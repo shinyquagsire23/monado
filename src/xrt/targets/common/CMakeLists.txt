@@ -67,6 +67,9 @@ if(BUILD_DRIVER_VIVE)
 	target_link_libraries(target_lists PRIVATE drv_vive)
 endif()
 
+if(BUILD_DRIVER_SURVIVE)
+	target_link_libraries(target_lists PRIVATE drv_survive)
+endif()
 
 ####
 # Instance

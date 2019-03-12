@@ -65,6 +65,7 @@ udev    = dependency('libudev', required: false)
 libuvc  = dependency('libuvc', required: false)
 vulkan  = dependency('vulkan', required: true)
 zlib    = dependency('zlib', required: false)
+survive = dependency('survive', required: false)
 
 opencv = dependency('opencv4', required: false)
 if not opencv.found()
@@ -181,6 +182,12 @@ if v4l2.found() and ('auto' in drivers or 'v4l2' in drivers)
 	if 'v4l2' not in drivers
 		drivers += ['v4l2']
 	endif
+endif
+
+if survive.found() and ('survive' in drivers)
+  if 'survive' not in drivers
+    drivers += ['survive']
+    endif
 endif
 
 if drivers.length() == 0 or drivers == ['auto']

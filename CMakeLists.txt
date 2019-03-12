@@ -107,6 +107,7 @@ option(BUILD_WITH_HDK "Enable HDK driver" ON)
 option(BUILD_WITH_PSMV "Enable Playstation Move driver" ON)
 option(BUILD_WITH_HYDRA "Enable Hydra driver" ON)
 option(BUILD_WITH_NS "Enable North Star driver" ON)
+option(BUILD_WITH_LIBSURVIVE "Enable libsurvive driver" OFF)
 
 # You can set this from a superproject to add a driver
 list(APPEND AVAILABLE_DRIVERS ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM)
@@ -180,6 +181,13 @@ endif()
 
 if(BUILD_WITH_NS)
 	set(BUILD_DRIVER_NS TRUE)
+endif()
+
+if (BUILD_WITH_LIBSURVIVE)
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(SURVIVE REQUIRED IMPORTED_TARGET survive)
+	add_definitions(-DXRT_BUILD_DRIVER_SURVIVE)
+	set(BUILD_DRIVER_SURVIVE TRUE)
 endif()
 
 if(BUILD_WITH_PSVR)

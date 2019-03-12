@@ -54,6 +54,10 @@ if 'vive' in drivers
 	driver_libs += [lib_drv_vive]
 endif
 
+if 'survive' in drivers
+	driver_libs += [lib_drv_survive]
+endif
+
 subdir('common')
 subdir('openxr')
 subdir('cli')

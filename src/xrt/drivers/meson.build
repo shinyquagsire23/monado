@@ -136,3 +136,19 @@ lib_drv_vive = static_library(
 	dependencies: [aux, zlib],
 	build_by_default: 'vive' in drivers,
 )
+
+lib_drv_survive = static_library(
+	'drv_survive',
+	files(
+		'survive/survive_driver.c',
+		'survive/survive_interface.h',
+		'survive/survive_wrap.c',
+		'survive/survive_wrap.h'
+	),
+	include_directories: [
+		xrt_include,
+		cjson_include,
+	],
+	dependencies: [aux, zlib, survive],
+	build_by_default: 'survive' in drivers,
+)

@@ -178,6 +178,32 @@ You can verify that it stuck with the command.
 xrandr --prop
 ```
 
+## Using libsurvive
+
+To enable the libsurvive driver, libsurvive has to be installed as a library with a pkgconfig file
+(https://github.com/cntools/libsurvive/pull/187).
+
+When starting any libsrvive or OpenXR application, libsurvive will run calibration and save
+configuration and calibration data in the current working directory.
+
+Make sure the HMD can see both basestations and is not moved during calibration.
+
+To remove libsurvive's calibration data (e.g. to force recalibration) delete the following
+files/directories:
+
+    rm -r *config.json calinfo
+
+Though working and somewhat usable, support for the libsurvive driver is **experimental**.
+Therefore with both meson and cmake, the survive driver has to be explicitly enabled with
+
+```
+#cmake
+-DBUILD_WITH_LIBSURVIVE=On
+
+#meson
+-Ddrivers=auto,survive
+```
+
 ## Coding style and formatting
 
 [clang-format][] is used,

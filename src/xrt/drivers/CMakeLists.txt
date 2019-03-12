@@ -162,6 +162,19 @@ if(BUILD_DRIVER_V4L2)
 	list(APPEND ENABLED_DRIVERS v4l2)
 endif()
 
+if (BUILD_WITH_LIBSURVIVE)
+	set(SURVIVE_SOURCE_FILES
+		survive/survive_driver.c
+		survive/survive_interface.h
+		survive/survive_wrap.c
+		survive/survive_wrap.h
+		)
+
+	add_library(drv_survive STATIC ${SURVIVE_SOURCE_FILES})
+	target_link_libraries(drv_survive PRIVATE xrt-interfaces aux_os aux_util aux_math PkgConfig::SURVIVE)
+	list(APPEND ENABLED_HEADSET_DRIVERS survive)
+endif()
+
 if(ENABLED_HEADSET_DRIVERS)
 	set(ENABLED_DRIVERS ${ENABLED_HEADSET_DRIVERS} ${ENABLED_DRIVERS})
 	list(SORT ENABLED_DRIVERS)
