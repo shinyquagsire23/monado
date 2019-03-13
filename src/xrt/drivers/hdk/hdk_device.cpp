@@ -210,18 +210,46 @@ hdk_device_create(hid_device *dev,
 	hd->print_spew = print_spew;
 	hd->print_debug = print_debug;
 
-	if (variant != HDK_VARIANT_2) {
-		HDK_ERROR(hd,
-		          "Only recognize HDK2 for now, and this isn't it!");
+	if (variant == HDK_UNKNOWN) {
+		HDK_ERROR(hd, "Don't know which HDK variant this is.");
 		hdk_device_destroy(&hd->base);
 		return NULL;
 	}
 
-	// Treat as symmetric right now.
-	const double FOV = 92.0 / 180 * M_PI;
+
+	double hFOV;
+	double vFOV;
+	double hCOP = 0.5;
+	double vCOP = 0.5;
+
+	switch (variant) {
+
+
+	case HDK_VARIANT_1_2:
+		// Distortion optional - this is for no distortion.
+		hFOV = 90;
+		vFOV = 96.73;
+		break;
+
+	case HDK_VARIANT_1_3_1_4:
+		// Non-mesh distortion.
+		hFOV = 90;
+		vFOV = 96.73;
+		hCOP = 0.529;
+		break;
+
+	case HDK_VARIANT_2:
+		// Mesh distortion (ideally)
+		hFOV = vFOV = 92.0;
+		break;
+	}
+
+	constexpr double DEGREES_TO_RADIANS = M_PI / 180.0;
+
 	{
 		/* right eye */
-		math_compute_fovs(1.0, 0.5, FOV, 1, 0.5, FOV,
+		math_compute_fovs(1.0, hCOP, hFOV * DEGREES_TO_RADIANS, 1, vCOP,
+		                  vFOV * DEGREES_TO_RADIANS,
 		                  &hd->base.views[1].fov);
 	}
 	{
@@ -236,35 +264,86 @@ hdk_device_create(hid_device *dev,
 		    -hd->base.views[1].fov.angle_left;
 	}
 
-	// HDK2 is upside down :facepalm:
+	switch (variant) {
+	case HDK_VARIANT_2: {
+		constexpr int panel_w = 1080;
+		constexpr int panel_h = 1200;
+		// Padding needed horizontally per side.
+		constexpr int horiz_padding = (panel_h - panel_w) / 2;
+		// HDK2 is upside down :facepalm:
 
-	// clang-format off
-	// Main display.
-	hd->base.screens[0].w_pixels = 2160;
-	hd->base.screens[0].h_pixels = 1200;
+		// clang-format off
+		// Main display.
+		hd->base.screens[0].w_pixels = panel_w * 2;
+		hd->base.screens[0].h_pixels = panel_h;
 
-	// Left
-	hd->base.views[0].display.w_pixels = 1080;
-	hd->base.views[0].display.h_pixels = 1200;
-	hd->base.views[0].viewport.x_pixels = 1080; // right half of display
-	hd->base.views[0].viewport.y_pixels = 60;
-	hd->base.views[0].viewport.w_pixels = 1080;
-	hd->base.views[0].viewport.h_pixels = 1080;
-	hd->base.views[0].rot = u_device_rotation_180;
+		// Left
+		hd->base.views[0].display.w_pixels = panel_w;
+		hd->base.views[0].display.h_pixels = panel_h;
+		hd->base.views[0].viewport.x_pixels = panel_w; // right half of display
+		hd->base.views[0].viewport.y_pixels = horiz_padding;
+		hd->base.views[0].viewport.w_pixels = panel_w;
+		hd->base.views[0].viewport.h_pixels = panel_w;
+		hd->base.views[0].rot = u_device_rotation_180;
 
-	// Right
-	hd->base.views[1].display.w_pixels = 1080;
-	hd->base.views[1].display.h_pixels = 1200;
-	hd->base.views[1].viewport.x_pixels = 0;
-	hd->base.views[1].viewport.y_pixels = 60;
-	hd->base.views[1].viewport.w_pixels = 1080;
-	hd->base.views[1].viewport.h_pixels = 1080;
-	hd->base.views[1].rot = u_device_rotation_180;
+		// Right
+		hd->base.views[1].display.w_pixels = panel_w;
+		hd->base.views[1].display.h_pixels = panel_h;
+		hd->base.views[1].viewport.x_pixels = 0;
+		hd->base.views[1].viewport.y_pixels = horiz_padding;
+		hd->base.views[1].viewport.w_pixels = panel_w;
+		hd->base.views[1].viewport.h_pixels = panel_w;
+		hd->base.views[1].rot = u_device_rotation_180;
+		// clang-format on
+		break;
+	}
+	case HDK_VARIANT_1_3_1_4:
+		// fallthrough intentional
+	case HDK_VARIANT_1_2: {
+		// 1080x1920 screen, with the top at the left.
+
+		constexpr int panel_w = 1080;
+		constexpr int panel_h = 1920;
+		constexpr int panel_half_h = panel_h / 2;
+		// clang-format off
+		// Main display.
+		hd->base.screens[0].w_pixels = panel_w;
+		hd->base.screens[0].h_pixels = panel_h;
+
+		// Left
+		hd->base.views[0].display.w_pixels = panel_half_h;
+		hd->base.views[0].display.h_pixels = panel_w;
+		hd->base.views[0].viewport.x_pixels = 0;
+		hd->base.views[0].viewport.y_pixels = 0;// top half of display
+		hd->base.views[0].viewport.w_pixels = panel_w;
+		hd->base.views[0].viewport.h_pixels = panel_half_h;
+		hd->base.views[0].rot = u_device_rotation_left;
+
+		// Right
+		hd->base.views[1].display.w_pixels = panel_half_h;
+		hd->base.views[1].display.h_pixels = panel_w;
+		hd->base.views[1].viewport.x_pixels = 0;
+		hd->base.views[1].viewport.y_pixels = panel_half_h; // bottom half of display
+		hd->base.views[1].viewport.w_pixels = panel_w;
+		hd->base.views[1].viewport.h_pixels = panel_half_h;
+		hd->base.views[1].rot = u_device_rotation_left;
+		// clang-format on
+		break;
+	}
+	}
 
 	// Distortion
+	// "None" is correct or at least acceptable for 1.2.
+	// We have coefficients for 1.3/1.4, though the mesh is better.
+	// We only have a mesh for 2, so use "none" there until it's supported.
 	hd->base.distortion.models = XRT_DISTORTION_MODEL_NONE;
 	hd->base.distortion.preferred = XRT_DISTORTION_MODEL_NONE;
-	// clang-format on
+	// if (variant == HDK_VARIANT_1_3_1_4) {
+	// 	hd->base.distortion.models =
+	// 	    xrt_distortion_model(hd->base.distortion.models |
+	// 	                         XRT_DISTORTION_MODEL_PANOTOOLS);
+	// 	hd->base.distortion.preferred = XRT_DISTORTION_MODEL_PANOTOOLS;
+	// }
 
 
 	if (hd->print_debug) {

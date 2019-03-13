@@ -48,7 +48,8 @@ hdk_prober_destroy(struct xrt_prober *p)
 
 HDK_MAKE_STRING(HDK2_PRODUCT_STRING, "OSVR HDK 2");
 HDK_MAKE_STRING(HDK13_PRODUCT_STRING, "OSVR HDK 1.3/1.4");
-
+static const wchar_t HDK1_PRODUCT_STRING_W[] = L"OSVR  HDK 1.x";
+static const char HDK12_PRODUCT_STRING[] = "OSVR HDK 1.2";
 
 static const uint16_t HDK_VID = 0x1532;
 static const uint16_t HDK_PID = 0x0b00;
@@ -76,6 +77,9 @@ hdk_prober_autoprobe(struct xrt_prober *p)
 	if (0 == wcscmp(HDK2_PRODUCT_STRING_W, devs->product_string)) {
 		variant = HDK_VARIANT_2;
 		name = HDK2_PRODUCT_STRING;
+	} else if (0 == wcscmp(HDK1_PRODUCT_STRING_W, devs->product_string)) {
+		variant = HDK_VARIANT_1_2;
+		name = HDK12_PRODUCT_STRING;
 	} else {
 		//! @todo just assuming anything else is 1.3 for now
 		(void)HDK13_PRODUCT_STRING_W;
