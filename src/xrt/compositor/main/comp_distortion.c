@@ -55,8 +55,7 @@ comp_distortion_init_pipeline_layout(struct comp_distortion *d);
 static void
 comp_distortion_init_pipeline(struct comp_distortion *d,
                               VkRenderPass render_pass,
-                              VkPipelineCache pipeline_cache,
-                              enum xrt_distortion_model distortion_model);
+                              VkPipelineCache pipeline_cache);
 
 static VkWriteDescriptorSet
 comp_distortion_get_uniform_write_descriptor_set(struct comp_distortion *d,
@@ -175,6 +174,8 @@ comp_distortion_init(struct comp_distortion *d,
 {
 	d->vk = &c->vk;
 
+	d->distortion_model = distortion_model;
+
 	d->ubo_vp_data[0].flip_y = flip_y;
 	d->ubo_vp_data[1].flip_y = flip_y;
 
@@ -182,8 +183,7 @@ comp_distortion_init(struct comp_distortion *d,
 	comp_distortion_update_uniform_buffer_warp(d, c);
 	comp_distortion_init_descriptor_set_layout(d);
 	comp_distortion_init_pipeline_layout(d);
-	comp_distortion_init_pipeline(d, render_pass, pipeline_cache,
-	                              distortion_model);
+	comp_distortion_init_pipeline(d, render_pass, pipeline_cache);
 	comp_distortion_init_descriptor_sets(d, descriptor_pool);
 }
 
@@ -207,8 +207,7 @@ comp_distortion_destroy(struct comp_distortion *d)
 static void
 comp_distortion_init_pipeline(struct comp_distortion *d,
                               VkRenderPass render_pass,
-                              VkPipelineCache pipeline_cache,
-                              enum xrt_distortion_model distortion_model)
+                              VkPipelineCache pipeline_cache)
 {
 	struct vk_bundle *vk = d->vk;
 	VkResult ret;
@@ -276,12 +275,10 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	    .pDynamicStates = dynamic_states,
 	};
 
-
-
 	const uint32_t *fragment_shader_code;
 	size_t fragment_shader_size;
 
-	switch (distortion_model) {
+	switch (d->distortion_model) {
 	case XRT_DISTORTION_MODEL_NONE:
 		fragment_shader_code = shaders_none_frag;
 		fragment_shader_size = sizeof(shaders_none_frag);
@@ -541,30 +538,53 @@ static void
 comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
                                            struct comp_compositor *c)
 {
-	/*
-	 * Pano vision fragment shader
-	 */
-
 	// clang-format off
-	d->ubo_pano.hmd_warp_param[0] = c->xdev->distortion.pano.distortion_k[0];
-	d->ubo_pano.hmd_warp_param[1] = c->xdev->distortion.pano.distortion_k[1];
-	d->ubo_pano.hmd_warp_param[2] = c->xdev->distortion.pano.distortion_k[2];
-	d->ubo_pano.hmd_warp_param[3] = c->xdev->distortion.pano.distortion_k[3];
-	d->ubo_pano.aberr[0] = c->xdev->distortion.pano.aberration_k[0];
-	d->ubo_pano.aberr[1] = c->xdev->distortion.pano.aberration_k[1];
-	d->ubo_pano.aberr[2] = c->xdev->distortion.pano.aberration_k[2];
-	d->ubo_pano.aberr[3] = c->xdev->distortion.pano.aberration_k[3];
-	d->ubo_pano.lens_center[0][0] = c->xdev->views[0].lens_center.x_meters;
-	d->ubo_pano.lens_center[0][1] = c->xdev->views[0].lens_center.y_meters;
-	d->ubo_pano.lens_center[1][0] = c->xdev->views[1].lens_center.x_meters;
-	d->ubo_pano.lens_center[1][1] = c->xdev->views[1].lens_center.y_meters;
-	d->ubo_pano.viewport_scale[0] = c->xdev->views[0].display.w_meters;
-	d->ubo_pano.viewport_scale[1] = c->xdev->views[0].display.h_meters;
-	d->ubo_pano.warp_scale = c->xdev->distortion.pano.warp_scale;
+	switch (d->distortion_model) {
+	case XRT_DISTORTION_MODEL_VIVE:
+		/*
+		 * VIVE fragment shader
+		 */
+		d->ubo_vive.aspect_x_over_y = c->xdev->distortion.vive.aspect_x_over_y;
+		d->ubo_vive.grow_for_undistort = c->xdev->distortion.vive.grow_for_undistort;
 
-	memcpy(d->ubo_handle.mapped, &d->ubo_pano, sizeof(d->ubo_pano));
+		for (uint32_t i = 0; i < 2; i++)
+			d->ubo_vive.undistort_r2_cutoff[i] = c->xdev->distortion.vive.undistort_r2_cutoff[i];
+
+		for (uint32_t i = 0; i < 2; i++)
+			for (uint32_t j = 0; j < 2; j++)
+				d->ubo_vive.center[i][j] = c->xdev->distortion.vive.center[i][j];
+
+		for (uint32_t i = 0; i < 2; i++)
+			for (uint32_t j = 0; j < 3; j++)
+				for (uint32_t k = 0; k < 3; k++)
+					d->ubo_vive.coefficients[i][j][k] = c->xdev->distortion.vive.coefficients[i][j][k];
+
+		memcpy(d->ubo_handle.mapped, &d->ubo_vive, sizeof(d->ubo_vive));
+		break;
+	case XRT_DISTORTION_MODEL_PANOTOOLS:
+	default:
+		/*
+		 * Pano vision fragment shader
+		 */
+		d->ubo_pano.hmd_warp_param[0] = c->xdev->distortion.pano.distortion_k[0];
+		d->ubo_pano.hmd_warp_param[1] = c->xdev->distortion.pano.distortion_k[1];
+		d->ubo_pano.hmd_warp_param[2] = c->xdev->distortion.pano.distortion_k[2];
+		d->ubo_pano.hmd_warp_param[3] = c->xdev->distortion.pano.distortion_k[3];
+		d->ubo_pano.aberr[0] = c->xdev->distortion.pano.aberration_k[0];
+		d->ubo_pano.aberr[1] = c->xdev->distortion.pano.aberration_k[1];
+		d->ubo_pano.aberr[2] = c->xdev->distortion.pano.aberration_k[2];
+		d->ubo_pano.aberr[3] = c->xdev->distortion.pano.aberration_k[3];
+		d->ubo_pano.lens_center[0][0] = c->xdev->views[0].lens_center.x_meters;
+		d->ubo_pano.lens_center[0][1] = c->xdev->views[0].lens_center.y_meters;
+		d->ubo_pano.lens_center[1][0] = c->xdev->views[1].lens_center.x_meters;
+		d->ubo_pano.lens_center[1][1] = c->xdev->views[1].lens_center.y_meters;
+		d->ubo_pano.viewport_scale[0] = c->xdev->views[0].display.w_meters;
+		d->ubo_pano.viewport_scale[1] = c->xdev->views[0].display.h_meters;
+		d->ubo_pano.warp_scale = c->xdev->distortion.pano.warp_scale;
+
+		memcpy(d->ubo_handle.mapped, &d->ubo_pano, sizeof(d->ubo_pano));
+	}
 	// clang-format on
-
 
 	/*
 	 * Common vertex shader stuff.
@@ -683,9 +703,19 @@ comp_distortion_init_uniform_buffer(struct comp_distortion *d,
 	memory_property_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 	memory_property_flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-	// Warp UBO in deferred fragment shader
+	// distortion ubo
+	VkDeviceSize ubo_size;
+
+	switch (d->distortion_model) {
+	case XRT_DISTORTION_MODEL_PANOTOOLS:
+		ubo_size = sizeof(d->ubo_pano);
+		break;
+	case XRT_DISTORTION_MODEL_VIVE: ubo_size = sizeof(d->ubo_vive); break;
+	default: ubo_size = sizeof(d->ubo_pano);
+	}
+
 	ret = _create_buffer(vk, usage_flags, memory_property_flags,
-	                     &d->ubo_handle, sizeof(d->ubo_pano), NULL);
+	                     &d->ubo_handle, ubo_size, NULL);
 	if (ret != VK_SUCCESS) {
 		VK_DEBUG(vk, "Failed to create warp ubo buffer!");
 	}

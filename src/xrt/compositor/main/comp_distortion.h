@@ -56,6 +56,8 @@ struct comp_distortion
 	struct comp_uniform_buffer ubo_handle;
 	struct comp_uniform_buffer ubo_viewport_handles[2];
 
+	enum xrt_distortion_model distortion_model;
+
 	struct
 	{
 		float hmd_warp_param[4];
@@ -64,6 +66,15 @@ struct comp_distortion
 		float viewport_scale[2];
 		float warp_scale;
 	} ubo_pano;
+
+	struct
+	{
+		float coefficients[2][3][4];
+		float center[2][4];
+		float undistort_r2_cutoff[4];
+		float aspect_x_over_y;
+		float grow_for_undistort;
+	} ubo_vive;
 
 	struct
 	{
