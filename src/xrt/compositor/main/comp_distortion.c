@@ -546,23 +546,23 @@ comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
 	 */
 
 	// clang-format off
-	d->ubo_data.hmd_warp_param[0] = c->xdev->distortion.pano.distortion_k[0];
-	d->ubo_data.hmd_warp_param[1] = c->xdev->distortion.pano.distortion_k[1];
-	d->ubo_data.hmd_warp_param[2] = c->xdev->distortion.pano.distortion_k[2];
-	d->ubo_data.hmd_warp_param[3] = c->xdev->distortion.pano.distortion_k[3];
-	d->ubo_data.aberr[0] = c->xdev->distortion.pano.aberration_k[0];
-	d->ubo_data.aberr[1] = c->xdev->distortion.pano.aberration_k[1];
-	d->ubo_data.aberr[2] = c->xdev->distortion.pano.aberration_k[2];
-	d->ubo_data.aberr[3] = c->xdev->distortion.pano.aberration_k[3];
-	d->ubo_data.lens_center[0][0] = c->xdev->views[0].lens_center.x_meters;
-	d->ubo_data.lens_center[0][1] = c->xdev->views[0].lens_center.y_meters;
-	d->ubo_data.lens_center[1][0] = c->xdev->views[1].lens_center.x_meters;
-	d->ubo_data.lens_center[1][1] = c->xdev->views[1].lens_center.y_meters;
-	d->ubo_data.viewport_scale[0] = c->xdev->views[0].display.w_meters;
-	d->ubo_data.viewport_scale[1] = c->xdev->views[0].display.h_meters;
-	d->ubo_data.warp_scale = c->xdev->distortion.pano.warp_scale;
+	d->ubo_pano.hmd_warp_param[0] = c->xdev->distortion.pano.distortion_k[0];
+	d->ubo_pano.hmd_warp_param[1] = c->xdev->distortion.pano.distortion_k[1];
+	d->ubo_pano.hmd_warp_param[2] = c->xdev->distortion.pano.distortion_k[2];
+	d->ubo_pano.hmd_warp_param[3] = c->xdev->distortion.pano.distortion_k[3];
+	d->ubo_pano.aberr[0] = c->xdev->distortion.pano.aberration_k[0];
+	d->ubo_pano.aberr[1] = c->xdev->distortion.pano.aberration_k[1];
+	d->ubo_pano.aberr[2] = c->xdev->distortion.pano.aberration_k[2];
+	d->ubo_pano.aberr[3] = c->xdev->distortion.pano.aberration_k[3];
+	d->ubo_pano.lens_center[0][0] = c->xdev->views[0].lens_center.x_meters;
+	d->ubo_pano.lens_center[0][1] = c->xdev->views[0].lens_center.y_meters;
+	d->ubo_pano.lens_center[1][0] = c->xdev->views[1].lens_center.x_meters;
+	d->ubo_pano.lens_center[1][1] = c->xdev->views[1].lens_center.y_meters;
+	d->ubo_pano.viewport_scale[0] = c->xdev->views[0].display.w_meters;
+	d->ubo_pano.viewport_scale[1] = c->xdev->views[0].display.h_meters;
+	d->ubo_pano.warp_scale = c->xdev->distortion.pano.warp_scale;
 
-	memcpy(d->ubo_handle.mapped, &d->ubo_data, sizeof(d->ubo_data));
+	memcpy(d->ubo_handle.mapped, &d->ubo_pano, sizeof(d->ubo_pano));
 	// clang-format on
 
 
@@ -685,7 +685,7 @@ comp_distortion_init_uniform_buffer(struct comp_distortion *d,
 
 	// Warp UBO in deferred fragment shader
 	ret = _create_buffer(vk, usage_flags, memory_property_flags,
-	                     &d->ubo_handle, sizeof(d->ubo_data), NULL);
+	                     &d->ubo_handle, sizeof(d->ubo_pano), NULL);
 	if (ret != VK_SUCCESS) {
 		VK_DEBUG(vk, "Failed to create warp ubo buffer!");
 	}

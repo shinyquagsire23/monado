@@ -63,7 +63,7 @@ struct comp_distortion
 		float lens_center[2][4];
 		float viewport_scale[2];
 		float warp_scale;
-	} ubo_data;
+	} ubo_pano;
 
 	struct
 	{
