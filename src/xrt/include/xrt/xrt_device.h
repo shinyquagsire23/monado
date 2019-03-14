@@ -128,8 +128,17 @@ struct xrt_device
 
 		struct
 		{
-			// To be filled in.
-			float temp;
+			float aspect_x_over_y;
+			float grow_for_undistort;
+
+			//! Left/right
+			float undistort_r2_cutoff[2];
+
+			//! Left/right, x/y
+			float center[2][2];
+
+			//! left/right, r/g/b, a/b/c
+			float coefficients[2][3][3];
 		} vive;
 
 	} distortion;
