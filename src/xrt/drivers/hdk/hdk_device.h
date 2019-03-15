@@ -32,6 +32,7 @@ struct hdk_device
 
 	bool print_spew;
 	bool print_debug;
+	bool disconnect_notified;
 };
 
 static inline struct hdk_device *

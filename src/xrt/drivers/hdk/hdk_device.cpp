@@ -105,6 +105,17 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 
 	uint8_t buffer[32];
 	auto bytesRead = hid_read(hd->dev, &(buffer[0]), sizeof(buffer));
+	if (bytesRead == -1) {
+		if (!hd->disconnect_notified) {
+			fprintf(stderr,
+			        "%s: HDK appeared to disconnect. Please quit, "
+			        "reconnect, and try again.\n",
+				__func__);
+			hd->disconnect_notified = true;
+		}
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+		return;
+	}
 	if (bytesRead != 32 && bytesRead != 16) {
 		HDK_DEBUG(hd, "Only got %d bytes", bytesRead);
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
