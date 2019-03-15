@@ -137,22 +137,53 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 	buf++;
 
 	struct xrt_quat quat;
-	quat.x = fromFixedPoint<1, 14>(hdk_get_le_int16(buf)) * -1;
-	quat.y = fromFixedPoint<1, 14>(hdk_get_le_int16(buf)) * -1;
-	quat.z = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
+	quat.x = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
+	quat.z = fromFixedPoint<1, 14>(hdk_get_le_int16(buf)) * -1;
+	quat.y = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
 	quat.w = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
+
+// Used to produce 90 degree rotations
+#define HDK_SIN_PI_OVER_4 0.7071068
+	struct xrt_quat rot_90_about_x
+	{
+		HDK_SIN_PI_OVER_4, 0, 0, HDK_SIN_PI_OVER_4
+	};
+	struct xrt_quat negative_90_about_y
+	{
+		0, -HDK_SIN_PI_OVER_4, 0, HDK_SIN_PI_OVER_4
+	};
+	// The flipping of components and this get us close, except we are
+	// looking 90 to the right of where we want.
+	math_quat_rotate(&quat, &rot_90_about_x, &quat);
+
+	// Fix that 90
+	math_quat_rotate(&negative_90_about_y, &quat, &quat);
 
 	out_relation->pose.orientation = quat;
 
 	/// @todo might not be accurate on some version 1 reports??
 
 	// This is in the "world" coordinate system.
-	struct xrt_vec3 ang_vel;
-	ang_vel.x = fromFixedPoint<6, 9>(hdk_get_le_int16(buf));
-	ang_vel.y = fromFixedPoint<6, 9>(hdk_get_le_int16(buf));
-	ang_vel.z = fromFixedPoint<6, 9>(hdk_get_le_int16(buf));
 
-	out_relation->angular_velocity = ang_vel;
+	// Note that we must "rotate" this velocity by the first transform above
+	// (90 about x), hence putting it in a pure quat.
+	struct xrt_quat ang_vel_quat;
+	ang_vel_quat.x = fromFixedPoint<6, 9>(hdk_get_le_int16(buf));
+	ang_vel_quat.z = fromFixedPoint<6, 9>(hdk_get_le_int16(buf)) * -1;
+	ang_vel_quat.y = fromFixedPoint<6, 9>(hdk_get_le_int16(buf));
+	ang_vel_quat.w = 0;
+
+	// need the inverse rotation here
+	struct xrt_quat negative_90_about_x
+	{
+		- HDK_SIN_PI_OVER_4, 0, 0, HDK_SIN_PI_OVER_4
+	};
+	math_quat_rotate(&ang_vel_quat, &rot_90_about_x, &ang_vel_quat);
+	math_quat_rotate(&negative_90_about_x, &ang_vel_quat, &ang_vel_quat);
+
+	out_relation->angular_velocity.x = ang_vel_quat.x;
+	out_relation->angular_velocity.y = ang_vel_quat.y;
+	out_relation->angular_velocity.z = ang_vel_quat.z;
 
 	out_relation->relation_flags = xrt_space_relation_flags(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
@@ -160,8 +191,8 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
 	HDK_SPEW(hd, "GET_TRACKED_POSE (%f, %f, %f, %f) ANG_VEL (%f, %f, %f)",
-	         quat.x, quat.y, quat.z, quat.w, ang_vel.x, ang_vel.y,
-	         ang_vel.z);
+	         quat.x, quat.y, quat.z, quat.w, ang_vel_quat.x, ang_vel_quat.y,
+	         ang_vel_quat.z);
 }
 
 static void
