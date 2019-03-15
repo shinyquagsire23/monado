@@ -64,30 +64,43 @@ hdk_prober_autoprobe(struct xrt_prober *p)
 	bool print_spew = debug_get_bool_option_hdk_spew();
 	bool print_debug = debug_get_bool_option_hdk_debug();
 	struct hid_device_info *devs = hid_enumerate(HDK_VID, HDK_PID);
+	struct hid_device_info *current = devs;
+	enum HDK_VARIANT variant = HDK_UNKNOWN;
+	const char *name = NULL;
 
-	// Just take the first one, not going to loop right now.
-	if (devs == NULL) {
+	// Just take the first one that responds correctly.
+	while (current != NULL) {
+		if (!current->product_string) {
+			// Skip if the product string is null.
+			continue;
+		}
+		if (0 == wcscmp(HDK2_PRODUCT_STRING_W, current->product_string)) {
+			variant = HDK_VARIANT_2;
+			name = HDK2_PRODUCT_STRING;
+			break;
+		} else if (0 == wcscmp(HDK1_PRODUCT_STRING_W,
+		                       current->product_string)) {
+			variant = HDK_VARIANT_1_2;
+			name = HDK12_PRODUCT_STRING;
+			break;
+		} else {
+			//! @todo just assuming anything else is 1.3 for now
+			(void)HDK13_PRODUCT_STRING_W;
+			variant = HDK_VARIANT_1_3_1_4;
+			name = HDK13_PRODUCT_STRING;
+			break;
+		}
+	}
+	if (current == NULL) {
 		if (print_debug) {
 			fprintf(stderr, "%s - no device found\n", __func__);
 		}
+		hid_free_enumeration(devs);
 		return NULL;
 	}
-	enum HDK_VARIANT variant = HDK_UNKNOWN;
-	const char *name = NULL;
-	if (0 == wcscmp(HDK2_PRODUCT_STRING_W, devs->product_string)) {
-		variant = HDK_VARIANT_2;
-		name = HDK2_PRODUCT_STRING;
-	} else if (0 == wcscmp(HDK1_PRODUCT_STRING_W, devs->product_string)) {
-		variant = HDK_VARIANT_1_2;
-		name = HDK12_PRODUCT_STRING;
-	} else {
-		//! @todo just assuming anything else is 1.3 for now
-		(void)HDK13_PRODUCT_STRING_W;
-		variant = HDK_VARIANT_1_3_1_4;
-		name = HDK13_PRODUCT_STRING;
-	}
 
-	hid_device *dev = hid_open(HDK_VID, HDK_PID, devs->serial_number);
+
+	hid_device *dev = hid_open(HDK_VID, HDK_PID, current->serial_number);
 	struct hdk_device *hd =
 	    hdk_device_create(dev, variant, print_spew, print_debug);
 	hid_free_enumeration(devs);
