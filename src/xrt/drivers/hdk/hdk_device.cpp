@@ -110,7 +110,7 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 			fprintf(stderr,
 			        "%s: HDK appeared to disconnect. Please quit, "
 			        "reconnect, and try again.\n",
-				__func__);
+			        __func__);
 			hd->disconnect_notified = true;
 		}
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
@@ -311,19 +311,19 @@ hdk_device_create(hid_device *dev,
 		constexpr int panel_w = 1080;
 		constexpr int panel_h = 1200;
 		// Padding needed horizontally per side.
-		constexpr int horiz_padding = (panel_h - panel_w) / 2;
+		constexpr int vert_padding = (panel_h - panel_w) / 2;
 		// HDK2 is upside down :facepalm:
 
 		// clang-format off
 		// Main display.
 		hd->base.screens[0].w_pixels = panel_w * 2;
 		hd->base.screens[0].h_pixels = panel_h;
-
+#ifndef HDK_DO_NOT_FLIP_HDK2_SCREEN
 		// Left
 		hd->base.views[0].display.w_pixels = panel_w;
 		hd->base.views[0].display.h_pixels = panel_h;
 		hd->base.views[0].viewport.x_pixels = panel_w; // right half of display
-		hd->base.views[0].viewport.y_pixels = horiz_padding;
+		hd->base.views[0].viewport.y_pixels = vert_padding;
 		hd->base.views[0].viewport.w_pixels = panel_w;
 		hd->base.views[0].viewport.h_pixels = panel_w;
 		hd->base.views[0].rot = u_device_rotation_180;
@@ -332,10 +332,29 @@ hdk_device_create(hid_device *dev,
 		hd->base.views[1].display.w_pixels = panel_w;
 		hd->base.views[1].display.h_pixels = panel_h;
 		hd->base.views[1].viewport.x_pixels = 0;
-		hd->base.views[1].viewport.y_pixels = horiz_padding;
+		hd->base.views[1].viewport.y_pixels = vert_padding;
 		hd->base.views[1].viewport.w_pixels = panel_w;
 		hd->base.views[1].viewport.h_pixels = panel_w;
 		hd->base.views[1].rot = u_device_rotation_180;
+#else
+		// Left
+		hd->base.views[0].display.w_pixels = panel_w;
+		hd->base.views[0].display.h_pixels = panel_h;
+		hd->base.views[0].viewport.x_pixels = 0;
+		hd->base.views[0].viewport.y_pixels = vert_padding;
+		hd->base.views[0].viewport.w_pixels = panel_w;
+		hd->base.views[0].viewport.h_pixels = panel_w;
+		hd->base.views[0].rot = u_device_rotation_ident;
+
+		// Right
+		hd->base.views[1].display.w_pixels = panel_w;
+		hd->base.views[1].display.h_pixels = panel_h;
+		hd->base.views[1].viewport.x_pixels = panel_w;
+		hd->base.views[1].viewport.y_pixels = vert_padding;
+		hd->base.views[1].viewport.w_pixels = panel_w;
+		hd->base.views[1].viewport.h_pixels = panel_w;
+		hd->base.views[1].rot = u_device_rotation_ident;
+#endif
 		// clang-format on
 		break;
 	}
