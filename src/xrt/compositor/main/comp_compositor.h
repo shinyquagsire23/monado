@@ -112,7 +112,7 @@ struct comp_compositor
 	//! The settings.
 	struct comp_settings settings;
 
-	// Vulkan bundle of things.
+	//! Vulkan bundle of things.
 	struct vk_bundle vk;
 
 	/*!
