@@ -297,6 +297,10 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.views[1].rot = u_device_rotation_ident;
 	// clang-format on
 
+	// Default to 90FPS
+	ohd->base.screens[0].nominal_frame_interval_ns =
+	    time_s_to_ns(1.0f / 90.0f);
+
 	// Find any needed quirks.
 	bool quirk_rotate_right = false;
 	bool quirk_rotate_inwards = false;
@@ -309,6 +313,9 @@ oh_device_create(ohmd_context *ctx,
 	if (strcmp(prod, "3Glasses-D3V2") == 0) {
 		quirk_rotate_right = true;
 		quirk_left_center_pano_scale = true;
+		// 70.43 FPS
+		ohd->base.screens[0].nominal_frame_interval_ns =
+		    time_s_to_ns(1.0f / 70.43f);
 	}
 
 	if (strcmp(prod, "HTC Vive") == 0) {
