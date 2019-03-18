@@ -92,7 +92,7 @@ Replace `make` with `ninja` if you used the Ninja generator.
     make
     make install
 
-Documentation can be browsed by opening `docs/html/index.html` in the build directory in a web browser.
+Documentation can be browsed by opening `doc/html/index.html` in the build directory in a web browser.
 
 ## Getting started using OpenXR with Monado
 
