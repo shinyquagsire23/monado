@@ -30,6 +30,8 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	s->distortion_model = xdev->distortion.preferred;
 	s->width = xdev->screens[0].w_pixels;
 	s->height = xdev->screens[0].h_pixels;
+	s->nominal_frame_interval_ns =
+	    xdev->screens[0].nominal_frame_interval_ns;
 	s->print_spew = debug_get_bool_option_print_spew();
 	s->print_debug = debug_get_bool_option_print_debug();
 

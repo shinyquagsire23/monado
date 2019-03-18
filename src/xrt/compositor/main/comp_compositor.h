@@ -118,6 +118,9 @@ struct comp_compositor
 	//! Vulkan bundle of things.
 	struct vk_bundle vk;
 
+	//! Timestamp of last-rendered (immersive) frame.
+	int64_t last_frame_time_ns;
+
 	/*!
 	 * The current state we are tracking.
 	 *

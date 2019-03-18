@@ -14,6 +14,7 @@
 
 #include "util/u_debug.h"
 #include "util/u_misc.h"
+#include "util/u_time.h"
 
 #include "main/comp_compositor.h"
 #include "main/comp_client_interface.h"
@@ -79,6 +80,9 @@ compositor_wait_frame(struct xrt_compositor *xc,
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_SPEW(c, "WAIT_FRAME");
+	*predicted_display_period = c->settings.nominal_frame_interval_ns;
+	*predicted_display_time =
+	    c->last_frame_time_ns + c->settings.nominal_frame_interval_ns;
 
 	//! @todo set *predicted_display_time
 
@@ -121,6 +125,9 @@ compositor_end_frame(struct xrt_compositor *xc,
 	} else {
 		COMP_ERROR(c, "non-stereo rendering not supported");
 	}
+
+	// Record the time of this frame.
+	c->last_frame_time_ns = time_state_get_now(c->timekeeping);
 }
 
 
@@ -487,6 +494,7 @@ comp_compositor_create(struct xrt_device *xdev,
 	comp_settings_init(&c->settings, xdev);
 
 	c->settings.flip_y = flip_y;
+	c->last_frame_time_ns = time_state_get_now(c->timekeeping);
 
 	// Need to select window backend before creating Vulkan, then
 	// swapchain will initialize the window fully and the swapchain, and

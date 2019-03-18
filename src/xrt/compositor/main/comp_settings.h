@@ -67,6 +67,9 @@ struct comp_settings
 
 	//! Should we flip y axis for compositor buffers (for GL)
 	bool flip_y;
+
+	//! Nominal frame interval
+	uint64_t nominal_frame_interval_ns;
 };
 
 /*!
