@@ -1,0 +1,4 @@
+OPENXR {
+	global: xrNegotiateLoaderRuntimeInterface; # Only one exported symbol.
+	local: *;                                  # Hide everything else.
+};

@@ -1,0 +1,155 @@
+// Copyright 2018-2019, Collabora, Ltd.
+// SPDX-License-Identifier: BSL-1.0
+/*!
+ * @file
+ * @brief  Holds session related functions.
+ * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup oxr_main
+ */
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <math.h>
+
+#include "util/u_debug.h"
+#include "util/u_time.h"
+
+#include "xrt/xrt_compiler.h"
+#include "xrt/xrt_prober.h"
+
+#include "oxr_objects.h"
+#include "oxr_logger.h"
+
+DEBUG_GET_ONCE_FLOAT_OPTION(lfov_left, "OXR_OVERRIDE_LFOV_LEFT", 0.0f)
+DEBUG_GET_ONCE_FLOAT_OPTION(lfov_right, "OXR_OVERRIDE_LFOV_RIGHT", 0.0f)
+DEBUG_GET_ONCE_FLOAT_OPTION(lfov_up, "OXR_OVERRIDE_LFOV_UP", 0.0f)
+DEBUG_GET_ONCE_FLOAT_OPTION(lfov_down, "OXR_OVERRIDE_LFOV_DOWN", 0.0f)
+
+static inline int32_t
+radtodeg_for_display(float radians)
+{
+	return (int32_t)(radians * 180 * M_1_PI);
+}
+
+XrResult
+oxr_instance_create(struct oxr_logger *log,
+                    const XrInstanceCreateInfo *createInfo,
+                    struct oxr_instance **out_instance)
+{
+	struct oxr_instance *inst =
+	    (struct oxr_instance *)calloc(1, sizeof(struct oxr_instance));
+	inst->debug = OXR_XR_DEBUG_INSTANCE;
+	inst->prober = xrt_create_prober();
+
+	struct xrt_device *dev =
+	    inst->prober->lelo_dallas_autoprobe(inst->prober);
+
+	const float left_override = debug_get_float_option_lfov_left();
+	if (left_override != 0.0f) {
+		printf(
+		    "Overriding left eye angle_left with %f radians (%i°), "
+		    "and right eye angle_right with %f radians (%i°)\n",
+		    left_override, radtodeg_for_display(left_override),
+		    -left_override, radtodeg_for_display(-left_override));
+		dev->views[0].fov.angle_left = left_override;
+		dev->views[1].fov.angle_right = -left_override;
+	}
+
+	const float right_override = debug_get_float_option_lfov_right();
+	if (right_override != 0.0f) {
+		printf(
+		    "Overriding left eye angle_right with %f radians (%i°), "
+		    "and right eye angle_left with %f radians (%i°)\n",
+		    right_override, radtodeg_for_display(right_override),
+		    -right_override, radtodeg_for_display(-right_override));
+		dev->views[0].fov.angle_right = right_override;
+		dev->views[1].fov.angle_left = -right_override;
+	}
+
+	const float up_override = debug_get_float_option_lfov_up();
+	if (up_override != 0.0f) {
+		printf("Overriding both eyes angle_up with %f radians (%i°)\n",
+		       up_override, radtodeg_for_display(up_override));
+		dev->views[0].fov.angle_up = up_override;
+		dev->views[1].fov.angle_up = up_override;
+	}
+
+	const float down_override = debug_get_float_option_lfov_down();
+	if (down_override != 0.0f) {
+		printf(
+		    "Overriding both eyes angle_down with %f radians (%i°)\n",
+		    down_override, radtodeg_for_display(down_override));
+		dev->views[0].fov.angle_down = down_override;
+		dev->views[1].fov.angle_down = down_override;
+	}
+
+	oxr_system_fill_in(log, inst, 1, &inst->system, dev);
+
+	inst->timekeeping = time_state_create();
+
+	//! @todo check if this (and other creates) failed?
+
+	*out_instance = inst;
+
+	return XR_SUCCESS;
+}
+
+XrResult
+oxr_instance_destroy(struct oxr_logger *log, struct oxr_instance *inst)
+{
+	struct xrt_prober *prober = inst->prober;
+	struct xrt_device *dev = inst->system.device;
+
+	if (dev != NULL) {
+		dev->destroy(dev);
+		inst->system.device = NULL;
+	}
+
+	if (prober != NULL) {
+		prober->destroy(prober);
+		inst->prober = NULL;
+	}
+
+	time_state_destroy(inst->timekeeping);
+	inst->timekeeping = NULL;
+
+	free(inst);
+
+	return XR_SUCCESS;
+}
+
+XrResult
+oxr_instance_get_properties(struct oxr_logger *log,
+                            struct oxr_instance *inst,
+                            XrInstanceProperties *instanceProperties)
+{
+	instanceProperties->runtimeVersion = XR_MAKE_VERSION(0, 0, 42);
+	strncpy(instanceProperties->runtimeName,
+	        "Monado(XRT) by Collabora et al", XR_MAX_RUNTIME_NAME_SIZE - 1);
+
+	return XR_SUCCESS;
+}
+
+#ifdef XR_USE_TIMESPEC
+
+XrResult
+oxr_instance_convert_time_to_timespec(struct oxr_logger *log,
+                                      struct oxr_instance *inst,
+                                      XrTime time,
+                                      struct timespec *timespecTime)
+{
+	time_state_to_timespec(inst->timekeeping, time, timespecTime);
+	return XR_SUCCESS;
+}
+
+XrResult
+oxr_instance_convert_timespec_to_time(struct oxr_logger *log,
+                                      struct oxr_instance *inst,
+                                      const struct timespec *timespecTime,
+                                      XrTime *time)
+{
+	*time = time_state_from_timespec(inst->timekeeping, timespecTime);
+	return XR_SUCCESS;
+}
+#endif // XR_USE_TIMESPEC

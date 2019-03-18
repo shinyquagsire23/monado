@@ -1,0 +1,15 @@
+CMakeCache.txt
+CMakeLists.txt.user
+*CMakeFiles/
+*Makefile
+*cmake_install.cmake
+*libopenxr_monado.so
+CMakeDoxyfile.in
+CMakeDoxygenDefaults.cmake
+doc/Doxyfile
+doc/html/
+doc/latex/
+openxr_monado-dev.json
+openxr_monado.json
+src/xrt/compositor/shaders/*.vert.h
+src/xrt/compositor/shaders/*.frag.h

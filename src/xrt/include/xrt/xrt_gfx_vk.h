@@ -1,0 +1,53 @@
+// Copyright 2019, Collabora, Ltd.
+// SPDX-License-Identifier: BSL-1.0
+/*!
+ * @file
+ * @brief  Header defining a XRT graphics provider.
+ * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup xrt_iface
+ */
+
+#pragma once
+
+#include "xrt/xrt_device.h"
+#include "xrt/xrt_compositor.h"
+#include "xrt/xrt_vulkan_includes.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/*!
+ * @ingroup xrt_iface
+ */
+extern const char *xrt_gfx_vk_instance_extensions;
+
+/*!
+ * @ingroup xrt_iface
+ */
+extern const char *xrt_gfx_vk_device_extensions;
+
+/*!
+ * @ingroup xrt_iface
+ */
+void
+xrt_gfx_vk_get_versions(struct xrt_api_requirements *ver);
+
+/*!
+ * @ingroup xrt_iface
+ */
+struct xrt_compositor_vk *
+xrt_gfx_vk_provider_create(struct xrt_device *xdev,
+                           VkInstance instance,
+                           PFN_vkGetInstanceProcAddr getProc,
+                           VkPhysicalDevice physicalDevice,
+                           VkDevice device,
+                           uint32_t queueFamilyIndex,
+                           uint32_t queueIndex);
+
+
+#ifdef __cplusplus
+}
+#endif
