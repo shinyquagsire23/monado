@@ -299,15 +299,10 @@ oxr_session_frame_wait(struct oxr_logger *log,
 		                 " session is not running");
 	}
 
-	// OK to update this here because xrWaitFrame must be externally
-	// synchronized by the app.
+	//! @todo this should be carefully synchronized, because there may be
+	//! more than one session per instance.
 	timepoint_ns now =
 	    time_state_get_now_and_update(sess->sys->inst->timekeeping);
-
-	// Set defaults - may be overridden by compositor.
-	frameState->predictedDisplayPeriod = sess->nominal_frame_interval_ns;
-	frameState->predictedDisplayTime =
-	    now + frameState->predictedDisplayPeriod;
 
 	struct xrt_compositor *xc = sess->compositor;
 	xc->wait_frame(xc, &frameState->predictedDisplayTime,
@@ -492,8 +487,6 @@ oxr_session_create(struct oxr_logger *log,
 	}
 
 	sess->ipd_meters = debug_get_num_option_ipd() / 1000.0f;
-	//! @todo hard-coding 90Hz
-	sess->nominal_frame_interval_ns = 11111111;
 	sess->static_prediction_s =
 	    debug_get_num_option_prediction_ms() / 1000.0f;
 

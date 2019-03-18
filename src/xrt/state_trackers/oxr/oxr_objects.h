@@ -463,7 +463,6 @@ struct oxr_session
 	 */
 	float ipd_meters;
 
-	uint64_t nominal_frame_interval_ns;
 	float static_prediction_s;
 
 	/*!
