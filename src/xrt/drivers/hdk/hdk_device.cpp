@@ -141,7 +141,6 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 	quat.z = fromFixedPoint<1, 14>(hdk_get_le_int16(buf)) * -1;
 	quat.y = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
 	quat.w = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
-
 // Used to produce 90 degree rotations
 #define HDK_SIN_PI_OVER_4 0.7071068
 	struct xrt_quat rot_90_about_x
@@ -257,7 +256,6 @@ hdk_device_create(hid_device *dev,
 		return NULL;
 	}
 
-
 	double hFOV;
 	double vFOV;
 	double hCOP = 0.5;
@@ -286,7 +284,6 @@ hdk_device_create(hid_device *dev,
 	}
 
 	constexpr double DEGREES_TO_RADIANS = M_PI / 180.0;
-
 	{
 		/* right eye */
 		math_compute_fovs(1.0, hCOP, hFOV * DEGREES_TO_RADIANS, 1, vCOP,
@@ -307,6 +304,7 @@ hdk_device_create(hid_device *dev,
 
 	switch (variant) {
 	case HDK_VARIANT_2: {
+		hd->base.screens[0].nominal_frame_interval_ns = time_s_to_ns(1.0f/90.0f);
 		constexpr int panel_w = 1080;
 		constexpr int panel_h = 1200;
 		// Padding needed horizontally per side.
@@ -361,6 +359,7 @@ hdk_device_create(hid_device *dev,
 		// fallthrough intentional
 	case HDK_VARIANT_1_2: {
 		// 1080x1920 screen, with the top at the left.
+		hd->base.screens[0].nominal_frame_interval_ns = time_s_to_ns(1.0f/60.0f);
 
 		constexpr int panel_w = 1080;
 		constexpr int panel_h = 1920;
