@@ -92,6 +92,8 @@ struct xrt_device
 	{
 		int w_pixels;
 		int h_pixels;
+		//! Nominal frame interval
+		uint64_t nominal_frame_interval_ns;
 	} screens[1];
 
 	/*!
