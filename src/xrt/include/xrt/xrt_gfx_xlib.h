@@ -21,12 +21,14 @@ typedef void* Display;
 typedef void* GLXFBConfig;
 typedef void* GLXDrawable;
 typedef void* GLXContext;
+struct time_state;
 
 /*!
  * @ingroup xrt_iface
  */
 struct xrt_compositor_gl*
 xrt_gfx_provider_create_gl_xlib(struct xrt_device* xdev,
+                                struct time_state* timekeeping,
                                 Display* xDisplay,
                                 uint32_t visualid,
                                 GLXFBConfig glxFBConfig,

@@ -16,13 +16,16 @@
 extern "C" {
 #endif
 
+struct time_state;
 
 /*!
  * Create the compositor instance using the given device. Used by the client
  * code and implemented by the main compositor code.
  */
 struct xrt_compositor_fd*
-comp_compositor_create(struct xrt_device* xdev, bool flip_y);
+comp_compositor_create(struct xrt_device* xdev,
+                       struct time_state* timekeeping,
+                       bool flip_y);
 
 
 #ifdef __cplusplus

@@ -18,13 +18,15 @@
 
 struct xrt_compositor_gl *
 xrt_gfx_provider_create_gl_xlib(struct xrt_device *xdev,
+                                struct time_state *timekeeping,
                                 Display *xDisplay,
                                 uint32_t visualid,
                                 GLXFBConfig glxFBConfig,
                                 GLXDrawable glxDrawable,
                                 GLXContext glxContext)
 {
-	struct xrt_compositor_fd *xcfd = comp_compositor_create(xdev, true);
+	struct xrt_compositor_fd *xcfd =
+	    comp_compositor_create(xdev, timekeeping, true);
 	if (xcfd == NULL) {
 		return NULL;
 	}

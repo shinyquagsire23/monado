@@ -18,6 +18,8 @@
 extern "C" {
 #endif
 
+struct time_state;
+
 
 /*!
  * @ingroup xrt_iface
@@ -40,6 +42,7 @@ xrt_gfx_vk_get_versions(struct xrt_api_requirements *ver);
  */
 struct xrt_compositor_vk *
 xrt_gfx_vk_provider_create(struct xrt_device *xdev,
+                           struct time_state *timekeeping,
                            VkInstance instance,
                            PFN_vkGetInstanceProcAddr getProc,
                            VkPhysicalDevice physicalDevice,

@@ -29,9 +29,9 @@ oxr_session_create_vk(struct oxr_logger *log,
                       struct oxr_session **out_session)
 {
 	struct xrt_compositor_vk *xcvk = xrt_gfx_vk_provider_create(
-	    sys->device, next->instance, vkGetInstanceProcAddr,
-	    next->physicalDevice, next->device, next->queueFamilyIndex,
-	    next->queueIndex);
+	    sys->device, sys->inst->timekeeping, next->instance,
+	    vkGetInstanceProcAddr, next->physicalDevice, next->device,
+	    next->queueFamilyIndex, next->queueIndex);
 
 	if (xcvk == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,

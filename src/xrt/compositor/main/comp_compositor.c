@@ -464,7 +464,9 @@ compositor_init_renderer(struct comp_compositor *c)
 }
 
 struct xrt_compositor_fd *
-comp_compositor_create(struct xrt_device *xdev, bool flip_y)
+comp_compositor_create(struct xrt_device *xdev,
+                       struct time_state *timekeeping,
+                       bool flip_y)
 {
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 
@@ -477,6 +479,7 @@ comp_compositor_create(struct xrt_device *xdev, bool flip_y)
 	c->base.base.end_frame = compositor_end_frame;
 	c->base.base.destroy = compositor_destroy;
 	c->xdev = xdev;
+	c->timekeeping = timekeeping;
 
 	COMP_DEBUG(c, "Doing init %p", (void *)c);
 

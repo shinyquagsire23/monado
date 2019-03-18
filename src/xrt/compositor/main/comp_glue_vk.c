@@ -45,6 +45,7 @@ xrt_gfx_vk_get_versions(struct xrt_api_requirements *ver)
 
 struct xrt_compositor_vk *
 xrt_gfx_vk_provider_create(struct xrt_device *xdev,
+                           struct time_state *timekeeping,
                            VkInstance instance,
                            PFN_vkGetInstanceProcAddr get_instance_proc_addr,
                            VkPhysicalDevice physical_device,
@@ -52,7 +53,8 @@ xrt_gfx_vk_provider_create(struct xrt_device *xdev,
                            uint32_t queue_family_index,
                            uint32_t queue_index)
 {
-	struct xrt_compositor_fd *xcfd = comp_compositor_create(xdev, false);
+	struct xrt_compositor_fd *xcfd =
+	    comp_compositor_create(xdev, timekeeping, false);
 	if (xcfd == NULL) {
 		return NULL;
 	}
