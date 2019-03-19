@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Install the OpenXR SDK, whatever version, with @haagch's patch so we can
+# actually install it system-wide.
+git clone https://github.com/KhronosGroup/OpenXR-SDK
+pushd OpenXR-SDK
+curl 'https://aur.archlinux.org/cgit/aur.git/plain/support_installing_the_loader.diff?h=openxr-loader-git' | patch -p1
+mkdir build
+pushd build
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=Off -DPRESENTATION_BACKEND=xlib -DDYNAMIC_LOADER=ON -DOpenGL_GL_PREFERENCE=GLVND -GNinja ..
+ninja install
+popd
+popd
+
+# Install OpenHMD from git master, as released versions are not sufficient
+# for us to build.
+git clone https://github.com/OpenHMD/OpenHMD
+pushd OpenHMD
+mkdir build
+meson --prefix=/usr/local --libdir=lib build
+ninja -C build install
+popd
