@@ -31,9 +31,8 @@ compositor_destroy(struct xrt_compositor *xc)
 		c->r = NULL;
 	}
 
-	vk_swapchain_cleanup(&c->window->swapchain);
-
 	if (c->window != NULL) {
+		vk_swapchain_cleanup(&c->window->swapchain);
 		c->window->destroy(c->window);
 		c->window = NULL;
 	}

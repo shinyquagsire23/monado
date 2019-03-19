@@ -102,7 +102,7 @@ comp_window_direct_init_swapchain(struct comp_window* w,
 static int
 comp_window_direct_connect(struct comp_window_direct* w);
 
-static void
+static VkResult
 comp_window_direct_aquire_xlib_display(struct comp_window_direct* w,
                                        VkDisplayKHR display);
 
@@ -332,7 +332,10 @@ comp_window_direct_create_surface(struct comp_window_direct* w,
 		return VK_ERROR_INITIALIZATION_FAILED;
 	}
 
-	comp_window_direct_aquire_xlib_display(w, d->display);
+	ret = comp_window_direct_aquire_xlib_display(w, d->display);
+	if (ret != VK_SUCCESS) {
+		return ret;
+	}
 
 
 	// Get plane properties
@@ -437,7 +440,7 @@ comp_window_direct_connect(struct comp_window_direct* w)
 	return !xcb_connection_has_error(w->connection);
 }
 
-static void
+static VkResult
 comp_window_direct_aquire_xlib_display(struct comp_window_direct* w,
                                        VkDisplayKHR display)
 {
@@ -450,6 +453,7 @@ comp_window_direct_aquire_xlib_display(struct comp_window_direct* w,
 		COMP_ERROR(w->base.c, "vkAcquireXlibDisplayEXT: %s (%p)",
 		           vk_result_string(ret), (void*)display);
 	}
+	return ret;
 }
 
 static VkDisplayKHR
