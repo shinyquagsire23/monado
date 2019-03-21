@@ -243,7 +243,7 @@ vk_create_image_from_fd(struct vk_bundle *vk,
                         VkDeviceMemory *out_mem)
 {
 	VkMemoryRequirements memory_requirements;
-	VkImageUsageFlagBits image_usage = 0;
+	VkImageUsageFlags image_usage = (VkImageUsageFlags)0;
 	VkDeviceMemory device_memory = NULL;
 	uint32_t memory_type_index = UINT32_MAX;
 	VkImage image = NULL;
@@ -262,7 +262,7 @@ vk_create_image_from_fd(struct vk_bundle *vk,
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .pNext = &external_memory_image_create_info,
 	    .imageType = VK_IMAGE_TYPE_2D,
-	    .format = format,
+	    .format = (VkFormat)format,
 	    .extent = {.width = width, .height = height, .depth = 1},
 	    .mipLevels = mip_count,
 	    .arrayLayers = 1,
@@ -594,7 +594,7 @@ vk_init_cmd_pool(struct vk_bundle *vk)
 	case r: return #r
 
 static const char *
-vk_debug_report_string(VkDebugReportFlagBitsEXT code)
+vk_debug_report_string(VkDebugReportFlagsEXT code)
 {
 	switch (code) {
 		ENUM_TO_STR(VK_DEBUG_REPORT_INFORMATION_BIT_EXT);

@@ -69,7 +69,7 @@ create_image_fd(struct comp_compositor *c,
                 struct xrt_image_fd *out_image_fd)
 {
 	VkMemoryRequirements memory_requirements;
-	VkImageUsageFlagBits image_usage = 0;
+	VkImageUsageFlags image_usage = (VkImageUsageFlags)0;
 	VkDeviceMemory device_memory = NULL;
 	uint32_t memory_type_index = UINT32_MAX;
 	VkImage image = NULL;
@@ -97,7 +97,7 @@ create_image_fd(struct comp_compositor *c,
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .pNext = &external_memory_image_create_info,
 	    .imageType = VK_IMAGE_TYPE_2D,
-	    .format = format,
+	    .format = (VkFormat)format,
 	    .extent = {.width = width, .height = height, .depth = 1},
 	    .mipLevels = mip_count,
 	    .arrayLayers = 1,
@@ -242,8 +242,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 		}
 
 		vk_create_sampler(&c->vk, &sc->images[i].sampler);
-
-		vk_create_view(&c->vk, sc->images[i].image, format,
+		vk_create_view(&c->vk, sc->images[i].image, (VkFormat)format,
 		               &sc->images[i].view);
 	}
 
