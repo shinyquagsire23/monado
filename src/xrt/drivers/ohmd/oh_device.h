@@ -8,10 +8,14 @@
 
 #pragma once
 
+#include <xrt/xrt_device.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+typedef struct ohmd_context ohmd_context;
+typedef struct ohmd_device ohmd_device;
 
 struct oh_device
 {

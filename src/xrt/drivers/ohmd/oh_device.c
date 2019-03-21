@@ -326,13 +326,15 @@ oh_device_create(ohmd_context *ctx,
 	}
 
 	// Which blend modes does the device support.
-	ohd->base.blend_mode |= XRT_BLEND_MODE_OPAQUE;
+	ohd->base.blend_mode = XRT_BLEND_MODE_OPAQUE;
 	if (quirk_video_see_through) {
-		ohd->base.blend_mode |= XRT_BLEND_MODE_ALPHA_BLEND;
+		ohd->base.blend_mode = (enum xrt_blend_mode)(
+		    ohd->base.blend_mode | XRT_BLEND_MODE_ALPHA_BLEND);
 	}
 
 	if (quirk_video_distortion_vive) {
-		ohd->base.distortion.models |= XRT_DISTORTION_MODEL_VIVE;
+		ohd->base.distortion.models = (enum xrt_distortion_model)(
+		    ohd->base.distortion.models | XRT_DISTORTION_MODEL_VIVE);
 		ohd->base.distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
 
 		// clang-format off
