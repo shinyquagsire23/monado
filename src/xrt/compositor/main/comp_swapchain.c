@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "util/u_misc.h"
+
 #include "main/comp_compositor.h"
 
 
@@ -223,7 +225,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	VkResult ret;
 
 
-	struct comp_swapchain *sc = calloc(1, sizeof(struct comp_swapchain));
+	struct comp_swapchain *sc = U_TYPED_CALLOC(struct comp_swapchain);
 	sc->base.base.destroy = swapchain_destroy;
 	sc->base.base.acquire_image = swapchain_acquire_image;
 	sc->base.base.wait_image = swapchain_wait_image;

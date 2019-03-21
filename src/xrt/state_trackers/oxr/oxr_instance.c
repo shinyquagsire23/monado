@@ -14,6 +14,7 @@
 
 #include "util/u_debug.h"
 #include "util/u_time.h"
+#include "util/u_misc.h"
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_prober.h"
@@ -37,8 +38,7 @@ oxr_instance_create(struct oxr_logger *log,
                     const XrInstanceCreateInfo *createInfo,
                     struct oxr_instance **out_instance)
 {
-	struct oxr_instance *inst =
-	    (struct oxr_instance *)calloc(1, sizeof(struct oxr_instance));
+	struct oxr_instance *inst = U_TYPED_CALLOC(struct oxr_instance);
 	inst->debug = OXR_XR_DEBUG_INSTANCE;
 	inst->prober = xrt_create_prober();
 

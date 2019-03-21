@@ -216,8 +216,7 @@ oh_device_create(ohmd_context *ctx,
                  bool print_spew,
                  bool print_debug)
 {
-	struct oh_device *ohd =
-	    (struct oh_device *)calloc(1, sizeof(struct oh_device));
+	struct oh_device *ohd = U_TYPED_CALLOC(struct oh_device);
 	ohd->base.destroy = oh_device_destroy;
 	ohd->base.get_tracked_pose = oh_device_get_tracked_pose;
 	ohd->base.get_view_pose = oh_device_get_view_pose;

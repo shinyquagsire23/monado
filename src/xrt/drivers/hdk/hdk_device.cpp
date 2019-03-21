@@ -242,8 +242,7 @@ hdk_device_create(hid_device *dev,
                   bool print_spew,
                   bool print_debug)
 {
-	struct hdk_device *hd =
-	    (struct hdk_device *)calloc(1, sizeof(struct hdk_device));
+	struct hdk_device *hd = U_TYPED_CALLOC(struct hdk_device);
 	hd->base.blend_mode = XRT_BLEND_MODE_OPAQUE;
 	hd->base.destroy = hdk_device_destroy;
 	hd->base.get_tracked_pose = hdk_device_get_tracked_pose;

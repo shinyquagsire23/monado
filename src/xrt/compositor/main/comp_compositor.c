@@ -13,6 +13,7 @@
 #include <stdarg.h>
 
 #include "util/u_debug.h"
+#include "util/u_misc.h"
 
 #include "main/comp_compositor.h"
 #include "main/comp_client_interface.h"
@@ -465,7 +466,7 @@ compositor_init_renderer(struct comp_compositor *c)
 struct xrt_compositor_fd *
 comp_compositor_create(struct xrt_device *xdev, bool flip_y)
 {
-	struct comp_compositor *c = calloc(1, sizeof(struct comp_compositor));
+	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 
 	c->base.base.create_swapchain = comp_swapchain_create;
 	c->base.base.begin_session = compositor_begin_session;

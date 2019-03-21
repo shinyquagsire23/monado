@@ -10,6 +10,8 @@
 
 #include <stdlib.h>
 
+#include "util/u_misc.h"
+
 #include "xrt/xrt_gfx_vk.h"
 
 #include "oxr_objects.h"
@@ -36,8 +38,7 @@ oxr_session_create_vk(struct oxr_logger *log,
 		                 " failed create a compositor");
 	}
 
-	struct oxr_session *sess =
-	    (struct oxr_session *)calloc(1, sizeof(struct oxr_session));
+	struct oxr_session *sess = U_TYPED_CALLOC(struct oxr_session);
 	sess->debug = OXR_XR_DEBUG_SESSION;
 	sess->sys = sys;
 	sess->compositor = &xcvk->base;

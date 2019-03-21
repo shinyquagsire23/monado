@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "util/u_misc.h"
+
 #include "comp_vk_client.h"
 
 
@@ -199,7 +201,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	};
 
 	struct client_vk_swapchain *sc =
-	    calloc(1, sizeof(struct client_vk_swapchain));
+	    U_TYPED_CALLOC(struct client_vk_swapchain);
 	sc->base.base.destroy = client_vk_swapchain_destroy;
 	sc->base.base.acquire_image = client_vk_swapchain_acquire_image;
 	sc->base.base.wait_image = client_vk_swapchain_wait_image;
@@ -243,7 +245,7 @@ client_vk_compositor_create(struct xrt_compositor_fd *xcfd,
 {
 	VkResult ret;
 	struct client_vk_compositor *c =
-	    calloc(1, sizeof(struct client_vk_compositor));
+	    U_TYPED_CALLOC(struct client_vk_compositor);
 
 	c->base.base.create_swapchain = client_vk_swapchain_create;
 	c->base.base.begin_session = client_vk_compositor_begin_session;

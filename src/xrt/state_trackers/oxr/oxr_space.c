@@ -14,6 +14,7 @@
 
 #include "math/m_api.h"
 #include "util/u_debug.h"
+#include "util/u_misc.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -61,8 +62,7 @@ oxr_space_reference_create(struct oxr_logger *log,
 		                 "(createInfo->poseInReferenceSpace)");
 	}
 
-	struct oxr_space *spc =
-	    (struct oxr_space *)calloc(1, sizeof(struct oxr_space));
+	struct oxr_space *spc = U_TYPED_CALLOC(struct oxr_space);
 	spc->debug = OXR_XR_DEBUG_SPACE;
 	spc->sess = sess;
 	spc->is_reference = true;

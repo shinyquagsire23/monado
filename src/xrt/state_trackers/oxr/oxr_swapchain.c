@@ -10,7 +10,9 @@
 #include <stdlib.h>
 
 #include "xrt/xrt_gfx_xlib.h"
+
 #include "util/u_debug.h"
+#include "util/u_misc.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -99,8 +101,7 @@ oxr_create_swapchain(struct oxr_logger *log,
 		                 " failed to create swapchain");
 	}
 
-	struct oxr_swapchain *sc =
-	    (struct oxr_swapchain *)calloc(1, sizeof(struct oxr_swapchain));
+	struct oxr_swapchain *sc = U_TYPED_CALLOC(struct oxr_swapchain);
 	sc->debug = OXR_XR_DEBUG_SWAPCHAIN;
 	sc->sess = sess;
 	sc->swapchain = xsc;

@@ -11,6 +11,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "util/u_misc.h"
+
 #include "xrt/xrt_gfx_vk.h"
 
 #include "oxr_objects.h"
@@ -88,7 +90,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		                 "VkPhysicalDevices");
 	}
 
-	VkPhysicalDevice *phys = calloc(count, sizeof(VkPhysicalDevice));
+	VkPhysicalDevice *phys = U_TYPED_ARRAY_CALLOC(VkPhysicalDevice, count);
 	vk_ret = vkEnumeratePhysicalDevices(vkInstance, &count, phys);
 	if (vk_ret != VK_SUCCESS) {
 		free(phys);

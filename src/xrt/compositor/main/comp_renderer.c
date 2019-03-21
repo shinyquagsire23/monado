@@ -594,7 +594,7 @@ renderer_init(struct comp_renderer *r)
 
 	renderer_init_descriptor_pool(r);
 
-	r->distortion = calloc(1, sizeof(struct comp_distortion));
+	r->distortion = U_TYPED_CALLOC(struct comp_distortion);
 
 	comp_distortion_init(r->distortion, r->c, r->render_pass,
 	                     r->pipeline_cache, r->settings->distortion_model,

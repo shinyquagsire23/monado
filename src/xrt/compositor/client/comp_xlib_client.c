@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "util/u_misc.h"
+
 #include "xrt/xrt_gfx_xlib.h"
 
 #include "client/comp_xlib_client.h"
@@ -38,7 +40,7 @@ client_xlib_compositor_create(struct xrt_compositor_fd *xcfd,
                               GLXContext glxContext)
 {
 	struct client_xlib_compositor *c =
-	    calloc(1, sizeof(struct client_xlib_compositor));
+	    U_TYPED_CALLOC(struct client_xlib_compositor);
 
 	if (!client_gl_compositor_init(&c->base, xcfd, glXGetProcAddress)) {
 		free(c);

@@ -11,6 +11,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "util/u_misc.h"
+
 #include "client/comp_gl_api.h"
 #include "client/comp_gl_client.h"
 
@@ -185,7 +187,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	}
 
 	struct client_gl_swapchain *sc =
-	    calloc(1, sizeof(struct client_gl_swapchain));
+	    U_TYPED_CALLOC(struct client_gl_swapchain);
 	sc->base.base.destroy = client_gl_swapchain_destroy;
 	sc->base.base.acquire_image = client_gl_swapchain_acquire_image;
 	sc->base.base.wait_image = client_gl_swapchain_wait_image;

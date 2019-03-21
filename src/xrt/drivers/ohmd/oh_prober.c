@@ -101,7 +101,7 @@ oh_prober_autoprobe(struct xrt_prober *p)
 struct xrt_prober *
 oh_create_prober()
 {
-	struct oh_prober *ohp = calloc(1, sizeof(struct oh_prober));
+	struct oh_prober *ohp = U_TYPED_CALLOC(struct oh_prober);
 	ohp->base.destroy = oh_prober_destroy;
 	ohp->base.lelo_dallas_autoprobe = oh_prober_autoprobe;
 	ohp->ctx = ohmd_ctx_create();

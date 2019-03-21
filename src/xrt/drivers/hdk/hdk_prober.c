@@ -115,8 +115,7 @@ hdk_prober_autoprobe(struct xrt_prober *p)
 struct xrt_prober *
 hdk_create_prober()
 {
-	struct hdk_prober *hhp =
-	    (struct hdk_prober *)calloc(1, sizeof(struct hdk_prober));
+	struct hdk_prober *hhp = U_TYPED_CALLOC(struct hdk_prober);
 	hhp->base.destroy = hdk_prober_destroy;
 	hhp->base.lelo_dallas_autoprobe = hdk_prober_autoprobe;
 
