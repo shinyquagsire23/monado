@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "util/u_misc.h"
+
 #include "comp_vk_swapchain.h"
 
 
@@ -241,8 +243,7 @@ _find_surface_format(struct vk_swapchain *sc,
 	    sc->vk->physical_device, surface, &num_formats, NULL);
 
 	if (num_formats != 0) {
-		formats = (VkSurfaceFormatKHR *)malloc(
-		    sizeof(VkSurfaceFormatKHR) * num_formats);
+		formats = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, num_formats);
 		sc->vk->vkGetPhysicalDeviceSurfaceFormatsKHR(
 		    sc->vk->physical_device, surface, &num_formats, formats);
 	} else {
@@ -276,8 +277,8 @@ _check_surface_present_mode(struct vk_bundle *vk,
 	    vk->physical_device, surface, &num_present_modes, NULL);
 
 	if (num_present_modes != 0) {
-		present_modes = (VkPresentModeKHR *)malloc(
-		    sizeof(VkPresentModeKHR) * num_present_modes);
+		present_modes =
+		    U_TYPED_ARRAY_CALLOC(VkPresentModeKHR, num_present_modes);
 		vk->vkGetPhysicalDeviceSurfacePresentModesKHR(
 		    vk->physical_device, surface, &num_present_modes,
 		    present_modes);
@@ -306,7 +307,7 @@ vk_swapchain_create_image_views(struct vk_swapchain *sc)
 	assert(sc->image_count > 0);
 	VK_DEBUG(sc->vk, "Creating %d image views.", sc->image_count);
 
-	VkImage *images = (VkImage *)malloc(sizeof(VkImage) * sc->image_count);
+	VkImage *images = U_TYPED_ARRAY_CALLOC(VkImage, sc->image_count);
 	sc->vk->vkGetSwapchainImagesKHR(sc->vk->device, sc->swap_chain,
 	                                &sc->image_count, images);
 
@@ -314,8 +315,8 @@ vk_swapchain_create_image_views(struct vk_swapchain *sc)
 		free(sc->buffers);
 	}
 
-	sc->buffers = (struct vk_swapchain_buffer *)malloc(
-	    sizeof(struct vk_swapchain_buffer) * sc->image_count);
+	sc->buffers =
+	    U_TYPED_ARRAY_CALLOC(struct vk_swapchain_buffer, sc->image_count);
 
 	for (uint32_t i = 0; i < sc->image_count; i++) {
 		sc->buffers[i].image = images[i];

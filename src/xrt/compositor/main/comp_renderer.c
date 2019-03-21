@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "util/u_misc.h"
+
 #include "xrt/xrt_compositor.h"
 #include "main/comp_distortion.h"
 
@@ -144,7 +146,7 @@ renderer_destroy(struct comp_renderer *r);
 struct comp_renderer *
 comp_renderer_create(struct comp_compositor *c)
 {
-	struct comp_renderer *r = malloc(sizeof(struct comp_renderer));
+	struct comp_renderer *r = U_TYPED_CALLOC(struct comp_renderer);
 
 	renderer_create(r, c);
 	renderer_init(r);
@@ -690,7 +692,7 @@ renderer_allocate_command_buffers(struct comp_renderer *r, uint32_t count)
 
 	r->num_cmd_buffers = count;
 
-	r->cmd_buffers = malloc(sizeof(VkCommandBuffer) * count);
+	r->cmd_buffers = U_TYPED_ARRAY_CALLOC(VkCommandBuffer, count);
 
 	VkCommandBufferAllocateInfo cmd_buffer_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -797,7 +799,7 @@ renderer_create_frame_buffers(struct comp_renderer *r, uint32_t count)
 	if (r->frame_buffers != NULL)
 		free(r->frame_buffers);
 
-	r->frame_buffers = malloc(sizeof(VkFramebuffer) * count);
+	r->frame_buffers = U_TYPED_ARRAY_CALLOC(VkFramebuffer, count);
 
 	for (uint32_t i = 0; i < count; i++) {
 		VkImageView attachments[1] = {

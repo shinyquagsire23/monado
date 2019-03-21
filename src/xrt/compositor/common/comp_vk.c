@@ -12,7 +12,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "util/u_misc.h"
 #include "util/u_debug.h"
+
 #include "common/comp_vk.h"
 
 
@@ -847,8 +849,7 @@ vk_find_graphics_queue(struct vk_bundle *vk, uint32_t *out_graphics_queue)
 	                                             &num_queues, NULL);
 
 	VkQueueFamilyProperties *queue_family_props =
-	    (VkQueueFamilyProperties *)malloc(sizeof(VkQueueFamilyProperties) *
-	                                      num_queues);
+	    U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, num_queues);
 
 	vk->vkGetPhysicalDeviceQueueFamilyProperties(
 	    vk->physical_device, &num_queues, queue_family_props);
