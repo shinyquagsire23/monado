@@ -148,7 +148,7 @@ oxr_space_ref_relation(struct oxr_logger *log,
 		// math_relation_reset() sets to identity.
 
 	} else {
-		out_relation->relation_flags = 0;
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return XR_SUCCESS;
 	}
 
@@ -182,11 +182,11 @@ get_pure_space_relation(struct oxr_logger *log,
 		// get_pure_space_relation(log, space, session->true_space,
 		//                         time, &pose2);
 		// math_pose_relate_2(&pose1, &pose2, out_pose);
-		out_relation->relation_flags = 0;
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return XR_SUCCESS;
 	} else {
 		// @todo deal with action space poses.
-		out_relation->relation_flags = 0;
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return XR_SUCCESS;
 	}
 }
