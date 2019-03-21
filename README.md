@@ -41,7 +41,7 @@ Dependencies include:
 Optional (but recommended) dependencies:
 
 * libxcb and xcb-xrandr development packages
-* [OpenHMD][] (found using pkg-config)
+* [OpenHMD][] 0.3.0 or newer (found using pkg-config)
 
 Truly optional dependencies, useful for some drivers, app support, etc.:
 
@@ -55,7 +55,7 @@ Truly optional dependencies, useful for some drivers, app support, etc.:
 * libjpeg
 
 Tested distributions that are fully compatible,
-on Intel and AMD graphics:
+on Intel (Vulkan only) and AMD graphics (Vulkan and OpenGL):
 
 * Ubuntu 18.10 (18.04 does not work)
 * Debian 10 `buster`
@@ -69,6 +69,11 @@ package sources.
 
 See also [Status of DRM Leases][drm-lease]
 for more details on specific packages, versions, and commits.
+
+Due to the lack of a OpenGL extension: GL_EXT_memory_object_fd, only the AMD
+radeonsi driver and the proprietary NVIDIA driver will work for OpenGL OpenXR
+clients. This is due to a requirement of the Compositor. Support status of the
+extension can be found on the [mesamatrix website][mesamatrix-ext].
 
 Build process is similar to other CMake builds,
 so something like the following will build it.
@@ -200,6 +205,7 @@ to just re-format your changes, in case version differences in tools result in o
 [cmake-build]: https://cmake.org/cmake/help/v3.12/manual/cmake.1.html#build-tool-mode
 [cmake-generate]: https://cmake.org/cmake/help/v3.12/manual/cmake.1.html
 [CMake]: https://cmake.org
+[mesamatrix-ext]: https://mesamatrix.net/#Version_ExtensionsthatarenotpartofanyOpenGLorOpenGLESversion
 
 ## Contributing, Code of Conduct
 
