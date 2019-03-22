@@ -28,6 +28,7 @@
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_device.h"
+#include "util/u_time.h"
 
 #include "hdk_device.h"
 
@@ -99,11 +100,14 @@ hdk_device_destroy(struct xrt_device *xdev)
 
 static void
 hdk_device_get_tracked_pose(struct xrt_device *xdev,
+                            struct time_state *timekeeping,
+                            int64_t *out_timestamp,
                             struct xrt_space_relation *out_relation)
 {
 	struct hdk_device *hd = hdk_device(xdev);
 
 	uint8_t buffer[32];
+	int64_t now = time_state_get_now(timekeeping);
 	auto bytesRead = hid_read(hd->dev, &(buffer[0]), sizeof(buffer));
 	if (bytesRead == -1) {
 		if (!hd->disconnect_notified) {
@@ -121,6 +125,8 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return;
 	}
+	//! @todo adjust for latency here
+	*out_timestamp = now;
 	uint8_t *buf = &(buffer[0]);
 
 #if 0

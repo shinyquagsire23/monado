@@ -20,6 +20,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_time.h"
 
 #include "oh_device.h"
 
@@ -41,11 +42,16 @@ oh_device_destroy(struct xrt_device *xdev)
 
 static void
 oh_device_get_tracked_pose(struct xrt_device *xdev,
+                           struct time_state *timekeeping,
+                           int64_t *out_timestamp,
                            struct xrt_space_relation *out_relation)
 {
 	struct oh_device *ohd = oh_device(xdev);
 	struct xrt_quat quat = {0.f, 0.f, 0.f, 1.f};
 	ohmd_ctx_update(ohd->ctx);
+	int64_t now = time_state_get_now(timekeeping);
+	//! @todo adjust for latency here
+	*out_timestamp = now;
 	ohmd_device_getf(ohd->dev, OHMD_ROTATION_QUAT, &quat.x);
 	out_relation->pose.orientation = quat;
 	//! @todo assuming that orientation is actually currently tracked.

@@ -135,7 +135,9 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 
 	struct xrt_device *xdev = sess->sys->device;
 	struct xrt_space_relation relation;
-	xdev->get_tracked_pose(xdev, &relation);
+	int64_t timestamp;
+	xdev->get_tracked_pose(xdev, sess->sys->inst->timekeeping, &timestamp,
+	                       &relation);
 	if ((relation.relation_flags &
 	     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0) {
 		pose->orientation = relation.pose.orientation;

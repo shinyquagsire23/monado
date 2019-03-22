@@ -15,6 +15,7 @@
 extern "C" {
 #endif
 
+struct time_state;
 
 /*!
  * A per-lens view information.
@@ -153,6 +154,8 @@ struct xrt_device
 	 * This is very very WIP and will need to be made a lot more advanced.
 	 */
 	void (*get_tracked_pose)(struct xrt_device *xdev,
+	                         struct time_state *timekeeping,
+	                         int64_t *out_timestamp,
 	                         struct xrt_space_relation *out_relation);
 
 	/*!
