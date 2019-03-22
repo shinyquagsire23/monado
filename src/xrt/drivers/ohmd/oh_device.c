@@ -24,6 +24,10 @@
 
 #include "oh_device.h"
 
+// Should we permit finite differencing to compute angular velocities when not
+// directly retrieved?
+DEBUG_GET_ONCE_BOOL_OPTION(oh_finite_diff, "OH_ALLOW_FINITE_DIFF", true)
+
 // Define this if you have the appropriately hacked-up OpenHMD version.
 #undef OHMD_HAVE_ANG_VEL
 
@@ -59,22 +63,13 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
+	bool have_ang_vel = false;
+	struct xrt_vec3 ang_vel;
 #ifdef OHMD_HAVE_ANG_VEL
 	if (!ohd->skip_ang_vel) {
-		struct xrt_vec3 ang_vel;
 		if (0 == ohmd_device_getf(ohd->dev, OHMD_ANGULAR_VELOCITY,
 		                          &ang_vel.x)) {
-			out_relation->angular_velocity = ang_vel;
-			out_relation->relation_flags =
-			    (enum xrt_space_relation_flags)(
-			        out_relation->relation_flags |
-			        XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
-			OH_SPEW(
-			    ohd,
-			    "GET_TRACKED_POSE (%f, %f, %f, %f) (%f, %f, %f)",
-			    quat.x, quat.y, quat.z, quat.w, ang_vel.x,
-			    ang_vel.y, ang_vel.z);
-			return;
+			have_ang_vel = true;
 		} else {
 			// we now know this device doesn't return angular
 			// velocity.
@@ -82,8 +77,47 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 		}
 	}
 #endif
-	OH_SPEW(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f)", quat.x, quat.y,
-	        quat.z, quat.w);
+
+	/*!
+	 * @todo possibly hoist this out of the driver level, to provide as a
+	 * common service?
+	 */
+	if (ohd->enable_finite_difference && !have_ang_vel) {
+		// No angular velocity
+		if (ohd->last_update == 0) {
+			// This is the first report, so just print a warning
+			// instead of estimating ang vel.
+			OH_DEBUG(ohd,
+			         "Will use finite differencing to estimate "
+			         "angular velocity.");
+		} else {
+			// but we can compute it.
+			float dt =
+			    time_ns_to_s(*out_timestamp - ohd->last_update);
+			math_quat_finite_difference(
+			    &ohd->last_orientation,
+			    &out_relation->pose.orientation, dt, &ang_vel);
+			have_ang_vel = true;
+		}
+	}
+
+	// Update state within driver
+	ohd->last_update = *out_timestamp;
+	ohd->last_orientation = out_relation->pose.orientation;
+
+	if (have_ang_vel) {
+		out_relation->angular_velocity = ang_vel;
+		out_relation->relation_flags = (enum xrt_space_relation_flags)(
+		    out_relation->relation_flags |
+		    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
+
+		OH_SPEW(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f) (%f, %f, %f)",
+		        quat.x, quat.y, quat.z, quat.w, ang_vel.x, ang_vel.y,
+		        ang_vel.z);
+	} else {
+		OH_SPEW(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f)", quat.x,
+		        quat.y, quat.z, quat.w);
+	}
 }
 
 static void
@@ -230,6 +264,7 @@ oh_device_create(ohmd_context *ctx,
 	ohd->dev = dev;
 	ohd->print_spew = print_spew;
 	ohd->print_debug = print_debug;
+	ohd->enable_finite_difference = debug_get_bool_option_oh_finite_diff();
 
 	const struct device_info info = get_info(ohd);
 

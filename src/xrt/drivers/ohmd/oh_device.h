@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include <xrt/xrt_device.h>
+#include "math/m_api.h"
+#include "xrt/xrt_device.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,8 +26,12 @@ struct oh_device
 
 	bool skip_ang_vel;
 
+	int64_t last_update;
+	struct xrt_quat last_orientation;
+
 	bool print_spew;
 	bool print_debug;
+	bool enable_finite_difference;
 };
 
 static inline struct oh_device *
