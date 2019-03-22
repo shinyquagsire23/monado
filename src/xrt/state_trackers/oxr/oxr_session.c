@@ -26,6 +26,7 @@
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(views, "OXR_DEBUG_VIEWS", false)
+DEBUG_GET_ONCE_BOOL_OPTION(dynamic_prediction, "OXR_DYNAMIC_PREDICTION", false)
 DEBUG_GET_ONCE_NUM_OPTION(ipd, "OXR_DEBUG_IPD_MM", 63)
 DEBUG_GET_ONCE_NUM_OPTION(prediction_ms, "OXR_DEBUG_PREDICTION_MS", 11)
 
@@ -161,19 +162,28 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 	     XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0) {
 		//! @todo Forcing a fixed amount of prediction for now since
 		//! devices don't tell us timestamps yet.
+		int64_t ns_diff = at_time - timestamp;
+		float interval;
+		if (debug_get_bool_option_dynamic_prediction()) {
+			interval =
+			    time_ns_to_s(ns_diff) + sess->static_prediction_s;
+		} else {
+			interval = sess->static_prediction_s;
+		}
+
 		struct xrt_quat predicted;
-		math_quat_integrate_velocity(
-		    &pose->orientation, &relation.angular_velocity,
-		    sess->static_prediction_s, &predicted);
+		math_quat_integrate_velocity(&pose->orientation,
+		                             &relation.angular_velocity,
+		                             interval, &predicted);
 		if (debug_get_bool_option_views()) {
 
-			fprintf(
-			    stderr,
-			    "\toriginal quat = {%f, %f, %f, %f}  predicted = "
-			    "{%f, %f, %f, %f}\n",
-			    pose->orientation.x, pose->orientation.y,
-			    pose->orientation.z, pose->orientation.w,
-			    predicted.x, predicted.y, predicted.z, predicted.w);
+			fprintf(stderr,
+			        "\toriginal quat = {%f, %f, %f, %f}   "
+			        "(time requested: %li, Interval %li nsec, with "
+			        "static interval %f s)\n",
+			        pose->orientation.x, pose->orientation.y,
+			        pose->orientation.z, pose->orientation.w,
+			        at_time, ns_diff, interval);
 		}
 		pose->orientation = predicted;
 	}
