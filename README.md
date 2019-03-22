@@ -109,7 +109,7 @@ OpenXR loader and API layers.
 
 The OpenXR loader can be pointed to a runtime json file in a nonstandard location with the environment variable `XR_RUNTIME_JSON`. Example:
 
-    XR_RUNTIME_JSON=~/monado/build/xrt_oopenxr_monado_dev.json ./openxr-example
+    XR_RUNTIME_JSON=~/monado/build/openxr_monado-dev.json ./openxr-example
 
 For this reason this runtime creates two manifest files within the build directory:
 
