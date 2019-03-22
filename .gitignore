@@ -1,3 +1,4 @@
+# Ignore build products
 CMakeCache.txt
 CMakeLists.txt.user
 *CMakeFiles/
@@ -13,3 +14,13 @@ openxr_monado-dev.json
 openxr_monado.json
 src/xrt/compositor/shaders/*.vert.h
 src/xrt/compositor/shaders/*.frag.h
+
+# ignore build trees
+build/
+build*/
+
+# Ignore local settings
+.vscode
+
+# Ignore merge-conflict resolution files
+*.orig
