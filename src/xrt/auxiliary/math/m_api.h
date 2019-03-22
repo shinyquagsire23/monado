@@ -75,7 +75,7 @@ math_quat_rotate(const struct xrt_quat *left,
  * Integrate an angular velocity vector (exponential map) and apply to a
  * quaternion.
  *
- * velocity and dt should share the same units of time, and the angular velocity
+ * ang_vel and dt should share the same units of time, and the ang_vel
  * vector should be in radians per unit of time.
  *
  * @relates xrt_quat
@@ -86,6 +86,25 @@ math_quat_integrate_velocity(const struct xrt_quat *quat,
                              const struct xrt_vec3 *ang_vel,
                              const float dt,
                              struct xrt_quat *result);
+
+/*!
+ * Compute an angular velocity vector (exponential map format) by taking the
+ * finite difference of two quaternions.
+ * 
+ * quat1 is the orientation dt time after the orientation was quat0
+ *
+ * out_ang_vel and dt share the same units of time, and out_ang_vel is be in
+ * radians per unit of time.
+ *
+ * @relates xrt_quat
+ * @relatesalso xrt_vec3
+ */
+void
+math_quat_finite_difference(const struct xrt_quat *quat0,
+                            const struct xrt_quat *quat1,
+                            const float dt,
+                            struct xrt_vec3 *out_ang_vel);
+
 /*
  *
  * Pose functions.
