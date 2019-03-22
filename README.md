@@ -199,7 +199,7 @@ reported by contacting:
 For this file only:
 
 > Copyright 2018-2019 Collabora, Ltd.
-> Code of Conduct section: excerpt adapted from the [Contributor Covenant][https://www.contributor-covenant.org], version 1.4.1,
+> Code of Conduct section: excerpt adapted from the [Contributor Covenant](https://www.contributor-covenant.org), version 1.4.1,
 > available at <https://www.contributor-covenant.org/version/1/4/code-of-conduct.html>,
 > and from the freedesktop.org-specific version of that code,
 > available at <https://www.freedesktop.org/wiki/CodeOfConduct/>
