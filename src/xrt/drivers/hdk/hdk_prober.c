@@ -70,11 +70,29 @@ hdk_prober_autoprobe(struct xrt_prober *p)
 
 	// Just take the first one that responds correctly.
 	while (current != NULL) {
-		if (!current->product_string) {
+		if (current->product_string == NULL ||
+		    current->serial_number == NULL) {
 			// Skip if the product string is null.
+			if (print_debug) {
+				fprintf(stderr,
+				        "%s - skipping an apparent match with "
+				        "null product string\n",
+				        __func__);
+			}
 			continue;
 		}
-		if (0 == wcscmp(HDK2_PRODUCT_STRING_W, current->product_string)) {
+		if (current->serial_number == NULL) {
+			// Skip if the serial number is null.
+			if (print_debug) {
+				fprintf(stderr,
+				        "%s - skipping an apparent match with "
+				        "null serial number\n",
+				        __func__);
+			}
+			continue;
+		}
+		if (0 ==
+		    wcscmp(HDK2_PRODUCT_STRING_W, current->product_string)) {
 			variant = HDK_VARIANT_2;
 			name = HDK2_PRODUCT_STRING;
 			break;
