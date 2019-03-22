@@ -22,8 +22,41 @@ extern "C" {
  * Integer timestamp type.
  *
  * @see time_state
+ * @see time_duration_ns
  */
 typedef int64_t timepoint_ns;
+
+/*!
+ * Integer duration type in nanoseconds.
+ *
+ * Logical type of timepoint differences.
+ *
+ * @see time_state
+ * @see timepoint_ns
+ */
+typedef int64_t time_duration_ns;
+
+/*!
+ * Convert nanoseconds duration to float seconds.
+ *
+ * @see timepoint_ns
+ */
+static inline float
+time_ns_to_s(time_duration_ns ns)
+{
+	return (float)(ns) / 1000000000.0f;
+}
+
+/*!
+ * Convert float seconds to nanoseconds.
+ *
+ * @see timepoint_ns
+ */
+static inline time_duration_ns
+time_s_to_ns(float duration)
+{
+	return (time_duration_ns)(duration * 1000000000.0f);
+}
 
 /*!
  * @struct time_state util/u_time.h
