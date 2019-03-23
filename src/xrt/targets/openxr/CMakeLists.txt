@@ -76,6 +76,7 @@ target_link_libraries(${RUNTIME_TARGET}
 	${OPENHMD_LIBRARIES}
 	${Vulkan_LIBRARIES}
 	${XCB_LIBRARIES}
+	OpenGL::GLX
 	)
 
 target_compile_definitions(${RUNTIME_TARGET} PRIVATE XRT_HAVE_OHMD)

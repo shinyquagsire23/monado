@@ -22,7 +22,7 @@ include(SPIR-V)
 
 find_package(Eigen3 REQUIRED)
 find_package(Vulkan REQUIRED)
-find_package(OpenGL)
+find_package(OpenGL REQUIRED COMPONENTS GLX)
 find_package(HIDAPI)
 
 # Push into a FindOpenHMD.cmake file.
