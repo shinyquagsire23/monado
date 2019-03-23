@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 #include "util/u_debug.h"
+#include "util/u_misc.h"
 #include "math/m_api.h"
 #include "util/u_time.h"
 
@@ -47,6 +48,10 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
                               int64_t *formats)
 {
 	struct xrt_compositor *xc = sess->compositor;
+	if (xc == NULL) {
+		*formatCountOutput = 0;
+		return XR_SUCCESS;
+	}
 
 	OXR_TWO_CALL_HELPER(log, formatCapacityInput, formatCountOutput,
 	                    formats, xc->num_formats, xc->formats);
@@ -63,8 +68,11 @@ oxr_session_begin(struct oxr_logger *log,
 	}
 
 	struct xrt_compositor *xc = sess->compositor;
-	xc->begin_session(
-	    xc, (enum xrt_view_type)beginInfo->primaryViewConfigurationType);
+
+	if (xc != NULL) {
+		xc->begin_session(xc, (enum xrt_view_type)beginInfo
+		                          ->primaryViewConfigurationType);
+	}
 
 	oxr_event_push_XrEventDataSessionStateChanged(
 	    log, sess, XR_SESSION_STATE_RUNNING, 0);
@@ -88,12 +96,14 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 		                 " session is not running");
 	}
 
-	if (sess->frame_started) {
-		xc->discard_frame(xc);
-		sess->frame_started = false;
-	}
+	if (xc != NULL) {
+		if (sess->frame_started) {
+			xc->discard_frame(xc);
+			sess->frame_started = false;
+		}
 
-	xc->end_session(xc);
+		xc->end_session(xc);
+	}
 
 	oxr_event_push_XrEventDataSessionStateChanged(
 	    log, sess, XR_SESSION_STATE_STOPPING, 0);
@@ -450,6 +460,14 @@ oxr_session_create(struct oxr_logger *log,
 	struct oxr_session *sess;
 	XrResult ret;
 
+	if (sys->inst->headless && next == NULL) {
+		ret = XR_SUCCESS;
+		sess = U_TYPED_CALLOC(struct oxr_session);
+		sess->debug = OXR_XR_DEBUG_SESSION;
+		sess->sys = sys;
+		sess->compositor = NULL;
+		sess->create_swapchain = NULL;
+	} else
 #ifdef XR_USE_PLATFORM_XLIB
 	if (*next == XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
 		ret = oxr_session_create_gl_xlib(
@@ -491,7 +509,9 @@ oxr_session_create(struct oxr_logger *log,
 XrResult
 oxr_session_destroy(struct oxr_logger *log, struct oxr_session *sess)
 {
-	sess->compositor->destroy(sess->compositor);
+	if (sess->compositor != NULL) {
+		sess->compositor->destroy(sess->compositor);
+	}
 	free(sess);
 
 	return XR_SUCCESS;

@@ -429,6 +429,11 @@ struct oxr_instance
 	uint64_t debug;
 	struct xrt_prober *prober;
 
+	/*!
+	 * Whether headless sessions can be created
+	 */
+	bool headless;
+
 	// Hardcoded single system.
 	struct oxr_system system;
 

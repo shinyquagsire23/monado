@@ -73,6 +73,7 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
 
 XrResult
 oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
+                               const oxr_instance* inst,
                                const XrSessionCreateInfo* createInfo)
 {
 	if (createInfo->type != XR_TYPE_SESSION_CREATE_INFO) {
@@ -81,6 +82,9 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 	}
 
 	if (createInfo->next == NULL) {
+		if (inst->headless) {
+			return XR_SUCCESS;
+		}
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "createInfo->next");
 	}

@@ -49,6 +49,11 @@ oxr_xrCreateSwapchain(XrSession session,
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrCreateSwapchain");
+	if (sess->compositor == NULL) {
+		return oxr_error(
+		    &log, XR_ERROR_VALIDATION_FAILURE,
+		    "xrCreateSwapchain is illegal in headless sessions");
+	}
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
 	                             XR_TYPE_SWAPCHAIN_CREATE_INFO);
 	OXR_VERIFY_ARG_NOT_NULL(&log, out_swapchain);

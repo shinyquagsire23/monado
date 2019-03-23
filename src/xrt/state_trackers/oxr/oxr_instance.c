@@ -88,6 +88,14 @@ oxr_instance_create(struct oxr_logger *log,
 
 	inst->timekeeping = time_state_create();
 
+	inst->headless = false;
+	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
+		if (strcmp(createInfo->enabledExtensionNames[i],
+		           XR_KHR_HEADLESS_EXTENSION_NAME) == 0) {
+			inst->headless = true;
+		}
+	}
+
 	//! @todo check if this (and other creates) failed?
 
 	*out_instance = inst;

@@ -123,7 +123,6 @@ extern "C" {
 		}                                                              \
 	} while (false)
 
-
 /*
  *
  * Implementation in oxr_verify.cpp
@@ -137,7 +136,9 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger*,
                                         const char* name);
 
 XrResult
-oxr_verify_XrSessionCreateInfo(struct oxr_logger*, const XrSessionCreateInfo*);
+oxr_verify_XrSessionCreateInfo(struct oxr_logger*,
+                               struct oxr_instance*,
+                               const XrSessionCreateInfo*);
 
 XrResult
 oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
