@@ -89,10 +89,18 @@ oxr_instance_create(struct oxr_logger *log,
 	inst->timekeeping = time_state_create();
 
 	inst->headless = false;
+	inst->opengl_enable = false;
+	inst->vulkan_enable = false;
 	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
 		if (strcmp(createInfo->enabledExtensionNames[i],
 		           XR_KHR_HEADLESS_EXTENSION_NAME) == 0) {
 			inst->headless = true;
+		} else if (strcmp(createInfo->enabledExtensionNames[i],
+		                  XR_KHR_OPENGL_ENABLE_EXTENSION_NAME) == 0) {
+			inst->opengl_enable = true;
+		} else if (strcmp(createInfo->enabledExtensionNames[i],
+		                  XR_KHR_VULKAN_ENABLE_EXTENSION_NAME) == 0) {
+			inst->vulkan_enable = true;
 		}
 	}
 

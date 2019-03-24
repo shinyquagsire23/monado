@@ -429,10 +429,10 @@ struct oxr_instance
 	uint64_t debug;
 	struct xrt_prober *prober;
 
-	/*!
-	 * Whether headless sessions can be created
-	 */
+	// Enabled extensions
 	bool headless;
+	bool opengl_enable;
+	bool vulkan_enable;
 
 	// Hardcoded single system.
 	struct oxr_system system;
