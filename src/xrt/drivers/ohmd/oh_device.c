@@ -77,6 +77,18 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 		}
 	}
 #endif
+	struct xrt_quat old_quat = ohd->last_relation.pose.orientation;
+	if (0 == memcmp(&quat, &old_quat, sizeof(quat))) {
+		// Looks like the exact same as last time, let's pretend we got
+		// no new report.
+		/*! @todo this is a hack - should really get a timestamp on the
+		 * USB data and use that instead.
+		 */
+		*out_timestamp = ohd->last_update;
+		*out_relation = ohd->last_relation;
+		OH_SPEW(ohd, "GET_TRACKED_POSE - no new data");
+		return;
+	}
 
 	/*!
 	 * @todo possibly hoist this out of the driver level, to provide as a
@@ -84,26 +96,23 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	 */
 	if (ohd->enable_finite_difference && !have_ang_vel) {
 		// No angular velocity
+		float dt = time_ns_to_s(*out_timestamp - ohd->last_update);
 		if (ohd->last_update == 0) {
 			// This is the first report, so just print a warning
 			// instead of estimating ang vel.
 			OH_DEBUG(ohd,
 			         "Will use finite differencing to estimate "
 			         "angular velocity.");
-		} else {
-			// but we can compute it.
-			float dt =
-			    time_ns_to_s(*out_timestamp - ohd->last_update);
-			math_quat_finite_difference(
-			    &ohd->last_orientation,
-			    &out_relation->pose.orientation, dt, &ang_vel);
+		} else if (dt < 1.0f && dt > 0.0005) {
+			// but we can compute it:
+			// last report was not long ago but not
+			// instantaneously (at least half a millisecond),
+			// so approximately safe to do this.
+			math_quat_finite_difference(&old_quat, &quat, dt,
+			                            &ang_vel);
 			have_ang_vel = true;
 		}
 	}
-
-	// Update state within driver
-	ohd->last_update = *out_timestamp;
-	ohd->last_orientation = out_relation->pose.orientation;
 
 	if (have_ang_vel) {
 		out_relation->angular_velocity = ang_vel;
@@ -118,6 +127,10 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 		OH_SPEW(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f)", quat.x,
 		        quat.y, quat.z, quat.w);
 	}
+
+	// Update state within driver
+	ohd->last_update = *out_timestamp;
+	ohd->last_relation = *out_relation;
 }
 
 static void

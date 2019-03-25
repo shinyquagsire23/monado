@@ -27,7 +27,7 @@ struct oh_device
 	bool skip_ang_vel;
 
 	int64_t last_update;
-	struct xrt_quat last_orientation;
+	struct xrt_space_relation last_relation;
 
 	bool print_spew;
 	bool print_debug;
