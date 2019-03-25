@@ -277,6 +277,46 @@ vk_get_memory_type(struct vk_bundle *vk,
                    uint32_t *out_type_id);
 
 /*!
+ * Allocate memory for an image and bind it to that image.
+ *
+ * Handles the following steps:
+ *
+ * - calling vkGetImageMemoryRequirements
+ *   - comparing against the max_size
+ * - getting the memory type (as dictated by the VkMemoryRequirements and
+ *   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+ * - calling vkAllocateMemory
+ * - calling vkBindImageMemory
+ * - calling vkDestroyMemory in case of an error.
+ *
+ * If this fails, it cleans up the VkDeviceMemory.
+ *
+ * @param vk Vulkan bundle
+ * @param image The VkImage to allocate for and bind.
+ * @param max_size The maximum value you'll allow for
+ *        VkMemoryRequirements::size. Pass SIZE_MAX if you will accept any size
+ *        that works.
+ * @param pNext_for_allocate (Optional) a pointer to use in the pNext chain of
+ *        VkMemoryAllocateInfo.
+ * @param out_mem Output parameter: will be set to the allocated memory if
+ *        everything succeeds. Not modified if there is an error.
+ * @param out_size (Optional) pointer to receive the value of
+ *        VkMemoryRequirements::size.
+ *
+ * If this fails, you may want to destroy your VkImage as well, since this
+ * routine is usually used in combination with vkCreateImage.
+ *
+ * @ingroup comp_common
+ */
+VkResult
+vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
+                               VkImage image,
+                               size_t max_size,
+                               const void *pNext_for_allocate,
+                               VkDeviceMemory *out_mem,
+                               VkDeviceSize *out_size);
+
+/*!
  * @ingroup comp_common
  */
 VkResult

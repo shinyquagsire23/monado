@@ -62,6 +62,30 @@ swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 }
 
 static VkResult
+get_device_memory_fd(struct comp_compositor *c,
+                     VkDeviceMemory device_memory,
+                     int *out_fd)
+{
+
+	// vkGetMemoryFdKHR parameter
+	VkMemoryGetFdInfoKHR fd_info = {
+	    .sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
+	    .pNext = NULL,
+	    .memory = device_memory,
+	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+	};
+	int fd;
+	VkResult ret = c->vk.vkGetMemoryFdKHR(c->vk.device, &fd_info, &fd);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "->image - vkGetMemoryFdKHR: %s",
+		           vk_result_string(ret));
+		return VK_ERROR_FEATURE_NOT_PRESENT;
+	}
+	*out_fd = fd;
+	return ret;
+}
+
+static VkResult
 create_image_fd(struct comp_compositor *c,
                 enum xrt_swapchain_usage_bits swapchain_usage,
                 int64_t format,
@@ -73,12 +97,10 @@ create_image_fd(struct comp_compositor *c,
                 VkDeviceMemory *out_mem,
                 struct xrt_image_fd *out_image_fd)
 {
-	VkMemoryRequirements memory_requirements;
 	VkImageUsageFlags image_usage = (VkImageUsageFlags)0;
-	VkDeviceMemory device_memory = NULL;
-	uint32_t memory_type_index = UINT32_MAX;
-	VkImage image = NULL;
-	VkResult ret;
+	VkDeviceMemory device_memory = VK_NULL_HANDLE;
+	VkImage image = VK_NULL_HANDLE;
+	VkResult ret = VK_SUCCESS;
 	size_t size;
 	int fd;
 
@@ -136,30 +158,14 @@ create_image_fd(struct comp_compositor *c,
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(c, "->image - vkCreateImage: %s",
 		           vk_result_string(ret));
-		goto err;
-	}
-
-
-	/*
-	 * Get the size of the buffer.
-	 */
-
-	c->vk.vkGetImageMemoryRequirements(c->vk.device, image,
-	                                   &memory_requirements);
-	size = memory_requirements.size;
-
-	if (!vk_get_memory_type(&c->vk, memory_requirements.memoryTypeBits,
-	                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-	                        &memory_type_index)) {
-		COMP_ERROR(c, "->image - _get_memory_type!");
-		ret = VK_ERROR_OUT_OF_DEVICE_MEMORY;
-		goto err_image;
+		// Nothing to cleanup
+		return ret;
 	}
 
 	/*
-	 * Create the memory.
+	 * Create and bind the memory.
 	 */
-
+	// vkAllocateMemory parameters
 	VkMemoryDedicatedAllocateInfoKHR dedicated_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
 	    .pNext = NULL,
@@ -173,47 +179,22 @@ create_image_fd(struct comp_compositor *c,
 	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	};
 
-	VkMemoryAllocateInfo alloc_info = {
-	    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-	    .pNext = &export_alloc_info,
-	    .allocationSize = size,
-	    .memoryTypeIndex = memory_type_index,
-	};
-
-	ret = c->vk.vkAllocateMemory(c->vk.device, &alloc_info, NULL,
-	                             &device_memory);
+	ret = vk_alloc_and_bind_image_memory(
+	    &c->vk, image, SIZE_MAX, &export_alloc_info, &device_memory, &size);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(c, "->image - vkAllocateMemory: %s",
 		           vk_result_string(ret));
 		goto err_image;
 	}
 
-	ret = c->vk.vkBindImageMemory(c->vk.device, image, device_memory, 0);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "->image - vkBindImageMemory: %s",
-		           vk_result_string(ret));
-		goto err_mem;
-	}
-
-
 	/*
 	 * Get the fd.
 	 */
-
-	VkMemoryGetFdInfoKHR fd_info = {
-	    .sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
-	    .pNext = NULL,
-	    .memory = device_memory,
-	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
-	};
-
-	ret = c->vk.vkGetMemoryFdKHR(c->vk.device, &fd_info, &fd);
+	ret = get_device_memory_fd(c, device_memory, &fd);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "->image - vkGetMemoryFdKHR: %s",
-		           vk_result_string(ret));
-		ret = VK_ERROR_FEATURE_NOT_PRESENT;
 		goto err_mem;
 	}
+
 
 	*out_image = image;
 	*out_mem = device_memory;
@@ -226,7 +207,6 @@ err_mem:
 	c->vk.vkFreeMemory(c->vk.device, device_memory, NULL);
 err_image:
 	c->vk.vkDestroyImage(c->vk.device, image, NULL);
-err:
 	return ret;
 }
 
