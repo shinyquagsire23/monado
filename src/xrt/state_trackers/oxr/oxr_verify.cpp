@@ -25,7 +25,7 @@
  *
  */
 
-bool
+static bool
 contains_zero(const char* path, uint32_t size)
 {
 	for (uint32_t i = 0; i < size; i++) {
@@ -37,7 +37,7 @@ contains_zero(const char* path, uint32_t size)
 	return false;
 }
 
-XrResult
+extern "C" XrResult
 oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
                                         const char* path,
                                         uint32_t size,
@@ -71,9 +71,9 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
  *
  */
 
-XrResult
+extern "C" XrResult
 oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
-                               const oxr_instance* inst,
+                               const struct oxr_instance* inst,
                                const XrSessionCreateInfo* createInfo)
 {
 	if (createInfo->type != XR_TYPE_SESSION_CREATE_INFO) {
@@ -122,8 +122,10 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 	return XR_SUCCESS;
 }
 
+
 #ifdef XR_USE_PLATFORM_XLIB
-XrResult
+
+extern "C" XrResult
 oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
     struct oxr_logger* log, const XrGraphicsBindingOpenGLXlibKHR* next)
 {
@@ -139,10 +141,13 @@ oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
 
 	return XR_SUCCESS;
 }
+
 #endif
 
+
 #ifdef XR_USE_GRAPHICS_API_VULKAN
-XrResult
+
+extern "C" XrResult
 oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger* log,
                                       const XrGraphicsBindingVulkanKHR* next)
 {
@@ -158,4 +163,5 @@ oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger* log,
 
 	return XR_SUCCESS;
 }
+
 #endif

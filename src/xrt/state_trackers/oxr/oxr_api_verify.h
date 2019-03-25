@@ -137,7 +137,7 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger*,
 
 XrResult
 oxr_verify_XrSessionCreateInfo(struct oxr_logger*,
-                               struct oxr_instance*,
+                               const struct oxr_instance*,
                                const XrSessionCreateInfo*);
 
 XrResult
