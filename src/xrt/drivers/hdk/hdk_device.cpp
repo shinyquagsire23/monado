@@ -125,7 +125,8 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return;
 	}
-	//! @todo adjust for latency here
+	// Adjusting for latency - 14ms, found empirically.
+	now -= 14000000;
 	*out_timestamp = now;
 	uint8_t *buf = &(buffer[0]);
 
