@@ -334,13 +334,16 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 	XrResult ret;
 	if (sess->frame_started) {
 		ret = XR_FRAME_DISCARDED;
-		xc->discard_frame(xc);
+		if (xc != NULL) {
+			xc->discard_frame(xc);
+		}
 	} else {
 		ret = XR_SUCCESS;
 		sess->frame_started = true;
 	}
-
-	xc->begin_frame(xc);
+	if (xc != NULL) {
+		xc->begin_frame(xc);
+	}
 
 	return ret;
 }
@@ -377,6 +380,15 @@ oxr_session_frame_end(struct oxr_logger *log,
 	}
 
 	struct xrt_compositor *xc = sess->compositor;
+
+	/*
+	 * early out for headless sessions.
+	 */
+	if (xc == NULL) {
+		sess->frame_started = false;
+
+		return XR_SUCCESS;
+	}
 
 	/*
 	 * Early out for discarded frame if layer count is 0,
