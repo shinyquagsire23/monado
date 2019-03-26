@@ -88,6 +88,12 @@ static void
 client_vk_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
+
+	if (c->vk.cmd_pool != VK_NULL_HANDLE) {
+		c->vk.vkDestroyCommandPool(c->vk.device, c->vk.cmd_pool, NULL);
+		c->vk.cmd_pool = VK_NULL_HANDLE;
+	}
+
 	// Pipe down call into fd compositor.
 	c->xcfd->base.destroy(&c->xcfd->base);
 	free(c);
