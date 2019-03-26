@@ -258,22 +258,23 @@ create_instance(struct comp_compositor *c)
 		return ret;
 	}
 
-#ifdef XRT_ENABLE_VK_VALIDATION
-	const char *instance_layers[] = {
-	    "VK_LAYER_LUNARG_standard_validation",
-	};
-#endif
-
 	VkInstanceCreateInfo instance_info = {
 	    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 	    .pApplicationInfo = &app_info,
 	    .enabledExtensionCount = num_extensions,
 	    .ppEnabledExtensionNames = instance_extensions,
-#ifdef XRT_ENABLE_VK_VALIDATION
-	    .enabledLayerCount = ARRAY_SIZE(instance_layers),
-	    .ppEnabledLayerNames = instance_layers,
-#endif
 	};
+
+#ifdef XRT_ENABLE_VK_VALIDATION
+	const char *instance_layers[] = {
+	    "VK_LAYER_LUNARG_standard_validation",
+	};
+
+	if (c->settings.validate_vulkan) {
+		instance_info.enabledLayerCount = ARRAY_SIZE(instance_layers);
+		instance_info.ppEnabledLayerNames = instance_layers;
+	}
+#endif
 
 	ret = c->vk.vkCreateInstance(&instance_info, NULL, &c->vk.instance);
 	if (ret != VK_SUCCESS) {
@@ -290,7 +291,8 @@ create_instance(struct comp_compositor *c)
 	}
 
 #ifdef XRT_ENABLE_VK_VALIDATION
-	vk_init_validation_callback(&c->vk);
+	if (c->settings.validate_vulkan)
+		vk_init_validation_callback(&c->vk);
 #endif
 
 	return ret;

@@ -11,7 +11,7 @@ endif()
 
 option(BUILD_TESTS "Build compile and runtime tests" ON)
 option(OPENXR_USE_LOADER "Application uses loader" ON)
-
+option(VULKAN_ENABLE_VALIDATION "Enable Vulkan validation for Compositor" ON)
 
 ###
 # Dependencies

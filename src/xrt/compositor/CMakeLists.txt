@@ -45,6 +45,10 @@ if (${XCB_FOUND})
 	add_definitions(-DVK_USE_PLATFORM_XLIB_XRANDR_EXT)
 endif()
 
+if (${VULKAN_ENABLE_VALIDATION})
+	add_definitions(-DXRT_ENABLE_VK_VALIDATION)
+endif()
+
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(comp OBJECT ${GL_SOURCE_FILES})
 set_property(TARGET comp PROPERTY POSITION_INDEPENDENT_CODE ON)

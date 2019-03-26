@@ -15,6 +15,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(print_debug, "XRT_COMPOSITOR_PRINT_DEBUG", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_direct, "XRT_COMPOSITOR_FORCE_DIRECT", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_xcb, "XRT_COMPOSITOR_FORCE_XCB", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_wayland, "XRT_COMPOSITOR_FORCE_WAYLAND", false)
+DEBUG_GET_ONCE_BOOL_OPTION(validate_vulkan, "XRT_COMPOSITOR_VULKAN_VALIDATION", false)
 
 void
 comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
@@ -34,6 +35,7 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	    xdev->screens[0].nominal_frame_interval_ns;
 	s->print_spew = debug_get_bool_option_print_spew();
 	s->print_debug = debug_get_bool_option_print_debug();
+	s->validate_vulkan = debug_get_bool_option_validate_vulkan();
 
 	if (debug_get_bool_option_force_direct()) {
 		s->window_type = WINDOW_DIRECT_MODE;
