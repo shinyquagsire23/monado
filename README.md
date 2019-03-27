@@ -26,7 +26,7 @@ and aims to support other operating systems in the near future.
 Dependencies include:
 
 * [CMake][] 3.10 or newer
-* [OpenHMD](https://openhmd.net) (found using pkg-config)
+* [OpenHMD][] (found using pkg-config)
 * Vulkan headers
 * Eigen3
 * glslang
@@ -56,7 +56,7 @@ software to use direct mode,
 without using any external, third-party, or backported
 package sources.
 
-See also [Status of DRM leases](https://haagch.frickel.club/#!drmlease.md)
+See also [Status of DRM Leases][drm-lease]
 for more details on specific packages, versions, and commits.
 
 Build process is similar to other CMake builds,
@@ -104,7 +104,7 @@ Documentation can be browsed by opening `doc/html/index.html` in the build direc
 
 ## Getting started using OpenXR with Monado
 
-This implements the [OpenXR](https://khronos.org/openxr) API,
+This implements the [OpenXR][] API,
 so to do anything with it, you'll need an application
 that uses OpenXR, along with the OpenXR loader.
 The OpenXR loader is a glue library that connects OpenXR applications to OpenXR runtimes such as Monado
@@ -182,6 +182,9 @@ if your clang-format binary isn't named `clang-format`.
 Note that you'll typically prefer to use something like `git clang-format`
 to just re-format your changes, in case version differences in tools result in overall format changes.
 
+[OpenHMD]: https://openhmd.net
+[drm-lease]: https://haagch.frickel.club/#!drmlease.md
+[OpenXR]: https://khronos.org/openxr
 [clang-format]: https://releases.llvm.org/7.0.0/tools/clang/docs/ClangFormat.html
 [cmake-build]: https://cmake.org/cmake/help/v3.12/manual/cmake.1.html#build-tool-mode
 [cmake-generate]: https://cmake.org/cmake/help/v3.12/manual/cmake.1.html
