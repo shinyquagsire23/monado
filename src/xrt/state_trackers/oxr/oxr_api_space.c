@@ -71,7 +71,8 @@ oxr_xrGetReferenceSpaceBoundsRect(XrSession session,
 	                                "xrGetReferenceSpaceBoundsRect");
 
 	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_FUNCTION_UNSUPPORTED, " not implemented");
+	return oxr_error(&log, XR_ERROR_FUNCTION_UNSUPPORTED,
+	                 " not implemented");
 }
 
 XrResult

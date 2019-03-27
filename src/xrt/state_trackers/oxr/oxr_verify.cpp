@@ -103,7 +103,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 	} else
 #endif
 #ifdef XR_USE_GRAPHICS_API_VULKAN
-	if (*next_type == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
+	    if (*next_type == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
 		if (!inst->vulkan_enable) {
 			return oxr_error(
 			    log, XR_ERROR_VALIDATION_FAILURE,

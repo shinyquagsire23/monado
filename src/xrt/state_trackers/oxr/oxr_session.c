@@ -471,7 +471,7 @@ oxr_session_create(struct oxr_logger *log,
 		sess->create_swapchain = NULL;
 	} else
 #ifdef XR_USE_PLATFORM_XLIB
-	if (*next == XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
+	    if (*next == XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
 		ret = oxr_session_create_gl_xlib(
 		    log, sys, (XrGraphicsBindingOpenGLXlibKHR *)next, &sess);
 	} else
