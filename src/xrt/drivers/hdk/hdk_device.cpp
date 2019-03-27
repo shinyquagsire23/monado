@@ -310,7 +310,8 @@ hdk_device_create(hid_device *dev,
 
 	switch (variant) {
 	case HDK_VARIANT_2: {
-		hd->base.screens[0].nominal_frame_interval_ns = time_s_to_ns(1.0f/90.0f);
+		hd->base.screens[0].nominal_frame_interval_ns =
+		    time_s_to_ns(1.0f / 90.0f);
 		constexpr int panel_w = 1080;
 		constexpr int panel_h = 1200;
 		// Padding needed horizontally per side.
@@ -365,7 +366,8 @@ hdk_device_create(hid_device *dev,
 		// fallthrough intentional
 	case HDK_VARIANT_1_2: {
 		// 1080x1920 screen, with the top at the left.
-		hd->base.screens[0].nominal_frame_interval_ns = time_s_to_ns(1.0f/60.0f);
+		hd->base.screens[0].nominal_frame_interval_ns =
+		    time_s_to_ns(1.0f / 60.0f);
 
 		constexpr int panel_w = 1080;
 		constexpr int panel_h = 1920;
