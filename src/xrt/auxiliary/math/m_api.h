@@ -90,7 +90,7 @@ math_quat_integrate_velocity(const struct xrt_quat *quat,
 /*!
  * Compute an angular velocity vector (exponential map format) by taking the
  * finite difference of two quaternions.
- * 
+ *
  * quat1 is the orientation dt time after the orientation was quat0
  *
  * out_ang_vel and dt share the same units of time, and out_ang_vel is be in
