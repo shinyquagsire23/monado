@@ -18,6 +18,12 @@
 extern "C" {
 #endif
 
+// since NVidia direct mode lets us 'acquire' any display, we need to
+// be careful about which displays we attempt to acquire.
+// We may wish to allow user configuration to extend this list.
+XRT_MAYBE_UNUSED static const char *NV_DIRECT_WHITELIST[] = {
+    "Sony SIE  HMD *08", "HTC Corporation HTC-VIVE"};
+
 
 /*!
  * Window type to use.
@@ -30,8 +36,10 @@ enum window_type
 	WINDOW_AUTO,
 	WINDOW_XCB,
 	WINDOW_WAYLAND,
-	WINDOW_DIRECT_MODE,
+	WINDOW_DIRECT_RANDR,
+	WINDOW_DIRECT_NVIDIA,
 };
+
 
 /*!
  * Settings for the compositor.

@@ -716,6 +716,7 @@ vk_get_instance_functions(struct vk_bundle *vk)
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	vk->vkCreateDisplayPlaneSurfaceKHR               = GET_INS_PROC(vk, vkCreateDisplayPlaneSurfaceKHR);
 	vk->vkGetDisplayPlaneCapabilitiesKHR             = GET_INS_PROC(vk, vkGetDisplayPlaneCapabilitiesKHR);
+	vk->vkGetPhysicalDeviceDisplayPropertiesKHR      = GET_INS_PROC(vk, vkGetPhysicalDeviceDisplayPropertiesKHR);
 	vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR = GET_INS_PROC(vk, vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
 	vk->vkGetDisplayModePropertiesKHR                = GET_INS_PROC(vk, vkGetDisplayModePropertiesKHR);
 	vk->vkAcquireXlibDisplayEXT                      = GET_INS_PROC(vk, vkAcquireXlibDisplayEXT);

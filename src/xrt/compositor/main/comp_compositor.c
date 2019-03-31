@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "util/u_debug.h"
 #include "util/u_misc.h"
@@ -217,7 +218,8 @@ select_instances_extensions(struct comp_compositor *c,
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-	case WINDOW_DIRECT_MODE:
+	case WINDOW_DIRECT_RANDR:
+	case WINDOW_DIRECT_NVIDIA:
 		*out_exts = instance_extensions_direct_mode;
 		*out_num = ARRAY_SIZE(instance_extensions_direct_mode);
 		break;
@@ -293,6 +295,7 @@ create_instance(struct comp_compositor *c)
 static bool
 compositor_init_vulkan(struct comp_compositor *c)
 {
+
 	VkResult ret;
 
 	ret = find_get_instance_proc_addr(c);
@@ -341,6 +344,140 @@ comp_compositor_print(struct comp_compositor *c,
 }
 
 static bool
+compositor_check_vulkan_caps(struct comp_compositor *c)
+{
+	VkResult ret;
+
+	// this is duplicative, but seems to be the easiest way to 'pre-check'
+	// capabilities when window creation precedes vulkan instance creation.
+	// we also need to load the VK_KHR_DISPLAY extension.
+
+	if (c->settings.window_type != WINDOW_AUTO) {
+		COMP_DEBUG(c, "Skipping NVIDIA detection, window type forced.");
+		return true;
+	} else {
+		COMP_DEBUG(c, "Checking for NVIDIA vulkan driver.");
+	}
+
+	struct vk_bundle temp_vk;
+	ret = vk_get_loader_functions(&temp_vk, vkGetInstanceProcAddr);
+	if (ret != VK_SUCCESS) {
+		return false;
+	}
+
+	const char *extension_names[] = {
+	    VK_KHR_SURFACE_EXTENSION_NAME,
+	    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+	    VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
+	    VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME,
+	    VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,
+	    VK_KHR_DISPLAY_EXTENSION_NAME,
+	};
+
+	VkInstanceCreateInfo instance_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+	    .pNext = NULL,
+	    .enabledExtensionCount = ARRAY_SIZE(extension_names),
+	    .ppEnabledExtensionNames = extension_names,
+	};
+
+	ret = temp_vk.vkCreateInstance(&instance_create_info, NULL,
+	                               &(temp_vk.instance));
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "Failed to create VkInstance: %s",
+		           vk_result_string(ret));
+		return false;
+	}
+
+	ret = vk_get_instance_functions(&temp_vk);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "Failed to get Vulkan instance functions: %s",
+		           vk_result_string(ret));
+		return false;
+	}
+
+	// follow same device selection logic as subsequent calls
+	ret = vk_create_device(&temp_vk);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "Failed to create VkDevice: %s",
+		           vk_result_string(ret));
+		return false;
+	}
+
+	bool nvidia_tests_passed = false;
+
+	VkPhysicalDeviceProperties physical_device_properties;
+	temp_vk.vkGetPhysicalDeviceProperties(temp_vk.physical_device,
+	                                      &physical_device_properties);
+
+	if (physical_device_properties.vendorID == 0x10DE) {
+		// our physical device is an nvidia card, we can potentially
+		// select nvidia-specific direct mode.
+
+		// we need to also check if we are confident that we can create
+		// a direct mode display, if not we need to  abandon the attempt
+		// here, and allow desktop-window fallback to occur.
+
+		// get a list of attached displays
+		uint32_t display_count;
+
+		if (temp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(
+		        temp_vk.physical_device, &display_count, NULL) !=
+		    VK_SUCCESS) {
+			COMP_ERROR(c, "Failed to get vulkan display count");
+			nvidia_tests_passed = false;
+		}
+
+		VkDisplayPropertiesKHR *display_props =
+		    U_TYPED_ARRAY_CALLOC(VkDisplayPropertiesKHR, display_count);
+
+		if (display_props &&
+		    temp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(
+		        temp_vk.physical_device, &display_count,
+		        display_props) != VK_SUCCESS) {
+			COMP_ERROR(c, "Failed to get display properties");
+			nvidia_tests_passed = false;
+		}
+
+		for (uint32_t i = 0; i < display_count; i++) {
+			VkDisplayPropertiesKHR disp = *(display_props + i);
+			// check this display against our whitelist
+			uint32_t wl_elements = sizeof(NV_DIRECT_WHITELIST) /
+			                       sizeof(NV_DIRECT_WHITELIST[0]);
+			for (uint32_t j = 0; j < wl_elements; j++) {
+				unsigned long wl_entry_length =
+				    strlen(NV_DIRECT_WHITELIST[j]);
+				unsigned long disp_entry_length =
+				    strlen(disp.displayName);
+				if (disp_entry_length >= wl_entry_length) {
+					if (strncmp(NV_DIRECT_WHITELIST[j],
+					            disp.displayName,
+					            wl_entry_length) == 0) {
+						// we have a match with this
+						// whitelist entry.
+						nvidia_tests_passed = true;
+					}
+				}
+			}
+		}
+
+		free(display_props);
+	}
+
+	if (nvidia_tests_passed) {
+		c->settings.window_type = WINDOW_DIRECT_NVIDIA;
+		COMP_DEBUG(c, "Selecting direct NVIDIA window type!");
+	} else {
+		COMP_DEBUG(c, "Keeping auto window type!");
+	}
+
+	temp_vk.vkDestroyDevice(temp_vk.device, NULL);
+	temp_vk.vkDestroyInstance(temp_vk.instance, NULL);
+
+	return true;
+}
+
+static bool
 compositor_try_window(struct comp_compositor *c, struct comp_window *window)
 {
 	if (window == NULL) {
@@ -358,17 +495,22 @@ compositor_try_window(struct comp_compositor *c, struct comp_window *window)
 }
 
 static bool
-compositor_init_window(struct comp_compositor *c)
+compositor_init_window_pre_vulkan(struct comp_compositor *c)
 {
 	// Setup the initial width from the settings.
 	c->current.width = c->settings.width;
 	c->current.height = c->settings.height;
 
+	// Nothing to do for nvidia.
+	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA) {
+		return true;
+	}
+
 	switch (c->settings.window_type) {
 	case WINDOW_AUTO:
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 		if (compositor_try_window(c, comp_window_direct_create(c))) {
-			c->settings.window_type = WINDOW_DIRECT_MODE;
+			c->settings.window_type = WINDOW_DIRECT_RANDR;
 			return true;
 		}
 #endif
@@ -400,7 +542,7 @@ compositor_init_window(struct comp_compositor *c)
 		COMP_ERROR(c, "Wayland support not compiled in!");
 #endif
 		break;
-	case WINDOW_DIRECT_MODE:
+	case WINDOW_DIRECT_RANDR:
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 		compositor_try_window(c, comp_window_direct_create(c));
 #else
@@ -418,6 +560,15 @@ compositor_init_window(struct comp_compositor *c)
 	return true;
 }
 
+static bool
+compositor_init_window_post_vulkan(struct comp_compositor *c)
+{
+	if (c->settings.window_type != WINDOW_DIRECT_NVIDIA) {
+		return true;
+	}
+
+	return compositor_try_window(c, comp_window_direct_create(c));
+}
 
 static void
 _sc_dimension_cb(uint32_t width, uint32_t height, void *ptr)
@@ -433,8 +584,11 @@ _sc_dimension_cb(uint32_t width, uint32_t height, void *ptr)
 static bool
 compositor_init_swapchain(struct comp_compositor *c)
 {
-	//! @todo Make c->window->init_swachain call vk_swapchain_init and give
-	//!       _sc_dimension_cb to window or just have it call a function?
+	//! @todo Make c->window->init_swachain call vk_swapchain_init
+	//! and give
+	//!       _sc_dimension_cb to window or just have it call a
+	//!       function?
+
 	vk_swapchain_init(&c->window->swapchain, &c->vk, _sc_dimension_cb,
 	                  (void *)c);
 	if (!c->window->init_swapchain(c->window, c->current.width,
@@ -464,6 +618,7 @@ compositor_init_renderer(struct comp_compositor *c)
 	return true;
 }
 
+
 struct xrt_compositor_fd *
 comp_compositor_create(struct xrt_device *xdev,
                        struct time_state *timekeeping,
@@ -490,12 +645,17 @@ comp_compositor_create(struct xrt_device *xdev,
 	c->settings.flip_y = flip_y;
 	c->last_frame_time_ns = time_state_get_now(c->timekeeping);
 
+
 	// Need to select window backend before creating Vulkan, then
-	// swapchain will initialize the window fully and the swapchain, and
-	// finally the renderer is created which renderers to window/swapchain.
+	// swapchain will initialize the window fully and the swapchain,
+	// and finally the renderer is created which renderers to
+	// window/swapchain.
+
 	// clang-format off
-	if (!compositor_init_window(c) ||
+	if (!compositor_check_vulkan_caps(c) ||
+	    !compositor_init_window_pre_vulkan(c) ||
 	    !compositor_init_vulkan(c) ||
+	    !compositor_init_window_post_vulkan(c) ||
 	    !compositor_init_swapchain(c) ||
 	    !compositor_init_renderer(c)) {
 		COMP_DEBUG(c, "Failed to init compositor %p", (void *)c);

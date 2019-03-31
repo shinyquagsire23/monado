@@ -20,6 +20,8 @@
 #include <utility>
 #include <cstring>
 
+#include "util/u_misc.h"
+
 #include "xrt/xrt_compiler.h"
 #include "main/comp_window.h"
 
@@ -33,11 +35,18 @@
 /*!
  * Probed display.
  */
-struct comp_window_direct_display
+struct comp_window_direct_randr_display
 {
 	std::string name;
 	xcb_randr_output_t output;
 	xcb_randr_mode_info_t primary_mode;
+	VkDisplayKHR display;
+};
+
+struct comp_window_direct_nvidia_display
+{
+	std::string name;
+	VkDisplayPropertiesKHR display_properties;
 	VkDisplayKHR display;
 };
 
@@ -53,10 +62,13 @@ struct comp_window_direct
 	xcb_connection_t* connection = nullptr;
 	xcb_screen_t* screen = nullptr;
 
-	std::map<uint32_t, xcb_randr_mode_info_t> modes = {};
+	std::map<uint32_t, xcb_randr_mode_info_t> randr_modes = {};
+	std::vector<comp_window_direct_randr_display> randr_displays = {};
 
-	std::vector<comp_window_direct_display> displays = {};
+	std::map<uint32_t, VkDisplayModeKHR> nv_modes;
+	std::vector<comp_window_direct_nvidia_display> nv_displays = {};
 };
+
 
 
 /*
@@ -69,13 +81,19 @@ static void
 comp_window_direct_destroy(struct comp_window* w);
 
 XRT_MAYBE_UNUSED static void
-comp_window_direct_list_screens(struct comp_window_direct* w);
+comp_window_direct_list_randr_screens(struct comp_window_direct* w);
 
 static bool
-comp_window_direct_init(struct comp_window* w);
+comp_window_direct_init_randr(struct comp_window* w);
 
-static comp_window_direct_display*
-comp_window_direct_current_display(struct comp_window_direct* w);
+static bool
+comp_window_direct_init_nvidia(struct comp_window* w);
+
+static comp_window_direct_randr_display*
+comp_window_direct_current_randr_display(struct comp_window_direct* w);
+
+static comp_window_direct_nvidia_display*
+comp_window_direct_current_nvidia_display(struct comp_window_direct* w);
 
 static void
 comp_window_direct_flush(struct comp_window* w);
@@ -103,15 +121,15 @@ static int
 comp_window_direct_connect(struct comp_window_direct* w);
 
 static VkResult
-comp_window_direct_aquire_xlib_display(struct comp_window_direct* w,
-                                       VkDisplayKHR display);
+comp_window_direct_acquire_xlib_display(struct comp_window_direct* w,
+                                        VkDisplayKHR display);
 
 static VkDisplayKHR
 comp_window_direct_get_xlib_randr_output(struct comp_window_direct* w,
                                          RROutput output);
 
 static void
-comp_window_direct_enumerate_modes(
+comp_window_direct_enumerate_randr_modes(
     struct comp_window_direct* w,
     xcb_randr_get_screen_resources_reply_t* resources_reply);
 
@@ -137,11 +155,16 @@ comp_window_direct_create(struct comp_compositor* c)
 	w->base.name = "direct";
 	w->base.destroy = comp_window_direct_destroy;
 	w->base.flush = comp_window_direct_flush;
-	w->base.init = comp_window_direct_init;
+	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA) {
+		w->base.init = comp_window_direct_init_nvidia;
+	} else {
+		w->base.init = comp_window_direct_init_randr;
+	}
 	w->base.init_swapchain = comp_window_direct_init_swapchain;
 	w->base.update_window_title = comp_window_direct_update_window_title;
 	w->base.c = c;
-	w->modes.clear();
+	w->randr_modes.clear();
+	w->nv_modes.clear();
 
 	return &w->base;
 }
@@ -152,14 +175,20 @@ comp_window_direct_destroy(struct comp_window* w)
 	comp_window_direct* w_direct = (comp_window_direct*)w;
 	vk_bundle* vk = &w->c->vk;
 
-	for (uint32_t i = 0; i < w_direct->displays.size(); i++) {
-		comp_window_direct_display* d = &w_direct->displays[i];
+	for (uint32_t i = 0; i < w_direct->randr_displays.size(); i++) {
+		comp_window_direct_randr_display* d =
+		    &w_direct->randr_displays[i];
 
 		if (d->display == VK_NULL_HANDLE) {
 			continue;
 		}
 
 		vk->vkReleaseDisplayEXT(vk->physical_device, d->display);
+		d->display = VK_NULL_HANDLE;
+	}
+	for (uint32_t i = 0; i < w_direct->nv_displays.size(); i++) {
+		comp_window_direct_nvidia_display* d =
+		    &w_direct->nv_displays[i];
 		d->display = VK_NULL_HANDLE;
 	}
 
@@ -172,10 +201,10 @@ comp_window_direct_destroy(struct comp_window* w)
 }
 
 static void
-comp_window_direct_list_screens(struct comp_window_direct* w)
+comp_window_direct_list_randr_screens(struct comp_window_direct* w)
 {
 	int display_i = 0;
-	for (comp_window_direct_display d : w->displays) {
+	for (comp_window_direct_randr_display d : w->randr_displays) {
 		COMP_DEBUG(w->base.c, "%d: %s %dx%d@%.2f", display_i,
 		           d.name.c_str(), d.primary_mode.width,
 		           d.primary_mode.height,
@@ -186,8 +215,14 @@ comp_window_direct_list_screens(struct comp_window_direct* w)
 }
 
 static bool
-comp_window_direct_init(struct comp_window* w)
+comp_window_direct_init_randr(struct comp_window* w)
 {
+	// Sanity check.
+	if (w->c->vk.instance != VK_NULL_HANDLE) {
+		COMP_ERROR(w->c, "Vulkan initialized before RANDR init!");
+		return false;
+	}
+
 	comp_window_direct* w_direct = (comp_window_direct*)w;
 
 	if (!comp_window_direct_connect(w_direct)) {
@@ -201,34 +236,34 @@ comp_window_direct_init(struct comp_window* w)
 
 	comp_window_direct_get_randr_outputs(w_direct);
 
-	if (w_direct->displays.size() < 1) {
+	if (w_direct->randr_displays.size() < 1) {
 		COMP_ERROR(w->c, "No non-desktop output available.");
 		return false;
 	}
 
-	if (w->c->settings.display > (int)w_direct->displays.size() - 1) {
+	if (w->c->settings.display > (int)w_direct->randr_displays.size() - 1) {
 		COMP_DEBUG(w->c,
 		           "Requested display %d, but only %d displays are "
 		           "available.",
 		           w->c->settings.display,
-		           (int)w_direct->displays.size());
+		           (int)w_direct->randr_displays.size());
 
 		w->c->settings.display = 0;
-		comp_window_direct_display* d =
-		    comp_window_direct_current_display(w_direct);
+		comp_window_direct_randr_display* d =
+		    comp_window_direct_current_randr_display(w_direct);
 		COMP_DEBUG(w->c, "Selecting '%s' instead.", d->name.c_str());
 	}
 
 	if (w->c->settings.display < 0) {
 		w->c->settings.display = 0;
-		comp_window_direct_display* d =
-		    comp_window_direct_current_display(w_direct);
+		comp_window_direct_randr_display* d =
+		    comp_window_direct_current_randr_display(w_direct);
 		COMP_DEBUG(w->c, "Selecting '%s' first display.",
 		           d->name.c_str());
 	}
 
-	comp_window_direct_display* d =
-	    comp_window_direct_current_display(w_direct);
+	comp_window_direct_randr_display* d =
+	    comp_window_direct_current_randr_display(w_direct);
 	w->c->settings.width = d->primary_mode.width;
 	w->c->settings.height = d->primary_mode.height;
 	// TODO: size callback
@@ -237,19 +272,111 @@ comp_window_direct_init(struct comp_window* w)
 	return true;
 }
 
-static comp_window_direct_display*
-comp_window_direct_current_display(struct comp_window_direct* w)
+static bool
+comp_window_direct_init_nvidia(struct comp_window* w)
+{
+	// Sanity check.
+	if (w->c->vk.instance == VK_NULL_HANDLE) {
+		COMP_ERROR(w->c, "Vulkan not initialized before NVIDIA init!");
+		return false;
+	}
+
+	comp_window_direct* w_direct = (comp_window_direct*)w;
+
+	if (!comp_window_direct_connect(w_direct)) {
+		return false;
+	}
+
+	struct vk_bundle comp_vk = w->c->vk;
+
+	// find our display using nvidia whitelist, enumerate its modes, and
+	// pick the best one
+	// get a list of attached displays
+	uint32_t display_count;
+	if (comp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(
+	        comp_vk.physical_device, &display_count, NULL) != VK_SUCCESS) {
+		COMP_ERROR(w->c, "Failed to get vulkan display count");
+		return false;
+	}
+
+	struct VkDisplayPropertiesKHR* display_props =
+	    U_TYPED_ARRAY_CALLOC(VkDisplayPropertiesKHR, display_count);
+
+	if (display_props && comp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(
+	                         comp_vk.physical_device, &display_count,
+	                         display_props) != VK_SUCCESS) {
+		COMP_ERROR(w->c, "Failed to get display properties");
+		free(display_props);
+		return false;
+	}
+
+	// TODO: what if we have multiple whitelisted HMD displays connected?
+
+	for (uint32_t i = 0; i < display_count; i++) {
+		struct VkDisplayPropertiesKHR disp = *(display_props + i);
+		// check this display against our whitelist
+		uint32_t wl_elements = sizeof(NV_DIRECT_WHITELIST) /
+		                       sizeof(NV_DIRECT_WHITELIST[0]);
+		for (uint32_t j = 0; j < wl_elements; j++) {
+			unsigned long wl_entry_length =
+			    strlen(NV_DIRECT_WHITELIST[j]);
+			unsigned long disp_entry_length =
+			    strlen(disp.displayName);
+			if (disp_entry_length >= wl_entry_length) {
+				if (strncmp(NV_DIRECT_WHITELIST[j],
+				            disp.displayName,
+				            wl_entry_length) == 0) {
+					// we have a match with this whitelist
+					// entry.
+					w->c->settings.width =
+					    disp.physicalResolution.width;
+					w->c->settings.height =
+					    disp.physicalResolution.height;
+					comp_window_direct_nvidia_display d = {
+					    .name =
+					        std::string(disp.displayName),
+					    .display_properties = disp,
+					    .display = disp.display};
+					w_direct->nv_displays.push_back(d);
+					break;
+				}
+			}
+		}
+	}
+
+	free(display_props);
+
+	return true;
+}
+
+static comp_window_direct_randr_display*
+comp_window_direct_current_randr_display(struct comp_window_direct* w)
 {
 	uint32_t index = w->base.c->settings.display;
 	if (index == (uint32_t)-1) {
 		index = 0;
 	}
 
-	if (w->displays.size() <= index) {
+	if (w->randr_displays.size() <= index) {
 		return nullptr;
 	}
 
-	return &w->displays[index];
+	return &w->randr_displays[index];
+}
+
+static comp_window_direct_nvidia_display*
+comp_window_direct_current_nvidia_display(struct comp_window_direct* w)
+{
+	uint32_t index = w->base.c->settings.display;
+	if (index == (uint32_t)-1) {
+		index = 0;
+	}
+
+	if (w->nv_displays.size() <= index) {
+		return nullptr;
+	}
+
+	return &w->nv_displays[index];
 }
 
 static void
@@ -317,22 +444,38 @@ comp_window_direct_create_surface(struct comp_window_direct* w,
                                   uint32_t width,
                                   uint32_t height)
 {
-	comp_window_direct_display* d = comp_window_direct_current_display(w);
+	comp_window_direct_randr_display* d =
+	    comp_window_direct_current_randr_display(w);
+	comp_window_direct_nvidia_display* nvd =
+	    comp_window_direct_current_nvidia_display(w);
 	struct vk_bundle* vk = w->base.swapchain.vk;
-	VkResult ret;
 
-	COMP_DEBUG(w->base.c, "Will use display: %s %dx%d@%.2f",
-	           d->name.c_str(), d->primary_mode.width,
-	           d->primary_mode.height,
-	           (double)d->primary_mode.dot_clock /
-	               (d->primary_mode.htotal * d->primary_mode.vtotal));
+	VkResult ret = VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
+	VkDisplayKHR _display = {};
+	if (d) {
+		COMP_DEBUG(
+		    w->base.c, "Will use display: %s %dx%d@%.2f",
+		    d->name.c_str(), d->primary_mode.width,
+		    d->primary_mode.height,
+		    (double)d->primary_mode.dot_clock /
+		        (d->primary_mode.htotal * d->primary_mode.vtotal));
 
-	d->display = comp_window_direct_get_xlib_randr_output(w, d->output);
-	if (d->display == VK_NULL_HANDLE) {
-		return VK_ERROR_INITIALIZATION_FAILED;
+		d->display =
+		    comp_window_direct_get_xlib_randr_output(w, d->output);
+		if (d->display == VK_NULL_HANDLE) {
+			return VK_ERROR_INITIALIZATION_FAILED;
+		}
+		ret = comp_window_direct_acquire_xlib_display(w, d->display);
+		_display = d->display;
 	}
 
-	ret = comp_window_direct_aquire_xlib_display(w, d->display);
+	if (nvd) {
+		COMP_DEBUG(w->base.c, "Will use display: %s",
+		           nvd->name.c_str());
+		ret = comp_window_direct_acquire_xlib_display(w, nvd->display);
+		_display = nvd->display;
+	}
+
 	if (ret != VK_SUCCESS) {
 		return ret;
 	}
@@ -370,7 +513,7 @@ comp_window_direct_create_surface(struct comp_window_direct* w,
 	uint32_t plane_index = 0;
 
 	VkDisplayModeKHR display_mode =
-	    comp_window_direct_get_primary_display_mode(w, d->display);
+	    comp_window_direct_get_primary_display_mode(w, _display);
 
 	VkDisplayPlaneCapabilitiesKHR plane_caps;
 	vk->vkGetDisplayPlaneCapabilitiesKHR(
@@ -441,8 +584,8 @@ comp_window_direct_connect(struct comp_window_direct* w)
 }
 
 static VkResult
-comp_window_direct_aquire_xlib_display(struct comp_window_direct* w,
-                                       VkDisplayKHR display)
+comp_window_direct_acquire_xlib_display(struct comp_window_direct* w,
+                                        VkDisplayKHR display)
 {
 	struct vk_bundle* vk = w->base.swapchain.vk;
 	VkResult ret;
@@ -484,7 +627,7 @@ comp_window_direct_get_xlib_randr_output(struct comp_window_direct* w,
 }
 
 static void
-comp_window_direct_enumerate_modes(
+comp_window_direct_enumerate_randr_modes(
     struct comp_window_direct* w,
     xcb_randr_get_screen_resources_reply_t* resources_reply)
 {
@@ -493,8 +636,9 @@ comp_window_direct_enumerate_modes(
 
 	int n = xcb_randr_get_screen_resources_modes_length(resources_reply);
 	for (int i = 0; i < n; i++)
-		w->modes.insert(std::pair<uint32_t, xcb_randr_mode_info_t>(
-		    mode_infos[i].id, mode_infos[i]));
+		w->randr_modes.insert(
+		    std::pair<uint32_t, xcb_randr_mode_info_t>(mode_infos[i].id,
+		                                               mode_infos[i]));
 }
 
 static void
@@ -549,7 +693,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 	xcb_randr_output_t* xcb_outputs =
 	    xcb_randr_get_screen_resources_outputs(resources_reply);
 
-	comp_window_direct_enumerate_modes(w, resources_reply);
+	comp_window_direct_enumerate_randr_modes(w, resources_reply);
 
 	int count =
 	    xcb_randr_get_screen_resources_outputs_length(resources_reply);
@@ -625,20 +769,20 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 				           name_str);
 			}
 
-			if (!w->modes.count(output_modes[0])) {
+			if (!w->randr_modes.count(output_modes[0])) {
 				COMP_ERROR(w->base.c,
 				           "No mode with id %d found??",
 				           output_modes[0]);
 			}
 
-			comp_window_direct_display d = {
+			comp_window_direct_randr_display d = {
 			    .name = std::string(name_str),
 			    .output = xcb_outputs[i],
-			    .primary_mode = w->modes.at(output_modes[0]),
+			    .primary_mode = w->randr_modes.at(output_modes[0]),
 			    .display = VK_NULL_HANDLE,
 			};
 
-			w->displays.push_back(d);
+			w->randr_displays.push_back(d);
 		}
 
 		free(name_str);
