@@ -19,6 +19,18 @@
 #include "comp_vk_swapchain.h"
 
 
+/*!
+ * These formats will be 'preferred' - in future we may wish to give preference
+ * to higher bit depths if they are available, but most display devices we are
+ * interested in should support one these.
+ */
+static VkFormat preferred_color_formats[] = {
+    VK_FORMAT_R8G8B8A8_UNORM,
+    VK_FORMAT_B8G8R8A8_UNORM,
+    VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+};
+
+
 /*
  *
  * Pre declare functions.
@@ -251,18 +263,96 @@ _find_surface_format(struct vk_swapchain *sc,
 		return false;
 	}
 
+	VkSurfaceFormatKHR *formats_for_colorspace = NULL;
+	formats_for_colorspace =
+	    U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, num_formats);
+
+	uint32_t num_formats_cs = 0;
+	uint32_t num_pref_formats = sizeof(preferred_color_formats) /
+	                            sizeof(preferred_color_formats[0]);
+
+	// Gather formats that match our color space, we will select
+	// from these in preference to others.
+
 	for (uint32_t i = 0; i < num_formats; i++) {
-		if (formats[i].format == sc->color_format &&
-		    formats[i].colorSpace == sc->color_space) {
-			format->format = formats[i].format;
-			format->colorSpace = formats[i].colorSpace;
-			free(formats);
-			return true;
+		if (formats[i].colorSpace == sc->color_space) {
+			formats_for_colorspace[num_formats_cs] = formats[i];
+			num_formats_cs++;
 		}
 	}
 
+	if (num_formats_cs > 0) {
+		// we have at least one format with our preferred colorspace
+		// if we have one that is on our preferred formats list, use it
+
+		for (uint32_t i = 0; i < num_formats_cs; i++) {
+			if (formats_for_colorspace[i].format ==
+			    sc->color_format) {
+				// perfect match.
+				*format = formats_for_colorspace[i];
+				goto cleanup;
+			}
+		}
+
+		// we dont have our swapchain default format and colorspace, but
+		// we may have at least one preferred format with the correct
+		// colorspace.
+		for (uint32_t i = 0; i < num_formats_cs; i++) {
+			for (uint32_t j = 0; j < num_pref_formats; j++) {
+				if (formats_for_colorspace[i].format ==
+				    preferred_color_formats[j]) {
+					*format = formats_for_colorspace[i];
+					goto cleanup;
+				}
+			}
+		}
+
+		// are we still here? this means we have a format with our
+		// preferred colorspace but we have no preferred color format -
+		// maybe we only have 10/12 bpc or 15/16bpp format. return the
+		// first one we have, at least its in the right color space.
+		*format = formats_for_colorspace[0];
+		VK_ERROR(sc->vk, "Returning unknown color format");
+		goto cleanup;
+
+	} else {
+
+		// we have nothing with the preferred colorspace? we can try to
+		// return a preferred format at least
+		for (uint32_t i = 0; i < num_formats; i++) {
+			for (uint32_t j = 0; j < num_pref_formats; j++) {
+				if (formats[i].format ==
+				    preferred_color_formats[j]) {
+					*format = formats_for_colorspace[i];
+					VK_ERROR(
+					    sc->vk,
+					    "Returning known-wrong color "
+					    "space! Color shift may occur.");
+					goto cleanup;
+				}
+			}
+		}
+		// if we are still here, we should just return the first format
+		// we have. we know its the wrong colorspace, and its not on our
+		// list of preferred formats, but its something.
+		*format = formats[0];
+		VK_ERROR(sc->vk,
+		         "Returning fallback format! cue up some Kenny "
+		         "Loggins, cos we're in the DANGER ZONE!");
+		goto cleanup;
+	}
+
+	VK_ERROR(sc->vk, "We should not be here");
+	goto error;
+
+cleanup:
+	free(formats_for_colorspace);
 	free(formats);
-	VK_ERROR(sc->vk, "Requested format not supported.");
+	return true;
+
+error:
+	free(formats_for_colorspace);
+	free(formats);
 	return false;
 }
 
