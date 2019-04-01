@@ -311,8 +311,9 @@ oxr_session_frame_wait(struct oxr_logger *log,
 
 	//! @todo this should be carefully synchronized, because there may be
 	//! more than one session per instance.
-	timepoint_ns now =
+	XRT_MAYBE_UNUSED timepoint_ns now =
 	    time_state_get_now_and_update(sess->sys->inst->timekeeping);
+
 
 	struct xrt_compositor *xc = sess->compositor;
 	xc->wait_frame(xc, &frameState->predictedDisplayTime,
