@@ -38,6 +38,25 @@ extern "C" {
 
 /*
  *
+ * Hash functions.
+ *
+ */
+
+/*!
+ * Generate a hash value from the given string, trailing zero not included.
+ *
+ * Hashing function used is not specified so no garantee of staying the same
+ * between different versions of the software, or even when the same version
+ * is compiled on different platforms/libc++ as it might use std::hash.
+ *
+ * @ingroup aux_math
+ */
+size_t
+math_hash_string(const char *str_c, size_t length);
+
+
+/*
+ *
  * Vector functions
  *
  */
