@@ -183,7 +183,7 @@ Note that you'll typically prefer to use something like `git clang-format`
 to just re-format your changes, in case version differences in tools result in overall format changes.
 
 [OpenHMD]: https://openhmd.net
-[drm-lease]: https://haagch.frickel.club/#!drmlease.md
+[drm-lease]: https://haagch.frickel.club/#!drmlease%2Emd
 [OpenXR]: https://khronos.org/openxr
 [clang-format]: https://releases.llvm.org/7.0.0/tools/clang/docs/ClangFormat.html
 [cmake-build]: https://cmake.org/cmake/help/v3.12/manual/cmake.1.html#build-tool-mode
