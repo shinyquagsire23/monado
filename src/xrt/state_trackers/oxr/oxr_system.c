@@ -13,10 +13,15 @@
 #include <assert.h>
 
 #include "xrt/xrt_device.h"
+#include "util/u_debug.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_two_call.h"
+
+// clang-format off
+DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "OXR_VIEWPORT_SCALE_PERCENTAGE", 140)
+// clang-format on
 
 
 static bool
@@ -64,27 +69,34 @@ oxr_system_fill_in(struct oxr_logger *log,
 		                 " failed to probe device");
 	}
 
-	sys->device = xdev;
-	sys->inst = inst;
-	sys->systemId = systemId;
-
 	// clang-format off
-	sys->form_factor =      XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
+	sys->device           = xdev;
+	sys->inst             = inst;
+	sys->systemId         = systemId;
+	sys->form_factor      = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
 	sys->view_config_type = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
 
-	sys->views[0].recommendedImageRectWidth       = xdev->views[0].display.w_pixels;
-	sys->views[0].maxImageRectWidth               = xdev->views[0].display.w_pixels;
-	sys->views[0].recommendedImageRectHeight      = xdev->views[0].display.h_pixels;
-	sys->views[0].maxImageRectHeight              = xdev->views[0].display.h_pixels;
+	double scale = debug_get_num_option_scale_percentage() / 100.0;
+
+	uint32_t w0 = (uint32_t)(xdev->views[0].display.w_pixels * scale);
+	uint32_t h0 = (uint32_t)(xdev->views[0].display.w_pixels * scale);
+	uint32_t w1 = (uint32_t)(xdev->views[1].display.w_pixels * scale);
+	uint32_t h1 = (uint32_t)(xdev->views[1].display.w_pixels * scale);
+
+	sys->views[0].recommendedImageRectWidth       = w0;
+	sys->views[0].maxImageRectWidth               = w0;
+	sys->views[0].recommendedImageRectHeight      = h0;
+	sys->views[0].maxImageRectHeight              = h0;
 	sys->views[0].recommendedSwapchainSampleCount = 1;
 	sys->views[0].maxSwapchainSampleCount         = 1;
 
-	sys->views[1].recommendedImageRectWidth       = xdev->views[1].display.w_pixels;
-	sys->views[1].maxImageRectWidth               = xdev->views[1].display.w_pixels;
-	sys->views[1].recommendedImageRectHeight      = xdev->views[1].display.h_pixels;
-	sys->views[1].maxImageRectHeight              = xdev->views[1].display.h_pixels;
+	sys->views[1].recommendedImageRectWidth       = w1;
+	sys->views[1].maxImageRectWidth               = w1;
+	sys->views[1].recommendedImageRectHeight      = h1;
+	sys->views[1].maxImageRectHeight              = h1;
 	sys->views[1].recommendedSwapchainSampleCount = 1;
 	sys->views[1].maxSwapchainSampleCount         = 1;
+	// clang-format on
 
 	uint32_t i = 0;
 	if (xdev->blend_mode & XRT_BLEND_MODE_OPAQUE) {
@@ -100,7 +112,6 @@ oxr_system_fill_in(struct oxr_logger *log,
 
 	assert(i < ARRAY_SIZE(sys->blend_modes));
 
-	// clang-format on
 
 	return XR_SUCCESS;
 }
