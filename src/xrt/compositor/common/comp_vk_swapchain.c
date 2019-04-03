@@ -19,6 +19,12 @@
 #include "comp_vk_swapchain.h"
 
 
+/*
+ *
+ * Types, defines and data.
+ *
+ */
+
 /*!
  * These formats will be 'preferred' - in future we may wish to give preference
  * to higher bit depths if they are available, but most display devices we are
