@@ -269,9 +269,7 @@ hdk_device_create(hid_device *dev,
 	double vCOP = 0.5;
 
 	switch (variant) {
-	case HDK_UNKNOWN:
-		assert(!"unknown device");
-		break;
+	case HDK_UNKNOWN: assert(!"unknown device"); break;
 
 	case HDK_VARIANT_1_2:
 		// Distortion optional - this is for no distortion.
@@ -312,9 +310,7 @@ hdk_device_create(hid_device *dev,
 	}
 
 	switch (variant) {
-	case HDK_UNKNOWN:
-		assert(!"unknown device");
-		break;
+	case HDK_UNKNOWN: assert(!"unknown device"); break;
 
 	case HDK_VARIANT_2: {
 		hd->base.screens[0].nominal_frame_interval_ns =
