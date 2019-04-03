@@ -674,6 +674,19 @@ vk_destroy_validation_callback(struct vk_bundle *vk)
 	(PFN_##name) vk->vkGetDeviceProcAddr(vk->device, #name);
 
 VkResult
+vk_get_loader_functions(struct vk_bundle *vk, PFN_vkGetInstanceProcAddr g)
+{
+	vk->vkGetInstanceProcAddr = g;
+
+	// Fill in all loader functions.
+	// clang-format off
+	vk->vkCreateInstance = GET_PROC(vk, vkCreateInstance);
+	// clang-format on
+
+	return VK_SUCCESS;
+}
+
+VkResult
 vk_get_instance_functions(struct vk_bundle *vk)
 {
 	// clang-format off

@@ -231,6 +231,12 @@ vk_destroy_validation_callback(struct vk_bundle *vk);
  * @ingroup comp_common
  */
 VkResult
+vk_get_loader_functions(struct vk_bundle *vk, PFN_vkGetInstanceProcAddr g);
+
+/*!
+ * @ingroup comp_common
+ */
+VkResult
 vk_get_instance_functions(struct vk_bundle *vk);
 
 /*!

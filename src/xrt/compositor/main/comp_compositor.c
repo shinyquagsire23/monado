@@ -137,7 +137,6 @@ compositor_end_frame(struct xrt_compositor *xc,
  *
  */
 
-#define GET_PROC(name) (PFN_##name) c->vk.vkGetInstanceProcAddr(NULL, #name);
 #define GET_DEV_PROC(c, name)                                                  \
 	(PFN_##name) c->vk.vkGetDeviceProcAddr(c->vk.device, #name);
 #define GET_INS_PROC(c, name)                                                  \
@@ -152,14 +151,7 @@ static VkResult
 find_get_instance_proc_addr(struct comp_compositor *c)
 {
 	//! @todo Do any library loading here.
-	c->vk.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
-
-	// Fill in all loader functions.
-	// clang-format off
-	c->vk.vkCreateInstance = GET_PROC(vkCreateInstance);
-	// clang-format on
-
-	return VK_SUCCESS;
+	return vk_get_loader_functions(&c->vk, vkGetInstanceProcAddr);
 }
 
 #ifdef XRT_ENABLE_VK_VALIDATION
