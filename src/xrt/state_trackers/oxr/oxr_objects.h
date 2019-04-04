@@ -64,6 +64,7 @@ struct oxr_swapchain;
 struct oxr_space;
 struct oxr_action_set;
 struct oxr_action;
+struct oxr_debug_messenger;
 struct oxr_handle_base;
 
 #define XRT_MAX_HANDLE_CHILDREN 256
@@ -291,7 +292,31 @@ oxr_create_swapchain(struct oxr_logger *,
 
 /*
  *
+ * oxr_messenger.c
+ *
+ */
 
+#ifdef XR_EXT_debug_utils
+/*!
+ * To go back to a OpenXR object.
+ */
+XRT_MAYBE_UNUSED static inline XrDebugUtilsMessengerEXT
+oxr_messenger_to_openxr(struct oxr_debug_messenger *mssngr)
+{
+	return (XrDebugUtilsMessengerEXT)mssngr;
+}
+
+XrResult
+oxr_create_messenger(struct oxr_logger *,
+                     struct oxr_instance *inst,
+                     const XrDebugUtilsMessengerCreateInfoEXT *,
+                     struct oxr_debug_messenger **out_mssngr);
+XrResult
+oxr_destroy_messenger(struct oxr_logger *log,
+                      struct oxr_debug_messenger *mssngr);
+#endif // XR_EXT_debug_utils
+/*
+ *
  * oxr_system.c
  *
  */
@@ -524,6 +549,11 @@ struct oxr_instance
 	// Event queue.
 	struct oxr_event *last_event;
 	struct oxr_event *next_event;
+
+#ifdef XR_EXT_debug_utils
+	//! Debug messengers
+	struct oxr_debug_messenger *messengers[XRT_MAX_HANDLE_CHILDREN];
+#endif // XR_EXT_debug_utils
 };
 
 /*!
@@ -660,6 +690,21 @@ struct oxr_debug_messenger
 
 	//! Onwer of this messenger.
 	struct oxr_instance *inst;
+
+#ifdef XR_EXT_debug_utils
+	//! Severities to submit to this messenger
+	XrDebugUtilsMessageSeverityFlagsEXT message_severities;
+
+	//! Types to submit to this messenger
+	XrDebugUtilsMessageTypeFlagsEXT message_types;
+
+	//! Callback function
+	PFN_xrDebugUtilsMessengerCallbackEXT user_callback;
+
+	//! Opaque user data
+	void *XR_MAY_ALIAS user_data;
+
+#endif // XR_EXT_debug_utils
 };
 
 /*!

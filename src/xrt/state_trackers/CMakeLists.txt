@@ -23,6 +23,7 @@ set(OXR_SOURCE_FILES
 	oxr/oxr_instance.c
 	oxr/oxr_logger.cpp
 	oxr/oxr_logger.h
+	oxr/oxr_messenger.c
 	oxr/oxr_objects.h
 	oxr/oxr_session.c
 	oxr/oxr_session_gl.c
