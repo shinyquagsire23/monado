@@ -124,6 +124,9 @@ oxr_system_get_properties(struct oxr_logger *log,
 	properties->vendorId = 42;
 	properties->systemId = sys->systemId;
 	properties->graphicsProperties.maxViewCount = 2;
+
+	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE, "Monado: %s", sys->device->name);
+
 	/*!
 	 * @todo conforming implementations must support at
 	 * leastXR_MIN_COMPOSITION_LAYERS_SUPPORTED layers.
