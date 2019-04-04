@@ -117,7 +117,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 		if (inst->headless) {
 			return XR_SUCCESS;
 		}
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID,
 		                 "createInfo->next");
 	}
 
