@@ -9,6 +9,8 @@
 
 #pragma once
 
+#define XRT_DEVICE_NAME_LEN 256
+
 #include "xrt/xrt_defines.h"
 
 #ifdef __cplusplus
@@ -86,6 +88,11 @@ struct xrt_view
  */
 struct xrt_device
 {
+	/*!
+	 * A string describing the device.
+	 */
+	char name[XRT_DEVICE_NAME_LEN];
+
 	/*!
 	 * The hmd screen, right now hardcoded to one.
 	 */
