@@ -53,6 +53,27 @@ oxr_space_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 }
 
 XrResult
+oxr_space_action_create(struct oxr_logger *log,
+                        struct oxr_action *act,
+                        const XrActionSpaceCreateInfo *createInfo,
+                        struct oxr_space **out_space)
+{
+	struct oxr_space *spc = NULL;
+	OXR_ALLOCATE_HANDLE_OR_RETURN(log, spc, OXR_XR_DEBUG_SPACE,
+	                              oxr_space_destroy, &act->handle);
+
+	//! @todo implement more fully
+	oxr_warn(log, " not fully implemented");
+
+	spc->is_reference = false;
+	memcpy(&spc->pose, &createInfo->poseInActionSpace, sizeof(spc->pose));
+
+	*out_space = spc;
+
+	return XR_SUCCESS;
+}
+
+XrResult
 oxr_space_reference_create(struct oxr_logger *log,
                            struct oxr_session *sess,
                            const XrReferenceSpaceCreateInfo *createInfo,

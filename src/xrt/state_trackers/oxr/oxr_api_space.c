@@ -35,8 +35,16 @@ oxr_xrCreateActionSpace(XrAction action,
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
 	                             XR_TYPE_ACTION_SPACE_CREATE_INFO);
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+
+	struct oxr_space* spc;
+	XrResult ret = oxr_space_action_create(&log, act, createInfo, &spc);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	*space = oxr_space_to_openxr(spc);
+
+	return XR_SUCCESS;
 }
 
 static const XrReferenceSpaceType session_spaces[] = {
