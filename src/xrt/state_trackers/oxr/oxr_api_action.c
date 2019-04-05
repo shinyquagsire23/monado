@@ -11,6 +11,7 @@
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
+#include "oxr_handle.h"
 
 #include "util/u_debug.h"
 
@@ -111,6 +112,17 @@ oxr_xrGetInputSourceLocalizedName(
  *
  */
 
+static XrResult
+oxr_action_set_destroy(struct oxr_logger* log, struct oxr_handle_base* hb)
+{
+	//! @todo Move to oxr_action.h
+	struct oxr_action_set* act_set = (struct oxr_action_set*)hb;
+
+	free(act_set);
+
+	return XR_SUCCESS;
+}
+
 XrResult
 oxr_xrCreateActionSet(XrSession session,
                       const XrActionSetCreateInfo* createInfo,
@@ -128,8 +140,14 @@ oxr_xrCreateActionSet(XrSession session,
 	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(
 	    &log, createInfo->localizedActionSetName);
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	//! @todo Move to oxr_action.h and implement more fully.
+	struct oxr_action_set* act_set = NULL;
+	OXR_ALLOCATE_HANDLE_OR_RETURN(&log, act_set, OXR_XR_DEBUG_ACTIONSET,
+	                              oxr_action_set_destroy, &sess->handle);
+
+	*actionSet = (XrActionSet)act_set;
+
+	return XR_SUCCESS;
 }
 
 XrResult
@@ -140,8 +158,7 @@ oxr_xrDestroyActionSet(XrActionSet actionSet)
 	OXR_VERIFY_ACTIONSET_AND_INIT_LOG(&log, actionSet, act_set,
 	                                  "xrDestroyActionSet");
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_handle_destroy(&log, &act_set->handle);
 }
 
 
@@ -150,6 +167,17 @@ oxr_xrDestroyActionSet(XrActionSet actionSet)
  * Action functions
  *
  */
+
+static XrResult
+oxr_action_destroy(struct oxr_logger* log, struct oxr_handle_base* hb)
+{
+	//! @todo Move to oxr_action.h
+	struct oxr_action* act = (struct oxr_action*)hb;
+
+	free(act);
+
+	return XR_SUCCESS;
+}
 
 XrResult
 oxr_xrCreateAction(XrActionSet actionSet,
@@ -164,8 +192,13 @@ oxr_xrCreateAction(XrActionSet actionSet,
 	                             XR_TYPE_ACTION_CREATE_INFO);
 	OXR_VERIFY_ARG_NOT_NULL(&log, action);
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	//! @todo Move to oxr_action.h and implement more fully.
+	struct oxr_action* act = NULL;
+	OXR_ALLOCATE_HANDLE_OR_RETURN(&log, act, OXR_XR_DEBUG_ACTION,
+	                              oxr_action_destroy, &act_set->handle);
+	*action = (XrAction)act;
+
+	return XR_SUCCESS;
 }
 
 XrResult
@@ -175,8 +208,7 @@ oxr_xrDestroyAction(XrAction action)
 	struct oxr_logger log;
 	OXR_VERIFY_ACTION_AND_INIT_LOG(&log, action, act, "xrDestroyAction");
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_handle_destroy(&log, &act->handle);
 }
 
 XrResult
