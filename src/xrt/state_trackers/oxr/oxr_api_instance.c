@@ -145,14 +145,29 @@ oxr_xrStructureTypeToString(XrInstance instance,
 }
 
 XrResult
-oxr_xrStringToPath(XrInstance instance, const char* pathString, XrPath* path)
+oxr_xrStringToPath(XrInstance instance,
+                   const char* pathString,
+                   XrPath* out_path)
 {
 	struct oxr_instance* inst;
 	struct oxr_logger log;
+	XrResult ret;
+	XrPath path;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrStringToPath");
 
-	OXR_WARN_ONCE(&log, "fill in properly");
+	ret = oxr_verify_full_path_c(&log, pathString, "pathString");
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	ret = oxr_path_get_or_create(&log, inst, pathString, strlen(pathString),
+	                             &path);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	*out_path = path;
 
 	return XR_SUCCESS;
 }
@@ -166,18 +181,26 @@ oxr_xrPathToString(XrInstance instance,
 {
 	struct oxr_instance* inst;
 	struct oxr_logger log;
+	const char* str;
+	size_t length;
+	XrResult ret;
+
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrPathToString");
-
-	OXR_WARN_ONCE(&log, "fill in properly");
-
-	if (bufferCountOutput != NULL) {
-		*bufferCountOutput = 1;
+	if (path == XR_NULL_PATH) {
+		return oxr_error(&log, XR_ERROR_PATH_INVALID,
+		                 "(path == XR_NULL_PATH)");
 	}
 
-	if (buffer != NULL && bufferCapacityInput > 0) {
-		buffer[0] = '\0';
+	ret = oxr_path_get_string(&log, inst, path, &str, &length);
+	if (ret != XR_SUCCESS) {
+		return ret;
 	}
+
+	// Length is the number of valid characters, not including the null
+	// termination character (but a extra null byte is always reserved).
+	OXR_TWO_CALL_HELPER(&log, bufferCapacityInput, bufferCountOutput,
+	                    buffer, length + 1, str);
 
 	return XR_SUCCESS;
 }
