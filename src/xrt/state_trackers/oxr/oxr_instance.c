@@ -41,6 +41,12 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	struct xrt_prober *prober = inst->prober;
 	struct xrt_device *dev = inst->system.device;
 
+	oxr_path_destroy_all(log, inst);
+
+	if (inst->path_store != NULL) {
+		u_hashset_destroy(&inst->path_store);
+	}
+
 	if (dev != NULL) {
 		dev->destroy(dev);
 		inst->system.device = NULL;
@@ -65,8 +71,17 @@ oxr_instance_create(struct oxr_logger *log,
                     struct oxr_instance **out_instance)
 {
 	struct oxr_instance *inst = NULL;
+	int h_ret;
+
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
 	                              oxr_instance_destroy, NULL);
+
+	h_ret = u_hashset_create(&inst->path_store);
+	if (h_ret != 0) {
+		free(inst);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to create hashset");
+	}
 
 	inst->prober = xrt_create_prober();
 

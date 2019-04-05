@@ -13,6 +13,7 @@
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_vulkan_includes.h"
 #include "xrt/xrt_openxr_includes.h"
+#include "util/u_hashset.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +43,7 @@ extern "C" {
 #define OXR_XR_DEBUG_INSTANCE  (*(uint64_t *)"oxrinst\0")
 #define OXR_XR_DEBUG_SESSION   (*(uint64_t *)"oxrsess\0")
 #define OXR_XR_DEBUG_SPACE     (*(uint64_t *)"oxrspac\0")
+#define OXR_XR_DEBUG_PATH      (*(uint64_t *)"oxrpath\0")
 #define OXR_XR_DEBUG_ACTION    (*(uint64_t *)"oxracti\0")
 #define OXR_XR_DEBUG_SWAPCHAIN (*(uint64_t *)"oxrswap\0")
 #define OXR_XR_DEBUG_ACTIONSET (*(uint64_t *)"oxraset\0")
@@ -148,6 +150,60 @@ oxr_instance_convert_timespec_to_time(struct oxr_logger *log,
                                       const struct timespec *timespecTime,
                                       XrTime *time);
 #endif // XR_USE_TIMESPEC
+
+
+/*
+ *
+ * oxr_path.c
+ *
+ */
+
+void *
+oxr_path_get_attached(struct oxr_logger *log,
+                      struct oxr_instance *inst,
+                      XrPath path);
+
+/*!
+ * Get the path for the given string if it exists, or create it if it does not.
+ */
+XrResult
+oxr_path_get_or_create(struct oxr_logger *log,
+                       struct oxr_instance *inst,
+                       const char *str,
+                       size_t length,
+                       XrPath *out_path);
+
+/*!
+ * Only get the path for the given string if it exists.
+ */
+XrResult
+oxr_path_only_get(struct oxr_logger *log,
+                  struct oxr_instance *inst,
+                  const char *str,
+                  size_t length,
+                  XrPath *out_path);
+
+/*!
+ * Get a pointer and length of the internal string.
+ *
+ * The pointer has the same life time as the instance. The length is the number
+ * of valid characters, not including the null termination character (but a
+ * extra null byte is always reserved at the end so can strings can be given
+ * to functions expecting null terminated strings).
+ */
+XrResult
+oxr_path_get_string(struct oxr_logger *log,
+                    struct oxr_instance *inst,
+                    XrPath path,
+                    const char **out_str,
+                    size_t *out_length);
+
+/*!
+ * Destroy all paths that the instance has created.
+ */
+void
+oxr_path_destroy_all(struct oxr_logger *log, struct oxr_instance *inst);
+
 
 /*
  *
@@ -537,6 +593,9 @@ struct oxr_instance
 	struct oxr_system system;
 
 	struct time_state *timekeeping;
+
+	//! Path store, for looking up paths.
+	struct u_hashset *path_store;
 
 	// Event queue.
 	struct oxr_event *last_event;
