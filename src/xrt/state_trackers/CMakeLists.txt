@@ -19,6 +19,7 @@ set(OXR_SOURCE_FILES
 	oxr/oxr_api_system.c
 	oxr/oxr_api_verify.h
 	oxr/oxr_event.cpp
+	oxr/oxr_handle_base.c
 	oxr/oxr_instance.c
 	oxr/oxr_logger.cpp
 	oxr/oxr_logger.h

@@ -23,7 +23,7 @@ extern "C" {
 			                 "(" #thing " == NULL)");              \
 		}                                                              \
 		new_thing = (__typeof__(new_thing))thing;                      \
-		if (new_thing->debug != OXR_XR_DEBUG_##THING) {                \
+		if (new_thing->handle.debug != OXR_XR_DEBUG_##THING) {         \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #thing " == %p)",                 \
 			                 (void*)new_thing);                    \
@@ -38,7 +38,7 @@ extern "C" {
 			                 "(" #arg " == NULL)");                \
 		}                                                              \
 		new_arg = (__typeof__(new_arg))arg;                            \
-		if (new_arg->debug != OXR_XR_DEBUG_##THING) {                  \
+		if (new_arg->handle.debug != OXR_XR_DEBUG_##THING) {           \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #arg " == %p)", (void*)new_arg);  \
 		}                                                              \

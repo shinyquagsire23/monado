@@ -21,6 +21,7 @@
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
+#include "oxr_handle.h"
 
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_left, "OXR_OVERRIDE_LFOV_LEFT", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_right, "OXR_OVERRIDE_LFOV_RIGHT", 0.0f)
@@ -33,13 +34,40 @@ radtodeg_for_display(float radians)
 	return (int32_t)(radians * 180 * M_1_PI);
 }
 
+static XrResult
+oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
+{
+	struct oxr_instance *inst = (struct oxr_instance *)hb;
+	struct xrt_prober *prober = inst->prober;
+	struct xrt_device *dev = inst->system.device;
+
+	if (dev != NULL) {
+		dev->destroy(dev);
+		inst->system.device = NULL;
+	}
+
+	if (prober != NULL) {
+		prober->destroy(prober);
+		inst->prober = NULL;
+	}
+
+	time_state_destroy(inst->timekeeping);
+	inst->timekeeping = NULL;
+
+	free(inst);
+
+	return XR_SUCCESS;
+}
+
 XrResult
 oxr_instance_create(struct oxr_logger *log,
                     const XrInstanceCreateInfo *createInfo,
                     struct oxr_instance **out_instance)
 {
-	struct oxr_instance *inst = U_TYPED_CALLOC(struct oxr_instance);
-	inst->debug = OXR_XR_DEBUG_INSTANCE;
+	struct oxr_instance *inst = NULL;
+	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
+	                              oxr_instance_destroy, NULL);
+
 	inst->prober = xrt_create_prober();
 
 	struct xrt_device *dev =
@@ -111,29 +139,6 @@ oxr_instance_create(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
-XrResult
-oxr_instance_destroy(struct oxr_logger *log, struct oxr_instance *inst)
-{
-	struct xrt_prober *prober = inst->prober;
-	struct xrt_device *dev = inst->system.device;
-
-	if (dev != NULL) {
-		dev->destroy(dev);
-		inst->system.device = NULL;
-	}
-
-	if (prober != NULL) {
-		prober->destroy(prober);
-		inst->prober = NULL;
-	}
-
-	time_state_destroy(inst->timekeeping);
-	inst->timekeeping = NULL;
-
-	free(inst);
-
-	return XR_SUCCESS;
-}
 
 XrResult
 oxr_instance_get_properties(struct oxr_logger *log,

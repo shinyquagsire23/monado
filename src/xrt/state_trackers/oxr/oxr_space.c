@@ -18,6 +18,7 @@
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
+#include "oxr_handle.h"
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(space, "OXR_DEBUG_SPACE", false)
@@ -43,6 +44,14 @@ check_reference_space_type(struct oxr_logger *log, XrReferenceSpaceType type)
 	}
 }
 
+static XrResult
+oxr_space_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
+{
+	struct oxr_space *spc = (struct oxr_space *)hb;
+	free(spc);
+	return XR_SUCCESS;
+}
+
 XrResult
 oxr_space_reference_create(struct oxr_logger *log,
                            struct oxr_session *sess,
@@ -62,8 +71,9 @@ oxr_space_reference_create(struct oxr_logger *log,
 		                 "(createInfo->poseInReferenceSpace)");
 	}
 
-	struct oxr_space *spc = U_TYPED_CALLOC(struct oxr_space);
-	spc->debug = OXR_XR_DEBUG_SPACE;
+	struct oxr_space *spc = NULL;
+	OXR_ALLOCATE_HANDLE_OR_RETURN(log, spc, OXR_XR_DEBUG_SPACE,
+	                              oxr_space_destroy, &sess->handle);
 	spc->sess = sess;
 	spc->is_reference = true;
 	spc->type = createInfo->referenceSpaceType;
@@ -75,12 +85,6 @@ oxr_space_reference_create(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
-XrResult
-oxr_space_destroy(struct oxr_logger *log, struct oxr_space *spc)
-{
-	free(spc);
-	return XR_SUCCESS;
-}
 
 static const char *
 get_ref_space_type_short_str(struct oxr_space *spc)

@@ -76,7 +76,7 @@ oxr_xrDestroySwapchain(XrSwapchain swapchain)
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc,
 	                                  "xrDestroySwapchain");
 
-	return sc->destroy(&log, sc);
+	return oxr_handle_destroy(&log, &sc->handle);
 }
 
 XrResult

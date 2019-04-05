@@ -60,7 +60,7 @@ oxr_xrDestroySession(XrSession session)
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrDestroySession");
 
-	return oxr_session_destroy(&log, sess);
+	return oxr_handle_destroy(&log, &sess->handle);
 }
 
 XrResult

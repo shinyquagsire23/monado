@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Contains the instance struct that a lot of things hangs of on.
+ * @brief  Contains the instance struct that a lot of things hang from.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup oxr_main
  */
@@ -64,8 +64,50 @@ struct oxr_swapchain;
 struct oxr_space;
 struct oxr_action_set;
 struct oxr_action;
+struct oxr_handle_base;
+
+#define XRT_MAX_HANDLE_CHILDREN 256
+
 struct time_state;
 
+typedef XrResult (*oxr_handle_destroyer)(struct oxr_logger *log,
+                                         struct oxr_handle_base *hb);
+
+/*!
+ * State of a handle base, to reduce likelyhood of going "boom" on
+ * out-of-order destruction or other unsavory behavior.
+ */
+enum oxr_handle_state
+{
+	/*! State during/before oxr_handle_init, or after failure */
+	OXR_HANDLE_STATE_UNINITIALIZED = 0,
+
+	/*! State after successful oxr_handle_init */
+	OXR_HANDLE_STATE_LIVE,
+
+	/*! State after successful oxr_handle_destroy */
+	OXR_HANDLE_STATE_DESTROYED,
+};
+
+/*
+ *
+ * oxr_handle_base.c
+ *
+ */
+
+/*!
+ * Destroy the handle's object, as well as all child handles recursively.
+ *
+ * This should be how all handle-associated objects are destroyed.
+ */
+XrResult
+oxr_handle_destroy(struct oxr_logger *log, struct oxr_handle_base *hb);
+
+/*!
+ * Returns a human-readable label for a handle state.
+ */
+const char *
+oxr_handle_state_to_string(enum oxr_handle_state state);
 
 /*
  *
@@ -86,9 +128,6 @@ XrResult
 oxr_instance_create(struct oxr_logger *log,
                     const XrInstanceCreateInfo *createInfo,
                     struct oxr_instance **out_inst);
-
-XrResult
-oxr_instance_destroy(struct oxr_logger *log, struct oxr_instance *inst);
 
 XrResult
 oxr_instance_get_properties(struct oxr_logger *log,
@@ -130,8 +169,13 @@ oxr_session_create(struct oxr_logger *log,
                    XrStructureType *next,
                    struct oxr_session **out_session);
 
+/*!
+ * Internal destructor - not to be used directly!
+ *
+ * Use oxr_handle_destroy() to destroy a session.
+ */
 XrResult
-oxr_session_destroy(struct oxr_logger *log, struct oxr_session *sess);
+oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb);
 
 XrResult
 oxr_session_enumerate_formats(struct oxr_logger *log,
@@ -197,13 +241,15 @@ oxr_space_to_openxr(struct oxr_space *spc)
 }
 
 XrResult
+oxr_space_action_create(struct oxr_logger *log,
+                        struct oxr_action *act,
+                        const XrActionSpaceCreateInfo *createInfo,
+                        struct oxr_space **out_space);
+XrResult
 oxr_space_reference_create(struct oxr_logger *log,
                            struct oxr_session *sess,
                            const XrReferenceSpaceCreateInfo *createInfo,
                            struct oxr_space **out_space);
-
-XrResult
-oxr_space_destroy(struct oxr_logger *log, struct oxr_space *spc);
 
 XrResult
 oxr_space_locate(struct oxr_logger *log,
@@ -245,6 +291,7 @@ oxr_create_swapchain(struct oxr_logger *,
 
 /*
  *
+
  * oxr_system.c
  *
  */
@@ -399,6 +446,39 @@ oxr_swapchain_vk_create(struct oxr_logger *,
  *
  */
 
+
+/*!
+ * Used to hold diverse child handles and ensure orderly destruction.
+ *
+ * Each object referenced by an OpenXR handle should have one of these as its
+ * first element.
+ */
+struct oxr_handle_base
+{
+	//! Magic (per-handle-type) value for debugging.
+	uint64_t debug;
+
+	/*!
+	 * Pointer to this object's parent handle holder, if any.
+	 */
+	struct oxr_handle_base *parent;
+
+	/*!
+	 * Array of children, if any.
+	 */
+	struct oxr_handle_base *children[XRT_MAX_HANDLE_CHILDREN];
+
+	/*!
+	 * Current handle state.
+	 */
+	enum oxr_handle_state state;
+
+	/*!
+	 * Destroy the object this handle refers to.
+	 */
+	oxr_handle_destroyer destroy;
+};
+
 /*!
  * Single or multiple devices grouped together to form a system that sessions
  * can be created from. Might need to open devices in order to get all
@@ -426,7 +506,9 @@ struct oxr_system
  */
 struct oxr_instance
 {
-	uint64_t debug;
+	//! Common structure for things referred to by OpenXR handles.
+	struct oxr_handle_base handle;
+
 	struct xrt_prober *prober;
 
 	// Enabled extensions
@@ -451,7 +533,8 @@ struct oxr_instance
  */
 struct oxr_session
 {
-	uint64_t debug;
+	//! Common structure for things referred to by OpenXR handles.
+	struct oxr_handle_base handle;
 	struct oxr_system *sys;
 	struct xrt_compositor *compositor;
 
@@ -481,8 +564,8 @@ struct oxr_session
  */
 struct oxr_space
 {
-	//! Magic value for debugging.
-	uint64_t debug;
+	//! Common structure for things referred to by OpenXR handles.
+	struct oxr_handle_base handle;
 
 	//! Onwer of this space.
 	struct oxr_session *sess;
@@ -504,8 +587,8 @@ struct oxr_space
  */
 struct oxr_swapchain
 {
-	//! Magic value for debugging.
-	uint64_t debug;
+	//! Common structure for things referred to by OpenXR handles.
+	struct oxr_handle_base handle;
 
 	//! Onwer of this swapchain.
 	struct oxr_session *sess;
@@ -544,8 +627,8 @@ struct oxr_swapchain
  */
 struct oxr_action_set
 {
-	//! Magic value for debugging.
-	uint64_t debug;
+	//! Common structure for things referred to by OpenXR handles.
+	struct oxr_handle_base handle;
 
 	//! Onwer of this messenger.
 	struct oxr_session *sess;
@@ -558,8 +641,8 @@ struct oxr_action_set
  */
 struct oxr_action
 {
-	//! Magic value for debugging.
-	uint64_t debug;
+	//! Common structure for things referred to by OpenXR handles.
+	struct oxr_handle_base handle;
 
 	//! Onwer of this messenger.
 	struct oxr_action_set *act_set;
@@ -572,8 +655,8 @@ struct oxr_action
  */
 struct oxr_debug_messenger
 {
-	//! Magic value for debugging.
-	uint64_t debug;
+	//! Common structure for things referred to by OpenXR handles.
+	struct oxr_handle_base handle;
 
 	//! Onwer of this messenger.
 	struct oxr_instance *inst;

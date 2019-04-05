@@ -17,6 +17,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_two_call.h"
+#include "oxr_handle.h"
 
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
@@ -38,8 +39,14 @@ oxr_session_create_vk(struct oxr_logger *log,
 		                 " failed create a compositor");
 	}
 
-	struct oxr_session *sess = U_TYPED_CALLOC(struct oxr_session);
-	sess->debug = OXR_XR_DEBUG_SESSION;
+	struct oxr_session *sess = NULL;
+	XrResult result =
+	    OXR_ALLOCATE_HANDLE(log, sess, OXR_XR_DEBUG_SESSION,
+	                        oxr_session_destroy, &sys->inst->handle);
+	if (result != XR_SUCCESS) {
+		xcvk->base.destroy(&xcvk->base);
+		return result;
+	}
 	sess->sys = sys;
 	sess->compositor = &xcvk->base;
 	sess->create_swapchain = oxr_swapchain_vk_create;

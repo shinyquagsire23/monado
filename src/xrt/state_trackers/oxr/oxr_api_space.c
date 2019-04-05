@@ -122,5 +122,5 @@ oxr_xrDestroySpace(XrSpace space)
 	struct oxr_logger log;
 	OXR_VERIFY_SPACE_AND_INIT_LOG(&log, space, spc, "xrDestroySpace");
 
-	return oxr_space_destroy(&log, spc);
+	return oxr_handle_destroy(&log, &spc->handle);
 }

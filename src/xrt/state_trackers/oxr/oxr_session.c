@@ -23,6 +23,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_two_call.h"
+#include "oxr_handle.h"
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(views, "OXR_DEBUG_VIEWS", false)
@@ -482,8 +483,9 @@ oxr_session_create(struct oxr_logger *log,
 
 	if (sys->inst->headless && next == NULL) {
 		ret = XR_SUCCESS;
-		sess = U_TYPED_CALLOC(struct oxr_session);
-		sess->debug = OXR_XR_DEBUG_SESSION;
+		OXR_ALLOCATE_HANDLE_OR_RETURN(log, sess, OXR_XR_DEBUG_SESSION,
+		                              oxr_session_destroy,
+		                              &sys->inst->handle);
 		sess->sys = sys;
 		sess->compositor = NULL;
 		sess->create_swapchain = NULL;
@@ -525,8 +527,9 @@ oxr_session_create(struct oxr_logger *log,
 }
 
 XrResult
-oxr_session_destroy(struct oxr_logger *log, struct oxr_session *sess)
+oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
+	struct oxr_session *sess = (struct oxr_session *)hb;
 	if (sess->compositor != NULL) {
 		sess->compositor->destroy(sess->compositor);
 	}

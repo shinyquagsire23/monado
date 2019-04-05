@@ -16,6 +16,7 @@
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
+#include "oxr_handle.h"
 
 
 static XrResult
@@ -82,6 +83,14 @@ oxr_swapchain_release_image(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
+static XrResult
+oxr_swapchain_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
+{
+	struct oxr_swapchain *sc = (struct oxr_swapchain *)hb;
+
+	return sc->destroy(log, sc);
+}
+
 XrResult
 oxr_create_swapchain(struct oxr_logger *log,
                      struct oxr_session *sess,
@@ -101,8 +110,9 @@ oxr_create_swapchain(struct oxr_logger *log,
 		                 " failed to create swapchain");
 	}
 
-	struct oxr_swapchain *sc = U_TYPED_CALLOC(struct oxr_swapchain);
-	sc->debug = OXR_XR_DEBUG_SWAPCHAIN;
+	struct oxr_swapchain *sc = NULL;
+	OXR_ALLOCATE_HANDLE_OR_RETURN(log, sc, OXR_XR_DEBUG_SWAPCHAIN,
+	                              oxr_swapchain_destroy, &sess->handle);
 	sc->sess = sess;
 	sc->swapchain = xsc;
 	sc->acquire_image = oxr_swapchain_acquire_image;

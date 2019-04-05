@@ -86,7 +86,7 @@ oxr_xrDestroyInstance(XrInstance instance)
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrDestroyInstance");
 
-	return oxr_instance_destroy(&log, inst);
+	return oxr_handle_destroy(&log, &inst->handle);
 }
 
 XrResult
