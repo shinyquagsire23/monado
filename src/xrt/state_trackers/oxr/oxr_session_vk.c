@@ -24,10 +24,10 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
 vkGetInstanceProcAddr(VkInstance instance, const char *pName);
 
 XrResult
-oxr_session_create_vk(struct oxr_logger *log,
-                      struct oxr_system *sys,
-                      XrGraphicsBindingVulkanKHR *next,
-                      struct oxr_session **out_session)
+oxr_session_populate_vk(struct oxr_logger *log,
+                        struct oxr_system *sys,
+                        XrGraphicsBindingVulkanKHR *next,
+                        struct oxr_session *sess)
 {
 	struct xrt_compositor_vk *xcvk = xrt_gfx_vk_provider_create(
 	    sys->device, sys->inst->timekeeping, next->instance,
@@ -39,19 +39,8 @@ oxr_session_create_vk(struct oxr_logger *log,
 		                 " failed create a compositor");
 	}
 
-	struct oxr_session *sess = NULL;
-	XrResult result =
-	    OXR_ALLOCATE_HANDLE(log, sess, OXR_XR_DEBUG_SESSION,
-	                        oxr_session_destroy, &sys->inst->handle);
-	if (result != XR_SUCCESS) {
-		xcvk->base.destroy(&xcvk->base);
-		return result;
-	}
-	sess->sys = sys;
 	sess->compositor = &xcvk->base;
 	sess->create_swapchain = oxr_swapchain_vk_create;
-
-	*out_session = sess;
 
 	return XR_SUCCESS;
 }

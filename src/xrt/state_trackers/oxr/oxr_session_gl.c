@@ -21,10 +21,10 @@
 
 
 XrResult
-oxr_session_create_gl_xlib(struct oxr_logger *log,
-                           struct oxr_system *sys,
-                           XrGraphicsBindingOpenGLXlibKHR *next,
-                           struct oxr_session **out_session)
+oxr_session_populate_gl_xlib(struct oxr_logger *log,
+                             struct oxr_system *sys,
+                             XrGraphicsBindingOpenGLXlibKHR *next,
+                             struct oxr_session *sess)
 {
 	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_xlib(
 	    sys->device, sys->inst->timekeeping, next->xDisplay, next->visualid,
@@ -35,19 +35,8 @@ oxr_session_create_gl_xlib(struct oxr_logger *log,
 		                 " failed create a compositor");
 	}
 
-	struct oxr_session *sess = NULL;
-	XrResult result =
-	    OXR_ALLOCATE_HANDLE(log, sess, OXR_XR_DEBUG_SESSION,
-	                        oxr_session_destroy, &sys->inst->handle);
-	if (result != XR_SUCCESS) {
-		xcgl->base.destroy(&xcgl->base);
-		return result;
-	}
-	sess->sys = sys;
 	sess->compositor = &xcgl->base;
 	sess->create_swapchain = oxr_swapchain_gl_create;
-
-	*out_session = sess;
 
 	return XR_SUCCESS;
 }

@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "util/u_debug.h"
 #include "util/u_misc.h"
@@ -472,6 +473,26 @@ oxr_session_frame_end(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
+static XrResult
+oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
+{
+	struct oxr_session *sess = (struct oxr_session *)hb;
+	if (sess->compositor != NULL) {
+		sess->compositor->destroy(sess->compositor);
+	}
+	free(sess);
+
+	return XR_SUCCESS;
+}
+
+#define OXR_SESSION_ALLOCATE(LOG, SYS, OUT)                                    \
+	do {                                                                   \
+		OXR_ALLOCATE_HANDLE_OR_RETURN(LOG, OUT, OXR_XR_DEBUG_SESSION,  \
+		                              oxr_session_destroy,             \
+		                              &SYS->inst->handle);             \
+		OUT->sys = SYS;                                                \
+	} while (0)
+
 XrResult
 oxr_session_create(struct oxr_logger *log,
                    struct oxr_system *sys,
@@ -482,24 +503,23 @@ oxr_session_create(struct oxr_logger *log,
 	XrResult ret;
 
 	if (sys->inst->headless && next == NULL) {
+		OXR_SESSION_ALLOCATE(log, sys, sess);
 		ret = XR_SUCCESS;
-		OXR_ALLOCATE_HANDLE_OR_RETURN(log, sess, OXR_XR_DEBUG_SESSION,
-		                              oxr_session_destroy,
-		                              &sys->inst->handle);
-		sess->sys = sys;
 		sess->compositor = NULL;
 		sess->create_swapchain = NULL;
 	} else
 #ifdef XR_USE_PLATFORM_XLIB
 	    if (*next == XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
-		ret = oxr_session_create_gl_xlib(
-		    log, sys, (XrGraphicsBindingOpenGLXlibKHR *)next, &sess);
+		OXR_SESSION_ALLOCATE(log, sys, sess);
+		ret = oxr_session_populate_gl_xlib(
+		    log, sys, (XrGraphicsBindingOpenGLXlibKHR *)next, sess);
 	} else
 #endif
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 	    if (*next == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
-		ret = oxr_session_create_vk(
-		    log, sys, (XrGraphicsBindingVulkanKHR *)next, &sess);
+		OXR_SESSION_ALLOCATE(log, sys, sess);
+		ret = oxr_session_populate_vk(
+		    log, sys, (XrGraphicsBindingVulkanKHR *)next, sess);
 	} else
 #endif
 	{
@@ -508,6 +528,10 @@ oxr_session_create(struct oxr_logger *log,
 	}
 
 	if (ret != XR_SUCCESS) {
+		/* clean up allocation first */
+		XrResult cleanup_result =
+		    oxr_handle_destroy(log, &sess->handle);
+		assert(cleanup_result == XR_SUCCESS);
 		return ret;
 	}
 
@@ -524,16 +548,4 @@ oxr_session_create(struct oxr_logger *log,
 	*out_session = sess;
 
 	return ret;
-}
-
-XrResult
-oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
-{
-	struct oxr_session *sess = (struct oxr_session *)hb;
-	if (sess->compositor != NULL) {
-		sess->compositor->destroy(sess->compositor);
-	}
-	free(sess);
-
-	return XR_SUCCESS;
 }

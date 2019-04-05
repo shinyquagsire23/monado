@@ -170,14 +170,6 @@ oxr_session_create(struct oxr_logger *log,
                    XrStructureType *next,
                    struct oxr_session **out_session);
 
-/*!
- * Internal destructor - not to be used directly!
- *
- * Use oxr_handle_destroy() to destroy a session.
- */
-XrResult
-oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb);
-
 XrResult
 oxr_session_enumerate_formats(struct oxr_logger *log,
                               struct oxr_session *sess,
@@ -400,10 +392,10 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 #ifdef XR_USE_PLATFORM_XLIB
 
 XrResult
-oxr_session_create_gl_xlib(struct oxr_logger *log,
-                           struct oxr_system *sys,
-                           XrGraphicsBindingOpenGLXlibKHR *next,
-                           struct oxr_session **out_session);
+oxr_session_populate_gl_xlib(struct oxr_logger *log,
+                             struct oxr_system *sys,
+                             XrGraphicsBindingOpenGLXlibKHR *next,
+                             struct oxr_session *sess);
 #endif
 
 XrResult
@@ -451,10 +443,10 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
                            VkPhysicalDevice *vkPhysicalDevice);
 
 XrResult
-oxr_session_create_vk(struct oxr_logger *log,
-                      struct oxr_system *sys,
-                      XrGraphicsBindingVulkanKHR *next,
-                      struct oxr_session **out_session);
+oxr_session_populate_vk(struct oxr_logger *log,
+                        struct oxr_system *sys,
+                        XrGraphicsBindingVulkanKHR *next,
+                        struct oxr_session *sess);
 
 XrResult
 oxr_swapchain_vk_create(struct oxr_logger *,
