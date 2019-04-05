@@ -136,10 +136,13 @@ extern "C" {
  *
  */
 
+/*!
+ * Verify a single path level that sits inside of a fixed sized array.
+ */
 XrResult
 oxr_verify_fixed_size_single_level_path(struct oxr_logger*,
                                         const char* path,
-                                        uint32_t size,
+                                        uint32_t array_size,
                                         const char* name);
 
 XrResult

@@ -9,7 +9,8 @@
  * @ingroup oxr_api
  */
 
-#include <stdio.h>
+#include <cstdio>
+#include <cstring>
 
 #include "xrt/xrt_compiler.h"
 #include "util/u_debug.h"
@@ -26,6 +27,24 @@
  */
 
 static bool
+valid_path_char(const char c)
+{
+	if ('a' <= c && c <= 'z') {
+		return true;
+	}
+
+	if ('0' <= c && c <= '9') {
+		return true;
+	}
+
+	if (c == '-' || c == '_' || c == '.' || c == '/') {
+		return true;
+	}
+
+	return false;
+}
+
+static bool
 contains_zero(const char* path, uint32_t size)
 {
 	for (uint32_t i = 0; i < size; i++) {
@@ -40,10 +59,10 @@ contains_zero(const char* path, uint32_t size)
 extern "C" XrResult
 oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
                                         const char* path,
-                                        uint32_t size,
+                                        uint32_t array_size,
                                         const char* name)
 {
-	if (size == 0) {
+	if (array_size == 0) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(%s) internal runtime error", name);
 	}
@@ -53,13 +72,26 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
 		                 "(%s) can not be empty", name);
 	}
 
-	if (!contains_zero(path, size)) {
+	if (!contains_zero(path, array_size)) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(%s) must include zero termination '\\0'.",
 		                 name);
 	}
 
-	//! @todo verify more!
+	size_t length = strlen(path);
+	for (size_t i = 0; i < length; i++) {
+		const char c = path[i];
+
+		// Slashes are not valid in single level paths.
+		if (valid_path_char(c) && c != '/') {
+			continue;
+		}
+
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "(%s) 0x%02x is not a valid character at position %u", name,
+		    c, (uint32_t)i);
+	}
 
 	return XR_SUCCESS;
 }
