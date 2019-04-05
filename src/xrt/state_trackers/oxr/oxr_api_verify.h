@@ -28,6 +28,13 @@ extern "C" {
 			                 "(" #thing " == %p)",                 \
 			                 (void*)new_thing);                    \
 		}                                                              \
+		if (new_thing->handle.state != OXR_HANDLE_STATE_LIVE) {        \
+			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
+			                 " state == %s (" #thing " == %p)",    \
+			                 oxr_handle_state_to_string(           \
+			                     new_thing->handle.state),         \
+			                 (void*)new_thing);                    \
+		}                                                              \
 		oxr_log_set_instance(log, lookup);                             \
 	} while (0)
 
