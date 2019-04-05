@@ -130,11 +130,28 @@ extern "C" {
 		}                                                              \
 	} while (false)
 
+
 /*
  *
  * Implementation in oxr_verify.cpp
  *
  */
+
+XrResult
+oxr_verify_full_path_c(struct oxr_logger* log,
+                       const char* path,
+                       const char* name);
+
+/*!
+ * Verify a full path.
+ *
+ * Length not including zero terminator character but must be there.
+ */
+XrResult
+oxr_verify_full_path(struct oxr_logger* log,
+                     const char* path,
+                     size_t length,
+                     const char* name);
 
 /*!
  * Verify a single path level that sits inside of a fixed sized array.

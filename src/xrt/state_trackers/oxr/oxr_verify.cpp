@@ -96,6 +96,140 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
 	return XR_SUCCESS;
 }
 
+enum class State
+{
+	Start,
+	Middle,
+	Slash,
+	SlashDots,
+};
+
+extern "C" XrResult
+oxr_verify_full_path_c(struct oxr_logger* log,
+                       const char* path,
+                       const char* name)
+{
+	size_t length = strlen(path);
+
+	if (length >= UINT32_MAX) {
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
+		                 "(%s) path to long", name);
+	}
+
+	return oxr_verify_full_path(log, path, (uint32_t)length, name);
+}
+
+extern "C" XrResult
+oxr_verify_full_path(struct oxr_logger* log,
+                     const char* path,
+                     size_t length,
+                     const char* name)
+{
+	State state = State::Start;
+	bool valid = true;
+
+	if (length >= UINT32_MAX || length + 1 >= XR_MAX_PATH_LENGTH) {
+		return oxr_error(
+		    log, XR_ERROR_PATH_FORMAT_INVALID,
+		    "(%s) string is too long for a path (%u + 1) > %u", name,
+		    (uint32_t)length, XR_MAX_PATH_LENGTH);
+	}
+
+	for (uint32_t i = 0; i < length; i++) {
+		const char c = path[i];
+		switch (state) {
+		case State::Start:
+			if (c != '/') {
+				return oxr_error(log,
+				                 XR_ERROR_PATH_FORMAT_INVALID,
+				                 "(%s) does not start with a "
+				                 "fowrward slash",
+				                 name);
+			}
+			state = State::Slash;
+			break;
+		case State::Slash:
+			switch (c) {
+			case '.':
+				// Is valid and starts the SlashDot(s) state.
+				state = State::SlashDots;
+				break;
+			case '/':
+				return oxr_error(
+				    log, XR_ERROR_PATH_FORMAT_INVALID,
+				    "(%s) '//' is not a valid in a path", name);
+			default:
+				valid = valid_path_char(c);
+				state = State::Middle;
+			}
+			break;
+		case State::Middle:
+			switch (c) {
+			case '/': state = State::Slash; break;
+			default:
+				valid = valid_path_char(c);
+				state = State::Middle;
+			}
+			break;
+		case State::SlashDots:
+			switch (c) {
+			case '/':
+				return oxr_error(
+				    log, XR_ERROR_PATH_FORMAT_INVALID,
+				    "(%s) '/.[.]*/' is not a valid in a path",
+				    name);
+			case '.':
+				// It's valid, more ShashDot(s).
+				break;
+			default:
+				valid = valid_path_char(c);
+				state = State::Middle;
+			}
+			break;
+		}
+
+		if (!valid) {
+			return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
+			                 "(%s) 0x%02x is not a valid character "
+			                 "at position %u",
+			                 name, c, (uint32_t)length);
+		}
+	}
+
+	switch (state) {
+	case State::Start:
+		// Empty string
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
+		                 "(%s) a empty string is not a valid path",
+		                 name);
+	case State::Slash:
+		// Is this '/foo/' or '/'
+		if (length > 1) {
+			// It was '/foo/'
+			return XR_SUCCESS;
+		}
+		// It was '/'
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
+		                 "(%s) the string '%s' is not a valid path",
+		                 name, path);
+	case State::SlashDots:
+		// Does the path ends with '/..'
+		return oxr_error(
+		    log, XR_ERROR_PATH_FORMAT_INVALID,
+		    "(%s) strings ending with '/.[.]*' is not a valid", name);
+
+	case State::Middle:
+		// '/foo/bar' okay!
+		return XR_SUCCESS;
+	default:
+		// We should not end up here.
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "(%s) internal runtime error validating path (%s)", name,
+		    path);
+	}
+}
+
 
 /*
  *
