@@ -4,6 +4,7 @@
  * @file
  * @brief  Misc helpers for device drivers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_util
  */
 
 #include <math.h>

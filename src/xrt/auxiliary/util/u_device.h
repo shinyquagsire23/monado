@@ -4,6 +4,7 @@
  * @file
  * @brief  Misc helpers for device drivers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_util
  */
 
 #pragma once
@@ -23,6 +24,8 @@ extern const struct xrt_matrix_2x2 u_device_rotation_180;
 
 /*!
  * Dump the device config to stderr.
+ *
+ * @ingroup aux_util
  */
 void
 u_device_dump_config(struct xrt_device* xdev,

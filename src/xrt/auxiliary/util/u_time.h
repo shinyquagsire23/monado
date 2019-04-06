@@ -5,6 +5,7 @@
  * @brief  Time-keeping: a clock that is steady, convertible to system time, and
  * ideally high-resolution.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @ingroup aux_util
  *
  * @see time_state
  */
@@ -23,6 +24,7 @@ extern "C" {
  *
  * @see time_state
  * @see time_duration_ns
+ * @ingroup aux_util
  */
 typedef int64_t timepoint_ns;
 
@@ -33,6 +35,7 @@ typedef int64_t timepoint_ns;
  *
  * @see time_state
  * @see timepoint_ns
+ * @ingroup aux_util
  */
 typedef int64_t time_duration_ns;
 
@@ -40,6 +43,7 @@ typedef int64_t time_duration_ns;
  * Convert nanoseconds duration to float seconds.
  *
  * @see timepoint_ns
+ * @ingroup aux_util
  */
 static inline float
 time_ns_to_s(time_duration_ns ns)
@@ -51,6 +55,7 @@ time_ns_to_s(time_duration_ns ns)
  * Convert float seconds to nanoseconds.
  *
  * @see timepoint_ns
+ * @ingroup aux_util
  */
 static inline time_duration_ns
 time_s_to_ns(float duration)
@@ -65,6 +70,7 @@ time_s_to_ns(float duration)
  * Exposed as an opaque pointer.
  *
  * @see timepoint_ns
+ * @ingroup aux_util
  */
 struct time_state;
 
@@ -72,6 +78,7 @@ struct time_state;
  * Create a struct time_state.
  *
  * @public @memberof time_state
+ * @ingroup aux_util
  */
 struct time_state*
 time_state_create();
@@ -83,6 +90,7 @@ time_state_create();
  * Should not be called simultaneously with any other time_state function.
  *
  * @public @memberof time_state
+ * @ingroup aux_util
  */
 void
 time_state_destroy(struct time_state* state);
@@ -94,6 +102,7 @@ time_state_destroy(struct time_state* state);
  * Should not be called simultaneously with time_state_get_now_and_update.
  *
  * @public @memberof time_state
+ * @ingroup aux_util
  */
 timepoint_ns
 time_state_get_now(struct time_state const* state);
@@ -107,6 +116,7 @@ time_state_get_now(struct time_state const* state);
  * Should not be called simultaneously with any other time_state function.
  *
  * @public @memberof time_state
+ * @ingroup aux_util
  */
 timepoint_ns
 time_state_get_now_and_update(struct time_state* state);
@@ -117,6 +127,7 @@ time_state_get_now_and_update(struct time_state* state);
  * Should not be called simultaneously with time_state_get_now_and_update.
  *
  * @public @memberof time_state
+ * @ingroup aux_util
  */
 void
 time_state_to_timespec(struct time_state const* state,
@@ -129,6 +140,7 @@ time_state_to_timespec(struct time_state const* state,
  * Should not be called simultaneously with time_state_get_now_and_update.
  *
  * @public @memberof time_state
+ * @ingroup aux_util
  */
 timepoint_ns
 time_state_from_timespec(struct time_state const* state,

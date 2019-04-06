@@ -4,6 +4,7 @@
  * @file
  * @brief  Small debug helpers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_util
  *
  * Debug get option helpers heavily inspired from mesa ones.
  */

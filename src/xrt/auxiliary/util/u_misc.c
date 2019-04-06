@@ -4,6 +4,7 @@
  * @file
  * @brief  Very small misc utils.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_util
  */
 
 #include "util/u_misc.h"

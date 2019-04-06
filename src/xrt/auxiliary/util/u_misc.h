@@ -4,6 +4,7 @@
  * @file
  * @brief  Very small misc utils.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_util
  */
 
 #pragma once
@@ -17,12 +18,16 @@ extern "C" {
 /*!
  * Allocate and zero the space required for some type, and cast the return type
  * appropriately.
+ *
+ * @ingroup aux_util
  */
 #define U_TYPED_CALLOC(TYPE) ((TYPE *)calloc(1, sizeof(TYPE)))
 
 /*!
  * Allocate and zero the space required for some type, and cast the return type
  * appropriately.
+ *
+ * @ingroup aux_util
  */
 #define U_TYPED_ARRAY_CALLOC(TYPE, COUNT)                                      \
 	((TYPE *)calloc((COUNT), sizeof(TYPE)))
