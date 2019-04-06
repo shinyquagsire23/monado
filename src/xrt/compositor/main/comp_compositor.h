@@ -23,34 +23,6 @@ extern "C" {
 
 /*
  *
- * Documentation
- *
- */
-
-/*!
- * @defgroup comp Compositor
- * Main compositing code.
- *
- * @ingroup xrt
- */
-
-/*!
- * Glue code between client program to the main compositor.
- *
- * @defgroup comp_client Compositor client glue code
- * @ingroup comp
- */
-
-/*!
- * Common compositor code shared between main and client code.
- *
- * @defgroup comp_common Common compositor code
- * @ingroup comp
- */
-
-
-/*
- *
  * Structs
  *
  */

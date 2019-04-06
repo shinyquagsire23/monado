@@ -26,6 +26,7 @@ set(GL_SOURCE_FILES
 	main/comp_compositor.h
 	main/comp_distortion.c
 	main/comp_distortion.h
+	main/comp_documentation.h
 	main/comp_glue_gl.c
 	main/comp_glue_vk.c
 	main/comp_glue_xlib.c
