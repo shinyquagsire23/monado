@@ -62,8 +62,7 @@ oxr_create_messenger(struct oxr_logger *log,
 
 	struct oxr_debug_messenger *mssngr = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, mssngr, OXR_XR_DEBUG_MESSENGER,
-	                              oxr_messenger_destroy,
-	                              &inst->handle);
+	                              oxr_messenger_destroy, &inst->handle);
 
 	mssngr->inst = inst;
 	mssngr->message_severities = createInfo->messageSeverities;
