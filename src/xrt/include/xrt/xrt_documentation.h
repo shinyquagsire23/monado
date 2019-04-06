@@ -4,19 +4,55 @@
  * @file
  * @brief  Header with just documentation.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup xrt
+ * @ingroup xrt_iface
  */
 
 #pragma once
 
 /*!
  * @defgroup xrt Monado(XRT)
+ *
+ * @brief Monado XR runtime project.
+ */
+
+/*!
+ * @defgroup inc Includes
+ * @ingroup xrt
+ *
+ * @brief Include and interface headers.
  */
 
 /*!
  * @defgroup xrt_iface XRT interfaces
+ * @ingroup inc
  *
- * The main interface shared between the different components of Monado.
- *
+ * @brief The main interface shared between the different components of Monado.
+ */
+
+/*!
+ * @dir include
  * @ingroup xrt
+ *
+ * @brief @ref inc and interface headers. 
+ */
+
+/*!
+ * @dir include/xrt
+ * @ingroup inc
+ *
+ * @brief @ref xrt_iface includes.
+ */
+
+/*!
+ * @dir state_trackers
+ * @ingroup xrt
+ *
+ * @brief State trackers.
+ */
+
+/*!
+ * @dir state_trackers/oxr
+ * @ingroup oxr
+ *
+ * @brief @ref oxr files.
  */
