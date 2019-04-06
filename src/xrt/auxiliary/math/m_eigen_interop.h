@@ -4,6 +4,7 @@
  * @file
  * @brief  Interoperability helpers connecting internal math types and Eigen.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @ingroup aux_math
  */
 
 #pragma once

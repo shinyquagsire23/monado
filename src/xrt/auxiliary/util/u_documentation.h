@@ -27,7 +27,7 @@
 
 /*!
  * @dir auxiliary
- * @ingroup aux
+ * @ingroup xrt
  *
  * @brief Shared code and helpers for Monado.
  */

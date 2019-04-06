@@ -5,6 +5,7 @@
  * @file
  * @brief  Base implementations for math library.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @ingroup aux_math
  *
  * Based in part on inc/osvr/Util/EigenQuatExponentialMap.h in OSVR-Core
  */

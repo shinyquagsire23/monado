@@ -5,6 +5,7 @@
  * @brief  Base implementations for math library.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @ingroup aux_math
  */
 
 #include <Eigen/Core>
