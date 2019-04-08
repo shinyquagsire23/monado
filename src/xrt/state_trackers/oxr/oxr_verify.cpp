@@ -63,7 +63,7 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
                                         const char* name)
 {
 	if (array_size == 0) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "(%s) internal runtime error", name);
 	}
 
