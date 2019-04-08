@@ -23,8 +23,6 @@
 #
 # ``libcheck::check``
 #
-# ``libcheck::subunit``
-#
 # Cache variables
 # ^^^^^^^^^^^^^^^
 #
@@ -80,8 +78,6 @@ find_library(LIBCHECK_SUBUNIT_LIBRARY
 find_library(LIBCHECK_LIBRT rt)
 find_library(LIBCHECK_LIBM m)
 
-# include(CMakeFindDependencyMacro)
-# find_dependency(Threads)
 find_package(Threads QUIET)
 
 include(FindPackageHandleStandardArgs)
@@ -89,18 +85,9 @@ find_package_handle_standard_args(Libcheck
     REQUIRED_VARS
     LIBCHECK_INCLUDE_DIR
     LIBCHECK_LIBRARY
-    LIBCHECK_SUBUNIT_LIBRARY
     THREADS_FOUND
 )
 if(LIBCHECK_FOUND)
-    if(NOT TARGET libcheck::subunit)
-        add_library(libcheck::subunit UNKNOWN IMPORTED)
-        set_target_properties(libcheck::subunit PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES "${LIBCHECK_INCLUDE_DIR}")
-        set_target_properties(libcheck::subunit PROPERTIES
-            IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-            IMPORTED_LOCATION ${LIBCHECK_SUBUNIT_LIBRARY})
-    endif()
     if(NOT TARGET libcheck::check)
         add_library(libcheck::check UNKNOWN IMPORTED)
 
@@ -110,16 +97,20 @@ if(LIBCHECK_FOUND)
             IMPORTED_LINK_INTERFACE_LANGUAGES "C"
             IMPORTED_LOCATION ${LIBCHECK_LIBRARY})
         set_property(TARGET libcheck::check PROPERTY
-                IMPORTED_LINK_INTERFACE_LIBRARIES libcheck::subunit Threads::Threads)
+                IMPORTED_LINK_INTERFACE_LIBRARIES Threads::Threads)
 
         # if we found librt or libm, link them.
         if(LIBCHECK_LIBRT)
             set_property(TARGET libcheck::check APPEND PROPERTY
-                IMPORTED_LINK_INTERFACE_LIBRARIES ${LIBCHECK_LIBRT})
+                IMPORTED_LINK_INTERFACE_LIBRARIES "${LIBCHECK_LIBRT}")
         endif()
         if(LIBCHECK_LIBM)
             set_property(TARGET libcheck::check APPEND PROPERTY
-                IMPORTED_LINK_INTERFACE_LIBRARIES ${LIBCHECK_LIBM})
+                IMPORTED_LINK_INTERFACE_LIBRARIES "${LIBCHECK_LIBM}")
+        endif()
+        if(LIBCHECK_SUBUNIT_LIBRARY)
+            set_property(TARGET libcheck::check APPEND PROPERTY
+                IMPORTED_LINK_INTERFACE_LIBRARIES "${LIBCHECK_SUBUNIT_LIBRARY}")
         endif()
 
     endif()
