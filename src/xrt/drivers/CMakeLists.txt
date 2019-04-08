@@ -20,7 +20,7 @@ target_include_directories(drv_ohmd SYSTEM
 	PRIVATE ${OPENHMD_INCLUDE_DIRS}
 	)
 
-if(HIDAPI_FOUND)
+if(BUILD_WITH_HIDAPI)
 	set(HDK_SOURCE_FILES
 		hdk/hdk_device.cpp
 		hdk/hdk_device.h

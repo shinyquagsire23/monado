@@ -34,9 +34,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_HIDAPI "Enable HIDAPI-based OSVR HDK driver" ON "HIDAPI_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_XLIB "Enable xlib support" ON "X11_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENGL "Enable OpenGL Graphics API support?" ON "OPENGL_FOUND" OFF)
+
+if(NOT BUILD_WITH_OPENHMD AND NOT BUILD_WITH_HIDAPI)
+    message(FATAL_ERROR "You must enable at least one driver: either provide OpenHMD and enable BUILD_WITH_OPENHMD (for a variety of devices via OpenHMD), or provide HIDAPI and enable BUILD_WITH_HIDAPI (for the HDK driver)")
+endif()
 
 
 ###
