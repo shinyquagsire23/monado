@@ -78,7 +78,7 @@ target_link_libraries(${RUNTIME_TARGET}
 if(BUILD_WITH_OPENHMD)
 	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_ohmd>)
 	target_compile_definitions(${RUNTIME_TARGET} PRIVATE XRT_HAVE_OHMD)
-	target_link_libraries(${RUNTIME_TARGET} INTERFACE OpenHMD::OpenHMD)
+	target_link_libraries(${RUNTIME_TARGET} PRIVATE OpenHMD::OpenHMD)
 endif()
 
 if(BUILD_WITH_HIDAPI)
