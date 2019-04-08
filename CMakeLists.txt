@@ -24,10 +24,7 @@ find_package(Eigen3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(OpenGL REQUIRED COMPONENTS GLX)
 find_package(HIDAPI)
-
-# Push into a FindOpenHMD.cmake file.
-find_package(PkgConfig)
-pkg_check_modules(OPENHMD openhmd)
+find_package(OpenHMD)
 
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")

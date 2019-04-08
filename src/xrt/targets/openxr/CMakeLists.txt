@@ -55,11 +55,6 @@ set(SOURCE_FILES
 	target.c
 	)
 
-
-# Siiiiiiiigh, there is no target_link_directories
-# or a way to add directories to a target.
-link_directories(${OPENHMD_LIBRARY_DIRS})
-
 # depends on above generated files
 add_library(${RUNTIME_TARGET} SHARED
 	${MANIFEST_DEV_PATH}
@@ -73,7 +68,8 @@ add_library(${RUNTIME_TARGET} SHARED
 	)
 
 target_link_libraries(${RUNTIME_TARGET}
-	${OPENHMD_LIBRARIES}
+	PUBLIC
+	OpenHMD::OpenHMD
 	${Vulkan_LIBRARIES}
 	${XCB_LIBRARIES}
 	OpenGL::GLX
@@ -83,7 +79,7 @@ target_compile_definitions(${RUNTIME_TARGET} PRIVATE XRT_HAVE_OHMD)
 
 if(TARGET drv_hdk)
 	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_hdk>)
-	target_link_libraries(${RUNTIME_TARGET} ${HIDAPI_LIBRARIES})
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC ${HIDAPI_LIBRARIES})
 	target_compile_definitions(${RUNTIME_TARGET} PRIVATE XRT_HAVE_HDK)
 endif()
 
