@@ -37,7 +37,14 @@ set(LIBCHECK_ROOT_DIR "${LIBCHECK_ROOT_DIR}" CACHE PATH "Root to search for libc
 
 find_package(PkgConfig QUIET)
 if(PKG_CONFIG_FOUND)
+    set(_old_prefix_path "${CMAKE_PREFIX_PATH}")
+    # So pkg-config uses LIBCHECK_ROOT_DIR too.
+    if(LIBCHECK_ROOT_DIR)
+        list(APPEND CMAKE_PREFIX_PATH ${LIBCHECK_ROOT_DIR})
+    endif()
     pkg_check_modules(PC_LIBCHECK QUIET check)
+    # Restore
+    set(CMAKE_PREFIX_PATH "${_old_prefix_path}")
 endif()
 find_path(LIBCHECK_INCLUDE_DIR
     NAMES

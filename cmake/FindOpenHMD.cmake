@@ -33,8 +33,16 @@ set(OPENHMD_ROOT_DIR "${OPENHMD_ROOT_DIR}" CACHE PATH "Root to search for OpenHM
 
 find_package(PkgConfig QUIET)
 if(PKG_CONFIG_FOUND)
+    set(_old_prefix_path "${CMAKE_PREFIX_PATH}")
+    # So pkg-config uses OPENHMD_ROOT_DIR too.
+    if(OPENHMD_ROOT_DIR)
+        list(APPEND CMAKE_PREFIX_PATH ${OPENHMD_ROOT_DIR})
+    endif()
     pkg_check_modules(PC_OPENHMD QUIET openhmd)
+    # Restore
+    set(CMAKE_PREFIX_PATH "${_old_prefix_path}")
 endif()
+
 find_path(OPENHMD_INCLUDE_DIR
     NAMES
     openhmd.h
