@@ -52,20 +52,20 @@
 set(HIDAPI_ROOT_DIR "${HIDAPI_ROOT_DIR}" CACHE PATH "Root to search for HIDAPI")
 
 # Clean up components
-if(HIDAPI_FIND_COMPONENTS)
+if("${HIDAPI_FIND_COMPONENTS}")
 	if(WIN32 OR APPLE)
 		# This makes no sense on Windows or Mac, which have native APIs
-		list(REMOVE HIDAPI_FIND_COMPONENTS libusb)
+		list(REMOVE "${HIDAPI_FIND_COMPONENTS}" libusb)
 	endif()
 
 	if(NOT ${CMAKE_SYSTEM} MATCHES "Linux")
 		# hidraw is only on linux
-		list(REMOVE HIDAPI_FIND_COMPONENTS hidraw)
+		list(REMOVE "${HIDAPI_FIND_COMPONENTS}" hidraw)
 	endif()
 endif()
-if(NOT HIDAPI_FIND_COMPONENTS)
+if(NOT "${HIDAPI_FIND_COMPONENTS}")
 	# Default to any
-	set(HIDAPI_FIND_COMPONENTS any)
+	set("${HIDAPI_FIND_COMPONENTS}" any)
 endif()
 
 # Ask pkg-config for hints
@@ -126,10 +126,10 @@ find_package(Threads QUIET)
 set(HIDAPI_LIBRARY)
 
 # First, try to use a preferred backend if supplied
-if(HIDAPI_FIND_COMPONENTS MATCHES "libusb" AND HIDAPI_LIBUSB_LIBRARY AND NOT HIDAPI_LIBRARY)
+if("${HIDAPI_FIND_COMPONENTS}" MATCHES "libusb" AND HIDAPI_LIBUSB_LIBRARY AND NOT HIDAPI_LIBRARY)
 	set(HIDAPI_LIBRARY ${HIDAPI_LIBUSB_LIBRARY})
 endif()
-if(HIDAPI_FIND_COMPONENTS MATCHES "hidraw" AND HIDAPI_HIDRAW_LIBRARY AND NOT HIDAPI_LIBRARY)
+if("${HIDAPI_FIND_COMPONENTS}" MATCHES "hidraw" AND HIDAPI_HIDRAW_LIBRARY AND NOT HIDAPI_LIBRARY)
 	set(HIDAPI_LIBRARY ${HIDAPI_HIDRAW_LIBRARY})
 endif()
 
@@ -150,7 +150,7 @@ endif()
 set(_hidapi_component_required_vars)
 
 foreach(_comp IN LISTS HIDAPI_FIND_COMPONENTS)
-	if(${_comp} STREQUAL "any")
+	if("${_comp}" STREQUAL "any")
 		list(APPEND _hidapi_component_required_vars
 			HIDAPI_INCLUDE_DIR
 			HIDAPI_LIBRARY)
@@ -161,7 +161,7 @@ foreach(_comp IN LISTS HIDAPI_FIND_COMPONENTS)
 			set(HIDAPI_any_FOUND FALSE)
 		endif()
 
-	elseif(${_comp} STREQUAL "libusb")
+	elseif("${_comp}" STREQUAL "libusb")
 		list(APPEND _hidapi_component_required_vars HIDAPI_INCLUDE_DIR HIDAPI_LIBUSB_LIBRARY)
 		if(HIDAPI_INCLUDE_DIR AND EXISTS "${HIDAPI_LIBUSB_LIBRARY}")
 			set(HIDAPI_libusb_FOUND TRUE)
@@ -170,7 +170,7 @@ foreach(_comp IN LISTS HIDAPI_FIND_COMPONENTS)
 			set(HIDAPI_libusb_FOUND FALSE)
 		endif()
 
-	elseif(${_comp} STREQUAL "hidraw")
+	elseif("${_comp}" STREQUAL "hidraw")
 		list(APPEND _hidapi_component_required_vars HIDAPI_INCLUDE_DIR HIDAPI_HIDRAW_LIBRARY)
 		if(HIDAPI_INCLUDE_DIR AND EXISTS "${HIDAPI_HIDRAW_LIBRARY}")
 			set(HIDAPI_hidraw_FOUND TRUE)

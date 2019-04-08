@@ -100,8 +100,8 @@ find_package_handle_standard_args(OpenHMD
     THREADS_FOUND
 )
 if(OPENHMD_FOUND)
-    set(OPENHMD_INCLUDE_DIRS ${OPENHMD_INCLUDE_DIR})
-    set(OPENHMD_LIBRARIES ${OPENHMD_LIBRARY})
+    set(OPENHMD_INCLUDE_DIRS "${OPENHMD_INCLUDE_DIR}")
+    set(OPENHMD_LIBRARIES "${OPENHMD_LIBRARY}")
     if(NOT TARGET OpenHMD::OpenHMD)
         add_library(OpenHMD::OpenHMD UNKNOWN IMPORTED)
     endif()
@@ -109,20 +109,20 @@ if(OPENHMD_FOUND)
         INTERFACE_INCLUDE_DIRECTORIES "${OPENHMD_INCLUDE_DIR}")
     set_target_properties(OpenHMD::OpenHMD PROPERTIES
         IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-        IMPORTED_LOCATION ${OPENHMD_LIBRARY})
+        IMPORTED_LOCATION "${OPENHMD_LIBRARY}")
 
     set_property(TARGET OpenHMD::OpenHMD PROPERTY
             IMPORTED_LINK_INTERFACE_LIBRARIES Threads::Threads)
 
-    if(${OPENHMD_HIDAPI_TYPE} STREQUAL libusb)
+    if("${OPENHMD_HIDAPI_TYPE}" STREQUAL libusb)
         set_property(TARGET OpenHMD::OpenHMD APPEND PROPERTY
                 IMPORTED_LINK_INTERFACE_LIBRARIES HIDAPI::hidapi-libusb)
         list(APPEND OPENHMD_LIBRARIES HIDAPI::hidapi-libusb)
-    elseif(${OPENHMD_HIDAPI_TYPE} STREQUAL hidraw)
+    elseif("${OPENHMD_HIDAPI_TYPE}" STREQUAL hidraw)
         set_property(TARGET OpenHMD::OpenHMD APPEND PROPERTY
                 IMPORTED_LINK_INTERFACE_LIBRARIES HIDAPI::hidapi-hidraw)
         list(APPEND OPENHMD_LIBRARIES HIDAPI::hidapi-hidraw)
-    elseif(${OPENHMD_HIDAPI_TYPE} STREQUAL undifferentiated)
+    elseif("${OPENHMD_HIDAPI_TYPE}" STREQUAL undifferentiated)
         set_property(TARGET OpenHMD::OpenHMD APPEND PROPERTY
                 IMPORTED_LINK_INTERFACE_LIBRARIES HIDAPI::hidapi)
         list(APPEND OPENHMD_LIBRARIES HIDAPI::hidapi)
