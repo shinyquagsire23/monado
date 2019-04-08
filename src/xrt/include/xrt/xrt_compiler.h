@@ -52,4 +52,6 @@
 #elif defined(_MSC_VER)
 #include <intrin.h>
 #define XRT_DEBUGBREAK() __debugbreak()
+#else
+#error "compiler not supported"
 #endif
