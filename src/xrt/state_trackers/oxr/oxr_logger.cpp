@@ -16,10 +16,6 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 
-#ifdef _MSC_VER
-// needed for __debugbreak()
-#include <intrin.h>
-#endif // _MSC_VER
 
 DEBUG_GET_ONCE_BOOL_OPTION(entrypoints, "OXR_DEBUG_ENTRYPOINTS", false)
 DEBUG_GET_ONCE_BOOL_OPTION(break_on_error, "OXR_BREAK_ON_ERROR", false)
@@ -98,12 +94,8 @@ oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
 
 	fprintf(stderr, "\n");
 	if (debug_get_bool_option_break_on_error()) {
-/// Trigger a debugger breakpoint.
-#ifdef _MSC_VER
-		__debugbreak();
-#else
-		__builtin_trap();
-#endif
+		/// Trigger a debugger breakpoint.
+		XRT_DEBUGBREAK();
 	}
 
 	return result;
