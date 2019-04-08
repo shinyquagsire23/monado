@@ -80,6 +80,11 @@ find_library(LIBCHECK_LIBM m)
 
 find_package(Threads QUIET)
 
+set(_libcheck_extra_required)
+if(PC_LIBCHECK_FOUND AND "${PC_LIBCHECK_LIBRARIES}" MATCHES "subunit")
+    list(APPEND _libcheck_extra_required LIBCHECK_SUBUNIT_LIBRARY)
+endif()
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Libcheck
     REQUIRED_VARS
