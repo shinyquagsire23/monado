@@ -1,6 +1,7 @@
 # Ignore build products
 CMakeCache.txt
 CMakeLists.txt.user
+CMakeLists.txt.user.*
 *CMakeFiles/
 *Makefile
 *cmake_install.cmake
@@ -21,6 +22,7 @@ build*/
 
 # Ignore local settings
 .vscode
+*.autosave
 
 # Ignore merge-conflict resolution files
 *.orig
