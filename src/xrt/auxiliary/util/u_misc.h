@@ -15,6 +15,15 @@
 extern "C" {
 #endif
 
+
+/*!
+ * Allocate and zero the give size and casts the memory into a pointer of the
+ * given type.
+ *
+ * @ingroup aux_util
+ */
+#define U_CALLOC_WITH_CAST(TYPE, SIZE) ((TYPE *)calloc(1, SIZE))
+
 /*!
  * Allocate and zero the space required for some type, and cast the return type
  * appropriately.
