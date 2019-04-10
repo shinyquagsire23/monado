@@ -33,7 +33,7 @@
  * @dir include
  * @ingroup xrt
  *
- * @brief @ref inc and interface headers. 
+ * @brief @ref inc and interface headers.
  */
 
 /*!

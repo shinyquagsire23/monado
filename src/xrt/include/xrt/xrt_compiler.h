@@ -47,7 +47,7 @@
  * @define XRT_DEBUGBREAK()
  * To trigger a trap/break in the debugger.
  */
-#if defined(__clang__) || defined(__GNUC__) 
+#if defined(__clang__) || defined(__GNUC__)
 #define XRT_DEBUGBREAK() __builtin_trap()
 #elif defined(_MSC_VER)
 #include <intrin.h>
