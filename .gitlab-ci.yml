@@ -43,7 +43,7 @@ debian:build-cmake:
 
 arch:build-cmake:
   stage: build
-  image: $DEBIAN_CONTAINER_IMAGE
+  image: $ARCH_CONTAINER_IMAGE
   script:
   - mkdir build
   - pushd build
