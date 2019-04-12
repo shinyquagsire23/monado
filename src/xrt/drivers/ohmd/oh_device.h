@@ -4,6 +4,7 @@
  * @file
  * @brief  Interface to OpenHMD driver code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup drv_ohmd
  */
 
 #pragma once

@@ -11,6 +11,7 @@
  *
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @author Kevin M. Godby <kevin@godby.org>
+ * @ingroup drv_hdk
  */
 
 

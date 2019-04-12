@@ -4,6 +4,7 @@
  * @file
  * @brief  Adaptor to a OpenHMD device.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup drv_ohmd
  */
 
 

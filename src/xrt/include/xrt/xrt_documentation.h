@@ -30,6 +30,13 @@
  */
 
 /*!
+ * @defgroup drv Drivers
+ * @ingroup xrt
+ *
+ * @brief Native and wrapper drivers in Monado.
+ */
+
+/*!
  * @dir include
  * @ingroup xrt
  *
@@ -55,4 +62,11 @@
  * @ingroup oxr
  *
  * @brief @ref oxr files.
+ */
+
+/*!
+ * @dir drivers
+ * @ingroup xrt
+ *
+ * @brief @ref drv files.
  */

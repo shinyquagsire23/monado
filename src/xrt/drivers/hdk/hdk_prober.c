@@ -5,6 +5,7 @@
  * @brief  OSVR HDK prober code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @ingroup drv_hdk
  */
 
 #include <stdio.h>
