@@ -212,8 +212,7 @@ destroy_callback(struct u_hashset_item *item, void *priv)
 }
 
 void
-oxr_path_destroy_all(struct oxr_logger *log,
-                     struct oxr_instance *inst)
+oxr_path_destroy_all(struct oxr_logger *log, struct oxr_instance *inst)
 {
 	u_hashset_clear_and_call_for_each(inst->path_store, destroy_callback,
 	                                  inst);
