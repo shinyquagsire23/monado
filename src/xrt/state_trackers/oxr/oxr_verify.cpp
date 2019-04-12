@@ -68,12 +68,12 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
 	}
 
 	if (path[0] == '\0') {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
 		                 "(%s) can not be empty", name);
 	}
 
 	if (!contains_zero(path, array_size)) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
 		                 "(%s) must include zero termination '\\0'.",
 		                 name);
 	}
@@ -88,7 +88,7 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
 		}
 
 		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
+		    log, XR_ERROR_PATH_FORMAT_INVALID,
 		    "(%s) 0x%02x is not a valid character at position %u", name,
 		    c, (uint32_t)i);
 	}
