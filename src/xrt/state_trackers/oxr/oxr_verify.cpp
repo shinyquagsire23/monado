@@ -128,7 +128,7 @@ oxr_verify_full_path(struct oxr_logger* log,
 	State state = State::Start;
 	bool valid = true;
 
-	if (length >= UINT32_MAX || length + 1 >= XR_MAX_PATH_LENGTH) {
+	if (length >= UINT32_MAX || (length + 1) > XR_MAX_PATH_LENGTH) {
 		return oxr_error(
 		    log, XR_ERROR_PATH_FORMAT_INVALID,
 		    "(%s) string is too long for a path (%u + 1) > %u", name,
