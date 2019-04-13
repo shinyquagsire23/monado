@@ -160,7 +160,7 @@ xrandr --output HDMI-A-0 --prop --set non-desktop 1
 You can verify that it stuck with the command.
 
 ```bash
-xrand --prop
+xrandr --prop
 ```
 
 ## Coding style and formatting
