@@ -68,7 +68,7 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
 	}
 
 	if (path[0] == '\0') {
-		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
+		return oxr_error(log, XR_ERROR_NAME_INVALID,
 		                 "(%s) can not be empty", name);
 	}
 
