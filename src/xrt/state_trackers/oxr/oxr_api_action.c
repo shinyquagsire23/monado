@@ -143,6 +143,7 @@ oxr_xrCreateActionSet(XrSession session,
 	struct oxr_action_set* act_set = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(&log, act_set, OXR_XR_DEBUG_ACTIONSET,
 	                              oxr_action_set_destroy, &sess->handle);
+	act_set->sess = sess;
 
 	*actionSet = (XrActionSet)act_set;
 
