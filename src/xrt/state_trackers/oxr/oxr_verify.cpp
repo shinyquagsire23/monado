@@ -96,6 +96,32 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
 	return XR_SUCCESS;
 }
 
+extern "C" XrResult
+oxr_verify_localized_name(struct oxr_logger* log,
+                          const char* string,
+                          uint32_t array_size,
+                          const char* name)
+{
+	if (array_size == 0) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "(%s) internal runtime error", name);
+	}
+
+	if (string[0] == '\0') {
+		return oxr_error(log, XR_ERROR_NAME_INVALID,
+		                 "(%s) can not be empty", name);
+	}
+
+	if (!contains_zero(string, array_size)) {
+		return oxr_error(log, XR_ERROR_NAME_INVALID,
+		                 "(%s) must include zero termination '\\0'.",
+		                 name);
+	}
+
+	// Future work: validate well-formed UTF-8?
+	return XR_SUCCESS;
+}
+
 enum class State
 {
 	Start,

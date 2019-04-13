@@ -130,6 +130,14 @@ extern "C" {
 		}                                                              \
 	} while (false)
 
+#define OXR_VERIFY_ARG_LOCALIZED_NAME(log, string)                             \
+	do {                                                                   \
+		XrResult verify_ret = oxr_verify_localized_name(               \
+		    log, string, ARRAY_SIZE(string), #string);                 \
+		if (verify_ret != XR_SUCCESS) {                                \
+			return verify_ret;                                     \
+		}                                                              \
+	} while (false)
 
 /*
  *
@@ -161,6 +169,15 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger*,
                                         const char* path,
                                         uint32_t array_size,
                                         const char* name);
+
+/*!
+ * Verify an arbitrary UTF-8 string that sits inside of a fixed sized array.
+ */
+XrResult
+oxr_verify_localized_name(struct oxr_logger*,
+                          const char* string,
+                          uint32_t array_size,
+                          const char* name);
 
 XrResult
 oxr_verify_XrSessionCreateInfo(struct oxr_logger*,

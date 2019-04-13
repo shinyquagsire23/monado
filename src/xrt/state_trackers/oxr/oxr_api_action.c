@@ -137,8 +137,7 @@ oxr_xrCreateActionSet(XrSession session,
 	OXR_VERIFY_ARG_NOT_NULL(&log, actionSet);
 	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(
 	    &log, createInfo->actionSetName);
-	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(
-	    &log, createInfo->localizedActionSetName);
+	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionSetName);
 
 	//! @todo Move to oxr_action.h and implement more fully.
 	struct oxr_action_set* act_set = NULL;
@@ -190,6 +189,7 @@ oxr_xrCreateAction(XrActionSet actionSet,
 	                                  "xrCreateAction");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
 	                             XR_TYPE_ACTION_CREATE_INFO);
+	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionName);
 	OXR_VERIFY_ARG_NOT_NULL(&log, action);
 
 	//! @todo Move to oxr_action.h and implement more fully.
