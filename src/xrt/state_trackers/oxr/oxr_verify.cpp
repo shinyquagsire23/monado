@@ -135,11 +135,14 @@ oxr_verify_full_path_c(struct oxr_logger* log,
                        const char* path,
                        const char* name)
 {
-	size_t length = strlen(path);
-
-	if (length >= UINT32_MAX) {
-		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
-		                 "(%s) path to long", name);
+	// XR_MAX_PATH_LENGTH is max including null terminator,
+	// length will not include null terminator
+	size_t length = XR_MAX_PATH_LENGTH;
+	for (size_t i = 0; i < XR_MAX_PATH_LENGTH; i++) {
+		if (path[i] == '\0') {
+			length = i;
+			break;
+		}
 	}
 
 	return oxr_verify_full_path(log, path, (uint32_t)length, name);
@@ -154,11 +157,14 @@ oxr_verify_full_path(struct oxr_logger* log,
 	State state = State::Start;
 	bool valid = true;
 
-	if (length >= UINT32_MAX || (length + 1) > XR_MAX_PATH_LENGTH) {
-		return oxr_error(
-		    log, XR_ERROR_PATH_FORMAT_INVALID,
-		    "(%s) string is too long for a path (%u + 1) > %u", name,
-		    (uint32_t)length, XR_MAX_PATH_LENGTH);
+	if (length >= XR_MAX_PATH_LENGTH) {
+		char formatted_path[XR_MAX_PATH_LENGTH + 6];
+		snprintf(formatted_path, XR_MAX_PATH_LENGTH + 6, "%s[...]",
+		         path);
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
+		                 "(%s) is too long for a path, must be shorter "
+		                 "than %u characters",
+		                 name, XR_MAX_PATH_LENGTH);
 	}
 
 	for (uint32_t i = 0; i < length; i++) {
