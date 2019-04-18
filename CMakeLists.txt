@@ -6,7 +6,7 @@ project(XRT VERSION 0.1.0)
 
 # CMake 3.11 introduced CMP0072 - Prefer GLVND
 if(POLICY CMP0072)
-    cmake_policy(SET CMP0072 NEW)
+	cmake_policy(SET CMP0072 NEW)
 endif()
 
 option(OPENXR_USE_LOADER "Application uses loader" ON)
@@ -48,9 +48,9 @@ if(FFMPEG_FOUND)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    find_package(X11)
-    find_package(Wayland)
-    pkg_check_modules(XCB xcb xcb-randr)
+	find_package(X11)
+	find_package(Wayland)
+	pkg_check_modules(XCB xcb xcb-randr)
 endif()
 
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
@@ -60,7 +60,7 @@ cmake_dependent_option(BUILD_WITH_XLIB "Enable xlib support" ON "X11_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENGL "Enable OpenGL Graphics API support?" ON "OPENGL_FOUND" OFF)
 
 if(NOT BUILD_WITH_OPENHMD AND NOT BUILD_WITH_HIDAPI)
-    message(FATAL_ERROR "You must enable at least one driver: either provide OpenHMD and enable BUILD_WITH_OPENHMD (for a variety of devices via OpenHMD), or provide HIDAPI and enable BUILD_WITH_HIDAPI (for the HDK driver)")
+	message(FATAL_ERROR "You must enable at least one driver: either provide OpenHMD and enable BUILD_WITH_OPENHMD (for a variety of devices via OpenHMD), or provide HIDAPI and enable BUILD_WITH_HIDAPI (for the HDK driver)")
 endif()
 
 
