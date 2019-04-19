@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "math/m_api.h"
 #include "util/u_device.h"
 
 
@@ -52,6 +53,7 @@ const struct xrt_matrix_2x2 u_device_rotation_180 = {{
             {0, -1},
         },
 }};
+
 
 /*
  *
@@ -124,4 +126,84 @@ u_device_dump_config(struct xrt_device* xdev,
 	PRINT_ANGLE( "views[1].fov.angle_down ", xdev->views[1].fov.angle_down);
 //	PRINT_ANGLE( "info.views[1].fov       ", info.views[0].fov);
 	// clang-format on
+}
+
+
+/*
+ *
+ * Helper setup functions.
+ *
+ */
+
+bool
+u_device_setup_split_side_by_side(struct xrt_device* xdev,
+                                  const struct u_device_simple_info* info)
+{
+	uint32_t w_pixels = info->display.w_pixels / 2;
+	uint32_t h_pixels = info->display.h_pixels;
+	float w_meters = info->display.w_meters / 2;
+	float h_meters = info->display.h_meters;
+
+	float lens_center_x_meters[2] = {
+	    w_meters - info->lens_horizontal_separation_meters / 2.0,
+	    info->lens_horizontal_separation_meters / 2.0,
+	};
+
+	float lens_center_y_meters[2] = {
+	    info->lens_vertical_position_meters,
+	    info->lens_vertical_position_meters,
+	};
+
+	// Common
+	xdev->blend_mode = XRT_BLEND_MODE_OPAQUE;
+	xdev->distortion.models = XRT_DISTORTION_MODEL_NONE;
+	xdev->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+	xdev->screens[0].w_pixels = info->display.w_pixels;
+	xdev->screens[0].h_pixels = info->display.h_pixels;
+
+	// Left
+	xdev->views[0].display.w_meters = w_meters;
+	xdev->views[0].display.h_meters = h_meters;
+	xdev->views[0].lens_center.x_meters = lens_center_x_meters[0];
+	xdev->views[0].lens_center.y_meters = lens_center_y_meters[0];
+	xdev->views[0].display.w_pixels = w_pixels;
+	xdev->views[0].display.h_pixels = h_pixels;
+	xdev->views[0].viewport.x_pixels = 0;
+	xdev->views[0].viewport.y_pixels = 0;
+	xdev->views[0].viewport.w_pixels = w_pixels;
+	xdev->views[0].viewport.h_pixels = h_pixels;
+	xdev->views[0].rot = u_device_rotation_ident;
+
+	// Right
+	xdev->views[1].display.w_meters = w_meters;
+	xdev->views[1].display.h_meters = h_meters;
+	xdev->views[1].lens_center.x_meters = lens_center_x_meters[1];
+	xdev->views[1].lens_center.y_meters = lens_center_y_meters[1];
+	xdev->views[1].display.w_pixels = w_pixels;
+	xdev->views[1].display.h_pixels = h_pixels;
+	xdev->views[1].viewport.x_pixels = w_pixels;
+	xdev->views[1].viewport.y_pixels = 0;
+	xdev->views[1].viewport.w_pixels = w_pixels;
+	xdev->views[1].viewport.h_pixels = h_pixels;
+	xdev->views[1].rot = u_device_rotation_ident;
+
+	{
+		/* right eye */
+		if (!math_compute_fovs(w_meters, lens_center_x_meters[1],
+		                       info->views[1].fov, h_meters,
+		                       lens_center_y_meters[1], 0,
+		                       &xdev->views[1].fov)) {
+			return false;
+		}
+	}
+	{
+		/* left eye - just mirroring right eye now */
+		xdev->views[0].fov.angle_up = xdev->views[1].fov.angle_up;
+		xdev->views[0].fov.angle_down = xdev->views[1].fov.angle_down;
+
+		xdev->views[0].fov.angle_left = -xdev->views[1].fov.angle_right;
+		xdev->views[0].fov.angle_right = -xdev->views[1].fov.angle_left;
+	}
+
+	return true;
 }

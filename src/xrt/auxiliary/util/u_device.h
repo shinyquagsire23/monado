@@ -22,6 +22,35 @@ extern const struct xrt_matrix_2x2 u_device_rotation_left;
 extern const struct xrt_matrix_2x2 u_device_rotation_ident;
 extern const struct xrt_matrix_2x2 u_device_rotation_180;
 
+struct u_device_simple_info
+{
+	struct
+	{
+		uint32_t w_pixels;
+		uint32_t h_pixels;
+		float w_meters;
+		float h_meters;
+	} display;
+
+	float lens_horizontal_separation_meters;
+	float lens_vertical_position_meters;
+
+	struct
+	{
+		float fov;
+	} views[2];
+};
+
+/*!
+ * Setup the device information given a very simple info struct.
+ *
+ * @return true on success.
+ * @ingroup aux_util
+ */
+bool
+u_device_setup_split_side_by_side(struct xrt_device* xdev,
+                                  const struct u_device_simple_info* info);
+
 /*!
  * Dump the device config to stderr.
  *
