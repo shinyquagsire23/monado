@@ -388,6 +388,10 @@ oh_device_create(ohmd_context *ctx,
 		quirk_video_distortion_none = true;
 	}
 
+	if (strcmp(prod, "PSVR") == 0) {
+		quirk_video_distortion_none = true;
+	}
+
 	// Which blend modes does the device support.
 	ohd->base.blend_mode = XRT_BLEND_MODE_OPAQUE;
 	if (quirk_video_see_through) {
