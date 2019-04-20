@@ -190,8 +190,8 @@ oxr_xrCreateAction(XrActionSet actionSet,
 	                                  "xrCreateAction");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
 	                             XR_TYPE_ACTION_CREATE_INFO);
-	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(
-	    &log, createInfo->actionName);
+	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(&log,
+	                                              createInfo->actionName);
 	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionName);
 	OXR_VERIFY_ARG_NOT_NULL(&log, action);
 
