@@ -54,7 +54,7 @@ set(BUILD_WITH_LIBUSB TRUE)
 cmake_dependent_option(BUILD_WITH_OPENCV "Enable OpenCV backend" ON "OpenCV_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_LIBUVC "Enable libuvc video driver" ON "LIBUVC_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_FFMPEG "Enable ffmpeg testing video driver" ON "FFMPEG_FOUND" OFF)
-cmake_dependent_option(BUILD_WITH_HIDAPI "Enable HIDAPI-based driver(s) (OSVR HDK)" ON "HIDAPI_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_HIDAPI "Enable HIDAPI-based driver(s) (OSVR HDK, PSVR)" ON "HIDAPI_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
 
 
@@ -105,6 +105,8 @@ if(BUILD_WITH_HIDAPI)
 	# Drivers enabled with hidapi.
 	add_definitions(-DXRT_BUILD_HDK)
 	set(BUILD_DRIVER_HDK TRUE)
+	add_definitions(-DXRT_BUILD_PSVR)
+	set(BUILD_DRIVER_PSVR TRUE)
 endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")

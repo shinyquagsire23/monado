@@ -40,3 +40,21 @@ if(BUILD_DRIVER_OHMD)
 		PRIVATE ${OPENHMD_INCLUDE_DIRS}
 		)
 endif()
+
+
+if(BUILD_DRIVER_PSVR)
+	set(PSVR_SOURCE_FILES
+		psvr/psvr_device.c
+		psvr/psvr_device.h
+		psvr/psvr_interface.h
+		psvr/psvr_packet.c
+		psvr/psvr_prober.c
+		)
+
+	# Use OBJECT to not create a archive, since it just gets in the way.
+	add_library(drv_psvr OBJECT ${PSVR_SOURCE_FILES})
+	set_property(TARGET drv_psvr PROPERTY POSITION_INDEPENDENT_CODE ON)
+	target_include_directories(drv_psvr SYSTEM
+		PRIVATE ${HIDAPI_INCLUDE_DIRS}
+		)
+endif()
