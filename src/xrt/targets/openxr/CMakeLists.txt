@@ -75,14 +75,18 @@ target_link_libraries(${RUNTIME_TARGET}
 	OpenGL::GLX
 	)
 
+if(BUILD_DRIVER_HDK)
+	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_hdk>)
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC ${HIDAPI_LIBRARIES})
+endif()
 
 if(BUILD_DRIVER_OHMD)
 	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_ohmd>)
 	target_link_libraries(${RUNTIME_TARGET} PRIVATE OpenHMD::OpenHMD)
 endif()
 
-if(BUILD_DRIVER_HDK)
-	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_hdk>)
+if(BUILD_DRIVER_PSVR)
+	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_psvr>)
 	target_link_libraries(${RUNTIME_TARGET} PUBLIC ${HIDAPI_LIBRARIES})
 endif()
 
