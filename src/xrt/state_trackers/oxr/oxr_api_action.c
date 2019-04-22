@@ -199,6 +199,7 @@ oxr_xrCreateAction(XrActionSet actionSet,
 	struct oxr_action* act = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(&log, act, OXR_XR_DEBUG_ACTION,
 	                              oxr_action_destroy, &act_set->handle);
+	act->act_set = act_set;
 	*action = (XrAction)act;
 
 	return XR_SUCCESS;
