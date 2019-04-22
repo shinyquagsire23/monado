@@ -24,20 +24,20 @@ DEBUG_GET_ONCE_BOOL_OPTION(oh_debug, "OH_PRINT_DEBUG", false)
 
 struct oh_prober
 {
-	struct xrt_prober base;
+	struct xrt_auto_prober base;
 	ohmd_context *ctx;
 	bool print_spew;
 	bool print_debug;
 };
 
 static inline struct oh_prober *
-oh_prober(struct xrt_prober *p)
+oh_prober(struct xrt_auto_prober *p)
 {
 	return (struct oh_prober *)p;
 }
 
 static void
-oh_prober_destroy(struct xrt_prober *p)
+oh_prober_destroy(struct xrt_auto_prober *p)
 {
 	struct oh_prober *ohp = oh_prober(p);
 
@@ -50,7 +50,7 @@ oh_prober_destroy(struct xrt_prober *p)
 }
 
 static struct xrt_device *
-oh_prober_autoprobe(struct xrt_prober *p)
+oh_prober_autoprobe(struct xrt_auto_prober *p)
 {
 	struct oh_prober *ohp = oh_prober(p);
 
@@ -99,8 +99,8 @@ oh_prober_autoprobe(struct xrt_prober *p)
 	return &ohd->base;
 }
 
-struct xrt_prober *
-oh_create_prober()
+struct xrt_auto_prober *
+oh_create_auto_prober()
 {
 	struct oh_prober *ohp = U_TYPED_CALLOC(struct oh_prober);
 	ohp->base.destroy = oh_prober_destroy;

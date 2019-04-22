@@ -38,7 +38,7 @@ static XrResult
 oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	struct oxr_instance *inst = (struct oxr_instance *)hb;
-	struct xrt_prober *prober = inst->prober;
+	struct xrt_auto_prober *prober = inst->prober;
 	struct xrt_device *dev = inst->system.device;
 
 	oxr_path_destroy_all(log, inst);
@@ -83,7 +83,7 @@ oxr_instance_create(struct oxr_logger *log,
 		                 "Failed to create hashset");
 	}
 
-	inst->prober = xrt_create_prober();
+	inst->prober = xrt_auto_prober_create();
 
 	struct xrt_device *dev =
 	    inst->prober->lelo_dallas_autoprobe(inst->prober);

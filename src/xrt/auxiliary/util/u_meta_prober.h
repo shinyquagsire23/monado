@@ -26,16 +26,16 @@ extern "C" {
 #endif
 
 
-typedef struct xrt_prober *(*prober_creator)();
+typedef struct xrt_auto_prober *(*prober_creator)();
 
 static const prober_creator DRIVERS[] = {
 #ifdef XRT_BUILD_HDK
     // Returns NULL if none found, so OK to go first.
-    hdk_create_prober,
+    hdk_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_OHMD
-    oh_create_prober,
+    oh_create_auto_prober,
 #endif
 
 };
@@ -43,23 +43,23 @@ static const prober_creator DRIVERS[] = {
 #define NUM_PROBERS (ARRAY_SIZE(DRIVERS))
 
 /*!
- * An xrt_prober that contains other xrt_probers.
+ * An xrt_auto_prober that contains other xrt_auto_probers.
  */
 struct u_meta_prober
 {
-	struct xrt_prober base;
-	struct xrt_prober *probers[NUM_PROBERS];
+	struct xrt_auto_prober base;
+	struct xrt_auto_prober *probers[NUM_PROBERS];
 };
 
 
 static inline struct u_meta_prober *
-u_meta_prober(struct xrt_prober *p)
+u_meta_prober(struct xrt_auto_prober *p)
 {
 	return (struct u_meta_prober *)p;
 }
 
 static void
-u_meta_prober_destroy(struct xrt_prober *p)
+u_meta_prober_destroy(struct xrt_auto_prober *p)
 {
 	struct u_meta_prober *mp = u_meta_prober(p);
 
@@ -74,7 +74,7 @@ u_meta_prober_destroy(struct xrt_prober *p)
 }
 
 static struct xrt_device *
-u_meta_prober_autoprobe(struct xrt_prober *p)
+u_meta_prober_autoprobe(struct xrt_auto_prober *p)
 {
 	struct u_meta_prober *mp = u_meta_prober(p);
 
@@ -93,7 +93,7 @@ u_meta_prober_autoprobe(struct xrt_prober *p)
 	return NULL;
 }
 
-static struct xrt_prober *
+static struct xrt_auto_prober *
 u_meta_prober_create()
 {
 	struct u_meta_prober *p =

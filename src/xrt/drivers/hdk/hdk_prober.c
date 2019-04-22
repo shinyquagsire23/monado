@@ -26,17 +26,17 @@ DEBUG_GET_ONCE_BOOL_OPTION(hdk_debug, "HDK_PRINT_DEBUG", false)
 
 struct hdk_prober
 {
-	struct xrt_prober base;
+	struct xrt_auto_prober base;
 };
 
 static inline struct hdk_prober *
-hdk_prober(struct xrt_prober *p)
+hdk_prober(struct xrt_auto_prober *p)
 {
 	return (struct hdk_prober *)p;
 }
 
 static void
-hdk_prober_destroy(struct xrt_prober *p)
+hdk_prober_destroy(struct xrt_auto_prober *p)
 {
 	struct hdk_prober *hhp = hdk_prober(p);
 
@@ -56,7 +56,7 @@ static const uint16_t HDK_VID = 0x1532;
 static const uint16_t HDK_PID = 0x0b00;
 
 static struct xrt_device *
-hdk_prober_autoprobe(struct xrt_prober *p)
+hdk_prober_autoprobe(struct xrt_auto_prober *p)
 {
 	struct hdk_prober *hhp = hdk_prober(p);
 
@@ -131,8 +131,8 @@ hdk_prober_autoprobe(struct xrt_prober *p)
 	return &hd->base;
 }
 
-struct xrt_prober *
-hdk_create_prober()
+struct xrt_auto_prober *
+hdk_create_auto_prober()
 {
 	struct hdk_prober *hhp = U_TYPED_CALLOC(struct hdk_prober);
 	hhp->base.destroy = hdk_prober_destroy;

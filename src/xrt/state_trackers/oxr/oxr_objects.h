@@ -582,7 +582,7 @@ struct oxr_instance
 	//! Common structure for things referred to by OpenXR handles.
 	struct oxr_handle_base handle;
 
-	struct xrt_prober *prober;
+	struct xrt_auto_prober *prober;
 
 	// Enabled extensions
 	bool headless;

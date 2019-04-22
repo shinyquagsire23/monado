@@ -9,8 +9,8 @@
 #include "util/u_meta_prober.h"
 
 
-struct xrt_prober*
-xrt_create_prober()
+struct xrt_auto_prober*
+xrt_auto_prober_create()
 {
 	return u_meta_prober_create();
 }

@@ -17,24 +17,25 @@ extern "C" {
 
 
 /*!
- * A prober for HMD devices connected to the system.
+ * A simple prober to probe for a HMD device connected to the system.
  *
  * @ingroup xrt_iface
  */
-struct xrt_prober
+struct xrt_auto_prober
 {
-	struct xrt_device *(*lelo_dallas_autoprobe)(struct xrt_prober *xdev);
-	void (*destroy)(struct xrt_prober *xdev);
+	struct xrt_device *(*lelo_dallas_autoprobe)(
+	    struct xrt_auto_prober *xdev);
+	void (*destroy)(struct xrt_auto_prober *xdev);
 };
 
 /*!
- * Call this function to create the prober. This function is setup in the the
- * very small target wrapper.c for each binary.
+ * Call this function to create the @ref xrt_auto_prober. This function is setup
+ * in the the very small target wrapper.c for each binary.
  *
  * @ingroup xrt_iface
  */
-struct xrt_prober *
-xrt_create_prober();
+struct xrt_auto_prober *
+xrt_auto_prober_create();
 
 
 #ifdef __cplusplus

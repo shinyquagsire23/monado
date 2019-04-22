@@ -27,8 +27,8 @@ extern "C" {
  *
  * @ingroup drv_hdk
  */
-struct xrt_prober*
-hdk_create_prober();
+struct xrt_auto_prober*
+hdk_create_auto_prober();
 
 /*!
  * @dir drivers/hdk
