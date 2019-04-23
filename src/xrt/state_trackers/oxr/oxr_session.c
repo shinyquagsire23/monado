@@ -69,6 +69,14 @@ oxr_session_begin(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_SESSION_RUNNING,
 		                 " session is already running");
 	}
+	XrViewConfigurationType view_type =
+	    beginInfo->primaryViewConfigurationType;
+	if (view_type != sess->sys->view_config_type) {
+		/*! @todo we only support a single view config type per system
+		 * right now */
+		return oxr_error(log, XR_ERROR_SESSION_RUNNING,
+		                 " view configuration type not supported");
+	}
 
 	struct xrt_compositor *xc = sess->compositor;
 
