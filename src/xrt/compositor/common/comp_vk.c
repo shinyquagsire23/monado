@@ -846,6 +846,13 @@ vk_select_physical_device(struct vk_bundle *vk)
 
 	vk->physical_device = physical_devices[gpu_index];
 
+	// Debug print info.
+	VkPhysicalDeviceProperties pdp;
+	vk->vkGetPhysicalDeviceProperties(physical_devices[gpu_index], &pdp);
+	VK_DEBUG(vk, "Selected device:\n\tname: %s\n\tversion: %u.%u.%u",
+	         pdp.deviceName, VK_VERSION_MAJOR(pdp.apiVersion),
+	         VK_VERSION_MINOR(pdp.apiVersion),
+	         VK_VERSION_PATCH(pdp.apiVersion));
 
 	// Fill out the device memory props as well.
 	vk->vkGetPhysicalDeviceMemoryProperties(vk->physical_device,
