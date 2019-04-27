@@ -480,7 +480,15 @@ oh_device_create(ohmd_context *ctx,
 	}
 
 	if (quirk_rotate_inwards) {
+		int w2 = info.display.w_pixels / 2;
+		int h = info.display.h_pixels;
+
+		ohd->base.views[0].display.w_pixels = h;
+		ohd->base.views[0].display.h_pixels = w2;
 		ohd->base.views[0].rot = u_device_rotation_right;
+
+		ohd->base.views[1].display.w_pixels = h;
+		ohd->base.views[1].display.h_pixels = w2;
 		ohd->base.views[1].rot = u_device_rotation_left;
 	}
 
