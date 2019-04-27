@@ -167,6 +167,7 @@ struct display_info
 	float h_meters;
 	int w_pixels;
 	int h_pixels;
+	float nominal_frame_interval_ns;
 };
 
 struct device_info
@@ -189,10 +190,20 @@ struct device_info
 		float lens_center_x_meters;
 		float lens_center_y_meters;
 	} views[2];
+
+	struct
+	{
+		bool rotate_right;
+		bool rotate_inwards;
+		bool video_see_through;
+		bool video_distortion_none;
+		bool video_distortion_vive;
+		bool left_center_pano_scale;
+	} quirks;
 };
 
 static struct device_info
-get_info(struct oh_device *ohd)
+get_info(struct oh_device *ohd, const char *prod)
 {
 	struct device_info info = {0};
 
@@ -207,6 +218,38 @@ get_info(struct oh_device *ohd)
 	ohmd_device_geti(ohd->dev, OHMD_SCREEN_VERTICAL_RESOLUTION, &info.display.h_pixels);
 	ohmd_device_getf(ohd->dev, OHMD_UNIVERSAL_DISTORTION_K, &info.pano_distortion_k[0]);
 	ohmd_device_getf(ohd->dev, OHMD_UNIVERSAL_ABERRATION_K, &info.pano_aberration_k[0]);
+
+	// Default to 90FPS
+	info.display.nominal_frame_interval_ns =
+	    time_s_to_ns(1.0f / 90.0f);
+
+	// Find any needed quirks.
+	if (strcmp(prod, "3Glasses-D3V2") == 0) {
+		info.quirks.rotate_right = true;
+		info.quirks.left_center_pano_scale = true;
+
+		// 70.43 FPS
+		info.display.nominal_frame_interval_ns =
+		    time_s_to_ns(1.0f / 70.43f);
+	}
+
+	if (strcmp(prod, "HTC Vive") == 0) {
+		info.quirks.video_distortion_vive = true;
+		info.quirks.video_see_through = true;
+	}
+
+	if (strcmp(prod, "LGR100") == 0) {
+		info.quirks.rotate_inwards = true;
+	}
+
+	if (strcmp(prod, "External Device") == 0) {
+		info.quirks.video_distortion_none = true;
+	}
+
+	if (strcmp(prod, "PSVR") == 0) {
+		info.quirks.video_distortion_none = true;
+	}
+
 
 	/*
 	 * Assumptions made here:
@@ -282,7 +325,7 @@ oh_device_create(ohmd_context *ctx,
 
 	snprintf(ohd->base.name, XRT_DEVICE_NAME_LEN, "%s", prod);
 
-	const struct device_info info = get_info(ohd);
+	const struct device_info info = get_info(ohd, prod);
 
 	{
 		/* right eye */
@@ -318,6 +361,7 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.distortion.preferred = XRT_DISTORTION_MODEL_PANOTOOLS;
 	ohd->base.screens[0].w_pixels = info.display.w_pixels;
 	ohd->base.screens[0].h_pixels = info.display.h_pixels;
+	ohd->base.screens[0].nominal_frame_interval_ns = info.display.nominal_frame_interval_ns;
 	ohd->base.distortion.pano.distortion_k[0] = info.pano_distortion_k[0];
 	ohd->base.distortion.pano.distortion_k[1] = info.pano_distortion_k[1];
 	ohd->base.distortion.pano.distortion_k[2] = info.pano_distortion_k[2];
@@ -354,52 +398,14 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.views[1].rot = u_device_rotation_ident;
 	// clang-format on
 
-	// Default to 90FPS
-	ohd->base.screens[0].nominal_frame_interval_ns =
-	    time_s_to_ns(1.0f / 90.0f);
-
-	// Find any needed quirks.
-	bool quirk_rotate_right = false;
-	bool quirk_rotate_inwards = false;
-	bool quirk_video_see_through = false;
-	bool quirk_video_distortion_none = false;
-	bool quirk_video_distortion_vive = false;
-	bool quirk_left_center_pano_scale = false;
-
-	// Needs to be rotated.
-	if (strcmp(prod, "3Glasses-D3V2") == 0) {
-		quirk_rotate_right = true;
-		quirk_left_center_pano_scale = true;
-		// 70.43 FPS
-		ohd->base.screens[0].nominal_frame_interval_ns =
-		    time_s_to_ns(1.0f / 70.43f);
-	}
-
-	if (strcmp(prod, "HTC Vive") == 0) {
-		quirk_video_distortion_vive = true;
-		quirk_video_see_through = true;
-	}
-
-	if (strcmp(prod, "LGR100") == 0) {
-		quirk_rotate_inwards = true;
-	}
-
-	if (strcmp(prod, "External Device") == 0) {
-		quirk_video_distortion_none = true;
-	}
-
-	if (strcmp(prod, "PSVR") == 0) {
-		quirk_video_distortion_none = true;
-	}
-
 	// Which blend modes does the device support.
 	ohd->base.blend_mode = XRT_BLEND_MODE_OPAQUE;
-	if (quirk_video_see_through) {
+	if (info.quirks.video_see_through) {
 		ohd->base.blend_mode = (enum xrt_blend_mode)(
 		    ohd->base.blend_mode | XRT_BLEND_MODE_ALPHA_BLEND);
 	}
 
-	if (quirk_video_distortion_vive) {
+	if (info.quirks.video_distortion_vive) {
 		ohd->base.distortion.models = (enum xrt_distortion_model)(
 		    ohd->base.distortion.models | XRT_DISTORTION_MODEL_VIVE);
 		ohd->base.distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
@@ -449,17 +455,17 @@ oh_device_create(ohmd_context *ctx,
 		// clang-format on
 	}
 
-	if (quirk_video_distortion_none) {
+	if (info.quirks.video_distortion_none) {
 		ohd->base.distortion.models = XRT_DISTORTION_MODEL_NONE;
 		ohd->base.distortion.preferred = XRT_DISTORTION_MODEL_NONE;
 	}
 
-	if (quirk_left_center_pano_scale) {
+	if (info.quirks.left_center_pano_scale) {
 		ohd->base.distortion.pano.warp_scale =
 		    info.views[0].lens_center_x_meters;
 	}
 
-	if (quirk_rotate_right) {
+	if (info.quirks.rotate_right) {
 		int w = info.display.w_pixels;
 		int h = info.display.h_pixels;
 
@@ -479,7 +485,7 @@ oh_device_create(ohmd_context *ctx,
 		ohd->base.views[1].rot = u_device_rotation_right;
 	}
 
-	if (quirk_rotate_inwards) {
+	if (info.quirks.rotate_inwards) {
 		int w2 = info.display.w_pixels / 2;
 		int h = info.display.h_pixels;
 
