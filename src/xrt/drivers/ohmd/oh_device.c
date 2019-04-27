@@ -193,12 +193,13 @@ struct device_info
 
 	struct
 	{
-		bool rotate_right;
-		bool rotate_inwards;
+		bool rotate_lenses_right;
+		bool rotate_lenses_inwards;
 		bool video_see_through;
 		bool video_distortion_none;
 		bool video_distortion_vive;
 		bool left_center_pano_scale;
+		bool rotate_screen_right_after;
 	} quirks;
 };
 
@@ -225,7 +226,8 @@ get_info(struct oh_device *ohd, const char *prod)
 
 	// Find any needed quirks.
 	if (strcmp(prod, "3Glasses-D3V2") == 0) {
-		info.quirks.rotate_right = true;
+		info.quirks.rotate_lenses_right = true;
+		info.quirks.rotate_screen_right_after = true;
 		info.quirks.left_center_pano_scale = true;
 
 		// 70.43 FPS
@@ -239,7 +241,7 @@ get_info(struct oh_device *ohd, const char *prod)
 	}
 
 	if (strcmp(prod, "LGR100") == 0) {
-		info.quirks.rotate_inwards = true;
+		info.quirks.rotate_lenses_inwards = true;
 	}
 
 	if (strcmp(prod, "External Device") == 0) {
@@ -302,6 +304,14 @@ get_info(struct oh_device *ohd, const char *prod)
 			info.views[0].lens_center_x_meters :
 			info.views[0].lens_center_x_meters;
 	// clang-format on
+
+	if (info.quirks.rotate_screen_right_after) {
+		// OpenHMD describes the logical orintation not the physical.
+		ohmd_device_getf(ohd->dev, OHMD_SCREEN_HORIZONTAL_SIZE, &info.display.h_meters);
+		ohmd_device_getf(ohd->dev, OHMD_SCREEN_VERTICAL_SIZE, &info.display.w_meters);
+		ohmd_device_geti(ohd->dev, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &info.display.h_pixels);
+		ohmd_device_geti(ohd->dev, OHMD_SCREEN_VERTICAL_RESOLUTION, &info.display.w_pixels);
+	}
 
 	return info;
 }
@@ -465,27 +475,24 @@ oh_device_create(ohmd_context *ctx,
 		    info.views[0].lens_center_x_meters;
 	}
 
-	if (info.quirks.rotate_right) {
+	if (info.quirks.rotate_lenses_right) {
 		int w = info.display.w_pixels;
 		int h = info.display.h_pixels;
 
-		ohd->base.screens[0].w_pixels = h;
-		ohd->base.screens[0].h_pixels = w;
-
 		ohd->base.views[0].viewport.x_pixels = 0;
 		ohd->base.views[0].viewport.y_pixels = 0;
-		ohd->base.views[0].viewport.w_pixels = h;
-		ohd->base.views[0].viewport.h_pixels = w / 2;
+		ohd->base.views[0].viewport.w_pixels = w;
+		ohd->base.views[0].viewport.h_pixels = h / 2;
 		ohd->base.views[0].rot = u_device_rotation_right;
 
 		ohd->base.views[1].viewport.x_pixels = 0;
-		ohd->base.views[1].viewport.y_pixels = w / 2;
-		ohd->base.views[1].viewport.w_pixels = h;
-		ohd->base.views[1].viewport.h_pixels = w / 2;
+		ohd->base.views[1].viewport.y_pixels = h / 2;
+		ohd->base.views[1].viewport.w_pixels = w;
+		ohd->base.views[1].viewport.h_pixels = h / 2;
 		ohd->base.views[1].rot = u_device_rotation_right;
 	}
 
-	if (info.quirks.rotate_inwards) {
+	if (info.quirks.rotate_lenses_inwards) {
 		int w2 = info.display.w_pixels / 2;
 		int h = info.display.h_pixels;
 
