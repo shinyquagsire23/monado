@@ -76,16 +76,14 @@ target_link_libraries(${RUNTIME_TARGET}
 	)
 
 
-if(BUILD_WITH_OPENHMD)
+if(BUILD_DRIVER_OHMD)
 	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_ohmd>)
-	target_compile_definitions(${RUNTIME_TARGET} PRIVATE XRT_HAVE_OHMD)
 	target_link_libraries(${RUNTIME_TARGET} PRIVATE OpenHMD::OpenHMD)
 endif()
 
-if(BUILD_WITH_HIDAPI)
+if(BUILD_DRIVER_HDK)
 	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_hdk>)
 	target_link_libraries(${RUNTIME_TARGET} PUBLIC ${HIDAPI_LIBRARIES})
-	target_compile_definitions(${RUNTIME_TARGET} PRIVATE XRT_HAVE_HDK)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")

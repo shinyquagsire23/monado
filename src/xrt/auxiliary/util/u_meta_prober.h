@@ -12,11 +12,11 @@
 #include <stdlib.h>
 #include "xrt/xrt_prober.h"
 
-#ifdef XRT_HAVE_OHMD
+#ifdef XRT_BUILD_OHMD
 #include "ohmd/oh_interface.h"
 #endif
 
-#ifdef XRT_HAVE_HDK
+#ifdef XRT_BUILD_HDK
 #include "hdk/hdk_interface.h"
 #endif
 
@@ -29,12 +29,12 @@ extern "C" {
 typedef struct xrt_prober *(*prober_creator)();
 
 static const prober_creator DRIVERS[] = {
-#ifdef XRT_HAVE_HDK
+#ifdef XRT_BUILD_HDK
     // Returns NULL if none found, so OK to go first.
     hdk_create_prober,
 #endif
 
-#ifdef XRT_HAVE_OHMD
+#ifdef XRT_BUILD_OHMD
     oh_create_prober,
 #endif
 
