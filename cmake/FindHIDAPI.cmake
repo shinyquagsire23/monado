@@ -219,8 +219,8 @@ if(HIDAPI_libusb_FOUND AND NOT TARGET HIDAPI::hidapi-libusb)
 endif()
 
 if(HIDAPI_hidraw_FOUND AND NOT TARGET HIDAPI::hidapi-hidraw)
-	add_library(HIDAPI::hidapi-hidraw hidraw IMPORTED)
-	set_target_properties(HIDAPI::hidapi-libusb PROPERTIES
+	add_library(HIDAPI::hidapi-hidraw UNKNOWN IMPORTED)
+	set_target_properties(HIDAPI::hidapi-hidraw PROPERTIES
 		IMPORTED_LINK_INTERFACE_LANGUAGES "C"
 		IMPORTED_LOCATION ${HIDAPI_HIDRAW_LIBRARY})
 	set_property(TARGET HIDAPI::hidapi-hidraw PROPERTY
