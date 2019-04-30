@@ -6,11 +6,10 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
-#include "util/u_meta_prober.h"
+#include "target_lists.h"
 
-
-struct xrt_auto_prober*
-xrt_auto_prober_create()
+int
+xrt_prober_create(struct xrt_prober **out_xp)
 {
-	return u_meta_prober_create();
+	return xrt_prober_create_with_lists(out_xp, &target_lists);
 }

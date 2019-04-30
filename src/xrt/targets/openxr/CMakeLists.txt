@@ -47,6 +47,7 @@ file(
 ")
 
 include_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}/../../targets/common
 	${CMAKE_CURRENT_SOURCE_DIR}/../../auxiliary
 	${CMAKE_CURRENT_SOURCE_DIR}/../../include
 	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
@@ -66,11 +67,16 @@ add_library(${RUNTIME_TARGET} SHARED
 	$<TARGET_OBJECTS:aux_math>
 	$<TARGET_OBJECTS:comp>
 	$<TARGET_OBJECTS:st_oxr>
+	$<TARGET_OBJECTS:st_prober>
+	$<TARGET_OBJECTS:target_lists>
 	)
 
 target_link_libraries(${RUNTIME_TARGET}
 	PUBLIC
+	${LIBUVC_LIBRARIES}
+	${LIBUSB_LIBRARIES}
 	${Vulkan_LIBRARIES}
+	${UDEV_LIBRARIES}
 	${XCB_LIBRARIES}
 	OpenGL::GLX
 	)
