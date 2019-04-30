@@ -307,10 +307,12 @@ get_info(struct oh_device *ohd, const char *prod)
 
 	if (info.quirks.rotate_screen_right_after) {
 		// OpenHMD describes the logical orintation not the physical.
+		// clang-format off
 		ohmd_device_getf(ohd->dev, OHMD_SCREEN_HORIZONTAL_SIZE, &info.display.h_meters);
 		ohmd_device_getf(ohd->dev, OHMD_SCREEN_VERTICAL_SIZE, &info.display.w_meters);
 		ohmd_device_geti(ohd->dev, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &info.display.h_pixels);
 		ohmd_device_geti(ohd->dev, OHMD_SCREEN_VERTICAL_RESOLUTION, &info.display.w_pixels);
+		// clang-format on
 	}
 
 	return info;
