@@ -568,7 +568,7 @@ renderer_init_dummy_images(struct comp_renderer *r)
 
 		vk_create_sampler(vk, &r->dummy_images[i].sampler);
 		vk_create_view(vk, r->dummy_images[i].image,
-		               VK_FORMAT_B8G8R8A8_SRGB,
+		               VK_FORMAT_B8G8R8A8_SRGB, subresource_range,
 		               &r->dummy_images[i].view);
 	}
 

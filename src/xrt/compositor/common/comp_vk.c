@@ -239,6 +239,7 @@ vk_create_image_from_fd(struct vk_bundle *vk,
                         int64_t format,
                         uint32_t width,
                         uint32_t height,
+                        uint32_t array_size,
                         uint32_t mip_count,
                         struct xrt_image_fd *image_fd,
                         VkImage *out_image,
@@ -267,7 +268,7 @@ vk_create_image_from_fd(struct vk_bundle *vk,
 	    .format = (VkFormat)format,
 	    .extent = {.width = width, .height = height, .depth = 1},
 	    .mipLevels = mip_count,
-	    .arrayLayers = 1,
+	    .arrayLayers = array_size,
 	    .samples = VK_SAMPLE_COUNT_1_BIT,
 	    .tiling = VK_IMAGE_TILING_OPTIMAL,
 	    .usage = image_usage,
@@ -389,6 +390,7 @@ VkResult
 vk_create_view(struct vk_bundle *vk,
                VkImage image,
                VkFormat format,
+               VkImageSubresourceRange subresource_range,
                VkImageView *out_view)
 {
 	VkImageView view;
@@ -408,14 +410,7 @@ vk_create_view(struct vk_bundle *vk,
 	            .b = VK_COMPONENT_SWIZZLE_B,
 	            .a = VK_COMPONENT_SWIZZLE_A,
 	        },
-	    .subresourceRange =
-	        {
-	            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-	            .baseMipLevel = 0,
-	            .levelCount = 1,
-	            .baseArrayLayer = 0,
-	            .layerCount = 1,
-	        },
+	    .subresourceRange = subresource_range,
 	};
 
 	ret = vk->vkCreateImageView(vk->device, &imageView, NULL, &view);

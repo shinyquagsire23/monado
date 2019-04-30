@@ -195,7 +195,8 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.num_images = num_images;
 	sc->xscfd = xrt_swapchain_fd(xsc);
 
-	glCreateTextures(GL_TEXTURE_2D, num_images, &sc->base.images[0]);
+	glCreateTextures(array_size == 1 ? GL_TEXTURE_2D : GL_TEXTURE_2D_ARRAY,
+	                 num_images, &sc->base.images[0]);
 	glCreateMemoryObjectsEXT(num_images, &sc->base.memory[0]);
 	for (uint32_t i = 0; i < num_images; i++) {
 		GLint dedicated = GL_TRUE;
@@ -205,9 +206,15 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		glImportMemoryFdEXT(
 		    sc->base.memory[i], sc->xscfd->images[i].size,
 		    GL_HANDLE_TYPE_OPAQUE_FD_EXT, sc->xscfd->images[i].fd);
-		glTextureStorageMem2DEXT(sc->base.images[i], mip_count,
-		                         (GLuint)format, width, height,
-		                         sc->base.memory[i], 0);
+		if (array_size == 1) {
+			glTextureStorageMem2DEXT(sc->base.images[i], mip_count,
+			                         (GLuint)format, width, height,
+			                         sc->base.memory[i], 0);
+		} else {
+			glTextureStorageMem3DEXT(
+			    sc->base.images[i], mip_count, (GLuint)format,
+			    width, height, array_size, sc->base.memory[i], 0);
+		}
 	}
 
 	return &sc->base.base;

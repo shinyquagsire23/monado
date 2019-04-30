@@ -203,7 +203,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	    .baseMipLevel = 0,
 	    .levelCount = 1,
 	    .baseArrayLayer = 0,
-	    .layerCount = 1,
+	    .layerCount = array_size,
 	};
 
 	struct client_vk_swapchain *sc =
@@ -217,10 +217,10 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	sc->xscfd = xrt_swapchain_fd(xsc);
 
 	for (uint32_t i = 0; i < num_images; i++) {
-		ret = vk_create_image_from_fd(&c->vk, format, width, height,
-		                              mip_count, &sc->xscfd->images[i],
-		                              &sc->base.images[i],
-		                              &sc->base.mems[i]);
+		ret = vk_create_image_from_fd(
+		    &c->vk, format, width, height, array_size, mip_count,
+		    &sc->xscfd->images[i], &sc->base.images[i],
+		    &sc->base.mems[i]);
 		if (ret != VK_SUCCESS) {
 			return NULL;
 		}

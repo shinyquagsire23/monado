@@ -65,6 +65,7 @@ create_image_fd(struct comp_compositor *c,
                 int64_t format,
                 uint32_t width,
                 uint32_t height,
+                uint32_t array_size,
                 uint32_t mip_count,
                 VkImage *out_image,
                 VkDeviceMemory *out_mem,
@@ -102,7 +103,7 @@ create_image_fd(struct comp_compositor *c,
 	    .format = (VkFormat)format,
 	    .extent = {.width = width, .height = height, .depth = 1},
 	    .mipLevels = mip_count,
-	    .arrayLayers = 1,
+	    .arrayLayers = array_size,
 	    .samples = VK_SAMPLE_COUNT_1_BIT,
 	    .tiling = VK_IMAGE_TILING_OPTIMAL,
 	    .usage = image_usage,
@@ -235,17 +236,26 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 	COMP_DEBUG(c, "CREATE %p %dx%d", (void *)sc, width, height);
 
+	VkImageSubresourceRange subresource_range = {
+	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .baseMipLevel = 0,
+	    .levelCount = 1,
+	    .baseArrayLayer = 0,
+	    .layerCount = array_size,
+	};
+
 	for (uint32_t i = 0; i < num_images; i++) {
-		ret = create_image_fd(
-		    c, format, width, height, mip_count, &sc->images[i].image,
-		    &sc->images[i].memory, &sc->base.images[i]);
+		ret =
+		    create_image_fd(c, format, width, height, array_size,
+		                    mip_count, &sc->images[i].image,
+		                    &sc->images[i].memory, &sc->base.images[i]);
 		if (ret != VK_SUCCESS) {
 			return NULL;
 		}
 
 		vk_create_sampler(&c->vk, &sc->images[i].sampler);
 		vk_create_view(&c->vk, sc->images[i].image, (VkFormat)format,
-		               &sc->images[i].view);
+		               subresource_range, &sc->images[i].view);
 	}
 
 
@@ -256,14 +266,6 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	 */
 
 	vk_init_cmd_buffer(&c->vk, &cmd_buffer);
-
-	VkImageSubresourceRange subresource_range = {
-	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-	    .baseMipLevel = 0,
-	    .levelCount = 1,
-	    .baseArrayLayer = 0,
-	    .layerCount = 1,
-	};
 
 	for (uint32_t i = 0; i < num_images; i++) {
 		vk_set_image_layout(&c->vk, cmd_buffer, sc->images[i].image, 0,
