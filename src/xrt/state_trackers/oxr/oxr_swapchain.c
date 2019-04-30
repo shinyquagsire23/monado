@@ -78,6 +78,7 @@ oxr_swapchain_release_image(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 " call to xsc->release_image failed");
 	}
+	sc->released_index = sc->acquired_index;
 	sc->acquired_index = -1;
 
 	return XR_SUCCESS;
@@ -119,6 +120,7 @@ oxr_create_swapchain(struct oxr_logger *log,
 	sc->wait_image = oxr_swapchain_wait_image;
 	sc->release_image = oxr_swapchain_release_image;
 	sc->acquired_index = -1;
+	sc->released_index = -1;
 
 	*out_swapchain = sc;
 

@@ -679,6 +679,7 @@ struct oxr_swapchain
 
 	//! Actual state tracked! :D
 	int acquired_index;
+	int released_index;
 
 	XrResult (*destroy)(struct oxr_logger *, struct oxr_swapchain *);
 
