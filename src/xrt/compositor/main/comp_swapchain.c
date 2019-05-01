@@ -24,7 +24,8 @@ swapchain_destroy(struct xrt_swapchain *xsc)
 	COMP_SPEW(sc->c, "DESTROY");
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
-		comp_swapchain_image_cleanup(vk, &sc->images[i]);
+		comp_swapchain_image_cleanup(vk, sc->base.base.array_size,
+		                             &sc->images[i]);
 	}
 
 	free(sc);
@@ -236,14 +237,6 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 	COMP_DEBUG(c, "CREATE %p %dx%d", (void *)sc, width, height);
 
-	VkImageSubresourceRange subresource_range = {
-	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-	    .baseMipLevel = 0,
-	    .levelCount = 1,
-	    .baseArrayLayer = 0,
-	    .layerCount = array_size,
-	};
-
 	for (uint32_t i = 0; i < num_images; i++) {
 		ret =
 		    create_image_fd(c, format, width, height, array_size,
@@ -254,8 +247,25 @@ comp_swapchain_create(struct xrt_compositor *xc,
 		}
 
 		vk_create_sampler(&c->vk, &sc->images[i].sampler);
-		vk_create_view(&c->vk, sc->images[i].image, (VkFormat)format,
-		               subresource_range, &sc->images[i].view);
+	}
+
+	for (uint32_t i = 0; i < num_images; i++) {
+		sc->images[i].views =
+		    U_TYPED_ARRAY_CALLOC(VkImageView, array_size);
+
+		for (uint32_t layer = 0; layer < array_size; ++layer) {
+			VkImageSubresourceRange subresource_range = {
+			    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			    .baseMipLevel = 0,
+			    .levelCount = 1,
+			    .baseArrayLayer = layer,
+			    .layerCount = 1,
+			};
+
+			vk_create_view(&c->vk, sc->images[i].image,
+			               (VkFormat)format, subresource_range,
+			               &sc->images[i].views[layer]);
+		}
 	}
 
 
@@ -266,6 +276,14 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	 */
 
 	vk_init_cmd_buffer(&c->vk, &cmd_buffer);
+
+	VkImageSubresourceRange subresource_range = {
+	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .baseMipLevel = 0,
+	    .levelCount = 1,
+	    .baseArrayLayer = 0,
+	    .layerCount = array_size,
+	};
 
 	for (uint32_t i = 0; i < num_images; i++) {
 		vk_set_image_layout(&c->vk, cmd_buffer, sc->images[i].image, 0,
@@ -282,11 +300,18 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 void
 comp_swapchain_image_cleanup(struct vk_bundle *vk,
+                             uint32_t array_size,
                              struct comp_swapchain_image *image)
 {
-	if (image->view != NULL) {
-		vk->vkDestroyImageView(vk->device, image->view, NULL);
-		image->view = NULL;
+	if (image->views != NULL) {
+		for (uint32_t i = 0; i < array_size; ++i) {
+			if (image->views[i] != NULL) {
+				vk->vkDestroyImageView(vk->device,
+				                       image->views[i], NULL);
+			}
+		}
+		free(image->views);
+		image->views = NULL;
 	}
 
 	if (image->sampler != NULL) {

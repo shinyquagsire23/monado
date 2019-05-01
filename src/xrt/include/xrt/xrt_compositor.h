@@ -74,6 +74,11 @@ struct xrt_swapchain
 	uint32_t num_images;
 
 	/*!
+         * Number of array layers per image.
+         */
+	uint32_t array_size;
+
+	/*!
 	 * Must have called release_image before calling this function.
 	 */
 	void (*destroy)(struct xrt_swapchain *sc);
@@ -186,6 +191,7 @@ struct xrt_compositor
 	                  enum xrt_blend_mode blend_mode,
 	                  struct xrt_swapchain **xscs,
 	                  uint32_t *image_index,
+			  uint32_t *layers,
 	                  uint32_t num_swapchains);
 
 	/*!

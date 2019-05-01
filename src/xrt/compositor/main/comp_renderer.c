@@ -75,7 +75,8 @@ renderer_init(struct comp_renderer *r);
 static void
 renderer_set_swapchain_image(struct comp_renderer *r,
                              uint32_t eye,
-                             struct comp_swapchain_image *image);
+                             struct comp_swapchain_image *image,
+                             uint32_t layer);
 
 static void
 renderer_render(struct comp_renderer *r);
@@ -157,10 +158,12 @@ comp_renderer_create(struct comp_compositor *c)
 void
 comp_renderer_frame(struct comp_renderer *r,
                     struct comp_swapchain_image *left,
-                    struct comp_swapchain_image *right)
+                    uint32_t left_layer,
+                    struct comp_swapchain_image *right,
+                    uint32_t right_layer)
 {
-	renderer_set_swapchain_image(r, 0, left);
-	renderer_set_swapchain_image(r, 1, right);
+	renderer_set_swapchain_image(r, 0, left, left_layer);
+	renderer_set_swapchain_image(r, 1, right, right_layer);
 	renderer_render(r);
 	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
 }
@@ -197,6 +200,8 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 
 	memset(&r->dummy_images[0], 0, sizeof(struct comp_swapchain_image));
 	memset(&r->dummy_images[1], 0, sizeof(struct comp_swapchain_image));
+	r->dummy_images[0].views = U_TYPED_CALLOC(VkImageView);
+	r->dummy_images[1].views = U_TYPED_CALLOC(VkImageView);
 
 	r->distortion = NULL;
 	r->cmd_buffers = NULL;
@@ -569,7 +574,7 @@ renderer_init_dummy_images(struct comp_renderer *r)
 		vk_create_sampler(vk, &r->dummy_images[i].sampler);
 		vk_create_view(vk, r->dummy_images[i].image,
 		               VK_FORMAT_B8G8R8A8_SRGB, subresource_range,
-		               &r->dummy_images[i].view);
+		               &r->dummy_images[i].views[0]);
 	}
 
 	_submit_cmd_buffer(r->c, vk->cmd_pool, cmd_buffer);
@@ -605,7 +610,7 @@ renderer_init(struct comp_renderer *r)
 	for (uint32_t i = 0; i < 2; i++)
 		comp_distortion_update_descriptor_set(
 		    r->distortion, r->dummy_images[i].sampler,
-		    r->dummy_images[i].view, i);
+		    r->dummy_images[i].views[0], i);
 
 	renderer_build_command_buffers(r);
 }
@@ -613,7 +618,8 @@ renderer_init(struct comp_renderer *r)
 static void
 renderer_set_swapchain_image(struct comp_renderer *r,
                              uint32_t eye,
-                             struct comp_swapchain_image *image)
+                             struct comp_swapchain_image *image,
+                             uint32_t layer)
 {
 	if (eye > 1) {
 		COMP_ERROR(r->c, "Swapchain image %p %u not found",
@@ -627,7 +633,8 @@ renderer_set_swapchain_image(struct comp_renderer *r,
 		           " swapchain image %p and eye %u",
 		           (void *)image, eye);
 		comp_distortion_update_descriptor_set(
-		    r->distortion, image->sampler, image->view, (uint32_t)eye);
+		    r->distortion, image->sampler, image->views[layer],
+		    (uint32_t)eye);
 		renderer_rebuild_command_buffers(r);
 		r->one_buffer_imported[eye] = true;
 	}
@@ -944,7 +951,7 @@ renderer_destroy(struct comp_renderer *r)
 
 	// Dummy images
 	for (uint32_t i = 0; i < 2; i++) {
-		comp_swapchain_image_cleanup(vk, &r->dummy_images[i]);
+		comp_swapchain_image_cleanup(vk, 1, &r->dummy_images[i]);
 	}
 
 	// Discriptor pool

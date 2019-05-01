@@ -128,6 +128,7 @@ client_gl_compositor_end_frame(struct xrt_compositor *xc,
                                enum xrt_blend_mode blend_mode,
                                struct xrt_swapchain **xscs,
                                uint32_t *image_index,
+                               uint32_t *layers,
                                uint32_t num_swapchains)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
@@ -145,7 +146,7 @@ client_gl_compositor_end_frame(struct xrt_compositor *xc,
 
 	// Pipe down call into fd compositor.
 	c->xcfd->base.end_frame(&c->xcfd->base, blend_mode, internal,
-	                        image_index, num_swapchains);
+	                        image_index, layers, num_swapchains);
 }
 
 static int64_t

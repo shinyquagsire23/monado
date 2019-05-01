@@ -110,6 +110,7 @@ compositor_end_frame(struct xrt_compositor *xc,
                      enum xrt_blend_mode blend_mode,
                      struct xrt_swapchain **xscs,
                      uint32_t *image_index,
+                     uint32_t *layers,
                      uint32_t num_swapchains)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -122,7 +123,7 @@ compositor_end_frame(struct xrt_compositor *xc,
 	if (num_swapchains == 2) {
 		left = &comp_swapchain(xscs[0])->images[image_index[0]];
 		right = &comp_swapchain(xscs[1])->images[image_index[1]];
-		comp_renderer_frame(c->r, left, right);
+		comp_renderer_frame(c->r, left, layers[0], right, layers[1]);
 	} else {
 		COMP_ERROR(c, "non-stereo rendering not supported");
 	}

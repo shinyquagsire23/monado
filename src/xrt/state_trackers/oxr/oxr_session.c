@@ -464,6 +464,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 
 	struct xrt_swapchain *chains[2];
 	uint32_t image_index[2];
+	uint32_t layers[2];
 	uint32_t num_chains = ARRAY_SIZE(chains);
 
 	for (uint32_t i = 0; i < num_chains; i++) {
@@ -471,10 +472,11 @@ oxr_session_frame_end(struct oxr_logger *log,
 		struct oxr_swapchain *sc =
 		    (struct oxr_swapchain *)proj->views[i].subImage.swapchain;
 		chains[i] = sc->swapchain;
+		layers[i] = proj->views[i].subImage.imageArrayIndex;
 		image_index[i] = sc->released_index;
 	}
 
-	xc->end_frame(xc, blend_mode, chains, image_index, num_chains);
+	xc->end_frame(xc, blend_mode, chains, image_index, layers, num_chains);
 
 	sess->frame_started = false;
 
