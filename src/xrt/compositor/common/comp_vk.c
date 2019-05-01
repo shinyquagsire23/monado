@@ -949,9 +949,9 @@ vk_create_device(struct vk_bundle *vk)
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 	    .queueCreateInfoCount = 1,
 	    .pQueueCreateInfos = &queue_create_info,
-	    .pEnabledFeatures = enabled_features,
 	    .enabledExtensionCount = ARRAY_SIZE(device_extensions),
 	    .ppEnabledExtensionNames = device_extensions,
+	    .pEnabledFeatures = enabled_features,
 	};
 
 	ret = vk->vkCreateDevice(vk->physical_device, &device_create_info, NULL,
