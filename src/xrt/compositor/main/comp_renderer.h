@@ -37,9 +37,9 @@ comp_renderer_create(struct comp_compositor *c);
 void
 comp_renderer_frame(struct comp_renderer *r,
                     struct comp_swapchain_image *left,
-		    uint32_t left_layer,
+                    uint32_t left_layer,
                     struct comp_swapchain_image *right,
-		    uint32_t right_layer);
+                    uint32_t right_layer);
 
 /*!
  * Clean up and free the renderer.

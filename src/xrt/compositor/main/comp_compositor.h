@@ -40,7 +40,8 @@ struct comp_swapchain_image
 	VkDeviceMemory memory;
 	//! Sampler used by the renderer and distortion code.
 	VkSampler sampler;
-	//! Views used by the renderer and distortion code, for each array layer.
+	//! Views used by the renderer and distortion code, for each array
+	//! layer.
 	VkImageView *views;
 };
 
@@ -159,7 +160,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
  */
 void
 comp_swapchain_image_cleanup(struct vk_bundle *vk,
-			     uint32_t array_size,
+                             uint32_t array_size,
                              struct comp_swapchain_image *image);
 
 /*!
