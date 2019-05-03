@@ -10,6 +10,12 @@ set(MATH_SOURCE_FILES
 	math/m_quatexpmap.cpp
 	)
 
+set(OS_SOURCE_FILES
+	os/os_documentation.h
+	os/os_hid.h
+	os/os_hid_hidraw.c
+	)
+
 set(UTIL_SOURCE_FILES
 	util/u_misc.c
 	util/u_misc.h
@@ -34,6 +40,10 @@ include_directories(
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(aux_util OBJECT ${UTIL_SOURCE_FILES})
 set_property(TARGET aux_util PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+# OS library.
+add_library(aux_os OBJECT ${OS_SOURCE_FILES})
+set_property(TARGET aux_os PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Math library.
 # Use OBJECT to not create a archive, since it just gets in the way.
