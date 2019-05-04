@@ -154,6 +154,7 @@ gl_format_to_vk(int64_t format)
 {
 	switch (format) {
 	case GL_RGBA8: return 37 /*VK_FORMAT_R8G8B8A8_UNORM*/;
+	case GL_SRGB8_ALPHA8: return 43 /*VK_FORMAT_R8G8B8A8_SRGB*/;
 	default: return 0;
 	}
 }
@@ -233,8 +234,9 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.begin_frame = client_gl_compositor_begin_frame;
 	c->base.base.discard_frame = client_gl_compositor_discard_frame;
 	c->base.base.end_frame = client_gl_compositor_end_frame;
-	c->base.base.formats[0] = GL_RGBA8;
-	c->base.base.num_formats = 1;
+	c->base.base.formats[0] = GL_SRGB8_ALPHA8;
+	c->base.base.formats[1] = GL_RGBA8;
+	c->base.base.num_formats = 2;
 	c->xcfd = xcfd;
 
 	gladLoadGL(get_gl_procaddr);
