@@ -148,8 +148,8 @@ u_device_setup_split_side_by_side(struct xrt_device* xdev,
 	float h_meters = info->display.h_meters;
 
 	float lens_center_x_meters[2] = {
-	    w_meters - info->lens_horizontal_separation_meters / 2.0,
-	    info->lens_horizontal_separation_meters / 2.0,
+	    w_meters - info->lens_horizontal_separation_meters / 2.0f,
+	    info->lens_horizontal_separation_meters / 2.0f,
 	};
 
 	float lens_center_y_meters[2] = {
