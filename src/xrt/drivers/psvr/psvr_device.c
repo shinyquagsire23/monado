@@ -460,10 +460,7 @@ control_leds(struct psvr_device *psvr,
              enum psvr_leds off)
 {
 	// Get the leds we should control and remove any extra bits.
-	enum psvr_leds all = 0;
-	all |= adjust;
-	all |= off;
-	all &= PSVR_LED_ALL;
+	enum psvr_leds all = (enum psvr_leds)((adjust | off) & PSVR_LED_ALL);
 	if (all == 0) {
 		// Nothing todo.
 		return 0;
@@ -531,8 +528,8 @@ disco_leds(struct psvr_device *psvr)
 	};
 
 	for (size_t i = 0; i < ARRAY_SIZE(leds); i++) {
-		int ret = control_leds(psvr, leds[i], PSVR_LED_POWER_MAX,
-		                       PSVR_LED_ALL);
+		int ret = control_leds(psvr, (enum psvr_leds)leds[i],
+		                       PSVR_LED_POWER_MAX, PSVR_LED_ALL);
 		if (ret < 0) {
 			return ret;
 		}
@@ -676,8 +673,8 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
                    bool print_spew,
                    bool print_debug)
 {
-	enum u_device_alloc_flags flags =
-	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE;
+	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
+	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 	struct psvr_device *psvr =
 	    U_DEVICE_ALLOCATE(struct psvr_device, flags, 1, 0);
 	int ret;
@@ -708,7 +705,8 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	if (debug_get_bool_option_psvr_disco()) {
 		ret = disco_leds(psvr);
 	} else {
-		ret = control_leds(psvr, PSVR_LED_ALL, PSVR_LED_POWER_MAX, 0);
+		ret = control_leds(psvr, PSVR_LED_ALL, PSVR_LED_POWER_MAX,
+		                   (enum psvr_leds)0);
 	}
 	if (ret < 0) {
 		PSVR_ERROR(psvr, "Failed to control leds '%i'", ret);
