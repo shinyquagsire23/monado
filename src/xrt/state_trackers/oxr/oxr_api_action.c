@@ -49,8 +49,7 @@ oxr_xrSyncActionData(XrSession session,
 		//! @todo verify path.
 	}
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_action_sync_data(&log, sess, countActionSets, actionSets);
 }
 
 XrResult
@@ -66,8 +65,18 @@ oxr_xrSetInteractionProfileSuggestedBindings(
 	    &log, suggestedBindings,
 	    XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING);
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
+		const XrActionSuggestedBinding* s =
+		    &suggestedBindings->suggestedBindings[i];
+
+		struct oxr_action* dummy;
+		OXR_VERIFY_ACTION_NOT_NULL(&log, s->action, dummy);
+
+		//! @todo verify path (s->binding).
+	}
+
+	return oxr_action_set_interaction_profile_suggested_bindings(
+	    &log, sess, suggestedBindings);
 }
 
 XrResult
@@ -82,8 +91,8 @@ oxr_xrGetCurrentInteractionProfile(XrSession session,
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, interactionProfile,
 	                             XR_TYPE_INTERACTION_PROFILE_INFO);
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_action_get_current_interaction_profile(
+	    &log, sess, topLevelUserPath, interactionProfile);
 }
 
 XrResult
@@ -101,8 +110,9 @@ oxr_xrGetInputSourceLocalizedName(
 	                                "xrGetInputSourceLocalizedName");
 	//! @todo verify path
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_action_get_input_source_localized_name(
+	    &log, sess, source, whichComponents, bufferCapacityInput,
+	    bufferCountOutput, buffer);
 }
 
 
@@ -112,24 +122,15 @@ oxr_xrGetInputSourceLocalizedName(
  *
  */
 
-static XrResult
-oxr_action_set_destroy(struct oxr_logger* log, struct oxr_handle_base* hb)
-{
-	//! @todo Move to oxr_action.h
-	struct oxr_action_set* act_set = (struct oxr_action_set*)hb;
-
-	free(act_set);
-
-	return XR_SUCCESS;
-}
-
 XrResult
 oxr_xrCreateActionSet(XrSession session,
                       const XrActionSetCreateInfo* createInfo,
                       XrActionSet* actionSet)
 {
-	struct oxr_session* sess;
+	struct oxr_action_set* act_set = NULL;
+	struct oxr_session* sess = NULL;
 	struct oxr_logger log;
+	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrCreateActionSet");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
@@ -139,13 +140,12 @@ oxr_xrCreateActionSet(XrSession session,
 	    &log, createInfo->actionSetName);
 	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionSetName);
 
-	//! @todo Move to oxr_action.h and implement more fully.
-	struct oxr_action_set* act_set = NULL;
-	OXR_ALLOCATE_HANDLE_OR_RETURN(&log, act_set, OXR_XR_DEBUG_ACTIONSET,
-	                              oxr_action_set_destroy, &sess->handle);
-	act_set->sess = sess;
+	ret = oxr_action_set_create(&log, sess, createInfo, &act_set);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
 
-	*actionSet = (XrActionSet)act_set;
+	*actionSet = oxr_action_set_to_openxr(act_set);
 
 	return XR_SUCCESS;
 }
@@ -168,24 +168,16 @@ oxr_xrDestroyActionSet(XrActionSet actionSet)
  *
  */
 
-static XrResult
-oxr_action_destroy(struct oxr_logger* log, struct oxr_handle_base* hb)
-{
-	//! @todo Move to oxr_action.h
-	struct oxr_action* act = (struct oxr_action*)hb;
-
-	free(act);
-
-	return XR_SUCCESS;
-}
-
 XrResult
 oxr_xrCreateAction(XrActionSet actionSet,
                    const XrActionCreateInfo* createInfo,
                    XrAction* action)
 {
 	struct oxr_action_set* act_set;
+	struct oxr_action* act = NULL;
 	struct oxr_logger log;
+	XrResult ret;
+
 	OXR_VERIFY_ACTIONSET_AND_INIT_LOG(&log, actionSet, act_set,
 	                                  "xrCreateAction");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
@@ -195,12 +187,12 @@ oxr_xrCreateAction(XrActionSet actionSet,
 	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionName);
 	OXR_VERIFY_ARG_NOT_NULL(&log, action);
 
-	//! @todo Move to oxr_action.h and implement more fully.
-	struct oxr_action* act = NULL;
-	OXR_ALLOCATE_HANDLE_OR_RETURN(&log, act, OXR_XR_DEBUG_ACTION,
-	                              oxr_action_destroy, &act_set->handle);
-	act->act_set = act_set;
-	*action = (XrAction)act;
+	ret = oxr_action_create(&log, act_set, createInfo, &act);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	*action = oxr_action_to_openxr(act);
 
 	return XR_SUCCESS;
 }
@@ -229,8 +221,8 @@ oxr_xrGetActionStateBoolean(XrAction action,
 	OXR_VERIFY_SUBACTION_PATHS(&log, countSubactionPaths, subactionPaths);
 	//! @todo verify paths
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_action_get_boolean(&log, act, countSubactionPaths,
+	                              subactionPaths, data);
 }
 
 XrResult
@@ -247,8 +239,8 @@ oxr_xrGetActionStateVector1f(XrAction action,
 	OXR_VERIFY_SUBACTION_PATHS(&log, countSubactionPaths, subactionPaths);
 	//! @todo verify paths
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_action_get_vector1f(&log, act, countSubactionPaths,
+	                               subactionPaths, data);
 }
 
 XrResult
@@ -265,8 +257,8 @@ oxr_xrGetActionStateVector2f(XrAction action,
 	OXR_VERIFY_SUBACTION_PATHS(&log, countSubactionPaths, subactionPaths);
 	//! @todo verify paths
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_action_get_vector2f(&log, act, countSubactionPaths,
+	                               subactionPaths, data);
 }
 
 XrResult
@@ -281,8 +273,7 @@ oxr_xrGetActionStatePose(XrAction action,
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, data, XR_TYPE_ACTION_STATE_POSE);
 	//! @todo verify path
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_action_get_pose(&log, act, subactionPath, data);
 }
 
 XrResult
@@ -296,8 +287,8 @@ oxr_xrGetBoundSourcesForAction(XrAction action,
 	OXR_VERIFY_ACTION_AND_INIT_LOG(&log, action, act,
 	                               "xrGetBoundSourcesForAction");
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_action_get_bound_sources(&log, act, sourceCapacityInput,
+	                                    sourceCountOutput, sources);
 }
 
 
@@ -313,15 +304,15 @@ oxr_xrApplyHapticFeedback(XrAction hapticAction,
                           const XrPath* subactionPaths,
                           const XrHapticBaseHeader* hapticEvent)
 {
-	struct oxr_action* hapticAct;
+	struct oxr_action* act;
 	struct oxr_logger log;
-	OXR_VERIFY_ACTION_AND_INIT_LOG(&log, hapticAction, hapticAct,
+	OXR_VERIFY_ACTION_AND_INIT_LOG(&log, hapticAction, act,
 	                               "xrApplyHapticFeedback");
 	OXR_VERIFY_SUBACTION_PATHS(&log, countSubactionPaths, subactionPaths);
 	//! @todo verify paths
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_action_apply_haptic_feedback(&log, act, countSubactionPaths,
+	                                        subactionPaths, hapticEvent);
 }
 
 XrResult
@@ -329,13 +320,13 @@ oxr_xrStopHapticFeedback(XrAction hapticAction,
                          uint32_t countSubactionPaths,
                          const XrPath* subactionPaths)
 {
-	struct oxr_action* hapticAct;
+	struct oxr_action* act;
 	struct oxr_logger log;
-	OXR_VERIFY_ACTION_AND_INIT_LOG(&log, hapticAction, hapticAct,
+	OXR_VERIFY_ACTION_AND_INIT_LOG(&log, hapticAction, act,
 	                               "xrStopHapticFeedback");
 	OXR_VERIFY_SUBACTION_PATHS(&log, countSubactionPaths, subactionPaths);
 	//! @todo verify paths
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_action_stop_haptic_feedback(&log, act, countSubactionPaths,
+	                                       subactionPaths);
 }

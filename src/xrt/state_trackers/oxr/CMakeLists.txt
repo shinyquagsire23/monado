@@ -21,6 +21,7 @@ set(OXR_SOURCE_FILES
 	oxr_chain.h
 	oxr_event.cpp
 	oxr_handle_base.c
+	oxr_input.c
 	oxr_instance.c
 	oxr_logger.cpp
 	oxr_logger.h
