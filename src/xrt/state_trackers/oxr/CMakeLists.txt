@@ -39,6 +39,7 @@ set(OXR_SOURCE_FILES
 	oxr_two_call.h
 	oxr_verify.cpp
 	oxr_vulkan.c
+	oxr_xdev.c
 	)
 
 # Use OBJECT to not create a archive, since it just gets in the way.

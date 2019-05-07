@@ -10,10 +10,12 @@
 #pragma once
 
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_tracking.h"
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_vulkan_includes.h"
 #include "xrt/xrt_openxr_includes.h"
 #include "util/u_hashset.h"
+#include "util/u_hashmap.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,6 +50,8 @@ extern "C" {
 #define OXR_XR_DEBUG_SWAPCHAIN (*(uint64_t *)"oxrswap\0")
 #define OXR_XR_DEBUG_ACTIONSET (*(uint64_t *)"oxraset\0")
 #define OXR_XR_DEBUG_MESSENGER (*(uint64_t *)"oxrmess\0")
+#define OXR_XR_DEBUG_SOURCESET (*(uint64_t *)"oxrsrcs\0")
+#define OXR_XR_DEBUG_SOURCE    (*(uint64_t *)"oxrsrc_\0")
 // clang-format on
 
 
@@ -68,6 +72,11 @@ struct oxr_action_set;
 struct oxr_action;
 struct oxr_debug_messenger;
 struct oxr_handle_base;
+struct oxr_sub_paths;
+struct oxr_source;
+struct oxr_source_set;
+struct oxr_source_input;
+struct oxr_source_output;
 
 #define XRT_MAX_HANDLE_CHILDREN 256
 
@@ -213,6 +222,26 @@ oxr_path_destroy_all(struct oxr_logger *log, struct oxr_instance *inst);
  */
 
 /*!
+ * Helper function to classify sub_paths.
+ */
+void
+oxr_classify_sub_action_paths(struct oxr_logger *log,
+                              struct oxr_instance *inst,
+                              uint32_t num_subaction_paths,
+                              const XrPath *subaction_paths,
+                              struct oxr_sub_paths *sub_paths);
+
+/*!
+ * Find the pose input for the set of sub_paths
+ */
+XrResult
+oxr_source_get_pose_input(struct oxr_logger *log,
+                          struct oxr_session *sess,
+                          uint32_t key,
+                          const struct oxr_sub_paths *sub_paths,
+                          struct oxr_source_input **out_input);
+
+/*!
  * To go back to a OpenXR object.
  */
 XRT_MAYBE_UNUSED static inline XrActionSet
@@ -274,28 +303,25 @@ oxr_action_get_input_source_localized_name(
 XrResult
 oxr_action_get_boolean(struct oxr_logger *log,
                        struct oxr_action *act,
-                       uint32_t countSubactionPaths,
-                       const XrPath *subactionPaths,
+                       struct oxr_sub_paths sub_paths,
                        XrActionStateBoolean *data);
 XrResult
 oxr_action_get_vector1f(struct oxr_logger *log,
                         struct oxr_action *act,
-                        uint32_t countSubactionPaths,
-                        const XrPath *subactionPaths,
+                        struct oxr_sub_paths sub_paths,
                         XrActionStateVector1f *data);
 
 
 XrResult
 oxr_action_get_vector2f(struct oxr_logger *log,
                         struct oxr_action *act,
-                        uint32_t countSubactionPaths,
-                        const XrPath *subactionPaths,
+                        struct oxr_sub_paths sub_paths,
                         XrActionStateVector2f *data);
 
 XrResult
 oxr_action_get_pose(struct oxr_logger *log,
                     struct oxr_action *act,
-                    XrPath subactionPath,
+                    struct oxr_sub_paths sub_paths,
                     XrActionStatePose *data);
 
 XrResult
@@ -495,7 +521,9 @@ oxr_system_fill_in(struct oxr_logger *log,
                    struct oxr_instance *inst,
                    XrSystemId systemId,
                    struct oxr_system *sys,
-                   struct xrt_device *dev);
+                   struct xrt_device *head,
+                   struct xrt_device *left,
+                   struct xrt_device *right);
 
 XrResult
 oxr_system_verify_id(struct oxr_logger *log,
@@ -561,6 +589,34 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
                                               struct oxr_session *sess,
                                               XrSessionState state,
                                               XrTime time);
+
+
+/*
+ *
+ * oxr_xdev.c
+ *
+ */
+
+void
+oxr_xdev_update(struct xrt_device* xdev, struct time_state* timekeeping);
+
+void
+oxr_xdev_find_input(struct xrt_device *xdev,
+                    enum xrt_input_name name,
+                    struct xrt_input **out_input);
+
+void
+oxr_xdev_find_output(struct xrt_device *xdev,
+                     enum xrt_output_name name,
+                     struct xrt_output **out_output);
+
+void
+oxr_xdev_get_pose_at(struct oxr_logger *log,
+                     struct oxr_instance *inst,
+                     struct xrt_device *xdev,
+                     enum xrt_input_name name,
+                     struct xrt_pose *pose,
+                     int64_t *timestamp);
 
 
 /*
@@ -687,7 +743,11 @@ struct oxr_handle_base
 struct oxr_system
 {
 	struct oxr_instance *inst;
-	struct xrt_device *device;
+
+	struct xrt_device *head;
+	struct xrt_device *left;
+	struct xrt_device *right;
+
 	XrSystemId systemId;
 
 	XrFormFactor form_factor;
@@ -707,7 +767,7 @@ struct oxr_instance
 	//! Common structure for things referred to by OpenXR handles.
 	struct oxr_handle_base handle;
 
-	struct xrt_auto_prober *prober;
+	struct xrt_prober *prober;
 
 	// Enabled extensions
 	bool headless;
@@ -725,6 +785,16 @@ struct oxr_instance
 	// Event queue.
 	struct oxr_event *last_event;
 	struct oxr_event *next_event;
+
+
+	struct
+	{
+		XrPath user;
+		XrPath head;
+		XrPath left;
+		XrPath right;
+		XrPath gamepad;
+	} path_cache;
 
 #ifdef XR_EXT_debug_utils
 	//! Debug messengers
@@ -747,6 +817,9 @@ struct oxr_session
 	XrSessionState state;
 	bool frame_started;
 
+	struct u_hashmap_int *act_sets;
+	struct u_hashmap_int *sources;
+
 	/*!
 	 * IPD, to be expanded to a proper 3D relation.
 	 */
@@ -761,6 +834,122 @@ struct oxr_session
 	                             struct oxr_session *sess,
 	                             const XrSwapchainCreateInfo *,
 	                             struct oxr_swapchain **);
+};
+
+/*!
+ * To carry around a sementic selection of sub action paths.
+ */
+struct oxr_sub_paths
+{
+	bool any;
+	bool user;
+	bool head;
+	bool left;
+	bool right;
+	bool gamepad;
+};
+
+/*!
+ * Session input source.
+ *
+ * @see oxr_action_set
+ */
+struct oxr_source_set
+{
+	//! Common structure for things referred to by OpenXR handles.
+	struct oxr_handle_base handle;
+
+	//! Which generation of the XrActionSet was this created from.
+	uint32_t generation;
+};
+
+/*!
+ * The state of a action input source.
+ *
+ * @see oxr_source
+ */
+struct oxr_source_state
+{
+	union {
+		struct
+		{
+			float x;
+		} vec1;
+
+		struct
+		{
+			float x;
+			float y;
+		} vec2;
+
+		bool boolean;
+	};
+
+	bool active;
+
+	// Was this changed.
+	bool changed;
+
+	//! When was this last changed.
+	XrTime timestamp;
+};
+
+/*!
+ * A input source pair of a @ref xrt_input and a @ref xrt_device.
+ *
+ * @see xrt_device
+ * @see xrt_input
+ */
+struct oxr_source_input
+{
+	struct xrt_device *xdev;
+	struct xrt_input *input;
+};
+
+/*!
+ * A output source pair of a @ref xrt_output_name and a @ref xrt_device.
+ *
+ * @see xrt_device
+ * @see xrt_output_name
+ */
+struct oxr_source_output
+{
+	struct xrt_device *xdev;
+	enum xrt_output_name name;
+};
+
+/*!
+ * A set of inputs for a single sub action path.
+ *
+ * @see oxr_source
+ */
+struct oxr_source_cache
+{
+	struct oxr_source_state current;
+
+	size_t num_inputs;
+	struct oxr_source_input *inputs;
+
+	int64_t stop_output_time;
+	size_t num_outputs;
+	struct oxr_source_output *outputs;
+};
+
+/*!
+ * Session input source.
+ *
+ * @see oxr_action
+ */
+struct oxr_source
+{
+	//! Common structure for things referred to by OpenXR handles.
+	struct oxr_handle_base handle;
+
+	struct oxr_source_cache user;
+	struct oxr_source_cache head;
+	struct oxr_source_cache left;
+	struct oxr_source_cache right;
+	struct oxr_source_cache gamepad;
 };
 
 /*!
@@ -782,8 +971,14 @@ struct oxr_space
 	//! What kind of reference space is this, if any.
 	XrReferenceSpaceType type;
 
+	//! Action key from which action this space was created from.
+	uint32_t act_key;
+
 	//! Is this a reference space?
 	bool is_reference;
+
+	//! Which sub action path is this?
+	struct oxr_sub_paths sub_paths;
 };
 
 /*!
@@ -839,6 +1034,15 @@ struct oxr_action_set
 
 	//! Onwer of this messenger.
 	struct oxr_session *sess;
+
+	/*!
+	 * Every change that is done to a action set will increment this
+	 * counter and trigger a rebinding of inputs when syncing actions.
+	 */
+	uint32_t generation;
+
+	//! Unique key for the session hashmap.
+	uint32_t key;
 };
 
 /*!
@@ -853,6 +1057,18 @@ struct oxr_action
 
 	//! Onwer of this messenger.
 	struct oxr_action_set *act_set;
+
+	//! Application supplied name of this action.
+	char name[XR_MAX_ACTION_NAME_SIZE];
+
+	//! Unique key for the session hashmap.
+	uint32_t key;
+
+	//! Type this action was created with.
+	XrActionType action_type;
+
+	//! Which sub action paths that this action was created with.
+	struct oxr_sub_paths sub_paths;
 };
 
 /*!

@@ -266,6 +266,185 @@ oxr_verify_full_path(struct oxr_logger* log,
 
 /*
  *
+ * Subaction path functions.
+ *
+ */
+
+static XrResult
+subaction_path_no_dups(struct oxr_logger* log,
+                       struct oxr_instance* inst,
+                       struct oxr_sub_paths& sub_paths,
+                       XrPath path,
+                       const char* variable,
+                       uint32_t index)
+{
+	bool duplicate = false;
+
+	if (path == XR_NULL_PATH) {
+		return oxr_error(log, XR_ERROR_PATH_INVALID,
+		                 "(%s[%u] == XR_NULL_PATH) not a "
+		                 "valid subaction path.",
+		                 variable, index);
+	} else if (path == inst->path_cache.user) {
+		if (sub_paths.user) {
+			duplicate = true;
+		} else {
+			sub_paths.user = true;
+		}
+	} else if (path == inst->path_cache.head) {
+		if (sub_paths.head) {
+			duplicate = true;
+		} else {
+			sub_paths.head = true;
+		}
+	} else if (path == inst->path_cache.left) {
+		if (sub_paths.left) {
+			duplicate = true;
+		} else {
+			sub_paths.left = true;
+		}
+	} else if (path == inst->path_cache.right) {
+		if (sub_paths.right) {
+			duplicate = true;
+		} else {
+			sub_paths.right = true;
+		}
+	} else if (path == inst->path_cache.gamepad) {
+		if (sub_paths.gamepad) {
+			duplicate = true;
+		} else {
+			sub_paths.gamepad = true;
+		}
+	} else {
+		const char* str = NULL;
+		size_t length = 0;
+
+		oxr_path_get_string(log, inst, path, &str, &length);
+		return oxr_error(log, XR_ERROR_PATH_INVALID,
+		                 "(%s[%u] == '%s') path is not a "
+		                 "valid subaction path.",
+		                 variable, index, str);
+	}
+
+	if (duplicate) {
+		const char* str = NULL;
+		size_t length = 0;
+
+		oxr_path_get_string(log, inst, path, &str, &length);
+
+		return oxr_error(log, XR_ERROR_PATH_INVALID,
+		                 "(%s[%u] == '%s') duplicate paths", variable,
+		                 index, str);
+	}
+
+	return XR_SUCCESS;
+}
+
+
+extern "C" XrResult
+oxr_verify_subaction_paths_create(struct oxr_logger* log,
+                                  struct oxr_instance* inst,
+                                  uint32_t countSubactionPaths,
+                                  const XrPath* subactionPaths,
+                                  const char* variable)
+{
+	struct oxr_sub_paths sub_paths = {};
+
+	for (uint32_t i = 0; i < countSubactionPaths; i++) {
+		XrPath path = subactionPaths[i];
+
+		XrResult ret = subaction_path_no_dups(log, inst, sub_paths,
+		                                      path, variable, i);
+		if (ret != XR_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return XR_SUCCESS;
+}
+
+extern "C" XrResult
+oxr_verify_subaction_path_sync(struct oxr_logger* log,
+                               struct oxr_instance* inst,
+                               XrPath path,
+                               uint32_t index)
+{
+	if (path == XR_NULL_PATH || path == inst->path_cache.user ||
+	    path == inst->path_cache.head || path == inst->path_cache.left ||
+	    path == inst->path_cache.right ||
+	    path == inst->path_cache.gamepad) {
+		return XR_SUCCESS;
+	} else {
+		const char* str = NULL;
+		size_t length = 0;
+
+		oxr_path_get_string(log, inst, path, &str, &length);
+		return oxr_error(log, XR_ERROR_PATH_INVALID,
+		                 "(actionSets[%i].subactionPath == '%s') path "
+		                 "is not a valid subaction path.",
+		                 index, str);
+	}
+
+	return XR_SUCCESS;
+}
+
+extern "C" XrResult
+oxr_verify_subaction_path_get(struct oxr_logger* log,
+                              struct oxr_instance* inst,
+                              XrPath path,
+                              const struct oxr_sub_paths* act_sub_paths,
+                              struct oxr_sub_paths* out_sub_paths,
+                              const char* variable)
+{
+	struct oxr_sub_paths sub_paths = {};
+
+	if (path == XR_NULL_PATH) {
+		sub_paths.any = true;
+	} else if (path == inst->path_cache.user) {
+		sub_paths.user = true;
+	} else if (path == inst->path_cache.head) {
+		sub_paths.head = true;
+	} else if (path == inst->path_cache.left) {
+		sub_paths.left = true;
+	} else if (path == inst->path_cache.right) {
+		sub_paths.right = true;
+	} else if (path == inst->path_cache.gamepad) {
+		sub_paths.gamepad = true;
+	} else {
+		const char* str = NULL;
+		size_t length = 0;
+
+		oxr_path_get_string(log, inst, path, &str, &length);
+		return oxr_error(log, XR_ERROR_PATH_INVALID,
+		                 "(%s == '%s') path is not "
+		                 "a valid subaction path.",
+		                 variable, str);
+	}
+
+	if ((sub_paths.user && !act_sub_paths->user) ||
+	    (sub_paths.head && !act_sub_paths->head) ||
+	    (sub_paths.left && !act_sub_paths->left) ||
+	    (sub_paths.right && !act_sub_paths->right) ||
+	    (sub_paths.gamepad && !act_sub_paths->gamepad)) {
+		const char* str = NULL;
+		size_t length = 0;
+
+		oxr_path_get_string(log, inst, path, &str, &length);
+
+		return oxr_error(log, XR_ERROR_PATH_INVALID,
+		                 "(%s == '%s') the subaction path was "
+		                 "not specified at action creation",
+		                 variable, str);
+	}
+
+	*out_sub_paths = sub_paths;
+
+	return XR_SUCCESS;
+}
+
+
+/*
+ *
  * Other verification.
  *
  */

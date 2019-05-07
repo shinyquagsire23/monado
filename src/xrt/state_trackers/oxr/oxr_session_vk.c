@@ -30,7 +30,7 @@ oxr_session_populate_vk(struct oxr_logger *log,
                         struct oxr_session *sess)
 {
 	struct xrt_compositor_vk *xcvk = xrt_gfx_vk_provider_create(
-	    sys->device, sys->inst->timekeeping, next->instance,
+	    sys->head, sys->inst->timekeeping, next->instance,
 	    vkGetInstanceProcAddr, next->physicalDevice, next->device,
 	    next->queueFamilyIndex, next->queueIndex);
 

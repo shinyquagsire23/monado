@@ -170,6 +170,36 @@ oxr_verify_localized_name(struct oxr_logger*,
                           uint32_t array_size,
                           const char* name);
 
+/*!
+ * Verify a set of subaction paths for action creation.
+ */
+XrResult
+oxr_verify_subaction_paths_create(struct oxr_logger* log,
+                                  struct oxr_instance* inst,
+                                  uint32_t countSubactionPaths,
+                                  const XrPath* subactionPaths,
+                                  const char* variable);
+
+/*!
+ * Verify a set of subaction paths for action sync.
+ */
+XrResult
+oxr_verify_subaction_path_sync(struct oxr_logger* log,
+                               struct oxr_instance* inst,
+                               XrPath path,
+                               uint32_t index);
+
+/*!
+ * Verify a set of subaction paths for action state get.
+ */
+XrResult
+oxr_verify_subaction_path_get(struct oxr_logger* log,
+                              struct oxr_instance* inst,
+                              XrPath path,
+                              const struct oxr_sub_paths* act_sub_paths,
+                              struct oxr_sub_paths* out_sub_paths,
+                              const char* variable);
+
 XrResult
 oxr_verify_XrSessionCreateInfo(struct oxr_logger*,
                                const struct oxr_instance*,

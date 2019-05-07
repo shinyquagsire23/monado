@@ -34,12 +34,24 @@ radtodeg_for_display(float radians)
 	return (int32_t)(radians * 180 * M_1_PI);
 }
 
+static inline void
+xdev_destroy(struct xrt_device **xdev_ptr)
+{
+	struct xrt_device *xdev = *xdev_ptr;
+
+	if (xdev == NULL) {
+		return;
+	}
+
+	xdev->destroy(xdev);
+	*xdev_ptr = NULL;
+}
+
 static XrResult
 oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	struct oxr_instance *inst = (struct oxr_instance *)hb;
-	struct xrt_auto_prober *prober = inst->prober;
-	struct xrt_device *dev = inst->system.device;
+	struct xrt_prober *prober = inst->prober;
 
 	oxr_path_destroy_all(log, inst);
 
@@ -47,14 +59,12 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 		u_hashset_destroy(&inst->path_store);
 	}
 
-	if (dev != NULL) {
-		dev->destroy(dev);
-		inst->system.device = NULL;
-	}
+	xdev_destroy(&inst->system.head);
+	xdev_destroy(&inst->system.left);
+	xdev_destroy(&inst->system.right);
 
-	if (prober != NULL) {
-		prober->destroy(prober);
-		inst->prober = NULL;
+	if (inst->prober != NULL) {
+		prober->destroy(&inst->prober);
 	}
 
 	time_state_destroy(inst->timekeeping);
@@ -65,13 +75,23 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	return XR_SUCCESS;
 }
 
+static void
+cache_path(struct oxr_logger *log,
+           struct oxr_instance *inst,
+           const char *str,
+           XrPath *out_path)
+{
+	oxr_path_get_or_create(log, inst, str, strlen(str), out_path);
+}
+
 XrResult
 oxr_instance_create(struct oxr_logger *log,
                     const XrInstanceCreateInfo *createInfo,
                     struct oxr_instance **out_instance)
 {
 	struct oxr_instance *inst = NULL;
-	int h_ret;
+	struct xrt_device *xdevs[3] = {0};
+	int h_ret, p_ret;
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
 	                              oxr_instance_destroy, NULL);
@@ -83,10 +103,35 @@ oxr_instance_create(struct oxr_logger *log,
 		                 "Failed to create hashset");
 	}
 
-	inst->prober = xrt_auto_prober_create();
+	// Cache certain often looked up paths.
+	cache_path(log, inst, "/user", &inst->path_cache.user);
+	cache_path(log, inst, "/user/hand/head", &inst->path_cache.head);
+	cache_path(log, inst, "/user/hand/left", &inst->path_cache.left);
+	cache_path(log, inst, "/user/hand/right", &inst->path_cache.right);
+	cache_path(log, inst, "/user/hand/gamepad", &inst->path_cache.gamepad);
 
-	struct xrt_device *dev =
-	    inst->prober->lelo_dallas_autoprobe(inst->prober);
+	p_ret = xrt_prober_create(&inst->prober);
+	if (p_ret != 0) {
+		inst->prober->destroy(&inst->prober);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to create prober");
+	}
+
+	p_ret = inst->prober->probe(inst->prober);
+	if (p_ret != 0) {
+		inst->prober->destroy(&inst->prober);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to probe device(s)");
+	}
+
+	p_ret = inst->prober->select(inst->prober, xdevs, 3);
+	if (p_ret != 0) {
+		inst->prober->destroy(&inst->prober);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to select device");
+	}
+
+	struct xrt_device *dev = xdevs[0];
 
 	const float left_override = debug_get_float_option_lfov_left();
 	if (left_override != 0.0f) {
@@ -127,7 +172,8 @@ oxr_instance_create(struct oxr_logger *log,
 		dev->hmd->views[1].fov.angle_down = down_override;
 	}
 
-	oxr_system_fill_in(log, inst, 1, &inst->system, dev);
+	oxr_system_fill_in(log, inst, 1, &inst->system, xdevs[0], xdevs[1],
+	                   xdevs[2]);
 
 	inst->timekeeping = time_state_create();
 

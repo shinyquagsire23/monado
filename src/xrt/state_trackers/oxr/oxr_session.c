@@ -129,6 +129,7 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 	return XR_SUCCESS;
 }
 
+
 XrResult
 oxr_session_get_view_pose_at(struct oxr_logger *log,
                              struct oxr_session *sess,
@@ -145,33 +146,39 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 	// @todo If using orientation tracking only implement a neck model to
 	//       get at least a slightly better position.
 
-	struct xrt_device *xdev = sess->sys->device;
+	struct xrt_device *xdev = sess->sys->head;
+	struct xrt_pose *offset = &xdev->tracking->offset;
+
 	struct xrt_space_relation relation;
 	int64_t timestamp;
 	xdev->get_tracked_pose(xdev, XRT_INPUT_GENERIC_HEAD_RELATION,
 	                       sess->sys->inst->timekeeping, &timestamp,
 	                       &relation);
-	if ((relation.relation_flags &
-	     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0) {
+
+	// Add in the offset from the tracking system.
+	math_relation_accumulate_transform(offset, &relation);
+
+	// clang-format off
+	bool valid_pos = (relation.relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0;
+	bool valid_ori = (relation.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
+	bool valid_vel = (relation.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0;
+	// clang-format on
+
+	if (valid_ori) {
 		pose->orientation = relation.pose.orientation;
 	} else {
-		pose->orientation.x = 0;
-		pose->orientation.y = 0;
-		pose->orientation.z = 0;
-		pose->orientation.w = 1;
-	}
-	if ((relation.relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) !=
-	    0) {
-		pose->position = relation.pose.position;
-	} else {
-		// "nominal height" 1.6m
-		pose->position.x = 0.0f;
-		pose->position.y = 1.60f;
-		pose->position.z = 0.0f;
+		// If the orientation is not valid just use the offset.
+		pose->orientation = offset->orientation;
 	}
 
-	if ((relation.relation_flags &
-	     XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0) {
+	if (valid_pos) {
+		pose->position = relation.pose.position;
+	} else {
+		// If the position is not valid just use the offset.
+		pose->position = offset->position;
+	}
+
+	if (valid_vel) {
 		//! @todo Forcing a fixed amount of prediction for now since
 		//! devices don't tell us timestamps yet.
 		int64_t ns_diff = at_time - timestamp;
@@ -187,8 +194,8 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 		math_quat_integrate_velocity(&pose->orientation,
 		                             &relation.angular_velocity,
 		                             interval, &predicted);
-		if (debug_get_bool_option_views()) {
 
+		if (debug_get_bool_option_views()) {
 			fprintf(stderr,
 			        "\toriginal quat = {%f, %f, %f, %f}   "
 			        "(time requested: %li, Interval %li nsec, with "
@@ -197,6 +204,7 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 			        pose->orientation.z, pose->orientation.w,
 			        at_time, ns_diff, interval);
 		}
+
 		pose->orientation = predicted;
 	}
 
@@ -238,7 +246,7 @@ oxr_session_views(struct oxr_logger *log,
                   uint32_t *viewCountOutput,
                   XrView *views)
 {
-	struct xrt_device *xdev = sess->sys->device;
+	struct xrt_device *xdev = sess->sys->head;
 	struct oxr_space *baseSpc = (struct oxr_space *)viewLocateInfo->space;
 	uint32_t num_views = 2;
 
@@ -276,9 +284,9 @@ oxr_session_views(struct oxr_logger *log,
 
 	struct xrt_pose pure = pure_relation.pose;
 
-	// @todo the fov information that we get from xdev->views[i].fov is not
-	//       properly filled out in oh_device.c, fix before wasting time on
-	//       debugging weird rendering when adding stuff here.
+	// @todo the fov information that we get from xdev->hmd->views[i].fov is
+	//       not properly filled out in oh_device.c, fix before wasting time
+	//       on debugging weird rendering when adding stuff here.
 
 	for (uint32_t i = 0; i < num_views; i++) {
 		//! @todo Do not hardcode IPD.
@@ -427,7 +435,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 		                 "unknown environment blend mode");
 	}
 
-	if ((blend_mode & sess->sys->device->hmd->blend_mode) == 0) {
+	if ((blend_mode & sess->sys->head->hmd->blend_mode) == 0) {
 		return oxr_error(log,
 		                 XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED,
 		                 "(frameEndInfo->environmentBlendMode) "
@@ -581,6 +589,9 @@ oxr_session_create(struct oxr_logger *log,
 	oxr_event_push_XrEventDataSessionStateChanged(
 	    log, sess, XR_SESSION_STATE_READY, 0);
 	sess->state = XR_SESSION_STATE_READY;
+
+	u_hashmap_int_create(&sess->act_sets);
+	u_hashmap_int_create(&sess->sources);
 
 	*out_session = sess;
 

@@ -93,15 +93,38 @@ oxr_system_fill_in(struct oxr_logger *log,
                    struct oxr_instance *inst,
                    XrSystemId systemId,
                    struct oxr_system *sys,
-                   struct xrt_device *xdev)
+                   struct xrt_device *head,
+                   struct xrt_device *left,
+                   struct xrt_device *right)
 {
-	if (xdev == NULL) {
+	if (head == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 " failed to probe device");
 	}
 
+	if (head->tracking->type == XRT_TRACKING_TYPE_NONE) {
+		// "nominal height" 1.6m
+		head->tracking->offset.position.x = 0.0f;
+		head->tracking->offset.position.y = 1.6f;
+		head->tracking->offset.position.z = 0.0f;
+	}
+
+	if (left != NULL && left->tracking->type == XRT_TRACKING_TYPE_NONE) {
+		left->tracking->offset.position.x = -0.2f;
+		left->tracking->offset.position.y = 1.3f;
+		left->tracking->offset.position.z = -0.5f;
+	}
+
+	if (right != NULL && right->tracking->type == XRT_TRACKING_TYPE_NONE) {
+		right->tracking->offset.position.x = 0.2f;
+		right->tracking->offset.position.y = 1.3f;
+		right->tracking->offset.position.z = -0.5f;
+	}
+
 	// clang-format off
-	sys->device           = xdev;
+	sys->head             = head;
+	sys->left             = left;
+	sys->right            = right;
 	sys->inst             = inst;
 	sys->systemId         = systemId;
 	sys->form_factor      = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
@@ -109,10 +132,11 @@ oxr_system_fill_in(struct oxr_logger *log,
 
 	double scale = debug_get_num_option_scale_percentage() / 100.0;
 
-	uint32_t w0 = (uint32_t)(xdev->hmd->views[0].display.w_pixels * scale);
-	uint32_t h0 = (uint32_t)(xdev->hmd->views[0].display.w_pixels * scale);
-	uint32_t w1 = (uint32_t)(xdev->hmd->views[1].display.w_pixels * scale);
-	uint32_t h1 = (uint32_t)(xdev->hmd->views[1].display.w_pixels * scale);
+
+	uint32_t w0 = (uint32_t)(head->hmd->views[0].display.w_pixels * scale);
+	uint32_t h0 = (uint32_t)(head->hmd->views[0].display.w_pixels * scale);
+	uint32_t w1 = (uint32_t)(head->hmd->views[1].display.w_pixels * scale);
+	uint32_t h1 = (uint32_t)(head->hmd->views[1].display.w_pixels * scale);
 
 	sys->views[0].recommendedImageRectWidth       = w0;
 	sys->views[0].maxImageRectWidth               = w0;
@@ -130,13 +154,13 @@ oxr_system_fill_in(struct oxr_logger *log,
 	// clang-format on
 
 	uint32_t i = 0;
-	if (xdev->hmd->blend_mode & XRT_BLEND_MODE_OPAQUE) {
+	if (head->hmd->blend_mode & XRT_BLEND_MODE_OPAQUE) {
 		sys->blend_modes[i++] = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
 	}
-	if (xdev->hmd->blend_mode & XRT_BLEND_MODE_ADDITIVE) {
+	if (head->hmd->blend_mode & XRT_BLEND_MODE_ADDITIVE) {
 		sys->blend_modes[i++] = XR_ENVIRONMENT_BLEND_MODE_ADDITIVE;
 	}
-	if (xdev->hmd->blend_mode & XRT_BLEND_MODE_ALPHA_BLEND) {
+	if (head->hmd->blend_mode & XRT_BLEND_MODE_ALPHA_BLEND) {
 		sys->blend_modes[i++] = XR_ENVIRONMENT_BLEND_MODE_ALPHA_BLEND;
 	}
 	sys->num_blend_modes = i;
@@ -157,7 +181,7 @@ oxr_system_get_properties(struct oxr_logger *log,
 	properties->graphicsProperties.maxViewCount = 2;
 
 	// Needed to silence the warnings.
-	const char *name = sys->device->name;
+	const char *name = sys->head->name;
 
 	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE, "Monado: %s",
 	         name);

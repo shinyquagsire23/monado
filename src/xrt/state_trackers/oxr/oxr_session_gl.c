@@ -27,7 +27,7 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              struct oxr_session *sess)
 {
 	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_xlib(
-	    sys->device, sys->inst->timekeeping, next->xDisplay, next->visualid,
+	    sys->head, sys->inst->timekeeping, next->xDisplay, next->visualid,
 	    next->glxFBConfig, next->glxDrawable, next->glxContext);
 
 	if (xcgl == NULL) {

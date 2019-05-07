@@ -58,6 +58,10 @@ oxr_space_action_create(struct oxr_logger *log,
                         const XrActionSpaceCreateInfo *createInfo,
                         struct oxr_space **out_space)
 {
+	struct oxr_session *sess = act->act_set->sess;
+	struct oxr_instance *inst = sess->sys->inst;
+	struct oxr_sub_paths sub_paths = {0};
+
 	struct oxr_space *spc = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, spc, OXR_XR_DEBUG_SPACE,
 	                              oxr_space_destroy, &act->handle);
@@ -65,8 +69,12 @@ oxr_space_action_create(struct oxr_logger *log,
 	//! @todo implement more fully
 	oxr_warn(log, " not fully implemented");
 
+	oxr_classify_sub_action_paths(log, inst, 1, &createInfo->subactionPath,
+	                              &sub_paths);
+
 	spc->sess = act->act_set->sess;
 	spc->is_reference = false;
+	spc->sub_paths = sub_paths;
 	memcpy(&spc->pose, &createInfo->poseInActionSpace, sizeof(spc->pose));
 
 	*out_space = spc;
@@ -112,7 +120,7 @@ static const char *
 get_ref_space_type_short_str(struct oxr_space *spc)
 {
 	if (!spc->is_reference) {
-		return "action?";
+		return "action";
 	}
 
 	switch (spc->type) {
@@ -182,6 +190,82 @@ oxr_space_ref_relation(struct oxr_logger *log,
 }
 
 /*!
+ * This returns only the relation between two spaces without any of the app
+ * given relations applied, assumes that only one is a action space.
+ */
+XrResult
+oxr_space_action_relation(struct oxr_logger *log,
+                          struct oxr_session *sess,
+                          struct oxr_space *spc,
+                          struct oxr_space *baseSpc,
+                          XrTime time,
+                          struct xrt_space_relation *out_relation)
+{
+	struct oxr_source_input *input = NULL;
+	struct oxr_space *act_spc, *ref_spc = NULL;
+	int64_t timestamp = 0;
+	bool invert = false;
+
+
+
+	// Find the action space
+	if (baseSpc->is_reference) {
+		// Note spc, is assumed to be the action space.
+		act_spc = spc;
+		ref_spc = baseSpc;
+	}
+
+	// Find the action space.
+	if (spc->is_reference) {
+		// Note baseSpc, is assumed to be the action space.
+		act_spc = baseSpc;
+		ref_spc = spc;
+		invert = true;
+	}
+
+	// Internal error check.
+	if (act_spc == NULL || act_spc->is_reference || ref_spc == NULL ||
+	    !ref_spc->is_reference) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "this is bad!");
+	}
+
+	// Reset so no relation is returned.
+	math_relation_reset(out_relation);
+
+	// We treat state and local space as the same.
+	//! @todo Can not relate to the view space right now.
+	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		//! @todo Error code?
+		return XR_SUCCESS;
+	}
+
+	oxr_source_get_pose_input(log, sess, act_spc->act_key,
+	                          &act_spc->sub_paths, &input);
+
+	// If the input isn't active.
+	if (input == NULL) {
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+		return XR_SUCCESS;
+	}
+
+	oxr_xdev_get_pose_at(log, sess->sys->inst, input->xdev,
+	                     input->input->name, &out_relation->pose,
+	                     &timestamp);
+
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+
+	if (invert) {
+		math_pose_invert(&out_relation->pose, &out_relation->pose);
+	}
+
+	return XR_SUCCESS;
+}
+
+/*!
  * This returns only the relation between two directly-associated spaces without
  * any of the app given relations applied.
  */
@@ -211,8 +295,8 @@ get_pure_space_relation(struct oxr_logger *log,
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return XR_SUCCESS;
 	} else {
-		// @todo deal with action space poses.
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+		oxr_space_action_relation(log, sess, spc, baseSpc, time,
+		                          out_relation);
 		return XR_SUCCESS;
 	}
 }
