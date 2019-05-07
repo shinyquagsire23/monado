@@ -10,7 +10,7 @@ set(MATH_SOURCE_FILES
 	math/m_quatexpmap.cpp
 	)
 
-set(SOURCE_FILES
+set(UTIL_SOURCE_FILES
 	util/u_misc.c
 	util/u_misc.h
 	util/u_debug.c
@@ -30,17 +30,17 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}
 	)
 
+# Util library.
 # Use OBJECT to not create a archive, since it just gets in the way.
-add_library(aux_util OBJECT ${SOURCE_FILES})
-
+add_library(aux_util OBJECT ${UTIL_SOURCE_FILES})
 set_property(TARGET aux_util PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-
-# Math library has different includes.
+# Math library.
+# Use OBJECT to not create a archive, since it just gets in the way.
 add_library(aux_math OBJECT ${MATH_SOURCE_FILES})
+set_property(TARGET aux_math PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# Math files has extra include(s).
 target_include_directories(aux_math SYSTEM
 	PRIVATE ${EIGEN3_INCLUDE_DIR}
 	)
-
-set_property(TARGET aux_math PROPERTY POSITION_INDEPENDENT_CODE ON)
