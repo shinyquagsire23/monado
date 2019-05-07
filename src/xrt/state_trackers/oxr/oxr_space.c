@@ -65,6 +65,7 @@ oxr_space_action_create(struct oxr_logger *log,
 	//! @todo implement more fully
 	oxr_warn(log, " not fully implemented");
 
+	spc->sess = act->act_set->sess;
 	spc->is_reference = false;
 	memcpy(&spc->pose, &createInfo->poseInActionSpace, sizeof(spc->pose));
 
