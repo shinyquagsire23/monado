@@ -46,13 +46,26 @@ oh_device_destroy(struct xrt_device *xdev)
 }
 
 static void
+oh_device_update_inputs(struct xrt_device *xdev, struct time_state *timekeeping)
+{
+	// Empty
+}
+
+static void
 oh_device_get_tracked_pose(struct xrt_device *xdev,
+                           enum xrt_input_name name,
                            struct time_state *timekeeping,
                            int64_t *out_timestamp,
                            struct xrt_space_relation *out_relation)
 {
 	struct oh_device *ohd = oh_device(xdev);
 	struct xrt_quat quat = {0.f, 0.f, 0.f, 1.f};
+
+	if (name != XRT_INPUT_GENERIC_HEAD_RELATION) {
+		OH_ERROR(ohd, "unknown input name");
+		return;
+	}
+
 	ohmd_ctx_update(ohd->ctx);
 	int64_t now = time_state_get_now(timekeeping);
 	//! @todo adjust for latency here
@@ -325,10 +338,14 @@ oh_device_create(ohmd_context *ctx,
                  bool print_spew,
                  bool print_debug)
 {
-	struct oh_device *ohd = U_TYPED_CALLOC(struct oh_device);
-	ohd->base.destroy = oh_device_destroy;
+	enum u_device_alloc_flags flags =
+	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE;
+	struct oh_device *ohd = U_DEVICE_ALLOCATE(struct oh_device, flags, 1);
+	ohd->base.update_inputs = oh_device_update_inputs;
 	ohd->base.get_tracked_pose = oh_device_get_tracked_pose;
 	ohd->base.get_view_pose = oh_device_get_view_pose;
+	ohd->base.destroy = oh_device_destroy;
+	ohd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
 	ohd->ctx = ctx;
 	ohd->dev = dev;
 	ohd->print_spew = print_spew;
@@ -346,7 +363,7 @@ oh_device_create(ohmd_context *ctx,
 		                       info.views[1].fov,
 		                       info.views[1].display.h_meters,
 		                       info.views[1].lens_center_y_meters, 0,
-		                       &ohd->base.views[1].fov)) {
+		                       &ohd->base.hmd->views[1].fov)) {
 			OH_ERROR(
 			    ohd,
 			    "Failed to compute the partial fields of view.");
@@ -356,124 +373,125 @@ oh_device_create(ohmd_context *ctx,
 	}
 	{
 		/* left eye - just mirroring right eye now */
-		ohd->base.views[0].fov.angle_up =
-		    ohd->base.views[1].fov.angle_up;
-		ohd->base.views[0].fov.angle_down =
-		    ohd->base.views[1].fov.angle_down;
+		ohd->base.hmd->views[0].fov.angle_up =
+		    ohd->base.hmd->views[1].fov.angle_up;
+		ohd->base.hmd->views[0].fov.angle_down =
+		    ohd->base.hmd->views[1].fov.angle_down;
 
-		ohd->base.views[0].fov.angle_left =
-		    -ohd->base.views[1].fov.angle_right;
-		ohd->base.views[0].fov.angle_right =
-		    -ohd->base.views[1].fov.angle_left;
+		ohd->base.hmd->views[0].fov.angle_left =
+		    -ohd->base.hmd->views[1].fov.angle_right;
+		ohd->base.hmd->views[0].fov.angle_right =
+		    -ohd->base.hmd->views[1].fov.angle_left;
 	}
 
 	// clang-format off
 	// Main display.
-	ohd->base.distortion.models = XRT_DISTORTION_MODEL_PANOTOOLS;
-	ohd->base.distortion.preferred = XRT_DISTORTION_MODEL_PANOTOOLS;
-	ohd->base.screens[0].w_pixels = info.display.w_pixels;
-	ohd->base.screens[0].h_pixels = info.display.h_pixels;
-	ohd->base.screens[0].nominal_frame_interval_ns = info.display.nominal_frame_interval_ns;
-	ohd->base.distortion.pano.distortion_k[0] = info.pano_distortion_k[0];
-	ohd->base.distortion.pano.distortion_k[1] = info.pano_distortion_k[1];
-	ohd->base.distortion.pano.distortion_k[2] = info.pano_distortion_k[2];
-	ohd->base.distortion.pano.distortion_k[3] = info.pano_distortion_k[3];
-	ohd->base.distortion.pano.aberration_k[0] = info.pano_aberration_k[0];
-	ohd->base.distortion.pano.aberration_k[1] = info.pano_aberration_k[1];
-	ohd->base.distortion.pano.aberration_k[2] = info.pano_aberration_k[2];
-	ohd->base.distortion.pano.warp_scale = info.pano_warp_scale;
+	ohd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_PANOTOOLS;
+	ohd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_PANOTOOLS;
+	ohd->base.hmd->screens[0].w_pixels = info.display.w_pixels;
+	ohd->base.hmd->screens[0].h_pixels = info.display.h_pixels;
+	ohd->base.hmd->screens[0].nominal_frame_interval_ns = info.display.nominal_frame_interval_ns;
+	ohd->base.hmd->distortion.pano.distortion_k[0] = info.pano_distortion_k[0];
+	ohd->base.hmd->distortion.pano.distortion_k[1] = info.pano_distortion_k[1];
+	ohd->base.hmd->distortion.pano.distortion_k[2] = info.pano_distortion_k[2];
+	ohd->base.hmd->distortion.pano.distortion_k[3] = info.pano_distortion_k[3];
+	ohd->base.hmd->distortion.pano.aberration_k[0] = info.pano_aberration_k[0];
+	ohd->base.hmd->distortion.pano.aberration_k[1] = info.pano_aberration_k[1];
+	ohd->base.hmd->distortion.pano.aberration_k[2] = info.pano_aberration_k[2];
+	ohd->base.hmd->distortion.pano.warp_scale = info.pano_warp_scale;
 
 	// Left
-	ohd->base.views[0].display.w_meters = info.views[0].display.w_meters;
-	ohd->base.views[0].display.h_meters = info.views[0].display.h_meters;
-	ohd->base.views[0].lens_center.x_meters = info.views[0].lens_center_x_meters;
-	ohd->base.views[0].lens_center.y_meters = info.views[0].lens_center_y_meters;
-	ohd->base.views[0].display.w_pixels = info.views[0].display.w_pixels;
-	ohd->base.views[0].display.h_pixels = info.views[0].display.h_pixels;
-	ohd->base.views[0].viewport.x_pixels = 0;
-	ohd->base.views[0].viewport.y_pixels = 0;
-	ohd->base.views[0].viewport.w_pixels = info.views[0].display.w_pixels;
-	ohd->base.views[0].viewport.h_pixels = info.views[0].display.h_pixels;
-	ohd->base.views[0].rot = u_device_rotation_ident;
+	ohd->base.hmd->views[0].display.w_meters = info.views[0].display.w_meters;
+	ohd->base.hmd->views[0].display.h_meters = info.views[0].display.h_meters;
+	ohd->base.hmd->views[0].lens_center.x_meters = info.views[0].lens_center_x_meters;
+	ohd->base.hmd->views[0].lens_center.y_meters = info.views[0].lens_center_y_meters;
+	ohd->base.hmd->views[0].display.w_pixels = info.views[0].display.w_pixels;
+	ohd->base.hmd->views[0].display.h_pixels = info.views[0].display.h_pixels;
+	ohd->base.hmd->views[0].viewport.x_pixels = 0;
+	ohd->base.hmd->views[0].viewport.y_pixels = 0;
+	ohd->base.hmd->views[0].viewport.w_pixels = info.views[0].display.w_pixels;
+	ohd->base.hmd->views[0].viewport.h_pixels = info.views[0].display.h_pixels;
+	ohd->base.hmd->views[0].rot = u_device_rotation_ident;
 
 	// Right
-	ohd->base.views[1].display.w_meters = info.views[1].display.w_meters;
-	ohd->base.views[1].display.h_meters = info.views[1].display.h_meters;
-	ohd->base.views[1].lens_center.x_meters = info.views[1].lens_center_x_meters;
-	ohd->base.views[1].lens_center.y_meters = info.views[1].lens_center_y_meters;
-	ohd->base.views[1].display.w_pixels = info.views[1].display.w_pixels;
-	ohd->base.views[1].display.h_pixels = info.views[1].display.h_pixels;
-	ohd->base.views[1].viewport.x_pixels = info.views[0].display.w_pixels;
-	ohd->base.views[1].viewport.y_pixels = 0;
-	ohd->base.views[1].viewport.w_pixels = info.views[1].display.w_pixels;
-	ohd->base.views[1].viewport.h_pixels = info.views[1].display.h_pixels;
-	ohd->base.views[1].rot = u_device_rotation_ident;
+	ohd->base.hmd->views[1].display.w_meters = info.views[1].display.w_meters;
+	ohd->base.hmd->views[1].display.h_meters = info.views[1].display.h_meters;
+	ohd->base.hmd->views[1].lens_center.x_meters = info.views[1].lens_center_x_meters;
+	ohd->base.hmd->views[1].lens_center.y_meters = info.views[1].lens_center_y_meters;
+	ohd->base.hmd->views[1].display.w_pixels = info.views[1].display.w_pixels;
+	ohd->base.hmd->views[1].display.h_pixels = info.views[1].display.h_pixels;
+	ohd->base.hmd->views[1].viewport.x_pixels = info.views[0].display.w_pixels;
+	ohd->base.hmd->views[1].viewport.y_pixels = 0;
+	ohd->base.hmd->views[1].viewport.w_pixels = info.views[1].display.w_pixels;
+	ohd->base.hmd->views[1].viewport.h_pixels = info.views[1].display.h_pixels;
+	ohd->base.hmd->views[1].rot = u_device_rotation_ident;
 	// clang-format on
 
 	// Which blend modes does the device support.
-	ohd->base.blend_mode = XRT_BLEND_MODE_OPAQUE;
+	ohd->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
 	if (info.quirks.video_see_through) {
-		ohd->base.blend_mode = (enum xrt_blend_mode)(
-		    ohd->base.blend_mode | XRT_BLEND_MODE_ALPHA_BLEND);
+		ohd->base.hmd->blend_mode = (enum xrt_blend_mode)(
+		    ohd->base.hmd->blend_mode | XRT_BLEND_MODE_ALPHA_BLEND);
 	}
 
 	if (info.quirks.video_distortion_vive) {
-		ohd->base.distortion.models = (enum xrt_distortion_model)(
-		    ohd->base.distortion.models | XRT_DISTORTION_MODEL_VIVE);
-		ohd->base.distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
+		ohd->base.hmd->distortion.models = (enum xrt_distortion_model)(
+		    ohd->base.hmd->distortion.models |
+		    XRT_DISTORTION_MODEL_VIVE);
+		ohd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
 
 		// clang-format off
 		// These need to be aquired from the vive config
-		ohd->base.distortion.vive.aspect_x_over_y = 0.8999999761581421f;
-		ohd->base.distortion.vive.grow_for_undistort = 0.6000000238418579f;
-		ohd->base.distortion.vive.undistort_r2_cutoff[0] = 1.11622154712677f;
-		ohd->base.distortion.vive.undistort_r2_cutoff[1] = 1.101870775222778f;
-		ohd->base.distortion.vive.center[0][0] = 0.08946027017045266f;
-		ohd->base.distortion.vive.center[0][1] = -0.009002181016260827f;
-		ohd->base.distortion.vive.center[1][0] = -0.08933516629552526f;
-		ohd->base.distortion.vive.center[1][1] = -0.006014565287238661f;
+		ohd->base.hmd->distortion.vive.aspect_x_over_y = 0.8999999761581421f;
+		ohd->base.hmd->distortion.vive.grow_for_undistort = 0.6000000238418579f;
+		ohd->base.hmd->distortion.vive.undistort_r2_cutoff[0] = 1.11622154712677f;
+		ohd->base.hmd->distortion.vive.undistort_r2_cutoff[1] = 1.101870775222778f;
+		ohd->base.hmd->distortion.vive.center[0][0] = 0.08946027017045266f;
+		ohd->base.hmd->distortion.vive.center[0][1] = -0.009002181016260827f;
+		ohd->base.hmd->distortion.vive.center[1][0] = -0.08933516629552526f;
+		ohd->base.hmd->distortion.vive.center[1][1] = -0.006014565287238661f;
 
 		// left
 		// green
-		ohd->base.distortion.vive.coefficients[0][0][0] = -0.188236068524731f;
-		ohd->base.distortion.vive.coefficients[0][0][1] = -0.221086205321053f;
-		ohd->base.distortion.vive.coefficients[0][0][2] = -0.2537849057915209f;
+		ohd->base.hmd->distortion.vive.coefficients[0][0][0] = -0.188236068524731f;
+		ohd->base.hmd->distortion.vive.coefficients[0][0][1] = -0.221086205321053f;
+		ohd->base.hmd->distortion.vive.coefficients[0][0][2] = -0.2537849057915209f;
 
 		// blue
-		ohd->base.distortion.vive.coefficients[0][1][0] = -0.07316590815739493f;
-		ohd->base.distortion.vive.coefficients[0][1][1] = -0.02332400789561968f;
-		ohd->base.distortion.vive.coefficients[0][1][2] = 0.02469959434698275f;
+		ohd->base.hmd->distortion.vive.coefficients[0][1][0] = -0.07316590815739493f;
+		ohd->base.hmd->distortion.vive.coefficients[0][1][1] = -0.02332400789561968f;
+		ohd->base.hmd->distortion.vive.coefficients[0][1][2] = 0.02469959434698275f;
 
 		// red
-		ohd->base.distortion.vive.coefficients[0][2][0] = -0.02223805567703767f;
-		ohd->base.distortion.vive.coefficients[0][2][1] = -0.04931309279533211f;
-		ohd->base.distortion.vive.coefficients[0][2][2] = -0.07862881939243466f;
+		ohd->base.hmd->distortion.vive.coefficients[0][2][0] = -0.02223805567703767f;
+		ohd->base.hmd->distortion.vive.coefficients[0][2][1] = -0.04931309279533211f;
+		ohd->base.hmd->distortion.vive.coefficients[0][2][2] = -0.07862881939243466f;
 
 		// right
 		// green
-		ohd->base.distortion.vive.coefficients[1][0][0] = -0.1906209981894497f;
-		ohd->base.distortion.vive.coefficients[1][0][1] = -0.2248896677207884f;
-		ohd->base.distortion.vive.coefficients[1][0][2] = -0.2721364516782803f;
+		ohd->base.hmd->distortion.vive.coefficients[1][0][0] = -0.1906209981894497f;
+		ohd->base.hmd->distortion.vive.coefficients[1][0][1] = -0.2248896677207884f;
+		ohd->base.hmd->distortion.vive.coefficients[1][0][2] = -0.2721364516782803f;
 
 		// blue
-		ohd->base.distortion.vive.coefficients[1][1][0] = -0.07346071902951497f;
-		ohd->base.distortion.vive.coefficients[1][1][1] = -0.02189527566250131f;
-		ohd->base.distortion.vive.coefficients[1][1][2] = 0.0581378652359256f;
+		ohd->base.hmd->distortion.vive.coefficients[1][1][0] = -0.07346071902951497f;
+		ohd->base.hmd->distortion.vive.coefficients[1][1][1] = -0.02189527566250131f;
+		ohd->base.hmd->distortion.vive.coefficients[1][1][2] = 0.0581378652359256f;
 
 		// red
-		ohd->base.distortion.vive.coefficients[1][2][0] = -0.01755850332081247f;
-		ohd->base.distortion.vive.coefficients[1][2][1] = -0.04517245633373419f;
-		ohd->base.distortion.vive.coefficients[1][2][2] = -0.0928909347763f;
+		ohd->base.hmd->distortion.vive.coefficients[1][2][0] = -0.01755850332081247f;
+		ohd->base.hmd->distortion.vive.coefficients[1][2][1] = -0.04517245633373419f;
+		ohd->base.hmd->distortion.vive.coefficients[1][2][2] = -0.0928909347763f;
 		// clang-format on
 	}
 
 	if (info.quirks.video_distortion_none) {
-		ohd->base.distortion.models = XRT_DISTORTION_MODEL_NONE;
-		ohd->base.distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+		ohd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
+		ohd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
 	}
 
 	if (info.quirks.left_center_pano_scale) {
-		ohd->base.distortion.pano.warp_scale =
+		ohd->base.hmd->distortion.pano.warp_scale =
 		    info.views[0].lens_center_x_meters;
 	}
 
@@ -481,30 +499,30 @@ oh_device_create(ohmd_context *ctx,
 		int w = info.display.w_pixels;
 		int h = info.display.h_pixels;
 
-		ohd->base.views[0].viewport.x_pixels = 0;
-		ohd->base.views[0].viewport.y_pixels = 0;
-		ohd->base.views[0].viewport.w_pixels = w;
-		ohd->base.views[0].viewport.h_pixels = h / 2;
-		ohd->base.views[0].rot = u_device_rotation_right;
+		ohd->base.hmd->views[0].viewport.x_pixels = 0;
+		ohd->base.hmd->views[0].viewport.y_pixels = 0;
+		ohd->base.hmd->views[0].viewport.w_pixels = w;
+		ohd->base.hmd->views[0].viewport.h_pixels = h / 2;
+		ohd->base.hmd->views[0].rot = u_device_rotation_right;
 
-		ohd->base.views[1].viewport.x_pixels = 0;
-		ohd->base.views[1].viewport.y_pixels = h / 2;
-		ohd->base.views[1].viewport.w_pixels = w;
-		ohd->base.views[1].viewport.h_pixels = h / 2;
-		ohd->base.views[1].rot = u_device_rotation_right;
+		ohd->base.hmd->views[1].viewport.x_pixels = 0;
+		ohd->base.hmd->views[1].viewport.y_pixels = h / 2;
+		ohd->base.hmd->views[1].viewport.w_pixels = w;
+		ohd->base.hmd->views[1].viewport.h_pixels = h / 2;
+		ohd->base.hmd->views[1].rot = u_device_rotation_right;
 	}
 
 	if (info.quirks.rotate_lenses_inwards) {
 		int w2 = info.display.w_pixels / 2;
 		int h = info.display.h_pixels;
 
-		ohd->base.views[0].display.w_pixels = h;
-		ohd->base.views[0].display.h_pixels = w2;
-		ohd->base.views[0].rot = u_device_rotation_right;
+		ohd->base.hmd->views[0].display.w_pixels = h;
+		ohd->base.hmd->views[0].display.h_pixels = w2;
+		ohd->base.hmd->views[0].rot = u_device_rotation_right;
 
-		ohd->base.views[1].display.w_pixels = h;
-		ohd->base.views[1].display.h_pixels = w2;
-		ohd->base.views[1].rot = u_device_rotation_left;
+		ohd->base.hmd->views[1].display.w_pixels = h;
+		ohd->base.hmd->views[1].display.h_pixels = w2;
+		ohd->base.hmd->views[1].rot = u_device_rotation_left;
 	}
 
 	if (ohd->print_debug) {

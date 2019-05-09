@@ -95,8 +95,8 @@ oxr_instance_create(struct oxr_logger *log,
 		    "and right eye angle_right with %f radians (%i°)\n",
 		    left_override, radtodeg_for_display(left_override),
 		    -left_override, radtodeg_for_display(-left_override));
-		dev->views[0].fov.angle_left = left_override;
-		dev->views[1].fov.angle_right = -left_override;
+		dev->hmd->views[0].fov.angle_left = left_override;
+		dev->hmd->views[1].fov.angle_right = -left_override;
 	}
 
 	const float right_override = debug_get_float_option_lfov_right();
@@ -106,16 +106,16 @@ oxr_instance_create(struct oxr_logger *log,
 		    "and right eye angle_left with %f radians (%i°)\n",
 		    right_override, radtodeg_for_display(right_override),
 		    -right_override, radtodeg_for_display(-right_override));
-		dev->views[0].fov.angle_right = right_override;
-		dev->views[1].fov.angle_left = -right_override;
+		dev->hmd->views[0].fov.angle_right = right_override;
+		dev->hmd->views[1].fov.angle_left = -right_override;
 	}
 
 	const float up_override = debug_get_float_option_lfov_up();
 	if (up_override != 0.0f) {
 		printf("Overriding both eyes angle_up with %f radians (%i°)\n",
 		       up_override, radtodeg_for_display(up_override));
-		dev->views[0].fov.angle_up = up_override;
-		dev->views[1].fov.angle_up = up_override;
+		dev->hmd->views[0].fov.angle_up = up_override;
+		dev->hmd->views[1].fov.angle_up = up_override;
 	}
 
 	const float down_override = debug_get_float_option_lfov_down();
@@ -123,8 +123,8 @@ oxr_instance_create(struct oxr_logger *log,
 		printf(
 		    "Overriding both eyes angle_down with %f radians (%i°)\n",
 		    down_override, radtodeg_for_display(down_override));
-		dev->views[0].fov.angle_down = down_override;
-		dev->views[1].fov.angle_down = down_override;
+		dev->hmd->views[0].fov.angle_down = down_override;
+		dev->hmd->views[1].fov.angle_down = down_override;
 	}
 
 	oxr_system_fill_in(log, inst, 1, &inst->system, dev);

@@ -11,6 +11,7 @@
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_tracking.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,14 @@ extern const struct xrt_matrix_2x2 u_device_rotation_right;
 extern const struct xrt_matrix_2x2 u_device_rotation_left;
 extern const struct xrt_matrix_2x2 u_device_rotation_ident;
 extern const struct xrt_matrix_2x2 u_device_rotation_180;
+
+enum u_device_alloc_flags
+{
+	// clang-format off
+	U_DEVICE_ALLOC_HMD           = 1 << 0,
+	U_DEVICE_ALLOC_TRACKING_NONE = 1 << 1,
+	// clang-format on
+};
 
 struct u_device_simple_info
 {
@@ -60,6 +69,21 @@ void
 u_device_dump_config(struct xrt_device* xdev,
                      const char* prefix,
                      const char* prod);
+
+#define U_DEVICE_ALLOCATE(type, flags, num_inputs)                             \
+	((type*)u_device_allocate(flags, sizeof(type), num_inputs))
+
+
+/*!
+ * Helper function to allocate a device plus inputs in the same allocation
+ * placed after the device in memory.
+ *
+ * Will setup any pointers and num values.
+ */
+void*
+u_device_allocate(enum u_device_alloc_flags flags,
+                  size_t size,
+                  size_t num_inputs);
 
 
 #ifdef __cplusplus

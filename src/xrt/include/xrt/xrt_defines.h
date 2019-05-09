@@ -57,15 +57,13 @@ struct xrt_quat
 };
 
 /*!
- * A 3 element vector with single floats.
+ * A 1 element vector with single floats.
  *
  * @ingroup xrt_iface math
  */
-struct xrt_vec3
+struct xrt_vec1
 {
 	float x;
-	float y;
-	float z;
 };
 
 /*!
@@ -77,6 +75,18 @@ struct xrt_vec2
 {
 	float x;
 	float y;
+};
+
+/*!
+ * A 3 element vector with single floats.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_vec3
+{
+	float x;
+	float y;
+	float z;
 };
 
 /*!
@@ -190,6 +200,61 @@ struct xrt_space_relation
 	struct xrt_vec3 linear_acceleration;
 	struct xrt_vec3 angular_acceleration;
 };
+
+
+/*
+ *
+ * Input related enums and structs.
+ *
+ */
+
+/*!
+ * Base type of this inputs.
+ *
+ * @ingroup xrt_iface
+ */
+enum xrt_input_type
+{
+	// clang-format off
+	XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE      = 0x00,
+	XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE = 0x01,
+	XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE = 0x02,
+	XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE = 0x03,
+	XRT_INPUT_TYPE_BOOLEAN               = 0x04,
+	XRT_INPUT_TYPE_POSE                  = 0x05,
+	XRT_INPUT_TYPE_RELATION              = 0x06,
+	// clang-format on
+};
+
+#define XRT_INPUT_NAME(id, type) ((id << 8) | XRT_INPUT_TYPE_##type)
+
+/*!
+ * Name of a input with a baked in type.
+ *
+ * @see xrt_input_type
+ * @ingroup xrt_iface
+ */
+enum xrt_input_name
+{
+	// clang-format off
+	XRT_INPUT_GENERIC_HEAD_RELATION              = XRT_INPUT_NAME(0x0000, RELATION),
+	XRT_INPUT_GENERIC_HEAD_DETECT                = XRT_INPUT_NAME(0x0001, BOOLEAN),
+	// clang-format on
+};
+
+/*!
+ * A union of all input types.
+ *
+ * @see xrt_input_type
+ * @ingroup xrt_iface math
+ */
+union xrt_input_value {
+	struct xrt_vec1 vec1;
+	struct xrt_vec2 vec2;
+	struct xrt_vec3 vec3;
+	bool boolean;
+};
+
 
 #ifdef __cplusplus
 }

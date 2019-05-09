@@ -18,6 +18,8 @@ extern "C" {
 #endif
 
 struct time_state;
+struct xrt_tracking;
+
 
 /*!
  * A per-lens view information.
@@ -82,17 +84,14 @@ struct xrt_view
 };
 
 /*!
- * A single HMD device.
+ * All of the device components that deals with interfacing to a users head.
+ *
+ * HMD is probably a bad name for the future but for now will have to do.
  *
  * @ingroup xrt_iface
  */
-struct xrt_device
+struct xrt_hmd_parts
 {
-	/*!
-	 * A string describing the device.
-	 */
-	char name[XRT_DEVICE_NAME_LEN];
-
 	/*!
 	 * The hmd screen, right now hardcoded to one.
 	 */
@@ -152,6 +151,53 @@ struct xrt_device
 		} vive;
 
 	} distortion;
+};
+
+/*!
+ * A single named input, that sits on a @ref xrt_device.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_input
+{
+	int64_t timestamp;
+
+	enum xrt_input_name name;
+
+	union xrt_input_value value;
+};
+
+/*!
+ * A single HMD or input device.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_device
+{
+	/*!
+	 * A string describing the device.
+	 */
+	char name[XRT_DEVICE_NAME_LEN];
+
+	//! Null if this device does not interface with the users head.
+	struct xrt_hmd_parts *hmd;
+
+	//! Always set, pointing to the tracking system for this device.
+	struct xrt_tracking *tracking;
+
+	//! Number of inputs.
+	size_t num_inputs;
+	//! Array of input structs.
+	struct xrt_input *inputs;
+
+	/*!
+	 * Update any attached inputs.
+	 *
+	 * @param[in] xdev        The device.
+	 * @param[in] timekeeping Shared time synchronization struct.
+	 */
+	void (*update_inputs)(struct xrt_device *xdev,
+	                      struct time_state *timekeeping);
 
 	/*!
 	 * Get relationship of a tracked device to the device "base space".
@@ -159,8 +205,19 @@ struct xrt_device
 	 * Right now the base space is assumed to be local space.
 	 *
 	 * This is very very WIP and will need to be made a lot more advanced.
+	 *
+	 * @param[in] xdev           The device.
+	 * @param[in] name           Some devices may have multiple poses on
+	 *                           them, select the one using this field. For
+	 *                           HMDs use @p XRT_INPUT_GENERIC_HEAD_POSE.
+	 * @param[in] timekeeping    Shared time synchronization struct.
+	 * @param[out] out_timestamp Timestamp when this relation was captured.
+	 * @param[out] out_relation  The relation read from the device.
+	 *
+	 * @see xrt_input_name
 	 */
 	void (*get_tracked_pose)(struct xrt_device *xdev,
+	                         enum xrt_input_name name,
 	                         struct time_state *timekeeping,
 	                         int64_t *out_timestamp,
 	                         struct xrt_space_relation *out_relation);

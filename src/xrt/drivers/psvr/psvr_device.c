@@ -585,12 +585,25 @@ teardown(struct psvr_device *psvr)
  */
 
 static void
+psvr_device_update_inputs(struct xrt_device *xdev,
+                          struct time_state *timekeeping)
+{
+	// Empty
+}
+
+static void
 psvr_device_get_tracked_pose(struct xrt_device *xdev,
+                             enum xrt_input_name name,
                              struct time_state *timekeeping,
                              int64_t *out_timestamp,
                              struct xrt_space_relation *out_relation)
 {
 	struct psvr_device *psvr = psvr_device(xdev);
+
+	if (name != XRT_INPUT_GENERIC_HEAD_RELATION) {
+		PSVR_ERROR(psvr, "unknown input name");
+		return;
+	}
 
 	// Read all packets.
 	read_handle_packets(psvr);
@@ -663,14 +676,19 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
                    bool print_spew,
                    bool print_debug)
 {
-	struct psvr_device *psvr = U_TYPED_CALLOC(struct psvr_device);
+	enum u_device_alloc_flags flags =
+	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE;
+	struct psvr_device *psvr =
+	    U_DEVICE_ALLOCATE(struct psvr_device, flags, 1);
 	int ret;
 
 	psvr->print_spew = print_spew;
 	psvr->print_debug = print_debug;
-	psvr->base.destroy = psvr_device_destroy;
+	psvr->base.update_inputs = psvr_device_update_inputs;
 	psvr->base.get_tracked_pose = psvr_device_get_tracked_pose;
 	psvr->base.get_view_pose = psvr_device_get_view_pose;
+	psvr->base.destroy = psvr_device_destroy;
+	psvr->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
 
 	ret = open_hid(psvr, hmd_handle_info, &psvr->hmd_handle);
 	if (ret != 0) {

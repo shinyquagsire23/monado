@@ -89,42 +89,44 @@ u_device_dump_config(struct xrt_device* xdev,
 	// clang-format off
 	fprintf(stderr, "%s - device_setup\n", prefix);
 	PRINT_STR(   "prod", prod);
-	PRINT_INT(   "screens[0].w_pixels ", xdev->screens[0].w_pixels);
-	PRINT_INT(   "screens[0].h_pixels ", xdev->screens[0].h_pixels);
-//	PRINT_MM(    "info.display.w_meters", info.display.w_meters);
-//	PRINT_MM(    "info.display.h_meters", info.display.h_meters);
-	PRINT_INT(   "views[0].viewport.x_pixels   ", xdev->views[0].viewport.x_pixels);
-	PRINT_INT(   "views[0].viewport.y_pixels   ", xdev->views[0].viewport.y_pixels);
-	PRINT_INT(   "views[0].viewport.w_pixels   ", xdev->views[0].viewport.w_pixels);
-	PRINT_INT(   "views[0].viewport.h_pixels   ", xdev->views[0].viewport.h_pixels);
-	PRINT_INT(   "views[0].display.w_pixels    ", xdev->views[0].display.w_pixels);
-	PRINT_INT(   "views[0].display.h_pixels    ", xdev->views[0].display.h_pixels);
-	PRINT_MM(    "views[0].display.w_meters    ", xdev->views[0].display.w_meters);
-	PRINT_MM(    "views[0].display.h_meters    ", xdev->views[0].display.h_meters);
-	PRINT_MM(    "views[0].lens_center.x_meters", xdev->views[0].lens_center.x_meters);
-	PRINT_MM(    "views[0].lens_center.y_meters", xdev->views[0].lens_center.y_meters);
-	PRINT_MAT2X2("views[0].rot            ", xdev->views[0].rot);
-	PRINT_ANGLE( "views[0].fov.angle_left ", xdev->views[0].fov.angle_left);
-	PRINT_ANGLE( "views[0].fov.angle_right", xdev->views[0].fov.angle_right);
-	PRINT_ANGLE( "views[0].fov.angle_up   ", xdev->views[0].fov.angle_up);
-	PRINT_ANGLE( "views[0].fov.angle_down ", xdev->views[0].fov.angle_down);
-//	PRINT_ANGLE( "info.views[0].fov       ", info.views[0].fov);
-	PRINT_INT(   "views[1].viewport.x_pixels   ", xdev->views[1].viewport.x_pixels);
-	PRINT_INT(   "views[1].viewport.y_pixels   ", xdev->views[1].viewport.y_pixels);
-	PRINT_INT(   "views[1].viewport.w_pixels   ", xdev->views[1].viewport.w_pixels);
-	PRINT_INT(   "views[1].viewport.h_pixels   ", xdev->views[1].viewport.h_pixels);
-	PRINT_INT(   "views[1].display.w_pixels    ", xdev->views[1].display.w_pixels);
-	PRINT_INT(   "views[1].display.h_pixels    ", xdev->views[1].display.h_pixels);
-	PRINT_MM(    "views[1].display.w_meters    ", xdev->views[1].display.w_meters);
-	PRINT_MM(    "views[1].display.h_meters    ", xdev->views[1].display.h_meters);
-	PRINT_MM(    "views[1].lens_center.x_meters", xdev->views[1].lens_center.x_meters);
-	PRINT_MM(    "views[1].lens_center.y_meters", xdev->views[1].lens_center.y_meters);
-	PRINT_MAT2X2("views[1].rot            ", xdev->views[1].rot);
-	PRINT_ANGLE( "views[1].fov.angle_left ", xdev->views[1].fov.angle_left);
-	PRINT_ANGLE( "views[1].fov.angle_right", xdev->views[1].fov.angle_right);
-	PRINT_ANGLE( "views[1].fov.angle_up   ", xdev->views[1].fov.angle_up);
-	PRINT_ANGLE( "views[1].fov.angle_down ", xdev->views[1].fov.angle_down);
-//	PRINT_ANGLE( "info.views[1].fov       ", info.views[0].fov);
+	if (xdev->hmd != NULL) {
+		PRINT_INT(   "screens[0].w_pixels ", xdev->hmd->screens[0].w_pixels);
+		PRINT_INT(   "screens[0].h_pixels ", xdev->hmd->screens[0].h_pixels);
+//		PRINT_MM(    "info.display.w_meters", info.display.w_meters);
+//		PRINT_MM(    "info.display.h_meters", info.display.h_meters);
+		PRINT_INT(   "views[0].viewport.x_pixels   ", xdev->hmd->views[0].viewport.x_pixels);
+		PRINT_INT(   "views[0].viewport.y_pixels   ", xdev->hmd->views[0].viewport.y_pixels);
+		PRINT_INT(   "views[0].viewport.w_pixels   ", xdev->hmd->views[0].viewport.w_pixels);
+		PRINT_INT(   "views[0].viewport.h_pixels   ", xdev->hmd->views[0].viewport.h_pixels);
+		PRINT_INT(   "views[0].display.w_pixels    ", xdev->hmd->views[0].display.w_pixels);
+		PRINT_INT(   "views[0].display.h_pixels    ", xdev->hmd->views[0].display.h_pixels);
+		PRINT_MM(    "views[0].display.w_meters    ", xdev->hmd->views[0].display.w_meters);
+		PRINT_MM(    "views[0].display.h_meters    ", xdev->hmd->views[0].display.h_meters);
+		PRINT_MM(    "views[0].lens_center.x_meters", xdev->hmd->views[0].lens_center.x_meters);
+		PRINT_MM(    "views[0].lens_center.y_meters", xdev->hmd->views[0].lens_center.y_meters);
+		PRINT_MAT2X2("views[0].rot            ", xdev->hmd->views[0].rot);
+		PRINT_ANGLE( "views[0].fov.angle_left ", xdev->hmd->views[0].fov.angle_left);
+		PRINT_ANGLE( "views[0].fov.angle_right", xdev->hmd->views[0].fov.angle_right);
+		PRINT_ANGLE( "views[0].fov.angle_up   ", xdev->hmd->views[0].fov.angle_up);
+		PRINT_ANGLE( "views[0].fov.angle_down ", xdev->hmd->views[0].fov.angle_down);
+//		PRINT_ANGLE( "info.views[0].fov       ", info.views[0].fov);
+		PRINT_INT(   "views[1].viewport.x_pixels   ", xdev->hmd->views[1].viewport.x_pixels);
+		PRINT_INT(   "views[1].viewport.y_pixels   ", xdev->hmd->views[1].viewport.y_pixels);
+		PRINT_INT(   "views[1].viewport.w_pixels   ", xdev->hmd->views[1].viewport.w_pixels);
+		PRINT_INT(   "views[1].viewport.h_pixels   ", xdev->hmd->views[1].viewport.h_pixels);
+		PRINT_INT(   "views[1].display.w_pixels    ", xdev->hmd->views[1].display.w_pixels);
+		PRINT_INT(   "views[1].display.h_pixels    ", xdev->hmd->views[1].display.h_pixels);
+		PRINT_MM(    "views[1].display.w_meters    ", xdev->hmd->views[1].display.w_meters);
+		PRINT_MM(    "views[1].display.h_meters    ", xdev->hmd->views[1].display.h_meters);
+		PRINT_MM(    "views[1].lens_center.x_meters", xdev->hmd->views[1].lens_center.x_meters);
+		PRINT_MM(    "views[1].lens_center.y_meters", xdev->hmd->views[1].lens_center.y_meters);
+		PRINT_MAT2X2("views[1].rot            ", xdev->hmd->views[1].rot);
+		PRINT_ANGLE( "views[1].fov.angle_left ", xdev->hmd->views[1].fov.angle_left);
+		PRINT_ANGLE( "views[1].fov.angle_right", xdev->hmd->views[1].fov.angle_right);
+		PRINT_ANGLE( "views[1].fov.angle_up   ", xdev->hmd->views[1].fov.angle_up);
+		PRINT_ANGLE( "views[1].fov.angle_down ", xdev->hmd->views[1].fov.angle_down);
+//		PRINT_ANGLE( "info.views[1].fov       ", info.views[0].fov);
+	}
 	// clang-format on
 }
 
@@ -155,55 +157,105 @@ u_device_setup_split_side_by_side(struct xrt_device* xdev,
 	};
 
 	// Common
-	xdev->blend_mode = XRT_BLEND_MODE_OPAQUE;
-	xdev->distortion.models = XRT_DISTORTION_MODEL_NONE;
-	xdev->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
-	xdev->screens[0].w_pixels = info->display.w_pixels;
-	xdev->screens[0].h_pixels = info->display.h_pixels;
+	xdev->hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
+	xdev->hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
+	xdev->hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+	xdev->hmd->screens[0].w_pixels = info->display.w_pixels;
+	xdev->hmd->screens[0].h_pixels = info->display.h_pixels;
 
 	// Left
-	xdev->views[0].display.w_meters = w_meters;
-	xdev->views[0].display.h_meters = h_meters;
-	xdev->views[0].lens_center.x_meters = lens_center_x_meters[0];
-	xdev->views[0].lens_center.y_meters = lens_center_y_meters[0];
-	xdev->views[0].display.w_pixels = w_pixels;
-	xdev->views[0].display.h_pixels = h_pixels;
-	xdev->views[0].viewport.x_pixels = 0;
-	xdev->views[0].viewport.y_pixels = 0;
-	xdev->views[0].viewport.w_pixels = w_pixels;
-	xdev->views[0].viewport.h_pixels = h_pixels;
-	xdev->views[0].rot = u_device_rotation_ident;
+	xdev->hmd->views[0].display.w_meters = w_meters;
+	xdev->hmd->views[0].display.h_meters = h_meters;
+	xdev->hmd->views[0].lens_center.x_meters = lens_center_x_meters[0];
+	xdev->hmd->views[0].lens_center.y_meters = lens_center_y_meters[0];
+	xdev->hmd->views[0].display.w_pixels = w_pixels;
+	xdev->hmd->views[0].display.h_pixels = h_pixels;
+	xdev->hmd->views[0].viewport.x_pixels = 0;
+	xdev->hmd->views[0].viewport.y_pixels = 0;
+	xdev->hmd->views[0].viewport.w_pixels = w_pixels;
+	xdev->hmd->views[0].viewport.h_pixels = h_pixels;
+	xdev->hmd->views[0].rot = u_device_rotation_ident;
 
 	// Right
-	xdev->views[1].display.w_meters = w_meters;
-	xdev->views[1].display.h_meters = h_meters;
-	xdev->views[1].lens_center.x_meters = lens_center_x_meters[1];
-	xdev->views[1].lens_center.y_meters = lens_center_y_meters[1];
-	xdev->views[1].display.w_pixels = w_pixels;
-	xdev->views[1].display.h_pixels = h_pixels;
-	xdev->views[1].viewport.x_pixels = w_pixels;
-	xdev->views[1].viewport.y_pixels = 0;
-	xdev->views[1].viewport.w_pixels = w_pixels;
-	xdev->views[1].viewport.h_pixels = h_pixels;
-	xdev->views[1].rot = u_device_rotation_ident;
+	xdev->hmd->views[1].display.w_meters = w_meters;
+	xdev->hmd->views[1].display.h_meters = h_meters;
+	xdev->hmd->views[1].lens_center.x_meters = lens_center_x_meters[1];
+	xdev->hmd->views[1].lens_center.y_meters = lens_center_y_meters[1];
+	xdev->hmd->views[1].display.w_pixels = w_pixels;
+	xdev->hmd->views[1].display.h_pixels = h_pixels;
+	xdev->hmd->views[1].viewport.x_pixels = w_pixels;
+	xdev->hmd->views[1].viewport.y_pixels = 0;
+	xdev->hmd->views[1].viewport.w_pixels = w_pixels;
+	xdev->hmd->views[1].viewport.h_pixels = h_pixels;
+	xdev->hmd->views[1].rot = u_device_rotation_ident;
 
 	{
 		/* right eye */
 		if (!math_compute_fovs(w_meters, lens_center_x_meters[1],
 		                       info->views[1].fov, h_meters,
 		                       lens_center_y_meters[1], 0,
-		                       &xdev->views[1].fov)) {
+		                       &xdev->hmd->views[1].fov)) {
 			return false;
 		}
 	}
 	{
 		/* left eye - just mirroring right eye now */
-		xdev->views[0].fov.angle_up = xdev->views[1].fov.angle_up;
-		xdev->views[0].fov.angle_down = xdev->views[1].fov.angle_down;
+		xdev->hmd->views[0].fov.angle_up =
+		    xdev->hmd->views[1].fov.angle_up;
+		xdev->hmd->views[0].fov.angle_down =
+		    xdev->hmd->views[1].fov.angle_down;
 
-		xdev->views[0].fov.angle_left = -xdev->views[1].fov.angle_right;
-		xdev->views[0].fov.angle_right = -xdev->views[1].fov.angle_left;
+		xdev->hmd->views[0].fov.angle_left =
+		    -xdev->hmd->views[1].fov.angle_right;
+		xdev->hmd->views[0].fov.angle_right =
+		    -xdev->hmd->views[1].fov.angle_left;
 	}
 
 	return true;
+}
+
+void*
+u_device_allocate(enum u_device_alloc_flags flags,
+                  size_t size,
+                  size_t num_inputs)
+{
+	bool alloc_hmd = (flags & U_DEVICE_ALLOC_HMD) != 0;
+	bool alloc_tracking = (flags & U_DEVICE_ALLOC_TRACKING_NONE) != 0;
+
+	size_t total_size = size;
+
+	// Inputs
+	size_t offset_inputs = total_size;
+	total_size += num_inputs * sizeof(struct xrt_input);
+
+	// HMD
+	size_t offset_hmd = total_size;
+	total_size += alloc_hmd ? sizeof(struct xrt_hmd_parts) : 0;
+
+	// Tracking
+	size_t offset_tracking = total_size;
+	total_size += alloc_tracking ? sizeof(struct xrt_tracking) : 0;
+
+	// Do the allocation
+	char* ptr = calloc(1, total_size);
+	struct xrt_device* xdev = (struct xrt_device*)ptr;
+
+	if (num_inputs > 0) {
+		xdev->num_inputs = num_inputs;
+		xdev->inputs = (struct xrt_input*)(ptr + offset_inputs);
+	}
+
+	if (alloc_hmd) {
+		xdev->hmd = (struct xrt_hmd_parts*)(ptr + offset_hmd);
+	}
+
+	if (alloc_tracking) {
+		xdev->tracking = (struct xrt_tracking*)(ptr + offset_tracking);
+		xdev->tracking->type = XRT_TRACKING_TYPE_NONE;
+		xdev->tracking->offset.orientation.w = 1.0f;
+		snprintf(xdev->tracking->name, XRT_TRACKING_NAME_LEN, "%s",
+		         "No tracking");
+	}
+
+	return xdev;
 }

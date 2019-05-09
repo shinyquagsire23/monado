@@ -148,7 +148,8 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 	struct xrt_device *xdev = sess->sys->device;
 	struct xrt_space_relation relation;
 	int64_t timestamp;
-	xdev->get_tracked_pose(xdev, sess->sys->inst->timekeeping, &timestamp,
+	xdev->get_tracked_pose(xdev, XRT_INPUT_GENERIC_HEAD_RELATION,
+	                       sess->sys->inst->timekeeping, &timestamp,
 	                       &relation);
 	if ((relation.relation_flags &
 	     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0) {
@@ -296,7 +297,7 @@ oxr_session_views(struct oxr_logger *log,
 		                        (struct xrt_pose *)&views[i].pose);
 
 		// Copy the fov information directly from the device.
-		views[i].fov = *(XrFovf *)&xdev->views[i].fov;
+		views[i].fov = *(XrFovf *)&xdev->hmd->views[i].fov;
 
 		print_view_fov(i, (struct xrt_fov *)&views[i].fov);
 		print_view_pose(i, (struct xrt_pose *)&views[i].pose);
@@ -426,7 +427,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 		                 "unknown environment blend mode");
 	}
 
-	if ((blend_mode & sess->sys->device->blend_mode) == 0) {
+	if ((blend_mode & sess->sys->device->hmd->blend_mode) == 0) {
 		return oxr_error(log,
 		                 XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED,
 		                 "(frameEndInfo->environmentBlendMode) "

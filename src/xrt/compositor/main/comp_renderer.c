@@ -327,9 +327,9 @@ renderer_build_command_buffer(struct comp_renderer *r,
 
 	// clang-format off
 	float scale_x = (float)r->c->current.width /
-	                (float)r->c->xdev->screens[0].w_pixels;
+	                (float)r->c->xdev->hmd->screens[0].w_pixels;
 	float scale_y = (float)r->c->current.height /
-	                (float)r->c->xdev->screens[0].h_pixels;
+	                (float)r->c->xdev->hmd->screens[0].h_pixels;
 	// clang-format on
 
 	VkViewport viewport = {
@@ -347,7 +347,7 @@ renderer_build_command_buffer(struct comp_renderer *r,
 	};
 
 	renderer_set_viewport_scissor(scale_x, scale_y, &viewport, &scissor,
-	                              &r->c->xdev->views[0]);
+	                              &r->c->xdev->hmd->views[0]);
 	vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 	vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
@@ -355,7 +355,7 @@ renderer_build_command_buffer(struct comp_renderer *r,
 
 
 	renderer_set_viewport_scissor(scale_x, scale_y, &viewport, &scissor,
-	                              &r->c->xdev->views[1]);
+	                              &r->c->xdev->hmd->views[1]);
 	vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 	vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 

@@ -100,12 +100,25 @@ hdk_device_destroy(struct xrt_device *xdev)
 }
 
 static void
+hdk_device_update_inputs(struct xrt_device *xdev,
+                         struct time_state *timekeeping)
+{
+	// Empty
+}
+
+static void
 hdk_device_get_tracked_pose(struct xrt_device *xdev,
+                            enum xrt_input_name name,
                             struct time_state *timekeeping,
                             int64_t *out_timestamp,
                             struct xrt_space_relation *out_relation)
 {
 	struct hdk_device *hd = hdk_device(xdev);
+
+	if (name != XRT_INPUT_GENERIC_HEAD_RELATION) {
+		HDK_ERROR(hd, "unknown input name");
+		return;
+	}
 
 	uint8_t buffer[32];
 	int64_t now = time_state_get_now(timekeeping);
@@ -249,11 +262,16 @@ hdk_device_create(hid_device *dev,
                   bool print_spew,
                   bool print_debug)
 {
-	struct hdk_device *hd = U_TYPED_CALLOC(struct hdk_device);
-	hd->base.blend_mode = XRT_BLEND_MODE_OPAQUE;
-	hd->base.destroy = hdk_device_destroy;
+	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
+	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	struct hdk_device *hd = U_DEVICE_ALLOCATE(struct hdk_device, flags, 1);
+
+	hd->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
+	hd->base.update_inputs = hdk_device_update_inputs;
 	hd->base.get_tracked_pose = hdk_device_get_tracked_pose;
 	hd->base.get_view_pose = hdk_device_get_view_pose;
+	hd->base.destroy = hdk_device_destroy;
+	hd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
 	hd->dev = dev;
 	hd->print_spew = print_spew;
 	hd->print_debug = print_debug;
@@ -296,25 +314,26 @@ hdk_device_create(hid_device *dev,
 		/* right eye */
 		math_compute_fovs(1.0, hCOP, hFOV * DEGREES_TO_RADIANS, 1, vCOP,
 		                  vFOV * DEGREES_TO_RADIANS,
-		                  &hd->base.views[1].fov);
+		                  &hd->base.hmd->views[1].fov);
 	}
 	{
 		/* left eye - just mirroring right eye now */
-		hd->base.views[0].fov.angle_up = hd->base.views[1].fov.angle_up;
-		hd->base.views[0].fov.angle_down =
-		    hd->base.views[1].fov.angle_down;
+		hd->base.hmd->views[0].fov.angle_up =
+		    hd->base.hmd->views[1].fov.angle_up;
+		hd->base.hmd->views[0].fov.angle_down =
+		    hd->base.hmd->views[1].fov.angle_down;
 
-		hd->base.views[0].fov.angle_left =
-		    -hd->base.views[1].fov.angle_right;
-		hd->base.views[0].fov.angle_right =
-		    -hd->base.views[1].fov.angle_left;
+		hd->base.hmd->views[0].fov.angle_left =
+		    -hd->base.hmd->views[1].fov.angle_right;
+		hd->base.hmd->views[0].fov.angle_right =
+		    -hd->base.hmd->views[1].fov.angle_left;
 	}
 
 	switch (variant) {
 	case HDK_UNKNOWN: assert(!"unknown device"); break;
 
 	case HDK_VARIANT_2: {
-		hd->base.screens[0].nominal_frame_interval_ns =
+		hd->base.hmd->screens[0].nominal_frame_interval_ns =
 		    time_s_to_ns(1.0f / 90.0f);
 		constexpr int panel_w = 1080;
 		constexpr int panel_h = 1200;
@@ -324,44 +343,44 @@ hdk_device_create(hid_device *dev,
 
 		// clang-format off
 		// Main display.
-		hd->base.screens[0].w_pixels = panel_w * 2;
-		hd->base.screens[0].h_pixels = panel_h;
+		hd->base.hmd->screens[0].w_pixels = panel_w * 2;
+		hd->base.hmd->screens[0].h_pixels = panel_h;
 #ifndef HDK_DO_NOT_FLIP_HDK2_SCREEN
 		// Left
-		hd->base.views[0].display.w_pixels = panel_w;
-		hd->base.views[0].display.h_pixels = panel_h;
-		hd->base.views[0].viewport.x_pixels = panel_w; // right half of display
-		hd->base.views[0].viewport.y_pixels = vert_padding;
-		hd->base.views[0].viewport.w_pixels = panel_w;
-		hd->base.views[0].viewport.h_pixels = panel_w;
-		hd->base.views[0].rot = u_device_rotation_180;
+		hd->base.hmd->views[0].display.w_pixels = panel_w;
+		hd->base.hmd->views[0].display.h_pixels = panel_h;
+		hd->base.hmd->views[0].viewport.x_pixels = panel_w; // right half of display
+		hd->base.hmd->views[0].viewport.y_pixels = vert_padding;
+		hd->base.hmd->views[0].viewport.w_pixels = panel_w;
+		hd->base.hmd->views[0].viewport.h_pixels = panel_w;
+		hd->base.hmd->views[0].rot = u_device_rotation_180;
 
 		// Right
-		hd->base.views[1].display.w_pixels = panel_w;
-		hd->base.views[1].display.h_pixels = panel_h;
-		hd->base.views[1].viewport.x_pixels = 0;
-		hd->base.views[1].viewport.y_pixels = vert_padding;
-		hd->base.views[1].viewport.w_pixels = panel_w;
-		hd->base.views[1].viewport.h_pixels = panel_w;
-		hd->base.views[1].rot = u_device_rotation_180;
+		hd->base.hmd->views[1].display.w_pixels = panel_w;
+		hd->base.hmd->views[1].display.h_pixels = panel_h;
+		hd->base.hmd->views[1].viewport.x_pixels = 0;
+		hd->base.hmd->views[1].viewport.y_pixels = vert_padding;
+		hd->base.hmd->views[1].viewport.w_pixels = panel_w;
+		hd->base.hmd->views[1].viewport.h_pixels = panel_w;
+		hd->base.hmd->views[1].rot = u_device_rotation_180;
 #else
 		// Left
-		hd->base.views[0].display.w_pixels = panel_w;
-		hd->base.views[0].display.h_pixels = panel_h;
-		hd->base.views[0].viewport.x_pixels = 0;
-		hd->base.views[0].viewport.y_pixels = vert_padding;
-		hd->base.views[0].viewport.w_pixels = panel_w;
-		hd->base.views[0].viewport.h_pixels = panel_w;
-		hd->base.views[0].rot = u_device_rotation_ident;
+		hd->base.hmd->views[0].display.w_pixels = panel_w;
+		hd->base.hmd->views[0].display.h_pixels = panel_h;
+		hd->base.hmd->views[0].viewport.x_pixels = 0;
+		hd->base.hmd->views[0].viewport.y_pixels = vert_padding;
+		hd->base.hmd->views[0].viewport.w_pixels = panel_w;
+		hd->base.hmd->views[0].viewport.h_pixels = panel_w;
+		hd->base.hmd->views[0].rot = u_device_rotation_ident;
 
 		// Right
-		hd->base.views[1].display.w_pixels = panel_w;
-		hd->base.views[1].display.h_pixels = panel_h;
-		hd->base.views[1].viewport.x_pixels = panel_w;
-		hd->base.views[1].viewport.y_pixels = vert_padding;
-		hd->base.views[1].viewport.w_pixels = panel_w;
-		hd->base.views[1].viewport.h_pixels = panel_w;
-		hd->base.views[1].rot = u_device_rotation_ident;
+		hd->base.hmd->views[1].display.w_pixels = panel_w;
+		hd->base.hmd->views[1].display.h_pixels = panel_h;
+		hd->base.hmd->views[1].viewport.x_pixels = panel_w;
+		hd->base.hmd->views[1].viewport.y_pixels = vert_padding;
+		hd->base.hmd->views[1].viewport.w_pixels = panel_w;
+		hd->base.hmd->views[1].viewport.h_pixels = panel_w;
+		hd->base.hmd->views[1].rot = u_device_rotation_ident;
 #endif
 		// clang-format on
 		break;
@@ -370,7 +389,7 @@ hdk_device_create(hid_device *dev,
 		// fallthrough intentional
 	case HDK_VARIANT_1_2: {
 		// 1080x1920 screen, with the top at the left.
-		hd->base.screens[0].nominal_frame_interval_ns =
+		hd->base.hmd->screens[0].nominal_frame_interval_ns =
 		    time_s_to_ns(1.0f / 60.0f);
 
 		constexpr int panel_w = 1080;
@@ -378,26 +397,26 @@ hdk_device_create(hid_device *dev,
 		constexpr int panel_half_h = panel_h / 2;
 		// clang-format off
 		// Main display.
-		hd->base.screens[0].w_pixels = panel_w;
-		hd->base.screens[0].h_pixels = panel_h;
+		hd->base.hmd->screens[0].w_pixels = panel_w;
+		hd->base.hmd->screens[0].h_pixels = panel_h;
 
 		// Left
-		hd->base.views[0].display.w_pixels = panel_half_h;
-		hd->base.views[0].display.h_pixels = panel_w;
-		hd->base.views[0].viewport.x_pixels = 0;
-		hd->base.views[0].viewport.y_pixels = 0;// top half of display
-		hd->base.views[0].viewport.w_pixels = panel_w;
-		hd->base.views[0].viewport.h_pixels = panel_half_h;
-		hd->base.views[0].rot = u_device_rotation_left;
+		hd->base.hmd->views[0].display.w_pixels = panel_half_h;
+		hd->base.hmd->views[0].display.h_pixels = panel_w;
+		hd->base.hmd->views[0].viewport.x_pixels = 0;
+		hd->base.hmd->views[0].viewport.y_pixels = 0;// top half of display
+		hd->base.hmd->views[0].viewport.w_pixels = panel_w;
+		hd->base.hmd->views[0].viewport.h_pixels = panel_half_h;
+		hd->base.hmd->views[0].rot = u_device_rotation_left;
 
 		// Right
-		hd->base.views[1].display.w_pixels = panel_half_h;
-		hd->base.views[1].display.h_pixels = panel_w;
-		hd->base.views[1].viewport.x_pixels = 0;
-		hd->base.views[1].viewport.y_pixels = panel_half_h; // bottom half of display
-		hd->base.views[1].viewport.w_pixels = panel_w;
-		hd->base.views[1].viewport.h_pixels = panel_half_h;
-		hd->base.views[1].rot = u_device_rotation_left;
+		hd->base.hmd->views[1].display.w_pixels = panel_half_h;
+		hd->base.hmd->views[1].display.h_pixels = panel_w;
+		hd->base.hmd->views[1].viewport.x_pixels = 0;
+		hd->base.hmd->views[1].viewport.y_pixels = panel_half_h; // bottom half of display
+		hd->base.hmd->views[1].viewport.w_pixels = panel_w;
+		hd->base.hmd->views[1].viewport.h_pixels = panel_half_h;
+		hd->base.hmd->views[1].rot = u_device_rotation_left;
 		// clang-format on
 		break;
 	}
@@ -407,13 +426,14 @@ hdk_device_create(hid_device *dev,
 	// "None" is correct or at least acceptable for 1.2.
 	// We have coefficients for 1.3/1.4, though the mesh is better.
 	// We only have a mesh for 2, so use "none" there until it's supported.
-	hd->base.distortion.models = XRT_DISTORTION_MODEL_NONE;
-	hd->base.distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+	hd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
+	hd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
 	// if (variant == HDK_VARIANT_1_3_1_4) {
-	// 	hd->base.distortion.models =
-	// 	    xrt_distortion_model(hd->base.distortion.models |
+	// 	hd->base.hmd->distortion.models =
+	// 	    xrt_distortion_model(hd->base.hmd->distortion.models |
 	// 	                         XRT_DISTORTION_MODEL_PANOTOOLS);
-	// 	hd->base.distortion.preferred = XRT_DISTORTION_MODEL_PANOTOOLS;
+	// 	hd->base.hmd->distortion.preferred =
+	// XRT_DISTORTION_MODEL_PANOTOOLS;
 	// }
 
 

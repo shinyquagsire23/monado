@@ -544,20 +544,20 @@ comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
 		/*
 		 * VIVE fragment shader
 		 */
-		d->ubo_vive.aspect_x_over_y = c->xdev->distortion.vive.aspect_x_over_y;
-		d->ubo_vive.grow_for_undistort = c->xdev->distortion.vive.grow_for_undistort;
+		d->ubo_vive.aspect_x_over_y = c->xdev->hmd->distortion.vive.aspect_x_over_y;
+		d->ubo_vive.grow_for_undistort = c->xdev->hmd->distortion.vive.grow_for_undistort;
 
 		for (uint32_t i = 0; i < 2; i++)
-			d->ubo_vive.undistort_r2_cutoff[i] = c->xdev->distortion.vive.undistort_r2_cutoff[i];
+			d->ubo_vive.undistort_r2_cutoff[i] = c->xdev->hmd->distortion.vive.undistort_r2_cutoff[i];
 
 		for (uint32_t i = 0; i < 2; i++)
 			for (uint32_t j = 0; j < 2; j++)
-				d->ubo_vive.center[i][j] = c->xdev->distortion.vive.center[i][j];
+				d->ubo_vive.center[i][j] = c->xdev->hmd->distortion.vive.center[i][j];
 
 		for (uint32_t i = 0; i < 2; i++)
 			for (uint32_t j = 0; j < 3; j++)
 				for (uint32_t k = 0; k < 3; k++)
-					d->ubo_vive.coefficients[i][j][k] = c->xdev->distortion.vive.coefficients[i][j][k];
+					d->ubo_vive.coefficients[i][j][k] = c->xdev->hmd->distortion.vive.coefficients[i][j][k];
 
 		memcpy(d->ubo_handle.mapped, &d->ubo_vive, sizeof(d->ubo_vive));
 		break;
@@ -566,21 +566,21 @@ comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
 		/*
 		 * Pano vision fragment shader
 		 */
-		d->ubo_pano.hmd_warp_param[0] = c->xdev->distortion.pano.distortion_k[0];
-		d->ubo_pano.hmd_warp_param[1] = c->xdev->distortion.pano.distortion_k[1];
-		d->ubo_pano.hmd_warp_param[2] = c->xdev->distortion.pano.distortion_k[2];
-		d->ubo_pano.hmd_warp_param[3] = c->xdev->distortion.pano.distortion_k[3];
-		d->ubo_pano.aberr[0] = c->xdev->distortion.pano.aberration_k[0];
-		d->ubo_pano.aberr[1] = c->xdev->distortion.pano.aberration_k[1];
-		d->ubo_pano.aberr[2] = c->xdev->distortion.pano.aberration_k[2];
-		d->ubo_pano.aberr[3] = c->xdev->distortion.pano.aberration_k[3];
-		d->ubo_pano.lens_center[0][0] = c->xdev->views[0].lens_center.x_meters;
-		d->ubo_pano.lens_center[0][1] = c->xdev->views[0].lens_center.y_meters;
-		d->ubo_pano.lens_center[1][0] = c->xdev->views[1].lens_center.x_meters;
-		d->ubo_pano.lens_center[1][1] = c->xdev->views[1].lens_center.y_meters;
-		d->ubo_pano.viewport_scale[0] = c->xdev->views[0].display.w_meters;
-		d->ubo_pano.viewport_scale[1] = c->xdev->views[0].display.h_meters;
-		d->ubo_pano.warp_scale = c->xdev->distortion.pano.warp_scale;
+		d->ubo_pano.hmd_warp_param[0] = c->xdev->hmd->distortion.pano.distortion_k[0];
+		d->ubo_pano.hmd_warp_param[1] = c->xdev->hmd->distortion.pano.distortion_k[1];
+		d->ubo_pano.hmd_warp_param[2] = c->xdev->hmd->distortion.pano.distortion_k[2];
+		d->ubo_pano.hmd_warp_param[3] = c->xdev->hmd->distortion.pano.distortion_k[3];
+		d->ubo_pano.aberr[0] = c->xdev->hmd->distortion.pano.aberration_k[0];
+		d->ubo_pano.aberr[1] = c->xdev->hmd->distortion.pano.aberration_k[1];
+		d->ubo_pano.aberr[2] = c->xdev->hmd->distortion.pano.aberration_k[2];
+		d->ubo_pano.aberr[3] = c->xdev->hmd->distortion.pano.aberration_k[3];
+		d->ubo_pano.lens_center[0][0] = c->xdev->hmd->views[0].lens_center.x_meters;
+		d->ubo_pano.lens_center[0][1] = c->xdev->hmd->views[0].lens_center.y_meters;
+		d->ubo_pano.lens_center[1][0] = c->xdev->hmd->views[1].lens_center.x_meters;
+		d->ubo_pano.lens_center[1][1] = c->xdev->hmd->views[1].lens_center.y_meters;
+		d->ubo_pano.viewport_scale[0] = c->xdev->hmd->views[0].display.w_meters;
+		d->ubo_pano.viewport_scale[1] = c->xdev->hmd->views[0].display.h_meters;
+		d->ubo_pano.warp_scale = c->xdev->hmd->distortion.pano.warp_scale;
 
 		memcpy(d->ubo_handle.mapped, &d->ubo_pano, sizeof(d->ubo_pano));
 	}
@@ -592,9 +592,9 @@ comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
 
 	// clang-format off
 	d->ubo_vp_data[0].viewport_id = 0;
-	d->ubo_vp_data[0].rot = c->xdev->views[0].rot;
+	d->ubo_vp_data[0].rot = c->xdev->hmd->views[0].rot;
 	d->ubo_vp_data[1].viewport_id = 1;
-	d->ubo_vp_data[1].rot = c->xdev->views[1].rot;
+	d->ubo_vp_data[1].rot = c->xdev->hmd->views[1].rot;
 
 	memcpy(d->ubo_viewport_handles[0].mapped, &d->ubo_vp_data[0], sizeof(d->ubo_vp_data[0]));
 	memcpy(d->ubo_viewport_handles[1].mapped, &d->ubo_vp_data[1], sizeof(d->ubo_vp_data[1]));
