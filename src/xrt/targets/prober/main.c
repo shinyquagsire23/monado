@@ -55,10 +55,12 @@ do_exit(struct xrt_prober **xp, int ret)
 	return ret;
 }
 
+#define NUM_XDEVS 32
+
 int
 main(int argc, const char **argv)
 {
-	struct xrt_device *xdev = NULL;
+	struct xrt_device *xdevs[NUM_XDEVS] = {0};
 	struct xrt_prober *p = NULL;
 	int ret = 0;
 
@@ -85,19 +87,26 @@ main(int argc, const char **argv)
 
 	printf(" :: Selecting device!\n");
 
-	ret = p->select(p, &xdev);
+	ret = p->select(p, xdevs, NUM_XDEVS);
 	if (ret != 0) {
 		do_exit(&p, ret);
 	}
-	if (xdev == NULL) {
-		printf("\tNo device found! :(\n");
+	if (xdevs[0] == NULL) {
+		printf("\tNo HMD found! :(\n");
 		return do_exit(&p, -1);
 	}
 
-	printf("\tFound '%s'\n", xdev->name);
 
-	xdev->destroy(xdev);
-	xdev = NULL;
+	for (size_t i = 0; i < NUM_XDEVS; i++) {
+		if (xdevs[i] == NULL) {
+			continue;
+		}
+
+		printf("\tFound '%s'\n", xdevs[i]->name);
+
+		xdevs[i]->destroy(xdevs[i]);
+		xdevs[i] = NULL;
+	}
 
 	printf(" :: All ok, shutting down.\n");
 

@@ -43,7 +43,9 @@ static int
 dump(struct xrt_prober* xp);
 
 static int
-select_device(struct xrt_prober* xp, struct xrt_device** out_xdev);
+select_device(struct xrt_prober* xp,
+              struct xrt_device** xdevs,
+              size_t num_xdevs);
 
 static int
 open_hid_interface(struct xrt_prober* xp,
@@ -487,10 +489,45 @@ dump(struct xrt_prober* xp)
 	return 0;
 }
 
-static int
-select_device(struct xrt_prober* xp, struct xrt_device** out_xdev)
+static void
+handle_found_device(struct prober* p,
+                    struct xrt_device** xdevs,
+                    size_t num_xdevs,
+                    struct xrt_device* xdev)
 {
-	struct xrt_device* xdev = NULL;
+	P_DEBUG(p, "Found '%s' %p", xdev->name, (void*)xdev);
+
+	// For controllers we put them after the first found HMD.
+	if (xdev->hmd == NULL) {
+		for (size_t i = 1; i < num_xdevs; i++) {
+			if (xdevs[i] == NULL) {
+				xdevs[i] = xdev;
+				return;
+			}
+		}
+
+		P_ERROR(p, "Too many controller devices closing '%s'",
+		        xdev->name);
+		xdev->destroy(xdev);
+		return;
+	}
+
+	// Not found a HMD before, add it first in the list.
+	if (xdevs[0] == NULL) {
+		xdevs[0] = xdev;
+		return;
+	}
+
+	P_ERROR(p, "Found more then one, HMD closing '%s'", xdev->name);
+	xdev->destroy(xdev);
+	return;
+}
+
+static int
+select_device(struct xrt_prober* xp,
+              struct xrt_device** xdevs,
+              size_t num_xdevs)
+{
 	struct prober* p = (struct prober*)xp;
 
 	// Build a list of all current probed devices.
@@ -511,13 +548,14 @@ select_device(struct xrt_prober* xp, struct xrt_device** out_xdev)
 				continue;
 			}
 
+			struct xrt_device* xdev = NULL;
 			entry->found(xp, dev_list, i, &xdev);
 
-			if (xdev != NULL) {
-				free(dev_list);
-				*out_xdev = xdev;
-				return 0;
+			if (xdev == NULL) {
+				continue;
 			}
+
+			handle_found_device(p, xdevs, num_xdevs, xdev);
 		}
 	}
 
@@ -525,16 +563,36 @@ select_device(struct xrt_prober* xp, struct xrt_device** out_xdev)
 	free(dev_list);
 
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
-		struct xrt_device* ret =
+		struct xrt_device* xdev =
 		    p->auto_probers[i]->lelo_dallas_autoprobe(
 		        p->auto_probers[i]);
-		if (ret) {
-			*out_xdev = ret;
-			return 0;
+		if (xdev == NULL) {
+			continue;
 		}
+
+		handle_found_device(p, xdevs, num_xdevs, xdev);
 	}
 
-	return -1;
+
+	if (xdevs[0] != NULL) {
+		P_DEBUG(p, "Found HMD! '%s'", xdevs[0]->name);
+		return 0;
+	}
+
+	P_DEBUG(p, "Didn't find any HMD devices");
+
+	// Destroy all other found devices.
+	for (size_t i = 1; i < num_xdevs; i++) {
+		if (xdevs[i] == NULL) {
+			continue;
+		}
+
+		P_DEBUG(p, "Destroying '%s'", xdevs[i]->name);
+		xdevs[i]->destroy(xdevs[i]);
+		xdevs[i] = NULL;
+	}
+
+	return 0;
 }
 
 static int

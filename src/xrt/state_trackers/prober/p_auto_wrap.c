@@ -54,7 +54,7 @@ auto_probe(struct xrt_auto_prober *xap)
 		return NULL;
 	}
 
-	ret = pw->xp->select(pw->xp, &xdev);
+	ret = pw->xp->select(pw->xp, &xdev, 1);
 	if (ret < 0) {
 		return NULL;
 	}

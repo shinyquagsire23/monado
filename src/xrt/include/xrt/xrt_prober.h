@@ -111,7 +111,9 @@ struct xrt_prober
 {
 	int (*probe)(struct xrt_prober *xp);
 	int (*dump)(struct xrt_prober *xp);
-	int (*select)(struct xrt_prober *xp, struct xrt_device **out_xdev);
+	int (*select)(struct xrt_prober *xp,
+	              struct xrt_device **xdevs,
+	              size_t num_xdevs);
 	int (*open_hid_interface)(struct xrt_prober *xp,
 	                          struct xrt_prober_device *xpdev,
 	                          int interface,
