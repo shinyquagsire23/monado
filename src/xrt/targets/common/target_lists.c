@@ -16,12 +16,19 @@
 #include "ohmd/oh_interface.h"
 #endif
 
+#ifdef XRT_BUILD_PSMV
+#include "psmv/psmv_interface.h"
+#endif
+
 #ifdef XRT_BUILD_PSVR
 #include "psvr/psvr_interface.h"
 #endif
 
 
 struct xrt_prober_entry target_entry_list[] = {
+#ifdef XRT_BUILD_PSVR
+    {PSMV_VID, PSMV_PID, psmv_found, "PS Move"},
+#endif
     {0x0000, 0x0000, NULL, NULL}, // Terminate
 };
 

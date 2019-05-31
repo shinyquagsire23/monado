@@ -109,6 +109,12 @@ if(BUILD_WITH_HIDAPI)
 	set(BUILD_DRIVER_PSVR TRUE)
 endif()
 
+if(TRUE)
+	# Uses the Monado internal hid wrapper.
+	add_definitions(-DXRT_BUILD_PSMV)
+	set(BUILD_DRIVER_PSMV TRUE)
+endif()
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 

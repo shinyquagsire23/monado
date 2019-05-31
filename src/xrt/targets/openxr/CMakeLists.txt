@@ -91,6 +91,10 @@ if(BUILD_DRIVER_OHMD)
 	target_link_libraries(${RUNTIME_TARGET} PRIVATE OpenHMD::OpenHMD)
 endif()
 
+if(BUILD_DRIVER_PSMV)
+	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_psmv>)
+endif()
+
 if(BUILD_DRIVER_PSVR)
 	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_psvr>)
 	target_link_libraries(${RUNTIME_TARGET} PUBLIC ${HIDAPI_LIBRARIES})

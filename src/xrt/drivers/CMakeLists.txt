@@ -42,6 +42,18 @@ if(BUILD_DRIVER_OHMD)
 endif()
 
 
+if(BUILD_DRIVER_PSMV)
+	set(PSMOVE_SOURCE_FILES
+		psmv/psmv_driver.c
+		psmv/psmv_interface.h
+		)
+
+	# Use OBJECT to not create a archive, since it just gets in the way.
+	add_library(drv_psmv OBJECT ${PSMOVE_SOURCE_FILES})
+	set_property(TARGET drv_psmv PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
+
+
 if(BUILD_DRIVER_PSVR)
 	set(PSVR_SOURCE_FILES
 		psvr/psvr_device.c
