@@ -101,10 +101,6 @@ extern "C" {
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
 			                 "(" #arg "->type = %u)", arg->type);  \
 		}                                                              \
-		if (arg->next != NULL) {                                       \
-			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
-			                 "(" #arg "->next = %p)", arg->next);  \
-		}                                                              \
 	} while (false)
 
 #define OXR_VERIFY_SUBACTION_PATHS(log, count, paths)                          \
