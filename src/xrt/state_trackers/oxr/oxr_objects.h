@@ -223,7 +223,7 @@ oxr_session_to_openxr(struct oxr_session *sess)
 XrResult
 oxr_session_create(struct oxr_logger *log,
                    struct oxr_system *sys,
-                   XrStructureType *next,
+                   const XrSessionCreateInfo *createInfo,
                    struct oxr_session **out_session);
 
 XrResult
@@ -450,7 +450,7 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 XrResult
 oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              struct oxr_system *sys,
-                             XrGraphicsBindingOpenGLXlibKHR *next,
+                             XrGraphicsBindingOpenGLXlibKHR const *next,
                              struct oxr_session *sess);
 #endif
 
@@ -501,7 +501,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 XrResult
 oxr_session_populate_vk(struct oxr_logger *log,
                         struct oxr_system *sys,
-                        XrGraphicsBindingVulkanKHR *next,
+                        XrGraphicsBindingVulkanKHR const *next,
                         struct oxr_session *sess);
 
 XrResult

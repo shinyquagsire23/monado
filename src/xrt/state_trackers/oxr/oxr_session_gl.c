@@ -23,7 +23,7 @@
 XrResult
 oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              struct oxr_system *sys,
-                             XrGraphicsBindingOpenGLXlibKHR *next,
+                             XrGraphicsBindingOpenGLXlibKHR const *next,
                              struct oxr_session *sess)
 {
 	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_xlib(

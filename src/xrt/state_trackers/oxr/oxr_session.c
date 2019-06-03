@@ -25,6 +25,7 @@
 #include "oxr_logger.h"
 #include "oxr_two_call.h"
 #include "oxr_handle.h"
+#include "oxr_chain.h"
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(views, "OXR_DEBUG_VIEWS", false)
@@ -503,39 +504,64 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 		(OUT)->sys = (SYS);                                            \
 	} while (0)
 
+/* Just the allocation and populate part, so we can use early-returns to
+ * simplify code flow and avoid weird if/else */
+static XrResult
+oxr_session_create_impl(struct oxr_logger *log,
+                        struct oxr_system *sys,
+                        const XrSessionCreateInfo *createInfo,
+                        struct oxr_session **out_session)
+{
+#ifdef XR_USE_PLATFORM_XLIB
+	XrGraphicsBindingOpenGLXlibKHR const *opengl_xlib =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo,
+	                             XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
+	                             XrGraphicsBindingOpenGLXlibKHR);
+	if (opengl_xlib != NULL) {
+		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		return oxr_session_populate_gl_xlib(log, sys, opengl_xlib,
+		                                    *out_session);
+	}
+#endif
+
+#ifdef XR_USE_GRAPHICS_API_VULKAN
+	XrGraphicsBindingVulkanKHR const *vulkan = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR,
+	    XrGraphicsBindingVulkanKHR);
+	if (vulkan != NULL) {
+		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		return oxr_session_populate_vk(log, sys, vulkan, *out_session);
+	}
+#endif
+
+	/*
+	 * Add any new graphics binding structs here - before the headless
+	 * check. (order for non-headless checks not specified in standard.)
+	 * Any new addition will also need to be added to
+	 * oxr_verify_XrSessionCreateInfo and have its own associated verify
+	 * function added.
+	 */
+
+	if (sys->inst->headless) {
+		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		(*out_session)->compositor = NULL;
+		(*out_session)->create_swapchain = NULL;
+		return XR_SUCCESS;
+	}
+	return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+	                 "(createInfo->next->type)");
+}
+
 XrResult
 oxr_session_create(struct oxr_logger *log,
                    struct oxr_system *sys,
-                   XrStructureType *next,
+                   const XrSessionCreateInfo *createInfo,
                    struct oxr_session **out_session)
 {
 	struct oxr_session *sess;
-	XrResult ret;
 
-	if (sys->inst->headless && next == NULL) {
-		OXR_SESSION_ALLOCATE(log, sys, sess);
-		ret = XR_SUCCESS;
-		sess->compositor = NULL;
-		sess->create_swapchain = NULL;
-	} else
-#ifdef XR_USE_PLATFORM_XLIB
-	    if (*next == XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
-		OXR_SESSION_ALLOCATE(log, sys, sess);
-		ret = oxr_session_populate_gl_xlib(
-		    log, sys, (XrGraphicsBindingOpenGLXlibKHR *)next, sess);
-	} else
-#endif
-#ifdef XR_USE_GRAPHICS_API_VULKAN
-	    if (*next == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
-		OXR_SESSION_ALLOCATE(log, sys, sess);
-		ret = oxr_session_populate_vk(
-		    log, sys, (XrGraphicsBindingVulkanKHR *)next, sess);
-	} else
-#endif
-	{
-		ret = oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                "(createInfo->next->type)");
-	}
+	/* Try allocating and populating. */
+	XrResult ret = oxr_session_create_impl(log, sys, createInfo, &sess);
 
 	if (ret != XR_SUCCESS) {
 		/* clean up allocation first */

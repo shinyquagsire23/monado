@@ -26,7 +26,7 @@ vkGetInstanceProcAddr(VkInstance instance, const char *pName);
 XrResult
 oxr_session_populate_vk(struct oxr_logger *log,
                         struct oxr_system *sys,
-                        XrGraphicsBindingVulkanKHR *next,
+                        XrGraphicsBindingVulkanKHR const *next,
                         struct oxr_session *sess)
 {
 	struct xrt_compositor_vk *xcvk = xrt_gfx_vk_provider_create(

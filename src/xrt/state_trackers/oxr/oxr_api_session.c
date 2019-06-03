@@ -41,8 +41,7 @@ oxr_xrCreateSession(XrInstance instance,
 		return ret;
 	}
 
-	ret = oxr_session_create(&log, &inst->system,
-	                         (XrStructureType*)createInfo->next, &sess);
+	ret = oxr_session_create(&log, &inst->system, createInfo, &sess);
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
