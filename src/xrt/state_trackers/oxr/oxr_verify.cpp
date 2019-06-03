@@ -327,8 +327,9 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 		return XR_SUCCESS;
 	}
 
-	return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-	                 "createInfo->next->type");
+	return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID,
+	                 "(createInfo->next) Argument chain does not contain "
+	                 "any known graphics bindings");
 }
 
 
@@ -340,7 +341,7 @@ oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
 {
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "createInfo->next->type");
+		                 " Graphics binding has invalid type");
 	}
 
 	return XR_SUCCESS;
@@ -357,7 +358,7 @@ oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger* log,
 {
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "createInfo->next->type");
+		                 " Graphics binding has invalid type");
 	}
 
 	return XR_SUCCESS;
