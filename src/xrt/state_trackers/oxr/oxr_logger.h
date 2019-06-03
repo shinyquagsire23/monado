@@ -55,6 +55,20 @@ oxr_log(struct oxr_logger *logger, const char *fmt, ...)
 void
 oxr_warn(struct oxr_logger *logger, const char *fmt, ...)
     XRT_PRINTF_FORMAT(2, 3);
+
+/*!
+ * Output an error and return the result code.
+ *
+ * Intended for use in a return statement, to log error information and return
+ * the result code in a single line.
+ *
+ * Note: The format string is appended to the function name with no spaces,
+ * so it should either start with a parenthesized argument name followed by a
+ * space and the message, or should start with a space then the message.
+ * That is, a format string of `"(arg) info"` becomes `XR_ERROR: xrFunc(arg)
+ * info`, and a format string of `" info msg"` becomes `XR_ERROR: xrFunc info
+ * msg`.
+ */
 XrResult
 oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
     XRT_PRINTF_FORMAT(3, 4);
