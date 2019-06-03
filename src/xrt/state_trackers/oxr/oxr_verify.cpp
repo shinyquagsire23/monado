@@ -276,7 +276,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 {
 	if (createInfo->type != XR_TYPE_SESSION_CREATE_INFO) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "createInfo->type");
+		                 "(createInfo->type)");
 	}
 
 	if (createInfo->next == NULL) {
@@ -293,7 +293,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 		if (!inst->opengl_enable) {
 			return oxr_error(
 			    log, XR_ERROR_VALIDATION_FAILURE,
-			    "OpenGL "
+			    " OpenGL "
 			    "requires " XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
 		}
 		return oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
@@ -305,7 +305,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 		if (!inst->vulkan_enable) {
 			return oxr_error(
 			    log, XR_ERROR_VALIDATION_FAILURE,
-			    "Vulkan "
+			    " Vulkan "
 			    "requires " XR_KHR_VULKAN_ENABLE_EXTENSION_NAME);
 		}
 		return oxr_verify_XrGraphicsBindingVulkanKHR(
