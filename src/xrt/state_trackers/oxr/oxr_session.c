@@ -499,8 +499,8 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	do {                                                                   \
 		OXR_ALLOCATE_HANDLE_OR_RETURN(LOG, OUT, OXR_XR_DEBUG_SESSION,  \
 		                              oxr_session_destroy,             \
-		                              &SYS->inst->handle);             \
-		OUT->sys = SYS;                                                \
+		                              &(SYS)->inst->handle);           \
+		(OUT)->sys = (SYS);                                            \
 	} while (0)
 
 XrResult
