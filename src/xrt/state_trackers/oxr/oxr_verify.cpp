@@ -18,6 +18,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_api_verify.h"
+#include "oxr_chain.h"
 
 
 /*
@@ -279,45 +280,55 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 		                 "(createInfo->type)");
 	}
 
-	if (createInfo->next == NULL) {
-		if (inst->headless) {
-			return XR_SUCCESS;
-		}
-		return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID,
-		                 "createInfo->next");
-	}
-
-	XrStructureType* next_type = (XrStructureType*)createInfo->next;
 #ifdef XR_USE_PLATFORM_XLIB
-	if (*next_type == XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
+	XrGraphicsBindingOpenGLXlibKHR const* opengl_xlib =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo,
+	                             XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
+	                             XrGraphicsBindingOpenGLXlibKHR);
+	if (opengl_xlib != NULL) {
 		if (!inst->opengl_enable) {
 			return oxr_error(
 			    log, XR_ERROR_VALIDATION_FAILURE,
 			    " OpenGL "
 			    "requires " XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
 		}
-		return oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
-		    log, (XrGraphicsBindingOpenGLXlibKHR*)createInfo->next);
-	} else
+		return oxr_verify_XrGraphicsBindingOpenGLXlibKHR(log,
+		                                                 opengl_xlib);
+	}
 #endif
+
 #ifdef XR_USE_GRAPHICS_API_VULKAN
-	    if (*next_type == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
+	XrGraphicsBindingVulkanKHR const* vulkan = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR,
+	    XrGraphicsBindingVulkanKHR);
+	if (vulkan != NULL) {
 		if (!inst->vulkan_enable) {
 			return oxr_error(
 			    log, XR_ERROR_VALIDATION_FAILURE,
 			    " Vulkan "
 			    "requires " XR_KHR_VULKAN_ENABLE_EXTENSION_NAME);
 		}
-		return oxr_verify_XrGraphicsBindingVulkanKHR(
-		    log, (XrGraphicsBindingVulkanKHR*)createInfo->next);
-	} else
+		return oxr_verify_XrGraphicsBindingVulkanKHR(log, vulkan);
+	}
 #endif
-	{
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "createInfo->next->type");
+
+	/*
+	 * Add any new graphics binding structs here - before the headless
+	 * check. (order for non-headless checks not specified in standard.)
+	 * Add a new verify function below.
+	 * Any new addition will also need to be added to
+	 * oxr_session_create_impl.
+	 */
+
+	/* We didn't recognize any graphics binding structs in the chain - our
+	 * last hope is headless. */
+
+	if (inst->headless) {
+		return XR_SUCCESS;
 	}
 
-	return XR_SUCCESS;
+	return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+	                 "createInfo->next->type");
 }
 
 
@@ -330,11 +341,6 @@ oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "createInfo->next->type");
-	}
-
-	if (next->next != NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "createInfo->next->next");
 	}
 
 	return XR_SUCCESS;
@@ -352,11 +358,6 @@ oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger* log,
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "createInfo->next->type");
-	}
-
-	if (next->next != NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "createInfo->next->next");
 	}
 
 	return XR_SUCCESS;
