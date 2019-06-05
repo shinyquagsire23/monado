@@ -93,7 +93,8 @@ oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
 	va_end(args);
 
 	fprintf(stderr, "\n");
-	if (debug_get_bool_option_break_on_error()) {
+	if (debug_get_bool_option_break_on_error() &&
+	    result != XR_ERROR_FUNCTION_UNSUPPORTED) {
 		/// Trigger a debugger breakpoint.
 		XRT_DEBUGBREAK();
 	}
