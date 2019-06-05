@@ -17,9 +17,12 @@ extern "C" {
 
 #define OXR_TWO_CALL_HELPER(log, cnt_input, cnt_output, output, count, data)   \
 	do {                                                                   \
-		if (cnt_output != NULL) {                                      \
-			*cnt_output = count;                                   \
+		if (cnt_output == NULL) {                                      \
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
+			                 #cnt_output);                         \
 		}                                                              \
+		*cnt_output = count;                                           \
+                                                                               \
 		if (cnt_input == 0) {                                          \
 			return XR_SUCCESS;                                     \
 		}                                                              \
