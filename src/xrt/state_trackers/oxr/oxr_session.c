@@ -53,7 +53,9 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 {
 	struct xrt_compositor *xc = sess->compositor;
 	if (xc == NULL) {
-		*formatCountOutput = 0;
+		if (formatCountOutput != NULL) {
+			*formatCountOutput = 0;
+		}
 		return XR_SUCCESS;
 	}
 
