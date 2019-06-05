@@ -60,6 +60,7 @@ find_library(OPENHMD_LIBRARY
     openhmd
     PATHS
     ${OPENHMD_ROOT_DIR}
+    ${OPENHMD_ROOT_DIR}/build
     HINTS
     ${PC_OPENHMD_LIBRARY_DIRS}
     PATH_SUFFIXES
