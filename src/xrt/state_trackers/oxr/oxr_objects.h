@@ -498,6 +498,17 @@ oxr_system_fill_in(struct oxr_logger *log,
                    struct xrt_device *dev);
 
 XrResult
+oxr_system_verify_id(struct oxr_logger *log,
+                     const struct oxr_instance *inst,
+                     XrSystemId systemId);
+
+XrResult
+oxr_system_get_by_id(struct oxr_logger *log,
+                     struct oxr_instance *inst,
+                     XrSystemId systemId,
+                     struct oxr_system **system);
+
+XrResult
 oxr_system_get_properties(struct oxr_logger *log,
                           struct oxr_system *sys,
                           XrSystemProperties *properties);

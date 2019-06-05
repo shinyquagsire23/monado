@@ -25,37 +25,17 @@
 
 
 /*!
- * A helper defines that allocates a logger on the stack and verifies both the
- * instance and systemId.
+ * A helper define that verifies the systemId.
  */
 #define OXR_VERIFY_SYSTEM_AND_GET(log, inst, sysId, system)                    \
 	struct oxr_system* system = NULL;                                      \
 	do {                                                                   \
-		XrResult ret = verify_system_id(log, inst, sysId, &system);    \
+		XrResult ret = oxr_system_get_by_id(log, inst, sysId, &system);    \
 		if (ret != XR_SUCCESS) {                                       \
 			return ret;                                            \
 		}                                                              \
 		assert(system != NULL);                                        \
 	} while (false)
-
-/*!
- * Function that does the actual verifing.
- */
-static XrResult
-verify_system_id(struct oxr_logger* log,
-                 struct oxr_instance* inst,
-                 XrSystemId systemId,
-                 struct oxr_system** system)
-{
-	if (systemId != 1) {
-		return oxr_error(log, XR_ERROR_SYSTEM_INVALID,
-		                 "invalid system %lu", systemId);
-	}
-
-	*system = &inst->system;
-
-	return XR_SUCCESS;
-}
 
 XrResult
 oxr_xrGetSystem(XrInstance instance,

@@ -280,6 +280,11 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 		                 "(createInfo->type)");
 	}
 
+	XrResult result = oxr_system_verify_id(log, inst, createInfo->systemId);
+	if (result != XR_SUCCESS) {
+		return result;
+	}
+
 #ifdef XR_USE_PLATFORM_XLIB
 	XrGraphicsBindingOpenGLXlibKHR const* opengl_xlib =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo,

@@ -57,6 +57,37 @@ oxr_system_select(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
+
+XrResult
+oxr_system_verify_id(struct oxr_logger *log,
+                     const struct oxr_instance *inst,
+                     XrSystemId systemId)
+{
+	if (systemId != 1) {
+		return oxr_error(log, XR_ERROR_SYSTEM_INVALID,
+		                 "invalid system %lu", systemId);
+	}
+	return XR_SUCCESS;
+}
+
+
+XrResult
+oxr_system_get_by_id(struct oxr_logger *log,
+                     struct oxr_instance *inst,
+                     XrSystemId systemId,
+                     struct oxr_system **system)
+{
+	XrResult result = oxr_system_verify_id(log, inst, systemId);
+	if (result != XR_SUCCESS) {
+		return result;
+	}
+
+	/* right now only have one system. */
+	*system = &inst->system;
+
+	return XR_SUCCESS;
+}
+
 XrResult
 oxr_system_fill_in(struct oxr_logger *log,
                    struct oxr_instance *inst,
