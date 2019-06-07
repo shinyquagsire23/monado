@@ -256,6 +256,48 @@ union xrt_input_value {
 };
 
 
+/*!
+ * Base type of this output.
+ *
+ * @ingroup xrt_iface
+ */
+enum xrt_output_type
+{
+	// clang-format off
+	XRT_OUTPUT_TYPE_VIBRATION             = 0x00,
+	// clang-format on
+};
+
+#define XRT_OUTPUT_NAME(id, type) ((id << 8) | XRT_OUTPUT_TYPE_##type)
+
+/*!
+ * Name of a output with a baked in type.
+ *
+ * @see xrt_output_type
+ * @ingroup xrt_iface
+ */
+enum xrt_output_name
+{
+	// clang-format off
+	XRT_OUTPUT_NAME_GENERIC_VIBRATION              = XRT_OUTPUT_NAME(0x0000, VIBRATION),
+	// clang-format on
+};
+
+/*!
+ * A union of all output types.
+ *
+ * @see xrt_output_type
+ * @ingroup xrt_iface math
+ */
+union xrt_output_value {
+	struct
+	{
+		float frequency;
+		float amplitude;
+	} vibration;
+};
+
+
 #ifdef __cplusplus
 }
 #endif

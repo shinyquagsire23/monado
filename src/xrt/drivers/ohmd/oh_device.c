@@ -340,7 +340,8 @@ oh_device_create(ohmd_context *ctx,
 {
 	enum u_device_alloc_flags flags =
 	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE;
-	struct oh_device *ohd = U_DEVICE_ALLOCATE(struct oh_device, flags, 1);
+	struct oh_device *ohd =
+	    U_DEVICE_ALLOCATE(struct oh_device, flags, 1, 0);
 	ohd->base.update_inputs = oh_device_update_inputs;
 	ohd->base.get_tracked_pose = oh_device_get_tracked_pose;
 	ohd->base.get_view_pose = oh_device_get_view_pose;

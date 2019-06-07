@@ -167,6 +167,11 @@ struct xrt_input
 	union xrt_input_value value;
 };
 
+struct xrt_output
+{
+	enum xrt_output_name name;
+};
+
 /*!
  * A single HMD or input device.
  *
@@ -189,6 +194,12 @@ struct xrt_device
 	size_t num_inputs;
 	//! Array of input structs.
 	struct xrt_input *inputs;
+
+	//! Number of outputs.
+	size_t num_outputs;
+	//! Array of output structs.
+	struct xrt_output *outputs;
+
 
 	/*!
 	 * Update any attached inputs.
@@ -221,6 +232,16 @@ struct xrt_device
 	                         struct time_state *timekeeping,
 	                         int64_t *out_timestamp,
 	                         struct xrt_space_relation *out_relation);
+
+	/*!
+	 * Set a output value.
+	 *
+	 * @see xrt_output_name
+	 */
+	void (*set_output)(struct xrt_device *xdev,
+	                   enum xrt_output_name name,
+	                   struct time_state *timekeeping,
+	                   union xrt_output_value *value);
 
 	/*!
 	 * Get the per view pose in relation to the view space. Does not do any

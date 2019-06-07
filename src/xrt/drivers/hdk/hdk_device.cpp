@@ -264,7 +264,8 @@ hdk_device_create(hid_device *dev,
 {
 	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
 	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
-	struct hdk_device *hd = U_DEVICE_ALLOCATE(struct hdk_device, flags, 1);
+	struct hdk_device *hd =
+	    U_DEVICE_ALLOCATE(struct hdk_device, flags, 1, 0);
 
 	hd->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
 	hd->base.update_inputs = hdk_device_update_inputs;

@@ -679,7 +679,7 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	enum u_device_alloc_flags flags =
 	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE;
 	struct psvr_device *psvr =
-	    U_DEVICE_ALLOCATE(struct psvr_device, flags, 1);
+	    U_DEVICE_ALLOCATE(struct psvr_device, flags, 1, 0);
 	int ret;
 
 	psvr->print_spew = print_spew;

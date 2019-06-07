@@ -70,8 +70,8 @@ u_device_dump_config(struct xrt_device* xdev,
                      const char* prefix,
                      const char* prod);
 
-#define U_DEVICE_ALLOCATE(type, flags, num_inputs)                             \
-	((type*)u_device_allocate(flags, sizeof(type), num_inputs))
+#define U_DEVICE_ALLOCATE(type, flags, num_inputs, num_outputs)                \
+	((type*)u_device_allocate(flags, sizeof(type), num_inputs, num_outputs))
 
 
 /*!
@@ -83,7 +83,8 @@ u_device_dump_config(struct xrt_device* xdev,
 void*
 u_device_allocate(enum u_device_alloc_flags flags,
                   size_t size,
-                  size_t num_inputs);
+                  size_t num_inputs,
+                  size_t num_outputs);
 
 
 #ifdef __cplusplus

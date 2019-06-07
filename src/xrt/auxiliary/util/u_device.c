@@ -217,7 +217,8 @@ u_device_setup_split_side_by_side(struct xrt_device* xdev,
 void*
 u_device_allocate(enum u_device_alloc_flags flags,
                   size_t size,
-                  size_t num_inputs)
+                  size_t num_inputs,
+                  size_t num_outputs)
 {
 	bool alloc_hmd = (flags & U_DEVICE_ALLOC_HMD) != 0;
 	bool alloc_tracking = (flags & U_DEVICE_ALLOC_TRACKING_NONE) != 0;
@@ -227,6 +228,10 @@ u_device_allocate(enum u_device_alloc_flags flags,
 	// Inputs
 	size_t offset_inputs = total_size;
 	total_size += num_inputs * sizeof(struct xrt_input);
+
+	// Outputs
+	size_t offset_outputs = total_size;
+	total_size += num_outputs * sizeof(struct xrt_output);
 
 	// HMD
 	size_t offset_hmd = total_size;
@@ -243,6 +248,11 @@ u_device_allocate(enum u_device_alloc_flags flags,
 	if (num_inputs > 0) {
 		xdev->num_inputs = num_inputs;
 		xdev->inputs = (struct xrt_input*)(ptr + offset_inputs);
+	}
+
+	if (num_outputs > 0) {
+		xdev->num_outputs = num_outputs;
+		xdev->outputs = (struct xrt_output*)(ptr + offset_outputs);
 	}
 
 	if (alloc_hmd) {
