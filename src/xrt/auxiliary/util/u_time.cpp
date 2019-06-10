@@ -18,12 +18,9 @@ using namespace std::chrono;
 
 struct MatchingTimePoints
 {
-	system_clock::time_point sys;
-	steady_clock::time_point steady;
+	system_clock::time_point sys = system_clock::now();
+	steady_clock::time_point steady = steady_clock::now();
 	// high_resolution_clock::time_point highRes;
-
-	//! Initializes to "right now" in all clocks
-	MatchingTimePoints();
 
 	timepoint_ns
 	getTimestamp(time_state const& prevState);
@@ -31,13 +28,9 @@ struct MatchingTimePoints
 
 struct time_state
 {
-	MatchingTimePoints lastTimePoints;
-	timepoint_ns lastTime;
+	MatchingTimePoints lastTimePoints = {};
+	timepoint_ns lastTime = {};
 };
-
-MatchingTimePoints::MatchingTimePoints()
-    : sys(system_clock::now()), steady(steady_clock::now())
-{}
 
 timepoint_ns
 MatchingTimePoints::getTimestamp(time_state const& prevState)
