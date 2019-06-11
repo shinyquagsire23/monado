@@ -360,7 +360,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 		COMP_DEBUG(c, "Checking for NVIDIA vulkan driver.");
 	}
 
-	struct vk_bundle temp_vk;
+	struct vk_bundle temp_vk = {0};
 	ret = vk_get_loader_functions(&temp_vk, vkGetInstanceProcAddr);
 	if (ret != VK_SUCCESS) {
 		return false;
