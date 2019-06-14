@@ -85,7 +85,10 @@ file(GENERATE
 # by a script we generate now.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	set(MANIFEST_RELATIVE_DIR share/openxr/${XR_API_MAJOR}/)
-
+	if(INSTALL_ACTIVE_RUNTIME)
+		configure_file(active_runtime.cmake ${CMAKE_CURRENT_BINARY_DIR}/active_runtime.cmake @ONLY)
+		install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/active_runtime.cmake)
+	endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	# TODO: install target on windows just needs to know where to install manifest
 	set(MANIFEST_RELATIVE_DIR)
