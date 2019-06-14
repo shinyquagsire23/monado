@@ -105,11 +105,6 @@ extern "C" {
 
 #define OXR_VERIFY_SUBACTION_PATHS(log, count, paths)                          \
 	do {                                                                   \
-		if (count == 0 && paths != NULL) {                             \
-			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
-			                 " " #count " is zero but " #paths     \
-			                 " is not NULL");                      \
-		}                                                              \
 		if (count > 0 && paths == NULL) {                              \
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
 			                 " " #count " is not zero but " #paths \
