@@ -31,21 +31,6 @@ file(
 }
 ")
 
-###
-# Generate runtime manifest with relative path to runtime intendend for installed release build
-# (assumes the runtime library is in the loader's search path)
-file(
-	GENERATE
-	OUTPUT "${CMAKE_BINARY_DIR}/${RUNTIME_TARGET}.json"
-	CONTENT
-"{
-    \"file_format_version\": \"1.0.0\",
-    \"runtime\": {
-        \"library_path\": \"$<TARGET_SONAME_FILE_NAME:${RUNTIME_TARGET}>\"
-    }
-}
-")
-
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/../../targets/common
 	${CMAKE_CURRENT_SOURCE_DIR}/../../auxiliary
@@ -91,6 +76,21 @@ endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	include(GNUInstallDirs)
+
+	###
+	# Generate runtime manifest with absolute path to installed runtime
+	file(
+		GENERATE
+		OUTPUT "${CMAKE_BINARY_DIR}/${RUNTIME_TARGET}.json"
+		CONTENT
+"{
+    \"file_format_version\": \"1.0.0\",
+    \"runtime\": {
+        \"library_path\": \"${CMAKE_INSTALL_FULL_LIBDIR}/$<TARGET_SONAME_FILE_NAME:${RUNTIME_TARGET}>\"
+    }
+}
+")
+
 	install(TARGETS ${RUNTIME_TARGET}
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
