@@ -14,23 +14,6 @@ set(RUNTIME_TARGET ${RUNTIME_PREFIX}openxr${RUNTIME_SUFFIX} CACHE INTERNAL "" FO
 
 set(XR_API_MAJOR "0")
 
-
-# $LIBPATH is a generator expression that is evaluated after configure_file, so we have to use file(GENERATE) instead
-
-###
-# Generate runtime manifest with absolute path to runtime intended for development without installing
-file(
-	GENERATE
-	OUTPUT "${CMAKE_BINARY_DIR}/${RUNTIME_TARGET}-dev.json"
-	CONTENT
-"{
-    \"file_format_version\": \"1.0.0\",
-    \"runtime\": {
-        \"library_path\": \"$<TARGET_SONAME_FILE:${RUNTIME_TARGET}>\"
-    }
-}
-")
-
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/../../targets/common
 	${CMAKE_CURRENT_SOURCE_DIR}/../../auxiliary
@@ -81,7 +64,21 @@ install(TARGETS ${RUNTIME_TARGET}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+
+# $LIBPATH is a generator expression that is evaluated after configure_file, so we have to use file(GENERATE) instead
+
+###
+# Generate runtime manifest with absolute path to runtime intended for development without installing
 set(MANIFEST_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/openxr_monado.in.json)
+set(RUNTIME_PATH $<TARGET_SONAME_FILE:${RUNTIME_TARGET}>)
+
+# Need this step because file(GENERATE) only evaluates generator expressions, and not what configure_file does.
+configure_file(${MANIFEST_INPUT} ${CMAKE_CURRENT_BINARY_DIR}/intermediate_manifest.json)
+file(GENERATE
+	OUTPUT "${CMAKE_BINARY_DIR}/${RUNTIME_TARGET}-dev.json"
+	INPUT ${CMAKE_CURRENT_BINARY_DIR}/intermediate_manifest.json)
+
 ###
 # Prepare the installable manifest: will be generated completely at install time,
 # by a script we generate now.
