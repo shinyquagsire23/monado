@@ -298,7 +298,7 @@ psmv_send_led_control(struct psmv_device *psmv,
                       uint8_t rumble)
 {
 	struct psmv_set_led msg;
-	memset(&msg, 0, sizeof(msg));
+	U_ZERO(&msg);
 	msg.id = 0x02;
 	msg.red = red;
 	msg.green = green;
