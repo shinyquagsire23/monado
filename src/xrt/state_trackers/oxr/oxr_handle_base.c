@@ -104,7 +104,7 @@ oxr_handle_allocate_and_init(struct oxr_logger *log,
 	 * function isn't recommended for direct use.
 	 */
 	struct oxr_handle_base *hb =
-	    U_CALLOC_WITH_CAST(struct oxr_handle_base *, size);
+	    U_CALLOC_WITH_CAST(struct oxr_handle_base, size);
 	XrResult result = oxr_handle_init(log, hb, debug, destroy, parent);
 	if (result != XR_SUCCESS) {
 		free(hb);
