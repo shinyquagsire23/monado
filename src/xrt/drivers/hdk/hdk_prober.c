@@ -18,6 +18,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 
+#include "hdk_interface.h"
 #include "hdk_device.h"
 
 
