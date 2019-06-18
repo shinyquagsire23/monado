@@ -30,7 +30,8 @@
 #define OXR_VERIFY_SYSTEM_AND_GET(log, inst, sysId, system)                    \
 	struct oxr_system* system = NULL;                                      \
 	do {                                                                   \
-		XrResult ret = oxr_system_get_by_id(log, inst, sysId, &system);    \
+		XrResult ret =                                                 \
+		    oxr_system_get_by_id(log, inst, sysId, &system);           \
 		if (ret != XR_SUCCESS) {                                       \
 			return ret;                                            \
 		}                                                              \
