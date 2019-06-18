@@ -75,27 +75,14 @@ if(DRIVER_LIBRARIES)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	include(GNUInstallDirs)
-
-	###
-	# Generate runtime manifest with absolute path to installed runtime
-	file(
-		GENERATE
-		OUTPUT "${CMAKE_BINARY_DIR}/${RUNTIME_TARGET}.json"
-		CONTENT
-"{
-    \"file_format_version\": \"1.0.0\",
-    \"runtime\": {
-        \"library_path\": \"${CMAKE_INSTALL_FULL_LIBDIR}/$<TARGET_SONAME_FILE_NAME:${RUNTIME_TARGET}>\"
-    }
-}
-")
-
-	install(TARGETS ${RUNTIME_TARGET}
-		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 	install(FILES "${CMAKE_BINARY_DIR}/${RUNTIME_TARGET}.json" DESTINATION "share/openxr/${XR_API_MAJOR}/")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	# TODO: install target on windows
 endif()
+include(GNUInstallDirs)
+
+# Install the runtime itself
+install(TARGETS ${RUNTIME_TARGET}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
