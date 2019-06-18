@@ -13,6 +13,10 @@
 #include "xrt/xrt_config.h"
 #include "xrt/xrt_compiler.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /*!
  * Representing a single hid interface on a device.
@@ -68,4 +72,8 @@ os_hid_destroy(struct os_hid_device *hid_dev)
  */
 int
 os_hid_open_hidraw(const char *path, struct os_hid_device **out_hid);
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
