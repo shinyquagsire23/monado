@@ -300,9 +300,9 @@ _find_surface_format(struct vk_swapchain *sc,
 			}
 		}
 
-		// we dont have our swapchain default format and colorspace, but
-		// we may have at least one preferred format with the correct
-		// colorspace.
+		// we don't have our swapchain default format and colorspace,
+		// but we may have at least one preferred format with the
+		// correct colorspace.
 		for (uint32_t i = 0; i < num_formats_cs; i++) {
 			for (uint32_t j = 0; j < num_pref_formats; j++) {
 				if (formats_for_colorspace[i].format ==
