@@ -205,7 +205,7 @@ oxr_classify_sub_action_paths(struct oxr_logger* log,
 	size_t length = 0;
 
 	// Reset the sub_paths completely.
-	memset(sub_paths, 0, sizeof(*sub_paths));
+	U_ZERO(&sub_paths);
 
 	if (num_subaction_paths == 0) {
 		sub_paths->any = true;
@@ -470,8 +470,7 @@ oxr_source_cache_update(struct oxr_logger* log,
 		if (cache->stop_output_time > 0) {
 			oxr_source_cache_stop_output(log, sess, cache);
 		}
-
-		memset(&cache->current, 0, sizeof(cache->current));
+		U_ZERO(&cache->current);
 		return;
 	}
 
@@ -866,7 +865,7 @@ oxr_action_get_boolean(struct oxr_logger* log,
 	oxr_session_get_source(sess, act->key, &src);
 
 	data->isActive = XR_FALSE;
-	memset(&data->currentState, 0, sizeof(data->currentState));
+	U_ZERO(&data->currentState);
 
 	if (src == NULL) {
 		return XR_SUCCESS;
@@ -895,7 +894,7 @@ oxr_action_get_vector1f(struct oxr_logger* log,
 	oxr_session_get_source(sess, act->key, &src);
 
 	data->isActive = XR_FALSE;
-	memset(&data->currentState, 0, sizeof(data->currentState));
+	U_ZERO(&data->currentState);
 
 	if (src == NULL) {
 		return XR_SUCCESS;
@@ -924,7 +923,7 @@ oxr_action_get_vector2f(struct oxr_logger* log,
 	oxr_session_get_source(sess, act->key, &src);
 
 	data->isActive = XR_FALSE;
-	memset(&data->currentState, 0, sizeof(data->currentState));
+	U_ZERO(&data->currentState);
 
 	if (src == NULL) {
 		return XR_SUCCESS;

@@ -8,6 +8,8 @@
  */
 
 #include "math/m_api.h"
+#include "util/u_misc.h"
+
 #include "oxr_objects.h"
 
 
@@ -68,7 +70,8 @@ oxr_xdev_get_pose_at(struct oxr_logger *log,
 {
 	struct xrt_pose *offset = &xdev->tracking->offset;
 
-	struct xrt_space_relation relation = {0};
+	struct xrt_space_relation relation;
+	U_ZERO(&relation);
 	xdev->get_tracked_pose(xdev, name, inst->timekeeping, timestamp,
 	                       &relation);
 

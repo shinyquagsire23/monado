@@ -82,7 +82,7 @@ oxr_handle_init(struct oxr_logger *log,
 			                 "child handles");
 		}
 	}
-	memset(hb, 0, sizeof(*hb));
+	U_ZERO(hb);
 	hb->debug = debug;
 	hb->parent = parent;
 	hb->state = OXR_HANDLE_STATE_LIVE;
