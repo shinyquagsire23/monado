@@ -607,7 +607,7 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 	read_control_packets(psvr);
 
 	// Clear out the relation.
-	memset(out_relation, 0, sizeof(*out_relation));
+	U_ZERO(out_relation);
 
 	int64_t now = time_state_get_now(timekeeping);
 	//! @todo adjust for latency here
