@@ -21,7 +21,7 @@ extern "C" {
  */
 
 /*!
- * Create a proble for OpenHMD supported devices.
+ * Create a probe for OpenHMD supported devices.
  *
  * @ingroup drv_ohmd
  */

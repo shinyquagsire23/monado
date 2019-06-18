@@ -442,7 +442,7 @@ oh_device_create(ohmd_context *ctx,
 		ohd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
 
 		// clang-format off
-		// These need to be aquired from the vive config
+		// These need to be acquired from the vive config
 		ohd->base.hmd->distortion.vive.aspect_x_over_y = 0.8999999761581421f;
 		ohd->base.hmd->distortion.vive.grow_for_undistort = 0.6000000238418579f;
 		ohd->base.hmd->distortion.vive.undistort_r2_cutoff[0] = 1.11622154712677f;
