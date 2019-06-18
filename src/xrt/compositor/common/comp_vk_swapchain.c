@@ -187,7 +187,7 @@ vk_swapchain_select_extent(struct vk_swapchain *sc,
                            uint32_t height)
 {
 	VkExtent2D extent;
-	memset(&extent, 0, sizeof(extent));
+	U_ZERO(&extent);
 
 	// If width (and height) equals the special value 0xFFFFFFFF,
 	// the size of the surface will be set by the swapchain

@@ -31,9 +31,9 @@ client_gl_swapchain_destroy(struct xrt_swapchain *xsc)
 	uint32_t num_images = sc->base.base.num_images;
 	if (num_images > 0) {
 		glDeleteTextures(num_images, &sc->base.images[0]);
-		memset(sc->base.images, 0, sizeof(sc->base.images));
+		U_ZERO_ARRAY(sc->base.images);
 		glDeleteMemoryObjectsEXT(num_images, &sc->base.memory[0]);
-		memset(sc->base.images, 0, sizeof(sc->base.memory));
+		U_ZERO_ARRAY(sc->base.images);
 		sc->base.base.num_images = 0;
 	}
 

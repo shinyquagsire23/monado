@@ -198,8 +198,8 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 	r->semaphores.present_complete = VK_NULL_HANDLE;
 	r->semaphores.render_complete = VK_NULL_HANDLE;
 
-	memset(&r->dummy_images[0], 0, sizeof(struct comp_swapchain_image));
-	memset(&r->dummy_images[1], 0, sizeof(struct comp_swapchain_image));
+	U_ZERO(&r->dummy_images[0]);
+	U_ZERO(&r->dummy_images[1]);
 	r->dummy_images[0].views = U_TYPED_CALLOC(VkImageView);
 	r->dummy_images[1].views = U_TYPED_CALLOC(VkImageView);
 

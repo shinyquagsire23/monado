@@ -987,7 +987,7 @@ vk_init_from_given(struct vk_bundle *vk,
 	VkResult ret;
 
 	// First memset it clear.
-	memset(vk, 0, sizeof(*vk));
+	U_ZERO(vk);
 
 	vk->vkGetInstanceProcAddr = vkGetInstanceProcAddr;
 	vk->instance = instance;
@@ -1025,6 +1025,6 @@ vk_init_from_given(struct vk_bundle *vk,
 	return VK_SUCCESS;
 
 err_memset:
-	memset(vk, 0, sizeof(*vk));
+	U_ZERO(vk);
 	return ret;
 }
