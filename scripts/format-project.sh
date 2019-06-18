@@ -1,28 +1,35 @@
-#!/bin/bash
-# Copyright 2018-2019, Collabora, Ltd.
-# Copyright 2016, Sensics, Inc.
-# SPDX-License-Identifier: Apache-2.0
+#!/bin/sh
+# Copyright 2019, Collabora, Ltd.
+# SPDX-License-Identifier: BSL-1.0
+# Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
-if [ ! "$CLANG_FORMAT" ]; then
-        for exe in clang-format-8 clang-format-7 clang-format-6.0 clang-format; do
-                if which $exe >/dev/null 2>&1; then
-                        CLANG_FORMAT=$exe
+# Formats all the source files in this project
+
+set -e
+
+if [ ! "${CLANGFORMAT}" ]; then
+        for fn in clang-format-9 clang-format-8 clang-format-7 clang-format-6.0 clang-format; do
+                if command -v $fn > /dev/null; then
+                        CLANGFORMAT=$fn
                         break
                 fi
         done
 fi
-if [ ! "$CLANG_FORMAT" ]; then
-        echo "Can't find clang-format - please set CLANG_FORMAT to a command or path" >&2
+
+if [ ! "${CLANGFORMAT}" ]; then
+        echo "We need some version of clang-format, please install one!" 1>&2
         exit 1
 fi
 
-runClangFormatOnDir() {
-    find "$1" \( -name "*.c" -o -name "*.cpp" -o -name "*.h" \)| \
-        grep -v "\.boilerplate" | \
-        xargs ${CLANG_FORMAT} -style=file -i
-}
-
 (
-cd $(dirname $0)/../src/xrt
-runClangFormatOnDir .
+        cd $(dirname $0)/..
+        find \
+                src/xrt/auxiliary \
+                src/xrt/compositor \
+                src/xrt/drivers \
+                src/xrt/include \
+                src/xrt/state_trackers \
+                src/xrt/targets \
+                \( -name "*.c" -o -name "*.cpp" -o -name "*.h" \) \
+                -exec ${CLANGFORMAT} -i -style=file \{\} +
 )
