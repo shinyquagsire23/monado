@@ -21,7 +21,7 @@ extern "C" {
  */
 
 /*!
- * Create a proble for PSVR devices.
+ * Create a probe for PSVR devices.
  *
  * @ingroup drv_psvr
  */
