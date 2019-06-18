@@ -13,6 +13,7 @@
 
 #include "math/m_api.h"
 #include "util/u_device.h"
+#include "util/u_misc.h"
 
 
 /*
@@ -242,7 +243,7 @@ u_device_allocate(enum u_device_alloc_flags flags,
 	total_size += alloc_tracking ? sizeof(struct xrt_tracking) : 0;
 
 	// Do the allocation
-	char* ptr = calloc(1, total_size);
+	char* ptr = U_TYPED_ARRAY_CALLOC(char, total_size);
 	struct xrt_device* xdev = (struct xrt_device*)ptr;
 
 	if (num_inputs > 0) {
