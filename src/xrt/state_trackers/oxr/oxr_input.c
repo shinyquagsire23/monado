@@ -205,7 +205,7 @@ oxr_classify_sub_action_paths(struct oxr_logger* log,
 	size_t length = 0;
 
 	// Reset the sub_paths completely.
-	U_ZERO(&sub_paths);
+	U_ZERO(sub_paths);
 
 	if (num_subaction_paths == 0) {
 		sub_paths->any = true;
