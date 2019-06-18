@@ -598,7 +598,7 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
  */
 
 void
-oxr_xdev_update(struct xrt_device* xdev, struct time_state* timekeeping);
+oxr_xdev_update(struct xrt_device *xdev, struct time_state *timekeeping);
 
 void
 oxr_xdev_find_input(struct xrt_device *xdev,

@@ -12,7 +12,7 @@
 
 
 void
-oxr_xdev_update(struct xrt_device* xdev, struct time_state* timekeeping)
+oxr_xdev_update(struct xrt_device *xdev, struct time_state *timekeeping)
 {
 	if (xdev != NULL) {
 		xdev->update_inputs(xdev, timekeeping);
