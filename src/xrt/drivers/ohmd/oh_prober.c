@@ -16,6 +16,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 
+#include "oh_interface.h"
 #include "oh_device.h"
 
 
