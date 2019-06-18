@@ -10,6 +10,7 @@
 #pragma once
 
 #include <stdlib.h>
+#include <string.h> // for memset
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +42,25 @@ extern "C" {
 #define U_TYPED_ARRAY_CALLOC(TYPE, COUNT)                                      \
 	((TYPE *)calloc((COUNT), sizeof(TYPE)))
 
+/*!
+ * Zeroes the correct amount of memory based on the type pointed-to by the
+ * argument.
+ * 
+ * Use instead of memset(..., 0, ...) on a structure or pointer to structure.
+ *
+ * @ingroup aux_util
+ */
+#define U_ZERO(PTR) memset((PTR), 0, sizeof(*(PTR)))
+
+/*!
+ * Zeroes the correct amount of memory based on the type and size of the static
+ * array named in the argument.
+ * 
+ * Use instead of memset(..., 0, ...) on an array.
+ *
+ * @ingroup aux_util
+ */
+#define U_ZERO_ARRAY(ARRAY) memset((ARRAY), 0, sizeof(ARRAY))
 
 #ifdef __cplusplus
 }
