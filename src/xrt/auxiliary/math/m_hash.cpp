@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Hashing fuction.
+ * @brief  Hashing function.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_math
  */

@@ -45,7 +45,7 @@ extern "C" {
 /*!
  * Generate a hash value from the given string, trailing zero not included.
  *
- * Hashing function used is not specified so no garantee of staying the same
+ * Hashing function used is not specified so no guarantee of staying the same
  * between different versions of the software, or even when the same version
  * is compiled on different platforms/libc++ as it might use std::hash.
  *

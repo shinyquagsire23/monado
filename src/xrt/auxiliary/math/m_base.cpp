@@ -195,7 +195,7 @@ math_pose_openxr_locate(const struct xrt_pose* space_pose,
 	assert(base_space_pose != NULL);
 	assert(result != NULL);
 
-	// Compilers are slighty better optimizing
+	// Compilers are slightly better optimizing
 	// if we copy the arguments in one go.
 	const auto bsp = *base_space_pose;
 	const auto rel = *relative_pose;
@@ -411,7 +411,7 @@ math_relation_openxr_locate(const struct xrt_pose* space_pose,
 	assert(base_space_pose != NULL);
 	assert(result != NULL);
 
-	// Compilers are slighty better optimizing
+	// Compilers are slightly better optimizing
 	// if we copy the arguments in one go.
 	const auto bsp = *base_space_pose;
 	const auto spc = *space_pose;
