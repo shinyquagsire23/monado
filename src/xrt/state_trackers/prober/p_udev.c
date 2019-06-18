@@ -192,7 +192,7 @@ p_udev_add_interface(struct prober_device* pdev,
 	pdev->hidraws = realloc(pdev->hidraws, new_size);
 
 	struct prober_hidraw* hidraw = &pdev->hidraws[pdev->num_hidraws++];
-	memset(hidraw, 0, sizeof(struct prober_hidraw));
+	U_ZERO(hidraw);
 
 	hidraw->interface = interface;
 	hidraw->path = strdup(path);

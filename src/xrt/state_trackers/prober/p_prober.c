@@ -183,7 +183,7 @@ add_device(struct prober* p, struct prober_device** out_dev)
 	p->devices = realloc(p->devices, new_size);
 
 	struct prober_device* dev = &p->devices[p->num_devices++];
-	memset(dev, 0, sizeof(struct prober_device));
+	U_ZERO(dev);
 
 	*out_dev = dev;
 }
