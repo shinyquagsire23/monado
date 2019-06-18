@@ -15,7 +15,7 @@ and aims to support other operating systems in the near future.
 
 * `src/xrt/include` - headers that define the internal interfaces of Monado.
 * `src/xrt/compositor` - code for doing distortion and driving the display hardware of a device.
-* `src/xrt/auxiliary` - utilies and other larger components.
+* `src/xrt/auxiliary` - utilities and other larger components.
 * `src/xrt/drivers` - hardware drivers.
 * `src/xrt/state_trackers/oxr` - OpenXR API implementation.
 * `src/xrt/targets` - glue code and build logic to produce final binaries.
