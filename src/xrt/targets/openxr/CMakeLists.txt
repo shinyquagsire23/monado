@@ -74,11 +74,6 @@ if(DRIVER_LIBRARIES)
 	target_link_libraries(${RUNTIME_TARGET} PRIVATE ${DRIVER_LIBRARIES})
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	install(FILES "${CMAKE_BINARY_DIR}/${RUNTIME_TARGET}.json" DESTINATION "share/openxr/${XR_API_MAJOR}/")
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-	# TODO: install target on windows
-endif()
 include(GNUInstallDirs)
 
 # Install the runtime itself
@@ -86,3 +81,21 @@ install(TARGETS ${RUNTIME_TARGET}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+set(MANIFEST_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/openxr_monado.in.json)
+###
+# Prepare the installable manifest: will be generated completely at install time,
+# by a script we generate now.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	set(MANIFEST_RELATIVE_DIR share/openxr/${XR_API_MAJOR}/)
+
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	# TODO: install target on windows just needs to know where to install manifest
+	set(MANIFEST_RELATIVE_DIR)
+endif()
+
+# If we know where to install the manifest, we can set it up to be installed.
+if(MANIFEST_RELATIVE_DIR)
+	set(RUNTIME_RELATIVE_PATH ${CMAKE_INSTALL_LIBDIR}/${CMAKE_SHARED_MODULE_PREFIX}${RUNTIME_TARGET}${CMAKE_SHARED_MODULE_SUFFIX})
+	configure_file(make_manifest.cmake ${CMAKE_CURRENT_BINARY_DIR}/make_manifest.cmake @ONLY)
+	install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/make_manifest.cmake)
+endif()
