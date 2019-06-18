@@ -11,7 +11,7 @@
 
 
 /*!
- * @defgroup st_prober Prober and device managment code
+ * @defgroup st_prober Prober and device management code
  *
  * Probing code.
  *

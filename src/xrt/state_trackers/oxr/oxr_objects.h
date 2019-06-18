@@ -86,7 +86,7 @@ typedef XrResult (*oxr_handle_destroyer)(struct oxr_logger *log,
                                          struct oxr_handle_base *hb);
 
 /*!
- * State of a handle base, to reduce likelyhood of going "boom" on
+ * State of a handle base, to reduce likelihood of going "boom" on
  * out-of-order destruction or other unsavory behavior.
  */
 enum oxr_handle_state
