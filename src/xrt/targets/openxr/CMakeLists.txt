@@ -81,23 +81,12 @@ target_link_libraries(${RUNTIME_TARGET}
 	OpenGL::GLX
 	)
 
-if(BUILD_DRIVER_HDK)
-	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_hdk>)
-	target_link_libraries(${RUNTIME_TARGET} PUBLIC ${HIDAPI_LIBRARIES})
+if(DRIVER_OBJECTS)
+	target_sources(${RUNTIME_TARGET} PRIVATE ${DRIVER_OBJECTS})
 endif()
 
-if(BUILD_DRIVER_OHMD)
-	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_ohmd>)
-	target_link_libraries(${RUNTIME_TARGET} PRIVATE OpenHMD::OpenHMD)
-endif()
-
-if(BUILD_DRIVER_PSMV)
-	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_psmv>)
-endif()
-
-if(BUILD_DRIVER_PSVR)
-	target_sources(${RUNTIME_TARGET} PRIVATE $<TARGET_OBJECTS:drv_psvr>)
-	target_link_libraries(${RUNTIME_TARGET} PUBLIC ${HIDAPI_LIBRARIES})
+if(DRIVER_LIBRARIES)
+	target_link_libraries(${RUNTIME_TARGET} PRIVATE ${DRIVER_LIBRARIES})
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")

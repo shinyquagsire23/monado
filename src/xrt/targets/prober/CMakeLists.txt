@@ -36,21 +36,10 @@ target_link_libraries(prober PRIVATE
 	${UDEV_LIBRARIES}
 	)
 
-if(BUILD_DRIVER_HDK)
-	target_sources(prober PRIVATE $<TARGET_OBJECTS:drv_hdk>)
-	target_link_libraries(prober PUBLIC ${HIDAPI_LIBRARIES})
+if(DRIVER_OBJECTS)
+	target_sources(prober PRIVATE ${DRIVER_OBJECTS})
 endif()
 
-if(BUILD_DRIVER_OHMD)
-	target_sources(prober PRIVATE $<TARGET_OBJECTS:drv_ohmd>)
-	target_link_libraries(prober PRIVATE OpenHMD::OpenHMD)
-endif()
-
-if(BUILD_DRIVER_PSMV)
-	target_sources(prober PRIVATE $<TARGET_OBJECTS:drv_psmv>)
-endif()
-
-if(BUILD_DRIVER_PSVR)
-	target_sources(prober PRIVATE $<TARGET_OBJECTS:drv_psvr>)
-	target_link_libraries(prober PUBLIC ${HIDAPI_LIBRARIES})
+if(DRIVER_LIBRARIES)
+	target_link_libraries(prober PRIVATE ${DRIVER_LIBRARIES})
 endif()
