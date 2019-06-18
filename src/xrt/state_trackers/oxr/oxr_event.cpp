@@ -11,6 +11,8 @@
 #include <cstring>
 #include <cstdlib>
 
+#include "util/u_misc.h"
+
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 
@@ -88,8 +90,8 @@ oxr_event_alloc(struct oxr_logger *log,
                 size_t size,
                 struct oxr_event **out_event)
 {
-	struct oxr_event *event =
-	    (struct oxr_event *)calloc(1, sizeof(struct oxr_event) + size);
+	struct oxr_event *event = U_CALLOC_WITH_CAST(
+	    struct oxr_event, sizeof(struct oxr_event) + size);
 
 	if (event == NULL) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,

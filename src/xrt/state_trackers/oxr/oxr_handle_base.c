@@ -7,6 +7,7 @@
  */
 
 #include "util/u_debug.h"
+#include "util/u_misc.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -99,10 +100,11 @@ oxr_handle_allocate_and_init(struct oxr_logger *log,
                              void **out)
 {
 	/*
-	 * This bare calloc call, taking a size, not a type, is why this
+	 * This allocation call, taking a size, not a type, is why this
 	 * function isn't recommended for direct use.
 	 */
-	struct oxr_handle_base *hb = (struct oxr_handle_base *)calloc(1, size);
+	struct oxr_handle_base *hb =
+	    U_CALLOC_WITH_CAST(struct oxr_handle_base *, size);
 	XrResult result = oxr_handle_init(log, hb, debug, destroy, parent);
 	if (result != XR_SUCCESS) {
 		free(hb);
