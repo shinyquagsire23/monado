@@ -92,7 +92,8 @@ endif()
 
 # If we know where to install the manifest, we can set it up to be installed.
 if(MANIFEST_RELATIVE_DIR)
-	set(RUNTIME_RELATIVE_PATH ${CMAKE_INSTALL_LIBDIR}/${CMAKE_SHARED_MODULE_PREFIX}${RUNTIME_TARGET}${CMAKE_SHARED_MODULE_SUFFIX})
+	set(RUNTIME_RELATIVE_DIR ${CMAKE_INSTALL_LIBDIR})
+	set(RUNTIME_FILENAME ${CMAKE_SHARED_MODULE_PREFIX}${RUNTIME_TARGET}${CMAKE_SHARED_MODULE_SUFFIX})
 	configure_file(make_manifest.cmake ${CMAKE_CURRENT_BINARY_DIR}/make_manifest.cmake @ONLY)
 	install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/make_manifest.cmake)
 endif()
