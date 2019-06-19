@@ -12,5 +12,6 @@ set(SOURCE_FILES
 	)
 
 add_library(target_lists OBJECT ${SOURCE_FILES})
+target_link_libraries(target_lists PRIVATE monado-driver-defines)
 
 set_property(TARGET target_lists PROPERTY POSITION_INDEPENDENT_CODE ON)
