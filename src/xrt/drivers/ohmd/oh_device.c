@@ -213,6 +213,7 @@ struct device_info
 		bool video_distortion_vive;
 		bool left_center_pano_scale;
 		bool rotate_screen_right_after;
+		bool delay_after_initialization;
 	} quirks;
 };
 
@@ -263,6 +264,10 @@ get_info(struct oh_device *ohd, const char *prod)
 
 	if (strcmp(prod, "PSVR") == 0) {
 		info.quirks.video_distortion_none = true;
+	}
+
+	if (strcmp(prod, "Rift (CV1)") == 0) {
+		info.quirks.delay_after_initialization = true;
 	}
 
 
@@ -524,6 +529,13 @@ oh_device_create(ohmd_context *ctx,
 		ohd->base.hmd->views[1].display.w_pixels = h;
 		ohd->base.hmd->views[1].display.h_pixels = w2;
 		ohd->base.hmd->views[1].rot = u_device_rotation_left;
+	}
+
+	if (info.quirks.delay_after_initialization) {
+		unsigned int time_to_sleep = 1;
+		do {
+			time_to_sleep = sleep(time_to_sleep);
+		} while (time_to_sleep);
 	}
 
 	if (ohd->print_debug) {
