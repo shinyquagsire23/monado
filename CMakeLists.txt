@@ -10,7 +10,7 @@ if(POLICY CMP0072)
 endif()
 
 option(OPENXR_USE_LOADER "Application uses loader" ON)
-option(OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH "Use the absolute path to the runtime in the installed manifest, rather than a relative path." OFF)
+option(OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH "Use the absolute path to the runtime in the installed manifest, rather than a bare filename." ON)
 option(VULKAN_ENABLE_VALIDATION "Enable Vulkan validation for Compositor" ON)
 
 ###
