@@ -25,6 +25,17 @@ if(BUILD_DRIVER_HDK)
 endif()
 
 
+if(BUILD_DRIVER_HYDRA)
+	set(HYDRA_SOURCE_FILES
+		hydra/hydra_driver.c
+		hydra/hydra_interface.h
+		)
+
+	# Use OBJECT to not create a archive, since it just gets in the way.
+	add_library(drv_hydra OBJECT ${HYDRA_SOURCE_FILES})
+	set_property(TARGET drv_hydra PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
+
 if(BUILD_DRIVER_OHMD)
 	set(OHMD_SOURCE_FILES
 		ohmd/oh_device.c

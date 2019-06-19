@@ -115,6 +115,9 @@ endif()
 if(TRUE)
 	# Uses the Monado internal hid wrapper.
 	set(BUILD_DRIVER_PSMV TRUE)
+
+	add_definitions(-DXRT_BUILD_HYDRA)
+	set(BUILD_DRIVER_HYDRA TRUE)
 endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")

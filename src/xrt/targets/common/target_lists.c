@@ -26,6 +26,10 @@
 #include "psvr/psvr_interface.h"
 #endif
 
+#ifdef XRT_BUILD_HYDRA
+#include "hydra/hydra_interface.h"
+#endif
+
 
 /*!
  * Each entry should be a vendor ID (VID), product ID (PID), a "found" function,
@@ -48,6 +52,11 @@ struct xrt_prober_entry target_entry_list[] = {
 #ifdef XRT_BUILD_PSMV
     {PSMV_VID, PSMV_PID, psmv_found, "PS Move"},
 #endif
+
+#ifdef XRT_BUILD_HYDRA
+    {HYDRA_VID, HYDRA_PID, hydra_found, "Razer Hydra"},
+#endif
+
     {0x0000, 0x0000, NULL, NULL}, // Terminate
 };
 
