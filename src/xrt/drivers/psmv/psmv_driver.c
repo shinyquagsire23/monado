@@ -355,7 +355,7 @@ psmv_force_led_and_rumble_update(struct psmv_device *psmv, int64_t time)
  */
 
 static void
-psvm_device_destroy(struct xrt_device *xdev)
+psmv_device_destroy(struct xrt_device *xdev)
 {
 	struct psmv_device *psmv = psmv_device(xdev);
 
@@ -466,7 +466,7 @@ psmv_found(struct xrt_prober *xp,
 	    U_DEVICE_ALLOCATE(struct psmv_device, flags, 12, 1);
 	psmv->print_spew = debug_get_bool_option_psmv_spew();
 	psmv->print_debug = debug_get_bool_option_psmv_debug();
-	psmv->base.destroy = psvm_device_destroy;
+	psmv->base.destroy = psmv_device_destroy;
 	psmv->base.update_inputs = psmv_device_update_inputs;
 	psmv->base.get_tracked_pose = psmv_device_get_tracked_pose;
 	psmv->base.set_output = psmv_device_set_output;
