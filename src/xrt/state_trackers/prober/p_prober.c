@@ -267,6 +267,7 @@ teardown_devices(struct prober* p)
 	for (size_t i = 0; i < p->num_devices; i++) {
 		struct prober_device* pdev = &p->devices[i];
 
+#ifdef XRT_OS_LINUX
 		for (size_t j = 0; j < pdev->num_hidraws; j++) {
 			struct prober_hidraw* hidraw = &pdev->hidraws[j];
 			free((char*)hidraw->path);
@@ -278,6 +279,7 @@ teardown_devices(struct prober* p)
 			pdev->hidraws = NULL;
 			pdev->num_hidraws = 0;
 		}
+#endif
 	}
 
 	if (p->devices != NULL) {

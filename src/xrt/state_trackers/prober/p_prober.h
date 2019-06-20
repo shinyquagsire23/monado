@@ -55,6 +55,7 @@
 #define MAX_AUTO_PROBERS 8
 
 
+#ifdef XRT_OS_LINUX
 /*!
  * A hidraw interface that a @ref prober_device exposes.
  */
@@ -63,6 +64,7 @@ struct prober_hidraw
 	ssize_t interface;
 	const char* path;
 };
+#endif
 
 /*!
  * A prober device.
@@ -101,10 +103,10 @@ struct prober_device
 	{
 		const char** paths;
 	} v4l;
-#endif
 
 	size_t num_hidraws;
 	struct prober_hidraw* hidraws;
+#endif
 };
 
 struct prober

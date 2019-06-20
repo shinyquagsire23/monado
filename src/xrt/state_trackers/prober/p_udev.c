@@ -34,9 +34,12 @@
  */
 
 static void
-p_udev_add_interface(struct prober_device* pdev,
-                     uint32_t interface,
-                     const char* path);
+p_udev_enumerate_hidraw(struct prober* p, struct udev* udev);
+
+static void
+p_udev_add_hidraw(struct prober_device* pdev,
+                  uint32_t interface,
+                  const char* path);
 
 static int
 p_udev_get_interface_number(struct udev_device* raw_dev,
@@ -50,10 +53,10 @@ p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
                             uint64_t* out_bluetooth_serial);
 
 static int
-p_udev_get_usb_address(struct udev_device* raw_dev,
-                       uint32_t bus_type,
-                       uint16_t* usb_bus,
-                       uint16_t* usb_addr);
+p_udev_get_usb_hid_address(struct udev_device* raw_dev,
+                           uint32_t bus_type,
+                           uint16_t* usb_bus,
+                           uint16_t* usb_addr);
 
 
 /*
@@ -65,26 +68,31 @@ p_udev_get_usb_address(struct udev_device* raw_dev,
 int
 p_udev_probe(struct prober* p)
 {
-	struct prober_device* pdev;
-	struct udev* udev;
-	struct udev_enumerate* enumerate;
-	struct udev_list_entry *devices, *dev_list_entry;
-	struct udev_device* raw_dev = NULL;
-	uint16_t vendor_id, product_id, interface;
-	uint16_t usb_bus = 0;
-	uint16_t usb_addr = 0;
-	uint32_t bus_type;
-	uint64_t bluetooth_id;
-	int ret;
-
-	const char* sysfs_path;
-	const char* dev_path;
-
-	udev = udev_new();
+	struct udev* udev = udev_new();
 	if (!udev) {
 		P_ERROR(p, "Can't create udev\n");
 		return -1;
 	}
+
+	p_udev_enumerate_hidraw(p, udev);
+
+	udev = udev_unref(udev);
+
+	return 0;
+}
+
+
+/*
+ *
+ * Internal functions.
+ *
+ */
+
+static void
+p_udev_enumerate_hidraw(struct prober* p, struct udev* udev)
+{
+	struct udev_enumerate* enumerate;
+	struct udev_list_entry *devices, *dev_list_entry;
 
 	enumerate = udev_enumerate_new(udev);
 	udev_enumerate_add_match_subsystem(enumerate, "hidraw");
@@ -94,6 +102,17 @@ p_udev_probe(struct prober* p)
 
 	udev_list_entry_foreach(dev_list_entry, devices)
 	{
+		struct prober_device* pdev = NULL;
+		struct udev_device* raw_dev = NULL;
+		uint16_t vendor_id, product_id, interface;
+		uint16_t usb_bus = 0;
+		uint16_t usb_addr = 0;
+		uint32_t bus_type = 0;
+		uint64_t bluetooth_id = 0;
+		const char* sysfs_path;
+		const char* dev_path;
+		int ret;
+
 		// Where in the sysfs is.
 		sysfs_path = udev_list_entry_get_name(dev_list_entry);
 		// Raw sysfs node.
@@ -117,8 +136,8 @@ p_udev_probe(struct prober* p)
 		}
 
 		// Get USB bus and address to de-dublicate devices.
-		ret = p_udev_get_usb_address(raw_dev, bus_type, &usb_bus,
-		                             &usb_addr);
+		ret = p_udev_get_usb_hid_address(raw_dev, bus_type, &usb_bus,
+		                                 &usb_addr);
 		if (ret != 0) {
 			P_ERROR(p, "Failed to get USB bus and addr.");
 			goto next;
@@ -161,29 +180,19 @@ p_udev_probe(struct prober* p)
 		}
 
 		// Add this interface to the usb device.
-		p_udev_add_interface(pdev, interface, dev_path);
+		p_udev_add_hidraw(pdev, interface, dev_path);
 
 	next:
 		udev_device_unref(raw_dev);
 	}
 
 	enumerate = udev_enumerate_unref(enumerate);
-	udev = udev_unref(udev);
-
-	return 0;
 }
 
-
-/*
- *
- * Internal functions.
- *
- */
-
 static void
-p_udev_add_interface(struct prober_device* pdev,
-                     uint32_t interface,
-                     const char* path)
+p_udev_add_hidraw(struct prober_device* pdev,
+                  uint32_t interface,
+                  const char* path)
 {
 	size_t new_size =
 	    (pdev->num_hidraws + 1) * sizeof(struct prober_hidraw);
@@ -197,10 +206,10 @@ p_udev_add_interface(struct prober_device* pdev,
 }
 
 static int
-p_udev_get_usb_address(struct udev_device* raw_dev,
-                       uint32_t bus_type,
-                       uint16_t* usb_bus,
-                       uint16_t* usb_addr)
+p_udev_get_usb_hid_address(struct udev_device* raw_dev,
+                           uint32_t bus_type,
+                           uint16_t* usb_bus,
+                           uint16_t* usb_addr)
 {
 	struct udev_device* usb_dev;
 	const char* bus_str;
