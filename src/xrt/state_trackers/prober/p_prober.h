@@ -188,6 +188,17 @@ int
 p_libusb_probe(struct prober* p);
 #endif
 
+#ifdef XRT_HAVE_LIBUVC
+int
+p_libuvc_init(struct prober* p);
+
+void
+p_libuvc_teardown(struct prober* p);
+
+int
+p_libuvc_probe(struct prober* p);
+#endif
+
 #ifdef XRT_HAVE_LIBUDEV
 int
 p_udev_probe(struct prober* p);

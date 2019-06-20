@@ -245,7 +245,7 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 #endif
 
 #ifdef XRT_HAVE_LIBUVC
-	ret = uvc_init(&p->uvc.ctx, p->usb.ctx);
+	ret = p_libuvc_init(p);
 	if (ret != 0) {
 		teardown(p);
 		return -1;
@@ -306,79 +306,12 @@ teardown(struct prober* p)
 	teardown_devices(p);
 
 #ifdef XRT_HAVE_LIBUVC
-	// Free all libuvc resources.
-	if (p->uvc.list != NULL) {
-		uvc_free_device_list(p->uvc.list, 1);
-		p->uvc.list = NULL;
-	}
-
-	if (p->uvc.ctx != NULL) {
-		uvc_exit(p->uvc.ctx);
-		p->uvc.ctx = NULL;
-	}
+	p_libuvc_teardown(p);
 #endif
 
 #ifdef XRT_HAVE_LIBUSB
 	p_libusb_teardown(p);
 #endif
-}
-
-static int
-p_libuvc_probe(struct prober* p)
-{
-#ifdef XRT_HAVE_LIBUVC
-	int ret;
-
-	// Free old list first.
-	if (p->uvc.list != NULL) {
-		uvc_free_device_list(p->uvc.list, 1);
-		p->uvc.list = NULL;
-	}
-
-	ret = uvc_get_device_list(p->uvc.ctx, &p->uvc.list);
-	if (ret < 0) {
-		P_ERROR(p, "\tFailed to enumerate uvc devices\n");
-		return -1;
-	}
-
-	// Count the number of UVC devices.
-	while (p->uvc.list != NULL && p->uvc.list[p->uvc.count] != NULL) {
-		p->uvc.count++;
-	}
-
-	for (ssize_t k = 0; k < p->uvc.count; k++) {
-		uvc_device_t* device = p->uvc.list[k];
-		struct uvc_device_descriptor* desc;
-		struct prober_device* pdev = NULL;
-
-		uvc_get_device_descriptor(device, &desc);
-		uint8_t bus = uvc_get_bus_number(device);
-		uint8_t addr = uvc_get_device_address(device);
-		uint16_t vendor = desc->idVendor;
-		uint16_t product = desc->idProduct;
-		uvc_free_device_descriptor(desc);
-
-		ret = p_dev_get_usb_dev(p, bus, addr, vendor, product, &pdev);
-
-		P_SPEW(p,
-		       "libuvc\n"
-		       "\t\tptr:        %p (%i)\n"
-		       "\t\tvendor_id:  %04x\n"
-		       "\t\tproduct_id: %04x\n"
-		       "\t\tbus:        %i\n"
-		       "\t\taddr:       %i",
-		       (void*)pdev, ret, vendor, product, bus, addr);
-
-		if (ret != 0) {
-			P_ERROR(p, "p_dev_get_usb_device failed!");
-			continue;
-		}
-
-		// Attach the libuvc device to it.
-		pdev->uvc.dev = p->uvc.list[k];
-	}
-#endif
-	return 0;
 }
 
 
@@ -405,11 +338,13 @@ probe(struct xrt_prober* xp)
 	}
 #endif
 
+#ifdef XRT_HAVE_LIBUVC
 	ret = p_libuvc_probe(p);
 	if (ret != 0) {
 		P_ERROR(p, "Failed to enumerate libuvc devices\n");
 		return -1;
 	}
+#endif
 
 #ifdef XRT_HAVE_LIBUDEV
 	ret = p_udev_probe(p);

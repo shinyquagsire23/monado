@@ -37,13 +37,22 @@ if(BUILD_WITH_LIBUSB)
 		)
 endif()
 
+# Add libuvc
+if(BUILD_WITH_LIBUVC)
+	list(APPEND PROBER_SOURCE_FILES
+		p_libuvc.c
+		)
+	list(APPEND PROBER_INCLUDES
+		${LIBUVC_INCLUDES}
+		)
+endif()
+
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(st_prober OBJECT ${PROBER_SOURCE_FILES})
 
 target_include_directories(st_prober
 	PRIVATE
 	${PROBER_INCLUDES}
-	${LIBUVC_INCLUDES}
 	)
 
 set_property(TARGET st_prober PROPERTY POSITION_INDEPENDENT_CODE ON)
