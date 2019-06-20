@@ -34,6 +34,15 @@
  */
 
 static void
+p_udev_enumerate_v4l2(struct prober* p, struct udev* udev);
+
+static void
+p_udev_add_v4l(struct prober_device* pdev,
+               uint32_t v4l_index,
+               uint32_t usb_iface,
+               const char* path);
+
+static void
 p_udev_enumerate_hidraw(struct prober* p, struct udev* udev);
 
 static void
@@ -58,6 +67,36 @@ p_udev_get_usb_hid_address(struct udev_device* raw_dev,
                            uint16_t* usb_bus,
                            uint16_t* usb_addr);
 
+static int
+p_udev_try_usb_relation_get_address(struct udev_device* raw_dev,
+                                    uint16_t* vendor_id,
+                                    uint16_t* product_id,
+                                    uint16_t* usb_bus,
+                                    uint16_t* usb_addr);
+
+static int
+p_udev_get_vendor_id_product(struct udev_device* usb_device_dev,
+                             uint16_t* vendor_id,
+                             uint16_t* product_id);
+
+static int
+p_udev_get_usb_device_address(struct udev_device* usb_device_dev,
+                              uint16_t* usb_bus,
+                              uint16_t* usb_addr);
+
+static int
+p_udev_get_sysattr_u16_base16(struct udev_device* dev,
+                              const char* str,
+                              uint16_t* out_value);
+
+static int
+p_udev_get_sysattr_u32_base10(struct udev_device* dev,
+                              const char* str,
+                              uint32_t* out_value);
+
+XRT_MAYBE_UNUSED static void
+p_udev_dump_device(struct udev_device* udev_dev, const char* name);
+
 
 /*
  *
@@ -74,6 +113,8 @@ p_udev_probe(struct prober* p)
 		return -1;
 	}
 
+	p_udev_enumerate_v4l2(p, udev);
+
 	p_udev_enumerate_hidraw(p, udev);
 
 	udev = udev_unref(udev);
@@ -87,6 +128,111 @@ p_udev_probe(struct prober* p)
  * Internal functions.
  *
  */
+
+static void
+p_udev_enumerate_v4l2(struct prober* p, struct udev* udev)
+{
+	struct udev_enumerate* enumerate;
+	struct udev_list_entry *devices, *dev_list_entry;
+
+	enumerate = udev_enumerate_new(udev);
+	udev_enumerate_add_match_subsystem(enumerate, "video4linux");
+	udev_enumerate_scan_devices(enumerate);
+
+	devices = udev_enumerate_get_list_entry(enumerate);
+
+	udev_list_entry_foreach(dev_list_entry, devices)
+	{
+		struct prober_device* pdev = NULL;
+		struct udev_device* raw_dev = NULL;
+		const char* sysfs_path = NULL;
+		const char* dev_path = NULL;
+		uint16_t vendor_id = 0;
+		uint16_t product_id = 0;
+		uint16_t usb_bus = 0;
+		uint16_t usb_addr = 0;
+		uint16_t usb_iface = 0;
+		uint32_t v4l_index = 0;
+		int ret;
+
+		// Where in the sysfs is.
+		sysfs_path = udev_list_entry_get_name(dev_list_entry);
+		// Raw sysfs node.
+		raw_dev = udev_device_new_from_syspath(udev, sysfs_path);
+		// The thing we will open.
+		dev_path = udev_device_get_devnode(raw_dev);
+
+		ret = p_udev_try_usb_relation_get_address(
+		    raw_dev, &vendor_id, &product_id, &usb_bus, &usb_addr);
+		if (ret != 0) {
+			P_ERROR(p, "skipping none usb v4l device '%s'",
+			        dev_path);
+			goto next;
+		}
+
+		// USB interface.
+		ret = p_udev_get_interface_number(raw_dev, &usb_iface);
+		if (ret != 0) {
+			P_ERROR(p, "Failed to get interface number.");
+			goto next;
+		}
+
+		// USB interface.
+		ret =
+		    p_udev_get_sysattr_u32_base10(raw_dev, "index", &v4l_index);
+		if (ret != 0) {
+			P_ERROR(p, "Failed to get v4l index.");
+			goto next;
+		}
+
+		ret = p_dev_get_usb_dev(p, usb_bus, usb_addr, vendor_id,
+		                        product_id, &pdev);
+
+		P_SPEW(p,
+		       "v4l\n"
+		       "\t\tptr:          %p (%i)\n"
+		       "\t\tsysfs_path:   '%s'\n"
+		       "\t\tdev_path:     '%s'\n"
+		       "\t\tvender_id:    %04x\n"
+		       "\t\tproduct_id:   %04x\n"
+		       "\t\tv4l_index:    %u\n"
+		       "\t\tusb_iface:    %i\n"
+		       "\t\tusb_bus:      %i\n"
+		       "\t\tusb_addr:     %i\n",
+		       (void*)pdev, ret, sysfs_path, dev_path, vendor_id,
+		       product_id, v4l_index, usb_iface, usb_bus, usb_addr);
+
+		if (ret != 0) {
+			P_ERROR(p, "p_dev_get_usb_device failed!");
+			goto next;
+		}
+
+		// Add this interface to the usb device.
+		p_udev_add_v4l(pdev, v4l_index, usb_iface, dev_path);
+
+	next:
+		udev_device_unref(raw_dev);
+	}
+
+	enumerate = udev_enumerate_unref(enumerate);
+}
+
+static void
+p_udev_add_v4l(struct prober_device* pdev,
+               uint32_t v4l_index,
+               uint32_t usb_iface,
+               const char* path)
+{
+	size_t new_size = (pdev->num_v4ls + 1) * sizeof(struct prober_v4l);
+	pdev->v4ls = realloc(pdev->v4ls, new_size);
+
+	struct prober_v4l* v4l = &pdev->v4ls[pdev->num_v4ls++];
+	U_ZERO(v4l);
+
+	v4l->usb_iface = usb_iface;
+	v4l->v4l_index = v4l_index;
+	v4l->path = strdup(path);
+}
 
 static void
 p_udev_enumerate_hidraw(struct prober* p, struct udev* udev)
@@ -212,9 +358,6 @@ p_udev_get_usb_hid_address(struct udev_device* raw_dev,
                            uint16_t* usb_addr)
 {
 	struct udev_device* usb_dev;
-	const char* bus_str;
-	const char* addr_str;
-
 
 	if (bus_type != HIDRAW_BUS_USB) {
 		return 0;
@@ -228,20 +371,7 @@ p_udev_get_usb_hid_address(struct udev_device* raw_dev,
 		return -1;
 	}
 
-	bus_str = udev_device_get_sysattr_value(usb_dev, "busnum");
-	if (bus_str == NULL) {
-		return -1;
-	}
-
-	addr_str = udev_device_get_sysattr_value(usb_dev, "devnum");
-	if (addr_str == NULL) {
-		return -1;
-	}
-
-	*usb_bus = (int)strtol(bus_str, NULL, 16);
-	*usb_addr = (int)strtol(addr_str, NULL, 16);
-
-	return 0;
+	return p_udev_get_usb_device_address(usb_dev, usb_bus, usb_addr);
 }
 
 static int
@@ -347,4 +477,157 @@ p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
 	} else {
 		return -1;
 	}
+}
+
+static int
+p_udev_try_usb_relation_get_address(struct udev_device* raw_dev,
+                                    uint16_t* out_vendor_id,
+                                    uint16_t* out_product_id,
+                                    uint16_t* out_usb_bus,
+                                    uint16_t* out_usb_addr)
+{
+	uint16_t vendor_id, product_id, usb_bus, usb_addr;
+	struct udev_device *parent_dev, *usb_interface, *usb_device;
+	int ret;
+
+	parent_dev = udev_device_get_parent(raw_dev);
+	usb_interface = udev_device_get_parent_with_subsystem_devtype(
+	    raw_dev, "usb", "usb_interface");
+	usb_device = udev_device_get_parent_with_subsystem_devtype(
+	    raw_dev, "usb", "usb_device");
+
+	// Huh, device has no direct parent?
+	if (parent_dev == NULL) {
+		return -1;
+	}
+
+	// Not directly sitting on the interface
+	if (usb_interface != parent_dev) {
+		return -1;
+	}
+
+	// Get the parent of the usb_interface which should be a usb_device.
+	parent_dev = udev_device_get_parent(usb_interface);
+
+	// This shouldn't really happen!
+	if (usb_device != parent_dev) {
+		return -1;
+	}
+
+	ret = p_udev_get_usb_device_address(usb_device, &usb_bus, &usb_addr);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = p_udev_get_vendor_id_product(usb_device, &vendor_id, &product_id);
+	if (ret != 0) {
+		return ret;
+	}
+
+	*out_vendor_id = vendor_id;
+	*out_product_id = product_id;
+	*out_usb_bus = usb_bus;
+	*out_usb_addr = usb_addr;
+
+	return 0;
+}
+
+static int
+p_udev_get_vendor_id_product(struct udev_device* usb_dev,
+                             uint16_t* out_vendor_id,
+                             uint16_t* out_product_id)
+{
+	uint16_t vendor_id, product_id;
+	int ret;
+
+	ret = p_udev_get_sysattr_u16_base16(usb_dev, "idVendor", &vendor_id);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = p_udev_get_sysattr_u16_base16(usb_dev, "idProduct", &product_id);
+	if (ret != 0) {
+		return ret;
+	}
+
+	*out_vendor_id = vendor_id;
+	*out_product_id = product_id;
+
+	return 0;
+}
+
+static int
+p_udev_get_usb_device_address(struct udev_device* usb_dev,
+                              uint16_t* out_usb_bus,
+                              uint16_t* out_usb_addr)
+{
+	uint16_t usb_bus, usb_addr;
+	int ret;
+
+	ret = p_udev_get_sysattr_u16_base16(usb_dev, "busnum", &usb_bus);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = p_udev_get_sysattr_u16_base16(usb_dev, "devnum", &usb_addr);
+	if (ret != 0) {
+		return ret;
+	}
+
+	*out_usb_bus = usb_bus;
+	*out_usb_addr = usb_addr;
+
+	return 0;
+}
+
+static int
+p_udev_get_sysattr_u16_base16(struct udev_device* dev,
+                              const char* name,
+                              uint16_t* out_value)
+{
+	const char* str = udev_device_get_sysattr_value(dev, name);
+	if (str == NULL) {
+		return -1;
+	}
+
+	*out_value = (uint16_t)strtol(str, NULL, 16);
+
+	return 0;
+}
+
+static int
+p_udev_get_sysattr_u32_base10(struct udev_device* dev,
+                              const char* name,
+                              uint32_t* out_value)
+{
+	const char* str = udev_device_get_sysattr_value(dev, name);
+	if (str == NULL) {
+		return -1;
+	}
+
+	*out_value = (uint32_t)strtol(str, NULL, 10);
+
+	return 0;
+}
+
+static void
+p_udev_dump_device(struct udev_device* udev_dev, const char* name)
+{
+	// clang-format off
+	fprintf(stderr, "\t%s\n", name);
+	fprintf(stderr, "\t\tptr:       %p\n", (void*)udev_dev);
+
+	if (udev_dev == NULL) {
+		return;
+	}
+
+	fprintf(stderr, "\t\tparent:    %p\n", (void*)udev_device_get_parent(udev_dev));
+	fprintf(stderr, "\t\tdevpath:   %s\n", udev_device_get_devpath(udev_dev));
+	fprintf(stderr, "\t\tdevnode:   %s\n", udev_device_get_devnode(udev_dev));
+	fprintf(stderr, "\t\tdevtype:   %s\n", udev_device_get_devtype(udev_dev));
+	fprintf(stderr, "\t\tsysname:   %s\n", udev_device_get_sysname(udev_dev));
+	fprintf(stderr, "\t\tsysnum:    %s\n", udev_device_get_sysnum(udev_dev));
+	fprintf(stderr, "\t\tsyspath:   %s\n", udev_device_get_syspath(udev_dev));
+	fprintf(stderr, "\t\tsubsystem: %s\n", udev_device_get_subsystem(udev_dev));
+	// clang-format on
 }

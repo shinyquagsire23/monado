@@ -98,11 +98,21 @@ p_dump_device(struct prober* p, struct prober_device* pdev, int id)
 #endif
 
 #ifdef XRT_OS_LINUX
+	for (size_t j = 0; j < pdev->num_v4ls; j++) {
+		struct prober_v4l* v4l = &pdev->v4ls[j];
+
+		printf("\t\tv4l.index:    %i\n", (int)v4l->v4l_index);
+		printf("\t\tv4l.iface:    %i\n", (int)v4l->usb_iface);
+		printf("\t\tv4l.path:     '%s'\n", v4l->path);
+	}
+#endif
+
+#ifdef XRT_OS_LINUX
 	for (size_t j = 0; j < pdev->num_hidraws; j++) {
 		struct prober_hidraw* hidraw = &pdev->hidraws[j];
 
-		printf("\t\tinterface:    %u\n", (int)hidraw->interface);
-		printf("\t\tpath:         '%s'\n", hidraw->path);
+		printf("\t\thidraw.iface: %i\n", (int)hidraw->interface);
+		printf("\t\thidraw.path:  '%s'\n", hidraw->path);
 	}
 #endif
 

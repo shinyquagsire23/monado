@@ -64,6 +64,16 @@ struct prober_hidraw
 	ssize_t interface;
 	const char* path;
 };
+
+/*!
+ * A v4l interface that a @ref prober_device exposes.
+ */
+struct prober_v4l
+{
+	const char* path;
+	int32_t usb_iface;
+	uint32_t v4l_index;
+};
 #endif
 
 /*!
@@ -99,10 +109,8 @@ struct prober_device
 #endif
 
 #ifdef XRT_OS_LINUX
-	struct
-	{
-		const char** paths;
-	} v4l;
+	size_t num_v4ls;
+	struct prober_v4l* v4ls;
 
 	size_t num_hidraws;
 	struct prober_hidraw* hidraws;

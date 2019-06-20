@@ -262,12 +262,23 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 static void
 teardown_devices(struct prober* p)
 {
-	// for (size_t i; i)
 	// Need to free all devices.
 	for (size_t i = 0; i < p->num_devices; i++) {
 		struct prober_device* pdev = &p->devices[i];
 
 #ifdef XRT_OS_LINUX
+		for (size_t j = 0; j < pdev->num_v4ls; j++) {
+			struct prober_v4l* v4l = &pdev->v4ls[j];
+			free((char*)v4l->path);
+			v4l->path = NULL;
+		}
+
+		if (pdev->v4ls != NULL) {
+			free(pdev->v4ls);
+			pdev->v4ls = NULL;
+			pdev->num_v4ls = 0;
+		}
+
 		for (size_t j = 0; j < pdev->num_hidraws; j++) {
 			struct prober_hidraw* hidraw = &pdev->hidraws[j];
 			free((char*)hidraw->path);
