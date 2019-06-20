@@ -76,6 +76,9 @@ struct prober_device
 		uint16_t bus;
 		uint16_t addr;
 
+		uint8_t ports[8];
+		uint32_t num_ports;
+
 #ifdef XRT_HAVE_LIBUSB
 		libusb_device* dev;
 #endif
@@ -110,12 +113,14 @@ struct prober
 
 	struct xrt_prober_entry_lists* lists;
 
+#ifdef XRT_HAVE_LIBUSB
 	struct
 	{
 		libusb_context* ctx;
 		libusb_device** list;
 		ssize_t count;
 	} usb;
+#endif
 
 #ifdef XRT_HAVE_LIBUVC
 	struct
@@ -172,6 +177,16 @@ p_dev_get_bluetooth_dev(struct prober* p,
                         uint16_t product_id,
                         struct prober_device** out_pdev);
 
+#ifdef XRT_HAVE_LIBUSB
+int
+p_libusb_init(struct prober* p);
+
+void
+p_libusb_teardown(struct prober* p);
+
+int
+p_libusb_probe(struct prober* p);
+#endif
 
 #ifdef XRT_HAVE_LIBUDEV
 int

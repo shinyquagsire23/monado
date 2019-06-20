@@ -65,6 +65,8 @@ print_ports(char* tmp, size_t size, uint8_t* ports, int num)
 void
 p_dump_device(struct prober* p, struct prober_device* pdev, int id)
 {
+	char tmp[1024];
+
 	if (pdev->usb.bus != 0 && pdev->usb.addr == 0 &&
 	    pdev->base.vendor_id != 0 && pdev->base.product_id == 0) {
 		return;
@@ -84,28 +86,25 @@ p_dump_device(struct prober* p, struct prober_device* pdev, int id)
 		       pdev->bluetooth.id);
 	}
 
-	libusb_device* usb_dev = pdev->usb.dev;
-	if (usb_dev != NULL) {
-		uint8_t ports[8];
-		char tmp[1024];
-
-		printf("\t\tlibusb:       %p\n", (void*)usb_dev);
-
-		int num =
-		    libusb_get_port_numbers(usb_dev, ports, ARRAY_SIZE(ports));
-
-		if (print_ports(tmp, ARRAY_SIZE(tmp), ports, num)) {
-			printf("\t\tport%s        %s\n", num > 1 ? "s:" : ": ",
-			       tmp);
-		}
+	int num = pdev->usb.num_ports;
+	if (print_ports(tmp, ARRAY_SIZE(tmp), pdev->usb.ports, num)) {
+		printf("\t\tport%s        %s\n", num > 1 ? "s:" : ": ", tmp);
 	}
 
+#ifdef XRT_HAVE_LIBUSB
+	if (pdev->usb.dev != NULL) {
+		printf("\t\tlibusb:       %p\n", (void*)pdev->usb.dev);
+	}
+#endif
+
+#ifdef XRT_OS_LINUX
 	for (size_t j = 0; j < pdev->num_hidraws; j++) {
 		struct prober_hidraw* hidraw = &pdev->hidraws[j];
 
 		printf("\t\tinterface:    %u\n", (int)hidraw->interface);
 		printf("\t\tpath:         '%s'\n", hidraw->path);
 	}
+#endif
 
 #ifdef XRT_HAVE_LIBUVC
 	uvc_device_t* uvc_dev = pdev->uvc.dev;

@@ -27,13 +27,22 @@ if(BUILD_WITH_LIBUDEV)
 		)
 endif()
 
+# Add libusb
+if(BUILD_WITH_LIBUSB)
+	list(APPEND PROBER_SOURCE_FILES
+		p_libusb.c
+		)
+	list(APPEND PROBER_INCLUDES
+		${LIBUSB_INCLUDES}
+		)
+endif()
+
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(st_prober OBJECT ${PROBER_SOURCE_FILES})
 
 target_include_directories(st_prober
 	PRIVATE
 	${PROBER_INCLUDES}
-	${LIBUSB_INCLUDES}
 	${LIBUVC_INCLUDES}
 	)
 

@@ -236,11 +236,13 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 		return -1;
 	}
 
-	ret = libusb_init(&p->usb.ctx);
+#ifdef XRT_HAVE_LIBUSB
+	ret = p_libusb_init(p);
 	if (ret != 0) {
 		teardown(p);
 		return -1;
 	}
+#endif
 
 #ifdef XRT_HAVE_LIBUVC
 	ret = uvc_init(&p->uvc.ctx, p->usb.ctx);
@@ -253,6 +255,7 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 	for (int i = 0; i < MAX_AUTO_PROBERS && lists->auto_probers[i]; i++) {
 		p->auto_probers[i] = lists->auto_probers[i]();
 	}
+
 	return 0;
 }
 
@@ -315,68 +318,9 @@ teardown(struct prober* p)
 	}
 #endif
 
-	// Free all libusb resources.
-	if (p->usb.list != NULL) {
-		libusb_free_device_list(p->usb.list, 1);
-		p->usb.list = NULL;
-	}
-
-	if (p->usb.ctx != NULL) {
-		libusb_exit(p->usb.ctx);
-		p->usb.ctx = NULL;
-	}
-}
-
-static int
-p_libusb_probe(struct prober* p)
-{
-	int ret;
-
-	// Free old list first.
-	if (p->usb.list != NULL) {
-		libusb_free_device_list(p->usb.list, 1);
-		p->usb.list = NULL;
-	}
-
-	// Probe for USB devices.
-	p->usb.count = libusb_get_device_list(p->usb.ctx, &p->usb.list);
-	if (p->usb.count < 0) {
-		P_ERROR(p, "\tFailed to enumerate usb devices\n");
-		return -1;
-	}
-
-	for (ssize_t i = 0; i < p->usb.count; i++) {
-		libusb_device* device = p->usb.list[i];
-		struct libusb_device_descriptor desc;
-		struct prober_device* pdev = NULL;
-
-		libusb_get_device_descriptor(device, &desc);
-		uint8_t bus = libusb_get_bus_number(device);
-		uint8_t addr = libusb_get_device_address(device);
-		uint16_t vendor = desc.idVendor;
-		uint16_t product = desc.idProduct;
-
-		ret = p_dev_get_usb_dev(p, bus, addr, vendor, product, &pdev);
-
-		P_SPEW(p,
-		       "libusb\n"
-		       "\t\tptr:        %p (%i)\n"
-		       "\t\tvendor_id:  %04x\n"
-		       "\t\tproduct_id: %04x\n"
-		       "\t\tbus:        %i\n"
-		       "\t\taddr:       %i",
-		       (void*)pdev, ret, vendor, product, bus, addr);
-
-		if (ret != 0) {
-			P_ERROR(p, "p_dev_get_usb_device failed!");
-			continue;
-		}
-
-		// Attach the libusb device to it.
-		pdev->usb.dev = device;
-	}
-
-	return 0;
+#ifdef XRT_HAVE_LIBUSB
+	p_libusb_teardown(p);
+#endif
 }
 
 static int
@@ -453,11 +397,13 @@ probe(struct xrt_prober* xp)
 	// Free old list first.
 	teardown_devices(p);
 
+#ifdef XRT_HAVE_LIBUSB
 	ret = p_libusb_probe(p);
 	if (ret != 0) {
 		P_ERROR(p, "Failed to enumerate libusb devices\n");
 		return -1;
 	}
+#endif
 
 	ret = p_libuvc_probe(p);
 	if (ret != 0) {
