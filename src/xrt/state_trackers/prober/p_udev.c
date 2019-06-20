@@ -7,8 +7,6 @@
  * @ingroup st_prober
  */
 
-#ifdef XRT_HAVE_LIBUDEV
-
 #include "util/u_misc.h"
 #include "p_prober.h"
 
@@ -341,5 +339,3 @@ p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
 		return -1;
 	}
 }
-
-#endif

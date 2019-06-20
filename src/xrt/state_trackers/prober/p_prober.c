@@ -465,11 +465,13 @@ probe(struct xrt_prober* xp)
 		return -1;
 	}
 
+#ifdef XRT_HAVE_LIBUDEV
 	ret = p_udev_probe(p);
 	if (ret != 0) {
 		P_ERROR(p, "Failed to enumerate udev devices\n");
 		return -1;
 	}
+#endif
 
 	return 0;
 }

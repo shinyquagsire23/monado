@@ -7,24 +7,34 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/../../../external
 	)
 
+set(PROBER_INCLUDES)
+
 set(PROBER_SOURCE_FILES
 	p_auto_wrap.c
 	p_documentation.h
 	p_dump.c
 	p_prober.c
 	p_prober.h
-	p_udev.c
 	)
+
+# Add libudev
+if(BUILD_WITH_LIBUDEV)
+	list(APPEND PROBER_SOURCE_FILES
+		p_udev.c
+		)
+	list(APPEND PROBER_INCLUDES
+		${LIBUDEV_INCLUDES}
+		)
+endif()
 
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(st_prober OBJECT ${PROBER_SOURCE_FILES})
 
 target_include_directories(st_prober
 	PRIVATE
+	${PROBER_INCLUDES}
 	${LIBUSB_INCLUDES}
 	${LIBUVC_INCLUDES}
-	${FFMPEG_INCLUDES}
-	${OPENCV_INCLUDES}
 	)
 
 set_property(TARGET st_prober PROPERTY POSITION_INDEPENDENT_CODE ON)
