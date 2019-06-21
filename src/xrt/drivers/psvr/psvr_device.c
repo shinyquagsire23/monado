@@ -687,6 +687,8 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	psvr->base.destroy = psvr_device_destroy;
 	psvr->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
 
+	snprintf(psvr->base.name, XRT_DEVICE_NAME_LEN, "PS VR Headset");
+
 	ret = open_hid(psvr, hmd_handle_info, &psvr->hmd_handle);
 	if (ret != 0) {
 		goto cleanup;
