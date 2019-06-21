@@ -600,7 +600,10 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 void
 oxr_xdev_update(struct xrt_device *xdev, struct time_state *timekeeping);
 
-void
+/*!
+ * Return true if it finds an input of that name on this device.
+ */
+bool
 oxr_xdev_find_input(struct xrt_device *xdev,
                     enum xrt_input_name name,
                     struct xrt_input **out_input);

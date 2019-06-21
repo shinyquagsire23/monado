@@ -21,14 +21,14 @@ oxr_xdev_update(struct xrt_device *xdev, struct time_state *timekeeping)
 	}
 }
 
-void
+bool
 oxr_xdev_find_input(struct xrt_device *xdev,
                     enum xrt_input_name name,
                     struct xrt_input **out_input)
 {
 	*out_input = NULL;
 	if (xdev == NULL) {
-		return;
+		return false;
 	}
 
 	for (uint32_t i = 0; i < xdev->num_inputs; i++) {
@@ -37,8 +37,9 @@ oxr_xdev_find_input(struct xrt_device *xdev,
 		}
 
 		*out_input = &xdev->inputs[i];
-		return;
+		return true;
 	}
+	return false;
 }
 
 void
