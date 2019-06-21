@@ -22,14 +22,13 @@
 #include <assert.h>
 #include <type_traits>
 
-#include <hidapi.h>
-
-#include "math/m_api.h"
 #include "xrt/xrt_device.h"
+#include "math/m_api.h"
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_device.h"
 #include "util/u_time.h"
+#include "os/os_hid.h"
 
 #include "hdk_device.h"
 
@@ -92,7 +91,7 @@ hdk_device_destroy(struct xrt_device *xdev)
 	struct hdk_device *hd = hdk_device(xdev);
 
 	if (hd->dev != NULL) {
-		hid_close(hd->dev);
+		os_hid_destroy(hd->dev);
 		hd->dev = NULL;
 	}
 
@@ -122,7 +121,7 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 
 	uint8_t buffer[32];
 	int64_t now = time_state_get_now(timekeeping);
-	auto bytesRead = hid_read(hd->dev, &(buffer[0]), sizeof(buffer));
+	auto bytesRead = os_hid_read(hd->dev, buffer, sizeof(buffer), 0);
 	if (bytesRead == -1) {
 		if (!hd->disconnect_notified) {
 			fprintf(stderr,
@@ -257,7 +256,7 @@ hdk_device_get_view_pose(struct xrt_device *xdev,
 	          rot.v[2], rot.v[3])
 
 struct hdk_device *
-hdk_device_create(hid_device *dev,
+hdk_device_create(struct os_hid_device *dev,
                   enum HDK_VARIANT variant,
                   bool print_spew,
                   bool print_debug)

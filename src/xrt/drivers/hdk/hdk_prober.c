@@ -10,9 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <wchar.h>
 
-#include <hidapi.h>
 #include "xrt/xrt_prober.h"
 
 #include "util/u_misc.h"
@@ -25,119 +23,62 @@
 DEBUG_GET_ONCE_BOOL_OPTION(hdk_spew, "HDK_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(hdk_debug, "HDK_PRINT_DEBUG", false)
 
-struct hdk_prober
-{
-	struct xrt_auto_prober base;
-};
-
-static inline struct hdk_prober *
-hdk_prober(struct xrt_auto_prober *p)
-{
-	return (struct hdk_prober *)p;
-}
-
-static void
-hdk_prober_destroy(struct xrt_auto_prober *p)
-{
-	struct hdk_prober *hhp = hdk_prober(p);
-
-
-	free(hhp);
-}
-#define HDK_MAKE_STRING(NAME, STR)                                             \
-	static const char NAME[] = STR;                                        \
-	static const wchar_t NAME##_W[] = L##STR
-
-HDK_MAKE_STRING(HDK2_PRODUCT_STRING, "OSVR HDK 2");
-HDK_MAKE_STRING(HDK13_PRODUCT_STRING, "OSVR HDK 1.3/1.4");
-static const wchar_t HDK1_PRODUCT_STRING_W[] = L"OSVR  HDK 1.x";
+static const char HDK2_PRODUCT_STRING[] = "OSVR HDK 2";
+#if 0
+static const char HDK13_PRODUCT_STRING[] = "OSVR HDK 1.3/1.4";
+static const char HDK1_PRODUCT_STRING[] = "OSVR  HDK 1.x";
 static const char HDK12_PRODUCT_STRING[] = "OSVR HDK 1.2";
+#endif
 
-static const uint16_t HDK_VID = 0x1532;
-static const uint16_t HDK_PID = 0x0b00;
-
-static struct xrt_device *
-hdk_prober_autoprobe(struct xrt_auto_prober *p)
+int
+hdk_found(struct xrt_prober *xp,
+          struct xrt_prober_device **devices,
+          size_t index,
+          struct xrt_device **out_xdev)
 {
-	struct hdk_prober *hhp = hdk_prober(p);
-
-	(void)hhp;
+	struct xrt_prober_device *dev = devices[index];
 
 	bool print_spew = debug_get_bool_option_hdk_spew();
 	bool print_debug = debug_get_bool_option_hdk_debug();
-	struct hid_device_info *devs = hid_enumerate(HDK_VID, HDK_PID);
-	struct hid_device_info *current = devs;
+#if 0
+	unsigned char buf[256] = {0};
+	int result = xrt_prober_get_string_descriptor(
+	    xp, dev, XRT_PROBER_STRING_PRODUCT, buf, sizeof(buf));
+
 	enum HDK_VARIANT variant = HDK_UNKNOWN;
 	const char *name = NULL;
-
-	// Just take the first one that responds correctly.
-	while (current != NULL) {
-		if (current->product_string == NULL ||
-		    current->serial_number == NULL) {
-			// Skip if the product string is null.
-			if (print_debug) {
-				fprintf(stderr,
-				        "%s - skipping an apparent match with "
-				        "null product string\n",
-				        __func__);
-			}
-			continue;
-		}
-		if (current->serial_number == NULL) {
-			// Skip if the serial number is null.
-			if (print_debug) {
-				fprintf(stderr,
-				        "%s - skipping an apparent match with "
-				        "null serial number\n",
-				        __func__);
-			}
-			continue;
-		}
-		if (0 ==
-		    wcscmp(HDK2_PRODUCT_STRING_W, current->product_string)) {
-			variant = HDK_VARIANT_2;
-			name = HDK2_PRODUCT_STRING;
-			break;
-		} else if (0 == wcscmp(HDK1_PRODUCT_STRING_W,
-		                       current->product_string)) {
-			variant = HDK_VARIANT_1_2;
-			name = HDK12_PRODUCT_STRING;
-			break;
-		} else {
-			//! @todo just assuming anything else is 1.3 for now
-			(void)HDK13_PRODUCT_STRING_W;
-			variant = HDK_VARIANT_1_3_1_4;
-			name = HDK13_PRODUCT_STRING;
-			break;
-		}
+	if (0 == strncmp(HDK2_PRODUCT_STRING, (const char *)buf, sizeof(buf))) {
+		variant = HDK_VARIANT_2;
+		name = HDK2_PRODUCT_STRING;
+	} else if (0 == strncmp(HDK1_PRODUCT_STRING, (const char *)buf,
+	                        sizeof(buf))) {
+		variant = HDK_VARIANT_1_2;
+		name = HDK12_PRODUCT_STRING;
+	} else {
+		//! @todo just assuming anything else is 1.3 for now
+		(void)HDK13_PRODUCT_STRING_W;
+		variant = HDK_VARIANT_1_3_1_4;
+		name = HDK13_PRODUCT_STRING;
 	}
-	if (current == NULL) {
-		if (print_debug) {
-			fprintf(stderr, "%s - no device found\n", __func__);
-		}
-		hid_free_enumeration(devs);
-		return NULL;
+#endif
+
+	// assume for now
+	enum HDK_VARIANT variant = HDK_VARIANT_2;
+	const char *name = HDK2_PRODUCT_STRING;
+	printf("%s - Found at least the tracker of some HDK -- %s -- opening\n",
+	       __func__, name);
+
+	struct os_hid_device *hid = NULL;
+	// Interface 2 is the HID interface.
+	int result = xrt_prober_open_hid_interface(xp, dev, 2, &hid);
+	if (result != 0) {
+		return -1;
 	}
-
-
-	hid_device *dev = hid_open(HDK_VID, HDK_PID, current->serial_number);
 	struct hdk_device *hd =
-	    hdk_device_create(dev, variant, print_spew, print_debug);
-	hid_free_enumeration(devs);
-	devs = NULL;
-
-	printf("%s - Found at least the tracker of some HDK: %s\n", __func__,
-	       name);
-
-	return &hd->base;
-}
-
-struct xrt_auto_prober *
-hdk_create_auto_prober()
-{
-	struct hdk_prober *hhp = U_TYPED_CALLOC(struct hdk_prober);
-	hhp->base.destroy = hdk_prober_destroy;
-	hhp->base.lelo_dallas_autoprobe = hdk_prober_autoprobe;
-
-	return &hhp->base;
+	    hdk_device_create(hid, variant, print_spew, print_debug);
+	if (hd == NULL) {
+		return -1;
+	}
+	*out_xdev = &hd->base;
+	return 1;
 }

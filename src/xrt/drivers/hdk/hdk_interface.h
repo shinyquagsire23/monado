@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <stdlib.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,13 +24,19 @@ extern "C" {
  * @brief Driver for the HDK HMD.
  */
 
+#define HDK_VID 0x1532
+#define HDK_PID 0x0b00
+
 /*!
- * Probe for HDKs.
+ * Probing function for HDK devices.
  *
  * @ingroup drv_hdk
  */
-struct xrt_auto_prober*
-hdk_create_auto_prober();
+int
+hdk_found(struct xrt_prober *xp,
+          struct xrt_prober_device **devices,
+          size_t index,
+          struct xrt_device **out_xdev);
 
 /*!
  * @dir drivers/hdk

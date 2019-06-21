@@ -51,11 +51,15 @@
 struct xrt_prober_entry target_entry_list[] = {
 #ifdef XRT_BUILD_PSMV
     {PSMV_VID, PSMV_PID, psmv_found, "PS Move"},
-#endif
+#endif // XRT_BUILD_PSMV
 
 #ifdef XRT_BUILD_HYDRA
     {HYDRA_VID, HYDRA_PID, hydra_found, "Razer Hydra"},
-#endif
+#endif // XRT_BUILD_HYDRA
+
+#ifdef XRT_BUILD_HDK
+    {HDK_VID, HDK_PID, hdk_found, "OSVR HDK"},
+#endif // XRT_BUILD_HDK
 
     {0x0000, 0x0000, NULL, NULL}, // Terminate
 };
@@ -66,10 +70,6 @@ struct xrt_prober_entry *target_entry_lists[] = {
 };
 
 xrt_auto_prober_creator target_auto_list[] = {
-#ifdef XRT_BUILD_HDK
-    hdk_create_auto_prober,
-#endif
-
 #ifdef XRT_BUILD_PSVR
     psvr_create_auto_prober,
 #endif

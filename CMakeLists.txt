@@ -108,12 +108,12 @@ if(BUILD_WITH_HIDAPI)
 	add_definitions(-DXRT_HAVE_HIDAPI)
 
 	# Drivers enabled with hidapi.
-	set(BUILD_DRIVER_HDK TRUE)
 	set(BUILD_DRIVER_PSVR TRUE)
 endif()
 
 if(TRUE)
 	# Uses the Monado internal hid wrapper.
+	set(BUILD_DRIVER_HDK TRUE)
 	set(BUILD_DRIVER_PSMV TRUE)
 
 	add_definitions(-DXRT_BUILD_HYDRA)
