@@ -94,3 +94,50 @@ p_libusb_probe(struct prober *p)
 
 	return 0;
 }
+
+int
+p_libusb_get_string_descriptor(struct prober *p,
+                               struct prober_device *pdev,
+                               enum xrt_prober_string which_string,
+                               unsigned char *buffer,
+                               int length)
+{
+
+	struct libusb_device_descriptor desc;
+
+	libusb_device *usb_dev = pdev->usb.dev;
+	int result = libusb_get_device_descriptor(usb_dev, &desc);
+	if (result < 0) {
+		P_ERROR(p, "libusb_get_device_descriptor failed!");
+		return result;
+	}
+	uint8_t which = 0;
+	switch (which_string) {
+	case XRT_PROBER_STRING_MANUFACTURER: which = desc.iManufacturer; break;
+	case XRT_PROBER_STRING_PRODUCT: which = desc.iProduct; break;
+	case XRT_PROBER_STRING_SERIAL_NUMBER: which = desc.iSerialNumber; break;
+	default: break;
+	}
+	P_SPEW(p,
+	       "libusb\n"
+	       "\t\tptr:        %p\n"
+	       "\t\trequested string index:  %i",
+	       (void *)pdev, which);
+	if (which == 0) {
+		// Not available?
+		return 0;
+	}
+	libusb_device_handle *dev_handle = NULL;
+	result = libusb_open(usb_dev, &dev_handle);
+	if (result < 0) {
+		P_ERROR(p, "libusb_open failed!");
+		return result;
+	}
+	int string_length = libusb_get_string_descriptor_ascii(
+	    dev_handle, which, buffer, length);
+	if (string_length < 0) {
+		P_ERROR(p, "libusb_get_string_descriptor_ascii failed!");
+	}
+	libusb_close(dev_handle);
+	return string_length;
+}

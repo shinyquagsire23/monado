@@ -201,6 +201,13 @@ p_libusb_teardown(struct prober* p);
 
 int
 p_libusb_probe(struct prober* p);
+
+int
+p_libusb_get_string_descriptor(struct prober* p,
+                               struct prober_device* pdev,
+                               enum xrt_prober_string which_string,
+                               unsigned char* buffer,
+                               int length);
 #endif
 
 #ifdef XRT_HAVE_LIBUVC

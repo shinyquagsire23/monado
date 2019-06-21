@@ -95,6 +95,16 @@ enum xrt_bus_type
 };
 
 /*!
+ * String descriptor types
+ */
+enum xrt_prober_string
+{
+	XRT_PROBER_STRING_MANUFACTURER,
+	XRT_PROBER_STRING_PRODUCT,
+	XRT_PROBER_STRING_SERIAL_NUMBER,
+};
+
+/*!
  * A probed device, may or may not be opened.
  *
  * @ingroup xrt_iface
@@ -137,6 +147,11 @@ struct xrt_prober
 	int (*list_video_devices)(struct xrt_prober *xp,
 	                          xrt_prober_list_video_cb cb,
 	                          void *ptr);
+	int (*get_string_descriptor)(struct xrt_prober *xp,
+	                             struct xrt_prober_device *xpdev,
+	                             enum xrt_prober_string which_string,
+	                             unsigned char *buffer,
+	                             int length);
 	void (*destroy)(struct xrt_prober **xp_ptr);
 };
 
@@ -187,6 +202,22 @@ xrt_prober_open_hid_interface(struct xrt_prober *xp,
                               struct os_hid_device **out_hid_dev)
 {
 	return xp->open_hid_interface(xp, xpdev, interface, out_hid_dev);
+}
+
+/*!
+ * Helper function for @ref xrt_prober::get_string_descriptor.
+ *
+ * @ingroup xrt_iface
+ */
+XRT_MAYBE_UNUSED static inline int
+xrt_prober_get_string_descriptor(struct xrt_prober *xp,
+                                 struct xrt_prober_device *xpdev,
+                                 enum xrt_prober_string which_string,
+                                 unsigned char *buffer,
+                                 int length)
+{
+	return xp->get_string_descriptor(xp, xpdev, which_string, buffer,
+	                                 length);
 }
 
 /*!

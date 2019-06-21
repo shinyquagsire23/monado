@@ -57,6 +57,12 @@ static int
 list_video_devices(struct xrt_prober* xp,
                    xrt_prober_list_video_cb cb,
                    void* ptr);
+static int
+get_string_descriptor(struct xrt_prober* xp,
+                      struct xrt_prober_device* xpdev,
+                      enum xrt_prober_string which_string,
+                      unsigned char* buffer,
+                      int length);
 
 static void
 destroy(struct xrt_prober** xp);
@@ -229,6 +235,7 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 	p->base.select = select_device;
 	p->base.open_hid_interface = open_hid_interface;
 	p->base.list_video_devices = list_video_devices;
+	p->base.get_string_descriptor = get_string_descriptor;
 	p->base.destroy = destroy;
 	p->lists = lists;
 	p->print_spew = debug_get_bool_option_prober_spew();
@@ -582,6 +589,29 @@ list_video_devices(struct xrt_prober* xp,
 	return 0;
 }
 
+static int
+get_string_descriptor(struct xrt_prober* xp,
+                      struct xrt_prober_device* xpdev,
+                      enum xrt_prober_string which_string,
+                      unsigned char* buffer,
+                      int length)
+{
+	struct prober* p = (struct prober*)xp;
+	struct prober_device* pdev = (struct prober_device*)xpdev;
+	int ret;
+#ifdef XRT_HAVE_LIBUSB
+	if (pdev->usb.dev != NULL) {
+		ret = p_libusb_get_string_descriptor(p, pdev, which_string,
+		                                     buffer, length);
+		if (ret >= 0) {
+			return ret;
+		}
+	}
+#endif
+	//! @todo add more backends
+	//! @todo make this unicode (utf-16)? utf-8 would be better...
+	return 0;
+}
 static void
 destroy(struct xrt_prober** xp)
 {
