@@ -25,6 +25,21 @@
 #endif
 
 
+/*!
+ * Each entry should be a vendor ID (VID), product ID (PID), a "found" function,
+ * and a string literal name.
+ *
+ * The "found" function must return `int` and take as parameters:
+ *
+ * - `struct xrt_prober *xp`
+ * - `struct xrt_prober_device **devices`
+ * - `size_t index`
+ * - `struct xrt_device **out_xdev`
+ *
+ * It is called when devices[index] match the VID and PID in the list.
+ * It should return 0 if it decides not to create any devices, or 1 if it
+ * creates one: it should assign *out_xdev to the created device.
+ */
 struct xrt_prober_entry target_entry_list[] = {
 #ifdef XRT_BUILD_PSVR
     {PSMV_VID, PSMV_PID, psmv_found, "PS Move"},
