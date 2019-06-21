@@ -103,12 +103,22 @@ main(int argc, const char **argv)
 		}
 
 		printf("\tFound '%s'\n", xdevs[i]->name);
+	}
+
+	// End of program
+	printf(" :: All ok, shutting down.\n");
+
+	for (size_t i = 0; i < NUM_XDEVS; i++) {
+		if (xdevs[i] == NULL) {
+			continue;
+		}
+
+		printf("\tDestroying '%s'\n", xdevs[i]->name);
 
 		xdevs[i]->destroy(xdevs[i]);
 		xdevs[i] = NULL;
 	}
 
-	printf(" :: All ok, shutting down.\n");
-
+	// Finally done
 	return do_exit(&p, 0);
 }
