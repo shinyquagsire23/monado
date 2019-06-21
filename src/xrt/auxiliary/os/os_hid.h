@@ -4,6 +4,7 @@
  * @file
  * @brief  Wrapper around OS native hid functions.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  *
  * @ingroup aux_os
  */
@@ -32,12 +33,23 @@ struct os_hid_device
 	             const uint8_t *data,
 	             size_t size);
 
+	int (*get_feature)(struct os_hid_device *hid_dev,
+	                   uint8_t report_num,
+	                   uint8_t *data,
+	                   size_t size);
+
+	int (*set_feature)(struct os_hid_device *hid_dev,
+	                   const uint8_t *data,
+	                   size_t size);
+
 	void (*destroy)(struct os_hid_device *hid_dev);
 };
 
 /*!
- * Read from the given hid device, if milliseconds are negative blocks, 0 polls
- * and positive will block for that amount of seconds.
+ * Read the next input report, if any, from the given hid device.
+ *
+ * If milliseconds are negative, this call blocks indefinitely, 0 polls,
+ * and positive will block for that amount of milliseconds.
  */
 XRT_MAYBE_UNUSED static inline int
 os_hid_read(struct os_hid_device *hid_dev,
@@ -49,12 +61,41 @@ os_hid_read(struct os_hid_device *hid_dev,
 }
 
 /*!
- * Write to the given device.
+ * Write an output report to the given device.
  */
 XRT_MAYBE_UNUSED static inline int
 os_hid_write(struct os_hid_device *hid_dev, const uint8_t *data, size_t size)
 {
 	return hid_dev->write(hid_dev, data, size);
+}
+
+/*!
+ * Get a numbered feature report.
+ *
+ * If the device doesn't have more than one feature report, just request
+ * report 0.
+ */
+XRT_MAYBE_UNUSED static inline int
+os_hid_get_feature(struct os_hid_device *hid_dev,
+                   uint8_t report_num,
+                   uint8_t *data,
+                   size_t size)
+{
+	return hid_dev->get_feature(hid_dev, report_num, data, size);
+}
+
+/*!
+ * Set a feature report.
+ *
+ * The first byte of the buffer is the report number, to be followed by
+ * the data of the report.
+ */
+XRT_MAYBE_UNUSED static inline int
+os_hid_set_feature(struct os_hid_device *hid_dev,
+                   const uint8_t *data,
+                   size_t size)
+{
+	return hid_dev->set_feature(hid_dev, data, size);
 }
 
 /*!

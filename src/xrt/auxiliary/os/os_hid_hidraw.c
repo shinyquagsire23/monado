@@ -4,6 +4,7 @@
  * @file
  * @brief  Hid implementation based on hidraw.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_os
  */
 
@@ -75,6 +76,29 @@ os_hidraw_write(struct os_hid_device *ohdev, const uint8_t *data, size_t length)
 	return write(hrdev->fd, data, length);
 }
 
+static int
+os_hidraw_get_feature(struct os_hid_device *ohdev,
+                      uint8_t report_num,
+                      uint8_t *data,
+                      size_t length)
+{
+	struct hid_hidraw *hrdev = (struct hid_hidraw *)ohdev;
+	// The ioctl expects the report number in the first byte of the buffer,
+	// but it will overwrite it.
+	data[0] = report_num;
+	return ioctl(hrdev->fd, HIDIOCGFEATURE(length), data);
+}
+
+static int
+os_hidraw_set_feature(struct os_hid_device *ohdev,
+                      const uint8_t *data,
+                      size_t length)
+{
+	struct hid_hidraw *hrdev = (struct hid_hidraw *)ohdev;
+
+	return ioctl(hrdev->fd, HIDIOCSFEATURE(length), data);
+}
+
 static void
 os_hidraw_destroy(struct os_hid_device *ohdev)
 {
@@ -91,6 +115,8 @@ os_hid_open_hidraw(const char *path, struct os_hid_device **out_ohdev)
 
 	hrdev->base.read = os_hidraw_read;
 	hrdev->base.write = os_hidraw_write;
+	hrdev->base.get_feature = os_hidraw_get_feature;
+	hrdev->base.set_feature = os_hidraw_set_feature;
 	hrdev->base.destroy = os_hidraw_destroy;
 	hrdev->fd = open(path, O_RDWR);
 	if (hrdev->fd < 0) {
