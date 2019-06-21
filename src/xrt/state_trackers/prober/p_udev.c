@@ -85,6 +85,16 @@ p_udev_get_usb_device_address(struct udev_device* usb_device_dev,
                               uint16_t* usb_addr);
 
 static int
+p_udev_get_usb_device_address_path(struct udev_device* usb_dev,
+                                   uint16_t* out_usb_bus,
+                                   uint16_t* out_usb_addr);
+
+static int
+p_udev_get_usb_device_address_sysfs(struct udev_device* usb_dev,
+                                    uint16_t* out_usb_bus,
+                                    uint16_t* out_usb_addr);
+
+static int
 p_udev_get_sysattr_u16_base16(struct udev_device* dev,
                               const char* str,
                               uint16_t* out_value);
@@ -561,7 +571,50 @@ p_udev_get_usb_device_address(struct udev_device* usb_dev,
                               uint16_t* out_usb_bus,
                               uint16_t* out_usb_addr)
 {
-	uint16_t usb_bus, usb_addr;
+	// We emulate what libusb does with regards to device bus and address.
+	if (p_udev_get_usb_device_address_path(usb_dev, out_usb_bus,
+	                                       out_usb_addr) == 0) {
+		return 0;
+	}
+
+	// If for some reason we can't read the dev path fallback to sysfs.
+	if (p_udev_get_usb_device_address_sysfs(usb_dev, out_usb_bus,
+	                                        out_usb_addr) == 0) {
+		return 0;
+	}
+
+	return -1;
+}
+
+static int
+p_udev_get_usb_device_address_path(struct udev_device* usb_dev,
+                                   uint16_t* out_usb_bus,
+                                   uint16_t* out_usb_addr)
+{
+	uint16_t bus = 0, addr = 0;
+
+	const char* dev_path = udev_device_get_devnode(usb_dev);
+	if (dev_path == NULL) {
+		return -1;
+	}
+
+	if (sscanf(dev_path, "/dev/bus/usb/%hu/%hu", &bus, &addr) != 2 &&
+	    sscanf(dev_path, "/proc/bus/usb/%hu/%hu", &bus, &addr) != 2) {
+		return -1;
+	}
+
+	*out_usb_bus = bus;
+	*out_usb_addr = addr;
+
+	return 0;
+}
+
+static int
+p_udev_get_usb_device_address_sysfs(struct udev_device* usb_dev,
+                                    uint16_t* out_usb_bus,
+                                    uint16_t* out_usb_addr)
+{
+	uint16_t usb_bus = 0, usb_addr = 0;
 	int ret;
 
 	ret = p_udev_get_sysattr_u16_base16(usb_dev, "busnum", &usb_bus);
