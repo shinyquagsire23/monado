@@ -308,10 +308,14 @@ MEGA_HACK_get_binding(struct oxr_logger* log,
 	}
 
 	if (strcmp(act->name, "grip_object") == 0) {
-		oxr_xdev_find_input(xdev, XRT_INPUT_PSMV_TRIGGER_VALUE, &input);
+		oxr_xdev_find_input(xdev, XRT_INPUT_PSMV_TRIGGER_VALUE,
+		                    &input) ||
+		    oxr_xdev_find_input(xdev, XRT_INPUT_HYDRA_TRIGGER_VALUE,
+		                        &input);
 	} else if (strcmp(act->name, "hand_pose") == 0) {
 		oxr_xdev_find_input(xdev, XRT_INPUT_PSMV_BODY_CENTER_POSE,
-		                    &input);
+		                    &input) ||
+		    oxr_xdev_find_input(xdev, XRT_INPUT_HYDRA_POSE, &input);
 	} else if (strcmp(act->name, "vibrate_hand") == 0) {
 		oxr_xdev_find_output(
 		    xdev, XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION, &output);
