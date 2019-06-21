@@ -71,6 +71,13 @@ math_vec3_accum(const struct xrt_vec3* additional, struct xrt_vec3* inAndOut)
  */
 
 void
+math_quat_normalize(struct xrt_quat* inout)
+{
+	assert(inout != NULL);
+	map_quat(*inout).normalize();
+}
+
+void
 math_quat_rotate(const struct xrt_quat* left,
                  const struct xrt_quat* right,
                  struct xrt_quat* result)

@@ -80,6 +80,15 @@ math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut);
  */
 
 /*!
+ * Normalize a quaternion.
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+void
+math_quat_normalize(struct xrt_quat *inout);
+
+/*!
  * Rotate a vector.
  *
  * @relates xrt_quat
