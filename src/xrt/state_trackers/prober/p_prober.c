@@ -444,14 +444,28 @@ select_device(struct xrt_prober* xp,
 				continue;
 			}
 
-			struct xrt_device* xdev = NULL;
-			entry->found(xp, dev_list, i, &xdev);
+			struct xrt_device*
+			    new_xdevs[XRT_MAX_DEVICES_PER_PROBE] = {NULL};
+			int num_found =
+			    entry->found(xp, dev_list, i, &(new_xdevs[0]));
 
-			if (xdev == NULL) {
+			if (num_found <= 0) {
 				continue;
 			}
-
-			handle_found_device(p, xdevs, num_xdevs, xdev);
+			for (int created_idx = 0; created_idx < num_found;
+			     ++created_idx) {
+				if (new_xdevs[created_idx] == NULL) {
+					P_DEBUG(
+					    p,
+					    "Leaving device creation loop "
+					    "early: found function reported %i "
+					    "created, but only %i non-null",
+					    num_found, created_idx);
+					continue;
+				}
+				handle_found_device(p, xdevs, num_xdevs,
+				                    new_xdevs[created_idx]);
+			}
 		}
 	}
 

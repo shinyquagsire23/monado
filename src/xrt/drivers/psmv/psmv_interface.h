@@ -33,7 +33,7 @@ int
 psmv_found(struct xrt_prober *xp,
            struct xrt_prober_device **devices,
            size_t index,
-           struct xrt_device **out_xdev);
+           struct xrt_device **out_xdevs);
 
 /*!
  * @dir drivers/psmv

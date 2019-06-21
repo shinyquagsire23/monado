@@ -34,11 +34,13 @@
  * - `struct xrt_prober *xp`
  * - `struct xrt_prober_device **devices`
  * - `size_t index`
- * - `struct xrt_device **out_xdev`
+ * - `struct xrt_device **out_xdevs` (an array of XRT_MAX_DEVICES_PER_PROBE
+ * xrt_device pointers)
  *
  * It is called when devices[index] match the VID and PID in the list.
- * It should return 0 if it decides not to create any devices, or 1 if it
- * creates one: it should assign *out_xdev to the created device.
+ * It should return 0 if it decides not to create any devices, negative on
+ * error, and the number of devices created if it creates one or more: it should
+ * assign sequential elements of out_xdevs to the created devices.
  */
 struct xrt_prober_entry target_entry_list[] = {
 #ifdef XRT_BUILD_PSVR

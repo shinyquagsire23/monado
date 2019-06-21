@@ -28,6 +28,14 @@ struct xrt_prober;
 struct xrt_prober_device;
 
 /*!
+ * The maximum number of devices that a single "found" function called by the
+ * prober can create per-call.
+ *
+ * @ingroup xrt_iface
+ */
+#define XRT_MAX_DEVICES_PER_PROBE 16
+
+/*!
  * Entry for a single device.
  *
  * @ingroup xrt_iface
@@ -40,7 +48,7 @@ struct xrt_prober_entry
 	int (*found)(struct xrt_prober *xp,
 	             struct xrt_prober_device **devices,
 	             size_t index,
-	             struct xrt_device **out_xdev);
+	             struct xrt_device **out_xdevs);
 
 	const char *name;
 };

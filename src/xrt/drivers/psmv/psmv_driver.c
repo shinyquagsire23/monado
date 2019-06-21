@@ -446,7 +446,7 @@ int
 psmv_found(struct xrt_prober *xp,
            struct xrt_prober_device **devices,
            size_t index,
-           struct xrt_device **out_xdev)
+           struct xrt_device **out_xdevs)
 {
 	struct os_hid_device *hid = NULL;
 	int ret;
@@ -506,6 +506,6 @@ psmv_found(struct xrt_prober *xp,
 	psmv_read_hid(psmv);
 
 	// And finally done
-	*out_xdev = &psmv->base;
-	return 0;
+	*out_xdevs = &psmv->base;
+	return 1;
 }
