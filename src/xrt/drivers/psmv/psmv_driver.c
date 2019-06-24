@@ -208,6 +208,20 @@ psmv_device(struct xrt_device *xdev)
 	return (struct psmv_device *)xdev;
 }
 
+static inline uint8_t
+psmv_clamp_zero_to_one_float_to_u8(float v)
+{
+	float vf = v * 255.0f;
+
+	if (vf >= 255.0f) {
+		return 0xff;
+	} else if (vf >= 0.0f) {
+		return (uint8_t)vf;
+	} else {
+		return 0x00;
+	}
+}
+
 static void
 psmv_vec3_from_16_be_to_32(struct psvm_vec3_32 *to,
                            const struct psvm_vec3_16_big_endian *from)
@@ -418,15 +432,8 @@ psmv_device_set_output(struct xrt_device *xdev,
 		return;
 	}
 
-	float vf = value->vibration.amplitude * 255.0f;
-
-	if (vf >= 255.0f) {
-		psmv->state.rumble = 0xff;
-	} else if (vf >= 0.0f) {
-		psmv->state.rumble = (uint8_t)vf;
-	} else {
-		psmv->state.rumble = 0x00;
-	}
+	psmv->state.rumble =
+	    psmv_clamp_zero_to_one_float_to_u8(value->vibration.amplitude);
 
 	// Force a resend;
 	int64_t now = time_state_get_now(timekeeping);
