@@ -9,6 +9,7 @@
  */
 
 #include "xrt/xrt_prober.h"
+#include "xrt/xrt_tracking.h"
 
 #include "os/os_threading.h"
 
@@ -439,6 +440,8 @@ struct psmv_device
 
 	struct os_hid_device *hid;
 
+	struct xrt_tracked_psmv *ball;
+
 	struct os_thread_helper oth;
 
 	struct
@@ -595,11 +598,12 @@ psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t now)
 static void
 update_fusion(struct psmv_device *psmv,
               struct psmv_parsed_sample *sample,
-              float dt)
+              timepoint_ns delta_ns)
 {
 	struct xrt_vec3 mag = {0.0f, 0.0f, 0.0f};
+
 	(void)mag;
-	(void)dt;
+
 
 	struct xrt_vec3_i32 *ra = &sample->accel;
 	struct xrt_vec3_i32 *rg = &sample->gyro;
@@ -621,9 +625,19 @@ update_fusion(struct psmv_device *psmv,
 	psmv->read.gyro.z = (rg->z - psmv->calibration.gyro.bias.z) /
 	                    psmv->calibration.gyro.factor.z;
 
-	// Super simple fusion.
-	math_quat_integrate_velocity(&psmv->fusion.rot, &psmv->read.gyro, dt,
-	                             &psmv->fusion.rot);
+	if (psmv->ball != NULL) {
+		struct xrt_tracking_sample sample;
+		sample.accel_m_s2 = psmv->read.accel;
+		sample.gyro_rad_secs = psmv->read.gyro;
+
+		xrt_tracked_psmv_push_imu(psmv->ball, delta_ns, &sample);
+	} else {
+		float dt = time_ns_to_s(delta_ns);
+
+		// Super simple fusion.
+		math_quat_integrate_velocity(
+		    &psmv->fusion.rot, &psmv->read.gyro, dt, &psmv->fusion.rot);
+	}
 }
 
 /*!
@@ -688,7 +702,7 @@ psmv_run_thread(void *ptr)
 
 		int num = psmv_parse_input(psmv, data.buffer, &input);
 
-		float dt = time_ns_to_s(now_ns - then_ns);
+		time_duration_ns delta_ns = now_ns - then_ns;
 		then_ns = now_ns;
 
 		// Lock last and the fusion.
@@ -700,11 +714,11 @@ psmv_run_thread(void *ptr)
 		// Process the parsed data.
 		if (num == 2) {
 			// ZCM1
-			update_fusion(psmv, &input.samples[0], dt / 2.0);
-			update_fusion(psmv, &input.samples[1], dt / 2.0);
+			update_fusion(psmv, &input.samples[0], delta_ns / 2.0);
+			update_fusion(psmv, &input.samples[1], delta_ns / 2.0);
 		} else if (num == 1) {
 			// ZCM2
-			update_fusion(psmv, &input.sample, dt);
+			update_fusion(psmv, &input.sample, delta_ns);
 		} else {
 			assert(false);
 		}
@@ -761,6 +775,20 @@ psmv_led_and_trigger_update(struct psmv_device *psmv, int64_t time)
 	                      psmv->state.led.b, psmv->state.rumble);
 }
 
+static void
+psmv_get_fusion_pose(struct psmv_device *psmv,
+                     enum xrt_input_name name,
+                     timepoint_ns when,
+                     struct xrt_space_relation *out_relation)
+{
+	out_relation->pose.orientation = psmv->fusion.rot;
+
+	//! @todo assuming that orientation is actually currently tracked.
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+}
+
 
 /*
  *
@@ -781,6 +809,9 @@ psmv_device_destroy(struct xrt_device *xdev)
 
 	// Remove the variable tracking.
 	u_var_remove_root(psmv);
+
+	// Includes null check, and sets to null.
+	xrt_tracked_psmv_destroy(&psmv->ball);
 
 	if (psmv->hid != NULL) {
 		psmv_send_led_control(psmv, 0x00, 0x00, 0x00, 0x00);
@@ -830,12 +861,17 @@ psmv_device_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct psmv_device *psmv = psmv_device(xdev);
 
-	out_relation->pose.orientation = psmv->fusion.rot;
+	timepoint_ns now = time_state_get_now(timekeeping);
 
-	//! @todo assuming that orientation is actually currently tracked.
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	//! @todo transform pose based on input.
+	// We have no tracking, don't return a position.
+	if (psmv->ball != NULL) {
+		timepoint_ns when_ns = now;
+		xrt_tracked_psmv_get_tracked_pose(psmv->ball, timekeeping,
+		                                  when_ns, out_relation);
+	} else {
+		psmv_get_fusion_pose(psmv, name, now, out_relation);
+	}
 }
 
 static void
@@ -942,23 +978,48 @@ psmv_found(struct xrt_prober *xp,
 		psmv_device_destroy(&psmv->base);
 		return ret;
 	}
-
-	static int hack = 0;
-	switch (hack++ % 3) {
-	case 0: psmv->wants.led.r = 0xff; break;
-	case 1:
-		psmv->wants.led.r = 0xff;
-		psmv->wants.led.b = 0xff;
-		break;
-	case 2: psmv->wants.led.b = 0xff; break;
-	}
-
 	// Get calibration data.
 	ret = psmv_get_calibration(psmv);
 	if (ret != 0) {
 		PSMV_ERROR(psmv, "Failed to get calibration data!");
 		psmv_device_destroy(&psmv->base);
 		return ret;
+	}
+
+#if 1
+	//! @todo Is this accureate? (46mm)
+	float diameter = 0.0046;
+	(void)diameter;
+	if (xp->tracking != NULL) {
+		xp->tracking->create_tracked_psmv(xp->tracking, &psmv->base,
+		                                  &psmv->ball);
+	}
+#endif
+
+	if (psmv->ball != NULL) {
+		// Use the new origin if we got a tracking system.
+		psmv->base.tracking_origin = psmv->ball->origin;
+
+		// We got a tracked ball, use it.
+		psmv->base.tracking_origin = psmv->ball->origin;
+		psmv->wants.led.r =
+		    psmv_clamp_zero_to_one_float_to_u8(psmv->ball->colour.r);
+		psmv->wants.led.g =
+		    psmv_clamp_zero_to_one_float_to_u8(psmv->ball->colour.g);
+		psmv->wants.led.b =
+		    psmv_clamp_zero_to_one_float_to_u8(psmv->ball->colour.b);
+
+	} else {
+		// Failed to create a tracking ball.
+		static int hack = 0;
+		switch (hack++ % 3) {
+		case 0: psmv->wants.led.r = 0xff; break;
+		case 1:
+			psmv->wants.led.r = 0xff;
+			psmv->wants.led.b = 0xff;
+			break;
+		case 2: psmv->wants.led.b = 0xff; break;
+		}
 	}
 
 	// Send the first update package.
