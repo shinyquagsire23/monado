@@ -164,7 +164,7 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 	//       get at least a slightly better position.
 
 	struct xrt_device *xdev = sess->sys->head;
-	struct xrt_pose *offset = &xdev->tracking->offset;
+	struct xrt_pose *offset = &xdev->tracking_origin->offset;
 
 	struct xrt_space_relation relation;
 	int64_t timestamp;

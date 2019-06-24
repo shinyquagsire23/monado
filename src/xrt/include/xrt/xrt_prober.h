@@ -28,6 +28,7 @@ struct xrt_fs;
 struct xrt_frame_context;
 struct xrt_prober;
 struct xrt_prober_device;
+struct xrt_tracking_factory;
 
 /*!
  * The maximum number of devices that a single "found" function called by the
@@ -139,6 +140,9 @@ typedef void (*xrt_prober_list_video_cb)(struct xrt_prober *xp,
  */
 struct xrt_prober
 {
+	//! Factory for producing tracked objects.
+	struct xrt_tracking_factory *tracking;
+
 	int (*probe)(struct xrt_prober *xp);
 	int (*dump)(struct xrt_prober *xp);
 	int (*select)(struct xrt_prober *xp,

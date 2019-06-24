@@ -83,7 +83,7 @@ oxr_xdev_get_pose_at(struct oxr_logger *log,
                      struct xrt_pose *pose,
                      int64_t *timestamp)
 {
-	struct xrt_pose *offset = &xdev->tracking->offset;
+	struct xrt_pose *offset = &xdev->tracking_origin->offset;
 
 	struct xrt_space_relation relation;
 	U_ZERO(&relation);

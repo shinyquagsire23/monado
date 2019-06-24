@@ -117,23 +117,25 @@ oxr_system_fill_in(struct oxr_logger *log,
 		                 " failed to probe device");
 	}
 
-	if (head->tracking->type == XRT_TRACKING_TYPE_NONE) {
+	if (head->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
 		// "nominal height" 1.6m
-		head->tracking->offset.position.x = 0.0f;
-		head->tracking->offset.position.y = 1.6f;
-		head->tracking->offset.position.z = 0.0f;
+		head->tracking_origin->offset.position.x = 0.0f;
+		head->tracking_origin->offset.position.y = 1.6f;
+		head->tracking_origin->offset.position.z = 0.0f;
 	}
 
-	if (left != NULL && left->tracking->type == XRT_TRACKING_TYPE_NONE) {
-		left->tracking->offset.position.x = -0.2f;
-		left->tracking->offset.position.y = 1.3f;
-		left->tracking->offset.position.z = -0.5f;
+	if (left != NULL &&
+	    left->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
+		left->tracking_origin->offset.position.x = -0.2f;
+		left->tracking_origin->offset.position.y = 1.3f;
+		left->tracking_origin->offset.position.z = -0.5f;
 	}
 
-	if (right != NULL && right->tracking->type == XRT_TRACKING_TYPE_NONE) {
-		right->tracking->offset.position.x = 0.2f;
-		right->tracking->offset.position.y = 1.3f;
-		right->tracking->offset.position.z = -0.5f;
+	if (right != NULL &&
+	    right->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
+		right->tracking_origin->offset.position.x = 0.2f;
+		right->tracking_origin->offset.position.y = 1.3f;
+		right->tracking_origin->offset.position.z = -0.5f;
 	}
 
 	// clang-format off

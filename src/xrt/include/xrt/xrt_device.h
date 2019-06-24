@@ -189,7 +189,7 @@ struct xrt_device
 	struct xrt_hmd_parts *hmd;
 
 	//! Always set, pointing to the tracking system for this device.
-	struct xrt_tracking *tracking;
+	struct xrt_tracking_origin *tracking_origin;
 
 	//! Number of inputs.
 	size_t num_inputs;

@@ -153,7 +153,7 @@ struct hydra_device;
  */
 struct hydra_system
 {
-	struct xrt_tracking base;
+	struct xrt_tracking_origin base;
 	struct os_hid_device *data_hid;
 	struct os_hid_device *command_hid;
 
@@ -229,7 +229,7 @@ hydra_device(struct xrt_device *xdev)
 }
 
 static inline struct hydra_system *
-hydra_system(struct xrt_tracking *xtrack)
+hydra_system(struct xrt_tracking_origin *xtrack)
 {
 	assert(xtrack);
 	struct hydra_system *ret = (struct hydra_system *)xtrack;
@@ -493,7 +493,7 @@ hydra_device_update_inputs(struct xrt_device *xdev,
                            struct time_state *timekeeping)
 {
 	struct hydra_device *hd = hydra_device(xdev);
-	struct hydra_system *hs = hydra_system(xdev->tracking);
+	struct hydra_system *hs = hydra_system(xdev->tracking_origin);
 
 	hydra_system_update(hs, timekeeping);
 
@@ -542,7 +542,7 @@ hydra_device_get_tracked_pose(struct xrt_device *xdev,
                               struct xrt_space_relation *out_relation)
 {
 	struct hydra_device *hd = hydra_device(xdev);
-	struct hydra_system *hs = hydra_system(xdev->tracking);
+	struct hydra_system *hs = hydra_system(xdev->tracking_origin);
 
 	hydra_system_update(hs, timekeeping);
 
@@ -566,7 +566,7 @@ hydra_device_get_tracked_pose(struct xrt_device *xdev,
 static void
 hydra_system_remove_child(struct hydra_system *hs, struct hydra_device *hd)
 {
-	assert(hydra_system(hd->base.tracking) == hs);
+	assert(hydra_system(hd->base.tracking_origin) == hs);
 	assert(hd->index == 0 || hd->index == 1);
 
 	// Make the device not point to the system
@@ -611,7 +611,7 @@ static void
 hydra_device_destroy(struct xrt_device *xdev)
 {
 	struct hydra_device *hd = hydra_device(xdev);
-	struct hydra_system *hs = hydra_system(xdev->tracking);
+	struct hydra_system *hs = hydra_system(xdev->tracking_origin);
 
 	hydra_system_remove_child(hs, hd);
 
@@ -668,8 +668,8 @@ hydra_found(struct xrt_prober *xp,
 	hs->devs[1] = U_DEVICE_ALLOCATE(struct hydra_device, flags, 10, 0);
 
 	// Populate the "tracking" member with the system.
-	hs->devs[0]->base.tracking = &(hs->base);
-	hs->devs[1]->base.tracking = &(hs->base);
+	hs->devs[0]->base.tracking_origin = &(hs->base);
+	hs->devs[1]->base.tracking_origin = &(hs->base);
 
 	hs->report_counter = -1;
 	hs->refs = 2;

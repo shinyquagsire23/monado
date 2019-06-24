@@ -240,7 +240,7 @@ u_device_allocate(enum u_device_alloc_flags flags,
 
 	// Tracking
 	size_t offset_tracking = total_size;
-	total_size += alloc_tracking ? sizeof(struct xrt_tracking) : 0;
+	total_size += alloc_tracking ? sizeof(struct xrt_tracking_origin) : 0;
 
 	// Do the allocation
 	char* ptr = U_TYPED_ARRAY_CALLOC(char, total_size);
@@ -261,11 +261,12 @@ u_device_allocate(enum u_device_alloc_flags flags,
 	}
 
 	if (alloc_tracking) {
-		xdev->tracking = (struct xrt_tracking*)(ptr + offset_tracking);
-		xdev->tracking->type = XRT_TRACKING_TYPE_NONE;
-		xdev->tracking->offset.orientation.w = 1.0f;
-		snprintf(xdev->tracking->name, XRT_TRACKING_NAME_LEN, "%s",
-		         "No tracking");
+		xdev->tracking_origin =
+		    (struct xrt_tracking_origin*)(ptr + offset_tracking);
+		xdev->tracking_origin->type = XRT_TRACKING_TYPE_NONE;
+		xdev->tracking_origin->offset.orientation.w = 1.0f;
+		snprintf(xdev->tracking_origin->name, XRT_TRACKING_NAME_LEN,
+		         "%s", "No tracking");
 	}
 
 	return xdev;
