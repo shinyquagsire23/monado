@@ -58,6 +58,12 @@ oxr_xrCreateSwapchain(XrSession session,
 	                             XR_TYPE_SWAPCHAIN_CREATE_INFO);
 	OXR_VERIFY_ARG_NOT_NULL(&log, out_swapchain);
 
+	// Save people from shooting themselves in the foot.
+	if (createInfo->arraySize <= 0) {
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(createInfo->arraySize) must be non-zero");
+	}
+
 	ret = sess->create_swapchain(&log, sess, createInfo, &sc);
 	if (ret != XR_SUCCESS) {
 		return ret;
