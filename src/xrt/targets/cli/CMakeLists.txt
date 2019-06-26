@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSL-1.0
 
 ######
-# Create a test executable for prober functionality.
+# Create a cli interface for Monado.
 
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/../../targets/common
@@ -12,10 +12,12 @@ include_directories(
 	)
 
 set(SOURCE_FILES
-	main.c
+	cli_cmd_test.c
+	cli_common.h
+	cli_main.c
+	cli_prober.c
 	)
 
-# depends on above generated files
 add_executable(prober
 	${SOURCE_FILES}
 	$<TARGET_OBJECTS:aux_os>
@@ -26,7 +28,7 @@ add_executable(prober
 	)
 
 set_target_properties(prober PROPERTIES
-	OUTPUT_NAME prober
+	OUTPUT_NAME monado-cli
 	PREFIX ""
 	)
 
