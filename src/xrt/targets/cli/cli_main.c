@@ -26,6 +26,7 @@ cli_print_help(int argc, const char **argv)
 	P("\n");
 	P("Commands:\n");
 	P("  test       - List found devices, for prober testing.\n");
+	P("  calibrate  - Calibrate a camera and save config.\n");
 
 	return 1;
 }
@@ -39,6 +40,8 @@ main(int argc, const char **argv)
 
 	if (strcmp(argv[1], "test") == 0) {
 		return cli_cmd_test(argc, argv);
+	} else if (strcmp(argv[1], "calibrate") == 0) {
+		return cli_cmd_calibrate(argc, argv);
 	} else {
 		return cli_print_help(argc, argv);
 	}

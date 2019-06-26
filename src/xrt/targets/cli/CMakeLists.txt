@@ -12,6 +12,7 @@ include_directories(
 	)
 
 set(SOURCE_FILES
+	cli_cmd_calibrate.c
 	cli_cmd_test.c
 	cli_common.h
 	cli_main.c
