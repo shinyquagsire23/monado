@@ -72,10 +72,6 @@ endif()
 # Flags
 ###
 
-# This "library" provides the preprocessor definitions for enabled drivers:
-# XRT_BUILD_ + some driver-specific string
-add_library(monado-driver-defines INTERFACE)
-
 if(BUILD_WITH_LIBUDEV)
 	add_definitions(-DXRT_HAVE_LIBUDEV)
 endif()
@@ -100,7 +96,7 @@ if(BUILD_WITH_OPENHMD)
 	add_definitions(-DXRT_HAVE_OPENHMD)
 
 	# Drivers enabled with OpenHMD.
-	target_compile_definitions(monado-driver-defines INTERFACE XRT_BUILD_OHMD)
+	add_definitions(-DXRT_BUILD_OHMD)
 	set(BUILD_DRIVER_OHMD TRUE)
 endif()
 
@@ -108,15 +104,15 @@ if(BUILD_WITH_HIDAPI)
 	add_definitions(-DXRT_HAVE_HIDAPI)
 
 	# Drivers enabled with hidapi.
-	target_compile_definitions(monado-driver-defines INTERFACE XRT_BUILD_HDK)
+	add_definitions(-DXRT_BUILD_HDK)
 	set(BUILD_DRIVER_HDK TRUE)
-	target_compile_definitions(monado-driver-defines INTERFACE XRT_BUILD_PSVR)
+	add_definitions(-DXRT_BUILD_PSVR)
 	set(BUILD_DRIVER_PSVR TRUE)
 endif()
 
 if(TRUE)
 	# Uses the Monado internal hid wrapper.
-	target_compile_definitions(monado-driver-defines INTERFACE XRT_BUILD_PSMV)
+	add_definitions(-DXRT_BUILD_PSMV)
 	set(BUILD_DRIVER_PSMV TRUE)
 endif()
 
