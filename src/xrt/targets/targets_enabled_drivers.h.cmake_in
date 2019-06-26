@@ -1,0 +1,14 @@
+// Copyright 2019, Collabora, Ltd.
+// SPDX-License-Identifier: BSL-1.0
+/*!
+ * @file
+ * @brief  Generated header listing the drivers available
+ */
+
+#pragma once
+
+#cmakedefine XRT_BUILD_OHMD
+
+#cmakedefine XRT_BUILD_HDK
+
+#cmakedefine XRT_BUILD_PSMV
