@@ -105,8 +105,6 @@ struct xrt_prober_device
 	uint16_t product_id;
 
 	enum xrt_bus_type bus;
-
-	bool opened;
 };
 
 /*!
