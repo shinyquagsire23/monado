@@ -267,6 +267,16 @@ teardown_devices(struct prober* p)
 		struct prober_device* pdev = &p->devices[i];
 
 #ifdef XRT_OS_LINUX
+		if (pdev->usb.product != NULL) {
+			free((char*)pdev->usb.product);
+			pdev->usb.product = NULL;
+		}
+
+		if (pdev->usb.path != NULL) {
+			free((char*)pdev->usb.path);
+			pdev->usb.path = NULL;
+		}
+
 		for (size_t j = 0; j < pdev->num_v4ls; j++) {
 			struct prober_v4l* v4l = &pdev->v4ls[j];
 			free((char*)v4l->path);
@@ -343,6 +353,14 @@ probe(struct xrt_prober* xp)
 	// Free old list first.
 	teardown_devices(p);
 
+#ifdef XRT_HAVE_LIBUDEV
+	ret = p_udev_probe(p);
+	if (ret != 0) {
+		P_ERROR(p, "Failed to enumerate udev devices\n");
+		return -1;
+	}
+#endif
+
 #ifdef XRT_HAVE_LIBUSB
 	ret = p_libusb_probe(p);
 	if (ret != 0) {
@@ -355,14 +373,6 @@ probe(struct xrt_prober* xp)
 	ret = p_libuvc_probe(p);
 	if (ret != 0) {
 		P_ERROR(p, "Failed to enumerate libuvc devices\n");
-		return -1;
-	}
-#endif
-
-#ifdef XRT_HAVE_LIBUDEV
-	ret = p_udev_probe(p);
-	if (ret != 0) {
-		P_ERROR(p, "Failed to enumerate udev devices\n");
 		return -1;
 	}
 #endif

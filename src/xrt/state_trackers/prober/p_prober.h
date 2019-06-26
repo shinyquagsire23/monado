@@ -88,6 +88,11 @@ struct prober_device
 		uint16_t bus;
 		uint16_t addr;
 
+#ifdef XRT_OS_LINUX
+		const char* product;
+		const char* path;
+#endif
+
 		uint8_t ports[8];
 		uint32_t num_ports;
 
