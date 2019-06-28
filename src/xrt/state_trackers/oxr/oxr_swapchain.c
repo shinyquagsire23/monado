@@ -38,6 +38,13 @@ oxr_swapchain_acquire_image(struct oxr_logger *log,
 	}
 
 	sc->acquired_index = (int)index;
+
+	// If the compositor is resuing the image,
+	// mark it as invalid to use in xrEndFrame.
+	if (sc->released_index == (int)index) {
+		sc->released_index = -1;
+	}
+
 	*out_index = index;
 
 	return XR_SUCCESS;
@@ -78,6 +85,8 @@ oxr_swapchain_release_image(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 " call to xsc->release_image failed");
 	}
+
+	// Overwrite the old released image, with new.
 	sc->released_index = sc->acquired_index;
 	sc->acquired_index = -1;
 
