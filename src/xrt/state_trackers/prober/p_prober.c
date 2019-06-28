@@ -53,6 +53,11 @@ open_hid_interface(struct xrt_prober* xp,
                    int interface,
                    struct os_hid_device** out_hid_dev);
 
+static int
+list_video_devices(struct xrt_prober* xp,
+                   xrt_prober_list_video_cb cb,
+                   void* ptr);
+
 static void
 destroy(struct xrt_prober** xp);
 
@@ -223,6 +228,7 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 	p->base.dump = dump;
 	p->base.select = select_device;
 	p->base.open_hid_interface = open_hid_interface;
+	p->base.list_video_devices = list_video_devices;
 	p->base.destroy = destroy;
 	p->lists = lists;
 	p->print_spew = debug_get_bool_option_prober_spew();
@@ -545,6 +551,35 @@ open_hid_interface(struct xrt_prober* xp,
 	        "hid interface (%i) on the device!",
 	        interface);
 	return -1;
+}
+
+static int
+list_video_devices(struct xrt_prober* xp,
+                   xrt_prober_list_video_cb cb,
+                   void* ptr)
+{
+	struct prober* p = (struct prober*)xp;
+
+	// Loop over all devices and find video devices.
+	for (size_t i = 0; i < p->num_devices; i++) {
+		struct prober_device* pdev = &p->devices[i];
+
+		bool has = false;
+#ifdef XRT_HAVE_LIBUVC
+		has |= pdev->uvc.dev != NULL;
+#endif
+
+#ifdef XRT_OS_LINUX
+		has |= pdev->num_v4ls > 0;
+#endif
+		if (!has) {
+			continue;
+		}
+
+		cb(xp, &pdev->base, pdev->usb.product, ptr);
+	}
+
+	return 0;
 }
 
 static void
