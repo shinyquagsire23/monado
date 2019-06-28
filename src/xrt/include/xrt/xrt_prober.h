@@ -108,6 +108,16 @@ struct xrt_prober_device
 };
 
 /*!
+ * Callback for listing video devices.
+ *
+ * @ingroup xrt_iface
+ */
+typedef void (*xrt_prober_list_video_cb)(struct xrt_prober *xp,
+                                         struct xrt_prober_device *pdev,
+                                         const char *name,
+                                         void *ptr);
+
+/*!
  * The main prober that probes and manages found but not opened HMD devices
  * that are connected to the system.
  *
@@ -124,6 +134,9 @@ struct xrt_prober
 	                          struct xrt_prober_device *xpdev,
 	                          int interface,
 	                          struct os_hid_device **out_hid_dev);
+	int (*list_video_devices)(struct xrt_prober *xp,
+	                          xrt_prober_list_video_cb cb,
+	                          void *ptr);
 	void (*destroy)(struct xrt_prober **xp);
 };
 
