@@ -469,6 +469,29 @@ oxr_session_frame_end(struct oxr_logger *log,
 		                 proj->viewCount);
 	}
 
+	// Check for valid swapchain states.
+	for (uint32_t i = 0; i < proj->viewCount; i++) {
+		//! @todo More validation?
+		struct oxr_swapchain *sc =
+		    (struct oxr_swapchain *)proj->views[i].subImage.swapchain;
+
+		if (sc->released_index == -1) {
+			return oxr_error(
+			    log, XR_ERROR_CALL_ORDER_INVALID,
+			    "(frameEndInfo->layers[0]->views[%i].subImage."
+			    "swapchain) Swapchain has not been released!",
+			    i);
+		}
+
+		if (sc->released_index >= (int)sc->swapchain->num_images) {
+			return oxr_error(
+			    log, XR_ERROR_RUNTIME_FAILURE,
+			    "(frameEndInfo->layers[0]->views[%i].subImage."
+			    "swapchain) Internal image index out of bounds!",
+			    i);
+		}
+	}
+
 
 	/*
 	 * Doing the real work.
@@ -480,7 +503,6 @@ oxr_session_frame_end(struct oxr_logger *log,
 	uint32_t num_chains = ARRAY_SIZE(chains);
 
 	for (uint32_t i = 0; i < num_chains; i++) {
-		//! @todo Validate this above.
 		struct oxr_swapchain *sc =
 		    (struct oxr_swapchain *)proj->views[i].subImage.swapchain;
 		chains[i] = sc->swapchain;
