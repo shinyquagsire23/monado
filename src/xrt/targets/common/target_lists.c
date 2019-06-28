@@ -45,7 +45,7 @@
  * assign sequential elements of out_xdevs to the created devices.
  */
 struct xrt_prober_entry target_entry_list[] = {
-#ifdef XRT_BUILD_PSVR
+#ifdef XRT_BUILD_PSMV
     {PSMV_VID, PSMV_PID, psmv_found, "PS Move"},
 #endif
     {0x0000, 0x0000, NULL, NULL}, // Terminate
