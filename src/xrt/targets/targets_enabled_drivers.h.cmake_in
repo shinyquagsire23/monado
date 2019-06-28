@@ -12,3 +12,5 @@
 #cmakedefine XRT_BUILD_HDK
 
 #cmakedefine XRT_BUILD_PSMV
+
+#cmakedefine XRT_BUILD_PSVR
