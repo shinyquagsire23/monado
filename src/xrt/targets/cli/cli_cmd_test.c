@@ -16,10 +16,7 @@
 static int
 do_exit(struct xrt_prober **xp_ptr, int ret)
 {
-	if (*xp_ptr != NULL) {
-		(*xp_ptr)->destroy(xp_ptr);
-		*xp_ptr = NULL;
-	}
+	xrt_prober_destroy(xp_ptr);
 
 	printf(" :: Exiting '%i'\n", ret);
 
@@ -46,7 +43,7 @@ cli_cmd_test(int argc, const char **argv)
 	// Need to prime the prober with devices before dumping and listing.
 	printf(" :: Probing!\n");
 
-	ret = xp->probe(xp);
+	ret = xrt_prober_probe(xp);
 	if (ret != 0) {
 		return do_exit(&xp, ret);
 	}
@@ -54,7 +51,7 @@ cli_cmd_test(int argc, const char **argv)
 	// So the user can see what we found.
 	printf(" :: Dumping!\n");
 
-	ret = xp->dump(xp);
+	ret = xrt_prober_dump(xp);
 	if (ret != 0) {
 		do_exit(&xp, ret);
 	}
@@ -62,7 +59,7 @@ cli_cmd_test(int argc, const char **argv)
 	// Multiple devices can be found.
 	printf(" :: Selecting devices!\n");
 
-	ret = xp->select(xp, xdevs, NUM_XDEVS);
+	ret = xrt_prober_select(xp, xdevs, NUM_XDEVS);
 	if (ret != 0) {
 		do_exit(&xp, ret);
 	}

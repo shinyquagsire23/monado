@@ -36,7 +36,7 @@ init(struct program *p)
 	}
 
 	// Need to prime the prober before listing devices.
-	ret = p->xp->probe(p->xp);
+	ret = xrt_prober_probe(p->xp);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to probe for devices.\n");
 		return ret;
@@ -71,7 +71,7 @@ print_cameras(struct program *p)
 	int ret;
 
 	p->index = 0;
-	ret = p->xp->list_video_devices(p->xp, list_cb, p);
+	ret = xrt_prober_list_video_devices(p->xp, list_cb, p);
 	if (ret != 0) {
 		return ret;
 	}
@@ -99,7 +99,7 @@ print_cameras(struct program *p)
 
 	p->index = 0;
 	p->selected = selected;
-	ret = p->xp->list_video_devices(p->xp, list_cb, p);
+	ret = xrt_prober_list_video_devices(p->xp, list_cb, p);
 	if (ret != 0) {
 		return ret;
 	}
@@ -112,7 +112,7 @@ static int
 do_exit(struct program *p, int ret)
 {
 	if (p->xp != NULL) {
-		p->xp->destroy(&p->xp);
+		xrt_prober_destroy(&p->xp);
 	}
 
 	printf(" :: Exiting '%i'\n", ret);
