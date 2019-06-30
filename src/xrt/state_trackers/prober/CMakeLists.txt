@@ -10,7 +10,6 @@ include_directories(
 set(PROBER_INCLUDES)
 
 set(PROBER_SOURCE_FILES
-	p_auto_wrap.c
 	p_documentation.h
 	p_dump.c
 	p_prober.c
