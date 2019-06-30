@@ -137,8 +137,86 @@ struct xrt_prober
 	int (*list_video_devices)(struct xrt_prober *xp,
 	                          xrt_prober_list_video_cb cb,
 	                          void *ptr);
-	void (*destroy)(struct xrt_prober **xp);
+	void (*destroy)(struct xrt_prober **xp_ptr);
 };
+
+/*!
+ * Helper functionfor @ref xrt_prober::probe.
+ *
+ * @ingroup xrt_iface
+ */
+XRT_MAYBE_UNUSED static inline int
+xrt_prober_probe(struct xrt_prober *xp)
+{
+	return xp->probe(xp);
+}
+
+/*!
+ * Helper functionfor @ref xrt_prober::dump.
+ *
+ * @ingroup xrt_iface
+ */
+XRT_MAYBE_UNUSED static inline int
+xrt_prober_dump(struct xrt_prober *xp)
+{
+	return xp->dump(xp);
+}
+
+/*!
+ * Helper functionfor @ref xrt_prober::select.
+ *
+ * @ingroup xrt_iface
+ */
+XRT_MAYBE_UNUSED static inline int
+xrt_prober_select(struct xrt_prober *xp,
+                  struct xrt_device **xdevs,
+                  size_t num_xdevs)
+{
+	return xp->select(xp, xdevs, num_xdevs);
+}
+
+/*!
+ * Helper functionfor @ref xrt_prober::open_hid_interface.
+ *
+ * @ingroup xrt_iface
+ */
+XRT_MAYBE_UNUSED static inline int
+xrt_prober_open_hid_interface(struct xrt_prober *xp,
+                              struct xrt_prober_device *xpdev,
+                              int interface,
+                              struct os_hid_device **out_hid_dev)
+{
+	return xp->open_hid_interface(xp, xpdev, interface, out_hid_dev);
+}
+
+/*!
+ * Helper functionfor @ref xrt_prober::list_video_devices.
+ *
+ * @ingroup xrt_iface
+ */
+XRT_MAYBE_UNUSED static inline int
+xrt_prober_list_video_devices(struct xrt_prober *xp,
+                              xrt_prober_list_video_cb cb,
+                              void *ptr)
+{
+	return xp->list_video_devices(xp, cb, ptr);
+}
+
+/*!
+ * Helper functionfor @ref xrt_prober::destroy.
+ *
+ * @ingroup xrt_iface
+ */
+XRT_MAYBE_UNUSED static inline void
+xrt_prober_destroy(struct xrt_prober **xp_ptr)
+{
+	struct xrt_prober *xp = *xp_ptr;
+	if (xp == NULL) {
+		return;
+	}
+
+	xp->destroy(xp_ptr);
+}
 
 /*!
  * Call this function to create the @ref xrt_prober. This function is setup in
@@ -176,15 +254,6 @@ struct xrt_auto_prober
 	    struct xrt_auto_prober *xdev);
 	void (*destroy)(struct xrt_auto_prober *xdev);
 };
-
-/*!
- * Call this function to create the @ref xrt_auto_prober. This function is setup
- * in the the very small target wrapper.c for each binary.
- *
- * @ingroup xrt_iface
- */
-struct xrt_auto_prober *
-xrt_auto_prober_create();
 
 
 #ifdef __cplusplus
