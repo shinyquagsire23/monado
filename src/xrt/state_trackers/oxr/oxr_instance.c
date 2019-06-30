@@ -51,7 +51,6 @@ static XrResult
 oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	struct oxr_instance *inst = (struct oxr_instance *)hb;
-	struct xrt_prober *prober = inst->prober;
 
 	oxr_path_destroy_all(log, inst);
 
@@ -63,9 +62,7 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	xdev_destroy(&inst->system.left);
 	xdev_destroy(&inst->system.right);
 
-	if (inst->prober != NULL) {
-		prober->destroy(&inst->prober);
-	}
+	xrt_prober_destroy(&inst->prober);
 
 	time_state_destroy(inst->timekeeping);
 	inst->timekeeping = NULL;
@@ -112,21 +109,21 @@ oxr_instance_create(struct oxr_logger *log,
 
 	p_ret = xrt_prober_create(&inst->prober);
 	if (p_ret != 0) {
-		inst->prober->destroy(&inst->prober);
+		xrt_prober_destroy(&inst->prober);
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Failed to create prober");
 	}
 
-	p_ret = inst->prober->probe(inst->prober);
+	p_ret = xrt_prober_probe(inst->prober);
 	if (p_ret != 0) {
-		inst->prober->destroy(&inst->prober);
+		xrt_prober_destroy(&inst->prober);
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Failed to probe device(s)");
 	}
 
-	p_ret = inst->prober->select(inst->prober, xdevs, 3);
+	p_ret = xrt_prober_select(inst->prober, xdevs, 3);
 	if (p_ret != 0) {
-		inst->prober->destroy(&inst->prober);
+		xrt_prober_destroy(&inst->prober);
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Failed to select device");
 	}
