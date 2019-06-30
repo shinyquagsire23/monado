@@ -463,7 +463,7 @@ psmv_found(struct xrt_prober *xp,
 		return 0;
 	}
 
-	ret = xp->open_hid_interface(xp, devices[index], 0, &hid);
+	ret = xrt_prober_open_hid_interface(xp, devices[index], 0, &hid);
 	if (ret != 0) {
 		return -1;
 	}
