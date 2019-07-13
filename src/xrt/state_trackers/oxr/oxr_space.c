@@ -54,17 +54,17 @@ oxr_space_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 
 XrResult
 oxr_space_action_create(struct oxr_logger *log,
-                        struct oxr_action *act,
+                        struct oxr_session *sess,
+                        uint64_t key,
                         const XrActionSpaceCreateInfo *createInfo,
                         struct oxr_space **out_space)
 {
-	struct oxr_session *sess = act->act_set->sess;
 	struct oxr_instance *inst = sess->sys->inst;
 	struct oxr_sub_paths sub_paths = {0};
 
 	struct oxr_space *spc = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, spc, OXR_XR_DEBUG_SPACE,
-	                              oxr_space_destroy, &act->handle);
+	                              oxr_space_destroy, &sess->handle);
 
 	//! @todo implement more fully
 	oxr_warn(log, " not fully implemented");
@@ -72,9 +72,10 @@ oxr_space_action_create(struct oxr_logger *log,
 	oxr_classify_sub_action_paths(log, inst, 1, &createInfo->subactionPath,
 	                              &sub_paths);
 
-	spc->sess = act->act_set->sess;
+	spc->sess = sess;
 	spc->is_reference = false;
 	spc->sub_paths = sub_paths;
+	spc->act_key = key;
 	memcpy(&spc->pose, &createInfo->poseInActionSpace, sizeof(spc->pose));
 
 	*out_space = spc;
@@ -332,7 +333,7 @@ oxr_space_locate(struct oxr_logger *log,
                  struct oxr_space *spc,
                  struct oxr_space *baseSpc,
                  XrTime time,
-                 XrSpaceRelation *relation)
+                 XrSpaceLocation *location)
 {
 	if (debug_get_bool_option_space()) {
 		fprintf(stderr, "%s\n", __func__);
@@ -346,7 +347,7 @@ oxr_space_locate(struct oxr_logger *log,
 	struct xrt_space_relation pure;
 	XrResult ret = get_pure_space_relation(log, spc, baseSpc, time, &pure);
 	if (ret != XR_SUCCESS) {
-		relation->relationFlags = 0;
+		location->locationFlags = 0;
 		return ret;
 	}
 
@@ -355,16 +356,18 @@ oxr_space_locate(struct oxr_logger *log,
 	math_relation_openxr_locate(&spc->pose, &pure, &baseSpc->pose, &result);
 
 	// Copy
-	relation->pose = *(XrPosef *)&result.pose;
-	relation->linearVelocity = *(XrVector3f *)&result.linear_velocity;
-	relation->angularVelocity = *(XrVector3f *)&result.angular_velocity;
-	relation->linearAcceleration =
+	location->pose = *(XrPosef *)&result.pose;
+	location->locationFlags = result.relation_flags;
+#if 0
+	location->linearVelocity = *(XrVector3f *)&result.linear_velocity;
+	location->angularVelocity = *(XrVector3f *)&result.angular_velocity;
+	location->linearAcceleration =
 	    *(XrVector3f *)&result.linear_acceleration;
-	relation->angularAcceleration =
+	location->angularAcceleration =
 	    *(XrVector3f *)&result.angular_acceleration;
-	relation->relationFlags = result.relation_flags;
+#endif
 
-	print_pose("\trelation->pose", (struct xrt_pose *)&relation->pose);
+	print_pose("\trelation->pose", (struct xrt_pose *)&location->pose);
 
 	return XR_SUCCESS;
 }

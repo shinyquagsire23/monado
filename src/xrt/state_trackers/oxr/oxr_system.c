@@ -178,7 +178,6 @@ oxr_system_get_properties(struct oxr_logger *log,
 {
 	properties->vendorId = 42;
 	properties->systemId = sys->systemId;
-	properties->graphicsProperties.maxViewCount = 2;
 
 	// Needed to silence the warnings.
 	const char *name = sys->head->name;
@@ -214,10 +213,12 @@ oxr_system_enumerate_view_confs(struct oxr_logger *log,
 XrResult
 oxr_system_enumerate_blend_modes(struct oxr_logger *log,
                                  struct oxr_system *sys,
+                                 XrViewConfigurationType viewConfigurationType,
                                  uint32_t environmentBlendModeCapacityInput,
                                  uint32_t *environmentBlendModeCountOutput,
                                  XrEnvironmentBlendMode *environmentBlendModes)
 {
+	//! @todo Take into account viewConfigurationType
 	OXR_TWO_CALL_HELPER(log, environmentBlendModeCapacityInput,
 	                    environmentBlendModeCountOutput,
 	                    environmentBlendModes, sys->num_blend_modes,

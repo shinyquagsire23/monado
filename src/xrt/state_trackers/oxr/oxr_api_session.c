@@ -130,6 +130,17 @@ oxr_xrEndFrame(XrSession session, const XrFrameEndInfo* frameEndInfo)
 }
 
 XrResult
+oxr_xrRequestExitSession(XrSession session)
+{
+	struct oxr_session* sess;
+	struct oxr_logger log;
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
+	                                "xrRequestExitSession");
+
+	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+}
+
+XrResult
 oxr_xrLocateViews(XrSession session,
                   const XrViewLocateInfo* viewLocateInfo,
                   XrViewState* viewState,

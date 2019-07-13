@@ -37,7 +37,17 @@ static bool
 is_running(XrSessionState state)
 {
 	switch (state) {
-	case XR_SESSION_STATE_RUNNING: return true;
+	case XR_SESSION_STATE_SYNCHRONIZED: return true;
+	case XR_SESSION_STATE_VISIBLE: return true;
+	case XR_SESSION_STATE_FOCUSED: return true;
+	default: return false;
+	}
+}
+
+static bool
+should_render(XrSessionState state)
+{
+	switch (state) {
 	case XR_SESSION_STATE_VISIBLE: return true;
 	case XR_SESSION_STATE_FOCUSED: return true;
 	default: return false;
@@ -89,7 +99,7 @@ oxr_session_begin(struct oxr_logger *log,
 	}
 
 	oxr_event_push_XrEventDataSessionStateChanged(
-	    log, sess, XR_SESSION_STATE_RUNNING, 0);
+	    log, sess, XR_SESSION_STATE_SYNCHRONIZED, 0);
 	oxr_event_push_XrEventDataSessionStateChanged(
 	    log, sess, XR_SESSION_STATE_VISIBLE, 0);
 	oxr_event_push_XrEventDataSessionStateChanged(
@@ -336,10 +346,11 @@ oxr_session_frame_wait(struct oxr_logger *log,
 	XRT_MAYBE_UNUSED timepoint_ns now =
 	    time_state_get_now_and_update(sess->sys->inst->timekeeping);
 
-
 	struct xrt_compositor *xc = sess->compositor;
 	xc->wait_frame(xc, &frameState->predictedDisplayTime,
 	               &frameState->predictedDisplayPeriod);
+
+	frameState->shouldRender = should_render(sess->state);
 
 	return XR_SUCCESS;
 }

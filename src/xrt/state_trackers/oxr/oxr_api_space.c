@@ -25,20 +25,23 @@
 
 
 XrResult
-oxr_xrCreateActionSpace(XrAction action,
+oxr_xrCreateActionSpace(XrSession session,
                         const XrActionSpaceCreateInfo* createInfo,
                         XrSpace* space)
 {
+	struct oxr_session* sess;
 	struct oxr_action* act;
 	struct oxr_logger log;
-	OXR_VERIFY_ACTION_AND_INIT_LOG(&log, action, act,
-	                               "xrCreateActionSpace");
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
+	                                "xrCreateActionSpace");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
 	                             XR_TYPE_ACTION_SPACE_CREATE_INFO);
 	OXR_VERIFY_POSE(&log, createInfo->poseInActionSpace);
+	OXR_VERIFY_ACTION_NOT_NULL(&log, createInfo->action, act);
 
 	struct oxr_space* spc;
-	XrResult ret = oxr_space_action_create(&log, act, createInfo, &spc);
+	XrResult ret =
+	    oxr_space_action_create(&log, sess, act->key, createInfo, &spc);
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
@@ -113,16 +116,16 @@ XrResult
 oxr_xrLocateSpace(XrSpace space,
                   XrSpace baseSpace,
                   XrTime time,
-                  XrSpaceRelation* relation)
+                  XrSpaceLocation* location)
 {
 	struct oxr_space* spc;
 	struct oxr_space* baseSpc;
 	struct oxr_logger log;
 	OXR_VERIFY_SPACE_AND_INIT_LOG(&log, space, spc, "xrLocateSpace");
 	OXR_VERIFY_SPACE_NOT_NULL(&log, baseSpace, baseSpc);
-	OXR_VERIFY_ARG_NOT_NULL(&log, relation);
+	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, location, XR_TYPE_SPACE_LOCATION);
 
-	return oxr_space_locate(&log, spc, baseSpc, time, relation);
+	return oxr_space_locate(&log, spc, baseSpc, time, location);
 }
 
 XrResult

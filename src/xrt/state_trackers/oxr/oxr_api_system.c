@@ -103,6 +103,7 @@ XrResult
 oxr_xrEnumerateEnvironmentBlendModes(
     XrInstance instance,
     XrSystemId systemId,
+    XrViewConfigurationType viewConfigurationType,
     uint32_t environmentBlendModeCapacityInput,
     uint32_t* environmentBlendModeCountOutput,
     XrEnvironmentBlendMode* environmentBlendModes)
@@ -114,7 +115,7 @@ oxr_xrEnumerateEnvironmentBlendModes(
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
 
 	return oxr_system_enumerate_blend_modes(
-	    &log, sys, environmentBlendModeCapacityInput,
+	    &log, sys, viewConfigurationType, environmentBlendModeCapacityInput,
 	    environmentBlendModeCountOutput, environmentBlendModes);
 }
 

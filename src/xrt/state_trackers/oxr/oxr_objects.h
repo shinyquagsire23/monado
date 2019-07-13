@@ -252,7 +252,7 @@ oxr_action_set_to_openxr(struct oxr_action_set *act_set)
 
 XrResult
 oxr_action_set_create(struct oxr_logger *log,
-                      struct oxr_session *sess,
+                      struct oxr_instance *inst,
                       const XrActionSetCreateInfo *createInfo,
                       struct oxr_action_set **out_act_set);
 
@@ -272,15 +272,20 @@ oxr_action_create(struct oxr_logger *log,
                   struct oxr_action **out_act);
 
 XrResult
+oxr_session_attach_action_sets(struct oxr_logger *log,
+                               struct oxr_session *sess,
+                               const XrSessionActionSetsAttachInfo *bindInfo);
+
+XrResult
 oxr_action_sync_data(struct oxr_logger *log,
                      struct oxr_session *sess,
                      uint32_t countActionSets,
                      const XrActiveActionSet *actionSets);
 
 XrResult
-oxr_action_set_interaction_profile_suggested_bindings(
+oxr_action_suggest_interaction_profile_bindings(
     struct oxr_logger *log,
-    struct oxr_session *sess,
+    struct oxr_instance *inst,
     const XrInteractionProfileSuggestedBinding *suggestedBindings);
 
 XrResult
@@ -288,61 +293,66 @@ oxr_action_get_current_interaction_profile(
     struct oxr_logger *log,
     struct oxr_session *sess,
     XrPath topLevelUserPath,
-    XrInteractionProfileInfo *interactionProfile);
+    XrInteractionProfileState *interactionProfile);
 
 XrResult
 oxr_action_get_input_source_localized_name(
     struct oxr_logger *log,
     struct oxr_session *sess,
-    XrPath source,
-    XrInputSourceLocalizedNameFlags whichComponents,
+    const XrInputSourceLocalizedNameGetInfo *getInfo,
     uint32_t bufferCapacityInput,
     uint32_t *bufferCountOutput,
     char *buffer);
 
 XrResult
 oxr_action_get_boolean(struct oxr_logger *log,
-                       struct oxr_action *act,
+                       struct oxr_session *sess,
+                       uint64_t key,
                        struct oxr_sub_paths sub_paths,
                        XrActionStateBoolean *data);
+
 XrResult
 oxr_action_get_vector1f(struct oxr_logger *log,
-                        struct oxr_action *act,
+                        struct oxr_session *sess,
+                        uint64_t key,
                         struct oxr_sub_paths sub_paths,
-                        XrActionStateVector1f *data);
+                        XrActionStateFloat *data);
 
 
 XrResult
 oxr_action_get_vector2f(struct oxr_logger *log,
-                        struct oxr_action *act,
+                        struct oxr_session *sess,
+                        uint64_t key,
                         struct oxr_sub_paths sub_paths,
                         XrActionStateVector2f *data);
 
 XrResult
 oxr_action_get_pose(struct oxr_logger *log,
-                    struct oxr_action *act,
+                    struct oxr_session *sess,
+                    uint64_t key,
                     struct oxr_sub_paths sub_paths,
                     XrActionStatePose *data);
 
 XrResult
 oxr_action_get_bound_sources(struct oxr_logger *log,
-                             struct oxr_action *act,
+                             struct oxr_session *sess,
+                             uint64_t key,
                              uint32_t sourceCapacityInput,
                              uint32_t *sourceCountOutput,
                              XrPath *sources);
 
 XrResult
 oxr_action_apply_haptic_feedback(struct oxr_logger *log,
-                                 struct oxr_action *act,
-                                 uint32_t countSubactionPaths,
-                                 const XrPath *subactionPaths,
+                                 struct oxr_session *sess,
+                                 uint64_t key,
+                                 struct oxr_sub_paths sub_paths,
                                  const XrHapticBaseHeader *hapticEvent);
 
 XrResult
 oxr_action_stop_haptic_feedback(struct oxr_logger *log,
-                                struct oxr_action *act,
-                                uint32_t countSubactionPaths,
-                                const XrPath *subactionPaths);
+                                struct oxr_session *sess,
+                                uint64_t key,
+                                struct oxr_sub_paths sub_paths);
 
 
 /*
@@ -431,9 +441,11 @@ oxr_space_to_openxr(struct oxr_space *spc)
 
 XrResult
 oxr_space_action_create(struct oxr_logger *log,
-                        struct oxr_action *act,
+                        struct oxr_session *sess,
+                        uint64_t key,
                         const XrActionSpaceCreateInfo *createInfo,
                         struct oxr_space **out_space);
+
 XrResult
 oxr_space_reference_create(struct oxr_logger *log,
                            struct oxr_session *sess,
@@ -445,7 +457,7 @@ oxr_space_locate(struct oxr_logger *log,
                  struct oxr_space *spc,
                  struct oxr_space *baseSpc,
                  XrTime time,
-                 XrSpaceRelation *relation);
+                 XrSpaceLocation *relation);
 
 XrResult
 oxr_space_ref_relation(struct oxr_logger *log,
@@ -552,6 +564,7 @@ oxr_system_enumerate_view_confs(
 XrResult
 oxr_system_enumerate_blend_modes(struct oxr_logger *log,
                                  struct oxr_system *sys,
+                                 XrViewConfigurationType viewConfigurationType,
                                  uint32_t environmentBlendModeCapacityInput,
                                  uint32_t *environmentBlendModeCountOutput,
                                  XrEnvironmentBlendMode *environmentBlendModes);
@@ -1036,7 +1049,7 @@ struct oxr_action_set
 	struct oxr_handle_base handle;
 
 	//! Onwer of this messenger.
-	struct oxr_session *sess;
+	struct oxr_instance *inst;
 
 	/*!
 	 * Every change that is done to a action set will increment this

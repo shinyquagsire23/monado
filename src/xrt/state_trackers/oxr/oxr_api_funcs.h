@@ -161,6 +161,7 @@ XrResult
 oxr_xrEnumerateEnvironmentBlendModes(
     XrInstance instance,
     XrSystemId systemId,
+    XrViewConfigurationType viewConfigurationType,
     uint32_t environmentBlendModeCapacityInput,
     uint32_t* environmentBlendModeCountOutput,
     XrEnvironmentBlendMode* environmentBlendModes);
@@ -245,6 +246,10 @@ oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo* frameBeginInfo);
 XrResult
 oxr_xrEndFrame(XrSession session, const XrFrameEndInfo* frameEndInfo);
 
+//! OpenXR API function @ep{xrRequestExitSession}
+XrResult
+oxr_xrRequestExitSession(XrSession session);
+
 //! OpenXR API function @ep{xrLocateViews}
 XrResult
 oxr_xrLocateViews(XrSession session,
@@ -314,7 +319,7 @@ XrResult
 oxr_xrLocateSpace(XrSpace space,
                   XrSpace baseSpace,
                   XrTime time,
-                  XrSpaceRelation* relation);
+                  XrSpaceLocation* relation);
 
 //! OpenXR API function @ep{xrDestroySpace}
 XrResult
@@ -424,13 +429,13 @@ oxr_xrSessionInsertDebugUtilsLabelEXT(XrSession session,
 
 //! OpenXR API function @ep{xrCreateActionSpace}
 XrResult
-oxr_xrCreateActionSpace(XrAction action,
+oxr_xrCreateActionSpace(XrSession session,
                         const XrActionSpaceCreateInfo* createInfo,
                         XrSpace* space);
 
 //! OpenXR API function @ep{xrCreateActionSet}
 XrResult
-oxr_xrCreateActionSet(XrSession session,
+oxr_xrCreateActionSet(XrInstance instance,
                       const XrActionSetCreateInfo* createInfo,
                       XrActionSet* actionSet);
 
@@ -448,81 +453,81 @@ oxr_xrCreateAction(XrActionSet actionSet,
 XrResult
 oxr_xrDestroyAction(XrAction action);
 
-//! OpenXR API function @ep{xrSetInteractionProfileSuggestedBindings}
+//! OpenXR API function @ep{xrSuggestInteractionProfileBindings}
 XrResult
-oxr_xrSetInteractionProfileSuggestedBindings(
-    XrSession session,
+oxr_xrSuggestInteractionProfileBindings(
+    XrInstance instance,
     const XrInteractionProfileSuggestedBinding* suggestedBindings);
+
+//! OpenXR API function @ep{xrAttachSessionActionSets}
+XrResult
+oxr_xrAttachSessionActionSets(XrSession session,
+                              const XrSessionActionSetsAttachInfo* bindInfo);
 
 //! OpenXR API function @ep{xrGetCurrentInteractionProfile}
 XrResult
 oxr_xrGetCurrentInteractionProfile(
     XrSession session,
     XrPath topLevelUserPath,
-    XrInteractionProfileInfo* interactionProfile);
+    XrInteractionProfileState* interactionProfile);
 
 //! OpenXR API function @ep{xrGetActionStateBoolean}
 XrResult
-oxr_xrGetActionStateBoolean(XrAction action,
-                            uint32_t countSubactionPaths,
-                            const XrPath* subactionPaths,
+oxr_xrGetActionStateBoolean(XrSession session,
+                            const XrActionStateGetInfo* getInfo,
                             XrActionStateBoolean* data);
 
-//! OpenXR API function @ep{xrGetActionStateVector1f}
+//! OpenXR API function @ep{xrGetActionStateFloat}
 XrResult
-oxr_xrGetActionStateVector1f(XrAction action,
-                             uint32_t countSubactionPaths,
-                             const XrPath* subactionPaths,
-                             XrActionStateVector1f* data);
+oxr_xrGetActionStateFloat(XrSession session,
+                          const XrActionStateGetInfo* getInfo,
+                          XrActionStateFloat* data);
 
 //! OpenXR API function @ep{xrGetActionStateVector2f}
 XrResult
-oxr_xrGetActionStateVector2f(XrAction action,
-                             uint32_t countSubactionPaths,
-                             const XrPath* subactionPaths,
+oxr_xrGetActionStateVector2f(XrSession session,
+                             const XrActionStateGetInfo* getInfo,
                              XrActionStateVector2f* data);
 
 //! OpenXR API function @ep{xrGetActionStatePose}
 XrResult
-oxr_xrGetActionStatePose(XrAction action,
-                         XrPath subactionPath,
+oxr_xrGetActionStatePose(XrSession session,
+                         const XrActionStateGetInfo* getInfo,
                          XrActionStatePose* data);
 
-//! OpenXR API function @ep{xrSyncActionData}
+//! OpenXR API function @ep{xrSyncActions}
 XrResult
-oxr_xrSyncActionData(XrSession session,
-                     uint32_t countActionSets,
-                     const XrActiveActionSet* actionSets);
+oxr_xrSyncActions(XrSession session, const XrActionsSyncInfo* syncInfo);
 
-//! OpenXR API function @ep{xrGetBoundSourcesForAction}
+//! OpenXR API function @ep{xrEnumerateBoundSourcesForAction}
 XrResult
-oxr_xrGetBoundSourcesForAction(XrAction action,
-                               uint32_t sourceCapacityInput,
-                               uint32_t* sourceCountOutput,
-                               XrPath* sources);
+oxr_xrEnumerateBoundSourcesForAction(
+    XrSession session,
+    const XrBoundSourcesForActionEnumerateInfo* enumerateInfo,
+    uint32_t sourceCapacityInput,
+    uint32_t* sourceCountOutput,
+    XrPath* sources);
 
 //! OpenXR API function @ep{xrGetInputSourceLocalizedName}
 XrResult
 oxr_xrGetInputSourceLocalizedName(
     XrSession session,
-    XrPath source,
-    XrInputSourceLocalizedNameFlags whichComponents,
+    const XrInputSourceLocalizedNameGetInfo* getInfo,
     uint32_t bufferCapacityInput,
     uint32_t* bufferCountOutput,
     char* buffer);
 
 //! OpenXR API function @ep{xrApplyHapticFeedback}
 XrResult
-oxr_xrApplyHapticFeedback(XrAction hapticAction,
-                          uint32_t countSubactionPaths,
-                          const XrPath* subactionPaths,
-                          const XrHapticBaseHeader* hapticEvent);
+oxr_xrApplyHapticFeedback(XrSession session,
+                          const XrHapticActionInfo* hapticActionInfo,
+                          const XrHapticBaseHeader* hapticFeedback);
 
 //! OpenXR API function @ep{xrStopHapticFeedback}
 XrResult
-oxr_xrStopHapticFeedback(XrAction hapticAction,
-                         uint32_t countSubactionPaths,
-                         const XrPath* subactionPaths);
+oxr_xrStopHapticFeedback(XrSession session,
+                         const XrHapticActionInfo* hapticActionInfo);
+
 
 /*!
  * @}

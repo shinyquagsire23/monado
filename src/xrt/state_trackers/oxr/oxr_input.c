@@ -109,7 +109,7 @@ oxr_action_set_destroy_cb(struct oxr_logger* log, struct oxr_handle_base* hb)
 
 XrResult
 oxr_action_set_create(struct oxr_logger* log,
-                      struct oxr_session* sess,
+                      struct oxr_instance* inst,
                       const XrActionSetCreateInfo* createInfo,
                       struct oxr_action_set** out_act_set)
 {
@@ -119,11 +119,11 @@ oxr_action_set_create(struct oxr_logger* log,
 	//! @todo Implement more fully.
 	struct oxr_action_set* act_set = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, act_set, OXR_XR_DEBUG_ACTIONSET,
-	                              oxr_action_set_destroy_cb, &sess->handle);
+	                              oxr_action_set_destroy_cb, &inst->handle);
 
 	act_set->key = key_gen++;
 	act_set->generation = 1;
-	act_set->sess = sess;
+	act_set->inst = inst;
 
 	*out_act_set = act_set;
 
@@ -158,7 +158,7 @@ oxr_action_create(struct oxr_logger* log,
                   const XrActionCreateInfo* createInfo,
                   struct oxr_action** out_act)
 {
-	struct oxr_instance* inst = act_set->sess->sys->inst;
+	struct oxr_instance* inst = act_set->inst;
 	struct oxr_sub_paths sub_paths = {0};
 
 	// Mod music for all!
@@ -307,7 +307,7 @@ MEGA_HACK_get_binding(struct oxr_logger* log,
 	default: break;
 	}
 
-	if (strcmp(act->name, "grip_object") == 0) {
+	if (strcmp(act->name, "grab_object") == 0) {
 		oxr_xdev_find_input(xdev, XRT_INPUT_PSMV_TRIGGER_VALUE,
 		                    &input) ||
 		    oxr_xdev_find_input(xdev, XRT_INPUT_HYDRA_TRIGGER_VALUE,
@@ -316,6 +316,8 @@ MEGA_HACK_get_binding(struct oxr_logger* log,
 		oxr_xdev_find_input(xdev, XRT_INPUT_PSMV_BODY_CENTER_POSE,
 		                    &input) ||
 		    oxr_xdev_find_input(xdev, XRT_INPUT_HYDRA_POSE, &input);
+	} else if (strcmp(act->name, "quit_session") == 0) {
+		oxr_xdev_find_input(xdev, XRT_INPUT_PSMV_PS_CLICK, &input);
 	} else if (strcmp(act->name, "vibrate_hand") == 0) {
 		oxr_xdev_find_output(
 		    xdev, XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION, &output);
@@ -354,10 +356,10 @@ oxr_source_set_destroy_cb(struct oxr_logger* log, struct oxr_handle_base* hb)
 
 static XrResult
 oxr_source_set_create(struct oxr_logger* log,
+                      struct oxr_session* sess,
                       struct oxr_action_set* act_set,
                       struct oxr_source_set** out_src_set)
 {
-	struct oxr_session* sess = act_set->sess;
 	struct oxr_source_set* src_set = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, src_set, OXR_XR_DEBUG_SOURCESET,
 	                              oxr_source_set_destroy_cb, &sess->handle);
@@ -637,6 +639,15 @@ oxr_session_destroy_all_sources(struct oxr_logger* log,
 }
 
 XrResult
+oxr_session_attach_action_sets(struct oxr_logger* log,
+                               struct oxr_session* sess,
+                               const XrSessionActionSetsAttachInfo* bindInfo)
+{
+	//! @todo not implementeds
+	return XR_SUCCESS;
+}
+
+XrResult
 oxr_action_sync_data(struct oxr_logger* log,
                      struct oxr_session* sess,
                      uint32_t countActionSets,
@@ -663,7 +674,7 @@ oxr_action_sync_data(struct oxr_logger* log,
 		// current action set generation, that's okay since we will
 		// be creating the sources for the actions below.
 		if (src_set == NULL) {
-			oxr_source_set_create(log, act_set, &src_set);
+			oxr_source_set_create(log, sess, act_set, &src_set);
 			continue;
 		}
 
@@ -707,13 +718,12 @@ oxr_action_sync_data(struct oxr_logger* log,
 }
 
 XrResult
-oxr_action_set_interaction_profile_suggested_bindings(
+oxr_action_suggest_interaction_profile_bindings(
     struct oxr_logger* log,
-    struct oxr_session* sess,
+    struct oxr_instance* inst,
     const XrInteractionProfileSuggestedBinding* suggestedBindings)
 {
 	//! @todo Implement
-	struct oxr_instance* inst = sess->sys->inst;
 	const char* str;
 	size_t length;
 
@@ -748,7 +758,7 @@ oxr_action_get_current_interaction_profile(
     struct oxr_logger* log,
     struct oxr_session* sess,
     XrPath topLevelUserPath,
-    XrInteractionProfileInfo* interactionProfile)
+    XrInteractionProfileState* interactionProfile)
 {
 	//! @todo Implement
 	return oxr_error(log, XR_ERROR_HANDLE_INVALID, " not implemented");
@@ -758,8 +768,7 @@ XrResult
 oxr_action_get_input_source_localized_name(
     struct oxr_logger* log,
     struct oxr_session* sess,
-    XrPath source,
-    XrInputSourceLocalizedNameFlags whichComponents,
+    const XrInputSourceLocalizedNameGetInfo* getInfo,
     uint32_t bufferCapacityInput,
     uint32_t* bufferCountOutput,
     char* buffer)
@@ -796,7 +805,7 @@ get_state_from_state_bool(struct oxr_source_state* state,
 
 static void
 get_state_from_state_vec1(struct oxr_source_state* state,
-                          XrActionStateVector1f* data)
+                          XrActionStateFloat* data)
 {
 	data->currentState = state->vec1.x;
 	data->lastChangeTime = state->timestamp;
@@ -859,14 +868,14 @@ get_state_from_state_vec2(struct oxr_source_state* state,
 
 XrResult
 oxr_action_get_boolean(struct oxr_logger* log,
-                       struct oxr_action* act,
+                       struct oxr_session* sess,
+                       uint64_t key,
                        struct oxr_sub_paths sub_paths,
                        XrActionStateBoolean* data)
 {
-	struct oxr_session* sess = act->act_set->sess;
 	struct oxr_source* src = NULL;
 
-	oxr_session_get_source(sess, act->key, &src);
+	oxr_session_get_source(sess, key, &src);
 
 	data->isActive = XR_FALSE;
 	U_ZERO(&data->currentState);
@@ -888,14 +897,14 @@ oxr_action_get_boolean(struct oxr_logger* log,
 
 XrResult
 oxr_action_get_vector1f(struct oxr_logger* log,
-                        struct oxr_action* act,
+                        struct oxr_session* sess,
+                        uint64_t key,
                         struct oxr_sub_paths sub_paths,
-                        XrActionStateVector1f* data)
+                        XrActionStateFloat* data)
 {
-	struct oxr_session* sess = act->act_set->sess;
 	struct oxr_source* src = NULL;
 
-	oxr_session_get_source(sess, act->key, &src);
+	oxr_session_get_source(sess, key, &src);
 
 	data->isActive = XR_FALSE;
 	U_ZERO(&data->currentState);
@@ -917,14 +926,14 @@ oxr_action_get_vector1f(struct oxr_logger* log,
 
 XrResult
 oxr_action_get_vector2f(struct oxr_logger* log,
-                        struct oxr_action* act,
+                        struct oxr_session* sess,
+                        uint64_t key,
                         struct oxr_sub_paths sub_paths,
                         XrActionStateVector2f* data)
 {
-	struct oxr_session* sess = act->act_set->sess;
 	struct oxr_source* src = NULL;
 
-	oxr_session_get_source(sess, act->key, &src);
+	oxr_session_get_source(sess, key, &src);
 
 	data->isActive = XR_FALSE;
 	U_ZERO(&data->currentState);
@@ -946,14 +955,14 @@ oxr_action_get_vector2f(struct oxr_logger* log,
 
 XrResult
 oxr_action_get_pose(struct oxr_logger* log,
-                    struct oxr_action* act,
+                    struct oxr_session* sess,
+                    uint64_t key,
                     struct oxr_sub_paths sub_paths,
                     XrActionStatePose* data)
 {
-	struct oxr_session* sess = act->act_set->sess;
 	struct oxr_source* src = NULL;
 
-	oxr_session_get_source(sess, act->key, &src);
+	oxr_session_get_source(sess, key, &src);
 
 	data->isActive = XR_FALSE;
 
@@ -982,7 +991,8 @@ oxr_action_get_pose(struct oxr_logger* log,
 
 XrResult
 oxr_action_get_bound_sources(struct oxr_logger* log,
-                             struct oxr_action* act,
+                             struct oxr_session* sess,
+                             uint64_t key,
                              uint32_t sourceCapacityInput,
                              uint32_t* sourceCountOutput,
                              XrPath* sources)
@@ -1019,21 +1029,18 @@ set_source_output_vibration(struct oxr_session* sess,
 	}
 }
 
+
+
 XrResult
 oxr_action_apply_haptic_feedback(struct oxr_logger* log,
-                                 struct oxr_action* act,
-                                 uint32_t countSubactionPaths,
-                                 const XrPath* subactionPaths,
+                                 struct oxr_session* sess,
+                                 uint64_t key,
+                                 struct oxr_sub_paths sub_paths,
                                  const XrHapticBaseHeader* hapticEvent)
 {
-	struct oxr_session* sess = act->act_set->sess;
 	struct oxr_source* src = NULL;
-	struct oxr_sub_paths sub_paths = {0};
 
-	oxr_classify_sub_action_paths(log, sess->sys->inst, countSubactionPaths,
-	                              subactionPaths, &sub_paths);
-
-	oxr_session_get_source(sess, act->key, &src);
+	oxr_session_get_source(sess, key, &src);
 
 	if (src == NULL) {
 		return XR_SUCCESS;
@@ -1067,18 +1074,13 @@ oxr_action_apply_haptic_feedback(struct oxr_logger* log,
 
 XrResult
 oxr_action_stop_haptic_feedback(struct oxr_logger* log,
-                                struct oxr_action* act,
-                                uint32_t countSubactionPaths,
-                                const XrPath* subactionPaths)
+                                struct oxr_session* sess,
+                                uint64_t key,
+                                struct oxr_sub_paths sub_paths)
 {
-	struct oxr_session* sess = act->act_set->sess;
 	struct oxr_source* src = NULL;
-	struct oxr_sub_paths sub_paths = {0};
 
-	oxr_classify_sub_action_paths(log, sess->sys->inst, countSubactionPaths,
-	                              subactionPaths, &sub_paths);
-
-	oxr_session_get_source(sess, act->key, &src);
+	oxr_session_get_source(sess, key, &src);
 
 	if (src == NULL) {
 		return XR_SUCCESS;

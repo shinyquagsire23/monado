@@ -67,11 +67,11 @@ extern "C" {
 #define OXR_VERIFY_SPACE_AND_INIT_LOG(log, thing, new_thing, name) \
 	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, SPACE, name, new_thing->sess->sys->inst)
 #define OXR_VERIFY_ACTION_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, ACTION, name, new_thing->act_set->sess->sys->inst)
+	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, ACTION, name, new_thing->act_set->inst)
 #define OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(log, thing, new_thing, name) \
 	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, SWAPCHAIN, name, new_thing->sess->sys->inst)
 #define OXR_VERIFY_ACTIONSET_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, ACTIONSET, name, new_thing->sess->sys->inst)
+	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, ACTIONSET, name, new_thing->inst)
 
 #define OXR_VERIFY_INSTANCE_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, INSTANCE);
 #define OXR_VERIFY_MESSENGER_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, MESSENGER);

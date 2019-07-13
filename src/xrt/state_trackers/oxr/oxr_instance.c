@@ -178,16 +178,24 @@ oxr_instance_create(struct oxr_logger *log,
 	inst->opengl_enable = false;
 	inst->vulkan_enable = false;
 	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
+#if XR_MND_headless
 		if (strcmp(createInfo->enabledExtensionNames[i],
-		           XR_KHR_HEADLESS_EXTENSION_NAME) == 0) {
+		           XR_MND_HEADLESS_EXTENSION_NAME) == 0) {
 			inst->headless = true;
-		} else if (strcmp(createInfo->enabledExtensionNames[i],
-		                  XR_KHR_OPENGL_ENABLE_EXTENSION_NAME) == 0) {
+		}
+#endif
+#if XR_KHR_opengl_enable
+		if (strcmp(createInfo->enabledExtensionNames[i],
+		           XR_KHR_OPENGL_ENABLE_EXTENSION_NAME) == 0) {
 			inst->opengl_enable = true;
-		} else if (strcmp(createInfo->enabledExtensionNames[i],
-		                  XR_KHR_VULKAN_ENABLE_EXTENSION_NAME) == 0) {
+		}
+#endif
+#if XR_KHR_vulkan_enable
+		if (strcmp(createInfo->enabledExtensionNames[i],
+		           XR_KHR_VULKAN_ENABLE_EXTENSION_NAME) == 0) {
 			inst->vulkan_enable = true;
 		}
+#endif
 	}
 
 	//! @todo check if this (and other creates) failed?
