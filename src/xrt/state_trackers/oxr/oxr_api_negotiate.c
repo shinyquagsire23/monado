@@ -114,7 +114,7 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
 #define ENTRY_IF(funcName)                                                     \
 	if (strcmp(name, #funcName) == 0) {                                    \
 		PFN_##funcName ret = &oxr_##funcName;                          \
-		*function = (PFN_xrVoidFunction)(ret);                         \
+		function = (PFN_xrVoidFunction)(ret);                          \
 	}
 
 /*!
@@ -124,7 +124,7 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
 	else if (strcmp(name, #funcName) == 0)                                 \
 	{                                                                      \
 		PFN_##funcName ret = &oxr_##funcName;                          \
-		*function = (PFN_xrVoidFunction)(ret);                         \
+		function = (PFN_xrVoidFunction)(ret);                          \
 	}
 
 /*!
@@ -133,8 +133,10 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
 static XrResult
 handle_none_null(struct oxr_logger* log,
                  const char* name,
-                 PFN_xrVoidFunction* function)
+                 PFN_xrVoidFunction* out_function)
 {
+	PFN_xrVoidFunction function = NULL;
+
 	ENTRY_IF(xrGetInstanceProcAddr)
 	ENTRY_ELSE_IF(xrEnumerateApiLayerProperties)
 	ENTRY_ELSE_IF(xrEnumerateInstanceExtensionProperties)
@@ -220,12 +222,12 @@ handle_none_null(struct oxr_logger* log,
 	ENTRY_ELSE_IF(xrGetVulkanGraphicsRequirementsKHR)
 #endif
 
-
-	if ((*function) == NULL) {
+	if (function == NULL) {
 		return oxr_error(log, XR_ERROR_FUNCTION_UNSUPPORTED,
 		                 "(name = \"%s\")", name);
 	}
 
+	*out_function = function;
 	return XR_SUCCESS;
 }
 
@@ -235,16 +237,19 @@ handle_none_null(struct oxr_logger* log,
 static XrResult
 handle_null(struct oxr_logger* log,
             const char* name,
-            PFN_xrVoidFunction* function)
+            PFN_xrVoidFunction* out_function)
 {
+	PFN_xrVoidFunction function = NULL;
+
 	ENTRY_IF(xrCreateInstance)
 	ENTRY_ELSE_IF(xrEnumerateInstanceExtensionProperties)
 
-	if ((*function) == NULL) {
+	if (function == NULL) {
 		return oxr_error(log, XR_ERROR_FUNCTION_UNSUPPORTED,
 		                 "(name = \"%s\")", name);
 	}
 
+	*out_function = function;
 	return XR_SUCCESS;
 }
 
