@@ -66,26 +66,29 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo* createInfo,
 	oxr_log_init(&log, "xrCreateInstance");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
 	                             XR_TYPE_INSTANCE_CREATE_INFO);
-#if XR_VERSION_MAJOR != 0
-#error "Must update this code following 1.0 release!"
-#endif
 	const uint32_t major = XR_VERSION_MAJOR(XR_CURRENT_API_VERSION);
 	const uint32_t minor = XR_VERSION_MINOR(XR_CURRENT_API_VERSION);
-	/* const uint32_t patch = XR_VERSION_PATCH(XR_CURRENT_API_VERSION);*/
+#if 0
+	const uint32_t patch = XR_VERSION_PATCH(XR_CURRENT_API_VERSION);
+#endif
+
 	if (createInfo->applicationInfo.apiVersion <
 	    XR_MAKE_VERSION(major, minor, 0)) {
 		return oxr_error(
-		    &log, XR_ERROR_RUNTIME_VERSION_INCOMPATIBLE,
+		    &log, XR_ERROR_API_VERSION_UNSUPPORTED,
 		    "(createInfo->applicationInfo.apiVersion) "
 		    "Cannot satisfy request for version less than %d.%d.%d",
 		    major, minor, 0);
 	}
-	/* This is a slight fib, to let us approximately run pre-release
-	 * things between 0.90 and 1.0 */
+
+	/*
+	 * This is a slight fib, to let us approximately run things between 1.0
+	 * and 2.0
+	 */
 	if (createInfo->applicationInfo.apiVersion >=
-	    XR_MAKE_VERSION(1, 0, 0)) {
+	    XR_MAKE_VERSION(2, 0, 0)) {
 		return oxr_error(
-		    &log, XR_ERROR_RUNTIME_VERSION_INCOMPATIBLE,
+		    &log, XR_ERROR_API_VERSION_UNSUPPORTED,
 		    "(createInfo->applicationInfo.apiVersion) "
 		    "Cannot satisfy request for version: too high");
 	}

@@ -59,33 +59,23 @@ xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo* loaderInfo,
 
 	// TODO: properly define what we support
 	uint16_t supported_major = XR_VERSION_MAJOR(XR_CURRENT_API_VERSION);
-	uint16_t supported_minor = XR_VERSION_MINOR(XR_CURRENT_API_VERSION);
 
-	uint16_t requested_min_major =
-	    XR_VERSION_MAJOR(loaderInfo->minInterfaceVersion);
-	uint16_t requested_min_minor =
-	    XR_VERSION_MINOR(loaderInfo->minInterfaceVersion);
-
-	uint16_t requested_max_major =
-	    XR_VERSION_MAJOR(loaderInfo->maxInterfaceVersion);
-	uint16_t requested_max_minor =
-	    XR_VERSION_MINOR(loaderInfo->maxInterfaceVersion);
+	uint32_t requested_min_major = loaderInfo->minInterfaceVersion;
+	uint32_t requested_max_major = loaderInfo->maxInterfaceVersion;
 
 	if (supported_major > requested_max_major ||
 	    supported_major < requested_min_major) {
 		PRINT_NEGOTIATE(
-		    "\tXRT - OpenXR doesn't support requested version %d.%d <= "
-		    "%d.%d <= %d.%d",
-		    requested_min_major, requested_min_minor, supported_major,
-		    supported_minor, requested_max_major, requested_max_minor);
+		    "\tXRT - OpenXR doesn't support requested version %d <= "
+		    "%d <= %d\n",
+		    requested_min_major, supported_major, requested_max_major);
 		return XR_ERROR_INITIALIZATION_FAILED;
 	}
 
 	runtimeRequest->getInstanceProcAddr = oxr_xrGetInstanceProcAddr;
 	runtimeRequest->runtimeInterfaceVersion =
 	    XR_CURRENT_LOADER_RUNTIME_VERSION;
-	runtimeRequest->runtimeXrVersion =
-	    XR_MAKE_VERSION(0, XR_HEADER_VERSION, 0);
+	runtimeRequest->runtimeApiVersion = XR_CURRENT_API_VERSION;
 
 	PRINT_NEGOTIATE("\tall ok!\n");
 
