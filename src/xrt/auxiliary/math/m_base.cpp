@@ -55,6 +55,18 @@ copy(const struct xrt_vec3* v)
  * Exported vector functions.
  *
  */
+
+bool
+math_vec3_validate(const struct xrt_vec3* vec3)
+{
+	assert(vec3 != NULL);
+
+	if (!map_vec3(*vec3).allFinite()) {
+		return false;
+	}
+	return true;
+}
+
 void
 math_vec3_accum(const struct xrt_vec3* additional, struct xrt_vec3* inAndOut)
 {
@@ -64,11 +76,34 @@ math_vec3_accum(const struct xrt_vec3* additional, struct xrt_vec3* inAndOut)
 	map_vec3(*inAndOut) += map_vec3(*additional);
 }
 
+
 /*
  *
  * Exported quaternion functions.
  *
  */
+
+bool
+math_quat_validate(const struct xrt_quat* quat)
+{
+	assert(quat != NULL);
+	auto rot = copy(*quat);
+
+	const float FLOAT_EPSILON = Eigen::NumTraits<float>::epsilon();
+	auto norm = rot.squaredNorm();
+	if (norm > 1.0f + FLOAT_EPSILON || norm < 1.0f - FLOAT_EPSILON) {
+		return false;
+	}
+
+	// Technically not yet a required check, but easier to stop problems
+	// now than once denormalized numbers pollute the rest of our state.
+	// see https://gitlab.khronos.org/openxr/openxr/issues/922
+	if (!rot.coeffs().allFinite()) {
+		return false;
+	}
+
+	return true;
+}
 
 void
 math_quat_normalize(struct xrt_quat* inout)
@@ -123,22 +158,8 @@ math_pose_validate(const struct xrt_pose* pose)
 {
 	assert(pose != NULL);
 
-	const float FLOAT_EPSILON = Eigen::NumTraits<float>::epsilon();
-	auto norm = orientation(*pose).squaredNorm();
-	if (norm > 1.0f + FLOAT_EPSILON || norm < 1.0f - FLOAT_EPSILON) {
-		return false;
-	}
-
-	// Technically not yet a required check, but easier to stop problems
-	// now than once denormalized numbers pollute the rest of our state.
-	// see https://gitlab.khronos.org/openxr/openxr/issues/922
-	if (!orientation(*pose).coeffs().allFinite()) {
-		return false;
-	}
-	if (!position(*pose).allFinite()) {
-		return false;
-	}
-	return true;
+	return math_vec3_validate(&pose->position) &&
+	       math_quat_validate(&pose->orientation);
 }
 
 void

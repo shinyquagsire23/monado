@@ -62,6 +62,15 @@ math_hash_string(const char *str_c, size_t length);
  */
 
 /*!
+ * Check if this vec3 is valid for math operations.
+ *
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+bool
+math_vec3_validate(const struct xrt_vec3 *vec3);
+
+/*!
  * Accumulate a vector by adding in-place.
  *
  * Logically, *inAndOut += *additional
@@ -73,11 +82,21 @@ math_hash_string(const char *str_c, size_t length);
 void
 math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut);
 
+
 /*
  *
  * Quat functions.
  *
  */
+
+/*!
+ * Check if this quat can be used in transformation operations.
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+bool
+math_quat_validate(const struct xrt_quat *qaut);
 
 /*!
  * Normalize a quaternion.
