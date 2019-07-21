@@ -29,6 +29,7 @@ find_package(OpenHMD)
 find_package(OpenCV COMPONENTS core calib3d highgui imgproc imgcodecs features2d video)
 find_package(Libusb1)
 find_package(JPEG)
+find_package(SDL2)
 
 # @TODO Turn into a find_package LIBUVC file.
 pkg_check_modules(LIBUVC libuvc)
@@ -59,6 +60,7 @@ cmake_dependent_option(BUILD_WITH_LIBUVC "Enable libuvc video driver" ON "LIBUVC
 cmake_dependent_option(BUILD_WITH_FFMPEG "Enable ffmpeg testing video driver" ON "FFMPEG_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_HIDAPI "Enable HIDAPI-based driver(s) (OSVR HDK, PSVR)" ON "HIDAPI_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND" OFF)
 
 
 ###
@@ -99,6 +101,18 @@ endif()
 
 if(BUILD_WITH_FFMPEG)
 	add_definitions(-DXRT_HAVE_FFMPEG)
+endif()
+
+if(BUILD_WITH_SDL2)
+	add_definitions(-DXRT_HAVE_SDL2)
+
+	# Arch work around
+	if(NOT DEFINED SDL2_LIBRARIES)
+		set(SDL2_LIBRARIES SDL2::SDL2)
+	endif()
+
+	# SDL2 based gui
+	set(BUILD_TARGET_GUI TRUE)
 endif()
 
 if(BUILD_WITH_OPENHMD)
