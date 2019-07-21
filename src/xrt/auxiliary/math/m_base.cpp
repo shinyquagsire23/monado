@@ -56,7 +56,7 @@ copy(const struct xrt_vec3* v)
  *
  */
 
-bool
+extern "C" bool
 math_vec3_validate(const struct xrt_vec3* vec3)
 {
 	assert(vec3 != NULL);
@@ -67,7 +67,7 @@ math_vec3_validate(const struct xrt_vec3* vec3)
 	return true;
 }
 
-void
+extern "C" void
 math_vec3_accum(const struct xrt_vec3* additional, struct xrt_vec3* inAndOut)
 {
 	assert(additional != NULL);
@@ -83,7 +83,7 @@ math_vec3_accum(const struct xrt_vec3* additional, struct xrt_vec3* inAndOut)
  *
  */
 
-bool
+extern "C" bool
 math_quat_validate(const struct xrt_quat* quat)
 {
 	assert(quat != NULL);
@@ -105,14 +105,14 @@ math_quat_validate(const struct xrt_quat* quat)
 	return true;
 }
 
-void
+extern "C" void
 math_quat_normalize(struct xrt_quat* inout)
 {
 	assert(inout != NULL);
 	map_quat(*inout).normalize();
 }
 
-void
+extern "C" void
 math_quat_rotate(const struct xrt_quat* left,
                  const struct xrt_quat* right,
                  struct xrt_quat* result)
@@ -129,7 +129,7 @@ math_quat_rotate(const struct xrt_quat* left,
 	map_quat(*result) = q;
 }
 
-void
+extern "C" void
 math_quat_rotate_vec3(const struct xrt_quat* left,
                       const struct xrt_vec3* right,
                       struct xrt_vec3* result)
@@ -153,7 +153,7 @@ math_quat_rotate_vec3(const struct xrt_quat* left,
  *
  */
 
-bool
+extern "C" bool
 math_pose_validate(const struct xrt_pose* pose)
 {
 	assert(pose != NULL);
@@ -162,7 +162,7 @@ math_pose_validate(const struct xrt_pose* pose)
 	       math_quat_validate(&pose->orientation);
 }
 
-void
+extern "C" void
 math_pose_invert(const struct xrt_pose* pose, struct xrt_pose* outPose)
 {
 	assert(pose != NULL);
@@ -199,7 +199,7 @@ transform_pose(const xrt_pose& transform, const xrt_pose& pose)
 	return ret;
 }
 
-void
+extern "C" void
 math_pose_transform(const struct xrt_pose* transform,
                     const struct xrt_pose* pose,
                     struct xrt_pose* outPose)
@@ -212,7 +212,7 @@ math_pose_transform(const struct xrt_pose* transform,
 	memcpy(outPose, &newPose, sizeof(xrt_pose));
 }
 
-void
+extern "C" void
 math_pose_openxr_locate(const struct xrt_pose* space_pose,
                         const struct xrt_pose* relative_pose,
                         const struct xrt_pose* base_space_pose,
@@ -366,13 +366,13 @@ static const struct xrt_space_relation BLANK_RELATION = {
     {0, 0, 0},
 };
 
-void
+extern "C" void
 math_relation_reset(struct xrt_space_relation* out)
 {
 	*out = BLANK_RELATION;
 }
 
-void
+extern "C" void
 math_relation_accumulate_transform(const struct xrt_pose* transform,
                                    struct xrt_space_relation* in_out_relation)
 {
@@ -383,8 +383,7 @@ math_relation_accumulate_transform(const struct xrt_pose* transform,
 	transform_accumulate_pose(*transform, *in_out_relation);
 }
 
-
-void
+extern "C" void
 math_relation_accumulate_relation(
     const struct xrt_space_relation* additional_relation,
     struct xrt_space_relation* in_out_relation)
@@ -428,7 +427,7 @@ math_relation_accumulate_relation(
 	}
 }
 
-void
+extern "C" void
 math_relation_openxr_locate(const struct xrt_pose* space_pose,
                             const struct xrt_space_relation* relative_relation,
                             const struct xrt_pose* base_space_pose,

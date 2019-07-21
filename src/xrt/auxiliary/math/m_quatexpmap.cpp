@@ -131,7 +131,7 @@ quat_ln(Eigen::Quaternion<Scalar> const &quat)
 
 } // namespace
 
-void
+extern "C" void
 math_quat_integrate_velocity(const struct xrt_quat *quat,
                              const struct xrt_vec3 *ang_vel,
                              const float dt,
@@ -149,7 +149,7 @@ math_quat_integrate_velocity(const struct xrt_quat *quat,
 	map_quat(*result) = q * incremental_rotation;
 }
 
-void
+extern "C" void
 math_quat_finite_difference(const struct xrt_quat *quat0,
                             const struct xrt_quat *quat1,
                             const float dt,

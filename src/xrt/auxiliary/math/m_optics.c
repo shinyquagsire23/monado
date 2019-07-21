@@ -119,7 +119,6 @@ math_solve_triangle(double w_total,
 	return true;
 }
 
-
 bool
 math_compute_fovs(double w_total,
                   double w_1,
