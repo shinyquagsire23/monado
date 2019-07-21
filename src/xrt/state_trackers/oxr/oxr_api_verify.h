@@ -130,6 +130,20 @@ extern "C" {
 		}                                                              \
 	} while (false)
 
+#define OXR_VERIFY_POSE(log, p)                                                \
+	do {                                                                   \
+		if (!math_quat_validate((struct xrt_quat*)&p.orientation)) {   \
+			return oxr_error(log, XR_ERROR_POSE_INVALID,           \
+			                 "(" #p                                \
+			                 ".orientation) is not a valid quat"); \
+		}                                                              \
+                                                                               \
+		if (!math_vec3_validate((struct xrt_vec3*)&p.position)) {      \
+			return oxr_error(log, XR_ERROR_POSE_INVALID,           \
+			                 "(" #p ".position) is not valid");    \
+		}                                                              \
+	} while (false)
+
 /*
  *
  * Implementation in oxr_verify.cpp

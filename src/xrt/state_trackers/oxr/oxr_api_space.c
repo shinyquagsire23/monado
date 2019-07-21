@@ -13,6 +13,7 @@
 
 #include "xrt/xrt_compiler.h"
 
+#include "math/m_api.h"
 #include "util/u_debug.h"
 
 #include "oxr_objects.h"
@@ -34,7 +35,7 @@ oxr_xrCreateActionSpace(XrAction action,
 	                               "xrCreateActionSpace");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
 	                             XR_TYPE_ACTION_SPACE_CREATE_INFO);
-
+	OXR_VERIFY_POSE(&log, createInfo->poseInActionSpace);
 
 	struct oxr_space* spc;
 	XrResult ret = oxr_space_action_create(&log, act, createInfo, &spc);
@@ -96,6 +97,7 @@ oxr_xrCreateReferenceSpace(XrSession session,
 	                                "xrCreateReferenceSpace");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
 	                             XR_TYPE_REFERENCE_SPACE_CREATE_INFO);
+	OXR_VERIFY_POSE(&log, createInfo->poseInReferenceSpace);
 
 	ret = oxr_space_reference_create(&log, sess, createInfo, &spc);
 	if (ret != XR_SUCCESS) {
