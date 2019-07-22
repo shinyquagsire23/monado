@@ -44,6 +44,24 @@ enum xrt_distortion_model
 };
 
 /*!
+ * Common formats, use `u_format_*` functions to reason about them.
+ */
+enum xrt_format
+{
+	XRT_FORMAT_R8G8B8X8,
+	XRT_FORMAT_R8G8B8A8,
+	XRT_FORMAT_R8G8B8,
+
+	XRT_FORMAT_BITMAP_8X1, // One bit format tiled in 8x1 blocks.
+	XRT_FORMAT_BITMAP_8X8, // One bit format tiled in 8X8 blocks.
+
+	XRT_FORMAT_YUV888,
+	XRT_FORMAT_YUV422,
+
+	XRT_FORMAT_MJPEG,
+};
+
+/*!
  * A quaternion with single floats.
  *
  * @ingroup xrt_iface math
