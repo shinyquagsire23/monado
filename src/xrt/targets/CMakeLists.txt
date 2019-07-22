@@ -41,6 +41,11 @@ if(BUILD_DRIVER_PSVR)
 	list(APPEND DRIVER_LIBRARIES ${HIDAPI_LIBRARIES})
 endif()
 
+if(BUILD_DRIVER_V4L2)
+	set(XRT_BUILD_V4L2 TRUE)
+	list(APPEND DRIVER_OBJECTS $<TARGET_OBJECTS:drv_v4l2>)
+endif()
+
 configure_file(targets_enabled_drivers.h.cmake_in ${CMAKE_CURRENT_BINARY_DIR}/targets_enabled_drivers.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 

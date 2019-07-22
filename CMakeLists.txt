@@ -44,6 +44,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
 	find_package(udev REQUIRED)
 	set(BUILD_WITH_LIBUDEV TRUE)
+	set(BUILD_DRIVER_V4L2 TRUE)
 endif()
 
 cmake_dependent_option(BUILD_WITH_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND" OFF)

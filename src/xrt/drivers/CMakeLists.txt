@@ -70,3 +70,14 @@ if(BUILD_DRIVER_PSVR)
 		PRIVATE ${HIDAPI_INCLUDE_DIRS}
 		)
 endif()
+
+
+if(BUILD_DRIVER_V4L2)
+	set(V4L2_SOURCE_FILES
+		v4l2/v4l2_driver.c
+		)
+
+	# Use OBJECT to not create a archive, since it just gets in the way.
+	add_library(drv_v4l2 OBJECT ${V4L2_SOURCE_FILES})
+	set_property(TARGET drv_v4l2 PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
