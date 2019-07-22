@@ -24,6 +24,8 @@ set(UTIL_SOURCE_FILES
 	util/u_device.c
 	util/u_device.h
 	util/u_documentation.h
+	util/u_format.c
+	util/u_format.h
 	util/u_hashmap.cpp
 	util/u_hashmap.h
 	util/u_hashset.cpp
