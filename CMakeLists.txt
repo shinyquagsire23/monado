@@ -84,6 +84,9 @@ endif()
 
 if(BUILD_WITH_OPENCV)
 	add_definitions(-DXRT_HAVE_OPENCV)
+
+	# Tracking requires OpenCV
+	set(BUILD_TRACKING TRUE)
 endif()
 
 if(BUILD_WITH_JPEG)

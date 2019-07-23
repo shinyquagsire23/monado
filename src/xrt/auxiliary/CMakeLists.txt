@@ -16,6 +16,16 @@ set(OS_SOURCE_FILES
 	os/os_hid_hidraw.c
 	)
 
+set(TRACKING_SOURCE_FILES
+	tracking/t_calibration.cpp
+	tracking/t_convert.cpp
+	tracking/t_debug_hsv_filter.cpp
+	tracking/t_debug_hsv_picker.cpp
+	tracking/t_debug_hsv_viewer.cpp
+	tracking/t_hsv_filter.c
+	tracking/t_tracking.h
+	)
+
 set(UTIL_SOURCE_FILES
 	util/u_misc.c
 	util/u_misc.h
@@ -60,3 +70,18 @@ set_property(TARGET aux_math PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(aux_math SYSTEM
 	PRIVATE ${EIGEN3_INCLUDE_DIR}
 	)
+
+
+if(BUILD_TRACKING)
+	# Tracking library.
+	# Use OBJECT to not create a archive, since it just gets in the way.
+	add_library(aux_tracking OBJECT ${TRACKING_SOURCE_FILES})
+	set_property(TARGET aux_tracking PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+	# Math files has extra include(s).
+	target_include_directories(aux_tracking SYSTEM
+		PRIVATE
+		${EIGEN3_INCLUDE_DIR}
+		${OpenCV_INCLUDE_DIRS}
+		)
+endif()
