@@ -30,6 +30,8 @@ set(UTIL_SOURCE_FILES
 	util/u_hashmap.h
 	util/u_hashset.cpp
 	util/u_hashset.h
+	util/u_sink.c
+	util/u_sink.h
 	util/u_time.cpp
 	util/u_time.h
 	)
