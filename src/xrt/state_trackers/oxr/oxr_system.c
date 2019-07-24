@@ -183,8 +183,8 @@ oxr_system_get_properties(struct oxr_logger *log,
 	// Needed to silence the warnings.
 	const char *name = sys->head->name;
 
-	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE, "Monado: %*.s",
-	         247, name);
+	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE,
+	         "Monado: %*.s", 247, name);
 
 	/*!
 	 * @todo conforming implementations must support at
