@@ -114,7 +114,7 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 {
 	struct oxr_instance *inst = sess->sys->inst;
 	XrEventDataSessionStateChanged *changed;
-	struct oxr_event *event;
+	struct oxr_event *event = NULL;
 
 	ALLOC(log, inst, &event, &changed);
 

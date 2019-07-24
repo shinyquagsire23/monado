@@ -145,7 +145,7 @@ oxr_path_get_or_create(struct oxr_logger *log,
                        XrPath *out_path)
 {
 	struct u_hashset_item *item;
-	struct oxr_path *path;
+	struct oxr_path *path = NULL;
 	XrResult ret;
 	int h_ret;
 

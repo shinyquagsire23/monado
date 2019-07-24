@@ -601,6 +601,7 @@ oxr_session_create(struct oxr_logger *log,
 		XrResult cleanup_result =
 		    oxr_handle_destroy(log, &sess->handle);
 		assert(cleanup_result == XR_SUCCESS);
+		(void)cleanup_result;
 		return ret;
 	}
 

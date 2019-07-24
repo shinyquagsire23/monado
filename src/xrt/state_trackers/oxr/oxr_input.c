@@ -243,7 +243,7 @@ oxr_source_get_pose_input(struct oxr_logger* log,
                           const struct oxr_sub_paths* sub_paths,
                           struct oxr_source_input** out_input)
 {
-	struct oxr_source* src;
+	struct oxr_source* src = NULL;
 
 	oxr_session_get_source(sess, act_key, &src);
 
