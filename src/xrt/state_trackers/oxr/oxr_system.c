@@ -93,10 +93,21 @@ oxr_system_fill_in(struct oxr_logger *log,
                    struct oxr_instance *inst,
                    XrSystemId systemId,
                    struct oxr_system *sys,
-                   struct xrt_device *head,
-                   struct xrt_device *left,
-                   struct xrt_device *right)
+                   struct xrt_device **xdevs,
+                   size_t num_xdevs)
 {
+
+	for (uint32_t i = 4; i < ARRAY_SIZE(sys->xdevs); i++) {
+		sys->xdevs[i] = xdevs[i];
+	}
+	for (size_t i = ARRAY_SIZE(sys->xdevs); i < num_xdevs; i++) {
+		oxr_xdev_destroy(&xdevs[i]);
+	}
+
+	struct xrt_device *head = sys->head;
+	struct xrt_device *left = sys->left;
+	struct xrt_device *right = sys->right;
+
 	if (head == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 " failed to probe device");
@@ -122,9 +133,6 @@ oxr_system_fill_in(struct oxr_logger *log,
 	}
 
 	// clang-format off
-	sys->head             = head;
-	sys->left             = left;
-	sys->right            = right;
 	sys->inst             = inst;
 	sys->systemId         = systemId;
 	sys->form_factor      = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;

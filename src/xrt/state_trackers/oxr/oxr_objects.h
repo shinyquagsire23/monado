@@ -535,9 +535,8 @@ oxr_system_fill_in(struct oxr_logger *log,
                    struct oxr_instance *inst,
                    XrSystemId systemId,
                    struct oxr_system *sys,
-                   struct xrt_device *head,
-                   struct xrt_device *left,
-                   struct xrt_device *right);
+                   struct xrt_device **xdevs,
+                   size_t num_xdevs);
 
 XrResult
 oxr_system_verify_id(struct oxr_logger *log,
@@ -611,6 +610,9 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
  * oxr_xdev.c
  *
  */
+
+void
+oxr_xdev_destroy(struct xrt_device **xdev_ptr);
 
 void
 oxr_xdev_update(struct xrt_device *xdev, struct time_state *timekeeping);
@@ -765,9 +767,16 @@ struct oxr_system
 {
 	struct oxr_instance *inst;
 
-	struct xrt_device *head;
-	struct xrt_device *left;
-	struct xrt_device *right;
+	union {
+		struct
+		{
+			struct xrt_device *head;
+			struct xrt_device *left;
+			struct xrt_device *right;
+		};
+		struct xrt_device *xdevs[16];
+	};
+	size_t num_xdevs;
 
 	XrSystemId systemId;
 

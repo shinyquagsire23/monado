@@ -664,9 +664,11 @@ oxr_action_sync_data(struct oxr_logger* log,
 	// Synchronize outputs to this time.
 	int64_t now = time_state_get_now(sess->sys->inst->timekeeping);
 
-	oxr_xdev_update(sess->sys->head, sess->sys->inst->timekeeping);
-	oxr_xdev_update(sess->sys->left, sess->sys->inst->timekeeping);
-	oxr_xdev_update(sess->sys->right, sess->sys->inst->timekeeping);
+	// Loop over all xdev devices.
+	for (size_t i = 0; i < sess->sys->num_xdevs; i++) {
+		oxr_xdev_update(sess->sys->xdevs[i],
+		                sess->sys->inst->timekeeping);
+	}
 
 	//! @todo These semantics below are all wrong!
 

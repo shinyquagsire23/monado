@@ -36,19 +36,6 @@ radtodeg_for_display(float radians)
 	return (int32_t)(radians * 180 * M_1_PI);
 }
 
-static inline void
-xdev_destroy(struct xrt_device **xdev_ptr)
-{
-	struct xrt_device *xdev = *xdev_ptr;
-
-	if (xdev == NULL) {
-		return;
-	}
-
-	xdev->destroy(xdev);
-	*xdev_ptr = NULL;
-}
-
 static XrResult
 oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
@@ -62,9 +49,9 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 		u_hashset_destroy(&inst->path_store);
 	}
 
-	xdev_destroy(&inst->system.head);
-	xdev_destroy(&inst->system.left);
-	xdev_destroy(&inst->system.right);
+	for (size_t i = 0; i < inst->system.num_xdevs; i++) {
+		oxr_xdev_destroy(&inst->system.xdevs[i]);
+	}
 
 	xrt_prober_destroy(&inst->prober);
 
@@ -85,13 +72,15 @@ cache_path(struct oxr_logger *log,
 	oxr_path_get_or_create(log, inst, str, strlen(str), out_path);
 }
 
+#define NUM_XDEVS 16
+
 XrResult
 oxr_instance_create(struct oxr_logger *log,
                     const XrInstanceCreateInfo *createInfo,
                     struct oxr_instance **out_instance)
 {
 	struct oxr_instance *inst = NULL;
-	struct xrt_device *xdevs[3] = {0};
+	struct xrt_device *xdevs[NUM_XDEVS] = {0};
 	int h_ret, p_ret;
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
@@ -125,7 +114,7 @@ oxr_instance_create(struct oxr_logger *log,
 		                 "Failed to probe device(s)");
 	}
 
-	p_ret = xrt_prober_select(inst->prober, xdevs, 3);
+	p_ret = xrt_prober_select(inst->prober, xdevs, NUM_XDEVS);
 	if (p_ret != 0) {
 		xrt_prober_destroy(&inst->prober);
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
@@ -173,8 +162,7 @@ oxr_instance_create(struct oxr_logger *log,
 		dev->hmd->views[1].fov.angle_down = down_override;
 	}
 
-	oxr_system_fill_in(log, inst, 1, &inst->system, xdevs[0], xdevs[1],
-	                   xdevs[2]);
+	oxr_system_fill_in(log, inst, 1, &inst->system, xdevs, NUM_XDEVS);
 
 	inst->timekeeping = time_state_create();
 
