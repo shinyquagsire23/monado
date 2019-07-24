@@ -59,10 +59,29 @@
 		fprintf(stderr, "\n");                                         \
 	} while (false)
 
+#define V_CONTROL_GET(VID, CONTROL)                                            \
+	do {                                                                   \
+		int _value = 0;                                                \
+		if (v4l2_control_get(VID, V4L2_CID_##CONTROL, &_value) != 0) { \
+			V_ERROR(VID, "failed to get V4L2_CID_" #CONTROL);      \
+		} else {                                                       \
+			V_DEBUG(VID, "V4L2_CID_" #CONTROL " = %i", _value);    \
+		}                                                              \
+	} while (false);
+
+#define V_CONTROL_SET(VID, CONTROL, VALUE)                                     \
+	do {                                                                   \
+		if (v4l2_control_set(VID, V4L2_CID_##CONTROL, VALUE) != 0) {   \
+			V_ERROR(VID, "failed to set V4L2_CID_" #CONTROL);      \
+		}                                                              \
+	} while (false);
+
+DEBUG_GET_ONCE_BOOL_OPTION(v4l2_options, "V4L2_PRINT_OPTIONS", false)
 DEBUG_GET_ONCE_BOOL_OPTION(v4l2_spew, "V4L2_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(v4l2_debug, "V4L2_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_NUM_OPTION(v4l2_exposure_absolute, "V4L2_EXPOSURE_ABSOLUTE", 15)
 
-#define NUM_V4L2_BUFFERS 4
+#define NUM_V4L2_BUFFERS 8
 
 
 /*
@@ -89,6 +108,10 @@ struct v4l2_fs
 	struct
 	{
 		bool ps4_cam;
+		bool set_auto_exposure;
+		bool set_exposure_absolute;
+		int value_exposure_absolute;
+		int value_auto_exposure;
 	} quirks;
 
 	struct
@@ -129,6 +152,9 @@ v4l2_fs(struct xrt_fs *xfs)
 	return (struct v4l2_fs *)xfs;
 }
 
+static void
+dump_controls(struct v4l2_fs *vid);
+
 
 /*
  *
@@ -136,11 +162,42 @@ v4l2_fs(struct xrt_fs *xfs)
  *
  */
 
+XRT_MAYBE_UNUSED static int
+v4l2_control_get(struct v4l2_fs *vid, uint32_t id, int *out_value)
+{
+	struct v4l2_control control = {0};
+	int ret;
+
+	control.id = id;
+	ret = ioctl(vid->fd, VIDIOC_G_CTRL, &control);
+	if (ret != 0) {
+		return ret;
+	}
+
+	*out_value = control.value;
+	return 0;
+}
+
+static int
+v4l2_control_set(struct v4l2_fs *vid, uint32_t id, int value)
+{
+	struct v4l2_control control = {0};
+	int ret;
+
+	control.id = id;
+	control.value = value;
+	ret = ioctl(vid->fd, VIDIOC_S_CTRL, &control);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return 0;
+}
+
 static int
 v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 {
 	int ret;
-
 
 	/*
 	 * Regular caps.
@@ -186,6 +243,11 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 		V_DEBUG(vid, "warning: No V4L2_CAP_TIMEPERFRAME");
 	}
 
+	// Dump controls.
+	if (debug_get_bool_option_v4l2_options()) {
+		dump_controls(vid);
+	}
+
 	/*
 	 * Find quirks
 	 */
@@ -193,6 +255,15 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 
 	vid->quirks.ps4_cam =
 	    strcmp(card, "USB Camera-OV580: USB Camera-OV") == 0;
+
+	if (vid->quirks.ps4_cam) {
+		// The experimented best controls to best track things.
+		vid->quirks.set_auto_exposure = true;
+		vid->quirks.value_auto_exposure = 2;
+		vid->quirks.set_exposure_absolute = true;
+		vid->quirks.value_exposure_absolute =
+		    debug_get_num_option_v4l2_exposure_absolute();
+	}
 
 	// Done
 	return 0;
@@ -671,6 +742,18 @@ v4l2_fs_stream_run(void *ptr)
 		return NULL;
 	}
 
+	/*
+	 * Need to set these after we have started the stream.
+	 */
+	if (vid->quirks.set_auto_exposure) {
+		V_CONTROL_SET(vid, EXPOSURE_AUTO,
+		              vid->quirks.value_auto_exposure);
+	}
+	if (vid->quirks.set_exposure_absolute) {
+		V_CONTROL_SET(vid, EXPOSURE_ABSOLUTE,
+		              vid->quirks.value_exposure_absolute);
+	}
+
 	struct xrt_fs_frame f = {0};
 
 	while (vid->is_running) {
@@ -707,4 +790,154 @@ v4l2_fs_stream_run(void *ptr)
 	V_DEBUG(vid, "info: Thread leave!");
 
 	return NULL;
+}
+
+
+/*
+ *
+ * Helper debug functions.
+ *
+ */
+
+static void
+dump_menu(struct v4l2_fs *vid, uint32_t id, uint32_t min, uint32_t max)
+{
+	fprintf(stderr, "  Menu items:\n");
+
+	struct v4l2_querymenu querymenu = {0};
+	querymenu.id = id;
+
+	for (querymenu.index = min; querymenu.index <= max; querymenu.index++) {
+		if (0 != ioctl(vid->fd, VIDIOC_QUERYMENU, &querymenu)) {
+			fprintf(stderr, "  %i\n", querymenu.index);
+			continue;
+		}
+		fprintf(stderr, "  %i: %s\n", querymenu.index, querymenu.name);
+	}
+}
+
+static void
+dump_contron_name(uint32_t id)
+{
+	const char *str = "ERROR";
+	switch (id) {
+#define CASE(CONTROL)                                                          \
+	case V4L2_CID_##CONTROL: str = "V4L2_CID_" #CONTROL; break
+		CASE(BRIGHTNESS);
+		CASE(CONTRAST);
+		CASE(SATURATION);
+		CASE(HUE);
+		CASE(AUDIO_VOLUME);
+		CASE(AUDIO_BALANCE);
+		CASE(AUDIO_BASS);
+		CASE(AUDIO_TREBLE);
+		CASE(AUDIO_MUTE);
+		CASE(AUDIO_LOUDNESS);
+		CASE(BLACK_LEVEL);
+		CASE(AUTO_WHITE_BALANCE);
+		CASE(DO_WHITE_BALANCE);
+		CASE(RED_BALANCE);
+		CASE(BLUE_BALANCE);
+		CASE(GAMMA);
+
+		CASE(EXPOSURE);
+		CASE(AUTOGAIN);
+		CASE(GAIN);
+		CASE(DIGITAL_GAIN);
+		CASE(ANALOGUE_GAIN);
+		CASE(HFLIP);
+		CASE(VFLIP);
+		CASE(POWER_LINE_FREQUENCY);
+		CASE(POWER_LINE_FREQUENCY_DISABLED);
+		CASE(POWER_LINE_FREQUENCY_50HZ);
+		CASE(POWER_LINE_FREQUENCY_60HZ);
+		CASE(POWER_LINE_FREQUENCY_AUTO);
+		CASE(HUE_AUTO);
+		CASE(WHITE_BALANCE_TEMPERATURE);
+		CASE(SHARPNESS);
+		CASE(BACKLIGHT_COMPENSATION);
+		CASE(CHROMA_AGC);
+		CASE(CHROMA_GAIN);
+		CASE(COLOR_KILLER);
+		CASE(COLORFX);
+		CASE(COLORFX_CBCR);
+		CASE(AUTOBRIGHTNESS);
+		CASE(ROTATE);
+		CASE(BG_COLOR);
+		CASE(ILLUMINATORS_1);
+		CASE(ILLUMINATORS_2);
+		CASE(MIN_BUFFERS_FOR_CAPTURE);
+		CASE(MIN_BUFFERS_FOR_OUTPUT);
+		CASE(ALPHA_COMPONENT);
+
+		// Camera controls
+		CASE(EXPOSURE_AUTO);
+		CASE(EXPOSURE_ABSOLUTE);
+		CASE(EXPOSURE_AUTO_PRIORITY);
+		CASE(AUTO_EXPOSURE_BIAS);
+		CASE(PAN_RELATIVE);
+		CASE(TILT_RELATIVE);
+		CASE(PAN_RESET);
+		CASE(TILT_RESET);
+		CASE(PAN_ABSOLUTE);
+		CASE(TILT_ABSOLUTE);
+		CASE(FOCUS_ABSOLUTE);
+		CASE(FOCUS_RELATIVE);
+		CASE(FOCUS_AUTO);
+		CASE(ZOOM_ABSOLUTE);
+		CASE(ZOOM_RELATIVE);
+		CASE(ZOOM_CONTINUOUS);
+		CASE(PRIVACY);
+		CASE(IRIS_ABSOLUTE);
+		CASE(IRIS_RELATIVE);
+#undef CASE
+	default: fprintf(stderr, "0x%08x", id); return;
+	}
+	fprintf(stderr, "%s", str);
+}
+
+static void
+dump_controls(struct v4l2_fs *vid)
+{
+	struct v4l2_queryctrl queryctrl = {0};
+
+	queryctrl.id = V4L2_CTRL_FLAG_NEXT_CTRL;
+	while (0 == ioctl(vid->fd, VIDIOC_QUERYCTRL, &queryctrl)) {
+		fprintf(stderr, "Control ");
+		dump_contron_name(queryctrl.id);
+		fprintf(stderr, " '%s'", queryctrl.name);
+
+#define V_CHECK(FLAG)                                                          \
+	do {                                                                   \
+		if (queryctrl.flags & V4L2_CTRL_FLAG_##FLAG) {                 \
+			fprintf(stderr, ", " #FLAG);                           \
+		}                                                              \
+	} while (false)
+
+		V_CHECK(DISABLED);
+		V_CHECK(GRABBED);
+		V_CHECK(READ_ONLY);
+		V_CHECK(UPDATE);
+		V_CHECK(INACTIVE);
+		V_CHECK(SLIDER);
+		V_CHECK(WRITE_ONLY);
+		V_CHECK(VOLATILE);
+		V_CHECK(HAS_PAYLOAD);
+		V_CHECK(EXECUTE_ON_WRITE);
+		V_CHECK(MODIFY_LAYOUT);
+#undef V_CHECK
+
+		fprintf(stderr, "\n");
+
+		if (queryctrl.flags & V4L2_CTRL_FLAG_DISABLED) {
+			continue;
+		}
+
+		if (queryctrl.type == V4L2_CTRL_TYPE_MENU) {
+			dump_menu(vid, queryctrl.id, queryctrl.minimum,
+			          queryctrl.maximum);
+		}
+
+		queryctrl.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
+	}
 }
