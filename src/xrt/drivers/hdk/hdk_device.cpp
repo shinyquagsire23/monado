@@ -289,7 +289,11 @@ hdk_device_create(hid_device *dev,
 	double vCOP = 0.5;
 
 	switch (variant) {
-	case HDK_UNKNOWN: assert(!"unknown device"); break;
+	default:
+	case HDK_UNKNOWN:
+		HDK_ERROR(hd, "Don't know which HDK variant this is.");
+		hdk_device_destroy(&hd->base);
+		return NULL;
 
 	case HDK_VARIANT_1_2:
 		// Distortion optional - this is for no distortion.
