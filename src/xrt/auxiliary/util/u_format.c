@@ -24,9 +24,7 @@ u_format_str(enum xrt_format f)
 	case XRT_FORMAT_YUV888: return "XRT_FORMAT_YUV888";
 	case XRT_FORMAT_YUV422: return "XRT_FORMAT_YUV422";
 	case XRT_FORMAT_MJPEG: return "XRT_FORMAT_MJPEG";
-	default:
-		assert(!"unsupported format");
-		return 0;
+	default: assert(!"unsupported format"); return 0;
 	}
 }
 
@@ -46,9 +44,7 @@ u_format_is_blocks(enum xrt_format f)
 	case XRT_FORMAT_MJPEG:
 		// Compressed
 		return false;
-	default:
-		assert(!"unsupported format");
-		return 0;
+	default: assert(!"unsupported format"); return 0;
 	}
 }
 
@@ -69,9 +65,7 @@ u_format_block_width(enum xrt_format f)
 	case XRT_FORMAT_BITMAP_8X1:
 		// Eight pixels per block.
 		return 8;
-	default:
-		assert(!"unsupported format");
-		return 0;
+	default: assert(!"unsupported format"); return 0;
 	}
 }
 
@@ -90,9 +84,7 @@ u_format_block_height(enum xrt_format f)
 	case XRT_FORMAT_BITMAP_8X8:
 		// Eight pixels high.
 		return 8;
-	default:
-		assert(!"unsupported format");
-		return 0;
+	default: assert(!"unsupported format"); return 0;
 	}
 }
 
@@ -113,9 +105,7 @@ u_format_block_size(enum xrt_format f)
 		return 4;
 	case XRT_FORMAT_BITMAP_8X8: // 64 bits.
 		return 8;
-	default:
-		assert(!"unsupported format");
-		return 0;
+	default: assert(!"unsupported format"); return 0;
 	}
 }
 
