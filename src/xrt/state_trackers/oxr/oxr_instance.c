@@ -211,7 +211,7 @@ oxr_instance_get_properties(struct oxr_logger *log,
                             struct oxr_instance *inst,
                             XrInstanceProperties *instanceProperties)
 {
-	instanceProperties->runtimeVersion = XR_MAKE_VERSION(0, 0, 42);
+	instanceProperties->runtimeVersion = XR_MAKE_VERSION(0, 1, 42);
 	strncpy(instanceProperties->runtimeName,
 	        "Monado(XRT) by Collabora et al", XR_MAX_RUNTIME_NAME_SIZE - 1);
 
