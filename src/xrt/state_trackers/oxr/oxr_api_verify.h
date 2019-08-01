@@ -91,6 +91,14 @@ extern "C" {
 		}                                                              \
 	} while (false)
 
+#define OXR_VERIFY_ARG_NOT_ZERO(log, arg)                                      \
+	do {                                                                   \
+		if (arg == 0) {                                                \
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
+			                 "(" #arg " == 0) must be non-zero");  \
+		}                                                              \
+	} while (false)
+
 #define OXR_VERIFY_ARG_TYPE_AND_NULL(log, arg, type_enum)                      \
 	do {                                                                   \
 		if (arg == NULL) {                                             \
