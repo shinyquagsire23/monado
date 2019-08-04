@@ -51,6 +51,10 @@ enum xrt_format
 	XRT_FORMAT_R8G8B8X8,
 	XRT_FORMAT_R8G8B8A8,
 	XRT_FORMAT_R8G8B8,
+	XRT_FORMAT_R8G8,
+	XRT_FORMAT_R8,
+
+	XRT_FORMAT_L8, // Luminence, R = L, G = L, B = L.
 
 	XRT_FORMAT_BITMAP_8X1, // One bit format tiled in 8x1 blocks.
 	XRT_FORMAT_BITMAP_8X8, // One bit format tiled in 8X8 blocks.
