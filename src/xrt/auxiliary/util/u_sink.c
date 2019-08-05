@@ -36,7 +36,6 @@ struct u_sink_converter
 	size_t stride;
 	uint32_t width;
 	uint32_t height;
-
 	enum xrt_format format;
 };
 
@@ -199,6 +198,39 @@ from_MJPEG_to_R8G8B8(struct u_sink_converter *s,
 	jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
 }
+
+static void
+from_MJPEG_to_YUV888(struct u_sink_converter *s,
+                     size_t size,
+                     const uint8_t *data)
+{
+
+	struct jpeg_decompress_struct cinfo = {0};
+	struct jpeg_error_mgr jerr = {0};
+
+	cinfo.err = jpeg_std_error(&jerr);
+	jerr.trace_level = 0;
+
+	jpeg_create_decompress(&cinfo);
+
+	jpeg_mem_src(&cinfo, data, size);
+	jpeg_read_header(&cinfo, TRUE);
+
+	cinfo.out_color_space = JCS_YCbCr;
+	jpeg_start_decompress(&cinfo);
+
+	uint8_t *moving_ptr = s->data;
+
+	uint32_t scanlines_read = 0;
+	while (scanlines_read < cinfo.image_height) {
+		int read_count = jpeg_read_scanlines(&cinfo, &moving_ptr, 16);
+		moving_ptr += read_count * s->stride;
+		scanlines_read += read_count;
+	}
+
+	jpeg_finish_decompress(&cinfo);
+	jpeg_destroy_decompress(&cinfo);
+}
 #endif
 
 
@@ -209,7 +241,10 @@ from_MJPEG_to_R8G8B8(struct u_sink_converter *s,
  */
 
 static void
-ensure_data(struct u_sink_converter *s, uint32_t w, uint32_t h)
+ensure_data(struct u_sink_converter *s,
+            enum xrt_format format,
+            uint32_t w,
+            uint32_t h)
 {
 	if (s->data != NULL && s->width == w && s->height == h) {
 		return;
@@ -217,6 +252,7 @@ ensure_data(struct u_sink_converter *s, uint32_t w, uint32_t h)
 
 	s->width = w;
 	s->height = h;
+	s->format = format;
 	u_format_size_for_dimensions(s->format, s->width, s->height, &s->stride,
 	                             &s->size);
 
@@ -224,31 +260,8 @@ ensure_data(struct u_sink_converter *s, uint32_t w, uint32_t h)
 }
 
 static void
-push_frame(struct xrt_frame_sink *xs, struct xrt_frame *xf)
+push_data_downstream(struct u_sink_converter *s, struct xrt_frame *xf)
 {
-	struct u_sink_converter *s = (struct u_sink_converter *)xs;
-	s->size = 0;
-
-	if (xf->format == s->format) {
-		s->downstream->push_frame(s->downstream, xf);
-	}
-
-	ensure_data(s, xf->width, xf->height);
-
-	switch (xf->format) {
-	case XRT_FORMAT_YUV422:
-		from_YUV422_to_R8G8B8(s, xf->stride, xf->data);
-		break;
-#ifdef XRT_HAVE_JPEG
-	case XRT_FORMAT_MJPEG:
-		from_MJPEG_to_R8G8B8(s, xf->size, xf->data);
-		break;
-#endif
-	default:
-		fprintf(stderr, "error: Can not convert from '%s'\n",
-		        u_format_str(xf->format));
-	}
-
 	struct xrt_frame nf = {0};
 	nf.width = s->width;
 	nf.height = s->height;
@@ -264,6 +277,62 @@ push_frame(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 	nf.source_id = xf->source_id;
 
 	s->downstream->push_frame(s->downstream, &nf);
+}
+
+static void
+receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
+{
+	struct u_sink_converter *s = (struct u_sink_converter *)xs;
+
+	switch (xf->format) {
+	case XRT_FORMAT_R8G8B8:
+		s->downstream->push_frame(s->downstream, xf);
+		return;
+	case XRT_FORMAT_YUV422:
+		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
+		from_YUV422_to_R8G8B8(s, xf->stride, xf->data);
+		break;
+#ifdef XRT_HAVE_JPEG
+	case XRT_FORMAT_MJPEG:
+		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
+		from_MJPEG_to_R8G8B8(s, xf->size, xf->data);
+		break;
+#endif
+	default:
+		fprintf(stderr, "error: Can not convert from '%s'\n",
+		        u_format_str(xf->format));
+		return;
+	}
+
+	push_data_downstream(s, xf);
+}
+
+static void
+receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
+{
+	struct u_sink_converter *s = (struct u_sink_converter *)xs;
+
+
+	switch (xf->format) {
+	case XRT_FORMAT_YUV422:
+	case XRT_FORMAT_YUV888:
+		s->downstream->push_frame(s->downstream, xf);
+		return;
+#ifdef XRT_HAVE_JPEG
+	case XRT_FORMAT_MJPEG:
+		ensure_data(s, XRT_FORMAT_YUV888, xf->width, xf->height);
+		from_MJPEG_to_YUV888(s, xf->size, xf->data);
+		break;
+#endif
+	default:
+		fprintf(
+		    stderr,
+		    "error: Can not convert from '%s' to either YUV or YUYV\n",
+		    u_format_str(xf->format));
+		return;
+	}
+
+	push_data_downstream(s, xf);
 }
 
 
@@ -289,8 +358,19 @@ u_sink_create_format_converter(enum xrt_format f,
 #endif
 
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
-	s->base.push_frame = push_frame;
+	s->base.push_frame = receive_frame_r8g8b8;
 	s->downstream = downstream;
-	s->format = f;
+
+	*out_xfs = &s->base;
+}
+
+void
+u_sink_create_to_yuv_or_yuyv(struct xrt_frame_sink *downstream,
+                             struct xrt_frame_sink **out_xfs)
+{
+	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
+	s->base.push_frame = receive_frame_yuv_or_yuyv;
+	s->downstream = downstream;
+
 	*out_xfs = &s->base;
 }

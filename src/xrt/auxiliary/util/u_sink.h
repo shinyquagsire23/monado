@@ -21,6 +21,10 @@ u_sink_create_format_converter(enum xrt_format f,
                                struct xrt_frame_sink *downstream,
                                struct xrt_frame_sink **out_xfs);
 
+void
+u_sink_create_to_yuv_or_yuyv(struct xrt_frame_sink *downstream,
+                             struct xrt_frame_sink **out_xfs);
+
 
 #ifdef __cplusplus
 }
