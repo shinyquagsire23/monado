@@ -197,7 +197,7 @@ comp_window_direct_destroy(struct comp_window* w)
 		w_direct->connection = nullptr;
 	}
 
-	delete w;
+	delete reinterpret_cast<struct comp_window_direct*>(w);
 }
 
 static void
