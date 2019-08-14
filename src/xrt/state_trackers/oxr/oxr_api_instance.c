@@ -24,6 +24,8 @@
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
 
+#include "openxr_includes/openxr.h"
+
 
 static const XrExtensionProperties extension_properties[] = {
 #ifdef XR_USE_GRAPHICS_API_OPENGL

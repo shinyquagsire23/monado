@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <openxr/openxr.h>
+#include <openxr_includes/openxr.h>
 
 #ifdef __cplusplus
 extern "C" {
