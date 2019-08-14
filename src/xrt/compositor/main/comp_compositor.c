@@ -20,6 +20,7 @@
 #include "main/comp_compositor.h"
 #include "main/comp_client_interface.h"
 
+#include <unistd.h>
 
 static void
 compositor_destroy(struct xrt_compositor *xc)
@@ -118,6 +119,20 @@ compositor_end_frame(struct xrt_compositor *xc,
 
 	struct comp_swapchain_image *right;
 	struct comp_swapchain_image *left;
+
+	//! HACK: Wait until the frame is predicted to be displayed.
+	// This needs improvement, but blocks for plausible timings.
+	uint64_t now = time_state_get_now(c->timekeeping);
+	uint64_t already_used = now - c->last_frame_time_ns;
+	if (already_used < c->settings.nominal_frame_interval_ns) {
+		uint64_t remaining_usec =
+		    (c->settings.nominal_frame_interval_ns - already_used) /
+		    1000;
+		remaining_usec -= 500; // HACK: leave a bit of time for overhead
+		// printf("Remaining usec before this frame is displayed :
+		// %lu\n", remaining_usec);
+		usleep(remaining_usec);
+	}
 
 	// Stereo!
 	if (num_swapchains == 2) {
