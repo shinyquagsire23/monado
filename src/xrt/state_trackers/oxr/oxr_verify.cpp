@@ -459,6 +459,11 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 		                 "(createInfo->type)");
 	}
 
+	if (createInfo->createFlags != 0) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 " Non-zero session create flags");
+	}
+
 	XrResult result = oxr_system_verify_id(log, inst, createInfo->systemId);
 	if (result != XR_SUCCESS) {
 		return result;
