@@ -141,7 +141,7 @@ struct xrt_prober
 };
 
 /*!
- * Helper functionfor @ref xrt_prober::probe.
+ * Helper function for @ref xrt_prober::probe.
  *
  * @ingroup xrt_iface
  */
@@ -152,7 +152,7 @@ xrt_prober_probe(struct xrt_prober *xp)
 }
 
 /*!
- * Helper functionfor @ref xrt_prober::dump.
+ * Helper function for @ref xrt_prober::dump.
  *
  * @ingroup xrt_iface
  */
@@ -163,7 +163,7 @@ xrt_prober_dump(struct xrt_prober *xp)
 }
 
 /*!
- * Helper functionfor @ref xrt_prober::select.
+ * Helper function for @ref xrt_prober::select.
  *
  * @ingroup xrt_iface
  */
@@ -176,7 +176,7 @@ xrt_prober_select(struct xrt_prober *xp,
 }
 
 /*!
- * Helper functionfor @ref xrt_prober::open_hid_interface.
+ * Helper function for @ref xrt_prober::open_hid_interface.
  *
  * @ingroup xrt_iface
  */
@@ -190,7 +190,7 @@ xrt_prober_open_hid_interface(struct xrt_prober *xp,
 }
 
 /*!
- * Helper functionfor @ref xrt_prober::list_video_devices.
+ * Helper function for @ref xrt_prober::list_video_devices.
  *
  * @ingroup xrt_iface
  */
@@ -203,7 +203,7 @@ xrt_prober_list_video_devices(struct xrt_prober *xp,
 }
 
 /*!
- * Helper functionfor @ref xrt_prober::destroy.
+ * Helper function for @ref xrt_prober::destroy.
  *
  * @ingroup xrt_iface
  */
