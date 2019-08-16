@@ -12,7 +12,8 @@ set(RUNTIME_SUFFIX _${RUNTIME_BARE_SUFFIX})
 
 set(RUNTIME_TARGET ${RUNTIME_PREFIX}openxr${RUNTIME_SUFFIX} CACHE INTERNAL "" FORCE)
 
-set(XR_API_MAJOR "0")
+# OpenXR 1.0
+set(XR_API_MAJOR "1")
 
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/../../targets/common
