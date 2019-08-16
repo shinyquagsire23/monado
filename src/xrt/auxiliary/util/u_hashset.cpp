@@ -60,9 +60,8 @@ u_hashset_find_str(struct u_hashset *hs,
 	if (search != hs->map.end()) {
 		*out_item = search->second;
 		return 0;
-	} else {
-		return -1;
 	}
+	return -1;
 }
 
 extern "C" int

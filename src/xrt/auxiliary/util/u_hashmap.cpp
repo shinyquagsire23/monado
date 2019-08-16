@@ -55,9 +55,8 @@ u_hashmap_int_find(struct u_hashmap_int *hmi, uint64_t key, void **out_item)
 	if (search != hmi->map.end()) {
 		*out_item = search->second;
 		return 0;
-	} else {
-		return -1;
 	}
+	return -1;
 }
 
 extern "C" int

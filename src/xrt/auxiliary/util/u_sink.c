@@ -52,11 +52,11 @@ clamp_to_byte(int v)
 {
 	if (v < 0) {
 		return 0;
-	} else if (v >= 255) {
-		return 255;
-	} else {
-		return v;
 	}
+	if (v >= 255) {
+		return 255;
+	}
+	return v;
 }
 
 static inline uint32_t
@@ -73,7 +73,7 @@ YUV444_to_RGBX8888(int y, int u, int v)
 	return B << 16 | G << 8 | R;
 }
 
-static uint32_t lookup_YUV_to_RGBX[256][256][256] = {0};
+static uint32_t lookup_YUV_to_RGBX[256][256][256] = {{0}};
 
 static void
 generate_lookup_YUV_to_RGBX()

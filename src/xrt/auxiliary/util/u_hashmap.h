@@ -30,16 +30,16 @@ int
 u_hashmap_int_create(struct u_hashmap_int **out_hashmap);
 
 int
-u_hashmap_int_destroy(struct u_hashmap_int **hs);
+u_hashmap_int_destroy(struct u_hashmap_int **hmi);
 
 int
-u_hashmap_int_find(struct u_hashmap_int *hs, uint64_t key, void **out_item);
+u_hashmap_int_find(struct u_hashmap_int *hmi, uint64_t key, void **out_item);
 
 int
-u_hashmap_int_insert(struct u_hashmap_int *hs, uint64_t key, void *value);
+u_hashmap_int_insert(struct u_hashmap_int *hmi, uint64_t key, void *value);
 
 int
-u_hashmap_int_erase(struct u_hashmap_int *hs, uint64_t key);
+u_hashmap_int_erase(struct u_hashmap_int *hmi, uint64_t key);
 
 /*!
  * First clear the hashmap and then call the given callback with each item that
@@ -48,7 +48,7 @@ u_hashmap_int_erase(struct u_hashmap_int *hs, uint64_t key);
  * @ingroup aux_util
  */
 void
-u_hashmap_int_clear_and_call_for_each(struct u_hashmap_int *hs,
+u_hashmap_int_clear_and_call_for_each(struct u_hashmap_int *hmi,
                                       u_hashmap_int_callback cb,
                                       void *priv);
 
