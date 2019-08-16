@@ -145,6 +145,8 @@ vk_swapchain_create(struct vk_swapchain *sc,
 
 	VkSwapchainCreateInfoKHR swap_chain_info = {
 	    .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+	    .pNext = NULL,
+	    .flags = 0,
 	    .surface = sc->surface,
 	    .minImageCount = surface_caps.minImageCount,
 	    .imageFormat = sc->surface_format.format,
@@ -158,6 +160,7 @@ vk_swapchain_create(struct vk_swapchain *sc,
 	    .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 	    .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	    .queueFamilyIndexCount = 0,
+	    .pQueueFamilyIndices = NULL,
 	    .preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
 	    .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 	    .presentMode = sc->present_mode,
@@ -240,11 +243,13 @@ vk_swapchain_present(struct vk_swapchain *sc,
 {
 	VkPresentInfoKHR presentInfo = {
 	    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+	    .pNext = NULL,
 	    .waitSemaphoreCount = 1,
 	    .pWaitSemaphores = &semaphore,
 	    .swapchainCount = 1,
 	    .pSwapchains = &sc->swap_chain,
 	    .pImageIndices = &index,
+	    .pResults = NULL,
 	};
 
 	return sc->vk->vkQueuePresentKHR(queue, &presentInfo);
@@ -459,6 +464,8 @@ vk_swapchain_create_image_view(struct vk_bundle *vk,
 
 	VkImageViewCreateInfo view_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+	    .pNext = NULL,
+	    .flags = 0,
 	    .image = image,
 	    .viewType = VK_IMAGE_VIEW_TYPE_2D,
 	    .format = format,

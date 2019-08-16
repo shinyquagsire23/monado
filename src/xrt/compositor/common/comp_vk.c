@@ -254,6 +254,7 @@ vk_create_image_from_fd(struct vk_bundle *vk,
 
 	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
+	    .pNext = 0,
 	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	};
 
@@ -264,6 +265,7 @@ vk_create_image_from_fd(struct vk_bundle *vk,
 	VkImageCreateInfo info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .pNext = &external_memory_image_create_info,
+	    .flags = 0,
 	    .imageType = VK_IMAGE_TYPE_2D,
 	    .format = (VkFormat)format,
 	    .extent = {.width = width, .height = height, .depth = 1},
@@ -273,6 +275,8 @@ vk_create_image_from_fd(struct vk_bundle *vk,
 	    .tiling = VK_IMAGE_TILING_OPTIMAL,
 	    .usage = image_usage,
 	    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+	    .queueFamilyIndexCount = 0,
+	    .pQueueFamilyIndices = NULL,
 	    .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 
@@ -440,6 +444,7 @@ vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
 	// Allocate the command buffer.
 	VkCommandBufferAllocateInfo cmd_buffer_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+	    .pNext = NULL,
 	    .commandPool = vk->cmd_pool,
 	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 	    .commandBufferCount = 1,
@@ -456,6 +461,9 @@ vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
 	// Start the command buffer as well.
 	VkCommandBufferBeginInfo begin_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+	    .pNext = NULL,
+	    .flags = 0,
+	    .pInheritanceInfo = NULL,
 	};
 	ret = vk->vkBeginCommandBuffer(cmd_buffer, &begin_info);
 	if (ret != VK_SUCCESS) {
@@ -487,6 +495,7 @@ vk_set_image_layout(struct vk_bundle *vk,
 {
 	VkImageMemoryBarrier barrier = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+	    .pNext = 0,
 	    .srcAccessMask = src_access_mask,
 	    .dstAccessMask = dst_access_mask,
 	    .oldLayout = old_layout,
@@ -524,6 +533,8 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 	// Create the fence.
 	VkFenceCreateInfo fence_info = {
 	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+	    .pNext = NULL,
+	    .flags = 0,
 	};
 	ret = vk->vkCreateFence(vk->device, &fence_info, NULL, &fence);
 	if (ret != VK_SUCCESS) {
@@ -534,8 +545,14 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 	// Do the actual submitting.
 	VkSubmitInfo submitInfo = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+	    .pNext = NULL,
+	    .waitSemaphoreCount = 0,
+	    .pWaitSemaphores = NULL,
+	    .pWaitDstStageMask = NULL,
 	    .commandBufferCount = 1,
 	    .pCommandBuffers = &cmd_buffer,
+	    .signalSemaphoreCount = 0,
+	    .pSignalSemaphores = NULL,
 	};
 
 	ret = vk->vkQueueSubmit(queue, 1, &submitInfo, fence);
@@ -566,6 +583,7 @@ vk_init_cmd_pool(struct vk_bundle *vk)
 {
 	VkCommandPoolCreateInfo cmd_pool_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+	    .pNext = NULL,
 	    .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
 	    .queueFamilyIndex = vk->queue_family_index,
 	};
@@ -636,8 +654,10 @@ vk_init_validation_callback(struct vk_bundle *vk)
 
 	VkDebugReportCallbackCreateInfoEXT info = {
 	    .sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT,
+	    .pNext = NULL,
 	    .flags = flags,
 	    .pfnCallback = _validation_cb,
+	    .pUserData = NULL,
 	};
 
 	vk->vkCreateDebugReportCallbackEXT(vk->instance, &info, NULL,
@@ -923,10 +943,14 @@ vk_create_device(struct vk_bundle *vk)
 	float queue_priority = 0.0f;
 	VkDeviceQueueCreateInfo queue_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+	    .pNext = NULL,
+	    .flags = 0,
+	    .queueFamilyIndex = 0, // assigned valid value later
 	    .queueCount = 1,
 	    .pQueuePriorities = &queue_priority,
 	};
 
+	//! @todo why not vk->queue_family_index ?
 	ret = vk_find_graphics_queue(vk, &queue_create_info.queueFamilyIndex);
 	if (ret != VK_SUCCESS) {
 		return ret;
@@ -947,8 +971,12 @@ vk_create_device(struct vk_bundle *vk)
 
 	VkDeviceCreateInfo device_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+	    .pNext = NULL,
+	    .flags = 0,
 	    .queueCreateInfoCount = 1,
 	    .pQueueCreateInfos = &queue_create_info,
+	    .enabledLayerCount = 0,
+	    .ppEnabledLayerNames = NULL,
 	    .enabledExtensionCount = ARRAY_SIZE(device_extensions),
 	    .ppEnabledExtensionNames = device_extensions,
 	    .pEnabledFeatures = enabled_features,

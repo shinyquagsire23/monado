@@ -255,8 +255,11 @@ create_instance(struct comp_compositor *c)
 
 	VkApplicationInfo app_info = {
 	    .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+	    .pNext = NULL,
 	    .pApplicationName = "Collabora Compositor",
+	    .applicationVersion = 0,
 	    .pEngineName = "Monado",
+	    .engineVersion = 0,
 	    .apiVersion = VK_MAKE_VERSION(1, 0, 2),
 	};
 
@@ -270,7 +273,11 @@ create_instance(struct comp_compositor *c)
 
 	VkInstanceCreateInfo instance_info = {
 	    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+	    .pNext = NULL,
+	    .flags = 0,
 	    .pApplicationInfo = &app_info,
+	    .enabledLayerCount = 0,
+	    .ppEnabledLayerNames = NULL,
 	    .enabledExtensionCount = num_extensions,
 	    .ppEnabledExtensionNames = instance_extensions,
 	};
@@ -393,6 +400,10 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	VkInstanceCreateInfo instance_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 	    .pNext = NULL,
+	    .flags = 0,
+	    .pApplicationInfo = NULL,
+	    .enabledLayerCount = 0,
+	    .ppEnabledLayerNames = NULL,
 	    .enabledExtensionCount = ARRAY_SIZE(extension_names),
 	    .ppEnabledExtensionNames = extension_names,
 	};
