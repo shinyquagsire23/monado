@@ -121,9 +121,9 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
  * Handle a non-null instance pointer.
  */
 static XrResult
-handle_none_null(struct oxr_logger* log,
-                 const char* name,
-                 PFN_xrVoidFunction* out_function)
+handle_non_null(struct oxr_logger* log,
+                const char* name,
+                PFN_xrVoidFunction* out_function)
 {
 	PFN_xrVoidFunction function = NULL;
 
@@ -269,5 +269,5 @@ oxr_xrGetInstanceProcAddr(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetInstanceProcAddr");
 
-	return handle_none_null(&log, name, function);
+	return handle_non_null(&log, name, function);
 }
