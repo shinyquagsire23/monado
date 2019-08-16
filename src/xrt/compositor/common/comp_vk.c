@@ -236,6 +236,7 @@ err:
 
 VkResult
 vk_create_image_from_fd(struct vk_bundle *vk,
+                        enum xrt_swapchain_usage_bits swapchain_usage,
                         int64_t format,
                         uint32_t width,
                         uint32_t height,
@@ -258,9 +259,24 @@ vk_create_image_from_fd(struct vk_bundle *vk,
 	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	};
 
-	image_usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-	image_usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-	image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
+		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	}
+	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
+		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	}
+	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS) != 0) {
+		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	}
+	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_TRANSFER_SRC) != 0) {
+		image_usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	}
+	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_TRANSFER_DST) != 0) {
+		image_usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	}
+	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_SAMPLED) != 0) {
+		image_usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+	}
 
 	VkImageCreateInfo info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,

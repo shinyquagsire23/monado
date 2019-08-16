@@ -281,6 +281,7 @@ vk_get_memory_type(struct vk_bundle *vk,
  */
 VkResult
 vk_create_image_from_fd(struct vk_bundle *vk,
+                        enum xrt_swapchain_usage_bits swapchain_usage,
                         int64_t format,
                         uint32_t width,
                         uint32_t height,
