@@ -52,7 +52,8 @@ os_hidraw_read(struct os_hid_device *ohdev,
 		if (ret == -1 || ret == 0) {
 			// Error or timeout.
 			return ret;
-		} else if (fds.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+		}
+		if (fds.revents & (POLLERR | POLLHUP | POLLNVAL)) {
 			// Device disconnect?
 			return -1;
 		}
@@ -109,7 +110,7 @@ os_hidraw_destroy(struct os_hid_device *ohdev)
 }
 
 int
-os_hid_open_hidraw(const char *path, struct os_hid_device **out_ohdev)
+os_hid_open_hidraw(const char *path, struct os_hid_device **out_hid)
 {
 	struct hid_hidraw *hrdev = U_TYPED_CALLOC(struct hid_hidraw);
 
@@ -124,7 +125,7 @@ os_hid_open_hidraw(const char *path, struct os_hid_device **out_ohdev)
 		return -1;
 	}
 
-	*out_ohdev = &hrdev->base;
+	*out_hid = &hrdev->base;
 
 	return 0;
 }
