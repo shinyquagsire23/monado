@@ -761,9 +761,9 @@ v4l2_fs_stream_run(void *ptr)
 			V_ERROR(vid, "error: Dequeue failed!");
 			vid->is_running = false;
 			break;
-		} else {
-			V_SPEW(vid, "Got frame %i", v_buf.index);
 		}
+		V_SPEW(vid, "Got frame %i", v_buf.index);
+
 
 		uint8_t *data = vid->capture.mem[v_buf.index];
 
