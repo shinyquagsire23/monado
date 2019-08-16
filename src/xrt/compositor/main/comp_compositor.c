@@ -110,7 +110,7 @@ static void
 compositor_end_frame(struct xrt_compositor *xc,
                      enum xrt_blend_mode blend_mode,
                      struct xrt_swapchain **xscs,
-                     uint32_t *image_index,
+                     const uint32_t *image_index,
                      uint32_t *layers,
                      uint32_t num_swapchains)
 {
@@ -337,11 +337,7 @@ compositor_init_vulkan(struct comp_compositor *c)
 	}
 
 	ret = vk_init_cmd_pool(&c->vk);
-	if (ret != VK_SUCCESS) {
-		return false;
-	}
-
-	return true;
+	return ret == VK_SUCCESS;
 }
 
 /*
@@ -378,9 +374,8 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	if (c->settings.window_type != WINDOW_AUTO) {
 		COMP_DEBUG(c, "Skipping NVIDIA detection, window type forced.");
 		return true;
-	} else {
-		COMP_DEBUG(c, "Checking for NVIDIA vulkan driver.");
 	}
+	COMP_DEBUG(c, "Checking for NVIDIA vulkan driver.");
 
 	struct vk_bundle temp_vk = {0};
 	ret = vk_get_loader_functions(&temp_vk, vkGetInstanceProcAddr);
@@ -514,11 +509,10 @@ compositor_try_window(struct comp_compositor *c, struct comp_window *window)
 	if (!window->init(window)) {
 		window->destroy(window);
 		return false;
-	} else {
-		COMP_DEBUG(c, "Window backend %s initialized!", window->name);
-		c->window = window;
-		return true;
 	}
+	COMP_DEBUG(c, "Window backend %s initialized!", window->name);
+	c->window = window;
+	return true;
 }
 
 static bool
@@ -580,11 +574,7 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 	}
 
 	// Failed to create?
-	if (c->window == NULL) {
-		return false;
-	}
-
-	return true;
+	return c->window != NULL;
 }
 
 static bool
@@ -638,11 +628,7 @@ static bool
 compositor_init_renderer(struct comp_compositor *c)
 {
 	c->r = comp_renderer_create(c);
-	if (c->r == NULL) {
-		return false;
-	}
-
-	return true;
+	return c->r != NULL;
 }
 
 

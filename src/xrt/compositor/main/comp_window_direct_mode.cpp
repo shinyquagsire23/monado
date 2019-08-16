@@ -204,7 +204,7 @@ static void
 comp_window_direct_list_randr_screens(struct comp_window_direct* w)
 {
 	int display_i = 0;
-	for (comp_window_direct_randr_display d : w->randr_displays) {
+	for (const comp_window_direct_randr_display& d : w->randr_displays) {
 		COMP_DEBUG(w->base.c, "%d: %s %dx%d@%.2f", display_i,
 		           d.name.c_str(), d.primary_mode.width,
 		           d.primary_mode.height,
@@ -236,7 +236,7 @@ comp_window_direct_init_randr(struct comp_window* w)
 
 	comp_window_direct_get_randr_outputs(w_direct);
 
-	if (w_direct->randr_displays.size() < 1) {
+	if (w_direct->randr_displays.empty()) {
 		COMP_ERROR(w->c, "No non-desktop output available.");
 		return false;
 	}
@@ -430,11 +430,11 @@ choose_alpha_mode(VkDisplayPlaneAlphaFlagsKHR flags)
 {
 	if (flags & VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR) {
 		return VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR;
-	} else if (flags & VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR) {
-		return VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR;
-	} else {
-		return VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR;
 	}
+	if (flags & VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR) {
+		return VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR;
+	}
+	return VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR;
 }
 
 static VkResult
@@ -650,7 +650,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 	xcb_randr_query_version_reply_t* version_reply =
 	    xcb_randr_query_version_reply(w->connection, version_cookie, NULL);
 
-	if (!version_reply) {
+	if (version_reply == nullptr) {
 		COMP_ERROR(w->base.c, "Could not get RandR version.");
 		return;
 	}
@@ -769,7 +769,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 				           name_str);
 			}
 
-			if (!w->randr_modes.count(output_modes[0])) {
+			if (w->randr_modes.count(output_modes[0]) == 0) {
 				COMP_ERROR(w->base.c,
 				           "No mode with id %d found??",
 				           output_modes[0]);

@@ -196,7 +196,7 @@ struct xrt_compositor
 	void (*end_frame)(struct xrt_compositor *xc,
 	                  enum xrt_blend_mode blend_mode,
 	                  struct xrt_swapchain **xscs,
-	                  uint32_t *image_index,
+	                  const uint32_t *image_index,
 	                  uint32_t *layers,
 	                  uint32_t num_swapchains);
 

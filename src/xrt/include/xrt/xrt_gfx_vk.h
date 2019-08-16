@@ -44,11 +44,11 @@ struct xrt_compositor_vk *
 xrt_gfx_vk_provider_create(struct xrt_device *xdev,
                            struct time_state *timekeeping,
                            VkInstance instance,
-                           PFN_vkGetInstanceProcAddr getProc,
-                           VkPhysicalDevice physicalDevice,
+                           PFN_vkGetInstanceProcAddr get_instance_proc_addr,
+                           VkPhysicalDevice physical_device,
                            VkDevice device,
-                           uint32_t queueFamilyIndex,
-                           uint32_t queueIndex);
+                           uint32_t queue_family_index,
+                           uint32_t queue_index);
 
 
 #ifdef __cplusplus

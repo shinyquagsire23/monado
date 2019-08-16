@@ -149,7 +149,7 @@ comp_window_xcb_list_screens(comp_window_xcb* w, xcb_screen_t* screen)
 	comp_window_xcb_get_randr_outputs(w);
 
 	int display_i = 0;
-	for (comp_window_xcb_display d : w->displays) {
+	for (const comp_window_xcb_display& d : w->displays) {
 		COMP_DEBUG(w->base.c, "%d: %s %dx%d [%d, %d]", display_i,
 		           d.name.c_str(), d.size.first, d.size.second,
 		           d.position.first, d.position.second);

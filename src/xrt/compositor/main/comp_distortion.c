@@ -69,13 +69,13 @@ comp_distortion_get_uniform_write_descriptor_set_vp(struct comp_distortion *d,
 
 static VkWriteDescriptorSet
 comp_distortion_get_image_write_descriptor_set(
-    VkDescriptorSet descriptorSet,
-    VkDescriptorImageInfo *texDescriptorPosition,
+    VkDescriptorSet descriptor_set,
+    VkDescriptorImageInfo *descriptor_position,
     uint32_t binding);
 
 static void
 comp_distortion_init_descriptor_sets(struct comp_distortion *d,
-                                     VkDescriptorPool descriptorPool);
+                                     VkDescriptorPool descriptor_pool);
 
 
 /*

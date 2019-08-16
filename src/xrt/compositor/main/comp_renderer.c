@@ -927,7 +927,8 @@ renderer_present_swapchain_image(struct comp_renderer *r)
 	if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
 		renderer_resize(r);
 		return;
-	} else if (ret != VK_SUCCESS) {
+	}
+	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vk_swapchain_present: %s",
 		           vk_result_string(ret));
 	}

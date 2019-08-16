@@ -89,7 +89,7 @@ client_vk_compositor(struct xrt_compositor *xc)
  * @ingroup comp_client
  */
 struct client_vk_compositor *
-client_vk_compositor_create(struct xrt_compositor_fd *c,
+client_vk_compositor_create(struct xrt_compositor_fd *xcfd,
                             VkInstance instance,
                             PFN_vkGetInstanceProcAddr getProc,
                             VkPhysicalDevice physicalDevice,
