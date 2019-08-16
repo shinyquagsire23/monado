@@ -524,7 +524,6 @@ p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
 	char* line;
 	char* tmp;
 	int ret;
-	bool ok;
 
 	// Dig through and find the regular hid node.
 	hid_dev =
@@ -543,6 +542,7 @@ p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
 		return -1;
 	}
 
+	bool ok = false;
 	line = strtok_r(tmp, "\n", &saveptr);
 	while (line != NULL) {
 		if (strncmp(line, "HID_ID=", 7) == 0) {
