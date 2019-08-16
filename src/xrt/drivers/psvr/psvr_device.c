@@ -72,8 +72,8 @@ XRT_MAYBE_UNUSED static const unsigned char psvr_tracking_on[12] = {
 };
 
 
-#define PSVR_LED_POWER_OFF 0
-#define PSVR_LED_POWER_MAX 100
+#define PSVR_LED_POWER_OFF ((uint8_t)0)
+#define PSVR_LED_POWER_MAX ((uint8_t)100)
 
 enum psvr_leds
 {
@@ -477,8 +477,8 @@ control_leds(struct psvr_device *psvr,
 	    0x00,
 	    0xaa,
 	    0x10,
-	    all,
-	    all >> 8,
+	    (uint8_t)all,        // lower byte
+	    (uint8_t)(all >> 8), // upper byte
 	    adjust & PSVR_LED_A ? power : PSVR_LED_POWER_OFF,
 	    adjust & PSVR_LED_B ? power : PSVR_LED_POWER_OFF,
 	    adjust & PSVR_LED_C ? power : PSVR_LED_POWER_OFF,
