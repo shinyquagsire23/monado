@@ -12,7 +12,10 @@ string(REGEX REPLACE "/$" "" MANIFEST_RELATIVE_DIR "${MANIFEST_RELATIVE_DIR}")
 
 if(OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH)
     # Absolute path to runtime
-    set(RUNTIME_PATH ${CMAKE_INSTALL_PREFIX}/${RUNTIME_RELATIVE_DIR}/${RUNTIME_FILENAME})
+    set(RUNTIME_PATH ${RUNTIME_RELATIVE_DIR}/${RUNTIME_FILENAME})
+    if(NOT IS_ABSOLUTE ${RUNTIME_RELATIVE_DIR})
+      set(RUNTIME_PATH ${CMAKE_INSTALL_PREFIX}/${RUNTIME_PATH})
+    endif()
 else()
     # Relative path to runtime: requires it exist on the system shared library search path.
     set(RUNTIME_PATH ${RUNTIME_FILENAME})
