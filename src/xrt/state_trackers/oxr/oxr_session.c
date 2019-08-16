@@ -607,17 +607,19 @@ oxr_session_create(struct oxr_logger *log,
                    const XrSessionCreateInfo *createInfo,
                    struct oxr_session **out_session)
 {
-	struct oxr_session *sess;
+	struct oxr_session *sess = NULL;
 
 	/* Try allocating and populating. */
 	XrResult ret = oxr_session_create_impl(log, sys, createInfo, &sess);
 
 	if (ret != XR_SUCCESS) {
-		/* clean up allocation first */
-		XrResult cleanup_result =
-		    oxr_handle_destroy(log, &sess->handle);
-		assert(cleanup_result == XR_SUCCESS);
-		(void)cleanup_result;
+		if (sess != NULL) {
+			/* clean up allocation first */
+			XrResult cleanup_result =
+			    oxr_handle_destroy(log, &sess->handle);
+			assert(cleanup_result == XR_SUCCESS);
+			(void)cleanup_result;
+		}
 		return ret;
 	}
 
