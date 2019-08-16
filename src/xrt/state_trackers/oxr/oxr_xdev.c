@@ -42,13 +42,13 @@ oxr_xdev_find_input(struct xrt_device *xdev,
 	return false;
 }
 
-void
+bool
 oxr_xdev_find_output(struct xrt_device *xdev,
                      enum xrt_output_name name,
                      struct xrt_output **out_output)
 {
 	if (xdev == NULL) {
-		return;
+		return false;
 	}
 
 	for (uint32_t i = 0; i < xdev->num_outputs; i++) {
@@ -57,8 +57,9 @@ oxr_xdev_find_output(struct xrt_device *xdev,
 		}
 
 		*out_output = &xdev->outputs[i];
-		return;
+		return true;
 	}
+	return false;
 }
 
 void

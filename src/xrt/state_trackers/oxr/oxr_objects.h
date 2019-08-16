@@ -621,7 +621,10 @@ oxr_xdev_find_input(struct xrt_device *xdev,
                     enum xrt_input_name name,
                     struct xrt_input **out_input);
 
-void
+/*!
+ * Return true if it finds an output of that name on this device.
+ */
+bool
 oxr_xdev_find_output(struct xrt_device *xdev,
                      enum xrt_output_name name,
                      struct xrt_output **out_output);
