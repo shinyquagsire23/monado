@@ -1,0 +1,8 @@
+---
+# Ideally we'd turn back on a few of these that are disabled near the end
+Checks:          'clang-diagnostic-*,clang-analyzer-*,performance-*,bugprone-*,cert-*,readability-*,misc-*,-modernize-*,-clang-analyzer-security.insecureAPI.strcpy,-bugprone-macro-parentheses,-readability-braces-around-statements,-misc-unused-parameters,-readability-implicit-bool-conversion,-clang-diagnostic-missing-field-initializers,-clang-diagnostic-missing-braces'
+WarningsAsErrors: ''
+HeaderFilterRegex: 'src/xrt/.*'
+AnalyzeTemporaryDtors: false
+FormatStyle:     file
+...
