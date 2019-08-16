@@ -205,7 +205,7 @@ ensure_data(struct u_sink_converter *s, uint32_t w, uint32_t h)
 	u_format_size_for_dimensions(s->format, s->width, s->height, &s->stride,
 	                             &s->size);
 
-	s->data = realloc(s->data, s->size);
+	s->data = (uint8_t *)realloc(s->data, s->size);
 }
 
 static void
