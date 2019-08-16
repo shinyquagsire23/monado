@@ -244,6 +244,9 @@ comp_swapchain_create(struct xrt_compositor *xc,
 		                    mip_count, &sc->images[i].image,
 		                    &sc->images[i].memory, &sc->base.images[i]);
 		if (ret != VK_SUCCESS) {
+			//! @todo memory leak of image fds and swapchain
+			// see
+			// https://gitlab.freedesktop.org/monado/monado/issues/20
 			return NULL;
 		}
 
