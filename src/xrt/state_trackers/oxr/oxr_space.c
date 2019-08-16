@@ -282,7 +282,8 @@ get_pure_space_relation(struct oxr_logger *log,
 	if (spc->is_reference && baseSpc->is_reference) {
 		return oxr_space_ref_relation(
 		    log, sess, spc->type, baseSpc->type, time, out_relation);
-	} else if (!spc->is_reference && !baseSpc->is_reference) {
+	}
+	if (!spc->is_reference && !baseSpc->is_reference) {
 		// @todo Deal with action to action by keeping a true_space that
 		//       we can always go via. Aka poor mans space graph.
 		// WARNING order not thought through here!
@@ -295,11 +296,10 @@ get_pure_space_relation(struct oxr_logger *log,
 		// math_pose_relate_2(&pose1, &pose2, out_pose);
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return XR_SUCCESS;
-	} else {
-		oxr_space_action_relation(log, sess, spc, baseSpc, time,
-		                          out_relation);
-		return XR_SUCCESS;
 	}
+
+	oxr_space_action_relation(log, sess, spc, baseSpc, time, out_relation);
+	return XR_SUCCESS;
 }
 
 static void

@@ -255,12 +255,11 @@ oxr_xrGetInstanceProcAddr(XrInstance instance,
 		oxr_log_init(&log, "xrGetInstanceProcAddr");
 
 		return handle_null(&log, name, function);
-	} else {
-		struct oxr_instance* inst;
-		struct oxr_logger log;
-		OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-		                                 "xrGetInstanceProcAddr");
-
-		return handle_none_null(&log, name, function);
 	}
+	struct oxr_instance* inst;
+	struct oxr_logger log;
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
+	                                 "xrGetInstanceProcAddr");
+
+	return handle_none_null(&log, name, function);
 }

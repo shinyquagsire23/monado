@@ -319,7 +319,7 @@ XrResult
 oxr_xrLocateSpace(XrSpace space,
                   XrSpace baseSpace,
                   XrTime time,
-                  XrSpaceLocation* relation);
+                  XrSpaceLocation* location);
 
 //! OpenXR API function @ep{xrDestroySpace}
 XrResult
@@ -521,7 +521,7 @@ oxr_xrGetInputSourceLocalizedName(
 XrResult
 oxr_xrApplyHapticFeedback(XrSession session,
                           const XrHapticActionInfo* hapticActionInfo,
-                          const XrHapticBaseHeader* hapticFeedback);
+                          const XrHapticBaseHeader* hapticEvent);
 
 //! OpenXR API function @ep{xrStopHapticFeedback}
 XrResult

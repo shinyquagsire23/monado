@@ -457,7 +457,7 @@ oxr_space_locate(struct oxr_logger *log,
                  struct oxr_space *spc,
                  struct oxr_space *baseSpc,
                  XrTime time,
-                 XrSpaceLocation *relation);
+                 XrSpaceLocation *location);
 
 XrResult
 oxr_space_ref_relation(struct oxr_logger *log,
@@ -487,7 +487,7 @@ XrResult
 oxr_create_swapchain(struct oxr_logger *,
                      struct oxr_session *sess,
                      const XrSwapchainCreateInfo *,
-                     struct oxr_swapchain **sc);
+                     struct oxr_swapchain **out_swapchain);
 
 
 /*

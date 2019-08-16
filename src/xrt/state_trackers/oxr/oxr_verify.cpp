@@ -285,7 +285,9 @@ subaction_path_no_dups(struct oxr_logger* log,
 		                 "(%s[%u] == XR_NULL_PATH) not a "
 		                 "valid subaction path.",
 		                 variable, index);
-	} else if (path == inst->path_cache.user) {
+	}
+
+	if (path == inst->path_cache.user) {
 		if (sub_paths.user) {
 			duplicate = true;
 		} else {
@@ -374,18 +376,15 @@ oxr_verify_subaction_path_sync(struct oxr_logger* log,
 	    path == inst->path_cache.right ||
 	    path == inst->path_cache.gamepad) {
 		return XR_SUCCESS;
-	} else {
-		const char* str = NULL;
-		size_t length = 0;
-
-		oxr_path_get_string(log, inst, path, &str, &length);
-		return oxr_error(log, XR_ERROR_PATH_INVALID,
-		                 "(actionSets[%i].subactionPath == '%s') path "
-		                 "is not a valid subaction path.",
-		                 index, str);
 	}
+	const char* str = NULL;
+	size_t length = 0;
 
-	return XR_SUCCESS;
+	oxr_path_get_string(log, inst, path, &str, &length);
+	return oxr_error(log, XR_ERROR_PATH_INVALID,
+	                 "(actionSets[%i].subactionPath == '%s') path "
+	                 "is not a valid subaction path.",
+	                 index, str);
 }
 
 extern "C" XrResult

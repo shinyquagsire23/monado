@@ -240,7 +240,7 @@ oxr_system_get_view_conf_properties(
 
 	// clang-format off
 	configurationProperties->viewConfigurationType = sys->view_config_type;
-	configurationProperties->fovMutable = false;
+	configurationProperties->fovMutable = XR_FALSE;
 	// clang-format on
 
 	return XR_SUCCESS;
