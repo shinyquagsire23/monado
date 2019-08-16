@@ -39,7 +39,7 @@ struct xrt_prober_entry_lists list = {
 };
 
 int
-xrt_prober_create(struct xrt_prober **out_xp)
+xrt_prober_create(struct xrt_prober **out_prober)
 {
-	return xrt_prober_create_with_lists(out_xp, &list);
+	return xrt_prober_create_with_lists(out_prober, &list);
 }
