@@ -106,12 +106,12 @@ p_udev_get_usb_device_address_sysfs(struct udev_device* usb_dev,
 
 static int
 p_udev_get_sysattr_u16_base16(struct udev_device* dev,
-                              const char* str,
+                              const char* name,
                               uint16_t* out_value);
 
 static int
 p_udev_get_sysattr_u32_base10(struct udev_device* dev,
-                              const char* str,
+                              const char* name,
                               uint32_t* out_value);
 
 XRT_MAYBE_UNUSED static void
@@ -139,7 +139,7 @@ p_udev_probe(struct prober* p)
 
 	p_udev_enumerate_hidraw(p, udev);
 
-	udev = udev_unref(udev);
+	udev_unref(udev);
 
 	return 0;
 }
@@ -220,7 +220,7 @@ p_udev_enumerate_usb(struct prober* p, struct udev* udev)
 		udev_device_unref(raw_dev);
 	}
 
-	enumerate = udev_enumerate_unref(enumerate);
+	udev_enumerate_unref(enumerate);
 }
 
 static void
@@ -321,7 +321,7 @@ p_udev_enumerate_v4l2(struct prober* p, struct udev* udev)
 		udev_device_unref(raw_dev);
 	}
 
-	enumerate = udev_enumerate_unref(enumerate);
+	udev_enumerate_unref(enumerate);
 }
 
 static void
@@ -439,7 +439,7 @@ p_udev_enumerate_hidraw(struct prober* p, struct udev* udev)
 		udev_device_unref(raw_dev);
 	}
 
-	enumerate = udev_enumerate_unref(enumerate);
+	udev_enumerate_unref(enumerate);
 }
 
 static void
@@ -449,7 +449,7 @@ p_udev_add_hidraw(struct prober_device* pdev,
 {
 	size_t new_size =
 	    (pdev->num_hidraws + 1) * sizeof(struct prober_hidraw);
-	pdev->hidraws = realloc(pdev->hidraws, new_size);
+	pdev->hidraws = (struct prober_hidraw*)realloc(pdev->hidraws, new_size);
 
 	struct prober_hidraw* hidraw = &pdev->hidraws[pdev->num_hidraws++];
 	U_ZERO(hidraw);
@@ -565,7 +565,7 @@ p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
 		union {
 			uint8_t arr[8];
 			uint64_t v;
-		} extract = {0};
+		} extract = {{0}};
 
 		ret = sscanf(serial_utf8, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
 		             &extract.arr[5], &extract.arr[4], &extract.arr[3],
@@ -583,9 +583,8 @@ p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
 		*out_product_id = product_id;
 		*out_bluetooth_serial = bluetooth_serial;
 		return 0;
-	} else {
-		return -1;
 	}
+	return -1;
 }
 
 static int

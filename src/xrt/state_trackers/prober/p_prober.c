@@ -75,7 +75,7 @@ destroy(struct xrt_prober** xp);
  */
 
 int
-xrt_prober_create_with_lists(struct xrt_prober** out_xp,
+xrt_prober_create_with_lists(struct xrt_prober** out_prober,
                              struct xrt_prober_entry_lists* lists)
 {
 	struct prober* p = U_TYPED_CALLOC(struct prober);
@@ -86,7 +86,7 @@ xrt_prober_create_with_lists(struct xrt_prober** out_xp,
 		return ret;
 	}
 
-	*out_xp = &p->base;
+	*out_prober = &p->base;
 
 	return 0;
 }
@@ -439,7 +439,6 @@ handle_found_device(struct prober* p,
 
 	P_ERROR(p, "Found more then one, HMD closing '%s'", xdev->name);
 	xdev->destroy(xdev);
-	return;
 }
 
 static int
