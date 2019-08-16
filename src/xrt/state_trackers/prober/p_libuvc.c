@@ -52,7 +52,7 @@ p_libuvc_probe(struct prober* p)
 		P_ERROR(p, "\tFailed to enumerate uvc devices\n");
 		return -1;
 	}
-
+	p->uvc.count = 0;
 	// Count the number of UVC devices.
 	while (p->uvc.list != NULL && p->uvc.list[p->uvc.count] != NULL) {
 		p->uvc.count++;
