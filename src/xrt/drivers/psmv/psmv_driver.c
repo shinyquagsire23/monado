@@ -215,11 +215,11 @@ psmv_clamp_zero_to_one_float_to_u8(float v)
 
 	if (vf >= 255.0f) {
 		return 0xff;
-	} else if (vf >= 0.0f) {
-		return (uint8_t)vf;
-	} else {
-		return 0x00;
 	}
+	if (vf >= 0.0f) {
+		return (uint8_t)vf;
+	}
+	return 0x00;
 }
 
 static void
