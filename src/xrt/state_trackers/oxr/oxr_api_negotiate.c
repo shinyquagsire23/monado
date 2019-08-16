@@ -128,7 +128,6 @@ handle_none_null(struct oxr_logger* log,
 	PFN_xrVoidFunction function = NULL;
 
 	ENTRY_IF(xrGetInstanceProcAddr)
-	ENTRY_ELSE_IF(xrEnumerateApiLayerProperties)
 	ENTRY_ELSE_IF(xrEnumerateInstanceExtensionProperties)
 	ENTRY_ELSE_IF(xrCreateInstance)
 	ENTRY_ELSE_IF(xrDestroyInstance)
@@ -239,6 +238,7 @@ handle_null(struct oxr_logger* log,
 
 	ENTRY_IF(xrCreateInstance)
 	ENTRY_ELSE_IF(xrEnumerateInstanceExtensionProperties)
+	ENTRY_ELSE_IF(xrEnumerateApiLayerProperties)
 
 	if (function == NULL) {
 		/*
