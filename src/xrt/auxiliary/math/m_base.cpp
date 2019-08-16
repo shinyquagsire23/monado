@@ -61,10 +61,7 @@ math_vec3_validate(const struct xrt_vec3* vec3)
 {
 	assert(vec3 != NULL);
 
-	if (!map_vec3(*vec3).allFinite()) {
-		return false;
-	}
-	return true;
+	return map_vec3(*vec3).allFinite();
 }
 
 extern "C" void
