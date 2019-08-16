@@ -96,7 +96,7 @@ math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut);
  * @ingroup aux_math
  */
 bool
-math_quat_validate(const struct xrt_quat *qaut);
+math_quat_validate(const struct xrt_quat *quat);
 
 /*!
  * Normalize a quaternion.
