@@ -789,8 +789,14 @@ struct oxr_instance
 	struct xrt_prober *prober;
 
 	// Enabled extensions
+
+	//! XR_MND_headless
 	bool headless;
+
+	//! XR_KHR_opengl_enable
 	bool opengl_enable;
+
+	//! XR_KHR_vulkan_enable
 	bool vulkan_enable;
 
 	// Hardcoded single system.

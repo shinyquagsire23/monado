@@ -104,126 +104,130 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
 #define ENTRY_IF(funcName)                                                     \
 	if (strcmp(name, #funcName) == 0) {                                    \
 		PFN_##funcName ret = &oxr_##funcName;                          \
-		function = (PFN_xrVoidFunction)(ret);                          \
+		*out_function = (PFN_xrVoidFunction)(ret);                     \
+		return XR_SUCCESS;                                             \
 	}
 
 /*!
- * @brief Helper define for generating that GetInstanceProcAddr function.
+ * @brief Helper define for generating that GetInstanceProcAddr function: checks
+ * the extra condition to find out if the extension is enabled
  */
-#define ENTRY_ELSE_IF(funcName)                                                \
-	else if (strcmp(name, #funcName) == 0)                                 \
-	{                                                                      \
-		PFN_##funcName ret = &oxr_##funcName;                          \
-		function = (PFN_xrVoidFunction)(ret);                          \
+#define ENTRY_IF_EXT(funcName, extraCondition)                                 \
+	if (strcmp(name, #funcName) == 0) {                                    \
+		if (extraCondition) {                                          \
+			PFN_##funcName ret = &oxr_##funcName;                  \
+			*out_function = (PFN_xrVoidFunction)(ret);             \
+			return XR_SUCCESS;                                     \
+		}                                                              \
+		return oxr_error(                                              \
+		    log, XR_ERROR_FUNCTION_UNSUPPORTED,                        \
+		    "(name = \"%s\") Required extension not enabled", name);   \
 	}
 
 /*!
  * Handle a non-null instance pointer.
  */
 static XrResult
-handle_non_null(struct oxr_logger* log,
+handle_non_null(struct oxr_instance* inst,
+                struct oxr_logger* log,
                 const char* name,
                 PFN_xrVoidFunction* out_function)
 {
-	PFN_xrVoidFunction function = NULL;
-
 	ENTRY_IF(xrGetInstanceProcAddr)
-	ENTRY_ELSE_IF(xrEnumerateInstanceExtensionProperties)
-	ENTRY_ELSE_IF(xrCreateInstance)
-	ENTRY_ELSE_IF(xrDestroyInstance)
-	ENTRY_ELSE_IF(xrGetInstanceProperties)
-	ENTRY_ELSE_IF(xrPollEvent)
-	ENTRY_ELSE_IF(xrResultToString)
-	ENTRY_ELSE_IF(xrStructureTypeToString)
-	ENTRY_ELSE_IF(xrGetSystem)
-	ENTRY_ELSE_IF(xrGetSystemProperties)
-	ENTRY_ELSE_IF(xrEnumerateEnvironmentBlendModes)
-	ENTRY_ELSE_IF(xrCreateSession)
-	ENTRY_ELSE_IF(xrDestroySession)
-	ENTRY_ELSE_IF(xrEnumerateReferenceSpaces)
-	ENTRY_ELSE_IF(xrCreateReferenceSpace)
-	ENTRY_ELSE_IF(xrGetReferenceSpaceBoundsRect)
-	ENTRY_ELSE_IF(xrCreateActionSpace)
-	ENTRY_ELSE_IF(xrLocateSpace)
-	ENTRY_ELSE_IF(xrDestroySpace)
-	ENTRY_ELSE_IF(xrEnumerateViewConfigurations)
-	ENTRY_ELSE_IF(xrGetViewConfigurationProperties)
-	ENTRY_ELSE_IF(xrEnumerateViewConfigurationViews)
-	ENTRY_ELSE_IF(xrEnumerateSwapchainFormats)
-	ENTRY_ELSE_IF(xrCreateSwapchain)
-	ENTRY_ELSE_IF(xrDestroySwapchain)
-	ENTRY_ELSE_IF(xrEnumerateSwapchainImages)
-	ENTRY_ELSE_IF(xrAcquireSwapchainImage)
-	ENTRY_ELSE_IF(xrWaitSwapchainImage)
-	ENTRY_ELSE_IF(xrReleaseSwapchainImage)
-	ENTRY_ELSE_IF(xrBeginSession)
-	ENTRY_ELSE_IF(xrEndSession)
-	ENTRY_ELSE_IF(xrWaitFrame)
-	ENTRY_ELSE_IF(xrBeginFrame)
-	ENTRY_ELSE_IF(xrEndFrame)
-	ENTRY_ELSE_IF(xrRequestExitSession)
-	ENTRY_ELSE_IF(xrLocateViews)
-	ENTRY_ELSE_IF(xrStringToPath)
-	ENTRY_ELSE_IF(xrPathToString)
-	ENTRY_ELSE_IF(xrCreateActionSet)
-	ENTRY_ELSE_IF(xrDestroyActionSet)
-	ENTRY_ELSE_IF(xrCreateAction)
-	ENTRY_ELSE_IF(xrDestroyAction)
-	ENTRY_ELSE_IF(xrSuggestInteractionProfileBindings)
-	ENTRY_ELSE_IF(xrAttachSessionActionSets)
-	ENTRY_ELSE_IF(xrGetCurrentInteractionProfile)
-	ENTRY_ELSE_IF(xrGetActionStateBoolean)
-	ENTRY_ELSE_IF(xrGetActionStateFloat)
-	ENTRY_ELSE_IF(xrGetActionStateVector2f)
-	ENTRY_ELSE_IF(xrGetActionStatePose)
-	ENTRY_ELSE_IF(xrSyncActions)
-	ENTRY_ELSE_IF(xrEnumerateBoundSourcesForAction)
-	ENTRY_ELSE_IF(xrGetInputSourceLocalizedName)
-	ENTRY_ELSE_IF(xrApplyHapticFeedback)
-	ENTRY_ELSE_IF(xrStopHapticFeedback)
+	ENTRY_IF(xrEnumerateInstanceExtensionProperties)
+	ENTRY_IF(xrCreateInstance)
+	ENTRY_IF(xrDestroyInstance)
+	ENTRY_IF(xrGetInstanceProperties)
+	ENTRY_IF(xrPollEvent)
+	ENTRY_IF(xrResultToString)
+	ENTRY_IF(xrStructureTypeToString)
+	ENTRY_IF(xrGetSystem)
+	ENTRY_IF(xrGetSystemProperties)
+	ENTRY_IF(xrEnumerateEnvironmentBlendModes)
+	ENTRY_IF(xrCreateSession)
+	ENTRY_IF(xrDestroySession)
+	ENTRY_IF(xrEnumerateReferenceSpaces)
+	ENTRY_IF(xrCreateReferenceSpace)
+	ENTRY_IF(xrGetReferenceSpaceBoundsRect)
+	ENTRY_IF(xrCreateActionSpace)
+	ENTRY_IF(xrLocateSpace)
+	ENTRY_IF(xrDestroySpace)
+	ENTRY_IF(xrEnumerateViewConfigurations)
+	ENTRY_IF(xrGetViewConfigurationProperties)
+	ENTRY_IF(xrEnumerateViewConfigurationViews)
+	ENTRY_IF(xrEnumerateSwapchainFormats)
+	ENTRY_IF(xrCreateSwapchain)
+	ENTRY_IF(xrDestroySwapchain)
+	ENTRY_IF(xrEnumerateSwapchainImages)
+	ENTRY_IF(xrAcquireSwapchainImage)
+	ENTRY_IF(xrWaitSwapchainImage)
+	ENTRY_IF(xrReleaseSwapchainImage)
+	ENTRY_IF(xrBeginSession)
+	ENTRY_IF(xrEndSession)
+	ENTRY_IF(xrWaitFrame)
+	ENTRY_IF(xrBeginFrame)
+	ENTRY_IF(xrEndFrame)
+	ENTRY_IF(xrRequestExitSession)
+	ENTRY_IF(xrLocateViews)
+	ENTRY_IF(xrStringToPath)
+	ENTRY_IF(xrPathToString)
+	ENTRY_IF(xrCreateActionSet)
+	ENTRY_IF(xrDestroyActionSet)
+	ENTRY_IF(xrCreateAction)
+	ENTRY_IF(xrDestroyAction)
+	ENTRY_IF(xrSuggestInteractionProfileBindings)
+	ENTRY_IF(xrAttachSessionActionSets)
+	ENTRY_IF(xrGetCurrentInteractionProfile)
+	ENTRY_IF(xrGetActionStateBoolean)
+	ENTRY_IF(xrGetActionStateFloat)
+	ENTRY_IF(xrGetActionStateVector2f)
+	ENTRY_IF(xrGetActionStatePose)
+	ENTRY_IF(xrSyncActions)
+	ENTRY_IF(xrEnumerateBoundSourcesForAction)
+	ENTRY_IF(xrGetInputSourceLocalizedName)
+	ENTRY_IF(xrApplyHapticFeedback)
+	ENTRY_IF(xrStopHapticFeedback)
+
+	//! @todo all extension functions should use ENTRY_IF_EXT !
+
 #ifdef XR_KHR_visibility_mask
-	ENTRY_ELSE_IF(xrGetVisibilityMaskKHR)
+	ENTRY_IF(xrGetVisibilityMaskKHR)
 #endif
 #ifdef XR_USE_TIMESPEC
-	ENTRY_ELSE_IF(xrConvertTimespecTimeToTimeKHR)
-	ENTRY_ELSE_IF(xrConvertTimeToTimespecTimeKHR)
+	ENTRY_IF(xrConvertTimespecTimeToTimeKHR)
+	ENTRY_IF(xrConvertTimeToTimespecTimeKHR)
 #endif
 #ifdef XR_EXT_performance_settings
-	ENTRY_ELSE_IF(xrPerfSettingsSetPerformanceLevelEXT)
+	ENTRY_IF(xrPerfSettingsSetPerformanceLevelEXT)
 #endif
 #ifdef XR_EXT_thermal_query
-	ENTRY_ELSE_IF(xrThermalGetTemperatureTrendEXT)
+	ENTRY_IF(xrThermalGetTemperatureTrendEXT)
 #endif
 #ifdef XR_EXT_debug_utils
-	ENTRY_ELSE_IF(xrSetDebugUtilsObjectNameEXT)
-	ENTRY_ELSE_IF(xrCreateDebugUtilsMessengerEXT)
-	ENTRY_ELSE_IF(xrDestroyDebugUtilsMessengerEXT)
-	ENTRY_ELSE_IF(xrSubmitDebugUtilsMessageEXT)
-	ENTRY_ELSE_IF(xrSessionBeginDebugUtilsLabelRegionEXT)
-	ENTRY_ELSE_IF(xrSessionEndDebugUtilsLabelRegionEXT)
-	ENTRY_ELSE_IF(xrSessionInsertDebugUtilsLabelEXT)
+	ENTRY_IF(xrSetDebugUtilsObjectNameEXT)
+	ENTRY_IF(xrCreateDebugUtilsMessengerEXT)
+	ENTRY_IF(xrDestroyDebugUtilsMessengerEXT)
+	ENTRY_IF(xrSubmitDebugUtilsMessageEXT)
+	ENTRY_IF(xrSessionBeginDebugUtilsLabelRegionEXT)
+	ENTRY_IF(xrSessionEndDebugUtilsLabelRegionEXT)
+	ENTRY_IF(xrSessionInsertDebugUtilsLabelEXT)
 #endif
 #ifdef XR_USE_GRAPHICS_API_OPENGL
-	ENTRY_ELSE_IF(xrGetOpenGLGraphicsRequirementsKHR)
+	ENTRY_IF_EXT(xrGetOpenGLGraphicsRequirementsKHR, inst->opengl_enable)
 #endif
 #ifdef XR_USE_GRAPHICS_API_VULKAN
-	ENTRY_ELSE_IF(xrGetVulkanInstanceExtensionsKHR)
-	ENTRY_ELSE_IF(xrGetVulkanDeviceExtensionsKHR)
-	ENTRY_ELSE_IF(xrGetVulkanGraphicsDeviceKHR)
-	ENTRY_ELSE_IF(xrGetVulkanGraphicsRequirementsKHR)
+	ENTRY_IF_EXT(xrGetVulkanInstanceExtensionsKHR, inst->vulkan_enable)
+	ENTRY_IF_EXT(xrGetVulkanDeviceExtensionsKHR, inst->vulkan_enable)
+	ENTRY_IF_EXT(xrGetVulkanGraphicsDeviceKHR, inst->vulkan_enable)
+	ENTRY_IF_EXT(xrGetVulkanGraphicsRequirementsKHR, inst->vulkan_enable)
 #endif
 
-	if (function == NULL) {
-		/*
-		 * Not logging here because there's no need to loudly advertise
-		 * which extensions the loader knows about (it calls this on
-		 * every known function) that we don't implement.
-		 */
-		return XR_ERROR_FUNCTION_UNSUPPORTED;
-	}
-
-	*out_function = function;
-	return XR_SUCCESS;
+	/*
+	 * Not logging here because there's no need to loudly advertise
+	 * which extensions the loader knows about (it calls this on
+	 * every known function) that we don't implement.
+	 */
+	return XR_ERROR_FUNCTION_UNSUPPORTED;
 }
 
 /*!
@@ -234,23 +238,16 @@ handle_null(struct oxr_logger* log,
             const char* name,
             PFN_xrVoidFunction* out_function)
 {
-	PFN_xrVoidFunction function = NULL;
-
 	ENTRY_IF(xrCreateInstance)
-	ENTRY_ELSE_IF(xrEnumerateInstanceExtensionProperties)
-	ENTRY_ELSE_IF(xrEnumerateApiLayerProperties)
+	ENTRY_IF(xrEnumerateInstanceExtensionProperties)
+	ENTRY_IF(xrEnumerateApiLayerProperties)
 
-	if (function == NULL) {
-		/*
-		 * This is fine to log, since there should not be other
-		 * null-instance calls.
-		 */
-		return oxr_error(log, XR_ERROR_FUNCTION_UNSUPPORTED,
-		                 "(name = \"%s\")", name);
-	}
-
-	*out_function = function;
-	return XR_SUCCESS;
+	/*
+	 * This is fine to log, since there should not be other
+	 * null-instance calls.
+	 */
+	return oxr_error(log, XR_ERROR_FUNCTION_UNSUPPORTED, "(name = \"%s\")",
+	                 name);
 }
 
 XrResult
@@ -258,16 +255,18 @@ oxr_xrGetInstanceProcAddr(XrInstance instance,
                           const char* name,
                           PFN_xrVoidFunction* function)
 {
-	if (instance == NULL) {
-		struct oxr_logger log;
-		oxr_log_init(&log, "xrGetInstanceProcAddr");
+	struct oxr_logger log;
 
+	// We need to set this unconditionally, per the spec.
+	*function = NULL;
+
+	if (instance == NULL) {
+		oxr_log_init(&log, "xrGetInstanceProcAddr");
 		return handle_null(&log, name, function);
 	}
+
 	struct oxr_instance* inst;
-	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetInstanceProcAddr");
-
-	return handle_non_null(&log, name, function);
+	return handle_non_null(inst, &log, name, function);
 }
