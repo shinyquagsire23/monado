@@ -215,8 +215,12 @@ handle_none_null(struct oxr_logger* log,
 #endif
 
 	if (function == NULL) {
-		return oxr_error(log, XR_ERROR_FUNCTION_UNSUPPORTED,
-		                 "(name = \"%s\")", name);
+		/*
+		 * Not logging here because there's no need to loudly advertise
+		 * which extensions the loader knows about (it calls this on
+		 * every known function) that we don't implement.
+		 */
+		return XR_ERROR_FUNCTION_UNSUPPORTED;
 	}
 
 	*out_function = function;
@@ -237,6 +241,10 @@ handle_null(struct oxr_logger* log,
 	ENTRY_ELSE_IF(xrEnumerateInstanceExtensionProperties)
 
 	if (function == NULL) {
+		/*
+		 * This is fine to log, since there should not be other
+		 * null-instance calls.
+		 */
 		return oxr_error(log, XR_ERROR_FUNCTION_UNSUPPORTED,
 		                 "(name = \"%s\")", name);
 	}
