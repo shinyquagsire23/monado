@@ -73,7 +73,9 @@ YUV444_to_RGBX8888(int y, int u, int v)
 	return B << 16 | G << 8 | R;
 }
 
-static uint32_t lookup_YUV_to_RGBX[256][256][256] = {{0}};
+#undef USE_TABLE
+#ifdef USE_TABLE
+static uint32_t lookup_YUV_to_RGBX[256][256][256] = {0};
 
 static void
 generate_lookup_YUV_to_RGBX()
@@ -95,6 +97,7 @@ generate_lookup_YUV_to_RGBX()
 		}
 	}
 }
+#endif
 
 inline static void
 YUV422_to_R8G8B8X8(const uint8_t *input, uint32_t *rgb1, uint32_t *rgb2)
@@ -104,8 +107,13 @@ YUV422_to_R8G8B8X8(const uint8_t *input, uint32_t *rgb1, uint32_t *rgb2)
 	uint8_t y1 = input[2];
 	uint8_t v = input[3];
 
+#ifdef USE_TABLE
 	*rgb1 = lookup_YUV_to_RGBX[y0][u][v];
 	*rgb2 = lookup_YUV_to_RGBX[y1][u][v];
+#else
+	*rgb1 = YUV444_to_RGBX8888(y0, u, v);
+	*rgb2 = YUV444_to_RGBX8888(y1, u, v);
+#endif
 }
 
 inline static void
@@ -116,8 +124,15 @@ YUV422_to_R8G8B8(const uint8_t *input, uint8_t *dst)
 	uint8_t y1 = input[2];
 	uint8_t v = input[3];
 
+#ifdef USE_TABLE
 	uint8_t *rgb1 = (uint8_t *)&lookup_YUV_to_RGBX[y0][u][v];
 	uint8_t *rgb2 = (uint8_t *)&lookup_YUV_to_RGBX[y1][u][v];
+#else
+	uint32_t rgb1v = YUV444_to_RGBX8888(y0, u, v);
+	uint32_t rgb2v = YUV444_to_RGBX8888(y1, u, v);
+	uint8_t *rgb1 = (uint8_t *)&rgb1v;
+	uint8_t *rgb2 = (uint8_t *)&rgb2v;
+#endif
 
 	dst[0] = rgb1[0];
 	dst[1] = rgb1[1];
@@ -269,7 +284,9 @@ u_sink_create_format_converter(enum xrt_format f,
 		return;
 	}
 
+#ifdef USE_TABLE
 	generate_lookup_YUV_to_RGBX();
+#endif
 
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
 	s->base.push_frame = push_frame;
