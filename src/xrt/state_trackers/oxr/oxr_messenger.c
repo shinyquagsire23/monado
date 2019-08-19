@@ -16,8 +16,6 @@
 #include "oxr_logger.h"
 #include "oxr_handle.h"
 
-#ifdef XR_EXT_debug_utils
-
 static XrResult
 oxr_messenger_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
@@ -75,6 +73,3 @@ oxr_create_messenger(struct oxr_logger *log,
 	*out_mssngr = mssngr;
 	return XR_SUCCESS;
 }
-
-
-#endif // XR_EXT_debug_utils

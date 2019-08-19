@@ -13,7 +13,6 @@
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
 
-#ifdef XR_EXT_debug_utils
 
 
 XrResult
@@ -121,5 +120,3 @@ oxr_xrSessionInsertDebugUtilsLabelEXT(XrSession session,
 
 	return oxr_error(&log, XR_ERROR_RUNTIME_FAILURE, " not implemented");
 }
-
-#endif

@@ -498,7 +498,6 @@ oxr_create_swapchain(struct oxr_logger *,
  *
  */
 
-#ifdef XR_EXT_debug_utils
 /*!
  * To go back to a OpenXR object.
  */
@@ -516,7 +515,8 @@ oxr_create_messenger(struct oxr_logger *,
 XrResult
 oxr_destroy_messenger(struct oxr_logger *log,
                       struct oxr_debug_messenger *mssngr);
-#endif // XR_EXT_debug_utils
+
+
 /*
  *
  * oxr_system.c
@@ -826,10 +826,8 @@ struct oxr_instance
 		XrPath gamepad;
 	} path_cache;
 
-#ifdef XR_EXT_debug_utils
 	//! Debug messengers
 	struct oxr_debug_messenger *messengers[XRT_MAX_HANDLE_CHILDREN];
-#endif // XR_EXT_debug_utils
 };
 
 /*!
@@ -1114,7 +1112,6 @@ struct oxr_debug_messenger
 	//! Onwer of this messenger.
 	struct oxr_instance *inst;
 
-#ifdef XR_EXT_debug_utils
 	//! Severities to submit to this messenger
 	XrDebugUtilsMessageSeverityFlagsEXT message_severities;
 
@@ -1126,8 +1123,6 @@ struct oxr_debug_messenger
 
 	//! Opaque user data
 	void *XR_MAY_ALIAS user_data;
-
-#endif // XR_EXT_debug_utils
 };
 
 /*!

@@ -381,8 +381,6 @@ oxr_xrReleaseSwapchainImage(XrSwapchain swapchain,
  *
  */
 
-#ifdef XR_EXT_debug_utils
-
 //! OpenXR API function @ep{xrSetDebugUtilsObjectNameEXT}
 XrResult
 oxr_xrSetDebugUtilsObjectNameEXT(XrInstance instance,
@@ -420,7 +418,6 @@ oxr_xrSessionEndDebugUtilsLabelRegionEXT(XrSession session);
 XrResult
 oxr_xrSessionInsertDebugUtilsLabelEXT(XrSession session,
                                       const XrDebugUtilsLabelEXT* labelInfo);
-#endif
 
 
 /*
