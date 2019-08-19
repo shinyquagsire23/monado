@@ -100,30 +100,49 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
 
 /*!
  * @brief Helper define for generating that GetInstanceProcAddr function.
+ *
+ * Use for functions that should be unconditionally available.
  */
-#define ENTRY_IF(funcName)                                                     \
-	if (strcmp(name, #funcName) == 0) {                                    \
-		PFN_##funcName ret = &oxr_##funcName;                          \
-		*out_function = (PFN_xrVoidFunction)(ret);                     \
-		return XR_SUCCESS;                                             \
-	}
-
-/*!
- * @brief Helper define for generating that GetInstanceProcAddr function: checks
- * the extra condition to find out if the extension is enabled
- */
-#define ENTRY_IF_EXT(funcName, extraCondition)                                 \
-	if (strcmp(name, #funcName) == 0) {                                    \
-		if (extraCondition) {                                          \
+#define ENTRY(funcName)                                                        \
+	do {                                                                   \
+		if (strcmp(name, #funcName) == 0) {                            \
 			PFN_##funcName ret = &oxr_##funcName;                  \
 			*out_function = (PFN_xrVoidFunction)(ret);             \
 			return XR_SUCCESS;                                     \
 		}                                                              \
-		return oxr_error(                                              \
-		    log, XR_ERROR_FUNCTION_UNSUPPORTED,                        \
-		    "(name = \"%s\") Required extension not enabled", name);   \
-	}
+	} while (false)
 
+/*!
+ * @brief Helper define for generating that GetInstanceProcAddr function for
+ * conditionally-available functions.
+ *
+ * Checks the extra condition to e.g. find out if the extension is enabled
+ */
+#define ENTRY_IF(funcName, extraCondition, message)                            \
+	do {                                                                   \
+		if (strcmp(name, #funcName) == 0) {                            \
+			if (extraCondition) {                                  \
+				PFN_##funcName ret = &oxr_##funcName;          \
+				*out_function = (PFN_xrVoidFunction)(ret);     \
+				return XR_SUCCESS;                             \
+			}                                                      \
+			return oxr_error(log, XR_ERROR_FUNCTION_UNSUPPORTED,   \
+			                 "(name = \"%s\") " message, name);    \
+		}                                                              \
+	} while (false)
+
+/*!
+ * @brief Helper define for generating that GetInstanceProcAddr function for
+ * extension-provided functions.
+ *
+ * Wraps ENTRY_IF for the common case.
+ *
+ * Pass the function name and the (mixed-case) extension name without the
+ * leading XR_.
+ */
+#define ENTRY_IF_EXT(funcName, short_ext_name)                                 \
+	ENTRY_IF(funcName, inst->extensions.short_ext_name,                    \
+	         "Required extension XR_" #short_ext_name " not enabled")
 /*!
  * Handle a non-null instance pointer.
  */
@@ -133,94 +152,99 @@ handle_non_null(struct oxr_instance* inst,
                 const char* name,
                 PFN_xrVoidFunction* out_function)
 {
-	ENTRY_IF(xrGetInstanceProcAddr)
-	ENTRY_IF(xrEnumerateInstanceExtensionProperties)
-	ENTRY_IF(xrCreateInstance)
-	ENTRY_IF(xrDestroyInstance)
-	ENTRY_IF(xrGetInstanceProperties)
-	ENTRY_IF(xrPollEvent)
-	ENTRY_IF(xrResultToString)
-	ENTRY_IF(xrStructureTypeToString)
-	ENTRY_IF(xrGetSystem)
-	ENTRY_IF(xrGetSystemProperties)
-	ENTRY_IF(xrEnumerateEnvironmentBlendModes)
-	ENTRY_IF(xrCreateSession)
-	ENTRY_IF(xrDestroySession)
-	ENTRY_IF(xrEnumerateReferenceSpaces)
-	ENTRY_IF(xrCreateReferenceSpace)
-	ENTRY_IF(xrGetReferenceSpaceBoundsRect)
-	ENTRY_IF(xrCreateActionSpace)
-	ENTRY_IF(xrLocateSpace)
-	ENTRY_IF(xrDestroySpace)
-	ENTRY_IF(xrEnumerateViewConfigurations)
-	ENTRY_IF(xrGetViewConfigurationProperties)
-	ENTRY_IF(xrEnumerateViewConfigurationViews)
-	ENTRY_IF(xrEnumerateSwapchainFormats)
-	ENTRY_IF(xrCreateSwapchain)
-	ENTRY_IF(xrDestroySwapchain)
-	ENTRY_IF(xrEnumerateSwapchainImages)
-	ENTRY_IF(xrAcquireSwapchainImage)
-	ENTRY_IF(xrWaitSwapchainImage)
-	ENTRY_IF(xrReleaseSwapchainImage)
-	ENTRY_IF(xrBeginSession)
-	ENTRY_IF(xrEndSession)
-	ENTRY_IF(xrWaitFrame)
-	ENTRY_IF(xrBeginFrame)
-	ENTRY_IF(xrEndFrame)
-	ENTRY_IF(xrRequestExitSession)
-	ENTRY_IF(xrLocateViews)
-	ENTRY_IF(xrStringToPath)
-	ENTRY_IF(xrPathToString)
-	ENTRY_IF(xrCreateActionSet)
-	ENTRY_IF(xrDestroyActionSet)
-	ENTRY_IF(xrCreateAction)
-	ENTRY_IF(xrDestroyAction)
-	ENTRY_IF(xrSuggestInteractionProfileBindings)
-	ENTRY_IF(xrAttachSessionActionSets)
-	ENTRY_IF(xrGetCurrentInteractionProfile)
-	ENTRY_IF(xrGetActionStateBoolean)
-	ENTRY_IF(xrGetActionStateFloat)
-	ENTRY_IF(xrGetActionStateVector2f)
-	ENTRY_IF(xrGetActionStatePose)
-	ENTRY_IF(xrSyncActions)
-	ENTRY_IF(xrEnumerateBoundSourcesForAction)
-	ENTRY_IF(xrGetInputSourceLocalizedName)
-	ENTRY_IF(xrApplyHapticFeedback)
-	ENTRY_IF(xrStopHapticFeedback)
+	ENTRY(xrGetInstanceProcAddr);
+	ENTRY(xrEnumerateInstanceExtensionProperties);
+	ENTRY(xrCreateInstance);
+	ENTRY(xrDestroyInstance);
+	ENTRY(xrGetInstanceProperties);
+	ENTRY(xrPollEvent);
+	ENTRY(xrResultToString);
+	ENTRY(xrStructureTypeToString);
+	ENTRY(xrGetSystem);
+	ENTRY(xrGetSystemProperties);
+	ENTRY(xrEnumerateEnvironmentBlendModes);
+	ENTRY(xrCreateSession);
+	ENTRY(xrDestroySession);
+	ENTRY(xrEnumerateReferenceSpaces);
+	ENTRY(xrCreateReferenceSpace);
+	ENTRY(xrGetReferenceSpaceBoundsRect);
+	ENTRY(xrCreateActionSpace);
+	ENTRY(xrLocateSpace);
+	ENTRY(xrDestroySpace);
+	ENTRY(xrEnumerateViewConfigurations);
+	ENTRY(xrGetViewConfigurationProperties);
+	ENTRY(xrEnumerateViewConfigurationViews);
+	ENTRY(xrEnumerateSwapchainFormats);
+	ENTRY(xrCreateSwapchain);
+	ENTRY(xrDestroySwapchain);
+	ENTRY(xrEnumerateSwapchainImages);
+	ENTRY(xrAcquireSwapchainImage);
+	ENTRY(xrWaitSwapchainImage);
+	ENTRY(xrReleaseSwapchainImage);
+	ENTRY(xrBeginSession);
+	ENTRY(xrEndSession);
+	ENTRY(xrWaitFrame);
+	ENTRY(xrBeginFrame);
+	ENTRY(xrEndFrame);
+	ENTRY(xrRequestExitSession);
+	ENTRY(xrLocateViews);
+	ENTRY(xrStringToPath);
+	ENTRY(xrPathToString);
+	ENTRY(xrCreateActionSet);
+	ENTRY(xrDestroyActionSet);
+	ENTRY(xrCreateAction);
+	ENTRY(xrDestroyAction);
+	ENTRY(xrSuggestInteractionProfileBindings);
+	ENTRY(xrAttachSessionActionSets);
+	ENTRY(xrGetCurrentInteractionProfile);
+	ENTRY(xrGetActionStateBoolean);
+	ENTRY(xrGetActionStateFloat);
+	ENTRY(xrGetActionStateVector2f);
+	ENTRY(xrGetActionStatePose);
+	ENTRY(xrSyncActions);
+	ENTRY(xrEnumerateBoundSourcesForAction);
+	ENTRY(xrGetInputSourceLocalizedName);
+	ENTRY(xrApplyHapticFeedback);
+	ENTRY(xrStopHapticFeedback);
 
-	//! @todo all extension functions should use ENTRY_IF_EXT !
+#ifdef OXR_HAVE_KHR_visibility_mask
+	ENTRY_IF_EXT(xrGetVisibilityMaskKHR, KHR_visibility_mask)
+#endif // OXR_HAVE_KHR_visibility_mask
 
-#ifdef XR_KHR_visibility_mask
-	ENTRY_IF(xrGetVisibilityMaskKHR)
-#endif
-#ifdef XR_USE_TIMESPEC
-	ENTRY_IF(xrConvertTimespecTimeToTimeKHR)
-	ENTRY_IF(xrConvertTimeToTimespecTimeKHR)
-#endif
-#ifdef XR_EXT_performance_settings
-	ENTRY_IF(xrPerfSettingsSetPerformanceLevelEXT)
-#endif
-#ifdef XR_EXT_thermal_query
-	ENTRY_IF(xrThermalGetTemperatureTrendEXT)
-#endif
-#ifdef XR_EXT_debug_utils
-	ENTRY_IF(xrSetDebugUtilsObjectNameEXT)
-	ENTRY_IF(xrCreateDebugUtilsMessengerEXT)
-	ENTRY_IF(xrDestroyDebugUtilsMessengerEXT)
-	ENTRY_IF(xrSubmitDebugUtilsMessageEXT)
-	ENTRY_IF(xrSessionBeginDebugUtilsLabelRegionEXT)
-	ENTRY_IF(xrSessionEndDebugUtilsLabelRegionEXT)
-	ENTRY_IF(xrSessionInsertDebugUtilsLabelEXT)
-#endif
-#ifdef XR_USE_GRAPHICS_API_OPENGL
-	ENTRY_IF_EXT(xrGetOpenGLGraphicsRequirementsKHR, inst->opengl_enable)
-#endif
-#ifdef XR_USE_GRAPHICS_API_VULKAN
-	ENTRY_IF_EXT(xrGetVulkanInstanceExtensionsKHR, inst->vulkan_enable)
-	ENTRY_IF_EXT(xrGetVulkanDeviceExtensionsKHR, inst->vulkan_enable)
-	ENTRY_IF_EXT(xrGetVulkanGraphicsDeviceKHR, inst->vulkan_enable)
-	ENTRY_IF_EXT(xrGetVulkanGraphicsRequirementsKHR, inst->vulkan_enable)
-#endif
+#ifdef OXR_HAVE_KHR_convert_timespec_time
+	ENTRY_IF_EXT(xrConvertTimespecTimeToTimeKHR, KHR_convert_timespec_time);
+	ENTRY_IF_EXT(xrConvertTimeToTimespecTimeKHR, KHR_convert_timespec_time);
+#endif // OXR_HAVE_KHR_convert_timespec_time
+
+#ifdef OXR_HAVE_EXT_performance_settings
+	ENTRY_IF_EXT(xrPerfSettingsSetPerformanceLevelEXT,
+	             EXT_performance_settings)
+#endif // OXR_HAVE_EXT_performance_settings
+
+#ifdef OXR_HAVE_EXT_thermal_query
+	ENTRY_IF_EXT(xrThermalGetTemperatureTrendEXT, EXT_thermal_query)
+#endif // OXR_HAVE_EXT_thermal_query
+
+#ifdef OXR_HAVE_EXT_debug_utils
+	ENTRY_IF_EXT(xrSetDebugUtilsObjectNameEXT, EXT_debug_utils);
+	ENTRY_IF_EXT(xrCreateDebugUtilsMessengerEXT, EXT_debug_utils);
+	ENTRY_IF_EXT(xrDestroyDebugUtilsMessengerEXT, EXT_debug_utils);
+	ENTRY_IF_EXT(xrSubmitDebugUtilsMessageEXT, EXT_debug_utils);
+	ENTRY_IF_EXT(xrSessionBeginDebugUtilsLabelRegionEXT, EXT_debug_utils);
+	ENTRY_IF_EXT(xrSessionEndDebugUtilsLabelRegionEXT, EXT_debug_utils);
+	ENTRY_IF_EXT(xrSessionInsertDebugUtilsLabelEXT, EXT_debug_utils);
+#endif // OXR_HAVE_EXT_debug_utils
+
+#ifdef OXR_HAVE_KHR_opengl_enable
+	ENTRY_IF_EXT(xrGetOpenGLGraphicsRequirementsKHR, KHR_opengl_enable);
+#endif // OXR_HAVE_KHR_opengl_enable
+
+#ifdef OXR_HAVE_KHR_vulkan_enable
+	ENTRY_IF_EXT(xrGetVulkanInstanceExtensionsKHR, KHR_vulkan_enable);
+	ENTRY_IF_EXT(xrGetVulkanDeviceExtensionsKHR, KHR_vulkan_enable);
+	ENTRY_IF_EXT(xrGetVulkanGraphicsDeviceKHR, KHR_vulkan_enable);
+	ENTRY_IF_EXT(xrGetVulkanGraphicsRequirementsKHR, KHR_vulkan_enable);
+#endif // OXR_HAVE_KHR_vulkan_enable
 
 	/*
 	 * Not logging here because there's no need to loudly advertise
@@ -238,9 +262,9 @@ handle_null(struct oxr_logger* log,
             const char* name,
             PFN_xrVoidFunction* out_function)
 {
-	ENTRY_IF(xrCreateInstance)
-	ENTRY_IF(xrEnumerateInstanceExtensionProperties)
-	ENTRY_IF(xrEnumerateApiLayerProperties)
+	ENTRY(xrCreateInstance);
+	ENTRY(xrEnumerateInstanceExtensionProperties);
+	ENTRY(xrEnumerateApiLayerProperties);
 
 	/*
 	 * This is fine to log, since there should not be other

@@ -468,37 +468,27 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 		return result;
 	}
 
-#ifdef XR_USE_PLATFORM_XLIB
+#if defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_XLIB)
 	XrGraphicsBindingOpenGLXlibKHR const* opengl_xlib =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo,
 	                             XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
 	                             XrGraphicsBindingOpenGLXlibKHR);
 	if (opengl_xlib != NULL) {
-		if (!inst->opengl_enable) {
-			return oxr_error(
-			    log, XR_ERROR_VALIDATION_FAILURE,
-			    " OpenGL "
-			    "requires " XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
-		}
+		OXR_VERIFY_EXTENSION(log, inst, KHR_opengl_enable);
 		return oxr_verify_XrGraphicsBindingOpenGLXlibKHR(log,
 		                                                 opengl_xlib);
 	}
-#endif
+#endif // defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_XLIB)
 
-#ifdef XR_USE_GRAPHICS_API_VULKAN
+#ifdef OXR_HAVE_KHR_vulkan_enable
 	XrGraphicsBindingVulkanKHR const* vulkan = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR,
 	    XrGraphicsBindingVulkanKHR);
 	if (vulkan != NULL) {
-		if (!inst->vulkan_enable) {
-			return oxr_error(
-			    log, XR_ERROR_VALIDATION_FAILURE,
-			    " Vulkan "
-			    "requires " XR_KHR_VULKAN_ENABLE_EXTENSION_NAME);
-		}
+		OXR_VERIFY_EXTENSION(log, inst, KHR_vulkan_enable);
 		return oxr_verify_XrGraphicsBindingVulkanKHR(log, vulkan);
 	}
-#endif
+#endif // OXR_HAVE_KHR_vulkan_enable
 
 	/*
 	 * Add any new graphics binding structs here - before the headless
@@ -511,7 +501,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 	/* We didn't recognize any graphics binding structs in the chain - our
 	 * last hope is headless. */
 
-	if (inst->headless) {
+	if (inst->extensions.MND_headless) {
 		return XR_SUCCESS;
 	}
 

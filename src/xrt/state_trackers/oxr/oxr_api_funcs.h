@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include "oxr_extension_support.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -259,7 +261,7 @@ oxr_xrLocateViews(XrSession session,
                   uint32_t* viewCountOutput,
                   XrView* views);
 
-#ifdef XR_KHR_visibility_mask
+#ifdef OXR_HAVE_KHR_visibility_mask
 //! OpenXR API function @ep{xrGetVisibilityMaskKHR}
 XrResult
 oxr_xrGetVisibilityMaskKHR(XrSession session,
@@ -267,17 +269,17 @@ oxr_xrGetVisibilityMaskKHR(XrSession session,
                            uint32_t viewIndex,
                            XrVisibilityMaskTypeKHR visibilityMaskType,
                            XrVisibilityMaskKHR* visibilityMask);
-#endif
+#endif // OXR_HAVE_KHR_visibility_mask
 
-#ifdef XR_EXT_performance_settings
+#ifdef OXR_HAVE_EXT_performance_settings
 //! OpenXR API function @ep{xrPerfSettingsSetPerformanceLevelEXT}
 XrResult
 oxr_xrPerfSettingsSetPerformanceLevelEXT(XrSession session,
                                          XrPerfSettingsDomainEXT domain,
                                          XrPerfSettingsLevelEXT level);
-#endif
+#endif // OXR_HAVE_EXT_performance_settings
 
-#ifdef XR_EXT_thermal_query
+#ifdef OXR_HAVE_EXT_thermal_query
 //! OpenXR API function @ep{xrThermalGetTemperatureTrendEXT}
 XrResult
 oxr_xrThermalGetTemperatureTrendEXT(
@@ -286,7 +288,7 @@ oxr_xrThermalGetTemperatureTrendEXT(
     XrPerfSettingsNotificationLevelEXT* notificationLevel,
     float* tempHeadroom,
     float* tempSlope);
-#endif
+#endif // OXR_HAVE_EXT_thermal_query
 
 
 /*

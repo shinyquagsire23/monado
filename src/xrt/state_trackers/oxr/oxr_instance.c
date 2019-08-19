@@ -22,6 +22,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_handle.h"
+#include "oxr_extension_support.h"
 
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_left, "OXR_OVERRIDE_LFOV_LEFT", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_right, "OXR_OVERRIDE_LFOV_RIGHT", 0.0f)
@@ -174,28 +175,20 @@ oxr_instance_create(struct oxr_logger *log,
 
 	inst->timekeeping = time_state_create();
 
-	inst->headless = false;
-	inst->opengl_enable = false;
-	inst->vulkan_enable = false;
+
+	U_ZERO(&inst->extensions);
 	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
-#if XR_MND_headless
-		if (strcmp(createInfo->enabledExtensionNames[i],
-		           XR_MND_HEADLESS_EXTENSION_NAME) == 0) {
-			inst->headless = true;
-		}
-#endif
-#if XR_KHR_opengl_enable
-		if (strcmp(createInfo->enabledExtensionNames[i],
-		           XR_KHR_OPENGL_ENABLE_EXTENSION_NAME) == 0) {
-			inst->opengl_enable = true;
-		}
-#endif
-#if XR_KHR_vulkan_enable
-		if (strcmp(createInfo->enabledExtensionNames[i],
-		           XR_KHR_VULKAN_ENABLE_EXTENSION_NAME) == 0) {
-			inst->vulkan_enable = true;
-		}
-#endif
+
+#define ENABLE_EXT(mixed_case, all_caps)                                       \
+	if (strcmp(createInfo->enabledExtensionNames[i],                       \
+	           XR_##all_caps##_EXTENSION_NAME) == 0) {                     \
+		inst->extensions.mixed_case = true;                            \
+		continue;                                                      \
+	}
+		OXR_EXTENSION_SUPPORT_GENERATE(ENABLE_EXT)
+		// assert(false &&
+		//        "Should not be reached - oxr_xrCreateInstance should "
+		//        "have failed on unrecognized extension.");
 	}
 
 	//! @todo check if this (and other creates) failed?

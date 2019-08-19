@@ -82,6 +82,19 @@ extern "C" {
 #define OXR_VERIFY_ACTIONSET_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, ACTIONSET);
 // clang-format on
 
+/*!
+ * Checks if a required extension is enabled.
+ *
+ * mixed_case_name should be the extension name without the XR_ prefix.
+ */
+#define OXR_VERIFY_EXTENSION(log, inst, mixed_case_name)                       \
+	do {                                                                   \
+		if (!(inst)->extensions.mixed_case_name) {                     \
+			return oxr_error((log), XR_ERROR_FUNCTION_UNSUPPORTED, \
+			                 " Requires XR_" #mixed_case_name      \
+			                 " extension enabled");                \
+		}                                                              \
+	} while (false)
 
 #define OXR_VERIFY_ARG_NOT_NULL(log, arg)                                      \
 	do {                                                                   \

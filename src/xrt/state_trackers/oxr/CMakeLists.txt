@@ -20,6 +20,7 @@ set(OXR_SOURCE_FILES
 	oxr_api_verify.h
 	oxr_chain.h
 	oxr_event.cpp
+	oxr_extension_support.h
 	oxr_handle_base.c
 	oxr_input.c
 	oxr_instance.c

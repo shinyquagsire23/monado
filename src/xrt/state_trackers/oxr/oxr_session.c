@@ -591,7 +591,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 	 * function added.
 	 */
 
-	if (sys->inst->headless) {
+	if (sys->inst->extensions.MND_headless) {
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
 		(*out_session)->compositor = NULL;
 		(*out_session)->create_swapchain = NULL;

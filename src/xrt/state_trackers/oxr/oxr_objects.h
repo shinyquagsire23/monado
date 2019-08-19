@@ -17,6 +17,8 @@
 #include "util/u_hashset.h"
 #include "util/u_hashmap.h"
 
+#include "oxr_extension_support.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -776,6 +778,17 @@ struct oxr_system
 	XrEnvironmentBlendMode blend_modes[3];
 };
 
+#define MAKE_EXT_STATUS(mixed_case, all_caps) bool mixed_case;
+/*!
+ * Structure tracking which extensions are enabled for a given instance.
+ *
+ * Names are systematic: the extension name with the XR_ prefix removed.
+ */
+struct oxr_extension_status
+{
+	OXR_EXTENSION_SUPPORT_GENERATE(MAKE_EXT_STATUS)
+};
+
 /*!
  * Main object that ties everything together.
  *
@@ -788,16 +801,8 @@ struct oxr_instance
 
 	struct xrt_prober *prober;
 
-	// Enabled extensions
-
-	//! XR_MND_headless
-	bool headless;
-
-	//! XR_KHR_opengl_enable
-	bool opengl_enable;
-
-	//! XR_KHR_vulkan_enable
-	bool vulkan_enable;
+	//! Enabled extensions
+	struct oxr_extension_status extensions;
 
 	// Hardcoded single system.
 	struct oxr_system system;

@@ -23,29 +23,15 @@
 
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
+#include "oxr_extension_support.h"
 
 #include "openxr_includes/openxr.h"
 
-
+#define MAKE_EXTENSION_PROPERTIES(mixed_case, all_caps)                        \
+	{XR_TYPE_EXTENSION_PROPERTIES, NULL, XR_##all_caps##_EXTENSION_NAME,   \
+	 XR_##mixed_case##_SPEC_VERSION},
 static const XrExtensionProperties extension_properties[] = {
-#ifdef XR_USE_GRAPHICS_API_OPENGL
-    {XR_TYPE_EXTENSION_PROPERTIES, NULL, XR_KHR_OPENGL_ENABLE_EXTENSION_NAME,
-     XR_KHR_opengl_enable_SPEC_VERSION},
-#endif
-#ifdef XR_USE_GRAPHICS_API_VULKAN
-    {XR_TYPE_EXTENSION_PROPERTIES, NULL, XR_KHR_VULKAN_ENABLE_EXTENSION_NAME,
-     XR_KHR_vulkan_enable_SPEC_VERSION},
-#endif
-#if XR_MND_headless
-    {XR_TYPE_EXTENSION_PROPERTIES, NULL, XR_MND_HEADLESS_EXTENSION_NAME,
-     XR_MND_headless_SPEC_VERSION},
-#endif
-#ifdef XR_USE_TIMESPEC
-    {XR_TYPE_EXTENSION_PROPERTIES, NULL,
-     XR_KHR_CONVERT_TIMESPEC_TIME_EXTENSION_NAME,
-     XR_KHR_convert_timespec_time_SPEC_VERSION},
-#endif
-};
+    OXR_EXTENSION_SUPPORT_GENERATE(MAKE_EXTENSION_PROPERTIES)};
 
 XrResult
 oxr_xrEnumerateInstanceExtensionProperties(const char* layerName,
@@ -96,6 +82,25 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo* createInfo,
 		    "(createInfo->applicationInfo.apiVersion) "
 		    "Cannot satisfy request for version: too high");
 	}
+
+	/*
+	 * Check that all extension names are recognized, so oxr_instance_create
+	 * doesn't need to check for bad extension names.
+	 */
+#define CHECK_EXT_NAME(mixed_case, all_caps)                                   \
+	if (strcmp(createInfo->enabledExtensionNames[i],                       \
+	           XR_##all_caps##_EXTENSION_NAME) == 0) {                     \
+		continue;                                                      \
+	}
+	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
+		OXR_EXTENSION_SUPPORT_GENERATE(CHECK_EXT_NAME)
+
+		return oxr_error(&log, XR_ERROR_EXTENSION_NOT_PRESENT,
+		                 "(createInfo->enabledExtensionNames[%d]) "
+		                 "Unrecognized extension name",
+		                 i);
+	}
+
 	struct oxr_instance* inst;
 
 	ret = oxr_instance_create(&log, createInfo, &inst);
@@ -227,8 +232,9 @@ oxr_xrPathToString(XrInstance instance,
 		return ret;
 	}
 
-	// Length is the number of valid characters, not including the null
-	// termination character (but a extra null byte is always reserved).
+	// Length is the number of valid characters, not including the
+	// null termination character (but a extra null byte is always
+	// reserved).
 	OXR_TWO_CALL_HELPER(&log, bufferCapacityInput, bufferCountOutput,
 	                    buffer, length + 1, str);
 
@@ -242,12 +248,13 @@ oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance,
                                    const struct timespec* timespecTime,
                                    XrTime* time)
 {
-	//! @todo do we need to check and see if this extension was enabled
-	//! first?
+	//! @todo do we need to check and see if this extension was
+	//! enabled first?
 	struct oxr_instance* inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrConvertTimespecTimeToTimeKHR");
+	OXR_VERIFY_EXTENSION(&log, inst, KHR_convert_timespec_time);
 	OXR_VERIFY_ARG_NOT_NULL(&log, timespecTime);
 	OXR_VERIFY_ARG_NOT_NULL(&log, time);
 	return oxr_instance_convert_timespec_to_time(&log, inst, timespecTime,
@@ -264,6 +271,7 @@ oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance,
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrConvertTimeToTimespecTimeKHR");
+	OXR_VERIFY_EXTENSION(&log, inst, KHR_convert_timespec_time);
 	OXR_VERIFY_ARG_NOT_NULL(&log, timespecTime);
 	return oxr_instance_convert_time_to_timespec(&log, inst, time,
 	                                             timespecTime);
