@@ -82,14 +82,32 @@ compositor_wait_frame(struct xrt_compositor *xc,
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_SPEW(c, "WAIT_FRAME");
+
+	// HACK: Wait until the frame is predicted to be displayed.
+	// This needs improvement, but blocks for plausible timings.
+	int64_t already_used =
+	    time_state_get_now(c->timekeeping) - c->last_frame_time_ns;
+	int64_t remaining_usec =
+	    ((int64_t)c->settings.nominal_frame_interval_ns - already_used) /
+	    1000;
+
+	// leave 1.25 ms for overhead
+	if (remaining_usec > 1250)
+		usleep(remaining_usec - 1250);
+
 	*predicted_display_period = c->settings.nominal_frame_interval_ns;
 	*predicted_display_time =
 	    c->last_frame_time_ns + c->settings.nominal_frame_interval_ns;
 
-	//! @todo set *predicted_display_time
+	// if frame intervals were missed, keep adding intervals until we
+	// predict the next one in the future. Also make sure we leave the
+	// application at least half a frame interval for rendering.
 
-	// *predicted_display_time = 0;
-	// *predicted_display_period = 0;
+	int64_t now = time_state_get_now(c->timekeeping);
+	while (*predicted_display_time <
+	       now - (int64_t)c->settings.nominal_frame_interval_ns / 2)
+		*predicted_display_time +=
+		    c->settings.nominal_frame_interval_ns;
 }
 
 static void
@@ -119,20 +137,6 @@ compositor_end_frame(struct xrt_compositor *xc,
 
 	struct comp_swapchain_image *right;
 	struct comp_swapchain_image *left;
-
-	//! HACK: Wait until the frame is predicted to be displayed.
-	// This needs improvement, but blocks for plausible timings.
-	uint64_t now = time_state_get_now(c->timekeeping);
-	uint64_t already_used = now - c->last_frame_time_ns;
-	if (already_used < c->settings.nominal_frame_interval_ns) {
-		uint64_t remaining_usec =
-		    (c->settings.nominal_frame_interval_ns - already_used) /
-		    1000;
-		remaining_usec -= 500; // HACK: leave a bit of time for overhead
-		// printf("Remaining usec before this frame is displayed :
-		// %lu\n", remaining_usec);
-		usleep(remaining_usec);
-	}
 
 	// Stereo!
 	if (num_swapchains == 2) {
