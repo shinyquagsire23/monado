@@ -63,7 +63,7 @@ struct v4l2_source_descriptor
  * @ingroup drv_v4l2
  */
 struct xrt_fs*
-v4l2_fs_create(const char* path, struct xrt_fs_sink* sink);
+v4l2_fs_create(const char* path, struct xrt_frame_sink* sink);
 
 
 #ifdef __cplusplus

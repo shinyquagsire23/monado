@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  @ref xrt_fs_sink converters and other helpers.
+ * @brief  @ref xrt_frame_sink converters and other helpers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_util
  */
@@ -26,9 +26,9 @@
 
 struct u_sink_converter
 {
-	struct xrt_fs_sink base;
+	struct xrt_frame_sink base;
 
-	struct xrt_fs_sink *downstream;
+	struct xrt_frame_sink *downstream;
 
 	uint8_t *data;
 
@@ -224,7 +224,7 @@ ensure_data(struct u_sink_converter *s, uint32_t w, uint32_t h)
 }
 
 static void
-push_frame(struct xrt_fs_sink *xs, struct xrt_fs_frame *xf)
+push_frame(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 {
 	struct u_sink_converter *s = (struct u_sink_converter *)xs;
 	s->size = 0;
@@ -249,7 +249,7 @@ push_frame(struct xrt_fs_sink *xs, struct xrt_fs_frame *xf)
 		        u_format_str(xf->format));
 	}
 
-	struct xrt_fs_frame nf = {0};
+	struct xrt_frame nf = {0};
 	nf.width = s->width;
 	nf.height = s->height;
 	nf.stride = s->stride;
@@ -275,8 +275,8 @@ push_frame(struct xrt_fs_sink *xs, struct xrt_fs_frame *xf)
 
 void
 u_sink_create_format_converter(enum xrt_format f,
-                               struct xrt_fs_sink *downstream,
-                               struct xrt_fs_sink **out_xfs)
+                               struct xrt_frame_sink *downstream,
+                               struct xrt_frame_sink **out_xfs)
 {
 	if (f != XRT_FORMAT_R8G8B8) {
 		fprintf(stderr, "error: Format '%s' not supported\n",

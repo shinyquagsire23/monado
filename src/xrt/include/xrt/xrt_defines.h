@@ -62,6 +62,18 @@ enum xrt_format
 };
 
 /*!
+ * What type of stereo format a frame has.
+ *
+ * @ingroup xrt_iface
+ */
+enum xrt_stereo_format
+{
+	XRT_STEREO_FORMAT_NONE,
+	XRT_STEREO_FORMAT_SBS, //!< Side by side
+	XRT_STEREO_FORMAT_OAU, //!< Over & Under
+};
+
+/*!
  * A quaternion with single floats.
  *
  * @ingroup xrt_iface math

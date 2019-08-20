@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  @ref xrt_fs_sink converters and other helpers.
+ * @brief  @ref xrt_frame_sink converters and other helpers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_util
  */
 
 #pragma once
 
-#include "xrt/xrt_defines.h"
-#include "xrt/xrt_frameserver.h"
+#include "xrt/xrt_frame.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,8 +18,8 @@ extern "C" {
 
 void
 u_sink_create_format_converter(enum xrt_format f,
-                               struct xrt_fs_sink *downstream,
-                               struct xrt_fs_sink **out_xfs);
+                               struct xrt_frame_sink *downstream,
+                               struct xrt_frame_sink **out_xfs);
 
 
 #ifdef __cplusplus

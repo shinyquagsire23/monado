@@ -12,8 +12,6 @@
 #include "util/u_debug.h"
 #include "util/u_format.h"
 
-#include "xrt/xrt_frameserver.h"
-
 #include "v4l2_interface.h"
 
 #include <stdio.h>
@@ -121,7 +119,7 @@ struct v4l2_fs
 		bool userptr;
 	} capture;
 
-	struct xrt_fs_sink *sink;
+	struct xrt_frame_sink *sink;
 
 	pthread_t stream_thread;
 
@@ -341,7 +339,7 @@ static void
 v4l2_quirk_apply_ps4(struct v4l2_fs *vid, struct v4l2_source_descriptor *desc)
 {
 	desc->offset = 32 + 64;
-	desc->base.stereo_format = XRT_FS_STEREO_SBS;
+	desc->base.stereo_format = XRT_STEREO_FORMAT_SBS;
 
 	switch (desc->stream.width) {
 	case 3448:
@@ -448,7 +446,7 @@ v4l2_list_modes_size(struct v4l2_fs *vid,
 	}
 
 	// Fill out the out sink variables.
-	desc->base.stereo_format = XRT_FS_STEREO_NONE;
+	desc->base.stereo_format = XRT_STEREO_FORMAT_NONE;
 	desc->base.format = format;
 	desc->base.width = desc->stream.width;
 	desc->base.height = desc->stream.height;
@@ -622,7 +620,7 @@ v4l2_fs_destroy(struct xrt_fs *xfs)
 }
 
 struct xrt_fs *
-v4l2_fs_create(const char *path, struct xrt_fs_sink *sink)
+v4l2_fs_create(const char *path, struct xrt_frame_sink *sink)
 {
 	struct v4l2_fs *vid = U_TYPED_CALLOC(struct v4l2_fs);
 	vid->base.enumerate_modes = v4l2_fs_enumerate_modes;
@@ -754,7 +752,7 @@ v4l2_fs_stream_run(void *ptr)
 		              vid->quirks.value_exposure_absolute);
 	}
 
-	struct xrt_fs_frame f = {0};
+	struct xrt_frame f = {0};
 
 	while (vid->is_running) {
 		if (ioctl(vid->fd, VIDIOC_DQBUF, &v_buf) < 0) {
