@@ -172,7 +172,7 @@ process_frame_yuyv(class Calibration &c, struct xrt_frame *xf)
 	int half_w = w / 2;
 	int h = (int)xf->height;
 
-	class t_frame_yuyv f = {};
+	struct t_frame_yuyv f = {};
 
 	f.data_half = cv::Mat(h, half_w, CV_8UC4, xf->data, xf->stride);
 	f.data_full = cv::Mat(h, w, CV_8UC2, xf->data, xf->stride);
@@ -192,7 +192,7 @@ process_frame_yuyv(class Calibration &c, struct xrt_frame *xf)
 extern "C" void
 t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 {
-	auto &c = *(struct Calibration *)xsink;
+	auto &c = *(class Calibration *)xsink;
 
 #if 0
 	if (xf->stereo_format != XRT_FS_STEREO_SBS) {

@@ -77,7 +77,7 @@ t_debug_hsv_filter_frame3(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 extern "C" void
 t_debug_hsv_filter_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 {
-	auto &d = *(struct DebugHSV *)xsink;
+	auto &d = *(class DebugHSV *)xsink;
 
 	d.sink->push_frame(d.sink, xf);
 	d.passthrough->push_frame(d.passthrough, xf);

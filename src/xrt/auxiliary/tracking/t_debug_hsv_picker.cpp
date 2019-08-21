@@ -192,7 +192,7 @@ on_high_V_thresh_trackbar(int, void *)
 extern "C" void
 t_debug_hsv_picker_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 {
-	auto &d = *(struct DebugHSVPicker *)xsink;
+	auto &d = *(class DebugHSVPicker *)xsink;
 
 	process_frame(d, xf);
 

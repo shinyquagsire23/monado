@@ -148,7 +148,7 @@ process_frame(DebugHSV &d, struct xrt_frame *xf)
 extern "C" void
 t_debug_hsv_viewer_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 {
-	auto &d = *(struct DebugHSV *)xsink;
+	auto &d = *(class DebugHSV *)xsink;
 
 	process_frame(d, xf);
 
