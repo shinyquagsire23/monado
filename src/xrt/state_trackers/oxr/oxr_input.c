@@ -623,7 +623,7 @@ oxr_session_destroy_all_sources(struct oxr_logger* log,
                                 struct oxr_session* sess,
                                 struct oxr_action_set* act_set)
 {
-	for (uint32_t k = 0; k < ARRAY_SIZE(act_set->handle.children); k++) {
+	for (uint32_t k = 0; k < XRT_MAX_HANDLE_CHILDREN; k++) {
 		// This assumes that all children are actions.
 		struct oxr_action* act =
 		    (struct oxr_action*)act_set->handle.children[k];
@@ -703,8 +703,7 @@ oxr_action_sync_data(struct oxr_logger* log,
 		                              &actionSets[i].subactionPath,
 		                              &sub_paths);
 
-		for (uint32_t k = 0; k < ARRAY_SIZE(act_set->handle.children);
-		     k++) {
+		for (uint32_t k = 0; k < XRT_MAX_HANDLE_CHILDREN; k++) {
 			// This assumes that all children of a
 			// action set are actions.
 			struct oxr_action* act =
