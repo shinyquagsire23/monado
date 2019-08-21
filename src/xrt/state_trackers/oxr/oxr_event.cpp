@@ -81,6 +81,9 @@ push(struct oxr_instance *inst, struct oxr_event *event)
 		if (ret != XR_SUCCESS) {                                       \
 			return ret;                                            \
 		}                                                              \
+		if (event == NULL) {                                           \
+			return XR_ERROR_RUNTIME_FAILURE;                       \
+		}                                                              \
 		*extra = (typeof(*extra))(*event)->ptr();                      \
 	} while (false)
 
