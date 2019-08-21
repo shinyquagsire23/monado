@@ -96,7 +96,7 @@ enum psmv_button_bit
 	PSMV_BUTTON_BIT_MOVE_ANY    = PSMV_BUTTON_BIT_MOVE_F1 |
 	                              PSMV_BUTTON_BIT_MOVE_F2,
 	PSMV_BUTTON_BIT_TRIGGER_ANY = PSMV_BUTTON_BIT_TRIGGER_F1 |
-	                              PSMV_BUTTON_BIT_TRIGGER_F1,
+	                              PSMV_BUTTON_BIT_TRIGGER_F2,
 	// clang-format on
 };
 
