@@ -17,6 +17,16 @@ extern "C" {
 
 
 /*!
+ * A base class for reference counted objects.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_reference
+{
+	uint32_t count;
+};
+
+/*!
  * Which blend mode does the device support, used as both a bitfield and value.
  *
  * @ingroup xrt_iface
@@ -354,6 +364,26 @@ union xrt_output_value {
 		float amplitude;
 	} vibration;
 };
+
+
+/*
+ *
+ * Inline functions
+ *
+ */
+
+static inline bool
+xrt_reference_dec(struct xrt_reference *xref)
+{
+	int count = xrt_atomic_dec_return(&xref->count);
+	return count == 0;
+}
+
+static inline void
+xrt_reference_inc(struct xrt_reference *xref)
+{
+	xrt_atomic_inc_return(&xref->count);
+}
 
 
 #ifdef __cplusplus
