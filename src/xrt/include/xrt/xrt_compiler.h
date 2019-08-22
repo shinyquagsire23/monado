@@ -46,6 +46,8 @@
 /*!
  * @define XRT_DEBUGBREAK()
  * To trigger a trap/break in the debugger.
+ *
+ * @ingroup xrt_iface
  */
 #if defined(__clang__) || defined(__GNUC__)
 #define XRT_DEBUGBREAK() __builtin_trap()
@@ -55,3 +57,22 @@
 #else
 #error "compiler not supported"
 #endif
+
+
+
+#if defined(__GNUC__)
+#define xrt_atomic_inc_return(v) __sync_add_and_fetch((v), 1)
+#define xrt_atomic_dec_return(v) __sync_sub_and_fetch((v), 1)
+#else
+#error "compiler not supported"
+#endif
+
+/*!
+ * @define container_of(ptr, type, field)
+ *
+ * Get the holder from a pointer to a field.
+ *
+ * @ingroup xrt_iface
+ */
+#define container_of(ptr, type, field)                                         \
+	(type*)((char*)ptr - offsetof(type, field))
