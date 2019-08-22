@@ -134,6 +134,56 @@ struct xrt_vec3
 };
 
 /*!
+ * A 3 element colour with 8 bits per channel.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_colour_rgb_u8
+{
+	uint8_t r;
+	uint8_t g;
+	uint8_t b;
+};
+
+/*!
+ * A 4 element colour with 8 bits per channel.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_colour_rgba_u8
+{
+	uint8_t r;
+	uint8_t g;
+	uint8_t b;
+	uint8_t a;
+};
+
+/*!
+ * A 3 element colour with floating point channels.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_colour_rgb_f32
+{
+	float r;
+	float g;
+	float b;
+};
+
+/*!
+ * A 4 element colour with floating point channels.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_colour_rgba_f32
+{
+	float r;
+	float g;
+	float b;
+	float a;
+};
+
+/*!
  * A pose composed of a position and orientation.
  *
  * @see xrt_qaut
