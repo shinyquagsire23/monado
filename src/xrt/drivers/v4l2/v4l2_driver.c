@@ -133,6 +133,8 @@ struct v4l2_fs
 	bool is_running;
 	bool print_spew;
 	bool print_debug;
+
+	char card[521];
 };
 
 /*!
@@ -250,6 +252,7 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 	 * Find quirks
 	 */
 	char *card = (char *)cap.card;
+	snprintf(vid->card, sizeof(vid->card), "%s", card);
 
 	vid->quirks.ps4_cam =
 	    strcmp(card, "USB Camera-OV580: USB Camera-OV") == 0;
@@ -559,7 +562,7 @@ v4l2_fs_stream_start(struct xrt_fs *xfs, uint32_t descriptor_index)
 		return false;
 	}
 
-	V_SPEW(vid, "info: Started!\n");
+	V_SPEW(vid, "info: Started!");
 
 	// we're off to the races!
 	return true;
@@ -636,7 +639,7 @@ v4l2_fs_create(const char *path, struct xrt_frame_sink *sink)
 
 	int fd = open(path, O_RDWR, 0);
 	if (fd < 0) {
-		V_ERROR(vid, "Can not open '%s'\n", path);
+		V_ERROR(vid, "Can not open '%s'", path);
 		free(vid);
 		return NULL;
 	}
@@ -684,7 +687,7 @@ v4l2_fs_stream_run(void *ptr)
 	}
 
 	if (ioctl(vid->fd, VIDIOC_S_FMT, &v_format) < 0) {
-		V_ERROR(vid, "could not set up format\n");
+		V_ERROR(vid, "could not set up format!");
 		return NULL;
 	}
 
