@@ -31,6 +31,7 @@ class DebugHSVPicker
 {
 public:
 	struct xrt_frame_sink base = {};
+	struct xrt_frame_node node = {};
 
 	struct
 	{
@@ -199,13 +200,30 @@ t_debug_hsv_picker_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 	d.passthrough->push_frame(d.passthrough, xf);
 }
 
+extern "C" void
+t_debug_hsv_picker_break_apart(struct xrt_frame_node *node)
+{}
+
+extern "C" void
+t_debug_hsv_picker_destroy(struct xrt_frame_node *node)
+{
+	auto d = container_of(node, DebugHSVPicker, node);
+	delete d;
+}
+
 extern "C" int
-t_debug_hsv_picker_create(struct xrt_frame_sink *passthrough,
+t_debug_hsv_picker_create(struct xrt_frame_context *xfctx,
+                          struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink)
 {
 	auto &d = *(new DebugHSVPicker());
 
 	cv::namedWindow(PICK_WIN);
+
+	d.base.push_frame = t_debug_hsv_picker_frame;
+	d.node.break_apart = t_debug_hsv_picker_break_apart;
+	d.node.destroy = t_debug_hsv_picker_destroy;
+	d.passthrough = passthrough;
 
 	// Trackbars to set thresholds for HSV values
 	cv::createTrackbar("Low H", PICK_WIN, &low_H, max_value_H,
@@ -225,9 +243,7 @@ t_debug_hsv_picker_create(struct xrt_frame_sink *passthrough,
 
 	t_convert_make_y8u8v8_to_h8s8v8(&d.yuv_to_hsv);
 
-	d.passthrough = passthrough;
-
-	d.base.push_frame = t_debug_hsv_picker_frame;
+	xrt_frame_context_add(xfctx, &d.node);
 
 	*out_sink = &d.base;
 

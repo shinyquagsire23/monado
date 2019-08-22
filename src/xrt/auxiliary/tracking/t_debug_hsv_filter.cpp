@@ -29,6 +29,7 @@ class DebugHSV
 {
 public:
 	struct xrt_frame_sink base = {};
+	struct xrt_frame_node node = {};
 	struct xrt_frame_sink sinks[4] = {};
 
 	struct xrt_frame_sink *sink;
@@ -83,8 +84,20 @@ t_debug_hsv_filter_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 	d.passthrough->push_frame(d.passthrough, xf);
 }
 
+extern "C" void
+t_debug_hsv_filter_break_apart(struct xrt_frame_node *node)
+{}
+
+extern "C" void
+t_debug_hsv_filter_destroy(struct xrt_frame_node *node)
+{
+	auto d = container_of(node, DebugHSV, node);
+	delete d;
+}
+
 extern "C" int
-t_debug_hsv_filter_create(struct xrt_frame_sink *passthrough,
+t_debug_hsv_filter_create(struct xrt_frame_context *xfctx,
+                          struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink)
 {
 	auto &d = *(new DebugHSV());
@@ -96,12 +109,14 @@ t_debug_hsv_filter_create(struct xrt_frame_sink *passthrough,
 
 	cv::startWindowThread();
 
+	d.base.push_frame = t_debug_hsv_filter_frame;
+	d.node.break_apart = t_debug_hsv_filter_break_apart;
+	d.node.destroy = t_debug_hsv_filter_destroy;
 	d.passthrough = passthrough;
 	d.sinks[0].push_frame = t_debug_hsv_filter_frame0;
 	d.sinks[1].push_frame = t_debug_hsv_filter_frame1;
 	d.sinks[2].push_frame = t_debug_hsv_filter_frame2;
 	d.sinks[3].push_frame = t_debug_hsv_filter_frame3;
-	d.base.push_frame = t_debug_hsv_filter_frame;
 
 	struct xrt_frame_sink *sinks[4] = {
 	    &d.sinks[0],
@@ -110,10 +125,12 @@ t_debug_hsv_filter_create(struct xrt_frame_sink *passthrough,
 	    &d.sinks[3],
 	};
 
-	*out_sink = &d.base;
-
 	t_hsv_filter_params params = T_HSV_DEFAULT_PARAMS();
-	t_hsv_filter_create(&params, sinks, &d.sink);
+	t_hsv_filter_create(xfctx, &params, sinks, &d.sink);
+
+	xrt_frame_context_add(xfctx, &d.node);
+
+	*out_sink = &d.base;
 
 	return 0;
 }

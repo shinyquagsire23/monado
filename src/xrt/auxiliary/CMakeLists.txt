@@ -36,12 +36,15 @@ set(UTIL_SOURCE_FILES
 	util/u_documentation.h
 	util/u_format.c
 	util/u_format.h
+	util/u_frame.c
+	util/u_frame.h
 	util/u_hashmap.cpp
 	util/u_hashmap.h
 	util/u_hashset.cpp
 	util/u_hashset.h
-	util/u_sink.c
 	util/u_sink.h
+	util/u_sink_converter.c
+	util/u_sink_queue.c
 	util/u_time.cpp
 	util/u_time.h
 	)

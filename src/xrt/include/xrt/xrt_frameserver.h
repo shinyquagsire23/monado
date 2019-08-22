@@ -83,12 +83,14 @@ struct xrt_fs
 	 * Is the capture stream running.
 	 */
 	bool (*is_running)(struct xrt_fs *xfs);
-
-	/*!
-	 * Destroy the frameserver, also stops the capture stream.
-	 */
-	void (*destroy)(struct xrt_fs *xfs);
 };
+
+
+/*
+ *
+ * Inline functions.
+ *
+ */
 
 /*!
  * Helper for xrt_fs::enumerate_modes.
@@ -146,23 +148,6 @@ static inline XRT_MAYBE_UNUSED bool
 xrt_fs_is_running(struct xrt_fs *xfs)
 {
 	return xfs->is_running(xfs);
-}
-
-/*!
- * Helper for xrt_fs::destroy.
- *
- * @ingroup xrt_iface
- */
-static inline XRT_MAYBE_UNUSED void
-xrt_fs_destroy(struct xrt_fs **xfs_ptr)
-{
-	struct xrt_fs *xfs = *xfs_ptr;
-	if (xfs == NULL) {
-		return;
-	}
-
-	xfs->destroy(xfs);
-	*xfs_ptr = NULL;
 }
 
 

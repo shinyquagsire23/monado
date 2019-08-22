@@ -8,11 +8,13 @@
 
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "util/u_frame.h"
 #include "util/u_format.h"
 
 #include "tracking/t_tracking.h"
 
 #include <stdio.h>
+#include <assert.h>
 
 #define MOD_180(v) ((uint32_t)(v) % 180)
 
@@ -130,19 +132,16 @@ t_hsv_build_optimized_table(struct t_hsv_filter_params *params,
 struct t_hsv_filter
 {
 	struct xrt_frame_sink base;
+	struct xrt_frame_node node;
 
 	struct xrt_frame_sink *sinks[NUM_CHANNELS];
 
 	struct t_hsv_filter_params params;
 
-	uint8_t *buf0;
-	uint8_t *buf1;
-	uint8_t *buf2;
-	uint8_t *buf3;
-	size_t buf_stride;
-	size_t buf_size;
-	uint32_t buf_width;
-	uint32_t buf_height;
+	struct xrt_frame *frame0;
+	struct xrt_frame *frame1;
+	struct xrt_frame *frame2;
+	struct xrt_frame *frame3;
 
 	struct t_hsv_filter_optimized_table table;
 };
@@ -168,12 +167,17 @@ process_sample(struct t_hsv_filter *f,
 static void
 process_frame_yuv(struct t_hsv_filter *f, struct xrt_frame *xf)
 {
+	struct xrt_frame *f0 = f->frame0;
+	struct xrt_frame *f1 = f->frame1;
+	struct xrt_frame *f2 = f->frame2;
+	struct xrt_frame *f3 = f->frame3;
+
 	for (uint32_t y = 0; y < xf->height; y++) {
 		uint8_t *src = (uint8_t *)xf->data + y * xf->stride;
-		uint8_t *dst0 = f->buf0 + y * f->buf_stride;
-		uint8_t *dst1 = f->buf1 + y * f->buf_stride;
-		uint8_t *dst2 = f->buf2 + y * f->buf_stride;
-		uint8_t *dst3 = f->buf3 + y * f->buf_stride;
+		uint8_t *dst0 = f0->data + y * f0->stride;
+		uint8_t *dst1 = f1->data + y * f1->stride;
+		uint8_t *dst2 = f2->data + y * f2->stride;
+		uint8_t *dst3 = f3->data + y * f3->stride;
 
 		for (uint32_t x = 0; x < xf->width; x += 1) {
 			uint8_t y = src[0];
@@ -193,12 +197,17 @@ process_frame_yuv(struct t_hsv_filter *f, struct xrt_frame *xf)
 static void
 process_frame_yuyv(struct t_hsv_filter *f, struct xrt_frame *xf)
 {
+	struct xrt_frame *f0 = f->frame0;
+	struct xrt_frame *f1 = f->frame1;
+	struct xrt_frame *f2 = f->frame2;
+	struct xrt_frame *f3 = f->frame3;
+
 	for (uint32_t y = 0; y < xf->height; y++) {
 		uint8_t *src = (uint8_t *)xf->data + y * xf->stride;
-		uint8_t *dst0 = f->buf0 + y * f->buf_stride;
-		uint8_t *dst1 = f->buf1 + y * f->buf_stride;
-		uint8_t *dst2 = f->buf2 + y * f->buf_stride;
-		uint8_t *dst3 = f->buf3 + y * f->buf_stride;
+		uint8_t *dst0 = f0->data + y * f0->stride;
+		uint8_t *dst1 = f1->data + y * f1->stride;
+		uint8_t *dst2 = f2->data + y * f2->stride;
+		uint8_t *dst3 = f3->data + y * f3->stride;
 
 		for (uint32_t x = 0; x < xf->width; x += 2) {
 			uint8_t y1 = src[0];
@@ -225,43 +234,34 @@ process_frame_yuyv(struct t_hsv_filter *f, struct xrt_frame *xf)
 static void
 ensure_buf_allocated(struct t_hsv_filter *f, struct xrt_frame *xf)
 {
-	if (xf->width == f->buf_width && xf->width == f->buf_height) {
-		return;
-	}
+	uint32_t w = xf->width;
+	uint32_t h = xf->height;
 
-	free(f->buf0);
-	free(f->buf1);
-	free(f->buf2);
-	free(f->buf3);
-
-	f->buf_width = xf->width;
-	f->buf_height = xf->height;
-	f->buf_stride = f->buf_width;
-	f->buf_size = f->buf_stride * f->buf_height;
-
-	f->buf0 = U_TYPED_ARRAY_CALLOC(uint8_t, f->buf_size);
-	f->buf1 = U_TYPED_ARRAY_CALLOC(uint8_t, f->buf_size);
-	f->buf2 = U_TYPED_ARRAY_CALLOC(uint8_t, f->buf_size);
-	f->buf3 = U_TYPED_ARRAY_CALLOC(uint8_t, f->buf_size);
+	u_frame_create_one_off(XRT_FORMAT_L8, w, h, &f->frame0);
+	u_frame_create_one_off(XRT_FORMAT_L8, w, h, &f->frame1);
+	u_frame_create_one_off(XRT_FORMAT_L8, w, h, &f->frame2);
+	u_frame_create_one_off(XRT_FORMAT_L8, w, h, &f->frame3);
 }
 
 static void
-push_buf(struct t_hsv_filter *f, struct xrt_frame_sink *xsink, uint8_t *buf)
+push_buf(struct t_hsv_filter *f,
+         struct xrt_frame *xf,
+         struct xrt_frame_sink *xsink,
+         struct xrt_frame **frame)
 {
 	if (xsink == NULL) {
+		xrt_frame_reference(frame, NULL);
 		return;
 	}
 
-	struct xrt_frame xf = {0};
+	(*frame)->timestamp = xf->timestamp;
+	(*frame)->source_id = xf->source_id;
+	(*frame)->source_sequence = xf->source_sequence;
+	(*frame)->source_timestamp = xf->source_timestamp;
 
-	xf.format = XRT_FORMAT_L8;
-	xf.width = f->buf_width;
-	xf.height = f->buf_height;
-	xf.stride = f->buf_stride;
-	xf.size = f->buf_size;
-	xf.data = buf;
+	xsink->push_frame(xsink, *frame);
 
-	xsink->push_frame(xsink, &xf);
+	xrt_frame_reference(frame, NULL);
 }
 
 static void
@@ -269,37 +269,63 @@ push_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 {
 	struct t_hsv_filter *f = (struct t_hsv_filter *)xsink;
 
-	ensure_buf_allocated(f, xf);
 
 	switch (xf->format) {
-	case XRT_FORMAT_YUV888: process_frame_yuv(f, xf); break;
-	case XRT_FORMAT_YUV422: process_frame_yuyv(f, xf); break;
+	case XRT_FORMAT_YUV888:
+		ensure_buf_allocated(f, xf);
+		process_frame_yuv(f, xf);
+		break;
+	case XRT_FORMAT_YUV422:
+		ensure_buf_allocated(f, xf);
+		process_frame_yuyv(f, xf);
+		break;
 	default:
 		fprintf(stderr, "ERROR: Bad format '%s'",
 		        u_format_str(xf->format));
 		return;
 	}
 
-	push_buf(f, f->sinks[0], f->buf0);
-	push_buf(f, f->sinks[1], f->buf1);
-	push_buf(f, f->sinks[2], f->buf2);
-	push_buf(f, f->sinks[3], f->buf3);
+	push_buf(f, xf, f->sinks[0], &f->frame0);
+	push_buf(f, xf, f->sinks[1], &f->frame1);
+	push_buf(f, xf, f->sinks[2], &f->frame2);
+	push_buf(f, xf, f->sinks[3], &f->frame3);
+
+	assert(f->frame0 == NULL);
+	assert(f->frame1 == NULL);
+	assert(f->frame2 == NULL);
+	assert(f->frame3 == NULL);
+}
+
+static void
+break_apart(struct xrt_frame_node *node)
+{}
+
+static void
+destroy(struct xrt_frame_node *node)
+{
+	struct t_hsv_filter *f = container_of(node, struct t_hsv_filter, node);
+	free(f);
 }
 
 int
-t_hsv_filter_create(struct t_hsv_filter_params *params,
+t_hsv_filter_create(struct xrt_frame_context *xfctx,
+                    struct t_hsv_filter_params *params,
                     struct xrt_frame_sink *sinks[4],
                     struct xrt_frame_sink **out_sink)
 {
 	struct t_hsv_filter *f = U_TYPED_CALLOC(struct t_hsv_filter);
-	f->params = *params;
 	f->base.push_frame = push_frame;
+	f->node.break_apart = break_apart;
+	f->node.destroy = destroy;
+	f->params = *params;
 	f->sinks[0] = sinks[0];
 	f->sinks[1] = sinks[1];
 	f->sinks[2] = sinks[2];
 	f->sinks[3] = sinks[3];
 
 	t_hsv_build_optimized_table(&f->params, &f->table);
+
+	xrt_frame_context_add(xfctx, &f->node);
 
 	*out_sink = &f->base;
 

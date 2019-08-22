@@ -130,7 +130,8 @@ t_hsv_filter_sample(struct t_hsv_filter_optimized_table *t,
 }
 
 int
-t_hsv_filter_create(struct t_hsv_filter_params *params,
+t_hsv_filter_create(struct xrt_frame_context *xfctx,
+                    struct t_hsv_filter_params *params,
                     struct xrt_frame_sink *sinks[4],
                     struct xrt_frame_sink **out_sink);
 
@@ -146,19 +147,23 @@ t_convert_yuv_or_yuyv_create(struct xrt_frame_sink *next,
                              struct xrt_frame_sink **out_sink);
 
 int
-t_calibration_create(struct xrt_frame_sink *gui,
+t_calibration_create(struct xrt_frame_context *xfctx,
+                     struct xrt_frame_sink *gui,
                      struct xrt_frame_sink **out_sink);
 
 int
-t_debug_hsv_picker_create(struct xrt_frame_sink *passthrough,
+t_debug_hsv_picker_create(struct xrt_frame_context *xfctx,
+                          struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink);
 
 int
-t_debug_hsv_viewer_create(struct xrt_frame_sink *passthrough,
+t_debug_hsv_viewer_create(struct xrt_frame_context *xfctx,
+                          struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink);
 
 int
-t_debug_hsv_filter_create(struct xrt_frame_sink *passthrough,
+t_debug_hsv_filter_create(struct xrt_frame_context *xfctx,
+                          struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink);
 
 

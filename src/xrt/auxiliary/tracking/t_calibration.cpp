@@ -225,7 +225,8 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
  */
 
 extern "C" int
-t_calibration_create(struct xrt_frame_sink *gui,
+t_calibration_create(struct xrt_frame_context *xfctx,
+                     struct xrt_frame_sink *gui,
                      struct xrt_frame_sink **out_sink)
 {
 
@@ -242,19 +243,19 @@ t_calibration_create(struct xrt_frame_sink *gui,
 
 	int ret = 0;
 	if (debug_get_bool_option_hsv_filter()) {
-		ret = t_debug_hsv_filter_create(*out_sink, out_sink);
+		ret = t_debug_hsv_filter_create(xfctx, *out_sink, out_sink);
 	}
 
 	if (debug_get_bool_option_hsv_picker()) {
-		ret = t_debug_hsv_picker_create(*out_sink, out_sink);
+		ret = t_debug_hsv_picker_create(xfctx, *out_sink, out_sink);
 	}
 
 	if (debug_get_bool_option_hsv_viewer()) {
-		ret = t_debug_hsv_viewer_create(*out_sink, out_sink);
+		ret = t_debug_hsv_viewer_create(xfctx, *out_sink, out_sink);
 	}
 
 	// Ensure we only get yuv or yuyv frames.
-	u_sink_create_to_yuv_or_yuyv(*out_sink, out_sink);
+	u_sink_create_to_yuv_or_yuyv(xfctx, *out_sink, out_sink);
 
 	return ret;
 }

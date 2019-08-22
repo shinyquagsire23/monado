@@ -79,7 +79,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(v4l2_spew, "V4L2_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(v4l2_debug, "V4L2_PRINT_DEBUG", false)
 DEBUG_GET_ONCE_NUM_OPTION(v4l2_exposure_absolute, "V4L2_EXPOSURE_ABSOLUTE", 15)
 
-#define NUM_V4L2_BUFFERS 8
+#define NUM_V4L2_BUFFERS 3
 
 
 /*
@@ -88,12 +88,23 @@ DEBUG_GET_ONCE_NUM_OPTION(v4l2_exposure_absolute, "V4L2_EXPOSURE_ABSOLUTE", 15)
  *
  */
 
+struct v4l2_frame
+{
+	struct xrt_frame base;
+
+	void *mem; //!< Data might be at an offset, so we need base memory.
+
+	struct v4l2_buffer v_buf;
+};
+
 /*!
  * A single open v4l2 capture device, starts it's own thread and waits on it.
  */
 struct v4l2_fs
 {
 	struct xrt_fs base;
+
+	struct xrt_frame_node node;
 
 	int fd;
 
@@ -112,9 +123,10 @@ struct v4l2_fs
 		int value_auto_exposure;
 	} quirks;
 
+	struct v4l2_frame frames[NUM_V4L2_BUFFERS];
+
 	struct
 	{
-		void *mem[NUM_V4L2_BUFFERS];
 		bool mmap;
 		bool userptr;
 	} capture;
@@ -161,6 +173,22 @@ dump_controls(struct v4l2_fs *vid);
  * Misc helper functions
  *
  */
+
+static void
+v4l2_free_frame(struct xrt_frame *xf)
+{
+	struct v4l2_frame *vf = (struct v4l2_frame *)xf;
+	struct v4l2_fs *vid = (struct v4l2_fs *)xf->owner;
+
+	if (!vid->is_running) {
+		return;
+	}
+
+	if (ioctl(vid->fd, VIDIOC_QBUF, &vf->v_buf) < 0) {
+		V_ERROR(vid, "error: Requeue failed!");
+		vid->is_running = false;
+	}
+}
 
 XRT_MAYBE_UNUSED static int
 v4l2_control_get(struct v4l2_fs *vid, uint32_t id, int *out_value)
@@ -298,7 +326,7 @@ v4l2_try_mmap(struct v4l2_fs *vid, struct v4l2_requestbuffers *v_bufrequest)
 
 static int
 v4l2_setup_mmap_buffer(struct v4l2_fs *vid,
-                       int index,
+                       struct v4l2_frame *vf,
                        struct v4l2_buffer *v_buf)
 {
 	void *ptr = mmap(0, v_buf->length, PROT_READ, MAP_SHARED, vid->fd,
@@ -308,14 +336,14 @@ v4l2_setup_mmap_buffer(struct v4l2_fs *vid,
 		return -1;
 	}
 
-	vid->capture.mem[index] = ptr;
+	vf->mem = ptr;
 
 	return 0;
 }
 
 static int
 v4l2_setup_userptr_buffer(struct v4l2_fs *vid,
-                          int index,
+                          struct v4l2_frame *vf,
                           struct v4l2_buffer *v_buf)
 {
 	// align this to a memory page, v4l2 likes it that way
@@ -325,7 +353,7 @@ v4l2_setup_userptr_buffer(struct v4l2_fs *vid,
 		return -1;
 	}
 
-	vid->capture.mem[index] = ptr;
+	vf->mem = ptr;
 	v_buf->m.userptr = (intptr_t)ptr;
 
 	return 0;
@@ -592,12 +620,10 @@ v4l2_fs_is_running(struct xrt_fs *xfs)
 }
 
 static void
-v4l2_fs_destroy(struct xrt_fs *xfs)
+v4l2_fs_destroy(struct v4l2_fs *vid)
 {
-	struct v4l2_fs *vid = v4l2_fs(xfs);
-
 	// Make sure that the stream is stopped.
-	v4l2_fs_stream_stop(xfs);
+	v4l2_fs_stream_stop(&vid->base);
 
 	if (vid->descriptors != NULL) {
 		free(vid->descriptors);
@@ -609,8 +635,8 @@ v4l2_fs_destroy(struct xrt_fs *xfs)
 	if (vid->capture.userptr) {
 		vid->capture.userptr = false;
 		for (uint32_t i = 0; i < NUM_V4L2_BUFFERS; i++) {
-			free(vid->capture.mem[i]);
-			vid->capture.mem[i] = NULL;
+			free(vid->frames[i].mem);
+			vid->frames[i].mem = NULL;
 		}
 	}
 
@@ -622,8 +648,24 @@ v4l2_fs_destroy(struct xrt_fs *xfs)
 	free(vid);
 }
 
+static void
+v4l2_fs_node_break_apart(struct xrt_frame_node *node)
+{
+	struct v4l2_fs *vid = container_of(node, struct v4l2_fs, node);
+	v4l2_fs_stream_stop(&vid->base);
+}
+
+static void
+v4l2_fs_node_destroy(struct xrt_frame_node *node)
+{
+	struct v4l2_fs *vid = container_of(node, struct v4l2_fs, node);
+	v4l2_fs_destroy(vid);
+}
+
 struct xrt_fs *
-v4l2_fs_create(const char *path, struct xrt_frame_sink *sink)
+v4l2_fs_create(struct xrt_frame_context *xfctx,
+               const char *path,
+               struct xrt_frame_sink *sink)
 {
 	struct v4l2_fs *vid = U_TYPED_CALLOC(struct v4l2_fs);
 	vid->base.enumerate_modes = v4l2_fs_enumerate_modes;
@@ -631,7 +673,8 @@ v4l2_fs_create(const char *path, struct xrt_frame_sink *sink)
 	vid->base.stream_start = v4l2_fs_stream_start;
 	vid->base.stream_stop = v4l2_fs_stream_stop;
 	vid->base.is_running = v4l2_fs_is_running;
-	vid->base.destroy = v4l2_fs_destroy;
+	vid->node.break_apart = v4l2_fs_node_break_apart;
+	vid->node.destroy = v4l2_fs_node_destroy;
 	vid->print_spew = debug_get_bool_option_v4l2_spew();
 	vid->print_debug = debug_get_bool_option_v4l2_debug();
 	vid->sink = sink;
@@ -648,10 +691,13 @@ v4l2_fs_create(const char *path, struct xrt_frame_sink *sink)
 
 	int ret = v4l2_query_cap_and_validate(vid);
 	if (ret != 0) {
-		v4l2_fs_destroy(&vid->base);
+		v4l2_fs_destroy(vid);
 		vid = NULL;
 		return NULL;
 	}
+
+	// It's now safe to add it to the context.
+	xrt_frame_context_add(xfctx, &vid->node);
 
 	v4l2_list_modes(vid);
 
@@ -705,33 +751,37 @@ v4l2_fs_stream_run(void *ptr)
 		return NULL;
 	}
 
-	// set up our buffers
-	struct v4l2_buffer v_buf = {0};
 
 	for (uint32_t i = 0; i < NUM_V4L2_BUFFERS; i++) {
-		v_buf.index = i;
-		v_buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		v_buf.memory = v_bufrequest.memory;
+		struct v4l2_frame *vf = &vid->frames[i];
+		struct v4l2_buffer *v_buf = &vf->v_buf;
 
-		if (ioctl(vid->fd, VIDIOC_QUERYBUF, &v_buf) < 0) {
+		vf->base.owner = vid;
+		vf->base.destroy = v4l2_free_frame;
+
+		v_buf->index = i;
+		v_buf->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		v_buf->memory = v_bufrequest.memory;
+
+		if (ioctl(vid->fd, VIDIOC_QUERYBUF, v_buf) < 0) {
 			V_ERROR(vid, "error: Could not query buffers!");
 			return NULL;
 		}
 
 		if (vid->capture.userptr &&
-		    v4l2_setup_userptr_buffer(vid, i, &v_buf) != 0) {
+		    v4l2_setup_userptr_buffer(vid, vf, v_buf) != 0) {
 			return NULL;
 		}
 		if (vid->capture.mmap &&
-		    v4l2_setup_mmap_buffer(vid, i, &v_buf) != 0) {
+		    v4l2_setup_mmap_buffer(vid, vf, v_buf) != 0) {
 			return NULL;
 		}
 
 		// Silence valgrind.
-		memset(vid->capture.mem[i], 0, v_buf.length);
+		memset(vf->mem, 0, v_buf->length);
 
 		// Queue this buffer
-		if (ioctl(vid->fd, VIDIOC_QBUF, &v_buf) < 0) {
+		if (ioctl(vid->fd, VIDIOC_QBUF, v_buf) < 0) {
 			V_ERROR(vid, "error: queueing buffer failed!");
 			return NULL;
 		}
@@ -755,7 +805,9 @@ v4l2_fs_stream_run(void *ptr)
 		              vid->quirks.value_exposure_absolute);
 	}
 
-	struct xrt_frame f = {0};
+	struct v4l2_buffer v_buf = {0};
+	v_buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	v_buf.memory = v_bufrequest.memory;
 
 	while (vid->is_running) {
 		if (ioctl(vid->fd, VIDIOC_DQBUF, &v_buf) < 0) {
@@ -763,29 +815,32 @@ v4l2_fs_stream_run(void *ptr)
 			vid->is_running = false;
 			break;
 		}
-		V_SPEW(vid, "Got frame %i", v_buf.index);
+		V_SPEW(vid, "Got frame #%u, index %i", v_buf.sequence,
+		       v_buf.index);
 
+		struct v4l2_frame *vf = &vid->frames[v_buf.index];
+		struct xrt_frame *xf = NULL;
 
-		uint8_t *data = vid->capture.mem[v_buf.index];
+		xrt_frame_reference(&xf, &vf->base);
+		uint8_t *data = vf->mem;
 
 		//! @todo Sequense number and timestamp.
-		f.width = desc->base.width;
-		f.height = desc->base.height;
-		f.format = desc->base.format;
-		f.stereo_format = desc->base.stereo_format;
+		xf->width = desc->base.width;
+		xf->height = desc->base.height;
+		xf->format = desc->base.format;
+		xf->stereo_format = desc->base.stereo_format;
 
-		f.data = data + desc->offset;
-		f.stride = desc->stream.stride;
-		f.size = v_buf.bytesused - desc->offset;
-		f.source_id = vid->base.source_id;
+		xf->data = data + desc->offset;
+		xf->stride = desc->stream.stride;
+		xf->size = v_buf.bytesused - desc->offset;
+		xf->source_id = vid->base.source_id;
+		xf->source_sequence = v_buf.sequence;
 
-		vid->sink->push_frame(vid->sink, &f);
+		vid->sink->push_frame(vid->sink, xf);
 
-		if (ioctl(vid->fd, VIDIOC_QBUF, &v_buf) < 0) {
-			V_ERROR(vid, "error: Requeue failed!");
-			vid->is_running = false;
-			break;
-		}
+		// The frame is requeued as soon as the refcount reaches zero,
+		// this can be done safely from another thread.
+		xrt_frame_reference(&xf, NULL);
 	}
 
 	V_DEBUG(vid, "info: Thread leave!");

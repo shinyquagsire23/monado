@@ -17,13 +17,20 @@ extern "C" {
 
 
 void
-u_sink_create_format_converter(enum xrt_format f,
+u_sink_create_format_converter(struct xrt_frame_context *xfctx,
+                               enum xrt_format f,
                                struct xrt_frame_sink *downstream,
                                struct xrt_frame_sink **out_xfs);
 
 void
-u_sink_create_to_yuv_or_yuyv(struct xrt_frame_sink *downstream,
+u_sink_create_to_yuv_or_yuyv(struct xrt_frame_context *xfctx,
+                             struct xrt_frame_sink *downstream,
                              struct xrt_frame_sink **out_xfs);
+
+bool
+u_sink_queue_create(struct xrt_frame_context *xfctx,
+                    struct xrt_frame_sink *downstream,
+                    struct xrt_frame_sink **out_xfs);
 
 
 #ifdef __cplusplus

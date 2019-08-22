@@ -26,6 +26,7 @@ class DebugHSV
 {
 public:
 	struct xrt_frame_sink base = {};
+	struct xrt_frame_node node = {};
 
 	struct xrt_frame_sink *passthrough;
 
@@ -155,8 +156,20 @@ t_debug_hsv_viewer_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 	d.passthrough->push_frame(d.passthrough, xf);
 }
 
+extern "C" void
+t_debug_hsv_viewer_break_apart(struct xrt_frame_node *node)
+{}
+
+extern "C" void
+t_debug_hsv_viewer_destroy(struct xrt_frame_node *node)
+{
+	auto d = container_of(node, DebugHSV, node);
+	delete d;
+}
+
 extern "C" int
-t_debug_hsv_viewer_create(struct xrt_frame_sink *passthrough,
+t_debug_hsv_viewer_create(struct xrt_frame_context *xfctx,
+                          struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink)
 {
 	auto &d = *(new DebugHSV());
@@ -167,14 +180,17 @@ t_debug_hsv_viewer_create(struct xrt_frame_sink *passthrough,
 
 	cv::startWindowThread();
 
-	d.passthrough = passthrough;
-
 	d.base.push_frame = t_debug_hsv_viewer_frame;
+	d.node.break_apart = t_debug_hsv_viewer_break_apart;
+	d.node.destroy = t_debug_hsv_viewer_destroy;
+	d.passthrough = passthrough;
 
 	t_convert_make_y8u8v8_to_r8g8b8(&d.yuv_to_rgb_table);
 	struct t_hsv_filter_params params = T_HSV_DEFAULT_PARAMS();
 	t_hsv_build_large_table(&params, &d.hsv_large);
 	t_hsv_build_optimized_table(&params, &d.hsv_opt);
+
+	xrt_frame_context_add(xfctx, &d.node);
 
 	*out_sink = &d.base;
 

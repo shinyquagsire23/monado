@@ -9,6 +9,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_sink.h"
+#include "util/u_frame.h"
 #include "util/u_format.h"
 
 #include <stdio.h>
@@ -27,15 +28,12 @@
 struct u_sink_converter
 {
 	struct xrt_frame_sink base;
+	struct xrt_frame_node node;
 
 	struct xrt_frame_sink *downstream;
 
-	uint8_t *data;
+	struct xrt_frame *frame;
 
-	size_t size;
-	size_t stride;
-	uint32_t width;
-	uint32_t height;
 	enum xrt_format format;
 };
 
@@ -143,16 +141,18 @@ YUV422_to_R8G8B8(const uint8_t *input, uint8_t *dst)
 
 static void
 from_YUV422_to_R8G8B8(struct u_sink_converter *s,
+                      uint32_t w,
+                      uint32_t h,
                       size_t stride,
                       const uint8_t *data)
 {
-	for (uint32_t y = 0; y < s->height; y++) {
-		for (uint32_t x = 0; x < s->width; x += 2) {
+	for (uint32_t y = 0; y < h; y++) {
+		for (uint32_t x = 0; x < w; x += 2) {
 			const uint8_t *src = data;
-			uint8_t *dst = s->data;
+			uint8_t *dst = s->frame->data;
 
 			src = src + (y * stride) + (x * 2);
-			dst = dst + (y * s->stride) + (x * 3);
+			dst = dst + (y * s->frame->stride) + (x * 3);
 			YUV422_to_R8G8B8(src, dst);
 		}
 	}
@@ -186,12 +186,12 @@ from_MJPEG_to_R8G8B8(struct u_sink_converter *s,
 	cinfo.out_color_space = JCS_RGB;
 	jpeg_start_decompress(&cinfo);
 
-	uint8_t *moving_ptr = s->data;
+	uint8_t *moving_ptr = s->frame->data;
 
 	uint32_t scanlines_read = 0;
 	while (scanlines_read < cinfo.image_height) {
 		int read_count = jpeg_read_scanlines(&cinfo, &moving_ptr, 16);
-		moving_ptr += read_count * s->stride;
+		moving_ptr += read_count * s->frame->stride;
 		scanlines_read += read_count;
 	}
 
@@ -219,12 +219,12 @@ from_MJPEG_to_YUV888(struct u_sink_converter *s,
 	cinfo.out_color_space = JCS_YCbCr;
 	jpeg_start_decompress(&cinfo);
 
-	uint8_t *moving_ptr = s->data;
+	uint8_t *moving_ptr = s->frame->data;
 
 	uint32_t scanlines_read = 0;
 	while (scanlines_read < cinfo.image_height) {
 		int read_count = jpeg_read_scanlines(&cinfo, &moving_ptr, 16);
-		moving_ptr += read_count * s->stride;
+		moving_ptr += read_count * s->frame->stride;
 		scanlines_read += read_count;
 	}
 
@@ -246,37 +246,27 @@ ensure_data(struct u_sink_converter *s,
             uint32_t w,
             uint32_t h)
 {
-	if (s->data != NULL && s->width == w && s->height == h) {
-		return;
-	}
-
-	s->width = w;
-	s->height = h;
-	s->format = format;
-	u_format_size_for_dimensions(s->format, s->width, s->height, &s->stride,
-	                             &s->size);
-
-	s->data = (uint8_t *)realloc(s->data, s->size);
+	u_frame_create_one_off(format, w, h, &s->frame);
 }
 
 static void
 push_data_downstream(struct u_sink_converter *s, struct xrt_frame *xf)
 {
-	struct xrt_frame nf = {0};
-	nf.width = s->width;
-	nf.height = s->height;
-	nf.stride = s->stride;
-	nf.format = s->format;
-	nf.size = s->size;
-	nf.data = s->data;
+	// The frame has a single reference on it when it's on the converter
+	// struct, we move it so no need to change the ref count.
+	struct xrt_frame *frame = s->frame;
+	s->frame = NULL;
 
 	// Copy directly from original frame.
-	nf.timestamp = xf->timestamp;
-	nf.source_timestamp = xf->source_timestamp;
-	nf.source_sequence = xf->source_sequence;
-	nf.source_id = xf->source_id;
+	frame->timestamp = xf->timestamp;
+	frame->source_timestamp = xf->source_timestamp;
+	frame->source_sequence = xf->source_sequence;
+	frame->source_id = xf->source_id;
 
-	s->downstream->push_frame(s->downstream, &nf);
+	s->downstream->push_frame(s->downstream, frame);
+
+	// Refcount in case it's being held downstream.
+	xrt_frame_reference(&frame, NULL);
 }
 
 static void
@@ -290,7 +280,8 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		return;
 	case XRT_FORMAT_YUV422:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
-		from_YUV422_to_R8G8B8(s, xf->stride, xf->data);
+		from_YUV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
+		                      xf->data);
 		break;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
@@ -335,6 +326,19 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 	push_data_downstream(s, xf);
 }
 
+static void
+break_apart(struct xrt_frame_node *node)
+{}
+
+static void
+destroy(struct xrt_frame_node *node)
+{
+	struct u_sink_converter *s =
+	    container_of(node, struct u_sink_converter, node);
+
+	free(s);
+}
+
 
 /*
  *
@@ -343,7 +347,8 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
  */
 
 void
-u_sink_create_format_converter(enum xrt_format f,
+u_sink_create_format_converter(struct xrt_frame_context *xfctx,
+                               enum xrt_format f,
                                struct xrt_frame_sink *downstream,
                                struct xrt_frame_sink **out_xfs)
 {
@@ -359,18 +364,27 @@ u_sink_create_format_converter(enum xrt_format f,
 
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
 	s->base.push_frame = receive_frame_r8g8b8;
+	s->node.break_apart = break_apart;
+	s->node.destroy = destroy;
 	s->downstream = downstream;
+
+	xrt_frame_context_add(xfctx, &s->node);
 
 	*out_xfs = &s->base;
 }
 
 void
-u_sink_create_to_yuv_or_yuyv(struct xrt_frame_sink *downstream,
+u_sink_create_to_yuv_or_yuyv(struct xrt_frame_context *xfctx,
+                             struct xrt_frame_sink *downstream,
                              struct xrt_frame_sink **out_xfs)
 {
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
 	s->base.push_frame = receive_frame_yuv_or_yuyv;
+	s->node.break_apart = break_apart;
+	s->node.destroy = destroy;
 	s->downstream = downstream;
+
+	xrt_frame_context_add(xfctx, &s->node);
 
 	*out_xfs = &s->base;
 }
