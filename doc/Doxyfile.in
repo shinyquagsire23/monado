@@ -44,6 +44,20 @@ ALWAYS_DETAILED_SEC    = YES
 WARN_IF_UNDOCUMENTED   = @DOXYGEN_WARN_UNDOCUMENTED@
 EXTRACT_ALL            = @DOXYGEN_EXTRACT_ALL@
 
+# The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of the
+# path mentioned in the documentation of a class, which tells the reader which
+# header file to include in order to use a class. If left blank only the name of
+# the header file containing the class definition is used. Otherwise one should
+# specify the list of include paths that are normally passed to the compiler
+# using the -I flag.
+
+STRIP_FROM_INC_PATH    = \
+                         @PROJECT_SOURCE_DIR@/src/xrt/include \
+                         @PROJECT_SOURCE_DIR@/src/xrt/auxiliary \
+                         @PROJECT_SOURCE_DIR@/src/xrt/compositor \
+                         @PROJECT_SOURCE_DIR@/src/xrt/drivers \
+                         @PROJECT_SOURCE_DIR@/src/xrt/state_trackers \
+                         @PROJECT_SOURCE_DIR@/src/xrt/targets
 # Doxyfile 1.8.13
 
 # This file describes the settings to be used by the documentation system
@@ -210,19 +224,6 @@ FULL_PATH_NAMES        = YES
 
 #STRIP_FROM_PATH        =
 
-# The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of the
-# path mentioned in the documentation of a class, which tells the reader which
-# header file to include in order to use a class. If left blank only the name of
-# the header file containing the class definition is used. Otherwise one should
-# specify the list of include paths that are normally passed to the compiler
-# using the -I flag.
-
-STRIP_FROM_INC_PATH    = src/xrt/auxiliary \
-                         src/xrt/compositor \
-                         src/xrt/drivers \
-                         src/xrt/include \
-                         src/xrt/state_trackers \
-                         src/xrt/targets
 
 # If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter (but
 # less readable) file names. This can be useful is yogur file systems doesn't
