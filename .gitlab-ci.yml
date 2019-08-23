@@ -70,8 +70,8 @@ arch:build-cmake:
 ###
 pages:
   stage: deploy
-  # only:
-    # - master
+  only:
+    - master
   dependencies:
     - debian:build-cmake
   script:
