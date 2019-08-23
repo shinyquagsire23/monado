@@ -23,6 +23,7 @@ include:
 stages:
   - container_prep
   - build
+  - pages
   - deploy
 
 debian:container_prep:
@@ -69,7 +70,7 @@ arch:build-cmake:
 # Pages
 ###
 pages:
-  stage: deploy
+  stage: pages
   only:
     - master
   dependencies:
