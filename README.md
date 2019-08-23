@@ -1,6 +1,10 @@
 
 # Monado - XR Runtime (XRT)
 
+> * Promotional homepage: <https://monado.dev>
+> * Maintained at <https://gitlab.freedesktop.org/monado/monado>
+> * Latest API documentation: <https://monado.pages.freedesktop.org/monado>
+
 Monado is an open source XR runtime delivering immersive experiences such as VR
 and AR on on mobile, PC/desktop, and any other device
 (because gosh darn people
@@ -26,30 +30,36 @@ and aims to support other operating systems in the near future.
 Dependencies include:
 
 * [CMake][] 3.10 or newer
-* [OpenHMD][] (found using pkg-config)
 * Vulkan headers
+* OpenGL headers
 * Eigen3
 * glslang
+* libusb
+* libudev
 
 Optional (but recommended) dependencies:
 
-* OpenGL headers for OpenGL graphics support
 * libxcb and xcb-xrandr development packages
+* [OpenHMD][] (found using pkg-config)
 
-Truly optional dependencies:
+Truly optional dependencies, useful for some drivers, app support, etc.:
 
 * Doxygen
 * Wayland development packages
-* Xlib development pages
-* libhidapi (for the HDK driver)
+* Xlib development packages
+* libhidapi
+* OpenCV
+* libuvc
+* ffmpeg
+* libjpeg
 
 Tested distributions that are fully compatible,
 on Intel and AMD graphics:
 
 * Ubuntu 18.10 (18.04 does not work)
 * Debian 10 `buster`
-  (currently the "testing" release -
-  current stable Stretch does not have new enough packages)
+  * Up-to-date package lists can be found in our CI config file,
+    `.gitlab-ci.yml`
 
 These distributions include recent-enough versions of all the
 software to use direct mode,
