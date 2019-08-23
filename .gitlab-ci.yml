@@ -23,6 +23,7 @@ include:
 stages:
   - container_prep
   - build
+  - deploy
 
 debian:container_prep:
   extends: .debian@container-ifnot-exists
@@ -51,6 +52,9 @@ debian:build-cmake:
   - pushd build
   - cmake -GNinja ..
   - ninja
+  artifacts:
+    paths:
+      - build/doc/html/
 
 arch:build-cmake:
   stage: build
@@ -60,3 +64,18 @@ arch:build-cmake:
   - pushd build
   - cmake -GNinja ..
   - ninja
+
+###
+# Pages
+###
+pages:
+  stage: deploy
+  # only:
+    # - master
+  dependencies:
+    - debian:build-cmake
+  script:
+    - mv build/doc/html public
+  artifacts:
+    paths:
+      - public
