@@ -43,6 +43,17 @@
 #define XRT_MAYBE_UNUSED
 #endif
 
+
+/*
+ * To stop inlining.
+ */
+#if defined(__GNUC__)
+#define XRT_NO_INLINE __attribute__((noinline))
+#else
+#define XRT_NO_INLINE
+#endif
+
+
 /*!
  * @define XRT_DEBUGBREAK()
  * To trigger a trap/break in the debugger.
