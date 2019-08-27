@@ -157,14 +157,18 @@ process_sample(struct t_hsv_filter *f,
                uint8_t *dst3)
 {
 	uint8_t bits = t_hsv_filter_sample(&f->table, y, cb, cr);
+	uint8_t v0 = (bits & (1 << 0)) ? 0xff : 0x00;
+	uint8_t v1 = (bits & (1 << 1)) ? 0xff : 0x00;
+	uint8_t v2 = (bits & (1 << 2)) ? 0xff : 0x00;
+	uint8_t v3 = (bits & (1 << 3)) ? 0xff : 0x00;
 
-	*dst0 = (bits & (1 << 0)) ? 0xff : 0x00;
-	*dst1 = (bits & (1 << 1)) ? 0xff : 0x00;
-	*dst2 = (bits & (1 << 2)) ? 0xff : 0x00;
-	*dst3 = (bits & (1 << 3)) ? 0xff : 0x00;
+	*dst0 = v0;
+	*dst1 = v1;
+	*dst2 = v2;
+	*dst3 = v3;
 }
 
-static void
+XRT_NO_INLINE static void
 process_frame_yuv(struct t_hsv_filter *f, struct xrt_frame *xf)
 {
 	struct xrt_frame *f0 = f->frame0;
@@ -194,7 +198,7 @@ process_frame_yuv(struct t_hsv_filter *f, struct xrt_frame *xf)
 	}
 }
 
-static void
+XRT_NO_INLINE static void
 process_frame_yuyv(struct t_hsv_filter *f, struct xrt_frame *xf)
 {
 	struct xrt_frame *f0 = f->frame0;
@@ -216,17 +220,29 @@ process_frame_yuyv(struct t_hsv_filter *f, struct xrt_frame *xf)
 			uint8_t cr = src[3];
 			src += 4;
 
-			process_sample(f, y1, cb, cr, dst0, dst1, dst2, dst3);
-			dst0 += 1;
-			dst1 += 1;
-			dst2 += 1;
-			dst3 += 1;
+			uint8_t bits0 =
+			    t_hsv_filter_sample(&f->table, y1, cb, cr);
+			uint8_t bits1 =
+			    t_hsv_filter_sample(&f->table, y2, cb, cr);
 
-			process_sample(f, y2, cb, cr, dst0, dst1, dst2, dst3);
-			dst0 += 1;
-			dst1 += 1;
-			dst2 += 1;
-			dst3 += 1;
+			uint8_t v0 = (bits0 & (1 << 0)) ? 0xff : 0x00;
+			uint8_t v1 = (bits0 & (1 << 1)) ? 0xff : 0x00;
+			uint8_t v2 = (bits0 & (1 << 2)) ? 0xff : 0x00;
+			uint8_t v3 = (bits0 & (1 << 3)) ? 0xff : 0x00;
+			uint8_t v4 = (bits1 & (1 << 0)) ? 0xff : 0x00;
+			uint8_t v5 = (bits1 & (1 << 1)) ? 0xff : 0x00;
+			uint8_t v6 = (bits1 & (1 << 2)) ? 0xff : 0x00;
+			uint8_t v7 = (bits1 & (1 << 3)) ? 0xff : 0x00;
+
+			*(uint16_t *)dst0 = v0 | v4 << 8;
+			*(uint16_t *)dst1 = v1 | v5 << 8;
+			*(uint16_t *)dst2 = v2 | v6 << 8;
+			*(uint16_t *)dst3 = v3 | v7 << 8;
+
+			dst0 += 2;
+			dst1 += 2;
+			dst2 += 2;
+			dst3 += 2;
 		}
 	}
 }
