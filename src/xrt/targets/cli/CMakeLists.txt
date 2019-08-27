@@ -19,7 +19,7 @@ set(SOURCE_FILES
 	cli_prober.c
 	)
 
-add_executable(prober
+add_executable(cli
 	${SOURCE_FILES}
 	$<TARGET_OBJECTS:aux_os>
 	$<TARGET_OBJECTS:aux_util>
@@ -28,21 +28,21 @@ add_executable(prober
 	$<TARGET_OBJECTS:target_lists>
 	)
 
-set_target_properties(prober PROPERTIES
+set_target_properties(cli PROPERTIES
 	OUTPUT_NAME monado-cli
 	PREFIX ""
 	)
 
-target_link_libraries(prober PRIVATE
+target_link_libraries(cli PRIVATE
 	${LIBUSB_LIBRARIES}
 	${LIBUVC_LIBRARIES}
 	${UDEV_LIBRARIES}
 	)
 
 if(DRIVER_OBJECTS)
-	target_sources(prober PRIVATE ${DRIVER_OBJECTS})
+	target_sources(cli PRIVATE ${DRIVER_OBJECTS})
 endif()
 
 if(DRIVER_LIBRARIES)
-	target_link_libraries(prober PRIVATE ${DRIVER_LIBRARIES})
+	target_link_libraries(cli PRIVATE ${DRIVER_LIBRARIES})
 endif()
