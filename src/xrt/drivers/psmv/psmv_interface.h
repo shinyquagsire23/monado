@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*!
- * @defgroup drv_psmv PSVR driver
+ * @defgroup drv_psmv PS Move driver
  * @ingroup drv
  *
  * @brief Driver for the Sony PlayStation Move Controller.
@@ -25,7 +25,7 @@ extern "C" {
 #define PSMV_PID 0x03d5
 
 /*!
- * Probing function for the PSMove devices.
+ * Probing function for the PS Move devices.
  *
  * @ingroup drv_psmv
  */
