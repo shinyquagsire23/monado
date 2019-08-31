@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "xrt/xrt_defines.h"
+#include "xrt/xrt_frame.h"
 #include <SDL2/SDL.h>
 
 /*!
@@ -55,6 +55,23 @@ struct program
 	struct time_state *timekeeping;
 	struct xrt_device *xdevs[NUM_XDEVS];
 	struct xrt_prober *xp;
+
+	struct gui_ogl_texture *texs[256];
+};
+
+/*!
+ * A OpenGL texture.
+ *
+ * @ingroup gui
+ */
+struct gui_ogl_texture
+{
+	uint64_t seq;
+	uint64_t dropped;
+	const char *name;
+	uint32_t w, h;
+	uint32_t id;
+	bool half;
 };
 
 /*!
@@ -117,6 +134,27 @@ gui_prober_update(struct program *p);
  */
 void
 gui_prober_teardown(struct program *p);
+
+/*!
+ * Create a sink that will turn frames into OpenGL textures, since the frame
+ * can come from another thread @ref gui_ogl_sink_update needs to be called.
+ *
+ * Destruction is handled by the frame context.
+ *
+ * @ingroup gui
+ */
+struct gui_ogl_texture *
+gui_ogl_sink_create(const char *name,
+                    struct xrt_frame_context *xfctx,
+                    struct xrt_frame_sink **out_sink);
+
+/*!
+ * Update the texture to the latest received frame.
+ *
+ * @ingroup gui
+ */
+void
+gui_ogl_sink_update(struct gui_ogl_texture *);
 
 
 #ifdef __cplusplus
