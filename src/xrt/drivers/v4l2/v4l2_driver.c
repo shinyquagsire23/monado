@@ -8,6 +8,7 @@
  * @ingroup drv_v4l2
  */
 
+#include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_format.h"
@@ -625,6 +626,9 @@ v4l2_fs_destroy(struct v4l2_fs *vid)
 	// Make sure that the stream is stopped.
 	v4l2_fs_stream_stop(&vid->base);
 
+	// Stop the variable tracking.
+	u_var_remove_root(vid);
+
 	if (vid->descriptors != NULL) {
 		free(vid->descriptors);
 		vid->descriptors = NULL;
@@ -698,6 +702,12 @@ v4l2_fs_create(struct xrt_frame_context *xfctx,
 
 	// It's now safe to add it to the context.
 	xrt_frame_context_add(xfctx, &vid->node);
+
+	// Start the variable tracking after we know what device we have.
+	u_var_add_root(vid, "V4L2 Frameserver", true);
+	u_var_add_text(vid, vid->card, "Card");
+	u_var_add_bool(vid, &vid->print_debug, "Debug");
+	u_var_add_bool(vid, &vid->print_spew, "Spew");
 
 	v4l2_list_modes(vid);
 
