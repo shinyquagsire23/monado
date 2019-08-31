@@ -15,6 +15,8 @@ include_directories(
 
 set(SOURCE_FILES
 	gui_common.h
+	gui_imgui.c
+	gui_imgui.h
 	gui_main.c
 	gui_ogl.c
 	gui_prober.c
@@ -22,6 +24,22 @@ set(SOURCE_FILES
 	gui_sdl2.c
 	../../../external/glad/gl.h
 	../../../external/glad/gl.c
+	../../../external/imgui/cimgui.cpp
+	../../../external/imgui/cimgui.h
+	../../../external/imgui/imconfig.h
+	../../../external/imgui/imgui.cpp
+	../../../external/imgui/imgui.h
+	../../../external/imgui/imgui_demo.cpp
+	../../../external/imgui/imgui_draw.cpp
+	../../../external/imgui/imgui_impl_opengl3.cpp
+	../../../external/imgui/imgui_impl_opengl3.h
+	../../../external/imgui/imgui_impl_sdl.cpp
+	../../../external/imgui/imgui_impl_sdl.h
+	../../../external/imgui/imgui_internal.h
+	../../../external/imgui/imgui_widgets.cpp
+	../../../external/imgui/imstb_rectpack.h
+	../../../external/imgui/imstb_textedit.h
+	../../../external/imgui/imstb_truetype.h
 	)
 
 add_executable(gui

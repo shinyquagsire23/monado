@@ -95,6 +95,14 @@ int
 gui_sdl2_init(struct program *p);
 
 /*!
+ * Loop until user request quit and show Imgui interface.
+ *
+ * @ingroup gui
+ */
+void
+gui_imgui_loop(struct program *p);
+
+/*!
  * Loop until quit signal has been received.
  *
  * @ingroup gui
