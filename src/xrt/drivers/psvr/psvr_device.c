@@ -12,6 +12,7 @@
 
 #include "xrt/xrt_compiler.h"
 
+#include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
 #include "util/u_debug.h"
@@ -52,6 +53,16 @@ struct psvr_device
 
 	struct
 	{
+		uint8_t leds[9];
+	} wants;
+
+	struct
+	{
+		uint8_t leds[9];
+	} state;
+
+	struct
+	{
 		struct xrt_vec3 gyro;
 		struct xrt_vec3 accel;
 	} raw;
@@ -72,8 +83,12 @@ XRT_MAYBE_UNUSED static const unsigned char psvr_tracking_on[12] = {
 };
 
 
-#define PSVR_LED_POWER_OFF ((uint8_t)0)
-#define PSVR_LED_POWER_MAX ((uint8_t)100)
+#define PSVR_LED_POWER_OFF ((uint8_t)0x00)
+#define PSVR_LED_POWER_MAX ((uint8_t)0xff)
+
+#define PSVR_LED_POWER_WIRE_OFF ((uint8_t)0)
+#define PSVR_LED_POWER_WIRE_MAX ((uint8_t)100)
+
 
 enum psvr_leds
 {
@@ -145,6 +160,12 @@ send_to_control(struct psvr_device *psvr, const uint8_t *data, size_t size)
  * Packet reading code.
  *
  */
+
+static uint8_t
+scale_led_power(uint8_t power)
+{
+	return (uint8_t)((power / 255.0f) * 100.0f);
+}
 
 static void
 accel_from_psvr_vec(const int16_t smp[3], struct xrt_vec3 *out_vec)
@@ -441,6 +462,41 @@ control_vrmode_and_wait(struct psvr_device *psvr, bool on)
 	return 0;
 }
 
+static int
+update_leds_if_changed(struct psvr_device *psvr)
+{
+	if (memcmp(psvr->wants.leds, psvr->state.leds,
+	           sizeof(psvr->state.leds)) == 0) {
+		return 0;
+	}
+
+	memcpy(psvr->state.leds, psvr->wants.leds, sizeof(psvr->state.leds));
+
+	uint8_t data[20] = {
+	    0x15,
+	    0x00,
+	    0xaa,
+	    0x10,
+	    (uint8_t)PSVR_LED_ALL,
+	    (uint8_t)(PSVR_LED_ALL >> 8),
+	    scale_led_power(psvr->state.leds[0]),
+	    scale_led_power(psvr->state.leds[1]),
+	    scale_led_power(psvr->state.leds[2]),
+	    scale_led_power(psvr->state.leds[3]),
+	    scale_led_power(psvr->state.leds[4]),
+	    scale_led_power(psvr->state.leds[5]),
+	    scale_led_power(psvr->state.leds[6]),
+	    scale_led_power(psvr->state.leds[7]),
+	    scale_led_power(psvr->state.leds[8]),
+	    0,
+	    0,
+	    0,
+	    0,
+	    0,
+	};
+
+	return send_to_control(psvr, data, sizeof(data));
+}
 
 /*!
  * Control the leds on the headset, allowing you to turn on and off different
@@ -466,36 +522,17 @@ control_leds(struct psvr_device *psvr,
 		return 0;
 	}
 
-	// Just in case, if the value is larger
-	// then max it will turn the leds off.
-	if (power > PSVR_LED_POWER_MAX) {
-		power = PSVR_LED_POWER_MAX;
+	for (uint32_t i = 0; i < ARRAY_SIZE(psvr->wants.leds); i++) {
+		uint32_t mask = (1 << i);
+		if (adjust & mask) {
+			psvr->wants.leds[i] = power;
+		}
+		if (off & mask) {
+			psvr->wants.leds[i] = 0x00;
+		}
 	}
 
-	uint8_t data[20] = {
-	    0x15,
-	    0x00,
-	    0xaa,
-	    0x10,
-	    (uint8_t)all,        // lower byte
-	    (uint8_t)(all >> 8), // upper byte
-	    adjust & PSVR_LED_A ? power : PSVR_LED_POWER_OFF,
-	    adjust & PSVR_LED_B ? power : PSVR_LED_POWER_OFF,
-	    adjust & PSVR_LED_C ? power : PSVR_LED_POWER_OFF,
-	    adjust & PSVR_LED_D ? power : PSVR_LED_POWER_OFF,
-	    adjust & PSVR_LED_E ? power : PSVR_LED_POWER_OFF,
-	    adjust & PSVR_LED_F ? power : PSVR_LED_POWER_OFF,
-	    adjust & PSVR_LED_G ? power : PSVR_LED_POWER_OFF,
-	    adjust & PSVR_LED_H ? power : PSVR_LED_POWER_OFF,
-	    adjust & PSVR_LED_I ? power : PSVR_LED_POWER_OFF,
-	    0,
-	    0,
-	    0,
-	    0,
-	    0,
-	};
-
-	return send_to_control(psvr, data, sizeof(data));
+	return update_leds_if_changed(psvr);
 }
 
 static int
@@ -556,7 +593,6 @@ disco_leds(struct psvr_device *psvr)
 static void
 teardown(struct psvr_device *psvr)
 {
-
 	if (psvr->hmd_control != NULL) {
 		// Turn off VR-mode and power down headset.
 		if (control_vrmode_and_wait(psvr, false) < 0 ||
@@ -572,6 +608,9 @@ teardown(struct psvr_device *psvr)
 		hid_close(psvr->hmd_handle);
 		psvr->hmd_handle = NULL;
 	}
+
+	// Stop the variable tracking.
+	u_var_remove_root(psvr);
 }
 
 
@@ -585,7 +624,9 @@ static void
 psvr_device_update_inputs(struct xrt_device *xdev,
                           struct time_state *timekeeping)
 {
-	// Empty
+	struct psvr_device *psvr = psvr_device(xdev);
+
+	update_leds_if_changed(psvr);
 }
 
 static void
@@ -736,6 +777,22 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 		goto cleanup;
 	}
 
+	/*
+	 * Setup variable.
+	 */
+
+	u_var_add_root(psvr, "PS VR Headset", true);
+	u_var_add_u8(psvr, &psvr->wants.leds[0], "Led A");
+	u_var_add_u8(psvr, &psvr->wants.leds[1], "Led B");
+	u_var_add_u8(psvr, &psvr->wants.leds[2], "Led C");
+	u_var_add_u8(psvr, &psvr->wants.leds[3], "Led D");
+	u_var_add_u8(psvr, &psvr->wants.leds[4], "Led E");
+	u_var_add_u8(psvr, &psvr->wants.leds[5], "Led F");
+	u_var_add_u8(psvr, &psvr->wants.leds[6], "Led G");
+	u_var_add_u8(psvr, &psvr->wants.leds[7], "Led H");
+	u_var_add_u8(psvr, &psvr->wants.leds[8], "Led I");
+	u_var_add_bool(psvr, &psvr->print_debug, "Debug");
+	u_var_add_bool(psvr, &psvr->print_spew, "Spew");
 
 	/*
 	 * Finishing touches.
