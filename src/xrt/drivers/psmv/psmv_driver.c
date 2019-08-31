@@ -15,6 +15,7 @@
 
 #include "xrt/xrt_prober.h"
 
+#include "util/u_var.h"
 #include "util/u_time.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
@@ -270,12 +271,16 @@ struct psmv_device
 
 	struct os_hid_device *hid;
 
-	int64_t resend_time;
 	struct
 	{
-		uint8_t red;
-		uint8_t green;
-		uint8_t blue;
+		int64_t resend_time;
+		struct xrt_colour_rgb_u8 led;
+		uint8_t rumble;
+	} wants;
+
+	struct
+	{
+		struct xrt_colour_rgb_u8 led;
 		uint8_t rumble;
 	} state;
 
@@ -494,20 +499,29 @@ static void
 psmv_led_and_trigger_update(struct psmv_device *psmv, int64_t time)
 {
 	// Need to keep sending led control packets to keep the leds on.
-	if (psmv->resend_time > time) {
+	if (psmv->wants.resend_time > time &&
+	    psmv->state.led.r == psmv->wants.led.r &&
+	    psmv->state.led.g == psmv->wants.led.g &&
+	    psmv->state.led.b == psmv->wants.led.b &&
+	    psmv->state.rumble == psmv->wants.rumble) {
 		return;
 	}
 
-	psmv->resend_time = time + 1000000000;
-	psmv_send_led_control(psmv, psmv->state.red, psmv->state.green,
-	                      psmv->state.blue, psmv->state.rumble);
+	psmv->state.led.r = psmv->wants.led.r;
+	psmv->state.led.g = psmv->wants.led.g;
+	psmv->state.led.b = psmv->wants.led.b;
+	psmv->state.rumble = psmv->wants.rumble;
+
+	psmv->wants.resend_time = time + 1000000000;
+	psmv_send_led_control(psmv, psmv->state.led.r, psmv->state.led.g,
+	                      psmv->state.led.b, psmv->state.rumble);
 }
 
 static void
 psmv_force_led_and_rumble_update(struct psmv_device *psmv, int64_t time)
 {
 	// Force a resend;
-	psmv->resend_time = 0;
+	psmv->wants.resend_time = 0;
 	psmv_led_and_trigger_update(psmv, time);
 }
 
@@ -618,6 +632,9 @@ psmv_device_destroy(struct xrt_device *xdev)
 {
 	struct psmv_device *psmv = psmv_device(xdev);
 
+	// Remove the variable tracking.
+	u_var_remove_root(psmv);
+
 	if (psmv->hid != NULL) {
 		psmv_send_led_control(psmv, 0x00, 0x00, 0x00, 0x00);
 
@@ -677,13 +694,14 @@ psmv_device_set_output(struct xrt_device *xdev,
 		return;
 	}
 
-	psmv->state.rumble =
+	psmv->wants.rumble =
 	    psmv_clamp_zero_to_one_float_to_u8(value->vibration.amplitude);
 
 	// Force a resend;
 	int64_t now = time_state_get_now(timekeeping);
 	psmv_force_led_and_rumble_update(psmv, now);
 }
+
 
 /*
  *
@@ -744,12 +762,12 @@ psmv_found(struct xrt_prober *xp,
 
 	static int hack = 0;
 	switch (hack++ % 3) {
-	case 0: psmv->state.red = 0xff; break;
+	case 0: psmv->wants.led.r = 0xff; break;
 	case 1:
-		psmv->state.red = 0xff;
-		psmv->state.blue = 0xff;
+		psmv->wants.led.r = 0xff;
+		psmv->wants.led.b = 0xff;
 		break;
-	case 2: psmv->state.blue = 0xff; break;
+	case 2: psmv->wants.led.b = 0xff; break;
 	}
 
 	// Get calibration data.
@@ -765,6 +783,13 @@ psmv_found(struct xrt_prober *xp,
 
 	// Clear any packets
 	psmv_read_hid(psmv);
+
+	// Start the variable tracking now that everything is in place.
+	u_var_add_root(psmv, "PSMV Controller", true);
+	u_var_add_rgb_u8(psmv, &psmv->wants.led, "Led");
+	u_var_add_u8(psmv, &psmv->wants.rumble, "Rumble");
+	u_var_add_bool(psmv, &psmv->print_debug, "Debug");
+	u_var_add_bool(psmv, &psmv->print_spew, "Spew");
 
 	// And finally done
 	*out_xdevs = &psmv->base;
