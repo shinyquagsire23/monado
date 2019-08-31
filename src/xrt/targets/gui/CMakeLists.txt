@@ -16,6 +16,7 @@ include_directories(
 set(SOURCE_FILES
 	gui_common.h
 	gui_main.c
+	gui_prober.c
 	gui_sdl2.c
 	../../../external/glad/gl.h
 	../../../external/glad/gl.c

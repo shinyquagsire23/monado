@@ -24,6 +24,11 @@
 extern "C" {
 #endif
 
+#define NUM_XDEVS 8
+struct xrt_device;
+struct xrt_prober;
+struct time_state;
+
 /*!
  * Common struct holding state for the GUI interface.
  *
@@ -46,6 +51,10 @@ struct program
 		uint32_t height;
 		bool own_buffer;
 	} blit;
+
+	struct time_state *timekeeping;
+	struct xrt_device *xdevs[NUM_XDEVS];
+	struct xrt_prober *xp;
 };
 
 /*!
@@ -84,6 +93,30 @@ gui_sdl2_display_R8G8B8(struct program *p,
  */
 void
 gui_sdl2_quit(struct program *p);
+
+/*!
+ * Initialize the prober and open all devices found.
+ *
+ * @ingroup gui
+ */
+int
+gui_prober_init(struct program *p);
+
+/*!
+ * Update all devices.
+ *
+ * @ingroup gui
+ */
+void
+gui_prober_update(struct program *p);
+
+/*!
+ * Destroy all opened devices and destroy the prober.
+ *
+ * @ingroup gui
+ */
+void
+gui_prober_teardown(struct program *p);
 
 
 #ifdef __cplusplus
