@@ -29,7 +29,7 @@
  */
 
 // Should the experimental PSVR driver be enabled.
-DEBUG_GET_ONCE_BOOL_OPTION(psvr_enable, "PSVR_ENABLE", false)
+DEBUG_GET_ONCE_BOOL_OPTION(psvr_enable, "PSVR_ENABLE", true)
 DEBUG_GET_ONCE_BOOL_OPTION(psvr_spew, "PSVR_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(psvr_debug, "PSVR_PRINT_DEBUG", false)
 
