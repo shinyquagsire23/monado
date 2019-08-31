@@ -12,9 +12,10 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "util/u_debug.h"
+#include "util/u_var.h"
 #include "util/u_time.h"
 #include "util/u_misc.h"
+#include "util/u_debug.h"
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_prober.h"
@@ -52,6 +53,8 @@ static XrResult
 oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	struct oxr_instance *inst = (struct oxr_instance *)hb;
+
+	u_var_remove_root((void *)inst);
 
 	oxr_path_destroy_all(log, inst);
 
@@ -192,6 +195,8 @@ oxr_instance_create(struct oxr_logger *log,
 	}
 
 	//! @todo check if this (and other creates) failed?
+
+	u_var_add_root((void *)inst, "XrInstance", true);
 
 	*out_instance = inst;
 
