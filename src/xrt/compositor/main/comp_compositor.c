@@ -83,31 +83,31 @@ compositor_wait_frame(struct xrt_compositor *xc,
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_SPEW(c, "WAIT_FRAME");
 
+	// A little bit easier to read.
+	int64_t interval_ns = (int64_t)c->settings.nominal_frame_interval_ns;
+
 	// HACK: Wait until the frame is predicted to be displayed.
 	// This needs improvement, but blocks for plausible timings.
-	int64_t already_used =
-	    time_state_get_now(c->timekeeping) - c->last_frame_time_ns;
-	int64_t remaining_usec =
-	    ((int64_t)c->settings.nominal_frame_interval_ns - already_used) /
-	    1000;
+	int64_t now_ns = time_state_get_now(c->timekeeping);
+	int64_t already_used_ns = now_ns - c->last_frame_time_ns;
+	int64_t remaining_usec = (interval_ns - already_used_ns) / 1000;
 
 	// leave 1.25 ms for overhead
-	if (remaining_usec > 1250)
+	if (remaining_usec > 1250) {
 		usleep(remaining_usec - 1250);
+	}
 
-	*predicted_display_period = c->settings.nominal_frame_interval_ns;
-	*predicted_display_time =
-	    c->last_frame_time_ns + c->settings.nominal_frame_interval_ns;
+	*predicted_display_period = interval_ns;
+	*predicted_display_time = c->last_frame_time_ns + interval_ns;
 
 	// if frame intervals were missed, keep adding intervals until we
 	// predict the next one in the future. Also make sure we leave the
 	// application at least half a frame interval for rendering.
 
-	int64_t now = time_state_get_now(c->timekeeping);
-	while (*predicted_display_time <
-	       now - (int64_t)c->settings.nominal_frame_interval_ns / 2)
-		*predicted_display_time +=
-		    c->settings.nominal_frame_interval_ns;
+	now_ns = time_state_get_now(c->timekeeping);
+	while (*predicted_display_time < now_ns - interval_ns / 2) {
+		*predicted_display_time += interval_ns;
+	}
 }
 
 static void
