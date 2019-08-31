@@ -7,8 +7,9 @@
  * @ingroup st_prober
  */
 
-#include "util/u_debug.h"
+#include "util/u_var.h"
 #include "util/u_misc.h"
+#include "util/u_debug.h"
 #include "p_prober.h"
 
 #include <stdio.h>
@@ -241,6 +242,10 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 	p->print_spew = debug_get_bool_option_prober_spew();
 	p->print_debug = debug_get_bool_option_prober_debug();
 
+	u_var_add_root((void*)p, "Prober", true);
+	u_var_add_bool((void*)p, &p->print_debug, "Debug");
+	u_var_add_bool((void*)p, &p->print_spew, "Spew");
+
 	int ret;
 
 	ret = collect_entries(p);
@@ -326,6 +331,9 @@ teardown_devices(struct prober* p)
 static void
 teardown(struct prober* p)
 {
+	// First remove the variable tracking.
+	u_var_remove_root((void*)p);
+
 	// Clean up all auto_probers.
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
 		p->auto_probers[i]->destroy(p->auto_probers[i]);
