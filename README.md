@@ -33,7 +33,7 @@ Dependencies include:
 * Vulkan headers
 * OpenGL headers
 * Eigen3
-* glslang
+* glslangValidator - Debian/Ubuntu package `glslang-tool`.
 * libusb
 * libudev
 
