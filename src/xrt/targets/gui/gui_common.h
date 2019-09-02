@@ -27,6 +27,8 @@ extern "C" {
 #define NUM_XDEVS 8
 struct xrt_device;
 struct xrt_prober;
+struct xrt_fs;
+struct xrt_frame_context;
 struct time_state;
 struct gui_scene_manager;
 
@@ -215,6 +217,32 @@ gui_scene_manager_init(struct program *p);
  */
 void
 gui_scene_manager_destroy(struct program *p);
+
+
+/*
+ *
+ * Scene creation functions.
+ *
+ */
+
+/*!
+ * Shows a UI that lets you select a video device and mode.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_select_video(struct program *p);
+
+/*!
+ * Given the frameserver runs some debug code on it.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_debug_video(struct program *p,
+                      struct xrt_frame_context *xfctx,
+                      struct xrt_fs *xfs,
+                      size_t mode);
 
 
 #ifdef __cplusplus

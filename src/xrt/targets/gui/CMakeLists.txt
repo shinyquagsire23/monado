@@ -21,6 +21,8 @@ set(SOURCE_FILES
 	gui_ogl.c
 	gui_prober.c
 	gui_scene.cpp
+	gui_scene_debug.c
+	gui_scene_video.c
 	gui_sdl2.c
 	../../../external/glad/gl.h
 	../../../external/glad/gl.c
