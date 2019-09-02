@@ -114,7 +114,7 @@ oxr_action_set_create(struct oxr_logger* log,
                       struct oxr_action_set** out_act_set)
 {
 	// Mod music for all!
-	static uint32_t key_gen = 0;
+	static uint32_t key_gen = 1;
 
 	//! @todo Implement more fully.
 	struct oxr_action_set* act_set = NULL;
@@ -162,7 +162,7 @@ oxr_action_create(struct oxr_logger* log,
 	struct oxr_sub_paths sub_paths = {0};
 
 	// Mod music for all!
-	static uint32_t key_gen = 0;
+	static uint32_t key_gen = 1;
 
 	oxr_classify_sub_action_paths(log, inst,
 	                              createInfo->countSubactionPaths,
