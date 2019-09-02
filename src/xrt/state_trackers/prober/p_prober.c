@@ -199,6 +199,30 @@ p_dev_get_bluetooth_dev(struct prober* p,
  */
 
 static void
+fill_out_product(struct prober* p, struct prober_device* pdev)
+{
+	const char* bus =
+	    pdev->base.bus == XRT_BUS_TYPE_BLUETOOTH ? "bluetooth" : "usb";
+
+	char* str = NULL;
+	int ret = 0;
+	do {
+		ret = snprintf(str, ret, "Unknown %s device: %04x:%04x", bus,
+		               pdev->base.vendor_id, pdev->base.product_id);
+		if (ret <= 0) {
+			return;
+		}
+
+		if (str == NULL) {
+			str = U_CALLOC_WITH_CAST(char, ret + 1);
+		} else {
+			pdev->usb.product = str;
+			return;
+		}
+	} while (true);
+}
+
+static void
 add_device(struct prober* p, struct prober_device** out_dev)
 {
 	size_t new_size = (p->num_devices + 1) * sizeof(struct prober_device);
@@ -627,6 +651,10 @@ list_video_devices(struct xrt_prober* xp,
 			continue;
 		}
 
+		if (pdev->usb.product == NULL) {
+			fill_out_product(p, pdev);
+		}
+
 		cb(xp, &pdev->base, pdev->usb.product, ptr);
 	}
 
@@ -656,6 +684,7 @@ get_string_descriptor(struct xrt_prober* xp,
 	//! @todo make this unicode (utf-16)? utf-8 would be better...
 	return 0;
 }
+
 static void
 destroy(struct xrt_prober** xp)
 {
