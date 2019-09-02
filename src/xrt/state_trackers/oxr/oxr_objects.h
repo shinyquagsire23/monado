@@ -79,6 +79,8 @@ struct oxr_source;
 struct oxr_source_set;
 struct oxr_source_input;
 struct oxr_source_output;
+struct oxr_binding;
+struct oxr_interaction_profile;
 
 #define XRT_MAX_HANDLE_CHILDREN 256
 
@@ -101,6 +103,18 @@ enum oxr_handle_state
 
 	/*! State after successful oxr_handle_destroy */
 	OXR_HANDLE_STATE_DESTROYED,
+};
+
+/*!
+ * Sub action paths.
+ */
+enum oxr_sub_action_path
+{
+	OXR_SUB_ACTION_PATH_USER,
+	OXR_SUB_ACTION_PATH_HEAD,
+	OXR_SUB_ACTION_PATH_LEFT,
+	OXR_SUB_ACTION_PATH_RIGHT,
+	OXR_SUB_ACTION_PATH_GAMEPAD,
 };
 
 
@@ -285,28 +299,6 @@ oxr_action_sync_data(struct oxr_logger *log,
                      const XrActiveActionSet *actionSets);
 
 XrResult
-oxr_action_suggest_interaction_profile_bindings(
-    struct oxr_logger *log,
-    struct oxr_instance *inst,
-    const XrInteractionProfileSuggestedBinding *suggestedBindings);
-
-XrResult
-oxr_action_get_current_interaction_profile(
-    struct oxr_logger *log,
-    struct oxr_session *sess,
-    XrPath topLevelUserPath,
-    XrInteractionProfileState *interactionProfile);
-
-XrResult
-oxr_action_get_input_source_localized_name(
-    struct oxr_logger *log,
-    struct oxr_session *sess,
-    const XrInputSourceLocalizedNameGetInfo *getInfo,
-    uint32_t bufferCapacityInput,
-    uint32_t *bufferCountOutput,
-    char *buffer);
-
-XrResult
 oxr_action_get_boolean(struct oxr_logger *log,
                        struct oxr_session *sess,
                        uint64_t key,
@@ -336,14 +328,6 @@ oxr_action_get_pose(struct oxr_logger *log,
                     XrActionStatePose *data);
 
 XrResult
-oxr_action_get_bound_sources(struct oxr_logger *log,
-                             struct oxr_session *sess,
-                             uint64_t key,
-                             uint32_t sourceCapacityInput,
-                             uint32_t *sourceCountOutput,
-                             XrPath *sources);
-
-XrResult
 oxr_action_apply_haptic_feedback(struct oxr_logger *log,
                                  struct oxr_session *sess,
                                  uint64_t key,
@@ -355,6 +339,70 @@ oxr_action_stop_haptic_feedback(struct oxr_logger *log,
                                 struct oxr_session *sess,
                                 uint64_t key,
                                 struct oxr_sub_paths sub_paths);
+
+
+/*
+ *
+ * oxr_binding.c
+ *
+ */
+
+/*!
+ * Find the best matching profile for the given @ref xrt_device.
+ *
+ * @param xdev Can be null.
+ */
+void
+oxr_find_profile_for_device(struct oxr_logger *log,
+                            struct oxr_instance *inst,
+                            struct xrt_device *xdev,
+                            struct oxr_interaction_profile **out_p);
+
+/*!
+ * Free all memory allocated by the binding system.
+ */
+void
+oxr_binding_destroy_all(struct oxr_logger *log, struct oxr_instance *inst);
+
+/*!
+ * Find all bindings that is the given action key is bound to.
+ */
+void
+oxr_binding_find_bindings_from_key(struct oxr_logger *log,
+                                   struct oxr_interaction_profile *profile,
+                                   uint32_t key,
+                                   struct oxr_binding *bindings[32],
+                                   size_t *num_bindings);
+
+XrResult
+oxr_action_suggest_interaction_profile_bindings(
+    struct oxr_logger *log,
+    struct oxr_instance *inst,
+    const XrInteractionProfileSuggestedBinding *suggestedBindings);
+
+XrResult
+oxr_action_get_current_interaction_profile(
+    struct oxr_logger *log,
+    struct oxr_session *sess,
+    XrPath topLevelUserPath,
+    XrInteractionProfileState *interactionProfile);
+
+XrResult
+oxr_action_get_input_source_localized_name(
+    struct oxr_logger *log,
+    struct oxr_session *sess,
+    const XrInputSourceLocalizedNameGetInfo *getInfo,
+    uint32_t bufferCapacityInput,
+    uint32_t *bufferCountOutput,
+    char *buffer);
+
+XrResult
+oxr_action_enumerate_bound_sources(struct oxr_logger *log,
+                                   struct oxr_session *sess,
+                                   uint64_t key,
+                                   uint32_t sourceCapacityInput,
+                                   uint32_t *sourceCountOutput,
+                                   XrPath *sources);
 
 
 /*
@@ -825,6 +873,9 @@ struct oxr_instance
 	struct oxr_event *last_event;
 	struct oxr_event *next_event;
 
+	struct oxr_interaction_profile **profiles;
+	size_t num_profiles;
+
 
 	struct
 	{
@@ -833,6 +884,16 @@ struct oxr_instance
 		XrPath left;
 		XrPath right;
 		XrPath gamepad;
+
+		XrPath khr_simple_controller;
+		XrPath google_daydream_controller;
+		XrPath htc_vive_controller;
+		XrPath htc_vive_pro;
+		XrPath microsoft_motion_controller;
+		XrPath microsoft_xbox_controller;
+		XrPath oculus_go_controller;
+		XrPath oculus_touch_controller;
+		XrPath valve_index_controller;
 	} path_cache;
 
 	//! Debug messengers
@@ -857,6 +918,21 @@ struct oxr_session
 	struct u_hashmap_int *act_sets;
 	struct u_hashmap_int *sources;
 
+	//! Has xrAttachSessionActionSets been called?
+	bool actionsAttached;
+
+	/*!
+	 * Currently bound interaction profile.
+	 * @{
+	 */
+	XrPath left;
+	XrPath right;
+	XrPath head;
+	XrPath gamepad;
+	/*!
+	 * @}
+	 */
+
 	/*!
 	 * IPD, to be expanded to a proper 3D relation.
 	 */
@@ -871,6 +947,36 @@ struct oxr_session
 	                             struct oxr_session *sess,
 	                             const XrSwapchainCreateInfo *,
 	                             struct oxr_swapchain **);
+};
+
+/*!
+ * A single interaction profile.
+ */
+struct oxr_interaction_profile
+{
+	XrPath path;
+	struct oxr_binding *bindings;
+	size_t num_bindings;
+};
+
+/*!
+ * Interaction profile binding state.
+ */
+struct oxr_binding
+{
+	XrPath *paths;
+	size_t num_paths;
+
+	enum oxr_sub_action_path sub_path;
+
+	uint32_t *keys;
+	size_t num_keys;
+
+	enum xrt_input_name *inputs;
+	size_t num_inputs;
+
+	enum xrt_output_name *outputs;
+	size_t num_outputs;
 };
 
 /*!
@@ -896,8 +1002,8 @@ struct oxr_source_set
 	//! Common structure for things referred to by OpenXR handles.
 	struct oxr_handle_base handle;
 
-	//! Which generation of the XrActionSet was this created from.
-	uint32_t generation;
+	//! Owning session.
+	struct oxr_session *sess;
 };
 
 /*!
@@ -1072,11 +1178,11 @@ struct oxr_action_set
 	//! Onwer of this messenger.
 	struct oxr_instance *inst;
 
-	/*!
-	 * Every change that is done to a action set will increment this
-	 * counter and trigger a rebinding of inputs when syncing actions.
-	 */
-	uint32_t generation;
+	//! Application supplied name of this action.
+	char name[XR_MAX_ACTION_SET_NAME_SIZE];
+
+	//! Has this action set been attached.
+	bool attached;
 
 	//! Unique key for the session hashmap.
 	uint32_t key;

@@ -43,6 +43,7 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 
 	u_var_remove_root((void *)inst);
 
+	oxr_binding_destroy_all(log, inst);
 	oxr_path_destroy_all(log, inst);
 
 	if (inst->path_store != NULL) {
@@ -94,11 +95,22 @@ oxr_instance_create(struct oxr_logger *log,
 	}
 
 	// Cache certain often looked up paths.
+	// clang-format off
 	cache_path(log, inst, "/user", &inst->path_cache.user);
 	cache_path(log, inst, "/user/hand/head", &inst->path_cache.head);
 	cache_path(log, inst, "/user/hand/left", &inst->path_cache.left);
 	cache_path(log, inst, "/user/hand/right", &inst->path_cache.right);
 	cache_path(log, inst, "/user/hand/gamepad", &inst->path_cache.gamepad);
+	cache_path(log, inst, "/interaction_profiles/khr/simple_controller", &inst->path_cache.khr_simple_controller);
+	cache_path(log, inst, "/interaction_profiles/google/daydream_controller", &inst->path_cache.google_daydream_controller);
+	cache_path(log, inst, "/interaction_profiles/htc/vive_controller", &inst->path_cache.htc_vive_controller);
+	cache_path(log, inst, "/interaction_profiles/htc/vive_pro", &inst->path_cache.htc_vive_pro);
+	cache_path(log, inst, "/interaction_profiles/microsoft/motion_controller", &inst->path_cache.microsoft_motion_controller);
+	cache_path(log, inst, "/interaction_profiles/microsoft/xbox_controller", &inst->path_cache.microsoft_xbox_controller);
+	cache_path(log, inst, "/interaction_profiles/oculus/go_controller", &inst->path_cache.oculus_go_controller);
+	cache_path(log, inst, "/interaction_profiles/oculus/touch_controller", &inst->path_cache.oculus_touch_controller);
+	cache_path(log, inst, "/interaction_profiles/valve/index_controller", &inst->path_cache.valve_index_controller);
+	// clang-format on
 
 	p_ret = xrt_prober_create(&inst->prober);
 	if (p_ret != 0) {

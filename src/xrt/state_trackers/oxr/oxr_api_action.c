@@ -382,9 +382,9 @@ oxr_xrEnumerateBoundSourcesForAction(
 	    XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, enumerateInfo->action, act);
 
-	return oxr_action_get_bound_sources(&log, sess, act->key,
-	                                    sourceCapacityInput,
-	                                    sourceCountOutput, sources);
+	return oxr_action_enumerate_bound_sources(&log, sess, act->key,
+	                                          sourceCapacityInput,
+	                                          sourceCountOutput, sources);
 }
 
 
