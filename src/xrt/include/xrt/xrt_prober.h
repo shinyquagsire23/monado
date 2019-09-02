@@ -24,6 +24,8 @@ extern "C" {
  *
  */
 
+struct xrt_fs;
+struct xrt_frame_context;
 struct xrt_prober;
 struct xrt_prober_device;
 
@@ -144,6 +146,10 @@ struct xrt_prober
 	                          struct xrt_prober_device *xpdev,
 	                          int interface,
 	                          struct os_hid_device **out_hid_dev);
+	int (*open_video_device)(struct xrt_prober *xp,
+	                         struct xrt_prober_device *xpdev,
+	                         struct xrt_frame_context *xfctx,
+	                         struct xrt_fs **out_xfs);
 	int (*list_video_devices)(struct xrt_prober *xp,
 	                          xrt_prober_list_video_cb cb,
 	                          void *ptr);
@@ -218,6 +224,20 @@ xrt_prober_get_string_descriptor(struct xrt_prober *xp,
 {
 	return xp->get_string_descriptor(xp, xpdev, which_string, buffer,
 	                                 length);
+}
+
+/*!
+ * Helper function for @ref xrt_prober::xrt_prober_open_video_device.
+ *
+ * @ingroup xrt_iface
+ */
+XRT_MAYBE_UNUSED static inline int
+xrt_prober_open_video_device(struct xrt_prober *xp,
+                             struct xrt_prober_device *xpdev,
+                             struct xrt_frame_context *xfctx,
+                             struct xrt_fs **out_xfs)
+{
+	return xp->open_video_device(xp, xpdev, xfctx, out_xfs);
 }
 
 /*!

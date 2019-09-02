@@ -12,6 +12,10 @@
 #include "util/u_debug.h"
 #include "p_prober.h"
 
+#ifdef XRT_OS_LINUX
+#include "v4l2/v4l2_interface.h"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 
@@ -53,6 +57,12 @@ open_hid_interface(struct xrt_prober* xp,
                    struct xrt_prober_device* xpdev,
                    int interface,
                    struct os_hid_device** out_hid_dev);
+
+static int
+open_video_device(struct xrt_prober* xp,
+                  struct xrt_prober_device* xpdev,
+                  struct xrt_frame_context* xfctx,
+                  struct xrt_fs** out_xfs);
 
 static int
 list_video_devices(struct xrt_prober* xp,
@@ -235,6 +245,7 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 	p->base.dump = dump;
 	p->base.select = select_device;
 	p->base.open_hid_interface = open_hid_interface;
+	p->base.open_video_device = open_video_device;
 	p->base.list_video_devices = list_video_devices;
 	p->base.get_string_descriptor = get_string_descriptor;
 	p->base.destroy = destroy;
@@ -565,6 +576,32 @@ open_hid_interface(struct xrt_prober* xp,
 	        "hid interface (%i) on the device!",
 	        interface);
 	return -1;
+}
+
+static int
+open_video_device(struct xrt_prober* xp,
+                  struct xrt_prober_device* xpdev,
+                  struct xrt_frame_context* xfctx,
+                  struct xrt_fs** out_xfs)
+{
+	struct prober_device* pdev = (struct prober_device*)xpdev;
+
+#ifdef XRT_OS_LINUX
+	if (pdev->num_v4ls == 0) {
+		return -1;
+	}
+
+	struct xrt_fs* xfs = v4l2_fs_create(xfctx, pdev->v4ls[0].path);
+	if (xfs == NULL) {
+		return -1;
+	}
+
+	*out_xfs = xfs;
+	return 0;
+#else
+	(void)pdev;
+	return -1;
+#endif
 }
 
 static int
