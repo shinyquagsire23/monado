@@ -572,7 +572,9 @@ v4l2_fs_configure_capture(struct xrt_fs *xfs,
 }
 
 static bool
-v4l2_fs_stream_start(struct xrt_fs *xfs, uint32_t descriptor_index)
+v4l2_fs_stream_start(struct xrt_fs *xfs,
+                     struct xrt_frame_sink *xs,
+                     uint32_t descriptor_index)
 {
 	struct v4l2_fs *vid = v4l2_fs(xfs);
 
@@ -583,6 +585,7 @@ v4l2_fs_stream_start(struct xrt_fs *xfs, uint32_t descriptor_index)
 	}
 	vid->selected = descriptor_index;
 
+	vid->sink = xs;
 	vid->is_running = true;
 	if (pthread_create(&vid->stream_thread, NULL, v4l2_fs_stream_run,
 	                   xfs)) {
@@ -667,9 +670,7 @@ v4l2_fs_node_destroy(struct xrt_frame_node *node)
 }
 
 struct xrt_fs *
-v4l2_fs_create(struct xrt_frame_context *xfctx,
-               const char *path,
-               struct xrt_frame_sink *sink)
+v4l2_fs_create(struct xrt_frame_context *xfctx, const char *path)
 {
 	struct v4l2_fs *vid = U_TYPED_CALLOC(struct v4l2_fs);
 	vid->base.enumerate_modes = v4l2_fs_enumerate_modes;
@@ -681,7 +682,6 @@ v4l2_fs_create(struct xrt_frame_context *xfctx,
 	vid->node.destroy = v4l2_fs_node_destroy;
 	vid->print_spew = debug_get_bool_option_v4l2_spew();
 	vid->print_debug = debug_get_bool_option_v4l2_debug();
-	vid->sink = sink;
 	vid->fd = -1;
 
 	int fd = open(path, O_RDWR, 0);

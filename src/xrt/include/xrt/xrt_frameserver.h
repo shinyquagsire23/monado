@@ -72,7 +72,9 @@ struct xrt_fs
 	/*!
 	 * Start the capture stream.
 	 */
-	bool (*stream_start)(struct xrt_fs *xfs, uint32_t descriptor_index);
+	bool (*stream_start)(struct xrt_fs *xfs,
+	                     struct xrt_frame_sink *xs,
+	                     uint32_t descriptor_index);
 
 	/*!
 	 * Stop the capture stream.
@@ -123,9 +125,11 @@ xrt_fs_configure_capture(struct xrt_fs *xfs,
  * @ingroup xrt_iface
  */
 static inline XRT_MAYBE_UNUSED bool
-xrt_fs_stream_start(struct xrt_fs *xfs, uint32_t descriptor_index)
+xrt_fs_stream_start(struct xrt_fs *xfs,
+                    struct xrt_frame_sink *xs,
+                    uint32_t descriptor_index)
 {
-	return xfs->stream_start(xfs, descriptor_index);
+	return xfs->stream_start(xfs, xs, descriptor_index);
 }
 
 /*!
