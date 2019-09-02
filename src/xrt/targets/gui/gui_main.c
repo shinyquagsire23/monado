@@ -7,6 +7,7 @@
  * @ingroup gui
  */
 
+#include "util/u_var.h"
 #include "gui_common.h"
 
 
@@ -16,14 +17,34 @@ main(int argc, char **argv)
 	struct program p = {0};
 	int ret;
 
+	// Need to do this as early as possible.
+	u_var_force_on();
+
 	ret = gui_sdl2_init(&p);
 	if (ret != 0) {
 		gui_sdl2_quit(&p);
 		return ret;
 	}
 
-	gui_sdl2_loop(&p);
+	// To manage the scenes.
+	gui_scene_manager_init(&p);
 
+	// Start all of the devices.
+	gui_prober_init(&p);
+
+	// First scene to start with.
+	gui_scene_select_video(&p);
+
+	// Main loop.
+	gui_imgui_loop(&p);
+
+	// Clean up after us.
+	gui_prober_teardown(&p);
+
+	// All scenes should be destroyed by now.
+	gui_scene_manager_destroy(&p);
+
+	// Final close.
 	gui_sdl2_quit(&p);
 
 	return 0;
