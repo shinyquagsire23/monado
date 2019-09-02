@@ -28,6 +28,7 @@ extern "C" {
 struct xrt_device;
 struct xrt_prober;
 struct time_state;
+struct gui_scene_manager;
 
 /*!
  * Common struct holding state for the GUI interface.
@@ -41,6 +42,8 @@ struct program
 
 	bool stopped;
 	bool initialized;
+
+	struct gui_scene_manager *gsm;
 
 	struct
 	{
@@ -57,6 +60,15 @@ struct program
 	struct xrt_prober *xp;
 
 	struct gui_ogl_texture *texs[256];
+};
+
+/*!
+ * A single currently running scene.
+ */
+struct gui_scene
+{
+	void (*render)(struct gui_scene *, struct program *);
+	void (*destroy)(struct gui_scene *);
 };
 
 /*!
@@ -155,6 +167,46 @@ gui_ogl_sink_create(const char *name,
  */
 void
 gui_ogl_sink_update(struct gui_ogl_texture *);
+
+/*!
+ * Push the scene to the top of the lists.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_push_front(struct program *p, struct gui_scene *me);
+
+/*!
+ * Put a scene on the delete list, also removes it from any other list.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_delete_me(struct program *p, struct gui_scene *me);
+
+/*!
+ * Render the scenes.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_manager_render(struct program *p);
+
+/*!
+ * Initialize the scene manager.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_manager_init(struct program *p);
+
+/*!
+ * Destroy the scene manager.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_manager_destroy(struct program *p);
 
 
 #ifdef __cplusplus
