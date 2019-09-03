@@ -32,6 +32,12 @@ u_sink_queue_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink *downstream,
                     struct xrt_frame_sink **out_xfs);
 
+void
+u_sink_split_create(struct xrt_frame_context *xfctx,
+                    struct xrt_frame_sink *left,
+                    struct xrt_frame_sink *right,
+                    struct xrt_frame_sink **out_xfs);
+
 
 #ifdef __cplusplus
 }

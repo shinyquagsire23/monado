@@ -45,6 +45,7 @@ set(UTIL_SOURCE_FILES
 	util/u_sink.h
 	util/u_sink_converter.c
 	util/u_sink_queue.c
+	util/u_sink_split.c
 	util/u_time.cpp
 	util/u_time.h
 	util/u_var.cpp
