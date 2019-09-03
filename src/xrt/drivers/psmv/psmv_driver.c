@@ -65,7 +65,7 @@ enum psmv_input_index
 	PSMV_INDEX_START_CLICK,
 	PSMV_INDEX_SELECT_CLICK,
 	PSMV_INDEX_SQUARE_CLICK,
-	PSMV_INDEX_X_CLICK,
+	PSMV_INDEX_CROSS_CLICK,
 	PSMV_INDEX_CIRCLE_CLICK,
 	PSMV_INDEX_TRIANGLE_CLICK,
 	PSMV_INDEX_TRIGGER_VALUE,
@@ -88,7 +88,7 @@ enum psmv_button_bit
 	PSMV_BUTTON_BIT_TRIANGLE    = (1 << 20),
 	PSMV_BUTTON_BIT_CIRCLE      = (1 << 21),
 	PSMV_BUTTON_BIT_SQUARE      = (1 << 22),
-	PSMV_BUTTON_BIT_X           = (1 << 23),
+	PSMV_BUTTON_BIT_CROSS       = (1 << 23),
 
 	PSMV_BUTTON_BIT_START       = (1 << 27),
 	PSMV_BUTTON_BIT_SELECT      = (1 << 24),
@@ -401,7 +401,7 @@ psmv_device_update_inputs(struct xrt_device *xdev,
 	psmv_update_input_click(psmv, PSMV_INDEX_START_CLICK, now, PSMV_BUTTON_BIT_START);
 	psmv_update_input_click(psmv, PSMV_INDEX_SELECT_CLICK, now, PSMV_BUTTON_BIT_SELECT);
 	psmv_update_input_click(psmv, PSMV_INDEX_SQUARE_CLICK, now, PSMV_BUTTON_BIT_SQUARE);
-	psmv_update_input_click(psmv, PSMV_INDEX_X_CLICK, now, PSMV_BUTTON_BIT_X);
+	psmv_update_input_click(psmv, PSMV_INDEX_CROSS_CLICK, now, PSMV_BUTTON_BIT_CROSS);
 	psmv_update_input_click(psmv, PSMV_INDEX_CIRCLE_CLICK, now, PSMV_BUTTON_BIT_CIRCLE);
 	psmv_update_input_click(psmv, PSMV_INDEX_TRIANGLE_CLICK, now, PSMV_BUTTON_BIT_TRIANGLE);
 	psmv_update_trigger_value(psmv, PSMV_INDEX_TRIGGER_VALUE, now);
@@ -485,7 +485,7 @@ psmv_found(struct xrt_prober *xp,
 	SET_INPUT(START_CLICK);
 	SET_INPUT(SELECT_CLICK);
 	SET_INPUT(SQUARE_CLICK);
-	SET_INPUT(X_CLICK);
+	SET_INPUT(CROSS_CLICK);
 	SET_INPUT(CIRCLE_CLICK);
 	SET_INPUT(TRIANGLE_CLICK);
 	SET_INPUT(TRIGGER_VALUE);
