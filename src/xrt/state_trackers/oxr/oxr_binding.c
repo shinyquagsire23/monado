@@ -37,8 +37,9 @@ struct profile_template
 
 static struct binding_template khr_simple_controller_bindings[10];
 static struct binding_template google_daydream_controller_bindings[12];
+static struct binding_template mnd_ball_on_stick_controller_bindings[24];
 
-static struct profile_template profiles[2] = {
+static struct profile_template profiles[3] = {
     {
         .path = "/interaction_profiles/khr/simple_controller",
         .bindings = khr_simple_controller_bindings,
@@ -48,6 +49,11 @@ static struct profile_template profiles[2] = {
         .path = "/interaction_profiles/google/daydream_controller",
         .bindings = google_daydream_controller_bindings,
         .num_bindings = ARRAY_SIZE(google_daydream_controller_bindings),
+    },
+    {
+        .path = "/interaction_profiles/mnd/ball_on_stick_controller",
+        .bindings = mnd_ball_on_stick_controller_bindings,
+        .num_bindings = ARRAY_SIZE(mnd_ball_on_stick_controller_bindings),
     },
 };
 
@@ -129,7 +135,8 @@ is_valid_interaction_profile(struct oxr_instance *inst, XrPath path)
 	       inst->path_cache.microsoft_xbox_controller == path ||
 	       inst->path_cache.oculus_go_controller == path ||
 	       inst->path_cache.oculus_touch_controller == path ||
-	       inst->path_cache.valve_index_controller == path;
+	       inst->path_cache.valve_index_controller == path ||
+	       inst->path_cache.mnd_ball_on_stick_controller == path;
 }
 
 static bool
@@ -274,6 +281,7 @@ oxr_find_profile_for_device(struct oxr_logger *log,
 	case XRT_DEVICE_PSMV:
 		// clang-format off
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
+		interaction_profile_find(log, inst, inst->path_cache.mnd_ball_on_stick_controller, out_p);
 		// clang-format on
 		return;
 	default: return;
@@ -815,6 +823,356 @@ static struct binding_template google_daydream_controller_bindings[12] = {
                 XRT_INPUT_PSMV_BALL_TIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
 #endif
+                0,
+            },
+    },
+};
+
+
+/*
+ *
+ *
+ *
+ * Monado ball on a stick controller
+ *
+ *
+ *
+ */
+
+static struct binding_template mnd_ball_on_stick_controller_bindings[24] = {
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/system/click",
+                "/user/hand/left/input/system",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_PS_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/menu/click",
+                "/user/hand/left/input/menu",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_MOVE_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/start/click",
+                "/user/hand/left/input/start",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_START_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/select/click",
+                "/user/hand/left/input/select",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_SELECT_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/square_mnd/click",
+                "/user/hand/left/input/square_mnd",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_SQUARE_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/cross_mnd/click",
+                "/user/hand/left/input/cross_mnd",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_CROSS_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/circle_mnd/click",
+                "/user/hand/left/input/circle_mnd",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_CIRCLE_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/triangle_mnd/click",
+                "/user/hand/left/input/triangle_mnd",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_TRIANGLE_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/trigger/value",
+                "/user/hand/left/input/trigger",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_TRIGGER_VALUE,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/grip/pose",
+                "/user/hand/left/input/grip",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_BODY_CENTER_POSE,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/ball_mnd/pose",
+                "/user/hand/left/input/ball_mnd",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_BALL_CENTER_POSE,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/input/aim/pose",
+                "/user/hand/left/input/aim",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_BALL_TIP_POSE,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/system/click",
+                "/user/hand/right/input/system",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_PS_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/menu/click",
+                "/user/hand/right/input/menu",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_MOVE_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/start/click",
+                "/user/hand/right/input/start",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_START_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/select/click",
+                "/user/hand/right/input/select",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_SELECT_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/square_mnd/click",
+                "/user/hand/right/input/square_mnd",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_SQUARE_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/cross_mnd/click",
+                "/user/hand/right/input/cross_mnd",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_CROSS_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/circle_mnd/click",
+                "/user/hand/right/input/circle_mnd",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_CIRCLE_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/triangle_mnd/click",
+                "/user/hand/right/input/triangle_mnd",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_TRIANGLE_CLICK,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/trigger/value",
+                "/user/hand/right/input/trigger",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_TRIGGER_VALUE,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/grip/pose",
+                "/user/hand/right/input/grip",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_BODY_CENTER_POSE,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/ball_mnd/pose",
+                "/user/hand/right/input/ball_mnd",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_BALL_CENTER_POSE,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/input/aim/pose",
+                "/user/hand/right/input/aim",
+                NULL,
+            },
+        .inputs =
+            {
+                XRT_INPUT_PSMV_BALL_TIP_POSE,
                 0,
             },
     },
