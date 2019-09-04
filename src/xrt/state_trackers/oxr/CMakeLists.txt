@@ -9,7 +9,6 @@ include_directories(
 
 set(OXR_SOURCE_FILES
 	oxr_api_action.c
-	oxr_api_debug.c
 	oxr_api_funcs.h
 	oxr_api_instance.c
 	oxr_api_negotiate.c
@@ -27,7 +26,6 @@ set(OXR_SOURCE_FILES
 	oxr_instance.c
 	oxr_logger.cpp
 	oxr_logger.h
-	oxr_messenger.c
 	oxr_objects.h
 	oxr_path.c
 	oxr_session.c

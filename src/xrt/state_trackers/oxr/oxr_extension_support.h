@@ -92,7 +92,6 @@
  */
 // clang-format off
 #define OXR_EXTENSION_SUPPORT_GENERATE(_) \
-    OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_KHR_convert_timespec_time(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable(_) \

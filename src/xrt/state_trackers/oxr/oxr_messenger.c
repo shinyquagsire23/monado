@@ -55,7 +55,7 @@ oxr_create_messenger(struct oxr_logger *log,
 	if (parent_slot == NULL) {
 		return oxr_error(
 		    log, XR_ERROR_LIMIT_REACHED,
-		    " nstance cannot hold any more debug messengers");
+		    " Instance cannot hold any more debug messengers");
 	}
 
 	struct oxr_debug_messenger *mssngr = NULL;
