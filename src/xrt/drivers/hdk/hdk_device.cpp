@@ -272,9 +272,12 @@ hdk_device_create(struct os_hid_device *dev,
 	hd->base.get_view_pose = hdk_device_get_view_pose;
 	hd->base.destroy = hdk_device_destroy;
 	hd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
+	hd->base.name = XRT_DEVICE_GENERIC_HMD;
 	hd->dev = dev;
 	hd->print_spew = print_spew;
 	hd->print_debug = print_debug;
+
+	snprintf(hd->base.str, XRT_DEVICE_NAME_LEN, "OSVR HDK-family Device");
 
 	if (variant == HDK_UNKNOWN) {
 		HDK_ERROR(hd, "Don't know which HDK variant this is.");
@@ -442,8 +445,7 @@ hdk_device_create(struct os_hid_device *dev,
 
 
 	if (hd->print_debug) {
-		u_device_dump_config(&hd->base, __func__,
-		                     "OSVR HDK-family Device");
+		u_device_dump_config(&hd->base, __func__, hd->base.str);
 	}
 
 	return hd;

@@ -303,6 +303,18 @@ struct xrt_space_relation
  */
 
 /*!
+ * A enum that is used to name devices so that the
+ * state trackers can reason about the devices easier.
+ */
+enum xrt_device_name
+{
+	XRT_DEVICE_GENERIC_HMD = 1,
+
+	XRT_DEVICE_PSMV = 2,
+	XRT_DEVICE_HYDRA = 3,
+};
+
+/*!
  * Base type of this inputs.
  *
  * @ingroup xrt_iface

@@ -179,10 +179,11 @@ struct xrt_output
  */
 struct xrt_device
 {
-	/*!
-	 * A string describing the device.
-	 */
-	char name[XRT_DEVICE_NAME_LEN];
+	//! Enum identifier of the device.
+	enum xrt_device_name name;
+
+	//! A string describing the device.
+	char str[XRT_DEVICE_NAME_LEN];
 
 	//! Null if this device does not interface with the users head.
 	struct xrt_hmd_parts *hmd;

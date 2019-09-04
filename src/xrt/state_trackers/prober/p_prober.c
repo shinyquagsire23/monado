@@ -414,7 +414,7 @@ handle_found_device(struct prober* p,
                     size_t num_xdevs,
                     struct xrt_device* xdev)
 {
-	P_DEBUG(p, "Found '%s' %p", xdev->name, (void*)xdev);
+	P_DEBUG(p, "Found '%s' %p", xdev->str, (void*)xdev);
 
 	// For controllers we put them after the first found HMD.
 	if (xdev->hmd == NULL) {
@@ -426,7 +426,7 @@ handle_found_device(struct prober* p,
 		}
 
 		P_ERROR(p, "Too many controller devices closing '%s'",
-		        xdev->name);
+		        xdev->str);
 		xdev->destroy(xdev);
 		return;
 	}
@@ -437,7 +437,7 @@ handle_found_device(struct prober* p,
 		return;
 	}
 
-	P_ERROR(p, "Found more then one, HMD closing '%s'", xdev->name);
+	P_ERROR(p, "Found more then one, HMD closing '%s'", xdev->str);
 	xdev->destroy(xdev);
 }
 
@@ -507,7 +507,7 @@ select_device(struct xrt_prober* xp,
 
 
 	if (xdevs[0] != NULL) {
-		P_DEBUG(p, "Found HMD! '%s'", xdevs[0]->name);
+		P_DEBUG(p, "Found HMD! '%s'", xdevs[0]->str);
 		return 0;
 	}
 
@@ -519,7 +519,7 @@ select_device(struct xrt_prober* xp,
 			continue;
 		}
 
-		P_DEBUG(p, "Destroying '%s'", xdevs[i]->name);
+		P_DEBUG(p, "Destroying '%s'", xdevs[i]->str);
 		xdevs[i]->destroy(xdevs[i]);
 		xdevs[i] = NULL;
 	}

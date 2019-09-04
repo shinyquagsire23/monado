@@ -73,7 +73,7 @@ cli_cmd_test(int argc, const char **argv)
 			continue;
 		}
 
-		printf("\tFound '%s'\n", xdevs[i]->name);
+		printf("\tFound '%s'\n", xdevs[i]->str);
 	}
 
 	// End of program
@@ -84,7 +84,7 @@ cli_cmd_test(int argc, const char **argv)
 			continue;
 		}
 
-		printf("\tDestroying '%s'\n", xdevs[i]->name);
+		printf("\tDestroying '%s'\n", xdevs[i]->str);
 
 		xdevs[i]->destroy(xdevs[i]);
 		xdevs[i] = NULL;

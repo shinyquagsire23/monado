@@ -477,7 +477,8 @@ psmv_found(struct xrt_prober *xp,
 	psmv->base.update_inputs = psmv_device_update_inputs;
 	psmv->base.get_tracked_pose = psmv_device_get_tracked_pose;
 	psmv->base.set_output = psmv_device_set_output;
-	snprintf(psmv->base.name, XRT_DEVICE_NAME_LEN, "%s",
+	psmv->base.name = XRT_DEVICE_PSMV;
+	snprintf(psmv->base.str, XRT_DEVICE_NAME_LEN, "%s",
 	         "PS Move Controller");
 	psmv->hid = hid;
 	SET_INPUT(PS_CLICK);

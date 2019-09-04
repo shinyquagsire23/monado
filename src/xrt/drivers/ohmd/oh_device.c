@@ -353,13 +353,14 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.get_view_pose = oh_device_get_view_pose;
 	ohd->base.destroy = oh_device_destroy;
 	ohd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
+	ohd->base.name = XRT_DEVICE_GENERIC_HMD;
 	ohd->ctx = ctx;
 	ohd->dev = dev;
 	ohd->print_spew = print_spew;
 	ohd->print_debug = print_debug;
 	ohd->enable_finite_difference = debug_get_bool_option_oh_finite_diff();
 
-	snprintf(ohd->base.name, XRT_DEVICE_NAME_LEN, "%s", prod);
+	snprintf(ohd->base.str, XRT_DEVICE_NAME_LEN, "%s", prod);
 
 	const struct device_info info = get_info(ohd, prod);
 
