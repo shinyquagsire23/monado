@@ -73,6 +73,57 @@ XrResult
 oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
     XRT_PRINTF_FORMAT(3, 4);
 
+
+
+/*
+ *
+ * Sink logger.
+ *
+ */
+
+/*!
+ * Allocate on the stack, make sure to zero initialize.
+ */
+struct oxr_sink_logger
+{
+	char *store;
+	size_t store_size;
+	size_t length;
+};
+
+/*!
+ * Log string to sink logger.
+ */
+void
+oxr_slog(struct oxr_sink_logger *slog, const char *fmt, ...);
+
+/*!
+ * Abort logging, frees all internal data.
+ */
+void
+oxr_slog_abort(struct oxr_sink_logger *slog);
+
+/*!
+ * Flush sink as a log message, frees all internal data.
+ */
+void
+oxr_log_slog(struct oxr_logger *log, struct oxr_sink_logger *slog);
+
+/*!
+ * Flush sink as a warning message, frees all internal data.
+ */
+void
+oxr_warn_slog(struct oxr_logger *log, struct oxr_sink_logger *slog);
+
+/*!
+ * Flush sink as a error message, frees all internal data.
+ */
+XrResult
+oxr_error_slog(struct oxr_logger *log,
+               XrResult res,
+               struct oxr_sink_logger *slog);
+
+
 /*!
  * @}
  */
