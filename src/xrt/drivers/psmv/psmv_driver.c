@@ -100,6 +100,8 @@ enum psmv_button_bit
 	// clang-format on
 };
 
+
+
 struct psmv_set_led
 {
 	uint8_t id;
@@ -112,23 +114,68 @@ struct psmv_set_led
 	uint8_t _pad[49 - 7];
 };
 
-struct psvm_vec3_16_big_endian
+/*!
+ * Wire encoding of a single 32 bit float, big endian.
+ *
+ * @ingroup drv_psmv
+ */
+struct psmv_f32_wire
 {
-	uint8_t low_x;
-	uint8_t high_x;
-	uint8_t low_y;
-	uint8_t high_y;
-	uint8_t low_z;
-	uint8_t high_z;
+	uint8_t val[4];
 };
 
-struct psvm_vec3_32
+/*!
+ * Wire encoding of three 32 bit float, notice order of axis, big endian.
+ *
+ * @ingroup drv_psmv
+ */
+struct psmv_vec3_f32_wite
+{
+	struct psmv_f32_wire x;
+	struct psmv_f32_wire z;
+	struct psmv_f32_wire y;
+};
+
+/*!
+ * Wire encoding of a single 16 bit integer, big endian.
+ *
+ * @ingroup drv_psmv
+ */
+struct psmv_i16_wire
+{
+	uint8_t low;
+	uint8_t high;
+};
+
+/*!
+ * Wire encoding of three 16 bit integers, notice order of axis.
+ *
+ * @ingroup drv_psmv
+ */
+struct psmv_vec3_i16_wire
+{
+	struct psmv_i16_wire x;
+	struct psmv_i16_wire z;
+	struct psmv_i16_wire y;
+};
+
+/*!
+ * A normal i32 3 element vector.
+ *
+ * @ingroup drv_psmv
+ */
+struct psmv_vec3_i32
 {
 	int32_t x;
 	int32_t y;
 	int32_t z;
 };
 
+/*!
+ * Input package.
+ *
+ * @ingroup drv_psmv
+ */
 struct psmv_get_input
 {
 	uint8_t header;
@@ -138,16 +185,66 @@ struct psmv_get_input
 	uint8_t unknown[4];
 	uint8_t timestamp_high;
 	uint8_t battery;
-	struct psvm_vec3_16_big_endian accel_f1;
-	struct psvm_vec3_16_big_endian accel_f2;
-	struct psvm_vec3_16_big_endian gyro_f1;
-	struct psvm_vec3_16_big_endian gyro_f2;
+	struct psmv_vec3_i16_wire accel_f1;
+	struct psmv_vec3_i16_wire accel_f2;
+	struct psmv_vec3_i16_wire gyro_f1;
+	struct psmv_vec3_i16_wire gyro_f2;
 	uint8_t temp_mag[6];
 	uint8_t timestamp_low;
 	uint8_t pad[49 - 44];
 };
 
-struct psvm_parsed_input
+/*!
+ * Part of a calibration data, multiple packets make up a single data packet.
+ *
+ * @ingroup drv_psmv
+ */
+struct psmv_calibration_part
+{
+	uint8_t id;
+	uint8_t which;
+	uint8_t data[49 - 2];
+};
+
+/*!
+ * Calibration data, multiple packets goes into this.
+ *
+ * @ingroup drv_psmv
+ */
+struct psmv_calibration_zcm1
+{
+	uint8_t id;
+	uint8_t which;
+	uint16_t _pad0;
+	struct psmv_vec3_i16_wire accel_max_y;
+	struct psmv_vec3_i16_wire accel_min_x;
+	struct psmv_vec3_i16_wire accel_min_y;
+	struct psmv_vec3_i16_wire accel_max_x;
+	struct psmv_vec3_i16_wire accel_max_z;
+	struct psmv_vec3_i16_wire accel_min_z;
+	uint16_t _pad1;
+	struct psmv_vec3_i16_wire gyro_bias_0;
+	uint16_t _pad2;
+	struct psmv_vec3_i16_wire gyro_bias_1;
+	uint8_t _pad3[7];
+	uint8_t _pad4;
+	uint16_t _pad5;
+	uint16_t _pad6;
+	uint16_t _pad7;
+	struct psmv_vec3_i16_wire gyro_rot_x;
+	uint16_t _pad8;
+	struct psmv_vec3_i16_wire gyro_rot_z;
+	uint16_t _pad9;
+	struct psmv_vec3_i16_wire gyro_rot_y;
+	uint16_t _pad10;
+	struct psmv_vec3_f32_wite unknown_vec3;
+	struct psmv_vec3_f32_wite gyro_fact;
+	struct psmv_f32_wire unknown_float_0;
+	struct psmv_f32_wire unknown_float_1;
+	uint8_t _pad[17];
+};
+
+struct psmv_parsed_input
 {
 	uint32_t buttons;
 	uint16_t timestamp;
@@ -156,8 +253,8 @@ struct psvm_parsed_input
 
 	struct
 	{
-		struct psvm_vec3_32 accel;
-		struct psvm_vec3_32 gyro;
+		struct psmv_vec3_i32 accel;
+		struct psmv_vec3_i32 gyro;
 		uint8_t trigger;
 	} frame[2];
 };
@@ -191,6 +288,36 @@ struct psmv_device
 		uint8_t seqno;
 	} last;
 
+	struct psmv_vec3_i32 accel_min_x;
+	struct psmv_vec3_i32 accel_max_x;
+	struct psmv_vec3_i32 accel_min_y;
+	struct psmv_vec3_i32 accel_max_y;
+	struct psmv_vec3_i32 accel_min_z;
+	struct psmv_vec3_i32 accel_max_z;
+
+	/*!
+	 * From: https://github.com/nitsch/moveonpc/wiki/Calibration-data
+	 *
+	 * Coded as the one before. The values are very near to 1.0.
+	 *
+	 * I observed, that when I multiply this vector with the gyro bias
+	 * vector before subtracting from the gyro 80rpm measures, I get a
+	 * better calibration.
+	 *
+	 * So in order to get the accurate 80rpm measures:
+	 * GyroMeasure80rpm-(GyroBias1*UnknownVector2) or
+	 * GyroMeasure80rpm-(GyroBias2*UnknownVector2)
+	 */
+	struct xrt_vec3 gyro_fact;
+	struct psmv_vec3_i32 gyro_bias_0;
+	struct psmv_vec3_i32 gyro_bias_1;
+	struct psmv_vec3_i32 gyro_rot_x;
+	struct psmv_vec3_i32 gyro_rot_y;
+	struct psmv_vec3_i32 gyro_rot_z;
+
+	struct xrt_vec3 unknown_vec3;
+	float unknown_float_0, unknown_float_1;
+
 	bool print_spew;
 	bool print_debug;
 };
@@ -223,12 +350,35 @@ psmv_clamp_zero_to_one_float_to_u8(float v)
 }
 
 static void
-psmv_vec3_from_16_be_to_32(struct psvm_vec3_32 *to,
-                           const struct psvm_vec3_16_big_endian *from)
+psmv_i32_from_i16_wire(int32_t *to, const struct psmv_i16_wire *from)
 {
-	to->x = (from->low_x | from->high_x << 8) - 0x8000;
-	to->y = (from->low_y | from->high_y << 8) - 0x8000;
-	to->z = (from->low_z | from->high_z << 8) - 0x8000;
+	*to = (from->low | from->high << 8) - 0x8000;
+}
+
+static void
+psmv_vec3_i32_from_i16_wire(struct psmv_vec3_i32 *to,
+                            const struct psmv_vec3_i16_wire *from)
+{
+	psmv_i32_from_i16_wire(&to->x, &from->x);
+	psmv_i32_from_i16_wire(&to->y, &from->y);
+	psmv_i32_from_i16_wire(&to->z, &from->z);
+}
+
+static void
+psmv_f32_from_wire(float *to, const struct psmv_f32_wire *from)
+{
+	uint32_t v = (from->val[0] << 0) | (from->val[1] << 8) |
+	             (from->val[2] << 16) | (from->val[3] << 24);
+	*to = *((float *)&v);
+}
+
+static void
+psmv_vec3_f32_from_wire(struct xrt_vec3 *to,
+                        const struct psmv_vec3_f32_wite *from)
+{
+	psmv_f32_from_wire(&to->x, &from->x);
+	psmv_f32_from_wire(&to->y, &from->y);
+	psmv_f32_from_wire(&to->z, &from->z);
 }
 
 static int
@@ -239,7 +389,7 @@ psmv_read_hid(struct psmv_device *psmv)
 		struct psmv_get_input input;
 	} data;
 
-	struct psvm_parsed_input input = {0};
+	struct psmv_parsed_input input = {0};
 
 	do {
 		int ret = os_hid_read(psmv->hid, data.buffer, sizeof(data), 0);
@@ -258,15 +408,15 @@ psmv_read_hid(struct psmv_device *psmv)
 		input.timestamp |= data.input.timestamp_high << 8;
 
 		input.frame[0].trigger = data.input.trigger_f1;
-		psmv_vec3_from_16_be_to_32(&input.frame[0].accel,
-		                           &data.input.accel_f1);
-		psmv_vec3_from_16_be_to_32(&input.frame[0].gyro,
-		                           &data.input.gyro_f1);
+		psmv_vec3_i32_from_i16_wire(&input.frame[0].accel,
+		                            &data.input.accel_f1);
+		psmv_vec3_i32_from_i16_wire(&input.frame[0].gyro,
+		                            &data.input.gyro_f1);
 		input.frame[1].trigger = data.input.trigger_f2;
-		psmv_vec3_from_16_be_to_32(&input.frame[1].accel,
-		                           &data.input.accel_f2);
-		psmv_vec3_from_16_be_to_32(&input.frame[1].gyro,
-		                           &data.input.gyro_f2);
+		psmv_vec3_i32_from_i16_wire(&input.frame[1].accel,
+		                            &data.input.accel_f2);
+		psmv_vec3_i32_from_i16_wire(&input.frame[1].gyro,
+		                            &data.input.gyro_f2);
 
 		int32_t diff = input.timestamp - psmv->last.timestamp;
 		bool missed = input.seq_no != ((psmv->last.seqno + 1) & 0x0f);
@@ -359,6 +509,101 @@ psmv_force_led_and_rumble_update(struct psmv_device *psmv, int64_t time)
 	// Force a resend;
 	psmv->resend_time = 0;
 	psmv_led_and_trigger_update(psmv, time);
+}
+
+static int
+psmv_get_calibration(struct psmv_device *psmv)
+{
+	struct psmv_calibration_zcm1 data;
+	uint8_t *dst = (uint8_t *)&data;
+	int ret = 0;
+	size_t src_offset, dst_offset;
+
+	for (int i = 0; i < 3; i++) {
+		struct psmv_calibration_part part = {0};
+		uint8_t *src = (uint8_t *)&part;
+
+		part.id = 0x10;
+
+		ret = os_hid_get_feature(psmv->hid, 0x10, src, sizeof(part));
+		if (ret < 0) {
+			return ret;
+		}
+
+		if (ret != (int)sizeof(part)) {
+			return ret;
+		}
+
+		switch (part.which) {
+		case 0x00:
+			src_offset = 0;
+			dst_offset = 0;
+			break;
+		case 0x01:
+			src_offset = 2;
+			dst_offset = sizeof(part);
+			break;
+		case 0x82:
+			src_offset = 2;
+			dst_offset = sizeof(part) * 2 - 2;
+			break;
+		default: return -1;
+		}
+
+		memcpy(dst + dst_offset, src + src_offset,
+		       sizeof(part) - src_offset);
+	}
+
+	psmv_vec3_i32_from_i16_wire(&psmv->accel_min_x, &data.accel_min_x);
+	psmv_vec3_i32_from_i16_wire(&psmv->accel_max_x, &data.accel_max_x);
+	psmv_vec3_i32_from_i16_wire(&psmv->accel_min_y, &data.accel_min_y);
+	psmv_vec3_i32_from_i16_wire(&psmv->accel_max_y, &data.accel_max_y);
+	psmv_vec3_i32_from_i16_wire(&psmv->accel_min_z, &data.accel_min_z);
+	psmv_vec3_i32_from_i16_wire(&psmv->accel_max_z, &data.accel_max_z);
+	psmv_vec3_i32_from_i16_wire(&psmv->gyro_bias_0, &data.gyro_bias_0);
+	psmv_vec3_i32_from_i16_wire(&psmv->gyro_bias_1, &data.gyro_bias_1);
+	psmv_vec3_i32_from_i16_wire(&psmv->gyro_rot_x, &data.gyro_rot_x);
+	psmv_vec3_i32_from_i16_wire(&psmv->gyro_rot_y, &data.gyro_rot_y);
+	psmv_vec3_i32_from_i16_wire(&psmv->gyro_rot_z, &data.gyro_rot_z);
+	psmv_vec3_f32_from_wire(&psmv->gyro_fact, &data.gyro_fact);
+	psmv_vec3_f32_from_wire(&psmv->unknown_vec3, &data.unknown_vec3);
+	psmv_f32_from_wire(&psmv->unknown_float_0, &data.unknown_float_0);
+	psmv_f32_from_wire(&psmv->unknown_float_1, &data.unknown_float_1);
+
+	PSMV_DEBUG(
+	    psmv,
+	    "Calibration:\n"
+	    "\taccel_min_x: %i %i %i\n"
+	    "\taccel_max_x: %i %i %i\n"
+	    "\taccel_min_y: %i %i %i\n"
+	    "\taccel_max_y: %i %i %i\n"
+	    "\taccel_min_z: %i %i %i\n"
+	    "\taccel_max_z: %i %i %i\n"
+	    "\tgyro_bias_0: %i %i %i\n"
+	    "\tgyro_bias_1: %i %i %i\n"
+	    "\tgyro_fact: %f %f %f\n"
+	    "\tgyro_rot_x: %i %i %i\n"
+	    "\tgyro_rot_y: %i %i %i\n"
+	    "\tgyro_rot_z: %i %i %i\n"
+	    "\tunknown_vec3: %f %f %f\n"
+	    "\tunknown_float_0 %f\n"
+	    "\tunknown_float_1 %f\n",
+	    psmv->accel_min_x.x, psmv->accel_min_x.y, psmv->accel_min_x.z,
+	    psmv->accel_max_x.x, psmv->accel_max_x.y, psmv->accel_max_x.z,
+	    psmv->accel_min_y.x, psmv->accel_min_y.y, psmv->accel_min_y.z,
+	    psmv->accel_max_y.x, psmv->accel_max_y.y, psmv->accel_max_y.z,
+	    psmv->accel_min_z.x, psmv->accel_min_z.y, psmv->accel_min_z.z,
+	    psmv->accel_max_z.x, psmv->accel_max_z.y, psmv->accel_max_z.z,
+	    psmv->gyro_bias_0.x, psmv->gyro_bias_0.y, psmv->gyro_bias_0.z,
+	    psmv->gyro_bias_1.x, psmv->gyro_bias_1.y, psmv->gyro_bias_1.z,
+	    psmv->gyro_fact.x, psmv->gyro_fact.y, psmv->gyro_fact.z,
+	    psmv->gyro_rot_x.x, psmv->gyro_rot_x.y, psmv->gyro_rot_x.z,
+	    psmv->gyro_rot_y.x, psmv->gyro_rot_y.y, psmv->gyro_rot_y.z,
+	    psmv->gyro_rot_z.x, psmv->gyro_rot_z.y, psmv->gyro_rot_z.z,
+	    psmv->unknown_vec3.x, psmv->unknown_vec3.y, psmv->unknown_vec3.z,
+	    psmv->unknown_float_0, psmv->unknown_float_1);
+
+	return 0;
 }
 
 
@@ -507,6 +752,14 @@ psmv_found(struct xrt_prober *xp,
 	case 2: psmv->state.blue = 0xff; break;
 	}
 
+	// Get calibration data.
+	ret = psmv_get_calibration(psmv);
+	if (ret != 0) {
+		PSMV_ERROR(psmv, "Failed to get calibration data!");
+		psmv_device_destroy(&psmv->base);
+		return ret;
+	}
+
 	// Send the first update package
 	psmv_led_and_trigger_update(psmv, 1);
 
@@ -515,5 +768,6 @@ psmv_found(struct xrt_prober *xp,
 
 	// And finally done
 	*out_xdevs = &psmv->base;
+
 	return 1;
 }
