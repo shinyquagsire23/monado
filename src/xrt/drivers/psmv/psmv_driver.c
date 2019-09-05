@@ -531,7 +531,7 @@ psmv_get_calibration(struct psmv_device *psmv)
 		}
 
 		if (ret != (int)sizeof(part)) {
-			return ret;
+			return -1;
 		}
 
 		switch (part.which) {
