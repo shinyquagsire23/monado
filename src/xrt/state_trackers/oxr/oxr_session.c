@@ -322,7 +322,12 @@ oxr_session_views(struct oxr_logger *log,
 		                        (struct xrt_pose *)&views[i].pose);
 
 		// Copy the fov information directly from the device.
-		views[i].fov = *(XrFovf *)&xdev->hmd->views[i].fov;
+		union {
+			struct xrt_fov xrt;
+			XrFovf oxr;
+		} safe_copy = {0};
+		safe_copy.xrt = xdev->hmd->views[i].fov;
+		views[i].fov = safe_copy.oxr;
 
 		print_view_fov(i, (struct xrt_fov *)&views[i].fov);
 		print_view_pose(i, (struct xrt_pose *)&views[i].pose);

@@ -356,8 +356,15 @@ oxr_space_locate(struct oxr_logger *log,
 	math_relation_openxr_locate(&spc->pose, &pure, &baseSpc->pose, &result);
 
 	// Copy
-	location->pose = *(XrPosef *)&result.pose;
+	union {
+		struct xrt_pose xrt;
+		XrPosef oxr;
+	} safe_copy = {0};
+	safe_copy.xrt = result.pose;
+
+	location->pose = safe_copy.oxr;
 	location->locationFlags = result.relation_flags;
+
 #if 0
 	location->linearVelocity = *(XrVector3f *)&result.linear_velocity;
 	location->angularVelocity = *(XrVector3f *)&result.angular_velocity;
