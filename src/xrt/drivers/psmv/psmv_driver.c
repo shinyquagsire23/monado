@@ -161,18 +161,6 @@ struct psmv_vec3_i16_wire
 };
 
 /*!
- * A normal i32 3 element vector.
- *
- * @ingroup drv_psmv
- */
-struct psmv_vec3_i32
-{
-	int32_t x;
-	int32_t y;
-	int32_t z;
-};
-
-/*!
  * Input package.
  *
  * @ingroup drv_psmv
@@ -254,8 +242,8 @@ struct psmv_parsed_input
 
 	struct
 	{
-		struct psmv_vec3_i32 accel;
-		struct psmv_vec3_i32 gyro;
+		struct xrt_vec3_i32 accel;
+		struct xrt_vec3_i32 gyro;
 		uint8_t trigger;
 	} frame[2];
 };
@@ -284,21 +272,15 @@ struct psmv_device
 		uint8_t rumble;
 	} state;
 
-	//! Last sensor read timestamp.
-	struct
-	{
-		uint32_t buttons;
-		uint8_t trigger;
-		uint16_t timestamp;
-		uint8_t seqno;
-	} last;
+	//! Last sensor read.
+	struct psmv_parsed_input last;
 
-	struct psmv_vec3_i32 accel_min_x;
-	struct psmv_vec3_i32 accel_max_x;
-	struct psmv_vec3_i32 accel_min_y;
-	struct psmv_vec3_i32 accel_max_y;
-	struct psmv_vec3_i32 accel_min_z;
-	struct psmv_vec3_i32 accel_max_z;
+	struct xrt_vec3_i32 accel_min_x;
+	struct xrt_vec3_i32 accel_max_x;
+	struct xrt_vec3_i32 accel_min_y;
+	struct xrt_vec3_i32 accel_max_y;
+	struct xrt_vec3_i32 accel_min_z;
+	struct xrt_vec3_i32 accel_max_z;
 
 	/*!
 	 * From: https://github.com/nitsch/moveonpc/wiki/Calibration-data
@@ -314,14 +296,19 @@ struct psmv_device
 	 * GyroMeasure80rpm-(GyroBias2*UnknownVector2)
 	 */
 	struct xrt_vec3 gyro_fact;
-	struct psmv_vec3_i32 gyro_bias_0;
-	struct psmv_vec3_i32 gyro_bias_1;
-	struct psmv_vec3_i32 gyro_rot_x;
-	struct psmv_vec3_i32 gyro_rot_y;
-	struct psmv_vec3_i32 gyro_rot_z;
+	struct xrt_vec3_i32 gyro_bias_0;
+	struct xrt_vec3_i32 gyro_bias_1;
+	struct xrt_vec3_i32 gyro_rot_x;
+	struct xrt_vec3_i32 gyro_rot_y;
+	struct xrt_vec3_i32 gyro_rot_z;
 
 	struct xrt_vec3 unknown_vec3;
 	float unknown_float_0, unknown_float_1;
+
+	struct
+	{
+		struct xrt_vec3 accel;
+	} read;
 
 	bool print_spew;
 	bool print_debug;
@@ -361,7 +348,7 @@ psmv_i32_from_i16_wire(int32_t *to, const struct psmv_i16_wire *from)
 }
 
 static void
-psmv_vec3_i32_from_i16_wire(struct psmv_vec3_i32 *to,
+psmv_vec3_i32_from_i16_wire(struct xrt_vec3_i32 *to,
                             const struct psmv_vec3_i16_wire *from)
 {
 	psmv_i32_from_i16_wire(&to->x, &from->x);
@@ -389,6 +376,23 @@ psmv_vec3_f32_from_wire(struct xrt_vec3 *to,
 	psmv_f32_from_wire(&to->x, &from->x);
 	psmv_f32_from_wire(&to->y, &from->y);
 	psmv_f32_from_wire(&to->z, &from->z);
+}
+
+static void
+psmv_read_process_last(struct psmv_device *psmv)
+{
+	struct xrt_vec3_i32 *raw = &psmv->last.frame[1].accel;
+
+	//! @todo This is clearly wrong.
+	psmv->read.accel.x =
+	    (float)raw->x / (raw->x < 0 ? (float)psmv->accel_min_x.x
+	                                : -(float)psmv->accel_max_x.x);
+	psmv->read.accel.y =
+	    (float)raw->y / (raw->y < 0 ? (float)psmv->accel_min_y.y
+	                                : -(float)psmv->accel_max_y.y);
+	psmv->read.accel.z =
+	    (float)raw->z / (raw->z < 0 ? (float)psmv->accel_min_z.z
+	                                : -(float)psmv->accel_max_z.z);
 }
 
 static int
@@ -429,13 +433,10 @@ psmv_read_hid(struct psmv_device *psmv)
 		                            &data.input.gyro_f2);
 
 		int32_t diff = input.timestamp - psmv->last.timestamp;
-		bool missed = input.seq_no != ((psmv->last.seqno + 1) & 0x0f);
+		bool missed = input.seq_no != ((psmv->last.seq_no + 1) & 0x0f);
 
-		psmv->last.trigger = input.frame[1].trigger;
-		psmv->last.timestamp = input.timestamp;
-		psmv->last.seqno = input.seq_no;
-		psmv->last.buttons = input.buttons;
-
+		// Update timestamp.
+		psmv->last = input;
 
 		PSMV_SPEW(psmv,
 		          "\n\t"
@@ -459,6 +460,10 @@ psmv_read_hid(struct psmv_device *psmv)
 		          input.frame[0].gyro.x, input.frame[0].gyro.y,
 		          input.frame[0].gyro.z, input.frame[1].trigger,
 		          input.timestamp, diff, input.seq_no);
+
+		// Process the parsed data.
+		psmv_read_process_last(psmv);
+
 	} while (true);
 
 	return 0;
@@ -497,7 +502,8 @@ static void
 psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t now)
 {
 	psmv->base.inputs[index].timestamp = now;
-	psmv->base.inputs[index].value.vec1.x = psmv->last.trigger / 255.0f;
+	psmv->base.inputs[index].value.vec1.x =
+	    psmv->last.frame[1].trigger / 255.0f;
 }
 
 static void
@@ -790,11 +796,28 @@ psmv_found(struct xrt_prober *xp,
 	psmv_read_hid(psmv);
 
 	// Start the variable tracking now that everything is in place.
+	// clang-format off
 	u_var_add_root(psmv, "PSMV Controller", true);
 	u_var_add_rgb_u8(psmv, &psmv->wants.led, "Led");
 	u_var_add_u8(psmv, &psmv->wants.rumble, "Rumble");
+	u_var_add_vec3_i32(psmv, &psmv->accel_min_x, "accel_min_x");
+	u_var_add_vec3_i32(psmv, &psmv->accel_max_x, "accel_max_x");
+	u_var_add_vec3_i32(psmv, &psmv->accel_min_y, "accel_min_y");
+	u_var_add_vec3_i32(psmv, &psmv->accel_max_y, "accel_max_y");
+	u_var_add_vec3_i32(psmv, &psmv->accel_min_z, "accel_min_z");
+	u_var_add_vec3_i32(psmv, &psmv->accel_max_z, "accel_max_z");
+
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[0].accel, "last.frame[0].accel");
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[1].accel, "last.frame[1].accel");
+
+	u_var_add_ro_vec3_f32(psmv, &psmv->read.accel, "accel");
+
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[0].gyro, "last.frame[0].gyro");
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[1].gyro, "last.frame[1].gyro");
+
 	u_var_add_bool(psmv, &psmv->print_debug, "Debug");
 	u_var_add_bool(psmv, &psmv->print_spew, "Spew");
+	// clang-format on
 
 	// And finally done
 	*out_xdevs = &psmv->base;
