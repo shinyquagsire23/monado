@@ -179,11 +179,9 @@ oxr_system_get_properties(struct oxr_logger *log,
 	properties->vendorId = 42;
 	properties->systemId = sys->systemId;
 
-	// Needed to silence the warnings.
-	const char *name = sys->head->str;
-
-	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE, "Monado: %s",
-	         name);
+	// The magical 247 number, is to silence warnings.
+	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE,
+	         "Monado: %.*s", 247, sys->head->str);
 
 	/*!
 	 * @todo conforming implementations must support at
