@@ -134,6 +134,18 @@ struct xrt_vec3
 };
 
 /*!
+ * A 3 element vector with 32 bit integers.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_vec3_i32
+{
+	int32_t x;
+	int32_t y;
+	int32_t z;
+};
+
+/*!
  * A 3 element colour with 8 bits per channel.
  *
  * @ingroup xrt_iface math
