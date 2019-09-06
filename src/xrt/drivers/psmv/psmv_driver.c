@@ -383,16 +383,24 @@ psmv_read_process_last(struct psmv_device *psmv)
 {
 	struct xrt_vec3_i32 *raw = &psmv->last.frame[1].accel;
 
-	//! @todo This is clearly wrong.
-	psmv->read.accel.x =
-	    (float)raw->x / (raw->x < 0 ? (float)psmv->accel_min_x.x
-	                                : -(float)psmv->accel_max_x.x);
-	psmv->read.accel.y =
-	    (float)raw->y / (raw->y < 0 ? (float)psmv->accel_min_y.y
-	                                : -(float)psmv->accel_max_y.y);
-	psmv->read.accel.z =
-	    (float)raw->z / (raw->z < 0 ? (float)psmv->accel_min_z.z
-	                                : -(float)psmv->accel_max_z.z);
+	//! @todo Pre-calculate this.
+	double ax = (psmv->accel_max_x.x - psmv->accel_min_x.x) / 2.0;
+	double ay = (psmv->accel_max_y.y - psmv->accel_min_y.y) / 2.0;
+	double az = (psmv->accel_max_z.z - psmv->accel_min_z.z) / 2.0;
+
+	double bx = (psmv->accel_min_y.x + psmv->accel_min_y.x +
+	             psmv->accel_min_z.x + psmv->accel_min_z.x) /
+	            -4.0;
+	double by = (psmv->accel_min_x.y + psmv->accel_min_x.y +
+	             psmv->accel_min_z.y + psmv->accel_min_z.y) /
+	            -4.0;
+	double bz = (psmv->accel_min_x.z + psmv->accel_min_x.z +
+	             psmv->accel_min_y.z + psmv->accel_min_y.z) /
+	            -4.0;
+
+	psmv->read.accel.x = (raw->x + bx) / ax;
+	psmv->read.accel.y = (raw->y + by) / ay;
+	psmv->read.accel.z = (raw->z + bz) / az;
 }
 
 static int
