@@ -372,9 +372,14 @@ psmv_vec3_i32_from_i16_wire(struct psmv_vec3_i32 *to,
 static void
 psmv_f32_from_wire(float *to, const struct psmv_f32_wire *from)
 {
-	uint32_t v = (from->val[0] << 0) | (from->val[1] << 8) |
-	             (from->val[2] << 16) | (from->val[3] << 24);
-	*to = *((float *)&v);
+	union {
+		uint32_t wire;
+		float f32;
+	} safe_copy;
+
+	safe_copy.wire = (from->val[0] << 0) | (from->val[1] << 8) |
+	                 (from->val[2] << 16) | (from->val[3] << 24);
+	*to = safe_copy.f32;
 }
 
 static void
