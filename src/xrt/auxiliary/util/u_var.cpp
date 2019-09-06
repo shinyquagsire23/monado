@@ -154,66 +154,6 @@ u_var_remove_root(void *root)
 }
 
 extern "C" void
-u_var_add_bool(void *obj, bool *ptr, const char *c_name)
-{
-	if (!get_on()) {
-		return;
-	}
-
-	add_var(obj, ptr, U_VAR_KIND_BOOL, c_name);
-}
-
-extern "C" void
-u_var_add_u8(void *obj, uint8_t *ptr, const char *c_name)
-{
-	if (!get_on()) {
-		return;
-	}
-
-	add_var(obj, ptr, U_VAR_KIND_U8, c_name);
-}
-
-extern "C" void
-u_var_add_u32(void *obj, uint32_t *ptr, const char *c_name)
-{
-	if (!get_on()) {
-		return;
-	}
-
-	add_var(obj, ptr, U_VAR_KIND_U32, c_name);
-}
-
-extern "C" void
-u_var_add_rgb_u8(void *obj, struct xrt_colour_rgb_u8 *ptr, const char *c_name)
-{
-	if (!get_on()) {
-		return;
-	}
-
-	add_var(obj, ptr, U_VAR_KIND_RGB_U8, c_name);
-}
-
-extern "C" void
-u_var_add_rgb_f32(void *obj, struct xrt_colour_rgb_f32 *ptr, const char *c_name)
-{
-	if (!get_on()) {
-		return;
-	}
-
-	add_var(obj, ptr, U_VAR_KIND_RGB_F32, c_name);
-}
-
-extern "C" void
-u_var_add_text(void *obj, const char *ptr, const char *c_name)
-{
-	if (!get_on()) {
-		return;
-	}
-
-	add_var(obj, (void *)ptr, U_VAR_KIND_TEXT, c_name);
-}
-
-extern "C" void
 u_var_visit(u_var_root_cb enter,
             u_var_root_cb exit,
             u_var_elm_cb elem,
@@ -241,3 +181,29 @@ u_var_visit(u_var_root_cb enter,
 		exit(obj->name.c_str(), priv);
 	}
 }
+
+#define ADD_FUNC(SUFFIX, TYPE, ENUM)                                           \
+	extern "C" void u_var_add_##SUFFIX(void *obj, TYPE *ptr,               \
+	                                   const char *c_name)                 \
+	{                                                                      \
+		if (!get_on()) {                                               \
+			return;                                                \
+		}                                                              \
+		add_var(obj, (void *)ptr, U_VAR_KIND_##ENUM, c_name);          \
+	}
+
+ADD_FUNC(bool, bool, BOOL);
+ADD_FUNC(rgb_u8, struct xrt_colour_rgb_u8, RGB_U8);
+ADD_FUNC(rgb_f32, struct xrt_colour_rgb_f32, RGB_F32);
+ADD_FUNC(u8, uint8_t, U8);
+ADD_FUNC(i32, int32_t, I32);
+ADD_FUNC(f32, float, F32);
+ADD_FUNC(vec3_i32, struct xrt_vec3_i32, VEC3_I32);
+ADD_FUNC(vec3_f32, struct xrt_vec3, VEC3_F32);
+ADD_FUNC(ro_text, const char, RO_TEXT);
+ADD_FUNC(ro_i32, int32_t, RO_I32);
+ADD_FUNC(ro_f32, float, RO_F32);
+ADD_FUNC(ro_vec3_i32, struct xrt_vec3_i32, RO_VEC3_I32);
+ADD_FUNC(ro_vec3_f32, struct xrt_vec3, RO_VEC3_F32);
+
+#undef ADD_FUNC

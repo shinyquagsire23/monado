@@ -26,12 +26,20 @@ extern "C" {
  */
 enum u_var_kind
 {
+
 	U_VAR_KIND_BOOL,
-	U_VAR_KIND_U8,
-	U_VAR_KIND_U32,
 	U_VAR_KIND_RGB_U8,
 	U_VAR_KIND_RGB_F32,
-	U_VAR_KIND_TEXT,
+	U_VAR_KIND_U8,
+	U_VAR_KIND_I32,
+	U_VAR_KIND_F32,
+	U_VAR_KIND_VEC3_I32,
+	U_VAR_KIND_VEC3_F32,
+	U_VAR_KIND_RO_TEXT,
+	U_VAR_KIND_RO_I32,
+	U_VAR_KIND_RO_F32,
+	U_VAR_KIND_RO_VEC3_I32,
+	U_VAR_KIND_RO_VEC3_F32,
 };
 
 /*!
@@ -93,29 +101,24 @@ u_var_visit(u_var_root_cb enter,
 void
 u_var_force_on(void);
 
-//! Add a variable to track on a root node, does not claim ownership.
-void
-u_var_add_rgb_u8(void *, struct xrt_colour_rgb_u8 *, const char *);
+#define ADD_FUNC(SUFFIX, TYPE, ENUM)                                           \
+	void u_var_add_##SUFFIX(void *, TYPE *, const char *)
 
-//! Add a variable to track on a root node, does not claim ownership.
-void
-u_var_add_rgb_f32(void *, struct xrt_colour_rgb_f32 *, const char *);
+ADD_FUNC(bool, bool, BOOL);
+ADD_FUNC(rgb_u8, struct xrt_colour_rgb_u8, RGB_U8);
+ADD_FUNC(rgb_f32, struct xrt_colour_rgb_f32, RGB_F32);
+ADD_FUNC(u8, uint8_t, U8);
+ADD_FUNC(i32, int32_t, I32);
+ADD_FUNC(f32, float, F32);
+ADD_FUNC(vec3_i32, struct xrt_vec3_i32, VEC3_I32);
+ADD_FUNC(vec3_f32, struct xrt_vec3, VEC3_F32);
+ADD_FUNC(ro_text, const char, RO_TEXT);
+ADD_FUNC(ro_i32, int32_t, RO_I32);
+ADD_FUNC(ro_f32, float, RO_F32);
+ADD_FUNC(ro_vec3_i32, struct xrt_vec3_i32, RO_VEC3_I32);
+ADD_FUNC(ro_vec3_f32, struct xrt_vec3, RO_VEC3_F32);
 
-//! Add a variable to track on a root node, does not claim ownership.
-void
-u_var_add_u8(void *, uint8_t *, const char *);
-
-//! Add a variable to track on a root node, does not claim ownership.
-void
-u_var_add_u32(void *, uint32_t *, const char *);
-
-//! Add a variable to track on a root node, does not claim ownership.
-void
-u_var_add_bool(void *, bool *, const char *);
-
-//! Add a variable to track on a root node, does not claim ownership.
-void
-u_var_add_text(void *, const char *, const char *);
+#undef ADD_FUNC
 
 /*!
  * @}

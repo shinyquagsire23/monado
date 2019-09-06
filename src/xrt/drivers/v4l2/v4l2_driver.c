@@ -705,7 +705,7 @@ v4l2_fs_create(struct xrt_frame_context *xfctx,
 
 	// Start the variable tracking after we know what device we have.
 	u_var_add_root(vid, "V4L2 Frameserver", true);
-	u_var_add_text(vid, vid->card, "Card");
+	u_var_add_ro_text(vid, vid->card, "Card");
 	u_var_add_bool(vid, &vid->print_debug, "Debug");
 	u_var_add_bool(vid, &vid->print_spew, "Spew");
 
