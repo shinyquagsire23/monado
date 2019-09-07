@@ -308,10 +308,18 @@ struct psmv_device
 	struct
 	{
 		struct xrt_vec3 accel;
+		struct xrt_vec3 gyro;
 	} read;
 
 	bool print_spew;
 	bool print_debug;
+
+	struct
+	{
+		bool control;
+		bool calibration;
+		bool last_frame;
+	} gui;
 };
 
 
@@ -806,23 +814,29 @@ psmv_found(struct xrt_prober *xp,
 	// Start the variable tracking now that everything is in place.
 	// clang-format off
 	u_var_add_root(psmv, "PSMV Controller", true);
-	u_var_add_rgb_u8(psmv, &psmv->wants.led, "Led");
-	u_var_add_u8(psmv, &psmv->wants.rumble, "Rumble");
+	u_var_add_gui_header(psmv, &psmv->gui.calibration, "Calibration");
 	u_var_add_vec3_i32(psmv, &psmv->accel_min_x, "accel_min_x");
 	u_var_add_vec3_i32(psmv, &psmv->accel_max_x, "accel_max_x");
 	u_var_add_vec3_i32(psmv, &psmv->accel_min_y, "accel_min_y");
 	u_var_add_vec3_i32(psmv, &psmv->accel_max_y, "accel_max_y");
 	u_var_add_vec3_i32(psmv, &psmv->accel_min_z, "accel_min_z");
 	u_var_add_vec3_i32(psmv, &psmv->accel_max_z, "accel_max_z");
-
+	u_var_add_vec3_i32(psmv, &psmv->gyro_rot_x, "gyro_rot_x");
+	u_var_add_vec3_i32(psmv, &psmv->gyro_rot_y, "gyro_rot_y");
+	u_var_add_vec3_i32(psmv, &psmv->gyro_rot_z, "gyro_rot_z");
+	u_var_add_vec3_i32(psmv, &psmv->gyro_bias_0, "gyro_bias_0");
+	u_var_add_vec3_i32(psmv, &psmv->gyro_bias_1, "gyro_bias_1");
+	u_var_add_vec3_f32(psmv, &psmv->gyro_fact, "gyro_fact");
+	u_var_add_gui_header(psmv, &psmv->gui.last_frame, "Last data");
 	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[0].accel, "last.frame[0].accel");
 	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[1].accel, "last.frame[1].accel");
-
-	u_var_add_ro_vec3_f32(psmv, &psmv->read.accel, "accel");
-
 	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[0].gyro, "last.frame[0].gyro");
 	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[1].gyro, "last.frame[1].gyro");
-
+	u_var_add_ro_vec3_f32(psmv, &psmv->read.accel, "read.accel");
+	u_var_add_ro_vec3_f32(psmv, &psmv->read.gyro, "read.gyro");
+	u_var_add_gui_header(psmv, &psmv->gui.control, "Control");
+	u_var_add_rgb_u8(psmv, &psmv->wants.led, "Led");
+	u_var_add_u8(psmv, &psmv->wants.rumble, "Rumble");
 	u_var_add_bool(psmv, &psmv->print_debug, "Debug");
 	u_var_add_bool(psmv, &psmv->print_spew, "Spew");
 	// clang-format on
