@@ -396,14 +396,14 @@ psmv_read_process_last(struct psmv_device *psmv)
 	double ay = (psmv->accel_max_y.y - psmv->accel_min_y.y) / 2.0;
 	double az = (psmv->accel_max_z.z - psmv->accel_min_z.z) / 2.0;
 
-	double bx = (psmv->accel_min_y.x + psmv->accel_min_y.x +
-	             psmv->accel_min_z.x + psmv->accel_min_z.x) /
+	double bx = (psmv->accel_min_y.x + psmv->accel_max_y.x +
+	             psmv->accel_min_z.x + psmv->accel_max_z.x) /
 	            -4.0;
-	double by = (psmv->accel_min_x.y + psmv->accel_min_x.y +
-	             psmv->accel_min_z.y + psmv->accel_min_z.y) /
+	double by = (psmv->accel_min_x.y + psmv->accel_max_x.y +
+	             psmv->accel_min_z.y + psmv->accel_max_z.y) /
 	            -4.0;
-	double bz = (psmv->accel_min_x.z + psmv->accel_min_x.z +
-	             psmv->accel_min_y.z + psmv->accel_min_y.z) /
+	double bz = (psmv->accel_min_x.z + psmv->accel_max_x.z +
+	             psmv->accel_min_y.z + psmv->accel_max_y.z) /
 	            -4.0;
 
 	psmv->read.accel.x = (raw->x + bx) / ax;
