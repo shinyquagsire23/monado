@@ -99,12 +99,12 @@ oxr_system_fill_in(struct oxr_logger *log,
                    struct xrt_device **xdevs,
                    size_t num_xdevs)
 {
-	size_t num_copy = min_size_t(ARRAY_SIZE(sys->xdevs), num_xdevs);
+	sys->num_xdevs = min_size_t(ARRAY_SIZE(sys->xdevs), num_xdevs);
 
-	for (uint32_t i = 0; i < num_copy; i++) {
+	for (uint32_t i = 0; i < sys->num_xdevs; i++) {
 		sys->xdevs[i] = xdevs[i];
 	}
-	for (size_t i = num_copy; i < num_xdevs; i++) {
+	for (size_t i = sys->num_xdevs; i < num_xdevs; i++) {
 		oxr_xdev_destroy(&xdevs[i]);
 	}
 
