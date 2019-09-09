@@ -62,7 +62,6 @@ oxr_system_select(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
-
 XrResult
 oxr_system_verify_id(struct oxr_logger *log,
                      const struct oxr_instance *inst,
@@ -74,7 +73,6 @@ oxr_system_verify_id(struct oxr_logger *log,
 	}
 	return XR_SUCCESS;
 }
-
 
 XrResult
 oxr_system_get_by_id(struct oxr_logger *log,
