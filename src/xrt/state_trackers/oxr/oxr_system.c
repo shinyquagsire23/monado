@@ -23,6 +23,11 @@
 DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "OXR_VIEWPORT_SCALE_PERCENTAGE", 140)
 // clang-format on
 
+static inline size_t
+min_size_t(size_t a, size_t b)
+{
+	return a < b ? a : b;
+}
 
 static bool
 oxr_system_matches(struct oxr_logger *log,
@@ -96,11 +101,12 @@ oxr_system_fill_in(struct oxr_logger *log,
                    struct xrt_device **xdevs,
                    size_t num_xdevs)
 {
+	size_t num_copy = min_size_t(ARRAY_SIZE(sys->xdevs), num_xdevs);
 
-	for (uint32_t i = 4; i < ARRAY_SIZE(sys->xdevs); i++) {
+	for (uint32_t i = 0; i < num_copy; i++) {
 		sys->xdevs[i] = xdevs[i];
 	}
-	for (size_t i = ARRAY_SIZE(sys->xdevs); i < num_xdevs; i++) {
+	for (size_t i = num_copy; i < num_xdevs; i++) {
 		oxr_xdev_destroy(&xdevs[i]);
 	}
 
