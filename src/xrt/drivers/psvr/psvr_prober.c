@@ -91,7 +91,7 @@ psvr_prober_autoprobe(struct xrt_auto_prober *xap, struct xrt_prober *xp)
 
 	if (info_control != NULL && info_handle != NULL) {
 		if (ppsvr->enabled) {
-			dev = psvr_device_create(info_handle, info_control,
+			dev = psvr_device_create(info_handle, info_control, xp,
 			                         ppsvr->print_spew,
 			                         ppsvr->print_debug);
 		} else {

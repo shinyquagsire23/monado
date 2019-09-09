@@ -11,6 +11,7 @@
  */
 
 #include "xrt/xrt_compiler.h"
+#include "xrt/xrt_tracking.h"
 
 #include "math/m_api.h"
 
@@ -50,6 +51,8 @@ struct psvr_device
 
 	hid_device *hmd_handle;
 	hid_device *hmd_control;
+
+	struct xrt_tracked_psvr *tracker;
 
 	struct psvr_parsed_sensor last;
 
@@ -202,19 +205,23 @@ update_fusion(struct psvr_device *psvr,
               uint32_t tick_delta)
 {
 	struct xrt_vec3 mag = {0.0f, 0.0f, 0.0f};
-	float dt = tick_delta * PSVR_TICK_PERIOD;
+	float delta_ns = tick_delta * PSVR_TICK_PERIOD;
 	(void)mag;
-	(void)dt;
 
 	accel_from_psvr_vec(&sample->accel, &psvr->read.accel);
 	gyro_from_psvr_vec(&sample->gyro, &psvr->read.gyro);
 
-	math_quat_integrate_velocity(&psvr->fusion.rot, &psvr->read.gyro, dt,
-	                             &psvr->fusion.rot);
+	if (psvr->tracker != NULL) {
+		struct xrt_tracking_sample sample;
+		sample.accel_m_s2 = psvr->read.accel;
+		sample.gyro_rad_secs = psvr->read.gyro;
 
-	//! @todo This is where we do the sensor fusion.
-	// ofusion_update(&psvr->sensor_fusion, dt, &psvr->raw.gyro,
-	//                &psvr->raw.accel, &mag);
+		xrt_tracked_psvr_push_imu(psvr->tracker, delta_ns, &sample);
+	} else {
+		math_quat_integrate_velocity(&psvr->fusion.rot,
+		                             &psvr->read.gyro, delta_ns,
+		                             &psvr->fusion.rot);
+	}
 }
 
 static uint32_t
@@ -603,6 +610,12 @@ disco_leds(struct psvr_device *psvr)
 static void
 teardown(struct psvr_device *psvr)
 {
+	// Stop the variable tracking.
+	u_var_remove_root(psvr);
+
+	// Includes null check, and sets to null.
+	xrt_tracked_psvr_destroy(&psvr->tracker);
+
 	if (psvr->hmd_control != NULL) {
 		// Turn off VR-mode and power down headset.
 		if (control_vrmode_and_wait(psvr, false) < 0 ||
@@ -618,9 +631,6 @@ teardown(struct psvr_device *psvr)
 		hid_close(psvr->hmd_handle);
 		psvr->hmd_handle = NULL;
 	}
-
-	// Stop the variable tracking.
-	u_var_remove_root(psvr);
 }
 
 
@@ -661,20 +671,19 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 	// Clear out the relation.
 	U_ZERO(out_relation);
 
-	int64_t now = time_state_get_now(timekeeping);
-	//! @todo adjust for latency here
-	*out_timestamp = now;
+	int64_t when = time_state_get_now(timekeeping);
+	*out_timestamp = when;
 
-	out_relation->pose.orientation = psvr->fusion.rot;
-
-	//! @todo assuming that orientation is actually currently tracked.
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
-
-	PSVR_SPEW(psvr, "\n\taccel = %f %f %f\n\tgyro = %f %f %f",
-	          psvr->read.accel.x, psvr->read.accel.y, psvr->read.accel.z,
-	          psvr->read.gyro.x, psvr->read.gyro.y, psvr->read.gyro.z);
+	// We have no tracking, don't return a position.
+	if (psvr->tracker == NULL) {
+		out_relation->pose.orientation = psvr->fusion.rot;
+		out_relation->relation_flags = (enum xrt_space_relation_flags)(
+		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	} else {
+		psvr->tracker->get_tracked_pose(psvr->tracker, timekeeping,
+		                                when, out_relation);
+	}
 }
 
 static void
@@ -722,6 +731,7 @@ psvr_device_destroy(struct xrt_device *xdev)
 struct xrt_device *
 psvr_device_create(struct hid_device_info *hmd_handle_info,
                    struct hid_device_info *hmd_control_info,
+                   struct xrt_prober *xp,
                    bool print_spew,
                    bool print_debug)
 {
@@ -822,6 +832,17 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 
 	if (psvr->print_debug) {
 		u_device_dump_config(&psvr->base, __func__, "Sony PSVR");
+	}
+
+	// If there is a tracking factory use it.
+	if (xp->tracking != NULL) {
+		xp->tracking->create_tracked_psvr(xp->tracking, &psvr->base,
+		                                  &psvr->tracker);
+	}
+
+	// Use the new origin if we got a tracking system.
+	if (psvr->tracker != NULL) {
+		psvr->base.tracking_origin = psvr->tracker->origin;
 	}
 
 	PSVR_DEBUG(psvr, "YES!");

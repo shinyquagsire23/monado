@@ -13,6 +13,7 @@
 #pragma once
 
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_prober.h"
 
 #include <hidapi.h>
 
@@ -115,6 +116,7 @@ struct psvr_parsed_status
 struct xrt_device *
 psvr_device_create(struct hid_device_info *hmd_handle_info,
                    struct hid_device_info *hmd_control_info,
+                   struct xrt_prober *xp,
                    bool print_spew,
                    bool print_debug);
 
