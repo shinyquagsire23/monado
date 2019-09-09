@@ -301,8 +301,8 @@ xrt_prober_create_with_lists(struct xrt_prober **out_prober,
  */
 struct xrt_auto_prober
 {
-	struct xrt_device *(*lelo_dallas_autoprobe)(
-	    struct xrt_auto_prober *xdev);
+	struct xrt_device *(*lelo_dallas_autoprobe)(struct xrt_auto_prober *xap,
+	                                            struct xrt_prober *xp);
 	void (*destroy)(struct xrt_auto_prober *xdev);
 };
 

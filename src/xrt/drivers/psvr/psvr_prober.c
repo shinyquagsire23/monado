@@ -69,9 +69,9 @@ psvr_prober_destroy(struct xrt_auto_prober *p)
 }
 
 static struct xrt_device *
-psvr_prober_autoprobe(struct xrt_auto_prober *p)
+psvr_prober_autoprobe(struct xrt_auto_prober *xap, struct xrt_prober *xp)
 {
-	struct psvr_prober *ppsvr = psvr_prober(p);
+	struct psvr_prober *ppsvr = psvr_prober(xap);
 	struct hid_device_info *info_control = NULL;
 	struct hid_device_info *info_handle = NULL;
 	struct hid_device_info *cur_dev = NULL;

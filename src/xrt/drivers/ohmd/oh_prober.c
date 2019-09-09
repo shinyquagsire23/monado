@@ -51,9 +51,9 @@ oh_prober_destroy(struct xrt_auto_prober *p)
 }
 
 static struct xrt_device *
-oh_prober_autoprobe(struct xrt_auto_prober *p)
+oh_prober_autoprobe(struct xrt_auto_prober *xap, struct xrt_prober *xp)
 {
-	struct oh_prober *ohp = oh_prober(p);
+	struct oh_prober *ohp = oh_prober(xap);
 
 	int device_idx = -1;
 

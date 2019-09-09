@@ -540,7 +540,7 @@ select_device(struct xrt_prober* xp,
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
 		struct xrt_device* xdev =
 		    p->auto_probers[i]->lelo_dallas_autoprobe(
-		        p->auto_probers[i]);
+		        p->auto_probers[i], xp);
 		if (xdev == NULL) {
 			continue;
 		}
