@@ -50,6 +50,12 @@ if(BUILD_DRIVER_V4L2)
 	list(APPEND DRIVER_OBJECTS $<TARGET_OBJECTS:drv_v4l2>)
 endif()
 
+if(BUILD_TRACKING)
+	set(XRT_BUILD_TRACKING TRUE)
+	list(APPEND DRIVER_OBJECTS $<TARGET_OBJECTS:aux_tracking>)
+	list(APPEND DRIVER_LIBRARIES ${OpenCV_LIBRARIES})
+endif()
+
 configure_file(targets_enabled_drivers.h.cmake_in ${CMAKE_CURRENT_BINARY_DIR}/targets_enabled_drivers.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 

@@ -65,13 +65,6 @@ target_link_libraries(gui PRIVATE
 	${SDL2_LIBRARIES}
 	)
 
-if(BUILD_TRACKING)
-	target_link_libraries(gui PRIVATE
-		$<TARGET_OBJECTS:aux_tracking>
-		${OpenCV_LIBRARIES}
-		)
-endif()
-
 if(DRIVER_OBJECTS)
 	target_sources(gui PRIVATE ${DRIVER_OBJECTS})
 endif()
