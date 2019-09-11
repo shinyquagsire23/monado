@@ -626,6 +626,7 @@ psvr_device_update_inputs(struct xrt_device *xdev,
 {
 	struct psvr_device *psvr = psvr_device(xdev);
 
+	read_handle_packets(psvr);
 	update_leds_if_changed(psvr);
 }
 
