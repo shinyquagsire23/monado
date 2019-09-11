@@ -74,6 +74,12 @@ struct psvr_device
 
 	bool print_spew;
 	bool print_debug;
+
+	struct
+	{
+		bool last_frame;
+		bool control;
+	} gui;
 };
 
 
@@ -776,7 +782,16 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	 * Setup variable.
 	 */
 
+	// clang-format off
 	u_var_add_root(psvr, "PS VR Headset", true);
+	u_var_add_gui_header(psvr, &psvr->gui.last_frame, "Last data");
+	u_var_add_ro_vec3_i32(psvr, &psvr->last.samples[0].accel, "last.samples[0].accel");
+	u_var_add_ro_vec3_i32(psvr, &psvr->last.samples[1].accel, "last.samples[1].accel");
+	u_var_add_ro_vec3_i32(psvr, &psvr->last.samples[0].gyro, "last.samples[0].gyro");
+	u_var_add_ro_vec3_i32(psvr, &psvr->last.samples[1].gyro, "last.samples[1].gyro");
+	u_var_add_ro_vec3_f32(psvr, &psvr->read.accel, "read.accel");
+	u_var_add_ro_vec3_f32(psvr, &psvr->read.gyro, "read.gyro");
+	u_var_add_gui_header(psvr, &psvr->gui.control, "Control");
 	u_var_add_u8(psvr, &psvr->wants.leds[0], "Led A");
 	u_var_add_u8(psvr, &psvr->wants.leds[1], "Led B");
 	u_var_add_u8(psvr, &psvr->wants.leds[2], "Led C");
@@ -788,6 +803,7 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	u_var_add_u8(psvr, &psvr->wants.leds[8], "Led I");
 	u_var_add_bool(psvr, &psvr->print_debug, "Debug");
 	u_var_add_bool(psvr, &psvr->print_spew, "Spew");
+	// clang-format on
 
 	/*
 	 * Finishing touches.
