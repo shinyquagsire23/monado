@@ -641,14 +641,6 @@ psmv_led_and_trigger_update(struct psmv_device *psmv, int64_t time)
 	                      psmv->state.led.b, psmv->state.rumble);
 }
 
-static void
-psmv_force_led_and_rumble_update(struct psmv_device *psmv, int64_t time)
-{
-	// Force a resend;
-	psmv->wants.resend_time = 0;
-	psmv_led_and_trigger_update(psmv, time);
-}
-
 static int
 psmv_get_calibration(struct psmv_device *psmv)
 {
@@ -828,9 +820,9 @@ psmv_device_set_output(struct xrt_device *xdev,
 	psmv->wants.rumble =
 	    psmv_clamp_zero_to_one_float_to_u8(value->vibration.amplitude);
 
-	// Force a resend;
+	// Resend if the rumble has been changed.
 	int64_t now = time_state_get_now(timekeeping);
-	psmv_force_led_and_rumble_update(psmv, now);
+	psmv_led_and_trigger_update(psmv, now);
 }
 
 
