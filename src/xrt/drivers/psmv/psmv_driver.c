@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <wchar.h>
+#include <math.h>
 
 #include "xrt/xrt_prober.h"
 
@@ -468,6 +469,24 @@ psmv_read_process_last(struct psmv_device *psmv)
 	psmv->read.accel.x = (raw->x + bx) / ax;
 	psmv->read.accel.y = (raw->y + by) / ay;
 	psmv->read.accel.z = (raw->z + bz) / az;
+
+
+	raw = &psmv->last.frame[1].gyro;
+
+	double gx =
+	    (psmv->gyro_rot_x.x - (psmv->gyro_bias_0.x * psmv->gyro_fact.x));
+	double gy =
+	    (psmv->gyro_rot_y.y - (psmv->gyro_bias_0.y * psmv->gyro_fact.y));
+	double gz =
+	    (psmv->gyro_rot_z.z - (psmv->gyro_bias_0.z * psmv->gyro_fact.z));
+
+	gx = (2.0 * M_PI * 80.0) / (60.0 * gx);
+	gy = (2.0 * M_PI * 80.0) / (60.0 * gy);
+	gz = (2.0 * M_PI * 80.0) / (60.0 * gz);
+
+	psmv->read.gyro.x = raw->x * gx;
+	psmv->read.gyro.y = raw->y * gy;
+	psmv->read.gyro.z = raw->z * gz;
 }
 
 static int
