@@ -16,6 +16,8 @@
 
 #include "xrt/xrt_prober.h"
 
+#include "math/m_api.h"
+
 #include "util/u_var.h"
 #include "util/u_time.h"
 #include "util/u_misc.h"
@@ -348,6 +350,11 @@ struct psmv_device
 		bool calibration;
 		bool last_frame;
 	} gui;
+
+	struct
+	{
+		struct xrt_quat rot;
+	} fusion;
 };
 
 
@@ -494,6 +501,10 @@ update_fusion(struct psmv_device *psmv, struct psmv_parsed_sample *sample)
 	psmv->read.gyro.x = rg->x * gx;
 	psmv->read.gyro.y = rg->y * gy;
 	psmv->read.gyro.z = rg->z * gz;
+
+	// Super simple fusion.
+	math_quat_integrate_velocity(&psmv->fusion.rot, &psmv->read.gyro, dt,
+	                             &psmv->fusion.rot);
 }
 
 static int
@@ -792,6 +803,13 @@ psmv_device_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct psmv_device *psmv = psmv_device(xdev);
 
+	out_relation->pose.orientation = psmv->fusion.rot;
+
+	//! @todo assuming that orientation is actually currently tracked.
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+
 	psmv_read_hid(psmv);
 }
 
@@ -854,6 +872,7 @@ psmv_found(struct xrt_prober *xp,
 	psmv->base.get_tracked_pose = psmv_device_get_tracked_pose;
 	psmv->base.set_output = psmv_device_set_output;
 	psmv->base.name = XRT_DEVICE_PSMV;
+	psmv->fusion.rot.w = 1.0f;
 	snprintf(psmv->base.str, XRT_DEVICE_NAME_LEN, "%s",
 	         "PS Move Controller");
 	psmv->hid = hid;
