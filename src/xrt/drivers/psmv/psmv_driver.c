@@ -370,6 +370,20 @@ psmv_device(struct xrt_device *xdev)
 	return (struct psmv_device *)xdev;
 }
 
+static uint32_t
+psmv_calc_delta_and_handle_rollover(uint32_t next, uint32_t last)
+{
+	uint32_t tick_delta = next - last;
+
+	// The 16-bit tick counter has rolled over,
+	// adjust the "negative" value to be positive.
+	if (tick_delta > 0xffff) {
+		tick_delta += 0x10000;
+	}
+
+	return tick_delta;
+}
+
 static inline uint8_t
 psmv_clamp_zero_to_one_float_to_u8(float v)
 {
@@ -544,7 +558,8 @@ psmv_read_hid(struct psmv_device *psmv)
 		psmv_from_vec3_i16_zn_wire(&input.sample[1].gyro,
 		                           &data.input.gyro_f2);
 
-		int32_t diff = input.timestamp - psmv->last.timestamp;
+		uint32_t diff = psmv_calc_delta_and_handle_rollover(
+		    input.timestamp, psmv->last.timestamp);
 		bool missed = input.seq_no != ((psmv->last.seq_no + 1) & 0x0f);
 
 		// Update timestamp.
