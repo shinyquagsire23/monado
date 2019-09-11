@@ -126,14 +126,15 @@ struct psmv_f32_wire
 };
 
 /*!
- * Wire encoding of three 32 bit float, notice order of axis, big endian.
+ * Wire encoding of three 32 bit float, notice order of axis and negation,
+ * big endian.
  *
  * @ingroup drv_psmv
  */
-struct psmv_vec3_f32_wite
+struct psmv_vec3_f32_wire
 {
 	struct psmv_f32_wire x;
-	struct psmv_f32_wire z;
+	struct psmv_f32_wire z_neg;
 	struct psmv_f32_wire y;
 };
 
@@ -149,14 +150,14 @@ struct psmv_i16_wire
 };
 
 /*!
- * Wire encoding of three 16 bit integers, notice order of axis.
+ * Wire encoding of three 16 bit integers, notice order of axis and negation.
  *
  * @ingroup drv_psmv
  */
 struct psmv_vec3_i16_wire
 {
 	struct psmv_i16_wire x;
-	struct psmv_i16_wire z;
+	struct psmv_i16_wire z_neg;
 	struct psmv_i16_wire y;
 };
 
@@ -209,8 +210,8 @@ struct psmv_calibration_zcm1
 	struct psmv_vec3_i16_wire accel_min_x;
 	struct psmv_vec3_i16_wire accel_min_y;
 	struct psmv_vec3_i16_wire accel_max_x;
-	struct psmv_vec3_i16_wire accel_max_z;
 	struct psmv_vec3_i16_wire accel_min_z;
+	struct psmv_vec3_i16_wire accel_max_z;
 	uint16_t _pad1;
 	struct psmv_vec3_i16_wire gyro_bias_0;
 	uint16_t _pad2;
@@ -226,8 +227,8 @@ struct psmv_calibration_zcm1
 	uint16_t _pad9;
 	struct psmv_vec3_i16_wire gyro_rot_y;
 	uint16_t _pad10;
-	struct psmv_vec3_f32_wite unknown_vec3;
-	struct psmv_vec3_f32_wite gyro_fact;
+	struct psmv_vec3_f32_wire unknown_vec3;
+	struct psmv_vec3_f32_wire gyro_fact;
 	struct psmv_f32_wire unknown_float_0;
 	struct psmv_f32_wire unknown_float_1;
 	uint8_t _pad[17];
@@ -356,12 +357,20 @@ psmv_i32_from_i16_wire(int32_t *to, const struct psmv_i16_wire *from)
 }
 
 static void
+psmv_i32_from_i16_wire_neg(int32_t *to, const struct psmv_i16_wire *from)
+{
+	int32_t v;
+	psmv_i32_from_i16_wire(&v, from);
+	*to = -v;
+}
+
+static void
 psmv_vec3_i32_from_i16_wire(struct xrt_vec3_i32 *to,
                             const struct psmv_vec3_i16_wire *from)
 {
 	psmv_i32_from_i16_wire(&to->x, &from->x);
 	psmv_i32_from_i16_wire(&to->y, &from->y);
-	psmv_i32_from_i16_wire(&to->z, &from->z);
+	psmv_i32_from_i16_wire_neg(&to->z, &from->z_neg);
 }
 
 static void
@@ -378,12 +387,20 @@ psmv_f32_from_wire(float *to, const struct psmv_f32_wire *from)
 }
 
 static void
+psmv_f32_from_wire_neg(float *to, const struct psmv_f32_wire *from)
+{
+	float v;
+	psmv_f32_from_wire(&v, from);
+	*to = -v;
+}
+
+static void
 psmv_vec3_f32_from_wire(struct xrt_vec3 *to,
-                        const struct psmv_vec3_f32_wite *from)
+                        const struct psmv_vec3_f32_wire *from)
 {
 	psmv_f32_from_wire(&to->x, &from->x);
 	psmv_f32_from_wire(&to->y, &from->y);
-	psmv_f32_from_wire(&to->z, &from->z);
+	psmv_f32_from_wire_neg(&to->z, &from->z_neg);
 }
 
 static void
