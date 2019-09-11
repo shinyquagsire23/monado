@@ -259,6 +259,13 @@ struct psmv_calibration_zcm1
 	uint8_t _pad[17];
 };
 
+struct psmv_parsed_sample
+{
+	struct xrt_vec3_i32 accel;
+	struct xrt_vec3_i32 gyro;
+	uint8_t trigger;
+};
+
 struct psmv_parsed_input
 {
 	uint32_t buttons;
@@ -266,12 +273,7 @@ struct psmv_parsed_input
 	uint8_t battery;
 	uint8_t seq_no;
 
-	struct
-	{
-		struct xrt_vec3_i32 accel;
-		struct xrt_vec3_i32 gyro;
-		uint8_t trigger;
-	} frame[2];
+	struct psmv_parsed_sample sample[2];
 };
 
 /*!
@@ -446,10 +448,18 @@ psmv_from_vec32_f32_wire(struct xrt_vec3 *to,
 	psmv_f32_from_wire(&to->z, &from->z);
 }
 
+#define PSMV_TICK_PERIOD (1.0 / 120.0)
+
 static void
-psmv_read_process_last(struct psmv_device *psmv)
+update_fusion(struct psmv_device *psmv, struct psmv_parsed_sample *sample)
 {
-	struct xrt_vec3_i32 *raw = &psmv->last.frame[1].accel;
+	struct xrt_vec3 mag = {0.0f, 0.0f, 0.0f};
+	float dt = PSMV_TICK_PERIOD;
+	(void)mag;
+	(void)dt;
+
+	struct xrt_vec3_i32 *ra = &sample->accel;
+	struct xrt_vec3_i32 *rg = &sample->gyro;
 
 	//! @todo Pre-calculate this.
 	double ax = (psmv->accel_max_x.x - psmv->accel_min_x.x) / 2.0;
@@ -466,12 +476,9 @@ psmv_read_process_last(struct psmv_device *psmv)
 	             psmv->accel_min_y.z + psmv->accel_max_y.z) /
 	            -4.0;
 
-	psmv->read.accel.x = (raw->x + bx) / ax;
-	psmv->read.accel.y = (raw->y + by) / ay;
-	psmv->read.accel.z = (raw->z + bz) / az;
-
-
-	raw = &psmv->last.frame[1].gyro;
+	psmv->read.accel.x = (ra->x + bx) / ax;
+	psmv->read.accel.y = (ra->y + by) / ay;
+	psmv->read.accel.z = (ra->z + bz) / az;
 
 	double gx =
 	    (psmv->gyro_rot_x.x - (psmv->gyro_bias_0.x * psmv->gyro_fact.x));
@@ -484,9 +491,9 @@ psmv_read_process_last(struct psmv_device *psmv)
 	gy = (2.0 * M_PI * 80.0) / (60.0 * gy);
 	gz = (2.0 * M_PI * 80.0) / (60.0 * gz);
 
-	psmv->read.gyro.x = raw->x * gx;
-	psmv->read.gyro.y = raw->y * gy;
-	psmv->read.gyro.z = raw->z * gz;
+	psmv->read.gyro.x = rg->x * gx;
+	psmv->read.gyro.y = rg->y * gy;
+	psmv->read.gyro.z = rg->z * gz;
 }
 
 static int
@@ -515,15 +522,15 @@ psmv_read_hid(struct psmv_device *psmv)
 		input.timestamp |= data.input.timestamp_low;
 		input.timestamp |= data.input.timestamp_high << 8;
 
-		input.frame[0].trigger = data.input.trigger_f1;
-		psmv_from_vec3_i16_zn_wire(&input.frame[0].accel,
+		input.sample[0].trigger = data.input.trigger_f1;
+		psmv_from_vec3_i16_zn_wire(&input.sample[0].accel,
 		                           &data.input.accel_f1);
-		psmv_from_vec3_i16_zn_wire(&input.frame[0].gyro,
+		psmv_from_vec3_i16_zn_wire(&input.sample[0].gyro,
 		                           &data.input.gyro_f1);
-		input.frame[1].trigger = data.input.trigger_f2;
-		psmv_from_vec3_i16_zn_wire(&input.frame[1].accel,
+		input.sample[1].trigger = data.input.trigger_f2;
+		psmv_from_vec3_i16_zn_wire(&input.sample[1].accel,
 		                           &data.input.accel_f2);
-		psmv_from_vec3_i16_zn_wire(&input.frame[1].gyro,
+		psmv_from_vec3_i16_zn_wire(&input.sample[1].gyro,
 		                           &data.input.gyro_f2);
 
 		int32_t diff = input.timestamp - psmv->last.timestamp;
@@ -537,26 +544,27 @@ psmv_read_hid(struct psmv_device *psmv)
 		          "missed: %s\n\t"
 		          "buttons: %08x\n\t"
 		          "battery: %x\n\t"
-		          "frame[0].trigger: %02x\n\t"
-		          "frame[0].accel_x: %i\n\t"
-		          "frame[0].accel_y: %i\n\t"
-		          "frame[0].accel_z: %i\n\t"
-		          "frame[0].gyro_x: %i\n\t"
-		          "frame[0].gyro_y: %i\n\t"
-		          "frame[0].gyro_z: %i\n\t"
-		          "frame[1].trigger: %02x\n\t"
+		          "sample[0].trigger: %02x\n\t"
+		          "sample[0].accel_x: %i\n\t"
+		          "sample[0].accel_y: %i\n\t"
+		          "sample[0].accel_z: %i\n\t"
+		          "sample[0].gyro_x: %i\n\t"
+		          "sample[0].gyro_y: %i\n\t"
+		          "sample[0].gyro_z: %i\n\t"
+		          "sample[1].trigger: %02x\n\t"
 		          "timestamp: %i\n\t"
 		          "diff: %i\n\t"
 		          "seq_no: %x\n",
 		          missed ? "yes" : "no", input.buttons, input.battery,
-		          input.frame[0].trigger, input.frame[0].accel.x,
-		          input.frame[0].accel.y, input.frame[0].accel.z,
-		          input.frame[0].gyro.x, input.frame[0].gyro.y,
-		          input.frame[0].gyro.z, input.frame[1].trigger,
+		          input.sample[0].trigger, input.sample[0].accel.x,
+		          input.sample[0].accel.y, input.sample[0].accel.z,
+		          input.sample[0].gyro.x, input.sample[0].gyro.y,
+		          input.sample[0].gyro.z, input.sample[1].trigger,
 		          input.timestamp, diff, input.seq_no);
 
 		// Process the parsed data.
-		psmv_read_process_last(psmv);
+		update_fusion(psmv, &input.sample[0]);
+		update_fusion(psmv, &input.sample[1]);
 
 	} while (true);
 
@@ -597,7 +605,7 @@ psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t now)
 {
 	psmv->base.inputs[index].timestamp = now;
 	psmv->base.inputs[index].value.vec1.x =
-	    psmv->last.frame[1].trigger / 255.0f;
+	    psmv->last.sample[1].trigger / 255.0f;
 }
 
 static void
@@ -906,10 +914,10 @@ psmv_found(struct xrt_prober *xp,
 	u_var_add_vec3_i32(psmv, &psmv->gyro_bias_1, "gyro_bias_1");
 	u_var_add_vec3_f32(psmv, &psmv->gyro_fact, "gyro_fact");
 	u_var_add_gui_header(psmv, &psmv->gui.last_frame, "Last data");
-	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[0].accel, "last.frame[0].accel");
-	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[1].accel, "last.frame[1].accel");
-	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[0].gyro, "last.frame[0].gyro");
-	u_var_add_ro_vec3_i32(psmv, &psmv->last.frame[1].gyro, "last.frame[1].gyro");
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.sample[0].accel, "last.sample[0].accel");
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.sample[1].accel, "last.sample[1].accel");
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.sample[0].gyro, "last.sample[0].gyro");
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.sample[1].gyro, "last.sample[1].gyro");
 	u_var_add_ro_vec3_f32(psmv, &psmv->read.accel, "read.accel");
 	u_var_add_ro_vec3_f32(psmv, &psmv->read.gyro, "read.gyro");
 	u_var_add_gui_header(psmv, &psmv->gui.control, "Control");
