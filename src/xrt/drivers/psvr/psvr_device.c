@@ -49,7 +49,7 @@ struct psvr_device
 	hid_device *hmd_handle;
 	hid_device *hmd_control;
 
-	struct psvr_sensor_packet sensor;
+	struct psvr_parsed_sensor last;
 
 	struct
 	{
@@ -65,7 +65,7 @@ struct psvr_device
 	{
 		struct xrt_vec3 gyro;
 		struct xrt_vec3 accel;
-	} raw;
+	} read;
 
 	uint16_t buttons;
 
@@ -168,30 +168,24 @@ scale_led_power(uint8_t power)
 }
 
 static void
-accel_from_psvr_vec(const int16_t smp[3], struct xrt_vec3 *out_vec)
+accel_from_psvr_vec(const struct xrt_vec3_i32 *accel, struct xrt_vec3 *out_vec)
 {
-	//! @todo Figure out calibration data and use here.
-
-	// clang-format off
-	out_vec->x = (float)(smp[1] *  (9.81 / 16384.0));
-	out_vec->y = (float)(smp[0] *  (9.81 / 16384.0));
-	out_vec->z = (float)(smp[2] * -(9.81 / 16384.0));
-	// clang-format on
+	out_vec->x = accel->x * (9.81 / 16384.0);
+	out_vec->y = accel->y * (9.81 / 16384.0);
+	out_vec->z = accel->z * (9.81 / 16384.0);
 }
 
 static void
-gyro_from_psvr_vec(const int16_t smp[3], struct xrt_vec3 *out_vec)
+gyro_from_psvr_vec(const struct xrt_vec3_i32 *gyro, struct xrt_vec3 *out_vec)
 {
-	//! @todo Figure out calibration data and use here.
-
-	out_vec->x = (float)(smp[1] * 0.00105);
-	out_vec->y = (float)(smp[0] * 0.00105);
-	out_vec->z = (float)(smp[2] * 0.00105 * -1.0);
+	out_vec->x = gyro->x * 0.00105;
+	out_vec->y = gyro->y * 0.00105;
+	out_vec->z = gyro->z * 0.00105;
 }
 
 static void
 update_fusion(struct psvr_device *psvr,
-              struct psvr_sensor_sample *sample,
+              struct psvr_parsed_sample *sample,
               uint32_t tick_delta)
 {
 	struct xrt_vec3 mag = {0.0f, 0.0f, 0.0f};
@@ -199,8 +193,8 @@ update_fusion(struct psvr_device *psvr,
 	(void)mag;
 	(void)dt;
 
-	accel_from_psvr_vec(sample->accel, &psvr->raw.accel);
-	gyro_from_psvr_vec(sample->gyro, &psvr->raw.gyro);
+	accel_from_psvr_vec(&sample->accel, &psvr->read.accel);
+	gyro_from_psvr_vec(&sample->gyro, &psvr->read.gyro);
 
 	//! @todo This is where we do the sensor fusion.
 	// ofusion_update(&psvr->sensor_fusion, dt, &psvr->raw.gyro,
@@ -226,13 +220,13 @@ handle_tracker_sensor_msg(struct psvr_device *psvr,
                           unsigned char *buffer,
                           int size)
 {
-	uint32_t last_sample_tick = psvr->sensor.samples[1].tick;
+	uint32_t last_sample_tick = psvr->last.samples[1].tick;
 
-	if (!psvr_parse_sensor_packet(&psvr->sensor, buffer, size)) {
+	if (!psvr_parse_sensor_packet(&psvr->last, buffer, size)) {
 		PSVR_ERROR(psvr, "couldn't decode tracker sensor message");
 	}
 
-	struct psvr_sensor_packet *s = &psvr->sensor;
+	struct psvr_parsed_sensor *s = &psvr->last;
 
 	// Simplest is the buttons.
 	psvr->buttons = s->buttons;
@@ -270,9 +264,9 @@ handle_control_status_msg(struct psvr_device *psvr,
                           unsigned char *buffer,
                           int size)
 {
-	struct psvr_status_packet packet;
+	struct psvr_parsed_status status;
 
-	if (!psvr_parse_status_packet(&packet, buffer, size)) {
+	if (!psvr_parse_status_packet(&status, buffer, size)) {
 		PSVR_ERROR(psvr, "couldn't decode tracker sensor message");
 	}
 
@@ -281,16 +275,16 @@ handle_control_status_msg(struct psvr_device *psvr,
 	 * Power
 	 */
 
-	if (packet.status & PSVR_STATUS_BIT_POWER) {
+	if (status.status & PSVR_STATUS_BIT_POWER) {
 		if (!psvr->powered_on) {
 			PSVR_DEBUG(psvr, "Device powered on! '%02x'",
-			           packet.status);
+			           status.status);
 		}
 		psvr->powered_on = true;
 	} else {
 		if (psvr->powered_on) {
 			PSVR_DEBUG(psvr, "Device powered off! '%02x'",
-			           packet.status);
+			           status.status);
 		}
 		psvr->powered_on = false;
 	}
@@ -300,16 +294,16 @@ handle_control_status_msg(struct psvr_device *psvr,
 	 * VR-Mode
 	 */
 
-	if (packet.vr_mode == PSVR_STATUS_VR_MODE_OFF) {
+	if (status.vr_mode == PSVR_STATUS_VR_MODE_OFF) {
 		if (psvr->in_vr_mode) {
 			PSVR_DEBUG(psvr, "Device not in vr-mode! '%02x'",
-			           packet.vr_mode);
+			           status.vr_mode);
 		}
 		psvr->in_vr_mode = false;
-	} else if (packet.vr_mode == PSVR_STATUS_VR_MODE_ON) {
+	} else if (status.vr_mode == PSVR_STATUS_VR_MODE_ON) {
 		if (!psvr->in_vr_mode) {
 			PSVR_DEBUG(psvr, "Device in vr-mode! '%02x'",
-			           packet.vr_mode);
+			           status.vr_mode);
 		}
 		psvr->in_vr_mode = true;
 	} else {
@@ -663,8 +657,8 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
 	PSVR_SPEW(psvr, "\n\taccel = %f %f %f\n\tgyro = %f %f %f",
-	          psvr->raw.accel.x, psvr->raw.accel.y, psvr->raw.accel.z,
-	          psvr->raw.gyro.x, psvr->raw.gyro.y, psvr->raw.gyro.z);
+	          psvr->read.accel.x, psvr->read.accel.y, psvr->read.accel.z,
+	          psvr->read.gyro.x, psvr->read.gyro.y, psvr->read.gyro.z);
 }
 
 static void

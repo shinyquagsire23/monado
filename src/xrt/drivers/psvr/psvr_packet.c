@@ -56,6 +56,23 @@ read_i16(const uint8_t **buffer, int16_t *out_value)
 }
 
 inline static void
+read_i16_to_i32(const uint8_t **buffer, int32_t *out_value)
+{
+	int16_t v = (*(*buffer + 0) << 0) | // Byte 0
+	            (*(*buffer + 1) << 8);  // Byte 1
+	*out_value = v;                     // Properly sign extend.
+	*buffer += 2;
+}
+
+inline static void
+read_i16_to_i32_neg(const uint8_t **buffer, int32_t *out_value)
+{
+	int32_t v;
+	read_i16_to_i32(buffer, &v);
+	*out_value = -v;
+}
+
+inline static void
 read_u32(const uint8_t **buffer, uint32_t *out_value)
 {
 	*out_value = (*(*buffer + 0) << 0) |  // Byte 0
@@ -66,20 +83,20 @@ read_u32(const uint8_t **buffer, uint32_t *out_value)
 }
 
 static void
-read_sensor(const uint8_t **buffer, struct psvr_sensor_sample *sample)
+read_sample(const uint8_t **buffer, struct psvr_parsed_sample *sample)
 {
 	// Tick.
 	read_u32(buffer, &sample->tick);
 
 	// Rotation.
-	read_i16(buffer, &sample->gyro[0]);
-	read_i16(buffer, &sample->gyro[1]);
-	read_i16(buffer, &sample->gyro[2]);
+	read_i16_to_i32(buffer, &sample->gyro.y);
+	read_i16_to_i32(buffer, &sample->gyro.x);
+	read_i16_to_i32_neg(buffer, &sample->gyro.z);
 
 	// Acceleration.
-	read_i16(buffer, &sample->accel[0]);
-	read_i16(buffer, &sample->accel[1]);
-	read_i16(buffer, &sample->accel[2]);
+	read_i16_to_i32(buffer, &sample->accel.y);
+	read_i16_to_i32(buffer, &sample->accel.x);
+	read_i16_to_i32_neg(buffer, &sample->accel.z);
 }
 
 
@@ -90,7 +107,7 @@ read_sensor(const uint8_t **buffer, struct psvr_sensor_sample *sample)
  */
 
 bool
-psvr_parse_sensor_packet(struct psvr_sensor_packet *packet,
+psvr_parse_sensor_packet(struct psvr_parsed_sensor *sensor,
                          const uint8_t *buffer,
                          int size)
 {
@@ -101,47 +118,47 @@ psvr_parse_sensor_packet(struct psvr_sensor_packet *packet,
 	}
 
 	// Buttons.
-	read_u8(&buffer, &packet->buttons);
+	read_u8(&buffer, &sensor->buttons);
 
 	// Unknown, skip 1 bytes.
 	skip(&buffer, 1);
 
 	// Volume.
-	read_u16(&buffer, &packet->volume);
+	read_u16(&buffer, &sensor->volume);
 
 	// Unknown, skip 1 bytes.
 	skip(&buffer, 1);
 
 	// State.
-	read_u8(&buffer, &packet->state);
+	read_u8(&buffer, &sensor->state);
 
 	// Unknown, skip 10 bytes.
 	skip(&buffer, 10);
 
 	// Two sensors.
-	read_sensor(&buffer, &packet->samples[0]);
-	read_sensor(&buffer, &packet->samples[1]);
+	read_sample(&buffer, &sensor->samples[0]);
+	read_sample(&buffer, &sensor->samples[1]);
 
 	// unknown, skip 5 bytes.
 	skip(&buffer, 5);
 
 	// Raw button data.
-	read_u16(&buffer, &packet->button_raw);
+	read_u16(&buffer, &sensor->button_raw);
 
 	// Proximity, ~150 (nothing) to 1023 (headset is on).
-	read_u16(&buffer, &packet->proximity);
+	read_u16(&buffer, &sensor->proximity);
 
 	// Unknown, skip 6 bytes.
 	skip(&buffer, 6);
 
 	// Finally a sequence number.
-	read_u8(&buffer, &packet->seq);
+	read_u8(&buffer, &sensor->seq);
 
 	return (size_t)buffer - (size_t)start == 64;
 }
 
 bool
-psvr_parse_status_packet(struct psvr_status_packet *packet,
+psvr_parse_status_packet(struct psvr_parsed_status *status,
                          const uint8_t *buffer,
                          int size)
 {
@@ -155,22 +172,22 @@ psvr_parse_status_packet(struct psvr_status_packet *packet,
 	skip(&buffer, 4);
 
 	// Status bits.
-	read_u8(&buffer, &packet->status);
+	read_u8(&buffer, &status->status);
 
 	// Volume.
-	read_u8(&buffer, &packet->volume);
+	read_u8(&buffer, &status->volume);
 
 	// Unknown, 0x00, 0x00.
 	skip(&buffer, 2);
 
 	// Display time in minutes.
-	read_u8(&buffer, &packet->display_time);
+	read_u8(&buffer, &status->display_time);
 
 	// Unknown, 0xFF, 0x00.
 	skip(&buffer, 2);
 
 	// VR Mode Active.
-	read_u8(&buffer, &packet->vr_mode);
+	read_u8(&buffer, &status->vr_mode);
 
 	// Unknown, 0x12, 0x00...
 	skip(&buffer, 8);

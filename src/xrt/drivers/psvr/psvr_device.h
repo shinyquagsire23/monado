@@ -64,39 +64,40 @@ enum psvr_status_bits
  */
 
 /*!
- * A single gyro, accel and tick sample.
+ * A parsed single gyro, accel and tick sample.
  *
  * @ingroup drv_psvr
  */
-struct psvr_sensor_sample
+struct psvr_parsed_sample
 {
-	int16_t accel[3];
-	int16_t gyro[3];
+	struct xrt_vec3_i32 accel;
+	struct xrt_vec3_i32 gyro;
 	uint32_t tick;
 };
 
 /*!
- * A parsed sensor packet from the headset.
+ * Over the wire sensor packet from the headset.
  *
  * @ingroup drv_psvr
  */
-struct psvr_sensor_packet
+struct psvr_parsed_sensor
 {
 	uint8_t buttons;
 	uint8_t state;
 	uint16_t volume;
-	struct psvr_sensor_sample samples[2];
 	uint16_t button_raw;
 	uint16_t proximity;
 	uint8_t seq;
+
+	struct psvr_parsed_sample samples[2];
 };
 
 /*!
- * A parsed status packet from the headset.
+ * A status packet from the headset in wire format.
  *
  * @ingroup drv_psvr
  */
-struct psvr_status_packet
+struct psvr_parsed_status
 {
 	uint8_t status;
 	uint8_t volume;
@@ -118,12 +119,12 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
                    bool print_debug);
 
 bool
-psvr_parse_sensor_packet(struct psvr_sensor_packet *packet,
+psvr_parse_sensor_packet(struct psvr_parsed_sensor *packet,
                          const uint8_t *buffer,
                          int size);
 
 bool
-psvr_parse_status_packet(struct psvr_status_packet *packet,
+psvr_parse_status_packet(struct psvr_parsed_status *packet,
                          const uint8_t *buffer,
                          int size);
 
