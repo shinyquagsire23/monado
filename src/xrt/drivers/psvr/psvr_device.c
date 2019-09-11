@@ -12,6 +12,8 @@
 
 #include "xrt/xrt_compiler.h"
 
+#include "math/m_api.h"
+
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
@@ -80,6 +82,11 @@ struct psvr_device
 		bool last_frame;
 		bool control;
 	} gui;
+
+	struct
+	{
+		struct xrt_quat rot;
+	} fusion;
 };
 
 
@@ -201,6 +208,9 @@ update_fusion(struct psvr_device *psvr,
 
 	accel_from_psvr_vec(&sample->accel, &psvr->read.accel);
 	gyro_from_psvr_vec(&sample->gyro, &psvr->read.gyro);
+
+	math_quat_integrate_velocity(&psvr->fusion.rot, &psvr->read.gyro, dt,
+	                             &psvr->fusion.rot);
 
 	//! @todo This is where we do the sensor fusion.
 	// ofusion_update(&psvr->sensor_fusion, dt, &psvr->raw.gyro,
@@ -655,7 +665,7 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 	//! @todo adjust for latency here
 	*out_timestamp = now;
 
-	out_relation->pose.orientation.w = 1.0f;
+	out_relation->pose.orientation = psvr->fusion.rot;
 
 	//! @todo assuming that orientation is actually currently tracked.
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
@@ -729,6 +739,7 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	psvr->base.destroy = psvr_device_destroy;
 	psvr->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
 	psvr->base.name = XRT_DEVICE_GENERIC_HMD;
+	psvr->fusion.rot.w = 1.0f;
 
 	snprintf(psvr->base.str, XRT_DEVICE_NAME_LEN, "PS VR Headset");
 
