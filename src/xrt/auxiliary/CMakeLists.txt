@@ -14,6 +14,7 @@ set(OS_SOURCE_FILES
 	os/os_documentation.h
 	os/os_hid.h
 	os/os_hid_hidraw.c
+	os/os_threading.h
 	)
 
 set(TRACKING_SOURCE_FILES
