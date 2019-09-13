@@ -18,6 +18,9 @@
 
 #include "math/m_api.h"
 
+#include "util/u_time.h"
+#include "os/os_threading.h"
+
 #include "util/u_var.h"
 #include "util/u_time.h"
 #include "util/u_misc.h"
@@ -289,6 +292,8 @@ struct psmv_device
 
 	struct os_hid_device *hid;
 
+	struct os_thread_helper oth;
+
 	struct
 	{
 		int64_t resend_time;
@@ -302,8 +307,20 @@ struct psmv_device
 		uint8_t rumble;
 	} state;
 
-	//! Last sensor read.
-	struct psmv_parsed_input last;
+	struct
+	{
+		//! Lock for last and fusion.
+		struct os_mutex lock;
+
+		//! Last sensor read.
+		struct psmv_parsed_input last;
+
+		struct
+		{
+			struct xrt_quat rot;
+		} fusion;
+	};
+
 
 	struct xrt_vec3_i32 accel_min_x;
 	struct xrt_vec3_i32 accel_max_x;
@@ -350,11 +367,6 @@ struct psmv_device
 		bool calibration;
 		bool last_frame;
 	} gui;
-
-	struct
-	{
-		struct xrt_quat rot;
-	} fusion;
 };
 
 
@@ -472,10 +484,11 @@ psmv_from_vec32_f32_wire(struct xrt_vec3 *to,
 #define PSMV_TICK_PERIOD (1.0 / 120.0)
 
 static void
-update_fusion(struct psmv_device *psmv, struct psmv_parsed_sample *sample)
+update_fusion(struct psmv_device *psmv,
+              struct psmv_parsed_sample *sample,
+              float dt)
 {
 	struct xrt_vec3 mag = {0.0f, 0.0f, 0.0f};
-	float dt = PSMV_TICK_PERIOD;
 	(void)mag;
 	(void)dt;
 
@@ -521,9 +534,38 @@ update_fusion(struct psmv_device *psmv, struct psmv_parsed_sample *sample)
 	                             &psmv->fusion.rot);
 }
 
-static int
-psmv_read_hid(struct psmv_device *psmv)
+static bool
+psmv_read_one_packet(struct psmv_device *psmv, uint8_t *buffer, size_t size)
 {
+	os_thread_helper_lock(&psmv->oth);
+
+	while (os_thread_helper_is_running_locked(&psmv->oth)) {
+
+		os_thread_helper_unlock(&psmv->oth);
+
+		int ret = os_hid_read(psmv->hid, buffer, size, 1000 * 1000);
+
+		if (ret == 0) {
+			// Must lock thread before check in while.
+			os_thread_helper_lock(&psmv->oth);
+			continue;
+		} else if (ret < 0) {
+			PSMV_ERROR(psmv, "Failed to read device '%i'!", ret);
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+static void *
+psmv_run_thread(void *ptr)
+{
+	struct psmv_device *psmv = (struct psmv_device *)ptr;
+	struct time_state *time = time_state_create();
+
 	union {
 		uint8_t buffer[256];
 		struct psmv_get_input input;
@@ -531,11 +573,21 @@ psmv_read_hid(struct psmv_device *psmv)
 
 	struct psmv_parsed_input input = {0};
 
-	do {
-		int ret = os_hid_read(psmv->hid, data.buffer, sizeof(data), 0);
-		if (ret <= 0) {
-			return ret;
-		}
+	while (os_hid_read(psmv->hid, data.buffer, sizeof(data), 0) > 0) {
+		// Empty queue first
+	}
+
+	// Now wait for a package to sync up, it's discarded but that's okay.
+	if (!psmv_read_one_packet(psmv, data.buffer, sizeof(data))) {
+		time_state_destroy(time);
+		return NULL;
+	}
+
+	timepoint_ns then_ns = time_state_get_now(time);
+
+	while (psmv_read_one_packet(psmv, data.buffer, sizeof(data))) {
+
+		timepoint_ns now_ns = time_state_get_now(time);
 
 		input.battery = data.input.battery;
 		input.seq_no = data.input.buttons[3] & 0x0f;
@@ -562,9 +614,6 @@ psmv_read_hid(struct psmv_device *psmv)
 		    input.timestamp, psmv->last.timestamp);
 		bool missed = input.seq_no != ((psmv->last.seq_no + 1) & 0x0f);
 
-		// Update timestamp.
-		psmv->last = input;
-
 		PSMV_SPEW(psmv,
 		          "\n\t"
 		          "missed: %s\n\t"
@@ -588,13 +637,26 @@ psmv_read_hid(struct psmv_device *psmv)
 		          input.sample[0].gyro.z, input.sample[1].trigger,
 		          input.timestamp, diff, input.seq_no);
 
+		float dt = time_ns_to_s(now_ns - then_ns);
+		then_ns = now_ns;
+
+		// Lock last and the fusion.
+		os_mutex_lock(&psmv->lock);
+
+		// Copy to device.
+		psmv->last = input;
+
 		// Process the parsed data.
-		update_fusion(psmv, &input.sample[0]);
-		update_fusion(psmv, &input.sample[1]);
+		update_fusion(psmv, &input.sample[0], dt / 2.0);
+		update_fusion(psmv, &input.sample[1], dt / 2.0);
 
-	} while (true);
+		// Now done.
+		os_mutex_unlock(&psmv->lock);
+	}
 
-	return 0;
+	time_state_destroy(time);
+
+	return NULL;
 }
 
 static int
@@ -763,6 +825,12 @@ psmv_device_destroy(struct xrt_device *xdev)
 {
 	struct psmv_device *psmv = psmv_device(xdev);
 
+	// Destroy the thread object.
+	os_thread_helper_destroy(&psmv->oth);
+
+	// Now that the thread is not running we can destroy the lock.
+	os_mutex_destroy(&psmv->lock);
+
 	// Remove the variable tracking.
 	u_var_remove_root(psmv);
 
@@ -782,11 +850,12 @@ psmv_device_update_inputs(struct xrt_device *xdev,
 {
 	struct psmv_device *psmv = psmv_device(xdev);
 
-	psmv_read_hid(psmv);
-
 	int64_t now = time_state_get_now(timekeeping);
 
 	psmv_led_and_trigger_update(psmv, now);
+
+	// Lock the data.
+	os_mutex_lock(&psmv->lock);
 
 	// clang-format off
 	psmv_update_input_click(psmv, PSMV_INDEX_PS_CLICK, now, PSMV_BUTTON_BIT_PS);
@@ -799,6 +868,9 @@ psmv_device_update_inputs(struct xrt_device *xdev,
 	psmv_update_input_click(psmv, PSMV_INDEX_TRIANGLE_CLICK, now, PSMV_BUTTON_BIT_TRIANGLE);
 	psmv_update_trigger_value(psmv, PSMV_INDEX_TRIGGER_VALUE, now);
 	// clang-format on
+
+	// Done now.
+	os_mutex_unlock(&psmv->lock);
 }
 
 static void
@@ -816,8 +888,6 @@ psmv_device_get_tracked_pose(struct xrt_device *xdev,
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
-
-	psmv_read_hid(psmv);
 }
 
 static void
@@ -899,6 +969,22 @@ psmv_found(struct xrt_prober *xp,
 	// We only have one output.
 	psmv->base.outputs[0].name = XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION;
 
+	// Mutex before thread.
+	ret = os_mutex_init(&psmv->lock);
+	if (ret != 0) {
+		PSMV_ERROR(psmv, "Failed to init mutex!");
+		psmv_device_destroy(&psmv->base);
+		return ret;
+	}
+
+	// Thread and other state.
+	ret = os_thread_helper_init(&psmv->oth);
+	if (ret != 0) {
+		PSMV_ERROR(psmv, "Failed to init threading!");
+		psmv_device_destroy(&psmv->base);
+		return ret;
+	}
+
 	static int hack = 0;
 	switch (hack++ % 3) {
 	case 0: psmv->wants.led.r = 0xff; break;
@@ -917,11 +1003,15 @@ psmv_found(struct xrt_prober *xp,
 		return ret;
 	}
 
-	// Send the first update package
+	// Send the first update package.
 	psmv_led_and_trigger_update(psmv, 1);
 
-	// Clear any packets
-	psmv_read_hid(psmv);
+	ret = os_thread_helper_start(&psmv->oth, psmv_run_thread, psmv);
+	if (ret != 0) {
+		PSMV_ERROR(psmv, "Failed to start thread!");
+		psmv_device_destroy(&psmv->base);
+		return ret;
+	}
 
 	// Start the variable tracking now that everything is in place.
 	// clang-format off
