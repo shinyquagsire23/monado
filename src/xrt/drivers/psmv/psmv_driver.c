@@ -196,7 +196,7 @@ struct psmv_vec3_i16_wire
  *
  * @ingroup drv_psmv
  */
-struct psmv_get_input
+struct psmv_input_zcm1
 {
 	uint8_t header;
 	uint8_t buttons[4];
@@ -281,47 +281,8 @@ struct psmv_parsed_input
 	struct psmv_parsed_sample sample[2];
 };
 
-/*!
- * A single PlayStation Move Controller.
- *
- * @ingroup drv_psmv
- */
-struct psmv_device
+struct psmv_parsed_calibration_zcm1
 {
-	struct xrt_device base;
-
-	struct os_hid_device *hid;
-
-	struct os_thread_helper oth;
-
-	struct
-	{
-		int64_t resend_time;
-		struct xrt_colour_rgb_u8 led;
-		uint8_t rumble;
-	} wants;
-
-	struct
-	{
-		struct xrt_colour_rgb_u8 led;
-		uint8_t rumble;
-	} state;
-
-	struct
-	{
-		//! Lock for last and fusion.
-		struct os_mutex lock;
-
-		//! Last sensor read.
-		struct psmv_parsed_input last;
-
-		struct
-		{
-			struct xrt_quat rot;
-		} fusion;
-	};
-
-
 	struct xrt_vec3_i32 accel_min_x;
 	struct xrt_vec3_i32 accel_max_x;
 	struct xrt_vec3_i32 accel_min_y;
@@ -351,6 +312,73 @@ struct psmv_device
 
 	struct xrt_vec3 unknown_vec3;
 	float unknown_float_0, unknown_float_1;
+};
+
+struct psmv_parsed_calibration
+{
+	struct psmv_parsed_calibration_zcm1 zcm1;
+};
+
+
+/*!
+ * A single PlayStation Move Controller.
+ *
+ * @ingroup drv_psmv
+ */
+struct psmv_device
+{
+	struct xrt_device base;
+
+	struct os_hid_device *hid;
+
+	struct os_thread_helper oth;
+
+	struct
+	{
+		int64_t resend_time;
+		struct xrt_colour_rgb_u8 led;
+		uint8_t rumble;
+	} wants;
+
+	struct
+	{
+		struct xrt_colour_rgb_u8 led;
+		uint8_t rumble;
+	} state;
+
+	struct
+	{
+		union {
+			struct psmv_parsed_calibration_zcm1 zcm1;
+		};
+
+		struct
+		{
+			struct xrt_vec3 factor;
+			struct xrt_vec3 bias;
+		} accel;
+
+		struct
+		{
+			struct xrt_vec3 factor;
+			struct xrt_vec3 bias;
+		} gyro;
+	} calibration;
+
+	struct
+	{
+		//! Lock for last and fusion.
+		struct os_mutex lock;
+
+		//! Last sensor read.
+		struct psmv_parsed_input last;
+
+		struct
+		{
+			struct xrt_quat rot;
+		} fusion;
+	};
+
 
 	struct
 	{
@@ -495,39 +523,19 @@ update_fusion(struct psmv_device *psmv,
 	struct xrt_vec3_i32 *ra = &sample->accel;
 	struct xrt_vec3_i32 *rg = &sample->gyro;
 
-	//! @todo Pre-calculate this.
-	double ax = (psmv->accel_max_x.x - psmv->accel_min_x.x) / 2.0;
-	double ay = (psmv->accel_max_y.y - psmv->accel_min_y.y) / 2.0;
-	double az = (psmv->accel_max_z.z - psmv->accel_min_z.z) / 2.0;
+	psmv->read.accel.x = (ra->x + psmv->calibration.accel.bias.x) *
+	                     psmv->calibration.accel.factor.x;
+	psmv->read.accel.y = (ra->y + psmv->calibration.accel.bias.y) *
+	                     psmv->calibration.accel.factor.y;
+	psmv->read.accel.z = (ra->z + psmv->calibration.accel.bias.z) *
+	                     psmv->calibration.accel.factor.z;
 
-	double bx = (psmv->accel_min_y.x + psmv->accel_max_y.x +
-	             psmv->accel_min_z.x + psmv->accel_max_z.x) /
-	            -4.0;
-	double by = (psmv->accel_min_x.y + psmv->accel_max_x.y +
-	             psmv->accel_min_z.y + psmv->accel_max_z.y) /
-	            -4.0;
-	double bz = (psmv->accel_min_x.z + psmv->accel_max_x.z +
-	             psmv->accel_min_y.z + psmv->accel_max_y.z) /
-	            -4.0;
-
-	psmv->read.accel.x = (ra->x + bx) / ax;
-	psmv->read.accel.y = (ra->y + by) / ay;
-	psmv->read.accel.z = (ra->z + bz) / az;
-
-	double gx =
-	    (psmv->gyro_rot_x.x - (psmv->gyro_bias_0.x * psmv->gyro_fact.x));
-	double gy =
-	    (psmv->gyro_rot_y.y - (psmv->gyro_bias_0.y * psmv->gyro_fact.y));
-	double gz =
-	    (psmv->gyro_rot_z.z - (psmv->gyro_bias_0.z * psmv->gyro_fact.z));
-
-	gx = (2.0 * M_PI * 80.0) / (60.0 * gx);
-	gy = (2.0 * M_PI * 80.0) / (60.0 * gy);
-	gz = (2.0 * M_PI * 80.0) / (60.0 * gz);
-
-	psmv->read.gyro.x = rg->x * gx;
-	psmv->read.gyro.y = rg->y * gy;
-	psmv->read.gyro.z = rg->z * gz;
+	psmv->read.gyro.x = (rg->x + psmv->calibration.gyro.bias.x) *
+	                    psmv->calibration.gyro.factor.x;
+	psmv->read.gyro.y = (rg->y + psmv->calibration.gyro.bias.y) *
+	                    psmv->calibration.gyro.factor.y;
+	psmv->read.gyro.z = (rg->z + psmv->calibration.gyro.bias.z) *
+	                    psmv->calibration.gyro.factor.z;
 
 	// Super simple fusion.
 	math_quat_integrate_velocity(&psmv->fusion.rot, &psmv->read.gyro, dt,
@@ -560,15 +568,21 @@ psmv_read_one_packet(struct psmv_device *psmv, uint8_t *buffer, size_t size)
 	return false;
 }
 
-static void *
-psmv_run_thread(void *ptr)
+static void
+psmv_parse_input_zcm1(
+    struct psmv_device *psmv,
+    struct psmv_input_zcm1 *data,
+    struct psmv_parsed_input *input);
+
+
+static void *psmv_run_thread(void *ptr)
 {
 	struct psmv_device *psmv = (struct psmv_device *)ptr;
 	struct time_state *time = time_state_create();
 
 	union {
 		uint8_t buffer[256];
-		struct psmv_get_input input;
+		struct psmv_input_zcm1 input;
 	} data;
 
 	struct psmv_parsed_input input = {0};
@@ -589,53 +603,7 @@ psmv_run_thread(void *ptr)
 
 		timepoint_ns now_ns = time_state_get_now(time);
 
-		input.battery = data.input.battery;
-		input.seq_no = data.input.buttons[3] & 0x0f;
-
-		input.buttons |= data.input.buttons[0] << 24;
-		input.buttons |= data.input.buttons[1] << 16;
-		input.buttons |= data.input.buttons[2] << 8;
-		input.buttons |= data.input.buttons[3] & 0xf0;
-		input.timestamp |= data.input.timestamp_low;
-		input.timestamp |= data.input.timestamp_high << 8;
-
-		input.sample[0].trigger = data.input.trigger_f1;
-		psmv_from_vec3_i16_zn_wire(&input.sample[0].accel,
-		                           &data.input.accel_f1);
-		psmv_from_vec3_i16_zn_wire(&input.sample[0].gyro,
-		                           &data.input.gyro_f1);
-		input.sample[1].trigger = data.input.trigger_f2;
-		psmv_from_vec3_i16_zn_wire(&input.sample[1].accel,
-		                           &data.input.accel_f2);
-		psmv_from_vec3_i16_zn_wire(&input.sample[1].gyro,
-		                           &data.input.gyro_f2);
-
-		uint32_t diff = psmv_calc_delta_and_handle_rollover(
-		    input.timestamp, psmv->last.timestamp);
-		bool missed = input.seq_no != ((psmv->last.seq_no + 1) & 0x0f);
-
-		PSMV_SPEW(psmv,
-		          "\n\t"
-		          "missed: %s\n\t"
-		          "buttons: %08x\n\t"
-		          "battery: %x\n\t"
-		          "sample[0].trigger: %02x\n\t"
-		          "sample[0].accel_x: %i\n\t"
-		          "sample[0].accel_y: %i\n\t"
-		          "sample[0].accel_z: %i\n\t"
-		          "sample[0].gyro_x: %i\n\t"
-		          "sample[0].gyro_y: %i\n\t"
-		          "sample[0].gyro_z: %i\n\t"
-		          "sample[1].trigger: %02x\n\t"
-		          "timestamp: %i\n\t"
-		          "diff: %i\n\t"
-		          "seq_no: %x\n",
-		          missed ? "yes" : "no", input.buttons, input.battery,
-		          input.sample[0].trigger, input.sample[0].accel.x,
-		          input.sample[0].accel.y, input.sample[0].accel.z,
-		          input.sample[0].gyro.x, input.sample[0].gyro.y,
-		          input.sample[0].gyro.z, input.sample[1].trigger,
-		          input.timestamp, diff, input.seq_no);
+		psmv_parse_input_zcm1(psmv, &data.input, &input);
 
 		float dt = time_ns_to_s(now_ns - then_ns);
 		then_ns = now_ns;
@@ -719,99 +687,7 @@ psmv_led_and_trigger_update(struct psmv_device *psmv, int64_t time)
 }
 
 static int
-psmv_get_calibration(struct psmv_device *psmv)
-{
-	struct psmv_calibration_zcm1 data;
-	uint8_t *dst = (uint8_t *)&data;
-	int ret = 0;
-	size_t src_offset, dst_offset;
-
-	for (int i = 0; i < 3; i++) {
-		struct psmv_calibration_part part = {0};
-		uint8_t *src = (uint8_t *)&part;
-
-		part.id = 0x10;
-
-		ret = os_hid_get_feature(psmv->hid, 0x10, src, sizeof(part));
-		if (ret < 0) {
-			return ret;
-		}
-
-		if (ret != (int)sizeof(part)) {
-			return -1;
-		}
-
-		switch (part.which) {
-		case 0x00:
-			src_offset = 0;
-			dst_offset = 0;
-			break;
-		case 0x01:
-			src_offset = 2;
-			dst_offset = sizeof(part);
-			break;
-		case 0x82:
-			src_offset = 2;
-			dst_offset = sizeof(part) * 2 - 2;
-			break;
-		default: return -1;
-		}
-
-		memcpy(dst + dst_offset, src + src_offset,
-		       sizeof(part) - src_offset);
-	}
-
-	psmv_from_vec3_i16_zn_wire(&psmv->accel_min_x, &data.accel_min_x);
-	psmv_from_vec3_i16_zn_wire(&psmv->accel_max_x, &data.accel_max_x);
-	psmv_from_vec3_i16_zn_wire(&psmv->accel_min_y, &data.accel_min_y);
-	psmv_from_vec3_i16_zn_wire(&psmv->accel_max_y, &data.accel_max_y);
-	psmv_from_vec3_i16_zn_wire(&psmv->accel_min_z, &data.accel_min_z);
-	psmv_from_vec3_i16_zn_wire(&psmv->accel_max_z, &data.accel_max_z);
-	psmv_from_vec3_i16_wire(&psmv->gyro_bias_0, &data.gyro_bias_0);
-	psmv_from_vec3_i16_wire(&psmv->gyro_bias_1, &data.gyro_bias_1);
-	psmv_from_vec3_i16_wire(&psmv->gyro_rot_x, &data.gyro_rot_x);
-	psmv_from_vec3_i16_wire(&psmv->gyro_rot_y, &data.gyro_rot_y);
-	psmv_from_vec3_i16_wire(&psmv->gyro_rot_z, &data.gyro_rot_z);
-	psmv_from_vec32_f32_wire(&psmv->gyro_fact, &data.gyro_fact);
-	psmv_from_vec3_f32_zn_wire(&psmv->unknown_vec3, &data.unknown_vec3);
-	psmv_f32_from_wire(&psmv->unknown_float_0, &data.unknown_float_0);
-	psmv_f32_from_wire(&psmv->unknown_float_1, &data.unknown_float_1);
-
-	PSMV_DEBUG(
-	    psmv,
-	    "Calibration:\n"
-	    "\taccel_min_x: %i %i %i\n"
-	    "\taccel_max_x: %i %i %i\n"
-	    "\taccel_min_y: %i %i %i\n"
-	    "\taccel_max_y: %i %i %i\n"
-	    "\taccel_min_z: %i %i %i\n"
-	    "\taccel_max_z: %i %i %i\n"
-	    "\tgyro_bias_0: %i %i %i\n"
-	    "\tgyro_bias_1: %i %i %i\n"
-	    "\tgyro_fact: %f %f %f\n"
-	    "\tgyro_rot_x: %i %i %i\n"
-	    "\tgyro_rot_y: %i %i %i\n"
-	    "\tgyro_rot_z: %i %i %i\n"
-	    "\tunknown_vec3: %f %f %f\n"
-	    "\tunknown_float_0 %f\n"
-	    "\tunknown_float_1 %f\n",
-	    psmv->accel_min_x.x, psmv->accel_min_x.y, psmv->accel_min_x.z,
-	    psmv->accel_max_x.x, psmv->accel_max_x.y, psmv->accel_max_x.z,
-	    psmv->accel_min_y.x, psmv->accel_min_y.y, psmv->accel_min_y.z,
-	    psmv->accel_max_y.x, psmv->accel_max_y.y, psmv->accel_max_y.z,
-	    psmv->accel_min_z.x, psmv->accel_min_z.y, psmv->accel_min_z.z,
-	    psmv->accel_max_z.x, psmv->accel_max_z.y, psmv->accel_max_z.z,
-	    psmv->gyro_bias_0.x, psmv->gyro_bias_0.y, psmv->gyro_bias_0.z,
-	    psmv->gyro_bias_1.x, psmv->gyro_bias_1.y, psmv->gyro_bias_1.z,
-	    psmv->gyro_fact.x, psmv->gyro_fact.y, psmv->gyro_fact.z,
-	    psmv->gyro_rot_x.x, psmv->gyro_rot_x.y, psmv->gyro_rot_x.z,
-	    psmv->gyro_rot_y.x, psmv->gyro_rot_y.y, psmv->gyro_rot_y.z,
-	    psmv->gyro_rot_z.x, psmv->gyro_rot_z.y, psmv->gyro_rot_z.z,
-	    psmv->unknown_vec3.x, psmv->unknown_vec3.y, psmv->unknown_vec3.z,
-	    psmv->unknown_float_0, psmv->unknown_float_1);
-
-	return 0;
-}
+psmv_get_calibration_zcm1(struct psmv_device *psmv);
 
 
 /*
@@ -996,7 +872,7 @@ psmv_found(struct xrt_prober *xp,
 	}
 
 	// Get calibration data.
-	ret = psmv_get_calibration(psmv);
+	ret = psmv_get_calibration_zcm1(psmv);
 	if (ret != 0) {
 		PSMV_ERROR(psmv, "Failed to get calibration data!");
 		psmv_device_destroy(&psmv->base);
@@ -1017,18 +893,22 @@ psmv_found(struct xrt_prober *xp,
 	// clang-format off
 	u_var_add_root(psmv, "PSMV Controller", true);
 	u_var_add_gui_header(psmv, &psmv->gui.calibration, "Calibration");
-	u_var_add_vec3_i32(psmv, &psmv->accel_min_x, "accel_min_x");
-	u_var_add_vec3_i32(psmv, &psmv->accel_max_x, "accel_max_x");
-	u_var_add_vec3_i32(psmv, &psmv->accel_min_y, "accel_min_y");
-	u_var_add_vec3_i32(psmv, &psmv->accel_max_y, "accel_max_y");
-	u_var_add_vec3_i32(psmv, &psmv->accel_min_z, "accel_min_z");
-	u_var_add_vec3_i32(psmv, &psmv->accel_max_z, "accel_max_z");
-	u_var_add_vec3_i32(psmv, &psmv->gyro_rot_x, "gyro_rot_x");
-	u_var_add_vec3_i32(psmv, &psmv->gyro_rot_y, "gyro_rot_y");
-	u_var_add_vec3_i32(psmv, &psmv->gyro_rot_z, "gyro_rot_z");
-	u_var_add_vec3_i32(psmv, &psmv->gyro_bias_0, "gyro_bias_0");
-	u_var_add_vec3_i32(psmv, &psmv->gyro_bias_1, "gyro_bias_1");
-	u_var_add_vec3_f32(psmv, &psmv->gyro_fact, "gyro_fact");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.accel_min_x, "zcm1.accel_min_x");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.accel_max_x, "zcm1.accel_max_x");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.accel_min_y, "zcm1.accel_min_y");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.accel_max_y, "zcm1.accel_max_y");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.accel_min_z, "zcm1.accel_min_z");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.accel_max_z, "zcm1.accel_max_z");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.gyro_rot_x, "zcm1.gyro_rot_x");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.gyro_rot_y, "zcm1.gyro_rot_y");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.gyro_rot_z, "zcm1.gyro_rot_z");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.gyro_bias_0, "zcm1.gyro_bias_0");
+	u_var_add_vec3_i32(psmv, &psmv->calibration.zcm1.gyro_bias_1, "zcm1.gyro_bias_1");
+	u_var_add_vec3_f32(psmv, &psmv->calibration.zcm1.gyro_fact, "zcm1.gyro_fact");
+	u_var_add_vec3_f32(psmv, &psmv->calibration.accel.factor, "accel.factor");
+	u_var_add_vec3_f32(psmv, &psmv->calibration.accel.bias, "accel.bias");
+	u_var_add_vec3_f32(psmv, &psmv->calibration.gyro.factor, "gyro.factor");
+	u_var_add_vec3_f32(psmv, &psmv->calibration.gyro.bias, "gyro.bias");
 	u_var_add_gui_header(psmv, &psmv->gui.last_frame, "Last data");
 	u_var_add_ro_vec3_i32(psmv, &psmv->last.sample[0].accel, "last.sample[0].accel");
 	u_var_add_ro_vec3_i32(psmv, &psmv->last.sample[1].accel, "last.sample[1].accel");
@@ -1047,4 +927,224 @@ psmv_found(struct xrt_prober *xp,
 	*out_xdevs = &psmv->base;
 
 	return 1;
+}
+
+
+/*
+ *
+ * Packet functions ZCM1
+ *
+ */
+
+static int
+psmv_get_calibration_zcm1(struct psmv_device *psmv)
+{
+	struct psmv_parsed_calibration_zcm1 *zcm1 = &psmv->calibration.zcm1;
+	struct psmv_calibration_zcm1 data;
+	uint8_t *dst = (uint8_t *)&data;
+	int ret = 0;
+	size_t src_offset, dst_offset;
+
+	for (int i = 0; i < 3; i++) {
+		struct psmv_calibration_part part = {0};
+		uint8_t *src = (uint8_t *)&part;
+
+		part.id = 0x10;
+
+		ret = os_hid_get_feature(psmv->hid, 0x10, src, sizeof(part));
+		if (ret < 0) {
+			return ret;
+		}
+
+		if (ret != (int)sizeof(part)) {
+			return -1;
+		}
+
+		switch (part.which) {
+		case 0x00:
+			src_offset = 0;
+			dst_offset = 0;
+			break;
+		case 0x01:
+			src_offset = 2;
+			dst_offset = sizeof(part);
+			break;
+		case 0x82:
+			src_offset = 2;
+			dst_offset = sizeof(part) * 2 - 2;
+			break;
+		default: return -1;
+		}
+
+		memcpy(dst + dst_offset, src + src_offset,
+		       sizeof(part) - src_offset);
+	}
+
+	psmv_from_vec3_i16_zn_wire(&zcm1->accel_min_x, &data.accel_min_x);
+	psmv_from_vec3_i16_zn_wire(&zcm1->accel_max_x, &data.accel_max_x);
+	psmv_from_vec3_i16_zn_wire(&zcm1->accel_min_y, &data.accel_min_y);
+	psmv_from_vec3_i16_zn_wire(&zcm1->accel_max_y, &data.accel_max_y);
+	psmv_from_vec3_i16_zn_wire(&zcm1->accel_min_z, &data.accel_min_z);
+	psmv_from_vec3_i16_zn_wire(&zcm1->accel_max_z, &data.accel_max_z);
+	psmv_from_vec3_i16_wire(&zcm1->gyro_bias_0, &data.gyro_bias_0);
+	psmv_from_vec3_i16_wire(&zcm1->gyro_bias_1, &data.gyro_bias_1);
+	psmv_from_vec3_i16_wire(&zcm1->gyro_rot_x, &data.gyro_rot_x);
+	psmv_from_vec3_i16_wire(&zcm1->gyro_rot_y, &data.gyro_rot_y);
+	psmv_from_vec3_i16_wire(&zcm1->gyro_rot_z, &data.gyro_rot_z);
+	psmv_from_vec32_f32_wire(&zcm1->gyro_fact, &data.gyro_fact);
+	psmv_from_vec3_f32_zn_wire(&zcm1->unknown_vec3, &data.unknown_vec3);
+	psmv_f32_from_wire(&zcm1->unknown_float_0, &data.unknown_float_0);
+	psmv_f32_from_wire(&zcm1->unknown_float_1, &data.unknown_float_1);
+
+
+	/*
+	 * Acceleration
+	 */
+
+	psmv->calibration.accel.factor.x =
+	    1.0 / ((zcm1->accel_max_x.x - zcm1->accel_min_x.x) / 2.0);
+	psmv->calibration.accel.factor.y =
+	    1.0 / ((zcm1->accel_max_y.y - zcm1->accel_min_y.y) / 2.0);
+	psmv->calibration.accel.factor.z =
+	    1.0 / ((zcm1->accel_max_z.z - zcm1->accel_min_z.z) / 2.0);
+
+	psmv->calibration.accel.bias.x =
+	    (zcm1->accel_min_y.x + zcm1->accel_max_y.x + zcm1->accel_min_z.x +
+	     zcm1->accel_max_z.x) /
+	    -4.0;
+	psmv->calibration.accel.bias.y =
+	    (zcm1->accel_min_x.y + zcm1->accel_max_x.y + zcm1->accel_min_z.y +
+	     zcm1->accel_max_z.y) /
+	    -4.0;
+	psmv->calibration.accel.bias.z =
+	    (zcm1->accel_min_x.z + zcm1->accel_max_x.z + zcm1->accel_min_y.z +
+	     zcm1->accel_max_y.z) /
+	    -4.0;
+
+
+	/*
+	 * Gyro
+	 */
+
+	double gx =
+	    (zcm1->gyro_rot_x.x - (zcm1->gyro_bias_0.x * zcm1->gyro_fact.x));
+	double gy =
+	    (zcm1->gyro_rot_y.y - (zcm1->gyro_bias_0.y * zcm1->gyro_fact.y));
+	double gz =
+	    (zcm1->gyro_rot_z.z - (zcm1->gyro_bias_0.z * zcm1->gyro_fact.z));
+
+	psmv->calibration.gyro.factor.x = (2.0 * M_PI * 80.0) / (60.0 * gx);
+	psmv->calibration.gyro.factor.y = (2.0 * M_PI * 80.0) / (60.0 * gy);
+	psmv->calibration.gyro.factor.z = (2.0 * M_PI * 80.0) / (60.0 * gz);
+	psmv->calibration.gyro.bias.x = 0.0;
+	psmv->calibration.gyro.bias.y = 0.0;
+	psmv->calibration.gyro.bias.z = 0.0;
+
+
+	/*
+	 * Print
+	 */
+
+	PSMV_DEBUG(
+	    psmv,
+	    "Calibration:\n"
+	    "\taccel_min_x: %i %i %i\n"
+	    "\taccel_max_x: %i %i %i\n"
+	    "\taccel_min_y: %i %i %i\n"
+	    "\taccel_max_y: %i %i %i\n"
+	    "\taccel_min_z: %i %i %i\n"
+	    "\taccel_max_z: %i %i %i\n"
+	    "\tgyro_bias_0: %i %i %i\n"
+	    "\tgyro_bias_1: %i %i %i\n"
+	    "\tgyro_fact: %f %f %f\n"
+	    "\tgyro_rot_x: %i %i %i\n"
+	    "\tgyro_rot_y: %i %i %i\n"
+	    "\tgyro_rot_z: %i %i %i\n"
+	    "\tunknown_vec3: %f %f %f\n"
+	    "\tunknown_float_0 %f\n"
+	    "\tunknown_float_1 %f\n"
+	    "Calculated:\n"
+	    "\taccel.factor: %f %f %f\n"
+	    "\taccel.bias: %f %f %f\n"
+	    "\tgyro.factor: %f %f %f\n"
+	    "\tgyro.bias: %f %f %f\n",
+	    zcm1->accel_min_x.x, zcm1->accel_min_x.y, zcm1->accel_min_x.z,
+	    zcm1->accel_max_x.x, zcm1->accel_max_x.y, zcm1->accel_max_x.z,
+	    zcm1->accel_min_y.x, zcm1->accel_min_y.y, zcm1->accel_min_y.z,
+	    zcm1->accel_max_y.x, zcm1->accel_max_y.y, zcm1->accel_max_y.z,
+	    zcm1->accel_min_z.x, zcm1->accel_min_z.y, zcm1->accel_min_z.z,
+	    zcm1->accel_max_z.x, zcm1->accel_max_z.y, zcm1->accel_max_z.z,
+	    zcm1->gyro_bias_0.x, zcm1->gyro_bias_0.y, zcm1->gyro_bias_0.z,
+	    zcm1->gyro_bias_1.x, zcm1->gyro_bias_1.y, zcm1->gyro_bias_1.z,
+	    zcm1->gyro_fact.x, zcm1->gyro_fact.y, zcm1->gyro_fact.z,
+	    zcm1->gyro_rot_x.x, zcm1->gyro_rot_x.y, zcm1->gyro_rot_x.z,
+	    zcm1->gyro_rot_y.x, zcm1->gyro_rot_y.y, zcm1->gyro_rot_y.z,
+	    zcm1->gyro_rot_z.x, zcm1->gyro_rot_z.y, zcm1->gyro_rot_z.z,
+	    zcm1->unknown_vec3.x, zcm1->unknown_vec3.y, zcm1->unknown_vec3.z,
+	    zcm1->unknown_float_0, zcm1->unknown_float_1,
+	    psmv->calibration.accel.factor.x, psmv->calibration.accel.factor.y,
+	    psmv->calibration.accel.factor.z, psmv->calibration.accel.bias.x,
+	    psmv->calibration.accel.bias.y, psmv->calibration.accel.bias.z,
+	    psmv->calibration.gyro.factor.x, psmv->calibration.gyro.factor.y,
+	    psmv->calibration.gyro.factor.z, psmv->calibration.gyro.bias.x,
+	    psmv->calibration.gyro.bias.y, psmv->calibration.gyro.bias.z);
+
+	return 0;
+}
+
+static void
+psmv_parse_input_zcm1(
+    struct psmv_device *psmv,
+    struct psmv_input_zcm1 *data,
+    struct psmv_parsed_input *input)
+{
+	input->battery = data->battery;
+	input->seq_no = data->buttons[3] & 0x0f;
+
+	input->buttons |= data->buttons[0] << 24;
+	input->buttons |= data->buttons[1] << 16;
+	input->buttons |= data->buttons[2] << 8;
+	input->buttons |= data->buttons[3] & 0xf0;
+	input->timestamp |= data->timestamp_low;
+	input->timestamp |= data->timestamp_high << 8;
+
+	input->sample[0].trigger = data->trigger_f1;
+	psmv_from_vec3_i16_zn_wire(&input->sample[0].accel, &data->accel_f1);
+	psmv_from_vec3_i16_zn_wire(&input->sample[0].gyro, &data->gyro_f1);
+
+	input->sample[1].trigger = data->trigger_f2;
+	psmv_from_vec3_i16_zn_wire(&input->sample[1].accel, &data->accel_f2);
+	psmv_from_vec3_i16_zn_wire(&input->sample[1].gyro, &data->gyro_f2);
+
+	uint32_t diff = psmv_calc_delta_and_handle_rollover(
+	    input->timestamp, psmv->last.timestamp);
+	bool missed = input->seq_no != ((psmv->last.seq_no + 1) & 0x0f);
+
+
+	/*
+	 * Print
+	 */
+
+	PSMV_SPEW(psmv,
+	          "\n\t"
+	          "missed: %s\n\t"
+	          "buttons: %08x\n\t"
+	          "battery: %x\n\t"
+	          "sample[0].trigger: %02x\n\t"
+	          "sample[0].accel_x: %i\n\t"
+	          "sample[0].accel_y: %i\n\t"
+	          "sample[0].accel_z: %i\n\t"
+	          "sample[0].gyro_x: %i\n\t"
+	          "sample[0].gyro_y: %i\n\t"
+	          "sample[0].gyro_z: %i\n\t"
+	          "sample[1].trigger: %02x\n\t"
+	          "timestamp: %i\n\t"
+	          "diff: %i\n\t"
+	          "seq_no: %x\n",
+	          missed ? "yes" : "no", input->buttons, input->battery,
+	          input->sample[0].trigger, input->sample[0].accel.x,
+	          input->sample[0].accel.y, input->sample[0].accel.z,
+	          input->sample[0].gyro.x, input->sample[0].gyro.y,
+	          input->sample[0].gyro.z, input->sample[1].trigger,
+	          input->timestamp, diff, input->seq_no);
 }
