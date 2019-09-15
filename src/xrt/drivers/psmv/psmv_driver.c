@@ -318,7 +318,6 @@ struct psmv_parsed_sample
 {
 	struct xrt_vec3_i32 accel;
 	struct xrt_vec3_i32 gyro;
-	uint8_t trigger;
 };
 
 /*!
@@ -331,7 +330,34 @@ struct psmv_parsed_input
 	uint8_t battery;
 	uint8_t seq_no;
 
-	struct psmv_parsed_sample sample[2];
+
+	union {
+		//! Trigger for the last two frames (ZCM1).
+		uint8_t trigger_values[2];
+
+		struct
+		{
+			//! Low-pass filtered versio of trigger (ZCM2).
+			uint8_t trigger_low_pass;
+
+			//! Trigger (ZCM2).
+			uint8_t trigger;
+		};
+	};
+
+	union {
+		//! Accelerometer and gyro scope samples (ZCM1).
+		struct psmv_parsed_sample samples[2];
+
+		struct
+		{
+			//! Accelerometer and gyro scope samples (ZCM2).
+			struct psmv_parsed_sample sample;
+
+			//! Copy of above (ZCM2).
+			struct psmv_parsed_sample sample_copy;
+		};
+	};
 };
 
 /*!
@@ -490,7 +516,7 @@ struct psmv_device
 static int
 psmv_get_calibration(struct psmv_device *psmv);
 
-static void
+static int
 psmv_parse_input(struct psmv_device *psmv,
                  void *data,
                  struct psmv_parsed_input *input);
@@ -551,8 +577,7 @@ static void
 psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t now)
 {
 	psmv->base.inputs[index].timestamp = now;
-	psmv->base.inputs[index].value.vec1.x =
-	    psmv->last.sample[1].trigger / 255.0f;
+	psmv->base.inputs[index].value.vec1.x = psmv->last.trigger / 255.0f;
 }
 
 
@@ -653,7 +678,7 @@ psmv_run_thread(void *ptr)
 
 		timepoint_ns now_ns = time_state_get_now(time);
 
-		psmv_parse_input(psmv, data.buffer, &input);
+		int num = psmv_parse_input(psmv, data.buffer, &input);
 
 		float dt = time_ns_to_s(now_ns - then_ns);
 		then_ns = now_ns;
@@ -665,8 +690,16 @@ psmv_run_thread(void *ptr)
 		psmv->last = input;
 
 		// Process the parsed data.
-		update_fusion(psmv, &input.sample[0], dt / 2.0);
-		update_fusion(psmv, &input.sample[1], dt / 2.0);
+		if (num == 2) {
+			// ZCM1
+			update_fusion(psmv, &input.samples[0], dt / 2.0);
+			update_fusion(psmv, &input.samples[1], dt / 2.0);
+		} else if (num == 1) {
+			// ZCM2
+			update_fusion(psmv, &input.sample, dt);
+		} else {
+			assert(false);
+		}
 
 		// Now done.
 		os_mutex_unlock(&psmv->lock);
@@ -970,10 +1003,10 @@ psmv_found(struct xrt_prober *xp,
 	u_var_add_vec3_f32(psmv, &psmv->calibration.gyro.factor, "gyro.factor");
 	u_var_add_vec3_f32(psmv, &psmv->calibration.gyro.bias, "gyro.bias");
 	u_var_add_gui_header(psmv, &psmv->gui.last_frame, "Last data");
-	u_var_add_ro_vec3_i32(psmv, &psmv->last.sample[0].accel, "last.sample[0].accel");
-	u_var_add_ro_vec3_i32(psmv, &psmv->last.sample[1].accel, "last.sample[1].accel");
-	u_var_add_ro_vec3_i32(psmv, &psmv->last.sample[0].gyro, "last.sample[0].gyro");
-	u_var_add_ro_vec3_i32(psmv, &psmv->last.sample[1].gyro, "last.sample[1].gyro");
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.samples[0].accel, "last.samples[0].accel");
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.samples[1].accel, "last.samples[1].accel");
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.samples[0].gyro, "last.samples[0].gyro");
+	u_var_add_ro_vec3_i32(psmv, &psmv->last.samples[1].gyro, "last.samples[1].gyro");
 	u_var_add_ro_vec3_f32(psmv, &psmv->read.accel, "read.accel");
 	u_var_add_ro_vec3_f32(psmv, &psmv->read.gyro, "read.gyro");
 	u_var_add_gui_header(psmv, &psmv->gui.control, "Control");
@@ -1213,7 +1246,7 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 	return 0;
 }
 
-static void
+static int
 psmv_parse_input_zcm1(struct psmv_device *psmv,
                       struct psmv_input_zcm1 *data,
                       struct psmv_parsed_input *input)
@@ -1228,13 +1261,14 @@ psmv_parse_input_zcm1(struct psmv_device *psmv,
 	input->timestamp |= data->timestamp_low;
 	input->timestamp |= data->timestamp_high << 8;
 
-	input->sample[0].trigger = data->trigger_f1;
-	psmv_from_vec3_u16_wire(&input->sample[0].accel, &data->accel_f1);
-	psmv_from_vec3_u16_wire(&input->sample[0].gyro, &data->gyro_f1);
+	input->trigger_values[0] = data->trigger_f1;
+	input->trigger_values[1] = data->trigger_f2;
 
-	input->sample[1].trigger = data->trigger_f2;
-	psmv_from_vec3_u16_wire(&input->sample[1].accel, &data->accel_f2);
-	psmv_from_vec3_u16_wire(&input->sample[1].gyro, &data->gyro_f2);
+	psmv_from_vec3_u16_wire(&input->samples[0].accel, &data->accel_f1);
+	psmv_from_vec3_u16_wire(&input->samples[0].gyro, &data->gyro_f1);
+
+	psmv_from_vec3_u16_wire(&input->samples[1].accel, &data->accel_f2);
+	psmv_from_vec3_u16_wire(&input->samples[1].gyro, &data->gyro_f2);
 
 	uint32_t diff = psmv_calc_delta_and_handle_rollover(
 	    input->timestamp, psmv->last.timestamp);
@@ -1250,24 +1284,26 @@ psmv_parse_input_zcm1(struct psmv_device *psmv,
 	          "missed: %s\n\t"
 	          "buttons: %08x\n\t"
 	          "battery: %x\n\t"
-	          "sample[0].accel: %6i %6i %6i\n\t"
-	          "sample[1].accel: %6i %6i %6i\n\t"
-	          "sample[0].gyro:  %6i %6i %6i\n\t"
-	          "sample[1].gyro:  %6i %6i %6i\n\t"
-	          "sample[0].trigger: %02x\n\t"
-	          "sample[1].trigger: %02x\n\t"
+	          "samples[0].accel: %6i %6i %6i\n\t"
+	          "samples[1].accel: %6i %6i %6i\n\t"
+	          "samples[0].gyro:  %6i %6i %6i\n\t"
+	          "samples[1].gyro:  %6i %6i %6i\n\t"
+	          "trigger_values[0]: %02x\n\t"
+	          "trigger_values[1]: %02x\n\t"
 	          "timestamp: %i\n\t"
 	          "diff: %i\n\t"
 	          "seq_no: %x\n",
 	          missed ? "yes" : "no", input->buttons, input->battery,
-	          input->sample[0].accel.x, input->sample[0].accel.y,
-	          input->sample[0].accel.z, input->sample[1].accel.x,
-	          input->sample[1].accel.y, input->sample[1].accel.z,
-	          input->sample[0].gyro.x, input->sample[0].gyro.y,
-	          input->sample[0].gyro.z, input->sample[1].gyro.x,
-	          input->sample[1].gyro.y, input->sample[1].gyro.z,
-	          input->sample[0].trigger, input->sample[1].trigger,
+	          input->samples[0].accel.x, input->samples[0].accel.y,
+	          input->samples[0].accel.z, input->samples[1].accel.x,
+	          input->samples[1].accel.y, input->samples[1].accel.z,
+	          input->samples[0].gyro.x, input->samples[0].gyro.y,
+	          input->samples[0].gyro.z, input->samples[1].gyro.x,
+	          input->samples[1].gyro.y, input->samples[1].gyro.z,
+	          input->trigger_values[0], input->trigger_values[1],
 	          input->timestamp, diff, input->seq_no);
+
+	return 2;
 }
 
 
@@ -1430,7 +1466,7 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	return 0;
 }
 
-static void
+static int
 psmv_parse_input_zcm2(struct psmv_device *psmv,
                       struct psmv_input_zcm2 *data,
                       struct psmv_parsed_input *input)
@@ -1445,14 +1481,14 @@ psmv_parse_input_zcm2(struct psmv_device *psmv,
 	input->timestamp |= data->timestamp_low;
 	input->timestamp |= data->timestamp_high << 8;
 
-	input->sample[0].trigger = data->trigger_low_pass;
-	input->sample[1].trigger = data->trigger;
+	input->trigger_low_pass = data->trigger_low_pass;
+	input->trigger = data->trigger;
 
-	psmv_from_vec3_i16_wire(&input->sample[0].accel, &data->accel);
-	psmv_from_vec3_i16_wire(&input->sample[0].gyro, &data->gyro);
+	psmv_from_vec3_i16_wire(&input->sample.accel, &data->accel);
+	psmv_from_vec3_i16_wire(&input->sample.gyro, &data->gyro);
 
-	psmv_from_vec3_i16_wire(&input->sample[1].accel, &data->accel_copy);
-	psmv_from_vec3_i16_wire(&input->sample[1].gyro, &data->gyro_copy);
+	psmv_from_vec3_i16_wire(&input->sample_copy.accel, &data->accel_copy);
+	psmv_from_vec3_i16_wire(&input->sample_copy.gyro, &data->gyro_copy);
 
 	uint32_t diff = psmv_calc_delta_and_handle_rollover(
 	    input->timestamp, psmv->last.timestamp);
@@ -1468,24 +1504,26 @@ psmv_parse_input_zcm2(struct psmv_device *psmv,
 	          "missed: %s\n\t"
 	          "buttons: %08x\n\t"
 	          "battery: %x\n\t"
-	          "sample[0].accel: %6i %6i %6i\n\t"
-	          "sample[1].accel: %6i %6i %6i\n\t"
-	          "sample[0].gyro:  %6i %6i %6i\n\t"
-	          "sample[1].gyro:  %6i %6i %6i\n\t"
-	          "sample.trigger_low_pass: %02x\n\t"
+	          "sample.accel:      %6i %6i %6i\n\t"
+	          "sample_copy.accel: %6i %6i %6i\n\t"
+	          "sample.gyro:       %6i %6i %6i\n\t"
+	          "sample_copy.gyro:  %6i %6i %6i\n\t"
 	          "sample.trigger: %02x\n\t"
+	          "sample.trigger_low_pass: %02x\n\t"
 	          "timestamp: %i\n\t"
 	          "diff: %i\n\t"
 	          "seq_no: %x\n",
 	          missed ? "yes" : "no", input->buttons, input->battery,
-	          input->sample[0].accel.x, input->sample[0].accel.y,
-	          input->sample[0].accel.z, input->sample[1].accel.x,
-	          input->sample[1].accel.y, input->sample[1].accel.z,
-	          input->sample[0].gyro.x, input->sample[0].gyro.y,
-	          input->sample[0].gyro.z, input->sample[1].gyro.x,
-	          input->sample[1].gyro.y, input->sample[1].gyro.z,
-	          input->sample[0].trigger, input->sample[1].trigger,
-	          input->timestamp, diff, input->seq_no);
+	          input->samples[0].accel.x, input->samples[0].accel.y,
+	          input->samples[0].accel.z, input->samples[1].accel.x,
+	          input->samples[1].accel.y, input->samples[1].accel.z,
+	          input->samples[0].gyro.x, input->samples[0].gyro.y,
+	          input->samples[0].gyro.z, input->samples[1].gyro.x,
+	          input->samples[1].gyro.y, input->samples[1].gyro.z,
+	          input->trigger_low_pass, input->trigger, input->timestamp,
+	          diff, input->seq_no);
+
+	return 1;
 }
 
 
@@ -1507,15 +1545,15 @@ psmv_get_calibration(struct psmv_device *psmv)
 	return 0;
 }
 
-static void
+static int
 psmv_parse_input(struct psmv_device *psmv,
                  void *data,
                  struct psmv_parsed_input *input)
 {
 	switch (psmv->pid) {
-	case PSMV_PID_ZCM1: psmv_parse_input_zcm1(psmv, data, input); break;
-	case PSMV_PID_ZCM2: psmv_parse_input_zcm2(psmv, data, input); break;
-	default: break;
+	case PSMV_PID_ZCM1: return psmv_parse_input_zcm1(psmv, data, input);
+	case PSMV_PID_ZCM2: return psmv_parse_input_zcm2(psmv, data, input);
+	default: return 0;
 	}
 }
 
