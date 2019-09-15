@@ -500,7 +500,7 @@ psmv_parse_input(struct psmv_device *psmv,
 
 /*
  *
- * Internal functions.
+ * Smaller helper functions.
  *
  */
 
@@ -539,58 +539,30 @@ psmv_clamp_zero_to_one_float_to_u8(float v)
 }
 
 static void
-psmv_i32_from_u16_wire(int32_t *to, const struct psmv_u16_wire *from)
+psmv_update_input_click(struct psmv_device *psmv,
+                        int index,
+                        int64_t now,
+                        uint32_t bit)
 {
-	*to = (from->low | from->high << 8) - 0x8000;
+	psmv->base.inputs[index].timestamp = now;
+	psmv->base.inputs[index].value.boolean =
+	    (psmv->last.buttons & bit) != 0;
 }
 
 static void
-psmv_i32_from_i16_wire(int32_t *to, const struct psmv_i16_wire *from)
+psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t now)
 {
-	*to = (int16_t)(from->low | from->high << 8);
+	psmv->base.inputs[index].timestamp = now;
+	psmv->base.inputs[index].value.vec1.x =
+	    psmv->last.sample[1].trigger / 255.0f;
 }
 
-static void
-psmv_from_vec3_u16_wire(struct xrt_vec3_i32 *to,
-                        const struct psmv_vec3_u16_wire *from)
-{
-	psmv_i32_from_u16_wire(&to->x, &from->x);
-	psmv_i32_from_u16_wire(&to->y, &from->y);
-	psmv_i32_from_u16_wire(&to->z, &from->z);
-}
 
-static void
-psmv_from_vec3_i16_wire(struct xrt_vec3_i32 *to,
-                        const struct psmv_vec3_i16_wire *from)
-{
-	psmv_i32_from_i16_wire(&to->x, &from->x);
-	psmv_i32_from_i16_wire(&to->y, &from->y);
-	psmv_i32_from_i16_wire(&to->z, &from->z);
-}
-
-static void
-psmv_f32_from_wire(float *to, const struct psmv_f32_wire *from)
-{
-	union {
-		uint32_t wire;
-		float f32;
-	} safe_copy;
-
-	safe_copy.wire = (from->val[0] << 0) | (from->val[1] << 8) |
-	                 (from->val[2] << 16) | (from->val[3] << 24);
-	*to = safe_copy.f32;
-}
-
-static void
-psmv_from_vec3_f32_wire(struct xrt_vec3 *to,
-                        const struct psmv_vec3_f32_wire *from)
-{
-	psmv_f32_from_wire(&to->x, &from->x);
-	psmv_f32_from_wire(&to->y, &from->y);
-	psmv_f32_from_wire(&to->z, &from->z);
-}
-
-#define PSMV_TICK_PERIOD (1.0 / 120.0)
+/*
+ *
+ * Internal functions.
+ *
+ */
 
 static void
 update_fusion(struct psmv_device *psmv,
@@ -623,6 +595,10 @@ update_fusion(struct psmv_device *psmv,
 	                             &psmv->fusion.rot);
 }
 
+/*!
+ * Reads one packet from the device, handles time out, locking and checking if
+ * the thread has been told to shut down.
+ */
 static bool
 psmv_read_one_packet(struct psmv_device *psmv, uint8_t *buffer, size_t size)
 {
@@ -632,9 +608,10 @@ psmv_read_one_packet(struct psmv_device *psmv, uint8_t *buffer, size_t size)
 
 		os_thread_helper_unlock(&psmv->oth);
 
-		int ret = os_hid_read(psmv->hid, buffer, size, 1000 * 1000);
+		int ret = os_hid_read(psmv->hid, buffer, size, 1000);
 
 		if (ret == 0) {
+			fprintf(stderr, "%s\n", __func__);
 			// Must lock thread before check in while.
 			os_thread_helper_lock(&psmv->oth);
 			continue;
@@ -702,6 +679,9 @@ psmv_run_thread(void *ptr)
 	return NULL;
 }
 
+/*!
+ * Does the actual sending of the led control package to the device.
+ */
 static int
 psmv_send_led_control(struct psmv_device *psmv,
                       uint8_t red,
@@ -718,25 +698,6 @@ psmv_send_led_control(struct psmv_device *psmv,
 	msg.rumble = rumble;
 
 	return os_hid_write(psmv->hid, (uint8_t *)&msg, sizeof(msg));
-}
-
-static void
-psmv_update_input_click(struct psmv_device *psmv,
-                        int index,
-                        int64_t now,
-                        uint32_t bit)
-{
-	psmv->base.inputs[index].timestamp = now;
-	psmv->base.inputs[index].value.boolean =
-	    (psmv->last.buttons & bit) != 0;
-}
-
-static void
-psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t now)
-{
-	psmv->base.inputs[index].timestamp = now;
-	psmv->base.inputs[index].value.vec1.x =
-	    psmv->last.sample[1].trigger / 255.0f;
 }
 
 static void
@@ -882,6 +843,7 @@ psmv_found(struct xrt_prober *xp,
 		return 0;
 	}
 
+	// Sanity check for device type.
 	switch (devices[index]->product_id) {
 	case PSMV_PID_ZCM1: break;
 	case PSMV_PID_ZCM2: break;
@@ -905,9 +867,11 @@ psmv_found(struct xrt_prober *xp,
 	psmv->base.name = XRT_DEVICE_PSMV;
 	psmv->fusion.rot.w = 1.0f;
 	psmv->pid = devices[index]->product_id;
+	psmv->hid = hid;
 	snprintf(psmv->base.str, XRT_DEVICE_NAME_LEN, "%s",
 	         "PS Move Controller");
-	psmv->hid = hid;
+
+	// Setup inputs.
 	SET_INPUT(PS_CLICK);
 	SET_INPUT(MOVE_CLICK);
 	SET_INPUT(START_CLICK);
@@ -1030,6 +994,66 @@ psmv_found(struct xrt_prober *xp,
 
 /*
  *
+ * Parsing functions
+ *
+ */
+
+static void
+psmv_i32_from_u16_wire(int32_t *to, const struct psmv_u16_wire *from)
+{
+	*to = (from->low | from->high << 8) - 0x8000;
+}
+
+static void
+psmv_i32_from_i16_wire(int32_t *to, const struct psmv_i16_wire *from)
+{
+	// The cast is important, sign extend properly.
+	*to = (int16_t)(from->low | from->high << 8);
+}
+
+static void
+psmv_from_vec3_u16_wire(struct xrt_vec3_i32 *to,
+                        const struct psmv_vec3_u16_wire *from)
+{
+	psmv_i32_from_u16_wire(&to->x, &from->x);
+	psmv_i32_from_u16_wire(&to->y, &from->y);
+	psmv_i32_from_u16_wire(&to->z, &from->z);
+}
+
+static void
+psmv_from_vec3_i16_wire(struct xrt_vec3_i32 *to,
+                        const struct psmv_vec3_i16_wire *from)
+{
+	psmv_i32_from_i16_wire(&to->x, &from->x);
+	psmv_i32_from_i16_wire(&to->y, &from->y);
+	psmv_i32_from_i16_wire(&to->z, &from->z);
+}
+
+static void
+psmv_f32_from_wire(float *to, const struct psmv_f32_wire *from)
+{
+	union {
+		uint32_t wire;
+		float f32;
+	} safe_copy;
+
+	safe_copy.wire = (from->val[0] << 0) | (from->val[1] << 8) |
+	                 (from->val[2] << 16) | (from->val[3] << 24);
+	*to = safe_copy.f32;
+}
+
+static void
+psmv_from_vec3_f32_wire(struct xrt_vec3 *to,
+                        const struct psmv_vec3_f32_wire *from)
+{
+	psmv_f32_from_wire(&to->x, &from->x);
+	psmv_f32_from_wire(&to->y, &from->y);
+	psmv_f32_from_wire(&to->z, &from->z);
+}
+
+
+/*
+ *
  * Packet functions ZCM1
  *
  */
@@ -1145,39 +1169,40 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 
 	PSMV_DEBUG(
 	    psmv,
-	    "Calibration:\n"
-	    "\taccel_min_x: %i %i %i\n"
-	    "\taccel_max_x: %i %i %i\n"
-	    "\taccel_min_y: %i %i %i\n"
-	    "\taccel_max_y: %i %i %i\n"
-	    "\taccel_min_z: %i %i %i\n"
-	    "\taccel_max_z: %i %i %i\n"
-	    "\tgyro_bias_0: %i %i %i\n"
-	    "\tgyro_bias_1: %i %i %i\n"
-	    "\tgyro_fact: %f %f %f\n"
-	    "\tgyro_rot_x: %i %i %i\n"
-	    "\tgyro_rot_y: %i %i %i\n"
-	    "\tgyro_rot_z: %i %i %i\n"
-	    "\tunknown_vec3: %f %f %f\n"
-	    "\tunknown_float_0 %f\n"
-	    "\tunknown_float_1 %f\n"
-	    "Calculated:\n"
-	    "\taccel.factor: %f %f %f\n"
-	    "\taccel.bias: %f %f %f\n"
-	    "\tgyro.factor: %f %f %f\n"
-	    "\tgyro.bias: %f %f %f\n",
+	    "\n"
+	    "\tCalibration:\n"
+	    "\t\taccel_min_x: %6i %6i %6i\n"
+	    "\t\taccel_max_x: %6i %6i %6i\n"
+	    "\t\taccel_min_y: %6i %6i %6i\n"
+	    "\t\taccel_max_y: %6i %6i %6i\n"
+	    "\t\taccel_min_z: %6i %6i %6i\n"
+	    "\t\taccel_max_z: %6i %6i %6i\n"
+	    "\t\tgyro_rot_x:  %6i %6i %6i\n"
+	    "\t\tgyro_rot_y:  %6i %6i %6i\n"
+	    "\t\tgyro_rot_z:  %6i %6i %6i\n"
+	    "\t\tgyro_bias_0: %6i %6i %6i\n"
+	    "\t\tgyro_bias_1: %6i %6i %6i\n"
+	    "\t\tgyro_fact: %f %f %f\n"
+	    "\t\tunknown_vec3: %f %f %f\n"
+	    "\t\tunknown_float_0 %f\n"
+	    "\t\tunknown_float_1 %f\n"
+	    "\tCalculated:\n"
+	    "\t\taccel.factor: %f %f %f\n"
+	    "\t\taccel.bias: %f %f %f\n"
+	    "\t\tgyro.factor: %f %f %f\n"
+	    "\t\tgyro.bias: %f %f %f\n",
 	    zcm1->accel_min_x.x, zcm1->accel_min_x.y, zcm1->accel_min_x.z,
 	    zcm1->accel_max_x.x, zcm1->accel_max_x.y, zcm1->accel_max_x.z,
 	    zcm1->accel_min_y.x, zcm1->accel_min_y.y, zcm1->accel_min_y.z,
 	    zcm1->accel_max_y.x, zcm1->accel_max_y.y, zcm1->accel_max_y.z,
 	    zcm1->accel_min_z.x, zcm1->accel_min_z.y, zcm1->accel_min_z.z,
 	    zcm1->accel_max_z.x, zcm1->accel_max_z.y, zcm1->accel_max_z.z,
-	    zcm1->gyro_bias_0.x, zcm1->gyro_bias_0.y, zcm1->gyro_bias_0.z,
-	    zcm1->gyro_bias_1.x, zcm1->gyro_bias_1.y, zcm1->gyro_bias_1.z,
-	    zcm1->gyro_fact.x, zcm1->gyro_fact.y, zcm1->gyro_fact.z,
 	    zcm1->gyro_rot_x.x, zcm1->gyro_rot_x.y, zcm1->gyro_rot_x.z,
 	    zcm1->gyro_rot_y.x, zcm1->gyro_rot_y.y, zcm1->gyro_rot_y.z,
 	    zcm1->gyro_rot_z.x, zcm1->gyro_rot_z.y, zcm1->gyro_rot_z.z,
+	    zcm1->gyro_bias_0.x, zcm1->gyro_bias_0.y, zcm1->gyro_bias_0.z,
+	    zcm1->gyro_bias_1.x, zcm1->gyro_bias_1.y, zcm1->gyro_bias_1.z,
+	    zcm1->gyro_fact.x, zcm1->gyro_fact.y, zcm1->gyro_fact.z,
 	    zcm1->unknown_vec3.x, zcm1->unknown_vec3.y, zcm1->unknown_vec3.z,
 	    zcm1->unknown_float_0, zcm1->unknown_float_1,
 	    psmv->calibration.accel.factor.x, psmv->calibration.accel.factor.y,
@@ -1227,22 +1252,23 @@ psmv_parse_input_zcm1(struct psmv_device *psmv,
 	          "missed: %s\n\t"
 	          "buttons: %08x\n\t"
 	          "battery: %x\n\t"
+	          "sample[0].accel: %6i %6i %6i\n\t"
+	          "sample[1].accel: %6i %6i %6i\n\t"
+	          "sample[0].gyro:  %6i %6i %6i\n\t"
+	          "sample[1].gyro:  %6i %6i %6i\n\t"
 	          "sample[0].trigger: %02x\n\t"
-	          "sample[0].accel_x: %i\n\t"
-	          "sample[0].accel_y: %i\n\t"
-	          "sample[0].accel_z: %i\n\t"
-	          "sample[0].gyro_x: %i\n\t"
-	          "sample[0].gyro_y: %i\n\t"
-	          "sample[0].gyro_z: %i\n\t"
 	          "sample[1].trigger: %02x\n\t"
 	          "timestamp: %i\n\t"
 	          "diff: %i\n\t"
 	          "seq_no: %x\n",
 	          missed ? "yes" : "no", input->buttons, input->battery,
-	          input->sample[0].trigger, input->sample[0].accel.x,
-	          input->sample[0].accel.y, input->sample[0].accel.z,
+	          input->sample[0].accel.x, input->sample[0].accel.y,
+	          input->sample[0].accel.z, input->sample[1].accel.x,
+	          input->sample[1].accel.y, input->sample[1].accel.z,
 	          input->sample[0].gyro.x, input->sample[0].gyro.y,
-	          input->sample[0].gyro.z, input->sample[1].trigger,
+	          input->sample[0].gyro.z, input->sample[1].gyro.x,
+	          input->sample[1].gyro.y, input->sample[1].gyro.z,
+	          input->sample[0].trigger, input->sample[1].trigger,
 	          input->timestamp, diff, input->seq_no);
 }
 
@@ -1365,24 +1391,25 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 
 	PSMV_DEBUG(
 	    psmv,
-	    "Calibration:\n"
-	    "\taccel_min_x: %i %i %i\n"
-	    "\taccel_max_x: %i %i %i\n"
-	    "\taccel_min_y: %i %i %i\n"
-	    "\taccel_max_y: %i %i %i\n"
-	    "\taccel_min_z: %i %i %i\n"
-	    "\taccel_max_z: %i %i %i\n"
-	    "\tgyro_neg_x: %i %i %i\n"
-	    "\tgyro_pos_x: %i %i %i\n"
-	    "\tgyro_neg_y: %i %i %i\n"
-	    "\tgyro_pos_y: %i %i %i\n"
-	    "\tgyro_neg_z: %i %i %i\n"
-	    "\tgyro_pos_z: %i %i %i\n"
-	    "Calculated:\n"
-	    "\taccel.factor: %f %f %f\n"
-	    "\taccel.bias: %f %f %f\n"
-	    "\tgyro.factor: %f %f %f\n"
-	    "\tgyro.bias: %f %f %f\n",
+	    "\n"
+	    "\tCalibration:\n"
+	    "\t\taccel_min_x: %6i %6i %6i\n"
+	    "\t\taccel_max_x: %6i %6i %6i\n"
+	    "\t\taccel_min_y: %6i %6i %6i\n"
+	    "\t\taccel_max_y: %6i %6i %6i\n"
+	    "\t\taccel_min_z: %6i %6i %6i\n"
+	    "\t\taccel_max_z: %6i %6i %6i\n"
+	    "\t\tgyro_neg_x:  %6i %6i %6i\n"
+	    "\t\tgyro_pos_x:  %6i %6i %6i\n"
+	    "\t\tgyro_neg_y:  %6i %6i %6i\n"
+	    "\t\tgyro_pos_y:  %6i %6i %6i\n"
+	    "\t\tgyro_neg_z:  %6i %6i %6i\n"
+	    "\t\tgyro_pos_z:  %6i %6i %6i\n"
+	    "\tCalculated:\n"
+	    "\t\taccel.factor: %f %f %f\n"
+	    "\t\taccel.bias: %f %f %f\n"
+	    "\t\tgyro.factor: %f %f %f\n"
+	    "\t\tgyro.bias: %f %f %f\n",
 	    zcm2->accel_min_x.x, zcm2->accel_min_x.y, zcm2->accel_min_x.z,
 	    zcm2->accel_max_x.x, zcm2->accel_max_x.y, zcm2->accel_max_x.z,
 	    zcm2->accel_min_y.x, zcm2->accel_min_y.y, zcm2->accel_min_y.z,
@@ -1447,8 +1474,8 @@ psmv_parse_input_zcm2(struct psmv_device *psmv,
 	          "sample[1].accel: %6i %6i %6i\n\t"
 	          "sample[0].gyro:  %6i %6i %6i\n\t"
 	          "sample[1].gyro:  %6i %6i %6i\n\t"
-	          "sample[0].trigger: %02x\n\t"
-	          "sample[1].trigger: %02x\n\t"
+	          "sample.trigger_low_pass: %02x\n\t"
+	          "sample.trigger: %02x\n\t"
 	          "timestamp: %i\n\t"
 	          "diff: %i\n\t"
 	          "seq_no: %x\n",
