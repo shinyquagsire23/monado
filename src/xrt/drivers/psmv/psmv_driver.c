@@ -243,6 +243,42 @@ struct psmv_calibration_zcm1
 };
 
 /*!
+ * Parsed calibration data from a ZCM1 device.
+ */
+struct psmv_parsed_calibration_zcm1
+{
+	struct xrt_vec3_i32 accel_min_x;
+	struct xrt_vec3_i32 accel_max_x;
+	struct xrt_vec3_i32 accel_min_y;
+	struct xrt_vec3_i32 accel_max_y;
+	struct xrt_vec3_i32 accel_min_z;
+	struct xrt_vec3_i32 accel_max_z;
+
+	/*!
+	 * From: https://github.com/nitsch/moveonpc/wiki/Calibration-data
+	 *
+	 * Coded as the one before. The values are very near to 1.0.
+	 *
+	 * I observed, that when I multiply this vector with the gyro bias
+	 * vector before subtracting from the gyro 80rpm measures, I get a
+	 * better calibration.
+	 *
+	 * So in order to get the accurate 80rpm measures:
+	 * GyroMeasure80rpm-(GyroBias1*UnknownVector2) or
+	 * GyroMeasure80rpm-(GyroBias2*UnknownVector2)
+	 */
+	struct xrt_vec3 gyro_fact;
+	struct xrt_vec3_i32 gyro_bias_0;
+	struct xrt_vec3_i32 gyro_bias_1;
+	struct xrt_vec3_i32 gyro_rot_x;
+	struct xrt_vec3_i32 gyro_rot_y;
+	struct xrt_vec3_i32 gyro_rot_z;
+
+	struct xrt_vec3 unknown_vec3;
+	float unknown_float_0, unknown_float_1;
+};
+
+/*!
  * Calibration data, multiple packets goes into this.
  */
 struct psmv_calibration_zcm2
@@ -267,8 +303,32 @@ struct psmv_calibration_zcm2
 	uint8_t _pad1[12];
 };
 
+
 /*!
- * Input package.
+ * Parsed calibration data from a ZCM2 device.
+ */
+struct psmv_parsed_calibration_zcm2
+{
+	struct xrt_vec3_i32 accel_min_x;
+	struct xrt_vec3_i32 accel_max_x;
+	struct xrt_vec3_i32 accel_min_y;
+	struct xrt_vec3_i32 accel_max_y;
+	struct xrt_vec3_i32 accel_min_z;
+	struct xrt_vec3_i32 accel_max_z;
+
+	struct xrt_vec3_i32 gyro_neg_x;
+	struct xrt_vec3_i32 gyro_pos_x;
+	struct xrt_vec3_i32 gyro_neg_y;
+	struct xrt_vec3_i32 gyro_pos_y;
+	struct xrt_vec3_i32 gyro_neg_z;
+	struct xrt_vec3_i32 gyro_pos_z;
+
+	//! Pretty sure this is gryo bias.
+	struct xrt_vec3_i32 gyro_bias;
+};
+
+/*!
+ * Input package for ZCM1.
  */
 struct psmv_input_zcm1
 {
@@ -289,7 +349,7 @@ struct psmv_input_zcm1
 };
 
 /*!
- * Input package.
+ * Input package for ZCM2.
  */
 struct psmv_input_zcm2
 {
@@ -310,7 +370,7 @@ struct psmv_input_zcm2
 };
 
 /*!
- * A parsed sample.
+ * A parsed sample of accel and gyro.
  */
 struct psmv_parsed_sample
 {
@@ -359,65 +419,6 @@ struct psmv_parsed_input
 };
 
 /*!
- * Parsed calibration data from a ZCM1 device.
- */
-struct psmv_parsed_calibration_zcm1
-{
-	struct xrt_vec3_i32 accel_min_x;
-	struct xrt_vec3_i32 accel_max_x;
-	struct xrt_vec3_i32 accel_min_y;
-	struct xrt_vec3_i32 accel_max_y;
-	struct xrt_vec3_i32 accel_min_z;
-	struct xrt_vec3_i32 accel_max_z;
-
-	/*!
-	 * From: https://github.com/nitsch/moveonpc/wiki/Calibration-data
-	 *
-	 * Coded as the one before. The values are very near to 1.0.
-	 *
-	 * I observed, that when I multiply this vector with the gyro bias
-	 * vector before subtracting from the gyro 80rpm measures, I get a
-	 * better calibration.
-	 *
-	 * So in order to get the accurate 80rpm measures:
-	 * GyroMeasure80rpm-(GyroBias1*UnknownVector2) or
-	 * GyroMeasure80rpm-(GyroBias2*UnknownVector2)
-	 */
-	struct xrt_vec3 gyro_fact;
-	struct xrt_vec3_i32 gyro_bias_0;
-	struct xrt_vec3_i32 gyro_bias_1;
-	struct xrt_vec3_i32 gyro_rot_x;
-	struct xrt_vec3_i32 gyro_rot_y;
-	struct xrt_vec3_i32 gyro_rot_z;
-
-	struct xrt_vec3 unknown_vec3;
-	float unknown_float_0, unknown_float_1;
-};
-
-/*!
- * Parsed calibration data from a ZCM2 device.
- */
-struct psmv_parsed_calibration_zcm2
-{
-	struct xrt_vec3_i32 accel_min_x;
-	struct xrt_vec3_i32 accel_max_x;
-	struct xrt_vec3_i32 accel_min_y;
-	struct xrt_vec3_i32 accel_max_y;
-	struct xrt_vec3_i32 accel_min_z;
-	struct xrt_vec3_i32 accel_max_z;
-
-	struct xrt_vec3_i32 gyro_neg_x;
-	struct xrt_vec3_i32 gyro_pos_x;
-	struct xrt_vec3_i32 gyro_neg_y;
-	struct xrt_vec3_i32 gyro_pos_y;
-	struct xrt_vec3_i32 gyro_neg_z;
-	struct xrt_vec3_i32 gyro_pos_z;
-
-	//! Pretty sure this is gryo bias.
-	struct xrt_vec3_i32 gyro_bias;
-};
-
-/*!
  * A single PlayStation Move Controller.
  *
  * A note about coordinate system. If you stand the controller in front of you
@@ -442,13 +443,13 @@ struct psmv_device
 		int64_t resend_time;
 		struct xrt_colour_rgb_u8 led;
 		uint8_t rumble;
-	} wants;
+	} wants; //!< What should be set.
 
 	struct
 	{
 		struct xrt_colour_rgb_u8 led;
 		uint8_t rumble;
-	} state;
+	} state; //!< What is currently set on the device.
 
 	struct
 	{
@@ -1566,6 +1567,7 @@ psmv_parse_input(struct psmv_device *psmv,
 	default: return 0;
 	}
 }
+
 
 /*!
  * @}
