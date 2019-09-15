@@ -9,6 +9,7 @@
  */
 
 #include "xrt/xrt_compiler.h"
+#include "util/u_misc.h"
 
 #ifdef XRT_OS_LINUX
 #include <pthread.h>
@@ -116,7 +117,7 @@ os_thread_start(struct os_thread *ost, os_run_func func, void *ptr)
 }
 
 /*!
- * Joon.
+ * Join.
  */
 XRT_MAYBE_UNUSED static void
 os_thread_join(struct os_thread *ost)
@@ -124,7 +125,7 @@ os_thread_join(struct os_thread *ost)
 	void *retval;
 
 	pthread_join(ost->thread, &retval);
-	memset(&ost->thread, 0, sizeof(ost->thread));
+	U_ZERO(&ost->thread);
 }
 
 /*!
