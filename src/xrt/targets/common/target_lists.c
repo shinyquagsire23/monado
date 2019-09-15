@@ -50,7 +50,8 @@
  */
 struct xrt_prober_entry target_entry_list[] = {
 #ifdef XRT_BUILD_PSMV
-    {PSMV_VID, PSMV_PID, psmv_found, "PS Move"},
+    {PSMV_VID, PSMV_PID_ZCM1, psmv_found, "PS Move Controller (ZCM1)"},
+    {PSMV_VID, PSMV_PID_ZCM2, psmv_found, "PS Move Controller (ZCM2)"},
 #endif // XRT_BUILD_PSMV
 
 #ifdef XRT_BUILD_HYDRA

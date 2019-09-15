@@ -22,7 +22,8 @@ extern "C" {
 
 
 #define PSMV_VID 0x054c
-#define PSMV_PID 0x03d5
+#define PSMV_PID_ZCM1 0x03d5
+#define PSMV_PID_ZCM2 0x0c5e
 
 /*!
  * Probing function for the PS Move devices.
