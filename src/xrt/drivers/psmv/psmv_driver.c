@@ -473,18 +473,18 @@ update_fusion(struct psmv_device *psmv,
 	struct xrt_vec3_i32 *ra = &sample->accel;
 	struct xrt_vec3_i32 *rg = &sample->gyro;
 
-	psmv->read.accel.x = (ra->x + psmv->calibration.accel.bias.x) *
+	psmv->read.accel.x = (ra->x - psmv->calibration.accel.bias.x) /
 	                     psmv->calibration.accel.factor.x;
-	psmv->read.accel.y = (ra->y + psmv->calibration.accel.bias.y) *
+	psmv->read.accel.y = (ra->y - psmv->calibration.accel.bias.y) /
 	                     psmv->calibration.accel.factor.y;
-	psmv->read.accel.z = (ra->z + psmv->calibration.accel.bias.z) *
+	psmv->read.accel.z = (ra->z - psmv->calibration.accel.bias.z) /
 	                     psmv->calibration.accel.factor.z;
 
-	psmv->read.gyro.x = (rg->x + psmv->calibration.gyro.bias.x) *
+	psmv->read.gyro.x = (rg->x - psmv->calibration.gyro.bias.x) /
 	                    psmv->calibration.gyro.factor.x;
-	psmv->read.gyro.y = (rg->y + psmv->calibration.gyro.bias.y) *
+	psmv->read.gyro.y = (rg->y - psmv->calibration.gyro.bias.y) /
 	                    psmv->calibration.gyro.factor.y;
-	psmv->read.gyro.z = (rg->z + psmv->calibration.gyro.bias.z) *
+	psmv->read.gyro.z = (rg->z - psmv->calibration.gyro.bias.z) /
 	                    psmv->calibration.gyro.factor.z;
 
 	// Super simple fusion.
@@ -952,24 +952,24 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 	 */
 
 	psmv->calibration.accel.factor.x =
-	    1.0 / ((zcm1->accel_max_x.x - zcm1->accel_min_x.x) / 2.0);
+	    (zcm1->accel_max_x.x - zcm1->accel_min_x.x) / 2.0;
 	psmv->calibration.accel.factor.y =
-	    1.0 / ((zcm1->accel_max_y.y - zcm1->accel_min_y.y) / 2.0);
+	    (zcm1->accel_max_y.y - zcm1->accel_min_y.y) / 2.0;
 	psmv->calibration.accel.factor.z =
-	    1.0 / ((zcm1->accel_max_z.z - zcm1->accel_min_z.z) / 2.0);
+	    (zcm1->accel_max_z.z - zcm1->accel_min_z.z) / 2.0;
 
 	psmv->calibration.accel.bias.x =
 	    (zcm1->accel_min_y.x + zcm1->accel_max_y.x + zcm1->accel_min_z.x +
 	     zcm1->accel_max_z.x) /
-	    -4.0;
+	    4.0;
 	psmv->calibration.accel.bias.y =
 	    (zcm1->accel_min_x.y + zcm1->accel_max_x.y + zcm1->accel_min_z.y +
 	     zcm1->accel_max_z.y) /
-	    -4.0;
+	    4.0;
 	psmv->calibration.accel.bias.z =
 	    (zcm1->accel_min_x.z + zcm1->accel_max_x.z + zcm1->accel_min_y.z +
 	     zcm1->accel_max_y.z) /
-	    -4.0;
+	    4.0;
 
 
 	/*
@@ -983,9 +983,9 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 	double gz =
 	    (zcm1->gyro_rot_z.z - (zcm1->gyro_bias_0.z * zcm1->gyro_fact.z));
 
-	psmv->calibration.gyro.factor.x = (2.0 * M_PI * 80.0) / (60.0 * gx);
-	psmv->calibration.gyro.factor.y = (2.0 * M_PI * 80.0) / (60.0 * gy);
-	psmv->calibration.gyro.factor.z = (2.0 * M_PI * 80.0) / (60.0 * gz);
+	psmv->calibration.gyro.factor.x = (60.0 * gx) / (2.0 * M_PI * 80.0);
+	psmv->calibration.gyro.factor.y = (60.0 * gy) / (2.0 * M_PI * 80.0);
+	psmv->calibration.gyro.factor.z = (60.0 * gz) / (2.0 * M_PI * 80.0);
 	psmv->calibration.gyro.bias.x = 0.0;
 	psmv->calibration.gyro.bias.y = 0.0;
 	psmv->calibration.gyro.bias.z = 0.0;
