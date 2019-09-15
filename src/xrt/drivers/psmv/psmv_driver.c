@@ -8,19 +8,11 @@
  * @ingroup drv_psmv
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <wchar.h>
-#include <math.h>
-#include <assert.h>
-
 #include "xrt/xrt_prober.h"
 
-#include "math/m_api.h"
-
-#include "util/u_time.h"
 #include "os/os_threading.h"
+
+#include "math/m_api.h"
 
 #include "util/u_var.h"
 #include "util/u_time.h"
@@ -29,7 +21,16 @@
 #include "util/u_device.h"
 
 #include "psmv_interface.h"
-#include <unistd.h>
+
+#include <stdio.h>
+#include <math.h>
+#include <assert.h>
+
+
+/*!
+ * @ingroup drv_psmv
+ * @{
+ */
 
 
 /*
@@ -66,6 +67,9 @@
 DEBUG_GET_ONCE_BOOL_OPTION(psmv_spew, "PSMV_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(psmv_debug, "PSMV_PRINT_DEBUG", false)
 
+/*!
+ * Indecies where each input is in the input list.
+ */
 enum psmv_input_index
 {
 	PSMV_INDEX_PS_CLICK,
@@ -82,6 +86,9 @@ enum psmv_input_index
 	PSMV_INDEX_BALL_TIP_POSE,
 };
 
+/*!
+ * Mask for the button in the button uint32_t.
+ */
 enum psmv_button_bit
 {
 	// clang-format off
@@ -108,8 +115,9 @@ enum psmv_button_bit
 	// clang-format on
 };
 
-
-
+/*!
+ * Led setting packet.
+ */
 struct psmv_set_led
 {
 	uint8_t id;
@@ -124,8 +132,6 @@ struct psmv_set_led
 
 /*!
  * Wire encoding of a single 32 bit float, big endian.
- *
- * @ingroup drv_psmv
  */
 struct psmv_f32_wire
 {
@@ -134,8 +140,6 @@ struct psmv_f32_wire
 
 /*!
  * Wire encoding of three 32 bit float, big endian.
- *
- * @ingroup drv_psmv
  */
 struct psmv_vec3_f32_wire
 {
@@ -150,8 +154,6 @@ struct psmv_vec3_f32_wire
  * The values are unsigned 16-bit integers and stored as two's complement. The
  * values are shifted up to always report positive numbers. Subtract 0x8000 to
  * obtain signed values and determine direction from the sign.
- *
- * @ingroup drv_psmv
  */
 struct psmv_u16_wire
 {
@@ -165,8 +167,6 @@ struct psmv_u16_wire
  * The values are unsigned 16-bit integers and stored as two's complement. The
  * values are shifted up to always report positive numbers. Subtract 0x8000 to
  * obtain signed values and determine direction from the sign.
- *
- * @ingroup drv_psmv
  */
 struct psmv_vec3_u16_wire
 {
@@ -177,8 +177,6 @@ struct psmv_vec3_u16_wire
 
 /*!
  * Wire encoding of a single 16 bit integer, big endian.
- *
- * @ingroup drv_psmv
  */
 struct psmv_i16_wire
 {
@@ -190,8 +188,6 @@ struct psmv_i16_wire
  * Wire encoding of three 16 bit integers, big endian.
  *
  * The values are signed 16-bit integers and stored as two's complement.
- *
- * @ingroup drv_psmv
  */
 struct psmv_vec3_i16_wire
 {
@@ -202,8 +198,6 @@ struct psmv_vec3_i16_wire
 
 /*!
  * Part of a calibration data, multiple packets make up a single data packet.
- *
- * @ingroup drv_psmv
  */
 struct psmv_calibration_part
 {
@@ -214,8 +208,6 @@ struct psmv_calibration_part
 
 /*!
  * Calibration data, multiple packets goes into this.
- *
- * @ingroup drv_psmv
  */
 struct psmv_calibration_zcm1
 {
@@ -252,8 +244,6 @@ struct psmv_calibration_zcm1
 
 /*!
  * Calibration data, multiple packets goes into this.
- *
- * @ingroup drv_psmv
  */
 struct psmv_calibration_zcm2
 {
@@ -281,8 +271,6 @@ struct psmv_calibration_zcm2
 
 /*!
  * Input package.
- *
- * @ingroup drv_psmv
  */
 struct psmv_input_zcm1
 {
@@ -304,8 +292,6 @@ struct psmv_input_zcm1
 
 /*!
  * Input package.
- *
- * @ingroup drv_psmv
  */
 struct psmv_input_zcm2
 {
@@ -325,6 +311,9 @@ struct psmv_input_zcm2
 	uint8_t timestamp_low;
 };
 
+/*!
+ * A parsed sample.
+ */
 struct psmv_parsed_sample
 {
 	struct xrt_vec3_i32 accel;
@@ -332,6 +321,9 @@ struct psmv_parsed_sample
 	uint8_t trigger;
 };
 
+/*!
+ * A parsed input packet.
+ */
 struct psmv_parsed_input
 {
 	uint32_t buttons;
@@ -342,6 +334,9 @@ struct psmv_parsed_input
 	struct psmv_parsed_sample sample[2];
 };
 
+/*!
+ * Parsed calibration data from a ZCM1 device.
+ */
 struct psmv_parsed_calibration_zcm1
 {
 	struct xrt_vec3_i32 accel_min_x;
@@ -375,6 +370,9 @@ struct psmv_parsed_calibration_zcm1
 	float unknown_float_0, unknown_float_1;
 };
 
+/*!
+ * Parsed calibration data from a ZCM2 device.
+ */
 struct psmv_parsed_calibration_zcm2
 {
 	struct xrt_vec3_i32 accel_min_x;
@@ -403,8 +401,6 @@ struct psmv_parsed_calibration_zcm2
  * Translated to axis that means the ball is on the Y+ axis, the buttons on the
  * Z+ axis, the trigger on the Z- axis, the USB port on the Y- axis, the start
  * button on the X+ axis, select button on the X- axis.
- *
- * @ingroup drv_psmv
  */
 struct psmv_device
 {
@@ -464,7 +460,9 @@ struct psmv_device
 
 	struct
 	{
+		//! Last adjusted accelerator value.
 		struct xrt_vec3 accel;
+		//! Last adjusted gyro value.
 		struct xrt_vec3 gyro;
 	} read;
 
@@ -1520,3 +1518,7 @@ psmv_parse_input(struct psmv_device *psmv,
 	default: break;
 	}
 }
+
+/*!
+ * @}
+ */
