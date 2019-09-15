@@ -255,18 +255,16 @@ struct psmv_calibration_zcm2
 	struct psmv_vec3_i16_wire accel_min_y;
 	struct psmv_vec3_i16_wire accel_max_z;
 	struct psmv_vec3_i16_wire accel_min_z;
-	uint16_t _pad0;
-	uint16_t _pad1;
-	uint16_t _pad2;
-	uint16_t _pad3;
-	uint16_t _pad4;
+	//! Pretty sure this is gryo bias.
+	struct psmv_vec3_i16_wire gyro_bias;
+	uint8_t _pad0[4];
 	struct psmv_vec3_i16_wire gyro_pos_x;
 	struct psmv_vec3_i16_wire gyro_pos_y;
 	struct psmv_vec3_i16_wire gyro_pos_z;
 	struct psmv_vec3_i16_wire gyro_neg_x;
 	struct psmv_vec3_i16_wire gyro_neg_y;
 	struct psmv_vec3_i16_wire gyro_neg_z;
-	uint16_t _pad[6];
+	uint8_t _pad1[12];
 };
 
 /*!
@@ -414,6 +412,9 @@ struct psmv_parsed_calibration_zcm2
 	struct xrt_vec3_i32 gyro_pos_y;
 	struct xrt_vec3_i32 gyro_neg_z;
 	struct xrt_vec3_i32 gyro_pos_z;
+
+	//! Pretty sure this is gryo bias.
+	struct xrt_vec3_i32 gyro_bias;
 };
 
 /*!
@@ -1366,6 +1367,7 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	psmv_from_vec3_i16_wire(&zcm2->gyro_pos_y, &data.gyro_pos_y);
 	psmv_from_vec3_i16_wire(&zcm2->gyro_neg_z, &data.gyro_neg_z);
 	psmv_from_vec3_i16_wire(&zcm2->gyro_pos_z, &data.gyro_pos_z);
+	psmv_from_vec3_i16_wire(&zcm2->gyro_bias, &data.gyro_bias);
 
 
 	/*
@@ -1405,6 +1407,7 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	psmv->calibration.gyro.factor.y = (60.0 * gy) / (2.0 * M_PI * 90.0);
 	psmv->calibration.gyro.factor.z = (60.0 * gz) / (2.0 * M_PI * 90.0);
 
+#if 0
 	psmv->calibration.gyro.bias.x =
 	    (zcm2->gyro_neg_y.x + zcm2->gyro_pos_y.x + zcm2->gyro_neg_z.x +
 	     zcm2->gyro_pos_z.x) /
@@ -1417,6 +1420,11 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	    (zcm2->gyro_neg_x.z + zcm2->gyro_pos_x.z + zcm2->gyro_neg_y.z +
 	     zcm2->gyro_pos_y.z) /
 	    4.0;
+#else
+	psmv->calibration.gyro.bias.x = zcm2->gyro_bias.x;
+	psmv->calibration.gyro.bias.y = zcm2->gyro_bias.y;
+	psmv->calibration.gyro.bias.z = zcm2->gyro_bias.z;
+#endif
 
 
 	/*
@@ -1439,6 +1447,7 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	    "\t\tgyro_pos_y:  %6i %6i %6i\n"
 	    "\t\tgyro_neg_z:  %6i %6i %6i\n"
 	    "\t\tgyro_pos_z:  %6i %6i %6i\n"
+	    "\t\tgyro_bias:  %6i %6i %6i\n"
 	    "\tCalculated:\n"
 	    "\t\taccel.factor: %f %f %f\n"
 	    "\t\taccel.bias: %f %f %f\n"
@@ -1456,6 +1465,7 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	    zcm2->gyro_pos_y.x, zcm2->gyro_pos_y.y, zcm2->gyro_pos_y.z,
 	    zcm2->gyro_neg_z.x, zcm2->gyro_neg_z.y, zcm2->gyro_neg_z.z,
 	    zcm2->gyro_pos_z.x, zcm2->gyro_pos_z.y, zcm2->gyro_pos_z.z,
+	    zcm2->gyro_bias.x, zcm2->gyro_bias.y, zcm2->gyro_bias.z,
 	    psmv->calibration.accel.factor.x, psmv->calibration.accel.factor.y,
 	    psmv->calibration.accel.factor.z, psmv->calibration.accel.bias.x,
 	    psmv->calibration.accel.bias.y, psmv->calibration.accel.bias.z,
