@@ -35,6 +35,19 @@ extern "C" {
  * @brief C interface to some transform-related math functions.
  */
 
+/*
+ *
+ * Defines.
+ *
+ */
+
+/*!
+ * Standard gravity acceleration constant.
+ *
+ * @ingroup aux_math
+ */
+#define MATH_GRAVITY_M_S2 (9.8066)
+
 
 /*
  *
