@@ -183,9 +183,9 @@ scale_led_power(uint8_t power)
 static void
 accel_from_psvr_vec(const struct xrt_vec3_i32 *accel, struct xrt_vec3 *out_vec)
 {
-	out_vec->x = accel->x * (9.81 / 16384.0);
-	out_vec->y = accel->y * (9.81 / 16384.0);
-	out_vec->z = accel->z * (9.81 / 16384.0);
+	out_vec->x = accel->x * (MATH_GRAVITY_M_S2 / 16384.0);
+	out_vec->y = accel->y * (MATH_GRAVITY_M_S2 / 16384.0);
+	out_vec->z = accel->z * (MATH_GRAVITY_M_S2 / 16384.0);
 }
 
 static void
