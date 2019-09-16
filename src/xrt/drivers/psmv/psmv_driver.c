@@ -602,11 +602,14 @@ update_fusion(struct psmv_device *psmv,
 	struct xrt_vec3_i32 *rg = &sample->gyro;
 
 	psmv->read.accel.x = (ra->x - psmv->calibration.accel.bias.x) /
-	                     psmv->calibration.accel.factor.x;
+	                     psmv->calibration.accel.factor.x *
+	                     MATH_GRAVITY_M_S2;
 	psmv->read.accel.y = (ra->y - psmv->calibration.accel.bias.y) /
-	                     psmv->calibration.accel.factor.y;
+	                     psmv->calibration.accel.factor.y *
+	                     MATH_GRAVITY_M_S2;
 	psmv->read.accel.z = (ra->z - psmv->calibration.accel.bias.z) /
-	                     psmv->calibration.accel.factor.z;
+	                     psmv->calibration.accel.factor.z *
+	                     MATH_GRAVITY_M_S2;
 
 	psmv->read.gyro.x = (rg->x - psmv->calibration.gyro.bias.x) /
 	                    psmv->calibration.gyro.factor.x;
