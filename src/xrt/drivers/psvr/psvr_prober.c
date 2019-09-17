@@ -113,7 +113,7 @@ psvr_prober_autoprobe(struct xrt_auto_prober *xap, struct xrt_prober *xp)
  */
 
 struct xrt_auto_prober *
-psvr_create_auto_prober()
+psvr_create_auto_prober(void)
 {
 	struct psvr_prober *ppsvr = U_TYPED_CALLOC(struct psvr_prober);
 	ppsvr->base.destroy = psvr_prober_destroy;
