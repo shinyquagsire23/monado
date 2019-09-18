@@ -40,6 +40,7 @@ enum u_var_kind
 	U_VAR_KIND_RO_F32,
 	U_VAR_KIND_RO_VEC3_I32,
 	U_VAR_KIND_RO_VEC3_F32,
+	U_VAR_KIND_RO_QUAT_F32,
 	U_VAR_KIND_GUI_HEADER,
 };
 
@@ -118,6 +119,7 @@ ADD_FUNC(ro_i32, int32_t, RO_I32);
 ADD_FUNC(ro_f32, float, RO_F32);
 ADD_FUNC(ro_vec3_i32, struct xrt_vec3_i32, RO_VEC3_I32);
 ADD_FUNC(ro_vec3_f32, struct xrt_vec3, RO_VEC3_F32);
+ADD_FUNC(ro_quat_f32, struct xrt_quat, RO_QUAT_F32);
 ADD_FUNC(gui_header, bool, GUI_HEADER);
 
 #undef ADD_FUNC
