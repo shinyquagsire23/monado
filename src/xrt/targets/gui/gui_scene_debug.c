@@ -107,10 +107,10 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 		break;
 	case U_VAR_KIND_VEC3_I32: igInputInt3(name, (int *)ptr, i_flags); break;
 	case U_VAR_KIND_F32:
-		igInputFloat(name, (float *)ptr, 1, 10, "%f", i_flags);
+		igInputFloat(name, (float *)ptr, 1, 10, "%+f", i_flags);
 		break;
 	case U_VAR_KIND_VEC3_F32:
-		igInputFloat3(name, (float *)ptr, "%f", i_flags);
+		igInputFloat3(name, (float *)ptr, "%+f", i_flags);
 		break;
 	case U_VAR_KIND_RO_TEXT: igText("%s: '%s'", name, (char *)ptr); break;
 	case U_VAR_KIND_RO_I32:
@@ -120,10 +120,10 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 		igInputInt3(name, (int *)ptr, ro_i_flags);
 		break;
 	case U_VAR_KIND_RO_F32:
-		igInputFloat(name, (float *)ptr, 1, 10, "%f", ro_i_flags);
+		igInputFloat(name, (float *)ptr, 1, 10, "%+f", ro_i_flags);
 		break;
 	case U_VAR_KIND_RO_VEC3_F32:
-		igInputFloat3(name, (float *)ptr, "%f", ro_i_flags);
+		igInputFloat3(name, (float *)ptr, "%+f", ro_i_flags);
 		break;
 	case U_VAR_KIND_GUI_HEADER:
 		state->hidden = !igCollapsingHeader(name, 0);
