@@ -125,6 +125,9 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 	case U_VAR_KIND_RO_VEC3_F32:
 		igInputFloat3(name, (float *)ptr, "%+f", ro_i_flags);
 		break;
+	case U_VAR_KIND_RO_QUAT_F32:
+		igInputFloat4(name, (float *)ptr, "%+f", ro_i_flags);
+		break;
 	case U_VAR_KIND_GUI_HEADER:
 		state->hidden = !igCollapsingHeader(name, 0);
 		break;
