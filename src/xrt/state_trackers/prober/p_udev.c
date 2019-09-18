@@ -38,6 +38,7 @@ p_udev_enumerate_usb(struct prober* p, struct udev* udev);
 
 static void
 p_udev_add_usb(struct prober_device* pdev,
+               uint8_t dev_class,
                const char* product,
                const char* path);
 
@@ -72,15 +73,17 @@ p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
 static int
 p_udev_get_usb_hid_address(struct udev_device* raw_dev,
                            uint32_t bus_type,
-                           uint16_t* usb_bus,
-                           uint16_t* usb_addr);
+                           uint8_t* out_dev_class,
+                           uint16_t* out_usb_bus,
+                           uint16_t* out_usb_addr);
 
 static int
 p_udev_try_usb_relation_get_address(struct udev_device* raw_dev,
-                                    uint16_t* vendor_id,
-                                    uint16_t* product_id,
-                                    uint16_t* usb_bus,
-                                    uint16_t* usb_addr);
+                                    uint8_t* out_dev_class,
+                                    uint16_t* out_vendor_id,
+                                    uint16_t* out_product_id,
+                                    uint16_t* out_usb_bus,
+                                    uint16_t* out_usb_addr);
 
 static int
 p_udev_get_vendor_id_product(struct udev_device* usb_device_dev,
@@ -89,6 +92,7 @@ p_udev_get_vendor_id_product(struct udev_device* usb_device_dev,
 
 static int
 p_udev_get_usb_device_info(struct udev_device* usb_device_dev,
+                           uint8_t* out_dev_class,
                            uint16_t* vendor_id,
                            uint16_t* product_id,
                            uint16_t* usb_bus,
@@ -170,6 +174,7 @@ p_udev_enumerate_usb(struct prober* p, struct udev* udev)
 		const char* sysfs_path = NULL;
 		const char* dev_path = NULL;
 		const char* product = NULL;
+		uint8_t dev_class = 0;
 		uint16_t vendor_id = 0;
 		uint16_t product_id = 0;
 		uint16_t usb_bus = 0;
@@ -185,8 +190,10 @@ p_udev_enumerate_usb(struct prober* p, struct udev* udev)
 		// Product name.
 		product = udev_device_get_sysattr_value(raw_dev, "product");
 
-		ret = p_udev_get_usb_device_info(
-		    raw_dev, &vendor_id, &product_id, &usb_bus, &usb_addr);
+
+		ret = p_udev_get_usb_device_info(raw_dev, &dev_class,
+		                                 &vendor_id, &product_id,
+		                                 &usb_bus, &usb_addr);
 		if (ret != 0) {
 			P_ERROR(p, "Failed to get usb device info");
 			goto next;
@@ -200,13 +207,14 @@ p_udev_enumerate_usb(struct prober* p, struct udev* udev)
 		       "\t\tptr:          %p (%i)\n"
 		       "\t\tsysfs_path:   '%s'\n"
 		       "\t\tdev_path:     '%s'\n"
+		       "\t\tdev_class:    %02x\n"
 		       "\t\tvendor_id:    %04x\n"
 		       "\t\tproduct_id:   %04x\n"
 		       "\t\tusb_bus:      %i\n"
 		       "\t\tusb_addr:     %i\n"
 		       "\t\tproduct:      '%s'",
-		       (void*)pdev, ret, sysfs_path, dev_path, vendor_id,
-		       product_id, usb_bus, usb_addr, product);
+		       (void*)pdev, ret, sysfs_path, dev_path, dev_class,
+		       vendor_id, product_id, usb_bus, usb_addr, product);
 
 		if (ret != 0) {
 			P_ERROR(p, "p_dev_get_usb_device failed!");
@@ -214,7 +222,7 @@ p_udev_enumerate_usb(struct prober* p, struct udev* udev)
 		}
 
 		// Add info to usb device.
-		p_udev_add_usb(pdev, product, dev_path);
+		p_udev_add_usb(pdev, dev_class, product, dev_path);
 
 	next:
 		udev_device_unref(raw_dev);
@@ -225,9 +233,12 @@ p_udev_enumerate_usb(struct prober* p, struct udev* udev)
 
 static void
 p_udev_add_usb(struct prober_device* pdev,
+               uint8_t dev_class,
                const char* product,
                const char* path)
 {
+	pdev->base.usb_dev_class = dev_class;
+
 	if (product != NULL) {
 		pdev->usb.product = strdup(product);
 	}
@@ -254,6 +265,7 @@ p_udev_enumerate_v4l2(struct prober* p, struct udev* udev)
 		struct udev_device* raw_dev = NULL;
 		const char* sysfs_path = NULL;
 		const char* dev_path = NULL;
+		uint8_t dev_class = 0;
 		uint16_t vendor_id = 0;
 		uint16_t product_id = 0;
 		uint16_t usb_bus = 0;
@@ -270,7 +282,8 @@ p_udev_enumerate_v4l2(struct prober* p, struct udev* udev)
 		dev_path = udev_device_get_devnode(raw_dev);
 
 		ret = p_udev_try_usb_relation_get_address(
-		    raw_dev, &vendor_id, &product_id, &usb_bus, &usb_addr);
+		    raw_dev, &dev_class, &vendor_id, &product_id, &usb_bus,
+		    &usb_addr);
 		if (ret != 0) {
 			P_ERROR(p, "skipping none usb v4l device '%s'",
 			        dev_path);
@@ -358,6 +371,7 @@ p_udev_enumerate_hidraw(struct prober* p, struct udev* udev)
 		struct prober_device* pdev = NULL;
 		struct udev_device* raw_dev = NULL;
 		uint16_t vendor_id, product_id, interface;
+		uint8_t dev_class = 0;
 		uint16_t usb_bus = 0;
 		uint16_t usb_addr = 0;
 		uint32_t bus_type = 0;
@@ -389,8 +403,8 @@ p_udev_enumerate_hidraw(struct prober* p, struct udev* udev)
 		}
 
 		// Get USB bus and address to de-dublicate devices.
-		ret = p_udev_get_usb_hid_address(raw_dev, bus_type, &usb_bus,
-		                                 &usb_addr);
+		ret = p_udev_get_usb_hid_address(raw_dev, bus_type, &dev_class,
+		                                 &usb_bus, &usb_addr);
 		if (ret != 0) {
 			P_ERROR(p, "Failed to get USB bus and addr.");
 			goto next;
@@ -461,6 +475,7 @@ p_udev_add_hidraw(struct prober_device* pdev,
 static int
 p_udev_get_usb_hid_address(struct udev_device* raw_dev,
                            uint32_t bus_type,
+                           uint8_t* out_dev_class,
                            uint16_t* out_usb_bus,
                            uint16_t* out_usb_addr)
 {
@@ -479,8 +494,9 @@ p_udev_get_usb_hid_address(struct udev_device* raw_dev,
 		return -1;
 	}
 
-	return p_udev_get_usb_device_info(
-	    usb_dev, &dummy_vendor, &dummy_product, out_usb_bus, out_usb_addr);
+	return p_udev_get_usb_device_info(usb_dev, out_dev_class, &dummy_vendor,
+	                                  &dummy_product, out_usb_bus,
+	                                  out_usb_addr);
 }
 
 static int
@@ -589,6 +605,7 @@ p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
 
 static int
 p_udev_try_usb_relation_get_address(struct udev_device* raw_dev,
+                                    uint8_t* out_dev_class,
                                     uint16_t* out_vendor_id,
                                     uint16_t* out_product_id,
                                     uint16_t* out_usb_bus,
@@ -620,9 +637,9 @@ p_udev_try_usb_relation_get_address(struct udev_device* raw_dev,
 		return -1;
 	}
 
-	return p_udev_get_usb_device_info(usb_device, out_vendor_id,
-	                                  out_product_id, out_usb_bus,
-	                                  out_usb_addr);
+	return p_udev_get_usb_device_info(usb_device, out_dev_class,
+	                                  out_vendor_id, out_product_id,
+	                                  out_usb_bus, out_usb_addr);
 }
 
 static int
@@ -651,12 +668,13 @@ p_udev_get_vendor_id_product(struct udev_device* usb_dev,
 
 static int
 p_udev_get_usb_device_info(struct udev_device* usb_dev,
+                           uint8_t* out_dev_class,
                            uint16_t* out_vendor_id,
                            uint16_t* out_product_id,
                            uint16_t* out_usb_bus,
                            uint16_t* out_usb_addr)
 {
-	uint16_t vendor_id, product_id;
+	uint16_t vendor_id, product_id, dev_class;
 	int ret;
 
 	// First get the vendor and product ids.
@@ -665,9 +683,16 @@ p_udev_get_usb_device_info(struct udev_device* usb_dev,
 		return ret;
 	}
 
+	ret =
+	    p_udev_get_sysattr_u16_base16(usb_dev, "bDeviceClass", &dev_class);
+	if (ret != 0) {
+		return ret;
+	}
+
 	// We emulate what libusb does with regards to device bus and address.
 	if (p_udev_get_usb_device_address_path(usb_dev, out_usb_bus,
 	                                       out_usb_addr) == 0) {
+		*out_dev_class = (uint8_t)dev_class;
 		*out_vendor_id = vendor_id;
 		*out_product_id = product_id;
 		return 0;
@@ -676,6 +701,7 @@ p_udev_get_usb_device_info(struct udev_device* usb_dev,
 	// If for some reason we can't read the dev path fallback to sysfs.
 	if (p_udev_get_usb_device_address_sysfs(usb_dev, out_usb_bus,
 	                                        out_usb_addr) == 0) {
+		*out_dev_class = (uint8_t)dev_class;
 		*out_vendor_id = vendor_id;
 		*out_product_id = product_id;
 		return 0;
