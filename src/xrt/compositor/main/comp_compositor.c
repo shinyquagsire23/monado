@@ -535,6 +535,12 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 
 	switch (c->settings.window_type) {
 	case WINDOW_AUTO:
+#ifdef VK_USE_PLATFORM_WAYLAND_KHR
+		if (compositor_try_window(c, comp_window_wayland_create(c))) {
+			c->settings.window_type = WINDOW_WAYLAND;
+			return true;
+		}
+#endif
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 		if (compositor_try_window(c, comp_window_direct_create(c))) {
 			c->settings.window_type = WINDOW_DIRECT_RANDR;
@@ -544,12 +550,6 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 #ifdef VK_USE_PLATFORM_XCB_KHR
 		if (compositor_try_window(c, comp_window_xcb_create(c))) {
 			c->settings.window_type = WINDOW_XCB;
-			return true;
-		}
-#endif
-#ifdef VK_USE_PLATFORM_WAYLAND_KHR
-		if (compositor_try_window(c, comp_window_wayland_create(c))) {
-			c->settings.window_type = WINDOW_WAYLAND;
 			return true;
 		}
 #endif

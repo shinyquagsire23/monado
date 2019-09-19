@@ -37,7 +37,6 @@ set(GL_SOURCE_FILES
 	main/comp_swapchain.c
 	main/comp_window.h
 	main/comp_window_direct_mode.cpp
-	main/comp_window_wayland.cpp
 	main/comp_window_xcb.cpp
 	)
 

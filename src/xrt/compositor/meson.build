@@ -49,12 +49,46 @@ if xcb_randr.found()
 	compositor_deps += [xcb_randr]
 endif
 
-# TODO: This backend is straight-up broken
-#if wayland.found()
-#	compile_args += ['-DVK_USE_PLATFORM_WAYLAND_KHR']
-#	compositor_srcs += ['main/comp_window_wayland.cpp']
-#	compositor_deps += [wayland]
-#endif
+if wayland.found() and wayland_protos.found() and wayland_scanner.found()
+	wl_protos_src = []
+	wl_protos_headers = []
+	wl_protocol_dir = wayland_protos.get_pkgconfig_variable('pkgdatadir')
+
+	protocols = [
+		[wl_protocol_dir, 'stable/xdg-shell/xdg-shell.xml'],
+	]
+
+	foreach p : protocols
+		xml = join_paths(p)
+		wl_protos_src += custom_target(
+			xml.underscorify() + '_c',
+			input: xml,
+			output: '@BASENAME@-protocol.c',
+			command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
+		)
+		wl_protos_headers += custom_target(
+			xml.underscorify() + '_client_h',
+			input: xml,
+			output: '@BASENAME@-client-protocol.h',
+			command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
+		)
+	endforeach
+
+	lib_wl_protos = static_library(
+		'wl_protos',
+		wl_protos_src + wl_protos_headers,
+		dependencies: wayland.partial_dependency(compile_args: true),
+	)
+
+	wl_protos = declare_dependency(
+		link_with: lib_wl_protos,
+		sources: wl_protos_headers,
+	)
+
+	compile_args += ['-DVK_USE_PLATFORM_WAYLAND_KHR']
+	compositor_srcs += ['main/comp_window_wayland.c']
+	compositor_deps += [wayland, wl_protos]
+endif
 
 if get_option('vulkan-validation')
 	compile_args += ['-DXRT_ENABLE_VK_VALIDATION']

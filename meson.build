@@ -59,7 +59,17 @@ endif
 x11       = dependency('x11', required: false)
 xcb       = dependency('xcb', required: false)
 xcb_randr = dependency('xcb-randr', required: false)
-wayland   = dependency('wayland-client', required: false)
+
+wayland         = dependency('wayland-client', required: false)
+wayland_protos  = dependency('wayland-protocols', required: false)
+wayland_scanner = dependency('wayland-scanner', required: false)
+
+if wayland_scanner.found()
+	wayland_scanner = find_program(
+		wayland_scanner.get_pkgconfig_variable('wayland_scanner'),
+		native: true,
+	)
+endif
 
 hidapi_required = false
 openhmd_required = false

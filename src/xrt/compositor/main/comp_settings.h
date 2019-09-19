@@ -53,7 +53,6 @@ enum window_type
 struct comp_settings
 {
 	int display;
-	int mode;
 
 	VkFormat color_format;
 	VkColorSpaceKHR color_space;
