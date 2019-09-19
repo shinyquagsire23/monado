@@ -1263,8 +1263,9 @@ psmv_parse_input_zcm1(struct psmv_device *psmv,
 	input->buttons |= data->buttons[1] << 16;
 	input->buttons |= data->buttons[2] << 8;
 	input->buttons |= data->buttons[3] & 0xf0;
-	input->timestamp |= data->timestamp_low;
-	input->timestamp |= data->timestamp_high << 8;
+	input->timestamp = 0;
+	input->timestamp |= (uint16_t)data->timestamp_low;
+	input->timestamp |= ((uint16_t)data->timestamp_high) << 8;
 
 	input->trigger_values[0] = data->trigger_f1;
 	input->trigger_values[1] = data->trigger_f2;
