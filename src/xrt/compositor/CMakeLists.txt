@@ -38,6 +38,7 @@ set(GL_SOURCE_FILES
 	main/comp_window.h
 	main/comp_window_direct_mode.cpp
 	main/comp_window_xcb.cpp
+	main/comp_window_wayland.c
 	)
 
 if (${XCB_FOUND})
@@ -45,17 +46,48 @@ if (${XCB_FOUND})
 	add_definitions(-DVK_USE_PLATFORM_XLIB_XRANDR_EXT)
 endif()
 
+# generate wayland protocols
+if("${WAYLAND_FOUND}" AND
+   "${WAYLAND_SCANNER_FOUND}" AND
+   "${WAYLAND_PROTOCOLS_FOUND}" AND
+   "${BUILD_WITH_WAYLAND}")
+	pkg_get_variable(WL_PROTOS_PKG_DIR wayland-protocols pkgdatadir)
+	pkg_get_variable(WL_SCANNER wayland-scanner wayland_scanner)
+
+	set(WL_PROTOS_DIR "${CMAKE_CURRENT_BINARY_DIR}/wayland-protocols/")
+	file(MAKE_DIRECTORY "${WL_PROTOS_DIR}")
+
+	set(WL_PROTOS_XML "${WL_PROTOS_PKG_DIR}/stable/xdg-shell/xdg-shell.xml")
+	set(WL_PROTOS_C "${WL_PROTOS_DIR}/xdg-shell.c")
+	set(WL_PROTOS_H "${WL_PROTOS_DIR}/xdg-shell-client-protocol.h")
+
+	add_custom_command(
+		COMMAND
+		${WL_SCANNER} private-code "${WL_PROTOS_XML}" "${WL_PROTOS_C}"
+		OUTPUT "${WL_PROTOS_C}" VERBATIM)
+
+	add_custom_command(
+		COMMAND
+		${WL_SCANNER} client-header "${WL_PROTOS_XML}" "${WL_PROTOS_H}"
+		OUTPUT "${WL_PROTOS_H}" VERBATIM)
+
+	set(WL_PROTOS_SRC ${WL_PROTOS_C} ${WL_PROTOS_H})
+
+	add_definitions(-DVK_USE_PLATFORM_WAYLAND_KHR)
+endif()
+
 if (${VULKAN_ENABLE_VALIDATION})
 	add_definitions(-DXRT_ENABLE_VK_VALIDATION)
 endif()
 
 # Use OBJECT to not create a archive, since it just gets in the way.
-add_library(comp OBJECT ${GL_SOURCE_FILES})
+add_library(comp OBJECT ${GL_SOURCE_FILES} ${WL_PROTOS_SRC})
 set_property(TARGET comp PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(comp
 	PRIVATE
 	${XCB_INCLUDE_DIRS}
 	${VULKAN_INCLUDE_DIR}
+	${WL_PROTOS_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/../include
 	${CMAKE_CURRENT_SOURCE_DIR}/../auxiliary

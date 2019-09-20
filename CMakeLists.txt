@@ -41,11 +41,16 @@ pkg_check_modules(FFMPEG libavcodec)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	# Compositor backend
 	find_package(X11)
+	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(XCB xcb xcb-randr)
 
 	find_package(udev REQUIRED)
 	set(BUILD_WITH_LIBUDEV TRUE)
 	set(BUILD_DRIVER_V4L2 TRUE)
+
+	pkg_search_module(WAYLAND wayland-client)
+	pkg_search_module(WAYLAND_SCANNER wayland-scanner)
+	pkg_search_module(WAYLAND_PROTOCOLS wayland-protocols)
 endif()
 
 cmake_dependent_option(BUILD_WITH_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND" OFF)

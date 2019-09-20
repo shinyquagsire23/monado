@@ -47,6 +47,7 @@ target_link_libraries(${RUNTIME_TARGET}
 	${Vulkan_LIBRARIES}
 	${UDEV_LIBRARIES}
 	${XCB_LIBRARIES}
+	${WAYLAND_LIBRARIES}
 	OpenGL::GLX
 	)
 
