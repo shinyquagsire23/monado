@@ -37,6 +37,7 @@ target_link_libraries(cli PRIVATE
 	${LIBUSB_LIBRARIES}
 	${LIBUVC_LIBRARIES}
 	${UDEV_LIBRARIES}
+	Threads::Threads
 	)
 
 if(DRIVER_OBJECTS)
