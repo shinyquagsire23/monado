@@ -358,15 +358,17 @@ struct psmv_input_zcm2
 	uint8_t trigger;
 	uint8_t trigger_low_pass;
 	uint8_t pad0[4];
-	uint8_t timestamp_high;
+	uint8_t timestamp_high_copy;
 	uint8_t battery;
 	struct psmv_vec3_i16_wire accel;
 	struct psmv_vec3_i16_wire accel_copy;
 	struct psmv_vec3_i16_wire gyro;
 	struct psmv_vec3_i16_wire gyro_copy;
 	uint8_t temp[2];
-	uint8_t pad1[2];
 	uint8_t timestamp_low;
+	uint8_t timestamp_high;
+	uint8_t pad1[2];
+	uint8_t timestamp_low_copy;
 };
 
 /*!
@@ -385,6 +387,7 @@ struct psmv_parsed_input
 {
 	uint32_t buttons;
 	uint16_t timestamp;
+	uint16_t timestamp_copy;
 	uint8_t battery;
 	uint8_t seq_no;
 
@@ -1493,9 +1496,12 @@ psmv_parse_input_zcm2(struct psmv_device *psmv,
 	input->buttons |= data->buttons[1] << 16;
 	input->buttons |= data->buttons[2] << 8;
 	input->buttons |= data->buttons[3] & 0xf0;
-	input->timestamp |= data->timestamp_low;
-	input->timestamp |= data->timestamp_high << 8;
-
+	input->timestamp = 0;
+	input->timestamp |= (uint16_t)data->timestamp_low;
+	input->timestamp |= ((uint16_t)data->timestamp_high) << 8;
+	input->timestamp_copy = 0;
+	input->timestamp_copy |= (uint16_t)data->timestamp_low_copy;
+	input->timestamp_copy |= ((uint16_t)data->timestamp_high_copy) << 8;
 	input->trigger_low_pass = data->trigger_low_pass;
 	input->trigger = data->trigger;
 
@@ -1525,7 +1531,8 @@ psmv_parse_input_zcm2(struct psmv_device *psmv,
 	          "sample_copy.gyro:  %6i %6i %6i\n\t"
 	          "sample.trigger: %02x\n\t"
 	          "sample.trigger_low_pass: %02x\n\t"
-	          "timestamp: %i\n\t"
+	          "timestamp:      %04x\n\t"
+	          "timestamp_copy: %04x\n\t"
 	          "diff: %i\n\t"
 	          "seq_no: %x\n",
 	          missed ? "yes" : "no", input->buttons, input->battery,
@@ -1536,7 +1543,7 @@ psmv_parse_input_zcm2(struct psmv_device *psmv,
 	          input->samples[0].gyro.z, input->samples[1].gyro.x,
 	          input->samples[1].gyro.y, input->samples[1].gyro.z,
 	          input->trigger_low_pass, input->trigger, input->timestamp,
-	          diff, input->seq_no);
+	          input->timestamp_copy, diff, input->seq_no);
 
 	return 1;
 }
