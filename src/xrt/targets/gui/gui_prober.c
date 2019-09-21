@@ -39,39 +39,29 @@ gui_prober_init(struct program *p)
 	p->timekeeping = time_state_create();
 
 	// Initialize the prober.
-	printf(" :: Creating prober!\n");
-
 	ret = xrt_prober_create(&p->xp);
 	if (ret != 0) {
 		return do_exit(p, ret);
 	}
 
 	// Need to prime the prober with devices before dumping and listing.
-	printf(" :: Probing!\n");
-
 	ret = xrt_prober_probe(p->xp);
 	if (ret != 0) {
 		return do_exit(p, ret);
 	}
 
-	// Multiple devices can be found.
-	printf(" :: Selecting devices!\n");
+	return 0;
+}
 
+int
+gui_prober_select(struct program *p)
+{
+	int ret;
+
+	// Multiple devices can be found.
 	ret = xrt_prober_select(p->xp, p->xdevs, NUM_XDEVS);
 	if (ret != 0) {
-		do_exit(p, ret);
-	}
-	if (p->xdevs[0] == NULL) {
-		printf("\tNo HMD found! :(\n");
-		return do_exit(p, -1);
-	}
-
-	for (size_t i = 0; i < NUM_XDEVS; i++) {
-		if (p->xdevs[i] == NULL) {
-			continue;
-		}
-
-		printf("\tFound '%s'\n", p->xdevs[i]->str);
+		return ret;
 	}
 
 	return 0;

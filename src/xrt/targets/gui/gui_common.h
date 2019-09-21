@@ -62,6 +62,7 @@ struct program
 	struct xrt_prober *xp;
 
 	struct gui_ogl_texture *texs[256];
+	size_t num_texs;
 };
 
 /*!
@@ -70,7 +71,7 @@ struct program
 struct gui_scene
 {
 	void (*render)(struct gui_scene *, struct program *);
-	void (*destroy)(struct gui_scene *);
+	void (*destroy)(struct gui_scene *, struct program *);
 };
 
 /*!
@@ -140,6 +141,14 @@ gui_sdl2_quit(struct program *p);
  */
 int
 gui_prober_init(struct program *p);
+
+/*!
+ * Create devices.
+ *
+ * @ingroup gui
+ */
+int
+gui_prober_select(struct program *p);
 
 /*!
  * Update all devices.
@@ -226,12 +235,28 @@ gui_scene_manager_destroy(struct program *p);
  */
 
 /*!
+ * Shows the main menu.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_main_menu(struct program *p);
+
+/*!
  * Shows a UI that lets you select a video device and mode.
  *
  * @ingroup gui
  */
 void
 gui_scene_select_video(struct program *p);
+
+/*!
+ * Regular debug UI.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_debug(struct program *p);
 
 /*!
  * Given the frameserver runs some debug code on it.

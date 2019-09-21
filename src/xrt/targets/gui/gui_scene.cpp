@@ -73,7 +73,7 @@ gui_scene_manager_render(struct program *p)
 	copy = gsm.del;
 	gsm.del.clear();
 	for (auto scene : copy) {
-		scene->destroy(scene);
+		scene->destroy(scene, p);
 	}
 
 	// If there are no scenes left stop the program.

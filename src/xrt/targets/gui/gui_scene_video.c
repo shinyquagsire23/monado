@@ -110,7 +110,7 @@ scene_render(struct gui_scene *scene, struct program *p)
 }
 
 static void
-scene_destroy(struct gui_scene *scene)
+scene_destroy(struct gui_scene *scene, struct program *p)
 {
 	struct video_select *vs = (struct video_select *)scene;
 

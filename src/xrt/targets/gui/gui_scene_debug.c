@@ -17,6 +17,7 @@
 
 #include "xrt/xrt_frame.h"
 #include "xrt/xrt_prober.h"
+#include "xrt/xrt_tracking.h"
 #include "xrt/xrt_frameserver.h"
 
 #include "gui_common.h"
@@ -181,7 +182,7 @@ scene_render(struct gui_scene *scene, struct program *p)
 }
 
 static void
-scene_destroy(struct gui_scene *scene)
+scene_destroy(struct gui_scene *scene, struct program *p)
 {
 	struct debug_scene *ds = (struct debug_scene *)scene;
 
@@ -240,4 +241,55 @@ gui_scene_debug_video(struct program *p,
 
 	// Now that we have setup a node graph, start it.
 	xrt_fs_stream_start(xfs, xsink, mode);
+}
+
+
+static void
+on_root_enter_sink(const char *name, void *priv)
+{}
+
+static void
+on_elem_sink(const char *name, enum u_var_kind kind, void *ptr, void *priv)
+{
+	struct program *p = (struct program *)priv;
+
+	if (kind != U_VAR_KIND_SINK) {
+		return;
+	}
+
+	if (p->xp->tracking == NULL) {
+		return;
+	}
+
+	struct xrt_frame_context *xfctx = p->xp->tracking->xfctx;
+	struct xrt_frame_sink **xsink_ptr = (struct xrt_frame_sink **)ptr;
+	struct xrt_frame_sink *split = NULL;
+
+
+	p->texs[p->num_texs++] = gui_ogl_sink_create(name, xfctx, &split);
+
+	if (*xsink_ptr != NULL) {
+		u_sink_split_create(xfctx, split, *xsink_ptr, xsink_ptr);
+	} else {
+		*xsink_ptr = split;
+	}
+}
+
+static void
+on_root_exit_sink(const char *name, void *priv)
+{}
+
+void
+gui_scene_debug(struct program *p)
+{
+	struct debug_scene *ds = U_TYPED_CALLOC(struct debug_scene);
+
+	ds->base.render = scene_render;
+	ds->base.destroy = scene_destroy;
+
+	gui_scene_push_front(p, &ds->base);
+
+	gui_prober_select(p);
+
+	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink, p);
 }
