@@ -205,21 +205,25 @@ update_fusion(struct psvr_device *psvr,
               uint32_t tick_delta)
 {
 	struct xrt_vec3 mag = {0.0f, 0.0f, 0.0f};
-	float delta_ns = tick_delta * PSVR_TICK_PERIOD;
 	(void)mag;
 
 	accel_from_psvr_vec(&sample->accel, &psvr->read.accel);
 	gyro_from_psvr_vec(&sample->gyro, &psvr->read.gyro);
 
 	if (psvr->tracker != NULL) {
+		time_duration_ns delta_ns =
+		    tick_delta * (1000000000.0 / PSVR_TICKS_PER_SECOND);
+
 		struct xrt_tracking_sample sample;
 		sample.accel_m_s2 = psvr->read.accel;
 		sample.gyro_rad_secs = psvr->read.gyro;
 
 		xrt_tracked_psvr_push_imu(psvr->tracker, delta_ns, &sample);
 	} else {
+		float delta_secs = tick_delta / PSVR_TICKS_PER_SECOND;
+
 		math_quat_integrate_velocity(&psvr->fusion.rot,
-		                             &psvr->read.gyro, delta_ns,
+		                             &psvr->read.gyro, delta_secs,
 		                             &psvr->fusion.rot);
 	}
 }

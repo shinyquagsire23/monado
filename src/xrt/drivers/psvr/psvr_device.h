@@ -52,7 +52,7 @@ enum psvr_status_bits
 #define PSVR_STATUS_VR_MODE_OFF 0
 #define PSVR_STATUS_VR_MODE_ON 1
 
-#define PSVR_TICK_PERIOD (1.0f / 1000000.0f) // 1 MHz ticks
+#define PSVR_TICKS_PER_SECOND (1000000.0) // 1 MHz ticks
 
 #define PSVR_PKG_STATUS 0xF0
 #define PSVR_PKG_0xA0 0xA0

@@ -22,6 +22,7 @@ extern "C" {
  */
 
 struct xrt_tracked_psmv;
+struct xrt_tracked_psvr;
 
 
 /*
@@ -157,6 +158,14 @@ int
 t_psmv_create(struct xrt_frame_context *xfctx,
               struct xrt_colour_rgb_f32 *rgb,
               struct xrt_tracked_psmv **out_xtmv,
+              struct xrt_frame_sink **out_sink);
+
+int
+t_psvr_start(struct xrt_tracked_psvr *xtvr);
+
+int
+t_psvr_create(struct xrt_frame_context *xfctx,
+              struct xrt_tracked_psvr **out_xtvr,
               struct xrt_frame_sink **out_sink);
 
 
