@@ -16,6 +16,8 @@ extern "C" {
 #endif
 
 
+struct xrt_frame_sink;
+
 /*!
  * @ingroup aux_util
  * @{
@@ -26,7 +28,6 @@ extern "C" {
  */
 enum u_var_kind
 {
-
 	U_VAR_KIND_BOOL,
 	U_VAR_KIND_RGB_U8,
 	U_VAR_KIND_RGB_F32,
@@ -35,6 +36,7 @@ enum u_var_kind
 	U_VAR_KIND_F32,
 	U_VAR_KIND_VEC3_I32,
 	U_VAR_KIND_VEC3_F32,
+	U_VAR_KIND_SINK,
 	U_VAR_KIND_RO_TEXT,
 	U_VAR_KIND_RO_I32,
 	U_VAR_KIND_RO_F32,
@@ -114,6 +116,7 @@ ADD_FUNC(i32, int32_t, I32);
 ADD_FUNC(f32, float, F32);
 ADD_FUNC(vec3_i32, struct xrt_vec3_i32, VEC3_I32);
 ADD_FUNC(vec3_f32, struct xrt_vec3, VEC3_F32);
+ADD_FUNC(sink, struct xrt_frame_sink *, SINK);
 ADD_FUNC(ro_text, const char, RO_TEXT);
 ADD_FUNC(ro_i32, int32_t, RO_I32);
 ADD_FUNC(ro_f32, float, RO_F32);
