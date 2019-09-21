@@ -6,6 +6,7 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
+#include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_frame.h"
@@ -320,6 +321,7 @@ static void
 destroy(struct xrt_frame_node *node)
 {
 	struct t_hsv_filter *f = container_of(node, struct t_hsv_filter, node);
+	u_var_remove_root(f);
 	free(f);
 }
 
@@ -342,6 +344,12 @@ t_hsv_filter_create(struct xrt_frame_context *xfctx,
 	t_hsv_build_optimized_table(&f->params, &f->table);
 
 	xrt_frame_context_add(xfctx, &f->node);
+
+	u_var_add_root(f, "HSV Filter", true);
+	u_var_add_sink(f, &f->sinks[0], "Red");
+	u_var_add_sink(f, &f->sinks[1], "Purple");
+	u_var_add_sink(f, &f->sinks[2], "Blue");
+	u_var_add_sink(f, &f->sinks[3], "White");
 
 	*out_sink = &f->base;
 
