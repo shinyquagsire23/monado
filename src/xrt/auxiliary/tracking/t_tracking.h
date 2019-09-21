@@ -15,6 +15,14 @@
 extern "C" {
 #endif
 
+/*
+ *
+ * Pre-declare
+ *
+ */
+
+struct xrt_tracked_psmv;
+
 
 /*
  *
@@ -134,6 +142,22 @@ t_hsv_filter_create(struct xrt_frame_context *xfctx,
                     struct t_hsv_filter_params *params,
                     struct xrt_frame_sink *sinks[4],
                     struct xrt_frame_sink **out_sink);
+
+
+/*
+ *
+ * Tracker code.
+ *
+ */
+
+int
+t_psmv_start(struct xrt_tracked_psmv *xtmv);
+
+int
+t_psmv_create(struct xrt_frame_context *xfctx,
+              struct xrt_colour_rgb_f32 *rgb,
+              struct xrt_tracked_psmv **out_xtmv,
+              struct xrt_frame_sink **out_sink);
 
 
 /*

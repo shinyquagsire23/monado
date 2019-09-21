@@ -24,6 +24,7 @@ set(TRACKING_SOURCE_FILES
 	tracking/t_debug_hsv_picker.cpp
 	tracking/t_debug_hsv_viewer.cpp
 	tracking/t_hsv_filter.c
+	tracking/t_tracker_psmv.cpp
 	tracking/t_tracking.h
 	)
 
