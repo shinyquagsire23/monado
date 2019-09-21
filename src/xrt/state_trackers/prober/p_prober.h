@@ -192,6 +192,18 @@ p_dev_get_bluetooth_dev(struct prober* p,
                         uint16_t product_id,
                         struct prober_device** out_pdev);
 
+/*!
+ * Init the tracking factory.
+ */
+int
+p_tracking_init(struct prober* p);
+
+/*!
+ * Teardown the tracking factory.
+ */
+void
+p_tracking_teardown(struct prober* p);
+
 #ifdef XRT_HAVE_LIBUSB
 int
 p_libusb_init(struct prober* p);

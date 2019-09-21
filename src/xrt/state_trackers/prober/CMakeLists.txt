@@ -15,6 +15,7 @@ set(PROBER_SOURCE_FILES
 	p_dump.c
 	p_prober.c
 	p_prober.h
+	p_tracking.c
 	)
 
 # Add libudev

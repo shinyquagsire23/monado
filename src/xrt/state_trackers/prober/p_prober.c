@@ -305,6 +305,12 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 	}
 #endif
 
+	ret = p_tracking_init(p);
+	if (ret != 0) {
+		teardown(p);
+		return -1;
+	}
+
 	for (int i = 0; i < MAX_AUTO_PROBERS && lists->auto_probers[i]; i++) {
 		p->auto_probers[i] = lists->auto_probers[i]();
 	}
@@ -374,6 +380,9 @@ teardown(struct prober* p)
 		p->auto_probers[i]->destroy(p->auto_probers[i]);
 		p->auto_probers[i] = NULL;
 	}
+
+	// Need to turn off tracking early.
+	p_tracking_teardown(p);
 
 	// Need to free all entries.
 	if (p->entries != NULL) {
