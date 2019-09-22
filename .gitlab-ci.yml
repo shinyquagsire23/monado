@@ -76,7 +76,8 @@ pages:
   dependencies:
     - debian:build-cmake
   script:
-    - mv build/doc/html public
+    - mkdir -p public
+    - mv build/doc/html/* public/
   artifacts:
     paths:
       - public
