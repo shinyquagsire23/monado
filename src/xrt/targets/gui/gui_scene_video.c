@@ -21,6 +21,9 @@ struct video_select
 {
 	struct gui_scene base;
 
+	bool test;
+	bool calibrate;
+
 	struct xrt_frame_context *xfctx;
 	struct xrt_fs *xfs;
 
@@ -91,7 +94,12 @@ scene_render(struct gui_scene *scene, struct program *p)
 		}
 
 		// User selected this mode, create the debug scene.
-		gui_scene_debug_video(p, vs->xfctx, vs->xfs, i);
+		if (vs->test) {
+			gui_scene_debug_video(p, vs->xfctx, vs->xfs, i);
+		} else if (vs->calibrate) {
+			gui_scene_calibrate(p, vs->xfctx, vs->xfs, i);
+		}
+
 		// We should not clean these up, zero them out.
 		vs->xfctx = NULL;
 		vs->xfs = NULL;
@@ -136,12 +144,25 @@ scene_destroy(struct gui_scene *scene, struct program *p)
  */
 
 void
-gui_scene_select_video(struct program *p)
+gui_scene_select_video_test(struct program *p)
 {
 	struct video_select *vs = U_TYPED_CALLOC(struct video_select);
 
 	vs->base.render = scene_render;
 	vs->base.destroy = scene_destroy;
+	vs->test = true;
+
+	gui_scene_push_front(p, &vs->base);
+}
+
+void
+gui_scene_select_video_calibrate(struct program *p)
+{
+	struct video_select *vs = U_TYPED_CALLOC(struct video_select);
+
+	vs->base.render = scene_render;
+	vs->base.destroy = scene_destroy;
+	vs->calibrate = true;
 
 	gui_scene_push_front(p, &vs->base);
 }

@@ -21,6 +21,7 @@ set(SOURCE_FILES
 	gui_ogl.c
 	gui_prober.c
 	gui_scene.cpp
+	gui_scene_calibrate.c
 	gui_scene_debug.c
 	gui_scene_main_menu.c
 	gui_scene_video.c

@@ -35,6 +35,8 @@ main(int argc, char **argv)
 	// First scene to start with.
 	if (argc >= 2 && strcmp("debug", argv[1]) == 0) {
 		gui_scene_debug(&p);
+	} else if (argc >= 2 && strcmp("calibrate", argv[1]) == 0) {
+		gui_scene_select_video_calibrate(&p);
 	} else {
 		gui_scene_main_menu(&p);
 	}

@@ -23,17 +23,24 @@ struct main_menu
 static void
 scene_render(struct gui_scene *scene, struct program *p)
 {
-	igBegin("Main Meun", NULL, 0);
+	igBegin("Main Menu", NULL, 0);
 
-	if (igButton("Debug", button_dims)) {
+	if (igButton("Calibrate", button_dims)) {
+		gui_scene_delete_me(p, scene);
+		gui_scene_select_video_calibrate(p);
+	}
+
+	if (igButton("Debug Test", button_dims)) {
 		gui_scene_delete_me(p, scene);
 		gui_scene_debug(p);
 	}
 
-	if (igButton("Select Video", button_dims)) {
+	if (igButton("Video (deprecated)", button_dims)) {
 		gui_scene_delete_me(p, scene);
-		gui_scene_select_video(p);
+		gui_scene_select_video_test(p);
 	}
+
+	igSeparator();
 
 	if (igButton("Exit", button_dims)) {
 		gui_scene_delete_me(p, scene);

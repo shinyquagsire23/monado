@@ -243,12 +243,20 @@ void
 gui_scene_main_menu(struct program *p);
 
 /*!
- * Shows a UI that lets you select a video device and mode.
+ * Shows a UI that lets you select a video device and mode for calibration.
  *
  * @ingroup gui
  */
 void
-gui_scene_select_video(struct program *p);
+gui_scene_select_video_calibrate(struct program *p);
+
+/*!
+ * Shows a UI that lets you select a video device and mode for testing.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_select_video_test(struct program *p);
 
 /*!
  * Regular debug UI.
@@ -268,6 +276,17 @@ gui_scene_debug_video(struct program *p,
                       struct xrt_frame_context *xfctx,
                       struct xrt_fs *xfs,
                       size_t mode);
+
+/*!
+ * Given the frameserver runs the calibration code on it.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_calibrate(struct program *p,
+                    struct xrt_frame_context *xfctx,
+                    struct xrt_fs *xfs,
+                    size_t mode);
 
 
 #ifdef __cplusplus
