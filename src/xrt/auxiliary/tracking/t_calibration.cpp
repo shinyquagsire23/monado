@@ -10,6 +10,7 @@
 #include "util/u_sink.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "util/u_frame.h"
 #include "util/u_format.h"
 #include "tracking/t_tracking.h"
 
@@ -34,6 +35,7 @@ public:
 	struct
 	{
 		cv::Mat rgb = {};
+		struct xrt_frame *frame = {};
 		struct xrt_frame_sink *sink = {};
 	} gui;
 
@@ -62,19 +64,21 @@ public:
  */
 
 static void
-send_rgb_frame(struct xrt_frame_sink *xsink, cv::Mat &rgb)
+refresh_gui_frame(class Calibration &c, int rows, int cols)
 {
-	struct xrt_frame xf = {};
+	// Also dereferences the old frame.
+	u_frame_create_one_off(XRT_FORMAT_R8G8B8, cols, rows, &c.gui.frame);
 
-	xf.format = XRT_FORMAT_R8G8B8;
-	xf.width = rgb.cols;
-	xf.height = rgb.rows;
-	xf.data = rgb.data;
+	c.gui.rgb = cv::Mat(rows, cols, CV_8UC3, c.gui.frame->data,
+	                    c.gui.frame->stride);
+}
 
-	u_format_size_for_dimensions(xf.format, xf.width, xf.height, &xf.stride,
-	                             &xf.size);
+static void
+send_rgb_frame(class Calibration &c)
+{
+	c.gui.sink->push_frame(c.gui.sink, c.gui.frame);
 
-	xsink->push_frame(xsink, &xf);
+	refresh_gui_frame(c, c.gui.rgb.rows, c.gui.rgb.cols);
 }
 
 static void
@@ -85,7 +89,8 @@ ensure_buffers_are_allocated(class Calibration &c, int rows, int cols)
 	}
 
 	c.grey = cv::Mat(rows, cols, CV_8UC1, cv::Scalar(0));
-	c.gui.rgb = cv::Mat(rows, cols, CV_8UC3, cv::Scalar(0, 0, 0));
+
+	refresh_gui_frame(c, rows, cols);
 }
 
 static void
@@ -116,7 +121,7 @@ make_gui_str(class Calibration &c)
 
 	print_txt(rgb, c.text, 1.0);
 
-	send_rgb_frame(c.gui.sink, c.gui.rgb);
+	send_rgb_frame(c);
 }
 
 static void
@@ -137,7 +142,7 @@ make_calibration_frame(class Calibration &c)
 
 	print_txt(rgb, "CALIBRATION MODE", 1.5);
 
-	send_rgb_frame(c.gui.sink, rgb);
+	send_rgb_frame(c);
 }
 
 
@@ -147,7 +152,7 @@ make_calibration_frame(class Calibration &c)
  *
  */
 
-static void
+XRT_NO_INLINE static void
 process_frame_yuv(class Calibration &c, struct xrt_frame *xf)
 {
 
@@ -161,7 +166,7 @@ process_frame_yuv(class Calibration &c, struct xrt_frame *xf)
 	cv::cvtColor(c.gui.rgb, c.grey, cv::COLOR_RGB2GRAY);
 }
 
-static void
+XRT_NO_INLINE static void
 process_frame_yuyv(class Calibration &c, struct xrt_frame *xf)
 {
 	/*
