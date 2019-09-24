@@ -56,9 +56,6 @@ if(BUILD_TRACKING)
 	list(APPEND DRIVER_LIBRARIES ${OpenCV_LIBRARIES})
 endif()
 
-configure_file(targets_enabled_drivers.h.cmake_in ${CMAKE_CURRENT_BINARY_DIR}/targets_enabled_drivers.h)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 add_subdirectory(common)
 add_subdirectory(openxr)
 add_subdirectory(cli)

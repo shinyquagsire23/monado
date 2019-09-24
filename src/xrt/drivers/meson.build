@@ -1,0 +1,76 @@
+# Copyright 2019, Collabora, Ltd.
+# SPDX-License-Identifier: BSL-1.0
+
+drv_include = include_directories('.')
+
+lib_drv_hdk = static_library(
+	'drv_hdk',
+	files(
+		'hdk/hdk_device.cpp',
+		'hdk/hdk_device.h',
+		'hdk/hdk_interface.h',
+		'hdk/hdk_prober.c',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux, hidapi],
+	build_by_default: 'hdk' in drivers,
+)
+
+lib_drv_hydra = static_library(
+	'drv_hydra',
+	files(
+		'hydra/hydra_driver.c',
+		'hydra/hydra_interface.h',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux],
+	build_by_default: 'hydra' in drivers,
+)
+
+lib_drv_ohmd = static_library(
+	'drv_ohmd',
+	files(
+		'ohmd/oh_device.c',
+		'ohmd/oh_device.h',
+		'ohmd/oh_interface.h',
+		'ohmd/oh_prober.c',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux, openhmd],
+	build_by_default: 'ohmd' in drivers,
+)
+
+lib_drv_psmv = static_library(
+	'drv_psmv',
+	files(
+		'psmv/psmv_driver.c',
+		'psmv/psmv_interface.h',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux],
+	build_by_default: 'psmv' in drivers,
+)
+
+lib_drv_psvr = static_library(
+	'drv_psvr',
+	files(
+		'psvr/psvr_device.c',
+		'psvr/psvr_device.h',
+		'psvr/psvr_interface.h',
+		'psvr/psvr_packet.c',
+		'psvr/psvr_prober.c',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux, hidapi],
+	build_by_default: 'psvr' in drivers,
+)
+
+lib_drv_v4l2 = static_library(
+	'drv_v4l2',
+	files(
+		'v4l2/v4l2_driver.c',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux, v4l2],
+	build_by_default: 'v4l2' in drivers,
+)
