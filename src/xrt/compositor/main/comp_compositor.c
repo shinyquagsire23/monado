@@ -227,16 +227,16 @@ select_instances_extensions(struct comp_compositor *c,
 		*out_exts = instance_extensions_none;
 		*out_num = ARRAY_SIZE(instance_extensions_none);
 		break;
-#ifdef VK_USE_PLATFORM_XCB_KHR
-	case WINDOW_XCB:
-		*out_exts = instance_extensions_xcb;
-		*out_num = ARRAY_SIZE(instance_extensions_xcb);
-		break;
-#endif
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
 	case WINDOW_WAYLAND:
 		*out_exts = instance_extensions_wayland;
 		*out_num = ARRAY_SIZE(instance_extensions_wayland);
+		break;
+#endif
+#ifdef VK_USE_PLATFORM_XCB_KHR
+	case WINDOW_XCB:
+		*out_exts = instance_extensions_xcb;
+		*out_num = ARRAY_SIZE(instance_extensions_xcb);
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
