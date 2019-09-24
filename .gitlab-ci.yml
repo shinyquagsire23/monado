@@ -2,13 +2,13 @@ variables:
   UPSTREAM_REPO: monado/monado
 
   DEBIAN_VERSION: buster
-  DEBIAN_TAG: '2019-06-13.0'
+  DEBIAN_TAG: '2019-09-26.0'
   DEBIAN_CONTAINER_IMAGE: $CI_REGISTRY_IMAGE/debian/$DEBIAN_VERSION:$DEBIAN_TAG
-  DEBIAN_DEBS: 'build-essential git cmake meson ninja-build doxygen graphviz libeigen3-dev curl patch python3 pkg-config libx11-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libhidapi-dev libwayland-dev libvulkan-dev glslang-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libuvc-dev libavcodec-dev libopencv-dev libudev-dev clang-format-7 codespell'
+  DEBIAN_DEBS: 'build-essential git cmake meson ninja-build doxygen graphviz libeigen3-dev curl patch python3 pkg-config libx11-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libhidapi-dev libwayland-dev libvulkan-dev glslang-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libuvc-dev libavcodec-dev libopencv-dev libudev-dev clang-format-7 codespell libv4l-dev'
   DEBIAN_EXEC: 'bash .gitlab-ci/build-openxr-openhmd.sh'
   
-  ARCH_TAG: '2019-06-19.0'
-  ARCH_PKGS: 'git gcc cmake meson ninja pkgconfig python3 diffutils patch doxygen graphviz eigen hidapi libxrandr mesa glslang vulkan-headers vulkan-icd-loader check glfw-x11 libusb opencv gtk3 ffmpeg'
+  ARCH_TAG: '2019-09-26.0'
+  ARCH_PKGS: 'git gcc cmake meson ninja pkgconfig python3 diffutils patch doxygen graphviz eigen hidapi libxrandr mesa glslang vulkan-headers vulkan-icd-loader check glfw-x11 libusb opencv gtk3 ffmpeg v4l-utils'
   ARCH_EXEC: 'bash .gitlab-ci/build-openxr-openhmd.sh'
   ARCH_CONTAINER_IMAGE: $CI_REGISTRY_IMAGE/archlinux/rolling:$ARCH_TAG
 
@@ -53,9 +53,6 @@ debian:build-cmake:
   - pushd build
   - cmake -GNinja ..
   - ninja
-  artifacts:
-    paths:
-      - build/doc/html/
 
 arch:build-cmake:
   stage: build
@@ -66,6 +63,27 @@ arch:build-cmake:
   - cmake -GNinja ..
   - ninja
 
+debian:build-meson:
+  stage: build
+  image: $DEBIAN_CONTAINER_IMAGE
+  script:
+  - mkdir build
+  - pushd build
+  - meson ..
+  - ninja
+  artifacts:
+    paths:
+      - build/doc/html/
+
+arch:build-meson:
+  stage: build
+  image: $ARCH_CONTAINER_IMAGE
+  script:
+  - mkdir build
+  - pushd build
+  - meson -Ddocs=disabled ..
+  - ninja
+
 ###
 # Pages
 ###
@@ -74,7 +92,7 @@ pages:
   only:
     - master
   dependencies:
-    - debian:build-cmake
+    - debian:build-meson
   script:
     - mkdir -p public
     - mv build/doc/html/* public/
