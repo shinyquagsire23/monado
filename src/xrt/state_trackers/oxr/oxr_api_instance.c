@@ -181,8 +181,15 @@ oxr_xrStructureTypeToString(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrStructureTypeToString");
 
-	OXR_WARN_ONCE(&log, "fill in properly");
-	buffer[0] = '\0';
+#define MAKE_TYPE_CASE(VAL, _)                                                 \
+	case VAL: strncpy(buffer, #VAL, XR_MAX_RESULT_STRING_SIZE); break;
+	switch (value) {
+		XR_LIST_ENUM_XrStructureType(MAKE_TYPE_CASE);
+	default:
+		snprintf(buffer, XR_MAX_RESULT_STRING_SIZE,
+		         "XR_UNKNOWN_STRUCTURE_TYPE_%d", value);
+	}
+	buffer[XR_MAX_RESULT_STRING_SIZE - 1] = '\0';
 
 	return XR_SUCCESS;
 }
