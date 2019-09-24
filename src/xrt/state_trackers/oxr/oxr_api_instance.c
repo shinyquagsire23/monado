@@ -26,6 +26,7 @@
 #include "oxr_extension_support.h"
 
 #include "openxr_includes/openxr.h"
+#include "openxr_includes/openxr_reflection.h"
 
 #define MAKE_EXTENSION_PROPERTIES(mixed_case, all_caps)                        \
 	{XR_TYPE_EXTENSION_PROPERTIES, NULL, XR_##all_caps##_EXTENSION_NAME,   \
@@ -157,8 +158,15 @@ oxr_xrResultToString(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrResultToString");
 
-	OXR_WARN_ONCE(&log, "fill in properly");
-	buffer[0] = '\0';
+#define MAKE_RESULT_CASE(VAL, _)                                               \
+	case VAL: strncpy(buffer, #VAL, XR_MAX_RESULT_STRING_SIZE); break;
+	switch (value) {
+		XR_LIST_ENUM_XrResult(MAKE_RESULT_CASE);
+	default:
+		snprintf(buffer, XR_MAX_RESULT_STRING_SIZE, "XR_UNKNOWN_%s_%d",
+		         value < 0 ? "FAILURE" : "SUCCESS", value);
+	}
+	buffer[XR_MAX_RESULT_STRING_SIZE - 1] = '\0';
 
 	return XR_SUCCESS;
 }
