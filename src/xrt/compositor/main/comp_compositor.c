@@ -13,6 +13,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "os/os_time.h"
+
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
@@ -90,11 +92,11 @@ compositor_wait_frame(struct xrt_compositor *xc,
 	// This needs improvement, but blocks for plausible timings.
 	int64_t now_ns = time_state_get_now(c->timekeeping);
 	int64_t already_used_ns = now_ns - c->last_frame_time_ns;
-	int64_t remaining_usec = (interval_ns - already_used_ns) / 1000;
+	int64_t remaining_nsec = interval_ns - already_used_ns;
 
 	// leave 1.25 ms for overhead
-	if (remaining_usec > 1250) {
-		usleep(remaining_usec - 1250);
+	if (remaining_nsec > 1250000) {
+		os_nanosleep(remaining_nsec - 1250000);
 	}
 
 	*predicted_display_period = interval_ns;
