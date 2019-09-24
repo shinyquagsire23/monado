@@ -126,8 +126,7 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
 				*out_function = (PFN_xrVoidFunction)(ret);     \
 				return XR_SUCCESS;                             \
 			}                                                      \
-			return oxr_error(log, XR_ERROR_FUNCTION_UNSUPPORTED,   \
-			                 "(name = \"%s\") " message, name);    \
+			return XR_ERROR_FUNCTION_UNSUPPORTED;                  \
 		}                                                              \
 	} while (false)
 
