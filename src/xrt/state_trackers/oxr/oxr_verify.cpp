@@ -221,6 +221,10 @@ oxr_verify_full_path(struct oxr_logger* log,
 			break;
 		}
 
+		if (valid) {
+			// Can't end with slash
+			valid = (path[length - 1] != '/');
+		}
 		if (!valid) {
 			return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
 			                 "(%s) 0x%02x is not a valid character "
