@@ -122,6 +122,7 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	t_psvr_create(&fact->xfctx, &fact->xtvr, &xsinks[2]);
 
 	// Setup origin to the common one.
+	fact->xtvr->origin = &fact->origin;
 	fact->xtmv[0]->origin = &fact->origin;
 	fact->xtmv[1]->origin = &fact->origin;
 
