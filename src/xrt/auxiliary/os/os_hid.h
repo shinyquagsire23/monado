@@ -38,6 +38,11 @@ struct os_hid_device
 	                   uint8_t *data,
 	                   size_t size);
 
+	int (*get_feature_timeout)(struct os_hid_device *hid_dev,
+	                           void *data,
+	                           size_t size,
+	                           uint32_t timeout);
+
 	int (*set_feature)(struct os_hid_device *hid_dev,
 	                   const uint8_t *data,
 	                   size_t size);
@@ -82,6 +87,18 @@ os_hid_get_feature(struct os_hid_device *hid_dev,
                    size_t size)
 {
 	return hid_dev->get_feature(hid_dev, report_num, data, size);
+}
+
+/*!
+ * Get a feature report with a timeout.
+ */
+XRT_MAYBE_UNUSED static inline int
+os_hid_get_feature_timeout(struct os_hid_device *hid_dev,
+                           void *data,
+                           size_t size,
+                           uint32_t timeout)
+{
+	return hid_dev->get_feature_timeout(hid_dev, data, size, timeout);
 }
 
 /*!

@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 
 #include <sys/ioctl.h>
 
@@ -91,6 +92,31 @@ os_hidraw_get_feature(struct os_hid_device *ohdev,
 }
 
 static int
+os_hidraw_get_feature_timeout(struct os_hid_device *ohdev,
+                              void *data,
+                              size_t length,
+                              uint32_t timeout)
+{
+	struct hid_hidraw *hrdev = (struct hid_hidraw *)ohdev;
+
+	struct timespec ts = {.tv_sec = 0, .tv_nsec = 1000000};
+	unsigned int i;
+	int ret = 0;
+
+	for (i = 0; i < timeout; i++) {
+		ret = ioctl(hrdev->fd, HIDIOCGFEATURE(length), data);
+		if (ret != -1 || errno != EPIPE)
+			break;
+
+		ts.tv_sec = 0;
+		ts.tv_nsec = 1000000;
+		nanosleep(&ts, NULL);
+	}
+
+	return ret;
+}
+
+static int
 os_hidraw_set_feature(struct os_hid_device *ohdev,
                       const uint8_t *data,
                       size_t length)
@@ -117,6 +143,7 @@ os_hid_open_hidraw(const char *path, struct os_hid_device **out_hid)
 	hrdev->base.read = os_hidraw_read;
 	hrdev->base.write = os_hidraw_write;
 	hrdev->base.get_feature = os_hidraw_get_feature;
+	hrdev->base.get_feature_timeout = os_hidraw_get_feature_timeout;
 	hrdev->base.set_feature = os_hidraw_set_feature;
 	hrdev->base.destroy = os_hidraw_destroy;
 	hrdev->fd = open(path, O_RDWR);
