@@ -66,7 +66,7 @@ openhmd_required = false
 v4l2_required = false
 
 # For now required on Linux
-if sys.OS() is 'Linux':
+if target_machine.system() == 'linux'
 	v4l2_required = true
 endif
 
