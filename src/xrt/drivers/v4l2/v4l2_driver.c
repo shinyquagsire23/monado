@@ -348,7 +348,8 @@ v4l2_setup_userptr_buffer(struct v4l2_fs *vid,
                           struct v4l2_buffer *v_buf)
 {
 	// align this to a memory page, v4l2 likes it that way
-	void *ptr = aligned_alloc(getpagesize(), v_buf->length);
+	long sz = sysconf(_SC_PAGESIZE);
+	void *ptr = aligned_alloc(sz, v_buf->length);
 	if (ptr == NULL) {
 		V_ERROR(vid, "error: Could not alloc page-aligned memory!");
 		return -1;
