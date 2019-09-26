@@ -65,6 +65,11 @@ hidapi_required = false
 openhmd_required = false
 v4l2_required = false
 
+# For now required on Linux
+if sys.OS() is 'Linux':
+	v4l2_required = true
+endif
+
 drivers = get_option('drivers')
 if 'ohmd' in drivers
 	openhmd_required = true
