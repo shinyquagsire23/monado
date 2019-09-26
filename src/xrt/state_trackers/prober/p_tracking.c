@@ -12,7 +12,7 @@
 #include "xrt/xrt_tracking.h"
 
 #include "targets_enabled_drivers.h"
-#ifdef XRT_BUILD_PSMV
+#ifdef XRT_HAVE_OPENCV
 #include "tracking/t_tracking.h"
 #endif
 
@@ -44,7 +44,7 @@ struct p_factory
 	//! For destruction of the node graph.
 	struct xrt_frame_context xfctx;
 
-#if defined(XRT_BUILD_PSMV) && defined(XRT_BUILD_PSVR)
+#ifdef XRT_HAVE_OPENCV
 	//! Keep track of how many psmv trackers that has been handed out.
 	size_t num_xtmv;
 
@@ -75,7 +75,7 @@ p_factory(struct xrt_tracking_factory *xfact)
 	return (struct p_factory *)xfact;
 }
 
-#if defined(XRT_BUILD_PSMV) && defined(XRT_BUILD_PSVR)
+#ifdef XRT_HAVE_OPENCV
 static void
 on_video_device(struct xrt_prober *xp,
                 struct xrt_prober_device *pdev,
@@ -154,7 +154,7 @@ p_factory_create_tracked_psmv(struct xrt_tracking_factory *xfact,
                               struct xrt_device *xdev,
                               struct xrt_tracked_psmv **out_xtmv)
 {
-#if defined(XRT_BUILD_PSMV) && defined(XRT_BUILD_PSVR)
+#ifdef XRT_HAVE_OPENCV
 	struct p_factory *fact = p_factory(xfact);
 	struct xrt_tracked_psmv *xtmv = NULL;
 
@@ -182,7 +182,7 @@ p_factory_create_tracked_psvr(struct xrt_tracking_factory *xfact,
                               struct xrt_device *xdev,
                               struct xrt_tracked_psvr **out_xtvr)
 {
-#if defined(XRT_BUILD_PSMV) && defined(XRT_BUILD_PSVR)
+#ifdef XRT_HAVE_OPENCV
 	struct p_factory *fact = p_factory(xfact);
 	struct xrt_tracked_psvr *xtvr = NULL;
 
@@ -242,7 +242,7 @@ p_tracking_teardown(struct prober *p)
 
 	// Drop any references to objects in the node graph.
 	fact->xfs = NULL;
-#if defined(XRT_BUILD_PSMV) && defined(XRT_BUILD_PSVR)
+#ifdef XRT_HAVE_OPENCV
 	fact->xtmv[0] = NULL;
 	fact->xtmv[1] = NULL;
 #endif
