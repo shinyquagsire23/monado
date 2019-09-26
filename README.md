@@ -36,6 +36,7 @@ Dependencies include:
 * glslangValidator - Debian/Ubuntu package `glslang-tool`.
 * libusb
 * libudev
+* Video 4 Linux - Debian/Ubuntu package `libv4l-dev`.
 
 Optional (but recommended) dependencies:
 
