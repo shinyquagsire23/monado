@@ -951,6 +951,32 @@ struct oxr_session
 };
 
 /*!
+ * Returns XR_SUCCESS or XR_SESSION_LOSS_PENDING as appropriate.
+ */
+XRT_MAYBE_UNUSED static inline XrResult
+oxr_session_success_result(struct oxr_session *session)
+{
+	switch (session->state) {
+	case XR_SESSION_STATE_LOSS_PENDING: return XR_SESSION_LOSS_PENDING;
+	default: return XR_SUCCESS;
+	}
+}
+
+/*!
+ * Returns XR_SUCCESS, XR_SESSION_LOSS_PENDING, or XR_SESSION_NOT_FOCUSED, as
+ * appropriate.
+ */
+XRT_MAYBE_UNUSED static inline XrResult
+oxr_session_success_focused_result(struct oxr_session *session)
+{
+	switch (session->state) {
+	case XR_SESSION_STATE_LOSS_PENDING: return XR_SESSION_LOSS_PENDING;
+	case XR_SESSION_STATE_FOCUSED: return XR_SUCCESS;
+	default: return XR_SESSION_NOT_FOCUSED;
+	}
+}
+
+/*!
  * A single interaction profile.
  */
 struct oxr_interaction_profile

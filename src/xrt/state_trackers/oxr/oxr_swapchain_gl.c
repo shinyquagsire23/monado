@@ -46,7 +46,7 @@ oxr_swapchain_gl_enumerate_images(struct oxr_logger *log,
 		gl_imgs[i].image = xsc->images[i];
 	}
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sc->sess);
 }
 
 XrResult

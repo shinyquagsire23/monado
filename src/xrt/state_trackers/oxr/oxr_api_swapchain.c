@@ -70,7 +70,7 @@ oxr_xrCreateSwapchain(XrSession session,
 
 	*out_swapchain = oxr_swapchain_to_openxr(sc);
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 XrResult

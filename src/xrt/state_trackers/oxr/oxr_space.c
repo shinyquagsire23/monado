@@ -376,5 +376,5 @@ oxr_space_locate(struct oxr_logger *log,
 
 	print_pose("\trelation->pose", (struct xrt_pose *)&location->pose);
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(spc->sess);
 }

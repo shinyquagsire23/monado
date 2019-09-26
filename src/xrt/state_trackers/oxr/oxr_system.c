@@ -219,7 +219,8 @@ oxr_system_enumerate_view_confs(struct oxr_logger *log,
 {
 	OXR_TWO_CALL_HELPER(log, viewConfigurationTypeCapacityInput,
 	                    viewConfigurationTypeCountOutput,
-	                    viewConfigurationTypes, 1, &sys->view_config_type);
+	                    viewConfigurationTypes, 1, &sys->view_config_type,
+	                    XR_SUCCESS);
 }
 
 XrResult
@@ -234,7 +235,7 @@ oxr_system_enumerate_blend_modes(struct oxr_logger *log,
 	OXR_TWO_CALL_HELPER(log, environmentBlendModeCapacityInput,
 	                    environmentBlendModeCountOutput,
 	                    environmentBlendModes, sys->num_blend_modes,
-	                    sys->blend_modes);
+	                    sys->blend_modes, XR_SUCCESS);
 }
 
 XrResult
@@ -274,5 +275,5 @@ oxr_system_enumerate_view_conf_views(
 	}
 
 	OXR_TWO_CALL_HELPER(log, viewCapacityInput, viewCountOutput, views, 2,
-	                    sys->views);
+	                    sys->views, XR_SUCCESS);
 }

@@ -15,7 +15,8 @@ extern "C" {
 #endif
 
 
-#define OXR_TWO_CALL_HELPER(log, cnt_input, cnt_output, output, count, data)   \
+#define OXR_TWO_CALL_HELPER(log, cnt_input, cnt_output, output, count, data,   \
+                            sval)                                              \
 	do {                                                                   \
 		if (cnt_output == NULL) {                                      \
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
@@ -24,7 +25,7 @@ extern "C" {
 		*cnt_output = count;                                           \
                                                                                \
 		if (cnt_input == 0) {                                          \
-			return XR_SUCCESS;                                     \
+			return sval;                                           \
 		}                                                              \
 		if (cnt_input < count) {                                       \
 			return oxr_error(log, XR_ERROR_SIZE_INSUFFICIENT,      \
@@ -33,7 +34,7 @@ extern "C" {
 		for (uint32_t i = 0; i < count; i++) {                         \
 			(output)[i] = (data)[i];                               \
 		}                                                              \
-		return XR_SUCCESS;                                             \
+		return sval;                                                   \
 	} while (false)
 
 

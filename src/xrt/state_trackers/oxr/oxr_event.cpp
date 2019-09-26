@@ -23,6 +23,7 @@ struct oxr_event
 public:
 	struct oxr_event *next;
 	size_t length;
+	XrResult result;
 
 
 public:
@@ -100,6 +101,7 @@ oxr_event_alloc(struct oxr_logger *log,
 
 	event->next = NULL;
 	event->length = size;
+	event->result = XR_SUCCESS;
 
 	*out_event = event;
 
@@ -122,6 +124,10 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 	changed->session = oxr_session_to_openxr(sess);
 	changed->state = state;
 	changed->time = time;
+
+	event->result = state == XR_SESSION_STATE_LOSS_PENDING
+	                    ? XR_SESSION_LOSS_PENDING
+	                    : XR_SUCCESS;
 
 	lock(inst);
 	push(inst, event);
@@ -146,5 +152,5 @@ oxr_poll_event(struct oxr_logger *log,
 	memcpy(eventData, event->ptr(), event->length);
 	free(event);
 
-	return XR_SUCCESS;
+	return event->result;
 }

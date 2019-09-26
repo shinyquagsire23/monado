@@ -752,7 +752,7 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 
 	sess->actionsAttached = true;
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 XrResult
@@ -809,8 +809,7 @@ oxr_action_sync_data(struct oxr_logger *log,
 		}
 	}
 
-	//! @todo Implement
-	return XR_SUCCESS;
+	return oxr_session_success_focused_result(sess);
 }
 
 
@@ -928,7 +927,7 @@ oxr_action_get_boolean(struct oxr_logger *log,
 
 	OXR_ACTION_GET_FILLER(bool);
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 XrResult
@@ -957,7 +956,7 @@ oxr_action_get_vector1f(struct oxr_logger *log,
 
 	OXR_ACTION_GET_FILLER(vec1);
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 XrResult
@@ -986,7 +985,7 @@ oxr_action_get_vector2f(struct oxr_logger *log,
 
 	OXR_ACTION_GET_FILLER(vec2);
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 XrResult
@@ -1022,7 +1021,7 @@ oxr_action_get_pose(struct oxr_logger *log,
 		data->isActive |= src->gamepad.current.active;
 	}
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 
@@ -1067,7 +1066,7 @@ oxr_action_apply_haptic_feedback(struct oxr_logger *log,
 	oxr_session_get_source(sess, key, &src);
 
 	if (src == NULL) {
-		return XR_SUCCESS;
+		return oxr_session_success_result(sess);
 	}
 
 	const XrHapticVibration *data = (const XrHapticVibration *)hapticEvent;
@@ -1093,7 +1092,7 @@ oxr_action_apply_haptic_feedback(struct oxr_logger *log,
 	}
 	// clang-format on
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 XrResult
@@ -1107,7 +1106,7 @@ oxr_action_stop_haptic_feedback(struct oxr_logger *log,
 	oxr_session_get_source(sess, key, &src);
 
 	if (src == NULL) {
-		return XR_SUCCESS;
+		return oxr_session_success_result(sess);
 	}
 
 	// clang-format off
@@ -1128,5 +1127,5 @@ oxr_action_stop_haptic_feedback(struct oxr_logger *log,
 	}
 	// clang-format on
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }

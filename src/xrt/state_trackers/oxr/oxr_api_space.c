@@ -48,7 +48,7 @@ oxr_xrCreateActionSpace(XrSession session,
 
 	*space = oxr_space_to_openxr(spc);
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 static const XrReferenceSpaceType session_spaces[] = {
@@ -69,7 +69,8 @@ oxr_xrEnumerateReferenceSpaces(XrSession session,
 	                                "xrEnumerateReferenceSpaces");
 
 	OXR_TWO_CALL_HELPER(&log, spaceCapacityInput, spaceCountOutput, spaces,
-	                    ARRAY_SIZE(session_spaces), session_spaces);
+	                    ARRAY_SIZE(session_spaces), session_spaces,
+	                    oxr_session_success_result(sess));
 }
 
 XrResult
@@ -109,7 +110,7 @@ oxr_xrCreateReferenceSpace(XrSession session,
 
 	*out_space = oxr_space_to_openxr(spc);
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 XrResult

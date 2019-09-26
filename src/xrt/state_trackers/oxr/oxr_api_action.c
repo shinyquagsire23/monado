@@ -112,6 +112,7 @@ oxr_xrGetCurrentInteractionProfile(
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, interactionProfile,
 	                             XR_TYPE_INTERACTION_PROFILE_STATE);
 
+	/* XXX: How do we return XR_SESSION_LOSS_PENDING here? */
 	return oxr_action_get_current_interaction_profile(
 	    &log, sess, topLevelUserPath, interactionProfile);
 }

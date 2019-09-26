@@ -70,11 +70,12 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 		if (formatCountOutput != NULL) {
 			*formatCountOutput = 0;
 		}
-		return XR_SUCCESS;
+		return oxr_session_success_result(sess);
 	}
 
 	OXR_TWO_CALL_HELPER(log, formatCapacityInput, formatCountOutput,
-	                    formats, xc->num_formats, xc->formats);
+	                    formats, xc->num_formats, xc->formats,
+	                    oxr_session_success_result(sess));
 }
 
 XrResult
@@ -112,7 +113,7 @@ oxr_session_begin(struct oxr_logger *log,
 
 	sess->state = XR_SESSION_STATE_FOCUSED;
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 XrResult
@@ -225,7 +226,7 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 		pose->orientation = predicted;
 	}
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 void
@@ -270,7 +271,7 @@ oxr_session_views(struct oxr_logger *log,
 	// Does this apply for all calls?
 	if (!baseSpc->is_reference) {
 		viewState->viewStateFlags = 0;
-		return XR_SUCCESS;
+		return oxr_session_success_result(sess);
 	}
 
 	// Start two call handling.
@@ -278,7 +279,7 @@ oxr_session_views(struct oxr_logger *log,
 		*viewCountOutput = num_views;
 	}
 	if (viewCapacityInput == 0) {
-		return XR_SUCCESS;
+		return oxr_session_success_result(sess);
 	}
 	if (viewCapacityInput < num_views) {
 		return oxr_error(log, XR_ERROR_SIZE_INSUFFICIENT,
@@ -338,7 +339,7 @@ oxr_session_views(struct oxr_logger *log,
 	viewState->viewStateFlags |= XR_VIEW_STATE_POSITION_VALID_BIT;
 	viewState->viewStateFlags |= XR_VIEW_STATE_ORIENTATION_VALID_BIT;
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 XrResult
@@ -362,7 +363,7 @@ oxr_session_frame_wait(struct oxr_logger *log,
 
 	frameState->shouldRender = should_render(sess->state);
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 XrResult
@@ -382,7 +383,7 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 			xc->discard_frame(xc);
 		}
 	} else {
-		ret = XR_SUCCESS;
+		ret = oxr_session_success_result(sess);
 		sess->frame_started = true;
 	}
 	if (xc != NULL) {
@@ -431,7 +432,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 	if (xc == NULL) {
 		sess->frame_started = false;
 
-		return XR_SUCCESS;
+		return oxr_session_success_result(sess);
 	}
 
 	/*
@@ -442,7 +443,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 		xc->discard_frame(xc);
 		sess->frame_started = false;
 
-		return XR_SUCCESS;
+		return oxr_session_success_result(sess);
 	}
 
 	/*
@@ -535,7 +536,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 
 	sess->frame_started = false;
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sess);
 }
 
 static XrResult

@@ -32,8 +32,8 @@ oxr_vk_get_instance_exts(struct oxr_logger *log,
 	size_t length = strlen(xrt_gfx_vk_instance_extensions) + 1;
 
 	OXR_TWO_CALL_HELPER(log, namesCapacityInput, namesCountOutput,
-	                    namesString, length,
-	                    xrt_gfx_vk_instance_extensions);
+	                    namesString, length, xrt_gfx_vk_instance_extensions,
+	                    XR_SUCCESS);
 }
 
 XrResult
@@ -46,7 +46,8 @@ oxr_vk_get_device_exts(struct oxr_logger *log,
 	size_t length = strlen(xrt_gfx_vk_device_extensions) + 1;
 
 	OXR_TWO_CALL_HELPER(log, namesCapacityInput, namesCountOutput,
-	                    namesString, length, xrt_gfx_vk_device_extensions);
+	                    namesString, length, xrt_gfx_vk_device_extensions,
+	                    XR_SUCCESS);
 }
 
 XrResult

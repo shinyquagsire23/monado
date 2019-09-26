@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Holds session related functions.
+ * @brief  Holds instance related functions.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup oxr_main
  */

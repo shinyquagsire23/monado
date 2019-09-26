@@ -47,7 +47,7 @@ oxr_swapchain_acquire_image(struct oxr_logger *log,
 
 	*out_index = index;
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sc->sess);
 }
 
 static XrResult
@@ -67,7 +67,7 @@ oxr_swapchain_wait_image(struct oxr_logger *log,
 		                 " call to xsc->wait_image failed");
 	}
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sc->sess);
 }
 
 static XrResult
@@ -90,7 +90,7 @@ oxr_swapchain_release_image(struct oxr_logger *log,
 	sc->released_index = sc->acquired_index;
 	sc->acquired_index = -1;
 
-	return XR_SUCCESS;
+	return oxr_session_success_result(sc->sess);
 }
 
 static XrResult
