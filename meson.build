@@ -96,7 +96,7 @@ if 'auto' in drivers
 endif
 
 openhmd = dependency('openhmd', required: openhmd_required)
-hidapi  = dependency('hidapi', required: hidapi_required)
+hidapi  = dependency('hidapi-libusb', required: hidapi_required)
 v4l2    = dependency('libv4l2', required: v4l2_required)
 
 if openhmd.found() and ('auto' in drivers or 'ohmd' in drivers)
