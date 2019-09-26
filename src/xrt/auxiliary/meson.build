@@ -76,21 +76,16 @@ aux_math = declare_dependency(
 
 tracking_srcs = [
 	'tracking/t_calibration.cpp',
+	'tracking/t_calibration_opencv.h',
 	'tracking/t_convert.cpp',
 	'tracking/t_debug_hsv_filter.cpp',
 	'tracking/t_debug_hsv_picker.cpp',
 	'tracking/t_debug_hsv_viewer.cpp',
 	'tracking/t_hsv_filter.c',
+	'tracking/t_tracker_psmv.cpp',
+	'tracking/t_tracker_psvr.cpp',
 	'tracking/t_tracking.h',
 ]
-
-if 'psmv' in drivers
-	tracking_srcs += ['tracking/t_tracker_psmv.cpp']
-endif
-
-if 'psvr' in drivers
-	tracking_srcs += ['tracking/t_tracker_psvr.cpp']
-endif
 
 lib_aux_tracking = static_library(
 	'aux_tracking',
