@@ -18,8 +18,8 @@ set(OS_SOURCE_FILES
 	)
 
 set(TRACKING_SOURCE_FILES
-        tracking/t_calibration_opencv.h
 	tracking/t_calibration.cpp
+	tracking/t_calibration_opencv.h
 	tracking/t_convert.cpp
 	tracking/t_debug_hsv_filter.cpp
 	tracking/t_debug_hsv_picker.cpp
