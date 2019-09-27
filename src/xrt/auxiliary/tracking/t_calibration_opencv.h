@@ -18,23 +18,23 @@ extern "C" {
 
 struct opencv_calibration_params
 {
-	cv::Mat l_intrinsics;
-	cv::Mat l_distortion;
-	cv::Mat l_distortion_fisheye;
-	cv::Mat l_translation;
-	cv::Mat l_rotation;
-	cv::Mat l_projection;
-	cv::Mat r_intrinsics;
-	cv::Mat r_distortion;
-	cv::Mat r_distortion_fisheye;
-	cv::Mat r_translation;
-	cv::Mat r_rotation;
-	cv::Mat r_projection;
-	cv::Mat disparity_to_depth;
-	cv::Mat mat_image_size;
+	cv::Mat l_intrinsics = {};
+	cv::Mat l_distortion = {};
+	cv::Mat l_distortion_fisheye = {};
+	cv::Mat l_translation = {};
+	cv::Mat l_rotation = {};
+	cv::Mat l_projection = {};
+	cv::Mat r_intrinsics = {};
+	cv::Mat r_distortion = {};
+	cv::Mat r_distortion_fisheye = {};
+	cv::Mat r_translation = {};
+	cv::Mat r_rotation = {};
+	cv::Mat r_projection = {};
+	cv::Mat disparity_to_depth = {};
+	cv::Mat mat_image_size = {};
 };
 
-static bool
+XRT_MAYBE_UNUSED static bool
 write_cv_mat(FILE* f, cv::Mat* m)
 {
 	uint32_t header[3];
@@ -47,11 +47,19 @@ write_cv_mat(FILE* f, cv::Mat* m)
 	return true;
 }
 
-static bool
-read_cv_mat(FILE* f, cv::Mat* m)
+XRT_MAYBE_UNUSED static bool
+read_cv_mat(FILE* f, cv::Mat* m, const char* name)
 {
-	uint32_t header[3];
-	fread(static_cast<void*>(header), sizeof(uint32_t), 3, f);
+	uint32_t header[3] = {};
+	size_t read = 0;
+
+	read = fread(static_cast<void*>(header), sizeof(uint32_t), 3, f);
+	if (read != 3) {
+		printf("Failed to read mat header: '%i' '%s'\n", (int)read,
+		       name);
+		return false;
+	}
+
 	//! @todo We may have written things other than CV_32F and CV_64F.
 	if (header[0] == 4) {
 		m->create(static_cast<int>(header[1]),
@@ -60,12 +68,18 @@ read_cv_mat(FILE* f, cv::Mat* m)
 		m->create(static_cast<int>(header[1]),
 		          static_cast<int>(header[2]), CV_64F);
 	}
-	fread(static_cast<void*>(m->data), header[0], header[1] * header[2], f);
+	read = fread(static_cast<void*>(m->data), header[0],
+	             header[1] * header[2], f);
+	if (read != (header[1] * header[2])) {
+		printf("Failed to read mat body: '%i' '%s'\n", (int)read, name);
+		return false;
+	}
+
 	return true;
 }
 
 XRT_MAYBE_UNUSED static bool
-calibration_get_stereo(char* configuration_filename,
+calibration_get_stereo(const char* configuration_filename,
                        uint32_t frame_w,
                        uint32_t frame_h,
                        bool use_fisheye,
@@ -94,20 +108,25 @@ calibration_get_stereo(char* configuration_filename,
 	}
 
 	// Read our calibration from this file
-	read_cv_mat(calib_file, &cp.l_intrinsics);
-	read_cv_mat(calib_file, &cp.r_intrinsics);
-	read_cv_mat(calib_file, &cp.l_distortion);
-	read_cv_mat(calib_file, &cp.r_distortion);
-	read_cv_mat(calib_file, &cp.l_distortion_fisheye);
-	read_cv_mat(calib_file, &cp.r_distortion_fisheye);
-	read_cv_mat(calib_file, &cp.l_rotation);
-	read_cv_mat(calib_file, &cp.r_rotation);
-	read_cv_mat(calib_file, &cp.l_translation);
-	read_cv_mat(calib_file, &cp.r_translation);
-	read_cv_mat(calib_file, &cp.l_projection);
-	read_cv_mat(calib_file, &cp.r_projection);
-	read_cv_mat(calib_file, disparity_to_depth); // provided by caller
-	read_cv_mat(calib_file, &cp.mat_image_size);
+	// clang-format off
+	read_cv_mat(calib_file, &cp.l_intrinsics, "l_intrinsics");
+	read_cv_mat(calib_file, &cp.r_intrinsics, "r_intrinsics");
+	read_cv_mat(calib_file, &cp.l_distortion, "l_distortion");
+	read_cv_mat(calib_file, &cp.r_distortion, "r_distortion");
+	read_cv_mat(calib_file, &cp.l_distortion_fisheye, "l_distortion_fisheye");
+	read_cv_mat(calib_file, &cp.r_distortion_fisheye, "r_distortion_fisheye");
+	read_cv_mat(calib_file, &cp.l_rotation, "l_rotation");
+	read_cv_mat(calib_file, &cp.r_rotation, "r_rotation");
+	read_cv_mat(calib_file, &cp.l_translation, "l_translation");
+	read_cv_mat(calib_file, &cp.r_translation, "r_translation");
+	read_cv_mat(calib_file, &cp.l_projection, "l_projection");
+	read_cv_mat(calib_file, &cp.r_projection, "r_projection");
+	read_cv_mat(calib_file, &cp.disparity_to_depth, "disparity_to_depth");
+	read_cv_mat(calib_file, &cp.mat_image_size, "mat_image_size");
+	// clang-format on
+
+	// provided by caller
+	*disparity_to_depth = cp.disparity_to_depth;
 
 	//! @todo Scale Our intrinsics if the frame size we request
 	//              calibration for does not match what was saved
@@ -150,7 +169,7 @@ calibration_get_stereo(char* configuration_filename,
 }
 
 //! @todo Move this as it is a generic helper
-static int
+XRT_MAYBE_UNUSED static int
 mkpath(char* path)
 {
 	char tmp[PATH_MAX]; //!< @todo PATH_MAX probably not strictly correct
