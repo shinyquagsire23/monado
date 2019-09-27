@@ -261,6 +261,12 @@ get_info(struct oh_device *ohd, const char *prod)
 
 	if (strcmp(prod, "External Device") == 0) {
 		info.quirks.video_distortion_none = true;
+		info.display.w_pixels = 1920;
+		info.display.h_pixels = 1080;
+		info.lens_horizontal_separation = 0.0630999878f;
+		info.lens_vertical_position = 0.0394899882f;
+		info.views[0].fov = 103.57f * M_PI / 180.0f;
+		info.views[1].fov = 103.57f * M_PI / 180.0f;
 	}
 
 	if (strcmp(prod, "PSVR") == 0) {
