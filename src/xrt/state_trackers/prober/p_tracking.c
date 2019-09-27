@@ -115,7 +115,7 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 
 	struct xrt_frame_sink *xsink = NULL;
 	struct xrt_frame_sink *xsinks[4] = {0};
-	struct xrt_colour_rgb_f32 rgb[2] = {{1.f, 0.f, 1.f}, {1.f, 0.f, 0.f}};
+	struct xrt_colour_rgb_f32 rgb[2] = {{1.f, 0.f, 0.f}, {1.f, 0.f, 1.f}};
 
 	// We create the two psmv trackers up front, but don't start them.
 	t_psmv_create(&fact->xfctx, &rgb[0], &fact->xtmv[0], &xsinks[0]);
