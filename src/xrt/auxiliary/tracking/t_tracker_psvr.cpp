@@ -270,9 +270,6 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 	t.sink.push_frame = t_psvr_sink_push_frame;
 	t.node.break_apart = t_psvr_node_break_apart;
 	t.node.destroy = t_psvr_node_destroy;
-	t.fusion.rot.x = 0.0f;
-	t.fusion.rot.y = 0.0f;
-	t.fusion.rot.z = 0.0f;
 	t.fusion.rot.w = 1.0f;
 
 	ret = os_thread_helper_init(&t.oth);
@@ -281,24 +278,8 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 		return ret;
 	}
 
-	static int hack = 0;
-	switch (hack++) {
-	case 0:
-		t.fusion.pos.x = -0.3f;
-		t.fusion.pos.y = 1.3f;
-		t.fusion.pos.z = -0.5f;
-		break;
-	case 1:
-		t.fusion.pos.x = 0.3f;
-		t.fusion.pos.y = 1.3f;
-		t.fusion.pos.z = -0.5f;
-		break;
-	default:
-		t.fusion.pos.x = 0.0f;
-		t.fusion.pos.y = 0.8f + hack * 0.1f;
-		t.fusion.pos.z = -0.5f;
-		break;
-	}
+	// HACK
+	t.fusion.pos.y = 1.6f;
 
 	xrt_frame_context_add(xfctx, &t.node);
 
