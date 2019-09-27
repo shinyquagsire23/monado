@@ -7,10 +7,10 @@
 
 #pragma once
 
-#mesondefine XRT_BUILD_OHMD
+#mesondefine XRT_BUILD_DRIVER_OHMD
 
-#mesondefine XRT_BUILD_HDK
+#mesondefine XRT_BUILD_DRIVER_HDK
 
-#mesondefine XRT_BUILD_PSMV
+#mesondefine XRT_BUILD_DRIVER_PSMV
 
-#mesondefine XRT_BUILD_PSVR
+#mesondefine XRT_BUILD_DRIVER_PSVR

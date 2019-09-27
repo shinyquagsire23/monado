@@ -10,23 +10,23 @@
 
 #include "target_lists.h"
 
-#ifdef XRT_BUILD_HDK
+#ifdef XRT_BUILD_DRIVER_HDK
 #include "hdk/hdk_interface.h"
 #endif
 
-#ifdef XRT_BUILD_OHMD
+#ifdef XRT_BUILD_DRIVER_OHMD
 #include "ohmd/oh_interface.h"
 #endif
 
-#ifdef XRT_BUILD_PSMV
+#ifdef XRT_BUILD_DRIVER_PSMV
 #include "psmv/psmv_interface.h"
 #endif
 
-#ifdef XRT_BUILD_PSVR
+#ifdef XRT_BUILD_DRIVER_PSVR
 #include "psvr/psvr_interface.h"
 #endif
 
-#ifdef XRT_BUILD_HYDRA
+#ifdef XRT_BUILD_DRIVER_HYDRA
 #include "hydra/hydra_interface.h"
 #endif
 
@@ -49,18 +49,18 @@
  * assign sequential elements of out_xdevs to the created devices.
  */
 struct xrt_prober_entry target_entry_list[] = {
-#ifdef XRT_BUILD_PSMV
+#ifdef XRT_BUILD_DRIVER_PSMV
     {PSMV_VID, PSMV_PID_ZCM1, psmv_found, "PS Move Controller (ZCM1)"},
     {PSMV_VID, PSMV_PID_ZCM2, psmv_found, "PS Move Controller (ZCM2)"},
-#endif // XRT_BUILD_PSMV
+#endif // XRT_BUILD_DRIVER_PSMV
 
-#ifdef XRT_BUILD_HYDRA
+#ifdef XRT_BUILD_DRIVER_HYDRA
     {HYDRA_VID, HYDRA_PID, hydra_found, "Razer Hydra"},
-#endif // XRT_BUILD_HYDRA
+#endif // XRT_BUILD_DRIVER_HYDRA
 
-#ifdef XRT_BUILD_HDK
+#ifdef XRT_BUILD_DRIVER_HDK
     {HDK_VID, HDK_PID, hdk_found, "OSVR HDK"},
-#endif // XRT_BUILD_HDK
+#endif // XRT_BUILD_DRIVER_HDK
 
     {0x0000, 0x0000, NULL, NULL}, // Terminate
 };
@@ -71,11 +71,11 @@ struct xrt_prober_entry *target_entry_lists[] = {
 };
 
 xrt_auto_prober_creator target_auto_list[] = {
-#ifdef XRT_BUILD_PSVR
+#ifdef XRT_BUILD_DRIVER_PSVR
     psvr_create_auto_prober,
 #endif
 
-#ifdef XRT_BUILD_OHMD
+#ifdef XRT_BUILD_DRIVER_OHMD
     // OpenHMD last as we want to override it with native drivers.
     oh_create_auto_prober,
 #endif

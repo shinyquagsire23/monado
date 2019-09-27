@@ -7,10 +7,10 @@
 
 #pragma once
 
-#cmakedefine XRT_BUILD_OHMD
+#cmakedefine XRT_BUILD_DRIVER_OHMD
 
-#cmakedefine XRT_BUILD_HDK
+#cmakedefine XRT_BUILD_DRIVER_HDK
 
-#cmakedefine XRT_BUILD_PSMV
+#cmakedefine XRT_BUILD_DRIVER_PSMV
 
-#cmakedefine XRT_BUILD_PSVR
+#cmakedefine XRT_BUILD_DRIVER_PSVR

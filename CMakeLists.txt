@@ -134,7 +134,7 @@ if(TRUE)
 	set(BUILD_DRIVER_HDK TRUE)
 	set(BUILD_DRIVER_PSMV TRUE)
 
-	add_definitions(-DXRT_BUILD_HYDRA)
+	add_definitions(-DXRT_BUILD_DRIVER_HYDRA)
 	set(BUILD_DRIVER_HYDRA TRUE)
 endif()
 

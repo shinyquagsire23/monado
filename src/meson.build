@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: BSL-1.0
 
 conf_data = configuration_data()
-conf_data.set('XRT_BUILD_OHMD', 'ohmd' in drivers)
-conf_data.set('XRT_BUILD_HDK', 'hdk' in drivers)
-conf_data.set('XRT_BUILD_PSMV', 'psmv' in drivers)
-conf_data.set('XRT_BUILD_PSVR', 'psvr' in drivers)
+conf_data.set('XRT_BUILD_DRIVER_OHMD', 'ohmd' in drivers)
+conf_data.set('XRT_BUILD_DRIVER_HDK', 'hdk' in drivers)
+conf_data.set('XRT_BUILD_DRIVER_PSMV', 'psmv' in drivers)
+conf_data.set('XRT_BUILD_DRIVER_PSVR', 'psvr' in drivers)
 
 targets_enabled_h = configure_file(
 	input: 'targets_enabled_drivers.h.meson_in',
