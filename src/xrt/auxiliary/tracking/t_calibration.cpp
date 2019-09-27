@@ -289,11 +289,20 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 #endif
 
 	// non-fisheye version
-	float rp_error = cv::stereoCalibrate(
-	    c.state.chessboards_model, c.state.view[0].measured,
-	    c.state.view[1].measured, cp.l_intrinsics, cp.l_distortion,
-	    cp.r_intrinsics, cp.r_distortion, image_size, camera_rotation,
-	    camera_translation, camera_essential, camera_fundamental, 0);
+	float rp_error =
+	    cv::stereoCalibrate(c.state.chessboards_model, // objectPoints
+	                        c.state.view[0].measured,  // inagePoints1
+	                        c.state.view[1].measured,  // imagePoints2,
+	                        cp.l_intrinsics,           // cameraMatrix1
+	                        cp.l_distortion,           // distCoeffs1
+	                        cp.r_intrinsics,           // cameraMatrix2
+	                        cp.r_distortion,           // distCoeffs2
+	                        image_size,                // imageSize
+	                        camera_rotation,           // R
+	                        camera_translation,        // T
+	                        camera_essential,          // E
+	                        camera_fundamental,        // F
+	                        0);                        // flags
 
 	std::cout << "calibration rp_error: " << rp_error << "\n";
 	std::cout << "calibration camera_translation:\n"
