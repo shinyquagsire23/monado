@@ -41,7 +41,6 @@ pkg_check_modules(FFMPEG libavcodec)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	# Compositor backend
 	find_package(X11)
-	find_package(Wayland)
 	pkg_check_modules(XCB xcb xcb-randr)
 
 	find_package(udev REQUIRED)
