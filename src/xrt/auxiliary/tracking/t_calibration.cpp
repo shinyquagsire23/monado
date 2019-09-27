@@ -22,11 +22,6 @@ DEBUG_GET_ONCE_BOOL_OPTION(hsv_filter, "T_DEBUG_HSV_FILTER", false)
 DEBUG_GET_ONCE_BOOL_OPTION(hsv_picker, "T_DEBUG_HSV_PICKER", false)
 DEBUG_GET_ONCE_BOOL_OPTION(hsv_viewer, "T_DEBUG_HSV_VIEWER", false)
 
-// calibration chessboard size - 7x9 'blocks' - the count
-// of rows and cols refer to 'internal intersections'
-#define CHESSBOARD_ROWS 6
-#define CHESSBOARD_COLS 8
-
 // we will use a number of samples spread across the frame
 // to ensure a good calibration. must be > 9
 #define CALIBRATION_SAMPLES 15
@@ -557,9 +552,10 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
  */
 
 extern "C" int
-t_calibration_create(struct xrt_frame_context *xfctx,
-                     struct xrt_frame_sink *gui,
-                     struct xrt_frame_sink **out_sink)
+t_calibration_stereo_create(struct xrt_frame_context *xfctx,
+                            struct t_calibration_params *params,
+                            struct xrt_frame_sink *gui,
+                            struct xrt_frame_sink **out_sink)
 {
 
 	auto &c = *(new Calibration());
@@ -589,11 +585,16 @@ t_calibration_create(struct xrt_frame_context *xfctx,
 	// Ensure we only get yuv or yuyv frames.
 	u_sink_create_to_yuv_or_yuyv(xfctx, *out_sink, out_sink);
 
-	c.chessboard_size = cv::Size(CHESSBOARD_COLS, CHESSBOARD_ROWS);
-	for (int i = 0; i < c.chessboard_size.width * c.chessboard_size.height;
-	     i++) {
-		cv::Point3f p(i / c.chessboard_size.width,
-		              i % c.chessboard_size.width, 0.0f);
+	int cross_cols_num = params->checker_cols_num - 1;
+	int cross_rows_num = params->checker_rows_num - 1;
+	int num_crosses = cross_cols_num * cross_rows_num;
+
+	c.chessboard_size = cv::Size(cross_cols_num, cross_rows_num);
+	for (int i = 0; i < num_crosses; i++) {
+		float x = (i / cross_cols_num) * params->checker_size_meters;
+		float y = (i % cross_cols_num) * params->checker_size_meters;
+
+		cv::Point3f p(x, y, 0.0f);
 		c.chessboard_model.push_back(p);
 	}
 

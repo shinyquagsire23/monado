@@ -28,7 +28,14 @@
 struct calibration_scene
 {
 	struct gui_scene base;
+
+#ifdef XRT_HAVE_OPENCV
+	struct t_calibration_params params;
+#endif
+
 	struct xrt_frame_context *xfctx;
+	struct xrt_fs *xfs;
+	size_t mode;
 };
 
 
@@ -69,7 +76,7 @@ draw_texture(struct gui_ogl_texture *tex, bool header)
 }
 
 static void
-scene_render(struct gui_scene *scene, struct program *p)
+scene_render_video(struct gui_scene *scene, struct program *p)
 {
 	struct calibration_scene *cs = (struct calibration_scene *)scene;
 
@@ -90,6 +97,55 @@ scene_render(struct gui_scene *scene, struct program *p)
 	}
 
 	igEnd();
+}
+
+static void
+scene_render_select(struct gui_scene *scene, struct program *p)
+{
+	struct calibration_scene *cs = (struct calibration_scene *)scene;
+
+#ifdef XRT_HAVE_OPENCV
+	igBegin("Params", NULL, 0);
+
+	igInputFloat("Checker Size (m)", &cs->params.checker_size_meters,
+	             0.0005, 0.001, NULL, 0);
+	igInputInt("Checkerboard Rows", &cs->params.checker_rows_num, 1, 5, 0);
+	igInputInt("Checkerboard Columns", &cs->params.checker_cols_num, 1, 5,
+	           0);
+
+	static ImVec2 button_dims = {0, 0};
+	bool pressed = igButton("Done", button_dims);
+	igEnd();
+
+	if (!pressed) {
+		return;
+	}
+
+	cs->base.render = scene_render_video;
+
+	struct xrt_frame_sink *rgb = NULL;
+	struct xrt_frame_sink *raw = NULL;
+	struct xrt_frame_sink *cali = NULL;
+
+	p->texs[p->num_texs++] =
+	    gui_ogl_sink_create("Calibration", cs->xfctx, &rgb);
+	u_sink_create_format_converter(cs->xfctx, XRT_FORMAT_R8G8B8, rgb, &rgb);
+	u_sink_queue_create(cs->xfctx, rgb, &rgb);
+
+	p->texs[p->num_texs++] = gui_ogl_sink_create("Raw", cs->xfctx, &raw);
+	u_sink_create_format_converter(cs->xfctx, XRT_FORMAT_R8G8B8, raw, &raw);
+	u_sink_queue_create(cs->xfctx, raw, &raw);
+
+	t_calibration_stereo_create(cs->xfctx, &cs->params, rgb, &cali);
+	u_sink_create_to_yuv_or_yuyv(cs->xfctx, cali, &cali);
+	u_sink_queue_create(cs->xfctx, cali, &cali);
+	u_sink_split_create(cs->xfctx, raw, cali, &cali);
+
+	// Now that we have setup a node graph, start it.
+	xrt_fs_stream_start(cs->xfs, cali, cs->mode);
+#else
+	gui_scene_delete_me(p, &cs->base);
+#endif
 }
 
 static void
@@ -120,34 +176,16 @@ gui_scene_calibrate(struct program *p,
 {
 	struct calibration_scene *cs = U_TYPED_CALLOC(struct calibration_scene);
 
-	cs->base.render = scene_render;
+#ifdef XRT_HAVE_OPENCV
+	struct t_calibration_params def = T_CALIBRATION_DEFAULT_PARAMS;
+	cs->params = def;
+#endif
+
+	cs->base.render = scene_render_select;
 	cs->base.destroy = scene_destroy;
 	cs->xfctx = xfctx;
+	cs->xfs = xfs;
+	cs->mode = mode;
 
 	gui_scene_push_front(p, &cs->base);
-
-#ifdef XRT_HAVE_OPENCV
-	struct xrt_frame_sink *rgb = NULL;
-	struct xrt_frame_sink *raw = NULL;
-	struct xrt_frame_sink *cali = NULL;
-
-	p->texs[p->num_texs++] =
-	    gui_ogl_sink_create("Calibration", xfctx, &rgb);
-	u_sink_create_format_converter(xfctx, XRT_FORMAT_R8G8B8, rgb, &rgb);
-	u_sink_queue_create(xfctx, rgb, &rgb);
-
-	p->texs[p->num_texs++] = gui_ogl_sink_create("Raw", xfctx, &raw);
-	u_sink_create_format_converter(xfctx, XRT_FORMAT_R8G8B8, raw, &raw);
-	u_sink_queue_create(xfctx, raw, &raw);
-
-	t_calibration_create(xfctx, rgb, &cali);
-	u_sink_create_to_yuv_or_yuyv(xfctx, cali, &cali);
-	u_sink_queue_create(xfctx, cali, &cali);
-	u_sink_split_create(xfctx, raw, cali, &cali);
-
-	// Now that we have setup a node graph, start it.
-	xrt_fs_stream_start(xfs, cali, mode);
-#else
-	gui_scene_delete_me(p, &cs->base);
-#endif
 }

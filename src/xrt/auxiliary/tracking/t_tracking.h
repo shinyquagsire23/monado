@@ -168,6 +168,31 @@ t_psvr_create(struct xrt_frame_context *xfctx,
               struct xrt_tracked_psvr **out_xtvr,
               struct xrt_frame_sink **out_sink);
 
+/*
+ *
+ * Camera calibration
+ *
+ */
+
+
+#define T_CALIBRATION_DEFAULT_PARAMS                                           \
+	{                                                                      \
+		9, 7, 0.025f,                                                  \
+	}
+
+struct t_calibration_params
+{
+	int checker_cols_num;
+	int checker_rows_num;
+	float checker_size_meters;
+};
+
+int
+t_calibration_stereo_create(struct xrt_frame_context *xfctx,
+                            struct t_calibration_params *params,
+                            struct xrt_frame_sink *gui,
+                            struct xrt_frame_sink **out_sink);
+
 
 /*
  *
@@ -179,10 +204,7 @@ int
 t_convert_yuv_or_yuyv_create(struct xrt_frame_sink *next,
                              struct xrt_frame_sink **out_sink);
 
-int
-t_calibration_create(struct xrt_frame_context *xfctx,
-                     struct xrt_frame_sink *gui,
-                     struct xrt_frame_sink **out_sink);
+
 
 int
 t_debug_hsv_picker_create(struct xrt_frame_context *xfctx,
