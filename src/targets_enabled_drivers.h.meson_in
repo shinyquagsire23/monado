@@ -7,10 +7,16 @@
 
 #pragma once
 
+#mesondefine XRT_BUILD_TRACKING
+
 #mesondefine XRT_BUILD_DRIVER_OHMD
 
 #mesondefine XRT_BUILD_DRIVER_HDK
 
+#mesondefine XRT_BUILD_DRIVER_HYDRA
+
 #mesondefine XRT_BUILD_DRIVER_PSMV
 
 #mesondefine XRT_BUILD_DRIVER_PSVR
+
+#mesondefine XRT_BUILD_DRIVER_V4L2
