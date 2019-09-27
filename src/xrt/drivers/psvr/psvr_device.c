@@ -13,6 +13,8 @@
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_tracking.h"
 
+#include "os/os_time.h"
+
 #include "math/m_api.h"
 
 #include "util/u_var.h"
@@ -412,7 +414,7 @@ wait_for_power(struct psvr_device *psvr, bool on)
 			return 0;
 		}
 
-		usleep(1000);
+		os_nanosleep(1000 * 1000);
 	}
 
 	return -1;
@@ -429,7 +431,7 @@ wait_for_vr_mode(struct psvr_device *psvr, bool on)
 			return 0;
 		}
 
-		usleep(1000);
+		os_nanosleep(1000 * 1000);
 	}
 
 	return -1;
@@ -604,7 +606,7 @@ disco_leds(struct psvr_device *psvr)
 				return ret;
 			}
 
-			usleep(1000);
+			os_nanosleep(1000 * 1000);
 		}
 	}
 
