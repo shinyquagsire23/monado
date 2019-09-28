@@ -123,25 +123,12 @@ public:
 	char text[512];
 };
 
-/*!
- * Holds `cv::Mat`s used during frame processing when processing a yuyv frame.
- */
-struct t_frame_yuyv
-{
-public:
-	//! Full frame size, each block is split across two cols.
-	cv::Mat data_full = {};
-	//! Half horizontal width covering a complete block of two pixels.
-	cv::Mat data_half = {};
-};
-
 
 /*
  *
  * Small helpers.
  *
  */
-
 
 static void
 refresh_gui_frame(class Calibration &c, int rows, int cols)
@@ -204,6 +191,9 @@ make_gui_str(class Calibration &c)
 	send_rgb_frame(c);
 }
 
+/*!
+ * Simple helper to draw a bounding rect.
+ */
 static void
 draw_rect(cv::Mat &rgb, cv::Rect rect, cv::Scalar colour)
 {
@@ -216,11 +206,18 @@ do_view(class Calibration &c,
         cv::Mat &grey,
         cv::Mat &rgb)
 {
-	bool found =
-	    cv::findChessboardCorners(grey, c.chessboard_size, view.current);
+	int flags = 0;
+	flags += cv::CALIB_CB_FAST_CHECK;
+	flags += cv::CALIB_CB_ADAPTIVE_THRESH;
+	flags += cv::CALIB_CB_NORMALIZE_IMAGE;
 
-	// compute our 'pre sample' coverage for this frame, and
-	// display it
+	bool found = cv::findChessboardCorners(grey,              // Image
+	                                       c.chessboard_size, // patternSize
+	                                       view.current,      // corners
+	                                       flags);            // flags
+
+	// Compute our 'pre sample' coverage for this frame,
+	// for display and area threshold checking.
 	std::vector<cv::Point2f> coverage;
 	for (uint32_t i = 0; i < view.measured.size(); i++) {
 		cv::Rect brect = cv::boundingRect(view.measured[i]);
@@ -233,17 +230,20 @@ do_view(class Calibration &c,
 
 	// What area of the camera have we calibrated.
 	view.pre_rect = cv::boundingRect(coverage);
-	draw_rect(rgb, view.pre_rect, cv::Scalar(0, 255, 0));
+	draw_rect(rgb, view.pre_rect, cv::Scalar(0, 255, 255));
 
 	if (found) {
 		view.brect = cv::boundingRect(view.current);
 		coverage.push_back(cv::Point2f(view.brect.tl()));
 		coverage.push_back(cv::Point2f(view.brect.br()));
 
+		// New area we cover.
 		view.post_rect = cv::boundingRect(coverage);
+
 		draw_rect(rgb, view.post_rect, cv::Scalar(0, 255, 0));
 	}
 
+	// Improve the corner positions.
 	if (found && c.subpixel_enable) {
 		cv::TermCriteria tcrit(cv::TermCriteria::Type::COUNT +
 		                           cv::TermCriteria::Type::EPS,
@@ -255,6 +255,7 @@ do_view(class Calibration &c,
 		cv::cornerSubPix(grey, view.current, size, zero, tcrit);
 	}
 
+	// Draw the checker board, will also draw partial hits.
 	cv::drawChessboardCorners(rgb, c.chessboard_size, view.current, found);
 
 	return found;
@@ -317,11 +318,24 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	std::cout << "calibration camera_translation:\n"
 	          << camera_translation << "\n";
 
-	cv::stereoRectify(cp.l_intrinsics, zero_distortion, cp.r_intrinsics,
-	                  zero_distortion, image_size, camera_rotation,
-	                  camera_translation, cp.l_rotation, cp.r_rotation,
-	                  cp.l_projection, cp.r_projection,
-	                  cp.disparity_to_depth, cv::CALIB_ZERO_DISPARITY);
+	// We currently don't change the image size or remove invalid pixels.
+	cv::stereoRectify(cp.l_intrinsics,          // cameraMatrix1
+	                  zero_distortion,          // distCoeffs1
+	                  cp.r_intrinsics,          // cameraMatrix2
+	                  zero_distortion,          // distCoeffs2
+	                  image_size,               // imageSize
+	                  camera_rotation,          // R
+	                  camera_translation,       // T
+	                  cp.l_rotation,            // R1
+	                  cp.r_rotation,            // R2
+	                  cp.l_projection,          // P1
+	                  cp.r_projection,          // P2
+	                  cp.disparity_to_depth,    // Q
+	                  cv::CALIB_ZERO_DISPARITY, // flags
+	                  -1,                       // alpha
+	                  image_size,               // newImageSize
+	                  NULL,                     // validPixROI1
+	                  NULL);                    // validPixROI2
 
 	P("CALIBRATION DONE RP ERROR %f", rp_error);
 
@@ -376,7 +390,7 @@ make_calibration_frame(class Calibration &c)
 	auto &rgb = c.gui.rgb;
 	auto &grey = c.grey;
 
-	// This should not happen
+	// This should not happen.
 	if (rgb.rows == 0 || rgb.cols == 0) {
 		return;
 	}
@@ -389,7 +403,7 @@ make_calibration_frame(class Calibration &c)
 		return;
 	}
 
-	// Clear our gui frame
+	// Clear our gui frame.
 	if (c.clear_frame) {
 		cv::rectangle(rgb, cv::Point2f(0, 0),
 		              cv::Point2f(rgb.cols, rgb.rows),
@@ -410,7 +424,7 @@ make_calibration_frame(class Calibration &c)
 	bool found_left = do_view(c, c.state.view[0], l_grey, l_rgb);
 	bool found_right = do_view(c, c.state.view[1], r_grey, r_rgb);
 
-	// draw our current calibration guide box
+	// Draw our current calibration guide box.
 	cv::Point2f bound_tl = calibration_rect[c.state.calibration_count].tl();
 	bound_tl.x *= cols;
 	bound_tl.y *= rows;
@@ -422,16 +436,18 @@ make_calibration_frame(class Calibration &c)
 	// Draw the target rect last so it is the most visible.
 	cv::rectangle(c.gui.rgb, bound_tl, bound_br, cv::Scalar(255, 0, 0));
 
-	// if we have a valid sample (left and right), display it
+	// If we have a valid sample (left and right).
 	if (found_left && found_right) {
 		cv::Rect brect = c.state.view[0].brect;
 		cv::Rect pre_rect = c.state.view[0].pre_rect;
 		cv::Rect post_rect = c.state.view[0].post_rect;
 
-		// determine if we should add this sample to our list.
-		// either we are still taking the first 9 samples and
-		// the chessboard is in the box, or we have exceeded 9
-		// samples and now want to 'push out the edges'
+		/*
+		 * Determine if we should add this sample to our list. Either we
+		 * are still taking the first 9 samples and the chessboard is in
+		 * the box, or we have exceeded 9 samples and now want to 'push
+		 * out the edges'.
+		 */
 
 		bool add_sample = false;
 		int coverage_threshold = cols * 0.3f * rows * 0.3f;
@@ -462,23 +478,17 @@ make_calibration_frame(class Calibration &c)
 		}
 	}
 
-	if (c.state.calibration_count < 9) {
+	// Are we done or do we need to inform the user what they should do.
+	if (c.state.calibration_count >= CALIBRATION_SAMPLES) {
+		process_stereo_samples(c, cols, rows);
+	} else if (c.state.calibration_count < 9) {
 		P("POSITION CHESSBOARD IN BOX");
 	} else {
 		P("TRY TO 'PUSH OUT EDGES' WITH LARGE BOARD IMAGES");
 	}
 
-	if (c.state.view[0].measured.size() == CALIBRATION_SAMPLES) {
-		process_stereo_samples(c, cols, rows);
-	}
-
-
-	/*
-	 * Draw text
-	 */
-
+	// Draw text and finally send the frame off.
 	print_txt(rgb, c.text, 1.5);
-
 	send_rgb_frame(c);
 }
 
@@ -512,18 +522,14 @@ process_frame_yuyv(class Calibration &c, struct xrt_frame *xf)
 	 * Cr/Cb are extracted at half width.
 	 */
 	int w = (int)xf->width;
-	int half_w = w / 2;
 	int h = (int)xf->height;
 
-	struct t_frame_yuyv f = {};
-
-	f.data_half = cv::Mat(h, half_w, CV_8UC4, xf->data, xf->stride);
-	f.data_full = cv::Mat(h, w, CV_8UC2, xf->data, xf->stride);
-	ensure_buffers_are_allocated(c, f.data_full.rows, f.data_full.cols);
+	cv::Mat data_full(h, w, CV_8UC2, xf->data, xf->stride);
+	ensure_buffers_are_allocated(c, data_full.rows, data_full.cols);
 	c.gui.frame->source_sequence = xf->source_sequence;
 
-	cv::cvtColor(f.data_full, c.gui.rgb, cv::COLOR_YUV2RGB_YUYV);
-	cv::cvtColor(f.data_full, c.grey, cv::COLOR_YUV2GRAY_YUYV);
+	cv::cvtColor(data_full, c.gui.rgb, cv::COLOR_YUV2RGB_YUYV);
+	cv::cvtColor(data_full, c.grey, cv::COLOR_YUV2GRAY_YUYV);
 }
 
 
