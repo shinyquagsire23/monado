@@ -61,28 +61,12 @@ manifest_conf.set('runtime_path', sopath)
 manifest_path = join_paths(
 	get_option('prefix'), get_option('datadir'), xr_api_major.to_string())
 
-# configure_file(install: ...) was added in meson 0.50
-# TODO: drop the version check once 0.50 is more widely adopted (i.e. Debian)
-# https://repology.org/badge/vertical-allrepos/meson.svg?minversion=0.50.0
-meson_version = meson.version().split('.')
-
-if meson_version[1].to_int() < 50
-	manifest_json = configure_file(
-		input: manifest_in,
-		output: 'openxr_monado.json',
-		configuration: manifest_conf,
-	)
-
-	install_data([manifest_json], install_dir: manifest_path)
-else
-	manifest_json = configure_file(
-		input: manifest_in,
-		output: 'openxr_monado.json',
-		configuration: manifest_conf,
-		install: true,
-		install_dir: manifest_path,
-	)
-endif
+manifest_json = configure_file(
+	input: manifest_in,
+	output: 'openxr_monado.json',
+	configuration: manifest_conf,
+	install_dir: manifest_path,
+)
 
 meson.add_install_script('install_active_runtime.sh', get_option('sysconfdir'),
 	join_paths(manifest_path, runtime_target + '.json'), xr_api_major.to_string())
