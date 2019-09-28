@@ -12,6 +12,7 @@
 #include "tracking/t_tracking.h"
 #include "tracking/t_calibration_opencv.h"
 
+#include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_frame.h"
@@ -26,6 +27,22 @@
 #include <pthread.h>
 
 
+/*!
+ * Single camera.
+ */
+struct View
+{
+	cv::Mat undistort_map_x;
+	cv::Mat undistort_map_y;
+	cv::Mat rectify_map_x;
+	cv::Mat rectify_map_y;
+
+	std::vector<cv::KeyPoint> keypoints;
+
+	cv::Mat frame_undist;
+	cv::Mat frame_rectified;
+};
+
 class TrackerPSMV
 {
 public:
@@ -39,6 +56,14 @@ public:
 	//! Thread and lock helper.
 	struct os_thread_helper oth;
 
+	struct
+	{
+		struct xrt_frame_sink *sink;
+		struct xrt_frame *frame;
+
+		cv::Mat rgb[2];
+	} debug;
+
 	//! Have we received a new IMU sample.
 	bool has_imu = false;
 
@@ -48,24 +73,91 @@ public:
 		struct xrt_quat rot = {};
 	} fusion;
 
+	View view[2];
 
-	cv::Mat l_undistort_map_x;
-	cv::Mat l_undistort_map_y;
-	cv::Mat l_rectify_map_x;
-	cv::Mat l_rectify_map_y;
-	cv::Mat r_undistort_map_x;
-	cv::Mat r_undistort_map_y;
-	cv::Mat r_rectify_map_x;
-	cv::Mat r_rectify_map_y;
-	cv::Mat disparity_to_depth;
 	bool calibrated;
 
-	std::vector<cv::KeyPoint> l_keypoints;
-	std::vector<cv::KeyPoint> r_keypoints;
+	cv::Mat disparity_to_depth;
+
 	cv::Ptr<cv::SimpleBlobDetector> sbd;
 
 	xrt_vec3 tracked_object_position;
 };
+
+static void
+refresh_gui_frame(TrackerPSMV &t, struct xrt_frame *xf)
+{
+	if (t.debug.sink == NULL) {
+		return;
+	}
+
+	// Also dereferences the old frame.
+	u_frame_create_one_off(XRT_FORMAT_R8G8B8, xf->width, xf->height,
+	                       &t.debug.frame);
+	t.debug.frame->source_sequence = xf->source_sequence;
+
+	int rows = xf->height;
+	int cols = xf->width / 2;
+
+	t.debug.rgb[0] = cv::Mat(rows,                   // rows
+	                         cols,                   // cols
+	                         CV_8UC3,                // channels
+	                         t.debug.frame->data,    // data
+	                         t.debug.frame->stride); // stride
+
+	t.debug.rgb[1] = cv::Mat(rows,                           // rows
+	                         cols,                           // cols
+	                         CV_8UC3,                        // channels
+	                         t.debug.frame->data + 3 * cols, // data
+	                         t.debug.frame->stride);         // stride
+}
+
+static void
+do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
+{
+	// Undistort the whole image.
+	cv::remap(grey,                 // src
+	          view.frame_undist,    // dst
+	          view.undistort_map_x, // map1
+	          view.undistort_map_y, // map2
+	          cv::INTER_LINEAR,     // interpolation
+	          cv::BORDER_CONSTANT,  // borderMode
+	          cv::Scalar(0, 0, 0)); // borderValue
+
+	// Rectify the whole image.
+	cv::remap(view.frame_undist,    // src
+	          view.frame_rectified, // dst
+	          view.rectify_map_x,   // map1
+	          view.rectify_map_y,   // map2
+	          cv::INTER_LINEAR,     // interpolation
+	          cv::BORDER_CONSTANT,  // borderMode
+	          cv::Scalar(0, 0, 0)); // borderValue
+
+	cv::threshold(view.frame_rectified, // src
+	              view.frame_rectified, // dst
+	              32.0,                 // thresh
+	              255.0,                // maxval
+	              0);                   // type
+
+	// tracker_measurement_t m = {};
+
+	// Do blob detection with our masks.
+	//! @todo Re-enable masks.
+	t.sbd->detect(view.frame_rectified, // image
+	              view.keypoints,       // keypoints
+	              cv::noArray());       // mask
+
+
+	// Debug is wanted, draw the keypoints.
+	if (rgb.cols > 0) {
+		cv::drawKeypoints(
+		    view.frame_rectified,                       // image
+		    view.keypoints,                             // keypoints
+		    rgb,                                        // outImage
+		    cv::Scalar(255, 0, 0),                      // color
+		    cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS); // flags
+	}
+}
 
 static void
 procces(TrackerPSMV &t, struct xrt_frame *xf)
@@ -75,63 +167,62 @@ procces(TrackerPSMV &t, struct xrt_frame *xf)
 		return;
 	}
 
+	if (xf->format != XRT_FORMAT_L8) {
+		xrt_frame_reference(&xf, NULL);
+		return;
+	}
+
 	if (!t.calibrated) {
-		if (calibration_get_stereo(
-		        "PS4_EYE", xf->width, xf->height, false,
-		        &t.l_undistort_map_x, &t.l_undistort_map_y,
-		        &t.l_rectify_map_x, &t.l_rectify_map_y,
-		        &t.r_undistort_map_x, &t.r_undistort_map_y,
-		        &t.r_rectify_map_x, &t.r_rectify_map_y,
-		        &t.disparity_to_depth)) {
+		bool ok = calibration_get_stereo(
+		    "PS4_EYE",                  // name
+		    xf->width,                  // width
+		    xf->height,                 // height
+		    false,                      // use_fisheye
+		    &t.view[0].undistort_map_x, // l_undistort_map_x
+		    &t.view[0].undistort_map_y, // l_undistort_map_y
+		    &t.view[0].rectify_map_x,   // l_rectify_map_x
+		    &t.view[0].rectify_map_y,   // l_rectify_map_y
+		    &t.view[1].undistort_map_x, // r_undistort_map_x
+		    &t.view[1].undistort_map_y, // r_undistort_map_y
+		    &t.view[1].rectify_map_x,   // r_rectify_map_x
+		    &t.view[1].rectify_map_y,   // r_rectify_map_y
+		    &t.disparity_to_depth);     // disparity_to_depth
+
+		if (ok) {
 			printf("loaded calibration for camera!\n");
 			t.calibrated = true;
+		} else {
+			xrt_frame_reference(&xf, NULL);
+			return;
 		}
 	}
-	t.l_keypoints.clear();
-	t.r_keypoints.clear();
 
-	// TODO: we assume L8 format here, this may be a bad assumption
+	// Create the debug frame if needed.
+	refresh_gui_frame(t, xf);
 
-	cv::Mat l_grey(xf->height, xf->width / 2, CV_8UC1, xf->data,
-	               xf->stride);
-	cv::Mat r_grey(xf->height, xf->width / 2, CV_8UC1,
-	               xf->data + xf->width / 2, xf->stride);
+	t.view[0].keypoints.clear();
+	t.view[1].keypoints.clear();
 
-	cv::Mat l_frame_undist;
-	cv::Mat r_frame_undist;
+	int cols = xf->width / 2;
+	int rows = xf->height;
+	int stride = xf->stride;
 
-	// undistort the whole image
-	cv::remap(l_grey, l_frame_undist, t.l_undistort_map_x,
-	          t.l_undistort_map_y, cv::INTER_LINEAR, cv::BORDER_CONSTANT,
-	          cv::Scalar(0, 0, 0));
-	cv::remap(r_grey, r_frame_undist, t.r_undistort_map_x,
-	          t.r_undistort_map_y, cv::INTER_LINEAR, cv::BORDER_CONSTANT,
-	          cv::Scalar(0, 0, 0));
+	cv::Mat l_grey(rows, cols, CV_8UC1, xf->data, stride);
+	cv::Mat r_grey(rows, cols, CV_8UC1, xf->data + cols, stride);
 
-	// rectify the whole image
-	cv::remap(l_frame_undist, l_grey, t.l_rectify_map_x, t.l_rectify_map_y,
-	          cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
-	cv::remap(r_frame_undist, r_grey, t.r_rectify_map_x, t.r_rectify_map_y,
-	          cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
+	do_view(t, t.view[0], l_grey, t.debug.rgb[0]);
+	do_view(t, t.view[1], r_grey, t.debug.rgb[1]);
 
-	cv::threshold(l_grey, l_grey, 32.0, 255.0, 0);
-	cv::threshold(r_grey, r_grey, 32.0, 255.0, 0);
-
-	// tracker_measurement_t m = {};
-
-	// do blob detection with our masks
-	// TODO: re-enable masks
-	t.sbd->detect(l_grey, t.l_keypoints); //,internal->l_mask_gray);
-	t.sbd->detect(r_grey, t.r_keypoints); //,internal->r_mask_gray);
-	// do some basic matching to come up with likely disparity-pairs
+	// do some basic matching to come up with likely disparity-pairs.
 	std::vector<cv::KeyPoint> l_blobs, r_blobs;
-	for (uint32_t i = 0; i < t.l_keypoints.size(); i++) {
-		cv::KeyPoint l_blob = t.l_keypoints[i];
+	for (uint32_t i = 0; i < t.view[0].keypoints.size(); i++) {
+		cv::KeyPoint l_blob = t.view[0].keypoints[i];
 		int l_index = -1;
 		int r_index = -1;
-		for (uint32_t j = 0; j < t.r_keypoints.size(); j++) {
+
+		for (uint32_t j = 0; j < t.view[1].keypoints.size(); j++) {
 			float lowest_dist = 128;
-			cv::KeyPoint r_blob = t.r_keypoints[j];
+			cv::KeyPoint r_blob = t.view[1].keypoints[j];
 			// find closest point on same-ish scanline
 			if ((l_blob.pt.y < r_blob.pt.y + 3) &&
 			    (l_blob.pt.y > r_blob.pt.y - 3) &&
@@ -141,14 +232,14 @@ procces(TrackerPSMV &t, struct xrt_frame *xf)
 				l_index = i;
 			}
 		}
+
 		if (l_index > -1 && r_index > -1) {
-			l_blobs.push_back(t.l_keypoints.at(l_index));
-			r_blobs.push_back(t.r_keypoints.at(r_index));
+			l_blobs.push_back(t.view[0].keypoints.at(l_index));
+			r_blobs.push_back(t.view[1].keypoints.at(r_index));
 		}
 	}
 
-	// convert our 2d point + disparities into 3d points.
-
+	// Convert our 2d point + disparities into 3d points.
 	std::vector<cv::Point3f> world_points;
 	if (l_blobs.size() > 0) {
 		for (uint32_t i = 0; i < l_blobs.size(); i++) {
@@ -158,6 +249,7 @@ procces(TrackerPSMV &t, struct xrt_frame *xf)
 			// Transform
 			cv::Vec4d h_world =
 			    (cv::Matx44d)t.disparity_to_depth * xydw;
+
 			// Divide by scale to get 3D vector from homogeneous
 			// coordinate. invert x while we are here.
 			world_points.push_back(cv::Point3f(
@@ -174,8 +266,7 @@ procces(TrackerPSMV &t, struct xrt_frame *xf)
 	                       t.tracked_object_position.z);
 
 	for (uint32_t i = 0; i < world_points.size(); i++) {
-		cv::Point3f world_point = world_points[i];
-		float dist = cv_dist3d_point(world_point, last_point);
+		float dist = cv_dist3d_point(world_points[i], last_point);
 		if (dist < lowest_dist) {
 			tracked_index = i;
 			lowest_dist = dist;
@@ -210,7 +301,14 @@ procces(TrackerPSMV &t, struct xrt_frame *xf)
 		t.tracked_object_position.z = world_point.z;
 	}
 
+	if (t.debug.frame != NULL) {
+		t.debug.sink->push_frame(t.debug.sink, t.debug.frame);
+		t.debug.rgb[0] = cv::Mat();
+		t.debug.rgb[1] = cv::Mat();
+	}
+
 	xrt_frame_reference(&xf, NULL);
+	xrt_frame_reference(&t.debug.frame, NULL);
 }
 
 
@@ -375,8 +473,10 @@ extern "C" void
 t_psmv_node_destroy(struct xrt_frame_node *node)
 {
 	auto t_ptr = container_of(node, TrackerPSMV, node);
-
 	os_thread_helper_destroy(&t_ptr->oth);
+
+	// Tidy variable setup.
+	u_var_remove_root(t_ptr);
 
 	delete t_ptr;
 }
@@ -476,6 +576,10 @@ t_psmv_create(struct xrt_frame_context *xfctx,
 
 	t.sbd = cv::SimpleBlobDetector::create(blob_params);
 	xrt_frame_context_add(xfctx, &t.node);
+
+	// Everything is safe, now setup the variable tracking.
+	u_var_add_root(&t, "PSMV Tracker", true);
+	u_var_add_sink(&t, &t.debug.sink, "Debug");
 
 	*out_sink = &t.sink;
 	*out_xtmv = &t.base;
