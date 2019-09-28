@@ -56,8 +56,45 @@ conv_rgb_u8_to_f32(struct xrt_colour_rgb_u8 *from,
 
 struct draw_state
 {
+	struct program *p;
 	bool hidden;
 };
+
+static void
+on_sink_var(const char *name, void *ptr, struct program *p)
+{
+	for (size_t i = 0; i < ARRAY_SIZE(p->texs); i++) {
+		struct gui_ogl_texture *tex = p->texs[i];
+
+		if (tex == NULL) {
+			continue;
+		}
+
+		if ((ptrdiff_t)tex->ptr != (ptrdiff_t)ptr) {
+			continue;
+		}
+
+		if (!igCollapsingHeader(name, 0)) {
+			continue;
+		}
+
+		gui_ogl_sink_update(tex);
+
+		igText("Sequence %u", (uint32_t)tex->seq);
+		char temp[512];
+		snprintf(temp, 512, "Half (%s)", tex->name);
+		igCheckbox(temp, &tex->half);
+		int w = tex->w / (tex->half ? 2 : 1);
+		int h = tex->h / (tex->half ? 2 : 1);
+
+		ImVec2 size = {w, h};
+		ImVec2 uv0 = {0, 0};
+		ImVec2 uv1 = {1, 1};
+		ImVec4 white = {1, 1, 1, 1};
+		ImTextureID id = (ImTextureID)(intptr_t)tex->id;
+		igImage(id, size, uv0, uv1, white, white);
+	}
+}
 
 static void
 on_root_enter(const char *name, void *priv)
@@ -132,6 +169,7 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 	case U_VAR_KIND_GUI_HEADER:
 		state->hidden = !igCollapsingHeader(name, 0);
 		break;
+	case U_VAR_KIND_SINK: on_sink_var(name, ptr, state->p); break;
 	default: igLabelText(name, "Unknown tag '%i'", kind); break;
 	}
 }
@@ -150,35 +188,9 @@ scene_render(struct gui_scene *scene, struct program *p)
 {
 	struct debug_scene *ds = (struct debug_scene *)scene;
 	(void)ds;
-	struct draw_state state = {false};
+	struct draw_state state = {p, false};
 
 	u_var_visit(on_root_enter, on_root_exit, on_elem, &state);
-
-	for (size_t i = 0; i < ARRAY_SIZE(p->texs); i++) {
-		struct gui_ogl_texture *tex = p->texs[i];
-
-		if (tex == NULL) {
-			continue;
-		}
-
-		gui_ogl_sink_update(tex);
-
-		igBegin(tex->name, NULL, 0);
-
-		igText("Sequence %u", (uint32_t)tex->seq);
-		igCheckbox("Half", &tex->half);
-		int w = tex->w / (tex->half ? 2 : 1);
-		int h = tex->h / (tex->half ? 2 : 1);
-
-		ImVec2 size = {w, h};
-		ImVec2 uv0 = {0, 0};
-		ImVec2 uv1 = {1, 1};
-		ImVec4 white = {1, 1, 1, 1};
-		ImTextureID id = (ImTextureID)(intptr_t)tex->id;
-		igImage(id, size, uv0, uv1, white, white);
-
-		igEnd();
-	}
 }
 
 static void
@@ -193,6 +205,48 @@ scene_destroy(struct gui_scene *scene, struct program *p)
 
 	free(ds);
 }
+
+
+/*
+ *
+ * Sink interception.
+ *
+ */
+
+static void
+on_root_enter_sink(const char *name, void *priv)
+{}
+
+static void
+on_elem_sink(const char *name, enum u_var_kind kind, void *ptr, void *priv)
+{
+	struct program *p = (struct program *)priv;
+
+	if (kind != U_VAR_KIND_SINK) {
+		return;
+	}
+
+	if (p->xp->tracking == NULL) {
+		return;
+	}
+
+	struct xrt_frame_context *xfctx = p->xp->tracking->xfctx;
+	struct xrt_frame_sink **xsink_ptr = (struct xrt_frame_sink **)ptr;
+	struct xrt_frame_sink *split = NULL;
+
+	p->texs[p->num_texs] = gui_ogl_sink_create(name, xfctx, &split);
+	p->texs[p->num_texs++]->ptr = ptr;
+
+	if (*xsink_ptr != NULL) {
+		u_sink_split_create(xfctx, split, *xsink_ptr, xsink_ptr);
+	} else {
+		*xsink_ptr = split;
+	}
+}
+
+static void
+on_root_exit_sink(const char *name, void *priv)
+{}
 
 
 /*
@@ -226,10 +280,6 @@ gui_scene_debug_video(struct program *p,
 	struct xrt_frame_sink *split = xsink;
 	xsink = NULL;
 	struct xrt_frame_sink *xsinks[4] = {NULL, NULL, NULL, NULL};
-	p->texs[num_texs++] = gui_ogl_sink_create("Red", xfctx, &xsinks[0]);
-	p->texs[num_texs++] = gui_ogl_sink_create("Purple", xfctx, &xsinks[1]);
-	p->texs[num_texs++] = gui_ogl_sink_create("Blue", xfctx, &xsinks[2]);
-	p->texs[num_texs++] = gui_ogl_sink_create("White", xfctx, &xsinks[3]);
 
 	struct t_hsv_filter_params params = T_HSV_DEFAULT_PARAMS();
 	t_hsv_filter_create(xfctx, &params, xsinks, &xsink);
@@ -239,45 +289,12 @@ gui_scene_debug_video(struct program *p,
 	u_sink_split_create(xfctx, split, xsink, &xsink);
 #endif
 
+	// Create the sink interceptors.
+	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink, p);
+
 	// Now that we have setup a node graph, start it.
 	xrt_fs_stream_start(xfs, xsink, mode);
 }
-
-
-static void
-on_root_enter_sink(const char *name, void *priv)
-{}
-
-static void
-on_elem_sink(const char *name, enum u_var_kind kind, void *ptr, void *priv)
-{
-	struct program *p = (struct program *)priv;
-
-	if (kind != U_VAR_KIND_SINK) {
-		return;
-	}
-
-	if (p->xp->tracking == NULL) {
-		return;
-	}
-
-	struct xrt_frame_context *xfctx = p->xp->tracking->xfctx;
-	struct xrt_frame_sink **xsink_ptr = (struct xrt_frame_sink **)ptr;
-	struct xrt_frame_sink *split = NULL;
-
-
-	p->texs[p->num_texs++] = gui_ogl_sink_create(name, xfctx, &split);
-
-	if (*xsink_ptr != NULL) {
-		u_sink_split_create(xfctx, split, *xsink_ptr, xsink_ptr);
-	} else {
-		*xsink_ptr = split;
-	}
-}
-
-static void
-on_root_exit_sink(const char *name, void *priv)
-{}
 
 void
 gui_scene_debug(struct program *p)
@@ -291,5 +308,6 @@ gui_scene_debug(struct program *p)
 
 	gui_prober_select(p);
 
+	// Create the sink interceptors.
 	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink, p);
 }

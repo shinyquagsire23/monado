@@ -87,6 +87,8 @@ struct gui_ogl_texture
 	uint32_t w, h;
 	uint32_t id;
 	bool half;
+
+	void *ptr;
 };
 
 /*!
