@@ -177,7 +177,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 
 #define T_CALIBRATION_DEFAULT_PARAMS                                           \
 	{                                                                      \
-		9, 7, 0.025f,                                                  \
+		9, 7, 0.025f, true, 5,                                         \
 	}
 
 struct t_calibration_params
@@ -185,6 +185,9 @@ struct t_calibration_params
 	int checker_cols_num;
 	int checker_rows_num;
 	float checker_size_meters;
+
+	bool subpixel_enable;
+	int subpixel_size;
 };
 
 int

@@ -113,6 +113,9 @@ public:
 
 	} state;
 
+	bool subpixel_enable;
+	bool subpixel_size;
+
 	bool clear_frame = false;
 
 	cv::Mat grey;
@@ -239,6 +242,16 @@ do_view(class Calibration &c,
 
 		view.post_rect = cv::boundingRect(coverage);
 		draw_rect(rgb, view.post_rect, cv::Scalar(0, 255, 0));
+	}
+
+	if (found && c.subpixel_enable) {
+		cv::TermCriteria tcrit(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30,
+		                       0.1);
+
+		cv::Size size(c.subpixel_size, c.subpixel_size);
+		cv::Size zero(-1, -1);
+
+		cv::cornerSubPix(grey, view.current, size, zero, tcrit);
 	}
 
 	cv::drawChessboardCorners(rgb, c.chessboard_size, view.current, found);
@@ -557,12 +570,12 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
                             struct xrt_frame_sink *gui,
                             struct xrt_frame_sink **out_sink)
 {
-
 	auto &c = *(new Calibration());
 
 	c.gui.sink = gui;
-
 	c.base.push_frame = t_calibration_frame;
+	c.subpixel_enable = params->subpixel_enable;
+	c.subpixel_size = params->subpixel_size;
 
 	*out_sink = &c.base;
 

@@ -112,6 +112,8 @@ scene_render_select(struct gui_scene *scene, struct program *p)
 	igInputInt("Checkerboard Rows", &cs->params.checker_rows_num, 1, 5, 0);
 	igInputInt("Checkerboard Columns", &cs->params.checker_cols_num, 1, 5,
 	           0);
+	igCheckbox("Subpixel", &cs->params.subpixel_enable);
+	igInputInt("Subpixel Search Size", &cs->params.subpixel_size, 1, 5, 0);
 
 	static ImVec2 button_dims = {0, 0};
 	bool pressed = igButton("Done", button_dims);
