@@ -245,8 +245,9 @@ do_view(class Calibration &c,
 	}
 
 	if (found && c.subpixel_enable) {
-		cv::TermCriteria tcrit(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30,
-		                       0.1);
+		cv::TermCriteria tcrit(cv::TermCriteria::Type::COUNT +
+		                           cv::TermCriteria::Type::EPS,
+		                       30, 0.1);
 
 		cv::Size size(c.subpixel_size, c.subpixel_size);
 		cv::Size zero(-1, -1);
