@@ -35,25 +35,25 @@ struct opencv_calibration_params
 };
 
 XRT_MAYBE_UNUSED static bool
-write_cv_mat(FILE* f, cv::Mat* m)
+write_cv_mat(FILE *f, cv::Mat *m)
 {
 	uint32_t header[3];
 	header[0] = static_cast<uint32_t>(m->elemSize());
 	header[1] = static_cast<uint32_t>(m->rows);
 	header[2] = static_cast<uint32_t>(m->cols);
-	fwrite(static_cast<void*>(header), sizeof(uint32_t), 3, f);
-	fwrite(static_cast<void*>(m->data), header[0], header[1] * header[2],
+	fwrite(static_cast<void *>(header), sizeof(uint32_t), 3, f);
+	fwrite(static_cast<void *>(m->data), header[0], header[1] * header[2],
 	       f);
 	return true;
 }
 
 XRT_MAYBE_UNUSED static bool
-read_cv_mat(FILE* f, cv::Mat* m, const char* name)
+read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 {
 	uint32_t header[3] = {};
 	size_t read = 0;
 
-	read = fread(static_cast<void*>(header), sizeof(uint32_t), 3, f);
+	read = fread(static_cast<void *>(header), sizeof(uint32_t), 3, f);
 	if (read != 3) {
 		printf("Failed to read mat header: '%i' '%s'\n", (int)read,
 		       name);
@@ -68,7 +68,7 @@ read_cv_mat(FILE* f, cv::Mat* m, const char* name)
 		m->create(static_cast<int>(header[1]),
 		          static_cast<int>(header[2]), CV_64F);
 	}
-	read = fread(static_cast<void*>(m->data), header[0],
+	read = fread(static_cast<void *>(m->data), header[0],
 	             header[1] * header[2], f);
 	if (read != (header[1] * header[2])) {
 		printf("Failed to read mat body: '%i' '%s'\n", (int)read, name);
@@ -79,30 +79,30 @@ read_cv_mat(FILE* f, cv::Mat* m, const char* name)
 }
 
 XRT_MAYBE_UNUSED static bool
-calibration_get_stereo(const char* configuration_filename,
+calibration_get_stereo(const char *configuration_filename,
                        uint32_t frame_w,
                        uint32_t frame_h,
                        bool use_fisheye,
-                       cv::Mat* l_undistort_map_x,
-                       cv::Mat* l_undistort_map_y,
-                       cv::Mat* l_rectify_map_x,
-                       cv::Mat* l_rectify_map_y,
-                       cv::Mat* r_undistort_map_x,
-                       cv::Mat* r_undistort_map_y,
-                       cv::Mat* r_rectify_map_x,
-                       cv::Mat* r_rectify_map_y,
-                       cv::Mat* disparity_to_depth)
+                       cv::Mat *l_undistort_map_x,
+                       cv::Mat *l_undistort_map_y,
+                       cv::Mat *l_rectify_map_x,
+                       cv::Mat *l_rectify_map_y,
+                       cv::Mat *r_undistort_map_x,
+                       cv::Mat *r_undistort_map_y,
+                       cv::Mat *r_rectify_map_x,
+                       cv::Mat *r_rectify_map_y,
+                       cv::Mat *disparity_to_depth)
 {
 	struct opencv_calibration_params cp;
 	cv::Mat zero_distortion = cv::Mat(5, 1, CV_32F, cv::Scalar(0.0f));
 
 	char path_string[256]; //! @todo 256 maybe not enough
 	//! @todo Use multiple env vars?
-	char* config_path = secure_getenv("HOME");
+	char *config_path = secure_getenv("HOME");
 	snprintf(path_string, 256, "%s/.config/monado/%s.calibration",
 	         config_path, configuration_filename); //! @todo Hardcoded 256
 
-	FILE* calib_file = fopen(path_string, "rb");
+	FILE *calib_file = fopen(path_string, "rb");
 	if (calib_file == NULL) {
 		return false;
 	}
@@ -170,10 +170,10 @@ calibration_get_stereo(const char* configuration_filename,
 
 //! @todo Move this as it is a generic helper
 XRT_MAYBE_UNUSED static int
-mkpath(char* path)
+mkpath(char *path)
 {
 	char tmp[PATH_MAX]; //!< @todo PATH_MAX probably not strictly correct
-	char* p = nullptr;
+	char *p = nullptr;
 	size_t len;
 
 	snprintf(tmp, sizeof(tmp), "%s", path);
@@ -200,7 +200,7 @@ mkpath(char* path)
 
 //! @todo Templatise?
 XRT_MAYBE_UNUSED static float
-cv_dist3d_point(cv::Point3f& p, cv::Point3f& q)
+cv_dist3d_point(cv::Point3f &p, cv::Point3f &q)
 {
 	cv::Point3f d = p - q;
 	return cv::sqrt(d.x * d.x + d.y * d.y + d.z * d.z);
@@ -208,7 +208,7 @@ cv_dist3d_point(cv::Point3f& p, cv::Point3f& q)
 
 //! @todo Templatise?
 XRT_MAYBE_UNUSED static float
-cv_dist3d_vec(cv::Vec3f& p, cv::Vec3f& q)
+cv_dist3d_vec(cv::Vec3f &p, cv::Vec3f &q)
 {
 	cv::Point3f d = p - q;
 	return cv::sqrt(d.x * d.x + d.y * d.y + d.z * d.z);
