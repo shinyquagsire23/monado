@@ -38,12 +38,16 @@ avcodec = dependency('libavcodec', required: false)
 eigen3  = dependency('eigen3')
 libjpeg = dependency('libjpeg', required: false)
 libusb  = dependency('libusb-1.0', required: false)
-opencv  = dependency('opencv', required: get_option('tracking'))
 opengl  = dependency('gl')
 sdl2    = dependency('sdl2', required: get_option('gui'))
 udev    = dependency('libudev', required: false)
 libuvc  = dependency('libuvc', required: false)
 vulkan  = dependency('vulkan')
+
+opencv = dependency('opencv4', required: false)
+if not opencv.found()
+	opencv = dependency('opencv', required: get_option('tracking'))
+endif
 
 doxygen = find_program('doxygen', required: get_option('docs'))
 
