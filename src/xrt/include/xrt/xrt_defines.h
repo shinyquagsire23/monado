@@ -196,6 +196,17 @@ struct xrt_colour_rgba_f32
 };
 
 /*!
+ * Image size.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_size
+{
+	int w;
+	int h;
+};
+
+/*!
  * A pose composed of a position and orientation.
  *
  * @see xrt_qaut
