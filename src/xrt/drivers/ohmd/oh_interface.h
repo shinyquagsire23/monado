@@ -25,7 +25,7 @@ extern "C" {
  *
  * @ingroup drv_ohmd
  */
-struct xrt_auto_prober*
+struct xrt_auto_prober *
 oh_create_auto_prober();
 
 /*!
