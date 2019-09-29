@@ -23,7 +23,7 @@ struct MatchingTimePoints
 	// high_resolution_clock::time_point highRes;
 
 	timepoint_ns
-	getTimestamp(time_state const& prevState);
+	getTimestamp(time_state const &prevState);
 };
 
 struct time_state
@@ -33,7 +33,7 @@ struct time_state
 };
 
 timepoint_ns
-MatchingTimePoints::getTimestamp(time_state const& prevState)
+MatchingTimePoints::getTimestamp(time_state const &prevState)
 {
 	//! @todo right now just doing steady clock for simplicity.
 	//! @todo Eventually need to make the high-res clock steady.
@@ -41,22 +41,22 @@ MatchingTimePoints::getTimestamp(time_state const& prevState)
 	return prevState.lastTime + duration_cast<nanoseconds>(elapsed).count();
 }
 
-struct time_state*
+struct time_state *
 time_state_create()
 {
 
-	time_state* state = new (std::nothrow) time_state;
+	time_state *state = new (std::nothrow) time_state;
 	return state;
 }
 
 void
-time_state_destroy(struct time_state* state)
+time_state_destroy(struct time_state *state)
 {
 	delete state;
 }
 
 timepoint_ns
-time_state_get_now(struct time_state const* state)
+time_state_get_now(struct time_state const *state)
 {
 	assert(state != NULL);
 	auto now = MatchingTimePoints();
@@ -65,7 +65,7 @@ time_state_get_now(struct time_state const* state)
 }
 
 timepoint_ns
-time_state_get_now_and_update(struct time_state* state)
+time_state_get_now_and_update(struct time_state *state)
 {
 	assert(state != NULL);
 	auto now = MatchingTimePoints();
@@ -80,9 +80,9 @@ time_state_get_now_and_update(struct time_state* state)
 }
 
 void
-time_state_to_timespec(struct time_state const* state,
+time_state_to_timespec(struct time_state const *state,
                        timepoint_ns timestamp,
-                       struct timespec* out)
+                       struct timespec *out)
 {
 	assert(state != NULL);
 	assert(out != NULL);
@@ -105,8 +105,8 @@ time_state_to_timespec(struct time_state const* state,
 
 
 timepoint_ns
-time_state_from_timespec(struct time_state const* state,
-                         const struct timespec* timespecTime)
+time_state_from_timespec(struct time_state const *state,
+                         const struct timespec *timespecTime)
 {
 	assert(state != NULL);
 	assert(timespecTime != NULL);

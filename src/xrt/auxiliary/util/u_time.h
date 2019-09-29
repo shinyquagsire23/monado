@@ -80,7 +80,7 @@ struct time_state;
  * @public @memberof time_state
  * @ingroup aux_util
  */
-struct time_state*
+struct time_state *
 time_state_create();
 
 
@@ -93,7 +93,7 @@ time_state_create();
  * @ingroup aux_util
  */
 void
-time_state_destroy(struct time_state* state);
+time_state_destroy(struct time_state *state);
 
 /*!
  * Get the current time as an integer timestamp.
@@ -105,7 +105,7 @@ time_state_destroy(struct time_state* state);
  * @ingroup aux_util
  */
 timepoint_ns
-time_state_get_now(struct time_state const* state);
+time_state_get_now(struct time_state const *state);
 
 /*!
  * Get the current time as an integer timestamp and update internal state.
@@ -119,7 +119,7 @@ time_state_get_now(struct time_state const* state);
  * @ingroup aux_util
  */
 timepoint_ns
-time_state_get_now_and_update(struct time_state* state);
+time_state_get_now_and_update(struct time_state *state);
 
 /*!
  * Convert an integer timestamp to a struct timespec (system time).
@@ -130,9 +130,9 @@ time_state_get_now_and_update(struct time_state* state);
  * @ingroup aux_util
  */
 void
-time_state_to_timespec(struct time_state const* state,
+time_state_to_timespec(struct time_state const *state,
                        timepoint_ns timestamp,
-                       struct timespec* out);
+                       struct timespec *out);
 
 /*!
  * Convert a struct timespec (system time) to an integer timestamp.
@@ -143,8 +143,8 @@ time_state_to_timespec(struct time_state const* state,
  * @ingroup aux_util
  */
 timepoint_ns
-time_state_from_timespec(struct time_state const* state,
-                         const struct timespec* timespecTime);
+time_state_from_timespec(struct time_state const *state,
+                         const struct timespec *timespecTime);
 
 #ifdef __cplusplus
 }

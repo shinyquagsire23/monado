@@ -83,9 +83,9 @@ const struct xrt_matrix_2x2 u_device_rotation_180 = {{
  * Dump the device config to stderr.
  */
 void
-u_device_dump_config(struct xrt_device* xdev,
-                     const char* prefix,
-                     const char* prod)
+u_device_dump_config(struct xrt_device *xdev,
+                     const char *prefix,
+                     const char *prod)
 {
 	// clang-format off
 	fprintf(stderr, "%s - device_setup\n", prefix);
@@ -139,8 +139,8 @@ u_device_dump_config(struct xrt_device* xdev,
  */
 
 bool
-u_device_setup_split_side_by_side(struct xrt_device* xdev,
-                                  const struct u_device_simple_info* info)
+u_device_setup_split_side_by_side(struct xrt_device *xdev,
+                                  const struct u_device_simple_info *info)
 {
 	uint32_t w_pixels = info->display.w_pixels / 2;
 	uint32_t h_pixels = info->display.h_pixels;
@@ -215,7 +215,7 @@ u_device_setup_split_side_by_side(struct xrt_device* xdev,
 	return true;
 }
 
-void*
+void *
 u_device_allocate(enum u_device_alloc_flags flags,
                   size_t size,
                   size_t num_inputs,
@@ -243,26 +243,26 @@ u_device_allocate(enum u_device_alloc_flags flags,
 	total_size += alloc_tracking ? sizeof(struct xrt_tracking_origin) : 0;
 
 	// Do the allocation
-	char* ptr = U_TYPED_ARRAY_CALLOC(char, total_size);
-	struct xrt_device* xdev = (struct xrt_device*)ptr;
+	char *ptr = U_TYPED_ARRAY_CALLOC(char, total_size);
+	struct xrt_device *xdev = (struct xrt_device *)ptr;
 
 	if (num_inputs > 0) {
 		xdev->num_inputs = num_inputs;
-		xdev->inputs = (struct xrt_input*)(ptr + offset_inputs);
+		xdev->inputs = (struct xrt_input *)(ptr + offset_inputs);
 	}
 
 	if (num_outputs > 0) {
 		xdev->num_outputs = num_outputs;
-		xdev->outputs = (struct xrt_output*)(ptr + offset_outputs);
+		xdev->outputs = (struct xrt_output *)(ptr + offset_outputs);
 	}
 
 	if (alloc_hmd) {
-		xdev->hmd = (struct xrt_hmd_parts*)(ptr + offset_hmd);
+		xdev->hmd = (struct xrt_hmd_parts *)(ptr + offset_hmd);
 	}
 
 	if (alloc_tracking) {
 		xdev->tracking_origin =
-		    (struct xrt_tracking_origin*)(ptr + offset_tracking);
+		    (struct xrt_tracking_origin *)(ptr + offset_tracking);
 		xdev->tracking_origin->type = XRT_TRACKING_TYPE_NONE;
 		xdev->tracking_origin->offset.orientation.w = 1.0f;
 		snprintf(xdev->tracking_origin->name, XRT_TRACKING_NAME_LEN,
