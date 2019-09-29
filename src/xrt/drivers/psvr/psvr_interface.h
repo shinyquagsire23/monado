@@ -25,7 +25,7 @@ extern "C" {
  *
  * @ingroup drv_psvr
  */
-struct xrt_auto_prober*
+struct xrt_auto_prober *
 psvr_create_auto_prober(void);
 
 /*!
