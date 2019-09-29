@@ -27,11 +27,11 @@ extern "C" {
  * Prefer using OXR_GET_INPUT_FROM_CHAIN() instead, since it includes the
  * casting.
  */
-static inline XrBaseInStructure const*
-oxr_find_input_in_chain(const void* ptr, XrStructureType desired)
+static inline XrBaseInStructure const *
+oxr_find_input_in_chain(const void *ptr, XrStructureType desired)
 {
 	while (ptr != NULL) {
-		XrBaseInStructure const* base = (XrBaseInStructure const*)ptr;
+		XrBaseInStructure const *base = (XrBaseInStructure const *)ptr;
 		if (base->type == desired) {
 			return base;
 		}
@@ -50,7 +50,7 @@ oxr_find_input_in_chain(const void* ptr, XrStructureType desired)
  * XrStructureType value) and TYPE (a type name) actually match!
  */
 #define OXR_GET_INPUT_FROM_CHAIN(PTR, STRUCTURE_TYPE_ENUM, TYPE)               \
-	((TYPE const*)oxr_find_input_in_chain(PTR, STRUCTURE_TYPE_ENUM))
+	((TYPE const *)oxr_find_input_in_chain(PTR, STRUCTURE_TYPE_ENUM))
 
 /*!
  * Finds an output struct of the given type in a next-chain.
@@ -60,11 +60,11 @@ oxr_find_input_in_chain(const void* ptr, XrStructureType desired)
  * Prefer using OXR_GET_OUTPUT_FROM_CHAIN() instead, since it includes the
  * casting.
  */
-static inline XrBaseOutStructure*
-oxr_find_output_in_chain(void* ptr, XrStructureType desired)
+static inline XrBaseOutStructure *
+oxr_find_output_in_chain(void *ptr, XrStructureType desired)
 {
 	while (ptr != NULL) {
-		XrBaseOutStructure* base = (XrBaseOutStructure*)ptr;
+		XrBaseOutStructure *base = (XrBaseOutStructure *)ptr;
 		if (base->type == desired) {
 			return base;
 		}
@@ -83,7 +83,7 @@ oxr_find_output_in_chain(void* ptr, XrStructureType desired)
  * XrStructureType value) and TYPE (a type name) actually match!
  */
 #define OXR_GET_OUTPUT_FROM_CHAIN(PTR, STRUCTURE_TYPE_ENUM, TYPE)              \
-	((TYPE*)oxr_find_output_in_chain(PTR, STRUCTURE_TYPE_ENUM))
+	((TYPE *)oxr_find_output_in_chain(PTR, STRUCTURE_TYPE_ENUM))
 
 /*!
  * @}

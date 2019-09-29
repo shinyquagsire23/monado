@@ -46,7 +46,7 @@ valid_path_char(const char c)
 }
 
 static bool
-contains_zero(const char* path, uint32_t size)
+contains_zero(const char *path, uint32_t size)
 {
 	for (uint32_t i = 0; i < size; i++) {
 		if (path[i] == '\0') {
@@ -58,10 +58,10 @@ contains_zero(const char* path, uint32_t size)
 }
 
 extern "C" XrResult
-oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
-                                        const char* path,
+oxr_verify_fixed_size_single_level_path(struct oxr_logger *log,
+                                        const char *path,
                                         uint32_t array_size,
-                                        const char* name)
+                                        const char *name)
 {
 	if (array_size == 0) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
@@ -98,10 +98,10 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger* log,
 }
 
 extern "C" XrResult
-oxr_verify_localized_name(struct oxr_logger* log,
-                          const char* string,
+oxr_verify_localized_name(struct oxr_logger *log,
+                          const char *string,
                           uint32_t array_size,
-                          const char* name)
+                          const char *name)
 {
 	if (array_size == 0) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
@@ -132,9 +132,9 @@ enum class State
 };
 
 extern "C" XrResult
-oxr_verify_full_path_c(struct oxr_logger* log,
-                       const char* path,
-                       const char* name)
+oxr_verify_full_path_c(struct oxr_logger *log,
+                       const char *path,
+                       const char *name)
 {
 	// XR_MAX_PATH_LENGTH is max including null terminator,
 	// length will not include null terminator
@@ -150,10 +150,10 @@ oxr_verify_full_path_c(struct oxr_logger* log,
 }
 
 extern "C" XrResult
-oxr_verify_full_path(struct oxr_logger* log,
-                     const char* path,
+oxr_verify_full_path(struct oxr_logger *log,
+                     const char *path,
                      size_t length,
-                     const char* name)
+                     const char *name)
 {
 	State state = State::Start;
 	bool valid = true;
@@ -275,11 +275,11 @@ oxr_verify_full_path(struct oxr_logger* log,
  */
 
 static XrResult
-subaction_path_no_dups(struct oxr_logger* log,
-                       struct oxr_instance* inst,
-                       struct oxr_sub_paths& sub_paths,
+subaction_path_no_dups(struct oxr_logger *log,
+                       struct oxr_instance *inst,
+                       struct oxr_sub_paths &sub_paths,
                        XrPath path,
-                       const char* variable,
+                       const char *variable,
                        uint32_t index)
 {
 	bool duplicate = false;
@@ -322,7 +322,7 @@ subaction_path_no_dups(struct oxr_logger* log,
 			sub_paths.gamepad = true;
 		}
 	} else {
-		const char* str = NULL;
+		const char *str = NULL;
 		size_t length = 0;
 
 		oxr_path_get_string(log, inst, path, &str, &length);
@@ -333,7 +333,7 @@ subaction_path_no_dups(struct oxr_logger* log,
 	}
 
 	if (duplicate) {
-		const char* str = NULL;
+		const char *str = NULL;
 		size_t length = 0;
 
 		oxr_path_get_string(log, inst, path, &str, &length);
@@ -348,11 +348,11 @@ subaction_path_no_dups(struct oxr_logger* log,
 
 
 extern "C" XrResult
-oxr_verify_subaction_paths_create(struct oxr_logger* log,
-                                  struct oxr_instance* inst,
+oxr_verify_subaction_paths_create(struct oxr_logger *log,
+                                  struct oxr_instance *inst,
                                   uint32_t countSubactionPaths,
-                                  const XrPath* subactionPaths,
-                                  const char* variable)
+                                  const XrPath *subactionPaths,
+                                  const char *variable)
 {
 	struct oxr_sub_paths sub_paths = {};
 
@@ -370,8 +370,8 @@ oxr_verify_subaction_paths_create(struct oxr_logger* log,
 }
 
 extern "C" XrResult
-oxr_verify_subaction_path_sync(struct oxr_logger* log,
-                               struct oxr_instance* inst,
+oxr_verify_subaction_path_sync(struct oxr_logger *log,
+                               struct oxr_instance *inst,
                                XrPath path,
                                uint32_t index)
 {
@@ -381,7 +381,7 @@ oxr_verify_subaction_path_sync(struct oxr_logger* log,
 	    path == inst->path_cache.gamepad) {
 		return XR_SUCCESS;
 	}
-	const char* str = NULL;
+	const char *str = NULL;
 	size_t length = 0;
 
 	oxr_path_get_string(log, inst, path, &str, &length);
@@ -392,12 +392,12 @@ oxr_verify_subaction_path_sync(struct oxr_logger* log,
 }
 
 extern "C" XrResult
-oxr_verify_subaction_path_get(struct oxr_logger* log,
-                              struct oxr_instance* inst,
+oxr_verify_subaction_path_get(struct oxr_logger *log,
+                              struct oxr_instance *inst,
                               XrPath path,
-                              const struct oxr_sub_paths* act_sub_paths,
-                              struct oxr_sub_paths* out_sub_paths,
-                              const char* variable)
+                              const struct oxr_sub_paths *act_sub_paths,
+                              struct oxr_sub_paths *out_sub_paths,
+                              const char *variable)
 {
 	struct oxr_sub_paths sub_paths = {};
 
@@ -414,7 +414,7 @@ oxr_verify_subaction_path_get(struct oxr_logger* log,
 	} else if (path == inst->path_cache.gamepad) {
 		sub_paths.gamepad = true;
 	} else {
-		const char* str = NULL;
+		const char *str = NULL;
 		size_t length = 0;
 
 		oxr_path_get_string(log, inst, path, &str, &length);
@@ -429,7 +429,7 @@ oxr_verify_subaction_path_get(struct oxr_logger* log,
 	    (sub_paths.left && !act_sub_paths->left) ||
 	    (sub_paths.right && !act_sub_paths->right) ||
 	    (sub_paths.gamepad && !act_sub_paths->gamepad)) {
-		const char* str = NULL;
+		const char *str = NULL;
 		size_t length = 0;
 
 		oxr_path_get_string(log, inst, path, &str, &length);
@@ -453,9 +453,9 @@ oxr_verify_subaction_path_get(struct oxr_logger* log,
  */
 
 extern "C" XrResult
-oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
-                               const struct oxr_instance* inst,
-                               const XrSessionCreateInfo* createInfo)
+oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
+                               const struct oxr_instance *inst,
+                               const XrSessionCreateInfo *createInfo)
 {
 	if (createInfo->type != XR_TYPE_SESSION_CREATE_INFO) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
@@ -473,7 +473,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 	}
 
 #if defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_XLIB)
-	XrGraphicsBindingOpenGLXlibKHR const* opengl_xlib =
+	XrGraphicsBindingOpenGLXlibKHR const *opengl_xlib =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo,
 	                             XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
 	                             XrGraphicsBindingOpenGLXlibKHR);
@@ -485,7 +485,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 #endif // defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_XLIB)
 
 #ifdef OXR_HAVE_KHR_vulkan_enable
-	XrGraphicsBindingVulkanKHR const* vulkan = OXR_GET_INPUT_FROM_CHAIN(
+	XrGraphicsBindingVulkanKHR const *vulkan = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR,
 	    XrGraphicsBindingVulkanKHR);
 	if (vulkan != NULL) {
@@ -519,7 +519,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger* log,
 
 extern "C" XrResult
 oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
-    struct oxr_logger* log, const XrGraphicsBindingOpenGLXlibKHR* next)
+    struct oxr_logger *log, const XrGraphicsBindingOpenGLXlibKHR *next)
 {
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
@@ -535,8 +535,8 @@ oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 
 extern "C" XrResult
-oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger* log,
-                                      const XrGraphicsBindingVulkanKHR* next)
+oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *log,
+                                      const XrGraphicsBindingVulkanKHR *next)
 {
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,

@@ -28,7 +28,7 @@
  * A helper define that verifies the systemId.
  */
 #define OXR_VERIFY_SYSTEM_AND_GET(log, inst, sysId, system)                    \
-	struct oxr_system* system = NULL;                                      \
+	struct oxr_system *system = NULL;                                      \
 	do {                                                                   \
 		XrResult ret =                                                 \
 		    oxr_system_get_by_id(log, inst, sysId, &system);           \
@@ -40,17 +40,17 @@
 
 XrResult
 oxr_xrGetSystem(XrInstance instance,
-                const XrSystemGetInfo* getInfo,
-                XrSystemId* systemId)
+                const XrSystemGetInfo *getInfo,
+                XrSystemId *systemId)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetSystem");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, getInfo, XR_TYPE_SYSTEM_GET_INFO);
 	OXR_VERIFY_ARG_NOT_NULL(&log, systemId);
 
-	struct oxr_system* selected = NULL;
-	struct oxr_system* systems[1] = {&inst->system};
+	struct oxr_system *selected = NULL;
+	struct oxr_system *systems[1] = {&inst->system};
 	uint32_t num_systems = 1;
 
 	XrResult ret = oxr_system_select(&log, systems, num_systems,
@@ -67,9 +67,9 @@ oxr_xrGetSystem(XrInstance instance,
 XrResult
 oxr_xrGetSystemProperties(XrInstance instance,
                           XrSystemId systemId,
-                          XrSystemProperties* properties)
+                          XrSystemProperties *properties)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetSystemProperties");
@@ -85,10 +85,10 @@ oxr_xrEnumerateViewConfigurations(
     XrInstance instance,
     XrSystemId systemId,
     uint32_t viewConfigurationTypeCapacityInput,
-    uint32_t* viewConfigurationTypeCountOutput,
-    XrViewConfigurationType* viewConfigurationTypes)
+    uint32_t *viewConfigurationTypeCountOutput,
+    XrViewConfigurationType *viewConfigurationTypes)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrEnumerateViewConfigurations");
@@ -105,10 +105,10 @@ oxr_xrEnumerateEnvironmentBlendModes(
     XrSystemId systemId,
     XrViewConfigurationType viewConfigurationType,
     uint32_t environmentBlendModeCapacityInput,
-    uint32_t* environmentBlendModeCountOutput,
-    XrEnvironmentBlendMode* environmentBlendModes)
+    uint32_t *environmentBlendModeCountOutput,
+    XrEnvironmentBlendMode *environmentBlendModes)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrEnumerateEnvironmentBlendModes");
@@ -124,9 +124,9 @@ oxr_xrGetViewConfigurationProperties(
     XrInstance instance,
     XrSystemId systemId,
     XrViewConfigurationType viewConfigurationType,
-    XrViewConfigurationProperties* configurationProperties)
+    XrViewConfigurationProperties *configurationProperties)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetViewConfigurationProperties");
@@ -144,10 +144,10 @@ oxr_xrEnumerateViewConfigurationViews(
     XrSystemId systemId,
     XrViewConfigurationType viewConfigurationType,
     uint32_t viewCapacityInput,
-    uint32_t* viewCountOutput,
-    XrViewConfigurationView* views)
+    uint32_t *viewCountOutput,
+    XrViewConfigurationView *views)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrEnumerateViewConfigurationViews");
@@ -171,9 +171,9 @@ XrResult
 oxr_xrGetOpenGLGraphicsRequirementsKHR(
     XrInstance instance,
     XrSystemId systemId,
-    XrGraphicsRequirementsOpenGLKHR* graphicsRequirements)
+    XrGraphicsRequirementsOpenGLKHR *graphicsRequirements)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetOpenGLGraphicsRequirementsKHR");
@@ -208,10 +208,10 @@ XrResult
 oxr_xrGetVulkanInstanceExtensionsKHR(XrInstance instance,
                                      XrSystemId systemId,
                                      uint32_t namesCapacityInput,
-                                     uint32_t* namesCountOutput,
-                                     char* namesString)
+                                     uint32_t *namesCountOutput,
+                                     char *namesString)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetVulkanInstanceExtensionsKHR");
@@ -225,10 +225,10 @@ XrResult
 oxr_xrGetVulkanDeviceExtensionsKHR(XrInstance instance,
                                    XrSystemId systemId,
                                    uint32_t namesCapacityInput,
-                                   uint32_t* namesCountOutput,
-                                   char* namesString)
+                                   uint32_t *namesCountOutput,
+                                   char *namesString)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetVulkanDeviceExtensionsKHR");
@@ -239,15 +239,15 @@ oxr_xrGetVulkanDeviceExtensionsKHR(XrInstance instance,
 }
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
-vkGetInstanceProcAddr(VkInstance instance, const char* pName);
+vkGetInstanceProcAddr(VkInstance instance, const char *pName);
 
 XrResult
 oxr_xrGetVulkanGraphicsDeviceKHR(XrInstance instance,
                                  XrSystemId systemId,
                                  VkInstance vkInstance,
-                                 VkPhysicalDevice* vkPhysicalDevice)
+                                 VkPhysicalDevice *vkPhysicalDevice)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetVulkanGraphicsDeviceKHR");
@@ -263,9 +263,9 @@ XrResult
 oxr_xrGetVulkanGraphicsRequirementsKHR(
     XrInstance instance,
     XrSystemId systemId,
-    XrGraphicsRequirementsVulkanKHR* graphicsRequirements)
+    XrGraphicsRequirementsVulkanKHR *graphicsRequirements)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetVulkanGraphicsRequirementsKHR");

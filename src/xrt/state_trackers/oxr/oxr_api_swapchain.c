@@ -26,10 +26,10 @@
 XrResult
 oxr_xrEnumerateSwapchainFormats(XrSession session,
                                 uint32_t formatCapacityInput,
-                                uint32_t* formatCountOutput,
-                                int64_t* formats)
+                                uint32_t *formatCountOutput,
+                                int64_t *formats)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrEnumerateSwapchainFormats");
@@ -40,12 +40,12 @@ oxr_xrEnumerateSwapchainFormats(XrSession session,
 
 XrResult
 oxr_xrCreateSwapchain(XrSession session,
-                      const XrSwapchainCreateInfo* createInfo,
-                      XrSwapchain* out_swapchain)
+                      const XrSwapchainCreateInfo *createInfo,
+                      XrSwapchain *out_swapchain)
 {
 	XrResult ret;
-	struct oxr_session* sess;
-	struct oxr_swapchain* sc;
+	struct oxr_session *sess;
+	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrCreateSwapchain");
@@ -76,7 +76,7 @@ oxr_xrCreateSwapchain(XrSession session,
 XrResult
 oxr_xrDestroySwapchain(XrSwapchain swapchain)
 {
-	struct oxr_swapchain* sc;
+	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc,
 	                                  "xrDestroySwapchain");
@@ -87,14 +87,14 @@ oxr_xrDestroySwapchain(XrSwapchain swapchain)
 XrResult
 oxr_xrEnumerateSwapchainImages(XrSwapchain swapchain,
                                uint32_t imageCapacityInput,
-                               uint32_t* imageCountOutput,
-                               XrSwapchainImageBaseHeader* images)
+                               uint32_t *imageCountOutput,
+                               XrSwapchainImageBaseHeader *images)
 {
-	struct oxr_swapchain* sc;
+	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc,
 	                                  "xrEnumerateSwapchainImages");
-	struct xrt_swapchain* xsc = sc->swapchain;
+	struct xrt_swapchain *xsc = sc->swapchain;
 
 	if (imageCountOutput != NULL) {
 		*imageCountOutput = xsc->num_images;
@@ -113,10 +113,10 @@ oxr_xrEnumerateSwapchainImages(XrSwapchain swapchain,
 
 XrResult
 oxr_xrAcquireSwapchainImage(XrSwapchain swapchain,
-                            const XrSwapchainImageAcquireInfo* acquireInfo,
-                            uint32_t* index)
+                            const XrSwapchainImageAcquireInfo *acquireInfo,
+                            uint32_t *index)
 {
-	struct oxr_swapchain* sc;
+	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc,
 	                                  "xrAcquireSwapchainImage");
@@ -129,9 +129,9 @@ oxr_xrAcquireSwapchainImage(XrSwapchain swapchain,
 
 XrResult
 oxr_xrWaitSwapchainImage(XrSwapchain swapchain,
-                         const XrSwapchainImageWaitInfo* waitInfo)
+                         const XrSwapchainImageWaitInfo *waitInfo)
 {
-	struct oxr_swapchain* sc;
+	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc,
 	                                  "xrWaitSwapchainImage");
@@ -143,9 +143,9 @@ oxr_xrWaitSwapchainImage(XrSwapchain swapchain,
 
 XrResult
 oxr_xrReleaseSwapchainImage(XrSwapchain swapchain,
-                            const XrSwapchainImageReleaseInfo* releaseInfo)
+                            const XrSwapchainImageReleaseInfo *releaseInfo)
 {
-	struct oxr_swapchain* sc;
+	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc,
 	                                  "xrReleaseSwapchainImage");

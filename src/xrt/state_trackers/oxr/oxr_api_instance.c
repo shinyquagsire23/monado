@@ -35,10 +35,10 @@ static const XrExtensionProperties extension_properties[] = {
     OXR_EXTENSION_SUPPORT_GENERATE(MAKE_EXTENSION_PROPERTIES)};
 
 XrResult
-oxr_xrEnumerateInstanceExtensionProperties(const char* layerName,
+oxr_xrEnumerateInstanceExtensionProperties(const char *layerName,
                                            uint32_t propertyCapacityInput,
-                                           uint32_t* propertyCountOutput,
-                                           XrExtensionProperties* properties)
+                                           uint32_t *propertyCountOutput,
+                                           XrExtensionProperties *properties)
 {
 	struct oxr_logger log;
 	oxr_log_init(&log, "xrEnumerateInstanceExtensionProperties");
@@ -49,8 +49,8 @@ oxr_xrEnumerateInstanceExtensionProperties(const char* layerName,
 }
 
 XrResult
-oxr_xrCreateInstance(const XrInstanceCreateInfo* createInfo,
-                     XrInstance* out_instance)
+oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo,
+                     XrInstance *out_instance)
 {
 	XrResult ret;
 	struct oxr_logger log;
@@ -102,7 +102,7 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo* createInfo,
 		                 i);
 	}
 
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 
 	ret = oxr_instance_create(&log, createInfo, &inst);
 	if (ret != XR_SUCCESS) {
@@ -117,7 +117,7 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo* createInfo,
 XrResult
 oxr_xrDestroyInstance(XrInstance instance)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrDestroyInstance");
@@ -127,9 +127,9 @@ oxr_xrDestroyInstance(XrInstance instance)
 
 XrResult
 oxr_xrGetInstanceProperties(XrInstance instance,
-                            XrInstanceProperties* instanceProperties)
+                            XrInstanceProperties *instanceProperties)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetInstanceProperties");
@@ -138,9 +138,9 @@ oxr_xrGetInstanceProperties(XrInstance instance,
 }
 
 XrResult
-oxr_xrPollEvent(XrInstance instance, XrEventDataBuffer* eventData)
+oxr_xrPollEvent(XrInstance instance, XrEventDataBuffer *eventData)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrPollEvent");
 	OXR_VERIFY_ARG_NOT_NULL(&log, eventData);
@@ -153,7 +153,7 @@ oxr_xrResultToString(XrInstance instance,
                      XrResult value,
                      char buffer[XR_MAX_RESULT_STRING_SIZE])
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrResultToString");
@@ -176,7 +176,7 @@ oxr_xrStructureTypeToString(XrInstance instance,
                             XrStructureType value,
                             char buffer[XR_MAX_STRUCTURE_NAME_SIZE])
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrStructureTypeToString");
@@ -196,10 +196,10 @@ oxr_xrStructureTypeToString(XrInstance instance,
 
 XrResult
 oxr_xrStringToPath(XrInstance instance,
-                   const char* pathString,
-                   XrPath* out_path)
+                   const char *pathString,
+                   XrPath *out_path)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	XrResult ret;
 	XrPath path;
@@ -226,12 +226,12 @@ XrResult
 oxr_xrPathToString(XrInstance instance,
                    XrPath path,
                    uint32_t bufferCapacityInput,
-                   uint32_t* bufferCountOutput,
-                   char* buffer)
+                   uint32_t *bufferCountOutput,
+                   char *buffer)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
-	const char* str;
+	const char *str;
 	size_t length;
 	XrResult ret;
 
@@ -260,12 +260,12 @@ oxr_xrPathToString(XrInstance instance,
 #ifdef XR_USE_TIMESPEC
 XrResult
 oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance,
-                                   const struct timespec* timespecTime,
-                                   XrTime* time)
+                                   const struct timespec *timespecTime,
+                                   XrTime *time)
 {
 	//! @todo do we need to check and see if this extension was
 	//! enabled first?
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrConvertTimespecTimeToTimeKHR");
@@ -280,9 +280,9 @@ oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance,
 XrResult
 oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance,
                                    XrTime time,
-                                   struct timespec* timespecTime)
+                                   struct timespec *timespecTime)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrConvertTimeToTimespecTimeKHR");

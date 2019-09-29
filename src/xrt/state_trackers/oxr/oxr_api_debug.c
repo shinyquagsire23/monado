@@ -17,9 +17,9 @@
 
 XrResult
 oxr_xrSetDebugUtilsObjectNameEXT(XrInstance instance,
-                                 const XrDebugUtilsObjectNameInfoEXT* nameInfo)
+                                 const XrDebugUtilsObjectNameInfoEXT *nameInfo)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrSetDebugUtilsObjectNameEXT");
@@ -30,11 +30,11 @@ oxr_xrSetDebugUtilsObjectNameEXT(XrInstance instance,
 XrResult
 oxr_xrCreateDebugUtilsMessengerEXT(
     XrInstance instance,
-    const XrDebugUtilsMessengerCreateInfoEXT* createInfo,
-    XrDebugUtilsMessengerEXT* messenger)
+    const XrDebugUtilsMessengerCreateInfoEXT *createInfo,
+    XrDebugUtilsMessengerEXT *messenger)
 {
-	struct oxr_instance* inst;
-	struct oxr_debug_messenger* mssngr;
+	struct oxr_instance *inst;
+	struct oxr_debug_messenger *mssngr;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrCreateDebugUtilsMessengerEXT");
@@ -57,7 +57,7 @@ oxr_xrCreateDebugUtilsMessengerEXT(
 XrResult
 oxr_xrDestroyDebugUtilsMessengerEXT(XrDebugUtilsMessengerEXT messenger)
 {
-	struct oxr_debug_messenger* mssngr;
+	struct oxr_debug_messenger *mssngr;
 	struct oxr_logger log;
 	OXR_VERIFY_MESSENGER_AND_INIT_LOG(&log, messenger, mssngr,
 	                                  "xrDestroyDebugUtilsMessengerEXT");
@@ -71,9 +71,9 @@ oxr_xrSubmitDebugUtilsMessageEXT(
     XrInstance instance,
     XrDebugUtilsMessageSeverityFlagsEXT messageSeverity,
     XrDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const XrDebugUtilsMessengerCallbackDataEXT* callbackData)
+    const XrDebugUtilsMessengerCallbackDataEXT *callbackData)
 {
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrSubmitDebugUtilsMessageEXT");
@@ -85,9 +85,9 @@ oxr_xrSubmitDebugUtilsMessageEXT(
 
 XrResult
 oxr_xrSessionBeginDebugUtilsLabelRegionEXT(
-    XrSession session, const XrDebugUtilsLabelEXT* labelInfo)
+    XrSession session, const XrDebugUtilsLabelEXT *labelInfo)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(
 	    &log, session, sess, "xrSessionBeginDebugUtilsLabelRegionEXT");
@@ -99,7 +99,7 @@ oxr_xrSessionBeginDebugUtilsLabelRegionEXT(
 XrResult
 oxr_xrSessionEndDebugUtilsLabelRegionEXT(XrSession session)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrSessionEndDebugUtilsLabelRegionEXT");
@@ -110,9 +110,9 @@ oxr_xrSessionEndDebugUtilsLabelRegionEXT(XrSession session)
 
 XrResult
 oxr_xrSessionInsertDebugUtilsLabelEXT(XrSession session,
-                                      const XrDebugUtilsLabelEXT* labelInfo)
+                                      const XrDebugUtilsLabelEXT *labelInfo)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrSessionInsertDebugUtilsLabelEXT");

@@ -34,8 +34,8 @@ DEBUG_GET_ONCE_BOOL_OPTION(negotiate, "OXR_DEBUG_NEGOTIATE", false)
 
 
 XrResult
-xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo* loaderInfo,
-                                  XrNegotiateRuntimeRequest* runtimeRequest)
+xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo,
+                                  XrNegotiateRuntimeRequest *runtimeRequest)
 {
 	PRINT_NEGOTIATE("xrNegotiateLoaderRuntimeInterface\n");
 
@@ -84,8 +84,8 @@ xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo* loaderInfo,
 
 XrResult
 oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
-                                  uint32_t* propertyCountOutput,
-                                  XrApiLayerProperties* properties)
+                                  uint32_t *propertyCountOutput,
+                                  XrApiLayerProperties *properties)
 {
 	struct oxr_logger log;
 	oxr_log_init(&log, "xrEnumerateApiLayerProperties");
@@ -146,10 +146,10 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
  * Handle a non-null instance pointer.
  */
 static XrResult
-handle_non_null(struct oxr_instance* inst,
-                struct oxr_logger* log,
-                const char* name,
-                PFN_xrVoidFunction* out_function)
+handle_non_null(struct oxr_instance *inst,
+                struct oxr_logger *log,
+                const char *name,
+                PFN_xrVoidFunction *out_function)
 {
 	ENTRY(xrGetInstanceProcAddr);
 	ENTRY(xrEnumerateInstanceExtensionProperties);
@@ -259,9 +259,9 @@ handle_non_null(struct oxr_instance* inst,
  * Special case a null instance pointer.
  */
 static XrResult
-handle_null(struct oxr_logger* log,
-            const char* name,
-            PFN_xrVoidFunction* out_function)
+handle_null(struct oxr_logger *log,
+            const char *name,
+            PFN_xrVoidFunction *out_function)
 {
 	ENTRY(xrCreateInstance);
 	ENTRY(xrEnumerateInstanceExtensionProperties);
@@ -277,8 +277,8 @@ handle_null(struct oxr_logger* log,
 
 XrResult
 oxr_xrGetInstanceProcAddr(XrInstance instance,
-                          const char* name,
-                          PFN_xrVoidFunction* function)
+                          const char *name,
+                          PFN_xrVoidFunction *function)
 {
 	struct oxr_logger log;
 
@@ -290,7 +290,7 @@ oxr_xrGetInstanceProcAddr(XrInstance instance,
 		return handle_null(&log, name, function);
 	}
 
-	struct oxr_instance* inst;
+	struct oxr_instance *inst;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetInstanceProcAddr");
 	return handle_non_null(inst, &log, name, function);

@@ -26,11 +26,11 @@
 
 XrResult
 oxr_xrCreateActionSpace(XrSession session,
-                        const XrActionSpaceCreateInfo* createInfo,
-                        XrSpace* space)
+                        const XrActionSpaceCreateInfo *createInfo,
+                        XrSpace *space)
 {
-	struct oxr_session* sess;
-	struct oxr_action* act;
+	struct oxr_session *sess;
+	struct oxr_action *act;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrCreateActionSpace");
@@ -39,7 +39,7 @@ oxr_xrCreateActionSpace(XrSession session,
 	OXR_VERIFY_POSE(&log, createInfo->poseInActionSpace);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, createInfo->action, act);
 
-	struct oxr_space* spc;
+	struct oxr_space *spc;
 	XrResult ret =
 	    oxr_space_action_create(&log, sess, act->key, createInfo, &spc);
 	if (ret != XR_SUCCESS) {
@@ -60,10 +60,10 @@ static const XrReferenceSpaceType session_spaces[] = {
 XrResult
 oxr_xrEnumerateReferenceSpaces(XrSession session,
                                uint32_t spaceCapacityInput,
-                               uint32_t* spaceCountOutput,
-                               XrReferenceSpaceType* spaces)
+                               uint32_t *spaceCountOutput,
+                               XrReferenceSpaceType *spaces)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrEnumerateReferenceSpaces");
@@ -75,9 +75,9 @@ oxr_xrEnumerateReferenceSpaces(XrSession session,
 XrResult
 oxr_xrGetReferenceSpaceBoundsRect(XrSession session,
                                   XrReferenceSpaceType referenceSpaceType,
-                                  XrExtent2Df* bounds)
+                                  XrExtent2Df *bounds)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetReferenceSpaceBoundsRect");
@@ -89,12 +89,12 @@ oxr_xrGetReferenceSpaceBoundsRect(XrSession session,
 
 XrResult
 oxr_xrCreateReferenceSpace(XrSession session,
-                           const XrReferenceSpaceCreateInfo* createInfo,
-                           XrSpace* out_space)
+                           const XrReferenceSpaceCreateInfo *createInfo,
+                           XrSpace *out_space)
 {
 	XrResult ret;
-	struct oxr_session* sess;
-	struct oxr_space* spc;
+	struct oxr_session *sess;
+	struct oxr_space *spc;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrCreateReferenceSpace");
@@ -116,10 +116,10 @@ XrResult
 oxr_xrLocateSpace(XrSpace space,
                   XrSpace baseSpace,
                   XrTime time,
-                  XrSpaceLocation* location)
+                  XrSpaceLocation *location)
 {
-	struct oxr_space* spc;
-	struct oxr_space* baseSpc;
+	struct oxr_space *spc;
+	struct oxr_space *baseSpc;
 	struct oxr_logger log;
 	OXR_VERIFY_SPACE_AND_INIT_LOG(&log, space, spc, "xrLocateSpace");
 	OXR_VERIFY_SPACE_NOT_NULL(&log, baseSpace, baseSpc);
@@ -131,7 +131,7 @@ oxr_xrLocateSpace(XrSpace space,
 XrResult
 oxr_xrDestroySpace(XrSpace space)
 {
-	struct oxr_space* spc;
+	struct oxr_space *spc;
 	struct oxr_logger log;
 	OXR_VERIFY_SPACE_AND_INIT_LOG(&log, space, spc, "xrDestroySpace");
 

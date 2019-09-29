@@ -26,12 +26,12 @@
 
 XrResult
 oxr_xrCreateSession(XrInstance instance,
-                    const XrSessionCreateInfo* createInfo,
-                    XrSession* out_session)
+                    const XrSessionCreateInfo *createInfo,
+                    XrSession *out_session)
 {
 	XrResult ret;
-	struct oxr_instance* inst;
-	struct oxr_session* sess;
+	struct oxr_instance *inst;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrCreateSession");
@@ -54,7 +54,7 @@ oxr_xrCreateSession(XrInstance instance,
 XrResult
 oxr_xrDestroySession(XrSession session)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrDestroySession");
@@ -63,9 +63,9 @@ oxr_xrDestroySession(XrSession session)
 }
 
 XrResult
-oxr_xrBeginSession(XrSession session, const XrSessionBeginInfo* beginInfo)
+oxr_xrBeginSession(XrSession session, const XrSessionBeginInfo *beginInfo)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrBeginSession");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, beginInfo,
@@ -77,7 +77,7 @@ oxr_xrBeginSession(XrSession session, const XrSessionBeginInfo* beginInfo)
 XrResult
 oxr_xrEndSession(XrSession session)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEndSession");
 
@@ -86,10 +86,10 @@ oxr_xrEndSession(XrSession session)
 
 XrResult
 oxr_xrWaitFrame(XrSession session,
-                const XrFrameWaitInfo* frameWaitInfo,
-                XrFrameState* frameState)
+                const XrFrameWaitInfo *frameWaitInfo,
+                XrFrameState *frameState)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrWaitFrame");
 	if (sess->compositor == NULL) {
@@ -103,9 +103,9 @@ oxr_xrWaitFrame(XrSession session,
 }
 
 XrResult
-oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo* frameBeginInfo)
+oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo *frameBeginInfo)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrBeginFrame");
 	// NULL explicitly allowed here because it's a basically empty struct.
@@ -118,9 +118,9 @@ oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo* frameBeginInfo)
 }
 
 XrResult
-oxr_xrEndFrame(XrSession session, const XrFrameEndInfo* frameEndInfo)
+oxr_xrEndFrame(XrSession session, const XrFrameEndInfo *frameEndInfo)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEndFrame");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, frameEndInfo,
@@ -132,7 +132,7 @@ oxr_xrEndFrame(XrSession session, const XrFrameEndInfo* frameEndInfo)
 XrResult
 oxr_xrRequestExitSession(XrSession session)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrRequestExitSession");
@@ -142,14 +142,14 @@ oxr_xrRequestExitSession(XrSession session)
 
 XrResult
 oxr_xrLocateViews(XrSession session,
-                  const XrViewLocateInfo* viewLocateInfo,
-                  XrViewState* viewState,
+                  const XrViewLocateInfo *viewLocateInfo,
+                  XrViewState *viewState,
                   uint32_t viewCapacityInput,
-                  uint32_t* viewCountOutput,
-                  XrView* views)
+                  uint32_t *viewCountOutput,
+                  XrView *views)
 {
-	struct oxr_session* sess;
-	struct oxr_space* spc;
+	struct oxr_session *sess;
+	struct oxr_space *spc;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrLocateViews");
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, viewLocateInfo,
@@ -181,9 +181,9 @@ oxr_xrGetVisibilityMaskKHR(XrSession session,
                            XrViewConfigurationType viewConfigurationType,
                            uint32_t viewIndex,
                            XrVisibilityMaskTypeKHR visibilityMaskType,
-                           XrVisibilityMaskKHR* visibilityMask)
+                           XrVisibilityMaskKHR *visibilityMask)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetVisibilityMaskKHR");
@@ -207,7 +207,7 @@ oxr_xrPerfSettingsSetPerformanceLevelEXT(XrSession session,
                                          XrPerfSettingsDomainEXT domain,
                                          XrPerfSettingsLevelEXT level)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrPerfSettingsSetPerformanceLevelEXT");
@@ -230,11 +230,11 @@ XrResult
 oxr_xrThermalGetTemperatureTrendEXT(
     XrSession session,
     XrPerfSettingsDomainEXT domain,
-    XrPerfSettingsNotificationLevelEXT* notificationLevel,
-    float* tempHeadroom,
-    float* tempSlope)
+    XrPerfSettingsNotificationLevelEXT *notificationLevel,
+    float *tempHeadroom,
+    float *tempSlope)
 {
-	struct oxr_session* sess;
+	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrThermalGetTemperatureTrendEXT");
