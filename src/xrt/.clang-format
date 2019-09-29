@@ -7,7 +7,7 @@ Standard:             Auto
 SortIncludes:         false
 
 # Spacing and Blank Lines
-DerivePointerAlignment: true
+DerivePointerAlignment: false
 PointerAlignment:       Right
 #AlignEscapedNewlines:   DontAlign
 #AlignConsecutiveDeclarations: false
