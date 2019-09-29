@@ -58,9 +58,9 @@ struct comp_window_direct
 {
 	struct comp_window base = comp_window();
 
-	Display* dpy = nullptr;
-	xcb_connection_t* connection = nullptr;
-	xcb_screen_t* screen = nullptr;
+	Display *dpy = nullptr;
+	xcb_connection_t *connection = nullptr;
+	xcb_screen_t *screen = nullptr;
 
 	std::map<uint32_t, xcb_randr_mode_info_t> randr_modes = {};
 	std::vector<comp_window_direct_randr_display> randr_displays = {};
@@ -78,67 +78,67 @@ struct comp_window_direct
  */
 
 static void
-comp_window_direct_destroy(struct comp_window* w);
+comp_window_direct_destroy(struct comp_window *w);
 
 XRT_MAYBE_UNUSED static void
-comp_window_direct_list_randr_screens(struct comp_window_direct* w);
+comp_window_direct_list_randr_screens(struct comp_window_direct *w);
 
 static bool
-comp_window_direct_init_randr(struct comp_window* w);
+comp_window_direct_init_randr(struct comp_window *w);
 
 static bool
-comp_window_direct_init_nvidia(struct comp_window* w);
+comp_window_direct_init_nvidia(struct comp_window *w);
 
-static comp_window_direct_randr_display*
-comp_window_direct_current_randr_display(struct comp_window_direct* w);
+static comp_window_direct_randr_display *
+comp_window_direct_current_randr_display(struct comp_window_direct *w);
 
-static comp_window_direct_nvidia_display*
-comp_window_direct_current_nvidia_display(struct comp_window_direct* w);
+static comp_window_direct_nvidia_display *
+comp_window_direct_current_nvidia_display(struct comp_window_direct *w);
 
 static void
-comp_window_direct_flush(struct comp_window* w);
+comp_window_direct_flush(struct comp_window *w);
 
 static VkDisplayModeKHR
-comp_window_direct_get_primary_display_mode(struct comp_window_direct* w,
+comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
                                             VkDisplayKHR display);
 
 static VkDisplayPlaneAlphaFlagBitsKHR
 choose_alpha_mode(VkDisplayPlaneAlphaFlagsKHR flags);
 
 static VkResult
-comp_window_direct_create_surface(struct comp_window_direct* w,
+comp_window_direct_create_surface(struct comp_window_direct *w,
                                   VkInstance instance,
-                                  VkSurfaceKHR* surface,
+                                  VkSurfaceKHR *surface,
                                   uint32_t width,
                                   uint32_t height);
 
 static bool
-comp_window_direct_init_swapchain(struct comp_window* w,
+comp_window_direct_init_swapchain(struct comp_window *w,
                                   uint32_t width,
                                   uint32_t height);
 
 static int
-comp_window_direct_connect(struct comp_window_direct* w);
+comp_window_direct_connect(struct comp_window_direct *w);
 
 static VkResult
-comp_window_direct_acquire_xlib_display(struct comp_window_direct* w,
+comp_window_direct_acquire_xlib_display(struct comp_window_direct *w,
                                         VkDisplayKHR display);
 
 static VkDisplayKHR
-comp_window_direct_get_xlib_randr_output(struct comp_window_direct* w,
+comp_window_direct_get_xlib_randr_output(struct comp_window_direct *w,
                                          RROutput output);
 
 static void
 comp_window_direct_enumerate_randr_modes(
-    struct comp_window_direct* w,
-    xcb_randr_get_screen_resources_reply_t* resources_reply);
+    struct comp_window_direct *w,
+    xcb_randr_get_screen_resources_reply_t *resources_reply);
 
 static void
-comp_window_direct_get_randr_outputs(struct comp_window_direct* w);
+comp_window_direct_get_randr_outputs(struct comp_window_direct *w);
 
 static void
-comp_window_direct_update_window_title(struct comp_window* w,
-                                       const char* title);
+comp_window_direct_update_window_title(struct comp_window *w,
+                                       const char *title);
 
 
 /*
@@ -147,8 +147,8 @@ comp_window_direct_update_window_title(struct comp_window* w,
  *
  */
 
-extern "C" struct comp_window*
-comp_window_direct_create(struct comp_compositor* c)
+extern "C" struct comp_window *
+comp_window_direct_create(struct comp_compositor *c)
 {
 	auto w = new comp_window_direct();
 
@@ -170,13 +170,13 @@ comp_window_direct_create(struct comp_compositor* c)
 }
 
 static void
-comp_window_direct_destroy(struct comp_window* w)
+comp_window_direct_destroy(struct comp_window *w)
 {
-	comp_window_direct* w_direct = (comp_window_direct*)w;
-	vk_bundle* vk = &w->c->vk;
+	comp_window_direct *w_direct = (comp_window_direct *)w;
+	vk_bundle *vk = &w->c->vk;
 
 	for (uint32_t i = 0; i < w_direct->randr_displays.size(); i++) {
-		comp_window_direct_randr_display* d =
+		comp_window_direct_randr_display *d =
 		    &w_direct->randr_displays[i];
 
 		if (d->display == VK_NULL_HANDLE) {
@@ -187,7 +187,7 @@ comp_window_direct_destroy(struct comp_window* w)
 		d->display = VK_NULL_HANDLE;
 	}
 	for (uint32_t i = 0; i < w_direct->nv_displays.size(); i++) {
-		comp_window_direct_nvidia_display* d =
+		comp_window_direct_nvidia_display *d =
 		    &w_direct->nv_displays[i];
 		d->display = VK_NULL_HANDLE;
 	}
@@ -197,14 +197,14 @@ comp_window_direct_destroy(struct comp_window* w)
 		w_direct->connection = nullptr;
 	}
 
-	delete reinterpret_cast<struct comp_window_direct*>(w);
+	delete reinterpret_cast<struct comp_window_direct *>(w);
 }
 
 static void
-comp_window_direct_list_randr_screens(struct comp_window_direct* w)
+comp_window_direct_list_randr_screens(struct comp_window_direct *w)
 {
 	int display_i = 0;
-	for (const comp_window_direct_randr_display& d : w->randr_displays) {
+	for (const comp_window_direct_randr_display &d : w->randr_displays) {
 		COMP_DEBUG(w->base.c, "%d: %s %dx%d@%.2f", display_i,
 		           d.name.c_str(), d.primary_mode.width,
 		           d.primary_mode.height,
@@ -215,7 +215,7 @@ comp_window_direct_list_randr_screens(struct comp_window_direct* w)
 }
 
 static bool
-comp_window_direct_init_randr(struct comp_window* w)
+comp_window_direct_init_randr(struct comp_window *w)
 {
 	// Sanity check.
 	if (w->c->vk.instance != VK_NULL_HANDLE) {
@@ -223,7 +223,7 @@ comp_window_direct_init_randr(struct comp_window* w)
 		return false;
 	}
 
-	comp_window_direct* w_direct = (comp_window_direct*)w;
+	comp_window_direct *w_direct = (comp_window_direct *)w;
 
 	if (!comp_window_direct_connect(w_direct)) {
 		return false;
@@ -249,20 +249,20 @@ comp_window_direct_init_randr(struct comp_window* w)
 		           (int)w_direct->randr_displays.size());
 
 		w->c->settings.display = 0;
-		comp_window_direct_randr_display* d =
+		comp_window_direct_randr_display *d =
 		    comp_window_direct_current_randr_display(w_direct);
 		COMP_DEBUG(w->c, "Selecting '%s' instead.", d->name.c_str());
 	}
 
 	if (w->c->settings.display < 0) {
 		w->c->settings.display = 0;
-		comp_window_direct_randr_display* d =
+		comp_window_direct_randr_display *d =
 		    comp_window_direct_current_randr_display(w_direct);
 		COMP_DEBUG(w->c, "Selecting '%s' first display.",
 		           d->name.c_str());
 	}
 
-	comp_window_direct_randr_display* d =
+	comp_window_direct_randr_display *d =
 	    comp_window_direct_current_randr_display(w_direct);
 	w->c->settings.width = d->primary_mode.width;
 	w->c->settings.height = d->primary_mode.height;
@@ -273,7 +273,7 @@ comp_window_direct_init_randr(struct comp_window* w)
 }
 
 static bool
-comp_window_direct_init_nvidia(struct comp_window* w)
+comp_window_direct_init_nvidia(struct comp_window *w)
 {
 	// Sanity check.
 	if (w->c->vk.instance == VK_NULL_HANDLE) {
@@ -281,7 +281,7 @@ comp_window_direct_init_nvidia(struct comp_window* w)
 		return false;
 	}
 
-	comp_window_direct* w_direct = (comp_window_direct*)w;
+	comp_window_direct *w_direct = (comp_window_direct *)w;
 
 	if (!comp_window_direct_connect(w_direct)) {
 		return false;
@@ -299,7 +299,7 @@ comp_window_direct_init_nvidia(struct comp_window* w)
 		return false;
 	}
 
-	struct VkDisplayPropertiesKHR* display_props =
+	struct VkDisplayPropertiesKHR *display_props =
 	    U_TYPED_ARRAY_CALLOC(VkDisplayPropertiesKHR, display_count);
 
 	if (display_props && comp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(
@@ -349,8 +349,8 @@ comp_window_direct_init_nvidia(struct comp_window* w)
 	return true;
 }
 
-static comp_window_direct_randr_display*
-comp_window_direct_current_randr_display(struct comp_window_direct* w)
+static comp_window_direct_randr_display *
+comp_window_direct_current_randr_display(struct comp_window_direct *w)
 {
 	uint32_t index = w->base.c->settings.display;
 	if (index == (uint32_t)-1) {
@@ -364,8 +364,8 @@ comp_window_direct_current_randr_display(struct comp_window_direct* w)
 	return &w->randr_displays[index];
 }
 
-static comp_window_direct_nvidia_display*
-comp_window_direct_current_nvidia_display(struct comp_window_direct* w)
+static comp_window_direct_nvidia_display *
+comp_window_direct_current_nvidia_display(struct comp_window_direct *w)
 {
 	uint32_t index = w->base.c->settings.display;
 	if (index == (uint32_t)-1) {
@@ -380,14 +380,14 @@ comp_window_direct_current_nvidia_display(struct comp_window_direct* w)
 }
 
 static void
-comp_window_direct_flush(struct comp_window* w)
+comp_window_direct_flush(struct comp_window *w)
 {}
 
 static VkDisplayModeKHR
-comp_window_direct_get_primary_display_mode(struct comp_window_direct* w,
+comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
                                             VkDisplayKHR display)
 {
-	struct vk_bundle* vk = w->base.swapchain.vk;
+	struct vk_bundle *vk = w->base.swapchain.vk;
 	uint32_t mode_count;
 	VkResult ret;
 
@@ -402,7 +402,7 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct* w,
 
 	COMP_DEBUG(w->base.c, "Found %d modes", mode_count);
 
-	VkDisplayModePropertiesKHR* mode_properties;
+	VkDisplayModePropertiesKHR *mode_properties;
 	mode_properties = new VkDisplayModePropertiesKHR[mode_count];
 	ret = vk->vkGetDisplayModePropertiesKHR(
 	    w->base.swapchain.vk->physical_device, display, &mode_count,
@@ -438,17 +438,17 @@ choose_alpha_mode(VkDisplayPlaneAlphaFlagsKHR flags)
 }
 
 static VkResult
-comp_window_direct_create_surface(struct comp_window_direct* w,
+comp_window_direct_create_surface(struct comp_window_direct *w,
                                   VkInstance instance,
-                                  VkSurfaceKHR* surface,
+                                  VkSurfaceKHR *surface,
                                   uint32_t width,
                                   uint32_t height)
 {
-	comp_window_direct_randr_display* d =
+	comp_window_direct_randr_display *d =
 	    comp_window_direct_current_randr_display(w);
-	comp_window_direct_nvidia_display* nvd =
+	comp_window_direct_nvidia_display *nvd =
 	    comp_window_direct_current_nvidia_display(w);
-	struct vk_bundle* vk = w->base.swapchain.vk;
+	struct vk_bundle *vk = w->base.swapchain.vk;
 
 	VkResult ret = VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
 	VkDisplayKHR _display = {};
@@ -496,7 +496,7 @@ comp_window_direct_create_surface(struct comp_window_direct* w,
 	COMP_DEBUG(w->base.c, "Found %d plane properites.",
 	           plane_property_count);
 
-	VkDisplayPlanePropertiesKHR* plane_properties =
+	VkDisplayPlanePropertiesKHR *plane_properties =
 	    new VkDisplayPlanePropertiesKHR[plane_property_count];
 
 	ret = vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
@@ -546,11 +546,11 @@ comp_window_direct_create_surface(struct comp_window_direct* w,
 }
 
 static bool
-comp_window_direct_init_swapchain(struct comp_window* w,
+comp_window_direct_init_swapchain(struct comp_window *w,
                                   uint32_t width,
                                   uint32_t height)
 {
-	comp_window_direct* w_direct = (comp_window_direct*)w;
+	comp_window_direct *w_direct = (comp_window_direct *)w;
 	VkResult ret;
 
 
@@ -570,7 +570,7 @@ comp_window_direct_init_swapchain(struct comp_window* w,
 }
 
 static int
-comp_window_direct_connect(struct comp_window_direct* w)
+comp_window_direct_connect(struct comp_window_direct *w)
 {
 	w->dpy = XOpenDisplay(nullptr);
 	if (w->dpy == nullptr) {
@@ -584,26 +584,26 @@ comp_window_direct_connect(struct comp_window_direct* w)
 }
 
 static VkResult
-comp_window_direct_acquire_xlib_display(struct comp_window_direct* w,
+comp_window_direct_acquire_xlib_display(struct comp_window_direct *w,
                                         VkDisplayKHR display)
 {
-	struct vk_bundle* vk = w->base.swapchain.vk;
+	struct vk_bundle *vk = w->base.swapchain.vk;
 	VkResult ret;
 
 	ret = vk->vkAcquireXlibDisplayEXT(w->base.swapchain.vk->physical_device,
 	                                  w->dpy, display);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->base.c, "vkAcquireXlibDisplayEXT: %s (%p)",
-		           vk_result_string(ret), (void*)display);
+		           vk_result_string(ret), (void *)display);
 	}
 	return ret;
 }
 
 static VkDisplayKHR
-comp_window_direct_get_xlib_randr_output(struct comp_window_direct* w,
+comp_window_direct_get_xlib_randr_output(struct comp_window_direct *w,
                                          RROutput output)
 {
-	struct vk_bundle* vk = w->base.swapchain.vk;
+	struct vk_bundle *vk = w->base.swapchain.vk;
 	VkResult ret;
 
 	VkDisplayKHR display;
@@ -628,10 +628,10 @@ comp_window_direct_get_xlib_randr_output(struct comp_window_direct* w,
 
 static void
 comp_window_direct_enumerate_randr_modes(
-    struct comp_window_direct* w,
-    xcb_randr_get_screen_resources_reply_t* resources_reply)
+    struct comp_window_direct *w,
+    xcb_randr_get_screen_resources_reply_t *resources_reply)
 {
-	xcb_randr_mode_info_t* mode_infos =
+	xcb_randr_mode_info_t *mode_infos =
 	    xcb_randr_get_screen_resources_modes(resources_reply);
 
 	int n = xcb_randr_get_screen_resources_modes_length(resources_reply);
@@ -642,12 +642,12 @@ comp_window_direct_enumerate_randr_modes(
 }
 
 static void
-comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
+comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 {
 	xcb_randr_query_version_cookie_t version_cookie =
 	    xcb_randr_query_version(w->connection, XCB_RANDR_MAJOR_VERSION,
 	                            XCB_RANDR_MINOR_VERSION);
-	xcb_randr_query_version_reply_t* version_reply =
+	xcb_randr_query_version_reply_t *version_reply =
 	    xcb_randr_query_version_reply(w->connection, version_cookie, NULL);
 
 	if (version_reply == nullptr) {
@@ -663,10 +663,10 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 		COMP_DEBUG(w->base.c, "RandR version below 1.6.");
 	}
 
-	xcb_generic_error_t* error = nullptr;
+	xcb_generic_error_t *error = nullptr;
 	xcb_intern_atom_cookie_t non_desktop_cookie = xcb_intern_atom(
 	    w->connection, 1, strlen("non-desktop"), "non-desktop");
-	xcb_intern_atom_reply_t* non_desktop_reply =
+	xcb_intern_atom_reply_t *non_desktop_reply =
 	    xcb_intern_atom_reply(w->connection, non_desktop_cookie, &error);
 
 	if (error != nullptr) {
@@ -687,10 +687,10 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 
 	xcb_randr_get_screen_resources_cookie_t resources_cookie =
 	    xcb_randr_get_screen_resources(w->connection, w->screen->root);
-	xcb_randr_get_screen_resources_reply_t* resources_reply =
+	xcb_randr_get_screen_resources_reply_t *resources_reply =
 	    xcb_randr_get_screen_resources_reply(w->connection,
 	                                         resources_cookie, nullptr);
-	xcb_randr_output_t* xcb_outputs =
+	xcb_randr_output_t *xcb_outputs =
 	    xcb_randr_get_screen_resources_outputs(resources_reply);
 
 	comp_window_direct_enumerate_randr_modes(w, resources_reply);
@@ -705,7 +705,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 		xcb_randr_get_output_info_cookie_t output_cookie =
 		    xcb_randr_get_output_info(w->connection, xcb_outputs[i],
 		                              XCB_CURRENT_TIME);
-		xcb_randr_get_output_info_reply_t* output_reply =
+		xcb_randr_get_output_info_reply_t *output_reply =
 		    xcb_randr_get_output_info_reply(w->connection,
 		                                    output_cookie, nullptr);
 
@@ -715,11 +715,11 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 			continue;
 		}
 
-		uint8_t* name = xcb_randr_get_output_info_name(output_reply);
+		uint8_t *name = xcb_randr_get_output_info_name(output_reply);
 		int name_len =
 		    xcb_randr_get_output_info_name_length(output_reply);
 
-		char* name_str = (char*)malloc(name_len + 1);
+		char *name_str = (char *)malloc(name_len + 1);
 		memcpy(name_str, name, name_len);
 		name_str[name_len] = '\0';
 
@@ -728,7 +728,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 		prop_cookie = xcb_randr_get_output_property(
 		    w->connection, xcb_outputs[i], non_desktop_reply->atom,
 		    XCB_ATOM_NONE, 0, 4, 0, 0);
-		xcb_randr_get_output_property_reply_t* prop_reply = nullptr;
+		xcb_randr_get_output_property_reply_t *prop_reply = nullptr;
 		prop_reply = xcb_randr_get_output_property_reply(
 		    w->connection, prop_cookie, &error);
 		if (error != nullptr) {
@@ -756,7 +756,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 		uint8_t non_desktop =
 		    *xcb_randr_get_output_property_data(prop_reply);
 		if (non_desktop == 1) {
-			xcb_randr_mode_t* output_modes =
+			xcb_randr_mode_t *output_modes =
 			    xcb_randr_get_output_info_modes(output_reply);
 
 			int num_modes = xcb_randr_get_output_info_modes_length(
@@ -790,7 +790,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct* w)
 }
 
 static void
-comp_window_direct_update_window_title(struct comp_window* w, const char* title)
+comp_window_direct_update_window_title(struct comp_window *w, const char *title)
 {}
 
 #endif
