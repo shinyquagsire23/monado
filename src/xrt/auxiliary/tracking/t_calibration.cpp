@@ -276,6 +276,7 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	c.state.calibrated = true;
 
 	cv::Size image_size(cols, rows);
+	cv::Size new_image_size(cols, rows);
 
 	// we don't serialise these
 	cv::Mat camera_rotation;
@@ -283,7 +284,11 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	cv::Mat camera_essential;
 	cv::Mat camera_fundamental;
 
-	struct opencv_calibration_params cp;
+	CalibrationRawData raw;
+	raw.image_size_pixels.w = image_size.width;
+	raw.image_size_pixels.h = image_size.height;
+	raw.new_image_size_pixels.w = new_image_size.width;
+	raw.new_image_size_pixels.h = new_image_size.height;
 
 	cv::Mat zero_distortion = cv::Mat(5, 1, CV_32F, cv::Scalar(0.0f));
 
@@ -303,10 +308,10 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	    cv::stereoCalibrate(c.state.chessboards_model, // objectPoints
 	                        c.state.view[0].measured,  // inagePoints1
 	                        c.state.view[1].measured,  // imagePoints2,
-	                        cp.l_intrinsics,           // cameraMatrix1
-	                        cp.l_distortion,           // distCoeffs1
-	                        cp.r_intrinsics,           // cameraMatrix2
-	                        cp.r_distortion,           // distCoeffs2
+	                        raw.l_intrinsics,          // cameraMatrix1
+	                        raw.l_distortion,          // distCoeffs1
+	                        raw.r_intrinsics,          // cameraMatrix2
+	                        raw.r_distortion,          // distCoeffs2
 	                        image_size,                // imageSize
 	                        camera_rotation,           // R
 	                        camera_translation,        // T
@@ -314,73 +319,37 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	                        camera_fundamental,        // F
 	                        0);                        // flags
 
-	std::cout << "calibration rp_error: " << rp_error << "\n";
-	std::cout << "calibration camera_translation:\n"
-	          << camera_translation << "\n";
+	raw.translation.x = camera_translation.at<float>(0, 0);
+	raw.translation.y = camera_translation.at<float>(0, 1);
+	raw.translation.z = camera_translation.at<float>(0, 2);
 
 	// We currently don't change the image size or remove invalid pixels.
-	cv::stereoRectify(cp.l_intrinsics,          // cameraMatrix1
+	cv::stereoRectify(raw.l_intrinsics,         // cameraMatrix1
 	                  zero_distortion,          // distCoeffs1
-	                  cp.r_intrinsics,          // cameraMatrix2
+	                  raw.r_intrinsics,         // cameraMatrix2
 	                  zero_distortion,          // distCoeffs2
 	                  image_size,               // imageSize
 	                  camera_rotation,          // R
 	                  camera_translation,       // T
-	                  cp.l_rotation,            // R1
-	                  cp.r_rotation,            // R2
-	                  cp.l_projection,          // P1
-	                  cp.r_projection,          // P2
-	                  cp.disparity_to_depth,    // Q
+	                  raw.l_rotation,           // R1
+	                  raw.r_rotation,           // R2
+	                  raw.l_projection,         // P1
+	                  raw.r_projection,         // P2
+	                  raw.disparity_to_depth,   // Q
 	                  cv::CALIB_ZERO_DISPARITY, // flags
 	                  -1,                       // alpha
-	                  image_size,               // newImageSize
+	                  new_image_size,           // newImageSize
 	                  NULL,                     // validPixROI1
 	                  NULL);                    // validPixROI2
 
 	P("CALIBRATION DONE RP ERROR %f", rp_error);
 
-	char path_string[PATH_MAX];
-	char file_string[PATH_MAX];
-	// TODO: centralise this - use multiple env vars?
-	char *config_path = secure_getenv("HOME");
-	snprintf(path_string, PATH_MAX, "%s/.config/monado", config_path);
-	snprintf(file_string, PATH_MAX, "%s/.config/monado/%s.calibration",
-	         config_path, "PS4_EYE");
-	FILE *calib_file = fopen(file_string, "wb");
-	if (!calib_file) {
-		// try creating it
-		mkpath(path_string);
-	}
-	calib_file = fopen(file_string, "wb");
-	if (!calib_file) {
-		printf(
-		    "ERROR. could not create calibration file "
-		    "%s\n",
-		    file_string);
-		return;
-	}
+	std::cout << "calibration rp_error: " << rp_error << "\n";
+	std::cout << "calibration camera_translation:\n"
+	          << camera_translation << "\n";
 
-	write_cv_mat(calib_file, &cp.l_intrinsics);
-	write_cv_mat(calib_file, &cp.r_intrinsics);
-	write_cv_mat(calib_file, &cp.l_distortion);
-	write_cv_mat(calib_file, &cp.r_distortion);
-	write_cv_mat(calib_file, &cp.l_distortion_fisheye);
-	write_cv_mat(calib_file, &cp.r_distortion_fisheye);
-	write_cv_mat(calib_file, &cp.l_rotation);
-	write_cv_mat(calib_file, &cp.r_rotation);
-	write_cv_mat(calib_file, &cp.l_translation);
-	write_cv_mat(calib_file, &cp.r_translation);
-	write_cv_mat(calib_file, &cp.l_projection);
-	write_cv_mat(calib_file, &cp.r_projection);
-	write_cv_mat(calib_file, &cp.disparity_to_depth);
 
-	cv::Mat mat_image_size;
-	mat_image_size.create(1, 2, CV_32F);
-	mat_image_size.at<float>(0, 0) = image_size.width;
-	mat_image_size.at<float>(0, 1) = image_size.height;
-	write_cv_mat(calib_file, &mat_image_size);
-
-	fclose(calib_file);
+	t_file_save_raw_data_hack(&raw);
 }
 
 

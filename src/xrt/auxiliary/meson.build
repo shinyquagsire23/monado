@@ -81,6 +81,7 @@ tracking_srcs = [
 	'tracking/t_debug_hsv_filter.cpp',
 	'tracking/t_debug_hsv_picker.cpp',
 	'tracking/t_debug_hsv_viewer.cpp',
+	'tracking/t_file.cpp',
 	'tracking/t_hsv_filter.c',
 	'tracking/t_tracker_psmv.cpp',
 	'tracking/t_tracker_psvr.cpp',

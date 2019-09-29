@@ -11,6 +11,9 @@
 
 #include "xrt/xrt_frame.h"
 
+#include <stdio.h>
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -179,6 +182,43 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 	{                                                                      \
 		9, 7, 0.025f, true, 5,                                         \
 	}
+
+
+
+/*!
+ * The calibration data that C only code can see.
+ */
+struct t_calibration_raw_data
+{
+	struct xrt_size image_size_pixels;
+	struct xrt_size new_image_size_pixels;
+
+	//! Translation between stereo cameras.
+	struct xrt_vec3 translation;
+};
+
+/*!
+ * Free raw calibration data.
+ */
+void
+t_calibration_raw_data_free(struct t_calibration_raw_data *raw_data);
+
+/*!
+ * Refined calibration data to be given to trackers.
+ */
+struct t_calibration_data
+{
+	struct xrt_size image_size_pixels;
+	struct xrt_size new_image_size_pixels;
+};
+
+void
+t_calibration_data_free(struct t_calibration_data *data);
+
+bool
+t_file_load_stereo_calibration_v1(FILE *calib_file,
+                                  struct t_calibration_data **out_data,
+                                  struct t_calibration_raw_data **out_raw_data);
 
 struct t_calibration_params
 {
