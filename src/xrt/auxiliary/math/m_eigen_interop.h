@@ -25,7 +25,7 @@
  * if it were a `const Eigen::Quaternionf&`.
  */
 static inline Eigen::Map<const Eigen::Quaternionf>
-map_quat(const struct xrt_quat& q)
+map_quat(const struct xrt_quat &q)
 {
 	return Eigen::Map<const Eigen::Quaternionf>{&q.x};
 }
@@ -38,7 +38,7 @@ map_quat(const struct xrt_quat& q)
  * were a `Eigen::Quaternionf&`.
  */
 static inline Eigen::Map<Eigen::Quaternionf>
-map_quat(struct xrt_quat& q)
+map_quat(struct xrt_quat &q)
 {
 	return Eigen::Map<Eigen::Quaternionf>{&q.x};
 }
@@ -51,7 +51,7 @@ map_quat(struct xrt_quat& q)
  * if it were a `const Eigen::Vector3f&`.
  */
 static inline Eigen::Map<const Eigen::Vector3f>
-map_vec3(const struct xrt_vec3& v)
+map_vec3(const struct xrt_vec3 &v)
 {
 	return Eigen::Map<const Eigen::Vector3f>{&v.x};
 }
@@ -64,7 +64,7 @@ map_vec3(const struct xrt_vec3& v)
  * if it were a `Eigen::Vector3f&`.
  */
 static inline Eigen::Map<Eigen::Vector3f>
-map_vec3(struct xrt_vec3& v)
+map_vec3(struct xrt_vec3 &v)
 {
 	return Eigen::Map<Eigen::Vector3f>{&v.x};
 }
@@ -79,7 +79,7 @@ map_vec3(struct xrt_vec3& v)
  * Return a Eigen type wrapping a pose's orientation (const).
  */
 static inline Eigen::Map<const Eigen::Quaternionf>
-orientation(const struct xrt_pose& pose)
+orientation(const struct xrt_pose &pose)
 {
 	return map_quat(pose.orientation);
 }
@@ -88,7 +88,7 @@ orientation(const struct xrt_pose& pose)
  * Return a Eigen type wrapping a pose's orientation.
  */
 static inline Eigen::Map<Eigen::Quaternionf>
-orientation(struct xrt_pose& pose)
+orientation(struct xrt_pose &pose)
 {
 	return map_quat(pose.orientation);
 }
@@ -97,7 +97,7 @@ orientation(struct xrt_pose& pose)
  * Return a Eigen type wrapping a pose's position (const).
  */
 static inline Eigen::Map<const Eigen::Vector3f>
-position(const struct xrt_pose& pose)
+position(const struct xrt_pose &pose)
 {
 	return map_vec3(pose.position);
 }
@@ -106,7 +106,7 @@ position(const struct xrt_pose& pose)
  * Return a Eigen type wrapping a pose's position.
  */
 static inline Eigen::Map<Eigen::Vector3f>
-position(struct xrt_pose& pose)
+position(struct xrt_pose &pose)
 {
 	return map_vec3(pose.position);
 }

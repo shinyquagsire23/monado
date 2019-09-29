@@ -23,7 +23,7 @@
  */
 
 static inline Eigen::Quaternionf
-copy(const struct xrt_quat& q)
+copy(const struct xrt_quat &q)
 {
 	// Eigen constructor order is different from XRT, OpenHMD and OpenXR!
 	//  Eigen: `float w, x, y, z`.
@@ -32,19 +32,19 @@ copy(const struct xrt_quat& q)
 }
 
 static inline Eigen::Quaternionf
-copy(const struct xrt_quat* q)
+copy(const struct xrt_quat *q)
 {
 	return copy(*q);
 }
 
 static inline Eigen::Vector3f
-copy(const struct xrt_vec3& v)
+copy(const struct xrt_vec3 &v)
 {
 	return Eigen::Vector3f(v.x, v.y, v.z);
 }
 
 static inline Eigen::Vector3f
-copy(const struct xrt_vec3* v)
+copy(const struct xrt_vec3 *v)
 {
 	return copy(*v);
 }
@@ -57,7 +57,7 @@ copy(const struct xrt_vec3* v)
  */
 
 extern "C" bool
-math_vec3_validate(const struct xrt_vec3* vec3)
+math_vec3_validate(const struct xrt_vec3 *vec3)
 {
 	assert(vec3 != NULL);
 
@@ -65,7 +65,7 @@ math_vec3_validate(const struct xrt_vec3* vec3)
 }
 
 extern "C" void
-math_vec3_accum(const struct xrt_vec3* additional, struct xrt_vec3* inAndOut)
+math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut)
 {
 	assert(additional != NULL);
 	assert(inAndOut != NULL);
@@ -81,7 +81,7 @@ math_vec3_accum(const struct xrt_vec3* additional, struct xrt_vec3* inAndOut)
  */
 
 extern "C" bool
-math_quat_validate(const struct xrt_quat* quat)
+math_quat_validate(const struct xrt_quat *quat)
 {
 	assert(quat != NULL);
 	auto rot = copy(*quat);
@@ -103,16 +103,16 @@ math_quat_validate(const struct xrt_quat* quat)
 }
 
 extern "C" void
-math_quat_normalize(struct xrt_quat* inout)
+math_quat_normalize(struct xrt_quat *inout)
 {
 	assert(inout != NULL);
 	map_quat(*inout).normalize();
 }
 
 extern "C" void
-math_quat_rotate(const struct xrt_quat* left,
-                 const struct xrt_quat* right,
-                 struct xrt_quat* result)
+math_quat_rotate(const struct xrt_quat *left,
+                 const struct xrt_quat *right,
+                 struct xrt_quat *result)
 {
 	assert(left != NULL);
 	assert(right != NULL);
@@ -127,9 +127,9 @@ math_quat_rotate(const struct xrt_quat* left,
 }
 
 extern "C" void
-math_quat_rotate_vec3(const struct xrt_quat* left,
-                      const struct xrt_vec3* right,
-                      struct xrt_vec3* result)
+math_quat_rotate_vec3(const struct xrt_quat *left,
+                      const struct xrt_vec3 *right,
+                      struct xrt_vec3 *result)
 {
 	assert(left != NULL);
 	assert(right != NULL);
@@ -151,7 +151,7 @@ math_quat_rotate_vec3(const struct xrt_quat* left,
  */
 
 extern "C" bool
-math_pose_validate(const struct xrt_pose* pose)
+math_pose_validate(const struct xrt_pose *pose)
 {
 	assert(pose != NULL);
 
@@ -160,7 +160,7 @@ math_pose_validate(const struct xrt_pose* pose)
 }
 
 extern "C" void
-math_pose_invert(const struct xrt_pose* pose, struct xrt_pose* outPose)
+math_pose_invert(const struct xrt_pose *pose, struct xrt_pose *outPose)
 {
 	assert(pose != NULL);
 	assert(outPose != NULL);
@@ -179,7 +179,7 @@ math_pose_invert(const struct xrt_pose* pose, struct xrt_pose* outPose)
  * Return the result of transforming a point by a pose/transform.
  */
 static inline Eigen::Vector3f
-transform_point(const xrt_pose& transform, const xrt_vec3& point)
+transform_point(const xrt_pose &transform, const xrt_vec3 &point)
 {
 	return orientation(transform) * map_vec3(point) + position(transform);
 }
@@ -188,7 +188,7 @@ transform_point(const xrt_pose& transform, const xrt_vec3& point)
  * Return the result of transforming a pose by a pose/transform.
  */
 static inline xrt_pose
-transform_pose(const xrt_pose& transform, const xrt_pose& pose)
+transform_pose(const xrt_pose &transform, const xrt_pose &pose)
 {
 	xrt_pose ret;
 	position(ret) = transform_point(transform, pose.position);
@@ -197,9 +197,9 @@ transform_pose(const xrt_pose& transform, const xrt_pose& pose)
 }
 
 extern "C" void
-math_pose_transform(const struct xrt_pose* transform,
-                    const struct xrt_pose* pose,
-                    struct xrt_pose* outPose)
+math_pose_transform(const struct xrt_pose *transform,
+                    const struct xrt_pose *pose,
+                    struct xrt_pose *outPose)
 {
 	assert(pose != NULL);
 	assert(transform != NULL);
@@ -210,10 +210,10 @@ math_pose_transform(const struct xrt_pose* transform,
 }
 
 extern "C" void
-math_pose_openxr_locate(const struct xrt_pose* space_pose,
-                        const struct xrt_pose* relative_pose,
-                        const struct xrt_pose* base_space_pose,
-                        struct xrt_pose* result)
+math_pose_openxr_locate(const struct xrt_pose *space_pose,
+                        const struct xrt_pose *relative_pose,
+                        const struct xrt_pose *base_space_pose,
+                        struct xrt_pose *result)
 {
 	assert(space_pose != NULL);
 	assert(relative_pose != NULL);
@@ -245,9 +245,9 @@ math_pose_openxr_locate(const struct xrt_pose* space_pose,
  * This is a differential transform.
  */
 static inline Eigen::Vector3f
-rotate_deriv(Eigen::Matrix3f const& rotation,
-             const xrt_vec3& derivativeVector,
-             Eigen::Matrix3f const& rotationInverse)
+rotate_deriv(Eigen::Matrix3f const &rotation,
+             const xrt_vec3 &derivativeVector,
+             Eigen::Matrix3f const &rotationInverse)
 {
 	return ((rotation * map_vec3(derivativeVector)).transpose() *
 	        rotationInverse)
@@ -287,8 +287,8 @@ MAKE_REL_FLAG_CHECK(has_some_derivative,
  * Apply a transform to a space relation.
  */
 static inline void
-transform_accumulate_pose(const xrt_pose& transform,
-                          xrt_space_relation& relation,
+transform_accumulate_pose(const xrt_pose &transform,
+                          xrt_space_relation &relation,
                           bool do_translation = true,
                           bool do_rotation = true)
 {
@@ -364,14 +364,14 @@ static const struct xrt_space_relation BLANK_RELATION = {
 };
 
 extern "C" void
-math_relation_reset(struct xrt_space_relation* out)
+math_relation_reset(struct xrt_space_relation *out)
 {
 	*out = BLANK_RELATION;
 }
 
 extern "C" void
-math_relation_accumulate_transform(const struct xrt_pose* transform,
-                                   struct xrt_space_relation* in_out_relation)
+math_relation_accumulate_transform(const struct xrt_pose *transform,
+                                   struct xrt_space_relation *in_out_relation)
 {
 	assert(transform != nullptr);
 	assert(in_out_relation != nullptr);
@@ -382,8 +382,8 @@ math_relation_accumulate_transform(const struct xrt_pose* transform,
 
 extern "C" void
 math_relation_accumulate_relation(
-    const struct xrt_space_relation* additional_relation,
-    struct xrt_space_relation* in_out_relation)
+    const struct xrt_space_relation *additional_relation,
+    struct xrt_space_relation *in_out_relation)
 {
 	assert(additional_relation != NULL);
 	assert(in_out_relation != NULL);
@@ -425,10 +425,10 @@ math_relation_accumulate_relation(
 }
 
 extern "C" void
-math_relation_openxr_locate(const struct xrt_pose* space_pose,
-                            const struct xrt_space_relation* relative_relation,
-                            const struct xrt_pose* base_space_pose,
-                            struct xrt_space_relation* result)
+math_relation_openxr_locate(const struct xrt_pose *space_pose,
+                            const struct xrt_space_relation *relative_relation,
+                            const struct xrt_pose *base_space_pose,
+                            struct xrt_space_relation *result)
 {
 	assert(space_pose != NULL);
 	assert(relative_relation != NULL);
