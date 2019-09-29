@@ -34,92 +34,92 @@
  */
 
 static void
-p_udev_enumerate_usb(struct prober* p, struct udev* udev);
+p_udev_enumerate_usb(struct prober *p, struct udev *udev);
 
 static void
-p_udev_add_usb(struct prober_device* pdev,
+p_udev_add_usb(struct prober_device *pdev,
                uint8_t dev_class,
-               const char* product,
-               const char* path);
+               const char *product,
+               const char *path);
 
 static void
-p_udev_enumerate_v4l2(struct prober* p, struct udev* udev);
+p_udev_enumerate_v4l2(struct prober *p, struct udev *udev);
 
 static void
-p_udev_add_v4l(struct prober_device* pdev,
+p_udev_add_v4l(struct prober_device *pdev,
                uint32_t v4l_index,
                uint32_t usb_iface,
-               const char* path);
+               const char *path);
 
 static void
-p_udev_enumerate_hidraw(struct prober* p, struct udev* udev);
+p_udev_enumerate_hidraw(struct prober *p, struct udev *udev);
 
 static void
-p_udev_add_hidraw(struct prober_device* pdev,
+p_udev_add_hidraw(struct prober_device *pdev,
                   uint32_t interface,
-                  const char* path);
+                  const char *path);
 
 static int
-p_udev_get_interface_number(struct udev_device* raw_dev,
-                            uint16_t* interface_number);
+p_udev_get_interface_number(struct udev_device *raw_dev,
+                            uint16_t *interface_number);
 
 static int
-p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
-                            uint32_t* out_bus_type,
-                            uint16_t* out_vendor_id,
-                            uint16_t* out_product_id,
-                            uint64_t* out_bluetooth_serial);
+p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
+                            uint32_t *out_bus_type,
+                            uint16_t *out_vendor_id,
+                            uint16_t *out_product_id,
+                            uint64_t *out_bluetooth_serial);
 
 static int
-p_udev_get_usb_hid_address(struct udev_device* raw_dev,
+p_udev_get_usb_hid_address(struct udev_device *raw_dev,
                            uint32_t bus_type,
-                           uint8_t* out_dev_class,
-                           uint16_t* out_usb_bus,
-                           uint16_t* out_usb_addr);
+                           uint8_t *out_dev_class,
+                           uint16_t *out_usb_bus,
+                           uint16_t *out_usb_addr);
 
 static int
-p_udev_try_usb_relation_get_address(struct udev_device* raw_dev,
-                                    uint8_t* out_dev_class,
-                                    uint16_t* out_vendor_id,
-                                    uint16_t* out_product_id,
-                                    uint16_t* out_usb_bus,
-                                    uint16_t* out_usb_addr);
+p_udev_try_usb_relation_get_address(struct udev_device *raw_dev,
+                                    uint8_t *out_dev_class,
+                                    uint16_t *out_vendor_id,
+                                    uint16_t *out_product_id,
+                                    uint16_t *out_usb_bus,
+                                    uint16_t *out_usb_addr);
 
 static int
-p_udev_get_vendor_id_product(struct udev_device* usb_device_dev,
-                             uint16_t* vendor_id,
-                             uint16_t* product_id);
+p_udev_get_vendor_id_product(struct udev_device *usb_device_dev,
+                             uint16_t *vendor_id,
+                             uint16_t *product_id);
 
 static int
-p_udev_get_usb_device_info(struct udev_device* usb_device_dev,
-                           uint8_t* out_dev_class,
-                           uint16_t* vendor_id,
-                           uint16_t* product_id,
-                           uint16_t* usb_bus,
-                           uint16_t* usb_addr);
+p_udev_get_usb_device_info(struct udev_device *usb_device_dev,
+                           uint8_t *out_dev_class,
+                           uint16_t *vendor_id,
+                           uint16_t *product_id,
+                           uint16_t *usb_bus,
+                           uint16_t *usb_addr);
 
 static int
-p_udev_get_usb_device_address_path(struct udev_device* usb_dev,
-                                   uint16_t* out_usb_bus,
-                                   uint16_t* out_usb_addr);
+p_udev_get_usb_device_address_path(struct udev_device *usb_dev,
+                                   uint16_t *out_usb_bus,
+                                   uint16_t *out_usb_addr);
 
 static int
-p_udev_get_usb_device_address_sysfs(struct udev_device* usb_dev,
-                                    uint16_t* out_usb_bus,
-                                    uint16_t* out_usb_addr);
+p_udev_get_usb_device_address_sysfs(struct udev_device *usb_dev,
+                                    uint16_t *out_usb_bus,
+                                    uint16_t *out_usb_addr);
 
 static int
-p_udev_get_sysattr_u16_base16(struct udev_device* dev,
-                              const char* name,
-                              uint16_t* out_value);
+p_udev_get_sysattr_u16_base16(struct udev_device *dev,
+                              const char *name,
+                              uint16_t *out_value);
 
 static int
-p_udev_get_sysattr_u32_base10(struct udev_device* dev,
-                              const char* name,
-                              uint32_t* out_value);
+p_udev_get_sysattr_u32_base10(struct udev_device *dev,
+                              const char *name,
+                              uint32_t *out_value);
 
 XRT_MAYBE_UNUSED static void
-p_udev_dump_device(struct udev_device* udev_dev, const char* name);
+p_udev_dump_device(struct udev_device *udev_dev, const char *name);
 
 
 /*
@@ -129,9 +129,9 @@ p_udev_dump_device(struct udev_device* udev_dev, const char* name);
  */
 
 int
-p_udev_probe(struct prober* p)
+p_udev_probe(struct prober *p)
 {
-	struct udev* udev = udev_new();
+	struct udev *udev = udev_new();
 	if (!udev) {
 		P_ERROR(p, "Can't create udev\n");
 		return -1;
@@ -156,9 +156,9 @@ p_udev_probe(struct prober* p)
  */
 
 static void
-p_udev_enumerate_usb(struct prober* p, struct udev* udev)
+p_udev_enumerate_usb(struct prober *p, struct udev *udev)
 {
-	struct udev_enumerate* enumerate;
+	struct udev_enumerate *enumerate;
 	struct udev_list_entry *devices, *dev_list_entry;
 
 	enumerate = udev_enumerate_new(udev);
@@ -169,11 +169,11 @@ p_udev_enumerate_usb(struct prober* p, struct udev* udev)
 	devices = udev_enumerate_get_list_entry(enumerate);
 	udev_list_entry_foreach(dev_list_entry, devices)
 	{
-		struct prober_device* pdev = NULL;
-		struct udev_device* raw_dev = NULL;
-		const char* sysfs_path = NULL;
-		const char* dev_path = NULL;
-		const char* product = NULL;
+		struct prober_device *pdev = NULL;
+		struct udev_device *raw_dev = NULL;
+		const char *sysfs_path = NULL;
+		const char *dev_path = NULL;
+		const char *product = NULL;
 		uint8_t dev_class = 0;
 		uint16_t vendor_id = 0;
 		uint16_t product_id = 0;
@@ -213,7 +213,7 @@ p_udev_enumerate_usb(struct prober* p, struct udev* udev)
 		       "\t\tusb_bus:      %i\n"
 		       "\t\tusb_addr:     %i\n"
 		       "\t\tproduct:      '%s'",
-		       (void*)pdev, ret, sysfs_path, dev_path, dev_class,
+		       (void *)pdev, ret, sysfs_path, dev_path, dev_class,
 		       vendor_id, product_id, usb_bus, usb_addr, product);
 
 		if (ret != 0) {
@@ -232,10 +232,10 @@ p_udev_enumerate_usb(struct prober* p, struct udev* udev)
 }
 
 static void
-p_udev_add_usb(struct prober_device* pdev,
+p_udev_add_usb(struct prober_device *pdev,
                uint8_t dev_class,
-               const char* product,
-               const char* path)
+               const char *product,
+               const char *path)
 {
 	pdev->base.usb_dev_class = dev_class;
 
@@ -248,9 +248,9 @@ p_udev_add_usb(struct prober_device* pdev,
 }
 
 static void
-p_udev_enumerate_v4l2(struct prober* p, struct udev* udev)
+p_udev_enumerate_v4l2(struct prober *p, struct udev *udev)
 {
-	struct udev_enumerate* enumerate;
+	struct udev_enumerate *enumerate;
 	struct udev_list_entry *devices, *dev_list_entry;
 
 	enumerate = udev_enumerate_new(udev);
@@ -261,10 +261,10 @@ p_udev_enumerate_v4l2(struct prober* p, struct udev* udev)
 
 	udev_list_entry_foreach(dev_list_entry, devices)
 	{
-		struct prober_device* pdev = NULL;
-		struct udev_device* raw_dev = NULL;
-		const char* sysfs_path = NULL;
-		const char* dev_path = NULL;
+		struct prober_device *pdev = NULL;
+		struct udev_device *raw_dev = NULL;
+		const char *sysfs_path = NULL;
+		const char *dev_path = NULL;
 		uint8_t dev_class = 0;
 		uint16_t vendor_id = 0;
 		uint16_t product_id = 0;
@@ -319,7 +319,7 @@ p_udev_enumerate_v4l2(struct prober* p, struct udev* udev)
 		       "\t\tusb_iface:    %i\n"
 		       "\t\tusb_bus:      %i\n"
 		       "\t\tusb_addr:     %i\n",
-		       (void*)pdev, ret, sysfs_path, dev_path, vendor_id,
+		       (void *)pdev, ret, sysfs_path, dev_path, vendor_id,
 		       product_id, v4l_index, usb_iface, usb_bus, usb_addr);
 
 		if (ret != 0) {
@@ -338,15 +338,15 @@ p_udev_enumerate_v4l2(struct prober* p, struct udev* udev)
 }
 
 static void
-p_udev_add_v4l(struct prober_device* pdev,
+p_udev_add_v4l(struct prober_device *pdev,
                uint32_t v4l_index,
                uint32_t usb_iface,
-               const char* path)
+               const char *path)
 {
 	size_t new_size = (pdev->num_v4ls + 1) * sizeof(struct prober_v4l);
 	pdev->v4ls = realloc(pdev->v4ls, new_size);
 
-	struct prober_v4l* v4l = &pdev->v4ls[pdev->num_v4ls++];
+	struct prober_v4l *v4l = &pdev->v4ls[pdev->num_v4ls++];
 	U_ZERO(v4l);
 
 	v4l->usb_iface = usb_iface;
@@ -355,9 +355,9 @@ p_udev_add_v4l(struct prober_device* pdev,
 }
 
 static void
-p_udev_enumerate_hidraw(struct prober* p, struct udev* udev)
+p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 {
-	struct udev_enumerate* enumerate;
+	struct udev_enumerate *enumerate;
 	struct udev_list_entry *devices, *dev_list_entry;
 
 	enumerate = udev_enumerate_new(udev);
@@ -368,16 +368,16 @@ p_udev_enumerate_hidraw(struct prober* p, struct udev* udev)
 
 	udev_list_entry_foreach(dev_list_entry, devices)
 	{
-		struct prober_device* pdev = NULL;
-		struct udev_device* raw_dev = NULL;
+		struct prober_device *pdev = NULL;
+		struct udev_device *raw_dev = NULL;
 		uint16_t vendor_id, product_id, interface;
 		uint8_t dev_class = 0;
 		uint16_t usb_bus = 0;
 		uint16_t usb_addr = 0;
 		uint32_t bus_type = 0;
 		uint64_t bluetooth_id = 0;
-		const char* sysfs_path;
-		const char* dev_path;
+		const char *sysfs_path;
+		const char *dev_path;
 		int ret;
 
 		// Where in the sysfs is.
@@ -437,7 +437,7 @@ p_udev_enumerate_hidraw(struct prober* p, struct udev* udev)
 		       "\t\tusb_bus:      %i\n"
 		       "\t\tusb_addr:     %i\n"
 		       "\t\tbluetooth_id: %012" PRIx64,
-		       (void*)pdev, ret, sysfs_path, dev_path, bus_type,
+		       (void *)pdev, ret, sysfs_path, dev_path, bus_type,
 		       vendor_id, product_id, interface, usb_bus, usb_addr,
 		       bluetooth_id);
 
@@ -457,15 +457,16 @@ p_udev_enumerate_hidraw(struct prober* p, struct udev* udev)
 }
 
 static void
-p_udev_add_hidraw(struct prober_device* pdev,
+p_udev_add_hidraw(struct prober_device *pdev,
                   uint32_t interface,
-                  const char* path)
+                  const char *path)
 {
 	size_t new_size =
 	    (pdev->num_hidraws + 1) * sizeof(struct prober_hidraw);
-	pdev->hidraws = (struct prober_hidraw*)realloc(pdev->hidraws, new_size);
+	pdev->hidraws =
+	    (struct prober_hidraw *)realloc(pdev->hidraws, new_size);
 
-	struct prober_hidraw* hidraw = &pdev->hidraws[pdev->num_hidraws++];
+	struct prober_hidraw *hidraw = &pdev->hidraws[pdev->num_hidraws++];
 	U_ZERO(hidraw);
 
 	hidraw->interface = interface;
@@ -473,14 +474,14 @@ p_udev_add_hidraw(struct prober_device* pdev,
 }
 
 static int
-p_udev_get_usb_hid_address(struct udev_device* raw_dev,
+p_udev_get_usb_hid_address(struct udev_device *raw_dev,
                            uint32_t bus_type,
-                           uint8_t* out_dev_class,
-                           uint16_t* out_usb_bus,
-                           uint16_t* out_usb_addr)
+                           uint8_t *out_dev_class,
+                           uint16_t *out_usb_bus,
+                           uint16_t *out_usb_addr)
 {
 	uint16_t dummy_vendor, dummy_product;
-	struct udev_device* usb_dev;
+	struct udev_device *usb_dev;
 
 	if (bus_type != HIDRAW_BUS_USB) {
 		return 0;
@@ -500,10 +501,10 @@ p_udev_get_usb_hid_address(struct udev_device* raw_dev,
 }
 
 static int
-p_udev_get_interface_number(struct udev_device* raw_dev, uint16_t* interface)
+p_udev_get_interface_number(struct udev_device *raw_dev, uint16_t *interface)
 {
-	struct udev_device* intf_dev;
-	const char* str;
+	struct udev_device *intf_dev;
+	const char *str;
 
 	// Make udev find the handle to the interface node.
 	// No we should not unref intf_dev, valgrind agrees.
@@ -524,21 +525,21 @@ p_udev_get_interface_number(struct udev_device* raw_dev, uint16_t* interface)
 }
 
 static int
-p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
-                            uint32_t* out_bus_type,
-                            uint16_t* out_vendor_id,
-                            uint16_t* out_product_id,
-                            uint64_t* out_bluetooth_serial)
+p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
+                            uint32_t *out_bus_type,
+                            uint16_t *out_vendor_id,
+                            uint16_t *out_product_id,
+                            uint64_t *out_bluetooth_serial)
 {
-	struct udev_device* hid_dev;
-	char* serial_utf8 = NULL;
+	struct udev_device *hid_dev;
+	char *serial_utf8 = NULL;
 	uint64_t bluetooth_serial = 0;
 	uint16_t vendor_id = 0, product_id = 0;
 	uint32_t bus_type;
-	const char* uevent;
-	char* saveptr;
-	char* line;
-	char* tmp;
+	const char *uevent;
+	char *saveptr;
+	char *line;
+	char *tmp;
 	int ret;
 
 	// Dig through and find the regular hid node.
@@ -604,12 +605,12 @@ p_udev_get_and_parse_uevent(struct udev_device* raw_dev,
 }
 
 static int
-p_udev_try_usb_relation_get_address(struct udev_device* raw_dev,
-                                    uint8_t* out_dev_class,
-                                    uint16_t* out_vendor_id,
-                                    uint16_t* out_product_id,
-                                    uint16_t* out_usb_bus,
-                                    uint16_t* out_usb_addr)
+p_udev_try_usb_relation_get_address(struct udev_device *raw_dev,
+                                    uint8_t *out_dev_class,
+                                    uint16_t *out_vendor_id,
+                                    uint16_t *out_product_id,
+                                    uint16_t *out_usb_bus,
+                                    uint16_t *out_usb_addr)
 {
 	struct udev_device *parent_dev, *usb_interface, *usb_device;
 
@@ -643,9 +644,9 @@ p_udev_try_usb_relation_get_address(struct udev_device* raw_dev,
 }
 
 static int
-p_udev_get_vendor_id_product(struct udev_device* usb_dev,
-                             uint16_t* out_vendor_id,
-                             uint16_t* out_product_id)
+p_udev_get_vendor_id_product(struct udev_device *usb_dev,
+                             uint16_t *out_vendor_id,
+                             uint16_t *out_product_id)
 {
 	uint16_t vendor_id, product_id;
 	int ret;
@@ -667,12 +668,12 @@ p_udev_get_vendor_id_product(struct udev_device* usb_dev,
 }
 
 static int
-p_udev_get_usb_device_info(struct udev_device* usb_dev,
-                           uint8_t* out_dev_class,
-                           uint16_t* out_vendor_id,
-                           uint16_t* out_product_id,
-                           uint16_t* out_usb_bus,
-                           uint16_t* out_usb_addr)
+p_udev_get_usb_device_info(struct udev_device *usb_dev,
+                           uint8_t *out_dev_class,
+                           uint16_t *out_vendor_id,
+                           uint16_t *out_product_id,
+                           uint16_t *out_usb_bus,
+                           uint16_t *out_usb_addr)
 {
 	uint16_t vendor_id, product_id, dev_class;
 	int ret;
@@ -711,13 +712,13 @@ p_udev_get_usb_device_info(struct udev_device* usb_dev,
 }
 
 static int
-p_udev_get_usb_device_address_path(struct udev_device* usb_dev,
-                                   uint16_t* out_usb_bus,
-                                   uint16_t* out_usb_addr)
+p_udev_get_usb_device_address_path(struct udev_device *usb_dev,
+                                   uint16_t *out_usb_bus,
+                                   uint16_t *out_usb_addr)
 {
 	uint16_t bus = 0, addr = 0;
 
-	const char* dev_path = udev_device_get_devnode(usb_dev);
+	const char *dev_path = udev_device_get_devnode(usb_dev);
 	if (dev_path == NULL) {
 		return -1;
 	}
@@ -734,9 +735,9 @@ p_udev_get_usb_device_address_path(struct udev_device* usb_dev,
 }
 
 static int
-p_udev_get_usb_device_address_sysfs(struct udev_device* usb_dev,
-                                    uint16_t* out_usb_bus,
-                                    uint16_t* out_usb_addr)
+p_udev_get_usb_device_address_sysfs(struct udev_device *usb_dev,
+                                    uint16_t *out_usb_bus,
+                                    uint16_t *out_usb_addr)
 {
 	uint16_t usb_bus = 0, usb_addr = 0;
 	int ret;
@@ -758,11 +759,11 @@ p_udev_get_usb_device_address_sysfs(struct udev_device* usb_dev,
 }
 
 static int
-p_udev_get_sysattr_u16_base16(struct udev_device* dev,
-                              const char* name,
-                              uint16_t* out_value)
+p_udev_get_sysattr_u16_base16(struct udev_device *dev,
+                              const char *name,
+                              uint16_t *out_value)
 {
-	const char* str = udev_device_get_sysattr_value(dev, name);
+	const char *str = udev_device_get_sysattr_value(dev, name);
 	if (str == NULL) {
 		return -1;
 	}
@@ -773,11 +774,11 @@ p_udev_get_sysattr_u16_base16(struct udev_device* dev,
 }
 
 static int
-p_udev_get_sysattr_u32_base10(struct udev_device* dev,
-                              const char* name,
-                              uint32_t* out_value)
+p_udev_get_sysattr_u32_base10(struct udev_device *dev,
+                              const char *name,
+                              uint32_t *out_value)
 {
-	const char* str = udev_device_get_sysattr_value(dev, name);
+	const char *str = udev_device_get_sysattr_value(dev, name);
 	if (str == NULL) {
 		return -1;
 	}
@@ -788,7 +789,7 @@ p_udev_get_sysattr_u32_base10(struct udev_device* dev,
 }
 
 static void
-p_udev_dump_device(struct udev_device* udev_dev, const char* name)
+p_udev_dump_device(struct udev_device *udev_dev, const char *name)
 {
 	// clang-format off
 	fprintf(stderr, "\t%s\n", name);

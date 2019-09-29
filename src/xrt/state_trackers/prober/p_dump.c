@@ -16,7 +16,7 @@
 
 
 static int
-print_ports(char* tmp, size_t size, uint8_t* ports, int num)
+print_ports(char *tmp, size_t size, uint8_t *ports, int num)
 {
 	switch (num) {
 	case 1: {
@@ -63,7 +63,7 @@ print_ports(char* tmp, size_t size, uint8_t* ports, int num)
  */
 
 void
-p_dump_device(struct prober* p, struct prober_device* pdev, int id)
+p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 {
 	char tmp[1024];
 
@@ -74,7 +74,7 @@ p_dump_device(struct prober* p, struct prober_device* pdev, int id)
 
 	printf("\t% 3i: 0x%04x:0x%04x\n", id, pdev->base.vendor_id,
 	       pdev->base.product_id);
-	printf("\t\tptr:           %p\n", (void*)pdev);
+	printf("\t\tptr:           %p\n", (void *)pdev);
 	printf("\t\tusb_dev_class: %02x\n", pdev->base.usb_dev_class);
 
 	if (pdev->usb.bus != 0 || pdev->usb.addr != 0) {
@@ -94,16 +94,16 @@ p_dump_device(struct prober* p, struct prober_device* pdev, int id)
 
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->usb.dev != NULL) {
-		printf("\t\tlibusb:        %p\n", (void*)pdev->usb.dev);
+		printf("\t\tlibusb:        %p\n", (void *)pdev->usb.dev);
 	}
 #endif
 
 #ifdef XRT_HAVE_LIBUVC
-	uvc_device_t* uvc_dev = pdev->uvc.dev;
+	uvc_device_t *uvc_dev = pdev->uvc.dev;
 	if (uvc_dev != NULL) {
-		struct uvc_device_descriptor* desc;
+		struct uvc_device_descriptor *desc;
 
-		printf("\t\tlibuvc:        %p\n", (void*)uvc_dev);
+		printf("\t\tlibuvc:        %p\n", (void *)uvc_dev);
 
 		uvc_get_device_descriptor(uvc_dev, &desc);
 
@@ -127,7 +127,7 @@ p_dump_device(struct prober* p, struct prober_device* pdev, int id)
 
 #ifdef XRT_OS_LINUX
 	for (size_t j = 0; j < pdev->num_v4ls; j++) {
-		struct prober_v4l* v4l = &pdev->v4ls[j];
+		struct prober_v4l *v4l = &pdev->v4ls[j];
 
 		printf("\t\tv4l.iface:     %i\n", (int)v4l->usb_iface);
 		printf("\t\tv4l.index:     %i\n", (int)v4l->v4l_index);
@@ -137,7 +137,7 @@ p_dump_device(struct prober* p, struct prober_device* pdev, int id)
 
 #ifdef XRT_OS_LINUX
 	for (size_t j = 0; j < pdev->num_hidraws; j++) {
-		struct prober_hidraw* hidraw = &pdev->hidraws[j];
+		struct prober_hidraw *hidraw = &pdev->hidraws[j];
 
 		printf("\t\thidraw.iface:  %i\n", (int)hidraw->interface);
 		printf("\t\thidraw.path:   '%s'\n", hidraw->path);

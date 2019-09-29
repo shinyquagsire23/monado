@@ -16,13 +16,13 @@
 
 
 int
-p_libuvc_init(struct prober* p)
+p_libuvc_init(struct prober *p)
 {
 	return uvc_init(&p->uvc.ctx, p->usb.ctx);
 }
 
 void
-p_libuvc_teardown(struct prober* p)
+p_libuvc_teardown(struct prober *p)
 {
 	// Free all libuvc resources.
 	if (p->uvc.list != NULL) {
@@ -37,7 +37,7 @@ p_libuvc_teardown(struct prober* p)
 }
 
 int
-p_libuvc_probe(struct prober* p)
+p_libuvc_probe(struct prober *p)
 {
 	int ret;
 
@@ -59,9 +59,9 @@ p_libuvc_probe(struct prober* p)
 	}
 
 	for (ssize_t k = 0; k < p->uvc.count; k++) {
-		uvc_device_t* device = p->uvc.list[k];
-		struct uvc_device_descriptor* desc;
-		struct prober_device* pdev = NULL;
+		uvc_device_t *device = p->uvc.list[k];
+		struct uvc_device_descriptor *desc;
+		struct prober_device *pdev = NULL;
 
 		uvc_get_device_descriptor(device, &desc);
 		uint8_t bus = uvc_get_bus_number(device);
@@ -79,7 +79,7 @@ p_libuvc_probe(struct prober* p)
 		       "\t\tproduct_id: %04x\n"
 		       "\t\tbus:        %i\n"
 		       "\t\taddr:       %i",
-		       (void*)pdev, ret, vendor, product, bus, addr);
+		       (void *)pdev, ret, vendor, product, bus, addr);
 
 		if (ret != 0) {
 			P_ERROR(p, "p_dev_get_usb_device failed!");

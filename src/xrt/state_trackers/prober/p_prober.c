@@ -30,53 +30,53 @@ DEBUG_GET_ONCE_BOOL_OPTION(prober_spew, "PROBER_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(prober_debug, "PROBER_PRINT_DEBUG", false)
 
 static void
-add_device(struct prober* p, struct prober_device** out_dev);
+add_device(struct prober *p, struct prober_device **out_dev);
 
 static int
-initialize(struct prober* p, struct xrt_prober_entry_lists* lists);
+initialize(struct prober *p, struct xrt_prober_entry_lists *lists);
 
 static void
-teardown_devices(struct prober* p);
+teardown_devices(struct prober *p);
 
 static void
-teardown(struct prober* p);
+teardown(struct prober *p);
 
 static int
-probe(struct xrt_prober* xp);
+probe(struct xrt_prober *xp);
 
 static int
-dump(struct xrt_prober* xp);
+dump(struct xrt_prober *xp);
 
 static int
-select_device(struct xrt_prober* xp,
-              struct xrt_device** xdevs,
+select_device(struct xrt_prober *xp,
+              struct xrt_device **xdevs,
               size_t num_xdevs);
 
 static int
-open_hid_interface(struct xrt_prober* xp,
-                   struct xrt_prober_device* xpdev,
+open_hid_interface(struct xrt_prober *xp,
+                   struct xrt_prober_device *xpdev,
                    int interface,
-                   struct os_hid_device** out_hid_dev);
+                   struct os_hid_device **out_hid_dev);
 
 static int
-open_video_device(struct xrt_prober* xp,
-                  struct xrt_prober_device* xpdev,
-                  struct xrt_frame_context* xfctx,
-                  struct xrt_fs** out_xfs);
+open_video_device(struct xrt_prober *xp,
+                  struct xrt_prober_device *xpdev,
+                  struct xrt_frame_context *xfctx,
+                  struct xrt_fs **out_xfs);
 
 static int
-list_video_devices(struct xrt_prober* xp,
+list_video_devices(struct xrt_prober *xp,
                    xrt_prober_list_video_cb cb,
-                   void* ptr);
+                   void *ptr);
 static int
-get_string_descriptor(struct xrt_prober* xp,
-                      struct xrt_prober_device* xpdev,
+get_string_descriptor(struct xrt_prober *xp,
+                      struct xrt_prober_device *xpdev,
                       enum xrt_prober_string which_string,
-                      unsigned char* buffer,
+                      unsigned char *buffer,
                       int length);
 
 static void
-destroy(struct xrt_prober** xp);
+destroy(struct xrt_prober **xp);
 
 
 /*
@@ -86,10 +86,10 @@ destroy(struct xrt_prober** xp);
  */
 
 int
-xrt_prober_create_with_lists(struct xrt_prober** out_prober,
-                             struct xrt_prober_entry_lists* lists)
+xrt_prober_create_with_lists(struct xrt_prober **out_prober,
+                             struct xrt_prober_entry_lists *lists)
 {
-	struct prober* p = U_TYPED_CALLOC(struct prober);
+	struct prober *p = U_TYPED_CALLOC(struct prober);
 
 	int ret = initialize(p, lists);
 	if (ret != 0) {
@@ -103,17 +103,17 @@ xrt_prober_create_with_lists(struct xrt_prober** out_prober,
 }
 
 int
-p_dev_get_usb_dev(struct prober* p,
+p_dev_get_usb_dev(struct prober *p,
                   uint16_t bus,
                   uint16_t addr,
                   uint16_t vendor_id,
                   uint16_t product_id,
-                  struct prober_device** out_pdev)
+                  struct prober_device **out_pdev)
 {
-	struct prober_device* pdev;
+	struct prober_device *pdev;
 
 	for (size_t i = 0; i < p->num_devices; i++) {
-		struct prober_device* pdev = &p->devices[i];
+		struct prober_device *pdev = &p->devices[i];
 
 		if (pdev->base.bus != XRT_BUS_TYPE_USB ||
 		    pdev->usb.bus != bus || pdev->usb.addr != addr) {
@@ -148,16 +148,16 @@ p_dev_get_usb_dev(struct prober* p,
 }
 
 int
-p_dev_get_bluetooth_dev(struct prober* p,
+p_dev_get_bluetooth_dev(struct prober *p,
                         uint64_t id,
                         uint16_t vendor_id,
                         uint16_t product_id,
-                        struct prober_device** out_pdev)
+                        struct prober_device **out_pdev)
 {
-	struct prober_device* pdev;
+	struct prober_device *pdev;
 
 	for (size_t i = 0; i < p->num_devices; i++) {
-		struct prober_device* pdev = &p->devices[i];
+		struct prober_device *pdev = &p->devices[i];
 
 		if (pdev->base.bus != XRT_BUS_TYPE_BLUETOOTH ||
 		    pdev->bluetooth.id != id) {
@@ -199,12 +199,12 @@ p_dev_get_bluetooth_dev(struct prober* p,
  */
 
 static void
-fill_out_product(struct prober* p, struct prober_device* pdev)
+fill_out_product(struct prober *p, struct prober_device *pdev)
 {
-	const char* bus =
+	const char *bus =
 	    pdev->base.bus == XRT_BUS_TYPE_BLUETOOTH ? "bluetooth" : "usb";
 
-	char* str = NULL;
+	char *str = NULL;
 	int ret = 0;
 	do {
 		ret = snprintf(str, ret, "Unknown %s device: %04x:%04x", bus,
@@ -223,34 +223,34 @@ fill_out_product(struct prober* p, struct prober_device* pdev)
 }
 
 static void
-add_device(struct prober* p, struct prober_device** out_dev)
+add_device(struct prober *p, struct prober_device **out_dev)
 {
 	size_t new_size = (p->num_devices + 1) * sizeof(struct prober_device);
 	p->devices = realloc(p->devices, new_size);
 
-	struct prober_device* dev = &p->devices[p->num_devices++];
+	struct prober_device *dev = &p->devices[p->num_devices++];
 	U_ZERO(dev);
 
 	*out_dev = dev;
 }
 
 static void
-add_usb_entry(struct prober* p, struct xrt_prober_entry* entry)
+add_usb_entry(struct prober *p, struct xrt_prober_entry *entry)
 {
 	size_t new_size =
-	    (p->num_entries + 1) * sizeof(struct xrt_prober_entry_usb*);
+	    (p->num_entries + 1) * sizeof(struct xrt_prober_entry_usb *);
 	p->entries = realloc(p->entries, new_size);
 	p->entries[p->num_entries++] = entry;
 }
 
 static int
-collect_entries(struct prober* p)
+collect_entries(struct prober *p)
 {
-	struct xrt_prober_entry_lists* lists = p->lists;
+	struct xrt_prober_entry_lists *lists = p->lists;
 	while (lists) {
 		for (size_t j = 0; lists->entries != NULL && lists->entries[j];
 		     j++) {
-			struct xrt_prober_entry* entry = lists->entries[j];
+			struct xrt_prober_entry *entry = lists->entries[j];
 			for (size_t k = 0; entry[k].found != NULL; k++) {
 				add_usb_entry(p, &entry[k]);
 			}
@@ -263,7 +263,7 @@ collect_entries(struct prober* p)
 }
 
 static int
-initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
+initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 {
 	p->base.probe = probe;
 	p->base.dump = dump;
@@ -277,9 +277,9 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 	p->print_spew = debug_get_bool_option_prober_spew();
 	p->print_debug = debug_get_bool_option_prober_debug();
 
-	u_var_add_root((void*)p, "Prober", true);
-	u_var_add_bool((void*)p, &p->print_debug, "Debug");
-	u_var_add_bool((void*)p, &p->print_spew, "Spew");
+	u_var_add_root((void *)p, "Prober", true);
+	u_var_add_bool((void *)p, &p->print_debug, "Debug");
+	u_var_add_bool((void *)p, &p->print_spew, "Spew");
 
 	int ret;
 
@@ -319,26 +319,26 @@ initialize(struct prober* p, struct xrt_prober_entry_lists* lists)
 }
 
 static void
-teardown_devices(struct prober* p)
+teardown_devices(struct prober *p)
 {
 	// Need to free all devices.
 	for (size_t i = 0; i < p->num_devices; i++) {
-		struct prober_device* pdev = &p->devices[i];
+		struct prober_device *pdev = &p->devices[i];
 
 #ifdef XRT_OS_LINUX
 		if (pdev->usb.product != NULL) {
-			free((char*)pdev->usb.product);
+			free((char *)pdev->usb.product);
 			pdev->usb.product = NULL;
 		}
 
 		if (pdev->usb.path != NULL) {
-			free((char*)pdev->usb.path);
+			free((char *)pdev->usb.path);
 			pdev->usb.path = NULL;
 		}
 
 		for (size_t j = 0; j < pdev->num_v4ls; j++) {
-			struct prober_v4l* v4l = &pdev->v4ls[j];
-			free((char*)v4l->path);
+			struct prober_v4l *v4l = &pdev->v4ls[j];
+			free((char *)v4l->path);
 			v4l->path = NULL;
 		}
 
@@ -349,8 +349,8 @@ teardown_devices(struct prober* p)
 		}
 
 		for (size_t j = 0; j < pdev->num_hidraws; j++) {
-			struct prober_hidraw* hidraw = &pdev->hidraws[j];
-			free((char*)hidraw->path);
+			struct prober_hidraw *hidraw = &pdev->hidraws[j];
+			free((char *)hidraw->path);
 			hidraw->path = NULL;
 		}
 
@@ -370,10 +370,10 @@ teardown_devices(struct prober* p)
 }
 
 static void
-teardown(struct prober* p)
+teardown(struct prober *p)
 {
 	// First remove the variable tracking.
-	u_var_remove_root((void*)p);
+	u_var_remove_root((void *)p);
 
 	// Clean up all auto_probers.
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
@@ -410,9 +410,9 @@ teardown(struct prober* p)
  */
 
 static int
-probe(struct xrt_prober* xp)
+probe(struct xrt_prober *xp)
 {
-	struct prober* p = (struct prober*)xp;
+	struct prober *p = (struct prober *)xp;
 	XRT_MAYBE_UNUSED int ret = 0;
 
 	// Free old list first.
@@ -446,14 +446,14 @@ probe(struct xrt_prober* xp)
 }
 
 static int
-dump(struct xrt_prober* xp)
+dump(struct xrt_prober *xp)
 {
-	struct prober* p = (struct prober*)xp;
+	struct prober *p = (struct prober *)xp;
 	XRT_MAYBE_UNUSED ssize_t k = 0;
 	XRT_MAYBE_UNUSED size_t j = 0;
 
 	for (size_t i = 0; i < p->num_devices; i++) {
-		struct prober_device* pdev = &p->devices[i];
+		struct prober_device *pdev = &p->devices[i];
 		p_dump_device(p, pdev, (int)i);
 	}
 
@@ -461,12 +461,12 @@ dump(struct xrt_prober* xp)
 }
 
 static void
-handle_found_device(struct prober* p,
-                    struct xrt_device** xdevs,
+handle_found_device(struct prober *p,
+                    struct xrt_device **xdevs,
                     size_t num_xdevs,
-                    struct xrt_device* xdev)
+                    struct xrt_device *xdev)
 {
-	P_DEBUG(p, "Found '%s' %p", xdev->str, (void*)xdev);
+	P_DEBUG(p, "Found '%s' %p", xdev->str, (void *)xdev);
 
 	// For controllers we put them after the first found HMD.
 	if (xdev->hmd == NULL) {
@@ -494,32 +494,32 @@ handle_found_device(struct prober* p,
 }
 
 static int
-select_device(struct xrt_prober* xp,
-              struct xrt_device** xdevs,
+select_device(struct xrt_prober *xp,
+              struct xrt_device **xdevs,
               size_t num_xdevs)
 {
-	struct prober* p = (struct prober*)xp;
+	struct prober *p = (struct prober *)xp;
 
 	// Build a list of all current probed devices.
-	struct xrt_prober_device** dev_list =
-	    U_TYPED_ARRAY_CALLOC(struct xrt_prober_device*, p->num_devices);
+	struct xrt_prober_device **dev_list =
+	    U_TYPED_ARRAY_CALLOC(struct xrt_prober_device *, p->num_devices);
 	for (size_t i = 0; i < p->num_devices; i++) {
 		dev_list[i] = &p->devices[i].base;
 	}
 
 	// Loop over all devices and entries that might match them.
 	for (size_t i = 0; i < p->num_devices; i++) {
-		struct prober_device* pdev = &p->devices[i];
+		struct prober_device *pdev = &p->devices[i];
 
 		for (size_t k = 0; k < p->num_entries; k++) {
-			struct xrt_prober_entry* entry = p->entries[k];
+			struct xrt_prober_entry *entry = p->entries[k];
 			if (pdev->base.vendor_id != entry->vendor_id ||
 			    pdev->base.product_id != entry->product_id) {
 				continue;
 			}
 
-			struct xrt_device*
-			    new_xdevs[XRT_MAX_DEVICES_PER_PROBE] = {NULL};
+			struct xrt_device
+			    *new_xdevs[XRT_MAX_DEVICES_PER_PROBE] = {NULL};
 			int num_found =
 			    entry->found(xp, dev_list, i, &(new_xdevs[0]));
 
@@ -547,7 +547,7 @@ select_device(struct xrt_prober* xp,
 	free(dev_list);
 
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
-		struct xrt_device* xdev =
+		struct xrt_device *xdev =
 		    p->auto_probers[i]->lelo_dallas_autoprobe(
 		        p->auto_probers[i], xp);
 		if (xdev == NULL) {
@@ -580,16 +580,16 @@ select_device(struct xrt_prober* xp,
 }
 
 static int
-open_hid_interface(struct xrt_prober* xp,
-                   struct xrt_prober_device* xpdev,
+open_hid_interface(struct xrt_prober *xp,
+                   struct xrt_prober_device *xpdev,
                    int interface,
-                   struct os_hid_device** out_hid_dev)
+                   struct os_hid_device **out_hid_dev)
 {
-	struct prober_device* pdev = (struct prober_device*)xpdev;
+	struct prober_device *pdev = (struct prober_device *)xpdev;
 	int ret;
 
 	for (size_t j = 0; j < pdev->num_hidraws; j++) {
-		struct prober_hidraw* hidraw = &pdev->hidraws[j];
+		struct prober_hidraw *hidraw = &pdev->hidraws[j];
 
 		if (hidraw->interface != interface) {
 			continue;
@@ -612,19 +612,19 @@ open_hid_interface(struct xrt_prober* xp,
 }
 
 static int
-open_video_device(struct xrt_prober* xp,
-                  struct xrt_prober_device* xpdev,
-                  struct xrt_frame_context* xfctx,
-                  struct xrt_fs** out_xfs)
+open_video_device(struct xrt_prober *xp,
+                  struct xrt_prober_device *xpdev,
+                  struct xrt_frame_context *xfctx,
+                  struct xrt_fs **out_xfs)
 {
-	struct prober_device* pdev = (struct prober_device*)xpdev;
+	struct prober_device *pdev = (struct prober_device *)xpdev;
 
 #ifdef XRT_OS_LINUX
 	if (pdev->num_v4ls == 0) {
 		return -1;
 	}
 
-	struct xrt_fs* xfs = v4l2_fs_create(xfctx, pdev->v4ls[0].path);
+	struct xrt_fs *xfs = v4l2_fs_create(xfctx, pdev->v4ls[0].path);
 	if (xfs == NULL) {
 		return -1;
 	}
@@ -638,15 +638,15 @@ open_video_device(struct xrt_prober* xp,
 }
 
 static int
-list_video_devices(struct xrt_prober* xp,
+list_video_devices(struct xrt_prober *xp,
                    xrt_prober_list_video_cb cb,
-                   void* ptr)
+                   void *ptr)
 {
-	struct prober* p = (struct prober*)xp;
+	struct prober *p = (struct prober *)xp;
 
 	// Loop over all devices and find video devices.
 	for (size_t i = 0; i < p->num_devices; i++) {
-		struct prober_device* pdev = &p->devices[i];
+		struct prober_device *pdev = &p->devices[i];
 
 		bool has = false;
 #ifdef XRT_HAVE_LIBUVC
@@ -671,14 +671,14 @@ list_video_devices(struct xrt_prober* xp,
 }
 
 static int
-get_string_descriptor(struct xrt_prober* xp,
-                      struct xrt_prober_device* xpdev,
+get_string_descriptor(struct xrt_prober *xp,
+                      struct xrt_prober_device *xpdev,
                       enum xrt_prober_string which_string,
-                      unsigned char* buffer,
+                      unsigned char *buffer,
                       int length)
 {
-	struct prober* p = (struct prober*)xp;
-	struct prober_device* pdev = (struct prober_device*)xpdev;
+	struct prober *p = (struct prober *)xp;
+	struct prober_device *pdev = (struct prober_device *)xpdev;
 	int ret;
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->usb.dev != NULL) {
@@ -695,9 +695,9 @@ get_string_descriptor(struct xrt_prober* xp,
 }
 
 static void
-destroy(struct xrt_prober** xp)
+destroy(struct xrt_prober **xp)
 {
-	struct prober* p = (struct prober*)*xp;
+	struct prober *p = (struct prober *)*xp;
 	if (p == NULL) {
 		return;
 	}
