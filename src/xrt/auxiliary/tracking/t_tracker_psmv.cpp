@@ -160,6 +160,49 @@ do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 	}
 }
 
+//! Keeps only the point closest to the reference point.
+struct NearestWorldPointTracker
+{
+	NearestWorldPointTracker(float x, float y, float z)
+	    : last_point(x, y, z)
+	{}
+	const cv::Point3f last_point;
+	bool got_one{false};
+	cv::Point3f nearest_world_point{};
+	float nearest_dist{};
+
+	void
+	handle_world_point(cv::Point3f world_point)
+	{
+		//! @todo don't really need the square root to be done here.
+		float dist = cv::norm(world_point - last_point);
+		if (!got_one || dist < nearest_dist) {
+			nearest_world_point = world_point;
+			nearest_dist = dist;
+			got_one = true;
+		}
+	}
+};
+
+//! Convert our 2d point + disparities into 3d points.
+static cv::Point3f
+world_point_from_blobs(cv::Point2f left,
+                       cv::Point2f right,
+                       const cv::Matx44d &disparity_to_depth)
+{
+	float disp = right.x - left.x;
+	cv::Vec4d xydw(left.x, left.y, disp, 1.0f);
+	// Transform
+	cv::Vec4d h_world = disparity_to_depth * xydw;
+
+	// Divide by scale to get 3D vector from homogeneous
+	// coordinate. invert x while we are here.
+	cv::Point3f world_point(-h_world[0] / h_world[3],
+	                        h_world[1] / h_world[3],
+	                        h_world[2] / h_world[3]);
+
+	return world_point;
+}
 static void
 process(TrackerPSMV &t, struct xrt_frame *xf)
 {
@@ -215,63 +258,41 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	do_view(t, t.view[1], r_grey, t.debug.rgb[1]);
 
 	// do some basic matching to come up with likely disparity-pairs.
+	NearestWorldPointTracker nearest_world{t.tracked_object_position.x,
+	                                       t.tracked_object_position.y,
+	                                       t.tracked_object_position.z};
+	const cv::Matx44d disparity_to_depth =
+	    static_cast<cv::Matx44d>(t.disparity_to_depth);
 	std::vector<cv::KeyPoint> l_blobs, r_blobs;
 	for (uint32_t i = 0; i < t.view[0].keypoints.size(); i++) {
-		cv::KeyPoint l_blob = t.view[0].keypoints[i];
+		cv::Point2f l_blob = t.view[0].keypoints[i].pt;
 		int l_index = -1;
 		int r_index = -1;
 
 		for (uint32_t j = 0; j < t.view[1].keypoints.size(); j++) {
 			float lowest_dist = 128;
-			cv::KeyPoint r_blob = t.view[1].keypoints[j];
+			cv::Point2f r_blob = t.view[1].keypoints[j].pt;
 			// find closest point on same-ish scanline
-			if ((l_blob.pt.y < r_blob.pt.y + 3) &&
-			    (l_blob.pt.y > r_blob.pt.y - 3) &&
-			    ((r_blob.pt.x - l_blob.pt.x) < lowest_dist)) {
-				lowest_dist = r_blob.pt.x - l_blob.pt.x;
+			if ((l_blob.y < r_blob.y + 3) &&
+			    (l_blob.y > r_blob.y - 3) &&
+			    ((r_blob.x - l_blob.x) < lowest_dist)) {
+				lowest_dist = r_blob.x - l_blob.x;
 				r_index = j;
 				l_index = i;
 			}
 		}
 
 		if (l_index > -1 && r_index > -1) {
-			l_blobs.push_back(t.view[0].keypoints.at(l_index));
-			r_blobs.push_back(t.view[1].keypoints.at(r_index));
+			cv::Point3f pt = world_point_from_blobs(
+			    t.view[0].keypoints.at(l_index).pt,
+			    t.view[1].keypoints.at(r_index).pt,
+			    disparity_to_depth);
+			nearest_world.handle_world_point(pt);
 		}
 	}
 
-	// Convert our 2d point + disparities into 3d points.
-	assert(l_blobs.size() == r_blobs.size());
-	if (!l_blobs.empty()) {
-		cv::Point3f closest_world_point;
-		float lowest_dist = 0.f;
-		cv::Point3f last_point(t.tracked_object_position.x,
-		                       t.tracked_object_position.y,
-		                       t.tracked_object_position.z);
-		const uint32_t n = l_blobs.size();
-		for (uint32_t i = 0; i < n; i++) {
-			float disp = r_blobs[i].pt.x - l_blobs[i].pt.x;
-			cv::Vec4d xydw(l_blobs[i].pt.x, l_blobs[i].pt.y, disp,
-			               1.0f);
-			// Transform
-			cv::Vec4d h_world =
-			    static_cast<cv::Matx44d>(t.disparity_to_depth) *
-			    xydw;
-
-			// Divide by scale to get 3D vector from homogeneous
-			// coordinate. invert x while we are here.
-			cv::Point3f world_point(-h_world[0] / h_world[3],
-			                        h_world[1] / h_world[3],
-			                        h_world[2] / h_world[3]);
-			//! @todo don't really need the square root to be done
-			//! here.
-			float dist = cv::norm(world_point - last_point);
-			if (i == 0 || dist < lowest_dist) {
-				closest_world_point = world_point;
-				lowest_dist = dist;
-			}
-		}
-
+	if (nearest_world.got_one) {
+		cv::Point3f world_point = nearest_world.nearest_world_point;
 #if 0
 		//apply our room setup transform
 		Eigen::Vector3f p = Eigen::Map<Eigen::Vector3f>(&world_point.x);
@@ -292,14 +313,8 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 #endif
 		// update internal state
 
-#if 0
-		t.tracked_object_position.x = world_point.x;
-		t.tracked_object_position.y = world_point.y;
-		t.tracked_object_position.z = world_point.z;
-#else
 		map_vec3(t.tracked_object_position) =
-		    Eigen::Map<Eigen::Vector3f>(&closest_world_point.x);
-#endif
+		    Eigen::Map<Eigen::Vector3f>(&world_point.x);
 	}
 
 	if (t.debug.frame != NULL) {
