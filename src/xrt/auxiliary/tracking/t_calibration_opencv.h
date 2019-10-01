@@ -126,22 +126,6 @@ mkpath(char *path)
 	return 0;
 }
 
-//! @todo Templatise?
-XRT_MAYBE_UNUSED static float
-cv_dist3d_point(cv::Point3f &p, cv::Point3f &q)
-{
-	cv::Point3f d = p - q;
-	return cv::sqrt(d.x * d.x + d.y * d.y + d.z * d.z);
-}
-
-//! @todo Templatise?
-XRT_MAYBE_UNUSED static float
-cv_dist3d_vec(cv::Vec3f &p, cv::Vec3f &q)
-{
-	cv::Point3f d = p - q;
-	return cv::sqrt(d.x * d.x + d.y * d.y + d.z * d.z);
-}
-
 
 #ifdef __cplusplus
 }
