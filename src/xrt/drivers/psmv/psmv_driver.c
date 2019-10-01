@@ -987,8 +987,8 @@ psmv_found(struct xrt_prober *xp,
 	}
 
 #if 1
-	//! @todo Is this accureate? (46mm)
-	float diameter = 0.0046;
+	// 45mm
+	float diameter = 0.045;
 	(void)diameter;
 	if (xp->tracking != NULL) {
 		xp->tracking->create_tracked_psmv(xp->tracking, &psmv->base,
