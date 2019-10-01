@@ -160,29 +160,35 @@ do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 	}
 }
 
-//! Keeps only the point closest to the reference point.
-struct NearestWorldPointTracker
+//! @brief Keeps the value that produces the lowest "score" as computed by your
+//! functor.
+template <typename T, typename ScoreType, typename F> struct FindLowestScore
 {
-	NearestWorldPointTracker(float x, float y, float z)
-	    : last_point(x, y, z)
-	{}
-	const cv::Point3f last_point;
+	const F score_functor;
 	bool got_one{false};
-	cv::Point3f nearest_world_point{};
-	float nearest_dist{};
+	T best{};
+	ScoreType best_score{};
 
 	void
-	handle_world_point(cv::Point3f world_point)
+	handle_candidate(T val)
 	{
-		//! @todo don't really need the square root to be done here.
-		float dist = cv::norm(world_point - last_point);
-		if (!got_one || dist < nearest_dist) {
-			nearest_world_point = world_point;
-			nearest_dist = dist;
+		ScoreType score = score_functor(val);
+		if (!got_one || score < best_score) {
+			best = val;
+			best_score = score;
 			got_one = true;
 		}
 	}
 };
+
+
+//! Factory function for FindLowestScore to deduce the functor type.
+template <typename T, typename F>
+static FindLowestScore<T, float, F>
+make_lowest_float_score_finder(F scoreFunctor)
+{
+	return {scoreFunctor};
+}
 
 //! Convert our 2d point + disparities into 3d points.
 static cv::Point3f
@@ -257,42 +263,44 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	do_view(t, t.view[0], l_grey, t.debug.rgb[0]);
 	do_view(t, t.view[1], r_grey, t.debug.rgb[1]);
 
+	cv::Point3f last_point(t.tracked_object_position.x,
+	                       t.tracked_object_position.y,
+	                       t.tracked_object_position.z);
+	auto nearest_world = make_lowest_float_score_finder<cv::Point3f>(
+	    [&](cv::Point3f world_point) {
+		    //! @todo don't really need the square root to be done here.
+		    return cv::norm(world_point - last_point);
+	    });
 	// do some basic matching to come up with likely disparity-pairs.
-	NearestWorldPointTracker nearest_world{t.tracked_object_position.x,
-	                                       t.tracked_object_position.y,
-	                                       t.tracked_object_position.z};
+
 	const cv::Matx44d disparity_to_depth =
 	    static_cast<cv::Matx44d>(t.disparity_to_depth);
-	std::vector<cv::KeyPoint> l_blobs, r_blobs;
-	for (uint32_t i = 0; i < t.view[0].keypoints.size(); i++) {
-		cv::Point2f l_blob = t.view[0].keypoints[i].pt;
-		int l_index = -1;
-		int r_index = -1;
 
-		for (uint32_t j = 0; j < t.view[1].keypoints.size(); j++) {
-			float lowest_dist = 128;
-			cv::Point2f r_blob = t.view[1].keypoints[j].pt;
+	for (const cv::KeyPoint &l_keypoint : t.view[0].keypoints) {
+		cv::Point2f l_blob = l_keypoint.pt;
+
+		auto nearest_blob = make_lowest_float_score_finder<cv::Point2f>(
+		    [&](cv::Point2f r_blob) { return l_blob.x - r_blob.x; });
+
+		for (const cv::KeyPoint &r_keypoint : t.view[1].keypoints) {
+			cv::Point2f r_blob = r_keypoint.pt;
 			// find closest point on same-ish scanline
 			if ((l_blob.y < r_blob.y + 3) &&
-			    (l_blob.y > r_blob.y - 3) &&
-			    ((r_blob.x - l_blob.x) < lowest_dist)) {
-				lowest_dist = r_blob.x - l_blob.x;
-				r_index = j;
-				l_index = i;
+			    (l_blob.y > r_blob.y - 3)) {
+				nearest_blob.handle_candidate(r_blob);
 			}
 		}
-
-		if (l_index > -1 && r_index > -1) {
+		//! @todo do we need to avoid claiming the same counterpart
+		//! several times?
+		if (nearest_blob.got_one) {
 			cv::Point3f pt = world_point_from_blobs(
-			    t.view[0].keypoints.at(l_index).pt,
-			    t.view[1].keypoints.at(r_index).pt,
-			    disparity_to_depth);
-			nearest_world.handle_world_point(pt);
+			    l_blob, nearest_blob.best, disparity_to_depth);
+			nearest_world.handle_candidate(pt);
 		}
 	}
 
 	if (nearest_world.got_one) {
-		cv::Point3f world_point = nearest_world.nearest_world_point;
+		cv::Point3f world_point = nearest_world.best;
 #if 0
 		//apply our room setup transform
 		Eigen::Vector3f p = Eigen::Map<Eigen::Vector3f>(&world_point.x);
