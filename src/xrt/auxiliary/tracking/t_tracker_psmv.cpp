@@ -500,14 +500,7 @@ extern "C" int
 t_psmv_start(struct xrt_tracked_psmv *xtmv)
 {
 	auto &t = *container_of(xtmv, TrackerPSMV, base);
-	int ret;
-
-	ret = os_thread_helper_start(&t.oth, t_psmv_run, &t);
-	if (ret != 0) {
-		return ret;
-	}
-
-	return ret;
+	return os_thread_helper_start(&t.oth, t_psmv_run, &t);
 }
 
 extern "C" int
