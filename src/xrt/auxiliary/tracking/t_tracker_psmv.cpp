@@ -19,6 +19,7 @@
 #include "util/u_format.h"
 
 #include "math/m_api.h"
+#include "math/m_eigen_interop.h"
 
 #include "os/os_threading.h"
 
@@ -240,43 +241,38 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	}
 
 	// Convert our 2d point + disparities into 3d points.
-	std::vector<cv::Point3f> world_points;
-	if (l_blobs.size() > 0) {
-		for (uint32_t i = 0; i < l_blobs.size(); i++) {
+	assert(l_blobs.size() == r_blobs.size());
+	if (!l_blobs.empty()) {
+		cv::Point3f closest_world_point;
+		float lowest_dist = 0.f;
+		cv::Point3f last_point(t.tracked_object_position.x,
+		                       t.tracked_object_position.y,
+		                       t.tracked_object_position.z);
+		const uint32_t n = l_blobs.size();
+		for (uint32_t i = 0; i < n; i++) {
 			float disp = r_blobs[i].pt.x - l_blobs[i].pt.x;
 			cv::Vec4d xydw(l_blobs[i].pt.x, l_blobs[i].pt.y, disp,
 			               1.0f);
 			// Transform
 			cv::Vec4d h_world =
-			    (cv::Matx44d)t.disparity_to_depth * xydw;
+			    static_cast<cv::Matx44d>(t.disparity_to_depth) *
+			    xydw;
 
 			// Divide by scale to get 3D vector from homogeneous
 			// coordinate. invert x while we are here.
-			world_points.push_back(cv::Point3f(
-			    -h_world[0] / h_world[3], h_world[1] / h_world[3],
-			    h_world[2] / h_world[3]));
+			cv::Point3f world_point(-h_world[0] / h_world[3],
+			                        h_world[1] / h_world[3],
+			                        h_world[2] / h_world[3]);
+			//! @todo don't really need the square root to be done
+			//! here.
+			float dist = cv::norm(world_point - last_point);
+			if (i == 0 || dist < lowest_dist) {
+				closest_world_point = world_point;
+				lowest_dist = dist;
+			}
 		}
-	}
 
-	int tracked_index = -1;
-	float lowest_dist = 65535.0f;
-
-	cv::Point3f last_point(t.tracked_object_position.x,
-	                       t.tracked_object_position.y,
-	                       t.tracked_object_position.z);
-
-	for (uint32_t i = 0; i < world_points.size(); i++) {
-		float dist = cv_dist3d_point(world_points[i], last_point);
-		if (dist < lowest_dist) {
-			tracked_index = i;
-			lowest_dist = dist;
-		}
-	}
-
-	if (tracked_index != -1) {
-		cv::Point3f world_point = world_points[tracked_index];
-
-		/*
+#if 0
 		//apply our room setup transform
 		Eigen::Vector3f p = Eigen::Map<Eigen::Vector3f>(&world_point.x);
 		Eigen::Vector4f pt;
@@ -293,12 +289,17 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 		m.pose.position.x = pt.x();
 		m.pose.position.y = pt.y();
 		m.pose.position.z = pt.z();
-		*/
+#endif
 		// update internal state
 
+#if 0
 		t.tracked_object_position.x = world_point.x;
 		t.tracked_object_position.y = world_point.y;
 		t.tracked_object_position.z = world_point.z;
+#else
+		map_vec3(t.tracked_object_position) =
+		    Eigen::Map<Eigen::Vector3f>(&closest_world_point.x);
+#endif
 	}
 
 	if (t.debug.frame != NULL) {
