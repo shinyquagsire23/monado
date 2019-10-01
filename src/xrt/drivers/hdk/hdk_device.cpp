@@ -162,7 +162,7 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 	quat.y = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
 	quat.w = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
 // Used to produce 90 degree rotations
-#define HDK_SIN_PI_OVER_4 0.7071068
+#define HDK_SIN_PI_OVER_4 0.7071068f
 	struct xrt_quat rot_90_about_x
 	{
 		HDK_SIN_PI_OVER_4, 0, 0, HDK_SIN_PI_OVER_4
