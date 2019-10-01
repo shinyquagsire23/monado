@@ -160,7 +160,7 @@ do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 }
 
 static void
-procces(TrackerPSMV &t, struct xrt_frame *xf)
+process(TrackerPSMV &t, struct xrt_frame *xf)
 {
 	// Only IMU data
 	if (xf == NULL) {
@@ -339,7 +339,7 @@ run(TrackerPSMV &t)
 		// Unlock the mutex when we do the work.
 		os_thread_helper_unlock(&t.oth);
 
-		procces(t, frame);
+		process(t, frame);
 
 		// Have to lock it again.
 		os_thread_helper_lock(&t.oth);
