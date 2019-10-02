@@ -31,6 +31,7 @@ set(TRACKING_SOURCE_FILES
 	tracking/t_debug_hsv_picker.cpp
 	tracking/t_debug_hsv_viewer.cpp
 	tracking/t_file.cpp
+	tracking/t_fusion.h
 	tracking/t_hsv_filter.c
 	tracking/t_tracker_psmv.cpp
 	tracking/t_tracker_psvr.cpp
@@ -104,10 +105,11 @@ if(BUILD_TRACKING)
 	add_library(aux_tracking OBJECT ${TRACKING_SOURCE_FILES})
 	set_property(TARGET aux_tracking PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-	# Math files has extra include(s).
+	# Tracking files have extra includes.
 	target_include_directories(aux_tracking SYSTEM
 		PRIVATE
 		${EIGEN3_INCLUDE_DIR}
 		${OpenCV_INCLUDE_DIRS}
+		${CMAKE_CURRENT_SOURCE_DIR}/../../external
 		)
 endif()

@@ -100,6 +100,7 @@ tracking_srcs = [
 	'tracking/t_debug_hsv_picker.cpp',
 	'tracking/t_debug_hsv_viewer.cpp',
 	'tracking/t_file.cpp',
+	'tracking/t_fusion.h',
 	'tracking/t_hsv_filter.c',
 	'tracking/t_tracker_psmv.cpp',
 	'tracking/t_tracker_psvr.cpp',
@@ -109,7 +110,7 @@ tracking_srcs = [
 lib_aux_tracking = static_library(
 	'aux_tracking',
 	files(tracking_srcs),
-	include_directories: xrt_include,
+	include_directories: [xrt_include, external_include],
 	dependencies: [eigen3, opencv],
 	build_by_default: build_tracking,
 )
