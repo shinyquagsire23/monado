@@ -43,6 +43,7 @@ sdl2    = dependency('sdl2', required: get_option('gui'))
 udev    = dependency('libudev', required: false)
 libuvc  = dependency('libuvc', required: false)
 vulkan  = dependency('vulkan')
+zlib    = dependency('zlib', required: false)
 
 opencv = dependency('opencv4', required: false)
 if not opencv.found()
@@ -115,6 +116,12 @@ if hidapi.found() and ('auto' in drivers or 'psvr' in drivers or 'hdk' in driver
 	endif
 	if 'hdk' not in drivers
 		drivers += ['hdk']
+	endif
+endif
+
+if zlib.found() and ('auto' in drivers or 'vive' in drivers)
+	if 'vive' not in drivers
+		drivers += ['vive']
 	endif
 endif
 

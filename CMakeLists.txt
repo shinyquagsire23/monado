@@ -31,6 +31,7 @@ find_package(Libusb1)
 find_package(JPEG)
 find_package(SDL2)
 find_package(Threads)
+find_package(ZLIB)
 
 # @TODO Turn into a find_package LIBUVC file.
 pkg_check_modules(LIBUVC libuvc)
@@ -132,6 +133,10 @@ if(BUILD_WITH_HIDAPI)
 
 	# Drivers enabled with hidapi.
 	set(BUILD_DRIVER_PSVR TRUE)
+endif()
+
+if(${ZLIB_FOUND})
+	set(BUILD_DRIVER_VIVE TRUE)
 endif()
 
 if(TRUE)

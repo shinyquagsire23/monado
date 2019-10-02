@@ -30,6 +30,9 @@
 #include "hydra/hydra_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_VIVE
+#include "vive/vive_prober.h"
+#endif
 
 /*!
  * Each entry should be a vendor ID (VID), product ID (PID), a "found" function,
@@ -61,6 +64,10 @@ struct xrt_prober_entry target_entry_list[] = {
 #ifdef XRT_BUILD_DRIVER_HDK
     {HDK_VID, HDK_PID, hdk_found, "OSVR HDK"},
 #endif // XRT_BUILD_DRIVER_HDK
+
+#ifdef XRT_BUILD_DRIVER_VIVE
+    {HTC_VID, VIVE_PID, vive_found, "HTC Vive"},
+#endif
 
     {0x0000, 0x0000, NULL, NULL}, // Terminate
 };

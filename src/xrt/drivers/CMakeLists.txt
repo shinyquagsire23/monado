@@ -83,6 +83,23 @@ if(BUILD_DRIVER_PSVR)
 		)
 endif()
 
+if(BUILD_DRIVER_VIVE)
+	set(VIVE_SOURCE_FILES
+		vive/vive_device.h
+		vive/vive_device.c
+		vive/vive_prober.h
+		vive/vive_prober.c
+		vive/vive_protocol.h
+		../../external/nxjson/nxjson.h
+		../../external/nxjson/nxjson.c
+		)
+
+	# Use OBJECT to not create a archive, since it just gets in the way.
+	add_library(drv_vive OBJECT ${VIVE_SOURCE_FILES})
+	target_include_directories(drv_vive SYSTEM PRIVATE ../../external)
+	target_link_libraries(drv_vive z)
+	set_property(TARGET drv_vive PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
 
 if(BUILD_DRIVER_V4L2)
 	set(V4L2_SOURCE_FILES

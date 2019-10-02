@@ -75,3 +75,20 @@ lib_drv_v4l2 = static_library(
 	dependencies: [aux, v4l2],
 	build_by_default: 'v4l2' in drivers,
 )
+
+lib_drv_vive = static_library(
+	'drv_vive',
+	files(
+		'vive/vive_device.c',
+		'vive/vive_device.h',
+		'vive/vive_protocol.h',
+		'vive/vive_prober.h',
+		'vive/vive_prober.c',
+		'../../external/nxjson/nxjson.h',
+		'../../external/nxjson/nxjson.c'
+	),
+	include_directories: [xrt_include,
+	                      include_directories('../../external/')],
+	dependencies: [aux, zlib],
+	build_by_default: 'vive' in drivers,
+)

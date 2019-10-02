@@ -3,7 +3,7 @@
 
 option('drivers',
 	type: 'array',
-	choices: ['auto', 'hdk', 'hydra', 'ohmd', 'psmv', 'psvr', 'v4l2'],
+	choices: ['auto', 'hdk', 'hydra', 'ohmd', 'psmv', 'psvr', 'v4l2', 'vive'],
 	value: ['auto'],
 	description: 'Set of drivers to build')
 
