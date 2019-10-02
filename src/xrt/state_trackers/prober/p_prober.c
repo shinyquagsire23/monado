@@ -520,8 +520,8 @@ select_device(struct xrt_prober *xp,
 
 			struct xrt_device
 			    *new_xdevs[XRT_MAX_DEVICES_PER_PROBE] = {NULL};
-			int num_found =
-			    entry->found(xp, dev_list, i, &(new_xdevs[0]));
+			int num_found = entry->found(
+			    xp, dev_list, p->num_devices, i, &(new_xdevs[0]));
 
 			if (num_found <= 0) {
 				continue;

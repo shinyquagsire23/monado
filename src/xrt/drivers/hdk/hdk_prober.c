@@ -31,6 +31,7 @@ static const char HDK12_PRODUCT_STRING[] = "OSVR HDK 1.2";
 int
 hdk_found(struct xrt_prober *xp,
           struct xrt_prober_device **devices,
+          size_t num_devices,
           size_t index,
           struct xrt_device **out_xdev)
 {
