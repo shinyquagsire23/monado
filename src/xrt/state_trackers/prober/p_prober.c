@@ -597,7 +597,8 @@ open_hid_interface(struct xrt_prober *xp,
 
 		ret = os_hid_open_hidraw(hidraw->path, out_hid_dev);
 		if (ret != 0) {
-			P_ERROR(p, "Failed to open device!");
+			P_ERROR(p, "Failed to open device '%s' got '%i'",
+			        hidraw->path, ret);
 			return ret;
 		}
 
