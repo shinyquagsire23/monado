@@ -122,7 +122,7 @@ os_hid_open_hidraw(const char *path, struct os_hid_device **out_hid)
 	hrdev->fd = open(path, O_RDWR);
 	if (hrdev->fd < 0) {
 		free(hrdev);
-		return -1;
+		return -errno;
 	}
 
 	*out_hid = &hrdev->base;
