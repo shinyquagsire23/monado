@@ -314,7 +314,7 @@ transform_accumulate_pose(const xrt_pose &transform,
 			    Eigen::Quaternionf::Identity();
 		}
 
-		math_pose_transform(&in_out_relation->pose, &transform,
+		math_pose_transform(&transform, &in_out_relation->pose,
 		                    &in_out_relation->pose);
 	}
 
