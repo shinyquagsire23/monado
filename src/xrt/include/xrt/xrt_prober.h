@@ -107,6 +107,12 @@ enum xrt_prober_string
 	XRT_PROBER_STRING_SERIAL_NUMBER,
 };
 
+const char *
+xrt_prober_string_to_string(enum xrt_prober_string t);
+
+const char *
+xrt_bus_type_to_string(enum xrt_bus_type t);
+
 /*!
  * A probed device, may or may not be opened.
  *
@@ -307,6 +313,11 @@ int
 xrt_prober_create_with_lists(struct xrt_prober **out_prober,
                              struct xrt_prober_entry_lists *list);
 
+bool
+xrt_prober_match_string(struct xrt_prober *xp,
+                        struct xrt_prober_device *dev,
+                        enum xrt_prober_string type,
+                        const char *to_match);
 
 /*
  *
