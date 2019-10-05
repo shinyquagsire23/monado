@@ -95,6 +95,31 @@ p_libusb_probe(struct prober *p)
 	return 0;
 }
 
+#define ENUM_TO_STR(r)                                                         \
+	case r: return #r
+
+static const char *
+p_libusb_error_to_string(enum libusb_error e)
+{
+	switch (e) {
+		ENUM_TO_STR(LIBUSB_SUCCESS);
+		ENUM_TO_STR(LIBUSB_ERROR_IO);
+		ENUM_TO_STR(LIBUSB_ERROR_INVALID_PARAM);
+		ENUM_TO_STR(LIBUSB_ERROR_ACCESS);
+		ENUM_TO_STR(LIBUSB_ERROR_NO_DEVICE);
+		ENUM_TO_STR(LIBUSB_ERROR_NOT_FOUND);
+		ENUM_TO_STR(LIBUSB_ERROR_BUSY);
+		ENUM_TO_STR(LIBUSB_ERROR_TIMEOUT);
+		ENUM_TO_STR(LIBUSB_ERROR_OVERFLOW);
+		ENUM_TO_STR(LIBUSB_ERROR_PIPE);
+		ENUM_TO_STR(LIBUSB_ERROR_INTERRUPTED);
+		ENUM_TO_STR(LIBUSB_ERROR_NO_MEM);
+		ENUM_TO_STR(LIBUSB_ERROR_NOT_SUPPORTED);
+		ENUM_TO_STR(LIBUSB_ERROR_OTHER);
+	}
+	return "";
+}
+
 int
 p_libusb_get_string_descriptor(struct prober *p,
                                struct prober_device *pdev,
@@ -108,7 +133,8 @@ p_libusb_get_string_descriptor(struct prober *p,
 	libusb_device *usb_dev = pdev->usb.dev;
 	int result = libusb_get_device_descriptor(usb_dev, &desc);
 	if (result < 0) {
-		P_ERROR(p, "libusb_get_device_descriptor failed!");
+		P_ERROR(p, "libusb_get_device_descriptor failed: %s",
+		        p_libusb_error_to_string(result));
 		return result;
 	}
 	uint8_t which = 0;
@@ -130,7 +156,8 @@ p_libusb_get_string_descriptor(struct prober *p,
 	libusb_device_handle *dev_handle = NULL;
 	result = libusb_open(usb_dev, &dev_handle);
 	if (result < 0) {
-		P_ERROR(p, "libusb_open failed!");
+		P_ERROR(p, "libusb_open failed: %s",
+		        p_libusb_error_to_string(result));
 		return result;
 	}
 	int string_length = libusb_get_string_descriptor_ascii(
@@ -140,4 +167,21 @@ p_libusb_get_string_descriptor(struct prober *p,
 	}
 	libusb_close(dev_handle);
 	return string_length;
+}
+
+bool
+p_libusb_can_open(struct prober *p, struct prober_device *pdev)
+{
+	libusb_device *usb_dev = pdev->usb.dev;
+	int result;
+	libusb_device_handle *dev_handle = NULL;
+	result = libusb_open(usb_dev, &dev_handle);
+	if (result < 0) {
+		P_ERROR(p, "libusb_open failed: %s",
+		        p_libusb_error_to_string(result));
+		return false;
+	}
+
+	libusb_close(dev_handle);
+	return true;
 }

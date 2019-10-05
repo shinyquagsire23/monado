@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include "xrt/xrt_config.h"
 #include "xrt/xrt_device.h"
 #include "os/os_hid.h"
 
@@ -165,6 +164,8 @@ struct xrt_prober
 	                             enum xrt_prober_string which_string,
 	                             unsigned char *buffer,
 	                             int length);
+	bool (*can_open)(struct xrt_prober *xp,
+	                 struct xrt_prober_device *xpdev);
 	void (*destroy)(struct xrt_prober **xp_ptr);
 };
 
@@ -232,6 +233,18 @@ xrt_prober_get_string_descriptor(struct xrt_prober *xp,
 	return xp->get_string_descriptor(xp, xpdev, which_string, buffer,
 	                                 length);
 }
+
+/*!
+ * Helper function for @ref xrt_prober::can_open.
+ *
+ * @ingroup xrt_iface
+ */
+XRT_MAYBE_UNUSED static inline bool
+xrt_prober_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
+{
+	return xp->can_open(xp, xpdev);
+}
+
 
 /*!
  * Helper function for @ref xrt_prober::xrt_prober_open_video_device.

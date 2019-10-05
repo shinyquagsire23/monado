@@ -75,6 +75,9 @@ get_string_descriptor(struct xrt_prober *xp,
                       unsigned char *buffer,
                       int length);
 
+static bool
+can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev);
+
 static void
 destroy(struct xrt_prober **xp);
 
@@ -272,6 +275,7 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 	p->base.open_video_device = open_video_device;
 	p->base.list_video_devices = list_video_devices;
 	p->base.get_string_descriptor = get_string_descriptor;
+	p->base.can_open = can_open;
 	p->base.destroy = destroy;
 	p->lists = lists;
 	p->print_spew = debug_get_bool_option_prober_spew();
@@ -694,6 +698,21 @@ get_string_descriptor(struct xrt_prober *xp,
 	//! @todo make this unicode (utf-16)? utf-8 would be better...
 	return 0;
 }
+
+static bool
+can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
+{
+	struct prober *p = (struct prober *)xp;
+	struct prober_device *pdev = (struct prober_device *)xpdev;
+#ifdef XRT_HAVE_LIBUSB
+	if (pdev->usb.dev != NULL) {
+		return p_libusb_can_open(p, pdev);
+	}
+#endif
+	//! @todo add more backends
+	return false;
+}
+
 
 static void
 destroy(struct xrt_prober **xp)

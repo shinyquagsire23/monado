@@ -220,6 +220,9 @@ p_libusb_get_string_descriptor(struct prober *p,
                                enum xrt_prober_string which_string,
                                unsigned char *buffer,
                                int length);
+
+bool
+p_libusb_can_open(struct prober *p, struct prober_device *pdev);
 #endif
 
 #ifdef XRT_HAVE_LIBUVC
