@@ -53,6 +53,9 @@ static void
 vk_swapchain_create_image_views(struct vk_swapchain *sc);
 
 static void
+vk_swapchain_destroy_image_views(struct vk_swapchain *sc);
+
+static void
 vk_swapchain_destroy_old(struct vk_swapchain *sc, VkSwapchainKHR old);
 
 static VkExtent2D
@@ -100,11 +103,17 @@ vk_swapchain_create(struct vk_swapchain *sc,
 	VkBool32 supported;
 	VkResult ret;
 
+	// Free old image views.
+	vk_swapchain_destroy_image_views(sc);
+
+	VkSwapchainKHR old_swap_chain = sc->swap_chain;
+
 	sc->image_count = 0;
 	sc->swap_chain = VK_NULL_HANDLE;
 	sc->color_format = color_format;
 	sc->color_space = color_space;
 	sc->present_mode = present_mode;
+
 
 	// Sanity check.
 	sc->vk->vkGetPhysicalDeviceSurfaceSupportKHR(sc->vk->physical_device, 0,
@@ -119,11 +128,15 @@ vk_swapchain_create(struct vk_swapchain *sc,
 	// More sanity checks.
 	if (!_check_surface_present_mode(sc->vk, sc->surface,
 	                                 sc->present_mode)) {
+		// Free old.
+		vk_swapchain_destroy_old(sc, old_swap_chain);
 		return;
 	}
 
 	// Find the correct format.
 	if (!_find_surface_format(sc, sc->surface, &sc->surface_format)) {
+		// Free old.
+		vk_swapchain_destroy_old(sc, old_swap_chain);
 		return;
 	}
 
@@ -135,11 +148,13 @@ vk_swapchain_create(struct vk_swapchain *sc,
 		VK_ERROR(sc->vk,
 		         "vkGetPhysicalDeviceSurfaceCapabilitiesKHR: %s",
 		         vk_result_string(ret));
+
+		// Free old.
+		vk_swapchain_destroy_old(sc, old_swap_chain);
 		return;
 	}
 
 
-	VkSwapchainKHR old_swap_chain = sc->swap_chain;
 	VkExtent2D extent =
 	    vk_swapchain_select_extent(sc, surface_caps, width, height);
 
@@ -170,14 +185,14 @@ vk_swapchain_create(struct vk_swapchain *sc,
 
 	ret = sc->vk->vkCreateSwapchainKHR(sc->vk->device, &swap_chain_info,
 	                                   NULL, &sc->swap_chain);
+
+	// Always destroy the old.
+	vk_swapchain_destroy_old(sc, old_swap_chain);
+
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(sc->vk, "vkCreateSwapchainKHR: %s",
 		         vk_result_string(ret));
 		return;
-	}
-
-	if (old_swap_chain != VK_NULL_HANDLE) {
-		vk_swapchain_destroy_old(sc, old_swap_chain);
 	}
 
 	vk_swapchain_create_image_views(sc);
@@ -217,12 +232,9 @@ vk_swapchain_select_extent(struct vk_swapchain *sc,
 static void
 vk_swapchain_destroy_old(struct vk_swapchain *sc, VkSwapchainKHR old)
 {
-	for (uint32_t i = 0; i < sc->image_count; i++) {
-		sc->vk->vkDestroyImageView(sc->vk->device, sc->buffers[i].view,
-		                           NULL);
+	if (old != VK_NULL_HANDLE) {
+		sc->vk->vkDestroySwapchainKHR(sc->vk->device, old, NULL);
 	}
-
-	sc->vk->vkDestroySwapchainKHR(sc->vk->device, old, NULL);
 }
 
 VkResult
@@ -401,6 +413,27 @@ _check_surface_present_mode(struct vk_bundle *vk,
 }
 
 static void
+vk_swapchain_destroy_image_views(struct vk_swapchain *sc)
+{
+	if (sc->buffers == NULL) {
+		return;
+	}
+
+	for (uint32_t i = 0; i < sc->image_count; i++) {
+		if (sc->buffers[i].view == VK_NULL_HANDLE) {
+			continue;
+		}
+
+		sc->vk->vkDestroyImageView(sc->vk->device, sc->buffers[i].view,
+		                           NULL);
+		sc->buffers[i].view = VK_NULL_HANDLE;
+	}
+
+	free(sc->buffers);
+	sc->buffers = NULL;
+}
+
+static void
 vk_swapchain_create_image_views(struct vk_swapchain *sc)
 {
 	sc->vk->vkGetSwapchainImagesKHR(sc->vk->device, sc->swap_chain,
@@ -412,20 +445,7 @@ vk_swapchain_create_image_views(struct vk_swapchain *sc)
 	sc->vk->vkGetSwapchainImagesKHR(sc->vk->device, sc->swap_chain,
 	                                &sc->image_count, images);
 
-	if (sc->buffers != NULL) {
-		for (uint32_t i = 0; i < sc->image_count; i++) {
-			if (sc->buffers[i].view == VK_NULL_HANDLE) {
-				continue;
-			}
-
-			sc->vk->vkDestroyImageView(sc->vk->device,
-			                           sc->buffers[i].view, NULL);
-			sc->buffers[i].view = VK_NULL_HANDLE;
-		}
-
-		free(sc->buffers);
-		sc->buffers = NULL;
-	}
+	vk_swapchain_destroy_image_views(sc);
 
 	sc->buffers =
 	    U_TYPED_ARRAY_CALLOC(struct vk_swapchain_buffer, sc->image_count);
