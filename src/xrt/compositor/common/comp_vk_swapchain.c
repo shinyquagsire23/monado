@@ -433,7 +433,7 @@ void
 vk_swapchain_cleanup(struct vk_swapchain *sc)
 {
 	for (uint32_t i = 0; i < sc->image_count; i++) {
-		if (sc->buffers[i].view) {
+		if (sc->buffers[i].view != VK_NULL_HANDLE) {
 			sc->vk->vkDestroyImageView(sc->vk->device,
 			                           sc->buffers[i].view, NULL);
 			sc->buffers[i].view = VK_NULL_HANDLE;

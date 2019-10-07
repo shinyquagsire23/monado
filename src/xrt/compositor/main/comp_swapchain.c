@@ -311,27 +311,30 @@ comp_swapchain_image_cleanup(struct vk_bundle *vk,
 {
 	if (image->views != NULL) {
 		for (uint32_t i = 0; i < array_size; ++i) {
-			if (image->views[i] != NULL) {
-				vk->vkDestroyImageView(vk->device,
-				                       image->views[i], NULL);
+			if (image->views[i] == VK_NULL_HANDLE) {
+				continue;
 			}
+
+			vk->vkDestroyImageView(vk->device, image->views[i],
+			                       NULL);
+			image->views[i] = VK_NULL_HANDLE;
 		}
 		free(image->views);
 		image->views = NULL;
 	}
 
-	if (image->sampler != NULL) {
+	if (image->sampler != VK_NULL_HANDLE) {
 		vk->vkDestroySampler(vk->device, image->sampler, NULL);
-		image->sampler = NULL;
+		image->sampler = VK_NULL_HANDLE;
 	}
 
-	if (image->image != NULL) {
+	if (image->image != VK_NULL_HANDLE) {
 		vk->vkDestroyImage(vk->device, image->image, NULL);
-		image->image = NULL;
+		image->image = VK_NULL_HANDLE;
 	}
 
-	if (image->memory != NULL) {
+	if (image->memory != VK_NULL_HANDLE) {
 		vk->vkFreeMemory(vk->device, image->memory, NULL);
-		image->memory = NULL;
+		image->memory = VK_NULL_HANDLE;
 	}
 }
