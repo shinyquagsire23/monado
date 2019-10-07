@@ -235,6 +235,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.wait_image = swapchain_wait_image;
 	sc->base.base.release_image = swapchain_release_image;
 	sc->base.base.num_images = num_images;
+	sc->base.base.array_size = array_size;
 	sc->c = c;
 
 	COMP_DEBUG(c, "CREATE %p %dx%d", (void *)sc, width, height);
