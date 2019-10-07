@@ -67,6 +67,7 @@ endif()
 
 if(BUILD_DRIVER_PSVR)
 	set(PSVR_SOURCE_FILES
+		psvr/psvr_both_uvs.h
 		psvr/psvr_device.c
 		psvr/psvr_device.h
 		psvr/psvr_interface.h

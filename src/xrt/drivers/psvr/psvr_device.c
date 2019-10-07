@@ -30,6 +30,7 @@
 #include <unistd.h>
 
 #include "psvr_device.h"
+#include "psvr_both_uvs.h"
 
 
 /*
@@ -755,6 +756,14 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	psvr->base.destroy = psvr_device_destroy;
 	psvr->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
 	psvr->base.name = XRT_DEVICE_GENERIC_HMD;
+	psvr->base.hmd->distortion.models = XRT_DISTORTION_MODEL_MESHUV;
+	psvr->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_MESHUV;
+	psvr->base.hmd->distortion.mesh.data = &psvr_both_uvs[0];
+	psvr->base.hmd->distortion.mesh.stride = sizeof(float) * 4;
+	psvr->base.hmd->distortion.mesh.num_uv_channels = 1;
+	psvr->base.hmd->distortion.mesh.num_vertex =
+	    ARRAY_SIZE(psvr_both_uvs) / 4;
+
 	psvr->fusion.rot.w = 1.0f;
 
 	snprintf(psvr->base.str, XRT_DEVICE_NAME_LEN, "PS VR Headset");
@@ -794,11 +803,11 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	info.display.w_pixels = 1920;
 	info.display.h_pixels = 1080;
 	info.display.w_meters = 0.126; // from calculated specs
-	info.display.h_meters = 0.071;
-	info.lens_horizontal_separation_meters = 0.0630999878f;
-	info.lens_vertical_position_meters = 0.0394899882f;
-	info.views[0].fov = 103.57f * M_PI / 180.0f;
-	info.views[1].fov = 103.57f * M_PI / 180.0f;
+	info.display.h_meters = 0.068;
+	info.lens_horizontal_separation_meters = 0.062f;
+	info.lens_vertical_position_meters = 0.07 / 2.0f; // 94899882f;
+	info.views[0].fov = 96.0f * (M_PI / 180.0f);
+	info.views[1].fov = 96.0f * (M_PI / 180.0f);
 
 	if (!u_device_setup_split_side_by_side(&psvr->base, &info)) {
 		PSVR_ERROR(psvr, "Failed to setup basic device info");
