@@ -159,8 +159,10 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev,
 
 	// Common
 	xdev->hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
-	xdev->hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
-	xdev->hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+	if (xdev->hmd->distortion.models == 0) {
+		xdev->hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
+		xdev->hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+	}
 	xdev->hmd->screens[0].w_pixels = info->display.w_pixels;
 	xdev->hmd->screens[0].h_pixels = info->display.h_pixels;
 
