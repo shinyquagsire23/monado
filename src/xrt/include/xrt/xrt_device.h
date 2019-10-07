@@ -150,6 +150,20 @@ struct xrt_hmd_parts
 			float coefficients[2][3][3];
 		} vive;
 
+		struct
+		{
+			//! Data.
+			float *data;
+
+			//! Stride of vertices
+			size_t stride;
+
+			//! 1 or 3 for (chromatic aberration).
+			size_t num_uv_channels;
+
+			//! Number of vertices.
+			size_t num_vertex;
+		} mesh;
 	} distortion;
 };
 

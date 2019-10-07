@@ -351,15 +351,26 @@ renderer_build_command_buffer(struct comp_renderer *r,
 	vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 	vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-	comp_distortion_draw_quad(r->distortion, command_buffer, 0);
+	if (r->distortion->distortion_model == XRT_DISTORTION_MODEL_MESHUV) {
+		// Mesh distortion
+		comp_distortion_draw_mesh(r->distortion, command_buffer, 0);
+		renderer_set_viewport_scissor(scale_x, scale_y, &viewport,
+		                              &scissor,
+		                              &r->c->xdev->hmd->views[1]);
+		vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+		vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+		comp_distortion_draw_mesh(r->distortion, command_buffer, 1);
 
-
-	renderer_set_viewport_scissor(scale_x, scale_y, &viewport, &scissor,
-	                              &r->c->xdev->hmd->views[1]);
-	vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-	vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-
-	comp_distortion_draw_quad(r->distortion, command_buffer, 1);
+	} else {
+		// 'OpenHMD' fragment shader distortion
+		comp_distortion_draw_quad(r->distortion, command_buffer, 0);
+		renderer_set_viewport_scissor(scale_x, scale_y, &viewport,
+		                              &scissor,
+		                              &r->c->xdev->hmd->views[1]);
+		vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+		vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+		comp_distortion_draw_quad(r->distortion, command_buffer, 1);
+	}
 
 	vk->vkCmdEndRenderPass(command_buffer);
 
@@ -605,7 +616,8 @@ renderer_init(struct comp_renderer *r)
 
 	comp_distortion_init(r->distortion, r->c, r->render_pass,
 	                     r->pipeline_cache, r->settings->distortion_model,
-	                     r->descriptor_pool, r->settings->flip_y);
+	                     r->c->xdev->hmd, r->descriptor_pool,
+	                     r->settings->flip_y);
 
 	for (uint32_t i = 0; i < 2; i++)
 		comp_distortion_update_descriptor_set(

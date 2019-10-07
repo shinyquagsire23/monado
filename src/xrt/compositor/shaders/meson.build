@@ -1,5 +1,7 @@
 shader_srcs = [
 	'distortion.vert',
+	'mesh.frag',
+	'mesh.vert',
 	'none.frag',
 	'panotools.frag',
 	'vive.frag',

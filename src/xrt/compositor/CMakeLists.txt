@@ -3,6 +3,8 @@
 
 spirv_shaders(SHADER_HEADERS
 	shaders/distortion.vert
+	shaders/mesh.frag
+	shaders/mesh.vert
 	shaders/none.frag
 	shaders/panotools.frag
 	shaders/vive.frag

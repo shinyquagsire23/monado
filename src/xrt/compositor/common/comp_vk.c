@@ -777,6 +777,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCmdEndRenderPass            = GET_DEV_PROC(vk, vkCmdEndRenderPass);
 	vk->vkCmdBindDescriptorSets       = GET_DEV_PROC(vk, vkCmdBindDescriptorSets);
 	vk->vkCmdBindPipeline             = GET_DEV_PROC(vk, vkCmdBindPipeline);
+	vk->vkCmdBindVertexBuffers        = GET_DEV_PROC(vk, vkCmdBindVertexBuffers);
 	vk->vkCmdDraw                     = GET_DEV_PROC(vk, vkCmdDraw);
 	vk->vkEndCommandBuffer            = GET_DEV_PROC(vk, vkEndCommandBuffer);
 	vk->vkFreeCommandBuffers          = GET_DEV_PROC(vk, vkFreeCommandBuffers);

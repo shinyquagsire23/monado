@@ -131,6 +131,7 @@ struct vk_bundle
 	PFN_vkCmdEndRenderPass vkCmdEndRenderPass;
 	PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets;
 	PFN_vkCmdBindPipeline vkCmdBindPipeline;
+	PFN_vkCmdBindVertexBuffers vkCmdBindVertexBuffers;
 	PFN_vkCmdDraw vkCmdDraw;
 	PFN_vkEndCommandBuffer vkEndCommandBuffer;
 	PFN_vkFreeCommandBuffers vkFreeCommandBuffers;
