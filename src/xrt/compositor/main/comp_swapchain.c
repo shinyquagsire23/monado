@@ -97,7 +97,8 @@ create_image_fd(struct comp_compositor *c,
                 VkDeviceMemory *out_mem,
                 struct xrt_image_fd *out_image_fd)
 {
-	VkImageUsageFlags image_usage = (VkImageUsageFlags)0;
+	VkImageUsageFlags image_usage =
+	    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
 	VkImage image = VK_NULL_HANDLE;
 	VkResult ret = VK_SUCCESS;
