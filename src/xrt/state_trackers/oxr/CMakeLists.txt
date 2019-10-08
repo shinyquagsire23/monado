@@ -19,12 +19,12 @@ set(OXR_SOURCE_FILES
 	oxr_api_verify.h
 	oxr_binding.c
 	oxr_chain.h
-	oxr_event.cpp
+	oxr_event.c
 	oxr_extension_support.h
 	oxr_handle_base.c
 	oxr_input.c
 	oxr_instance.c
-	oxr_logger.cpp
+	oxr_logger.c
 	oxr_logger.h
 	oxr_objects.h
 	oxr_path.c

@@ -137,7 +137,7 @@ oxr_slog_ensure(struct oxr_sink_logger *slog, size_t extra)
 	slog->store = (char *)realloc(slog->store, slog->store_size);
 }
 
-extern "C" void
+void
 oxr_slog(struct oxr_sink_logger *slog, const char *fmt, ...)
 {
 	va_list args;
@@ -162,7 +162,7 @@ oxr_slog(struct oxr_sink_logger *slog, const char *fmt, ...)
 	slog->length += ret;
 }
 
-extern "C" void
+void
 oxr_slog_free(struct oxr_sink_logger *slog)
 {
 	free(slog->store);
@@ -170,21 +170,21 @@ oxr_slog_free(struct oxr_sink_logger *slog)
 	slog->store_size = 0;
 }
 
-extern "C" void
+void
 oxr_log_slog(struct oxr_logger *log, struct oxr_sink_logger *slog)
 {
 	oxr_log(log, "%s", slog->store);
 	oxr_slog_free(slog);
 }
 
-extern "C" void
+void
 oxr_warn_slog(struct oxr_logger *log, struct oxr_sink_logger *slog)
 {
 	oxr_warn(log, "%s", slog->store);
 	oxr_slog_free(slog);
 }
 
-extern "C" XrResult
+XrResult
 oxr_error_slog(struct oxr_logger *log,
                XrResult res,
                struct oxr_sink_logger *slog)

@@ -20,7 +20,7 @@ lib_st_oxr = static_library(
 		'oxr_handle_base.c',
 		'oxr_input.c',
 		'oxr_instance.c',
-		'oxr_logger.cpp',
+		'oxr_logger.c',
 		'oxr_logger.h',
 		'oxr_objects.h',
 		'oxr_path.c',
