@@ -9,8 +9,9 @@
  * @ingroup oxr_api
  */
 
-#include <cstdio>
-#include <cstring>
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "xrt/xrt_compiler.h"
 #include "util/u_debug.h"
@@ -57,7 +58,7 @@ contains_zero(const char *path, uint32_t size)
 	return false;
 }
 
-extern "C" XrResult
+XrResult
 oxr_verify_fixed_size_single_level_path(struct oxr_logger *log,
                                         const char *path,
                                         uint32_t array_size,
@@ -97,7 +98,7 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
-extern "C" XrResult
+XrResult
 oxr_verify_localized_name(struct oxr_logger *log,
                           const char *string,
                           uint32_t array_size,
@@ -123,15 +124,15 @@ oxr_verify_localized_name(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
-enum class State
+enum verify_state
 {
-	Start,
-	Middle,
-	Slash,
-	SlashDots,
+	VERIFY_START,
+	VERIFY_MIDDLE,
+	VERIFY_SLASH,
+	VERIFY_SLASHDOTS,
 };
 
-extern "C" XrResult
+XrResult
 oxr_verify_full_path_c(struct oxr_logger *log,
                        const char *path,
                        const char *name)
@@ -149,13 +150,13 @@ oxr_verify_full_path_c(struct oxr_logger *log,
 	return oxr_verify_full_path(log, path, (uint32_t)length, name);
 }
 
-extern "C" XrResult
+XrResult
 oxr_verify_full_path(struct oxr_logger *log,
                      const char *path,
                      size_t length,
                      const char *name)
 {
-	State state = State::Start;
+	enum verify_state state = VERIFY_START;
 	bool valid = true;
 
 	if (length >= XR_MAX_PATH_LENGTH) {
@@ -171,7 +172,7 @@ oxr_verify_full_path(struct oxr_logger *log,
 	for (uint32_t i = 0; i < length; i++) {
 		const char c = path[i];
 		switch (state) {
-		case State::Start:
+		case VERIFY_START:
 			if (c != '/') {
 				return oxr_error(log,
 				                 XR_ERROR_PATH_FORMAT_INVALID,
@@ -179,13 +180,13 @@ oxr_verify_full_path(struct oxr_logger *log,
 				                 "fowrward slash",
 				                 name);
 			}
-			state = State::Slash;
+			state = VERIFY_SLASH;
 			break;
-		case State::Slash:
+		case VERIFY_SLASH:
 			switch (c) {
 			case '.':
 				// Is valid and starts the SlashDot(s) state.
-				state = State::SlashDots;
+				state = VERIFY_SLASHDOTS;
 				break;
 			case '/':
 				return oxr_error(
@@ -193,18 +194,18 @@ oxr_verify_full_path(struct oxr_logger *log,
 				    "(%s) '//' is not a valid in a path", name);
 			default:
 				valid = valid_path_char(c);
-				state = State::Middle;
+				state = VERIFY_MIDDLE;
 			}
 			break;
-		case State::Middle:
+		case VERIFY_MIDDLE:
 			switch (c) {
-			case '/': state = State::Slash; break;
+			case '/': state = VERIFY_SLASH; break;
 			default:
 				valid = valid_path_char(c);
-				state = State::Middle;
+				state = VERIFY_MIDDLE;
 			}
 			break;
-		case State::SlashDots:
+		case VERIFY_SLASHDOTS:
 			switch (c) {
 			case '/':
 				return oxr_error(
@@ -216,7 +217,7 @@ oxr_verify_full_path(struct oxr_logger *log,
 				break;
 			default:
 				valid = valid_path_char(c);
-				state = State::Middle;
+				state = VERIFY_MIDDLE;
 			}
 			break;
 		}
@@ -234,12 +235,12 @@ oxr_verify_full_path(struct oxr_logger *log,
 	}
 
 	switch (state) {
-	case State::Start:
+	case VERIFY_START:
 		// Empty string
 		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
 		                 "(%s) a empty string is not a valid path",
 		                 name);
-	case State::Slash:
+	case VERIFY_SLASH:
 		// Is this '/foo/' or '/'
 		if (length > 1) {
 			// It was '/foo/'
@@ -249,13 +250,13 @@ oxr_verify_full_path(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
 		                 "(%s) the string '%s' is not a valid path",
 		                 name, path);
-	case State::SlashDots:
+	case VERIFY_SLASHDOTS:
 		// Does the path ends with '/..'
 		return oxr_error(
 		    log, XR_ERROR_PATH_FORMAT_INVALID,
 		    "(%s) strings ending with '/.[.]*' is not a valid", name);
 
-	case State::Middle:
+	case VERIFY_MIDDLE:
 		// '/foo/bar' okay!
 		return XR_SUCCESS;
 	default:
@@ -277,11 +278,12 @@ oxr_verify_full_path(struct oxr_logger *log,
 static XrResult
 subaction_path_no_dups(struct oxr_logger *log,
                        struct oxr_instance *inst,
-                       struct oxr_sub_paths &sub_paths,
+                       struct oxr_sub_paths *sub_paths,
                        XrPath path,
                        const char *variable,
                        uint32_t index)
 {
+	assert(sub_paths);
 	bool duplicate = false;
 
 	if (path == XR_NULL_PATH) {
@@ -292,34 +294,34 @@ subaction_path_no_dups(struct oxr_logger *log,
 	}
 
 	if (path == inst->path_cache.user) {
-		if (sub_paths.user) {
+		if (sub_paths->user) {
 			duplicate = true;
 		} else {
-			sub_paths.user = true;
+			sub_paths->user = true;
 		}
 	} else if (path == inst->path_cache.head) {
-		if (sub_paths.head) {
+		if (sub_paths->head) {
 			duplicate = true;
 		} else {
-			sub_paths.head = true;
+			sub_paths->head = true;
 		}
 	} else if (path == inst->path_cache.left) {
-		if (sub_paths.left) {
+		if (sub_paths->left) {
 			duplicate = true;
 		} else {
-			sub_paths.left = true;
+			sub_paths->left = true;
 		}
 	} else if (path == inst->path_cache.right) {
-		if (sub_paths.right) {
+		if (sub_paths->right) {
 			duplicate = true;
 		} else {
-			sub_paths.right = true;
+			sub_paths->right = true;
 		}
 	} else if (path == inst->path_cache.gamepad) {
-		if (sub_paths.gamepad) {
+		if (sub_paths->gamepad) {
 			duplicate = true;
 		} else {
-			sub_paths.gamepad = true;
+			sub_paths->gamepad = true;
 		}
 	} else {
 		const char *str = NULL;
@@ -347,19 +349,19 @@ subaction_path_no_dups(struct oxr_logger *log,
 }
 
 
-extern "C" XrResult
+XrResult
 oxr_verify_subaction_paths_create(struct oxr_logger *log,
                                   struct oxr_instance *inst,
                                   uint32_t countSubactionPaths,
                                   const XrPath *subactionPaths,
                                   const char *variable)
 {
-	struct oxr_sub_paths sub_paths = {};
+	struct oxr_sub_paths sub_paths = {0};
 
 	for (uint32_t i = 0; i < countSubactionPaths; i++) {
 		XrPath path = subactionPaths[i];
 
-		XrResult ret = subaction_path_no_dups(log, inst, sub_paths,
+		XrResult ret = subaction_path_no_dups(log, inst, &sub_paths,
 		                                      path, variable, i);
 		if (ret != XR_SUCCESS) {
 			return ret;
@@ -369,7 +371,7 @@ oxr_verify_subaction_paths_create(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
-extern "C" XrResult
+XrResult
 oxr_verify_subaction_path_sync(struct oxr_logger *log,
                                struct oxr_instance *inst,
                                XrPath path,
@@ -391,7 +393,7 @@ oxr_verify_subaction_path_sync(struct oxr_logger *log,
 	                 index, str);
 }
 
-extern "C" XrResult
+XrResult
 oxr_verify_subaction_path_get(struct oxr_logger *log,
                               struct oxr_instance *inst,
                               XrPath path,
@@ -399,7 +401,7 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
                               struct oxr_sub_paths *out_sub_paths,
                               const char *variable)
 {
-	struct oxr_sub_paths sub_paths = {};
+	struct oxr_sub_paths sub_paths = {0};
 
 	if (path == XR_NULL_PATH) {
 		sub_paths.any = true;
@@ -452,7 +454,7 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
  *
  */
 
-extern "C" XrResult
+XrResult
 oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
                                const struct oxr_instance *inst,
                                const XrSessionCreateInfo *createInfo)
@@ -517,7 +519,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 
 #ifdef XR_USE_PLATFORM_XLIB
 
-extern "C" XrResult
+XrResult
 oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
     struct oxr_logger *log, const XrGraphicsBindingOpenGLXlibKHR *next)
 {
@@ -534,7 +536,7 @@ oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
 
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 
-extern "C" XrResult
+XrResult
 oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *log,
                                       const XrGraphicsBindingVulkanKHR *next)
 {

@@ -37,7 +37,7 @@ set(OXR_SOURCE_FILES
 	oxr_swapchain_vk.c
 	oxr_system.c
 	oxr_two_call.h
-	oxr_verify.cpp
+	oxr_verify.c
 	oxr_vulkan.c
 	oxr_xdev.c
 	)
