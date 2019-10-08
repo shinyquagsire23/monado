@@ -791,7 +791,7 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	 */
 
 	struct u_device_simple_info info;
-	info.display.w_pixels = 1980;
+	info.display.w_pixels = 1920;
 	info.display.h_pixels = 1080;
 	info.display.w_meters = 0.126; // from calculated specs
 	info.display.h_meters = 0.071;
