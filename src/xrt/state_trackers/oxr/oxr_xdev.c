@@ -91,7 +91,7 @@ oxr_xdev_get_pose_at(struct oxr_logger *log,
 	                       &relation);
 
 	// Add in the offset from the tracking system.
-	math_relation_accumulate_transform(offset, &relation);
+	math_relation_apply_offset(offset, &relation);
 
 	// clang-format off
 	bool valid_pos = (relation.relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0;

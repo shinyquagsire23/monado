@@ -262,8 +262,8 @@ math_relation_reset(struct xrt_space_relation *out);
  * @ingroup aux_math
  */
 void
-math_relation_accumulate_transform(const struct xrt_pose *transform,
-                                   struct xrt_space_relation *in_out_relation);
+math_relation_apply_offset(const struct xrt_pose *offset,
+                           struct xrt_space_relation *in_out_relation);
 
 /*!
  * Apply another step of space relation on top of an existing relation.

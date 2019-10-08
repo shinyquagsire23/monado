@@ -283,12 +283,19 @@ MAKE_REL_FLAG_CHECK(has_some_derivative,
 
 #endif // !XRT_DOXYGEN
 
+enum accumulate_pose_flags
+{
+	OFFSET,
+	LEGACY,
+};
+
 /*!
  * Apply a transform to a space relation.
  */
 static inline void
 transform_accumulate_pose(const xrt_pose &transform,
                           xrt_space_relation &relation,
+                          enum accumulate_pose_flags accum_flags,
                           bool do_translation = true,
                           bool do_rotation = true)
 {
@@ -314,8 +321,14 @@ transform_accumulate_pose(const xrt_pose &transform,
 			    Eigen::Quaternionf::Identity();
 		}
 
-		math_pose_transform(&transform, &in_out_relation->pose,
-		                    &in_out_relation->pose);
+		//! @todo This is just a big hack.
+		if (accum_flags == OFFSET) {
+			math_pose_transform(&transform, &in_out_relation->pose,
+			                    &in_out_relation->pose);
+		} else {
+			math_pose_transform(&in_out_relation->pose, &transform,
+			                    &in_out_relation->pose);
+		}
 	}
 
 	if (do_rotation && has_some_derivative(flags)) {
@@ -370,14 +383,25 @@ math_relation_reset(struct xrt_space_relation *out)
 }
 
 extern "C" void
-math_relation_accumulate_transform(const struct xrt_pose *transform,
-                                   struct xrt_space_relation *in_out_relation)
+math_relation_apply_offset(const struct xrt_pose *offset,
+                           struct xrt_space_relation *in_out_relation)
+{
+	assert(offset != nullptr);
+	assert(in_out_relation != nullptr);
+
+	// No modifying the validity flags here.
+	transform_accumulate_pose(*offset, *in_out_relation, OFFSET);
+}
+
+void
+accumulate_transform(const struct xrt_pose *transform,
+                     struct xrt_space_relation *in_out_relation)
 {
 	assert(transform != nullptr);
 	assert(in_out_relation != nullptr);
 
 	// No modifying the validity flags here.
-	transform_accumulate_pose(*transform, *in_out_relation);
+	transform_accumulate_pose(*transform, *in_out_relation, LEGACY);
 }
 
 extern "C" void
@@ -397,9 +421,9 @@ math_relation_accumulate_relation(
 	if (has_some_pose_component(flags)) {
 		// First, just do the pose part (including rotating
 		// derivatives, if applicable).
-		transform_accumulate_pose(additional_relation->pose,
-		                          *in_out_relation, has_position(flags),
-		                          has_orientation(flags));
+		transform_accumulate_pose(
+		    additional_relation->pose, *in_out_relation, LEGACY,
+		    has_position(flags), has_orientation(flags));
 	}
 
 	// Then, accumulate the derivatives, if required.
@@ -449,7 +473,7 @@ math_relation_openxr_locate(const struct xrt_pose *space_pose,
 	                                  &accumulating_relation);
 
 	// Apply the space pose.
-	math_relation_accumulate_transform(&spc, &accumulating_relation);
+	accumulate_transform(&spc, &accumulating_relation);
 
 	*result = accumulating_relation;
 }
