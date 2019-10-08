@@ -141,6 +141,12 @@ oxr_poll_event(struct oxr_logger *log,
                struct oxr_instance *inst,
                XrEventDataBuffer *eventData)
 {
+	struct oxr_session *sess = inst->sessions;
+	while (sess) {
+		oxr_session_poll(sess);
+		sess = sess->next;
+	}
+
 	lock(inst);
 	auto event = pop(inst);
 	unlock(inst);

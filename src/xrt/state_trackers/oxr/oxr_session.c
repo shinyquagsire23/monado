@@ -147,6 +147,13 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 	return XR_SUCCESS;
 }
 
+void
+oxr_session_poll(struct oxr_session *sess)
+{
+	struct xrt_compositor *xc = sess->compositor;
+	(void)xc; // TODO: dispatch to compositor
+}
+
 
 XrResult
 oxr_session_get_view_pose_at(struct oxr_logger *log,

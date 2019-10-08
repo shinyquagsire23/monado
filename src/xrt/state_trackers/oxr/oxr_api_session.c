@@ -31,7 +31,7 @@ oxr_xrCreateSession(XrInstance instance,
 {
 	XrResult ret;
 	struct oxr_instance *inst;
-	struct oxr_session *sess;
+	struct oxr_session *sess, **link;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrCreateSession");
@@ -48,16 +48,32 @@ oxr_xrCreateSession(XrInstance instance,
 
 	*out_session = oxr_session_to_openxr(sess);
 
+	/* Add to session list */
+	link = &inst->sessions;
+	while (*link) {
+		link = &(*link)->next;
+	}
+	*link = sess;
+
 	return XR_SUCCESS;
 }
 
 XrResult
 oxr_xrDestroySession(XrSession session)
 {
-	struct oxr_session *sess;
+	struct oxr_session *sess, **link;
+	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrDestroySession");
+
+	/* Remove from session list */
+	inst = sess->sys->inst;
+	link = &inst->sessions;
+	while (*link != sess) {
+		link = &(*link)->next;
+	}
+	*link = sess->next;
 
 	return oxr_handle_destroy(&log, &sess->handle);
 }

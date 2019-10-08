@@ -441,6 +441,9 @@ oxr_session_begin(struct oxr_logger *log,
 XrResult
 oxr_session_end(struct oxr_logger *log, struct oxr_session *sess);
 
+void
+oxr_session_poll(struct oxr_session *sess);
+
 /*!
  * Get the view space position at the given time in relation to the
  * local or stage space.
@@ -876,6 +879,7 @@ struct oxr_instance
 	struct oxr_interaction_profile **profiles;
 	size_t num_profiles;
 
+	struct oxr_session *sessions;
 
 	struct
 	{
@@ -912,6 +916,8 @@ struct oxr_session
 	struct oxr_handle_base handle;
 	struct oxr_system *sys;
 	struct xrt_compositor *compositor;
+
+	struct oxr_session *next;
 
 	XrSessionState state;
 	bool frame_started;
