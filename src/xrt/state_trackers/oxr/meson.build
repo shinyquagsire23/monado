@@ -15,7 +15,7 @@ lib_st_oxr = static_library(
 		'oxr_api_verify.h',
 		'oxr_binding.c',
 		'oxr_chain.h',
-		'oxr_event.cpp',
+		'oxr_event.c',
 		'oxr_extension_support.h',
 		'oxr_handle_base.c',
 		'oxr_input.c',

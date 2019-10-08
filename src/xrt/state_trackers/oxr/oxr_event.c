@@ -7,9 +7,9 @@
  * @ingroup oxr_main
  */
 
-#include <cstdio>
-#include <cstring>
-#include <cstdlib>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "util/u_misc.h"
 
@@ -20,18 +20,9 @@
 
 struct oxr_event
 {
-public:
 	struct oxr_event *next;
 	size_t length;
 	XrResult result;
-
-
-public:
-	inline void *
-	ptr()
-	{
-		return &this[1];
-	}
 };
 
 
@@ -43,10 +34,16 @@ void
 unlock(struct oxr_instance *inst)
 {}
 
+void *
+oxr_event_extra(struct oxr_event *event)
+{
+	return &event[1];
+}
+
 struct oxr_event *
 pop(struct oxr_instance *inst)
 {
-	auto ret = inst->next_event;
+	struct oxr_event *ret = inst->next_event;
 	if (ret == NULL) {
 		return NULL;
 	}
@@ -64,7 +61,7 @@ pop(struct oxr_instance *inst)
 void
 push(struct oxr_instance *inst, struct oxr_event *event)
 {
-	auto last = inst->last_event;
+	struct oxr_event *last = inst->last_event;
 	if (last != NULL) {
 		last->next = event;
 	}
@@ -82,7 +79,7 @@ push(struct oxr_instance *inst, struct oxr_event *event)
 		if (ret != XR_SUCCESS) {                                       \
 			return ret;                                            \
 		}                                                              \
-		*extra = (typeof(*extra))(*event)->ptr();                      \
+		*((void **)extra) = oxr_event_extra(*event);                   \
 	} while (false)
 
 static XrResult
@@ -148,14 +145,14 @@ oxr_poll_event(struct oxr_logger *log,
 	}
 
 	lock(inst);
-	auto event = pop(inst);
+	struct oxr_event *event = pop(inst);
 	unlock(inst);
 
 	if (event == NULL) {
 		return XR_EVENT_UNAVAILABLE;
 	}
 
-	memcpy(eventData, event->ptr(), event->length);
+	memcpy(eventData, oxr_event_extra(event), event->length);
 	free(event);
 
 	return event->result;
