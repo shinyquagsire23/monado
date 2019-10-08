@@ -880,7 +880,20 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->rot_filtered.w = 1.0f;
 	d->variant = variant;
 
-	snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Vive-family Device");
+	switch (variant) {
+	case VIVE_VARIANT_VIVE:
+		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive");
+		break;
+	case VIVE_VARIANT_PRO:
+		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro");
+		break;
+	case VIVE_VARIANT_INDEX:
+		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Valve Index");
+		break;
+	default:
+		snprintf(d->base.str, XRT_DEVICE_NAME_LEN,
+		         "Unknown Vive device");
+	}
 
 	if (d->mainboard_dev) {
 		vive_mainboard_power_on(d);
