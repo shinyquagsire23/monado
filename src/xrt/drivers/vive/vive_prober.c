@@ -17,6 +17,8 @@
 
 static const char VIVE_PRODUCT_STRING[] = "HTC Vive";
 static const char VIVE_PRO_PRODUCT_STRING[] = "VIVE Pro";
+static const char VALVE_INDEX_PRODUCT_STRING[] = "Index HMD";
+static const char VALVE_INDEX_MANUFACTURER_STRING[] = "Valve";
 static const char VIVE_MANUFACTURER_STRING[] = "HTC";
 
 DEBUG_GET_ONCE_BOOL_OPTION(vive_debug, "VIVE_PRINT_DEBUG", false)
@@ -178,6 +180,43 @@ init_vive_pro(struct xrt_prober *xp,
 	return 1;
 }
 
+static int
+init_valve_index(struct xrt_prober *xp,
+                 struct xrt_prober_device *dev,
+                 struct xrt_prober_device **devices,
+                 size_t num_devices,
+                 bool print_debug,
+                 struct xrt_device **out_xdev)
+{
+	if (print_debug)
+		_print_device_info(xp, dev);
+
+	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER,
+	                             VALVE_INDEX_MANUFACTURER_STRING) ||
+	    !xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT,
+	                             VALVE_INDEX_PRODUCT_STRING)) {
+		if (print_debug)
+			printf(
+			    "Valve Index manufactuer string did not match.\n");
+		return -1;
+	}
+
+	struct os_hid_device *sensors_dev = NULL;
+	int result = xrt_prober_open_hid_interface(xp, dev, 0, &sensors_dev);
+	if (result != 0) {
+		VIVE_ERROR("Could not open Index sensors device.");
+		return -1;
+	}
+	struct vive_device *d =
+	    vive_device_create(NULL, sensors_dev, VIVE_VARIANT_INDEX);
+	if (d == NULL) {
+		return -1;
+	}
+
+	*out_xdev = &d->base;
+
+	return 1;
+}
 
 int
 vive_found(struct xrt_prober *xp,
@@ -205,6 +244,9 @@ vive_found(struct xrt_prober *xp,
 	case VIVE_PRO_MAINBOARD_PID:
 		return init_vive_pro(xp, dev, devices, num_devices, print_debug,
 		                     out_xdev);
+	case VIVE_PRO_LHR_PID:
+		return init_valve_index(xp, dev, devices, num_devices,
+		                        print_debug, out_xdev);
 	default:
 		VIVE_ERROR("No product ids matched %.4x\n", dev->product_id);
 		return -1;

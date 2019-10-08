@@ -45,7 +45,8 @@ static void
 vive_device_destroy(struct xrt_device *xdev)
 {
 	struct vive_device *d = vive_device(xdev);
-	vive_mainboard_power_off(d);
+	if (d->mainboard_dev)
+		vive_mainboard_power_off(d);
 
 	// Destroy the thread object.
 	os_thread_helper_destroy(&d->sensors_thread);
@@ -346,6 +347,13 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 			// flip y axis
 			angular_velocity.y = -angular_velocity.y;
 			break;
+		case VIVE_VARIANT_INDEX: {
+			struct xrt_vec3 angular_velocity_fixed;
+			angular_velocity_fixed.x = angular_velocity.y;
+			angular_velocity_fixed.y = angular_velocity.x;
+			angular_velocity_fixed.z = angular_velocity.z;
+			angular_velocity = angular_velocity_fixed;
+		} break;
 		default: VIVE_ERROR("Unhandled Vive variant\n"); return;
 		}
 
@@ -467,8 +475,12 @@ vive_sensros_get_imu_range_report(struct vive_device *d)
 	int ret;
 	ret = os_hid_get_feature(d->sensors_dev, report.id, (uint8_t *)&report,
 	                         sizeof(report));
-	if (ret < 0)
+	if (ret < 0) {
+		printf("Could not get range report!\n");
+		d->imu.gyro_range = 8.726646f;
+		d->imu.acc_range = 39.226600f;
 		return ret;
+	}
 
 	if (!report.gyro_range || !report.accel_range) {
 		VIVE_ERROR(
@@ -585,7 +597,8 @@ _get_color_coeffs(struct xrt_hmd_parts *hmd,
                   uint8_t eye,
                   uint8_t channel)
 {
-	assert(coeffs->length == 8);
+	// this is 4 on index, all values populated
+	// assert(coeffs->length == 8);
 	// only 3 coeffs contain values
 	for (int i = 0; i < 3; i++) {
 		const nx_json *item = nx_json_item(coeffs, i);
@@ -666,25 +679,41 @@ vive_parse_config(struct vive_device *d, char *json_string)
 			_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
 			_json_get_vec3(imu, "gyro_scale", &d->imu.gyro_scale);
 		} break;
+		case VIVE_VARIANT_INDEX: {
+			const nx_json *imu = nx_json_get(json, "imu");
+			_json_get_vec3(imu, "acc_bias", &d->imu.acc_bias);
+			_json_get_vec3(imu, "acc_scale", &d->imu.acc_scale);
+			_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
+			d->imu.gyro_scale.x = 1.0f;
+			d->imu.gyro_scale.y = 1.0f;
+			d->imu.gyro_scale.z = 1.0f;
+		} break;
 		default: VIVE_ERROR("Unknown Vive variant.\n"); return false;
 		}
 
 		d->firmware.model_number =
 		    _json_get_string(json, "model_number");
-		d->firmware.mb_serial_number =
-		    _json_get_string(json, "mb_serial_number");
-		d->display.lens_separation =
-		    _json_get_double(json, "lens_separation");
+		if (d->variant != VIVE_VARIANT_INDEX) {
+			d->firmware.mb_serial_number =
+			    _json_get_string(json, "mb_serial_number");
+			d->display.lens_separation =
+			    _json_get_double(json, "lens_separation");
+		}
 		d->firmware.device_serial_number =
 		    _json_get_string(json, "device_serial_number");
 
 		const nx_json *device_json = nx_json_get(json, "device");
 		if (device_json) {
-			d->display.persistence =
-			    _json_get_double(device_json, "persistence");
-			d->base.hmd->distortion.vive.aspect_x_over_y =
-			    _json_get_float(device_json,
-			                    "physical_aspect_x_over_y");
+			if (d->variant != VIVE_VARIANT_INDEX) {
+				d->display.persistence = _json_get_double(
+				    device_json, "persistence");
+				d->base.hmd->distortion.vive.aspect_x_over_y =
+				    _json_get_float(device_json,
+				                    "physical_aspect_x_over_y");
+			} else {
+				d->base.hmd->distortion.vive.aspect_x_over_y =
+				    0.89999997615814209f;
+			}
 			d->display.eye_target_height_in_pixels =
 			    (uint16_t)_json_get_int(
 			        device_json, "eye_target_height_in_pixels");
@@ -853,8 +882,10 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 
 	snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Vive-family Device");
 
-	vive_mainboard_power_on(d);
-	vive_mainboard_get_device_info(d);
+	if (d->mainboard_dev) {
+		vive_mainboard_power_on(d);
+		vive_mainboard_get_device_info(d);
+	}
 	vive_sensors_read_firmware(d);
 	vive_sensros_get_imu_range_report(d);
 
@@ -876,8 +907,13 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	// Main display.
 	d->base.hmd->screens[0].w_pixels = (int)w_pixels * 2;
 	d->base.hmd->screens[0].h_pixels = (int)h_pixels;
-	d->base.hmd->screens[0].nominal_frame_interval_ns =
-	    (uint64_t)time_s_to_ns(1.0f / 90.0f);
+
+	if (d->variant == VIVE_VARIANT_INDEX)
+		d->base.hmd->screens[0].nominal_frame_interval_ns =
+		    (uint64_t)time_s_to_ns(1.0f / 144.0f);
+	else
+		d->base.hmd->screens[0].nominal_frame_interval_ns =
+		    (uint64_t)time_s_to_ns(1.0f / 90.0f);
 
 	for (uint8_t eye = 0; eye < 2; eye++) {
 		struct xrt_view *v = &d->base.hmd->views[eye];
@@ -920,12 +956,15 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
 
 	int ret;
-	ret = os_thread_helper_start(&d->mainboard_thread,
-	                             vive_mainboard_run_thread, d);
-	if (ret != 0) {
-		VIVE_ERROR("Failed to start mainboard thread!");
-		vive_device_destroy((struct xrt_device *)d);
-		return NULL;
+
+	if (d->mainboard_dev) {
+		ret = os_thread_helper_start(&d->mainboard_thread,
+		                             vive_mainboard_run_thread, d);
+		if (ret != 0) {
+			VIVE_ERROR("Failed to start mainboard thread!");
+			vive_device_destroy((struct xrt_device *)d);
+			return NULL;
+		}
 	}
 
 	ret = os_thread_helper_start(&d->sensors_thread,
