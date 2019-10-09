@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "gui_common.h"
+#include "gui/gui_common.h"
 #include <SDL2/SDL.h>
 
 /*!

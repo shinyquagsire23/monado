@@ -9,40 +9,18 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/../../auxiliary
 	${CMAKE_CURRENT_SOURCE_DIR}/../../include
 	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
+	${CMAKE_CURRENT_SOURCE_DIR}/../../state_trackers
 	${CMAKE_CURRENT_SOURCE_DIR}/../../../external
 	${SDL2_INCLUDE_DIRS}
 	)
 
 set(SOURCE_FILES
-	gui_common.h
-	gui_imgui.h
-	gui_ogl.c
-	gui_prober.c
-	gui_scene.cpp
-	gui_scene_calibrate.c
-	gui_scene_debug.c
-	gui_scene_main_menu.c
-	gui_scene_video.c
 	gui_sdl2.c
 	gui_sdl2_imgui.c
 	gui_sdl2_main.c
 	gui_sdl2_prober.c
-	../../../external/imgui/cimgui.cpp
-	../../../external/imgui/cimgui.h
-	../../../external/imgui/imconfig.h
-	../../../external/imgui/imgui.cpp
-	../../../external/imgui/imgui.h
-	../../../external/imgui/imgui_demo.cpp
-	../../../external/imgui/imgui_draw.cpp
-	../../../external/imgui/imgui_impl_opengl3.cpp
-	../../../external/imgui/imgui_impl_opengl3.h
 	../../../external/imgui/imgui_impl_sdl.cpp
 	../../../external/imgui/imgui_impl_sdl.h
-	../../../external/imgui/imgui_internal.h
-	../../../external/imgui/imgui_widgets.cpp
-	../../../external/imgui/imstb_rectpack.h
-	../../../external/imgui/imstb_textedit.h
-	../../../external/imgui/imstb_truetype.h
 	)
 
 add_executable(gui
@@ -51,6 +29,7 @@ add_executable(gui
 	$<TARGET_OBJECTS:aux_ogl>
 	$<TARGET_OBJECTS:aux_util>
 	$<TARGET_OBJECTS:aux_math>
+	$<TARGET_OBJECTS:st_gui>
 	$<TARGET_OBJECTS:st_prober>
 	$<TARGET_OBJECTS:target_lists>
 	)

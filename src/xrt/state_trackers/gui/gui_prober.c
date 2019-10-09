@@ -6,8 +6,8 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
+#include "xrt/xrt_prober.h"
 #include "util/u_time.h"
-#include "target_lists.h"
 #include "gui_common.h"
 
 
