@@ -9,9 +9,9 @@
 
 #include "xrt/xrt_frame.h"
 #include "util/u_misc.h"
+#include "ogl/ogl_api.h"
 
 #include "gui_common.h"
-#include "glad/gl.h"
 
 #include <pthread.h>
 

@@ -7,8 +7,8 @@
  * @ingroup gui
  */
 
+#include "ogl/ogl_api.h"
 #include "gui_sdl2.h"
-#include "glad/gl.h"
 
 
 /*

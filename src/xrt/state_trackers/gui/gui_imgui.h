@@ -11,4 +11,3 @@
 
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "imgui/cimgui.h"
-#include "glad/gl.h"

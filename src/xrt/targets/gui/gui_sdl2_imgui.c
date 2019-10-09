@@ -13,7 +13,9 @@
 #include "util/u_sink.h"
 #include "util/u_format.h"
 
+#include "ogl/ogl_api.h"
 #include "gui/gui_imgui.h"
+
 #include "gui_sdl2.h"
 
 
