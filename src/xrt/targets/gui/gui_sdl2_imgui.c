@@ -13,9 +13,7 @@
 #include "util/u_sink.h"
 #include "util/u_format.h"
 
-#include "xrt/xrt_prober.h"
-
-#include "gui_common.h"
+#include "gui_sdl2.h"
 #include "gui_imgui.h"
 
 
@@ -44,7 +42,7 @@ struct gui_imgui
  */
 
 void
-gui_imgui_loop(struct program *p)
+gui_sdl2_imgui_loop(struct sdl2_program *p)
 {
 	// Need to call this before any other Imgui call.
 	igCreateContext(NULL);
@@ -67,22 +65,22 @@ gui_imgui_loop(struct program *p)
 	u_var_add_root(&gui, "GUI Control", false);
 	u_var_add_rgb_f32(&gui, &gui.clear, "Clear Colour");
 	u_var_add_bool(&gui, &gui.show_demo_window, "Demo Window");
-	u_var_add_bool(&gui, &p->stopped, "Exit");
+	u_var_add_bool(&gui, &p->base.stopped, "Exit");
 
-	while (!p->stopped) {
+	while (!p->base.stopped) {
 		SDL_Event event;
 
 		while (SDL_PollEvent(&event)) {
 			igImGui_ImplSDL2_ProcessEvent(&event);
 
 			if (event.type == SDL_QUIT) {
-				p->stopped = true;
+				p->base.stopped = true;
 			}
 
 			if (event.type == SDL_WINDOWEVENT &&
 			    event.window.event == SDL_WINDOWEVENT_CLOSE &&
 			    event.window.windowID == SDL_GetWindowID(p->win)) {
-				p->stopped = true;
+				p->base.stopped = true;
 			}
 		}
 
@@ -94,7 +92,7 @@ gui_imgui_loop(struct program *p)
 		igNewFrame();
 
 		// Render the scene into it.
-		gui_scene_manager_render(p);
+		gui_scene_manager_render(&p->base);
 
 		// Handle this here.
 		if (gui.show_demo_window) {
@@ -114,7 +112,7 @@ gui_imgui_loop(struct program *p)
 
 		SDL_GL_SwapWindow(p->win);
 
-		gui_prober_update(p);
+		gui_prober_update(&p->base);
 	}
 
 	// Cleanup

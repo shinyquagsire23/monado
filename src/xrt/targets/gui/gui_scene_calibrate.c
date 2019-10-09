@@ -76,7 +76,7 @@ draw_texture(struct gui_ogl_texture *tex, bool header)
 }
 
 static void
-scene_render_video(struct gui_scene *scene, struct program *p)
+scene_render_video(struct gui_scene *scene, struct gui_program *p)
 {
 	struct calibration_scene *cs = (struct calibration_scene *)scene;
 
@@ -100,7 +100,7 @@ scene_render_video(struct gui_scene *scene, struct program *p)
 }
 
 static void
-scene_render_select(struct gui_scene *scene, struct program *p)
+scene_render_select(struct gui_scene *scene, struct gui_program *p)
 {
 	struct calibration_scene *cs = (struct calibration_scene *)scene;
 
@@ -151,7 +151,7 @@ scene_render_select(struct gui_scene *scene, struct program *p)
 }
 
 static void
-scene_destroy(struct gui_scene *scene, struct program *p)
+scene_destroy(struct gui_scene *scene, struct gui_program *p)
 {
 	struct calibration_scene *cs = (struct calibration_scene *)scene;
 
@@ -171,7 +171,7 @@ scene_destroy(struct gui_scene *scene, struct program *p)
  */
 
 void
-gui_scene_calibrate(struct program *p,
+gui_scene_calibrate(struct gui_program *p,
                     struct xrt_frame_context *xfctx,
                     struct xrt_fs *xfs,
                     size_t mode)

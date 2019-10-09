@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include "xrt/xrt_frame.h"
-#include <SDL2/SDL.h>
+#include "xrt/xrt_compiler.h"
+
 
 /*!
  * @defgroup gui GUI Config Interface
@@ -19,43 +19,31 @@
  * @brief Small GUI interface to configure Monado based on SDL2.
  */
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define NUM_XDEVS 8
+
 struct xrt_device;
 struct xrt_prober;
 struct xrt_fs;
+struct xrt_frame_sink;
 struct xrt_frame_context;
 struct time_state;
 struct gui_scene_manager;
 
+
 /*!
- * Common struct holding state for the GUI interface.
+ * A gui program.
  *
  * @ingroup gui
  */
-struct program
+struct gui_program
 {
-	SDL_Window *win;
-	SDL_GLContext ctx;
-
 	bool stopped;
-	bool initialized;
 
 	struct gui_scene_manager *gsm;
-
-	struct
-	{
-		SDL_Surface *sf;
-		uint8_t *buffer;
-		size_t stride;
-		uint32_t width;
-		uint32_t height;
-		bool own_buffer;
-	} blit;
 
 	struct time_state *timekeeping;
 	struct xrt_device *xdevs[NUM_XDEVS];
@@ -70,8 +58,8 @@ struct program
  */
 struct gui_scene
 {
-	void (*render)(struct gui_scene *, struct program *);
-	void (*destroy)(struct gui_scene *, struct program *);
+	void (*render)(struct gui_scene *, struct gui_program *);
+	void (*destroy)(struct gui_scene *, struct gui_program *);
 };
 
 /*!
@@ -92,57 +80,12 @@ struct gui_ogl_texture
 };
 
 /*!
- * Init SDL2, create and show a window and bring up any other structs needed.
- *
- * @ingroup gui
- */
-int
-gui_sdl2_init(struct program *p);
-
-/*!
- * Loop until user request quit and show Imgui interface.
- *
- * @ingroup gui
- */
-void
-gui_imgui_loop(struct program *p);
-
-/*!
- * Loop until quit signal has been received.
- *
- * @ingroup gui
- */
-void
-gui_sdl2_loop(struct program *p);
-
-/*!
- * Display a 24bit RGB image on the screen.
- *
- * @ingroup gui
- */
-void
-gui_sdl2_display_R8G8B8(struct program *p,
-                        bool resize,
-                        uint32_t width,
-                        uint32_t height,
-                        size_t stride,
-                        void *data);
-
-/*!
- * Destroy all SDL things and quit SDL.
- *
- * @ingroup gui
- */
-void
-gui_sdl2_quit(struct program *p);
-
-/*!
  * Initialize the prober and open all devices found.
  *
  * @ingroup gui
  */
 int
-gui_prober_init(struct program *p);
+gui_prober_init(struct gui_program *p);
 
 /*!
  * Create devices.
@@ -150,7 +93,7 @@ gui_prober_init(struct program *p);
  * @ingroup gui
  */
 int
-gui_prober_select(struct program *p);
+gui_prober_select(struct gui_program *p);
 
 /*!
  * Update all devices.
@@ -158,7 +101,7 @@ gui_prober_select(struct program *p);
  * @ingroup gui
  */
 void
-gui_prober_update(struct program *p);
+gui_prober_update(struct gui_program *p);
 
 /*!
  * Destroy all opened devices and destroy the prober.
@@ -166,7 +109,7 @@ gui_prober_update(struct program *p);
  * @ingroup gui
  */
 void
-gui_prober_teardown(struct program *p);
+gui_prober_teardown(struct gui_program *p);
 
 /*!
  * Create a sink that will turn frames into OpenGL textures, since the frame
@@ -195,7 +138,7 @@ gui_ogl_sink_update(struct gui_ogl_texture *);
  * @ingroup gui
  */
 void
-gui_scene_push_front(struct program *p, struct gui_scene *me);
+gui_scene_push_front(struct gui_program *p, struct gui_scene *me);
 
 /*!
  * Put a scene on the delete list, also removes it from any other list.
@@ -203,7 +146,7 @@ gui_scene_push_front(struct program *p, struct gui_scene *me);
  * @ingroup gui
  */
 void
-gui_scene_delete_me(struct program *p, struct gui_scene *me);
+gui_scene_delete_me(struct gui_program *p, struct gui_scene *me);
 
 /*!
  * Render the scenes.
@@ -211,7 +154,7 @@ gui_scene_delete_me(struct program *p, struct gui_scene *me);
  * @ingroup gui
  */
 void
-gui_scene_manager_render(struct program *p);
+gui_scene_manager_render(struct gui_program *p);
 
 /*!
  * Initialize the scene manager.
@@ -219,7 +162,7 @@ gui_scene_manager_render(struct program *p);
  * @ingroup gui
  */
 void
-gui_scene_manager_init(struct program *p);
+gui_scene_manager_init(struct gui_program *p);
 
 /*!
  * Destroy the scene manager.
@@ -227,7 +170,7 @@ gui_scene_manager_init(struct program *p);
  * @ingroup gui
  */
 void
-gui_scene_manager_destroy(struct program *p);
+gui_scene_manager_destroy(struct gui_program *p);
 
 
 /*
@@ -242,7 +185,7 @@ gui_scene_manager_destroy(struct program *p);
  * @ingroup gui
  */
 void
-gui_scene_main_menu(struct program *p);
+gui_scene_main_menu(struct gui_program *p);
 
 /*!
  * Shows a UI that lets you select a video device and mode for calibration.
@@ -250,7 +193,7 @@ gui_scene_main_menu(struct program *p);
  * @ingroup gui
  */
 void
-gui_scene_select_video_calibrate(struct program *p);
+gui_scene_select_video_calibrate(struct gui_program *p);
 
 /*!
  * Shows a UI that lets you select a video device and mode for testing.
@@ -258,7 +201,7 @@ gui_scene_select_video_calibrate(struct program *p);
  * @ingroup gui
  */
 void
-gui_scene_select_video_test(struct program *p);
+gui_scene_select_video_test(struct gui_program *p);
 
 /*!
  * Regular debug UI.
@@ -266,7 +209,7 @@ gui_scene_select_video_test(struct program *p);
  * @ingroup gui
  */
 void
-gui_scene_debug(struct program *p);
+gui_scene_debug(struct gui_program *p);
 
 /*!
  * Given the frameserver runs some debug code on it.
@@ -274,7 +217,7 @@ gui_scene_debug(struct program *p);
  * @ingroup gui
  */
 void
-gui_scene_debug_video(struct program *p,
+gui_scene_debug_video(struct gui_program *p,
                       struct xrt_frame_context *xfctx,
                       struct xrt_fs *xfs,
                       size_t mode);
@@ -285,7 +228,7 @@ gui_scene_debug_video(struct program *p,
  * @ingroup gui
  */
 void
-gui_scene_calibrate(struct program *p,
+gui_scene_calibrate(struct gui_program *p,
                     struct xrt_frame_context *xfctx,
                     struct xrt_fs *xfs,
                     size_t mode);

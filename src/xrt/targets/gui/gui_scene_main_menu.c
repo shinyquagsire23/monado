@@ -21,7 +21,7 @@ struct main_menu
 };
 
 static void
-scene_render(struct gui_scene *scene, struct program *p)
+scene_render(struct gui_scene *scene, struct gui_program *p)
 {
 	igBegin("Main Menu", NULL, 0);
 
@@ -50,7 +50,7 @@ scene_render(struct gui_scene *scene, struct program *p)
 }
 
 static void
-scene_destroy(struct gui_scene *scene, struct program *p)
+scene_destroy(struct gui_scene *scene, struct gui_program *p)
 {
 	free(scene);
 }
@@ -63,7 +63,7 @@ scene_destroy(struct gui_scene *scene, struct program *p)
  */
 
 void
-gui_scene_main_menu(struct program *p)
+gui_scene_main_menu(struct gui_program *p)
 {
 	struct main_menu *mm = U_TYPED_CALLOC(struct main_menu);
 

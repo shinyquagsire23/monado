@@ -8,13 +8,13 @@
  */
 
 #include "util/u_var.h"
-#include "gui_common.h"
+#include "gui_sdl2.h"
 
 
 int
 main(int argc, char **argv)
 {
-	struct program p = {0};
+	struct sdl2_program p = {0};
 	int ret;
 
 	// Need to do this as early as possible.
@@ -27,28 +27,28 @@ main(int argc, char **argv)
 	}
 
 	// To manage the scenes.
-	gui_scene_manager_init(&p);
+	gui_scene_manager_init(&p.base);
 
 	// Start all of the devices.
-	gui_prober_init(&p);
+	gui_prober_init(&p.base);
 
 	// First scene to start with.
 	if (argc >= 2 && strcmp("debug", argv[1]) == 0) {
-		gui_scene_debug(&p);
+		gui_scene_debug(&p.base);
 	} else if (argc >= 2 && strcmp("calibrate", argv[1]) == 0) {
-		gui_scene_select_video_calibrate(&p);
+		gui_scene_select_video_calibrate(&p.base);
 	} else {
-		gui_scene_main_menu(&p);
+		gui_scene_main_menu(&p.base);
 	}
 
 	// Main loop.
-	gui_imgui_loop(&p);
+	gui_sdl2_imgui_loop(&p);
 
 	// Clean up after us.
-	gui_prober_teardown(&p);
+	gui_prober_teardown(&p.base);
 
 	// All scenes should be destroyed by now.
-	gui_scene_manager_destroy(&p);
+	gui_scene_manager_destroy(&p.base);
 
 	// Final close.
 	gui_sdl2_quit(&p);

@@ -73,7 +73,7 @@ render_mode(struct xrt_fs_mode *mode)
 }
 
 static void
-scene_render(struct gui_scene *scene, struct program *p)
+scene_render(struct gui_scene *scene, struct gui_program *p)
 {
 	struct video_select *vs = (struct video_select *)scene;
 
@@ -118,7 +118,7 @@ scene_render(struct gui_scene *scene, struct program *p)
 }
 
 static void
-scene_destroy(struct gui_scene *scene, struct program *p)
+scene_destroy(struct gui_scene *scene, struct gui_program *p)
 {
 	struct video_select *vs = (struct video_select *)scene;
 
@@ -144,7 +144,7 @@ scene_destroy(struct gui_scene *scene, struct program *p)
  */
 
 void
-gui_scene_select_video_test(struct program *p)
+gui_scene_select_video_test(struct gui_program *p)
 {
 	struct video_select *vs = U_TYPED_CALLOC(struct video_select);
 
@@ -156,7 +156,7 @@ gui_scene_select_video_test(struct program *p)
 }
 
 void
-gui_scene_select_video_calibrate(struct program *p)
+gui_scene_select_video_calibrate(struct gui_program *p)
 {
 	struct video_select *vs = U_TYPED_CALLOC(struct video_select);
 

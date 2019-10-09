@@ -7,7 +7,7 @@
  * @ingroup gui
  */
 
-#include "gui_common.h"
+#include "gui_sdl2.h"
 #include "glad/gl.h"
 
 
@@ -17,37 +17,11 @@
  *
  */
 
-XRT_MAYBE_UNUSED static void
-create_blit_info(struct program *p, uint32_t width, uint32_t height)
-{
-	if (p->blit.sf != NULL) {
-		SDL_FreeSurface(p->blit.sf);
-		p->blit.sf = NULL;
-
-		if (p->blit.own_buffer) {
-			free(p->blit.buffer);
-		}
-		p->blit.buffer = NULL;
-	}
-
-	size_t stride = width * 4;
-	size_t size = stride * height;
-	p->blit.width = width;
-	p->blit.height = height;
-	p->blit.stride = stride;
-	p->blit.own_buffer = true;
-
-	p->blit.buffer = malloc(size);
-	p->blit.sf =
-	    SDL_CreateRGBSurfaceFrom(p->blit.buffer, width, height, 32, stride,
-	                             0x0000FF, 0x00FF00, 0xFF0000, 0);
-}
-
 static void
-sdl2_handle_keydown(struct program *p, const SDL_Event *e)
+sdl2_handle_keydown(struct sdl2_program *p, const SDL_Event *e)
 {
 	switch (e->key.keysym.sym) {
-	case SDLK_ESCAPE: p->stopped = true; break;
+	case SDLK_ESCAPE: p->base.stopped = true; break;
 	default: break;
 	}
 
@@ -62,43 +36,10 @@ sdl2_handle_keydown(struct program *p, const SDL_Event *e)
  */
 
 void
-gui_sdl2_display_R8G8B8(struct program *p,
-                        bool resize,
-                        uint32_t width,
-                        uint32_t height,
-                        size_t stride,
-                        void *data)
-{
-	if (p->blit.buffer != data || p->blit.width != width ||
-	    p->blit.height != height || p->blit.sf == NULL) {
-
-		if (resize) {
-			SDL_SetWindowSize(p->win, width, height);
-		}
-
-		p->blit.sf =
-		    SDL_CreateRGBSurfaceFrom(data, width, height, 24, stride,
-		                             0x0000FF, 0x00FF00, 0xFF0000, 0);
-
-		p->blit.width = width;
-		p->blit.height = height;
-		p->blit.stride = stride;
-		p->blit.buffer = data;
-		p->blit.own_buffer = false;
-	}
-
-	SDL_Surface *win_sf = SDL_GetWindowSurface(p->win);
-
-	if (SDL_BlitSurface(p->blit.sf, NULL, win_sf, NULL) == 0) {
-		SDL_UpdateWindowSurface(p->win);
-	}
-}
-
-void
-gui_sdl2_loop(struct program *p)
+gui_sdl2_loop(struct sdl2_program *p)
 {
 	SDL_Event event;
-	while (!p->stopped) {
+	while (!p->base.stopped) {
 		if (SDL_WaitEvent(&event) == 0) {
 			return;
 		}
@@ -116,11 +57,12 @@ gui_sdl2_loop(struct program *p)
 }
 
 int
-gui_sdl2_init(struct program *p)
+gui_sdl2_init(struct sdl2_program *p)
 {
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
 		return -1;
 	}
+	p->sdl_initialized = true;
 
 	const char *title = "Monado! ☺";
 	int x = SDL_WINDOWPOS_UNDEFINED;
@@ -146,7 +88,7 @@ gui_sdl2_init(struct program *p)
 	window_flags |= SDL_WINDOW_MAXIMIZED;
 #endif
 
-	p->initialized = true;
+
 	p->win = SDL_CreateWindow(title, x, y, w, h, window_flags);
 
 	if (p->win == NULL) {
@@ -171,22 +113,8 @@ gui_sdl2_init(struct program *p)
 }
 
 void
-gui_sdl2_quit(struct program *p)
+gui_sdl2_quit(struct sdl2_program *p)
 {
-	if (!p->initialized) {
-		return;
-	}
-
-	if (p->blit.sf != NULL) {
-		SDL_FreeSurface(p->blit.sf);
-		p->blit.sf = NULL;
-
-		if (p->blit.own_buffer) {
-			free(p->blit.buffer);
-		}
-		p->blit.buffer = NULL;
-	}
-
 	if (p->ctx != NULL) {
 		SDL_GL_DeleteContext(p->ctx);
 		p->ctx = NULL;
@@ -198,5 +126,5 @@ gui_sdl2_quit(struct program *p)
 	}
 
 	SDL_Quit();
-	p->initialized = false;
+	p->sdl_initialized = false;
 }

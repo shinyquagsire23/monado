@@ -15,9 +15,7 @@ include_directories(
 
 set(SOURCE_FILES
 	gui_common.h
-	gui_imgui.c
 	gui_imgui.h
-	gui_main.c
 	gui_ogl.c
 	gui_prober.c
 	gui_scene.cpp
@@ -26,6 +24,9 @@ set(SOURCE_FILES
 	gui_scene_main_menu.c
 	gui_scene_video.c
 	gui_sdl2.c
+	gui_sdl2_imgui.c
+	gui_sdl2_main.c
+	gui_sdl2_prober.c
 	../../../external/glad/gl.h
 	../../../external/glad/gl.c
 	../../../external/imgui/cimgui.cpp

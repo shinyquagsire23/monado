@@ -18,7 +18,7 @@
  */
 
 static int
-do_exit(struct program *p, int ret)
+do_exit(struct gui_program *p, int ret)
 {
 	gui_prober_teardown(p);
 	return ret;
@@ -32,7 +32,7 @@ do_exit(struct program *p, int ret)
  */
 
 int
-gui_prober_init(struct program *p)
+gui_prober_init(struct gui_program *p)
 {
 	int ret = 0;
 
@@ -54,7 +54,7 @@ gui_prober_init(struct program *p)
 }
 
 int
-gui_prober_select(struct program *p)
+gui_prober_select(struct gui_program *p)
 {
 	int ret;
 
@@ -68,7 +68,7 @@ gui_prober_select(struct program *p)
 }
 
 void
-gui_prober_update(struct program *p)
+gui_prober_update(struct gui_program *p)
 {
 	// We haven't been initialized
 	if (p->timekeeping == NULL) {
@@ -87,7 +87,7 @@ gui_prober_update(struct program *p)
 }
 
 void
-gui_prober_teardown(struct program *p)
+gui_prober_teardown(struct gui_program *p)
 {
 	for (size_t i = 0; i < NUM_XDEVS; i++) {
 		if (p->xdevs[i] == NULL) {
@@ -104,10 +104,4 @@ gui_prober_teardown(struct program *p)
 	}
 
 	xrt_prober_destroy(&p->xp);
-}
-
-int
-xrt_prober_create(struct xrt_prober **out_xp)
-{
-	return xrt_prober_create_with_lists(out_xp, &target_lists);
 }

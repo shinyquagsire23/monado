@@ -56,12 +56,12 @@ conv_rgb_u8_to_f32(struct xrt_colour_rgb_u8 *from,
 
 struct draw_state
 {
-	struct program *p;
+	struct gui_program *p;
 	bool hidden;
 };
 
 static void
-on_sink_var(const char *name, void *ptr, struct program *p)
+on_sink_var(const char *name, void *ptr, struct gui_program *p)
 {
 	for (size_t i = 0; i < ARRAY_SIZE(p->texs); i++) {
 		struct gui_ogl_texture *tex = p->texs[i];
@@ -184,7 +184,7 @@ on_root_exit(const char *name, void *priv)
 }
 
 static void
-scene_render(struct gui_scene *scene, struct program *p)
+scene_render(struct gui_scene *scene, struct gui_program *p)
 {
 	struct debug_scene *ds = (struct debug_scene *)scene;
 	(void)ds;
@@ -194,7 +194,7 @@ scene_render(struct gui_scene *scene, struct program *p)
 }
 
 static void
-scene_destroy(struct gui_scene *scene, struct program *p)
+scene_destroy(struct gui_scene *scene, struct gui_program *p)
 {
 	struct debug_scene *ds = (struct debug_scene *)scene;
 
@@ -220,7 +220,7 @@ on_root_enter_sink(const char *name, void *priv)
 static void
 on_elem_sink(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 {
-	struct program *p = (struct program *)priv;
+	struct gui_program *p = (struct gui_program *)priv;
 
 	if (kind != U_VAR_KIND_SINK) {
 		return;
@@ -256,7 +256,7 @@ on_root_exit_sink(const char *name, void *priv)
  */
 
 void
-gui_scene_debug_video(struct program *p,
+gui_scene_debug_video(struct gui_program *p,
                       struct xrt_frame_context *xfctx,
                       struct xrt_fs *xfs,
                       size_t mode)
@@ -297,7 +297,7 @@ gui_scene_debug_video(struct program *p,
 }
 
 void
-gui_scene_debug(struct program *p)
+gui_scene_debug(struct gui_program *p)
 {
 	struct debug_scene *ds = U_TYPED_CALLOC(struct debug_scene);
 

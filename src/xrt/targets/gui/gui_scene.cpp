@@ -21,7 +21,7 @@ public:
 };
 
 extern "C" void
-gui_scene_push_front(struct program *p, struct gui_scene *me)
+gui_scene_push_front(struct gui_program *p, struct gui_scene *me)
 {
 	auto &gsm = *p->gsm;
 
@@ -42,7 +42,7 @@ gui_scene_push_front(struct program *p, struct gui_scene *me)
 }
 
 extern "C" void
-gui_scene_delete_me(struct program *p, struct gui_scene *me)
+gui_scene_delete_me(struct gui_program *p, struct gui_scene *me)
 {
 	auto &gsm = *p->gsm;
 
@@ -61,7 +61,7 @@ gui_scene_delete_me(struct program *p, struct gui_scene *me)
 }
 
 extern "C" void
-gui_scene_manager_render(struct program *p)
+gui_scene_manager_render(struct gui_program *p)
 {
 	auto &gsm = *p->gsm;
 	auto copy = gsm.scenes;
@@ -83,13 +83,13 @@ gui_scene_manager_render(struct program *p)
 }
 
 extern "C" void
-gui_scene_manager_init(struct program *p)
+gui_scene_manager_init(struct gui_program *p)
 {
 	p->gsm = new gui_scene_manager;
 }
 
 extern "C" void
-gui_scene_manager_destroy(struct program *p)
+gui_scene_manager_destroy(struct gui_program *p)
 {
 	delete p->gsm;
 	p->gsm = NULL;
