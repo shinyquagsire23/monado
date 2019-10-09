@@ -32,6 +32,7 @@ add_library(${RUNTIME_TARGET} SHARED
 	${MANIFEST_PATH}
 	${SOURCE_FILES}
 	$<TARGET_OBJECTS:aux_os>
+	$<TARGET_OBJECTS:aux_ogl>
 	$<TARGET_OBJECTS:aux_util>
 	$<TARGET_OBJECTS:aux_math>
 	$<TARGET_OBJECTS:comp>

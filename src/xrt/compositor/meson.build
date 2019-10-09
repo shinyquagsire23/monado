@@ -6,8 +6,6 @@ subdir('shaders')
 compositor_deps = [aux, shaders, vulkan]
 
 compositor_srcs = [
-	'client/comp_gl_api.c',
-	'client/comp_gl_api.h',
 	'client/comp_gl_client.c',
 	'client/comp_gl_client.h',
 	'client/comp_vk_client.c',

@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  OpenGL API wrapper.
+ * @brief  OpenGL API wrapper header.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp_client
+ * @ingroup aux_ogl
  */
 
-#include "glad/gl.c"
+#pragma once
+
+#include "glad/gl.h"

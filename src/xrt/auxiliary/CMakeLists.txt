@@ -10,6 +10,12 @@ set(MATH_SOURCE_FILES
 	math/m_quatexpmap.cpp
 	)
 
+set(OGL_SOURCE_FILES
+	ogl/ogl_api.c
+	ogl/ogl_api.h
+	ogl/ogl_documentation.h
+	)
+
 set(OS_SOURCE_FILES
 	os/os_documentation.h
 	os/os_hid.h
@@ -62,6 +68,15 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/../include
 	${CMAKE_CURRENT_SOURCE_DIR}
 	)
+
+# OpenGL library.
+# Use OBJECT to not create a archive, since it just gets in the way.
+add_library(aux_ogl OBJECT ${OGL_SOURCE_FILES})
+set_property(TARGET aux_ogl PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_include_directories(aux_ogl SYSTEM
+		PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/../../external
+		)
 
 # Util library.
 # Use OBJECT to not create a archive, since it just gets in the way.

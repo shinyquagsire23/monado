@@ -21,6 +21,7 @@ openxr = library(
 	files('target.c'),
 	link_whole: [
 		lib_aux_os,
+		lib_aux_ogl,
 		lib_aux_util,
 		lib_aux_math,
 		lib_comp,

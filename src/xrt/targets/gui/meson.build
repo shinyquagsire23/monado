@@ -29,8 +29,6 @@ gui = executable(
 		'gui_sdl2_imgui.c',
 		'gui_sdl2_main.c',
 		'gui_sdl2_prober.c',
-		'../../../external/glad/gl.h',
-		'../../../external/glad/gl.c',
 		'../../../external/imgui/cimgui.cpp',
 		'../../../external/imgui/cimgui.h',
 		'../../../external/imgui/imconfig.h',
@@ -50,6 +48,7 @@ gui = executable(
 	),
 	link_whole: [
 		lib_aux_os,
+		lib_aux_ogl,
 		lib_aux_util,
 		lib_aux_math,
 		lib_st_prober,

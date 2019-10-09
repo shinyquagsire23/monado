@@ -38,6 +38,24 @@ aux_util = declare_dependency(
 	link_whole: lib_aux_util,
 )
 
+lib_aux_ogl = static_library(
+	'aux_ogl',
+	files(
+		'ogl/ogl_api.h',
+		'ogl/ogl_api.c',
+		'ogl/ogl_documentation.h',
+	),
+	include_directories: [
+		xrt_include,
+		external_include,
+	],
+)
+
+aux_ogl = declare_dependency(
+	include_directories: aux_include,
+	link_whole: lib_aux_ogl,
+)
+
 lib_aux_os = static_library(
 	'aux_os',
 	files(

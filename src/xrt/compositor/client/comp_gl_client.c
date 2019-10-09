@@ -13,7 +13,7 @@
 
 #include "util/u_misc.h"
 
-#include "client/comp_gl_api.h"
+#include "ogl/ogl_api.h"
 #include "client/comp_gl_client.h"
 
 

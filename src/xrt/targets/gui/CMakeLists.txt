@@ -27,8 +27,6 @@ set(SOURCE_FILES
 	gui_sdl2_imgui.c
 	gui_sdl2_main.c
 	gui_sdl2_prober.c
-	../../../external/glad/gl.h
-	../../../external/glad/gl.c
 	../../../external/imgui/cimgui.cpp
 	../../../external/imgui/cimgui.h
 	../../../external/imgui/imconfig.h
@@ -50,6 +48,7 @@ set(SOURCE_FILES
 add_executable(gui
 	${SOURCE_FILES}
 	$<TARGET_OBJECTS:aux_os>
+	$<TARGET_OBJECTS:aux_ogl>
 	$<TARGET_OBJECTS:aux_util>
 	$<TARGET_OBJECTS:aux_math>
 	$<TARGET_OBJECTS:st_prober>

@@ -10,8 +10,6 @@ spirv_shaders(SHADER_HEADERS
 
 set(GL_SOURCE_FILES
 	${SHADER_HEADERS}
-	client/comp_gl_api.c
-	client/comp_gl_api.h
 	client/comp_gl_client.c
 	client/comp_gl_client.h
 	client/comp_vk_client.c
