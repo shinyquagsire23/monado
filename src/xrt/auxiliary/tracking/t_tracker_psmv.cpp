@@ -101,7 +101,6 @@ struct TrackerPSMV
 	xrt_fusion::SimpleIMUFusion imu;
 
 	xrt_vec3 tracked_object_position;
-	Eigen::Isometry3f room_transform;
 };
 
 static void
@@ -337,8 +336,7 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	xrt_frame_reference(&t.debug.frame, NULL);
 	bool corrected = false;
 	if (nearest_world.got_one) {
-		Eigen::Vector3f position =
-		    t.room_transform * map_vec3(t.tracked_object_position);
+		Eigen::Vector3f position = map_vec3(t.tracked_object_position);
 
 		auto measurement =
 		    xrt_fusion::AbsolutePositionLeverArmMeasurement{
@@ -606,10 +604,6 @@ t_psmv_create(struct xrt_frame_context *xfctx,
 	t.fusion.rot.y = 0.0f;
 	t.fusion.rot.z = 0.0f;
 	t.fusion.rot.w = 1.0f;
-	t.room_transform.fromPositionOrientationScale(
-	    Eigen::Vector3f(0.f, 1.3f, -0.5f),
-	    Eigen::AngleAxisf(EIGEN_PI, Eigen::Vector3f::UnitY()),
-	    Eigen::Vector3f::Constant(1.f));
 
 	ret = os_thread_helper_init(&t.oth);
 	if (ret != 0) {

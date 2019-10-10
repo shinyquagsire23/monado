@@ -222,7 +222,9 @@ p_tracking_init(struct prober *p)
 	fact->base.create_tracked_psmv = p_factory_create_tracked_psmv;
 	fact->base.create_tracked_psvr = p_factory_create_tracked_psvr;
 	fact->origin.type = XRT_TRACKING_TYPE_RGB;
-	fact->origin.offset.orientation.w = 1.0f;
+	fact->origin.offset.orientation.y = 1.0f;
+	fact->origin.offset.position.z = -2.0f;
+	fact->origin.offset.position.y = 1.0f;
 	fact->p = p;
 
 	// Finally set us as the tracking factory.
