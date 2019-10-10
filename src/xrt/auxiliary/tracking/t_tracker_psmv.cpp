@@ -13,6 +13,7 @@
 #include "tracking/t_tracking.h"
 #include "tracking/t_calibration_opencv.h"
 #include "tracking/t_fusion.h"
+#include "tracking/t_imu_fusion.h"
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
@@ -96,6 +97,8 @@ struct TrackerPSMV
 
 	State filter_state;
 	ProcessModel process_model;
+
+	xrt_fusion::SimpleIMUFusion imu;
 
 	xrt_vec3 tracked_object_position;
 	Eigen::Isometry3f room_transform;
@@ -455,14 +458,14 @@ imu_data(TrackerPSMV &t,
 	}
 
 	float dt = time_ns_to_s(delta_ns);
-	// Super simple fusion.
-	math_quat_integrate_velocity(&t.fusion.rot, &sample->gyro_rad_secs, dt,
-	                             &t.fusion.rot);
+	t.imu.handleAccel(map_vec3(sample->accel_m_s2).cast<double>(), dt);
+	t.imu.handleGyro(map_vec3(sample->gyro_rad_secs).cast<double>(), dt);
+	t.imu.postCorrect();
+
 	//! @todo use better measurements instead of the above "simple fusion"
 	flexkalman::predict(t.filter_state, t.process_model, dt);
-	Eigen::Quaterniond quat = Eigen::Quaternionf(map_quat(t.fusion.rot)).cast<double>();
 	auto meas = flexkalman::AbsoluteOrientationMeasurement{
-	    quat, Eigen::Vector3d::Constant(0.01)};
+	    t.imu.getQuat(), Eigen::Vector3d::Constant(0.01)};
 	if (!flexkalman::correctUnscented(t.filter_state, meas)) {
 		fprintf(stderr,
 		        "Got non-finite something when filtering IMU!\n");
