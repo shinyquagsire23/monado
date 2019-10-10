@@ -30,6 +30,17 @@ DEBUG_GET_ONCE_FLOAT_OPTION(lfov_right, "OXR_OVERRIDE_LFOV_RIGHT", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_up, "OXR_OVERRIDE_LFOV_UP", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_down, "OXR_OVERRIDE_LFOV_DOWN", 0.0f)
 
+/* ---- HACK ---- */
+extern int
+oxr_sdl2_hack_create(void **out_hack);
+
+extern void
+oxr_sdl2_hack_start(void *hack, struct xrt_prober *xp);
+
+extern void
+oxr_sdl2_hack_stop(void *hack);
+/* ---- HACK ---- */
+
 static inline int32_t
 radtodeg_for_display(float radians)
 {
@@ -53,6 +64,10 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	for (size_t i = 0; i < inst->system.num_xdevs; i++) {
 		oxr_xdev_destroy(&inst->system.xdevs[i]);
 	}
+
+	/* ---- HACK ---- */
+	oxr_sdl2_hack_stop(inst->hack);
+	/* ---- HACK ---- */
 
 	xrt_prober_destroy(&inst->prober);
 
@@ -86,6 +101,10 @@ oxr_instance_create(struct oxr_logger *log,
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
 	                              oxr_instance_destroy, NULL);
+
+	/* ---- HACK ---- */
+	oxr_sdl2_hack_create(&inst->hack);
+	/* ---- HACK ---- */
 
 	h_ret = u_hashset_create(&inst->path_store);
 	if (h_ret != 0) {
@@ -198,6 +217,10 @@ oxr_instance_create(struct oxr_logger *log,
 	//! @todo check if this (and other creates) failed?
 
 	u_var_add_root((void *)inst, "XrInstance", true);
+
+	/* ---- HACK ---- */
+	oxr_sdl2_hack_start(inst->hack, inst->prober);
+	/* ---- HACK ---- */
 
 	*out_instance = inst;
 

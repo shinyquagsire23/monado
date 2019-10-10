@@ -16,14 +16,17 @@ set(RUNTIME_TARGET ${RUNTIME_PREFIX}openxr${RUNTIME_SUFFIX} CACHE INTERNAL "" FO
 set(XR_API_MAJOR "1")
 
 include_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}/../../../external
 	${CMAKE_CURRENT_SOURCE_DIR}/../../targets/common
 	${CMAKE_CURRENT_SOURCE_DIR}/../../auxiliary
 	${CMAKE_CURRENT_SOURCE_DIR}/../../include
 	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
+	${CMAKE_CURRENT_SOURCE_DIR}/../../state_trackers
 	)
 
 set(SOURCE_FILES
 	target.c
+	oxr_sdl2_hack.c
 	)
 
 # depends on above generated files
@@ -37,12 +40,12 @@ add_library(${RUNTIME_TARGET} SHARED
 	$<TARGET_OBJECTS:aux_math>
 	$<TARGET_OBJECTS:comp>
 	$<TARGET_OBJECTS:st_oxr>
+	$<TARGET_OBJECTS:st_gui>
 	$<TARGET_OBJECTS:st_prober>
 	$<TARGET_OBJECTS:target_lists>
 	)
 
-target_link_libraries(${RUNTIME_TARGET}
-	PUBLIC
+target_link_libraries(${RUNTIME_TARGET} PUBLIC
 	${LIBUVC_LIBRARIES}
 	${LIBUSB_LIBRARIES}
 	${Vulkan_LIBRARIES}
@@ -53,11 +56,29 @@ target_link_libraries(${RUNTIME_TARGET}
 	)
 
 if(DRIVER_OBJECTS)
-	target_sources(${RUNTIME_TARGET} PRIVATE ${DRIVER_OBJECTS})
+	target_sources(${RUNTIME_TARGET} PRIVATE
+		${DRIVER_OBJECTS}
+		)
 endif()
 
 if(DRIVER_LIBRARIES)
-	target_link_libraries(${RUNTIME_TARGET} PRIVATE ${DRIVER_LIBRARIES})
+	target_link_libraries(${RUNTIME_TARGET} PRIVATE
+		${DRIVER_LIBRARIES}
+		)
+endif()
+
+if(BUILD_WITH_SDL2)
+	include_directories(${SDL2_INCLUDE_DIRS})
+
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC
+		${SDL2_LIBRARIES}
+		X11 # HACK HACK HACK HACK
+		)
+
+	target_sources(${RUNTIME_TARGET} PRIVATE
+		../../../external/imgui/imgui_impl_sdl.cpp
+		../../../external/imgui/imgui_impl_sdl.h
+		)
 endif()
 
 include(GNUInstallDirs)
@@ -66,7 +87,8 @@ include(GNUInstallDirs)
 install(TARGETS ${RUNTIME_TARGET}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	)
 
 
 # $LIBPATH is a generator expression that is evaluated after configure_file, so we have to use file(GENERATE) instead

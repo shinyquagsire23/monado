@@ -16,9 +16,32 @@ runtime_target = '@0@openxr@1@'.format(runtime_prefix, runtime_suffix)
 # OpenXR 1.0
 xr_api_major = 1
 
+hack_deps = []
+hack_src = []
+hack_libs = []
+hack_incs = []
+
+if sdl2.found()
+	hack_deps += sdl2
+	hack_src += [
+		'oxr_sdl2_hack.c',
+		'../../../external/imgui/imgui_impl_sdl.cpp',
+		'../../../external/imgui/imgui_impl_sdl.h',
+	]
+	hack_libs += lib_st_gui
+	hack_incs += [
+		st_include,
+	]
+else
+	hack_src += 'oxr_sdl2_hack.c'
+endif
+
 openxr = library(
 	runtime_target,
-	files('target.c'),
+	files(
+		'target.c',
+		hack_src,
+	),
 	link_whole: [
 		lib_aux_os,
 		lib_aux_ogl,
@@ -28,13 +51,15 @@ openxr = library(
 		lib_st_oxr,
 		lib_st_prober,
 		lib_target_lists,
-	] + driver_libs,
+	] + driver_libs + hack_libs,
 	include_directories: [
+		external_include,
+		st_include, # Sigh debian meson requires this.
 		aux_include,
 		common_include,
 		drv_include,
 		xrt_include,
-	],
+	] + hack_incs,
 	dependencies: [
 		libusb,
 		libuvc,
@@ -46,7 +71,7 @@ openxr = library(
 		x11,
 		xcb,
 		xcb_randr,
-	] + driver_deps,
+	] + driver_deps + hack_deps,
 	install: true,
 )
 
