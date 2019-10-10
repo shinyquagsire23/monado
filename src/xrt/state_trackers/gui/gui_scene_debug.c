@@ -226,7 +226,7 @@ on_elem_sink(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 		return;
 	}
 
-	if (p->xp->tracking == NULL) {
+	if (p->xp == NULL || p->xp->tracking == NULL) {
 		return;
 	}
 
@@ -305,8 +305,6 @@ gui_scene_debug(struct gui_program *p)
 	ds->base.destroy = scene_destroy;
 
 	gui_scene_push_front(p, &ds->base);
-
-	gui_prober_select(p);
 
 	// Create the sink interceptors.
 	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink, p);

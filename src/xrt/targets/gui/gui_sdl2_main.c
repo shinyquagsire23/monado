@@ -34,6 +34,8 @@ main(int argc, char **argv)
 
 	// First scene to start with.
 	if (argc >= 2 && strcmp("debug", argv[1]) == 0) {
+		// We have created a prober select devices now.
+		gui_prober_select(&p.base);
 		gui_scene_debug(&p.base);
 	} else if (argc >= 2 && strcmp("calibrate", argv[1]) == 0) {
 		gui_scene_select_video_calibrate(&p.base);

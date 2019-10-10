@@ -32,6 +32,12 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 
 	if (igButton("Debug Test", button_dims)) {
 		gui_scene_delete_me(p, scene);
+
+		// If we have created a prober select devices now.
+		if (p->xp != NULL) {
+			gui_prober_select(p);
+		}
+
 		gui_scene_debug(p);
 	}
 
