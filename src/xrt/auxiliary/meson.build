@@ -35,7 +35,7 @@ lib_aux_util = static_library(
 
 aux_util = declare_dependency(
 	include_directories: aux_include,
-	link_whole: lib_aux_util,
+	link_with: lib_aux_util,
 )
 
 lib_aux_ogl = static_library(
@@ -53,7 +53,7 @@ lib_aux_ogl = static_library(
 
 aux_ogl = declare_dependency(
 	include_directories: aux_include,
-	link_whole: lib_aux_ogl,
+	link_with: lib_aux_ogl,
 )
 
 lib_aux_os = static_library(
@@ -70,7 +70,7 @@ lib_aux_os = static_library(
 
 aux_os = declare_dependency(
 	include_directories: aux_include,
-	link_whole: lib_aux_os,
+	link_with: lib_aux_os,
 )
 
 lib_aux_math = static_library(
@@ -89,7 +89,7 @@ lib_aux_math = static_library(
 
 aux_math = declare_dependency(
 	include_directories: aux_include,
-	link_whole: lib_aux_math,
+	link_with: lib_aux_math,
 )
 
 tracking_srcs = [
@@ -120,7 +120,7 @@ lib_aux_tracking = static_library(
 
 aux_tracking = declare_dependency(
 	include_directories: aux_include,
-	link_whole: lib_aux_tracking,
+	link_with: lib_aux_tracking,
 )
 
 all_aux = [aux_util, aux_os, aux_math]
