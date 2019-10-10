@@ -91,8 +91,12 @@ comp_distortion_init_descriptor_sets(struct comp_distortion *d,
 static void
 _buffer_destroy(struct vk_bundle *vk, struct comp_uniform_buffer *buffer)
 {
-	vk->vkDestroyBuffer(buffer->device, buffer->buffer, NULL);
-	vk->vkFreeMemory(buffer->device, buffer->memory, NULL);
+	if (buffer->buffer != VK_NULL_HANDLE) {
+		vk->vkDestroyBuffer(buffer->device, buffer->buffer, NULL);
+	}
+	if (buffer->memory != VK_NULL_HANDLE) {
+		vk->vkFreeMemory(buffer->device, buffer->memory, NULL);
+	}
 }
 
 static VkResult
