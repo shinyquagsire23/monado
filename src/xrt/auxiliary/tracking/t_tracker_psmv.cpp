@@ -181,15 +181,16 @@ do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 
 //! @brief Keeps the value that produces the lowest "score" as computed by your
 //! functor.
-template <typename T, typename ScoreType, typename F> struct FindLowestScore
+template <typename ValueType, typename ScoreType, typename FunctionType>
+struct FindLowestScore
 {
-	const F score_functor;
+	const FunctionType score_functor;
 	bool got_one{false};
-	T best{};
+	ValueType best{};
 	ScoreType best_score{};
 
 	void
-	handle_candidate(T val)
+	handle_candidate(ValueType val)
 	{
 		ScoreType score = score_functor(val);
 		if (!got_one || score < best_score) {
@@ -202,11 +203,11 @@ template <typename T, typename ScoreType, typename F> struct FindLowestScore
 
 
 //! Factory function for FindLowestScore to deduce the functor type.
-template <typename T, typename F>
-static FindLowestScore<T, float, F>
-make_lowest_float_score_finder(F scoreFunctor)
+template <typename ValueType, typename FunctionType>
+static FindLowestScore<ValueType, float, FunctionType>
+make_lowest_float_score_finder(FunctionType scoreFunctor)
 {
-	return {scoreFunctor};
+	return FindLowestScore<ValueType, float, FunctionType>{scoreFunctor};
 }
 
 //! Convert our 2d point + disparities into 3d points.
