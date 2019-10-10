@@ -34,5 +34,17 @@ layout (location = 0) out vec4 outColor;
 void main()
 {
 	vec3 color = texture(texSampler, inUV).xyz;
-	outColor = vec4(color,1.0);
+
+#if 0
+	if (inUV.x < 0.0 || inUV.x > 1.0 || inUV.y < 0.0 || inUV.y > 1.0) {
+		color = vec3(1.0, 0.0, 1.0);
+	} else {
+		float t = floor(inUV.x * 16) + floor(inUV.y * 16);
+		bool isEven = mod(t, 2.0) == 0.0;
+		// color = color * float(isEven);
+		color = vec3(isEven, isEven, isEven);
+	}
+#endif
+
+	outColor = vec4(color, 1.0);
 }
