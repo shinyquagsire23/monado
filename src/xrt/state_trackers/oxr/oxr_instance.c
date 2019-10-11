@@ -110,7 +110,7 @@ oxr_instance_create(struct oxr_logger *log,
 	cache_path(log, inst, "/interaction_profiles/oculus/go_controller", &inst->path_cache.oculus_go_controller);
 	cache_path(log, inst, "/interaction_profiles/oculus/touch_controller", &inst->path_cache.oculus_touch_controller);
 	cache_path(log, inst, "/interaction_profiles/valve/index_controller", &inst->path_cache.valve_index_controller);
-	cache_path(log, inst, "/interaction_profiles/mnd/ball_on_stick", &inst->path_cache.mnd_ball_on_stick_controller);
+	cache_path(log, inst, "/interaction_profiles/mnd/ball_on_stick_controller", &inst->path_cache.mnd_ball_on_stick_controller);
 	// clang-format on
 
 	p_ret = xrt_prober_create(&inst->prober);

@@ -37,7 +37,7 @@ struct profile_template
 
 static struct binding_template khr_simple_controller_bindings[10];
 static struct binding_template google_daydream_controller_bindings[12];
-static struct binding_template mnd_ball_on_stick_controller_bindings[24];
+static struct binding_template mnd_ball_on_stick_controller_bindings[26];
 
 static struct profile_template profiles[3] = {
     {
@@ -839,7 +839,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
  *
  */
 
-static struct binding_template mnd_ball_on_stick_controller_bindings[24] = {
+static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
     {
         .sub_path = OXR_SUB_ACTION_PATH_LEFT,
         .paths =
@@ -1009,6 +1009,19 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[24] = {
             },
     },
     {
+        .sub_path = OXR_SUB_ACTION_PATH_LEFT,
+        .paths =
+            {
+                "/user/hand/left/output/haptic",
+                NULL,
+            },
+        .outputs =
+            {
+                XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION,
+                0,
+            },
+    },
+    {
         .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
         .paths =
             {
@@ -1173,6 +1186,19 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[24] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_BALL_TIP_POSE,
+                0,
+            },
+    },
+    {
+        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
+        .paths =
+            {
+                "/user/hand/right/output/haptic",
+                NULL,
+            },
+        .outputs =
+            {
+                XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION,
                 0,
             },
     },
