@@ -127,6 +127,7 @@ struct xrt_tracked_psmv
 	 * frames.
 	 */
 	void (*get_tracked_pose)(struct xrt_tracked_psmv *,
+	                         enum xrt_input_name name,
 	                         struct time_state *timekeeper,
 	                         timepoint_ns when_ns,
 	                         struct xrt_space_relation *out_relation);
@@ -181,11 +182,12 @@ struct xrt_tracked_psvr
 
 static inline void
 xrt_tracked_psmv_get_tracked_pose(struct xrt_tracked_psmv *psmv,
+                                  enum xrt_input_name name,
                                   struct time_state *timekeeper,
                                   timepoint_ns when_ns,
                                   struct xrt_space_relation *out_relation)
 {
-	psmv->get_tracked_pose(psmv, timekeeper, when_ns, out_relation);
+	psmv->get_tracked_pose(psmv, name, timekeeper, when_ns, out_relation);
 }
 
 static inline void

@@ -867,7 +867,7 @@ psmv_device_get_tracked_pose(struct xrt_device *xdev,
 	// We have no tracking, don't return a position.
 	if (psmv->ball != NULL) {
 		timepoint_ns when_ns = now;
-		xrt_tracked_psmv_get_tracked_pose(psmv->ball, timekeeping,
+		xrt_tracked_psmv_get_tracked_pose(psmv->ball, name, timekeeping,
 		                                  when_ns, out_relation);
 	} else {
 		psmv_get_fusion_pose(psmv, name, now, out_relation);

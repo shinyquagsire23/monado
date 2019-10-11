@@ -412,6 +412,7 @@ run(TrackerPSMV &t)
 
 static void
 get_pose(TrackerPSMV &t,
+         enum xrt_input_name name,
          struct time_state *timestate,
          timepoint_ns when_ns,
          struct xrt_space_relation *out_relation)
@@ -420,6 +421,21 @@ get_pose(TrackerPSMV &t,
 
 	// Don't do anything if we have stopped.
 	if (!os_thread_helper_is_running_locked(&t.oth)) {
+		os_thread_helper_unlock(&t.oth);
+		return;
+	}
+
+	if (name == XRT_INPUT_PSMV_BALL_CENTER_POSE) {
+		out_relation->pose.position = t.tracked_object_position;
+		out_relation->pose.orientation.x = 0.0f;
+		out_relation->pose.orientation.y = 0.0f;
+		out_relation->pose.orientation.z = 0.0f;
+		out_relation->pose.orientation.w = 1.0f;
+
+		out_relation->relation_flags = (enum xrt_space_relation_flags)(
+		    XRT_SPACE_RELATION_POSITION_VALID_BIT |
+		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+
 		os_thread_helper_unlock(&t.oth);
 		return;
 	}
@@ -518,12 +534,13 @@ t_psmv_push_imu(struct xrt_tracked_psmv *xtmv,
 
 extern "C" void
 t_psmv_get_tracked_pose(struct xrt_tracked_psmv *xtmv,
+                        enum xrt_input_name name,
                         struct time_state *timestate,
                         timepoint_ns when_ns,
                         struct xrt_space_relation *out_relation)
 {
 	auto &t = *container_of(xtmv, TrackerPSMV, base);
-	get_pose(t, timestate, when_ns, out_relation);
+	get_pose(t, name, timestate, when_ns, out_relation);
 }
 
 extern "C" void
