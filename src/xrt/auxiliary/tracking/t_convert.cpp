@@ -4,6 +4,7 @@
  * @file
  * @brief  Code to build conversion tables and convert images.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_tracking
  */
 
 #include "tracking/t_tracking.h"

@@ -5,6 +5,7 @@
  * @brief  Handling of files and calibration data.
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_tracking
  */
 
 #include "t_calibration_opencv.h"

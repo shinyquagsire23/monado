@@ -4,7 +4,6 @@
  * @file
  * @brief  C interface to basic IMU fusion.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
- *
  * @ingroup aux_tracking
  */
 

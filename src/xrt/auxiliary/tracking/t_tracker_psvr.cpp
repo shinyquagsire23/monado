@@ -4,6 +4,7 @@
  * @file
  * @brief  PSVR tracker code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_tracking
  */
 
 #include "xrt/xrt_tracking.h"

@@ -4,6 +4,7 @@
  * @file
  * @brief  OpenCV calibration helpers.
  * @author Pete Black <pblack@collabora.com>
+ * @ingroup aux_tracking
  */
 
 #pragma once

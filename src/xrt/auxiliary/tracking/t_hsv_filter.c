@@ -4,6 +4,7 @@
  * @file
  * @brief  A simple HSV filter.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_tracking
  */
 
 #include "util/u_var.h"

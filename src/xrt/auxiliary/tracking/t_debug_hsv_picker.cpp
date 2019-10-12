@@ -5,6 +5,7 @@
  * @brief  HSV Picker Debugging code.
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_tracking
  */
 
 #include "util/u_misc.h"

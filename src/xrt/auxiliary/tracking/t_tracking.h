@@ -5,6 +5,7 @@
  * @brief  Tracking API interface.
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_tracking
  */
 
 #pragma once
@@ -17,6 +18,48 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/*!
+ * @defgroup aux_tracking Tracking
+ * @ingroup aux
+ * @brief Trackers, filters and associated helper code.
+ *
+ *
+ * ### Cordinate system
+ *
+ * Right now there is no specific convention on where a tracking systems
+ * coordinate system is centered, and is something we probably need to figure
+ * out. Right now the stereo based tracking system used by the PSVR and PSMV
+ * tracking system is centered on the camera that OpenCV decided is origin.
+ *
+ * To go a bit further on the PSVR/PSMV case. Think about a idealized start up
+ * case, the user is wearing the HMD headset and holding two PSMV controllers.
+ * The HMD's cordinate system axis are perfectly parallel with the user
+ * cordinate with the user's cordinate system. Where -Z is forward. The user
+ * holds the controllers with the ball pointing up and the buttons on the back
+ * pointing forward. Which if you read the documentation of @ref psmv_device
+ * will that the axis of the PSMV are also perfectly aligned with the users
+ * coordinate system. So everything "attached" to the user have it's coordinate
+ * system parallel to the user's.
+ *
+ * The camera on the other hand is looking directly at the user, it's Z-axis and
+ * X-axis is flipped in relation to the user's. So to compare what is sees to
+ * what the user sees, everything is rotated 180° around the Y-axis.
+ */
+
+/*!
+ * @ingroup aux_tracking
+ * @{
+ */
+
+/*!
+ * @dir auxiliary/tracking
+ * @ingroup aux
+ *
+ * @brief Trackers, filters and associated helper code.
+ */
+
 
 /*
  *
@@ -263,6 +306,10 @@ int
 t_debug_hsv_filter_create(struct xrt_frame_context *xfctx,
                           struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink);
+
+/*!
+ * @}
+ */
 
 
 #ifdef __cplusplus

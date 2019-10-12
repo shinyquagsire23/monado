@@ -4,6 +4,7 @@
  * @file
  * @brief  HSV filter debug code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_tracking
  */
 
 #include "util/u_misc.h"
