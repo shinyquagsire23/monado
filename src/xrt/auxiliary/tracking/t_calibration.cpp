@@ -279,19 +279,13 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	cv::Size image_size(cols, rows);
 	cv::Size new_image_size(cols, rows);
 
-	// we don't serialise these
-	cv::Mat camera_rotation;
-	cv::Mat camera_translation;
-	cv::Mat camera_essential;
-	cv::Mat camera_fundamental;
+	CalibrationRawData raw = {};
+	assert(raw.isDataStorageValid());
 
-	CalibrationRawData raw;
 	raw.image_size_pixels.w = image_size.width;
 	raw.image_size_pixels.h = image_size.height;
 	raw.new_image_size_pixels.w = new_image_size.width;
 	raw.new_image_size_pixels.h = new_image_size.height;
-
-	cv::Mat zero_distortion = cv::Mat(5, 1, CV_32F, cv::Scalar(0.0f));
 
 	// TODO: handle both fisheye and normal cameras -right
 	// now I only have the normal, for the PS4 camera
@@ -306,49 +300,56 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 
 	// non-fisheye version
 	float rp_error =
-	    cv::stereoCalibrate(c.state.chessboards_model, // objectPoints
-	                        c.state.view[0].measured,  // inagePoints1
-	                        c.state.view[1].measured,  // imagePoints2,
-	                        raw.l_intrinsics,          // cameraMatrix1
-	                        raw.l_distortion,          // distCoeffs1
-	                        raw.r_intrinsics,          // cameraMatrix2
-	                        raw.r_distortion,          // distCoeffs2
-	                        image_size,                // imageSize
-	                        camera_rotation,           // R
-	                        camera_translation,        // T
-	                        camera_essential,          // E
-	                        camera_fundamental,        // F
-	                        0);                        // flags
+	    cv::stereoCalibrate(c.state.chessboards_model,  // objectPoints
+	                        c.state.view[0].measured,   // inagePoints1
+	                        c.state.view[1].measured,   // imagePoints2,
+	                        raw.l_intrinsics_mat,       // cameraMatrix1
+	                        raw.l_distortion_mat,       // distCoeffs1
+	                        raw.r_intrinsics_mat,       // cameraMatrix2
+	                        raw.r_distortion_mat,       // distCoeffs2
+	                        image_size,                 // imageSize
+	                        raw.camera_rotation_mat,    // R
+	                        raw.camera_translation_mat, // T
+	                        raw.camera_essential_mat,   // E
+	                        raw.camera_fundamental_mat, // F
+	                        0);                         // flags
 
-	raw.translation.x = camera_translation.at<float>(0, 0);
-	raw.translation.y = camera_translation.at<float>(0, 1);
-	raw.translation.z = camera_translation.at<float>(0, 2);
+	assert(raw.camera_rotation_mat.size() == cv::Size(3, 3));
+	assert(raw.camera_translation_mat.size() == cv::Size(1, 3));
+	assert(raw.camera_essential_mat.size() == cv::Size(3, 3));
+	assert(raw.camera_fundamental_mat.size() == cv::Size(3, 3));
 
 	// We currently don't change the image size or remove invalid pixels.
-	cv::stereoRectify(raw.l_intrinsics,         // cameraMatrix1
-	                  zero_distortion,          // distCoeffs1
-	                  raw.r_intrinsics,         // cameraMatrix2
-	                  zero_distortion,          // distCoeffs2
-	                  image_size,               // imageSize
-	                  camera_rotation,          // R
-	                  camera_translation,       // T
-	                  raw.l_rotation,           // R1
-	                  raw.r_rotation,           // R2
-	                  raw.l_projection,         // P1
-	                  raw.r_projection,         // P2
-	                  raw.disparity_to_depth,   // Q
-	                  cv::CALIB_ZERO_DISPARITY, // flags
-	                  -1,                       // alpha
-	                  new_image_size,           // newImageSize
-	                  NULL,                     // validPixROI1
-	                  NULL);                    // validPixROI2
+	cv::stereoRectify(raw.l_intrinsics_mat,       // cameraMatrix1
+	                  cv::noArray(),              // distCoeffs1
+	                  raw.r_intrinsics_mat,       // cameraMatrix2
+	                  cv::noArray(),              // distCoeffs2
+	                  image_size,                 // imageSize
+	                  raw.camera_rotation_mat,    // R
+	                  raw.camera_translation_mat, // T
+	                  raw.l_rotation_mat,         // R1
+	                  raw.r_rotation_mat,         // R2
+	                  raw.l_projection_mat,       // P1
+	                  raw.r_projection_mat,       // P2
+	                  raw.disparity_to_depth_mat, // Q
+	                  cv::CALIB_ZERO_DISPARITY,   // flags
+	                  -1,                         // alpha
+	                  new_image_size,             // newImageSize
+	                  NULL,                       // validPixROI1
+	                  NULL);                      // validPixROI2
+
+	// Validate that nothing has been re-allocated.
+	assert(raw.isDataStorageValid());
 
 	P("CALIBRATION DONE RP ERROR %f", rp_error);
 
+	// clang-format off
 	std::cout << "calibration rp_error: " << rp_error << "\n";
-	std::cout << "calibration camera_translation:\n"
-	          << camera_translation << "\n";
-
+	std::cout << "camera_rotation:\n" << raw.camera_rotation_mat << "\n";
+	std::cout << "camera_translation:\n" << raw.camera_translation_mat << "\n";
+	std::cout << "camera_essential:\n" << raw.camera_essential_mat << "\n";
+	std::cout << "camera_fundamental:\n" << raw.camera_fundamental_mat << "\n";
+	// clang-format on
 
 	t_file_save_raw_data_hack(&raw);
 }

@@ -24,19 +24,47 @@ extern "C" {
  */
 struct CalibrationRawData : t_calibration_raw_data
 {
-	cv::Mat l_intrinsics = {};
-	cv::Mat l_distortion = {};
-	cv::Mat l_distortion_fisheye = {};
-	cv::Mat l_translation = {};
-	cv::Mat l_rotation = {};
-	cv::Mat l_projection = {};
-	cv::Mat r_intrinsics = {};
-	cv::Mat r_distortion = {};
-	cv::Mat r_distortion_fisheye = {};
-	cv::Mat r_translation = {};
-	cv::Mat r_rotation = {};
-	cv::Mat r_projection = {};
-	cv::Mat disparity_to_depth = {};
+public:
+	cv::Mat camera_rotation_mat = {};
+	cv::Mat camera_translation_mat = {};
+	cv::Mat camera_essential_mat = {};
+	cv::Mat camera_fundamental_mat = {};
+
+	cv::Mat disparity_to_depth_mat = {};
+
+	cv::Mat l_intrinsics_mat = {};
+	cv::Mat l_distortion_mat = {};
+	cv::Mat l_distortion_fisheye_mat = {};
+	cv::Mat l_translation_mat = {};
+	cv::Mat l_rotation_mat = {};
+	cv::Mat l_projection_mat = {};
+	cv::Mat r_intrinsics_mat = {};
+	cv::Mat r_distortion_mat = {};
+	cv::Mat r_distortion_fisheye_mat = {};
+	cv::Mat r_translation_mat = {};
+	cv::Mat r_rotation_mat = {};
+	cv::Mat r_projection_mat = {};
+
+
+public:
+	CalibrationRawData()
+	{
+		// clang-format off
+		camera_translation_mat = cv::Mat(3, 1, CV_64F, &camera_translation[0]);
+		camera_rotation_mat = cv::Mat(3, 3, CV_64F, &camera_rotation[0]);
+		camera_essential_mat = cv::Mat(3, 3, CV_64F, &camera_essential[0]);
+		camera_fundamental_mat = cv::Mat(3, 3, CV_64F, &camera_fundamental[0]);
+		// clang-format on
+	}
+
+	bool
+	isDataStorageValid()
+	{
+		return camera_rotation_mat.size() == cv::Size(3, 3) &&
+		       camera_translation_mat.size() == cv::Size(1, 3) &&
+		       camera_essential_mat.size() == cv::Size(3, 3) &&
+		       camera_fundamental_mat.size() == cv::Size(3, 3);
+	}
 };
 
 struct CalibrationData : t_calibration_data

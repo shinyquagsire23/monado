@@ -236,8 +236,17 @@ struct t_calibration_raw_data
 	struct xrt_size image_size_pixels;
 	struct xrt_size new_image_size_pixels;
 
-	//! Translation between stereo cameras.
-	struct xrt_vec3 translation;
+	//! Translation between thw two cameras, in the stereo pair.
+	double camera_translation[3];
+
+	//! Rotation matrix between the two cameras, in the stereo pair.
+	double camera_rotation[3][3];
+
+	//! Essential matrix.
+	double camera_essential[3][3];
+
+	//! Fundamental matrix.
+	double camera_fundamental[3][3];
 };
 
 /*!
