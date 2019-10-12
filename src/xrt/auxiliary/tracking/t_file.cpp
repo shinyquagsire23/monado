@@ -58,8 +58,6 @@ t_file_load_stereo_calibration_v1(FILE *calib_file,
 	CalibrationRawData &raw = *(new CalibrationRawData());
 	CalibrationData &data = *(new CalibrationData());
 
-	cv::Mat zero_distortion = cv::Mat(5, 1, CV_32F, cv::Scalar(0.0f));
-
 	//! @todo Load from file.
 	bool use_fisheye = false;
 
@@ -113,32 +111,64 @@ t_file_load_stereo_calibration_v1(FILE *calib_file,
 
 	if (use_fisheye) {
 		cv::fisheye::initUndistortRectifyMap(
-		    raw.l_intrinsics, raw.l_distortion_fisheye, cv::noArray(),
-		    raw.l_intrinsics, image_size, CV_32FC1,
-		    data.l_undistort_map_x, data.l_undistort_map_y);
+		    raw.l_intrinsics,         // cameraMatrix
+		    raw.l_distortion_fisheye, // distCoeffs
+		    cv::noArray(),            // R
+		    raw.l_intrinsics,         // newCameraMatrix
+		    image_size,               // size
+		    CV_32FC1,                 // m1type
+		    data.l_undistort_map_x,   // map1
+		    data.l_undistort_map_y);  // map2
 		cv::fisheye::initUndistortRectifyMap(
-		    raw.r_intrinsics, raw.r_distortion_fisheye, cv::noArray(),
-		    raw.r_intrinsics, image_size, CV_32FC1,
-		    data.r_undistort_map_x, data.r_undistort_map_y);
+		    raw.r_intrinsics,         // cameraMatrix
+		    raw.r_distortion_fisheye, // distCoeffs
+		    cv::noArray(),            // R
+		    raw.r_intrinsics,         // newCameraMatrix
+		    image_size,               // size
+		    CV_32FC1,                 // m1type
+		    data.r_undistort_map_x,   // map1
+		    data.r_undistort_map_y);  // map2
 	} else {
-		cv::initUndistortRectifyMap(
-		    raw.l_intrinsics, raw.l_distortion, cv::noArray(),
-		    raw.l_intrinsics, image_size, CV_32FC1,
-		    data.l_undistort_map_x, data.l_undistort_map_y);
-		cv::initUndistortRectifyMap(
-		    raw.r_intrinsics, raw.r_distortion, cv::noArray(),
-		    raw.r_intrinsics, image_size, CV_32FC1,
-		    data.r_undistort_map_x, data.r_undistort_map_y);
+		cv::initUndistortRectifyMap(raw.l_intrinsics, // cameraMatrix
+		                            raw.l_distortion, // distCoeffs
+		                            cv::noArray(),    // R
+		                            raw.l_intrinsics, // newCameraMatrix
+		                            image_size,       // size
+		                            CV_32FC1,         // m1type
+		                            data.l_undistort_map_x,  // map1
+		                            data.l_undistort_map_y); // map2
+		cv::initUndistortRectifyMap(raw.r_intrinsics, // cameraMatrix
+		                            raw.r_distortion, // distCoeffs
+		                            cv::noArray(),    // R
+		                            raw.r_intrinsics, // newCameraMatrix
+		                            image_size,       // size
+		                            CV_32FC1,         // m1type
+		                            data.r_undistort_map_x,  // map1
+		                            data.r_undistort_map_y); // map2
 	}
 
-	// Generate our rectification maps
+	/*
+	 * Generate our rectification maps
+	 *
+	 * Here cv::noArray() means zero distortion.
+	 */
 
-	cv::initUndistortRectifyMap(
-	    raw.l_intrinsics, zero_distortion, raw.l_rotation, raw.l_projection,
-	    image_size, CV_32FC1, data.l_rectify_map_x, data.l_rectify_map_y);
-	cv::initUndistortRectifyMap(
-	    raw.r_intrinsics, zero_distortion, raw.r_rotation, raw.r_projection,
-	    image_size, CV_32FC1, data.r_rectify_map_x, data.r_rectify_map_y);
+	cv::initUndistortRectifyMap(raw.l_intrinsics,      // cameraMatrix
+	                            cv::noArray(),         // distCoeffs
+	                            raw.l_rotation,        // R
+	                            raw.l_projection,      // newCameraMatrix
+	                            image_size,            // size
+	                            CV_32FC1,              // m1type
+	                            data.l_rectify_map_x,  // map1
+	                            data.l_rectify_map_y); // map2
+	cv::initUndistortRectifyMap(raw.r_intrinsics,      // cameraMatrix
+	                            cv::noArray(),         // distCoeffs
+	                            raw.r_rotation,        // R
+	                            raw.r_projection,      // newCameraMatrix
+	                            image_size,            // size
+	                            CV_32FC1,              // m1type
+	                            data.r_rectify_map_x,  // map1
+	                            data.r_rectify_map_y); // map2
 
 	*out_data = &data;
 	*out_raw_data = &raw;
