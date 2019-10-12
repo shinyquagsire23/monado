@@ -131,6 +131,13 @@ refresh_gui_frame(TrackerPSMV &t, struct xrt_frame *xf)
 	                         t.debug.frame->stride);         // stride
 }
 
+
+/*!
+ * @brief Perform per-view (two in a stereo camera image) processing on an
+ * image, before tracking math is performed.
+ *
+ * Right now, this is mainly finding blobs/keypoints.
+ */
 static void
 do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 {
@@ -178,20 +185,34 @@ do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 	}
 }
 
-//! @brief Keeps the value that produces the lowest "score" as computed by your
-//! functor.
-template <typename ValueType, typename ScoreType, typename FunctionType>
-struct FindLowestScore
+/*!
+ * @brief Helper struct that keeps the value that produces the lowest "score" as
+ * computed by your functor.
+ *
+ * Having this as a struct with a method, instead of a single "algorithm"-style
+ * function, allows you to keep your complicated filtering logic in your own
+ * loop, just calling in when you have a new candidate for "best".
+ *
+ * @note Create by calling make_lowest_score_finder() with your
+ * function/lambda that takes an element and returns the score, to deduce the
+ * un-spellable typename of the lambda.
+ *
+ * @tparam ValueType The type of a single element value - whatever you want to
+ * assign a score to.
+ * @tparam FunctionType The type of your functor/lambda that turns a ValueType
+ * into a float "score". Usually deduced.
+ */
+template <typename ValueType, typename FunctionType> struct FindLowestScore
 {
 	const FunctionType score_functor;
 	bool got_one{false};
 	ValueType best{};
-	ScoreType best_score{};
+	float best_score{0};
 
 	void
 	handle_candidate(ValueType val)
 	{
-		ScoreType score = score_functor(val);
+		float score = score_functor(val);
 		if (!got_one || score < best_score) {
 			best = val;
 			best_score = score;
@@ -203,10 +224,10 @@ struct FindLowestScore
 
 //! Factory function for FindLowestScore to deduce the functor type.
 template <typename ValueType, typename FunctionType>
-static FindLowestScore<ValueType, float, FunctionType>
-make_lowest_float_score_finder(FunctionType scoreFunctor)
+static FindLowestScore<ValueType, FunctionType>
+make_lowest_score_finder(FunctionType scoreFunctor)
 {
-	return FindLowestScore<ValueType, float, FunctionType>{scoreFunctor};
+	return FindLowestScore<ValueType, FunctionType>{scoreFunctor};
 }
 
 //! Convert our 2d point + disparities into 3d points.
@@ -228,14 +249,18 @@ world_point_from_blobs(cv::Point2f left,
 
 	return world_point;
 }
+/*!
+ * @brief Perform tracking computations on a frame of video data.
+ */
 static void
 process(TrackerPSMV &t, struct xrt_frame *xf)
 {
-	// Only IMU data
+	// Only IMU data: nothing to do
 	if (xf == NULL) {
 		return;
 	}
 
+	// Wrong type of frame: unreference and return?
 	if (xf->format != XRT_FORMAT_L8) {
 		xrt_frame_reference(&xf, NULL);
 		return;
@@ -285,8 +310,8 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	cv::Point3f last_point(t.tracked_object_position.x,
 	                       t.tracked_object_position.y,
 	                       t.tracked_object_position.z);
-	auto nearest_world = make_lowest_float_score_finder<cv::Point3f>(
-	    [&](cv::Point3f world_point) {
+	auto nearest_world =
+	    make_lowest_score_finder<cv::Point3f>([&](cv::Point3f world_point) {
 		    //! @todo don't really need the square root to be done here.
 		    return cv::norm(world_point - last_point);
 	    });
@@ -298,7 +323,7 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	for (const cv::KeyPoint &l_keypoint : t.view[0].keypoints) {
 		cv::Point2f l_blob = l_keypoint.pt;
 
-		auto nearest_blob = make_lowest_float_score_finder<cv::Point2f>(
+		auto nearest_blob = make_lowest_score_finder<cv::Point2f>(
 		    [&](cv::Point2f r_blob) { return l_blob.x - r_blob.x; });
 
 		for (const cv::KeyPoint &r_keypoint : t.view[1].keypoints) {
@@ -373,7 +398,9 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	}
 }
 
-
+/*!
+ * @brief Tracker processing thread function
+ */
 static void
 run(TrackerPSMV &t)
 {
@@ -410,6 +437,9 @@ run(TrackerPSMV &t)
 	os_thread_helper_unlock(&t.oth);
 }
 
+/*!
+ * @brief Retrieves a pose from the filter.
+ */
 static void
 get_pose(TrackerPSMV &t,
          enum xrt_input_name name,
