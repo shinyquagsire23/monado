@@ -236,17 +236,39 @@ struct t_calibration_raw_data
 	struct xrt_size image_size_pixels;
 	struct xrt_size new_image_size_pixels;
 
-	//! Translation between thw two cameras, in the stereo pair.
+	//! Translation between the two cameras, in the stereo pair.
 	double camera_translation[3];
-
 	//! Rotation matrix between the two cameras, in the stereo pair.
 	double camera_rotation[3][3];
-
 	//! Essential matrix.
 	double camera_essential[3][3];
-
 	//! Fundamental matrix.
 	double camera_fundamental[3][3];
+
+	//! Left camera intrinsics
+	double l_intrinsics[3][3];
+	//! Left camera distortion
+	double l_distortion[5];
+	//! Left rectification transform (rotation matrix).
+	double l_rotation[3][3];
+	//! Left projection matrix in the new (rectified) coordinate systems.
+	double l_projection[3][4];
+
+	//! Right camera intrinsics
+	double r_intrinsics[3][3];
+	//! Right camera distortion
+	double r_distortion[5];
+	//! Right rectification transform (rotation matrix).
+	double r_rotation[3][3];
+	//! Right projection matrix in the new (rectified) coordinate systems.
+	double r_projection[3][4];
+
+#if 0
+	double r_translation[3];        // [0 x 0] [1 x 3]??
+	double r_distortion_fisheye[4]; // [0 x 0] [4 x 1]??
+	double l_translation[3];        // [0 x 0] [1 x 3]??
+	double l_distortion_fisheye[4]; // [0 x 0] [4 x 1]??
+#endif
 };
 
 /*!
