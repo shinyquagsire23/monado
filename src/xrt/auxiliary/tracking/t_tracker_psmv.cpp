@@ -683,7 +683,8 @@ t_psmv_create(struct xrt_frame_context *xfctx,
 	// clang-format off
 	cv::SimpleBlobDetector::Params blob_params;
 	blob_params.filterByArea = false;
-	blob_params.filterByConvexity = false;
+	blob_params.filterByConvexity = true;
+	blob_params.minConvexity = 0.8;
 	blob_params.filterByInertia = false;
 	blob_params.filterByColor = true;
 	blob_params.blobColor = 255; // 0 or 255 - color comes from binarized image?
