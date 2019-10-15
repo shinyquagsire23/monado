@@ -70,6 +70,8 @@ struct TrackerPSMV
 	//! Thread and lock helper.
 	struct os_thread_helper oth;
 
+	bool tracked = false;
+
 	struct
 	{
 		struct xrt_frame_sink *sink;
@@ -249,6 +251,21 @@ world_point_from_blobs(cv::Point2f left,
 
 	return world_point;
 }
+
+static void
+reset_filter(TrackerPSMV &t)
+{
+
+	t.filter_state = State{};
+	t.tracked = false;
+}
+
+static void
+reset_filter_and_imu(TrackerPSMV &t)
+{
+	reset_filter(t);
+	t.imu = xrt_fusion::SimpleIMUFusion{};
+}
 /*!
  * @brief Perform tracking computations on a frame of video data.
  */
@@ -378,13 +395,21 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 		        // Not sure how to estimate the depth variance without
 		        // some research.
 		        Eigen::Vector3d(1.e-4, 1.e-4, 4.e-4)};
+		double resid = measurement.getResidual(t.filter_state).norm();
 
+		if (resid > 15) {
+			// Residual arbitrarily "too large"
+			fprintf(stderr,
+			        "Warning - measurement residual is %f\n",
+			        resid);
+		}
 		//! @todo predict and use actual dt - right now only IMU updates
 		//! this time.
 		// flexkalman::predict(t.filter_state, t.process_model, 1.0
 		// / 60.);
 		if (flexkalman::correctUnscented(t.filter_state, measurement)) {
 			corrected = true;
+			t.tracked = true;
 		} else {
 			fprintf(stderr,
 			        "Got non-finite something when filtering "
@@ -471,6 +496,12 @@ get_pose(TrackerPSMV &t,
 		return;
 	}
 
+	if (!t.tracked) {
+		out_relation->relation_flags = (enum xrt_space_relation_flags)0;
+		os_thread_helper_unlock(&t.oth);
+		return;
+	}
+
 	auto predicted_state =
 	    flexkalman::getPrediction(t.filter_state, t.process_model,
 	                              /*! @todo compute dt here */ 0.024);
@@ -519,9 +550,8 @@ imu_data(TrackerPSMV &t,
 		fprintf(stderr,
 		        "Got non-finite something when filtering IMU - "
 		        "resetting filter and IMU fusion!\n");
+		reset_filter_and_imu(t);
 
-		t.filter_state = State{};
-		t.imu = xrt_fusion::SimpleIMUFusion{};
 	} else {
 		map_quat(t.fusion.rot) =
 		    t.filter_state.getQuaternion().cast<float>();
