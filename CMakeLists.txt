@@ -30,6 +30,7 @@ find_package(OpenCV COMPONENTS core calib3d highgui imgproc imgcodecs features2d
 find_package(Libusb1)
 find_package(JPEG)
 find_package(SDL2)
+find_package(Threads)
 
 # @TODO Turn into a find_package LIBUVC file.
 pkg_check_modules(LIBUVC libuvc)
