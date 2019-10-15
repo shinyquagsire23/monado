@@ -510,7 +510,10 @@ imu_data(TrackerPSMV &t,
 	//! @todo use better measurements instead of the above "simple fusion"
 	flexkalman::predict(t.filter_state, t.process_model, dt);
 	auto meas = flexkalman::AbsoluteOrientationMeasurement{
-	    t.imu.getQuat(), Eigen::Vector3d::Constant(0.01)};
+	    Eigen::Quaterniond(
+	        Eigen::AngleAxisd(EIGEN_PI, Eigen::Vector3d::UnitY())) *
+	        t.imu.getQuat(),
+	    Eigen::Vector3d::Constant(0.01)};
 	if (!flexkalman::correctUnscented(t.filter_state, meas)) {
 		fprintf(stderr,
 		        "Got non-finite something when filtering IMU!\n");
