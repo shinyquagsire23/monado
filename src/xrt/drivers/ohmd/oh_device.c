@@ -19,6 +19,7 @@
 
 #include "math/m_api.h"
 #include "xrt/xrt_device.h"
+#include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
@@ -37,6 +38,9 @@ static void
 oh_device_destroy(struct xrt_device *xdev)
 {
 	struct oh_device *ohd = oh_device(xdev);
+
+	// Remove the variable tracking.
+	u_var_remove_root(ohd);
 
 	if (ohd->dev != NULL) {
 		ohmd_close_device(ohd->dev);
@@ -549,6 +553,9 @@ oh_device_create(ohmd_context *ctx,
 	if (ohd->print_debug) {
 		u_device_dump_config(&ohd->base, __func__, prod);
 	}
+
+	u_var_add_root(ohd, "OpenHMD Wrapper", true);
+	u_var_add_ro_text(ohd, ohd->base.str, "Card");
 
 	return ohd;
 }
