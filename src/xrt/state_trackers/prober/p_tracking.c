@@ -16,6 +16,7 @@
 #include "tracking/t_tracking.h"
 #endif
 
+#include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_sink.h"
 #include "p_prober.h"
@@ -227,6 +228,11 @@ p_tracking_init(struct prober *p)
 	fact->origin.offset.position.y = 1.0f;
 	fact->p = p;
 
+	u_var_add_root(fact, "Tracking Factory", false);
+	u_var_add_vec3_f32(fact, &fact->origin.offset.position, "offset.pos");
+	// u_var_add_vec4_f32(fact, &fact->origin.offset.orientation,
+	// "offset.rot");
+
 	// Finally set us as the tracking factory.
 	p->base.tracking = &fact->base;
 
@@ -241,6 +247,9 @@ p_tracking_teardown(struct prober *p)
 	}
 
 	struct p_factory *fact = p_factory(p->base.tracking);
+
+	// Remove root
+	u_var_remove_root(fact);
 
 	// Drop any references to objects in the node graph.
 	fact->xfs = NULL;
