@@ -388,7 +388,8 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 		} else {
 			fprintf(stderr,
 			        "Got non-finite something when filtering "
-			        "tracker!\n");
+			        "tracker - resetting filter!\n");
+			t.filter_state = State{};
 		}
 	}
 	if (!corrected) {
@@ -516,7 +517,11 @@ imu_data(TrackerPSMV &t,
 	    Eigen::Vector3d::Constant(0.01)};
 	if (!flexkalman::correctUnscented(t.filter_state, meas)) {
 		fprintf(stderr,
-		        "Got non-finite something when filtering IMU!\n");
+		        "Got non-finite something when filtering IMU - "
+		        "resetting filter and IMU fusion!\n");
+
+		t.filter_state = State{};
+		t.imu = xrt_fusion::SimpleIMUFusion{};
 	} else {
 		map_quat(t.fusion.rot) =
 		    t.filter_state.getQuaternion().cast<float>();
