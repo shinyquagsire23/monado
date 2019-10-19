@@ -8,6 +8,8 @@
  * @ingroup drv_v4l2
  */
 
+#include "os/os_time.h"
+
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
@@ -78,7 +80,7 @@
 DEBUG_GET_ONCE_BOOL_OPTION(v4l2_options, "V4L2_PRINT_OPTIONS", false)
 DEBUG_GET_ONCE_BOOL_OPTION(v4l2_spew, "V4L2_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(v4l2_debug, "V4L2_PRINT_DEBUG", false)
-DEBUG_GET_ONCE_NUM_OPTION(v4l2_exposure_absolute, "V4L2_EXPOSURE_ABSOLUTE", 15)
+DEBUG_GET_ONCE_NUM_OPTION(v4l2_exposure_absolute, "V4L2_EXPOSURE_ABSOLUTE", 10)
 
 #define NUM_V4L2_BUFFERS 3
 
@@ -98,6 +100,15 @@ struct v4l2_frame
 	struct v4l2_buffer v_buf;
 };
 
+struct v4l2_control_state
+{
+	int force;
+	int id;
+	int want;
+	int value;
+	const char *name;
+};
+
 /*!
  * A single open v4l2 capture device, starts it's own thread and waits on it.
  */
@@ -115,13 +126,13 @@ struct v4l2_fs
 		bool timeperframe;
 	} has;
 
+
+	struct v4l2_control_state states[256];
+	size_t num_states;
+
 	struct
 	{
 		bool ps4_cam;
-		bool set_auto_exposure;
-		bool set_exposure_absolute;
-		int value_exposure_absolute;
-		int value_auto_exposure;
 	} quirks;
 
 	struct v4l2_frame frames[NUM_V4L2_BUFFERS];
@@ -167,6 +178,9 @@ v4l2_fs(struct xrt_fs *xfs)
 
 static void
 dump_controls(struct v4l2_fs *vid);
+
+static void
+dump_contron_name(uint32_t id);
 
 
 /*
@@ -221,6 +235,18 @@ v4l2_control_set(struct v4l2_fs *vid, uint32_t id, int value)
 	}
 
 	return 0;
+}
+
+static void
+v4l2_add_control_state(
+    struct v4l2_fs *vid, int control, int want, int force, const char *name)
+{
+	struct v4l2_control_state *state = &vid->states[vid->num_states++];
+
+	state->id = control;
+	state->name = name;
+	state->want = want;
+	state->force = force;
 }
 
 static int
@@ -288,11 +314,17 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 
 	if (vid->quirks.ps4_cam) {
 		// The experimented best controls to best track things.
-		vid->quirks.set_auto_exposure = true;
-		vid->quirks.value_auto_exposure = 2;
-		vid->quirks.set_exposure_absolute = true;
-		vid->quirks.value_exposure_absolute =
-		    debug_get_num_option_v4l2_exposure_absolute();
+		v4l2_add_control_state(vid, V4L2_CID_GAIN, 0, 2, "gain");
+		v4l2_add_control_state(vid, V4L2_CID_AUTO_WHITE_BALANCE, 0, 2,
+		                       "auto_white_balance");
+		v4l2_add_control_state(vid, V4L2_CID_WHITE_BALANCE_TEMPERATURE,
+		                       3900, 2, "white_balance_temperature");
+		v4l2_add_control_state(vid, V4L2_CID_EXPOSURE_AUTO, 2, 2,
+		                       "exposure_auto");
+		v4l2_add_control_state(
+		    vid, V4L2_CID_EXPOSURE_ABSOLUTE,
+		    debug_get_num_option_v4l2_exposure_absolute(), 2,
+		    "exposure_absolute");
 	}
 
 	// Done
@@ -530,6 +562,49 @@ v4l2_list_modes(struct v4l2_fs *vid)
 	}
 }
 
+static void
+v4l2_set_control_if_diff(struct v4l2_fs *vid, struct v4l2_control_state *state)
+{
+	int value = 0;
+	int ret = 0;
+
+	ret = v4l2_control_get(vid, state->id, &value);
+	if (ret != 0) {
+		return;
+	}
+
+	if (value == state->want && state->force <= 0) {
+		return;
+	}
+
+#if 0
+	dump_contron_name(state->id);
+
+	fprintf(stderr, " ret: %i, want: %i, was: %i, force: %i\n", ret,
+	        state->want, value, state->force);
+#endif
+
+	ret = v4l2_control_set(vid, state->id, state->want);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to set ");
+		dump_contron_name(state->id);
+		fprintf(stderr, "\n");
+		return;
+	}
+
+	if (state->force > 0) {
+		state->force--;
+	}
+}
+
+static void
+v4l2_update_controls(struct v4l2_fs *vid)
+{
+	for (size_t i = 0; i < vid->num_states; i++) {
+		v4l2_set_control_if_diff(vid, &vid->states[i]);
+	}
+}
+
 
 /*
  *
@@ -705,10 +780,15 @@ v4l2_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	xrt_frame_context_add(xfctx, &vid->node);
 
 	// Start the variable tracking after we know what device we have.
+	// clang-format off
 	u_var_add_root(vid, "V4L2 Frameserver", true);
 	u_var_add_ro_text(vid, vid->card, "Card");
 	u_var_add_bool(vid, &vid->print_debug, "Debug");
 	u_var_add_bool(vid, &vid->print_spew, "Spew");
+	for (size_t i = 0; i < vid->num_states; i++) {
+		u_var_add_i32(vid, &vid->states[i].want, vid->states[i].name);
+	}
+	// clang-format on
 
 	v4l2_list_modes(vid);
 
@@ -807,14 +887,7 @@ v4l2_fs_stream_run(void *ptr)
 	/*
 	 * Need to set these after we have started the stream.
 	 */
-	if (vid->quirks.set_auto_exposure) {
-		V_CONTROL_SET(vid, EXPOSURE_AUTO,
-		              vid->quirks.value_auto_exposure);
-	}
-	if (vid->quirks.set_exposure_absolute) {
-		V_CONTROL_SET(vid, EXPOSURE_ABSOLUTE,
-		              vid->quirks.value_exposure_absolute);
-	}
+	v4l2_update_controls(vid);
 
 	struct v4l2_buffer v_buf = {0};
 	v_buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -826,6 +899,9 @@ v4l2_fs_stream_run(void *ptr)
 			vid->is_running = false;
 			break;
 		}
+
+		v4l2_update_controls(vid);
+
 		V_SPEW(vid, "Got frame #%u, index %i", v_buf.sequence,
 		       v_buf.index);
 
@@ -867,6 +943,14 @@ v4l2_fs_stream_run(void *ptr)
  */
 
 static void
+dump_integer(struct v4l2_fs *vid, struct v4l2_queryctrl *queryctrl)
+{
+	fprintf(stderr, "  Type: Integer\n");
+	fprintf(stderr, "    min: %i, max: %i, step: %i.\n", queryctrl->minimum,
+	        queryctrl->maximum, queryctrl->step);
+}
+
+static void
 dump_menu(struct v4l2_fs *vid, uint32_t id, uint32_t min, uint32_t max)
 {
 	fprintf(stderr, "  Menu items:\n");
@@ -876,10 +960,11 @@ dump_menu(struct v4l2_fs *vid, uint32_t id, uint32_t min, uint32_t max)
 
 	for (querymenu.index = min; querymenu.index <= max; querymenu.index++) {
 		if (0 != ioctl(vid->fd, VIDIOC_QUERYMENU, &querymenu)) {
-			fprintf(stderr, "  %i\n", querymenu.index);
+			fprintf(stderr, "    %i\n", querymenu.index);
 			continue;
 		}
-		fprintf(stderr, "  %i: %s\n", querymenu.index, querymenu.name);
+		fprintf(stderr, "    %i: %s\n", querymenu.index,
+		        querymenu.name);
 	}
 }
 
@@ -996,13 +1081,31 @@ dump_controls(struct v4l2_fs *vid)
 
 		fprintf(stderr, "\n");
 
-		if (queryctrl.flags & V4L2_CTRL_FLAG_DISABLED) {
-			continue;
-		}
-
-		if (queryctrl.type == V4L2_CTRL_TYPE_MENU) {
+		switch (queryctrl.type) {
+		case V4L2_CTRL_TYPE_BOOLEAN:
+			fprintf(stderr, "  Type: Boolean\n");
+			break;
+		case V4L2_CTRL_TYPE_INTEGER:
+			dump_integer(vid, &queryctrl);
+			break;
+		case V4L2_CTRL_TYPE_INTEGER64:
+			fprintf(stderr, "  Type: Integer64\n");
+			break;
+		case V4L2_CTRL_TYPE_BUTTON:
+			fprintf(stderr, "  Type: Buttons\n");
+			break;
+		case V4L2_CTRL_TYPE_MENU:
 			dump_menu(vid, queryctrl.id, queryctrl.minimum,
 			          queryctrl.maximum);
+			break;
+		case V4L2_CTRL_TYPE_STRING:
+			fprintf(stderr, "  Type: String\n");
+			break;
+		default: fprintf(stderr, " Type: Unknown\n"); break;
+		}
+
+		if (queryctrl.flags & V4L2_CTRL_FLAG_DISABLED) {
+			continue;
 		}
 
 		queryctrl.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
