@@ -237,6 +237,8 @@ on_elem_sink(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 	p->texs[p->num_texs] = gui_ogl_sink_create(name, xfctx, &split);
 	p->texs[p->num_texs++]->ptr = ptr;
 
+	u_sink_create_to_r8g8b8_or_l8(xfctx, split, &split);
+
 	if (*xsink_ptr != NULL) {
 		u_sink_split_create(xfctx, split, *xsink_ptr, xsink_ptr);
 	} else {
