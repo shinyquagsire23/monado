@@ -23,6 +23,11 @@ u_sink_create_format_converter(struct xrt_frame_context *xfctx,
                                struct xrt_frame_sink **out_xfs);
 
 void
+u_sink_create_to_r8g8b8_or_l8(struct xrt_frame_context *xfctx,
+                              struct xrt_frame_sink *downstream,
+                              struct xrt_frame_sink **out_xfs);
+
+void
 u_sink_create_to_yuv_or_yuyv(struct xrt_frame_context *xfctx,
                              struct xrt_frame_sink *downstream,
                              struct xrt_frame_sink **out_xfs);
