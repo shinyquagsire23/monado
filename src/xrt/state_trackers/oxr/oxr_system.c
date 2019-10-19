@@ -44,6 +44,13 @@ oxr_system_select(struct oxr_logger *log,
                   XrFormFactor form_factor,
                   struct oxr_system **out_selected)
 {
+	if (num_systems == 0) {
+		return oxr_error(
+		    log, XR_ERROR_FORM_FACTOR_UNSUPPORTED,
+		    "(getInfo->formFactor) no system available (given: %i)",
+		    form_factor);
+	}
+
 	struct oxr_system *selected = NULL;
 	for (uint32_t i = 0; i < num_systems; i++) {
 		if (oxr_system_matches(log, systems[i], form_factor)) {
@@ -54,7 +61,9 @@ oxr_system_select(struct oxr_logger *log,
 
 	if (selected == NULL) {
 		return oxr_error(log, XR_ERROR_FORM_FACTOR_UNSUPPORTED,
-		                 "(getInfo->formFactor) no matching system");
+		                 "(getInfo->formFactor) no matching system "
+		                 "(given: %i, first: %i)",
+		                 form_factor, systems[0]->form_factor);
 	}
 
 	*out_selected = selected;
