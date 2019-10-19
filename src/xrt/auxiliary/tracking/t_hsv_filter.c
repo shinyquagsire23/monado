@@ -136,7 +136,9 @@ struct t_hsv_filter
 	struct xrt_frame_sink base;
 	struct xrt_frame_node node;
 
+
 	struct xrt_frame_sink *sinks[NUM_CHANNELS];
+	struct xrt_frame_sink *debug;
 
 	struct t_hsv_filter_params params;
 
@@ -303,6 +305,10 @@ push_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 		return;
 	}
 
+	if (f->debug != NULL) {
+		f->debug->push_frame(f->debug, xf);
+	}
+
 	push_buf(f, xf, f->sinks[0], &f->frame0);
 	push_buf(f, xf, f->sinks[1], &f->frame1);
 	push_buf(f, xf, f->sinks[2], &f->frame2);
@@ -347,6 +353,7 @@ t_hsv_filter_create(struct xrt_frame_context *xfctx,
 	xrt_frame_context_add(xfctx, &f->node);
 
 	u_var_add_root(f, "HSV Filter", true);
+	u_var_add_sink(f, &f->debug, "Input");
 	u_var_add_sink(f, &f->sinks[0], "Red");
 	u_var_add_sink(f, &f->sinks[1], "Purple");
 	u_var_add_sink(f, &f->sinks[2], "Blue");
