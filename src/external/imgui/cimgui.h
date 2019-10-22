@@ -2051,8 +2051,10 @@ typedef struct SDL_Window SDL_Window;
 typedef union SDL_Event SDL_Event;
 
 CIMGUI_API bool igImGui_ImplSDL2_InitForOpenGL(SDL_Window* window, void* sdl_gl_context);
+#if 0
 CIMGUI_API bool igImGui_ImplSDL2_InitForVulkan(SDL_Window* window);
 CIMGUI_API bool igImGui_ImplSDL2_InitForD3D(SDL_Window* window);
+#endif
 CIMGUI_API void igImGui_ImplSDL2_Shutdown(void);
 CIMGUI_API void igImGui_ImplSDL2_NewFrame(SDL_Window* window);
 CIMGUI_API bool igImGui_ImplSDL2_ProcessEvent(const SDL_Event* event);
