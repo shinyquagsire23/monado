@@ -64,9 +64,6 @@ oxr_space_action_create(struct oxr_logger *log,
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, spc, OXR_XR_DEBUG_SPACE,
 	                              oxr_space_destroy, &sess->handle);
 
-	//! @todo implement more fully
-	oxr_warn(log, " not fully implemented");
-
 	oxr_classify_sub_action_paths(log, inst, 1, &createInfo->subactionPath,
 	                              &sub_paths);
 
