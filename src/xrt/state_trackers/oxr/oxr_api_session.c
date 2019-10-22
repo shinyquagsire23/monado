@@ -108,10 +108,6 @@ oxr_xrWaitFrame(XrSession session,
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrWaitFrame");
-	if (sess->compositor == NULL) {
-		return oxr_error(&log, XR_ERROR_GRAPHICS_DEVICE_INVALID,
-		                 "xrWaitFrame is illegal in headless sessions");
-	}
 	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, frameState, XR_TYPE_FRAME_STATE);
 	OXR_VERIFY_ARG_NOT_NULL(&log, frameState);
 

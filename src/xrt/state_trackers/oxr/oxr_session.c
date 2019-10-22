@@ -391,10 +391,13 @@ oxr_session_frame_wait(struct oxr_logger *log,
 	    time_state_get_now_and_update(sess->sys->inst->timekeeping);
 
 	struct xrt_compositor *xc = sess->compositor;
-	xc->wait_frame(xc, &frameState->predictedDisplayTime,
-	               &frameState->predictedDisplayPeriod);
-
-	frameState->shouldRender = should_render(sess->state);
+	if (xc != NULL) {
+		xc->wait_frame(xc, &frameState->predictedDisplayTime,
+		               &frameState->predictedDisplayPeriod);
+		frameState->shouldRender = should_render(sess->state);
+	} else {
+		frameState->shouldRender = XR_FALSE;
+	}
 
 	return oxr_session_success_result(sess);
 }
