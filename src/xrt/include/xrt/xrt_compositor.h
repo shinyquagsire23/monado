@@ -260,7 +260,7 @@ typedef struct VkImage_T *VkImage;
 typedef struct VkDeviceMemory_T *VkDeviceMemory;
 
 /*!
- * Base clase for a Vulkan client swapchain.
+ * Base class for a Vulkan client swapchain.
  *
  * @ingroup xrt_iface comp_client
  */
@@ -273,7 +273,7 @@ struct xrt_swapchain_vk
 };
 
 /*!
- * Base clase for a Vulkan client compositor.
+ * Base class for a Vulkan client compositor.
  *
  * @ingroup xrt_iface comp_client
  */
