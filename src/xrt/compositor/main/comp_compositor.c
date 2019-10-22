@@ -5,7 +5,40 @@
  * @brief  Main compositor written using Vulkan implementation.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup comp
+ *
+ *
+ * begin_frame and end_frame delimit the application's work on graphics for a
+ * single frame. end_frame updates our estimate of the current estimated app
+ * graphics duration, as well as the "swap interval" for scheduling the
+ * application.
+ *
+ * We have some known overhead work required to composite a frame: eventually
+ * this may be measured as well. Overhead plus the estimated app render duration
+ * is compared to the frame duration: if it's longer, then we go to a "swap
+ * interval" of 2.
+ *
+ * wait_frame must be the one to produce the next predicted display time,
+ * because we cannot distinguish two sequential wait_frame calls (an app
+ * skipping a frame) from an OS scheduling blip causing the second wait_frame to
+ * happen before the first begin_frame actually gets executed. It cannot use the
+ * last display time in this computation for this reason. (Except perhaps to
+ * align the period at a sub-frame level? e.g. should be a multiple of the frame
+ * duration after the last displayed time).
+ *
+ * wait_frame should not actually produce the predicted display time until it's
+ * done waiting: it should wake up once a frame and see what the current swap
+ * interval suggests: this handles the case where end_frame changes the swap
+ * interval from 2 to 1 during a wait_frame call. (That is, we should wait until
+ * whichever is closer of the next vsync or the time we currently predict we
+ * should release the app.)
+ *
+ * Sleeping can be a bit hairy: in general right now we'll use a combination of
+ * operating system sleeps and busy-waits (for fine-grained waiting). Some
+ * platforms provide vsync-related sync primitives that may get us closer to our
+ * desired time. This is also convenient for the "wait until next frame"
+ * behavior.
  */
 
 #include <stdio.h>
@@ -23,7 +56,10 @@
 #include "main/comp_client_interface.h"
 
 #include <unistd.h>
+#include <math.h>
 
+/*!
+ */
 static void
 compositor_destroy(struct xrt_compositor *xc)
 {
@@ -77,6 +113,50 @@ compositor_end_session(struct xrt_compositor *xc)
 	COMP_DEBUG(c, "END_SESSION");
 }
 
+/*!
+ * @brief Utility for waiting (for rendering purposes) until the next vsync or a
+ * specified time point, whichever comes first.
+ *
+ * Only for rendering - this will busy-wait if needed.
+ *
+ * @return true if we waited until the time indicated
+ *
+ * @todo In the future, this may differ between platforms since some have ways
+ * to directly wait on a vsync.
+ */
+static bool
+compositor_wait_vsync_or_time(struct comp_compositor *c, int64_t wake_up_time)
+{
+
+	int64_t now_ns = time_state_get_now(c->timekeeping);
+	/*!
+	 * @todo this is not accurate, but it serves the purpose of not letting
+	 * us sleep longer than the next vsync usually
+	 */
+	int64_t next_vsync = now_ns + c->settings.nominal_frame_interval_ns / 2;
+
+	bool ret = true;
+	// Sleep until the sooner of vsync or our deadline.
+	if (next_vsync < wake_up_time) {
+		ret = false;
+		wake_up_time = next_vsync;
+	}
+	int64_t wait_duration = wake_up_time - now_ns;
+	if (wait_duration <= 0) {
+		// Don't wait at all
+		return ret;
+	}
+
+	if (wait_duration > 1000000) {
+		os_nanosleep(wait_duration - (wait_duration % 1000000));
+	}
+	// Busy-wait for fine-grained delays.
+	while (now_ns < wake_up_time) {
+		now_ns = time_state_get_now(c->timekeeping);
+	}
+
+	return ret;
+}
 static void
 compositor_wait_frame(struct xrt_compositor *xc,
                       int64_t *predicted_display_time,
@@ -88,27 +168,46 @@ compositor_wait_frame(struct xrt_compositor *xc,
 	// A little bit easier to read.
 	int64_t interval_ns = (int64_t)c->settings.nominal_frame_interval_ns;
 
-	// HACK: Wait until the frame is predicted to be displayed.
-	// This needs improvement, but blocks for plausible timings.
 	int64_t now_ns = time_state_get_now(c->timekeeping);
-	int64_t already_used_ns = now_ns - c->last_frame_time_ns;
-	int64_t remaining_nsec = interval_ns - already_used_ns;
+	if (c->last_next_display_time == 0) {
+		// First frame, we'll just assume we will display immediately
 
-	// leave 1.25 ms for overhead
-	if (remaining_nsec > 1250000) {
-		os_nanosleep(remaining_nsec - 1250000);
+		*predicted_display_period = interval_ns;
+		c->last_next_display_time = now_ns + interval_ns;
+		*predicted_display_time = c->last_next_display_time;
+		return;
 	}
 
-	*predicted_display_period = interval_ns;
-	*predicted_display_time = c->last_frame_time_ns + interval_ns;
+	// First estimate of next display time.
+	while (1) {
 
-	// if frame intervals were missed, keep adding intervals until we
-	// predict the next one in the future. Also make sure we leave the
-	// application at least half a frame interval for rendering.
+		int64_t render_time_ns =
+		    c->expected_app_duration_ns + c->frame_overhead_ns;
+		int64_t swap_interval =
+		    ceil((float)render_time_ns / interval_ns);
+		int64_t render_interval_ns = swap_interval * interval_ns;
+		int64_t next_display_time =
+		    c->last_next_display_time + render_interval_ns;
+		/*!
+		 * @todo adjust next_display_time to be a multiple of
+		 * interval_ns from c->last_frame_time_ns
+		 */
 
-	now_ns = time_state_get_now(c->timekeeping);
-	while (*predicted_display_time < now_ns - interval_ns / 2) {
-		*predicted_display_time += interval_ns;
+		while ((next_display_time - render_time_ns) < now_ns) {
+			// we can't unblock in the past
+			next_display_time += render_interval_ns;
+		}
+		if (compositor_wait_vsync_or_time(
+		        c, (next_display_time - render_time_ns))) {
+			// True return val means we actually waited for the
+			// deadline.
+			*predicted_display_period =
+			    next_display_time - c->last_next_display_time;
+			*predicted_display_time = next_display_time;
+
+			c->last_next_display_time = next_display_time;
+			return;
+		}
 	}
 }
 
@@ -117,6 +216,7 @@ compositor_begin_frame(struct xrt_compositor *xc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_SPEW(c, "BEGIN_FRAME");
+	c->app_profiling.last_begin = time_state_get_now(c->timekeeping);
 }
 
 static void
@@ -151,6 +251,11 @@ compositor_end_frame(struct xrt_compositor *xc,
 
 	// Record the time of this frame.
 	c->last_frame_time_ns = time_state_get_now(c->timekeeping);
+	c->app_profiling.last_end = c->last_frame_time_ns;
+
+	//! @todo do a time-weighted average or something.
+	c->expected_app_duration_ns =
+	    c->app_profiling.last_end - c->app_profiling.last_begin;
 }
 
 
@@ -373,9 +478,10 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 {
 	VkResult ret;
 
-	// this is duplicative, but seems to be the easiest way to 'pre-check'
-	// capabilities when window creation precedes vulkan instance creation.
-	// we also need to load the VK_KHR_DISPLAY extension.
+	// this is duplicative, but seems to be the easiest way to
+	// 'pre-check' capabilities when window creation precedes vulkan
+	// instance creation. we also need to load the VK_KHR_DISPLAY
+	// extension.
 
 	if (c->settings.window_type != WINDOW_AUTO) {
 		COMP_DEBUG(c, "Skipping NVIDIA detection, window type forced.");
@@ -439,12 +545,13 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	                                      &physical_device_properties);
 
 	if (physical_device_properties.vendorID == 0x10DE) {
-		// our physical device is an nvidia card, we can potentially
-		// select nvidia-specific direct mode.
+		// our physical device is an nvidia card, we can
+		// potentially select nvidia-specific direct mode.
 
-		// we need to also check if we are confident that we can create
-		// a direct mode display, if not we need to  abandon the attempt
-		// here, and allow desktop-window fallback to occur.
+		// we need to also check if we are confident that we can
+		// create a direct mode display, if not we need to
+		// abandon the attempt here, and allow desktop-window
+		// fallback to occur.
 
 		// get a list of attached displays
 		uint32_t display_count;
@@ -481,8 +588,8 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 					if (strncmp(NV_DIRECT_WHITELIST[j],
 					            disp.displayName,
 					            wl_entry_length) == 0) {
-						// we have a match with this
-						// whitelist entry.
+						// we have a match with
+						// this whitelist entry.
 						nvidia_tests_passed = true;
 					}
 				}
@@ -663,6 +770,9 @@ comp_compositor_create(struct xrt_device *xdev,
 
 	c->settings.flip_y = flip_y;
 	c->last_frame_time_ns = time_state_get_now(c->timekeeping);
+	c->frame_overhead_ns = 2000000;
+	//! @todo set this to an estimate that's better than 6ms
+	c->expected_app_duration_ns = 6000000;
 
 
 	// Need to select window backend before creating Vulkan, then

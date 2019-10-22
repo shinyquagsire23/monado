@@ -95,6 +95,29 @@ struct comp_compositor
 	int64_t last_frame_time_ns;
 
 	/*!
+	 * @brief Data exclusive to the begin_frame/end_frame for computing an
+	 * estimate of the app's needs.
+	 */
+	struct
+	{
+		int64_t last_begin;
+		int64_t last_end;
+	} app_profiling;
+
+	//! The time our compositor needs to do rendering
+	int64_t frame_overhead_ns;
+	/*!
+	 * @brief Estimated rendering time per frame of the application.
+	 *
+	 * Set by the begin_frame/end_frame code.
+	 *
+	 * @todo make this atomic.
+	 */
+	int64_t expected_app_duration_ns;
+	//! The last time we provided in the results of wait_frame
+	int64_t last_next_display_time;
+
+	/*!
 	 * The current state we are tracking.
 	 *
 	 * Settings is supposed to be read only.
