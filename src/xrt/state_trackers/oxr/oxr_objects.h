@@ -933,6 +933,7 @@ struct oxr_session
 
 	XrSessionState state;
 	bool frame_started;
+	bool exiting;
 
 	struct u_hashmap_int *act_sets;
 	struct u_hashmap_int *sources;

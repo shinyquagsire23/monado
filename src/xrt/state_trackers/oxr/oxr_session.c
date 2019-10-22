@@ -145,8 +145,11 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 	}
 
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
-
+	if (sess->exiting) {
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_EXITING);
+	} else {
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
+	}
 	return oxr_session_success_result(sess);
 }
 
@@ -166,6 +169,7 @@ oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
 	}
 	//! @todo start fading out the app.
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_STOPPING);
+	sess->exiting = true;
 	return oxr_session_success_result(sess);
 }
 
