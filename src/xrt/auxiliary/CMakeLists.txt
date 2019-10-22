@@ -49,6 +49,8 @@ set(UTIL_SOURCE_FILES
 	util/u_debug.h
 	util/u_device.c
 	util/u_device.h
+	util/u_distortion_mesh.c
+	util/u_distortion_mesh.h
 	util/u_documentation.h
 	util/u_format.c
 	util/u_format.h
