@@ -20,6 +20,7 @@ gui = executable(
 		'gui_sdl2_imgui.c',
 		'gui_sdl2_main.c',
 		'gui_sdl2_prober.c',
+		'../../../external/imgui/cimgui_sdl.cpp',
 		'../../../external/imgui/imgui_impl_sdl.cpp',
 		'../../../external/imgui/imgui_impl_sdl.h',
 	),

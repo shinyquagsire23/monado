@@ -76,6 +76,7 @@ if(BUILD_WITH_SDL2)
 		)
 
 	target_sources(${RUNTIME_TARGET} PRIVATE
+		../../../external/imgui/cimgui_sdl.cpp
 		../../../external/imgui/imgui_impl_sdl.cpp
 		../../../external/imgui/imgui_impl_sdl.h
 		)

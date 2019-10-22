@@ -25,6 +25,7 @@ if sdl2.found()
 	hack_deps += sdl2
 	hack_src += [
 		'oxr_sdl2_hack.c',
+		'../../../external/imgui/cimgui_sdl.cpp',
 		'../../../external/imgui/imgui_impl_sdl.cpp',
 		'../../../external/imgui/imgui_impl_sdl.h',
 	]
