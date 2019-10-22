@@ -441,6 +441,9 @@ oxr_session_begin(struct oxr_logger *log,
 XrResult
 oxr_session_end(struct oxr_logger *log, struct oxr_session *sess);
 
+XrResult
+oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess);
+
 void
 oxr_session_poll(struct oxr_session *sess);
 

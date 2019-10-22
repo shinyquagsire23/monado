@@ -39,6 +39,7 @@ is_running(XrSessionState state)
 	case XR_SESSION_STATE_SYNCHRONIZED: return true;
 	case XR_SESSION_STATE_VISIBLE: return true;
 	case XR_SESSION_STATE_FOCUSED: return true;
+	case XR_SESSION_STATE_STOPPING: return true;
 	default: return false;
 	}
 }
@@ -49,8 +50,18 @@ should_render(XrSessionState state)
 	switch (state) {
 	case XR_SESSION_STATE_VISIBLE: return true;
 	case XR_SESSION_STATE_FOCUSED: return true;
+	case XR_SESSION_STATE_STOPPING: return true;
 	default: return false;
 	}
+}
+
+static void
+oxr_session_change_state(struct oxr_logger *log,
+                         struct oxr_session *sess,
+                         XrSessionState state)
+{
+	oxr_event_push_XrEventDataSessionStateChanged(log, sess, state, 0);
+	sess->state = state;
 }
 
 XrResult
@@ -103,14 +114,9 @@ oxr_session_begin(struct oxr_logger *log,
 		                          ->primaryViewConfigurationType);
 	}
 
-	oxr_event_push_XrEventDataSessionStateChanged(
-	    log, sess, XR_SESSION_STATE_SYNCHRONIZED, 0);
-	oxr_event_push_XrEventDataSessionStateChanged(
-	    log, sess, XR_SESSION_STATE_VISIBLE, 0);
-	oxr_event_push_XrEventDataSessionStateChanged(
-	    log, sess, XR_SESSION_STATE_FOCUSED, 0);
-
-	sess->state = XR_SESSION_STATE_FOCUSED;
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED);
 
 	return oxr_session_success_result(sess);
 }
@@ -124,6 +130,10 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
 		                 " session is not running");
 	}
+	if (sess->state != XR_SESSION_STATE_STOPPING) {
+		return oxr_error(log, XR_ERROR_SESSION_NOT_STOPPING,
+		                 " session is not stopping");
+	}
 
 	if (xc != NULL) {
 		if (sess->frame_started) {
@@ -134,16 +144,29 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 		xc->end_session(xc);
 	}
 
-	oxr_event_push_XrEventDataSessionStateChanged(
-	    log, sess, XR_SESSION_STATE_STOPPING, 0);
-	oxr_event_push_XrEventDataSessionStateChanged(log, sess,
-	                                              XR_SESSION_STATE_IDLE, 0);
-	oxr_event_push_XrEventDataSessionStateChanged(
-	    log, sess, XR_SESSION_STATE_READY, 0);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
 
-	sess->state = XR_SESSION_STATE_READY;
+	return oxr_session_success_result(sess);
+}
 
-	return XR_SUCCESS;
+XrResult
+oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
+{
+	if (!is_running(sess->state)) {
+		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
+		                 " session is not running");
+	}
+	if (sess->state == XR_SESSION_STATE_FOCUSED) {
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+	}
+	if (sess->state == XR_SESSION_STATE_VISIBLE) {
+		oxr_session_change_state(log, sess,
+		                         XR_SESSION_STATE_SYNCHRONIZED);
+	}
+	//! @todo start fading out the app.
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_STOPPING);
+	return oxr_session_success_result(sess);
 }
 
 void

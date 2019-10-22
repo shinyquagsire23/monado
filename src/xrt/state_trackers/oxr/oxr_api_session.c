@@ -153,7 +153,7 @@ oxr_xrRequestExitSession(XrSession session)
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrRequestExitSession");
 
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_session_request_exit(&log, sess);
 }
 
 XrResult
