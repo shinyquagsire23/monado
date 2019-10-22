@@ -17,10 +17,8 @@
 #include <stdlib.h>
 
 
-DEBUG_GET_ONCE_BOOL_OPTION(lifecycle_verbose, "OXR_LIFECYCLE_VERBOSE", false)
-
 #define HANDLE_LIFECYCLE_LOG(log, ...)                                         \
-	if (debug_get_bool_option_lifecycle_verbose()) {                       \
+	if (log->inst != NULL && log->inst->lifecycle_verbose) {               \
 		oxr_log(log, " Handle Lifecycle: " __VA_ARGS__);               \
 	}
 

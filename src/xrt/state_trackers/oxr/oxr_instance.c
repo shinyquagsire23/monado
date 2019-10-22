@@ -25,6 +25,12 @@
 #include "oxr_handle.h"
 #include "oxr_extension_support.h"
 
+
+DEBUG_GET_ONCE_BOOL_OPTION(debug_views, "OXR_DEBUG_VIEWS", false)
+DEBUG_GET_ONCE_BOOL_OPTION(debug_spaces, "OXR_DEBUG_SPACES", false)
+DEBUG_GET_ONCE_BOOL_OPTION(debug_bindings, "OXR_DEBUG_BINDINGS", false)
+DEBUG_GET_ONCE_BOOL_OPTION(lifecycle_verbose, "OXR_LIFECYCLE_VERBOSE", false)
+
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_left, "OXR_OVERRIDE_LFOV_LEFT", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_right, "OXR_OVERRIDE_LFOV_RIGHT", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_up, "OXR_OVERRIDE_LFOV_UP", 0.0f)
@@ -101,6 +107,11 @@ oxr_instance_create(struct oxr_logger *log,
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
 	                              oxr_instance_destroy, NULL);
+
+	inst->lifecycle_verbose = debug_get_bool_option_lifecycle_verbose();
+	inst->debug_spaces = debug_get_bool_option_debug_spaces();
+	inst->debug_views = debug_get_bool_option_debug_views();
+	inst->debug_bindings = debug_get_bool_option_debug_bindings();
 
 	/* ---- HACK ---- */
 	oxr_sdl2_hack_create(&inst->hack);

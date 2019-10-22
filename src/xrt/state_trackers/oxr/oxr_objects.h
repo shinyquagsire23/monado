@@ -907,6 +907,11 @@ struct oxr_instance
 
 	//! Debug messengers
 	struct oxr_debug_messenger *messengers[XRT_MAX_HANDLE_CHILDREN];
+
+	bool lifecycle_verbose;
+	bool debug_views;
+	bool debug_spaces;
+	bool debug_bindings;
 };
 
 /*!

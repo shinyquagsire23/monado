@@ -28,7 +28,6 @@
 #include "oxr_chain.h"
 
 
-DEBUG_GET_ONCE_BOOL_OPTION(views, "OXR_DEBUG_VIEWS", false)
 DEBUG_GET_ONCE_BOOL_OPTION(dynamic_prediction, "OXR_DYNAMIC_PREDICTION", true)
 DEBUG_GET_ONCE_NUM_OPTION(ipd, "OXR_DEBUG_IPD_MM", 63)
 DEBUG_GET_ONCE_NUM_OPTION(prediction_ms, "OXR_DEBUG_PREDICTION_MS", 11)
@@ -220,7 +219,7 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 		                             &relation.angular_velocity,
 		                             interval, &predicted);
 
-		if (debug_get_bool_option_views()) {
+		if (sess->sys->inst->debug_views) {
 			fprintf(stderr,
 			        "\toriginal quat = {%f, %f, %f, %f}   "
 			        "(time requested: %li, Interval %li nsec, with "
@@ -237,9 +236,11 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 }
 
 void
-print_view_fov(uint32_t index, const struct xrt_fov *fov)
+print_view_fov(struct oxr_session *sess,
+               uint32_t index,
+               const struct xrt_fov *fov)
 {
-	if (!debug_get_bool_option_views()) {
+	if (!sess->sys->inst->debug_views) {
 		return;
 	}
 
@@ -249,9 +250,11 @@ print_view_fov(uint32_t index, const struct xrt_fov *fov)
 }
 
 void
-print_view_pose(uint32_t index, const struct xrt_pose *pose)
+print_view_pose(struct oxr_session *sess,
+                uint32_t index,
+                const struct xrt_pose *pose)
 {
-	if (!debug_get_bool_option_views()) {
+	if (!sess->sys->inst->debug_views) {
 		return;
 	}
 
@@ -295,7 +298,7 @@ oxr_session_views(struct oxr_logger *log,
 	}
 	// End two call handling.
 
-	if (debug_get_bool_option_views()) {
+	if (sess->sys->inst->debug_views) {
 		fprintf(stderr, "%s\n", __func__);
 		fprintf(stderr, "\tviewLocateInfo->displayTime %lu\n",
 		        viewLocateInfo->displayTime);
@@ -337,8 +340,8 @@ oxr_session_views(struct oxr_logger *log,
 		safe_copy.xrt = xdev->hmd->views[i].fov;
 		views[i].fov = safe_copy.oxr;
 
-		print_view_fov(i, (struct xrt_fov *)&views[i].fov);
-		print_view_pose(i, (struct xrt_pose *)&views[i].pose);
+		print_view_fov(sess, i, (struct xrt_fov *)&views[i].fov);
+		print_view_pose(sess, i, (struct xrt_pose *)&views[i].pose);
 	}
 
 	// @todo Add tracking bit once we have them.

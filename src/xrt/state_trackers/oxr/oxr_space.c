@@ -21,8 +21,6 @@
 #include "oxr_handle.h"
 
 
-DEBUG_GET_ONCE_BOOL_OPTION(space, "OXR_DEBUG_SPACE", false)
-
 const struct xrt_pose origin = {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}};
 
 static XrResult
@@ -303,9 +301,9 @@ get_pure_space_relation(struct oxr_logger *log,
 }
 
 static void
-print_pose(const char *prefix, struct xrt_pose *pose)
+print_pose(struct oxr_session *sess, const char *prefix, struct xrt_pose *pose)
 {
-	if (!debug_get_bool_option_space()) {
+	if (!sess->sys->inst->debug_spaces) {
 		return;
 	}
 
@@ -319,13 +317,13 @@ print_pose(const char *prefix, struct xrt_pose *pose)
 static void
 print_space(const char *name, struct oxr_space *spc)
 {
-	if (!debug_get_bool_option_space()) {
+	if (!spc->sess->sys->inst->debug_spaces) {
 		return;
 	}
 
 	const char *type_str = get_ref_space_type_short_str(spc);
 	fprintf(stderr, "\t%s->type %s\n\t%s->pose", name, type_str, name);
-	print_pose("", &spc->pose);
+	print_pose(spc->sess, "", &spc->pose);
 }
 
 XrResult
@@ -335,7 +333,7 @@ oxr_space_locate(struct oxr_logger *log,
                  XrTime time,
                  XrSpaceLocation *location)
 {
-	if (debug_get_bool_option_space()) {
+	if (spc->sess->sys->inst->debug_spaces) {
 		fprintf(stderr, "%s\n", __func__);
 	}
 	print_space("space", spc);
@@ -374,7 +372,8 @@ oxr_space_locate(struct oxr_logger *log,
 	    *(XrVector3f *)&result.angular_acceleration;
 #endif
 
-	print_pose("\trelation->pose", (struct xrt_pose *)&location->pose);
+	print_pose(spc->sess, "\trelation->pose",
+	           (struct xrt_pose *)&location->pose);
 
 	return oxr_session_success_result(spc->sess);
 }

@@ -535,7 +535,11 @@ oxr_source_create(struct oxr_logger *log,
 	oxr_slog(&slog, "\tDone");
 
 	// Also frees all data.
-	oxr_log_slog(log, &slog);
+	if (sess->sys->inst->debug_bindings) {
+		oxr_log_slog(log, &slog);
+	} else {
+		oxr_slog_abort(&slog);
+	}
 
 	return XR_SUCCESS;
 }
