@@ -48,6 +48,12 @@ struct vive_device
 
 	struct
 	{
+		struct xrt_vec3 acc;
+		struct xrt_vec3 gyro;
+	} last;
+
+	struct
+	{
 		double lens_separation;
 		double persistence;
 		uint16_t eye_target_height_in_pixels;
@@ -77,6 +83,12 @@ struct vive_device
 	bool print_spew;
 	bool print_debug;
 	bool disconnect_notified;
+
+	struct
+	{
+		bool calibration;
+		bool last;
+	} gui;
 };
 
 struct vive_device *

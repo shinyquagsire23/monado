@@ -968,6 +968,16 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.hmd->distortion.models = XRT_DISTORTION_MODEL_VIVE;
 	d->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
 
+	u_var_add_root(d, "Vive Device", true);
+	u_var_add_gui_header(d, &d->gui.calibration, "Calibration");
+	u_var_add_vec3_f32(d, &d->imu.acc_scale, "acc_scale");
+	u_var_add_vec3_f32(d, &d->imu.acc_bias, "acc_bias");
+	u_var_add_vec3_f32(d, &d->imu.gyro_scale, "gyro_scale");
+	u_var_add_vec3_f32(d, &d->imu.gyro_scale, "gyro_bias");
+	u_var_add_gui_header(d, &d->gui.last, "Last data");
+	u_var_add_vec3_f32(d, &d->last.acc, "acc");
+	u_var_add_vec3_f32(d, &d->last.gyro, "gyro");
+
 	int ret;
 
 	if (d->mainboard_dev) {
