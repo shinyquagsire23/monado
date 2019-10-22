@@ -137,6 +137,14 @@ oxr_slog_ensure(struct oxr_sink_logger *slog, size_t extra)
 	slog->store = (char *)realloc(slog->store, slog->store_size);
 }
 
+static void
+slog_free_store(struct oxr_sink_logger *slog)
+{
+	free(slog->store);
+	slog->length = 0;
+	slog->store_size = 0;
+}
+
 void
 oxr_slog(struct oxr_sink_logger *slog, const char *fmt, ...)
 {
@@ -163,25 +171,23 @@ oxr_slog(struct oxr_sink_logger *slog, const char *fmt, ...)
 }
 
 void
-oxr_slog_free(struct oxr_sink_logger *slog)
+oxr_slog_abort(struct oxr_sink_logger *slog)
 {
-	free(slog->store);
-	slog->length = 0;
-	slog->store_size = 0;
+	slog_free_store(slog);
 }
 
 void
 oxr_log_slog(struct oxr_logger *log, struct oxr_sink_logger *slog)
 {
 	oxr_log(log, "%s", slog->store);
-	oxr_slog_free(slog);
+	slog_free_store(slog);
 }
 
 void
 oxr_warn_slog(struct oxr_logger *log, struct oxr_sink_logger *slog)
 {
 	oxr_warn(log, "%s", slog->store);
-	oxr_slog_free(slog);
+	slog_free_store(slog);
 }
 
 XrResult
@@ -190,6 +196,6 @@ oxr_error_slog(struct oxr_logger *log,
                struct oxr_sink_logger *slog)
 {
 	oxr_error(log, res, "%s", slog->store);
-	oxr_slog_free(slog);
+	slog_free_store(slog);
 	return res;
 }
