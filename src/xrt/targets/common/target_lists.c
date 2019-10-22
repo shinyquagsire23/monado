@@ -67,6 +67,7 @@ struct xrt_prober_entry target_entry_list[] = {
 
 #ifdef XRT_BUILD_DRIVER_VIVE
     {HTC_VID, VIVE_PID, vive_found, "HTC Vive"},
+    {HTC_VID, VIVE_PRO_MAINBOARD_PID, vive_found, "HTC Vive Pro"},
 #endif
 
     {0x0000, 0x0000, NULL, NULL}, // Terminate

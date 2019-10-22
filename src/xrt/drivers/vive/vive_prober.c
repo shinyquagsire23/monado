@@ -16,6 +16,7 @@
 #include "vive_prober.h"
 
 static const char VIVE_PRODUCT_STRING[] = "HTC Vive";
+static const char VIVE_PRO_PRODUCT_STRING[] = "VIVE Pro";
 static const char VIVE_MANUFACTURER_STRING[] = "HTC";
 
 DEBUG_GET_ONCE_BOOL_OPTION(vive_debug, "VIVE_PRINT_DEBUG", false)
@@ -111,6 +112,73 @@ init_vive1(struct xrt_prober *xp,
 	return 1;
 }
 
+static int
+init_vive_pro(struct xrt_prober *xp,
+              struct xrt_prober_device *dev,
+              struct xrt_prober_device **devices,
+              size_t num_devices,
+              bool print_debug,
+              struct xrt_device **out_xdev)
+{
+	if (print_debug)
+		_print_device_info(xp, dev);
+
+	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER,
+	                             VIVE_MANUFACTURER_STRING) ||
+	    !xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT,
+	                             VIVE_PRO_PRODUCT_STRING)) {
+		if (print_debug)
+			printf("Vive Pro manufactuer string did not match.\n");
+		return -1;
+	}
+
+	struct os_hid_device *sensors_dev = NULL;
+	for (uint32_t i = 0; i < num_devices; i++) {
+		struct xrt_prober_device *d = devices[i];
+
+		if (d->vendor_id != VALVE_VID &&
+		    d->product_id != VIVE_PRO_LHR_PID)
+			continue;
+
+		if (print_debug)
+			_print_device_info(xp, d);
+
+		int result =
+		    xrt_prober_open_hid_interface(xp, d, 0, &sensors_dev);
+		if (result != 0) {
+			VIVE_ERROR("Could not open Vive sensors device.");
+			return -1;
+		}
+		break;
+	}
+
+	if (sensors_dev == NULL) {
+		VIVE_ERROR("Could not find Vive Pro sensors device.");
+		return -1;
+	}
+
+	struct os_hid_device *mainboard_dev = NULL;
+
+	int result = xrt_prober_open_hid_interface(xp, dev, 0, &mainboard_dev);
+	if (result != 0) {
+		VIVE_ERROR("Could not open Vive mainboard device.");
+		free(sensors_dev);
+		return -1;
+	}
+	struct vive_device *d =
+	    vive_device_create(mainboard_dev, sensors_dev, VIVE_VARIANT_PRO);
+	if (d == NULL) {
+		free(sensors_dev);
+		free(mainboard_dev);
+		return -1;
+	}
+
+	*out_xdev = &d->base;
+
+	return 1;
+}
+
+
 int
 vive_found(struct xrt_prober *xp,
            struct xrt_prober_device **devices,
@@ -134,6 +202,9 @@ vive_found(struct xrt_prober *xp,
 	case VIVE_PID:
 		return init_vive1(xp, dev, devices, num_devices, print_debug,
 		                  out_xdev);
+	case VIVE_PRO_MAINBOARD_PID:
+		return init_vive_pro(xp, dev, devices, num_devices, print_debug,
+		                     out_xdev);
 	default:
 		VIVE_ERROR("No product ids matched %.4x\n", dev->product_id);
 		return -1;

@@ -337,8 +337,17 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 		VIVE_SPEW(d, "GYRO %f %f %f", angular_velocity.x,
 		          angular_velocity.y, angular_velocity.z);
 
-		// flip x axis
-		angular_velocity.x = -angular_velocity.x;
+		switch (d->variant) {
+		case VIVE_VARIANT_VIVE:
+			// flip x axis
+			angular_velocity.x = -angular_velocity.x;
+			break;
+		case VIVE_VARIANT_PRO:
+			// flip y axis
+			angular_velocity.y = -angular_velocity.y;
+			break;
+		default: VIVE_ERROR("Unhandled Vive variant\n"); return;
+		}
 
 		math_quat_integrate_velocity(
 		    &d->rot_filtered, &angular_velocity,
@@ -488,6 +497,8 @@ vive_sensros_get_imu_range_report(struct vive_device *d)
 		VIVE_ERROR("Gyroscope or accelerometer range too large.");
 		VIVE_ERROR("Gyroscope: %d", report.gyro_range);
 		VIVE_ERROR("Aaccelerometer: %d", report.accel_range);
+		d->imu.gyro_range = 8.726646f;
+		d->imu.acc_range = 39.226600f;
 		return -1;
 	}
 
@@ -640,10 +651,23 @@ vive_parse_config(struct vive_device *d, char *json_string)
 
 	const nx_json *json = nx_json_parse(json_string, 0);
 	if (json) {
-		_json_get_vec3(json, "acc_bias", &d->imu.acc_bias);
-		_json_get_vec3(json, "acc_scale", &d->imu.acc_scale);
-		_json_get_vec3(json, "gyro_bias", &d->imu.gyro_bias);
-		_json_get_vec3(json, "gyro_scale", &d->imu.gyro_scale);
+
+		switch (d->variant) {
+		case VIVE_VARIANT_VIVE:
+			_json_get_vec3(json, "acc_bias", &d->imu.acc_bias);
+			_json_get_vec3(json, "acc_scale", &d->imu.acc_scale);
+			_json_get_vec3(json, "gyro_bias", &d->imu.gyro_bias);
+			_json_get_vec3(json, "gyro_scale", &d->imu.gyro_scale);
+			break;
+		case VIVE_VARIANT_PRO: {
+			const nx_json *imu = nx_json_get(json, "imu");
+			_json_get_vec3(imu, "acc_bias", &d->imu.acc_bias);
+			_json_get_vec3(imu, "acc_scale", &d->imu.acc_scale);
+			_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
+			_json_get_vec3(imu, "gyro_scale", &d->imu.gyro_scale);
+		} break;
+		default: VIVE_ERROR("Unknown Vive variant.\n"); return false;
+		}
 
 		d->firmware.model_number =
 		    _json_get_string(json, "model_number");
