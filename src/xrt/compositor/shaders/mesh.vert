@@ -31,20 +31,10 @@ void main()
 		ubo_vp.rot.zw,
 	};
 
-        vec2 pos = 2.0 * (in_pos_ruv.xy - vec2(0.5, 0.5));
-
-        out_ruv = in_pos_ruv.zw;
-        out_guv = in_guv_buv.xy;
-        out_buv = in_guv_buv.zw;
-
-	// A hack for now.
-	if (ubo_vp.viewport_id == 1) {
-		pos.x = -pos.x;
-
-                out_ruv.x = 1.0 - out_ruv.x;
-                out_guv.x = 1.0 - out_guv.x;
-                out_buv.x = 1.0 - out_buv.x;
-        }
+	vec2 pos = rot * in_pos_ruv.xy;
+	out_ruv = in_pos_ruv.zw;
+	out_guv = in_guv_buv.xy;
+	out_buv = in_guv_buv.zw;
 
 	if (ubo_vp.flip_y) {
 		out_ruv.y = 1.0 - out_ruv.y;
@@ -52,6 +42,5 @@ void main()
 		out_buv.y = 1.0 - out_buv.y;
 	}
 
-	pos = rot * pos;
 	gl_Position = vec4(pos, 0.0f, 1.0f);
 }

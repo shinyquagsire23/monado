@@ -191,12 +191,24 @@ comp_distortion_init(struct comp_distortion *d,
 	d->distortion_model = distortion_model;
 
 	//! Add support for 1 channels as well.
-	assert(parts->distortion.mesh.data == NULL ||
+	assert(parts->distortion.mesh.vertices == NULL ||
 	       parts->distortion.mesh.num_uv_channels == 3);
+	assert(parts->distortion.mesh.indices == NULL ||
+	       parts->distortion.mesh.total_num_indices != 0);
+	assert(parts->distortion.mesh.indices == NULL ||
+	       parts->distortion.mesh.num_indices[0] != 0);
+	assert(parts->distortion.mesh.indices == NULL ||
+	       parts->distortion.mesh.num_indices[1] != 0);
 
-	d->vbo_mesh.data = parts->distortion.mesh.data;
-	d->vbo_mesh.stride = parts->distortion.mesh.stride;
-	d->vbo_mesh.num = parts->distortion.mesh.num_vertex;
+	d->mesh.vertices = parts->distortion.mesh.vertices;
+	d->mesh.stride = parts->distortion.mesh.stride;
+	d->mesh.num_vertices = parts->distortion.mesh.num_vertices;
+	d->mesh.indices = parts->distortion.mesh.indices;
+	d->mesh.total_num_indices = parts->distortion.mesh.total_num_indices;
+	d->mesh.num_indices[0] = parts->distortion.mesh.num_indices[0];
+	d->mesh.num_indices[1] = parts->distortion.mesh.num_indices[1];
+	d->mesh.offset_indices[0] = parts->distortion.mesh.offset_indices[0];
+	d->mesh.offset_indices[1] = parts->distortion.mesh.offset_indices[1];
 
 	d->ubo_vp_data[0].flip_y = flip_y;
 	d->ubo_vp_data[1].flip_y = flip_y;
@@ -220,6 +232,7 @@ comp_distortion_destroy(struct comp_distortion *d)
 
 	_buffer_destroy(vk, &d->ubo_handle);
 	_buffer_destroy(vk, &d->vbo_handle);
+	_buffer_destroy(vk, &d->index_handle);
 	_buffer_destroy(vk, &d->ubo_viewport_handles[0]);
 	_buffer_destroy(vk, &d->ubo_viewport_handles[1]);
 
@@ -235,12 +248,22 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	struct vk_bundle *vk = d->vk;
 	VkResult ret;
 
+	VkPolygonMode polygonMode = VK_POLYGON_MODE_FILL;
+	if (d->quirk_draw_lines) {
+		polygonMode = VK_POLYGON_MODE_LINE;
+	}
+
+	VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	if (d->mesh.total_num_indices > 0) {
+		topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+	}
+
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state = {
 	    .sType =
 	        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 	    .pNext = NULL,
 	    .flags = 0,
-	    .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+	    .topology = topology,
 	    .primitiveRestartEnable = VK_FALSE,
 	};
 
@@ -250,8 +273,8 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	    .flags = 0,
 	    .depthClampEnable = VK_FALSE,
 	    .rasterizerDiscardEnable = VK_FALSE,
-	    .polygonMode = VK_POLYGON_MODE_FILL,
-	    .cullMode = VK_CULL_MODE_NONE, // Hack for now, should only be back.
+	    .polygonMode = polygonMode,
+	    .cullMode = VK_CULL_MODE_BACK_BIT,
 	    .frontFace = VK_FRONT_FACE_CLOCKWISE,
 	    .depthBiasEnable = VK_FALSE,
 	    .depthBiasConstantFactor = 0.f,
@@ -398,7 +421,7 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 
 		vertex_input_binding_description.binding = 0;
 		vertex_input_binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		vertex_input_binding_description.stride = d->vbo_mesh.stride;
+		vertex_input_binding_description.stride = d->mesh.stride;
 
 		vertex_input_state.vertexAttributeDescriptionCount = 2;
 		vertex_input_state.pVertexAttributeDescriptions = vertex_input_attribute_descriptions;
@@ -688,7 +711,16 @@ comp_distortion_draw_mesh(struct comp_distortion *d,
 	vk->vkCmdBindVertexBuffers(command_buffer, 0, 1,
 	                           &(d->vbo_handle.buffer), offsets);
 
-	vk->vkCmdDraw(command_buffer, d->vbo_mesh.num, 1, 0, 0);
+	if (d->mesh.total_num_indices > 0) {
+		vk->vkCmdBindIndexBuffer(command_buffer, d->index_handle.buffer,
+		                         0, VK_INDEX_TYPE_UINT32);
+
+		vk->vkCmdDrawIndexed(command_buffer, d->mesh.num_indices[eye],
+		                     1, d->mesh.offset_indices[eye], 0, 0);
+
+	} else {
+		vk->vkCmdDraw(command_buffer, d->mesh.num_vertices, 1, 0, 0);
+	}
 }
 
 // Update fragment shader hmd warp uniform block
@@ -733,12 +765,12 @@ comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
 		d->ubo_pano.aberr[1] = c->xdev->hmd->distortion.pano.aberration_k[1];
 		d->ubo_pano.aberr[2] = c->xdev->hmd->distortion.pano.aberration_k[2];
 		d->ubo_pano.aberr[3] = c->xdev->hmd->distortion.pano.aberration_k[3];
-		d->ubo_pano.lens_center[0][0] = c->xdev->hmd->views[0].lens_center.x_meters;
-		d->ubo_pano.lens_center[0][1] = c->xdev->hmd->views[0].lens_center.y_meters;
-		d->ubo_pano.lens_center[1][0] = c->xdev->hmd->views[1].lens_center.x_meters;
-		d->ubo_pano.lens_center[1][1] = c->xdev->hmd->views[1].lens_center.y_meters;
-		d->ubo_pano.viewport_scale[0] = c->xdev->hmd->views[0].display.w_meters;
-		d->ubo_pano.viewport_scale[1] = c->xdev->hmd->views[0].display.h_meters;
+		d->ubo_pano.lens_center[0][0] = 0.5;//c->xdev->hmd->views[0].lens_center.x_meters;
+		d->ubo_pano.lens_center[0][1] = 0.5;//c->xdev->hmd->views[0].lens_center.y_meters;
+		d->ubo_pano.lens_center[1][0] = 0.5;//c->xdev->hmd->views[1].lens_center.x_meters;
+		d->ubo_pano.lens_center[1][1] = 0.5;//c->xdev->hmd->views[1].lens_center.y_meters;
+		d->ubo_pano.viewport_scale[0] = 1.0;//c->xdev->hmd->views[0].display.w_meters;
+		d->ubo_pano.viewport_scale[1] = 1.0;//c->xdev->hmd->views[0].display.h_meters;
 		d->ubo_pano.warp_scale = c->xdev->hmd->distortion.pano.warp_scale;
 
 		memcpy(d->ubo_handle.mapped, &d->ubo_pano, sizeof(d->ubo_pano));
@@ -863,18 +895,21 @@ comp_distortion_init_buffers(struct comp_distortion *d,
 	VkMemoryPropertyFlags memory_property_flags = 0;
 	VkBufferUsageFlags ubo_usage_flags = 0;
 	VkBufferUsageFlags vbo_usage_flags = 0;
+	VkBufferUsageFlags index_usage_flags = 0;
 
 	VkResult ret;
 
 	// Using the same flags for all ubos and vbos uniform buffers.
 	ubo_usage_flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	vbo_usage_flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	index_usage_flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 	memory_property_flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 	memory_property_flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	// Distortion ubo and vbo sizes.
 	VkDeviceSize ubo_size = 0;
 	VkDeviceSize vbo_size = 0;
+	VkDeviceSize index_size = 0;
 
 	switch (d->distortion_model) {
 	case XRT_DISTORTION_MODEL_PANOTOOLS:
@@ -882,7 +917,8 @@ comp_distortion_init_buffers(struct comp_distortion *d,
 		break;
 	case XRT_DISTORTION_MODEL_MESHUV:
 		ubo_size = sizeof(d->ubo_pano);
-		vbo_size = d->vbo_mesh.stride * d->vbo_mesh.num;
+		vbo_size = d->mesh.stride * d->mesh.num_vertices;
+		index_size = sizeof(int) * d->mesh.total_num_indices;
 		break;
 	case XRT_DISTORTION_MODEL_VIVE:
 		// Vive data
@@ -935,11 +971,25 @@ comp_distortion_init_buffers(struct comp_distortion *d,
 	}
 
 	ret = _create_buffer(vk, vbo_usage_flags, memory_property_flags,
-	                     &d->vbo_handle, vbo_size, d->vbo_mesh.data);
+	                     &d->vbo_handle, vbo_size, d->mesh.vertices);
 	if (ret != VK_SUCCESS) {
 		VK_DEBUG(vk, "Failed to create mesh vbo buffer!");
 	}
 	ret = _buffer_map(vk, &d->vbo_handle, vbo_size, 0);
+	if (ret != VK_SUCCESS) {
+		VK_DEBUG(vk, "Failed to map mesh vbo buffer!");
+	}
+
+	if (index_size == 0) {
+		return;
+	}
+
+	ret = _create_buffer(vk, index_usage_flags, memory_property_flags,
+	                     &d->index_handle, index_size, d->mesh.indices);
+	if (ret != VK_SUCCESS) {
+		VK_DEBUG(vk, "Failed to create mesh index buffer!");
+	}
+	ret = _buffer_map(vk, &d->index_handle, index_size, 0);
 	if (ret != VK_SUCCESS) {
 		VK_DEBUG(vk, "Failed to map mesh vbo buffer!");
 	}

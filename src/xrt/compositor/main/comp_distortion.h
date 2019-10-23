@@ -56,6 +56,7 @@ struct comp_distortion
 
 	struct comp_uniform_buffer ubo_handle;
 	struct comp_uniform_buffer vbo_handle;
+	struct comp_uniform_buffer index_handle;
 	struct comp_uniform_buffer ubo_viewport_handles[2];
 
 	enum xrt_distortion_model distortion_model;
@@ -78,13 +79,16 @@ struct comp_distortion
 		float grow_for_undistort;
 	} ubo_vive;
 
-	// vec2 for pos, vec2 for uv
 	struct
 	{
-		void *data;
+		float *vertices;
+		int *indices;
 		size_t stride;
-		size_t num;
-	} vbo_mesh;
+		size_t num_vertices;
+		size_t num_indices[2];
+		size_t offset_indices[2];
+		size_t total_num_indices;
+	} mesh;
 
 	struct
 	{
@@ -98,6 +102,8 @@ struct comp_distortion
 
 	VkDescriptorSetLayout descriptor_set_layout;
 	VkDescriptorSet descriptor_sets[2];
+
+	bool quirk_draw_lines;
 };
 
 
