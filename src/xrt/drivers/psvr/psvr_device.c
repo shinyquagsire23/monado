@@ -22,6 +22,7 @@
 #include "util/u_time.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_distortion_mesh.h"
 
 #include "tracking/t_imu.h"
 
@@ -860,7 +861,8 @@ psvr_device_destroy(struct xrt_device *xdev)
 {
 	struct psvr_device *psvr = psvr_device(xdev);
 	teardown(psvr);
-	free(psvr);
+
+	u_device_free(&psvr->base);
 }
 
 
@@ -892,8 +894,26 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	psvr->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	psvr->base.name = XRT_DEVICE_GENERIC_HMD;
 
-	psvr->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
-	psvr->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+	{
+		struct u_panotools_values vals = {0};
+
+		vals.distortion_k[0] = 0.77;
+		vals.distortion_k[1] = 0.08;
+		vals.distortion_k[2] = 0.01;
+		vals.distortion_k[3] = 0.0;
+		vals.distortion_k[4] = 0.7;
+		vals.aberration_k[0] = 0.999;
+		vals.aberration_k[1] = 1.008;
+		vals.aberration_k[2] = 1.018;
+		vals.scale = 0.72;
+		vals.lens_center.x = 0.5;
+		vals.lens_center.y = 0.5;
+		vals.viewport_size.x = 1.0;
+		vals.viewport_size.y = 1.0;
+
+		u_distortion_mesh_from_panotools(&vals, &vals, psvr->base.hmd);
+	}
+
 #if 0
 	psvr->base.hmd->distortion.models = XRT_DISTORTION_MODEL_MESHUV;
 	psvr->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_MESHUV;
