@@ -68,10 +68,13 @@ void main()
 		texture(texSampler, tcB).b
 	);
 
-	// distortion cuttoff
+#if 0
+	// No need to do this as the texture is clamped to black.
+	// Distortion cut-off.
 	if (tcG.x < 0.0 || tcG.x > 1.0 || tcG.y < 0.0 || tcG.y > 1.0) {
 		color *= 0.125;
 	}
+#endif
 
 	outColor = vec4(color, 1.0);
 }
