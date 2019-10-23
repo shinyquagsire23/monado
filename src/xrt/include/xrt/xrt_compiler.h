@@ -74,6 +74,8 @@
 #if defined(__GNUC__)
 #define xrt_atomic_inc_return(v) __sync_add_and_fetch((v), 1)
 #define xrt_atomic_dec_return(v) __sync_sub_and_fetch((v), 1)
+#define xrt_atomic_cmpxchg(v, old, _new)                                       \
+	__sync_val_compare_and_swap((v), (old), (_new))
 #else
 #error "compiler not supported"
 #endif
