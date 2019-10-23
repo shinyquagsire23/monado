@@ -9,48 +9,37 @@
 
 #version 450
 
-layout (binding = 0) uniform sampler2D texSampler;
+layout (binding = 0) uniform sampler2D tex_sampler;
+
 layout (binding = 1, std140) uniform UBO
 {
 	// Distoriton coefficients (PanoTools model) [a,b,c,d]
-	vec4 HmdWarpParam;
+	vec4 hmd_warp_param;
 
 	// chromatic distortion post scaling
 	vec4 aberr;
 
 	// Position of lens center in m (usually eye_w/2, eye_h/2)
-	vec2 LensCenter[2];
+	vec2 lens_center[2];
 
 	// Scale from texture co-ords to m (usually eye_w, eye_h)
-	vec2 ViewportScale;
+	vec2 viewport_scale;
 
 	// Distortion overall scale in m (usually ~eye_w/2)
-	float WarpScale;
+	float warp_scale;
 } ubo;
 
-
-layout (location = 0) in vec2 in_ruv;
-layout (location = 1) in vec2 in_guv;
-layout (location = 2) in vec2 in_buv;
-
+layout (location = 0)  in vec2 in_ruv;
+layout (location = 1)  in vec2 in_guv;
+layout (location = 2)  in vec2 in_buv;
 layout (location = 0) out vec4 out_color;
+
 
 void main()
 {
-	float r = texture(texSampler, in_ruv).x;
-	float g = texture(texSampler, in_guv).y;
-	float b = texture(texSampler, in_buv).z;
-
-#if 0
-        if (in_ruv.x < 0.0 || in_ruv.x > 1.0 || in_ruv.y < 0.0 || in_ruv.y > 1.0) {
-		color = vec3(1.0, 0.0, 1.0);
-	} else {
-                float t = floor(in_ruv.x * 16) + floor(in_ruv.y * 16);
-		bool isEven = mod(t, 2.0) == 0.0;
-		// color = color * float(isEven);
-		color = vec3(isEven, isEven, isEven);
-	}
-#endif
+	float r = texture(tex_sampler, in_ruv).x;
+	float g = texture(tex_sampler, in_guv).y;
+	float b = texture(tex_sampler, in_buv).z;
 
         out_color = vec4(r, g, b, 1.0);
 }

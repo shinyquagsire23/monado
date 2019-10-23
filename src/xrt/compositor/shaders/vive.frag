@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: BSL-1.0
 // Author: Philipp Zabel <philipp.zabel@gmail.com>
 // Author: Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
+
 #version 450
 
-layout (binding = 0) uniform sampler2D texSampler;
+layout (binding = 0) uniform sampler2D tex_sampler;
 
 layout (binding = 1, std140) uniform UBO
 {
@@ -16,20 +17,19 @@ layout (binding = 1, std140) uniform UBO
 	float grow_for_undistort;
 } ubo;
 
-layout (location = 0) in vec2 inUV;
-layout (location = 1) flat in int inViewIndex;
-
-layout (location = 0) out vec4 outColor;
+layout (location = 0)      in vec2 in_uv;
+layout (location = 1) flat in  int in_view_index;
+layout (location = 0)     out vec4 out_color;
 
 
 void main()
 {
-	const int i = inViewIndex;
+	const int i = in_view_index;
 
 	const vec2 factor = 0.5 / (1.0 + ubo.grow_for_undistort)
 	                    * vec2(1.0, ubo.aspect_x_over_y);
 
-	vec2 texCoord = 2.0 * inUV - vec2(1.0);
+	vec2 texCoord = 2.0 * in_uv - vec2(1.0);
 
 	texCoord.y /= ubo.aspect_x_over_y;
 	texCoord -= ubo.center[i].xy;
@@ -44,18 +44,18 @@ void main()
 
 	const vec2 offset = vec2(0.5);
 
-	vec2 tcR = offset + (texCoord * d.r + ubo.center[i].xy) * factor;
-	vec2 tcG = offset + (texCoord * d.g + ubo.center[i].xy) * factor;
-	vec2 tcB = offset + (texCoord * d.b + ubo.center[i].xy) * factor;
+	vec2 tc_r = offset + (texCoord * d.r + ubo.center[i].xy) * factor;
+	vec2 tc_g = offset + (texCoord * d.g + ubo.center[i].xy) * factor;
+	vec2 tc_b = offset + (texCoord * d.b + ubo.center[i].xy) * factor;
 
 	vec3 color = vec3(
-	      texture(texSampler, tcR).r,
-	      texture(texSampler, tcG).g,
-	      texture(texSampler, tcB).b);
+	      texture(tex_sampler, tc_r).r,
+	      texture(tex_sampler, tc_g).g,
+	      texture(tex_sampler, tc_b).b);
 
 	if (r2 > ubo.undistort_r2_cutoff[i]) {
 		color *= 0.125;
 	}
 
-	outColor = vec4(color, 1.0);
+	out_color = vec4(color, 1.0);
 }

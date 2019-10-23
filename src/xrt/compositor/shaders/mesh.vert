@@ -5,19 +5,18 @@
 
 #version 450
 
-layout (location = 0)  in vec4 in_pos_ruv;
-layout (location = 1)  in vec4 in_guv_buv;
-
-layout (location = 0) out vec2 out_ruv;
-layout (location = 1) out vec2 out_guv;
-layout (location = 2) out vec2 out_buv;
-
 layout (binding = 2, std140) uniform ubo
 {
 	vec4 rot;
 	int viewport_id;
 	bool flip_y;
 } ubo_vp;
+
+layout (location = 0)  in vec4 in_pos_ruv;
+layout (location = 1)  in vec4 in_guv_buv;
+layout (location = 0) out vec2 out_ruv;
+layout (location = 1) out vec2 out_guv;
+layout (location = 2) out vec2 out_buv;
 
 out gl_PerVertex
 {
