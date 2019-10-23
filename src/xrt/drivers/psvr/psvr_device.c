@@ -891,13 +891,18 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	psvr->base.destroy = psvr_device_destroy;
 	psvr->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	psvr->base.name = XRT_DEVICE_GENERIC_HMD;
+
+	psvr->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
+	psvr->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+#if 0
 	psvr->base.hmd->distortion.models = XRT_DISTORTION_MODEL_MESHUV;
 	psvr->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_MESHUV;
-	psvr->base.hmd->distortion.mesh.data = &psvr_both_uvs[0];
+	psvr->base.hmd->distortion.mesh.vertices = &psvr_both_uvs[0];
 	psvr->base.hmd->distortion.mesh.stride = sizeof(float) * 8;
 	psvr->base.hmd->distortion.mesh.num_uv_channels = 3;
-	psvr->base.hmd->distortion.mesh.num_vertex =
+	psvr->base.hmd->distortion.mesh.num_vertices =
 	    ARRAY_SIZE(psvr_both_uvs) / 8;
+#endif
 
 #if 0
 	psvr->fusion = imu_fusion_create();
