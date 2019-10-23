@@ -24,6 +24,7 @@
 #include "util/u_debug.h"
 #include "util/u_device.h"
 #include "util/u_time.h"
+#include "util/u_distortion_mesh.h"
 
 #include "oh_device.h"
 
@@ -47,7 +48,7 @@ oh_device_destroy(struct xrt_device *xdev)
 		ohd->dev = NULL;
 	}
 
-	free(ohd);
+	u_device_free(&ohd->base);
 }
 
 static void
@@ -556,6 +557,11 @@ oh_device_create(ohmd_context *ctx,
 
 	u_var_add_root(ohd, "OpenHMD Wrapper", true);
 	u_var_add_ro_text(ohd, ohd->base.str, "Card");
+
+	if (ohd->base.hmd->distortion.preferred == XRT_DISTORTION_MODEL_NONE) {
+		// Setup the distortion mesh.
+		u_distortion_mesh_none(ohd->base.hmd);
+	}
 
 	return ohd;
 }
