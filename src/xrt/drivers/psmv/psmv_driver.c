@@ -1636,7 +1636,7 @@ psmv_parse_input(struct psmv_device *psmv,
                  void *data,
                  struct psmv_parsed_input *input)
 {
-	memset(input, 0, sizeof(*input));
+	U_ZERO(input);
 
 	switch (psmv->pid) {
 	case PSMV_PID_ZCM1: return psmv_parse_input_zcm1(psmv, data, input);
