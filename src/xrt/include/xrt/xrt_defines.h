@@ -363,7 +363,29 @@ enum xrt_input_type
 	// clang-format on
 };
 
+/*!
+ * @brief Create an enum value for xrt_input_name that packs an ID and input
+ * type.
+ *
+ * @param id an integer
+ * @param type The suffix of an xrt_input_type value name: `XRT_INPUT_TYPE_` is
+ * prepended automatically.
+ *
+ * @see xrt_input_name
+ * @ingroup xrt_iface
+ */
 #define XRT_INPUT_NAME(id, type) ((id << 8) | XRT_INPUT_TYPE_##type)
+
+/*!
+ * @brief Extract the xrt_input_type from an xrt_input_name.
+ *
+ * @param name A xrt_input_name value
+ *
+ * @see xrt_input_name
+ * @see xrt_input_type
+ * @ingroup xrt_iface
+ */
+#define XRT_GET_INPUT_TYPE(name) (name & 0xff)
 
 /*!
  * Name of a input with a baked in type.
