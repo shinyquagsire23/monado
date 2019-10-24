@@ -37,13 +37,20 @@ struct u_panotools_values
 };
 
 /*!
- * Callback used when generating a distortion mesh.
+ *
  *
  * @ingroup aux_util
  */
-typedef void (*u_distortion_mesh_func)(
-    int view, float x, float y, float result[8], void *user_ptr);
+struct u_uv_generator
+{
+	void (*calc)(struct u_uv_generator *,
+	             int view,
+	             float u,
+	             float v,
+	             float result[6]);
 
+	void (*destroy)(struct u_uv_generator *);
+};
 
 /*!
  * Given a callback and a user_ptr generates num_views meshes.
@@ -51,13 +58,25 @@ typedef void (*u_distortion_mesh_func)(
  * @ingroup aux_util
  */
 void
-u_distortion_mesh_from_func(u_distortion_mesh_func func,
-                            void *user_ptr,
-                            int num_views,
-                            struct xrt_hmd_parts *target);
+u_distortion_mesh_from_gen(struct u_uv_generator *,
+                           int num_views,
+                           struct xrt_hmd_parts *target);
+
+/*!
+ * Given two sets of panotools values creates a mesh generator, copies the
+ * values into it. This probably isn't the function you want.
+ *
+ * @ingroup aux_util
+ */
+void
+u_distortion_mesh_generator_from_panotools(
+    const struct u_panotools_values *left,
+    const struct u_panotools_values *right,
+    struct u_uv_generator **out_gen);
 
 /*!
  * Given two sets of panotools values creates the left and th right uv meshes.
+ * This is probably the function you want.
  *
  * @ingroup aux_util
  */

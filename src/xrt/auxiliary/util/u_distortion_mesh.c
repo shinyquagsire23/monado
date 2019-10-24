@@ -28,6 +28,9 @@ DEBUG_GET_ONCE_NUM_OPTION(mesh_size, "XRT_MESH_SIZE", 64)
  *
  */
 
+typedef void (*func_cb)(
+    struct u_uv_generator *gen, int view, float x, float y, float result[6]);
+
 static int
 index_for(int row, int col, int stride, int offset)
 {
@@ -35,14 +38,16 @@ index_for(int row, int col, int stride, int offset)
 }
 
 void
-run_func(u_distortion_mesh_func func,
-         void *user_ptr,
+run_func(struct u_uv_generator *gen,
          int num_views,
          struct xrt_hmd_parts *target,
          size_t num)
 {
+	assert(gen != NULL);
 	assert(num_views == 2);
 	assert(num_views <= 2);
+
+	func_cb func = gen->calc;
 
 	size_t offset_vertices[2] = {0};
 	size_t offset_indices[2] = {0};
@@ -73,7 +78,10 @@ run_func(u_distortion_mesh_func func,
 				// This goes from 0 to 1.0 inclusive.
 				float u = (float)c / (float)cells_cols;
 
-				func(view, u, v, &verts[i], user_ptr);
+				// Make the position in the range of [-1, 1]
+				verts[i + 0] = u * 2.0 - 1.0;
+				verts[i + 1] = v * 2.0 - 1.0;
+				func(gen, view, u, v, &verts[i + 2]);
 
 				i += stride_in_floats;
 			}
@@ -123,13 +131,12 @@ run_func(u_distortion_mesh_func func,
 }
 
 void
-u_distortion_mesh_from_func(u_distortion_mesh_func func,
-                            void *user_ptr,
-                            int num_views,
-                            struct xrt_hmd_parts *target)
+u_distortion_mesh_from_gen(struct u_uv_generator *gen,
+                           int num_views,
+                           struct xrt_hmd_parts *target)
 {
 	size_t num = debug_get_num_option_mesh_size();
-	run_func(func, user_ptr, num_views, target, num);
+	run_func(gen, num_views, target, num);
 }
 
 
@@ -150,18 +157,20 @@ u_distortion_mesh_from_func(u_distortion_mesh_func func,
 
 struct panotools_state
 {
+	struct u_uv_generator base;
+
 	const struct u_panotools_values *vals[2];
 };
 
 static void
-panotools_func(int view, float u, float v, float result[8], void *user_ptr)
+panotools_calc(struct u_uv_generator *generator,
+               int view,
+               float u,
+               float v,
+               float result[6])
 {
-	struct panotools_state *state = (struct panotools_state *)user_ptr;
+	struct panotools_state *state = (struct panotools_state *)generator;
 	const struct u_panotools_values val = *state->vals[view];
-
-	// Make the position in the range of [-1, 1]
-	result[0] = u * 2.0 - 1.0;
-	result[1] = v * 2.0 - 1.0;
 
 	struct xrt_vec2 r = {u, v};
 	r = mul(r, val.viewport_size);
@@ -190,12 +199,29 @@ panotools_func(int view, float u, float v, float result[8], void *user_ptr)
 	b_uv = add(b_uv, val.lens_center);
 	b_uv = div(b_uv, val.viewport_size);
 
-	result[2] = r_uv.x;
-	result[3] = r_uv.y;
-	result[4] = g_uv.x;
-	result[5] = g_uv.y;
-	result[6] = b_uv.x;
-	result[7] = b_uv.y;
+	result[0] = r_uv.x;
+	result[1] = r_uv.y;
+	result[2] = g_uv.x;
+	result[3] = g_uv.y;
+	result[4] = b_uv.x;
+	result[5] = b_uv.y;
+}
+
+static void
+panotools_destroy(struct u_uv_generator *generator)
+{
+	free(generator);
+}
+
+static void
+panotools_fill_in(const struct u_panotools_values *left,
+                  const struct u_panotools_values *right,
+                  struct panotools_state *state)
+{
+	state->base.calc = panotools_calc;
+	state->base.destroy = panotools_destroy;
+	state->vals[0] = left;
+	state->vals[1] = right;
 }
 
 void
@@ -204,11 +230,21 @@ u_distortion_mesh_from_panotools(const struct u_panotools_values *left,
                                  struct xrt_hmd_parts *target)
 {
 	struct panotools_state state;
-	state.vals[0] = left;
-	state.vals[1] = right;
+	panotools_fill_in(left, right, &state);
 
 	size_t num = debug_get_num_option_mesh_size();
-	run_func(panotools_func, &state, 2, target, num);
+	run_func(&state.base, 2, target, num);
+}
+
+void
+u_distortion_mesh_generator_from_panotools(
+    const struct u_panotools_values *left,
+    const struct u_panotools_values *right,
+    struct u_uv_generator **out_gen)
+{
+	struct panotools_state *state = U_TYPED_CALLOC(struct panotools_state);
+	panotools_fill_in(left, right, state);
+	*out_gen = &state->base;
 }
 
 
@@ -219,20 +255,25 @@ u_distortion_mesh_from_panotools(const struct u_panotools_values *left,
  */
 
 static void
-no_distortion_func(int view, float u, float v, float result[8], void *user_ptr)
+no_distortion_calc(struct u_uv_generator *generator,
+                   int view,
+                   float u,
+                   float v,
+                   float result[6])
 {
-	result[0] = u * 2.0 - 1.0;
-	result[1] = v * 2.0 - 1.0;
+	result[0] = u;
+	result[1] = v;
 	result[2] = u;
 	result[3] = v;
 	result[4] = u;
 	result[5] = v;
-	result[6] = u;
-	result[7] = v;
 }
 
 void
 u_distortion_mesh_none(struct xrt_hmd_parts *target)
 {
-	run_func(no_distortion_func, NULL, 2, target, 8);
+	struct u_uv_generator gen;
+	gen.calc = no_distortion_calc;
+
+	run_func(&gen, 2, target, 8);
 }
