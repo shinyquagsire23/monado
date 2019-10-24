@@ -346,12 +346,19 @@ enum xrt_device_name
 enum xrt_input_type
 {
 	// clang-format off
+	//! Float input in [0, 1]
 	XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE      = 0x00,
+	//! Float input in [-1, 1]
 	XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE = 0x01,
+	//! Vec2 input, components in [-1, 1]
 	XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE = 0x02,
+	//! Vec3 input, components in [-1, 1]
 	XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE = 0x03,
+	//! Boolean (digital, binary) input
 	XRT_INPUT_TYPE_BOOLEAN               = 0x04,
+	//! A tracked pose
 	XRT_INPUT_TYPE_POSE                  = 0x05,
+	//! A static relationship?
 	XRT_INPUT_TYPE_RELATION              = 0x06,
 	// clang-format on
 };
