@@ -189,6 +189,16 @@ dump_contron_name(uint32_t id);
  *
  */
 
+static size_t
+align_up(size_t size, size_t align)
+{
+	if ((size % align) == 0) {
+		return size;
+	}
+
+	return size + (align - (size % align));
+}
+
 static void
 v4l2_free_frame(struct xrt_frame *xf)
 {
@@ -381,7 +391,9 @@ v4l2_setup_userptr_buffer(struct v4l2_fs *vid,
 {
 	// align this to a memory page, v4l2 likes it that way
 	long sz = sysconf(_SC_PAGESIZE);
-	void *ptr = aligned_alloc(sz, v_buf->length);
+	size_t size = align_up(v_buf->length, (size_t)sz);
+
+	void *ptr = aligned_alloc(sz, size);
 	if (ptr == NULL) {
 		V_ERROR(vid, "error: Could not alloc page-aligned memory!");
 		return -1;
