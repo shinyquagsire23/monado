@@ -80,12 +80,22 @@ u_device_dump_config(struct xrt_device *xdev,
  * placed after the device in memory.
  *
  * Will setup any pointers and num values.
+ *
+ * @ingroup aux_util
  */
 void *
 u_device_allocate(enum u_device_alloc_flags flags,
                   size_t size,
                   size_t num_inputs,
                   size_t num_outputs);
+
+/*!
+ * Helper function to free a device and any data hanging of it.
+ *
+ * @ingroup aux_util
+ */
+void
+u_device_free(struct xrt_device *xdev);
 
 
 #ifdef __cplusplus

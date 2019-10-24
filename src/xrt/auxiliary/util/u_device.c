@@ -273,3 +273,17 @@ u_device_allocate(enum u_device_alloc_flags flags,
 
 	return xdev;
 }
+
+void
+u_device_free(struct xrt_device *xdev)
+{
+	if (xdev->hmd != NULL) {
+		free(xdev->hmd->distortion.mesh.vertices);
+		xdev->hmd->distortion.mesh.vertices = NULL;
+
+		free(xdev->hmd->distortion.mesh.indices);
+		xdev->hmd->distortion.mesh.indices = NULL;
+	}
+
+	free(xdev);
+}
