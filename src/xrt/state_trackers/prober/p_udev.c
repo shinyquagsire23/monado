@@ -293,7 +293,10 @@ p_udev_enumerate_v4l2(struct prober *p, struct udev *udev)
 		// USB interface.
 		ret = p_udev_get_interface_number(raw_dev, &usb_iface);
 		if (ret != 0) {
-			P_ERROR(p, "Failed to get interface number.");
+			P_ERROR(p,
+			        "In enumerating V4L2 devices: "
+			        "Failed to get interface number for '%s'",
+			        sysfs_path);
 			goto next;
 		}
 
@@ -398,7 +401,10 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 		// HID interface.
 		ret = p_udev_get_interface_number(raw_dev, &interface);
 		if (ret != 0) {
-			P_ERROR(p, "Failed to get interface number.");
+			P_ERROR(p,
+			        "In enumerating hidraw devices: "
+			        "Failed to get interface number for '%s'",
+			        sysfs_path);
 			goto next;
 		}
 
