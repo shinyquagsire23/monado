@@ -54,7 +54,6 @@ lib_drv_psmv = static_library(
 lib_drv_psvr = static_library(
 	'drv_psvr',
 	files(
-		'psvr/psvr_both_uvs.h',
 		'psvr/psvr_device.c',
 		'psvr/psvr_device.h',
 		'psvr/psvr_interface.h',

@@ -33,7 +33,6 @@
 #include <unistd.h>
 
 #include "psvr_device.h"
-#include "psvr_both_uvs.h"
 
 
 /*
@@ -913,16 +912,6 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 
 		u_distortion_mesh_from_panotools(&vals, &vals, psvr->base.hmd);
 	}
-
-#if 0
-	psvr->base.hmd->distortion.models = XRT_DISTORTION_MODEL_MESHUV;
-	psvr->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_MESHUV;
-	psvr->base.hmd->distortion.mesh.vertices = &psvr_both_uvs[0];
-	psvr->base.hmd->distortion.mesh.stride = sizeof(float) * 8;
-	psvr->base.hmd->distortion.mesh.num_uv_channels = 3;
-	psvr->base.hmd->distortion.mesh.num_vertices =
-	    ARRAY_SIZE(psvr_both_uvs) / 8;
-#endif
 
 #if 0
 	psvr->fusion = imu_fusion_create();
