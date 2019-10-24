@@ -897,15 +897,15 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	{
 		struct u_panotools_values vals = {0};
 
-		vals.distortion_k[0] = 0.77;
-		vals.distortion_k[1] = 0.08;
-		vals.distortion_k[2] = 0.01;
+		vals.distortion_k[0] = 0.75;
+		vals.distortion_k[1] = -0.01;
+		vals.distortion_k[2] = 0.75;
 		vals.distortion_k[3] = 0.0;
-		vals.distortion_k[4] = 0.7;
+		vals.distortion_k[4] = 3.8;
 		vals.aberration_k[0] = 0.999;
 		vals.aberration_k[1] = 1.008;
 		vals.aberration_k[2] = 1.018;
-		vals.scale = 0.72;
+		vals.scale = 1.2;
 		vals.lens_center.x = 0.5;
 		vals.lens_center.y = 0.5;
 		vals.viewport_size.x = 1.0;
@@ -972,12 +972,12 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	struct u_device_simple_info info;
 	info.display.w_pixels = 1920;
 	info.display.h_pixels = 1080;
-	info.display.w_meters = 0.126; // from calculated specs
-	info.display.h_meters = 0.068;
-	info.lens_horizontal_separation_meters = 0.062f;
-	info.lens_vertical_position_meters = 0.07 / 2.0f; // 94899882f;
-	info.views[0].fov = 96.0f * (M_PI / 180.0f);
-	info.views[1].fov = 96.0f * (M_PI / 180.0f);
+	info.display.w_meters = 0.13;
+	info.display.h_meters = 0.07;
+	info.lens_horizontal_separation_meters = 0.063f;
+	info.lens_vertical_position_meters = 0.07 / 2.0f;
+	info.views[0].fov = 85.0f * (M_PI / 180.0f);
+	info.views[1].fov = 85.0f * (M_PI / 180.0f);
 
 	if (!u_device_setup_split_side_by_side(&psvr->base, &info)) {
 		PSVR_ERROR(psvr, "Failed to setup basic device info");
