@@ -12,8 +12,7 @@
 
 #include "tracking/t_tracking.h"
 #include "tracking/t_calibration_opencv.h"
-#include "tracking/t_fusion.h"
-#include "tracking/t_imu_fusion.h"
+#include "tracking/t_tracker_psmv_fusion.h"
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
@@ -22,24 +21,12 @@
 #include "util/u_format.h"
 
 #include "math/m_api.h"
-#include "math/m_eigen_interop.h"
 
 #include "os/os_threading.h"
-
-
-#include "flexkalman/AbsoluteOrientationMeasurement.h"
-#include "flexkalman/FlexibleKalmanFilter.h"
-#include "flexkalman/FlexibleUnscentedCorrect.h"
-#include "flexkalman/PoseSeparatelyDampedConstantVelocity.h"
-#include "flexkalman/PoseState.h"
 
 #include <stdio.h>
 #include <assert.h>
 #include <pthread.h>
-
-using State = flexkalman::pose_externalized_rotation::State;
-using ProcessModel =
-    flexkalman::PoseSeparatelyDampedConstantVelocityProcessModel;
 
 /*!
  * Single camera.
@@ -59,7 +46,6 @@ struct View
 
 struct TrackerPSMV
 {
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	struct xrt_tracked_psmv base = {};
 	struct xrt_frame_sink sink = {};
 	struct xrt_frame_node node = {};
@@ -97,10 +83,7 @@ struct TrackerPSMV
 
 	cv::Ptr<cv::SimpleBlobDetector> sbd;
 
-	State filter_state;
-	ProcessModel process_model;
-
-	xrt_fusion::SimpleIMUFusion imu;
+	std::unique_ptr<xrt_fusion::PSMVFusionInterface> filter;
 
 	xrt_vec3 tracked_object_position;
 };
@@ -252,20 +235,6 @@ world_point_from_blobs(cv::Point2f left,
 	return world_point;
 }
 
-static void
-reset_filter(TrackerPSMV &t)
-{
-
-	t.filter_state = State{};
-	t.tracked = false;
-}
-
-static void
-reset_filter_and_imu(TrackerPSMV &t)
-{
-	reset_filter(t);
-	t.imu = xrt_fusion::SimpleIMUFusion{};
-}
 /*!
  * @brief Perform tracking computations on a frame of video data.
  */
@@ -363,9 +332,10 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	if (nearest_world.got_one) {
 		cv::Point3f world_point = nearest_world.best;
 		// update internal state
-
-		map_vec3(t.tracked_object_position) =
-		    Eigen::Map<Eigen::Vector3f>(&world_point.x);
+		memcpy(&t.tracked_object_position, &world_point.x,
+		       sizeof(t.tracked_object_position));
+	} else {
+		t.filter->clear_position_tracked_flag();
 	}
 
 	if (t.debug.frame != NULL) {
@@ -376,51 +346,27 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 
 	xrt_frame_reference(&xf, NULL);
 	xrt_frame_reference(&t.debug.frame, NULL);
-	bool corrected = false;
 	if (nearest_world.got_one) {
-		Eigen::Vector3f position = map_vec3(t.tracked_object_position);
-
-		auto measurement =
-		    xrt_fusion::AbsolutePositionLeverArmMeasurement{
-		        position.cast<double>(),
-		        //! @todo something less arbitrary for the lever arm?
-		        //! This puts the origin approximately under the PS
-		        //! button.
-		        Eigen::Vector3d(0., 0.09, 0.),
-		        //! @todo this should depend on distance
-		        // Weirdly, this is where *not* applying the
-		        // disparity-to-distance/rectification/etc would
-		        // simplify things, since the measurement variance is
-		        // related to the image sensor. 1.e-4 means 1cm std dev.
-		        // Not sure how to estimate the depth variance without
-		        // some research.
-		        Eigen::Vector3d(1.e-4, 1.e-4, 4.e-4)};
-		double resid = measurement.getResidual(t.filter_state).norm();
-
-		if (resid > 15) {
-			// Residual arbitrarily "too large"
-			fprintf(stderr,
-			        "Warning - measurement residual is %f\n",
-			        resid);
-		}
-		//! @todo predict and use actual dt - right now only IMU updates
-		//! this time.
-		// flexkalman::predict(t.filter_state, t.process_model, 1.0
-		// / 60.);
-		if (flexkalman::correctUnscented(t.filter_state, measurement)) {
-			corrected = true;
-			t.tracked = true;
-		} else {
-			fprintf(stderr,
-			        "Got non-finite something when filtering "
-			        "tracker - resetting filter!\n");
-			t.filter_state = State{};
-		}
-	}
-	if (!corrected) {
-		// We don't have anything to correct with, so we must manually
-		// run post-correct.
-		t.filter_state.postCorrect();
+#if 0
+		//! @todo something less arbitrary for the lever arm?
+		//! This puts the origin approximately under the PS
+		//! button.
+		xrt_vec3 lever_arm{0.f, 0.09f, 0.f};
+		//! @todo this should depend on distance
+		// Weirdly, this is where *not* applying the
+		// disparity-to-distance/rectification/etc would
+		// simplify things, since the measurement variance is
+		// related to the image sensor. 1.e-4 means 1cm std dev.
+		// Not sure how to estimate the depth variance without
+		// some research.
+		xrt_vec3 variance{1.e-4f, 1.e-4f, 4.e-4f};
+#endif
+		t.filter->process_3d_vision_data(
+		    0, &t.tracked_object_position, NULL, NULL,
+		    //! @todo tune cutoff for residual arbitrarily "too large"
+		    15);
+	} else {
+		t.filter->clear_position_tracked_flag();
 	}
 }
 
@@ -496,27 +442,7 @@ get_pose(TrackerPSMV &t,
 		return;
 	}
 
-	if (!t.tracked) {
-		out_relation->relation_flags = (enum xrt_space_relation_flags)0;
-		os_thread_helper_unlock(&t.oth);
-		return;
-	}
-
-	auto predicted_state =
-	    flexkalman::getPrediction(t.filter_state, t.process_model,
-	                              /*! @todo compute dt here */ 0.024);
-	// out_relation->pose.position = t.fusion.pos;
-	map_vec3(out_relation->pose.position) =
-	    predicted_state.position().cast<float>();
-	map_quat(out_relation->pose.orientation) =
-	    predicted_state.getQuaternion().cast<float>();
-
-	//! @todo assuming that orientation is actually currently tracked.
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	t.filter->get_prediction(when_ns, out_relation);
 
 	os_thread_helper_unlock(&t.oth);
 }
@@ -533,29 +459,7 @@ imu_data(TrackerPSMV &t,
 		os_thread_helper_unlock(&t.oth);
 		return;
 	}
-
-	float dt = time_ns_to_s(delta_ns);
-	t.imu.handleAccel(map_vec3(sample->accel_m_s2).cast<double>(), dt);
-	t.imu.handleGyro(map_vec3(sample->gyro_rad_secs).cast<double>(), dt);
-	t.imu.postCorrect();
-
-	//! @todo use better measurements instead of the above "simple fusion"
-	flexkalman::predict(t.filter_state, t.process_model, dt);
-	auto meas = flexkalman::AbsoluteOrientationMeasurement{
-	    Eigen::Quaterniond(
-	        Eigen::AngleAxisd(EIGEN_PI, Eigen::Vector3d::UnitY())) *
-	        t.imu.getQuat(),
-	    Eigen::Vector3d::Constant(0.01)};
-	if (!flexkalman::correctUnscented(t.filter_state, meas)) {
-		fprintf(stderr,
-		        "Got non-finite something when filtering IMU - "
-		        "resetting filter and IMU fusion!\n");
-		reset_filter_and_imu(t);
-
-	} else {
-		map_quat(t.fusion.rot) =
-		    t.filter_state.getQuaternion().cast<float>();
-	}
+	t.filter->process_imu_data(delta_ns, sample, NULL);
 
 	os_thread_helper_unlock(&t.oth);
 }
@@ -689,6 +593,7 @@ t_psmv_create(struct xrt_frame_context *xfctx,
 	t.fusion.rot.y = 0.0f;
 	t.fusion.rot.z = 0.0f;
 	t.fusion.rot.w = 1.0f;
+	t.filter = xrt_fusion::PSMVFusionInterface::create();
 
 	ret = os_thread_helper_init(&t.oth);
 	if (ret != 0) {

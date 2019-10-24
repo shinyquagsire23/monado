@@ -24,8 +24,8 @@ set(OS_SOURCE_FILES
 	)
 
 set(TRACKING_SOURCE_FILES
-	tracking/t_calibration.cpp
 	tracking/t_calibration_opencv.h
+	tracking/t_calibration.cpp
 	tracking/t_convert.cpp
 	tracking/t_debug_hsv_filter.cpp
 	tracking/t_debug_hsv_picker.cpp
@@ -34,8 +34,9 @@ set(TRACKING_SOURCE_FILES
 	tracking/t_fusion.h
 	tracking/t_hsv_filter.c
 	tracking/t_imu_fusion.h
-	tracking/t_imu.cpp
 	tracking/t_imu.h
+	tracking/t_kalman.cpp
+	tracking/t_tracker_psmv_fusion.h
 	tracking/t_tracker_psmv.cpp
 	tracking/t_tracker_psvr.cpp
 	tracking/t_tracking.h
