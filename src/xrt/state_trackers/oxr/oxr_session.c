@@ -202,7 +202,7 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 
 	struct xrt_space_relation relation;
 	int64_t timestamp;
-	xdev->get_tracked_pose(xdev, XRT_INPUT_GENERIC_HEAD_RELATION,
+	xdev->get_tracked_pose(xdev, XRT_INPUT_GENERIC_HEAD_POSE,
 	                       sess->sys->inst->timekeeping, &timestamp,
 	                       &relation);
 

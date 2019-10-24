@@ -85,7 +85,7 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct vive_device *d = vive_device(xdev);
 
-	if (name != XRT_INPUT_GENERIC_HEAD_RELATION) {
+	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
 		VIVE_ERROR("unknown input name");
 		return;
 	}
@@ -871,7 +871,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.get_tracked_pose = vive_device_get_tracked_pose;
 	d->base.get_view_pose = vive_device_get_view_pose;
 	d->base.destroy = vive_device_destroy;
-	d->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
+	d->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	d->base.name = XRT_DEVICE_GENERIC_HMD;
 	d->mainboard_dev = mainboard_dev;
 	d->sensors_dev = sensors_dev;

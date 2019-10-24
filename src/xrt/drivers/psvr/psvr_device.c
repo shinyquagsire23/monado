@@ -682,7 +682,7 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct psvr_device *psvr = psvr_device(xdev);
 
-	if (name != XRT_INPUT_GENERIC_HEAD_RELATION) {
+	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
 		PSVR_ERROR(psvr, "unknown input name");
 		return;
 	}
@@ -778,7 +778,7 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	psvr->base.get_tracked_pose = psvr_device_get_tracked_pose;
 	psvr->base.get_view_pose = psvr_device_get_view_pose;
 	psvr->base.destroy = psvr_device_destroy;
-	psvr->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
+	psvr->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	psvr->base.name = XRT_DEVICE_GENERIC_HMD;
 	psvr->base.hmd->distortion.models = XRT_DISTORTION_MODEL_MESHUV;
 	psvr->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_MESHUV;

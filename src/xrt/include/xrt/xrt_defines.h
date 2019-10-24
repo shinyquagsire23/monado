@@ -358,8 +358,6 @@ enum xrt_input_type
 	XRT_INPUT_TYPE_BOOLEAN               = 0x04,
 	//! A tracked pose
 	XRT_INPUT_TYPE_POSE                  = 0x05,
-	//! A static relationship?
-	XRT_INPUT_TYPE_RELATION              = 0x06,
 	// clang-format on
 };
 
@@ -396,7 +394,7 @@ enum xrt_input_type
 enum xrt_input_name
 {
 	// clang-format off
-	XRT_INPUT_GENERIC_HEAD_RELATION              = XRT_INPUT_NAME(0x0000, RELATION),
+	XRT_INPUT_GENERIC_HEAD_POSE                  = XRT_INPUT_NAME(0x0000, POSE),
 	XRT_INPUT_GENERIC_HEAD_DETECT                = XRT_INPUT_NAME(0x0001, BOOLEAN),
 
 	XRT_INPUT_PSMV_PS_CLICK                      = XRT_INPUT_NAME(0x0020, BOOLEAN),

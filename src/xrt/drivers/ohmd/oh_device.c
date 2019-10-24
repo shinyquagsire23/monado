@@ -66,7 +66,7 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	struct oh_device *ohd = oh_device(xdev);
 	struct xrt_quat quat = {0.f, 0.f, 0.f, 1.f};
 
-	if (name != XRT_INPUT_GENERIC_HEAD_RELATION) {
+	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
 		OH_ERROR(ohd, "unknown input name");
 		return;
 	}
@@ -362,7 +362,7 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.get_tracked_pose = oh_device_get_tracked_pose;
 	ohd->base.get_view_pose = oh_device_get_view_pose;
 	ohd->base.destroy = oh_device_destroy;
-	ohd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
+	ohd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	ohd->base.name = XRT_DEVICE_GENERIC_HMD;
 	ohd->ctx = ctx;
 	ohd->dev = dev;

@@ -114,7 +114,7 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct hdk_device *hd = hdk_device(xdev);
 
-	if (name != XRT_INPUT_GENERIC_HEAD_RELATION) {
+	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
 		HDK_ERROR(hd, "unknown input name");
 		return;
 	}
@@ -271,7 +271,7 @@ hdk_device_create(struct os_hid_device *dev,
 	hd->base.get_tracked_pose = hdk_device_get_tracked_pose;
 	hd->base.get_view_pose = hdk_device_get_view_pose;
 	hd->base.destroy = hdk_device_destroy;
-	hd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_RELATION;
+	hd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	hd->base.name = XRT_DEVICE_GENERIC_HMD;
 	hd->dev = dev;
 	hd->print_spew = print_spew;
