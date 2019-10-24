@@ -586,12 +586,45 @@ oxr_source_cache_update(struct oxr_logger *log,
 	}
 
 	if (cache->num_inputs > 0) {
-		//! @todo Deal with other types and combine sources.
-		int64_t timestamp = cache->inputs[0].input->timestamp;
-		float value = cache->inputs[0].input->value.vec1.x;
+		/*!
+		 * @todo Combine multiple sources for a single subaction path
+		 * and convert type as required.
+		 */
 
-		bool changed = value != last.vec1.x;
-		cache->current.vec1.x = value;
+		struct xrt_input *input = cache->inputs[0].input;
+		int64_t timestamp = input->timestamp;
+		bool changed = false;
+		switch (XRT_GET_INPUT_TYPE(input->name)) {
+		case XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE:
+		case XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE: {
+			changed = (input->value.vec1.x != last.vec1.x);
+			cache->current.vec1.x = input->value.vec1.x;
+			break;
+		}
+		case XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE: {
+			changed = (input->value.vec2.x != last.vec2.x) ||
+			          (input->value.vec2.y != last.vec2.y);
+			cache->current.vec2.x = input->value.vec2.x;
+			cache->current.vec2.y = input->value.vec2.y;
+			break;
+		}
+#if 0
+		case XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE: {
+			changed = (input->value.vec3.x != last.vec3.x) ||
+			          (input->value.vec3.y != last.vec3.y) ||
+			          (input->value.vec3.z != last.vec3.z);
+			cache->current.vec3.x = input->value.vec3.x;
+			cache->current.vec3.y = input->value.vec3.y;
+			cache->current.vec3.z = input->value.vec3.z;
+			break;
+		}
+#endif
+		case XRT_INPUT_TYPE_BOOLEAN: {
+			changed = (input->value.boolean != last.boolean);
+			cache->current.boolean = input->value.boolean;
+			break;
+		}
+		}
 
 		if (last.active && changed) {
 			cache->current.timestamp = timestamp;
@@ -829,6 +862,7 @@ get_state_from_state_bool(struct oxr_source_state *state,
 {
 	data->currentState = state->boolean;
 	data->lastChangeTime = state->timestamp;
+	data->changedSinceLastSync = state->changed;
 	data->isActive = XR_TRUE;
 
 #if 0
@@ -848,6 +882,7 @@ get_state_from_state_vec1(struct oxr_source_state *state,
 {
 	data->currentState = state->vec1.x;
 	data->lastChangeTime = state->timestamp;
+	data->changedSinceLastSync = state->changed;
 	data->isActive = XR_TRUE;
 
 #if 0
@@ -868,6 +903,7 @@ get_state_from_state_vec2(struct oxr_source_state *state,
 	data->currentState.x = state->vec2.x;
 	data->currentState.y = state->vec2.y;
 	data->lastChangeTime = state->timestamp;
+	data->changedSinceLastSync = state->changed;
 	data->isActive = XR_TRUE;
 
 #if 0
