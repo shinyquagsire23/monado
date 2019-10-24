@@ -1324,6 +1324,7 @@ psmv_parse_input_zcm1(struct psmv_device *psmv,
 	input->battery = data->battery;
 	input->seq_no = data->buttons[3] & 0x0f;
 
+	input->buttons = 0;
 	input->buttons |= data->buttons[0] << 24;
 	input->buttons |= data->buttons[1] << 16;
 	input->buttons |= data->buttons[2] << 8;
@@ -1554,6 +1555,7 @@ psmv_parse_input_zcm2(struct psmv_device *psmv,
 	input->battery = data->battery;
 	input->seq_no = data->buttons[3] & 0x0f;
 
+	input->buttons = 0;
 	input->buttons |= data->buttons[0] << 24;
 	input->buttons |= data->buttons[1] << 16;
 	input->buttons |= data->buttons[2] << 8;
@@ -1634,6 +1636,8 @@ psmv_parse_input(struct psmv_device *psmv,
                  void *data,
                  struct psmv_parsed_input *input)
 {
+	memset(input, 0, sizeof(*input));
+
 	switch (psmv->pid) {
 	case PSMV_PID_ZCM1: return psmv_parse_input_zcm1(psmv, data, input);
 	case PSMV_PID_ZCM2: return psmv_parse_input_zcm2(psmv, data, input);
