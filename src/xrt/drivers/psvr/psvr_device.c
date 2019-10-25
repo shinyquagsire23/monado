@@ -87,6 +87,14 @@ struct psvr_device
 
 	struct
 	{
+		union {
+			uint8_t data[290];
+		};
+		int last_packet;
+	} calibration;
+
+	struct
+	{
 		bool last_frame;
 		bool control;
 	} gui;
@@ -177,6 +185,15 @@ static int
 send_to_control(struct psvr_device *psvr, const uint8_t *data, size_t size)
 {
 	return hid_write(psvr->hmd_control, data, size);
+}
+
+static int
+send_request_data(struct psvr_device *psvr, int id, int num)
+{
+	const uint8_t data[12] = {
+	    0x81, 0x00, 0xaa, 0x08, id, num, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	};
+	return send_to_control(psvr, data, sizeof(data));
 }
 
 
@@ -358,6 +375,37 @@ handle_control_status_msg(struct psvr_device *psvr,
 }
 
 static void
+handle_device_name_msg(struct psvr_device *psvr,
+                       unsigned char *buffer,
+                       int size)
+{
+	//! @todo Get the name here.
+}
+
+static void
+handle_calibration_msg(struct psvr_device *psvr,
+                       unsigned char *buffer,
+                       size_t size)
+{
+	const size_t data_start = 6;
+	const size_t data_length = 58;
+	const size_t packet_length = data_start + data_length;
+
+	if (size != packet_length) {
+		PSVR_ERROR(psvr, "invalid calibration packet length");
+		return;
+	}
+
+	size_t which = buffer[1];
+	size_t dst = data_length * which;
+	for (size_t src = data_start; src < size; src++, dst++) {
+		psvr->calibration.data[dst] = buffer[src];
+	}
+
+	psvr->calibration.last_packet = which;
+}
+
+static void
 handle_control_0xA0(struct psvr_device *psvr, unsigned char *buffer, int size)
 {
 	if (size < 4) {
@@ -404,6 +452,10 @@ read_control_packets(struct psvr_device *psvr)
 
 		if (buffer[0] == PSVR_PKG_STATUS) {
 			handle_control_status_msg(psvr, buffer, size);
+		} else if (buffer[0] == PSVR_PKG_DEVICE_NAME) {
+			handle_device_name_msg(psvr, buffer, size);
+		} else if (buffer[0] == PSVR_PKG_CALIBRATION) {
+			handle_calibration_msg(psvr, buffer, size);
 		} else if (buffer[0] == PSVR_PKG_0xA0) {
 			handle_control_0xA0(psvr, buffer, size);
 		} else {
@@ -411,6 +463,54 @@ read_control_packets(struct psvr_device *psvr)
 		}
 
 	} while (true);
+}
+
+static int
+read_calibration_data(struct psvr_device *psvr)
+{
+	// Request the device name.
+	int ret = send_request_data(psvr, 0x80, 0);
+	if (ret < 0) {
+		return ret;
+	}
+
+	for (int i = 0; i < 5; i++) {
+		// Request the IMU calibration data.
+		ret = send_request_data(psvr, 0x86, i);
+		if (ret < 0) {
+			return ret;
+		}
+	}
+
+	for (int i = 0; i < 100; i++) {
+		os_nanosleep(1000 * 1000);
+		read_control_packets(psvr);
+
+		// Check if we got the packet.
+		if (psvr->calibration.last_packet == 4) {
+			break;
+		}
+	}
+
+	if (psvr->calibration.last_packet != 4) {
+		PSVR_ERROR(psvr, "Failed to get calibration");
+		return -1;
+	}
+
+#if 0
+	for (size_t i = 0; i < sizeof(psvr->calibration.data); i++) {
+		fprintf(stderr, "%02x ", psvr->calibration.data[i]);
+	}
+	fprintf(stderr, "\n");
+
+	int *data = (int*)&psvr->calibration.data[0];
+	for (size_t i = 0; i < (sizeof(psvr->calibration.data) / 4); i++) {
+		int v = data[i];
+		fprintf(stderr, "%i %f\n", v, *(float*)&v);
+	}
+#endif
+
+	return 0;
 }
 
 
@@ -808,6 +908,12 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 
 	if (control_power_and_wait(psvr, true) < 0 ||
 	    control_vrmode_and_wait(psvr, true) < 0) {
+		goto cleanup;
+	}
+
+	// Device is now on and we can read calibration data now.
+	ret = read_calibration_data(psvr);
+	if (ret < 0) {
 		goto cleanup;
 	}
 

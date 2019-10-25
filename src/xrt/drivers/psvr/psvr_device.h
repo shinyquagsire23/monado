@@ -55,6 +55,8 @@ enum psvr_status_bits
 #define PSVR_TICKS_PER_SECOND (1000000.0) // 1 MHz ticks
 
 #define PSVR_PKG_STATUS 0xF0
+#define PSVR_PKG_DEVICE_NAME 0x80
+#define PSVR_PKG_CALIBRATION 0x86
 #define PSVR_PKG_0xA0 0xA0
 
 
