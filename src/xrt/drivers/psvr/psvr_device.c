@@ -465,6 +465,12 @@ read_control_packets(struct psvr_device *psvr)
 	} while (true);
 }
 
+
+/*!
+ * Get the device name data and calibration data, see link below for info.
+ *
+ * https://github.com/gusmanb/PSVRFramework/wiki/Report-0x81-Device-ID-and-Calibration
+ */
 static int
 read_calibration_data(struct psvr_device *psvr)
 {
