@@ -469,29 +469,32 @@ static int
 read_calibration_data(struct psvr_device *psvr)
 {
 	// Request the device name.
-	int ret = send_request_data(psvr, 0x80, 0);
+	int ret = send_request_data(psvr, PSVR_GET_DATA_ID_DEVICE_NAME, 0);
 	if (ret < 0) {
 		return ret;
 	}
 
+	// There are 5 pages of PSVR calibration data.
 	for (int i = 0; i < 5; i++) {
 		// Request the IMU calibration data.
-		ret = send_request_data(psvr, 0x86, i);
+		ret = send_request_data(psvr, PSVR_GET_DATA_ID_CALIBRATION, i);
 		if (ret < 0) {
 			return ret;
 		}
 	}
 
+	// We have requested 5 pages worth of data, wait for the replies.
 	for (int i = 0; i < 100; i++) {
 		os_nanosleep(1000 * 1000);
 		read_control_packets(psvr);
 
-		// Check if we got the packet.
+		// If we have gotten of the packets stop wait.
 		if (psvr->calibration.last_packet == 4) {
 			break;
 		}
 	}
 
+	// Did we really get all of the data?
 	if (psvr->calibration.last_packet != 4) {
 		PSVR_ERROR(psvr, "Failed to get calibration");
 		return -1;
@@ -510,6 +513,8 @@ read_calibration_data(struct psvr_device *psvr)
 	}
 #endif
 
+	// Jobs done!
+	//  - Orc peon.
 	return 0;
 }
 
