@@ -25,6 +25,7 @@
 
 #define HIDRAW_BUS_USB 3
 #define HIDRAW_BUS_BLUETOOTH 5
+#define HIDRAW_BUS_I2C_MAYBE_QUESTION_MARK 24
 
 
 /*
@@ -398,6 +399,24 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 			goto next;
 		}
 
+		// Get USB bus and address to de-dublicate devices.
+		ret = p_udev_get_usb_hid_address(raw_dev, bus_type, &dev_class,
+		                                 &usb_bus, &usb_addr);
+		if (ret != 0) {
+			P_ERROR(p, "Failed to get USB bus and addr.");
+			goto next;
+		}
+
+		switch (bus_type) {
+		case HIDRAW_BUS_BLUETOOTH:
+		case HIDRAW_BUS_USB: break;
+		case HIDRAW_BUS_I2C_MAYBE_QUESTION_MARK: goto next;
+		default:
+			P_ERROR(p, "Unknown hidraw bus_type: '%i', ignoring.",
+			        bus_type);
+			goto next;
+		}
+
 		// HID interface.
 		ret = p_udev_get_interface_number(raw_dev, &interface);
 		if (ret != 0) {
@@ -405,14 +424,6 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 			        "In enumerating hidraw devices: "
 			        "Failed to get interface number for '%s'",
 			        sysfs_path);
-			goto next;
-		}
-
-		// Get USB bus and address to de-dublicate devices.
-		ret = p_udev_get_usb_hid_address(raw_dev, bus_type, &dev_class,
-		                                 &usb_bus, &usb_addr);
-		if (ret != 0) {
-			P_ERROR(p, "Failed to get USB bus and addr.");
 			goto next;
 		}
 
