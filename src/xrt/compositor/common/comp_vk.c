@@ -825,7 +825,7 @@ vk_get_device_functions(struct vk_bundle *vk)
  */
 
 static VkResult
-vk_select_physical_device(struct vk_bundle *vk)
+vk_select_physical_device(struct vk_bundle *vk, int forced_index)
 {
 	VkPhysicalDevice physical_devices[16];
 	uint32_t gpu_count = ARRAY_SIZE(physical_devices);
@@ -848,14 +848,23 @@ vk_select_physical_device(struct vk_bundle *vk)
 		VK_DEBUG(vk, "Can not deal well with multiple devices.");
 	}
 
-	// as a first-step to 'intelligent' selection, prefer a 'discrete' gpu
-	// if it is present
+	VK_DEBUG(vk, "Choosing Vulkan device index");
 	uint32_t gpu_index = 0;
-	for (uint32_t i = 0; i < gpu_count; i++) {
-		VkPhysicalDeviceProperties pdp;
-		vk->vkGetPhysicalDeviceProperties(physical_devices[i], &pdp);
-		if (pdp.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-			gpu_index = i;
+	if (forced_index > -1) {
+		gpu_index = forced_index;
+		VK_DEBUG(vk, "Forced use of Vulkan device index %d.",
+		         gpu_index);
+	} else {
+		// as a first-step to 'intelligent' selection, prefer a
+		// 'discrete' gpu if it is present
+		for (uint32_t i = 0; i < gpu_count; i++) {
+			VkPhysicalDeviceProperties pdp;
+			vk->vkGetPhysicalDeviceProperties(physical_devices[i],
+			                                  &pdp);
+			if (pdp.deviceType ==
+			    VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+				gpu_index = i;
+			}
 		}
 	}
 
@@ -929,11 +938,11 @@ err_free:
 }
 
 VkResult
-vk_create_device(struct vk_bundle *vk)
+vk_create_device(struct vk_bundle *vk, int forced_index)
 {
 	VkResult ret;
 
-	ret = vk_select_physical_device(vk);
+	ret = vk_select_physical_device(vk, forced_index);
 	if (ret != VK_SUCCESS) {
 		return ret;
 	}

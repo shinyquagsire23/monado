@@ -84,6 +84,9 @@ struct comp_settings
 
 	//! Enable vulkan validation for compositor
 	bool validate_vulkan;
+
+	//! Run the compositor on this Vulkan physical device
+	int gpu_index;
 };
 
 /*!

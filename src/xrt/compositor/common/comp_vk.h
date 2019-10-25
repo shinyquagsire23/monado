@@ -253,7 +253,7 @@ vk_init_cmd_pool(struct vk_bundle *vk);
  * @ingroup comp_common
  */
 VkResult
-vk_create_device(struct vk_bundle *vk);
+vk_create_device(struct vk_bundle *vk, int forced_index);
 
 /*!
  * Initialize a bundle with objects given to us by client code,
