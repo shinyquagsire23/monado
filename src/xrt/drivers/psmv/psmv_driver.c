@@ -132,7 +132,7 @@ struct psmv_set_led
 };
 
 /*!
- * Wire encoding of a single 32 bit float, big endian.
+ * Wire encoding of a single 32 bit float, "little" endian.
  */
 struct psmv_f32_wire
 {
@@ -140,7 +140,7 @@ struct psmv_f32_wire
 };
 
 /*!
- * Wire encoding of three 32 bit float, big endian.
+ * Wire encoding of three 32 bit float, "little" endian.
  */
 struct psmv_vec3_f32_wire
 {
@@ -150,7 +150,7 @@ struct psmv_vec3_f32_wire
 };
 
 /*!
- * Wire encoding of a single 16 bit integer, big endian.
+ * Wire encoding of a single 16 bit integer, little endian.
  *
  * The values are unsigned 16-bit integers and stored as two's complement. The
  * values are shifted up to always report positive numbers. Subtract 0x8000 to
@@ -163,7 +163,7 @@ struct psmv_u16_wire
 };
 
 /*!
- * Wire encoding of three 16 bit integers, big endian.
+ * Wire encoding of three 16 bit integers, little endian.
  *
  * The values are unsigned 16-bit integers and stored as two's complement. The
  * values are shifted up to always report positive numbers. Subtract 0x8000 to
@@ -177,7 +177,7 @@ struct psmv_vec3_u16_wire
 };
 
 /*!
- * Wire encoding of a single 16 bit integer, big endian.
+ * Wire encoding of a single 16 bit integer, little endian.
  */
 struct psmv_i16_wire
 {
@@ -186,7 +186,7 @@ struct psmv_i16_wire
 };
 
 /*!
- * Wire encoding of three 16 bit integers, big endian.
+ * Wire encoding of three 16 bit integers, little endian.
  *
  * The values are signed 16-bit integers and stored as two's complement.
  */
@@ -214,28 +214,28 @@ struct psmv_calibration_zcm1
 {
 	uint8_t id;
 	uint8_t which;
-	uint16_t _pad0;
+	uint8_t _pad0[2];
 	struct psmv_vec3_u16_wire accel_max_z;
 	struct psmv_vec3_u16_wire accel_min_x;
 	struct psmv_vec3_u16_wire accel_min_z;
 	struct psmv_vec3_u16_wire accel_max_x;
 	struct psmv_vec3_u16_wire accel_max_y;
 	struct psmv_vec3_u16_wire accel_min_y;
-	uint16_t _pad1;
+	uint8_t _pad1[2];
 	struct psmv_vec3_u16_wire gyro_bias_0;
-	uint16_t _pad2;
+	uint8_t _pad2[2];
 	struct psmv_vec3_u16_wire gyro_bias_1;
 	uint8_t _pad3[7];
 	uint8_t _pad4;
-	uint16_t _pad5;
-	uint16_t _pad6;
-	uint16_t _pad7;
+	uint8_t _pad5[2];
+	uint8_t _pad6[2];
+	uint8_t _pad7[2];
 	struct psmv_vec3_u16_wire gyro_rot_x;
-	uint16_t _pad8;
+	uint8_t _pad8[2];
 	struct psmv_vec3_u16_wire gyro_rot_y;
-	uint16_t _pad9;
+	uint8_t _pad9[2];
 	struct psmv_vec3_u16_wire gyro_rot_z;
-	uint16_t _pad10;
+	uint8_t _pad10[2];
 	struct psmv_vec3_f32_wire unknown_vec3;
 	struct psmv_vec3_f32_wire gyro_fact;
 	struct psmv_f32_wire unknown_float_0;
