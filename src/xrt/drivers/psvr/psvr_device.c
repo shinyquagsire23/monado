@@ -210,19 +210,40 @@ scale_led_power(uint8_t power)
 }
 
 static void
-accel_from_psvr_vec(const struct xrt_vec3_i32 *accel, struct xrt_vec3 *out_vec)
+read_sample_and_apply_calibration(struct psvr_device *psvr,
+                                  struct psvr_parsed_sample *sample,
+                                  struct xrt_vec3 *out_accel,
+                                  struct xrt_vec3 *out_gyro)
 {
-	out_vec->x = accel->x * (MATH_GRAVITY_M_S2 / 16384.0);
-	out_vec->y = accel->y * (MATH_GRAVITY_M_S2 / 16384.0);
-	out_vec->z = accel->z * (MATH_GRAVITY_M_S2 / 16384.0);
-}
+	const struct xrt_vec3_i32 raw_accel = sample->accel;
+	const struct xrt_vec3_i32 raw_gyro = sample->gyro;
 
-static void
-gyro_from_psvr_vec(const struct xrt_vec3_i32 *gyro, struct xrt_vec3 *out_vec)
-{
-	out_vec->x = gyro->x * 0.00105;
-	out_vec->y = gyro->y * 0.00105;
-	out_vec->z = gyro->z * 0.00105;
+	// Convert so that for a perfect IMU 1.0 is one G.
+	struct xrt_vec3 accel = {
+	    raw_accel.x / 16384.0,
+	    raw_accel.y / 16384.0,
+	    raw_accel.z / 16384.0,
+	};
+
+	// What unit is this?
+	struct xrt_vec3 gyro = {
+	    raw_gyro.x * 0.00105,
+	    raw_gyro.y * 0.00105,
+	    raw_gyro.z * 0.00105,
+	};
+
+	// Go from Gs to m/s2 and flip the Z-axis.
+	accel.x *= +MATH_GRAVITY_M_S2;
+	accel.y *= +MATH_GRAVITY_M_S2;
+	accel.z *= -MATH_GRAVITY_M_S2;
+
+	// Flip the Z-axis.
+	gyro.x *= +1.0;
+	gyro.y *= +1.0;
+	gyro.z *= -1.0;
+
+	*out_accel = accel;
+	*out_gyro = gyro;
 }
 
 static void
@@ -233,8 +254,8 @@ update_fusion(struct psvr_device *psvr,
 	struct xrt_vec3 mag = {0.0f, 0.0f, 0.0f};
 	(void)mag;
 
-	accel_from_psvr_vec(&sample->accel, &psvr->read.accel);
-	gyro_from_psvr_vec(&sample->gyro, &psvr->read.gyro);
+	read_sample_and_apply_calibration(psvr, sample, &psvr->read.accel,
+	                                  &psvr->read.gyro);
 
 	if (psvr->tracker != NULL) {
 		time_duration_ns delta_ns =

@@ -65,14 +65,6 @@ read_i16_to_i32(const uint8_t **buffer, int32_t *out_value)
 }
 
 inline static void
-read_i16_to_i32_neg(const uint8_t **buffer, int32_t *out_value)
-{
-	int32_t v;
-	read_i16_to_i32(buffer, &v);
-	*out_value = -v;
-}
-
-inline static void
 read_u32(const uint8_t **buffer, uint32_t *out_value)
 {
 	*out_value = (*(*buffer + 0) << 0) |  // Byte 0
@@ -91,12 +83,12 @@ read_sample(const uint8_t **buffer, struct psvr_parsed_sample *sample)
 	// Rotation.
 	read_i16_to_i32(buffer, &sample->gyro.y);
 	read_i16_to_i32(buffer, &sample->gyro.x);
-	read_i16_to_i32_neg(buffer, &sample->gyro.z);
+	read_i16_to_i32(buffer, &sample->gyro.z);
 
 	// Acceleration.
 	read_i16_to_i32(buffer, &sample->accel.y);
 	read_i16_to_i32(buffer, &sample->accel.x);
-	read_i16_to_i32_neg(buffer, &sample->accel.z);
+	read_i16_to_i32(buffer, &sample->accel.z);
 }
 
 
