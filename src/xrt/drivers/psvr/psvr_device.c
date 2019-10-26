@@ -89,6 +89,33 @@ struct psvr_device
 	{
 		union {
 			uint8_t data[290];
+			struct
+			{
+				uint32_t _pad0[4];
+				struct xrt_vec3 unknown0;
+				uint32_t _zero0;
+				uint32_t _pad2_vec3_zero[4];
+				uint32_t _pad3_vec3_zero[4];
+				uint32_t _pad4_vec3_zero[4];
+				struct xrt_vec3 accel_pos_y;
+				uint32_t _pad5[1];
+				struct xrt_vec3 accel_neg_x;
+				uint32_t _pad6[1];
+				struct xrt_vec3 accel_neg_y;
+				uint32_t _pad7[1];
+				struct xrt_vec3 accel_pos_x;
+				uint32_t _pad8[1];
+				struct xrt_vec3 accel_pos_z;
+				uint32_t _pad9[1];
+				struct xrt_vec3 accel_neg_z;
+				uint32_t _pad10[1];
+				struct xrt_vec3 gyro_neg_y;
+				uint32_t _pad11[1];
+				struct xrt_vec3 gyro_pos_x;
+				uint32_t _pad12[1];
+				struct xrt_vec3 gyro_neg_z;
+				uint32_t _pad13[1];
+			};
 		};
 		int last_packet;
 	} calibration;
@@ -231,6 +258,30 @@ read_sample_and_apply_calibration(struct psvr_device *psvr,
 	    raw_gyro.y * 0.00105,
 	    raw_gyro.z * 0.00105,
 	};
+
+	float ax = 2.0 / (psvr->calibration.accel_pos_x.x -
+	                  psvr->calibration.accel_neg_x.x);
+	float ay = 2.0 / (psvr->calibration.accel_pos_y.y -
+	                  psvr->calibration.accel_neg_y.y);
+	float az = 2.0 / (psvr->calibration.accel_pos_z.z -
+	                  psvr->calibration.accel_neg_z.z);
+
+	float ox = (psvr->calibration.accel_pos_x.x +
+	            psvr->calibration.accel_neg_x.x) /
+	           2.0;
+	float oy = (psvr->calibration.accel_pos_y.y +
+	            psvr->calibration.accel_neg_y.y) /
+	           2.0;
+	float oz = (psvr->calibration.accel_pos_z.z +
+	            psvr->calibration.accel_neg_z.z) /
+	           2.0;
+
+	accel.x -= ox;
+	accel.y -= oy;
+	accel.z -= oz;
+	accel.x *= ax;
+	accel.y *= ay;
+	accel.z *= az;
 
 	// Go from Gs to m/s2 and flip the Z-axis.
 	accel.x *= +MATH_GRAVITY_M_S2;
@@ -526,6 +577,24 @@ read_calibration_data(struct psvr_device *psvr)
 		PSVR_ERROR(psvr, "Failed to get calibration");
 		return -1;
 	}
+
+	PSVR_DEBUG(
+	    psvr,
+	    "calibration.accel_pos_x: %f %f %f\n"
+	    "calibration.accel_neg_x: %f %f %f\n"
+	    "calibration.accel_pos_y: %f %f %f\n"
+	    "calibration.accel_neg_y: %f %f %f\n"
+	    "calibration.accel_pos_z: %f %f %f\n"
+	    "calibration.accel_neg_z: %f %f %f\n",
+	    psvr->calibration.accel_pos_x.x, psvr->calibration.accel_pos_x.y,
+	    psvr->calibration.accel_pos_x.z, psvr->calibration.accel_neg_x.x,
+	    psvr->calibration.accel_neg_x.y, psvr->calibration.accel_neg_x.z,
+	    psvr->calibration.accel_pos_y.x, psvr->calibration.accel_pos_y.y,
+	    psvr->calibration.accel_pos_y.z, psvr->calibration.accel_neg_y.x,
+	    psvr->calibration.accel_neg_y.y, psvr->calibration.accel_neg_y.z,
+	    psvr->calibration.accel_pos_z.x, psvr->calibration.accel_pos_z.y,
+	    psvr->calibration.accel_pos_z.z, psvr->calibration.accel_neg_z.x,
+	    psvr->calibration.accel_neg_z.y, psvr->calibration.accel_neg_z.z);
 
 #if 0
 	for (size_t i = 0; i < sizeof(psvr->calibration.data); i++) {
