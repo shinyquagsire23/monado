@@ -44,7 +44,6 @@ oxr_session_get_source(struct oxr_session *sess,
 static void
 oxr_source_cache_update(struct oxr_logger *log,
                         struct oxr_session *sess,
-                        struct oxr_action *act,
                         struct oxr_source_cache *cache,
                         int64_t time,
                         bool select);
@@ -52,7 +51,7 @@ oxr_source_cache_update(struct oxr_logger *log,
 static void
 oxr_source_update(struct oxr_logger *log,
                   struct oxr_session *sess,
-                  struct oxr_action *act,
+                  struct oxr_source *src,
                   int64_t time,
                   struct oxr_sub_paths sub_paths);
 
@@ -453,6 +452,9 @@ oxr_source_set_create(struct oxr_logger *log,
 	src_set->sess = sess;
 	u_hashmap_int_insert(sess->act_sets, act_set->key, src_set);
 
+	src_set->next = sess->src_set_list;
+	sess->src_set_list = src_set;
+
 	*out_src_set = src_set;
 
 	return XR_SUCCESS;
@@ -502,6 +504,9 @@ oxr_source_create(struct oxr_logger *log,
 	                              oxr_source_destroy_cb, &src_set->handle);
 
 	u_hashmap_int_insert(src_set->sess->sources, act->key, src);
+
+	// Need to copy this.
+	src->action_type = act->action_type;
 
 	// Start logging into a single buffer.
 	oxr_slog(&slog, ": Binding %s/%s\n", act->act_set->name, act->name);
@@ -567,7 +572,6 @@ oxr_source_cache_stop_output(struct oxr_logger *log,
 static void
 oxr_source_cache_update(struct oxr_logger *log,
                         struct oxr_session *sess,
-                        struct oxr_action *act,
                         struct oxr_source_cache *cache,
                         int64_t time,
                         bool selected)
@@ -625,8 +629,7 @@ oxr_source_cache_update(struct oxr_logger *log,
 			cache->current.boolean = input->value.boolean;
 			break;
 		}
-		case XRT_INPUT_TYPE_POSE:
-			return;
+		case XRT_INPUT_TYPE_POSE: return;
 		default:
 			// Should not end up here.
 			assert(false);
@@ -676,14 +679,10 @@ oxr_source_cache_update(struct oxr_logger *log,
 static void
 oxr_source_update(struct oxr_logger *log,
                   struct oxr_session *sess,
-                  struct oxr_action *act,
+                  struct oxr_source *src,
                   int64_t time,
                   struct oxr_sub_paths sub_paths)
 {
-	struct oxr_source *src = NULL;
-
-	oxr_session_get_source(sess, act->key, &src);
-
 	// This really shouldn't be happening.
 	if (src == NULL) {
 		return;
@@ -698,10 +697,10 @@ oxr_source_update(struct oxr_logger *log,
 	bool select_gamepad = sub_paths.gamepad || sub_paths.any;
 
 	// clang-format off
-	oxr_source_cache_update(log, sess, act, &src->head, time, select_head);
-	oxr_source_cache_update(log, sess, act, &src->left, time, select_left);
-	oxr_source_cache_update(log, sess, act, &src->right, time, select_right);
-	oxr_source_cache_update(log, sess, act, &src->gamepad, time, select_gamepad);
+	oxr_source_cache_update(log, sess, &src->head, time, select_head);
+	oxr_source_cache_update(log, sess, &src->left, time, select_left);
+	oxr_source_cache_update(log, sess, &src->right, time, select_right);
+	oxr_source_cache_update(log, sess, &src->gamepad, time, select_gamepad);
 	// clang-format on
 
 	if (!select_any) {
@@ -717,7 +716,7 @@ oxr_source_update(struct oxr_logger *log,
 	bool changed = false;
 	XrTime timestamp = 0;
 
-	switch (act->action_type) {
+	switch (src->action_type) {
 	case XR_ACTION_TYPE_BOOLEAN_INPUT: {
 		bool value = false;
 		BOOL_CHECK(user);
@@ -937,29 +936,57 @@ oxr_action_sync_data(struct oxr_logger *log,
 		                sess->sys->inst->timekeeping);
 	}
 
+	// Reset all requested source sets.
+	src_set = sess->src_set_list;
+	while (src_set != NULL) {
+		U_ZERO(&src_set->requested_sub_paths);
+
+		// Grab the next one.
+		src_set = src_set->next;
+	}
+
 	// Go over all action sets and update them.
 	for (uint32_t i = 0; i < countActionSets; i++) {
 		struct oxr_sub_paths sub_paths;
-		struct oxr_action_set *act_set =
-		    (struct oxr_action_set *)actionSets[i].actionSet;
+		oxr_session_get_source_set(sess, actionSets[i].actionSet,
+		                           &src_set, &act_set);
+		assert(src_set != NULL);
 
 		oxr_classify_sub_action_paths(log, sess->sys->inst, 1,
 		                              &actionSets[i].subactionPath,
 		                              &sub_paths);
 
+		src_set->requested_sub_paths.any |= sub_paths.any;
+		src_set->requested_sub_paths.user |= sub_paths.user;
+		src_set->requested_sub_paths.head |= sub_paths.head;
+		src_set->requested_sub_paths.left |= sub_paths.left;
+		src_set->requested_sub_paths.right |= sub_paths.right;
+		src_set->requested_sub_paths.gamepad |= sub_paths.gamepad;
+	}
+
+	// Reset all source sets.
+	src_set = sess->src_set_list;
+	while (src_set != NULL) {
+		struct oxr_sub_paths sub_paths = src_set->requested_sub_paths;
+
+
 		for (uint32_t k = 0; k < XRT_MAX_HANDLE_CHILDREN; k++) {
 			// This assumes that all children of a
-			// action set are actions.
-			struct oxr_action *act =
-			    (struct oxr_action *)act_set->handle.children[k];
+			// source set are actions.
+			struct oxr_source *src =
+			    (struct oxr_source *)src_set->handle.children[k];
 
-			if (act == NULL) {
+			if (src == NULL) {
 				continue;
 			}
 
-			oxr_source_update(log, sess, act, now, sub_paths);
+			oxr_source_update(log, sess, src, now, sub_paths);
 		}
+
+		// Grab the next one.
+		src_set = src_set->next;
 	}
+
 
 	return oxr_session_success_focused_result(sess);
 }

@@ -938,6 +938,9 @@ struct oxr_session
 	struct u_hashmap_int *act_sets;
 	struct u_hashmap_int *sources;
 
+	//! List of created source sets.
+	struct oxr_source_set *src_set_list;
+
 	//! Has xrAttachSessionActionSets been called?
 	bool actionsAttached;
 
@@ -1050,6 +1053,12 @@ struct oxr_source_set
 
 	//! Owning session.
 	struct oxr_session *sess;
+
+	//! Which sub-action paths are requested on the latest sync.
+	struct oxr_sub_paths requested_sub_paths;
+
+	//! Next source set on this session.
+	struct oxr_source_set *next;
 };
 
 /*!
@@ -1133,6 +1142,9 @@ struct oxr_source
 {
 	//! Common structure for things referred to by OpenXR handles.
 	struct oxr_handle_base handle;
+
+	//! Type the action this source was created from is.
+	XrActionType action_type;
 
 	struct oxr_source_state any_state;
 
