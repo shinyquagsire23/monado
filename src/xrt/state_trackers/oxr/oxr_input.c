@@ -7,11 +7,6 @@
  * @ingroup oxr_main
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
-
 #include "util/u_debug.h"
 #include "util/u_time.h"
 #include "util/u_misc.h"
@@ -21,6 +16,12 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_handle.h"
+
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 
 
 /*
@@ -624,6 +625,11 @@ oxr_source_cache_update(struct oxr_logger *log,
 			cache->current.boolean = input->value.boolean;
 			break;
 		}
+		case XRT_INPUT_TYPE_POSE:
+			return;
+		default:
+			// Should not end up here.
+			assert(false);
 		}
 
 		if (last.active && changed) {
@@ -639,6 +645,34 @@ oxr_source_cache_update(struct oxr_logger *log,
 	}
 }
 
+#define BOOL_CHECK(NAME)                                                       \
+	if (src->NAME.current.active) {                                        \
+		active |= true;                                                \
+		value |= src->NAME.current.boolean;                            \
+		timestamp = src->NAME.current.timestamp;                       \
+	}
+#define VEC1_CHECK(NAME)                                                       \
+	if (src->NAME.current.active) {                                        \
+		active |= true;                                                \
+		if (value < src->NAME.current.vec1.x) {                        \
+			value = src->NAME.current.vec1.x;                      \
+			timestamp = src->NAME.current.timestamp;               \
+		}                                                              \
+	}
+#define VEC2_CHECK(NAME)                                                       \
+	if (src->NAME.current.active) {                                        \
+		active |= true;                                                \
+		float curr_x = src->NAME.current.vec2.x;                       \
+		float curr_y = src->NAME.current.vec2.y;                       \
+		float curr_d = curr_x * curr_x + curr_y * curr_y;              \
+		if (distance < curr_d) {                                       \
+			x = curr_x;                                            \
+			y = curr_y;                                            \
+			distance = curr_d;                                     \
+			timestamp = src->NAME.current.timestamp;               \
+		}                                                              \
+	}
+
 static void
 oxr_source_update(struct oxr_logger *log,
                   struct oxr_session *sess,
@@ -649,22 +683,103 @@ oxr_source_update(struct oxr_logger *log,
 	struct oxr_source *src = NULL;
 
 	oxr_session_get_source(sess, act->key, &src);
+
 	// This really shouldn't be happening.
 	if (src == NULL) {
 		return;
 	}
 
+	//! @todo "/user" sub-action path.
+
+	bool select_any = sub_paths.any;
 	bool select_head = sub_paths.head || sub_paths.any;
 	bool select_left = sub_paths.left || sub_paths.any;
 	bool select_right = sub_paths.right || sub_paths.any;
 	bool select_gamepad = sub_paths.gamepad || sub_paths.any;
 
+	// clang-format off
 	oxr_source_cache_update(log, sess, act, &src->head, time, select_head);
 	oxr_source_cache_update(log, sess, act, &src->left, time, select_left);
-	oxr_source_cache_update(log, sess, act, &src->right, time,
-	                        select_right);
-	oxr_source_cache_update(log, sess, act, &src->gamepad, time,
-	                        select_gamepad);
+	oxr_source_cache_update(log, sess, act, &src->right, time, select_right);
+	oxr_source_cache_update(log, sess, act, &src->gamepad, time, select_gamepad);
+	// clang-format on
+
+	if (!select_any) {
+		U_ZERO(&src->any_state);
+		return;
+	}
+
+	/*
+	 * Any state.
+	 */
+	struct oxr_source_state last = src->any_state;
+	bool active = false;
+	bool changed = false;
+	XrTime timestamp = 0;
+
+	switch (act->action_type) {
+	case XR_ACTION_TYPE_BOOLEAN_INPUT: {
+		bool value = false;
+		BOOL_CHECK(user);
+		BOOL_CHECK(head);
+		BOOL_CHECK(left);
+		BOOL_CHECK(right);
+		BOOL_CHECK(gamepad);
+
+		changed = last.boolean != value;
+		src->any_state.boolean = value;
+		break;
+	}
+	case XR_ACTION_TYPE_FLOAT_INPUT: {
+		float value = -2.0;
+		VEC1_CHECK(user);
+		VEC1_CHECK(head);
+		VEC1_CHECK(left);
+		VEC1_CHECK(right);
+		VEC1_CHECK(gamepad);
+
+		changed = last.vec1.x != value;
+		src->any_state.vec1.x = value;
+		break;
+	}
+	case XR_ACTION_TYPE_VECTOR2F_INPUT: {
+		float x = 0.0;
+		float y = 0.0;
+		float distance = -1.0;
+		VEC2_CHECK(user);
+		VEC2_CHECK(head);
+		VEC2_CHECK(left);
+		VEC2_CHECK(right);
+		VEC2_CHECK(gamepad);
+
+		changed = last.vec2.x != x || last.vec2.y != y;
+		src->any_state.vec2.x = x;
+		src->any_state.vec2.y = y;
+		break;
+	}
+	default:
+	case XR_ACTION_TYPE_POSE_INPUT:
+	case XR_ACTION_TYPE_VIBRATION_OUTPUT:
+		// Nothing to do
+		//! @todo You sure?
+		return;
+	}
+
+	if (!active) {
+		U_ZERO(&src->any_state);
+	} else if (last.active && changed) {
+		src->any_state.timestamp = timestamp;
+		src->any_state.changed = true;
+		src->any_state.active = true;
+	} else if (last.active) {
+		src->any_state.timestamp = last.timestamp;
+		src->any_state.changed = false;
+		src->any_state.active = true;
+	} else {
+		src->any_state.timestamp = timestamp;
+		src->any_state.changed = false;
+		src->any_state.active = true;
+	}
 }
 
 static void
@@ -864,16 +979,6 @@ get_state_from_state_bool(struct oxr_source_state *state,
 	data->lastChangeTime = state->timestamp;
 	data->changedSinceLastSync = state->changed;
 	data->isActive = XR_TRUE;
-
-#if 0
-	bool value = state->boolean;
-
-	if (data->isActive) {
-		data->currentState |= value;
-		data->lastChangeTime = state->timestamp;
-		data->isActive = XR_TRUE;
-	}
-#endif
 }
 
 static void
@@ -884,16 +989,6 @@ get_state_from_state_vec1(struct oxr_source_state *state,
 	data->lastChangeTime = state->timestamp;
 	data->changedSinceLastSync = state->changed;
 	data->isActive = XR_TRUE;
-
-#if 0
-	float value = state->vec1.x;
-
-	if (!data->isActive || (data->isActive && value > data->currentState)) {
-		data->currentState = value;
-		data->lastChangeTime = state->timestamp;
-		data->isActive = XR_TRUE;
-	}
-#endif
 }
 
 static void
@@ -905,26 +1000,12 @@ get_state_from_state_vec2(struct oxr_source_state *state,
 	data->lastChangeTime = state->timestamp;
 	data->changedSinceLastSync = state->changed;
 	data->isActive = XR_TRUE;
-
-#if 0
-	float value_x = state->vec2.x;
-	float value_y = state->vec2.y;
-	float distance = value_x * value_x + value_y * value_y;
-	float old_distance =
-	    data->isActive ? data->currentState.x * data->currentState.x +
-	                         data->currentState.y * data->currentState.y
-	                   : 0.f;
-
-	if (!data->isActive || (data->isActive && distance > old_distance)) {
-		data->currentState.x = value_x;
-		data->currentState.y = value_y;
-		data->lastChangeTime = state->timestamp;
-		data->isActive = XR_TRUE;
-	}
-#endif
 }
 
 #define OXR_ACTION_GET_FILLER(TYPE)                                            \
+	if (sub_paths.any && src->any_state.active) {                          \
+		get_state_from_state_##TYPE(&src->any_state, data);            \
+	}                                                                      \
 	if (sub_paths.user && src->user.current.active) {                      \
 		get_state_from_state_##TYPE(&src->user.current, data);         \
 	}                                                                      \
@@ -941,6 +1022,7 @@ get_state_from_state_vec2(struct oxr_source_state *state,
 		get_state_from_state_##TYPE(&src->gamepad.current, data);      \
 	}
 
+
 XrResult
 oxr_action_get_boolean(struct oxr_logger *log,
                        struct oxr_session *sess,
@@ -956,13 +1038,7 @@ oxr_action_get_boolean(struct oxr_logger *log,
 	U_ZERO(&data->currentState);
 
 	if (src == NULL) {
-		return XR_SUCCESS;
-	}
-
-	//! @todo support any subpath.
-	if (sub_paths.any) {
-		return oxr_error(log, XR_ERROR_HANDLE_INVALID,
-		                 "any path not implemented!");
+		return oxr_session_success_result(sess);
 	}
 
 	OXR_ACTION_GET_FILLER(bool);
@@ -985,13 +1061,7 @@ oxr_action_get_vector1f(struct oxr_logger *log,
 	U_ZERO(&data->currentState);
 
 	if (src == NULL) {
-		return XR_SUCCESS;
-	}
-
-	//! @todo support any subpath.
-	if (sub_paths.any) {
-		return oxr_error(log, XR_ERROR_HANDLE_INVALID,
-		                 "any path not implemented!");
+		return oxr_session_success_result(sess);
 	}
 
 	OXR_ACTION_GET_FILLER(vec1);
@@ -1014,13 +1084,7 @@ oxr_action_get_vector2f(struct oxr_logger *log,
 	U_ZERO(&data->currentState);
 
 	if (src == NULL) {
-		return XR_SUCCESS;
-	}
-
-	//! @todo support any subpath.
-	if (sub_paths.any) {
-		return oxr_error(log, XR_ERROR_HANDLE_INVALID,
-		                 "any path not implemented!");
+		return oxr_session_success_result(sess);
 	}
 
 	OXR_ACTION_GET_FILLER(vec2);
@@ -1042,7 +1106,7 @@ oxr_action_get_pose(struct oxr_logger *log,
 	data->isActive = XR_FALSE;
 
 	if (src == NULL) {
-		return XR_SUCCESS;
+		return oxr_session_success_result(sess);
 	}
 
 	if (sub_paths.user || sub_paths.any) {

@@ -1134,6 +1134,8 @@ struct oxr_source
 	//! Common structure for things referred to by OpenXR handles.
 	struct oxr_handle_base handle;
 
+	struct oxr_source_state any_state;
+
 	struct oxr_source_cache user;
 	struct oxr_source_cache head;
 	struct oxr_source_cache left;
