@@ -6,7 +6,7 @@
 > * Latest API documentation: <https://monado.pages.freedesktop.org/monado>
 
 Monado is an open source XR runtime delivering immersive experiences such as VR
-and AR on on mobile, PC/desktop, and any other device
+and AR on mobile, PC/desktop, and any other device
 (because gosh darn people
 come up with a lot of weird hardware).
 Monado aims to be a complete and conforming implementation
