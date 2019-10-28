@@ -107,7 +107,7 @@ oxr_create_swapchain(struct oxr_logger *log,
                      const XrSwapchainCreateInfo *createInfo,
                      struct oxr_swapchain **out_swapchain)
 {
-	struct xrt_swapchain *xsc = sess->compositor->create_swapchain(
+	struct xrt_swapchain *xsc = xrt_comp_create_swapchain(
 	    sess->compositor,
 	    (enum xrt_swapchain_create_flags)createInfo->createFlags,
 	    (enum xrt_swapchain_usage_bits)createInfo->usageFlags,

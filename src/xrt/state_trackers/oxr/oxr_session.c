@@ -110,8 +110,8 @@ oxr_session_begin(struct oxr_logger *log,
 			    " view configuration type not supported");
 		}
 
-		xc->begin_session(xc, (enum xrt_view_type)beginInfo
-		                          ->primaryViewConfigurationType);
+		xrt_comp_begin_session(xc, (enum xrt_view_type)beginInfo
+		                               ->primaryViewConfigurationType);
 	}
 
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
@@ -137,11 +137,11 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 
 	if (xc != NULL) {
 		if (sess->frame_started) {
-			xc->discard_frame(xc);
+			xrt_comp_discard_frame(xc);
 			sess->frame_started = false;
 		}
 
-		xc->end_session(xc);
+		xrt_comp_end_session(xc);
 	}
 
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
@@ -396,8 +396,8 @@ oxr_session_frame_wait(struct oxr_logger *log,
 
 	struct xrt_compositor *xc = sess->compositor;
 	if (xc != NULL) {
-		xc->wait_frame(xc, &frameState->predictedDisplayTime,
-		               &frameState->predictedDisplayPeriod);
+		xrt_comp_wait_frame(xc, &frameState->predictedDisplayTime,
+		                    &frameState->predictedDisplayPeriod);
 		frameState->shouldRender = should_render(sess->state);
 	} else {
 		frameState->shouldRender = XR_FALSE;
@@ -420,14 +420,14 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 	if (sess->frame_started) {
 		ret = XR_FRAME_DISCARDED;
 		if (xc != NULL) {
-			xc->discard_frame(xc);
+			xrt_comp_discard_frame(xc);
 		}
 	} else {
 		ret = oxr_session_success_result(sess);
 		sess->frame_started = true;
 	}
 	if (xc != NULL) {
-		xc->begin_frame(xc);
+		xrt_comp_begin_frame(xc);
 	}
 
 	return ret;
@@ -480,7 +480,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 * since then blend mode, etc. doesn't matter.
 	 */
 	if (frameEndInfo->layerCount == 0) {
-		xc->discard_frame(xc);
+		xrt_comp_discard_frame(xc);
 		sess->frame_started = false;
 
 		return oxr_session_success_result(sess);
@@ -572,7 +572,8 @@ oxr_session_frame_end(struct oxr_logger *log,
 		image_index[i] = sc->released_index;
 	}
 
-	xc->end_frame(xc, blend_mode, chains, image_index, layers, num_chains);
+	xrt_comp_end_frame(xc, blend_mode, chains, image_index, layers,
+	                   num_chains);
 
 	sess->frame_started = false;
 
@@ -583,9 +584,10 @@ static XrResult
 oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	struct oxr_session *sess = (struct oxr_session *)hb;
-	if (sess->compositor != NULL) {
-		sess->compositor->destroy(sess->compositor);
-	}
+
+	// Does a null-ptr check.
+	xrt_comp_destroy(&sess->compositor);
+
 	free(sess);
 
 	return XR_SUCCESS;
