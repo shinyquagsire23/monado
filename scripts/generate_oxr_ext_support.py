@@ -1,4 +1,4 @@
-# /usr/bin/env python3
+#!/usr/bin/env python3
 # Copyright 2019, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 """Simple script to update oxr_extension_support.h."""
