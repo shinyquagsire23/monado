@@ -3,6 +3,7 @@
 
 subdir('shaders')
 
+# TODO: Dependency resolution and subsequent configuration could be improved
 compositor_deps = [aux, shaders, vulkan]
 
 compositor_srcs = [
@@ -21,6 +22,7 @@ compositor_srcs = [
 	'main/comp_distortion.c',
 	'main/comp_distortion.h',
 	'main/comp_documentation.h',
+	'main/comp_glue_egl.c',
 	'main/comp_glue_gl.c',
 	'main/comp_glue_vk.c',
 	'main/comp_glue_xlib.c',

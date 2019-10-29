@@ -57,6 +57,8 @@ glslangValidator = find_program('glslangValidator')
 pthreads = cc.find_library('pthread', required: true)
 
 avcodec = dependency('libavcodec', required: false)
+egl     = dependency('egl')
+egl     = egl.partial_dependency(includes: true)
 eigen3  = dependency('eigen3')
 libjpeg = dependency('libjpeg', required: false)
 libusb  = dependency('libusb-1.0', required: false)

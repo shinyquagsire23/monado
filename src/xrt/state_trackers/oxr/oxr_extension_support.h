@@ -62,6 +62,18 @@
 
 
 /*
+ * XR_MND_egl_enable
+ */
+#if defined(XR_MND_egl_enable) && defined(XR_USE_PLATFORM_EGL)
+#define OXR_HAVE_MND_egl_enable
+#define OXR_EXTENSION_SUPPORT_MND_egl_enable(_)                                \
+	_(MND_egl_enable, MND_EGL_ENABLE)
+#else
+#define OXR_EXTENSION_SUPPORT_MND_egl_enable(_)
+#endif
+
+
+/*
  * XR_MND_headless
  */
 #if defined(XR_MND_headless)
@@ -92,8 +104,10 @@
  */
 // clang-format off
 #define OXR_EXTENSION_SUPPORT_GENERATE(_) \
+    OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_KHR_convert_timespec_time(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable(_) \
+    OXR_EXTENSION_SUPPORT_MND_egl_enable(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_)
 // clang-format on

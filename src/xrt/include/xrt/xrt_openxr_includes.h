@@ -13,6 +13,7 @@
 #define XR_USE_GRAPHICS_API_OPENGL
 #define XR_USE_GRAPHICS_API_VULKAN
 #define XR_USE_PLATFORM_XLIB
+#define XR_USE_PLATFORM_EGL
 #define XR_USE_TIMESPEC 1
 
 #ifdef XR_USE_PLATFORM_XLIB
@@ -20,6 +21,15 @@ typedef void *Display;
 typedef void *GLXFBConfig;
 typedef void *GLXDrawable;
 typedef void *GLXContext;
+#endif
+
+#ifdef XR_USE_PLATFORM_EGL
+typedef void *EGLDisplay;
+typedef void *EGLContext;
+typedef void *EGLConfig;
+typedef void (*__eglMustCastToProperFunctionPointerType)(void);
+typedef __eglMustCastToProperFunctionPointerType (*PFNEGLGETPROCADDRESSPROC)(
+    const char *procname);
 #endif
 
 #ifdef XR_USE_TIMESPEC

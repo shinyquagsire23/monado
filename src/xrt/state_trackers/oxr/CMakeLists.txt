@@ -30,6 +30,7 @@ set(OXR_SOURCE_FILES
 	oxr_path.c
 	oxr_session.c
 	oxr_session_gl.c
+	oxr_session_egl.c
 	oxr_session_vk.c
 	oxr_space.c
 	oxr_swapchain.c

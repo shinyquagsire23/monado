@@ -26,6 +26,7 @@ lib_st_oxr = static_library(
 		'oxr_path.c',
 		'oxr_session.c',
 		'oxr_session_gl.c',
+		'oxr_session_egl.c',
 		'oxr_session_vk.c',
 		'oxr_space.c',
 		'oxr_swapchain.c',

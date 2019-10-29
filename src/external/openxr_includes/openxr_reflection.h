@@ -183,6 +183,8 @@ XR_ENUM_STR(XrResult);
     _(XR_TYPE_EVENT_DATA_VISIBILITY_MASK_CHANGED_KHR, 1000031001) \
     _(XR_TYPE_SPATIAL_ANCHOR_CREATE_INFO_MSFT, 1000039000) \
     _(XR_TYPE_SPATIAL_ANCHOR_SPACE_CREATE_INFO_MSFT, 1000039001) \
+    _(XR_TYPE_VIEW_CONFIGURATION_DEPTH_RANGE_EXT, 1000046000) \
+    _(XR_TYPE_GRAPHICS_BINDING_EGL_MND, 1000047004) \
     _(XR_STRUCTURE_TYPE_MAX_ENUM, 0x7FFFFFFF)
 
 #define XR_LIST_ENUM_XrFormFactor(_) \
@@ -1014,6 +1016,22 @@ XR_ENUM_STR(XrResult);
     _(next) \
     _(anchor) \
     _(poseInAnchorSpace)
+
+#define XR_LIST_STRUCT_XrViewConfigurationDepthRangeEXT(_) \
+    _(type) \
+    _(next) \
+    _(recommendedNearZ) \
+    _(minNearZ) \
+    _(recommendedFarZ) \
+    _(maxFarZ)
+
+#define XR_LIST_STRUCT_XrGraphicsBindingEGLMND(_) \
+    _(type) \
+    _(next) \
+    _(getProcAddress) \
+    _(display) \
+    _(config) \
+    _(context)
 
 
 

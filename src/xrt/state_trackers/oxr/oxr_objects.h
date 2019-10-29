@@ -776,6 +776,23 @@ oxr_swapchain_vk_create(struct oxr_logger *,
 
 /*
  *
+ * EGL, located in various files.
+ *
+ */
+
+#ifdef XR_USE_PLATFORM_EGL
+
+XrResult
+oxr_session_populate_egl(struct oxr_logger *log,
+                         struct oxr_system *sys,
+                         XrGraphicsBindingEGLMND const *next,
+                         struct oxr_session *sess);
+
+#endif
+
+
+/*
+ *
  * Structs
  *
  */

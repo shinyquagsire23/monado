@@ -253,6 +253,10 @@ XrResult
 oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *,
                                       const XrGraphicsBindingVulkanKHR *);
 
+XrResult
+oxr_verify_XrGraphicsBindingEGLMND(struct oxr_logger *log,
+                                   const XrGraphicsBindingEGLMND *next);
+
 /*!
  * @}
  */

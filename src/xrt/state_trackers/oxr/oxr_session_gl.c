@@ -12,13 +12,16 @@
 
 #include "util/u_misc.h"
 
-#include "xrt/xrt_gfx_xlib.h"
-
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_two_call.h"
 #include "oxr_handle.h"
 
+#ifdef XR_USE_PLATFORM_XLIB
+#include "xrt/xrt_gfx_xlib.h"
+#endif
+
+#ifdef XR_USE_PLATFORM_XLIB
 
 XrResult
 oxr_session_populate_gl_xlib(struct oxr_logger *log,
@@ -40,3 +43,5 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
 
 	return XR_SUCCESS;
 }
+
+#endif
