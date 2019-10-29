@@ -103,8 +103,8 @@ enum psmv_button_bit
 
 	PSMV_BUTTON_BIT_TRIANGLE    = (1 << 20),
 	PSMV_BUTTON_BIT_CIRCLE      = (1 << 21),
-	PSMV_BUTTON_BIT_SQUARE      = (1 << 22),
-	PSMV_BUTTON_BIT_CROSS       = (1 << 23),
+	PSMV_BUTTON_BIT_CROSS       = (1 << 22),
+	PSMV_BUTTON_BIT_SQUARE      = (1 << 23),
 
 	PSMV_BUTTON_BIT_START       = (1 << 27),
 	PSMV_BUTTON_BIT_SELECT      = (1 << 24),
