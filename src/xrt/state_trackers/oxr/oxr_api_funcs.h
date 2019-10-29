@@ -177,6 +177,15 @@ oxr_xrGetOpenGLGraphicsRequirementsKHR(
     XrGraphicsRequirementsOpenGLKHR *graphicsRequirements);
 #endif
 
+#ifdef XR_USE_GRAPHICS_API_OPENGL_ES
+//! OpenXR API function @ep{xrGetOpenGLESGraphicsRequirementsKHR}
+XrResult
+oxr_xrGetOpenGLESGraphicsRequirementsKHR(
+    XrInstance instance,
+    XrSystemId systemId,
+    XrGraphicsRequirementsOpenGLESKHR *graphicsRequirements);
+#endif
+
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 //! OpenXR API function @ep{xrGetVulkanInstanceExtensionsKHR}
 XrResult

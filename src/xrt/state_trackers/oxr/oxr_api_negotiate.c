@@ -240,6 +240,11 @@ handle_non_null(struct oxr_instance *inst,
 	ENTRY_IF_EXT(xrGetOpenGLGraphicsRequirementsKHR, KHR_opengl_enable);
 #endif // OXR_HAVE_KHR_opengl_enable
 
+#ifdef OXR_HAVE_KHR_opengl_es_enable
+	ENTRY_IF_EXT(xrGetOpenGLESGraphicsRequirementsKHR,
+	             KHR_opengl_es_enable);
+#endif // OXR_HAVE_KHR_opengl_es_enable
+
 #ifdef OXR_HAVE_KHR_vulkan_enable
 	ENTRY_IF_EXT(xrGetVulkanInstanceExtensionsKHR, KHR_vulkan_enable);
 	ENTRY_IF_EXT(xrGetVulkanDeviceExtensionsKHR, KHR_vulkan_enable);

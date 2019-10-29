@@ -14,6 +14,7 @@
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_gfx_gl.h"
+#include "xrt/xrt_gfx_gles.h"
 #include "util/u_debug.h"
 
 #include "oxr_objects.h"
@@ -158,6 +159,44 @@ oxr_xrEnumerateViewConfigurationViews(
 	    &log, sys, viewConfigurationType, viewCapacityInput,
 	    viewCountOutput, views);
 }
+
+
+/*
+ *
+ * OpenGL ES
+ *
+ */
+
+#ifdef XR_USE_GRAPHICS_API_OPENGL_ES
+
+XrResult
+oxr_xrGetOpenGLESGraphicsRequirementsKHR(
+    XrInstance instance,
+    XrSystemId systemId,
+    XrGraphicsRequirementsOpenGLESKHR *graphicsRequirements)
+{
+	struct oxr_instance *inst;
+	struct oxr_logger log;
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(
+	    &log, instance, inst, "xrGetOpenGLESGraphicsRequirementsKHR");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
+	    &log, graphicsRequirements,
+	    XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_ES_KHR);
+	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
+
+	struct xrt_api_requirements ver;
+
+	xrt_gfx_gles_get_versions(&ver);
+
+	graphicsRequirements->minApiVersionSupported =
+	    XR_MAKE_VERSION(ver.min_major, ver.min_minor, ver.min_patch);
+	graphicsRequirements->maxApiVersionSupported =
+	    XR_MAKE_VERSION(ver.max_major, ver.max_minor, ver.max_patch);
+
+	return XR_SUCCESS;
+}
+
+#endif
 
 
 /*

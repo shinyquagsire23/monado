@@ -50,6 +50,18 @@
 
 
 /*
+ * XR_KHR_opengl_es_enable
+ */
+#if defined(XR_KHR_opengl_es_enable) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+#define OXR_HAVE_KHR_opengl_es_enable
+#define OXR_EXTENSION_SUPPORT_KHR_opengl_es_enable(_)                          \
+	_(KHR_opengl_es_enable, KHR_OPENGL_ES_ENABLE)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_opengl_es_enable(_)
+#endif
+
+
+/*
  * XR_KHR_vulkan_enable
  */
 #if defined(XR_KHR_vulkan_enable) && defined(XR_USE_GRAPHICS_API_VULKAN)
@@ -107,6 +119,7 @@
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_KHR_convert_timespec_time(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_enable(_) \
+    OXR_EXTENSION_SUPPORT_KHR_opengl_es_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable(_) \
     OXR_EXTENSION_SUPPORT_MND_egl_enable(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_)

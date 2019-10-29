@@ -24,6 +24,7 @@ compositor_srcs = [
 	'main/comp_documentation.h',
 	'main/comp_glue_egl.c',
 	'main/comp_glue_gl.c',
+	'main/comp_glue_gles.c',
 	'main/comp_glue_vk.c',
 	'main/comp_glue_xlib.c',
 	'main/comp_renderer.c',

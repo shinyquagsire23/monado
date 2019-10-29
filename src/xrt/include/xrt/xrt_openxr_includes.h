@@ -11,6 +11,7 @@
 
 // Move these to the build system instead.
 #define XR_USE_GRAPHICS_API_OPENGL
+#define XR_USE_GRAPHICS_API_OPENGL_ES
 #define XR_USE_GRAPHICS_API_VULKAN
 #define XR_USE_PLATFORM_XLIB
 #define XR_USE_PLATFORM_EGL
