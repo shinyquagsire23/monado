@@ -55,7 +55,8 @@ oxr_session_populate_egl(struct oxr_logger *log,
 		    "eglQueryContext(EGL_CONTEXT_CLIENT_TYPE) failed");
 	}
 
-	if (egl_client_type != EGL_OPENGL_API) {
+	if (egl_client_type != EGL_OPENGL_API &&
+	    egl_client_type != EGL_OPENGL_ES_API) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 "unsupported EGL client type");
 	}
