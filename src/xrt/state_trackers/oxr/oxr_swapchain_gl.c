@@ -41,20 +41,34 @@ oxr_swapchain_gl_enumerate_images(struct oxr_logger *log,
 {
 	struct xrt_swapchain_gl *xsc = (struct xrt_swapchain_gl *)sc->swapchain;
 
+	XrSwapchainImageOpenGLKHR *gl_imgs = NULL;
+	XrSwapchainImageOpenGLESKHR *gles_imgs = NULL;
 	assert(count > 0);
-	if (images[0].type != XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR) {
+	switch (images[0].type) {
+	case XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR:
+		gl_imgs = (XrSwapchainImageOpenGLKHR *)images;
+		break;
+	case XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR:
+		gles_imgs = (XrSwapchainImageOpenGLESKHR *)images;
+		break;
+	default:
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "unsupported XrSwapchainImageBaseHeader type");
 	}
-	XrSwapchainImageOpenGLKHR *gl_imgs =
-	    (XrSwapchainImageOpenGLKHR *)images;
 
 	for (uint32_t i = 0; i < count; i++) {
-		if (gl_imgs[i].type != images[0].type) {
+		if ((gl_imgs != NULL && gl_imgs[i].type != images[0].type) ||
+		    (gles_imgs != NULL &&
+		     gles_imgs[i].type != images[0].type)) {
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 			                 "images array contains mixed types");
 		}
-		gl_imgs[i].image = xsc->images[i];
+		if (gl_imgs != NULL) {
+			gl_imgs[i].image = xsc->images[i];
+		}
+		if (gles_imgs != NULL) {
+			gles_imgs[i].image = xsc->images[i];
+		}
 	}
 
 	return oxr_session_success_result(sc->sess);
