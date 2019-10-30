@@ -8,6 +8,7 @@
  * @ingroup comp_client
  */
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "xrt/xrt_gfx_xlib.h"
@@ -39,10 +40,20 @@ oxr_swapchain_gl_enumerate_images(struct oxr_logger *log,
                                   XrSwapchainImageBaseHeader *images)
 {
 	struct xrt_swapchain_gl *xsc = (struct xrt_swapchain_gl *)sc->swapchain;
+
+	assert(count > 0);
+	if (images[0].type != XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "unsupported XrSwapchainImageBaseHeader type");
+	}
 	XrSwapchainImageOpenGLKHR *gl_imgs =
 	    (XrSwapchainImageOpenGLKHR *)images;
 
 	for (uint32_t i = 0; i < count; i++) {
+		if (gl_imgs[i].type != images[0].type) {
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+			                 "images array contains mixed types");
+		}
 		gl_imgs[i].image = xsc->images[i];
 	}
 
