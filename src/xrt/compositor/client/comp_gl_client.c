@@ -198,8 +198,17 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.num_images = num_images;
 	sc->xscfd = xrt_swapchain_fd(xsc);
 
-	glCreateTextures(array_size == 1 ? GL_TEXTURE_2D : GL_TEXTURE_2D_ARRAY,
-	                 num_images, &sc->base.images[0]);
+	GLuint prev_texture = 0;
+	glGetIntegerv(array_size == 1 ? GL_TEXTURE_BINDING_2D
+	                              : GL_TEXTURE_BINDING_2D_ARRAY,
+	              (GLint *)&prev_texture);
+
+	glGenTextures(num_images, sc->base.images);
+	for (uint32_t i = 0; i < num_images; i++) {
+		glBindTexture(array_size == 1 ? GL_TEXTURE_2D
+		                              : GL_TEXTURE_2D_ARRAY,
+		              sc->base.images[i]);
+	}
 	glCreateMemoryObjectsEXT(num_images, &sc->base.memory[0]);
 	for (uint32_t i = 0; i < num_images; i++) {
 		GLint dedicated = GL_TRUE;
@@ -219,6 +228,9 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 			    width, height, array_size, sc->base.memory[i], 0);
 		}
 	}
+
+	glBindTexture(array_size == 1 ? GL_TEXTURE_2D : GL_TEXTURE_2D_ARRAY,
+	              prev_texture);
 
 	return &sc->base.base;
 }
