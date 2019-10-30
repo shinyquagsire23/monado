@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include <stdlib.h>
 
 #include "util/u_misc.h"
@@ -222,6 +223,12 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	return &sc->base.base;
 }
 
+static void
+client_gl_compositor_destroy(struct xrt_compositor *xc)
+{
+	assert(!"Destroy should be implemented by the winsys code that uses the GL code.");
+}
+
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_fd *xcfd,
@@ -234,6 +241,7 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.begin_frame = client_gl_compositor_begin_frame;
 	c->base.base.discard_frame = client_gl_compositor_discard_frame;
 	c->base.base.end_frame = client_gl_compositor_end_frame;
+	c->base.base.destroy = client_gl_compositor_destroy;
 	c->base.base.formats[0] = GL_SRGB8_ALPHA8;
 	c->base.base.formats[1] = GL_RGBA8;
 	c->base.base.num_formats = 2;
