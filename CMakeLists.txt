@@ -69,6 +69,10 @@ cmake_dependent_option(BUILD_WITH_VIVE "Enable Vive driver" ON "ZLIB_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND" OFF)
 
+# hdk, hydra & psmv use the Monado internal hid wrapper.
+option(BUILD_WITH_HDK "Enable HDK driver" ON)
+option(BUILD_WITH_PSMV "Enable Playstation Move driver" ON)
+option(BUILD_WITH_HYDRA "Enable Hydra driver" ON)
 
 ###
 # Error checking
@@ -140,10 +144,15 @@ if(BUILD_WITH_VIVE)
 	set(BUILD_DRIVER_VIVE TRUE)
 endif()
 
-if(TRUE)
-	# Uses the Monado internal hid wrapper.
+if(BUILD_WITH_HDK)
 	set(BUILD_DRIVER_HDK TRUE)
+endif()
+
+if(BUILD_WITH_PSMV)
 	set(BUILD_DRIVER_PSMV TRUE)
+endif()
+
+if(BUILD_WITH_HYDRA)
 	set(BUILD_DRIVER_HYDRA TRUE)
 endif()
 
