@@ -89,7 +89,7 @@ drivers = get_option('drivers')
 if 'ohmd' in drivers
 	openhmd_required = true
 endif
-if 'hdk' in drivers or 'psvr' in drivers
+if 'psvr' in drivers
 	hidapi_required = true
 endif
 if 'v4l2' in drivers
@@ -97,7 +97,7 @@ if 'v4l2' in drivers
 endif
 
 if 'auto' in drivers
-	drivers += ['psmv', 'hydra']
+	drivers += ['psmv', 'hydra', 'hdk']
 endif
 
 openhmd = dependency('openhmd', required: openhmd_required)
@@ -113,9 +113,6 @@ endif
 if hidapi.found() and ('auto' in drivers or 'psvr' in drivers or 'hdk' in drivers)
 	if 'psvr' not in drivers
 		drivers += ['psvr']
-	endif
-	if 'hdk' not in drivers
-		drivers += ['hdk']
 	endif
 endif
 

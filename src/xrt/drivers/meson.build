@@ -12,7 +12,7 @@ lib_drv_hdk = static_library(
 		'hdk/hdk_prober.c',
 	),
 	include_directories: xrt_include,
-	dependencies: [aux, hidapi],
+	dependencies: [aux],
 	build_by_default: 'hdk' in drivers,
 )
 
