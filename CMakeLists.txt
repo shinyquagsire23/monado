@@ -65,6 +65,7 @@ cmake_dependent_option(BUILD_WITH_OPENCV "Enable OpenCV backend" ON "OpenCV_FOUN
 cmake_dependent_option(BUILD_WITH_LIBUVC "Enable libuvc video driver" ON "LIBUVC_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_FFMPEG "Enable ffmpeg testing video driver" ON "FFMPEG_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_HIDAPI "Enable HIDAPI-based driver(s) (OSVR HDK, PSVR)" ON "HIDAPI_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_VIVE "Enable Vive driver" ON "ZLIB_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND" OFF)
 
@@ -135,7 +136,7 @@ if(BUILD_WITH_HIDAPI)
 	set(BUILD_DRIVER_PSVR TRUE)
 endif()
 
-if(${ZLIB_FOUND})
+if(BUILD_WITH_VIVE)
 	set(BUILD_DRIVER_VIVE TRUE)
 endif()
 
