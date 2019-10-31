@@ -78,8 +78,13 @@ option(BUILD_WITH_HYDRA "Enable Hydra driver" ON)
 # Error checking
 ###
 
-if(NOT BUILD_WITH_OPENHMD AND NOT BUILD_WITH_HIDAPI)
-	message(FATAL_ERROR "You must enable at least one driver: either provide OpenHMD and enable BUILD_WITH_OPENHMD (for a variety of devices via OpenHMD), or provide HIDAPI and enable BUILD_WITH_HIDAPI (for the HDK driver)")
+if(
+	NOT BUILD_WITH_OPENHMD
+	AND NOT BUILD_WITH_VIVE
+	AND NOT BUILD_WITH_HDK
+	AND NOT BUILD_WITH_PSMV
+	AND NOT BUILD_WITH_HYDRA)
+	message(FATAL_ERROR "You must enable at least one driver: either provide OpenHMD and enable BUILD_WITH_OPENHMD (for a variety of devices via OpenHMD), or enable one of Monado's native drivers.")
 endif()
 
 
