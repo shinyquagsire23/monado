@@ -108,6 +108,8 @@ oxr_xrWaitFrame(XrSession session,
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrWaitFrame");
+	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, frameWaitInfo,
+	                                XR_TYPE_FRAME_WAIT_INFO);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, frameState, XR_TYPE_FRAME_STATE);
 	OXR_VERIFY_ARG_NOT_NULL(&log, frameState);
 
@@ -121,10 +123,8 @@ oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo *frameBeginInfo)
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrBeginFrame");
 	// NULL explicitly allowed here because it's a basically empty struct.
-	if (frameBeginInfo != NULL) {
-		OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, frameBeginInfo,
-		                                 XR_TYPE_FRAME_BEGIN_INFO);
-	}
+	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, frameBeginInfo,
+	                                XR_TYPE_FRAME_BEGIN_INFO);
 
 	return oxr_session_frame_begin(&log, sess);
 }

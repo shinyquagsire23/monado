@@ -120,8 +120,8 @@ oxr_xrAcquireSwapchainImage(XrSwapchain swapchain,
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc,
 	                                  "xrAcquireSwapchainImage");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, acquireInfo,
-	                                 XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO);
+	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, acquireInfo,
+	                                XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO);
 	OXR_VERIFY_ARG_NOT_NULL(&log, index);
 
 	return sc->acquire_image(&log, sc, acquireInfo, index);
@@ -149,8 +149,8 @@ oxr_xrReleaseSwapchainImage(XrSwapchain swapchain,
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc,
 	                                  "xrReleaseSwapchainImage");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, releaseInfo,
-	                                 XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO);
+	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, releaseInfo,
+	                                XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO);
 
 	return sc->release_image(&log, sc, releaseInfo);
 }
