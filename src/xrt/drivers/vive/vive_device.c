@@ -467,7 +467,7 @@ vive_sensors_read_firmware(struct vive_device *d)
 }
 
 int
-vive_sensros_get_imu_range_report(struct vive_device *d)
+vive_sensors_get_imu_range_report(struct vive_device *d)
 {
 	struct vive_imu_range_modes_report report = {
 	    .id = VIVE_IMU_RANGE_MODES_REPORT_ID};
@@ -900,7 +900,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		vive_mainboard_get_device_info(d);
 	}
 	vive_sensors_read_firmware(d);
-	vive_sensros_get_imu_range_report(d);
+	vive_sensors_get_imu_range_report(d);
 
 	char *config = vive_sensors_read_config(d);
 	vive_parse_config(d, config);
