@@ -64,7 +64,7 @@ cmake_dependent_option(BUILD_WITH_JPEG "Enable jpeg code (used for some video dr
 cmake_dependent_option(BUILD_WITH_OPENCV "Enable OpenCV backend" ON "OpenCV_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_LIBUVC "Enable libuvc video driver" ON "LIBUVC_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_FFMPEG "Enable ffmpeg testing video driver" ON "FFMPEG_FOUND" OFF)
-cmake_dependent_option(BUILD_WITH_HIDAPI "Enable HIDAPI-based driver(s) (OSVR HDK, PSVR)" ON "HIDAPI_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_PSVR "Enable PSVR HMD driver" ON "HIDAPI_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_VIVE "Enable Vive driver" ON "ZLIB_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND" OFF)
@@ -82,6 +82,7 @@ if(
 	NOT BUILD_WITH_OPENHMD
 	AND NOT BUILD_WITH_VIVE
 	AND NOT BUILD_WITH_HDK
+	AND NOT BUILD_WITH_PSVR
 	AND NOT BUILD_WITH_PSMV
 	AND NOT BUILD_WITH_HYDRA)
 	message(FATAL_ERROR "You must enable at least one driver: either provide OpenHMD and enable BUILD_WITH_OPENHMD (for a variety of devices via OpenHMD), or enable one of Monado's native drivers.")
@@ -138,10 +139,11 @@ if(BUILD_WITH_OPENHMD)
 	set(BUILD_DRIVER_OHMD TRUE)
 endif()
 
-if(BUILD_WITH_HIDAPI)
-	add_definitions(-DXRT_HAVE_HIDAPI)
+if(BUILD_WITH_PSVR)
+	if (NOT ${HIDAPI_FOUND})
+		message(FATAL_ERROR "PSVR driver requires hidapi")
+	endif()
 
-	# Drivers enabled with hidapi.
 	set(BUILD_DRIVER_PSVR TRUE)
 endif()
 
