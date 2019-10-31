@@ -210,6 +210,9 @@ comp_window_wayland_init_swapchain(struct comp_window *w,
 	    &w->swapchain, width, height, w->c->settings.color_format,
 	    w->c->settings.color_space, w->c->settings.present_mode);
 
+	xdg_toplevel_set_min_size(w_wayland->xdg_toplevel, width, height);
+	xdg_toplevel_set_max_size(w_wayland->xdg_toplevel, width, height);
+
 	return true;
 }
 
