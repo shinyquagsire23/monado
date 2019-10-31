@@ -112,16 +112,21 @@ extern "C" {
 		}                                                              \
 	} while (false)
 
+#define OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(log, arg, type_enum)                   \
+	do {                                                                   \
+		if (arg != NULL && arg->type != type_enum) {                   \
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
+			                 "(" #arg "->type == %u)", arg->type); \
+		}                                                              \
+	} while (false)
+
 #define OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(log, arg, type_enum)                  \
 	do {                                                                   \
 		if (arg == NULL) {                                             \
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
-			                 "(" #arg "== NULL)");                 \
+			                 "(" #arg " == NULL)");                \
 		}                                                              \
-		if (arg->type != type_enum) {                                  \
-			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
-			                 "(" #arg "->type = %u)", arg->type);  \
-		}                                                              \
+		OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(log, arg, type_enum);          \
 	} while (false)
 
 #define OXR_VERIFY_SUBACTION_PATHS(log, count, paths)                          \
