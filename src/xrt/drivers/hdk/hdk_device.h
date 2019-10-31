@@ -10,9 +10,6 @@
 
 #pragma once
 
-#include <hidapi.h>
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
