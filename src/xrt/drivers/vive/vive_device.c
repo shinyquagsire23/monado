@@ -783,13 +783,8 @@ vive_sensors_read_config(struct vive_device *d)
 	    .id = VIVE_CONFIG_START_REPORT_ID,
 	};
 
-	unsigned char *config_json;
-	unsigned char *config_z;
-	uint32_t count = 0;
-	int ret;
-
-	ret = os_hid_get_feature_timeout(d->sensors_dev, &start_report,
-	                                 sizeof(start_report), 100);
+	int ret = os_hid_get_feature_timeout(d->sensors_dev, &start_report,
+	                                     sizeof(start_report), 100);
 	if (ret < 0) {
 		VIVE_ERROR("Could not get config start report.");
 		return NULL;
@@ -799,8 +794,9 @@ vive_sensors_read_config(struct vive_device *d)
 	    .id = VIVE_CONFIG_READ_REPORT_ID,
 	};
 
-	config_z = malloc(4096);
+	unsigned char *config_z = U_TYPED_ARRAY_CALLOC(unsigned char, 4096);
 
+	uint32_t count = 0;
 	do {
 		ret = os_hid_get_feature_timeout(d->sensors_dev, &report,
 		                                 sizeof(report), 100);
@@ -826,7 +822,7 @@ vive_sensors_read_config(struct vive_device *d)
 		count += report.len;
 	} while (report.len);
 
-	config_json = malloc(32768);
+	unsigned char *config_json = U_TYPED_ARRAY_CALLOC(unsigned char, 32768);
 
 	z_stream strm = {.zalloc = Z_NULL,
 	                 .zfree = Z_NULL,
@@ -840,6 +836,7 @@ vive_sensors_read_config(struct vive_device *d)
 	if (ret != Z_OK) {
 		VIVE_ERROR("inflate_init failed: %d", ret);
 		free(config_z);
+		free(config_json);
 		return NULL;
 	}
 
@@ -853,7 +850,7 @@ vive_sensors_read_config(struct vive_device *d)
 
 	config_json[strm.total_out] = '\0';
 
-	return realloc(config_json, strm.total_out + 1);
+	return (char *)realloc(config_json, strm.total_out + 1);
 }
 
 struct vive_device *
