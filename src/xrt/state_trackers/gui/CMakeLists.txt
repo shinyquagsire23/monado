@@ -42,5 +42,3 @@ target_include_directories(st_gui
 	PRIVATE
 	${GUI_INCLUDES}
 	)
-
-set_property(TARGET st_gui PROPERTY POSITION_INDEPENDENT_CODE ON)

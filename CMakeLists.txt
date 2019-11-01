@@ -166,6 +166,9 @@ endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 
+# Default to PIC code
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 
 ###
 # Decend into madness.

@@ -49,5 +49,3 @@ target_include_directories(st_oxr
 	PRIVATE
 	${VULKAN_INCLUDE_DIR}
 	)
-
-set_property(TARGET st_oxr PROPERTY POSITION_INDEPENDENT_CODE ON)

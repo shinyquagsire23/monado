@@ -18,7 +18,6 @@ if(BUILD_DRIVER_HDK)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_hdk OBJECT ${HDK_SOURCE_FILES})
-	set_property(TARGET drv_hdk PROPERTY POSITION_INDEPENDENT_CODE ON)
 	target_include_directories(drv_hdk SYSTEM
 		PRIVATE ${HIDAPI_INCLUDE_DIRS}
 		)
@@ -33,7 +32,6 @@ if(BUILD_DRIVER_HYDRA)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_hydra OBJECT ${HYDRA_SOURCE_FILES})
-	set_property(TARGET drv_hydra PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
 if(BUILD_DRIVER_OHMD)
@@ -46,7 +44,6 @@ if(BUILD_DRIVER_OHMD)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_ohmd OBJECT ${OHMD_SOURCE_FILES})
-	set_property(TARGET drv_ohmd PROPERTY POSITION_INDEPENDENT_CODE ON)
 	target_include_directories(drv_ohmd SYSTEM
 		PRIVATE ${OPENHMD_INCLUDE_DIRS}
 		)
@@ -61,7 +58,6 @@ if(BUILD_DRIVER_PSMV)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_psmv OBJECT ${PSMOVE_SOURCE_FILES})
-	set_property(TARGET drv_psmv PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
 
@@ -76,7 +72,6 @@ if(BUILD_DRIVER_PSVR)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_psvr OBJECT ${PSVR_SOURCE_FILES})
-	set_property(TARGET drv_psvr PROPERTY POSITION_INDEPENDENT_CODE ON)
 	target_include_directories(drv_psvr SYSTEM
 		PRIVATE ${HIDAPI_INCLUDE_DIRS}
 		)
@@ -97,7 +92,6 @@ if(BUILD_DRIVER_VIVE)
 	add_library(drv_vive OBJECT ${VIVE_SOURCE_FILES})
 	target_include_directories(drv_vive SYSTEM PRIVATE ../../external)
 	target_link_libraries(drv_vive z)
-	set_property(TARGET drv_vive PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
 if(BUILD_DRIVER_V4L2)
@@ -107,5 +101,4 @@ if(BUILD_DRIVER_V4L2)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_v4l2 OBJECT ${V4L2_SOURCE_FILES})
-	set_property(TARGET drv_v4l2 PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()

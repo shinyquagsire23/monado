@@ -79,7 +79,6 @@ include_directories(
 # OpenGL library.
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(aux_ogl OBJECT ${OGL_SOURCE_FILES})
-set_property(TARGET aux_ogl PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(aux_ogl SYSTEM
 		PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/../../external
@@ -88,16 +87,13 @@ target_include_directories(aux_ogl SYSTEM
 # Util library.
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(aux_util OBJECT ${UTIL_SOURCE_FILES})
-set_property(TARGET aux_util PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # OS library.
 add_library(aux_os OBJECT ${OS_SOURCE_FILES})
-set_property(TARGET aux_os PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Math library.
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(aux_math OBJECT ${MATH_SOURCE_FILES})
-set_property(TARGET aux_math PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Math files has extra include(s).
 target_include_directories(aux_math SYSTEM
@@ -109,7 +105,6 @@ if(BUILD_TRACKING)
 	# Tracking library.
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(aux_tracking OBJECT ${TRACKING_SOURCE_FILES})
-	set_property(TARGET aux_tracking PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 	# Tracking files have extra includes.
 	target_include_directories(aux_tracking SYSTEM

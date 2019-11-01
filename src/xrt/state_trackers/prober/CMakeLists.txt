@@ -55,5 +55,3 @@ target_include_directories(st_prober
 	PRIVATE
 	${PROBER_INCLUDES}
 	)
-
-set_property(TARGET st_prober PROPERTY POSITION_INDEPENDENT_CODE ON)

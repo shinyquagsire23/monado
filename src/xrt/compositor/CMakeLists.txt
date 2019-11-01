@@ -82,7 +82,6 @@ endif()
 
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(comp OBJECT ${GL_SOURCE_FILES} ${WL_PROTOS_SRC})
-set_property(TARGET comp PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(comp
 	PRIVATE
 	${XCB_INCLUDE_DIRS}
