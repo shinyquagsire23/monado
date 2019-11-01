@@ -15,13 +15,13 @@
 
 #include "util/u_device.h"
 #include "util/u_debug.h"
+#include "util/u_json.h"
 #include "util/u_var.h"
 
 #include "math/m_api.h"
 
 #include "os/os_hid.h"
 
-#include "nxjson/nxjson.h"
 
 #include "vive_device.h"
 #include "vive_protocol.h"
@@ -573,79 +573,94 @@ _array_to_vec3(const float array[3], struct xrt_vec3 *result)
 }
 
 static void
-_json_get_vec3(const nx_json *json, const char *name, struct xrt_vec3 *result)
+_json_get_vec3(const cJSON *json, const char *name, struct xrt_vec3 *result)
 {
-	const nx_json *acc_bias_arr = nx_json_get(json, name);
+	const cJSON *acc_bias_arr =
+	    cJSON_GetObjectItemCaseSensitive(json, name);
 
 	float result_array[3];
 
-	assert(acc_bias_arr->length == 3);
-
-	for (int i = 0; i < acc_bias_arr->length; i++) {
-		const nx_json *item = nx_json_item(acc_bias_arr, i);
-		result_array[i] = (float)item->dbl_value;
+	assert(cJSON_GetArraySize(acc_bias_arr) == 3);
+	const cJSON *item = NULL;
+	size_t i = 0;
+	cJSON_ArrayForEach(item, acc_bias_arr)
+	{
+		assert(cJSON_IsNumber(item));
+		result_array[i] = (float)item->valuedouble;
+		++i;
+		if (i == 3) {
+			break;
+		}
 	}
 
 	_array_to_vec3(result_array, result);
 }
 
 static char *
-_json_get_string(const nx_json *json, const char *name)
+_json_get_string(const cJSON *json, const char *name)
 {
-	const nx_json *item = nx_json_get(json, name);
-	return strdup(item->text_value);
+	const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
+	return strdup(item->string);
 }
 
 static double
-_json_get_double(const nx_json *json, const char *name)
+_json_get_double(const cJSON *json, const char *name)
 {
-	const nx_json *item = nx_json_get(json, name);
-	return item->dbl_value;
+	const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
+	return item->valuedouble;
 }
 
 static float
-_json_get_float(const nx_json *json, const char *name)
+_json_get_float(const cJSON *json, const char *name)
 {
-	const nx_json *item = nx_json_get(json, name);
-	return (float)item->dbl_value;
+	const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
+	return (float)item->valuedouble;
 }
 
 static long long
-_json_get_int(const nx_json *json, const char *name)
+_json_get_int(const cJSON *json, const char *name)
 {
-	const nx_json *item = nx_json_get(json, name);
-	return item->int_value;
+	const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
+	return item->valueint;
 }
 
 static void
 _get_color_coeffs(struct xrt_hmd_parts *hmd,
-                  const nx_json *coeffs,
+                  const cJSON *coeffs,
                   uint8_t eye,
                   uint8_t channel)
 {
 	// this is 4 on index, all values populated
 	// assert(coeffs->length == 8);
 	// only 3 coeffs contain values
-	for (int i = 0; i < 3; i++) {
-		const nx_json *item = nx_json_item(coeffs, i);
+	const cJSON *item = NULL;
+	size_t i = 0;
+	cJSON_ArrayForEach(item, coeffs)
+	{
 		hmd->distortion.vive.coefficients[eye][i][channel] =
-		    (float)item->dbl_value;
+		    (float)item->valuedouble;
+		++i;
+		if (i == 3) {
+			break;
+		}
 	}
 }
 
 static void
 _get_color_coeffs_lookup(struct xrt_hmd_parts *hmd,
-                         const nx_json *eye_json,
+                         const cJSON *eye_json,
                          const char *name,
                          uint8_t eye,
                          uint8_t channel)
 {
-	const nx_json *distortion = nx_json_get(eye_json, name);
+	const cJSON *distortion =
+	    cJSON_GetObjectItemCaseSensitive(eye_json, name);
 	if (distortion == NULL) {
 		return;
 	}
 
-	const nx_json *coeffs = nx_json_get(distortion, "coeffs");
+	const cJSON *coeffs =
+	    cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
 	if (coeffs == NULL) {
 		return;
 	}
@@ -655,10 +670,10 @@ _get_color_coeffs_lookup(struct xrt_hmd_parts *hmd,
 
 static void
 get_distortion_properties(struct xrt_hmd_parts *hmd,
-                          const nx_json *eye_transform_json,
+                          const cJSON *eye_transform_json,
                           uint8_t eye)
 {
-	const nx_json *eye_json = nx_json_item(eye_transform_json, eye);
+	const cJSON *eye_json = cJSON_GetArrayItem(eye_transform_json, eye);
 	if (eye_json == NULL) {
 		return;
 	}
@@ -669,7 +684,8 @@ get_distortion_properties(struct xrt_hmd_parts *hmd,
 	hmd->distortion.vive.undistort_r2_cutoff[eye] = _json_get_float(eye_json, "undistort_r2_cutoff");
 	// clang-format on
 
-	const nx_json *distortion = nx_json_get(eye_json, "distortion");
+	const cJSON *distortion =
+	    cJSON_GetObjectItemCaseSensitive(eye_json, "distortion");
 	if (distortion != NULL) {
 		// TODO: store center per color
 		// clang-format off
@@ -678,7 +694,8 @@ get_distortion_properties(struct xrt_hmd_parts *hmd,
 		// clang-format on
 
 		// green
-		const nx_json *coeffs = nx_json_get(distortion, "coeffs");
+		const cJSON *coeffs =
+		    cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
 		if (coeffs != NULL) {
 			_get_color_coeffs(hmd, coeffs, eye, 1);
 		}
@@ -719,8 +736,8 @@ vive_parse_config(struct vive_device *d, char *json_string)
 {
 	VIVE_SPEW(d, "JSON config:\n%s\n", json_string);
 
-	const nx_json *json = nx_json_parse(json_string, 0);
-	if (json == NULL) {
+	cJSON *json = cJSON_Parse(json_string);
+	if (!cJSON_IsObject(json)) {
 		VIVE_ERROR("Could not parse JSON data.");
 		return false;
 	}
@@ -733,14 +750,16 @@ vive_parse_config(struct vive_device *d, char *json_string)
 		_json_get_vec3(json, "gyro_scale", &d->imu.gyro_scale);
 		break;
 	case VIVE_VARIANT_PRO: {
-		const nx_json *imu = nx_json_get(json, "imu");
+		const cJSON *imu =
+		    cJSON_GetObjectItemCaseSensitive(json, "imu");
 		_json_get_vec3(imu, "acc_bias", &d->imu.acc_bias);
 		_json_get_vec3(imu, "acc_scale", &d->imu.acc_scale);
 		_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
 		_json_get_vec3(imu, "gyro_scale", &d->imu.gyro_scale);
 	} break;
 	case VIVE_VARIANT_INDEX: {
-		const nx_json *imu = nx_json_get(json, "imu");
+		const cJSON *imu =
+		    cJSON_GetObjectItemCaseSensitive(json, "imu");
 		_json_get_vec3(imu, "acc_bias", &d->imu.acc_bias);
 		_json_get_vec3(imu, "acc_scale", &d->imu.acc_scale);
 		_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
@@ -758,7 +777,8 @@ vive_parse_config(struct vive_device *d, char *json_string)
 	d->firmware.device_serial_number =
 	    _json_get_string(json, "device_serial_number");
 
-	const nx_json *device_json = nx_json_get(json, "device");
+	const cJSON *device_json =
+	    cJSON_GetObjectItemCaseSensitive(json, "device");
 	if (device_json) {
 		if (d->variant != VIVE_VARIANT_INDEX) {
 			d->display.persistence =
@@ -774,8 +794,8 @@ vive_parse_config(struct vive_device *d, char *json_string)
 		    device_json, "eye_target_width_in_pixels");
 	}
 
-	const nx_json *eye_transform_json =
-	    nx_json_get(json, "tracking_to_eye_transform");
+	const cJSON *eye_transform_json =
+	    cJSON_GetObjectItemCaseSensitive(json, "tracking_to_eye_transform");
 	if (eye_transform_json) {
 		for (uint8_t eye = 0; eye < 2; eye++) {
 			get_distortion_properties(d->base.hmd,
@@ -783,7 +803,7 @@ vive_parse_config(struct vive_device *d, char *json_string)
 		}
 	}
 
-	nx_json_free(json);
+	cJSON_Delete(json);
 
 	// clang-format off
 	VIVE_DEBUG(d, "= Vive configuration =");

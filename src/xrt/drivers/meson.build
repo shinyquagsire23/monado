@@ -83,8 +83,6 @@ lib_drv_vive = static_library(
 		'vive/vive_protocol.h',
 		'vive/vive_prober.h',
 		'vive/vive_prober.c',
-		'../../external/nxjson/nxjson.h',
-		'../../external/nxjson/nxjson.c'
 	),
 	include_directories: [xrt_include,
 	                      include_directories('../../external/')],

@@ -85,13 +85,9 @@ if(BUILD_DRIVER_VIVE)
 		vive/vive_prober.c
 		vive/vive_protocol.h
 		)
-	set(NXJSON_SOURCE_FILES
-		../../external/nxjson/nxjson.h
-		../../external/nxjson/nxjson.c
-		)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_vive OBJECT ${VIVE_SOURCE_FILES} ${NXJSON_SOURCE_FILES})
+	add_library(drv_vive OBJECT ${VIVE_SOURCE_FILES})
 	target_include_directories(drv_vive SYSTEM PRIVATE ../../external)
 	target_link_libraries(drv_vive z)
 endif()
