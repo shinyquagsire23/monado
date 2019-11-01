@@ -591,6 +591,15 @@ select_device(struct xrt_prober *xp,
 	free(dev_list);
 
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
+
+		/*
+		 * If we have found a HMD stop checking the auto probers. This
+		 * is mostly to stop OpenHMD and Monado fighting over devices.
+		 */
+		if (xdevs[0] != NULL) {
+			break;
+		}
+
 		struct xrt_device *xdev =
 		    p->auto_probers[i]->lelo_dallas_autoprobe(
 		        p->auto_probers[i], xp);
