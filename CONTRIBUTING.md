@@ -36,7 +36,7 @@ Just let us know and we'll figure out a way to help you get involved successfull
   by showing the diff you're committing in your commit message editor.
   (This can even be set system-wide in `git config --global commit.verbose true`
   if you find it as life-changing as many others have - thanks
-  [@emilyst](https://twitter.com/emilyst/status/1039205453010362368).)
+  [emilyst](https://twitter.com/emilyst/status/1039205453010362368).)
 
 - If you can, before submitting a pull/merge request, try building with clang-tidy enabled,
   and if you touched any code that has or should have documentation,
