@@ -56,6 +56,8 @@ endif
 
 glslangValidator = find_program('glslangValidator')
 
+pthreads = cc.find_library('pthread', required: true)
+
 avcodec = dependency('libavcodec', required: false)
 eigen3  = dependency('eigen3')
 libjpeg = dependency('libjpeg', required: false)
@@ -71,8 +73,6 @@ opencv = dependency('opencv4', required: false)
 if not opencv.found()
 	opencv = dependency('opencv', required: get_option('tracking'))
 endif
-
-pthreads = cc.find_library('pthread', required: true)
 
 if get_option('tracking').enabled() or get_option('tracking').auto()
 	build_tracking = opencv.found()
