@@ -32,6 +32,23 @@ add_project_arguments(cpp.get_supported_arguments([
 	'-Wno-deprecated-copy', # Eigen
 ]), language: 'cpp')
 
+
+#
+# Pre-setting these variables
+#
+
+build_docs = false
+build_tracking = false
+
+v4l2_required = false
+hidapi_required = false
+openhmd_required = false
+
+
+#
+# Adding dependencies
+#
+
 glslangValidator = find_program('glslangValidator')
 
 avcodec = dependency('libavcodec', required: false)
@@ -56,8 +73,6 @@ pthreads = cc.find_library('pthread', required: true)
 
 if get_option('tracking').enabled() or get_option('tracking').auto()
 	build_tracking = opencv.found()
-else
-	build_tracking = false
 endif
 
 # TODO: make these behave well when not present
@@ -75,10 +90,6 @@ if wayland_scanner.found()
 		native: true,
 	)
 endif
-
-hidapi_required = false
-openhmd_required = false
-v4l2_required = false
 
 # For now required on Linux
 if target_machine.system() == 'linux'
@@ -130,8 +141,6 @@ endif
 
 if drivers.length() == 0 or drivers == ['auto']
 	error('You must enable at least one driver.')
-else
-	message('Building with drivers ' + ', '.join(drivers))
 endif
 
 if udev.found()
@@ -162,11 +171,25 @@ if sdl2.found()
 	add_project_arguments('-DXRT_HAVE_SDL2', language: ['c', 'cpp'])
 endif
 
+if doxygen.found()
+	build_docs = true
+endif
+
+
+#
+# Go down sub directories
+#
+
 subdir('src')
 
-if doxygen.found()
+if build_docs
 	subdir('doc')
 endif
+
+
+#
+# Final bits
+#
 
 # This is here so that it gets emitted in the top-level build directory
 manifest_devconf = configuration_data()
@@ -178,3 +201,18 @@ manifest_dev_json = configure_file(
 	output: 'openxr_monado-dev.json',
 	configuration: manifest_devconf,
 )
+
+message('Configuration done!')
+message('    drivers:  ' + ', '.join(drivers))
+
+if build_docs
+	message('    docs:     yes')
+else
+	message('    docs:     no')
+endif
+
+if build_tracking
+	message('    tracking: yes')
+else
+	message('    tracking: no')
+endif
