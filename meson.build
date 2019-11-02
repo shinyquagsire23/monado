@@ -49,6 +49,11 @@ openhmd_required = false
 # Adding dependencies
 #
 
+doxygen = find_program('doxygen', required: get_option('docs'))
+if get_option('docs').enabled() or get_option('docs').auto()
+	build_docs = true
+endif
+
 glslangValidator = find_program('glslangValidator')
 
 avcodec = dependency('libavcodec', required: false)
@@ -66,8 +71,6 @@ opencv = dependency('opencv4', required: false)
 if not opencv.found()
 	opencv = dependency('opencv', required: get_option('tracking'))
 endif
-
-doxygen = find_program('doxygen', required: get_option('docs'))
 
 pthreads = cc.find_library('pthread', required: true)
 
@@ -169,10 +172,6 @@ endif
 
 if sdl2.found()
 	add_project_arguments('-DXRT_HAVE_SDL2', language: ['c', 'cpp'])
-endif
-
-if doxygen.found()
-	build_docs = true
 endif
 
 
