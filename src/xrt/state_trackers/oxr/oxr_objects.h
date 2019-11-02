@@ -350,7 +350,10 @@ oxr_action_stop_haptic_feedback(struct oxr_logger *log,
 /*!
  * Find the best matching profile for the given @ref xrt_device.
  *
- * @param xdev Can be null.
+ * @param      log   Logger.
+ * @param      inst  Instance.
+ * @param      xdev  Can be null.
+ * @param[out] out_p Returned interaction profile.
  */
 void
 oxr_find_profile_for_device(struct oxr_logger *log,
