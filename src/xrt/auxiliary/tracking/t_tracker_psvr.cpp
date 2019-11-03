@@ -279,8 +279,15 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 		return ret;
 	}
 
-	// HACK
-	t.fusion.pos.y = 1.6f;
+	// HACK, to counter the tracking origin offset.
+	t.fusion.pos.x = 0.0f;
+	t.fusion.pos.y = 0.6f;
+	t.fusion.pos.z = -2.0f;
+
+	t.fusion.rot.x = 0.0f;
+	t.fusion.rot.y = 1.0f;
+	t.fusion.rot.z = 0.0f;
+	t.fusion.rot.w = 0.0f;
 
 	xrt_frame_context_add(xfctx, &t.node);
 
