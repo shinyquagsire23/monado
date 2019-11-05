@@ -46,7 +46,8 @@ oxr_xrGetSystem(XrInstance instance,
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetSystem");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, getInfo, XR_TYPE_SYSTEM_GET_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo,
+	                                 XR_TYPE_SYSTEM_GET_INFO);
 	OXR_VERIFY_ARG_NOT_NULL(&log, systemId);
 
 	struct oxr_system *selected = NULL;
@@ -73,8 +74,8 @@ oxr_xrGetSystemProperties(XrInstance instance,
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetSystemProperties");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, properties,
-	                             XR_TYPE_SYSTEM_PROPERTIES);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, properties,
+	                                 XR_TYPE_SYSTEM_PROPERTIES);
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
 
 	return oxr_system_get_properties(&log, sys, properties);
@@ -130,8 +131,8 @@ oxr_xrGetViewConfigurationProperties(
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetViewConfigurationProperties");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, configurationProperties,
-	                             XR_TYPE_VIEW_CONFIGURATION_PROPERTIES);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, configurationProperties,
+	                                 XR_TYPE_VIEW_CONFIGURATION_PROPERTIES);
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
 
 	return oxr_system_get_view_conf_properties(
@@ -177,8 +178,9 @@ oxr_xrGetOpenGLGraphicsRequirementsKHR(
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetOpenGLGraphicsRequirementsKHR");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, graphicsRequirements,
-	                             XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
+	    &log, graphicsRequirements,
+	    XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR);
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
 
 	struct xrt_api_requirements ver;
@@ -270,8 +272,9 @@ oxr_xrGetVulkanGraphicsRequirementsKHR(
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrGetVulkanGraphicsRequirementsKHR");
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, graphicsRequirements,
-	                             XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
+	    &log, graphicsRequirements,
+	    XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR);
 
 	return oxr_vk_get_requirements(&log, sys, graphicsRequirements);
 }

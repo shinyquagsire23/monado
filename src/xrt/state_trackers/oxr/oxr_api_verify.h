@@ -112,7 +112,7 @@ extern "C" {
 		}                                                              \
 	} while (false)
 
-#define OXR_VERIFY_ARG_TYPE_AND_NULL(log, arg, type_enum)                      \
+#define OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(log, arg, type_enum)                  \
 	do {                                                                   \
 		if (arg == NULL) {                                             \
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \

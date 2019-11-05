@@ -55,8 +55,8 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo,
 	XrResult ret;
 	struct oxr_logger log;
 	oxr_log_init(&log, "xrCreateInstance");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
-	                             XR_TYPE_INSTANCE_CREATE_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
+	                                 XR_TYPE_INSTANCE_CREATE_INFO);
 	const uint32_t major = XR_VERSION_MAJOR(XR_CURRENT_API_VERSION);
 	const uint32_t minor = XR_VERSION_MINOR(XR_CURRENT_API_VERSION);
 #if 0

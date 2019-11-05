@@ -84,8 +84,8 @@ oxr_xrBeginSession(XrSession session, const XrSessionBeginInfo *beginInfo)
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrBeginSession");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, beginInfo,
-	                             XR_TYPE_SESSION_BEGIN_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, beginInfo,
+	                                 XR_TYPE_SESSION_BEGIN_INFO);
 
 	return oxr_session_begin(&log, sess, beginInfo);
 }
@@ -108,7 +108,7 @@ oxr_xrWaitFrame(XrSession session,
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrWaitFrame");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, frameState, XR_TYPE_FRAME_STATE);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, frameState, XR_TYPE_FRAME_STATE);
 	OXR_VERIFY_ARG_NOT_NULL(&log, frameState);
 
 	return oxr_session_frame_wait(&log, sess, frameState);
@@ -122,8 +122,8 @@ oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo *frameBeginInfo)
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrBeginFrame");
 	// NULL explicitly allowed here because it's a basically empty struct.
 	if (frameBeginInfo != NULL) {
-		OXR_VERIFY_ARG_TYPE_AND_NULL(&log, frameBeginInfo,
-		                             XR_TYPE_FRAME_BEGIN_INFO);
+		OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, frameBeginInfo,
+		                                 XR_TYPE_FRAME_BEGIN_INFO);
 	}
 
 	return oxr_session_frame_begin(&log, sess);
@@ -135,8 +135,8 @@ oxr_xrEndFrame(XrSession session, const XrFrameEndInfo *frameEndInfo)
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEndFrame");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, frameEndInfo,
-	                             XR_TYPE_FRAME_END_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, frameEndInfo,
+	                                 XR_TYPE_FRAME_END_INFO);
 
 	return oxr_session_frame_end(&log, sess, frameEndInfo);
 }
@@ -164,10 +164,10 @@ oxr_xrLocateViews(XrSession session,
 	struct oxr_space *spc;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrLocateViews");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, viewLocateInfo,
-	                             XR_TYPE_VIEW_LOCATE_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, viewLocateInfo,
+	                                 XR_TYPE_VIEW_LOCATE_INFO);
 	OXR_VERIFY_SPACE_NOT_NULL(&log, viewLocateInfo->space, spc);
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, viewState, XR_TYPE_VIEW_STATE);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, viewState, XR_TYPE_VIEW_STATE);
 
 	if (viewCapacityInput == 0) {
 		OXR_VERIFY_ARG_NOT_NULL(&log, viewCountOutput);

@@ -40,7 +40,7 @@ oxr_xrCreateDebugUtilsMessengerEXT(
 	                                 "xrCreateDebugUtilsMessengerEXT");
 	OXR_VERIFY_EXTENSION(&log, inst, EXT_debug_utils);
 
-	OXR_VERIFY_ARG_TYPE_AND_NULL(
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
 	    &log, createInfo, XR_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
 	OXR_VERIFY_ARG_NOT_NULL(&log, messenger);
 

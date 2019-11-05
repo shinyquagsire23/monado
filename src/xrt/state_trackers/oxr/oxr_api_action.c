@@ -31,7 +31,8 @@ oxr_xrSyncActions(XrSession session, const XrActionsSyncInfo *syncInfo)
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrSyncActions");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, syncInfo, XR_TYPE_ACTIONS_SYNC_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, syncInfo,
+	                                 XR_TYPE_ACTIONS_SYNC_INFO);
 
 	if (syncInfo->countActiveActionSets == 0) {
 		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
@@ -60,8 +61,8 @@ oxr_xrAttachSessionActionSets(XrSession session,
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrAttachSessionActionSets");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, bindInfo,
-	                             XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
+	    &log, bindInfo, XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO);
 
 	for (uint32_t i = 0; i < bindInfo->countActionSets; i++) {
 		struct oxr_action_set *act_set = NULL;
@@ -81,7 +82,7 @@ oxr_xrSuggestInteractionProfileBindings(
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrSuggestInteractionProfileBindings");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
 	    &log, suggestedBindings,
 	    XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING);
 
@@ -109,8 +110,8 @@ oxr_xrGetCurrentInteractionProfile(
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetCurrentInteractionProfile");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, interactionProfile,
-	                             XR_TYPE_INTERACTION_PROFILE_STATE);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, interactionProfile,
+	                                 XR_TYPE_INTERACTION_PROFILE_STATE);
 
 	/* XXX: How do we return XR_SESSION_LOSS_PENDING here? */
 	return oxr_action_get_current_interaction_profile(
@@ -154,8 +155,8 @@ oxr_xrCreateActionSet(XrInstance instance,
 	XrResult ret;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrCreateActionSet");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
-	                             XR_TYPE_ACTION_SET_CREATE_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
+	                                 XR_TYPE_ACTION_SET_CREATE_INFO);
 	OXR_VERIFY_ARG_NOT_NULL(&log, actionSet);
 	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(
 	    &log, createInfo->actionSetName);
@@ -201,8 +202,8 @@ oxr_xrCreateAction(XrActionSet actionSet,
 
 	OXR_VERIFY_ACTIONSET_AND_INIT_LOG(&log, actionSet, act_set,
 	                                  "xrCreateAction");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
-	                             XR_TYPE_ACTION_CREATE_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
+	                                 XR_TYPE_ACTION_CREATE_INFO);
 	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(&log,
 	                                              createInfo->actionName);
 	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionName);
@@ -249,9 +250,10 @@ oxr_xrGetActionStateBoolean(XrSession session,
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetActionStateBoolean");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, data, XR_TYPE_ACTION_STATE_BOOLEAN);
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, getInfo,
-	                             XR_TYPE_ACTION_STATE_GET_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data,
+	                                 XR_TYPE_ACTION_STATE_BOOLEAN);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo,
+	                                 XR_TYPE_ACTION_STATE_GET_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, getInfo->action, act);
 
 	if (act->action_type != XR_ACTION_TYPE_BOOLEAN_INPUT) {
@@ -281,9 +283,10 @@ oxr_xrGetActionStateFloat(XrSession session,
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetActionStateFloat");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, data, XR_TYPE_ACTION_STATE_FLOAT);
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, getInfo,
-	                             XR_TYPE_ACTION_STATE_GET_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data,
+	                                 XR_TYPE_ACTION_STATE_FLOAT);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo,
+	                                 XR_TYPE_ACTION_STATE_GET_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, getInfo->action, act);
 
 	if (act->action_type != XR_ACTION_TYPE_FLOAT_INPUT) {
@@ -313,9 +316,10 @@ oxr_xrGetActionStateVector2f(XrSession session,
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetActionStateVector2f");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, data, XR_TYPE_ACTION_STATE_VECTOR2F);
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, getInfo,
-	                             XR_TYPE_ACTION_STATE_GET_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data,
+	                                 XR_TYPE_ACTION_STATE_VECTOR2F);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo,
+	                                 XR_TYPE_ACTION_STATE_GET_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, getInfo->action, act);
 
 	if (act->action_type != XR_ACTION_TYPE_VECTOR2F_INPUT) {
@@ -345,9 +349,9 @@ oxr_xrGetActionStatePose(XrSession session,
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetActionStatePose");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, data, XR_TYPE_ACTION_STATE_POSE);
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, getInfo,
-	                             XR_TYPE_ACTION_STATE_GET_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data, XR_TYPE_ACTION_STATE_POSE);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo,
+	                                 XR_TYPE_ACTION_STATE_GET_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, getInfo->action, act);
 
 	if (act->action_type != XR_ACTION_TYPE_POSE_INPUT) {
@@ -378,7 +382,7 @@ oxr_xrEnumerateBoundSourcesForAction(
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrEnumerateBoundSourcesForAction");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
 	    &log, enumerateInfo,
 	    XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, enumerateInfo->action, act);
@@ -407,10 +411,10 @@ oxr_xrApplyHapticFeedback(XrSession session,
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrApplyHapticFeedback");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, hapticActionInfo,
-	                             XR_TYPE_HAPTIC_ACTION_INFO);
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, hapticEvent,
-	                             XR_TYPE_HAPTIC_VIBRATION);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, hapticActionInfo,
+	                                 XR_TYPE_HAPTIC_ACTION_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, hapticEvent,
+	                                 XR_TYPE_HAPTIC_VIBRATION);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, hapticActionInfo->action, act);
 
 	ret = oxr_verify_subaction_path_get(
@@ -440,8 +444,8 @@ oxr_xrStopHapticFeedback(XrSession session,
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrStopHapticFeedback");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, hapticActionInfo,
-	                             XR_TYPE_HAPTIC_ACTION_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, hapticActionInfo,
+	                                 XR_TYPE_HAPTIC_ACTION_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, hapticActionInfo->action, act);
 
 	ret = oxr_verify_subaction_path_get(

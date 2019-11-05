@@ -34,8 +34,8 @@ oxr_xrCreateActionSpace(XrSession session,
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrCreateActionSpace");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
-	                             XR_TYPE_ACTION_SPACE_CREATE_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
+	                                 XR_TYPE_ACTION_SPACE_CREATE_INFO);
 	OXR_VERIFY_POSE(&log, createInfo->poseInActionSpace);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, createInfo->action, act);
 
@@ -99,8 +99,8 @@ oxr_xrCreateReferenceSpace(XrSession session,
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrCreateReferenceSpace");
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, createInfo,
-	                             XR_TYPE_REFERENCE_SPACE_CREATE_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
+	                                 XR_TYPE_REFERENCE_SPACE_CREATE_INFO);
 	OXR_VERIFY_POSE(&log, createInfo->poseInReferenceSpace);
 
 	ret = oxr_space_reference_create(&log, sess, createInfo, &spc);
@@ -124,7 +124,8 @@ oxr_xrLocateSpace(XrSpace space,
 	struct oxr_logger log;
 	OXR_VERIFY_SPACE_AND_INIT_LOG(&log, space, spc, "xrLocateSpace");
 	OXR_VERIFY_SPACE_NOT_NULL(&log, baseSpace, baseSpc);
-	OXR_VERIFY_ARG_TYPE_AND_NULL(&log, location, XR_TYPE_SPACE_LOCATION);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, location,
+	                                 XR_TYPE_SPACE_LOCATION);
 
 	return oxr_space_locate(&log, spc, baseSpc, time, location);
 }
