@@ -154,6 +154,10 @@ oxr_system_fill_in(struct oxr_logger *log,
 	sys->view_config_type = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
 
 	double scale = debug_get_num_option_scale_percentage() / 100.0;
+	if (scale > 2.0) {
+		scale = 2.0;
+		oxr_log(log, "Clamped scale to 200%%\n");
+	}
 
 
 	uint32_t w0 = (uint32_t)(head->hmd->views[0].display.w_pixels * scale);
@@ -161,17 +165,22 @@ oxr_system_fill_in(struct oxr_logger *log,
 	uint32_t w1 = (uint32_t)(head->hmd->views[1].display.w_pixels * scale);
 	uint32_t h1 = (uint32_t)(head->hmd->views[1].display.h_pixels * scale);
 
+	uint32_t w0_2 = head->hmd->views[0].display.w_pixels * 2;
+	uint32_t h0_2 = head->hmd->views[0].display.h_pixels * 2;
+	uint32_t w1_2 = head->hmd->views[1].display.w_pixels * 2;
+	uint32_t h1_2 = head->hmd->views[1].display.h_pixels * 2;
+
 	sys->views[0].recommendedImageRectWidth       = w0;
-	sys->views[0].maxImageRectWidth               = w0;
+	sys->views[0].maxImageRectWidth               = w0_2;
 	sys->views[0].recommendedImageRectHeight      = h0;
-	sys->views[0].maxImageRectHeight              = h0;
+	sys->views[0].maxImageRectHeight              = h0_2;
 	sys->views[0].recommendedSwapchainSampleCount = 1;
 	sys->views[0].maxSwapchainSampleCount         = 1;
 
 	sys->views[1].recommendedImageRectWidth       = w1;
-	sys->views[1].maxImageRectWidth               = w1;
+	sys->views[1].maxImageRectWidth               = w1_2;
 	sys->views[1].recommendedImageRectHeight      = h1;
-	sys->views[1].maxImageRectHeight              = h1;
+	sys->views[1].maxImageRectHeight              = h1_2;
 	sys->views[1].recommendedSwapchainSampleCount = 1;
 	sys->views[1].maxSwapchainSampleCount         = 1;
 	// clang-format on
