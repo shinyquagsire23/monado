@@ -157,9 +157,9 @@ oxr_system_fill_in(struct oxr_logger *log,
 
 
 	uint32_t w0 = (uint32_t)(head->hmd->views[0].display.w_pixels * scale);
-	uint32_t h0 = (uint32_t)(head->hmd->views[0].display.w_pixels * scale);
+	uint32_t h0 = (uint32_t)(head->hmd->views[0].display.h_pixels * scale);
 	uint32_t w1 = (uint32_t)(head->hmd->views[1].display.w_pixels * scale);
-	uint32_t h1 = (uint32_t)(head->hmd->views[1].display.w_pixels * scale);
+	uint32_t h1 = (uint32_t)(head->hmd->views[1].display.h_pixels * scale);
 
 	sys->views[0].recommendedImageRectWidth       = w0;
 	sys->views[0].maxImageRectWidth               = w0;
