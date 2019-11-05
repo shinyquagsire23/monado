@@ -904,11 +904,11 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 		vals.aberration_k[0] = 0.999;
 		vals.aberration_k[1] = 1.008;
 		vals.aberration_k[2] = 1.018;
-		vals.scale = 1.2;
-		vals.lens_center.x = 0.5;
-		vals.lens_center.y = 0.5;
-		vals.viewport_size.x = 1.0;
-		vals.viewport_size.y = 1.0;
+		vals.scale = 1.2 * (1980 / 2.0f);
+		vals.viewport_size.x = (1980 / 2.0f);
+		vals.viewport_size.y = (1080);
+		vals.lens_center.x = vals.viewport_size.x / 2.0;
+		vals.lens_center.y = vals.viewport_size.y / 2.0;
 
 		u_distortion_mesh_from_panotools(&vals, &vals, psvr->base.hmd);
 	}
@@ -961,10 +961,10 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	struct u_device_simple_info info;
 	info.display.w_pixels = 1920;
 	info.display.h_pixels = 1080;
-	info.display.w_meters = 0.13;
-	info.display.h_meters = 0.07;
-	info.lens_horizontal_separation_meters = 0.063f;
-	info.lens_vertical_position_meters = 0.07 / 2.0f;
+	info.display.w_meters = 0.13f;
+	info.display.h_meters = 0.07f;
+	info.lens_horizontal_separation_meters = 0.13f / 2.0f;
+	info.lens_vertical_position_meters = 0.07f / 2.0f;
 	info.views[0].fov = 85.0f * (M_PI / 180.0f);
 	info.views[1].fov = 85.0f * (M_PI / 180.0f);
 
