@@ -138,6 +138,7 @@ if v4l2.found() and ('auto' in drivers or 'v4l2' in drivers)
 	if 'v4l2' not in drivers
 		drivers += ['v4l2']
 	endif
+	add_project_arguments('-DXRT_HAVE_V4L2', language: ['c', 'cpp'])
 endif
 
 if drivers.length() == 0 or drivers == ['auto']
