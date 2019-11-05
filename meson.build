@@ -37,7 +37,6 @@ add_project_arguments(cpp.get_supported_arguments([
 # Pre-setting these variables
 #
 
-build_docs = false
 build_tracking = false
 
 v4l2_required = false
@@ -49,10 +48,9 @@ openhmd_required = false
 # Adding dependencies
 #
 
+# When docs are disabled, doxygen will always appear as "not found"
 doxygen = find_program('doxygen', required: get_option('docs'))
-if get_option('docs').enabled() or get_option('docs').auto()
-	build_docs = true
-endif
+build_docs = doxygen.found()
 
 glslangValidator = find_program('glslangValidator')
 
