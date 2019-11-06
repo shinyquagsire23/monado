@@ -1413,7 +1413,7 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 
 		if (ret != (int)sizeof(part)) {
 			PSMV_ERROR(psmv, "Size wrong: %i != %i", ret,
-			           (int)sizeof(*part));
+			           (int)sizeof(part));
 			return -1;
 		}
 
@@ -1427,7 +1427,7 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 			dst_offset = sizeof(part);
 			break;
 		default:
-			PSMV_ERROR(psmv, "Unexpected part id! %i", part->which);
+			PSMV_ERROR(psmv, "Unexpected part id! %i", part.which);
 			return -1;
 		}
 
