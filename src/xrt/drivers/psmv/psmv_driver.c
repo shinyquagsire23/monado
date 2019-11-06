@@ -1176,10 +1176,13 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 
 		ret = os_hid_get_feature(psmv->hid, 0x10, src, sizeof(part));
 		if (ret < 0) {
+			PSMV_ERROR(psmv, "os_hid_get_feature returned %i", ret);
 			return ret;
 		}
 
 		if (ret != (int)sizeof(part)) {
+			PSMV_ERROR(psmv, "Size wrong: %i != %i", ret,
+			           (int)sizeof(part));
 			return -1;
 		}
 
@@ -1196,7 +1199,9 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 			src_offset = 2;
 			dst_offset = sizeof(part) * 2 - 2;
 			break;
-		default: return -1;
+		default:
+			PSMV_ERROR(psmv, "Unexpected part id! %i", part.which);
+			return -1;
 		}
 
 		memcpy(dst + dst_offset, src + src_offset,
@@ -1402,10 +1407,13 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 
 		ret = os_hid_get_feature(psmv->hid, 0x10, src, sizeof(part));
 		if (ret < 0) {
+			PSMV_ERROR(psmv, "os_hid_get_feature returned %i", ret);
 			return ret;
 		}
 
 		if (ret != (int)sizeof(part)) {
+			PSMV_ERROR(psmv, "Size wrong: %i != %i", ret,
+			           (int)sizeof(*part));
 			return -1;
 		}
 
@@ -1418,7 +1426,9 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 			src_offset = 2;
 			dst_offset = sizeof(part);
 			break;
-		default: return -1;
+		default:
+			PSMV_ERROR(psmv, "Unexpected part id! %i", part->which);
+			return -1;
 		}
 
 		memcpy(dst + dst_offset, src + src_offset,
