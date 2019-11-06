@@ -260,6 +260,7 @@ vive_mainboard_decode_message(struct vive_device *d,
 	if (d->board.button != report->button) {
 		d->board.button = report->button;
 		VIVE_SPEW(d, "Button %d.", report->button);
+		d->rot_filtered = (struct xrt_quat){0, 0, 0, 1};
 	}
 }
 
