@@ -914,11 +914,14 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		vive_mainboard_get_device_info(d);
 	}
 	vive_sensors_read_firmware(d);
+
 	vive_sensors_get_imu_range_report(d);
 
 	char *config = vive_sensors_read_config(d);
-	vive_parse_config(d, config);
-	free(config);
+	if (config != NULL) {
+		vive_parse_config(d, config);
+		free(config);
+	}
 
 	// TODO: Replace hard coded values from OpenHMD with config
 	double w_meters = 0.122822 / 2.0;
