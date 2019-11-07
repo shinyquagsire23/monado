@@ -477,8 +477,6 @@ vive_sensors_get_imu_range_report(struct vive_device *d)
 	                         sizeof(report));
 	if (ret < 0) {
 		printf("Could not get range report!\n");
-		d->imu.gyro_range = 8.726646f;
-		d->imu.acc_range = 39.226600f;
 		return ret;
 	}
 
@@ -509,8 +507,6 @@ vive_sensors_get_imu_range_report(struct vive_device *d)
 		VIVE_ERROR("Gyroscope or accelerometer range too large.");
 		VIVE_ERROR("Gyroscope: %d", report.gyro_range);
 		VIVE_ERROR("Aaccelerometer: %d", report.accel_range);
-		d->imu.gyro_range = 8.726646f;
-		d->imu.acc_range = 39.226600f;
 		return -1;
 	}
 
@@ -657,6 +653,32 @@ get_distortion_properties(struct xrt_hmd_parts *hmd,
 	}
 }
 
+void
+vive_init_defaults(struct vive_device *d)
+{
+	d->display.eye_target_width_in_pixels = 1080;
+	d->display.eye_target_height_in_pixels = 1200;
+
+	d->imu.gyro_range = 8.726646f;
+	d->imu.acc_range = 39.226600f;
+
+	d->imu.acc_scale.x = 1.0f;
+	d->imu.acc_scale.y = 1.0f;
+	d->imu.acc_scale.z = 1.0f;
+
+	d->imu.gyro_scale.x = 1.0f;
+	d->imu.gyro_scale.y = 1.0f;
+	d->imu.gyro_scale.z = 1.0f;
+
+	d->rot_filtered.w = 1.0f;
+
+	struct xrt_hmd_parts *hmd = d->base.hmd;
+	hmd->distortion.vive.aspect_x_over_y = 0.89999997615814209f;
+	hmd->distortion.vive.grow_for_undistort = 0.5f;
+	hmd->distortion.vive.undistort_r2_cutoff[0] = 1.0f;
+	hmd->distortion.vive.undistort_r2_cutoff[1] = 1.0f;
+}
+
 bool
 vive_parse_config(struct vive_device *d, char *json_string)
 {
@@ -684,9 +706,6 @@ vive_parse_config(struct vive_device *d, char *json_string)
 			_json_get_vec3(imu, "acc_bias", &d->imu.acc_bias);
 			_json_get_vec3(imu, "acc_scale", &d->imu.acc_scale);
 			_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
-			d->imu.gyro_scale.x = 1.0f;
-			d->imu.gyro_scale.y = 1.0f;
-			d->imu.gyro_scale.z = 1.0f;
 		} break;
 		default: VIVE_ERROR("Unknown Vive variant.\n"); return false;
 		}
@@ -710,9 +729,6 @@ vive_parse_config(struct vive_device *d, char *json_string)
 				d->base.hmd->distortion.vive.aspect_x_over_y =
 				    _json_get_float(device_json,
 				                    "physical_aspect_x_over_y");
-			} else {
-				d->base.hmd->distortion.vive.aspect_x_over_y =
-				    0.89999997615814209f;
 			}
 			d->display.eye_target_height_in_pixels =
 			    (uint16_t)_json_get_int(
@@ -874,8 +890,9 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->sensors_dev = sensors_dev;
 	d->print_spew = debug_get_bool_option_vive_spew();
 	d->print_debug = debug_get_bool_option_vive_debug();
-	d->rot_filtered.w = 1.0f;
 	d->variant = variant;
+
+	vive_init_defaults(d);
 
 	switch (variant) {
 	case VIVE_VARIANT_VIVE:
