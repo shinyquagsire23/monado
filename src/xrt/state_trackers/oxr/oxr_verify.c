@@ -535,8 +535,24 @@ oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
 {
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 " Graphics binding has invalid type");
+		                 "Graphics binding has invalid type");
 	}
+
+	if (next->xDisplay == NULL) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "xDisplay is NULL");
+	}
+
+	if (next->glxContext == NULL) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "glxContext is NULL");
+	}
+
+	if (next->glxDrawable == NULL) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "glxDrawable is NULL");
+	}
+
 
 	return XR_SUCCESS;
 }
