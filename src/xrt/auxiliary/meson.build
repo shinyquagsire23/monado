@@ -23,6 +23,8 @@ lib_aux_util = static_library(
 		'util/u_hashmap.h',
 		'util/u_hashset.cpp',
 		'util/u_hashset.h',
+		'util/u_json.c',
+		'util/u_json.h',
 		'util/u_sink.h',
 		'util/u_sink_converter.c',
 		'util/u_sink_queue.c',
@@ -32,7 +34,10 @@ lib_aux_util = static_library(
 		'util/u_var.cpp',
 		'util/u_var.h',
 	),
-	include_directories: xrt_include,
+	include_directories: [
+		xrt_include,
+		external_include,
+	],
 )
 
 aux_util = declare_dependency(

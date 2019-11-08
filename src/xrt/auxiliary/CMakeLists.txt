@@ -63,6 +63,8 @@ set(UTIL_SOURCE_FILES
 	util/u_hashmap.h
 	util/u_hashset.cpp
 	util/u_hashset.h
+	util/u_json.c
+	util/u_json.h
 	util/u_sink.h
 	util/u_sink_converter.c
 	util/u_sink_queue.c
@@ -90,6 +92,10 @@ target_include_directories(aux_ogl SYSTEM
 # Util library.
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(aux_util OBJECT ${UTIL_SOURCE_FILES})
+target_include_directories(aux_util SYSTEM
+		PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/../../external
+		)
 
 # OS library.
 add_library(aux_os OBJECT ${OS_SOURCE_FILES})
