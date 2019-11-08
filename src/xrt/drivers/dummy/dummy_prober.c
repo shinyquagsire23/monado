@@ -39,6 +39,7 @@ dummy_prober_destroy(struct xrt_auto_prober *p)
 
 static struct xrt_device *
 dummy_prober_autoprobe(struct xrt_auto_prober *xap,
+                       cJSON *attached_data,
                        bool no_hmds,
                        struct xrt_prober *xp)
 {
@@ -57,6 +58,7 @@ struct xrt_auto_prober *
 dummy_create_auto_prober()
 {
 	struct dummy_prober *dp = U_TYPED_CALLOC(struct dummy_prober);
+	dp->base.name = "Dummy";
 	dp->base.destroy = dummy_prober_destroy;
 	dp->base.lelo_dallas_autoprobe = dummy_prober_autoprobe;
 

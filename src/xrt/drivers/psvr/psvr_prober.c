@@ -70,6 +70,7 @@ psvr_prober_destroy(struct xrt_auto_prober *p)
 
 static struct xrt_device *
 psvr_prober_autoprobe(struct xrt_auto_prober *xap,
+                      cJSON *attached_data,
                       bool no_hmds,
                       struct xrt_prober *xp)
 {
@@ -123,6 +124,7 @@ struct xrt_auto_prober *
 psvr_create_auto_prober(void)
 {
 	struct psvr_prober *ppsvr = U_TYPED_CALLOC(struct psvr_prober);
+	ppsvr->base.name = "PSVR";
 	ppsvr->base.destroy = psvr_prober_destroy;
 	ppsvr->base.lelo_dallas_autoprobe = psvr_prober_autoprobe;
 	ppsvr->enabled = debug_get_bool_option_psvr_enable();

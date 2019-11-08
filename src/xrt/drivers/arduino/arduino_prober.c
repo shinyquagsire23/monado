@@ -68,6 +68,7 @@ arduino_prober_destroy(struct xrt_auto_prober *p)
 
 static struct xrt_device *
 arduino_prober_autoprobe(struct xrt_auto_prober *xap,
+                         cJSON *attached_data,
                          bool no_hmds,
                          struct xrt_prober *xp)
 {
@@ -99,6 +100,7 @@ struct xrt_auto_prober *
 arduino_create_auto_prober()
 {
 	struct arduino_prober *ap = U_TYPED_CALLOC(struct arduino_prober);
+	ap->base.name = "Arduino";
 	ap->base.destroy = arduino_prober_destroy;
 	ap->base.lelo_dallas_autoprobe = arduino_prober_autoprobe;
 	ap->enabled = debug_get_bool_option_arduino_enable();

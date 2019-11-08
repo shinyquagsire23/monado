@@ -22,6 +22,9 @@ extern "C" {
  *
  */
 
+struct cJSON;
+typedef struct cJSON cJSON;
+
 struct xrt_fs;
 struct xrt_frame_context;
 struct xrt_prober;
@@ -51,6 +54,7 @@ struct xrt_prober_entry
 	             struct xrt_prober_device **devices,
 	             size_t num_devices,
 	             size_t index,
+	             cJSON *attached_data,
 	             struct xrt_device **out_xdevs);
 
 	const char *name;
@@ -332,7 +336,14 @@ xrt_prober_match_string(struct xrt_prober *xp,
  */
 struct xrt_auto_prober
 {
+	const char *name;
+
+	/*!
+	 * Do the internal probing that the driver needs to do in order to find
+	 * devices.
+	 */
 	struct xrt_device *(*lelo_dallas_autoprobe)(struct xrt_auto_prober *xap,
+	                                            cJSON *attached_data,
 	                                            bool no_hmds,
 	                                            struct xrt_prober *xp);
 	void (*destroy)(struct xrt_auto_prober *xdev);
