@@ -30,7 +30,7 @@ oxr_sdl2_hack_start(void *hack, struct xrt_prober *xp)
 {}
 
 void
-oxr_sdl2_hack_stop(void *hack)
+oxr_sdl2_hack_stop(void **hack)
 {}
 
 #else
@@ -277,9 +277,9 @@ oxr_sdl2_hack_start(void *hack, struct xrt_prober *xp)
 }
 
 void
-oxr_sdl2_hack_stop(void *hack)
+oxr_sdl2_hack_stop(void **hack_ptr)
 {
-	struct sdl2_program *p = (struct sdl2_program *)hack;
+	struct sdl2_program *p = *(struct sdl2_program **)hack_ptr;
 	if (p == NULL) {
 		return;
 	}
@@ -291,5 +291,6 @@ oxr_sdl2_hack_stop(void *hack)
 	os_thread_helper_destroy(&p->oth);
 
 	free(p);
+	*hack_ptr = NULL;
 }
 #endif

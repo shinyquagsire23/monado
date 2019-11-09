@@ -44,7 +44,7 @@ extern void
 oxr_sdl2_hack_start(void *hack, struct xrt_prober *xp);
 
 extern void
-oxr_sdl2_hack_stop(void *hack);
+oxr_sdl2_hack_stop(void **hack_ptr);
 /* ---- HACK ---- */
 
 static inline int32_t
@@ -72,7 +72,7 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	}
 
 	/* ---- HACK ---- */
-	oxr_sdl2_hack_stop(inst->hack);
+	oxr_sdl2_hack_stop(&inst->hack);
 	/* ---- HACK ---- */
 
 	xrt_prober_destroy(&inst->prober);
