@@ -77,8 +77,10 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 
 	xrt_prober_destroy(&inst->prober);
 
-	time_state_destroy(inst->timekeeping);
-	inst->timekeeping = NULL;
+	if (inst->timekeeping != NULL) {
+		time_state_destroy(inst->timekeeping);
+		inst->timekeeping = NULL;
+	}
 
 	free(inst);
 
@@ -104,6 +106,7 @@ oxr_instance_create(struct oxr_logger *log,
 	struct oxr_instance *inst = NULL;
 	struct xrt_device *xdevs[NUM_XDEVS] = {0};
 	int h_ret, p_ret;
+	XrResult ret;
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
 	                              oxr_instance_destroy, NULL);
@@ -145,23 +148,35 @@ oxr_instance_create(struct oxr_logger *log,
 
 	p_ret = xrt_prober_create(&inst->prober);
 	if (p_ret != 0) {
-		xrt_prober_destroy(&inst->prober);
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Failed to create prober");
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                "Failed to create prober");
+		oxr_instance_destroy(log, &inst->handle);
+		return ret;
 	}
 
 	p_ret = xrt_prober_probe(inst->prober);
 	if (p_ret != 0) {
-		xrt_prober_destroy(&inst->prober);
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Failed to probe device(s)");
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                "Failed to probe device(s)");
+		oxr_instance_destroy(log, &inst->handle);
+		return ret;
 	}
 
 	p_ret = xrt_prober_select(inst->prober, xdevs, NUM_XDEVS);
 	if (p_ret != 0) {
-		xrt_prober_destroy(&inst->prober);
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Failed to select device");
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                "Failed to select device");
+		oxr_instance_destroy(log, &inst->handle);
+		return ret;
+	}
+
+	// Did we find any HMD
+	// @todo Headless with only controllers?
+	if (xdevs[0] == NULL) {
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                "Failed to find any HMD device");
+		oxr_instance_destroy(log, &inst->handle);
+		return ret;
 	}
 
 	struct xrt_device *dev = xdevs[0];
@@ -205,7 +220,11 @@ oxr_instance_create(struct oxr_logger *log,
 		dev->hmd->views[1].fov.angle_down = down_override;
 	}
 
-	oxr_system_fill_in(log, inst, 1, &inst->system, xdevs, NUM_XDEVS);
+	ret = oxr_system_fill_in(log, inst, 1, &inst->system, xdevs, NUM_XDEVS);
+	if (ret != XR_SUCCESS) {
+		oxr_instance_destroy(log, &inst->handle);
+		return ret;
+	}
 
 	inst->timekeeping = time_state_create();
 
