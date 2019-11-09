@@ -26,7 +26,7 @@ extern "C" {
  * @brief Trackers, filters and associated helper code.
  *
  *
- * ### Cordinate system
+ * ### Coordinate system
  *
  * Right now there is no specific convention on where a tracking systems
  * coordinate system is centered, and is something we probably need to figure
@@ -35,8 +35,8 @@ extern "C" {
  *
  * To go a bit further on the PSVR/PSMV case. Think about a idealized start up
  * case, the user is wearing the HMD headset and holding two PSMV controllers.
- * The HMD's cordinate system axis are perfectly parallel with the user
- * cordinate with the user's cordinate system. Where -Z is forward. The user
+ * The HMD's coordinate system axis are perfectly parallel with the user
+ * coordinate with the user's coordinate system. Where -Z is forward. The user
  * holds the controllers with the ball pointing up and the buttons on the back
  * pointing forward. Which if you read the documentation of @ref psmv_device
  * will that the axis of the PSMV are also perfectly aligned with the users
