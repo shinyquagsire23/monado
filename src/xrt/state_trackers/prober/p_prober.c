@@ -12,7 +12,7 @@
 #include "util/u_debug.h"
 #include "p_prober.h"
 
-#ifdef XRT_OS_LINUX
+#ifdef XRT_HAVE_V4L2
 #include "v4l2/v4l2_interface.h"
 #endif
 
@@ -673,7 +673,7 @@ open_video_device(struct xrt_prober *xp,
 {
 	struct prober_device *pdev = (struct prober_device *)xpdev;
 
-#if defined(XRT_OS_LINUX) && defined(XRT_HAVE_V4L2)
+#if defined(XRT_HAVE_V4L2)
 	if (pdev->num_v4ls == 0) {
 		return -1;
 	}

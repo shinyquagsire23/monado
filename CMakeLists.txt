@@ -97,6 +97,10 @@ if(BUILD_WITH_LIBUDEV)
 	add_definitions(-DXRT_HAVE_LIBUDEV)
 endif()
 
+if(BUILD_DRIVER_V4L2)
+	add_definitions(-DXRT_HAVE_V4L2)
+endif()
+
 if(BUILD_WITH_LIBUSB)
 	add_definitions(-DXRT_HAVE_LIBUSB)
 endif()
