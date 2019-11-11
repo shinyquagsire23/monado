@@ -607,7 +607,8 @@ psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t now)
 static void
 update_fusion(struct psmv_device *psmv,
               struct psmv_parsed_sample *sample,
-              timepoint_ns delta_ns)
+              timepoint_ns timestamp_ns,
+              time_duration_ns delta_ns)
 {
 	struct xrt_vec3 mag = {0.0f, 0.0f, 0.0f};
 
@@ -641,24 +642,21 @@ update_fusion(struct psmv_device *psmv,
 
 		xrt_tracked_psmv_push_imu(psmv->ball, delta_ns, &sample);
 	} else {
-		float dt = time_ns_to_s(delta_ns);
 
 #if 0
 		// Super simple fusion.
 		math_quat_integrate_velocity(
 		    &psmv->fusion.rot, &psmv->read.gyro, dt, &psmv->fusion.rot);
 #else
-		imu_fusion_incorporate_gyros(psmv->fusion.fusion, dt,
-		                             &psmv->read.gyro,
-		                             &psmv->fusion.variance.gyro);
-		imu_fusion_incorporate_accelerometer(
-		    psmv->fusion.fusion, 0, &psmv->read.accel,
+		imu_fusion_incorporate_gyros_and_accelerometer(
+		    psmv->fusion.fusion, timestamp_ns, &psmv->read.gyro,
+		    &psmv->fusion.variance.gyro, &psmv->read.accel,
 		    &psmv->fusion.variance.accel);
 		struct xrt_vec3 angvel_dummy;
-		imu_fusion_get_prediction(psmv->fusion.fusion, 0,
+		imu_fusion_get_prediction(psmv->fusion.fusion, timestamp_ns,
 		                          &psmv->fusion.rot, &angvel_dummy);
-		imu_fusion_get_prediction_rotation_vec(psmv->fusion.fusion, 0,
-		                                       &psmv->fusion.rotvec);
+		imu_fusion_get_prediction_rotation_vec(
+		    psmv->fusion.fusion, timestamp_ns, &psmv->fusion.rotvec);
 #endif
 	}
 }
@@ -698,6 +696,7 @@ static void *
 psmv_run_thread(void *ptr)
 {
 	struct psmv_device *psmv = (struct psmv_device *)ptr;
+	//! @todo this should be injected at construction time
 	struct time_state *time = time_state_create();
 
 	union {
@@ -737,11 +736,14 @@ psmv_run_thread(void *ptr)
 		// Process the parsed data.
 		if (num == 2) {
 			// ZCM1
-			update_fusion(psmv, &input.samples[0], delta_ns / 2.0);
-			update_fusion(psmv, &input.samples[1], delta_ns / 2.0);
+			update_fusion(psmv, &input.samples[0],
+			              now_ns - (delta_ns / 2.0),
+			              (delta_ns / 2.0));
+			update_fusion(psmv, &input.samples[1], now_ns,
+			              (delta_ns / 2.0));
 		} else if (num == 1) {
 			// ZCM2
-			update_fusion(psmv, &input.sample, delta_ns);
+			update_fusion(psmv, &input.sample, now_ns, delta_ns);
 		} else {
 			assert(false);
 		}
