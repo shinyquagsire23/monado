@@ -13,8 +13,11 @@
 extern "C" {
 #endif
 
-
+/*!
+ * Opaque type for fusing IMU reports.
+ */
 struct imu_fusion;
+
 /*!
  * Create a struct imu_fusion.
  *
