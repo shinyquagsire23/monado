@@ -85,7 +85,7 @@ public:
 	bool
 	handleAccel(Eigen::Vector3d const &accel, float /* dt */)
 	{
-		auto diff = std::abs(accel.norm() - 9.81);
+		auto diff = std::abs(accel.norm() - MATH_GRAVITY_M_S2);
 		if (!started_) {
 			if (diff > 1.) {
 				// We're moving, don't start it now.
