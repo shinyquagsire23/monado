@@ -143,6 +143,15 @@ namespace {
 			        "resetting filter and IMU fusion!\n");
 			reset_filter_and_imu();
 		}
+		// 7200 deg/sec
+		constexpr double max_rad_per_sec = 20 * EIGEN_PI * 2;
+		if (filter_state.angularVelocity().squaredNorm() >
+		    max_rad_per_sec * max_rad_per_sec) {
+			fprintf(stderr,
+			        "Got excessive angular velocity when filtering "
+			        "IMU - resetting filter and IMU fusion!\n");
+			reset_filter_and_imu();
+		}
 	}
 
 	void
