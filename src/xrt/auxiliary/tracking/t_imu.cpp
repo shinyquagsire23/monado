@@ -21,17 +21,6 @@ struct imu_fusion
 	xrt_fusion::SimpleIMUFusion simple_fusion;
 };
 
-static float
-imu_fusion_get_dt(struct imu_fusion &fusion, uint64_t timestamp_ns)
-{
-	float dt = 0;
-	if (fusion.time_ns != 0) {
-		dt = (timestamp_ns - fusion.time_ns) * 1.e-9;
-	}
-	fusion.time_ns = timestamp_ns;
-	return dt;
-}
-
 /*
  * API functions
  */
@@ -67,9 +56,8 @@ imu_fusion_incorporate_gyros(struct imu_fusion *fusion,
 		assert(variance);
 		assert(timestamp_ns != 0);
 
-		float dt = imu_fusion_get_dt(*fusion, timestamp_ns);
 		fusion->simple_fusion.handleGyro(
-		    map_vec3(*ang_vel).cast<double>(), dt);
+		    map_vec3(*ang_vel).cast<double>(), timestamp_ns);
 		return 0;
 	} catch (...) {
 		assert(false && "Caught exception on incorporate gyros");
@@ -89,9 +77,8 @@ imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
 		assert(variance);
 		assert(timestamp_ns != 0);
 
-		float dt = imu_fusion_get_dt(*fusion, timestamp_ns);
 		fusion->simple_fusion.handleAccel(
-		    map_vec3(*accel).cast<double>(), dt);
+		    map_vec3(*accel).cast<double>(), timestamp_ns);
 		return 0;
 	} catch (...) {
 		assert(false &&
@@ -124,9 +111,8 @@ imu_fusion_get_prediction(struct imu_fusion const *fusion,
 			    fusion->simple_fusion.getQuat().cast<float>();
 			return 0;
 		}
-		float dt = (timestamp_ns - fusion->time_ns) * 1.e-9;
 		Eigen::Quaterniond predicted_quat =
-		    fusion->simple_fusion.getPredictedQuat(dt);
+		    fusion->simple_fusion.getPredictedQuat(timestamp_ns);
 		map_quat(*out_quat) = predicted_quat.cast<float>();
 		return 0;
 
@@ -155,9 +141,9 @@ imu_fusion_get_prediction_rotation_vec(struct imu_fusion const *fusion,
 			    fusion->simple_fusion.getRotationVec()
 			        .cast<float>();
 		} else {
-			float dt = (timestamp_ns - fusion->time_ns) * 1.e-9;
 			Eigen::Quaterniond predicted_quat =
-			    fusion->simple_fusion.getPredictedQuat(dt);
+			    fusion->simple_fusion.getPredictedQuat(
+			        timestamp_ns);
 			map_vec3(*out_rotation_vec) =
 			    flexkalman::util::quat_ln(predicted_quat)
 			        .cast<float>();
@@ -186,11 +172,10 @@ imu_fusion_incorporate_gyros_and_accelerometer(
 		assert(accel_variance);
 		assert(timestamp_ns != 0);
 
-		float dt = imu_fusion_get_dt(*fusion, timestamp_ns);
 		Eigen::Vector3d accelVec = map_vec3(*accel).cast<double>();
 		Eigen::Vector3d angVelVec = map_vec3(*ang_vel).cast<double>();
-		fusion->simple_fusion.handleAccel(accelVec, dt);
-		fusion->simple_fusion.handleGyro(angVelVec, dt);
+		fusion->simple_fusion.handleAccel(accelVec, timestamp_ns);
+		fusion->simple_fusion.handleGyro(angVelVec, timestamp_ns);
 		fusion->simple_fusion.postCorrect();
 		return 0;
 	} catch (...) {

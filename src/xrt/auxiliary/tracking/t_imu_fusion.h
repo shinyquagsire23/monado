@@ -13,6 +13,9 @@
 #error "This header is C++-only."
 #endif
 
+#include "math/m_api.h"
+#include "util/u_time.h"
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
@@ -44,8 +47,13 @@ public:
 	}
 
 	Eigen::Quaterniond
-	getPredictedQuat(float dt) const
+	getPredictedQuat(timepoint_ns timestamp) const
 	{
+		timepoint_ns state_time =
+		    std::max(last_accel_timestamp_, last_gyro_timestamp_);
+		time_duration_ns delta_ns =
+		    (state_time == 0) ? 1e6 : timestamp - state_time;
+		float dt = time_ns_to_s(delta_ns);
 		return quat_ * flexkalman::util::quat_exp(angVel_ * dt * 0.5);
 	}
 
@@ -63,11 +71,22 @@ public:
 	}
 
 	bool
-	handleGyro(Eigen::Vector3d const &gyro, float dt)
+	handleGyro(Eigen::Vector3d const &gyro, timepoint_ns timestamp)
 	{
 		if (!started_) {
 			return false;
 		}
+		time_duration_ns delta_ns =
+		    (last_gyro_timestamp_ == 0)
+		        ? 1e6
+		        : timestamp - last_gyro_timestamp_;
+		if (delta_ns > 1e10) {
+			// Limit integration to 1/10th of a second
+			// Does not affect updating the last gyro timestamp.
+			delta_ns = 1e10;
+		}
+		float dt = time_ns_to_s(delta_ns);
+		last_gyro_timestamp_ = timestamp;
 		Eigen::Vector3d incRot = gyro * dt;
 		// Crude handling of "approximately zero"
 		if (incRot.squaredNorm() < 1.e-8) {
@@ -83,8 +102,12 @@ public:
 	}
 
 	bool
-	handleAccel(Eigen::Vector3d const &accel, float /* dt */)
+	handleAccel(Eigen::Vector3d const &accel, timepoint_ns timestamp)
 	{
+		uint64_t delta_ns = (last_accel_timestamp_ == 0)
+		                        ? 1e6
+		                        : timestamp - last_accel_timestamp_;
+		float dt = time_ns_to_s(delta_ns);
 		auto diff = std::abs(accel.norm() - MATH_GRAVITY_M_S2);
 		if (!started_) {
 			if (diff > 1.) {
@@ -96,8 +119,10 @@ public:
 			started_ = true;
 			quat_ = Eigen::Quaterniond::FromTwoVectors(
 			    accel.normalized(), Eigen::Vector3d::UnitY());
+			last_accel_timestamp_ = timestamp;
 			return true;
 		}
+		last_accel_timestamp_ = timestamp;
 		auto scale = 1. - diff;
 		if (scale <= 0) {
 			// Too far from gravity to be useful/trusted.
@@ -136,6 +161,8 @@ private:
 	Eigen::Vector3d angVel_{Eigen::Vector3d::Zero()};
 	Eigen::Quaterniond quat_{Eigen::Quaterniond::Identity()};
 	double gravity_scale_;
+	uint64_t last_accel_timestamp_{0};
+	uint64_t last_gyro_timestamp_{0};
 	bool started_{false};
 };
 } // namespace xrt_fusion
