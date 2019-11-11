@@ -75,8 +75,6 @@ int
 imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
                                      float dt,
                                      struct xrt_vec3 const *accel,
-                                     float scale,
-                                     struct xrt_vec3 const *reference,
                                      struct xrt_vec3 const *variance);
 
 /*!
@@ -97,8 +95,6 @@ imu_fusion_incorporate_gyros_and_accelerometer(
     struct xrt_vec3 const *ang_vel,
     struct xrt_vec3 const *ang_vel_variance,
     struct xrt_vec3 const *accel,
-    float accel_scale,
-    struct xrt_vec3 const *accel_reference,
     struct xrt_vec3 const *accel_variance);
 
 /*!
