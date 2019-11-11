@@ -158,7 +158,7 @@ namespace pose_exp_map {
         }
 
         void postCorrect() {
-            Eigen::Vector3d ori(orientation(m_state));
+            types::Vector<3> ori = orientation(m_state);
             matrix_exponential_map::avoidSingularities(ori);
             orientation(m_state) = ori;
             m_cacheData.reset(ori);

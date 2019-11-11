@@ -100,9 +100,9 @@ inline types::SquareMatrix<getDimension<StateType>()>
 predictErrorCovariance(StateType const &state, ProcessModelType &processModel,
                        double dt) {
     using StateSquareMatrix = types::SquareMatrix<getDimension<StateType>()>;
-    StateSquareMatrix A = processModel.getStateTransitionMatrix(state, dt);
+    const auto A = processModel.getStateTransitionMatrix(state, dt);
     // FLEXKALMAN_DEBUG_OUTPUT("State transition matrix", A);
-    StateSquareMatrix P = state.errorCovariance();
+    auto &&P = state.errorCovariance();
     /*!
      * @todo Determine if the fact that Q is (at least in one case)
      * symmetrical implies anything else useful performance-wise here or
