@@ -14,6 +14,7 @@
 #include "os/os_threading.h"
 
 #include "math/m_api.h"
+#include "tracking/t_imu.h"
 
 #include "util/u_var.h"
 #include "util/u_time.h"
@@ -488,6 +489,13 @@ struct psmv_device
 		struct
 		{
 			struct xrt_quat rot;
+			struct xrt_vec3 rotvec;
+			struct imu_fusion *fusion;
+			struct
+			{
+				struct xrt_vec3 accel;
+				struct xrt_vec3 gyro;
+			} variance;
 		} fusion;
 	};
 
@@ -511,6 +519,7 @@ struct psmv_device
 		bool control;
 		bool calibration;
 		bool last_frame;
+		bool fusion;
 	} gui;
 };
 
@@ -634,9 +643,23 @@ update_fusion(struct psmv_device *psmv,
 	} else {
 		float dt = time_ns_to_s(delta_ns);
 
+#if 0
 		// Super simple fusion.
 		math_quat_integrate_velocity(
 		    &psmv->fusion.rot, &psmv->read.gyro, dt, &psmv->fusion.rot);
+#else
+		imu_fusion_incorporate_gyros(psmv->fusion.fusion, dt,
+		                             &psmv->read.gyro,
+		                             &psmv->fusion.variance.gyro);
+		imu_fusion_incorporate_accelerometer(
+		    psmv->fusion.fusion, 0, &psmv->read.accel,
+		    &psmv->fusion.variance.accel);
+		struct xrt_vec3 angvel_dummy;
+		imu_fusion_get_prediction(psmv->fusion.fusion, 0,
+		                          &psmv->fusion.rot, &angvel_dummy);
+		imu_fusion_get_prediction_rotation_vec(psmv->fusion.fusion, 0,
+		                                       &psmv->fusion.rotvec);
+#endif
 	}
 }
 
@@ -807,6 +830,9 @@ psmv_device_destroy(struct xrt_device *xdev)
 	// Now that the thread is not running we can destroy the lock.
 	os_mutex_destroy(&psmv->lock);
 
+	// Destroy the IMU fusion.
+	imu_fusion_destroy(psmv->fusion.fusion);
+
 	// Remove the variable tracking.
 	u_var_remove_root(psmv);
 
@@ -942,10 +968,38 @@ psmv_found(struct xrt_prober *xp,
 	psmv->base.set_output = psmv_device_set_output;
 	psmv->base.name = XRT_DEVICE_PSMV;
 	psmv->fusion.rot.w = 1.0f;
+	psmv->fusion.fusion = imu_fusion_create();
 	psmv->pid = devices[index]->product_id;
 	psmv->hid = hid;
 	snprintf(psmv->base.str, XRT_DEVICE_NAME_LEN, "%s",
 	         "PS Move Controller");
+
+
+	// Default variance
+	switch (devices[index]->product_id) {
+	case PSMV_PID_ZCM1:
+		// Note that there is one axis "weird" in each - this model has
+		// 2-axis sensors.
+		psmv->fusion.variance.accel.x = 0.00046343013089f;
+		psmv->fusion.variance.accel.y = 0.000358375519793f;
+		psmv->fusion.variance.accel.z = 0.000358375519793f;
+		psmv->fusion.variance.gyro.x = 7.85920759635965E-05f;
+		psmv->fusion.variance.gyro.y = 7.85920759635965E-05f;
+		psmv->fusion.variance.gyro.z = 0.00051253981244f;
+		break;
+	case PSMV_PID_ZCM2:
+		//! @todo measure!
+		psmv->fusion.variance.accel.x = 0.00046343013089f;
+		psmv->fusion.variance.accel.y = 0.000358375519793f;
+		psmv->fusion.variance.accel.z = 0.000358375519793f;
+		psmv->fusion.variance.gyro.x = 7.85920759635965E-05f;
+		psmv->fusion.variance.gyro.y = 7.85920759635965E-05f;
+		psmv->fusion.variance.gyro.z = 0.00051253981244f;
+		break;
+	default:
+		//! @todo cleanup to not leak
+		return -1;
+	}
 
 	// Setup inputs.
 	SET_INPUT(PS_CLICK);
@@ -1079,6 +1133,11 @@ psmv_found(struct xrt_prober *xp,
 	u_var_add_ro_vec3_i32(psmv, &psmv->last.samples[1].gyro, "last.samples[1].gyro");
 	u_var_add_ro_vec3_f32(psmv, &psmv->read.accel, "read.accel");
 	u_var_add_ro_vec3_f32(psmv, &psmv->read.gyro, "read.gyro");
+	u_var_add_gui_header(psmv, &psmv->gui.fusion, "Fusion");
+	u_var_add_vec3_f32(psmv, &psmv->fusion.variance.accel, "fusion.variance.accel");
+	u_var_add_vec3_f32(psmv, &psmv->fusion.variance.gyro, "fusion.variance.gyro");
+	u_var_add_ro_quat_f32(psmv, &psmv->fusion.rot, "fusion.rot");
+	u_var_add_ro_vec3_f32(psmv, &psmv->fusion.rotvec, "fusion.rotvec");
 	u_var_add_gui_header(psmv, &psmv->gui.control, "Control");
 	u_var_add_rgb_u8(psmv, &psmv->wants.led, "Led");
 	u_var_add_u8(psmv, &psmv->wants.rumble, "Rumble");
