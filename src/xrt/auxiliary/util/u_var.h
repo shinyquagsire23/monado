@@ -70,7 +70,7 @@ typedef void (*u_var_elm_cb)(const char *, enum u_var_kind, void *, void *);
  *
  * ```c
  * // On create
- * u_var_add_root((void*)psmv, "PS Move Controller", psmv_var_updated_callback);
+ * u_var_add_root((void*)psmv, "PS Move Controller", true);
  * u_var_add_rgb_u8((void*)psmv, &psmv->led_color, "LED");
  * u_var_add_bool((void*)psmv, &psmv->print_spew, "Spew");
  * u_var_add_bool((void*)psmv, &psmv->print_debug, "Debug");
@@ -82,13 +82,13 @@ typedef void (*u_var_elm_cb)(const char *, enum u_var_kind, void *, void *);
  * @ingroup aux_util
  */
 void
-u_var_add_root(void *, const char *, bool);
+u_var_add_root(void *root, const char *c_name, bool number);
 
 /*!
  * Remove the root node.
  */
 void
-u_var_remove_root(void *);
+u_var_remove_root(void *root);
 
 /*!
  * Visit all root nodes and their variables.
