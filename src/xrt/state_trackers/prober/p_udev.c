@@ -399,7 +399,7 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 			goto next;
 		}
 
-		// Get USB bus and address to de-dublicate devices.
+		// Get USB bus and address to de-duplicate devices.
 		ret = p_udev_get_usb_hid_address(raw_dev, bus_type, &dev_class,
 		                                 &usb_bus, &usb_addr);
 		if (ret != 0) {
