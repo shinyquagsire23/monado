@@ -54,15 +54,15 @@ imu_fusion_destroy(struct imu_fusion *fusion);
  */
 int
 imu_fusion_incorporate_gyros(struct imu_fusion *fusion,
-                             float dt,
+                             uint64_t timestamp_ns,
                              struct xrt_vec3 const *ang_vel,
                              struct xrt_vec3 const *variance);
 
 /*!
  * Predict and correct fusion with an accelerometer reading.
  *
- * dt should not be zero: If you're receiving accel and gyro data at the same
- * time, call imu_fusion_incorporate_gyros_and_accelerometer() instead.
+ * If you're receiving accel and gyro data at the same time, call
+ * imu_fusion_incorporate_gyros_and_accelerometer() instead.
  *
  * Should not be called simultaneously with any other imu_fusion function.
  *
@@ -73,7 +73,7 @@ imu_fusion_incorporate_gyros(struct imu_fusion *fusion,
  */
 int
 imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
-                                     float dt,
+                                     uint64_t timestamp_ns,
                                      struct xrt_vec3 const *accel,
                                      struct xrt_vec3 const *variance);
 
@@ -91,7 +91,7 @@ imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
 int
 imu_fusion_incorporate_gyros_and_accelerometer(
     struct imu_fusion *fusion,
-    float dt,
+    uint64_t timestamp_ns,
     struct xrt_vec3 const *ang_vel,
     struct xrt_vec3 const *ang_vel_variance,
     struct xrt_vec3 const *accel,
@@ -107,7 +107,7 @@ imu_fusion_incorporate_gyros_and_accelerometer(
  */
 int
 imu_fusion_get_prediction(struct imu_fusion const *fusion,
-                          float dt,
+                          uint64_t timestamp_ns,
                           struct xrt_quat *out_quat,
                           struct xrt_vec3 *out_ang_vel);
 
@@ -123,7 +123,7 @@ imu_fusion_get_prediction(struct imu_fusion const *fusion,
  */
 int
 imu_fusion_get_prediction_rotation_vec(struct imu_fusion const *fusion,
-                                       float dt,
+                                       uint64_t timestamp_ns,
                                        struct xrt_vec3 *out_rotation_vec);
 #ifdef __cplusplus
 }
