@@ -640,7 +640,7 @@ update_fusion(struct psmv_device *psmv,
 		sample.accel_m_s2 = psmv->read.accel;
 		sample.gyro_rad_secs = psmv->read.gyro;
 
-		xrt_tracked_psmv_push_imu(psmv->ball, delta_ns, &sample);
+		xrt_tracked_psmv_push_imu(psmv->ball, timestamp_ns, &sample);
 	} else {
 
 #if 0

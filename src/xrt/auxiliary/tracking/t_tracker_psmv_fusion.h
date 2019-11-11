@@ -33,11 +33,11 @@ public:
 
 	virtual void
 	process_imu_data(
-	    time_duration_ns delta_ns,
+	    timepoint_ns timestamp_ns,
 	    const struct xrt_tracking_sample *sample,
 	    const struct xrt_vec3 *orientation_variance_optional) = 0;
 	virtual void
-	process_3d_vision_data(time_duration_ns delta_ns,
+	process_3d_vision_data(timepoint_ns timestamp_ns,
 	                       const struct xrt_vec3 *position,
 	                       const struct xrt_vec3 *variance_optional,
 	                       const struct xrt_vec3 *lever_arm_optional,

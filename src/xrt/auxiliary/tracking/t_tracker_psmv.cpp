@@ -449,7 +449,7 @@ get_pose(TrackerPSMV &t,
 
 static void
 imu_data(TrackerPSMV &t,
-         time_duration_ns delta_ns,
+         timepoint_ns timestamp_ns,
          struct xrt_tracking_sample *sample)
 {
 	os_thread_helper_lock(&t.oth);
@@ -459,7 +459,7 @@ imu_data(TrackerPSMV &t,
 		os_thread_helper_unlock(&t.oth);
 		return;
 	}
-	t.filter->process_imu_data(delta_ns, sample, NULL);
+	t.filter->process_imu_data(timestamp_ns, sample, NULL);
 
 	os_thread_helper_unlock(&t.oth);
 }
@@ -497,11 +497,11 @@ break_apart(TrackerPSMV &t)
 
 extern "C" void
 t_psmv_push_imu(struct xrt_tracked_psmv *xtmv,
-                time_duration_ns delta_ns,
+                timepoint_ns timestamp_ns,
                 struct xrt_tracking_sample *sample)
 {
 	auto &t = *container_of(xtmv, TrackerPSMV, base);
-	imu_data(t, delta_ns, sample);
+	imu_data(t, timestamp_ns, sample);
 }
 
 extern "C" void

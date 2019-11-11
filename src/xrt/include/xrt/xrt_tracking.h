@@ -115,7 +115,7 @@ struct xrt_tracked_psmv
 	 * Push a IMU sample into the tracking system.
 	 */
 	void (*push_imu)(struct xrt_tracked_psmv *,
-	                 time_duration_ns delta_ns,
+	                 timepoint_ns timestamp_ns,
 	                 struct xrt_tracking_sample *sample);
 
 	/*!
@@ -192,10 +192,10 @@ xrt_tracked_psmv_get_tracked_pose(struct xrt_tracked_psmv *psmv,
 
 static inline void
 xrt_tracked_psmv_push_imu(struct xrt_tracked_psmv *psmv,
-                          time_duration_ns delta_ns,
+                          timepoint_ns timestamp_ns,
                           struct xrt_tracking_sample *sample)
 {
-	psmv->push_imu(psmv, delta_ns, sample);
+	psmv->push_imu(psmv, timestamp_ns, sample);
 }
 
 static inline void

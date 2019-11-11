@@ -50,13 +50,13 @@ namespace {
 		clear_position_tracked_flag() override;
 
 		void
-		process_imu_data(time_duration_ns delta_ns,
+		process_imu_data(timepoint_ns timestamp_ns,
 		                 const struct xrt_tracking_sample *sample,
 		                 const struct xrt_vec3
 		                     *orientation_variance_optional) override;
 		void
 		process_3d_vision_data(
-		    time_duration_ns delta_ns,
+		    timepoint_ns timestamp_ns,
 		    const struct xrt_vec3 *position,
 		    const struct xrt_vec3 *variance_optional,
 		    const struct xrt_vec3 *lever_arm_optional,
@@ -78,6 +78,7 @@ namespace {
 
 		xrt_fusion::SimpleIMUFusion imu;
 
+		timepoint_ns filter_time_ns{0};
 		bool tracked{false};
 		TrackingInfo orientation_state;
 		TrackingInfo position_state;
@@ -108,26 +109,30 @@ namespace {
 
 	void
 	PSMVFusion::process_imu_data(
-	    time_duration_ns delta_ns,
+	    timepoint_ns timestamp_ns,
 	    const struct xrt_tracking_sample *sample,
 	    const struct xrt_vec3 *orientation_variance_optional)
 	{
 
-		float dt = time_ns_to_s(delta_ns);
 		Eigen::Vector3d variance = Eigen::Vector3d::Constant(0.01);
 		if (orientation_variance_optional) {
 			variance = map_vec3(*orientation_variance_optional)
 			               .cast<double>();
 		}
 		imu.handleAccel(map_vec3(sample->accel_m_s2).cast<double>(),
-		                dt);
+		                timestamp_ns);
 		imu.handleGyro(map_vec3(sample->gyro_rad_secs).cast<double>(),
-		               dt);
+		               timestamp_ns);
 		imu.postCorrect();
 
 		//! @todo use better measurements instead of the above "simple
 		//! fusion"
-		flexkalman::predict(filter_state, process_model, dt);
+		if (filter_time_ns != 0 && filter_time_ns != timestamp_ns) {
+			float dt = time_ns_to_s(timestamp_ns - filter_time_ns);
+			assert(dt > 0);
+			flexkalman::predict(filter_state, process_model, dt);
+		}
+		filter_time_ns = timestamp_ns;
 		auto meas = flexkalman::AbsoluteOrientationMeasurement{
 		    // Must rotate by 180 to align
 		    Eigen::Quaterniond(
@@ -156,7 +161,7 @@ namespace {
 
 	void
 	PSMVFusion::process_3d_vision_data(
-	    time_duration_ns delta_ns,
+	    timepoint_ns timestamp_ns,
 	    const struct xrt_vec3 *position,
 	    const struct xrt_vec3 *variance_optional,
 	    const struct xrt_vec3 *lever_arm_optional,
@@ -209,12 +214,12 @@ namespace {
 		// Clear to sane values
 		U_ZERO(out_relation);
 		out_relation->pose.orientation.w = 1;
-		if (!tracked) {
+		if (!tracked || filter_time_ns == 0) {
 			return;
 		}
-		auto predicted_state = flexkalman::getPrediction(
-		    filter_state, process_model,
-		    /*! @todo compute dt here */ 0.024);
+		float dt = time_ns_to_s(when_ns - filter_time_ns);
+		auto predicted_state =
+		    flexkalman::getPrediction(filter_state, process_model, dt);
 
 		map_vec3(out_relation->pose.position) =
 		    predicted_state.position().cast<float>();
