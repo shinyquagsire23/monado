@@ -13,6 +13,8 @@
 #error "This header is C++-only."
 #endif
 
+#include "t_lowpass.h"
+#include "t_lowpass_vector.h"
 #include "math/m_api.h"
 #include "util/u_time.h"
 
@@ -101,6 +103,16 @@ public:
 		return true;
 	}
 
+	/*!
+	 * Returns a coefficient to correct the scale of the accelerometer
+	 * reading.
+	 */
+	double
+	getAccelScaleFactor() const
+	{
+		return MATH_GRAVITY_M_S2 / gravity_filter_.getState();
+	}
+
 	bool
 	handleAccel(Eigen::Vector3d const &accel, timepoint_ns timestamp)
 	{
@@ -108,8 +120,8 @@ public:
 		                        ? 1e6
 		                        : timestamp - last_accel_timestamp_;
 		float dt = time_ns_to_s(delta_ns);
-		auto diff = std::abs(accel.norm() - MATH_GRAVITY_M_S2);
 		if (!started_) {
+			auto diff = std::abs(accel.norm() - MATH_GRAVITY_M_S2);
 			if (diff > 1.) {
 				// We're moving, don't start it now.
 				return false;
@@ -119,23 +131,33 @@ public:
 			started_ = true;
 			quat_ = Eigen::Quaterniond::FromTwoVectors(
 			    accel.normalized(), Eigen::Vector3d::UnitY());
+			accel_filter_.addSample(accel, timestamp);
+			gravity_filter_.addSample(accel.norm(), timestamp);
 			last_accel_timestamp_ = timestamp;
 			return true;
 		}
 		last_accel_timestamp_ = timestamp;
+		accel_filter_.addSample(accel, timestamp);
+		gravity_filter_.addSample(accel.norm(), timestamp);
+
+		// Adjust scale of accelerometer
+		Eigen::Vector3d adjusted_accel =
+		    accel_filter_.getState() * getAccelScaleFactor();
+		auto diff = std::abs(adjusted_accel.norm() - MATH_GRAVITY_M_S2);
 		auto scale = 1. - diff;
 		if (scale <= 0) {
 			// Too far from gravity to be useful/trusted.
 			return false;
 		}
+
 		// This should match the global gravity vector if the rotation
 		// is right.
 		Eigen::Vector3d measuredGravityDirection =
-		    (quat_ * accel).normalized();
+		    (quat_ * adjusted_accel).normalized();
 		auto incremental = Eigen::Quaterniond::FromTwoVectors(
 		    measuredGravityDirection, Eigen::Vector3d::UnitY());
 
-		double alpha = scale * gravity_scale_;
+		double alpha = scale * gravity_scale_ * dt;
 		Eigen::Quaterniond scaledIncrementalQuat =
 		    Eigen::Quaterniond::Identity().slerp(alpha, incremental);
 
@@ -161,6 +183,9 @@ private:
 	Eigen::Vector3d angVel_{Eigen::Vector3d::Zero()};
 	Eigen::Quaterniond quat_{Eigen::Quaterniond::Identity()};
 	double gravity_scale_;
+	LowPassIIRVectorFilter<3, double> accel_filter_{
+	    200 /* hz cutoff frequency */};
+	LowPassIIRFilter<double> gravity_filter_{1 /* hz cutoff frequency */};
 	uint64_t last_accel_timestamp_{0};
 	uint64_t last_gyro_timestamp_{0};
 	bool started_{false};
