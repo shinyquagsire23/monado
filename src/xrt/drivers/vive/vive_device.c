@@ -26,8 +26,7 @@
 #include "vive_device.h"
 #include "vive_protocol.h"
 
-#define VIVE_CLOCK_FREQ 48e6      // 48 MHz
-#define XRT_GRAVITY_EARTH 9.80665 // m/s²
+#define VIVE_CLOCK_FREQ 48e6 // 48 MHz
 
 DEBUG_GET_ONCE_BOOL_OPTION(vive_spew, "VIVE_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(vive_debug, "VIVE_PRINT_DEBUG", false)
@@ -520,7 +519,7 @@ vive_sensors_get_imu_range_report(struct vive_device *d)
 	d->imu.gyro_range = M_PI / 180.0 * (250 << report.gyro_range);
 	VIVE_DEBUG(d, "Vive gyroscope range     %f", d->imu.gyro_range);
 
-	d->imu.acc_range = XRT_GRAVITY_EARTH * (2 << report.accel_range);
+	d->imu.acc_range = MATH_GRAVITY_M_S2 * (2 << report.accel_range);
 	VIVE_DEBUG(d, "Vive accelerometer range %f", d->imu.acc_range);
 
 	return 0;
