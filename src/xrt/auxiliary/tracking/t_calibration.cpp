@@ -196,7 +196,7 @@ make_gui_str(class Calibration &c)
  * Simple helper to draw a bounding rect.
  */
 static void
-draw_rect(cv::Mat &rgb, cv::Rect rect, cv::Scalar colour)
+draw_rect(cv::Mat &rgb, const cv::Rect &rect, const cv::Scalar &colour)
 {
 	cv::rectangle(rgb, rect.tl(), rect.br(), colour);
 }
