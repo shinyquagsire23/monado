@@ -41,6 +41,8 @@ public:
 	//! Have we received a new IMU sample.
 	bool has_imu = false;
 
+	timepoint_ns last_imu{0};
+
 	struct
 	{
 		struct xrt_vec3 pos = {};
@@ -124,7 +126,7 @@ get_pose(TrackerPSVR &t,
 
 static void
 imu_data(TrackerPSVR &t,
-         time_duration_ns delta_ns,
+         timepoint_ns timestamp_ns,
          struct xrt_tracking_sample *sample)
 {
 	os_thread_helper_lock(&t.oth);
@@ -134,11 +136,14 @@ imu_data(TrackerPSVR &t,
 		os_thread_helper_unlock(&t.oth);
 		return;
 	}
-
-	float dt = time_ns_to_s(delta_ns);
-	// Super simple fusion.
-	math_quat_integrate_velocity(&t.fusion.rot, &sample->gyro_rad_secs, dt,
-	                             &t.fusion.rot);
+	if (t.last_imu != 0) {
+		time_duration_ns delta_ns = timestamp_ns - t.last_imu;
+		float dt = time_ns_to_s(delta_ns);
+		// Super simple fusion.
+		math_quat_integrate_velocity(
+		    &t.fusion.rot, &sample->gyro_rad_secs, dt, &t.fusion.rot);
+	}
+	t.last_imu = timestamp_ns;
 
 	os_thread_helper_unlock(&t.oth);
 }
@@ -177,11 +182,11 @@ break_apart(TrackerPSVR &t)
 
 extern "C" void
 t_psvr_push_imu(struct xrt_tracked_psvr *xtmv,
-                time_duration_ns delta_ns,
+                timepoint_ns timestamp_ns,
                 struct xrt_tracking_sample *sample)
 {
 	auto &t = *container_of(xtmv, TrackerPSVR, base);
-	imu_data(t, delta_ns, sample);
+	imu_data(t, timestamp_ns, sample);
 }
 
 extern "C" void

@@ -59,6 +59,9 @@ struct psvr_device
 
 	struct xrt_tracked_psvr *tracker;
 
+	struct time_state *timekeeping;
+	timepoint_ns last_sensor_time;
+
 	struct psvr_parsed_sensor last;
 
 	struct
@@ -300,7 +303,8 @@ read_sample_and_apply_calibration(struct psvr_device *psvr,
 static void
 update_fusion(struct psvr_device *psvr,
               struct psvr_parsed_sample *sample,
-              uint32_t tick_delta)
+              uint32_t tick_delta,
+              timepoint_ns timestamp_ns)
 {
 	struct xrt_vec3 mag = {0.0f, 0.0f, 0.0f};
 	(void)mag;
@@ -309,14 +313,11 @@ update_fusion(struct psvr_device *psvr,
 	                                  &psvr->read.gyro);
 
 	if (psvr->tracker != NULL) {
-		time_duration_ns delta_ns =
-		    tick_delta * (1000000000.0 / PSVR_TICKS_PER_SECOND);
-
 		struct xrt_tracking_sample sample;
 		sample.accel_m_s2 = psvr->read.accel;
 		sample.gyro_rad_secs = psvr->read.gyro;
 
-		xrt_tracked_psvr_push_imu(psvr->tracker, delta_ns, &sample);
+		xrt_tracked_psvr_push_imu(psvr->tracker, timestamp_ns, &sample);
 	} else {
 		float delta_secs = tick_delta / PSVR_TICKS_PER_SECOND;
 
@@ -355,6 +356,7 @@ handle_tracker_sensor_msg(struct psvr_device *psvr,
                           unsigned char *buffer,
                           int size)
 {
+	timepoint_ns now = time_state_get_now_and_update(psvr->timekeeping);
 	uint32_t last_sample_tick = psvr->last.samples[1].tick;
 
 	if (!psvr_parse_sensor_packet(&psvr->last, buffer, size)) {
@@ -382,16 +384,19 @@ handle_tracker_sensor_msg(struct psvr_device *psvr,
 			tick_delta = 500;
 		}
 	}
-
-	// Update the fusion with first sample.
-	update_fusion(psvr, &s->samples[0], tick_delta);
-
 	// New delta between the two samples.
-	tick_delta = calc_delta_and_handle_rollover(s->samples[1].tick,
-	                                            s->samples[0].tick);
+	uint32_t tick_delta2 = calc_delta_and_handle_rollover(
+	    s->samples[1].tick, s->samples[0].tick);
+
+	time_duration_ns inter_sample_duration_ns =
+	    tick_delta2 * PSVR_NS_PER_TICK;
+	// Update the fusion with first sample.
+	update_fusion(psvr, &s->samples[0], tick_delta,
+	              now - inter_sample_duration_ns);
 
 	// Update the fusion with second sample.
-	update_fusion(psvr, &s->samples[1], tick_delta);
+	update_fusion(psvr, &s->samples[1], tick_delta2, now);
+	psvr->last_sensor_time = now;
 }
 
 static void
@@ -837,6 +842,8 @@ teardown(struct psvr_device *psvr)
 	// Stop the variable tracking.
 	u_var_remove_root(psvr);
 
+	time_state_destroy(psvr->timekeeping);
+
 	// Includes null check, and sets to null.
 	xrt_tracked_psvr_destroy(&psvr->tracker);
 
@@ -1002,6 +1009,9 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 
 		u_distortion_mesh_from_panotools(&vals, &vals, psvr->base.hmd);
 	}
+
+	//! @todo inject this, don't create it
+	psvr->timekeeping = time_state_create();
 
 #if 0
 	psvr->fusion = imu_fusion_create();
