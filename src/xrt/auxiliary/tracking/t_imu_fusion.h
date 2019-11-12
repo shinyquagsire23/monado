@@ -167,6 +167,18 @@ public:
 		return true;
 	}
 
+	/*!
+	 * Use this to obtain the residual, world-space acceleration not
+	 * associated with gravity, after incorporating a measurement.
+	 */
+	Eigen::Vector3d
+	getCorrectedWorldAccel(Eigen::Vector3d const &accel) const
+	{
+		Eigen::Vector3d adjusted_accel = accel * getAccelScaleFactor();
+		return (quat_ * adjusted_accel) -
+		       (Eigen::Vector3d::UnitY() * MATH_GRAVITY_M_S2);
+	}
+
 	Eigen::Matrix3d
 	getRotationMatrix() const
 	{
