@@ -11,6 +11,7 @@
 #include "t_imu.h"
 #include "t_imu_fusion.h"
 #include "math/m_eigen_interop.h"
+#include "util/u_misc.h"
 
 #include <memory>
 
@@ -69,13 +70,17 @@ int
 imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
                                      uint64_t timestamp_ns,
                                      struct xrt_vec3 const *accel,
-                                     struct xrt_vec3 const *accel_variance)
+                                     struct xrt_vec3 const *accel_variance,
+                                     struct xrt_vec3 *out_world_accel)
 {
 	try {
 		assert(fusion);
 		assert(accel);
 		assert(accel_variance);
 		assert(timestamp_ns != 0);
+		if (out_world_accel != NULL) {
+			U_ZERO(out_world_accel);
+		}
 
 		fusion->simple_fusion.handleAccel(
 		    map_vec3(*accel).cast<double>(), timestamp_ns);
@@ -162,7 +167,8 @@ imu_fusion_incorporate_gyros_and_accelerometer(
     struct xrt_vec3 const *ang_vel,
     struct xrt_vec3 const *ang_vel_variance,
     struct xrt_vec3 const *accel,
-    struct xrt_vec3 const *accel_variance)
+    struct xrt_vec3 const *accel_variance,
+    struct xrt_vec3 *out_world_accel)
 {
 	try {
 		assert(fusion);
@@ -171,6 +177,9 @@ imu_fusion_incorporate_gyros_and_accelerometer(
 		assert(accel);
 		assert(accel_variance);
 		assert(timestamp_ns != 0);
+		if (out_world_accel != NULL) {
+			U_ZERO(out_world_accel);
+		}
 
 		Eigen::Vector3d accelVec = map_vec3(*accel).cast<double>();
 		Eigen::Vector3d angVelVec = map_vec3(*ang_vel).cast<double>();

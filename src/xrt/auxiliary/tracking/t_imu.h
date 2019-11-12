@@ -84,6 +84,8 @@ imu_fusion_incorporate_gyros(struct imu_fusion *fusion,
  * assumed to be +y when aligned with the world.
  * @param accel_variance The variance of the accelerometer measurements: part of
  * the characteristics of the IMU being used.
+ * @param out_world_accel Optional output parameter: will contain the
+ * non-gravity acceleration in the world frame.
  *
  * @public @memberof imu_fusion
  * @ingroup aux_tracking
@@ -92,7 +94,8 @@ int
 imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
                                      uint64_t timestamp_ns,
                                      struct xrt_vec3 const *accel,
-                                     struct xrt_vec3 const *accel_variance);
+                                     struct xrt_vec3 const *accel_variance,
+                                     struct xrt_vec3 *out_world_accel);
 
 /*!
  * Predict and correct fusion with a simultaneous accelerometer and gyroscope
@@ -112,6 +115,8 @@ imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
  * assumed to be +y when aligned with the world.
  * @param accel_variance The variance of the accelerometer measurements: part of
  * the characteristics of the IMU being used.
+ * @param out_world_accel Optional output parameter: will contain the
+ * non-gravity acceleration in the world frame.
  *
  * @public @memberof imu_fusion
  * @ingroup aux_tracking
@@ -123,7 +128,8 @@ imu_fusion_incorporate_gyros_and_accelerometer(
     struct xrt_vec3 const *ang_vel,
     struct xrt_vec3 const *ang_vel_variance,
     struct xrt_vec3 const *accel,
-    struct xrt_vec3 const *accel_variance);
+    struct xrt_vec3 const *accel_variance,
+    struct xrt_vec3 *out_world_accel);
 
 /*!
  * Get the predicted state. Does not advance the internal state clock.

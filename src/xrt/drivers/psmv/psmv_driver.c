@@ -651,7 +651,7 @@ update_fusion(struct psmv_device *psmv,
 		imu_fusion_incorporate_gyros_and_accelerometer(
 		    psmv->fusion.fusion, timestamp_ns, &psmv->read.gyro,
 		    &psmv->fusion.variance.gyro, &psmv->read.accel,
-		    &psmv->fusion.variance.accel);
+		    &psmv->fusion.variance.accel, NULL);
 		struct xrt_vec3 angvel_dummy;
 		imu_fusion_get_prediction(psmv->fusion.fusion, timestamp_ns,
 		                          &psmv->fusion.rot, &angvel_dummy);
