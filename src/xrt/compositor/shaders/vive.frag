@@ -53,9 +53,11 @@ void main()
 	      texture(tex_sampler, tc_g).g,
 	      texture(tex_sampler, tc_b).b);
 
+#if 0
 	if (r2 > ubo.undistort_r2_cutoff[i]) {
 		color *= 0.125;
 	}
+#endif
 
 	out_color = vec4(color, 1.0);
 }
