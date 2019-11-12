@@ -78,12 +78,14 @@ imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
 		assert(accel);
 		assert(accel_variance);
 		assert(timestamp_ns != 0);
+		Eigen::Vector3d accelVec = map_vec3(*accel).cast<double>();
+		fusion->simple_fusion.handleAccel(accelVec, timestamp_ns);
 		if (out_world_accel != NULL) {
-			U_ZERO(out_world_accel);
+			Eigen::Vector3d worldAccel =
+			    fusion->simple_fusion.getCorrectedWorldAccel(
+			        accelVec);
+			map_vec3(*out_world_accel) = worldAccel.cast<float>();
 		}
-
-		fusion->simple_fusion.handleAccel(
-		    map_vec3(*accel).cast<double>(), timestamp_ns);
 		return 0;
 	} catch (...) {
 		assert(false &&
@@ -177,15 +179,18 @@ imu_fusion_incorporate_gyros_and_accelerometer(
 		assert(accel);
 		assert(accel_variance);
 		assert(timestamp_ns != 0);
-		if (out_world_accel != NULL) {
-			U_ZERO(out_world_accel);
-		}
 
 		Eigen::Vector3d accelVec = map_vec3(*accel).cast<double>();
 		Eigen::Vector3d angVelVec = map_vec3(*ang_vel).cast<double>();
 		fusion->simple_fusion.handleAccel(accelVec, timestamp_ns);
 		fusion->simple_fusion.handleGyro(angVelVec, timestamp_ns);
 		fusion->simple_fusion.postCorrect();
+		if (out_world_accel != NULL) {
+			Eigen::Vector3d worldAccel =
+			    fusion->simple_fusion.getCorrectedWorldAccel(
+			        accelVec);
+			map_vec3(*out_world_accel) = worldAccel.cast<float>();
+		}
 		return 0;
 	} catch (...) {
 		assert(
