@@ -48,12 +48,12 @@ int
 imu_fusion_incorporate_gyros(struct imu_fusion *fusion,
                              uint64_t timestamp_ns,
                              struct xrt_vec3 const *ang_vel,
-                             struct xrt_vec3 const *variance)
+                             struct xrt_vec3 const *ang_vel_variance)
 {
 	try {
 		assert(fusion);
 		assert(ang_vel);
-		assert(variance);
+		assert(ang_vel_variance);
 		assert(timestamp_ns != 0);
 
 		fusion->simple_fusion.handleGyro(
@@ -69,12 +69,12 @@ int
 imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
                                      uint64_t timestamp_ns,
                                      struct xrt_vec3 const *accel,
-                                     struct xrt_vec3 const *variance)
+                                     struct xrt_vec3 const *accel_variance)
 {
 	try {
 		assert(fusion);
 		assert(accel);
-		assert(variance);
+		assert(accel_variance);
 		assert(timestamp_ns != 0);
 
 		fusion->simple_fusion.handleAccel(
