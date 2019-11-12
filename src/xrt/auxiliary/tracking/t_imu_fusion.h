@@ -95,7 +95,7 @@ public:
 			// Initially, just set it to totally trust gravity.
 			started_ = true;
 			quat_ = Eigen::Quaterniond::FromTwoVectors(
-			    Eigen::Vector3d::UnitY(), accel.normalized());
+			    accel.normalized(), Eigen::Vector3d::UnitY());
 			return true;
 		}
 		auto scale = 1. - diff;
