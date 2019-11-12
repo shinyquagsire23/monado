@@ -158,7 +158,7 @@ math_quat_rotate(const struct xrt_quat *left,
 void
 math_quat_integrate_velocity(const struct xrt_quat *quat,
                              const struct xrt_vec3 *ang_vel,
-                             const float dt,
+                             float dt,
                              struct xrt_quat *result);
 
 /*!
@@ -177,7 +177,7 @@ math_quat_integrate_velocity(const struct xrt_quat *quat,
 void
 math_quat_finite_difference(const struct xrt_quat *quat0,
                             const struct xrt_quat *quat1,
-                            const float dt,
+                            float dt,
                             struct xrt_vec3 *out_ang_vel);
 
 /*
