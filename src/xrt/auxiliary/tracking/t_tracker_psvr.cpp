@@ -181,28 +181,28 @@ break_apart(TrackerPSVR &t)
  */
 
 extern "C" void
-t_psvr_push_imu(struct xrt_tracked_psvr *xtmv,
+t_psvr_push_imu(struct xrt_tracked_psvr *xtvr,
                 timepoint_ns timestamp_ns,
                 struct xrt_tracking_sample *sample)
 {
-	auto &t = *container_of(xtmv, TrackerPSVR, base);
+	auto &t = *container_of(xtvr, TrackerPSVR, base);
 	imu_data(t, timestamp_ns, sample);
 }
 
 extern "C" void
-t_psvr_get_tracked_pose(struct xrt_tracked_psvr *xtmv,
+t_psvr_get_tracked_pose(struct xrt_tracked_psvr *xtvr,
                         struct time_state *timestate,
                         timepoint_ns when_ns,
                         struct xrt_space_relation *out_relation)
 {
-	auto &t = *container_of(xtmv, TrackerPSVR, base);
+	auto &t = *container_of(xtvr, TrackerPSVR, base);
 	get_pose(t, timestate, when_ns, out_relation);
 }
 
 extern "C" void
-t_psvr_fake_destroy(struct xrt_tracked_psvr *xtmv)
+t_psvr_fake_destroy(struct xrt_tracked_psvr *xtvr)
 {
-	auto &t = *container_of(xtmv, TrackerPSVR, base);
+	auto &t = *container_of(xtvr, TrackerPSVR, base);
 	(void)t;
 	// Not the real destroy function
 }
@@ -247,9 +247,9 @@ t_psvr_run(void *ptr)
  */
 
 extern "C" int
-t_psvr_start(struct xrt_tracked_psvr *xtmv)
+t_psvr_start(struct xrt_tracked_psvr *xtvr)
 {
-	auto &t = *container_of(xtmv, TrackerPSVR, base);
+	auto &t = *container_of(xtvr, TrackerPSVR, base);
 	int ret;
 
 	ret = os_thread_helper_start(&t.oth, t_psvr_run, &t);
@@ -262,7 +262,7 @@ t_psvr_start(struct xrt_tracked_psvr *xtmv)
 
 extern "C" int
 t_psvr_create(struct xrt_frame_context *xfctx,
-              struct xrt_tracked_psvr **out_xtmv,
+              struct xrt_tracked_psvr **out_xtvr,
               struct xrt_frame_sink **out_sink)
 {
 	fprintf(stderr, "%s\n", __func__);
@@ -297,7 +297,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 	xrt_frame_context_add(xfctx, &t.node);
 
 	*out_sink = &t.sink;
-	*out_xtmv = &t.base;
+	*out_xtvr = &t.base;
 
 	return 0;
 }
