@@ -588,6 +588,9 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	// Does a null-ptr check.
 	xrt_comp_destroy(&sess->compositor);
 
+	u_hashmap_int_destroy(&sess->act_sets);
+	u_hashmap_int_destroy(&sess->sources);
+
 	free(sess);
 
 	return XR_SUCCESS;

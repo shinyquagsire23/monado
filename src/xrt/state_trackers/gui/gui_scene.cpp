@@ -91,6 +91,10 @@ gui_scene_manager_init(struct gui_program *p)
 extern "C" void
 gui_scene_manager_destroy(struct gui_program *p)
 {
+	for (auto scene : p->gsm->scenes) {
+		scene->destroy(scene, p);
+	}
+
 	delete p->gsm;
 	p->gsm = NULL;
 }

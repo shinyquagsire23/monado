@@ -98,7 +98,9 @@ oxr_swapchain_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	struct oxr_swapchain *sc = (struct oxr_swapchain *)hb;
 
-	return sc->destroy(log, sc);
+	XrResult ret = sc->destroy(log, sc);
+	free(sc);
+	return ret;
 }
 
 XrResult

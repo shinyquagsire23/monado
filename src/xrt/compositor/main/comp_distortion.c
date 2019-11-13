@@ -9,6 +9,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
@@ -238,6 +239,8 @@ comp_distortion_destroy(struct comp_distortion *d)
 
 	vk->vkDestroyPipeline(vk->device, d->pipeline, NULL);
 	vk->vkDestroyPipelineLayout(vk->device, d->pipeline_layout, NULL);
+
+	free(d);
 }
 
 static void

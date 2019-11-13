@@ -216,12 +216,18 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 }
 
 static void
+reset_binding_keys(struct oxr_binding *binding)
+{
+	free(binding->keys);
+	binding->keys = NULL;
+	binding->num_keys = 0;
+}
+
+static void
 reset_all_keys(struct oxr_binding *bindings, size_t num_bindings)
 {
 	for (size_t x = 0; x < num_bindings; x++) {
-		free(bindings[x].keys);
-		bindings[x].keys = NULL;
-		bindings[x].num_keys = 0;
+		reset_binding_keys(&bindings[x]);
 	}
 }
 
@@ -331,6 +337,8 @@ oxr_binding_destroy_all(struct oxr_logger *log, struct oxr_instance *inst)
 
 		for (size_t y = 0; y < p->num_bindings; y++) {
 			struct oxr_binding *b = &p->bindings[y];
+
+			reset_binding_keys(b);
 			free(b->paths);
 			free(b->inputs);
 			free(b->outputs);
@@ -346,6 +354,8 @@ oxr_binding_destroy_all(struct oxr_logger *log, struct oxr_instance *inst)
 		free(p->bindings);
 		p->bindings = NULL;
 		p->num_bindings = 0;
+
+		free(p);
 	}
 
 	free(inst->profiles);

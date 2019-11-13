@@ -22,6 +22,20 @@
 		oxr_log(log, " Handle Lifecycle: " __VA_ARGS__);               \
 	}
 
+// Variation of HANDLE_LIFECYCLE_LOG() to wrap a handle free() which might
+// potentially free the instance (in which logger info is stored).
+#define HANDLE_LIFECYCLE_LOG_SCOPED_BEGIN(log)                                 \
+	{                                                                      \
+		const bool _log_lifecycle_verbose =                            \
+		    log->inst != NULL && log->inst->lifecycle_verbose;
+#define HANDLE_LIFECYCLE_LOG_SCOPED_END                                        \
+	}                                                                      \
+	(void)0
+#define HANDLE_LIFECYCLE_LOG_SCOPED(log, ...)                                  \
+	if (_log_lifecycle_verbose) {                                          \
+		oxr_log(log, " Handle Lifecycle: " __VA_ARGS__);               \
+	}
+
 
 const char *
 oxr_handle_state_to_string(enum oxr_handle_state state)
@@ -171,17 +185,23 @@ oxr_handle_do_destroy(struct oxr_logger *log,
 		}
 	}
 
-	/* Destroy self */
-	HANDLE_LIFECYCLE_LOG(
-	    log, "[%d: destroying %p] Calling handle object destructor", level,
-	    (void *)hb);
-	hb->state = OXR_HANDLE_STATE_DESTROYED;
-	XrResult result = hb->destroy(log, hb);
-	if (result != XR_SUCCESS) {
-		return result;
+	/* Might destroy instance, which log needs, so use secured variant */
+	HANDLE_LIFECYCLE_LOG_SCOPED_BEGIN(log)
+	{
+		/* Destroy self */
+		HANDLE_LIFECYCLE_LOG_SCOPED(
+		    log, "[%d: destroying %p] Calling handle object destructor",
+		    level, (void *)hb);
+		hb->state = OXR_HANDLE_STATE_DESTROYED;
+		XrResult result = hb->destroy(log, hb);
+		if (result != XR_SUCCESS) {
+			return result;
+		}
+		HANDLE_LIFECYCLE_LOG_SCOPED(log, "r%d: destroying %p] Done",
+		                            level, (void *)hb);
 	}
-	HANDLE_LIFECYCLE_LOG(log, "[%d: destroying %p] Done", level,
-	                     (void *)hb);
+	HANDLE_LIFECYCLE_LOG_SCOPED_END;
+
 	return XR_SUCCESS;
 }
 
@@ -191,13 +211,20 @@ oxr_handle_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	assert(log != NULL);
 	assert(hb != NULL);
 
-	HANDLE_LIFECYCLE_LOG(
-	    log, "[~: destroying %p] oxr_handle_destroy starting", (void *)hb);
+	/* Might destroy instance, which log needs, so use secured variant */
+	HANDLE_LIFECYCLE_LOG_SCOPED_BEGIN(log)
+	{
+		HANDLE_LIFECYCLE_LOG_SCOPED(
+		    log, "[~: destroying %p] oxr_handle_destroy starting",
+		    (void *)hb);
 
-	XrResult result = oxr_handle_do_destroy(log, hb, 0);
+		XrResult result = oxr_handle_do_destroy(log, hb, 0);
 
-	HANDLE_LIFECYCLE_LOG(
-	    log, "[~: destroying %p] oxr_handle_destroy finished", (void *)hb);
+		HANDLE_LIFECYCLE_LOG_SCOPED(
+		    log, "[~: destroying %p] oxr_handle_destroy finished",
+		    (void *)hb);
 
-	return result;
+		return result;
+	}
+	HANDLE_LIFECYCLE_LOG_SCOPED_END;
 }

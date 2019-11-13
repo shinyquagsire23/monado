@@ -152,8 +152,9 @@ oxr_poll_event(struct oxr_logger *log,
 		return XR_EVENT_UNAVAILABLE;
 	}
 
+	XrResult ret = event->result;
 	memcpy(eventData, oxr_event_extra(event), event->length);
 	free(event);
 
-	return event->result;
+	return ret;
 }
