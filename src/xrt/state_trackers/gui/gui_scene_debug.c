@@ -87,7 +87,7 @@ on_sink_var(const char *name, void *ptr, struct gui_program *p)
 		int w = tex->w / (tex->half ? 2 : 1);
 		int h = tex->h / (tex->half ? 2 : 1);
 
-		ImVec2 size = {w, h};
+		ImVec2 size = {(float)w, (float)h};
 		ImVec2 uv0 = {0, 0};
 		ImVec2 uv1 = {1, 1};
 		ImVec4 white = {1, 1, 1, 1};
@@ -124,7 +124,7 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 	ImGuiInputTextFlags ro_i_flags = ImGuiInputTextFlags_ReadOnly;
 
 	switch (kind) {
-	case U_VAR_KIND_BOOL: igCheckbox(name, ptr); break;
+	case U_VAR_KIND_BOOL: igCheckbox(name, (bool *)ptr); break;
 	case U_VAR_KIND_RGB_F32:
 		igColorEdit3(name, (float *)ptr, flags);
 		igSameLine(0.0f, 4.0f);
@@ -132,9 +132,9 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 		break;
 	case U_VAR_KIND_RGB_U8:;
 		struct xrt_colour_rgb_f32 tmp;
-		conv_rgb_u8_to_f32(ptr, &tmp);
+		conv_rgb_u8_to_f32((struct xrt_colour_rgb_u8 *)ptr, &tmp);
 		on_elem(name, U_VAR_KIND_RGB_F32, &tmp, priv);
-		conv_rgb_f32_to_u8(&tmp, ptr);
+		conv_rgb_f32_to_u8(&tmp, (struct xrt_colour_rgb_u8 *)ptr);
 		break;
 	case U_VAR_KIND_U8:
 		igDragScalar(name, ImGuiDataType_U8, ptr, drag_speed, NULL,

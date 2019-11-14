@@ -64,7 +64,7 @@ draw_texture(struct gui_ogl_texture *tex, bool header)
 	int w = tex->w / (tex->half ? 2 : 1);
 	int h = tex->h / (tex->half ? 2 : 1);
 
-	ImVec2 size = {w, h};
+	ImVec2 size = {(float)w, (float)h};
 	ImVec2 uv0 = {0, 0};
 	ImVec2 uv1 = {1, 1};
 	ImVec4 white = {1, 1, 1, 1};
