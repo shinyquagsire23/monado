@@ -507,7 +507,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_TRIGGER_VALUE,
                 XRT_INPUT_HYDRA_TRIGGER_VALUE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -522,7 +522,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_MOVE_CLICK,
                 XRT_INPUT_HYDRA_MIDDLE_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -537,7 +537,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_BODY_CENTER_POSE,
                 XRT_INPUT_HYDRA_POSE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -552,7 +552,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_BALL_TIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -565,7 +565,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
         .outputs =
             {
                 XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION,
-                0,
+                (enum xrt_output_name)0,
             },
     },
     {
@@ -580,7 +580,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_TRIGGER_VALUE,
                 XRT_INPUT_HYDRA_TRIGGER_VALUE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -595,7 +595,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_MOVE_CLICK,
                 XRT_INPUT_HYDRA_MIDDLE_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -610,7 +610,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_BODY_CENTER_POSE,
                 XRT_INPUT_HYDRA_POSE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -625,7 +625,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_BALL_TIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -638,7 +638,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
         .outputs =
             {
                 XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION,
-                0,
+                (enum xrt_output_name)0,
             },
     },
 };
@@ -669,7 +669,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
                 XRT_INPUT_PSMV_TRIGGER_VALUE,
                 XRT_INPUT_HYDRA_TRIGGER_VALUE,
 #endif
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -684,7 +684,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
             },
         .inputs =
             {
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -697,7 +697,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
             },
         .inputs =
             {
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -709,7 +709,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
             },
         .inputs =
             {
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -726,7 +726,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
                 XRT_INPUT_PSMV_BODY_CENTER_POSE,
                 XRT_INPUT_HYDRA_POSE,
 #endif
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -743,7 +743,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
                 XRT_INPUT_PSMV_BALL_TIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
 #endif
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -760,7 +760,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
                 XRT_INPUT_PSMV_TRIGGER_VALUE,
                 XRT_INPUT_HYDRA_TRIGGER_VALUE,
 #endif
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -775,7 +775,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
             },
         .inputs =
             {
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -788,7 +788,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
             },
         .inputs =
             {
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -800,7 +800,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
             },
         .inputs =
             {
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -817,7 +817,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
                 XRT_INPUT_PSMV_BODY_CENTER_POSE,
                 XRT_INPUT_HYDRA_POSE,
 #endif
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -834,7 +834,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
                 XRT_INPUT_PSMV_BALL_TIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
 #endif
-                0,
+                (enum xrt_input_name)0,
             },
     },
 };
@@ -862,7 +862,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_PS_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -876,7 +876,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_MOVE_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -890,7 +890,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_START_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -904,7 +904,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_SELECT_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -918,7 +918,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_SQUARE_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -932,7 +932,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_CROSS_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -946,7 +946,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_CIRCLE_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -960,7 +960,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_TRIANGLE_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -974,7 +974,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_TRIGGER_VALUE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -988,7 +988,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_BODY_CENTER_POSE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1002,7 +1002,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_BALL_CENTER_POSE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1016,7 +1016,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_BALL_TIP_POSE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1029,7 +1029,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .outputs =
             {
                 XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION,
-                0,
+                (enum xrt_output_name)0,
             },
     },
     {
@@ -1043,7 +1043,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_PS_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1057,7 +1057,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_MOVE_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1071,7 +1071,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_START_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1085,7 +1085,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_SELECT_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1099,7 +1099,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_SQUARE_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1113,7 +1113,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_CROSS_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1127,7 +1127,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_CIRCLE_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1141,7 +1141,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_TRIANGLE_CLICK,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1155,7 +1155,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_TRIGGER_VALUE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1169,7 +1169,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_BODY_CENTER_POSE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1183,7 +1183,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_BALL_CENTER_POSE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1197,7 +1197,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .inputs =
             {
                 XRT_INPUT_PSMV_BALL_TIP_POSE,
-                0,
+                (enum xrt_input_name)0,
             },
     },
     {
@@ -1210,7 +1210,7 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .outputs =
             {
                 XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION,
-                0,
+                (enum xrt_output_name)0,
             },
     },
 };
