@@ -923,7 +923,7 @@ v4l2_fs_stream_run(void *ptr)
 		xrt_frame_reference(&xf, &vf->base);
 		uint8_t *data = vf->mem;
 
-		//! @todo Sequense number and timestamp.
+		//! @todo Sequence number and timestamp.
 		xf->width = desc->base.width;
 		xf->height = desc->base.height;
 		xf->format = desc->base.format;
