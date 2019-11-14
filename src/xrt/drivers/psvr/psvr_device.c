@@ -218,7 +218,7 @@ send_to_control(struct psvr_device *psvr, const uint8_t *data, size_t size)
 }
 
 static int
-send_request_data(struct psvr_device *psvr, int id, int num)
+send_request_data(struct psvr_device *psvr, uint8_t id, uint8_t num)
 {
 	const uint8_t data[12] = {
 	    0x81, 0x00, 0xaa, 0x08, id, num, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -250,16 +250,16 @@ read_sample_and_apply_calibration(struct psvr_device *psvr,
 
 	// Convert so that for a perfect IMU 1.0 is one G.
 	struct xrt_vec3 accel = {
-	    raw_accel.x / 16384.0,
-	    raw_accel.y / 16384.0,
-	    raw_accel.z / 16384.0,
+	    raw_accel.x / 16384.0f,
+	    raw_accel.y / 16384.0f,
+	    raw_accel.z / 16384.0f,
 	};
 
 	// What unit is this?
 	struct xrt_vec3 gyro = {
-	    raw_gyro.x * 0.00105,
-	    raw_gyro.y * 0.00105,
-	    raw_gyro.z * 0.00105,
+	    raw_gyro.x * 0.00105f,
+	    raw_gyro.y * 0.00105f,
+	    raw_gyro.z * 0.00105f,
 	};
 
 	float ax = 2.0 / (psvr->calibration.accel_pos_x.x -
