@@ -840,13 +840,15 @@ vive_sensors_read_config(struct vive_device *d)
 
 	unsigned char *config_json = U_TYPED_ARRAY_CALLOC(unsigned char, 32768);
 
-	z_stream strm = {.zalloc = Z_NULL,
-	                 .zfree = Z_NULL,
-	                 .opaque = Z_NULL,
-	                 .avail_in = count,
-	                 .next_in = config_z,
-	                 .avail_out = 32768,
-	                 .next_out = config_json};
+	z_stream strm = {
+	    .next_in = config_z,
+	    .avail_in = count,
+	    .next_out = config_json,
+	    .avail_out = 32768,
+	    .zalloc = Z_NULL,
+	    .zfree = Z_NULL,
+	    .opaque = Z_NULL,
+	};
 
 	ret = inflateInit(&strm);
 	if (ret != Z_OK) {
