@@ -249,6 +249,8 @@ struct t_calibration_raw_data
 	double l_intrinsics[3][3];
 	//! Left camera distortion
 	double l_distortion[5];
+	//! Left fisheye camera distortion
+	double l_distortion_fisheye[4];
 	//! Left rectification transform (rotation matrix).
 	double l_rotation[3][3];
 	//! Left projection matrix in the new (rectified) coordinate systems.
@@ -258,17 +260,12 @@ struct t_calibration_raw_data
 	double r_intrinsics[3][3];
 	//! Right camera distortion
 	double r_distortion[5];
+	//! Right fisheye camera distortion
+	double r_distortion_fisheye[4];
 	//! Right rectification transform (rotation matrix).
 	double r_rotation[3][3];
 	//! Right projection matrix in the new (rectified) coordinate systems.
 	double r_projection[3][4];
-
-#if 0
-	double r_translation[3];        // [0 x 0] [1 x 3]??
-	double r_distortion_fisheye[4]; // [0 x 0] [4 x 1]??
-	double l_translation[3];        // [0 x 0] [1 x 3]??
-	double l_distortion_fisheye[4]; // [0 x 0] [4 x 1]??
-#endif
 };
 
 /*!

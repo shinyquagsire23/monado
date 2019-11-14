@@ -35,13 +35,11 @@ public:
 	cv::Mat l_intrinsics_mat = {};
 	cv::Mat l_distortion_mat = {};
 	cv::Mat l_distortion_fisheye_mat = {};
-	cv::Mat l_translation_mat = {};
 	cv::Mat l_rotation_mat = {};
 	cv::Mat l_projection_mat = {};
 	cv::Mat r_intrinsics_mat = {};
 	cv::Mat r_distortion_mat = {};
 	cv::Mat r_distortion_fisheye_mat = {};
-	cv::Mat r_translation_mat = {};
 	cv::Mat r_rotation_mat = {};
 	cv::Mat r_projection_mat = {};
 
@@ -57,11 +55,13 @@ public:
 
 		l_intrinsics_mat = cv::Mat(3, 3, CV_64F, &l_intrinsics[0][0]);
 		l_distortion_mat = cv::Mat(1, 5, CV_64F, &l_distortion[0]);
+		l_distortion_fisheye_mat = cv::Mat(1, 4, CV_64F, &l_distortion_fisheye[0]);
 		l_rotation_mat = cv::Mat(3, 3, CV_64F, &l_rotation[0][0]);
 		l_projection_mat = cv::Mat(3, 4, CV_64F, &l_projection[0][0]);
 
 		r_intrinsics_mat = cv::Mat(3, 3, CV_64F, &r_intrinsics[0][0]);
 		r_distortion_mat = cv::Mat(1, 5, CV_64F, &r_distortion[0]);
+		r_distortion_fisheye_mat = cv::Mat(1, 4, CV_64F, &r_distortion_fisheye[0]);
 		r_rotation_mat = cv::Mat(3, 3, CV_64F, &r_rotation[0][0]);
 		r_projection_mat = cv::Mat(3, 4, CV_64F, &r_projection[0][0]);
 		// clang-format on
@@ -76,14 +76,12 @@ public:
 		       camera_fundamental_mat.size() == cv::Size(3, 3) &&
 		       l_intrinsics_mat.size() == cv::Size(3, 3) &&
 		       l_distortion_mat.size() == cv::Size(5, 1) &&
-		       l_distortion_fisheye_mat.size() == cv::Size(0, 0) &&
-		       l_translation_mat.size() == cv::Size(0, 0) &&
+		       l_distortion_fisheye_mat.size() == cv::Size(4, 1) &&
 		       l_rotation_mat.size() == cv::Size(3, 3) &&
 		       l_projection_mat.size() == cv::Size(4, 3) &&
 		       r_intrinsics_mat.size() == cv::Size(3, 3) &&
 		       r_distortion_mat.size() == cv::Size(5, 1) &&
-		       r_distortion_fisheye_mat.size() == cv::Size(0, 0) &&
-		       r_translation_mat.size() == cv::Size(0, 0) &&
+		       r_distortion_fisheye_mat.size() == cv::Size(4, 1) &&
 		       r_rotation_mat.size() == cv::Size(3, 3) &&
 		       r_projection_mat.size() == cv::Size(4, 3);
 	}

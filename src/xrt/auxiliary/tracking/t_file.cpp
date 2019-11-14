@@ -61,6 +61,10 @@ t_file_load_stereo_calibration_v1(FILE *calib_file,
 
 	assert(raw.isDataStorageValid());
 
+	// Dummies
+	cv::Mat l_translation_dummy;
+	cv::Mat r_translation_dummy;
+
 	//! @todo Load from file.
 	bool use_fisheye = false;
 
@@ -74,8 +78,8 @@ t_file_load_stereo_calibration_v1(FILE *calib_file,
 	read_cv_mat(calib_file, &raw.r_distortion_fisheye_mat, "r_distortion_fisheye");
 	read_cv_mat(calib_file, &raw.l_rotation_mat, "l_rotation"); // 3 x 3
 	read_cv_mat(calib_file, &raw.r_rotation_mat, "r_rotation"); // 3 x 3
-	read_cv_mat(calib_file, &raw.l_translation_mat, "l_translation"); // empty
-	read_cv_mat(calib_file, &raw.r_translation_mat, "r_translation"); // empty
+	read_cv_mat(calib_file, &l_translation_dummy, "l_translation"); // empty
+	read_cv_mat(calib_file, &r_translation_dummy, "r_translation"); // empty
 	read_cv_mat(calib_file, &raw.l_projection_mat, "l_projection"); // 3 x 4
 	read_cv_mat(calib_file, &raw.r_projection_mat, "r_projection"); // 3 x 4
 	read_cv_mat(calib_file, &raw.disparity_to_depth_mat, "disparity_to_depth");  // 4 x 4
@@ -213,6 +217,10 @@ t_file_save_raw_data(FILE *calib_file, struct t_calibration_raw_data *raw_data)
 {
 	CalibrationRawData &raw = *(CalibrationRawData *)raw_data;
 
+	cv::Mat l_translation_dummy;
+	cv::Mat r_translation_dummy;
+
+
 	write_cv_mat(calib_file, &raw.l_intrinsics_mat);
 	write_cv_mat(calib_file, &raw.r_intrinsics_mat);
 	write_cv_mat(calib_file, &raw.l_distortion_mat);
@@ -221,8 +229,8 @@ t_file_save_raw_data(FILE *calib_file, struct t_calibration_raw_data *raw_data)
 	write_cv_mat(calib_file, &raw.r_distortion_fisheye_mat);
 	write_cv_mat(calib_file, &raw.l_rotation_mat);
 	write_cv_mat(calib_file, &raw.r_rotation_mat);
-	write_cv_mat(calib_file, &raw.l_translation_mat);
-	write_cv_mat(calib_file, &raw.r_translation_mat);
+	write_cv_mat(calib_file, &l_translation_dummy);
+	write_cv_mat(calib_file, &r_translation_dummy);
 	write_cv_mat(calib_file, &raw.l_projection_mat);
 	write_cv_mat(calib_file, &raw.r_projection_mat);
 	write_cv_mat(calib_file, &raw.disparity_to_depth_mat);
@@ -343,6 +351,10 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 		printf("Failed to read mat header: '%i' '%s'\n", (int)read,
 		       name);
 		return false;
+	}
+
+	if (header[1] == 0 && header[2] == 0) {
+		return true;
 	}
 
 	//! @todo We may have written things other than CV_32F and CV_64F.
