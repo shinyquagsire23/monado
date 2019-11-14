@@ -1712,8 +1712,12 @@ psmv_parse_input(struct psmv_device *psmv,
 	U_ZERO(input);
 
 	switch (psmv->pid) {
-	case PSMV_PID_ZCM1: return psmv_parse_input_zcm1(psmv, data, input);
-	case PSMV_PID_ZCM2: return psmv_parse_input_zcm2(psmv, data, input);
+	case PSMV_PID_ZCM1:
+		return psmv_parse_input_zcm1(
+		    psmv, (struct psmv_input_zcm1 *)data, input);
+	case PSMV_PID_ZCM2:
+		return psmv_parse_input_zcm2(
+		    psmv, (struct psmv_input_zcm2 *)data, input);
 	default: return 0;
 	}
 }
