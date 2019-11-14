@@ -439,12 +439,11 @@ static struct v4l2_source_descriptor *
 v4l2_add_descriptor(struct v4l2_fs *vid)
 {
 	uint32_t index = vid->num_descriptors++;
-	size_t new_size =
-	    vid->num_descriptors * sizeof(struct v4l2_source_descriptor);
-	vid->descriptors = realloc(vid->descriptors, new_size);
+	U_ARRAY_REALLOC_OR_FREE(vid->descriptors, struct v4l2_source_descriptor,
+	                        vid->num_descriptors);
 
 	struct v4l2_source_descriptor *desc = &vid->descriptors[index];
-	memset(desc, 0, sizeof(*desc));
+	U_ZERO(desc);
 
 	return desc;
 }
@@ -499,7 +498,7 @@ v4l2_list_modes_size(struct v4l2_fs *vid,
 		return;
 	}
 
-	enum xrt_format format = 0;
+	enum xrt_format format = (enum xrt_format)0;
 	switch (interval.pixel_format) {
 	case V4L2_PIX_FMT_YUYV: format = XRT_FORMAT_YUV422; break;
 	case V4L2_PIX_FMT_MJPEG: format = XRT_FORMAT_MJPEG; break;
@@ -921,7 +920,7 @@ v4l2_fs_stream_run(void *ptr)
 		struct xrt_frame *xf = NULL;
 
 		xrt_frame_reference(&xf, &vf->base);
-		uint8_t *data = vf->mem;
+		uint8_t *data = (uint8_t *)vf->mem;
 
 		//! @todo Sequence number and timestamp.
 		xf->width = desc->base.width;
