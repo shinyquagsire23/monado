@@ -376,7 +376,7 @@ vive_mainboard_run_thread(void *ptr)
 	while (vive_mainboard_read_one_msg(d, buffer, sizeof(buffer))) {
 		if (buffer[0] == VIVE_MAINBOARD_STATUS_REPORT_ID) {
 			struct vive_mainboard_status_report *report =
-			    (void *)buffer;
+			    (struct vive_mainboard_status_report *)buffer;
 			if (64 != sizeof(*report))
 				VIVE_ERROR(
 				    "Mainboard status report has invalid "
