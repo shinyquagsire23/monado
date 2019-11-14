@@ -17,9 +17,14 @@
 
 struct imu_fusion
 {
+public:
 	uint64_t time_ns{0};
 
 	xrt_fusion::SimpleIMUFusion simple_fusion;
+
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /*
