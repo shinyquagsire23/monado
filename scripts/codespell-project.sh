@@ -28,7 +28,7 @@ SCRIPTDIR=$(cd $(dirname $0) && pwd)
         find \
                 *.md \
                 doc \
-                scripts/*.sh \
+                scripts/format-*.sh \
                 src/xrt \
                 \( -name "*.c" \
                 -o -name "*.cpp" \
@@ -37,6 +37,7 @@ SCRIPTDIR=$(cd $(dirname $0) && pwd)
                 -o -name "*.md" \
                 -o -name "CMakeLists.txt" \) \
                 -exec codespell \
+                        --exclude-file=${SCRIPTDIR}/monado-codespell.exclude \
                     --ignore-words-list="${IGNORE_WORDS_LIST}" \
                     -w \
                     "$@" \
