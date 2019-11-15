@@ -175,6 +175,17 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	uint32_t num_images = 3;
 
+	if (array_size > 1) {
+		const char *version_str = (const char *)glGetString(GL_VERSION);
+		if (strstr(version_str, "OpenGL ES 2.") == version_str) {
+			fprintf(stderr,
+			        "%s - only one array layer is supported with "
+			        "OpenGL ES 2\n",
+			        __func__);
+			return NULL;
+		}
+	}
+
 	int64_t vk_format = gl_format_to_vk(format);
 	if (vk_format == 0) {
 		fprintf(stderr, "%s - Invalid format!\n", __func__);
