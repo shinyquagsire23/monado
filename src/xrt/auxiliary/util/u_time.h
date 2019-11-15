@@ -93,7 +93,7 @@ time_state_create();
  * @ingroup aux_util
  */
 void
-time_state_destroy(struct time_state *state);
+time_state_destroy(struct time_state **state);
 
 /*!
  * Get the current time as an integer timestamp.

@@ -77,10 +77,8 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 
 	xrt_prober_destroy(&inst->prober);
 
-	if (inst->timekeeping != NULL) {
-		time_state_destroy(inst->timekeeping);
-		inst->timekeeping = NULL;
-	}
+	// Does null checking and sets to null.
+	time_state_destroy(&inst->timekeeping);
 
 	free(inst);
 

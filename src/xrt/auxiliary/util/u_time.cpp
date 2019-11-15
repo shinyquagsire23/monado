@@ -52,7 +52,14 @@ time_state_create()
 extern "C" void
 time_state_destroy(struct time_state **state_ptr)
 {
+	struct time_state *state = *state_ptr;
+
+	if (state == NULL) {
+		return;
+	}
+
 	delete state;
+	*state_ptr = NULL;
 }
 
 extern "C" timepoint_ns

@@ -897,11 +897,10 @@ teardown(struct psvr_device *psvr)
 	/*
 	 * This needs to happen last because when waiting for
 	 * device control changes we can get IMU update packets.
+	 *
+	 * Does null checking and setting of null.
 	 */
-	if (psvr->timekeeping != NULL) {
-		time_state_destroy(psvr->timekeeping);
-		psvr->timekeeping = NULL;
-	}
+	time_state_destroy(&psvr->timekeeping);
 }
 
 

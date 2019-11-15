@@ -712,7 +712,8 @@ psmv_run_thread(void *ptr)
 
 	// Now wait for a package to sync up, it's discarded but that's okay.
 	if (!psmv_read_one_packet(psmv, data.buffer, sizeof(data))) {
-		time_state_destroy(time);
+		// Does null checking and sets to null.
+		time_state_destroy(&time);
 		return NULL;
 	}
 
@@ -752,7 +753,8 @@ psmv_run_thread(void *ptr)
 		os_mutex_unlock(&psmv->lock);
 	}
 
-	time_state_destroy(time);
+	// Does null checking and sets to null.
+	time_state_destroy(&time);
 
 	return NULL;
 }
