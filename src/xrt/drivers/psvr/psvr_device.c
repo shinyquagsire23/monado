@@ -875,8 +875,6 @@ teardown(struct psvr_device *psvr)
 	// Stop the variable tracking.
 	u_var_remove_root(psvr);
 
-	time_state_destroy(psvr->timekeeping);
-
 	// Includes null check, and sets to null.
 	xrt_tracked_psvr_destroy(&psvr->tracker);
 
@@ -894,6 +892,15 @@ teardown(struct psvr_device *psvr)
 	if (psvr->hmd_handle != NULL) {
 		hid_close(psvr->hmd_handle);
 		psvr->hmd_handle = NULL;
+	}
+
+	/*
+	 * This needs to happen last because when waiting for
+	 * device control changes we can get IMU update packets.
+	 */
+	if (psvr->timekeeping != NULL) {
+		time_state_destroy(psvr->timekeeping);
+		psvr->timekeeping = NULL;
 	}
 }
 
