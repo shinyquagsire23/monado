@@ -59,9 +59,11 @@ enum psvr_status_bits
 #define PSVR_PKG_DEVICE_NAME 0x80
 #define PSVR_PKG_CALIBRATION 0x86
 #define PSVR_PKG_0xA0 0xA0
+#define PSVR_PKG_0x82 0x82
 
 #define PSVR_GET_DATA_ID_DEVICE_NAME 0x80
 #define PSVR_GET_DATA_ID_CALIBRATION 0x86
+#define PSVR_GET_DATA_ID_0x82 0x82
 
 
 /*

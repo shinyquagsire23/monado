@@ -483,6 +483,31 @@ handle_calibration_msg(struct psvr_device *psvr,
 }
 
 static void
+handle_control_0x82(struct psvr_device *psvr, unsigned char *buffer, int size)
+{
+	if (size < 4) {
+		return;
+	}
+
+	if (size < (int)sizeof(float) * 6) {
+		PSVR_DEBUG(psvr, "%02x %02x %02x %02x", buffer[0], buffer[1],
+		           buffer[2], buffer[3]);
+	}
+
+	float *f = (float *)buffer;
+	int *i = (int *)buffer;
+
+	PSVR_DEBUG(psvr,
+	           "%02x %02x %02x %02x\n"
+	           "%+f %+f %+f %+f %+f\n"
+	           "0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n"
+	           "% 10i % 10i % 10i % 10i % 10i",
+	           buffer[0], buffer[1], buffer[2], buffer[3], f[1], f[2], f[3],
+	           f[4], f[5], i[1], i[2], i[3], i[4], i[5], i[1], i[2], i[3],
+	           i[4], i[5]);
+}
+
+static void
 handle_control_0xA0(struct psvr_device *psvr, unsigned char *buffer, int size)
 {
 	if (size < 4) {
@@ -533,10 +558,12 @@ read_control_packets(struct psvr_device *psvr)
 			handle_device_name_msg(psvr, buffer, size);
 		} else if (buffer[0] == PSVR_PKG_CALIBRATION) {
 			handle_calibration_msg(psvr, buffer, size);
+		} else if (buffer[0] == PSVR_PKG_0x82) {
+			handle_control_0x82(psvr, buffer, size);
 		} else if (buffer[0] == PSVR_PKG_0xA0) {
 			handle_control_0xA0(psvr, buffer, size);
 		} else {
-			PSVR_DEBUG(psvr, "Got report, 0x%02x", buffer[0]);
+			PSVR_ERROR(psvr, "Got report, 0x%02x", buffer[0]);
 		}
 
 	} while (true);
@@ -553,6 +580,12 @@ read_calibration_data(struct psvr_device *psvr)
 {
 	// Request the device name.
 	int ret = send_request_data(psvr, PSVR_GET_DATA_ID_DEVICE_NAME, 0);
+	if (ret < 0) {
+		return ret;
+	}
+
+	// Request unknown data 0x82.
+	ret = send_request_data(psvr, PSVR_GET_DATA_ID_0x82, 0);
 	if (ret < 0) {
 		return ret;
 	}
