@@ -41,7 +41,7 @@ MatchingTimePoints::getTimestamp(time_state const &prevState)
 	return prevState.lastTime + duration_cast<nanoseconds>(elapsed).count();
 }
 
-struct time_state *
+extern "C" struct time_state *
 time_state_create()
 {
 
@@ -49,13 +49,13 @@ time_state_create()
 	return state;
 }
 
-void
-time_state_destroy(struct time_state *state)
+extern "C" void
+time_state_destroy(struct time_state **state_ptr)
 {
 	delete state;
 }
 
-timepoint_ns
+extern "C" timepoint_ns
 time_state_get_now(struct time_state const *state)
 {
 	assert(state != NULL);
@@ -64,7 +64,7 @@ time_state_get_now(struct time_state const *state)
 	return now.getTimestamp(*state);
 }
 
-timepoint_ns
+extern "C" timepoint_ns
 time_state_get_now_and_update(struct time_state *state)
 {
 	assert(state != NULL);
@@ -79,7 +79,7 @@ time_state_get_now_and_update(struct time_state *state)
 	return timestamp;
 }
 
-void
+extern "C" void
 time_state_to_timespec(struct time_state const *state,
                        timepoint_ns timestamp,
                        struct timespec *out)
@@ -104,7 +104,7 @@ time_state_to_timespec(struct time_state const *state,
 }
 
 
-timepoint_ns
+extern "C" timepoint_ns
 time_state_from_timespec(struct time_state const *state,
                          const struct timespec *timespecTime)
 {
