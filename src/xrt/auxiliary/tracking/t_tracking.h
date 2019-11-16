@@ -82,7 +82,9 @@ struct xrt_tracked_psvr;
  */
 struct t_settings_stereo
 {
+	//! Source image size before undistortion.
 	struct xrt_size image_size_pixels;
+	//! Target image size after undistortion.
 	struct xrt_size new_image_size_pixels;
 
 	//! Disparity and position to camera world coordinates.
@@ -94,7 +96,9 @@ struct t_settings_stereo
  */
 struct t_settings_stereo_raw
 {
+	//! Source image size before undistortion.
 	struct xrt_size image_size_pixels;
+	//! Target image size after undistortion.
 	struct xrt_size new_image_size_pixels;
 
 	//! Translation between the two cameras, in the stereo pair.
