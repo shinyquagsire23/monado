@@ -49,15 +49,15 @@ extern "C" {
  */
 
 /*!
- * @ingroup aux_tracking
- * @{
- */
-
-/*!
  * @dir auxiliary/tracking
  * @ingroup aux
  *
  * @brief Trackers, filters and associated helper code.
+ */
+
+/*!
+ * @ingroup aux_tracking
+ * @{
  */
 
 
