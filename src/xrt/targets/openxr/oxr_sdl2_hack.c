@@ -62,14 +62,8 @@ struct gui_imgui
 };
 
 static void
-sdl2_init(struct sdl2_program *p)
+sdl2_window_init(struct sdl2_program *p)
 {
-	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
-		fprintf(stderr, "Failed to init SDL2!\n");
-		return;
-	}
-	p->sdl_initialized = true;
-
 	const char *title = "Monado! ☺";
 	int x = SDL_WINDOWPOS_UNDEFINED;
 	int y = SDL_WINDOWPOS_UNDEFINED;
@@ -233,7 +227,7 @@ oxr_sdl2_hack_run_thread(void *ptr)
 {
 	struct sdl2_program *p = (struct sdl2_program *)ptr;
 
-	sdl2_init(p);
+	sdl2_window_init(p);
 
 	sdl2_loop(p);
 
@@ -272,6 +266,13 @@ oxr_sdl2_hack_start(void *hack, struct xrt_prober *xp)
 	}
 
 	p->base.xp = xp;
+
+
+	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+		fprintf(stderr, "Failed to init SDL2!\n");
+		return;
+	}
+	p->sdl_initialized = true;
 
 	(void)os_thread_helper_start(&p->oth, oxr_sdl2_hack_run_thread, p);
 }
