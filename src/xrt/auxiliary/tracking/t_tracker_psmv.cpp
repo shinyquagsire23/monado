@@ -553,7 +553,7 @@ t_psmv_start(struct xrt_tracked_psmv *xtmv)
 extern "C" int
 t_psmv_create(struct xrt_frame_context *xfctx,
               struct xrt_colour_rgb_f32 *rgb,
-              struct t_calibration_data *data,
+              struct t_settings_stereo *data,
               struct xrt_tracked_psmv **out_xtmv,
               struct xrt_frame_sink **out_sink)
 {

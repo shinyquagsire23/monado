@@ -47,7 +47,7 @@ struct p_factory
 
 #ifdef XRT_HAVE_OPENCV
 	//! Data to be given to the trackers.
-	struct t_calibration_data *data;
+	struct t_settings_stereo *data;
 
 	//! Keep track of how many psmv trackers that has been handed out.
 	size_t num_xtmv;
@@ -118,7 +118,7 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	}
 
 	// Now load the calibration data.
-	if (!t_file_load_stereo_calibration_v1_hack(&fact->data)) {
+	if (!t_settings_stereo_load_v1_hack(&fact->data)) {
 		return;
 	}
 
@@ -278,7 +278,7 @@ p_tracking_teardown(struct prober *p)
 	 *
 	 * Does null checking and sets to null.
 	 */
-	t_calibration_data_free(&fact->data);
+	t_settings_stereo_free(&fact->data);
 #endif
 
 	free(fact);

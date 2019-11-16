@@ -69,7 +69,88 @@ extern "C" {
 
 struct xrt_tracked_psmv;
 struct xrt_tracked_psvr;
-struct t_calibration_data;
+
+
+/*
+ *
+ * Calibration data.
+ *
+ */
+
+/*!
+ * Refined calibration data settings to be given to trackers.
+ */
+struct t_settings_stereo
+{
+	struct xrt_size image_size_pixels;
+	struct xrt_size new_image_size_pixels;
+};
+
+/*!
+ * Raw calibration data settings saved and loaded from disk.
+ */
+struct t_settings_stereo_raw
+{
+	struct xrt_size image_size_pixels;
+	struct xrt_size new_image_size_pixels;
+
+	//! Translation between the two cameras, in the stereo pair.
+	double camera_translation[3];
+	//! Rotation matrix between the two cameras, in the stereo pair.
+	double camera_rotation[3][3];
+	//! Essential matrix.
+	double camera_essential[3][3];
+	//! Fundamental matrix.
+	double camera_fundamental[3][3];
+
+	//! Left camera intrinsics
+	double l_intrinsics[3][3];
+	//! Left camera distortion
+	double l_distortion[5];
+	//! Left fisheye camera distortion
+	double l_distortion_fisheye[4];
+	//! Left rectification transform (rotation matrix).
+	double l_rotation[3][3];
+	//! Left projection matrix in the new (rectified) coordinate systems.
+	double l_projection[3][4];
+
+	//! Right camera intrinsics
+	double r_intrinsics[3][3];
+	//! Right camera distortion
+	double r_distortion[5];
+	//! Right fisheye camera distortion
+	double r_distortion_fisheye[4];
+	//! Right rectification transform (rotation matrix).
+	double r_rotation[3][3];
+	//! Right projection matrix in the new (rectified) coordinate systems.
+	double r_projection[3][4];
+};
+
+/*!
+ * Free stereo calibration data.
+ */
+void
+t_settings_stereo_free(struct t_settings_stereo **data_ptr);
+
+/*!
+ * Free raw stereo calibration data.
+ */
+void
+t_settings_stereo_raw_free(struct t_settings_stereo_raw **raw_data_ptr);
+
+/*!
+ * Load stereo calibration data from a given file.
+ */
+bool
+t_settings_stereo_load_v1(FILE *calib_file,
+                          struct t_settings_stereo **out_data,
+                          struct t_settings_stereo_raw **out_raw_data);
+
+/*!
+ * Load a stereo calibration struct from a hardcoded place.
+ */
+bool
+t_settings_stereo_load_v1_hack(struct t_settings_stereo **out_data);
 
 
 /*
@@ -204,7 +285,7 @@ t_psmv_start(struct xrt_tracked_psmv *xtmv);
 int
 t_psmv_create(struct xrt_frame_context *xfctx,
               struct xrt_colour_rgb_f32 *rgb,
-              struct t_calibration_data *data,
+              struct t_settings_stereo *data,
               struct xrt_tracked_psmv **out_xtmv,
               struct xrt_frame_sink **out_sink);
 
@@ -213,9 +294,10 @@ t_psvr_start(struct xrt_tracked_psvr *xtvr);
 
 int
 t_psvr_create(struct xrt_frame_context *xfctx,
-              struct t_calibration_data *data,
+              struct t_settings_stereo *data,
               struct xrt_tracked_psvr **out_xtvr,
               struct xrt_frame_sink **out_sink);
+
 
 /*
  *
@@ -223,82 +305,10 @@ t_psvr_create(struct xrt_frame_context *xfctx,
  *
  */
 
-
 #define T_CALIBRATION_DEFAULT_PARAMS                                           \
 	{                                                                      \
 		9, 7, 0.025f, true, 5,                                         \
 	}
-
-
-
-/*!
- * The calibration data that C only code can see.
- */
-struct t_calibration_raw_data
-{
-	struct xrt_size image_size_pixels;
-	struct xrt_size new_image_size_pixels;
-
-	//! Translation between the two cameras, in the stereo pair.
-	double camera_translation[3];
-	//! Rotation matrix between the two cameras, in the stereo pair.
-	double camera_rotation[3][3];
-	//! Essential matrix.
-	double camera_essential[3][3];
-	//! Fundamental matrix.
-	double camera_fundamental[3][3];
-
-	//! Left camera intrinsics
-	double l_intrinsics[3][3];
-	//! Left camera distortion
-	double l_distortion[5];
-	//! Left fisheye camera distortion
-	double l_distortion_fisheye[4];
-	//! Left rectification transform (rotation matrix).
-	double l_rotation[3][3];
-	//! Left projection matrix in the new (rectified) coordinate systems.
-	double l_projection[3][4];
-
-	//! Right camera intrinsics
-	double r_intrinsics[3][3];
-	//! Right camera distortion
-	double r_distortion[5];
-	//! Right fisheye camera distortion
-	double r_distortion_fisheye[4];
-	//! Right rectification transform (rotation matrix).
-	double r_rotation[3][3];
-	//! Right projection matrix in the new (rectified) coordinate systems.
-	double r_projection[3][4];
-};
-
-/*!
- * Free raw calibration data.
- */
-void
-t_calibration_raw_data_free(struct t_calibration_raw_data **raw_data_ptr);
-
-/*!
- * Refined calibration data to be given to trackers.
- */
-struct t_calibration_data
-{
-	struct xrt_size image_size_pixels;
-	struct xrt_size new_image_size_pixels;
-};
-
-void
-t_calibration_data_free(struct t_calibration_data **data_ptr);
-
-bool
-t_file_load_stereo_calibration_v1(FILE *calib_file,
-                                  struct t_calibration_data **out_data,
-                                  struct t_calibration_raw_data **out_raw_data);
-
-/*!
- * Load a stereo calibration struct from a hardcoded place.
- */
-bool
-t_file_load_stereo_calibration_v1_hack(struct t_calibration_data **out_data);
 
 struct t_calibration_params
 {

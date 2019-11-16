@@ -17,6 +17,9 @@
  *
  */
 
+static int
+mkpath(char *path);
+
 static bool
 read_cv_mat(FILE *f, cv::Mat *m, const char *name);
 
@@ -31,7 +34,7 @@ write_cv_mat(FILE *f, cv::Mat *m);
  */
 
 extern "C" void
-t_calibration_data_free(struct t_calibration_data **data_ptr)
+t_settings_stereo_free(struct t_settings_stereo **data_ptr)
 {
 	CalibrationData *cd = (CalibrationData *)*data_ptr;
 	if (cd == NULL) {
@@ -43,7 +46,7 @@ t_calibration_data_free(struct t_calibration_data **data_ptr)
 }
 
 extern "C" void
-t_calibration_raw_data_free(struct t_calibration_raw_data **raw_data_ptr)
+t_settings_stereo_raw_free(struct t_settings_stereo_raw **raw_data_ptr)
 {
 	CalibrationRawData *crd = (CalibrationRawData *)*raw_data_ptr;
 	if (crd == NULL) {
@@ -62,9 +65,9 @@ t_calibration_raw_data_free(struct t_calibration_raw_data **raw_data_ptr)
  */
 
 extern "C" bool
-t_file_load_stereo_calibration_v1(FILE *calib_file,
-                                  struct t_calibration_data **out_data,
-                                  struct t_calibration_raw_data **out_raw_data)
+t_settings_stereo_load_v1(FILE *calib_file,
+                          struct t_settings_stereo **out_data,
+                          struct t_settings_stereo_raw **out_raw_data)
 {
 	CalibrationRawData &raw = *(new CalibrationRawData());
 	CalibrationData &data = *(new CalibrationData());
@@ -139,6 +142,8 @@ t_file_load_stereo_calibration_v1(FILE *calib_file,
 	assert(raw.isDataStorageValid());
 
 	// No processing needed.
+	data.image_size_pixels = raw.image_size_pixels;
+	data.new_image_size_pixels = raw.new_image_size_pixels;
 	data.disparity_to_depth = raw.disparity_to_depth_mat.clone();
 
 	//! @todo Scale Our intrinsics if the frame size we request
@@ -223,7 +228,7 @@ t_file_load_stereo_calibration_v1(FILE *calib_file,
  */
 
 extern "C" bool
-t_file_save_raw_data(FILE *calib_file, struct t_calibration_raw_data *raw_data)
+t_file_save_raw_data(FILE *calib_file, struct t_settings_stereo_raw *raw_data)
 {
 	CalibrationRawData &raw = *(CalibrationRawData *)raw_data;
 
@@ -273,7 +278,7 @@ t_file_save_raw_data(FILE *calib_file, struct t_calibration_raw_data *raw_data)
  */
 
 extern "C" bool
-t_file_load_stereo_calibration_v1_hack(struct t_calibration_data **out_data)
+t_settings_stereo_load_v1_hack(struct t_settings_stereo **out_data)
 {
 	const char *configuration_filename = "PS4_EYE";
 
@@ -288,11 +293,10 @@ t_file_load_stereo_calibration_v1_hack(struct t_calibration_data **out_data)
 		return false;
 	}
 
-	t_calibration_raw_data *raw_data;
-	bool ret =
-	    t_file_load_stereo_calibration_v1(calib_file, out_data, &raw_data);
+	t_settings_stereo_raw *raw_data;
+	bool ret = t_settings_stereo_load_v1(calib_file, out_data, &raw_data);
 
-	t_calibration_raw_data_free(&raw_data);
+	t_settings_stereo_raw_free(&raw_data);
 
 	fclose(calib_file);
 
@@ -300,7 +304,7 @@ t_file_load_stereo_calibration_v1_hack(struct t_calibration_data **out_data)
 }
 
 extern "C" bool
-t_file_save_raw_data_hack(struct t_calibration_raw_data *raw_data)
+t_file_save_raw_data_hack(struct t_settings_stereo_raw *raw_data)
 {
 	char path_string[PATH_MAX];
 	char file_string[PATH_MAX];
@@ -336,6 +340,36 @@ t_file_save_raw_data_hack(struct t_calibration_raw_data *raw_data)
  * Helpers
  *
  */
+
+//! @todo Move this as it is a generic helper
+static int
+mkpath(char *path)
+{
+	char tmp[PATH_MAX]; //!< @todo PATH_MAX probably not strictly correct
+	char *p = nullptr;
+	size_t len;
+
+	snprintf(tmp, sizeof(tmp), "%s", path);
+	len = strlen(tmp) - 1;
+	if (tmp[len] == '/') {
+		tmp[len] = 0;
+	}
+
+	for (p = tmp + 1; *p; p++) {
+		if (*p == '/') {
+			*p = 0;
+			if (mkdir(tmp, S_IRWXU) < 0 && errno != EEXIST)
+				return -1;
+			*p = '/';
+		}
+	}
+
+	if (mkdir(tmp, S_IRWXU) < 0 && errno != EEXIST) {
+		return -1;
+	}
+
+	return 0;
+}
 
 static bool
 write_cv_mat(FILE *f, cv::Mat *m)
