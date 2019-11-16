@@ -101,16 +101,10 @@ struct CalibrationData : t_calibration_data
 };
 
 extern "C" bool
-t_file_load_stereo_calibration_v1_hack(struct t_calibration_data **out_data);
-
-extern "C" bool
 t_file_save_raw_data_hack(struct t_calibration_raw_data *raw_data);
 
-XRT_MAYBE_UNUSED static bool
-calibration_get_stereo(const char *configuration_filename,
-                       uint32_t frame_w,
-                       uint32_t frame_h,
-                       bool use_fisheye,
+XRT_MAYBE_UNUSED static void
+calibration_get_stereo(t_calibration_data *data_c,
                        cv::Mat *l_undistort_map_x,
                        cv::Mat *l_undistort_map_y,
                        cv::Mat *l_rectify_map_x,
@@ -121,13 +115,6 @@ calibration_get_stereo(const char *configuration_filename,
                        cv::Mat *r_rectify_map_y,
                        cv::Mat *disparity_to_depth)
 {
-	t_calibration_data *data_c;
-	bool ok = t_file_load_stereo_calibration_v1_hack(&data_c);
-
-	if (!ok) {
-		return false;
-	}
-
 	CalibrationData *data = (CalibrationData *)data_c;
 
 	*l_undistort_map_x = data->l_undistort_map_x;
@@ -139,10 +126,6 @@ calibration_get_stereo(const char *configuration_filename,
 	*r_rectify_map_x = data->r_rectify_map_x;
 	*r_rectify_map_y = data->r_rectify_map_y;
 	*disparity_to_depth = data->disparity_to_depth;
-
-	t_calibration_data_free(&data_c);
-
-	return true;
 }
 
 //! @todo Move this as it is a generic helper

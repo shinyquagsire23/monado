@@ -46,6 +46,9 @@ struct p_factory
 	struct xrt_frame_context xfctx;
 
 #ifdef XRT_HAVE_OPENCV
+	//! Data to be given to the trackers.
+	struct t_calibration_data *data;
+
 	//! Keep track of how many psmv trackers that has been handed out.
 	size_t num_xtmv;
 
@@ -114,14 +117,21 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 		return;
 	}
 
+	// Now load the calibration data.
+	if (!t_file_load_stereo_calibration_v1_hack(&fact->data)) {
+		return;
+	}
+
 	struct xrt_frame_sink *xsink = NULL;
 	struct xrt_frame_sink *xsinks[4] = {0};
 	struct xrt_colour_rgb_f32 rgb[2] = {{1.f, 0.f, 0.f}, {1.f, 0.f, 1.f}};
 
 	// We create the two psmv trackers up front, but don't start them.
-	t_psmv_create(&fact->xfctx, &rgb[0], &fact->xtmv[0], &xsinks[0]);
-	t_psmv_create(&fact->xfctx, &rgb[1], &fact->xtmv[1], &xsinks[1]);
-	t_psvr_create(&fact->xfctx, &fact->xtvr, &xsinks[2]);
+	// clang-format off
+	t_psmv_create(&fact->xfctx, &rgb[0], fact->data, &fact->xtmv[0], &xsinks[0]);
+	t_psmv_create(&fact->xfctx, &rgb[1], fact->data, &fact->xtmv[1], &xsinks[1]);
+	t_psvr_create(&fact->xfctx, fact->data, &fact->xtvr, &xsinks[2]);
+	// clang-format on
 
 	// Setup origin to the common one.
 	fact->xtvr->origin = &fact->origin;
@@ -256,10 +266,20 @@ p_tracking_teardown(struct prober *p)
 #ifdef XRT_HAVE_OPENCV
 	fact->xtmv[0] = NULL;
 	fact->xtmv[1] = NULL;
+	fact->xtvr = NULL;
 #endif
 
 	// Take down the node graph.
 	xrt_frame_context_destroy_nodes(&fact->xfctx);
+
+#ifdef XRT_HAVE_OPENCV
+	/*
+	 * Needs to be done after the trackers has been destroyed.
+	 *
+	 * Does null checking and sets to null.
+	 */
+	t_calibration_data_free(&fact->data);
+#endif
 
 	free(fact);
 	p->base.tracking = NULL;

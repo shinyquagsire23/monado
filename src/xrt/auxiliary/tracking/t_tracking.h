@@ -69,6 +69,7 @@ extern "C" {
 
 struct xrt_tracked_psmv;
 struct xrt_tracked_psvr;
+struct t_calibration_data;
 
 
 /*
@@ -203,6 +204,7 @@ t_psmv_start(struct xrt_tracked_psmv *xtmv);
 int
 t_psmv_create(struct xrt_frame_context *xfctx,
               struct xrt_colour_rgb_f32 *rgb,
+              struct t_calibration_data *data,
               struct xrt_tracked_psmv **out_xtmv,
               struct xrt_frame_sink **out_sink);
 
@@ -211,6 +213,7 @@ t_psvr_start(struct xrt_tracked_psvr *xtvr);
 
 int
 t_psvr_create(struct xrt_frame_context *xfctx,
+              struct t_calibration_data *data,
               struct xrt_tracked_psvr **out_xtvr,
               struct xrt_frame_sink **out_sink);
 
@@ -290,6 +293,12 @@ bool
 t_file_load_stereo_calibration_v1(FILE *calib_file,
                                   struct t_calibration_data **out_data,
                                   struct t_calibration_raw_data **out_raw_data);
+
+/*!
+ * Load a stereo calibration struct from a hardcoded place.
+ */
+bool
+t_file_load_stereo_calibration_v1_hack(struct t_calibration_data **out_data);
 
 struct t_calibration_params
 {

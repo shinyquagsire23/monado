@@ -253,28 +253,7 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	}
 
 	if (!t.calibrated) {
-		bool ok = calibration_get_stereo(
-		    "PS4_EYE",                  // name
-		    xf->width,                  // width
-		    xf->height,                 // height
-		    false,                      // use_fisheye
-		    &t.view[0].undistort_map_x, // l_undistort_map_x
-		    &t.view[0].undistort_map_y, // l_undistort_map_y
-		    &t.view[0].rectify_map_x,   // l_rectify_map_x
-		    &t.view[0].rectify_map_y,   // l_rectify_map_y
-		    &t.view[1].undistort_map_x, // r_undistort_map_x
-		    &t.view[1].undistort_map_y, // r_undistort_map_y
-		    &t.view[1].rectify_map_x,   // r_rectify_map_x
-		    &t.view[1].rectify_map_y,   // r_rectify_map_y
-		    &t.disparity_to_depth);     // disparity_to_depth
-
-		if (ok) {
-			printf("loaded calibration for camera!\n");
-			t.calibrated = true;
-		} else {
-			xrt_frame_reference(&xf, NULL);
-			return;
-		}
+		return;
 	}
 
 	// Create the debug frame if needed.
@@ -574,6 +553,7 @@ t_psmv_start(struct xrt_tracked_psmv *xtmv)
 extern "C" int
 t_psmv_create(struct xrt_frame_context *xfctx,
               struct xrt_colour_rgb_f32 *rgb,
+              struct t_calibration_data *data,
               struct xrt_tracked_psmv **out_xtmv,
               struct xrt_frame_sink **out_sink)
 {
@@ -619,6 +599,18 @@ t_psmv_create(struct xrt_frame_context *xfctx,
 		t.fusion.pos.z = -0.5f;
 		break;
 	}
+
+	calibration_get_stereo(data,
+	                       &t.view[0].undistort_map_x, // l_undistort_map_x
+	                       &t.view[0].undistort_map_y, // l_undistort_map_y
+	                       &t.view[0].rectify_map_x,   // l_rectify_map_x
+	                       &t.view[0].rectify_map_y,   // l_rectify_map_y
+	                       &t.view[1].undistort_map_x, // r_undistort_map_x
+	                       &t.view[1].undistort_map_y, // r_undistort_map_y
+	                       &t.view[1].rectify_map_x,   // r_rectify_map_x
+	                       &t.view[1].rectify_map_y,   // r_rectify_map_y
+	                       &t.disparity_to_depth);     // disparity_to_depth
+	t.calibrated = true;
 
 	// clang-format off
 	cv::SimpleBlobDetector::Params blob_params;

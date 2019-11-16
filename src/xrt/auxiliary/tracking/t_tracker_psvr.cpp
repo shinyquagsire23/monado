@@ -262,6 +262,7 @@ t_psvr_start(struct xrt_tracked_psvr *xtvr)
 
 extern "C" int
 t_psvr_create(struct xrt_frame_context *xfctx,
+              struct t_calibration_data *data,
               struct xrt_tracked_psvr **out_xtvr,
               struct xrt_frame_sink **out_sink)
 {
