@@ -140,7 +140,7 @@ calibration_get_stereo(const char *configuration_filename,
 	*r_rectify_map_y = data->r_rectify_map_y;
 	*disparity_to_depth = data->disparity_to_depth;
 
-	t_calibration_data_free(data_c);
+	t_calibration_data_free(&data_c);
 
 	return true;
 }

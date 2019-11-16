@@ -31,17 +31,27 @@ write_cv_mat(FILE *f, cv::Mat *m);
  */
 
 extern "C" void
-t_calibration_data_free(struct t_calibration_data *data)
+t_calibration_data_free(struct t_calibration_data **data_ptr)
 {
-	CalibrationData *d_ptr = (CalibrationData *)data;
-	delete d_ptr;
+	CalibrationData *cd = (CalibrationData *)*data_ptr;
+	if (cd == NULL) {
+		return;
+	}
+
+	delete cd;
+	*data_ptr = NULL;
 }
 
 extern "C" void
-t_calibration_raw_data_free(struct t_calibration_raw_data *raw_data)
+t_calibration_raw_data_free(struct t_calibration_raw_data **raw_data_ptr)
 {
-	CalibrationRawData *rd_ptr = (CalibrationRawData *)raw_data;
-	delete rd_ptr;
+	CalibrationRawData *crd = (CalibrationRawData *)*raw_data_ptr;
+	if (crd == NULL) {
+		return;
+	}
+
+	delete crd;
+	*raw_data_ptr = NULL;
 }
 
 
@@ -282,7 +292,7 @@ t_file_load_stereo_calibration_v1_hack(struct t_calibration_data **out_data)
 	bool ret =
 	    t_file_load_stereo_calibration_v1(calib_file, out_data, &raw_data);
 
-	t_calibration_raw_data_free(raw_data);
+	t_calibration_raw_data_free(&raw_data);
 
 	fclose(calib_file);
 

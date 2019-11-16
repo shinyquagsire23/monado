@@ -272,7 +272,7 @@ struct t_calibration_raw_data
  * Free raw calibration data.
  */
 void
-t_calibration_raw_data_free(struct t_calibration_raw_data *raw_data);
+t_calibration_raw_data_free(struct t_calibration_raw_data **raw_data_ptr);
 
 /*!
  * Refined calibration data to be given to trackers.
@@ -284,7 +284,7 @@ struct t_calibration_data
 };
 
 void
-t_calibration_data_free(struct t_calibration_data *data);
+t_calibration_data_free(struct t_calibration_data **data_ptr);
 
 bool
 t_file_load_stereo_calibration_v1(FILE *calib_file,
