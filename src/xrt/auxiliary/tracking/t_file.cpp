@@ -140,11 +140,12 @@ t_settings_stereo_load_v1(FILE *calib_file,
 	}
 
 	assert(raw.isDataStorageValid());
+	assert(data.isDataStorageValid());
 
 	// No processing needed.
 	data.image_size_pixels = raw.image_size_pixels;
 	data.new_image_size_pixels = raw.new_image_size_pixels;
-	data.disparity_to_depth = raw.disparity_to_depth_mat.clone();
+	raw.disparity_to_depth_mat.copyTo(data.disparity_to_depth_mat);
 
 	//! @todo Scale Our intrinsics if the frame size we request
 	//              calibration for does not match what was saved

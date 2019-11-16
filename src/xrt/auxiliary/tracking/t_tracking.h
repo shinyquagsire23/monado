@@ -84,6 +84,9 @@ struct t_settings_stereo
 {
 	struct xrt_size image_size_pixels;
 	struct xrt_size new_image_size_pixels;
+
+	//! Disparity and position to camera world coordinates.
+	double disparity_to_depth[4][4];
 };
 
 /*!
@@ -102,6 +105,9 @@ struct t_settings_stereo_raw
 	double camera_essential[3][3];
 	//! Fundamental matrix.
 	double camera_fundamental[3][3];
+
+	//! Disparity and position to camera world coordinates.
+	double disparity_to_depth[4][4];
 
 	//! Left camera intrinsics
 	double l_intrinsics[3][3];
