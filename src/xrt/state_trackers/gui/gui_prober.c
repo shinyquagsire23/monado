@@ -98,10 +98,8 @@ gui_prober_teardown(struct gui_program *p)
 		p->xdevs[i] = NULL;
 	}
 
-	if (p->timekeeping != NULL) {
-		time_state_destroy(p->timekeeping);
-		p->timekeeping = NULL;
-	}
+	// Does null checking and sets to null.
+	time_state_destroy(&p->timekeeping);
 
 	xrt_prober_destroy(&p->xp);
 }
