@@ -354,32 +354,33 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	t_file_save_raw_data_hack(&raw);
 }
 
-
+/*!
+ * Make a mono frame.
+ */
 static void
-make_calibration_frame(class Calibration &c)
+make_calibration_frame_mono(class Calibration &c)
 {
 	auto &rgb = c.gui.rgb;
 	auto &grey = c.grey;
 
-	// This should not happen.
-	if (rgb.rows == 0 || rgb.cols == 0) {
-		return;
-	}
+	bool found = do_view(c, c.state.view[0], grey, rgb);
+	(void)found;
 
-	// Don't do anything if we are done.
-	if (c.state.calibrated) {
-		print_txt(rgb, c.text, 1.5);
+	P("MONO IS WIP!");
 
-		send_rgb_frame(c);
-		return;
-	}
+	// Draw text and finally send the frame off.
+	print_txt(rgb, c.text, 1.5);
+	send_rgb_frame(c);
+}
 
-	// Clear our gui frame.
-	if (c.clear_frame) {
-		cv::rectangle(rgb, cv::Point2f(0, 0),
-		              cv::Point2f(rgb.cols, rgb.rows),
-		              cv::Scalar(0, 0, 0), -1, 0);
-	}
+/*!
+ * Make a stereo frame side by side.
+ */
+static void
+make_calibration_frame_sbs(class Calibration &c)
+{
+	auto &rgb = c.gui.rgb;
+	auto &grey = c.grey;
 
 	int cols = rgb.cols / 2;
 	int rows = rgb.rows;
@@ -515,13 +516,6 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 {
 	auto &c = *(class Calibration *)xsink;
 
-	//! @todo Add single view support.
-	if (xf->stereo_format != XRT_STEREO_FORMAT_SBS) {
-		P("ERROR: Not side by side stereo!");
-		make_gui_str(c);
-		return;
-	}
-
 	// Fill both c.gui.rgb and c.grey with the data we got.
 	switch (xf->format) {
 	case XRT_FORMAT_YUV888: process_frame_yuv(c, xf); break;
@@ -532,7 +526,29 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 		return;
 	}
 
-	make_calibration_frame(c);
+	// Don't do anything if we are done.
+	if (c.state.calibrated) {
+		print_txt(c.gui.rgb, c.text, 1.5);
+
+		send_rgb_frame(c);
+		return;
+	}
+
+	// Clear our gui frame.
+	if (c.clear_frame) {
+		cv::rectangle(c.gui.rgb, cv::Point2f(0, 0),
+		              cv::Point2f(c.gui.rgb.cols, c.gui.rgb.rows),
+		              cv::Scalar(0, 0, 0), -1, 0);
+	}
+
+	switch (xf->stereo_format) {
+	case XRT_STEREO_FORMAT_SBS: make_calibration_frame_sbs(c); break;
+	case XRT_STEREO_FORMAT_NONE: make_calibration_frame_mono(c); break;
+	default:
+		P("ERROR: Unknown stereo format! '%i'", xf->stereo_format);
+		make_gui_str(c);
+		return;
+	}
 }
 
 
