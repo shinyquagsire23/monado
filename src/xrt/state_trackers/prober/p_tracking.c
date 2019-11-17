@@ -117,10 +117,14 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 		return;
 	}
 
+	struct t_settings_stereo_raw *raw_data;
 	// Now load the calibration data.
-	if (!t_settings_stereo_load_v1_hack(&fact->data)) {
+	if (!t_settings_stereo_load_v1_hack(&raw_data)) {
 		return;
 	}
+
+	t_settings_stereo_refine(raw_data, &fact->data);
+	t_settings_stereo_raw_free(&raw_data);
 
 	struct xrt_frame_sink *xsink = NULL;
 	struct xrt_frame_sink *xsinks[4] = {0};

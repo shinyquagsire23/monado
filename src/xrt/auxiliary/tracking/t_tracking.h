@@ -137,10 +137,23 @@ struct t_settings_stereo_raw
 };
 
 /*!
+ * Refine a raw calibration data, this how you create stereo calibration data.
+ */
+void
+t_settings_stereo_refine(struct t_settings_stereo_raw *raw_data,
+                         struct t_settings_stereo **out_data);
+
+/*!
  * Free stereo calibration data.
  */
 void
 t_settings_stereo_free(struct t_settings_stereo **data_ptr);
+
+/*!
+ * Create a raw stereo calibration data.
+ */
+void
+t_settings_stereo_raw_create(struct t_settings_stereo_raw **out_raw_data);
 
 /*!
  * Free raw stereo calibration data.
@@ -153,14 +166,13 @@ t_settings_stereo_raw_free(struct t_settings_stereo_raw **raw_data_ptr);
  */
 bool
 t_settings_stereo_load_v1(FILE *calib_file,
-                          struct t_settings_stereo **out_data,
                           struct t_settings_stereo_raw **out_raw_data);
 
 /*!
  * Load a stereo calibration struct from a hardcoded place.
  */
 bool
-t_settings_stereo_load_v1_hack(struct t_settings_stereo **out_data);
+t_settings_stereo_load_v1_hack(struct t_settings_stereo_raw **out_raw_data);
 
 
 /*

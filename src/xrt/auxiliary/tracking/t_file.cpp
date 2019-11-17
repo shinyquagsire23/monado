@@ -60,84 +60,16 @@ t_settings_stereo_raw_free(struct t_settings_stereo_raw **raw_data_ptr)
 
 /*
  *
- * Load functions.
+ * Refine and create functions.
  *
  */
 
-extern "C" bool
-t_settings_stereo_load_v1(FILE *calib_file,
-                          struct t_settings_stereo **out_data,
-                          struct t_settings_stereo_raw **out_raw_data)
+extern "C" void
+t_settings_stereo_refine(struct t_settings_stereo_raw *raw_data,
+                         struct t_settings_stereo **out_data)
 {
-	CalibrationRawData &raw = *(new CalibrationRawData());
+	CalibrationRawData &raw = *(CalibrationRawData *)raw_data;
 	CalibrationData &data = *(new CalibrationData());
-
-	assert(raw.isDataStorageValid());
-
-	// Dummies
-	cv::Mat l_translation_dummy;
-	cv::Mat r_translation_dummy;
-
-	//! @todo Load from file.
-	bool use_fisheye = false;
-
-	// Read our calibration from this file
-	// clang-format off
-	read_cv_mat(calib_file, &raw.l_intrinsics_mat, "l_intrinsics"); // 3 x 3
-	read_cv_mat(calib_file, &raw.r_intrinsics_mat, "r_intrinsics"); // 3 x 3
-	read_cv_mat(calib_file, &raw.l_distortion_mat, "l_distortion"); // 1 x 5
-	read_cv_mat(calib_file, &raw.r_distortion_mat, "r_distortion"); // 1 x 5
-	read_cv_mat(calib_file, &raw.l_distortion_fisheye_mat, "l_distortion_fisheye");
-	read_cv_mat(calib_file, &raw.r_distortion_fisheye_mat, "r_distortion_fisheye");
-	read_cv_mat(calib_file, &raw.l_rotation_mat, "l_rotation"); // 3 x 3
-	read_cv_mat(calib_file, &raw.r_rotation_mat, "r_rotation"); // 3 x 3
-	read_cv_mat(calib_file, &l_translation_dummy, "l_translation"); // empty
-	read_cv_mat(calib_file, &r_translation_dummy, "r_translation"); // empty
-	read_cv_mat(calib_file, &raw.l_projection_mat, "l_projection"); // 3 x 4
-	read_cv_mat(calib_file, &raw.r_projection_mat, "r_projection"); // 3 x 4
-	read_cv_mat(calib_file, &raw.disparity_to_depth_mat, "disparity_to_depth");  // 4 x 4
-	cv::Mat mat_image_size = {};
-	read_cv_mat(calib_file, &mat_image_size, "mat_image_size");
-
-	raw.image_size_pixels.w = uint32_t(mat_image_size.at<float>(0, 0));
-	raw.image_size_pixels.h = uint32_t(mat_image_size.at<float>(0, 1));
-	cv::Size image_size(raw.image_size_pixels.w, raw.image_size_pixels.h);
-
-	cv::Mat mat_new_image_size = {};
-	if (read_cv_mat(calib_file, &mat_new_image_size, "mat_new_image_size")) {
-		raw.new_image_size_pixels.w = uint32_t(mat_new_image_size.at<float>(0, 0));
-		raw.new_image_size_pixels.h = uint32_t(mat_new_image_size.at<float>(0, 1));
-	} else {
-		raw.new_image_size_pixels.w = raw.image_size_pixels.w;
-		raw.new_image_size_pixels.h = raw.image_size_pixels.h;
-	}
-
-	if (!read_cv_mat(calib_file, &raw.camera_translation_mat, "translation")) {
-		fprintf(stderr, "\tRe-run calibration!\n");
-	}
-	if (!read_cv_mat(calib_file, &raw.camera_rotation_mat, "rotation")) {
-		fprintf(stderr, "\tRe-run calibration!\n");
-	}
-	if (!read_cv_mat(calib_file, &raw.camera_essential_mat, "essential")) {
-		fprintf(stderr, "\tRe-run calibration!\n");
-	}
-	if (!read_cv_mat(calib_file, &raw.camera_fundamental_mat, "fundamental")) {
-		fprintf(stderr, "\tRe-run calibration!\n");
-	}
-	// clang-format on
-
-	if (raw.camera_translation_mat.size() == cv::Size(3, 1)) {
-		fprintf(stderr,
-		        "Radjusting translation, re-run calibration.\n");
-		raw.camera_translation[0] =
-		    raw.camera_translation_mat.at<double>(0, 0);
-		raw.camera_translation[1] =
-		    raw.camera_translation_mat.at<double>(0, 1);
-		raw.camera_translation[2] =
-		    raw.camera_translation_mat.at<double>(0, 2);
-		raw.camera_translation_mat =
-		    cv::Mat(3, 1, CV_64F, &raw.camera_translation[0]);
-	}
 
 	assert(raw.isDataStorageValid());
 	assert(data.isDataStorageValid());
@@ -147,8 +79,12 @@ t_settings_stereo_load_v1(FILE *calib_file,
 	data.new_image_size_pixels = raw.new_image_size_pixels;
 	raw.disparity_to_depth_mat.copyTo(data.disparity_to_depth_mat);
 
+	//! @todo Load from file.
+	bool use_fisheye = false;
+
 	//! @todo Scale Our intrinsics if the frame size we request
 	//              calibration for does not match what was saved
+	cv::Size image_size(raw.image_size_pixels.w, raw.image_size_pixels.h);
 
 	// Generate undistortion maps - handle fisheye or rectilinear sources
 
@@ -215,7 +151,95 @@ t_settings_stereo_load_v1(FILE *calib_file,
 	                            data.r_rectify_map_x,  // map1
 	                            data.r_rectify_map_y); // map2
 
+	assert(data.isDataStorageValid());
+
 	*out_data = &data;
+}
+
+extern "C" void
+t_settings_stereo_raw_create(struct t_settings_stereo_raw **out_raw_data)
+{
+	*out_raw_data = new CalibrationRawData();
+}
+
+
+/*
+ *
+ * Load functions.
+ *
+ */
+
+extern "C" bool
+t_settings_stereo_load_v1(FILE *calib_file,
+                          struct t_settings_stereo_raw **out_raw_data)
+{
+	CalibrationRawData &raw = *(new CalibrationRawData());
+
+
+	assert(raw.isDataStorageValid());
+
+	// Dummies
+	cv::Mat l_translation_dummy;
+	cv::Mat r_translation_dummy;
+
+	// Read our calibration from this file
+	// clang-format off
+	read_cv_mat(calib_file, &raw.l_intrinsics_mat, "l_intrinsics"); // 3 x 3
+	read_cv_mat(calib_file, &raw.r_intrinsics_mat, "r_intrinsics"); // 3 x 3
+	read_cv_mat(calib_file, &raw.l_distortion_mat, "l_distortion"); // 1 x 5
+	read_cv_mat(calib_file, &raw.r_distortion_mat, "r_distortion"); // 1 x 5
+	read_cv_mat(calib_file, &raw.l_distortion_fisheye_mat, "l_distortion_fisheye");
+	read_cv_mat(calib_file, &raw.r_distortion_fisheye_mat, "r_distortion_fisheye");
+	read_cv_mat(calib_file, &raw.l_rotation_mat, "l_rotation"); // 3 x 3
+	read_cv_mat(calib_file, &raw.r_rotation_mat, "r_rotation"); // 3 x 3
+	read_cv_mat(calib_file, &l_translation_dummy, "l_translation"); // empty
+	read_cv_mat(calib_file, &r_translation_dummy, "r_translation"); // empty
+	read_cv_mat(calib_file, &raw.l_projection_mat, "l_projection"); // 3 x 4
+	read_cv_mat(calib_file, &raw.r_projection_mat, "r_projection"); // 3 x 4
+	read_cv_mat(calib_file, &raw.disparity_to_depth_mat, "disparity_to_depth");  // 4 x 4
+	cv::Mat mat_image_size = {};
+	read_cv_mat(calib_file, &mat_image_size, "mat_image_size");
+
+	raw.image_size_pixels.w = uint32_t(mat_image_size.at<float>(0, 0));
+	raw.image_size_pixels.h = uint32_t(mat_image_size.at<float>(0, 1));
+
+	cv::Mat mat_new_image_size = {};
+	if (read_cv_mat(calib_file, &mat_new_image_size, "mat_new_image_size")) {
+		raw.new_image_size_pixels.w = uint32_t(mat_new_image_size.at<float>(0, 0));
+		raw.new_image_size_pixels.h = uint32_t(mat_new_image_size.at<float>(0, 1));
+	} else {
+		raw.new_image_size_pixels.w = raw.image_size_pixels.w;
+		raw.new_image_size_pixels.h = raw.image_size_pixels.h;
+	}
+
+	if (!read_cv_mat(calib_file, &raw.camera_translation_mat, "translation")) {
+		fprintf(stderr, "\tRe-run calibration!\n");
+	}
+	if (!read_cv_mat(calib_file, &raw.camera_rotation_mat, "rotation")) {
+		fprintf(stderr, "\tRe-run calibration!\n");
+	}
+	if (!read_cv_mat(calib_file, &raw.camera_essential_mat, "essential")) {
+		fprintf(stderr, "\tRe-run calibration!\n");
+	}
+	if (!read_cv_mat(calib_file, &raw.camera_fundamental_mat, "fundamental")) {
+		fprintf(stderr, "\tRe-run calibration!\n");
+	}
+	// clang-format on
+
+	if (raw.camera_translation_mat.size() == cv::Size(3, 1)) {
+		fprintf(stderr,
+		        "Radjusting translation, re-run calibration.\n");
+		raw.camera_translation[0] =
+		    raw.camera_translation_mat.at<double>(0, 0);
+		raw.camera_translation[1] =
+		    raw.camera_translation_mat.at<double>(0, 1);
+		raw.camera_translation[2] =
+		    raw.camera_translation_mat.at<double>(0, 2);
+		raw.camera_translation_mat =
+		    cv::Mat(3, 1, CV_64F, &raw.camera_translation[0]);
+	}
+
+	assert(raw.isDataStorageValid());
 	*out_raw_data = &raw;
 
 	return true;
@@ -279,7 +303,7 @@ t_file_save_raw_data(FILE *calib_file, struct t_settings_stereo_raw *raw_data)
  */
 
 extern "C" bool
-t_settings_stereo_load_v1_hack(struct t_settings_stereo **out_data)
+t_settings_stereo_load_v1_hack(struct t_settings_stereo_raw **out_raw_data)
 {
 	const char *configuration_filename = "PS4_EYE";
 
@@ -294,10 +318,7 @@ t_settings_stereo_load_v1_hack(struct t_settings_stereo **out_data)
 		return false;
 	}
 
-	t_settings_stereo_raw *raw_data;
-	bool ret = t_settings_stereo_load_v1(calib_file, out_data, &raw_data);
-
-	t_settings_stereo_raw_free(&raw_data);
+	bool ret = t_settings_stereo_load_v1(calib_file, out_raw_data);
 
 	fclose(calib_file);
 
