@@ -112,10 +112,20 @@ public:
 		uint32_t calibration_count;
 		bool calibrated;
 
+
+		uint32_t waited_for;
+		uint32_t collected_of_part;
 	} state;
 
 	bool subpixel_enable;
-	bool subpixel_size;
+	int subpixel_size;
+
+	//! Number of frames to wait for before collecting.
+	uint32_t num_wait_for;
+	//! Total number of samples to collect.
+	uint32_t num_collect_total;
+	//! Number of frames to capture before restarting.
+	uint32_t num_collect_restart;
 
 	bool clear_frame = false;
 
@@ -366,7 +376,37 @@ make_calibration_frame_mono(class Calibration &c)
 	bool found = do_view(c, c.state.view[0], grey, rgb);
 	(void)found;
 
-	P("MONO IS WIP!");
+	int num = (int)c.state.chessboards_model.size();
+	int of = c.num_collect_total;
+	P("(%i/%i) SHOW CHESSBOARD", num, of);
+
+	// Poor mans goto.
+	do {
+		if (!found) {
+			c.state.waited_for = c.num_wait_for;
+			c.state.collected_of_part = 0;
+			break;
+		}
+
+		if (c.state.waited_for > 0) {
+			P("(%i/%i) WAITING %i FRAMES", num, of,
+			  c.state.waited_for);
+			c.state.waited_for--;
+			break;
+		}
+
+		if (c.state.collected_of_part >= c.num_collect_restart) {
+			c.state.waited_for = c.num_wait_for * 2;
+			c.state.collected_of_part = 0;
+			break;
+		}
+
+		c.state.chessboards_model.push_back(c.chessboard_model);
+		c.state.view[0].measured.push_back(c.state.view[0].current);
+		c.state.collected_of_part++;
+
+		P("(%i/%i) COLLECTED #%i", num, of, c.state.collected_of_part);
+	} while (false);
 
 	// Draw text and finally send the frame off.
 	print_txt(rgb, c.text, 1.5);
@@ -570,7 +610,9 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 	c.base.push_frame = t_calibration_frame;
 	c.subpixel_enable = params->subpixel_enable;
 	c.subpixel_size = params->subpixel_size;
-
+	c.num_wait_for = params->num_wait_for;
+	c.num_collect_total = params->num_collect_total;
+	c.num_collect_restart = params->num_collect_restart;
 	*out_sink = &c.base;
 
 	P("Waiting for camera");

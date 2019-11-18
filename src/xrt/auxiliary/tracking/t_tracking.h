@@ -329,7 +329,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 
 #define T_CALIBRATION_DEFAULT_PARAMS                                           \
 	{                                                                      \
-		9, 7, 0.025f, true, 5,                                         \
+		9, 7, 0.0173333f, true, 5, 20, 60, 2                           \
 	}
 
 struct t_calibration_params
@@ -340,6 +340,10 @@ struct t_calibration_params
 
 	bool subpixel_enable;
 	int subpixel_size;
+
+	uint32_t num_wait_for;
+	uint32_t num_collect_total;
+	uint32_t num_collect_restart;
 };
 
 int
