@@ -115,6 +115,12 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igCheckbox("Subpixel", &cs->params.subpixel_enable);
 	igInputInt("Subpixel Search Size", &cs->params.subpixel_size, 1, 5, 0);
 
+	igInputInt("Wait for # frames", &cs->params.num_wait_for, 1, 5, 0);
+	igInputInt("Collect # measurements", &cs->params.num_collect_total, 1,
+	           5, 0);
+	igInputInt("Collect in groups of #", &cs->params.num_collect_restart, 1,
+	           5, 0);
+
 	static ImVec2 button_dims = {0, 0};
 	bool pressed = igButton("Done", button_dims);
 	igEnd();

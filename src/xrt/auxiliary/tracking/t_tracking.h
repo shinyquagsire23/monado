@@ -344,9 +344,9 @@ struct t_calibration_params
 	bool subpixel_enable;
 	int subpixel_size;
 
-	uint32_t num_wait_for;
-	uint32_t num_collect_total;
-	uint32_t num_collect_restart;
+	int num_wait_for;
+	int num_collect_total;
+	int num_collect_restart;
 
 	bool save_images;
 };
