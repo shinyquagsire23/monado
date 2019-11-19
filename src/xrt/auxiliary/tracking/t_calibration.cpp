@@ -274,14 +274,15 @@ do_view(class Calibration &c,
 
 	// Improve the corner positions.
 	if (found && c.subpixel_enable) {
-		cv::TermCriteria tcrit(cv::TermCriteria::Type::COUNT +
-		                           cv::TermCriteria::Type::EPS,
-		                       30, 0.1);
+		int crit_flag = 0;
+		crit_flag |= cv::TermCriteria::EPS;
+		crit_flag |= cv::TermCriteria::COUNT;
+		cv::TermCriteria term_criteria = {crit_flag, 30, 0.1};
 
 		cv::Size size(c.subpixel_size, c.subpixel_size);
 		cv::Size zero(-1, -1);
 
-		cv::cornerSubPix(grey, view.current, size, zero, tcrit);
+		cv::cornerSubPix(grey, view.current, size, zero, term_criteria);
 	}
 
 	// Draw the checker board, will also draw partial hits.
