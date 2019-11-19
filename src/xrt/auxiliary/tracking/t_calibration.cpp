@@ -96,9 +96,9 @@ struct ViewState
 
 	cv::Mat current = {};
 
-	cv::Rect brect;
-	cv::Rect pre_rect;
-	cv::Rect post_rect;
+	cv::Rect brect = {};
+	cv::Rect pre_rect = {};
+	cv::Rect post_rect = {};
 };
 
 /*!
@@ -116,21 +116,21 @@ public:
 		struct xrt_frame_sink *sink = {};
 	} gui;
 
-	Model chessboard_model;
-	cv::Size chessboard_size;
+	Model chessboard_model = {};
+	cv::Size chessboard_size = {8, 6};
 
 	struct
 	{
 		ViewState view[2] = {};
 
-		ArrayOfModels chessboard_models;
+		ArrayOfModels chessboard_models = {};
 
-		uint32_t calibration_count;
-		bool calibrated;
+		uint32_t calibration_count = {};
+		bool calibrated = false;
 
 
-		uint32_t waited_for;
-		uint32_t collected_of_part;
+		uint32_t waited_for = 0;
+		uint32_t collected_of_part = 0;
 	} state;
 
 	//! Should we use subpixel enhancing for checkerboard.
@@ -139,17 +139,17 @@ public:
 	int subpixel_size = 5;
 
 	//! Number of frames to wait for before collecting.
-	uint32_t num_wait_for;
+	uint32_t num_wait_for = 20;
 	//! Total number of samples to collect.
-	uint32_t num_collect_total;
+	uint32_t num_collect_total = 40;
 	//! Number of frames to capture before restarting.
-	uint32_t num_collect_restart;
+	uint32_t num_collect_restart = 1;
 
 	bool clear_frame = false;
 
-	cv::Mat grey;
+	cv::Mat grey = {};
 
-	char text[512];
+	char text[512] = {};
 };
 
 
