@@ -99,6 +99,10 @@ struct ViewState
 	cv::Rect brect = {};
 	cv::Rect pre_rect = {};
 	cv::Rect post_rect = {};
+
+	bool maps_valid = false;
+	cv::Mat map1 = {};
+	cv::Mat map2 = {};
 };
 
 /*!
@@ -145,7 +149,9 @@ public:
 	//! Number of frames to capture before restarting.
 	uint32_t num_collect_restart = 1;
 
+	bool use_fisheye = false;
 	bool clear_frame = false;
+	bool dump_measurements = false;
 
 	cv::Mat grey = {};
 
@@ -291,6 +297,22 @@ do_view(class Calibration &c,
 	return found;
 }
 
+static void
+remap_view(class Calibration &c, struct ViewState &view, cv::Mat &rgb)
+{
+	if (!view.maps_valid) {
+		return;
+	}
+
+	cv::remap(rgb,                 // src
+	          rgb,                 // dst
+	          view.map1,           // map1
+	          view.map2,           // map2
+	          cv::INTER_LINEAR,    // interpolation
+	          cv::BORDER_CONSTANT, // borderMode
+	          cv::Scalar());       // borderValue
+}
+
 
 /*
  *
@@ -383,6 +405,158 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	t_file_save_raw_data_hack(&raw);
 }
 
+static void
+process_view_samples(class Calibration &c,
+                     struct ViewState &view,
+                     int cols,
+                     int rows)
+{
+	const cv::Size image_size = {cols, rows};
+	double rp_error = 0.f;
+
+	cv::Mat intrinsics_mat = {};
+	cv::Mat new_intrinsics_mat = {};
+	cv::Mat distortion_mat = {};
+	cv::Mat distortion_fisheye_mat = {};
+
+	if (c.dump_measurements) {
+		printf("...measured = (ArrayOfMeasurements){\n");
+		for (Measurement &m : view.measured) {
+			printf("  {\n");
+			for (cv::Point2f &p : m) {
+				printf("   {%+ff, %+ff},\n", p.x, p.y);
+			}
+			printf("  },\n");
+		}
+		printf("};\n");
+	}
+
+	if (c.use_fisheye) {
+		int crit_flag = 0;
+		crit_flag |= cv::TermCriteria::EPS;
+		crit_flag |= cv::TermCriteria::COUNT;
+		cv::TermCriteria term_criteria = {crit_flag, 100, DBL_EPSILON};
+
+		int flags = 0;
+		flags |= cv::fisheye::CALIB_FIX_SKEW;
+		flags |= cv::fisheye::CALIB_RECOMPUTE_EXTRINSIC;
+		flags |= cv::fisheye::CALIB_FIX_PRINCIPAL_POINT;
+
+		rp_error = cv::fisheye::calibrate(
+		    c.state.chessboard_models, // objectPoints
+		    view.measured,             // imagePoints
+		    image_size,                // image_size
+		    intrinsics_mat,            // K (cameraMatrix 3x3)
+		    distortion_fisheye_mat,    // D (distCoeffs 4x1)
+		    cv::noArray(),             // rvecs
+		    cv::noArray(),             // tvecs
+		    flags,                     // flags
+		    term_criteria);            // criteria
+
+		double balance = 0.0f;
+
+		cv::fisheye::estimateNewCameraMatrixForUndistortRectify(
+		    intrinsics_mat,         // K
+		    distortion_fisheye_mat, // D
+		    image_size,             // image_size
+		    cv::Matx33d::eye(),     // R
+		    new_intrinsics_mat,     // P
+		    balance);               // balance
+	} else {
+		rp_error = cv::calibrateCamera(
+		    c.state.chessboard_models, // objectPoints
+		    view.measured,             // imagePoints
+		    image_size,                // imageSize
+		    intrinsics_mat,            // cameraMatrix
+		    distortion_mat,            // distCoeffs
+		    cv::noArray(),             // rvecs
+		    cv::noArray());            // tvecs
+	}
+
+	P("Calibration done, RP-Error %f", rp_error);
+
+	// clang-format off
+	std::cout << "image_size: " << image_size << "\n";
+	std::cout << "rp_error: " << rp_error << "\n";
+	std::cout << "intrinsics_mat:\n" << intrinsics_mat << "\n";
+	if (c.use_fisheye) {
+		std::cout << "new_intrinsics_mat:\n" << new_intrinsics_mat << "\n";
+		std::cout << "distortion_fisheye_mat:\n" << distortion_fisheye_mat << "\n";
+	} else {
+		std::cout << "distortion_mat:\n" << distortion_mat << "\n";
+	}
+	// clang-format on
+
+	if (c.use_fisheye) {
+		cv::fisheye::initUndistortRectifyMap(
+		    intrinsics_mat,         // K
+		    distortion_fisheye_mat, // D
+		    cv::Matx33d::eye(),     // R
+		    new_intrinsics_mat,     // P
+		    image_size,             // size
+		    CV_32FC1,               // m1type
+		    view.map1,              // map1
+		    view.map2);             // map2
+
+		// Set the maps as valid.
+		view.maps_valid = true;
+	} else {
+		cv::initUndistortRectifyMap( //
+		    intrinsics_mat,          // K
+		    distortion_mat,          // D
+		    cv::noArray(),           // R
+		    intrinsics_mat,          // P
+		    image_size,              // size
+		    CV_32FC1,                // m1type
+		    view.map1,               // map1
+		    view.map2);              // map2
+
+		// Set the maps as valid.
+		view.maps_valid = true;
+	}
+
+	c.state.calibrated = true;
+}
+
+/*!
+ * Logic for capturing a frame.
+ */
+static void
+do_capture_logic(class Calibration &c, struct ViewState &view, bool found)
+{
+	int num = (int)c.state.chessboard_models.size();
+	int of = c.num_collect_total;
+	P("(%i/%i) SHOW CHESSBOARD", num, of);
+
+	// We haven't found anything, reset to be beginning.
+	if (!found) {
+		c.state.waited_for = c.num_wait_for;
+		c.state.collected_of_part = 0;
+		return;
+	}
+
+	// We are still waiting for frames.
+	if (c.state.waited_for > 0) {
+		P("(%i/%i) WAITING %i FRAMES", num, of, c.state.waited_for);
+		c.state.waited_for--;
+		return;
+	}
+
+	// Have we collected all of the frames for one part?
+	if (c.state.collected_of_part >= c.num_collect_restart) {
+		c.state.waited_for = c.num_wait_for * 2;
+		c.state.collected_of_part = 0;
+		return;
+	}
+
+	c.state.chessboard_models.push_back(c.chessboard_model);
+	view.measured.push_back(view.current);
+
+	c.state.collected_of_part++;
+
+	P("(%i/%i) COLLECTED #%i", num, of, c.state.collected_of_part);
+}
+
 /*!
  * Make a mono frame.
  */
@@ -392,40 +566,15 @@ make_calibration_frame_mono(class Calibration &c)
 	auto &rgb = c.gui.rgb;
 	auto &grey = c.grey;
 
+
 	bool found = do_view(c, c.state.view[0], grey, rgb);
-	(void)found;
 
-	int num = (int)c.state.chessboard_models.size();
-	int of = c.num_collect_total;
-	P("(%i/%i) SHOW CHESSBOARD", num, of);
+	// Advance the state of the calibration.
+	do_capture_logic(c, c.state.view[0], found);
 
-	// Poor mans goto.
-	do {
-		if (!found) {
-			c.state.waited_for = c.num_wait_for;
-			c.state.collected_of_part = 0;
-			break;
-		}
-
-		if (c.state.waited_for > 0) {
-			P("(%i/%i) WAITING %i FRAMES", num, of,
-			  c.state.waited_for);
-			c.state.waited_for--;
-			break;
-		}
-
-		if (c.state.collected_of_part >= c.num_collect_restart) {
-			c.state.waited_for = c.num_wait_for * 2;
-			c.state.collected_of_part = 0;
-			break;
-		}
-
-		c.state.chessboard_models.push_back(c.chessboard_model);
-		c.state.view[0].measured.push_back(c.state.view[0].current);
-		c.state.collected_of_part++;
-
-		P("(%i/%i) COLLECTED #%i", num, of, c.state.collected_of_part);
-	} while (false);
+	if (c.state.chessboard_models.size() >= c.num_collect_total) {
+		process_view_samples(c, c.state.view[0], rgb.cols, rgb.rows);
+	}
 
 	// Draw text and finally send the frame off.
 	print_txt(rgb, c.text, 1.5);
@@ -587,6 +736,9 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 
 	// Don't do anything if we are done.
 	if (c.state.calibrated) {
+		//! @todo add support for stereo.
+		remap_view(c, c.state.view[0], c.gui.rgb);
+
 		print_txt(c.gui.rgb, c.text, 1.5);
 
 		send_rgb_frame(c);
