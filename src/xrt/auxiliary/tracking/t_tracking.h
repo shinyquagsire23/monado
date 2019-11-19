@@ -329,7 +329,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 
 #define T_CALIBRATION_DEFAULT_PARAMS                                           \
 	{                                                                      \
-		9, 7, 0.0173333f, true, 5, 20, 60, 2                           \
+		9, 7, 0.025f, true, 5, 20, 60, 2                               \
 	}
 
 struct t_calibration_params
