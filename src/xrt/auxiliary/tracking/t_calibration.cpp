@@ -78,9 +78,22 @@ static cv::Rect2f calibration_rect[] = {
  *
  */
 
+//! Model of the thing we are measuring to calibrate.
+typedef std::vector<cv::Point3f> Model;
+//! A measurement of the model as viewed on the camera.
+typedef std::vector<cv::Point2f> Measurement;
+//! For each @ref Measurement we take we also save the @ref Model.
+typedef std::vector<Model> ArrayOfModels;
+//! A array of @ref Measurement.
+typedef std::vector<Measurement> ArrayOfMeasurements;
+
+/*!
+ * Current state for each view, one view for mono cameras, two for stereo.
+ */
 struct ViewState
 {
-	std::vector<std::vector<cv::Point2f>> measured = {};
+	ArrayOfMeasurements measured = {};
+
 	cv::Mat current = {};
 
 	cv::Rect brect;
@@ -88,6 +101,9 @@ struct ViewState
 	cv::Rect post_rect;
 };
 
+/*!
+ * Main class for doing calibration.
+ */
 class Calibration
 {
 public:
@@ -100,14 +116,14 @@ public:
 		struct xrt_frame_sink *sink = {};
 	} gui;
 
-	std::vector<cv::Point3f> chessboard_model;
+	Model chessboard_model;
 	cv::Size chessboard_size;
 
 	struct
 	{
 		ViewState view[2] = {};
 
-		std::vector<std::vector<cv::Point3f>> chessboards_model;
+		ArrayOfModels chessboard_models;
 
 		uint32_t calibration_count;
 		bool calibrated;
@@ -117,8 +133,10 @@ public:
 		uint32_t collected_of_part;
 	} state;
 
-	bool subpixel_enable;
-	int subpixel_size;
+	//! Should we use subpixel enhancing for checkerboard.
+	bool subpixel_enable = true;
+	//! What subpixel range for checkerboard enhancement.
+	int subpixel_size = 5;
 
 	//! Number of frames to wait for before collecting.
 	uint32_t num_wait_for;
@@ -301,7 +319,7 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	// now I only have the normal, for the PS4 camera
 #if 0
 	float rp_error = cv::fisheye::stereoCalibrate(
-	    internal->chessboards_model, internal->l_measured,
+	    internal->chessboard_models, internal->l_measured,
 	    internal->r_measured, l_intrinsics,
 	    l_distortion_fisheye, r_intrinsics, r_distortion_fisheye,
 	    image_size, camera_rotation, camera_translation,
@@ -310,7 +328,7 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 
 	// non-fisheye version
 	float rp_error =
-	    cv::stereoCalibrate(c.state.chessboards_model,  // objectPoints
+	    cv::stereoCalibrate(c.state.chessboard_models,  // objectPoints
 	                        c.state.view[0].measured,   // inagePoints1
 	                        c.state.view[1].measured,   // imagePoints2,
 	                        raw.l_intrinsics_mat,       // cameraMatrix1
@@ -376,7 +394,7 @@ make_calibration_frame_mono(class Calibration &c)
 	bool found = do_view(c, c.state.view[0], grey, rgb);
 	(void)found;
 
-	int num = (int)c.state.chessboards_model.size();
+	int num = (int)c.state.chessboard_models.size();
 	int of = c.num_collect_total;
 	P("(%i/%i) SHOW CHESSBOARD", num, of);
 
@@ -401,7 +419,7 @@ make_calibration_frame_mono(class Calibration &c)
 			break;
 		}
 
-		c.state.chessboards_model.push_back(c.chessboard_model);
+		c.state.chessboard_models.push_back(c.chessboard_model);
 		c.state.view[0].measured.push_back(c.state.view[0].current);
 		c.state.collected_of_part++;
 
@@ -478,7 +496,7 @@ make_calibration_frame_sbs(class Calibration &c)
 		}
 
 		if (add_sample) {
-			c.state.chessboards_model.push_back(c.chessboard_model);
+			c.state.chessboard_models.push_back(c.chessboard_model);
 			c.state.view[0].measured.push_back(
 			    c.state.view[0].current);
 			c.state.view[1].measured.push_back(
