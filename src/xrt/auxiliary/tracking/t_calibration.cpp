@@ -666,5 +666,17 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 		c.chessboard_model.push_back(p);
 	}
 
+#if 0
+	c.state.view[0].measured = (ArrayOfMeasurements){
+	};
+
+	c.state.view[1].measured = (ArrayOfMeasurements){
+	};
+
+	for (Measurement &m : c.state.view[0].measured) {
+		(void)m;
+		c.state.board_models.push_back(c.board.model);
+	}
+#endif
 	return ret;
 }
