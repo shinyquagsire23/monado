@@ -942,6 +942,7 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 	c.num_collect_total = params->num_collect_total;
 	c.num_collect_restart = params->num_collect_restart;
 	c.save_images = params->save_images;
+	c.use_fisheye = params->use_fisheye;
 
 	// Setup a initial message.
 	P("Waiting for camera");

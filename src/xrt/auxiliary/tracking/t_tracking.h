@@ -329,11 +329,14 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 
 #define T_CALIBRATION_DEFAULT_PARAMS                                           \
 	{                                                                      \
-		9, 7, 0.025f, true, 5, 20, 60, 2, false                        \
+		false, 9, 7, 0.025f, true, 5, 20, 60, 2, false                 \
 	}
 
 struct t_calibration_params
 {
+	//! Should we use fisheye version of the calibration functions.
+	bool use_fisheye;
+
 	int checker_cols_num;
 	int checker_rows_num;
 	float checker_size_meters;
