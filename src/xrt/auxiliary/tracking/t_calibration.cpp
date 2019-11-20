@@ -106,6 +106,16 @@ struct ViewState
 };
 
 /*!
+ * What type of pattern is being used.
+ */
+enum class Pattern
+{
+	CHESSBOARD,
+	CIRCLES_GRID,
+	ASYMMETRIC_CIRCLES_GRID,
+};
+
+/*!
  * Main class for doing calibration.
  */
 class Calibration
@@ -120,14 +130,19 @@ public:
 		struct xrt_frame_sink *sink = {};
 	} gui;
 
-	Model chessboard_model = {};
-	cv::Size chessboard_size = {8, 6};
+	struct
+	{
+		Model model = {};
+		cv::Size dims = {8, 6};
+		Pattern pattern = Pattern::CHESSBOARD;
+		float spacing_meters = 0.05;
+	} board;
 
 	struct
 	{
 		ViewState view[2] = {};
 
-		ArrayOfModels chessboard_models = {};
+		ArrayOfModels board_models = {};
 
 		uint32_t calibration_count = {};
 		bool calibrated = false;
@@ -236,20 +251,20 @@ draw_rect(cv::Mat &rgb, const cv::Rect &rect, const cv::Scalar &colour)
 }
 
 static bool
-do_view(class Calibration &c,
-        struct ViewState &view,
-        cv::Mat &grey,
-        cv::Mat &rgb)
+do_view_chess(class Calibration &c,
+              struct ViewState &view,
+              cv::Mat &grey,
+              cv::Mat &rgb)
 {
 	int flags = 0;
 	flags += cv::CALIB_CB_FAST_CHECK;
 	flags += cv::CALIB_CB_ADAPTIVE_THRESH;
 	flags += cv::CALIB_CB_NORMALIZE_IMAGE;
 
-	bool found = cv::findChessboardCorners(grey,              // Image
-	                                       c.chessboard_size, // patternSize
-	                                       view.current,      // corners
-	                                       flags);            // flags
+	bool found = cv::findChessboardCorners(grey,         // Image
+	                                       c.board.dims, // patternSize
+	                                       view.current, // corners
+	                                       flags);       // flags
 
 	// Compute our 'pre sample' coverage for this frame,
 	// for display and area threshold checking.
@@ -292,9 +307,73 @@ do_view(class Calibration &c,
 	}
 
 	// Draw the checker board, will also draw partial hits.
-	cv::drawChessboardCorners(rgb, c.chessboard_size, view.current, found);
+	cv::drawChessboardCorners(rgb, c.board.dims, view.current, found);
 
 	return found;
+}
+
+static bool
+do_view_circles(class Calibration &c,
+                struct ViewState &view,
+                cv::Mat &grey,
+                cv::Mat &rgb)
+{
+	int flags = 0;
+	if (c.board.pattern == Pattern::ASYMMETRIC_CIRCLES_GRID) {
+		flags |= cv::CALIB_CB_ASYMMETRIC_GRID;
+	}
+
+	bool found = cv::findCirclesGrid(grey,         // Image
+	                                 c.board.dims, // patternSize
+	                                 view.current, // corners
+	                                 flags);       // flags
+
+	// Compute our 'pre sample' coverage for this frame,
+	// for display and area threshold checking.
+	std::vector<cv::Point2f> coverage;
+	for (uint32_t i = 0; i < view.measured.size(); i++) {
+		cv::Rect brect = cv::boundingRect(view.measured[i]);
+
+		draw_rect(rgb, brect, cv::Scalar(0, 64, 32));
+
+		coverage.push_back(cv::Point2f(brect.tl()));
+		coverage.push_back(cv::Point2f(brect.br()));
+	}
+
+	// What area of the camera have we calibrated.
+	view.pre_rect = cv::boundingRect(coverage);
+	draw_rect(rgb, view.pre_rect, cv::Scalar(0, 255, 255));
+
+	if (found) {
+		view.brect = cv::boundingRect(view.current);
+		coverage.push_back(cv::Point2f(view.brect.tl()));
+		coverage.push_back(cv::Point2f(view.brect.br()));
+
+		// New area we cover.
+		view.post_rect = cv::boundingRect(coverage);
+
+		draw_rect(rgb, view.post_rect, cv::Scalar(0, 255, 0));
+	}
+
+	// Draw the circles we found, will also draw partial hits.
+	cv::drawChessboardCorners(rgb, c.board.dims, view.current, found);
+
+	return found;
+}
+
+static bool
+do_view(class Calibration &c,
+        struct ViewState &view,
+        cv::Mat &grey,
+        cv::Mat &rgb)
+{
+	switch (c.board.pattern) {
+	case Pattern::CHESSBOARD: return do_view_chess(c, view, grey, rgb);
+	case Pattern::CIRCLES_GRID: return do_view_circles(c, view, grey, rgb);
+	case Pattern::ASYMMETRIC_CIRCLES_GRID:
+		return do_view_circles(c, view, grey, rgb);
+	default: assert(false);
+	}
 }
 
 static void
@@ -311,6 +390,53 @@ remap_view(class Calibration &c, struct ViewState &view, cv::Mat &rgb)
 	          cv::INTER_LINEAR,    // interpolation
 	          cv::BORDER_CONSTANT, // borderMode
 	          cv::Scalar());       // borderValue
+}
+
+static void
+build_board_position(class Calibration &c)
+{
+	int cols_num = c.board.dims.width;
+	int rows_num = c.board.dims.height;
+	float size_meters = c.board.spacing_meters;
+
+	switch (c.board.pattern) {
+	case Pattern::CHESSBOARD:
+	case Pattern::CIRCLES_GRID:
+		// Nothing to do.
+		break;
+	case Pattern::ASYMMETRIC_CIRCLES_GRID:
+		// From diagonal size to "square" size.
+		size_meters = sqrt((size_meters * size_meters) / 2.0);
+		break;
+	}
+
+	switch (c.board.pattern) {
+	case Pattern::CHESSBOARD:
+	case Pattern::CIRCLES_GRID:
+		for (int i = 0; i < rows_num; ++i) {
+			for (int j = 0; j < cols_num; ++j) {
+				cv::Point3f p = {
+				    j * size_meters,
+				    i * size_meters,
+				    0.0f,
+				};
+				c.board.model.push_back(p);
+			}
+		}
+		break;
+	case Pattern::ASYMMETRIC_CIRCLES_GRID:
+		for (int i = 0; i < rows_num; ++i) {
+			for (int j = 0; j < cols_num; ++j) {
+				cv::Point3f p = {
+				    (2 * j + i % 2) * size_meters,
+				    i * size_meters,
+				    0.0f,
+				};
+				c.board.model.push_back(p);
+			}
+		}
+		break;
+	}
 }
 
 
@@ -342,7 +468,7 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	// now I only have the normal, for the PS4 camera
 #if 0
 	float rp_error = cv::fisheye::stereoCalibrate(
-	    internal->chessboard_models, internal->l_measured,
+	    internal->board_models, internal->l_measured,
 	    internal->r_measured, l_intrinsics,
 	    l_distortion_fisheye, r_intrinsics, r_distortion_fisheye,
 	    image_size, camera_rotation, camera_translation,
@@ -351,7 +477,7 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 
 	// non-fisheye version
 	float rp_error =
-	    cv::stereoCalibrate(c.state.chessboard_models,  // objectPoints
+	    cv::stereoCalibrate(c.state.board_models,       // objectPoints
 	                        c.state.view[0].measured,   // inagePoints1
 	                        c.state.view[1].measured,   // imagePoints2,
 	                        raw.l_intrinsics_mat,       // cameraMatrix1
@@ -443,15 +569,15 @@ process_view_samples(class Calibration &c,
 		flags |= cv::fisheye::CALIB_FIX_PRINCIPAL_POINT;
 
 		rp_error = cv::fisheye::calibrate(
-		    c.state.chessboard_models, // objectPoints
-		    view.measured,             // imagePoints
-		    image_size,                // image_size
-		    intrinsics_mat,            // K (cameraMatrix 3x3)
-		    distortion_fisheye_mat,    // D (distCoeffs 4x1)
-		    cv::noArray(),             // rvecs
-		    cv::noArray(),             // tvecs
-		    flags,                     // flags
-		    term_criteria);            // criteria
+		    c.state.board_models,   // objectPoints
+		    view.measured,          // imagePoints
+		    image_size,             // image_size
+		    intrinsics_mat,         // K (cameraMatrix 3x3)
+		    distortion_fisheye_mat, // D (distCoeffs 4x1)
+		    cv::noArray(),          // rvecs
+		    cv::noArray(),          // tvecs
+		    flags,                  // flags
+		    term_criteria);         // criteria
 
 		double balance = 0.0f;
 
@@ -463,14 +589,14 @@ process_view_samples(class Calibration &c,
 		    new_intrinsics_mat,     // P
 		    balance);               // balance
 	} else {
-		rp_error = cv::calibrateCamera(
-		    c.state.chessboard_models, // objectPoints
-		    view.measured,             // imagePoints
-		    image_size,                // imageSize
-		    intrinsics_mat,            // cameraMatrix
-		    distortion_mat,            // distCoeffs
-		    cv::noArray(),             // rvecs
-		    cv::noArray());            // tvecs
+		rp_error = cv::calibrateCamera( //
+		    c.state.board_models,       // objectPoints
+		    view.measured,              // imagePoints
+		    image_size,                 // imageSize
+		    intrinsics_mat,             // cameraMatrix
+		    distortion_mat,             // distCoeffs
+		    cv::noArray(),              // rvecs
+		    cv::noArray());             // tvecs
 	}
 
 	P("Calibration done, RP-Error %f", rp_error);
@@ -524,7 +650,7 @@ process_view_samples(class Calibration &c,
 static void
 do_capture_logic(class Calibration &c, struct ViewState &view, bool found)
 {
-	int num = (int)c.state.chessboard_models.size();
+	int num = (int)c.state.board_models.size();
 	int of = c.num_collect_total;
 	P("(%i/%i) SHOW CHESSBOARD", num, of);
 
@@ -549,7 +675,7 @@ do_capture_logic(class Calibration &c, struct ViewState &view, bool found)
 		return;
 	}
 
-	c.state.chessboard_models.push_back(c.chessboard_model);
+	c.state.board_models.push_back(c.board.model);
 	view.measured.push_back(view.current);
 
 	c.state.collected_of_part++;
@@ -566,13 +692,12 @@ make_calibration_frame_mono(class Calibration &c)
 	auto &rgb = c.gui.rgb;
 	auto &grey = c.grey;
 
-
 	bool found = do_view(c, c.state.view[0], grey, rgb);
 
 	// Advance the state of the calibration.
 	do_capture_logic(c, c.state.view[0], found);
 
-	if (c.state.chessboard_models.size() >= c.num_collect_total) {
+	if (c.state.board_models.size() >= c.num_collect_total) {
 		process_view_samples(c, c.state.view[0], rgb.cols, rgb.rows);
 	}
 
@@ -646,7 +771,7 @@ make_calibration_frame_sbs(class Calibration &c)
 		}
 
 		if (add_sample) {
-			c.state.chessboard_models.push_back(c.chessboard_model);
+			c.state.board_models.push_back(c.board.model);
 			c.state.view[0].measured.push_back(
 			    c.state.view[0].current);
 			c.state.view[1].measured.push_back(
@@ -777,15 +902,24 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 {
 	auto &c = *(new Calibration());
 
+	// Basic setup.
 	c.gui.sink = gui;
 	c.base.push_frame = t_calibration_frame;
+	*out_sink = &c.base;
+
+	// Copy the parameters.
+	c.board.dims = {
+	    params->checker_cols_num - 1,
+	    params->checker_rows_num - 1,
+	};
+	c.board.spacing_meters = params->checker_size_meters;
 	c.subpixel_enable = params->subpixel_enable;
 	c.subpixel_size = params->subpixel_size;
 	c.num_wait_for = params->num_wait_for;
 	c.num_collect_total = params->num_collect_total;
 	c.num_collect_restart = params->num_collect_restart;
-	*out_sink = &c.base;
 
+	// Setup a initial message.
 	P("Waiting for camera");
 	make_gui_str(c);
 
@@ -805,18 +939,8 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 	// Ensure we only get yuv or yuyv frames.
 	u_sink_create_to_yuv_or_yuyv(xfctx, *out_sink, out_sink);
 
-	int cross_cols_num = params->checker_cols_num - 1;
-	int cross_rows_num = params->checker_rows_num - 1;
-	int num_crosses = cross_cols_num * cross_rows_num;
-
-	c.chessboard_size = cv::Size(cross_cols_num, cross_rows_num);
-	for (int i = 0; i < num_crosses; i++) {
-		float x = (i / cross_cols_num) * params->checker_size_meters;
-		float y = (i % cross_cols_num) * params->checker_size_meters;
-
-		cv::Point3f p(x, y, 0.0f);
-		c.chessboard_model.push_back(p);
-	}
+	// Build the board model.
+	build_board_position(c);
 
 #if 0
 	c.state.view[0].measured = (ArrayOfMeasurements){
