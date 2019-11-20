@@ -107,6 +107,10 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 #ifdef XRT_HAVE_OPENCV
 	igBegin("Params", NULL, 0);
 
+	igCheckbox("Fisheye Camera (mono only)", &cs->params.use_fisheye);
+
+	// ---
+	igSeparator();
 	igInputFloat("Checker Size (m)", &cs->params.checker_size_meters,
 	             0.0005, 0.001, NULL, 0);
 	igInputInt("Checkerboard Rows", &cs->params.checker_rows_num, 1, 5, 0);
