@@ -164,8 +164,13 @@ public:
 	//! Number of frames to capture before restarting.
 	uint32_t num_collect_restart = 1;
 
+	//! Is the camera fisheye.
 	bool use_fisheye = false;
+
+	//! Should we clear the frame.
 	bool clear_frame = false;
+
+	//! Dump all of the measurements to stdout.
 	bool dump_measurements = false;
 
 	cv::Mat grey = {};
