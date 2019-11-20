@@ -329,7 +329,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 
 #define T_CALIBRATION_DEFAULT_PARAMS                                           \
 	{                                                                      \
-		9, 7, 0.025f, true, 5, 20, 60, 2                               \
+		9, 7, 0.025f, true, 5, 20, 60, 2, false                        \
 	}
 
 struct t_calibration_params
@@ -344,6 +344,8 @@ struct t_calibration_params
 	uint32_t num_wait_for;
 	uint32_t num_collect_total;
 	uint32_t num_collect_restart;
+
+	bool save_images;
 };
 
 int

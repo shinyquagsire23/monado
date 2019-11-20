@@ -173,6 +173,9 @@ public:
 	//! Dump all of the measurements to stdout.
 	bool dump_measurements = false;
 
+	//! Should we save images used for capture.
+	bool save_images;
+
 	cv::Mat grey = {};
 
 	char text[512] = {};
@@ -653,7 +656,11 @@ process_view_samples(class Calibration &c,
  * Logic for capturing a frame.
  */
 static void
-do_capture_logic(class Calibration &c, struct ViewState &view, bool found)
+do_capture_logic(class Calibration &c,
+                 struct ViewState &view,
+                 bool found,
+                 cv::Mat &grey,
+                 cv::Mat &rgb)
 {
 	int num = (int)c.state.board_models.size();
 	int of = c.num_collect_total;
@@ -680,6 +687,17 @@ do_capture_logic(class Calibration &c, struct ViewState &view, bool found)
 		return;
 	}
 
+	if (c.save_images) {
+		char buf[512];
+
+		snprintf(buf, 512, "grey_%03i.png", (int)view.measured.size());
+		cv::imwrite(buf, grey);
+
+		snprintf(buf, 512, "debug_rgb_%03i.jpg",
+		         (int)view.measured.size());
+		cv::imwrite(buf, rgb);
+	}
+
 	c.state.board_models.push_back(c.board.model);
 	view.measured.push_back(view.current);
 
@@ -700,7 +718,7 @@ make_calibration_frame_mono(class Calibration &c)
 	bool found = do_view(c, c.state.view[0], grey, rgb);
 
 	// Advance the state of the calibration.
-	do_capture_logic(c, c.state.view[0], found);
+	do_capture_logic(c, c.state.view[0], found, grey, rgb);
 
 	if (c.state.board_models.size() >= c.num_collect_total) {
 		process_view_samples(c, c.state.view[0], rgb.cols, rgb.rows);
@@ -923,6 +941,7 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 	c.num_wait_for = params->num_wait_for;
 	c.num_collect_total = params->num_collect_total;
 	c.num_collect_restart = params->num_collect_restart;
+	c.save_images = params->save_images;
 
 	// Setup a initial message.
 	P("Waiting for camera");
