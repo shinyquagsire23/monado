@@ -112,16 +112,26 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igInputInt("Checkerboard Rows", &cs->params.checker_rows_num, 1, 5, 0);
 	igInputInt("Checkerboard Columns", &cs->params.checker_cols_num, 1, 5,
 	           0);
+
+	// ---
+	igSeparator();
 	igCheckbox("Subpixel", &cs->params.subpixel_enable);
 	igInputInt("Subpixel Search Size", &cs->params.subpixel_size, 1, 5, 0);
 
+	// ---
+	igSeparator();
 	igInputInt("Wait for # frames", &cs->params.num_wait_for, 1, 5, 0);
 	igInputInt("Collect # measurements", &cs->params.num_collect_total, 1,
 	           5, 0);
 	igInputInt("Collect in groups of #", &cs->params.num_collect_restart, 1,
 	           5, 0);
 
+	// ---
+	igSeparator();
+	igCheckbox("Save images (mono only)", &cs->params.save_images);
+
 	static ImVec2 button_dims = {0, 0};
+	igSeparator();
 	bool pressed = igButton("Done", button_dims);
 	igEnd();
 
