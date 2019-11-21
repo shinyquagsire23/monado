@@ -111,6 +111,7 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igCheckbox("Fisheye Camera (mono only)", &cs->params.use_fisheye);
 
 	igSeparator();
+	igCheckbox("Mirror (no calibration effect)", &cs->params.mirror_rgb_image);
 	igCheckbox("Save images (mono only)", &cs->params.save_images);
 
 	igSeparator();
