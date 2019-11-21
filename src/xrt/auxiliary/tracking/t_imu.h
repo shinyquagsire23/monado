@@ -13,6 +13,7 @@
 extern "C" {
 #endif
 
+
 /*!
  * Opaque type for fusing IMU reports.
  */
@@ -174,6 +175,8 @@ int
 imu_fusion_get_prediction_rotation_vec(struct imu_fusion const *fusion,
                                        uint64_t timestamp_ns,
                                        struct xrt_vec3 *out_rotation_vec);
+
+
 #ifdef __cplusplus
 }
 #endif

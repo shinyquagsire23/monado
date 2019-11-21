@@ -6,8 +6,8 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_tracking
  */
-#pragma once
 
+#pragma once
 
 #ifndef __cplusplus
 #error "This header is C++-only."
@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <type_traits>
+
 
 namespace xrt_fusion {
 namespace implementation {

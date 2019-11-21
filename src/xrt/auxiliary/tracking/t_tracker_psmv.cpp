@@ -11,8 +11,8 @@
 #include "xrt/xrt_tracking.h"
 
 #include "tracking/t_tracking.h"
-#include "tracking/t_calibration_opencv.h"
-#include "tracking/t_tracker_psmv_fusion.h"
+#include "tracking/t_calibration_opencv.hpp"
+#include "tracking/t_tracker_psmv_fusion.hpp"
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <pthread.h>
+
 
 /*!
  * Single camera.

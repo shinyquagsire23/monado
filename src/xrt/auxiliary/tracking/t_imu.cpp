@@ -8,12 +8,14 @@
  * @ingroup aux_tracking
  */
 
-#include "t_imu.h"
-#include "t_imu_fusion.h"
+#include "tracking/t_imu.h"
+#include "tracking/t_imu_fusion.hpp"
+
 #include "math/m_eigen_interop.h"
 #include "util/u_misc.h"
 
 #include <memory>
+
 
 struct imu_fusion
 {

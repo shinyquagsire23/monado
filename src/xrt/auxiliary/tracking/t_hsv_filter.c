@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+
 #define MOD_180(v) ((uint32_t)(v) % 180)
 
 static inline bool

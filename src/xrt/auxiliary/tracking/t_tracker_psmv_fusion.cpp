@@ -12,10 +12,9 @@
  * @ingroup aux_tracking
  */
 
-#include "t_tracker_psmv_fusion.h"
-
-#include "tracking/t_fusion.h"
-#include "tracking/t_imu_fusion.h"
+#include "tracking/t_fusion.hpp"
+#include "tracking/t_imu_fusion.hpp"
+#include "tracking/t_tracker_psmv_fusion.hpp"
 
 #include "math/m_api.h"
 #include "math/m_eigen_interop.h"

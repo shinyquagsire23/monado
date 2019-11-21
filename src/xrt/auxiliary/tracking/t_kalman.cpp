@@ -9,5 +9,5 @@
  * @ingroup aux_tracking
  */
 
-#include "t_imu.cpp"
-#include "t_tracker_psmv_fusion.cpp"
+#include "tracking/t_imu.cpp"
+#include "tracking/t_tracker_psmv_fusion.cpp"

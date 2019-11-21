@@ -9,12 +9,19 @@
  * @ingroup aux_tracking
  */
 
+#pragma once
+
+#ifndef __cplusplus
+#error "This header is C++-only."
+#endif
+
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_tracking.h"
 
 #include "util/u_time.h"
 
 #include <memory>
+
 
 namespace xrt_fusion {
 class PSMVFusionInterface

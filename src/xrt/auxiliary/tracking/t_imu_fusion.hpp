@@ -6,15 +6,15 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_tracking
  */
-#pragma once
 
+#pragma once
 
 #ifndef __cplusplus
 #error "This header is C++-only."
 #endif
 
-#include "t_lowpass.h"
-#include "t_lowpass_vector.h"
+#include "tracking/t_lowpass.hpp"
+#include "tracking/t_lowpass_vector.hpp"
 #include "math/m_api.h"
 #include "util/u_time.h"
 
@@ -22,6 +22,7 @@
 #include <Eigen/Geometry>
 
 #include "flexkalman/EigenQuatExponentialMap.h"
+
 
 namespace xrt_fusion {
 class SimpleIMUFusion

@@ -6,16 +6,17 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_tracking
  */
-#pragma once
 
+#pragma once
 
 #ifndef __cplusplus
 #error "This header is C++-only."
 #endif
 
-#include "t_lowpass.h"
+#include "tracking/t_lowpass.hpp"
 
 #include <Eigen/Core>
+
 
 namespace xrt_fusion {
 

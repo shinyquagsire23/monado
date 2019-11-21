@@ -6,8 +6,8 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_tracking
  */
-#pragma once
 
+#pragma once
 
 #ifndef __cplusplus
 #error "This header is C++-only."
@@ -20,6 +20,7 @@
 #include "flexkalman/AugmentedState.h"
 #include "flexkalman/BaseTypes.h"
 #include "flexkalman/PoseState.h"
+
 
 namespace xrt_fusion {
 namespace types = flexkalman::types;
