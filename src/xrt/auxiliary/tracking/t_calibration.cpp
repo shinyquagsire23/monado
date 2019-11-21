@@ -650,7 +650,7 @@ process_view_samples(class Calibration &c,
 		    cv::noArray());             // tvecs
 	}
 
-	P("Calibration done, RP-Error %f", rp_error);
+	P("CALIBRATION DONE RP ERROR %f", rp_error);
 
 	// clang-format off
 	std::cout << "image_size: " << image_size << "\n";
@@ -707,7 +707,7 @@ do_capture_logic(class Calibration &c,
 {
 	int num = (int)c.state.board_models.size();
 	int of = c.num_collect_total;
-	P("(%i/%i) SHOW CHESSBOARD", num, of);
+	P("(%i/%i) SHOW BOARD", num, of);
 
 	// We haven't found anything, reset to be beginning.
 	if (!found) {
@@ -870,7 +870,7 @@ make_calibration_frame_sbs(class Calibration &c)
 	if (c.state.calibration_count >= CALIBRATION_SAMPLES) {
 		process_stereo_samples(c, cols, rows);
 	} else if (c.state.calibration_count < 9) {
-		P("POSITION CHESSBOARD IN BOX");
+		P("POSITION BOARD IN BOX");
 	} else {
 		P("TRY TO 'PUSH OUT EDGES' WITH LARGE BOARD IMAGES");
 	}
