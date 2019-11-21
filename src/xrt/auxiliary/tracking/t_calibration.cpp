@@ -179,7 +179,10 @@ public:
 	bool dump_measurements = false;
 
 	//! Should we save images used for capture.
-	bool save_images;
+	bool save_images = false;
+
+	//! Should we mirror the rgb images.
+	bool mirror_rgb_image = false;
 
 	cv::Mat grey = {};
 
@@ -380,13 +383,26 @@ do_view(class Calibration &c,
         cv::Mat &grey,
         cv::Mat &rgb)
 {
+	bool found = false;
+
 	switch (c.board.pattern) {
-	case Pattern::CHESSBOARD: return do_view_chess(c, view, grey, rgb);
-	case Pattern::CIRCLES_GRID: return do_view_circles(c, view, grey, rgb);
+	case Pattern::CHESSBOARD:
+		found = do_view_chess(c, view, grey, rgb);
+		break;
+	case Pattern::CIRCLES_GRID:
+		found = do_view_circles(c, view, grey, rgb);
+		break;
 	case Pattern::ASYMMETRIC_CIRCLES_GRID:
-		return do_view_circles(c, view, grey, rgb);
+		found = do_view_circles(c, view, grey, rgb);
+		break;
 	default: assert(false);
 	}
+
+	if (c.mirror_rgb_image) {
+		cv::flip(rgb, rgb, +1);
+	}
+
+	return found;
 }
 
 static void
@@ -979,14 +995,15 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 	    params->checker_cols_num - 1,
 	    params->checker_rows_num - 1,
 	};
+	c.use_fisheye = params->use_fisheye;
 	c.board.spacing_meters = params->checker_size_meters;
 	c.subpixel_enable = params->subpixel_enable;
 	c.subpixel_size = params->subpixel_size;
 	c.num_wait_for = params->num_wait_for;
 	c.num_collect_total = params->num_collect_total;
 	c.num_collect_restart = params->num_collect_restart;
+	c.mirror_rgb_image = params->mirror_rgb_image;
 	c.save_images = params->save_images;
-	c.use_fisheye = params->use_fisheye;
 
 	// Setup a initial message.
 	P("Waiting for camera");

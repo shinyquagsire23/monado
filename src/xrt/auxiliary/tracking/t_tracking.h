@@ -329,7 +329,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 
 #define T_CALIBRATION_DEFAULT_PARAMS                                           \
 	{                                                                      \
-		false, 9, 7, 0.025f, true, 5, 20, 60, 2, false                 \
+		false, 9, 7, 0.025f, true, 5, 10, 60, 2, false, false          \
 	}
 
 struct t_calibration_params
@@ -347,6 +347,13 @@ struct t_calibration_params
 	int num_wait_for;
 	int num_collect_total;
 	int num_collect_restart;
+
+	/*!
+	 * Should we mirror the RGB image?
+	 *
+	 * Before text is written out, has no effect on actual image capture.
+	 */
+	bool mirror_rgb_image;
 
 	bool save_images;
 };
