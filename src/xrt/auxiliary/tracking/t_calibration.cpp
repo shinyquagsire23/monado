@@ -96,7 +96,10 @@ struct ViewState
 {
 	ArrayOfMeasurements measured = {};
 
-	cv::Mat current = {};
+	bool last_valid = false;
+	Measurement last;
+
+	Measurement current = {};
 
 	cv::Rect brect = {};
 	cv::Rect pre_rect = {};
@@ -449,6 +452,28 @@ build_board_position(class Calibration &c)
 	}
 }
 
+/*!
+ * Returns true if any one of the measurement points have moved.
+ */
+static bool
+has_measurement_moved(Measurement &last, Measurement &current)
+{
+	if (last.size() != current.size()) {
+		return true;
+	}
+
+	for (size_t i = 0; i < last.size(); ++i) {
+		float x = last[i].x - current[i].x;
+		float y = last[i].y - current[i].y;
+
+		// Distance squard in pixels.
+		if ((x * x + y * y) >= 3.0) {
+			return true;
+		}
+	}
+
+	return false;
+}
 
 /*
  *
@@ -672,6 +697,7 @@ do_capture_logic(class Calibration &c,
 	if (!found) {
 		c.state.waited_for = c.num_wait_for;
 		c.state.collected_of_part = 0;
+		view.last_valid = false;
 		return;
 	}
 
@@ -679,6 +705,22 @@ do_capture_logic(class Calibration &c,
 	if (c.state.waited_for > 0) {
 		P("(%i/%i) WAITING %i FRAMES", num, of, c.state.waited_for);
 		c.state.waited_for--;
+
+		bool moved = false;
+		if (view.last_valid) {
+			moved = has_measurement_moved(view.last, view.current);
+		}
+
+		// Now save the current measurement to the last one.
+		view.last = view.current;
+		view.last_valid = true;
+
+		if (moved) {
+			P("(%i/%i) KEEP BOARD STILL!", num, of);
+			c.state.waited_for = c.num_wait_for;
+			c.state.collected_of_part = 0;
+		}
+
 		return;
 	}
 
