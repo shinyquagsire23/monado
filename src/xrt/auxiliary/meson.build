@@ -80,10 +80,11 @@ lib_aux_math = static_library(
 	files(
 		'math/m_api.h',
 		'math/m_base.cpp',
-		'math/m_eigen_interop.h',
+		'math/m_eigen_interop.hpp',
 		'math/m_hash.cpp',
 		'math/m_optics.c',
 		'math/m_quatexpmap.cpp',
+		'math/m_vec2.h',
 	),
 	include_directories: xrt_include,
 	dependencies: [eigen3],

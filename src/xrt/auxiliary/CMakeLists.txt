@@ -4,10 +4,11 @@
 set(MATH_SOURCE_FILES
 	math/m_api.h
 	math/m_base.cpp
-	math/m_eigen_interop.h
+	math/m_eigen_interop.hpp
 	math/m_hash.cpp
 	math/m_optics.c
 	math/m_quatexpmap.cpp
+	math/m_vec2.h
 	)
 
 set(OGL_SOURCE_FILES

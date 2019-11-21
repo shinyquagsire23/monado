@@ -8,11 +8,13 @@
  */
 
 
-#include "m_api.h"
+#include "math/m_api.h"
 #include "util/u_debug.h"
+
 #include <math.h>
-#include <assert.h>
 #include <stdio.h>
+#include <assert.h>
+
 
 DEBUG_GET_ONCE_BOOL_OPTION(views, "MATH_DEBUG_VIEWS", false)
 

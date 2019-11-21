@@ -11,7 +11,7 @@
 #include "tracking/t_imu.h"
 #include "tracking/t_imu_fusion.hpp"
 
-#include "math/m_eigen_interop.h"
+#include "math/m_eigen_interop.hpp"
 #include "util/u_misc.h"
 
 #include <memory>

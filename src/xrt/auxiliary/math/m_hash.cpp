@@ -7,8 +7,8 @@
  * @ingroup aux_math
  */
 
+#include "math/m_api.h"
 #include <string>
-#include "m_api.h"
 
 
 extern "C" size_t

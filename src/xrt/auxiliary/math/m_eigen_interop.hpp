@@ -18,6 +18,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+
 /*!
  * @brief Wrap an internal quaternion struct in an Eigen type, const overload.
  *

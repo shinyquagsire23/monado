@@ -10,13 +10,14 @@
  * Based in part on inc/osvr/Util/EigenQuatExponentialMap.h in OSVR-Core
  */
 
+#include "math/m_api.h"
+#include "math/m_eigen_interop.hpp"
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 #include <assert.h>
 
-#include "math/m_api.h"
-#include "math/m_eigen_interop.h"
 
 // anonymous namespace for internal types
 namespace {

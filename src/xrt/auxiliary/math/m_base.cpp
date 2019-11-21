@@ -8,13 +8,14 @@
  * @ingroup aux_math
  */
 
+#include "math/m_api.h"
+#include "math/m_eigen_interop.hpp"
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 #include <assert.h>
 
-#include "math/m_api.h"
-#include "math/m_eigen_interop.h"
 
 /*
  *
