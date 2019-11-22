@@ -329,20 +329,64 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 
 #define T_CALIBRATION_DEFAULT_PARAMS                                           \
 	{                                                                      \
-		false, 9, 7, 0.025f, true, 5, 5, 20, 1, false, true            \
+		false, T_BOARD_CHECKERS,                                       \
+		    {                                                          \
+		        9, 7, 0.025f, true, 5,                                 \
+		    },                                                         \
+		    {                                                          \
+		        9,                                                     \
+		        7,                                                     \
+		        0.025f,                                                \
+		    },                                                         \
+		    {                                                          \
+		        5,                                                     \
+		        17,                                                    \
+		        0.02f,                                                 \
+		    },                                                         \
+		    5, 20, 1, false, true,                                     \
 	}
+
+/*!
+ * Board pattern type.
+ */
+enum t_board_pattern
+{
+	T_BOARD_CHECKERS,
+	T_BOARD_CIRCLES,
+	T_BOARD_ASYMMETRIC_CIRCLES,
+};
 
 struct t_calibration_params
 {
 	//! Should we use fisheye version of the calibration functions.
 	bool use_fisheye;
 
-	int checker_cols_num;
-	int checker_rows_num;
-	float checker_size_meters;
+	//! What type of pattern are we using for calibration.
+	enum t_board_pattern pattern;
 
-	bool subpixel_enable;
-	int subpixel_size;
+	struct
+	{
+		int cols;
+		int rows;
+		float size_meters;
+
+		bool subpixel_enable;
+		int subpixel_size;
+	} checkers;
+
+	struct
+	{
+		int cols;
+		int rows;
+		float distance_meters;
+	} circles;
+
+	struct
+	{
+		int cols;
+		int rows;
+		float diagonal_distance_meters;
+	} asymmetric_circles;
 
 	int num_wait_for;
 	int num_collect_total;

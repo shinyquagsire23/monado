@@ -111,16 +111,6 @@ struct ViewState
 };
 
 /*!
- * What type of pattern is being used.
- */
-enum class Pattern
-{
-	CHESSBOARD,
-	CIRCLES_GRID,
-	ASYMMETRIC_CIRCLES_GRID,
-};
-
-/*!
  * Main class for doing calibration.
  */
 class Calibration
@@ -139,7 +129,7 @@ public:
 	{
 		Model model = {};
 		cv::Size dims = {8, 6};
-		Pattern pattern = Pattern::CHESSBOARD;
+		enum t_board_pattern pattern = T_BOARD_CHECKERS;
 		float spacing_meters = 0.05;
 	} board;
 
@@ -335,7 +325,7 @@ do_view_circles(class Calibration &c,
                 cv::Mat &rgb)
 {
 	int flags = 0;
-	if (c.board.pattern == Pattern::ASYMMETRIC_CIRCLES_GRID) {
+	if (c.board.pattern == T_BOARD_ASYMMETRIC_CIRCLES) {
 		flags |= cv::CALIB_CB_ASYMMETRIC_GRID;
 	}
 
@@ -386,13 +376,13 @@ do_view(class Calibration &c,
 	bool found = false;
 
 	switch (c.board.pattern) {
-	case Pattern::CHESSBOARD:
+	case T_BOARD_CHECKERS: //
 		found = do_view_chess(c, view, grey, rgb);
 		break;
-	case Pattern::CIRCLES_GRID:
+	case T_BOARD_CIRCLES: //
 		found = do_view_circles(c, view, grey, rgb);
 		break;
-	case Pattern::ASYMMETRIC_CIRCLES_GRID:
+	case T_BOARD_ASYMMETRIC_CIRCLES: //
 		found = do_view_circles(c, view, grey, rgb);
 		break;
 	default: assert(false);
@@ -429,19 +419,19 @@ build_board_position(class Calibration &c)
 	float size_meters = c.board.spacing_meters;
 
 	switch (c.board.pattern) {
-	case Pattern::CHESSBOARD:
-	case Pattern::CIRCLES_GRID:
+	case T_BOARD_CHECKERS:
+	case T_BOARD_CIRCLES:
 		// Nothing to do.
 		break;
-	case Pattern::ASYMMETRIC_CIRCLES_GRID:
+	case T_BOARD_ASYMMETRIC_CIRCLES:
 		// From diagonal size to "square" size.
 		size_meters = sqrt((size_meters * size_meters) / 2.0);
 		break;
 	}
 
 	switch (c.board.pattern) {
-	case Pattern::CHESSBOARD:
-	case Pattern::CIRCLES_GRID:
+	case T_BOARD_CHECKERS:
+	case T_BOARD_CIRCLES:
 		for (int i = 0; i < rows_num; ++i) {
 			for (int j = 0; j < cols_num; ++j) {
 				cv::Point3f p = {
@@ -453,7 +443,7 @@ build_board_position(class Calibration &c)
 			}
 		}
 		break;
-	case Pattern::ASYMMETRIC_CIRCLES_GRID:
+	case T_BOARD_ASYMMETRIC_CIRCLES:
 		for (int i = 0; i < rows_num; ++i) {
 			for (int j = 0; j < cols_num; ++j) {
 				cv::Point3f p = {
@@ -991,19 +981,41 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 	*out_sink = &c.base;
 
 	// Copy the parameters.
-	c.board.dims = {
-	    params->checker_cols_num - 1,
-	    params->checker_rows_num - 1,
-	};
 	c.use_fisheye = params->use_fisheye;
-	c.board.spacing_meters = params->checker_size_meters;
-	c.subpixel_enable = params->subpixel_enable;
-	c.subpixel_size = params->subpixel_size;
+	c.board.pattern = params->pattern;
+	switch (params->pattern) {
+	case T_BOARD_CHECKERS:
+		c.board.dims = {
+		    params->checkers.cols - 1,
+		    params->checkers.rows - 1,
+		};
+		c.board.spacing_meters = params->checkers.size_meters;
+		c.subpixel_enable = params->checkers.subpixel_enable;
+		c.subpixel_size = params->checkers.subpixel_size;
+		break;
+	case T_BOARD_CIRCLES:
+		c.board.dims = {
+		    params->circles.cols,
+		    params->circles.rows,
+		};
+		c.board.spacing_meters = params->circles.distance_meters;
+		break;
+	case T_BOARD_ASYMMETRIC_CIRCLES:
+		c.board.dims = {
+		    params->asymmetric_circles.cols,
+		    params->asymmetric_circles.rows,
+		};
+		c.board.spacing_meters =
+		    params->asymmetric_circles.diagonal_distance_meters;
+		break;
+	default: assert(false);
+	}
 	c.num_wait_for = params->num_wait_for;
 	c.num_collect_total = params->num_collect_total;
 	c.num_collect_restart = params->num_collect_restart;
 	c.mirror_rgb_image = params->mirror_rgb_image;
 	c.save_images = params->save_images;
+
 
 	// Setup a initial message.
 	P("Waiting for camera");

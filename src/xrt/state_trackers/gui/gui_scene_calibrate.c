@@ -24,6 +24,8 @@
 #include "gui_common.h"
 #include "gui_imgui.h"
 
+#include <assert.h>
+
 
 struct calibration_scene
 {
@@ -120,13 +122,27 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igInputInt("Collect in groups of #", &cs->params.num_collect_restart, 1, 5, 0);
 
 	igSeparator();
-	igInputFloat("Checker Size (m)", &cs->params.checker_size_meters, 0.0005, 0.001, NULL, 0);
-	igInputInt("Checkerboard Rows", &cs->params.checker_rows_num, 1, 5, 0);
-	igInputInt("Checkerboard Columns", &cs->params.checker_cols_num, 1, 5, 0);
-
-	igSeparator();
-	igCheckbox("Subpixel", &cs->params.subpixel_enable);
-	igInputInt("Subpixel Search Size", &cs->params.subpixel_size, 1, 5, 0);
+	igComboStr("Board type", (int*)&cs->params.pattern, "Checkers\0Circles\0Asymetric Circles\0\0", 3);
+	switch (cs->params.pattern) {
+	case T_BOARD_CHECKERS:
+		igInputInt("Checkerboard Rows", &cs->params.checkers.rows, 1, 5, 0);
+		igInputInt("Checkerboard Columns", &cs->params.checkers.cols, 1, 5, 0);
+		igInputFloat("Checker Size (m)", &cs->params.checkers.size_meters, 0.0005, 0.001, NULL, 0);
+		igCheckbox("Subpixel", &cs->params.checkers.subpixel_enable);
+		igInputInt("Subpixel Search Size", &cs->params.checkers.subpixel_size, 1, 5, 0);
+		break;
+	case T_BOARD_CIRCLES:
+		igInputInt("Circle Rows", &cs->params.circles.rows, 1, 5, 0);
+		igInputInt("Circle Columns", &cs->params.circles.cols, 1, 5, 0);
+		igInputFloat("Spacing (m)", &cs->params.circles.distance_meters, 0.0005, 0.001, NULL, 0);
+		break;
+	case T_BOARD_ASYMMETRIC_CIRCLES:
+		igInputInt("Circle Rows", &cs->params.asymmetric_circles.rows, 1, 5, 0);
+		igInputInt("Circle Columns", &cs->params.asymmetric_circles.cols, 1, 5, 0);
+		igInputFloat("Diagonal spacing (m)", &cs->params.asymmetric_circles.diagonal_distance_meters, 0.0005, 0.001, NULL, 0);
+		break;
+	default: assert(false);
+	}
 	// clang-format on
 
 	static ImVec2 button_dims = {0, 0};
