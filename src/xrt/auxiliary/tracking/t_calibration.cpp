@@ -183,7 +183,7 @@ public:
 	//! Should we mirror the rgb images.
 	bool mirror_rgb_image = false;
 
-	cv::Mat grey = {};
+	cv::Mat gray = {};
 
 	char text[512] = {};
 };
@@ -220,7 +220,7 @@ ensure_buffers_are_allocated(class Calibration &c, int rows, int cols)
 		return;
 	}
 
-	c.grey = cv::Mat(rows, cols, CV_8UC1, cv::Scalar(0));
+	c.gray = cv::Mat(rows, cols, CV_8UC1, cv::Scalar(0));
 
 	refresh_gui_frame(c, rows, cols);
 }
@@ -268,7 +268,7 @@ draw_rect(cv::Mat &rgb, const cv::Rect &rect, const cv::Scalar &colour)
 static bool
 do_view_chess(class Calibration &c,
               struct ViewState &view,
-              cv::Mat &grey,
+              cv::Mat &gray,
               cv::Mat &rgb)
 {
 	int flags = 0;
@@ -276,7 +276,7 @@ do_view_chess(class Calibration &c,
 	flags += cv::CALIB_CB_ADAPTIVE_THRESH;
 	flags += cv::CALIB_CB_NORMALIZE_IMAGE;
 
-	bool found = cv::findChessboardCorners(grey,         // Image
+	bool found = cv::findChessboardCorners(gray,         // Image
 	                                       c.board.dims, // patternSize
 	                                       view.current, // corners
 	                                       flags);       // flags
@@ -318,7 +318,7 @@ do_view_chess(class Calibration &c,
 		cv::Size size(c.subpixel_size, c.subpixel_size);
 		cv::Size zero(-1, -1);
 
-		cv::cornerSubPix(grey, view.current, size, zero, term_criteria);
+		cv::cornerSubPix(gray, view.current, size, zero, term_criteria);
 	}
 
 	// Draw the checker board, will also draw partial hits.
@@ -330,7 +330,7 @@ do_view_chess(class Calibration &c,
 static bool
 do_view_circles(class Calibration &c,
                 struct ViewState &view,
-                cv::Mat &grey,
+                cv::Mat &gray,
                 cv::Mat &rgb)
 {
 	int flags = 0;
@@ -338,7 +338,7 @@ do_view_circles(class Calibration &c,
 		flags |= cv::CALIB_CB_ASYMMETRIC_GRID;
 	}
 
-	bool found = cv::findCirclesGrid(grey,         // Image
+	bool found = cv::findCirclesGrid(gray,         // Image
 	                                 c.board.dims, // patternSize
 	                                 view.current, // corners
 	                                 flags);       // flags
@@ -384,20 +384,20 @@ do_view_circles(class Calibration &c,
 static bool
 do_view(class Calibration &c,
         struct ViewState &view,
-        cv::Mat &grey,
+        cv::Mat &gray,
         cv::Mat &rgb)
 {
 	bool found = false;
 
 	switch (c.board.pattern) {
 	case T_BOARD_CHECKERS: //
-		found = do_view_chess(c, view, grey, rgb);
+		found = do_view_chess(c, view, gray, rgb);
 		break;
 	case T_BOARD_CIRCLES: //
-		found = do_view_circles(c, view, grey, rgb);
+		found = do_view_circles(c, view, gray, rgb);
 		break;
 	case T_BOARD_ASYMMETRIC_CIRCLES: //
-		found = do_view_circles(c, view, grey, rgb);
+		found = do_view_circles(c, view, gray, rgb);
 		break;
 	default: assert(false);
 	}
@@ -712,7 +712,7 @@ static void
 do_capture_logic(class Calibration &c,
                  struct ViewState &view,
                  bool found,
-                 cv::Mat &grey,
+                 cv::Mat &gray,
                  cv::Mat &rgb)
 {
 	int num = (int)c.state.board_models.size();
@@ -759,8 +759,8 @@ do_capture_logic(class Calibration &c,
 	if (c.save_images) {
 		char buf[512];
 
-		snprintf(buf, 512, "grey_%03i.png", (int)view.measured.size());
-		cv::imwrite(buf, grey);
+		snprintf(buf, 512, "gray_%03i.png", (int)view.measured.size());
+		cv::imwrite(buf, gray);
 
 		snprintf(buf, 512, "debug_rgb_%03i.jpg",
 		         (int)view.measured.size());
@@ -790,12 +790,12 @@ static void
 make_calibration_frame_mono(class Calibration &c)
 {
 	auto &rgb = c.gui.rgb;
-	auto &grey = c.grey;
+	auto &gray = c.gray;
 
-	bool found = do_view(c, c.state.view[0], grey, rgb);
+	bool found = do_view(c, c.state.view[0], gray, rgb);
 
 	// Advance the state of the calibration.
-	do_capture_logic(c, c.state.view[0], found, grey, rgb);
+	do_capture_logic(c, c.state.view[0], found, gray, rgb);
 
 	if (c.state.board_models.size() >= c.num_collect_total) {
 		process_view_samples(c, c.state.view[0], rgb.cols, rgb.rows);
@@ -813,21 +813,21 @@ static void
 make_calibration_frame_sbs(class Calibration &c)
 {
 	auto &rgb = c.gui.rgb;
-	auto &grey = c.grey;
+	auto &gray = c.gray;
 
 	int cols = rgb.cols / 2;
 	int rows = rgb.rows;
 
 	// Split left and right eyes, don't make any copies.
-	cv::Mat l_grey(rows, cols, CV_8UC1, grey.data, grey.cols);
-	cv::Mat r_grey(rows, cols, CV_8UC1, grey.data + cols, grey.cols);
+	cv::Mat l_gray(rows, cols, CV_8UC1, gray.data, gray.cols);
+	cv::Mat r_gray(rows, cols, CV_8UC1, gray.data + cols, gray.cols);
 	cv::Mat l_rgb(rows, cols, CV_8UC3, c.gui.frame->data,
 	              c.gui.frame->stride);
 	cv::Mat r_rgb(rows, cols, CV_8UC3, c.gui.frame->data + 3 * cols,
 	              c.gui.frame->stride);
 
-	bool found_left = do_view(c, c.state.view[0], l_grey, l_rgb);
-	bool found_right = do_view(c, c.state.view[1], r_grey, r_rgb);
+	bool found_left = do_view(c, c.state.view[0], l_gray, l_rgb);
+	bool found_right = do_view(c, c.state.view[1], r_gray, r_rgb);
 
 	// Draw our current calibration guide box.
 	cv::Point2f bound_tl = calibration_rect[c.state.calibration_count].tl();
@@ -928,7 +928,7 @@ process_frame_yuv(class Calibration &c, struct xrt_frame *xf)
 	c.gui.frame->source_sequence = xf->source_sequence;
 
 	cv::cvtColor(data, c.gui.rgb, cv::COLOR_YUV2RGB);
-	cv::cvtColor(c.gui.rgb, c.grey, cv::COLOR_RGB2GRAY);
+	cv::cvtColor(c.gui.rgb, c.gray, cv::COLOR_RGB2GRAY);
 }
 
 XRT_NO_INLINE static void
@@ -946,7 +946,7 @@ process_frame_yuyv(class Calibration &c, struct xrt_frame *xf)
 	c.gui.frame->source_sequence = xf->source_sequence;
 
 	cv::cvtColor(data_full, c.gui.rgb, cv::COLOR_YUV2RGB_YUYV);
-	cv::cvtColor(data_full, c.grey, cv::COLOR_YUV2GRAY_YUYV);
+	cv::cvtColor(data_full, c.gray, cv::COLOR_YUV2GRAY_YUYV);
 }
 
 XRT_NO_INLINE static void
@@ -969,27 +969,27 @@ process_load_image(class Calibration &c, struct xrt_frame *xf)
 			break;
 		}
 
-		snprintf(buf, 512, "grey_%03i.png", i);
-		c.grey = cv::imread(buf, cv::IMREAD_GRAYSCALE);
+		snprintf(buf, 512, "gray_%03i.png", i);
+		c.gray = cv::imread(buf, cv::IMREAD_GRAYSCALE);
 
-		if (c.grey.rows == 0 || c.grey.cols == 0) {
+		if (c.gray.rows == 0 || c.gray.cols == 0) {
 			fprintf(stderr, "Could not find image '%s'!\n", buf);
 			continue;
 		}
 
-		if (c.grey.rows != (int)xf->height ||
-		    c.grey.cols != (int)xf->width) {
+		if (c.gray.rows != (int)xf->height ||
+		    c.gray.cols != (int)xf->width) {
 			fprintf(stderr,
 			        "Image size does not match frame size! Image: "
 			        "(%ix%i) Frame: (%ux%u)\n",
-			        c.grey.cols, c.grey.rows, xf->width,
+			        c.gray.cols, c.gray.rows, xf->width,
 			        xf->height);
 			continue;
 		}
 
-		// Create a new RGB image and then copy the grey data to it.
-		refresh_gui_frame(c, c.grey.rows, c.grey.cols);
-		cv::cvtColor(c.grey, c.gui.rgb, cv::COLOR_GRAY2RGB);
+		// Create a new RGB image and then copy the gray data to it.
+		refresh_gui_frame(c, c.gray.rows, c.gray.cols);
+		cv::cvtColor(c.gray, c.gui.rgb, cv::COLOR_GRAY2RGB);
 
 		// Call the normal frame processing now.
 		make_calibration_frame(c, xf);
@@ -1019,7 +1019,7 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 		process_load_image(c, xf);
 	}
 
-	// Fill both c.gui.rgb and c.grey with the data we got.
+	// Fill both c.gui.rgb and c.gray with the data we got.
 	switch (xf->format) {
 	case XRT_FORMAT_YUV888: process_frame_yuv(c, xf); break;
 	case XRT_FORMAT_YUV422: process_frame_yuyv(c, xf); break;
