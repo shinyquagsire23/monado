@@ -764,7 +764,7 @@ do_capture_logic(class Calibration &c,
 
 	// Have we collected all of the frames for one part?
 	if (c.state.collected_of_part >= c.num_collect_restart) {
-		c.state.waited_for = c.num_wait_for * 2;
+		c.state.waited_for = c.num_wait_for;
 		c.state.collected_of_part = 0;
 		c.state.cooldown = c.num_cooldown_frames;
 		return;
