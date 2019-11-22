@@ -148,6 +148,12 @@ public:
 		uint32_t collected_of_part = 0;
 	} state;
 
+	struct
+	{
+		bool enabled = false;
+		uint32_t num_images = 20;
+	} load;
+
 	//! Should we use subpixel enhancing for checkerboard.
 	bool subpixel_enable = true;
 	//! What subpixel range for checkerboard enhancement.
@@ -887,6 +893,18 @@ make_calibration_frame_sbs(class Calibration &c)
 	send_rgb_frame(c);
 }
 
+static void
+make_calibration_frame(class Calibration &c, struct xrt_frame *xf)
+{
+	switch (xf->stereo_format) {
+	case XRT_STEREO_FORMAT_SBS: make_calibration_frame_sbs(c); break;
+	case XRT_STEREO_FORMAT_NONE: make_calibration_frame_mono(c); break;
+	default:
+		P("ERROR: Unknown stereo format! '%i'", xf->stereo_format);
+		make_gui_str(c);
+		return;
+	}
+}
 
 /*
  *
@@ -927,6 +945,60 @@ process_frame_yuyv(class Calibration &c, struct xrt_frame *xf)
 	cv::cvtColor(data_full, c.grey, cv::COLOR_YUV2GRAY_YUYV);
 }
 
+XRT_NO_INLINE static void
+process_load_image(class Calibration &c, struct xrt_frame *xf)
+{
+	char buf[512];
+
+	// We need to change the settings for frames to make it work.
+	uint32_t num_collect_restart = 1;
+	uint32_t num_cooldown_frames = 0;
+	uint32_t num_wait_for = 0;
+
+	std::swap(c.num_collect_restart, num_collect_restart);
+	std::swap(c.num_cooldown_frames, num_cooldown_frames);
+	std::swap(c.num_wait_for, num_wait_for);
+
+	for (uint32_t i = 0; i < c.load.num_images; i++) {
+		// Early out if the user requeted less images.
+		if (c.state.calibrated) {
+			break;
+		}
+
+		snprintf(buf, 512, "grey_%03i.png", i);
+		c.grey = cv::imread(buf, cv::IMREAD_GRAYSCALE);
+
+		if (c.grey.rows == 0 || c.grey.cols == 0) {
+			fprintf(stderr, "Could not find image '%s'!\n", buf);
+			continue;
+		}
+
+		if (c.grey.rows != (int)xf->height ||
+		    c.grey.cols != (int)xf->width) {
+			fprintf(stderr,
+			        "Image size does not match frame size! Image: "
+			        "(%ix%i) Frame: (%ux%u)\n",
+			        c.grey.cols, c.grey.rows, xf->width,
+			        xf->height);
+			continue;
+		}
+
+		// Create a new RGB image and then copy the grey data to it.
+		refresh_gui_frame(c, c.grey.rows, c.grey.cols);
+		cv::cvtColor(c.grey, c.gui.rgb, cv::COLOR_GRAY2RGB);
+
+		// Call the normal frame processing now.
+		make_calibration_frame(c, xf);
+	}
+
+	// Restore settings.
+	c.num_collect_restart = num_collect_restart;
+	c.num_cooldown_frames = num_cooldown_frames;
+	c.num_wait_for = num_wait_for;
+
+	c.load.enabled = false;
+}
+
 
 /*
  *
@@ -938,6 +1010,10 @@ extern "C" void
 t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 {
 	auto &c = *(class Calibration *)xsink;
+
+	if (c.load.enabled) {
+		process_load_image(c, xf);
+	}
 
 	// Fill both c.gui.rgb and c.grey with the data we got.
 	switch (xf->format) {
@@ -967,14 +1043,7 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 		              cv::Scalar(0, 0, 0), -1, 0);
 	}
 
-	switch (xf->stereo_format) {
-	case XRT_STEREO_FORMAT_SBS: make_calibration_frame_sbs(c); break;
-	case XRT_STEREO_FORMAT_NONE: make_calibration_frame_mono(c); break;
-	default:
-		P("ERROR: Unknown stereo format! '%i'", xf->stereo_format);
-		make_gui_str(c);
-		return;
-	}
+	make_calibration_frame(c, xf);
 }
 
 
@@ -1031,6 +1100,8 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 	c.num_wait_for = params->num_wait_for;
 	c.num_collect_total = params->num_collect_total;
 	c.num_collect_restart = params->num_collect_restart;
+	c.load.enabled = params->load.enabled;
+	c.load.num_images = params->load.num_images;
 	c.mirror_rgb_image = params->mirror_rgb_image;
 	c.save_images = params->save_images;
 

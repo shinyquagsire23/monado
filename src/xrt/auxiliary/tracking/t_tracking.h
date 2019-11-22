@@ -343,6 +343,10 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 		        17,                                                    \
 		        0.02f,                                                 \
 		    },                                                         \
+		    {                                                          \
+		        false,                                                 \
+		        20,                                                    \
+		    },                                                         \
 		    20, 5, 20, 1, false, true,                                 \
 	}
 
@@ -387,6 +391,12 @@ struct t_calibration_params
 		int rows;
 		float diagonal_distance_meters;
 	} asymmetric_circles;
+
+	struct
+	{
+		bool enabled;
+		int num_images;
+	} load;
 
 	int num_cooldown_frames;
 	int num_wait_for;

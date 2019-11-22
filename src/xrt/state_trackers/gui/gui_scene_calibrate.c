@@ -117,6 +117,12 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igCheckbox("Save images (mono only)", &cs->params.save_images);
 
 	igSeparator();
+	igCheckbox("Load images (kinda mono only)", &cs->params.load.enabled);
+	if (cs->params.load.enabled) {
+		igInputInt("# images", &cs->params.load.num_images, 1, 5, 0);
+	}
+
+	igSeparator();
 	igInputInt("Cooldown for # frames", &cs->params.num_cooldown_frames, 1, 5, 0);
 	igInputInt("Wait for # frames (steady)", &cs->params.num_wait_for, 1, 5, 0);
 	igInputInt("Collect # measurements", &cs->params.num_collect_total, 1, 5, 0);
