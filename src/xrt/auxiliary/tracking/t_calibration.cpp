@@ -759,7 +759,8 @@ do_capture_logic(class Calibration &c,
 	if (c.save_images) {
 		char buf[512];
 
-		snprintf(buf, 512, "gray_%03i.png", (int)view.measured.size());
+		snprintf(buf, 512, "gray_%ix%i_%03i.png", gray.cols, gray.rows,
+		         (int)view.measured.size());
 		cv::imwrite(buf, gray);
 
 		snprintf(buf, 512, "debug_rgb_%03i.jpg",
@@ -969,7 +970,8 @@ process_load_image(class Calibration &c, struct xrt_frame *xf)
 			break;
 		}
 
-		snprintf(buf, 512, "gray_%03i.png", i);
+		snprintf(buf, 512, "gray_%ux%u_%03i.png", xf->width, xf->height,
+		         i);
 		c.gray = cv::imread(buf, cv::IMREAD_GRAYSCALE);
 
 		if (c.gray.rows == 0 || c.gray.cols == 0) {
