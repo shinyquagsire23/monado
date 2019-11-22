@@ -615,7 +615,9 @@ process_view_samples(class Calibration &c,
 		int flags = 0;
 		flags |= cv::fisheye::CALIB_FIX_SKEW;
 		flags |= cv::fisheye::CALIB_RECOMPUTE_EXTRINSIC;
+#if 0
 		flags |= cv::fisheye::CALIB_FIX_PRINCIPAL_POINT;
+#endif
 
 		rp_error = cv::fisheye::calibrate(
 		    c.state.board_models,   // objectPoints
@@ -628,7 +630,7 @@ process_view_samples(class Calibration &c,
 		    flags,                  // flags
 		    term_criteria);         // criteria
 
-		double balance = 0.0f;
+		double balance = 0.5f;
 
 		cv::fisheye::estimateNewCameraMatrixForUndistortRectify(
 		    intrinsics_mat,         // K
