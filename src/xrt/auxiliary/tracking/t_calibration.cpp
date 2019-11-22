@@ -636,7 +636,7 @@ process_view_samples(class Calibration &c,
 		    flags,                  // flags
 		    term_criteria);         // criteria
 
-		double balance = 0.5f;
+		double balance = 0.1f;
 
 		cv::fisheye::estimateNewCameraMatrixForUndistortRectify(
 		    intrinsics_mat,         // K
@@ -645,6 +645,10 @@ process_view_samples(class Calibration &c,
 		    cv::Matx33d::eye(),     // R
 		    new_intrinsics_mat,     // P
 		    balance);               // balance
+
+		// Probably a busted work-around for busted function.
+		new_intrinsics_mat.at<double>(0, 2) = (cols - 1) / 2.0;
+		new_intrinsics_mat.at<double>(1, 2) = (rows - 1) / 2.0;
 	} else {
 		rp_error = cv::calibrateCamera( //
 		    c.state.board_models,       // objectPoints
