@@ -143,6 +143,7 @@ public:
 		bool calibrated = false;
 
 
+		uint32_t cooldown = 0;
 		uint32_t waited_for = 0;
 		uint32_t collected_of_part = 0;
 	} state;
@@ -152,10 +153,12 @@ public:
 	//! What subpixel range for checkerboard enhancement.
 	int subpixel_size = 5;
 
+	//! Number of frames to wait for cooldown.
+	uint32_t num_cooldown_frames = 20;
 	//! Number of frames to wait for before collecting.
-	uint32_t num_wait_for = 20;
+	uint32_t num_wait_for = 5;
 	//! Total number of samples to collect.
-	uint32_t num_collect_total = 40;
+	uint32_t num_collect_total = 20;
 	//! Number of frames to capture before restarting.
 	uint32_t num_collect_restart = 1;
 
@@ -340,7 +343,12 @@ do_view_circles(class Calibration &c,
 	for (uint32_t i = 0; i < view.measured.size(); i++) {
 		cv::Rect brect = cv::boundingRect(view.measured[i]);
 
-		draw_rect(rgb, brect, cv::Scalar(0, 64, 32));
+		// Draw the last frame captured in red.
+		if (i == view.measured.size() - 1) {
+			draw_rect(rgb, brect, cv::Scalar(256, 16, 16));
+		} else {
+			draw_rect(rgb, brect, cv::Scalar(0, 64, 32));
+		}
 
 		coverage.push_back(cv::Point2f(brect.tl()));
 		coverage.push_back(cv::Point2f(brect.br()));
@@ -699,6 +707,12 @@ do_capture_logic(class Calibration &c,
 	int of = c.num_collect_total;
 	P("(%i/%i) SHOW BOARD", num, of);
 
+	if (c.state.cooldown > 0) {
+		P("(%i/%i) MOVE BOARD TO NEW POSITION", num, of);
+		c.state.cooldown--;
+		return;
+	}
+
 	// We haven't found anything, reset to be beginning.
 	if (!found) {
 		c.state.waited_for = c.num_wait_for;
@@ -730,13 +744,6 @@ do_capture_logic(class Calibration &c,
 		return;
 	}
 
-	// Have we collected all of the frames for one part?
-	if (c.state.collected_of_part >= c.num_collect_restart) {
-		c.state.waited_for = c.num_wait_for * 2;
-		c.state.collected_of_part = 0;
-		return;
-	}
-
 	if (c.save_images) {
 		char buf[512];
 
@@ -754,6 +761,14 @@ do_capture_logic(class Calibration &c,
 	c.state.collected_of_part++;
 
 	P("(%i/%i) COLLECTED #%i", num, of, c.state.collected_of_part);
+
+	// Have we collected all of the frames for one part?
+	if (c.state.collected_of_part >= c.num_collect_restart) {
+		c.state.waited_for = c.num_wait_for * 2;
+		c.state.collected_of_part = 0;
+		c.state.cooldown = c.num_cooldown_frames;
+		return;
+	}
 }
 
 /*!
@@ -1010,6 +1025,7 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 		break;
 	default: assert(false);
 	}
+	c.num_cooldown_frames = params->num_cooldown_frames;
 	c.num_wait_for = params->num_wait_for;
 	c.num_collect_total = params->num_collect_total;
 	c.num_collect_restart = params->num_collect_restart;

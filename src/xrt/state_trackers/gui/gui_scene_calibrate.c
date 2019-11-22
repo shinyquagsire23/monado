@@ -117,7 +117,8 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igCheckbox("Save images (mono only)", &cs->params.save_images);
 
 	igSeparator();
-	igInputInt("Wait for # frames", &cs->params.num_wait_for, 1, 5, 0);
+	igInputInt("Cooldown for # frames", &cs->params.num_cooldown_frames, 1, 5, 0);
+	igInputInt("Wait for # frames (steady)", &cs->params.num_wait_for, 1, 5, 0);
 	igInputInt("Collect # measurements", &cs->params.num_collect_total, 1, 5, 0);
 	igInputInt("Collect in groups of #", &cs->params.num_collect_restart, 1, 5, 0);
 
