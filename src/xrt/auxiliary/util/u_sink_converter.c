@@ -166,11 +166,32 @@ from_YUV422_to_R8G8B8(struct u_sink_converter *s,
  */
 
 #ifdef XRT_HAVE_JPEG
-static void
+static bool
+check_header(size_t size, const uint8_t *data)
+{
+	if (size < 16) {
+		fprintf(stderr, "error: Invalid JPEG file size! %u\n",
+		        (uint32_t)size);
+		return false;
+	}
+
+	if (data[0] != 0xFF || data[1] != 0xD8) {
+		fprintf(stderr, "error: Invalid file header! 0x%02X 0x%02X\n",
+		        data[0], data[1]);
+		return false;
+	}
+
+	return true;
+}
+
+static bool
 from_MJPEG_to_R8G8B8(struct u_sink_converter *s,
                      size_t size,
                      const uint8_t *data)
 {
+	if (!check_header(size, data)) {
+		return false;
+	}
 
 	struct jpeg_decompress_struct cinfo = {0};
 	struct jpeg_error_mgr jerr = {0};
@@ -179,9 +200,13 @@ from_MJPEG_to_R8G8B8(struct u_sink_converter *s,
 	jerr.trace_level = 0;
 
 	jpeg_create_decompress(&cinfo);
-
 	jpeg_mem_src(&cinfo, data, size);
-	jpeg_read_header(&cinfo, TRUE);
+
+	int ret = jpeg_read_header(&cinfo, TRUE);
+	if (ret != JPEG_HEADER_OK) {
+		jpeg_destroy_decompress(&cinfo);
+		return false;
+	}
 
 	cinfo.out_color_space = JCS_RGB;
 	jpeg_start_decompress(&cinfo);
@@ -197,13 +222,18 @@ from_MJPEG_to_R8G8B8(struct u_sink_converter *s,
 
 	jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
+
+	return true;
 }
 
-static void
+static bool
 from_MJPEG_to_YUV888(struct u_sink_converter *s,
                      size_t size,
                      const uint8_t *data)
 {
+	if (!check_header(size, data)) {
+		return false;
+	}
 
 	struct jpeg_decompress_struct cinfo = {0};
 	struct jpeg_error_mgr jerr = {0};
@@ -212,9 +242,13 @@ from_MJPEG_to_YUV888(struct u_sink_converter *s,
 	jerr.trace_level = 0;
 
 	jpeg_create_decompress(&cinfo);
-
 	jpeg_mem_src(&cinfo, data, size);
-	jpeg_read_header(&cinfo, TRUE);
+
+	int ret = jpeg_read_header(&cinfo, TRUE);
+	if (ret != JPEG_HEADER_OK) {
+		jpeg_destroy_decompress(&cinfo);
+		return false;
+	}
 
 	cinfo.out_color_space = JCS_YCbCr;
 	jpeg_start_decompress(&cinfo);
@@ -230,6 +264,8 @@ from_MJPEG_to_YUV888(struct u_sink_converter *s,
 
 	jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
+
+	return true;
 }
 #endif
 
@@ -287,7 +323,9 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
-		from_MJPEG_to_R8G8B8(s, xf->size, xf->data);
+		if (!from_MJPEG_to_R8G8B8(s, xf->size, xf->data)) {
+			return;
+		}
 		break;
 #endif
 	default:
@@ -316,7 +354,9 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
-		from_MJPEG_to_R8G8B8(s, xf->size, xf->data);
+		if (!from_MJPEG_to_R8G8B8(s, xf->size, xf->data)) {
+			return;
+		}
 		break;
 #endif
 	default:
@@ -342,7 +382,9 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
 		ensure_data(s, XRT_FORMAT_YUV888, xf->width, xf->height);
-		from_MJPEG_to_YUV888(s, xf->size, xf->data);
+		if (!from_MJPEG_to_YUV888(s, xf->size, xf->data)) {
+			return;
+		}
 		break;
 #endif
 	default:
