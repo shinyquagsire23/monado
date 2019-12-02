@@ -81,7 +81,7 @@ sdl2_window_init(struct sdl2_program *p)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,
 	                    SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 
-	SDL_WindowFlags window_flags = 0;
+	int window_flags = 0;
 	window_flags |= SDL_WINDOW_SHOWN;
 	window_flags |= SDL_WINDOW_OPENGL;
 	window_flags |= SDL_WINDOW_RESIZABLE;
