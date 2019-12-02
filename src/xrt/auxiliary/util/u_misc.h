@@ -70,6 +70,42 @@ extern "C" {
  */
 #define U_ZERO_ARRAY(ARRAY) memset((ARRAY), 0, sizeof(ARRAY))
 
+/*!
+ * Reallocates or frees dynamically-allocated memory.
+ *
+ * Just wraps realloc with a return value check, freeing the provided memory if
+ * it is NULL, to avoid leaks. Use U_ARRAY_REALLOC_OR_FREE() instead.
+ *
+ * @ingroup aux_util
+ */
+static inline void *
+u_realloc_or_free(void *ptr, size_t new_size)
+{
+	void *ret = realloc(ptr, new_size);
+	if (ret == NULL) {
+		free(ptr);
+	}
+	return ret;
+}
+
+/*!
+ * Re-allocate the space required for some type, and update the pointer -
+ * freeing the allocation instead if it can't be resized.
+ *
+ * Use instead of a bare realloc when allocating an array of a type.
+ * This includes reallocating C strings: pass char as the type.
+ *
+ * Be sure not to parenthesize the type! It will cause an error like "expression
+ * expected".
+ *
+ * On the other hand, if you get an incompatible types error in assignment,
+ * that's a type mismatch, a real bug.
+ *
+ * @ingroup aux_util
+ */
+#define U_ARRAY_REALLOC_OR_FREE(VAR, TYPE, COUNT)                              \
+	(VAR) = ((TYPE *)u_realloc_or_free((VAR), sizeof(TYPE) * (COUNT)))
+
 #ifdef __cplusplus
 }
 #endif
