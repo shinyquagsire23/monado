@@ -280,9 +280,8 @@ add_device(struct prober *p, struct prober_device **out_dev)
 static void
 add_usb_entry(struct prober *p, struct xrt_prober_entry *entry)
 {
-	size_t new_size =
-	    (p->num_entries + 1) * sizeof(struct xrt_prober_entry_usb *);
-	p->entries = realloc(p->entries, new_size);
+	U_ARRAY_REALLOC_OR_FREE(p->entries, struct xrt_prober_entry *,
+	                        (p->num_entries + 1));
 	p->entries[p->num_entries++] = entry;
 }
 
