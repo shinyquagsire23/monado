@@ -438,17 +438,18 @@ oxr_action_get_current_interaction_profile(
 	}
 
 	if (topLevelUserPath == inst->path_cache.head) {
-		return sess->head;
+		interactionProfile->interactionProfile = sess->head;
 	} else if (topLevelUserPath == inst->path_cache.left) {
-		return sess->left;
+		interactionProfile->interactionProfile = sess->left;
 	} else if (topLevelUserPath == inst->path_cache.right) {
-		return sess->right;
+		interactionProfile->interactionProfile = sess->right;
 	} else if (topLevelUserPath == inst->path_cache.gamepad) {
-		return sess->gamepad;
+		interactionProfile->interactionProfile = sess->gamepad;
 	} else {
 		return oxr_error(log, XR_ERROR_HANDLE_INVALID,
 		                 " not implemented");
 	}
+	return XR_SUCCESS;
 }
 
 XrResult
