@@ -205,9 +205,9 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 	}
 
 	// Add to the list of currently created interaction profiles.
-	size_t size =
-	    sizeof(struct oxr_interaction_profile) * (inst->num_profiles + 1);
-	inst->profiles = realloc(inst->profiles, size);
+	U_ARRAY_REALLOC_OR_FREE(inst->profiles,
+	                        struct oxr_interaction_profile *,
+	                        (inst->num_profiles + 1));
 	inst->profiles[inst->num_profiles++] = p;
 
 	*out_p = p;
