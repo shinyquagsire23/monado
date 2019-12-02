@@ -252,8 +252,7 @@ add_key_to_matching_bindings(struct oxr_binding *bindings,
 			continue;
 		}
 
-		size_t size = sizeof(uint32_t) * (b->num_keys + 1);
-		b->keys = realloc(b->keys, size);
+		U_ARRAY_REALLOC_OR_FREE(b->keys, uint32_t, (b->num_keys + 1));
 		b->keys[b->num_keys++] = key;
 	}
 }
