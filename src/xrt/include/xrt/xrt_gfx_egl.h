@@ -30,9 +30,9 @@ struct time_state;
 struct xrt_compositor_gl *
 xrt_gfx_provider_create_gl_egl(struct xrt_device *xdev,
                                struct time_state *timekeeping,
-                               EGLDisplay *display,
-                               EGLConfig *config,
-                               EGLContext *context,
+                               EGLDisplay display,
+                               EGLConfig config,
+                               EGLContext context,
                                PFNEGLGETPROCADDRESSPROC getProcAddress);
 
 #ifdef __cplusplus
