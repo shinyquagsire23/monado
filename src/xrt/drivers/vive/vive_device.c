@@ -868,7 +868,8 @@ vive_sensors_read_config(struct vive_device *d)
 
 	config_json[strm.total_out] = '\0';
 
-	return (char *)realloc(config_json, strm.total_out + 1);
+	U_ARRAY_REALLOC_OR_FREE(config_json, unsigned char, strm.total_out + 1);
+	return (char *)config_json;
 }
 
 struct vive_device *
