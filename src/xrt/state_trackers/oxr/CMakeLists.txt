@@ -29,12 +29,9 @@ set(OXR_SOURCE_FILES
 	oxr_objects.h
 	oxr_path.c
 	oxr_session.c
-	oxr_session_gl.c
-	oxr_session_egl.c
 	oxr_session_vk.c
 	oxr_space.c
 	oxr_swapchain.c
-	oxr_swapchain_gl.c
 	oxr_swapchain_vk.c
 	oxr_system.c
 	oxr_two_call.h
@@ -45,6 +42,10 @@ set(OXR_SOURCE_FILES
 
 if(BUILD_WITH_OPENGL)
 	add_definitions(-DXR_USE_GRAPHICS_API_OPENGL -DXR_USE_GRAPHICS_API_OPENGL_ES)
+	list(APPEND OXR_SOURCE_FILES
+		oxr_session_gl.c
+		oxr_swapchain_gl.c
+		)
 endif()
 
 if(BUILD_WITH_XLIB)
@@ -53,12 +54,13 @@ endif()
 
 if(BUILD_WITH_EGL)
 	add_definitions(-DXR_USE_PLATFORM_EGL)
+	list(APPEND OXR_SOURCE_FILES oxr_session_egl.c)
 endif()
 
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(st_oxr OBJECT ${OXR_SOURCE_FILES})
 
-target_include_directories(st_oxr
+target_include_directories(st_oxr SYSTEM
 	PRIVATE
 	${VULKAN_INCLUDE_DIR}
 	)
