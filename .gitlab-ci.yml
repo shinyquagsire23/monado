@@ -1,23 +1,19 @@
 variables:
   UPSTREAM_REPO: monado/monado
 
-  DEBIAN_TAG: '2019-11-05.0'
-  DEBIAN_DEBS: 'build-essential git cmake meson ninja-build doxygen graphviz libeigen3-dev curl patch python3 pkg-config libx11-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libhidapi-dev libwayland-dev libvulkan-dev glslang-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libuvc-dev libavcodec-dev libopencv-dev libudev-dev clang-format-7 codespell libv4l-dev libegl1-mesa-dev'
-  DEBIAN_EXEC: 'bash .gitlab-ci/build-openxr-openhmd.sh'
+  DEBIAN_TAG: 2019-12-03.0
   DEBIAN_VERSION: buster
-  DEBIAN_CONTAINER_IMAGE: $CI_REGISTRY_IMAGE/debian/$DEBIAN_VERSION:$DEBIAN_TAG
+  DEBIAN_CONTAINER_IMAGE: "$CI_REGISTRY_IMAGE/debian/$DEBIAN_VERSION:$DEBIAN_TAG"
   
-  ARCH_TAG: '2019-11-05.1'
-  ARCH_PKGS: 'git gcc cmake meson ninja pkgconfig python3 diffutils patch doxygen graphviz eigen hidapi libxrandr mesa glslang vulkan-headers vulkan-icd-loader check glfw-x11 libusb opencv gtk3 ffmpeg v4l-utils qt5-base'
-  ARCH_EXEC: 'bash .gitlab-ci/build-openxr-openhmd.sh'
-  ARCH_CONTAINER_IMAGE: $CI_REGISTRY_IMAGE/archlinux/rolling:$ARCH_TAG
+  ARCH_TAG: 2019-12-03.0
+  ARCH_CONTAINER_IMAGE: "$CI_REGISTRY_IMAGE/archlinux/rolling:$ARCH_TAG"
 
 include:
   - project: 'wayland/ci-templates'
-    ref: c73dae8b84697ef18e2dbbf4fed7386d9652b0cd
+    ref: 0a9bdd33a98f05af6761ab118b5074952242aab0
     file: '/templates/debian.yml'
   - project: 'wayland/ci-templates'
-    ref: 96912c7331cbc6da41fbf22c4217aa541176f063
+    ref: 0a9bdd33a98f05af6761ab118b5074952242aab0
     file: '/templates/arch.yml'
 
 stages:
@@ -29,10 +25,21 @@ stages:
 debian:container_prep:
   extends: .debian@container-ifnot-exists
   stage: container_prep
+  variables:
+    GIT_STRATEGY: none # no need to pull the whole tree for rebuilding the image
+    # a list of packages to install
+    DEBIAN_DEBS: 'build-essential git cmake meson ninja-build doxygen graphviz libeigen3-dev curl patch python3 pkg-config libx11-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libhidapi-dev libwayland-dev libvulkan-dev glslang-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libuvc-dev libavcodec-dev libopencv-dev libudev-dev clang-format-7 codespell libv4l-dev libegl1-mesa-dev'
+    DEBIAN_EXEC: 'bash .gitlab-ci/build-openxr-openhmd.sh'
+
 
 arch:container_prep:
   extends: .arch@container-ifnot-exists
   stage: container_prep
+  variables:
+    GIT_STRATEGY: none # no need to pull the whole tree for rebuilding the image
+    # a list of packages to install
+    ARCH_PKGS: 'git gcc cmake meson ninja pkgconfig python3 diffutils patch doxygen graphviz eigen hidapi libxrandr mesa glslang vulkan-headers vulkan-icd-loader check glfw-x11 libusb opencv gtk3 ffmpeg v4l-utils qt5-base'
+    ARCH_EXEC: 'bash .gitlab-ci/build-openxr-openhmd.sh'
 
 format-and-spellcheck:
   stage: build
