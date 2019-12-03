@@ -70,6 +70,9 @@ struct vk_bundle
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	PFN_vkCreateDisplayPlaneSurfaceKHR vkCreateDisplayPlaneSurfaceKHR;
 	PFN_vkGetDisplayPlaneCapabilitiesKHR vkGetDisplayPlaneCapabilitiesKHR;
+
+	// This doesn't strictly require VK_USE_PLATFORM_XLIB_XRANDR_EXT,
+	// but it's only used in the NVIDIA X direct mode path that does require it.
 	PFN_vkGetPhysicalDeviceDisplayPropertiesKHR vkGetPhysicalDeviceDisplayPropertiesKHR;
 	PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR vkGetPhysicalDeviceDisplayPlanePropertiesKHR;
 	PFN_vkGetDisplayModePropertiesKHR vkGetDisplayModePropertiesKHR;
