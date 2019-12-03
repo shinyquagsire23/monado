@@ -681,7 +681,8 @@ psmv_read_one_packet(struct psmv_device *psmv, uint8_t *buffer, size_t size)
 			// Must lock thread before check in while.
 			os_thread_helper_lock(&psmv->oth);
 			continue;
-		} else if (ret < 0) {
+		}
+		if (ret < 0) {
 			PSMV_ERROR(psmv, "Failed to read device '%i'!", ret);
 			return false;
 		}
