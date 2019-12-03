@@ -851,6 +851,13 @@ vk_select_physical_device(struct vk_bundle *vk, int forced_index)
 	VK_DEBUG(vk, "Choosing Vulkan device index");
 	uint32_t gpu_index = 0;
 	if (forced_index > -1) {
+		if ((uint32_t)forced_index + 1 > gpu_count) {
+			VK_ERROR(vk,
+			         "Attempted to force GPU index %d, but only %d "
+			         "GPUs are available",
+			         forced_index, gpu_count);
+			return VK_ERROR_DEVICE_LOST;
+		}
 		gpu_index = forced_index;
 		VK_DEBUG(vk, "Forced use of Vulkan device index %d.",
 		         gpu_index);
