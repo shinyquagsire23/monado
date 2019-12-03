@@ -129,12 +129,12 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
                    bool print_debug);
 
 bool
-psvr_parse_sensor_packet(struct psvr_parsed_sensor *packet,
+psvr_parse_sensor_packet(struct psvr_parsed_sensor *sensor,
                          const uint8_t *buffer,
                          int size);
 
 bool
-psvr_parse_status_packet(struct psvr_parsed_status *packet,
+psvr_parse_status_packet(struct psvr_parsed_status *status,
                          const uint8_t *buffer,
                          int size);
 

@@ -461,7 +461,7 @@ handle_device_name_msg(struct psvr_device *psvr,
 
 static void
 handle_calibration_msg(struct psvr_device *psvr,
-                       unsigned char *buffer,
+                       const unsigned char *buffer,
                        size_t size)
 {
 	const size_t data_start = 6;
