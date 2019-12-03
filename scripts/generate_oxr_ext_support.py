@@ -23,8 +23,8 @@ ROOT = Path(__file__).resolve().parent.parent
 FN = ROOT / 'src' / 'xrt'/'state_trackers' / 'oxr' / 'oxr_extension_support.h'
 
 INVOCATION_PREFIX = 'OXR_EXTENSION_SUPPORT'
-
-END_OF_PER_EXTENSION = '// end of per-extension defines - do not modify this comment - used by scripts'
+BEGIN_OF_PER_EXTENSION = '// beginning of GENERATED defines - do not modify - used by scripts'
+END_OF_PER_EXTENSION = '// end of GENERATED per-extension defines - do not modify - used by scripts'
 CLANG_FORMAT_OFF = '// clang-format off'
 CLANG_FORMAT_ON = '// clang-format on'
 
@@ -73,7 +73,7 @@ def generate_second_chunk():
 if __name__ == "__main__":
     with open(str(FN), 'r', encoding='utf-8') as fp:
         orig = [line.rstrip() for line in fp.readlines()]
-    beginning = orig[:orig.index('#pragma once')+1]
+    beginning = orig[:orig.index(BEGIN_OF_PER_EXTENSION)+1]
     middle_start = orig.index(END_OF_PER_EXTENSION)
     middle_end = orig.index(CLANG_FORMAT_OFF)
     middle = orig[middle_start:middle_end]

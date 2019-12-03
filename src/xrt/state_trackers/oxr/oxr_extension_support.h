@@ -5,13 +5,18 @@
  * @brief  Macros for generating extension-related tables and code and
  * inspecting Monado's extension support.
  *
- * Add an extension here first to support it. To correctly update this easily,
- * edit and run generate_oxr_ext_support.py, then run clang-format on this file.
+ * MOSTLY GENERATED CODE - see below!
+ *
+ * To add support for a new extension, edit and run generate_oxr_ext_support.py,
+ * then run clang-format on this file. Two entire chunks of this file get
+ * replaced by that script: comments indicate where they are.
  *
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  */
 
 #pragma once
+
+// beginning of GENERATED defines - do not modify - used by scripts
 
 /*
  * XR_EXT_debug_utils
@@ -95,7 +100,7 @@
 #define OXR_EXTENSION_SUPPORT_MND_headless(_)
 #endif
 
-// end of per-extension defines - do not modify this comment - used by scripts
+// end of GENERATED per-extension defines - do not modify - used by scripts
 
 /*!
  * Call this, passing a macro taking two parameters, to
@@ -113,6 +118,9 @@
  * Implementation note: This macro calls another macro for each extension: that
  * macro is either defined to call your provided macro, or defined to nothing,
  * depending on if the extension is supported in this build.
+ *
+ * @note Do not edit anything between `clang-format off` and `clang-format on` -
+ * it will be replaced next time this file is generated!
  */
 // clang-format off
 #define OXR_EXTENSION_SUPPORT_GENERATE(_) \
