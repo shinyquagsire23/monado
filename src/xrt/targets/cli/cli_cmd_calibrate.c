@@ -51,7 +51,7 @@ list_cb(struct xrt_prober *xp,
         const char *name,
         void *ptr)
 {
-	struct program *p = ptr;
+	struct program *p = (struct program *)ptr;
 	if (p->selected <= 0) {
 		printf(" %i) %s\n", ++p->index, name);
 	} else if (p->selected == ++p->index) {
