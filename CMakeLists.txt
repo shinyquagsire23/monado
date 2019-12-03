@@ -55,8 +55,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	pkg_search_module(WAYLAND_PROTOCOLS wayland-protocols)
 endif()
 
-cmake_dependent_option(BUILD_WITH_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND AND WAYLAND_SCANNER_FOUND AND WAYLAND_PROTOCOLS_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_XLIB "Enable xlib support" ON "X11_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_XCB "Enable xcb support" ON "XCB_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENGL "Enable OpenGL Graphics API support" ON "OPENGL_FOUND" OFF)
 
 set(BUILD_WITH_LIBUSB TRUE)
@@ -69,7 +70,7 @@ cmake_dependent_option(BUILD_WITH_VIVE "Enable Vive driver" ON "ZLIB_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND" OFF)
 
-# hdk, hydra & psmv use the Monado internal hid wrapper.
+# These all use the Monado internal hid wrapper which is assumed to be available.
 option(BUILD_WITH_HDK "Enable HDK driver" ON)
 option(BUILD_WITH_PSMV "Enable Playstation Move driver" ON)
 option(BUILD_WITH_HYDRA "Enable Hydra driver" ON)
