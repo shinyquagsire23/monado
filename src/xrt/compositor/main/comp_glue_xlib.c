@@ -13,7 +13,7 @@
 #include "xrt/xrt_gfx_xlib.h"
 
 #include "main/comp_client_interface.h"
-#include "client/comp_xlib_client.h"
+#include "client/comp_gl_xlib_client.h"
 
 
 struct xrt_compositor_gl *
@@ -31,8 +31,9 @@ xrt_gfx_provider_create_gl_xlib(struct xrt_device *xdev,
 		return NULL;
 	}
 
-	struct client_xlib_compositor *xcc = client_xlib_compositor_create(
-	    xcfd, xDisplay, visualid, glxFBConfig, glxDrawable, glxContext);
+	struct client_gl_xlib_compositor *xcc =
+	    client_gl_xlib_compositor_create(
+	        xcfd, xDisplay, visualid, glxFBConfig, glxDrawable, glxContext);
 
 	return &xcc->base.base;
 }

@@ -11,7 +11,7 @@ compositor_srcs = [
 	'client/comp_gl_client.h',
 	'client/comp_vk_client.c',
 	'client/comp_vk_client.h',
-	'client/comp_xlib_client.c',
+	'client/comp_gl_xlib_client.c',
 	'common/comp_vk.c',
 	'common/comp_vk.h',
 	'common/comp_vk_swapchain.h',
