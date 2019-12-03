@@ -719,7 +719,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 		int name_len =
 		    xcb_randr_get_output_info_name_length(output_reply);
 
-		char *name_str = (char *)malloc(name_len + 1);
+		char *name_str = U_TYPED_ARRAY_CALLOC(char, name_len + 1);
 		memcpy(name_str, name, name_len);
 		name_str[name_len] = '\0';
 

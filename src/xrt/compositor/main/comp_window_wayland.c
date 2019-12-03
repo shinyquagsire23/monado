@@ -20,6 +20,7 @@
 #include "xdg-shell-client-protocol.h"
 #include "xrt/xrt_compiler.h"
 #include "main/comp_window.h"
+#include "util/u_misc.h"
 
 
 /*
@@ -100,7 +101,7 @@ struct comp_window *
 comp_window_wayland_create(struct comp_compositor *c)
 {
 	struct comp_window_wayland *w =
-	    calloc(1, sizeof(struct comp_window_wayland));
+	    U_TYPED_CALLOC(struct comp_window_wayland);
 
 	w->base.name = "wayland";
 	w->base.destroy = comp_window_wayland_destroy;
