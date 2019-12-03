@@ -81,7 +81,8 @@
 /*
  * XR_MND_egl_enable
  */
-#if defined(XR_MND_egl_enable) && defined(XR_USE_PLATFORM_EGL)
+#if defined(XR_MND_egl_enable) && defined(XR_USE_PLATFORM_EGL) &&              \
+    defined(XR_USE_GRAPHICS_API_OPENGL)
 #define OXR_HAVE_MND_egl_enable
 #define OXR_EXTENSION_SUPPORT_MND_egl_enable(_)                                \
 	_(MND_egl_enable, MND_EGL_ENABLE)
