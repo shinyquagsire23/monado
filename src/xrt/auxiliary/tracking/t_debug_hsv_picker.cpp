@@ -143,42 +143,42 @@ process_frame(class DebugHSVPicker &d, struct xrt_frame *xf)
 }
 
 static void
-on_low_H_thresh_trackbar(int, void *)
+on_low_H_thresh_trackbar(int /*unused*/, void * /*unused*/)
 {
 	low_H = min(high_H - 1, low_H);
 	cv::setTrackbarPos("Low H", PICK_WIN, low_H);
 }
 
 static void
-on_high_H_thresh_trackbar(int, void *)
+on_high_H_thresh_trackbar(int /*unused*/, void * /*unused*/)
 {
 	high_H = max(high_H, low_H + 1);
 	cv::setTrackbarPos("High H", PICK_WIN, high_H);
 }
 
 static void
-on_low_S_thresh_trackbar(int, void *)
+on_low_S_thresh_trackbar(int /*unused*/, void * /*unused*/)
 {
 	low_S = min(high_S - 1, low_S);
 	cv::setTrackbarPos("Low S", PICK_WIN, low_S);
 }
 
 static void
-on_high_S_thresh_trackbar(int, void *)
+on_high_S_thresh_trackbar(int /*unused*/, void * /*unused*/)
 {
 	high_S = max(high_S, low_S + 1);
 	cv::setTrackbarPos("High S", PICK_WIN, high_S);
 }
 
 static void
-on_low_V_thresh_trackbar(int, void *)
+on_low_V_thresh_trackbar(int /*unused*/, void * /*unused*/)
 {
 	low_V = min(high_V - 1, low_V);
 	cv::setTrackbarPos("Low V", PICK_WIN, low_V);
 }
 
 static void
-on_high_V_thresh_trackbar(int, void *)
+on_high_V_thresh_trackbar(int /*unused*/, void * /*unused*/)
 {
 	high_V = max(high_V, low_V + 1);
 	cv::setTrackbarPos("High V", PICK_WIN, high_V);

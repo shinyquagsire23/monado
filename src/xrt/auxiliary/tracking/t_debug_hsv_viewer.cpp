@@ -54,7 +54,7 @@ process_pixel(bool f1,
               uint8_t *hsv_cap,
               uint8_t *hsv_opt,
               uint8_t *hsv_diff,
-              uint8_t *rgb)
+              const uint8_t *rgb)
 {
 	if (f1) {
 		hsv_cap[0] = rgb[2];
