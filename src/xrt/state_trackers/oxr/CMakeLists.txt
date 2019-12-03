@@ -43,6 +43,18 @@ set(OXR_SOURCE_FILES
 	oxr_xdev.c
 	)
 
+if(BUILD_WITH_OPENGL)
+	add_definitions(-DXR_USE_GRAPHICS_API_OPENGL -DXR_USE_GRAPHICS_API_OPENGL_ES)
+endif()
+
+if(BUILD_WITH_XLIB)
+	add_definitions(-DXR_USE_PLATFORM_XLIB)
+endif()
+
+if(BUILD_WITH_EGL)
+	add_definitions(-DXR_USE_PLATFORM_EGL)
+endif()
+
 # Use OBJECT to not create a archive, since it just gets in the way.
 add_library(st_oxr OBJECT ${OXR_SOURCE_FILES})
 

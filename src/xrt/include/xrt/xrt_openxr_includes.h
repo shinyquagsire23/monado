@@ -9,12 +9,8 @@
 
 #pragma once
 
-// Move these to the build system instead.
-#define XR_USE_GRAPHICS_API_OPENGL
-#define XR_USE_GRAPHICS_API_OPENGL_ES
+//! @todo Move these to the build system instead.
 #define XR_USE_GRAPHICS_API_VULKAN
-#define XR_USE_PLATFORM_XLIB
-#define XR_USE_PLATFORM_EGL
 #define XR_USE_TIMESPEC 1
 
 #ifdef XR_USE_PLATFORM_XLIB

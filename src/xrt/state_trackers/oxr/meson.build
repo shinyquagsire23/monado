@@ -1,6 +1,19 @@
 # Copyright 2019, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+compile_args = []
+if x11.found()
+	compile_args += ['-DXR_USE_GRAPHICS_API_OPENGL', '-DXR_USE_GRAPHICS_API_OPENGL_ES']
+endif
+
+if egl.found()
+	compile_args += ['-DXR_USE_PLATFORM_EGL']
+endif
+
+if opengl.found()
+	compile_args += ['-DXR_USE_PLATFORM_XLIB']
+endif
+
 lib_st_oxr = static_library(
 	'st_oxr',
 	files(
@@ -43,4 +56,6 @@ lib_st_oxr = static_library(
 		external_include,
 	],
 	dependencies: [aux, vulkan],
+	c_args: compile_args,
+	cpp_args: compile_args,
 )
