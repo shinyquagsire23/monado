@@ -72,13 +72,17 @@ if(BUILD_WITH_SDL2)
 
 	target_link_libraries(${RUNTIME_TARGET} PUBLIC
 		${SDL2_LIBRARIES}
-		X11 # HACK HACK HACK HACK
 		)
 
 	target_sources(${RUNTIME_TARGET} PRIVATE
 		../../../external/imgui/cimgui_sdl.cpp
 		../../../external/imgui/imgui_impl_sdl.cpp
 		../../../external/imgui/imgui_impl_sdl.h
+		)
+endif()
+if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC
+		${X11_X11_LIB}
 		)
 endif()
 
