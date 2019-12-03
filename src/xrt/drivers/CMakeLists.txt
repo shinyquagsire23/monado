@@ -18,9 +18,6 @@ if(BUILD_DRIVER_HDK)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_hdk OBJECT ${HDK_SOURCE_FILES})
-	target_include_directories(drv_hdk SYSTEM
-		PRIVATE ${HIDAPI_INCLUDE_DIRS}
-		)
 endif()
 
 
