@@ -8,6 +8,9 @@ include_directories(
 	)
 
 
+set(ENABLED_HEADSET_DRIVERS)
+set(ENABLED_DRIVERS)
+
 if(BUILD_DRIVER_HDK)
 	set(HDK_SOURCE_FILES
 		hdk/hdk_device.cpp
@@ -18,6 +21,7 @@ if(BUILD_DRIVER_HDK)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_hdk OBJECT ${HDK_SOURCE_FILES})
+	list(APPEND ENABLED_HEADSET_DRIVERS hdk)
 endif()
 
 
@@ -29,6 +33,7 @@ if(BUILD_DRIVER_HYDRA)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_hydra OBJECT ${HYDRA_SOURCE_FILES})
+	list(APPEND ENABLED_DRIVERS hydra)
 endif()
 
 if(BUILD_DRIVER_OHMD)
@@ -44,6 +49,7 @@ if(BUILD_DRIVER_OHMD)
 	target_include_directories(drv_ohmd SYSTEM
 		PRIVATE ${OPENHMD_INCLUDE_DIRS}
 		)
+	list(APPEND ENABLED_HEADSET_DRIVERS openhmd)
 endif()
 
 
@@ -55,6 +61,7 @@ if(BUILD_DRIVER_PSMV)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_psmv OBJECT ${PSMOVE_SOURCE_FILES})
+	list(APPEND ENABLED_DRIVERS psmv)
 endif()
 
 
@@ -72,6 +79,7 @@ if(BUILD_DRIVER_PSVR)
 	target_include_directories(drv_psvr SYSTEM
 		PRIVATE ${HIDAPI_INCLUDE_DIRS}
 		)
+	list(APPEND ENABLED_HEADSET_DRIVERS psvr)
 endif()
 
 if(BUILD_DRIVER_VIVE)
@@ -87,6 +95,7 @@ if(BUILD_DRIVER_VIVE)
 	add_library(drv_vive OBJECT ${VIVE_SOURCE_FILES})
 	target_include_directories(drv_vive SYSTEM PRIVATE ../../external)
 	target_link_libraries(drv_vive z)
+	list(APPEND ENABLED_HEADSET_DRIVERS vive)
 endif()
 
 if(BUILD_DRIVER_V4L2)
@@ -96,4 +105,14 @@ if(BUILD_DRIVER_V4L2)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_v4l2 OBJECT ${V4L2_SOURCE_FILES})
+	list(APPEND ENABLED_DRIVERS v4l2)
+endif()
+
+if(ENABLED_HEADSET_DRIVERS)
+	set(ENABLED_DRIVERS ${ENABLED_HEADSET_DRIVERS} ${ENABLED_DRIVERS})
+	list(SORT ENABLED_DRIVERS)
+	string(REPLACE ";" " " ENABLED_DRIVERS "${ENABLED_DRIVERS}")
+	message(STATUS "Enabled drivers: ${ENABLED_DRIVERS}")
+else()
+	message(FATAL_ERROR "You must enable at least one headset driver to build Monado.")
 endif()
