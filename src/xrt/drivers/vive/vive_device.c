@@ -216,7 +216,8 @@ vive_mainboard_read_one_msg(struct vive_device *d, uint8_t *buffer, size_t size)
 			// Must lock thread before check in while.
 			os_thread_helper_lock(&d->mainboard_thread);
 			continue;
-		} else if (ret < 0) {
+		}
+		if (ret < 0) {
 			VIVE_ERROR("Failed to read device '%i'!", ret);
 			return false;
 		}
@@ -268,10 +269,10 @@ oldest_sequence_index(uint8_t a, uint8_t b, uint8_t c)
 {
 	if (a == (uint8_t)(b + 2))
 		return 1;
-	else if (b == (uint8_t)(c + 2))
+	if (b == (uint8_t)(c + 2))
 		return 2;
-	else
-		return 0;
+
+	return 0;
 }
 
 static void
@@ -409,7 +410,8 @@ vive_sensors_read_one_msg(struct vive_device *d)
 			// Must lock thread before check in while.
 			os_thread_helper_lock(&d->sensors_thread);
 			continue;
-		} else if (ret < 0) {
+		}
+		if (ret < 0) {
 			VIVE_ERROR("Failed to read device '%i'!", ret);
 			return false;
 		}
@@ -418,9 +420,9 @@ vive_sensors_read_one_msg(struct vive_device *d)
 			if (ret != 52) {
 				VIVE_ERROR("Wrong IMU report size: %d", ret);
 				return false;
-			} else {
-				update_imu(d, (struct vive_imu_report *)buffer);
 			}
+			update_imu(d, (struct vive_imu_report *)buffer);
+
 		} else
 			VIVE_ERROR("Unknown message type %d", buffer[0]);
 
@@ -535,7 +537,7 @@ print_vec3(const char *title, struct xrt_vec3 *vec)
 
 
 static void
-_array_to_vec3(float array[3], struct xrt_vec3 *result)
+_array_to_vec3(const float array[3], struct xrt_vec3 *result)
 {
 	result->x = array[0];
 	result->y = array[1];
