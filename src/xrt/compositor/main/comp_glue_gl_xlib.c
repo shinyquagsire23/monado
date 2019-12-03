@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Glue code to Xlib client side glue code.
+ * @brief  Glue code to OpenGL Xlib client side glue code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup comp
  */

@@ -30,8 +30,8 @@ set(GL_SOURCE_FILES
 	main/comp_glue_egl.c
 	main/comp_glue_gl.c
 	main/comp_glue_gles.c
+	main/comp_glue_gl_xlib.c
 	main/comp_glue_vk.c
-	main/comp_glue_xlib.c
 	main/comp_renderer.c
 	main/comp_renderer.h
 	main/comp_settings.c
