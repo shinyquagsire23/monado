@@ -77,7 +77,7 @@ gui_sdl2_init(struct sdl2_program *p)
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-	SDL_WindowFlags window_flags = 0;
+	int window_flags = 0;
 	window_flags |= SDL_WINDOW_SHOWN;
 	window_flags |= SDL_WINDOW_OPENGL;
 	window_flags |= SDL_WINDOW_RESIZABLE;
