@@ -77,7 +77,7 @@ gui_scene_manager_render(struct gui_program *p)
 	}
 
 	// If there are no scenes left stop the program.
-	if (gsm.scenes.size() == 0) {
+	if (gsm.scenes.empty()) {
 		p->stopped = true;
 	}
 }
