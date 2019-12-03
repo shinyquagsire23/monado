@@ -101,32 +101,39 @@ aux_math = declare_dependency(
 )
 
 tracking_srcs = [
-	'tracking/t_calibration.cpp',
-	'tracking/t_calibration_opencv.hpp',
-	'tracking/t_convert.cpp',
-	'tracking/t_debug_hsv_filter.cpp',
-	'tracking/t_debug_hsv_picker.cpp',
-	'tracking/t_debug_hsv_viewer.cpp',
-	'tracking/t_file.cpp',
-	'tracking/t_fusion.hpp',
-	'tracking/t_hsv_filter.c',
 	'tracking/t_imu.h',
 	'tracking/t_imu_fusion.hpp',
-	'tracking/t_kalman.cpp',
+	'tracking/t_imu.cpp',
 	'tracking/t_lowpass.hpp',
 	'tracking/t_lowpass_vector.hpp',
-	'tracking/t_tracker_psmv.cpp',
-	'tracking/t_tracker_psmv_fusion.hpp',
-	'tracking/t_tracker_psvr.cpp',
 	'tracking/t_tracking.h',
 ]
+tracking_deps = [eigen3]
+
+if build_tracking
+	tracking_srcs += [
+		'tracking/t_calibration.cpp',
+		'tracking/t_calibration_opencv.hpp',
+		'tracking/t_convert.cpp',
+		'tracking/t_debug_hsv_filter.cpp',
+		'tracking/t_debug_hsv_picker.cpp',
+		'tracking/t_debug_hsv_viewer.cpp',
+		'tracking/t_file.cpp',
+		'tracking/t_fusion.hpp',
+		'tracking/t_hsv_filter.c',
+		'tracking/t_kalman.cpp',
+		'tracking/t_tracker_psmv.cpp',
+		'tracking/t_tracker_psmv_fusion.hpp',
+		'tracking/t_tracker_psvr.cpp',
+	]
+	tracking_deps += [opencv]
+endif
 
 lib_aux_tracking = static_library(
 	'aux_tracking',
 	files(tracking_srcs),
 	include_directories: [xrt_include, external_include],
-	dependencies: [eigen3, opencv],
-	build_by_default: build_tracking,
+	dependencies: tracking_deps
 )
 
 aux_tracking = declare_dependency(
@@ -134,9 +141,6 @@ aux_tracking = declare_dependency(
 	link_with: lib_aux_tracking,
 )
 
-all_aux = [aux_util, aux_os, aux_math]
-if build_tracking
-	all_aux += [aux_tracking]
-endif
+all_aux = [aux_util, aux_os, aux_math, aux_tracking]
 
 aux = declare_dependency(dependencies: all_aux)

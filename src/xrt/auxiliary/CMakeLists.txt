@@ -25,25 +25,30 @@ set(OS_SOURCE_FILES
 	)
 
 set(TRACKING_SOURCE_FILES
-	tracking/t_calibration.cpp
-	tracking/t_calibration_opencv.hpp
-	tracking/t_convert.cpp
-	tracking/t_debug_hsv_filter.cpp
-	tracking/t_debug_hsv_picker.cpp
-	tracking/t_debug_hsv_viewer.cpp
-	tracking/t_file.cpp
-	tracking/t_fusion.hpp
-	tracking/t_hsv_filter.c
-	tracking/t_imu.h
 	tracking/t_imu_fusion.hpp
-	tracking/t_kalman.cpp
-	tracking/t_lowpass.hpp
+	tracking/t_imu.cpp
+	tracking/t_imu.h
 	tracking/t_lowpass_vector.hpp
-	tracking/t_tracker_psmv.cpp
-	tracking/t_tracker_psmv_fusion.hpp
-	tracking/t_tracker_psvr.cpp
+	tracking/t_lowpass.hpp
 	tracking/t_tracking.h
 	)
+if(BUILD_TRACKING)
+	list(APPEND TRACKING_SOURCE_FILES
+		tracking/t_calibration_opencv.hpp
+		tracking/t_calibration.cpp
+		tracking/t_convert.cpp
+		tracking/t_debug_hsv_filter.cpp
+		tracking/t_debug_hsv_picker.cpp
+		tracking/t_debug_hsv_viewer.cpp
+		tracking/t_file.cpp
+		tracking/t_fusion.hpp
+		tracking/t_hsv_filter.c
+		tracking/t_kalman.cpp
+		tracking/t_tracker_psmv_fusion.hpp
+		tracking/t_tracker_psmv.cpp
+		tracking/t_tracker_psvr.cpp
+		)
+endif()
 
 set(UTIL_SOURCE_FILES
 	util/u_misc.c
@@ -109,17 +114,19 @@ target_include_directories(aux_math SYSTEM
 	PRIVATE ${EIGEN3_INCLUDE_DIR}
 	)
 
+# Tracking library.
+# Use OBJECT to not create a archive, since it just gets in the way.
+add_library(aux_tracking OBJECT ${TRACKING_SOURCE_FILES})
 
+# Tracking files have extra includes.
+target_include_directories(aux_tracking SYSTEM
+	PRIVATE
+	${EIGEN3_INCLUDE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/../../external
+	)
 if(BUILD_TRACKING)
-	# Tracking library.
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(aux_tracking OBJECT ${TRACKING_SOURCE_FILES})
-
-	# Tracking files have extra includes.
 	target_include_directories(aux_tracking SYSTEM
 		PRIVATE
-		${EIGEN3_INCLUDE_DIR}
 		${OpenCV_INCLUDE_DIRS}
-		${CMAKE_CURRENT_SOURCE_DIR}/../../external
 		)
 endif()
