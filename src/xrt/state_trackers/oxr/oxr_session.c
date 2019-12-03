@@ -612,7 +612,7 @@ oxr_session_create_impl(struct oxr_logger *log,
                         const XrSessionCreateInfo *createInfo,
                         struct oxr_session **out_session)
 {
-#ifdef XR_USE_PLATFORM_XLIB
+#if defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
 	XrGraphicsBindingOpenGLXlibKHR const *opengl_xlib =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo,
 	                             XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,

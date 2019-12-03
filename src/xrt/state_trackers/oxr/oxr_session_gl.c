@@ -21,6 +21,7 @@
 #include "xrt/xrt_gfx_xlib.h"
 #endif
 
+#ifdef XR_USE_GRAPHICS_API_OPENGL
 #ifdef XR_USE_PLATFORM_XLIB
 
 XrResult
@@ -44,4 +45,8 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
-#endif
+#endif // XR_USE_PLATFORM_XLIB
+
+//! @todo add the other OpenGL graphics binding structs here
+
+#endif // XR_USE_GRAPHICS_API_OPENGL

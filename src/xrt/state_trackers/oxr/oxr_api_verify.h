@@ -245,17 +245,23 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *,
                                const struct oxr_instance *,
                                const XrSessionCreateInfo *);
 
+#if defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
 XrResult
 oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
     struct oxr_logger *, const XrGraphicsBindingOpenGLXlibKHR *);
+#endif // defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
+#if defined(XR_USE_GRAPHICS_API_VULKAN)
 XrResult
 oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *,
                                       const XrGraphicsBindingVulkanKHR *);
+#endif // defined(XR_USE_GRAPHICS_API_VULKAN)
 
+#if defined(XR_USE_PLATFORM_EGL) && defined(XR_USE_GRAPHICS_API_OPENGL)
 XrResult
 oxr_verify_XrGraphicsBindingEGLMND(struct oxr_logger *log,
                                    const XrGraphicsBindingEGLMND *next);
+#endif // defined(XR_USE_PLATFORM_EGL) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
 /*!
  * @}

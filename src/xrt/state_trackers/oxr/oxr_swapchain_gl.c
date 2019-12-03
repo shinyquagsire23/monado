@@ -18,6 +18,8 @@
 #include "oxr_logger.h"
 
 
+#ifdef XR_USE_GRAPHICS_API_OPENGL
+
 static XrResult
 oxr_swapchain_gl_destroy(struct oxr_logger *log, struct oxr_swapchain *sc)
 {
@@ -95,3 +97,5 @@ oxr_swapchain_gl_create(struct oxr_logger *log,
 
 	return XR_SUCCESS;
 }
+
+#endif // XR_USE_GRAPHICS_API_OPENGL

@@ -713,7 +713,7 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              struct oxr_system *sys,
                              XrGraphicsBindingOpenGLXlibKHR const *next,
                              struct oxr_session *sess);
-#endif
+#endif // XR_USE_PLATFORM_XLIB
 
 XrResult
 oxr_swapchain_gl_create(struct oxr_logger *,
@@ -721,7 +721,7 @@ oxr_swapchain_gl_create(struct oxr_logger *,
                         const XrSwapchainCreateInfo *,
                         struct oxr_swapchain **out_swapchain);
 
-#endif
+#endif // XR_USE_GRAPHICS_API_OPENGL
 
 
 /*

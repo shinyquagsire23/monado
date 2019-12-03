@@ -527,7 +527,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 }
 
 
-#ifdef XR_USE_PLATFORM_XLIB
+#if defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
 XrResult
 oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
@@ -557,7 +557,7 @@ oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
 	return XR_SUCCESS;
 }
 
-#endif
+#endif // defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
 
 #ifdef XR_USE_GRAPHICS_API_VULKAN
