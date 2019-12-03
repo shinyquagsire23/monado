@@ -24,8 +24,6 @@ sdl2_handle_keydown(struct sdl2_program *p, const SDL_Event *e)
 	case SDLK_ESCAPE: p->base.stopped = true; break;
 	default: break;
 	}
-
-	return;
 }
 
 
@@ -52,8 +50,6 @@ gui_sdl2_loop(struct sdl2_program *p)
 			sdl2_handle_keydown(p, &event);
 		}
 	}
-
-	return;
 }
 
 int
