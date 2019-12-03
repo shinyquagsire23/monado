@@ -35,6 +35,7 @@
 #=============================================================================
 # Copyright 2014 Alex Merry <alex.merry@kde.org>
 # Copyright 2014 Martin Gräßlin <mgraesslin@kde.org>
+# Copyright 2019 Ryan Pavlik <ryan.pavlik@collabora.com>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -60,11 +61,8 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #=============================================================================
 
-include(${CMAKE_CURRENT_LIST_DIR}/ECMFindModuleHelpersStub.cmake)
 include(CheckCXXSourceCompiles)
 include(CMakePushCheckState)
-
-ecm_find_package_version_check(EGL)
 
 # Use pkg-config to get the directories and then use these values
 # in the FIND_PATH() and FIND_LIBRARY() calls
