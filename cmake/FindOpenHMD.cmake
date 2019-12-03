@@ -66,30 +66,38 @@ find_library(OPENHMD_LIBRARY
     PATH_SUFFIXES
     lib
 )
-find_library(OPENHMD_LIBRT rt)
-find_library(OPENHMD_LIBM m)
+
+
+if(NOT WIN32)
+        find_library(OPENHMD_LIBRT rt)
+        find_library(OPENHMD_LIBM m)
+endif()
 
 find_package(Threads QUIET)
 
 set(_ohmd_extra_deps)
 
 set(OPENHMD_HIDAPI_TYPE)
-if(PC_OPENHMD_FOUND)
-        # See if we need a particular hidapi.
-        list(REMOVE_ITEM PC_OPENHMD_LIBRARIES openhmd)
-        if("${PC_OPENHMD_LIBRARIES}" MATCHES hidapi-libusb)
-            set(OPENHMD_HIDAPI_TYPE libusb)
-            find_package(HIDAPI QUIET COMPONENTS libusb)
-            list(APPEND _ohmd_extra_deps HIDAPI_libusb_FOUND)
-        elseif("${PC_OPENHMD_LIBRARIES}" MATCHES hidapi-hidraw)
-            set(OPENHMD_HIDAPI_TYPE hidraw)
-            find_package(HIDAPI QUIET COMPONENTS hidraw)
-            list(APPEND _ohmd_extra_deps HIDAPI_hidraw_FOUND)
-        elseif("${PC_OPENHMD_LIBRARIES}" MATCHES hidapi)
-            # Undifferentiated
-            set(OPENHMD_HIDAPI_TYPE undifferentiated)
-            find_package(HIDAPI QUIET)
-            list(APPEND _ohmd_extra_deps HIDAPI_FOUND)
+if(OPENHMD_LIBRARY AND "${OPENHMD_LIBRARY}" MATCHES "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        # Looks like a static library
+        if(PC_OPENHMD_FOUND)
+                # See if we need a particular hidapi.
+                list(REMOVE_ITEM PC_OPENHMD_LIBRARIES openhmd)
+                if("${PC_OPENHMD_LIBRARIES}" MATCHES hidapi-libusb)
+                set(OPENHMD_HIDAPI_TYPE libusb)
+                find_package(HIDAPI QUIET COMPONENTS libusb)
+                list(APPEND _ohmd_extra_deps HIDAPI_libusb_FOUND)
+                elseif("${PC_OPENHMD_LIBRARIES}" MATCHES hidapi-hidraw)
+                set(OPENHMD_HIDAPI_TYPE hidraw)
+                find_package(HIDAPI QUIET COMPONENTS hidraw)
+                list(APPEND _ohmd_extra_deps HIDAPI_hidraw_FOUND)
+                endif()
+        endif()
+        if(NOT PC_OPENHMD_FOUND OR NOT OPENHMD_HIDAPI_TYPE)
+                # Undifferentiated
+                set(OPENHMD_HIDAPI_TYPE undifferentiated)
+                find_package(HIDAPI QUIET)
+                list(APPEND _ohmd_extra_deps HIDAPI_FOUND)
         endif()
 endif()
 
