@@ -134,7 +134,7 @@ oxr_slog_ensure(struct oxr_sink_logger *slog, size_t extra)
 		slog->store_size += 1024;
 	}
 
-	slog->store = (char *)realloc(slog->store, slog->store_size);
+	U_ARRAY_REALLOC_OR_FREE(slog->store, char, slog->store_size);
 }
 
 static void
