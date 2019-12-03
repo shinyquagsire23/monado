@@ -347,8 +347,8 @@ p_udev_add_v4l(struct prober_device *pdev,
                uint32_t usb_iface,
                const char *path)
 {
-	size_t new_size = (pdev->num_v4ls + 1) * sizeof(struct prober_v4l);
-	pdev->v4ls = realloc(pdev->v4ls, new_size);
+	U_ARRAY_REALLOC_OR_FREE(pdev->v4ls, struct prober_v4l,
+	                        (pdev->num_v4ls + 1));
 
 	struct prober_v4l *v4l = &pdev->v4ls[pdev->num_v4ls++];
 	U_ZERO(v4l);
@@ -478,10 +478,8 @@ p_udev_add_hidraw(struct prober_device *pdev,
                   uint32_t interface,
                   const char *path)
 {
-	size_t new_size =
-	    (pdev->num_hidraws + 1) * sizeof(struct prober_hidraw);
-	pdev->hidraws =
-	    (struct prober_hidraw *)realloc(pdev->hidraws, new_size);
+	U_ARRAY_REALLOC_OR_FREE(pdev->hidraws, struct prober_hidraw,
+	                        (pdev->num_hidraws + 1));
 
 	struct prober_hidraw *hidraw = &pdev->hidraws[pdev->num_hidraws++];
 	U_ZERO(hidraw);

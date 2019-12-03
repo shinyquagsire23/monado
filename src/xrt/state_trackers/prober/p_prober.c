@@ -268,8 +268,8 @@ fill_out_product(struct prober *p, struct prober_device *pdev)
 static void
 add_device(struct prober *p, struct prober_device **out_dev)
 {
-	size_t new_size = (p->num_devices + 1) * sizeof(struct prober_device);
-	p->devices = realloc(p->devices, new_size);
+	U_ARRAY_REALLOC_OR_FREE(p->devices, struct prober_device,
+	                        (p->num_devices + 1));
 
 	struct prober_device *dev = &p->devices[p->num_devices++];
 	U_ZERO(dev);
