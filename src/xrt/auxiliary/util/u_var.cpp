@@ -51,7 +51,7 @@ public:
 
 public:
 	int
-	getNumber(std::string name)
+	getNumber(const std::string &name)
 	{
 		auto s = counters.find(name);
 		int count = (s != counters.end() ? s->second : 0) + 1;
@@ -149,9 +149,9 @@ u_var_remove_root(void *root)
 }
 
 extern "C" void
-u_var_visit(u_var_root_cb enter,
-            u_var_root_cb exit,
-            u_var_elm_cb elem,
+u_var_visit(u_var_root_cb enter_cb,
+            u_var_root_cb exit_cb,
+            u_var_elm_cb elem_cb,
             void *priv)
 {
 	if (!get_on()) {
@@ -166,14 +166,14 @@ u_var_visit(u_var_root_cb enter,
 	}
 
 	for (Obj *obj : tmp) {
-		enter(obj->name.c_str(), priv);
+		enter_cb(obj->name.c_str(), priv);
 
 		for (auto &var : obj->vars) {
-			elem(var.name.c_str(), (u_var_kind)var.kind, var.ptr,
-			     priv);
+			elem_cb(var.name.c_str(), (u_var_kind)var.kind, var.ptr,
+			        priv);
 		}
 
-		exit(obj->name.c_str(), priv);
+		exit_cb(obj->name.c_str(), priv);
 	}
 }
 

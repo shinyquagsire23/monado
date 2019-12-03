@@ -94,9 +94,9 @@ u_var_remove_root(void *root);
  * Visit all root nodes and their variables.
  */
 void
-u_var_visit(u_var_root_cb enter,
-            u_var_root_cb exit,
-            u_var_elm_cb e_cb,
+u_var_visit(u_var_root_cb enter_cb,
+            u_var_root_cb exit_cb,
+            u_var_elm_cb elem_cb,
             void *priv);
 
 /*!
