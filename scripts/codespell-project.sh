@@ -33,6 +33,7 @@ SCRIPTDIR=$(cd $(dirname $0) && pwd)
                 \( -name "*.c" \
                 -o -name "*.cpp" \
                 -o -name "*.h" \
+                -o -name "*.hpp" \
                 -o -name "*.sh" \
                 -o -name "*.md" \
                 -o -name "CMakeLists.txt" \) \
