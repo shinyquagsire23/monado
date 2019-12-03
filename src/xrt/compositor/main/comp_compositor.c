@@ -45,6 +45,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <assert.h>
 
 #include "os/os_time.h"
 
@@ -540,6 +541,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 
 	bool nvidia_tests_passed = false;
 
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	VkPhysicalDeviceProperties physical_device_properties;
 	temp_vk.vkGetPhysicalDeviceProperties(temp_vk.physical_device,
 	                                      &physical_device_properties);
@@ -598,6 +600,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 
 		free(display_props);
 	}
+#endif // VK_USE_PLATFORM_XLIB_XRANDR_EXT
 
 	if (nvidia_tests_passed) {
 		c->settings.window_type = WINDOW_DIRECT_NVIDIA;
@@ -697,7 +700,13 @@ compositor_init_window_post_vulkan(struct comp_compositor *c)
 		return true;
 	}
 
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	return compositor_try_window(c, comp_window_direct_create(c));
+#else
+	assert(false &&
+	       "NVIDIA direct mode depends on the xlib/xrandr direct mode.");
+	return false;
+#endif
 }
 
 static void
