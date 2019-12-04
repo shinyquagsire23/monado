@@ -99,7 +99,6 @@ template <typename StateType, typename ProcessModelType>
 inline types::SquareMatrix<getDimension<StateType>()>
 predictErrorCovariance(StateType const &state, ProcessModelType &processModel,
                        double dt) {
-    using StateSquareMatrix = types::SquareMatrix<getDimension<StateType>()>;
     const auto A = processModel.getStateTransitionMatrix(state, dt);
     // FLEXKALMAN_DEBUG_OUTPUT("State transition matrix", A);
     auto &&P = state.errorCovariance();
