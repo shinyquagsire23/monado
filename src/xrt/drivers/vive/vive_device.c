@@ -622,53 +622,58 @@ _get_color_coeffs(struct xrt_hmd_parts *hmd,
 }
 
 static void
+_get_color_coeffs_lookup(struct xrt_hmd_parts *hmd,
+                         const nx_json *eye_json,
+                         const char *name,
+                         uint8_t eye,
+                         uint8_t channel)
+{
+	const nx_json *distortion = nx_json_get(eye_json, name);
+	if (distortion == NULL) {
+		return;
+	}
+
+	const nx_json *coeffs = nx_json_get(distortion, "coeffs");
+	if (coeffs == NULL) {
+		return;
+	}
+
+	_get_color_coeffs(hmd, coeffs, eye, channel);
+}
+
+static void
 get_distortion_properties(struct xrt_hmd_parts *hmd,
                           const nx_json *eye_transform_json,
                           uint8_t eye)
 {
 	const nx_json *eye_json = nx_json_item(eye_transform_json, eye);
-	if (eye_json) {
-		// TODO: store grow_for_undistort per eye
-		hmd->distortion.vive.grow_for_undistort =
-		    _json_get_float(eye_json, "grow_for_undistort");
-		hmd->distortion.vive.undistort_r2_cutoff[eye] =
-		    _json_get_float(eye_json, "undistort_r2_cutoff");
+	if (eye_json == NULL) {
+		return;
+	}
 
-		const nx_json *distortion = nx_json_get(eye_json, "distortion");
-		if (distortion) {
-			// TODO: store center per color
-			hmd->distortion.vive.center[eye][0] =
-			    _json_get_float(eye_json, "center_x");
-			hmd->distortion.vive.center[eye][1] =
-			    _json_get_float(eye_json, "center_y");
+	// TODO: store grow_for_undistort per eye
+	// clang-format off
+	hmd->distortion.vive.grow_for_undistort = _json_get_float(eye_json, "grow_for_undistort");
+	hmd->distortion.vive.undistort_r2_cutoff[eye] = _json_get_float(eye_json, "undistort_r2_cutoff");
+	// clang-format on
 
-			// green
-			const nx_json *coeffs =
-			    nx_json_get(distortion, "coeffs");
-			if (coeffs)
-				_get_color_coeffs(hmd, coeffs, eye, 1);
-		}
+	const nx_json *distortion = nx_json_get(eye_json, "distortion");
+	if (distortion != NULL) {
+		// TODO: store center per color
+		// clang-format off
+		hmd->distortion.vive.center[eye][0] = _json_get_float(distortion, "center_x");
+		hmd->distortion.vive.center[eye][1] = _json_get_float(distortion, "center_y");
+		// clang-format on
 
-		const nx_json *distortion_blue =
-		    nx_json_get(eye_json, "distortion_blue");
-		if (distortion_blue) {
-			const nx_json *coeffs =
-			    nx_json_get(distortion_blue, "coeffs");
-			// blue
-			if (coeffs)
-				_get_color_coeffs(hmd, coeffs, eye, 2);
-		}
-
-		const nx_json *distortion_red =
-		    nx_json_get(eye_json, "distortion_red");
-		if (distortion_red) {
-			const nx_json *coeffs =
-			    nx_json_get(distortion_red, "coeffs");
-			// red
-			if (coeffs)
-				_get_color_coeffs(hmd, coeffs, eye, 0);
+		// green
+		const nx_json *coeffs = nx_json_get(distortion, "coeffs");
+		if (coeffs != NULL) {
+			_get_color_coeffs(hmd, coeffs, eye, 1);
 		}
 	}
+
+	_get_color_coeffs_lookup(hmd, eye_json, "distortion_red", eye, 0);
+	_get_color_coeffs_lookup(hmd, eye_json, "distortion_blue", eye, 2);
 }
 
 void
@@ -703,109 +708,96 @@ vive_parse_config(struct vive_device *d, char *json_string)
 	VIVE_SPEW(d, "JSON config:\n%s\n", json_string);
 
 	const nx_json *json = nx_json_parse(json_string, 0);
-	if (json) {
-
-		switch (d->variant) {
-		case VIVE_VARIANT_VIVE:
-			_json_get_vec3(json, "acc_bias", &d->imu.acc_bias);
-			_json_get_vec3(json, "acc_scale", &d->imu.acc_scale);
-			_json_get_vec3(json, "gyro_bias", &d->imu.gyro_bias);
-			_json_get_vec3(json, "gyro_scale", &d->imu.gyro_scale);
-			break;
-		case VIVE_VARIANT_PRO: {
-			const nx_json *imu = nx_json_get(json, "imu");
-			_json_get_vec3(imu, "acc_bias", &d->imu.acc_bias);
-			_json_get_vec3(imu, "acc_scale", &d->imu.acc_scale);
-			_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
-			_json_get_vec3(imu, "gyro_scale", &d->imu.gyro_scale);
-		} break;
-		case VIVE_VARIANT_INDEX: {
-			const nx_json *imu = nx_json_get(json, "imu");
-			_json_get_vec3(imu, "acc_bias", &d->imu.acc_bias);
-			_json_get_vec3(imu, "acc_scale", &d->imu.acc_scale);
-			_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
-		} break;
-		default: VIVE_ERROR("Unknown Vive variant.\n"); return false;
-		}
-
-		d->firmware.model_number =
-		    _json_get_string(json, "model_number");
-		if (d->variant != VIVE_VARIANT_INDEX) {
-			d->firmware.mb_serial_number =
-			    _json_get_string(json, "mb_serial_number");
-			d->display.lens_separation =
-			    _json_get_double(json, "lens_separation");
-		}
-		d->firmware.device_serial_number =
-		    _json_get_string(json, "device_serial_number");
-
-		const nx_json *device_json = nx_json_get(json, "device");
-		if (device_json) {
-			if (d->variant != VIVE_VARIANT_INDEX) {
-				d->display.persistence = _json_get_double(
-				    device_json, "persistence");
-				d->base.hmd->distortion.vive.aspect_x_over_y =
-				    _json_get_float(device_json,
-				                    "physical_aspect_x_over_y");
-			}
-			d->display.eye_target_height_in_pixels =
-			    (uint16_t)_json_get_int(
-			        device_json, "eye_target_height_in_pixels");
-			d->display.eye_target_width_in_pixels =
-			    (uint16_t)_json_get_int(
-			        device_json, "eye_target_width_in_pixels");
-		}
-
-		const nx_json *eye_transform_json =
-		    nx_json_get(json, "tracking_to_eye_transform");
-		if (eye_transform_json) {
-			for (uint8_t eye = 0; eye < 2; eye++)
-				get_distortion_properties(
-				    d->base.hmd, eye_transform_json, eye);
-		}
-
-		nx_json_free(json);
-
-		VIVE_DEBUG(d, "= Vive configuration =");
-		VIVE_DEBUG(d, "lens_separation: %f",
-		           d->display.lens_separation);
-		VIVE_DEBUG(d, "persistence: %f", d->display.persistence);
-		VIVE_DEBUG(
-		    d, "physical_aspect_x_over_y: %f",
-		    (double)d->base.hmd->distortion.vive.aspect_x_over_y);
-
-		VIVE_DEBUG(d, "model_number: %s", d->firmware.model_number);
-		VIVE_DEBUG(d, "mb_serial_number: %s",
-		           d->firmware.mb_serial_number);
-		VIVE_DEBUG(d, "device_serial_number: %s",
-		           d->firmware.device_serial_number);
-
-		VIVE_DEBUG(d, "eye_target_height_in_pixels: %d",
-		           d->display.eye_target_height_in_pixels);
-		VIVE_DEBUG(d, "eye_target_width_in_pixels: %d",
-		           d->display.eye_target_width_in_pixels);
-
-		if (d->print_debug) {
-			print_vec3("acc_bias", &d->imu.acc_bias);
-			print_vec3("acc_scale", &d->imu.acc_scale);
-			print_vec3("gyro_bias", &d->imu.gyro_bias);
-			print_vec3("gyro_scale", &d->imu.gyro_scale);
-		}
-
-		VIVE_DEBUG(
-		    d, "grow_for_undistort: %f",
-		    (double)d->base.hmd->distortion.vive.grow_for_undistort);
-
-		VIVE_DEBUG(d, "undistort_r2_cutoff 0: %f",
-		           (double)d->base.hmd->distortion.vive
-		               .undistort_r2_cutoff[0]);
-		VIVE_DEBUG(d, "undistort_r2_cutoff 1: %f",
-		           (double)d->base.hmd->distortion.vive
-		               .undistort_r2_cutoff[1]);
-	} else {
+	if (json == NULL) {
 		VIVE_ERROR("Could not parse JSON data.");
 		return false;
 	}
+
+	switch (d->variant) {
+	case VIVE_VARIANT_VIVE:
+		_json_get_vec3(json, "acc_bias", &d->imu.acc_bias);
+		_json_get_vec3(json, "acc_scale", &d->imu.acc_scale);
+		_json_get_vec3(json, "gyro_bias", &d->imu.gyro_bias);
+		_json_get_vec3(json, "gyro_scale", &d->imu.gyro_scale);
+		break;
+	case VIVE_VARIANT_PRO: {
+		const nx_json *imu = nx_json_get(json, "imu");
+		_json_get_vec3(imu, "acc_bias", &d->imu.acc_bias);
+		_json_get_vec3(imu, "acc_scale", &d->imu.acc_scale);
+		_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
+		_json_get_vec3(imu, "gyro_scale", &d->imu.gyro_scale);
+	} break;
+	case VIVE_VARIANT_INDEX: {
+		const nx_json *imu = nx_json_get(json, "imu");
+		_json_get_vec3(imu, "acc_bias", &d->imu.acc_bias);
+		_json_get_vec3(imu, "acc_scale", &d->imu.acc_scale);
+		_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
+	} break;
+	default: VIVE_ERROR("Unknown Vive variant.\n"); return false;
+	}
+
+	d->firmware.model_number = _json_get_string(json, "model_number");
+	if (d->variant != VIVE_VARIANT_INDEX) {
+		// clang-format off
+		d->firmware.mb_serial_number = _json_get_string(json, "mb_serial_number");
+		d->display.lens_separation = _json_get_double(json, "lens_separation");
+		// clang-format on
+	}
+	d->firmware.device_serial_number =
+	    _json_get_string(json, "device_serial_number");
+
+	const nx_json *device_json = nx_json_get(json, "device");
+	if (device_json) {
+		if (d->variant != VIVE_VARIANT_INDEX) {
+			d->display.persistence =
+			    _json_get_double(device_json, "persistence");
+			d->base.hmd->distortion.vive.aspect_x_over_y =
+			    _json_get_float(device_json,
+			                    "physical_aspect_x_over_y");
+		}
+		d->display.eye_target_height_in_pixels =
+		    (uint16_t)_json_get_int(device_json,
+		                            "eye_target_height_in_pixels");
+		d->display.eye_target_width_in_pixels = (uint16_t)_json_get_int(
+		    device_json, "eye_target_width_in_pixels");
+	}
+
+	const nx_json *eye_transform_json =
+	    nx_json_get(json, "tracking_to_eye_transform");
+	if (eye_transform_json) {
+		for (uint8_t eye = 0; eye < 2; eye++) {
+			get_distortion_properties(d->base.hmd,
+			                          eye_transform_json, eye);
+		}
+	}
+
+	nx_json_free(json);
+
+	// clang-format off
+	VIVE_DEBUG(d, "= Vive configuration =");
+	VIVE_DEBUG(d, "lens_separation: %f", d->display.lens_separation);
+	VIVE_DEBUG(d, "persistence: %f", d->display.persistence);
+	VIVE_DEBUG(d, "physical_aspect_x_over_y: %f", (double)d->base.hmd->distortion.vive.aspect_x_over_y);
+
+	VIVE_DEBUG(d, "model_number: %s", d->firmware.model_number);
+	VIVE_DEBUG(d, "mb_serial_number: %s", d->firmware.mb_serial_number);
+	VIVE_DEBUG(d, "device_serial_number: %s", d->firmware.device_serial_number);
+
+	VIVE_DEBUG(d, "eye_target_height_in_pixels: %d", d->display.eye_target_height_in_pixels);
+	VIVE_DEBUG(d, "eye_target_width_in_pixels: %d", d->display.eye_target_width_in_pixels);
+
+	if (d->print_debug) {
+		print_vec3("acc_bias", &d->imu.acc_bias);
+		print_vec3("acc_scale", &d->imu.acc_scale);
+		print_vec3("gyro_bias", &d->imu.gyro_bias);
+		print_vec3("gyro_scale", &d->imu.gyro_scale);
+	}
+
+	VIVE_DEBUG(d, "grow_for_undistort: %f", (double)d->base.hmd->distortion.vive.grow_for_undistort);
+
+	VIVE_DEBUG(d, "undistort_r2_cutoff 0: %f", (double)d->base.hmd->distortion.vive.undistort_r2_cutoff[0]);
+	VIVE_DEBUG(d, "undistort_r2_cutoff 1: %f", (double)d->base.hmd->distortion.vive.undistort_r2_cutoff[1]);
+	// clang-format on
 
 	return true;
 }
