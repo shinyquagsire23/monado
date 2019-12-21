@@ -392,51 +392,59 @@ vive_mainboard_run_thread(void *ptr)
 	return NULL;
 }
 
+
+/*
+ *
+ * Sensor thread.
+ *
+ */
+
 static bool
 vive_sensors_read_one_msg(struct vive_device *d)
 {
-	os_thread_helper_lock(&d->sensors_thread);
-
 	uint8_t buffer[64];
 
-	while (os_thread_helper_is_running_locked(&d->sensors_thread)) {
-
-		os_thread_helper_unlock(&d->sensors_thread);
-
-		int ret =
-		    os_hid_read(d->sensors_dev, buffer, sizeof(buffer), 1000);
-
-		if (ret == 0) {
-			// Must lock thread before check in while.
-			os_thread_helper_lock(&d->sensors_thread);
-			continue;
-		}
-		if (ret < 0) {
-			VIVE_ERROR("Failed to read device '%i'!", ret);
-			return false;
-		}
-
-		if (buffer[0] == VIVE_IMU_REPORT_ID) {
-			if (ret != 52) {
-				VIVE_ERROR("Wrong IMU report size: %d", ret);
-				return false;
-			}
-			update_imu(d, (struct vive_imu_report *)buffer);
-
-		} else
-			VIVE_ERROR("Unknown message type %d", buffer[0]);
-
+	int ret = os_hid_read(d->sensors_dev, buffer, sizeof(buffer), 1000);
+	if (ret == 0) {
+		// Time out
 		return true;
 	}
+	if (ret < 0) {
+		VIVE_ERROR("Failed to read device '%i'!", ret);
+		return false;
+	}
 
-	return false;
+	switch (buffer[0]) {
+	case VIVE_IMU_REPORT_ID:
+		if (ret != 52) {
+			VIVE_ERROR("Wrong IMU report size: %d", ret);
+			return false;
+		}
+		update_imu(d, (struct vive_imu_report *)buffer);
+		break;
+	default: VIVE_ERROR("Unknown sensor message type %d", buffer[0]); break;
+	}
+
+	return true;
 }
 
 static void *
-vive_sensors_run_thread(void *d)
+vive_sensors_run_thread(void *ptr)
 {
-	while (vive_sensors_read_one_msg((struct vive_device *)d))
-		;
+	struct vive_device *d = (struct vive_device *)ptr;
+
+	os_thread_helper_lock(&d->sensors_thread);
+	while (os_thread_helper_is_running_locked(&d->sensors_thread)) {
+		os_thread_helper_unlock(&d->sensors_thread);
+
+		if (!vive_sensors_read_one_msg(d)) {
+			return NULL;
+		}
+
+		// Just keep swimming.
+		os_thread_helper_lock(&d->sensors_thread);
+	}
+
 	return NULL;
 }
 
