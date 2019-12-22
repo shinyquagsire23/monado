@@ -202,32 +202,6 @@ vive_mainboard_power_off(struct vive_device *d)
 	return true;
 }
 
-static bool
-vive_mainboard_read_one_msg(struct vive_device *d, uint8_t *buffer, size_t size)
-{
-	os_thread_helper_lock(&d->mainboard_thread);
-
-	while (os_thread_helper_is_running_locked(&d->mainboard_thread)) {
-
-		os_thread_helper_unlock(&d->mainboard_thread);
-
-		int ret = os_hid_read(d->mainboard_dev, buffer, size, 1000);
-		if (ret == 0) {
-			// Must lock thread before check in while.
-			os_thread_helper_lock(&d->mainboard_thread);
-			continue;
-		}
-		if (ret < 0) {
-			VIVE_ERROR("Failed to read device '%i'!", ret);
-			return false;
-		}
-
-		return true;
-	}
-
-	return false;
-}
-
 static void
 vive_mainboard_decode_message(struct vive_device *d,
                               struct vive_mainboard_status_report *report)
@@ -367,26 +341,60 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 	}
 }
 
+
+/*
+ *
+ * Mainboard thread
+ *
+ */
+
+static bool
+vive_mainboard_read_one_msg(struct vive_device *d)
+{
+	uint8_t buffer[64];
+
+	int ret = os_hid_read(d->mainboard_dev, buffer, sizeof(buffer), 1000);
+	if (ret == 0) {
+		// Time out
+		return true;
+	}
+	if (ret < 0) {
+		VIVE_ERROR("Failed to read device '%i'!", ret);
+		return false;
+	}
+
+	switch (buffer[0]) {
+	case VIVE_MAINBOARD_STATUS_REPORT_ID:
+		if (ret != sizeof(struct vive_mainboard_status_report)) {
+			VIVE_ERROR("Mainboard status report has invalid size.");
+			return false;
+		}
+		vive_mainboard_decode_message(
+		    d, (struct vive_mainboard_status_report *)buffer);
+		break;
+	default:
+		VIVE_ERROR("Unknown mainboard message type %d", buffer[0]);
+		break;
+	}
+
+	return true;
+}
+
 static void *
 vive_mainboard_run_thread(void *ptr)
 {
 	struct vive_device *d = (struct vive_device *)ptr;
 
-	uint8_t buffer[64];
+	os_thread_helper_lock(&d->mainboard_thread);
+	while (os_thread_helper_is_running_locked(&d->mainboard_thread)) {
+		os_thread_helper_unlock(&d->mainboard_thread);
 
-	while (vive_mainboard_read_one_msg(d, buffer, sizeof(buffer))) {
-		if (buffer[0] == VIVE_MAINBOARD_STATUS_REPORT_ID) {
-			struct vive_mainboard_status_report *report =
-			    (struct vive_mainboard_status_report *)buffer;
-			if (64 != sizeof(*report))
-				VIVE_ERROR(
-				    "Mainboard status report has invalid "
-				    "size.");
-			else
-				vive_mainboard_decode_message(d, report);
-		} else {
-			VIVE_ERROR("Unknown message type %d", buffer[0]);
+		if (!vive_mainboard_read_one_msg(d)) {
+			return NULL;
 		}
+
+		// Just keep swimming.
+		os_thread_helper_lock(&d->mainboard_thread);
 	}
 
 	return NULL;
