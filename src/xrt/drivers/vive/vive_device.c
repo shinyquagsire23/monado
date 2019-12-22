@@ -286,26 +286,31 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 		dt = sample_time - (uint32_t)d->imu.time;
 		raw_time = d->imu.time + dt;
 
-		int16_t acc[3] = {(int16_t)__le16_to_cpu(sample->acc[0]),
-		                  (int16_t)__le16_to_cpu(sample->acc[1]),
-		                  (int16_t)__le16_to_cpu(sample->acc[2])};
+		int16_t acc[3] = {
+		    (int16_t)__le16_to_cpu(sample->acc[0]),
+		    (int16_t)__le16_to_cpu(sample->acc[1]),
+		    (int16_t)__le16_to_cpu(sample->acc[2]),
+		};
 
 		scale = (float)d->imu.acc_range / 32768.0f;
 		struct xrt_vec3 acceleration = {
 		    -scale * d->imu.acc_scale.x * acc[0] - d->imu.acc_bias.x,
 		    -scale * d->imu.acc_scale.y * acc[1] - d->imu.acc_bias.y,
-		    -scale * d->imu.acc_scale.z * acc[2] - d->imu.acc_bias.z};
+		    -scale * d->imu.acc_scale.z * acc[2] - d->imu.acc_bias.z,
+		};
 
-		int16_t gyro[3] = {(int16_t)__le16_to_cpu(sample->gyro[0]),
-		                   (int16_t)__le16_to_cpu(sample->gyro[1]),
-		                   (int16_t)__le16_to_cpu(sample->gyro[2])};
+		int16_t gyro[3] = {
+		    (int16_t)__le16_to_cpu(sample->gyro[0]),
+		    (int16_t)__le16_to_cpu(sample->gyro[1]),
+		    (int16_t)__le16_to_cpu(sample->gyro[2]),
+		};
 
 		scale = (float)d->imu.gyro_range / 32768.0f;
 		struct xrt_vec3 angular_velocity = {
 		    -scale * d->imu.gyro_scale.x * gyro[0] - d->imu.gyro_bias.x,
 		    -scale * d->imu.gyro_scale.y * gyro[1] - d->imu.gyro_bias.y,
-		    -scale * d->imu.gyro_scale.z * gyro[2] -
-		        d->imu.gyro_bias.z};
+		    -scale * d->imu.gyro_scale.z * gyro[2] - d->imu.gyro_bias.z,
+		};
 
 		VIVE_SPEW(d, "ACC  %f %f %f", acceleration.x, acceleration.y,
 		          acceleration.z);
