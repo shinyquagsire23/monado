@@ -346,6 +346,8 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 		    &d->rot_filtered, &angular_velocity,
 		    (float)(dt / VIVE_CLOCK_FREQ), &d->rot_filtered);
 
+		d->last.acc = acceleration;
+		d->last.gyro = angular_velocity;
 		d->imu.sequence = seq;
 		d->imu.time = raw_time;
 	}
