@@ -294,9 +294,9 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 
 		scale = (float)d->imu.acc_range / 32768.0f;
 		struct xrt_vec3 acceleration = {
-		    -scale * d->imu.acc_scale.x * acc[0] - d->imu.acc_bias.x,
-		    -scale * d->imu.acc_scale.y * acc[1] - d->imu.acc_bias.y,
-		    -scale * d->imu.acc_scale.z * acc[2] - d->imu.acc_bias.z,
+		    scale * d->imu.acc_scale.x * acc[0] - d->imu.acc_bias.x,
+		    scale * d->imu.acc_scale.y * acc[1] - d->imu.acc_bias.y,
+		    scale * d->imu.acc_scale.z * acc[2] - d->imu.acc_bias.z,
 		};
 
 		int16_t gyro[3] = {
@@ -307,9 +307,9 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 
 		scale = (float)d->imu.gyro_range / 32768.0f;
 		struct xrt_vec3 angular_velocity = {
-		    -scale * d->imu.gyro_scale.x * gyro[0] - d->imu.gyro_bias.x,
-		    -scale * d->imu.gyro_scale.y * gyro[1] - d->imu.gyro_bias.y,
-		    -scale * d->imu.gyro_scale.z * gyro[2] - d->imu.gyro_bias.z,
+		    scale * d->imu.gyro_scale.x * gyro[0] - d->imu.gyro_bias.x,
+		    scale * d->imu.gyro_scale.y * gyro[1] - d->imu.gyro_bias.y,
+		    scale * d->imu.gyro_scale.z * gyro[2] - d->imu.gyro_bias.z,
 		};
 
 		VIVE_SPEW(d, "ACC  %f %f %f", acceleration.x, acceleration.y,
@@ -320,18 +320,23 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 
 		switch (d->variant) {
 		case VIVE_VARIANT_VIVE:
-			// flip x axis
-			angular_velocity.x = -angular_velocity.x;
+			// flip all execpt x axis
+			angular_velocity.x = +angular_velocity.x;
+			angular_velocity.y = -angular_velocity.y;
+			angular_velocity.z = -angular_velocity.z;
 			break;
 		case VIVE_VARIANT_PRO:
-			// flip y axis
-			angular_velocity.y = -angular_velocity.y;
+			// flip all execpt y axis
+			angular_velocity.x = -angular_velocity.x;
+			angular_velocity.y = +angular_velocity.y;
+			angular_velocity.z = -angular_velocity.z;
 			break;
 		case VIVE_VARIANT_INDEX: {
+			// Flip all axis and re-order.
 			struct xrt_vec3 angular_velocity_fixed;
-			angular_velocity_fixed.x = angular_velocity.y;
-			angular_velocity_fixed.y = angular_velocity.x;
-			angular_velocity_fixed.z = angular_velocity.z;
+			angular_velocity_fixed.x = -angular_velocity.y;
+			angular_velocity_fixed.y = -angular_velocity.x;
+			angular_velocity_fixed.z = -angular_velocity.z;
 			angular_velocity = angular_velocity_fixed;
 		} break;
 		default: VIVE_ERROR("Unhandled Vive variant\n"); return;
