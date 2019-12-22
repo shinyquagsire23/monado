@@ -72,7 +72,7 @@ vive_device_update_inputs(struct xrt_device *xdev,
                           struct time_state *timekeeping)
 {
 	struct vive_device *d = vive_device(xdev);
-	VIVE_DEBUG(d, "vive_device_update_inputs.");
+	VIVE_SPEW(d, "ENTER!");
 }
 
 static void
