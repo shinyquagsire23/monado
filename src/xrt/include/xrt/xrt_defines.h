@@ -247,6 +247,16 @@ struct xrt_matrix_2x2
 };
 
 /*!
+ * A tightly packed 3x3 matrix of floats.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_matrix_3x3
+{
+	float v[9];
+};
+
+/*!
  * A tightly packed 4x4 matrix of floats.
  *
  * @ingroup xrt_iface math
