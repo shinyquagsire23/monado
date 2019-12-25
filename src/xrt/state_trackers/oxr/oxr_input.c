@@ -594,6 +594,19 @@ oxr_source_cache_update(struct oxr_logger *log,
 	}
 
 	if (cache->num_inputs > 0) {
+
+		/*!
+		 * @todo This logic should be a lot more smarter.
+		 */
+
+		// If the input is not active signal that.
+		if (!cache->inputs[0].input->active) {
+			// Reset all state.
+			U_ZERO(&cache->current);
+			return;
+		}
+
+		// Signal that the input is active, always set just to be sure.
 		cache->current.active = true;
 
 		/*!
