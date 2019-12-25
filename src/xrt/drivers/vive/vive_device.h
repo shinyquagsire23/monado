@@ -58,6 +58,7 @@ struct vive_device
 		double persistence;
 		uint16_t eye_target_height_in_pixels;
 		uint16_t eye_target_width_in_pixels;
+		struct xrt_quat rot[2];
 	} display;
 
 	struct

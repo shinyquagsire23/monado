@@ -121,9 +121,11 @@ vive_device_get_view_pose(struct xrt_device *xdev,
                           uint32_t view_index,
                           struct xrt_pose *out_pose)
 {
+	struct vive_device *d = vive_device(xdev);
 	struct xrt_pose pose = {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}};
 	bool adjust = view_index == 0;
 
+	pose.orientation = d->display.rot[view_index];
 	pose.position.x = eye_relation->x / 2.0f;
 	pose.position.y = eye_relation->y / 2.0f;
 	pose.position.z = eye_relation->z / 2.0f;
@@ -596,6 +598,39 @@ _json_get_vec3(const cJSON *json, const char *name, struct xrt_vec3 *result)
 	_array_to_vec3(result_array, result);
 }
 
+static bool
+_json_get_matrix_3x3(const cJSON *json,
+                     const char *name,
+                     struct xrt_matrix_3x3 *result)
+{
+	const cJSON *vec3_arr = cJSON_GetObjectItemCaseSensitive(json, name);
+
+	// Some sanity checking.
+	if (vec3_arr == NULL || cJSON_GetArraySize(vec3_arr) != 3) {
+		return false;
+	}
+
+	size_t total = 0;
+	const cJSON *vec = NULL;
+	cJSON_ArrayForEach(vec, vec3_arr)
+	{
+		assert(cJSON_GetArraySize(vec) == 3);
+		const cJSON *elem = NULL;
+		cJSON_ArrayForEach(elem, vec)
+		{
+			// Just in case.
+			if (total >= 9) {
+				break;
+			}
+
+			assert(cJSON_IsNumber(elem));
+			result->v[total++] = (float)elem->valuedouble;
+		}
+	}
+
+	return true;
+}
+
 static char *
 _json_get_string(const cJSON *json, const char *name)
 {
@@ -669,13 +704,20 @@ _get_color_coeffs_lookup(struct xrt_hmd_parts *hmd,
 }
 
 static void
-get_distortion_properties(struct xrt_hmd_parts *hmd,
+get_distortion_properties(struct vive_device *d,
                           const cJSON *eye_transform_json,
                           uint8_t eye)
 {
+	struct xrt_hmd_parts *hmd = d->base.hmd;
+
 	const cJSON *eye_json = cJSON_GetArrayItem(eye_transform_json, eye);
 	if (eye_json == NULL) {
 		return;
+	}
+
+	struct xrt_matrix_3x3 rot = {0};
+	if (_json_get_matrix_3x3(eye_json, "eye_to_head", &rot)) {
+		math_quat_from_matrix_3x3(&rot, &d->display.rot[eye]);
 	}
 
 	// TODO: store grow_for_undistort per eye
@@ -710,6 +752,9 @@ vive_init_defaults(struct vive_device *d)
 {
 	d->display.eye_target_width_in_pixels = 1080;
 	d->display.eye_target_height_in_pixels = 1200;
+
+	d->display.rot[0].w = 1.0f;
+	d->display.rot[1].w = 1.0f;
 
 	d->imu.gyro_range = 8.726646f;
 	d->imu.acc_range = 39.226600f;
@@ -798,8 +843,7 @@ vive_parse_config(struct vive_device *d, char *json_string)
 	    cJSON_GetObjectItemCaseSensitive(json, "tracking_to_eye_transform");
 	if (eye_transform_json) {
 		for (uint8_t eye = 0; eye < 2; eye++) {
-			get_distortion_properties(d->base.hmd,
-			                          eye_transform_json, eye);
+			get_distortion_properties(d, eye_transform_json, eye);
 		}
 	}
 
