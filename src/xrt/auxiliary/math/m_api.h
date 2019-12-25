@@ -103,6 +103,17 @@ math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut);
  */
 
 /*!
+ * Create a rotation from a 3x3 rotation matrix.
+ *
+ * @relates xrt_quat
+ * @relates xrt_matrix_3x3
+ * @ingroup aux_math
+ */
+void
+math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat,
+                          struct xrt_quat *result);
+
+/*!
  * Check if this quat can be used in transformation operations.
  *
  * @relates xrt_quat

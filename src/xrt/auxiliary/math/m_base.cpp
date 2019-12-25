@@ -81,6 +81,19 @@ math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut)
  *
  */
 
+
+extern "C" void
+math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat,
+                          struct xrt_quat *result)
+{
+	Eigen::Matrix3f m;
+	m << mat->v[0], mat->v[1], mat->v[2], mat->v[3], mat->v[4], mat->v[5],
+	    mat->v[6], mat->v[7], mat->v[8];
+
+	Eigen::Quaternionf q(m);
+	map_quat(*result) = q;
+}
+
 extern "C" bool
 math_quat_validate(const struct xrt_quat *quat)
 {
