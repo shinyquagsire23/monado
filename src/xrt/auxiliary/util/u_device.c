@@ -251,6 +251,11 @@ u_device_allocate(enum u_device_alloc_flags flags,
 	if (num_inputs > 0) {
 		xdev->num_inputs = num_inputs;
 		xdev->inputs = (struct xrt_input *)(ptr + offset_inputs);
+
+		// Set inputs to active initially, easier for drivers.
+		for (size_t i = 0; i < num_inputs; i++) {
+			xdev->inputs[i].active = true;
+		}
 	}
 
 	if (num_outputs > 0) {

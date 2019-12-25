@@ -180,6 +180,9 @@ struct xrt_hmd_parts
  */
 struct xrt_input
 {
+	//! Is this input active.
+	bool active;
+
 	int64_t timestamp;
 
 	enum xrt_input_name name;
