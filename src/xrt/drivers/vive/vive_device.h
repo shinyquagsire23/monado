@@ -16,6 +16,29 @@
 extern "C" {
 #endif
 
+
+/*!
+ * A lighthouse consisting of sensors.
+ *
+ * All sensors are placed in IMU space.
+ */
+struct lh_model
+{
+	struct lh_sensor *sensors;
+	size_t num_sensors;
+};
+
+/*!
+ * A single lighthouse senosor point and normal, in IMU space.
+ */
+struct lh_sensor
+{
+	struct xrt_vec3 pos;
+	uint32_t _pad0;
+	struct xrt_vec3 normal;
+	uint32_t _pad1;
+};
+
 enum VIVE_VARIANT
 {
 	VIVE_UNKNOWN = 0,
@@ -34,6 +57,8 @@ struct vive_device
 	struct os_thread_helper sensors_thread;
 	struct os_thread_helper mainboard_thread;
 
+	struct lh_model lh;
+
 	struct
 	{
 		uint64_t time;
@@ -44,6 +69,9 @@ struct vive_device
 		struct xrt_vec3 acc_scale;
 		struct xrt_vec3 gyro_bias;
 		struct xrt_vec3 gyro_scale;
+
+		//! IMU position in tracking space.
+		struct xrt_pose trackref;
 	} imu;
 
 	struct
@@ -58,7 +86,13 @@ struct vive_device
 		double persistence;
 		uint16_t eye_target_height_in_pixels;
 		uint16_t eye_target_width_in_pixels;
+
 		struct xrt_quat rot[2];
+
+		//! Head position in tracking space.
+		struct xrt_pose trackref;
+		//! Head position in IMU space.
+		struct xrt_pose imuref;
 	} display;
 
 	struct

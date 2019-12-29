@@ -61,6 +61,12 @@ vive_device_destroy(struct xrt_device *xdev)
 		d->sensors_dev = NULL;
 	}
 
+	if (d->lh.sensors != NULL) {
+		free(d->lh.sensors);
+		d->lh.sensors = NULL;
+		d->lh.num_sensors = 0;
+	}
+
 	// Remove the variable tracking.
 	u_var_remove_root(d);
 
@@ -575,17 +581,14 @@ _array_to_vec3(const float array[3], struct xrt_vec3 *result)
 }
 
 static void
-_json_get_vec3(const cJSON *json, const char *name, struct xrt_vec3 *result)
+_json_to_vec3(const cJSON *json, struct xrt_vec3 *result)
 {
-	const cJSON *acc_bias_arr =
-	    cJSON_GetObjectItemCaseSensitive(json, name);
-
 	float result_array[3];
 
-	assert(cJSON_GetArraySize(acc_bias_arr) == 3);
+	assert(cJSON_GetArraySize(json) == 3);
 	const cJSON *item = NULL;
 	size_t i = 0;
-	cJSON_ArrayForEach(item, acc_bias_arr)
+	cJSON_ArrayForEach(item, json)
 	{
 		assert(cJSON_IsNumber(item));
 		result_array[i] = (float)item->valuedouble;
@@ -596,6 +599,24 @@ _json_get_vec3(const cJSON *json, const char *name, struct xrt_vec3 *result)
 	}
 
 	_array_to_vec3(result_array, result);
+}
+
+static long long
+_json_to_int(const cJSON *item)
+{
+	if (item != NULL) {
+		return item->valueint;
+	} else {
+		return 0;
+	}
+}
+
+static void
+_json_get_vec3(const cJSON *json, const char *name, struct xrt_vec3 *result)
+{
+	const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
+
+	_json_to_vec3(item, result);
 }
 
 static bool
@@ -656,7 +677,7 @@ static long long
 _json_get_int(const cJSON *json, const char *name)
 {
 	const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
-	return item->valueint;
+	return _json_to_int(item);
 }
 
 static void
@@ -704,6 +725,17 @@ _get_color_coeffs_lookup(struct xrt_hmd_parts *hmd,
 }
 
 static void
+_get_pose_from_pos_x_z(const cJSON *obj, struct xrt_pose *pose)
+{
+	struct xrt_vec3 plus_x, plus_z;
+	_json_get_vec3(obj, "plus_x", &plus_x);
+	_json_get_vec3(obj, "plus_z", &plus_z);
+	_json_get_vec3(obj, "position", &pose->position);
+
+	math_quat_from_plus_x_z(&plus_x, &plus_z, &pose->orientation);
+}
+
+static void
 get_distortion_properties(struct vive_device *d,
                           const cJSON *eye_transform_json,
                           uint8_t eye)
@@ -745,6 +777,85 @@ get_distortion_properties(struct vive_device *d,
 
 	_get_color_coeffs_lookup(hmd, eye_json, "distortion_red", eye, 0);
 	_get_color_coeffs_lookup(hmd, eye_json, "distortion_blue", eye, 2);
+}
+
+static void
+get_lighthouse_config(struct vive_device *d, const cJSON *json)
+{
+	const cJSON *lh =
+	    cJSON_GetObjectItemCaseSensitive(json, "lighthouse_config");
+	if (lh == NULL) {
+		return;
+	}
+
+	const cJSON *json_map =
+	    cJSON_GetObjectItemCaseSensitive(lh, "channelMap");
+	const cJSON *json_normals =
+	    cJSON_GetObjectItemCaseSensitive(lh, "modelNormals");
+	const cJSON *json_points =
+	    cJSON_GetObjectItemCaseSensitive(lh, "modelPoints");
+
+	if (json_map == NULL || json_normals == NULL || json_points == NULL) {
+		return;
+	}
+
+	size_t map_size = cJSON_GetArraySize(json_map);
+	size_t normals_size = cJSON_GetArraySize(json_normals);
+	size_t points_size = cJSON_GetArraySize(json_points);
+
+	if (map_size != normals_size || normals_size != points_size ||
+	    map_size <= 0) {
+		return;
+	}
+
+	uint32_t *map = U_TYPED_ARRAY_CALLOC(uint32_t, map_size);
+	struct lh_sensor *s = U_TYPED_ARRAY_CALLOC(struct lh_sensor, map_size);
+
+	size_t i = 0;
+	const cJSON *item = NULL;
+	cJSON_ArrayForEach(item, json_map)
+	{
+		// Build the channel map.
+		map[i++] = _json_to_int(item);
+	}
+
+	i = 0;
+	item = NULL;
+	cJSON_ArrayForEach(item, json_normals)
+	{
+		// Store in channel map order.
+		_json_to_vec3(item, &s[map[i++]].normal);
+	}
+
+	i = 0;
+	item = NULL;
+	cJSON_ArrayForEach(item, json_points)
+	{
+		// Store in channel map order.
+		_json_to_vec3(item, &s[map[i++]].pos);
+	}
+
+	// Free the map.
+	free(map);
+	map = NULL;
+
+	d->lh.sensors = s;
+	d->lh.num_sensors = map_size;
+
+
+	// Transform the sensors into IMU space.
+	struct xrt_pose trackref_to_imu = {0};
+	math_pose_invert(&d->imu.trackref, &trackref_to_imu);
+
+	for (i = 0; i < d->lh.num_sensors; i++) {
+		struct xrt_vec3 point = d->lh.sensors[i].pos;
+		struct xrt_vec3 normal = d->lh.sensors[i].normal;
+
+		math_quat_rotate_vec3(&trackref_to_imu.orientation, &normal,
+		                      &d->lh.sensors[i].normal);
+		math_pose_transform_point(&trackref_to_imu, &point,
+		                          &d->lh.sensors[i].pos);
+	}
 }
 
 void
@@ -803,11 +914,28 @@ vive_parse_config(struct vive_device *d, char *json_string)
 		_json_get_vec3(imu, "gyro_scale", &d->imu.gyro_scale);
 	} break;
 	case VIVE_VARIANT_INDEX: {
+		const cJSON *head =
+		    cJSON_GetObjectItemCaseSensitive(json, "head");
+		_get_pose_from_pos_x_z(head, &d->display.trackref);
+
 		const cJSON *imu =
 		    cJSON_GetObjectItemCaseSensitive(json, "imu");
+		_get_pose_from_pos_x_z(imu, &d->imu.trackref);
+
 		_json_get_vec3(imu, "acc_bias", &d->imu.acc_bias);
 		_json_get_vec3(imu, "acc_scale", &d->imu.acc_scale);
 		_json_get_vec3(imu, "gyro_bias", &d->imu.gyro_bias);
+
+		get_lighthouse_config(d, json);
+
+		struct xrt_pose trackref_to_head;
+		struct xrt_pose imu_to_head;
+
+		math_pose_invert(&d->display.trackref, &trackref_to_head);
+		math_pose_transform(&trackref_to_head, &d->imu.trackref,
+		                    &imu_to_head);
+
+		d->display.imuref = imu_to_head;
 	} break;
 	default: VIVE_ERROR("Unknown Vive variant.\n"); return false;
 	}
