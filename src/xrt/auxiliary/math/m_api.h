@@ -95,6 +95,17 @@ math_vec3_validate(const struct xrt_vec3 *vec3);
 void
 math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut);
 
+/*!
+ * Cross product of a vector.
+ *
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_vec3_cross(const struct xrt_vec3 *l,
+                const struct xrt_vec3 *r,
+                struct xrt_vec3 *result);
+
 
 /*
  *
@@ -112,6 +123,19 @@ math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut);
 void
 math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat,
                           struct xrt_quat *result);
+
+/*!
+ * Create a rotation from two vectors plus x and z, by creating a rotation
+ * matrix by crossing z and x to get the y axis.
+ *
+ * @relates xrt_quat
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_quat_from_plus_x_z(const struct xrt_vec3 *plus_x,
+                        const struct xrt_vec3 *plus_z,
+                        struct xrt_quat *result);
 
 /*!
  * Check if this quat can be used in transformation operations.
@@ -229,6 +253,18 @@ void
 math_pose_transform(const struct xrt_pose *transform,
                     const struct xrt_pose *pose,
                     struct xrt_pose *outPose);
+
+/*!
+ * Apply a rigid-body transformation to a point.
+ *
+ * @relates xrt_pose
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_pose_transform_point(const struct xrt_pose *transform,
+                          const struct xrt_vec3 *point,
+                          struct xrt_vec3 *out_point);
 
 /*!
  * Combine the poses of the target and base space with the relative pose of

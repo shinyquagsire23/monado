@@ -74,13 +74,20 @@ math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut)
 	map_vec3(*inAndOut) += map_vec3(*additional);
 }
 
+extern "C" void
+math_vec3_cross(const struct xrt_vec3 *l,
+                const struct xrt_vec3 *r,
+                struct xrt_vec3 *result)
+{
+	map_vec3(*result) = map_vec3(*l).cross(map_vec3(*r));
+}
+
 
 /*
  *
  * Exported quaternion functions.
  *
  */
-
 
 extern "C" void
 math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat,
@@ -92,6 +99,29 @@ math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat,
 
 	Eigen::Quaternionf q(m);
 	map_quat(*result) = q;
+}
+
+extern "C" void
+math_quat_from_plus_x_z(const struct xrt_vec3 *plus_x,
+                        const struct xrt_vec3 *plus_z,
+                        struct xrt_quat *result)
+{
+	xrt_vec3 plus_y;
+	math_vec3_cross(plus_z, plus_x, &plus_y);
+
+	xrt_matrix_3x3 m = {{
+	    plus_x->x,
+	    plus_y.x,
+	    plus_z->x,
+	    plus_x->y,
+	    plus_y.y,
+	    plus_z->y,
+	    plus_x->z,
+	    plus_y.z,
+	    plus_z->z,
+	}};
+
+	math_quat_from_matrix_3x3(&m, result);
 }
 
 extern "C" bool
@@ -225,6 +255,18 @@ math_pose_transform(const struct xrt_pose *transform,
 
 	xrt_pose newPose = transform_pose(*transform, *pose);
 	memcpy(outPose, &newPose, sizeof(xrt_pose));
+}
+
+extern "C" void
+math_pose_transform_point(const struct xrt_pose *transform,
+                          const struct xrt_vec3 *point,
+                          struct xrt_vec3 *out_point)
+{
+	assert(transform != NULL);
+	assert(point != NULL);
+	assert(out_point != NULL);
+
+	map_vec3(*out_point) = transform_point(*transform, *point);
 }
 
 extern "C" void
