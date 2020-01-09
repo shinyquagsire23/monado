@@ -28,8 +28,11 @@ client_gl_xlib_compositor_destroy(struct xrt_compositor *xc)
 
 typedef void (*void_ptr_func)();
 
-void_ptr_func
-glXGetProcAddress(const char *procName);
+#ifdef __cplusplus
+extern "C"
+#endif
+    void_ptr_func
+    glXGetProcAddress(const char *procName);
 
 struct client_gl_xlib_compositor *
 client_gl_xlib_compositor_create(struct xrt_compositor_fd *xcfd,
