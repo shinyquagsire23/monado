@@ -19,10 +19,6 @@
 #include "oxr_two_call.h"
 #include "oxr_handle.h"
 
-
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
-vkGetInstanceProcAddr(VkInstance instance, const char *pName);
-
 XrResult
 oxr_session_populate_vk(struct oxr_logger *log,
                         struct oxr_system *sys,
