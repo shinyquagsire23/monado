@@ -89,7 +89,7 @@ destroy(struct xrt_prober **xp);
  */
 
 int
-xrt_prober_create_with_lists(struct xrt_prober **out_prober,
+xrt_prober_create_with_lists(struct xrt_prober **out_xp,
                              struct xrt_prober_entry_lists *lists)
 {
 	struct prober *p = U_TYPED_CALLOC(struct prober);
@@ -100,7 +100,7 @@ xrt_prober_create_with_lists(struct xrt_prober **out_prober,
 		return ret;
 	}
 
-	*out_prober = &p->base;
+	*out_xp = &p->base;
 
 	return 0;
 }

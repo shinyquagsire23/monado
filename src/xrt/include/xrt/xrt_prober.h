@@ -302,7 +302,7 @@ xrt_prober_destroy(struct xrt_prober **xp_ptr)
  * @ingroup xrt_iface
  */
 int
-xrt_prober_create(struct xrt_prober **out_prober);
+xrt_prober_create(struct xrt_prober **out_xp);
 
 /*!
  * Used by the target binary to create the prober with a list of drivers.
@@ -310,7 +310,7 @@ xrt_prober_create(struct xrt_prober **out_prober);
  * @ingroup xrt_iface
  */
 int
-xrt_prober_create_with_lists(struct xrt_prober **out_prober,
+xrt_prober_create_with_lists(struct xrt_prober **out_xp,
                              struct xrt_prober_entry_lists *list);
 
 bool
