@@ -586,8 +586,11 @@ oxr_source_cache_update(struct oxr_logger *log,
 		return;
 	}
 
-	if (cache->num_outputs > 0 && cache->stop_output_time < time) {
-		oxr_source_cache_stop_output(log, sess, cache);
+	if (cache->num_outputs > 0) {
+		cache->current.active = true;
+		if (cache->stop_output_time < time) {
+			oxr_source_cache_stop_output(log, sess, cache);
+		}
 	}
 
 	if (cache->num_inputs > 0) {
