@@ -322,13 +322,13 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 
 		switch (d->variant) {
 		case VIVE_VARIANT_VIVE:
-			// flip all execpt x axis
+			// flip all except x axis
 			angular_velocity.x = +angular_velocity.x;
 			angular_velocity.y = -angular_velocity.y;
 			angular_velocity.z = -angular_velocity.z;
 			break;
 		case VIVE_VARIANT_PRO:
-			// flip all execpt y axis
+			// flip all except y axis
 			angular_velocity.x = -angular_velocity.x;
 			angular_velocity.y = +angular_velocity.y;
 			angular_velocity.z = -angular_velocity.z;
