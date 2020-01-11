@@ -179,11 +179,15 @@ math_pose_invert(const struct xrt_pose *pose, struct xrt_pose *outPose)
 	assert(pose != NULL);
 	assert(outPose != NULL);
 
-	// store results to temporary locals so we can do this "in-place"
-	// (pose == outPose) if desired.
-	Eigen::Vector3f newPosition = -position(*pose);
+	// Store results to temporary locals so we can do this "in-place"
+	// (pose == outPose) if desired. Pure copies here.
+	Eigen::Vector3f newPosition = position(*pose);
+	Eigen::Quaternionf newOrientation = orientation(*pose);
+
 	// Conjugate legal here since pose must be normalized/unit length.
-	Eigen::Quaternionf newOrientation = orientation(*pose).conjugate();
+	newOrientation = newOrientation.conjugate();
+	// Use the newly inverted rotation, to rotate position.
+	newPosition = -(newOrientation * newPosition);
 
 	position(*outPose) = newPosition;
 	orientation(*outPose) = newOrientation;
