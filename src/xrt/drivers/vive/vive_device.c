@@ -890,7 +890,7 @@ vive_init_defaults(struct vive_device *d)
 bool
 vive_parse_config(struct vive_device *d, char *json_string)
 {
-	VIVE_SPEW(d, "JSON config:\n%s\n", json_string);
+	VIVE_DEBUG(d, "JSON config:\n%s\n", json_string);
 
 	cJSON *json = cJSON_Parse(json_string);
 	if (!cJSON_IsObject(json)) {
