@@ -25,54 +25,6 @@ DEBUG_GET_ONCE_BOOL_OPTION(hsv_filter, "T_DEBUG_HSV_FILTER", false)
 DEBUG_GET_ONCE_BOOL_OPTION(hsv_picker, "T_DEBUG_HSV_PICKER", false)
 DEBUG_GET_ONCE_BOOL_OPTION(hsv_viewer, "T_DEBUG_HSV_VIEWER", false)
 
-// we will use a number of samples spread across the frame
-// to ensure a good calibration. must be > 9
-#define CALIBRATION_SAMPLES 15
-
-// set up our calibration rectangles, we will collect 9 chessboard samples
-// that 'fill' these rectangular regions to get good coverage
-#define COVERAGE_X 0.8f
-#define COVERAGE_Y 0.8f
-
-static cv::Rect2f calibration_rect[] = {
-    cv::Rect2f(
-        (1.0f - COVERAGE_X) / 2.0f, (1.0f - COVERAGE_Y) / 2.0f, 0.3f, 0.3f),
-    cv::Rect2f((1.0f - COVERAGE_X) / 2.0f + COVERAGE_X / 3.0f,
-               (1.0f - COVERAGE_Y) / 2.0f,
-               0.3f,
-               0.3f),
-    cv::Rect2f((1.0f - COVERAGE_X) / 2.0f + 2 * COVERAGE_X / 3.0f,
-               (1.0f - COVERAGE_Y) / 2.0f,
-               0.3f,
-               0.3f),
-
-    cv::Rect2f((1.0f - COVERAGE_X) / 2.0f,
-               (1.0f - COVERAGE_Y) / 2.0f + COVERAGE_Y / 3.0f,
-               0.3f,
-               0.3f),
-    cv::Rect2f((1.0f - COVERAGE_X) / 2.0f + COVERAGE_X / 3.0f,
-               (1.0f - COVERAGE_Y) / 2.0f + COVERAGE_Y / 3.0f,
-               0.3f,
-               0.3f),
-    cv::Rect2f((1.0f - COVERAGE_X) / 2.0f + 2 * COVERAGE_X / 3.0f,
-               (1.0f - COVERAGE_Y) / 2.0f + COVERAGE_Y / 3.0f,
-               0.3f,
-               0.3f),
-
-    cv::Rect2f((1.0f - COVERAGE_X) / 2.0f,
-               (1.0f - COVERAGE_Y) / 2.0f + 2 * COVERAGE_Y / 3.0f,
-               0.3f,
-               0.3f),
-    cv::Rect2f((1.0f - COVERAGE_X) / 2.0f + COVERAGE_X / 3.0f,
-               (1.0f - COVERAGE_Y) / 2.0f + 2 * COVERAGE_Y / 3.0f,
-               0.3f,
-               0.3f),
-    cv::Rect2f((1.0f - COVERAGE_X) / 2.0f + 2 * COVERAGE_X / 3.0f,
-               (1.0f - COVERAGE_Y) / 2.0f + 2 * COVERAGE_Y / 3.0f,
-               0.3f,
-               0.3f),
-};
-
 
 /*
  *
@@ -495,6 +447,21 @@ has_measurement_moved(Measurement &last, Measurement &current)
 	return false;
 }
 
+static bool
+moved_state_check(struct ViewState &view)
+{
+	bool moved = false;
+	if (view.last_valid) {
+		moved = has_measurement_moved(view.last, view.current);
+	}
+
+	// Now save the current measurement to the last one.
+	view.last = view.current;
+	view.last_valid = true;
+
+	return moved;
+}
+
 /*
  *
  * Stereo calibration
@@ -584,6 +551,29 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	// clang-format on
 
 	t_file_save_raw_data_hack(&raw);
+
+	// Preview undistortion.
+	cv::initUndistortRectifyMap(raw.l_intrinsics_mat,  // cameraMatrix
+	                            raw.l_distortion_mat,  // distCoeffs
+	                            raw.l_rotation_mat,    // R
+	                            raw.l_projection_mat,  // newCameraMatrix
+	                            image_size,            // size
+	                            CV_32FC1,              // m1type
+	                            c.state.view[0].map1,  // map1
+	                            c.state.view[0].map2); // map2
+
+	cv::initUndistortRectifyMap(raw.r_intrinsics_mat,  // cameraMatrix
+	                            raw.r_distortion_mat,  // distCoeffs
+	                            raw.r_rotation_mat,    // R
+	                            raw.r_projection_mat,  // newCameraMatrix
+	                            image_size,            // size
+	                            CV_32FC1,              // m1type
+	                            c.state.view[1].map1,  // map1
+	                            c.state.view[1].map2); // map2
+
+	// Set the maps as valid.
+	c.state.view[0].maps_valid = true;
+	c.state.view[1].maps_valid = true;
 }
 
 static void
@@ -709,11 +699,11 @@ process_view_samples(class Calibration &c,
  * Logic for capturing a frame.
  */
 static void
-do_capture_logic(class Calibration &c,
-                 struct ViewState &view,
-                 bool found,
-                 cv::Mat &gray,
-                 cv::Mat &rgb)
+do_capture_logic_mono(class Calibration &c,
+                      struct ViewState &view,
+                      bool found,
+                      cv::Mat &gray,
+                      cv::Mat &rgb)
 {
 	int num = (int)c.state.board_models.size();
 	int of = c.num_collect_total;
@@ -738,16 +728,7 @@ do_capture_logic(class Calibration &c,
 		P("(%i/%i) WAITING %i FRAMES", num, of, c.state.waited_for);
 		c.state.waited_for--;
 
-		bool moved = false;
-		if (view.last_valid) {
-			moved = has_measurement_moved(view.last, view.current);
-		}
-
-		// Now save the current measurement to the last one.
-		view.last = view.current;
-		view.last_valid = true;
-
-		if (moved) {
+		if (moved_state_check(view)) {
 			P("(%i/%i) KEEP BOARD STILL!", num, of);
 			c.state.waited_for = c.num_wait_for;
 			c.state.collected_of_part = 0;
@@ -785,6 +766,90 @@ do_capture_logic(class Calibration &c,
 }
 
 /*!
+ * Capture logic for stereo frames.
+ */
+static void
+do_capture_logic_stereo(class Calibration &c,
+                        cv::Mat &gray,
+                        cv::Mat &rgb,
+                        bool l_found,
+                        struct ViewState &l_view,
+                        cv::Mat &l_gray,
+                        cv::Mat &l_rgb,
+                        bool r_found,
+                        struct ViewState &r_view,
+                        cv::Mat &r_gray,
+                        cv::Mat &r_rgb)
+{
+	bool found = l_found && r_found;
+
+	int num = (int)c.state.board_models.size();
+	int of = c.num_collect_total;
+	P("(%i/%i) SHOW BOARD %i %i", num, of, l_found, r_found);
+
+	if (c.state.cooldown > 0) {
+		P("(%i/%i) MOVE BOARD TO NEW POSITION", num, of);
+		c.state.cooldown--;
+		return;
+	}
+
+	// We haven't found anything, reset to be beginning.
+	if (!found) {
+		c.state.waited_for = c.num_wait_for;
+		c.state.collected_of_part = 0;
+		l_view.last_valid = false;
+		r_view.last_valid = false;
+		return;
+	}
+
+	// We are still waiting for frames.
+	if (c.state.waited_for > 0) {
+		P("(%i/%i) WAITING %i FRAMES", num, of, c.state.waited_for);
+		c.state.waited_for--;
+
+		bool l_moved = moved_state_check(l_view);
+		bool r_moved = moved_state_check(r_view);
+		bool moved = l_moved || r_moved;
+
+		if (moved) {
+			P("(%i/%i) KEEP BOARD STILL!", num, of);
+			c.state.waited_for = c.num_wait_for;
+			c.state.collected_of_part = 0;
+		}
+
+		return;
+	}
+
+	if (c.save_images) {
+		char buf[512];
+
+		snprintf(buf, 512, "gray_%ix%i_%03i.png", gray.cols, gray.rows,
+		         (int)c.state.board_models.size());
+		cv::imwrite(buf, gray);
+
+		snprintf(buf, 512, "debug_rgb_%03i.jpg",
+		         (int)c.state.board_models.size());
+		cv::imwrite(buf, rgb);
+	}
+
+	c.state.board_models.push_back(c.board.model);
+	c.state.view[0].measured.push_back(c.state.view[0].current);
+	c.state.view[1].measured.push_back(c.state.view[1].current);
+
+	c.state.collected_of_part++;
+
+	P("(%i/%i) COLLECTED #%i", num, of, c.state.collected_of_part);
+
+	// Have we collected all of the frames for one part?
+	if (c.state.collected_of_part >= c.num_collect_restart) {
+		c.state.waited_for = c.num_wait_for;
+		c.state.collected_of_part = 0;
+		c.state.cooldown = c.num_cooldown_frames;
+		return;
+	}
+}
+
+/*!
  * Make a mono frame.
  */
 static void
@@ -796,7 +861,7 @@ make_calibration_frame_mono(class Calibration &c)
 	bool found = do_view(c, c.state.view[0], gray, rgb);
 
 	// Advance the state of the calibration.
-	do_capture_logic(c, c.state.view[0], found, gray, rgb);
+	do_capture_logic_mono(c, c.state.view[0], found, gray, rgb);
 
 	if (c.state.board_models.size() >= c.num_collect_total) {
 		process_view_samples(c, c.state.view[0], rgb.cols, rgb.rows);
@@ -816,6 +881,14 @@ make_calibration_frame_sbs(class Calibration &c)
 	auto &rgb = c.gui.rgb;
 	auto &gray = c.gray;
 
+	// For now
+	if (c.use_fisheye) {
+		P("ERROR: Fisheye not supported in stereo!");
+		print_txt(rgb, c.text, 1.5);
+		send_rgb_frame(c);
+		return;
+	}
+
 	int cols = rgb.cols / 2;
 	int rows = rgb.rows;
 
@@ -830,67 +903,12 @@ make_calibration_frame_sbs(class Calibration &c)
 	bool found_left = do_view(c, c.state.view[0], l_gray, l_rgb);
 	bool found_right = do_view(c, c.state.view[1], r_gray, r_rgb);
 
-	// Draw our current calibration guide box.
-	cv::Point2f bound_tl = calibration_rect[c.state.calibration_count].tl();
-	bound_tl.x *= cols;
-	bound_tl.y *= rows;
+	do_capture_logic_stereo(c, gray, rgb, found_left, c.state.view[0],
+	                        l_gray, l_rgb, found_right, c.state.view[1],
+	                        r_gray, r_rgb);
 
-	cv::Point2f bound_br = calibration_rect[c.state.calibration_count].br();
-	bound_br.x *= cols;
-	bound_br.y *= rows;
-
-	// Draw the target rect last so it is the most visible.
-	cv::rectangle(c.gui.rgb, bound_tl, bound_br, cv::Scalar(255, 0, 0));
-
-	// If we have a valid sample (left and right).
-	if (found_left && found_right) {
-		cv::Rect brect = c.state.view[0].brect;
-		cv::Rect pre_rect = c.state.view[0].pre_rect;
-		cv::Rect post_rect = c.state.view[0].post_rect;
-
-		/*
-		 * Determine if we should add this sample to our list. Either we
-		 * are still taking the first 9 samples and the chessboard is in
-		 * the box, or we have exceeded 9 samples and now want to 'push
-		 * out the edges'.
-		 */
-
-		bool add_sample = false;
-		int coverage_threshold = cols * 0.3f * rows * 0.3f;
-
-		if (c.state.calibration_count < 9 &&
-		    brect.tl().x >= bound_tl.x && brect.tl().y >= bound_tl.y &&
-		    brect.br().x <= bound_br.x && brect.br().y <= bound_br.y) {
-			add_sample = true;
-		}
-
-		if (c.state.calibration_count >= 9 &&
-		    brect.area() > coverage_threshold &&
-		    post_rect.area() >
-		        pre_rect.area() + coverage_threshold / 5) {
-			add_sample = true;
-		}
-
-		if (add_sample) {
-			c.state.board_models.push_back(c.board.model);
-			c.state.view[0].measured.push_back(
-			    c.state.view[0].current);
-			c.state.view[1].measured.push_back(
-			    c.state.view[1].current);
-			c.state.calibration_count++;
-
-			printf("SAMPLE: %ld\n",
-			       c.state.view[0].measured.size());
-		}
-	}
-
-	// Are we done or do we need to inform the user what they should do.
-	if (c.state.calibration_count >= CALIBRATION_SAMPLES) {
+	if (c.state.board_models.size() >= c.num_collect_total) {
 		process_stereo_samples(c, cols, rows);
-	} else if (c.state.calibration_count < 9) {
-		P("POSITION BOARD IN BOX");
-	} else {
-		P("TRY TO 'PUSH OUT EDGES' WITH LARGE BOARD IMAGES");
 	}
 
 	// Draw text and finally send the frame off.
@@ -910,6 +928,35 @@ make_calibration_frame(class Calibration &c, struct xrt_frame *xf)
 		return;
 	}
 }
+
+static void
+make_remap_view(class Calibration &c, struct xrt_frame *xf)
+{
+	cv::Mat &rgb = c.gui.rgb;
+	struct xrt_frame &frame = *c.gui.frame;
+
+	switch (xf->stereo_format) {
+	case XRT_STEREO_FORMAT_SBS: {
+		int cols = rgb.cols / 2;
+		int rows = rgb.rows;
+
+		cv::Mat l_rgb(rows, cols, CV_8UC3, frame.data, frame.stride);
+		cv::Mat r_rgb(rows, cols, CV_8UC3, frame.data + 3 * cols,
+		              frame.stride);
+
+		remap_view(c, c.state.view[0], l_rgb);
+		remap_view(c, c.state.view[1], r_rgb);
+	} break;
+	case XRT_STEREO_FORMAT_NONE: {
+		remap_view(c, c.state.view[0], rgb);
+	} break;
+	default:
+		P("ERROR: Unknown stereo format! '%i'", xf->stereo_format);
+		make_gui_str(c);
+		return;
+	}
+}
+
 
 /*
  *
@@ -993,6 +1040,10 @@ process_load_image(class Calibration &c, struct xrt_frame *xf)
 		refresh_gui_frame(c, c.gray.rows, c.gray.cols);
 		cv::cvtColor(c.gray, c.gui.rgb, cv::COLOR_GRAY2RGB);
 
+#if 0
+		xf->stereo_format = XRT_STEREO_FORMAT_SBS;
+#endif
+
 		// Call the normal frame processing now.
 		make_calibration_frame(c, xf);
 	}
@@ -1033,8 +1084,7 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 
 	// Don't do anything if we are done.
 	if (c.state.calibrated) {
-		//! @todo add support for stereo.
-		remap_view(c, c.state.view[0], c.gui.rgb);
+		make_remap_view(c, xf);
 
 		print_txt(c.gui.rgb, c.text, 1.5);
 
