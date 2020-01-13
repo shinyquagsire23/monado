@@ -203,3 +203,105 @@ struct StereoRectificationMaps
 	 */
 	StereoRectificationMaps(t_stereo_camera_calibration *data);
 };
+
+
+/*!
+ * @brief Provides cached, precomputed access to normalized image coordinates
+ * from original, distorted ones.
+ *
+ * Populates internal structures using cv::undistortPoints() and performs
+ * subpixel sampling to interpolate for each query. Essentially, this class lets
+ * you perform cv::undistortPoints() while caching the initial setup work
+ * required for that function.
+ */
+class NormalizedCoordsCache
+{
+public:
+	/*!
+	 * @brief Set up the precomputed cache for a given camera.
+	 *
+	 * @param size Size of the image in pixels
+	 * @param intrinsics Camera intrinsics matrix
+	 * @param distortion Distortion coefficients
+	 *
+	 * This overload applies no rectification (`R`) and uses a
+	 * normalized/identity new camera matrix (`P`).
+	 */
+	NormalizedCoordsCache(cv::Size size,
+	                      const cv::Matx33d &intrinsics,
+	                      const cv::Matx<double, 5, 1> &distortion);
+	/*!
+	 * @brief Set up the precomputed cache for a given camera (overload for
+	 * rectification and new camera matrix)
+	 *
+	 * @param size Size of the image in pixels
+	 * @param intrinsics Camera intrinsics matrix
+	 * @param distortion Distortion coefficients
+	 * @param rectification Rectification matrix - corresponds to parameter
+	 * `R` to cv::undistortPoints().
+	 * @param new_camera_matrix A 3x3 new camera matrix - corresponds to
+	 * parameter `P` to cv::undistortPoints().
+	 */
+	NormalizedCoordsCache(cv::Size size,
+	                      const cv::Matx33d &intrinsics,
+	                      const cv::Matx<double, 5, 1> &distortion,
+	                      const cv::Matx33d &rectification,
+	                      const cv::Matx33d &new_camera_matrix);
+
+	/*!
+	 * @brief Set up the precomputed cache for a given camera. (overload for
+	 * rectification and new projection matrix)
+	 *
+	 * @param size Size of the image in pixels
+	 * @param intrinsics Camera intrinsics matrix
+	 * @param distortion Distortion coefficients
+	 * @param rectification Rectification matrix - corresponds to parameter
+	 * `R` to cv::undistortPoints().
+	 * @param new_projection_matrix A 3x4 new projection matrix -
+	 * corresponds to parameter `P` to cv::undistortPoints().
+	 */
+	NormalizedCoordsCache(
+	    cv::Size size,
+	    const cv::Matx33d &intrinsics,
+	    const cv::Matx<double, 5, 1> &distortion,
+	    const cv::Matx33d &rectification,
+	    const cv::Matx<double, 3, 4> &new_projection_matrix);
+
+	/*!
+	 * @brief Set up the precomputed cache for a given camera.
+	 *
+	 * Less-strongly-typed overload.
+	 *
+	 * @overload
+	 *
+	 * This overload applies no rectification (`R`) and uses a
+	 * normalized/identity new camera matrix (`P`).
+	 */
+	NormalizedCoordsCache(cv::Size size,
+	                      const cv::Mat &intrinsics,
+	                      const cv::Mat &distortion);
+
+	/*!
+	 * @brief Get normalized, undistorted coordinates from a point in the
+	 * original (distorted, etc.) image.
+	 *
+	 * @param origCoords Image coordinates in original image
+	 *
+	 * @return Corresponding undistorted coordinates in a "normalized" image
+	 */
+	cv::Vec2f
+	getNormalizedImageCoords(cv::Point2f origCoords) const;
+
+	/*!
+	 * @brief Get normalized vector in the camera-space direction
+	 * corresponding to the original (distorted, etc.) image coordinates.
+	 *
+	 * Note that the Z component will be negative by convention.
+	 */
+	cv::Vec3f
+	getNormalizedVector(cv::Point2f origCoords) const;
+
+private:
+	cv::Mat_<float> cacheX_;
+	cv::Mat_<float> cacheY_;
+};
