@@ -1,10 +1,11 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  PS Move tracker code.
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_tracking
  */
 
@@ -43,6 +44,17 @@ struct View
 
 	cv::Mat frame_undist;
 	cv::Mat frame_rectified;
+
+	void
+	populate_from_calib(t_camera_calibration &calib,
+	                    const RemapPair &rectification)
+	{
+		auto remap_pair = calibration_get_undistort_map(calib);
+		undistort_map_x = remap_pair.remap_x;
+		undistort_map_y = remap_pair.remap_y;
+		rectify_map_x = rectification.remap_x;
+		rectify_map_y = rectification.remap_y;
+	}
 };
 
 struct TrackerPSMV
@@ -554,7 +566,7 @@ t_psmv_start(struct xrt_tracked_psmv *xtmv)
 extern "C" int
 t_psmv_create(struct xrt_frame_context *xfctx,
               struct xrt_colour_rgb_f32 *rgb,
-              struct t_settings_stereo *data,
+              struct t_stereo_camera_calibration *data,
               struct xrt_tracked_psmv **out_xtmv,
               struct xrt_frame_sink **out_sink)
 {
@@ -601,16 +613,11 @@ t_psmv_create(struct xrt_frame_context *xfctx,
 		break;
 	}
 
-	calibration_get_stereo(data,
-	                       &t.view[0].undistort_map_x, // l_undistort_map_x
-	                       &t.view[0].undistort_map_y, // l_undistort_map_y
-	                       &t.view[0].rectify_map_x,   // l_rectify_map_x
-	                       &t.view[0].rectify_map_y,   // l_rectify_map_y
-	                       &t.view[1].undistort_map_x, // r_undistort_map_x
-	                       &t.view[1].undistort_map_y, // r_undistort_map_y
-	                       &t.view[1].rectify_map_x,   // r_rectify_map_x
-	                       &t.view[1].rectify_map_y,   // r_rectify_map_y
-	                       &t.disparity_to_depth);     // disparity_to_depth
+	StereoCameraCalibrationWrapper wrapped(*data);
+	StereoRectificationMaps rectify(*data);
+	t.view[0].populate_from_calib(data->l_calibration, rectify.l_rectify);
+	t.view[1].populate_from_calib(data->r_calibration, rectify.r_rectify);
+	t.disparity_to_depth = rectify.disparity_to_depth_mat;
 	t.calibrated = true;
 
 	// clang-format off

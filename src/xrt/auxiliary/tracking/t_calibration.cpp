@@ -1,10 +1,11 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Calibration code.
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_tracking
  */
 
@@ -519,15 +520,17 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 
 	cv::Size image_size(cols, rows);
 	cv::Size new_image_size(cols, rows);
+	t_stereo_camera_calibration &data =
+	    *U_TYPED_CALLOC(t_stereo_camera_calibration);
+	StereoCameraCalibrationWrapper wrapped(data);
 
-	CalibrationRawData raw = {};
-	assert(raw.isDataStorageValid());
+	wrapped.l_calibration.image_size_pixels.w = image_size.width;
+	wrapped.l_calibration.image_size_pixels.h = image_size.height;
+	wrapped.r_calibration.image_size_pixels =
+	    wrapped.l_calibration.image_size_pixels;
 
-	raw.use_fisheye = c.use_fisheye;
-	raw.image_size_pixels.w = image_size.width;
-	raw.image_size_pixels.h = image_size.height;
-	raw.new_image_size_pixels.w = new_image_size.width;
-	raw.new_image_size_pixels.h = new_image_size.height;
+	wrapped.l_calibration.use_fisheye = c.use_fisheye;
+	wrapped.r_calibration.use_fisheye = c.use_fisheye;
 
 
 	float rp_error = 0.0f;
@@ -538,165 +541,79 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 
 		// fisheye version
 		rp_error = cv::fisheye::stereoCalibrate(
-		    c.state.board_models_f64,     // objectPoints
-		    c.state.view[0].measured_f64, // inagePoints1
-		    c.state.view[1].measured_f64, // imagePoints2
-		    raw.l_intrinsics_mat,         // cameraMatrix1
-		    raw.l_distortion_fisheye_mat, // distCoeffs1
-		    raw.r_intrinsics_mat,         // cameraMatrix2
-		    raw.r_distortion_fisheye_mat, // distCoeffs2
-		    image_size,                   // imageSize
-		    raw.camera_rotation_mat,      // R
-		    raw.camera_translation_mat,   // T
+		    c.state.board_models_f64,             // objectPoints
+		    c.state.view[0].measured_f64,         // inagePoints1
+		    c.state.view[1].measured_f64,         // imagePoints2
+		    wrapped.l_calibration.intrinsics_mat, // cameraMatrix1
+		    wrapped.l_calibration.distortion_fisheye_mat, // distCoeffs1
+		    wrapped.r_calibration.intrinsics_mat, // cameraMatrix2
+		    wrapped.r_calibration.distortion_fisheye_mat, // distCoeffs2
+		    image_size,                                   // imageSize
+		    wrapped.camera_rotation_mat,                  // R
+		    wrapped.camera_translation_mat,               // T
 		    flags);
 	} else {
 		// non-fisheye version
+
+		// Insists on 32-bit floats for object points and image points
 		rp_error = cv::stereoCalibrate(
-		    c.state.board_models_f32,     // objectPoints
-		    c.state.view[0].measured_f32, // inagePoints1
-		    c.state.view[1].measured_f32, // imagePoints2,
-		    raw.l_intrinsics_mat,         // cameraMatrix1
-		    raw.l_distortion_mat,         // distCoeffs1
-		    raw.r_intrinsics_mat,         // cameraMatrix2
-		    raw.r_distortion_mat,         // distCoeffs2
-		    image_size,                   // imageSize
-		    raw.camera_rotation_mat,      // R
-		    raw.camera_translation_mat,   // T
-		    raw.camera_essential_mat,     // E
-		    raw.camera_fundamental_mat,   // F
-		    0);                           // flags
+		    c.state.board_models_f32,             // objectPoints
+		    c.state.view[0].measured_f32,         // inagePoints1
+		    c.state.view[1].measured_f32,         // imagePoints2,
+		    wrapped.l_calibration.intrinsics_mat, // cameraMatrix1
+		    wrapped.l_calibration.distortion_mat, // distCoeffs1
+		    wrapped.r_calibration.intrinsics_mat, // cameraMatrix2
+		    wrapped.r_calibration.distortion_mat, // distCoeffs2
+		    image_size,                           // imageSize
+		    wrapped.camera_rotation_mat,          // R
+		    wrapped.camera_translation_mat,       // T
+		    wrapped.camera_essential_mat,         // E
+		    wrapped.camera_fundamental_mat,       // F
+		    0);                                   // flags
 	}
 
-	assert(raw.camera_rotation_mat.size() == cv::Size(3, 3));
-	assert(raw.camera_translation_mat.size() == cv::Size(1, 3));
-	assert(raw.camera_essential_mat.size() == cv::Size(3, 3));
-	assert(raw.camera_fundamental_mat.size() == cv::Size(3, 3));
-
-#if 0
-	// stereoRectify just yields very bad results. :(
-	if (c.use_fisheye) {
-		cv::fisheye::stereoRectify(
-		    raw.l_intrinsics_mat,         // cameraMatrix1
-		    raw.r_distortion_fisheye_mat, // distCoeffs1
-		    raw.r_intrinsics_mat,         // cameraMatrix2
-		    raw.r_distortion_fisheye_mat, // distCoeffs2
-		    image_size,                   // imageSize
-		    raw.camera_rotation_mat,      // R
-		    raw.camera_translation_mat,   // T
-		    raw.l_rotation_mat,           // R1
-		    raw.r_rotation_mat,           // R2
-		    raw.l_projection_mat,         // P1
-		    raw.r_projection_mat,         // P2
-		    raw.disparity_to_depth_mat,   // Q
-		    cv::CALIB_ZERO_DISPARITY,     // flags
-		    new_image_size,               // newImageSize
-		    0.0,                          // balance
-		    1.0);                         // fov_scale
-	} else
-#endif
-	{
-		// We currently don't change the image size or remove invalid
-		// pixels.
-		cv::stereoRectify(raw.l_intrinsics_mat,       // cameraMatrix1
-		                  cv::noArray(),              // distCoeffs1
-		                  raw.r_intrinsics_mat,       // cameraMatrix2
-		                  cv::noArray(),              // distCoeffs2
-		                  image_size,                 // imageSize
-		                  raw.camera_rotation_mat,    // R
-		                  raw.camera_translation_mat, // T
-		                  raw.l_rotation_mat,         // R1
-		                  raw.r_rotation_mat,         // R2
-		                  raw.l_projection_mat,       // P1
-		                  raw.r_projection_mat,       // P2
-		                  raw.disparity_to_depth_mat, // Q
-		                  cv::CALIB_ZERO_DISPARITY,   // flags
-		                  -1,                         // alpha
-		                  new_image_size,             // newImageSize
-		                  NULL,                       // validPixROI1
-		                  NULL);                      // validPixROI2
-	}
 
 	// Validate that nothing has been re-allocated.
-	assert(raw.isDataStorageValid());
+	assert(wrapped.isDataStorageValid());
 
 	P("CALIBRATION DONE RP ERROR %f", rp_error);
 
 	// clang-format off
 	std::cout << "#####\n";
 	std::cout << "calibration rp_error: " << rp_error << "\n";
-	std::cout << "camera_rotation:\n" << raw.camera_rotation_mat << "\n";
-	std::cout << "camera_translation:\n" << raw.camera_translation_mat << "\n";
+	std::cout << "camera_rotation:\n" << wrapped.camera_rotation_mat << "\n";
+	std::cout << "camera_translation:\n" << wrapped.camera_translation_mat << "\n";
 	if (!c.use_fisheye) {
-		std::cout << "camera_essential:\n" << raw.camera_essential_mat << "\n";
-		std::cout << "camera_fundamental:\n" << raw.camera_fundamental_mat << "\n";
+	std::cout << "camera_essential:\n" << wrapped.camera_essential_mat << "\n";
+	std::cout << "camera_fundamental:\n" << wrapped.camera_fundamental_mat << "\n";
 	}
 	std::cout << "#####\n";
+	std::cout << "l_calibration.intrinsics_mat:\n" << wrapped.l_calibration.intrinsics_mat << "\n";
 	if (c.use_fisheye) {
-		std::cout << "l_distortion_fisheye_mat:\n" << raw.l_distortion_fisheye_mat << "\n";
+		std::cout << "l_calibration.distortion_fisheye_mat:\n" << wrapped.l_calibration.distortion_fisheye_mat << "\n";
 	} else {
-		std::cout << "l_distortion_mat:\n" << raw.l_distortion_mat << "\n";
+		std::cout << "l_calibration.distortion_mat:\n" << wrapped.l_calibration.distortion_mat << "\n";
 	}
-	std::cout << "l_intrinsics_mat:\n" << raw.l_intrinsics_mat << "\n";
-	std::cout << "l_projection_mat:\n" << raw.l_projection_mat << "\n";
-	std::cout << "l_rotation_mat:\n" << raw.l_rotation_mat << "\n";
 	std::cout << "#####\n";
+	std::cout << "r_calibration.intrinsics_mat:\n" << wrapped.r_calibration.intrinsics_mat << "\n";
 	if (c.use_fisheye) {
-		std::cout << "r_distortion_fisheye_mat:\n" << raw.r_distortion_fisheye_mat << "\n";
+		std::cout << "r_calibration.distortion_fisheye_mat:\n" << wrapped.r_calibration.distortion_fisheye_mat << "\n";
 	} else {
-		std::cout << "r_distortion_mat:\n" << raw.r_distortion_mat << "\n";
+		std::cout << "r_calibration.distortion_mat:\n" << wrapped.r_calibration.distortion_mat << "\n";
 	}
-	std::cout << "r_intrinsics_mat:\n" << raw.r_intrinsics_mat << "\n";
-	std::cout << "r_projection_mat:\n" << raw.r_projection_mat << "\n";
-	std::cout << "r_rotation_mat:\n" << raw.r_rotation_mat << "\n";
 	// clang-format on
 
-	t_file_save_raw_data_hack(&raw);
 
-	// Preview undistortion.
-	if (c.use_fisheye) {
-		cv::fisheye::initUndistortRectifyMap(
-		    raw.l_intrinsics_mat,         // cameraMatrix
-		    raw.l_distortion_fisheye_mat, // distCoeffs
-		    raw.l_rotation_mat,           // R
-		    raw.l_projection_mat,         // newCameraMatrix
-		    image_size,                   // size
-		    CV_32FC1,                     // m1type
-		    c.state.view[0].map1,         // map1
-		    c.state.view[0].map2);        // map2
+	t_file_save_raw_data_hack(&data);
 
-		cv::fisheye::initUndistortRectifyMap(
-		    raw.r_intrinsics_mat,         // cameraMatrix
-		    raw.r_distortion_fisheye_mat, // distCoeffs
-		    raw.r_rotation_mat,           // R
-		    raw.r_projection_mat,         // newCameraMatrix
-		    image_size,                   // size
-		    CV_32FC1,                     // m1type
-		    c.state.view[1].map1,         // map1
-		    c.state.view[1].map2);        // map2
-	} else {
-		cv::initUndistortRectifyMap(
-		    raw.l_intrinsics_mat,  // cameraMatrix
-		    raw.l_distortion_mat,  // distCoeffs
-		    cv::Matx33d::eye(),    // R
-		    raw.l_intrinsics_mat,  // newCameraMatrix
-		    image_size,            // size
-		    CV_32FC1,              // m1type
-		    c.state.view[0].map1,  // map1
-		    c.state.view[0].map2); // map2
-
-		cv::initUndistortRectifyMap(
-		    raw.r_intrinsics_mat,  // cameraMatrix
-		    raw.l_distortion_mat,  // distCoeffs
-		    cv::Matx33d::eye(),    // R
-		    raw.l_intrinsics_mat,  // newCameraMatrix
-		    image_size,            // size
-		    CV_32FC1,              // m1type
-		    c.state.view[1].map1,  // map1
-		    c.state.view[1].map2); // map2
-	}
-
-	// Set the maps as valid.
+	// Preview undistortion/rectification.
+	StereoRectificationMaps maps(data);
+	c.state.view[0].map1 = maps.l_rectify.remap_x;
+	c.state.view[0].map2 = maps.l_rectify.remap_y;
 	c.state.view[0].maps_valid = true;
+
+	c.state.view[1].map1 = maps.r_rectify.remap_x;
+	c.state.view[1].map2 = maps.r_rectify.remap_y;
 	c.state.view[1].maps_valid = true;
 }
 
