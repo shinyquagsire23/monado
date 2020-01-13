@@ -39,14 +39,25 @@ struct View
 	cv::Mat undistort_rectify_map_x;
 	cv::Mat undistort_rectify_map_y;
 
+	cv::Matx33d intrinsics;
+	cv::Mat distortion; // size may vary
+	cv::Vec4d distortion_fisheye;
+	bool use_fisheye;
+
 	std::vector<cv::KeyPoint> keypoints;
 
 	cv::Mat frame_undist_rectified;
 
 	void
-	populate_from_calib(t_camera_calibration & /* calib */,
+	populate_from_calib(t_camera_calibration &calib,
 	                    const RemapPair &rectification)
 	{
+		CameraCalibrationWrapper wrap(calib);
+		intrinsics = wrap.intrinsics_mat;
+		distortion = wrap.distortion_mat.clone();
+		distortion_fisheye = wrap.distortion_fisheye_mat;
+		use_fisheye = wrap.use_fisheye;
+
 		undistort_rectify_map_x = rectification.remap_x;
 		undistort_rectify_map_y = rectification.remap_y;
 	}
@@ -82,6 +93,8 @@ struct TrackerPSMV
 	bool calibrated;
 
 	cv::Mat disparity_to_depth;
+	cv::Vec3d r_cam_translation;
+	cv::Matx33d r_cam_rotation;
 
 	cv::Ptr<cv::SimpleBlobDetector> sbd;
 
@@ -567,6 +580,9 @@ t_psmv_create(struct xrt_frame_context *xfctx,
 	t.view[0].populate_from_calib(data->view[0], rectify.view[0].rectify);
 	t.view[1].populate_from_calib(data->view[1], rectify.view[1].rectify);
 	t.disparity_to_depth = rectify.disparity_to_depth_mat;
+	StereoCameraCalibrationWrapper wrapped(data);
+	t.r_cam_rotation = wrapped.camera_rotation_mat;
+	t.r_cam_translation = wrapped.camera_translation_mat;
 	t.calibrated = true;
 
 	// clang-format off
