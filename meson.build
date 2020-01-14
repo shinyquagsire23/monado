@@ -57,16 +57,16 @@ glslangValidator = find_program('glslangValidator')
 pthreads = cc.find_library('pthread', required: true)
 
 avcodec = dependency('libavcodec', required: false)
-egl     = dependency('egl')
+egl     = dependency('egl', required: get_option('egl'))
 egl     = egl.partial_dependency(includes: true)
 eigen3  = dependency('eigen3')
 libjpeg = dependency('libjpeg', required: false)
 libusb  = dependency('libusb-1.0', required: false)
-opengl  = dependency('gl')
+opengl  = dependency('gl', required: get_option('opengl'))
 sdl2    = dependency('sdl2', required: get_option('gui'))
 udev    = dependency('libudev', required: false)
 libuvc  = dependency('libuvc', required: false)
-vulkan  = dependency('vulkan')
+vulkan  = dependency('vulkan', required: true)
 zlib    = dependency('zlib', required: false)
 
 opencv = dependency('opencv4', required: false)
@@ -79,19 +79,47 @@ if get_option('tracking').enabled() or get_option('tracking').auto()
 endif
 
 # TODO: make these behave well when not present
-x11       = dependency('x11', required: false)
-xcb       = dependency('xcb', required: false)
-xcb_randr = dependency('xcb-randr', required: false)
+x11       = dependency('x11', required: get_option('xlib'))
+xcb       = dependency('xcb', required: get_option('xcb'))
+xcb_randr = dependency('xcb-randr', required: get_option('xcb'))
 
-wayland         = dependency('wayland-client', required: false)
-wayland_protos  = dependency('wayland-protocols', required: false)
-wayland_scanner = dependency('wayland-scanner', required: false)
+wayland         = dependency('wayland-client', required: get_option('wayland'))
+wayland_protos  = dependency('wayland-protocols', required: get_option('wayland'))
+wayland_scanner = dependency('wayland-scanner', required: get_option('wayland'))
 
 if wayland_scanner.found()
 	wayland_scanner = find_program(
 		wayland_scanner.get_pkgconfig_variable('wayland_scanner'),
 		native: true,
 	)
+endif
+
+build_opengl = false
+if get_option('opengl').enabled() or get_option('opengl').auto()
+        build_opengl = opengl.found()
+endif
+
+
+build_egl = false
+if get_option('egl').enabled() or get_option('egl').auto()
+        build_egl = opengl.found() and egl.found()
+endif
+
+build_xlib = false
+if get_option('xlib').enabled() or get_option('xlib').auto()
+        build_xlib = x11.found()
+endif
+
+build_xcb = false
+if get_option('xcb').enabled() or get_option('xcb').auto()
+        build_xcb = xcb.found()
+endif
+
+build_xcb_xrandr_direct = build_xcb and build_xlib and xcb_randr.found()
+
+build_wayland = false
+if get_option('wayland').enabled() or get_option('wayland').auto()
+        build_wayland = wayland.found() and wayland_protos.found() and wayland_scanner.found()
 endif
 
 # For now required on Linux

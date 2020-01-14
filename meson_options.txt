@@ -41,3 +41,28 @@ option('install-active-runtime',
 	type: 'boolean',
 	value: true,
 	description: 'Make Monado the default OpenXR runtime on install')
+
+option('opengl',
+	type: 'feature',
+	value: 'auto',
+	description: 'Enable OpenGL/GLES application support.')
+
+option('egl',
+	type: 'feature',
+	value: 'auto',
+	description: 'Enable EGL application support.')
+
+option('xlib',
+	type: 'feature',
+	value: 'auto',
+	description: 'Enable xlib application support. Also required for direct mode on X.')
+
+option('xcb',
+	type: 'feature',
+	value: 'auto',
+	description: 'Enable xcb support for direct mode on X.')
+
+option('wayland',
+	type: 'feature',
+	value: 'auto',
+	description: 'Enable support for Wayland rendering.')

@@ -37,6 +37,31 @@ else
 	hack_src += 'oxr_sdl2_hack.c'
 endif
 
+openxr_deps = [
+		libusb,
+		libuvc,
+		pthreads,
+		targets_enabled,
+		udev,
+		vulkan,
+	]
+
+if build_opengl
+	openxr_deps += [opengl]
+endif
+
+if build_opengl and build_xlib
+	openxr_deps += [x11]
+endif
+
+if build_xcb
+	openxr_deps += [xcb]
+endif
+
+if build_xcb_xrandr_direct
+	openxr_deps += [xcb_randr]
+endif
+
 openxr = library(
 	runtime_target,
 	files(
@@ -61,18 +86,7 @@ openxr = library(
 		drv_include,
 		xrt_include,
 	] + hack_incs,
-	dependencies: [
-		libusb,
-		libuvc,
-		opengl,
-		pthreads,
-		targets_enabled,
-		udev,
-		vulkan,
-		x11,
-		xcb,
-		xcb_randr,
-	] + driver_deps + hack_deps,
+	dependencies: openxr_deps + driver_deps + hack_deps,
 	install: true,
 )
 

@@ -2,15 +2,15 @@
 # SPDX-License-Identifier: BSL-1.0
 
 compile_args = []
-if x11.found()
+if build_opengl
 	compile_args += ['-DXR_USE_GRAPHICS_API_OPENGL', '-DXR_USE_GRAPHICS_API_OPENGL_ES']
 endif
 
-if egl.found()
+if build_egl
 	compile_args += ['-DXR_USE_PLATFORM_EGL']
 endif
 
-if opengl.found()
+if build_xlib
 	compile_args += ['-DXR_USE_PLATFORM_XLIB']
 endif
 

@@ -7,11 +7,8 @@ subdir('shaders')
 compositor_deps = [aux, shaders, vulkan]
 
 compositor_srcs = [
-	'client/comp_gl_client.c',
-	'client/comp_gl_client.h',
 	'client/comp_vk_client.c',
 	'client/comp_vk_client.h',
-	'client/comp_gl_xlib_client.c',
 	'common/comp_vk.c',
 	'common/comp_vk.h',
 	'common/comp_vk_swapchain.h',
@@ -22,10 +19,6 @@ compositor_srcs = [
 	'main/comp_distortion.c',
 	'main/comp_distortion.h',
 	'main/comp_documentation.h',
-	'main/comp_glue_egl.c',
-	'main/comp_glue_gl.c',
-	'main/comp_glue_gles.c',
-	'main/comp_glue_gl_xlib.c',
 	'main/comp_glue_vk.c',
 	'main/comp_renderer.c',
 	'main/comp_renderer.h',
@@ -37,20 +30,44 @@ compositor_srcs = [
 
 compile_args = []
 
-if xcb.found()
+if build_xcb
 	compile_args += ['-DVK_USE_PLATFORM_XCB_KHR']
 	compositor_srcs += ['main/comp_window_xcb.cpp']
 	compositor_deps += [xcb]
 endif
 
-if xcb_randr.found()
-	# TODO: monado doesn't compile when xcb is present but not xrandr
+if build_xcb_xrandr_direct
 	compile_args += ['-DVK_USE_PLATFORM_XLIB_XRANDR_EXT']
 	compositor_srcs += ['main/comp_window_direct_mode.cpp']
 	compositor_deps += [xcb_randr]
 endif
 
-if wayland.found() and wayland_protos.found() and wayland_scanner.found()
+if build_opengl
+	compositor_srcs += [
+		'client/comp_gl_client.c',
+		'client/comp_gl_client.h',
+		'main/comp_glue_gl.c',
+		'main/comp_glue_gles.c',
+	]
+	compositor_deps += [opengl]
+endif
+
+if build_opengl and build_xlib
+	compositor_srcs += [
+		'client/comp_gl_xlib_client.c',
+		'main/comp_glue_gl_xlib.c',
+	]
+	compositor_deps += [x11]
+endif
+
+if build_egl
+	compositor_srcs += [
+		'main/comp_glue_egl.c',
+	]
+	compositor_deps += [egl]
+endif
+
+if build_wayland
 	wl_protos_src = []
 	wl_protos_headers = []
 	wl_protocol_dir = wayland_protos.get_pkgconfig_variable('pkgdatadir')
