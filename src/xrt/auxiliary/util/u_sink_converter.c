@@ -298,6 +298,7 @@ push_data_downstream(struct u_sink_converter *s, struct xrt_frame *xf)
 	frame->source_timestamp = xf->source_timestamp;
 	frame->source_sequence = xf->source_sequence;
 	frame->source_id = xf->source_id;
+	frame->stereo_format = xf->stereo_format;
 
 	s->downstream->push_frame(s->downstream, frame);
 
