@@ -120,6 +120,7 @@ if build_tracking
 		'tracking/t_debug_hsv_viewer.cpp',
 		'tracking/t_file.cpp',
 		'tracking/t_fusion.hpp',
+		'tracking/t_helper_debug_sink.hpp',
 		'tracking/t_hsv_filter.c',
 		'tracking/t_kalman.cpp',
 		'tracking/t_tracker_psmv.cpp',

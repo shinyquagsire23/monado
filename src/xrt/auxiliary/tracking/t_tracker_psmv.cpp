@@ -14,6 +14,7 @@
 #include "tracking/t_tracking.h"
 #include "tracking/t_calibration_opencv.hpp"
 #include "tracking/t_tracker_psmv_fusion.hpp"
+#include "tracking/t_helper_debug_sink.hpp"
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
@@ -65,13 +66,7 @@ struct TrackerPSMV
 
 	bool tracked = false;
 
-	struct
-	{
-		struct xrt_frame_sink *sink;
-		struct xrt_frame *frame;
-
-		cv::Mat rgb[2];
-	} debug;
+	HelperDebugSink debug = {HelperDebugSink::AllAvailable};
 
 	//! Have we received a new IMU sample.
 	bool has_imu = false;
@@ -94,34 +89,6 @@ struct TrackerPSMV
 
 	xrt_vec3 tracked_object_position;
 };
-
-static void
-refresh_gui_frame(TrackerPSMV &t, struct xrt_frame *xf)
-{
-	if (t.debug.sink == NULL) {
-		return;
-	}
-
-	// Also dereferences the old frame.
-	u_frame_create_one_off(XRT_FORMAT_R8G8B8, xf->width, xf->height,
-	                       &t.debug.frame);
-	t.debug.frame->source_sequence = xf->source_sequence;
-
-	int rows = xf->height;
-	int cols = xf->width / 2;
-
-	t.debug.rgb[0] = cv::Mat(rows,                   // rows
-	                         cols,                   // cols
-	                         CV_8UC3,                // channels
-	                         t.debug.frame->data,    // data
-	                         t.debug.frame->stride); // stride
-
-	t.debug.rgb[1] = cv::Mat(rows,                           // rows
-	                         cols,                           // cols
-	                         CV_8UC3,                        // channels
-	                         t.debug.frame->data + 3 * cols, // data
-	                         t.debug.frame->stride);         // stride
-}
 
 
 /*!
@@ -255,7 +222,7 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	}
 
 	// Create the debug frame if needed.
-	refresh_gui_frame(t, xf);
+	t.debug.refresh(xf);
 
 	t.view[0].keypoints.clear();
 	t.view[1].keypoints.clear();
@@ -315,14 +282,12 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 		t.filter->clear_position_tracked_flag();
 	}
 
-	if (t.debug.frame != NULL) {
-		t.debug.sink->push_frame(t.debug.sink, t.debug.frame);
-		t.debug.rgb[0] = cv::Mat();
-		t.debug.rgb[1] = cv::Mat();
-	}
+	// We are done with the debug frame.
+	t.debug.submit();
 
+	// We are done with the frame.
 	xrt_frame_reference(&xf, NULL);
-	xrt_frame_reference(&t.debug.frame, NULL);
+
 	if (nearest_world.got_one) {
 #if 0
 		//! @todo something less arbitrary for the lever arm?
