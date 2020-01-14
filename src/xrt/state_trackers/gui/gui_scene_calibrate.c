@@ -33,6 +33,7 @@ struct calibration_scene
 
 #ifdef XRT_HAVE_OPENCV
 	struct t_calibration_params params;
+	struct t_calibration_status status;
 #endif
 
 	struct xrt_frame_context *xfctx;
@@ -78,13 +79,70 @@ draw_texture(struct gui_ogl_texture *tex, bool header)
 }
 
 static void
+render_progress(struct calibration_scene *cs)
+{
+#ifdef XRT_HAVE_OPENCV
+	if (cs->status.finished) {
+
+		igText(
+		    "Calibration complete - showing preview of undistortion.");
+		return;
+	}
+
+	static const ImVec2 progress_dims = {150, 0};
+	if (cs->status.cooldown > 0) {
+		// This progress bar intentionally counts down to 0.
+		float cooldown = (float)(cs->status.cooldown) /
+		                 (float)cs->params.num_cooldown_frames;
+		igText("Move to a new position");
+		igProgressBar(cooldown, progress_dims, "Move to new position");
+	} else if (!cs->status.found) {
+		// This progress bar is always zero:
+		// comes before "hold still"
+		igText("Show board");
+		igProgressBar(0.0f, progress_dims, "Show board");
+
+	} else {
+		// This progress bar counts up from zero before
+		// capturing.
+		int waits_complete =
+		    cs->params.num_wait_for - cs->status.waits_remaining;
+		float hold_completion =
+		    (float)waits_complete / (float)cs->params.num_wait_for;
+		if (cs->status.waits_remaining == 0) {
+			igText("Capturing and processing!");
+		} else {
+			igText("Hold still! (%i/%i)", waits_complete,
+			       cs->params.num_wait_for);
+		}
+		igProgressBar(hold_completion, progress_dims, "Hold still!");
+	}
+	float capture_completion = ((float)cs->status.num_collected) /
+	                           (float)cs->params.num_collect_total;
+	igText("Overall progress: %i of %i frames captured",
+	       cs->status.num_collected, cs->params.num_collect_total);
+	igProgressBar(capture_completion, progress_dims, NULL);
+
+#else
+	// Unused
+	(void)cs;
+#endif // XRT_HAVE_OPENCV
+}
+
+static void
 scene_render_video(struct gui_scene *scene, struct gui_program *p)
 {
 	struct calibration_scene *cs = (struct calibration_scene *)scene;
 
 	igBegin("Calibration", NULL, 0);
 
+	// Manipulated textures
 	draw_texture(p->texs[0], false);
+
+	// Progress widgets
+	render_progress(cs);
+
+	// Raw textures
 	draw_texture(p->texs[1], true);
 
 	for (size_t i = 2; i < ARRAY_SIZE(p->texs); i++) {
@@ -176,7 +234,8 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	u_sink_create_format_converter(cs->xfctx, XRT_FORMAT_R8G8B8, raw, &raw);
 	u_sink_queue_create(cs->xfctx, raw, &raw);
 
-	t_calibration_stereo_create(cs->xfctx, &cs->params, NULL, rgb, &cali);
+	t_calibration_stereo_create(cs->xfctx, &cs->params, &cs->status, rgb,
+	                            &cali);
 	u_sink_create_to_yuv_or_yuyv(cs->xfctx, cali, &cali);
 	u_sink_queue_create(cs->xfctx, cali, &cali);
 	u_sink_split_create(cs->xfctx, raw, cali, &cali);
