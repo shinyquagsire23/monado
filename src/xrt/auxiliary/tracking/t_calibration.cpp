@@ -32,20 +32,22 @@ DEBUG_GET_ONCE_BOOL_OPTION(hsv_viewer, "T_DEBUG_HSV_VIEWER", false)
  *
  */
 
-//! A point in the @ref Model.
-typedef cv::Point3d ModelPoint;
-//! A point in the @ref Measurement.
-typedef cv::Point2d MeasurementPoint;
-//! Model of the thing we are measuring to calibrate.
-typedef std::vector<ModelPoint> Model;
+//! Model of the thing we are measuring to calibrate, 32 bit.
+typedef std::vector<cv::Point3f> ModelF32;
+//! Model of the thing we are measuring to calibrate, 64 bit.
+typedef std::vector<cv::Point3d> ModelF64;
 //! A measurement of the model as viewed on the camera.
-typedef std::vector<MeasurementPoint> Measurement;
-//! In floats, because OpenCV can't agree on a single type to use.
-typedef std::vector<cv::Point2f> MeasurementDisplay;
-//! For each @ref Measurement we take we also save the @ref Model.
-typedef std::vector<Model> ArrayOfModels;
-//! A array of @ref Measurement.
-typedef std::vector<Measurement> ArrayOfMeasurements;
+typedef std::vector<cv::Point2f> MeasurementF32;
+//! In doubles, because OpenCV can't agree on a single type to use.
+typedef std::vector<cv::Point2d> MeasurementF64;
+//! For each @ref MeasurementF32 we take we also save the @ref ModelF32.
+typedef std::vector<ModelF32> ArrayOfModelF32s;
+//! For each @ref MeasurementF64 we take we also save the @ref ModelF64.
+typedef std::vector<ModelF64> ArrayOfModelF64s;
+//! A array of @ref MeasurementF32.
+typedef std::vector<MeasurementF32> ArrayOfMeasurementF32s;
+//! A array of @ref MeasurementF64.
+typedef std::vector<MeasurementF64> ArrayOfMeasurementF64s;
 //! A array of bounding rects.
 typedef std::vector<cv::Rect> ArrayOfRects;
 
@@ -54,15 +56,16 @@ typedef std::vector<cv::Rect> ArrayOfRects;
  */
 struct ViewState
 {
-	ArrayOfMeasurements measured = {};
-	ArrayOfRects measuredBounds = {};
+	ArrayOfMeasurementF32s measured_f32 = {};
+	ArrayOfMeasurementF64s measured_f64 = {};
+	ArrayOfRects measured_bounds = {};
 
 	bool last_valid = false;
-	Measurement last = {};
+	MeasurementF64 last = {};
 
-	Measurement current = {};
-	MeasurementDisplay currentDisplay = {};
-	cv::Rect currentBounds = {};
+	MeasurementF64 current_f64 = {};
+	MeasurementF32 current_f32 = {};
+	cv::Rect current_bounds = {};
 
 	cv::Rect pre_rect = {};
 	cv::Rect post_rect = {};
@@ -89,7 +92,8 @@ public:
 
 	struct
 	{
-		Model model = {};
+		ModelF32 model_f32 = {};
+		ModelF64 model_f64 = {};
 		cv::Size dims = {8, 6};
 		enum t_board_pattern pattern = T_BOARD_CHECKERS;
 		float spacing_meters = 0.05;
@@ -99,7 +103,8 @@ public:
 	{
 		ViewState view[2] = {};
 
-		ArrayOfModels board_models = {};
+		ArrayOfModelF32s board_models_f32 = {};
+		ArrayOfModelF64s board_models_f64 = {};
 
 		uint32_t calibration_count = {};
 		bool calibrated = false;
@@ -236,25 +241,18 @@ do_view_coverage(class Calibration &c,
                  cv::Mat &rgb,
                  bool found)
 {
-	// Clear the display and convert from the measurement.
-	view.currentDisplay.clear();
-	for (const MeasurementPoint &p : view.current) {
-		view.currentDisplay.push_back(cv::Point2f(p.x, p.y));
-	}
-
 	// Get the current bounding rect.
-	view.currentBounds = cv::boundingRect(view.currentDisplay);
+	view.current_bounds = cv::boundingRect(view.current_f32);
 
 	// Compute our 'pre sample' coverage for this frame,
 	// for display and area threshold checking.
 	std::vector<cv::Point2f> coverage;
-	for (uint32_t i = 0; i < view.measured.size(); i++) {
-		cv::Rect brect = view.measuredBounds[i];
-
+	coverage.reserve(view.measured_bounds.size() * 2 + 2);
+	for (const cv::Rect &brect : view.measured_bounds) {
 		draw_rect(rgb, brect, cv::Scalar(0, 64, 32));
 
-		coverage.push_back(cv::Point2f(brect.tl()));
-		coverage.push_back(cv::Point2f(brect.br()));
+		coverage.emplace_back(cv::Point2f(brect.tl()));
+		coverage.emplace_back(cv::Point2f(brect.br()));
 	}
 
 	// What area of the camera have we calibrated.
@@ -262,8 +260,8 @@ do_view_coverage(class Calibration &c,
 	draw_rect(rgb, view.pre_rect, cv::Scalar(0, 255, 255));
 
 	if (found) {
-		coverage.push_back(cv::Point2f(view.currentBounds.tl()));
-		coverage.push_back(cv::Point2f(view.currentBounds.br()));
+		coverage.emplace_back(cv::Point2f(view.current_bounds.tl()));
+		coverage.emplace_back(cv::Point2f(view.current_bounds.br()));
 
 		// New area we cover.
 		view.post_rect = cv::boundingRect(coverage);
@@ -272,8 +270,7 @@ do_view_coverage(class Calibration &c,
 	}
 
 	// Draw the checker board, will also draw partial hits.
-	cv::drawChessboardCorners(rgb, c.board.dims, view.currentDisplay,
-	                          found);
+	cv::drawChessboardCorners(rgb, c.board.dims, view.current_f32, found);
 }
 
 static bool
@@ -282,15 +279,21 @@ do_view_chess(class Calibration &c,
               cv::Mat &gray,
               cv::Mat &rgb)
 {
+	/*
+	 * Fisheye requires measurement and model to be double, other functions
+	 * requires them to be floats (like cornerSubPix). So we give in
+	 * current_f32 here and convert below.
+	 */
+
 	int flags = 0;
 	flags += cv::CALIB_CB_FAST_CHECK;
 	flags += cv::CALIB_CB_ADAPTIVE_THRESH;
 	flags += cv::CALIB_CB_NORMALIZE_IMAGE;
 
-	bool found = cv::findChessboardCorners(gray,         // Image
-	                                       c.board.dims, // patternSize
-	                                       view.current, // corners
-	                                       flags);       // flags
+	bool found = cv::findChessboardCorners(gray,             // Image
+	                                       c.board.dims,     // patternSize
+	                                       view.current_f32, // corners
+	                                       flags);           // flags
 
 	// Improve the corner positions.
 	if (found && c.subpixel_enable) {
@@ -302,7 +305,14 @@ do_view_chess(class Calibration &c,
 		cv::Size size(c.subpixel_size, c.subpixel_size);
 		cv::Size zero(-1, -1);
 
-		cv::cornerSubPix(gray, view.current, size, zero, term_criteria);
+		cv::cornerSubPix(gray, view.current_f32, size, zero,
+		                 term_criteria);
+	}
+
+	// Do the conversion here.
+	view.current_f64.clear(); // Doesn't effect capacity.
+	for (const cv::Point2f &p : view.current_f32) {
+		view.current_f64.emplace_back(double(p.x), double(p.y));
 	}
 
 	do_view_coverage(c, view, gray, rgb, found);
@@ -316,15 +326,27 @@ do_view_circles(class Calibration &c,
                 cv::Mat &gray,
                 cv::Mat &rgb)
 {
+	/*
+	 * Fisheye requires measurement and model to be double, other functions
+	 * requires them to be floats (like drawChessboardCorners). So we give
+	 * in current here for highest precision and convert below.
+	 */
+
 	int flags = 0;
 	if (c.board.pattern == T_BOARD_ASYMMETRIC_CIRCLES) {
 		flags |= cv::CALIB_CB_ASYMMETRIC_GRID;
 	}
 
-	bool found = cv::findCirclesGrid(gray,         // Image
-	                                 c.board.dims, // patternSize
-	                                 view.current, // corners
-	                                 flags);       // flags
+	bool found = cv::findCirclesGrid(gray,             // Image
+	                                 c.board.dims,     // patternSize
+	                                 view.current_f64, // corners
+	                                 flags);           // flags
+
+	// Convert here so that displaying also works.
+	view.current_f32.clear(); // Doesn't effect capacity.
+	for (const cv::Point2d &p : view.current_f64) {
+		view.current_f32.emplace_back(float(p.x), float(p.y));
+	}
 
 	do_view_coverage(c, view, gray, rgb, found);
 
@@ -396,37 +418,59 @@ build_board_position(class Calibration &c)
 	switch (c.board.pattern) {
 	case T_BOARD_CHECKERS:
 	case T_BOARD_CIRCLES:
+		c.board.model_f32.reserve(rows_num * cols_num);
+		c.board.model_f64.reserve(rows_num * cols_num);
 		for (int i = 0; i < rows_num; ++i) {
 			for (int j = 0; j < cols_num; ++j) {
-				cv::Point3f p = {
+				cv::Point3d p = {
 				    j * size_meters,
 				    i * size_meters,
 				    0.0f,
 				};
-				c.board.model.push_back(p);
+				c.board.model_f32.emplace_back(p);
+				c.board.model_f64.emplace_back(p);
 			}
 		}
 		break;
 	case T_BOARD_ASYMMETRIC_CIRCLES:
+		c.board.model_f32.reserve(rows_num * cols_num);
+		c.board.model_f64.reserve(rows_num * cols_num);
 		for (int i = 0; i < rows_num; ++i) {
 			for (int j = 0; j < cols_num; ++j) {
-				cv::Point3f p = {
+				cv::Point3d p = {
 				    (2 * j + i % 2) * size_meters,
 				    i * size_meters,
 				    0.0f,
 				};
-				c.board.model.push_back(p);
+				c.board.model_f32.emplace_back(p);
+				c.board.model_f64.emplace_back(p);
 			}
 		}
 		break;
 	}
 }
 
+static void
+push_model(Calibration &c)
+{
+	c.state.board_models_f32.push_back(c.board.model_f32);
+	c.state.board_models_f64.push_back(c.board.model_f64);
+}
+
+static void
+push_measurement(ViewState &view)
+{
+	view.measured_f32.push_back(view.current_f32);
+	view.measured_f64.push_back(view.current_f64);
+	view.measured_bounds.push_back(view.current_bounds);
+}
+
+
 /*!
  * Returns true if any one of the measurement points have moved.
  */
 static bool
-has_measurement_moved(Measurement &last, Measurement &current)
+has_measurement_moved(MeasurementF64 &last, MeasurementF64 &current)
 {
 	if (last.size() != current.size()) {
 		return true;
@@ -450,11 +494,11 @@ moved_state_check(struct ViewState &view)
 {
 	bool moved = false;
 	if (view.last_valid) {
-		moved = has_measurement_moved(view.last, view.current);
+		moved = has_measurement_moved(view.last, view.current_f64);
 	}
 
 	// Now save the current measurement to the last one.
-	view.last = view.current;
+	view.last = view.current_f64;
 	view.last_valid = true;
 
 	return moved;
@@ -494,9 +538,9 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 
 		// fisheye version
 		rp_error = cv::fisheye::stereoCalibrate(
-		    c.state.board_models,         // objectPoints
-		    c.state.view[0].measured,     // inagePoints1
-		    c.state.view[1].measured,     // imagePoints2
+		    c.state.board_models_f64,     // objectPoints
+		    c.state.view[0].measured_f64, // inagePoints1
+		    c.state.view[1].measured_f64, // imagePoints2
 		    raw.l_intrinsics_mat,         // cameraMatrix1
 		    raw.l_distortion_fisheye_mat, // distCoeffs1
 		    raw.r_intrinsics_mat,         // cameraMatrix2
@@ -508,19 +552,19 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	} else {
 		// non-fisheye version
 		rp_error = cv::stereoCalibrate(
-		    c.state.board_models,       // objectPoints
-		    c.state.view[0].measured,   // inagePoints1
-		    c.state.view[1].measured,   // imagePoints2,
-		    raw.l_intrinsics_mat,       // cameraMatrix1
-		    raw.l_distortion_mat,       // distCoeffs1
-		    raw.r_intrinsics_mat,       // cameraMatrix2
-		    raw.r_distortion_mat,       // distCoeffs2
-		    image_size,                 // imageSize
-		    raw.camera_rotation_mat,    // R
-		    raw.camera_translation_mat, // T
-		    raw.camera_essential_mat,   // E
-		    raw.camera_fundamental_mat, // F
-		    0);                         // flags
+		    c.state.board_models_f32,     // objectPoints
+		    c.state.view[0].measured_f32, // inagePoints1
+		    c.state.view[1].measured_f32, // imagePoints2,
+		    raw.l_intrinsics_mat,         // cameraMatrix1
+		    raw.l_distortion_mat,         // distCoeffs1
+		    raw.r_intrinsics_mat,         // cameraMatrix2
+		    raw.r_distortion_mat,         // distCoeffs2
+		    image_size,                   // imageSize
+		    raw.camera_rotation_mat,      // R
+		    raw.camera_translation_mat,   // T
+		    raw.camera_essential_mat,     // E
+		    raw.camera_fundamental_mat,   // F
+		    0);                           // flags
 	}
 
 	assert(raw.camera_rotation_mat.size() == cv::Size(3, 3));
@@ -673,9 +717,9 @@ process_view_samples(class Calibration &c,
 
 	if (c.dump_measurements) {
 		printf("...measured = (ArrayOfMeasurements){\n");
-		for (Measurement &m : view.measured) {
+		for (MeasurementF32 &m : view.measured_f32) {
 			printf("  {\n");
-			for (MeasurementPoint &p : m) {
+			for (cv::Point2f &p : m) {
 				printf("   {%+ff, %+ff},\n", p.x, p.y);
 			}
 			printf("  },\n");
@@ -697,15 +741,15 @@ process_view_samples(class Calibration &c,
 #endif
 
 		rp_error = cv::fisheye::calibrate(
-		    c.state.board_models,   // objectPoints
-		    view.measured,          // imagePoints
-		    image_size,             // image_size
-		    intrinsics_mat,         // K (cameraMatrix 3x3)
-		    distortion_fisheye_mat, // D (distCoeffs 4x1)
-		    cv::noArray(),          // rvecs
-		    cv::noArray(),          // tvecs
-		    flags,                  // flags
-		    term_criteria);         // criteria
+		    c.state.board_models_f64, // objectPoints
+		    view.measured_f64,        // imagePoints
+		    image_size,               // image_size
+		    intrinsics_mat,           // K (cameraMatrix 3x3)
+		    distortion_fisheye_mat,   // D (distCoeffs 4x1)
+		    cv::noArray(),            // rvecs
+		    cv::noArray(),            // tvecs
+		    flags,                    // flags
+		    term_criteria);           // criteria
 
 		double balance = 0.1f;
 
@@ -722,8 +766,8 @@ process_view_samples(class Calibration &c,
 		new_intrinsics_mat.at<double>(1, 2) = (rows - 1) / 2.0;
 	} else {
 		rp_error = cv::calibrateCamera( //
-		    c.state.board_models,       // objectPoints
-		    view.measured,              // imagePoints
+		    c.state.board_models_f32,   // objectPoints
+		    view.measured_f32,          // imagePoints
 		    image_size,                 // imageSize
 		    intrinsics_mat,             // cameraMatrix
 		    distortion_mat,             // distCoeffs
@@ -780,7 +824,7 @@ static void
 update_public_status(class Calibration &c, bool found)
 {
 	if (c.status != NULL) {
-		int num = (int)c.state.board_models.size();
+		int num = (int)c.state.board_models_f32.size();
 		c.status->num_collected = num;
 		c.status->cooldown = c.state.cooldown;
 		c.status->waits_remaining = c.state.waited_for;
@@ -798,7 +842,7 @@ do_capture_logic_mono(class Calibration &c,
                       cv::Mat &gray,
                       cv::Mat &rgb)
 {
-	int num = (int)c.state.board_models.size();
+	int num = (int)c.state.board_models_f32.size();
 	int of = c.num_collect_total;
 	P("(%i/%i) SHOW BOARD", num, of);
 	update_public_status(c, found);
@@ -835,17 +879,16 @@ do_capture_logic_mono(class Calibration &c,
 		char buf[512];
 
 		snprintf(buf, 512, "gray_%ix%i_%03i.png", gray.cols, gray.rows,
-		         (int)view.measured.size());
+		         (int)view.measured_f32.size());
 		cv::imwrite(buf, gray);
 
 		snprintf(buf, 512, "debug_rgb_%03i.jpg",
-		         (int)view.measured.size());
+		         (int)view.measured_f32.size());
 		cv::imwrite(buf, rgb);
 	}
 
-	c.state.board_models.push_back(c.board.model);
-	view.measured.push_back(view.current);
-	view.measuredBounds.push_back(view.currentBounds);
+	push_model(c);
+	push_measurement(view);
 
 	c.state.collected_of_part++;
 
@@ -878,7 +921,7 @@ do_capture_logic_stereo(class Calibration &c,
 {
 	bool found = l_found && r_found;
 
-	int num = (int)c.state.board_models.size();
+	int num = (int)c.state.board_models_f32.size();
 	int of = c.num_collect_total;
 	P("(%i/%i) SHOW BOARD %i %i", num, of, l_found, r_found);
 	update_public_status(c, found);
@@ -920,19 +963,17 @@ do_capture_logic_stereo(class Calibration &c,
 		char buf[512];
 
 		snprintf(buf, 512, "gray_%ix%i_%03i.png", gray.cols, gray.rows,
-		         (int)c.state.board_models.size());
+		         (int)c.state.board_models_f32.size());
 		cv::imwrite(buf, gray);
 
 		snprintf(buf, 512, "debug_rgb_%03i.jpg",
-		         (int)c.state.board_models.size());
+		         (int)c.state.board_models_f32.size());
 		cv::imwrite(buf, rgb);
 	}
 
-	c.state.board_models.push_back(c.board.model);
-	c.state.view[0].measured.push_back(c.state.view[0].current);
-	c.state.view[0].measuredBounds.push_back(c.state.view[0].currentBounds);
-	c.state.view[1].measured.push_back(c.state.view[1].current);
-	c.state.view[1].measuredBounds.push_back(c.state.view[1].currentBounds);
+	push_model(c);
+	push_measurement(c.state.view[0]);
+	push_measurement(c.state.view[1]);
 
 	c.state.collected_of_part++;
 
@@ -961,7 +1002,7 @@ make_calibration_frame_mono(class Calibration &c)
 	// Advance the state of the calibration.
 	do_capture_logic_mono(c, c.state.view[0], found, gray, rgb);
 
-	if (c.state.board_models.size() >= c.num_collect_total) {
+	if (c.state.board_models_f32.size() >= c.num_collect_total) {
 		process_view_samples(c, c.state.view[0], rgb.cols, rgb.rows);
 	}
 
@@ -997,7 +1038,7 @@ make_calibration_frame_sbs(class Calibration &c)
 	                        l_gray, l_rgb, found_right, c.state.view[1],
 	                        r_gray, r_rgb);
 
-	if (c.state.board_models.size() >= c.num_collect_total) {
+	if (c.state.board_models_f32.size() >= c.num_collect_total) {
 		process_stereo_samples(c, cols, rows);
 	}
 
@@ -1282,10 +1323,10 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 	build_board_position(c);
 
 	// Pre allocate
-	c.state.view[0].current.reserve(c.board.model.size());
-	c.state.view[0].currentDisplay.reserve(c.board.model.size());
-	c.state.view[1].current.reserve(c.board.model.size());
-	c.state.view[1].currentDisplay.reserve(c.board.model.size());
+	c.state.view[0].current_f32.reserve(c.board.model_f32.size());
+	c.state.view[0].current_f64.reserve(c.board.model_f64.size());
+	c.state.view[1].current_f32.reserve(c.board.model_f32.size());
+	c.state.view[1].current_f64.reserve(c.board.model_f64.size());
 
 #if 0
 	c.state.view[0].measured = (ArrayOfMeasurements){
@@ -1296,7 +1337,7 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 
 	for (Measurement &m : c.state.view[0].measured) {
 		(void)m;
-		c.state.board_models.push_back(c.board.model);
+		push_model(c);
 	}
 #endif
 	return ret;
