@@ -79,16 +79,13 @@ t_settings_stereo_refine(struct t_settings_stereo_raw *raw_data,
 	data.new_image_size_pixels = raw.new_image_size_pixels;
 	raw.disparity_to_depth_mat.copyTo(data.disparity_to_depth_mat);
 
-	//! @todo Load from file.
-	bool use_fisheye = false;
-
 	//! @todo Scale Our intrinsics if the frame size we request
 	//              calibration for does not match what was saved
 	cv::Size image_size(raw.image_size_pixels.w, raw.image_size_pixels.h);
 
 	// Generate undistortion maps - handle fisheye or rectilinear sources
 
-	if (use_fisheye) {
+	if (raw.use_fisheye) {
 		cv::fisheye::initUndistortRectifyMap(
 		    raw.l_intrinsics_mat,         // cameraMatrix
 		    raw.l_distortion_fisheye_mat, // distCoeffs
@@ -188,8 +185,8 @@ t_settings_stereo_load_v1(FILE *calib_file,
 	read_cv_mat(calib_file, &raw.r_intrinsics_mat, "r_intrinsics"); // 3 x 3
 	read_cv_mat(calib_file, &raw.l_distortion_mat, "l_distortion"); // 1 x 5
 	read_cv_mat(calib_file, &raw.r_distortion_mat, "r_distortion"); // 1 x 5
-	read_cv_mat(calib_file, &raw.l_distortion_fisheye_mat, "l_distortion_fisheye");
-	read_cv_mat(calib_file, &raw.r_distortion_fisheye_mat, "r_distortion_fisheye");
+	read_cv_mat(calib_file, &raw.l_distortion_fisheye_mat, "l_distortion_fisheye"); // 4 x 1
+	read_cv_mat(calib_file, &raw.r_distortion_fisheye_mat, "r_distortion_fisheye"); // 4 x 1
 	read_cv_mat(calib_file, &raw.l_rotation_mat, "l_rotation"); // 3 x 3
 	read_cv_mat(calib_file, &raw.r_rotation_mat, "r_rotation"); // 3 x 3
 	read_cv_mat(calib_file, &l_translation_dummy, "l_translation"); // empty
@@ -223,6 +220,14 @@ t_settings_stereo_load_v1(FILE *calib_file,
 	}
 	if (!read_cv_mat(calib_file, &raw.camera_fundamental_mat, "fundamental")) {
 		fprintf(stderr, "\tRe-run calibration!\n");
+	}
+
+	cv::Mat mat_use_fisheye = {};
+	if (!read_cv_mat(calib_file, &mat_use_fisheye, "use_fisheye")) {
+		raw.use_fisheye = false;
+		fprintf(stderr, "\tRe-run calibration!\n");
+	} else {
+		raw.use_fisheye = mat_use_fisheye.at<float>(0, 0) != 0.0;
 	}
 	// clang-format on
 
@@ -291,6 +296,11 @@ t_file_save_raw_data(FILE *calib_file, struct t_settings_stereo_raw *raw_data)
 	write_cv_mat(calib_file, &raw.camera_rotation_mat);
 	write_cv_mat(calib_file, &raw.camera_essential_mat);
 	write_cv_mat(calib_file, &raw.camera_fundamental_mat);
+
+	cv::Mat mat_use_fisheye;
+	mat_use_fisheye.create(1, 1, CV_32F);
+	mat_use_fisheye.at<float>(0, 0) = raw.use_fisheye;
+	write_cv_mat(calib_file, &mat_use_fisheye);
 
 	return true;
 }

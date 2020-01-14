@@ -134,6 +134,9 @@ struct t_settings_stereo_raw
 	double r_rotation[3][3];
 	//! Right projection matrix in the new (rectified) coordinate systems.
 	double r_projection[3][4];
+
+	//! Use fisheye distortion.
+	bool use_fisheye;
 };
 
 /*!

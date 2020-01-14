@@ -477,6 +477,7 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	CalibrationRawData raw = {};
 	assert(raw.isDataStorageValid());
 
+	raw.use_fisheye = c.use_fisheye;
 	raw.image_size_pixels.w = image_size.width;
 	raw.image_size_pixels.h = image_size.height;
 	raw.new_image_size_pixels.w = new_image_size.width;
