@@ -148,6 +148,8 @@ public:
 	cv::Mat gray = {};
 
 	char text[512] = {};
+
+	t_calibration_status *status;
 };
 
 
@@ -660,6 +662,7 @@ process_view_samples(class Calibration &c,
                      int cols,
                      int rows)
 {
+
 	const cv::Size image_size = {cols, rows};
 	double rp_error = 0.f;
 
@@ -773,6 +776,18 @@ process_view_samples(class Calibration &c,
 	c.state.calibrated = true;
 }
 
+static void
+update_public_status(class Calibration &c, bool found)
+{
+	if (c.status != NULL) {
+		int num = (int)c.state.board_models.size();
+		c.status->num_collected = num;
+		c.status->cooldown = c.state.cooldown;
+		c.status->waits_remaining = c.state.waited_for;
+		c.status->found = found;
+	}
+}
+
 /*!
  * Logic for capturing a frame.
  */
@@ -786,6 +801,7 @@ do_capture_logic_mono(class Calibration &c,
 	int num = (int)c.state.board_models.size();
 	int of = c.num_collect_total;
 	P("(%i/%i) SHOW BOARD", num, of);
+	update_public_status(c, found);
 
 	if (c.state.cooldown > 0) {
 		P("(%i/%i) MOVE BOARD TO NEW POSITION", num, of);
@@ -865,6 +881,7 @@ do_capture_logic_stereo(class Calibration &c,
 	int num = (int)c.state.board_models.size();
 	int of = c.num_collect_total;
 	P("(%i/%i) SHOW BOARD %i %i", num, of, l_found, r_found);
+	update_public_status(c, found);
 
 	if (c.state.cooldown > 0) {
 		P("(%i/%i) MOVE BOARD TO NEW POSITION", num, of);
@@ -999,6 +1016,10 @@ make_calibration_frame(class Calibration &c, struct xrt_frame *xf)
 		P("ERROR: Unknown stereo format! '%i'", xf->stereo_format);
 		make_gui_str(c);
 		return;
+	}
+
+	if (c.status != NULL && c.state.calibrated) {
+		c.status->finished = true;
 	}
 }
 
@@ -1184,7 +1205,8 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 
 extern "C" int
 t_calibration_stereo_create(struct xrt_frame_context *xfctx,
-                            struct t_calibration_params *params,
+                            const struct t_calibration_params *params,
+                            struct t_calibration_status *status,
                             struct xrt_frame_sink *gui,
                             struct xrt_frame_sink **out_sink)
 {
@@ -1233,6 +1255,7 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 	c.load.num_images = params->load.num_images;
 	c.mirror_rgb_image = params->mirror_rgb_image;
 	c.save_images = params->save_images;
+	c.status = status;
 
 
 	// Setup a initial message.

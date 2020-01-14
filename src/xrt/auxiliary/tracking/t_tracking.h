@@ -350,7 +350,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 		        false,                                                 \
 		        20,                                                    \
 		    },                                                         \
-		    20, 5, 20, 1, false, true,                                 \
+		    20, 5, 20, 1, false, true                                  \
 	}
 
 /*!
@@ -361,6 +361,20 @@ enum t_board_pattern
 	T_BOARD_CHECKERS,
 	T_BOARD_CIRCLES,
 	T_BOARD_ASYMMETRIC_CIRCLES,
+};
+
+struct t_calibration_status
+{
+	//! Is calibration finished?
+	bool finished;
+	//! Was the target found this frame?
+	bool found;
+	//! Number of frames collected
+	int num_collected;
+	//! Number of moving frames before another capture
+	int cooldown;
+	//! Number of non-moving frames before capture.
+	int waits_remaining;
 };
 
 struct t_calibration_params
@@ -416,9 +430,21 @@ struct t_calibration_params
 	bool save_images;
 };
 
+/*!
+ * @brief Create the camera calibration frame sink.
+ *
+ * @param xfctx Context for frame transport.
+ * @param params Parameters to use during calibration. Values copied, pointer
+ * not retained.
+ * @param status Optional pointer to structure for status information. Pointer
+ * retained, and pointed-to struct modified.
+ * @param gui Frame sink
+ * @param out_sink Output: created frame sink.
+ */
 int
 t_calibration_stereo_create(struct xrt_frame_context *xfctx,
-                            struct t_calibration_params *params,
+                            const struct t_calibration_params *params,
+                            struct t_calibration_status *status,
                             struct xrt_frame_sink *gui,
                             struct xrt_frame_sink **out_sink);
 

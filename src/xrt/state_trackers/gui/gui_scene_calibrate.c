@@ -176,7 +176,7 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	u_sink_create_format_converter(cs->xfctx, XRT_FORMAT_R8G8B8, raw, &raw);
 	u_sink_queue_create(cs->xfctx, raw, &raw);
 
-	t_calibration_stereo_create(cs->xfctx, &cs->params, rgb, &cali);
+	t_calibration_stereo_create(cs->xfctx, &cs->params, NULL, rgb, &cali);
 	u_sink_create_to_yuv_or_yuyv(cs->xfctx, cali, &cali);
 	u_sink_queue_create(cs->xfctx, cali, &cali);
 	u_sink_split_create(cs->xfctx, raw, cali, &cali);
