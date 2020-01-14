@@ -277,6 +277,7 @@ push_buf(struct t_hsv_filter *f,
 
 	(*frame)->timestamp = xf->timestamp;
 	(*frame)->source_id = xf->source_id;
+	(*frame)->stereo_format = xf->stereo_format;
 	(*frame)->source_sequence = xf->source_sequence;
 	(*frame)->source_timestamp = xf->source_timestamp;
 
