@@ -177,24 +177,28 @@ t_stereo_camera_calibration_load_v1(
 
 	// Read our calibration from this file
 	// clang-format off
-	read_cv_mat(calib_file, &wrapped.l_calibration.intrinsics_mat, "l_intrinsics"); // 3 x 3
-	read_cv_mat(calib_file, &wrapped.r_calibration.intrinsics_mat, "r_intrinsics"); // 3 x 3
-	read_cv_mat(calib_file, &wrapped.l_calibration.distortion_mat, "l_distortion"); // 1 x 5
-	read_cv_mat(calib_file, &wrapped.r_calibration.distortion_mat, "r_distortion"); // 1 x 5
-	read_cv_mat(calib_file, &wrapped.l_calibration.distortion_fisheye_mat, "l_distortion_fisheye"); // 4 x 1
-	read_cv_mat(calib_file, &wrapped.r_calibration.distortion_fisheye_mat, "r_distortion_fisheye"); // 4 x 1
-	read_cv_mat(calib_file, &dummy, "l_rotation"); // 3 x 3
-	read_cv_mat(calib_file, &dummy, "r_rotation"); // 3 x 3
-	read_cv_mat(calib_file, &dummy, "l_translation"); // empty
-	read_cv_mat(calib_file, &dummy, "r_translation"); // empty
-	read_cv_mat(calib_file, &dummy, "l_projection"); // 3 x 4
-	read_cv_mat(calib_file, &dummy, "r_projection"); // 3 x 4
-	read_cv_mat(calib_file, &dummy, "disparity_to_depth");  // 4 x 4
-	cv::Mat mat_image_size = {};
-	read_cv_mat(calib_file, &mat_image_size, "mat_image_size");
+	cv::Mat_<float> mat_image_size(2, 1);
+	bool result = read_cv_mat(calib_file, &wrapped.l_calibration.intrinsics_mat, "l_intrinsics"); // 3 x 3
+	result = result && read_cv_mat(calib_file, &wrapped.r_calibration.intrinsics_mat, "r_intrinsics"); // 3 x 3
+	result = result && read_cv_mat(calib_file, &wrapped.l_calibration.distortion_mat, "l_distortion"); // 1 x 5
+	result = result && read_cv_mat(calib_file, &wrapped.r_calibration.distortion_mat, "r_distortion"); // 1 x 5
+	result = result && read_cv_mat(calib_file, &wrapped.l_calibration.distortion_fisheye_mat, "l_distortion_fisheye"); // 4 x 1
+	result = result && read_cv_mat(calib_file, &wrapped.r_calibration.distortion_fisheye_mat, "r_distortion_fisheye"); // 4 x 1
+	result = result && read_cv_mat(calib_file, &dummy, "l_rotation"); // 3 x 3
+	result = result && read_cv_mat(calib_file, &dummy, "r_rotation"); // 3 x 3
+	result = result && read_cv_mat(calib_file, &dummy, "l_translation"); // empty
+	result = result && read_cv_mat(calib_file, &dummy, "r_translation"); // empty
+	result = result && read_cv_mat(calib_file, &dummy, "l_projection"); // 3 x 4
+	result = result && read_cv_mat(calib_file, &dummy, "r_projection"); // 3 x 4
+	result = result && read_cv_mat(calib_file, &dummy, "disparity_to_depth");  // 4 x 4
+	result = result && read_cv_mat(calib_file, &mat_image_size, "mat_image_size");
 
-	wrapped.l_calibration.image_size_pixels.w = uint32_t(mat_image_size.at<float>(0, 0));
-	wrapped.l_calibration.image_size_pixels.h = uint32_t(mat_image_size.at<float>(0, 1));
+	if (!result) {
+		fprintf(stderr, "\tRe-run calibration!\n");
+		return false;
+	}
+	wrapped.l_calibration.image_size_pixels.w = uint32_t(mat_image_size(0, 0));
+	wrapped.l_calibration.image_size_pixels.h = uint32_t(mat_image_size(0, 1));
 	wrapped.r_calibration.image_size_pixels = wrapped.l_calibration.image_size_pixels;
 
 	cv::Mat mat_new_image_size = mat_image_size.clone();
@@ -215,30 +219,16 @@ t_stereo_camera_calibration_load_v1(
 		fprintf(stderr, "\tRe-run calibration!\n");
 	}
 
-	cv::Mat mat_use_fisheye = {};
+	cv::Mat_<float> mat_use_fisheye(1, 1);
 	if (!read_cv_mat(calib_file, &mat_use_fisheye, "use_fisheye")) {
 		wrapped.l_calibration.use_fisheye = false;
 		fprintf(stderr, "\tRe-run calibration! (Assuming not fisheye)\n");
 	} else {
-		wrapped.l_calibration.use_fisheye = mat_use_fisheye.at<float>(0, 0) != 0.0;
+		wrapped.l_calibration.use_fisheye = mat_use_fisheye(0, 0) != 0.0f;
 	}
 	wrapped.r_calibration.use_fisheye = wrapped.l_calibration.use_fisheye;
 	// clang-format on
 
-	if (wrapped.camera_translation_mat.size() == cv::Size(3, 1)) {
-		//! @todo don't understand this code - looks like it's just
-		//! self-assigning
-		fprintf(stderr,
-		        "Readjusting translation, re-run calibration.\n");
-		raw.camera_translation[0] =
-		    wrapped.camera_translation_mat.at<double>(0, 0);
-		raw.camera_translation[1] =
-		    wrapped.camera_translation_mat.at<double>(0, 1);
-		raw.camera_translation[2] =
-		    wrapped.camera_translation_mat.at<double>(0, 2);
-		wrapped.camera_translation_mat =
-		    cv::Mat(3, 1, CV_64F, &raw.camera_translation[0]);
-	}
 
 	assert(wrapped.isDataStorageValid());
 	*out_data = &raw;
@@ -417,6 +407,7 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 	uint32_t header[3] = {};
 	size_t read = 0;
 
+	cv::Mat temp;
 	read = fread(static_cast<void *>(header), sizeof(uint32_t), 3, f);
 	if (read != 3) {
 		printf("Failed to read mat header: '%i' '%s'\n", (int)read,
@@ -430,18 +421,41 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 
 	//! @todo We may have written things other than CV_32F and CV_64F.
 	if (header[0] == 4) {
-		m->create(static_cast<int>(header[1]),
-		          static_cast<int>(header[2]), CV_32F);
+		temp.create(static_cast<int>(header[1]),
+		            static_cast<int>(header[2]), CV_32F);
 	} else {
-		m->create(static_cast<int>(header[1]),
-		          static_cast<int>(header[2]), CV_64F);
+		temp.create(static_cast<int>(header[1]),
+		            static_cast<int>(header[2]), CV_64F);
 	}
-	read = fread(static_cast<void *>(m->data), header[0],
+	read = fread(static_cast<void *>(temp.data), header[0],
 	             header[1] * header[2], f);
 	if (read != (header[1] * header[2])) {
 		printf("Failed to read mat body: '%i' '%s'\n", (int)read, name);
 		return false;
 	}
-
-	return true;
+	if (temp.type() != m->type()) {
+		printf("Mat body type does not match: %i vs %i for '%s'\n",
+		       (int)temp.type(), (int)m->type(), name);
+		return false;
+	}
+	if (temp.total() != m->total()) {
+		printf("Mat total size does not match: %i vs %i for '%s'\n",
+		       (int)temp.total(), (int)m->total(), name);
+		return false;
+	}
+	if (temp.size() == m->size()) {
+		// Exact match
+		temp.copyTo(*m);
+		return true;
+	}
+	if (temp.size().width == m->size().height &&
+	    temp.size().height == m->size().width) {
+		printf("Mat transposing on load: '%s'\n", name);
+		// needs transpose
+		cv::transpose(temp, *m);
+		return true;
+	}
+	// highly unlikely so minimally-helpful error message.
+	printf("Mat dimension unknown mismatch: '%s'\n", name);
+	return false;
 }
