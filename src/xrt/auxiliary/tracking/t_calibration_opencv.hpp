@@ -37,18 +37,16 @@ t_file_save_raw_data_hack(struct t_stereo_camera_calibration *data);
 struct CameraCalibrationWrapper
 {
 	xrt_size &image_size_pixels;
-	cv::Mat intrinsics_mat;
-	cv::Mat distortion_mat;
-	cv::Mat distortion_fisheye_mat;
+	cv::Mat_<double> intrinsics_mat;
+	cv::Mat_<double> distortion_mat;
+	cv::Mat_<double> distortion_fisheye_mat;
 	bool &use_fisheye;
 
 	CameraCalibrationWrapper(t_camera_calibration &calib)
 	    : image_size_pixels(calib.image_size_pixels),
-	      intrinsics_mat(3, 3, CV_64F, &calib.intrinsics[0][0]),
-	      distortion_mat(
-	          XRT_DISTORTION_MAX_DIM, 1, CV_64F, &calib.distortion[0]),
-	      distortion_fisheye_mat(
-	          4, 1, CV_64F, &calib.distortion_fisheye[0]),
+	      intrinsics_mat(3, 3, &calib.intrinsics[0][0]),
+	      distortion_mat(XRT_DISTORTION_MAX_DIM, 1, &calib.distortion[0]),
+	      distortion_fisheye_mat(4, 1, &calib.distortion_fisheye[0]),
 	      use_fisheye(calib.use_fisheye)
 	{
 		assert(isDataStorageValid());
@@ -76,21 +74,18 @@ struct StereoCameraCalibrationWrapper
 {
 	CameraCalibrationWrapper l_calibration;
 	CameraCalibrationWrapper r_calibration;
-	cv::Mat camera_translation_mat;
-	cv::Mat camera_rotation_mat;
-	cv::Mat camera_essential_mat;
-	cv::Mat camera_fundamental_mat;
+	cv::Mat_<double> camera_translation_mat;
+	cv::Mat_<double> camera_rotation_mat;
+	cv::Mat_<double> camera_essential_mat;
+	cv::Mat_<double> camera_fundamental_mat;
 
 	StereoCameraCalibrationWrapper(t_stereo_camera_calibration &stereo)
 	    : l_calibration(stereo.l_calibration),
 	      r_calibration(stereo.r_calibration),
-	      camera_translation_mat(
-	          3, 1, CV_64F, &stereo.camera_translation[0]),
-	      camera_rotation_mat(3, 3, CV_64F, &stereo.camera_rotation[0][0]),
-	      camera_essential_mat(
-	          3, 3, CV_64F, &stereo.camera_essential[0][0]),
-	      camera_fundamental_mat(
-	          3, 3, CV_64F, &stereo.camera_fundamental[0][0])
+	      camera_translation_mat(3, 1, &stereo.camera_translation[0]),
+	      camera_rotation_mat(3, 3, &stereo.camera_rotation[0][0]),
+	      camera_essential_mat(3, 3, &stereo.camera_essential[0][0]),
+	      camera_fundamental_mat(3, 3, &stereo.camera_fundamental[0][0])
 	{
 		assert(isDataStorageValid());
 	}
