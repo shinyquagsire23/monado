@@ -35,25 +35,19 @@
  */
 struct View
 {
-	cv::Mat undistort_map_x;
-	cv::Mat undistort_map_y;
-	cv::Mat rectify_map_x;
-	cv::Mat rectify_map_y;
+	cv::Mat undistort_rectify_map_x;
+	cv::Mat undistort_rectify_map_y;
 
 	std::vector<cv::KeyPoint> keypoints;
 
-	cv::Mat frame_undist;
-	cv::Mat frame_rectified;
+	cv::Mat frame_undist_rectified;
 
 	void
-	populate_from_calib(t_camera_calibration &calib,
+	populate_from_calib(t_camera_calibration & /* calib */,
 	                    const RemapPair &rectification)
 	{
-		auto remap_pair = calibration_get_undistort_map(calib);
-		undistort_map_x = remap_pair.remap_x;
-		undistort_map_y = remap_pair.remap_y;
-		rectify_map_x = rectification.remap_x;
-		rectify_map_y = rectification.remap_y;
+		undistort_rectify_map_x = rectification.remap_x;
+		undistort_rectify_map_y = rectification.remap_y;
 	}
 };
 
@@ -139,43 +133,34 @@ refresh_gui_frame(TrackerPSMV &t, struct xrt_frame *xf)
 static void
 do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 {
-	// Undistort the whole image.
-	cv::remap(grey,                 // src
-	          view.frame_undist,    // dst
-	          view.undistort_map_x, // map1
-	          view.undistort_map_y, // map2
-	          cv::INTER_LINEAR,     // interpolation
-	          cv::BORDER_CONSTANT,  // borderMode
-	          cv::Scalar(0, 0, 0)); // borderValue
+	// Undistort and rectify the whole image.
+	cv::remap(grey,                         // src
+	          view.frame_undist_rectified,  // dst
+	          view.undistort_rectify_map_x, // map1
+	          view.undistort_rectify_map_y, // map2
+	          cv::INTER_LINEAR,             // interpolation
+	          cv::BORDER_CONSTANT,          // borderMode
+	          cv::Scalar(0, 0, 0));         // borderValue
 
-	// Rectify the whole image.
-	cv::remap(view.frame_undist,    // src
-	          view.frame_rectified, // dst
-	          view.rectify_map_x,   // map1
-	          view.rectify_map_y,   // map2
-	          cv::INTER_LINEAR,     // interpolation
-	          cv::BORDER_CONSTANT,  // borderMode
-	          cv::Scalar(0, 0, 0)); // borderValue
-
-	cv::threshold(view.frame_rectified, // src
-	              view.frame_rectified, // dst
-	              32.0,                 // thresh
-	              255.0,                // maxval
-	              0);                   // type
+	cv::threshold(view.frame_undist_rectified, // src
+	              view.frame_undist_rectified, // dst
+	              32.0,                        // thresh
+	              255.0,                       // maxval
+	              0);                          // type
 
 	// tracker_measurement_t m = {};
 
 	// Do blob detection with our masks.
 	//! @todo Re-enable masks.
-	t.sbd->detect(view.frame_rectified, // image
-	              view.keypoints,       // keypoints
-	              cv::noArray());       // mask
+	t.sbd->detect(view.frame_undist_rectified, // image
+	              view.keypoints,              // keypoints
+	              cv::noArray());              // mask
 
 
 	// Debug is wanted, draw the keypoints.
 	if (rgb.cols > 0) {
 		cv::drawKeypoints(
-		    view.frame_rectified,                       // image
+		    view.frame_undist_rectified,                // image
 		    view.keypoints,                             // keypoints
 		    rgb,                                        // outImage
 		    cv::Scalar(255, 0, 0),                      // color
