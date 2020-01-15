@@ -66,6 +66,7 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct oh_device *ohd = oh_device(xdev);
 	struct xrt_quat quat = {0.f, 0.f, 0.f, 1.f};
+	struct xrt_vec3 pos = {0.f, 0.f, 0.f};
 
 	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
 		OH_ERROR(ohd, "unknown input name");
@@ -77,11 +78,21 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	//! @todo adjust for latency here
 	*out_timestamp = now;
 	ohmd_device_getf(ohd->dev, OHMD_ROTATION_QUAT, &quat.x);
+	ohmd_device_getf(ohd->dev, OHMD_POSITION_VECTOR, &pos.x);
 	out_relation->pose.orientation = quat;
-	//! @todo assuming that orientation is actually currently tracked.
+	out_relation->pose.position = pos;
+	//! @todo assuming that orientation is actually currently tracked
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_POSITION_VALID_BIT);
+
+	// we assume the position is tracked if and only if it is not zero
+	if (pos.x != 0.0 || pos.y != 0.0 || pos.z != 0.0) {
+		out_relation->relation_flags = (enum xrt_space_relation_flags)(
+		    out_relation->relation_flags |
+		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+	}
 
 	bool have_ang_vel = false;
 	struct xrt_vec3 ang_vel;
