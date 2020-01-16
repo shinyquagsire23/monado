@@ -252,8 +252,8 @@ do_view_coverage(class Calibration &c,
 	for (const cv::Rect &brect : view.measured_bounds) {
 		draw_rect(rgb, brect, cv::Scalar(0, 64, 32));
 
-		coverage.emplace_back(cv::Point2f(brect.tl()));
-		coverage.emplace_back(cv::Point2f(brect.br()));
+		coverage.emplace_back(brect.tl());
+		coverage.emplace_back(brect.br());
 	}
 
 	// What area of the camera have we calibrated.
@@ -261,8 +261,8 @@ do_view_coverage(class Calibration &c,
 	draw_rect(rgb, view.pre_rect, cv::Scalar(0, 255, 255));
 
 	if (found) {
-		coverage.emplace_back(cv::Point2f(view.current_bounds.tl()));
-		coverage.emplace_back(cv::Point2f(view.current_bounds.br()));
+		coverage.emplace_back(view.current_bounds.tl());
+		coverage.emplace_back(view.current_bounds.br());
 
 		// New area we cover.
 		view.post_rect = cv::boundingRect(coverage);
