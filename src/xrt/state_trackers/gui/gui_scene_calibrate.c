@@ -172,10 +172,10 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 
 	igSeparator();
 	igCheckbox("Mirror on-screen preview", &cs->params.mirror_rgb_image);
-	igCheckbox("Save images (mono only)", &cs->params.save_images);
+	igCheckbox("Save images", &cs->params.save_images);
 
 	igSeparator();
-	igCheckbox("Load images (kinda mono only)", &cs->params.load.enabled);
+	igCheckbox("Load images (mono only)", &cs->params.load.enabled);
 	if (cs->params.load.enabled) {
 		igInputInt("# images", &cs->params.load.num_images, 1, 5, 0);
 	}
