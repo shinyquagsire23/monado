@@ -466,6 +466,9 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 		printf("Failed to read mat body: '%i' '%s'\n", (int)read, name);
 		return false;
 	}
+	if (m->empty()) {
+		m->create(header[1], header[2], temp.type());
+	}
 	if (temp.type() != m->type()) {
 		printf("Mat body type does not match: %i vs %i for '%s'\n",
 		       (int)temp.type(), (int)m->type(), name);
