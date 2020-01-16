@@ -524,13 +524,12 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	    *U_TYPED_CALLOC(t_stereo_camera_calibration);
 	StereoCameraCalibrationWrapper wrapped(data);
 
-	wrapped.l_calibration.image_size_pixels.w = image_size.width;
-	wrapped.l_calibration.image_size_pixels.h = image_size.height;
-	wrapped.r_calibration.image_size_pixels =
-	    wrapped.l_calibration.image_size_pixels;
+	wrapped.view[0].image_size_pixels.w = image_size.width;
+	wrapped.view[0].image_size_pixels.h = image_size.height;
+	wrapped.view[1].image_size_pixels = wrapped.view[0].image_size_pixels;
 
-	wrapped.l_calibration.use_fisheye = c.use_fisheye;
-	wrapped.r_calibration.use_fisheye = c.use_fisheye;
+	wrapped.view[0].use_fisheye = c.use_fisheye;
+	wrapped.view[1].use_fisheye = c.use_fisheye;
 
 
 	float rp_error = 0.0f;
@@ -541,35 +540,35 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 
 		// fisheye version
 		rp_error = cv::fisheye::stereoCalibrate(
-		    c.state.board_models_f64,             // objectPoints
-		    c.state.view[0].measured_f64,         // inagePoints1
-		    c.state.view[1].measured_f64,         // imagePoints2
-		    wrapped.l_calibration.intrinsics_mat, // cameraMatrix1
-		    wrapped.l_calibration.distortion_fisheye_mat, // distCoeffs1
-		    wrapped.r_calibration.intrinsics_mat, // cameraMatrix2
-		    wrapped.r_calibration.distortion_fisheye_mat, // distCoeffs2
-		    image_size,                                   // imageSize
-		    wrapped.camera_rotation_mat,                  // R
-		    wrapped.camera_translation_mat,               // T
+		    c.state.board_models_f64,               // objectPoints
+		    c.state.view[0].measured_f64,           // inagePoints1
+		    c.state.view[1].measured_f64,           // imagePoints2
+		    wrapped.view[0].intrinsics_mat,         // cameraMatrix1
+		    wrapped.view[0].distortion_fisheye_mat, // distCoeffs1
+		    wrapped.view[1].intrinsics_mat,         // cameraMatrix2
+		    wrapped.view[1].distortion_fisheye_mat, // distCoeffs2
+		    image_size,                             // imageSize
+		    wrapped.camera_rotation_mat,            // R
+		    wrapped.camera_translation_mat,         // T
 		    flags);
 	} else {
 		// non-fisheye version
 
 		// Insists on 32-bit floats for object points and image points
 		rp_error = cv::stereoCalibrate(
-		    c.state.board_models_f32,             // objectPoints
-		    c.state.view[0].measured_f32,         // inagePoints1
-		    c.state.view[1].measured_f32,         // imagePoints2,
-		    wrapped.l_calibration.intrinsics_mat, // cameraMatrix1
-		    wrapped.l_calibration.distortion_mat, // distCoeffs1
-		    wrapped.r_calibration.intrinsics_mat, // cameraMatrix2
-		    wrapped.r_calibration.distortion_mat, // distCoeffs2
-		    image_size,                           // imageSize
-		    wrapped.camera_rotation_mat,          // R
-		    wrapped.camera_translation_mat,       // T
-		    wrapped.camera_essential_mat,         // E
-		    wrapped.camera_fundamental_mat,       // F
-		    0);                                   // flags
+		    c.state.board_models_f32,       // objectPoints
+		    c.state.view[0].measured_f32,   // inagePoints1
+		    c.state.view[1].measured_f32,   // imagePoints2,
+		    wrapped.view[0].intrinsics_mat, // cameraMatrix1
+		    wrapped.view[0].distortion_mat, // distCoeffs1
+		    wrapped.view[1].intrinsics_mat, // cameraMatrix2
+		    wrapped.view[1].distortion_mat, // distCoeffs2
+		    image_size,                     // imageSize
+		    wrapped.camera_rotation_mat,    // R
+		    wrapped.camera_translation_mat, // T
+		    wrapped.camera_essential_mat,   // E
+		    wrapped.camera_fundamental_mat, // F
+		    0);                             // flags
 	}
 
 
@@ -588,18 +587,18 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	std::cout << "camera_fundamental:\n" << wrapped.camera_fundamental_mat << "\n";
 	}
 	std::cout << "#####\n";
-	std::cout << "l_calibration.intrinsics_mat:\n" << wrapped.l_calibration.intrinsics_mat << "\n";
+	std::cout << "view[0].intrinsics_mat:\n" << wrapped.view[0].intrinsics_mat << "\n";
 	if (c.use_fisheye) {
-		std::cout << "l_calibration.distortion_fisheye_mat:\n" << wrapped.l_calibration.distortion_fisheye_mat << "\n";
+		std::cout << "view[0].distortion_fisheye_mat:\n" << wrapped.view[0].distortion_fisheye_mat << "\n";
 	} else {
-		std::cout << "l_calibration.distortion_mat:\n" << wrapped.l_calibration.distortion_mat << "\n";
+		std::cout << "view[0].distortion_mat:\n" << wrapped.view[0].distortion_mat << "\n";
 	}
 	std::cout << "#####\n";
-	std::cout << "r_calibration.intrinsics_mat:\n" << wrapped.r_calibration.intrinsics_mat << "\n";
+	std::cout << "view[1].intrinsics_mat:\n" << wrapped.view[1].intrinsics_mat << "\n";
 	if (c.use_fisheye) {
-		std::cout << "r_calibration.distortion_fisheye_mat:\n" << wrapped.r_calibration.distortion_fisheye_mat << "\n";
+		std::cout << "view[1].distortion_fisheye_mat:\n" << wrapped.view[1].distortion_fisheye_mat << "\n";
 	} else {
-		std::cout << "r_calibration.distortion_mat:\n" << wrapped.r_calibration.distortion_mat << "\n";
+		std::cout << "view[1].distortion_mat:\n" << wrapped.view[1].distortion_mat << "\n";
 	}
 	// clang-format on
 
@@ -608,12 +607,12 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 
 	// Preview undistortion/rectification.
 	StereoRectificationMaps maps(data);
-	c.state.view[0].map1 = maps.l_rectify.remap_x;
-	c.state.view[0].map2 = maps.l_rectify.remap_y;
+	c.state.view[0].map1 = maps.view[0].rectify.remap_x;
+	c.state.view[0].map2 = maps.view[0].rectify.remap_y;
 	c.state.view[0].maps_valid = true;
 
-	c.state.view[1].map1 = maps.r_rectify.remap_x;
-	c.state.view[1].map2 = maps.r_rectify.remap_y;
+	c.state.view[1].map1 = maps.view[1].rectify.remap_x;
+	c.state.view[1].map2 = maps.view[1].rectify.remap_y;
 	c.state.view[1].maps_valid = true;
 }
 

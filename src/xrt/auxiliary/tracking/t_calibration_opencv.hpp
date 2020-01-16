@@ -72,16 +72,15 @@ struct CameraCalibrationWrapper
  */
 struct StereoCameraCalibrationWrapper
 {
-	CameraCalibrationWrapper l_calibration;
-	CameraCalibrationWrapper r_calibration;
+	CameraCalibrationWrapper view[2];
 	cv::Mat_<double> camera_translation_mat;
 	cv::Mat_<double> camera_rotation_mat;
 	cv::Mat_<double> camera_essential_mat;
 	cv::Mat_<double> camera_fundamental_mat;
 
 	StereoCameraCalibrationWrapper(t_stereo_camera_calibration &stereo)
-	    : l_calibration(stereo.l_calibration),
-	      r_calibration(stereo.r_calibration),
+	    : view{CameraCalibrationWrapper{stereo.view[0]},
+	           CameraCalibrationWrapper{stereo.view[1]}},
 	      camera_translation_mat(3, 1, &stereo.camera_translation[0]),
 	      camera_rotation_mat(3, 3, &stereo.camera_rotation[0][0]),
 	      camera_essential_mat(3, 3, &stereo.camera_essential[0][0]),
@@ -98,8 +97,8 @@ struct StereoCameraCalibrationWrapper
 
 		       camera_essential_mat.size() == cv::Size(3, 3) &&
 		       camera_fundamental_mat.size() == cv::Size(3, 3) &&
-		       l_calibration.isDataStorageValid() &&
-		       r_calibration.isDataStorageValid();
+		       view[0].isDataStorageValid() &&
+		       view[1].isDataStorageValid();
 	}
 };
 
@@ -132,22 +131,33 @@ calibration_get_undistort_map(
     cv::Mat new_camera_matrix_optional = cv::Mat());
 
 /*!
+ * @brief Rectification, rotation, projection data for a single view in a stereo
+ * pair.
+ *
+ * @see StereoRectificationMaps
+ */
+struct ViewRectification
+{
+	RemapPair rectify;
+	cv::Mat rotation_mat = {};
+	cv::Mat projection_mat = {};
+};
+
+/*!
  * @brief Rectification maps as well as transforms for a stereo camera.
  *
  * Computed in the constructor from saved calibration data.
  */
 struct StereoRectificationMaps
 {
-	RemapPair l_rectify;
-	cv::Mat l_rotation_mat = {};
-	cv::Mat l_projection_mat = {};
-
-	RemapPair r_rectify;
-	cv::Mat r_rotation_mat = {};
-	cv::Mat r_projection_mat = {};
+	ViewRectification view[2];
 
 	//! Disparity and position to camera world coordinates.
 	cv::Mat disparity_to_depth_mat = {};
 
+	/*!
+	 * @brief Constructor - produces rectification data for a stereo camera
+	 * based on calibration data.
+	 */
 	StereoRectificationMaps(t_stereo_camera_calibration &data);
 };

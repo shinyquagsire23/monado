@@ -108,18 +108,15 @@ struct t_camera_calibration
  */
 struct t_stereo_camera_calibration
 {
-	//! Calibration of left sensor
-	struct t_camera_calibration l_calibration;
-
-	//! Calibration of right sensor
-	struct t_camera_calibration r_calibration;
+	//! Calibration of individual views/sensor
+	struct t_camera_calibration view[2];
 
 	//! Source image size.
 	struct xrt_size image_size_pixels;
 
-	//! Translation from L to R in the stereo pair.
+	//! Translation from first to second in the stereo pair.
 	double camera_translation[3];
-	//! Rotation matrix from L to R in the stereo pair.
+	//! Rotation matrix from first to second in the stereo pair.
 	double camera_rotation[3][3];
 
 	//! Essential matrix.
