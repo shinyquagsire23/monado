@@ -553,6 +553,7 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 		    flags);
 	} else {
 		// non-fisheye version
+		int flags = 0;
 
 		// Insists on 32-bit floats for object points and image points
 		rp_error = cv::stereoCalibrate(
@@ -568,7 +569,7 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 		    wrapped.camera_translation_mat, // T
 		    wrapped.camera_essential_mat,   // E
 		    wrapped.camera_fundamental_mat, // F
-		    0);                             // flags
+		    flags);                         // flags
 	}
 
 
@@ -681,6 +682,13 @@ process_view_samples(class Calibration &c,
 		new_intrinsics_mat.at<double>(0, 2) = (cols - 1) / 2.0;
 		new_intrinsics_mat.at<double>(1, 2) = (rows - 1) / 2.0;
 	} else {
+		int flags = 0;
+
+		// Go all out.
+		flags |= cv::CALIB_THIN_PRISM_MODEL;
+		flags |= cv::CALIB_RATIONAL_MODEL;
+		flags |= cv::CALIB_TILTED_MODEL;
+
 		rp_error = cv::calibrateCamera( //
 		    c.state.board_models_f32,   // objectPoints
 		    view.measured_f32,          // imagePoints
@@ -688,7 +696,21 @@ process_view_samples(class Calibration &c,
 		    intrinsics_mat,             // cameraMatrix
 		    distortion_mat,             // distCoeffs
 		    cv::noArray(),              // rvecs
-		    cv::noArray());             // tvecs
+		    cv::noArray(),              // tvecs
+		    flags);                     // flags
+
+		// Currently see as much as possible of the original image.
+		float alpha = 1.0;
+
+		// Create the new camera matrix.
+		new_intrinsics_mat = cv::getOptimalNewCameraMatrix(
+		    intrinsics_mat, // cameraMatrix
+		    distortion_mat, // distCoeffs
+		    image_size,     // imageSize
+		    alpha,          // alpha
+		    cv::Size(),     // newImgSize
+		    NULL,           // validPixROI
+		    false);         // centerPrincipalPoint
 	}
 
 	P("CALIBRATION DONE RP ERROR %f", rp_error);
@@ -697,8 +719,8 @@ process_view_samples(class Calibration &c,
 	std::cout << "image_size: " << image_size << "\n";
 	std::cout << "rp_error: " << rp_error << "\n";
 	std::cout << "intrinsics_mat:\n" << intrinsics_mat << "\n";
+	std::cout << "new_intrinsics_mat:\n" << new_intrinsics_mat << "\n";
 	if (c.use_fisheye) {
-		std::cout << "new_intrinsics_mat:\n" << new_intrinsics_mat << "\n";
 		std::cout << "distortion_fisheye_mat:\n" << distortion_fisheye_mat << "\n";
 	} else {
 		std::cout << "distortion_mat:\n" << distortion_mat << "\n";
@@ -723,7 +745,7 @@ process_view_samples(class Calibration &c,
 		    intrinsics_mat,          // K
 		    distortion_mat,          // D
 		    cv::noArray(),           // R
-		    intrinsics_mat,          // P
+		    new_intrinsics_mat,      // P
 		    image_size,              // size
 		    CV_32FC1,                // m1type
 		    view.map1,               // map1
