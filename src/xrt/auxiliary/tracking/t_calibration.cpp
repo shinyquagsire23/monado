@@ -576,33 +576,8 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	// Validate that nothing has been re-allocated.
 	assert(wrapped.isDataStorageValid());
 
+	// Tell the user what has happened.
 	P("CALIBRATION DONE RP ERROR %f", rp_error);
-
-	// clang-format off
-	std::cout << "#####\n";
-	std::cout << "calibration rp_error: " << rp_error << "\n";
-	std::cout << "camera_rotation:\n" << wrapped.camera_rotation_mat << "\n";
-	std::cout << "camera_translation:\n" << wrapped.camera_translation_mat << "\n";
-	if (!c.use_fisheye) {
-	std::cout << "camera_essential:\n" << wrapped.camera_essential_mat << "\n";
-	std::cout << "camera_fundamental:\n" << wrapped.camera_fundamental_mat << "\n";
-	}
-	std::cout << "#####\n";
-	std::cout << "view[0].intrinsics_mat:\n" << wrapped.view[0].intrinsics_mat << "\n";
-	if (c.use_fisheye) {
-		std::cout << "view[0].distortion_fisheye_mat:\n" << wrapped.view[0].distortion_fisheye_mat << "\n";
-	} else {
-		std::cout << "view[0].distortion_mat:\n" << wrapped.view[0].distortion_mat << "\n";
-	}
-	std::cout << "#####\n";
-	std::cout << "view[1].intrinsics_mat:\n" << wrapped.view[1].intrinsics_mat << "\n";
-	if (c.use_fisheye) {
-		std::cout << "view[1].distortion_fisheye_mat:\n" << wrapped.view[1].distortion_fisheye_mat << "\n";
-	} else {
-		std::cout << "view[1].distortion_mat:\n" << wrapped.view[1].distortion_mat << "\n";
-	}
-	// clang-format on
-
 
 	t_file_save_raw_data_hack(&data);
 
@@ -615,6 +590,35 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	c.state.view[1].map1 = maps.view[1].rectify.remap_x;
 	c.state.view[1].map2 = maps.view[1].rectify.remap_y;
 	c.state.view[1].maps_valid = true;
+
+	// clang-format off
+	std::cout << "#####\n";
+	std::cout << "calibration rp_error: " << rp_error << "\n";
+	std::cout << "camera_rotation:\n" << wrapped.camera_rotation_mat << "\n";
+	std::cout << "camera_translation:\n" << wrapped.camera_translation_mat << "\n";
+	if (!c.use_fisheye) {
+		std::cout << "camera_essential:\n" << wrapped.camera_essential_mat << "\n";
+		std::cout << "camera_fundamental:\n" << wrapped.camera_fundamental_mat << "\n";
+	}
+	std::cout << "#####\n";
+	if (c.use_fisheye) {
+		std::cout << "view[0].distortion_fisheye_mat:\n" << wrapped.view[0].distortion_fisheye_mat << "\n";
+	} else {
+		std::cout << "view[0].distortion_mat:\n" << wrapped.view[0].distortion_mat << "\n";
+	}
+	std::cout << "view[0].intrinsics_mat:\n" << wrapped.view[0].intrinsics_mat << "\n";
+	std::cout << "view[0].projection_mat:\n" << maps.view[0].projection_mat << "\n";
+	std::cout << "view[0].rotation_mat:\n" << maps.view[0].rotation_mat << "\n";
+	std::cout << "#####\n";
+	if (c.use_fisheye) {
+		std::cout << "view[1].distortion_fisheye_mat:\n" << wrapped.view[1].distortion_fisheye_mat << "\n";
+	} else {
+		std::cout << "view[1].distortion_mat:\n" << wrapped.view[1].distortion_mat << "\n";
+	}
+	std::cout << "view[1].intrinsics_mat:\n" << wrapped.view[1].intrinsics_mat << "\n";
+	std::cout << "view[1].projection_mat:\n" << maps.view[1].projection_mat << "\n";
+	std::cout << "view[1].rotation_mat:\n" << maps.view[1].rotation_mat << "\n";
+	// clang-format on
 }
 
 static void
