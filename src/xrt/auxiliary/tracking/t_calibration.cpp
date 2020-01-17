@@ -192,6 +192,13 @@ ensure_buffers_are_allocated(class Calibration &c, int rows, int cols)
 		return;
 	}
 
+	// If our rgb is not allocated but our gray already is, alloc our rgb
+	// now. We will hit this path if we receive L8 format.
+	if (c.gray.cols == cols && c.gray.rows == rows) {
+		refresh_gui_frame(c, rows, cols);
+		return;
+	}
+
 	c.gray = cv::Mat(rows, cols, CV_8UC1, cv::Scalar(0));
 
 	refresh_gui_frame(c, rows, cols);
@@ -1043,6 +1050,21 @@ make_remap_view(class Calibration &c, struct xrt_frame *xf)
  */
 
 XRT_NO_INLINE static void
+process_frame_l8(class Calibration &c, struct xrt_frame *xf)
+{
+
+	int w = (int)xf->width;
+	int h = (int)xf->height;
+
+	cv::Mat data(h, w, CV_8UC1, xf->data, xf->stride);
+	c.gray = data;
+	ensure_buffers_are_allocated(c, data.rows, data.cols);
+	c.gui.frame->source_sequence = xf->source_sequence;
+
+	cv::cvtColor(data, c.gui.rgb, cv::COLOR_GRAY2RGB);
+}
+
+XRT_NO_INLINE static void
 process_frame_yuv(class Calibration &c, struct xrt_frame *xf)
 {
 
@@ -1154,6 +1176,7 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 	switch (xf->format) {
 	case XRT_FORMAT_YUV888: process_frame_yuv(c, xf); break;
 	case XRT_FORMAT_YUV422: process_frame_yuyv(c, xf); break;
+	case XRT_FORMAT_L8: process_frame_l8(c, xf); break;
 	default:
 		P("ERROR: Bad format '%s'", u_format_str(xf->format));
 		make_gui_str(c);
@@ -1260,8 +1283,9 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 		ret = t_debug_hsv_viewer_create(xfctx, *out_sink, out_sink);
 	}
 
-	// Ensure we only get yuv or yuyv frames.
-	u_sink_create_to_yuv_or_yuyv(xfctx, *out_sink, out_sink);
+	// Ensure we only get yuv, yuyv or l8 frames.
+	u_sink_create_to_yuv_yuyv_or_l8(xfctx, *out_sink, out_sink);
+
 
 	// Build the board model.
 	build_board_position(c);
