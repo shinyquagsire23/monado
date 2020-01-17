@@ -157,8 +157,6 @@ struct v4l2_fs
 	bool is_running;
 	bool print_spew;
 	bool print_debug;
-
-	char card[521];
 };
 
 /*!
@@ -317,7 +315,7 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 	 * Find quirks
 	 */
 	char *card = (char *)cap.card;
-	snprintf(vid->card, sizeof(vid->card), "%s", card);
+	snprintf(vid->base.name, sizeof(vid->base.name), "%s", card);
 
 	vid->quirks.ps4_cam =
 	    strcmp(card, "USB Camera-OV580: USB Camera-OV") == 0;
@@ -793,7 +791,7 @@ v4l2_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	// Start the variable tracking after we know what device we have.
 	// clang-format off
 	u_var_add_root(vid, "V4L2 Frameserver", true);
-	u_var_add_ro_text(vid, vid->card, "Card");
+	u_var_add_ro_text(vid, vid->base.name, "Card");
 	u_var_add_bool(vid, &vid->print_debug, "Debug");
 	u_var_add_bool(vid, &vid->print_spew, "Spew");
 	for (size_t i = 0; i < vid->num_states; i++) {

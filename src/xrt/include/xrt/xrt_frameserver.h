@@ -51,6 +51,11 @@ struct xrt_fs_mode
 struct xrt_fs
 {
 	/*!
+	 * Name of the frame server source.
+	 */
+	char name[512];
+
+	/*!
 	 * All frames produced by this frameserver is tagged with this id.
 	 */
 	uint64_t source_id;
