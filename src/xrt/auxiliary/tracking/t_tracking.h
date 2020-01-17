@@ -327,7 +327,8 @@ struct t_calibration_params
 {
 	//! Should we use fisheye version of the calibration functions.
 	bool use_fisheye;
-
+	//! Is the camera a stereo sbs camera, mostly for image loading.
+	bool stereo_sbs;
 	//! What type of pattern are we using for calibration.
 	enum t_board_pattern pattern;
 
@@ -382,7 +383,11 @@ struct t_calibration_params
 static inline void
 t_calibration_params_default(struct t_calibration_params *p)
 {
-	p->use_fisheye = true;
+	// Camera config.
+	p->use_fisheye = false;
+	p->stereo_sbs = true;
+
+	// Which board should we calibrate against.
 	p->pattern = T_BOARD_CHECKERS;
 
 	// Checker board.

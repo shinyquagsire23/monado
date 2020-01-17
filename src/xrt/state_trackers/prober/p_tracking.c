@@ -148,6 +148,9 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	// Put a queue before it to multi-thread the filter.
 	u_sink_queue_create(&fact->xfctx, xsink, &xsink);
 
+	// Hardcoded quirk sink.
+	u_sink_quirk_create(&fact->xfctx, xsink, true, true, &xsink);
+
 	// Start the stream now.
 	xrt_fs_stream_start(fact->xfs, xsink, 1);
 }

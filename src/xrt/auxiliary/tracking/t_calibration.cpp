@@ -138,6 +138,8 @@ public:
 
 	//! Is the camera fisheye.
 	bool use_fisheye = false;
+	//! From parameters.
+	bool stereo_sbs = false;
 
 	//! Should we clear the frame.
 	bool clear_frame = false;
@@ -571,7 +573,6 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 		    wrapped.camera_fundamental_mat, // F
 		    flags);                         // flags
 	}
-
 
 	// Validate that nothing has been re-allocated.
 	assert(wrapped.isDataStorageValid());
@@ -1117,9 +1118,9 @@ process_load_image(class Calibration &c, struct xrt_frame *xf)
 		refresh_gui_frame(c, c.gray.rows, c.gray.cols);
 		cv::cvtColor(c.gray, c.gui.rgb, cv::COLOR_GRAY2RGB);
 
-#if 0
-		xf->stereo_format = XRT_STEREO_FORMAT_SBS;
-#endif
+		if (c.stereo_sbs) {
+			xf->stereo_format = XRT_STEREO_FORMAT_SBS;
+		}
 
 		// Call the normal frame processing now.
 		make_calibration_frame(c, xf);
@@ -1202,6 +1203,7 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 
 	// Copy the parameters.
 	c.use_fisheye = params->use_fisheye;
+	c.stereo_sbs = params->stereo_sbs;
 	c.board.pattern = params->pattern;
 	switch (params->pattern) {
 	case T_BOARD_CHECKERS:

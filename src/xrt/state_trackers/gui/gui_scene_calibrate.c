@@ -39,6 +39,8 @@ struct calibration_scene
 	struct xrt_frame_context *xfctx;
 	struct xrt_fs *xfs;
 	size_t mode;
+
+	bool ps4_cam;
 };
 
 
@@ -168,14 +170,22 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igBegin("Params", NULL, 0);
 
 	// clang-format off
-	igCheckbox("Fisheye Camera", &cs->params.use_fisheye);
+	if (!cs->ps4_cam) {
+		igCheckbox("Fisheye Camera", &cs->params.use_fisheye);
+		igCheckbox("Stereo (Side-By-Side) Camera", &cs->params.stereo_sbs);
+	}
+	igCheckbox("PS4 Camera", &cs->ps4_cam);
+	if (cs->ps4_cam) {
+		cs->params.use_fisheye = false;
+		cs->params.stereo_sbs = true;
+	}
 
 	igSeparator();
 	igCheckbox("Mirror on-screen preview", &cs->params.mirror_rgb_image);
 	igCheckbox("Save images", &cs->params.save_images);
 
 	igSeparator();
-	igCheckbox("Load images (mono only)", &cs->params.load.enabled);
+	igCheckbox("Load images", &cs->params.load.enabled);
 	if (cs->params.load.enabled) {
 		igInputInt("# images", &cs->params.load.num_images, 1, 5, 0);
 	}
@@ -239,6 +249,8 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	u_sink_create_to_yuv_or_yuyv(cs->xfctx, cali, &cali);
 	u_sink_queue_create(cs->xfctx, cali, &cali);
 	u_sink_split_create(cs->xfctx, raw, cali, &cali);
+	u_sink_quirk_create(cs->xfctx, cali, cs->params.stereo_sbs, cs->ps4_cam,
+	                    &cali);
 
 	// Now that we have setup a node graph, start it.
 	xrt_fs_stream_start(cs->xfs, cali, cs->mode);
@@ -283,6 +295,26 @@ gui_scene_calibrate(struct gui_program *p,
 
 #ifdef XRT_HAVE_OPENCV
 	t_calibration_params_default(&cs->params);
+
+	/*
+	 * Pre-quirk some known cameras.
+	 */
+
+	// PS4 Camera.
+	if (strcmp(xfs->name, "USB Camera-OV580: USB Camera-OV") == 0) {
+		// It's one speedy camera. :)
+		cs->params.num_cooldown_frames = 240;
+		cs->params.num_wait_for = 10;
+		cs->params.stereo_sbs = true;
+		cs->ps4_cam = true;
+	}
+
+	// Valve Index and ELP Stereo Camera.
+	if (strcmp(xfs->name, "3D Camera: eTronVideo") == 0 ||
+	    strcmp(xfs->name, "3D USB Camera: 3D USB Camera") == 0) {
+		cs->params.stereo_sbs = true;
+		cs->params.use_fisheye = true;
+	}
 #endif
 	gui_scene_push_front(p, &cs->base);
 }

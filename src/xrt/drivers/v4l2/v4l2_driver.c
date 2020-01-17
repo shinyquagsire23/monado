@@ -410,29 +410,6 @@ v4l2_setup_userptr_buffer(struct v4l2_fs *vid,
  *
  */
 
-static void
-v4l2_quirk_apply_ps4(struct v4l2_fs *vid, struct v4l2_source_descriptor *desc)
-{
-	desc->offset = 32 + 64;
-	desc->base.stereo_format = XRT_STEREO_FORMAT_SBS;
-
-	switch (desc->stream.width) {
-	case 3448:
-		desc->base.width = 1280 * 2;
-		desc->base.height = 800;
-		break;
-	case 1748:
-		desc->base.width = 640 * 2;
-		desc->base.height = 400;
-		break;
-	case 898:
-		desc->base.width = 320 * 2;
-		desc->base.height = 192;
-		break;
-	default: break;
-	}
-}
-
 static struct v4l2_source_descriptor *
 v4l2_add_descriptor(struct v4l2_fs *vid)
 {
@@ -524,14 +501,6 @@ v4l2_list_modes_size(struct v4l2_fs *vid,
 	desc->base.format = format;
 	desc->base.width = desc->stream.width;
 	desc->base.height = desc->stream.height;
-
-	/*
-	 * Apply any quirks to the modes.
-	 */
-
-	if (vid->quirks.ps4_cam) {
-		v4l2_quirk_apply_ps4(vid, desc);
-	}
 }
 
 static void
