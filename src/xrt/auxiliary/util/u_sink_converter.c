@@ -370,6 +370,37 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 }
 
 static void
+receive_frame_yuv_yuyv_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
+{
+	struct u_sink_converter *s = (struct u_sink_converter *)xs;
+
+
+	switch (xf->format) {
+	case XRT_FORMAT_L8:
+	case XRT_FORMAT_YUV422:
+	case XRT_FORMAT_YUV888:
+		s->downstream->push_frame(s->downstream, xf);
+		return;
+#ifdef XRT_HAVE_JPEG
+	case XRT_FORMAT_MJPEG:
+		ensure_data(s, XRT_FORMAT_YUV888, xf->width, xf->height);
+		if (!from_MJPEG_to_YUV888(s, xf->size, xf->data)) {
+			return;
+		}
+		break;
+#endif
+	default:
+		fprintf(
+		    stderr,
+		    "error: Can not convert from '%s' to either YUV or YUYV\n",
+		    u_format_str(xf->format));
+		return;
+	}
+
+	push_data_downstream(s, xf);
+}
+
+static void
 receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 {
 	struct u_sink_converter *s = (struct u_sink_converter *)xs;
@@ -460,6 +491,22 @@ u_sink_create_to_r8g8b8_or_l8(struct xrt_frame_context *xfctx,
 #ifdef USE_TABLE
 	generate_lookup_YUV_to_RGBX();
 #endif
+
+	xrt_frame_context_add(xfctx, &s->node);
+
+	*out_xfs = &s->base;
+}
+
+void
+u_sink_create_to_yuv_yuyv_or_l8(struct xrt_frame_context *xfctx,
+                                struct xrt_frame_sink *downstream,
+                                struct xrt_frame_sink **out_xfs)
+{
+	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
+	s->base.push_frame = receive_frame_yuv_yuyv_or_l8;
+	s->node.break_apart = break_apart;
+	s->node.destroy = destroy;
+	s->downstream = downstream;
 
 	xrt_frame_context_add(xfctx, &s->node);
 
