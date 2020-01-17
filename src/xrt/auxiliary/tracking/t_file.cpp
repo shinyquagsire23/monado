@@ -162,8 +162,8 @@ StereoRectificationMaps::StereoRectificationMaps(
 	} else {
 		// Have the same principal point on both.
 		int flags = cv::CALIB_ZERO_DISPARITY;
-		// The function performs the default scaling.
-		float alpha = -1.0f;
+		// Get all of the pixels from the camera.
+		float alpha = 1.0f;
 
 		cv::stereoRectify(
 		    wrapped.view[0].intrinsics_mat, // cameraMatrix1
