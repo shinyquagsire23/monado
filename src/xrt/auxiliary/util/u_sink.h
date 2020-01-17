@@ -38,6 +38,13 @@ u_sink_queue_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink **out_xfs);
 
 void
+u_sink_quirk_create(struct xrt_frame_context *xfctx,
+                    struct xrt_frame_sink *downstream,
+                    bool stereo_sbs,
+                    bool ps4_cam,
+                    struct xrt_frame_sink **out_xfs);
+
+void
 u_sink_split_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink *left,
                     struct xrt_frame_sink *right,
