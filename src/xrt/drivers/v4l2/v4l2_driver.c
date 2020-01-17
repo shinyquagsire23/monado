@@ -272,6 +272,11 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 		return ret;
 	}
 
+	char *card = (char *)cap.card;
+	snprintf(vid->base.name, sizeof(vid->base.name), "%s", card);
+
+	V_DEBUG(vid, "V4L2 device: '%s'", vid->base.name);
+
 	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
 		// not a video device
 		V_ERROR(vid, "error: Is not a capture device.");
@@ -314,9 +319,6 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 	/*
 	 * Find quirks
 	 */
-	char *card = (char *)cap.card;
-	snprintf(vid->base.name, sizeof(vid->base.name), "%s", card);
-
 	vid->quirks.ps4_cam =
 	    strcmp(card, "USB Camera-OV580: USB Camera-OV") == 0;
 
