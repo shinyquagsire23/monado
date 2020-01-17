@@ -110,14 +110,18 @@ StereoRectificationMaps::StereoRectificationMaps(
 	 * Here cv::noArray() means zero distortion.
 	 */
 	if (data.view[0].use_fisheye) {
+#if 0
 		//! @todo for some reason this looks weird?
+		// Alpha of 1.0 kinda works, not really.
+		int flags = cv::CALIB_ZERO_DISPARITY;
+		double balance = 0.0; // aka alpha.
+		double fov_scale = 1.0;
+
 		cv::fisheye::stereoRectify(
 		    wrapped.view[0].intrinsics_mat,         // K1
 		    wrapped.view[0].distortion_fisheye_mat, // D1
-		    /* cv::noArray(), */                    // D1
 		    wrapped.view[1].intrinsics_mat,         // K2
 		    wrapped.view[1].distortion_fisheye_mat, // D2
-		    /* cv::noArray(), */                    // D2
 		    image_size,                             // imageSize
 		    wrapped.camera_rotation_mat,            // R
 		    wrapped.camera_translation_mat,         // tvec
@@ -126,9 +130,41 @@ StereoRectificationMaps::StereoRectificationMaps(
 		    view[0].projection_mat,                 // P1
 		    view[1].projection_mat,                 // P2
 		    disparity_to_depth_mat,                 // Q
-		    cv::CALIB_ZERO_DISPARITY                // flags
-		);
+		    flags,                                  // flags
+		    cv::Size(),                             // newImageSize
+		    balance,                                // balance
+		    fov_scale);                             // fov_scale
+#else
+		// Regular stereoRectify function instead, without distortion.
+		int flags = cv::CALIB_ZERO_DISPARITY;
+		// The function performs the default scaling.
+		float alpha = -1.0f;
+
+		cv::stereoRectify(
+		    wrapped.view[0].intrinsics_mat, // cameraMatrix1
+		    cv::noArray(),                  // distCoeffs1
+		    wrapped.view[1].intrinsics_mat, // cameraMatrix2
+		    cv::noArray(),                  // distCoeffs2
+		    image_size,                     // imageSize
+		    wrapped.camera_rotation_mat,    // R
+		    wrapped.camera_translation_mat, // T
+		    view[0].rotation_mat,           // R1
+		    view[1].rotation_mat,           // R2
+		    view[0].projection_mat,         // P1
+		    view[1].projection_mat,         // P2
+		    disparity_to_depth_mat,         // Q
+		    flags,                          // flags
+		    alpha,                          // alpha
+		    cv::Size(),                     // newImageSize
+		    NULL,                           // validPixROI1
+		    NULL);                          // validPixROI2
+#endif
 	} else {
+		// Have the same principal point on both.
+		int flags = cv::CALIB_ZERO_DISPARITY;
+		// The function performs the default scaling.
+		float alpha = -1.0f;
+
 		cv::stereoRectify(
 		    wrapped.view[0].intrinsics_mat, // cameraMatrix1
 		    /* cv::noArray(), */            // distCoeffs1
@@ -144,9 +180,9 @@ StereoRectificationMaps::StereoRectificationMaps(
 		    view[0].projection_mat,         // P1
 		    view[1].projection_mat,         // P2
 		    disparity_to_depth_mat,         // Q
-		    cv::CALIB_ZERO_DISPARITY,       // flags
-		    -1,                             // alpha
-		    image_size,                     // newImageSize
+		    flags,                          // flags
+		    alpha,                          // alpha
+		    cv::Size(),                     // newImageSize
 		    NULL,                           // validPixROI1
 		    NULL);                          // validPixROI2
 	}
