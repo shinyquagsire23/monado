@@ -149,7 +149,11 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	u_sink_queue_create(&fact->xfctx, xsink, &xsink);
 
 	// Hardcoded quirk sink.
-	u_sink_quirk_create(&fact->xfctx, xsink, true, true, &xsink);
+	struct u_sink_quirk_params qp;
+	U_ZERO(&qp);
+	qp.stereo_sbs = true;
+	qp.ps4_cam = true;
+	u_sink_quirk_create(&fact->xfctx, xsink, &qp, &xsink);
 
 	// Start the stream now.
 	xrt_fs_stream_start(fact->xfs, xsink, 1);

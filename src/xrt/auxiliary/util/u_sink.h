@@ -16,6 +16,12 @@ extern "C" {
 #endif
 
 
+struct u_sink_quirk_params
+{
+	bool stereo_sbs;
+	bool ps4_cam;
+};
+
 void
 u_sink_create_format_converter(struct xrt_frame_context *xfctx,
                                enum xrt_format f,
@@ -50,8 +56,7 @@ u_sink_queue_create(struct xrt_frame_context *xfctx,
 void
 u_sink_quirk_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink *downstream,
-                    bool stereo_sbs,
-                    bool ps4_cam,
+                    struct u_sink_quirk_params *params,
                     struct xrt_frame_sink **out_xfs);
 
 void

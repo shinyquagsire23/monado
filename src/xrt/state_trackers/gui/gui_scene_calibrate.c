@@ -249,8 +249,13 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	u_sink_create_to_yuv_or_yuyv(cs->xfctx, cali, &cali);
 	u_sink_queue_create(cs->xfctx, cali, &cali);
 	u_sink_split_create(cs->xfctx, raw, cali, &cali);
-	u_sink_quirk_create(cs->xfctx, cali, cs->params.stereo_sbs, cs->ps4_cam,
-	                    &cali);
+
+	// Just after the camera create a quirk stream.
+	struct u_sink_quirk_params qp;
+	U_ZERO(&qp);
+	qp.stereo_sbs = cs->params.stereo_sbs;
+	qp.ps4_cam = cs->ps4_cam;
+	u_sink_quirk_create(cs->xfctx, cali, &qp, &cali);
 
 	// Now that we have setup a node graph, start it.
 	xrt_fs_stream_start(cs->xfs, cali, cs->mode);

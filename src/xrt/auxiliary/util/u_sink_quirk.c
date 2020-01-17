@@ -84,8 +84,7 @@ destroy(struct xrt_frame_node *node)
 void
 u_sink_quirk_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink *downstream,
-                    bool stereo_sbs,
-                    bool ps4_cam,
+                    struct u_sink_quirk_params *params,
                     struct xrt_frame_sink **out_xfs)
 {
 	struct u_sink_quirk *q = U_TYPED_CALLOC(struct u_sink_quirk);
@@ -95,8 +94,8 @@ u_sink_quirk_create(struct xrt_frame_context *xfctx,
 	q->node.destroy = destroy;
 	q->downstream = downstream;
 
-	q->stereo_sbs = stereo_sbs;
-	q->ps4_cam = ps4_cam;
+	q->stereo_sbs = params->stereo_sbs;
+	q->ps4_cam = params->ps4_cam;
 
 	*out_xfs = &q->base;
 }
