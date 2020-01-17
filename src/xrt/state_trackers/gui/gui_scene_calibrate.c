@@ -275,16 +275,14 @@ gui_scene_calibrate(struct gui_program *p,
 {
 	struct calibration_scene *cs = U_TYPED_CALLOC(struct calibration_scene);
 
-#ifdef XRT_HAVE_OPENCV
-	struct t_calibration_params def = T_CALIBRATION_DEFAULT_PARAMS;
-	cs->params = def;
-#endif
-
 	cs->base.render = scene_render_select;
 	cs->base.destroy = scene_destroy;
 	cs->xfctx = xfctx;
 	cs->xfs = xfs;
 	cs->mode = mode;
 
+#ifdef XRT_HAVE_OPENCV
+	t_calibration_params_default(&cs->params);
+#endif
 	gui_scene_push_front(p, &cs->base);
 }

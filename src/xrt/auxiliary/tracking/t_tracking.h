@@ -299,29 +299,6 @@ t_psvr_create(struct xrt_frame_context *xfctx,
  *
  */
 
-#define T_CALIBRATION_DEFAULT_PARAMS                                           \
-	{                                                                      \
-		false, T_BOARD_CHECKERS,                                       \
-		    {                                                          \
-		        9, 7, 0.025f, true, 5,                                 \
-		    },                                                         \
-		    {                                                          \
-		        9,                                                     \
-		        7,                                                     \
-		        0.025f,                                                \
-		    },                                                         \
-		    {                                                          \
-		        5,                                                     \
-		        17,                                                    \
-		        0.02f,                                                 \
-		    },                                                         \
-		    {                                                          \
-		        false,                                                 \
-		        20,                                                    \
-		    },                                                         \
-		    20, 5, 20, 1, false, true                                  \
-	}
-
 /*!
  * Board pattern type.
  */
@@ -398,6 +375,47 @@ struct t_calibration_params
 
 	bool save_images;
 };
+
+/*!
+ * Sets the calibration parameters to the their default values.
+ */
+static inline void
+t_calibration_params_default(struct t_calibration_params *p)
+{
+	p->use_fisheye = true;
+	p->pattern = T_BOARD_CHECKERS;
+
+	// Checker board.
+	p->checkers.cols = 9;
+	p->checkers.rows = 7;
+	p->checkers.size_meters = 0.025f;
+	p->checkers.subpixel_enable = true;
+	p->checkers.subpixel_size = 5;
+
+	// Symmetrical circles.
+	p->circles.cols = 9;
+	p->circles.rows = 7;
+	p->circles.distance_meters = 0.025f;
+
+	// Asymmetrical circles.
+	p->asymmetric_circles.cols = 5;
+	p->asymmetric_circles.rows = 7;
+	p->asymmetric_circles.diagonal_distance_meters = 0.02f;
+
+	// Loading of images.
+	p->load.enabled = false;
+	p->load.num_images = 20;
+
+	// Frame collection info.
+	p->num_cooldown_frames = 20;
+	p->num_wait_for = 5;
+	p->num_collect_total = 20;
+	p->num_collect_restart = 1;
+
+	// Misc.
+	p->mirror_rgb_image = false;
+	p->save_images = true;
+}
 
 /*!
  * @brief Create the camera calibration frame sink.
