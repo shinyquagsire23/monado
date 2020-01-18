@@ -36,6 +36,7 @@ t_file_save_raw_data_hack(struct t_stereo_camera_calibration *data);
  */
 struct CameraCalibrationWrapper
 {
+	t_camera_calibration &base;
 	xrt_size &image_size_pixels;
 	cv::Mat_<double> intrinsics_mat;
 	cv::Mat_<double> distortion_mat;
@@ -43,7 +44,7 @@ struct CameraCalibrationWrapper
 	bool &use_fisheye;
 
 	CameraCalibrationWrapper(t_camera_calibration &calib)
-	    : image_size_pixels(calib.image_size_pixels),
+	    : base(calib), image_size_pixels(calib.image_size_pixels),
 	      intrinsics_mat(3, 3, &calib.intrinsics[0][0]),
 	      distortion_mat(XRT_DISTORTION_MAX_DIM, 1, &calib.distortion[0]),
 	      distortion_fisheye_mat(4, 1, &calib.distortion_fisheye[0]),
@@ -57,9 +58,16 @@ struct CameraCalibrationWrapper
 	isDataStorageValid() const noexcept
 	{
 		return intrinsics_mat.size() == cv::Size(3, 3) &&
+		       (double *)intrinsics_mat.data ==
+		           &(base.intrinsics[0][0]) &&
+
 		       distortion_mat.size() ==
 		           cv::Size(1, XRT_DISTORTION_MAX_DIM) &&
-		       distortion_fisheye_mat.size() == cv::Size(1, 4);
+		       (double *)distortion_mat.data == &(base.distortion[0]) &&
+
+		       distortion_fisheye_mat.size() == cv::Size(1, 4) &&
+		       (double *)distortion_fisheye_mat.data ==
+		           &(base.distortion_fisheye[0]);
 	}
 };
 
@@ -72,6 +80,7 @@ struct CameraCalibrationWrapper
  */
 struct StereoCameraCalibrationWrapper
 {
+	t_stereo_camera_calibration &base;
 	CameraCalibrationWrapper view[2];
 	cv::Mat_<double> camera_translation_mat;
 	cv::Mat_<double> camera_rotation_mat;
@@ -79,8 +88,8 @@ struct StereoCameraCalibrationWrapper
 	cv::Mat_<double> camera_fundamental_mat;
 
 	StereoCameraCalibrationWrapper(t_stereo_camera_calibration &stereo)
-	    : view{CameraCalibrationWrapper{stereo.view[0]},
-	           CameraCalibrationWrapper{stereo.view[1]}},
+	    : base(stereo), view{CameraCalibrationWrapper{stereo.view[0]},
+	                         CameraCalibrationWrapper{stereo.view[1]}},
 	      camera_translation_mat(3, 1, &stereo.camera_translation[0]),
 	      camera_rotation_mat(3, 3, &stereo.camera_rotation[0][0]),
 	      camera_essential_mat(3, 3, &stereo.camera_essential[0][0]),
@@ -93,10 +102,21 @@ struct StereoCameraCalibrationWrapper
 	isDataStorageValid() const noexcept
 	{
 		return camera_translation_mat.size() == cv::Size(1, 3) &&
+		       (double *)camera_translation_mat.data ==
+		           &base.camera_translation[0] &&
+
 		       camera_rotation_mat.size() == cv::Size(3, 3) &&
+		       (double *)camera_rotation_mat.data ==
+		           &base.camera_rotation[0][0] &&
 
 		       camera_essential_mat.size() == cv::Size(3, 3) &&
+		       (double *)camera_essential_mat.data ==
+		           &base.camera_essential[0][0] &&
+
 		       camera_fundamental_mat.size() == cv::Size(3, 3) &&
+		       (double *)camera_fundamental_mat.data ==
+		           &base.camera_fundamental[0][0] &&
+
 		       view[0].isDataStorageValid() &&
 		       view[1].isDataStorageValid();
 	}
