@@ -84,8 +84,9 @@ enum xrt_format
 enum xrt_stereo_format
 {
 	XRT_STEREO_FORMAT_NONE,
-	XRT_STEREO_FORMAT_SBS, //!< Side by side
-	XRT_STEREO_FORMAT_OAU, //!< Over & Under
+	XRT_STEREO_FORMAT_SBS,         //!< Side by side.
+	XRT_STEREO_FORMAT_INTERLEAVED, //!< Interleaved pixels.
+	XRT_STEREO_FORMAT_OAU,         //!< Over & Under.
 };
 
 /*!
