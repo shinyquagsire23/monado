@@ -139,6 +139,25 @@ YUV422_to_R8G8B8(const uint8_t *input, uint8_t *dst)
 	dst[5] = rgb2[2];
 }
 
+inline static void
+YUV444_to_R8G8B8(const uint8_t *input, uint8_t *dst)
+{
+	uint8_t y = input[0];
+	uint8_t u = input[1];
+	uint8_t v = input[2];
+
+#ifdef USE_TABLE
+	uint8_t *rgb = (uint8_t *)&lookup_YUV_to_RGBX[y][u][v];
+#else
+	uint32_t rgbv = YUV444_to_RGBX8888(y, u, v);
+	uint8_t *rgb = (uint8_t *)&rgbv;
+#endif
+
+	dst[0] = rgb[0];
+	dst[1] = rgb[1];
+	dst[2] = rgb[2];
+}
+
 static void
 from_YUV422_to_R8G8B8(struct u_sink_converter *s,
                       uint32_t w,
@@ -154,6 +173,25 @@ from_YUV422_to_R8G8B8(struct u_sink_converter *s,
 			src = src + (y * stride) + (x * 2);
 			dst = dst + (y * s->frame->stride) + (x * 3);
 			YUV422_to_R8G8B8(src, dst);
+		}
+	}
+}
+
+static void
+from_YUV888_to_R8G8B8(struct u_sink_converter *s,
+                      uint32_t w,
+                      uint32_t h,
+                      size_t stride,
+                      const uint8_t *data)
+{
+	for (uint32_t y = 0; y < h; y++) {
+		for (uint32_t x = 0; x < w; x++) {
+			const uint8_t *src = data;
+			uint8_t *dst = s->frame->data;
+
+			src = src + (y * stride) + (x * 3);
+			dst = dst + (y * s->frame->stride) + (x * 3);
+			YUV444_to_R8G8B8(src, dst);
 		}
 	}
 }
@@ -321,6 +359,11 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		from_YUV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
 		                      xf->data);
 		break;
+	case XRT_FORMAT_YUV888:
+		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
+		from_YUV888_to_R8G8B8(s, xf->width, xf->height, xf->stride,
+		                      xf->data);
+		break;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
@@ -350,6 +393,11 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 	case XRT_FORMAT_YUV422:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
 		from_YUV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
+		                      xf->data);
+		break;
+	case XRT_FORMAT_YUV888:
+		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
+		from_YUV888_to_R8G8B8(s, xf->width, xf->height, xf->stride,
 		                      xf->data);
 		break;
 #ifdef XRT_HAVE_JPEG
