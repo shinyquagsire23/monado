@@ -26,6 +26,12 @@
 
 #include <assert.h>
 
+enum camera_type
+{
+	CAM_REGULAR,
+	CAM_PS4,
+	CAM_LEAP_MOTION,
+};
 
 struct calibration_scene
 {
@@ -40,7 +46,7 @@ struct calibration_scene
 	struct xrt_fs *xfs;
 	size_t mode;
 
-	bool ps4_cam;
+	int camera_type;
 };
 
 
@@ -170,14 +176,21 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igBegin("Params", NULL, 0);
 
 	// clang-format off
-	if (!cs->ps4_cam) {
+	igComboStr("Type", &cs->camera_type, "Regular\0PS4\0Leap Motion Controller\0\0", -1);
+
+	switch (cs->camera_type) {
+	case CAM_REGULAR:
 		igCheckbox("Fisheye Camera", &cs->params.use_fisheye);
 		igCheckbox("Stereo (Side-By-Side) Camera", &cs->params.stereo_sbs);
-	}
-	igCheckbox("PS4 Camera", &cs->ps4_cam);
-	if (cs->ps4_cam) {
+		break;
+	case CAM_PS4:
 		cs->params.use_fisheye = false;
 		cs->params.stereo_sbs = true;
+		break;
+	case CAM_LEAP_MOTION:
+		cs->params.use_fisheye = true;
+		cs->params.stereo_sbs = true;
+		break;
 	}
 
 	igSeparator();
@@ -246,14 +259,16 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 
 	t_calibration_stereo_create(cs->xfctx, &cs->params, &cs->status, rgb,
 	                            &cali);
-	u_sink_queue_create(cs->xfctx, cali, &cali);
 	u_sink_split_create(cs->xfctx, raw, cali, &cali);
+	u_sink_deinterleaver_create(cs->xfctx, cali, &cali);
+	u_sink_queue_create(cs->xfctx, cali, &cali);
 
 	// Just after the camera create a quirk stream.
 	struct u_sink_quirk_params qp;
 	U_ZERO(&qp);
 	qp.stereo_sbs = cs->params.stereo_sbs;
-	qp.ps4_cam = cs->ps4_cam;
+	qp.ps4_cam = cs->camera_type == CAM_PS4;
+	qp.leap_motion = cs->camera_type == CAM_LEAP_MOTION;
 	u_sink_quirk_create(cs->xfctx, cali, &qp, &cali);
 
 	// Now that we have setup a node graph, start it.
@@ -310,15 +325,25 @@ gui_scene_calibrate(struct gui_program *p,
 		cs->params.num_cooldown_frames = 240;
 		cs->params.num_wait_for = 10;
 		cs->params.stereo_sbs = true;
-		cs->ps4_cam = true;
+		cs->camera_type = CAM_PS4;
+	}
+
+	// Leap Motion.
+	if (strcmp(xfs->name, "Leap Motion Controller") == 0) {
+		cs->params.use_fisheye = true;
+		cs->params.stereo_sbs = true;
+		cs->camera_type = CAM_LEAP_MOTION;
 	}
 
 	// Valve Index and ELP Stereo Camera.
 	if (strcmp(xfs->name, "3D Camera: eTronVideo") == 0 ||
 	    strcmp(xfs->name, "3D USB Camera: 3D USB Camera") == 0) {
-		cs->params.stereo_sbs = true;
 		cs->params.use_fisheye = true;
+		cs->params.stereo_sbs = true;
+		cs->camera_type = CAM_REGULAR;
 	}
+
+
 #endif
 	gui_scene_push_front(p, &cs->base);
 }
