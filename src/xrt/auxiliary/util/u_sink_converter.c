@@ -373,7 +373,8 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		break;
 #endif
 	default:
-		fprintf(stderr, "error: Can not convert from '%s'\n",
+		fprintf(stderr,
+		        "error: Can not convert from '%s' to R8G8B8 or L8!\n",
 		        u_format_str(xf->format));
 		return;
 	}
@@ -409,7 +410,7 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		break;
 #endif
 	default:
-		fprintf(stderr, "error: Can not convert from '%s'\n",
+		fprintf(stderr, "error: Can not convert from '%s' to R8G8B8!\n",
 		        u_format_str(xf->format));
 		return;
 	}
@@ -438,10 +439,10 @@ receive_frame_yuv_yuyv_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		break;
 #endif
 	default:
-		fprintf(
-		    stderr,
-		    "error: Can not convert from '%s' to either YUV or YUYV\n",
-		    u_format_str(xf->format));
+		fprintf(stderr,
+		        "error: Can not convert from '%s' to either YUV, YUYV "
+		        "or L8!\n",
+		        u_format_str(xf->format));
 		return;
 	}
 
@@ -470,7 +471,7 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 	default:
 		fprintf(
 		    stderr,
-		    "error: Can not convert from '%s' to either YUV or YUYV\n",
+		    "error: Can not convert from '%s' to either YUV or YUYV!\n",
 		    u_format_str(xf->format));
 		return;
 	}
