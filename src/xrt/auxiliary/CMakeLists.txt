@@ -73,6 +73,7 @@ set(UTIL_SOURCE_FILES
 	util/u_json.h
 	util/u_sink.h
 	util/u_sink_converter.c
+	util/u_sink_deinterleaver.c
 	util/u_sink_queue.c
 	util/u_sink_quirk.c
 	util/u_sink_split.c

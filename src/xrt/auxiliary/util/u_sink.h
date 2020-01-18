@@ -32,6 +32,11 @@ u_sink_create_to_yuv_or_yuyv(struct xrt_frame_context *xfctx,
                              struct xrt_frame_sink *downstream,
                              struct xrt_frame_sink **out_xfs);
 
+void
+u_sink_deinterleaver_create(struct xrt_frame_context *xfctx,
+                            struct xrt_frame_sink *downstream,
+                            struct xrt_frame_sink **out_xfs);
+
 bool
 u_sink_queue_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink *downstream,
