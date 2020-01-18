@@ -20,6 +20,7 @@ struct u_sink_quirk_params
 {
 	bool stereo_sbs;
 	bool ps4_cam;
+	bool leap_motion;
 };
 
 void

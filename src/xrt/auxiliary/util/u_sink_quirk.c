@@ -21,6 +21,7 @@ struct u_sink_quirk
 
 	bool stereo_sbs;
 	bool ps4_cam;
+	bool leap_motion;
 };
 
 static void
@@ -33,6 +34,12 @@ quirk_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 
 	if (q->stereo_sbs) {
 		xf->stereo_format = XRT_STEREO_FORMAT_SBS;
+	}
+
+	if (q->leap_motion) {
+		xf->stereo_format = XRT_STEREO_FORMAT_INTERLEAVED;
+		xf->format = XRT_FORMAT_L8;
+		xf->width *= 2;
 	}
 
 	if (q->ps4_cam) {
@@ -96,6 +103,7 @@ u_sink_quirk_create(struct xrt_frame_context *xfctx,
 
 	q->stereo_sbs = params->stereo_sbs;
 	q->ps4_cam = params->ps4_cam;
+	q->leap_motion = params->leap_motion;
 
 	*out_xfs = &q->base;
 }
