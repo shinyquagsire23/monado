@@ -168,6 +168,12 @@ public:
  */
 
 static void
+to_stdout(const char *name, const cv::Mat &mat)
+{
+	std::cout << name << " " << mat.size() << ":\n" << mat << "\n";
+}
+
+static void
 refresh_gui_frame(class Calibration &c, int rows, int cols)
 {
 	// Also dereferences the old frame.
@@ -581,13 +587,8 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 		    flags);                         // flags
 	}
 
-	// Validate that nothing has been re-allocated.
-	assert(wrapped.isDataStorageValid());
-
 	// Tell the user what has happened.
 	P("CALIBRATION DONE RP ERROR %f", rp_error);
-
-	t_file_save_raw_data_hack(&data);
 
 	// Preview undistortion/rectification.
 	StereoRectificationMaps maps(data);
@@ -602,31 +603,37 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	// clang-format off
 	std::cout << "#####\n";
 	std::cout << "calibration rp_error: " << rp_error << "\n";
-	std::cout << "camera_rotation:\n" << wrapped.camera_rotation_mat << "\n";
-	std::cout << "camera_translation:\n" << wrapped.camera_translation_mat << "\n";
+	to_stdout("camera_rotation", wrapped.camera_rotation_mat);
+	to_stdout("camera_translation", wrapped.camera_translation_mat);
 	if (!c.use_fisheye) {
-		std::cout << "camera_essential:\n" << wrapped.camera_essential_mat << "\n";
-		std::cout << "camera_fundamental:\n" << wrapped.camera_fundamental_mat << "\n";
+		to_stdout("camera_essential", wrapped.camera_essential_mat);
+		to_stdout("camera_fundamental", wrapped.camera_fundamental_mat);
 	}
+	to_stdout("disparity_to_depth", maps.disparity_to_depth_mat);
 	std::cout << "#####\n";
 	if (c.use_fisheye) {
-		std::cout << "view[0].distortion_fisheye_mat:\n" << wrapped.view[0].distortion_fisheye_mat << "\n";
+		to_stdout("view[0].distortion_fisheye", wrapped.view[0].distortion_fisheye_mat);
 	} else {
-		std::cout << "view[0].distortion_mat:\n" << wrapped.view[0].distortion_mat << "\n";
+		to_stdout("view[0].distortion", wrapped.view[0].distortion_mat);
 	}
-	std::cout << "view[0].intrinsics_mat:\n" << wrapped.view[0].intrinsics_mat << "\n";
-	std::cout << "view[0].projection_mat:\n" << maps.view[0].projection_mat << "\n";
-	std::cout << "view[0].rotation_mat:\n" << maps.view[0].rotation_mat << "\n";
+	to_stdout("view[0].intrinsics", wrapped.view[0].intrinsics_mat);
+	to_stdout("view[0].projection", maps.view[0].projection_mat);
+	to_stdout("view[0].rotation", maps.view[0].rotation_mat);
 	std::cout << "#####\n";
 	if (c.use_fisheye) {
-		std::cout << "view[1].distortion_fisheye_mat:\n" << wrapped.view[1].distortion_fisheye_mat << "\n";
+		to_stdout("view[1].distortion_fisheye", wrapped.view[1].distortion_fisheye_mat);
 	} else {
-		std::cout << "view[1].distortion_mat:\n" << wrapped.view[1].distortion_mat << "\n";
+		to_stdout("view[1].distortion", wrapped.view[1].distortion_mat);
 	}
-	std::cout << "view[1].intrinsics_mat:\n" << wrapped.view[1].intrinsics_mat << "\n";
-	std::cout << "view[1].projection_mat:\n" << maps.view[1].projection_mat << "\n";
-	std::cout << "view[1].rotation_mat:\n" << maps.view[1].rotation_mat << "\n";
+	to_stdout("view[1].intrinsics", wrapped.view[1].intrinsics_mat);
+	to_stdout("view[1].projection", maps.view[1].projection_mat);
+	to_stdout("view[1].rotation", maps.view[1].rotation_mat);
 	// clang-format on
+
+	// Validate that nothing has been re-allocated.
+	assert(wrapped.isDataStorageValid());
+
+	t_file_save_raw_data_hack(&data);
 }
 
 static void
