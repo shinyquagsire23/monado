@@ -404,7 +404,7 @@ t_calibration_params_default(struct t_calibration_params *p)
 
 	// Asymmetrical circles.
 	p->asymmetric_circles.cols = 5;
-	p->asymmetric_circles.rows = 7;
+	p->asymmetric_circles.rows = 17;
 	p->asymmetric_circles.diagonal_distance_meters = 0.02f;
 
 	// Loading of images.
