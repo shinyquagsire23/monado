@@ -512,12 +512,16 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 */
 
 	if (frameEndInfo->layers == NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
 		                 "(frameEndInfo->layers == NULL)");
+	}
+	if (frameEndInfo->layers[0] == NULL) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[0] == NULL)");
 	}
 	if (frameEndInfo->layers[0]->type !=
 	    XR_TYPE_COMPOSITION_LAYER_PROJECTION) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
 		                 "(frameEndInfo->layers[0]->type)");
 	}
 
