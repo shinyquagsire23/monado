@@ -333,6 +333,7 @@ xrt_prober_match_string(struct xrt_prober *xp,
 struct xrt_auto_prober
 {
 	struct xrt_device *(*lelo_dallas_autoprobe)(struct xrt_auto_prober *xap,
+	                                            bool no_hmds,
 	                                            struct xrt_prober *xp);
 	void (*destroy)(struct xrt_auto_prober *xdev);
 };

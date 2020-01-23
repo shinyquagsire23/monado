@@ -69,7 +69,9 @@ psvr_prober_destroy(struct xrt_auto_prober *p)
 }
 
 static struct xrt_device *
-psvr_prober_autoprobe(struct xrt_auto_prober *xap, struct xrt_prober *xp)
+psvr_prober_autoprobe(struct xrt_auto_prober *xap,
+                      bool no_hmds,
+                      struct xrt_prober *xp)
 {
 	struct psvr_prober *ppsvr = psvr_prober(xap);
 	struct hid_device_info *info_control = NULL;
@@ -77,6 +79,11 @@ psvr_prober_autoprobe(struct xrt_auto_prober *xap, struct xrt_prober *xp)
 	struct hid_device_info *cur_dev = NULL;
 	struct hid_device_info *devs = NULL;
 	struct xrt_device *dev = NULL;
+
+	// Do not look for the PSVR if we are not looking for HMDs.
+	if (no_hmds) {
+		return NULL;
+	}
 
 	devs = hid_enumerate(PSVR_VID, PSVR_PID);
 	cur_dev = devs;
