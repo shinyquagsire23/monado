@@ -558,7 +558,7 @@ vive_sensors_get_imu_range_report(struct vive_device *d)
 	if (report.gyro_range > 4 || report.accel_range > 4) {
 		VIVE_ERROR("Gyroscope or accelerometer range too large.");
 		VIVE_ERROR("Gyroscope: %d", report.gyro_range);
-		VIVE_ERROR("Aaccelerometer: %d", report.accel_range);
+		VIVE_ERROR("Accelerometer: %d", report.accel_range);
 		return -1;
 	}
 
