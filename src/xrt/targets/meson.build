@@ -24,6 +24,10 @@ if 'hydra' in drivers
 	driver_libs += [lib_drv_hydra]
 endif
 
+if 'ns' in drivers
+	driver_libs += [lib_drv_ns]
+endif
+
 if 'ohmd' in drivers
 	driver_libs += [lib_drv_ohmd]
 endif

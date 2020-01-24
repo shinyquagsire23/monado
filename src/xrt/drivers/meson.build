@@ -39,6 +39,18 @@ lib_drv_hydra = static_library(
 	build_by_default: 'hydra' in drivers,
 )
 
+lib_drv_ns = static_library(
+	'drv_ns',
+	files(
+		'north_star/ns_hmd.c',
+		'north_star/ns_interface.h',
+		'north_star/ns_prober.c',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux],
+	build_by_default: 'ns' in drivers,
+)
+
 lib_drv_ohmd = static_library(
 	'drv_ohmd',
 	files(

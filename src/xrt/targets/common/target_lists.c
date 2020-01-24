@@ -22,6 +22,10 @@
 #include "ohmd/oh_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_NS
+#include "north_star/ns_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_PSMV
 #include "psmv/psmv_interface.h"
 #endif
@@ -89,8 +93,13 @@ xrt_auto_prober_creator target_auto_list[] = {
 #endif
 
 #ifdef XRT_BUILD_DRIVER_OHMD
-    // OpenHMD second last as we want to override it with native drivers.
+    // OpenHMD almost as the end as we want to override it with native drivers.
     oh_create_auto_prober,
+#endif
+
+#ifdef XRT_BUILD_DRIVER_NS
+    // North star driver here for now.
+    ns_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_DUMMY

@@ -80,6 +80,7 @@ cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "
 option(BUILD_WITH_HDK "Enable HDK driver" ON)
 option(BUILD_WITH_PSMV "Enable Playstation Move driver" ON)
 option(BUILD_WITH_HYDRA "Enable Hydra driver" ON)
+option(BUILD_WITH_NS "Enable North Star driver" ON)
 
 ###
 # Flags
@@ -137,6 +138,10 @@ if(BUILD_WITH_OPENHMD)
 
 	# Drivers enabled with OpenHMD.
 	set(BUILD_DRIVER_OHMD TRUE)
+endif()
+
+if(BUILD_WITH_NS)
+	set(BUILD_DRIVER_NS TRUE)
 endif()
 
 if(BUILD_WITH_PSVR)

@@ -131,6 +131,9 @@ drivers = get_option('drivers')
 if 'ohmd' in drivers
 	openhmd_required = true
 endif
+if 'ns' in drivers
+	ns_required = true
+endif
 if 'psvr' in drivers
 	hidapi_required = true
 endif
@@ -145,6 +148,12 @@ endif
 openhmd = dependency('openhmd', required: openhmd_required)
 hidapi  = dependency('hidapi-libusb', required: hidapi_required)
 v4l2    = dependency('libv4l2', required: v4l2_required)
+
+if 'auto' in drivers or 'ns' in drivers
+	if 'ns' not in drivers
+		drivers += ['ns']
+	endif
+endif
 
 if openhmd.found() and ('auto' in drivers or 'ohmd' in drivers)
 	if 'ohmd' not in drivers
