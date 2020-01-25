@@ -20,6 +20,8 @@
 #include "xrt/xrt_tracking.h"
 #include "xrt/xrt_frameserver.h"
 
+#include "math/m_api.h"
+
 #include "gui_common.h"
 #include "gui_imgui.h"
 
@@ -52,6 +54,32 @@ conv_rgb_u8_to_f32(struct xrt_colour_rgb_u8 *from,
 	to->r = from->r / 255.0f;
 	to->g = from->g / 255.0f;
 	to->b = from->b / 255.0f;
+}
+
+static void
+handle_draggable_vec3_f32(const char *name, struct xrt_vec3 *v)
+{
+	float min = -256.0f;
+	float max = 256.0f;
+
+	igDragFloat3(name, (float *)v, 0.005f, min, max, "%+f", 1.0f);
+}
+
+static void
+handle_draggable_quat(const char *name, struct xrt_quat *q)
+{
+	float min = -1.0f;
+	float max = 1.0f;
+
+	igDragFloat4(name, (float *)q, 0.005f, min, max, "%+f", 1.0f);
+
+	// Avoid invalid
+	if (q->x == 0.0f && q->y == 0.0f && q->z == 0.0f && q->w == 0.0f) {
+		q->w = 1.0f;
+	}
+
+	// And make sure it's a unit rotation.
+	math_quat_normalize(q);
 }
 
 struct draw_state
@@ -150,6 +178,15 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 	case U_VAR_KIND_VEC3_F32:
 		igInputFloat3(name, (float *)ptr, "%+f", i_flags);
 		break;
+	case U_VAR_KIND_POSE: {
+		struct xrt_pose *pose = (struct xrt_pose *)ptr;
+		char text[512];
+		snprintf(text, 512, "%s.position", name);
+		handle_draggable_vec3_f32(text, &pose->position);
+		snprintf(text, 512, "%s.orientation", name);
+		handle_draggable_quat(text, &pose->orientation);
+		break;
+	}
 	case U_VAR_KIND_RO_TEXT: igText("%s: '%s'", name, (char *)ptr); break;
 	case U_VAR_KIND_RO_I32:
 		igInputInt(name, (int *)ptr, 1, 10, ro_i_flags);
