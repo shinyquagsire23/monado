@@ -187,21 +187,6 @@ u_var_visit(u_var_root_cb enter_cb,
 		add_var(obj, (void *)ptr, U_VAR_KIND_##ENUM, c_name);          \
 	}
 
-ADD_FUNC(bool, bool, BOOL);
-ADD_FUNC(rgb_u8, struct xrt_colour_rgb_u8, RGB_U8);
-ADD_FUNC(rgb_f32, struct xrt_colour_rgb_f32, RGB_F32);
-ADD_FUNC(u8, uint8_t, U8);
-ADD_FUNC(i32, int32_t, I32);
-ADD_FUNC(f32, float, F32);
-ADD_FUNC(vec3_i32, struct xrt_vec3_i32, VEC3_I32);
-ADD_FUNC(vec3_f32, struct xrt_vec3, VEC3_F32);
-ADD_FUNC(sink, struct xrt_frame_sink *, SINK);
-ADD_FUNC(ro_text, const char, RO_TEXT);
-ADD_FUNC(ro_i32, int32_t, RO_I32);
-ADD_FUNC(ro_f32, float, RO_F32);
-ADD_FUNC(ro_vec3_i32, struct xrt_vec3_i32, RO_VEC3_I32);
-ADD_FUNC(ro_vec3_f32, struct xrt_vec3, RO_VEC3_F32);
-ADD_FUNC(ro_quat_f32, struct xrt_quat, RO_QUAT_F32);
-ADD_FUNC(gui_header, bool, GUI_HEADER);
+U_VAR_ADD_FUNCS()
 
 #undef ADD_FUNC
