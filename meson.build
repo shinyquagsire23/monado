@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 project(
@@ -139,7 +139,7 @@ if 'v4l2' in drivers
 endif
 
 if 'auto' in drivers
-	drivers += ['psmv', 'hydra', 'hdk']
+	drivers += ['dummy', 'hdk', 'hydra', 'psmv']
 endif
 
 openhmd = dependency('openhmd', required: openhmd_required)

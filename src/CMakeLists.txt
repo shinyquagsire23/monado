@@ -1,9 +1,13 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 
 if(BUILD_TRACKING)
 	set(XRT_BUILD_TRACKING TRUE)
+endif()
+
+if(BUILD_DRIVER_DUMMY)
+	set(XRT_BUILD_DRIVER_DUMMY TRUE)
 endif()
 
 if(BUILD_DRIVER_HDK)

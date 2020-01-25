@@ -1,7 +1,19 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 drv_include = include_directories('.')
+
+lib_drv_dummy = static_library(
+	'drv_dummy',
+	files(
+		'dummy/dummy_hmd.c',
+		'dummy/dummy_interface.h',
+		'dummy/dummy_prober.c',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux],
+	build_by_default: 'dummy' in drivers,
+)
 
 lib_drv_hdk = static_library(
 	'drv_hdk',

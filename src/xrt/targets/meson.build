@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 driver_libs = []
@@ -10,6 +10,10 @@ endif
 
 if libjpeg.found()
 	driver_deps += [libjpeg]
+endif
+
+if 'dummy' in drivers
+	driver_libs += [lib_drv_dummy]
 endif
 
 if 'hdk' in drivers

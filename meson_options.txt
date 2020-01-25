@@ -1,9 +1,9 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 option('drivers',
 	type: 'array',
-	choices: ['auto', 'hdk', 'hydra', 'ohmd', 'psmv', 'psvr', 'v4l2', 'vive'],
+	choices: ['auto', 'dummy', 'hdk', 'hydra', 'ohmd', 'psmv', 'psvr', 'v4l2', 'vive'],
 	value: ['auto'],
 	description: 'Set of drivers to build')
 

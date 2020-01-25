@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 
@@ -10,6 +10,18 @@ include_directories(
 
 set(ENABLED_HEADSET_DRIVERS)
 set(ENABLED_DRIVERS)
+
+if(BUILD_DRIVER_DUMMY)
+	set(DUMMY_SOURCE_FILES
+		dummy/dummy_hmd.c
+		dummy/dummy_interface.h
+		dummy/dummy_prober.c
+		)
+
+	# Use OBJECT to not create a archive, since it just gets in the way.
+	add_library(drv_dummy OBJECT ${DUMMY_SOURCE_FILES})
+	list(APPEND ENABLED_HEADSET_DRIVERS dummy)
+endif()
 
 if(BUILD_DRIVER_HDK)
 	set(HDK_SOURCE_FILES

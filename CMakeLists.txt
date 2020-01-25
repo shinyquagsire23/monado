@@ -1,4 +1,4 @@
-# Copyright 2018-2019, Collabora, Ltd.
+# Copyright 2018-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 cmake_minimum_required(VERSION 3.10.0)
@@ -71,6 +71,7 @@ cmake_dependent_option(BUILD_WITH_OPENCV "Enable OpenCV backend" ON "OpenCV_FOUN
 cmake_dependent_option(BUILD_WITH_LIBUVC "Enable libuvc video driver" ON "LIBUVC_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_FFMPEG "Enable ffmpeg testing video driver" ON "FFMPEG_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_PSVR "Enable PSVR HMD driver" ON "HIDAPI_FOUND" OFF)
+option(BUILD_WITH_DUMMY "Enable dummy driver" ON)
 cmake_dependent_option(BUILD_WITH_VIVE "Enable Vive driver" ON "ZLIB_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND" OFF)
@@ -125,6 +126,10 @@ if(BUILD_WITH_SDL2)
 
 	# SDL2 based gui
 	set(BUILD_TARGET_GUI TRUE)
+endif()
+
+if(BUILD_WITH_DUMMY)
+	set(BUILD_DRIVER_DUMMY TRUE)
 endif()
 
 if(BUILD_WITH_OPENHMD)

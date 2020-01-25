@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ######
@@ -18,6 +18,10 @@ endif()
 
 if(BUILD_WITH_JPEG)
 	list(APPEND DRIVER_LIBRARIES ${JPEG_LIBRARIES})
+endif()
+
+if(BUILD_DRIVER_DUMMY)
+	list(APPEND DRIVER_OBJECTS $<TARGET_OBJECTS:drv_dummy>)
 endif()
 
 if(BUILD_DRIVER_HDK)

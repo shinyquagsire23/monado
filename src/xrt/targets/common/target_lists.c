@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,6 +9,10 @@
 #include "targets_enabled_drivers.h"
 
 #include "target_lists.h"
+
+#ifdef XRT_BUILD_DRIVER_DUMMY
+#include "dummy/dummy_interface.h"
+#endif
 
 #ifdef XRT_BUILD_DRIVER_HDK
 #include "hdk/hdk_interface.h"
@@ -87,6 +91,11 @@ xrt_auto_prober_creator target_auto_list[] = {
 #ifdef XRT_BUILD_DRIVER_OHMD
     // OpenHMD last as we want to override it with native drivers.
     oh_create_auto_prober,
+#endif
+
+#ifdef XRT_BUILD_DRIVER_DUMMY
+    // Dummy headset driver last.
+    dummy_create_auto_prober,
 #endif
     NULL, // Terminate
 };

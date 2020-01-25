@@ -1,8 +1,9 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 conf_data = configuration_data()
 conf_data.set('XRT_BUILD_TRACKING', build_tracking)
+conf_data.set('XRT_BUILD_DRIVER_DUMMY', 'dummy' in drivers)
 conf_data.set('XRT_BUILD_DRIVER_HDK', 'hdk' in drivers)
 conf_data.set('XRT_BUILD_DRIVER_HYDRA', 'hydra' in drivers)
 conf_data.set('XRT_BUILD_DRIVER_OHMD', 'ohmd' in drivers)
