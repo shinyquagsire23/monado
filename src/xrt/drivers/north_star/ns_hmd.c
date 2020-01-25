@@ -42,6 +42,11 @@ struct ns_hmd
 	bool print_debug;
 };
 
+struct ns_mesh
+{
+	struct u_uv_generator base;
+};
+
 
 /*
  *
@@ -147,6 +152,42 @@ ns_hmd_get_view_pose(struct xrt_device *xdev,
 	*out_pose = pose;
 }
 
+
+/*
+ *
+ * Mesh functions.
+ *
+ */
+
+static void
+ns_mesh_calc(
+    struct u_uv_generator *gen, int view, float u, float v, float result[6])
+{
+	struct ns_mesh *mesh = (struct ns_mesh *)gen;
+	(void)mesh; // Noop
+
+	result[0] = u;
+	result[1] = v;
+	result[2] = u;
+	result[3] = v;
+	result[4] = u;
+	result[5] = v;
+}
+
+static void
+ns_mesh_destroy(struct u_uv_generator *gen)
+{
+	struct ns_mesh *mesh = (struct ns_mesh *)gen;
+	(void)mesh; // Noop
+}
+
+
+/*
+ *
+ * Create function.
+ *
+ */
+
 struct xrt_device *
 ns_hmd_create(bool print_spew, bool print_debug)
 {
@@ -189,10 +230,14 @@ ns_hmd_create(bool print_spew, bool print_debug)
 	u_var_add_root(ns, "North Star", true);
 	u_var_add_pose(ns, &ns->pose, "pose");
 
-	if (ns->base.hmd->distortion.preferred == XRT_DISTORTION_MODEL_NONE) {
-		// Setup the distortion mesh.
-		u_distortion_mesh_none(ns->base.hmd);
-	}
+	// Setup the distortion mesh.
+	struct ns_mesh mesh;
+	U_ZERO(&mesh);
+	mesh.base.calc = ns_mesh_calc;
+	mesh.base.destroy = ns_mesh_destroy;
+
+	// Do the mesh generation.
+	u_distortion_mesh_from_gen(&mesh.base, 2, ns->base.hmd);
 
 	return &ns->base;
 }
