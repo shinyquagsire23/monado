@@ -213,6 +213,7 @@ comp_distortion_init(struct comp_distortion *d,
 
 	d->ubo_vp_data[0].flip_y = flip_y;
 	d->ubo_vp_data[1].flip_y = flip_y;
+	d->quirk_draw_lines = c->settings.debug.wireframe;
 
 	comp_distortion_init_buffers(d, c);
 	comp_distortion_update_uniform_buffer_warp(d, c);

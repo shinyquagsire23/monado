@@ -67,6 +67,12 @@ struct comp_settings
 	uint32_t width;
 	uint32_t height;
 
+	struct
+	{
+		//! Display wireframe instead of solid triangles.
+		bool wireframe;
+	} debug;
+
 	//! Not used with direct mode.
 	bool fullscreen;
 
