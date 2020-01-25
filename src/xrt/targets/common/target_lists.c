@@ -89,7 +89,7 @@ xrt_auto_prober_creator target_auto_list[] = {
 #endif
 
 #ifdef XRT_BUILD_DRIVER_OHMD
-    // OpenHMD last as we want to override it with native drivers.
+    // OpenHMD second last as we want to override it with native drivers.
     oh_create_auto_prober,
 #endif
 

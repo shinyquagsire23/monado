@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -22,6 +22,7 @@
 
 DEBUG_GET_ONCE_BOOL_OPTION(oh_spew, "OH_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(oh_debug, "OH_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_BOOL_OPTION(oh_external, "OH_EXTERNAL_DRIVER", false)
 
 struct oh_prober
 {
@@ -70,6 +71,7 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 	/* Then loop */
 	for (int i = 0; i < num_devices; i++) {
 		int device_class = 0, device_flags = 0;
+		const char *prod = NULL;
 
 		ohmd_list_geti(ohp->ctx, i, OHMD_DEVICE_CLASS, &device_class);
 		ohmd_list_geti(ohp->ctx, i, OHMD_DEVICE_FLAGS, &device_flags);
@@ -84,6 +86,16 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 			OH_DEBUG(ohp,
 			         "Rejecting device idx %i, is a NULL device.",
 			         i);
+			continue;
+		}
+
+		prod = ohmd_list_gets(ohp->ctx, i, OHMD_PRODUCT);
+		if (strcmp(prod, "External Device") == 0 &&
+		    !debug_get_bool_option_oh_external()) {
+			OH_DEBUG(
+			    ohp,
+			    "Rejecting device idx %i, is a External device.",
+			    i);
 			continue;
 		}
 
