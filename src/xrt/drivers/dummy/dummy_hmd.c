@@ -188,6 +188,7 @@ dummy_hmd_create(void)
 
 	// Setup variable tracker.
 	u_var_add_root(dh, "Dummy HMD", true);
+	u_var_add_pose(dh, &dh->pose, "pose");
 
 	if (dh->base.hmd->distortion.preferred == XRT_DISTORTION_MODEL_NONE) {
 		// Setup the distortion mesh.
