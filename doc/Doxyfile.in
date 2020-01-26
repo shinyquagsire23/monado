@@ -4,11 +4,10 @@ QUIET                  = YES
 PROJECT_NAME           = "OpenXR Runtime"
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/
 INPUT                  = \
-     @CMAKE_CURRENT_SOURCE_DIR@/../README.md \
      @CMAKE_CURRENT_SOURCE_DIR@/../src/xrt \
      @CMAKE_CURRENT_SOURCE_DIR@
 
-USE_MDFILE_AS_MAINPAGE = @CMAKE_CURRENT_SOURCE_DIR@/../README.md
+USE_MDFILE_AS_MAINPAGE = @CMAKE_CURRENT_SOURCE_DIR@/mainpage.md
 
 RECURSIVE              = YES
 EXCLUDE                = @CMAKE_CURRENT_SOURCE_DIR@/../src/xrt/generated
