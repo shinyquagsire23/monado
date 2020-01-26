@@ -28,8 +28,11 @@ DEBUG_GET_ONCE_NUM_OPTION(mesh_size, "XRT_MESH_SIZE", 64)
  *
  */
 
-typedef void (*func_cb)(
-    struct u_uv_generator *gen, int view, float x, float y, float result[6]);
+typedef void (*func_cb)(struct u_uv_generator *gen,
+                        int view,
+                        float x,
+                        float y,
+                        struct u_uv_triplet *result);
 
 static int
 index_for(int row, int col, int stride, int offset)
@@ -81,7 +84,8 @@ run_func(struct u_uv_generator *gen,
 				// Make the position in the range of [-1, 1]
 				verts[i + 0] = u * 2.0 - 1.0;
 				verts[i + 1] = v * 2.0 - 1.0;
-				func(gen, view, u, v, &verts[i + 2]);
+				func(gen, view, u, v,
+				     (struct u_uv_triplet *)&verts[i + 2]);
 
 				i += stride_in_floats;
 			}
@@ -167,7 +171,7 @@ panotools_calc(struct u_uv_generator *generator,
                int view,
                float u,
                float v,
-               float result[6])
+               struct u_uv_triplet *result)
 {
 	struct panotools_state *state = (struct panotools_state *)generator;
 	const struct u_panotools_values val = *state->vals[view];
@@ -199,12 +203,9 @@ panotools_calc(struct u_uv_generator *generator,
 	b_uv = add(b_uv, val.lens_center);
 	b_uv = div(b_uv, val.viewport_size);
 
-	result[0] = r_uv.x;
-	result[1] = r_uv.y;
-	result[2] = g_uv.x;
-	result[3] = g_uv.y;
-	result[4] = b_uv.x;
-	result[5] = b_uv.y;
+	result->r = r_uv;
+	result->g = g_uv;
+	result->b = b_uv;
 }
 
 static void
@@ -259,14 +260,14 @@ no_distortion_calc(struct u_uv_generator *generator,
                    int view,
                    float u,
                    float v,
-                   float result[6])
+                   struct u_uv_triplet *result)
 {
-	result[0] = u;
-	result[1] = v;
-	result[2] = u;
-	result[3] = v;
-	result[4] = u;
-	result[5] = v;
+	result->r.x = u;
+	result->r.y = v;
+	result->g.x = u;
+	result->g.y = v;
+	result->b.x = u;
+	result->b.y = v;
 }
 
 void

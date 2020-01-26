@@ -160,24 +160,27 @@ ns_hmd_get_view_pose(struct xrt_device *xdev,
  */
 
 static void
-ns_mesh_calc(
-    struct u_uv_generator *gen, int view, float u, float v, float result[6])
+ns_mesh_calc(struct u_uv_generator *generator,
+             int view,
+             float u,
+             float v,
+             struct u_uv_triplet *result)
 {
-	struct ns_mesh *mesh = (struct ns_mesh *)gen;
+	struct ns_mesh *mesh = (struct ns_mesh *)generator;
 	(void)mesh; // Noop
 
-	result[0] = u;
-	result[1] = v;
-	result[2] = u;
-	result[3] = v;
-	result[4] = u;
-	result[5] = v;
+	result->r.x = u;
+	result->r.y = v;
+	result->g.x = u;
+	result->g.y = v;
+	result->b.x = u;
+	result->b.y = v;
 }
 
 static void
-ns_mesh_destroy(struct u_uv_generator *gen)
+ns_mesh_destroy(struct u_uv_generator *generator)
 {
-	struct ns_mesh *mesh = (struct ns_mesh *)gen;
+	struct ns_mesh *mesh = (struct ns_mesh *)generator;
 	(void)mesh; // Noop
 }
 

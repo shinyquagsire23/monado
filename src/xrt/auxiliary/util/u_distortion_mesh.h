@@ -37,7 +37,18 @@ struct u_panotools_values
 };
 
 /*!
+ * Three UV pairs, one for each color channel in the source image.
  *
+ * @ingroup aux_util
+ */
+struct u_uv_triplet
+{
+	struct xrt_vec2 r, g, b;
+};
+
+/*!
+ * Generator struct for building meshes, can be implemented by drivers for
+ * special meshes.
  *
  * @ingroup aux_util
  */
@@ -47,13 +58,13 @@ struct u_uv_generator
 	             int view,
 	             float u,
 	             float v,
-	             float result[6]);
+	             struct u_uv_triplet *result);
 
 	void (*destroy)(struct u_uv_generator *);
 };
 
 /*!
- * Given a callback and a user_ptr generates num_views meshes.
+ * Given a @ref u_uv_generator generates num_views meshes, populates target.
  *
  * @ingroup aux_util
  */
