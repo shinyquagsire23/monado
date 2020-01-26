@@ -38,7 +38,7 @@ struct xrt_device *
 ns_hmd_create(bool print_spew, bool print_debug);
 
 /*!
- * @dir drivers/ns
+ * @dir drivers/north_star
  *
  * @brief @ref drv_ns files.
  */
