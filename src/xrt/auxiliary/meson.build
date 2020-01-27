@@ -92,6 +92,7 @@ lib_aux_math = static_library(
 		'math/m_optics.c',
 		'math/m_quatexpmap.cpp',
 		'math/m_vec2.h',
+		'math/m_vec3.h',
 	),
 	include_directories: xrt_include,
 	dependencies: [eigen3],

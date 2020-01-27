@@ -9,6 +9,7 @@ set(MATH_SOURCE_FILES
 	math/m_optics.c
 	math/m_quatexpmap.cpp
 	math/m_vec2.h
+	math/m_vec3.h
 	)
 
 set(OGL_SOURCE_FILES
