@@ -4,11 +4,10 @@ QUIET                  = YES
 PROJECT_NAME           = "OpenXR Runtime"
 OUTPUT_DIRECTORY       = @CURBUILDDIR@/
 INPUT                  = \
-     @SRCDIR@/README.md \
      @SRCDIR@/src/xrt \
-     @SRCDIR@
+     @SRCDIR@/doc
 
-USE_MDFILE_AS_MAINPAGE = @SRCDIR@/README.md
+USE_MDFILE_AS_MAINPAGE = @SRCDIR@/doc/mainpage.md
 
 RECURSIVE              = YES
 EXCLUDE                = @SRCDIR@/src/external \
