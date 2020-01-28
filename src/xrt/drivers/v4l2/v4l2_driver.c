@@ -337,6 +337,18 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 		    "exposure_absolute");
 	}
 
+	if (strcmp(card, "3D USB Camera: 3D USB Camera") == 0) {
+		// The experimented best controls to best track things.
+		v4l2_add_control_state(vid, V4L2_CID_AUTO_WHITE_BALANCE, 0, 2,
+		                       "auto_white_balance");
+		v4l2_add_control_state(vid, V4L2_CID_WHITE_BALANCE_TEMPERATURE,
+		                       6500, 2, "white_balance_temperature");
+		v4l2_add_control_state(vid, V4L2_CID_EXPOSURE_AUTO, 1, 2,
+		                       "exposure_auto");
+		v4l2_add_control_state(vid, V4L2_CID_EXPOSURE_ABSOLUTE, 10, 2,
+		                       "exposure_absolute");
+	}
+
 	// Done
 	return 0;
 }
