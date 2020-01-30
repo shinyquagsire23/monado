@@ -257,6 +257,8 @@ math_pose_transform(const struct xrt_pose *transform,
 /*!
  * Apply a rigid-body transformation to a point.
  *
+ * The input point and output may be the same pointer.
+ *
  * @relates xrt_pose
  * @relates xrt_vec3
  * @ingroup aux_math
