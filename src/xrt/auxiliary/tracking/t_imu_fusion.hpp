@@ -17,12 +17,22 @@
 #include "tracking/t_lowpass_vector.hpp"
 #include "math/m_api.h"
 #include "util/u_time.h"
+#include "util/u_debug.h"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 #include "flexkalman/EigenQuatExponentialMap.h"
 
+DEBUG_GET_ONCE_BOOL_OPTION(simple_imu_debug, "SIMPLE_IMU_DEBUG", false)
+
+#define SIMPLE_IMU_DEBUG(MSG)                                                  \
+	do {                                                                   \
+		if (debug_) {                                                  \
+			printf("SimpleIMU(%p): " MSG "\n",                     \
+			       (const void *)this);                            \
+		}                                                              \
+	} while (0)
 
 namespace xrt_fusion {
 class SimpleIMUFusion
@@ -34,8 +44,11 @@ public:
 	 * accelerometer should affect the orientation each second.
 	 */
 	explicit SimpleIMUFusion(double gravity_rate = 0.9)
-	    : gravity_scale_(gravity_rate)
-	{}
+	    : gravity_scale_(gravity_rate),
+	      debug_(debug_get_bool_option_simple_imu_debug())
+	{
+		SIMPLE_IMU_DEBUG("Creating instance");
+	}
 
 	bool
 	valid() const noexcept
@@ -77,6 +90,10 @@ public:
 	handleGyro(Eigen::Vector3d const &gyro, timepoint_ns timestamp)
 	{
 		if (!started_) {
+
+			SIMPLE_IMU_DEBUG(
+			    "Discarding gyro report before first usable accel "
+			    "report");
 			return false;
 		}
 		time_duration_ns delta_ns =
@@ -84,6 +101,8 @@ public:
 		        ? 1e6
 		        : timestamp - last_gyro_timestamp_;
 		if (delta_ns > 1e10) {
+
+			SIMPLE_IMU_DEBUG("Clamping integration period");
 			// Limit integration to 1/10th of a second
 			// Does not affect updating the last gyro timestamp.
 			delta_ns = 1e10;
@@ -93,6 +112,9 @@ public:
 		Eigen::Vector3d incRot = gyro * dt;
 		// Crude handling of "approximately zero"
 		if (incRot.squaredNorm() < 1.e-8) {
+
+			SIMPLE_IMU_DEBUG(
+			    "Discarding gyro data that is approximately zero");
 			return false;
 		}
 
@@ -125,6 +147,10 @@ public:
 			auto diff = std::abs(accel.norm() - MATH_GRAVITY_M_S2);
 			if (diff > 1.) {
 				// We're moving, don't start it now.
+
+				SIMPLE_IMU_DEBUG(
+				    "Can't start tracker with this accel "
+				    "sample: we're moving too much.");
 				return false;
 			}
 
@@ -135,6 +161,8 @@ public:
 			accel_filter_.addSample(accel, timestamp);
 			gravity_filter_.addSample(accel.norm(), timestamp);
 			last_accel_timestamp_ = timestamp;
+
+			SIMPLE_IMU_DEBUG("Got a usable startup accel report");
 			return true;
 		}
 		last_accel_timestamp_ = timestamp;
@@ -148,6 +176,8 @@ public:
 		auto scale = 1. - diff;
 		if (scale <= 0) {
 			// Too far from gravity to be useful/trusted.
+			SIMPLE_IMU_DEBUG(
+			    "Too far from gravity to be useful/trusted.");
 			return false;
 		}
 
@@ -202,5 +232,6 @@ private:
 	uint64_t last_accel_timestamp_{0};
 	uint64_t last_gyro_timestamp_{0};
 	bool started_{false};
+	bool debug_{false};
 };
 } // namespace xrt_fusion
