@@ -31,6 +31,7 @@ struct CameraCalibrationWrapper
 {
 	t_camera_calibration &base;
 	xrt_size &image_size_pixels;
+	const cv::Size image_size_pixels_cv;
 	cv::Mat_<double> intrinsics_mat;
 	cv::Mat_<double> distortion_mat;
 	cv::Mat_<double> distortion_fisheye_mat;
@@ -38,6 +39,8 @@ struct CameraCalibrationWrapper
 
 	CameraCalibrationWrapper(t_camera_calibration &calib)
 	    : base(calib), image_size_pixels(calib.image_size_pixels),
+	      image_size_pixels_cv(calib.image_size_pixels.w,
+	                           calib.image_size_pixels.h),
 	      intrinsics_mat(3, 3, &calib.intrinsics[0][0]),
 	      distortion_mat(XRT_DISTORTION_MAX_DIM, 1, &calib.distortion[0]),
 	      distortion_fisheye_mat(4, 1, &calib.distortion_fisheye[0]),
