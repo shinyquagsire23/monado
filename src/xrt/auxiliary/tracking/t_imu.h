@@ -55,7 +55,7 @@ imu_fusion_destroy(struct imu_fusion *fusion);
  * @param fusion The IMU Fusion object
  * @param timestamp_ns The timestamp corresponding to the information being
  * processed with this call.
- * @param ang_vel Angular velocity vector from gyroscope
+ * @param ang_vel Angular velocity vector from gyroscope: in radians per second.
  * @param ang_vel_variance The variance of the angular velocity measurements:
  * part of the characteristics of the IMU being used.
  *
@@ -109,7 +109,7 @@ imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
  * @param fusion The IMU Fusion object
  * @param timestamp_ns The timestamp corresponding to the information being
  * processed with this call.
- * @param ang_vel Angular velocity vector from gyroscope
+ * @param ang_vel Angular velocity vector from gyroscope: radians/s
  * @param ang_vel_variance The variance of the angular velocity measurements:
  * part of the characteristics of the IMU being used.
  * @param accel Accelerometer data (in m/s/s) including the effect of gravity -
