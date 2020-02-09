@@ -50,6 +50,10 @@ endif()
 
 if(BUILD_DRIVER_NS)
 	set(NS_SOURCE_FILES
+		north_star/distortion/utility_northstar.h
+		north_star/distortion/deformation_northstar.h
+		north_star/distortion/deformation_northstar.cpp
+		north_star/ns_hmd.h
 		north_star/ns_hmd.c
 		north_star/ns_interface.h
 		north_star/ns_prober.c
@@ -57,6 +61,7 @@ if(BUILD_DRIVER_NS)
 
 	# Use OBJECT to not create a archive, since it just gets in the way.
 	add_library(drv_ns OBJECT ${NS_SOURCE_FILES})
+	target_include_directories(drv_ns SYSTEM PRIVATE ../../external)
 	list(APPEND ENABLED_HEADSET_DRIVERS ns)
 endif()
 

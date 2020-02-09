@@ -17,41 +17,18 @@
 #include <string.h>
 #include <assert.h>
 
-#include "math/m_api.h"
-#include "xrt/xrt_device.h"
+#include "ns_hmd.h"
+
 #include "util/u_var.h"
-#include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
 #include "util/u_time.h"
 #include "util/u_distortion_mesh.h"
 
 #include "targets_enabled_drivers.h"
+#ifdef XRT_BUILD_DRIVER_RS
 #include "../realsense/rs_interface.h"
-
-
-/*
- *
- * Structs and defines.
- *
- */
-
-struct ns_hmd
-{
-	struct xrt_device base;
-
-	struct xrt_device *tracker;
-
-	struct xrt_pose pose;
-
-	bool print_spew;
-	bool print_debug;
-};
-
-struct ns_mesh
-{
-	struct u_uv_generator base;
-};
+#endif
 
 
 /*
@@ -60,46 +37,22 @@ struct ns_mesh
  *
  */
 
-static inline struct ns_hmd *
-ns_hmd(struct xrt_device *xdev)
+struct ns_hmd *
+get_ns_hmd(struct xrt_device *xdev)
 {
 	return (struct ns_hmd *)xdev;
 }
 
-#define NS_SPEW(c, ...)                                                        \
-	do {                                                                   \
-		if (c->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define NS_DEBUG(c, ...)                                                       \
-	do {                                                                   \
-		if (c->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define NS_ERROR(c, ...)                                                       \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+static inline struct ns_mesh *
+ns_mesh(struct u_uv_generator *gen)
+{
+	return (struct ns_mesh *)gen;
+}
 
 static void
 ns_hmd_destroy(struct xrt_device *xdev)
 {
-	struct ns_hmd *ns = ns_hmd(xdev);
-
-	if (ns->tracker != NULL) {
-		ns->tracker->destroy(ns->tracker);
-		ns->tracker = NULL;
-	}
+	struct ns_hmd *ns = get_ns_hmd(xdev);
 
 	// Remove the variable tracking.
 	u_var_remove_root(ns);
@@ -110,9 +63,8 @@ ns_hmd_destroy(struct xrt_device *xdev)
 static void
 ns_hmd_update_inputs(struct xrt_device *xdev, struct time_state *timekeeping)
 {
-	struct ns_hmd *ns = ns_hmd(xdev);
+	struct ns_hmd *ns = get_ns_hmd(xdev);
 
-	// Also update the tracking module if it is in use.
 	if (ns->tracker != NULL) {
 		ns->tracker->update_inputs(ns->tracker, timekeeping);
 	}
@@ -125,7 +77,8 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
                         int64_t *out_timestamp,
                         struct xrt_space_relation *out_relation)
 {
-	struct ns_hmd *ns = ns_hmd(xdev);
+	struct ns_hmd *ns = get_ns_hmd(xdev);
+
 
 	// If the tracking device is created use it.
 	if (ns->tracker != NULL) {
@@ -154,25 +107,8 @@ ns_hmd_get_view_pose(struct xrt_device *xdev,
                      uint32_t view_index,
                      struct xrt_pose *out_pose)
 {
-	struct xrt_pose pose = {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}};
-	bool adjust = view_index == 0;
-
-	pose.position.x = eye_relation->x / 2.0f;
-	pose.position.y = eye_relation->y / 2.0f;
-	pose.position.z = eye_relation->z / 2.0f;
-
-	// Adjust for left/right while also making sure there aren't any -0.f.
-	if (pose.position.x > 0.0f && adjust) {
-		pose.position.x = -pose.position.x;
-	}
-	if (pose.position.y > 0.0f && adjust) {
-		pose.position.y = -pose.position.y;
-	}
-	if (pose.position.z > 0.0f && adjust) {
-		pose.position.z = -pose.position.z;
-	}
-
-	*out_pose = pose;
+	struct ns_hmd *ns = get_ns_hmd(xdev);
+	*out_pose = ns->eye_configs[view_index].eye_pose;
 }
 
 
@@ -183,28 +119,176 @@ ns_hmd_get_view_pose(struct xrt_device *xdev,
  */
 
 static void
-ns_mesh_calc(struct u_uv_generator *generator,
+ns_mesh_calc(struct u_uv_generator *gen,
              int view,
              float u,
              float v,
              struct u_uv_triplet *result)
 {
-	struct ns_mesh *mesh = (struct ns_mesh *)generator;
-	(void)mesh; // Noop
+	struct ns_mesh *mesh = ns_mesh(gen);
 
-	result->r.x = u;
-	result->r.y = v;
-	result->g.x = u;
-	result->g.y = v;
-	result->b.x = u;
-	result->b.y = v;
+	struct ns_uv uv = {u, v};
+	struct ns_uv warped_uv = {0.0f, 0.0f};
+	ns_display_uv_to_render_uv(uv, &warped_uv, mesh->ns->eye_configs[view]);
+
+	result->r.x = warped_uv.u;
+	result->r.y = warped_uv.v;
+	result->g.x = warped_uv.u;
+	result->g.y = warped_uv.v;
+	result->b.x = warped_uv.u;
+	result->b.y = warped_uv.v;
 }
 
 static void
-ns_mesh_destroy(struct u_uv_generator *generator)
+ns_mesh_destroy(struct u_uv_generator *gen)
 {
-	struct ns_mesh *mesh = (struct ns_mesh *)generator;
+	struct ns_mesh *mesh = (struct ns_mesh *)gen;
 	(void)mesh; // Noop
+}
+
+static void
+ns_leap_parse(struct ns_leap *leap, struct cJSON *leap_data)
+{
+	/*
+	        These are very wrong!
+	        You could very likely write into random memory here.
+
+	        u_json_get_string(cJSON_GetObjectItemCaseSensitive(leap_data,
+	   "name"), &leap->name);
+	        u_json_get_string(cJSON_GetObjectItemCaseSensitive(leap_data,
+	   "serial"), &leap->serial);
+	*/
+
+	u_json_get_vec3(
+	    cJSON_GetObjectItemCaseSensitive(
+	        cJSON_GetObjectItemCaseSensitive(leap_data, "localPose"),
+	        "position"),
+	    &leap->pose.position);
+	u_json_get_quat(
+	    cJSON_GetObjectItemCaseSensitive(
+	        cJSON_GetObjectItemCaseSensitive(leap_data, "localPose"),
+	        "rotation"),
+	    &leap->pose.orientation);
+}
+
+static void
+ns_eye_parse(struct ns_eye *eye, struct cJSON *eye_data)
+{
+	u_json_get_float(
+	    cJSON_GetObjectItemCaseSensitive(eye_data, "ellipseMinorAxis"),
+	    &eye->ellipse_minor_axis);
+	u_json_get_float(
+	    cJSON_GetObjectItemCaseSensitive(eye_data, "ellipseMajorAxis"),
+	    &eye->ellipse_major_axis);
+	u_json_get_vec3(
+	    cJSON_GetObjectItemCaseSensitive(eye_data, "screenForward"),
+	    &eye->screen_forward);
+	u_json_get_vec3(
+	    cJSON_GetObjectItemCaseSensitive(eye_data, "screenPosition"),
+	    &eye->screen_position);
+	u_json_get_vec3(
+	    cJSON_GetObjectItemCaseSensitive(eye_data, "eyePosition"),
+	    &eye->eye_pose.position);
+	u_json_get_quat(
+	    cJSON_GetObjectItemCaseSensitive(eye_data, "eyeRotation"),
+	    &eye->eye_pose.orientation);
+	u_json_get_quat(
+	    cJSON_GetObjectItemCaseSensitive(eye_data, "cameraProjection"),
+	    &eye->camera_projection);
+	for (int x = 0; x < 4; ++x) {
+		for (int y = 0; y < 4; ++y) {
+			char key[4];
+			sprintf(key, "e%d%d", x, y);
+
+			u_json_get_float(
+			    cJSON_GetObjectItemCaseSensitive(
+			        cJSON_GetObjectItemCaseSensitive(
+			            eye_data, "sphereToWorldSpace"),
+			        key),
+			    &eye->sphere_to_world_space.v[(x * 4) + y]);
+			u_json_get_float(
+			    cJSON_GetObjectItemCaseSensitive(
+			        cJSON_GetObjectItemCaseSensitive(
+			            eye_data, "worldToScreenSpace"),
+			        key),
+			    &eye->world_to_screen_space.v[(x * 4) + y]);
+		}
+	}
+}
+
+
+/*
+ *
+ * Parse function.
+ *
+ */
+
+static void
+ns_fov_calculate(struct xrt_fov *fov, struct xrt_quat projection)
+{
+	fov->angle_up = projection.x; // atanf(fabsf(projection.x) /
+	                              // near_plane);
+	fov->angle_down =
+	    projection.y; // atanf(fabsf(projection.y) / near_plane);
+	fov->angle_left =
+	    projection.z; // atanf(fabsf(projection.z) / near_plane);
+	fov->angle_right =
+	    projection.w; // atanf(fabsf(projection.w) / near_plane);
+}
+
+static bool
+ns_config_load(struct ns_hmd *ns)
+{
+	// Get the path to the JSON file
+	if (ns->config_path == NULL || strcmp(ns->config_path, "/") == 0) {
+		NS_ERROR(ns,
+		         "Configuration path \"%s\" does not lead to a "
+		         "configuration JSON file. Set the NS_CONFIG_PATH env "
+		         "variable to your JSON.",
+		         ns->config_path);
+		return false;
+	}
+
+	// Open the JSON file and put its contents into a string
+	FILE *config_file = fopen(ns->config_path, "r");
+	if (config_file == NULL) {
+		NS_ERROR(
+		    ns,
+		    "The configuration file at path \"%s\" was unable to load",
+		    ns->config_path);
+		return false;
+	}
+
+	char json[8192];
+	size_t i = 0;
+	while (!feof(config_file) && i < (sizeof(json) - 1)) {
+		json[i++] = fgetc(config_file);
+	}
+	json[i] = '\0';
+
+	struct cJSON *config_json;
+
+	// Parse the JSON file
+	config_json = cJSON_Parse(json);
+	if (config_json == NULL) {
+		const char *error_ptr = cJSON_GetErrorPtr();
+		NS_ERROR(ns, "The JSON file at path \"%s\" was unable to parse",
+		         ns->config_path);
+		if (error_ptr != NULL) {
+			NS_ERROR(ns, "because of an error before %s",
+			         error_ptr);
+		}
+		return false;
+	}
+
+	ns_eye_parse(&ns->eye_configs[0],
+	             cJSON_GetObjectItemCaseSensitive(config_json, "leftEye"));
+	ns_eye_parse(&ns->eye_configs[1],
+	             cJSON_GetObjectItemCaseSensitive(config_json, "rightEye"));
+	ns_leap_parse(&ns->leap_config, cJSON_GetObjectItemCaseSensitive(
+	                                    config_json, "leapTracker"));
+	cJSON_Delete(config_json);
+	return true;
 }
 
 
@@ -226,6 +310,7 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 	ns->base.destroy = ns_hmd_destroy;
 	ns->base.name = XRT_DEVICE_GENERIC_HMD;
 	ns->pose.orientation.w = 1.0f; // All other values set to zero.
+	ns->config_path = config_path;
 	ns->print_spew = print_spew;
 	ns->print_debug = print_debug;
 
@@ -237,19 +322,33 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 
 	// Setup info.
 	struct u_device_simple_info info;
-	info.display.w_pixels = 1920;
-	info.display.h_pixels = 1080;
+	info.display.w_pixels = 2880;
+	info.display.h_pixels = 1440;
 	info.display.w_meters = 0.13f;
 	info.display.h_meters = 0.07f;
 	info.lens_horizontal_separation_meters = 0.13f / 2.0f;
 	info.lens_vertical_position_meters = 0.07f / 2.0f;
-	info.views[0].fov = 85.0f * (M_PI / 180.0f);
-	info.views[1].fov = 85.0f * (M_PI / 180.0f);
+	info.views[0].fov = 70.0f * (M_PI / 180.0f);
+	info.views[1].fov = 70.0f * (M_PI / 180.0f);
 
+	if (!ns_config_load(ns))
+		goto cleanup;
+
+	ns_fov_calculate(&ns->base.hmd->views[0].fov,
+	                 ns->eye_configs[0].camera_projection);
+	ns_fov_calculate(&ns->base.hmd->views[1].fov,
+	                 ns->eye_configs[1].camera_projection);
+
+	// Create the optical systems
+	ns->eye_configs[0].optical_system =
+	    ns_create_optical_system(&ns->eye_configs[0]);
+	ns->eye_configs[1].optical_system =
+	    ns_create_optical_system(&ns->eye_configs[1]);
+
+	// Setup the north star basic info
 	if (!u_device_setup_split_side_by_side(&ns->base, &info)) {
 		NS_ERROR(ns, "Failed to setup basic device info");
-		ns_hmd_destroy(&ns->base);
-		return NULL;
+		goto cleanup;
 	}
 
 	// If built, try to load the realsense tracker.
@@ -264,6 +363,7 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 	// Setup the distortion mesh.
 	struct ns_mesh mesh;
 	U_ZERO(&mesh);
+	mesh.ns = ns;
 	mesh.base.calc = ns_mesh_calc;
 	mesh.base.destroy = ns_mesh_destroy;
 
@@ -271,4 +371,8 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 	u_distortion_mesh_from_gen(&mesh.base, 2, ns->base.hmd);
 
 	return &ns->base;
+
+cleanup:
+	ns_hmd_destroy(&ns->base);
+	return NULL;
 }
