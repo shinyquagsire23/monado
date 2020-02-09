@@ -106,6 +106,19 @@ if(BUILD_DRIVER_PSVR)
 	list(APPEND ENABLED_HEADSET_DRIVERS psvr)
 endif()
 
+if(BUILD_DRIVER_RS)
+	set(RS_SOURCE_FILES
+		realsense/rs_6dof.c
+		)
+
+	# Use OBJECT to not create a archive, since it just gets in the way.
+	add_library(drv_rs OBJECT ${RS_SOURCE_FILES})
+	target_include_directories(drv_rs SYSTEM
+		PRIVATE ${realsense2_INCLUDE_DIR}
+		)
+	list(APPEND ENABLED_HEADSET_DRIVERS rs)
+endif()
+
 if(BUILD_DRIVER_VIVE)
 	set(VIVE_SOURCE_FILES
 		vive/vive_device.h
