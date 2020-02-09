@@ -47,7 +47,7 @@ lib_drv_ns = static_library(
 		'north_star/ns_prober.c',
 	),
 	include_directories: xrt_include,
-	dependencies: [aux],
+	dependencies: [aux, targets_enabled],
 	build_by_default: 'ns' in drivers,
 )
 

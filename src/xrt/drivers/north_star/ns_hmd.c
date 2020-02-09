@@ -26,6 +26,10 @@
 #include "util/u_time.h"
 #include "util/u_distortion_mesh.h"
 
+#include "targets_enabled_drivers.h"
+#include "../realsense/rs_interface.h"
+
+
 /*
  *
  * Structs and defines.
@@ -35,6 +39,8 @@
 struct ns_hmd
 {
 	struct xrt_device base;
+
+	struct xrt_device *tracker;
 
 	struct xrt_pose pose;
 
@@ -90,6 +96,11 @@ ns_hmd_destroy(struct xrt_device *xdev)
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
 
+	if (ns->tracker != NULL) {
+		ns->tracker->destroy(ns->tracker);
+		ns->tracker = NULL;
+	}
+
 	// Remove the variable tracking.
 	u_var_remove_root(ns);
 
@@ -99,7 +110,12 @@ ns_hmd_destroy(struct xrt_device *xdev)
 static void
 ns_hmd_update_inputs(struct xrt_device *xdev, struct time_state *timekeeping)
 {
-	// Empty
+	struct ns_hmd *ns = ns_hmd(xdev);
+
+	// Also update the tracking module if it is in use.
+	if (ns->tracker != NULL) {
+		ns->tracker->update_inputs(ns->tracker, timekeeping);
+	}
 }
 
 static void
@@ -110,6 +126,13 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
                         struct xrt_space_relation *out_relation)
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
+
+	// If the tracking device is created use it.
+	if (ns->tracker != NULL) {
+		ns->tracker->get_tracked_pose(ns->tracker, name, timekeeping,
+		                              out_timestamp, out_relation);
+		return;
+	}
 
 	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
 		NS_ERROR(ns, "unknown input name");
@@ -228,6 +251,11 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 		ns_hmd_destroy(&ns->base);
 		return NULL;
 	}
+
+	// If built, try to load the realsense tracker.
+#ifdef XRT_BUILD_DRIVER_RS
+	ns->tracker = rs_6dof_create();
+#endif
 
 	// Setup variable tracker.
 	u_var_add_root(ns, "North Star", true);
