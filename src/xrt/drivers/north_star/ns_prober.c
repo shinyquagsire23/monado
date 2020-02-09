@@ -1,4 +1,5 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2020, Nova King.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -19,12 +20,14 @@
 #include "ns_interface.h"
 
 
+DEBUG_GET_ONCE_OPTION(ns_config_path, "NS_CONFIG_PATH", NULL)
 DEBUG_GET_ONCE_BOOL_OPTION(ns_spew, "NS_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(ns_debug, "NS_PRINT_DEBUG", false)
 
 struct ns_prober
 {
 	struct xrt_auto_prober base;
+	const char *config_path;
 	bool print_spew;
 	bool print_debug;
 };
@@ -54,7 +57,12 @@ ns_prober_autoprobe(struct xrt_auto_prober *xap,
 		return NULL;
 	}
 
-	return ns_hmd_create(nsp->print_spew, nsp->print_debug);
+	if (nsp->config_path == NULL) {
+		return NULL;
+	}
+
+	return ns_hmd_create(nsp->config_path, nsp->print_spew,
+	                     nsp->print_debug);
 }
 
 struct xrt_auto_prober *
@@ -63,6 +71,7 @@ ns_create_auto_prober()
 	struct ns_prober *nsp = U_TYPED_CALLOC(struct ns_prober);
 	nsp->base.destroy = ns_prober_destroy;
 	nsp->base.lelo_dallas_autoprobe = ns_prober_autoprobe;
+	nsp->config_path = debug_get_option_ns_config_path();
 	nsp->print_spew = debug_get_bool_option_ns_spew();
 	nsp->print_debug = debug_get_bool_option_ns_debug();
 

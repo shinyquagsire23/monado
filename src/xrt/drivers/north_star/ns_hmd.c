@@ -192,7 +192,7 @@ ns_mesh_destroy(struct u_uv_generator *generator)
  */
 
 struct xrt_device *
-ns_hmd_create(bool print_spew, bool print_debug)
+ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 {
 	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
 	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);

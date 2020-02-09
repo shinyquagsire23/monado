@@ -1,4 +1,5 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2020, Nova King.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -20,7 +21,6 @@ extern "C" {
  * @brief Driver for the North Star HMD.
  */
 
-
 /*!
  * Create a probe for NS devices.
  *
@@ -35,7 +35,7 @@ ns_create_auto_prober(void);
  * @ingroup drv_ns
  */
 struct xrt_device *
-ns_hmd_create(bool print_spew, bool print_debug);
+ns_hmd_create(const char *config_path, bool print_spew, bool print_debug);
 
 /*!
  * @dir drivers/north_star
