@@ -40,6 +40,11 @@ if 'psvr' in drivers
 	driver_libs += [lib_drv_psvr]
 endif
 
+if 'rs' in drivers
+	driver_libs += [lib_drv_rs]
+	driver_deps += [rs]
+endif
+
 if 'v4l2' in drivers
 	driver_libs += [lib_drv_v4l2]
 	driver_deps += [v4l2]

@@ -10,6 +10,7 @@ conf_data.set('XRT_BUILD_DRIVER_NS', 'ns' in drivers)
 conf_data.set('XRT_BUILD_DRIVER_OHMD', 'ohmd' in drivers)
 conf_data.set('XRT_BUILD_DRIVER_PSMV', 'psmv' in drivers)
 conf_data.set('XRT_BUILD_DRIVER_PSVR', 'psvr' in drivers)
+conf_data.set('XRT_BUILD_DRIVER_RS', 'rs' in drivers)
 conf_data.set('XRT_BUILD_DRIVER_V4L2', 'v4l2' in drivers)
 conf_data.set('XRT_BUILD_DRIVER_VIVE', 'vive' in drivers)
 

@@ -63,6 +63,7 @@ eigen3  = dependency('eigen3')
 libjpeg = dependency('libjpeg', required: false)
 libusb  = dependency('libusb-1.0', required: false)
 opengl  = dependency('gl', required: get_option('opengl'))
+rs      = dependency('realsense2', required: false)
 sdl2    = dependency('sdl2', required: get_option('gui'))
 udev    = dependency('libudev', required: false)
 libuvc  = dependency('libuvc', required: false)
@@ -170,6 +171,12 @@ endif
 if zlib.found() and ('auto' in drivers or 'vive' in drivers)
 	if 'vive' not in drivers
 		drivers += ['vive']
+	endif
+endif
+
+if rs.found() and ('auto' in drivers or 'rs' in drivers)
+	if 'rs' not in drivers
+		drivers += ['rs']
 	endif
 endif
 

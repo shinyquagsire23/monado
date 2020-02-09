@@ -89,6 +89,17 @@ lib_drv_psvr = static_library(
 	build_by_default: 'psvr' in drivers,
 )
 
+lib_drv_rs = static_library(
+	'drv_rs',
+	files(
+		'realsense/rs_6dof.c',
+		'realsense/rs_interface.h',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux, rs],
+	build_by_default: 'rs' in drivers,
+)
+
 lib_drv_v4l2 = static_library(
 	'drv_v4l2',
 	files(
