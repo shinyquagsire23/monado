@@ -119,8 +119,7 @@ lib_drv_vive = static_library(
 		'vive/vive_prober.h',
 		'vive/vive_prober.c',
 	),
-	include_directories: [xrt_include,
-	                      include_directories('../../external/')],
+	include_directories: [xrt_include, external_include],
 	dependencies: [aux, zlib],
 	build_by_default: 'vive' in drivers,
 )
