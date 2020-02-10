@@ -551,7 +551,7 @@ handle_found_device(struct prober *p,
 		return;
 	}
 
-	P_ERROR(p, "Found more then one, HMD closing '%s'", xdev->str);
+	P_ERROR(p, "Found more than one, HMD closing '%s'", xdev->str);
 	xdev->destroy(xdev);
 }
 
