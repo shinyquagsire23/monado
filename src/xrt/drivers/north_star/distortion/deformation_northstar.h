@@ -4,15 +4,10 @@
 
 #pragma once
 
-#include <map>
 #include "utility_northstar.h"
 #include "../ns_hmd.h"
-#include <chrono>
+#include <map>
 
-using namespace std::chrono;
-
-static char *s_strLeftEye = "leftEye";
-static char *s_strRightEye = "rightEye";
 
 class OpticalSystem
 {
@@ -71,9 +66,6 @@ public:
 	void
 	UpdateClipToWorld(Matrix4x4 eyeRotationMatrix)
 	{
-		// TEST DELETEME
-		float time = clock() / (float)CLOCKS_PER_SEC;
-		float osc = sinf(time * 2 * LP_PI);
 		Matrix4x4 eyeToWorld =
 		    Matrix4x4::Translate(eyePosition) * eyeRotationMatrix;
 		eyeToWorld.m02 *= -1;
@@ -99,7 +91,7 @@ public:
 		    clipToWorld.MultiplyPoint(tmp * 2.f) - cameraPosition;
 
 		float mag = dir.Magnitude();
-		out = dir / dir.Magnitude();
+		out = dir / mag;
 		return;
 	}
 

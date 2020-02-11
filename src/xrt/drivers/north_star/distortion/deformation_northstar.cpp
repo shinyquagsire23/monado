@@ -221,10 +221,10 @@ OpticalSystem::SolveDisplayUVToRenderUV(Vector2 inputUV,
 		Vector2 error = curDisplayUV - inputUV;
 		Vector2 step = Vector2::zero();
 
-		if (!displayUVGradX.x == 0.f || !displayUVGradX.y == 0.f) {
+		if ((!displayUVGradX.x) == 0.f || (!displayUVGradX.y) == 0.f) {
 			step = step + (displayUVGradX * error.x);
 		}
-		if (!displayUVGradY.x == 0.f || !displayUVGradY.y == 0.f) {
+		if ((!displayUVGradY.x) == 0.f || (!displayUVGradY.y) == 0.f) {
 			step = step + (displayUVGradY * error.y);
 		}
 

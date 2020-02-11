@@ -44,6 +44,15 @@ public:
 		z = 0.f;
 	};
 
+	constexpr Vector3 &
+	operator=(const Vector3 &lhr)
+	{
+		this->x = lhr.x;
+		this->y = lhr.y;
+		this->z = lhr.z;
+		return *this;
+	}
+
 	inline static Vector3
 	Up()
 	{
@@ -137,14 +146,6 @@ public:
 		ret.y = -y;
 		ret.z = -z;
 		return ret;
-	}
-
-	inline void
-	copy(Vector3 &lhs, Vector3 rhs)
-	{
-		rhs.x = lhs.x;
-		rhs.y = lhs.y;
-		rhs.z = lhs.z;
 	}
 
 	inline float static Dot(Vector3 lhs, Vector3 rhs)
@@ -300,6 +301,14 @@ public:
 		y = _y;
 	};
 
+	constexpr Vector2 &
+	operator=(const Vector2 &lhr)
+	{
+		this->x = lhr.x;
+		this->y = lhr.y;
+		return *this;
+	}
+
 	inline static Vector2
 	zero()
 	{
@@ -432,6 +441,28 @@ public:
 		m31 = in31;
 		m32 = in32;
 		m33 = in33;
+	};
+
+	constexpr Matrix4x4 &
+	operator=(const Matrix4x4 &lhr)
+	{
+		this->m00 = lhr.m00;
+		this->m01 = lhr.m01;
+		this->m02 = lhr.m02;
+		this->m03 = lhr.m03;
+		this->m10 = lhr.m10;
+		this->m11 = lhr.m11;
+		this->m12 = lhr.m12;
+		this->m13 = lhr.m13;
+		this->m20 = lhr.m20;
+		this->m21 = lhr.m21;
+		this->m22 = lhr.m22;
+		this->m23 = lhr.m23;
+		this->m30 = lhr.m30;
+		this->m31 = lhr.m31;
+		this->m32 = lhr.m32;
+		this->m33 = lhr.m33;
+		return *this;
 	};
 
 	inline static Matrix4x4
@@ -688,6 +719,16 @@ public:
 		w = in.w;
 	}
 
+	constexpr Vector4 &
+	operator=(const Vector4 &lhr)
+	{
+		this->x = lhr.x;
+		this->y = lhr.y;
+		this->z = lhr.z;
+		this->w = lhr.w;
+		return *this;
+	}
+
 	inline Matrix4x4
 	ComposeProjection()
 	{
@@ -783,6 +824,16 @@ public:
 		z = _in.z;
 		w = _in.w;
 	};
+
+	constexpr Quaternion &
+	operator=(const Quaternion &lhr)
+	{
+		this->x = lhr.x;
+		this->y = lhr.y;
+		this->z = lhr.z;
+		this->w = lhr.w;
+		return *this;
+	}
 
 	inline static Quaternion
 	Identity()
