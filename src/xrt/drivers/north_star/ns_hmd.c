@@ -9,7 +9,6 @@
  * @ingroup drv_ns
  */
 
-
 #include <math.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -37,22 +36,10 @@
  *
  */
 
-struct ns_hmd *
-get_ns_hmd(struct xrt_device *xdev)
-{
-	return (struct ns_hmd *)xdev;
-}
-
-static inline struct ns_mesh *
-ns_mesh(struct u_uv_generator *gen)
-{
-	return (struct ns_mesh *)gen;
-}
-
 static void
 ns_hmd_destroy(struct xrt_device *xdev)
 {
-	struct ns_hmd *ns = get_ns_hmd(xdev);
+	struct ns_hmd *ns = ns_hmd(xdev);
 
 	// Remove the variable tracking.
 	u_var_remove_root(ns);
@@ -63,7 +50,7 @@ ns_hmd_destroy(struct xrt_device *xdev)
 static void
 ns_hmd_update_inputs(struct xrt_device *xdev, struct time_state *timekeeping)
 {
-	struct ns_hmd *ns = get_ns_hmd(xdev);
+	struct ns_hmd *ns = ns_hmd(xdev);
 
 	if (ns->tracker != NULL) {
 		ns->tracker->update_inputs(ns->tracker, timekeeping);
@@ -77,7 +64,7 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
                         int64_t *out_timestamp,
                         struct xrt_space_relation *out_relation)
 {
-	struct ns_hmd *ns = get_ns_hmd(xdev);
+	struct ns_hmd *ns = ns_hmd(xdev);
 
 
 	// If the tracking device is created use it.
@@ -107,7 +94,7 @@ ns_hmd_get_view_pose(struct xrt_device *xdev,
                      uint32_t view_index,
                      struct xrt_pose *out_pose)
 {
-	struct ns_hmd *ns = get_ns_hmd(xdev);
+	struct ns_hmd *ns = ns_hmd(xdev);
 	*out_pose = ns->eye_configs[view_index].eye_pose;
 }
 
@@ -129,7 +116,8 @@ ns_mesh_calc(struct u_uv_generator *gen,
 
 	struct ns_uv uv = {u, v};
 	struct ns_uv warped_uv = {0.0f, 0.0f};
-	ns_display_uv_to_render_uv(uv, &warped_uv, mesh->ns->eye_configs[view]);
+	ns_display_uv_to_render_uv(uv, &warped_uv,
+	                           &mesh->ns->eye_configs[view]);
 
 	result->r.x = warped_uv.u;
 	result->r.y = warped_uv.v;

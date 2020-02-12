@@ -16,16 +16,11 @@
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*!
- * @defgroup drv_ns North Star Driver
- * @ingroup drv
- *
- * @brief Driver for the North Star HMD.
- */
 
 /*
  *
@@ -65,14 +60,12 @@ extern "C" {
  *
  */
 
-
 /*!
  * Opaque struct for optical system C++ integration
  *
  * @ingroup drv_ns
  */
-typedef struct _ns_optical_system ns_optical_system;
-
+struct ns_optical_system;
 
 /*!
  * Simple UV struct.
@@ -84,7 +77,6 @@ struct ns_uv
 	float u;
 	float v;
 };
-
 
 /*!
  * Configuration information about the LMC or Rigel sensor according to the
@@ -98,7 +90,6 @@ struct ns_leap
 	const char *serial;
 	struct xrt_pose pose;
 };
-
 
 /*!
  * Distortion information about an eye parsed from the configuration file.
@@ -120,7 +111,7 @@ struct ns_eye
 	struct xrt_matrix_4x4 sphere_to_world_space;
 	struct xrt_matrix_4x4 world_to_screen_space;
 
-	ns_optical_system *optical_system;
+	struct ns_optical_system *optical_system;
 };
 
 /*!
@@ -155,18 +146,34 @@ struct ns_mesh
 	struct ns_hmd *ns;
 };
 
-/*!
- * @dir drivers/north_star
- *
- * @brief @ref drv_ns files.
- */
-
 
 /*
  *
  * Functions
  *
  */
+
+/*!
+ * Get the North Star HMD information from a @ref xrt_device.
+ *
+ * @ingroup drv_ns
+ */
+XRT_MAYBE_UNUSED static inline struct ns_hmd *
+ns_hmd(struct xrt_device *xdev)
+{
+	return (struct ns_hmd *)xdev;
+}
+
+/*!
+ * Get the North Star mesh generator from a @ref u_uv_generator.
+ *
+ * @ingroup drv_ns
+ */
+XRT_MAYBE_UNUSED static inline struct ns_mesh *
+ns_mesh(struct u_uv_generator *gen)
+{
+	return (struct ns_mesh *)gen;
+}
 
 /*!
  * Convert the display UV to the render UV using the distortion mesh.
@@ -176,18 +183,9 @@ struct ns_mesh
 void
 ns_display_uv_to_render_uv(struct ns_uv display_uv,
                            struct ns_uv *render_uv,
-                           struct ns_eye eye);
+                           struct ns_eye *eye);
 
-/*!
- * Get the North Star HMD information from the xrt_device.
- *
- * @ingroup drv_ns
- */
-struct ns_hmd *
-get_ns_hmd(struct xrt_device *xdev);
-
-
-ns_optical_system *
+struct ns_optical_system *
 ns_create_optical_system(struct ns_eye *eye);
 
 

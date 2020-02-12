@@ -4,6 +4,7 @@
 
 #include "deformation_northstar.h"
 
+
 OpticalSystem::OpticalSystem(const OpticalSystem &_in)
 {
 	ellipseMinorAxis = _in.ellipseMinorAxis;
@@ -107,7 +108,6 @@ OpticalSystem::RegenerateMesh()
 	}
 }
 
-
 Vector2
 OpticalSystem::RenderUVToDisplayUV(Vector2 inputUV)
 {
@@ -186,7 +186,6 @@ OpticalSystem::RenderUVToDisplayUV(Vector3 inputUV)
 
 	return ScreenUV_Real;
 }
-
 
 Vector2
 OpticalSystem::SolveDisplayUVToRenderUV(Vector2 inputUV,
@@ -294,22 +293,22 @@ OpticalSystem::DisplayUVToRenderUVPreviousSeed(Vector2 inputUV)
 }
 
 
-extern "C" ns_optical_system *
+extern "C" struct ns_optical_system *
 ns_create_optical_system(struct ns_eye *eye)
 {
 	OpticalSystem *opticalSystem = new OpticalSystem();
 	opticalSystem->LoadOpticalData(eye);
 	opticalSystem->setiters(50, 50);
 	opticalSystem->RegenerateMesh();
-	return (ns_optical_system *)opticalSystem;
+	return (struct ns_optical_system *)opticalSystem;
 }
 
 extern "C" void
 ns_display_uv_to_render_uv(struct ns_uv in,
                            struct ns_uv *out,
-                           struct ns_eye eye)
+                           struct ns_eye *eye)
 {
-	OpticalSystem *opticalSystem = (OpticalSystem *)eye.optical_system;
+	OpticalSystem *opticalSystem = (OpticalSystem *)eye->optical_system;
 	Vector2 inUV = Vector2(in.u, 1.f - in.v);
 	Vector2 outUV = opticalSystem->DisplayUVToRenderUVPreviousSeed(inUV);
 	out->u = outUV.x;

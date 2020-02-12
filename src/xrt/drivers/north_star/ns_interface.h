@@ -14,6 +14,7 @@
 extern "C" {
 #endif
 
+
 /*!
  * @defgroup drv_ns North Star Driver
  * @ingroup drv
