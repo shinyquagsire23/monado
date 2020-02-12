@@ -163,8 +163,6 @@ process_frame(struct rs_6dof *rs, rs2_frame *frame, struct xrt_pose *out_pose)
 	out_pose->position.x = camera_pose.translation.x;
 	out_pose->position.y = camera_pose.translation.y;
 	out_pose->position.z = camera_pose.translation.z;
-
-	rs2_release_frame(frame);
 }
 
 static int
