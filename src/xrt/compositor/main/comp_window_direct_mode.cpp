@@ -383,6 +383,51 @@ static void
 comp_window_direct_flush(struct comp_window *w)
 {}
 
+static int
+choose_best_vk_mode_auto(struct comp_window_direct *w,
+                         VkDisplayModePropertiesKHR *mode_properties,
+                         int mode_count)
+{
+	struct
+	{
+		uint16_t width = 0;
+		uint16_t height = 0;
+		float refresh = 0;
+		int index = 0;
+	} best_mode;
+
+	// First priority: choose mode that maximizes rendered pixels.
+	// Second priority: choose mode with highest refresh rate.
+	for (int i = 0; i < mode_count; i++) {
+		VkDisplayModePropertiesKHR props = mode_properties[i];
+		uint16_t width = props.parameters.visibleRegion.width;
+		uint16_t height = props.parameters.visibleRegion.height;
+		float refresh = (float)props.parameters.refreshRate / 1000.;
+		COMP_DEBUG(w->base.c, "Available Vk direct mode %d: %dx%d@%.2f",
+		           i, width, height, refresh);
+
+		int max_pixels = best_mode.width * best_mode.height;
+		int pixels = width * height;
+		if (pixels > max_pixels) {
+			best_mode.index = i;
+			best_mode.width = width;
+			best_mode.height = height;
+			best_mode.refresh = refresh;
+		} else if (pixels == max_pixels &&
+		           refresh > best_mode.refresh) {
+			best_mode.index = i;
+			/* update dims because it might be rotated */
+			best_mode.width = width;
+			best_mode.height = height;
+			best_mode.refresh = refresh;
+		}
+	}
+	COMP_DEBUG(w->base.c, "Auto choosing Vk direct mode %d: %dx%d@%.2f",
+	           best_mode.index, best_mode.width, best_mode.height,
+	           best_mode.refresh);
+	return best_mode.index;
+}
+
 static VkDisplayModeKHR
 comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
                                             VkDisplayKHR display)
@@ -414,11 +459,14 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
 		return nullptr;
 	}
 
-	VkDisplayModePropertiesKHR props = mode_properties[0];
+	int chosen_mode =
+	    choose_best_vk_mode_auto(w, mode_properties, mode_count);
+	VkDisplayModePropertiesKHR props = mode_properties[chosen_mode];
 
-	COMP_DEBUG(w->base.c, "found display mode %d %d",
+	COMP_DEBUG(w->base.c, "found display mode %dx%d@%.2f",
 	           props.parameters.visibleRegion.width,
-	           props.parameters.visibleRegion.height);
+	           props.parameters.visibleRegion.height,
+	           (float)props.parameters.refreshRate / 1000.);
 
 	delete[] mode_properties;
 
