@@ -96,6 +96,9 @@ struct comp_settings
 
 	//! Run the compositor on this Vulkan physical device
 	int gpu_index;
+
+	//! Try to choose the mode with this index for direct mode
+	int desired_mode;
 };
 
 /*!

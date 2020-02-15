@@ -479,8 +479,26 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
 
 	print_modes(w, mode_properties, mode_count);
 
-	int chosen_mode =
-	    choose_best_vk_mode_auto(w, mode_properties, mode_count);
+
+	int chosen_mode = 0;
+
+	int desired_mode = w->base.c->settings.desired_mode;
+	if (desired_mode + 1 > (int)mode_count) {
+		COMP_ERROR(w->base.c,
+		           "Requested mode index %d, but max is %d. Falling "
+		           "back to automatic mode selection",
+		           desired_mode, mode_count);
+		chosen_mode =
+		    choose_best_vk_mode_auto(w, mode_properties, mode_count);
+	} else if (desired_mode < 0) {
+		chosen_mode =
+		    choose_best_vk_mode_auto(w, mode_properties, mode_count);
+	} else {
+		COMP_DEBUG(w->base.c, "Using manually chosen mode %d",
+		           desired_mode);
+		chosen_mode = desired_mode;
+	}
+
 	VkDisplayModePropertiesKHR props = mode_properties[chosen_mode];
 
 	COMP_DEBUG(w->base.c, "found display mode %dx%d@%.2f",
