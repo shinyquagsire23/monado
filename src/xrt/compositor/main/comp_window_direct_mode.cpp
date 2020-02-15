@@ -468,6 +468,20 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
 	           props.parameters.visibleRegion.height,
 	           (float)props.parameters.refreshRate / 1000.);
 
+	int64_t new_frame_interval =
+	    1000. * 1000. * 1000. * 1000. / props.parameters.refreshRate;
+
+	COMP_DEBUG(w->base.c,
+	           "Updating compositor settings nominal frame interval from "
+	           "%lu (%f Hz) to %lu (%f Hz)",
+	           w->base.c->settings.nominal_frame_interval_ns,
+	           1000. * 1000. * 1000. /
+	               (float)w->base.c->settings.nominal_frame_interval_ns,
+	           new_frame_interval,
+	           (float)props.parameters.refreshRate / 1000.);
+
+	w->base.c->settings.nominal_frame_interval_ns = new_frame_interval;
+
 	delete[] mode_properties;
 
 	return props.displayMode;
