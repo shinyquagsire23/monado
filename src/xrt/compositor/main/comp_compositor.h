@@ -222,6 +222,18 @@ comp_compositor_print(struct comp_compositor *c,
 	} while (false)
 
 /*!
+ * Mode printing.
+ *
+ * @ingroup comp
+ */
+#define COMP_PRINT_MODE(c, ...)                                                \
+	do {                                                                   \
+		if (c->settings.print_modes) {                                 \
+			comp_compositor_print(c, __func__, __VA_ARGS__);       \
+		}                                                              \
+	} while (false)
+
+/*!
  * Error level logging.
  *
  * @ingroup comp

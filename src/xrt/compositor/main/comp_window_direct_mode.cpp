@@ -428,6 +428,24 @@ choose_best_vk_mode_auto(struct comp_window_direct *w,
 	return best_mode.index;
 }
 
+static void
+print_modes(struct comp_window_direct *w,
+            VkDisplayModePropertiesKHR *mode_properties,
+            int mode_count)
+{
+	COMP_PRINT_MODE(w->base.c, "Available Vk modes for direct mode");
+	for (int i = 0; i < mode_count; i++) {
+		VkDisplayModePropertiesKHR props = mode_properties[i];
+		uint16_t width = props.parameters.visibleRegion.width;
+		uint16_t height = props.parameters.visibleRegion.height;
+		float refresh = (float)props.parameters.refreshRate / 1000.;
+
+		COMP_PRINT_MODE(w->base.c, "| %2d | %dx%d@%.2f", i, width,
+		                height, refresh);
+	}
+	COMP_PRINT_MODE(w->base.c, "Listed %d modes", mode_count);
+}
+
 static VkDisplayModeKHR
 comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
                                             VkDisplayKHR display)
@@ -458,6 +476,8 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
 		delete[] mode_properties;
 		return nullptr;
 	}
+
+	print_modes(w, mode_properties, mode_count);
 
 	int chosen_mode =
 	    choose_best_vk_mode_auto(w, mode_properties, mode_count);

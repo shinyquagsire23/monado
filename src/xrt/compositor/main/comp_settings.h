@@ -82,6 +82,9 @@ struct comp_settings
 	//! Should we debug print.
 	bool print_debug;
 
+	//! Print information about available modes for direct mode.
+	bool print_modes;
+
 	//! Should we flip y axis for compositor buffers (for GL)
 	bool flip_y;
 
