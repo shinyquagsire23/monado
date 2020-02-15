@@ -338,12 +338,12 @@ get_info(struct oh_device *ohd, const char *prod)
 	info.views[1].lens_center_x_meters = info.lens_horizontal_separation / 2.0;
 	info.views[1].lens_center_y_meters = h_1;
 
-	//! @todo This is most definitely wrong!
-	//!       3Glasses likes the opposite better.
+	// From OpenHMD: Assume calibration was for lens view to which ever edge
+	//               of screen is further away from lens center.
 	info.pano_warp_scale =
-		(info.views[0].lens_center_x_meters > info.views[0].lens_center_x_meters) ?
+		(info.views[0].lens_center_x_meters > info.views[1].lens_center_x_meters) ?
 			info.views[0].lens_center_x_meters :
-			info.views[0].lens_center_x_meters;
+			info.views[1].lens_center_x_meters;
 	// clang-format on
 
 	if (info.quirks.rotate_screen_right_after) {
