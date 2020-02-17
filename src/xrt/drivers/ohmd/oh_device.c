@@ -224,6 +224,7 @@ struct device_info
 	struct
 	{
 		bool rotate_lenses_right;
+		bool rotate_lenses_left;
 		bool rotate_lenses_inwards;
 		bool video_see_through;
 		bool video_distortion_none;
@@ -291,6 +292,14 @@ get_info(struct oh_device *ohd, const char *prod)
 
 	if (strcmp(prod, "Rift (CV1)") == 0) {
 		info.quirks.delay_after_initialization = true;
+	}
+
+	/* Only the WVR2 display is rotated. OpenHMD can't easily tell us
+	 * the WVR SKU, so just recognize it by resolution */
+	if (strcmp(prod, "VR-Tek WVR") == 0 &&
+	    info.display.w_pixels == 2560 &&
+	    info.display.h_pixels == 1440) {
+		info.quirks.rotate_lenses_left = true;
 	}
 
 
@@ -540,6 +549,23 @@ oh_device_create(ohmd_context *ctx,
 		ohd->base.hmd->views[1].viewport.w_pixels = w;
 		ohd->base.hmd->views[1].viewport.h_pixels = h / 2;
 		ohd->base.hmd->views[1].rot = u_device_rotation_right;
+	}
+
+	if (info.quirks.rotate_lenses_left) {
+		int w = info.display.w_pixels;
+		int h = info.display.h_pixels;
+
+		ohd->base.hmd->views[0].viewport.x_pixels = 0;
+		ohd->base.hmd->views[0].viewport.y_pixels = 0;
+		ohd->base.hmd->views[0].viewport.w_pixels = w;
+		ohd->base.hmd->views[0].viewport.h_pixels = h / 2;
+		ohd->base.hmd->views[0].rot = u_device_rotation_left;
+
+		ohd->base.hmd->views[1].viewport.x_pixels = 0;
+		ohd->base.hmd->views[1].viewport.y_pixels = h / 2;
+		ohd->base.hmd->views[1].viewport.w_pixels = w;
+		ohd->base.hmd->views[1].viewport.h_pixels = h / 2;
+		ohd->base.hmd->views[1].rot = u_device_rotation_left;
 	}
 
 	if (info.quirks.rotate_lenses_inwards) {
