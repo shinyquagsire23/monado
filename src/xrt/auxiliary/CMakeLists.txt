@@ -5,6 +5,8 @@ set(MATH_SOURCE_FILES
 	math/m_api.h
 	math/m_base.cpp
 	math/m_eigen_interop.hpp
+	math/m_filter_fifo.c
+	math/m_filter_fifo.h
 	math/m_hash.cpp
 	math/m_optics.c
 	math/m_quatexpmap.cpp
