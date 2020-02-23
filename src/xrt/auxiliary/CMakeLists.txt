@@ -86,6 +86,12 @@ set(UTIL_SOURCE_FILES
 	util/u_var.h
 	)
 
+set(VK_SOURCE_FILES
+	vk/vk_helpers.c
+	vk/vk_helpers.h
+	vk/vk_documentation.h
+	)
+
 # Common includes
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/../include
@@ -136,3 +142,11 @@ if(BUILD_TRACKING)
 		${OpenCV_INCLUDE_DIRS}
 		)
 endif()
+
+# Vulkan library.
+# Use OBJECT to not create a archive, since it just gets in the way.
+add_library(aux_vk OBJECT ${VK_SOURCE_FILES})
+target_include_directories(aux_vk SYSTEM
+		PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/../../external
+		)

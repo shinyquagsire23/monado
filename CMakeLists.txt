@@ -178,6 +178,19 @@ if(BUILD_WITH_HYDRA)
 	set(BUILD_DRIVER_HYDRA TRUE)
 endif()
 
+
+# Vulkan flags for the shared Vulkan code.
+if(BUILD_WITH_XCB)
+	add_definitions(-DVK_USE_PLATFORM_XCB_KHR)
+endif()
+if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
+	add_definitions(-DVK_USE_PLATFORM_XLIB_XRANDR_EXT)
+endif()
+if(BUILD_WITH_WAYLAND)
+	add_definitions(-DVK_USE_PLATFORM_WAYLAND_KHR)
+endif()
+
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 

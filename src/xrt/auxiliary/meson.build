@@ -147,6 +147,25 @@ aux_tracking = declare_dependency(
 	link_with: lib_aux_tracking,
 )
 
+lib_aux_vk = static_library(
+	'aux_vk',
+	files(
+		'vk/vk_helpers.h',
+		'vk/vk_helpers.c',
+		'vk/vk_documentation.h',
+	),
+	include_directories: [
+		xrt_include,
+		external_include,
+	],
+)
+
+aux_vk = declare_dependency(
+	include_directories: aux_include,
+	link_with: lib_aux_vk,
+)
+
+
 all_aux = [aux_util, aux_os, aux_math, aux_tracking]
 
 aux = declare_dependency(dependencies: all_aux)

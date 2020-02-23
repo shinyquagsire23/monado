@@ -1,11 +1,11 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Common Vulkan code header.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 
 #pragma once
@@ -29,7 +29,7 @@ extern "C" {
  * comp_client. Note that they both have different instances of the object and
  * as such VkInstance and so on.
  *
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 struct vk_bundle
 {
@@ -224,37 +224,37 @@ vk_color_space_string(VkColorSpaceKHR code);
 	} while (false)
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 void
 vk_init_validation_callback(struct vk_bundle *vk);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 void
 vk_destroy_validation_callback(struct vk_bundle *vk);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_get_loader_functions(struct vk_bundle *vk, PFN_vkGetInstanceProcAddr g);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_get_instance_functions(struct vk_bundle *vk);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_init_cmd_pool(struct vk_bundle *vk);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_create_device(struct vk_bundle *vk, int forced_index);
@@ -263,7 +263,7 @@ vk_create_device(struct vk_bundle *vk, int forced_index);
  * Initialize a bundle with objects given to us by client code,
  * used by @ref client_vk_compositor in @ref comp_client.
  *
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_init_from_given(struct vk_bundle *vk,
@@ -275,7 +275,7 @@ vk_init_from_given(struct vk_bundle *vk,
                    uint32_t queue_index);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 bool
 vk_get_memory_type(struct vk_bundle *vk,
@@ -313,7 +313,7 @@ vk_get_memory_type(struct vk_bundle *vk,
  * If this fails, you may want to destroy your VkImage as well, since this
  * routine is usually used in combination with vkCreateImage.
  *
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
@@ -324,7 +324,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
                                VkDeviceSize *out_size);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_create_image_from_fd(struct vk_bundle *vk,
@@ -339,7 +339,7 @@ vk_create_image_from_fd(struct vk_bundle *vk,
                         VkDeviceMemory *out_mem);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_create_image_simple(struct vk_bundle *vk,
@@ -350,13 +350,13 @@ vk_create_image_simple(struct vk_bundle *vk,
                        VkImage *out_image);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_create_sampler(struct vk_bundle *vk, VkSampler *out_sampler);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_create_view(struct vk_bundle *vk,
@@ -366,13 +366,13 @@ vk_create_view(struct vk_bundle *vk,
                VkImageView *out_view);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_set_image_layout(struct vk_bundle *vk,
@@ -385,7 +385,7 @@ vk_set_image_layout(struct vk_bundle *vk,
                     VkImageSubresourceRange subresource_range);
 
 /*!
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 VkResult
 vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);

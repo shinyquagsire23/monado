@@ -1,11 +1,11 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Common Vulkan code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
- * @ingroup comp_common
+ * @ingroup aux_vk
  */
 
 #include <stdio.h>
@@ -15,7 +15,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 
-#include "common/comp_vk.h"
+#include "vk/vk_helpers.h"
 
 
 /*

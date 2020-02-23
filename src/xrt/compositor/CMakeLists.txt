@@ -13,8 +13,6 @@ spirv_shaders(SHADER_HEADERS
 set(SOURCE_FILES
 	client/comp_vk_client.c
 	client/comp_vk_client.h
-	common/comp_vk.c
-	common/comp_vk.h
 	common/comp_vk_swapchain.h
 	common/comp_vk_swapchain.c
 	main/comp_client_interface.h
@@ -33,11 +31,9 @@ set(SOURCE_FILES
 	)
 
 if(BUILD_WITH_XCB)
-	add_definitions(-DVK_USE_PLATFORM_XCB_KHR)
 	list(APPEND SOURCE_FILES main/comp_window_xcb.cpp)
 endif()
 if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
-	add_definitions(-DVK_USE_PLATFORM_XLIB_XRANDR_EXT)
 	list(APPEND SOURCE_FILES main/comp_window_direct_mode.cpp)
 endif()
 if(BUILD_WITH_OPENGL)
@@ -84,8 +80,6 @@ if(BUILD_WITH_WAYLAND)
 
 	set(WL_PROTOS_SRC ${WL_PROTOS_C} ${WL_PROTOS_H})
 	list(APPEND SOURCE_FILES main/comp_window_wayland.c)
-
-	add_definitions(-DVK_USE_PLATFORM_WAYLAND_KHR)
 endif()
 
 if (${VULKAN_ENABLE_VALIDATION})

@@ -69,6 +69,7 @@ openxr = library(
 		hack_src,
 	),
 	link_whole: [
+		lib_aux_vk,
 		lib_aux_os,
 		lib_aux_ogl,
 		lib_aux_util,

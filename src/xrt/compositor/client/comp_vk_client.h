@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "common/comp_vk.h"
+#include "vk/vk_helpers.h"
 #include "xrt/xrt_gfx_vk.h"
 
 #ifdef __cplusplus

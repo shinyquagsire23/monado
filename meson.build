@@ -220,6 +220,18 @@ if sdl2.found()
 endif
 
 
+# Vulkan flags for the shared Vulkan code.
+if build_wayland
+	add_project_arguments('-DVK_USE_PLATFORM_WAYLAND_KHR', language: ['c', 'cpp'])
+endif
+if build_xcb
+	add_project_arguments('-DVK_USE_PLATFORM_XCB_KHR', language: ['c', 'cpp'])
+endif
+if build_xcb_xrandr_direct
+	add_project_arguments('-DVK_USE_PLATFORM_XLIB_XRANDR_EXT', language: ['c', 'cpp'])
+endif
+
+
 #
 # Go down sub directories
 #

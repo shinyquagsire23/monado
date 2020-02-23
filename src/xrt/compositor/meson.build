@@ -9,8 +9,6 @@ compositor_deps = [aux, shaders, vulkan]
 compositor_srcs = [
 	'client/comp_vk_client.c',
 	'client/comp_vk_client.h',
-	'common/comp_vk.c',
-	'common/comp_vk.h',
 	'common/comp_vk_swapchain.h',
 	'common/comp_vk_swapchain.c',
 	'main/comp_client_interface.h',
@@ -31,13 +29,11 @@ compositor_srcs = [
 compile_args = []
 
 if build_xcb
-	compile_args += ['-DVK_USE_PLATFORM_XCB_KHR']
 	compositor_srcs += ['main/comp_window_xcb.cpp']
 	compositor_deps += [xcb]
 endif
 
 if build_xcb_xrandr_direct
-	compile_args += ['-DVK_USE_PLATFORM_XLIB_XRANDR_EXT']
 	compositor_srcs += ['main/comp_window_direct_mode.cpp']
 	compositor_deps += [xcb_randr]
 endif
@@ -103,7 +99,6 @@ if build_wayland
 		sources: wl_protos_headers,
 	)
 
-	compile_args += ['-DVK_USE_PLATFORM_WAYLAND_KHR']
 	compositor_srcs += ['main/comp_window_wayland.c']
 	compositor_deps += [wayland, wl_protos]
 endif

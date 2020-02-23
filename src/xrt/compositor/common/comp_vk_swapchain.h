@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "common/comp_vk.h"
+#include "vk/vk_helpers.h"
 
 #ifdef __cplusplus
 extern "C" {
