@@ -1,4 +1,4 @@
-// Copyright 2018-2019, Collabora, Ltd.
+// Copyright 2018-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -13,7 +13,12 @@
 #include <vulkan/vulkan.h>
 
 #ifdef __cplusplus
-extern "C"
+extern "C" {
 #endif
-    VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
-    vkGetInstanceProcAddr(VkInstance instance, const char *pName);
+
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
+vkGetInstanceProcAddr(VkInstance instance, const char *pName);
+
+#ifdef __cplusplus
+}
+#endif
