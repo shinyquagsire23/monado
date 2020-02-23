@@ -25,8 +25,9 @@ extern "C" {
  */
 
 /*!
- * A bundle of Vulkan functions and objects, shared between @ref comp and
- * @ref comp_client.
+ * A bundle of Vulkan functions and objects, used by both @ref comp and @ref
+ * comp_client. Note that they both have different instances of the object and
+ * as such VkInstance and so on.
  *
  * @ingroup comp_common
  */
