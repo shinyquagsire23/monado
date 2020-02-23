@@ -44,12 +44,6 @@ static VkFormat preferred_color_formats[] = {
  */
 
 static void
-vk_swapchain_create_image_view(struct vk_bundle *vk,
-                               VkImage image,
-                               VkFormat format,
-                               VkImageView *view);
-
-static void
 vk_swapchain_create_image_views(struct vk_swapchain *sc);
 
 static void
@@ -450,11 +444,19 @@ vk_swapchain_create_image_views(struct vk_swapchain *sc)
 	sc->buffers =
 	    U_TYPED_ARRAY_CALLOC(struct vk_swapchain_buffer, sc->image_count);
 
+	VkImageSubresourceRange subresource_range = {
+	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .baseMipLevel = 0,
+	    .levelCount = 1,
+	    .baseArrayLayer = 0,
+	    .layerCount = 1,
+	};
+
 	for (uint32_t i = 0; i < sc->image_count; i++) {
 		sc->buffers[i].image = images[i];
-		vk_swapchain_create_image_view(sc->vk, sc->buffers[i].image,
-		                               sc->surface_format.format,
-		                               &sc->buffers[i].view);
+		vk_create_view(sc->vk, sc->buffers[i].image,
+		               sc->surface_format.format, subresource_range,
+		               &sc->buffers[i].view);
 	}
 
 	free(images);
@@ -475,43 +477,5 @@ vk_swapchain_cleanup(struct vk_swapchain *sc)
 		sc->vk->vkDestroySurfaceKHR(sc->vk->instance, sc->surface,
 		                            NULL);
 		sc->swap_chain = VK_NULL_HANDLE;
-	}
-}
-
-static void
-vk_swapchain_create_image_view(struct vk_bundle *vk,
-                               VkImage image,
-                               VkFormat format,
-                               VkImageView *view)
-{
-	VkResult ret;
-
-	VkImageViewCreateInfo view_create_info = {
-	    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
-	    .image = image,
-	    .viewType = VK_IMAGE_VIEW_TYPE_2D,
-	    .format = format,
-	    .components =
-	        {
-	            .r = VK_COMPONENT_SWIZZLE_R,
-	            .g = VK_COMPONENT_SWIZZLE_G,
-	            .b = VK_COMPONENT_SWIZZLE_B,
-	            .a = VK_COMPONENT_SWIZZLE_A,
-	        },
-	    .subresourceRange =
-	        {
-	            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-	            .baseMipLevel = 0,
-	            .levelCount = 1,
-	            .baseArrayLayer = 0,
-	            .layerCount = 1,
-	        },
-	};
-
-	ret = vk->vkCreateImageView(vk->device, &view_create_info, NULL, view);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateImageView: %s", vk_result_string(ret));
 	}
 }
