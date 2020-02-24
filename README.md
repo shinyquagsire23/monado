@@ -193,7 +193,7 @@ if your clang-format binary isn't named `clang-format`.
 Note that you'll typically prefer to use something like `git clang-format`
 to just re-format your changes, in case version differences in tools result in overall format changes.
 
-[OpenHMD]: https://openhmd.net
+[OpenHMD]: http://openhmd.net
 [drm-lease]: https://haagch.frickel.club/#!drmlease%2Emd
 [OpenXR]: https://khronos.org/openxr
 [clang-format]: https://releases.llvm.org/7.0.0/tools/clang/docs/ClangFormat.html
