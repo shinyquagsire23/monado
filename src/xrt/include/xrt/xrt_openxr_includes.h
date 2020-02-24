@@ -14,7 +14,7 @@
 #define XR_USE_TIMESPEC 1
 
 #ifdef XR_USE_PLATFORM_XLIB
-typedef void *Display;
+typedef struct _XDisplay Display;
 typedef void *GLXFBConfig;
 typedef void *GLXDrawable;
 typedef void *GLXContext;
