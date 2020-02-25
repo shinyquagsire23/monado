@@ -640,6 +640,12 @@ oxr_session_frame_end(struct oxr_logger *log,
 		                 " frame not begun with xrBeginFrame");
 	}
 
+	if (frameEndInfo->displayTime <= 0) {
+		return oxr_error(log, XR_ERROR_TIME_INVALID,
+		                 "(frameEndInfo->displayTime) zero or a "
+		                 "negative value is not a valid XrTime");
+	}
+
 	struct xrt_compositor *xc = sess->compositor;
 
 	/*
