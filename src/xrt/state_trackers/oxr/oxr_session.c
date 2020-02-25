@@ -651,19 +651,11 @@ oxr_session_frame_end(struct oxr_logger *log,
 		return oxr_session_success_result(sess);
 	}
 
-	/*
-	 * Early out for discarded frame if layer count is 0,
-	 * since then blend mode, etc. doesn't matter.
-	 */
-	if (frameEndInfo->layerCount == 0) {
-		xrt_comp_discard_frame(xc);
-		sess->frame_started = false;
-
-		return oxr_session_success_result(sess);
-	}
 
 	/*
 	 * Blend mode.
+	 * XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED must always be reported,
+	 * even with 0 layers.
 	 */
 
 	enum xrt_blend_mode blend_mode =
@@ -682,6 +674,15 @@ oxr_session_frame_end(struct oxr_logger *log,
 		                 "is not supported");
 	}
 
+	/*
+	 * Early out for discarded frame if layer count is 0.
+	 */
+	if (frameEndInfo->layerCount == 0) {
+		xrt_comp_discard_frame(xc);
+		sess->frame_started = false;
+
+		return oxr_session_success_result(sess);
+	}
 
 	/*
 	 * Layers.
