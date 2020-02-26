@@ -4,6 +4,10 @@ This documentation is intended for developers wanting to dive into the code of
 Monado. And assumes that you have read [README.md][], the file also holdss
 getting started information and general documentation.
 
+
+## Useful pages
+ * @ref md_writing-a-new-driver (**not complete**)
+
 ## Source layout
 
  * src/xrt/include - @ref xrt_iface defines the internal interfaces of Monado.
