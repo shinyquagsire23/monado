@@ -1,7 +1,7 @@
 ## Changed properties goes on the top.
 
 QUIET                  = YES
-PROJECT_NAME           = "OpenXR Runtime"
+PROJECT_NAME           = "Monado OpenXR Runtime"
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/
 INPUT                  = \
      @CMAKE_CURRENT_SOURCE_DIR@/../src/xrt \
