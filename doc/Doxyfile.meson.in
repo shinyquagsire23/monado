@@ -13,7 +13,7 @@ RECURSIVE              = YES
 EXCLUDE                = @SRCDIR@/src/external \
                          @BUILDDIR@
 STRIP_FROM_PATH        = @SRCDIR@/src/xrt \
-                         @SRCDIR@
+                         @SRCDIR@/doc
 
 
 PREDEFINED             = VK_USE_PLATFORM_XCB_KHR \
