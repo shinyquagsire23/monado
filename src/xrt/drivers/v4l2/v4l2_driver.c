@@ -904,10 +904,7 @@ v4l2_fs_stream_run(void *ptr)
 		xf->source_sequence = v_buf.sequence;
 
 		if ((v_buf.flags & V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC) != 0) {
-			int64_t ns = 0;
-			ns += v_buf.timestamp.tv_sec * 1000 * 1000 * 1000;
-			ns += v_buf.timestamp.tv_usec * 1000;
-			xf->timestamp = ns;
+			xf->timestamp = os_timeval_to_ns(&v_buf.timestamp);
 		}
 
 		vid->sink->push_frame(vid->sink, xf);
