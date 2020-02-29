@@ -307,14 +307,15 @@ push_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 		return;
 	}
 
-	if (f->debug != NULL) {
-		f->debug->push_frame(f->debug, xf);
-	}
-
 	push_buf(f, xf, f->sinks[0], &f->frame0);
 	push_buf(f, xf, f->sinks[1], &f->frame1);
 	push_buf(f, xf, f->sinks[2], &f->frame2);
 	push_buf(f, xf, f->sinks[3], &f->frame3);
+
+	// Push the debug frame last, there might be a conversion involved.
+	if (f->debug != NULL) {
+		f->debug->push_frame(f->debug, xf);
+	}
 
 	assert(f->frame0 == NULL);
 	assert(f->frame1 == NULL);
