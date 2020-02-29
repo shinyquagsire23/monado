@@ -26,14 +26,14 @@ extern "C" {
 /*!
  * Callback when a @ref vk_swapchain changes size.
  *
- * @ingroup comp_common
+ * @ingroup comp
  */
 typedef void (*vk_swapchain_cb)(uint32_t width, uint32_t height, void *priv);
 
 /*!
  * A pair of VkImage and VkImageView.
  *
- * @ingroup comp_common
+ * @ingroup comp
  */
 struct vk_swapchain_buffer
 {
@@ -44,7 +44,7 @@ struct vk_swapchain_buffer
 /*!
  * Wraps and manage VkSwapchainKHR and VkSurfaceKHR, used by @ref comp code.
  *
- * @ingroup comp_common
+ * @ingroup comp
  */
 struct vk_swapchain
 {
@@ -76,7 +76,7 @@ struct vk_swapchain
 /*!
  * Wraps and manage VkSwapchainKHR and VkSurfaceKHR, used by @ref comp code.
  *
- * @ingroup comp_common
+ * @ingroup comp
  */
 void
 vk_swapchain_init(struct vk_swapchain *sc,
@@ -87,7 +87,7 @@ vk_swapchain_init(struct vk_swapchain *sc,
 /*!
  * Initialize the given @ref vk_swapchain, does not allocate.
  *
- * @ingroup comp_common
+ * @ingroup comp
  */
 void
 vk_swapchain_create(struct vk_swapchain *sc,
@@ -100,7 +100,7 @@ vk_swapchain_create(struct vk_swapchain *sc,
 /*!
  * Acquire a image index from the given @ref vk_swapchain for rendering.
  *
- * @ingroup comp_common
+ * @ingroup comp
  */
 VkResult
 vk_swapchain_acquire_next_image(struct vk_swapchain *sc,
@@ -110,7 +110,7 @@ vk_swapchain_acquire_next_image(struct vk_swapchain *sc,
 /*!
  * Make the given @ref vk_swapchain present the next acquired image.
  *
- * @ingroup comp_common
+ * @ingroup comp
  */
 VkResult
 vk_swapchain_present(struct vk_swapchain *sc,
@@ -122,7 +122,7 @@ vk_swapchain_present(struct vk_swapchain *sc,
  * Free all managed resources on the given @ref vk_swapchain,
  * does not free the struct itself.
  *
- * @ingroup comp_common
+ * @ingroup comp
  */
 void
 vk_swapchain_cleanup(struct vk_swapchain *sc);

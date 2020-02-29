@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "common/comp_vk_swapchain.h"
+#include "main/comp_vk_swapchain.h"
 #include "main/comp_compositor.h"
 
 #ifdef __cplusplus

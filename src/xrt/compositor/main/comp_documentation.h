@@ -26,17 +26,10 @@
  */
 
 /*!
- * @defgroup comp_common Common compositor code
- * @ingroup comp
- *
- * @brief Common compositor code shared between main and client code.
- */
-
-/*!
  * @dir compositor
  * @ingroup xrt
  *
- * @brief Shared code and helpers for Monado.
+ * @brief The compositor for Monado.
  */
 
 /*!
@@ -44,13 +37,6 @@
  * @ingroup comp
  *
  * @brief Smaller pieces of auxiliary utilities code.
- */
-
-/*!
- * @dir compositor/common
- * @ingroup comp
- *
- * @brief Common compositor code shared between main and client code.
  */
 
 /*!

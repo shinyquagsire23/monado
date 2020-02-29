@@ -13,8 +13,6 @@ spirv_shaders(SHADER_HEADERS
 set(SOURCE_FILES
 	client/comp_vk_client.c
 	client/comp_vk_client.h
-	common/comp_vk_swapchain.h
-	common/comp_vk_swapchain.c
 	main/comp_client_interface.h
 	main/comp_compositor.c
 	main/comp_compositor.h
@@ -27,6 +25,8 @@ set(SOURCE_FILES
 	main/comp_settings.c
 	main/comp_settings.h
 	main/comp_swapchain.c
+	main/comp_vk_swapchain.c
+	main/comp_vk_swapchain.h
 	main/comp_window.h
 	)
 
