@@ -41,8 +41,7 @@ xrt_gfx_vk_get_versions(struct xrt_api_requirements *ver);
  * @ingroup xrt_iface
  */
 struct xrt_compositor_vk *
-xrt_gfx_vk_provider_create(struct xrt_device *xdev,
-                           struct time_state *timekeeping,
+xrt_gfx_vk_provider_create(struct xrt_compositor_fd *xcfd,
                            VkInstance instance,
                            PFN_vkGetInstanceProcAddr get_instance_proc_addr,
                            VkPhysicalDevice physical_device,

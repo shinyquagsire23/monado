@@ -16,7 +16,6 @@
 #include <stdlib.h>
 
 #include "client/comp_gl_client.h"
-#include "main/comp_client_interface.h"
 #include "util/u_misc.h"
 #include "xrt/xrt_gfx_egl.h"
 
@@ -37,8 +36,7 @@ client_egl_compositor_destroy(struct xrt_compositor *xc)
 }
 
 struct xrt_compositor_gl *
-xrt_gfx_provider_create_gl_egl(struct xrt_device *xdev,
-                               struct time_state *timekeeping,
+xrt_gfx_provider_create_gl_egl(struct xrt_compositor_fd *xcfd,
                                EGLDisplay display,
                                EGLConfig config,
                                EGLContext context,
@@ -54,13 +52,6 @@ xrt_gfx_provider_create_gl_egl(struct xrt_device *xdev,
 
 	if (!eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
 		fprintf(stderr, "Failed to make EGL context current\n");
-		return NULL;
-	}
-
-	struct xrt_compositor_fd *xcfd =
-	    comp_compositor_create(xdev, timekeeping, true);
-	if (xcfd == NULL) {
-		fprintf(stderr, "Failed to create compositor\n");
 		return NULL;
 	}
 

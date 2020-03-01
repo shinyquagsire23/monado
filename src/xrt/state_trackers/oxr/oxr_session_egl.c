@@ -22,6 +22,7 @@
 #define EGL_NO_X11              // libglvnd
 #define MESA_EGL_NO_X11_HEADERS // mesa
 #include <EGL/egl.h>
+#include "xrt/xrt_gfx_fd.h"
 #include "xrt/xrt_gfx_egl.h"
 
 // Not forward declared by mesa
@@ -61,13 +62,21 @@ oxr_session_populate_egl(struct oxr_logger *log,
 		                 "unsupported EGL client type");
 	}
 
-	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_egl(
-	    sys->head, sys->inst->timekeeping, next->display, next->config,
-	    next->context, next->getProcAddress);
+	struct xrt_compositor_fd *xcfd =
+	    xrt_gfx_provider_create_fd(sys->head, sys->inst->timekeeping, true);
+	if (xcfd == NULL) {
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
+		                 " failed create a fd compositor");
+	}
+
+	struct xrt_compositor_gl *xcgl =
+	    xrt_gfx_provider_create_gl_egl(xcfd, next->display, next->config,
+	                                   next->context, next->getProcAddress);
 
 	if (xcgl == NULL) {
+		xcfd->base.destroy(&xcfd->base);
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 " failed create a compositor");
+		                 " failed create a egl client compositor");
 	}
 
 	sess->compositor = &xcgl->base;

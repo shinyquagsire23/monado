@@ -12,6 +12,7 @@
 
 #include "util/u_misc.h"
 
+#include "xrt/xrt_gfx_fd.h"
 #include "xrt/xrt_gfx_vk.h"
 
 #include "oxr_objects.h"
@@ -25,14 +26,21 @@ oxr_session_populate_vk(struct oxr_logger *log,
                         XrGraphicsBindingVulkanKHR const *next,
                         struct oxr_session *sess)
 {
+	struct xrt_compositor_fd *xcfd = xrt_gfx_provider_create_fd(
+	    sys->head, sys->inst->timekeeping, false);
+	if (xcfd == NULL) {
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
+		                 " failed create a fd compositor");
+	}
+
 	struct xrt_compositor_vk *xcvk = xrt_gfx_vk_provider_create(
-	    sys->head, sys->inst->timekeeping, next->instance,
-	    vkGetInstanceProcAddr, next->physicalDevice, next->device,
-	    next->queueFamilyIndex, next->queueIndex);
+	    xcfd, next->instance, vkGetInstanceProcAddr, next->physicalDevice,
+	    next->device, next->queueFamilyIndex, next->queueIndex);
 
 	if (xcvk == NULL) {
+		xcfd->base.destroy(&xcfd->base);
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 " failed create a compositor");
+		                 " failed create a vk client compositor");
 	}
 
 	sess->compositor = &xcvk->base;

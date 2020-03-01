@@ -27,8 +27,7 @@ struct time_state;
  * @ingroup xrt_iface
  */
 struct xrt_compositor_gl *
-xrt_gfx_provider_create_gl_xlib(struct xrt_device *xdev,
-                                struct time_state *timekeeping,
+xrt_gfx_provider_create_gl_xlib(struct xrt_compositor_fd *xcfd,
                                 Display *xDisplay,
                                 uint32_t visualid,
                                 GLXFBConfig glxFBConfig,

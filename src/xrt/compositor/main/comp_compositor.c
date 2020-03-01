@@ -54,7 +54,6 @@
 #include "util/u_time.h"
 
 #include "main/comp_compositor.h"
-#include "main/comp_client_interface.h"
 
 #include <unistd.h>
 #include <math.h>
@@ -755,9 +754,9 @@ compositor_init_renderer(struct comp_compositor *c)
 
 
 struct xrt_compositor_fd *
-comp_compositor_create(struct xrt_device *xdev,
-                       struct time_state *timekeeping,
-                       bool flip_y)
+xrt_gfx_provider_create_fd(struct xrt_device *xdev,
+                           struct time_state *timekeeping,
+                           bool flip_y)
 {
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 

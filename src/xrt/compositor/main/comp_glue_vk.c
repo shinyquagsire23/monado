@@ -9,7 +9,6 @@
 
 #include <stdlib.h>
 
-#include "main/comp_client_interface.h"
 #include "client/comp_vk_client.h"
 
 
@@ -44,8 +43,7 @@ xrt_gfx_vk_get_versions(struct xrt_api_requirements *ver)
 }
 
 struct xrt_compositor_vk *
-xrt_gfx_vk_provider_create(struct xrt_device *xdev,
-                           struct time_state *timekeeping,
+xrt_gfx_vk_provider_create(struct xrt_compositor_fd *xcfd,
                            VkInstance instance,
                            PFN_vkGetInstanceProcAddr get_instance_proc_addr,
                            VkPhysicalDevice physical_device,
@@ -53,12 +51,6 @@ xrt_gfx_vk_provider_create(struct xrt_device *xdev,
                            uint32_t queue_family_index,
                            uint32_t queue_index)
 {
-	struct xrt_compositor_fd *xcfd =
-	    comp_compositor_create(xdev, timekeeping, false);
-	if (xcfd == NULL) {
-		return NULL;
-	}
-
 	struct client_vk_compositor *vcc = client_vk_compositor_create(
 	    xcfd, instance, get_instance_proc_addr, physical_device, device,
 	    queue_family_index, queue_index);
