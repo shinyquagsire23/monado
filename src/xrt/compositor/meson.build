@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 subdir('shaders')
@@ -9,13 +9,12 @@ compositor_deps = [aux, shaders, vulkan]
 compositor_srcs = [
 	'client/comp_vk_client.c',
 	'client/comp_vk_client.h',
-	'main/comp_client_interface.h',
+	'client/comp_vk_glue.c',
 	'main/comp_compositor.c',
 	'main/comp_compositor.h',
 	'main/comp_distortion.c',
 	'main/comp_distortion.h',
 	'main/comp_documentation.h',
-	'main/comp_glue_vk.c',
 	'main/comp_renderer.c',
 	'main/comp_renderer.h',
 	'main/comp_settings.c',
@@ -42,8 +41,8 @@ if build_opengl
 	compositor_srcs += [
 		'client/comp_gl_client.c',
 		'client/comp_gl_client.h',
-		'main/comp_glue_gl.c',
-		'main/comp_glue_gles.c',
+		'client/comp_gl_glue.c',
+		'client/comp_gles_glue.c',
 	]
 	compositor_deps += [opengl]
 endif
@@ -51,14 +50,15 @@ endif
 if build_opengl and build_xlib
 	compositor_srcs += [
 		'client/comp_gl_xlib_client.c',
-		'main/comp_glue_gl_xlib.c',
+		'client/comp_gl_xlib_client.h',
+		'client/comp_gl_xlib_glue.c',
 	]
 	compositor_deps += [x11]
 endif
 
 if build_egl
 	compositor_srcs += [
-		'main/comp_glue_egl.c',
+		'client/comp_egl_glue.c',
 	]
 	compositor_deps += [egl]
 endif

@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 spirv_shaders(SHADER_HEADERS
@@ -13,13 +13,12 @@ spirv_shaders(SHADER_HEADERS
 set(SOURCE_FILES
 	client/comp_vk_client.c
 	client/comp_vk_client.h
-	main/comp_client_interface.h
+	client/comp_vk_glue.c
 	main/comp_compositor.c
 	main/comp_compositor.h
 	main/comp_distortion.c
 	main/comp_distortion.h
 	main/comp_documentation.h
-	main/comp_glue_vk.c
 	main/comp_renderer.c
 	main/comp_renderer.h
 	main/comp_settings.c
@@ -40,19 +39,22 @@ if(BUILD_WITH_OPENGL)
 	list(APPEND SOURCE_FILES
 		client/comp_gl_client.c
 		client/comp_gl_client.h
-		main/comp_glue_gl.c
-		main/comp_glue_gles.c # TODO separate config for GLES
+		client/comp_gl_glue.c
+		client/comp_gles_glue.c # TODO separate config for GLES
 		)
 endif()
 if(BUILD_WITH_OPENGL AND BUILD_WITH_XLIB)
 	list(APPEND SOURCE_FILES
 		client/comp_gl_xlib_client.c
-		main/comp_glue_gl_xlib.c
+		client/comp_gl_xlib_client.h
+		client/comp_gl_xlib_glue.c
 		)
 
 endif()
 if(BUILD_WITH_OPENGL AND BUILD_WITH_EGL)
-	list(APPEND SOURCE_FILES main/comp_glue_egl.c)
+	list(APPEND SOURCE_FILES
+		client/comp_egl_glue.c
+		)
 endif()
 
 # generate wayland protocols
