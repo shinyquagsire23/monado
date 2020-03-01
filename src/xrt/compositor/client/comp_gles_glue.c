@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Glue code to OpenGL ES client side glue code.
+ * @brief  Glue code to OpenGL ES client side code.
  * @author Simon Ser <contact@emersion.fr>
- * @ingroup comp
+ * @ingroup comp_client
  */
 
 #include "xrt/xrt_gfx_gles.h"

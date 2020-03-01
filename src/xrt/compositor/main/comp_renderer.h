@@ -5,7 +5,7 @@
  * @brief  Compositor rendering code header.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  */
 
 #pragma once
@@ -24,7 +24,7 @@ struct comp_swapchain_image;
 /*!
  * Called by the main compositor code to create the renderer.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_renderer *
 comp_renderer_create(struct comp_compositor *c);
@@ -32,7 +32,7 @@ comp_renderer_create(struct comp_compositor *c);
 /*!
  * Render a distorted stereo frame.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 comp_renderer_frame(struct comp_renderer *r,
@@ -44,7 +44,7 @@ comp_renderer_frame(struct comp_renderer *r,
 /*!
  * Clean up and free the renderer.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 comp_renderer_destroy(struct comp_renderer *r);

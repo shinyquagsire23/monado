@@ -5,7 +5,7 @@
  * @brief  Wayland window code.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  */
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR

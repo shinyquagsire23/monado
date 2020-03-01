@@ -5,7 +5,7 @@
  * @brief  Distortion shader code.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  */
 
 #include <stdio.h>

@@ -5,7 +5,7 @@
  * @brief  Glue code to EGL client side glue code.
  * @author Drew DeVault <sir@cmpwn.com>
  * @author Simon Ser <contact@emersion.fr>
- * @ingroup comp
+ * @ingroup comp_client
  */
 
 #define EGL_EGL_PROTOTYPES 0

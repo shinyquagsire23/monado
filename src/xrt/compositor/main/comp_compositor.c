@@ -6,7 +6,7 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  *
  *
  * begin_frame and end_frame delimit the application's work on graphics for a

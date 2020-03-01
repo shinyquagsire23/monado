@@ -5,7 +5,7 @@
  * @brief  Distortion shader code header.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  */
 
 #pragma once
@@ -29,7 +29,7 @@ extern "C" {
 /*!
  * Helper buffer for a single uniform buffer.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_uniform_buffer
 {
@@ -47,7 +47,7 @@ struct comp_uniform_buffer
 /*!
  * Helper struct that encapsulate a distortion rendering code.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_distortion
 {
@@ -116,7 +116,7 @@ struct comp_distortion
 /*!
  * Init a distortion, pass in the distortion so it can be embedded in a struct.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 comp_distortion_init(struct comp_distortion *d,
@@ -131,7 +131,7 @@ comp_distortion_init(struct comp_distortion *d,
 /*!
  * Free and destroy all fields, does not free the destortion itself.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 comp_distortion_destroy(struct comp_distortion *d);
@@ -139,7 +139,7 @@ comp_distortion_destroy(struct comp_distortion *d);
 /*!
  * Update the descriptor set to a new image.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 comp_distortion_update_descriptor_set(struct comp_distortion *d,
@@ -150,7 +150,7 @@ comp_distortion_update_descriptor_set(struct comp_distortion *d,
 /*!
  * Submit draw commands to the given command_buffer.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 comp_distortion_draw_quad(struct comp_distortion *d,

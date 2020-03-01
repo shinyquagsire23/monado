@@ -5,7 +5,7 @@
  * @brief  Compositor window header.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  */
 
 #pragma once
@@ -27,7 +27,7 @@ extern "C" {
 /*!
  * A output device or a window, often directly connected to the device.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_window
 {
@@ -60,7 +60,7 @@ struct comp_window
 /*!
  * Create a xcb window.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_window *
 comp_window_xcb_create(struct comp_compositor *c);
@@ -70,7 +70,7 @@ comp_window_xcb_create(struct comp_compositor *c);
 /*!
  * Create a wayland window.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_window *
 comp_window_wayland_create(struct comp_compositor *c);
@@ -80,7 +80,7 @@ comp_window_wayland_create(struct comp_compositor *c);
 /*!
  * Create a direct surface to a HMD.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_window *
 comp_window_direct_create(struct comp_compositor *c);

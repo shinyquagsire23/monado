@@ -5,7 +5,7 @@
  * @brief  Vulkan swapchain code.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp_client
+ * @ingroup comp_main
  */
 
 

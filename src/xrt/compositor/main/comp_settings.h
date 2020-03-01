@@ -5,7 +5,7 @@
  * @brief  Settings struct for compositor header.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  */
 
 #pragma once
@@ -32,7 +32,7 @@ XRT_MAYBE_UNUSED static const char *NV_DIRECT_WHITELIST[] = {
 /*!
  * Window type to use.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 enum window_type
 {
@@ -48,7 +48,7 @@ enum window_type
 /*!
  * Settings for the compositor.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_settings
 {
@@ -104,7 +104,7 @@ struct comp_settings
 /*!
  * Initialize the settings struct with either defaults or loaded setting.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 comp_settings_init(struct comp_settings *s, struct xrt_device *xdev);

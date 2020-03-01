@@ -5,7 +5,7 @@
  * @brief  Vulkan swapchain code header.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp_client
+ * @ingroup comp_main
  */
 
 #pragma once
@@ -26,14 +26,14 @@ extern "C" {
 /*!
  * Callback when a @ref vk_swapchain changes size.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 typedef void (*vk_swapchain_cb)(uint32_t width, uint32_t height, void *priv);
 
 /*!
  * A pair of VkImage and VkImageView.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct vk_swapchain_buffer
 {
@@ -44,7 +44,7 @@ struct vk_swapchain_buffer
 /*!
  * Wraps and manage VkSwapchainKHR and VkSurfaceKHR, used by @ref comp code.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct vk_swapchain
 {
@@ -76,7 +76,7 @@ struct vk_swapchain
 /*!
  * Wraps and manage VkSwapchainKHR and VkSurfaceKHR, used by @ref comp code.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 vk_swapchain_init(struct vk_swapchain *sc,
@@ -87,7 +87,7 @@ vk_swapchain_init(struct vk_swapchain *sc,
 /*!
  * Initialize the given @ref vk_swapchain, does not allocate.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 vk_swapchain_create(struct vk_swapchain *sc,
@@ -100,7 +100,7 @@ vk_swapchain_create(struct vk_swapchain *sc,
 /*!
  * Acquire a image index from the given @ref vk_swapchain for rendering.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 VkResult
 vk_swapchain_acquire_next_image(struct vk_swapchain *sc,
@@ -110,7 +110,7 @@ vk_swapchain_acquire_next_image(struct vk_swapchain *sc,
 /*!
  * Make the given @ref vk_swapchain present the next acquired image.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 VkResult
 vk_swapchain_present(struct vk_swapchain *sc,
@@ -122,7 +122,7 @@ vk_swapchain_present(struct vk_swapchain *sc,
  * Free all managed resources on the given @ref vk_swapchain,
  * does not free the struct itself.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 vk_swapchain_cleanup(struct vk_swapchain *sc);

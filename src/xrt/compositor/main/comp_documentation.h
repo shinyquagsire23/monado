@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Main compositor written using Vulkan header.
+ * @brief  Documentation for the compositor.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @ingroup comp
@@ -15,11 +15,18 @@
  * @defgroup comp Compositor
  * @ingroup xrt
  *
- * @brief Main compositing code.
+ * @brief All of the compositor code.
  */
 
 /*!
- * @defgroup comp_client Compositor client glue code
+ * @defgroup comp_main Main compositor code
+ * @ingroup comp
+ *
+ * @brief  Main compositor code.
+ */
+
+/*!
+ * @defgroup comp_client Compositor client code
  * @ingroup comp
  *
  * @brief Glue code between client program to the main compositor.
@@ -29,19 +36,19 @@
  * @dir compositor
  * @ingroup xrt
  *
- * @brief The compositor for Monado.
+ * @brief All of the compositor code.
  */
 
 /*!
  * @dir compositor/client
  * @ingroup comp
  *
- * @brief Smaller pieces of auxiliary utilities code.
+ * @brief Compositor client code.
  */
 
 /*!
  * @dir compositor/main
  * @ingroup comp
  *
- * @brief Main chunk of compositor code.
+ * @brief Main compositor code.
  */

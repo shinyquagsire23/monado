@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Glue code to vulkan client side glue code.
+ * @brief  Glue code to vulkan client side code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp
+ * @ingroup comp_client
  */
 
 #include <stdlib.h>

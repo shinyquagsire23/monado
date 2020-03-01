@@ -5,7 +5,7 @@
  * @brief  Compositor rendering code.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  */
 
 #include <string.h>
@@ -28,7 +28,7 @@
 /*!
  * Holds associated vulkan objects and state to render with a distortion.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_renderer
 {

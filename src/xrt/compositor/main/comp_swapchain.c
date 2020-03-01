@@ -4,7 +4,7 @@
  * @file
  * @brief  Swapchain code for the main compositor.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  */
 
 #include <stdio.h>

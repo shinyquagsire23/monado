@@ -4,7 +4,7 @@
  * @file
  * @brief  Settings struct for compositor.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  */
 
 #include "util/u_debug.h"

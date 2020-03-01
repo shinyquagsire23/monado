@@ -5,7 +5,7 @@
  * @brief  Main compositor written using Vulkan header.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
- * @ingroup comp
+ * @ingroup comp_main
  */
 
 #pragma once
@@ -30,7 +30,7 @@ extern "C" {
 /*!
  * A single swapchain image, holds the needed state for tracking image usage.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_swapchain_image
 {
@@ -50,7 +50,7 @@ struct comp_swapchain_image
  *
  * Not used by the window backend that uses the vk_swapchain to render to.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_swapchain
 {
@@ -64,7 +64,7 @@ struct comp_swapchain
 /*!
  * Main compositor struct tying everything in the compositor together.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct comp_compositor
 {
@@ -139,7 +139,7 @@ struct comp_compositor
 /*!
  * Convinence function to convert a xrt_swapchain to a comp_swapchain.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 XRT_MAYBE_UNUSED static struct comp_swapchain *
 comp_swapchain(struct xrt_swapchain *xsc)
@@ -150,7 +150,7 @@ comp_swapchain(struct xrt_swapchain *xsc)
 /*!
  * Convinence function to convert a xrt_compositor to a comp_compositor.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 XRT_MAYBE_UNUSED static struct comp_compositor *
 comp_compositor(struct xrt_compositor *xc)
@@ -161,7 +161,7 @@ comp_compositor(struct xrt_compositor *xc)
 /*!
  * A compositor function that is implemented in the swapchain code.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 struct xrt_swapchain *
 comp_swapchain_create(struct xrt_compositor *xc,
@@ -179,7 +179,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
  * Free and destroy any initialized fields on the given image, safe to pass in
  * images that has one or all fields set to NULL.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 comp_swapchain_image_cleanup(struct vk_bundle *vk,
@@ -189,7 +189,7 @@ comp_swapchain_image_cleanup(struct vk_bundle *vk,
 /*!
  * Printer helper.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 void
 comp_compositor_print(struct comp_compositor *c,
@@ -200,7 +200,7 @@ comp_compositor_print(struct comp_compositor *c,
 /*!
  * Spew level logging.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 #define COMP_SPEW(c, ...)                                                      \
 	do {                                                                   \
@@ -212,7 +212,7 @@ comp_compositor_print(struct comp_compositor *c,
 /*!
  * Debug level logging.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 #define COMP_DEBUG(c, ...)                                                     \
 	do {                                                                   \
@@ -224,7 +224,7 @@ comp_compositor_print(struct comp_compositor *c,
 /*!
  * Mode printing.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 #define COMP_PRINT_MODE(c, ...)                                                \
 	do {                                                                   \
@@ -236,7 +236,7 @@ comp_compositor_print(struct comp_compositor *c,
 /*!
  * Error level logging.
  *
- * @ingroup comp
+ * @ingroup comp_main
  */
 #define COMP_ERROR(c, ...)                                                     \
 	do {                                                                   \
