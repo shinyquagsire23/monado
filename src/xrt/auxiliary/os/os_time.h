@@ -59,7 +59,7 @@ extern "C" {
  * @brief Sleep the given number of nanoseconds.
  * @ingroup aux_os_time
  */
-XRT_MAYBE_UNUSED static inline void
+static inline void
 os_nanosleep(long nsec)
 {
 #ifdef XRT_OS_LINUX
@@ -76,7 +76,7 @@ os_nanosleep(long nsec)
  * @brief Convert a timespec struct to nanoseconds.
  * @ingroup aux_os_time_extra
  */
-XRT_MAYBE_UNUSED static inline uint64_t
+static inline uint64_t
 os_timespec_to_ns(struct timespec *spec)
 {
 	uint64_t ns = 0;
@@ -92,7 +92,7 @@ os_timespec_to_ns(struct timespec *spec)
  * @brief Convert a timeval struct to nanoseconds.
  * @ingroup aux_os_time_extra
  */
-XRT_MAYBE_UNUSED static inline uint64_t
+static inline uint64_t
 os_timeval_to_ns(struct timeval *val)
 {
 	uint64_t ns = 0;
@@ -107,7 +107,7 @@ os_timeval_to_ns(struct timeval *val)
  * @brief Return a monotonic clock in nanoseconds.
  * @ingroup aux_os_time
  */
-XRT_MAYBE_UNUSED static inline uint64_t
+static inline uint64_t
 os_monotonic_get_ns(void)
 {
 #ifdef XRT_OS_LINUX
