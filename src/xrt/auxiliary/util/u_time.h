@@ -1,9 +1,14 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Time-keeping: a clock that is steady, convertible to system time, and
  * ideally high-resolution.
+ *
+ * Designed to suit the needs of OpenXR: you can and should use something
+ * simpler (like @ref aux_os_time) for most purposes that aren't in OpenXR
+ * interface code.
+ *
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_util
  *
@@ -146,6 +151,21 @@ timepoint_ns
 time_state_from_timespec(struct time_state const *state,
                          const struct timespec *timespecTime);
 
+/*!
+ * Convert a monotonic system time (such as from @ref aux_os_time) to an
+ * adjusted integer timestamp.
+ *
+ * Adjustments may need to be applied to achieve the other guarantees that e.g.
+ * CLOCK_MONOTONIC does not provide: this function performs those adjustments.
+ *
+ * Should not be called simultaneously with time_state_get_now_and_update.
+ *
+ * @public @memberof time_state
+ * @ingroup aux_util
+ */
+timepoint_ns
+time_state_from_monotonic_ns(struct time_state const *state,
+                             uint64_t monotonic_ns);
 #ifdef __cplusplus
 }
 #endif

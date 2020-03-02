@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -8,19 +8,36 @@
  */
 
 #include "u_time.h"
+#include "xrt/xrt_config.h"
+#include "xrt/xrt_compiler.h"
 
 #include <chrono>
 #include <new>
 #include <assert.h>
 #include <stdlib.h>
+#include <time.h>
+
+#ifdef XRT_OS_LINUX
+#include <sys/time.h>
+#endif
 
 using namespace std::chrono;
 
 struct MatchingTimePoints
 {
+	MatchingTimePoints()
+	{
+#ifdef XRT_OS_LINUX
+		clock_gettime(CLOCK_MONOTONIC, &clock_monotonic);
+#endif
+	}
 	system_clock::time_point sys = system_clock::now();
 	steady_clock::time_point steady = steady_clock::now();
 	// high_resolution_clock::time_point highRes;
+
+#ifdef XRT_OS_LINUX
+	struct timespec clock_monotonic;
+#endif
 
 	timepoint_ns
 	getTimestamp(time_state const &prevState);
@@ -129,6 +146,22 @@ time_state_from_timespec(struct time_state const *state,
 
 	// duration between last update and the supplied timespec
 	auto sinceLastUpdate = state->lastTimePoints.sys - systemTimePoint;
+
+	// Offset the last timestamp by that duration.
+	return state->lastTime +
+	       duration_cast<nanoseconds>(sinceLastUpdate).count();
+}
+
+
+timepoint_ns
+time_state_from_monotonic_ns(struct time_state const *state,
+                             uint64_t monotonic_ns)
+{
+	assert(state != NULL);
+	auto sinceLastUpdate =
+	    seconds{state->lastTimePoints.clock_monotonic.tv_sec} +
+	    nanoseconds{state->lastTimePoints.clock_monotonic.tv_nsec} -
+	    nanoseconds{monotonic_ns};
 
 	// Offset the last timestamp by that duration.
 	return state->lastTime +
