@@ -191,7 +191,8 @@ unset(_comp)
 ###
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(HIDAPI
-REQUIRED_VARS
+	REQUIRED_VARS
+	HIDAPI_INCLUDE_DIR
 	${_hidapi_component_required_vars}
 	THREADS_FOUND
 	HANDLE_COMPONENTS)
