@@ -29,16 +29,16 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 	struct client_vk_compositor *c = sc->c;
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
-		if (sc->base.images[i] != NULL) {
+		if (sc->base.images[i] != VK_NULL_HANDLE) {
 			c->vk.vkDestroyImage(c->vk.device, sc->base.images[i],
 			                     NULL);
-			sc->base.images[i] = NULL;
+			sc->base.images[i] = VK_NULL_HANDLE;
 		}
 
-		if (sc->base.mems[i] != NULL) {
+		if (sc->base.mems[i] != VK_NULL_HANDLE) {
 			c->vk.vkFreeMemory(c->vk.device, sc->base.mems[i],
 			                   NULL);
-			sc->base.mems[i] = NULL;
+			sc->base.mems[i] = VK_NULL_HANDLE;
 		}
 	}
 
