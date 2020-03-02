@@ -10,6 +10,7 @@
 #pragma once
 
 #include "xrt/xrt_defines.h"
+#include "xrt/xrt_compiler.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -392,8 +393,13 @@ xrt_compositor_gl(struct xrt_compositor *xc)
  *
  */
 
+#ifdef XRT_64_BIT
 typedef struct VkImage_T *VkImage;
 typedef struct VkDeviceMemory_T *VkDeviceMemory;
+#else
+typedef uint64_t VkImage;
+typedef uint64_t VkDeviceMemory;
+#endif
 
 /*!
  * Base class for a Vulkan client swapchain.
