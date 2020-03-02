@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <assert.h>
 
 #include "xrt/xrt_device.h"
@@ -78,7 +79,7 @@ oxr_system_verify_id(struct oxr_logger *log,
 {
 	if (systemId != 1) {
 		return oxr_error(log, XR_ERROR_SYSTEM_INVALID,
-		                 "invalid system %lu", systemId);
+		                 "invalid system %" PRIu64, systemId);
 	}
 	return XR_SUCCESS;
 }

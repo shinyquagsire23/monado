@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #include "util/u_debug.h"
 #include "util/u_misc.h"
@@ -249,7 +250,9 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 		if (sess->sys->inst->debug_views) {
 			fprintf(stderr,
 			        "\toriginal quat = {%f, %f, %f, %f}   "
-			        "(time requested: %li, Interval %li nsec, with "
+			        "(time requested: %" PRIi64
+			        ", Interval %" PRIi64
+			        " nsec, with "
 			        "static interval %f s)\n",
 			        pose->orientation.x, pose->orientation.y,
 			        pose->orientation.z, pose->orientation.w,
@@ -327,7 +330,7 @@ oxr_session_views(struct oxr_logger *log,
 
 	if (sess->sys->inst->debug_views) {
 		fprintf(stderr, "%s\n", __func__);
-		fprintf(stderr, "\tviewLocateInfo->displayTime %lu\n",
+		fprintf(stderr, "\tviewLocateInfo->displayTime %" PRIu64 "\n",
 		        viewLocateInfo->displayTime);
 	}
 
