@@ -72,7 +72,9 @@ if(BUILD_TRACKING)
 endif()
 
 add_subdirectory(common)
-add_subdirectory(openxr)
+if(BUILD_TARGET_OPENXR)
+	add_subdirectory(openxr)
+endif()
 add_subdirectory(cli)
 
 if(BUILD_TARGET_GUI)
