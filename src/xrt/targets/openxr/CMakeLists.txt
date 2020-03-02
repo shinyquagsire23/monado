@@ -39,7 +39,8 @@ add_library(${RUNTIME_TARGET} SHARED
 	$<TARGET_OBJECTS:aux_ogl>
 	$<TARGET_OBJECTS:aux_util>
 	$<TARGET_OBJECTS:aux_math>
-	$<TARGET_OBJECTS:comp>
+	$<TARGET_OBJECTS:comp_main>
+	$<TARGET_OBJECTS:comp_client>
 	$<TARGET_OBJECTS:st_oxr>
 	$<TARGET_OBJECTS:st_gui>
 	$<TARGET_OBJECTS:st_prober>

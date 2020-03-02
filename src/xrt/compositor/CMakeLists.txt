@@ -10,10 +10,13 @@ spirv_shaders(SHADER_HEADERS
 	shaders/vive.frag
 	)
 
-set(SOURCE_FILES
+set(CLIENT_SOURCE_FILES
 	client/comp_vk_client.c
 	client/comp_vk_client.h
 	client/comp_vk_glue.c
+	)
+
+set(MAIN_SOURCE_FILES
 	main/comp_compositor.c
 	main/comp_compositor.h
 	main/comp_distortion.c
@@ -29,14 +32,28 @@ set(SOURCE_FILES
 	main/comp_window.h
 	)
 
-if(BUILD_WITH_XCB)
-	list(APPEND SOURCE_FILES main/comp_window_xcb.cpp)
+include_directories(PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/../include
+	${CMAKE_CURRENT_SOURCE_DIR}/../auxiliary
+	)
+
+include_directories(SYSTEM PRIVATE
+	${VULKAN_INCLUDE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/../../external
+	)
+
+if (${VULKAN_ENABLE_VALIDATION})
+	add_definitions(-DXRT_ENABLE_VK_VALIDATION)
 endif()
-if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
-	list(APPEND SOURCE_FILES main/comp_window_direct_mode.cpp)
-endif()
+
+
+###
+# Client library
+#
+
 if(BUILD_WITH_OPENGL)
-	list(APPEND SOURCE_FILES
+	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_gl_client.c
 		client/comp_gl_client.h
 		client/comp_gl_glue.c
@@ -44,7 +61,7 @@ if(BUILD_WITH_OPENGL)
 		)
 endif()
 if(BUILD_WITH_OPENGL AND BUILD_WITH_XLIB)
-	list(APPEND SOURCE_FILES
+	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_gl_xlib_client.c
 		client/comp_gl_xlib_client.h
 		client/comp_gl_xlib_glue.c
@@ -52,8 +69,27 @@ if(BUILD_WITH_OPENGL AND BUILD_WITH_XLIB)
 
 endif()
 if(BUILD_WITH_OPENGL AND BUILD_WITH_EGL)
-	list(APPEND SOURCE_FILES
+	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_egl_glue.c
+		)
+endif()
+
+# Use OBJECT to not create a archive, since it just gets in the way.
+add_library(comp_client OBJECT ${CLIENT_SOURCE_FILES})
+
+
+##
+# Main library
+#
+
+if(BUILD_WITH_XCB)
+	list(APPEND MAIN_SOURCE_FILES
+		main/comp_window_xcb.cpp
+		)
+endif()
+if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
+	list(APPEND MAIN_SOURCE_FILES
+		main/comp_window_direct_mode.cpp
 		)
 endif()
 
@@ -79,39 +115,27 @@ if(BUILD_WITH_WAYLAND)
 		${WL_SCANNER} client-header "${WL_PROTOS_XML}" "${WL_PROTOS_H}"
 		OUTPUT "${WL_PROTOS_H}" VERBATIM)
 
-
 	set(WL_PROTOS_SRC ${WL_PROTOS_C} ${WL_PROTOS_H})
-	list(APPEND SOURCE_FILES main/comp_window_wayland.c)
-endif()
-
-if (${VULKAN_ENABLE_VALIDATION})
-	add_definitions(-DXRT_ENABLE_VK_VALIDATION)
+	list(APPEND MAIN_SOURCE_FILES
+		main/comp_window_wayland.c
+		)
 endif()
 
 # Use OBJECT to not create a archive, since it just gets in the way.
-add_library(comp OBJECT ${SHADER_HEADERS} ${SOURCE_FILES} ${WL_PROTOS_SRC})
-target_include_directories(comp SYSTEM
-	PRIVATE
-	${VULKAN_INCLUDE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/../../external
+add_library(comp_main OBJECT ${SHADER_HEADERS} ${MAIN_SOURCE_FILES} ${WL_PROTOS_SRC})
+target_include_directories(comp_main SYSTEM PRIVATE
 	# Shaders - marked SYSTEM so we get no warnings
 	${CMAKE_CURRENT_BINARY_DIR}
-)
-target_include_directories(comp
-	PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/../include
-	${CMAKE_CURRENT_SOURCE_DIR}/../auxiliary
 	)
 
 if(BUILD_WITH_WAYLAND)
-	target_include_directories(comp SYSTEM PRIVATE ${WL_PROTOS_DIR})
+	target_include_directories(comp_main SYSTEM PRIVATE ${WL_PROTOS_DIR})
 endif()
 if(BUILD_WITH_XCB)
-	target_include_directories(comp SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
+	target_include_directories(comp_main SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
 endif()
 if(BUILD_WITH_EGL)
-	target_include_directories(comp SYSTEM PRIVATE ${EGL_INCLUDE_DIRS})
+	target_include_directories(comp_main SYSTEM PRIVATE ${EGL_INCLUDE_DIRS})
 endif()
 
 add_subdirectory(shaders)
