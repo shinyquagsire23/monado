@@ -23,6 +23,11 @@
  */
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__)
+#define XRT_64_BIT
+#else
+#define XRT_32_BIT
+#endif
 
 /*
  * Printf helper attribute.
