@@ -26,8 +26,8 @@ oxr_session_populate_vk(struct oxr_logger *log,
                         XrGraphicsBindingVulkanKHR const *next,
                         struct oxr_session *sess)
 {
-	struct xrt_compositor_fd *xcfd = xrt_gfx_provider_create_fd(
-	    sys->head, sys->inst->timekeeping, false);
+	struct xrt_compositor_fd *xcfd =
+	    xrt_gfx_provider_create_fd(sys->head, false);
 	if (xcfd == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 " failed create a fd compositor");

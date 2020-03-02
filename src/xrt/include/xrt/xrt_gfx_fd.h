@@ -25,9 +25,7 @@ struct time_state;
  * @ingroup xrt_iface
  */
 struct xrt_compositor_fd *
-xrt_gfx_provider_create_fd(struct xrt_device *xdev,
-                           struct time_state *timekeeping,
-                           bool flip_y);
+xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y);
 
 
 #ifdef __cplusplus

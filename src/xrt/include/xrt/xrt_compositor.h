@@ -169,8 +169,8 @@ struct xrt_compositor
 	 * See xrWaitFrame.
 	 */
 	void (*wait_frame)(struct xrt_compositor *xc,
-	                   int64_t *predicted_display_time,
-	                   int64_t *predicted_display_period);
+	                   uint64_t *predicted_display_time,
+	                   uint64_t *predicted_display_period);
 
 	/*!
 	 * See xrBeginFrame.
@@ -282,8 +282,8 @@ xrt_comp_end_session(struct xrt_compositor *xc)
  */
 XRT_MAYBE_UNUSED static void
 xrt_comp_wait_frame(struct xrt_compositor *xc,
-                    int64_t *predicted_display_time,
-                    int64_t *predicted_display_period)
+                    uint64_t *predicted_display_time,
+                    uint64_t *predicted_display_period)
 {
 	xc->wait_frame(xc, predicted_display_time, predicted_display_period);
 }

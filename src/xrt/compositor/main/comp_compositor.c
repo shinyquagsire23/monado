@@ -55,6 +55,8 @@
 
 #include "main/comp_compositor.h"
 
+#include "xrt/xrt_gfx_fd.h"
+
 #include <unistd.h>
 #include <math.h>
 
@@ -128,7 +130,7 @@ static bool
 compositor_wait_vsync_or_time(struct comp_compositor *c, int64_t wake_up_time)
 {
 
-	int64_t now_ns = time_state_get_now(c->timekeeping);
+	int64_t now_ns = os_monotonic_get_ns();
 	/*!
 	 * @todo this is not accurate, but it serves the purpose of not letting
 	 * us sleep longer than the next vsync usually
@@ -152,15 +154,16 @@ compositor_wait_vsync_or_time(struct comp_compositor *c, int64_t wake_up_time)
 	}
 	// Busy-wait for fine-grained delays.
 	while (now_ns < wake_up_time) {
-		now_ns = time_state_get_now(c->timekeeping);
+		now_ns = os_monotonic_get_ns();
 	}
 
 	return ret;
 }
+
 static void
 compositor_wait_frame(struct xrt_compositor *xc,
-                      int64_t *predicted_display_time,
-                      int64_t *predicted_display_period)
+                      uint64_t *predicted_display_time,
+                      uint64_t *predicted_display_period)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_SPEW(c, "WAIT_FRAME");
@@ -168,7 +171,7 @@ compositor_wait_frame(struct xrt_compositor *xc,
 	// A little bit easier to read.
 	int64_t interval_ns = (int64_t)c->settings.nominal_frame_interval_ns;
 
-	int64_t now_ns = time_state_get_now(c->timekeeping);
+	int64_t now_ns = os_monotonic_get_ns();
 	if (c->last_next_display_time == 0) {
 		// First frame, we'll just assume we will display immediately
 
@@ -216,7 +219,7 @@ compositor_begin_frame(struct xrt_compositor *xc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_SPEW(c, "BEGIN_FRAME");
-	c->app_profiling.last_begin = time_state_get_now(c->timekeeping);
+	c->app_profiling.last_begin = os_monotonic_get_ns();
 }
 
 static void
@@ -250,7 +253,7 @@ compositor_end_frame(struct xrt_compositor *xc,
 	}
 
 	// Record the time of this frame.
-	c->last_frame_time_ns = time_state_get_now(c->timekeeping);
+	c->last_frame_time_ns = os_monotonic_get_ns();
 	c->app_profiling.last_end = c->last_frame_time_ns;
 
 	//! @todo do a time-weighted average or something.
@@ -754,9 +757,7 @@ compositor_init_renderer(struct comp_compositor *c)
 
 
 struct xrt_compositor_fd *
-xrt_gfx_provider_create_fd(struct xrt_device *xdev,
-                           struct time_state *timekeeping,
-                           bool flip_y)
+xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 {
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 
@@ -769,7 +770,6 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev,
 	c->base.base.end_frame = compositor_end_frame;
 	c->base.base.destroy = compositor_destroy;
 	c->xdev = xdev;
-	c->timekeeping = timekeeping;
 
 	COMP_DEBUG(c, "Doing init %p", (void *)c);
 
@@ -777,7 +777,7 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev,
 	comp_settings_init(&c->settings, xdev);
 
 	c->settings.flip_y = flip_y;
-	c->last_frame_time_ns = time_state_get_now(c->timekeeping);
+	c->last_frame_time_ns = os_monotonic_get_ns();
 	c->frame_overhead_ns = 2000000;
 	//! @todo set this to an estimate that's better than 6ms
 	c->expected_app_duration_ns = 6000000;

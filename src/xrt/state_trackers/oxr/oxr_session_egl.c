@@ -63,7 +63,7 @@ oxr_session_populate_egl(struct oxr_logger *log,
 	}
 
 	struct xrt_compositor_fd *xcfd =
-	    xrt_gfx_provider_create_fd(sys->head, sys->inst->timekeeping, true);
+	    xrt_gfx_provider_create_fd(sys->head, true);
 	if (xcfd == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 " failed create a fd compositor");

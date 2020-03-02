@@ -118,8 +118,8 @@ client_vk_compositor_end_session(struct xrt_compositor *xc)
 
 static void
 client_vk_compositor_wait_frame(struct xrt_compositor *xc,
-                                int64_t *predicted_display_time,
-                                int64_t *predicted_display_period)
+                                uint64_t *predicted_display_time,
+                                uint64_t *predicted_display_period)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	// Pipe down call into fd compositor.
