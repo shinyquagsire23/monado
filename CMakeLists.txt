@@ -48,7 +48,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	pkg_check_modules(XCB xcb xcb-randr)
 
 	find_package(udev REQUIRED)
-	set(BUILD_WITH_LIBUDEV TRUE)
 	set(BUILD_DRIVER_V4L2 TRUE)
 
 	pkg_search_module(WAYLAND wayland-client)
@@ -71,10 +70,15 @@ cmake_dependent_option(BUILD_TARGET_OPENXR "Build OpenXR runtime target" ON "BUI
 # Most users won't touch these.
 mark_as_advanced(BUILD_COMPOSITOR_MAIN BUILD_TARGET_OPENXR)
 
-set(BUILD_WITH_LIBUSB TRUE)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	set(BUILD_WITH_LIBUDEV ON)
+else()
+	cmake_dependent_option(BUILD_WITH_LIBUDEV "Enable libudev (used for device probing on Linux)" ON "UDEV_FOUND" OFF)
+endif()
+cmake_dependent_option(BUILD_WITH_LIBUSB "Enable libusb (used for most drivers)" ON "LIBUSB1_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_JPEG "Enable jpeg code (used for some video drivers)" ON "JPEG_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENCV "Enable OpenCV backend" ON "OpenCV_FOUND" OFF)
-cmake_dependent_option(BUILD_WITH_LIBUVC "Enable libuvc video driver" ON "LIBUVC_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_LIBUVC "Enable libuvc video driver" ON "LIBUVC_FOUND AND BUILD_WITH_LIBUSB" OFF)
 cmake_dependent_option(BUILD_WITH_FFMPEG "Enable ffmpeg testing video driver" ON "FFMPEG_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_PSVR "Enable PSVR HMD driver" ON "HIDAPI_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_RS "Enable RealSense device driver" ON "realsense2_FOUND" OFF)
