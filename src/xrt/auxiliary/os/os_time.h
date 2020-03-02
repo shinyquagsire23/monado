@@ -1,9 +1,10 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Wrapper around OS native time functions.
  * @author Drew DeVault <sir@cmpwn.com>
+ * @author Jakob Bornecrantz <jakob@collabora.com>
  *
  * @ingroup aux_os
  */
@@ -16,6 +17,14 @@
 #ifdef XRT_OS_LINUX
 #include <time.h>
 #include <sys/time.h>
+#define XRT_HAVE_TIMESPEC
+#define XRT_HAVE_TIMEVAL
+
+#elif defined(XRT_DOXYGEN)
+#include <time.h>
+#define XRT_HAVE_TIMESPEC
+#define XRT_HAVE_TIMEVAL
+
 #else
 #error "No time support on non-Linux platforms yet."
 #endif
@@ -24,9 +33,26 @@
 extern "C" {
 #endif
 
+/*!
+ * @defgroup aux_os_time Portable Timekeeping
+ * @ingroup aux_os
+ *
+ * @brief Unifying wrapper around system time retrieval functions.
+ */
+
 
 /*!
- * Write an output report to the given device.
+ * @defgroup aux_os_time_extra Extra Timekeeping Utilities
+ * @ingroup aux_os_time
+ *
+ * @brief Less-portable utility functions for manipulating system time, for
+ * interoperation with platform APIs.
+ */
+
+
+/*!
+ * @brief Sleep the given number of nanoseconds.
+ * @ingroup aux_os_time
  */
 XRT_MAYBE_UNUSED static inline void
 os_nanosleep(long nsec)
@@ -40,9 +66,10 @@ os_nanosleep(long nsec)
 #endif
 }
 
-#ifdef XRT_OS_LINUX
+#ifdef XRT_HAVE_TIMESPEC
 /*!
- * Convert a timespec struct to nanoseconds.
+ * @brief Convert a timespec struct to nanoseconds.
+ * @ingroup aux_os_time_extra
  */
 XRT_MAYBE_UNUSED static inline uint64_t
 os_timespec_to_ns(struct timespec *spec)
@@ -52,9 +79,13 @@ os_timespec_to_ns(struct timespec *spec)
 	ns += (uint64_t)spec->tv_nsec;
 	return ns;
 }
+#endif // XRT_HAVE_TIMESPEC
 
+
+#ifdef XRT_HAVE_TIMEVAL
 /*!
- * Convert a timeval struct to nanoseconds.
+ * @brief Convert a timeval struct to nanoseconds.
+ * @ingroup aux_os_time_extra
  */
 XRT_MAYBE_UNUSED static inline uint64_t
 os_timeval_to_ns(struct timeval *val)
@@ -64,13 +95,17 @@ os_timeval_to_ns(struct timeval *val)
 	ns += (uint64_t)val->tv_usec * 1000;
 	return ns;
 }
+#endif // XRT_HAVE_TIMEVAL
+
 
 /*!
- * Return a monotonic clock in nanoseconds.
+ * @brief Return a monotonic clock in nanoseconds.
+ * @ingroup aux_os_time
  */
 XRT_MAYBE_UNUSED static inline uint64_t
 os_monotonic_get_ns(void)
 {
+#ifdef XRT_OS_LINUX
 	struct timespec ts;
 	int ret = clock_gettime(CLOCK_MONOTONIC, &ts);
 	if (ret != 0) {
@@ -78,8 +113,8 @@ os_monotonic_get_ns(void)
 	}
 
 	return os_timespec_to_ns(&ts);
-}
 #endif
+}
 
 
 #ifdef __cplusplus
