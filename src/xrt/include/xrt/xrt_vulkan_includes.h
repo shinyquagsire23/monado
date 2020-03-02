@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "xrt/xrt_config_vulkan.h"
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 

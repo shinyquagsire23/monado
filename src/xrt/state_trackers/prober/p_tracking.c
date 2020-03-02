@@ -11,7 +11,8 @@
 #include "xrt/xrt_frameserver.h"
 #include "xrt/xrt_tracking.h"
 
-#include "targets_enabled_drivers.h"
+#include "xrt/xrt_config_have.h"
+#include "xrt/xrt_config_drivers.h"
 #ifdef XRT_HAVE_OPENCV
 #include "tracking/t_tracking.h"
 #endif

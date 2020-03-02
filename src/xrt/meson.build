@@ -3,6 +3,7 @@
 
 xrt_include = include_directories('include')
 
+subdir('include')
 subdir('auxiliary')
 subdir('drivers')
 subdir('compositor')

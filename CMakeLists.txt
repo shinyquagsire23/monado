@@ -84,43 +84,46 @@ option(BUILD_WITH_PSMV "Enable Playstation Move driver" ON)
 option(BUILD_WITH_HYDRA "Enable Hydra driver" ON)
 option(BUILD_WITH_NS "Enable North Star driver" ON)
 
+# You can set this from a superproject to add a driver
+list(APPEND AVAILABLE_DRIVERS DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE)
+
 ###
 # Flags
 ###
 
 if(BUILD_WITH_LIBUDEV)
-	add_definitions(-DXRT_HAVE_LIBUDEV)
+	set(XRT_HAVE_LIBUDEV TRUE)
 endif()
 
 if(BUILD_DRIVER_V4L2)
-	add_definitions(-DXRT_HAVE_V4L2)
+	set(XRT_HAVE_V4L2 TRUE)
 endif()
 
 if(BUILD_WITH_LIBUSB)
-	add_definitions(-DXRT_HAVE_LIBUSB)
+	set(XRT_HAVE_LIBUSB TRUE)
 endif()
 
 if(BUILD_WITH_OPENCV)
-	add_definitions(-DXRT_HAVE_OPENCV)
+	set(XRT_HAVE_OPENCV TRUE)
 
 	# Tracking requires OpenCV
 	set(BUILD_TRACKING TRUE)
 endif()
 
 if(BUILD_WITH_JPEG)
-	add_definitions(-DXRT_HAVE_JPEG)
+	set(XRT_HAVE_JPEG TRUE)
 endif()
 
 if(BUILD_WITH_LIBUVC)
-	add_definitions(-DXRT_HAVE_LIBUVC)
+	set(XRT_HAVE_LIBUVC TRUE)
 endif()
 
 if(BUILD_WITH_FFMPEG)
-	add_definitions(-DXRT_HAVE_FFMPEG)
+	set(XRT_HAVE_FFMPEG TRUE)
 endif()
 
 if(BUILD_WITH_SDL2)
-	add_definitions(-DXRT_HAVE_SDL2)
+	set(XRT_HAVE_SDL2 TRUE)
 
 	# Arch work around
 	if(NOT DEFINED SDL2_LIBRARIES)
@@ -136,7 +139,7 @@ if(BUILD_WITH_DUMMY)
 endif()
 
 if(BUILD_WITH_OPENHMD)
-	add_definitions(-DXRT_HAVE_OPENHMD)
+	set(XRT_HAVE_OPENHMD TRUE)
 
 	# Drivers enabled with OpenHMD.
 	set(BUILD_DRIVER_OHMD TRUE)
@@ -181,13 +184,13 @@ endif()
 
 # Vulkan flags for the shared Vulkan code.
 if(BUILD_WITH_XCB)
-	add_definitions(-DVK_USE_PLATFORM_XCB_KHR)
+	set(VK_USE_PLATFORM_XCB_KHR TRUE)
 endif()
 if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
-	add_definitions(-DVK_USE_PLATFORM_XLIB_XRANDR_EXT)
+	set(VK_USE_PLATFORM_XLIB_XRANDR_EXT TRUE)
 endif()
 if(BUILD_WITH_WAYLAND)
-	add_definitions(-DVK_USE_PLATFORM_WAYLAND_KHR)
+	set(VK_USE_PLATFORM_WAYLAND_KHR TRUE)
 endif()
 
 

@@ -6,7 +6,7 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
-#include "targets_enabled_drivers.h"
+#include "xrt/xrt_config_drivers.h"
 
 #include "target_lists.h"
 

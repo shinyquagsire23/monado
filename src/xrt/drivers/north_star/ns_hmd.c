@@ -24,7 +24,7 @@
 #include "util/u_time.h"
 #include "util/u_distortion_mesh.h"
 
-#include "targets_enabled_drivers.h"
+#include "xrt/xrt_config_drivers.h"
 #ifdef XRT_BUILD_DRIVER_RS
 #include "../realsense/rs_interface.h"
 #endif

@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Generated header listing the drivers available
+ * @brief  What drivers are we building.
+ * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup xrt_iface
  */
 
 #pragma once
-
-#cmakedefine XRT_BUILD_TRACKING
 
 #cmakedefine XRT_BUILD_DRIVER_DUMMY
 

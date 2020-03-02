@@ -48,14 +48,21 @@ add_library(${RUNTIME_TARGET} SHARED
 	)
 
 target_link_libraries(${RUNTIME_TARGET} PUBLIC
-	${LIBUVC_LIBRARIES}
-	${LIBUSB_LIBRARIES}
 	${Vulkan_LIBRARIES}
-	${UDEV_LIBRARIES}
-	${XCB_LIBRARIES}
-	${WAYLAND_LIBRARIES}
 	OpenGL::GLX
 	)
+
+if(BUILD_WITH_XCB)
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC
+		${XCB_LIBRARIES}
+		)
+endif()
+
+if(BUILD_WITH_WAYLAND)
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC
+		${WAYLAND_LIBRARIES}
+		)
+endif()
 
 if(DRIVER_OBJECTS)
 	target_sources(${RUNTIME_TARGET} PRIVATE

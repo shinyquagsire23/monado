@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "xrt/xrt_config.h"
+#include "xrt/xrt_config_os.h"
 #include "xrt/xrt_compiler.h"
 
 #ifdef __cplusplus

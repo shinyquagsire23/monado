@@ -7,7 +7,7 @@
  * @ingroup gui
  */
 
-
+#include "xrt/xrt_config_have.h"
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_sink.h"
@@ -25,6 +25,7 @@
 #include "gui_imgui.h"
 
 #include <assert.h>
+
 
 enum camera_type
 {

@@ -40,6 +40,9 @@ lib_aux_util = static_library(
 		xrt_include,
 		external_include,
 	],
+	dependencies: [
+		xrt_config_have
+	]
 )
 
 aux_util = declare_dependency(

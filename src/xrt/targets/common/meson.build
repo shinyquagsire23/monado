@@ -9,5 +9,5 @@ lib_target_lists = static_library(
 		'target_lists.c',
 	),
 	include_directories: [drv_include, xrt_include],
-	dependencies: [aux, targets_enabled],
+	dependencies: [aux, xrt_config_drivers],
 )

@@ -184,53 +184,11 @@ if v4l2.found() and ('auto' in drivers or 'v4l2' in drivers)
 	if 'v4l2' not in drivers
 		drivers += ['v4l2']
 	endif
-	add_project_arguments('-DXRT_HAVE_V4L2', language: ['c', 'cpp'])
 endif
 
 if drivers.length() == 0 or drivers == ['auto']
 	error('You must enable at least one driver.')
 endif
-
-if udev.found()
-	add_project_arguments('-DXRT_HAVE_LIBUDEV', language: ['c', 'cpp'])
-endif
-
-if libusb.found()
-	add_project_arguments('-DXRT_HAVE_LIBUSB', language: ['c', 'cpp'])
-endif
-
-if opencv.found()
-	add_project_arguments('-DXRT_HAVE_OPENCV', language: ['c', 'cpp'])
-endif
-
-if libjpeg.found()
-	add_project_arguments('-DXRT_HAVE_JPEG', language: ['c', 'cpp'])
-endif
-
-if libuvc.found()
-	add_project_arguments('-DXRT_HAVE_LIBUVC', language: ['c', 'cpp'])
-endif
-
-if avcodec.found()
-	add_project_arguments('-DXRT_HAVE_FFMPEG', language: ['c', 'cpp'])
-endif
-
-if sdl2.found()
-	add_project_arguments('-DXRT_HAVE_SDL2', language: ['c', 'cpp'])
-endif
-
-
-# Vulkan flags for the shared Vulkan code.
-if build_wayland
-	add_project_arguments('-DVK_USE_PLATFORM_WAYLAND_KHR', language: ['c', 'cpp'])
-endif
-if build_xcb
-	add_project_arguments('-DVK_USE_PLATFORM_XCB_KHR', language: ['c', 'cpp'])
-endif
-if build_xcb_xrandr_direct
-	add_project_arguments('-DVK_USE_PLATFORM_XLIB_XRANDR_EXT', language: ['c', 'cpp'])
-endif
-
 
 #
 # Go down sub directories

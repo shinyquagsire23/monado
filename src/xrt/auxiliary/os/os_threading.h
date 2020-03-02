@@ -8,8 +8,8 @@
  * @ingroup aux_os
  */
 
+#include "xrt/xrt_config_os.h"
 #include "xrt/xrt_compiler.h"
-#include "xrt/xrt_config.h"
 #include "util/u_misc.h"
 
 #ifdef XRT_OS_LINUX

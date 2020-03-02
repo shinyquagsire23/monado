@@ -4,7 +4,7 @@
 subdir('shaders')
 
 # TODO: Dependency resolution and subsequent configuration could be improved
-compositor_deps = [aux, shaders, vulkan]
+compositor_deps = [aux, shaders, vulkan, xrt_config_vulkan]
 
 compositor_srcs = [
 	'client/comp_vk_client.c',

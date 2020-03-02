@@ -9,7 +9,7 @@ prober_sources = [
 	'p_tracking.c',
 ]
 
-prober_deps = [aux, targets_enabled]
+prober_deps = [aux, xrt_config_drivers, xrt_config_have]
 
 if udev.found()
 	prober_sources += ['p_udev.c']

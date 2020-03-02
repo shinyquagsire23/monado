@@ -8,8 +8,6 @@
  * @ingroup comp_main
  */
 
-#ifdef VK_USE_PLATFORM_WAYLAND_KHR
-
 #include <errno.h>
 #include <linux/input.h>
 #include <poll.h>
@@ -368,5 +366,3 @@ comp_window_wayland_configure(struct comp_window_wayland *w,
 	// TODO: resize cb
 	// resize_cb(m->size.first, m->size.second);
 }
-
-#endif

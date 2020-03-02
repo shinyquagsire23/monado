@@ -27,7 +27,7 @@ gui_sources = [
 	'../../../external/imgui/imstb_truetype.h',
 ]
 
-gui_deps = [aux]
+gui_deps = [aux, xrt_config_have]
 
 lib_st_gui = static_library(
 	'st_gui',

@@ -1,0 +1,16 @@
+// Copyright 2019-2020, Collabora, Ltd.
+// SPDX-License-Identifier: BSL-1.0
+/*!
+ * @file
+ * @brief  Vulkan defines.
+ * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup xrt_iface
+ */
+
+#pragma once
+
+#cmakedefine VK_USE_PLATFORM_XCB_KHR
+
+#cmakedefine VK_USE_PLATFORM_XLIB_XRANDR_EXT
+
+#cmakedefine VK_USE_PLATFORM_WAYLAND_KHR

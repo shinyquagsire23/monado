@@ -8,8 +8,6 @@
  * @ingroup comp_main
  */
 
-#ifdef VK_USE_PLATFORM_XCB_KHR
-
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
 
@@ -405,5 +403,3 @@ comp_window_xcb_update_window_title(struct comp_window *w, const char *title)
 	                    w_xcb->window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8,
 	                    strlen(title), title);
 }
-
-#endif

@@ -8,8 +8,6 @@
  * @ingroup comp_main
  */
 
-#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
 #include <X11/extensions/Xrandr.h>
@@ -892,5 +890,3 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 static void
 comp_window_direct_update_window_title(struct comp_window *w, const char *title)
 {}
-
-#endif

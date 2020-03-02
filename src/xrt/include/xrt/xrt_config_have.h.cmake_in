@@ -1,0 +1,28 @@
+// Copyright 2019-2020, Collabora, Ltd.
+// SPDX-License-Identifier: BSL-1.0
+/*!
+ * @file
+ * @brief  What external components we have.
+ * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup xrt_iface
+ */
+
+#pragma once
+
+#cmakedefine XRT_HAVE_LIBUDEV
+
+#cmakedefine XRT_HAVE_V4L2
+
+#cmakedefine XRT_HAVE_LIBUSB
+
+#cmakedefine XRT_HAVE_OPENCV
+
+#cmakedefine XRT_HAVE_JPEG
+
+#cmakedefine XRT_HAVE_LIBUVC
+
+#cmakedefine XRT_HAVE_FFMPEG
+
+#cmakedefine XRT_HAVE_SDL2
+
+#cmakedefine XRT_HAVE_OPENHMD

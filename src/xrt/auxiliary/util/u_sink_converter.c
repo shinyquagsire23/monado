@@ -7,6 +7,7 @@
  * @ingroup aux_util
  */
 
+#include "xrt/xrt_config_have.h"
 #include "util/u_misc.h"
 #include "util/u_sink.h"
 #include "util/u_frame.h"

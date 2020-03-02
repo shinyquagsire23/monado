@@ -41,7 +41,8 @@ openxr_deps = [
 		libusb,
 		libuvc,
 		pthreads,
-		targets_enabled,
+		xrt_config_drivers,
+		xrt_config_have,
 		udev,
 		vulkan,
 	]
