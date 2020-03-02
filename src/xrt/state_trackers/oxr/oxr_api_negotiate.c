@@ -290,7 +290,7 @@ oxr_xrGetInstanceProcAddr(XrInstance instance,
 	// We need to set this unconditionally, per the spec.
 	*function = NULL;
 
-	if (instance == NULL) {
+	if ((void *)instance == NULL) {
 		oxr_log_init(&log, "xrGetInstanceProcAddr");
 		return handle_null(&log, name, function);
 	}
