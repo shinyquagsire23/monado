@@ -3,6 +3,11 @@
 /*!
  * @file
  * @brief  Wrapper around OS native time functions.
+ *
+ * These should be preferred over directly using native OS time functions in
+ * potentially-portable code. Additionally, in most cases these are preferred
+ * over timepoints from @ref time_state for general usage in drivers, etc.
+ *
  * @author Drew DeVault <sir@cmpwn.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
  *
