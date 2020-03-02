@@ -629,7 +629,7 @@ _validation_cb(VkDebugReportFlagsEXT flags,
                const char *message,
                void *user_data)
 {
-	fprintf(stderr, "%s %s %lu:%d: %s\n", vk_debug_report_string(flags),
+	fprintf(stderr, "%s %s %zu:%d: %s\n", vk_debug_report_string(flags),
 	        layer_prefix, location, message_code, message);
 	return VK_FALSE;
 }
