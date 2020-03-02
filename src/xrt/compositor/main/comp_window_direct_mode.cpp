@@ -17,6 +17,7 @@
 #include <vector>
 #include <utility>
 #include <cstring>
+#include <inttypes.h>
 
 #include "util/u_misc.h"
 
@@ -507,14 +508,14 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
 	int64_t new_frame_interval =
 	    1000. * 1000. * 1000. * 1000. / props.parameters.refreshRate;
 
-	COMP_DEBUG(w->base.c,
-	           "Updating compositor settings nominal frame interval from "
-	           "%lu (%f Hz) to %lu (%f Hz)",
-	           w->base.c->settings.nominal_frame_interval_ns,
-	           1000. * 1000. * 1000. /
-	               (float)w->base.c->settings.nominal_frame_interval_ns,
-	           new_frame_interval,
-	           (float)props.parameters.refreshRate / 1000.);
+	COMP_DEBUG(
+	    w->base.c,
+	    "Updating compositor settings nominal frame interval from %" PRIu64
+	    " (%f Hz) to %" PRIu64 " (%f Hz)",
+	    w->base.c->settings.nominal_frame_interval_ns,
+	    1000. * 1000. * 1000. /
+	        (float)w->base.c->settings.nominal_frame_interval_ns,
+	    new_frame_interval, (float)props.parameters.refreshRate / 1000.);
 
 	w->base.c->settings.nominal_frame_interval_ns = new_frame_interval;
 
