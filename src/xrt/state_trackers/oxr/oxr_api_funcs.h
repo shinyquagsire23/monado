@@ -34,13 +34,13 @@ extern "C" {
  */
 
 //! OpenXR API function @ep{xrGetInstanceProcAddr}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetInstanceProcAddr(XrInstance instance,
                           const char *name,
                           PFN_xrVoidFunction *function);
 
 //! OpenXR API function @ep{xrEnumerateApiLayerProperties}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
                                   uint32_t *propertyCountOutput,
                                   XrApiLayerProperties *properties);
@@ -53,48 +53,48 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
  */
 
 //! OpenXR API function @ep{xrEnumerateInstanceExtensionProperties}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateInstanceExtensionProperties(const char *layerName,
                                            uint32_t propertyCapacityInput,
                                            uint32_t *propertyCountOutput,
                                            XrExtensionProperties *properties);
 
 //! OpenXR API function @ep{xrCreateInstance}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo,
                      XrInstance *instance);
 
 //! OpenXR API function @ep{xrDestroyInstance}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroyInstance(XrInstance instance);
 
 //! OpenXR API function @ep{xrGetInstanceProperties}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetInstanceProperties(XrInstance instance,
                             XrInstanceProperties *instanceProperties);
 
 //! OpenXR API function @ep{xrPollEvent}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrPollEvent(XrInstance instance, XrEventDataBuffer *eventData);
 
 //! OpenXR API function @ep{xrResultToString}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrResultToString(XrInstance instance,
                      XrResult value,
                      char buffer[XR_MAX_RESULT_STRING_SIZE]);
 
 //! OpenXR API function @ep{xrStructureTypeToString}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrStructureTypeToString(XrInstance instance,
                             XrStructureType value,
                             char buffer[XR_MAX_STRUCTURE_NAME_SIZE]);
 
 //! OpenXR API function @ep{xrStringToPath}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrStringToPath(XrInstance instance, const char *pathString, XrPath *path);
 
 //! OpenXR API function @ep{xrPathToString}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrPathToString(XrInstance instance,
                    XrPath path,
                    uint32_t bufferCapacityInput,
@@ -102,13 +102,13 @@ oxr_xrPathToString(XrInstance instance,
                    char *buffer);
 
 //! OpenXR API function @ep{xrConvertTimespecTimeToTimeKHR}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance,
                                    const struct timespec *timespecTime,
                                    XrTime *time);
 
 //! OpenXR API function @ep{xrConvertTimeToTimespecTimeKHR}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance,
                                    XrTime time,
                                    struct timespec *timespecTime);
@@ -120,19 +120,19 @@ oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance,
  */
 
 //! OpenXR API function @ep{xrGetSystem}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetSystem(XrInstance instance,
                 const XrSystemGetInfo *getInfo,
                 XrSystemId *systemId);
 
 //! OpenXR API function @ep{xrGetSystemProperties}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetSystemProperties(XrInstance instance,
                           XrSystemId systemId,
                           XrSystemProperties *properties);
 
 //! OpenXR API function @ep{xrEnumerateViewConfigurations}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateViewConfigurations(
     XrInstance instance,
     XrSystemId systemId,
@@ -141,7 +141,7 @@ oxr_xrEnumerateViewConfigurations(
     XrViewConfigurationType *viewConfigurationTypes);
 
 //! OpenXR API function @ep{xrGetViewConfigurationProperties}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetViewConfigurationProperties(
     XrInstance instance,
     XrSystemId systemId,
@@ -149,7 +149,7 @@ oxr_xrGetViewConfigurationProperties(
     XrViewConfigurationProperties *configurationProperties);
 
 //! OpenXR API function @ep{xrEnumerateViewConfigurationViews}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateViewConfigurationViews(
     XrInstance instance,
     XrSystemId systemId,
@@ -159,7 +159,7 @@ oxr_xrEnumerateViewConfigurationViews(
     XrViewConfigurationView *views);
 
 //! OpenXR API function @ep{xrEnumerateEnvironmentBlendModes}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateEnvironmentBlendModes(
     XrInstance instance,
     XrSystemId systemId,
@@ -170,7 +170,7 @@ oxr_xrEnumerateEnvironmentBlendModes(
 
 #ifdef XR_USE_GRAPHICS_API_OPENGL
 //! OpenXR API function @ep{xrGetOpenGLGraphicsRequirementsKHR}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetOpenGLGraphicsRequirementsKHR(
     XrInstance instance,
     XrSystemId systemId,
@@ -179,7 +179,7 @@ oxr_xrGetOpenGLGraphicsRequirementsKHR(
 
 #ifdef XR_USE_GRAPHICS_API_OPENGL_ES
 //! OpenXR API function @ep{xrGetOpenGLESGraphicsRequirementsKHR}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetOpenGLESGraphicsRequirementsKHR(
     XrInstance instance,
     XrSystemId systemId,
@@ -188,7 +188,7 @@ oxr_xrGetOpenGLESGraphicsRequirementsKHR(
 
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 //! OpenXR API function @ep{xrGetVulkanInstanceExtensionsKHR}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanInstanceExtensionsKHR(XrInstance instance,
                                      XrSystemId systemId,
                                      uint32_t namesCapacityInput,
@@ -196,7 +196,7 @@ oxr_xrGetVulkanInstanceExtensionsKHR(XrInstance instance,
                                      char *namesString);
 
 //! OpenXR API function @ep{xrGetVulkanDeviceExtensionsKHR}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanDeviceExtensionsKHR(XrInstance instance,
                                    XrSystemId systemId,
                                    uint32_t namesCapacityInput,
@@ -204,14 +204,14 @@ oxr_xrGetVulkanDeviceExtensionsKHR(XrInstance instance,
                                    char *namesString);
 
 //! OpenXR API function @ep{xrGetVulkanGraphicsDeviceKHR}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanGraphicsDeviceKHR(XrInstance instance,
                                  XrSystemId systemId,
                                  VkInstance vkInstance,
                                  VkPhysicalDevice *vkPhysicalDevice);
 
 //! OpenXR API function @ep{xrGetVulkanGraphicsRequirementsKHR}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanGraphicsRequirementsKHR(
     XrInstance instance,
     XrSystemId systemId,
@@ -226,43 +226,43 @@ oxr_xrGetVulkanGraphicsRequirementsKHR(
  */
 
 //! OpenXR API function @ep{xrCreateSession}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateSession(XrInstance instance,
                     const XrSessionCreateInfo *createInfo,
                     XrSession *session);
 
 //! OpenXR API function @ep{xrDestroySession}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroySession(XrSession session);
 
 //! OpenXR API function @ep{xrBeginSession}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrBeginSession(XrSession session, const XrSessionBeginInfo *beginInfo);
 
 //! OpenXR API function @ep{xrEndSession}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEndSession(XrSession session);
 
 //! OpenXR API function @ep{xrWaitFrame}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrWaitFrame(XrSession session,
                 const XrFrameWaitInfo *frameWaitInfo,
                 XrFrameState *frameState);
 
 //! OpenXR API function @ep{xrBeginFrame}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo *frameBeginInfo);
 
 //! OpenXR API function @ep{xrEndFrame}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEndFrame(XrSession session, const XrFrameEndInfo *frameEndInfo);
 
 //! OpenXR API function @ep{xrRequestExitSession}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrRequestExitSession(XrSession session);
 
 //! OpenXR API function @ep{xrLocateViews}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrLocateViews(XrSession session,
                   const XrViewLocateInfo *viewLocateInfo,
                   XrViewState *viewState,
@@ -272,7 +272,7 @@ oxr_xrLocateViews(XrSession session,
 
 #ifdef OXR_HAVE_KHR_visibility_mask
 //! OpenXR API function @ep{xrGetVisibilityMaskKHR}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVisibilityMaskKHR(XrSession session,
                            XrViewConfigurationType viewConfigurationType,
                            uint32_t viewIndex,
@@ -282,7 +282,7 @@ oxr_xrGetVisibilityMaskKHR(XrSession session,
 
 #ifdef OXR_HAVE_EXT_performance_settings
 //! OpenXR API function @ep{xrPerfSettingsSetPerformanceLevelEXT}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrPerfSettingsSetPerformanceLevelEXT(XrSession session,
                                          XrPerfSettingsDomainEXT domain,
                                          XrPerfSettingsLevelEXT level);
@@ -290,7 +290,7 @@ oxr_xrPerfSettingsSetPerformanceLevelEXT(XrSession session,
 
 #ifdef OXR_HAVE_EXT_thermal_query
 //! OpenXR API function @ep{xrThermalGetTemperatureTrendEXT}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrThermalGetTemperatureTrendEXT(
     XrSession session,
     XrPerfSettingsDomainEXT domain,
@@ -307,33 +307,33 @@ oxr_xrThermalGetTemperatureTrendEXT(
  */
 
 //! OpenXR API function @ep{xrEnumerateReferenceSpaces}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateReferenceSpaces(XrSession session,
                                uint32_t spaceCapacityInput,
                                uint32_t *spaceCountOutput,
                                XrReferenceSpaceType *spaces);
 
 //! OpenXR API function @ep{xrGetReferenceSpaceBoundsRect}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetReferenceSpaceBoundsRect(XrSession session,
                                   XrReferenceSpaceType referenceSpaceType,
                                   XrExtent2Df *bounds);
 
 //! OpenXR API function @ep{xrCreateReferenceSpace}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateReferenceSpace(XrSession session,
                            const XrReferenceSpaceCreateInfo *createInfo,
                            XrSpace *space);
 
 //! OpenXR API function @ep{xrLocateSpace}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrLocateSpace(XrSpace space,
                   XrSpace baseSpace,
                   XrTime time,
                   XrSpaceLocation *location);
 
 //! OpenXR API function @ep{xrDestroySpace}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroySpace(XrSpace space);
 
 
@@ -344,42 +344,42 @@ oxr_xrDestroySpace(XrSpace space);
  */
 
 //! OpenXR API function @ep{xrEnumerateSwapchainFormats}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateSwapchainFormats(XrSession session,
                                 uint32_t formatCapacityInput,
                                 uint32_t *formatCountOutput,
                                 int64_t *formats);
 
 //! OpenXR API function @ep{xrCreateSwapchain}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateSwapchain(XrSession session,
                       const XrSwapchainCreateInfo *createInfo,
                       XrSwapchain *swapchain);
 
 //! OpenXR API function @ep{xrDestroySwapchain}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroySwapchain(XrSwapchain swapchain);
 
 //! OpenXR API function @ep{xrEnumerateSwapchainImages}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateSwapchainImages(XrSwapchain swapchain,
                                uint32_t imageCapacityInput,
                                uint32_t *imageCountOutput,
                                XrSwapchainImageBaseHeader *images);
 
 //! OpenXR API function @ep{xrAcquireSwapchainImage}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrAcquireSwapchainImage(XrSwapchain swapchain,
                             const XrSwapchainImageAcquireInfo *acquireInfo,
                             uint32_t *index);
 
 //! OpenXR API function @ep{xrWaitSwapchainImage}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrWaitSwapchainImage(XrSwapchain swapchain,
                          const XrSwapchainImageWaitInfo *waitInfo);
 
 //! OpenXR API function @ep{xrReleaseSwapchainImage}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrReleaseSwapchainImage(XrSwapchain swapchain,
                             const XrSwapchainImageReleaseInfo *releaseInfo);
 
@@ -391,23 +391,23 @@ oxr_xrReleaseSwapchainImage(XrSwapchain swapchain,
  */
 
 //! OpenXR API function @ep{xrSetDebugUtilsObjectNameEXT}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrSetDebugUtilsObjectNameEXT(XrInstance instance,
                                  const XrDebugUtilsObjectNameInfoEXT *nameInfo);
 
 //! OpenXR API function @ep{xrCreateDebugUtilsMessengerEXT}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateDebugUtilsMessengerEXT(
     XrInstance instance,
     const XrDebugUtilsMessengerCreateInfoEXT *createInfo,
     XrDebugUtilsMessengerEXT *messenger);
 
 //! OpenXR API function @ep{xrDestroyDebugUtilsMessengerEXT}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroyDebugUtilsMessengerEXT(XrDebugUtilsMessengerEXT messenger);
 
 //! OpenXR API function @ep{xrSubmitDebugUtilsMessageEXT}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrSubmitDebugUtilsMessageEXT(
     XrInstance instance,
     XrDebugUtilsMessageSeverityFlagsEXT messageSeverity,
@@ -415,16 +415,16 @@ oxr_xrSubmitDebugUtilsMessageEXT(
     const XrDebugUtilsMessengerCallbackDataEXT *callbackData);
 
 //! OpenXR API function @ep{xrSessionBeginDebugUtilsLabelRegionEXT}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrSessionBeginDebugUtilsLabelRegionEXT(
     XrSession session, const XrDebugUtilsLabelEXT *labelInfo);
 
 //! OpenXR API function @ep{xrSessionEndDebugUtilsLabelRegionEXT}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrSessionEndDebugUtilsLabelRegionEXT(XrSession session);
 
 //! OpenXR API function @ep{xrSessionInsertDebugUtilsLabelEXT}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrSessionInsertDebugUtilsLabelEXT(XrSession session,
                                       const XrDebugUtilsLabelEXT *labelInfo);
 
@@ -436,79 +436,79 @@ oxr_xrSessionInsertDebugUtilsLabelEXT(XrSession session,
  */
 
 //! OpenXR API function @ep{xrCreateActionSpace}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateActionSpace(XrSession session,
                         const XrActionSpaceCreateInfo *createInfo,
                         XrSpace *space);
 
 //! OpenXR API function @ep{xrCreateActionSet}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateActionSet(XrInstance instance,
                       const XrActionSetCreateInfo *createInfo,
                       XrActionSet *actionSet);
 
 //! OpenXR API function @ep{xrDestroyActionSet}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroyActionSet(XrActionSet actionSet);
 
 //! OpenXR API function @ep{xrCreateAction}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateAction(XrActionSet actionSet,
                    const XrActionCreateInfo *createInfo,
                    XrAction *action);
 
 //! OpenXR API function @ep{xrDestroyAction}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroyAction(XrAction action);
 
 //! OpenXR API function @ep{xrSuggestInteractionProfileBindings}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrSuggestInteractionProfileBindings(
     XrInstance instance,
     const XrInteractionProfileSuggestedBinding *suggestedBindings);
 
 //! OpenXR API function @ep{xrAttachSessionActionSets}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrAttachSessionActionSets(XrSession session,
                               const XrSessionActionSetsAttachInfo *bindInfo);
 
 //! OpenXR API function @ep{xrGetCurrentInteractionProfile}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetCurrentInteractionProfile(
     XrSession session,
     XrPath topLevelUserPath,
     XrInteractionProfileState *interactionProfile);
 
 //! OpenXR API function @ep{xrGetActionStateBoolean}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetActionStateBoolean(XrSession session,
                             const XrActionStateGetInfo *getInfo,
                             XrActionStateBoolean *data);
 
 //! OpenXR API function @ep{xrGetActionStateFloat}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetActionStateFloat(XrSession session,
                           const XrActionStateGetInfo *getInfo,
                           XrActionStateFloat *data);
 
 //! OpenXR API function @ep{xrGetActionStateVector2f}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetActionStateVector2f(XrSession session,
                              const XrActionStateGetInfo *getInfo,
                              XrActionStateVector2f *data);
 
 //! OpenXR API function @ep{xrGetActionStatePose}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetActionStatePose(XrSession session,
                          const XrActionStateGetInfo *getInfo,
                          XrActionStatePose *data);
 
 //! OpenXR API function @ep{xrSyncActions}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrSyncActions(XrSession session, const XrActionsSyncInfo *syncInfo);
 
 //! OpenXR API function @ep{xrEnumerateBoundSourcesForAction}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateBoundSourcesForAction(
     XrSession session,
     const XrBoundSourcesForActionEnumerateInfo *enumerateInfo,
@@ -517,7 +517,7 @@ oxr_xrEnumerateBoundSourcesForAction(
     XrPath *sources);
 
 //! OpenXR API function @ep{xrGetInputSourceLocalizedName}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetInputSourceLocalizedName(
     XrSession session,
     const XrInputSourceLocalizedNameGetInfo *getInfo,
@@ -526,13 +526,13 @@ oxr_xrGetInputSourceLocalizedName(
     char *buffer);
 
 //! OpenXR API function @ep{xrApplyHapticFeedback}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrApplyHapticFeedback(XrSession session,
                           const XrHapticActionInfo *hapticActionInfo,
                           const XrHapticBaseHeader *hapticEvent);
 
 //! OpenXR API function @ep{xrStopHapticFeedback}
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrStopHapticFeedback(XrSession session,
                          const XrHapticActionInfo *hapticActionInfo);
 
