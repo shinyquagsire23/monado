@@ -18,10 +18,10 @@ extern "C" {
 
 
 /*!
- * @defgroup drv_hdk HDK Driver
+ * @defgroup drv_hdk HDK driver
  * @ingroup drv
  *
- * @brief Driver for the HDK HMD.
+ * @brief Driver for the OSVR HDK series of HMDs.
  */
 
 #define HDK_VID 0x1532

@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 /*!
- * @defgroup drv_hydra Razer Hydra Driver
+ * @defgroup drv_hydra Razer Hydra driver
  * @ingroup drv
  *
  * @brief Driver for the Razer Hydra motion controllers.

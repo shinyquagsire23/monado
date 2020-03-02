@@ -17,7 +17,7 @@ extern "C" {
  * @defgroup drv_psvr PSVR driver
  * @ingroup drv
  *
- * @brief Driver for the Sony PSVR hmd.
+ * @brief Driver for the Sony PSVR HMD.
  */
 
 /*!

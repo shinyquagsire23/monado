@@ -15,10 +15,10 @@ extern "C" {
 
 
 /*!
- * @defgroup drv_rs North Star Driver
+ * @defgroup drv_rs Intel RealSense driver
  * @ingroup drv
  *
- * @brief Driver for the North Star HMD.
+ * @brief Driver for the SLAM-capable Intel Realsense devices.
  */
 
 /*!

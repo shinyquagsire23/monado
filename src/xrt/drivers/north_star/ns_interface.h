@@ -16,7 +16,7 @@ extern "C" {
 
 
 /*!
- * @defgroup drv_ns North Star Driver
+ * @defgroup drv_ns North Star driver
  * @ingroup drv
  *
  * @brief Driver for the North Star HMD.

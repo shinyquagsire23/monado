@@ -20,7 +20,7 @@ extern "C" {
 
 
 /*!
- * @defgroup drv_vive Vive and Index Driver
+ * @defgroup drv_vive HTC Vive and Valve Index driver
  * @ingroup drv
  *
  * @brief Driver for the HTC Vive and Valve Index family of HMDs.

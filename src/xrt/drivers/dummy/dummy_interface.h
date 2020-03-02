@@ -14,10 +14,10 @@ extern "C" {
 #endif
 
 /*!
- * @defgroup drv_dummy Dummy driver.
+ * @defgroup drv_dummy Dummy driver
  * @ingroup drv
  *
- * @brief Simple do nothing dummy driver.
+ * @brief Simple do-nothing dummy driver.
  */
 
 /*!
