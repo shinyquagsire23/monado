@@ -458,7 +458,7 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->base.c, "vkGetDisplayModePropertiesKHR: %s",
 		           vk_result_string(ret));
-		return nullptr;
+		return VK_NULL_HANDLE;
 	}
 
 	COMP_DEBUG(w->base.c, "Found %d modes", mode_count);
@@ -472,7 +472,7 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
 		COMP_ERROR(w->base.c, "vkGetDisplayModePropertiesKHR: %s",
 		           vk_result_string(ret));
 		delete[] mode_properties;
-		return nullptr;
+		return VK_NULL_HANDLE;
 	}
 
 	print_modes(w, mode_properties, mode_count);
@@ -710,14 +710,14 @@ comp_window_direct_get_xlib_randr_output(struct comp_window_direct *w,
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->base.c, "vkGetRandROutputDisplayEXT: %s",
 		           vk_result_string(ret));
-		return nullptr;
+		return VK_NULL_HANDLE;
 	}
 
 	if (display == VK_NULL_HANDLE) {
 		COMP_DEBUG(w->base.c,
 		           "vkGetRandROutputDisplayEXT"
 		           " returned a null display! %p",
-		           display);
+		           (void *)display);
 		return VK_NULL_HANDLE;
 	}
 
