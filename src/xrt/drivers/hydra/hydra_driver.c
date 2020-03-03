@@ -24,6 +24,7 @@
 #include "util/u_device.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
+#include "os/os_hid.h"
 
 #include "hydra_interface.h"
 
