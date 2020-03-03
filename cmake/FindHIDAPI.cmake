@@ -52,20 +52,20 @@
 set(HIDAPI_ROOT_DIR "${HIDAPI_ROOT_DIR}" CACHE PATH "Root to search for HIDAPI")
 
 # Clean up components
-if("${HIDAPI_FIND_COMPONENTS}")
+if(HIDAPI_FIND_COMPONENTS)
 	if(WIN32 OR APPLE)
 		# This makes no sense on Windows or Mac, which have native APIs
-		list(REMOVE "${HIDAPI_FIND_COMPONENTS}" libusb)
+		list(REMOVE HIDAPI_FIND_COMPONENTS libusb)
 	endif()
 
 	if(NOT ${CMAKE_SYSTEM} MATCHES "Linux")
 		# hidraw is only on linux
-		list(REMOVE "${HIDAPI_FIND_COMPONENTS}" hidraw)
+		list(REMOVE HIDAPI_FIND_COMPONENTS hidraw)
 	endif()
 endif()
-if(NOT "${HIDAPI_FIND_COMPONENTS}")
+if(NOT HIDAPI_FIND_COMPONENTS)
 	# Default to any
-	set("${HIDAPI_FIND_COMPONENTS}" any)
+	set(HIDAPI_FIND_COMPONENTS any)
 endif()
 
 # Ask pkg-config for hints
@@ -148,7 +148,6 @@ endif()
 # Determine if the various requested components are found.
 ###
 set(_hidapi_component_required_vars)
-
 foreach(_comp IN LISTS HIDAPI_FIND_COMPONENTS)
 	if("${_comp}" STREQUAL "any")
 		list(APPEND _hidapi_component_required_vars
@@ -192,11 +191,9 @@ unset(_comp)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(HIDAPI
 	REQUIRED_VARS
-	HIDAPI_INCLUDE_DIR
 	${_hidapi_component_required_vars}
 	THREADS_FOUND
 	HANDLE_COMPONENTS)
-
 if(HIDAPI_FOUND)
 	set(HIDAPI_LIBRARIES "${HIDAPI_LIBRARY}")
 	set(HIDAPI_INCLUDE_DIRS "${HIDAPI_INCLUDE_DIR}")
