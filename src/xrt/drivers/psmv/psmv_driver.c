@@ -12,6 +12,7 @@
 #include "xrt/xrt_tracking.h"
 
 #include "os/os_threading.h"
+#include "os/os_hid.h"
 
 #include "math/m_api.h"
 #include "tracking/t_imu.h"
