@@ -93,33 +93,32 @@ set(VK_SOURCE_FILES
 	)
 
 # Common includes
-include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}/../include
-	${CMAKE_CURRENT_SOURCE_DIR}
-	)
+add_library(aux-includes INTERFACE)
+target_include_directories(aux-includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(aux-includes INTERFACE xrt-interfaces)
 
 # OpenGL library.
-# Use OBJECT to not create a archive, since it just gets in the way.
-add_library(aux_ogl OBJECT ${OGL_SOURCE_FILES})
-target_include_directories(aux_ogl SYSTEM
-		PRIVATE
-		${CMAKE_CURRENT_SOURCE_DIR}/../../external
-		)
+add_library(aux_ogl STATIC ${OGL_SOURCE_FILES})
+target_link_libraries(aux_ogl PUBLIC aux-includes)
+# for GLAD
+target_link_libraries(aux_ogl PRIVATE xrt-external-headers)
 
 # Util library.
-# Use OBJECT to not create a archive, since it just gets in the way.
-add_library(aux_util OBJECT ${UTIL_SOURCE_FILES})
-target_include_directories(aux_util SYSTEM
-		PRIVATE
-		${CMAKE_CURRENT_SOURCE_DIR}/../../external
-		)
+add_library(aux_util STATIC ${UTIL_SOURCE_FILES})
+target_link_libraries(aux_util PUBLIC aux-includes)
+# for cJSON
+target_link_libraries(aux_util PUBLIC xrt-external-headers)
+if(BUILD_WITH_JPEG)
+	target_link_libraries(aux_util PRIVATE ${JPEG_LIBRARIES})
+endif()
 
 # OS library.
-add_library(aux_os OBJECT ${OS_SOURCE_FILES})
+add_library(aux_os STATIC ${OS_SOURCE_FILES})
+target_link_libraries(aux_os PUBLIC aux-includes PRIVATE Threads::Threads)
 
 # Math library.
-# Use OBJECT to not create a archive, since it just gets in the way.
-add_library(aux_math OBJECT ${MATH_SOURCE_FILES})
+add_library(aux_math STATIC ${MATH_SOURCE_FILES})
+target_link_libraries(aux_math PUBLIC aux-includes)
 
 # Math files has extra include(s).
 target_include_directories(aux_math SYSTEM
@@ -127,26 +126,25 @@ target_include_directories(aux_math SYSTEM
 	)
 
 # Tracking library.
-# Use OBJECT to not create a archive, since it just gets in the way.
-add_library(aux_tracking OBJECT ${TRACKING_SOURCE_FILES})
+add_library(aux_tracking STATIC ${TRACKING_SOURCE_FILES})
+target_link_libraries(aux_tracking PUBLIC aux-includes PRIVATE aux_math)
 
 # Tracking files have extra includes.
 target_include_directories(aux_tracking SYSTEM
 	PRIVATE
 	${EIGEN3_INCLUDE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/../../external
 	)
+# for flexkalman
+target_link_libraries(aux_tracking PRIVATE xrt-external-headers)
 if(BUILD_TRACKING)
 	target_include_directories(aux_tracking SYSTEM
 		PRIVATE
 		${OpenCV_INCLUDE_DIRS}
 		)
+	target_link_libraries(aux_tracking PUBLIC ${OpenCV_LIBRARIES})
 endif()
 
 # Vulkan library.
-# Use OBJECT to not create a archive, since it just gets in the way.
-add_library(aux_vk OBJECT ${VK_SOURCE_FILES})
-target_include_directories(aux_vk SYSTEM
-		PRIVATE
-		${CMAKE_CURRENT_SOURCE_DIR}/../../external
-		)
+add_library(aux_vk STATIC ${VK_SOURCE_FILES})
+target_link_libraries(aux_vk PUBLIC aux-includes)
+target_link_libraries(aux_vk PUBLIC Vulkan::Vulkan)

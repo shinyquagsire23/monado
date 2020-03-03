@@ -2,12 +2,6 @@
 # SPDX-License-Identifier: BSL-1.0
 
 
-include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}/../include
-	${CMAKE_CURRENT_SOURCE_DIR}/../auxiliary
-	)
-
-
 set(ENABLED_HEADSET_DRIVERS)
 set(ENABLED_DRIVERS)
 
@@ -18,8 +12,8 @@ if(BUILD_DRIVER_DUMMY)
 		dummy/dummy_prober.c
 		)
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_dummy OBJECT ${DUMMY_SOURCE_FILES})
+	add_library(drv_dummy STATIC ${DUMMY_SOURCE_FILES})
+	target_link_libraries(drv_dummy PRIVATE xrt-interfaces aux_util)
 	list(APPEND ENABLED_HEADSET_DRIVERS dummy)
 endif()
 
@@ -31,8 +25,8 @@ if(BUILD_DRIVER_HDK)
 		hdk/hdk_prober.c
 		)
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_hdk OBJECT ${HDK_SOURCE_FILES})
+	add_library(drv_hdk STATIC ${HDK_SOURCE_FILES})
+	target_link_libraries(drv_hdk PRIVATE xrt-interfaces aux_math)
 	list(APPEND ENABLED_HEADSET_DRIVERS hdk)
 endif()
 
@@ -43,8 +37,8 @@ if(BUILD_DRIVER_HYDRA)
 		hydra/hydra_interface.h
 		)
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_hydra OBJECT ${HYDRA_SOURCE_FILES})
+	add_library(drv_hydra STATIC ${HYDRA_SOURCE_FILES})
+	target_link_libraries(drv_hydra PRIVATE xrt-interfaces aux_os)
 	list(APPEND ENABLED_DRIVERS hydra)
 endif()
 
@@ -59,9 +53,8 @@ if(BUILD_DRIVER_NS)
 		north_star/ns_prober.c
 		)
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_ns OBJECT ${NS_SOURCE_FILES})
-	target_include_directories(drv_ns SYSTEM PRIVATE ../../external)
+	add_library(drv_ns STATIC ${NS_SOURCE_FILES})
+	target_link_libraries(drv_ns PRIVATE xrt-interfaces aux_math xrt-external-headers)
 	list(APPEND ENABLED_HEADSET_DRIVERS ns)
 endif()
 
@@ -73,11 +66,8 @@ if(BUILD_DRIVER_OHMD)
 		ohmd/oh_prober.c
 		)
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_ohmd OBJECT ${OHMD_SOURCE_FILES})
-	target_include_directories(drv_ohmd SYSTEM
-		PRIVATE ${OPENHMD_INCLUDE_DIRS}
-		)
+	add_library(drv_ohmd STATIC ${OHMD_SOURCE_FILES})
+	target_link_libraries(drv_ohmd PRIVATE xrt-interfaces OpenHMD::OpenHMD aux_util aux_math)
 	list(APPEND ENABLED_HEADSET_DRIVERS openhmd)
 endif()
 
@@ -88,8 +78,8 @@ if(BUILD_DRIVER_PSMV)
 		psmv/psmv_interface.h
 		)
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_psmv OBJECT ${PSMOVE_SOURCE_FILES})
+	add_library(drv_psmv STATIC ${PSMOVE_SOURCE_FILES})
+	target_link_libraries(drv_psmv PRIVATE xrt-interfaces PUBLIC aux_os aux_tracking)
 	list(APPEND ENABLED_DRIVERS psmv)
 endif()
 
@@ -103,11 +93,8 @@ if(BUILD_DRIVER_PSVR)
 		psvr/psvr_prober.c
 		)
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_psvr OBJECT ${PSVR_SOURCE_FILES})
-	target_include_directories(drv_psvr SYSTEM
-		PRIVATE ${HIDAPI_INCLUDE_DIRS}
-		)
+	add_library(drv_psvr STATIC ${PSVR_SOURCE_FILES})
+	target_link_libraries(drv_psvr PRIVATE xrt-interfaces HIDAPI::hidapi aux_util)
 	list(APPEND ENABLED_HEADSET_DRIVERS psvr)
 endif()
 
@@ -116,8 +103,8 @@ if(BUILD_DRIVER_RS)
 		realsense/rs_6dof.c
 		)
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_rs OBJECT ${RS_SOURCE_FILES})
+	add_library(drv_rs STATIC ${RS_SOURCE_FILES})
+	target_link_libraries(drv_rs PRIVATE xrt-interfaces ${realsense2_LIBRARY} aux_util)
 	target_include_directories(drv_rs SYSTEM
 		PRIVATE ${realsense2_INCLUDE_DIR}
 		)
@@ -133,10 +120,10 @@ if(BUILD_DRIVER_VIVE)
 		vive/vive_protocol.h
 		)
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_vive OBJECT ${VIVE_SOURCE_FILES})
-	target_include_directories(drv_vive SYSTEM PRIVATE ../../external)
-	target_link_libraries(drv_vive z)
+	add_library(drv_vive STATIC ${VIVE_SOURCE_FILES})
+	target_link_libraries(drv_vive PRIVATE xrt-interfaces aux_os aux_util aux_math)
+	target_link_libraries(drv_vive PRIVATE ${ZLIB_LIBRARIES})
+	target_include_directories(drv_vive PRIVATE ${ZLIB_INCLUDE_DIRS})
 	list(APPEND ENABLED_HEADSET_DRIVERS vive)
 endif()
 
@@ -145,8 +132,8 @@ if(BUILD_DRIVER_V4L2)
 		v4l2/v4l2_driver.c
 		)
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(drv_v4l2 OBJECT ${V4L2_SOURCE_FILES})
+	add_library(drv_v4l2 STATIC ${V4L2_SOURCE_FILES})
+	target_link_libraries(drv_v4l2 PRIVATE xrt-interfaces aux_os)
 	list(APPEND ENABLED_DRIVERS v4l2)
 endif()
 

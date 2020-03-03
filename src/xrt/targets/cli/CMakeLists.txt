@@ -1,15 +1,9 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ######
 # Create a cli interface for Monado.
 
-include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}/../../targets/common
-	${CMAKE_CURRENT_SOURCE_DIR}/../../auxiliary
-	${CMAKE_CURRENT_SOURCE_DIR}/../../include
-	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
-	)
 
 set(SOURCE_FILES
 	cli_cmd_calibrate.c
@@ -22,11 +16,6 @@ set(SOURCE_FILES
 
 add_executable(cli
 	${SOURCE_FILES}
-	$<TARGET_OBJECTS:aux_os>
-	$<TARGET_OBJECTS:aux_util>
-	$<TARGET_OBJECTS:aux_math>
-	$<TARGET_OBJECTS:st_prober>
-	$<TARGET_OBJECTS:target_lists>
 	)
 
 set_target_properties(cli PROPERTIES
@@ -35,13 +24,10 @@ set_target_properties(cli PROPERTIES
 	)
 
 target_link_libraries(cli PRIVATE
-	Threads::Threads
+	aux_os
+	aux_util
+	aux_math
+	st_prober
+	target_lists
 	)
 
-if(DRIVER_OBJECTS)
-	target_sources(cli PRIVATE ${DRIVER_OBJECTS})
-endif()
-
-if(DRIVER_LIBRARIES)
-	target_link_libraries(cli PRIVATE ${DRIVER_LIBRARIES})
-endif()

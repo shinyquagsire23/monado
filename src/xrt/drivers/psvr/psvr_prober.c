@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <wchar.h>
 
-#include <hidapi.h>
+#include <hidapi/hidapi.h>
 #include "xrt/xrt_prober.h"
 
 #include "util/u_misc.h"

@@ -32,18 +32,7 @@ set(MAIN_SOURCE_FILES
 	main/comp_window.h
 	)
 
-include_directories(PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/../include
-	${CMAKE_CURRENT_SOURCE_DIR}/../auxiliary
-	)
-
-include_directories(SYSTEM PRIVATE
-	${VULKAN_INCLUDE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/../../external
-	)
-
-if (${VULKAN_ENABLE_VALIDATION})
+if (VULKAN_ENABLE_VALIDATION)
 	add_definitions(-DXRT_ENABLE_VK_VALIDATION)
 endif()
 
@@ -74,9 +63,9 @@ if(BUILD_WITH_OPENGL AND BUILD_WITH_EGL)
 		)
 endif()
 
-# Use OBJECT to not create a archive, since it just gets in the way.
-add_library(comp_client OBJECT ${CLIENT_SOURCE_FILES})
-
+add_library(comp_client STATIC ${CLIENT_SOURCE_FILES})
+target_link_libraries(comp_client PUBLIC xrt-interfaces PRIVATE aux_util)
+target_include_directories(comp_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 ##
 # Main library
@@ -123,8 +112,9 @@ if(BUILD_COMPOSITOR_MAIN)
 			)
 	endif()
 
-	# Use OBJECT to not create a archive, since it just gets in the way.
-	add_library(comp_main OBJECT ${SHADER_HEADERS} ${MAIN_SOURCE_FILES} ${WL_PROTOS_SRC})
+	add_library(comp_main STATIC ${SHADER_HEADERS} ${MAIN_SOURCE_FILES} ${WL_PROTOS_SRC})
+	target_link_libraries(comp_main PUBLIC xrt-interfaces PRIVATE aux_util aux_os)
+	target_include_directories(comp_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 	target_include_directories(comp_main SYSTEM PRIVATE
 		# Shaders - marked SYSTEM so we get no warnings
 		${CMAKE_CURRENT_BINARY_DIR}
@@ -132,12 +122,19 @@ if(BUILD_COMPOSITOR_MAIN)
 
 	if(BUILD_WITH_WAYLAND)
 		target_include_directories(comp_main SYSTEM PRIVATE ${WL_PROTOS_DIR})
+		target_link_libraries(comp_main PRIVATE ${WAYLAND_LIBRARIES})
 	endif()
 	if(BUILD_WITH_XCB)
 		target_include_directories(comp_main SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
+		target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
+	endif()
+
+	if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
+		target_link_libraries(comp_main PRIVATE ${X11_X11_LIB})
 	endif()
 	if(BUILD_WITH_EGL)
 		target_include_directories(comp_main SYSTEM PRIVATE ${EGL_INCLUDE_DIRS})
+		target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
 	endif()
 
 	add_subdirectory(shaders)

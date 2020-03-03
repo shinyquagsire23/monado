@@ -1,12 +1,5 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
-
-include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}/../../include
-	${CMAKE_CURRENT_SOURCE_DIR}/../../auxiliary
-	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
-	${CMAKE_CURRENT_SOURCE_DIR}/../../../external
-	)
 
 set(PROBER_INCLUDES)
 
@@ -23,18 +16,12 @@ if(BUILD_WITH_LIBUDEV)
 	list(APPEND PROBER_SOURCE_FILES
 		p_udev.c
 		)
-	list(APPEND PROBER_INCLUDES
-		${LIBUDEV_INCLUDES}
-		)
 endif()
 
 # Add libusb
 if(BUILD_WITH_LIBUSB)
 	list(APPEND PROBER_SOURCE_FILES
 		p_libusb.c
-		)
-	list(APPEND PROBER_INCLUDES
-		${LIBUSB_INCLUDES}
 		)
 endif()
 
@@ -43,15 +30,32 @@ if(BUILD_WITH_LIBUVC)
 	list(APPEND PROBER_SOURCE_FILES
 		p_libuvc.c
 		)
-	list(APPEND PROBER_INCLUDES
-		${LIBUVC_INCLUDES}
-		)
 endif()
 
-# Use OBJECT to not create a archive, since it just gets in the way.
-add_library(st_prober OBJECT ${PROBER_SOURCE_FILES})
+add_library(st_prober STATIC ${PROBER_SOURCE_FILES})
+target_link_libraries(st_prober PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_tracking)
+target_include_directories(st_prober PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../drivers)
 
-target_include_directories(st_prober
-	PRIVATE
-	${PROBER_INCLUDES}
-	)
+if(BUILD_WITH_LIBUDEV)
+	target_include_directories(st_prober
+		PRIVATE
+		${UDEV_INCLUDE_DIRS}
+		)
+	target_link_libraries(st_prober PRIVATE ${UDEV_LIBRARIES})
+endif()
+
+if(BUILD_WITH_LIBUSB)
+	target_include_directories(st_prober
+		PRIVATE
+		${LIBUSB1_INCLUDE_DIRS}
+		)
+	target_link_libraries(st_prober PRIVATE ${LIBUSB1_LIBRARIES})
+endif()
+
+if(BUILD_WITH_LIBUVC)
+	target_include_directories(st_prober
+		PRIVATE
+		${LIBUVC_INCLUDES}
+		)
+	target_link_libraries(st_prober PRIVATE ${LIBUVC_LIBRARIES})
+endif()

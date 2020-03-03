@@ -1,11 +1,5 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
-
-include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}/../../include
-	${CMAKE_CURRENT_SOURCE_DIR}/../../auxiliary
-	${CMAKE_CURRENT_SOURCE_DIR}/../../../external
-	)
 
 set(OXR_SOURCE_FILES
 	oxr_api_action.c
@@ -57,10 +51,5 @@ if(BUILD_WITH_EGL)
 	list(APPEND OXR_SOURCE_FILES oxr_session_egl.c)
 endif()
 
-# Use OBJECT to not create a archive, since it just gets in the way.
-add_library(st_oxr OBJECT ${OXR_SOURCE_FILES})
-
-target_include_directories(st_oxr SYSTEM
-	PRIVATE
-	${VULKAN_INCLUDE_DIR}
-	)
+add_library(st_oxr STATIC ${OXR_SOURCE_FILES})
+target_link_libraries(st_oxr PRIVATE xrt-interfaces aux_util aux_math Vulkan::Vulkan)

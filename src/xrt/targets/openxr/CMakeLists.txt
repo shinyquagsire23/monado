@@ -4,9 +4,6 @@
 ######
 # Create a loadable OpenXR driver.
 
-# set(RUNTIME_BARE_PREFIX xrt)
-# set(RUNTIME_PREFIX ${RUNTIME_BARE_PREFIX}_)
-
 set(RUNTIME_BARE_SUFFIX monado)
 set(RUNTIME_SUFFIX _${RUNTIME_BARE_SUFFIX})
 
@@ -14,15 +11,6 @@ set(RUNTIME_TARGET ${RUNTIME_PREFIX}openxr${RUNTIME_SUFFIX} CACHE INTERNAL "" FO
 
 # OpenXR 1.0
 set(XR_API_MAJOR "1")
-
-include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}/../../../external
-	${CMAKE_CURRENT_SOURCE_DIR}/../../targets/common
-	${CMAKE_CURRENT_SOURCE_DIR}/../../auxiliary
-	${CMAKE_CURRENT_SOURCE_DIR}/../../include
-	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
-	${CMAKE_CURRENT_SOURCE_DIR}/../../state_trackers
-	)
 
 set(SOURCE_FILES
 	target.c
@@ -34,66 +22,26 @@ add_library(${RUNTIME_TARGET} SHARED
 	${MANIFEST_DEV_PATH}
 	${MANIFEST_PATH}
 	${SOURCE_FILES}
-	$<TARGET_OBJECTS:aux_vk>
-	$<TARGET_OBJECTS:aux_os>
-	$<TARGET_OBJECTS:aux_ogl>
-	$<TARGET_OBJECTS:aux_util>
-	$<TARGET_OBJECTS:aux_math>
-	$<TARGET_OBJECTS:comp_main>
-	$<TARGET_OBJECTS:comp_client>
-	$<TARGET_OBJECTS:st_oxr>
-	$<TARGET_OBJECTS:st_gui>
-	$<TARGET_OBJECTS:st_prober>
-	$<TARGET_OBJECTS:target_lists>
 	)
 
 target_link_libraries(${RUNTIME_TARGET} PUBLIC
-	${Vulkan_LIBRARIES}
-	OpenGL::GLX
+	aux_vk
+	aux_os
+	aux_ogl
+	aux_util
+	aux_math
+	comp_main
+	comp_client
+	st_oxr
+	st_gui
+	st_prober
+	target_lists
 	)
 
-if(BUILD_WITH_XCB)
-	target_link_libraries(${RUNTIME_TARGET} PUBLIC
-		${XCB_LIBRARIES}
-		)
-endif()
-
-if(BUILD_WITH_WAYLAND)
-	target_link_libraries(${RUNTIME_TARGET} PUBLIC
-		${WAYLAND_LIBRARIES}
-		)
-endif()
-
-if(DRIVER_OBJECTS)
-	target_sources(${RUNTIME_TARGET} PRIVATE
-		${DRIVER_OBJECTS}
-		)
-endif()
-
-if(DRIVER_LIBRARIES)
-	target_link_libraries(${RUNTIME_TARGET} PRIVATE
-		${DRIVER_LIBRARIES}
-		)
-endif()
-
 if(BUILD_WITH_SDL2)
-	include_directories(${SDL2_INCLUDE_DIRS})
-
-	target_link_libraries(${RUNTIME_TARGET} PUBLIC
-		${SDL2_LIBRARIES}
-		)
-
-	target_sources(${RUNTIME_TARGET} PRIVATE
-		../../../external/imgui/cimgui_sdl.cpp
-		../../../external/imgui/imgui_impl_sdl.cpp
-		../../../external/imgui/imgui_impl_sdl.h
-		)
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC imgui_impl_sdl)
 endif()
-if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
-	target_link_libraries(${RUNTIME_TARGET} PUBLIC
-		${X11_X11_LIB}
-		)
-endif()
+
 
 include(GNUInstallDirs)
 
