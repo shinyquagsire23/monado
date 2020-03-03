@@ -17,6 +17,7 @@
 #include "util/u_debug.h"
 #include "util/u_json.h"
 #include "util/u_var.h"
+#include "util/u_time.h"
 
 #include "math/m_api.h"
 
