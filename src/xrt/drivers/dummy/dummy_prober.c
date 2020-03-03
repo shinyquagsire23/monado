@@ -4,7 +4,7 @@
  * @file
  * @brief  Dummy prober code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup drv_ohmd
+ * @ingroup drv_dummy
  */
 
 #include <stdio.h>
