@@ -10,6 +10,7 @@
 #pragma once
 
 #include "xrt/xrt_config_have.h"
+#include "xrt/xrt_config_os.h"
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_prober.h"
 

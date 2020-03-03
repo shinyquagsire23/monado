@@ -10,6 +10,7 @@
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "os/os_hid.h"
 #include "p_prober.h"
 
 #ifdef XRT_HAVE_V4L2
