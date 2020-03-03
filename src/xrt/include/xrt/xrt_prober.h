@@ -10,7 +10,6 @@
 #pragma once
 
 #include "xrt/xrt_device.h"
-#include "os/os_hid.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,6 +27,7 @@ struct xrt_frame_context;
 struct xrt_prober;
 struct xrt_prober_device;
 struct xrt_tracking_factory;
+struct os_hid_device;
 
 /*!
  * The maximum number of devices that a single "found" function called by the

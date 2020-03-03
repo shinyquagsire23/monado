@@ -12,7 +12,6 @@
 #define XRT_TRACKING_NAME_LEN 256
 
 #include "xrt/xrt_defines.h"
-#include "util/u_time.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,6 +24,9 @@ struct xrt_tracking;
 struct xrt_tracking_factory;
 struct xrt_tracked_psmv;
 struct xrt_tracked_psvr;
+
+//! @todo This is from u_time, duplicated to avoid layer violation.
+typedef int64_t timepoint_ns;
 
 /*!
  * @ingroup xrt_iface
