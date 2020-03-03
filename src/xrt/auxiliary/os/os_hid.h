@@ -12,7 +12,8 @@
 #pragma once
 
 #include "xrt/xrt_config_os.h"
-#include "xrt/xrt_compiler.h"
+#include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,7 +57,7 @@ struct os_hid_device
  * If milliseconds are negative, this call blocks indefinitely, 0 polls,
  * and positive will block for that amount of milliseconds.
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 os_hid_read(struct os_hid_device *hid_dev,
             uint8_t *data,
             size_t size,
@@ -68,7 +69,7 @@ os_hid_read(struct os_hid_device *hid_dev,
 /*!
  * Write an output report to the given device.
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 os_hid_write(struct os_hid_device *hid_dev, const uint8_t *data, size_t size)
 {
 	return hid_dev->write(hid_dev, data, size);
@@ -80,7 +81,7 @@ os_hid_write(struct os_hid_device *hid_dev, const uint8_t *data, size_t size)
  * If the device doesn't have more than one feature report, just request
  * report 0.
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 os_hid_get_feature(struct os_hid_device *hid_dev,
                    uint8_t report_num,
                    uint8_t *data,
@@ -92,7 +93,7 @@ os_hid_get_feature(struct os_hid_device *hid_dev,
 /*!
  * Get a feature report with a timeout.
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 os_hid_get_feature_timeout(struct os_hid_device *hid_dev,
                            void *data,
                            size_t size,
@@ -107,7 +108,7 @@ os_hid_get_feature_timeout(struct os_hid_device *hid_dev,
  * The first byte of the buffer is the report number, to be followed by
  * the data of the report.
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 os_hid_set_feature(struct os_hid_device *hid_dev,
                    const uint8_t *data,
                    size_t size)
@@ -118,7 +119,7 @@ os_hid_set_feature(struct os_hid_device *hid_dev,
 /*!
  * Close and free the given device.
  */
-XRT_MAYBE_UNUSED static inline void
+static inline void
 os_hid_destroy(struct os_hid_device *hid_dev)
 {
 	hid_dev->destroy(hid_dev);

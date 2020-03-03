@@ -138,7 +138,7 @@ struct comp_compositor
  *
  * @ingroup comp_main
  */
-XRT_MAYBE_UNUSED static struct comp_swapchain *
+static inline struct comp_swapchain *
 comp_swapchain(struct xrt_swapchain *xsc)
 {
 	return (struct comp_swapchain *)xsc;
@@ -149,7 +149,7 @@ comp_swapchain(struct xrt_swapchain *xsc)
  *
  * @ingroup comp_main
  */
-XRT_MAYBE_UNUSED static struct comp_compositor *
+static inline struct comp_compositor *
 comp_compositor(struct xrt_compositor *xc)
 {
 	return (struct comp_compositor *)xc;

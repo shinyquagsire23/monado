@@ -251,7 +251,7 @@ void
 t_hsv_build_optimized_table(struct t_hsv_filter_params *params,
                             struct t_hsv_filter_optimized_table *t);
 
-XRT_MAYBE_UNUSED static inline uint8_t
+static inline uint8_t
 t_hsv_filter_sample(struct t_hsv_filter_optimized_table *t,
                     uint32_t y,
                     uint32_t u,

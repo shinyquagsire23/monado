@@ -180,7 +180,7 @@ struct xrt_prober
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 xrt_prober_probe(struct xrt_prober *xp)
 {
 	return xp->probe(xp);
@@ -191,7 +191,7 @@ xrt_prober_probe(struct xrt_prober *xp)
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 xrt_prober_dump(struct xrt_prober *xp)
 {
 	return xp->dump(xp);
@@ -202,7 +202,7 @@ xrt_prober_dump(struct xrt_prober *xp)
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 xrt_prober_select(struct xrt_prober *xp,
                   struct xrt_device **xdevs,
                   size_t num_xdevs)
@@ -215,7 +215,7 @@ xrt_prober_select(struct xrt_prober *xp,
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 xrt_prober_open_hid_interface(struct xrt_prober *xp,
                               struct xrt_prober_device *xpdev,
                               int interface,
@@ -229,7 +229,7 @@ xrt_prober_open_hid_interface(struct xrt_prober *xp,
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 xrt_prober_get_string_descriptor(struct xrt_prober *xp,
                                  struct xrt_prober_device *xpdev,
                                  enum xrt_prober_string which_string,
@@ -245,7 +245,7 @@ xrt_prober_get_string_descriptor(struct xrt_prober *xp,
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static inline bool
+static inline bool
 xrt_prober_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 {
 	return xp->can_open(xp, xpdev);
@@ -257,7 +257,7 @@ xrt_prober_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 xrt_prober_open_video_device(struct xrt_prober *xp,
                              struct xrt_prober_device *xpdev,
                              struct xrt_frame_context *xfctx,
@@ -271,7 +271,7 @@ xrt_prober_open_video_device(struct xrt_prober *xp,
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static inline int
+static inline int
 xrt_prober_list_video_devices(struct xrt_prober *xp,
                               xrt_prober_list_video_cb cb,
                               void *ptr)
@@ -284,7 +284,7 @@ xrt_prober_list_video_devices(struct xrt_prober *xp,
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static inline void
+static inline void
 xrt_prober_destroy(struct xrt_prober **xp_ptr)
 {
 	struct xrt_prober *xp = *xp_ptr;

@@ -74,7 +74,7 @@ struct p_factory
  *
  */
 
-XRT_MAYBE_UNUSED static struct p_factory *
+static inline struct p_factory *
 p_factory(struct xrt_tracking_factory *xfact)
 {
 	return (struct p_factory *)xfact;

@@ -10,7 +10,6 @@
 #pragma once
 
 #include "xrt/xrt_defines.h"
-#include "xrt/xrt_compiler.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -215,7 +214,7 @@ struct xrt_compositor
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static struct xrt_swapchain *
+static inline struct xrt_swapchain *
 xrt_comp_create_swapchain(struct xrt_compositor *xc,
                           enum xrt_swapchain_create_flags create,
                           enum xrt_swapchain_usage_bits bits,
@@ -237,7 +236,7 @@ xrt_comp_create_swapchain(struct xrt_compositor *xc,
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_comp_poll_events(struct xrt_compositor *xc, uint64_t *WIP)
 {
 	xc->poll_events(xc, WIP);
@@ -248,7 +247,7 @@ xrt_comp_poll_events(struct xrt_compositor *xc, uint64_t *WIP)
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_comp_prepare_session(struct xrt_compositor *xc)
 {
 	xc->prepare_session(xc);
@@ -259,7 +258,7 @@ xrt_comp_prepare_session(struct xrt_compositor *xc)
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_comp_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
 {
 	xc->begin_session(xc, view_type);
@@ -270,7 +269,7 @@ xrt_comp_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_comp_end_session(struct xrt_compositor *xc)
 {
 	xc->end_session(xc);
@@ -281,7 +280,7 @@ xrt_comp_end_session(struct xrt_compositor *xc)
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_comp_wait_frame(struct xrt_compositor *xc,
                     uint64_t *predicted_display_time,
                     uint64_t *predicted_display_period)
@@ -294,7 +293,7 @@ xrt_comp_wait_frame(struct xrt_compositor *xc,
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_comp_begin_frame(struct xrt_compositor *xc)
 {
 	xc->begin_frame(xc);
@@ -305,7 +304,7 @@ xrt_comp_begin_frame(struct xrt_compositor *xc)
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_comp_discard_frame(struct xrt_compositor *xc)
 {
 	xc->discard_frame(xc);
@@ -316,7 +315,7 @@ xrt_comp_discard_frame(struct xrt_compositor *xc)
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_comp_end_frame(struct xrt_compositor *xc,
                    enum xrt_blend_mode blend_mode,
                    struct xrt_swapchain **xscs,
@@ -334,7 +333,7 @@ xrt_comp_end_frame(struct xrt_compositor *xc,
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_comp_destroy(struct xrt_compositor **xc_ptr)
 {
 	struct xrt_compositor *xc = *xc_ptr;

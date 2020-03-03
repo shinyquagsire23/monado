@@ -101,7 +101,7 @@ struct xrt_frame_context
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_frame_reference(struct xrt_frame **dst, struct xrt_frame *src)
 {
 	struct xrt_frame *old_dst = *dst;
@@ -128,7 +128,7 @@ xrt_frame_reference(struct xrt_frame **dst, struct xrt_frame *src)
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_frame_context_add(struct xrt_frame_context *xfctx,
                       struct xrt_frame_node *node)
 {
@@ -141,7 +141,7 @@ xrt_frame_context_add(struct xrt_frame_context *xfctx,
  *
  * @ingroup xrt_iface
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 xrt_frame_context_destroy_nodes(struct xrt_frame_context *xfctx)
 {
 	struct xrt_frame_node *next = NULL;

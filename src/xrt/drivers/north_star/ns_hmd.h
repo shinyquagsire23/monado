@@ -158,7 +158,7 @@ struct ns_mesh
  *
  * @ingroup drv_ns
  */
-XRT_MAYBE_UNUSED static inline struct ns_hmd *
+static inline struct ns_hmd *
 ns_hmd(struct xrt_device *xdev)
 {
 	return (struct ns_hmd *)xdev;
@@ -169,7 +169,7 @@ ns_hmd(struct xrt_device *xdev)
  *
  * @ingroup drv_ns
  */
-XRT_MAYBE_UNUSED static inline struct ns_mesh *
+static inline struct ns_mesh *
 ns_mesh(struct u_uv_generator *gen)
 {
 	return (struct ns_mesh *)gen;

@@ -66,7 +66,7 @@ struct client_vk_compositor
  *
  * @ingroup comp_client
  */
-XRT_MAYBE_UNUSED static struct client_vk_swapchain *
+static inline struct client_vk_swapchain *
 client_vk_swapchain(struct xrt_swapchain *xsc)
 {
 	return (struct client_vk_swapchain *)xsc;
@@ -77,7 +77,7 @@ client_vk_swapchain(struct xrt_swapchain *xsc)
  *
  * @ingroup comp_client
  */
-XRT_MAYBE_UNUSED static struct client_vk_compositor *
+static inline struct client_vk_compositor *
 client_vk_compositor(struct xrt_compositor *xc)
 {
 	return (struct client_vk_compositor *)xc;

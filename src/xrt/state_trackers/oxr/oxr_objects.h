@@ -147,7 +147,7 @@ oxr_handle_state_to_string(enum oxr_handle_state state);
 /*!
  * To go back to a OpenXR object.
  */
-XRT_MAYBE_UNUSED static inline XrInstance
+static inline XrInstance
 oxr_instance_to_openxr(struct oxr_instance *inst)
 {
 	return (XrInstance)inst;
@@ -260,7 +260,7 @@ oxr_source_get_pose_input(struct oxr_logger *log,
 /*!
  * To go back to a OpenXR object.
  */
-XRT_MAYBE_UNUSED static inline XrActionSet
+static inline XrActionSet
 oxr_action_set_to_openxr(struct oxr_action_set *act_set)
 {
 	return (XrActionSet)act_set;
@@ -275,7 +275,7 @@ oxr_action_set_create(struct oxr_logger *log,
 /*!
  * To go back to a OpenXR object.
  */
-XRT_MAYBE_UNUSED static inline XrAction
+static inline XrAction
 oxr_action_to_openxr(struct oxr_action *act)
 {
 	return (XrAction)act;
@@ -417,7 +417,7 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
 /*!
  * To go back to a OpenXR object.
  */
-XRT_MAYBE_UNUSED static inline XrSession
+static inline XrSession
 oxr_session_to_openxr(struct oxr_session *sess)
 {
 	return (XrSession)sess;
@@ -492,7 +492,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 /*!
  * To go back to a OpenXR object.
  */
-XRT_MAYBE_UNUSED static inline XrSpace
+static inline XrSpace
 oxr_space_to_openxr(struct oxr_space *spc)
 {
 	return (XrSpace)spc;
@@ -536,7 +536,7 @@ oxr_space_ref_relation(struct oxr_logger *log,
 /*!
  * To go back to a OpenXR object.
  */
-XRT_MAYBE_UNUSED static inline XrSwapchain
+static inline XrSwapchain
 oxr_swapchain_to_openxr(struct oxr_swapchain *sc)
 {
 	return (XrSwapchain)sc;
@@ -558,7 +558,7 @@ oxr_create_swapchain(struct oxr_logger *,
 /*!
  * To go back to a OpenXR object.
  */
-XRT_MAYBE_UNUSED static inline XrDebugUtilsMessengerEXT
+static inline XrDebugUtilsMessengerEXT
 oxr_messenger_to_openxr(struct oxr_debug_messenger *mssngr)
 {
 	return (XrDebugUtilsMessengerEXT)mssngr;
@@ -995,7 +995,7 @@ struct oxr_session
 /*!
  * Returns XR_SUCCESS or XR_SESSION_LOSS_PENDING as appropriate.
  */
-XRT_MAYBE_UNUSED static inline XrResult
+static inline XrResult
 oxr_session_success_result(struct oxr_session *session)
 {
 	switch (session->state) {
@@ -1008,7 +1008,7 @@ oxr_session_success_result(struct oxr_session *session)
  * Returns XR_SUCCESS, XR_SESSION_LOSS_PENDING, or XR_SESSION_NOT_FOCUSED, as
  * appropriate.
  */
-XRT_MAYBE_UNUSED static inline XrResult
+static inline XrResult
 oxr_session_success_focused_result(struct oxr_session *session)
 {
 	switch (session->state) {

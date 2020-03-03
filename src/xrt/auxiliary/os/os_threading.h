@@ -9,7 +9,6 @@
  */
 
 #include "xrt/xrt_config_os.h"
-#include "xrt/xrt_compiler.h"
 #include "util/u_misc.h"
 
 #ifdef XRT_OS_LINUX
@@ -45,7 +44,7 @@ struct os_mutex
 /*!
  * Init.
  */
-XRT_MAYBE_UNUSED static int
+static inline int
 os_mutex_init(struct os_mutex *om)
 {
 	return pthread_mutex_init(&om->mutex, NULL);
@@ -54,7 +53,7 @@ os_mutex_init(struct os_mutex *om)
 /*!
  * Lock.
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 os_mutex_lock(struct os_mutex *om)
 {
 	pthread_mutex_lock(&om->mutex);
@@ -63,7 +62,7 @@ os_mutex_lock(struct os_mutex *om)
 /*!
  * Unlock.
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 os_mutex_unlock(struct os_mutex *om)
 {
 	pthread_mutex_unlock(&om->mutex);
@@ -72,7 +71,7 @@ os_mutex_unlock(struct os_mutex *om)
 /*!
  * Clean up.
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 os_mutex_destroy(struct os_mutex *om)
 {
 	pthread_mutex_destroy(&om->mutex);
@@ -102,7 +101,7 @@ typedef void *(*os_run_func)(void *);
 /*!
  * Init.
  */
-XRT_MAYBE_UNUSED static int
+static inline int
 os_thread_init(struct os_thread *ost)
 {
 	return 0;
@@ -111,7 +110,7 @@ os_thread_init(struct os_thread *ost)
 /*!
  * Start thread.
  */
-XRT_MAYBE_UNUSED static int
+static inline int
 os_thread_start(struct os_thread *ost, os_run_func func, void *ptr)
 {
 	return pthread_create(&ost->thread, NULL, func, ptr);
@@ -120,7 +119,7 @@ os_thread_start(struct os_thread *ost, os_run_func func, void *ptr)
 /*!
  * Join.
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 os_thread_join(struct os_thread *ost)
 {
 	void *retval;
@@ -132,7 +131,7 @@ os_thread_join(struct os_thread *ost)
 /*!
  * Destruction.
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 os_thread_destroy(struct os_thread *ost)
 {}
 
@@ -159,7 +158,7 @@ struct os_thread_helper
 /*!
  * Initialize the thread helper.
  */
-XRT_MAYBE_UNUSED static int
+static inline int
 os_thread_helper_init(struct os_thread_helper *oth)
 {
 	int ret = pthread_mutex_init(&oth->mutex, NULL);
@@ -179,7 +178,7 @@ os_thread_helper_init(struct os_thread_helper *oth)
 /*!
  * Start the internal thread.
  */
-XRT_MAYBE_UNUSED static int
+static inline int
 os_thread_helper_start(struct os_thread_helper *oth,
                        os_run_func func,
                        void *ptr)
@@ -207,7 +206,7 @@ os_thread_helper_start(struct os_thread_helper *oth,
 /*!
  * Stop the thread.
  */
-XRT_MAYBE_UNUSED static int
+static inline int
 os_thread_helper_stop(struct os_thread_helper *oth)
 {
 	void *retval = NULL;
@@ -238,7 +237,7 @@ os_thread_helper_stop(struct os_thread_helper *oth)
 /*!
  * Destroy the thread helper, externally syncronizable.
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 os_thread_helper_destroy(struct os_thread_helper *oth)
 {
 	// Stop the thread.
@@ -252,7 +251,7 @@ os_thread_helper_destroy(struct os_thread_helper *oth)
 /*!
  * Lock the helper.
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 os_thread_helper_lock(struct os_thread_helper *oth)
 {
 	pthread_mutex_lock(&oth->mutex);
@@ -261,7 +260,7 @@ os_thread_helper_lock(struct os_thread_helper *oth)
 /*!
  * Unlock the helper.
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 os_thread_helper_unlock(struct os_thread_helper *oth)
 {
 	pthread_mutex_unlock(&oth->mutex);
@@ -272,7 +271,7 @@ os_thread_helper_unlock(struct os_thread_helper *oth)
  *
  * Must be called with the helper locked.
  */
-XRT_MAYBE_UNUSED static bool
+static inline bool
 os_thread_helper_is_running_locked(struct os_thread_helper *oth)
 {
 	return oth->running;
@@ -283,7 +282,7 @@ os_thread_helper_is_running_locked(struct os_thread_helper *oth)
  *
  * Must be called with the helper locked.
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 os_thread_helper_wait_locked(struct os_thread_helper *oth)
 {
 	pthread_cond_wait(&oth->cond, &oth->mutex);
@@ -294,7 +293,7 @@ os_thread_helper_wait_locked(struct os_thread_helper *oth)
  *
  * Must be called with the helper locked.
  */
-XRT_MAYBE_UNUSED static void
+static inline void
 os_thread_helper_signal_locked(struct os_thread_helper *oth)
 {
 	pthread_cond_signal(&oth->cond);

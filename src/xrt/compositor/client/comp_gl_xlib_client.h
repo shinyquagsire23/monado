@@ -34,7 +34,7 @@ struct client_gl_xlib_compositor
  *
  * @ingroup comp_client
  */
-XRT_MAYBE_UNUSED static struct client_gl_xlib_compositor *
+static inline struct client_gl_xlib_compositor *
 client_gl_xlib_compositor(struct xrt_compositor *xc)
 {
 	return (struct client_gl_xlib_compositor *)xc;

@@ -104,7 +104,7 @@ struct xrt_fs
  *
  * @ingroup xrt_iface
  */
-static inline XRT_MAYBE_UNUSED bool
+static inline bool
 xrt_fs_enumerate_modes(struct xrt_fs *xfs,
                        struct xrt_fs_mode **out_modes,
                        uint32_t *out_count)
@@ -117,7 +117,7 @@ xrt_fs_enumerate_modes(struct xrt_fs *xfs,
  *
  * @ingroup xrt_iface
  */
-static inline XRT_MAYBE_UNUSED bool
+static inline bool
 xrt_fs_configure_capture(struct xrt_fs *xfs,
                          struct xrt_fs_capture_parameters *cp)
 {
@@ -129,7 +129,7 @@ xrt_fs_configure_capture(struct xrt_fs *xfs,
  *
  * @ingroup xrt_iface
  */
-static inline XRT_MAYBE_UNUSED bool
+static inline bool
 xrt_fs_stream_start(struct xrt_fs *xfs,
                     struct xrt_frame_sink *xs,
                     uint32_t descriptor_index)
@@ -142,7 +142,7 @@ xrt_fs_stream_start(struct xrt_fs *xfs,
  *
  * @ingroup xrt_iface
  */
-static inline XRT_MAYBE_UNUSED bool
+static inline bool
 xrt_fs_stream_stop(struct xrt_fs *xfs)
 {
 	return xfs->stream_stop(xfs);
@@ -153,7 +153,7 @@ xrt_fs_stream_stop(struct xrt_fs *xfs)
  *
  * @ingroup xrt_iface
  */
-static inline XRT_MAYBE_UNUSED bool
+static inline bool
 xrt_fs_is_running(struct xrt_fs *xfs)
 {
 	return xfs->is_running(xfs);
