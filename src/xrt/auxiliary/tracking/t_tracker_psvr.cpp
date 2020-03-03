@@ -15,6 +15,7 @@
 #include "util/u_debug.h"
 #include "util/u_frame.h"
 #include "util/u_format.h"
+#include "util/u_time.h"
 
 #include "math/m_api.h"
 
