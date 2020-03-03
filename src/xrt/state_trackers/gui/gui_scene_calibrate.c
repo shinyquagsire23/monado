@@ -138,7 +138,7 @@ render_progress(struct calibration_scene *cs)
 #endif // XRT_HAVE_OPENCV
 }
 
-static void
+XRT_MAYBE_UNUSED static void
 scene_render_video(struct gui_scene *scene, struct gui_program *p)
 {
 	struct calibration_scene *cs = (struct calibration_scene *)scene;

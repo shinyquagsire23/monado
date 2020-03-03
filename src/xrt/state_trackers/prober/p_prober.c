@@ -670,7 +670,8 @@ open_video_device(struct xrt_prober *xp,
                   struct xrt_frame_context *xfctx,
                   struct xrt_fs **out_xfs)
 {
-	struct prober_device *pdev = (struct prober_device *)xpdev;
+	XRT_MAYBE_UNUSED struct prober_device *pdev =
+	    (struct prober_device *)xpdev;
 
 #if defined(XRT_HAVE_V4L2)
 	if (pdev->num_v4ls == 0) {
@@ -685,7 +686,6 @@ open_video_device(struct xrt_prober *xp,
 	*out_xfs = xfs;
 	return 0;
 #else
-	(void)pdev;
 	return -1;
 #endif
 }
@@ -730,9 +730,10 @@ get_string_descriptor(struct xrt_prober *xp,
                       unsigned char *buffer,
                       int length)
 {
-	struct prober *p = (struct prober *)xp;
-	struct prober_device *pdev = (struct prober_device *)xpdev;
-	int ret;
+	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
+	XRT_MAYBE_UNUSED struct prober_device *pdev =
+	    (struct prober_device *)xpdev;
+	XRT_MAYBE_UNUSED int ret;
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->usb.dev != NULL) {
 		ret = p_libusb_get_string_descriptor(p, pdev, which_string,
@@ -750,8 +751,9 @@ get_string_descriptor(struct xrt_prober *xp,
 static bool
 can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 {
-	struct prober *p = (struct prober *)xp;
-	struct prober_device *pdev = (struct prober_device *)xpdev;
+	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
+	XRT_MAYBE_UNUSED struct prober_device *pdev =
+	    (struct prober_device *)xpdev;
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->usb.dev != NULL) {
 		return p_libusb_can_open(p, pdev);
