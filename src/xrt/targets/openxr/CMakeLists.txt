@@ -45,10 +45,11 @@ endif()
 
 if(NOT MSVC)
 	# Force the main "negotiate" symbol's inclusion
+	# and use a version script to ensure that's the only one we expose.
 	set_property(TARGET ${RUNTIME_TARGET}
 		APPEND_STRING
 		PROPERTY LINK_FLAGS
-		"-u xrNegotiateLoaderRuntimeInterface")
+		"-u xrNegotiateLoaderRuntimeInterface -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libopenxr.version")
 endif()
 
 
