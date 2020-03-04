@@ -12,6 +12,7 @@
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
 
+#include "util/u_time.h"
 #include "util/u_device.h"
 
 #include <librealsense2/rs.h>
