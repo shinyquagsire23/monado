@@ -104,10 +104,7 @@ if(BUILD_DRIVER_RS)
 		)
 
 	add_library(drv_rs STATIC ${RS_SOURCE_FILES})
-	target_link_libraries(drv_rs PRIVATE xrt-interfaces ${realsense2_LIBRARY} aux_util)
-	target_include_directories(drv_rs SYSTEM
-		PRIVATE ${realsense2_INCLUDE_DIR}
-		)
+	target_link_libraries(drv_rs PRIVATE xrt-interfaces realsense2::realsense2 aux_util)
 	list(APPEND ENABLED_HEADSET_DRIVERS rs)
 endif()
 
