@@ -55,7 +55,6 @@ if(BUILD_WITH_OPENGL AND BUILD_WITH_XLIB)
 		client/comp_gl_xlib_client.h
 		client/comp_gl_xlib_glue.c
 		)
-
 endif()
 if(BUILD_WITH_OPENGL AND BUILD_WITH_EGL)
 	list(APPEND CLIENT_SOURCE_FILES
@@ -64,9 +63,16 @@ if(BUILD_WITH_OPENGL AND BUILD_WITH_EGL)
 endif()
 
 add_library(comp_client STATIC ${CLIENT_SOURCE_FILES})
-target_link_libraries(comp_client PUBLIC xrt-interfaces PRIVATE aux_util)
+target_link_libraries(comp_client PUBLIC xrt-interfaces PRIVATE aux_util aux_vk)
 target_include_directories(comp_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(BUILD_WITH_OPENGL)
+	target_link_libraries(comp_client PRIVATE aux_ogl)
+endif()
+
+if(BUILD_WITH_OPENGL AND BUILD_WITH_XLIB)
+	target_link_libraries(comp_client PRIVATE OpenGL::GLX)
+endif()
 ##
 # Main library
 #
@@ -113,7 +119,7 @@ if(BUILD_COMPOSITOR_MAIN)
 	endif()
 
 	add_library(comp_main STATIC ${SHADER_HEADERS} ${MAIN_SOURCE_FILES} ${WL_PROTOS_SRC})
-	target_link_libraries(comp_main PUBLIC xrt-interfaces PRIVATE aux_util aux_os)
+	target_link_libraries(comp_main PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk)
 	target_include_directories(comp_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 	target_include_directories(comp_main SYSTEM PRIVATE
 		# Shaders - marked SYSTEM so we get no warnings

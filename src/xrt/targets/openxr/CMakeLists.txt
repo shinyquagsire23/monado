@@ -24,22 +24,31 @@ add_library(${RUNTIME_TARGET} SHARED
 	${SOURCE_FILES}
 	)
 
+# Note: Order matters in this list!
 target_link_libraries(${RUNTIME_TARGET} PUBLIC
 	aux_vk
 	aux_os
 	aux_ogl
 	aux_util
 	aux_math
-	comp_main
-	comp_client
 	st_oxr
 	st_gui
 	st_prober
+	comp_main
+	comp_client
 	target_lists
 	)
 
 if(BUILD_WITH_SDL2)
 	target_link_libraries(${RUNTIME_TARGET} PUBLIC imgui_impl_sdl)
+endif()
+
+if(NOT MSVC)
+	# Force the main "negotiate" symbol's inclusion
+	set_property(TARGET ${RUNTIME_TARGET}
+		APPEND_STRING
+		PROPERTY LINK_FLAGS
+		"-u xrNegotiateLoaderRuntimeInterface")
 endif()
 
 
