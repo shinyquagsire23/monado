@@ -51,6 +51,11 @@ if(NOT MSVC)
 		APPEND_STRING
 		PROPERTY LINK_FLAGS
 		"-u xrNegotiateLoaderRuntimeInterface -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libopenxr.version")
+	# Re-link if the version script changes.
+	set_property(TARGET ${RUNTIME_TARGET}
+		APPEND
+		PROPERTY LINK_DEPENDS
+		"${CMAKE_CURRENT_SOURCE_DIR}/libopenxr.version")
 endif()
 
 
