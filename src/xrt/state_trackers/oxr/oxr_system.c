@@ -278,6 +278,20 @@ oxr_system_get_view_conf_properties(
 	return XR_SUCCESS;
 }
 
+static void
+view_configuration_view_fill_in(XrViewConfigurationView *target_view,
+                                XrViewConfigurationView *source_view)
+{
+	// clang-format off
+	target_view->recommendedImageRectWidth       = source_view->recommendedImageRectWidth;
+	target_view->maxImageRectWidth               = source_view->maxImageRectWidth;
+	target_view->recommendedImageRectHeight      = source_view->recommendedImageRectHeight;
+	target_view->maxImageRectHeight              = source_view->maxImageRectHeight;
+	target_view->recommendedSwapchainSampleCount = source_view->recommendedSwapchainSampleCount;
+	target_view->maxSwapchainSampleCount         = source_view->maxSwapchainSampleCount;
+	// clang-format on
+}
+
 XrResult
 oxr_system_enumerate_view_conf_views(
     struct oxr_logger *log,
@@ -293,6 +307,7 @@ oxr_system_enumerate_view_conf_views(
 		                 "invalid view configuration type");
 	}
 
-	OXR_TWO_CALL_HELPER(log, viewCapacityInput, viewCountOutput, views, 2,
-	                    sys->views, XR_SUCCESS);
+	OXR_TWO_CALL_FILL_IN_HELPER(log, viewCapacityInput, viewCountOutput,
+	                            views, 2, view_configuration_view_fill_in,
+	                            sys->views, XR_SUCCESS);
 }
