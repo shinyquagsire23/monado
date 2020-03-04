@@ -103,15 +103,6 @@ target_link_libraries(aux_ogl PUBLIC aux-includes)
 # for GLAD
 target_link_libraries(aux_ogl PRIVATE xrt-external-headers)
 
-# Util library.
-add_library(aux_util STATIC ${UTIL_SOURCE_FILES})
-target_link_libraries(aux_util PUBLIC aux-includes)
-# for cJSON
-target_link_libraries(aux_util PUBLIC xrt-external-headers)
-if(BUILD_WITH_JPEG)
-	target_link_libraries(aux_util PRIVATE ${JPEG_LIBRARIES})
-endif()
-
 # OS library.
 add_library(aux_os STATIC ${OS_SOURCE_FILES})
 target_link_libraries(aux_os PUBLIC aux-includes PRIVATE Threads::Threads)
@@ -124,6 +115,17 @@ target_link_libraries(aux_math PUBLIC aux-includes)
 target_include_directories(aux_math SYSTEM
 	PRIVATE ${EIGEN3_INCLUDE_DIR}
 	)
+
+# Util library.
+add_library(aux_util STATIC ${UTIL_SOURCE_FILES})
+target_link_libraries(aux_util PUBLIC aux-includes)
+# for cJSON
+target_link_libraries(aux_util PUBLIC xrt-external-headers)
+# for u_device
+target_link_libraries(aux_util PUBLIC aux_math)
+if(BUILD_WITH_JPEG)
+	target_link_libraries(aux_util PRIVATE ${JPEG_LIBRARIES})
+endif()
 
 # Tracking library.
 add_library(aux_tracking STATIC ${TRACKING_SOURCE_FILES})
