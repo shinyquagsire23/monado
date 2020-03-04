@@ -63,6 +63,8 @@ if build_xcb_xrandr_direct
 	openxr_deps += [xcb_randr]
 endif
 
+mapfile = 'libopenxr.version'
+version_script_flag = '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(), mapfile)
 openxr = library(
 	runtime_target,
 	files(
@@ -91,6 +93,8 @@ openxr = library(
 	] + hack_incs,
 	dependencies: openxr_deps + driver_deps + hack_deps,
 	install: true,
+	link_args: version_script_flag,
+	link_depends: mapfile
 )
 
 manifest_in = files('openxr_monado.in.json')
