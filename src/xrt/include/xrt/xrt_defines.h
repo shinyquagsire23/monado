@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -145,6 +145,17 @@ struct xrt_vec3_i32
 	int32_t x;
 	int32_t y;
 	int32_t z;
+};
+
+/*!
+ * A 2 element vector with 32 bit integers.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_vec2_i32
+{
+	int32_t x;
+	int32_t y;
 };
 
 /*!
