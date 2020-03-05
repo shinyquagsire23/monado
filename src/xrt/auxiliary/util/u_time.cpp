@@ -8,7 +8,7 @@
  */
 
 #include "u_time.h"
-#include "xrt/xrt_config.h"
+#include "xrt/xrt_config_os.h"
 #include "xrt/xrt_compiler.h"
 
 #include <chrono>
