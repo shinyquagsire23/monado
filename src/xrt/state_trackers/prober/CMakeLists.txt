@@ -59,3 +59,8 @@ if(BUILD_WITH_LIBUVC)
 		)
 	target_link_libraries(st_prober PRIVATE ${LIBUVC_LIBRARIES})
 endif()
+
+if(BUILD_DRIVER_V4L2)
+	# Uses v4l2_fs_create
+	target_link_libraries(st_prober PRIVATE drv_v4l2)
+endif()
