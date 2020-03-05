@@ -10,6 +10,10 @@ target_link_libraries(target_lists PRIVATE xrt-interfaces)
 target_include_directories(target_lists PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../drivers)
 target_include_directories(target_lists PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(BUILD_DRIVER_DAYDREAM)
+	target_link_libraries(target_lists PRIVATE drv_daydream)
+endif()
+
 if(BUILD_DRIVER_DUMMY)
 	target_link_libraries(target_lists PRIVATE drv_dummy)
 endif()

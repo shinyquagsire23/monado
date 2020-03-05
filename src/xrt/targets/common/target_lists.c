@@ -42,6 +42,10 @@
 #include "vive/vive_prober.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_DAYDREAM
+#include "daydream/daydream_interface.h"
+#endif
+
 /*!
  * Each entry should be a vendor ID (VID), product ID (PID), a "found" function,
  * and a string literal name.
@@ -90,6 +94,11 @@ struct xrt_prober_entry *target_entry_lists[] = {
 xrt_auto_prober_creator target_auto_list[] = {
 #ifdef XRT_BUILD_DRIVER_PSVR
     psvr_create_auto_prober,
+#endif
+
+#ifdef XRT_BUILD_DRIVER_DAYDREAM
+    // Before OpenHMD
+    daydream_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_OHMD

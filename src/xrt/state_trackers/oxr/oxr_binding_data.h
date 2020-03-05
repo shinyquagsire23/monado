@@ -59,6 +59,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_TRIGGER_VALUE,
                 XRT_INPUT_HYDRA_TRIGGER_VALUE,
+                XRT_INPUT_DAYDREAM_TOUCHPAD_CLICK,
                 (enum xrt_input_name)0,
             },
     },
@@ -74,6 +75,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_MOVE_CLICK,
                 XRT_INPUT_HYDRA_MIDDLE_CLICK,
+                XRT_INPUT_DAYDREAM_BAR_CLICK,
                 (enum xrt_input_name)0,
             },
     },
@@ -89,6 +91,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_BODY_CENTER_POSE,
                 XRT_INPUT_HYDRA_POSE,
+                XRT_INPUT_DAYDREAM_POSE,
                 (enum xrt_input_name)0,
             },
     },
@@ -104,6 +107,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_BALL_TIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
+                XRT_INPUT_DAYDREAM_POSE,
                 (enum xrt_input_name)0,
             },
     },
@@ -132,6 +136,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_TRIGGER_VALUE,
                 XRT_INPUT_HYDRA_TRIGGER_VALUE,
+                XRT_INPUT_DAYDREAM_TOUCHPAD_CLICK,
                 (enum xrt_input_name)0,
             },
     },
@@ -147,6 +152,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_MOVE_CLICK,
                 XRT_INPUT_HYDRA_MIDDLE_CLICK,
+                XRT_INPUT_DAYDREAM_BAR_CLICK,
                 (enum xrt_input_name)0,
             },
     },
@@ -162,6 +168,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_BODY_CENTER_POSE,
                 XRT_INPUT_HYDRA_POSE,
+                XRT_INPUT_DAYDREAM_POSE,
                 (enum xrt_input_name)0,
             },
     },
@@ -177,6 +184,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             {
                 XRT_INPUT_PSMV_BALL_TIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
+                XRT_INPUT_DAYDREAM_POSE,
                 (enum xrt_input_name)0,
             },
     },

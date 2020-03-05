@@ -5,6 +5,19 @@
 set(ENABLED_HEADSET_DRIVERS)
 set(ENABLED_DRIVERS)
 
+if(BUILD_DRIVER_DAYDREAM)
+	set(DAYDREAM_SOURCE_FILES
+		daydream/daydream_device.c
+		daydream/daydream_device.h
+		daydream/daydream_interface.h
+		daydream/daydream_prober.c
+		)
+
+	add_library(drv_daydream STATIC ${DAYDREAM_SOURCE_FILES})
+	target_link_libraries(drv_daydream PRIVATE xrt-interfaces aux_util aux_os)
+	list(APPEND ENABLED_DRIVERS daydream)
+endif()
+
 if(BUILD_DRIVER_DUMMY)
 	set(DUMMY_SOURCE_FILES
 		dummy/dummy_hmd.c
@@ -82,7 +95,6 @@ if(BUILD_DRIVER_PSMV)
 	target_link_libraries(drv_psmv PRIVATE xrt-interfaces PUBLIC aux_os aux_tracking)
 	list(APPEND ENABLED_DRIVERS psmv)
 endif()
-
 
 if(BUILD_DRIVER_PSVR)
 	set(PSVR_SOURCE_FILES

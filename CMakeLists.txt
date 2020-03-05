@@ -99,7 +99,7 @@ option(BUILD_WITH_HYDRA "Enable Hydra driver" ON)
 option(BUILD_WITH_NS "Enable North Star driver" ON)
 
 # You can set this from a superproject to add a driver
-list(APPEND AVAILABLE_DRIVERS DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE)
+list(APPEND AVAILABLE_DRIVERS DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM)
 
 ###
 # Flags
@@ -197,6 +197,10 @@ endif()
 
 if(BUILD_WITH_HYDRA)
 	set(BUILD_DRIVER_HYDRA TRUE)
+endif()
+
+if(BUILD_WITH_DAYDREAM)
+	set(BUILD_DRIVER_DAYDREAM TRUE)
 endif()
 
 

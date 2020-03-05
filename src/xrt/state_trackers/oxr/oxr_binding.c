@@ -1,4 +1,4 @@
-// Copyright 2018-2019, Collabora, Ltd.
+// Copyright 2018-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -248,6 +248,10 @@ oxr_find_profile_for_device(struct oxr_logger *log,
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
 		interaction_profile_find(log, inst, inst->path_cache.mnd_ball_on_stick_controller, out_p);
 		// clang-format on
+		return;
+	case XRT_DEVICE_DAYDREAM:
+		interaction_profile_find(
+		    log, inst, inst->path_cache.khr_simple_controller, out_p);
 		return;
 	default: return;
 	}
