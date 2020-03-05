@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 aux_include = include_directories('.')
@@ -6,8 +6,8 @@ aux_include = include_directories('.')
 lib_aux_util = static_library(
 	'aux_util',
 	files(
-		'util/u_misc.c',
-		'util/u_misc.h',
+		'util/u_bitwise.c',
+		'util/u_bitwise.h',
 		'util/u_debug.c',
 		'util/u_debug.h',
 		'util/u_device.c',
@@ -25,6 +25,8 @@ lib_aux_util = static_library(
 		'util/u_hashset.h',
 		'util/u_json.c',
 		'util/u_json.h',
+		'util/u_misc.c',
+		'util/u_misc.h',
 		'util/u_sink.h',
 		'util/u_sink_converter.c',
 		'util/u_sink_deinterleaver.c',

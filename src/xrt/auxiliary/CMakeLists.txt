@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 set(MATH_SOURCE_FILES
@@ -55,6 +55,8 @@ if(BUILD_TRACKING)
 endif()
 
 set(UTIL_SOURCE_FILES
+	util/u_bitwise.c
+	util/u_bitwise.h
 	util/u_misc.c
 	util/u_misc.h
 	util/u_debug.c
