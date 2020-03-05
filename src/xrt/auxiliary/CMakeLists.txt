@@ -21,11 +21,17 @@ set(OGL_SOURCE_FILES
 	)
 
 set(OS_SOURCE_FILES
+	os/os_ble.h
 	os/os_documentation.h
 	os/os_hid.h
 	os/os_hid_hidraw.c
 	os/os_threading.h
 	)
+if(BUILD_WITH_DBUS)
+	list(APPEND OS_SOURCE_FILES
+		os/os_ble_dbus.c
+		)
+endif()
 
 set(TRACKING_SOURCE_FILES
 	tracking/t_imu_fusion.hpp
@@ -108,6 +114,13 @@ target_link_libraries(aux_ogl PRIVATE xrt-external-headers)
 # OS library.
 add_library(aux_os STATIC ${OS_SOURCE_FILES})
 target_link_libraries(aux_os PUBLIC aux-includes PRIVATE Threads::Threads)
+if(BUILD_WITH_DBUS)
+	target_link_libraries(aux_os PRIVATE ${DBUS_LIBRARIES})
+	target_include_directories(aux_os SYSTEM
+		PRIVATE
+		${DBUS_INCLUDE_DIRS}
+		)
+endif()
 
 # Math library.
 add_library(aux_math STATIC ${MATH_SOURCE_FILES})

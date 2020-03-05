@@ -56,6 +56,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		pkg_search_module(WAYLAND_PROTOCOLS wayland-protocols)
 	endif()
 	find_package(OpenGL COMPONENTS GLX)
+	pkg_search_module(DBUS dbus-1)
+
 else()
 	find_package(OpenGL)
 endif()
@@ -65,6 +67,7 @@ cmake_dependent_option(BUILD_WITH_XLIB "Enable xlib support" ON "X11_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_XCB "Enable xcb support" ON "XCB_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENGL "Enable OpenGL Graphics API support" ON "OPENGL_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_EGL "Enable OpenGL on EGL Graphics API support" ON "BUILD_WITH_OPENGL AND EGL_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_DBUS "Enable dbus support (for BLE support)" ON "DBUS_FOUND" OFF)
 cmake_dependent_option(BUILD_COMPOSITOR_MAIN "Build main compositor host" ON "BUILD_WITH_WAYLAND OR BUILD_WITH_XCB" OFF)
 cmake_dependent_option(BUILD_TARGET_OPENXR "Build OpenXR runtime target" ON "BUILD_COMPOSITOR_MAIN" OFF)
 
@@ -87,6 +90,7 @@ option(BUILD_WITH_DUMMY "Enable dummy driver" ON)
 cmake_dependent_option(BUILD_WITH_VIVE "Enable Vive driver" ON "ZLIB_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_DAYDREAM "Enable Bluetooth LE via DBUS" ON "BUILD_WITH_DBUS" OFF)
 
 # These all use the Monado internal hid wrapper which is assumed to be available.
 option(BUILD_WITH_HDK "Enable HDK driver" ON)
@@ -103,6 +107,10 @@ list(APPEND AVAILABLE_DRIVERS DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE)
 
 if(BUILD_WITH_LIBUDEV)
 	set(XRT_HAVE_LIBUDEV TRUE)
+endif()
+
+if(BUILD_WITH_DBUS)
+	set(XRT_HAVE_DBUS TRUE)
 endif()
 
 if(BUILD_DRIVER_V4L2)
