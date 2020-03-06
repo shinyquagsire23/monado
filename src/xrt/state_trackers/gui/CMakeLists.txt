@@ -12,6 +12,7 @@ set(GUI_SOURCE_FILES
 	gui_scene_main_menu.c
 	gui_scene_video.c
 	../../../external/imgui/cimgui.cpp
+	../../../external/imgui_monado/imgui_monado.cpp
 	../../../external/imgui/cimgui.h
 	../../../external/imgui/imconfig.h
 	../../../external/imgui/imgui.cpp

@@ -60,6 +60,8 @@
 #include <unistd.h>
 #include <math.h>
 
+#include "util/u_var.h"
+
 /*!
  */
 static void
@@ -96,6 +98,10 @@ compositor_destroy(struct xrt_compositor *xc)
 	if (vk->instance != VK_NULL_HANDLE) {
 		vk->vkDestroyInstance(vk->instance, NULL);
 		vk->instance = VK_NULL_HANDLE;
+	}
+
+	if (c->compositor_frame_times.debug_var) {
+		free(c->compositor_frame_times.debug_var);
 	}
 
 	free(c);
@@ -230,6 +236,43 @@ compositor_discard_frame(struct xrt_compositor *xc)
 }
 
 static void
+compositor_add_frame_timing(struct comp_compositor *c)
+{
+	int last_index = c->compositor_frame_times.index;
+
+	c->compositor_frame_times.index++;
+	c->compositor_frame_times.index %= NUM_FRAME_TIMES;
+
+	// update fps only once every FPS_NUM_TIMINGS
+	if (c->compositor_frame_times.index == 0) {
+		float total_s = 0;
+
+		// frame *timings* are durations between *times*
+		int NUM_FRAME_TIMINGS = NUM_FRAME_TIMES - 1;
+
+		for (int i = 0; i < NUM_FRAME_TIMINGS; i++) {
+			uint64_t frametime_ns =
+			    c->compositor_frame_times.times_ns[i + 1] -
+			    c->compositor_frame_times.times_ns[i];
+			float frametime_s =
+			    frametime_ns * 1. / 1000. * 1. / 1000. * 1. / 1000.;
+			total_s += frametime_s;
+		}
+		float avg_frametime_s = total_s / ((float)NUM_FRAME_TIMINGS);
+		c->compositor_frame_times.fps = 1. / avg_frametime_s;
+	}
+
+	c->compositor_frame_times.times_ns[c->compositor_frame_times.index] =
+	    os_monotonic_get_ns();
+
+	uint64_t diff = c->compositor_frame_times
+	                    .times_ns[c->compositor_frame_times.index] -
+	                c->compositor_frame_times.times_ns[last_index];
+	c->compositor_frame_times.timings_ms[c->compositor_frame_times.index] =
+	    (float)diff * 1. / 1000. * 1. / 1000.;
+}
+
+static void
 compositor_end_frame(struct xrt_compositor *xc,
                      enum xrt_blend_mode blend_mode,
                      struct xrt_swapchain **xscs,
@@ -251,6 +294,8 @@ compositor_end_frame(struct xrt_compositor *xc,
 	} else {
 		COMP_ERROR(c, "non-stereo rendering not supported");
 	}
+
+	compositor_add_frame_timing(c);
 
 	// Record the time of this frame.
 	c->last_frame_time_ns = os_monotonic_get_ns();
@@ -802,6 +847,34 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 	// clang-format on
 
 	COMP_DEBUG(c, "Done %p", (void *)c);
+
+
+	u_var_add_root(c, "Compositor", true);
+	u_var_add_ro_f32(c, &c->compositor_frame_times.fps, "FPS (Compositor)");
+
+	struct u_var_timing *ft = U_CALLOC_WITH_CAST(
+	    struct u_var_timing, sizeof(struct u_var_timing));
+
+	float target_frame_time_ms =
+	    c->settings.nominal_frame_interval_ns * 1. / 1000. * 1. / 1000.;
+
+	uint64_t now = os_monotonic_get_ns();
+	for (int i = 0; i < NUM_FRAME_TIMES; i++) {
+		c->compositor_frame_times.times_ns[i] = now + i;
+	}
+	ft->values.data = c->compositor_frame_times.timings_ms;
+	ft->values.length = NUM_FRAME_TIMES;
+	ft->values.index_ptr = &c->compositor_frame_times.index;
+
+	ft->reference_timing = target_frame_time_ms;
+	ft->range = 10.f;
+	ft->unit = "ms";
+	ft->dynamic_rescale = false;
+	ft->center_reference_timing = true;
+
+	u_var_add_f32_timing(c, ft, "Frame Times (Compositor)");
+
+	c->compositor_frame_times.debug_var = ft;
 
 	return &c->base;
 }

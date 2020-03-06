@@ -20,6 +20,7 @@
 extern "C" {
 #endif
 
+#define NUM_FRAME_TIMES 50
 
 /*
  *
@@ -103,6 +104,24 @@ struct comp_compositor
 
 	//! The time our compositor needs to do rendering
 	int64_t frame_overhead_ns;
+
+	struct
+	{
+		//! Current Index for times_ns.
+		int index;
+
+		//! Timestamps of last-rendered (immersive) frames.
+		int64_t times_ns[NUM_FRAME_TIMES];
+
+		//! Frametimes between last-rendered (immersive) frames.
+		float timings_ms[NUM_FRAME_TIMES];
+
+		//! Average FPS of last NUM_FRAME_TIMES rendered frames.
+		float fps;
+
+		struct u_var_timing *debug_var;
+	} compositor_frame_times;
+
 	/*!
 	 * @brief Estimated rendering time per frame of the application.
 	 *

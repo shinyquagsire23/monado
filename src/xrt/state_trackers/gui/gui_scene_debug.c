@@ -26,6 +26,9 @@
 #include "gui_common.h"
 #include "gui_imgui.h"
 
+#include "imgui_monado/cimgui_monado.h"
+
+#include <float.h>
 
 struct debug_scene
 {
@@ -134,6 +137,13 @@ on_root_enter(const char *name, void *priv)
 	igBegin(name, NULL, 0);
 }
 
+static float
+get_float_arr_val(void *_data, int _idx)
+{
+	float *arr = _data;
+	return arr[_idx];
+}
+
 static void
 on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 {
@@ -176,6 +186,51 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 	case U_VAR_KIND_F32:
 		igInputFloat(name, (float *)ptr, 1, 10, "%+f", i_flags);
 		break;
+	case U_VAR_KIND_F32_ARR: {
+		struct u_var_f32_arr *f32_arr = ptr;
+		int index = *f32_arr->index_ptr;
+		int length = f32_arr->length;
+		float *arr = (float *)f32_arr->data;
+
+		float w = igGetWindowContentRegionWidth();
+		ImVec2 graph_size = {w, 200};
+
+		float stats_min = FLT_MAX;
+		float stats_max = FLT_MAX;
+
+		igPlotLinesFnPtr(name, get_float_arr_val, arr, length, index,
+		                 NULL, stats_min, stats_max, graph_size);
+		break;
+	}
+	case U_VAR_KIND_TIMING: {
+		struct u_var_timing *frametime_arr = ptr;
+		struct u_var_f32_arr *f32_arr = &frametime_arr->values;
+		int index = *f32_arr->index_ptr;
+		int length = f32_arr->length;
+		float *arr = (float *)f32_arr->data;
+
+		float w = igGetWindowContentRegionWidth();
+		ImVec2 graph_size = {w, 200};
+
+
+		float stats_min = FLT_MAX;
+		float stats_max = 0;
+
+		for (int f = 0; f < length; f++) {
+			if (arr[f] < stats_min)
+				stats_min = arr[f];
+			if (arr[f] > stats_max)
+				stats_max = arr[f];
+		}
+
+		igPlotTimings(name, get_float_arr_val, arr, length, index, NULL,
+		              0, stats_max, graph_size,
+		              frametime_arr->reference_timing,
+		              frametime_arr->center_reference_timing,
+		              frametime_arr->range, frametime_arr->unit,
+		              frametime_arr->dynamic_rescale);
+		break;
+	}
 	case U_VAR_KIND_VEC3_F32:
 		igInputFloat3(name, (float *)ptr, "%+f", i_flags);
 		break;

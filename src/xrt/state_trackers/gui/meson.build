@@ -25,6 +25,8 @@ gui_sources = [
 	'../../../external/imgui/imstb_rectpack.h',
 	'../../../external/imgui/imstb_textedit.h',
 	'../../../external/imgui/imstb_truetype.h',
+    '../../../external/imgui_monado/cimgui_monado.h',
+    '../../../external/imgui_monado/imgui_monado.cpp'
 ]
 
 gui_deps = [aux, xrt_config_have]

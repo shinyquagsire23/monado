@@ -15,6 +15,30 @@
 extern "C" {
 #endif
 
+struct u_var_f32_arr
+{
+	void *data;
+	int *index_ptr;
+	int length;
+};
+
+struct u_var_timing
+{
+	struct u_var_f32_arr values;
+	float reference_timing;
+
+	// if false, reference_timing will be the bottom of the graph
+	bool center_reference_timing;
+
+	// how many units the graph expands by default
+	float range;
+
+	// a string describing the unit used
+	char *unit;
+
+	// rescale graph's value range when value exceeds range
+	bool dynamic_rescale;
+};
 
 struct xrt_frame_sink;
 
@@ -34,6 +58,8 @@ enum u_var_kind
 	U_VAR_KIND_U8,
 	U_VAR_KIND_I32,
 	U_VAR_KIND_F32,
+	U_VAR_KIND_F32_ARR,
+	U_VAR_KIND_TIMING,
 	U_VAR_KIND_VEC3_I32,
 	U_VAR_KIND_VEC3_F32,
 	U_VAR_KIND_POSE,
@@ -113,6 +139,8 @@ u_var_force_on(void);
 	ADD_FUNC(u8, uint8_t, U8)                                              \
 	ADD_FUNC(i32, int32_t, I32)                                            \
 	ADD_FUNC(f32, float, F32)                                              \
+	ADD_FUNC(f32_arr, struct u_var_f32_arr, F32_ARR)                       \
+	ADD_FUNC(f32_timing, struct u_var_timing, TIMING)                      \
 	ADD_FUNC(vec3_i32, struct xrt_vec3_i32, VEC3_I32)                      \
 	ADD_FUNC(vec3_f32, struct xrt_vec3, VEC3_F32)                          \
 	ADD_FUNC(pose, struct xrt_pose, POSE)                                  \
