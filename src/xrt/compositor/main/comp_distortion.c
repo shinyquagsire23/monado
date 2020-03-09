@@ -769,12 +769,12 @@ comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
 		d->ubo_pano.aberr[1] = c->xdev->hmd->distortion.pano.aberration_k[1];
 		d->ubo_pano.aberr[2] = c->xdev->hmd->distortion.pano.aberration_k[2];
 		d->ubo_pano.aberr[3] = c->xdev->hmd->distortion.pano.aberration_k[3];
-		d->ubo_pano.lens_center[0][0] = 0.5;//c->xdev->hmd->views[0].lens_center.x_meters;
-		d->ubo_pano.lens_center[0][1] = 0.5;//c->xdev->hmd->views[0].lens_center.y_meters;
-		d->ubo_pano.lens_center[1][0] = 0.5;//c->xdev->hmd->views[1].lens_center.x_meters;
-		d->ubo_pano.lens_center[1][1] = 0.5;//c->xdev->hmd->views[1].lens_center.y_meters;
-		d->ubo_pano.viewport_scale[0] = 1.0;//c->xdev->hmd->views[0].display.w_meters;
-		d->ubo_pano.viewport_scale[1] = 1.0;//c->xdev->hmd->views[0].display.h_meters;
+		d->ubo_pano.lens_center[0][0] = c->xdev->hmd->views[0].lens_center.x_meters;
+		d->ubo_pano.lens_center[0][1] = c->xdev->hmd->views[0].lens_center.y_meters;
+		d->ubo_pano.lens_center[1][0] = c->xdev->hmd->views[1].lens_center.x_meters;
+		d->ubo_pano.lens_center[1][1] = c->xdev->hmd->views[1].lens_center.y_meters;
+		d->ubo_pano.viewport_scale[0] = c->xdev->hmd->views[0].display.w_meters;
+		d->ubo_pano.viewport_scale[1] = c->xdev->hmd->views[0].display.h_meters;
 		d->ubo_pano.warp_scale = c->xdev->hmd->distortion.pano.warp_scale;
 
 		memcpy(d->ubo_handle.mapped, &d->ubo_pano, sizeof(d->ubo_pano));
