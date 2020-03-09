@@ -15,6 +15,14 @@
 extern "C" {
 #endif
 
+
+struct xrt_frame_sink;
+
+/*!
+ * @ingroup aux_util
+ * @{
+ */
+
 struct u_var_f32_arr
 {
 	void *data;
@@ -24,28 +32,24 @@ struct u_var_f32_arr
 
 struct u_var_timing
 {
+	//! Values to be plotted.
 	struct u_var_f32_arr values;
+
+	//! A reference line drawn on the plot.
 	float reference_timing;
 
-	// if false, reference_timing will be the bottom of the graph
+	//! If false, reference_timing will be the bottom of the graph.
 	bool center_reference_timing;
 
-	// how many units the graph expands by default
+	//! How many units the graph expands by default.
 	float range;
 
-	// a string describing the unit used
-	char *unit;
-
-	// rescale graph's value range when value exceeds range
+	//! Rescale graph's value range when value exceeds range.
 	bool dynamic_rescale;
+
+	//! A string describing the unit used, not freed.
+	const char *unit;
 };
-
-struct xrt_frame_sink;
-
-/*!
- * @ingroup aux_util
- * @{
- */
 
 /*!
  * What kind of variable is this tracking.

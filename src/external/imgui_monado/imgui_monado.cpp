@@ -20,7 +20,7 @@
 using namespace ImGui;
 
 static void _draw_line(ImGuiWindow *window, int values_count, float scale_min,
-                       float scale_max, float val, char *unit,
+                       float scale_max, float val, const char *unit,
                        const ImRect inner_bb, ImVec2 frame_size, ImU32 color) {
   const float inv_scale =
       (scale_min == scale_max) ? 0.0f : (1.0f / (scale_max - scale_min));
@@ -42,7 +42,7 @@ static void _draw_line(ImGuiWindow *window, int values_count, float scale_min,
   ImGui::PopStyleColor(1);
 }
 static void _draw_grid(ImGuiWindow *window, int values_count, float scale_min,
-                       float scale_max, float reference_timing, char *unit,
+                       float scale_max, float reference_timing, const char *unit,
                        const ImRect inner_bb, ImVec2 frame_size) {
 
   ImVec4 target_color = ImVec4(1.0f, 1.0f, 0.0f, .75f);
@@ -64,7 +64,7 @@ static void PlotTimings(const char *label,
                         int values_count, int values_offset,
                         const char *overlay_text, ImVec2 frame_size,
                         float reference_timing, bool center_reference_timing,
-                        float range, char *unit, bool dynamic_rescale) {
+                        float range, const char *unit, bool dynamic_rescale) {
   ImGuiWindow *window = GetCurrentWindow();
   if (window->SkipItems)
     return;
@@ -228,7 +228,7 @@ void igPlotTimings(const char *label,
                    int values_count, int values_offset,
                    const char *overlay_text, float scale_min, float scale_max,
                    ImVec2 frame_size, float reference_timing,
-                   bool center_reference_timing, float range, char *unit,
+                   bool center_reference_timing, float range, const char *unit,
                    bool dynamic_rescale) {
   PlotTimings(label, values_getter, data, values_count, values_offset,
               overlay_text, frame_size, reference_timing,

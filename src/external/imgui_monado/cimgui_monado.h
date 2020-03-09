@@ -17,7 +17,7 @@ void igPlotTimings(const char *label,
                    int values_count, int values_offset,
                    const char *overlay_text, float scale_min, float scale_max,
                    ImVec2 frame_size, float reference_timing,
-                   bool center_reference_timing, float range, char *unit,
+                   bool center_reference_timing, float range, const char *unit,
                    bool dynamic_rescale);
 
 #ifdef __cplusplus
