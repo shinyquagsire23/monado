@@ -286,7 +286,7 @@ p_tracking_teardown(struct prober *p)
 	 *
 	 * Does null checking and sets to null.
 	 */
-	t_stereo_camera_calibration_free(&fact->data);
+	t_stereo_camera_calibration_reference(&fact->data, NULL);
 #endif
 
 	free(fact);

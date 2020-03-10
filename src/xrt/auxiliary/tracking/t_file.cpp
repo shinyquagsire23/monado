@@ -31,20 +31,6 @@ write_cv_mat(FILE *f, cv::Mat *m);
 
 /*
  *
- * Free functions.
- *
- */
-
-extern "C" void
-t_stereo_camera_calibration_free(struct t_stereo_camera_calibration **data_ptr)
-{
-	free(*data_ptr);
-	*data_ptr = NULL;
-}
-
-
-/*
- *
  * Refine and create functions.
  *
  */
@@ -91,17 +77,18 @@ calibration_get_undistort_map(t_camera_calibration &calib,
 }
 
 StereoRectificationMaps::StereoRectificationMaps(
-    t_stereo_camera_calibration &data)
+    t_stereo_camera_calibration *data)
 {
-	assert(data.view[0].image_size_pixels.w ==
-	       data.view[1].image_size_pixels.w);
-	assert(data.view[0].image_size_pixels.h ==
-	       data.view[1].image_size_pixels.h);
+	assert(data != NULL);
+	assert(data->view[0].image_size_pixels.w ==
+	       data->view[1].image_size_pixels.w);
+	assert(data->view[0].image_size_pixels.h ==
+	       data->view[1].image_size_pixels.h);
 
-	assert(data.view[0].use_fisheye == data.view[1].use_fisheye);
+	assert(data->view[0].use_fisheye == data->view[1].use_fisheye);
 
-	cv::Size image_size(data.view[0].image_size_pixels.w,
-	                    data.view[0].image_size_pixels.h);
+	cv::Size image_size(data->view[0].image_size_pixels.w,
+	                    data->view[0].image_size_pixels.h);
 	StereoCameraCalibrationWrapper wrapped(data);
 
 	/*
@@ -109,7 +96,7 @@ StereoRectificationMaps::StereoRectificationMaps(
 	 *
 	 * Here cv::noArray() means zero distortion.
 	 */
-	if (data.view[0].use_fisheye) {
+	if (data->view[0].use_fisheye) {
 #if 0
 		//! @todo for some reason this looks weird?
 		// Alpha of 1.0 kinda works, not really.
@@ -188,9 +175,9 @@ StereoRectificationMaps::StereoRectificationMaps(
 	}
 
 	view[0].rectify = calibration_get_undistort_map(
-	    data.view[0], view[0].rotation_mat, view[0].projection_mat);
+	    data->view[0], view[0].rotation_mat, view[0].projection_mat);
 	view[1].rectify = calibration_get_undistort_map(
-	    data.view[1], view[1].rotation_mat, view[1].projection_mat);
+	    data->view[1], view[1].rotation_mat, view[1].projection_mat);
 }
 
 /*
@@ -203,9 +190,9 @@ extern "C" bool
 t_stereo_camera_calibration_load_v1(
     FILE *calib_file, struct t_stereo_camera_calibration **out_data)
 {
-	t_stereo_camera_calibration &raw =
-	    *U_TYPED_CALLOC(t_stereo_camera_calibration);
-	StereoCameraCalibrationWrapper wrapped(raw);
+	t_stereo_camera_calibration *data_ptr = NULL;
+	t_stereo_camera_calibration_alloc(&data_ptr);
+	StereoCameraCalibrationWrapper wrapped(data_ptr);
 
 	// Dummy matrix
 	cv::Mat dummy;
@@ -266,7 +253,9 @@ t_stereo_camera_calibration_load_v1(
 
 
 	assert(wrapped.isDataStorageValid());
-	*out_data = &raw;
+
+	t_stereo_camera_calibration_reference(out_data, data_ptr);
+	t_stereo_camera_calibration_reference(&data_ptr, NULL);
 
 	return true;
 }
@@ -281,7 +270,7 @@ t_stereo_camera_calibration_load_v1(
 extern "C" bool
 t_file_save_raw_data(FILE *calib_file, struct t_stereo_camera_calibration *data)
 {
-	StereoCameraCalibrationWrapper wrapped(*data);
+	StereoCameraCalibrationWrapper wrapped(data);
 	// Dummy matrix
 	cv::Mat dummy;
 

@@ -58,6 +58,20 @@ struct calibration_scene
  */
 
 static void
+save_calibration(struct calibration_scene *cs)
+{
+	if (cs->status.stereo_data == NULL) {
+		return;
+	}
+
+	// Save the data.
+	t_file_save_raw_data_hack(cs->status.stereo_data);
+
+	// Free data, no longer needed.
+	t_stereo_camera_calibration_reference(&cs->status.stereo_data, NULL);
+}
+
+static void
 draw_texture(struct gui_ogl_texture *tex, bool header)
 {
 	if (tex == NULL) {
@@ -95,6 +109,7 @@ render_progress(struct calibration_scene *cs)
 
 		igText(
 		    "Calibration complete - showing preview of undistortion.");
+		save_calibration(cs);
 		return;
 	}
 

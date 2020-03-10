@@ -12,6 +12,7 @@
 #pragma once
 
 #include "xrt/xrt_frame.h"
+#include "util/u_misc.h"
 
 #include <stdio.h>
 
@@ -103,11 +104,15 @@ struct t_camera_calibration
 	//! Is the camera fisheye?
 	bool use_fisheye;
 };
+
 /*!
  * Stereo camera calibration data to be given to trackers.
  */
 struct t_stereo_camera_calibration
 {
+	//! Ref counting
+	struct xrt_reference reference;
+
 	//! Calibration of individual views/sensor
 	struct t_camera_calibration view[2];
 
@@ -125,12 +130,49 @@ struct t_stereo_camera_calibration
 	double camera_fundamental[3][3];
 };
 
-
 /*!
- * Free stereo calibration data.
+ * Allocates a new stereo calibration data, unreferences the old @p calib.
  */
 void
-t_stereo_camera_calibration_free(struct t_stereo_camera_calibration **data_ptr);
+t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **calib);
+
+/*!
+ * Only to be called by @ref t_stereo_camera_calibration_reference.
+ */
+void
+t_stereo_camera_calibration_destroy(struct t_stereo_camera_calibration *c);
+
+/*!
+ * Update the reference counts on a stereo calibration data(s).
+ *
+ * @param     dst Pointer to a object reference, if the object reference is
+ *                non-null will decrement it's counter. The reference that
+ *                @p dst points to will be set to @p src.
+ * @param[in] src Object to be have it's refcount increased @p dst is set to
+ *                this.
+ */
+static inline void
+t_stereo_camera_calibration_reference(struct t_stereo_camera_calibration **dst,
+                                      struct t_stereo_camera_calibration *src)
+{
+	struct t_stereo_camera_calibration *old_dst = *dst;
+
+	if (old_dst == src) {
+		return;
+	}
+
+	if (src) {
+		xrt_reference_inc(&src->reference);
+	}
+
+	*dst = src;
+
+	if (old_dst) {
+		if (xrt_reference_dec(&old_dst->reference)) {
+			t_stereo_camera_calibration_destroy(old_dst);
+		}
+	}
+}
 
 /*!
  * Load stereo calibration data from a given file.
@@ -145,6 +187,13 @@ t_stereo_camera_calibration_load_v1(
 bool
 t_stereo_camera_calibration_load_v1_hack(
     struct t_stereo_camera_calibration **out_data);
+
+/*!
+ * Save raw calibration data to file, hack until prober has storage for such
+ * things.
+ */
+bool
+t_file_save_raw_data_hack(struct t_stereo_camera_calibration *data);
 
 
 /*
@@ -321,6 +370,8 @@ struct t_calibration_status
 	int cooldown;
 	//! Number of non-moving frames before capture.
 	int waits_remaining;
+	//! Stereo calibration data that was produced.
+	struct t_stereo_camera_calibration *stereo_data;
 };
 
 struct t_calibration_params

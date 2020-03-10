@@ -22,13 +22,6 @@
 
 
 /*!
- * Save raw calibration data to file, hack until prober has storage for such
- * things.
- */
-extern "C" bool
-t_file_save_raw_data_hack(struct t_stereo_camera_calibration *data);
-
-/*!
  * @brief Essential calibration data wrapped for C++.
  *
  * Just like the cv::Mat that it holds, this object does not own all the memory
@@ -80,22 +73,51 @@ struct CameraCalibrationWrapper
  */
 struct StereoCameraCalibrationWrapper
 {
-	t_stereo_camera_calibration &base;
+	t_stereo_camera_calibration *base;
 	CameraCalibrationWrapper view[2];
 	cv::Mat_<double> camera_translation_mat;
 	cv::Mat_<double> camera_rotation_mat;
 	cv::Mat_<double> camera_essential_mat;
 	cv::Mat_<double> camera_fundamental_mat;
 
-	StereoCameraCalibrationWrapper(t_stereo_camera_calibration &stereo)
-	    : base(stereo), view{CameraCalibrationWrapper{stereo.view[0]},
-	                         CameraCalibrationWrapper{stereo.view[1]}},
-	      camera_translation_mat(3, 1, &stereo.camera_translation[0]),
-	      camera_rotation_mat(3, 3, &stereo.camera_rotation[0][0]),
-	      camera_essential_mat(3, 3, &stereo.camera_essential[0][0]),
-	      camera_fundamental_mat(3, 3, &stereo.camera_fundamental[0][0])
+
+	static t_stereo_camera_calibration *
+	allocData()
 	{
+		t_stereo_camera_calibration *data_ptr = NULL;
+		t_stereo_camera_calibration_alloc(&data_ptr);
+		return data_ptr;
+	}
+
+	StereoCameraCalibrationWrapper(t_stereo_camera_calibration *stereo)
+	    : base(stereo), view{CameraCalibrationWrapper{stereo->view[0]},
+	                         CameraCalibrationWrapper{stereo->view[1]}},
+	      camera_translation_mat(3, 1, &stereo->camera_translation[0]),
+	      camera_rotation_mat(3, 3, &stereo->camera_rotation[0][0]),
+	      camera_essential_mat(3, 3, &stereo->camera_essential[0][0]),
+	      camera_fundamental_mat(3, 3, &stereo->camera_fundamental[0][0])
+	{
+		// Correct reference counting.
+		t_stereo_camera_calibration *temp = NULL;
+		t_stereo_camera_calibration_reference(&temp, stereo);
+
 		assert(isDataStorageValid());
+	}
+
+	StereoCameraCalibrationWrapper()
+	    : StereoCameraCalibrationWrapper(allocData())
+	{
+
+		// The function allocData returns with a ref count of one,
+		// the constructor increments the refcount with one,
+		// so to correct it we need to decrement the ref count with one.
+		t_stereo_camera_calibration *tmp = base;
+		t_stereo_camera_calibration_reference(&tmp, NULL);
+	}
+
+	~StereoCameraCalibrationWrapper()
+	{
+		t_stereo_camera_calibration_reference(&base, NULL);
 	}
 
 	bool
@@ -103,19 +125,19 @@ struct StereoCameraCalibrationWrapper
 	{
 		return camera_translation_mat.size() == cv::Size(1, 3) &&
 		       (double *)camera_translation_mat.data ==
-		           &base.camera_translation[0] &&
+		           &base->camera_translation[0] &&
 
 		       camera_rotation_mat.size() == cv::Size(3, 3) &&
 		       (double *)camera_rotation_mat.data ==
-		           &base.camera_rotation[0][0] &&
+		           &base->camera_rotation[0][0] &&
 
 		       camera_essential_mat.size() == cv::Size(3, 3) &&
 		       (double *)camera_essential_mat.data ==
-		           &base.camera_essential[0][0] &&
+		           &base->camera_essential[0][0] &&
 
 		       camera_fundamental_mat.size() == cv::Size(3, 3) &&
 		       (double *)camera_fundamental_mat.data ==
-		           &base.camera_fundamental[0][0] &&
+		           &base->camera_fundamental[0][0] &&
 
 		       view[0].isDataStorageValid() &&
 		       view[1].isDataStorageValid();
@@ -179,5 +201,5 @@ struct StereoRectificationMaps
 	 * @brief Constructor - produces rectification data for a stereo camera
 	 * based on calibration data.
 	 */
-	StereoRectificationMaps(t_stereo_camera_calibration &data);
+	StereoRectificationMaps(t_stereo_camera_calibration *data);
 };

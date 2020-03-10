@@ -563,8 +563,7 @@ t_psmv_create(struct xrt_frame_context *xfctx,
 		break;
 	}
 
-	StereoCameraCalibrationWrapper wrapped(*data);
-	StereoRectificationMaps rectify(*data);
+	StereoRectificationMaps rectify(data);
 	t.view[0].populate_from_calib(data->view[0], rectify.view[0].rectify);
 	t.view[1].populate_from_calib(data->view[1], rectify.view[1].rectify);
 	t.disparity_to_depth = rectify.disparity_to_depth_mat;

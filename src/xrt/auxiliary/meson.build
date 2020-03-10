@@ -111,6 +111,7 @@ aux_math = declare_dependency(
 )
 
 tracking_srcs = [
+	'tracking/t_data_utils.c',
 	'tracking/t_imu.h',
 	'tracking/t_imu_fusion.hpp',
 	'tracking/t_imu.cpp',

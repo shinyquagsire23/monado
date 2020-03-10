@@ -34,6 +34,7 @@ if(BUILD_WITH_DBUS)
 endif()
 
 set(TRACKING_SOURCE_FILES
+	tracking/t_data_utils.c
 	tracking/t_imu_fusion.hpp
 	tracking/t_imu.cpp
 	tracking/t_imu.h

@@ -535,10 +535,8 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 
 	cv::Size image_size(cols, rows);
 	cv::Size new_image_size(cols, rows);
-	t_stereo_camera_calibration &data =
-	    *U_TYPED_CALLOC(t_stereo_camera_calibration);
-	StereoCameraCalibrationWrapper wrapped(data);
 
+	StereoCameraCalibrationWrapper wrapped = {};
 	wrapped.view[0].image_size_pixels.w = image_size.width;
 	wrapped.view[0].image_size_pixels.h = image_size.height;
 	wrapped.view[1].image_size_pixels = wrapped.view[0].image_size_pixels;
@@ -591,7 +589,7 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	P("CALIBRATION DONE RP ERROR %f", rp_error);
 
 	// Preview undistortion/rectification.
-	StereoRectificationMaps maps(data);
+	StereoRectificationMaps maps(wrapped.base);
 	c.state.view[0].map1 = maps.view[0].rectify.remap_x;
 	c.state.view[0].map2 = maps.view[0].rectify.remap_y;
 	c.state.view[0].maps_valid = true;
@@ -633,7 +631,10 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	// Validate that nothing has been re-allocated.
 	assert(wrapped.isDataStorageValid());
 
-	t_file_save_raw_data_hack(&data);
+	if (c.status != NULL) {
+		t_stereo_camera_calibration_reference(&c.status->stereo_data,
+		                                      wrapped.base);
+	}
 }
 
 static void
