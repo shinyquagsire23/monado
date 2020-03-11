@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  @ref xrt_frame helpers.
+ * @brief  Code to generate disortion meshes.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_util
  */
