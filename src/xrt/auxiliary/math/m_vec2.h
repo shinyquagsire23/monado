@@ -21,6 +21,11 @@ extern "C" {
 #endif
 
 
+/*!
+ * @ingroup aux_math
+ * @{
+ */
+
 static inline struct xrt_vec2
 m_vec2_mul(struct xrt_vec2 l, struct xrt_vec2 r)
 {
@@ -64,10 +69,21 @@ m_vec2_div_scalar(struct xrt_vec2 l, float r)
 }
 
 static inline float
+m_vec2_len_sqrd(struct xrt_vec2 l)
+{
+	return l.x * l.x + l.y * l.y;
+}
+
+
+static inline float
 m_vec2_len(struct xrt_vec2 l)
 {
-	return sqrtf(l.x * l.x + l.y * l.y);
+	return sqrtf(m_vec2_len_sqrd(l));
 }
+
+/*!
+ * @}
+ */
 
 
 #ifdef __cplusplus
