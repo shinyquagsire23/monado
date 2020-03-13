@@ -245,13 +245,31 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 	}
 	case U_VAR_KIND_RO_TEXT: igText("%s: '%s'", name, (char *)ptr); break;
 	case U_VAR_KIND_RO_I32:
-		igInputInt(name, (int *)ptr, 1, 10, ro_i_flags);
+		igInputScalar(name, ImGuiDataType_S32, ptr, NULL, NULL, NULL,
+		              ro_i_flags);
+		break;
+	case U_VAR_KIND_RO_U32:
+		igInputScalar(name, ImGuiDataType_U32, ptr, NULL, NULL, NULL,
+		              ro_i_flags);
+		break;
+	case U_VAR_KIND_RO_F32:
+		igInputScalar(name, ImGuiDataType_Float, ptr, NULL, NULL, "%+f",
+		              ro_i_flags);
+		break;
+	case U_VAR_KIND_RO_I64:
+		igInputScalar(name, ImGuiDataType_S64, ptr, NULL, NULL, NULL,
+		              ro_i_flags);
+		break;
+	case U_VAR_KIND_RO_U64:
+		igInputScalar(name, ImGuiDataType_S64, ptr, NULL, NULL, NULL,
+		              ro_i_flags);
+		break;
+	case U_VAR_KIND_RO_F64:
+		igInputScalar(name, ImGuiDataType_Double, ptr, NULL, NULL,
+		              "%+f", ro_i_flags);
 		break;
 	case U_VAR_KIND_RO_VEC3_I32:
 		igInputInt3(name, (int *)ptr, ro_i_flags);
-		break;
-	case U_VAR_KIND_RO_F32:
-		igInputFloat(name, (float *)ptr, 1, 10, "%+f", ro_i_flags);
 		break;
 	case U_VAR_KIND_RO_VEC3_F32:
 		igInputFloat3(name, (float *)ptr, "%+f", ro_i_flags);
