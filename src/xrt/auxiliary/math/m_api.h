@@ -114,6 +114,18 @@ math_vec3_cross(const struct xrt_vec3 *l,
  */
 
 /*!
+ * Create a rotation from a angle in radians and a vector.
+ *
+ * @relates xrt_quat
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_quat_from_angle_vector(float angle_rads,
+                            const struct xrt_vec3 *vector,
+                            struct xrt_quat *result);
+
+/*!
  * Create a rotation from a 3x3 rotation matrix.
  *
  * @relates xrt_quat

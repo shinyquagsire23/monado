@@ -90,6 +90,14 @@ math_vec3_cross(const struct xrt_vec3 *l,
  */
 
 extern "C" void
+math_quat_from_angle_vector(float angle_rads,
+                            const struct xrt_vec3 *vector,
+                            struct xrt_quat *result)
+{
+	map_quat(*result) = Eigen::AngleAxisf(angle_rads, copy(vector));
+}
+
+extern "C" void
 math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat,
                           struct xrt_quat *result)
 {
