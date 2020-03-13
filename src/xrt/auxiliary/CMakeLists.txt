@@ -8,6 +8,8 @@ set(MATH_SOURCE_FILES
 	math/m_filter_fifo.c
 	math/m_filter_fifo.h
 	math/m_hash.cpp
+	math/m_imu_3dof.c
+	math/m_imu_3dof.h
 	math/m_imu_pre.c
 	math/m_imu_pre.h
 	math/m_optics.c
