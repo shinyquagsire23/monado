@@ -86,50 +86,32 @@ daydream_update_input_click(struct daydream_device *daydream,
  */
 
 static void
-update_fusion(struct daydream_device *daydream,
+update_fusion(struct daydream_device *dd,
               struct daydream_parsed_sample *sample,
               timepoint_ns timestamp_ns,
               time_duration_ns delta_ns)
 {
-	DAYDREAM_DEBUG(daydream,
-	               "fusion sample mx %d my %d mz %d ax %d ay %d az %d gx "
-	               "%d gy %d gz %d\n",
+
+	struct xrt_vec3 accel, gyro;
+	m_imu_pre_filter_data(&dd->pre_filter, &sample->accel, &sample->gyro,
+	                      &accel, &gyro);
+
+	DAYDREAM_DEBUG(dd,
+	               "fusion sample"
+	               " (mx %d my %d mz %d)"
+	               " (ax %d ay %d az %d)"
+	               " (gx %d gy %d gz %d)",
 	               sample->mag.x, sample->mag.y, sample->mag.z,
 	               sample->accel.x, sample->accel.y, sample->accel.z,
 	               sample->gyro.x, sample->gyro.y, sample->gyro.z);
+	DAYDREAM_DEBUG(dd,
+	               "fusion calibrated sample"
+	               " (ax %f ay %f az %f)"
+	               " (gx %f gy %f gz %f)",
+	               accel.x, accel.y, accel.z, gyro.x, gyro.y, gyro.z);
+	DAYDREAM_DEBUG(dd, "-");
 
-
-	daydream->read.accel.x =
-	    (sample->accel.x - daydream->calibration.accel.bias.x) /
-	    daydream->calibration.accel.factor.x * MATH_GRAVITY_M_S2;
-	daydream->read.accel.y =
-	    (sample->accel.y - daydream->calibration.accel.bias.y) /
-	    daydream->calibration.accel.factor.y * MATH_GRAVITY_M_S2;
-	daydream->read.accel.z =
-	    (sample->accel.z - daydream->calibration.accel.bias.z) /
-	    daydream->calibration.accel.factor.z * MATH_GRAVITY_M_S2;
-
-	daydream->read.gyro.x =
-	    (sample->gyro.x - daydream->calibration.gyro.bias.x) /
-	    daydream->calibration.gyro.factor.x;
-	daydream->read.gyro.y =
-	    (sample->gyro.y - daydream->calibration.gyro.bias.y) /
-	    daydream->calibration.gyro.factor.y;
-	daydream->read.gyro.z =
-	    (sample->gyro.z - daydream->calibration.gyro.bias.z) /
-	    daydream->calibration.gyro.factor.z;
-	DAYDREAM_DEBUG(
-	    daydream,
-	    "fusion calibrated sample ax %f ay %f az %f gx %f gy %f gz %f\n",
-	    daydream->read.accel.x, daydream->read.accel.y,
-	    daydream->read.accel.z, daydream->read.gyro.x,
-	    daydream->read.gyro.y, daydream->read.gyro.z);
-
-
-	double delta_s = (double)delta_ns / (1000.0 * 1000.0 * 1000.0);
-	math_quat_integrate_velocity(&daydream->fusion.rot,
-	                             &daydream->read.gyro, delta_s,
-	                             &daydream->fusion.rot);
+	m_imu_3dof_update(&dd->fusion, timestamp_ns, &accel, &gyro);
 }
 
 static int
@@ -142,7 +124,7 @@ daydream_parse_input(struct daydream_device *daydream,
 	DAYDREAM_DEBUG(
 	    daydream,
 	    "raw input: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
-	    "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+	    "%02x %02x %02x %02x %02x %02x %02x %02x %02x",
 	    b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10],
 	    b[11], b[12], b[13], b[14], b[15], b[16], b[17], b[18], b[19]);
 	input->timestamp = get_bits(b, 0, 14);
@@ -292,8 +274,8 @@ daydream_device_destroy(struct xrt_device *xdev)
 	// Now that the thread is not running we can destroy the lock.
 	os_mutex_destroy(&daydream->lock);
 
-	// Destroy the IMU fusion.
-	imu_fusion_destroy(daydream->fusion.fusion);
+	// Destroy the fusion.
+	m_imu_3dof_close(&daydream->fusion);
 
 	// Remove the variable tracking.
 	u_var_remove_root(daydream);
@@ -364,8 +346,6 @@ daydream_device_create(struct os_ble_device *ble,
 	struct daydream_device *dd =
 	    U_DEVICE_ALLOCATE(struct daydream_device, flags, 8, 0);
 
-	dd->print_spew = print_spew;
-	dd->print_debug = print_debug;
 	dd->base.name = XRT_DEVICE_DAYDREAM;
 	dd->base.destroy = daydream_device_destroy;
 	dd->base.update_inputs = daydream_device_update_inputs;
@@ -380,30 +360,14 @@ daydream_device_create(struct os_ble_device *ble,
 	dd->base.inputs[7].name = XRT_INPUT_DAYDREAM_TOUCHPAD_VALUE_Y;
 
 	dd->ble = ble;
-	dd->fusion.rot.w = 1.0f;
-	dd->fusion.fusion = imu_fusion_create();
-	dd->fusion.variance.accel.x = 1.0f;
-	dd->fusion.variance.accel.y = 1.0f;
-	dd->fusion.variance.accel.z = 1.0f;
-	dd->fusion.variance.gyro.x = 1.0f;
-	dd->fusion.variance.gyro.y = 1.0f;
-	dd->fusion.variance.gyro.z = 1.0f;
+	dd->print_spew = print_spew;
+	dd->print_debug = print_debug;
 
-	dd->calibration.accel.factor.x = 120.0;
-	dd->calibration.accel.factor.y = 120.0;
-	dd->calibration.accel.factor.z = 120.0;
-
-	dd->calibration.accel.bias.x = 0.0;
-	dd->calibration.accel.bias.y = 0.0;
-	dd->calibration.accel.bias.z = 0.0;
-
-	dd->calibration.gyro.factor.x = 120.0;
-	dd->calibration.gyro.factor.y = 120.0;
-	dd->calibration.gyro.factor.z = 120.0;
-
-	dd->calibration.gyro.bias.x = 0.0;
-	dd->calibration.gyro.bias.y = 0.0;
-	dd->calibration.gyro.bias.z = 0.0;
+	float accel_ticks_to_float = MATH_GRAVITY_M_S2 / 520.0;
+	float gyro_ticks_to_float = 1.0 / 120.0;
+	m_imu_pre_filter_init(&dd->pre_filter, accel_ticks_to_float,
+	                      gyro_ticks_to_float);
+	m_imu_3dof_init(&dd->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_300MS);
 
 	daydream_get_calibration(dd);
 
@@ -415,6 +379,10 @@ daydream_device_create(struct os_ble_device *ble,
 		return NULL;
 	}
 
+	u_var_add_root(dd, "Daydream controller", true);
+	u_var_add_gui_header(dd, &dd->gui.last, "Last");
+	u_var_add_ro_vec3_f32(dd, &dd->fusion.last.accel, "last.accel");
+	u_var_add_ro_vec3_f32(dd, &dd->fusion.last.gyro, "last.gyro");
 
 	DAYDREAM_DEBUG(dd, "Created device!");
 

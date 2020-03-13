@@ -10,9 +10,14 @@
 #pragma once
 
 #include "math/m_api.h"
+#include "math/m_imu_pre.h"
+#include "math/m_imu_3dof.h"
+
 #include "xrt/xrt_device.h"
+
 #include "os/os_threading.h"
 #include "os/os_ble.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,18 +34,6 @@ struct daydream_parsed_sample
 	struct xrt_vec3_i32 mag;
 };
 
-/*!
- * A parsed input packet.
- */
-/*struct button_data
-{
-        uint8_t volup : 1;
-        uint8_t voldn : 1;
-        uint8_t app : 1;
-        uint8_t home : 1;
-        uint8_t touchpad : 1;
-};
-*/
 enum daydream_button_bits
 {
 	DAYDREAM_TOUCHPAD_BUTTON_BIT = 0,
@@ -84,64 +77,16 @@ struct daydream_device
 		//! Last sensor read.
 		struct daydream_parsed_input last;
 
-		struct
-		{
-			struct xrt_quat rot;
-			struct xrt_vec3 rotvec;
-			struct imu_fusion *fusion;
-			struct
-			{
-				struct xrt_vec3 accel;
-				struct xrt_vec3 gyro;
-				struct xrt_vec3 mag;
-
-			} variance;
-		} fusion;
+		struct m_imu_pre_filter pre_filter;
+		struct m_imu_3dof fusion;
 	};
-
-	struct
-	{
-
-		struct
-		{
-			struct xrt_vec3 factor;
-			struct xrt_vec3 bias;
-		} accel;
-
-		struct
-		{
-			struct xrt_vec3 factor;
-			struct xrt_vec3 bias;
-		} gyro;
-
-		struct
-		{
-			struct xrt_vec3 factor;
-			struct xrt_vec3 bias;
-		} mag;
-
-
-	} calibration;
-
-	struct
-	{
-		//! Last adjusted accelerator value.
-		struct xrt_vec3 accel;
-		//! Last adjusted gyro value.
-		struct xrt_vec3 gyro;
-		struct xrt_vec3 mag;
-
-	} read;
 
 	bool print_spew;
 	bool print_debug;
 
 	struct
 	{
-		bool control;
-		bool calibration;
-		bool last_frame;
-		bool fusion;
+		bool last;
 	} gui;
 };
 
