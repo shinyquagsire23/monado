@@ -73,6 +73,9 @@ os_ble_destroy(struct os_ble_device **ble_dev_ptr)
  * Open the given mac and path to device endpoint (Currently Linux/BlueZ
  * specific).
  *
+ * @returns Negative on failure, zero on no device found and positive if a
+ *          device has been found.
+ *
  * @ingroup aux_os
  */
 int

@@ -719,6 +719,11 @@ os_ble_notify_open(const char *dev_uuid,
 	XRT_MAYBE_UNUSED ssize_t written =
 	    get_path_to_notify_char(bledev->conn, dev_uuid, char_uuid,
 	                            dbus_address, sizeof(dbus_address));
+	if (written == 0) {
+		return 0;
+	} else if (written < 0) {
+		return -1;
+	}
 
 	msg = dbus_message_new_method_call(
 	    "org.bluez",                     // target for the method call
@@ -766,5 +771,5 @@ os_ble_notify_open(const char *dev_uuid,
 
 	*out_ble = &bledev->base;
 
-	return 0;
+	return 1;
 }
