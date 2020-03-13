@@ -52,6 +52,8 @@ vive_device_destroy(struct xrt_device *xdev)
 	os_thread_helper_destroy(&d->sensors_thread);
 	os_thread_helper_destroy(&d->mainboard_thread);
 
+	m_imu_3dof_close(&d->fusion);
+
 	if (d->mainboard_dev != NULL) {
 		os_hid_destroy(d->mainboard_dev);
 		d->mainboard_dev = NULL;
@@ -258,6 +260,31 @@ oldest_sequence_index(uint8_t a, uint8_t b, uint8_t c)
 	return 0;
 }
 
+static inline uint32_t
+calc_dt_raw_and_handle_overflow(struct vive_device *d, uint32_t sample_time)
+{
+	uint64_t dt_raw =
+	    (uint64_t)sample_time - (uint64_t)d->imu.last_sample_time_raw;
+	d->imu.last_sample_time_raw = sample_time;
+
+	// The 32-bit tick counter has rolled over,
+	// adjust the "negative" value to be positive.
+	// It's easiest to do this with 64-bits.
+	if (dt_raw > 0xFFFFFFFF) {
+		dt_raw += 0x100000000;
+	}
+
+	return (uint32_t)dt_raw;
+}
+
+static inline uint64_t
+cald_dt_ns(uint32_t dt_raw)
+{
+	double f = (double)(dt_raw) / VIVE_CLOCK_FREQ;
+	uint64_t diff_ns = (uint64_t)(f * 1000.0 * 1000.0 * 1000.0);
+	return diff_ns;
+}
+
 static void
 update_imu(struct vive_device *d, struct vive_imu_report *report)
 {
@@ -275,25 +302,22 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 
 	/* From there, handle all new samples */
 	for (j = 3; j; --j, i = (i + 1) % 3) {
-		uint32_t sample_time;
 		float scale;
 		uint8_t seq;
-		int32_t dt;
-
-		uint64_t raw_time;
 
 		sample = report->sample + i;
 		seq = sample->seq;
 
 		/* Skip already seen samples */
 		if (seq == last_seq || seq == (uint8_t)(last_seq - 1) ||
-		    seq == (uint8_t)(last_seq - 2))
+		    seq == (uint8_t)(last_seq - 2)) {
 			continue;
+		}
 
-		sample_time = __le32_to_cpu(sample->time);
+		uint32_t time_raw = __le32_to_cpu(sample->time);
+		uint32_t dt_raw = calc_dt_raw_and_handle_overflow(d, time_raw);
+		uint64_t dt_ns = cald_dt_ns(dt_raw);
 
-		dt = sample_time - (uint32_t)d->imu.time;
-		raw_time = d->imu.time + dt;
 
 		int16_t acc[3] = {
 		    (int16_t)__le16_to_cpu(sample->acc[0]),
@@ -365,14 +389,15 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 		default: VIVE_ERROR("Unhandled Vive variant\n"); return;
 		}
 
-		math_quat_integrate_velocity(
-		    &d->rot_filtered, &angular_velocity,
-		    (float)(dt / VIVE_CLOCK_FREQ), &d->rot_filtered);
-
+		d->imu.time_ns += dt_ns;
 		d->last.acc = acceleration;
 		d->last.gyro = angular_velocity;
 		d->imu.sequence = seq;
-		d->imu.time = raw_time;
+
+		m_imu_3dof_update(&d->fusion, d->imu.time_ns, &acceleration,
+		                  &angular_velocity);
+
+		d->rot_filtered = d->fusion.rot;
 	}
 }
 
@@ -1217,6 +1242,9 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.hmd->distortion.models = XRT_DISTORTION_MODEL_VIVE;
 	d->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
 
+	// Init here.
+	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
+
 	u_var_add_root(d, "Vive Device", true);
 	u_var_add_gui_header(d, &d->gui.calibration, "Calibration");
 	u_var_add_vec3_f32(d, &d->imu.acc_scale, "acc_scale");
@@ -1228,7 +1256,6 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	u_var_add_vec3_f32(d, &d->last.gyro, "gyro");
 
 	int ret;
-
 	if (d->mainboard_dev) {
 		ret = os_thread_helper_start(&d->mainboard_thread,
 		                             vive_mainboard_run_thread, d);

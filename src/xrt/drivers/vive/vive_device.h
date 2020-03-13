@@ -10,6 +10,7 @@
 #pragma once
 
 #include "xrt/xrt_device.h"
+#include "math/m_imu_3dof.h"
 #include "os/os_threading.h"
 
 #ifdef __cplusplus
@@ -61,8 +62,9 @@ struct vive_device
 
 	struct
 	{
-		uint64_t time;
+		uint64_t time_ns;
 		uint8_t sequence;
+		uint32_t last_sample_time_raw;
 		double acc_range;
 		double gyro_range;
 		struct xrt_vec3 acc_bias;
@@ -73,6 +75,8 @@ struct vive_device
 		//! IMU position in tracking space.
 		struct xrt_pose trackref;
 	} imu;
+
+	struct m_imu_3dof fusion;
 
 	struct
 	{
