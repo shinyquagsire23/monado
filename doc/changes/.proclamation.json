@@ -1,0 +1,22 @@
+{
+    "#": "This is a config file for Proclamation, the changelog combiner: https://gitlab.com/ryanpavlik/proclamation",
+    "SPDX-License-Identifier: CC0-1.0": "",
+    "SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Proclamation contributors": "",
+    "project_name": "Monado",
+    "base_url": "https://gitlab.freedesktop.org/monado/monado",
+    "news_filename": "../CHANGELOG.md",
+    "sections": {
+        "State Trackers": {
+            "directory": "state_trackers"
+        },
+        "Drivers": {
+            "directory": "drivers"
+        },
+        "Misc. Features": {
+            "directory": "misc_features"
+        },
+        "Misc. Fixes": {
+            "directory": "misc_fixes"
+        }
+    }
+}
