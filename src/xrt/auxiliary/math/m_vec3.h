@@ -16,12 +16,18 @@
 #include "xrt/xrt_defines.h"
 
 #include <math.h>
+#include <float.h>
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+
+/*!
+ * @ingroup aux_math
+ * @{
+ */
 
 static inline struct xrt_vec3
 m_vec3_mul(struct xrt_vec3 l, struct xrt_vec3 r)
@@ -66,10 +72,54 @@ m_vec3_div_scalar(struct xrt_vec3 l, float r)
 }
 
 static inline float
+m_vec3_dot(struct xrt_vec3 l, struct xrt_vec3 r)
+{
+	return l.x * r.x + l.y * r.y + l.z * r.z;
+}
+
+static inline float
+m_vec3_len_sqrd(struct xrt_vec3 l)
+{
+	return m_vec3_dot(l, l);
+}
+
+static inline float
 m_vec3_len(struct xrt_vec3 l)
 {
-	return sqrtf(l.x * l.x + l.y * l.y + l.z * l.z);
+	return sqrtf(m_vec3_len_sqrd(l));
 }
+
+static inline struct xrt_vec3
+m_vec3_normalize(struct xrt_vec3 l)
+{
+	float len = m_vec3_len(l);
+	if (len <= FLT_EPSILON) {
+		return l;
+	}
+
+	return (struct xrt_vec3){
+	    l.x / len,
+	    l.y / len,
+	    l.z / len,
+	};
+}
+
+static inline float
+m_vec3_angle(struct xrt_vec3 l, struct xrt_vec3 r)
+{
+	float dot = m_vec3_dot(l, r);
+	float lengths = m_vec3_len_sqrd(l) * m_vec3_len_sqrd(r);
+
+	if (lengths == 0) {
+		return 0;
+	}
+
+	return acosf(dot / lengths);
+}
+
+/*!
+ * @}
+ */
 
 
 #ifdef __cplusplus
