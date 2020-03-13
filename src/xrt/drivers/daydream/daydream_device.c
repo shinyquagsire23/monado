@@ -125,22 +125,11 @@ update_fusion(struct daydream_device *daydream,
 	    daydream->read.accel.z, daydream->read.gyro.x,
 	    daydream->read.gyro.y, daydream->read.gyro.z);
 
-	math_quat_integrate_velocity(&daydream->fusion.rot,
-	                             &daydream->read.gyro, delta_ns,
-	                             &daydream->fusion.rot);
 
-	/*
-	imu_fusion_incorporate_gyros_and_accelerometer(
-	        daydream->fusion.fusion, timestamp_ns, &daydream->read.gyro,
-	        &daydream->fusion.variance.gyro, &daydream->read.accel,
-	        &daydream->fusion.variance.accel, NULL);
-	    struct xrt_vec3 angvel_dummy;
-	    imu_fusion_get_prediction(daydream->fusion.fusion, timestamp_ns,
-	                              &daydream->fusion.rot, &angvel_dummy);
-	    imu_fusion_get_prediction_rotation_vec(
-	        daydream->fusion.fusion, timestamp_ns,
-	&daydream->fusion.rotvec);
-	*/
+	double delta_s = (double)delta_ns / (1000.0 * 1000.0 * 1000.0);
+	math_quat_integrate_velocity(&daydream->fusion.rot,
+	                             &daydream->read.gyro, delta_s,
+	                             &daydream->fusion.rot);
 }
 
 static int
@@ -400,17 +389,17 @@ daydream_device_create(struct os_ble_device *ble,
 	dd->fusion.variance.gyro.y = 1.0f;
 	dd->fusion.variance.gyro.z = 1.0f;
 
-	dd->calibration.accel.factor.x = 120000000000.0;
-	dd->calibration.accel.factor.y = 120000000000.0;
-	dd->calibration.accel.factor.z = 120000000000.0;
+	dd->calibration.accel.factor.x = 120.0;
+	dd->calibration.accel.factor.y = 120.0;
+	dd->calibration.accel.factor.z = 120.0;
 
 	dd->calibration.accel.bias.x = 0.0;
 	dd->calibration.accel.bias.y = 0.0;
 	dd->calibration.accel.bias.z = 0.0;
 
-	dd->calibration.gyro.factor.x = 120000000000.0;
-	dd->calibration.gyro.factor.y = 120000000000.0;
-	dd->calibration.gyro.factor.z = 120000000000.0;
+	dd->calibration.gyro.factor.x = 120.0;
+	dd->calibration.gyro.factor.y = 120.0;
+	dd->calibration.gyro.factor.z = 120.0;
 
 	dd->calibration.gyro.bias.x = 0.0;
 	dd->calibration.gyro.bias.y = 0.0;
