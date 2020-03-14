@@ -10,6 +10,10 @@
 
 #include "target_lists.h"
 
+#ifdef XRT_BUILD_DRIVER_ARDUINO
+#include "arduino/arduino_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_DUMMY
 #include "dummy/dummy_interface.h"
 #endif
@@ -94,6 +98,11 @@ struct xrt_prober_entry *target_entry_lists[] = {
 xrt_auto_prober_creator target_auto_list[] = {
 #ifdef XRT_BUILD_DRIVER_PSVR
     psvr_create_auto_prober,
+#endif
+
+#ifdef XRT_BUILD_DRIVER_ARDUINO
+    // Before OpenHMD
+    arduino_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_DAYDREAM

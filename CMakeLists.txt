@@ -92,6 +92,7 @@ cmake_dependent_option(BUILD_WITH_VIVE "Enable Vive driver" ON "ZLIB_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_DAYDREAM "Enable Bluetooth LE via DBUS" ON "BUILD_WITH_DBUS" OFF)
+cmake_dependent_option(BUILD_WITH_ARDUINO "Enable Arduino input device with BLE via DBUS" ON "BUILD_WITH_DBUS" OFF)
 
 # These all use the Monado internal hid wrapper which is assumed to be available.
 option(BUILD_WITH_HDK "Enable HDK driver" ON)
@@ -100,7 +101,7 @@ option(BUILD_WITH_HYDRA "Enable Hydra driver" ON)
 option(BUILD_WITH_NS "Enable North Star driver" ON)
 
 # You can set this from a superproject to add a driver
-list(APPEND AVAILABLE_DRIVERS DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM)
+list(APPEND AVAILABLE_DRIVERS ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM)
 
 ###
 # Flags
@@ -151,6 +152,11 @@ if(BUILD_WITH_SDL2)
 
 	# SDL2 based gui
 	set(BUILD_TARGET_GUI TRUE)
+endif()
+
+
+if(BUILD_WITH_ARDUINO)
+	set(BUILD_DRIVER_ARDUINO TRUE)
 endif()
 
 if(BUILD_WITH_DUMMY)

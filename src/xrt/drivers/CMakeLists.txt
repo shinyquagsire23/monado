@@ -5,6 +5,19 @@
 set(ENABLED_HEADSET_DRIVERS)
 set(ENABLED_DRIVERS)
 
+
+if(BUILD_DRIVER_ARDUINO)
+	set(ARDUINO_SOURCE_FILES
+		arduino/arduino_device.c
+		arduino/arduino_interface.h
+		arduino/arduino_prober.c
+		)
+
+	add_library(drv_arduino STATIC ${ARDUINO_SOURCE_FILES})
+	target_link_libraries(drv_arduino PRIVATE xrt-interfaces aux_util aux_os)
+	list(APPEND ENABLED_DRIVERS arduino)
+endif()
+
 if(BUILD_DRIVER_DAYDREAM)
 	set(DAYDREAM_SOURCE_FILES
 		daydream/daydream_device.c
