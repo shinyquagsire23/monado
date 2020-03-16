@@ -202,6 +202,26 @@ math_quat_rotate_vec3(const struct xrt_quat *left,
  *
  */
 
+extern "C" void
+math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
+                               const struct xrt_vec3 *right,
+                               struct xrt_vec3 *result)
+{
+	Eigen::Matrix3f m;
+	m << left->v[0], left->v[1], left->v[2], // 1
+	    left->v[3], left->v[4], left->v[5],  // 2
+	    left->v[6], left->v[7], left->v[8];  // 3
+
+	map_vec3(*result) = m * copy(right);
+}
+
+
+/*
+ *
+ * Exported pose functions.
+ *
+ */
+
 extern "C" bool
 math_pose_validate(const struct xrt_pose *pose)
 {

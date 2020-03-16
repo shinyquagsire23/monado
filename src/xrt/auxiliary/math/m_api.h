@@ -227,6 +227,19 @@ math_quat_finite_difference(const struct xrt_quat *quat0,
                             float dt,
                             struct xrt_vec3 *out_ang_vel);
 
+
+/*
+ *
+ * Matrix function
+ *
+ */
+
+void
+math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
+                               const struct xrt_vec3 *right,
+                               struct xrt_vec3 *result);
+
+
 /*
  *
  * Pose functions.
