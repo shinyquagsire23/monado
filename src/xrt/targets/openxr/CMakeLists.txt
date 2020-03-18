@@ -53,8 +53,6 @@ if(NOT MSVC)
 endif()
 
 
-include(GNUInstallDirs)
-
 # Install the runtime itself
 install(TARGETS ${RUNTIME_TARGET}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

@@ -31,3 +31,6 @@ target_link_libraries(cli PRIVATE
 	target_lists
 	)
 
+install(TARGETS cli
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	)

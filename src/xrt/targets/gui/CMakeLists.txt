@@ -31,3 +31,7 @@ target_link_libraries(gui PRIVATE
 	imgui_impl_sdl
 	)
 target_include_directories(gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+install(TARGETS gui
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	)

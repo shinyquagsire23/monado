@@ -20,6 +20,7 @@ option(INSTALL_ACTIVE_RUNTIME "Make Monado the default OpenXR runtime on install
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CMakeDependentOption)
 include(SPIR-V)
+include(GNUInstallDirs)
 
 find_package(Eigen3 REQUIRED)
 find_package(Vulkan REQUIRED)
