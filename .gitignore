@@ -35,3 +35,7 @@ build*/
 patches/
 
 imgui.ini
+
+# files from package building
+obj-*/
+.pc/
