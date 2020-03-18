@@ -1,3 +1,5 @@
+# Copyright 2019, Collabora, Ltd.
+# Copyright 2019, Benjamin Saunders <ben.e.saunders@gmail.com>
 # SPDX-License-Identifier: BSL-1.0
 
 # Get input from main CMake script

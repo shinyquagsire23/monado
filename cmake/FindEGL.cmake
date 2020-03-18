@@ -32,6 +32,7 @@
 #
 # Since pre-1.0.0.
 
+# SPDX-License-Identifier: BSD-3-Clause
 #=============================================================================
 # Copyright 2014 Alex Merry <alex.merry@kde.org>
 # Copyright 2014 Martin Gräßlin <mgraesslin@kde.org>

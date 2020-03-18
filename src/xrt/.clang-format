@@ -1,4 +1,6 @@
 ---
+# SPDX-LicenseIdentifier: CC0-1.0
+# SPDX-FileCopyrightText: 2019, Collabora, Ltd.
 Language:             Cpp
 BasedOnStyle:         LLVM
 Standard:             Auto

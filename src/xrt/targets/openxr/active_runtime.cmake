@@ -1,3 +1,4 @@
+# Copyright 2019, Benjamin Saunders <ben.e.saunders@gmail.com>
 # SPDX-License-Identifier: BSL-1.0
 
 include(GNUInstallDirs)

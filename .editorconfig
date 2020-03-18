@@ -1,6 +1,9 @@
 # To use this config on you editor, follow the instructions at:
 # http://editorconfig.org
 
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-FileCopyrightText: 2018-2020 Collabora, Ltd. and the Monado contributors
+
 root = true
 
 [*]

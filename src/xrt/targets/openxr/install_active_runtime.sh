@@ -1,4 +1,9 @@
 #!/bin/sh -eux
+# Copyright 2019, Drew DeVault <sir@cmpwn.com>
+# SPDX-License-Identifier: BSL-1.0
+#
+# Used by the Meson build only.
+
 sysconfdir="$DESTDIR"/"$1"
 manifest="$2"
 xrversion="$3"
