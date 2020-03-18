@@ -1,0 +1,36 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Monado
+Source: <https://monado.freedesktop.org>
+
+Files: doc/changes/drivers/*
+  doc/changes/misc_features/*
+  doc/changes/misc_fixes/*
+  doc/changes/state_trackers/*
+Copyright: 2020, Collabora, Ltd. and the Monado contributors
+License: CC0-1.0
+Comment: Prevents needing a license header per fragment between releases.
+
+Files: src/external/flexkalman/.clang-format
+       src/external/flexkalman/README.md
+Copyright: 2015, 2016, Sensics, Inc.
+ 2019, Collabora, Ltd.
+License: Apache-2.0
+Comment: Copyright statement and license identifier missing.
+
+Files: src/external/cjson/*
+Copyright: 2009-2017, Dave Gamble and cJSON contributors
+License: MIT
+Comment: SPDX-Licence-Identifier missing.
+ Debian calls this "Expat" for clarity.
+
+Files: src/external/openxr_includes/*
+Copyright: 2017-2019, The Khronos Group Inc.
+License: Apache-2.0
+Comment: SPDX-Licence-Identifier missing.
+
+Files: src/external/openxr_includes/loader_interfaces.h
+Copyright: 2017, LunarG, Inc.
+ 2017, Valve Corporation
+ 2017-2019, The Khronos Group Inc.
+License: Apache-2.0
+Comment: SPDX-Licence-Identifier missing.
