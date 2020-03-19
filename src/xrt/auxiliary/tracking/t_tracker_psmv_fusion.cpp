@@ -30,7 +30,7 @@
 
 using State = flexkalman::pose_externalized_rotation::State;
 using ProcessModel =
-    flexkalman::PoseSeparatelyDampedConstantVelocityProcessModel;
+    flexkalman::PoseSeparatelyDampedConstantVelocityProcessModel<State>;
 
 namespace xrt_fusion {
 

@@ -13,6 +13,9 @@
 */
 
 // Copyright 2015 Sensics, Inc.
+// Copyright 2020 Collabora, Ltd.
+//
+// SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +35,8 @@
 #include "BaseTypes.h"
 #include "FlexibleKalmanBase.h"
 #include "MatrixExponentialMap.h"
+#include "PoseConstantVelocityGeneric.h"
+#include "SO3.h"
 
 // Library/third-party includes
 // - none
@@ -50,93 +55,18 @@ namespace pose_exp_map {
         StateVector::ConstFixedSegmentReturnType<3>::Type;
 
     using StateVectorBlock6 = StateVector::FixedSegmentReturnType<6>::Type;
+    using ConstStateVectorBlock6 =
+        StateVector::ConstFixedSegmentReturnType<6>::Type;
     using StateSquareMatrix = types::SquareMatrix<Dimension>;
-
-    //! @name Accessors to blocks in the state vector.
-    /// @{
-    inline StateVectorBlock3 position(StateVector &vec) {
-        return vec.head<3>();
-    }
-    inline ConstStateVectorBlock3 position(StateVector const &vec) {
-        return vec.head<3>();
-    }
-
-    inline StateVectorBlock3 orientation(StateVector &vec) {
-        return vec.segment<3>(3);
-    }
-    inline ConstStateVectorBlock3 orientation(StateVector const &vec) {
-        return vec.segment<3>(3);
-    }
-
-    inline StateVectorBlock3 velocity(StateVector &vec) {
-        return vec.segment<3>(6);
-    }
-    inline ConstStateVectorBlock3 velocity(StateVector const &vec) {
-        return vec.segment<3>(6);
-    }
-
-    inline StateVectorBlock3 angularVelocity(StateVector &vec) {
-        return vec.segment<3>(9);
-    }
-    inline ConstStateVectorBlock3 angularVelocity(StateVector const &vec) {
-        return vec.segment<3>(9);
-    }
-
-    //! both translational and angular velocities
-    inline StateVectorBlock6 velocities(StateVector &vec) {
-        return vec.segment<6>(6);
-    }
-    //! @}
-
-    /*!
-     * This returns A(deltaT), though if you're just predicting xhat-, use
-     * applyVelocity() instead for performance.
-     */
-    inline StateSquareMatrix stateTransitionMatrix(double dt) {
-        // eq. 4.5 in Welch 1996 - except we have all the velocities at the
-        // end
-        StateSquareMatrix A = StateSquareMatrix::Identity();
-        A.topRightCorner<6, 6>() = types::SquareMatrix<6>::Identity() * dt;
-
-        return A;
-    }
     inline double computeAttenuation(double damping, double dt) {
         return std::pow(damping, dt);
-    }
-    inline StateSquareMatrix
-    stateTransitionMatrixWithVelocityDamping(double dt, double damping) {
-
-        // eq. 4.5 in Welch 1996
-
-        auto A = stateTransitionMatrix(dt);
-        auto attenuation = computeAttenuation(damping, dt);
-        A.bottomRightCorner<6, 6>() *= attenuation;
-        return A;
-    }
-    //! Computes A(deltaT)xhat(t-deltaT)
-    inline StateVector applyVelocity(StateVector const &state, double dt) {
-        // eq. 4.5 in Welch 1996
-
-        /*!
-         * @todo benchmark - assuming for now that the manual small
-         * calcuations are faster than the matrix ones.
-         */
-
-        StateVector ret = state;
-        position(ret) += velocity(state) * dt;
-        orientation(ret) += angularVelocity(state) * dt;
-        return ret;
-    }
-
-    inline void dampenVelocities(StateVector &state, double damping,
-                                 double dt) {
-        auto attenuation = computeAttenuation(damping, dt);
-        velocities(state) *= attenuation;
     }
     class State : public StateBase<State> {
       public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         static constexpr size_t Dimension = 12;
+        using StateVector = ::flexkalman::pose_exp_map::StateVector;
+        using StateSquareMatrix = ::flexkalman::pose_exp_map::StateSquareMatrix;
 
         //! Default constructor
         State()
@@ -158,37 +88,55 @@ namespace pose_exp_map {
         }
 
         void postCorrect() {
-            types::Vector<3> ori = orientation(m_state);
+            types::Vector<3> ori = rotationVector();
             matrix_exponential_map::avoidSingularities(ori);
-            orientation(m_state) = ori;
-            m_cacheData.reset(ori);
+            rotationVector() = ori;
         }
 
-        StateVectorBlock3 position() { return pose_exp_map::position(m_state); }
+        StateVectorBlock3 position() { return m_state.head<3>(); }
 
-        ConstStateVectorBlock3 position() const {
-            return pose_exp_map::position(m_state);
+        ConstStateVectorBlock3 position() const { return m_state.head<3>(); }
+
+        Eigen::Quaterniond getQuaternion() const {
+            return matrix_exponential_map::toQuat(rotationVector());
+        }
+        Eigen::Matrix3d getRotationMatrix() const {
+            return matrix_exponential_map::rodrigues(rotationVector());
         }
 
-        Eigen::Quaterniond const &getQuaternion() {
-            return m_cacheData.getQuaternion();
-        }
-        Eigen::Matrix3d const &getRotationMatrix() {
-            return m_cacheData.getRotationMatrix();
-        }
-
-        StateVectorBlock3 velocity() { return pose_exp_map::velocity(m_state); }
+        StateVectorBlock3 velocity() { return m_state.segment<3>(6); }
 
         ConstStateVectorBlock3 velocity() const {
-            return pose_exp_map::velocity(m_state);
+            return m_state.segment<3>(6);
         }
 
-        StateVectorBlock3 angularVelocity() {
-            return pose_exp_map::angularVelocity(m_state);
-        }
+        StateVectorBlock3 angularVelocity() { return m_state.segment<3>(9); }
 
         ConstStateVectorBlock3 angularVelocity() const {
-            return pose_exp_map::angularVelocity(m_state);
+            return m_state.segment<3>(9);
+        }
+
+        /// Linear and angular velocities
+        StateVectorBlock6 velocities() { return m_state.tail<6>(); }
+
+        /// Linear and angular velocities
+        ConstStateVectorBlock6 velocities() const { return m_state.tail<6>(); }
+
+        StateVectorBlock3 rotationVector() { return m_state.segment<3>(3); }
+
+        ConstStateVectorBlock3 rotationVector() const {
+            return m_state.segment<3>(3);
+        }
+
+        /*!
+         * Get the position and quaternion combined into a single isometry
+         * (transformation)
+         */
+        Eigen::Isometry3d getIsometry() const {
+            Eigen::Isometry3d ret;
+            ret.fromPositionOrientationScale(position(), getQuaternion(),
+                                             Eigen::Vector3d::Constant(1));
+            return ret;
         }
 
       private:
@@ -199,9 +147,6 @@ namespace pose_exp_map {
         StateVector m_state;
         //! P
         StateSquareMatrix m_errorCovariance;
-
-        //! Cached data for use in consuming the exponential map rotation.
-        matrix_exponential_map::ExponentialMapData m_cacheData;
     };
 
     /*!
@@ -214,6 +159,73 @@ namespace pose_exp_map {
         os << "error:\n" << state.errorCovariance() << "\n";
         return os;
     }
+
+    /*!
+     * This returns A(deltaT), though if you're just predicting xhat-, use
+     * applyVelocity() instead for performance.
+     *
+     * State is a parameter for ADL.
+     */
+    inline StateSquareMatrix stateTransitionMatrix(State const &, double dt) {
+        // eq. 4.5 in Welch 1996 - except we have all the velocities at the
+        // end
+        StateSquareMatrix A = StateSquareMatrix::Identity();
+        A.topRightCorner<6, 6>() = types::SquareMatrix<6>::Identity() * dt;
+
+        return A;
+    }
+
+    inline StateSquareMatrix
+    stateTransitionMatrixWithVelocityDamping(State const &s, double dt,
+                                             double damping) {
+
+        // eq. 4.5 in Welch 1996
+
+        auto A = stateTransitionMatrix(s, dt);
+        auto attenuation = computeAttenuation(damping, dt);
+        A.bottomRightCorner<6, 6>() *= attenuation;
+        return A;
+    }
+
+    /*!
+     * Returns the state transition matrix for a constant velocity with
+     * separate damping paramters for linear and angular velocity (not for
+     * direct use in computing state transition, because it is very sparse,
+     * but in computing other values)
+     */
+    inline StateSquareMatrix stateTransitionMatrixWithSeparateVelocityDamping(
+        State const &state, double dt, double posDamping, double oriDamping) {
+        // eq. 4.5 in Welch 1996
+        auto A = stateTransitionMatrix(state, dt);
+        A.block<3, 3>(6, 6) *= computeAttenuation(posDamping, dt);
+        A.bottomRightCorner<3, 3>() *= computeAttenuation(oriDamping, dt);
+        return A;
+    }
+
+    //! Separately dampen the linear and angular velocities
+    inline void separatelyDampenVelocities(State &state, double posDamping,
+                                           double oriDamping, double dt) {
+        state.velocity() *= computeAttenuation(posDamping, dt);
+        state.angularVelocity() *= computeAttenuation(oriDamping, dt);
+    }
+
+    /// Computes A(deltaT)xhat(t-deltaT) (or, the more precise, non-linear thing
+    /// that is intended to simulate.)
+    inline void applyVelocity(State &state, double dt) {
+        state.position() += state.velocity() * dt;
+
+        // Do the full thing, not just the small-angle approximation as we have
+        // in the state transition matrix.
+        SO3 newOrientation = SO3{(state.angularVelocity() * dt).eval()} *
+                             SO3{(state.rotationVector()).eval()};
+        state.rotationVector() = newOrientation.getVector();
+    }
+
+    inline types::Vector<3> predictAbsoluteOrientationMeasurement(State const &s) {
+        return s.rotationVector();
+    }
+    using ConstantVelocityProcessModel =
+        PoseConstantVelocityGenericProcessModel<State>;
 } // namespace pose_exp_map
 
 } // namespace flexkalman

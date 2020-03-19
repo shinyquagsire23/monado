@@ -13,7 +13,9 @@
 */
 
 // Copyright 2015 Sensics, Inc.
-// Copyright 2019 Collabora, Ltd.
+// Copyright 2019-2020 Collabora, Ltd.
+//
+// SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -75,40 +77,13 @@ namespace pose_externalized_rotation {
         return std::pow(damping, dt);
     }
 
-    /*!
-     * Returns the state transition matrix for a constant velocity with a
-     * single damping parameter (not for direct use in computing state
-     * transition, because it is very sparse, but in computing other
-     * values)
-     */
-    inline StateSquareMatrix
-    stateTransitionMatrixWithVelocityDamping(double dt, double damping) {
-        // eq. 4.5 in Welch 1996
-        auto A = stateTransitionMatrix(dt);
-        A.bottomRightCorner<6, 6>() *= computeAttenuation(damping, dt);
-        return A;
-    }
-
-    /*!
-     * Returns the state transition matrix for a constant velocity with
-     * separate damping paramters for linear and angular velocity (not for
-     * direct use in computing state transition, because it is very sparse,
-     * but in computing other values)
-     */
-    inline StateSquareMatrix stateTransitionMatrixWithSeparateVelocityDamping(
-        double dt, double posDamping, double oriDamping) {
-        // eq. 4.5 in Welch 1996
-        auto A = stateTransitionMatrix(dt);
-        A.block<3, 3>(6, 6) *= computeAttenuation(posDamping, dt);
-        A.bottomRightCorner<3, 3>() *= computeAttenuation(oriDamping, dt);
-        return A;
-    }
-
     class State : public StateBase<State> {
       public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         static constexpr size_t Dimension = 12;
+        using StateVector = types::Vector<Dimension>;
+        using StateSquareMatrix = types::SquareMatrix<Dimension>;
 
         //! Default constructor
         State()
@@ -244,6 +219,40 @@ namespace pose_externalized_rotation {
                                            double oriDamping, double dt) {
         state.velocity() *= computeAttenuation(posDamping, dt);
         state.angularVelocity() *= computeAttenuation(oriDamping, dt);
+    }
+
+    inline StateSquareMatrix stateTransitionMatrix(State const & /* state */,
+                                                   double dt) {
+        return stateTransitionMatrix(dt);
+    }
+    /*!
+     * Returns the state transition matrix for a constant velocity with a
+     * single damping parameter (not for direct use in computing state
+     * transition, because it is very sparse, but in computing other
+     * values)
+     */
+    inline StateSquareMatrix
+    stateTransitionMatrixWithVelocityDamping(State const &state, double dt,
+                                             double damping) {
+        // eq. 4.5 in Welch 1996
+        auto A = stateTransitionMatrix(state, dt);
+        A.bottomRightCorner<6, 6>() *= computeAttenuation(damping, dt);
+        return A;
+    }
+
+    /*!
+     * Returns the state transition matrix for a constant velocity with
+     * separate damping paramters for linear and angular velocity (not for
+     * direct use in computing state transition, because it is very sparse,
+     * but in computing other values)
+     */
+    inline StateSquareMatrix stateTransitionMatrixWithSeparateVelocityDamping(
+        State const &state, double dt, double posDamping, double oriDamping) {
+        // eq. 4.5 in Welch 1996
+        auto A = stateTransitionMatrix(state, dt);
+        A.block<3, 3>(6, 6) *= computeAttenuation(posDamping, dt);
+        A.bottomRightCorner<3, 3>() *= computeAttenuation(oriDamping, dt);
+        return A;
     }
 } // namespace pose_externalized_rotation
 

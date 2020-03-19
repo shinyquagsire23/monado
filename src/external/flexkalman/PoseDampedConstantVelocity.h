@@ -13,7 +13,9 @@
 */
 
 // Copyright 2015 Sensics, Inc.
-// Copyright 2019 Collabora, Ltd.
+// Copyright 2019-2020 Collabora, Ltd.
+//
+// SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -79,9 +81,10 @@ class PoseDampedConstantVelocityProcessModel
     }
 
     //! Also known as the "process model jacobian" in TAG, this is A.
-    StateSquareMatrix getStateTransitionMatrix(State const &, double dt) const {
+    StateSquareMatrix getStateTransitionMatrix(State const &s,
+                                               double dt) const {
         return pose_externalized_rotation::
-            stateTransitionMatrixWithVelocityDamping(dt, m_damp);
+            stateTransitionMatrixWithVelocityDamping(s, dt, m_damp);
     }
 
     void predictStateOnly(State &s, double dt) const {

@@ -1,7 +1,7 @@
 /** @file
     @brief Header
 
-    @date 2015-2019
+    @date 2015-2020
 
     @author
     Ryan Pavlik
@@ -13,7 +13,7 @@
 */
 
 // Copyright 2015 Sensics, Inc.
-// Copyright 2019 Collabora, Ltd.
+// Copyright 2019-2020 Collabora, Ltd.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -32,8 +32,7 @@
 #pragma once
 
 // Internal Includes
-#include "BaseTypes.h"
-#include "OrientationState.h"
+#include "FlexibleKalmanBase.h"
 
 // Library/third-party includes
 // - none
@@ -43,34 +42,44 @@
 
 namespace flexkalman {
 
-//! A model for a 3DOF pose (with angular velocity)
-class OrientationConstantVelocityProcessModel
-    : public ProcessModelBase<OrientationConstantVelocityProcessModel> {
+//! A constant-velocity model for a 6DOF pose (with velocities)
+template <typename StateType>
+class PoseConstantVelocityGenericProcessModel
+    : public ProcessModelBase<
+          PoseConstantVelocityGenericProcessModel<StateType>> {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    using State = orient_externalized_rotation::State;
-    using StateVector = orient_externalized_rotation::StateVector;
-    using StateSquareMatrix = orient_externalized_rotation::StateSquareMatrix;
-    using NoiseAutocorrelation = types::Vector<3>;
-    OrientationConstantVelocityProcessModel(double orientationNoise = 0.1) {
-        setNoiseAutocorrelation(orientationNoise);
+    using State = StateType;
+    using StateVector = typename State::StateVector;
+    using StateSquareMatrix = typename State::StateSquareMatrix;
+    using NoiseAutocorrelation = types::Vector<6>;
+    PoseConstantVelocityGenericProcessModel(double positionNoise = 0.01,
+                                            double orientationNoise = 0.1) {
+        setNoiseAutocorrelation(positionNoise, orientationNoise);
     }
-    void setNoiseAutocorrelation(double orientationNoise = 0.1) {
-        m_mu.head<3>() = types::Vector<3>::Constant(orientationNoise);
+    void setNoiseAutocorrelation(double positionNoise = 0.01,
+                                 double orientationNoise = 0.1) {
+        m_mu.head<3>() = types::Vector<3>::Constant(positionNoise);
+        m_mu.tail<3>() = types::Vector<3>::Constant(orientationNoise);
     }
     void setNoiseAutocorrelation(NoiseAutocorrelation const &noise) {
         m_mu = noise;
     }
 
     //! Also known as the "process model jacobian" in TAG, this is A.
-    StateSquareMatrix getStateTransitionMatrix(State const &, double dt) const {
-        return orient_externalized_rotation::stateTransitionMatrix(dt);
+    StateSquareMatrix getStateTransitionMatrix(State const &s,
+                                               double dt) const {
+        // using argument-dependent lookup
+        return stateTransitionMatrix(s, dt);
     }
 
+    //! Does not update error covariance
     void predictStateOnly(State &s, double dt) const {
         FLEXKALMAN_DEBUG_OUTPUT("Time change", dt);
-        orient_externalized_rotation::applyVelocity(s, dt);
+        // using argument-dependent lookup
+        applyVelocity(s, dt);
     }
+    //! Updates state vector and error covariance
     void predictState(State &s, double dt) const {
         predictStateOnly(s, dt);
         auto Pminus = predictErrorCovariance(s, *this, dt);
@@ -93,7 +102,7 @@ class OrientationConstantVelocityProcessModel
         for (std::size_t xIndex = 0; xIndex < dim / 2; ++xIndex) {
             auto xDotIndex = xIndex + dim / 2;
             // xIndex is 'i' and xDotIndex is 'j' in eq. 4.8
-            const auto mu = getMu(xDotIndex);
+            const auto mu = getMu(xIndex);
             cov(xIndex, xIndex) = mu * dt3;
             auto symmetric = mu * dt2;
             cov(xIndex, xDotIndex) = symmetric;

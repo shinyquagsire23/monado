@@ -13,7 +13,9 @@
 */
 
 // Copyright 2015 Sensics, Inc.
-// Copyright 2019 Collabora, Ltd.
+// Copyright 2019-2020 Collabora, Ltd.
+//
+// SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,8 +33,7 @@
 
 // Internal Includes
 #include "BaseTypes.h"
-#include "PoseConstantVelocity.h"
-#include "PoseState.h"
+#include "PoseConstantVelocityGeneric.h"
 
 // Library/third-party includes
 // - none
@@ -47,16 +48,17 @@ namespace flexkalman {
  * damping of the velocities inspired by TAG. This model has separate
  * damping/attenuation of linear and angular velocities.
  */
+template <typename StateType>
 class PoseSeparatelyDampedConstantVelocityProcessModel
     : public ProcessModelBase<
-          PoseSeparatelyDampedConstantVelocityProcessModel> {
+          PoseSeparatelyDampedConstantVelocityProcessModel<StateType>> {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    using State = pose_externalized_rotation::State;
-    using StateVector = pose_externalized_rotation::StateVector;
-    using StateSquareMatrix = pose_externalized_rotation::StateSquareMatrix;
-    using BaseProcess = PoseConstantVelocityProcessModel;
-    using NoiseAutocorrelation = BaseProcess::NoiseAutocorrelation;
+    using State = StateType;
+    using StateVector = typename StateType::StateVector;
+    using StateSquareMatrix = typename StateType::StateSquareMatrix;
+    using BaseProcess = PoseConstantVelocityGenericProcessModel<State>;
+    using NoiseAutocorrelation = typename BaseProcess::NoiseAutocorrelation;
     PoseSeparatelyDampedConstantVelocityProcessModel(
         double positionDamping = 0.3, double orientationDamping = 0.01,
         double positionNoise = 0.01, double orientationNoise = 0.1)
@@ -84,17 +86,17 @@ class PoseSeparatelyDampedConstantVelocityProcessModel
     }
 
     //! Also known as the "process model jacobian" in TAG, this is A.
-    StateSquareMatrix getStateTransitionMatrix(State const &, double dt) const {
-        return pose_externalized_rotation::
-            stateTransitionMatrixWithSeparateVelocityDamping(dt, m_posDamp,
-                                                             m_oriDamp);
+    StateSquareMatrix getStateTransitionMatrix(State const &s,
+                                               double dt) const {
+        // using argument-dependent lookup
+        return stateTransitionMatrixWithSeparateVelocityDamping(
+            s, dt, m_posDamp, m_oriDamp);
     }
 
     void predictStateOnly(State &s, double dt) const {
         m_constantVelModel.predictStateOnly(s, dt);
-        // Dampen velocities
-        pose_externalized_rotation::separatelyDampenVelocities(s, m_posDamp,
-                                                               m_oriDamp, dt);
+        // Dampen velocities - using argument-dependent lookup
+        separatelyDampenVelocities(s, m_posDamp, m_oriDamp, dt);
     }
     void predictState(State &s, double dt) const {
         predictStateOnly(s, dt);

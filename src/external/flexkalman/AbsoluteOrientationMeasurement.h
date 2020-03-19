@@ -1,7 +1,7 @@
 /** @file
     @brief Header for measurements of absolute orientation.
 
-    @date 2015
+    @date 2015, 2020
 
     @author
     Ryan Pavlik
@@ -12,6 +12,9 @@
 */
 
 // Copyright 2015 Sensics, Inc.
+// Copyright 2020 Collabora, Ltd.
+//
+// SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,6 +46,13 @@
 
 namespace flexkalman {
 
+//! Default implementation: overload if this won't work for your state type.
+//! @see AbsoluteOrientationMeasurementBase
+template <typename State>
+types::Vector<3> predictAbsoluteOrientationMeasurement(State const &s) {
+    return s.incrementalOrientation();
+}
+
 class AbsoluteOrientationMeasurementBase {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -60,7 +70,7 @@ class AbsoluteOrientationMeasurementBase {
 
     template <typename State>
     MeasurementVector predictMeasurement(State const &state) const {
-        return state.incrementalOrientation();
+        return predictAbsoluteOrientationMeasurement(state);
     }
     template <typename State>
     MeasurementVector getResidual(MeasurementVector const &predictedMeasurement,

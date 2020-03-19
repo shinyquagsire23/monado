@@ -1,7 +1,7 @@
 /** @file
     @brief Header
 
-    @date 2015
+    @date 2015, 2019
 
     @author
     Sensics, Inc.
@@ -9,6 +9,9 @@
 */
 
 // Copyright 2015 Sensics, Inc.
+// Copyright 2019 Collabora, Ltd.
+//
+// SPDX-License-Identifier: Apache-2.0
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
