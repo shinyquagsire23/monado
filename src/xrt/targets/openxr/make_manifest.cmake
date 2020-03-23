@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # Copyright 2019, Benjamin Saunders <ben.e.saunders@gmail.com>
 # SPDX-License-Identifier: BSL-1.0
 
@@ -22,6 +22,8 @@ else()
     # Relative path to runtime: requires it exist on the system shared library search path.
     set(RUNTIME_PATH ${RUNTIME_FILENAME})
 endif()
+
+set(runtime_path ${RUNTIME_PATH})
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
 

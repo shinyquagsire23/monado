@@ -66,7 +66,7 @@ install(TARGETS ${RUNTIME_TARGET}
 ###
 # Generate runtime manifest with absolute path to runtime intended for development without installing
 set(MANIFEST_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/openxr_monado.in.json)
-set(RUNTIME_PATH $<TARGET_SONAME_FILE:${RUNTIME_TARGET}>)
+set(runtime_path $<TARGET_SONAME_FILE:${RUNTIME_TARGET}>)
 
 # Need this step because file(GENERATE) only evaluates generator expressions, and not what configure_file does.
 configure_file(${MANIFEST_INPUT} ${CMAKE_CURRENT_BINARY_DIR}/intermediate_manifest.json)
