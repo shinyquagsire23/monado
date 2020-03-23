@@ -22,7 +22,7 @@ else
 	doxyconf.set('DOXYGEN_EXTRACT_ALL', 'NO')
 endif
 
-doxyfile = configure_file(input: 'Doxyfile.meson_in',
+doxyfile = configure_file(input: 'Doxyfile.in',
 	output: 'Doxyfile', configuration: doxyconf, install: false)
 
 html = custom_target('docs',
