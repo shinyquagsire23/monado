@@ -4,7 +4,7 @@
 variables:
   UPSTREAM_REPO: monado/monado
 
-  DEBIAN_TAG: 2019-12-03.0
+  DEBIAN_TAG: 2019-03-23.0
   DEBIAN_VERSION: buster
   DEBIAN_CONTAINER_IMAGE: "$CI_REGISTRY_IMAGE/debian/$DEBIAN_VERSION:$DEBIAN_TAG"
   
@@ -31,7 +31,7 @@ debian:container_prep:
   variables:
     GIT_STRATEGY: none # no need to pull the whole tree for rebuilding the image
     # a list of packages to install
-    DEBIAN_DEBS: 'build-essential git cmake meson ninja-build doxygen graphviz libeigen3-dev curl patch python3 pkg-config libx11-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libhidapi-dev libwayland-dev libvulkan-dev glslang-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libuvc-dev libavcodec-dev libopencv-dev libudev-dev clang-format-7 codespell libv4l-dev libegl1-mesa-dev'
+    DEBIAN_DEBS: 'build-essential git cmake meson ninja-build doxygen graphviz libeigen3-dev curl patch python3 pkg-config libx11-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libhidapi-dev libwayland-dev libvulkan-dev glslang-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libuvc-dev libavcodec-dev libopencv-dev libudev-dev clang-format-7 codespell libv4l-dev libegl1-mesa-dev python3-click python3-pip'
     DEBIAN_EXEC: 'bash .gitlab-ci/build-openxr-openhmd.sh'
 
 
@@ -77,6 +77,12 @@ debian:build-meson:
   stage: build
   image: $DEBIAN_CONTAINER_IMAGE
   script:
+  # Generate "changes since last release"
+  - pip3 install proclamation
+  - pushd doc/changes
+  - proclamation build --overwrite vNEXT
+  - popd
+  # Now proceed with build.
   - mkdir build
   - pushd build
   - meson ..
