@@ -116,9 +116,6 @@ struct t_stereo_camera_calibration
 	//! Calibration of individual views/sensor
 	struct t_camera_calibration view[2];
 
-	//! Source image size.
-	struct xrt_size image_size_pixels;
-
 	//! Translation from first to second in the stereo pair.
 	double camera_translation[3];
 	//! Rotation matrix from first to second in the stereo pair.
