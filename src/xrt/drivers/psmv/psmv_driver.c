@@ -1,8 +1,8 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  PSVR prober code.
+ * @brief  PlayStation Move motion controller prober and driver code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup drv_psmv
@@ -1305,17 +1305,17 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 	    (zcm1->accel_max_z.z - zcm1->accel_min_z.z) / 2.0;
 
 	psmv->calibration.accel.bias.x =
-	    (zcm1->accel_min_y.x + zcm1->accel_max_y.x + zcm1->accel_min_z.x +
-	     zcm1->accel_max_z.x) /
-	    4.0;
+	    (zcm1->accel_min_x.x + zcm1->accel_max_x.x + zcm1->accel_min_y.x +
+	     zcm1->accel_max_y.x + zcm1->accel_min_z.x + zcm1->accel_max_z.x) /
+	    6.0;
 	psmv->calibration.accel.bias.y =
-	    (zcm1->accel_min_x.y + zcm1->accel_max_x.y + zcm1->accel_min_z.y +
-	     zcm1->accel_max_z.y) /
-	    4.0;
+	    (zcm1->accel_min_x.y + zcm1->accel_max_x.y + zcm1->accel_min_y.y +
+	     zcm1->accel_max_y.y + zcm1->accel_min_z.y + zcm1->accel_max_z.y) /
+	    6.0;
 	psmv->calibration.accel.bias.z =
 	    (zcm1->accel_min_x.z + zcm1->accel_max_x.z + zcm1->accel_min_y.z +
-	     zcm1->accel_max_y.z) /
-	    4.0;
+	     zcm1->accel_max_y.z + zcm1->accel_min_z.z + zcm1->accel_max_z.z) /
+	    6.0;
 
 
 	/*
@@ -1531,17 +1531,17 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	    (zcm2->accel_max_z.z - zcm2->accel_min_z.z) / 2.0;
 
 	psmv->calibration.accel.bias.x =
-	    (zcm2->accel_min_y.x + zcm2->accel_max_y.x + zcm2->accel_min_z.x +
-	     zcm2->accel_max_z.x) /
-	    4.0;
+	    (zcm2->accel_min_x.x + zcm2->accel_max_x.x + zcm2->accel_min_y.x +
+	     zcm2->accel_max_y.x + zcm2->accel_min_z.x + zcm2->accel_max_z.x) /
+	    6.0;
 	psmv->calibration.accel.bias.y =
-	    (zcm2->accel_min_x.y + zcm2->accel_max_x.y + zcm2->accel_min_z.y +
-	     zcm2->accel_max_z.y) /
-	    4.0;
+	    (zcm2->accel_min_x.y + zcm2->accel_max_x.y + zcm2->accel_min_y.y +
+	     zcm2->accel_max_y.y + zcm2->accel_min_z.y + zcm2->accel_max_z.y) /
+	    6.0;
 	psmv->calibration.accel.bias.z =
 	    (zcm2->accel_min_x.z + zcm2->accel_max_x.z + zcm2->accel_min_y.z +
-	     zcm2->accel_max_y.z) /
-	    4.0;
+	     zcm2->accel_max_y.z + zcm2->accel_min_z.z + zcm2->accel_max_z.z) /
+	    6.0;
 
 
 	/*
