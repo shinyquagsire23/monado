@@ -12,6 +12,9 @@
         "Drivers": {
             "directory": "drivers"
         },
+        "Helper Libraries": {
+            "directory": "aux"
+        },
         "Misc. Features": {
             "directory": "misc_features"
         },
