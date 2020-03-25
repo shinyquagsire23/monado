@@ -15,6 +15,7 @@
 #include "os/os_hid.h"
 
 #include "math/m_api.h"
+#include "math/m_imu_pre.h"
 #include "tracking/t_imu.h"
 
 #include "util/u_var.h"
@@ -466,18 +467,9 @@ struct psmv_device
 			struct psmv_parsed_calibration_zcm2 zcm2;
 		};
 
-		struct
-		{
-			struct xrt_vec3 factor;
-			struct xrt_vec3 bias;
-		} accel;
-
-		struct
-		{
-			struct xrt_vec3 factor;
-			struct xrt_vec3 bias;
-		} gyro;
+		struct m_imu_pre_filter prefilter;
 	} calibration;
+
 
 	struct
 	{
@@ -619,30 +611,18 @@ update_fusion(struct psmv_device *psmv,
 	struct xrt_vec3_i32 *ra = &sample->accel;
 	struct xrt_vec3_i32 *rg = &sample->gyro;
 
-	psmv->read.accel.x = (ra->x - psmv->calibration.accel.bias.x) /
-	                     psmv->calibration.accel.factor.x *
-	                     MATH_GRAVITY_M_S2;
-	psmv->read.accel.y = (ra->y - psmv->calibration.accel.bias.y) /
-	                     psmv->calibration.accel.factor.y *
-	                     MATH_GRAVITY_M_S2;
-	psmv->read.accel.z = (ra->z - psmv->calibration.accel.bias.z) /
-	                     psmv->calibration.accel.factor.z *
-	                     MATH_GRAVITY_M_S2;
-
-	psmv->read.gyro.x = (rg->x - psmv->calibration.gyro.bias.x) /
-	                    psmv->calibration.gyro.factor.x;
-	psmv->read.gyro.y = (rg->y - psmv->calibration.gyro.bias.y) /
-	                    psmv->calibration.gyro.factor.y;
-	psmv->read.gyro.z = (rg->z - psmv->calibration.gyro.bias.z) /
-	                    psmv->calibration.gyro.factor.z;
+	m_imu_pre_filter_data(&psmv->calibration.prefilter, ra, rg,
+	                      &psmv->read.accel, &psmv->read.gyro);
 
 	if (psmv->ball != NULL) {
+		// We have positional tracking
 		struct xrt_tracking_sample sample;
 		sample.accel_m_s2 = psmv->read.accel;
 		sample.gyro_rad_secs = psmv->read.gyro;
 
 		xrt_tracked_psmv_push_imu(psmv->ball, timestamp_ns, &sample);
 	} else {
+		// Orientation-only tracking
 
 #if 0
 		// Super simple fusion.
@@ -983,6 +963,7 @@ psmv_found(struct xrt_prober *xp,
 	snprintf(psmv->base.str, XRT_DEVICE_NAME_LEN, "%s",
 	         "PS Move Controller");
 
+	m_imu_pre_filter_init(&psmv->calibration.prefilter, 1.f, 1.f);
 
 	// Default variance
 	switch (devices[index]->product_id) {
@@ -1131,10 +1112,10 @@ psmv_found(struct xrt_prober *xp,
 		break;
 	default: assert(false);
 	}
-	u_var_add_vec3_f32(psmv, &psmv->calibration.accel.factor, "accel.factor");
-	u_var_add_vec3_f32(psmv, &psmv->calibration.accel.bias, "accel.bias");
-	u_var_add_vec3_f32(psmv, &psmv->calibration.gyro.factor, "gyro.factor");
-	u_var_add_vec3_f32(psmv, &psmv->calibration.gyro.bias, "gyro.bias");
+	u_var_add_vec3_f32(psmv, &psmv->calibration.prefilter.accel.gain, "prefilter.accel.gain");
+	u_var_add_vec3_f32(psmv, &psmv->calibration.prefilter.accel.bias, "prefilter.accel.bias");
+	u_var_add_vec3_f32(psmv, &psmv->calibration.prefilter.gyro.gain, "prefilter.gyro.gain");
+	u_var_add_vec3_f32(psmv, &psmv->calibration.prefilter.gyro.bias, "prefilter.gyro.bias");
 	u_var_add_gui_header(psmv, &psmv->gui.last_frame, "Last data");
 	u_var_add_ro_vec3_i32(psmv, &psmv->last.samples[0].accel, "last.samples[0].accel");
 	u_var_add_ro_vec3_i32(psmv, &psmv->last.samples[1].accel, "last.samples[1].accel");
@@ -1292,31 +1273,41 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 	psmv_f32_from_wire(&zcm1->unknown_float_0, &data.unknown_float_0);
 	psmv_f32_from_wire(&zcm1->unknown_float_1, &data.unknown_float_1);
 
+	/*
+	 * See the following reference for details on the computations below. We
+	 * are currently pretending cross-gains are zero.
+	 *
+	 * Vitali, Andrea. “6-Point Tumble Sensor Calibration.” Design tip.
+	 * STMicroelectronics, 2015.
+	 * https://www.st.com/resource/en/design_tip/dm00253745-6point-tumble-sensor-calibration-stmicroelectronics.pdf.
+	 */
 
 	/*
 	 * Acceleration
 	 */
 
-	psmv->calibration.accel.factor.x =
-	    (zcm1->accel_max_x.x - zcm1->accel_min_x.x) / 2.0;
-	psmv->calibration.accel.factor.y =
-	    (zcm1->accel_max_y.y - zcm1->accel_min_y.y) / 2.0;
-	psmv->calibration.accel.factor.z =
-	    (zcm1->accel_max_z.z - zcm1->accel_min_z.z) / 2.0;
+	psmv->calibration.prefilter.accel.gain.x =
+	    MATH_GRAVITY_M_S2 /
+	    ((zcm1->accel_max_x.x - zcm1->accel_min_x.x) / 2.0);
+	psmv->calibration.prefilter.accel.gain.y =
+	    MATH_GRAVITY_M_S2 /
+	    ((zcm1->accel_max_y.y - zcm1->accel_min_y.y) / 2.0);
+	psmv->calibration.prefilter.accel.gain.z =
+	    MATH_GRAVITY_M_S2 /
+	    ((zcm1->accel_max_z.z - zcm1->accel_min_z.z) / 2.0);
 
-	psmv->calibration.accel.bias.x =
+	psmv->calibration.prefilter.accel.bias.x =
 	    (zcm1->accel_min_x.x + zcm1->accel_max_x.x + zcm1->accel_min_y.x +
 	     zcm1->accel_max_y.x + zcm1->accel_min_z.x + zcm1->accel_max_z.x) /
 	    6.0;
-	psmv->calibration.accel.bias.y =
+	psmv->calibration.prefilter.accel.bias.y =
 	    (zcm1->accel_min_x.y + zcm1->accel_max_x.y + zcm1->accel_min_y.y +
 	     zcm1->accel_max_y.y + zcm1->accel_min_z.y + zcm1->accel_max_z.y) /
 	    6.0;
-	psmv->calibration.accel.bias.z =
+	psmv->calibration.prefilter.accel.bias.z =
 	    (zcm1->accel_min_x.z + zcm1->accel_max_x.z + zcm1->accel_min_y.z +
 	     zcm1->accel_max_y.z + zcm1->accel_min_z.z + zcm1->accel_max_z.z) /
 	    6.0;
-
 
 	/*
 	 * Gyro
@@ -1329,12 +1320,15 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 	double gz =
 	    (zcm1->gyro_rot_z.z - (zcm1->gyro_bias_0.z * zcm1->gyro_fact.z));
 
-	psmv->calibration.gyro.factor.x = (60.0 * gx) / (2.0 * M_PI * 80.0);
-	psmv->calibration.gyro.factor.y = (60.0 * gy) / (2.0 * M_PI * 80.0);
-	psmv->calibration.gyro.factor.z = (60.0 * gz) / (2.0 * M_PI * 80.0);
-	psmv->calibration.gyro.bias.x = 0.0;
-	psmv->calibration.gyro.bias.y = 0.0;
-	psmv->calibration.gyro.bias.z = 0.0;
+	psmv->calibration.prefilter.gyro.gain.x =
+	    (2.0 * M_PI * 80.0) / (60.0 * gx);
+	psmv->calibration.prefilter.gyro.gain.y =
+	    (2.0 * M_PI * 80.0) / (60.0 * gy);
+	psmv->calibration.prefilter.gyro.gain.z =
+	    (2.0 * M_PI * 80.0) / (60.0 * gz);
+	psmv->calibration.prefilter.gyro.bias.x = 0.0;
+	psmv->calibration.prefilter.gyro.bias.y = 0.0;
+	psmv->calibration.prefilter.gyro.bias.z = 0.0;
 
 
 	/*
@@ -1361,9 +1355,9 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 	    "\t\tunknown_float_0 %f\n"
 	    "\t\tunknown_float_1 %f\n"
 	    "\tCalculated:\n"
-	    "\t\taccel.factor: %f %f %f\n"
+	    "\t\taccel.gain: %f %f %f\n"
 	    "\t\taccel.bias: %f %f %f\n"
-	    "\t\tgyro.factor: %f %f %f\n"
+	    "\t\tgyro.gain: %f %f %f\n"
 	    "\t\tgyro.bias: %f %f %f\n",
 	    zcm1->accel_min_x.x, zcm1->accel_min_x.y, zcm1->accel_min_x.z,
 	    zcm1->accel_max_x.x, zcm1->accel_max_x.y, zcm1->accel_max_x.z,
@@ -1379,12 +1373,18 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 	    zcm1->gyro_fact.x, zcm1->gyro_fact.y, zcm1->gyro_fact.z,
 	    zcm1->unknown_vec3.x, zcm1->unknown_vec3.y, zcm1->unknown_vec3.z,
 	    zcm1->unknown_float_0, zcm1->unknown_float_1,
-	    psmv->calibration.accel.factor.x, psmv->calibration.accel.factor.y,
-	    psmv->calibration.accel.factor.z, psmv->calibration.accel.bias.x,
-	    psmv->calibration.accel.bias.y, psmv->calibration.accel.bias.z,
-	    psmv->calibration.gyro.factor.x, psmv->calibration.gyro.factor.y,
-	    psmv->calibration.gyro.factor.z, psmv->calibration.gyro.bias.x,
-	    psmv->calibration.gyro.bias.y, psmv->calibration.gyro.bias.z);
+	    psmv->calibration.prefilter.accel.gain.x,
+	    psmv->calibration.prefilter.accel.gain.y,
+	    psmv->calibration.prefilter.accel.gain.z,
+	    psmv->calibration.prefilter.accel.bias.x,
+	    psmv->calibration.prefilter.accel.bias.y,
+	    psmv->calibration.prefilter.accel.bias.z,
+	    psmv->calibration.prefilter.gyro.gain.x,
+	    psmv->calibration.prefilter.gyro.gain.y,
+	    psmv->calibration.prefilter.gyro.gain.z,
+	    psmv->calibration.prefilter.gyro.bias.x,
+	    psmv->calibration.prefilter.gyro.bias.y,
+	    psmv->calibration.prefilter.gyro.bias.z);
 
 	return 0;
 }
@@ -1523,22 +1523,25 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	 * Acceleration
 	 */
 
-	psmv->calibration.accel.factor.x =
-	    (zcm2->accel_max_x.x - zcm2->accel_min_x.x) / 2.0;
-	psmv->calibration.accel.factor.y =
-	    (zcm2->accel_max_y.y - zcm2->accel_min_y.y) / 2.0;
-	psmv->calibration.accel.factor.z =
-	    (zcm2->accel_max_z.z - zcm2->accel_min_z.z) / 2.0;
+	psmv->calibration.prefilter.accel.gain.x =
+	    MATH_GRAVITY_M_S2 /
+	    ((zcm2->accel_max_x.x - zcm2->accel_min_x.x) / 2.0);
+	psmv->calibration.prefilter.accel.gain.y =
+	    MATH_GRAVITY_M_S2 /
+	    ((zcm2->accel_max_y.y - zcm2->accel_min_y.y) / 2.0);
+	psmv->calibration.prefilter.accel.gain.z =
+	    MATH_GRAVITY_M_S2 /
+	    ((zcm2->accel_max_z.z - zcm2->accel_min_z.z) / 2.0);
 
-	psmv->calibration.accel.bias.x =
+	psmv->calibration.prefilter.accel.bias.x =
 	    (zcm2->accel_min_x.x + zcm2->accel_max_x.x + zcm2->accel_min_y.x +
 	     zcm2->accel_max_y.x + zcm2->accel_min_z.x + zcm2->accel_max_z.x) /
 	    6.0;
-	psmv->calibration.accel.bias.y =
+	psmv->calibration.prefilter.accel.bias.y =
 	    (zcm2->accel_min_x.y + zcm2->accel_max_x.y + zcm2->accel_min_y.y +
 	     zcm2->accel_max_y.y + zcm2->accel_min_z.y + zcm2->accel_max_z.y) /
 	    6.0;
-	psmv->calibration.accel.bias.z =
+	psmv->calibration.prefilter.accel.bias.z =
 	    (zcm2->accel_min_x.z + zcm2->accel_max_x.z + zcm2->accel_min_y.z +
 	     zcm2->accel_max_y.z + zcm2->accel_min_z.z + zcm2->accel_max_z.z) /
 	    6.0;
@@ -1552,27 +1555,30 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	double gy = (zcm2->gyro_pos_y.y - zcm2->gyro_neg_y.y) / 2.0;
 	double gz = (zcm2->gyro_pos_z.z - zcm2->gyro_neg_z.z) / 2.0;
 
-	psmv->calibration.gyro.factor.x = (60.0 * gx) / (2.0 * M_PI * 90.0);
-	psmv->calibration.gyro.factor.y = (60.0 * gy) / (2.0 * M_PI * 90.0);
-	psmv->calibration.gyro.factor.z = (60.0 * gz) / (2.0 * M_PI * 90.0);
+	psmv->calibration.prefilter.gyro.gain.x =
+	    (2.0 * M_PI * 90.0) / (60.0 * gx);
+	psmv->calibration.prefilter.gyro.gain.y =
+	    (2.0 * M_PI * 90.0) / (60.0 * gy);
+	psmv->calibration.prefilter.gyro.gain.z =
+	    (2.0 * M_PI * 90.0) / (60.0 * gz);
 
 #if 0
-	psmv->calibration.gyro.bias.x =
+	psmv->calibration.prefilter.gyro.bias.x =
 	    (zcm2->gyro_neg_y.x + zcm2->gyro_pos_y.x + zcm2->gyro_neg_z.x +
 	     zcm2->gyro_pos_z.x) /
 	    4.0;
-	psmv->calibration.gyro.bias.y =
+	psmv->calibration.prefilter.gyro.bias.y =
 	    (zcm2->gyro_neg_x.y + zcm2->gyro_pos_x.y + zcm2->gyro_neg_z.y +
 	     zcm2->gyro_pos_z.y) /
 	    4.0;
-	psmv->calibration.gyro.bias.z =
+	psmv->calibration.prefilter.gyro.bias.z =
 	    (zcm2->gyro_neg_x.z + zcm2->gyro_pos_x.z + zcm2->gyro_neg_y.z +
 	     zcm2->gyro_pos_y.z) /
 	    4.0;
 #else
-	psmv->calibration.gyro.bias.x = zcm2->gyro_bias.x;
-	psmv->calibration.gyro.bias.y = zcm2->gyro_bias.y;
-	psmv->calibration.gyro.bias.z = zcm2->gyro_bias.z;
+	psmv->calibration.prefilter.gyro.bias.x = zcm2->gyro_bias.x;
+	psmv->calibration.prefilter.gyro.bias.y = zcm2->gyro_bias.y;
+	psmv->calibration.prefilter.gyro.bias.z = zcm2->gyro_bias.z;
 #endif
 
 
@@ -1598,9 +1604,9 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	    "\t\tgyro_pos_z:  %6i %6i %6i\n"
 	    "\t\tgyro_bias:  %6i %6i %6i\n"
 	    "\tCalculated:\n"
-	    "\t\taccel.factor: %f %f %f\n"
+	    "\t\taccel.gain: %f %f %f\n"
 	    "\t\taccel.bias: %f %f %f\n"
-	    "\t\tgyro.factor: %f %f %f\n"
+	    "\t\tgyro.gain: %f %f %f\n"
 	    "\t\tgyro.bias: %f %f %f\n",
 	    zcm2->accel_min_x.x, zcm2->accel_min_x.y, zcm2->accel_min_x.z,
 	    zcm2->accel_max_x.x, zcm2->accel_max_x.y, zcm2->accel_max_x.z,
@@ -1615,12 +1621,18 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	    zcm2->gyro_neg_z.x, zcm2->gyro_neg_z.y, zcm2->gyro_neg_z.z,
 	    zcm2->gyro_pos_z.x, zcm2->gyro_pos_z.y, zcm2->gyro_pos_z.z,
 	    zcm2->gyro_bias.x, zcm2->gyro_bias.y, zcm2->gyro_bias.z,
-	    psmv->calibration.accel.factor.x, psmv->calibration.accel.factor.y,
-	    psmv->calibration.accel.factor.z, psmv->calibration.accel.bias.x,
-	    psmv->calibration.accel.bias.y, psmv->calibration.accel.bias.z,
-	    psmv->calibration.gyro.factor.x, psmv->calibration.gyro.factor.y,
-	    psmv->calibration.gyro.factor.z, psmv->calibration.gyro.bias.x,
-	    psmv->calibration.gyro.bias.y, psmv->calibration.gyro.bias.z);
+	    psmv->calibration.prefilter.accel.gain.x,
+	    psmv->calibration.prefilter.accel.gain.y,
+	    psmv->calibration.prefilter.accel.gain.z,
+	    psmv->calibration.prefilter.accel.bias.x,
+	    psmv->calibration.prefilter.accel.bias.y,
+	    psmv->calibration.prefilter.accel.bias.z,
+	    psmv->calibration.prefilter.gyro.gain.x,
+	    psmv->calibration.prefilter.gyro.gain.y,
+	    psmv->calibration.prefilter.gyro.gain.z,
+	    psmv->calibration.prefilter.gyro.bias.x,
+	    psmv->calibration.prefilter.gyro.bias.y,
+	    psmv->calibration.prefilter.gyro.bias.z);
 
 	return 0;
 }
