@@ -57,6 +57,7 @@ struct calibration_scene
  *
  */
 
+#ifdef XRT_HAVE_OPENCV
 static void
 save_calibration(struct calibration_scene *cs)
 {
@@ -70,6 +71,7 @@ save_calibration(struct calibration_scene *cs)
 	// Free data, no longer needed.
 	t_stereo_camera_calibration_reference(&cs->status.stereo_data, NULL);
 }
+#endif
 
 static void
 draw_texture(struct gui_ogl_texture *tex, bool header)
