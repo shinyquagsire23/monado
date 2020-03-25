@@ -11,6 +11,7 @@ USE_MDFILE_AS_MAINPAGE = @SRCDIR@/doc/mainpage.md
 
 RECURSIVE              = YES
 EXCLUDE                = @SRCDIR@/src/external \
+                         @SRCDIR@/doc/changes \
                          @BUILDDIR@
 STRIP_FROM_PATH        = @SRCDIR@/src/xrt \
                          @SRCDIR@/doc
