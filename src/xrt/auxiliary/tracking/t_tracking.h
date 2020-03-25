@@ -137,7 +137,7 @@ void
 t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **calib);
 
 /*!
- * Only to be called by @ref t_stereo_camera_calibration_reference.
+ * Only to be called by @p t_stereo_camera_calibration_reference.
  */
 void
 t_stereo_camera_calibration_destroy(struct t_stereo_camera_calibration *c);
