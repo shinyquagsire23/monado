@@ -936,7 +936,7 @@ static void ShowDemoWindowWidgets()
         }
         if (ImGui::TreeNode("Alignment"))
         {
-            HelpMarker("Alignment applies when a selectable is larger than its text content.\nBy default, Selectables uses style.SelectableTextAlign but it can be overriden on a per-item basis using PushStyleVar().");
+            HelpMarker("Alignment applies when a selectable is larger than its text content.\nBy default, Selectables uses style.SelectableTextAlign but it can be overridden on a per-item basis using PushStyleVar().");
             static bool selected[3*3] = { true, false, true, false, true, false, true, false, true };
             for (int y = 0; y < 3; y++)
             {
