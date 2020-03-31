@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  File for verifing app input into api functions.
+ * @brief  File for verifying app input into api functions.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup oxr_main
