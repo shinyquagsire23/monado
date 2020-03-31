@@ -141,12 +141,16 @@ target_include_directories(aux_math SYSTEM
 # Util library.
 add_library(aux_util STATIC ${UTIL_SOURCE_FILES})
 target_link_libraries(aux_util PUBLIC aux-includes)
-# for cJSON
 target_link_libraries(aux_util PUBLIC xrt-external-headers)
 # for u_device
 target_link_libraries(aux_util PUBLIC aux_math)
 if(BUILD_WITH_JPEG)
 	target_link_libraries(aux_util PRIVATE ${JPEG_LIBRARIES})
+endif()
+# for cJSON
+if(BUILD_WITH_SYSTEM_CJSON)
+	target_link_libraries(aux_util PUBLIC cJSON::cJSON)
+	target_compile_definitions(aux_util PRIVATE XRT_USE_SYSTEM_CJSON)
 endif()
 
 # Tracking library.

@@ -10,9 +10,12 @@
 
 #include "u_json.h"
 #include <assert.h>
+#include <stdio.h>
 
+#ifndef XRT_USE_SYSTEM_CJSON
 // This includes the c file completely.
 #include "cjson/cJSON.c"
+#endif
 
 
 /*!

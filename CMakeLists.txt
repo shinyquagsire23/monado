@@ -34,6 +34,7 @@ find_package(realsense2)
 find_package(SDL2)
 find_package(Threads)
 find_package(ZLIB)
+find_package(cJSON)
 
 # @TODO Turn into a find_package LIBUVC file.
 pkg_check_modules(LIBUVC libuvc)
@@ -93,6 +94,8 @@ cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FO
 cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_DAYDREAM "Enable Bluetooth LE via DBUS" ON "BUILD_WITH_DBUS" OFF)
 cmake_dependent_option(BUILD_WITH_ARDUINO "Enable Arduino input device with BLE via DBUS" ON "BUILD_WITH_DBUS" OFF)
+
+cmake_dependent_option(BUILD_WITH_SYSTEM_CJSON "Enable cJSON from system, instead of bundled source" ON "CJSON_FOUND" OFF)
 
 # These all use the Monado internal hid wrapper which is assumed to be available.
 option(BUILD_WITH_HDK "Enable HDK driver" ON)
