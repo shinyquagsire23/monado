@@ -70,7 +70,6 @@ get_device_memory_fd(struct comp_compositor *c,
 	// vkGetMemoryFdKHR parameter
 	VkMemoryGetFdInfoKHR fd_info = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
-	    .pNext = NULL,
 	    .memory = device_memory,
 	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	};
@@ -114,7 +113,6 @@ create_image_fd(struct comp_compositor *c,
 
 	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
-	    .pNext = NULL,
 	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	};
 
@@ -140,7 +138,6 @@ create_image_fd(struct comp_compositor *c,
 	VkImageCreateInfo info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .pNext = &external_memory_image_create_info,
-	    .flags = 0,
 	    .imageType = VK_IMAGE_TYPE_2D,
 	    .format = (VkFormat)format,
 	    .extent = {.width = width, .height = height, .depth = 1},
@@ -150,8 +147,6 @@ create_image_fd(struct comp_compositor *c,
 	    .tiling = VK_IMAGE_TILING_OPTIMAL,
 	    .usage = image_usage,
 	    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-	    .queueFamilyIndexCount = 0,
-	    .pQueueFamilyIndices = NULL,
 	    .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 

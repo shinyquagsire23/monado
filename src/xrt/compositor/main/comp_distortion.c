@@ -147,8 +147,6 @@ _shader_load(struct vk_bundle *vk,
 
 	VkShaderModuleCreateInfo info = {
 	    .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .codeSize = size,
 	    .pCode = code,
 	};
@@ -161,12 +159,9 @@ _shader_load(struct vk_bundle *vk,
 
 	return (VkPipelineShaderStageCreateInfo){
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .stage = flags,
 	    .module = module,
 	    .pName = "main",
-	    .pSpecializationInfo = NULL,
 	};
 }
 
@@ -265,101 +260,55 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state = {
 	    .sType =
 	        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .topology = topology,
 	    .primitiveRestartEnable = VK_FALSE,
 	};
 
 	VkPipelineRasterizationStateCreateInfo rasterization_state = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .depthClampEnable = VK_FALSE,
 	    .rasterizerDiscardEnable = VK_FALSE,
 	    .polygonMode = polygonMode,
 	    .cullMode = VK_CULL_MODE_BACK_BIT,
 	    .frontFace = VK_FRONT_FACE_CLOCKWISE,
-	    .depthBiasEnable = VK_FALSE,
-	    .depthBiasConstantFactor = 0.f,
-	    .depthBiasClamp = 0.f,
-	    .depthBiasSlopeFactor = 0.f,
 	    .lineWidth = 1.0f,
 	};
 
-	VkPipelineColorBlendAttachmentState blend_attachment_state = {0};
-	blend_attachment_state.blendEnable = VK_FALSE;
-	blend_attachment_state.colorWriteMask = 0xf;
+	VkPipelineColorBlendAttachmentState blend_attachment_state = {
+	    .blendEnable = VK_FALSE,
+	    .colorWriteMask = 0xf,
+	};
 
 	VkPipelineColorBlendStateCreateInfo color_blend_state = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
-	    .logicOpEnable = VK_FALSE,
-	    .logicOp = VK_LOGIC_OP_CLEAR,
 	    .attachmentCount = 1,
 	    .pAttachments = &blend_attachment_state,
-	    //! @todo what's the right value for blendConstants?
-	    .blendConstants = {1.f, 1.f, 1.f, 1.f},
 	};
 
 	VkPipelineDepthStencilStateCreateInfo depth_stencil_state = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .depthTestEnable = VK_TRUE,
 	    .depthWriteEnable = VK_TRUE,
 	    .depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-	    .depthBoundsTestEnable = VK_FALSE,
-	    .stencilTestEnable = VK_FALSE,
 	    .front =
 	        {
-	            .failOp = VK_STENCIL_OP_KEEP,
-	            .passOp = VK_STENCIL_OP_KEEP,
-	            .depthFailOp = VK_STENCIL_OP_KEEP,
-	            .compareOp = VK_COMPARE_OP_ALWAYS, // this is the only
-	                                               // meaningful value here.
-	            .compareMask = 0,
-	            .writeMask = 0,
-	            .reference = 0,
+	            .compareOp = VK_COMPARE_OP_ALWAYS,
 	        },
 	    .back =
 	        {
-	            .failOp = VK_STENCIL_OP_KEEP,
-	            .passOp = VK_STENCIL_OP_KEEP,
-	            .depthFailOp = VK_STENCIL_OP_KEEP,
-	            .compareOp = VK_COMPARE_OP_ALWAYS, // this is the only
-	                                               // meaningful value here.
-	            .compareMask = 0,
-	            .writeMask = 0,
-	            .reference = 0,
+	            .compareOp = VK_COMPARE_OP_ALWAYS,
 	        },
-	    .minDepthBounds = 0.f,
-	    .maxDepthBounds = 0.f,
 	};
 
 	VkPipelineViewportStateCreateInfo viewport_state = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .viewportCount = 1,
-	    .pViewports = NULL, // assigned valid value later
 	    .scissorCount = 1,
-	    .pScissors = NULL, // assigned valid value later
 	};
 
 	VkPipelineMultisampleStateCreateInfo multisample_state = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
-	    .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-	    .sampleShadingEnable = VK_FALSE,
-	    .minSampleShading = 0,
-	    .pSampleMask = NULL,
-	    .alphaToCoverageEnable = VK_FALSE,
-	    .alphaToOneEnable = VK_FALSE,
-
-	};
+	    .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT};
 
 	VkDynamicState dynamic_states[] = {
 	    VK_DYNAMIC_STATE_VIEWPORT,
@@ -368,8 +317,6 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 
 	VkPipelineDynamicStateCreateInfo dynamic_state = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .dynamicStateCount = 2,
 	    .pDynamicStates = dynamic_states,
 	};
@@ -388,12 +335,6 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	 */
 	VkPipelineVertexInputStateCreateInfo vertex_input_state = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
-	    .vertexBindingDescriptionCount = 0,
-	    .pVertexBindingDescriptions = NULL,
-	    .vertexAttributeDescriptionCount = 0,
-	    .pVertexAttributeDescriptions = NULL,
 	};
 	const uint32_t *vertex_shader_code = shaders_distortion_vert;
 	size_t vertex_shader_size = sizeof(shaders_distortion_vert);
@@ -451,17 +392,13 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	                 VK_SHADER_STAGE_FRAGMENT_BIT),
 	};
 
-
-
 	VkGraphicsPipelineCreateInfo pipeline_info = {
 	    .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-	    .pNext = NULL,
 	    .flags = 0,
 	    .stageCount = ARRAY_SIZE(shader_stages),
 	    .pStages = shader_stages,
 	    .pVertexInputState = &vertex_input_state,
 	    .pInputAssemblyState = &input_assembly_state,
-	    .pTessellationState = NULL,
 	    .pViewportState = &viewport_state,
 	    .pRasterizationState = &rasterization_state,
 	    .pMultisampleState = &multisample_state,
@@ -470,7 +407,6 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	    .pDynamicState = &dynamic_state,
 	    .layout = d->pipeline_layout,
 	    .renderPass = render_pass,
-	    .subpass = 0, //! @todo
 	    .basePipelineHandle = VK_NULL_HANDLE,
 	    .basePipelineIndex = -1,
 	};
@@ -492,15 +428,11 @@ comp_distortion_get_uniform_write_descriptor_set(struct comp_distortion *d,
 {
 	return (VkWriteDescriptorSet){
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-	    .pNext = NULL,
 	    .dstSet = d->descriptor_sets[eye],
 	    .dstBinding = binding,
-	    .dstArrayElement = 0, //! @todo
 	    .descriptorCount = 1,
 	    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-	    .pImageInfo = NULL,
 	    .pBufferInfo = &d->ubo_handle.descriptor,
-	    .pTexelBufferView = NULL,
 	};
 }
 
@@ -511,15 +443,11 @@ comp_distortion_get_uniform_write_descriptor_set_vp(struct comp_distortion *d,
 {
 	return (VkWriteDescriptorSet){
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-	    .pNext = NULL,
 	    .dstSet = d->descriptor_sets[eye],
 	    .dstBinding = binding,
-	    .dstArrayElement = 0, //! @todo
 	    .descriptorCount = 1,
 	    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-	    .pImageInfo = NULL,
 	    .pBufferInfo = &d->ubo_viewport_handles[eye].descriptor,
-	    .pTexelBufferView = NULL,
 	};
 }
 
@@ -531,15 +459,11 @@ comp_distortion_get_image_write_descriptor_set(
 {
 	return (VkWriteDescriptorSet){
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-	    .pNext = NULL,
 	    .dstSet = descriptor_set,
 	    .dstBinding = binding,
-	    .dstArrayElement = 0, //! @todo
 	    .descriptorCount = 1,
 	    .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	    .pImageInfo = descriptor_position,
-	    .pBufferInfo = NULL,
-	    .pTexelBufferView = NULL,
 	};
 }
 
@@ -552,7 +476,6 @@ comp_distortion_init_descriptor_sets(struct comp_distortion *d,
 
 	VkDescriptorSetAllocateInfo alloc_info = {
 	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-	    .pNext = NULL,
 	    .descriptorPool = descriptor_pool,
 	    .descriptorSetCount = 1,
 	    .pSetLayouts = &d->descriptor_set_layout,
@@ -621,7 +544,6 @@ comp_distortion_init_descriptor_set_layout(struct comp_distortion *d)
 	        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	        .descriptorCount = 1,
 	        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-	        .pImmutableSamplers = NULL,
 	    },
 	    // Binding 1 : Fragment shader uniform buffer
 	    {
@@ -629,7 +551,6 @@ comp_distortion_init_descriptor_set_layout(struct comp_distortion *d)
 	        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 	        .descriptorCount = 1,
 	        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-	        .pImmutableSamplers = NULL,
 	    },
 	    // binding 2: viewport index
 	    {
@@ -637,14 +558,11 @@ comp_distortion_init_descriptor_set_layout(struct comp_distortion *d)
 	        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 	        .descriptorCount = 1,
 	        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-	        .pImmutableSamplers = NULL,
 	    },
 	};
 
 	VkDescriptorSetLayoutCreateInfo set_layout_info = {
 	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .bindingCount = ARRAY_SIZE(set_layout_bindings),
 	    .pBindings = set_layout_bindings,
 	};
@@ -664,12 +582,9 @@ comp_distortion_init_pipeline_layout(struct comp_distortion *d)
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .setLayoutCount = 1,
 	    .pSetLayouts = &d->descriptor_set_layout,
-	    .pushConstantRangeCount = 0,
-	    .pPushConstantRanges = NULL};
+	};
 
 	ret = vk->vkCreatePipelineLayout(d->vk->device, &pipeline_layout_info,
 	                                 NULL, &d->pipeline_layout);
@@ -811,13 +726,8 @@ _create_buffer(struct vk_bundle *vk,
 	// Create the buffer handle.
 	VkBufferCreateInfo buffer_info = {
 	    .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .size = size,
 	    .usage = usage_flags,
-	    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-	    .queueFamilyIndexCount = 0,
-	    .pQueueFamilyIndices = NULL,
 	};
 	ret =
 	    vk->vkCreateBuffer(vk->device, &buffer_info, NULL, &buffer->buffer);
@@ -838,7 +748,6 @@ _create_buffer(struct vk_bundle *vk,
 
 	VkMemoryAllocateInfo mem_alloc = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-	    .pNext = NULL,
 	    .allocationSize = mem_reqs.size,
 	    .memoryTypeIndex = memory_type_index,
 	};
