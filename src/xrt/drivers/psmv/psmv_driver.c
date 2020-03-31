@@ -403,7 +403,7 @@ struct psmv_parsed_input
 
 		struct
 		{
-			//! Low-pass filtered versio of trigger (ZCM2).
+			//! Low-pass filtered version of trigger (ZCM2).
 			uint8_t trigger_low_pass;
 
 			//! Trigger (ZCM2).
