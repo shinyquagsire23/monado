@@ -17,7 +17,7 @@ OpticalSystem::OpticalSystem(const OpticalSystem &_in)
 	worldToScreenSpace = _in.worldToScreenSpace;
 	clipToWorld = _in.clipToWorld;
 	cameraProjection = _in.cameraProjection;
-};
+}
 
 void
 OpticalSystem::LoadOpticalData(struct ns_eye *eye)
@@ -80,7 +80,7 @@ OpticalSystem::LoadOpticalData(struct ns_eye *eye)
 	worldToSphereSpace = sphereToWorldSpace.Inverse();
 
 	UpdateClipToWorld(Matrix4x4::Identity());
-};
+}
 
 void
 OpticalSystem::RegenerateMesh()
