@@ -23,7 +23,7 @@ else
 endif
 
 doxyfile = configure_file(input: 'Doxyfile.in',
-	output: 'Doxyfile', configuration: doxyconf, install: false)
+	output: 'Doxyfile', configuration: doxyconf)
 
 html = custom_target('docs',
 	input: doxyfile, output: 'html', command: [doxygen, doxyfile],
