@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 prober_sources = [
@@ -37,7 +37,7 @@ lib_st_prober = static_library(
 	include_directories: [
 		xrt_include,
 		drv_include,
-		external_include,
+		cjson_include,
 	],
 	dependencies: prober_deps,
 )

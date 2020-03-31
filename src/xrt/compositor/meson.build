@@ -7,6 +7,7 @@ comp_include = include_directories('.')
 
 # TODO: Dependency resolution and subsequent configuration could be improved
 compositor_deps = [aux, shaders, vulkan, xrt_config_vulkan]
+compositor_includes = [xrt_include]
 
 compositor_srcs = [
 	'client/comp_vk_client.c',
@@ -49,6 +50,7 @@ if build_opengl
 		'client/comp_gles_glue.c',
 	]
 	compositor_deps += [opengl]
+	compositor_includes += [glad_include]
 endif
 
 if build_opengl and build_xlib
@@ -114,10 +116,7 @@ endif
 lib_comp = static_library(
 	'comp',
 	compositor_srcs,
-	include_directories: [
-		xrt_include,
-		external_include,
-	],
+	include_directories: compositor_includes,
 	dependencies: compositor_deps,
 	c_args: compile_args,
 	cpp_args: compile_args,

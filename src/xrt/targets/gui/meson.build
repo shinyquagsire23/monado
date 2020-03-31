@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 gui_deps = [
@@ -20,9 +20,9 @@ gui = executable(
 		'gui_sdl2_imgui.c',
 		'gui_sdl2_main.c',
 		'gui_sdl2_prober.c',
-		'../../../external/imgui/cimgui_sdl.cpp',
-		'../../../external/imgui/imgui_impl_sdl.cpp',
-		'../../../external/imgui/imgui_impl_sdl.h',
+		'../../../external/imgui/imgui/cimgui_sdl.cpp',
+		'../../../external/imgui/imgui/imgui_impl_sdl.cpp',
+		'../../../external/imgui/imgui/imgui_impl_sdl.h',
 	),
 	link_whole: [
 		lib_aux_os,
@@ -36,10 +36,11 @@ gui = executable(
 	include_directories: [
 		aux_include,
 		common_include,
-		external_include,
+		glad_include,
 		st_include,
 		drv_include,
 		xrt_include,
+		imgui_include,
 	],
 	dependencies: gui_deps + driver_deps,
 )

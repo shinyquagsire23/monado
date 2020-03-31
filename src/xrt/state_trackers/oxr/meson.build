@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 compile_args = []
@@ -53,7 +53,7 @@ lib_st_oxr = static_library(
 	),
 	include_directories: [
 		xrt_include,
-		external_include,
+		openxr_include,
 	],
 	dependencies: [aux, vulkan],
 	c_args: compile_args,

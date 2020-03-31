@@ -42,7 +42,7 @@ lib_aux_util = static_library(
 	),
 	include_directories: [
 		xrt_include,
-		external_include,
+		cjson_include,
 	],
 	dependencies: [
 		xrt_config_have
@@ -63,7 +63,7 @@ lib_aux_ogl = static_library(
 	),
 	include_directories: [
 		xrt_include,
-		external_include,
+		glad_include,
 	],
 )
 
@@ -150,7 +150,7 @@ endif
 lib_aux_tracking = static_library(
 	'aux_tracking',
 	files(tracking_srcs),
-	include_directories: [xrt_include, external_include],
+	include_directories: [xrt_include, flexkalman_include],
 	dependencies: tracking_deps
 )
 
@@ -168,7 +168,6 @@ lib_aux_vk = static_library(
 	),
 	include_directories: [
 		xrt_include,
-		external_include,
 	],
 )
 

@@ -33,6 +33,6 @@ typedef __eglMustCastToProperFunctionPointerType (*PFNEGLGETPROCADDRESSPROC)(
 #include <time.h>
 #endif
 
-#include "openxr_includes/openxr.h"
-#include "openxr_includes/openxr_platform.h"
-#include "openxr_includes/loader_interfaces.h"
+#include "openxr/openxr.h"
+#include "openxr/openxr_platform.h"
+#include "openxr/loader_interfaces.h"

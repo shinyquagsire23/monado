@@ -52,4 +52,4 @@ if(BUILD_WITH_EGL)
 endif()
 
 add_library(st_oxr STATIC ${OXR_SOURCE_FILES})
-target_link_libraries(st_oxr PRIVATE xrt-interfaces aux_util aux_math Vulkan::Vulkan comp_client)
+target_link_libraries(st_oxr PRIVATE xrt-interfaces xrt-external-openxr aux_util aux_math Vulkan::Vulkan comp_client)

@@ -112,11 +112,13 @@ add_library(aux-includes INTERFACE)
 target_include_directories(aux-includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(aux-includes INTERFACE xrt-interfaces)
 
-# OpenGL library.
-add_library(aux_ogl STATIC ${OGL_SOURCE_FILES})
-target_link_libraries(aux_ogl PUBLIC aux-includes)
-# for GLAD
-target_link_libraries(aux_ogl PRIVATE xrt-external-headers)
+if(BUILD_WITH_OPENGL)
+	# OpenGL library.
+	add_library(aux_ogl STATIC ${OGL_SOURCE_FILES})
+	target_link_libraries(aux_ogl PUBLIC aux-includes)
+	# for GLAD
+	target_link_libraries(aux_ogl PUBLIC xrt-external-glad)
+endif()
 
 # OS library.
 add_library(aux_os STATIC ${OS_SOURCE_FILES})
@@ -141,7 +143,6 @@ target_include_directories(aux_math SYSTEM
 # Util library.
 add_library(aux_util STATIC ${UTIL_SOURCE_FILES})
 target_link_libraries(aux_util PUBLIC aux-includes)
-target_link_libraries(aux_util PUBLIC xrt-external-headers)
 # for u_device
 target_link_libraries(aux_util PUBLIC aux_math)
 if(BUILD_WITH_JPEG)
@@ -151,6 +152,8 @@ endif()
 if(BUILD_WITH_SYSTEM_CJSON)
 	target_link_libraries(aux_util PUBLIC cJSON::cJSON)
 	target_compile_definitions(aux_util PRIVATE XRT_USE_SYSTEM_CJSON)
+else()
+	target_link_libraries(aux_util PUBLIC xrt-external-cjson)
 endif()
 
 # Tracking library.
@@ -163,7 +166,7 @@ target_include_directories(aux_tracking SYSTEM
 	${EIGEN3_INCLUDE_DIR}
 	)
 # for flexkalman
-target_link_libraries(aux_tracking PRIVATE xrt-external-headers)
+target_link_libraries(aux_tracking PRIVATE xrt-external-flexkalman)
 if(BUILD_TRACKING)
 	target_include_directories(aux_tracking SYSTEM
 		PRIVATE

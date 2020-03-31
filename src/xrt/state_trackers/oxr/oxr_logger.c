@@ -17,7 +17,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 
-#include "openxr_includes/openxr_reflection.h"
+#include "openxr/openxr_reflection.h"
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(entrypoints, "OXR_DEBUG_ENTRYPOINTS", false)

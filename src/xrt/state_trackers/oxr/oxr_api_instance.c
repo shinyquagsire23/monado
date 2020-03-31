@@ -24,8 +24,8 @@
 #include "oxr_api_verify.h"
 #include "oxr_extension_support.h"
 
-#include "openxr_includes/openxr.h"
-#include "openxr_includes/openxr_reflection.h"
+#include "openxr/openxr.h"
+#include "openxr/openxr_reflection.h"
 
 #define MAKE_EXTENSION_PROPERTIES(mixed_case, all_caps)                        \
 	{XR_TYPE_EXTENSION_PROPERTIES, NULL, XR_##all_caps##_EXTENSION_NAME,   \

@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ######
@@ -17,24 +17,24 @@ runtime_target = '@0@openxr@1@'.format(runtime_prefix, runtime_suffix)
 xr_api_major = 1
 
 hack_deps = []
-hack_src = []
+hack_src = [ 'oxr_sdl2_hack.c']
 hack_libs = []
-hack_incs = []
+hack_incs = [
+	glad_include,
+	imgui_include,
+]
 
 if sdl2.found()
 	hack_deps += sdl2
 	hack_src += [
-		'oxr_sdl2_hack.c',
-		'../../../external/imgui/cimgui_sdl.cpp',
-		'../../../external/imgui/imgui_impl_sdl.cpp',
-		'../../../external/imgui/imgui_impl_sdl.h',
+		'../../../external/imgui/imgui/cimgui_sdl.cpp',
+		'../../../external/imgui/imgui/imgui_impl_sdl.cpp',
+		'../../../external/imgui/imgui/imgui_impl_sdl.h',
 	]
 	hack_libs += lib_st_gui
 	hack_incs += [
 		st_include,
 	]
-else
-	hack_src += 'oxr_sdl2_hack.c'
 endif
 
 openxr_deps = [
@@ -84,7 +84,7 @@ openxr = library(
 		lib_target_instance,
 	] + driver_libs + hack_libs,
 	include_directories: [
-		external_include,
+		openxr_include,
 		st_include, # Sigh debian meson requires this.
 		aux_include,
 		common_include,

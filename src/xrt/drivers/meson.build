@@ -50,7 +50,10 @@ lib_drv_ns = static_library(
 		'north_star/ns_interface.h',
 		'north_star/ns_prober.c',
 	),
-	include_directories: [xrt_include, external_include],
+	include_directories: [
+		xrt_include,
+		cjson_include,
+	],
 	dependencies: [aux, xrt_config_drivers],
 	build_by_default: 'ns' in drivers,
 )
@@ -126,7 +129,10 @@ lib_drv_vive = static_library(
 		'vive/vive_controller_driver.c',
 		'vive/vive_controller_interface.h'
 	),
-	include_directories: [xrt_include, external_include],
+	include_directories: [
+		xrt_include,
+		cjson_include,
+	],
 	dependencies: [aux, zlib],
 	build_by_default: 'vive' in drivers,
 )

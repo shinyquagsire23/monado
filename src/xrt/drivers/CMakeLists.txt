@@ -80,7 +80,7 @@ if(BUILD_DRIVER_NS)
 		)
 
 	add_library(drv_ns STATIC ${NS_SOURCE_FILES})
-	target_link_libraries(drv_ns PRIVATE xrt-interfaces aux_math xrt-external-headers)
+	target_link_libraries(drv_ns PRIVATE xrt-interfaces aux_math xrt-external-cjson)
 	list(APPEND ENABLED_HEADSET_DRIVERS ns)
 endif()
 
@@ -146,7 +146,7 @@ if(BUILD_DRIVER_VIVE)
 		)
 
 	add_library(drv_vive STATIC ${VIVE_SOURCE_FILES})
-	target_link_libraries(drv_vive PRIVATE xrt-interfaces aux_os aux_util aux_math)
+	target_link_libraries(drv_vive PRIVATE xrt-interfaces aux_os aux_util aux_math xrt-external-cjson)
 	target_link_libraries(drv_vive PRIVATE ${ZLIB_LIBRARIES})
 	target_include_directories(drv_vive PRIVATE ${ZLIB_INCLUDE_DIRS})
 	list(APPEND ENABLED_HEADSET_DRIVERS vive)
