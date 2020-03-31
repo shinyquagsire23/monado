@@ -762,6 +762,8 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 		COMP_DEBUG(w->base.c, "RandR version below 1.6.");
 	}
 
+	free(version_reply);
+
 	xcb_generic_error_t *error = nullptr;
 	xcb_intern_atom_cookie_t non_desktop_cookie = xcb_intern_atom(
 	    w->connection, 1, strlen("non-desktop"), "non-desktop");
@@ -811,6 +813,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 		// Only outputs with an available mode should be used
 		// (it is possible to see 'ghost' outputs with non-desktop=1).
 		if (output_reply->num_modes == 0) {
+			free(output_reply);
 			continue;
 		}
 
@@ -836,12 +839,14 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 			           "returned error %d",
 			           error->error_code);
 			free(name_str);
+			free(prop_reply);
 			continue;
 		}
 
 		if (prop_reply == nullptr) {
 			COMP_ERROR(w->base.c, "property reply == nullptr");
 			free(name_str);
+			free(prop_reply);
 			continue;
 		}
 
@@ -849,6 +854,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 		    prop_reply->num_items != 1 || prop_reply->format != 32) {
 			COMP_ERROR(w->base.c, "Invalid non-desktop reply");
 			free(name_str);
+			free(prop_reply);
 			continue;
 		}
 
@@ -884,8 +890,12 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 			w->randr_displays.push_back(d);
 		}
 
+		free(prop_reply);
+		free(output_reply);
 		free(name_str);
 	}
+
+	free(resources_reply);
 }
 
 static void

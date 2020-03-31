@@ -301,6 +301,7 @@ comp_window_xcb_get_randr_outputs(comp_window_xcb *w)
 		if (output_reply->connection !=
 		        XCB_RANDR_CONNECTION_CONNECTED ||
 		    output_reply->crtc == XCB_NONE) {
+			free(output_reply);
 			continue;
 		}
 
@@ -325,8 +326,12 @@ comp_window_xcb_get_randr_outputs(comp_window_xcb *w)
 		d.size = {crtc_reply->width, crtc_reply->height};
 		w->displays.push_back(d);
 
+		free(crtc_reply);
+		free(output_reply);
 		free(name_str);
 	}
+
+	free(resources_reply);
 }
 
 static void
