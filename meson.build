@@ -9,7 +9,7 @@ project(
 	meson_version: '>=0.49.0',
 	default_options: [
 		'c_std=c11',
-		'warning_level=2',
+		'warning_level=3',
 	],
 )
 
@@ -18,12 +18,12 @@ cpp = meson.get_compiler('cpp')
 
 add_project_arguments(cc.get_supported_arguments([
 	'-D_XOPEN_SOURCE=700',
-	'-pedantic',
 	'-Wno-unused-parameter',
 ]), language: 'c')
 
 add_project_arguments(cpp.get_supported_arguments([
 	'-D_XOPEN_SOURCE=700',
+	'-Wno-pedantic',
 	'-Wno-unused-parameter',
 	'-Wno-deprecated-copy', # Eigen
 ]), language: 'cpp')
