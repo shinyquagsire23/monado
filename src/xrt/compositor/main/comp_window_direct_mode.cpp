@@ -10,6 +10,7 @@
 
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
+#include <X11/Xlib-xcb.h>
 #include <X11/extensions/Xrandr.h>
 
 #include <map>
@@ -58,7 +59,6 @@ struct comp_window_direct
 	struct comp_window base = comp_window();
 
 	Display *dpy = nullptr;
-	xcb_connection_t *connection = nullptr;
 	xcb_screen_t *screen = nullptr;
 
 	std::map<uint32_t, xcb_randr_mode_info_t> randr_modes = {};
@@ -191,9 +191,9 @@ comp_window_direct_destroy(struct comp_window *w)
 		d->display = VK_NULL_HANDLE;
 	}
 
-	if (w_direct->connection) {
-		xcb_disconnect(w_direct->connection);
-		w_direct->connection = nullptr;
+	if (w_direct->dpy) {
+		XCloseDisplay(w_direct->dpy);
+		w_direct->dpy = nullptr;
 	}
 
 	delete reinterpret_cast<struct comp_window_direct *>(w);
@@ -228,8 +228,10 @@ comp_window_direct_init_randr(struct comp_window *w)
 		return false;
 	}
 
+	xcb_connection_t *connection = XGetXCBConnection(w_direct->dpy);
+
 	xcb_screen_iterator_t iter =
-	    xcb_setup_roots_iterator(xcb_get_setup(w_direct->connection));
+	    xcb_setup_roots_iterator(xcb_get_setup(connection));
 
 	w_direct->screen = iter.data;
 
@@ -676,10 +678,7 @@ comp_window_direct_connect(struct comp_window_direct *w)
 		COMP_ERROR(w->base.c, "Could not open X display.");
 		return false;
 	}
-
-	//! @todo only open one connection and use XGetXCBConnection.
-	w->connection = xcb_connect(nullptr, nullptr);
-	return !xcb_connection_has_error(w->connection);
+	return true;
 }
 
 static VkResult
@@ -743,11 +742,12 @@ comp_window_direct_enumerate_randr_modes(
 static void
 comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 {
+	xcb_connection_t *connection = XGetXCBConnection(w->dpy);
 	xcb_randr_query_version_cookie_t version_cookie =
-	    xcb_randr_query_version(w->connection, XCB_RANDR_MAJOR_VERSION,
+	    xcb_randr_query_version(connection, XCB_RANDR_MAJOR_VERSION,
 	                            XCB_RANDR_MINOR_VERSION);
 	xcb_randr_query_version_reply_t *version_reply =
-	    xcb_randr_query_version_reply(w->connection, version_cookie, NULL);
+	    xcb_randr_query_version_reply(connection, version_cookie, NULL);
 
 	if (version_reply == nullptr) {
 		COMP_ERROR(w->base.c, "Could not get RandR version.");
@@ -766,9 +766,9 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 
 	xcb_generic_error_t *error = nullptr;
 	xcb_intern_atom_cookie_t non_desktop_cookie = xcb_intern_atom(
-	    w->connection, 1, strlen("non-desktop"), "non-desktop");
+	    connection, 1, strlen("non-desktop"), "non-desktop");
 	xcb_intern_atom_reply_t *non_desktop_reply =
-	    xcb_intern_atom_reply(w->connection, non_desktop_cookie, &error);
+	    xcb_intern_atom_reply(connection, non_desktop_cookie, &error);
 
 	if (error != nullptr) {
 		COMP_ERROR(w->base.c, "xcb_intern_atom_reply returned error %d",
@@ -787,10 +787,10 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 	}
 
 	xcb_randr_get_screen_resources_cookie_t resources_cookie =
-	    xcb_randr_get_screen_resources(w->connection, w->screen->root);
+	    xcb_randr_get_screen_resources(connection, w->screen->root);
 	xcb_randr_get_screen_resources_reply_t *resources_reply =
-	    xcb_randr_get_screen_resources_reply(w->connection,
-	                                         resources_cookie, nullptr);
+	    xcb_randr_get_screen_resources_reply(connection, resources_cookie,
+	                                         nullptr);
 	xcb_randr_output_t *xcb_outputs =
 	    xcb_randr_get_screen_resources_outputs(resources_reply);
 
@@ -804,11 +804,11 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 
 	for (int i = 0; i < count; i++) {
 		xcb_randr_get_output_info_cookie_t output_cookie =
-		    xcb_randr_get_output_info(w->connection, xcb_outputs[i],
+		    xcb_randr_get_output_info(connection, xcb_outputs[i],
 		                              XCB_CURRENT_TIME);
 		xcb_randr_get_output_info_reply_t *output_reply =
-		    xcb_randr_get_output_info_reply(w->connection,
-		                                    output_cookie, nullptr);
+		    xcb_randr_get_output_info_reply(connection, output_cookie,
+		                                    nullptr);
 
 		// Only outputs with an available mode should be used
 		// (it is possible to see 'ghost' outputs with non-desktop=1).
@@ -828,11 +828,11 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 		// Find the first output that has the non-desktop property set.
 		xcb_randr_get_output_property_cookie_t prop_cookie;
 		prop_cookie = xcb_randr_get_output_property(
-		    w->connection, xcb_outputs[i], non_desktop_reply->atom,
+		    connection, xcb_outputs[i], non_desktop_reply->atom,
 		    XCB_ATOM_NONE, 0, 4, 0, 0);
 		xcb_randr_get_output_property_reply_t *prop_reply = nullptr;
 		prop_reply = xcb_randr_get_output_property_reply(
-		    w->connection, prop_cookie, &error);
+		    connection, prop_cookie, &error);
 		if (error != nullptr) {
 			COMP_ERROR(w->base.c,
 			           "xcb_randr_get_output_property_reply "

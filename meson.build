@@ -81,6 +81,7 @@ endif
 
 # TODO: make these behave well when not present
 x11       = dependency('x11', required: get_option('xlib'))
+x11_xcb   = dependency('x11-xcb', required: get_option('xlib'))
 xcb       = dependency('xcb', required: get_option('xcb'))
 xcb_randr = dependency('xcb-randr', required: get_option('xcb'))
 
@@ -116,7 +117,7 @@ if get_option('xcb').enabled() or get_option('xcb').auto()
         build_xcb = xcb.found()
 endif
 
-build_xcb_xrandr_direct = build_xcb and build_xlib and xcb_randr.found()
+build_xcb_xrandr_direct = build_xcb and build_xlib and xcb_randr.found() and x11_xcb.found()
 
 build_wayland = false
 if get_option('wayland').enabled() or get_option('wayland').auto()

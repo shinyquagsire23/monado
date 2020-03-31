@@ -50,7 +50,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	find_package(udev REQUIRED)
 	set(BUILD_DRIVER_V4L2 TRUE)
 	if(PKGCONFIG_FOUND)
-		pkg_check_modules(XCB xcb xcb-randr)
+		pkg_check_modules(XCB xcb xcb-randr x11-xcb)
 
 		pkg_search_module(WAYLAND wayland-client)
 		pkg_search_module(WAYLAND_SCANNER wayland-scanner)
