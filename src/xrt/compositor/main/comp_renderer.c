@@ -220,7 +220,6 @@ renderer_submit_queue(struct comp_renderer *r)
 
 	VkSubmitInfo comp_submit_info = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-	    .pNext = NULL,
 	    .waitSemaphoreCount = 1,
 	    .pWaitSemaphores = &r->semaphores.present_complete,
 	    .pWaitDstStageMask = stage_flags,
@@ -288,9 +287,6 @@ renderer_build_command_buffer(struct comp_renderer *r,
 
 	VkCommandBufferBeginInfo command_buffer_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
-	    .pInheritanceInfo = NULL,
 	};
 
 	ret = vk->vkBeginCommandBuffer(command_buffer, &command_buffer_info);
@@ -302,7 +298,6 @@ renderer_build_command_buffer(struct comp_renderer *r,
 
 	VkRenderPassBeginInfo render_pass_begin_info = {
 	    .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-	    .pNext = NULL,
 	    .renderPass = r->render_pass,
 	    .framebuffer = framebuffer,
 	    .renderArea =
@@ -401,8 +396,6 @@ renderer_init_descriptor_pool(struct comp_renderer *r)
 
 	VkDescriptorPoolCreateInfo descriptor_pool_info = {
 	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .maxSets = 2,
 	    .poolSizeCount = ARRAY_SIZE(pool_sizes),
 	    .pPoolSizes = pool_sizes,
@@ -429,7 +422,6 @@ _set_image_layout(struct vk_bundle *vk,
 {
 	VkImageMemoryBarrier barrier = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-	    .pNext = NULL,
 	    .srcAccessMask = src_access_mask,
 	    .dstAccessMask = dst_access_mask,
 	    .oldLayout = old_layout,
@@ -454,7 +446,6 @@ _init_cmd_buffer(struct comp_compositor *c,
 
 	VkCommandBufferAllocateInfo cmd_buffer_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-	    .pNext = NULL,
 	    .commandPool = cmd_pool,
 	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 	    .commandBufferCount = 1,
@@ -471,9 +462,6 @@ _init_cmd_buffer(struct comp_compositor *c,
 
 	VkCommandBufferBeginInfo begin_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
-	    .pInheritanceInfo = NULL,
 	};
 	ret = vk->vkBeginCommandBuffer(*out_cmd_buffer, &begin_info);
 	if (ret != VK_SUCCESS) {
@@ -497,20 +485,12 @@ _submit_cmd_buffer(struct comp_compositor *c,
 
 	VkSubmitInfo submitInfo = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-	    .pNext = NULL,
-	    .waitSemaphoreCount = 0,
-	    .pWaitSemaphores = NULL,
-	    .pWaitDstStageMask = NULL,
 	    .commandBufferCount = 1,
 	    .pCommandBuffers = &cmd_buffer,
-	    .signalSemaphoreCount = 0,
-	    .pSignalSemaphores = NULL,
 	};
 
 	VkFenceCreateInfo fence_info = {
 	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	};
 	VkFence fence;
 	ret = vk->vkCreateFence(vk->device, &fence_info, NULL, &fence);
@@ -675,8 +655,6 @@ renderer_create_frame_buffer(struct comp_renderer *r,
 
 	VkFramebufferCreateInfo frame_buffer_info = {
 	    .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .renderPass = r->render_pass,
 	    .attachmentCount = num_attachements,
 	    .pAttachments = attachments,
@@ -715,7 +693,6 @@ renderer_allocate_command_buffers(struct comp_renderer *r, uint32_t count)
 
 	VkCommandBufferAllocateInfo cmd_buffer_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-	    .pNext = NULL,
 	    .commandPool = vk->cmd_pool,
 	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 	    .commandBufferCount = count,
@@ -746,10 +723,6 @@ renderer_create_pipeline_cache(struct comp_renderer *r)
 
 	VkPipelineCacheCreateInfo pipeline_cache_info = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
-	    .initialDataSize = 0,
-	    .pInitialData = NULL,
 	};
 	ret = vk->vkCreatePipelineCache(vk->device, &pipeline_cache_info, NULL,
 	                                &r->pipeline_cache);
@@ -767,8 +740,6 @@ renderer_init_semaphores(struct comp_renderer *r)
 
 	VkSemaphoreCreateInfo info = {
 	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	};
 
 	ret = vk->vkCreateSemaphore(vk->device, &info, NULL,
@@ -838,7 +809,6 @@ renderer_create_render_pass(struct comp_renderer *r)
 
 	VkAttachmentDescription attachments[1] = {
 	    (VkAttachmentDescription){
-	        .flags = 0,
 	        .format = r->c->window->swapchain.surface_format.format,
 	        .samples = VK_SAMPLE_COUNT_1_BIT,
 	        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -856,7 +826,6 @@ renderer_create_render_pass(struct comp_renderer *r)
 	};
 
 	VkSubpassDescription subpass_description = {
-	    .flags = 0,
 	    .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
 	    .inputAttachmentCount = 0,
 	    .pInputAttachments = NULL,
@@ -877,14 +846,11 @@ renderer_create_render_pass(struct comp_renderer *r)
 	        .srcAccessMask = 0,
 	        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
 	                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-	        .dependencyFlags = 0,
 	    },
 	};
 
 	VkRenderPassCreateInfo render_pass_info = {
 	    .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .attachmentCount = ARRAY_SIZE(attachments),
 	    .pAttachments = attachments,
 	    .subpassCount = 1,

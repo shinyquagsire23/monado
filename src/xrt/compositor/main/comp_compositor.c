@@ -547,7 +547,6 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 
 	VkInstanceCreateInfo instance_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-	    .pNext = NULL,
 	    .enabledExtensionCount = ARRAY_SIZE(extension_names),
 	    .ppEnabledExtensionNames = extension_names,
 	};

@@ -394,7 +394,6 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 
 	VkGraphicsPipelineCreateInfo pipeline_info = {
 	    .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-	    .flags = 0,
 	    .stageCount = ARRAY_SIZE(shader_stages),
 	    .pStages = shader_stages,
 	    .pVertexInputState = &vertex_input_state,

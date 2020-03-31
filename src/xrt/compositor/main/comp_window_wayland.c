@@ -224,8 +224,6 @@ comp_window_wayland_create_surface(struct comp_window_wayland *w,
 
 	VkWaylandSurfaceCreateInfoKHR surface_info = {
 	    .sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR,
-	    .pNext = NULL,
-	    .flags = 0,
 	    .display = w->display,
 	    .surface = w->surface,
 	};

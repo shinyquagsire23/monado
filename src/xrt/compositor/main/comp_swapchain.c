@@ -164,7 +164,6 @@ create_image_fd(struct comp_compositor *c,
 	// vkAllocateMemory parameters
 	VkMemoryDedicatedAllocateInfoKHR dedicated_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
-	    .pNext = NULL,
 	    .image = image,
 	    .buffer = VK_NULL_HANDLE,
 	};
