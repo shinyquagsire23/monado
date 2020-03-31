@@ -62,7 +62,7 @@ struct client_vk_compositor
  */
 
 /*!
- * Convinence function to convert a xrt_swapchain to a client_vk_swapchain.
+ * Convenience function to convert a xrt_swapchain to a client_vk_swapchain.
  *
  * @ingroup comp_client
  */
@@ -73,7 +73,7 @@ client_vk_swapchain(struct xrt_swapchain *xsc)
 }
 
 /*!
- * Convinence function to convert a xrt_compositor to a client_vk_compositor.
+ * Convenience function to convert a xrt_compositor to a client_vk_compositor.
  *
  * @ingroup comp_client
  */

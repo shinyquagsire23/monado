@@ -162,7 +162,7 @@ struct comp_compositor
  */
 
 /*!
- * Convinence function to convert a xrt_swapchain to a comp_swapchain.
+ * Convenience function to convert a xrt_swapchain to a comp_swapchain.
  *
  * @ingroup comp_main
  */
@@ -173,7 +173,7 @@ comp_swapchain(struct xrt_swapchain *xsc)
 }
 
 /*!
- * Convinence function to convert a xrt_compositor to a comp_compositor.
+ * Convenience function to convert a xrt_compositor to a comp_compositor.
  *
  * @ingroup comp_main
  */

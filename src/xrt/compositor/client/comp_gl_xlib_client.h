@@ -29,7 +29,7 @@ struct client_gl_xlib_compositor
 };
 
 /*!
- * Convinence function to convert a xrt_compositor to a
+ * Convenience function to convert a xrt_compositor to a
  * client_gl_xlib_compositor.
  *
  * @ingroup comp_client
