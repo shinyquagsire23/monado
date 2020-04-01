@@ -13,11 +13,6 @@
 #include <X11/Xlib-xcb.h>
 #include <X11/extensions/Xrandr.h>
 
-#include <map>
-#include <string>
-#include <vector>
-#include <utility>
-#include <cstring>
 #include <inttypes.h>
 
 #include "util/u_misc.h"
@@ -37,7 +32,7 @@
  */
 struct comp_window_direct_randr_display
 {
-	std::string name;
+	char *name;
 	xcb_randr_output_t output;
 	xcb_randr_mode_info_t primary_mode;
 	VkDisplayKHR display;
@@ -45,7 +40,7 @@ struct comp_window_direct_randr_display
 
 struct comp_window_direct_nvidia_display
 {
-	std::string name;
+	char *name;
 	VkDisplayPropertiesKHR display_properties;
 	VkDisplayKHR display;
 };
@@ -56,14 +51,16 @@ struct comp_window_direct_nvidia_display
  */
 struct comp_window_direct
 {
-	struct comp_window base = comp_window();
+	struct comp_window base;
 
-	Display *dpy = nullptr;
-	xcb_screen_t *screen = nullptr;
+	Display *dpy;
+	xcb_screen_t *screen;
 
-	std::vector<comp_window_direct_randr_display> randr_displays = {};
+	struct comp_window_direct_randr_display *randr_displays;
+	uint16_t num_randr_displays;
 
-	std::vector<comp_window_direct_nvidia_display> nv_displays = {};
+	struct comp_window_direct_nvidia_display *nv_displays;
+	uint16_t num_nv_displays;
 };
 
 
@@ -86,10 +83,10 @@ comp_window_direct_init_randr(struct comp_window *w);
 static bool
 comp_window_direct_init_nvidia(struct comp_window *w);
 
-static comp_window_direct_randr_display *
+static struct comp_window_direct_randr_display *
 comp_window_direct_current_randr_display(struct comp_window_direct *w);
 
-static comp_window_direct_nvidia_display *
+static struct comp_window_direct_nvidia_display *
 comp_window_direct_current_nvidia_display(struct comp_window_direct *w);
 
 static void
@@ -139,10 +136,11 @@ comp_window_direct_update_window_title(struct comp_window *w,
  *
  */
 
-extern "C" struct comp_window *
+struct comp_window *
 comp_window_direct_create(struct comp_compositor *c)
 {
-	auto w = new comp_window_direct();
+	struct comp_window_direct *w =
+	    U_TYPED_CALLOC(struct comp_window_direct);
 
 	w->base.name = "direct";
 	w->base.destroy = comp_window_direct_destroy;
@@ -162,11 +160,11 @@ comp_window_direct_create(struct comp_compositor *c)
 static void
 comp_window_direct_destroy(struct comp_window *w)
 {
-	comp_window_direct *w_direct = (comp_window_direct *)w;
-	vk_bundle *vk = &w->c->vk;
+	struct comp_window_direct *w_direct = (struct comp_window_direct *)w;
+	struct vk_bundle *vk = &w->c->vk;
 
-	for (uint32_t i = 0; i < w_direct->randr_displays.size(); i++) {
-		comp_window_direct_randr_display *d =
+	for (uint32_t i = 0; i < w_direct->num_randr_displays; i++) {
+		struct comp_window_direct_randr_display *d =
 		    &w_direct->randr_displays[i];
 
 		if (d->display == VK_NULL_HANDLE) {
@@ -175,32 +173,40 @@ comp_window_direct_destroy(struct comp_window *w)
 
 		vk->vkReleaseDisplayEXT(vk->physical_device, d->display);
 		d->display = VK_NULL_HANDLE;
+		free(d->name);
 	}
-	for (uint32_t i = 0; i < w_direct->nv_displays.size(); i++) {
-		comp_window_direct_nvidia_display *d =
+	for (uint32_t i = 0; i < w_direct->num_nv_displays; i++) {
+		struct comp_window_direct_nvidia_display *d =
 		    &w_direct->nv_displays[i];
 		d->display = VK_NULL_HANDLE;
+		free(d->name);
 	}
+
+	if (w_direct->nv_displays != NULL)
+		free(w_direct->nv_displays);
+
+	if (w_direct->randr_displays != NULL)
+		free(w_direct->randr_displays);
 
 	if (w_direct->dpy) {
 		XCloseDisplay(w_direct->dpy);
-		w_direct->dpy = nullptr;
+		w_direct->dpy = NULL;
 	}
 
-	delete reinterpret_cast<struct comp_window_direct *>(w);
+	free(w);
 }
 
 static void
 comp_window_direct_list_randr_screens(struct comp_window_direct *w)
 {
-	int display_i = 0;
-	for (const comp_window_direct_randr_display &d : w->randr_displays) {
-		COMP_DEBUG(w->base.c, "%d: %s %dx%d@%.2f", display_i,
-		           d.name.c_str(), d.primary_mode.width,
-		           d.primary_mode.height,
-		           (double)d.primary_mode.dot_clock /
-		               (d.primary_mode.htotal * d.primary_mode.vtotal));
-		display_i++;
+	for (int i = 0; i < w->num_randr_displays; i++) {
+		const struct comp_window_direct_randr_display *d =
+		    &w->randr_displays[i];
+		COMP_DEBUG(
+		    w->base.c, "%d: %s %dx%d@%.2f", i, d->name,
+		    d->primary_mode.width, d->primary_mode.height,
+		    (double)d->primary_mode.dot_clock /
+		        (d->primary_mode.htotal * d->primary_mode.vtotal));
 	}
 }
 
@@ -213,7 +219,7 @@ comp_window_direct_init_randr(struct comp_window *w)
 		return false;
 	}
 
-	comp_window_direct *w_direct = (comp_window_direct *)w;
+	struct comp_window_direct *w_direct = (struct comp_window_direct *)w;
 
 	if (!comp_window_direct_connect(w_direct)) {
 		return false;
@@ -228,33 +234,32 @@ comp_window_direct_init_randr(struct comp_window *w)
 
 	comp_window_direct_get_randr_outputs(w_direct);
 
-	if (w_direct->randr_displays.empty()) {
+	if (w_direct->num_randr_displays == 0) {
 		COMP_ERROR(w->c, "No non-desktop output available.");
 		return false;
 	}
 
-	if (w->c->settings.display > (int)w_direct->randr_displays.size() - 1) {
+	if (w->c->settings.display > (int)w_direct->num_randr_displays - 1) {
 		COMP_DEBUG(w->c,
 		           "Requested display %d, but only %d displays are "
 		           "available.",
 		           w->c->settings.display,
-		           (int)w_direct->randr_displays.size());
+		           w_direct->num_randr_displays);
 
 		w->c->settings.display = 0;
-		comp_window_direct_randr_display *d =
+		struct comp_window_direct_randr_display *d =
 		    comp_window_direct_current_randr_display(w_direct);
-		COMP_DEBUG(w->c, "Selecting '%s' instead.", d->name.c_str());
+		COMP_DEBUG(w->c, "Selecting '%s' instead.", d->name);
 	}
 
 	if (w->c->settings.display < 0) {
 		w->c->settings.display = 0;
-		comp_window_direct_randr_display *d =
+		struct comp_window_direct_randr_display *d =
 		    comp_window_direct_current_randr_display(w_direct);
-		COMP_DEBUG(w->c, "Selecting '%s' first display.",
-		           d->name.c_str());
+		COMP_DEBUG(w->c, "Selecting '%s' first display.", d->name);
 	}
 
-	comp_window_direct_randr_display *d =
+	struct comp_window_direct_randr_display *d =
 	    comp_window_direct_current_randr_display(w_direct);
 	w->c->settings.width = d->primary_mode.width;
 	w->c->settings.height = d->primary_mode.height;
@@ -280,11 +285,24 @@ append_nvidia_entry_on_match(struct comp_window_direct *w,
 	// we have a match with this whitelist entry.
 	w->base.c->settings.width = disp->physicalResolution.width;
 	w->base.c->settings.height = disp->physicalResolution.height;
-	comp_window_direct_nvidia_display d = {
-	    .name = std::string(disp->displayName),
+	struct comp_window_direct_nvidia_display d = {
+	    .name = U_TYPED_ARRAY_CALLOC(char, disp_entry_length + 1),
 	    .display_properties = *disp,
 	    .display = disp->display};
-	w->nv_displays.push_back(d);
+
+	memcpy(d.name, disp->displayName, disp_entry_length);
+	d.name[disp_entry_length] = '\0';
+
+	w->num_nv_displays += 1;
+
+	U_ARRAY_REALLOC_OR_FREE(w->nv_displays,
+	                        struct comp_window_direct_nvidia_display,
+	                        w->num_nv_displays);
+
+	if (w->nv_displays == NULL)
+		COMP_ERROR(w->base.c, "Unable to reallocate randr_displays");
+
+	w->nv_displays[w->num_nv_displays - 1] = d;
 
 	return true;
 }
@@ -298,7 +316,7 @@ comp_window_direct_init_nvidia(struct comp_window *w)
 		return false;
 	}
 
-	comp_window_direct *w_direct = (comp_window_direct *)w;
+	struct comp_window_direct *w_direct = (struct comp_window_direct *)w;
 
 	if (!comp_window_direct_connect(w_direct)) {
 		return false;
@@ -342,28 +360,28 @@ comp_window_direct_init_nvidia(struct comp_window *w)
 	return true;
 }
 
-static comp_window_direct_randr_display *
+static struct comp_window_direct_randr_display *
 comp_window_direct_current_randr_display(struct comp_window_direct *w)
 {
 	int index = w->base.c->settings.display;
 	if (index == -1)
 		index = 0;
 
-	if (w->randr_displays.size() <= (uint32_t)index)
-		return nullptr;
+	if (w->num_randr_displays <= (uint32_t)index)
+		return NULL;
 
 	return &w->randr_displays[index];
 }
 
-static comp_window_direct_nvidia_display *
+static struct comp_window_direct_nvidia_display *
 comp_window_direct_current_nvidia_display(struct comp_window_direct *w)
 {
 	int index = w->base.c->settings.display;
 	if (index == -1)
 		index = 0;
 
-	if (w->nv_displays.size() <= (uint32_t)index)
-		return nullptr;
+	if (w->num_nv_displays <= (uint32_t)index)
+		return NULL;
 
 	return &w->nv_displays[index];
 }
@@ -379,10 +397,10 @@ choose_best_vk_mode_auto(struct comp_window_direct *w,
 {
 	struct
 	{
-		uint16_t width = 0;
-		uint16_t height = 0;
-		float refresh = 0;
-		int index = 0;
+		uint16_t width;
+		uint16_t height;
+		float refresh;
+		int index;
 	} best_mode;
 
 	// First priority: choose mode that maximizes rendered pixels.
@@ -444,8 +462,7 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
 	VkResult ret;
 
 	ret = vk->vkGetDisplayModePropertiesKHR(
-	    w->base.swapchain.vk->physical_device, display, &mode_count,
-	    nullptr);
+	    w->base.swapchain.vk->physical_device, display, &mode_count, NULL);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->base.c, "vkGetDisplayModePropertiesKHR: %s",
 		           vk_result_string(ret));
@@ -454,15 +471,15 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
 
 	COMP_DEBUG(w->base.c, "Found %d modes", mode_count);
 
-	VkDisplayModePropertiesKHR *mode_properties;
-	mode_properties = new VkDisplayModePropertiesKHR[mode_count];
+	VkDisplayModePropertiesKHR *mode_properties =
+	    U_TYPED_ARRAY_CALLOC(VkDisplayModePropertiesKHR, mode_count);
 	ret = vk->vkGetDisplayModePropertiesKHR(
 	    w->base.swapchain.vk->physical_device, display, &mode_count,
 	    mode_properties);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->base.c, "vkGetDisplayModePropertiesKHR: %s",
 		           vk_result_string(ret));
-		delete[] mode_properties;
+		free(mode_properties);
 		return VK_NULL_HANDLE;
 	}
 
@@ -509,7 +526,7 @@ comp_window_direct_get_primary_display_mode(struct comp_window_direct *w,
 
 	w->base.c->settings.nominal_frame_interval_ns = new_frame_interval;
 
-	delete[] mode_properties;
+	free(mode_properties);
 
 	return props.displayMode;
 }
@@ -533,19 +550,18 @@ comp_window_direct_create_surface(struct comp_window_direct *w,
                                   uint32_t width,
                                   uint32_t height)
 {
-	comp_window_direct_randr_display *d =
+	struct comp_window_direct_randr_display *d =
 	    comp_window_direct_current_randr_display(w);
-	comp_window_direct_nvidia_display *nvd =
+	struct comp_window_direct_nvidia_display *nvd =
 	    comp_window_direct_current_nvidia_display(w);
 	struct vk_bundle *vk = w->base.swapchain.vk;
 
 	VkResult ret = VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
-	VkDisplayKHR _display = {};
+	VkDisplayKHR _display = VK_NULL_HANDLE;
 	if (d) {
 		COMP_DEBUG(
-		    w->base.c, "Will use display: %s %dx%d@%.2f",
-		    d->name.c_str(), d->primary_mode.width,
-		    d->primary_mode.height,
+		    w->base.c, "Will use display: %s %dx%d@%.2f", d->name,
+		    d->primary_mode.width, d->primary_mode.height,
 		    (double)d->primary_mode.dot_clock /
 		        (d->primary_mode.htotal * d->primary_mode.vtotal));
 
@@ -559,8 +575,7 @@ comp_window_direct_create_surface(struct comp_window_direct *w,
 	}
 
 	if (nvd) {
-		COMP_DEBUG(w->base.c, "Will use display: %s",
-		           nvd->name.c_str());
+		COMP_DEBUG(w->base.c, "Will use display: %s", nvd->name);
 		ret = comp_window_direct_acquire_xlib_display(w, nvd->display);
 		_display = nvd->display;
 	}
@@ -573,8 +588,7 @@ comp_window_direct_create_surface(struct comp_window_direct *w,
 	// Get plane properties
 	uint32_t plane_property_count;
 	ret = vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
-	    w->base.swapchain.vk->physical_device, &plane_property_count,
-	    nullptr);
+	    w->base.swapchain.vk->physical_device, &plane_property_count, NULL);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->base.c,
 		           "vkGetPhysicalDeviceDisplayPlanePropertiesKHR: %s",
@@ -585,8 +599,8 @@ comp_window_direct_create_surface(struct comp_window_direct *w,
 	COMP_DEBUG(w->base.c, "Found %d plane properites.",
 	           plane_property_count);
 
-	VkDisplayPlanePropertiesKHR *plane_properties =
-	    new VkDisplayPlanePropertiesKHR[plane_property_count];
+	VkDisplayPlanePropertiesKHR *plane_properties = U_TYPED_ARRAY_CALLOC(
+	    VkDisplayPlanePropertiesKHR, plane_property_count);
 
 	ret = vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
 	    w->base.swapchain.vk->physical_device, &plane_property_count,
@@ -595,7 +609,7 @@ comp_window_direct_create_surface(struct comp_window_direct *w,
 		COMP_ERROR(w->base.c,
 		           "vkGetPhysicalDeviceDisplayPlanePropertiesKHR: %s",
 		           vk_result_string(ret));
-		delete[] plane_properties;
+		free(plane_properties);
 		return ret;
 	}
 
@@ -611,7 +625,7 @@ comp_window_direct_create_surface(struct comp_window_direct *w,
 
 	VkDisplaySurfaceCreateInfoKHR surface_info = {
 	    .sType = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR,
-	    .pNext = nullptr,
+	    .pNext = NULL,
 	    .flags = 0,
 	    .displayMode = display_mode,
 	    .planeIndex = plane_index,
@@ -627,9 +641,9 @@ comp_window_direct_create_surface(struct comp_window_direct *w,
 	};
 
 	VkResult result = vk->vkCreateDisplayPlaneSurfaceKHR(
-	    instance, &surface_info, nullptr, surface);
+	    instance, &surface_info, NULL, surface);
 
-	delete[] plane_properties;
+	free(plane_properties);
 
 	return result;
 }
@@ -639,11 +653,9 @@ comp_window_direct_init_swapchain(struct comp_window *w,
                                   uint32_t width,
                                   uint32_t height)
 {
-	comp_window_direct *w_direct = (comp_window_direct *)w;
-	VkResult ret;
+	struct comp_window_direct *w_direct = (struct comp_window_direct *)w;
 
-
-	ret = comp_window_direct_create_surface(
+	VkResult ret = comp_window_direct_create_surface(
 	    w_direct, w->swapchain.vk->instance, &w->swapchain.surface, width,
 	    height);
 	if (ret != VK_SUCCESS) {
@@ -661,8 +673,8 @@ comp_window_direct_init_swapchain(struct comp_window *w,
 static int
 comp_window_direct_connect(struct comp_window_direct *w)
 {
-	w->dpy = XOpenDisplay(nullptr);
-	if (w->dpy == nullptr) {
+	w->dpy = XOpenDisplay(NULL);
+	if (w->dpy == NULL) {
 		COMP_ERROR(w->base.c, "Could not open X display.");
 		return false;
 	}
@@ -747,20 +759,27 @@ append_randr_display(struct comp_window_direct *w,
 		COMP_ERROR(w->base.c, "No mode with id %d found??",
 		           output_modes[0]);
 
-	char *name_str = U_TYPED_ARRAY_CALLOC(char, name_len + 1);
-	memcpy(name_str, name, name_len);
-	name_str[name_len] = '\0';
 
-	comp_window_direct_randr_display d = {
-	    .name = std::string(name_str),
+	struct comp_window_direct_randr_display d = {
+	    .name = U_TYPED_ARRAY_CALLOC(char, name_len + 1),
 	    .output = xcb_output,
 	    .primary_mode = *mode_info,
 	    .display = VK_NULL_HANDLE,
 	};
 
-	free(name_str);
+	memcpy(d.name, name, name_len);
+	d.name[name_len] = '\0';
 
-	w->randr_displays.push_back(d);
+	w->num_randr_displays += 1;
+
+	U_ARRAY_REALLOC_OR_FREE(w->randr_displays,
+	                        struct comp_window_direct_randr_display,
+	                        w->num_randr_displays);
+
+	if (w->randr_displays == NULL)
+		COMP_ERROR(w->base.c, "Unable to reallocate randr_displays");
+
+	w->randr_displays[w->num_randr_displays - 1] = d;
 }
 
 static void
@@ -773,7 +792,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 	xcb_randr_query_version_reply_t *version_reply =
 	    xcb_randr_query_version_reply(connection, version_cookie, NULL);
 
-	if (version_reply == nullptr) {
+	if (version_reply == NULL) {
 		COMP_ERROR(w->base.c, "Could not get RandR version.");
 		return;
 	}
@@ -788,20 +807,20 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 
 	free(version_reply);
 
-	xcb_generic_error_t *error = nullptr;
+	xcb_generic_error_t *error = NULL;
 	xcb_intern_atom_cookie_t non_desktop_cookie = xcb_intern_atom(
 	    connection, 1, strlen("non-desktop"), "non-desktop");
 	xcb_intern_atom_reply_t *non_desktop_reply =
 	    xcb_intern_atom_reply(connection, non_desktop_cookie, &error);
 
-	if (error != nullptr) {
+	if (error != NULL) {
 		COMP_ERROR(w->base.c, "xcb_intern_atom_reply returned error %d",
 		           error->error_code);
 		return;
 	}
 
-	if (non_desktop_reply == nullptr) {
-		COMP_ERROR(w->base.c, "non-desktop reply nullptr");
+	if (non_desktop_reply == NULL) {
+		COMP_ERROR(w->base.c, "non-desktop reply NULL");
 		return;
 	}
 
@@ -814,7 +833,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 	    xcb_randr_get_screen_resources(connection, w->screen->root);
 	xcb_randr_get_screen_resources_reply_t *resources_reply =
 	    xcb_randr_get_screen_resources_reply(connection, resources_cookie,
-	                                         nullptr);
+	                                         NULL);
 	xcb_randr_output_t *xcb_outputs =
 	    xcb_randr_get_screen_resources_outputs(resources_reply);
 
@@ -830,7 +849,7 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 		                              XCB_CURRENT_TIME);
 		xcb_randr_get_output_info_reply_t *output_reply =
 		    xcb_randr_get_output_info_reply(connection, output_cookie,
-		                                    nullptr);
+		                                    NULL);
 
 		// Only outputs with an available mode should be used
 		// (it is possible to see 'ghost' outputs with non-desktop=1).
@@ -844,10 +863,10 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 		prop_cookie = xcb_randr_get_output_property(
 		    connection, xcb_outputs[i], non_desktop_reply->atom,
 		    XCB_ATOM_NONE, 0, 4, 0, 0);
-		xcb_randr_get_output_property_reply_t *prop_reply = nullptr;
+		xcb_randr_get_output_property_reply_t *prop_reply = NULL;
 		prop_reply = xcb_randr_get_output_property_reply(
 		    connection, prop_cookie, &error);
-		if (error != nullptr) {
+		if (error != NULL) {
 			COMP_ERROR(w->base.c,
 			           "xcb_randr_get_output_property_reply "
 			           "returned error %d",
@@ -856,8 +875,8 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 			continue;
 		}
 
-		if (prop_reply == nullptr) {
-			COMP_ERROR(w->base.c, "property reply == nullptr");
+		if (prop_reply == NULL) {
+			COMP_ERROR(w->base.c, "property reply == NULL");
 			free(prop_reply);
 			continue;
 		}
