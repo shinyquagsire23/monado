@@ -64,7 +64,6 @@ struct comp_window_direct
 	std::map<uint32_t, xcb_randr_mode_info_t> randr_modes = {};
 	std::vector<comp_window_direct_randr_display> randr_displays = {};
 
-	std::map<uint32_t, VkDisplayModeKHR> nv_modes;
 	std::vector<comp_window_direct_nvidia_display> nv_displays = {};
 };
 
@@ -163,7 +162,6 @@ comp_window_direct_create(struct comp_compositor *c)
 	w->base.update_window_title = comp_window_direct_update_window_title;
 	w->base.c = c;
 	w->randr_modes.clear();
-	w->nv_modes.clear();
 
 	return &w->base;
 }
