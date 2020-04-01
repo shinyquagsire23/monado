@@ -352,14 +352,12 @@ comp_window_direct_init_nvidia(struct comp_window *w)
 static comp_window_direct_randr_display *
 comp_window_direct_current_randr_display(struct comp_window_direct *w)
 {
-	uint32_t index = w->base.c->settings.display;
-	if (index == (uint32_t)-1) {
+	int index = w->base.c->settings.display;
+	if (index == -1)
 		index = 0;
-	}
 
-	if (w->randr_displays.size() <= index) {
+	if (w->randr_displays.size() <= (uint32_t)index)
 		return nullptr;
-	}
 
 	return &w->randr_displays[index];
 }
@@ -367,14 +365,12 @@ comp_window_direct_current_randr_display(struct comp_window_direct *w)
 static comp_window_direct_nvidia_display *
 comp_window_direct_current_nvidia_display(struct comp_window_direct *w)
 {
-	uint32_t index = w->base.c->settings.display;
-	if (index == (uint32_t)-1) {
+	int index = w->base.c->settings.display;
+	if (index == -1)
 		index = 0;
-	}
 
-	if (w->nv_displays.size() <= index) {
+	if (w->nv_displays.size() <= (uint32_t)index)
 		return nullptr;
-	}
 
 	return &w->nv_displays[index];
 }
