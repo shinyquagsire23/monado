@@ -735,6 +735,47 @@ comp_window_direct_enumerate_randr_modes(
 }
 
 static void
+append_randr_display(struct comp_window_direct *w,
+                     xcb_randr_get_output_info_reply_t *output_reply,
+                     xcb_randr_output_t xcb_output)
+{
+	xcb_randr_mode_t *output_modes =
+	    xcb_randr_get_output_info_modes(output_reply);
+
+	uint8_t *name = xcb_randr_get_output_info_name(output_reply);
+	int name_len = xcb_randr_get_output_info_name_length(output_reply);
+
+	int num_modes = xcb_randr_get_output_info_modes_length(output_reply);
+	if (num_modes == 0) {
+		COMP_ERROR(w->base.c,
+		           "%s does not have any modes "
+		           "available. "
+		           "Check `xrandr --prop`.",
+		           name);
+	}
+
+	if (w->randr_modes.count(output_modes[0]) == 0) {
+		COMP_ERROR(w->base.c, "No mode with id %d found??",
+		           output_modes[0]);
+	}
+
+	char *name_str = U_TYPED_ARRAY_CALLOC(char, name_len + 1);
+	memcpy(name_str, name, name_len);
+	name_str[name_len] = '\0';
+
+	comp_window_direct_randr_display d = {
+	    .name = std::string(name_str),
+	    .output = xcb_output,
+	    .primary_mode = w->randr_modes.at(output_modes[0]),
+	    .display = VK_NULL_HANDLE,
+	};
+
+	free(name_str);
+
+	w->randr_displays.push_back(d);
+}
+
+static void
 comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 {
 	xcb_connection_t *connection = XGetXCBConnection(w->dpy);
@@ -812,14 +853,6 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 			continue;
 		}
 
-		uint8_t *name = xcb_randr_get_output_info_name(output_reply);
-		int name_len =
-		    xcb_randr_get_output_info_name_length(output_reply);
-
-		char *name_str = U_TYPED_ARRAY_CALLOC(char, name_len + 1);
-		memcpy(name_str, name, name_len);
-		name_str[name_len] = '\0';
-
 		// Find the first output that has the non-desktop property set.
 		xcb_randr_get_output_property_cookie_t prop_cookie;
 		prop_cookie = xcb_randr_get_output_property(
@@ -833,14 +866,12 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 			           "xcb_randr_get_output_property_reply "
 			           "returned error %d",
 			           error->error_code);
-			free(name_str);
 			free(prop_reply);
 			continue;
 		}
 
 		if (prop_reply == nullptr) {
 			COMP_ERROR(w->base.c, "property reply == nullptr");
-			free(name_str);
 			free(prop_reply);
 			continue;
 		}
@@ -848,46 +879,17 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 		if (prop_reply->type != XCB_ATOM_INTEGER ||
 		    prop_reply->num_items != 1 || prop_reply->format != 32) {
 			COMP_ERROR(w->base.c, "Invalid non-desktop reply");
-			free(name_str);
 			free(prop_reply);
 			continue;
 		}
 
 		uint8_t non_desktop =
 		    *xcb_randr_get_output_property_data(prop_reply);
-		if (non_desktop == 1) {
-			xcb_randr_mode_t *output_modes =
-			    xcb_randr_get_output_info_modes(output_reply);
-
-			int num_modes = xcb_randr_get_output_info_modes_length(
-			    output_reply);
-			if (num_modes == 0) {
-				COMP_ERROR(w->base.c,
-				           "%s does not have any modes "
-				           "available. "
-				           "Check `xrandr --prop`.",
-				           name_str);
-			}
-
-			if (w->randr_modes.count(output_modes[0]) == 0) {
-				COMP_ERROR(w->base.c,
-				           "No mode with id %d found??",
-				           output_modes[0]);
-			}
-
-			comp_window_direct_randr_display d = {
-			    .name = std::string(name_str),
-			    .output = xcb_outputs[i],
-			    .primary_mode = w->randr_modes.at(output_modes[0]),
-			    .display = VK_NULL_HANDLE,
-			};
-
-			w->randr_displays.push_back(d);
-		}
+		if (non_desktop == 1)
+			append_randr_display(w, output_reply, xcb_outputs[i]);
 
 		free(prop_reply);
 		free(output_reply);
-		free(name_str);
 	}
 
 	free(resources_reply);
