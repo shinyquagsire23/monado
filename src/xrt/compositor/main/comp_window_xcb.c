@@ -11,11 +11,6 @@
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
 
-#include <string>
-#include <vector>
-#include <utility>
-#include <cstring>
-
 #include "util/u_misc.h"
 #include "xrt/xrt_compiler.h"
 #include "main/comp_window.h"
@@ -32,9 +27,18 @@
  */
 struct comp_window_xcb_display
 {
-	std::string name;
-	std::pair<int16_t, int16_t> position;
-	std::pair<uint16_t, uint16_t> size;
+	char *name;
+	struct
+	{
+		int16_t x;
+		int16_t y;
+	} position;
+
+	struct
+	{
+		uint16_t width;
+		uint16_t height;
+	} size;
 };
 
 /*!
@@ -42,16 +46,17 @@ struct comp_window_xcb_display
  */
 struct comp_window_xcb
 {
-	struct comp_window base = comp_window();
+	struct comp_window base;
 
-	xcb_connection_t *connection = nullptr;
-	xcb_window_t window = XCB_NONE;
-	xcb_screen_t *screen = nullptr;
+	xcb_connection_t *connection;
+	xcb_window_t window;
+	xcb_screen_t *screen;
 
-	xcb_atom_t atom_wm_protocols = XCB_NONE;
-	xcb_atom_t atom_wm_delete_window = XCB_NONE;
+	xcb_atom_t atom_wm_protocols;
+	xcb_atom_t atom_wm_delete_window;
 
-	std::vector<comp_window_xcb_display> displays = {};
+	struct comp_window_xcb_display *displays;
+	uint16_t num_displays;
 };
 
 
@@ -68,13 +73,13 @@ static void
 comp_window_xcb_flush(struct comp_window *w);
 
 XRT_MAYBE_UNUSED static void
-comp_window_xcb_list_screens(comp_window_xcb *w, xcb_screen_t *screen);
+comp_window_xcb_list_screens(struct comp_window_xcb *w, xcb_screen_t *screen);
 
 static bool
 comp_window_xcb_init(struct comp_window *w);
 
-static comp_window_xcb_display *
-comp_window_xcb_current_display(comp_window_xcb *w);
+static struct comp_window_xcb_display *
+comp_window_xcb_current_display(struct comp_window_xcb *w);
 
 static bool
 comp_window_xcb_init_swapchain(struct comp_window *w,
@@ -82,27 +87,28 @@ comp_window_xcb_init_swapchain(struct comp_window *w,
                                uint32_t height);
 
 static int
-comp_window_xcb_connect(comp_window_xcb *w);
+comp_window_xcb_connect(struct comp_window_xcb *w);
 
 static void
-comp_window_xcb_create_window(comp_window_xcb *w,
+comp_window_xcb_create_window(struct comp_window_xcb *w,
                               uint32_t width,
                               uint32_t height);
 
 static void
-comp_window_xcb_get_randr_outputs(comp_window_xcb *w);
+comp_window_xcb_get_randr_outputs(struct comp_window_xcb *w);
 
 static void
-comp_window_xcb_connect_delete_event(comp_window_xcb *w);
+comp_window_xcb_connect_delete_event(struct comp_window_xcb *w);
 
 static void
-comp_window_xcb_set_full_screen(comp_window_xcb *w);
+comp_window_xcb_set_full_screen(struct comp_window_xcb *w);
 
 static xcb_atom_t
-comp_window_xcb_get_atom(comp_window_xcb *w, const char *name);
+comp_window_xcb_get_atom(struct comp_window_xcb *w, const char *name);
 
 static VkResult
-comp_window_xcb_create_surface(comp_window_xcb *w, VkSurfaceKHR *surface);
+comp_window_xcb_create_surface(struct comp_window_xcb *w,
+                               VkSurfaceKHR *surface);
 
 static void
 comp_window_xcb_update_window_title(struct comp_window *w, const char *title);
@@ -114,10 +120,10 @@ comp_window_xcb_update_window_title(struct comp_window *w, const char *title);
  *
  */
 
-extern "C" struct comp_window *
+struct comp_window *
 comp_window_xcb_create(struct comp_compositor *c)
 {
-	auto w = new comp_window_xcb();
+	struct comp_window_xcb *w = U_TYPED_CALLOC(struct comp_window_xcb);
 
 	w->base.name = "xcb";
 	w->base.destroy = comp_window_xcb_destroy;
@@ -133,26 +139,30 @@ comp_window_xcb_create(struct comp_compositor *c)
 static void
 comp_window_xcb_destroy(struct comp_window *w)
 {
-	comp_window_xcb *w_xcb = (comp_window_xcb *)w;
+	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)w;
 	xcb_destroy_window(w_xcb->connection, w_xcb->window);
 	xcb_disconnect(w_xcb->connection);
 
-	delete w;
+	for (uint16_t i = 0; i > w_xcb->num_displays; i++)
+		free(w_xcb->displays[i].name);
+
+	free(w_xcb->displays);
+
+	free(w);
 }
 
 static void
-comp_window_xcb_list_screens(comp_window_xcb *w, xcb_screen_t *screen)
+comp_window_xcb_list_screens(struct comp_window_xcb *w, xcb_screen_t *screen)
 {
 	COMP_DEBUG(w->base.c, "Screen 0 %dx%d", screen->width_in_pixels,
 	           screen->height_in_pixels);
 	comp_window_xcb_get_randr_outputs(w);
 
-	int display_i = 0;
-	for (const comp_window_xcb_display &d : w->displays) {
-		COMP_DEBUG(w->base.c, "%d: %s %dx%d [%d, %d]", display_i,
-		           d.name.c_str(), d.size.first, d.size.second,
-		           d.position.first, d.position.second);
-		display_i++;
+	for (uint16_t i = 0; i < w->num_displays; i++) {
+		struct comp_window_xcb_display *d = &w->displays[i];
+		COMP_DEBUG(w->base.c, "%d: %s %dx%d [%d, %d]", i, d->name,
+		           d->size.width, d->size.height, d->position.x,
+		           d->position.y);
 	}
 }
 
@@ -173,27 +183,25 @@ comp_window_xcb_init(struct comp_window *w)
 	if (w->c->settings.fullscreen) {
 		comp_window_xcb_get_randr_outputs(w_xcb);
 
-		if (w->c->settings.display > (int)w_xcb->displays.size() - 1) {
+		if (w->c->settings.display > (int)w_xcb->num_displays - 1) {
 			COMP_DEBUG(w->c,
 			           "Requested display %d, but only %d "
 			           "displays are available.",
-			           w->c->settings.display,
-			           (int)w_xcb->displays.size());
+			           w->c->settings.display, w_xcb->num_displays);
 
 			w->c->settings.display = 0;
-			comp_window_xcb_display *d =
+			struct comp_window_xcb_display *d =
 			    comp_window_xcb_current_display(w_xcb);
-			COMP_DEBUG(w->c, "Selecting '%s' instead.",
-			           d->name.c_str());
+			COMP_DEBUG(w->c, "Selecting '%s' instead.", d->name);
 		}
 
 		if (w->c->settings.display == -1)
 			w->c->settings.display = 0;
 
-		comp_window_xcb_display *d =
+		struct comp_window_xcb_display *d =
 		    comp_window_xcb_current_display(w_xcb);
-		w->c->settings.width = d->size.first;
-		w->c->settings.height = d->size.second;
+		w->c->settings.width = d->size.width;
+		w->c->settings.height = d->size.height;
 		// TODO: size cb
 		// set_size_cb(settings->width, settings->height);
 	}
@@ -211,8 +219,8 @@ comp_window_xcb_init(struct comp_window *w)
 	return true;
 }
 
-static comp_window_xcb_display *
-comp_window_xcb_current_display(comp_window_xcb *w)
+static struct comp_window_xcb_display *
+comp_window_xcb_current_display(struct comp_window_xcb *w)
 {
 	return &w->displays[w->base.c->settings.display];
 }
@@ -226,7 +234,7 @@ comp_window_xcb_init_swapchain(struct comp_window *w,
                                uint32_t width,
                                uint32_t height)
 {
-	comp_window_xcb *w_xcb = (comp_window_xcb *)w;
+	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)w;
 	VkResult ret;
 
 	ret = comp_window_xcb_create_surface(w_xcb, &w->swapchain.surface);
@@ -244,14 +252,14 @@ comp_window_xcb_init_swapchain(struct comp_window *w,
 }
 
 static int
-comp_window_xcb_connect(comp_window_xcb *w)
+comp_window_xcb_connect(struct comp_window_xcb *w)
 {
-	w->connection = xcb_connect(nullptr, nullptr);
+	w->connection = xcb_connect(NULL, NULL);
 	return !xcb_connection_has_error(w->connection);
 }
 
 static void
-comp_window_xcb_create_window(comp_window_xcb *w,
+comp_window_xcb_create_window(struct comp_window_xcb *w,
                               uint32_t width,
                               uint32_t height)
 {
@@ -261,8 +269,8 @@ comp_window_xcb_create_window(comp_window_xcb *w,
 	int y = 0;
 
 	if (w->base.c->settings.fullscreen) {
-		x = comp_window_xcb_current_display(w)->position.first;
-		y = comp_window_xcb_current_display(w)->position.second;
+		x = comp_window_xcb_current_display(w)->position.x;
+		y = comp_window_xcb_current_display(w)->position.y;
 	}
 
 	uint32_t value_list = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
@@ -274,29 +282,31 @@ comp_window_xcb_create_window(comp_window_xcb *w,
 }
 
 static void
-comp_window_xcb_get_randr_outputs(comp_window_xcb *w)
+comp_window_xcb_get_randr_outputs(struct comp_window_xcb *w)
 {
 	xcb_randr_get_screen_resources_cookie_t resources_cookie =
 	    xcb_randr_get_screen_resources(w->connection, w->screen->root);
 	xcb_randr_get_screen_resources_reply_t *resources_reply =
 	    xcb_randr_get_screen_resources_reply(w->connection,
-	                                         resources_cookie, nullptr);
+	                                         resources_cookie, NULL);
 	xcb_randr_output_t *xcb_outputs =
 	    xcb_randr_get_screen_resources_outputs(resources_reply);
 
-	int count =
+	w->num_displays =
 	    xcb_randr_get_screen_resources_outputs_length(resources_reply);
-	if (count < 1) {
+	if (w->num_displays < 1)
 		COMP_ERROR(w->base.c, "Failed to retrieve randr outputs");
-	}
 
-	for (int i = 0; i < count; i++) {
+	w->displays =
+	    calloc(w->num_displays, sizeof(struct comp_window_xcb_display));
+
+	for (int i = 0; i < w->num_displays; i++) {
 		xcb_randr_get_output_info_cookie_t output_cookie =
 		    xcb_randr_get_output_info(w->connection, xcb_outputs[i],
 		                              XCB_CURRENT_TIME);
 		xcb_randr_get_output_info_reply_t *output_reply =
 		    xcb_randr_get_output_info_reply(w->connection,
-		                                    output_cookie, nullptr);
+		                                    output_cookie, NULL);
 
 		if (output_reply->connection !=
 		        XCB_RANDR_CONNECTION_CONNECTED ||
@@ -310,32 +320,29 @@ comp_window_xcb_get_randr_outputs(comp_window_xcb *w)
 		                            XCB_CURRENT_TIME);
 		xcb_randr_get_crtc_info_reply_t *crtc_reply =
 		    xcb_randr_get_crtc_info_reply(w->connection, crtc_cookie,
-		                                  nullptr);
+		                                  NULL);
 
 		uint8_t *name = xcb_randr_get_output_info_name(output_reply);
 		int name_len =
 		    xcb_randr_get_output_info_name_length(output_reply);
 
-		char *name_str = U_TYPED_ARRAY_CALLOC(char, name_len + 1);
-		memcpy(name_str, name, name_len);
-		name_str[name_len] = '\0';
-
-		struct comp_window_xcb_display d = {};
-		d.name = std::string(name_str);
-		d.position = {crtc_reply->x, crtc_reply->y};
-		d.size = {crtc_reply->width, crtc_reply->height};
-		w->displays.push_back(d);
+		w->displays[i] = (struct comp_window_xcb_display){
+		    .name = U_TYPED_ARRAY_CALLOC(char, name_len + 1),
+		    .position = {crtc_reply->x, crtc_reply->y},
+		    .size = {crtc_reply->width, crtc_reply->height},
+		};
+		memcpy(w->displays[i].name, name, name_len);
+		w->displays[i].name[name_len] = '\0';
 
 		free(crtc_reply);
 		free(output_reply);
-		free(name_str);
 	}
 
 	free(resources_reply);
 }
 
 static void
-comp_window_xcb_connect_delete_event(comp_window_xcb *w)
+comp_window_xcb_connect_delete_event(struct comp_window_xcb *w)
 {
 	w->atom_wm_protocols = comp_window_xcb_get_atom(w, "WM_PROTOCOLS");
 	w->atom_wm_delete_window =
@@ -346,7 +353,7 @@ comp_window_xcb_connect_delete_event(comp_window_xcb *w)
 }
 
 static void
-comp_window_xcb_set_full_screen(comp_window_xcb *w)
+comp_window_xcb_set_full_screen(struct comp_window_xcb *w)
 {
 	xcb_atom_t atom_wm_state = comp_window_xcb_get_atom(w, "_NET_WM_STATE");
 	xcb_atom_t atom_wm_fullscreen =
@@ -357,7 +364,7 @@ comp_window_xcb_set_full_screen(comp_window_xcb *w)
 }
 
 static xcb_atom_t
-comp_window_xcb_get_atom(comp_window_xcb *w, const char *name)
+comp_window_xcb_get_atom(struct comp_window_xcb *w, const char *name)
 {
 	xcb_intern_atom_cookie_t cookie;
 	xcb_intern_atom_reply_t *reply;
@@ -376,15 +383,13 @@ comp_window_xcb_get_atom(comp_window_xcb *w, const char *name)
 }
 
 static VkResult
-comp_window_xcb_create_surface(comp_window_xcb *w, VkSurfaceKHR *surface)
+comp_window_xcb_create_surface(struct comp_window_xcb *w, VkSurfaceKHR *surface)
 {
 	struct vk_bundle *vk = w->base.swapchain.vk;
 	VkResult ret;
 
 	VkXcbSurfaceCreateInfoKHR surface_info = {
 	    .sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
-	    .pNext = nullptr,
-	    .flags = 0,
 	    .connection = w->connection,
 	    .window = w->window,
 	};
@@ -403,7 +408,7 @@ comp_window_xcb_create_surface(comp_window_xcb *w, VkSurfaceKHR *surface)
 static void
 comp_window_xcb_update_window_title(struct comp_window *w, const char *title)
 {
-	comp_window_xcb *w_xcb = (comp_window_xcb *)w;
+	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)w;
 	xcb_change_property(w_xcb->connection, XCB_PROP_MODE_REPLACE,
 	                    w_xcb->window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8,
 	                    strlen(title), title);

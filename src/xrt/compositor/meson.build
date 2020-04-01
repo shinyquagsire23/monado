@@ -28,7 +28,7 @@ compositor_srcs = [
 compile_args = []
 
 if build_xcb
-	compositor_srcs += ['main/comp_window_xcb.cpp']
+	compositor_srcs += ['main/comp_window_xcb.c']
 	compositor_deps += [xcb]
 endif
 

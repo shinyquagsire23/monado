@@ -81,7 +81,7 @@ if(BUILD_COMPOSITOR_MAIN)
 
 	if(BUILD_WITH_XCB)
 		list(APPEND MAIN_SOURCE_FILES
-			main/comp_window_xcb.cpp
+			main/comp_window_xcb.c
 			)
 	endif()
 	if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
