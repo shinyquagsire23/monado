@@ -61,7 +61,6 @@ struct comp_window_direct
 	Display *dpy = nullptr;
 	xcb_screen_t *screen = nullptr;
 
-	std::map<uint32_t, xcb_randr_mode_info_t> randr_modes = {};
 	std::vector<comp_window_direct_randr_display> randr_displays = {};
 
 	std::vector<comp_window_direct_nvidia_display> nv_displays = {};
@@ -127,11 +126,6 @@ comp_window_direct_get_xlib_randr_output(struct comp_window_direct *w,
                                          RROutput output);
 
 static void
-comp_window_direct_enumerate_randr_modes(
-    struct comp_window_direct *w,
-    xcb_randr_get_screen_resources_reply_t *resources_reply);
-
-static void
 comp_window_direct_get_randr_outputs(struct comp_window_direct *w);
 
 static void
@@ -161,7 +155,6 @@ comp_window_direct_create(struct comp_compositor *c)
 	w->base.init_swapchain = comp_window_direct_init_swapchain;
 	w->base.update_window_title = comp_window_direct_update_window_title;
 	w->base.c = c;
-	w->randr_modes.clear();
 
 	return &w->base;
 }
@@ -720,23 +713,9 @@ comp_window_direct_get_xlib_randr_output(struct comp_window_direct *w,
 }
 
 static void
-comp_window_direct_enumerate_randr_modes(
-    struct comp_window_direct *w,
-    xcb_randr_get_screen_resources_reply_t *resources_reply)
-{
-	xcb_randr_mode_info_t *mode_infos =
-	    xcb_randr_get_screen_resources_modes(resources_reply);
-
-	int n = xcb_randr_get_screen_resources_modes_length(resources_reply);
-	for (int i = 0; i < n; i++)
-		w->randr_modes.insert(
-		    std::pair<uint32_t, xcb_randr_mode_info_t>(mode_infos[i].id,
-		                                               mode_infos[i]));
-}
-
-static void
 append_randr_display(struct comp_window_direct *w,
                      xcb_randr_get_output_info_reply_t *output_reply,
+                     xcb_randr_get_screen_resources_reply_t *resources_reply,
                      xcb_randr_output_t xcb_output)
 {
 	xcb_randr_mode_t *output_modes =
@@ -754,10 +733,19 @@ append_randr_display(struct comp_window_direct *w,
 		           name);
 	}
 
-	if (w->randr_modes.count(output_modes[0]) == 0) {
+	xcb_randr_mode_info_t *mode_infos =
+	    xcb_randr_get_screen_resources_modes(resources_reply);
+
+	int n = xcb_randr_get_screen_resources_modes_length(resources_reply);
+
+	xcb_randr_mode_info_t *mode_info = NULL;
+	for (int i = 0; i < n; i++)
+		if (mode_infos[i].id == output_modes[0])
+			mode_info = &mode_infos[i];
+
+	if (mode_info == NULL)
 		COMP_ERROR(w->base.c, "No mode with id %d found??",
 		           output_modes[0]);
-	}
 
 	char *name_str = U_TYPED_ARRAY_CALLOC(char, name_len + 1);
 	memcpy(name_str, name, name_len);
@@ -766,7 +754,7 @@ append_randr_display(struct comp_window_direct *w,
 	comp_window_direct_randr_display d = {
 	    .name = std::string(name_str),
 	    .output = xcb_output,
-	    .primary_mode = w->randr_modes.at(output_modes[0]),
+	    .primary_mode = *mode_info,
 	    .display = VK_NULL_HANDLE,
 	};
 
@@ -830,8 +818,6 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 	xcb_randr_output_t *xcb_outputs =
 	    xcb_randr_get_screen_resources_outputs(resources_reply);
 
-	comp_window_direct_enumerate_randr_modes(w, resources_reply);
-
 	int count =
 	    xcb_randr_get_screen_resources_outputs_length(resources_reply);
 	if (count < 1) {
@@ -886,7 +872,8 @@ comp_window_direct_get_randr_outputs(struct comp_window_direct *w)
 		uint8_t non_desktop =
 		    *xcb_randr_get_output_property_data(prop_reply);
 		if (non_desktop == 1)
-			append_randr_display(w, output_reply, xcb_outputs[i]);
+			append_randr_display(w, output_reply, resources_reply,
+			                     xcb_outputs[i]);
 
 		free(prop_reply);
 		free(output_reply);
