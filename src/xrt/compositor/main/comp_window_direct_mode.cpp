@@ -314,9 +314,7 @@ comp_window_direct_init_nvidia(struct comp_window *w)
 	for (uint32_t i = 0; i < display_count; i++) {
 		struct VkDisplayPropertiesKHR disp = *(display_props + i);
 		// check this display against our whitelist
-		uint32_t wl_elements = sizeof(NV_DIRECT_WHITELIST) /
-		                       sizeof(NV_DIRECT_WHITELIST[0]);
-		for (uint32_t j = 0; j < wl_elements; j++) {
+		for (uint32_t j = 0; j < ARRAY_SIZE(NV_DIRECT_WHITELIST); j++) {
 			unsigned long wl_entry_length =
 			    strlen(NV_DIRECT_WHITELIST[j]);
 			unsigned long disp_entry_length =
