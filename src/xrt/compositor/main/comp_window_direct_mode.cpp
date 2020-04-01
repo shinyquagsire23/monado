@@ -272,6 +272,31 @@ comp_window_direct_init_randr(struct comp_window *w)
 }
 
 static bool
+append_nvidia_entry_on_match(struct comp_window_direct *w,
+                             const char *wl_entry,
+                             struct VkDisplayPropertiesKHR *disp)
+{
+	unsigned long wl_entry_length = strlen(wl_entry);
+	unsigned long disp_entry_length = strlen(disp->displayName);
+	if (disp_entry_length < wl_entry_length)
+		return false;
+
+	if (strncmp(wl_entry, disp->displayName, wl_entry_length) != 0)
+		return false;
+
+	// we have a match with this whitelist entry.
+	w->base.c->settings.width = disp->physicalResolution.width;
+	w->base.c->settings.height = disp->physicalResolution.height;
+	comp_window_direct_nvidia_display d = {
+	    .name = std::string(disp->displayName),
+	    .display_properties = *disp,
+	    .display = disp->display};
+	w->nv_displays.push_back(d);
+
+	return true;
+}
+
+static bool
 comp_window_direct_init_nvidia(struct comp_window *w)
 {
 	// Sanity check.
@@ -310,35 +335,13 @@ comp_window_direct_init_nvidia(struct comp_window *w)
 	}
 
 	// TODO: what if we have multiple whitelisted HMD displays connected?
-
 	for (uint32_t i = 0; i < display_count; i++) {
 		struct VkDisplayPropertiesKHR disp = *(display_props + i);
 		// check this display against our whitelist
-		for (uint32_t j = 0; j < ARRAY_SIZE(NV_DIRECT_WHITELIST); j++) {
-			unsigned long wl_entry_length =
-			    strlen(NV_DIRECT_WHITELIST[j]);
-			unsigned long disp_entry_length =
-			    strlen(disp.displayName);
-			if (disp_entry_length >= wl_entry_length) {
-				if (strncmp(NV_DIRECT_WHITELIST[j],
-				            disp.displayName,
-				            wl_entry_length) == 0) {
-					// we have a match with this whitelist
-					// entry.
-					w->c->settings.width =
-					    disp.physicalResolution.width;
-					w->c->settings.height =
-					    disp.physicalResolution.height;
-					comp_window_direct_nvidia_display d = {
-					    .name =
-					        std::string(disp.displayName),
-					    .display_properties = disp,
-					    .display = disp.display};
-					w_direct->nv_displays.push_back(d);
-					break;
-				}
-			}
-		}
+		for (uint32_t j = 0; j < ARRAY_SIZE(NV_DIRECT_WHITELIST); j++)
+			if (append_nvidia_entry_on_match(
+			        w_direct, NV_DIRECT_WHITELIST[j], &disp))
+				break;
 	}
 
 	free(display_props);
