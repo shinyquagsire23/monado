@@ -325,12 +325,16 @@ comp_window_direct_init_nvidia(struct comp_window *w)
 	struct vk_bundle comp_vk = w->c->vk;
 
 	// find our display using nvidia whitelist, enumerate its modes, and
-	// pick the best one
-	// get a list of attached displays
+	// pick the best one get a list of attached displays
 	uint32_t display_count;
 	if (comp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(
 	        comp_vk.physical_device, &display_count, NULL) != VK_SUCCESS) {
 		COMP_ERROR(w->c, "Failed to get vulkan display count");
+		return false;
+	}
+
+	if (display_count == 0) {
+		COMP_ERROR(w->c, "NVIDIA: No Vulkan displays found.");
 		return false;
 	}
 
