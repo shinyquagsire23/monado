@@ -23,7 +23,6 @@ add_project_arguments(cc.get_supported_arguments([
 
 add_project_arguments(cpp.get_supported_arguments([
 	'-D_XOPEN_SOURCE=700',
-	'-Wno-pedantic',
 	'-Wno-unused-parameter',
 	'-Wno-deprecated-copy', # Eigen
 ]), language: 'cpp')
