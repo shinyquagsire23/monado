@@ -68,7 +68,6 @@ p_libuvc_probe(struct prober *p)
 		uint8_t addr = uvc_get_device_address(device);
 		uint16_t vendor = desc->idVendor;
 		uint16_t product = desc->idProduct;
-		uvc_free_device_descriptor(desc);
 
 		ret = p_dev_get_usb_dev(p, bus, addr, vendor, product, &pdev);
 
@@ -78,8 +77,14 @@ p_libuvc_probe(struct prober *p)
 		       "\t\tvendor_id:  %04x\n"
 		       "\t\tproduct_id: %04x\n"
 		       "\t\tbus:        %i\n"
-		       "\t\taddr:       %i",
-		       (void *)pdev, ret, vendor, product, bus, addr);
+		       "\t\taddr:       %i\n"
+		       "\t\tserial:     %s\n"
+		       "\t\tmanuf:      %s\n"
+		       "\t\tproduct:    %s",
+		       (void *)pdev, ret, vendor, product, bus, addr,
+		       desc->serialNumber, desc->manufacturer, desc->product);
+
+		uvc_free_device_descriptor(desc);
 
 		if (ret != 0) {
 			P_ERROR(p, "p_dev_get_usb_device failed!");
