@@ -27,6 +27,9 @@ extern "C" {
 XRT_MAYBE_UNUSED static const char *NV_DIRECT_WHITELIST[] = {
     "Sony SIE  HMD *08",
     "HTC Corporation HTC-VIVE",
+    "HTC Corporation VIVE Pro",
+    "Oculus VR Inc. Rift", /* Matches DK1, DK2 and CV1 */
+    "Valve Corporation Index HMD",
 };
 
 /*!
