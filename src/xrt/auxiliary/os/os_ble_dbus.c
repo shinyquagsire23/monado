@@ -24,6 +24,21 @@
 
 /*
  *
+ * Structs.
+ *
+ */
+
+struct ble_notify
+{
+	struct os_ble_device base;
+	DBusConnection *conn;
+	DBusError err;
+	int fd;
+};
+
+
+/*
+ *
  * Send helpers.
  *
  */
@@ -622,20 +637,85 @@ get_path_to_notify_char(DBusConnection *conn,
 	return 0;
 }
 
+static int
+init_ble_notify(const char *dev_uuid,
+                const char *char_uuid,
+                struct ble_notify *bledev)
+{
+	DBusMessage *msg;
+
+	dbus_error_init(&bledev->err);
+	bledev->conn = dbus_bus_get(DBUS_BUS_SYSTEM, &bledev->err);
+	if (dbus_error_is_set(&bledev->err)) {
+		fprintf(stderr, "DBUS Connection Error: %s\n",
+		        bledev->err.message);
+		dbus_error_free(&bledev->err);
+	}
+	if (bledev->conn == NULL) {
+		return -1;
+	}
+
+	char dbus_address[256]; // should be long enough
+	XRT_MAYBE_UNUSED ssize_t written =
+	    get_path_to_notify_char(bledev->conn, dev_uuid, char_uuid,
+	                            dbus_address, sizeof(dbus_address));
+	if (written == 0) {
+		return -1;
+	} else if (written < 0) {
+		return -1;
+	}
+
+	msg = dbus_message_new_method_call(
+	    "org.bluez",                     // target for the method call
+	    dbus_address,                    // object to call on
+	    "org.bluez.GattCharacteristic1", // interface to call on
+	    "AcquireNotify");                // method name
+	if (msg == NULL) {
+		fprintf(stderr, "Message Null after construction\n");
+		return -1;
+	}
+
+	// AcquireNotify has a argument of Array of Dicts.
+	add_empty_dict_sv(msg);
+
+	// Send the message, consumes our message and returns what we received.
+	if (send_message(bledev->conn, &bledev->err, &msg) != 0) {
+		return -1;
+	}
+
+	DBusMessageIter args;
+	char *response = NULL;
+	dbus_message_iter_init(msg, &args);
+	while (true) {
+		int type = dbus_message_iter_get_arg_type(&args);
+		if (type == DBUS_TYPE_INVALID) {
+			break;
+		} else if (type == DBUS_TYPE_STRING) {
+			dbus_message_iter_get_basic(&args, &response);
+			printf("DBus call returned message: %s\n", response);
+		} else if (type == DBUS_TYPE_UNIX_FD) {
+			dbus_message_iter_get_basic(&args, &bledev->fd);
+		}
+		dbus_message_iter_next(&args);
+	}
+
+	// free reply
+	dbus_message_unref(msg);
+
+	// We didn't get a fd.
+	if (bledev->fd == -1) {
+		return -1;
+	}
+
+	return 0;
+}
+
 
 /*
  *
  * BLE notify object implementation.
  *
  */
-
-struct ble_notify
-{
-	struct os_ble_device base;
-	DBusConnection *conn;
-	DBusError err;
-	int fd;
-};
 
 static int
 os_ble_notify_read(struct os_ble_device *bdev,
@@ -684,6 +764,7 @@ os_ble_notify_destroy(struct os_ble_device *bdev)
 	}
 
 	if (dev->conn != NULL) {
+		dbus_error_free(&dev->err);
 		dbus_connection_unref(dev->conn);
 		dev->conn = NULL;
 	}
@@ -696,75 +777,13 @@ os_ble_notify_open(const char *dev_uuid,
                    const char *char_uuid,
                    struct os_ble_device **out_ble)
 {
-	DBusMessage *msg;
-
 	struct ble_notify *bledev = U_TYPED_CALLOC(struct ble_notify);
 	bledev->base.read = os_ble_notify_read;
 	bledev->base.destroy = os_ble_notify_destroy;
 	bledev->fd = -1;
 
-	dbus_error_init(&bledev->err);
-	bledev->conn = dbus_bus_get(DBUS_BUS_SYSTEM, &bledev->err);
-	if (dbus_error_is_set(&bledev->err)) {
-		fprintf(stderr, "DBUS Connection Error: %s\n",
-		        bledev->err.message);
-		dbus_error_free(&bledev->err);
-	}
-	if (bledev->conn == NULL) {
-		os_ble_notify_destroy(&bledev->base);
-		return -1;
-	}
-
-	char dbus_address[256]; // should be long enough
-	XRT_MAYBE_UNUSED ssize_t written =
-	    get_path_to_notify_char(bledev->conn, dev_uuid, char_uuid,
-	                            dbus_address, sizeof(dbus_address));
-	if (written == 0) {
-		return 0;
-	} else if (written < 0) {
-		return -1;
-	}
-
-	msg = dbus_message_new_method_call(
-	    "org.bluez",                     // target for the method call
-	    dbus_address,                    // object to call on
-	    "org.bluez.GattCharacteristic1", // interface to call on
-	    "AcquireNotify");                // method name
-	if (msg == NULL) {
-		fprintf(stderr, "Message Null after construction\n");
-		os_ble_notify_destroy(&bledev->base);
-		return -1;
-	}
-
-	// AcquireNotify has a argument of Array of Dicts.
-	add_empty_dict_sv(msg);
-
-	// Send the message, consumes our message and returns what we received.
-	if (send_message(bledev->conn, &bledev->err, &msg) != 0) {
-		return -1;
-	}
-
-	DBusMessageIter args;
-	char *response = NULL;
-	dbus_message_iter_init(msg, &args);
-	while (true) {
-		int type = dbus_message_iter_get_arg_type(&args);
-		if (type == DBUS_TYPE_INVALID) {
-			break;
-		} else if (type == DBUS_TYPE_STRING) {
-			dbus_message_iter_get_basic(&args, &response);
-			printf("DBus call returned message: %s\n", response);
-		} else if (type == DBUS_TYPE_UNIX_FD) {
-			dbus_message_iter_get_basic(&args, &bledev->fd);
-		}
-		dbus_message_iter_next(&args);
-	}
-
-	// free reply
-	dbus_message_unref(msg);
-
-	// We didn't get a fd.
-	if (bledev->fd == -1) {
+	int ret = init_ble_notify(dev_uuid, char_uuid, bledev);
+	if (ret <= 0) {
 		os_ble_notify_destroy(&bledev->base);
 		return -1;
 	}
