@@ -653,11 +653,69 @@ get_path_to_notify_char(DBusConnection *conn,
 }
 
 static int
+has_dbus_name(DBusConnection *conn, const char *name)
+{
+	DBusMessage *msg;
+	DBusError err;
+
+	msg = dbus_message_new_method_call(
+	    "org.freedesktop.DBus",  // target for the method call
+	    "/org/freedesktop/DBus", // object to call on
+	    "org.freedesktop.DBus",  // interface to call on
+	    "ListNames");            // method name
+	if (send_message(conn, &err, &msg) != 0) {
+		return -1;
+	}
+
+	DBusMessageIter args;
+	dbus_message_iter_init(msg, &args);
+
+	// Check if this is a error message.
+	int type = dbus_message_iter_get_arg_type(&args);
+	if (type == DBUS_TYPE_STRING) {
+		char *response = NULL;
+		dbus_message_iter_get_basic(&args, &response);
+		fprintf(stderr, "Error getting calling ListNames:\n%s\n",
+		        response);
+		response = NULL;
+
+		// free reply
+		dbus_message_unref(msg);
+		return -1;
+	}
+
+	DBusMessageIter first_elm;
+	int ret =
+	    array_get_first_elem_of_type(&args, DBUS_TYPE_STRING, &first_elm);
+	if (ret < 0) {
+		// free reply
+		dbus_message_unref(msg);
+		return -1;
+	}
+
+	for_each(elm, first_elm)
+	{
+		char *response = NULL;
+		dbus_message_iter_get_basic(&elm, &response);
+		if (strcmp(response, name) == 0) {
+			// free reply
+			dbus_message_unref(msg);
+			return 0;
+		}
+	}
+
+	// free reply
+	dbus_message_unref(msg);
+	return -1;
+}
+
+static int
 init_ble_notify(const char *dev_uuid,
                 const char *char_uuid,
                 struct ble_notify *bledev)
 {
 	DBusMessage *msg;
+	int ret;
 
 	dbus_error_init(&bledev->err);
 	bledev->conn = dbus_bus_get(DBUS_BUS_SYSTEM, &bledev->err);
@@ -667,6 +725,12 @@ init_ble_notify(const char *dev_uuid,
 		dbus_error_free(&bledev->err);
 	}
 	if (bledev->conn == NULL) {
+		return -1;
+	}
+
+	// Check if org.bluez is running.
+	ret = has_dbus_name(bledev->conn, "org.bluez");
+	if (ret != 0) {
 		return -1;
 	}
 
