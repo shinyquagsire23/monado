@@ -593,8 +593,23 @@ get_path_to_notify_char(DBusConnection *conn,
 		return -1;
 	}
 
-	DBusMessageIter args, first_elm;
+	DBusMessageIter args;
 	dbus_message_iter_init(msg, &args);
+
+	// Check if this is a error message.
+	int type = dbus_message_iter_get_arg_type(&args);
+	if (type == DBUS_TYPE_STRING) {
+		char *response = NULL;
+		dbus_message_iter_get_basic(&args, &response);
+		fprintf(stderr, "Error getting objects:\n%s\n", response);
+		response = NULL;
+
+		// free reply
+		dbus_message_unref(msg);
+		return -1;
+	}
+
+	DBusMessageIter first_elm;
 	int ret = array_get_first_elem_of_type(&args, DBUS_TYPE_DICT_ENTRY,
 	                                       &first_elm);
 	if (ret < 0) {
