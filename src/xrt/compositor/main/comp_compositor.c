@@ -688,7 +688,8 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 		}
 #endif
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-		if (compositor_try_window(c, comp_window_direct_create(c))) {
+		if (compositor_try_window(c,
+		                          comp_window_direct_randr_create(c))) {
 			c->settings.window_type = WINDOW_DIRECT_RANDR;
 			return true;
 		}
@@ -717,7 +718,7 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 		break;
 	case WINDOW_DIRECT_RANDR:
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-		compositor_try_window(c, comp_window_direct_create(c));
+		compositor_try_window(c, comp_window_direct_randr_create(c));
 #else
 		COMP_ERROR(c, "Direct mode support not compiled in!");
 #endif
@@ -737,7 +738,7 @@ compositor_init_window_post_vulkan(struct comp_compositor *c)
 	}
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-	return compositor_try_window(c, comp_window_direct_create(c));
+	return compositor_try_window(c, comp_window_direct_nvidia_create(c));
 #else
 	assert(false &&
 	       "NVIDIA direct mode depends on the xlib/xrandr direct mode.");
