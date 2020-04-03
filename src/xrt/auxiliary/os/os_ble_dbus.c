@@ -783,7 +783,7 @@ os_ble_notify_open(const char *dev_uuid,
 	bledev->fd = -1;
 
 	int ret = init_ble_notify(dev_uuid, char_uuid, bledev);
-	if (ret <= 0) {
+	if (ret != 0) {
 		os_ble_notify_destroy(&bledev->base);
 		return -1;
 	}
