@@ -84,7 +84,7 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		xrt_prober_list_video_devices(p->xp, on_video_device, vs);
 	} else if (vs->num_modes == 0) {
 		// No modes on it :(
-		igText("No modes found on '%s'!", "vs->xfs->name");
+		igText("No modes found on '%s'!", vs->xfs->name);
 	}
 
 	// We have selected a stream device and it has modes.
