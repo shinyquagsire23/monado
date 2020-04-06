@@ -15,6 +15,8 @@ lib_aux_util = static_library(
 		'util/u_distortion_mesh.c',
 		'util/u_distortion_mesh.h',
 		'util/u_documentation.h',
+		'util/u_file.c',
+		'util/u_file.h',
 		'util/u_format.c',
 		'util/u_format.h',
 		'util/u_frame.c',
