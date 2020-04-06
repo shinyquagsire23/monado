@@ -31,6 +31,14 @@ bool
 u_json_get_string_into_array(const cJSON *json, char *out, size_t max_size);
 
 /*!
+ * @brief Parse an bool from a JSON object.
+ *
+ * @return true if successful, false if not.
+ */
+bool
+u_json_get_bool(const cJSON *json, bool *out_bool);
+
+/*!
  * @brief Parse an int from a JSON object.
  *
  * @return true if successful, false if not.

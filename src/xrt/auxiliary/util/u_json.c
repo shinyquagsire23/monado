@@ -47,6 +47,23 @@ u_json_get_string_into_array(const cJSON *json, char *out_str, size_t max_size)
 }
 
 bool
+u_json_get_bool(const cJSON *json, bool *out_bool)
+{
+	assert(out_bool != NULL);
+
+	if (!json) {
+		return false;
+	}
+	if (!cJSON_IsBool(json)) {
+		return false;
+	}
+
+	*out_bool = json->valueint;
+
+	return true;
+}
+
+bool
 u_json_get_int(const cJSON *json, int *out_int)
 {
 	assert(out_int != NULL);
