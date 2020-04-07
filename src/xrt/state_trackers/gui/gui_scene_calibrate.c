@@ -66,7 +66,7 @@ save_calibration(struct calibration_scene *cs)
 	}
 
 	// Save the data.
-	t_file_save_raw_data_hack(cs->status.stereo_data);
+	t_stereo_camera_calibration_save_v1_hack(cs->status.stereo_data);
 
 	// Free data, no longer needed.
 	t_stereo_camera_calibration_reference(&cs->status.stereo_data, NULL);

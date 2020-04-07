@@ -268,7 +268,8 @@ t_stereo_camera_calibration_load_v1(
  */
 
 extern "C" bool
-t_file_save_raw_data(FILE *calib_file, struct t_stereo_camera_calibration *data)
+t_stereo_camera_calibration_save_v1(FILE *calib_file,
+                                    struct t_stereo_camera_calibration *data)
 {
 	StereoCameraCalibrationWrapper wrapped(data);
 	// Dummy matrix
@@ -343,7 +344,8 @@ t_stereo_camera_calibration_load_v1_hack(
 }
 
 extern "C" bool
-t_file_save_raw_data_hack(struct t_stereo_camera_calibration *data)
+t_stereo_camera_calibration_save_v1_hack(
+    struct t_stereo_camera_calibration *data)
 {
 	char path_string[PATH_MAX];
 	char file_string[PATH_MAX];
@@ -366,7 +368,7 @@ t_file_save_raw_data_hack(struct t_stereo_camera_calibration *data)
 		return false;
 	}
 
-	t_file_save_raw_data(calib_file, data);
+	t_stereo_camera_calibration_save_v1(calib_file, data);
 
 	fclose(calib_file);
 
