@@ -1,0 +1,1 @@
+Shorten Vulkan initializers.
