@@ -37,7 +37,16 @@ struct u_hashset_item
 {
 	size_t hash;
 	size_t length;
+
+#ifdef __cplusplus
+	inline const char *
+	c_str()
+	{
+		return (const char *)&this[1];
+	}
+#else
 	const char c_str[];
+#endif
 };
 
 typedef void (*u_hashset_callback)(struct u_hashset_item *item, void *priv);

@@ -77,7 +77,7 @@ u_hashset_find_c_str(struct u_hashset *hs,
 extern "C" int
 u_hashset_insert_item(struct u_hashset *hs, struct u_hashset_item *item)
 {
-	std::string key = std::string(item->c_str, item->length);
+	std::string key = std::string(item->c_str(), item->length);
 	hs->map[key] = item;
 	return 0;
 }
@@ -85,7 +85,7 @@ u_hashset_insert_item(struct u_hashset *hs, struct u_hashset_item *item)
 extern "C" int
 u_hashset_erase_item(struct u_hashset *hs, struct u_hashset_item *item)
 {
-	std::string key = std::string(item->c_str, item->length);
+	std::string key = std::string(item->c_str(), item->length);
 	hs->map.erase(key);
 	return 0;
 }
