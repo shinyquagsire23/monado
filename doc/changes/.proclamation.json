@@ -12,6 +12,9 @@
         "Drivers": {
             "directory": "drivers"
         },
+        "Compositor": {
+            "directory": "compositor"
+        },
         "Helper Libraries": {
             "directory": "aux"
         },
