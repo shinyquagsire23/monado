@@ -399,44 +399,42 @@ choose_best_vk_mode_auto(struct comp_window_direct *w,
                          VkDisplayModePropertiesKHR *mode_properties,
                          int mode_count)
 {
-	struct
-	{
-		uint16_t width;
-		uint16_t height;
-		float refresh;
-		int index;
-	} best_mode;
+	if (mode_count == 1)
+		return 0;
+
+	int best_index = 0;
 
 	// First priority: choose mode that maximizes rendered pixels.
 	// Second priority: choose mode with highest refresh rate.
-	for (int i = 0; i < mode_count; i++) {
-		VkDisplayModePropertiesKHR props = mode_properties[i];
-		uint16_t width = props.parameters.visibleRegion.width;
-		uint16_t height = props.parameters.visibleRegion.height;
-		float refresh = (float)props.parameters.refreshRate / 1000.;
+	for (int i = 1; i < mode_count; i++) {
+		VkDisplayModeParametersKHR current =
+		    mode_properties[i].parameters;
 		COMP_DEBUG(w->base.c, "Available Vk direct mode %d: %dx%d@%.2f",
-		           i, width, height, refresh);
+		           i, current.visibleRegion.width,
+		           current.visibleRegion.height,
+		           (float)current.refreshRate / 1000.);
 
-		int max_pixels = best_mode.width * best_mode.height;
-		int pixels = width * height;
-		if (pixels > max_pixels) {
-			best_mode.index = i;
-			best_mode.width = width;
-			best_mode.height = height;
-			best_mode.refresh = refresh;
-		} else if (pixels == max_pixels &&
-		           refresh > best_mode.refresh) {
-			best_mode.index = i;
-			/* update dims because it might be rotated */
-			best_mode.width = width;
-			best_mode.height = height;
-			best_mode.refresh = refresh;
+
+		VkDisplayModeParametersKHR best =
+		    mode_properties[best_index].parameters;
+
+		int best_pixels =
+		    best.visibleRegion.width * best.visibleRegion.height;
+		int pixels =
+		    current.visibleRegion.width * current.visibleRegion.height;
+		if (pixels > best_pixels) {
+			best_index = i;
+		} else if (pixels == best_pixels &&
+		           current.refreshRate > best.refreshRate) {
+			best_index = i;
 		}
 	}
+	VkDisplayModeParametersKHR best =
+	    mode_properties[best_index].parameters;
 	COMP_DEBUG(w->base.c, "Auto choosing Vk direct mode %d: %dx%d@%.2f",
-	           best_mode.index, best_mode.width, best_mode.height,
-	           best_mode.refresh);
-	return best_mode.index;
+	           best_index, best.visibleRegion.width,
+	           best.visibleRegion.width, (float)best.refreshRate / 1000.);
+	return best_index;
 }
 
 static void
