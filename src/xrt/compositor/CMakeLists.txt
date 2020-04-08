@@ -86,6 +86,7 @@ if(BUILD_COMPOSITOR_MAIN)
 	endif()
 	if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
 		list(APPEND MAIN_SOURCE_FILES
+			main/comp_window_direct.c
 			main/comp_window_direct_randr.c
 			main/comp_window_direct_nvidia.c
 			)

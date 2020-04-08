@@ -33,7 +33,8 @@ if build_xcb
 endif
 
 if build_xcb_xrandr_direct
-	compositor_srcs += ['main/comp_window_direct_randr.c',
+	compositor_srcs += ['main/comp_window_direct.c',
+	                    'main/comp_window_direct_randr.c',
 	                    'main/comp_window_direct_nvidia.c']
 	compositor_deps += [xcb_randr, x11_xcb]
 endif
