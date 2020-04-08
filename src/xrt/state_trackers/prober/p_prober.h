@@ -13,6 +13,7 @@
 #include "xrt/xrt_config_os.h"
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_prober.h"
+#include "xrt/xrt_settings.h"
 
 #ifdef XRT_HAVE_LIBUSB
 #include <libusb-1.0/libusb.h>
@@ -130,6 +131,11 @@ struct prober
 
 	struct xrt_prober_entry_lists *lists;
 
+	struct
+	{
+		cJSON *root;
+	} json;
+
 #ifdef XRT_HAVE_LIBUSB
 	struct
 	{
@@ -166,6 +172,18 @@ struct prober
  * Functions.
  *
  */
+
+/*!
+ * Load the JSON config file.
+ */
+cJSON *
+p_json_open_or_create_main_file(void);
+
+/*!
+ * Extract tracking settings from the JSON.
+ */
+bool
+p_json_get_tracking_settings(cJSON *root, struct xrt_settings_tracking *s);
 
 /*!
  * Dump the given device to stdout.

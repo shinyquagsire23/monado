@@ -40,6 +40,12 @@ struct p_factory
 	// Owning prober.
 	struct prober *p;
 
+	// Has the settings be loaded.
+	bool setting_ok;
+
+	// Settings for this tracking system.
+	struct xrt_settings_tracking settings;
+
 	//! Shared tracking origin.
 	struct xrt_tracking_origin origin;
 
@@ -93,8 +99,7 @@ on_video_device(struct xrt_prober *xp,
 		return;
 	}
 
-	// Hardcoded to PS4 camera.
-	if (strcmp(name, "USB Camera-OV580") != 0) {
+	if (strcmp(name, fact->settings.camera_name) != 0) {
 		return;
 	}
 
@@ -105,6 +110,11 @@ on_video_device(struct xrt_prober *xp,
 static void
 p_factory_ensure_frameserver(struct p_factory *fact)
 {
+	// No settings loaded.
+	if (!fact->setting_ok) {
+		return;
+	}
+
 	// Already created.
 	if (fact->xfs != NULL) {
 		return;
@@ -118,10 +128,18 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 		return;
 	}
 
-	// Now load the calibration data.
-	if (!t_stereo_camera_calibration_load_v1_hack(&fact->data)) {
+	// Open the calibration file.
+	FILE *file = fopen(fact->settings.calibration_path, "rb");
+	if (file == NULL) {
 		return;
 	}
+
+	// Parse the calibration data from the file.
+	if (!t_stereo_camera_calibration_load_v1(file, &fact->data)) {
+		fclose(file);
+		return;
+	}
+	fclose(file);
 
 	struct xrt_frame_sink *xsink = NULL;
 	struct xrt_frame_sink *xsinks[4] = {0};
@@ -152,12 +170,34 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	// Hardcoded quirk sink.
 	struct u_sink_quirk_params qp;
 	U_ZERO(&qp);
-	qp.stereo_sbs = true;
-	qp.ps4_cam = true;
+
+	switch (fact->settings.camera_type) {
+	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_MONO:
+		qp.stereo_sbs = false;
+		qp.ps4_cam = false;
+		qp.leap_motion = false;
+		break;
+	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_SBS:
+		qp.stereo_sbs = true;
+		qp.ps4_cam = false;
+		qp.leap_motion = false;
+		break;
+	case XRT_SETTINGS_CAMERA_TYPE_PS4:
+		qp.stereo_sbs = true;
+		qp.ps4_cam = true;
+		qp.leap_motion = false;
+		break;
+	case XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION:
+		qp.stereo_sbs = true;
+		qp.ps4_cam = false;
+		qp.leap_motion = true;
+		break;
+	}
+
 	u_sink_quirk_create(&fact->xfctx, xsink, &qp, &xsink);
 
 	// Start the stream now.
-	xrt_fs_stream_start(fact->xfs, xsink, 1);
+	xrt_fs_stream_start(fact->xfs, xsink, fact->settings.camera_mode);
 }
 #endif
 
@@ -173,8 +213,13 @@ p_factory_create_tracked_psmv(struct xrt_tracking_factory *xfact,
                               struct xrt_device *xdev,
                               struct xrt_tracked_psmv **out_xtmv)
 {
-#ifdef XRT_HAVE_OPENCV
 	struct p_factory *fact = p_factory(xfact);
+
+	if (!fact->setting_ok) {
+		return -1;
+	}
+
+#ifdef XRT_HAVE_OPENCV
 	struct xrt_tracked_psmv *xtmv = NULL;
 
 	p_factory_ensure_frameserver(fact);
@@ -201,8 +246,13 @@ p_factory_create_tracked_psvr(struct xrt_tracking_factory *xfact,
                               struct xrt_device *xdev,
                               struct xrt_tracked_psvr **out_xtvr)
 {
-#ifdef XRT_HAVE_OPENCV
 	struct p_factory *fact = p_factory(xfact);
+
+	if (!fact->setting_ok) {
+		return -1;
+	}
+
+#ifdef XRT_HAVE_OPENCV
 	struct xrt_tracked_psvr *xtvr = NULL;
 
 	p_factory_ensure_frameserver(fact);
@@ -253,6 +303,13 @@ p_tracking_init(struct prober *p)
 
 	// Finally set us as the tracking factory.
 	p->base.tracking = &fact->base;
+
+	fact->setting_ok =
+	    p_json_get_tracking_settings(p->json.root, &fact->settings);
+
+	if (!fact->setting_ok) {
+		fprintf(stderr, "Failed to load settings!\n");
+	}
 
 	return 0;
 }

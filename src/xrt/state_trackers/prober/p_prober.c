@@ -9,6 +9,7 @@
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
+#include "util/u_json.h"
 #include "util/u_debug.h"
 #include "os/os_hid.h"
 #include "p_prober.h"
@@ -327,6 +328,8 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 
 	int ret;
 
+	p->json.root = p_json_open_or_create_main_file();
+
 	ret = collect_entries(p);
 	if (ret != 0) {
 		teardown(p);
@@ -444,6 +447,11 @@ teardown(struct prober *p)
 #ifdef XRT_HAVE_LIBUSB
 	p_libusb_teardown(p);
 #endif
+
+	if (p->json.root != NULL) {
+		cJSON_Delete(p->json.root);
+		p->json.root = NULL;
+	}
 }
 
 
