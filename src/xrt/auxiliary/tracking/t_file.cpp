@@ -19,9 +19,6 @@
  *
  */
 
-static int
-mkpath(char *path);
-
 static bool
 read_cv_mat(FILE *f, cv::Mat *m, const char *name);
 
@@ -315,102 +312,9 @@ t_stereo_camera_calibration_save_v1(FILE *calib_file,
 
 /*
  *
- * Hack functions.
- *
- */
-
-extern "C" bool
-t_stereo_camera_calibration_load_v1_hack(
-    struct t_stereo_camera_calibration **out_data)
-{
-	const char *configuration_filename = "PS4_EYE";
-
-	char path_string[256]; //! @todo 256 maybe not enough
-	//! @todo Use multiple env vars?
-	char *config_path = secure_getenv("HOME");
-	snprintf(path_string, 256, "%s/.config/monado/%s.calibration",
-	         config_path, configuration_filename); //! @todo Hardcoded 256
-
-	FILE *calib_file = fopen(path_string, "rb");
-	if (calib_file == NULL) {
-		return false;
-	}
-
-	bool ret = t_stereo_camera_calibration_load_v1(calib_file, out_data);
-
-	fclose(calib_file);
-
-	return ret;
-}
-
-extern "C" bool
-t_stereo_camera_calibration_save_v1_hack(
-    struct t_stereo_camera_calibration *data)
-{
-	char path_string[PATH_MAX];
-	char file_string[PATH_MAX];
-	// TODO: centralise this - use multiple env vars?
-	char *config_path = secure_getenv("HOME");
-	snprintf(path_string, PATH_MAX, "%s/.config/monado", config_path);
-	snprintf(file_string, PATH_MAX, "%s/.config/monado/%s.calibration",
-	         config_path, "PS4_EYE");
-	FILE *calib_file = fopen(file_string, "wb");
-	if (!calib_file) {
-		// try creating it
-		mkpath(path_string);
-	}
-	calib_file = fopen(file_string, "wb");
-	if (!calib_file) {
-		printf(
-		    "ERROR. could not create calibration file "
-		    "%s\n",
-		    file_string);
-		return false;
-	}
-
-	t_stereo_camera_calibration_save_v1(calib_file, data);
-
-	fclose(calib_file);
-
-	return true;
-}
-
-
-/*
- *
  * Helpers
  *
  */
-
-//! @todo Move this as it is a generic helper
-static int
-mkpath(char *path)
-{
-	char tmp[PATH_MAX]; //!< @todo PATH_MAX probably not strictly correct
-	char *p = nullptr;
-	size_t len;
-
-	snprintf(tmp, sizeof(tmp), "%s", path);
-	len = strlen(tmp) - 1;
-	if (tmp[len] == '/') {
-		tmp[len] = 0;
-	}
-
-	for (p = tmp + 1; *p; p++) {
-		if (*p == '/') {
-			*p = 0;
-			if (mkdir(tmp, S_IRWXU) < 0 && errno != EEXIST)
-				return -1;
-			*p = '/';
-		}
-	}
-
-	if (mkdir(tmp, S_IRWXU) < 0 && errno != EEXIST) {
-		return -1;
-	}
-
-	return 0;
-}
 
 static bool
 write_cv_mat(FILE *f, cv::Mat *m)

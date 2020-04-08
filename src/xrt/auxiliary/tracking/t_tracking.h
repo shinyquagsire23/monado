@@ -179,26 +179,11 @@ t_stereo_camera_calibration_load_v1(
     FILE *calib_file, struct t_stereo_camera_calibration **out_data);
 
 /*!
- * Load a stereo calibration struct from a hardcoded place.
- */
-bool
-t_stereo_camera_calibration_load_v1_hack(
-    struct t_stereo_camera_calibration **out_data);
-
-/*!
  * Save the given stereo calibration data to the given file.
  */
 bool
 t_stereo_camera_calibration_save_v1(FILE *calib_file,
                                     struct t_stereo_camera_calibration *data);
-
-/*!
- * Save raw calibration data to file, hack until prober has storage for such
- * things.
- */
-bool
-t_stereo_camera_calibration_save_v1_hack(
-    struct t_stereo_camera_calibration *data);
 
 
 /*
