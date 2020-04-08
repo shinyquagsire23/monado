@@ -30,6 +30,7 @@ struct xrt_prober;
 struct xrt_fs;
 struct xrt_frame_sink;
 struct xrt_frame_context;
+struct xrt_settings_tracking;
 struct time_state;
 struct gui_scene_manager;
 
@@ -213,6 +214,7 @@ gui_scene_debug(struct gui_program *p);
 
 /*!
  * Given the frameserver runs some debug code on it.
+ * Claims ownership of @p s.
  *
  * @ingroup gui
  */
@@ -220,10 +222,11 @@ void
 gui_scene_debug_video(struct gui_program *p,
                       struct xrt_frame_context *xfctx,
                       struct xrt_fs *xfs,
-                      size_t mode);
+                      struct xrt_settings_tracking *s);
 
 /*!
  * Given the frameserver runs the calibration code on it.
+ * Claims ownership of @p s.
  *
  * @ingroup gui
  */
@@ -231,7 +234,7 @@ void
 gui_scene_calibrate(struct gui_program *p,
                     struct xrt_frame_context *xfctx,
                     struct xrt_fs *xfs,
-                    size_t mode);
+                    struct xrt_settings_tracking *s);
 
 
 #ifdef __cplusplus

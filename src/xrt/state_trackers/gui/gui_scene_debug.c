@@ -19,6 +19,7 @@
 #include "xrt/xrt_frame.h"
 #include "xrt/xrt_prober.h"
 #include "xrt/xrt_tracking.h"
+#include "xrt/xrt_settings.h"
 #include "xrt/xrt_frameserver.h"
 
 #include "math/m_api.h"
@@ -372,7 +373,7 @@ void
 gui_scene_debug_video(struct gui_program *p,
                       struct xrt_frame_context *xfctx,
                       struct xrt_fs *xfs,
-                      size_t mode)
+                      struct xrt_settings_tracking *s)
 {
 	struct debug_scene *ds = U_TYPED_CALLOC(struct debug_scene);
 	uint32_t num_texs = 0;
@@ -406,7 +407,7 @@ gui_scene_debug_video(struct gui_program *p,
 	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink, p);
 
 	// Now that we have setup a node graph, start it.
-	xrt_fs_stream_start(xfs, xsink, mode);
+	xrt_fs_stream_start(xfs, xsink, s->camera_mode);
 }
 
 void

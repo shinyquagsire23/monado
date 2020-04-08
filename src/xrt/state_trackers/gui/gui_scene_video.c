@@ -11,6 +11,7 @@
 #include "util/u_format.h"
 
 #include "xrt/xrt_prober.h"
+#include "xrt/xrt_settings.h"
 #include "xrt/xrt_frameserver.h"
 
 #include "gui_common.h"
@@ -27,11 +28,13 @@ struct video_select
 	struct xrt_frame_context *xfctx;
 	struct xrt_fs *xfs;
 
+	struct xrt_settings_tracking *settings;
+
 	struct xrt_fs_mode *modes;
 	uint32_t num_modes;
 };
 
-static ImVec2 button_dims = {256, 0};
+static ImVec2 button_dims = {256 + 64, 0};
 
 
 /*
@@ -52,9 +55,15 @@ on_video_device(struct xrt_prober *xp,
 		return;
 	}
 
-	if (!igButton(name, button_dims)) {
+	char buf[256] = {0};
+	snprintf(buf, sizeof(buf), "%04x:%04x '%s'\n", pdev->vendor_id,
+	         pdev->product_id, name);
+	if (!igButton(buf, button_dims)) {
 		return;
 	}
+
+	snprintf(vs->settings->camera_name, sizeof(vs->settings->camera_name),
+	         "%s", name);
 
 	vs->xfctx = U_TYPED_CALLOC(struct xrt_frame_context);
 	xrt_prober_open_video_device(xp, pdev, vs->xfctx, &vs->xfs);
@@ -93,14 +102,19 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 			continue;
 		}
 
+		vs->settings->camera_mode = i;
+
 		// User selected this mode, create the debug scene.
 		if (vs->test) {
-			gui_scene_debug_video(p, vs->xfctx, vs->xfs, i);
+			gui_scene_debug_video(p, vs->xfctx, vs->xfs,
+			                      vs->settings);
 		} else if (vs->calibrate) {
-			gui_scene_calibrate(p, vs->xfctx, vs->xfs, i);
+			gui_scene_calibrate(p, vs->xfctx, vs->xfs,
+			                    vs->settings);
 		}
 
 		// We should not clean these up, zero them out.
+		vs->settings = NULL;
 		vs->xfctx = NULL;
 		vs->xfs = NULL;
 
@@ -133,7 +147,24 @@ scene_destroy(struct gui_scene *scene, struct gui_program *p)
 		vs->modes = NULL;
 	}
 
+	if (vs->settings != NULL) {
+		free(vs->settings);
+		vs->settings = NULL;
+	}
+
 	free(scene);
+}
+
+static struct video_select *
+create(void)
+{
+	struct video_select *vs = U_TYPED_CALLOC(struct video_select);
+
+	vs->base.render = scene_render;
+	vs->base.destroy = scene_destroy;
+	vs->settings = U_TYPED_CALLOC(struct xrt_settings_tracking);
+
+	return vs;
 }
 
 
@@ -146,10 +177,7 @@ scene_destroy(struct gui_scene *scene, struct gui_program *p)
 void
 gui_scene_select_video_test(struct gui_program *p)
 {
-	struct video_select *vs = U_TYPED_CALLOC(struct video_select);
-
-	vs->base.render = scene_render;
-	vs->base.destroy = scene_destroy;
+	struct video_select *vs = create();
 	vs->test = true;
 
 	gui_scene_push_front(p, &vs->base);
@@ -158,10 +186,7 @@ gui_scene_select_video_test(struct gui_program *p)
 void
 gui_scene_select_video_calibrate(struct gui_program *p)
 {
-	struct video_select *vs = U_TYPED_CALLOC(struct video_select);
-
-	vs->base.render = scene_render;
-	vs->base.destroy = scene_destroy;
+	struct video_select *vs = create();
 	vs->calibrate = true;
 
 	gui_scene_push_front(p, &vs->base);
