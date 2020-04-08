@@ -45,7 +45,7 @@ struct comp_window_direct_randr
 	Display *dpy;
 	xcb_screen_t *screen;
 
-	struct comp_window_direct_randr_display *randr_displays;
+	struct comp_window_direct_randr_display *displays;
 
 	uint16_t num_displays;
 };
@@ -122,7 +122,7 @@ comp_window_direct_randr_destroy(struct comp_window *w)
 
 	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
 		struct comp_window_direct_randr_display *d =
-		    &w_direct->randr_displays[i];
+		    &w_direct->displays[i];
 
 		if (d->display == VK_NULL_HANDLE) {
 			continue;
@@ -133,8 +133,8 @@ comp_window_direct_randr_destroy(struct comp_window *w)
 		free(d->name);
 	}
 
-	if (w_direct->randr_displays != NULL)
-		free(w_direct->randr_displays);
+	if (w_direct->displays != NULL)
+		free(w_direct->displays);
 
 	if (w_direct->dpy) {
 		XCloseDisplay(w_direct->dpy);
@@ -149,7 +149,7 @@ comp_window_direct_randr_list_screens(struct comp_window_direct_randr *w)
 {
 	for (int i = 0; i < w->num_displays; i++) {
 		const struct comp_window_direct_randr_display *d =
-		    &w->randr_displays[i];
+		    &w->displays[i];
 		COMP_DEBUG(
 		    w->base.c, "%d: %s %dx%d@%.2f", i, d->name,
 		    d->primary_mode.width, d->primary_mode.height,
@@ -227,7 +227,7 @@ comp_window_direct_randr_current_display(struct comp_window_direct_randr *w)
 	if (w->num_displays <= (uint32_t)index)
 		return NULL;
 
-	return &w->randr_displays[index];
+	return &w->displays[index];
 }
 
 static bool
@@ -352,14 +352,14 @@ append_randr_display(struct comp_window_direct_randr *w,
 
 	w->num_displays += 1;
 
-	U_ARRAY_REALLOC_OR_FREE(w->randr_displays,
+	U_ARRAY_REALLOC_OR_FREE(w->displays,
 	                        struct comp_window_direct_randr_display,
 	                        w->num_displays);
 
-	if (w->randr_displays == NULL)
+	if (w->displays == NULL)
 		COMP_ERROR(w->base.c, "Unable to reallocate randr_displays");
 
-	w->randr_displays[w->num_displays - 1] = d;
+	w->displays[w->num_displays - 1] = d;
 }
 
 static void
