@@ -260,3 +260,30 @@ comp_window_direct_acquire_xlib_display(struct comp_window *w,
 	}
 	return ret;
 }
+
+bool
+comp_window_direct_init_swapchain(struct comp_window *w,
+                                  Display *dpy,
+                                  VkDisplayKHR display,
+                                  uint32_t width,
+                                  uint32_t height)
+{
+	VkResult ret;
+	ret = comp_window_direct_acquire_xlib_display(w, dpy, display);
+
+	if (ret != VK_SUCCESS) {
+		return false;
+	}
+
+	ret = comp_window_direct_create_surface(w, display, width, height);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(w->c, "Failed to create surface!");
+		return false;
+	}
+
+	vk_swapchain_create(
+	    &w->swapchain, width, height, w->c->settings.color_format,
+	    w->c->settings.color_space, w->c->settings.present_mode);
+
+	return true;
+}

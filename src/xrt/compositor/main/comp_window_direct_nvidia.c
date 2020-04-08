@@ -250,33 +250,15 @@ comp_window_direct_nvidia_init_swapchain(struct comp_window *w,
 	struct comp_window_direct_nvidia *w_direct =
 	    (struct comp_window_direct_nvidia *)w;
 
-	struct comp_window_direct_nvidia_display *nvd =
+	struct comp_window_direct_nvidia_display *d =
 	    comp_window_direct_nvidia_current_display(w_direct);
-
-	VkResult ret = VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
-
-	VkDisplayKHR _display = VK_NULL_HANDLE;
-
-	if (nvd) {
-		COMP_DEBUG(w->c, "Will use display: %s", nvd->name);
-		ret = comp_window_direct_acquire_xlib_display(w, w_direct->dpy,
-		                                              nvd->display);
-		_display = nvd->display;
-	}
-
-	if (ret != VK_SUCCESS) {
-		return ret;
-	}
-
-	ret = comp_window_direct_create_surface(w, _display, width, height);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c, "Failed to create surface!");
+	if (!d) {
+		COMP_ERROR(w->c, "NVIDIA could not find any HMDs.");
 		return false;
 	}
 
-	vk_swapchain_create(
-	    &w->swapchain, width, height, w->c->settings.color_format,
-	    w->c->settings.color_space, w->c->settings.present_mode);
+	COMP_DEBUG(w->c, "Will use display: %s", d->name);
 
-	return true;
+	return comp_window_direct_init_swapchain(w, w_direct->dpy, d->display,
+	                                         width, height);
 }

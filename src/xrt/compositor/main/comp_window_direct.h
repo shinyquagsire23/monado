@@ -34,6 +34,13 @@ comp_window_direct_acquire_xlib_display(struct comp_window *w,
                                         Display *dpy,
                                         VkDisplayKHR display);
 
+bool
+comp_window_direct_init_swapchain(struct comp_window *w,
+                                  Display *dpy,
+                                  VkDisplayKHR display,
+                                  uint32_t width,
+                                  uint32_t height);
+
 #ifdef __cplusplus
 }
 #endif

@@ -241,40 +241,23 @@ comp_window_direct_randr_init_swapchain(struct comp_window *w,
 	struct comp_window_direct_randr_display *d =
 	    comp_window_direct_randr_current_display(w_direct);
 
-	VkResult ret = VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
-	VkDisplayKHR _display = VK_NULL_HANDLE;
-	if (d) {
-		COMP_DEBUG(
-		    w->c, "Will use display: %s %dx%d@%.2f", d->name,
-		    d->primary_mode.width, d->primary_mode.height,
-		    (double)d->primary_mode.dot_clock /
-		        (d->primary_mode.htotal * d->primary_mode.vtotal));
-
-		d->display =
-		    comp_window_direct_randr_get_output(w_direct, d->output);
-		if (d->display == VK_NULL_HANDLE) {
-			return VK_ERROR_INITIALIZATION_FAILED;
-		}
-		ret = comp_window_direct_acquire_xlib_display(w, w_direct->dpy,
-		                                              d->display);
-		_display = d->display;
-	}
-
-	if (ret != VK_SUCCESS) {
-		return ret;
-	}
-
-	ret = comp_window_direct_create_surface(w, _display, width, height);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c, "Failed to create surface!");
+	if (!d) {
+		COMP_ERROR(w->c, "RandR could not find any HMDs.");
 		return false;
 	}
 
-	vk_swapchain_create(
-	    &w->swapchain, width, height, w->c->settings.color_format,
-	    w->c->settings.color_space, w->c->settings.present_mode);
+	COMP_DEBUG(w->c, "Will use display: %s %dx%d@%.2f", d->name,
+	           d->primary_mode.width, d->primary_mode.height,
+	           (double)d->primary_mode.dot_clock /
+	               (d->primary_mode.htotal * d->primary_mode.vtotal));
 
-	return true;
+	d->display = comp_window_direct_randr_get_output(w_direct, d->output);
+	if (d->display == VK_NULL_HANDLE) {
+		return false;
+	}
+
+	return comp_window_direct_init_swapchain(w, w_direct->dpy, d->display,
+	                                         width, height);
 }
 
 static VkDisplayKHR
