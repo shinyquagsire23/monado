@@ -57,10 +57,9 @@ struct comp_window_direct
 	xcb_screen_t *screen;
 
 	struct comp_window_direct_randr_display *randr_displays;
-	uint16_t num_randr_displays;
-
 	struct comp_window_direct_nvidia_display *nv_displays;
-	uint16_t num_nv_displays;
+
+	uint16_t num_displays;
 };
 
 
@@ -163,7 +162,7 @@ comp_window_direct_destroy(struct comp_window *w)
 	struct comp_window_direct *w_direct = (struct comp_window_direct *)w;
 	struct vk_bundle *vk = &w->c->vk;
 
-	for (uint32_t i = 0; i < w_direct->num_randr_displays; i++) {
+	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
 		struct comp_window_direct_randr_display *d =
 		    &w_direct->randr_displays[i];
 
@@ -175,7 +174,7 @@ comp_window_direct_destroy(struct comp_window *w)
 		d->display = VK_NULL_HANDLE;
 		free(d->name);
 	}
-	for (uint32_t i = 0; i < w_direct->num_nv_displays; i++) {
+	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
 		struct comp_window_direct_nvidia_display *d =
 		    &w_direct->nv_displays[i];
 		d->display = VK_NULL_HANDLE;
@@ -199,7 +198,7 @@ comp_window_direct_destroy(struct comp_window *w)
 static void
 comp_window_direct_list_randr_screens(struct comp_window_direct *w)
 {
-	for (int i = 0; i < w->num_randr_displays; i++) {
+	for (int i = 0; i < w->num_displays; i++) {
 		const struct comp_window_direct_randr_display *d =
 		    &w->randr_displays[i];
 		COMP_DEBUG(
@@ -234,17 +233,17 @@ comp_window_direct_init_randr(struct comp_window *w)
 
 	comp_window_direct_get_randr_outputs(w_direct);
 
-	if (w_direct->num_randr_displays == 0) {
+	if (w_direct->num_displays == 0) {
 		COMP_ERROR(w->c, "No non-desktop output available.");
 		return false;
 	}
 
-	if (w->c->settings.display > (int)w_direct->num_randr_displays - 1) {
+	if (w->c->settings.display > (int)w_direct->num_displays - 1) {
 		COMP_DEBUG(w->c,
 		           "Requested display %d, but only %d displays are "
 		           "available.",
 		           w->c->settings.display,
-		           w_direct->num_randr_displays);
+		           w_direct->num_displays);
 
 		w->c->settings.display = 0;
 		struct comp_window_direct_randr_display *d =
@@ -293,16 +292,16 @@ append_nvidia_entry_on_match(struct comp_window_direct *w,
 	memcpy(d.name, disp->displayName, disp_entry_length);
 	d.name[disp_entry_length] = '\0';
 
-	w->num_nv_displays += 1;
+	w->num_displays += 1;
 
 	U_ARRAY_REALLOC_OR_FREE(w->nv_displays,
 	                        struct comp_window_direct_nvidia_display,
-	                        w->num_nv_displays);
+	                        w->num_displays);
 
 	if (w->nv_displays == NULL)
 		COMP_ERROR(w->base.c, "Unable to reallocate randr_displays");
 
-	w->nv_displays[w->num_nv_displays - 1] = d;
+	w->nv_displays[w->num_displays - 1] = d;
 
 	return true;
 }
@@ -359,7 +358,7 @@ comp_window_direct_init_nvidia(struct comp_window *w)
 				break;
 	}
 
-	if (w_direct->num_nv_displays == 0) {
+	if (w_direct->num_displays == 0) {
 		COMP_ERROR(w->c,
 		           "NVIDIA: No machting displays found. "
 		           "Is your headset whitelisted?");
@@ -388,7 +387,7 @@ comp_window_direct_current_randr_display(struct comp_window_direct *w)
 	if (index == -1)
 		index = 0;
 
-	if (w->num_randr_displays <= (uint32_t)index)
+	if (w->num_displays <= (uint32_t)index)
 		return NULL;
 
 	return &w->randr_displays[index];
@@ -401,7 +400,7 @@ comp_window_direct_current_nvidia_display(struct comp_window_direct *w)
 	if (index == -1)
 		index = 0;
 
-	if (w->num_nv_displays <= (uint32_t)index)
+	if (w->num_displays <= (uint32_t)index)
 		return NULL;
 
 	return &w->nv_displays[index];
@@ -789,16 +788,16 @@ append_randr_display(struct comp_window_direct *w,
 	memcpy(d.name, name, name_len);
 	d.name[name_len] = '\0';
 
-	w->num_randr_displays += 1;
+	w->num_displays += 1;
 
 	U_ARRAY_REALLOC_OR_FREE(w->randr_displays,
 	                        struct comp_window_direct_randr_display,
-	                        w->num_randr_displays);
+	                        w->num_displays);
 
 	if (w->randr_displays == NULL)
 		COMP_ERROR(w->base.c, "Unable to reallocate randr_displays");
 
-	w->randr_displays[w->num_randr_displays - 1] = d;
+	w->randr_displays[w->num_displays - 1] = d;
 }
 
 static void
