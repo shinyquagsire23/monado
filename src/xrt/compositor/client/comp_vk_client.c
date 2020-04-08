@@ -183,7 +183,6 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	VkCommandBuffer cmd_buffer;
-	uint32_t num_images = 3;
 	VkResult ret;
 
 	struct xrt_swapchain *xsc = c->xcfd->base.create_swapchain(
@@ -213,11 +212,12 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.acquire_image = client_vk_swapchain_acquire_image;
 	sc->base.base.wait_image = client_vk_swapchain_wait_image;
 	sc->base.base.release_image = client_vk_swapchain_release_image;
-	sc->base.base.num_images = num_images;
+	// Fetch the number of images from the fd swapchain.
+	sc->base.base.num_images = xsc->num_images;
 	sc->c = c;
 	sc->xscfd = xrt_swapchain_fd(xsc);
 
-	for (uint32_t i = 0; i < num_images; i++) {
+	for (uint32_t i = 0; i < xsc->num_images; i++) {
 		ret = vk_create_image_from_fd(
 		    &c->vk, bits, format, width, height, array_size, mip_count,
 		    &sc->xscfd->images[i], &sc->base.images[i],

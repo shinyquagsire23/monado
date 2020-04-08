@@ -173,7 +173,6 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
                            uint32_t mip_count)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
-	uint32_t num_images = 3;
 
 	if (array_size > 1) {
 		const char *version_str = (const char *)glGetString(GL_VERSION);
@@ -200,13 +199,15 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		return NULL;
 	}
 
+
 	struct client_gl_swapchain *sc =
 	    U_TYPED_CALLOC(struct client_gl_swapchain);
 	sc->base.base.destroy = client_gl_swapchain_destroy;
 	sc->base.base.acquire_image = client_gl_swapchain_acquire_image;
 	sc->base.base.wait_image = client_gl_swapchain_wait_image;
 	sc->base.base.release_image = client_gl_swapchain_release_image;
-	sc->base.base.num_images = num_images;
+	// Fetch the number of images from the fd swapchain.
+	sc->base.base.num_images = xsc->num_images;
 	sc->xscfd = xrt_swapchain_fd(xsc);
 
 	GLuint prev_texture = 0;
@@ -214,14 +215,14 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	                              : GL_TEXTURE_BINDING_2D_ARRAY,
 	              (GLint *)&prev_texture);
 
-	glGenTextures(num_images, sc->base.images);
-	for (uint32_t i = 0; i < num_images; i++) {
+	glGenTextures(xsc->num_images, sc->base.images);
+	for (uint32_t i = 0; i < xsc->num_images; i++) {
 		glBindTexture(array_size == 1 ? GL_TEXTURE_2D
 		                              : GL_TEXTURE_2D_ARRAY,
 		              sc->base.images[i]);
 	}
-	glCreateMemoryObjectsEXT(num_images, &sc->base.memory[0]);
-	for (uint32_t i = 0; i < num_images; i++) {
+	glCreateMemoryObjectsEXT(xsc->num_images, &sc->base.memory[0]);
+	for (uint32_t i = 0; i < xsc->num_images; i++) {
 		GLint dedicated = GL_TRUE;
 		glMemoryObjectParameterivEXT(sc->base.memory[i],
 		                             GL_DEDICATED_MEMORY_OBJECT_EXT,
