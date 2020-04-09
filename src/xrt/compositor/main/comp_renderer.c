@@ -48,9 +48,8 @@ struct comp_renderer
 	} semaphores;
 
 	VkCommandBuffer *cmd_buffers;
-	uint32_t num_cmd_buffers;
 	VkFramebuffer *frame_buffers;
-	uint32_t num_frame_buffers;
+	uint32_t num_buffers;
 
 	struct comp_swapchain_image dummy_images[2];
 
@@ -108,7 +107,7 @@ renderer_create_frame_buffer(struct comp_renderer *r,
                              VkImageView *attachments);
 
 static void
-renderer_allocate_command_buffers(struct comp_renderer *r, uint32_t count);
+renderer_allocate_command_buffers(struct comp_renderer *r);
 
 static void
 renderer_destroy_command_buffers(struct comp_renderer *r);
@@ -123,7 +122,7 @@ static void
 renderer_resize(struct comp_renderer *r);
 
 static void
-renderer_create_frame_buffers(struct comp_renderer *r, uint32_t count);
+renderer_create_frame_buffers(struct comp_renderer *r);
 
 static void
 renderer_create_render_pass(struct comp_renderer *r);
@@ -238,7 +237,7 @@ renderer_submit_queue(struct comp_renderer *r)
 static void
 renderer_build_command_buffers(struct comp_renderer *r)
 {
-	for (uint32_t i = 0; i < r->num_cmd_buffers; ++i)
+	for (uint32_t i = 0; i < r->num_buffers; ++i)
 		renderer_build_command_buffer(r, r->cmd_buffers[i],
 		                              r->frame_buffers[i]);
 }
@@ -246,13 +245,11 @@ renderer_build_command_buffers(struct comp_renderer *r)
 static void
 renderer_rebuild_command_buffers(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
+	renderer_destroy_command_buffers(r);
 
+	r->num_buffers = r->c->window->swapchain.image_count;
 
-	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, r->num_cmd_buffers,
-	                         r->cmd_buffers);
-	renderer_allocate_command_buffers(r,
-	                                  r->c->window->swapchain.image_count);
+	renderer_allocate_command_buffers(r);
 	renderer_build_command_buffers(r);
 }
 
@@ -585,9 +582,10 @@ renderer_init(struct comp_renderer *r)
 
 	assert(r->c->window->swapchain.image_count > 0);
 
-	renderer_create_frame_buffers(r, r->c->window->swapchain.image_count);
-	renderer_allocate_command_buffers(r,
-	                                  r->c->window->swapchain.image_count);
+	r->num_buffers = r->c->window->swapchain.image_count;
+
+	renderer_create_frame_buffers(r);
+	renderer_allocate_command_buffers(r);
 
 	renderer_init_dummy_images(r);
 
@@ -670,30 +668,28 @@ renderer_create_frame_buffer(struct comp_renderer *r,
 }
 
 static void
-renderer_allocate_command_buffers(struct comp_renderer *r, uint32_t count)
+renderer_allocate_command_buffers(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->vk;
 	VkResult ret;
 
-	if (count == 0) {
+	if (r->num_buffers == 0) {
 		COMP_ERROR(r->c, "Requested 0 command buffers.");
 		return;
 	}
 
-	COMP_DEBUG(r->c, "Allocating %d Command Buffers.", count);
+	COMP_DEBUG(r->c, "Allocating %d Command Buffers.", r->num_buffers);
 
 	if (r->cmd_buffers != NULL)
 		free(r->cmd_buffers);
 
-	r->num_cmd_buffers = count;
-
-	r->cmd_buffers = U_TYPED_ARRAY_CALLOC(VkCommandBuffer, count);
+	r->cmd_buffers = U_TYPED_ARRAY_CALLOC(VkCommandBuffer, r->num_buffers);
 
 	VkCommandBufferAllocateInfo cmd_buffer_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 	    .commandPool = vk->cmd_pool,
 	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-	    .commandBufferCount = count,
+	    .commandBufferCount = r->num_buffers,
 	};
 
 	ret = vk->vkAllocateCommandBuffers(vk->device, &cmd_buffer_info,
@@ -709,7 +705,7 @@ renderer_destroy_command_buffers(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->vk;
 
-	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, r->num_cmd_buffers,
+	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, r->num_buffers,
 	                         r->cmd_buffers);
 }
 
@@ -767,29 +763,27 @@ renderer_resize(struct comp_renderer *r)
 	                    r->settings->color_space,
 	                    r->settings->present_mode);
 
-	for (uint32_t i = 0; i < r->num_frame_buffers; i++)
+	for (uint32_t i = 0; i < r->num_buffers; i++)
 		vk->vkDestroyFramebuffer(vk->device, r->frame_buffers[i], NULL);
-	renderer_create_frame_buffers(r, r->c->window->swapchain.image_count);
-
 	renderer_destroy_command_buffers(r);
-	renderer_allocate_command_buffers(r,
-	                                  r->c->window->swapchain.image_count);
 
+	r->num_buffers = r->c->window->swapchain.image_count;
+
+	renderer_create_frame_buffers(r);
+	renderer_allocate_command_buffers(r);
 	renderer_build_command_buffers(r);
 	vk->vkDeviceWaitIdle(vk->device);
 }
 
 static void
-renderer_create_frame_buffers(struct comp_renderer *r, uint32_t count)
+renderer_create_frame_buffers(struct comp_renderer *r)
 {
-	r->num_frame_buffers = count;
-
 	if (r->frame_buffers != NULL)
 		free(r->frame_buffers);
 
-	r->frame_buffers = U_TYPED_ARRAY_CALLOC(VkFramebuffer, count);
+	r->frame_buffers = U_TYPED_ARRAY_CALLOC(VkFramebuffer, r->num_buffers);
 
-	for (uint32_t i = 0; i < count; i++) {
+	for (uint32_t i = 0; i < r->num_buffers; i++) {
 		VkImageView attachments[1] = {
 		    r->c->window->swapchain.buffers[i].view,
 		};
@@ -936,7 +930,6 @@ renderer_destroy(struct comp_renderer *r)
 	renderer_destroy_command_buffers(r);
 	if (r->cmd_buffers != NULL)
 		free(r->cmd_buffers);
-	r->num_cmd_buffers = 0;
 
 	// Render pass
 	if (r->render_pass != VK_NULL_HANDLE) {
@@ -945,7 +938,7 @@ renderer_destroy(struct comp_renderer *r)
 	}
 
 	// Frame buffers
-	for (uint32_t i = 0; i < r->num_frame_buffers; i++) {
+	for (uint32_t i = 0; i < r->num_buffers; i++) {
 		if (r->frame_buffers[i] != VK_NULL_HANDLE) {
 			vk->vkDestroyFramebuffer(vk->device,
 			                         r->frame_buffers[i], NULL);
@@ -955,7 +948,7 @@ renderer_destroy(struct comp_renderer *r)
 	if (r->frame_buffers != NULL)
 		free(r->frame_buffers);
 	r->frame_buffers = NULL;
-	r->num_frame_buffers = 0;
+	r->num_buffers = 0;
 
 	// Pipeline cache
 	if (r->pipeline_cache != VK_NULL_HANDLE) {
