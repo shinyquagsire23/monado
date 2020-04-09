@@ -897,7 +897,6 @@ renderer_acquire_swapchain_image(struct comp_renderer *r)
 static void
 renderer_present_swapchain_image(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
 	VkResult ret;
 
 	ret = vk_swapchain_present(&r->c->window->swapchain, r->queue,
@@ -910,11 +909,6 @@ renderer_present_swapchain_image(struct comp_renderer *r)
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vk_swapchain_present: %s",
 		           vk_result_string(ret));
-	}
-
-	ret = vk->vkQueueWaitIdle(r->queue);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkQueueWaitIdle: %s", vk_result_string(ret));
 	}
 }
 
