@@ -56,7 +56,7 @@ struct client_gl_compositor
  */
 
 /*!
- * Convinence function to convert a xrt_swapchain to a client_gl_swapchain.
+ * Convenience function to convert a xrt_swapchain to a client_gl_swapchain.
  */
 static inline struct client_gl_swapchain *
 client_gl_swapchain(struct xrt_swapchain *xsc)
@@ -65,7 +65,7 @@ client_gl_swapchain(struct xrt_swapchain *xsc)
 }
 
 /*!
- * Convinence function to convert a xrt_compositor to a client_gl_compositor.
+ * Convenience function to convert a xrt_compositor to a client_gl_compositor.
  */
 static inline struct client_gl_compositor *
 client_gl_compositor(struct xrt_compositor *xc)

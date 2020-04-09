@@ -62,6 +62,7 @@
 
 #include "util/u_var.h"
 
+
 /*!
  */
 static void
@@ -818,7 +819,7 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 
 	// Need to select window backend before creating Vulkan, then
 	// swapchain will initialize the window fully and the swapchain,
-	// and finally the renderer is created which renderers to
+	// and finally the renderer is created which renders to
 	// window/swapchain.
 
 	// clang-format off
