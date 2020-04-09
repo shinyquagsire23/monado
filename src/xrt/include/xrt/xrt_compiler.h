@@ -23,7 +23,9 @@
  */
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__)
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) ||          \
+    defined(_ARCH_PPC64) || defined(__s390x__) ||                              \
+    (defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8)
 #define XRT_64_BIT
 #else
 #define XRT_32_BIT
