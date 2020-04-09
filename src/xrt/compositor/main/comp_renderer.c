@@ -165,7 +165,6 @@ comp_renderer_frame(struct comp_renderer *r,
 	renderer_set_swapchain_image(r, 0, left, left_layer);
 	renderer_set_swapchain_image(r, 1, right, right_layer);
 	renderer_render(r);
-	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
 }
 
 void
@@ -805,7 +804,6 @@ renderer_resize(struct comp_renderer *r)
 	renderer_create_frame_buffers(r);
 	renderer_allocate_command_buffers(r);
 	renderer_build_command_buffers(r);
-	vk->vkDeviceWaitIdle(vk->device);
 }
 
 static void

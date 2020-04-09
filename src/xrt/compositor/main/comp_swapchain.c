@@ -303,6 +303,8 @@ comp_swapchain_image_cleanup(struct vk_bundle *vk,
                              uint32_t array_size,
                              struct comp_swapchain_image *image)
 {
+	vk->vkDeviceWaitIdle(vk->device);
+
 	if (image->views != NULL) {
 		for (uint32_t i = 0; i < array_size; ++i) {
 			if (image->views[i] == VK_NULL_HANDLE) {
