@@ -636,11 +636,8 @@ renderer_set_swapchain_image(struct comp_renderer *r,
 static void
 renderer_render(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
-
 	r->c->window->flush(r->c->window);
 	renderer_acquire_swapchain_image(r);
-	vk->vkDeviceWaitIdle(vk->device);
 	renderer_submit_queue(r);
 	renderer_present_swapchain_image(r);
 }
