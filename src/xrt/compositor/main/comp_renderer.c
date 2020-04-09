@@ -481,6 +481,7 @@ _submit_cmd_buffer(struct comp_compositor *c,
 
 	ret = vk->vkEndCommandBuffer(cmd_buffer);
 	if (ret != VK_SUCCESS) {
+		return false;
 	}
 
 	VkSubmitInfo submitInfo = {
