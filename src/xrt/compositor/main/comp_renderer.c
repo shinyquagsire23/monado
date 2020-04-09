@@ -129,7 +129,7 @@ static void
 renderer_create_render_pass(struct comp_renderer *r);
 
 static void
-renderer_aquire_swapchain_image(struct comp_renderer *r);
+renderer_acquire_swapchain_image(struct comp_renderer *r);
 
 static void
 renderer_present_swapchain_image(struct comp_renderer *r);
@@ -638,7 +638,7 @@ renderer_render(struct comp_renderer *r)
 	struct vk_bundle *vk = &r->c->vk;
 
 	r->c->window->flush(r->c->window);
-	renderer_aquire_swapchain_image(r);
+	renderer_acquire_swapchain_image(r);
 	vk->vkDeviceWaitIdle(vk->device);
 	renderer_submit_queue(r);
 	renderer_present_swapchain_image(r);
@@ -868,7 +868,7 @@ renderer_create_render_pass(struct comp_renderer *r)
 }
 
 static void
-renderer_aquire_swapchain_image(struct comp_renderer *r)
+renderer_acquire_swapchain_image(struct comp_renderer *r)
 {
 	VkResult ret;
 
