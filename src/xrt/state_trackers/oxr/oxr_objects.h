@@ -63,6 +63,7 @@ extern "C" {
  *
  */
 
+struct xrt_instance;
 struct oxr_logger;
 struct oxr_instance;
 struct oxr_system;
@@ -886,7 +887,7 @@ struct oxr_instance
 	void *hack;
 	/* ---- HACK ---- */
 
-	struct xrt_prober *prober;
+	struct xrt_instance *xinst;
 
 	//! Enabled extensions
 	struct oxr_extension_status extensions;

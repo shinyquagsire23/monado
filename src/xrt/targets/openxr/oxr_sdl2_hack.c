@@ -6,7 +6,9 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
+#include "xrt/xrt_instance.h"
 #include "xrt/xrt_config_have.h"
+
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
@@ -18,6 +20,8 @@
 #include "gui/gui_imgui.h"
 
 
+struct xrt_instance;
+
 #ifndef XRT_HAVE_SDL2
 
 int
@@ -27,7 +31,7 @@ oxr_sdl2_hack_create(void **out_hack)
 }
 
 void
-oxr_sdl2_hack_start(void *hack, struct xrt_prober *xp)
+oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst)
 {}
 
 void
@@ -259,15 +263,14 @@ oxr_sdl2_hack_create(void **out_hack)
 }
 
 void
-oxr_sdl2_hack_start(void *hack, struct xrt_prober *xp)
+oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst)
 {
 	struct sdl2_program *p = (struct sdl2_program *)hack;
 	if (p == NULL) {
 		return;
 	}
 
-	p->base.xp = xp;
-
+	xrt_instance_get_prober(xinst, &p->base.xp);
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
 		fprintf(stderr, "Failed to init SDL2!\n");

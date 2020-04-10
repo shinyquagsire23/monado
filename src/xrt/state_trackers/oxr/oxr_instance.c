@@ -17,8 +17,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 
-#include "xrt/xrt_compiler.h"
-#include "xrt/xrt_prober.h"
+#include "xrt/xrt_instance.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -41,7 +40,7 @@ extern int
 oxr_sdl2_hack_create(void **out_hack);
 
 extern void
-oxr_sdl2_hack_start(void *hack, struct xrt_prober *xp);
+oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst);
 
 extern void
 oxr_sdl2_hack_stop(void **hack_ptr);
@@ -75,7 +74,7 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	oxr_sdl2_hack_stop(&inst->hack);
 	/* ---- HACK ---- */
 
-	xrt_prober_destroy(&inst->prober);
+	xrt_instance_destroy(&inst->xinst);
 
 	// Does null checking and sets to null.
 	time_state_destroy(&inst->timekeeping);
@@ -103,7 +102,7 @@ oxr_instance_create(struct oxr_logger *log,
 {
 	struct oxr_instance *inst = NULL;
 	struct xrt_device *xdevs[NUM_XDEVS] = {0};
-	int h_ret, p_ret;
+	int h_ret, xinst_ret;
 	XrResult ret;
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
@@ -144,26 +143,19 @@ oxr_instance_create(struct oxr_logger *log,
 	cache_path(log, inst, "/interaction_profiles/mnd/ball_on_stick_controller", &inst->path_cache.mnd_ball_on_stick_controller);
 	// clang-format on
 
-	p_ret = xrt_prober_create(&inst->prober);
-	if (p_ret != 0) {
+	xinst_ret = xrt_instance_create(&inst->xinst);
+	if (xinst_ret != 0) {
 		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                "Failed to create prober");
 		oxr_instance_destroy(log, &inst->handle);
 		return ret;
 	}
 
-	p_ret = xrt_prober_probe(inst->prober);
-	if (p_ret != 0) {
-		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                "Failed to probe device(s)");
-		oxr_instance_destroy(log, &inst->handle);
-		return ret;
-	}
 
-	p_ret = xrt_prober_select(inst->prober, xdevs, NUM_XDEVS);
-	if (p_ret != 0) {
+	xinst_ret = xrt_instance_select(inst->xinst, xdevs, NUM_XDEVS);
+	if (xinst_ret != 0) {
 		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                "Failed to select device");
+		                "Failed to select device(s)");
 		oxr_instance_destroy(log, &inst->handle);
 		return ret;
 	}
@@ -247,7 +239,7 @@ oxr_instance_create(struct oxr_logger *log,
 	u_var_add_root((void *)inst, "XrInstance", true);
 
 	/* ---- HACK ---- */
-	oxr_sdl2_hack_start(inst->hack, inst->prober);
+	oxr_sdl2_hack_start(inst->hack, inst->xinst);
 	/* ---- HACK ---- */
 
 	*out_instance = inst;

@@ -13,7 +13,6 @@
 #include <string.h>
 
 #include "xrt/xrt_compiler.h"
-#include "xrt/xrt_prober.h"
 
 #include "util/u_debug.h"
 

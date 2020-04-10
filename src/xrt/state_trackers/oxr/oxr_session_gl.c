@@ -17,7 +17,8 @@
 #include "oxr_two_call.h"
 #include "oxr_handle.h"
 
-#include "xrt/xrt_gfx_fd.h"
+#include "xrt/xrt_instance.h"
+
 #ifdef XR_USE_PLATFORM_XLIB
 #include "xrt/xrt_gfx_xlib.h"
 #endif
@@ -25,18 +26,21 @@
 #ifdef XR_USE_GRAPHICS_API_OPENGL
 #ifdef XR_USE_PLATFORM_XLIB
 
+
 XrResult
 oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              struct oxr_system *sys,
                              XrGraphicsBindingOpenGLXlibKHR const *next,
                              struct oxr_session *sess)
 {
-	struct xrt_compositor_fd *xcfd =
-	    xrt_gfx_provider_create_fd(sys->head, true);
-	if (xcfd == NULL) {
+	struct xrt_compositor_fd *xcfd = NULL;
+	int ret = xrt_instance_create_fd_compositor(sys->inst->xinst, sys->head,
+	                                            true, &xcfd);
+	if (ret < 0 || xcfd == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 " failed create a fd compositor");
+		                 " failed create a fd compositor '%i'", ret);
 	}
+
 
 	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_xlib(
 	    xcfd, next->xDisplay, next->visualid, next->glxFBConfig,

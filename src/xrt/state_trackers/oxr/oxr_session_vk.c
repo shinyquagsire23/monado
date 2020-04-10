@@ -12,7 +12,7 @@
 
 #include "util/u_misc.h"
 
-#include "xrt/xrt_gfx_fd.h"
+#include "xrt/xrt_instance.h"
 #include "xrt/xrt_gfx_vk.h"
 
 #include "oxr_objects.h"
@@ -20,17 +20,19 @@
 #include "oxr_two_call.h"
 #include "oxr_handle.h"
 
+
 XrResult
 oxr_session_populate_vk(struct oxr_logger *log,
                         struct oxr_system *sys,
                         XrGraphicsBindingVulkanKHR const *next,
                         struct oxr_session *sess)
 {
-	struct xrt_compositor_fd *xcfd =
-	    xrt_gfx_provider_create_fd(sys->head, false);
-	if (xcfd == NULL) {
+	struct xrt_compositor_fd *xcfd = NULL;
+	int ret = xrt_instance_create_fd_compositor(sys->inst->xinst, sys->head,
+	                                            false, &xcfd);
+	if (ret < 0 || xcfd == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 " failed create a fd compositor");
+		                 " failed create a fd compositor '%i'", ret);
 	}
 
 	struct xrt_compositor_vk *xcvk = xrt_gfx_vk_provider_create(

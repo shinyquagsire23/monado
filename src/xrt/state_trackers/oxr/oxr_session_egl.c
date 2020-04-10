@@ -18,12 +18,14 @@
 #include "oxr_two_call.h"
 #include "oxr_handle.h"
 
+#include "xrt/xrt_instance.h"
+
 #ifdef XR_USE_PLATFORM_EGL
 #define EGL_NO_X11              // libglvnd
 #define MESA_EGL_NO_X11_HEADERS // mesa
 #include <EGL/egl.h>
-#include "xrt/xrt_gfx_fd.h"
 #include "xrt/xrt_gfx_egl.h"
+
 
 // Not forward declared by mesa
 typedef EGLBoolean(EGLAPIENTRYP PFNEGLQUERYCONTEXTPROC)(EGLDisplay dpy,
@@ -62,11 +64,12 @@ oxr_session_populate_egl(struct oxr_logger *log,
 		                 "unsupported EGL client type");
 	}
 
-	struct xrt_compositor_fd *xcfd =
-	    xrt_gfx_provider_create_fd(sys->head, true);
-	if (xcfd == NULL) {
+	struct xrt_compositor_fd *xcfd = NULL;
+	int ret = xrt_instance_create_fd_compositor(sys->inst->xinst, sys->head,
+	                                            true, &xcfd);
+	if (ret < 0 || xcfd == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 " failed create a fd compositor");
+		                 " failed create a fd compositor '%i'", ret);
 	}
 
 	struct xrt_compositor_gl *xcgl =
