@@ -291,6 +291,69 @@ struct xrt_device
 	void (*destroy)(struct xrt_device *xdev);
 };
 
+/*!
+ * Helper function for @ref xrt_device::update_inputs.
+ */
+static inline void
+xrt_device_update_inputs(struct xrt_device *xdev,
+                         struct time_state *timekeeping)
+{
+	xdev->update_inputs(xdev, timekeeping);
+}
+
+/*!
+ * Helper function for @ref xrt_device::get_tracked_pose.
+ */
+static inline void
+xrt_device_get_tracked_pose(struct xrt_device *xdev,
+                            enum xrt_input_name name,
+                            struct time_state *timekeeping,
+                            int64_t *out_timestamp,
+                            struct xrt_space_relation *out_relation)
+{
+	xdev->get_tracked_pose(xdev, name, timekeeping, out_timestamp,
+	                       out_relation);
+}
+
+/*!
+ * Helper function for @ref xrt_device::set_output.
+ */
+static inline void
+xrt_device_set_output(struct xrt_device *xdev,
+                      enum xrt_output_name name,
+                      struct time_state *timekeeping,
+                      union xrt_output_value *value)
+{
+	xdev->set_output(xdev, name, timekeeping, value);
+}
+
+/*!
+ * Helper function for @ref xrt_device::get_view_pose.
+ */
+static inline void
+xrt_device_get_view_pose(struct xrt_device *xdev,
+                         struct xrt_vec3 *eye_relation,
+                         uint32_t view_index,
+                         struct xrt_pose *out_pose)
+{
+	xdev->get_view_pose(xdev, eye_relation, view_index, out_pose);
+}
+
+/*!
+ * Helper function for @ref xrt_device::destroy.
+ */
+static inline void
+xrt_device_destroy(struct xrt_device **xdev_ptr)
+{
+	struct xrt_device *xdev = *xdev_ptr;
+	if (xdev == NULL) {
+		return;
+	}
+
+	xdev->destroy(xdev);
+	*xdev_ptr = NULL;
+}
+
 
 #ifdef __cplusplus
 }
