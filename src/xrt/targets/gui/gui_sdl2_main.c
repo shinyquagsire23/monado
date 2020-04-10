@@ -57,3 +57,10 @@ main(int argc, char **argv)
 
 	return 0;
 }
+
+//! Needed to support st/prober.
+int
+xrt_gfx_provider_create_fd()
+{
+	return -1;
+}
