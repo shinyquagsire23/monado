@@ -174,6 +174,12 @@ comp_renderer_destroy(struct comp_renderer *r)
 	free(r);
 }
 
+void
+comp_renderer_reset(struct comp_renderer *r)
+{
+	r->one_buffer_imported[0] = false;
+	r->one_buffer_imported[1] = false;
+}
 
 /*
  *

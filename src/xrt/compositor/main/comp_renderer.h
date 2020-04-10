@@ -42,6 +42,15 @@ comp_renderer_frame(struct comp_renderer *r,
                     uint32_t right_layer);
 
 /*!
+ * Reset renderer as input has changed.
+ *
+ * @ingroup comp_main
+ */
+
+void
+comp_renderer_reset(struct comp_renderer *r);
+
+/*!
  * Clean up and free the renderer.
  *
  * @ingroup comp_main
