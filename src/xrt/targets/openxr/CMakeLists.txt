@@ -34,9 +34,10 @@ target_link_libraries(${RUNTIME_TARGET} PUBLIC
 	st_oxr
 	st_gui
 	st_prober
+	target_lists
+	target_instance
 	comp_main
 	comp_client
-	target_lists
 	)
 
 if(BUILD_WITH_SDL2)

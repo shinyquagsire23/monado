@@ -79,6 +79,7 @@ openxr = library(
 		lib_st_oxr,
 		lib_st_prober,
 		lib_target_lists,
+		lib_target_instance,
 	] + driver_libs + hack_libs,
 	include_directories: [
 		external_include,

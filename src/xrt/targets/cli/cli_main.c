@@ -51,10 +51,3 @@ main(int argc, const char **argv)
 	}
 	return cli_print_help(argc, argv);
 }
-
-//! Needed to support st/prober.
-int
-xrt_gfx_provider_create_fd()
-{
-	return -1;
-}
