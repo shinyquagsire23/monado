@@ -370,47 +370,6 @@ on_root_exit_sink(const char *name, void *priv)
  */
 
 void
-gui_scene_debug_video(struct gui_program *p,
-                      struct xrt_frame_context *xfctx,
-                      struct xrt_fs *xfs,
-                      struct xrt_settings_tracking *s)
-{
-	struct debug_scene *ds = U_TYPED_CALLOC(struct debug_scene);
-	uint32_t num_texs = 0;
-
-	ds->base.render = scene_render;
-	ds->base.destroy = scene_destroy;
-	ds->xfctx = xfctx;
-
-	gui_scene_push_front(p, &ds->base);
-
-	struct xrt_frame_sink *xsink = NULL;
-
-	p->texs[num_texs++] = gui_ogl_sink_create("Stream", xfctx, &xsink);
-	u_sink_create_format_converter(xfctx, XRT_FORMAT_R8G8B8, xsink, &xsink);
-	u_sink_queue_create(xfctx, xsink, &xsink);
-
-#ifdef XRT_HAVE_OPENCV
-	struct xrt_frame_sink *split = xsink;
-	xsink = NULL;
-	struct xrt_frame_sink *xsinks[4] = {NULL, NULL, NULL, NULL};
-
-	struct t_hsv_filter_params params = T_HSV_DEFAULT_PARAMS();
-	t_hsv_filter_create(xfctx, &params, xsinks, &xsink);
-	u_sink_create_to_yuv_or_yuyv(xfctx, xsink, &xsink);
-	u_sink_queue_create(xfctx, xsink, &xsink);
-
-	u_sink_split_create(xfctx, split, xsink, &xsink);
-#endif
-
-	// Create the sink interceptors.
-	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink, p);
-
-	// Now that we have setup a node graph, start it.
-	xrt_fs_stream_start(xfs, xsink, s->camera_mode);
-}
-
-void
 gui_scene_debug(struct gui_program *p)
 {
 	struct debug_scene *ds = U_TYPED_CALLOC(struct debug_scene);

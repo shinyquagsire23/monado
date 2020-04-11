@@ -41,11 +41,6 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		gui_scene_debug(p);
 	}
 
-	if (igButton("Video (deprecated)", button_dims)) {
-		gui_scene_delete_me(p, scene);
-		gui_scene_select_video_test(p);
-	}
-
 	igSeparator();
 
 	if (igButton("Exit", button_dims)) {

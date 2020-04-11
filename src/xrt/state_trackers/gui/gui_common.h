@@ -197,32 +197,12 @@ void
 gui_scene_select_video_calibrate(struct gui_program *p);
 
 /*!
- * Shows a UI that lets you select a video device and mode for testing.
- *
- * @ingroup gui
- */
-void
-gui_scene_select_video_test(struct gui_program *p);
-
-/*!
  * Regular debug UI.
  *
  * @ingroup gui
  */
 void
 gui_scene_debug(struct gui_program *p);
-
-/*!
- * Given the frameserver runs some debug code on it.
- * Claims ownership of @p s.
- *
- * @ingroup gui
- */
-void
-gui_scene_debug_video(struct gui_program *p,
-                      struct xrt_frame_context *xfctx,
-                      struct xrt_fs *xfs,
-                      struct xrt_settings_tracking *s);
 
 /*!
  * Given the frameserver runs the calibration code on it.

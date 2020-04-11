@@ -22,9 +22,6 @@ struct video_select
 {
 	struct gui_scene base;
 
-	bool test;
-	bool calibrate;
-
 	struct xrt_frame_context *xfctx;
 	struct xrt_fs *xfs;
 
@@ -104,14 +101,8 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 
 		vs->settings->camera_mode = i;
 
-		// User selected this mode, create the debug scene.
-		if (vs->test) {
-			gui_scene_debug_video(p, vs->xfctx, vs->xfs,
-			                      vs->settings);
-		} else if (vs->calibrate) {
-			gui_scene_calibrate(p, vs->xfctx, vs->xfs,
-			                    vs->settings);
-		}
+		// User selected this mode, create the next scene.
+		gui_scene_calibrate(p, vs->xfctx, vs->xfs, vs->settings);
 
 		// We should not clean these up, zero them out.
 		vs->settings = NULL;
@@ -175,19 +166,9 @@ create(void)
  */
 
 void
-gui_scene_select_video_test(struct gui_program *p)
-{
-	struct video_select *vs = create();
-	vs->test = true;
-
-	gui_scene_push_front(p, &vs->base);
-}
-
-void
 gui_scene_select_video_calibrate(struct gui_program *p)
 {
 	struct video_select *vs = create();
-	vs->calibrate = true;
 
 	gui_scene_push_front(p, &vs->base);
 }
