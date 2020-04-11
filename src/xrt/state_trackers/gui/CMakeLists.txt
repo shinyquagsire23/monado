@@ -28,11 +28,15 @@ set(GUI_SOURCE_FILES
 	../../../external/imgui/imstb_truetype.h
 	)
 
-add_library(st_gui STATIC ${GUI_SOURCE_FILES})
+add_library(st_gui STATIC
+	${GUI_SOURCE_FILES}
+	)
 
-target_link_libraries(st_gui PRIVATE aux_util xrt-external-headers)
-target_include_directories(st_gui
-	PUBLIC
+target_link_libraries(st_gui PRIVATE
+	xrt-external-headers
+	aux_util
+	)
+target_include_directories(st_gui PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/..
 	)
 
@@ -42,6 +46,11 @@ if(BUILD_WITH_SDL2)
 		../../../external/imgui/imgui_impl_sdl.cpp
 		../../../external/imgui/imgui_impl_sdl.h
 		)
-	target_link_libraries(imgui_impl_sdl PRIVATE ${SDL2_LIBRARIES} xrt-external-headers)
-	target_include_directories(imgui_impl_sdl PRIVATE ${SDL2_INCLUDE_DIRS})
+	target_link_libraries(imgui_impl_sdl PRIVATE
+		${SDL2_LIBRARIES}
+		xrt-external-headers
+		)
+	target_include_directories(imgui_impl_sdl PRIVATE
+		${SDL2_INCLUDE_DIRS}
+		)
 endif()
