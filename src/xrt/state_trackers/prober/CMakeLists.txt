@@ -34,16 +34,29 @@ if(BUILD_WITH_LIBUVC)
 		)
 endif()
 
-add_library(st_prober STATIC ${PROBER_SOURCE_FILES})
-target_link_libraries(st_prober PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_tracking)
-target_include_directories(st_prober PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../drivers)
+add_library(st_prober STATIC
+	${PROBER_SOURCE_FILES}
+	)
+target_link_libraries(st_prober PUBLIC
+	xrt-interfaces
+	)
+target_link_libraries(st_prober PRIVATE
+	aux_util
+	aux_os
+	aux_tracking
+	)
+target_include_directories(st_prober PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
+	)
 
 if(BUILD_WITH_LIBUDEV)
 	target_include_directories(st_prober
 		PRIVATE
 		${UDEV_INCLUDE_DIRS}
 		)
-	target_link_libraries(st_prober PRIVATE ${UDEV_LIBRARIES})
+	target_link_libraries(st_prober PRIVATE
+		${UDEV_LIBRARIES}
+		)
 endif()
 
 if(BUILD_WITH_LIBUSB)
@@ -51,7 +64,9 @@ if(BUILD_WITH_LIBUSB)
 		PRIVATE
 		${LIBUSB1_INCLUDE_DIRS}
 		)
-	target_link_libraries(st_prober PRIVATE ${LIBUSB1_LIBRARIES})
+	target_link_libraries(st_prober PRIVATE
+		${LIBUSB1_LIBRARIES}
+		)
 endif()
 
 if(BUILD_WITH_LIBUVC)
@@ -59,10 +74,14 @@ if(BUILD_WITH_LIBUVC)
 		PRIVATE
 		${LIBUVC_INCLUDES}
 		)
-	target_link_libraries(st_prober PRIVATE ${LIBUVC_LIBRARIES})
+	target_link_libraries(st_prober PRIVATE
+		${LIBUVC_LIBRARIES}
+		)
 endif()
 
 if(BUILD_DRIVER_V4L2)
 	# Uses v4l2_fs_create
-	target_link_libraries(st_prober PRIVATE drv_v4l2)
+	target_link_libraries(st_prober PRIVATE
+		drv_v4l2
+		)
 endif()
