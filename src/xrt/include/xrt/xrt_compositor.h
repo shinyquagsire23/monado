@@ -87,26 +87,79 @@ struct xrt_swapchain
 	/*!
 	 * Must have called release_image before calling this function.
 	 */
-	void (*destroy)(struct xrt_swapchain *sc);
+	void (*destroy)(struct xrt_swapchain *xsc);
 
 	/*!
 	 * See xrWaitSwapchainImage, must make sure that no image is acquired
 	 * before calling acquire_image.
 	 */
-	bool (*acquire_image)(struct xrt_swapchain *xc, uint32_t *index);
+	bool (*acquire_image)(struct xrt_swapchain *xsc, uint32_t *index);
 
 	/*!
 	 * See xrWaitSwapchainImage, state tracker needs to track index.
 	 */
-	bool (*wait_image)(struct xrt_swapchain *xc,
+	bool (*wait_image)(struct xrt_swapchain *xsc,
 	                   uint64_t timeout,
 	                   uint32_t index);
 
 	/*!
 	 * See xrReleaseSwapchainImage, state tracker needs to track index.
 	 */
-	bool (*release_image)(struct xrt_swapchain *xc, uint32_t index);
+	bool (*release_image)(struct xrt_swapchain *xsc, uint32_t index);
 };
+
+/*!
+ * Helper for xrt_swapchain::acquire_image.
+ *
+ * @ingroup xrt_iface
+ */
+static inline bool
+xrt_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
+{
+	return xsc->acquire_image(xsc, index);
+}
+
+/*!
+ * Helper for xrt_swapchain::wait_image.
+ *
+ * @ingroup xrt_iface
+ */
+static inline bool
+xrt_swapchain_wait_image(struct xrt_swapchain *xsc,
+                         uint64_t timeout,
+                         uint32_t index)
+{
+	return xsc->wait_image(xsc, timeout, index);
+}
+
+/*!
+ * Helper for xrt_swapchain::release_image.
+ *
+ * @ingroup xrt_iface
+ */
+static inline bool
+xrt_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
+{
+	return xsc->release_image(xsc, index);
+}
+
+/*!
+ * Helper for xrt_swapchain::destroy, does a null check and sets xc_ptr to
+ * null if freed.
+ *
+ * @ingroup xrt_iface
+ */
+static inline void
+xrt_swapchain_destroy(struct xrt_swapchain **xsc_ptr)
+{
+	struct xrt_swapchain *xsc = *xsc_ptr;
+	if (xsc == NULL) {
+		return;
+	}
+
+	xsc->destroy(xsc);
+	*xsc_ptr = NULL;
+}
 
 /*!
  * Common compositor base.
