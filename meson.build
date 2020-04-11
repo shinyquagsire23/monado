@@ -50,6 +50,7 @@ build_docs = doxygen.found()
 glslangValidator = find_program('glslangValidator')
 
 pthreads = cc.find_library('pthread', required: true)
+rt = cc.find_library('rt', required: true)
 
 avcodec = dependency('libavcodec', required: false)
 egl     = dependency('egl', required: get_option('egl'))

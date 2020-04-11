@@ -71,7 +71,8 @@ cmake_dependent_option(BUILD_WITH_OPENGL "Enable OpenGL Graphics API support" ON
 cmake_dependent_option(BUILD_WITH_EGL "Enable OpenGL on EGL Graphics API support" ON "BUILD_WITH_OPENGL AND EGL_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_DBUS "Enable dbus support (for BLE support)" ON "DBUS_FOUND" OFF)
 cmake_dependent_option(BUILD_COMPOSITOR_MAIN "Build main compositor host" ON "BUILD_WITH_WAYLAND OR BUILD_WITH_XCB" OFF)
-cmake_dependent_option(BUILD_TARGET_OPENXR "Build OpenXR runtime target" ON "BUILD_COMPOSITOR_MAIN" OFF)
+cmake_dependent_option(XRT_BUILD_IPC "Build OpenXR runtime target" ON "BUILD_COMPOSITOR_MAIN" OFF)
+cmake_dependent_option(BUILD_TARGET_OPENXR "Build OpenXR runtime target" ON "BUILD_COMPOSITOR_MAIN OR XRT_BUILD_IPC" OFF)
 
 # Most users won't touch these.
 mark_as_advanced(BUILD_COMPOSITOR_MAIN BUILD_TARGET_OPENXR)

@@ -7,3 +7,7 @@ add_subdirectory(drivers)
 add_subdirectory(compositor)
 add_subdirectory(state_trackers)
 add_subdirectory(targets)
+
+if (XRT_BUILD_IPC)
+	add_subdirectory(ipc)
+endif()

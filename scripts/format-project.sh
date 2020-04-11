@@ -28,6 +28,7 @@ fi
                 src/xrt/compositor \
                 src/xrt/drivers \
                 src/xrt/include \
+                src/xrt/ipc \
                 src/xrt/state_trackers \
                 src/xrt/targets \
                 \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \

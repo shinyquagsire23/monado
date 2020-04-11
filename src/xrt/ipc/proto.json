@@ -1,0 +1,116 @@
+{
+	"instance_get_shm_fd": {
+		"out_fds": true
+	},
+
+	"session_begin": {},
+
+	"session_end": {},
+
+	"compositor_get_formats": {
+		"out": [
+			{"name": "info", "type": "struct ipc_formats_info"}
+		]
+	},
+
+	"compositor_wait_frame": {
+		"out": [
+			{"name": "predicted_display_time", "type": "uint64_t"},
+			{"name": "predicted_display_period", "type": "uint64_t"}
+		]
+	},
+
+	"compositor_begin_frame": {},
+
+	"compositor_discard_frame": {},
+
+	"compositor_layer_sync": {
+		"in": [
+			{"name": "slot_id", "type": "uint32_t"}
+		],
+		"out": [
+			{"name": "free_slot_id", "type": "uint32_t"}
+		]
+	},
+
+	"swapchain_create": {
+		"in": [
+			{"name": "width", "type": "uint32_t"},
+			{"name": "height", "type": "uint32_t"},
+			{"name": "format", "type": "uint64_t"}
+		],
+		"out": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "num_images", "type": "uint32_t"},
+			{"name": "size", "type": "uint64_t"}
+		],
+		"out_fds": true
+	},
+
+	"swapchain_wait_image": {
+		"in": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "timeout", "type": "uint64_t"},
+			{"name": "index", "type": "uint32_t"}
+		]
+	},
+
+	"swapchain_acquire_image": {
+		"in": [
+			{"name": "id", "type": "uint32_t"}
+		],
+		"out": [
+			{"name": "index", "type": "uint32_t"}
+		]
+	},
+
+	"swapchain_release_image": {
+		"in": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "index", "type": "uint32_t"}
+		]
+	},
+
+	"swapchain_destroy": {
+		"in": [
+			{"name": "id", "type": "uint32_t"}
+		]
+	},
+
+	"device_update_input": {
+		"in": [
+			{"name": "id", "type": "uint32_t"}
+		]
+	},
+
+	"device_get_tracked_pose": {
+		"in": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "name", "type": "enum xrt_input_name"},
+			{"name": "at_timestamp", "type": "uint64_t"}
+		],
+		"out": [
+			{"name": "timestamp", "type": "uint64_t"},
+			{"name": "relation", "type": "struct xrt_space_relation"}
+		]
+	},
+
+	"device_get_view_pose": {
+		"in": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "eye_relation", "type": "struct xrt_vec3"},
+			{"name": "view_index", "type": "uint32_t"}
+		],
+		"out": [
+			{"name": "pose", "type": "struct xrt_pose"}
+		]
+	},
+
+	"device_set_output": {
+		"in": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "name", "type": "enum xrt_output_name"},
+			{"name": "value", "type": "union xrt_output_value"}
+		]
+	}
+}
