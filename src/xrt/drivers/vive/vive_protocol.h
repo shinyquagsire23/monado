@@ -12,6 +12,7 @@
 
 #include <asm/byteorder.h>
 #include <stdint.h>
+#include "os/os_hid.h"
 
 #define VIVE_CONTROLLER_BUTTON_REPORT_ID 0x01
 
@@ -246,41 +247,21 @@ struct vive_controller_poweroff_report
 	uint8_t magic[4];
 } __attribute__((packed));
 
+const struct vive_headset_power_report power_on_report;
+const struct vive_headset_power_report power_off_report;
 
-const struct vive_headset_power_report power_on_report = {
-    .id = VIVE_HEADSET_POWER_REPORT_ID,
-    .type = __cpu_to_le16(VIVE_HEADSET_POWER_REPORT_TYPE),
-    .len = 56,
-    .unknown1 =
-        {
-            0x01,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x02,
-            0x00,
-            0x01,
-        },
-    .unknown2 = 0x7a,
-};
+char *
+vive_read_config(struct os_hid_device *hid_dev);
 
-const struct vive_headset_power_report power_off_report = {
-    .id = VIVE_HEADSET_POWER_REPORT_ID,
-    .type = __cpu_to_le16(VIVE_HEADSET_POWER_REPORT_TYPE),
-    .len = 56,
-    .unknown1 =
-        {
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x02,
-            0x00,
-            0x00,
-        },
-    .unknown2 = 0x7c,
-};
+int
+vive_get_imu_range_report(struct os_hid_device *hid_dev,
+                          double *gyro_range,
+                          double *acc_range);
+
+int
+vive_read_firmware(struct os_hid_device *hid_dev,
+                   uint32_t *firmware_version,
+                   uint8_t *hardware_revision,
+                   uint8_t *hardware_version_micro,
+                   uint8_t *hardware_version_minor,
+                   uint8_t *hardware_version_major);

@@ -518,95 +518,7 @@ vive_sensors_run_thread(void *ptr)
 	return NULL;
 }
 
-
-int
-vive_sensors_read_firmware(struct vive_device *d)
-{
-	struct vive_firmware_version_report report = {
-	    .id = VIVE_FIRMWARE_VERSION_REPORT_ID,
-	};
-
-	int ret;
-	ret = os_hid_get_feature(d->sensors_dev, report.id, (uint8_t *)&report,
-	                         sizeof(report));
-	if (ret < 0)
-		return ret;
-
-	d->firmware.firmware_version = __le32_to_cpu(report.firmware_version);
-	d->firmware.hardware_revision = report.hardware_revision;
-
-	VIVE_DEBUG(d, "Firmware version %u %s@%s FPGA %u.%u",
-	           d->firmware.firmware_version, report.string1, report.string2,
-	           report.fpga_version_major, report.fpga_version_minor);
-	VIVE_DEBUG(d, "Hardware revision: %d rev %d.%d.%d",
-	           d->firmware.hardware_revision, report.hardware_version_major,
-	           report.hardware_version_minor,
-	           report.hardware_version_micro);
-
-	return 0;
-}
-
-int
-vive_sensors_get_imu_range_report(struct vive_device *d)
-{
-	struct vive_imu_range_modes_report report = {
-	    .id = VIVE_IMU_RANGE_MODES_REPORT_ID};
-
-	int ret;
-	ret = os_hid_get_feature(d->sensors_dev, report.id, (uint8_t *)&report,
-	                         sizeof(report));
-	if (ret < 0) {
-		printf("Could not get range report!\n");
-		return ret;
-	}
-
-	if (!report.gyro_range || !report.accel_range) {
-		VIVE_ERROR(
-		    "Invalid gyroscope and accelerometer data. Trying to fetch "
-		    "again.");
-		ret = os_hid_get_feature(d->sensors_dev, report.id,
-		                         (uint8_t *)&report, sizeof(report));
-		if (ret < 0) {
-			VIVE_ERROR("Could not get feature report %d.",
-			           report.id);
-			return ret;
-		}
-
-		if (!report.gyro_range || !report.accel_range) {
-			VIVE_ERROR(
-			    "Unexpected range mode report: %02x %02x %02x",
-			    report.id, report.gyro_range, report.accel_range);
-			for (int i = 0; i < 61; i++)
-				printf(" %02x", report.unknown[i]);
-			printf("\n");
-			return -1;
-		}
-	}
-
-	if (report.gyro_range > 4 || report.accel_range > 4) {
-		VIVE_ERROR("Gyroscope or accelerometer range too large.");
-		VIVE_ERROR("Gyroscope: %d", report.gyro_range);
-		VIVE_ERROR("Accelerometer: %d", report.accel_range);
-		return -1;
-	}
-
-	/*
-	 * Convert MPU-6500 gyro full scale range (+/-250°/s, +/-500°/s,
-	 * +/-1000°/s, or +/-2000°/s) into rad/s, accel full scale range
-	 * (+/-2g, +/-4g, +/-8g, or +/-16g) into m/s².
-	 */
-
-	d->imu.gyro_range = M_PI / 180.0 * (250 << report.gyro_range);
-	VIVE_DEBUG(d, "Vive gyroscope range     %f", d->imu.gyro_range);
-
-	d->imu.acc_range = MATH_GRAVITY_M_S2 * (2 << report.accel_range);
-	VIVE_DEBUG(d, "Vive accelerometer range %f", d->imu.acc_range);
-
-	return 0;
-}
-
-
-void
+static void
 print_vec3(const char *title, struct xrt_vec3 *vec)
 {
 	printf("%s = %f %f %f\n", title, (double)vec->x, (double)vec->y,
@@ -1048,86 +960,6 @@ vive_parse_config(struct vive_device *d, char *json_string)
 	return true;
 }
 
-char *
-vive_sensors_read_config(struct vive_device *d)
-{
-	struct vive_config_start_report start_report = {
-	    .id = VIVE_CONFIG_START_REPORT_ID,
-	};
-
-	int ret = os_hid_get_feature_timeout(d->sensors_dev, &start_report,
-	                                     sizeof(start_report), 100);
-	if (ret < 0) {
-		VIVE_ERROR("Could not get config start report.");
-		return NULL;
-	}
-
-	struct vive_config_read_report report = {
-	    .id = VIVE_CONFIG_READ_REPORT_ID,
-	};
-
-	unsigned char *config_z = U_TYPED_ARRAY_CALLOC(unsigned char, 4096);
-
-	uint32_t count = 0;
-	do {
-		ret = os_hid_get_feature_timeout(d->sensors_dev, &report,
-		                                 sizeof(report), 100);
-		if (ret < 0) {
-			VIVE_ERROR("Read error after %d bytes: %d", count, ret);
-			free(config_z);
-			return NULL;
-		}
-
-		if (report.len > 62) {
-			VIVE_ERROR("Invalid configuration data at %d", count);
-			free(config_z);
-			return NULL;
-		}
-
-		if (count + report.len > 4096) {
-			VIVE_ERROR("Configuration data too large");
-			free(config_z);
-			return NULL;
-		}
-
-		memcpy(config_z + count, report.payload, report.len);
-		count += report.len;
-	} while (report.len);
-
-	unsigned char *config_json = U_TYPED_ARRAY_CALLOC(unsigned char, 32768);
-
-	z_stream strm = {
-	    .next_in = config_z,
-	    .avail_in = count,
-	    .next_out = config_json,
-	    .avail_out = 32768,
-	    .zalloc = Z_NULL,
-	    .zfree = Z_NULL,
-	    .opaque = Z_NULL,
-	};
-
-	ret = inflateInit(&strm);
-	if (ret != Z_OK) {
-		VIVE_ERROR("inflate_init failed: %d", ret);
-		free(config_z);
-		free(config_json);
-		return NULL;
-	}
-
-	ret = inflate(&strm, Z_FINISH);
-	free(config_z);
-	if (ret != Z_STREAM_END) {
-		VIVE_ERROR("Failed to inflate configuration data: %d", ret);
-		free(config_json);
-		return NULL;
-	}
-
-	config_json[strm.total_out] = '\0';
-
-	U_ARRAY_REALLOC_OR_FREE(config_json, unsigned char, strm.total_out + 1);
-	return (char *)config_json;
-}
-
 struct vive_device *
 vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *sensors_dev,
@@ -1172,11 +1004,31 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		vive_mainboard_power_on(d);
 		vive_mainboard_get_device_info(d);
 	}
-	vive_sensors_read_firmware(d);
+	vive_read_firmware(d->sensors_dev, &d->firmware.firmware_version,
+	                   &d->firmware.hardware_revision,
+	                   &d->firmware.hardware_version_micro,
+	                   &d->firmware.hardware_version_minor,
+	                   &d->firmware.hardware_version_major);
 
-	vive_sensors_get_imu_range_report(d);
+	/*
+	VIVE_DEBUG(d, "Firmware version %u %s@%s FPGA %u.%u",
+	           d->firmware.firmware_version, report.string1, report.string2,
+	           report.fpga_version_major, report.fpga_version_minor);
+	*/
 
-	char *config = vive_sensors_read_config(d);
+	VIVE_DEBUG(d, "Firmware version %u", d->firmware.firmware_version);
+	VIVE_DEBUG(d, "Hardware revision: %d rev %d.%d.%d",
+	           d->firmware.hardware_revision,
+	           d->firmware.hardware_version_major,
+	           d->firmware.hardware_version_minor,
+	           d->firmware.hardware_version_micro);
+
+	vive_get_imu_range_report(d->sensors_dev, &d->imu.gyro_range,
+	                          &d->imu.acc_range);
+	VIVE_DEBUG(d, "Vive gyroscope range     %f", d->imu.gyro_range);
+	VIVE_DEBUG(d, "Vive accelerometer range %f", d->imu.acc_range);
+
+	char *config = vive_read_config(d->sensors_dev);
 	if (config != NULL) {
 		vive_parse_config(d, config);
 		free(config);

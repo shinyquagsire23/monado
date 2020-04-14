@@ -139,6 +139,7 @@ if(BUILD_DRIVER_VIVE)
 		vive/vive_device.c
 		vive/vive_prober.h
 		vive/vive_prober.c
+		vive/vive_protocol.c
 		vive/vive_protocol.h
 		)
 

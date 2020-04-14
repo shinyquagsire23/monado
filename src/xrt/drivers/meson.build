@@ -119,6 +119,7 @@ lib_drv_vive = static_library(
 	files(
 		'vive/vive_device.c',
 		'vive/vive_device.h',
+		'vive/vive_protocol.c',
 		'vive/vive_protocol.h',
 		'vive/vive_prober.h',
 		'vive/vive_prober.c',

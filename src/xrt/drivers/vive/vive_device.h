@@ -112,6 +112,9 @@ struct vive_device
 		uint32_t display_firmware_version;
 		uint32_t firmware_version;
 		uint8_t hardware_revision;
+		uint8_t hardware_version_micro;
+		uint8_t hardware_version_minor;
+		uint8_t hardware_version_major;
 		char *mb_serial_number;
 		char *model_number;
 		char *device_serial_number;
