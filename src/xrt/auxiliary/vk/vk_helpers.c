@@ -772,6 +772,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCreateFence                 = GET_DEV_PROC(vk, vkCreateFence);
 	vk->vkWaitForFences               = GET_DEV_PROC(vk, vkWaitForFences);
 	vk->vkDestroyFence                = GET_DEV_PROC(vk, vkDestroyFence);
+	vk->vkResetFences                 = GET_DEV_PROC(vk, vkResetFences);
 	vk->vkCreateSwapchainKHR          = GET_DEV_PROC(vk, vkCreateSwapchainKHR);
 	vk->vkDestroySwapchainKHR         = GET_DEV_PROC(vk, vkDestroySwapchainKHR);
 	vk->vkGetSwapchainImagesKHR       = GET_DEV_PROC(vk, vkGetSwapchainImagesKHR);

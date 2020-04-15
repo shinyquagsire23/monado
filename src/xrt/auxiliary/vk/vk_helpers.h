@@ -169,6 +169,7 @@ struct vk_bundle
 	PFN_vkCreateFence vkCreateFence;
 	PFN_vkWaitForFences vkWaitForFences;
 	PFN_vkDestroyFence vkDestroyFence;
+	PFN_vkResetFences vkResetFences;
 
 	PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR;
 	PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR;
