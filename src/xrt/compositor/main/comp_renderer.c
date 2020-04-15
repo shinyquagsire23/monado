@@ -49,6 +49,7 @@ struct comp_renderer
 
 	VkCommandBuffer *cmd_buffers;
 	VkFramebuffer *frame_buffers;
+	VkFence *fences;
 	uint32_t num_buffers;
 
 	struct comp_swapchain_image dummy_images[2];
@@ -217,6 +218,15 @@ renderer_submit_queue(struct comp_renderer *r)
 	    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 	};
 
+	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->current_buffer],
+	                          VK_TRUE, UINT64_MAX);
+	if (ret != VK_SUCCESS)
+		COMP_ERROR(r->c, "vkWaitForFences: %s", vk_result_string(ret));
+
+	ret = vk->vkResetFences(vk->device, 1, &r->fences[r->current_buffer]);
+	if (ret != VK_SUCCESS)
+		COMP_ERROR(r->c, "vkResetFences: %s", vk_result_string(ret));
+
 	VkSubmitInfo comp_submit_info = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 	    .waitSemaphoreCount = 1,
@@ -228,7 +238,8 @@ renderer_submit_queue(struct comp_renderer *r)
 	    .pSignalSemaphores = &r->semaphores.render_complete,
 	};
 
-	ret = vk->vkQueueSubmit(r->queue, 1, &comp_submit_info, VK_NULL_HANDLE);
+	ret = vk->vkQueueSubmit(r->queue, 1, &comp_submit_info,
+	                        r->fences[r->current_buffer]);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
 	}
@@ -570,6 +581,27 @@ renderer_init_dummy_images(struct comp_renderer *r)
 }
 
 static void
+_create_fences(struct comp_renderer *r)
+{
+	r->fences = U_TYPED_ARRAY_CALLOC(VkFence, r->num_buffers);
+
+	struct vk_bundle *vk = &r->c->vk;
+
+	for (uint32_t i = 0; i < r->num_buffers; i++) {
+		VkResult ret = vk->vkCreateFence(
+		    vk->device,
+		    &(VkFenceCreateInfo){
+		        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		        .flags = VK_FENCE_CREATE_SIGNALED_BIT},
+		    NULL, &r->fences[i]);
+		if (ret != VK_SUCCESS) {
+			COMP_ERROR(r->c, "vkCreateFence: %s",
+			           vk_result_string(ret));
+		}
+	}
+}
+
+static void
 renderer_init(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->vk;
@@ -584,6 +616,7 @@ renderer_init(struct comp_renderer *r)
 
 	r->num_buffers = r->c->window->swapchain.image_count;
 
+	_create_fences(r);
 	renderer_create_frame_buffers(r);
 	renderer_allocate_command_buffers(r);
 
@@ -925,6 +958,11 @@ renderer_destroy(struct comp_renderer *r)
 		                            NULL);
 		r->descriptor_pool = VK_NULL_HANDLE;
 	}
+
+	// Fences
+	for (uint32_t i = 0; i < r->num_buffers; i++)
+		vk->vkDestroyFence(vk->device, r->fences[i], NULL);
+	free(r->fences);
 
 	// Command buffers
 	renderer_destroy_command_buffers(r);
