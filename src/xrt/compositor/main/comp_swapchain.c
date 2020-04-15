@@ -19,16 +19,10 @@ static void
 swapchain_destroy(struct xrt_swapchain *xsc)
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
-	struct vk_bundle *vk = &sc->c->vk;
 
 	COMP_SPEW(sc->c, "DESTROY");
 
-	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
-		comp_swapchain_image_cleanup(vk, sc->base.base.array_size,
-		                             &sc->images[i]);
-	}
-
-	free(sc);
+	u_threading_stack_push(&sc->c->threading.destroy_swapchains, sc);
 }
 
 static bool
@@ -205,6 +199,13 @@ err_image:
 	return ret;
 }
 
+
+/*
+ *
+ * Exported functions.
+ *
+ */
+
 struct xrt_swapchain *
 comp_swapchain_create(struct xrt_compositor *xc,
                       enum xrt_swapchain_create_flags create,
@@ -333,4 +334,19 @@ comp_swapchain_image_cleanup(struct vk_bundle *vk,
 		vk->vkFreeMemory(vk->device, image->memory, NULL);
 		image->memory = VK_NULL_HANDLE;
 	}
+}
+
+void
+comp_swapchain_really_destroy(struct comp_swapchain *sc)
+{
+	struct vk_bundle *vk = &sc->c->vk;
+
+	COMP_SPEW(sc->c, "REALLY DESTROY");
+
+	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
+		comp_swapchain_image_cleanup(vk, sc->base.base.array_size,
+		                             &sc->images[i]);
+	}
+
+	free(sc);
 }

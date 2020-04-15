@@ -73,6 +73,9 @@ compositor_destroy(struct xrt_compositor *xc)
 
 	COMP_DEBUG(c, "DESTROY");
 
+	// Make sure we don't have anything to destroy.
+	comp_compositor_garbage_collect(c);
+
 	if (c->r) {
 		comp_renderer_destroy(c->r);
 		c->r = NULL;
@@ -104,6 +107,8 @@ compositor_destroy(struct xrt_compositor *xc)
 	if (c->compositor_frame_times.debug_var) {
 		free(c->compositor_frame_times.debug_var);
 	}
+
+	u_threading_stack_fini(&c->threading.destroy_swapchains);
 
 	free(c);
 }
@@ -305,6 +310,9 @@ compositor_end_frame(struct xrt_compositor *xc,
 	//! @todo do a time-weighted average or something.
 	c->expected_app_duration_ns =
 	    c->app_profiling.last_end - c->app_profiling.last_begin;
+
+	// Now is a good point to garbage collect.
+	comp_compositor_garbage_collect(c);
 }
 
 
@@ -806,6 +814,8 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 	c->base.base.destroy = compositor_destroy;
 	c->xdev = xdev;
 
+	u_threading_stack_init(&c->threading.destroy_swapchains);
+
 	COMP_DEBUG(c, "Doing init %p", (void *)c);
 
 	// Init the settings to default.
@@ -867,4 +877,14 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 	c->compositor_frame_times.debug_var = ft;
 
 	return &c->base;
+}
+
+void
+comp_compositor_garbage_collect(struct comp_compositor *c)
+{
+	struct comp_swapchain *sc;
+
+	while ((sc = u_threading_stack_pop(&c->threading.destroy_swapchains))) {
+		comp_swapchain_really_destroy(sc);
+	}
 }

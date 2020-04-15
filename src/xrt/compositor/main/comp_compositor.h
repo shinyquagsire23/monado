@@ -10,11 +10,14 @@
 
 #pragma once
 
+#include "xrt/xrt_gfx_vk.h"
+
+#include "util/u_threading.h"
+
 #include "main/comp_settings.h"
 #include "main/comp_window.h"
 #include "main/comp_renderer.h"
 
-#include "xrt/xrt_gfx_vk.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -143,6 +146,12 @@ struct comp_compositor
 		uint32_t width;
 		uint32_t height;
 	} current;
+
+	struct
+	{
+		//! Thread object for safely destroying swapchain.
+		struct u_threading_stack destroy_swapchains;
+	} threading;
 };
 
 
@@ -175,6 +184,15 @@ comp_compositor(struct xrt_compositor *xc)
 }
 
 /*!
+ * Do garbage collection, destroying any resources that has been scheduled for
+ * destruction from other threads.
+ *
+ * @ingroup comp_main
+ */
+void
+comp_compositor_garbage_collect(struct comp_compositor *c);
+
+/*!
  * A compositor function that is implemented in the swapchain code.
  *
  * @ingroup comp_main
@@ -190,6 +208,16 @@ comp_swapchain_create(struct xrt_compositor *xc,
                       uint32_t face_count,
                       uint32_t array_size,
                       uint32_t mip_count);
+
+/*!
+ * Swapchain destruct is delayed until it is safe to destroy them, this function
+ * does the actual destruction and is called from @ref
+ * comp_compositor_garbage_collect.
+ *
+ * @ingroup comp_main
+ */
+void
+comp_swapchain_really_destroy(struct comp_swapchain *sc);
 
 /*!
  * Free and destroy any initialized fields on the given image, safe to pass in
