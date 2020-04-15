@@ -141,6 +141,8 @@ if(BUILD_DRIVER_VIVE)
 		vive/vive_prober.c
 		vive/vive_protocol.c
 		vive/vive_protocol.h
+		vive/vive_controller_interface.h
+		vive/vive_controller_driver.c
 		)
 
 	add_library(drv_vive STATIC ${VIVE_SOURCE_FILES})

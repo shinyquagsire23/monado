@@ -234,7 +234,10 @@ struct vive_controller_haptic_pulse_report
 	uint8_t id;
 	uint8_t command;
 	uint8_t len;
-	uint8_t unknown[7];
+	uint8_t zero;
+	uint16_t pulse_high;
+	uint16_t pulse_low;
+	uint16_t repeat_count;
 } __attribute__((packed));
 
 #define VIVE_CONTROLLER_POWEROFF_COMMAND 0x9f

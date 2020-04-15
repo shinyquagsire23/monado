@@ -44,6 +44,7 @@
 
 #ifdef XRT_BUILD_DRIVER_VIVE
 #include "vive/vive_prober.h"
+#include "vive/vive_controller_interface.h"
 #endif
 
 #ifdef XRT_BUILD_DRIVER_DAYDREAM
@@ -85,6 +86,10 @@ struct xrt_prober_entry target_entry_list[] = {
     {HTC_VID, VIVE_PID, vive_found, "HTC Vive"},
     {HTC_VID, VIVE_PRO_MAINBOARD_PID, vive_found, "HTC Vive Pro"},
     {VALVE_VID, VIVE_PRO_LHR_PID, vive_found, "Valve Index"},
+    {VALVE_VID, VIVE_WATCHMAN_DONGLE, vive_controller_found,
+     "HTC Vive Watchman Wireless Device"},
+    {VALVE_VID, VIVE_WATCHMAN_DONGLE_GEN2, vive_controller_found,
+     "Valve Watchman Wireless Device"},
 #endif
 
     {0x0000, 0x0000, NULL, NULL}, // Terminate

@@ -18,6 +18,7 @@
 
 #include "util/u_debug.h"
 #include "util/u_misc.h"
+#include "util/u_json.h"
 
 #define VIVE_ERROR(...)                                                        \
 	do {                                                                   \
