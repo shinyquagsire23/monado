@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "os/os_threading.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -28,9 +30,15 @@ struct hdk_device
 	struct os_hid_device *dev;
 	enum HDK_VARIANT variant;
 
+	struct os_thread_helper imu_thread;
+
 	bool print_spew;
 	bool print_debug;
 	bool disconnect_notified;
+
+	struct xrt_quat quat;
+	struct xrt_quat ang_vel_quat;
+	bool quat_valid;
 };
 
 static inline struct hdk_device *

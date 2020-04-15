@@ -90,6 +90,8 @@ hdk_device_destroy(struct xrt_device *xdev)
 {
 	struct hdk_device *hd = hdk_device(xdev);
 
+	os_thread_helper_destroy(&hd->imu_thread);
+
 	if (hd->dev != NULL) {
 		os_hid_destroy(hd->dev);
 		hd->dev = NULL;
@@ -105,42 +107,32 @@ hdk_device_update_inputs(struct xrt_device *xdev,
 	// Empty
 }
 
-static void
-hdk_device_get_tracked_pose(struct xrt_device *xdev,
-                            enum xrt_input_name name,
-                            struct time_state *timekeeping,
-                            int64_t *out_timestamp,
-                            struct xrt_space_relation *out_relation)
+static int
+hdk_device_update(struct hdk_device *hd)
 {
-	struct hdk_device *hd = hdk_device(xdev);
-
-	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
-		HDK_ERROR(hd, "unknown input name");
-		return;
-	}
-
 	uint8_t buffer[32];
-	int64_t now = time_state_get_now(timekeeping);
+
 	auto bytesRead = os_hid_read(hd->dev, buffer, sizeof(buffer), 0);
 	if (bytesRead == -1) {
 		if (!hd->disconnect_notified) {
-			fprintf(stderr,
-			        "%s: HDK appeared to disconnect. Please quit, "
-			        "reconnect, and try again.\n",
-			        __func__);
+			HDK_ERROR(hd,
+			          "%s: HDK appeared to disconnect. Please "
+			          "quit, reconnect, and try again.",
+			          __func__);
 			hd->disconnect_notified = true;
 		}
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		return;
+		hd->quat_valid = false;
+		return 0;
 	}
-	if (bytesRead != 32 && bytesRead != 16) {
-		HDK_DEBUG(hd, "Only got %d bytes", bytesRead);
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		return;
+	while (bytesRead > 0) {
+		if (bytesRead != 32 && bytesRead != 16) {
+			HDK_DEBUG(hd, "Only got %d bytes", bytesRead);
+			hd->quat_valid = false;
+			return 1;
+		}
+		bytesRead = os_hid_read(hd->dev, buffer, sizeof(buffer), 0);
 	}
-	// Adjusting for latency - 14ms, found empirically.
-	now -= 14000000;
-	*out_timestamp = now;
+
 	uint8_t *buf = &(buffer[0]);
 
 #if 0
@@ -178,7 +170,7 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 	// Fix that 90
 	math_quat_rotate(&negative_90_about_y, &quat, &quat);
 
-	out_relation->pose.orientation = quat;
+	hd->quat = quat;
 
 	/// @todo might not be accurate on some version 1 reports??
 
@@ -200,18 +192,56 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 	math_quat_rotate(&ang_vel_quat, &rot_90_about_x, &ang_vel_quat);
 	math_quat_rotate(&negative_90_about_x, &ang_vel_quat, &ang_vel_quat);
 
-	out_relation->angular_velocity.x = ang_vel_quat.x;
-	out_relation->angular_velocity.y = ang_vel_quat.y;
-	out_relation->angular_velocity.z = ang_vel_quat.z;
+	hd->ang_vel_quat = ang_vel_quat;
+
+	hd->quat_valid = true;
+	return 1;
+}
+
+static void
+hdk_device_get_tracked_pose(struct xrt_device *xdev,
+                            enum xrt_input_name name,
+                            struct time_state *timekeeping,
+                            int64_t *out_timestamp,
+                            struct xrt_space_relation *out_relation)
+{
+	struct hdk_device *hd = hdk_device(xdev);
+
+	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
+		HDK_ERROR(hd, "unknown input name");
+		return;
+	}
+
+	int64_t now = time_state_get_now(timekeeping);
+
+	// Adjusting for latency - 14ms, found empirically.
+	now -= 14000000;
+	*out_timestamp = now;
+
+	if (!hd->quat_valid) {
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+		HDK_SPEW(hd, "GET_TRACKED_POSE: No pose");
+		return;
+	}
+
+	os_thread_helper_lock(&hd->imu_thread);
+
+	out_relation->pose.orientation = hd->quat;
+
+	out_relation->angular_velocity.x = hd->ang_vel_quat.x;
+	out_relation->angular_velocity.y = hd->ang_vel_quat.y;
+	out_relation->angular_velocity.z = hd->ang_vel_quat.z;
 
 	out_relation->relation_flags = xrt_space_relation_flags(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT |
 	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
+	os_thread_helper_unlock(&hd->imu_thread);
+
 	HDK_SPEW(hd, "GET_TRACKED_POSE (%f, %f, %f, %f) ANG_VEL (%f, %f, %f)",
-	         quat.x, quat.y, quat.z, quat.w, ang_vel_quat.x, ang_vel_quat.y,
-	         ang_vel_quat.z);
+	         hd->quat.x, hd->quat.y, hd->quat.z, hd->quat.w,
+	         hd->ang_vel_quat.x, hd->ang_vel_quat.y, hd->ang_vel_quat.z);
 }
 
 static void
@@ -239,6 +269,25 @@ hdk_device_get_view_pose(struct xrt_device *xdev,
 	}
 
 	*out_pose = pose;
+}
+
+static void *
+hdk_device_run_thread(void *ptr)
+{
+	struct hdk_device *hd = hdk_device((struct xrt_device *)ptr);
+
+	os_thread_helper_lock(&hd->imu_thread);
+	while (os_thread_helper_is_running_locked(&hd->imu_thread)) {
+		os_thread_helper_unlock(&hd->imu_thread);
+
+		if (!hdk_device_update(hd)) {
+			return NULL;
+		}
+
+		// Just keep swimming.
+		os_thread_helper_lock(&hd->imu_thread);
+	}
+	return NULL;
 }
 
 #define HDK_DEBUG_INT(hd, name, val) HDK_DEBUG(hd, "\t%s = %u", name, val)
@@ -389,6 +438,14 @@ hdk_device_create(struct os_hid_device *dev,
 		hd->base.hmd->views[1].viewport.h_pixels = panel_w;
 		hd->base.hmd->views[1].rot = u_device_rotation_ident;
 #endif
+
+		hd->base.hmd->views[0].lens_center.x_meters = -0.03;
+		hd->base.hmd->views[1].lens_center.x_meters = 0.3;
+		printf("Center %f %f, %f %f\n",
+			hd->base.hmd->views[0].lens_center.x_meters,
+			hd->base.hmd->views[0].lens_center.y_meters,
+			hd->base.hmd->views[1].lens_center.x_meters,
+			hd->base.hmd->views[1].lens_center.y_meters);
 		// clang-format on
 		break;
 	}
@@ -443,6 +500,15 @@ hdk_device_create(struct os_hid_device *dev,
 	// XRT_DISTORTION_MODEL_PANOTOOLS;
 	// }
 
+	if (hd->dev) {
+		int ret = os_thread_helper_start(&hd->imu_thread,
+		                                 hdk_device_run_thread, hd);
+		if (ret != 0) {
+			HDK_ERROR(d, "Failed to start mainboard thread!");
+			hdk_device_destroy((struct xrt_device *)hd);
+			return 0;
+		}
+	}
 
 	if (hd->print_debug) {
 		u_device_dump_config(&hd->base, __func__, hd->base.str);
