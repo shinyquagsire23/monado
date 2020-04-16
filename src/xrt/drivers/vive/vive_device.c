@@ -22,10 +22,11 @@
 #include "math/m_api.h"
 
 #include "os/os_hid.h"
-
+#include "os/os_time.h"
 
 #include "vive_device.h"
 #include "vive_protocol.h"
+
 
 #define VIVE_CLOCK_FREQ 48e6 // 48 MHz
 
@@ -77,8 +78,7 @@ vive_device_destroy(struct xrt_device *xdev)
 }
 
 static void
-vive_device_update_inputs(struct xrt_device *xdev,
-                          struct time_state *timekeeping)
+vive_device_update_inputs(struct xrt_device *xdev)
 {
 	struct vive_device *d = vive_device(xdev);
 	VIVE_SPEW(d, "ENTER!");
@@ -87,8 +87,8 @@ vive_device_update_inputs(struct xrt_device *xdev,
 static void
 vive_device_get_tracked_pose(struct xrt_device *xdev,
                              enum xrt_input_name name,
-                             struct time_state *timekeeping,
-                             int64_t *out_timestamp,
+                             uint64_t at_timestamp_ns,
+                             uint64_t *out_relation_timestamp_ns,
                              struct xrt_space_relation *out_relation)
 {
 	struct vive_device *d = vive_device(xdev);
@@ -101,8 +101,10 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 	// Clear out the relation.
 	U_ZERO(out_relation);
 
-	int64_t when = time_state_get_now(timekeeping);
-	*out_timestamp = when;
+	//! @todo Use this properly.
+	(void)at_timestamp_ns;
+	uint64_t when = os_monotonic_get_ns();
+	*out_relation_timestamp_ns = when;
 
 	os_thread_helper_lock(&d->sensors_thread);
 

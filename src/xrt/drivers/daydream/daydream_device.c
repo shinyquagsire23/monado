@@ -252,7 +252,6 @@ daydream_get_calibration(struct daydream_device *daydream)
 static void
 daydream_get_fusion_pose(struct daydream_device *daydream,
                          enum xrt_input_name name,
-                         timepoint_ns when,
                          struct xrt_space_relation *out_relation)
 {
 	out_relation->pose.orientation = daydream->fusion.rot;
@@ -287,12 +286,11 @@ daydream_device_destroy(struct xrt_device *xdev)
 }
 
 static void
-daydream_device_update_inputs(struct xrt_device *xdev,
-                              struct time_state *timekeeping)
+daydream_device_update_inputs(struct xrt_device *xdev)
 {
 	struct daydream_device *daydream = daydream_device(xdev);
 
-	int64_t now = time_state_get_now(timekeeping);
+	uint64_t now = os_monotonic_get_ns();
 
 	// Lock the data.
 	os_mutex_lock(&daydream->lock);
@@ -318,15 +316,16 @@ daydream_device_update_inputs(struct xrt_device *xdev,
 static void
 daydream_device_get_tracked_pose(struct xrt_device *xdev,
                                  enum xrt_input_name name,
-                                 struct time_state *timekeeping,
-                                 int64_t *out_timestamp,
+                                 uint64_t at_timestamp_ns,
+                                 uint64_t *out_relation_timestamp_ns,
                                  struct xrt_space_relation *out_relation)
 {
 	struct daydream_device *daydream = daydream_device(xdev);
+	uint64_t now = os_monotonic_get_ns();
 
-	timepoint_ns now = time_state_get_now(timekeeping);
-
-	daydream_get_fusion_pose(daydream, name, now, out_relation);
+	(void)at_timestamp_ns;
+	daydream_get_fusion_pose(daydream, name, out_relation);
+	*out_relation_timestamp_ns = now;
 }
 
 

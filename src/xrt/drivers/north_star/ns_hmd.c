@@ -16,6 +16,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "os/os_time.h"
+
 #include "ns_hmd.h"
 
 #include "util/u_var.h"
@@ -48,20 +50,20 @@ ns_hmd_destroy(struct xrt_device *xdev)
 }
 
 static void
-ns_hmd_update_inputs(struct xrt_device *xdev, struct time_state *timekeeping)
+ns_hmd_update_inputs(struct xrt_device *xdev)
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
 
 	if (ns->tracker != NULL) {
-		ns->tracker->update_inputs(ns->tracker, timekeeping);
+		xrt_device_update_inputs(ns->tracker);
 	}
 }
 
 static void
 ns_hmd_get_tracked_pose(struct xrt_device *xdev,
                         enum xrt_input_name name,
-                        struct time_state *timekeeping,
-                        int64_t *out_timestamp,
+                        uint64_t at_timestamp_ns,
+                        uint64_t *out_relation_timestamp_ns,
                         struct xrt_space_relation *out_relation)
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
@@ -69,8 +71,9 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
 
 	// If the tracking device is created use it.
 	if (ns->tracker != NULL) {
-		ns->tracker->get_tracked_pose(ns->tracker, name, timekeeping,
-		                              out_timestamp, out_relation);
+		xrt_device_get_tracked_pose(ns->tracker, name, at_timestamp_ns,
+		                            out_relation_timestamp_ns,
+		                            out_relation);
 		return;
 	}
 
@@ -79,9 +82,9 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	int64_t now = time_state_get_now(timekeeping);
+	uint64_t now = os_monotonic_get_ns();
 
-	*out_timestamp = now;
+	*out_relation_timestamp_ns = now;
 	out_relation->pose = ns->pose;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |

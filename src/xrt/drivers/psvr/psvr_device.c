@@ -59,7 +59,6 @@ struct psvr_device
 
 	struct xrt_tracked_psvr *tracker;
 
-	struct time_state *timekeeping;
 	timepoint_ns last_sensor_time;
 
 	struct psvr_parsed_sensor last;
@@ -356,7 +355,7 @@ handle_tracker_sensor_msg(struct psvr_device *psvr,
                           unsigned char *buffer,
                           int size)
 {
-	timepoint_ns now = time_state_get_now_and_update(psvr->timekeeping);
+	timepoint_ns now = os_monotonic_get_ns();
 	uint32_t last_sample_tick = psvr->last.samples[1].tick;
 
 	if (!psvr_parse_sensor_packet(&psvr->last, buffer, size)) {
@@ -893,14 +892,6 @@ teardown(struct psvr_device *psvr)
 		hid_close(psvr->hmd_handle);
 		psvr->hmd_handle = NULL;
 	}
-
-	/*
-	 * This needs to happen last because when waiting for
-	 * device control changes we can get IMU update packets.
-	 *
-	 * Does null checking and setting of null.
-	 */
-	time_state_destroy(&psvr->timekeeping);
 }
 
 
@@ -911,8 +902,7 @@ teardown(struct psvr_device *psvr)
  */
 
 static void
-psvr_device_update_inputs(struct xrt_device *xdev,
-                          struct time_state *timekeeping)
+psvr_device_update_inputs(struct xrt_device *xdev)
 {
 	struct psvr_device *psvr = psvr_device(xdev);
 
@@ -923,8 +913,8 @@ psvr_device_update_inputs(struct xrt_device *xdev,
 static void
 psvr_device_get_tracked_pose(struct xrt_device *xdev,
                              enum xrt_input_name name,
-                             struct time_state *timekeeping,
-                             int64_t *out_timestamp,
+                             uint64_t at_timestamp_ns,
+                             uint64_t *out_relation_timestamp_ns,
                              struct xrt_space_relation *out_relation)
 {
 	struct psvr_device *psvr = psvr_device(xdev);
@@ -941,9 +931,6 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 	// Clear out the relation.
 	U_ZERO(out_relation);
 
-	int64_t when = time_state_get_now(timekeeping);
-	*out_timestamp = when;
-
 	// We have no tracking, don't return a position.
 	if (psvr->tracker == NULL) {
 #if 0
@@ -958,9 +945,12 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 		out_relation->relation_flags = (enum xrt_space_relation_flags)(
 		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+
+		*out_relation_timestamp_ns = os_monotonic_get_ns();
 	} else {
-		psvr->tracker->get_tracked_pose(psvr->tracker, timekeeping,
-		                                when, out_relation);
+		xrt_tracked_psvr_get_tracked_pose(
+		    psvr->tracker, at_timestamp_ns, out_relation);
+		*out_relation_timestamp_ns = at_timestamp_ns;
 	}
 }
 
@@ -1048,9 +1038,6 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 
 		u_distortion_mesh_from_panotools(&vals, &vals, psvr->base.hmd);
 	}
-
-	//! @todo inject this, don't create it
-	psvr->timekeeping = time_state_create();
 
 #if 0
 	psvr->fusion = imu_fusion_create();

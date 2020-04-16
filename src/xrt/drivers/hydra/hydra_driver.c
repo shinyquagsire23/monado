@@ -19,18 +19,21 @@
 
 #include "xrt/xrt_prober.h"
 
+#include "os/os_hid.h"
+#include "os/os_time.h"
+
 #include "math/m_api.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
-#include "os/os_hid.h"
 
 #include "hydra_interface.h"
 
 #ifdef XRT_OS_LINUX
 #include <unistd.h>
 #endif
+
 
 /*
  *
@@ -430,10 +433,10 @@ hydra_system_enter_motion_control(struct hydra_system *hs, timepoint_ns now)
  *
  */
 static int
-hydra_system_update(struct hydra_system *hs, struct time_state *timekeeping)
+hydra_system_update(struct hydra_system *hs)
 {
 	assert(hs);
-	timepoint_ns now = time_state_get_now(timekeeping);
+	timepoint_ns now = os_monotonic_get_ns();
 
 	// In all states of the state machine:
 	// Try reading a report: will only return >0 if we get a full motion
@@ -490,13 +493,12 @@ hydra_device_update_input_click(struct hydra_device *hd,
  */
 
 static void
-hydra_device_update_inputs(struct xrt_device *xdev,
-                           struct time_state *timekeeping)
+hydra_device_update_inputs(struct xrt_device *xdev)
 {
 	struct hydra_device *hd = hydra_device(xdev);
 	struct hydra_system *hs = hydra_system(xdev->tracking_origin);
 
-	hydra_system_update(hs, timekeeping);
+	hydra_system_update(hs);
 
 	if (hd->input_time != hs->report_time) {
 		timepoint_ns now = hs->report_time;
@@ -538,16 +540,16 @@ hydra_device_update_inputs(struct xrt_device *xdev,
 static void
 hydra_device_get_tracked_pose(struct xrt_device *xdev,
                               enum xrt_input_name name,
-                              struct time_state *timekeeping,
-                              int64_t *out_timestamp,
+                              uint64_t at_timestamp_ns,
+                              uint64_t *out_relation_timestamp_ns,
                               struct xrt_space_relation *out_relation)
 {
 	struct hydra_device *hd = hydra_device(xdev);
 	struct hydra_system *hs = hydra_system(xdev->tracking_origin);
 
-	hydra_system_update(hs, timekeeping);
+	hydra_system_update(hs);
 
-	*out_timestamp = hs->report_time;
+	*out_relation_timestamp_ns = hs->report_time;
 	out_relation->pose = hd->state.pose;
 
 	//! @todo how do we report this is not (necessarily) the same base space

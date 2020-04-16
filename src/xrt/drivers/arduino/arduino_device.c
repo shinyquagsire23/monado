@@ -296,7 +296,6 @@ arduino_run_thread(void *ptr)
 static void
 arduino_get_fusion_pose(struct arduino_device *ad,
                         enum xrt_input_name name,
-                        timepoint_ns when,
                         struct xrt_space_relation *out_relation)
 {
 	out_relation->pose.orientation = ad->fusion.rot;
@@ -331,12 +330,11 @@ arduino_device_destroy(struct xrt_device *xdev)
 }
 
 static void
-arduino_device_update_inputs(struct xrt_device *xdev,
-                             struct time_state *timekeeping)
+arduino_device_update_inputs(struct xrt_device *xdev)
 {
 	struct arduino_device *ad = arduino_device(xdev);
 
-	int64_t now = time_state_get_now(timekeeping);
+	uint64_t now = os_monotonic_get_ns();
 
 	// Lock the data.
 	os_mutex_lock(&ad->lock);
@@ -357,15 +355,17 @@ arduino_device_update_inputs(struct xrt_device *xdev,
 static void
 arduino_device_get_tracked_pose(struct xrt_device *xdev,
                                 enum xrt_input_name name,
-                                struct time_state *timekeeping,
-                                int64_t *out_timestamp,
+                                uint64_t at_timestamp_ns,
+                                uint64_t *out_relation_timestamp_ns,
                                 struct xrt_space_relation *out_relation)
 {
 	struct arduino_device *ad = arduino_device(xdev);
 
-	timepoint_ns now = time_state_get_now(timekeeping);
+	uint64_t now = os_monotonic_get_ns();
 
-	arduino_get_fusion_pose(ad, name, now, out_relation);
+	(void)at_timestamp_ns;
+	arduino_get_fusion_pose(ad, name, out_relation);
+	*out_relation_timestamp_ns = now;
 }
 
 

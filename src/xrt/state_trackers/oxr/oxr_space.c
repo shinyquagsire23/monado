@@ -194,12 +194,12 @@ oxr_space_action_relation(struct oxr_logger *log,
                           struct oxr_session *sess,
                           struct oxr_space *spc,
                           struct oxr_space *baseSpc,
-                          XrTime time,
+                          XrTime at_time,
                           struct xrt_space_relation *out_relation)
 {
 	struct oxr_source_input *input = NULL;
 	struct oxr_space *act_spc, *ref_spc = NULL;
-	int64_t timestamp = 0;
+	uint64_t timestamp = 0;
 	bool invert = false;
 
 
@@ -245,8 +245,8 @@ oxr_space_action_relation(struct oxr_logger *log,
 	}
 
 	oxr_xdev_get_pose_at(log, sess->sys->inst, input->xdev,
-	                     input->input->name, &out_relation->pose,
-	                     &timestamp);
+	                     input->input->name, at_time, &timestamp,
+	                     &out_relation->pose);
 
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_POSITION_VALID_BIT |

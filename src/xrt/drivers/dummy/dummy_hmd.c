@@ -15,6 +15,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include "os/os_time.h"
 #include "math/m_api.h"
 #include "xrt/xrt_device.h"
 #include "util/u_var.h"
@@ -23,6 +24,7 @@
 #include "util/u_device.h"
 #include "util/u_time.h"
 #include "util/u_distortion_mesh.h"
+
 
 /*
  *
@@ -93,7 +95,7 @@ dummy_hmd_destroy(struct xrt_device *xdev)
 }
 
 static void
-dummy_hmd_update_inputs(struct xrt_device *xdev, struct time_state *timekeeping)
+dummy_hmd_update_inputs(struct xrt_device *xdev)
 {
 	// Empty
 }
@@ -101,8 +103,8 @@ dummy_hmd_update_inputs(struct xrt_device *xdev, struct time_state *timekeeping)
 static void
 dummy_hmd_get_tracked_pose(struct xrt_device *xdev,
                            enum xrt_input_name name,
-                           struct time_state *timekeeping,
-                           int64_t *out_timestamp,
+                           uint64_t at_timestamp_ns,
+                           uint64_t *out_relation_timestamp_ns,
                            struct xrt_space_relation *out_relation)
 {
 	struct dummy_hmd *dh = dummy_hmd(xdev);
@@ -112,9 +114,9 @@ dummy_hmd_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	int64_t now = time_state_get_now(timekeeping);
+	uint64_t now = os_monotonic_get_ns();
 
-	*out_timestamp = now;
+	*out_relation_timestamp_ns = now;
 	out_relation->pose = dh->pose;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |

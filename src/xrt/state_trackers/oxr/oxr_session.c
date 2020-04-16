@@ -15,8 +15,9 @@
 
 #include "util/u_debug.h"
 #include "util/u_misc.h"
-#include "math/m_api.h"
 #include "util/u_time.h"
+
+#include "math/m_api.h"
 
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_gfx_xlib.h"
@@ -199,36 +200,23 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 	//       get at least a slightly better position.
 
 	struct xrt_device *xdev = sess->sys->head;
-	struct xrt_pose *offset = &xdev->tracking_origin->offset;
-
 	struct xrt_space_relation relation;
-	int64_t timestamp;
-	xdev->get_tracked_pose(xdev, XRT_INPUT_GENERIC_HEAD_POSE,
-	                       sess->sys->inst->timekeeping, &timestamp,
-	                       &relation);
+	uint64_t timestamp;
 
-	// Add in the offset from the tracking system.
-	math_relation_apply_offset(offset, &relation);
+	// Applies the offset in the function.
+	oxr_xdev_get_relation_at(log, sess->sys->inst, xdev,
+	                         XRT_INPUT_GENERIC_HEAD_POSE, at_time,
+	                         &timestamp, &relation);
 
 	// clang-format off
-	bool valid_pos = (relation.relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0;
-	bool valid_ori = (relation.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
+	// Function above always makes the pose valid.
+	assert((relation.relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0);
+	assert((relation.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0);
+	*pose = relation.pose;
+
 	bool valid_vel = (relation.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0;
 	// clang-format on
 
-	if (valid_ori) {
-		pose->orientation = relation.pose.orientation;
-	} else {
-		// If the orientation is not valid just use the offset.
-		pose->orientation = offset->orientation;
-	}
-
-	if (valid_pos) {
-		pose->position = relation.pose.position;
-	} else {
-		// If the position is not valid just use the offset.
-		pose->position = offset->position;
-	}
 
 	if (valid_vel) {
 		//! @todo Forcing a fixed amount of prediction for now since

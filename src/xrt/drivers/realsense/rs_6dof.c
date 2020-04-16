@@ -12,6 +12,8 @@
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
 
+#include "os/os_time.h"
+
 #include "util/u_time.h"
 #include "util/u_device.h"
 
@@ -203,7 +205,7 @@ update(struct rs_6dof *rs, struct xrt_pose *out_pose)
 }
 
 static void
-rs_6dof_update_inputs(struct xrt_device *xdev, struct time_state *timekeeping)
+rs_6dof_update_inputs(struct xrt_device *xdev)
 {
 	// Empty
 }
@@ -211,8 +213,8 @@ rs_6dof_update_inputs(struct xrt_device *xdev, struct time_state *timekeeping)
 static void
 rs_6dof_get_tracked_pose(struct xrt_device *xdev,
                          enum xrt_input_name name,
-                         struct time_state *timekeeping,
-                         int64_t *out_timestamp,
+                         uint64_t at_timestamp_ns,
+                         uint64_t *out_relation_timestamp_ns,
                          struct xrt_space_relation *out_relation)
 {
 	struct rs_6dof *rs = rs_6dof(xdev);
@@ -222,8 +224,8 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	int64_t now = time_state_get_now(timekeeping);
-	*out_timestamp = now;
+	uint64_t now = os_monotonic_get_ns();
+	*out_relation_timestamp_ns = now;
 
 	update(rs, &rs->pose);
 

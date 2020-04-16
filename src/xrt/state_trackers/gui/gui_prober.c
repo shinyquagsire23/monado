@@ -82,7 +82,7 @@ gui_prober_update(struct gui_program *p)
 			continue;
 		}
 
-		p->xdevs[i]->update_inputs(p->xdevs[i], p->timekeeping);
+		p->xdevs[i]->update_inputs(p->xdevs[i]);
 	}
 }
 

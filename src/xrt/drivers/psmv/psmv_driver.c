@@ -13,6 +13,7 @@
 
 #include "os/os_threading.h"
 #include "os/os_hid.h"
+#include "os/os_time.h"
 
 #include "math/m_api.h"
 #include "math/m_imu_pre.h"
@@ -678,8 +679,6 @@ static void *
 psmv_run_thread(void *ptr)
 {
 	struct psmv_device *psmv = (struct psmv_device *)ptr;
-	//! @todo this should be injected at construction time
-	struct time_state *time = time_state_create();
 
 	union {
 		uint8_t buffer[256];
@@ -694,16 +693,14 @@ psmv_run_thread(void *ptr)
 
 	// Now wait for a package to sync up, it's discarded but that's okay.
 	if (!psmv_read_one_packet(psmv, data.buffer, sizeof(data))) {
-		// Does null checking and sets to null.
-		time_state_destroy(&time);
 		return NULL;
 	}
 
-	timepoint_ns then_ns = time_state_get_now(time);
+	timepoint_ns then_ns = os_monotonic_get_ns();
 
 	while (psmv_read_one_packet(psmv, data.buffer, sizeof(data))) {
 
-		timepoint_ns now_ns = time_state_get_now(time);
+		timepoint_ns now_ns = os_monotonic_get_ns();
 
 		int num = psmv_parse_input(psmv, data.buffer, &input);
 
@@ -734,9 +731,6 @@ psmv_run_thread(void *ptr)
 		// Now done.
 		os_mutex_unlock(&psmv->lock);
 	}
-
-	// Does null checking and sets to null.
-	time_state_destroy(&time);
 
 	return NULL;
 }
@@ -836,12 +830,11 @@ psmv_device_destroy(struct xrt_device *xdev)
 }
 
 static void
-psmv_device_update_inputs(struct xrt_device *xdev,
-                          struct time_state *timekeeping)
+psmv_device_update_inputs(struct xrt_device *xdev)
 {
 	struct psmv_device *psmv = psmv_device(xdev);
 
-	int64_t now = time_state_get_now(timekeeping);
+	int64_t now = os_monotonic_get_ns();
 
 	psmv_led_and_trigger_update(psmv, now);
 
@@ -870,29 +863,29 @@ psmv_device_update_inputs(struct xrt_device *xdev,
 static void
 psmv_device_get_tracked_pose(struct xrt_device *xdev,
                              enum xrt_input_name name,
-                             struct time_state *timekeeping,
-                             int64_t *out_timestamp,
+                             uint64_t at_timestamp_ns,
+                             uint64_t *out_relation_timestamp_ns,
                              struct xrt_space_relation *out_relation)
 {
 	struct psmv_device *psmv = psmv_device(xdev);
 
-	timepoint_ns now = time_state_get_now(timekeeping);
 
 	//! @todo transform pose based on input.
 	// We have no tracking, don't return a position.
 	if (psmv->ball != NULL) {
-		timepoint_ns when_ns = now;
-		xrt_tracked_psmv_get_tracked_pose(psmv->ball, name, timekeeping,
-		                                  when_ns, out_relation);
+		xrt_tracked_psmv_get_tracked_pose(
+		    psmv->ball, name, at_timestamp_ns, out_relation);
+		*out_relation_timestamp_ns = at_timestamp_ns;
 	} else {
+		uint64_t now = os_monotonic_get_ns();
 		psmv_get_fusion_pose(psmv, name, now, out_relation);
+		*out_relation_timestamp_ns = now;
 	}
 }
 
 static void
 psmv_device_set_output(struct xrt_device *xdev,
                        enum xrt_output_name name,
-                       struct time_state *timekeeping,
                        union xrt_output_value *value)
 {
 	struct psmv_device *psmv = psmv_device(xdev);
@@ -905,7 +898,7 @@ psmv_device_set_output(struct xrt_device *xdev,
 	    psmv_clamp_zero_to_one_float_to_u8(value->vibration.amplitude);
 
 	// Resend if the rumble has been changed.
-	int64_t now = time_state_get_now(timekeeping);
+	int64_t now = os_monotonic_get_ns();
 	psmv_led_and_trigger_update(psmv, now);
 }
 

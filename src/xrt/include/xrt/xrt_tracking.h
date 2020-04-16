@@ -130,7 +130,6 @@ struct xrt_tracked_psmv
 	 */
 	void (*get_tracked_pose)(struct xrt_tracked_psmv *,
 	                         enum xrt_input_name name,
-	                         struct time_state *timekeeper,
 	                         timepoint_ns when_ns,
 	                         struct xrt_space_relation *out_relation);
 
@@ -165,7 +164,6 @@ struct xrt_tracked_psvr
 	 * the psvr in the tracking space at the given time.
 	 */
 	void (*get_tracked_pose)(struct xrt_tracked_psvr *,
-	                         struct time_state *timekeeper,
 	                         timepoint_ns when_ns,
 	                         struct xrt_space_relation *out_relation);
 
@@ -185,11 +183,10 @@ struct xrt_tracked_psvr
 static inline void
 xrt_tracked_psmv_get_tracked_pose(struct xrt_tracked_psmv *psmv,
                                   enum xrt_input_name name,
-                                  struct time_state *timekeeper,
                                   timepoint_ns when_ns,
                                   struct xrt_space_relation *out_relation)
 {
-	psmv->get_tracked_pose(psmv, name, timekeeper, when_ns, out_relation);
+	psmv->get_tracked_pose(psmv, name, when_ns, out_relation);
 }
 
 static inline void
@@ -214,11 +211,10 @@ xrt_tracked_psmv_destroy(struct xrt_tracked_psmv **xtmv_ptr)
 
 static inline void
 xrt_tracked_psvr_get_tracked_pose(struct xrt_tracked_psvr *psvr,
-                                  struct time_state *timekeeper,
                                   timepoint_ns when_ns,
                                   struct xrt_space_relation *out_relation)
 {
-	psvr->get_tracked_pose(psvr, timekeeper, when_ns, out_relation);
+	psvr->get_tracked_pose(psvr, when_ns, out_relation);
 }
 
 static inline void

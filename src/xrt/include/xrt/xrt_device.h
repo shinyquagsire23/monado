@@ -17,7 +17,6 @@
 extern "C" {
 #endif
 
-struct time_state;
 struct xrt_tracking;
 
 
@@ -231,8 +230,7 @@ struct xrt_device
 	 * @param[in] xdev        The device.
 	 * @param[in] timekeeping Shared time synchronization struct.
 	 */
-	void (*update_inputs)(struct xrt_device *xdev,
-	                      struct time_state *timekeeping);
+	void (*update_inputs)(struct xrt_device *xdev);
 
 	/*!
 	 * Get relationship of a tracked device to the device "base space".
@@ -245,16 +243,19 @@ struct xrt_device
 	 * @param[in] name           Some devices may have multiple poses on
 	 *                           them, select the one using this field. For
 	 *                           HMDs use @p XRT_INPUT_GENERIC_HEAD_POSE.
-	 * @param[in] timekeeping    Shared time synchronization struct.
-	 * @param[out] out_timestamp Timestamp when this relation was captured.
-	 * @param[out] out_relation  The relation read from the device.
+	 * @param[in] at_timestamp_ns If the device can predict or has a history
+	 *                            of positions, this is when the caller
+	 *                            wants the pose to be from.
+	 * @param[out] out_relation_timestamp_ns Timestamp when this relation
+	 *                                       was captured.
+	 * @param[out] out_relation The relation read from the device.
 	 *
 	 * @see xrt_input_name
 	 */
 	void (*get_tracked_pose)(struct xrt_device *xdev,
 	                         enum xrt_input_name name,
-	                         struct time_state *timekeeping,
-	                         int64_t *out_timestamp,
+	                         uint64_t at_timestamp_ns,
+	                         uint64_t *out_relation_timestamp_ns,
 	                         struct xrt_space_relation *out_relation);
 
 	/*!
@@ -264,7 +265,6 @@ struct xrt_device
 	 */
 	void (*set_output)(struct xrt_device *xdev,
 	                   enum xrt_output_name name,
-	                   struct time_state *timekeeping,
 	                   union xrt_output_value *value);
 
 	/*!
@@ -295,10 +295,9 @@ struct xrt_device
  * Helper function for @ref xrt_device::update_inputs.
  */
 static inline void
-xrt_device_update_inputs(struct xrt_device *xdev,
-                         struct time_state *timekeeping)
+xrt_device_update_inputs(struct xrt_device *xdev)
 {
-	xdev->update_inputs(xdev, timekeeping);
+	xdev->update_inputs(xdev);
 }
 
 /*!
@@ -307,12 +306,12 @@ xrt_device_update_inputs(struct xrt_device *xdev,
 static inline void
 xrt_device_get_tracked_pose(struct xrt_device *xdev,
                             enum xrt_input_name name,
-                            struct time_state *timekeeping,
-                            int64_t *out_timestamp,
+                            uint64_t requested_timestamp_ns,
+                            uint64_t *out_actual_timestamp_ns,
                             struct xrt_space_relation *out_relation)
 {
-	xdev->get_tracked_pose(xdev, name, timekeeping, out_timestamp,
-	                       out_relation);
+	xdev->get_tracked_pose(xdev, name, requested_timestamp_ns,
+	                       out_actual_timestamp_ns, out_relation);
 }
 
 /*!
@@ -321,10 +320,9 @@ xrt_device_get_tracked_pose(struct xrt_device *xdev,
 static inline void
 xrt_device_set_output(struct xrt_device *xdev,
                       enum xrt_output_name name,
-                      struct time_state *timekeeping,
                       union xrt_output_value *value)
 {
-	xdev->set_output(xdev, name, timekeeping, value);
+	xdev->set_output(xdev, name, value);
 }
 
 /*!

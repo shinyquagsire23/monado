@@ -564,8 +564,7 @@ oxr_source_cache_stop_output(struct oxr_logger *log,
 		struct oxr_source_output *output = &cache->outputs[i];
 		struct xrt_device *xdev = output->xdev;
 
-		xdev->set_output(xdev, output->name,
-		                 sess->sys->inst->timekeeping, &value);
+		xrt_device_set_output(xdev, output->name, &value);
 	}
 }
 
@@ -950,8 +949,7 @@ oxr_action_sync_data(struct oxr_logger *log,
 
 	// Loop over all xdev devices.
 	for (size_t i = 0; i < sess->sys->num_xdevs; i++) {
-		oxr_xdev_update(sess->sys->xdevs[i],
-		                sess->sys->inst->timekeeping);
+		oxr_xdev_update(sess->sys->xdevs[i]);
 	}
 
 	// Reset all requested source sets.
@@ -1196,8 +1194,7 @@ set_source_output_vibration(struct oxr_session *sess,
 		struct oxr_source_output *output = &cache->outputs[i];
 		struct xrt_device *xdev = output->xdev;
 
-		xdev->set_output(xdev, output->name,
-		                 sess->sys->inst->timekeeping, &value);
+		xrt_device_set_output(xdev, output->name, &value);
 	}
 }
 

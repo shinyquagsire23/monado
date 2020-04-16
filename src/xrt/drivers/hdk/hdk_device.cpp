@@ -23,12 +23,16 @@
 #include <type_traits>
 
 #include "xrt/xrt_device.h"
+
+#include "os/os_hid.h"
+#include "os/os_time.h"
+
 #include "math/m_api.h"
+
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_device.h"
 #include "util/u_time.h"
-#include "os/os_hid.h"
 
 #include "hdk_device.h"
 
@@ -101,8 +105,7 @@ hdk_device_destroy(struct xrt_device *xdev)
 }
 
 static void
-hdk_device_update_inputs(struct xrt_device *xdev,
-                         struct time_state *timekeeping)
+hdk_device_update_inputs(struct xrt_device *xdev)
 {
 	// Empty
 }
@@ -201,8 +204,8 @@ hdk_device_update(struct hdk_device *hd)
 static void
 hdk_device_get_tracked_pose(struct xrt_device *xdev,
                             enum xrt_input_name name,
-                            struct time_state *timekeeping,
-                            int64_t *out_timestamp,
+                            uint64_t requested_timestamp_ns,
+                            uint64_t *out_actual_timestamp_ns,
                             struct xrt_space_relation *out_relation)
 {
 	struct hdk_device *hd = hdk_device(xdev);
@@ -212,11 +215,11 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	int64_t now = time_state_get_now(timekeeping);
+	uint64_t now = os_monotonic_get_ns();
 
 	// Adjusting for latency - 14ms, found empirically.
 	now -= 14000000;
-	*out_timestamp = now;
+	*out_actual_timestamp_ns = now;
 
 	if (!hd->quat_valid) {
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;

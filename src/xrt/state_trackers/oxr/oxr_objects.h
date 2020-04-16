@@ -673,7 +673,7 @@ void
 oxr_xdev_destroy(struct xrt_device **xdev_ptr);
 
 void
-oxr_xdev_update(struct xrt_device *xdev, struct time_state *timekeeping);
+oxr_xdev_update(struct xrt_device *xdev);
 
 /*!
  * Return true if it finds an input of that name on this device.
@@ -691,13 +691,31 @@ oxr_xdev_find_output(struct xrt_device *xdev,
                      enum xrt_output_name name,
                      struct xrt_output **out_output);
 
+/*!
+ * Returns the pose of the named input from the device, if the pose isn't valid
+ * uses the device offset instead.
+ */
 void
 oxr_xdev_get_pose_at(struct oxr_logger *log,
                      struct oxr_instance *inst,
                      struct xrt_device *xdev,
                      enum xrt_input_name name,
-                     struct xrt_pose *pose,
-                     int64_t *timestamp);
+                     XrTime at_time,
+                     uint64_t *out_pose_timestamp_ns,
+                     struct xrt_pose *out_pose);
+
+/*!
+ * Returns the relation of the named input from the device, always ensures
+ * that position and orientation is valid by using the device offset.
+ */
+void
+oxr_xdev_get_relation_at(struct oxr_logger *log,
+                         struct oxr_instance *inst,
+                         struct xrt_device *xdev,
+                         enum xrt_input_name name,
+                         XrTime at_time,
+                         uint64_t *out_relation_timestamp_ns,
+                         struct xrt_space_relation *out_relation);
 
 
 /*

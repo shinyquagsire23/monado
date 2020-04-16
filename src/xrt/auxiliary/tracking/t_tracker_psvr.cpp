@@ -100,7 +100,6 @@ run(TrackerPSVR &t)
 
 static void
 get_pose(TrackerPSVR &t,
-         struct time_state *timestate,
          timepoint_ns when_ns,
          struct xrt_space_relation *out_relation)
 {
@@ -192,12 +191,11 @@ t_psvr_push_imu(struct xrt_tracked_psvr *xtvr,
 
 extern "C" void
 t_psvr_get_tracked_pose(struct xrt_tracked_psvr *xtvr,
-                        struct time_state *timestate,
                         timepoint_ns when_ns,
                         struct xrt_space_relation *out_relation)
 {
 	auto &t = *container_of(xtvr, TrackerPSVR, base);
-	get_pose(t, timestate, when_ns, out_relation);
+	get_pose(t, when_ns, out_relation);
 }
 
 extern "C" void

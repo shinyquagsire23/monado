@@ -370,7 +370,6 @@ run(TrackerPSMV &t)
 static void
 get_pose(TrackerPSMV &t,
          enum xrt_input_name name,
-         struct time_state *timestate,
          timepoint_ns when_ns,
          struct xrt_space_relation *out_relation)
 {
@@ -462,12 +461,11 @@ t_psmv_push_imu(struct xrt_tracked_psmv *xtmv,
 extern "C" void
 t_psmv_get_tracked_pose(struct xrt_tracked_psmv *xtmv,
                         enum xrt_input_name name,
-                        struct time_state *timestate,
                         timepoint_ns when_ns,
                         struct xrt_space_relation *out_relation)
 {
 	auto &t = *container_of(xtmv, TrackerPSMV, base);
-	get_pose(t, name, timestate, when_ns, out_relation);
+	get_pose(t, name, when_ns, out_relation);
 }
 
 extern "C" void
