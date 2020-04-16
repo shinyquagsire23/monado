@@ -168,6 +168,12 @@ comp_renderer_frame(struct comp_renderer *r,
 }
 
 void
+comp_renderer_frame_cached(struct comp_renderer *r)
+{
+	renderer_render(r);
+}
+
+void
 comp_renderer_destroy(struct comp_renderer *r)
 {
 	renderer_destroy(r);
@@ -607,6 +613,15 @@ _create_fences(struct comp_renderer *r)
 }
 
 static void
+_set_dummy_images(struct comp_renderer *r)
+{
+	for (uint32_t i = 0; i < 2; i++)
+		comp_distortion_update_descriptor_set(
+		    r->distortion, r->dummy_images[i].sampler,
+		    r->dummy_images[i].views[0], i);
+}
+
+static void
 renderer_init(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->vk;
@@ -636,12 +651,16 @@ renderer_init(struct comp_renderer *r)
 	                     r->c->xdev->hmd, r->descriptor_pool,
 	                     r->settings->flip_y);
 
-	for (uint32_t i = 0; i < 2; i++)
-		comp_distortion_update_descriptor_set(
-		    r->distortion, r->dummy_images[i].sampler,
-		    r->dummy_images[i].views[0], i);
+	_set_dummy_images(r);
 
 	renderer_build_command_buffers(r);
+}
+
+void
+comp_renderer_set_idle_images(struct comp_renderer *r)
+{
+	_set_dummy_images(r);
+	renderer_rebuild_command_buffers(r);
 }
 
 static void

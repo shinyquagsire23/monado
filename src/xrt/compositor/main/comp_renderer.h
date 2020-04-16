@@ -58,6 +58,21 @@ comp_renderer_reset(struct comp_renderer *r);
 void
 comp_renderer_destroy(struct comp_renderer *r);
 
+/*!
+ * Set dummy images in renderer.
+ *
+ * @ingroup comp_main
+ */
+void
+comp_renderer_set_idle_images(struct comp_renderer *r);
+
+/*!
+ * Render frame without setting new images.
+ *
+ * @ingroup comp_main
+ */
+void
+comp_renderer_frame_cached(struct comp_renderer *r);
 
 #ifdef __cplusplus
 }
