@@ -524,6 +524,78 @@ comp_compositor_print(struct comp_compositor *c,
 	fprintf(stderr, "\n");
 }
 
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
+static bool
+_match_wl_entry(const char *wl_entry, VkDisplayPropertiesKHR *disp)
+{
+	unsigned long wl_entry_length = strlen(wl_entry);
+	unsigned long disp_entry_length = strlen(disp->displayName);
+	if (disp_entry_length < wl_entry_length)
+		return false;
+
+	// we have a match with this whitelist entry.
+	if (strncmp(wl_entry, disp->displayName, wl_entry_length) == 0)
+		return true;
+
+	return false;
+}
+
+/*
+ * our physical device is an nvidia card, we can potentially select
+ * nvidia-specific direct mode.
+ *
+ * we need to also check if we are confident that we can create a direct mode
+ * display, if not we need to abandon the attempt here, and allow desktop-window
+ * fallback to occur.
+ */
+
+static bool
+_test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
+{
+	VkPhysicalDeviceProperties physical_device_properties;
+	vk->vkGetPhysicalDeviceProperties(vk->physical_device,
+	                                  &physical_device_properties);
+
+	if (physical_device_properties.vendorID != 0x10DE)
+		return false;
+
+	// get a list of attached displays
+	uint32_t display_count;
+
+	if (vk->vkGetPhysicalDeviceDisplayPropertiesKHR(
+	        vk->physical_device, &display_count, NULL) != VK_SUCCESS) {
+		COMP_ERROR(c, "Failed to get vulkan display count");
+		return false;
+	}
+
+	VkDisplayPropertiesKHR *display_props =
+	    U_TYPED_ARRAY_CALLOC(VkDisplayPropertiesKHR, display_count);
+
+	if (display_props && vk->vkGetPhysicalDeviceDisplayPropertiesKHR(
+	                         vk->physical_device, &display_count,
+	                         display_props) != VK_SUCCESS) {
+		COMP_ERROR(c, "Failed to get display properties");
+		free(display_props);
+		return false;
+	}
+
+	for (uint32_t i = 0; i < display_count; i++) {
+		VkDisplayPropertiesKHR *disp = display_props + i;
+		// check this display against our whitelist
+		for (uint32_t j = 0; j < ARRAY_SIZE(NV_DIRECT_WHITELIST); j++) {
+			if (_match_wl_entry(NV_DIRECT_WHITELIST[j], disp)) {
+				free(display_props);
+				return true;
+			}
+		}
+	}
+
+	free(display_props);
+
+	return false;
+}
+#endif // VK_USE_PLATFORM_XLIB_XRANDR_EXT
+
 static bool
 compositor_check_vulkan_caps(struct comp_compositor *c)
 {
@@ -584,75 +656,12 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 		return false;
 	}
 
-	bool nvidia_tests_passed = false;
-
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-	VkPhysicalDeviceProperties physical_device_properties;
-	temp_vk.vkGetPhysicalDeviceProperties(temp_vk.physical_device,
-	                                      &physical_device_properties);
-
-	if (physical_device_properties.vendorID == 0x10DE) {
-		// our physical device is an nvidia card, we can
-		// potentially select nvidia-specific direct mode.
-
-		// we need to also check if we are confident that we can
-		// create a direct mode display, if not we need to
-		// abandon the attempt here, and allow desktop-window
-		// fallback to occur.
-
-		// get a list of attached displays
-		uint32_t display_count;
-
-		if (temp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(
-		        temp_vk.physical_device, &display_count, NULL) !=
-		    VK_SUCCESS) {
-			COMP_ERROR(c, "Failed to get vulkan display count");
-			nvidia_tests_passed = false;
-		}
-
-		VkDisplayPropertiesKHR *display_props =
-		    U_TYPED_ARRAY_CALLOC(VkDisplayPropertiesKHR, display_count);
-
-		if (display_props &&
-		    temp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(
-		        temp_vk.physical_device, &display_count,
-		        display_props) != VK_SUCCESS) {
-			COMP_ERROR(c, "Failed to get display properties");
-			nvidia_tests_passed = false;
-		}
-
-		for (uint32_t i = 0; i < display_count; i++) {
-			VkDisplayPropertiesKHR disp = *(display_props + i);
-			// check this display against our whitelist
-			uint32_t wl_elements = sizeof(NV_DIRECT_WHITELIST) /
-			                       sizeof(NV_DIRECT_WHITELIST[0]);
-			for (uint32_t j = 0; j < wl_elements; j++) {
-				unsigned long wl_entry_length =
-				    strlen(NV_DIRECT_WHITELIST[j]);
-				unsigned long disp_entry_length =
-				    strlen(disp.displayName);
-				if (disp_entry_length >= wl_entry_length) {
-					if (strncmp(NV_DIRECT_WHITELIST[j],
-					            disp.displayName,
-					            wl_entry_length) == 0) {
-						// we have a match with
-						// this whitelist entry.
-						nvidia_tests_passed = true;
-					}
-				}
-			}
-		}
-
-		free(display_props);
-	}
-#endif // VK_USE_PLATFORM_XLIB_XRANDR_EXT
-
-	if (nvidia_tests_passed) {
+	if (_test_for_nvidia(c, &temp_vk)) {
 		c->settings.window_type = WINDOW_DIRECT_NVIDIA;
 		COMP_DEBUG(c, "Selecting direct NVIDIA window type!");
-	} else {
-		COMP_DEBUG(c, "Keeping auto window type!");
 	}
+#endif // VK_USE_PLATFORM_XLIB_XRANDR_EXT
 
 	temp_vk.vkDestroyDevice(temp_vk.device, NULL);
 	temp_vk.vkDestroyInstance(temp_vk.instance, NULL);
