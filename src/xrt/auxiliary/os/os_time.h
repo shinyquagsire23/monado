@@ -63,11 +63,9 @@ static inline void
 os_nanosleep(long nsec)
 {
 #ifdef XRT_OS_LINUX
-	struct timespec spec = {
-	    .tv_sec = 0,
-	    .tv_nsec = nsec,
-	};
-	nanosleep(&spec, NULL);
+	struct timespec spec;
+	spec.tv_sec = 0;
+	spec.tv_nsec = nsec, nanosleep(&spec, NULL);
 #endif
 }
 
