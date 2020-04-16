@@ -439,13 +439,6 @@ hdk_device_create(struct os_hid_device *dev,
 		hd->base.hmd->views[1].rot = u_device_rotation_ident;
 #endif
 
-		hd->base.hmd->views[0].lens_center.x_meters = -0.03;
-		hd->base.hmd->views[1].lens_center.x_meters = 0.3;
-		printf("Center %f %f, %f %f\n",
-			hd->base.hmd->views[0].lens_center.x_meters,
-			hd->base.hmd->views[0].lens_center.y_meters,
-			hd->base.hmd->views[1].lens_center.x_meters,
-			hd->base.hmd->views[1].lens_center.y_meters);
 		// clang-format on
 		break;
 	}
