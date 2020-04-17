@@ -24,7 +24,7 @@
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
 
-#include "tracking/t_imu.h"
+#include "math/m_imu_3dof.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -128,8 +128,8 @@ struct psvr_device
 		bool control;
 	} gui;
 
-#if 0
-	struct imu_fusion *fusion;
+#if 1
+	struct m_imu_3dof fusion;
 #else
 	struct
 	{
@@ -320,14 +320,9 @@ update_fusion(struct psvr_device *psvr,
 	} else {
 		float delta_secs = tick_delta / PSVR_TICKS_PER_SECOND;
 
-#if 0
-		struct xrt_vec3 ident = {0.0f, 1.0f, 0.0f};
-		struct xrt_vec3 var1 = {0};
-		struct xrt_vec3 var2 = {0};
-
-		imu_fusion_incorporate_gyros_and_accelerometer(
-		    psvr->fusion, delta_secs, &psvr->read.gyro, &var1,
-		    &psvr->read.accel, 0.0f, &ident, &var2);
+#if 1
+		m_imu_3dof_update(&psvr->fusion, delta_secs, &psvr->read.accel,
+		                  &psvr->read.gyro);
 #else
 		math_quat_integrate_velocity(&psvr->fusion.rot,
 		                             &psvr->read.gyro, delta_secs,
@@ -892,6 +887,9 @@ teardown(struct psvr_device *psvr)
 		hid_close(psvr->hmd_handle);
 		psvr->hmd_handle = NULL;
 	}
+
+	// Destroy the fusion.
+	m_imu_3dof_close(&psvr->fusion);
 }
 
 
@@ -933,14 +931,7 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 
 	// We have no tracking, don't return a position.
 	if (psvr->tracker == NULL) {
-#if 0
-		struct xrt_vec3 ang_vel = {0};
-		imu_fusion_get_prediction(psvr->fusion, 0.0f,
-		                          &out_relation->pose.orientation,
-		                          &ang_vel);
-#else
 		out_relation->pose.orientation = psvr->fusion.rot;
-#endif
 
 		out_relation->relation_flags = (enum xrt_space_relation_flags)(
 		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
@@ -1039,8 +1030,8 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 		u_distortion_mesh_from_panotools(&vals, &vals, psvr->base.hmd);
 	}
 
-#if 0
-	psvr->fusion = imu_fusion_create();
+#if 1
+	m_imu_3dof_init(&psvr->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 #else
 	psvr->fusion.rot.w = 1.0f;
 #endif
