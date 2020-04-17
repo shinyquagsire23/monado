@@ -262,14 +262,13 @@ client_vk_compositor_create(struct xrt_compositor_fd *xcfd,
 	c->base.base.discard_frame = client_vk_compositor_discard_frame;
 	c->base.base.end_frame = client_vk_compositor_end_frame;
 	c->base.base.destroy = client_vk_compositor_destroy;
-
-	c->base.base.formats[0] = VK_FORMAT_B8G8R8A8_SRGB;
-	c->base.base.formats[1] = VK_FORMAT_R8G8B8A8_SRGB;
-	c->base.base.formats[2] = VK_FORMAT_B8G8R8A8_UNORM;
-	c->base.base.formats[3] = VK_FORMAT_R8G8B8A8_UNORM;
-	c->base.base.num_formats = 4;
-
 	c->xcfd = xcfd;
+	// passthrough our formats from the fd compositor to the client
+	for (uint32_t i = 0; i < xcfd->base.num_formats; i++) {
+		c->base.base.formats[i] = xcfd->base.formats[i];
+	}
+
+	c->base.base.num_formats = xcfd->base.num_formats;
 
 	ret = vk_init_from_given(&c->vk, getProc, instance, physicalDevice,
 	                         device, queueFamilyIndex, queueIndex);

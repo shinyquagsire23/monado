@@ -41,26 +41,24 @@
  * behavior.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <assert.h>
+#include "xrt/xrt_gfx_fd.h"
 
 #include "os/os_time.h"
 
-#include "util/u_debug.h"
+#include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
+#include "util/u_debug.h"
 
 #include "main/comp_compositor.h"
 
-#include "xrt/xrt_gfx_fd.h"
-
-#include <unistd.h>
 #include <math.h>
-
-#include "util/u_var.h"
+#include <stdio.h>
+#include <assert.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 
 
 /*!
@@ -501,6 +499,7 @@ compositor_init_vulkan(struct comp_compositor *c)
 	return ret == VK_SUCCESS;
 }
 
+
 /*
  *
  * Other functions.
@@ -798,7 +797,6 @@ compositor_init_renderer(struct comp_compositor *c)
 	return c->r != NULL;
 }
 
-
 struct xrt_compositor_fd *
 xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 {
@@ -848,6 +846,16 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 
 	COMP_DEBUG(c, "Done %p", (void *)c);
 
+	/*!
+	 * @todo Support more like, depth/float formats etc,
+	 * remember to update the GL client as well.
+	 */
+	// These are the available formats we will expose to our clients.
+	c->base.base.formats[0] = VK_FORMAT_B8G8R8A8_SRGB;
+	c->base.base.formats[1] = VK_FORMAT_R8G8B8A8_SRGB;
+	c->base.base.formats[2] = VK_FORMAT_B8G8R8A8_UNORM;
+	c->base.base.formats[3] = VK_FORMAT_R8G8B8A8_UNORM;
+	c->base.base.num_formats = 4;
 
 	u_var_add_root(c, "Compositor", true);
 	u_var_add_ro_f32(c, &c->compositor_frame_times.fps, "FPS (Compositor)");

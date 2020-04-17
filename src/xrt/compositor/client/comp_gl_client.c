@@ -160,6 +160,20 @@ gl_format_to_vk(int64_t format)
 	}
 }
 
+static int64_t
+vk_format_to_gl(int64_t format)
+{
+	switch (format) {
+	case 37 /*VK_FORMAT_R8G8B8A8_UNORM*/: return GL_RGBA8;
+	case 43 /*VK_FORMAT_R8G8B8A8_SRGB*/: return GL_SRGB8_ALPHA8;
+	case 44 /*VK_FORMAT_B8G8R8A8_UNORM*/: return 0;
+	case 50 /*VK_FORMAT_B8G8R8A8_SRGB*/: return 0;
+	default:
+		printf("Cannot convert VK format %ld to GL format!\n", format);
+		return 0;
+	}
+}
+
 static struct xrt_swapchain *
 client_gl_swapchain_create(struct xrt_compositor *xc,
                            enum xrt_swapchain_create_flags create,
@@ -266,10 +280,19 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.discard_frame = client_gl_compositor_discard_frame;
 	c->base.base.end_frame = client_gl_compositor_end_frame;
 	c->base.base.destroy = client_gl_compositor_destroy;
-	c->base.base.formats[0] = GL_SRGB8_ALPHA8;
-	c->base.base.formats[1] = GL_RGBA8;
-	c->base.base.num_formats = 2;
 	c->xcfd = xcfd;
+
+	// Passthrough our formats from the fd compositor to the client.
+	size_t count = 0;
+	for (uint32_t i = 0; i < xcfd->base.num_formats; i++) {
+		int64_t f = vk_format_to_gl(xcfd->base.formats[i]);
+		if (f == 0) {
+			continue;
+		}
+
+		c->base.base.formats[count++] = f;
+	}
+	c->base.base.num_formats = count;
 
 	gladLoadGL(get_gl_procaddr);
 
