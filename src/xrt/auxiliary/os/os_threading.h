@@ -8,6 +8,8 @@
  * @ingroup aux_os
  */
 
+#pragma once
+
 #include "xrt/xrt_config_os.h"
 #include "util/u_misc.h"
 
