@@ -1189,6 +1189,7 @@ set_source_output_vibration(struct oxr_session *sess,
 	union xrt_output_value value = {0};
 	value.vibration.frequency = data->frequency;
 	value.vibration.amplitude = data->amplitude;
+	value.vibration.duration = data->duration;
 
 	for (uint32_t i = 0; i < cache->num_outputs; i++) {
 		struct oxr_source_output *output = &cache->outputs[i];

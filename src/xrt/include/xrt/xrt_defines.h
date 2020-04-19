@@ -10,6 +10,7 @@
 #pragma once
 
 #include "xrt/xrt_compiler.h"
+#include "util/u_time.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -547,6 +548,7 @@ union xrt_output_value {
 	{
 		float frequency;
 		float amplitude;
+		time_duration_ns duration;
 	} vibration;
 };
 
