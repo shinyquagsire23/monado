@@ -610,7 +610,7 @@ static char *
 _json_get_string(const cJSON *json, const char *name)
 {
 	const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
-	return strdup(item->string);
+	return strdup(item->valuestring);
 }
 
 static double
