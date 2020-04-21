@@ -16,6 +16,8 @@ extern "C" {
 #endif
 
 
+struct xrt_device;
+
 /*!
  * Max swapchain images, artificial limit.
  *
@@ -244,14 +246,87 @@ struct xrt_compositor
 	void (*discard_frame)(struct xrt_compositor *xc);
 
 	/*!
-	 * See xrEndFrame.
+	 * Begins layer submission, this and the other layer_* calls equivalent
+	 * to xrEndFrame, except over multiple class. It's only after
+	 * @p layer_commit that layers will be displayed. From the point of view
+	 * of the swapchain the image is used as soon as it's given in a call.
 	 */
-	void (*end_frame)(struct xrt_compositor *xc,
-	                  enum xrt_blend_mode blend_mode,
-	                  struct xrt_swapchain **xscs,
-	                  const uint32_t *image_index,
-	                  uint32_t *layers,
-	                  uint32_t num_swapchains);
+	void (*layer_begin)(struct xrt_compositor *xc,
+	                    enum xrt_blend_mode env_blend_mode);
+
+	/*!
+	 * Adds a stereo projection layer for submissions.
+	 *
+	 * @param timestamp     When should this layer be shown.
+	 * @param xdev          The device the layer is relative to.
+	 * @param name          Which pose this layer is relative to.
+	 * @param layer_flags   Flags for this layer, applied to both images.
+	 * @param l_sc          Left swapchain.
+	 * @param l_image_index Left image index as return by acquire_image.
+	 * @param l_rect        Left subimage rect.
+	 * @param l_array_index Left array index.
+	 * @param l_fov         Left fov the left projection rendered with.
+	 * @param l_pose        Left pose the left projection rendered with.
+	 * @param r_sc          Right swapchain.
+	 * @param r_image_index Right image index as return by acquire_image.
+	 * @param r_rect        Right subimage rect.
+	 * @param r_array_index Right array index.
+	 * @param r_fov         Right fov the left projection rendered with.
+	 * @param r_pose        Right pose the left projection rendered with.
+	 */
+	void (*layer_stereo_projection)(
+	    struct xrt_compositor *xc,
+	    uint64_t timestamp,
+	    struct xrt_device *xdev,
+	    enum xrt_input_name name,
+	    enum xrt_layer_composition_flags layer_flags,
+	    struct xrt_swapchain *l_sc,
+	    uint32_t l_image_index,
+	    struct xrt_rect *l_rect,
+	    uint32_t l_array_index,
+	    struct xrt_fov *l_fov,
+	    struct xrt_pose *l_pose,
+	    struct xrt_swapchain *r_sc,
+	    uint32_t r_image_index,
+	    struct xrt_rect *r_rect,
+	    uint32_t r_array_index,
+	    struct xrt_fov *r_fov,
+	    struct xrt_pose *r_pose);
+
+	/*!
+	 * Adds a quad layer for submission, the center of the quad is specified
+	 * by the pose and extends outwards from it.
+	 *
+	 * @param timestamp   When should this layer be shown.
+	 * @param xdev        The device the layer is relative to.
+	 * @param name        Which pose this layer is relative to.
+	 * @param layer_flags Flags for this layer.
+	 * @param visibility  Which views are is this layer visible in.
+	 * @param sc          Swapchain.
+	 * @param image_index Image index as return by acquire_image.
+	 * @param rect        Subimage rect.
+	 * @param array_index Array index.
+	 * @param pose        Pose the left projection rendered with.
+	 * @param size        Size of the quad in meters.
+	 */
+	void (*layer_quad)(struct xrt_compositor *xc,
+	                   uint64_t timestamp,
+	                   struct xrt_device *xdev,
+	                   enum xrt_input_name name,
+	                   enum xrt_layer_composition_flags layer_flags,
+	                   enum xrt_layer_eye_visibility visibility,
+	                   struct xrt_swapchain *sc,
+	                   uint32_t image_index,
+	                   struct xrt_rect *rect,
+	                   uint32_t array_index,
+	                   struct xrt_pose *pose,
+	                   struct xrt_vec2 *size);
+
+	/*!
+	 * Commits all of the submitted layers, it's from this on that the
+	 * compositor will use the layers.
+	 */
+	void (*layer_commit)(struct xrt_compositor *xc);
 
 	/*!
 	 * Teardown the compositor.
@@ -364,20 +439,79 @@ xrt_comp_discard_frame(struct xrt_compositor *xc)
 }
 
 /*!
- * Helper for xrt_compositor::end_frame
+ * Helper for xrt_compositor::layer_begin
  *
  * @ingroup xrt_iface
  */
 static inline void
-xrt_comp_end_frame(struct xrt_compositor *xc,
-                   enum xrt_blend_mode blend_mode,
-                   struct xrt_swapchain **xscs,
-                   const uint32_t *image_index,
-                   uint32_t *layers,
-                   uint32_t num_swapchains)
+xrt_comp_layer_begin(struct xrt_compositor *xc,
+                     enum xrt_blend_mode env_blend_mode)
 {
-	xc->end_frame(xc, blend_mode, xscs, image_index, layers,
-	              num_swapchains);
+	xc->layer_begin(xc, env_blend_mode);
+}
+
+/*!
+ * Helper for xrt_compositor::layer_stereo_projection
+ *
+ * @ingroup xrt_iface
+ */
+static inline void
+xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
+                                 uint64_t timestamp,
+                                 struct xrt_device *xdev,
+                                 enum xrt_input_name name,
+                                 enum xrt_layer_composition_flags layer_flags,
+                                 struct xrt_swapchain *l_sc,
+                                 uint32_t l_image_index,
+                                 struct xrt_rect *l_rect,
+                                 uint32_t l_array_index,
+                                 struct xrt_fov *l_fov,
+                                 struct xrt_pose *l_pose,
+                                 struct xrt_swapchain *r_sc,
+                                 uint32_t r_image_index,
+                                 struct xrt_rect *r_rect,
+                                 uint32_t r_array_index,
+                                 struct xrt_fov *r_fov,
+                                 struct xrt_pose *r_pose)
+{
+	xc->layer_stereo_projection(xc, timestamp, xdev, name, layer_flags,
+	                            l_sc, l_image_index, l_rect, l_array_index,
+	                            l_fov, l_pose, r_sc, r_image_index, r_rect,
+	                            r_array_index, r_fov, r_pose);
+}
+
+/*!
+ * Helper for xrt_compositor::layer_quad
+ *
+ * @ingroup xrt_iface
+ */
+static inline void
+xrt_comp_layer_quad(struct xrt_compositor *xc,
+                    uint64_t timestamp,
+                    struct xrt_device *xdev,
+                    enum xrt_input_name name,
+                    enum xrt_layer_composition_flags layer_flags,
+                    enum xrt_layer_eye_visibility visibility,
+                    struct xrt_swapchain *sc,
+                    uint32_t image_index,
+                    struct xrt_rect *rect,
+                    uint32_t array_index,
+                    struct xrt_pose *pose,
+                    struct xrt_vec2 *size)
+{
+	xc->layer_quad(xc, timestamp, xdev, name, layer_flags, visibility, sc,
+	               image_index, rect, array_index, pose, size);
+}
+
+/*!
+ * Helper for xrt_compositor::layer_commit
+ *
+ * @ingroup xrt_iface
+ */
+static inline void
+xrt_comp_layer_commit(struct xrt_compositor *xc)
+{
+	xc->layer_commit(xc);
 }
 
 /*!
