@@ -444,6 +444,151 @@ oxr_blend_mode_to_xrt(XrEnvironmentBlendMode blend_mode)
 	// clang-format on
 }
 
+static XrResult
+verify_space(struct oxr_logger *log, uint32_t layer_index, XrSpace space)
+{
+	if (space == XR_NULL_HANDLE) {
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "(frameEndInfo->layers[%u]->space == "
+		    "XR_NULL_HANDLE) XrSpace must not be XR_NULL_HANDLE",
+		    layer_index);
+	}
+
+	return XR_SUCCESS;
+}
+
+static XrResult
+verify_quad_layer(struct xrt_compositor *xc,
+                  struct oxr_logger *log,
+                  uint32_t layer_index,
+                  XrCompositionLayerQuad *quad,
+                  struct xrt_device *head,
+                  uint64_t timestamp)
+{
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_swapchain *, quad->subImage.swapchain);
+
+	XrResult ret = verify_space(log, layer_index, quad->space);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	if (sc->released_index == -1) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "swapchain) swapchain has not been released!",
+		                 layer_index);
+	}
+
+	if (sc->released_index >= (int)sc->swapchain->num_images) {
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
+		    "image index out of bounds",
+		    layer_index);
+	}
+
+	return XR_SUCCESS;
+}
+
+static XrResult
+verify_projection_layer(struct xrt_compositor *xc,
+                        struct oxr_logger *log,
+                        uint32_t layer_index,
+                        XrCompositionLayerProjection *proj,
+                        struct xrt_device *head,
+                        uint64_t timestamp)
+{
+	XrResult ret = verify_space(log, layer_index, proj->space);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	if (proj->viewCount != 2) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->viewCount == %u)"
+		                 " must be 2",
+		                 layer_index, proj->viewCount);
+	}
+
+	// Check for valid swapchain states.
+	for (uint32_t i = 0; i < proj->viewCount; i++) {
+		//! @todo More validation?
+		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
+
+		if (sc->released_index == -1) {
+			return oxr_error(
+			    log, XR_ERROR_LAYER_INVALID,
+			    "(frameEndInfo->layers[%u]->views[%i].subImage."
+			    "swapchain) swapchain has not been released",
+			    layer_index, i);
+		}
+
+		if (sc->released_index >= (int)sc->swapchain->num_images) {
+			return oxr_error(
+			    log, XR_ERROR_RUNTIME_FAILURE,
+			    "(frameEndInfo->layers[%u]->views[%i].subImage."
+			    "swapchain) internal image index out of bounds",
+			    layer_index, i);
+		}
+	}
+
+	return XR_SUCCESS;
+}
+
+static void
+submit_quad_layer(struct xrt_compositor *xc,
+                  struct oxr_logger *log,
+                  XrCompositionLayerQuad *quad,
+                  struct xrt_device *head,
+                  uint64_t timestamp)
+{
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_swapchain *, quad->subImage.swapchain);
+
+	xrt_comp_layer_quad(
+	    xc, timestamp, head, XRT_INPUT_GENERIC_HEAD_POSE, quad->layerFlags,
+	    (enum xrt_layer_eye_visibility)quad->eyeVisibility, sc->swapchain,
+	    sc->released_index, (struct xrt_rect *)&quad->subImage.imageRect,
+	    quad->subImage.imageArrayIndex, (struct xrt_pose *)&quad->pose,
+	    (struct xrt_vec2 *)&quad->size);
+}
+
+static void
+submit_projection_layer(struct xrt_compositor *xc,
+                        struct oxr_logger *log,
+                        XrCompositionLayerProjection *proj,
+                        struct xrt_device *head,
+                        uint64_t timestamp)
+{
+	enum xrt_layer_composition_flags flags = 0;
+	struct oxr_swapchain *scs[2];
+
+	uint32_t num_chains = ARRAY_SIZE(scs);
+
+	for (uint32_t i = 0; i < num_chains; i++) {
+		scs[i] = XRT_CAST_OXR_HANDLE_TO_PTR(
+		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
+	}
+
+	xrt_comp_layer_stereo_projection(
+	    xc, timestamp, head, XRT_INPUT_GENERIC_HEAD_POSE, flags,
+	    scs[0]->swapchain, // Left
+	    scs[0]->released_index,
+	    (struct xrt_rect *)&proj->views[0].subImage.imageRect,
+	    proj->views[0].subImage.imageArrayIndex,
+	    (struct xrt_fov *)&proj->views[0].fov,
+	    (struct xrt_pose *)&proj->views[0].pose,
+	    scs[1]->swapchain, // Right
+	    scs[1]->released_index,
+	    (struct xrt_rect *)&proj->views[1].subImage.imageRect,
+	    proj->views[1].subImage.imageArrayIndex,
+	    (struct xrt_fov *)&proj->views[1].fov,
+	    (struct xrt_pose *)&proj->views[1].pose);
+}
+
 XrResult
 oxr_session_frame_end(struct oxr_logger *log,
                       struct oxr_session *sess,
@@ -513,69 +658,70 @@ oxr_session_frame_end(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
 		                 "(frameEndInfo->layers == NULL)");
 	}
-	if (frameEndInfo->layers[0] == NULL) {
-		return oxr_error(log, XR_ERROR_LAYER_INVALID,
-		                 "(frameEndInfo->layers[0] == NULL)");
-	}
-	if (frameEndInfo->layers[0]->type !=
-	    XR_TYPE_COMPOSITION_LAYER_PROJECTION) {
-		return oxr_error(log, XR_ERROR_LAYER_INVALID,
-		                 "(frameEndInfo->layers[0]->type)");
-	}
 
-	XrCompositionLayerProjection *proj =
-	    (XrCompositionLayerProjection *)frameEndInfo->layers[0];
-
-	if (proj->viewCount != 2) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "(frameEndInfo->layers[0]->viewCount == %u)"
-		                 " must be 2",
-		                 proj->viewCount);
-	}
-
-	// Check for valid swapchain states.
-	for (uint32_t i = 0; i < proj->viewCount; i++) {
-		//! @todo More validation?
-		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
-
-		if (sc->released_index == -1) {
-			return oxr_error(
-			    log, XR_ERROR_LAYER_INVALID,
-			    "(frameEndInfo->layers[0]->views[%i].subImage."
-			    "swapchain) Swapchain has not been released!",
-			    i);
+	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
+		const XrCompositionLayerBaseHeader *layer =
+		    frameEndInfo->layers[i];
+		if (layer == NULL) {
+			return oxr_error(log, XR_ERROR_LAYER_INVALID,
+			                 "(frameEndInfo->layers[%u] == NULL) "
+			                 "layer can not be null",
+			                 i);
 		}
 
-		if (sc->released_index >= (int)sc->swapchain->num_images) {
-			return oxr_error(
-			    log, XR_ERROR_RUNTIME_FAILURE,
-			    "(frameEndInfo->layers[0]->views[%i].subImage."
-			    "swapchain) Internal image index out of bounds!",
-			    i);
+		XrResult res;
+
+		switch (layer->type) {
+		case XR_TYPE_COMPOSITION_LAYER_PROJECTION:
+			res = verify_projection_layer(
+			    xc, log, i, (XrCompositionLayerProjection *)layer,
+			    sess->sys->head, frameEndInfo->displayTime);
+			break;
+		case XR_TYPE_COMPOSITION_LAYER_QUAD:
+			res = verify_quad_layer(
+			    xc, log, i, (XrCompositionLayerQuad *)layer,
+			    sess->sys->head, frameEndInfo->displayTime);
+			break;
+		default:
+			return oxr_error(log, XR_ERROR_LAYER_INVALID,
+			                 "(frameEndInfo->layers[%u]->type) "
+			                 "layer type not supported",
+			                 i);
+		}
+
+		if (res != XR_SUCCESS) {
+			return res;
 		}
 	}
 
 
 	/*
-	 * Doing the real work.
+	 * Done verifying.
 	 */
 
-	struct xrt_swapchain *chains[2];
-	uint32_t image_index[2];
-	uint32_t layers[2];
-	uint32_t num_chains = ARRAY_SIZE(chains);
+	xrt_comp_layer_begin(xc, blend_mode);
 
-	for (uint32_t i = 0; i < num_chains; i++) {
-		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
-		chains[i] = sc->swapchain;
-		layers[i] = proj->views[i].subImage.imageArrayIndex;
-		image_index[i] = sc->released_index;
+	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
+		const XrCompositionLayerBaseHeader *layer =
+		    frameEndInfo->layers[i];
+		assert(layer != NULL);
+
+		switch (layer->type) {
+		case XR_TYPE_COMPOSITION_LAYER_PROJECTION:
+			submit_projection_layer(
+			    xc, log, (XrCompositionLayerProjection *)layer,
+			    sess->sys->head, frameEndInfo->displayTime);
+			break;
+		case XR_TYPE_COMPOSITION_LAYER_QUAD:
+			submit_quad_layer(
+			    xc, log, (XrCompositionLayerQuad *)layer,
+			    sess->sys->head, frameEndInfo->displayTime);
+			break;
+		default: assert(false && "invalid layer type");
+		}
 	}
 
-	xrt_comp_end_frame(xc, blend_mode, chains, image_index, layers,
-	                   num_chains);
+	xrt_comp_layer_commit(xc);
 
 	sess->frame_started = false;
 
