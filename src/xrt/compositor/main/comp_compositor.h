@@ -24,6 +24,7 @@ extern "C" {
 #endif
 
 #define NUM_FRAME_TIMES 50
+#define COMP_MAX_LAYERS 16
 
 /*
  *
@@ -66,6 +67,58 @@ struct comp_swapchain
 };
 
 /*!
+ * A stereo projection layer.
+ *
+ * @ingroup comp_main
+ */
+struct comp_layer_quad
+{
+	struct comp_swapchain *sc;
+};
+
+/*!
+ * A stereo projection layer.
+ *
+ * @ingroup comp_main
+ */
+struct comp_layer_stereo
+{
+	struct
+	{
+		struct comp_swapchain *sc;
+		uint32_t image_index;
+		uint32_t array_index;
+	} l, r;
+};
+
+/*!
+ * A single layer.
+ *
+ * @ingroup comp_main
+ */
+struct comp_layer
+{
+	int64_t timestamp;
+	enum xrt_layer_composition_flags flags;
+	union {
+		struct comp_layer_quad quad;
+		struct comp_layer_stereo stereo;
+	};
+};
+
+/*!
+ * A stack of layers.
+ *
+ * @ingroup comp_main
+ */
+struct comp_layer_slot
+{
+	enum xrt_blend_mode env_blend_mode;
+
+	struct comp_layer layers[COMP_MAX_LAYERS];
+};
+
+/*!
  * Main compositor struct tying everything in the compositor together.
  *
  * @ingroup comp_main
@@ -94,6 +147,9 @@ struct comp_compositor
 
 	//! Timestamp of last-rendered (immersive) frame.
 	int64_t last_frame_time_ns;
+
+	//! Triple buffered layer stacks.
+	struct comp_layer_slot slots[3];
 
 	/*!
 	 * @brief Data exclusive to the begin_frame/end_frame for computing an

@@ -277,27 +277,91 @@ compositor_add_frame_timing(struct comp_compositor *c)
 }
 
 static void
-compositor_end_frame(struct xrt_compositor *xc,
-                     enum xrt_blend_mode blend_mode,
-                     struct xrt_swapchain **xscs,
-                     const uint32_t *image_index,
-                     uint32_t *layers,
-                     uint32_t num_swapchains)
+compositor_layer_begin(struct xrt_compositor *xc,
+                       enum xrt_blend_mode env_blend_mode)
 {
 	struct comp_compositor *c = comp_compositor(xc);
-	COMP_SPEW(c, "END_FRAME");
+
+	// Always zero for now.
+	uint32_t slot_id = 0;
+
+	c->slots[slot_id].env_blend_mode = env_blend_mode;
+}
+
+static void
+compositor_layer_stereo_projection(struct xrt_compositor *xc,
+                                   uint64_t timestamp,
+                                   struct xrt_device *xdev,
+                                   enum xrt_input_name name,
+                                   enum xrt_layer_composition_flags layer_flags,
+                                   struct xrt_swapchain *l_sc,
+                                   uint32_t l_image_index,
+                                   struct xrt_rect *l_rect,
+                                   uint32_t l_array_index,
+                                   struct xrt_fov *l_fov,
+                                   struct xrt_pose *l_pose,
+                                   struct xrt_swapchain *r_sc,
+                                   uint32_t r_image_index,
+                                   struct xrt_rect *r_rect,
+                                   uint32_t r_array_index,
+                                   struct xrt_fov *r_fov,
+                                   struct xrt_pose *r_pose)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+
+	// Always zero for now.
+	uint32_t slot_id = 0;
+	uint32_t layer_id = 0;
+
+	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
+	layer->stereo.l.sc = comp_swapchain(l_sc);
+	layer->stereo.l.image_index = l_image_index;
+	layer->stereo.l.array_index = l_array_index;
+	layer->stereo.r.sc = comp_swapchain(r_sc);
+	layer->stereo.r.image_index = r_image_index;
+	layer->stereo.r.array_index = r_array_index;
+}
+
+static void
+compositor_layer_quad(struct xrt_compositor *xc,
+                      uint64_t timestamp,
+                      struct xrt_device *xdev,
+                      enum xrt_input_name name,
+                      enum xrt_layer_composition_flags layer_flags,
+                      enum xrt_layer_eye_visibility visibility,
+                      struct xrt_swapchain *sc,
+                      uint32_t image_index,
+                      struct xrt_rect *rect,
+                      uint32_t array_index,
+                      struct xrt_pose *pose,
+                      struct xrt_vec2 *size)
+{
+	// Noop!
+}
+
+static void
+compositor_layer_commit(struct xrt_compositor *xc)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+
+	COMP_SPEW(c, "LAYER_COMMIT");
 
 	struct comp_swapchain_image *right;
 	struct comp_swapchain_image *left;
 
-	// Stereo!
-	if (num_swapchains == 2) {
-		left = &comp_swapchain(xscs[0])->images[image_index[0]];
-		right = &comp_swapchain(xscs[1])->images[image_index[1]];
-		comp_renderer_frame(c->r, left, layers[0], right, layers[1]);
-	} else {
-		COMP_ERROR(c, "non-stereo rendering not supported");
-	}
+	// Always zero for now.
+	uint32_t slot_id = 0;
+	uint32_t layer_id = 0;
+
+	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
+	struct comp_layer_stereo *stereo = &layer->stereo;
+
+	left = &stereo->l.sc->images[stereo->l.image_index];
+	right = &stereo->l.sc->images[stereo->r.image_index];
+	uint32_t l_array_index = stereo->l.array_index;
+	uint32_t r_array_index = stereo->r.array_index;
+
+	comp_renderer_frame(c->r, left, l_array_index, right, r_array_index);
 
 	compositor_add_frame_timing(c);
 
@@ -819,7 +883,11 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 	c->base.base.wait_frame = compositor_wait_frame;
 	c->base.base.begin_frame = compositor_begin_frame;
 	c->base.base.discard_frame = compositor_discard_frame;
-	c->base.base.end_frame = compositor_end_frame;
+	c->base.base.layer_begin = compositor_layer_begin;
+	c->base.base.layer_stereo_projection =
+	    compositor_layer_stereo_projection;
+	c->base.base.layer_quad = compositor_layer_quad;
+	c->base.base.layer_commit = compositor_layer_commit;
 	c->base.base.destroy = compositor_destroy;
 	c->xdev = xdev;
 
