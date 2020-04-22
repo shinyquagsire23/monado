@@ -126,29 +126,76 @@ client_gl_compositor_discard_frame(struct xrt_compositor *xc)
 }
 
 static void
-client_gl_compositor_end_frame(struct xrt_compositor *xc,
-                               enum xrt_blend_mode blend_mode,
-                               struct xrt_swapchain **xscs,
-                               const uint32_t *image_index,
-                               uint32_t *layers,
-                               uint32_t num_swapchains)
+client_gl_compositor_layer_begin(struct xrt_compositor *xc,
+                                 enum xrt_blend_mode env_blend_mode)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
-	struct xrt_swapchain *internal[8];
 
-	if (num_swapchains > 8) {
-		fprintf(stderr, "ERROR! %s\n", __func__);
-		return;
-	}
+	xrt_comp_layer_begin(&c->xcfd->base, env_blend_mode);
+}
 
-	for (uint32_t i = 0; i < num_swapchains; i++) {
-		struct client_gl_swapchain *sc = client_gl_swapchain(xscs[i]);
-		internal[i] = &sc->xscfd->base;
-	}
+static void
+client_gl_compositor_layer_stereo_projection(
+    struct xrt_compositor *xc,
+    uint64_t timestamp,
+    struct xrt_device *xdev,
+    enum xrt_input_name name,
+    enum xrt_layer_composition_flags layer_flags,
+    struct xrt_swapchain *l_sc,
+    uint32_t l_image_index,
+    struct xrt_rect *l_rect,
+    uint32_t l_array_index,
+    struct xrt_fov *l_fov,
+    struct xrt_pose *l_pose,
+    struct xrt_swapchain *r_sc,
+    uint32_t r_image_index,
+    struct xrt_rect *r_rect,
+    uint32_t r_array_index,
+    struct xrt_fov *r_fov,
+    struct xrt_pose *r_pose)
+{
+	struct client_gl_compositor *c = client_gl_compositor(xc);
+	struct xrt_swapchain *l_xscfd, *r_xscfd;
 
-	// Pipe down call into fd compositor.
-	c->xcfd->base.end_frame(&c->xcfd->base, blend_mode, internal,
-	                        image_index, layers, num_swapchains);
+	l_xscfd = &client_gl_swapchain(l_sc)->xscfd->base;
+	r_xscfd = &client_gl_swapchain(r_sc)->xscfd->base;
+
+	xrt_comp_layer_stereo_projection(
+	    &c->xcfd->base, timestamp, xdev, name, layer_flags, l_xscfd,
+	    l_image_index, l_rect, l_array_index, l_fov, l_pose, r_xscfd,
+	    r_image_index, r_rect, r_array_index, r_fov, r_pose);
+}
+
+static void
+client_gl_compositor_layer_quad(struct xrt_compositor *xc,
+                                uint64_t timestamp,
+                                struct xrt_device *xdev,
+                                enum xrt_input_name name,
+                                enum xrt_layer_composition_flags layer_flags,
+                                enum xrt_layer_eye_visibility visibility,
+                                struct xrt_swapchain *sc,
+                                uint32_t image_index,
+                                struct xrt_rect *rect,
+                                uint32_t array_index,
+                                struct xrt_pose *pose,
+                                struct xrt_vec2 *size)
+{
+	struct client_gl_compositor *c = client_gl_compositor(xc);
+	struct xrt_swapchain *xscfb;
+
+	xscfb = &client_gl_swapchain(sc)->xscfd->base;
+
+	xrt_comp_layer_quad(&c->xcfd->base, timestamp, xdev, name, layer_flags,
+	                    visibility, xscfb, image_index, rect, array_index,
+	                    pose, size);
+}
+
+static void
+client_gl_compositor_layer_commit(struct xrt_compositor *xc)
+{
+	struct client_gl_compositor *c = client_gl_compositor(xc);
+
+	xrt_comp_layer_commit(&c->xcfd->base);
 }
 
 static int64_t
@@ -281,7 +328,11 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.wait_frame = client_gl_compositor_wait_frame;
 	c->base.base.begin_frame = client_gl_compositor_begin_frame;
 	c->base.base.discard_frame = client_gl_compositor_discard_frame;
-	c->base.base.end_frame = client_gl_compositor_end_frame;
+	c->base.base.layer_begin = client_gl_compositor_layer_begin;
+	c->base.base.layer_stereo_projection =
+	    client_gl_compositor_layer_stereo_projection;
+	c->base.base.layer_quad = client_gl_compositor_layer_quad;
+	c->base.base.layer_commit = client_gl_compositor_layer_commit;
 	c->base.base.destroy = client_gl_compositor_destroy;
 	c->xcfd = xcfd;
 
