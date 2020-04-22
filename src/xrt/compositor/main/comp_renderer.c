@@ -547,7 +547,7 @@ renderer_init_dummy_images(struct comp_renderer *r)
 	    .baseArrayLayer = 0,
 	    .layerCount = 1};
 
-	VkClearColorValue color = {.float32 = {1, 1, 1, 1}};
+	VkClearColorValue color = {.float32 = {0.3, 0.3, 0.3, 1}};
 
 	for (uint32_t i = 0; i < 2; i++) {
 		vk_create_image_simple(
