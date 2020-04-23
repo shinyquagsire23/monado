@@ -20,6 +20,13 @@
 extern "C" {
 #endif // __cplusplus
 
+/*!
+ * @brief Get a JSON object by string from a JSON object.
+ *
+ * @return The JSON object with the given name if successful, NULL if not.
+ */
+const cJSON *
+u_json_get(const cJSON *json, const char *f);
 
 /*!
  * @brief Parse a string from a JSON object into a char array.

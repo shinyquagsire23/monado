@@ -27,6 +27,12 @@ get(const cJSON *json, const char *f)
 	return cJSON_GetObjectItemCaseSensitive(json, f);
 }
 
+const cJSON *
+u_json_get(const cJSON *json, const char *f)
+{
+	return get(json, f);
+}
+
 bool
 u_json_get_string_into_array(const cJSON *json, char *out_str, size_t max_size)
 {
