@@ -541,7 +541,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 
 		if (sc->released_index == -1) {
 			return oxr_error(
-			    log, XR_ERROR_CALL_ORDER_INVALID,
+			    log, XR_ERROR_LAYER_INVALID,
 			    "(frameEndInfo->layers[0]->views[%i].subImage."
 			    "swapchain) Swapchain has not been released!",
 			    i);
