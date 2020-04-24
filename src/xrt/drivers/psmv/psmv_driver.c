@@ -73,7 +73,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(psmv_spew, "PSMV_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(psmv_debug, "PSMV_PRINT_DEBUG", false)
 
 /*!
- * Indecies where each input is in the input list.
+ * Indices where each input is in the input list.
  */
 enum psmv_input_index
 {
