@@ -726,7 +726,7 @@ list_video_devices(struct xrt_prober *xp,
 			fill_out_product(p, pdev);
 		}
 
-		cb(xp, &pdev->base, pdev->usb.product, ptr);
+		cb(xp, &pdev->base, pdev->usb.product, NULL, NULL, ptr);
 	}
 
 	return 0;

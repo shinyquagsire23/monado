@@ -43,24 +43,26 @@ static ImVec2 button_dims = {256 + 64, 0};
 static void
 on_video_device(struct xrt_prober *xp,
                 struct xrt_prober_device *pdev,
-                const char *name,
+                const char *product,
+                const char *manufacturer,
+                const char *serial,
                 void *ptr)
 {
 	struct video_select *vs = (struct video_select *)ptr;
 
-	if (name == NULL) {
+	if (product == NULL) {
 		return;
 	}
 
 	char buf[256] = {0};
-	snprintf(buf, sizeof(buf), "%04x:%04x '%s'\n", pdev->vendor_id,
-	         pdev->product_id, name);
+	snprintf(buf, sizeof(buf), "%04x:%04x '%s' '%s'\n", pdev->vendor_id,
+	         pdev->product_id, product, serial);
 	if (!igButton(buf, button_dims)) {
 		return;
 	}
 
 	snprintf(vs->settings->camera_name, sizeof(vs->settings->camera_name),
-	         "%s", name);
+	         "%s", product);
 
 	vs->xfctx = U_TYPED_CALLOC(struct xrt_frame_context);
 	xrt_prober_open_video_device(xp, pdev, vs->xfctx, &vs->xfs);

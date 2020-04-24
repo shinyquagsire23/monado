@@ -139,7 +139,9 @@ struct xrt_prober_device
  */
 typedef void (*xrt_prober_list_video_cb)(struct xrt_prober *xp,
                                          struct xrt_prober_device *pdev,
-                                         const char *name,
+                                         const char *product,
+                                         const char *manufacturer,
+                                         const char *serial,
                                          void *ptr);
 
 /*!

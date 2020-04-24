@@ -90,16 +90,18 @@ p_factory(struct xrt_tracking_factory *xfact)
 static void
 on_video_device(struct xrt_prober *xp,
                 struct xrt_prober_device *pdev,
-                const char *name,
+                const char *product,
+                const char *manufacturer,
+                const char *serial,
                 void *ptr)
 {
 	struct p_factory *fact = (struct p_factory *)ptr;
 
-	if (fact->xfs != NULL || name == NULL) {
+	if (fact->xfs != NULL || product == NULL) {
 		return;
 	}
 
-	if (strcmp(name, fact->settings.camera_name) != 0) {
+	if (strcmp(product, fact->settings.camera_name) != 0) {
 		return;
 	}
 

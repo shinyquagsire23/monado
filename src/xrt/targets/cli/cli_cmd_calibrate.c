@@ -48,16 +48,18 @@ init(struct program *p)
 static void
 list_cb(struct xrt_prober *xp,
         struct xrt_prober_device *pdev,
-        const char *name,
+        const char *product,
+        const char *manufacturer,
+        const char *serial,
         void *ptr)
 {
 	struct program *p = (struct program *)ptr;
 	if (p->selected <= 0) {
-		printf(" %i) %s\n", ++p->index, name);
+		printf(" %i) %s\n", ++p->index, product);
 	} else if (p->selected == ++p->index) {
 		// Do stuff
 		printf(" :: Doing calibrartion\n");
-		printf(" Pretending to calibrarating camera '%s'\n", name);
+		printf(" Pretending to calibrarating camera '%s'\n", product);
 	}
 }
 
