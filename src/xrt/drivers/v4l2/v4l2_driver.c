@@ -527,8 +527,8 @@ v4l2_list_modes_fmt(struct v4l2_fs *vid, const struct v4l2_fmtdesc *fmt)
 	case V4L2_PIX_FMT_YUYV: break;
 	case V4L2_PIX_FMT_MJPEG: break;
 	default:
-		V_ERROR(vid, "error: Unknown pixelformat '%s'",
-		        fmt->description);
+		V_ERROR(vid, "error: Unknown pixelformat '%s' '%08x'",
+		        fmt->description, fmt->pixelformat);
 		return;
 	}
 
