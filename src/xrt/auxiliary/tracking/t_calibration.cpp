@@ -1106,6 +1106,24 @@ process_frame_yuyv(class Calibration &c, struct xrt_frame *xf)
 }
 
 XRT_NO_INLINE static void
+process_frame_uyvy(class Calibration &c, struct xrt_frame *xf)
+{
+	/*
+	 * Cleverly extract the different channels.
+	 * Cr/Cb are extracted at half width.
+	 */
+	int w = (int)xf->width;
+	int h = (int)xf->height;
+
+	cv::Mat data_full(h, w, CV_8UC2, xf->data, xf->stride);
+	ensure_buffers_are_allocated(c, data_full.rows, data_full.cols);
+	c.gui.frame->source_sequence = xf->source_sequence;
+
+	cv::cvtColor(data_full, c.gui.rgb, cv::COLOR_YUV2RGB_UYVY);
+	cv::cvtColor(data_full, c.gray, cv::COLOR_YUV2GRAY_UYVY);
+}
+
+XRT_NO_INLINE static void
 process_load_image(class Calibration &c, struct xrt_frame *xf)
 {
 	char buf[512];
@@ -1184,6 +1202,7 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 	switch (xf->format) {
 	case XRT_FORMAT_YUV888: process_frame_yuv(c, xf); break;
 	case XRT_FORMAT_YUYV422: process_frame_yuyv(c, xf); break;
+	case XRT_FORMAT_UYVY422: process_frame_uyvy(c, xf); break;
 	case XRT_FORMAT_L8: process_frame_l8(c, xf); break;
 	default:
 		P("ERROR: Bad format '%s'", u_format_str(xf->format));
