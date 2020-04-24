@@ -141,6 +141,32 @@ YUYV422_to_R8G8B8(const uint8_t *input, uint8_t *dst)
 }
 
 inline static void
+UYVY422_to_R8G8B8(const uint8_t *input, uint8_t *dst)
+{
+	uint8_t u = input[0];
+	uint8_t y0 = input[1];
+	uint8_t v = input[2];
+	uint8_t y1 = input[3];
+
+#ifdef USE_TABLE
+	uint8_t *rgb1 = (uint8_t *)&lookup_YUV_to_RGBX[y0][u][v];
+	uint8_t *rgb2 = (uint8_t *)&lookup_YUV_to_RGBX[y1][u][v];
+#else
+	uint32_t rgb1v = YUV444_to_RGBX8888(y0, u, v);
+	uint32_t rgb2v = YUV444_to_RGBX8888(y1, u, v);
+	uint8_t *rgb1 = (uint8_t *)&rgb1v;
+	uint8_t *rgb2 = (uint8_t *)&rgb2v;
+#endif
+
+	dst[0] = rgb1[0];
+	dst[1] = rgb1[1];
+	dst[2] = rgb1[2];
+	dst[3] = rgb2[0];
+	dst[4] = rgb2[1];
+	dst[5] = rgb2[2];
+}
+
+inline static void
 YUV444_to_R8G8B8(const uint8_t *input, uint8_t *dst)
 {
 	uint8_t y = input[0];
@@ -177,6 +203,26 @@ from_YUYV422_to_R8G8B8(struct u_sink_converter *s,
 		}
 	}
 }
+
+static void
+from_UYVY422_to_R8G8B8(struct u_sink_converter *s,
+                       uint32_t w,
+                       uint32_t h,
+                       size_t stride,
+                       const uint8_t *data)
+{
+	for (uint32_t y = 0; y < h; y++) {
+		for (uint32_t x = 0; x < w; x += 2) {
+			const uint8_t *src = data;
+			uint8_t *dst = s->frame->data;
+
+			src = src + (y * stride) + (x * 2);
+			dst = dst + (y * s->frame->stride) + (x * 3);
+			UYVY422_to_R8G8B8(src, dst);
+		}
+	}
+}
+
 
 static void
 from_YUV888_to_R8G8B8(struct u_sink_converter *s,
@@ -360,6 +406,11 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		from_YUYV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
 		                       xf->data);
 		break;
+	case XRT_FORMAT_UYVY422:
+		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
+		from_UYVY422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
+		                       xf->data);
+		break;
 	case XRT_FORMAT_YUV888:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
 		from_YUV888_to_R8G8B8(s, xf->width, xf->height, xf->stride,
@@ -397,6 +448,11 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		from_YUYV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
 		                       xf->data);
 		break;
+	case XRT_FORMAT_UYVY422:
+		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
+		from_UYVY422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
+		                       xf->data);
+		break;
 	case XRT_FORMAT_YUV888:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
 		from_YUV888_to_R8G8B8(s, xf->width, xf->height, xf->stride,
@@ -420,7 +476,8 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 }
 
 static void
-receive_frame_yuv_yuyv_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
+receive_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs,
+                                  struct xrt_frame *xf)
 {
 	struct u_sink_converter *s = (struct u_sink_converter *)xs;
 
@@ -428,6 +485,7 @@ receive_frame_yuv_yuyv_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 	switch (xf->format) {
 	case XRT_FORMAT_L8:
 	case XRT_FORMAT_YUYV422:
+	case XRT_FORMAT_UYVY422:
 	case XRT_FORMAT_YUV888:
 		s->downstream->push_frame(s->downstream, xf);
 		return;
@@ -441,8 +499,8 @@ receive_frame_yuv_yuyv_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 #endif
 	default:
 		fprintf(stderr,
-		        "error: Can not convert from '%s' to either YUV, YUYV "
-		        "or L8!\n",
+		        "error: Can not convert from '%s' to either YUV, YUYV, "
+		        "UYVY or L8!\n",
 		        u_format_str(xf->format));
 		return;
 	}
@@ -548,12 +606,12 @@ u_sink_create_to_r8g8b8_or_l8(struct xrt_frame_context *xfctx,
 }
 
 void
-u_sink_create_to_yuv_yuyv_or_l8(struct xrt_frame_context *xfctx,
-                                struct xrt_frame_sink *downstream,
-                                struct xrt_frame_sink **out_xfs)
+u_sink_create_to_yuv_yuyv_uyvy_or_l8(struct xrt_frame_context *xfctx,
+                                     struct xrt_frame_sink *downstream,
+                                     struct xrt_frame_sink **out_xfs)
 {
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
-	s->base.push_frame = receive_frame_yuv_yuyv_or_l8;
+	s->base.push_frame = receive_frame_yuv_yuyv_uyvy_or_l8;
 	s->node.break_apart = break_apart;
 	s->node.destroy = destroy;
 	s->downstream = downstream;

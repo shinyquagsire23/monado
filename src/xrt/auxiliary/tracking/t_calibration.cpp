@@ -1310,8 +1310,8 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 		ret = t_debug_hsv_viewer_create(xfctx, *out_sink, out_sink);
 	}
 
-	// Ensure we only get yuv, yuyv or l8 frames.
-	u_sink_create_to_yuv_yuyv_or_l8(xfctx, *out_sink, out_sink);
+	// Ensure we only get yuv, yuyv, uyvy or l8 frames.
+	u_sink_create_to_yuv_yuyv_uyvy_or_l8(xfctx, *out_sink, out_sink);
 
 
 	// Build the board model.
