@@ -489,7 +489,7 @@ v4l2_list_modes_size(struct v4l2_fs *vid,
 
 	enum xrt_format format = (enum xrt_format)0;
 	switch (interval.pixel_format) {
-	case V4L2_PIX_FMT_YUYV: format = XRT_FORMAT_YUV422; break;
+	case V4L2_PIX_FMT_YUYV: format = XRT_FORMAT_YUYV422; break;
 	case V4L2_PIX_FMT_MJPEG: format = XRT_FORMAT_MJPEG; break;
 	default: V_ERROR(vid, "error: Format not supported."); return;
 	}

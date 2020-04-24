@@ -25,7 +25,7 @@ u_format_str(enum xrt_format f)
 	case XRT_FORMAT_BITMAP_8X1: return "XRT_FORMAT_BITMAP_8X1";
 	case XRT_FORMAT_BITMAP_8X8: return "XRT_FORMAT_BITMAP_8X8";
 	case XRT_FORMAT_YUV888: return "XRT_FORMAT_YUV888";
-	case XRT_FORMAT_YUV422: return "XRT_FORMAT_YUV422";
+	case XRT_FORMAT_YUYV422: return "XRT_FORMAT_YUYV422";
 	case XRT_FORMAT_MJPEG: return "XRT_FORMAT_MJPEG";
 	default: assert(!"unsupported format"); return 0;
 	}
@@ -44,7 +44,7 @@ u_format_is_blocks(enum xrt_format f)
 	case XRT_FORMAT_BITMAP_8X1:
 	case XRT_FORMAT_BITMAP_8X8:
 	case XRT_FORMAT_YUV888:
-	case XRT_FORMAT_YUV422:
+	case XRT_FORMAT_YUYV422:
 		// Yes
 		return true;
 	case XRT_FORMAT_MJPEG:
@@ -67,7 +67,7 @@ u_format_block_width(enum xrt_format f)
 	case XRT_FORMAT_YUV888:
 		// Regular one pixel per block formats.
 		return 1;
-	case XRT_FORMAT_YUV422:
+	case XRT_FORMAT_YUYV422:
 		// Two pixels per block.
 		return 2;
 	case XRT_FORMAT_BITMAP_8X8:
@@ -90,7 +90,7 @@ u_format_block_height(enum xrt_format f)
 	case XRT_FORMAT_L8:
 	case XRT_FORMAT_BITMAP_8X1:
 	case XRT_FORMAT_YUV888:
-	case XRT_FORMAT_YUV422:
+	case XRT_FORMAT_YUYV422:
 		// One pixel high.
 		return 1;
 	case XRT_FORMAT_BITMAP_8X8:
@@ -118,7 +118,7 @@ u_format_block_size(enum xrt_format f)
 		return 3;
 	case XRT_FORMAT_R8G8B8X8:
 	case XRT_FORMAT_R8G8B8A8:
-	case XRT_FORMAT_YUV422: // Four bytes per two pixels.
+	case XRT_FORMAT_YUYV422: // Four bytes per two pixels.
 		// 32bit pixel formats.
 		return 4;
 	case XRT_FORMAT_BITMAP_8X8: // 64 bits.

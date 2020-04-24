@@ -98,7 +98,7 @@ generate_lookup_YUV_to_RGBX()
 #endif
 
 inline static void
-YUV422_to_R8G8B8X8(const uint8_t *input, uint32_t *rgb1, uint32_t *rgb2)
+YUYV422_to_R8G8B8X8(const uint8_t *input, uint32_t *rgb1, uint32_t *rgb2)
 {
 	uint8_t y0 = input[0];
 	uint8_t u = input[1];
@@ -115,7 +115,7 @@ YUV422_to_R8G8B8X8(const uint8_t *input, uint32_t *rgb1, uint32_t *rgb2)
 }
 
 inline static void
-YUV422_to_R8G8B8(const uint8_t *input, uint8_t *dst)
+YUYV422_to_R8G8B8(const uint8_t *input, uint8_t *dst)
 {
 	uint8_t y0 = input[0];
 	uint8_t u = input[1];
@@ -160,11 +160,11 @@ YUV444_to_R8G8B8(const uint8_t *input, uint8_t *dst)
 }
 
 static void
-from_YUV422_to_R8G8B8(struct u_sink_converter *s,
-                      uint32_t w,
-                      uint32_t h,
-                      size_t stride,
-                      const uint8_t *data)
+from_YUYV422_to_R8G8B8(struct u_sink_converter *s,
+                       uint32_t w,
+                       uint32_t h,
+                       size_t stride,
+                       const uint8_t *data)
 {
 	for (uint32_t y = 0; y < h; y++) {
 		for (uint32_t x = 0; x < w; x += 2) {
@@ -173,7 +173,7 @@ from_YUV422_to_R8G8B8(struct u_sink_converter *s,
 
 			src = src + (y * stride) + (x * 2);
 			dst = dst + (y * s->frame->stride) + (x * 3);
-			YUV422_to_R8G8B8(src, dst);
+			YUYV422_to_R8G8B8(src, dst);
 		}
 	}
 }
@@ -355,10 +355,10 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 	case XRT_FORMAT_R8G8B8:
 		s->downstream->push_frame(s->downstream, xf);
 		return;
-	case XRT_FORMAT_YUV422:
+	case XRT_FORMAT_YUYV422:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
-		from_YUV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
-		                      xf->data);
+		from_YUYV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
+		                       xf->data);
 		break;
 	case XRT_FORMAT_YUV888:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
@@ -392,10 +392,10 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 	case XRT_FORMAT_R8G8B8:
 		s->downstream->push_frame(s->downstream, xf);
 		return;
-	case XRT_FORMAT_YUV422:
+	case XRT_FORMAT_YUYV422:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
-		from_YUV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
-		                      xf->data);
+		from_YUYV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
+		                       xf->data);
 		break;
 	case XRT_FORMAT_YUV888:
 		ensure_data(s, XRT_FORMAT_R8G8B8, xf->width, xf->height);
@@ -427,7 +427,7 @@ receive_frame_yuv_yuyv_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 
 	switch (xf->format) {
 	case XRT_FORMAT_L8:
-	case XRT_FORMAT_YUV422:
+	case XRT_FORMAT_YUYV422:
 	case XRT_FORMAT_YUV888:
 		s->downstream->push_frame(s->downstream, xf);
 		return;
@@ -457,7 +457,7 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 
 
 	switch (xf->format) {
-	case XRT_FORMAT_YUV422:
+	case XRT_FORMAT_YUYV422:
 	case XRT_FORMAT_YUV888:
 		s->downstream->push_frame(s->downstream, xf);
 		return;

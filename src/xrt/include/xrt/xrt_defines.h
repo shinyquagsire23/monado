@@ -72,7 +72,7 @@ enum xrt_format
 	XRT_FORMAT_BITMAP_8X8, // One bit format tiled in 8X8 blocks.
 
 	XRT_FORMAT_YUV888,
-	XRT_FORMAT_YUV422,
+	XRT_FORMAT_YUYV422,
 
 	XRT_FORMAT_MJPEG,
 };

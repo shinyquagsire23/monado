@@ -134,7 +134,7 @@ process_frame(class DebugHSVPicker &d, struct xrt_frame *xf)
 
 	switch (xf->format) {
 	case XRT_FORMAT_YUV888: process_frame_yuv(d, xf); break;
-	case XRT_FORMAT_YUV422: process_frame_yuyv(d, xf); break;
+	case XRT_FORMAT_YUYV422: process_frame_yuyv(d, xf); break;
 	default:
 		fprintf(stderr, "ERROR: Bad format '%s'",
 		        u_format_str(xf->format));

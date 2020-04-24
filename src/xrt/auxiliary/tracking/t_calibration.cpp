@@ -1183,7 +1183,7 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 	// Fill both c.gui.rgb and c.gray with the data we got.
 	switch (xf->format) {
 	case XRT_FORMAT_YUV888: process_frame_yuv(c, xf); break;
-	case XRT_FORMAT_YUV422: process_frame_yuyv(c, xf); break;
+	case XRT_FORMAT_YUYV422: process_frame_yuyv(c, xf); break;
 	case XRT_FORMAT_L8: process_frame_l8(c, xf); break;
 	default:
 		P("ERROR: Bad format '%s'", u_format_str(xf->format));

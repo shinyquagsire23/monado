@@ -297,7 +297,7 @@ push_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 		ensure_buf_allocated(f, xf);
 		process_frame_yuv(f, xf);
 		break;
-	case XRT_FORMAT_YUV422:
+	case XRT_FORMAT_YUYV422:
 		ensure_buf_allocated(f, xf);
 		process_frame_yuyv(f, xf);
 		break;
