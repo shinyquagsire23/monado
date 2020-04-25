@@ -41,6 +41,8 @@ static void
 p_udev_add_usb(struct prober_device *pdev,
                uint8_t dev_class,
                const char *product,
+               const char *manufacturer,
+               const char *serial,
                const char *path);
 
 static void
@@ -234,7 +236,8 @@ p_udev_enumerate_usb(struct prober *p, struct udev *udev)
 		}
 
 		// Add info to usb device.
-		p_udev_add_usb(pdev, dev_class, product, dev_path);
+		p_udev_add_usb(pdev, dev_class, product, manufacturer, serial,
+		               dev_path);
 
 	next:
 		udev_device_unref(raw_dev);
@@ -247,12 +250,20 @@ static void
 p_udev_add_usb(struct prober_device *pdev,
                uint8_t dev_class,
                const char *product,
+               const char *manufacturer,
+               const char *serial,
                const char *path)
 {
 	pdev->base.usb_dev_class = dev_class;
 
 	if (product != NULL) {
 		pdev->usb.product = strdup(product);
+	}
+	if (manufacturer != NULL) {
+		pdev->usb.manufacturer = strdup(manufacturer);
+	}
+	if (serial != NULL) {
+		pdev->usb.serial = strdup(serial);
 	}
 	if (path != NULL) {
 		pdev->usb.path = strdup(path);

@@ -74,27 +74,36 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 
 	printf("\t% 3i: 0x%04x:0x%04x\n", id, pdev->base.vendor_id,
 	       pdev->base.product_id);
-	printf("\t\tptr:           %p\n", (void *)pdev);
-	printf("\t\tusb_dev_class: %02x\n", pdev->base.usb_dev_class);
+	printf("\t\tptr:              %p\n", (void *)pdev);
+	printf("\t\tusb_dev_class:    %02x\n", pdev->base.usb_dev_class);
+
+
+	if (pdev->usb.serial != NULL || pdev->usb.product != NULL ||
+	    pdev->usb.manufacturer != NULL) {
+		printf("\t\tusb.product:      %s\n", pdev->usb.product);
+		printf("\t\tusb.manufacturer: %s\n", pdev->usb.manufacturer);
+		printf("\t\tusb.serial:       %s\n", pdev->usb.serial);
+	}
 
 	if (pdev->usb.bus != 0 || pdev->usb.addr != 0) {
-		printf("\t\tusb.bus:       %i\n", pdev->usb.bus);
-		printf("\t\tusb.addr:      %i\n", pdev->usb.addr);
+		printf("\t\tusb.bus:          %i\n", pdev->usb.bus);
+		printf("\t\tusb.addr:         %i\n", pdev->usb.addr);
 	}
 
 	if (pdev->bluetooth.id != 0) {
-		printf("\t\tbluetooth.id:  %012" PRIx64 "\n",
+		printf("\t\tbluetooth.id:     %012" PRIx64 "\n",
 		       pdev->bluetooth.id);
 	}
 
 	int num = pdev->usb.num_ports;
 	if (print_ports(tmp, ARRAY_SIZE(tmp), pdev->usb.ports, num)) {
-		printf("\t\tport%s         %s\n", num > 1 ? "s:" : ": ", tmp);
+		printf("\t\tport%s            %s\n", num > 1 ? "s:" : ": ",
+		       tmp);
 	}
 
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->usb.dev != NULL) {
-		printf("\t\tlibusb:        %p\n", (void *)pdev->usb.dev);
+		printf("\t\tlibusb:           %p\n", (void *)pdev->usb.dev);
 	}
 #endif
 
@@ -103,21 +112,23 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 	if (uvc_dev != NULL) {
 		struct uvc_device_descriptor *desc;
 
-		printf("\t\tlibuvc:        %p\n", (void *)uvc_dev);
+		printf("\t\tlibuvc:           %p\n", (void *)uvc_dev);
 
 		uvc_get_device_descriptor(uvc_dev, &desc);
 
 		if (desc->product != NULL) {
 
-			printf("\t\tproduct:       '%s'\n", desc->product);
+			printf("\t\tproduct:          '%s'\n", desc->product);
 		}
 		if (desc->manufacturer != NULL) {
 
-			printf("\t\tmanufacturer:  '%s'\n", desc->manufacturer);
+			printf("\t\tmanufacturer:     '%s'\n",
+			       desc->manufacturer);
 		}
 		if (desc->serialNumber != NULL) {
 
-			printf("\t\tserial:        '%s'\n", desc->serialNumber);
+			printf("\t\tserial:           '%s'\n",
+			       desc->serialNumber);
 		}
 
 		uvc_free_device_descriptor(desc);
@@ -129,9 +140,9 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 	for (size_t j = 0; j < pdev->num_v4ls; j++) {
 		struct prober_v4l *v4l = &pdev->v4ls[j];
 
-		printf("\t\tv4l.iface:     %i\n", (int)v4l->usb_iface);
-		printf("\t\tv4l.index:     %i\n", (int)v4l->v4l_index);
-		printf("\t\tv4l.path:      '%s'\n", v4l->path);
+		printf("\t\tv4l.iface:        %i\n", (int)v4l->usb_iface);
+		printf("\t\tv4l.index:        %i\n", (int)v4l->v4l_index);
+		printf("\t\tv4l.path:         '%s'\n", v4l->path);
 	}
 #endif
 
@@ -139,8 +150,8 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 	for (size_t j = 0; j < pdev->num_hidraws; j++) {
 		struct prober_hidraw *hidraw = &pdev->hidraws[j];
 
-		printf("\t\thidraw.iface:  %i\n", (int)hidraw->interface);
-		printf("\t\thidraw.path:   '%s'\n", hidraw->path);
+		printf("\t\thidraw.iface:     %i\n", (int)hidraw->interface);
+		printf("\t\thidraw.path:      '%s'\n", hidraw->path);
 	}
 #endif
 }

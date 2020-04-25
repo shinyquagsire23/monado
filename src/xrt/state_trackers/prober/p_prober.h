@@ -93,6 +93,8 @@ struct prober_device
 
 #ifdef XRT_OS_LINUX
 		const char *product;
+		const char *manufacturer;
+		const char *serial;
 		const char *path;
 #endif
 

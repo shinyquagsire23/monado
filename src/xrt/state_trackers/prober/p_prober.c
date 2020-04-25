@@ -378,6 +378,16 @@ teardown_devices(struct prober *p)
 			pdev->usb.product = NULL;
 		}
 
+		if (pdev->usb.manufacturer != NULL) {
+			free((char *)pdev->usb.manufacturer);
+			pdev->usb.manufacturer = NULL;
+		}
+
+		if (pdev->usb.serial != NULL) {
+			free((char *)pdev->usb.serial);
+			pdev->usb.serial = NULL;
+		}
+
 		if (pdev->usb.path != NULL) {
 			free((char *)pdev->usb.path);
 			pdev->usb.path = NULL;
@@ -726,7 +736,8 @@ list_video_devices(struct xrt_prober *xp,
 			fill_out_product(p, pdev);
 		}
 
-		cb(xp, &pdev->base, pdev->usb.product, NULL, NULL, ptr);
+		cb(xp, &pdev->base, pdev->usb.product, pdev->usb.manufacturer,
+		   pdev->usb.serial, ptr);
 	}
 
 	return 0;
