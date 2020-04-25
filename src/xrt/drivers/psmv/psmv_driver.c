@@ -598,6 +598,57 @@ psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t now)
  *
  */
 
+/*!
+ * Does the actual sending of the led control package to the device.
+ */
+static int
+psmv_send_led_control(struct psmv_device *psmv,
+                      uint8_t red,
+                      uint8_t green,
+                      uint8_t blue,
+                      uint8_t rumble)
+{
+	struct psmv_set_led msg;
+	U_ZERO(&msg);
+	msg.id = 0x06;
+	msg.red = red;
+	msg.green = green;
+	msg.blue = blue;
+	msg.rumble = rumble;
+
+	return os_hid_write(psmv->hid, (uint8_t *)&msg, sizeof(msg));
+}
+
+static void
+psmv_led_and_trigger_update_locked(struct psmv_device *psmv, int64_t time)
+{
+	// Need to keep sending led control packets to keep the leds on.
+	if (psmv->wants.resend_time > time &&
+	    psmv->state.led.r == psmv->wants.led.r &&
+	    psmv->state.led.g == psmv->wants.led.g &&
+	    psmv->state.led.b == psmv->wants.led.b &&
+	    psmv->state.rumble == psmv->wants.rumble) {
+		return;
+	}
+
+	psmv->state.led.r = psmv->wants.led.r;
+	psmv->state.led.g = psmv->wants.led.g;
+	psmv->state.led.b = psmv->wants.led.b;
+	psmv->state.rumble = psmv->wants.rumble;
+
+	psmv->wants.resend_time = time + 1000000000;
+	psmv_send_led_control(psmv, psmv->state.led.r, psmv->state.led.g,
+	                      psmv->state.led.b, psmv->state.rumble);
+}
+
+static void
+psmv_led_and_trigger_update(struct psmv_device *psmv, int64_t time)
+{
+	os_mutex_lock(&psmv->lock);
+	psmv_led_and_trigger_update_locked(psmv, time);
+	os_mutex_unlock(&psmv->lock);
+}
+
 static void
 update_fusion(struct psmv_device *psmv,
               struct psmv_parsed_sample *sample,
@@ -710,6 +761,9 @@ psmv_run_thread(void *ptr)
 		// Lock last and the fusion.
 		os_mutex_lock(&psmv->lock);
 
+		// Make sure the leds stays on.
+		psmv_led_and_trigger_update_locked(psmv, now_ns);
+
 		// Copy to device.
 		psmv->last = input;
 
@@ -733,49 +787,6 @@ psmv_run_thread(void *ptr)
 	}
 
 	return NULL;
-}
-
-/*!
- * Does the actual sending of the led control package to the device.
- */
-static int
-psmv_send_led_control(struct psmv_device *psmv,
-                      uint8_t red,
-                      uint8_t green,
-                      uint8_t blue,
-                      uint8_t rumble)
-{
-	struct psmv_set_led msg;
-	U_ZERO(&msg);
-	msg.id = 0x06;
-	msg.red = red;
-	msg.green = green;
-	msg.blue = blue;
-	msg.rumble = rumble;
-
-	return os_hid_write(psmv->hid, (uint8_t *)&msg, sizeof(msg));
-}
-
-static void
-psmv_led_and_trigger_update(struct psmv_device *psmv, int64_t time)
-{
-	// Need to keep sending led control packets to keep the leds on.
-	if (psmv->wants.resend_time > time &&
-	    psmv->state.led.r == psmv->wants.led.r &&
-	    psmv->state.led.g == psmv->wants.led.g &&
-	    psmv->state.led.b == psmv->wants.led.b &&
-	    psmv->state.rumble == psmv->wants.rumble) {
-		return;
-	}
-
-	psmv->state.led.r = psmv->wants.led.r;
-	psmv->state.led.g = psmv->wants.led.g;
-	psmv->state.led.b = psmv->wants.led.b;
-	psmv->state.rumble = psmv->wants.rumble;
-
-	psmv->wants.resend_time = time + 1000000000;
-	psmv_send_led_control(psmv, psmv->state.led.r, psmv->state.led.g,
-	                      psmv->state.led.b, psmv->state.rumble);
 }
 
 static void
@@ -836,7 +847,6 @@ psmv_device_update_inputs(struct xrt_device *xdev)
 
 	int64_t now = os_monotonic_get_ns();
 
-	psmv_led_and_trigger_update(psmv, now);
 
 	// Lock the data.
 	os_mutex_lock(&psmv->lock);
