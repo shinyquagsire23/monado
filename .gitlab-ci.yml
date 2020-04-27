@@ -10,7 +10,7 @@ variables:
 .monado.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2019-04-28.0"
+    FDO_DISTRIBUTION_TAG: "2019-04-28.1"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.debian:buster-ndk:
@@ -50,7 +50,7 @@ stages:
     # Each most-derived job has a script to set up stuff for it.
     FDO_DISTRIBUTION_EXEC: "bash .gitlab-ci/${CI_JOB_NAME}.sh"
 
-# Debian Buster (x64)
+# Debian Buster (x64 + i386)
 debian:container_prep:
   stage: container_prep
   extends:
@@ -175,6 +175,24 @@ arch:meson:
     - .monado.build-meson # local
   variables:
     MESON_ARGS: -Ddocs=disabled
+
+# Cross-compiling
+debian:meson:32bit:
+  extends:
+    - .monado.debian:buster # local
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.build-meson # local
+  variables:
+    MESON_ARGS: --prefix /usr --libdir /usr/lib/i386-linux-gnu --cross-file ../.gitlab-ci/i386-cross.txt
+
+debian:cmake:32bit:
+  extends:
+    - .monado.debian:buster # local
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.build-cmake # local
+  variables:
+    # OpenCV and local OpenHMD doesn't play nicely with us in multi-arch.
+    CMAKE_ARGS: -DCMAKE_TOOLCHAIN_FILE=../.gitlab-ci/i386.cmake -DBUILD_WITH_OPENCV=off -DBUILD_WITH_OPENHMD=off
 
 # Base of Android NDK builds.
 # Takes the last :-delimited part of the name as the ABI to build for,
