@@ -148,7 +148,7 @@ namespace {
 			reset_filter_and_imu();
 		}
 		// 7200 deg/sec
-		constexpr double max_rad_per_sec = 20 * EIGEN_PI * 2;
+		constexpr double max_rad_per_sec = 20 * double(EIGEN_PI) * 2;
 		if (filter_state.angularVelocity().squaredNorm() >
 		    max_rad_per_sec * max_rad_per_sec) {
 			fprintf(stderr,
