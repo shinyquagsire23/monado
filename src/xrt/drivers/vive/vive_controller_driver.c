@@ -553,8 +553,8 @@ controller_handle_buttons(struct vive_controller_device *d, uint8_t buttons)
 static void
 controller_handle_touch_position(struct vive_controller_device *d, uint8_t *buf)
 {
-	int16_t x = __le16_to_cpup((__le16 *)buf);
-	int16_t y = __le16_to_cpup((__le16 *)(buf + 2));
+	int16_t x = __le16_to_cpu(*(__le16 *)buf);
+	int16_t y = __le16_to_cpu(*(__le16 *)(buf + 2));
 	d->state.trackpad.x = (float)x / INT16_MAX;
 	d->state.trackpad.y = (float)y / INT16_MAX;
 	if (d->state.trackpad.x != 0 || d->state.trackpad.y != 0)
