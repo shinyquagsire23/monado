@@ -58,8 +58,8 @@ list_cb(struct xrt_prober *xp,
 		printf(" %i) %s\n", ++p->index, product);
 	} else if (p->selected == ++p->index) {
 		// Do stuff
-		printf(" :: Doing calibrartion\n");
-		printf(" Pretending to calibrarating camera '%s'\n", product);
+		printf(" :: Doing calibration\n");
+		printf(" Pretending to calibrate camera '%s'\n", product);
 	}
 }
 
