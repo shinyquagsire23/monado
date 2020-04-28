@@ -21,6 +21,13 @@ variables:
     FDO_DISTRIBUTION_VERSION: buster
     FDO_DISTRIBUTION_TAG: "2019-04-28.0"
 
+# Variables for build and usage of Debian 10 (Buster) + Android NDK image
+.monado.debian:buster-ndk:
+  variables:
+    FDO_DISTRIBUTION_VERSION: buster
+    FDO_DISTRIBUTION_TAG: "2019-04-28.1"
+    FDO_REPO_SUFFIX: ndk
+
 # Variables for build and usage of Arch Linux image
 .monado.arch:rolling:
   variables:
@@ -73,6 +80,19 @@ arch:container_prep:
   variables:
     # a list of packages to install
     FDO_DISTRIBUTION_PACKAGES: "git gcc cmake meson ninja pkgconfig python3 diffutils patch doxygen graphviz eigen hidapi libxrandr mesa glslang vulkan-headers vulkan-icd-loader check glfw-x11 libusb opencv gtk3 ffmpeg v4l-utils qt5-base"
+
+# Debian Buster + the Android NDK in /opt/android-ndk
+# The NDK itself gets installed by .gitlab-ci/ndk:container_prep.sh
+ndk:container_prep:
+  stage: container_prep
+  extends:
+    - .monado.debian:buster-ndk # local
+    - .monado.container_base # local
+    - .fdo.container-build@debian # from ci-templates
+  variables:
+    # Repo suffix is set in .monado.debian:buster-ndk
+    # a list of packages to install
+    FDO_DISTRIBUTION_PACKAGES: "git wget unzip cmake meson ninja-build libeigen3-dev python3 pkg-config ca-certificates glslang-tools"
 
 format-and-spellcheck:
   extends:
@@ -140,6 +160,32 @@ arch:meson:
     - .monado.build-meson # local
   variables:
     MESON_ARGS: -Ddocs=disabled
+
+# Base of Android NDK builds.
+# Takes the last :-delimited part of the name as the ABI to build for,
+# so you don't need to do anything other than "extends" in the job
+.monado.ndk:build-base:
+  stage: build
+  extends:
+    - .monado.debian:buster-ndk # local
+    - .fdo.suffixed-image@debian # from ci-templates
+  variables:
+    ANDROID_PLATFORM: 24
+  script:
+    - mkdir build
+    - pushd build
+    # This extracts the ABI from the job name
+    - export ABI=$(echo $CI_JOB_NAME | cut --delimiter=":" -f 2)
+    # Note we are pointing CMake to the host install of Eigen3 because it's header-only
+    # and thus this is safe to do.
+    - cmake -GNinja .. -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=$ABI -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/
+    - ninja
+
+ndk:armeabi-v7a:
+  extends: .monado.ndk:build-base
+
+ndk:arm64-v8a:
+  extends: .monado.ndk:build-base
 
 ###
 # Pages
