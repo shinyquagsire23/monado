@@ -45,6 +45,18 @@ extern "C" {
 	((HANDLE_TYPE)(uint64_t)(uintptr_t)(PTR))
 
 /*!
+ * @brief Cast an OpenXR handle to a pointer in such a way as to avoid warnings.
+ *
+ * Avoids -Wint-to-pointer-cast by first casting to a 64-bit int, then to a
+ * pointer-sized int, then to the desired pointer type. That's a lot of no-ops
+ * on 64-bit, but a narrowing (!) conversion on 32-bit.
+ *
+ * @ingroup oxr
+ */
+#define XRT_CAST_OXR_HANDLE_TO_PTR(PTR_TYPE, HANDLE)                           \
+	((PTR_TYPE)(uintptr_t)(uint64_t)(HANDLE))
+
+/*!
  * @defgroup oxr_main OpenXR main code
  *
  * Gets called from @ref oxr_api functions and talks to devices and
