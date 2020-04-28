@@ -18,7 +18,7 @@ extern "C" {
                                      lookup)                                   \
 	do {                                                                   \
 		oxr_log_init(log, name);                                       \
-		if ((void *)thing == NULL) {                                   \
+		if (thing == XR_NULL_HANDLE) {                                 \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #thing " == NULL)");              \
 		}                                                              \
@@ -40,7 +40,7 @@ extern "C" {
 
 #define _OXR_VERIFY_SET(log, arg, new_arg, THING)                              \
 	do {                                                                   \
-		if ((void *)arg == NULL) {                                     \
+		if (arg == XR_NULL_HANDLE) {                                   \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #arg " == NULL)");                \
 		}                                                              \
