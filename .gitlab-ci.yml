@@ -141,6 +141,30 @@ debian:cmake:
     paths:
       - build/doc/html/
 
+debian:cmake-no-opencv:
+  extends:
+    - .monado.debian:buster # local
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.build-cmake # local
+  variables:
+    CMAKE_ARGS: -DBUILD_WITH_OPENCV=OFF
+
+debian:cmake-no-opengl:
+  extends:
+    - .monado.debian:buster # local
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.build-cmake # local
+  variables:
+    CMAKE_ARGS: -DBUILD_WITH_OPENGL=OFF
+
+debian:cmake-no-sdl2:
+  extends:
+    - .monado.debian:buster # local
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.build-cmake # local
+  variables:
+    CMAKE_ARGS: -DBUILD_WITH_SDL2=OFF
+
 arch:cmake:
   extends:
     - .monado.arch:rolling # local
