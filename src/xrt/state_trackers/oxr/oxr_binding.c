@@ -383,7 +383,8 @@ oxr_action_suggest_interaction_profile_bindings(
 	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
 		const XrActionSuggestedBinding *s =
 		    &suggestedBindings->suggestedBindings[i];
-		struct oxr_action *act = (struct oxr_action *)s->action;
+		struct oxr_action *act =
+		    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action *, s->action);
 
 #if 0
 		oxr_path_get_string(log, inst, s->binding, &str, &length);

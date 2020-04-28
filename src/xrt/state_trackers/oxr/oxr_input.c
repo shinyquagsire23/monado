@@ -852,7 +852,8 @@ oxr_session_get_source_set(struct oxr_session *sess,
                            struct oxr_action_set **act_set)
 {
 	void *ptr = NULL;
-	*act_set = (struct oxr_action_set *)actionSet;
+	*act_set =
+	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action_set *, actionSet);
 
 	int ret = u_hashmap_int_find(sess->act_sets, (*act_set)->key, &ptr);
 	if (ret == 0) {
@@ -892,7 +893,8 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 
 	// Has any of the bound action sets been updated.
 	for (uint32_t i = 0; i < bindInfo->countActionSets; i++) {
-		act_set = (struct oxr_action_set *)bindInfo->actionSets[i];
+		act_set = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action_set *,
+		                                     bindInfo->actionSets[i]);
 		act_set->attached = true;
 
 		oxr_source_set_create(log, sess, act_set, &src_set);

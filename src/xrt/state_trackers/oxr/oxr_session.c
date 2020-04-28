@@ -293,7 +293,8 @@ oxr_session_views(struct oxr_logger *log,
                   XrView *views)
 {
 	struct xrt_device *xdev = sess->sys->head;
-	struct oxr_space *baseSpc = (struct oxr_space *)viewLocateInfo->space;
+	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_space *, viewLocateInfo->space);
 	uint32_t num_views = 2;
 
 	// Does this apply for all calls?
@@ -535,8 +536,8 @@ oxr_session_frame_end(struct oxr_logger *log,
 	// Check for valid swapchain states.
 	for (uint32_t i = 0; i < proj->viewCount; i++) {
 		//! @todo More validation?
-		struct oxr_swapchain *sc =
-		    (struct oxr_swapchain *)proj->views[i].subImage.swapchain;
+		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
 
 		if (sc->released_index == -1) {
 			return oxr_error(
@@ -566,8 +567,8 @@ oxr_session_frame_end(struct oxr_logger *log,
 	uint32_t num_chains = ARRAY_SIZE(chains);
 
 	for (uint32_t i = 0; i < num_chains; i++) {
-		struct oxr_swapchain *sc =
-		    (struct oxr_swapchain *)proj->views[i].subImage.swapchain;
+		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
 		chains[i] = sc->swapchain;
 		layers[i] = proj->views[i].subImage.imageArrayIndex;
 		image_index[i] = sc->released_index;

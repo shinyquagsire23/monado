@@ -40,13 +40,13 @@ struct oxr_path
 static inline struct oxr_path *
 oxr_path(XrPath path)
 {
-	return (struct oxr_path *)path;
+	return XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_path *, path);
 }
 
 static inline XrPath
 to_xr_path(struct oxr_path *path)
 {
-	return (XrPath)path;
+	return XRT_CAST_PTR_TO_OXR_HANDLE(XrPath, path);
 }
 
 static inline struct u_hashset_item *

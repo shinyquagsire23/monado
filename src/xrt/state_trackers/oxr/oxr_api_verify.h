@@ -22,7 +22,7 @@ extern "C" {
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #thing " == NULL)");              \
 		}                                                              \
-		new_thing = (__typeof__(new_thing))thing;                      \
+		new_thing = (__typeof__(new_thing))(uintptr_t)thing;           \
 		if (new_thing->handle.debug != OXR_XR_DEBUG_##THING) {         \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #thing " == %p)",                 \
@@ -44,7 +44,7 @@ extern "C" {
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #arg " == NULL)");                \
 		}                                                              \
-		new_arg = (__typeof__(new_arg))arg;                            \
+		new_arg = (__typeof__(new_arg))(uintptr_t)arg;                 \
 		if (new_arg->handle.debug != OXR_XR_DEBUG_##THING) {           \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #arg " == %p)", (void *)new_arg); \
