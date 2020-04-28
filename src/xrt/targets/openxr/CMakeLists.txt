@@ -24,25 +24,29 @@ add_library(${RUNTIME_TARGET} MODULE
 	${SOURCE_FILES}
 	)
 
-# Note: Order matters in this list!
+# Note: Order may matter in these lists!
 target_link_libraries(${RUNTIME_TARGET} PUBLIC
 	aux_vk
 	aux_os
-	aux_ogl
 	aux_util
 	aux_math
+	)
+
+if(BUILD_WITH_OPENGL)
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC aux_ogl)
+endif()
+if(BUILD_WITH_SDL2)
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC st_gui imgui_impl_sdl)
+endif()
+
+target_link_libraries(${RUNTIME_TARGET} PUBLIC
 	st_oxr
-	st_gui
 	st_prober
 	target_lists
 	target_instance
 	comp_main
 	comp_client
 	)
-
-if(BUILD_WITH_SDL2)
-	target_link_libraries(${RUNTIME_TARGET} PUBLIC imgui_impl_sdl)
-endif()
 
 if(NOT MSVC)
 	# Force the main "negotiate" symbol's inclusion

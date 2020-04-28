@@ -14,10 +14,6 @@
 #include "util/u_debug.h"
 
 #include "os/os_threading.h"
-#include "ogl/ogl_api.h"
-
-#include "gui/gui_common.h"
-#include "gui/gui_imgui.h"
 
 
 struct xrt_instance;
@@ -39,6 +35,11 @@ oxr_sdl2_hack_stop(void **hack)
 {}
 
 #else
+
+#include "ogl/ogl_api.h"
+
+#include "gui/gui_common.h"
+#include "gui/gui_imgui.h"
 
 #include <SDL2/SDL.h>
 

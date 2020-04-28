@@ -91,7 +91,7 @@ cmake_dependent_option(BUILD_WITH_RS "Enable RealSense device driver" ON "realse
 option(BUILD_WITH_DUMMY "Enable dummy driver" ON)
 cmake_dependent_option(BUILD_WITH_VIVE "Enable Vive driver" ON "ZLIB_FOUND" OFF)
 cmake_dependent_option(BUILD_WITH_OPENHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
-cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND" OFF)
+cmake_dependent_option(BUILD_WITH_SDL2 "Enable SDL2 based test application" ON "SDL2_FOUND AND BUILD_WITH_OPENGL" OFF)
 cmake_dependent_option(BUILD_WITH_DAYDREAM "Enable Bluetooth LE via DBUS" ON "BUILD_WITH_DBUS" OFF)
 cmake_dependent_option(BUILD_WITH_ARDUINO "Enable Arduino input device with BLE via DBUS" ON "BUILD_WITH_DBUS" OFF)
 
