@@ -391,10 +391,10 @@ scene_destroy(struct gui_scene *scene, struct gui_program *p)
 		free(cs->settings);
 		cs->settings = NULL;
 	}
-
+#ifdef XRT_HAVE_OPENCV
 	// Free data, no longer needed.
 	t_stereo_camera_calibration_reference(&cs->status.stereo_data, NULL);
-
+#endif
 	free(cs);
 }
 
