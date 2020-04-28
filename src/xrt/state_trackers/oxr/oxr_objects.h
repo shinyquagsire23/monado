@@ -33,6 +33,18 @@ extern "C" {
  */
 
 /*!
+ * @brief Cast a pointer to an OpenXR handle in such a way as to avoid warnings.
+ *
+ * Avoids -Wpointer-to-int-cast by first casting to the same size int, then
+ * promoting to the 64-bit int, then casting to the handle type. That's a lot of
+ * no-ops on 64-bit, but a widening conversion on 32-bit.
+ *
+ * @ingroup oxr
+ */
+#define XRT_CAST_PTR_TO_OXR_HANDLE(HANDLE_TYPE, PTR)                           \
+	((HANDLE_TYPE)(uint64_t)(uintptr_t)(PTR))
+
+/*!
  * @defgroup oxr_main OpenXR main code
  *
  * Gets called from @ref oxr_api functions and talks to devices and
@@ -151,7 +163,7 @@ oxr_handle_state_to_string(enum oxr_handle_state state);
 static inline XrInstance
 oxr_instance_to_openxr(struct oxr_instance *inst)
 {
-	return (XrInstance)inst;
+	return XRT_CAST_PTR_TO_OXR_HANDLE(XrInstance, inst);
 }
 
 XrResult
@@ -264,7 +276,7 @@ oxr_source_get_pose_input(struct oxr_logger *log,
 static inline XrActionSet
 oxr_action_set_to_openxr(struct oxr_action_set *act_set)
 {
-	return (XrActionSet)act_set;
+	return XRT_CAST_PTR_TO_OXR_HANDLE(XrActionSet, act_set);
 }
 
 XrResult
@@ -279,7 +291,7 @@ oxr_action_set_create(struct oxr_logger *log,
 static inline XrAction
 oxr_action_to_openxr(struct oxr_action *act)
 {
-	return (XrAction)act;
+	return XRT_CAST_PTR_TO_OXR_HANDLE(XrAction, act);
 }
 
 XrResult
@@ -421,7 +433,7 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
 static inline XrSession
 oxr_session_to_openxr(struct oxr_session *sess)
 {
-	return (XrSession)sess;
+	return XRT_CAST_PTR_TO_OXR_HANDLE(XrSession, sess);
 }
 
 XrResult
@@ -496,7 +508,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 static inline XrSpace
 oxr_space_to_openxr(struct oxr_space *spc)
 {
-	return (XrSpace)spc;
+	return XRT_CAST_PTR_TO_OXR_HANDLE(XrSpace, spc);
 }
 
 XrResult
@@ -540,7 +552,7 @@ oxr_space_ref_relation(struct oxr_logger *log,
 static inline XrSwapchain
 oxr_swapchain_to_openxr(struct oxr_swapchain *sc)
 {
-	return (XrSwapchain)sc;
+	return XRT_CAST_PTR_TO_OXR_HANDLE(XrSwapchain, sc);
 }
 
 XrResult
@@ -562,7 +574,7 @@ oxr_create_swapchain(struct oxr_logger *,
 static inline XrDebugUtilsMessengerEXT
 oxr_messenger_to_openxr(struct oxr_debug_messenger *mssngr)
 {
-	return (XrDebugUtilsMessengerEXT)mssngr;
+	return XRT_CAST_PTR_TO_OXR_HANDLE(XrDebugUtilsMessengerEXT, mssngr);
 }
 
 XrResult
