@@ -130,7 +130,7 @@ init_vive_pro(struct xrt_prober *xp,
 	    !xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT,
 	                             VIVE_PRO_PRODUCT_STRING)) {
 		if (print_debug)
-			printf("Vive Pro manufactuer string did not match.\n");
+			printf("Vive Pro manufacturer string did not match.\n");
 		return -1;
 	}
 
@@ -197,7 +197,7 @@ init_valve_index(struct xrt_prober *xp,
 	                             VALVE_INDEX_PRODUCT_STRING)) {
 		if (print_debug)
 			printf(
-			    "Valve Index manufactuer string did not match.\n");
+			    "Valve Index manufacturer string did not match.\n");
 		return -1;
 	}
 
