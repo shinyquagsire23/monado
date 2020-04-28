@@ -17,6 +17,8 @@
 
 #include "main/comp_window_direct.h"
 
+#include <inttypes.h>
+
 /*
  *
  * Private structs
@@ -279,8 +281,8 @@ comp_window_direct_randr_get_output(struct comp_window_direct_randr *w,
 	if (display == VK_NULL_HANDLE) {
 		COMP_DEBUG(w->base.c,
 		           "vkGetRandROutputDisplayEXT"
-		           " returned a null display! %p",
-		           (void *)display);
+		           " returned a null display! 0x%016" PRIx64,
+		           (uint64_t)display);
 		return VK_NULL_HANDLE;
 	}
 

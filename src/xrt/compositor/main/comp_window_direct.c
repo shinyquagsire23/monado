@@ -255,8 +255,9 @@ comp_window_direct_acquire_xlib_display(struct comp_window *w,
 	ret = vk->vkAcquireXlibDisplayEXT(w->swapchain.vk->physical_device, dpy,
 	                                  display);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c, "vkAcquireXlibDisplayEXT: %s (%p)",
-		           vk_result_string(ret), (void *)display);
+		COMP_ERROR(w->c,
+		           "vkAcquireXlibDisplayEXT: %s (0x%016" PRIx64 ")",
+		           vk_result_string(ret), (uint64_t)display);
 	}
 	return ret;
 }
