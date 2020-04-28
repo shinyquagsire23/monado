@@ -17,3 +17,7 @@ add_subdirectory(cli)
 if(BUILD_TARGET_GUI)
 	add_subdirectory(gui)
 endif()
+
+if(XRT_BUILD_IPC)
+	add_subdirectory(service)
+endif()

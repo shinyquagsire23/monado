@@ -39,14 +39,22 @@ if(BUILD_WITH_SDL2)
 	target_link_libraries(${RUNTIME_TARGET} PUBLIC st_gui imgui_impl_sdl)
 endif()
 
-target_link_libraries(${RUNTIME_TARGET} PUBLIC
-	st_oxr
-	st_prober
-	target_lists
-	target_instance
-	comp_main
-	comp_client
-	)
+if(XRT_BUILD_IPC)
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC
+		st_oxr
+		ipc_client
+		comp_client
+		)
+else()
+	target_link_libraries(${RUNTIME_TARGET} PUBLIC
+		st_oxr
+		st_prober
+		target_lists
+		target_instance
+		comp_main
+		comp_client
+		)
+endif()
 
 if(NOT MSVC)
 	# Force the main "negotiate" symbol's inclusion

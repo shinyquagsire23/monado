@@ -61,3 +61,5 @@ subdir('cli')
 if sdl2.found()
 	subdir('gui')
 endif
+
+subdir('service')

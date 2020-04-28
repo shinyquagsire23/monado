@@ -78,11 +78,9 @@ openxr = library(
 		lib_aux_util,
 		lib_aux_math,
 		lib_comp,
+		lib_ipc_client,
 		lib_st_oxr,
-		lib_st_prober,
-		lib_target_lists,
-		lib_target_instance,
-	] + driver_libs + hack_libs,
+	] + hack_libs,
 	include_directories: [
 		openxr_include,
 		st_include, # Sigh debian meson requires this.
