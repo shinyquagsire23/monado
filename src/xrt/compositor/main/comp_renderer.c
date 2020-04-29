@@ -376,7 +376,7 @@ renderer_build_command_buffer(struct comp_renderer *r,
 		comp_distortion_draw_mesh(r->distortion, command_buffer, 1);
 
 	} else {
-		// 'OpenHMD' fragment shader distortion
+		// Fragment shader distortion
 		comp_distortion_draw_quad(r->distortion, command_buffer, 0);
 		renderer_set_viewport_scissor(scale_x, scale_y, &viewport,
 		                              &scissor,
