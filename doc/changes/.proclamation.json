@@ -6,6 +6,9 @@
     "base_url": "https://gitlab.freedesktop.org/monado/monado",
     "news_filename": "../CHANGELOG.md",
     "sections": {
+        "Major changes": {
+            "directory": "big"
+        },
         "XRT Interface": {
             "directory": "xrt"
         },
