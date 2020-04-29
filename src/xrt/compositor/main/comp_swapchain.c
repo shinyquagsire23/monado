@@ -95,7 +95,7 @@ create_image_fd(struct comp_compositor *c,
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
 	VkImage image = VK_NULL_HANDLE;
 	VkResult ret = VK_SUCCESS;
-	size_t size;
+	VkDeviceSize size;
 	int fd;
 
 	COMP_SPEW(c, "->image - vkCreateImage %dx%d", width, height);

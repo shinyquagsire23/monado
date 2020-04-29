@@ -17,6 +17,7 @@
 #include "ogl/ogl_api.h"
 #include "client/comp_gl_client.h"
 
+#include <inttypes.h>
 
 /*
  *
@@ -169,7 +170,9 @@ vk_format_to_gl(int64_t format)
 	case 44 /*VK_FORMAT_B8G8R8A8_UNORM*/: return 0;
 	case 50 /*VK_FORMAT_B8G8R8A8_SRGB*/: return 0;
 	default:
-		printf("Cannot convert VK format %ld to GL format!\n", format);
+		printf("Cannot convert VK format 0x%016" PRIx64
+		       " to GL format!\n",
+		       format);
 		return 0;
 	}
 }
