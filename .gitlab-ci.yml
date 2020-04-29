@@ -191,6 +191,14 @@ debian:cmake-no-sdl2:
   variables:
     CMAKE_ARGS: -DBUILD_WITH_SDL2=OFF
 
+debian:cmake-no-service:
+  extends:
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.build-cmake
+  variables:
+    CMAKE_ARGS: -DXRT_BUILD_IPC=OFF
+
 arch:cmake:
   extends:
     - .monado.variables.arch:rolling
