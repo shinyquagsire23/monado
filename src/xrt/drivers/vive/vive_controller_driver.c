@@ -86,8 +86,7 @@ enum vive_controller_input_index
 	VIVE_CONTROLLER_INDEX_SYSTEM_CLICK,
 	VIVE_CONTROLLER_INDEX_TRIGGER_CLICK,
 	VIVE_CONTROLLER_INDEX_TRIGGER_VALUE,
-	VIVE_CONTROLLER_INDEX_TRACKPAD_X,
-	VIVE_CONTROLLER_INDEX_TRACKPAD_Y,
+	VIVE_CONTROLLER_INDEX_TRACKPAD,
 	VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH,
 
 	// Vive Wand specific inputs
@@ -96,8 +95,7 @@ enum vive_controller_input_index
 	VIVE_CONTROLLER_INDEX_TRACKPAD_CLICK,
 
 	// Valve Index specific inputs
-	VIVE_CONTROLLER_INDEX_THUMBSTICK_X,
-	VIVE_CONTROLLER_INDEX_THUMBSTICK_Y,
+	VIVE_CONTROLLER_INDEX_THUMBSTICK,
 	VIVE_CONTROLLER_INDEX_A_CLICK,
 	VIVE_CONTROLLER_INDEX_B_CLICK,
 	VIVE_CONTROLLER_INDEX_THUMBSTICK_CLICK,
@@ -268,23 +266,15 @@ vive_controller_device_update_wand_inputs(struct xrt_device *xdev)
 		}
 	}
 
-	if (d->state.trackpad.x != 0) {
+	if (d->state.trackpad.x != 0 || d->state.trackpad.y != 0) {
 		struct xrt_input *input =
-		    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_X];
+		    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD];
 		input->timestamp = now;
-		input->value.vec1.x = d->state.trackpad.x;
-	}
-
-	if (d->state.trackpad.y != 0) {
-		struct xrt_input *input =
-		    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_Y];
-		input->timestamp = now;
-		input->value.vec1.x = d->state.trackpad.y;
-	}
-
-	if (d->state.trackpad.x != 0 || d->state.trackpad.y != 0)
+		input->value.vec2.x = d->state.trackpad.x;
+		input->value.vec2.y = d->state.trackpad.y;
 		VIVE_CONTROLLER_DEBUG(d, "Trackpad: %f, %f",
 		                      d->state.trackpad.x, d->state.trackpad.y);
+	}
 
 	if (d->state.trigger != 0) {
 		struct xrt_input *input =
@@ -348,33 +338,18 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	 * report trackpad position when trackpad has been touched last, and
 	 * thumbstick position when trackpad touch has been released
 	 */
-	if (d->state.trackpad.x != 0) {
-		struct xrt_input *input;
-		if (d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH]
-		        .value.boolean)
-			input =
-			    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_X];
-		else
-			input =
-			    &d->base.inputs[VIVE_CONTROLLER_INDEX_THUMBSTICK_X];
-		input->timestamp = now;
-		input->value.vec1.x = d->state.trackpad.x;
-	}
-
-	if (d->state.trackpad.y != 0) {
-		struct xrt_input *input;
-		if (d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH]
-		        .value.boolean)
-			input =
-			    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_X];
-		else
-			input =
-			    &d->base.inputs[VIVE_CONTROLLER_INDEX_THUMBSTICK_X];
-		input->timestamp = now;
-		input->value.vec1.x = d->state.trackpad.y;
-	}
-
 	if (d->state.trackpad.x != 0 || d->state.trackpad.y != 0) {
+		struct xrt_input *input;
+		if (d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH]
+		        .value.boolean)
+			input = &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD];
+		else
+			input =
+			    &d->base.inputs[VIVE_CONTROLLER_INDEX_THUMBSTICK];
+		input->timestamp = now;
+		input->value.vec2.x = d->state.trackpad.x;
+		input->value.vec2.y = d->state.trackpad.y;
+
 		const char *component =
 		    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH]
 		            .value.boolean
@@ -1159,8 +1134,7 @@ vive_controller_found(struct xrt_prober *xp,
 		SET_WAND_INPUT(MENU_CLICK, MENU_CLICK);
 		SET_WAND_INPUT(TRIGGER_CLICK, TRIGGER_CLICK);
 		SET_WAND_INPUT(TRIGGER_VALUE, TRIGGER_VALUE);
-		SET_WAND_INPUT(TRACKPAD_X, TRACKPAD_X);
-		SET_WAND_INPUT(TRACKPAD_Y, TRACKPAD_Y);
+		SET_WAND_INPUT(TRACKPAD, TRACKPAD);
 		SET_WAND_INPUT(TRACKPAD_CLICK, TRACKPAD_CLICK);
 		SET_WAND_INPUT(TRACKPAD_TOUCH, TRACKPAD_TOUCH);
 
@@ -1180,11 +1154,9 @@ vive_controller_found(struct xrt_prober *xp,
 		SET_INDEX_INPUT(B_CLICK, B_CLICK);
 		SET_INDEX_INPUT(TRIGGER_CLICK, TRIGGER_CLICK);
 		SET_INDEX_INPUT(TRIGGER_VALUE, TRIGGER_VALUE);
-		SET_INDEX_INPUT(TRACKPAD_X, TRACKPAD_X);
-		SET_INDEX_INPUT(TRACKPAD_Y, TRACKPAD_Y);
+		SET_INDEX_INPUT(TRACKPAD, TRACKPAD);
 		SET_INDEX_INPUT(TRACKPAD_TOUCH, TRACKPAD_TOUCH);
-		SET_INDEX_INPUT(THUMBSTICK_X, THUMBSTICK_X);
-		SET_INDEX_INPUT(THUMBSTICK_Y, THUMBSTICK_Y);
+		SET_INDEX_INPUT(THUMBSTICK, THUMBSTICK);
 		SET_INDEX_INPUT(THUMBSTICK_CLICK, THUMBSTICK_CLICK);
 
 		SET_INDEX_INPUT(AIM_POSE, AIM_POSE);

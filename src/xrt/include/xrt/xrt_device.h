@@ -189,6 +189,13 @@ struct xrt_input
 	union xrt_input_value value;
 };
 
+enum xrt_source_value_redirect
+{
+	INPUT_REDIRECT_DEFAULT = 0,
+	INPUT_REDIRECT_VEC2_X_TO_VEC1,
+	INPUT_REDIRECT_VEC2_Y_TO_VEC1
+};
+
 struct xrt_output
 {
 	enum xrt_output_name name;

@@ -826,6 +826,69 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
 	            },                                                         \
 	    },
 
+// creates an input that can not be "downgraded" to the top level path.
+// e.g. don't bind ../trackpad/click, ../trackpad/touch with just ../trackpad
+#define MAKE_INPUT_SUFFIX_ONLY(COMPONENT, SUFFIX, INPUT)                       \
+	{                                                                      \
+	    .sub_path = OXR_SUB_ACTION_PATH_LEFT,                              \
+	    .paths =                                                           \
+	        {                                                              \
+	            "/user/hand/left/input/" #COMPONENT "/" #SUFFIX,           \
+	            NULL,                                                      \
+	        },                                                             \
+	    .inputs =                                                          \
+	        {                                                              \
+	            INPUT,                                                     \
+	            (enum xrt_input_name)0,                                    \
+	        },                                                             \
+	},                                                                     \
+	    {                                                                  \
+	        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,                         \
+	        .paths =                                                       \
+	            {                                                          \
+	                "/user/hand/right/input/" #COMPONENT "/" #SUFFIX,      \
+	                NULL,                                                  \
+	            },                                                         \
+	        .inputs =                                                      \
+	            {                                                          \
+	                INPUT,                                                 \
+	                (enum xrt_input_name)0,                                \
+	            },                                                         \
+	    },
+
+// creates an input with a top level path and /x and /y sub paths
+#define MAKE_INPUT_VEC2F(COMPONENT, INPUT)                                     \
+	{                                                                      \
+	    .sub_path = OXR_SUB_ACTION_PATH_LEFT,                              \
+	    .paths =                                                           \
+	        {                                                              \
+	            "/user/hand/left/input/" #COMPONENT,                       \
+	            "/user/hand/left/input/" #COMPONENT "/x",                  \
+	            "/user/hand/left/input/" #COMPONENT "/y",                  \
+	            NULL,                                                      \
+	        },                                                             \
+	    .inputs =                                                          \
+	        {                                                              \
+	            INPUT,                                                     \
+	            (enum xrt_input_name)0,                                    \
+	        },                                                             \
+	},                                                                     \
+	    {                                                                  \
+	        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,                         \
+	        .paths =                                                       \
+	            {                                                          \
+	                "/user/hand/right/input/" #COMPONENT,                  \
+	                "/user/hand/right/input/" #COMPONENT "/x",             \
+	                "/user/hand/right/input/" #COMPONENT "/y",             \
+	                NULL,                                                  \
+	            },                                                         \
+	        .inputs =                                                      \
+	            {                                                          \
+	                INPUT,                                                 \
+	                (enum xrt_input_name)0,                                \
+	            },                                                         \
+	    },
+
 #define MAKE_OUTPUT(COMPONENT, SUFFIX, OUTPUT)                                 \
 	{                                                                      \
 	    .sub_path = OXR_SUB_ACTION_PATH_LEFT,                              \
@@ -869,14 +932,12 @@ static struct binding_template valve_index_controller_bindings[44] = {
 	MAKE_INPUT(trigger, click, XRT_INPUT_INDEX_TRIGGER_CLICK)
 	MAKE_INPUT(trigger, value, XRT_INPUT_INDEX_TRIGGER_VALUE)
 	MAKE_INPUT(trigger, touch, XRT_INPUT_INDEX_TRIGGER_TOUCH)
-	MAKE_INPUT(thumbstick, x, XRT_INPUT_INDEX_THUMBSTICK_X)
-	MAKE_INPUT(thumbstick, y, XRT_INPUT_INDEX_THUMBSTICK_Y)
-	MAKE_INPUT(thumbstick, click, XRT_INPUT_INDEX_THUMBSTICK_CLICK)
-	MAKE_INPUT(thumbstick, touch, XRT_INPUT_INDEX_THUMBSTICK_TOUCH)
-	MAKE_INPUT(trackpad, x, XRT_INPUT_INDEX_TRACKPAD_X)
-	MAKE_INPUT(trackpad, y, XRT_INPUT_INDEX_TRACKPAD_Y)
-	MAKE_INPUT(trackpad, force, XRT_INPUT_INDEX_TRACKPAD_FORCE)
-	MAKE_INPUT(trackpad, touch, XRT_INPUT_INDEX_TRACKPAD_TOUCH)
+	MAKE_INPUT_VEC2F(thumbstick, XRT_INPUT_INDEX_THUMBSTICK)
+	MAKE_INPUT_SUFFIX_ONLY(thumbstick, click, XRT_INPUT_INDEX_THUMBSTICK_CLICK)
+	MAKE_INPUT_SUFFIX_ONLY(thumbstick, touch, XRT_INPUT_INDEX_THUMBSTICK_TOUCH)
+	MAKE_INPUT_VEC2F(trackpad, XRT_INPUT_INDEX_TRACKPAD)
+	MAKE_INPUT_SUFFIX_ONLY(trackpad, force, XRT_INPUT_INDEX_TRACKPAD_FORCE)
+	MAKE_INPUT_SUFFIX_ONLY(trackpad, touch, XRT_INPUT_INDEX_TRACKPAD_TOUCH)
 	MAKE_INPUT(grip, pose, XRT_INPUT_INDEX_GRIP_POSE)
 	MAKE_INPUT(aim, pose, XRT_INPUT_INDEX_AIM_POSE)
 
@@ -891,10 +952,9 @@ static struct binding_template htc_vive_controller_bindings[24] = {
 	MAKE_INPUT(menu, click, XRT_INPUT_VIVE_MENU_CLICK)
 	MAKE_INPUT(trigger, click, XRT_INPUT_VIVE_TRIGGER_CLICK)
 	MAKE_INPUT(trigger, value, XRT_INPUT_VIVE_TRIGGER_VALUE)
-	MAKE_INPUT(trackpad, x, XRT_INPUT_VIVE_TRACKPAD_X)
-	MAKE_INPUT(trackpad, y, XRT_INPUT_VIVE_TRACKPAD_Y)
-	MAKE_INPUT(trackpad, click, XRT_INPUT_VIVE_TRACKPAD_CLICK)
-	MAKE_INPUT(trackpad, touch, XRT_INPUT_VIVE_TRACKPAD_TOUCH)
+	MAKE_INPUT_VEC2F(trackpad, XRT_INPUT_VIVE_TRACKPAD)
+	MAKE_INPUT_SUFFIX_ONLY(trackpad, click, XRT_INPUT_VIVE_TRACKPAD_CLICK)
+	MAKE_INPUT_SUFFIX_ONLY(trackpad, touch, XRT_INPUT_VIVE_TRACKPAD_TOUCH)
 	MAKE_INPUT(grip, pose, XRT_INPUT_VIVE_GRIP_POSE)
 	MAKE_INPUT(aim, pose, XRT_INPUT_VIVE_AIM_POSE)
 

@@ -195,7 +195,8 @@ static void
 add_key_to_matching_bindings(struct oxr_binding *bindings,
                              size_t num_bindings,
                              XrPath path,
-                             uint32_t key)
+                             uint32_t key,
+                             uint32_t *preferred_binding_path)
 {
 	for (size_t x = 0; x < num_bindings; x++) {
 		struct oxr_binding *b = &bindings[x];
@@ -204,6 +205,7 @@ add_key_to_matching_bindings(struct oxr_binding *bindings,
 		for (size_t y = 0; y < b->num_paths; y++) {
 			if (b->paths[y] == path) {
 				found = true;
+				*preferred_binding_path = y;
 				break;
 			}
 		}
@@ -391,8 +393,9 @@ oxr_action_suggest_interaction_profile_bindings(
 		fprintf(stderr, "\t\t%s %i -> %s\n", act->name, act->key, str);
 #endif
 
-		add_key_to_matching_bindings(bindings, num_bindings, s->binding,
-		                             act->key);
+		add_key_to_matching_bindings(
+		    bindings, num_bindings, s->binding, act->key,
+		    &act->preferred_binding_path_index);
 	}
 
 	return XR_SUCCESS;

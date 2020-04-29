@@ -327,6 +327,54 @@ do_io_bindings(struct oxr_binding *b,
 	return found;
 }
 
+static bool
+ends_with(const char *str, const char *suffix)
+{
+	int len = strlen(str);
+	int suffix_len = strlen(suffix);
+
+	return (len >= suffix_len) &&
+	       (0 == strcmp(str + (len - suffix_len), suffix));
+}
+
+static void
+oxr_source_cache_determine_redirect(struct oxr_logger *log,
+                                    struct oxr_session *sess,
+                                    struct oxr_action *act,
+                                    struct oxr_source_cache *cache,
+                                    XrPath bound_path)
+{
+
+	cache->redirect = INPUT_REDIRECT_DEFAULT;
+
+	struct oxr_source_input *input = &cache->inputs[0];
+	if (input == NULL)
+		return;
+
+	const char *str;
+	size_t length;
+	oxr_path_get_string(log, sess->sys->inst, bound_path, &str, &length);
+
+	enum xrt_input_type t = XRT_GET_INPUT_TYPE(input->input->name);
+
+	// trackpad/thumbstick data is kept in vec2f values.
+	// When a float action binds to ../trackpad/x or ../thumbstick/y, store
+	// the information which vec2f component to read.
+	if (act->action_type == XR_ACTION_TYPE_FLOAT_INPUT &&
+	    t == XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE) {
+		if (ends_with(str, "/x")) {
+			cache->redirect = INPUT_REDIRECT_VEC2_X_TO_VEC1;
+		} else if (ends_with(str, "/y")) {
+			cache->redirect = INPUT_REDIRECT_VEC2_Y_TO_VEC1;
+		} else {
+			oxr_log(log,
+			        "No rule to get float from vec2f for action "
+			        "%s, binding %s\n",
+			        act->name, str);
+		}
+	}
+}
+
 static void
 get_binding(struct oxr_logger *log,
             struct oxr_sink_logger *slog,
@@ -337,7 +385,8 @@ get_binding(struct oxr_logger *log,
             struct oxr_source_input inputs[16],
             uint32_t *num_inputs,
             struct oxr_source_output outputs[16],
-            uint32_t *num_outputs)
+            uint32_t *num_outputs,
+            XrPath *bound_path)
 {
 	struct xrt_device *xdev = NULL;
 	struct oxr_binding *bindings[32];
@@ -400,8 +449,15 @@ get_binding(struct oxr_logger *log,
 		const char *str = NULL;
 		struct oxr_binding *b = bindings[i];
 
-		// Just pick the first path.
-		oxr_path_get_string(log, sess->sys->inst, b->paths[0], &str,
+		// pick the path that the action prefers.
+		// e.g. an action bound to /user/hand/*/trackpad will prefer
+		// index 0 of those bindings, an action bound to
+		// /user/hand/*/trackpad will prefer index 1
+		// [/user/hand/*/trackpad, /user/hand/*/trackpad/x]
+
+		XrPath preferred_path =
+		    b->paths[act->preferred_binding_path_index];
+		oxr_path_get_string(log, sess->sys->inst, preferred_path, &str,
 		                    &length);
 		oxr_slog(slog, "\t\t\tBinding: %s\n", str);
 
@@ -414,6 +470,7 @@ get_binding(struct oxr_logger *log,
 		                            outputs, num_outputs);
 
 		if (found) {
+			*bound_path = preferred_path;
 			oxr_slog(slog, "\t\t\t\tBound!\n");
 		} else {
 			oxr_slog(slog, "\t\t\t\tRejected! (NO XDEV MAPPING)\n");
@@ -812,8 +869,9 @@ oxr_source_bind_inputs(struct oxr_logger *log,
 	struct oxr_source_output outputs[16] = {0};
 	uint32_t num_outputs = 0;
 
+	XrPath bound_path;
 	get_binding(log, slog, sess, act, profile, sub_path, inputs,
-	            &num_inputs, outputs, &num_outputs);
+	            &num_inputs, outputs, &num_outputs, &bound_path);
 
 	cache->current.active = false;
 
@@ -836,6 +894,8 @@ oxr_source_bind_inputs(struct oxr_logger *log,
 		}
 		cache->num_outputs = num_outputs;
 	}
+
+	oxr_source_cache_determine_redirect(log, sess, act, cache, bound_path);
 }
 
 
@@ -1018,7 +1078,8 @@ oxr_action_sync_data(struct oxr_logger *log,
 
 static void
 get_state_from_state_bool(struct oxr_source_state *state,
-                          XrActionStateBoolean *data)
+                          XrActionStateBoolean *data,
+                          enum xrt_source_value_redirect redirect)
 {
 	data->currentState = state->boolean;
 	data->lastChangeTime = state->timestamp;
@@ -1028,9 +1089,20 @@ get_state_from_state_bool(struct oxr_source_state *state,
 
 static void
 get_state_from_state_vec1(struct oxr_source_state *state,
-                          XrActionStateFloat *data)
+                          XrActionStateFloat *data,
+                          enum xrt_source_value_redirect redirect)
 {
-	data->currentState = state->vec1.x;
+	switch (redirect) {
+	case INPUT_REDIRECT_VEC2_X_TO_VEC1:
+		data->currentState = state->vec2.x;
+		break;
+	case INPUT_REDIRECT_VEC2_Y_TO_VEC1:
+		data->currentState = state->vec2.y;
+		break;
+	case INPUT_REDIRECT_DEFAULT:
+	default: data->currentState = state->vec1.x; break;
+	}
+
 	data->lastChangeTime = state->timestamp;
 	data->changedSinceLastSync = state->changed;
 	data->isActive = XR_TRUE;
@@ -1038,7 +1110,8 @@ get_state_from_state_vec1(struct oxr_source_state *state,
 
 static void
 get_state_from_state_vec2(struct oxr_source_state *state,
-                          XrActionStateVector2f *data)
+                          XrActionStateVector2f *data,
+                          enum xrt_source_value_redirect redirect)
 {
 	data->currentState.x = state->vec2.x;
 	data->currentState.y = state->vec2.y;
@@ -1049,22 +1122,28 @@ get_state_from_state_vec2(struct oxr_source_state *state,
 
 #define OXR_ACTION_GET_FILLER(TYPE)                                            \
 	if (sub_paths.any && src->any_state.active) {                          \
-		get_state_from_state_##TYPE(&src->any_state, data);            \
+		get_state_from_state_##TYPE(&src->any_state, data,             \
+		                            INPUT_REDIRECT_DEFAULT);           \
 	}                                                                      \
 	if (sub_paths.user && src->user.current.active) {                      \
-		get_state_from_state_##TYPE(&src->user.current, data);         \
+		get_state_from_state_##TYPE(&src->user.current, data,          \
+		                            src->user.redirect);               \
 	}                                                                      \
 	if (sub_paths.head && src->head.current.active) {                      \
-		get_state_from_state_##TYPE(&src->head.current, data);         \
+		get_state_from_state_##TYPE(&src->head.current, data,          \
+		                            src->head.redirect);               \
 	}                                                                      \
 	if (sub_paths.left && src->left.current.active) {                      \
-		get_state_from_state_##TYPE(&src->left.current, data);         \
+		get_state_from_state_##TYPE(&src->left.current, data,          \
+		                            src->left.redirect);               \
 	}                                                                      \
 	if (sub_paths.right && src->right.current.active) {                    \
-		get_state_from_state_##TYPE(&src->right.current, data);        \
+		get_state_from_state_##TYPE(&src->right.current, data,         \
+		                            src->right.redirect);              \
 	}                                                                      \
 	if (sub_paths.gamepad && src->gamepad.current.active) {                \
-		get_state_from_state_##TYPE(&src->gamepad.current, data);      \
+		get_state_from_state_##TYPE(&src->gamepad.current, data,       \
+		                            src->gamepad.redirect);            \
 	}
 
 

@@ -1194,6 +1194,8 @@ struct oxr_source_cache
 	int64_t stop_output_time;
 	size_t num_outputs;
 	struct oxr_source_output *outputs;
+
+	enum xrt_source_value_redirect redirect;
 };
 
 /*!
@@ -1335,6 +1337,9 @@ struct oxr_action
 
 	//! Which sub action paths that this action was created with.
 	struct oxr_sub_paths sub_paths;
+
+	//! Which of the paths in oxr_binding.paths matches this action.
+	uint32_t preferred_binding_path_index;
 };
 
 /*!
