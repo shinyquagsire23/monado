@@ -194,7 +194,7 @@ ipc_instance_create(struct xrt_instance **out_xinst)
 		    "Failed to connect to monado service process\n\n"
 		    "###\n"
 		    "#\n"
-		    "# Please make sure that the service procss is running\n"
+		    "# Please make sure that the service process is running\n"
 		    "#\n"
 		    "# It is called \"monado-service\"\n"
 		    "# For builds it's located "
