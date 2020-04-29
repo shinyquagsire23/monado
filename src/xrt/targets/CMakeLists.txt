@@ -8,16 +8,16 @@
 
 add_subdirectory(common)
 
-if(BUILD_TARGET_OPENXR)
+if(XRT_FEATURE_OPENXR)
 	add_subdirectory(openxr)
 endif()
 
 add_subdirectory(cli)
 
-if(BUILD_TARGET_GUI)
+if(XRT_HAVE_SDL2)
 	add_subdirectory(gui)
 endif()
 
-if(XRT_BUILD_IPC)
+if(XRT_FEATURE_SERVICE)
 	add_subdirectory(service)
 endif()

@@ -4,7 +4,7 @@
 # Generate a header containing defines for each enabled driver
 set(FILE_CONTENTS "")
 foreach(DRIVER ${AVAILABLE_DRIVERS})
-	if(BUILD_DRIVER_${DRIVER})
+	if(XRT_BUILD_DRIVER_${DRIVER})
 		string(APPEND FILE_CONTENTS "#define XRT_BUILD_DRIVER_${DRIVER}\n")
 	endif()
 endforeach()

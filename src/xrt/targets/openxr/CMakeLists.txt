@@ -32,14 +32,14 @@ target_link_libraries(${RUNTIME_TARGET} PUBLIC
 	aux_math
 	)
 
-if(BUILD_WITH_OPENGL)
+if(XRT_HAVE_OPENGL)
 	target_link_libraries(${RUNTIME_TARGET} PUBLIC aux_ogl)
 endif()
-if(BUILD_WITH_SDL2)
+if(XRT_HAVE_SDL2)
 	target_link_libraries(${RUNTIME_TARGET} PUBLIC st_gui imgui_impl_sdl)
 endif()
 
-if(XRT_BUILD_IPC)
+if(XRT_FEATURE_SERVICE)
 	target_link_libraries(${RUNTIME_TARGET} PUBLIC
 		st_oxr
 		ipc_client
@@ -97,7 +97,7 @@ file(GENERATE
 # by a script we generate now.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	set(MANIFEST_RELATIVE_DIR share/openxr/${XR_API_MAJOR}/)
-	if(INSTALL_ACTIVE_RUNTIME)
+	if(XRT_OPENXR_INSTALL_ACTIVE_RUNTIME)
 		configure_file(active_runtime.cmake ${CMAKE_CURRENT_BINARY_DIR}/active_runtime.cmake @ONLY)
 		install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/active_runtime.cmake)
 	endif()

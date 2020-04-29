@@ -32,7 +32,7 @@ set(MAIN_SOURCE_FILES
 	main/comp_window.h
 	)
 
-if (VULKAN_ENABLE_VALIDATION)
+if (XRT_VULKAN_ENABLE_VALIDATION)
 	add_definitions(-DXRT_ENABLE_VK_VALIDATION)
 endif()
 
@@ -41,7 +41,7 @@ endif()
 # Client library
 #
 
-if(BUILD_WITH_OPENGL)
+if(XRT_HAVE_OPENGL)
 	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_gl_client.c
 		client/comp_gl_client.h
@@ -49,14 +49,14 @@ if(BUILD_WITH_OPENGL)
 		client/comp_gles_glue.c # TODO separate config for GLES
 		)
 endif()
-if(BUILD_WITH_OPENGL AND BUILD_WITH_XLIB)
+if(XRT_HAVE_OPENGL AND XRT_HAVE_XLIB)
 	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_gl_xlib_client.c
 		client/comp_gl_xlib_client.h
 		client/comp_gl_xlib_glue.c
 		)
 endif()
-if(BUILD_WITH_OPENGL AND BUILD_WITH_EGL)
+if(XRT_HAVE_OPENGL AND XRT_HAVE_EGL)
 	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_egl_glue.c
 		)
@@ -66,25 +66,25 @@ add_library(comp_client STATIC ${CLIENT_SOURCE_FILES})
 target_link_libraries(comp_client PUBLIC xrt-interfaces PRIVATE aux_util aux_vk)
 target_include_directories(comp_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(BUILD_WITH_OPENGL)
+if(XRT_HAVE_OPENGL)
 	target_link_libraries(comp_client PRIVATE aux_ogl)
 endif()
 
-if(BUILD_WITH_OPENGL AND BUILD_WITH_XLIB)
+if(XRT_HAVE_OPENGL AND XRT_HAVE_XLIB)
 	target_link_libraries(comp_client PRIVATE OpenGL::GLX)
 endif()
 ##
 # Main library
 #
 
-if(BUILD_COMPOSITOR_MAIN)
+if(XRT_FEATURE_COMPOSITOR_MAIN)
 
-	if(BUILD_WITH_XCB)
+	if(XRT_HAVE_XCB)
 		list(APPEND MAIN_SOURCE_FILES
 			main/comp_window_xcb.c
 			)
 	endif()
-	if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
+	if(XRT_HAVE_XCB AND XRT_HAVE_XLIB)
 		list(APPEND MAIN_SOURCE_FILES
 			main/comp_window_direct.c
 			main/comp_window_direct_randr.c
@@ -93,7 +93,7 @@ if(BUILD_COMPOSITOR_MAIN)
 	endif()
 
 	# generate wayland protocols
-	if(BUILD_WITH_WAYLAND)
+	if(XRT_HAVE_WAYLAND)
 		pkg_get_variable(WL_PROTOS_PKG_DIR wayland-protocols pkgdatadir)
 		pkg_get_variable(WL_SCANNER wayland-scanner wayland_scanner)
 
@@ -128,19 +128,19 @@ if(BUILD_COMPOSITOR_MAIN)
 		${CMAKE_CURRENT_BINARY_DIR}
 		)
 
-	if(BUILD_WITH_WAYLAND)
+	if(XRT_HAVE_WAYLAND)
 		target_include_directories(comp_main SYSTEM PRIVATE ${WL_PROTOS_DIR})
 		target_link_libraries(comp_main PRIVATE ${WAYLAND_LIBRARIES})
 	endif()
-	if(BUILD_WITH_XCB)
+	if(XRT_HAVE_XCB)
 		target_include_directories(comp_main SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
 		target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
 	endif()
 
-	if(BUILD_WITH_XCB AND BUILD_WITH_XLIB)
+	if(XRT_HAVE_XCB AND XRT_HAVE_XLIB)
 		target_link_libraries(comp_main PRIVATE ${X11_X11_LIB})
 	endif()
-	if(BUILD_WITH_EGL)
+	if(XRT_HAVE_EGL)
 		target_include_directories(comp_main SYSTEM PRIVATE ${EGL_INCLUDE_DIRS})
 		target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
 	endif()

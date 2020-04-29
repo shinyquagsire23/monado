@@ -8,7 +8,7 @@
 
 #include "xrt/xrt_config_build.h"
 
-#ifdef XRT_BUILD_IPC
+#ifdef XRT_FEATURE_SERVICE
 
 struct xrt_instance;
 

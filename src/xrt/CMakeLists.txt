@@ -8,6 +8,6 @@ add_subdirectory(compositor)
 add_subdirectory(state_trackers)
 add_subdirectory(targets)
 
-if (XRT_BUILD_IPC)
+if(XRT_FEATURE_SERVICE)
 	add_subdirectory(ipc)
 endif()

@@ -31,7 +31,7 @@ set(OS_SOURCE_FILES
 	os/os_hid_hidraw.c
 	os/os_threading.h
 	)
-if(BUILD_WITH_DBUS)
+if(XRT_HAVE_DBUS)
 	list(APPEND OS_SOURCE_FILES
 		os/os_ble_dbus.c
 		)
@@ -46,7 +46,7 @@ set(TRACKING_SOURCE_FILES
 	tracking/t_lowpass.hpp
 	tracking/t_tracking.h
 	)
-if(BUILD_TRACKING)
+if(XRT_HAVE_OPENCV)
 	list(APPEND TRACKING_SOURCE_FILES
 		tracking/t_calibration_opencv.hpp
 		tracking/t_calibration.cpp
@@ -112,7 +112,7 @@ add_library(aux-includes INTERFACE)
 target_include_directories(aux-includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(aux-includes INTERFACE xrt-interfaces)
 
-if(BUILD_WITH_OPENGL)
+if(XRT_HAVE_OPENGL)
 	# OpenGL library.
 	add_library(aux_ogl STATIC ${OGL_SOURCE_FILES})
 	target_link_libraries(aux_ogl PUBLIC aux-includes)
@@ -123,7 +123,7 @@ endif()
 # OS library.
 add_library(aux_os STATIC ${OS_SOURCE_FILES})
 target_link_libraries(aux_os PUBLIC aux-includes PRIVATE Threads::Threads)
-if(BUILD_WITH_DBUS)
+if(XRT_HAVE_DBUS)
 	target_link_libraries(aux_os PRIVATE ${DBUS_LIBRARIES})
 	target_include_directories(aux_os SYSTEM
 		PRIVATE
@@ -145,13 +145,13 @@ add_library(aux_util STATIC ${UTIL_SOURCE_FILES})
 target_link_libraries(aux_util PUBLIC aux-includes)
 # for u_device
 target_link_libraries(aux_util PUBLIC aux_math)
-if(BUILD_WITH_JPEG)
+if(XRT_HAVE_JPEG)
 	target_link_libraries(aux_util PRIVATE ${JPEG_LIBRARIES})
 endif()
 # for cJSON
-if(BUILD_WITH_SYSTEM_CJSON)
+if(XRT_HAVE_SYSTEM_CJSON)
 	target_link_libraries(aux_util PUBLIC cJSON::cJSON)
-	target_compile_definitions(aux_util PRIVATE XRT_USE_SYSTEM_CJSON)
+	target_compile_definitions(aux_util PRIVATE XRT_HAVE_SYSTEM_CJSON)
 else()
 	target_link_libraries(aux_util PUBLIC xrt-external-cjson)
 endif()
@@ -167,7 +167,7 @@ target_include_directories(aux_tracking SYSTEM
 	)
 # for flexkalman
 target_link_libraries(aux_tracking PRIVATE xrt-external-flexkalman)
-if(BUILD_TRACKING)
+if(XRT_HAVE_OPENCV)
 	target_include_directories(aux_tracking SYSTEM
 		PRIVATE
 		${OpenCV_INCLUDE_DIRS}

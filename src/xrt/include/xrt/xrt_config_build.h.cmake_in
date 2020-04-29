@@ -9,4 +9,4 @@
 
 #pragma once
 
-#cmakedefine XRT_BUILD_IPC
+#cmakedefine XRT_FEATURE_SERVICE

@@ -5,7 +5,7 @@
 find_package(Doxygen)
 cmake_dependent_option(BUILD_DOC "Build documentation" ON "DOXYGEN_FOUND" OFF)
 cmake_dependent_option(BUILD_DOC_WARN_UNDOCUMENTED "Warn on undocumented entities when building documentation" OFF "DOXYGEN_FOUND" OFF)
-cmake_dependent_option(BUILD_DOC_EXTRACT_ALL "Extract all entities for documentation, not just documented ones (conflicts with BUILD_DOCS_WARN_UNDOCUMENTED)" ON "DOXYGEN_FOUND; NOT BUILD_DOCS_WARN_UNDOCUMENTED" OFF)
+cmake_dependent_option(BUILD_DOC_EXTRACT_ALL "Extract all entities for documentation, not just documented ones (conflicts with BUILD_DOC_WARN_UNDOCUMENTED)" ON "DOXYGEN_FOUND AND NOT BUILD_DOC_WARN_UNDOCUMENTED" OFF)
 
 if(BUILD_DOC)
 	if(BUILD_DOC_WARN_UNDOCUMENTED)

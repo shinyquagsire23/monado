@@ -13,21 +13,21 @@ set(PROBER_SOURCE_FILES
 	)
 
 # Add libudev
-if(BUILD_WITH_LIBUDEV)
+if(XRT_HAVE_LIBUDEV)
 	list(APPEND PROBER_SOURCE_FILES
 		p_udev.c
 		)
 endif()
 
 # Add libusb
-if(BUILD_WITH_LIBUSB)
+if(XRT_HAVE_LIBUSB)
 	list(APPEND PROBER_SOURCE_FILES
 		p_libusb.c
 		)
 endif()
 
 # Add libuvc
-if(BUILD_WITH_LIBUVC)
+if(XRT_HAVE_LIBUVC)
 	list(APPEND PROBER_SOURCE_FILES
 		p_libuvc.c
 		)
@@ -48,7 +48,7 @@ target_include_directories(st_prober PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
 	)
 
-if(BUILD_WITH_LIBUDEV)
+if(XRT_HAVE_LIBUDEV)
 	target_include_directories(st_prober
 		PRIVATE
 		${UDEV_INCLUDE_DIRS}
@@ -58,7 +58,7 @@ if(BUILD_WITH_LIBUDEV)
 		)
 endif()
 
-if(BUILD_WITH_LIBUSB)
+if(XRT_HAVE_LIBUSB)
 	target_include_directories(st_prober
 		PRIVATE
 		${LIBUSB1_INCLUDE_DIRS}
@@ -68,7 +68,7 @@ if(BUILD_WITH_LIBUSB)
 		)
 endif()
 
-if(BUILD_WITH_LIBUVC)
+if(XRT_HAVE_LIBUVC)
 	target_include_directories(st_prober
 		PRIVATE
 		${LIBUVC_INCLUDES}
@@ -78,7 +78,7 @@ if(BUILD_WITH_LIBUVC)
 		)
 endif()
 
-if(BUILD_DRIVER_V4L2)
+if(XRT_HAVE_V4L2)
 	# Uses v4l2_fs_create
 	target_link_libraries(st_prober PRIVATE
 		drv_v4l2

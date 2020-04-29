@@ -72,7 +72,7 @@ xrt_config_have = declare_dependency(
 
 build_conf = configuration_data()
 if true
-	build_conf.set('XRT_BUILD_IPC', true)
+	build_conf.set('XRT_FEATURE_SERVICE', true)
 endif
 
 xrt_config_build_h = configure_file(

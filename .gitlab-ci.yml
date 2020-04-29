@@ -175,7 +175,7 @@ debian:cmake-no-opencv:
     - .fdo.distribution-image@debian # from ci-templates
     - .monado.base-job.build-cmake
   variables:
-    CMAKE_ARGS: -DBUILD_WITH_OPENCV=OFF
+    CMAKE_ARGS: -DXRT_HAVE_OPENCV=OFF
 
 debian:cmake-no-opengl:
   extends:
@@ -183,7 +183,7 @@ debian:cmake-no-opengl:
     - .fdo.distribution-image@debian # from ci-templates
     - .monado.base-job.build-cmake
   variables:
-    CMAKE_ARGS: -DBUILD_WITH_OPENGL=OFF
+    CMAKE_ARGS: -DXRT_HAVE_OPENGL=OFF
 
 debian:cmake-no-sdl2:
   extends:
@@ -191,7 +191,7 @@ debian:cmake-no-sdl2:
     - .fdo.distribution-image@debian # from ci-templates
     - .monado.base-job.build-cmake
   variables:
-    CMAKE_ARGS: -DBUILD_WITH_SDL2=OFF
+    CMAKE_ARGS: -DXRT_HAVE_SDL2=OFF
 
 debian:cmake-no-service:
   extends:
@@ -199,7 +199,7 @@ debian:cmake-no-service:
     - .fdo.distribution-image@debian # from ci-templates
     - .monado.base-job.build-cmake
   variables:
-    CMAKE_ARGS: -DXRT_BUILD_IPC=OFF
+    CMAKE_ARGS: -DXRT_FEATURE_SERVICE=OFF
 
 arch:cmake:
   extends:
@@ -257,7 +257,7 @@ debian:cmake:32bit:
     - .monado.base-job.build-cmake
   variables:
     # OpenCV and local OpenHMD doesn't play nicely with us in multi-arch.
-    CMAKE_ARGS: -DCMAKE_TOOLCHAIN_FILE=../.gitlab-ci/i386.cmake -DBUILD_WITH_OPENCV=off -DBUILD_WITH_OPENHMD=off
+    CMAKE_ARGS: -DCMAKE_TOOLCHAIN_FILE=../.gitlab-ci/i386.cmake -DXRT_HAVE_OPENCV=off -DXRT_BUILD_DRIVER_OHMD=off
 
 # Packaging
 .monado.base-job.debuild:

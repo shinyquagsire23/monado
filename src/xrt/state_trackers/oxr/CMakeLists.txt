@@ -34,7 +34,7 @@ set(OXR_SOURCE_FILES
 	oxr_xdev.c
 	)
 
-if(BUILD_WITH_OPENGL)
+if(XRT_HAVE_OPENGL)
 	add_definitions(-DXR_USE_GRAPHICS_API_OPENGL -DXR_USE_GRAPHICS_API_OPENGL_ES)
 	list(APPEND OXR_SOURCE_FILES
 		oxr_session_gl.c
@@ -42,11 +42,11 @@ if(BUILD_WITH_OPENGL)
 		)
 endif()
 
-if(BUILD_WITH_XLIB)
+if(XRT_HAVE_XLIB)
 	add_definitions(-DXR_USE_PLATFORM_XLIB)
 endif()
 
-if(BUILD_WITH_EGL)
+if(XRT_HAVE_EGL)
 	add_definitions(-DXR_USE_PLATFORM_EGL)
 	list(APPEND OXR_SOURCE_FILES oxr_session_egl.c)
 endif()

@@ -20,55 +20,55 @@ target_include_directories(target_lists PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}
 	)
 
-if(BUILD_DRIVER_ARDUINO)
+if(XRT_BUILD_DRIVER_ARDUINO)
 	target_link_libraries(target_lists PRIVATE drv_arduino)
 endif()
 
-if(BUILD_DRIVER_DAYDREAM)
+if(XRT_BUILD_DRIVER_DAYDREAM)
 	target_link_libraries(target_lists PRIVATE drv_daydream)
 endif()
 
-if(BUILD_DRIVER_DUMMY)
+if(XRT_BUILD_DRIVER_DUMMY)
 	target_link_libraries(target_lists PRIVATE drv_dummy)
 endif()
 
-if(BUILD_DRIVER_HDK)
+if(XRT_BUILD_DRIVER_HDK)
 	target_link_libraries(target_lists PRIVATE drv_hdk)
 endif()
 
-if(BUILD_DRIVER_HYDRA)
+if(XRT_BUILD_DRIVER_HYDRA)
 	target_link_libraries(target_lists PRIVATE drv_hydra)
 endif()
 
-if(BUILD_DRIVER_NS)
+if(XRT_BUILD_DRIVER_NS)
 	target_link_libraries(target_lists PRIVATE drv_ns)
 endif()
 
-if(BUILD_DRIVER_OHMD)
+if(XRT_BUILD_DRIVER_OHMD)
 	target_link_libraries(target_lists PRIVATE drv_ohmd)
 endif()
 
-if(BUILD_DRIVER_PSMV)
+if(XRT_BUILD_DRIVER_PSMV)
 	target_link_libraries(target_lists PRIVATE drv_psmv)
 endif()
 
-if(BUILD_DRIVER_PSVR)
+if(XRT_BUILD_DRIVER_PSVR)
 	target_link_libraries(target_lists PRIVATE drv_psvr)
 endif()
 
-if(BUILD_DRIVER_RS)
+if(XRT_BUILD_DRIVER_RS)
 	target_link_libraries(target_lists PRIVATE drv_rs)
 endif()
 
-if(BUILD_DRIVER_V4L2)
+if(XRT_HAVE_V4L2)
 	target_link_libraries(target_lists PRIVATE drv_v4l2)
 endif()
 
-if(BUILD_DRIVER_VIVE)
+if(XRT_BUILD_DRIVER_VIVE)
 	target_link_libraries(target_lists PRIVATE drv_vive)
 endif()
 
-if(BUILD_DRIVER_SURVIVE)
+if(XRT_BUILD_DRIVER_SURVIVE)
 	target_link_libraries(target_lists PRIVATE drv_survive)
 endif()
 
