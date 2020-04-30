@@ -455,7 +455,7 @@ main_loop(struct ipc_server *vs)
 		last_r = r;
 		last_l = l;
 
-		comp_renderer_frame(c->r, r, 0, l, 0);
+		comp_renderer_frame(c->r, l, 0, r, 0);
 
 		// Now is a good time to destroy objects.
 		comp_compositor_garbage_collect(c);
