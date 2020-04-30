@@ -397,7 +397,7 @@ ipc_compositor_end_frame(struct xrt_compositor *xc,
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
 	struct ipc_layer_stereo_projection *stereo = &layer->stereo;
 	struct ipc_client_swapchain *l = ipc_client_swapchain(xscs[0]);
-	struct ipc_client_swapchain *r = ipc_client_swapchain(xscs[0]);
+	struct ipc_client_swapchain *r = ipc_client_swapchain(xscs[1]);
 
 	// stereo->timestamp = timestamp;
 	// stereo->xdev_id = 0; //! @todo Real id.

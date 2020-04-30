@@ -107,11 +107,10 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 	struct ipc_layer_slot *slot = &ism->slots[slot_id];
 	struct ipc_layer_stereo_projection *stereo = &slot->layers[0].stereo;
 
-	// TODO: this is hardcoded for now
-	cs->render_state.l_render_index = stereo->l.image_index;
-	// TODO: this is hardcoded for now
-	cs->render_state.r_render_index = stereo->l.image_index;
-	// printf("SERVER: sending compositor end frame response\n");
+	cs->render_state.l_swapchain_index = stereo->l.swapchain_id;
+	cs->render_state.l_image_index = stereo->l.image_index;
+	cs->render_state.r_swapchain_index = stereo->r.swapchain_id;
+	cs->render_state.r_image_index = stereo->r.image_index;
 	cs->render_state.rendering = true;
 
 	*out_free_slot_id = (slot_id + 1) % IPC_MAX_SLOTS;

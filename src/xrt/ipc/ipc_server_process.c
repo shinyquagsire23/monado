@@ -366,6 +366,38 @@ check_epoll(struct ipc_server *vs)
 	}
 }
 
+static void
+set_rendering_state(volatile struct ipc_client_state *active_client,
+                    struct comp_swapchain_image **l,
+                    struct comp_swapchain_image **r,
+                    bool *using_idle_images)
+{
+	// our ipc server thread will fill in l & r
+	// swapchain indices and toggle wait to false
+	// when the client calls end_frame, signalling
+	// us to render.
+	volatile struct ipc_render_state *render_state =
+	    &active_client->render_state;
+
+	if (!render_state->rendering) {
+		return;
+	}
+
+	uint32_t li = render_state->l_swapchain_index;
+	uint32_t ri = render_state->r_swapchain_index;
+	struct comp_swapchain *cl = comp_swapchain(active_client->xscs[li]);
+	struct comp_swapchain *cr = comp_swapchain(active_client->xscs[ri]);
+	*l = &cl->images[render_state->l_image_index];
+	*r = &cr->images[render_state->r_image_index];
+
+	// set our client state back to waiting.
+	render_state->rendering = false;
+
+	// comp_compositor_garbage_collect(c);
+
+	*using_idle_images = false;
+}
+
 static int
 main_loop(struct ipc_server *vs)
 {
@@ -413,47 +445,27 @@ main_loop(struct ipc_server *vs)
 				COMP_DEBUG(c, "Resetting to idle images.");
 				comp_renderer_set_idle_images(c->r);
 				using_idle_images = true;
-				last_r = NULL;
 				last_l = NULL;
+				last_r = NULL;
 			}
 		} else {
-			// our ipc server thread will fill in l & r
-			// swapchain indices and toggle wait to false
-			// when the client calls end_frame, signalling
-			// us to render.
-			volatile struct ipc_render_state *render_state =
-			    &active_client->render_state;
-
-			if (render_state->rendering) {
-				struct comp_swapchain *cl =
-				    comp_swapchain(active_client->xscs[0]);
-				struct comp_swapchain *cr =
-				    comp_swapchain(active_client->xscs[1]);
-				l = &cl->images[render_state->l_render_index];
-				r = &cr->images[render_state->r_render_index];
-
-				// set our client state back to waiting.
-				render_state->rendering = false;
-
-				comp_compositor_garbage_collect(c);
-
-				using_idle_images = false;
-			}
+			set_rendering_state(active_client, &l, &r,
+			                    &using_idle_images);
 		}
 
 		// Rendering idle images
-		if (r == NULL || l == NULL) {
+		if (l == NULL || r == NULL) {
 			comp_renderer_frame_cached(c->r);
 			comp_compositor_garbage_collect(c);
 			continue;
 		}
 
 		// Rebuild command buffers if we are showing new buffers.
-		if (last_r != r || last_l != l) {
+		if (last_l != l || last_r != r) {
 			comp_renderer_reset(c->r);
 		}
-		last_r = r;
 		last_l = l;
+		last_r = r;
 
 		comp_renderer_frame(c->r, l, 0, r, 0);
 
