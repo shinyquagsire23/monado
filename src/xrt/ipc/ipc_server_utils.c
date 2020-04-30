@@ -41,10 +41,10 @@ ipc_reply(int socket, void *data, size_t len)
 
 	ssize_t ret = sendmsg(socket, &msg, MSG_NOSIGNAL);
 	if (ret < 0) {
-		printf(
-		    "sending plain message on socket %d failed with error: "
-		    "%s\n",
-		    socket, strerror(errno));
+		fprintf(stderr,
+		        "ERROR: Sending plain message on socket %d failed with "
+		        "error: '%i' '%s'\n",
+		        socket, errno, strerror(errno));
 	}
 
 	return ret;
@@ -77,8 +77,10 @@ ipc_reply_fds(int socket, void *data, size_t size, int *fds, uint32_t num_fds)
 
 	ssize_t ret = sendmsg(socket, &msg, MSG_NOSIGNAL);
 	if (ret < 0) {
-		printf("sending %d FDs on socket %d failed with error: %s\n",
-		       num_fds, socket, strerror(errno));
+		fprintf(stderr,
+		        "ERROR: sending %d FDs on socket %d failed with error: "
+		        "'%i' '%s'\n",
+		        num_fds, socket, errno, strerror(errno));
 	}
 
 	return ret;

@@ -498,5 +498,7 @@ ipc_server_main(int argc, char **argv)
 	teardown_all(s);
 	free(s);
 
+	fprintf(stderr, "SERVER: Exiting! '%i'\n", ret);
+
 	return ret;
 }

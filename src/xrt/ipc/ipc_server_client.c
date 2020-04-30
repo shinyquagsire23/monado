@@ -373,7 +373,10 @@ client_loop(volatile struct ipc_client_state *cs)
 		// We use epoll here to be able to timeout.
 		int ret = epoll_wait(epoll_fd, &event, 1, half_a_second_ms);
 		if (ret < 0) {
-			fprintf(stderr, "ERROR: Failed epoll_wait '%i'\n", ret);
+			fprintf(stderr,
+			        "ERROR: Failed epoll_wait '%i', disconnecting "
+			        "client.\n",
+			        ret);
 			break;
 		}
 
@@ -384,13 +387,16 @@ client_loop(volatile struct ipc_client_state *cs)
 
 		// Detect clients disconnecting gracefully.
 		if (ret > 0 && (event.events & EPOLLHUP) != 0) {
+			fprintf(stderr, "SERVER: Client disconnected\n");
 			break;
 		}
 
 		// Finally get the data that is waiting for us.
 		ssize_t len = recv(cs->ipc_socket_fd, &buf, IPC_BUF_SIZE, 0);
 		if (len < 4) {
-			fprintf(stderr, "ERROR: Invalid packet received\n");
+			fprintf(stderr,
+			        "ERROR: Invalid packet received, disconnecting "
+			        "client.\n");
 			break;
 		}
 
@@ -398,12 +404,12 @@ client_loop(volatile struct ipc_client_state *cs)
 		ipc_command_t *ipc_command = (uint32_t *)buf;
 		ret = ipc_dispatch(cs, ipc_command);
 		if (ret < 0) {
-			fprintf(stderr, "ERROR: Failed to dispatch packet\n");
+			fprintf(stderr,
+			        "ERROR: During packet handling, disconnecting "
+			        "client.\n");
 			break;
 		}
 	}
-
-	fprintf(stderr, "SERVER: Client disconnected\n");
 
 	close(epoll_fd);
 	epoll_fd = -1;
