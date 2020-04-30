@@ -10,6 +10,7 @@
 
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_compositor.h"
+#include "xrt/xrt_defines.h"
 
 #include "util/u_misc.h"
 
@@ -300,7 +301,6 @@ ipc_compositor_begin_frame(struct xrt_compositor *xc)
 	CALL_CHK(ipc_call_compositor_begin_frame(icc->ipc_c));
 }
 
-#if 0 /* LAYERS */
 static void
 ipc_compositor_layer_begin(struct xrt_compositor *xc,
                            enum xrt_blend_mode env_blend_mode)
@@ -356,6 +356,8 @@ ipc_compositor_layer_stereo_projection(
 	stereo->r.fov = *r_fov;
 	stereo->r.pose = *r_pose;
 
+	layer->type = IPC_LAYER_STEREO_PROJECTION;
+
 	// Increment the number of layers.
 	icc->layers.num_layers++;
 }
@@ -393,6 +395,8 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 	quad->pose = *pose;
 	quad->size = *size;
 
+	layer->type = IPC_LAYER_QUAD;
+
 	// Increment the number of layers.
 	icc->layers.num_layers++;
 }
@@ -414,53 +418,6 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc)
 	// Reset.
 	icc->layers.num_layers = 0;
 }
-
-#else
-
-static void
-ipc_compositor_end_frame(struct xrt_compositor *xc,
-                         enum xrt_blend_mode blend_mode,
-                         struct xrt_swapchain **xscs,
-                         const uint32_t *image_index,
-                         uint32_t *layers,
-                         uint32_t num_swapchains)
-{
-	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
-
-	struct ipc_shared_memory *ism = icc->ipc_c->ism;
-	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
-	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
-	struct ipc_layer_stereo_projection *stereo = &layer->stereo;
-	struct ipc_client_swapchain *l = ipc_client_swapchain(xscs[0]);
-	struct ipc_client_swapchain *r = ipc_client_swapchain(xscs[1]);
-
-	// stereo->timestamp = timestamp;
-	// stereo->xdev_id = 0; //! @todo Real id.
-	// stereo->name = name;
-	// stereo->layer_flags = layer_flags;
-	stereo->l.swapchain_id = l->id;
-	stereo->l.image_index = image_index[0];
-	// stereo->l.rect = *l_rect;
-	stereo->l.array_index = layers[0];
-	// stereo->l.fov = *l_fov;
-	// stereo->l.pose = *l_pose;
-	stereo->r.swapchain_id = r->id;
-	stereo->r.image_index = image_index[1];
-	// stereo->r.rect = *r_rect;
-	stereo->r.array_index = layers[1];
-	// stereo->r.fov = *r_fov;
-	// stereo->r.pose = *r_pose;
-
-	// Last bit of data to put in the shared memory area.
-	slot->num_layers = icc->layers.num_layers;
-
-	CALL_CHK(ipc_call_compositor_layer_sync(icc->ipc_c, icc->layers.slot_id,
-	                                        &icc->layers.slot_id));
-
-	// Reset.
-	icc->layers.num_layers = 0;
-}
-#endif
 
 static void
 ipc_compositor_discard_frame(struct xrt_compositor *xc)
@@ -500,15 +457,11 @@ ipc_client_compositor_create(ipc_connection_t *ipc_c,
 	c->base.base.wait_frame = ipc_compositor_wait_frame;
 	c->base.base.begin_frame = ipc_compositor_begin_frame;
 	c->base.base.discard_frame = ipc_compositor_discard_frame;
-#if 0 /* LAYERS */
 	c->base.base.layer_begin = ipc_compositor_layer_begin;
 	c->base.base.layer_stereo_projection =
 	    ipc_compositor_layer_stereo_projection;
 	c->base.base.layer_quad = ipc_compositor_layer_quad;
 	c->base.base.layer_commit = ipc_compositor_layer_commit;
-#else
-	c->base.base.end_frame = ipc_compositor_end_frame;
-#endif
 	c->base.base.destroy = ipc_compositor_destroy;
 	c->ipc_c = ipc_c;
 

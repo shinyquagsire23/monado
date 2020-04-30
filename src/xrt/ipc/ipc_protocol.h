@@ -76,17 +76,13 @@ struct ipc_layer_stereo_projection
 
 	uint32_t xdev_id;
 	enum xrt_input_name name;
-#if 0 /* LAYERS */
 	enum xrt_layer_composition_flags layer_flags;
-#endif
 
 	struct
 	{
 		uint32_t swapchain_id;
 		uint32_t image_index;
-#if 0 /* LAYERS */
 		struct xrt_rect rect;
-#endif
 		uint32_t array_index;
 		struct xrt_fov fov;
 		struct xrt_pose pose;
@@ -99,15 +95,11 @@ struct ipc_layer_quad
 
 	uint32_t xdev_id;
 	enum xrt_input_name name;
-#if 0 /* LAYERS */
 	enum xrt_layer_composition_flags layer_flags;
-#endif
 
 	uint32_t swapchain_id;
 	uint32_t image_index;
-#if 0 /* LAYERS */
 	struct xrt_rect rect;
-#endif
 	uint32_t array_index;
 	struct xrt_pose pose;
 	struct xrt_vec2 size;
