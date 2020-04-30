@@ -39,7 +39,7 @@ ipc_reply(int socket, void *data, size_t len)
 	msg.msg_iovlen = 1;
 	msg.msg_flags = 0;
 
-	ssize_t ret = sendmsg(socket, &msg, 0);
+	ssize_t ret = sendmsg(socket, &msg, MSG_NOSIGNAL);
 	if (ret < 0) {
 		printf(
 		    "sending plain message on socket %d failed with error: "
@@ -75,7 +75,7 @@ ipc_reply_fds(int socket, void *data, size_t size, int *fds, uint32_t num_fds)
 
 	memcpy(CMSG_DATA(cmsg), fds, num_fds * sizeof(int));
 
-	ssize_t ret = sendmsg(socket, &msg, 0);
+	ssize_t ret = sendmsg(socket, &msg, MSG_NOSIGNAL);
 	if (ret < 0) {
 		printf("sending %d FDs on socket %d failed with error: %s\n",
 		       num_fds, socket, strerror(errno));
