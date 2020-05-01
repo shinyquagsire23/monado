@@ -149,6 +149,8 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
 	if (ii->ipc_c.socket_fd >= 0)
 		close(ii->ipc_c.socket_fd);
 
+	os_mutex_destroy(&ii->ipc_c.mutex);
+
 	free(ii);
 }
 
@@ -229,6 +231,8 @@ ipc_instance_create(struct xrt_instance **out_xinst)
 	ii->num_xdevs = count;
 
 	*out_xinst = &ii->base;
+
+	os_mutex_init(&ii->ipc_c.mutex);
 
 	return 0;
 }

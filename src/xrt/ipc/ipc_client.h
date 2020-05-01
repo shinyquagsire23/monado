@@ -13,6 +13,8 @@
 #include "xrt/xrt_compiler.h"
 #include "ipc_protocol.h"
 
+#include "util/u_threading.h"
+
 #include <stdio.h>
 
 
@@ -76,6 +78,8 @@ typedef struct ipc_connection
 
 	struct ipc_shared_memory *ism;
 	int ism_fd;
+
+	struct os_mutex mutex;
 
 	bool print_debug; // TODO: link to settings
 	bool print_spew;  // TODO: link to settings

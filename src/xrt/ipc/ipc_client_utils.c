@@ -17,7 +17,6 @@
 #include <string.h>
 #include <sys/socket.h>
 
-
 ipc_result_t
 ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
                               void *msg_ptr,
@@ -25,14 +24,19 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
                               void *reply_ptr,
                               size_t reply_size)
 {
+	// Other threads must not read/write the fd while we wait for reply
+	os_mutex_lock(&ipc_c->mutex);
+
 	if (ipc_c->socket_fd < 0) {
 		IPC_ERROR(ipc_c, "Error sending - not connected!");
+		os_mutex_unlock(&ipc_c->mutex);
 		return IPC_FAILURE;
 	}
 
 	ssize_t len = send(ipc_c->socket_fd, msg_ptr, msg_size, 0);
 	if ((size_t)len != msg_size) {
 		IPC_ERROR(ipc_c, "Error sending - cannot continue!");
+		os_mutex_unlock(&ipc_c->mutex);
 		return IPC_FAILURE;
 	}
 
@@ -51,17 +55,21 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
 	msg.msg_flags = 0;
 
 	len = recvmsg(ipc_c->socket_fd, &msg, 0);
+
 	if (len < 0) {
 		IPC_ERROR(ipc_c, "recvmsg failed with error: %s",
 		          strerror(errno));
+		os_mutex_unlock(&ipc_c->mutex);
 		return IPC_FAILURE;
 	}
 
 	if ((size_t)len != reply_size) {
 		IPC_ERROR(ipc_c, "recvmsg failed with error: wrong size");
+		os_mutex_unlock(&ipc_c->mutex);
 		return IPC_FAILURE;
 	}
 
+	os_mutex_unlock(&ipc_c->mutex);
 	return IPC_SUCCESS;
 }
 
@@ -74,8 +82,11 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
                                   int *fds,
                                   size_t num_fds)
 {
+	os_mutex_lock(&ipc_c->mutex);
+
 	if (send(ipc_c->socket_fd, msg_ptr, msg_size, 0) == -1) {
 		IPC_ERROR(ipc_c, "Error sending - cannot continue!");
+		os_mutex_unlock(&ipc_c->mutex);
 		return IPC_FAILURE;
 	}
 
@@ -98,16 +109,20 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
 	if (len < 0) {
 		IPC_ERROR(ipc_c, "recvmsg failed with error: %s",
 		          strerror(errno));
+		os_mutex_unlock(&ipc_c->mutex);
 		return -1;
 	}
 
 	if (len == 0) {
 		IPC_ERROR(ipc_c, "recvmsg failed with error: no data");
+		os_mutex_unlock(&ipc_c->mutex);
 		return -1;
 	}
 
 	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
 	memcpy(fds, (int *)CMSG_DATA(cmsg), fds_size);
+
+	os_mutex_unlock(&ipc_c->mutex);
 
 	return IPC_SUCCESS;
 }
