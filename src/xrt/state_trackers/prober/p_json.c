@@ -43,30 +43,48 @@ read_content(FILE *file)
 	return buffer;
 }
 
-cJSON *
-p_json_open_or_create_main_file(void)
+void
+p_json_open_or_create_main_file(struct prober *p)
 {
+	char tmp[1024];
+	ssize_t ret =
+	    u_file_get_path_in_config_dir("config_v0.json", tmp, sizeof(tmp));
+	if (ret <= 0) {
+		fprintf(stderr,
+		        "ERROR:Could not load or create config file no $HOME "
+		        "or $XDG_CONFIG_HOME env variables defined\n");
+		return;
+	}
+
 	FILE *file = u_file_open_file_in_config_dir("config_v0.json", "r");
 	if (file == NULL) {
-		fprintf(stderr, "Could not open the file!\n");
-		return NULL;
+		return;
 	}
+
+	p->json.file_loaded = true;
 
 	char *str = read_content(file);
 	fclose(file);
 	if (str == NULL) {
-		fprintf(stderr, "Could not read the contents of the file!\n");
-		return NULL;
+		fprintf(stderr, "ERROR: Could not read the contents of '%s'!\n",
+		        tmp);
+		return;
 	}
 
-	cJSON *ret = cJSON_Parse(str);
-	if (ret == NULL) {
-		fprintf(stderr, "Failed to parse JSON:\n%s\n#######\n", str);
+	// No config created, ignore.
+	if (strlen(str) == 0) {
+		free(str);
+		return;
+	}
+
+	p->json.root = cJSON_Parse(str);
+	if (p->json.root == NULL) {
+		fprintf(stderr, "Failed to parse JSON in '%s':\n%s\n#######\n",
+		        tmp, str);
 		fprintf(stderr, "'%s'\n", cJSON_GetErrorPtr());
 	}
 
 	free(str);
-	return ret;
 }
 
 static cJSON *
@@ -128,15 +146,20 @@ get_obj_str(cJSON *json, const char *name, char *array, size_t array_size)
 }
 
 bool
-p_json_get_tracking_settings(cJSON *root, struct xrt_settings_tracking *s)
+p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s)
 {
-	if (root == NULL) {
+	if (p->json.root == NULL) {
+		if (p->json.file_loaded) {
+			fprintf(stderr, "JSON not parsed!\n");
+		} else {
+			fprintf(stderr, "No config file!\n");
+		}
 		return false;
 	}
 
-	cJSON *t = cJSON_GetObjectItemCaseSensitive(root, "tracking");
+	cJSON *t = cJSON_GetObjectItemCaseSensitive(p->json.root, "tracking");
 	if (t == NULL) {
-		fprintf(stderr, "No tracking node!\n");
+		fprintf(stderr, "No tracking node\n");
 		return false;
 	}
 

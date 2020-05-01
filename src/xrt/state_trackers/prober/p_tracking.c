@@ -40,8 +40,8 @@ struct p_factory
 	// Owning prober.
 	struct prober *p;
 
-	// Has the settings be loaded.
-	bool setting_ok;
+	// Have we tried to load the settings.
+	bool tried_settings;
 
 	// Settings for this tracking system.
 	struct xrt_settings_tracking settings;
@@ -112,13 +112,23 @@ on_video_device(struct xrt_prober *xp,
 static void
 p_factory_ensure_frameserver(struct p_factory *fact)
 {
-	// No settings loaded.
-	if (!fact->setting_ok) {
+	// Already created.
+	if (fact->xfs != NULL) {
 		return;
 	}
 
-	// Already created.
-	if (fact->xfs != NULL) {
+	// We have already tried to load the settings.
+	if (fact->tried_settings) {
+		return;
+	}
+
+	// We have no tried the settings.
+	fact->tried_settings = true;
+
+	if (!p_json_get_tracking_settings(fact->p, &fact->settings)) {
+		fprintf(stderr,
+		        "ERROR: Could not setup PSVR and/or PSMV tracking, see "
+		        "above.\n");
 		return;
 	}
 
@@ -217,22 +227,20 @@ p_factory_create_tracked_psmv(struct xrt_tracking_factory *xfact,
 {
 	struct p_factory *fact = p_factory(xfact);
 
-	if (!fact->setting_ok) {
-		return -1;
-	}
-
 #ifdef XRT_HAVE_OPENCV
 	struct xrt_tracked_psmv *xtmv = NULL;
 
 	p_factory_ensure_frameserver(fact);
 
 	if (fact->num_xtmv < ARRAY_SIZE(fact->xtmv)) {
-		xtmv = fact->xtmv[fact->num_xtmv++];
+		xtmv = fact->xtmv[fact->num_xtmv];
 	}
 
 	if (xtmv == NULL) {
 		return -1;
 	}
+
+	fact->num_xtmv++;
 
 	t_psmv_start(xtmv);
 	*out_xtmv = xtmv;
@@ -249,10 +257,6 @@ p_factory_create_tracked_psvr(struct xrt_tracking_factory *xfact,
                               struct xrt_tracked_psvr **out_xtvr)
 {
 	struct p_factory *fact = p_factory(xfact);
-
-	if (!fact->setting_ok) {
-		return -1;
-	}
 
 #ifdef XRT_HAVE_OPENCV
 	struct xrt_tracked_psvr *xtvr = NULL;
@@ -305,13 +309,6 @@ p_tracking_init(struct prober *p)
 
 	// Finally set us as the tracking factory.
 	p->base.tracking = &fact->base;
-
-	fact->setting_ok =
-	    p_json_get_tracking_settings(p->json.root, &fact->settings);
-
-	if (!fact->setting_ok) {
-		fprintf(stderr, "Failed to load settings!\n");
-	}
 
 	return 0;
 }

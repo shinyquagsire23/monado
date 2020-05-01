@@ -135,6 +135,9 @@ struct prober
 
 	struct
 	{
+		//! For error reporting, was it loaded but not parsed?
+		bool file_loaded;
+
 		cJSON *root;
 	} json;
 
@@ -178,14 +181,14 @@ struct prober
 /*!
  * Load the JSON config file.
  */
-cJSON *
-p_json_open_or_create_main_file(void);
+void
+p_json_open_or_create_main_file(struct prober *p);
 
 /*!
  * Extract tracking settings from the JSON.
  */
 bool
-p_json_get_tracking_settings(cJSON *root, struct xrt_settings_tracking *s);
+p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s);
 
 /*!
  * Dump the given device to stdout.

@@ -328,7 +328,7 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 
 	int ret;
 
-	p->json.root = p_json_open_or_create_main_file();
+	p_json_open_or_create_main_file(p);
 
 	ret = collect_entries(p);
 	if (ret != 0) {
