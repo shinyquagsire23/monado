@@ -90,7 +90,7 @@ compositor_disconnect(ipc_connection_t *ipc_c)
 
 #define CALL_CHK(call)                                                         \
 	if ((call) != IPC_SUCCESS) {                                           \
-		IPC_DEBUG(icc->ipc_c, "IPC: %s call error!", __func__);        \
+		IPC_ERROR(icc->ipc_c, "IPC: %s call error!", __func__);        \
 	}
 
 

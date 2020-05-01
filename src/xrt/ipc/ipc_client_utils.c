@@ -26,13 +26,13 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
                               size_t reply_size)
 {
 	if (ipc_c->socket_fd < 0) {
-		IPC_DEBUG(ipc_c, "Error sending - not connected!");
+		IPC_ERROR(ipc_c, "Error sending - not connected!");
 		return IPC_FAILURE;
 	}
 
 	ssize_t len = send(ipc_c->socket_fd, msg_ptr, msg_size, 0);
 	if ((size_t)len != msg_size) {
-		IPC_DEBUG(ipc_c, "Error sending - cannot continue!");
+		IPC_ERROR(ipc_c, "Error sending - cannot continue!");
 		return IPC_FAILURE;
 	}
 
@@ -52,13 +52,13 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
 
 	len = recvmsg(ipc_c->socket_fd, &msg, 0);
 	if (len < 0) {
-		IPC_DEBUG(ipc_c, "recvmsg failed with error: %s",
+		IPC_ERROR(ipc_c, "recvmsg failed with error: %s",
 		          strerror(errno));
 		return IPC_FAILURE;
 	}
 
 	if ((size_t)len != reply_size) {
-		IPC_DEBUG(ipc_c, "recvmsg failed with error: no data");
+		IPC_ERROR(ipc_c, "recvmsg failed with error: wrong size");
 		return IPC_FAILURE;
 	}
 
@@ -75,7 +75,7 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
                                   size_t num_fds)
 {
 	if (send(ipc_c->socket_fd, msg_ptr, msg_size, 0) == -1) {
-		IPC_DEBUG(ipc_c, "Error sending - cannot continue!");
+		IPC_ERROR(ipc_c, "Error sending - cannot continue!");
 		return IPC_FAILURE;
 	}
 
@@ -96,13 +96,13 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
 	ssize_t len = recvmsg(ipc_c->socket_fd, &msg, 0);
 
 	if (len < 0) {
-		IPC_DEBUG(ipc_c, "recvmsg failed with error: %s",
+		IPC_ERROR(ipc_c, "recvmsg failed with error: %s",
 		          strerror(errno));
 		return -1;
 	}
 
 	if (len == 0) {
-		IPC_DEBUG(ipc_c, "recvmsg failed with error: no data");
+		IPC_ERROR(ipc_c, "recvmsg failed with error: no data");
 		return -1;
 	}
 
