@@ -59,9 +59,6 @@ u_file_get_config_dir(char *out_path, size_t out_path_size)
 		return snprintf(out_path, out_path_size, "%s/.config/monado",
 		                home);
 	} else {
-		fprintf(stderr,
-		        "Could not create config file no $HOME or "
-		        "$XDG_CONFIG_HOME env variables defined\n");
 		return -1;
 	}
 }
@@ -103,11 +100,6 @@ u_file_open_file_in_config_dir(const char *filename, const char *mode)
 	// Try creating the path.
 	mkpath(tmp);
 
-	file = fopen(file_str, mode);
-	if (file == NULL) {
-		fprintf(stderr, "Could not open or create file '%s'\n",
-		        file_str);
-	}
-
-	return file;
+	// Do not report error.
+	return fopen(file_str, mode);
 }
