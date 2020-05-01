@@ -156,9 +156,13 @@ ipc_client_device_create(ipc_connection_t *ipc_c, uint32_t device_id)
 	icd->base.inputs = &ism->inputs[idev->first_input_index];
 	icd->base.num_inputs = idev->num_inputs;
 
-	assert(idev->num_outputs > 0);
-	icd->base.outputs = &ism->outputs[idev->first_output_index];
+	// Setup outputs, if any point directly into the shared memory.
 	icd->base.num_outputs = idev->num_outputs;
+	if (idev->num_outputs > 0) {
+		icd->base.outputs = &ism->outputs[idev->first_output_index];
+	} else {
+		icd->base.outputs = NULL;
+	}
 
 	// Setup variable tracker.
 	u_var_add_root(icd, icd->base.str, true);
