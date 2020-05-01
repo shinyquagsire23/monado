@@ -145,6 +145,10 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
 {
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
 
+	// service considers us to be connected until fd is closed
+	if (ii->ipc_c.socket_fd >= 0)
+		close(ii->ipc_c.socket_fd);
+
 	free(ii);
 }
 
