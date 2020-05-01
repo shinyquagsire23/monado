@@ -15,6 +15,7 @@
 #
 #=============================================================================
 # Copyright (c) 2015 Jari Vetoniemi
+# Copyright (c) 2020 Collabora, Ltd.
 #
 # Distributed under the OSI-approved BSD License (the "License");
 #
@@ -24,17 +25,25 @@
 #=============================================================================
 
 include(FeatureSummary)
-set_package_properties(Systemd PROPERTIES
-   URL "http://freedesktop.org/wiki/Software/systemd/"
-   DESCRIPTION "System and Service Manager")
+set_package_properties(
+    Systemd PROPERTIES
+    URL "http://freedesktop.org/wiki/Software/systemd/"
+    DESCRIPTION "System and Service Manager")
 
 find_package(PkgConfig)
 pkg_check_modules(PC_SYSTEMD QUIET libsystemd)
-find_library(SYSTEMD_LIBRARIES NAMES systemd ${PC_SYSTEMD_LIBRARY_DIRS})
-find_path(SYSTEMD_INCLUDE_DIRS systemd/sd-login.h HINTS ${PC_SYSTEMD_INCLUDE_DIRS})
-
-set(SYSTEMD_DEFINITIONS ${PC_SYSTEMD_CFLAGS_OTHER})
+find_library(
+    SYSTEMD_LIBRARY
+    NAMES systemd
+    HINTS ${PC_SYSTEMD_LIBRARY_DIRS})
+find_path(SYSTEMD_INCLUDE_DIR systemd/sd-login.h
+          HINTS ${PC_SYSTEMD_INCLUDE_DIRS})
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(SYSTEMD DEFAULT_MSG SYSTEMD_INCLUDE_DIRS SYSTEMD_LIBRARIES)
-mark_as_advanced(SYSTEMD_INCLUDE_DIRS SYSTEMD_LIBRARIES SYSTEMD_DEFINITIONS)
+find_package_handle_standard_args(Systemd DEFAULT_MSG SYSTEMD_INCLUDE_DIR
+                                  SYSTEMD_LIBRARY)
+if(SYSTEMD_FOUND)
+    set(SYSTEMD_LIBRARIES ${SYSTEMD_LIBRARY})
+    set(SYSTEMD_INCLUDE_DIRS ${SYSTEMD_INCLUDE_DIR})
+    set(SYSTEMD_DEFINITIONS ${PC_SYSTEMD_CFLAGS_OTHER})
+endif()

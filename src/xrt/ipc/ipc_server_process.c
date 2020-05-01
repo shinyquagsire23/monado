@@ -12,6 +12,7 @@
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_compositor.h"
+#include "xrt/xrt_config_have.h"
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
@@ -36,6 +37,9 @@
 #include <errno.h>
 #include <stdio.h>
 
+#ifdef XRT_HAVE_SYSTEMD
+#include <systemd/sd-daemon.h>
+#endif
 
 /*
  *
@@ -68,6 +72,7 @@ teardown_all(struct ipc_server *s)
 	xrt_instance_destroy(&s->xinst);
 
 	if (s->listen_socket > 0) {
+		// Close socket on exit
 		close(s->listen_socket);
 		s->listen_socket = -1;
 	}
@@ -174,8 +179,28 @@ init_shm(struct ipc_server *s)
 }
 
 static int
-init_listen_socket(struct ipc_server *s)
+get_systemd_socket(struct ipc_server *s, int *out_fd)
 {
+#ifdef XRT_HAVE_SYSTEMD
+	// We may have been launched with socket activation
+	int num_fds = sd_listen_fds(0);
+	if (num_fds > 1) {
+		fprintf(stderr,
+		        "Too many file descriptors passed by systemd.\n");
+		return -1;
+	}
+	if (num_fds == 1) {
+		*out_fd = SD_LISTEN_FDS_START + 0;
+		s->launched_by_socket = true;
+		printf("Got existing socket from systemd.\n");
+	}
+#endif
+	return 0;
+}
+static int
+create_listen_socket(struct ipc_server *s, int *out_fd)
+{
+	// no fd provided
 	struct sockaddr_un addr;
 	int fd, ret;
 
@@ -202,9 +227,31 @@ init_listen_socket(struct ipc_server *s)
 		close(fd);
 		return ret;
 	}
+	printf("Created listening socket.\n");
+	*out_fd = fd;
+	return 0;
+}
 
+static int
+init_listen_socket(struct ipc_server *s)
+{
+	int fd = -1, ret;
+	s->listen_socket = -1;
+
+	ret = get_systemd_socket(s, &fd);
+	if (ret < 0) {
+		return ret;
+	}
+
+	if (fd == -1) {
+		ret = create_listen_socket(s, &fd);
+		if (ret < 0) {
+			return ret;
+		}
+	}
 	// All ok!
 	s->listen_socket = fd;
+	printf("Listening socket is fd %d\n", s->listen_socket);
 
 	return fd;
 }
@@ -221,12 +268,17 @@ init_epoll(struct ipc_server *s)
 
 	struct epoll_event ev = {0};
 
-	ev.events = EPOLLIN;
-	ev.data.fd = 0; // stdin
-	ret = epoll_ctl(s->epoll_fd, EPOLL_CTL_ADD, 0, &ev);
-	if (ret < 0) {
-		fprintf(stderr, "ERROR: epoll_ctl(stdin) failed '%i'\n", ret);
-		return ret;
+	if (!s->launched_by_socket) {
+		// Can't do this when launched by systemd socket activation by
+		// default
+		ev.events = EPOLLIN;
+		ev.data.fd = 0; // stdin
+		ret = epoll_ctl(s->epoll_fd, EPOLL_CTL_ADD, 0, &ev);
+		if (ret < 0) {
+			fprintf(stderr, "ERROR: epoll_ctl(stdin) failed '%i'\n",
+			        ret);
+			return ret;
+		}
 	}
 
 	ev.events = EPOLLIN;

@@ -26,3 +26,5 @@
 #cmakedefine XRT_HAVE_SDL2
 
 #cmakedefine XRT_HAVE_OPENHMD
+
+#cmakedefine XRT_HAVE_SYSTEMD

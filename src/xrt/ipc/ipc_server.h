@@ -156,6 +156,9 @@ struct ipc_server
 	// Should we exit when a client disconnects.
 	bool exit_on_disconnect;
 
+	//! Were we launched by socket activation, instead of explicitly?
+	bool launched_by_socket;
+
 	bool print_debug;
 	bool print_spew;
 

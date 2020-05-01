@@ -75,3 +75,10 @@ target_link_libraries(ipc_server PRIVATE
 	aux_util
 	rt
 	)
+
+if(XRT_HAVE_SYSTEMD)
+	target_include_directories(ipc_server PRIVATE
+		${SYSTEMD_INCLUDE_DIRS})
+	target_link_libraries(ipc_server PRIVATE
+		${SYSTEMD_LIBRARIES})
+endif()
