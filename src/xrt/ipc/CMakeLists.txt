@@ -67,7 +67,6 @@ target_include_directories(ipc_server
 	${CMAKE_CURRENT_SOURCE_DIR}
 	)
 target_include_directories(ipc_server PRIVATE
-	aux_util
 	${CMAKE_CURRENT_SOURCE_DIR}/../compositor
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}
