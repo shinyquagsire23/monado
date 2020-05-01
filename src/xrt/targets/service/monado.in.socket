@@ -1,0 +1,10 @@
+[Unit]
+Description=Monado XR service module connection socket @extra_desc@
+ConditionUser=!root
+Conflicts=@conflicts@.socket
+
+[Socket]
+ListenStream=/tmp/monado_comp_ipc
+
+[Install]
+WantedBy=sockets.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=Monado XR runtime service module @extra_desc@
+Requires=%N.socket
+ConditionUser=!root
+Conflicts=@conflicts@.service
+
+[Service]
+ExecStart=@service_path@
+Environment="XRT_COMPOSITOR_PRINT_DEBUG=on" "XRT_PRINT_OPTIONS=on" "IPC_EXIT_ON_DISCONNECT=@exit_on_disconnect@"
+# MemoryDenyWriteExecute=yes
+# NoNewPrivileges=yes
+Restart=no
+
+[Install]
+Also=%N.socket

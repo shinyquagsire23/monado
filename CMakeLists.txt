@@ -74,6 +74,8 @@ cmake_dependent_option(BUILD_WITH_DBUS "Enable dbus support (for BLE support)" O
 cmake_dependent_option(BUILD_COMPOSITOR_MAIN "Build main compositor host" ON "BUILD_WITH_WAYLAND OR BUILD_WITH_XCB" OFF)
 cmake_dependent_option(XRT_BUILD_IPC "Build OpenXR runtime target" ON "BUILD_COMPOSITOR_MAIN" OFF)
 cmake_dependent_option(XRT_HAVE_SYSTEMD "Enable systemd support (for socket activation of service)" ON "Systemd_FOUND AND XRT_BUILD_IPC" OFF)
+cmake_dependent_option(XRT_INSTALL_SYSTEMD_UNIT_FILES "Install user unit files for systemd socket activation on installation" ON "XRT_HAVE_SYSTEMD" OFF)
+cmake_dependent_option(XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES "Use an absolute path to monado-system in installed user unit files for systemd socket activation" ON "XRT_INSTALL_SYSTEMD_UNIT_FILES" OFF)
 cmake_dependent_option(BUILD_TARGET_OPENXR "Build OpenXR runtime target" ON "BUILD_COMPOSITOR_MAIN OR XRT_BUILD_IPC" OFF)
 
 # Most users won't touch these.
