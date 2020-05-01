@@ -395,8 +395,7 @@ arduino_device_create(struct os_ble_device *ble,
 	ad->base.inputs[3].name = XRT_INPUT_DAYDREAM_CIRCLE_CLICK;
 	ad->base.inputs[4].name = XRT_INPUT_DAYDREAM_VOLDN_CLICK;
 	ad->base.inputs[5].name = XRT_INPUT_DAYDREAM_VOLUP_CLICK;
-	ad->base.inputs[6].name = XRT_INPUT_DAYDREAM_TOUCHPAD_VALUE_X;
-	ad->base.inputs[7].name = XRT_INPUT_DAYDREAM_TOUCHPAD_VALUE_Y;
+	ad->base.inputs[6].name = XRT_INPUT_DAYDREAM_TOUCHPAD;
 
 	ad->ble = ble;
 	ad->print_spew = print_spew;

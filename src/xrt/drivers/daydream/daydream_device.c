@@ -40,8 +40,7 @@ enum daydream_input_index
 	DAYDREAM_CIRCLE_CLICK,
 	DAYDREAM_VOLUP_CLICK,
 	DAYDREAM_VOLDN_CLICK,
-	DAYDREAM_TOUCHPAD_POSX,
-	DAYDREAM_TOUCHPAD_POSY,
+	DAYDREAM_TOUCHPAD,
 
 };
 
@@ -303,10 +302,17 @@ daydream_device_update_inputs(struct xrt_device *xdev)
 	daydream_update_input_click(daydream, 5, now, DAYDREAM_VOLUP_BUTTON_MASK);
 	// clang-format on
 
-	daydream->base.inputs[6].timestamp = now;
-	daydream->base.inputs[6].value.vec1.x = daydream->last.touchpad.x;
-	daydream->base.inputs[7].timestamp = now;
-	daydream->base.inputs[7].value.vec1.x = daydream->last.touchpad.y;
+	daydream->base.inputs[DAYDREAM_TOUCHPAD].timestamp = now;
+	float x = (daydream->last.touchpad.y / 255.0) * 2.0 - 1.0;
+	float y = (daydream->last.touchpad.y / 255.0) * 2.0 - 1.0;
+
+	// Device sets x and y to zero when no finger is detected on the pad.
+	if (daydream->last.touchpad.x == 0 || daydream->last.touchpad.y == 0) {
+		x = y = 0.0f;
+	}
+
+	daydream->base.inputs[DAYDREAM_TOUCHPAD].value.vec2.x = x;
+	daydream->base.inputs[DAYDREAM_TOUCHPAD].value.vec2.y = y;
 
 	// Done now.
 
@@ -355,8 +361,7 @@ daydream_device_create(struct os_ble_device *ble,
 	dd->base.inputs[3].name = XRT_INPUT_DAYDREAM_CIRCLE_CLICK;
 	dd->base.inputs[4].name = XRT_INPUT_DAYDREAM_VOLDN_CLICK;
 	dd->base.inputs[5].name = XRT_INPUT_DAYDREAM_VOLUP_CLICK;
-	dd->base.inputs[6].name = XRT_INPUT_DAYDREAM_TOUCHPAD_VALUE_X;
-	dd->base.inputs[7].name = XRT_INPUT_DAYDREAM_TOUCHPAD_VALUE_Y;
+	dd->base.inputs[6].name = XRT_INPUT_DAYDREAM_TOUCHPAD;
 
 	dd->ble = ble;
 	dd->print_spew = print_spew;
