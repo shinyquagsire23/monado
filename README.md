@@ -1,4 +1,3 @@
-
 # Monado - XR Runtime (XRT)
 
 > * Promotional homepage: <https://monado.dev>
@@ -33,7 +32,7 @@ Dependencies include:
 * Vulkan headers
 * OpenGL headers
 * Eigen3
-* glslangValidator - Debian/Ubuntu package `glslang-tool`.
+* glslangValidator - Debian/Ubuntu package `glslang-tools`.
 * libusb
 * libudev
 * Video 4 Linux - Debian/Ubuntu package `libv4l-dev`.
