@@ -879,7 +879,8 @@ oxr_source_bind_inputs(struct oxr_logger *log,
 	struct oxr_source_output outputs[16] = {0};
 	uint32_t num_outputs = 0;
 
-	XrPath bound_path;
+	//! @todo Should this be asserted to be none-null?
+	XrPath bound_path = XR_NULL_PATH;
 	get_binding(log, slog, sess, act, profile, sub_path, inputs,
 	            &num_inputs, outputs, &num_outputs, &bound_path);
 
