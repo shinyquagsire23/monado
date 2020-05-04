@@ -889,12 +889,11 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
 	            },                                                         \
 	    },
 
-#define MAKE_OUTPUT(COMPONENT, SUFFIX, OUTPUT)                                 \
+#define MAKE_OUTPUT(COMPONENT, OUTPUT)                                         \
 	{                                                                      \
 	    .sub_path = OXR_SUB_ACTION_PATH_LEFT,                              \
 	    .paths =                                                           \
 	        {                                                              \
-	            "/user/hand/left/output/" #COMPONENT "/" #SUFFIX,          \
 	            "/user/hand/left/output/" #COMPONENT,                      \
 	            NULL,                                                      \
 	        },                                                             \
@@ -908,7 +907,6 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
 	        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,                         \
 	        .paths =                                                       \
 	            {                                                          \
-	                "/user/hand/right/output/" #COMPONENT "/" #SUFFIX,     \
 	                "/user/hand/right/output/" #COMPONENT,                 \
 	                NULL,                                                  \
 	            },                                                         \
@@ -941,7 +939,7 @@ static struct binding_template valve_index_controller_bindings[44] = {
 	MAKE_INPUT(grip, pose, XRT_INPUT_INDEX_GRIP_POSE)
 	MAKE_INPUT(aim, pose, XRT_INPUT_INDEX_AIM_POSE)
 
-	MAKE_OUTPUT(haptic, , XRT_OUTPUT_NAME_INDEX_HAPTIC)
+	MAKE_OUTPUT(haptic, XRT_OUTPUT_NAME_INDEX_HAPTIC)
     // clang-format on
 };
 
@@ -958,7 +956,7 @@ static struct binding_template htc_vive_controller_bindings[24] = {
 	MAKE_INPUT(grip, pose, XRT_INPUT_VIVE_GRIP_POSE)
 	MAKE_INPUT(aim, pose, XRT_INPUT_VIVE_AIM_POSE)
 
-	MAKE_OUTPUT(haptic, , XRT_OUTPUT_NAME_VIVE_HAPTIC)
+	MAKE_OUTPUT(haptic, XRT_OUTPUT_NAME_VIVE_HAPTIC)
     // clang-format on
 };
 
