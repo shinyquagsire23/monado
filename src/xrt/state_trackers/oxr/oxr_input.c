@@ -375,6 +375,22 @@ oxr_source_cache_determine_redirect(struct oxr_logger *log,
 	}
 }
 
+static XrPath
+get_matched_xrpath(struct oxr_binding *b, struct oxr_action *act)
+{
+	XrPath preferred_path = XR_NULL_PATH;
+	for (uint32_t i = 0; i < b->num_keys; i++) {
+		if (b->keys[i] == act->key) {
+			uint32_t preferred_path_index = XR_NULL_PATH;
+			preferred_path_index =
+			    b->preferred_binding_path_index[i];
+			preferred_path = b->paths[preferred_path_index];
+			break;
+		}
+	}
+	return preferred_path;
+}
+
 static void
 get_binding(struct oxr_logger *log,
             struct oxr_sink_logger *slog,
@@ -449,15 +465,9 @@ get_binding(struct oxr_logger *log,
 		const char *str = NULL;
 		struct oxr_binding *b = bindings[i];
 
-		// pick the path that the action prefers.
-		// e.g. an action bound to /user/hand/*/trackpad will prefer
-		// index 0 of those bindings, an action bound to
-		// /user/hand/*/trackpad will prefer index 1
-		// [/user/hand/*/trackpad, /user/hand/*/trackpad/x]
+		XrPath matched_path = get_matched_xrpath(b, act);
 
-		XrPath preferred_path =
-		    b->paths[act->preferred_binding_path_index];
-		oxr_path_get_string(log, sess->sys->inst, preferred_path, &str,
+		oxr_path_get_string(log, sess->sys->inst, matched_path, &str,
 		                    &length);
 		oxr_slog(slog, "\t\t\tBinding: %s\n", str);
 
@@ -470,7 +480,7 @@ get_binding(struct oxr_logger *log,
 		                            outputs, num_outputs);
 
 		if (found) {
-			*bound_path = preferred_path;
+			*bound_path = matched_path;
 			oxr_slog(slog, "\t\t\t\tBound!\n");
 		} else {
 			oxr_slog(slog, "\t\t\t\tRejected! (NO XDEV MAPPING)\n");

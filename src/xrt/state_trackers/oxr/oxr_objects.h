@@ -1081,8 +1081,10 @@ struct oxr_binding
 
 	enum oxr_sub_action_path sub_path;
 
-	uint32_t *keys;
 	size_t num_keys;
+	uint32_t *keys;
+	//! store which entry in paths was suggested, for each action key
+	uint32_t *preferred_binding_path_index;
 
 	enum xrt_input_name *inputs;
 	size_t num_inputs;
@@ -1337,9 +1339,6 @@ struct oxr_action
 
 	//! Which sub action paths that this action was created with.
 	struct oxr_sub_paths sub_paths;
-
-	//! Which of the paths in oxr_binding.paths matches this action.
-	uint32_t preferred_binding_path_index;
 };
 
 /*!
