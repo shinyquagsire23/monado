@@ -480,6 +480,8 @@ compositor_init_vulkan(struct comp_compositor *c)
 
 	VkResult ret;
 
+	c->vk.print = c->settings.print_debug;
+
 	ret = find_get_instance_proc_addr(c);
 	if (ret != VK_SUCCESS) {
 		return false;
