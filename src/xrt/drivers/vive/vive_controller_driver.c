@@ -265,26 +265,24 @@ vive_controller_device_update_wand_inputs(struct xrt_device *xdev)
 			                      pressed ? "pressed" : "released");
 		}
 	}
-
-	if (d->state.trackpad.x != 0 || d->state.trackpad.y != 0) {
-		struct xrt_input *input =
-		    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD];
-		input->timestamp = now;
-		input->value.vec2.x = d->state.trackpad.x;
-		input->value.vec2.y = d->state.trackpad.y;
-		VIVE_CONTROLLER_DEBUG(d, "Trackpad: %f, %f",
-		                      d->state.trackpad.x, d->state.trackpad.y);
-	}
-
-	if (d->state.trigger != 0) {
-		struct xrt_input *input =
-		    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRIGGER_VALUE];
-		input->timestamp = now;
-		input->value.vec1.x = d->state.trigger;
-		VIVE_CONTROLLER_DEBUG(d, "Trigger: %f", d->state.trigger);
-	}
-
 	d->state.last_buttons = d->state.buttons;
+
+
+	struct xrt_input *trackpad_input =
+	    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD];
+	trackpad_input->timestamp = now;
+	trackpad_input->value.vec2.x = d->state.trackpad.x;
+	trackpad_input->value.vec2.y = d->state.trackpad.y;
+	VIVE_CONTROLLER_SPEW(d, "Trackpad: %f, %f", d->state.trackpad.x,
+	                     d->state.trackpad.y);
+
+
+	struct xrt_input *trigger_input =
+	    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRIGGER_VALUE];
+	trigger_input->timestamp = now;
+	trigger_input->value.vec1.x = d->state.trigger;
+	VIVE_CONTROLLER_SPEW(d, "Trigger: %f", d->state.trigger);
+
 	os_thread_helper_unlock(&d->controller_thread);
 }
 
@@ -333,41 +331,37 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 			                      pressed ? "pressed" : "released");
 		}
 	}
+	d->state.last_buttons = d->state.buttons;
+
 
 	/* trackpad and thumbstick position are the same usb events.
 	 * report trackpad position when trackpad has been touched last, and
 	 * thumbstick position when trackpad touch has been released
 	 */
-	if (d->state.trackpad.x != 0 || d->state.trackpad.y != 0) {
-		struct xrt_input *input;
-		if (d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH]
-		        .value.boolean)
-			input = &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD];
-		else
-			input =
-			    &d->base.inputs[VIVE_CONTROLLER_INDEX_THUMBSTICK];
-		input->timestamp = now;
-		input->value.vec2.x = d->state.trackpad.x;
-		input->value.vec2.y = d->state.trackpad.y;
+	struct xrt_input *thumb_input;
+	bool trackpad_touched =
+	    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH].value.boolean;
+	if (trackpad_touched)
+		thumb_input = &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD];
+	else
+		thumb_input = &d->base.inputs[VIVE_CONTROLLER_INDEX_THUMBSTICK];
+	thumb_input->timestamp = now;
+	thumb_input->value.vec2.x = d->state.trackpad.x;
+	thumb_input->value.vec2.y = d->state.trackpad.y;
 
-		const char *component =
-		    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH]
-		            .value.boolean
-		        ? "Trackpad"
-		        : "Thumbstick";
-		VIVE_CONTROLLER_DEBUG(d, "%s: %f, %f", component,
-		                      d->state.trackpad.x, d->state.trackpad.y);
-	}
+	const char *component = trackpad_touched ? "Trackpad" : "Thumbstick";
+	VIVE_CONTROLLER_SPEW(d, "%s: %f, %f", component, d->state.trackpad.x,
+	                     d->state.trackpad.y);
 
-	if (d->state.trigger != 0) {
-		struct xrt_input *input =
-		    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRIGGER_VALUE];
-		input->timestamp = now;
-		input->value.vec1.x = d->state.trigger;
-		VIVE_CONTROLLER_DEBUG(d, "Trigger: %f", d->state.trigger);
-	}
 
-	d->state.last_buttons = d->state.buttons;
+	struct xrt_input *trigger_input =
+	    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRIGGER_VALUE];
+
+	trigger_input->timestamp = now;
+	trigger_input->value.vec1.x = d->state.trigger;
+
+	VIVE_CONTROLLER_SPEW(d, "Trigger: %f", d->state.trigger);
+
 	os_thread_helper_unlock(&d->controller_thread);
 }
 
