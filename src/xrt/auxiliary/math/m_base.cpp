@@ -50,6 +50,18 @@ copy(const struct xrt_vec3 *v)
 	return copy(*v);
 }
 
+static inline Eigen::Matrix4f
+copy(const struct xrt_matrix_4x4 *m)
+{
+	Eigen::Matrix4f res;
+	// clang-format off
+	res << m->v[0], m->v[4], m->v[8],  m->v[12],
+	       m->v[1], m->v[5], m->v[9],  m->v[13],
+	       m->v[2], m->v[6], m->v[10], m->v[14],
+	       m->v[3], m->v[7], m->v[11], m->v[15];
+	// clang-format on
+	return res;
+}
 
 /*
  *
@@ -198,7 +210,7 @@ math_quat_rotate_vec3(const struct xrt_quat *left,
 
 /*
  *
- * Exported pose functions.
+ * Exported matrix functions.
  *
  */
 
@@ -215,6 +227,20 @@ math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
 	map_vec3(*result) = m * copy(right);
 }
 
+
+void
+math_matrix_4x4_identity(struct xrt_matrix_4x4 *result)
+{
+	map_matrix_4x4(*result) = Eigen::Matrix4f::Identity();
+}
+
+void
+math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
+                         const struct xrt_matrix_4x4 *right,
+                         struct xrt_matrix_4x4 *result)
+{
+	map_matrix_4x4(*result) = copy(left) * copy(right);
+}
 
 /*
  *

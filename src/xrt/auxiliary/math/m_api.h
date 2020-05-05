@@ -106,7 +106,6 @@ math_vec3_cross(const struct xrt_vec3 *l,
                 const struct xrt_vec3 *r,
                 struct xrt_vec3 *result);
 
-
 /*
  *
  * Quat functions.
@@ -230,7 +229,7 @@ math_quat_finite_difference(const struct xrt_quat *quat0,
 
 /*
  *
- * Matrix function
+ * Matrix functions
  *
  */
 
@@ -239,6 +238,25 @@ math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
                                const struct xrt_vec3 *right,
                                struct xrt_vec3 *result);
 
+/*!
+ * Initialize Matrix4x4 with identity.
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_identity(struct xrt_matrix_4x4 *result);
+
+/*!
+ * Multiply Matrix4x4.
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
+                         const struct xrt_matrix_4x4 *right,
+                         struct xrt_matrix_4x4 *result);
 
 /*
  *

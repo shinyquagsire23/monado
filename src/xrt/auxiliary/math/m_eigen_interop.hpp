@@ -70,6 +70,19 @@ map_vec3(struct xrt_vec3 &v)
 	return Eigen::Map<Eigen::Vector3f>{&v.x};
 }
 
+/*!
+ * @brief Wrap an internal 4x4 matrix struct in an Eigen type, non-const
+ * overload.
+ *
+ * Permits zero-overhead manipulation of `xrt_matrix_4x4&` by Eigen routines as
+ * if it were a `Eigen::Matrix4f&`.
+ */
+static inline Eigen::Map<Eigen::Matrix4f>
+map_matrix_4x4(struct xrt_matrix_4x4 &m)
+{
+	return Eigen::Map<Eigen::Matrix4f>(m.v);
+}
+
 /*
  *
  * Pose deconstruction helpers.
