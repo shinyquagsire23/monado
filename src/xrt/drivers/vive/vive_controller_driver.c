@@ -614,26 +614,38 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d,
 	 */
 
 	if (d->variant == CONTROLLER_VIVE_WAND) {
-		acceleration.x *= -1;
-		float temp_accel = acceleration.y;
-		acceleration.y = -acceleration.z;
-		acceleration.z = -temp_accel;
+		struct xrt_vec3 fixed_acceleration = {.x = -acceleration.x,
+		                                      .y = -acceleration.z,
+		                                      .z = -acceleration.y};
+		acceleration = fixed_acceleration;
 
-		angular_velocity.x *= -1;
-		float temp_ang = angular_velocity.y;
-		angular_velocity.y = -angular_velocity.z;
-		angular_velocity.z = -temp_ang;
-	} else if (d->variant == CONTROLLER_INDEX_LEFT ||
-	           d->variant == CONTROLLER_INDEX_RIGHT) {
-		float temp_accel = acceleration.x;
-		acceleration.x = acceleration.z;
-		acceleration.y = -acceleration.y;
-		acceleration.z = temp_accel;
+		struct xrt_vec3 fixed_angular_velocity = {
+		    .x = -angular_velocity.x,
+		    .y = -angular_velocity.z,
+		    .z = -angular_velocity.y};
+		angular_velocity = fixed_angular_velocity;
+	} else if (d->variant == CONTROLLER_INDEX_RIGHT) {
+		struct xrt_vec3 fixed_acceleration = {.x = acceleration.z,
+		                                      .y = -acceleration.y,
+		                                      .z = acceleration.x};
+		acceleration = fixed_acceleration;
 
-		float temp_ang = angular_velocity.x;
-		angular_velocity.x = angular_velocity.z;
-		angular_velocity.y = -angular_velocity.y;
-		angular_velocity.z = temp_ang;
+		struct xrt_vec3 fixed_angular_velocity = {
+		    .x = angular_velocity.z,
+		    .y = -angular_velocity.y,
+		    .z = angular_velocity.x};
+		angular_velocity = fixed_angular_velocity;
+	} else if (d->variant == CONTROLLER_INDEX_LEFT) {
+		struct xrt_vec3 fixed_acceleration = {.x = -acceleration.z,
+		                                      .y = acceleration.x,
+		                                      .z = -acceleration.y};
+		acceleration = fixed_acceleration;
+
+		struct xrt_vec3 fixed_angular_velocity = {
+		    .x = -angular_velocity.z,
+		    .y = angular_velocity.x,
+		    .z = -angular_velocity.y};
+		angular_velocity = fixed_angular_velocity;
 	}
 
 	d->imu.time_ns += dt_ns;
