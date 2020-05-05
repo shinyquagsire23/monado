@@ -22,7 +22,7 @@
             "directory": "compositor"
         },
         "Helper Libraries": {
-            "directory": "aux"
+            "directory": "auxiliary"
         },
         "Misc. Features": {
             "directory": "misc_features"
