@@ -302,6 +302,9 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	printf("\n");
 	*/
 
+	bool was_trackpad_touched =
+	    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH].value.boolean;
+
 	uint64_t now = os_monotonic_get_ns();
 
 	/* d->state.buttons is bitmask of currently pressed buttons.
@@ -333,15 +336,17 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	}
 	d->state.last_buttons = d->state.buttons;
 
+	bool is_trackpad_touched =
+	    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH].value.boolean;
 
 	/* trackpad and thumbstick position are the same usb events.
 	 * report trackpad position when trackpad has been touched last, and
 	 * thumbstick position when trackpad touch has been released
 	 */
 	struct xrt_input *thumb_input;
-	bool trackpad_touched =
-	    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH].value.boolean;
-	if (trackpad_touched)
+
+	// after releasing trackpad, next 0,0 position still goes to trackpad
+	if (is_trackpad_touched || was_trackpad_touched)
 		thumb_input = &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD];
 	else
 		thumb_input = &d->base.inputs[VIVE_CONTROLLER_INDEX_THUMBSTICK];
@@ -349,7 +354,9 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	thumb_input->value.vec2.x = d->state.trackpad.x;
 	thumb_input->value.vec2.y = d->state.trackpad.y;
 
-	const char *component = trackpad_touched ? "Trackpad" : "Thumbstick";
+	const char *component = is_trackpad_touched || was_trackpad_touched
+	                            ? "Trackpad"
+	                            : "Thumbstick";
 	VIVE_CONTROLLER_SPEW(d, "%s: %f, %f", component, d->state.trackpad.x,
 	                     d->state.trackpad.y);
 
