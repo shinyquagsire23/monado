@@ -457,40 +457,6 @@ _set_image_layout(struct vk_bundle *vk,
 }
 
 static bool
-_init_cmd_buffer(struct comp_compositor *c,
-                 VkCommandPool cmd_pool,
-                 VkCommandBuffer *out_cmd_buffer)
-{
-	struct vk_bundle *vk = &c->vk;
-
-	VkCommandBufferAllocateInfo cmd_buffer_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-	    .commandPool = cmd_pool,
-	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-	    .commandBufferCount = 1,
-	};
-
-	VkResult ret;
-	ret = vk->vkAllocateCommandBuffers(vk->device, &cmd_buffer_info,
-	                                   out_cmd_buffer);
-	if (ret != VK_SUCCESS) {
-		fprintf(stderr,
-		        "Error: Could not initialize command buffer.\n");
-		return false;
-	}
-
-	VkCommandBufferBeginInfo begin_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-	};
-	ret = vk->vkBeginCommandBuffer(*out_cmd_buffer, &begin_info);
-	if (ret != VK_SUCCESS) {
-		fprintf(stderr, "Error: Could not begin command buffer.\n");
-		return false;
-	}
-	return true;
-}
-
-static bool
 _submit_cmd_buffer(struct comp_compositor *c,
                    VkCommandPool cmd_pool,
                    VkCommandBuffer cmd_buffer)
@@ -550,7 +516,8 @@ renderer_init_dummy_images(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->vk;
 	VkCommandBuffer cmd_buffer;
-	_init_cmd_buffer(r->c, vk->cmd_pool, &cmd_buffer);
+	if (vk_init_cmd_buffer(vk, &cmd_buffer) != VK_SUCCESS)
+		return;
 
 	VkImageSubresourceRange subresource_range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
