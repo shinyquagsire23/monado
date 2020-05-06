@@ -456,61 +456,6 @@ _set_image_layout(struct vk_bundle *vk,
 	                         0, NULL, 1, &barrier);
 }
 
-static bool
-_submit_cmd_buffer(struct comp_compositor *c,
-                   VkCommandPool cmd_pool,
-                   VkCommandBuffer cmd_buffer)
-{
-	struct vk_bundle *vk = &c->vk;
-	VkResult ret;
-
-	ret = vk->vkEndCommandBuffer(cmd_buffer);
-	if (ret != VK_SUCCESS) {
-		return false;
-	}
-
-	VkSubmitInfo submitInfo = {
-	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-	    .commandBufferCount = 1,
-	    .pCommandBuffers = &cmd_buffer,
-	};
-
-	VkFenceCreateInfo fence_info = {
-	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-	};
-	VkFence fence;
-	ret = vk->vkCreateFence(vk->device, &fence_info, NULL, &fence);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vkCreateFence: %s", vk_result_string(ret));
-		vk->vkFreeCommandBuffers(vk->device, cmd_pool, 1, &cmd_buffer);
-		return false;
-	}
-
-	VkQueue queue;
-	vk->vkGetDeviceQueue(vk->device, c->vk.queue_family_index, 0, &queue);
-
-	ret = vk->vkQueueSubmit(queue, 1, &submitInfo, fence);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vkCreateFence: %s", vk_result_string(ret));
-		vk->vkDestroyFence(vk->device, fence, NULL);
-		vk->vkFreeCommandBuffers(vk->device, cmd_pool, 1, &cmd_buffer);
-		return false;
-	}
-
-	ret = vk->vkWaitForFences(vk->device, 1, &fence, VK_TRUE, UINT64_MAX);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vkCreateFence: %s", vk_result_string(ret));
-		vk->vkDestroyFence(vk->device, fence, NULL);
-		vk->vkFreeCommandBuffers(vk->device, cmd_pool, 1, &cmd_buffer);
-		return false;
-	}
-
-	vk->vkDestroyFence(vk->device, fence, NULL);
-	vk->vkFreeCommandBuffers(vk->device, cmd_pool, 1, &cmd_buffer);
-
-	return true;
-}
-
 static void
 renderer_init_dummy_images(struct comp_renderer *r)
 {
@@ -559,7 +504,7 @@ renderer_init_dummy_images(struct comp_renderer *r)
 		               &r->dummy_images[i].views[0]);
 	}
 
-	_submit_cmd_buffer(r->c, vk->cmd_pool, cmd_buffer);
+	vk_submit_cmd_buffer(vk, cmd_buffer);
 }
 
 static void
