@@ -1077,3 +1077,45 @@ vk_get_access_flags(VkImageLayout layout)
 	}
 	return 0;
 }
+
+bool
+vk_init_descriptor_pool(struct vk_bundle *vk,
+                        const VkDescriptorPoolSize *pool_sizes,
+                        uint32_t pool_size_count,
+                        uint32_t set_count,
+                        VkDescriptorPool *out_descriptor_pool)
+{
+	VkDescriptorPoolCreateInfo info = {
+	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+	    .maxSets = set_count,
+	    .poolSizeCount = pool_size_count,
+	    .pPoolSizes = pool_sizes,
+	};
+
+	VkResult res = vk->vkCreateDescriptorPool(vk->device, &info, NULL,
+	                                          out_descriptor_pool);
+	vk_check_error("vkCreateDescriptorPool", res, false);
+
+	return true;
+}
+
+bool
+vk_allocate_descriptor_sets(struct vk_bundle *vk,
+                            VkDescriptorPool descriptor_pool,
+                            uint32_t count,
+                            const VkDescriptorSetLayout *set_layout,
+                            VkDescriptorSet *sets)
+{
+	VkDescriptorSetAllocateInfo alloc_info = {
+	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+	    .descriptorPool = descriptor_pool,
+	    .descriptorSetCount = count,
+	    .pSetLayouts = set_layout,
+	};
+
+	VkResult res =
+	    vk->vkAllocateDescriptorSets(vk->device, &alloc_info, sets);
+	vk_check_error("vkAllocateDescriptorSets", res, false);
+
+	return true;
+}

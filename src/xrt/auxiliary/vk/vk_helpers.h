@@ -402,6 +402,21 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
 VkAccessFlags
 vk_get_access_flags(VkImageLayout layout);
 
+bool
+vk_init_descriptor_pool(struct vk_bundle *vk,
+                        const VkDescriptorPoolSize *pool_sizes,
+                        uint32_t pool_size_count,
+                        uint32_t set_count,
+                        VkDescriptorPool *out_descriptor_pool);
+
+bool
+vk_allocate_descriptor_sets(struct vk_bundle *vk,
+                            VkDescriptorPool descriptor_pool,
+                            uint32_t count,
+                            const VkDescriptorSetLayout *set_layout,
+                            VkDescriptorSet *sets);
+
+
 #ifdef __cplusplus
 }
 #endif
