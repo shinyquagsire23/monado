@@ -1120,3 +1120,53 @@ vk_allocate_descriptor_sets(struct vk_bundle *vk,
 
 	return true;
 }
+
+bool
+vk_buffer_init(struct vk_bundle *vk,
+               VkDeviceSize size,
+               VkBufferUsageFlags usage,
+               VkMemoryPropertyFlags properties,
+               VkBuffer *out_buffer,
+               VkDeviceMemory *out_mem)
+{
+	VkBufferCreateInfo buffer_info = {
+	    .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+	    .size = size,
+	    .usage = usage,
+	};
+
+	VkResult res =
+	    vk->vkCreateBuffer(vk->device, &buffer_info, NULL, out_buffer);
+	vk_check_error("vkCreateBuffer", res, false);
+
+	VkMemoryRequirements requirements;
+	vk->vkGetBufferMemoryRequirements(vk->device, *out_buffer,
+	                                  &requirements);
+
+	VkMemoryAllocateInfo alloc_info = {
+	    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+	    .allocationSize = requirements.size};
+
+	if (!vk_get_memory_type(vk, requirements.memoryTypeBits, properties,
+	                        &alloc_info.memoryTypeIndex)) {
+		fprintf(stderr,
+		        "Failed to find matching memoryTypeIndex for buffer\n");
+		return false;
+	}
+
+	res = vk->vkAllocateMemory(vk->device, &alloc_info, NULL, out_mem);
+	vk_check_error("vkAllocateMemory", res, false);
+
+	res = vk->vkBindBufferMemory(vk->device, *out_buffer, *out_mem, 0);
+	vk_check_error("vkBindBufferMemory", res, false);
+
+	return true;
+}
+
+void
+vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk)
+{
+	vk->vkDestroyBuffer(vk->device, self->handle, NULL);
+	vk->vkFreeMemory(vk->device, self->memory, NULL);
+}
+

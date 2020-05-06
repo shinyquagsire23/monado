@@ -180,6 +180,13 @@ struct vk_bundle
 	// clang-format on
 };
 
+struct vk_buffer
+{
+	VkBuffer handle;
+	VkDeviceMemory memory;
+	uint32_t size;
+	void *data;
+};
 
 /*
  *
@@ -417,6 +424,16 @@ vk_allocate_descriptor_sets(struct vk_bundle *vk,
                             const VkDescriptorSetLayout *set_layout,
                             VkDescriptorSet *sets);
 
+bool
+vk_buffer_init(struct vk_bundle *vk,
+               VkDeviceSize size,
+               VkBufferUsageFlags usage,
+               VkMemoryPropertyFlags properties,
+               VkBuffer *out_buffer,
+               VkDeviceMemory *out_mem);
+
+void
+vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk);
 
 #ifdef __cplusplus
 }
