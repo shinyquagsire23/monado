@@ -115,6 +115,16 @@ vk_color_space_string(VkColorSpaceKHR code)
 	}
 }
 
+bool
+vk_has_error(VkResult res, const char *fun, const char *file, int line)
+{
+	if (res != VK_SUCCESS) {
+		fprintf(stderr, "ERROR: %s failed with %s in %s:%d\n", fun,
+		        vk_result_string(res), file, line);
+		return true;
+	}
+	return false;
+}
 
 /*
  *
