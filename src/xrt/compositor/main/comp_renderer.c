@@ -560,10 +560,14 @@ renderer_init_dummy_images(struct comp_renderer *r)
 	    .layerCount = 1};
 
 	VkClearColorValue color = {.float32 = {0.3, 0.3, 0.3, 1}};
+	VkExtent2D extent = {.width = 640, .height = 800};
+
+	VkImageUsageFlags usage =
+	    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 	for (uint32_t i = 0; i < 2; i++) {
 		vk_create_image_simple(
-		    &r->c->vk, 640, 800, VK_FORMAT_B8G8R8A8_SRGB,
+		    &r->c->vk, extent, VK_FORMAT_B8G8R8A8_SRGB, usage,
 		    &r->dummy_images[i].memory, &r->dummy_images[i].image);
 
 		_set_image_layout(

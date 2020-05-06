@@ -217,31 +217,27 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 
 VkResult
 vk_create_image_simple(struct vk_bundle *vk,
-                       uint32_t width,
-                       uint32_t height,
+                       VkExtent2D extent,
                        VkFormat format,
+                       VkImageUsageFlags usage,
                        VkDeviceMemory *out_mem,
                        VkImage *out_image)
 {
-	VkImageUsageFlags usage_flags = 0;
-	usage_flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
-	usage_flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
 	VkImageCreateInfo image_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .imageType = VK_IMAGE_TYPE_2D,
 	    .format = format,
 	    .extent =
 	        {
-	            .width = width,
-	            .height = height,
+	            .width = extent.width,
+	            .height = extent.height,
 	            .depth = 1,
 	        },
 	    .mipLevels = 1,
 	    .arrayLayers = 1,
 	    .samples = VK_SAMPLE_COUNT_1_BIT,
 	    .tiling = VK_IMAGE_TILING_LINEAR,
-	    .usage = usage_flags,
+	    .usage = usage,
 	    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	    .queueFamilyIndexCount = 0,
 	    .pQueueFamilyIndices = NULL,

@@ -351,9 +351,9 @@ vk_create_image_from_fd(struct vk_bundle *vk,
  */
 VkResult
 vk_create_image_simple(struct vk_bundle *vk,
-                       uint32_t width,
-                       uint32_t height,
+                       VkExtent2D extent,
                        VkFormat format,
+                       VkImageUsageFlags usage,
                        VkDeviceMemory *out_mem,
                        VkImage *out_image);
 
