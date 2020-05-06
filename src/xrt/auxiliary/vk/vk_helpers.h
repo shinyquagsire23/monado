@@ -399,6 +399,9 @@ VkResult
 vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
 
 
+VkAccessFlags
+vk_get_access_flags(VkImageLayout layout);
+
 #ifdef __cplusplus
 }
 #endif
