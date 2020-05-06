@@ -58,7 +58,7 @@ subdir('common')
 subdir('openxr')
 subdir('cli')
 
-if sdl2.found()
+if get_option('gui').enabled() or (get_option('gui').auto() and sdl2.found())
 	subdir('gui')
 endif
 
