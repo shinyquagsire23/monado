@@ -6,17 +6,24 @@ variables:
 
 .templates_sha: &templates_sha 322bf2b8f29b6491caeb13861201e96969ddc169
 
+# Variables listing packages for Debian-based distros
+.monado.debian-based-packages:
+  variables:
+    CORE_REQUIRED_PACKAGES: "build-essential git wget unzip cmake meson ninja-build libeigen3-dev curl patch python3 pkg-config libx11-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev  libudev-dev"
+    FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev"
+    TOOLS_REQUIRED_PACKAGES: "clang-format-7 codespell doxygen graphviz python3-pip python3-click"
+
 # Variables for build and usage of Debian 10 (Buster) image
 .monado.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2019-04-28.1"
+    FDO_DISTRIBUTION_TAG: "2020-05-06.0"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.debian:buster-ndk:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2019-04-28.1"
+    FDO_DISTRIBUTION_TAG: "2020-05-06.0"
     FDO_REPO_SUFFIX: ndk
 
 # Variables for build and usage of Arch Linux image
@@ -54,12 +61,13 @@ stages:
 debian:container_prep:
   stage: container_prep
   extends:
-    - .monado.debian:buster # local
+    - .monado.debian:buster # local - variables
     - .monado.container_base # local
+    - .monado.debian-based-packages # local - variables
     - .fdo.container-build@debian # from ci-templates
   variables:
-    # a list of packages to install
-    FDO_DISTRIBUTION_PACKAGES: "build-essential git wget unzip cmake meson ninja-build doxygen graphviz libeigen3-dev curl patch python3 pkg-config libx11-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libhidapi-dev libwayland-dev libvulkan-dev glslang-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libuvc-dev libavcodec-dev libopencv-dev libudev-dev clang-format-7 codespell libv4l-dev libegl1-mesa-dev python3-pip python3-click"
+    # a list of packages to install - assembled from .monado.debian-based-packages
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
 
 # Arch Linux (x64)
 arch:container_prep:
