@@ -188,6 +188,14 @@ struct vk_buffer
 	void *data;
 };
 
+struct vk_image
+{
+	VkImage handle;
+	VkDeviceMemory memory;
+	VkImageView view;
+	VkSampler sampler;
+};
+
 /*
  *
  * String helper functions.
@@ -434,6 +442,10 @@ vk_buffer_init(struct vk_bundle *vk,
 
 void
 vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk);
+
+
+void
+vk_image_destroy(struct vk_image *self, struct vk_bundle *vk);
 
 #ifdef __cplusplus
 }
