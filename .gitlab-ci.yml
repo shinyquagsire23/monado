@@ -24,7 +24,7 @@ variables:
 .monado.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2020-05-06.0"
+    FDO_DISTRIBUTION_TAG: "2020-05-06.1"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.debian:buster-ndk:
@@ -91,6 +91,7 @@ arch:container_prep:
     # a list of packages to install
     FDO_DISTRIBUTION_PACKAGES: "git gcc cmake meson ninja pkgconfig python3 diffutils patch doxygen graphviz eigen hidapi libxrandr mesa glslang vulkan-headers vulkan-icd-loader check glfw-x11 libusb opencv gtk3 ffmpeg v4l-utils qt5-base"
 
+# Ubuntu Focal (x64)
 ubuntu:container_prep:
   stage: container_prep
   extends:
@@ -100,7 +101,7 @@ ubuntu:container_prep:
     - .fdo.container-build@ubuntu # from ci-templates
   variables:
     # a list of packages to install - assembled from .monado.debian-based-packages
-    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
 
 # Debian Buster + the Android NDK in /opt/android-ndk
 # The NDK itself gets installed by .gitlab-ci/ndk:container_prep.sh
@@ -237,27 +238,42 @@ debian:cmake:32bit:
     CMAKE_ARGS: -DCMAKE_TOOLCHAIN_FILE=../.gitlab-ci/i386.cmake -DBUILD_WITH_OPENCV=off -DBUILD_WITH_OPENHMD=off
 
 # Packaging
-debian:buster:package:
-  stage: build
-  extends:
-    - .monado.debian:buster # local
-    - .fdo.distribution-image@debian # from ci-templates
+.monado.debuild:
+  stage: package
   only:
-    - ci-packaging
-  variables:
-    BACKPORT_SUFFIX: bpo10
-    PACKAGE_BRANCH: debian/buster-backports
+    - master
   script:
     - git config --global user.email "ryan.pavlik@collabora.com"
     - git config --global user.name "Monado CI"
     - git merge origin/${PACKAGE_BRANCH} --no-commit
     - FULLNAME="Monado CI <ryan.pavlik@collabora.com>" debian/extra/prepare-commit-package.sh ${CI_COMMIT_SHA} 1~${BACKPORT_SUFFIX}~ci$(date --utc "+%Y%m%d")
     - debuild -uc -us
-    - cp ../*.deb .
+    - mkdir ${DISTRO}
+    - cp ../*.deb ${DISTRO}/
   artifacts:
     paths:
-      - "*.deb"
+      - "${DISTRO}/*.deb"
     expire_in: 30 days
+
+debian:buster:package:
+  extends:
+    - .monado.debian:buster # local
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.debuild # local
+  variables:
+    BACKPORT_SUFFIX: bpo10
+    PACKAGE_BRANCH: debian/buster-backports
+    DISTRO: buster
+
+ubuntu:focal:package:
+  extends:
+    - .monado.ubuntu:focal # local
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .monado.debuild # local
+  variables:
+    BACKPORT_SUFFIX: ubuntu20.04
+    PACKAGE_BRANCH: ubuntu/focal
+    DISTRO: focal
 
 # Base of Android NDK builds.
 # Takes the last :-delimited part of the name as the ABI to build for,
