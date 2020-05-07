@@ -224,6 +224,14 @@ create_listen_socket(struct ipc_server *s, int *out_fd)
 
 	ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret < 0) {
+		fprintf(stderr,
+		        "ERROR: Could not bind socket: is the "
+		        "service running already?\n");
+#ifdef XRT_HAVE_SYSTEMD
+		fprintf(stderr,
+		        "Or, is the systemd unit monado.socket or "
+		        "monado-dev.socket active?\n");
+#endif
 		close(fd);
 		return ret;
 	}
