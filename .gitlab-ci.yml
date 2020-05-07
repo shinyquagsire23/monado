@@ -11,13 +11,14 @@ variables:
   variables:
     CORE_REQUIRED_PACKAGES: "build-essential git wget unzip cmake meson ninja-build libeigen3-dev curl patch python3 pkg-config libx11-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev  libudev-dev"
     FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev"
+    PACKAGING_PACKAGES: "devscripts debhelper osc osc-plugins-dput"
     TOOLS_REQUIRED_PACKAGES: "clang-format-7 codespell doxygen graphviz python3-pip python3-click"
 
 # Variables for build and usage of Debian 10 (Buster) image
 .monado.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2020-05-06.0"
+    FDO_DISTRIBUTION_TAG: "2020-05-06.1"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.debian:buster-ndk:
@@ -42,6 +43,7 @@ include:
 stages:
   - container_prep
   - build
+  - package
   - pages
   - deploy
 
@@ -67,7 +69,7 @@ debian:container_prep:
     - .fdo.container-build@debian # from ci-templates
   variables:
     # a list of packages to install - assembled from .monado.debian-based-packages
-    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
 
 # Arch Linux (x64)
 arch:container_prep:
@@ -201,6 +203,29 @@ debian:cmake:32bit:
   variables:
     # OpenCV and local OpenHMD doesn't play nicely with us in multi-arch.
     CMAKE_ARGS: -DCMAKE_TOOLCHAIN_FILE=../.gitlab-ci/i386.cmake -DBUILD_WITH_OPENCV=off -DBUILD_WITH_OPENHMD=off
+
+# Packaging
+debian:buster:package:
+  stage: build
+  extends:
+    - .monado.debian:buster # local
+    - .fdo.distribution-image@debian # from ci-templates
+  only:
+    - ci-packaging
+  variables:
+    BACKPORT_SUFFIX: bpo10
+    PACKAGE_BRANCH: debian/buster-backports
+  script:
+    - git config --global user.email "ryan.pavlik@collabora.com"
+    - git config --global user.name "Monado CI"
+    - git merge origin/${PACKAGE_BRANCH} --no-commit
+    - FULLNAME="Monado CI <ryan.pavlik@collabora.com>" debian/extra/prepare-commit-package.sh ${CI_COMMIT_SHA} 1~${BACKPORT_SUFFIX}~ci$(date --utc "+%Y%m%d")
+    - debuild -uc -us
+    - cp ../*.deb .
+  artifacts:
+    paths:
+      - "*.deb"
+    expire_in: 30 days
 
 # Base of Android NDK builds.
 # Takes the last :-delimited part of the name as the ABI to build for,
