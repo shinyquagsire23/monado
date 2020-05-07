@@ -159,6 +159,9 @@ struct ipc_server
 	//! Were we launched by socket activation, instead of explicitly?
 	bool launched_by_socket;
 
+	//! The socket filename we bound to, if any.
+	char *socket_filename;
+
 	bool print_debug;
 	bool print_spew;
 

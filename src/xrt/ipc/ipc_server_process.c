@@ -36,6 +36,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifdef XRT_HAVE_SYSTEMD
 #include <systemd/sd-daemon.h>
@@ -75,6 +76,12 @@ teardown_all(struct ipc_server *s)
 		// Close socket on exit
 		close(s->listen_socket);
 		s->listen_socket = -1;
+		if (!s->launched_by_socket && s->socket_filename) {
+			// Unlink it too, but only if we bound it.
+			unlink(s->socket_filename);
+			free(s->socket_filename);
+			s->socket_filename = NULL;
+		}
 	}
 }
 
@@ -214,13 +221,14 @@ create_listen_socket(struct ipc_server *s, int *out_fd)
 
 	addr.sun_family = AF_UNIX;
 	strcpy(addr.sun_path, IPC_MSG_SOCK_FILE);
-	unlink(IPC_MSG_SOCK_FILE);
 
 	ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret < 0) {
 		close(fd);
 		return ret;
 	}
+	// Save for later
+	s->socket_filename = strdup(IPC_MSG_SOCK_FILE);
 
 	ret = listen(fd, IPC_MAX_CLIENTS);
 	if (ret < 0) {
