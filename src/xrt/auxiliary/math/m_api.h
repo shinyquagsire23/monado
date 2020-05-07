@@ -258,6 +258,16 @@ math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
                          const struct xrt_matrix_4x4 *right,
                          struct xrt_matrix_4x4 *result);
 
+/*!
+ * Compute view matrix from xrt_pose.
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_view_from_pose(const struct xrt_pose *pose,
+                               struct xrt_matrix_4x4 *result);
+
 /*
  *
  * Pose functions.

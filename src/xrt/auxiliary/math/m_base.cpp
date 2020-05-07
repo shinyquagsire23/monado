@@ -242,6 +242,19 @@ math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
 	map_matrix_4x4(*result) = copy(left) * copy(right);
 }
 
+void
+math_matrix_4x4_view_from_pose(const struct xrt_pose *pose,
+                               struct xrt_matrix_4x4 *result)
+{
+	Eigen::Vector3f position = copy(&pose->position);
+	Eigen::Quaternionf orientation = copy(&pose->orientation);
+
+	Eigen::Translation3f translation(position);
+	Eigen::Affine3f transformation = translation * orientation;
+
+	map_matrix_4x4(*result) = transformation.matrix().inverse();
+}
+
 /*
  *
  * Exported pose functions.
