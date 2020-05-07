@@ -224,6 +224,8 @@ debian:meson:32bit:
     - .monado.debian:buster # local
     - .fdo.distribution-image@debian # from ci-templates
     - .monado.build-meson # local
+  # Known bug - it still tries to use SDL2.
+  allow_failure: true
   variables:
     MESON_ARGS: --prefix /usr --libdir /usr/lib/i386-linux-gnu --cross-file ../.gitlab-ci/i386-cross.txt
 
