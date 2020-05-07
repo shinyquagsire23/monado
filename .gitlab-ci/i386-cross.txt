@@ -6,6 +6,7 @@ strip = '/usr/bin/i686-linux-gnu-strip'
 objcopy = '/usr/bin/i686-linux-gnu-objcopy'
 ld= '/usr/bin/i686-linux-gnu-ld'
 pkgconfig = '/usr/bin/i686-linux-gnu-pkg-config'
+sdl2-config = '/bin/false'
 
 [properties]
 needs_exe_wrapper = False
