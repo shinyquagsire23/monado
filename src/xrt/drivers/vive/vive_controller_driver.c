@@ -867,7 +867,8 @@ vive_controller_device_update(struct vive_controller_device *d)
 {
 	uint8_t buf[FEATURE_BUFFER_SIZE];
 	do {
-		int ret = os_hid_read(d->controller_hid, buf, sizeof(buf), 0);
+		int ret =
+		    os_hid_read(d->controller_hid, buf, sizeof(buf), 1000);
 		if (ret < 0) {
 			return ret;
 		}
