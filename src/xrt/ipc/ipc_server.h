@@ -140,6 +140,7 @@ struct ipc_server
 	struct xrt_compositor_fd *xcfd;
 
 	struct xrt_device *xdevs[IPC_SERVER_NUM_XDEVS];
+	struct xrt_tracking_origin *xtracks[IPC_SERVER_NUM_XDEVS];
 
 	struct ipc_shared_memory *ism;
 	int ism_fd;

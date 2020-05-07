@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "xrt/xrt_tracking.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_compiler.h"
 
@@ -32,10 +33,25 @@
  *
  */
 
+struct ipc_shared_tracking_origin
+{
+	//! For debugging.
+	char name[XRT_TRACKING_NAME_LEN];
+
+	//! What can the state tracker expect from this tracking system.
+	enum xrt_tracking_type type;
+
+	//! Initial offset of the tracking origin.
+	struct xrt_pose offset;
+};
+
 struct ipc_shared_device
 {
 	//! Enum identifier of the device.
 	enum xrt_device_name name;
+
+	//! Which tracking system origin is this device attached to.
+	uint32_t tracking_origin_index;
 
 	//! A string describing the device.
 	char str[XRT_DEVICE_NAME_LEN];
@@ -133,6 +149,9 @@ struct ipc_layer_slot
  */
 struct ipc_shared_memory
 {
+	// This array may be sparse.
+	size_t num_itracks;
+	struct ipc_shared_tracking_origin itracks[IPC_SHARED_MAX_DEVICES];
 	size_t num_idevs;
 	struct ipc_shared_device idevs[IPC_SHARED_MAX_DEVICES];
 

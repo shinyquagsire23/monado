@@ -37,10 +37,12 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #ifdef XRT_HAVE_SYSTEMD
 #include <systemd/sd-daemon.h>
 #endif
+
 
 /*
  *
@@ -86,6 +88,31 @@ teardown_all(struct ipc_server *s)
 }
 
 static int
+init_tracking_origins(struct ipc_server *s)
+{
+	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
+		if (s->xdevs[i] == NULL) {
+			continue;
+		}
+
+		struct xrt_device *xdev = s->xdevs[i];
+		struct xrt_tracking_origin *xtrack = xdev->tracking_origin;
+		size_t index = 0;
+
+		for (; index < IPC_SERVER_NUM_XDEVS; index++) {
+			if (s->xtracks[index] == NULL) {
+				s->xtracks[index] = xtrack;
+				break;
+			} else if (s->xtracks[index] == xtrack) {
+				break;
+			}
+		}
+	}
+
+	return 0;
+}
+
+static int
 init_shm(struct ipc_server *s)
 {
 	const size_t size = sizeof(struct ipc_shared_memory);
@@ -121,11 +148,32 @@ init_shm(struct ipc_server *s)
 	 *
 	 */
 
-	uint32_t input_index = 0;
-	uint32_t output_index = 0;
 	uint32_t count = 0;
 	struct ipc_shared_memory *ism = s->ism;
 
+	count = 0;
+	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
+		struct xrt_tracking_origin *xtrack = s->xtracks[i];
+		if (xtrack == NULL) {
+			continue;
+		}
+
+		// The position of the tracking origin matches that in the
+		// servers memory.
+		assert(i < IPC_SHARED_MAX_DEVICES);
+
+		struct ipc_shared_tracking_origin *itrack =
+		    &ism->itracks[count++];
+		memcpy(itrack->name, xtrack->name, sizeof(itrack->name));
+		itrack->type = xtrack->type;
+		itrack->offset = xtrack->offset;
+	}
+
+	ism->num_itracks = count;
+
+	count = 0;
+	uint32_t input_index = 0;
+	uint32_t output_index = 0;
 	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
 		struct xrt_device *xdev = s->xdevs[i];
 		if (xdev == NULL) {
@@ -150,6 +198,19 @@ init_shm(struct ipc_server *s)
 			    xdev->hmd->views[1].display.h_pixels;
 			ism->hmd.views[1].fov = xdev->hmd->views[1].fov;
 		}
+
+		// Setup the tracking origin.
+		idev->tracking_origin_index = (uint32_t)-1;
+		for (size_t k = 0; k < IPC_SERVER_NUM_XDEVS; k++) {
+			if (xdev->tracking_origin != s->xtracks[i]) {
+				continue;
+			}
+
+			idev->tracking_origin_index = i;
+			break;
+		}
+
+		assert(idev->tracking_origin_index != (uint32_t)-1);
 
 		// Initial update.
 		xrt_device_update_inputs(xdev);
@@ -204,6 +265,7 @@ get_systemd_socket(struct ipc_server *s, int *out_fd)
 #endif
 	return 0;
 }
+
 static int
 create_listen_socket(struct ipc_server *s, int *out_fd)
 {
@@ -330,6 +392,12 @@ init_all(struct ipc_server *s)
 	}
 
 	if (s->xdevs[0] == NULL) {
+		teardown_all(s);
+		return -1;
+	}
+
+	ret = init_tracking_origins(s);
+	if (ret < 0) {
 		teardown_all(s);
 		return -1;
 	}

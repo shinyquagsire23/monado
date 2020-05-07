@@ -118,15 +118,17 @@ ipc_client_hmd_get_view_pose(struct xrt_device *xdev,
 }
 
 struct xrt_device *
-ipc_client_hmd_create(ipc_connection_t *ipc_c, uint32_t device_id)
+ipc_client_hmd_create(ipc_connection_t *ipc_c,
+                      struct xrt_tracking_origin *xtrack,
+                      uint32_t device_id)
 {
 	struct ipc_shared_memory *ism = ipc_c->ism;
 	struct ipc_shared_device *idev = &ism->idevs[device_id];
 
 
 
-	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
-	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	enum u_device_alloc_flags flags =
+	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD);
 	struct ipc_client_hmd *ich =
 	    U_DEVICE_ALLOCATE(struct ipc_client_hmd, flags, 0, 0);
 	ich->ipc_c = ipc_c;
@@ -137,8 +139,10 @@ ipc_client_hmd_create(ipc_connection_t *ipc_c, uint32_t device_id)
 	ich->base.destroy = ipc_client_hmd_destroy;
 
 	// Start copying the information from the idev.
+	ich->base.tracking_origin = xtrack;
 	ich->base.name = idev->name;
 	ich->device_id = device_id;
+
 	// Print name.
 	snprintf(ich->base.str, XRT_DEVICE_NAME_LEN, "%s", idev->str);
 

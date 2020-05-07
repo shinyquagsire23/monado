@@ -126,15 +126,17 @@ ipc_client_device_set_output(struct xrt_device *xdev,
 }
 
 struct xrt_device *
-ipc_client_device_create(ipc_connection_t *ipc_c, uint32_t device_id)
+ipc_client_device_create(ipc_connection_t *ipc_c,
+                         struct xrt_tracking_origin *xtrack,
+                         uint32_t device_id)
 {
 	// Helpers.
 	struct ipc_shared_memory *ism = ipc_c->ism;
 	struct ipc_shared_device *idev = &ism->idevs[device_id];
 
 	// Allocate and setup the basics.
-	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
-	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	enum u_device_alloc_flags flags =
+	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD);
 	struct ipc_client_device *icd =
 	    U_DEVICE_ALLOCATE(struct ipc_client_device, flags, 0, 0);
 	icd->ipc_c = ipc_c;
@@ -145,6 +147,7 @@ ipc_client_device_create(ipc_connection_t *ipc_c, uint32_t device_id)
 	icd->base.destroy = ipc_client_device_destroy;
 
 	// Start copying the information from the idev.
+	icd->base.tracking_origin = xtrack;
 	icd->base.name = idev->name;
 	icd->device_id = device_id;
 

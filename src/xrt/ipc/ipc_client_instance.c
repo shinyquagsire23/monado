@@ -39,6 +39,9 @@ struct ipc_client_instance
 
 	ipc_connection_t ipc_c;
 
+	struct xrt_tracking_origin *xtracks[8];
+	size_t num_xtracks;
+
 	struct xrt_device *xdevs[8];
 	size_t num_xdevs;
 };
@@ -146,8 +149,15 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
 
 	// service considers us to be connected until fd is closed
-	if (ii->ipc_c.socket_fd >= 0)
+	if (ii->ipc_c.socket_fd >= 0) {
 		close(ii->ipc_c.socket_fd);
+	}
+
+	for (size_t i = 0; i < ii->num_xtracks; i++) {
+		free(ii->xtracks[i]);
+		ii->xtracks[i] = NULL;
+	}
+	ii->num_xtracks = 0;
 
 	os_mutex_destroy(&ii->ipc_c.mutex);
 
@@ -213,18 +223,38 @@ ipc_instance_create(struct xrt_instance **out_xinst)
 		return -1;
 	}
 
+	uint32_t count = 0;
+	struct xrt_tracking_origin *xtrack = NULL;
 	struct ipc_shared_memory *ism = ii->ipc_c.ism;
 
+	// Query the server for how many tracking origins it has.
+	count = 0;
+	for (uint32_t i = 0; i < ism->num_itracks; i++) {
+		fprintf(stderr, "%s\n", ism->itracks[i].name);
+		xtrack = U_TYPED_CALLOC(struct xrt_tracking_origin);
 
-	uint32_t count = 0;
+		memcpy(xtrack->name, ism->itracks[i].name,
+		       sizeof(xtrack->name));
+
+		xtrack->type = ism->itracks[i].type;
+		xtrack->offset = ism->itracks[i].offset;
+		ii->xtracks[count++] = xtrack;
+	}
+
+	ii->num_xtracks = count;
+
 	// Query the server for how many devices it has.
+	count = 0;
 	for (uint32_t i = 0; i < ism->num_idevs; i++) {
-		if (ism->idevs[i].name == XRT_DEVICE_GENERIC_HMD) {
+		struct ipc_shared_device *idev = &ism->idevs[i];
+		xtrack = ii->xtracks[idev->tracking_origin_index];
+
+		if (idev->name == XRT_DEVICE_GENERIC_HMD) {
 			ii->xdevs[count++] =
-			    ipc_client_hmd_create(&ii->ipc_c, i);
+			    ipc_client_hmd_create(&ii->ipc_c, xtrack, i);
 		} else {
 			ii->xdevs[count++] =
-			    ipc_client_device_create(&ii->ipc_c, i);
+			    ipc_client_device_create(&ii->ipc_c, xtrack, i);
 		}
 	}
 
