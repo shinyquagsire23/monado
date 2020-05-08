@@ -360,11 +360,13 @@ compositor_layer_commit(struct xrt_compositor *xc)
 
 	left = &stereo->l.sc->images[stereo->l.image_index];
 	right = &stereo->l.sc->images[stereo->r.image_index];
-	uint32_t l_array_index = stereo->l.array_index;
-	uint32_t r_array_index = stereo->r.array_index;
 
-	comp_renderer_frame(c->r, left, l_array_index, right, r_array_index,
-	                    layer->flip_y);
+	comp_renderer_destroy_layers(c->r);
+	comp_renderer_allocate_layers(c->r, 1);
+
+	comp_renderer_set_projection_layer(c->r, left, right, layer->flip_y, 0);
+
+	comp_renderer_draw(c->r);
 
 	compositor_add_frame_timing(c);
 

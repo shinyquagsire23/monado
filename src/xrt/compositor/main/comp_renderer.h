@@ -11,6 +11,7 @@
 #pragma once
 
 #include "xrt/xrt_compiler.h"
+#include "xrt/xrt_defines.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,24 +31,10 @@ struct comp_renderer *
 comp_renderer_create(struct comp_compositor *c);
 
 /*!
- * Render a distorted stereo frame.
- *
- * @ingroup comp_main
- */
-void
-comp_renderer_frame(struct comp_renderer *r,
-                    struct comp_swapchain_image *left,
-                    uint32_t left_layer,
-                    struct comp_swapchain_image *right,
-                    uint32_t right_layer,
-                    bool flip_y);
-
-/*!
  * Reset renderer as input has changed.
  *
  * @ingroup comp_main
  */
-
 void
 comp_renderer_reset(struct comp_renderer *r);
 
@@ -60,20 +47,34 @@ void
 comp_renderer_destroy(struct comp_renderer *r);
 
 /*!
- * Set dummy images in renderer.
+ * Render frame.
  *
  * @ingroup comp_main
  */
 void
-comp_renderer_set_idle_images(struct comp_renderer *r);
+comp_renderer_draw(struct comp_renderer *r);
 
-/*!
- * Render frame without setting new images.
- *
- * @ingroup comp_main
- */
 void
-comp_renderer_frame_cached(struct comp_renderer *r);
+comp_renderer_set_projection_layer(struct comp_renderer *r,
+                                   struct comp_swapchain_image *left_image,
+                                   struct comp_swapchain_image *right_image,
+                                   bool flip_y,
+                                   uint32_t layer);
+
+void
+comp_renderer_set_quad_layer(struct comp_renderer *r,
+                             struct comp_swapchain_image *image,
+                             struct xrt_pose *pose,
+                             struct xrt_vec2 *size,
+                             bool flip_y,
+                             uint32_t layer);
+
+
+void
+comp_renderer_allocate_layers(struct comp_renderer *self, uint32_t num_layers);
+
+void
+comp_renderer_destroy_layers(struct comp_renderer *self);
 
 #ifdef __cplusplus
 }

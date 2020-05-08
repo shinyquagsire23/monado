@@ -101,14 +101,35 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 {
 	struct ipc_shared_memory *ism = cs->server->ism;
 	struct ipc_layer_slot *slot = &ism->slots[slot_id];
-	struct ipc_layer_entry *layer = &slot->layers[0];
-	struct ipc_layer_stereo_projection *stereo = &layer->stereo;
 
-	cs->render_state.flip_y = layer->flip_y;
-	cs->render_state.l_swapchain_index = stereo->l.swapchain_id;
-	cs->render_state.l_image_index = stereo->l.image_index;
-	cs->render_state.r_swapchain_index = stereo->r.swapchain_id;
-	cs->render_state.r_image_index = stereo->r.image_index;
+	for (uint32_t i = 0; i < slot->num_layers; i++) {
+		cs->render_state.layers[i].type = slot->layers[i].type;
+
+		struct ipc_layer_entry *sl = &slot->layers[i];
+		volatile struct ipc_layer_render_state *rl =
+		    &cs->render_state.layers[i];
+
+		rl->flip_y = sl->flip_y;
+
+		switch (slot->layers[i].type) {
+		case IPC_LAYER_STEREO_PROJECTION:
+			rl->stereo.l.swapchain_index =
+			    sl->stereo.l.swapchain_id;
+			rl->stereo.l.image_index = sl->stereo.l.image_index;
+			rl->stereo.r.swapchain_index =
+			    sl->stereo.r.swapchain_id;
+			rl->stereo.r.image_index = sl->stereo.r.image_index;
+			break;
+		case IPC_LAYER_QUAD:
+			rl->quad.swapchain_index = sl->quad.swapchain_id;
+			rl->quad.image_index = sl->quad.image_index;
+			rl->quad.pose = sl->quad.pose;
+			rl->quad.size = sl->quad.size;
+			break;
+		}
+	}
+
+	cs->render_state.num_layers = slot->num_layers;
 	cs->render_state.rendering = true;
 
 	*out_free_slot_id = (slot_id + 1) % IPC_MAX_SLOTS;
@@ -415,13 +436,22 @@ client_loop(volatile struct ipc_client_state *cs)
 	cs->num_swapchains = 0;
 
 	// Make sure to reset the renderstate fully.
-	cs->render_state.flip_y = false;
-	cs->render_state.l_swapchain_index = 0;
-	cs->render_state.l_image_index = 0;
-	cs->render_state.r_swapchain_index = 0;
-	cs->render_state.r_image_index = 0;
+	cs->render_state.num_layers = 0;
 	cs->render_state.rendering = false;
+	for (uint32_t i = 0; i < ARRAY_SIZE(cs->render_state.layers); ++i) {
+		volatile struct ipc_layer_render_state *rl =
+		    &cs->render_state.layers[i];
 
+		rl->flip_y = false;
+		rl->stereo.l.swapchain_index = 0;
+		rl->stereo.l.image_index = 0;
+		rl->stereo.r.swapchain_index = 0;
+		rl->stereo.r.image_index = 0;
+		rl->quad.swapchain_index = 0;
+		rl->quad.image_index = 0;
+	}
+
+	// Destroy all swapchains now.
 	for (uint32_t j = 0; j < IPC_MAX_CLIENT_SWAPCHAINS; j++) {
 		xrt_swapchain_destroy((struct xrt_swapchain **)&cs->xscs[j]);
 		cs->swapchain_handles[j] = -1;

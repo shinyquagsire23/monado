@@ -14,6 +14,8 @@
 
 #include "os/os_threading.h"
 
+#include "ipc_protocol.h"
+
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -81,6 +83,35 @@ struct ipc_swapchain_data
 	uint32_t num_images;
 };
 
+struct ipc_quad_render_state
+{
+	uint32_t swapchain_index;
+	uint32_t image_index;
+
+	struct xrt_pose pose;
+	struct xrt_vec2 size;
+};
+
+struct ipc_stereo_projection_render_state
+{
+	struct
+	{
+		uint32_t swapchain_index;
+		uint32_t image_index;
+	} l, r;
+};
+
+struct ipc_layer_render_state
+{
+	enum ipc_layer_type type;
+	bool flip_y;
+
+	union {
+		struct ipc_quad_render_state quad;
+		struct ipc_stereo_projection_render_state stereo;
+	};
+};
+
 /*!
  * Render state for a client.
  *
@@ -89,11 +120,9 @@ struct ipc_swapchain_data
 struct ipc_render_state
 {
 	bool rendering;
-	bool flip_y;
-	uint32_t l_swapchain_index;
-	uint32_t l_image_index;
-	uint32_t r_swapchain_index;
-	uint32_t r_image_index;
+	enum xrt_blend_mode env_blend_mode;
+	uint32_t num_layers;
+	struct ipc_layer_render_state layers[IPC_MAX_LAYERS];
 };
 
 /*!
