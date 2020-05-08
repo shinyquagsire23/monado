@@ -243,6 +243,7 @@ debian:cmake:32bit:
   only:
     - master
   script:
+    - git clean -dfx
     - git config --global user.email "ryan.pavlik@collabora.com"
     - git config --global user.name "Monado CI"
     - git merge origin/${PACKAGE_BRANCH} --no-commit
