@@ -726,6 +726,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkDestroyBuffer               = GET_DEV_PROC(vk, vkDestroyBuffer);
 	vk->vkBindBufferMemory            = GET_DEV_PROC(vk, vkBindBufferMemory);
 	vk->vkGetBufferMemoryRequirements = GET_DEV_PROC(vk, vkGetBufferMemoryRequirements);
+	vk->vkFlushMappedMemoryRanges     = GET_DEV_PROC(vk, vkFlushMappedMemoryRanges);
 	vk->vkCreateImage                 = GET_DEV_PROC(vk, vkCreateImage);
 	vk->vkGetImageMemoryRequirements  = GET_DEV_PROC(vk, vkGetImageMemoryRequirements);
 	vk->vkBindImageMemory             = GET_DEV_PROC(vk, vkBindImageMemory);

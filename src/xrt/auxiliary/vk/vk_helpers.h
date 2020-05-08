@@ -109,6 +109,7 @@ struct vk_bundle
 	PFN_vkDestroyBuffer vkDestroyBuffer;
 	PFN_vkBindBufferMemory vkBindBufferMemory;
 	PFN_vkGetBufferMemoryRequirements vkGetBufferMemoryRequirements;
+	PFN_vkFlushMappedMemoryRanges vkFlushMappedMemoryRanges;
 
 	PFN_vkCreateImage vkCreateImage;
 	PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements;
