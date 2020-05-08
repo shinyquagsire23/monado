@@ -8,6 +8,8 @@ spirv_shaders(SHADER_HEADERS
 	shaders/none.frag
 	shaders/panotools.frag
 	shaders/vive.frag
+	shaders/quad.frag
+	shaders/quad.vert
 	)
 
 set(CLIENT_SOURCE_FILES
@@ -30,6 +32,10 @@ set(MAIN_SOURCE_FILES
 	main/comp_vk_swapchain.c
 	main/comp_vk_swapchain.h
 	main/comp_window.h
+	main/comp_layer.h
+	main/comp_layer.c
+	main/comp_layer_renderer.h
+	main/comp_layer_renderer.c
 	)
 
 if (XRT_VULKAN_ENABLE_VALIDATION)

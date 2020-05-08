@@ -5,6 +5,8 @@ shader_srcs = [
 	'none.frag',
 	'panotools.frag',
 	'vive.frag',
+	'quad.vert',
+	'quad.frag'
 ]
 
 shader_headers = []

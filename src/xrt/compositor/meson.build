@@ -26,6 +26,8 @@ compositor_srcs = [
 	'main/comp_vk_swapchain.c',
 	'main/comp_vk_swapchain.h',
 	'main/comp_window.h',
+	'main/comp_layer_renderer.c',
+	'main/comp_layer.c',
 ]
 
 compile_args = []

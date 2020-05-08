@@ -66,6 +66,12 @@ struct comp_swapchain
 	struct comp_swapchain_image images[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
+enum comp_layer_type
+{
+	COMP_LAYER_STEREO_PROJECTION,
+	COMP_LAYER_QUAD,
+};
+
 /*!
  * A stereo projection layer.
  *
