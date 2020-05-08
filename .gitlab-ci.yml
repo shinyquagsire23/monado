@@ -11,20 +11,20 @@ variables:
   variables:
     CORE_REQUIRED_PACKAGES: "build-essential git wget unzip cmake meson ninja-build libeigen3-dev curl patch python3 pkg-config libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev  libudev-dev"
     FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev"
-    PACKAGING_PACKAGES: "devscripts debhelper osc osc-plugins-dput"
+    PACKAGING_PACKAGES: "devscripts debhelper osc osc-plugins-dput reprepro"
     TOOLS_REQUIRED_PACKAGES: "clang-format-7 codespell doxygen graphviz python3-pip python3-click"
 
 # Variables for build and usage of Debian 10 (Buster) image
 .monado.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2020-05-06.1"
+    FDO_DISTRIBUTION_TAG: "2020-05-06.2"
 
 # Variables for build and usage of Ubuntu 20.04 LTS (Focal) image
 .monado.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2020-05-06.1"
+    FDO_DISTRIBUTION_TAG: "2020-05-06.2"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.debian:buster-ndk:
@@ -242,18 +242,35 @@ debian:cmake:32bit:
   stage: package
   only:
     - master
+  before_script:
+    # Convince gnupg to work properly in CI
+    - mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+    - touch ~/.gnupg/gpg.conf
+    - echo 'use-agent' > ~/.gnupg/gpg.conf
+    - echo 'pinentry-mode loopback' >> ~/.gnupg/gpg.conf
+    - touch ~/.gnupg/gpg-agent.conf
+    - echo 'allow-loopback-pinentry' > ~/.gnupg/gpg-agent.conf
+    - echo RELOADAGENT | gpg-connect-agent
+    - gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE} --import ${MONADO_GPG_SECRET_KEY}
   script:
+    # Prep the source tree
     - git clean -dfx
     - git config --global user.email "ryan.pavlik@collabora.com"
     - git config --global user.name "Monado CI"
     - git merge origin/${PACKAGE_BRANCH} --no-commit
     - FULLNAME="Monado CI <ryan.pavlik@collabora.com>" debian/extra/prepare-commit-package.sh ${CI_COMMIT_SHA} 1~${BACKPORT_SUFFIX}~ci$(date --utc "+%Y%m%d")
+    # Build the package
     - debuild -uc -us
+    # Sign the package
+    - debsign -k ${MONADO_GPG_FINGERPRINT} -p "gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE}"
+    # Use reprepro to create an apt repository in our artifacts
     - mkdir ${DISTRO}
-    - cp ../*.deb ${DISTRO}/
+    - mkdir ${DISTRO}/conf
+    - cp .gitlab-ci/distributions ${DISTRO}/conf
+    - reprepro -V --ignore=wrongdistribution -b ${DISTRO} include ${DISTRO} ../monado_$(dpkg-parsechangelog --show-field version)_amd64.changes
   artifacts:
     paths:
-      - "${DISTRO}/*.deb"
+      - "${DISTRO}/"
     expire_in: 30 days
 
 debian:buster:package:
