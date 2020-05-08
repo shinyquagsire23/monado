@@ -223,6 +223,7 @@ comp_distortion_destroy(struct comp_distortion *d)
 {
 	struct vk_bundle *vk = d->vk;
 
+	vk->vkDeviceWaitIdle(vk->device);
 
 	vk->vkDestroyDescriptorSetLayout(vk->device, d->descriptor_set_layout,
 	                                 NULL);
