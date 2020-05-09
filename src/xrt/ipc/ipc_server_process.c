@@ -203,11 +203,11 @@ init_shm(struct ipc_server *s)
 		// Setup the tracking origin.
 		idev->tracking_origin_index = (uint32_t)-1;
 		for (size_t k = 0; k < IPC_SERVER_NUM_XDEVS; k++) {
-			if (xdev->tracking_origin != s->xtracks[i]) {
+			if (xdev->tracking_origin != s->xtracks[k]) {
 				continue;
 			}
 
-			idev->tracking_origin_index = i;
+			idev->tracking_origin_index = k;
 			break;
 		}
 
