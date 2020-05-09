@@ -302,10 +302,11 @@ p_tracking_init(struct prober *p)
 	fact->origin.offset.position.y = 1.0f;
 	fact->p = p;
 
+	snprintf(fact->origin.name, sizeof(fact->origin.name),
+	         "PSVR & PSMV tracking");
+
 	u_var_add_root(fact, "Tracking Factory", false);
-	u_var_add_vec3_f32(fact, &fact->origin.offset.position, "offset.pos");
-	// u_var_add_vec4_f32(fact, &fact->origin.offset.orientation,
-	// "offset.rot");
+	u_var_add_pose(fact, &fact->origin.offset, "offset");
 
 	// Finally set us as the tracking factory.
 	p->base.tracking = &fact->base;
