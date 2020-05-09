@@ -11,6 +11,7 @@
 #include "xrt/xrt_gfx_fd.h"
 
 #include "util/u_misc.h"
+#include "util/u_var.h"
 
 #include "ipc_protocol.h"
 #include "ipc_client.h"
@@ -154,6 +155,7 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
 	}
 
 	for (size_t i = 0; i < ii->num_xtracks; i++) {
+		u_var_remove_root(ii->xtracks[i]);
 		free(ii->xtracks[i]);
 		ii->xtracks[i] = NULL;
 	}
@@ -239,6 +241,10 @@ ipc_instance_create(struct xrt_instance **out_xinst)
 		xtrack->type = ism->itracks[i].type;
 		xtrack->offset = ism->itracks[i].offset;
 		ii->xtracks[count++] = xtrack;
+
+		u_var_add_root(xtrack, "Tracking origin", true);
+		u_var_add_ro_text(xtrack, xtrack->name, "name");
+		u_var_add_pose(xtrack, &xtrack->offset, "offset");
 	}
 
 	ii->num_xtracks = count;
