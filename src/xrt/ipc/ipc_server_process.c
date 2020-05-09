@@ -97,6 +97,7 @@ init_tracking_origins(struct ipc_server *s)
 
 		struct xrt_device *xdev = s->xdevs[i];
 		struct xrt_tracking_origin *xtrack = xdev->tracking_origin;
+		assert(xtrack != NULL);
 		size_t index = 0;
 
 		for (; index < IPC_SERVER_NUM_XDEVS; index++) {
