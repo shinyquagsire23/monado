@@ -1,0 +1,14 @@
+{
+    "+hooks": [
+    ],
+    "-hooks": [
+        "gpg",
+        "allowed-distribution",
+        "suite-mismatch",
+        "lintian"
+    ],
+    "incoming": "${INCOMING}",
+    "meta": "debian",
+    "method": "local",
+    "run_lintian": false
+}

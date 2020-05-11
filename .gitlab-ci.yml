@@ -6,35 +6,37 @@ variables:
 
 .templates_sha: &templates_sha 322bf2b8f29b6491caeb13861201e96969ddc169
 
+.package_only_branch: &package_only_branch master
+
 # Variables listing packages for Debian-based distros
-.monado.debian-based-packages:
+.monado.variables.debian-based-packages:
   variables:
     CORE_REQUIRED_PACKAGES: "build-essential git wget unzip cmake meson ninja-build libeigen3-dev curl patch python3 pkg-config libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev  libudev-dev"
     FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev"
-    PACKAGING_PACKAGES: "devscripts debhelper osc osc-plugins-dput reprepro"
+    PACKAGING_PACKAGES: "devscripts debhelper osc osc-plugins-dput dput-ng gettext-base"
     TOOLS_REQUIRED_PACKAGES: "clang-format-7 codespell doxygen graphviz python3-pip python3-click"
 
 # Variables for build and usage of Debian 10 (Buster) image
-.monado.debian:buster:
+.monado.variables.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2020-05-06.2"
+    FDO_DISTRIBUTION_TAG: "2020-05-11.0"
 
 # Variables for build and usage of Ubuntu 20.04 LTS (Focal) image
-.monado.ubuntu:focal:
+.monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2020-05-06.2"
+    FDO_DISTRIBUTION_TAG: "2020-05-11.1"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
-.monado.debian:buster-ndk:
+.monado.variables.debian:buster-ndk:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
     FDO_DISTRIBUTION_TAG: "2020-05-06.0"
     FDO_REPO_SUFFIX: ndk
 
 # Variables for build and usage of Arch Linux image
-.monado.arch:rolling:
+.monado.variables.arch:rolling:
   variables:
     FDO_DISTRIBUTION_TAG: "2019-04-28.0"
 
@@ -53,6 +55,7 @@ stages:
   - container_prep
   - build
   - package
+  - reprepro
   - pages
   - deploy
 
@@ -60,32 +63,32 @@ stages:
 # Container prep jobs
 
 # Base for all container prep
-.monado.container_base:
+.monado.variables.container-prep-base:
   # "stage" set here doesn't work, for some reason
   variables:
     # no need to pull the whole tree for rebuilding the image - is this still needed?
     GIT_STRATEGY: none
-    # Each most-derived job has a script to set up stuff for it.
+    # Each most-derived container prep job has a script to set up stuff for it.
     FDO_DISTRIBUTION_EXEC: "bash .gitlab-ci/${CI_JOB_NAME}.sh"
 
 # Debian Buster (x64 + i386)
 debian:container_prep:
   stage: container_prep
   extends:
-    - .monado.debian:buster # local - variables
-    - .monado.container_base # local
-    - .monado.debian-based-packages # local - variables
+    - .monado.variables.debian:buster
+    - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
     - .fdo.container-build@debian # from ci-templates
   variables:
-    # a list of packages to install - assembled from .monado.debian-based-packages
-    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages, plus reprepro
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES} reprepro"
 
 # Arch Linux (x64)
 arch:container_prep:
   stage: container_prep
   extends:
-    - .monado.arch:rolling # local
-    - .monado.container_base # local
+    - .monado.variables.arch:rolling
+    - .monado.variables.container-prep-base
     - .fdo.container-build@arch # from ci-templates
   variables:
     # a list of packages to install
@@ -95,12 +98,12 @@ arch:container_prep:
 ubuntu:container_prep:
   stage: container_prep
   extends:
-    - .monado.ubuntu:focal # local - variables
-    - .monado.container_base # local
-    - .monado.debian-based-packages # local - variables
+    - .monado.variables.ubuntu:focal
+    - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
     - .fdo.container-build@ubuntu # from ci-templates
   variables:
-    # a list of packages to install - assembled from .monado.debian-based-packages
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages
     FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
 
 # Debian Buster + the Android NDK in /opt/android-ndk
@@ -108,17 +111,18 @@ ubuntu:container_prep:
 ndk:container_prep:
   stage: container_prep
   extends:
-    - .monado.debian:buster-ndk # local
-    - .monado.container_base # local
+    - .monado.variables.debian:buster-ndk
+    - .monado.variables.container-prep-base
     - .fdo.container-build@debian # from ci-templates
   variables:
-    # Repo suffix is set in .monado.debian:buster-ndk
+    # Repo suffix is set in .monado.variables.debian:buster-ndk
     # a list of packages to install
     FDO_DISTRIBUTION_PACKAGES: "git wget unzip cmake meson ninja-build libeigen3-dev python3 pkg-config ca-certificates glslang-tools"
 
+# Style check job
 format-and-spellcheck:
   extends:
-    - .monado.debian:buster # local
+    - .monado.variables.debian:buster
     - .fdo.distribution-image@debian # from ci-templates
   stage: build
   script:
@@ -130,7 +134,7 @@ format-and-spellcheck:
     when: on_failure
 
 # "Base" job for a CMake build
-.monado.build-cmake:
+.monado.base-job.build-cmake:
   stage: build
   script:
     - mkdir build
@@ -139,7 +143,7 @@ format-and-spellcheck:
     - ninja
 
 # "Base" job for a Meson build
-.monado.build-meson:
+.monado.base-job.build-meson:
   stage: build
   script:
     - mkdir build
@@ -149,9 +153,9 @@ format-and-spellcheck:
 
 debian:cmake:
   extends:
-    - .monado.debian:buster # local
+    - .monado.variables.debian:buster
     - .fdo.distribution-image@debian # from ci-templates
-    - .monado.build-cmake # local
+    - .monado.base-job.build-cmake
   before_script:
     # Generate "changes since last release" and add to changelog,
     # since this is the build that makes our docs.
@@ -165,83 +169,136 @@ debian:cmake:
 
 debian:cmake-no-opencv:
   extends:
-    - .monado.debian:buster # local
+    - .monado.variables.debian:buster
     - .fdo.distribution-image@debian # from ci-templates
-    - .monado.build-cmake # local
+    - .monado.base-job.build-cmake
   variables:
     CMAKE_ARGS: -DBUILD_WITH_OPENCV=OFF
 
 debian:cmake-no-opengl:
   extends:
-    - .monado.debian:buster # local
+    - .monado.variables.debian:buster
     - .fdo.distribution-image@debian # from ci-templates
-    - .monado.build-cmake # local
+    - .monado.base-job.build-cmake
   variables:
     CMAKE_ARGS: -DBUILD_WITH_OPENGL=OFF
 
 debian:cmake-no-sdl2:
   extends:
-    - .monado.debian:buster # local
+    - .monado.variables.debian:buster
     - .fdo.distribution-image@debian # from ci-templates
-    - .monado.build-cmake # local
+    - .monado.base-job.build-cmake
   variables:
     CMAKE_ARGS: -DBUILD_WITH_SDL2=OFF
 
 arch:cmake:
   extends:
-    - .monado.arch:rolling # local
+    - .monado.variables.arch:rolling
     - .fdo.distribution-image@arch # from ci-templates
-    - .monado.build-cmake # local
+    - .monado.base-job.build-cmake
 
 ubuntu:cmake:
   extends:
-    - .monado.ubuntu:focal # local
+    - .monado.variables.ubuntu:focal
     - .fdo.distribution-image@ubuntu # from ci-templates
-    - .monado.build-cmake # local
+    - .monado.base-job.build-cmake
 
 debian:meson:
   extends:
-    - .monado.debian:buster # local
+    - .monado.variables.debian:buster
     - .fdo.distribution-image@debian # from ci-templates
-    - .monado.build-meson # local
+    - .monado.base-job.build-meson
 
 ubuntu:meson:
   extends:
-    - .monado.ubuntu:focal # local
+    - .monado.variables.ubuntu:focal
     - .fdo.distribution-image@ubuntu # from ci-templates
-    - .monado.build-meson # local
+    - .monado.base-job.build-meson
 
 arch:meson:
   extends:
-    - .monado.arch:rolling # local
+    - .monado.variables.arch:rolling
     - .fdo.distribution-image@arch # from ci-templates
-    - .monado.build-meson # local
+    - .monado.base-job.build-meson
   variables:
     MESON_ARGS: -Ddocs=disabled
 
 # Cross-compiling
 debian:meson:32bit:
   extends:
-    - .monado.debian:buster # local
+    - .monado.variables.debian:buster
     - .fdo.distribution-image@debian # from ci-templates
-    - .monado.build-meson # local
+    - .monado.base-job.build-meson
   variables:
     MESON_ARGS: --prefix /usr --libdir /usr/lib/i386-linux-gnu --cross-file ../.gitlab-ci/i386-cross.txt
 
 debian:cmake:32bit:
   extends:
-    - .monado.debian:buster # local
+    - .monado.variables.debian:buster
     - .fdo.distribution-image@debian # from ci-templates
-    - .monado.build-cmake # local
+    - .monado.base-job.build-cmake
   variables:
     # OpenCV and local OpenHMD doesn't play nicely with us in multi-arch.
     CMAKE_ARGS: -DCMAKE_TOOLCHAIN_FILE=../.gitlab-ci/i386.cmake -DBUILD_WITH_OPENCV=off -DBUILD_WITH_OPENHMD=off
 
 # Packaging
-.monado.debuild:
+.monado.base-job.debuild:
   stage: package
   only:
-    - master
+    - *package_only_branch
+  before_script:
+    # Configure git - needed despite not actually committing here.
+    - git config --global user.email "ryan.pavlik@collabora.com"
+    - git config --global user.name "Monado CI"
+  script:
+    # Prep the source tree
+    - git clean -dfx
+    - git merge origin/${PACKAGE_BRANCH} --no-commit
+    - FULLNAME="Monado CI <ryan.pavlik@collabora.com>" debian/extra/prepare-commit-package.sh ${CI_COMMIT_SHA} 1~${BACKPORT_SUFFIX}~ci$(date --utc "+%Y%m%d")
+    # Build the package
+    - debuild -uc -us
+    # Use dput-ng to move the package-related files into some artifacts.
+    - export INCOMING=$(pwd)/incoming
+    - mkdir -p $INCOMING
+    - mkdir -p ~/.dput.d/profiles
+    - cat .gitlab-ci/localhost.json | envsubst  > ~/.dput.d/profiles/localhost.json
+    - dpkg-parsechangelog --show-field version > incoming/${DISTRO}.distro
+    - dput --debug localhost ../monado_$(dpkg-parsechangelog --show-field version)_amd64.changes
+  artifacts:
+    paths:
+      - "incoming/"
+    expire_in: 2 days
+
+debian:buster:package:
+  extends:
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.debuild
+  variables:
+    BACKPORT_SUFFIX: bpo10
+    PACKAGE_BRANCH: debian/buster-backports
+    DISTRO: buster
+
+ubuntu:focal:package:
+  extends:
+    - .monado.variables.ubuntu:focal
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .monado.base-job.debuild
+  variables:
+    BACKPORT_SUFFIX: ubuntu20.04
+    PACKAGE_BRANCH: ubuntu/focal
+    DISTRO: focal
+
+reprepro:package:
+  stage: reprepro
+  only:
+    - *package_only_branch
+  extends:
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+  dependencies:
+    - debian:buster:package
+    - ubuntu:focal:package
   before_script:
     # Convince gnupg to work properly in CI
     - mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
@@ -252,46 +309,30 @@ debian:cmake:32bit:
     - echo 'allow-loopback-pinentry' > ~/.gnupg/gpg-agent.conf
     - echo RELOADAGENT | gpg-connect-agent
     - gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE} --import ${MONADO_GPG_SECRET_KEY}
+
   script:
-    # Prep the source tree
-    - git clean -dfx
-    - git config --global user.email "ryan.pavlik@collabora.com"
-    - git config --global user.name "Monado CI"
-    - git merge origin/${PACKAGE_BRANCH} --no-commit
-    - FULLNAME="Monado CI <ryan.pavlik@collabora.com>" debian/extra/prepare-commit-package.sh ${CI_COMMIT_SHA} 1~${BACKPORT_SUFFIX}~ci$(date --utc "+%Y%m%d")
-    # Build the package
-    - debuild -uc -us
-    # Sign the package
-    - debsign -k ${MONADO_GPG_FINGERPRINT} -p "gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE}"
     # Use reprepro to create an apt repository in our artifacts
-    - mkdir ${DISTRO}
-    - mkdir ${DISTRO}/conf
-    - cp .gitlab-ci/distributions ${DISTRO}/conf
-    - reprepro -V --ignore=wrongdistribution -b ${DISTRO} include ${DISTRO} ../monado_$(dpkg-parsechangelog --show-field version)_amd64.changes
+    - mkdir -p repo/conf
+    # For each distro, sign the changes file and add it to the repo.
+    - |
+      for fn in incoming/*.distro; do
+        # parse the distro name out
+        export DISTRO=$(echo $fn | sed -e 's:incoming/::' -e 's:[.]distro::')
+        echo "Processing $DISTRO"
+        # add distro to repository config - blank line is mandatory!
+        cat .gitlab-ci/distributions | envsubst >> repo/conf/distributions
+        echo >> repo/conf/distributions
+
+        echo "Signing package for $DISTRO"
+        debsign -k ${MONADO_GPG_FINGERPRINT} -p "gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE}" incoming/monado_$(cat $fn)_amd64.changes
+
+        echo "Adding package for $DISTRO to the repository"
+        reprepro -V --ignore=wrongdistribution -b repo include ${DISTRO} incoming/monado_$(cat $fn)_amd64.changes
+      done
   artifacts:
     paths:
-      - "${DISTRO}/"
-    expire_in: 30 days
-
-debian:buster:package:
-  extends:
-    - .monado.debian:buster # local
-    - .fdo.distribution-image@debian # from ci-templates
-    - .monado.debuild # local
-  variables:
-    BACKPORT_SUFFIX: bpo10
-    PACKAGE_BRANCH: debian/buster-backports
-    DISTRO: buster
-
-ubuntu:focal:package:
-  extends:
-    - .monado.ubuntu:focal # local
-    - .fdo.distribution-image@ubuntu # from ci-templates
-    - .monado.debuild # local
-  variables:
-    BACKPORT_SUFFIX: ubuntu20.04
-    PACKAGE_BRANCH: ubuntu/focal
-    DISTRO: focal
+      - "repo/"
+    expire_in: 2 days
 
 # Base of Android NDK builds.
 # Takes the last :-delimited part of the name as the ABI to build for,
@@ -299,7 +340,7 @@ ubuntu:focal:package:
 .monado.ndk:build-base:
   stage: build
   extends:
-    - .monado.debian:buster-ndk # local
+    - .monado.variables.debian:buster-ndk
     - .fdo.suffixed-image@debian # from ci-templates
   variables:
     ANDROID_PLATFORM: 24
@@ -328,9 +369,11 @@ pages:
     - master
   dependencies:
     - debian:cmake
+    - reprepro:package
   script:
     - mkdir -p public
     - mv build/doc/html/* public/
+    - mv repo public/apt
   artifacts:
     paths:
       - public

@@ -1,15 +1,7 @@
 Origin: monado.freedesktop.org
 Description: Monado CI apt repository
-Codename: focal
+Codename: ${DISTRO}
 Architectures: amd64 i386 source
 Components: main
 Tracking: minimal
-SignWith: 43D1A31F598523E0CE948FCF065BE417396AA28E
-
-Origin: monado.freedesktop.org
-Description: Monado CI apt repository
-Codename: buster
-Architectures: amd64 i386 source
-Components: main
-Tracking: minimal
-SignWith: 43D1A31F598523E0CE948FCF065BE417396AA28E
+SignWith: ${MONADO_GPG_FINGERPRINT}
