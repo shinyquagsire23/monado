@@ -38,7 +38,7 @@ variables:
 # Variables for build and usage of Arch Linux image
 .monado.variables.arch:rolling:
   variables:
-    FDO_DISTRIBUTION_TAG: "2019-04-28.0"
+    FDO_DISTRIBUTION_TAG: "2020-05-12.0"
 
 include:
   - project: "freedesktop/ci-templates"
@@ -92,7 +92,7 @@ arch:container_prep:
     - .fdo.container-build@arch # from ci-templates
   variables:
     # a list of packages to install
-    FDO_DISTRIBUTION_PACKAGES: "git gcc cmake meson ninja pkgconfig python3 diffutils patch doxygen graphviz eigen hidapi libxrandr mesa glslang vulkan-headers vulkan-icd-loader check glfw-x11 libusb opencv gtk3 ffmpeg v4l-utils qt5-base"
+    FDO_DISTRIBUTION_PACKAGES: "git gcc clang cmake meson ninja pkgconfig python3 diffutils patch doxygen graphviz eigen hidapi libxrandr mesa glslang vulkan-headers vulkan-icd-loader check glfw-x11 libusb opencv gtk3 ffmpeg v4l-utils qt5-base"
 
 # Ubuntu Focal (x64)
 ubuntu:container_prep:
@@ -206,6 +206,14 @@ arch:cmake:
     - .monado.variables.arch:rolling
     - .fdo.distribution-image@arch # from ci-templates
     - .monado.base-job.build-cmake
+
+arch:cmake:clang:
+  extends:
+    - .monado.variables.arch:rolling
+    - .fdo.distribution-image@arch # from ci-templates
+    - .monado.base-job.build-cmake
+  variables:
+    CMAKE_ARGS: -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
 
 ubuntu:cmake:
   extends:
