@@ -19,6 +19,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CMakeDependentOption)
 include(SPIR-V)
 include(GNUInstallDirs)
+if(NOT ${CMAKE_VERSION} VERSION_LESS 3.9)
+	include(CheckIPOSupported)
+	check_ipo_supported(RESULT HAS_IPO)
+endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(Vulkan REQUIRED)
@@ -64,6 +68,7 @@ else()
 	find_package(OpenGL)
 endif()
 
+cmake_dependent_option(CMAKE_INTERPROCEDURAL_OPTIMIZATION "Enable inter-procedural (link-time) optimization" OFF "HAS_IPO" OFF)
 cmake_dependent_option(XRT_HAVE_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND AND WAYLAND_SCANNER_FOUND AND WAYLAND_PROTOCOLS_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_XLIB "Enable xlib support" ON "X11_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_XCB "Enable xcb support" ON "XCB_FOUND" OFF)
@@ -152,6 +157,10 @@ endif()
 # Default to PIC code
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Describe IPO setting
+if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+	message(STATUS "Inter-procedural optimization enabled")
+endif()
 
 ###
 # Decend into madness.

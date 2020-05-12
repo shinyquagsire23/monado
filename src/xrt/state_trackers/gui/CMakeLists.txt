@@ -1,6 +1,9 @@
 # Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+# c-imgui doesn't do well with IPO - lots of warnings.
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+
 set(GUI_SOURCE_FILES
 	gui_common.h
 	gui_imgui.h
