@@ -250,8 +250,8 @@ struct vive_controller_poweroff_report
 	uint8_t magic[4];
 } __attribute__((packed));
 
-const struct vive_headset_power_report power_on_report;
-const struct vive_headset_power_report power_off_report;
+extern const struct vive_headset_power_report power_on_report;
+extern const struct vive_headset_power_report power_off_report;
 
 char *
 vive_read_config(struct os_hid_device *hid_dev);
