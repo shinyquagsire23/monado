@@ -11,6 +11,7 @@ add_library(target_lists STATIC
 	)
 target_link_libraries(target_lists PRIVATE
 	xrt-interfaces
+	aux_util # TODO Remove this after removing #include "util/u_time.h" from xrt_defines.h
 	)
 target_include_directories(target_lists PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
