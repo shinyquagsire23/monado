@@ -27,7 +27,7 @@
 #define HSV2_WIN "HSV Channel #3 (Blue)"
 #define HSV3_WIN "HSV Channel #4 (White)"
 
-class DebugHSV
+class DebugHSVFilter
 {
 public:
 	struct xrt_frame_sink base = {};
@@ -80,7 +80,7 @@ t_debug_hsv_filter_frame3(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 extern "C" void
 t_debug_hsv_filter_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 {
-	auto &d = *(class DebugHSV *)xsink;
+	auto &d = *(class DebugHSVFilter *)xsink;
 
 	d.sink->push_frame(d.sink, xf);
 	d.passthrough->push_frame(d.passthrough, xf);
@@ -93,7 +93,7 @@ t_debug_hsv_filter_break_apart(struct xrt_frame_node *node)
 extern "C" void
 t_debug_hsv_filter_destroy(struct xrt_frame_node *node)
 {
-	auto d = container_of(node, DebugHSV, node);
+	auto d = container_of(node, DebugHSVFilter, node);
 	delete d;
 }
 
@@ -102,7 +102,7 @@ t_debug_hsv_filter_create(struct xrt_frame_context *xfctx,
                           struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink)
 {
-	auto &d = *(new DebugHSV());
+	auto &d = *(new DebugHSVFilter());
 
 	cv::namedWindow(HSV0_WIN);
 	cv::namedWindow(HSV1_WIN);

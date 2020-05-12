@@ -23,7 +23,7 @@
 
 #define HSV_WIN "HSV Filter Tester"
 
-class DebugHSV
+class DebugHSVViewer
 {
 public:
 	struct xrt_frame_sink base = {};
@@ -95,7 +95,7 @@ process_pixel(bool f1,
 #define NUM_CHAN 4
 
 static void
-process_frame(DebugHSV &d, struct xrt_frame *xf)
+process_frame(DebugHSVViewer &d, struct xrt_frame *xf)
 {
 	uint32_t width = SIZE * 3;
 	uint32_t height = SIZE * NUM_CHAN;
@@ -150,7 +150,7 @@ process_frame(DebugHSV &d, struct xrt_frame *xf)
 extern "C" void
 t_debug_hsv_viewer_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 {
-	auto &d = *(class DebugHSV *)xsink;
+	auto &d = *(class DebugHSVViewer *)xsink;
 
 	process_frame(d, xf);
 
@@ -164,7 +164,7 @@ t_debug_hsv_viewer_break_apart(struct xrt_frame_node *node)
 extern "C" void
 t_debug_hsv_viewer_destroy(struct xrt_frame_node *node)
 {
-	auto d = container_of(node, DebugHSV, node);
+	auto d = container_of(node, DebugHSVViewer, node);
 	delete d;
 }
 
@@ -173,7 +173,7 @@ t_debug_hsv_viewer_create(struct xrt_frame_context *xfctx,
                           struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink)
 {
-	auto &d = *(new DebugHSV());
+	auto &d = *(new DebugHSVViewer());
 
 	cv::namedWindow(HSV_WIN);
 
