@@ -140,6 +140,8 @@ format-and-spellcheck:
     - mkdir build
     - pushd build
     - cmake -GNinja .. $CMAKE_ARGS
+    # List build options
+    - grep "^XRT_" CMakeCache.txt
     - ninja
 
 # "Base" job for a Meson build
@@ -360,6 +362,7 @@ reprepro:package:
     # Note we are pointing CMake to the host install of Eigen3 because it's header-only
     # and thus this is safe to do.
     - cmake -GNinja .. -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=$ABI -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/
+    - grep "^XRT_" CMakeCache.txt
     - ninja
 
 ndk:armeabi-v7a:
