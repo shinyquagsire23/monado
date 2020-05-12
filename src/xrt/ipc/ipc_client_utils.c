@@ -64,7 +64,8 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
 	}
 
 	if ((size_t)len != reply_size) {
-		IPC_ERROR(ipc_c, "recvmsg failed with error: wrong size");
+		IPC_ERROR(ipc_c, "recvmsg failed with error: wrong size %i %i",
+		          (int)len, (int)reply_size);
 		os_mutex_unlock(&ipc_c->mutex);
 		return IPC_FAILURE;
 	}

@@ -76,13 +76,9 @@ ipc_handle_compositor_get_formats(volatile struct ipc_client_state *cs,
 }
 
 ipc_result_t
-ipc_handle_compositor_wait_frame(volatile struct ipc_client_state *cs,
-                                 uint64_t *out_predicted_display_time,
-                                 uint64_t *out_predicted_display_period)
+ipc_handle_compositor_wait_frame(volatile struct ipc_client_state *cs)
 {
-	xrt_comp_wait_frame(cs->xc, out_predicted_display_time,
-	                    out_predicted_display_period);
-
+	ipc_server_wait_add_frame(cs->server->iw, cs);
 	return IPC_SUCCESS;
 }
 

@@ -13,6 +13,8 @@
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_compiler.h"
 
+#include <semaphore.h>
+
 #define IPC_MSG_SOCK_FILE "/tmp/monado_comp_ipc"
 #define IPC_MAX_SWAPCHAIN_FDS 8
 #define IPC_CRED_SIZE 1    // auth not implemented
@@ -186,6 +188,13 @@ struct ipc_shared_memory
 	struct xrt_output outputs[IPC_SHARED_MAX_OUTPUTS];
 
 	struct ipc_layer_slot slots[IPC_MAX_SLOTS];
+
+	struct
+	{
+		uint64_t predicted_display_time;
+		uint64_t predicted_display_period;
+		sem_t sem;
+	} wait_frame;
 };
 
 

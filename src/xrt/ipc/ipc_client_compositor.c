@@ -247,14 +247,49 @@ ipc_compositor_get_formats(struct xrt_compositor *xc,
 }
 
 static void
+wait_semaphore(struct ipc_client_compositor *icc, struct ipc_shared_memory *ism)
+{
+	struct timespec ts;
+	if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+		IPC_ERROR(icc->ipc_c, "Error getting CLOCK_REALTIME\n");
+		return;
+	}
+
+	int s;
+	ts.tv_sec += 2;
+
+	do {
+		s = sem_timedwait(&ism->wait_frame.sem, &ts);
+	} while (s < 0 && errno == EINTR);
+
+	/* Check what happened */
+
+	if (s < 0) {
+		if (errno == ETIMEDOUT) {
+			IPC_ERROR(icc->ipc_c,
+			          "Error sem_timedwait() timed out\n");
+		} else {
+			IPC_ERROR(icc->ipc_c,
+			          "Error sem_timedwait() error '%i'\n", errno);
+		}
+	}
+}
+
+static void
 ipc_compositor_wait_frame(struct xrt_compositor *xc,
-                          uint64_t *predicted_display_time,
-                          uint64_t *predicted_display_period)
+                          uint64_t *out_predicted_display_time,
+                          uint64_t *out_predicted_display_period)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	CALL_CHK(ipc_call_compositor_wait_frame(
-	    icc->ipc_c, predicted_display_period, predicted_display_time));
+	CALL_CHK(ipc_call_compositor_wait_frame(icc->ipc_c));
+
+	wait_semaphore(icc, icc->ipc_c->ism);
+
+	*out_predicted_display_time =
+	    icc->ipc_c->ism->wait_frame.predicted_display_time;
+	*out_predicted_display_period =
+	    icc->ipc_c->ism->wait_frame.predicted_display_period;
 }
 
 static void

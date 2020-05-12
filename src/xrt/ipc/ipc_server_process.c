@@ -66,6 +66,8 @@ teardown_all(struct ipc_server *s)
 {
 	u_var_remove_root(s);
 
+	ipc_server_wait_free(&s->iw);
+
 	xrt_comp_destroy(&s->xc);
 
 	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
@@ -243,6 +245,8 @@ init_shm(struct ipc_server *s)
 
 	// Finally tell the client how many devices we have.
 	s->ism->num_idevs = count;
+
+	sem_init(&s->ism->wait_frame.sem, true, 1);
 
 	return 0;
 }
@@ -423,6 +427,12 @@ init_all(struct ipc_server *s)
 	}
 
 	ret = init_epoll(s);
+	if (ret < 0) {
+		teardown_all(s);
+		return ret;
+	}
+
+	ret = ipc_server_wait_alloc(s, &s->iw);
 	if (ret < 0) {
 		teardown_all(s);
 		return ret;

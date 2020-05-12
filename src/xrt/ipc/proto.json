@@ -14,10 +14,6 @@
 	},
 
 	"compositor_wait_frame": {
-		"out": [
-			{"name": "predicted_display_time", "type": "uint64_t"},
-			{"name": "predicted_display_period", "type": "uint64_t"}
-		]
 	},
 
 	"compositor_begin_frame": {},

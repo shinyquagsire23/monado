@@ -65,6 +65,8 @@ extern "C" {
 struct xrt_instance;
 struct xrt_compositor;
 struct xrt_compositor_fd;
+struct ipc_wait;
+
 
 /*!
  * Information about a single swapchain.
@@ -167,13 +169,12 @@ struct ipc_server
 	bool print_spew;
 
 	// Hack for now.
+	struct ipc_wait *iw;
 	struct os_thread thread;
 	volatile bool thread_started;
 	volatile bool thread_stopping;
 	volatile struct ipc_client_state thread_state;
 };
-
-
 
 /*!
  * Main entrypoint to the compositor process.
@@ -190,6 +191,32 @@ ipc_server_main(int argc, char **argv);
  */
 void *
 ipc_server_client_thread(void *_cs);
+
+/*!
+ * Create a single wait thread.
+ *
+ * @ingroup ipc_server
+ */
+int
+ipc_server_wait_alloc(struct ipc_server *s, struct ipc_wait **out_iw);
+
+/*!
+ * Destroy a wait thread, checks for NULL and sets to NULL.
+ *
+ * @ingroup ipc_server
+ */
+void
+ipc_server_wait_free(struct ipc_wait **out_iw);
+
+/*!
+ * Add a client to wait for wait frame, if need be start waiting for the next
+ * wait frame.
+ *
+ * @ingroup ipc_server
+ */
+void
+ipc_server_wait_add_frame(struct ipc_wait *iw,
+                          volatile struct ipc_client_state *cs);
 
 
 #ifdef __cplusplus
