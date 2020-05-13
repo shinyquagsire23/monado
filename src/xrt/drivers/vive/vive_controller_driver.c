@@ -866,36 +866,39 @@ static int
 vive_controller_device_update(struct vive_controller_device *d)
 {
 	uint8_t buf[FEATURE_BUFFER_SIZE];
-	do {
-		int ret =
-		    os_hid_read(d->controller_hid, buf, sizeof(buf), 1000);
-		if (ret < 0) {
-			return ret;
-		}
-		if (ret == 0) {
-			// controller off
-			return true;
-		}
 
-		if (buf[0] == VIVE_CONTROLLER_REPORT1_ID) {
-			struct vive_controller_report1 *pkt =
-			    (struct vive_controller_report1 *)buf;
-			vive_controller_decode_message(d, &pkt->message);
-		} else if (buf[0] == VIVE_CONTROLLER_REPORT2_ID) {
-			struct vive_controller_report2 *pkt =
-			    (struct vive_controller_report2 *)buf;
-			vive_controller_decode_message(d, &pkt->message[0]);
-			vive_controller_decode_message(d, &pkt->message[1]);
-		} else if (buf[0] == VIVE_CONTROLLER_DISCONNECT_REPORT_ID) {
-			VIVE_CONTROLLER_DEBUG(d, "Controller disconnected.");
-		} else {
-			VIVE_CONTROLLER_ERROR(
-			    d, "Unknown controller message type: %u", buf[0]);
-		}
+	int ret = os_hid_read(d->controller_hid, buf, sizeof(buf), 1000);
+	if (ret == 0) {
+		// controller off
+		return true;
+	}
 
-	} while (true);
+	if (ret < 0) {
+		VIVE_CONTROLLER_ERROR(d, "Failed to read device '%i'!", ret);
+		return false;
+	}
 
-	return 0;
+	switch (buf[0]) {
+	case VIVE_CONTROLLER_REPORT1_ID:
+		vive_controller_decode_message(
+		    d, &((struct vive_controller_report1 *)buf)->message);
+		break;
+
+	case VIVE_CONTROLLER_REPORT2_ID:
+		vive_controller_decode_message(
+		    d, &((struct vive_controller_report2 *)buf)->message[0]);
+		vive_controller_decode_message(
+		    d, &((struct vive_controller_report2 *)buf)->message[1]);
+		break;
+	case VIVE_CONTROLLER_DISCONNECT_REPORT_ID:
+		VIVE_CONTROLLER_DEBUG(d, "Controller disconnected.");
+		break;
+	default:
+		VIVE_CONTROLLER_ERROR(d, "Unknown controller message type: %u",
+		                      buf[0]);
+	}
+
+	return true;
 }
 
 static void *
