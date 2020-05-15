@@ -268,6 +268,17 @@ void
 math_matrix_4x4_view_from_pose(const struct xrt_pose *pose,
                                struct xrt_matrix_4x4 *result);
 
+/*!
+ * Compute quad layer model matrix from xrt_pose and xrt_vec2 size.
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_quad_model(const struct xrt_pose *pose,
+                           const struct xrt_vec2 *size,
+                           struct xrt_matrix_4x4 *result);
+
 /*
  *
  * Pose functions.

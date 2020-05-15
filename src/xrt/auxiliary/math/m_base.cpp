@@ -265,6 +265,22 @@ math_matrix_4x4_view_from_pose(const struct xrt_pose *pose,
 	map_matrix_4x4(*result) = transformation.matrix().inverse();
 }
 
+void
+math_matrix_4x4_quad_model(const struct xrt_pose *pose,
+                           const struct xrt_vec2 *size,
+                           struct xrt_matrix_4x4 *result)
+{
+	Eigen::Vector3f position = copy(&pose->position);
+	Eigen::Quaternionf orientation = copy(&pose->orientation);
+
+	auto scale = Eigen::Scaling(size->x, size->y, 1.0f);
+
+	Eigen::Translation3f translation(position);
+	Eigen::Affine3f transformation = translation * orientation * scale;
+
+	map_matrix_4x4(*result) = transformation.matrix();
+}
+
 /*
  *
  * Exported pose functions.
