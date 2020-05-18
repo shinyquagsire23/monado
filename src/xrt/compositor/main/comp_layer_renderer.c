@@ -216,8 +216,16 @@ _init_graphics_pipeline(struct comp_layer_renderer *self)
 	        },
 	    .blend_attachments =
 	        &(VkPipelineColorBlendAttachmentState){
-	            .blendEnable = VK_FALSE,
-	            .colorWriteMask = 0xf,
+	            .blendEnable = VK_TRUE,
+	            .colorWriteMask =
+	                VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+	                VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+	            .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+	            .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+	            .colorBlendOp = VK_BLEND_OP_ADD,
+	            .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+	            .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+	            .alphaBlendOp = VK_BLEND_OP_ADD,
 	        },
 	    .rasterization_state =
 	        &(VkPipelineRasterizationStateCreateInfo){
