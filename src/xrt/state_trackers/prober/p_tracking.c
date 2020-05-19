@@ -225,9 +225,9 @@ p_factory_create_tracked_psmv(struct xrt_tracking_factory *xfact,
                               struct xrt_device *xdev,
                               struct xrt_tracked_psmv **out_xtmv)
 {
+#ifdef XRT_HAVE_OPENCV
 	struct p_factory *fact = p_factory(xfact);
 
-#ifdef XRT_HAVE_OPENCV
 	struct xrt_tracked_psmv *xtmv = NULL;
 
 	p_factory_ensure_frameserver(fact);
@@ -256,9 +256,9 @@ p_factory_create_tracked_psvr(struct xrt_tracking_factory *xfact,
                               struct xrt_device *xdev,
                               struct xrt_tracked_psvr **out_xtvr)
 {
+#ifdef XRT_HAVE_OPENCV
 	struct p_factory *fact = p_factory(xfact);
 
-#ifdef XRT_HAVE_OPENCV
 	struct xrt_tracked_psvr *xtvr = NULL;
 
 	p_factory_ensure_frameserver(fact);
