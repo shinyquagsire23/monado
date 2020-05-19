@@ -749,7 +749,7 @@ _create_buffer(struct vk_bundle *vk,
 	                                  &mem_reqs);
 
 	// Find a memory type index that fits the properties of the buffer.
-	uint32_t memory_type_index;
+	uint32_t memory_type_index = 0;
 	vk_get_memory_type(vk, mem_reqs.memoryTypeBits, memory_property_flags,
 	                   &memory_type_index);
 
