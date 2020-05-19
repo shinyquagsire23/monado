@@ -398,7 +398,7 @@ handle_control_status_msg(struct psvr_device *psvr,
                           unsigned char *buffer,
                           int size)
 {
-	struct psvr_parsed_status status;
+	struct psvr_parsed_status status = {0};
 
 	if (!psvr_parse_status_packet(&status, buffer, size)) {
 		PSVR_ERROR(psvr, "couldn't decode tracker sensor message");
