@@ -95,7 +95,7 @@ oxr_xrCreateReferenceSpace(XrSession session,
 {
 	XrResult ret;
 	struct oxr_session *sess;
-	struct oxr_space *spc;
+	struct oxr_space *spc = NULL;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrCreateReferenceSpace");

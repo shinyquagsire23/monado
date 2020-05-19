@@ -101,7 +101,7 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo,
 		                 i);
 	}
 
-	struct oxr_instance *inst;
+	struct oxr_instance *inst = NULL;
 
 	ret = oxr_instance_create(&log, createInfo, &inst);
 	if (ret != XR_SUCCESS) {
