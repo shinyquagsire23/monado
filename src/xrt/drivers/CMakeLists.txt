@@ -162,7 +162,7 @@ if(XRT_HAVE_V4L2)
 	list(APPEND ENABLED_DRIVERS v4l2)
 endif()
 
-if (BUILD_WITH_LIBSURVIVE)
+if (XRT_BUILD_DRIVER_SURVIVE)
 	set(SURVIVE_SOURCE_FILES
 		survive/survive_driver.c
 		survive/survive_interface.h
