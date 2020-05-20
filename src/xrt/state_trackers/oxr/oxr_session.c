@@ -637,9 +637,9 @@ oxr_session_create_impl(struct oxr_logger *log,
 #endif
 
 #ifdef XR_USE_PLATFORM_EGL
-	XrGraphicsBindingEGLMND const *egl = OXR_GET_INPUT_FROM_CHAIN(
-	    createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MND,
-	    XrGraphicsBindingEGLMND);
+	XrGraphicsBindingEGLMNDX const *egl = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MNDX,
+	    XrGraphicsBindingEGLMNDX);
 	if (egl != NULL) {
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
 		return oxr_session_populate_egl(log, sys, egl, *out_session);

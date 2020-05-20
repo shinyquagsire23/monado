@@ -79,15 +79,15 @@
 
 
 /*
- * XR_MND_egl_enable
+ * XR_MNDS_egl_enable
  */
-#if defined(XR_MND_egl_enable) && defined(XR_USE_PLATFORM_EGL) &&              \
+#if defined(XR_MNDX_egl_enable) && defined(XR_USE_PLATFORM_EGL) &&             \
     defined(XR_USE_GRAPHICS_API_OPENGL)
-#define OXR_HAVE_MND_egl_enable
-#define OXR_EXTENSION_SUPPORT_MND_egl_enable(_)                                \
-	_(MND_egl_enable, MND_EGL_ENABLE)
+#define OXR_HAVE_MNDX_egl_enable
+#define OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_)                               \
+	_(MNDX_egl_enable, MNDX_EGL_ENABLE)
 #else
-#define OXR_EXTENSION_SUPPORT_MND_egl_enable(_)
+#define OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_)
 #endif
 
 
@@ -130,6 +130,6 @@
     OXR_EXTENSION_SUPPORT_KHR_opengl_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_es_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable(_) \
-    OXR_EXTENSION_SUPPORT_MND_egl_enable(_) \
+    OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_)
 // clang-format on

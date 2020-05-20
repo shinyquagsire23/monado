@@ -39,7 +39,7 @@ typedef EGLBoolean(EGLAPIENTRYP PFNEGLQUERYCONTEXTPROC)(EGLDisplay dpy,
 XrResult
 oxr_session_populate_egl(struct oxr_logger *log,
                          struct oxr_system *sys,
-                         XrGraphicsBindingEGLMND const *next,
+                         XrGraphicsBindingEGLMNDX const *next,
                          struct oxr_session *sess)
 {
 	EGLint egl_client_type;

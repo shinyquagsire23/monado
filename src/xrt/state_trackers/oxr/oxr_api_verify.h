@@ -259,8 +259,8 @@ oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *,
 
 #if defined(XR_USE_PLATFORM_EGL) && defined(XR_USE_GRAPHICS_API_OPENGL)
 XrResult
-oxr_verify_XrGraphicsBindingEGLMND(struct oxr_logger *log,
-                                   const XrGraphicsBindingEGLMND *next);
+oxr_verify_XrGraphicsBindingEGLMNDX(struct oxr_logger *log,
+                                    const XrGraphicsBindingEGLMNDX *next);
 #endif // defined(XR_USE_PLATFORM_EGL) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
 /*!

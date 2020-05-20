@@ -497,12 +497,12 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 #endif // OXR_HAVE_KHR_vulkan_enable
 
 #if defined(OXR_HAVE_MND_egl_enable) && defined(XR_USE_PLATFORM_EGL)
-	XrGraphicsBindingEGLMND const *egl = OXR_GET_INPUT_FROM_CHAIN(
+	XrGraphicsBindingEGLMNDX const *egl = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MND,
-	    XrGraphicsBindingEGLMND);
+	    XrGraphicsBindingEGLMNDX);
 	if (egl != NULL) {
 		OXR_VERIFY_EXTENSION(log, inst, MND_egl_enable);
-		return oxr_verify_XrGraphicsBindingEGLMND(log, egl);
+		return oxr_verify_XrGraphicsBindingEGLMNDX(log, egl);
 	}
 #endif // defined(OXR_HAVE_MND_egl_enable) && defined(XR_USE_PLATFORM_EGL_KHR)
 
@@ -580,10 +580,10 @@ oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *log,
 #ifdef XR_USE_PLATFORM_EGL
 
 XrResult
-oxr_verify_XrGraphicsBindingEGLMND(struct oxr_logger *log,
-                                   const XrGraphicsBindingEGLMND *next)
+oxr_verify_XrGraphicsBindingEGLMNDX(struct oxr_logger *log,
+                                    const XrGraphicsBindingEGLMNDX *next)
 {
-	if (next->type != XR_TYPE_GRAPHICS_BINDING_EGL_MND) {
+	if (next->type != XR_TYPE_GRAPHICS_BINDING_EGL_MNDX) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 " Graphics binding has invalid type");
 	}
