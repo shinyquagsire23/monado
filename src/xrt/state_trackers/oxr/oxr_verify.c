@@ -496,15 +496,15 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 	}
 #endif // OXR_HAVE_KHR_vulkan_enable
 
-#if defined(OXR_HAVE_MND_egl_enable) && defined(XR_USE_PLATFORM_EGL)
+#if defined(OXR_HAVE_MNDX_egl_enable) && defined(XR_USE_PLATFORM_EGL)
 	XrGraphicsBindingEGLMNDX const *egl = OXR_GET_INPUT_FROM_CHAIN(
-	    createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MND,
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MNDX,
 	    XrGraphicsBindingEGLMNDX);
 	if (egl != NULL) {
-		OXR_VERIFY_EXTENSION(log, inst, MND_egl_enable);
+		OXR_VERIFY_EXTENSION(log, inst, MNDX_egl_enable);
 		return oxr_verify_XrGraphicsBindingEGLMNDX(log, egl);
 	}
-#endif // defined(OXR_HAVE_MND_egl_enable) && defined(XR_USE_PLATFORM_EGL_KHR)
+#endif // defined(OXR_HAVE_MNDX_egl_enable) && defined(XR_USE_PLATFORM_EGL_KHR)
 
 	/*
 	 * Add any new graphics binding structs here - before the headless
