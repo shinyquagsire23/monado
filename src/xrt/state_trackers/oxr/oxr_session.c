@@ -496,6 +496,13 @@ verify_quad_layer(struct xrt_compositor *xc,
 		                 layer_index);
 	}
 
+	if (quad->subImage.imageRect.offset.x >= 1 ||
+	    quad->subImage.imageRect.offset.y >= 1) {
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "imageRect offset out of bounds for layer %u.",
+		                 layer_index);
+	}
+
 	return XR_SUCCESS;
 }
 
