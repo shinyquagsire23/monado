@@ -514,7 +514,7 @@ check_epoll(struct ipc_server *vs)
 	}
 }
 
-static void
+static bool
 _update_projection_layer(struct comp_compositor *c,
                          volatile struct ipc_client_state *active_client,
                          volatile struct ipc_layer_render_state *layer,
@@ -522,6 +522,14 @@ _update_projection_layer(struct comp_compositor *c,
 {
 	uint32_t lsi = layer->stereo.l.swapchain_index;
 	uint32_t rsi = layer->stereo.r.swapchain_index;
+
+	if (active_client->xscs[lsi] == NULL ||
+	    active_client->xscs[rsi] == NULL) {
+		fprintf(stderr,
+		        "ERROR: Invalid swap chain for projection layer.\n");
+		return false;
+	}
+
 	struct comp_swapchain *cl = comp_swapchain(active_client->xscs[lsi]);
 	struct comp_swapchain *cr = comp_swapchain(active_client->xscs[rsi]);
 
@@ -531,15 +539,23 @@ _update_projection_layer(struct comp_compositor *c,
 	r = &cr->images[layer->stereo.r.image_index];
 
 	comp_renderer_set_projection_layer(c->r, l, r, layer->flip_y, i);
+
+	return true;
 }
 
-static void
+static bool
 _update_quad_layer(struct comp_compositor *c,
                    volatile struct ipc_client_state *active_client,
                    volatile struct ipc_layer_render_state *layer,
                    uint32_t i)
 {
 	uint32_t sci = layer->quad.swapchain_index;
+
+	if (active_client->xscs[sci] == NULL) {
+		fprintf(stderr, "ERROR: Invalid swap chain for quad layer.\n");
+		return false;
+	}
+
 	struct comp_swapchain *sc = comp_swapchain(active_client->xscs[sci]);
 	struct comp_swapchain_image *image = NULL;
 	image = &sc->images[layer->quad.image_index];
@@ -549,9 +565,11 @@ _update_quad_layer(struct comp_compositor *c,
 
 	comp_renderer_set_quad_layer(c->r, image, &pose, &size, layer->flip_y,
 	                             i);
+
+	return true;
 }
 
-static void
+static bool
 _update_layers(struct comp_compositor *c,
                volatile struct ipc_client_state *active_client,
                uint32_t *num_layers)
@@ -571,15 +589,19 @@ _update_layers(struct comp_compositor *c,
 		    &render_state->layers[i];
 		switch (layer->type) {
 		case IPC_LAYER_STEREO_PROJECTION: {
-			_update_projection_layer(c, active_client, layer, i);
+			if (!_update_projection_layer(c, active_client, layer,
+			                              i))
+				return false;
 			break;
 		}
 		case IPC_LAYER_QUAD: {
-			_update_quad_layer(c, active_client, layer, i);
+			if (!_update_quad_layer(c, active_client, layer, i))
+				return false;
 			break;
 		}
 		}
 	}
+	return true;
 }
 
 static int
@@ -631,7 +653,9 @@ main_loop(struct ipc_server *vs)
 			    &active_client->render_state;
 
 			if (render_state->rendering) {
-				_update_layers(c, active_client, &num_layers);
+				if (!_update_layers(c, active_client,
+				                    &num_layers))
+					continue;
 
 				// set our client state back to waiting.
 				render_state->rendering = false;
