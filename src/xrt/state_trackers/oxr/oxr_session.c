@@ -28,6 +28,7 @@
 #include "oxr_two_call.h"
 #include "oxr_handle.h"
 #include "oxr_chain.h"
+#include "oxr_api_verify.h"
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(dynamic_prediction, "OXR_DYNAMIC_PREDICTION", true)
@@ -473,6 +474,8 @@ verify_quad_layer(struct xrt_compositor *xc,
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
+
+	OXR_VERIFY_POSE(log, quad->pose);
 
 	if (sc->released_index == -1) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
