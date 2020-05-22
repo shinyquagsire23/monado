@@ -553,7 +553,7 @@ submit_quad_layer(struct xrt_compositor *xc,
 	    (enum xrt_layer_eye_visibility)quad->eyeVisibility, sc->swapchain,
 	    sc->released_index, (struct xrt_rect *)&quad->subImage.imageRect,
 	    quad->subImage.imageArrayIndex, (struct xrt_pose *)&quad->pose,
-	    (struct xrt_vec2 *)&quad->size);
+	    (struct xrt_vec2 *)&quad->size, false);
 }
 
 static void
@@ -586,7 +586,7 @@ submit_projection_layer(struct xrt_compositor *xc,
 	    (struct xrt_rect *)&proj->views[1].subImage.imageRect,
 	    proj->views[1].subImage.imageArrayIndex,
 	    (struct xrt_fov *)&proj->views[1].fov,
-	    (struct xrt_pose *)&proj->views[1].pose);
+	    (struct xrt_pose *)&proj->views[1].pose, false);
 }
 
 XrResult

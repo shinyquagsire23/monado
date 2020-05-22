@@ -273,6 +273,7 @@ struct xrt_compositor
 	 * @param r_array_index Right array index.
 	 * @param r_fov         Right fov the left projection rendered with.
 	 * @param r_pose        Right pose the left projection rendered with.
+	 * @param flip_y        Flip Y texture coordinates.
 	 */
 	void (*layer_stereo_projection)(
 	    struct xrt_compositor *xc,
@@ -291,7 +292,8 @@ struct xrt_compositor
 	    struct xrt_rect *r_rect,
 	    uint32_t r_array_index,
 	    struct xrt_fov *r_fov,
-	    struct xrt_pose *r_pose);
+	    struct xrt_pose *r_pose,
+	    bool flip_y);
 
 	/*!
 	 * Adds a quad layer for submission, the center of the quad is specified
@@ -308,6 +310,7 @@ struct xrt_compositor
 	 * @param array_index Array index.
 	 * @param pose        Pose the left projection rendered with.
 	 * @param size        Size of the quad in meters.
+	 * @param flip_y      Flip Y texture coordinates.
 	 */
 	void (*layer_quad)(struct xrt_compositor *xc,
 	                   uint64_t timestamp,
@@ -320,7 +323,8 @@ struct xrt_compositor
 	                   struct xrt_rect *rect,
 	                   uint32_t array_index,
 	                   struct xrt_pose *pose,
-	                   struct xrt_vec2 *size);
+	                   struct xrt_vec2 *size,
+	                   bool flip_y);
 
 	/*!
 	 * Commits all of the submitted layers, it's from this on that the
@@ -472,12 +476,13 @@ xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
                                  struct xrt_rect *r_rect,
                                  uint32_t r_array_index,
                                  struct xrt_fov *r_fov,
-                                 struct xrt_pose *r_pose)
+                                 struct xrt_pose *r_pose,
+                                 bool flip_y)
 {
 	xc->layer_stereo_projection(xc, timestamp, xdev, name, layer_flags,
 	                            l_sc, l_image_index, l_rect, l_array_index,
 	                            l_fov, l_pose, r_sc, r_image_index, r_rect,
-	                            r_array_index, r_fov, r_pose);
+	                            r_array_index, r_fov, r_pose, flip_y);
 }
 
 /*!
@@ -497,10 +502,11 @@ xrt_comp_layer_quad(struct xrt_compositor *xc,
                     struct xrt_rect *rect,
                     uint32_t array_index,
                     struct xrt_pose *pose,
-                    struct xrt_vec2 *size)
+                    struct xrt_vec2 *size,
+                    bool flip_y)
 {
 	xc->layer_quad(xc, timestamp, xdev, name, layer_flags, visibility, sc,
-	               image_index, rect, array_index, pose, size);
+	               image_index, rect, array_index, pose, size, flip_y);
 }
 
 /*!

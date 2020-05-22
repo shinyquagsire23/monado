@@ -170,7 +170,8 @@ client_vk_compositor_layer_stereo_projection(
     struct xrt_rect *r_rect,
     uint32_t r_array_index,
     struct xrt_fov *r_fov,
-    struct xrt_pose *r_pose)
+    struct xrt_pose *r_pose,
+    bool flip_y)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *l_xscfd, *r_xscfd;
@@ -181,7 +182,7 @@ client_vk_compositor_layer_stereo_projection(
 	xrt_comp_layer_stereo_projection(
 	    &c->xcfd->base, timestamp, xdev, name, layer_flags, l_xscfd,
 	    l_image_index, l_rect, l_array_index, l_fov, l_pose, r_xscfd,
-	    r_image_index, r_rect, r_array_index, r_fov, r_pose);
+	    r_image_index, r_rect, r_array_index, r_fov, r_pose, false);
 }
 
 static void
@@ -196,7 +197,8 @@ client_vk_compositor_layer_quad(struct xrt_compositor *xc,
                                 struct xrt_rect *rect,
                                 uint32_t array_index,
                                 struct xrt_pose *pose,
-                                struct xrt_vec2 *size)
+                                struct xrt_vec2 *size,
+                                bool flip_y)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *xscfb;
@@ -205,7 +207,7 @@ client_vk_compositor_layer_quad(struct xrt_compositor *xc,
 
 	xrt_comp_layer_quad(&c->xcfd->base, timestamp, xdev, name, layer_flags,
 	                    visibility, xscfb, image_index, rect, array_index,
-	                    pose, size);
+	                    pose, size, false);
 }
 
 static void
