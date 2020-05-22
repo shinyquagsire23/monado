@@ -489,6 +489,13 @@ verify_quad_layer(struct xrt_compositor *xc,
 		    layer_index);
 	}
 
+	if (quad->subImage.imageRect.offset.x < 0 ||
+	    quad->subImage.imageRect.offset.y < 0) {
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "imageRect offset is negative for layer %u.",
+		                 layer_index);
+	}
+
 	return XR_SUCCESS;
 }
 
