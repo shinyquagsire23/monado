@@ -567,16 +567,20 @@ submit_quad_layer(struct xrt_compositor *xc,
                   struct oxr_logger *log,
                   XrCompositionLayerQuad *quad,
                   struct xrt_device *head,
+                  struct xrt_pose *inv_offset,
                   uint64_t timestamp)
 {
 	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
 	    struct oxr_swapchain *, quad->subImage.swapchain);
 
+	struct xrt_pose pose;
+	math_pose_transform(inv_offset, (struct xrt_pose *)&quad->pose, &pose);
+
 	xrt_comp_layer_quad(
 	    xc, timestamp, head, XRT_INPUT_GENERIC_HEAD_POSE, quad->layerFlags,
 	    (enum xrt_layer_eye_visibility)quad->eyeVisibility, sc->swapchain,
 	    sc->released_index, (struct xrt_rect *)&quad->subImage.imageRect,
-	    quad->subImage.imageArrayIndex, (struct xrt_pose *)&quad->pose,
+	    quad->subImage.imageArrayIndex, &pose,
 	    (struct xrt_vec2 *)&quad->size, false);
 }
 
@@ -585,6 +589,7 @@ submit_projection_layer(struct xrt_compositor *xc,
                         struct oxr_logger *log,
                         XrCompositionLayerProjection *proj,
                         struct xrt_device *head,
+                        struct xrt_pose *inv_offset,
                         uint64_t timestamp)
 {
 	enum xrt_layer_composition_flags flags = 0;
@@ -597,20 +602,24 @@ submit_projection_layer(struct xrt_compositor *xc,
 		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
 	}
 
+	struct xrt_pose pose[2];
+	math_pose_transform(inv_offset, (struct xrt_pose *)&proj->views[0].pose,
+	                    &pose[0]);
+	math_pose_transform(inv_offset, (struct xrt_pose *)&proj->views[1].pose,
+	                    &pose[1]);
+
 	xrt_comp_layer_stereo_projection(
 	    xc, timestamp, head, XRT_INPUT_GENERIC_HEAD_POSE, flags,
 	    scs[0]->swapchain, // Left
 	    scs[0]->released_index,
 	    (struct xrt_rect *)&proj->views[0].subImage.imageRect,
 	    proj->views[0].subImage.imageArrayIndex,
-	    (struct xrt_fov *)&proj->views[0].fov,
-	    (struct xrt_pose *)&proj->views[0].pose,
+	    (struct xrt_fov *)&proj->views[0].fov, &pose[0],
 	    scs[1]->swapchain, // Right
 	    scs[1]->released_index,
 	    (struct xrt_rect *)&proj->views[1].subImage.imageRect,
 	    proj->views[1].subImage.imageArrayIndex,
-	    (struct xrt_fov *)&proj->views[1].fov,
-	    (struct xrt_pose *)&proj->views[1].pose, false);
+	    (struct xrt_fov *)&proj->views[1].fov, &pose[1], false);
 }
 
 XrResult
@@ -723,6 +732,11 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 * Done verifying.
 	 */
 
+
+	struct xrt_pose inv_offset = {0};
+	math_pose_invert(&sess->sys->head->tracking_origin->offset,
+	                 &inv_offset);
+
 	xrt_comp_layer_begin(xc, blend_mode);
 
 	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
@@ -734,12 +748,14 @@ oxr_session_frame_end(struct oxr_logger *log,
 		case XR_TYPE_COMPOSITION_LAYER_PROJECTION:
 			submit_projection_layer(
 			    xc, log, (XrCompositionLayerProjection *)layer,
-			    sess->sys->head, frameEndInfo->displayTime);
+			    sess->sys->head, &inv_offset,
+			    frameEndInfo->displayTime);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_QUAD:
-			submit_quad_layer(
-			    xc, log, (XrCompositionLayerQuad *)layer,
-			    sess->sys->head, frameEndInfo->displayTime);
+			submit_quad_layer(xc, log,
+			                  (XrCompositionLayerQuad *)layer,
+			                  sess->sys->head, &inv_offset,
+			                  frameEndInfo->displayTime);
 			break;
 		default: assert(false && "invalid layer type");
 		}
