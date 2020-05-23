@@ -232,7 +232,6 @@ ipc_instance_create(struct xrt_instance **out_xinst)
 	// Query the server for how many tracking origins it has.
 	count = 0;
 	for (uint32_t i = 0; i < ism->num_itracks; i++) {
-		fprintf(stderr, "%s\n", ism->itracks[i].name);
 		xtrack = U_TYPED_CALLOC(struct xrt_tracking_origin);
 
 		memcpy(xtrack->name, ism->itracks[i].name,
