@@ -305,7 +305,8 @@ compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                    struct xrt_rect *r_rect,
                                    uint32_t r_array_index,
                                    struct xrt_fov *r_fov,
-                                   struct xrt_pose *r_pose)
+                                   struct xrt_pose *r_pose,
+                                   bool flip_y)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 
@@ -334,7 +335,8 @@ compositor_layer_quad(struct xrt_compositor *xc,
                       struct xrt_rect *rect,
                       uint32_t array_index,
                       struct xrt_pose *pose,
-                      struct xrt_vec2 *size)
+                      struct xrt_vec2 *size,
+                      bool flip_y)
 {
 	// Noop!
 }
@@ -361,7 +363,8 @@ compositor_layer_commit(struct xrt_compositor *xc)
 	uint32_t l_array_index = stereo->l.array_index;
 	uint32_t r_array_index = stereo->r.array_index;
 
-	comp_renderer_frame(c->r, left, l_array_index, right, r_array_index);
+	comp_renderer_frame(c->r, left, l_array_index, right, r_array_index,
+	                    layer->flip_y);
 
 	compositor_add_frame_timing(c);
 

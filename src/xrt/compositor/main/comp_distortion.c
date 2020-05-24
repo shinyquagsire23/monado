@@ -49,7 +49,8 @@ comp_distortion_init_buffers(struct comp_distortion *d,
 XRT_MAYBE_UNUSED static void
 comp_distortion_update_descriptor_sets(struct comp_distortion *d,
                                        VkSampler samplers[2],
-                                       VkImageView views[2]);
+                                       VkImageView views[2],
+                                       bool flip_y);
 
 static void
 comp_distortion_init_descriptor_set_layout(struct comp_distortion *d);
@@ -495,7 +496,8 @@ void
 comp_distortion_update_descriptor_set(struct comp_distortion *d,
                                       VkSampler sampler,
                                       VkImageView view,
-                                      uint32_t eye)
+                                      uint32_t eye,
+                                      bool flip_y)
 {
 	struct vk_bundle *vk = d->vk;
 
@@ -518,16 +520,21 @@ comp_distortion_update_descriptor_set(struct comp_distortion *d,
 	vk->vkUpdateDescriptorSets(vk->device,
 	                           ARRAY_SIZE(write_descriptor_sets),
 	                           write_descriptor_sets, 0, NULL);
+
+	d->ubo_vp_data[eye].flip_y = flip_y;
+	memcpy(d->ubo_viewport_handles[eye].mapped, &d->ubo_vp_data[eye],
+	       sizeof(d->ubo_vp_data[eye]));
 }
 
 static void
 comp_distortion_update_descriptor_sets(struct comp_distortion *d,
                                        VkSampler samplers[2],
-                                       VkImageView views[2])
+                                       VkImageView views[2],
+                                       bool flip_y)
 {
 	for (uint32_t i = 0; i < 2; i++) {
 		comp_distortion_update_descriptor_set(d, samplers[i], views[i],
-		                                      i);
+		                                      i, flip_y);
 	}
 }
 

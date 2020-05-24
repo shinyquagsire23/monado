@@ -145,7 +145,8 @@ void
 comp_distortion_update_descriptor_set(struct comp_distortion *d,
                                       VkSampler sampler,
                                       VkImageView view,
-                                      uint32_t eye);
+                                      uint32_t eye,
+                                      bool flip_y);
 
 /*!
  * Submit draw commands to the given command_buffer.

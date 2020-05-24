@@ -89,6 +89,7 @@ struct ipc_swapchain_data
 struct ipc_render_state
 {
 	bool rendering;
+	bool flip_y;
 	uint32_t l_swapchain_index;
 	uint32_t l_image_index;
 	uint32_t r_swapchain_index;

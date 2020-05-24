@@ -328,7 +328,8 @@ ipc_compositor_layer_stereo_projection(
     struct xrt_rect *r_rect,
     uint32_t r_array_index,
     struct xrt_fov *r_fov,
-    struct xrt_pose *r_pose)
+    struct xrt_pose *r_pose,
+    bool flip_y)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -356,6 +357,8 @@ ipc_compositor_layer_stereo_projection(
 	stereo->r.fov = *r_fov;
 	stereo->r.pose = *r_pose;
 
+	layer->flip_y = flip_y;
+
 	layer->type = IPC_LAYER_STEREO_PROJECTION;
 
 	// Increment the number of layers.
@@ -374,7 +377,8 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
                           struct xrt_rect *rect,
                           uint32_t array_index,
                           struct xrt_pose *pose,
-                          struct xrt_vec2 *size)
+                          struct xrt_vec2 *size,
+                          bool flip_y)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -395,6 +399,7 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 	quad->pose = *pose;
 	quad->size = *size;
 
+	layer->flip_y = flip_y;
 	layer->type = IPC_LAYER_QUAD;
 
 	// Increment the number of layers.

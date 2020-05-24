@@ -114,6 +114,7 @@ enum ipc_layer_type
 struct ipc_layer_entry
 {
 	enum ipc_layer_type type;
+	bool flip_y;
 
 	union {
 		struct ipc_layer_quad quad;

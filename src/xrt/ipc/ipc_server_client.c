@@ -101,8 +101,10 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 {
 	struct ipc_shared_memory *ism = cs->server->ism;
 	struct ipc_layer_slot *slot = &ism->slots[slot_id];
-	struct ipc_layer_stereo_projection *stereo = &slot->layers[0].stereo;
+	struct ipc_layer_entry *layer = &slot->layers[0];
+	struct ipc_layer_stereo_projection *stereo = &layer->stereo;
 
+	cs->render_state.flip_y = layer->flip_y;
 	cs->render_state.l_swapchain_index = stereo->l.swapchain_id;
 	cs->render_state.l_image_index = stereo->l.image_index;
 	cs->render_state.r_swapchain_index = stereo->r.swapchain_id;
@@ -415,6 +417,14 @@ client_loop(volatile struct ipc_client_state *cs)
 
 	cs->active = false;
 	cs->num_swapchains = 0;
+
+	// Make sure to reset the renderstate fully.
+	cs->render_state.flip_y = false;
+	cs->render_state.l_swapchain_index = 0;
+	cs->render_state.l_image_index = 0;
+	cs->render_state.r_swapchain_index = 0;
+	cs->render_state.r_image_index = 0;
+	cs->render_state.rendering = false;
 
 	for (uint32_t j = 0; j < IPC_MAX_CLIENT_SWAPCHAINS; j++) {
 		xrt_swapchain_destroy((struct xrt_swapchain **)&cs->xscs[j]);

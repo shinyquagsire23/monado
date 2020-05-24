@@ -76,7 +76,8 @@ static void
 renderer_set_swapchain_image(struct comp_renderer *r,
                              uint32_t eye,
                              struct comp_swapchain_image *image,
-                             uint32_t layer);
+                             uint32_t layer,
+                             bool flip_y);
 
 static void
 renderer_render(struct comp_renderer *r);
@@ -160,10 +161,11 @@ comp_renderer_frame(struct comp_renderer *r,
                     struct comp_swapchain_image *left,
                     uint32_t left_layer,
                     struct comp_swapchain_image *right,
-                    uint32_t right_layer)
+                    uint32_t right_layer,
+                    bool flip_y)
 {
-	renderer_set_swapchain_image(r, 0, left, left_layer);
-	renderer_set_swapchain_image(r, 1, right, right_layer);
+	renderer_set_swapchain_image(r, 0, left, left_layer, flip_y);
+	renderer_set_swapchain_image(r, 1, right, right_layer, flip_y);
 	renderer_render(r);
 }
 
@@ -534,7 +536,7 @@ _set_dummy_images(struct comp_renderer *r)
 	for (uint32_t i = 0; i < 2; i++)
 		comp_distortion_update_descriptor_set(
 		    r->distortion, r->dummy_images[i].sampler,
-		    r->dummy_images[i].views[0], i);
+		    r->dummy_images[i].views[0], i, false);
 }
 
 static void
@@ -583,7 +585,8 @@ static void
 renderer_set_swapchain_image(struct comp_renderer *r,
                              uint32_t eye,
                              struct comp_swapchain_image *image,
-                             uint32_t layer)
+                             uint32_t layer,
+                             bool flip_y)
 {
 	if (eye > 1) {
 		COMP_ERROR(r->c, "Swapchain image %p %u not found",
@@ -598,7 +601,7 @@ renderer_set_swapchain_image(struct comp_renderer *r,
 		           (void *)image, eye);
 		comp_distortion_update_descriptor_set(
 		    r->distortion, image->sampler, image->views[layer],
-		    (uint32_t)eye);
+		    (uint32_t)eye, flip_y);
 		renderer_rebuild_command_buffers(r);
 		r->one_buffer_imported[eye] = true;
 	}

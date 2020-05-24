@@ -100,6 +100,7 @@ struct comp_layer
 {
 	int64_t timestamp;
 	enum xrt_layer_composition_flags flags;
+	bool flip_y;
 	union {
 		struct comp_layer_quad quad;
 		struct comp_layer_stereo stereo;

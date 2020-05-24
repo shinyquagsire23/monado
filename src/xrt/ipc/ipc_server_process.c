@@ -518,7 +518,8 @@ static void
 set_rendering_state(volatile struct ipc_client_state *active_client,
                     struct comp_swapchain_image **l,
                     struct comp_swapchain_image **r,
-                    bool *using_idle_images)
+                    bool *using_idle_images,
+                    bool *flip_y)
 {
 	// our ipc server thread will fill in l & r
 	// swapchain indices and toggle wait to false
@@ -537,6 +538,7 @@ set_rendering_state(volatile struct ipc_client_state *active_client,
 	struct comp_swapchain *cr = comp_swapchain(active_client->xscs[ri]);
 	*l = &cl->images[render_state->l_image_index];
 	*r = &cr->images[render_state->r_image_index];
+	*flip_y = render_state->flip_y;
 
 	// set our client state back to waiting.
 	render_state->rendering = false;
@@ -586,11 +588,13 @@ main_loop(struct ipc_server *vs)
 
 		struct comp_swapchain_image *l = NULL;
 		struct comp_swapchain_image *r = NULL;
+		bool flip_y = false;
 
 		if (active_client == NULL || !active_client->active ||
 		    active_client->num_swapchains == 0) {
 			if (!using_idle_images) {
 				COMP_DEBUG(c, "Resetting to idle images.");
+				comp_renderer_reset(c->r);
 				comp_renderer_set_idle_images(c->r);
 				using_idle_images = true;
 				last_l = NULL;
@@ -598,24 +602,22 @@ main_loop(struct ipc_server *vs)
 			}
 		} else {
 			set_rendering_state(active_client, &l, &r,
-			                    &using_idle_images);
+			                    &using_idle_images, &flip_y);
 		}
 
-		// Rendering idle images
-		if (l == NULL || r == NULL) {
+		// Render the idle images or already cached images state.
+		if ((l == NULL || r == NULL) || (l == last_l && r == last_r)) {
 			comp_renderer_frame_cached(c->r);
 			comp_compositor_garbage_collect(c);
 			continue;
 		}
 
 		// Rebuild command buffers if we are showing new buffers.
-		if (last_l != l || last_r != r) {
-			comp_renderer_reset(c->r);
-		}
+		comp_renderer_reset(c->r);
+		comp_renderer_frame(c->r, l, 0, r, 0, flip_y);
+
 		last_l = l;
 		last_r = r;
-
-		comp_renderer_frame(c->r, l, 0, r, 0);
 
 		// Now is a good time to destroy objects.
 		comp_compositor_garbage_collect(c);
