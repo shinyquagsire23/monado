@@ -614,6 +614,15 @@ renderer_render(struct comp_renderer *r)
 	renderer_acquire_swapchain_image(r);
 	renderer_submit_queue(r);
 	renderer_present_swapchain_image(r);
+
+	/*
+	 * This fixes a lot of validation issues as it makes sure that the
+	 * command buffer has completed and all resources referred by it can
+	 * now be manipulated.
+	 *
+	 * This is done after a swap so isn't time critical.
+	 */
+	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
 }
 
 static void
