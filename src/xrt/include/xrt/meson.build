@@ -55,6 +55,10 @@ if sdl2.found()
 	have_conf.set('XRT_HAVE_SDL2', true)
 endif
 
+if v4l2.found()
+	have_conf.set('XRT_HAVE_V4L2', true)
+endif
+
 xrt_config_have_h = configure_file(
 	output: 'xrt_config_have.h',
 	configuration: have_conf,
