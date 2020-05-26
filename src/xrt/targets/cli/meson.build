@@ -8,7 +8,6 @@ cli = executable(
 		'cli_cmd_probe.c',
 		'cli_cmd_test.c',
 		'cli_common.h',
-		'cli_instance.c',
 		'cli_main.c',
 	),
 	link_whole: [
@@ -16,7 +15,7 @@ cli = executable(
 		lib_aux_util,
 		lib_aux_math,
 		lib_st_prober,
-		lib_target_lists,
+		lib_target_instance_no_comp,
 	] + driver_libs,
 	include_directories: [
 		aux_include,

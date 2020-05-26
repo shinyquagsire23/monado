@@ -9,14 +9,15 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "xrt/xrt_instance.h"
 #include "xrt/xrt_prober.h"
 #include "cli_common.h"
 
 
 static int
-do_exit(struct xrt_prober **xp_ptr, int ret)
+do_exit(struct xrt_instance **xi_ptr, int ret)
 {
-	xrt_prober_destroy(xp_ptr);
+	xrt_instance_destroy(xi_ptr);
 
 	printf(" :: Exiting '%i'\n", ret);
 
@@ -29,44 +30,57 @@ int
 cli_cmd_test(int argc, const char **argv)
 {
 	struct xrt_device *xdevs[NUM_XDEVS] = {0};
-	struct xrt_prober *xp = NULL;
+	struct xrt_instance *xi = NULL;
 	int ret = 0;
 
 	// Initialize the prober.
-	printf(" :: Creating prober!\n");
+	printf(" :: Creating instance!\n");
 
-	ret = xrt_prober_create(&xp);
+	ret = xrt_instance_create(&xi);
 	if (ret != 0) {
-		return do_exit(&xp, 0);
+		return do_exit(&xi, 0);
+	}
+	struct xrt_prober *xp = NULL;
+
+	ret = xrt_instance_get_prober(xi, &xp);
+	if (ret != 0) {
+		do_exit(&xi, ret);
+	}
+	if (xp != NULL) {
+		// This instance provides an xrt_prober so we can dump some
+		// internal info.
+
+		// Need to prime the prober with devices before dumping and
+		// listing.
+		printf(" :: Probing!\n");
+
+		ret = xrt_prober_probe(xp);
+		if (ret != 0) {
+			return do_exit(&xi, ret);
+		}
+
+		// So the user can see what we found.
+		printf(" :: Dumping!\n");
+
+		ret = xrt_prober_dump(xp);
+		if (ret != 0) {
+			do_exit(&xi, ret);
+		}
 	}
 
-	// Need to prime the prober with devices before dumping and listing.
-	printf(" :: Probing!\n");
+	// Regardless of whether xrt_prober is used, we can find and select
+	// (multiple) devices.
+	printf(" :: Probing and selecting devices!\n");
 
-	ret = xrt_prober_probe(xp);
+	ret = xrt_instance_select(xi, xdevs, NUM_XDEVS);
 	if (ret != 0) {
-		return do_exit(&xp, ret);
-	}
-
-	// So the user can see what we found.
-	printf(" :: Dumping!\n");
-
-	ret = xrt_prober_dump(xp);
-	if (ret != 0) {
-		do_exit(&xp, ret);
-	}
-
-	// Multiple devices can be found.
-	printf(" :: Selecting devices!\n");
-
-	ret = xrt_prober_select(xp, xdevs, NUM_XDEVS);
-	if (ret != 0) {
-		do_exit(&xp, ret);
+		return do_exit(&xi, ret);
 	}
 	if (xdevs[0] == NULL) {
 		printf("\tNo HMD found! :(\n");
-		return do_exit(&xp, -1);
+		return do_exit(&xi, -1);
 	}
+
 
 	for (size_t i = 0; i < NUM_XDEVS; i++) {
 		if (xdevs[i] == NULL) {
@@ -85,11 +99,9 @@ cli_cmd_test(int argc, const char **argv)
 		}
 
 		printf("\tDestroying '%s'\n", xdevs[i]->str);
-
-		xdevs[i]->destroy(xdevs[i]);
-		xdevs[i] = NULL;
+		xrt_device_destroy(&xdevs[i]);
 	}
 
 	// Finally done
-	return do_exit(&xp, 0);
+	return do_exit(&xi, 0);
 }

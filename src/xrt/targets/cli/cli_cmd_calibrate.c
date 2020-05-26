@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 
+#include "xrt/xrt_instance.h"
 #include "xrt/xrt_prober.h"
 #include "util/u_misc.h"
 #include "cli_common.h"
@@ -18,6 +19,7 @@
 
 struct program
 {
+	struct xrt_instance *xi;
 	struct xrt_prober *xp;
 
 	int index;
@@ -29,11 +31,24 @@ init(struct program *p)
 {
 	int ret;
 
-	// Fist initialize the prober.
-	ret = xrt_prober_create(&p->xp);
+	// Fist initialize the instance.
+	ret = xrt_instance_create(&p->xi);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to create prober\n");
+		fprintf(stderr, "Failed to create instance\n");
 		return ret;
+	}
+
+	// Get the prober pointer.
+	// In general, null probers are OK, but this module directly uses the
+	// prober.
+	ret = xrt_instance_get_prober(p->xi, &p->xp);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to get prober from instance.\n");
+		return ret;
+	}
+	if (p->xp == NULL) {
+		fprintf(stderr, "Null prober returned - cannot proceed.\n");
+		return -1;
 	}
 
 	// Need to prime the prober before listing devices.
@@ -114,9 +129,8 @@ print_cameras(struct program *p)
 static int
 do_exit(struct program *p, int ret)
 {
-	if (p->xp != NULL) {
-		xrt_prober_destroy(&p->xp);
-	}
+	p->xp = NULL;
+	xrt_instance_destroy(&p->xi);
 
 	printf(" :: Exiting '%i'\n", ret);
 

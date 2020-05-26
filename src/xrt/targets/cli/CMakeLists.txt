@@ -11,7 +11,6 @@ set(SOURCE_FILES
 	cli_cmd_test.c
 	cli_common.h
 	cli_main.c
-	cli_prober.c
 	)
 
 add_executable(cli
@@ -27,8 +26,7 @@ target_link_libraries(cli PRIVATE
 	aux_os
 	aux_util
 	aux_math
-	st_prober
-	target_lists
+	target_instance_no_comp
 	)
 
 install(TARGETS cli
