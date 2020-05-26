@@ -271,9 +271,3 @@ ipc_instance_create(struct xrt_instance **out_xinst)
 
 	return 0;
 }
-
-int
-xrt_prober_create(void **hack)
-{
-	return -1;
-}
