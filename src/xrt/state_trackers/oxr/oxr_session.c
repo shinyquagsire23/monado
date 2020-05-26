@@ -388,18 +388,33 @@ oxr_session_frame_wait(struct oxr_logger *log,
 	    time_state_get_now_and_update(sess->sys->inst->timekeeping);
 
 	struct xrt_compositor *xc = sess->compositor;
-	if (xc != NULL) {
-		uint64_t predicted_display_time;
-		uint64_t predicted_display_period;
-		xrt_comp_wait_frame(xc, &predicted_display_time,
-		                    &predicted_display_period);
-
-		frameState->shouldRender = should_render(sess->state);
-		frameState->predictedDisplayPeriod = predicted_display_period;
-		frameState->predictedDisplayTime = time_state_from_monotonic_ns(
-		    sess->sys->inst->timekeeping, predicted_display_time);
-	} else {
+	if (xc == NULL) {
 		frameState->shouldRender = XR_FALSE;
+		return oxr_session_success_result(sess);
+	}
+
+	uint64_t predicted_display_time;
+	uint64_t predicted_display_period;
+	xrt_comp_wait_frame(xc, &predicted_display_time,
+	                    &predicted_display_period);
+
+	if ((int64_t)predicted_display_time < 0) {
+		//! @todo Also check for zero.
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 " got a negative display time '%" PRIi64 "'",
+		                 (int64_t)predicted_display_time);
+	}
+
+	frameState->shouldRender = should_render(sess->state);
+	frameState->predictedDisplayPeriod = predicted_display_period;
+	frameState->predictedDisplayTime = time_state_from_monotonic_ns(
+	    sess->sys->inst->timekeeping, predicted_display_time);
+
+	if (frameState->predictedDisplayTime <= 0) {
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    " time_state_from_monotonic_ns returned '%" PRIi64 "'",
+		    frameState->predictedDisplayTime);
 	}
 
 	return oxr_session_success_result(sess);
@@ -641,9 +656,11 @@ oxr_session_frame_end(struct oxr_logger *log,
 	}
 
 	if (frameEndInfo->displayTime <= 0) {
-		return oxr_error(log, XR_ERROR_TIME_INVALID,
-		                 "(frameEndInfo->displayTime) zero or a "
-		                 "negative value is not a valid XrTime");
+		return oxr_error(
+		    log, XR_ERROR_TIME_INVALID,
+		    "(frameEndInfo->displayTime == %" PRIi64
+		    ") zero or a negative value is not a valid XrTime",
+		    frameEndInfo->displayTime);
 	}
 
 	struct xrt_compositor *xc = sess->compositor;
