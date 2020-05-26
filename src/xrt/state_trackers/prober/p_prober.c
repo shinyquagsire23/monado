@@ -636,15 +636,15 @@ select_device(struct xrt_prober *xp,
 
 	P_DEBUG(p, "Didn't find any HMD devices");
 
-	// Destroy all other found devices.
+	// Even if we've found some controllers, we don't use them without an
+	// HMD. So, destroy all other found devices.
 	for (size_t i = 1; i < num_xdevs; i++) {
 		if (xdevs[i] == NULL) {
 			continue;
 		}
 
 		P_DEBUG(p, "Destroying '%s'", xdevs[i]->str);
-		xdevs[i]->destroy(xdevs[i]);
-		xdevs[i] = NULL;
+		xrt_device_destroy(&xdevs[i]);
 	}
 
 	return 0;
