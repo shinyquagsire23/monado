@@ -407,13 +407,13 @@ oxr_session_frame_wait(struct oxr_logger *log,
 
 	frameState->shouldRender = should_render(sess->state);
 	frameState->predictedDisplayPeriod = predicted_display_period;
-	frameState->predictedDisplayTime = time_state_from_monotonic_ns(
+	frameState->predictedDisplayTime = time_state_monotonic_to_ts_ns(
 	    sess->sys->inst->timekeeping, predicted_display_time);
 
 	if (frameState->predictedDisplayTime <= 0) {
 		return oxr_error(
 		    log, XR_ERROR_RUNTIME_FAILURE,
-		    " time_state_from_monotonic_ns returned '%" PRIi64 "'",
+		    " time_state_monotonic_to_ts_ns returned '%" PRIi64 "'",
 		    frameState->predictedDisplayTime);
 	}
 

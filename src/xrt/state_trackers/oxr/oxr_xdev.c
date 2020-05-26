@@ -129,7 +129,7 @@ oxr_xdev_get_relation_at(struct oxr_logger *log,
 	// Always make those to base things valid.
 	ensure_valid_position_and_orientation(&relation, offset);
 
-	*out_relation_timestamp_ns = time_state_from_monotonic_ns(
+	*out_relation_timestamp_ns = time_state_monotonic_to_ts_ns(
 	    inst->timekeeping, relation_timestamp_ns);
 
 	*out_relation = relation;

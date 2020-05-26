@@ -164,8 +164,23 @@ time_state_from_timespec(struct time_state const *state,
  * @ingroup aux_util
  */
 timepoint_ns
-time_state_from_monotonic_ns(struct time_state const *state,
-                             uint64_t monotonic_ns);
+time_state_monotonic_to_ts_ns(struct time_state const *state,
+                              uint64_t monotonic_ns);
+
+/*!
+ * Convert a adjusted integer timestamp to an monotonic system time (such as
+ * from @ref aux_os_time).
+ *
+ * Should not be called simultaneously with time_state_get_now_and_update.
+ *
+ * @public @memberof time_state
+ * @ingroup aux_util
+ */
+uint64_t
+time_state_ts_to_monotonic_ns(struct time_state const *state,
+                              timepoint_ns timestamp);
+
+
 #ifdef __cplusplus
 }
 #endif
