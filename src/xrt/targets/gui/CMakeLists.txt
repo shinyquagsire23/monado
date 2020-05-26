@@ -8,7 +8,6 @@ set(SOURCE_FILES
 	gui_sdl2.c
 	gui_sdl2_imgui.c
 	gui_sdl2_main.c
-	gui_sdl2_prober.c
 	)
 
 add_executable(gui
@@ -26,8 +25,7 @@ target_link_libraries(gui PRIVATE
 	aux_util
 	aux_math
 	st_gui
-	st_prober
-	target_lists
+	target_instance_no_comp
 	imgui_impl_sdl
 	)
 target_include_directories(gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)

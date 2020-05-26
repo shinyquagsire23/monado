@@ -170,6 +170,10 @@ create(void)
 void
 gui_scene_select_video_calibrate(struct gui_program *p)
 {
+	if (p->xp == NULL) {
+		// No prober, nothing to create.
+		return;
+	}
 	struct video_select *vs = create();
 
 	gui_scene_push_front(p, &vs->base);

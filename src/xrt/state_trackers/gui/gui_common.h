@@ -47,6 +47,7 @@ struct gui_program
 	struct gui_scene_manager *gsm;
 
 	struct xrt_device *xdevs[NUM_XDEVS];
+	struct xrt_instance *instance;
 	struct xrt_prober *xp;
 
 	struct gui_ogl_texture *texs[256];

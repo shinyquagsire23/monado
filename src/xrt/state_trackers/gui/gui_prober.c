@@ -7,6 +7,7 @@
  */
 
 #include "xrt/xrt_prober.h"
+#include "xrt/xrt_instance.h"
 #include "util/u_time.h"
 #include "gui_common.h"
 
@@ -37,17 +38,23 @@ gui_prober_init(struct gui_program *p)
 	int ret = 0;
 
 	// Initialize the prober.
-	ret = xrt_prober_create(&p->xp);
+	ret = xrt_instance_create(&p->instance);
+	if (ret != 0) {
+		return do_exit(p, ret);
+	}
+	ret = xrt_instance_get_prober(p->instance, &p->xp);
 	if (ret != 0) {
 		return do_exit(p, ret);
 	}
 
-	// Need to prime the prober with devices before dumping and listing.
-	ret = xrt_prober_probe(p->xp);
-	if (ret != 0) {
-		return do_exit(p, ret);
+	if (p->xp != NULL) {
+		// Need to prime the prober with devices before dumping and
+		// listing.
+		ret = xrt_prober_probe(p->xp);
+		if (ret != 0) {
+			return do_exit(p, ret);
+		}
 	}
-
 	return 0;
 }
 
@@ -57,7 +64,7 @@ gui_prober_select(struct gui_program *p)
 	int ret;
 
 	// Multiple devices can be found.
-	ret = xrt_prober_select(p->xp, p->xdevs, NUM_XDEVS);
+	ret = xrt_instance_select(p->instance, p->xdevs, NUM_XDEVS);
 	if (ret != 0) {
 		return ret;
 	}
@@ -89,5 +96,5 @@ gui_prober_teardown(struct gui_program *p)
 		p->xdevs[i] = NULL;
 	}
 
-	xrt_prober_destroy(&p->xp);
+	xrt_instance_destroy(&p->instance);
 }
