@@ -351,19 +351,17 @@ xrt_prober_destroy(struct xrt_prober **xp_ptr)
 }
 
 /*!
- * Call this function to create the @ref xrt_prober. This function is setup in
- * the the very small target wrapper.c for each binary.
+ * Create a prober with a list of known devices and autoprobers.
+ *
+ * Typically used by xrt_instance_create implementations to create the prober,
+ * often with a shared list called `target_list`.
+ *
+ * @param[out] out_xp Pointer to xrt_prober pointer, will be populated with
+ * created xrt_prober instance.
+ * @param[in] list Prober entry list
  *
  * @ingroup xrt_iface
- */
-int
-xrt_prober_create(struct xrt_prober **out_xp);
-
-/*!
- * Can be used by xrt_instance_create implementations to create the prober with
- * a list of drivers.
- *
- * @ingroup xrt_iface
+ * @relates xrt_prober
  */
 int
 xrt_prober_create_with_lists(struct xrt_prober **out_xp,
