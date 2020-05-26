@@ -82,6 +82,8 @@ add_library(target_instance STATIC
 target_link_libraries(target_instance PRIVATE
 	xrt-interfaces
 	aux_util
+	st_prober
+	target_lists
 	)
 target_include_directories(target_instance PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers

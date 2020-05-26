@@ -8,8 +8,8 @@ cli = executable(
 		'cli_cmd_probe.c',
 		'cli_cmd_test.c',
 		'cli_common.h',
+		'cli_instance.c',
 		'cli_main.c',
-		'cli_prober.c',
 	),
 	link_whole: [
 		lib_aux_os,

@@ -6,6 +6,8 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
+#include "target_lists.h"
+
 #include "xrt/xrt_prober.h"
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_gfx_fd.h"
@@ -102,7 +104,7 @@ xrt_instance_create(struct xrt_instance **out_xinst)
 {
 	struct xrt_prober *xp = NULL;
 
-	int ret = xrt_prober_create(&xp);
+	int ret = xrt_prober_create_with_lists(&xp, &target_lists);
 	if (ret < 0) {
 		return ret;
 	}

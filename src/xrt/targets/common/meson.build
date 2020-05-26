@@ -18,5 +18,6 @@ lib_target_instance = static_library(
 		'target_instance.c',
 	),
 	include_directories: [xrt_include],
+	link_with: [lib_target_lists, lib_st_prober],
 	dependencies: [aux],
 )
