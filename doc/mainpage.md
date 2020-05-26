@@ -9,6 +9,7 @@ getting started information and general documentation.
 * @ref md_CHANGELOG - If this is the web version of the docs, the changelog
 also includes a section for changes that have not yet been in a tagged
 release.
+* @ref md_targets
 * @ref md_writing-a-new-driver (**not complete**)
 
 ## Source layout
