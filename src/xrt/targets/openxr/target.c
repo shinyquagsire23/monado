@@ -10,8 +10,9 @@
 
 #ifdef XRT_FEATURE_SERVICE
 
-struct xrt_instance;
+#include "xrt/xrt_instance.h"
 
+// Forward declaration
 int
 ipc_instance_create(struct xrt_instance **out_xinst);
 
@@ -23,12 +24,12 @@ xrt_instance_create(struct xrt_instance **out_xinst)
 
 #else
 
-#include "target_lists.h"
-
-int
-xrt_prober_create(struct xrt_prober **out_xp)
-{
-	return xrt_prober_create_with_lists(out_xp, &target_lists);
-}
+/*
+ * For non-service runtime, xrt_instance_create defined in target_instance
+ * helper lib, so we just have a dummy symbol below to silence warnings about
+ * empty translation units.
+ */
+#include <xrt/xrt_compiler.h>
+XRT_MAYBE_UNUSED static const int DUMMY = 42;
 
 #endif
