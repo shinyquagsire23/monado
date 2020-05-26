@@ -79,8 +79,7 @@ gui_prober_update(struct gui_program *p)
 		if (p->xdevs[i] == NULL) {
 			continue;
 		}
-
-		p->xdevs[i]->update_inputs(p->xdevs[i]);
+		xrt_device_update_inputs(p->xdevs[i]);
 	}
 }
 
@@ -92,8 +91,7 @@ gui_prober_teardown(struct gui_program *p)
 			continue;
 		}
 
-		p->xdevs[i]->destroy(p->xdevs[i]);
-		p->xdevs[i] = NULL;
+		xrt_device_destroy(&(p->xdevs[i]));
 	}
 
 	xrt_instance_destroy(&p->instance);
