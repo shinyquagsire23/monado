@@ -663,15 +663,18 @@ oxr_session_frame_end(struct oxr_logger *log,
 
 	if (blend_mode == 0) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "(frameEndInfo->environmentBlendMode) "
-		                 "unknown environment blend mode");
+		                 "(frameEndInfo->environmentBlendMode == "
+		                 "0x%08x) unknown environment blend mode",
+		                 frameEndInfo->environmentBlendMode);
 	}
 
 	if ((blend_mode & sess->sys->head->hmd->blend_mode) == 0) {
+		//! @todo Make integer print to string.
 		return oxr_error(log,
 		                 XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED,
-		                 "(frameEndInfo->environmentBlendMode) "
-		                 "is not supported");
+		                 "(frameEndInfo->environmentBlendMode == %u) "
+		                 "is not supported",
+		                 frameEndInfo->environmentBlendMode);
 	}
 
 	/*
