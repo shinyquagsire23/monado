@@ -46,7 +46,6 @@ struct gui_program
 
 	struct gui_scene_manager *gsm;
 
-	struct time_state *timekeeping;
 	struct xrt_device *xdevs[NUM_XDEVS];
 	struct xrt_prober *xp;
 

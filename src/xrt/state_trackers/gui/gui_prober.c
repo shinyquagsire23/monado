@@ -36,8 +36,6 @@ gui_prober_init(struct gui_program *p)
 {
 	int ret = 0;
 
-	p->timekeeping = time_state_create();
-
 	// Initialize the prober.
 	ret = xrt_prober_create(&p->xp);
 	if (ret != 0) {
@@ -70,13 +68,6 @@ gui_prober_select(struct gui_program *p)
 void
 gui_prober_update(struct gui_program *p)
 {
-	// We haven't been initialized
-	if (p->timekeeping == NULL) {
-		return;
-	}
-
-	time_state_get_now_and_update(p->timekeeping);
-
 	for (size_t i = 0; i < NUM_XDEVS; i++) {
 		if (p->xdevs[i] == NULL) {
 			continue;
@@ -97,9 +88,6 @@ gui_prober_teardown(struct gui_program *p)
 		p->xdevs[i]->destroy(p->xdevs[i]);
 		p->xdevs[i] = NULL;
 	}
-
-	// Does null checking and sets to null.
-	time_state_destroy(&p->timekeeping);
 
 	xrt_prober_destroy(&p->xp);
 }
