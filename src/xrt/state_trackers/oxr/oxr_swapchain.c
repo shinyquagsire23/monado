@@ -103,6 +103,17 @@ oxr_swapchain_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	return ret;
 }
 
+static enum xrt_swapchain_create_flags
+convert_create_flags(XrSwapchainCreateFlags xr_flags)
+{
+	enum xrt_swapchain_create_flags flags = 0;
+	if ((xr_flags & XR_SWAPCHAIN_CREATE_STATIC_IMAGE_BIT) != 0) {
+		flags |= XRT_SWAPCHAIN_CREATE_STATIC_IMAGE;
+	}
+
+	return flags;
+}
+
 XrResult
 oxr_create_swapchain(struct oxr_logger *log,
                      struct oxr_session *sess,
@@ -110,8 +121,7 @@ oxr_create_swapchain(struct oxr_logger *log,
                      struct oxr_swapchain **out_swapchain)
 {
 	struct xrt_swapchain *xsc = xrt_comp_create_swapchain(
-	    sess->compositor,
-	    (enum xrt_swapchain_create_flags)createInfo->createFlags,
+	    sess->compositor, convert_create_flags(createInfo->createFlags),
 	    (enum xrt_swapchain_usage_bits)createInfo->usageFlags,
 	    createInfo->format, createInfo->sampleCount, createInfo->width,
 	    createInfo->height, createInfo->faceCount, createInfo->arraySize,
