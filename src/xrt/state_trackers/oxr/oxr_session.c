@@ -398,8 +398,7 @@ oxr_session_frame_wait(struct oxr_logger *log,
 	xrt_comp_wait_frame(xc, &predicted_display_time,
 	                    &predicted_display_period);
 
-	if ((int64_t)predicted_display_time < 0) {
-		//! @todo Also check for zero.
+	if ((int64_t)predicted_display_time <= 0) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 " got a negative display time '%" PRIi64 "'",
 		                 (int64_t)predicted_display_time);
