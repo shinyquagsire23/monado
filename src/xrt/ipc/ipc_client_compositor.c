@@ -179,9 +179,15 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 	uint64_t size;
 
 	r = ipc_call_swapchain_create(icc->ipc_c,             // connection
+	                              create,                 // in
+	                              bits,                   // in
+	                              format,                 // in
+	                              sample_count,           // in
 	                              width,                  // in
 	                              height,                 // in
-	                              format,                 // in
+	                              face_count,             // in
+	                              array_size,             // in
+	                              mip_count,              // in
 	                              &handle,                // out
 	                              &num_images,            // out
 	                              &size,                  // out

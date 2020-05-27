@@ -31,9 +31,15 @@
 
 	"swapchain_create": {
 		"in": [
+			{"name": "create", "type": "enum xrt_swapchain_create_flags"},
+			{"name": "bits", "type": "enum xrt_swapchain_usage_bits"},
+			{"name": "format", "type": "int64_t"},
+			{"name": "sample_count", "type": "uint32_t"},
 			{"name": "width", "type": "uint32_t"},
 			{"name": "height", "type": "uint32_t"},
-			{"name": "format", "type": "uint64_t"}
+			{"name": "face_count", "type": "uint32_t"},
+			{"name": "array_size", "type": "uint32_t"},
+			{"name": "mip_count", "type": "uint32_t"}
 		],
 		"out": [
 			{"name": "id", "type": "uint32_t"},

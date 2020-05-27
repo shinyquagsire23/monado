@@ -118,9 +118,15 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 
 ipc_result_t
 ipc_handle_swapchain_create(volatile struct ipc_client_state *cs,
+                            enum xrt_swapchain_create_flags create,
+                            enum xrt_swapchain_usage_bits bits,
+                            int64_t format,
+                            uint32_t sample_count,
                             uint32_t width,
                             uint32_t height,
-                            uint64_t format,
+                            uint32_t face_count,
+                            uint32_t array_size,
+                            uint32_t mip_count,
                             uint32_t *out_id,
                             uint32_t *out_num_images,
                             uint64_t *out_size,
@@ -128,21 +134,11 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *cs,
                             int *out_fds,
                             size_t *out_num_fds)
 {
-
-	enum xrt_swapchain_create_flags flags =
-	    XRT_SWAPCHAIN_CREATE_STATIC_IMAGE;
-	enum xrt_swapchain_usage_bits usage =
-	    XRT_SWAPCHAIN_CREATE_STATIC_IMAGE | XRT_SWAPCHAIN_USAGE_COLOR;
-	uint32_t sample_count = 1;
-	uint32_t face_count = 1;
-	uint32_t array_size = 1;
-	uint32_t mip_count = 1;
-
 	// create the swapchain
 	struct xrt_swapchain *xsc =
 	    xrt_comp_create_swapchain(cs->xc,       // Compositor
-	                              flags,        // Flags
-	                              usage,        // Usage
+	                              create,       // Flags
+	                              bits,         // Usage
 	                              format,       // Format
 	                              sample_count, // Sample count
 	                              width,        // Width

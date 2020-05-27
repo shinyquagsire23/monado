@@ -12,6 +12,7 @@
 #include "xrt/xrt_tracking.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_compiler.h"
+#include "xrt/xrt_compositor.h"
 
 #include <semaphore.h>
 
