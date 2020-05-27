@@ -140,7 +140,8 @@ header = '''// Copyright 2020, Collabora, Ltd.
  */
 '''
 
-def doH(file):
+
+def doH(file, p):
     f = open(file, "w")
     f.write(header.format(brief='Generated IPC protocol header', suffix=''))
     f.write('''
@@ -210,7 +211,8 @@ ipc_cmd_to_str(ipc_command_t id)
     f.write("\n// clang-format on\n")
     f.close()
 
-def doClientC(file):
+
+def doClientC(file, p):
     f = open(file, "w")
     f.write(header.format(brief='Generated IPC client code', suffix='_client'))
     f.write('''
@@ -263,7 +265,8 @@ def doClientC(file):
     f.write("\n// clang-format off\n")
     f.close()
 
-def doClientH(file):
+
+def doClientH(file, p):
     f = open(file, "w")
     f.write(header.format(brief='Generated IPC client code', suffix='_client'))
     f.write('''
@@ -283,7 +286,8 @@ def doClientH(file):
     f.write("\n// clang-format on\n")
     f.close()
 
-def doServerC(file):
+
+def doServerC(file, p):
     f = open(file, "w")
     f.write(header.format(brief='Generated IPC server code', suffix='_server'))
     f.write('''
@@ -351,7 +355,8 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
 ''')
     f.close()
 
-def doServerH(file):
+
+def doServerH(file, p):
     f = open(file, "w")
     f.write(header.format(brief='Generated IPC server code', suffix='_server'))
     f.write('''
@@ -374,21 +379,27 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command);
     f.close()
 
 
-parser = argparse.ArgumentParser(description='Protocol generator.')
-parser.add_argument('proto', help='Protocol file to use')
-parser.add_argument('output', type=str, nargs='+', help='Output file, uses the ending to figure out what file it should generate')
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser(description='Protocol generator.')
+    parser.add_argument('proto', help='Protocol file to use')
+    parser.add_argument('output', type=str, nargs='+',
+                        help='Output file, uses the ending to figure out what file it should generate')
+    args = parser.parse_args()
 
-p = Proto.loadAndParse(args.proto)
+    p = Proto.loadAndParse(args.proto)
 
-for output in args.output:
-    if output.endswith("ipc_protocol_generated.h"):
-        doH(output)
-    if output.endswith("ipc_client_generated.c"):
-        doClientC(output)
-    if output.endswith("ipc_client_generated.h"):
-        doClientH(output)
-    if output.endswith("ipc_server_generated.c"):
-        doServerC(output)
-    if output.endswith("ipc_server_generated.h"):
-        doServerH(output)
+    for output in args.output:
+        if output.endswith("ipc_protocol_generated.h"):
+            doH(output, p)
+        if output.endswith("ipc_client_generated.c"):
+            doClientC(output, p)
+        if output.endswith("ipc_client_generated.h"):
+            doClientH(output, p)
+        if output.endswith("ipc_server_generated.c"):
+            doServerC(output, p)
+        if output.endswith("ipc_server_generated.h"):
+            doServerH(output, p)
+
+
+if __name__ == "__main__":
+    main()
