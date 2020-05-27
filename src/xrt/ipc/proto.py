@@ -55,36 +55,32 @@ class Call:
     def writeCallDecl(self, f):
         f.write("\nipc_result_t\n")
         start = "ipc_call_" + self.name + "("
-        pad = ""
-        for c in start:
-            pad = pad + " "
+        delim_pad = ",\n" + (" " * len(start))
 
-        f.write(start + "struct ipc_connection *ipc_c")
-        for arg in self.inArgs:
-            f.write(",\n" + pad + arg.getFuncArgumentIn())
-        for arg in self.outArgs:
-            f.write(",\n" + pad + arg.getFuncArgumentOut())
+        f.write(start)
+        args = ["struct ipc_connection *ipc_c"]
+        args.extend(arg.getFuncArgumentIn() for arg in self.inArgs)
+        args.extend(arg.getFuncArgumentOut() for arg in self.outArgs)
         if self.outFds:
-            f.write(",\n" + pad + "int *fds")
-            f.write(",\n" + pad + "size_t num_fds")
+            args.extend(("int *fds", "size_t num_fds"))
+        f.write(delim_pad.join(args))
         f.write(")")
 
     def writeHandleDecl(self, f):
         f.write("\nipc_result_t\n")
         start = "ipc_handle_" + self.name + "("
-        pad = ""
-        for c in start:
-            pad = pad + " "
+        delim_pad = ",\n" + (" " * len(start))
 
-        f.write(start + "volatile struct ipc_client_state *cs")
-        for arg in self.inArgs:
-            f.write(",\n" + pad + arg.getFuncArgumentIn())
-        for arg in self.outArgs:
-            f.write(",\n" + pad + arg.getFuncArgumentOut())
+        f.write(start)
+        args = ["volatile struct ipc_client_state *cs"]
+        args.extend(arg.getFuncArgumentIn() for arg in self.inArgs)
+        args.extend(arg.getFuncArgumentOut() for arg in self.outArgs)
         if self.outFds:
-            f.write(",\n" + pad + "size_t max_num_fds")
-            f.write(",\n" + pad + "int *out_fds")
-            f.write(",\n" + pad + "size_t *out_num_fds")
+            args.extend((
+                "size_t max_num_fds",
+                "int *out_fds",
+                "size_t *out_num_fds"))
+        f.write(delim_pad.join(args))
         f.write(")")
 
     def __init__(self, name, data):
@@ -97,12 +93,14 @@ class Call:
         for key in data:
             if key == 'id':
                 self.id = data[key]
-            if key == 'in':
+            elif key == 'in':
                 self.inArgs = Arg.parseArray(data[key])
-            if key == 'out':
+            elif key == 'out':
                 self.outArgs = Arg.parseArray(data[key])
-            if key == 'out_fds':
+            elif key == 'out_fds':
                 self.outFds = data[key]
+            else:
+                raise RuntimeError("Unrecognized key")
         if not self.id:
             self.id = "IPC_" + name.upper()
 
@@ -323,27 +321,27 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
             f.write("\t\tsize_t num_fds = {0};\n")
         f.write("\n")
         start = "reply.result = ipc_handle_" + call.name + "("
-        pad = ""
-        for c in start:
-            pad = pad + " "
-        f.write("\t\t" + start + "cs")
+        delim_pad = ",\n\t\t" + " " * len(start)
+        f.write("\t\t" + start)
+        args = ["cs"]
         for arg in call.inArgs:
-            if arg.isAggregate:
-                f.write(",\n\t\t" + pad + "&msg->" + arg.name)
-            else:
-                f.write(",\n\t\t" + pad + "msg->" + arg.name)
-        for arg in call.outArgs:
-            f.write(",\n\t\t" + pad + "&reply." + arg.name)
+            args.append(("&msg->" + arg.name)
+                        if arg.isAggregate
+                        else ("msg->" + arg.name))
+        args.extend("&reply." + arg.name for arg in call.outArgs)
         if call.outFds:
-            f.write(",\n\t\t" + pad + "MAX_FDS")
-            f.write(",\n\t\t" + pad + "fds")
-            f.write(",\n\t\t" + pad + "&num_fds")
+            args.extend(("MAX_FDS",
+                         "fds",
+                         "&num_fds",))
+        f.write(delim_pad.join(args))
         f.write(");\n")
 
         if call.outFds:
-            f.write("\t\treturn ipc_reply_fds(cs->ipc_socket_fd, &reply, sizeof(reply), fds, num_fds);\n")
+            f.write(
+                "\t\treturn ipc_reply_fds(cs->ipc_socket_fd, &reply, sizeof(reply), fds, num_fds);\n")
         else:
-            f.write("\t\treturn ipc_reply(cs->ipc_socket_fd, &reply, sizeof(reply));\n")
+            f.write(
+                "\t\treturn ipc_reply(cs->ipc_socket_fd, &reply, sizeof(reply));\n")
         f.write("\t}\n")
     f.write('''\tdefault:
 \t\tprintf("UNHANDLED IPC MESSAGE! %d\\n", *ipc_command);
