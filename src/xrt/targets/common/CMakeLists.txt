@@ -75,19 +75,41 @@ endif()
 ####
 # Instance
 #
+if(XRT_FEATURE_COMPOSITOR_MAIN)
+	add_library(target_instance STATIC
+		target_instance.c
+		)
+	target_link_libraries(target_instance PRIVATE
+		xrt-interfaces
+		aux_util
+		st_prober
+		target_lists
+		comp_main
+		)
+	target_include_directories(target_instance PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
+		)
+	target_include_directories(target_instance PUBLIC
+		${CMAKE_CURRENT_SOURCE_DIR}
+		)
+endif()
 
-add_library(target_instance STATIC
-	target_instance.c
+####
+# Instance without Compositor
+#
+
+add_library(target_instance_no_comp STATIC
+	target_instance_no_comp.c
 	)
-target_link_libraries(target_instance PRIVATE
+target_link_libraries(target_instance_no_comp PRIVATE
 	xrt-interfaces
 	aux_util
 	st_prober
 	target_lists
 	)
-target_include_directories(target_instance PRIVATE
+target_include_directories(target_instance_no_comp PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
 	)
-target_include_directories(target_instance PUBLIC
+target_include_directories(target_instance_no_comp PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}
 	)

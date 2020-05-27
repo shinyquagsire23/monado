@@ -21,3 +21,13 @@ lib_target_instance = static_library(
 	link_with: [lib_target_lists, lib_st_prober],
 	dependencies: [aux],
 )
+
+lib_target_instance_no_comp = static_library(
+	'target_instance_no_comp',
+	files(
+		'target_instance_no_comp.c',
+	),
+	include_directories: [xrt_include],
+	link_with: [lib_target_lists, lib_st_prober],
+	dependencies: [aux],
+)
