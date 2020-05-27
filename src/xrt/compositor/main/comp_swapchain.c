@@ -224,6 +224,10 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	VkResult ret;
 
 
+	if ((create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
+		num_images = 1;
+	}
+
 	struct comp_swapchain *sc = U_TYPED_CALLOC(struct comp_swapchain);
 	sc->base.base.destroy = swapchain_destroy;
 	sc->base.base.acquire_image = swapchain_acquire_image;
