@@ -209,6 +209,12 @@ oxr_instance_convert_timespec_to_time(struct oxr_logger *log,
  *
  */
 
+/*!
+ * Initialize the path system.
+ */
+XrResult
+oxr_path_init(struct oxr_logger *log, struct oxr_instance *inst);
+
 void *
 oxr_path_get_attached(struct oxr_logger *log,
                       struct oxr_instance *inst,
@@ -250,10 +256,10 @@ oxr_path_get_string(struct oxr_logger *log,
                     size_t *out_length);
 
 /*!
- * Destroy all paths that the instance has created.
+ * Destroy the path system and all paths that the instance has created.
  */
 void
-oxr_path_destroy_all(struct oxr_logger *log, struct oxr_instance *inst);
+oxr_path_destroy(struct oxr_logger *log, struct oxr_instance *inst);
 
 
 /*
@@ -941,6 +947,12 @@ struct oxr_instance
 
 	//! Path store, for looking up paths.
 	struct u_hashset *path_store;
+	//! Mapping from ID to path.
+	struct oxr_path **path_array;
+	//! Total length of path array.
+	size_t path_array_length;
+	//! Number of paths in the array (0 is always null).
+	size_t path_num;
 
 	// Event queue.
 	struct oxr_event *last_event;

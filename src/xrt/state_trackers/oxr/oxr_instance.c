@@ -60,11 +60,8 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	u_var_remove_root((void *)inst);
 
 	oxr_binding_destroy_all(log, inst);
-	oxr_path_destroy_all(log, inst);
 
-	if (inst->path_store != NULL) {
-		u_hashset_destroy(&inst->path_store);
-	}
+	oxr_path_destroy(log, inst);
 
 	for (size_t i = 0; i < inst->system.num_xdevs; i++) {
 		oxr_xdev_destroy(&inst->system.xdevs[i]);
@@ -102,7 +99,7 @@ oxr_instance_create(struct oxr_logger *log,
 {
 	struct oxr_instance *inst = NULL;
 	struct xrt_device *xdevs[NUM_XDEVS] = {0};
-	int h_ret, xinst_ret;
+	int xinst_ret;
 	XrResult ret;
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
@@ -117,11 +114,10 @@ oxr_instance_create(struct oxr_logger *log,
 	oxr_sdl2_hack_create(&inst->hack);
 	/* ---- HACK ---- */
 
-	h_ret = u_hashset_create(&inst->path_store);
-	if (h_ret != 0) {
+	ret = oxr_path_init(log, inst);
+	if (ret != XR_SUCCESS) {
 		free(inst);
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Failed to create hashset");
+		return 0;
 	}
 
 	// Cache certain often looked up paths.

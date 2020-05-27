@@ -27,6 +27,7 @@
 struct oxr_path
 {
 	uint64_t debug;
+	XrPath id;
 	void *attached;
 };
 
@@ -37,16 +38,10 @@ struct oxr_path
  *
  */
 
-static inline struct oxr_path *
-oxr_path(XrPath path)
-{
-	return XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_path *, path);
-}
-
 static inline XrPath
 to_xr_path(struct oxr_path *path)
 {
-	return XRT_CAST_PTR_TO_OXR_HANDLE(XrPath, path);
+	return path->id;
 }
 
 static inline struct u_hashset_item *
@@ -67,6 +62,31 @@ from_item(struct u_hashset_item *item)
  * Static functions.
  *
  */
+
+static XrResult
+oxr_ensure_array_length(struct oxr_logger *log,
+                        struct oxr_instance *inst,
+                        XrPath *out_id)
+{
+	size_t num = inst->path_num + 1;
+
+	if (num < inst->path_array_length) {
+		*out_id = inst->path_num++;
+		return XR_SUCCESS;
+	}
+
+	size_t new_size = inst->path_array_length;
+	while (new_size < num) {
+		new_size += 64;
+	}
+
+	U_ARRAY_REALLOC_OR_FREE(inst->path_array, struct oxr_path *, new_size);
+	inst->path_array_length = new_size;
+
+	*out_id = inst->path_num++;
+
+	return XR_SUCCESS;
+}
 
 static XrResult
 oxr_allocate_path(struct oxr_logger *log,
@@ -113,11 +133,25 @@ oxr_allocate_path(struct oxr_logger *log,
 		                 "Failed to insert item");
 	}
 
+	oxr_ensure_array_length(log, inst, &path->id);
+	inst->path_array[path->id] = path;
+
 	*out_path = path;
 
 	return XR_SUCCESS;
 }
 
+struct oxr_path *
+get_path_or_null(struct oxr_logger *log,
+                 struct oxr_instance *inst,
+                 XrPath xr_path)
+{
+	if (xr_path >= inst->path_array_length) {
+		return NULL;
+	}
+
+	return inst->path_array[xr_path];
+}
 
 /*
  *
@@ -130,11 +164,12 @@ oxr_path_get_attached(struct oxr_logger *log,
                       struct oxr_instance *inst,
                       XrPath xr_path)
 {
-	if (xr_path == XR_NULL_PATH) {
+	struct oxr_path *path = get_path_or_null(log, inst, xr_path);
+	if (path == NULL) {
 		return NULL;
 	}
 
-	return oxr_path(xr_path)->attached;
+	return path->attached;
 }
 
 XrResult
@@ -195,7 +230,10 @@ oxr_path_get_string(struct oxr_logger *log,
                     const char **out_str,
                     size_t *out_length)
 {
-	struct oxr_path *path = oxr_path(xr_path);
+	struct oxr_path *path = get_path_or_null(log, inst, xr_path);
+	if (path == NULL) {
+		return XR_ERROR_PATH_INVALID;
+	}
 
 	*out_str = get_item(path)->c_str;
 	*out_length = get_item(path)->length;
@@ -211,9 +249,39 @@ destroy_callback(struct u_hashset_item *item, void *priv)
 	free(path);
 }
 
-void
-oxr_path_destroy_all(struct oxr_logger *log, struct oxr_instance *inst)
+XrResult
+oxr_path_init(struct oxr_logger *log, struct oxr_instance *inst)
 {
+	int h_ret = u_hashset_create(&inst->path_store);
+	if (h_ret != 0) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to create hashset");
+	}
+
+	size_t new_size = 64;
+	U_ARRAY_REALLOC_OR_FREE(inst->path_array, struct oxr_path *, new_size);
+	inst->path_array_length = new_size;
+	inst->path_num = 1; // Reserve space for XR_NULL_PATH
+
+	return XR_SUCCESS;
+}
+
+void
+oxr_path_destroy(struct oxr_logger *log, struct oxr_instance *inst)
+{
+	if (inst->path_array != NULL) {
+		free(inst->path_array);
+	}
+
+	inst->path_array = NULL;
+	inst->path_num = 0;
+	inst->path_array_length = 0;
+
+	if (inst->path_store == NULL) {
+		return;
+	}
+
 	u_hashset_clear_and_call_for_each(inst->path_store, destroy_callback,
 	                                  inst);
+	u_hashset_destroy(&inst->path_store);
 }
