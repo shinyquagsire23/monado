@@ -246,7 +246,7 @@ init_shm(struct ipc_server *s)
 	// Finally tell the client how many devices we have.
 	s->ism->num_idevs = count;
 
-	sem_init(&s->ism->wait_frame.sem, true, 1);
+	sem_init(&s->ism->wait_frame.sem, true, 0);
 
 	return 0;
 }
