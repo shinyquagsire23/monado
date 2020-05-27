@@ -7,11 +7,6 @@
  * @ingroup oxr_api
  */
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "xrt/xrt_compiler.h"
 
 #include "util/u_debug.h"
@@ -19,13 +14,19 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_two_call.h"
+#include "oxr_extension_support.h"
 
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
-#include "oxr_extension_support.h"
 
 #include "openxr/openxr.h"
 #include "openxr/openxr_reflection.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <inttypes.h>
+
 
 #define MAKE_EXTENSION_PROPERTIES(mixed_case, all_caps)                        \
 	{XR_TYPE_EXTENSION_PROPERTIES, NULL, XR_##all_caps##_EXTENSION_NAME,   \
@@ -275,7 +276,6 @@ oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance,
 	                                             time);
 }
 
-
 XrResult
 oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance,
                                    XrTime time,
@@ -287,6 +287,13 @@ oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance,
 	                                 "xrConvertTimeToTimespecTimeKHR");
 	OXR_VERIFY_EXTENSION(&log, inst, KHR_convert_timespec_time);
 	OXR_VERIFY_ARG_NOT_NULL(&log, timespecTime);
+
+	if (time <= (XrTime)0) {
+		return oxr_error(&log, XR_ERROR_TIME_INVALID,
+		                 "(time == %" PRIi64 ") is not a valid time.",
+		                 time);
+	}
+
 	return oxr_instance_convert_time_to_timespec(&log, inst, time,
 	                                             timespecTime);
 }
