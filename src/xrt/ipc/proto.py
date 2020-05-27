@@ -7,45 +7,39 @@ import argparse
 
 
 class Arg:
-    isAggregate = False
-    name = ''
-    type = ''
-
-    def parseArray(array):
+    @classmethod
+    def parseArray(cls, a):
         ret = []
-        for elm in array:
-            ret.append(Arg(elm))
+        for elm in a:
+            ret.append(cls(elm))
         return ret
 
     def getFuncArgumentIn(self):
         if self.isAggregate:
-            return self.type + " *" + self.name
+            return self.typename + " *" + self.name
         else:
-            return self.type + " " + self.name
+            return self.typename + " " + self.name
 
     def getFuncArgumentOut(self):
-        return self.type + " *out_" + self.name
+        return self.typename + " *out_" + self.name
 
     def getStructField(self):
-        return self.type + " " + self.name 
+        return self.typename + " " + self.name
 
     def dump(self):
-        print("\t\t" + self.type  + ": " + self.name)
+        print("\t\t" + self.typename + ": " + self.name)
 
     def __init__(self, data):
         self.name = data['name']
-        self.type = data['type']
-        if self.type.find("struct ") == 0:
+        self.typename = data['type']
+        self.isAggregate = False
+        if self.typename.find("struct ") == 0:
             self.isAggregate = True
-        if self.type.find("union ") == 0:
+        if self.typename.find("union ") == 0:
             self.isAggregate = True
 
+
 class Call:
-    id = None
-    name = ''
-    inArgs = []
-    outArgs = []
-    outFds = False
 
     def dump(self):
         print("Call " + self.name)
@@ -94,7 +88,12 @@ class Call:
         f.write(")")
 
     def __init__(self, name, data):
+
+        self.id = None
         self.name = name
+        self.inArgs = []
+        self.outArgs = []
+        self.outFds = False
         for key in data:
             if key == 'id':
                 self.id = data[key]
@@ -107,15 +106,16 @@ class Call:
         if not self.id:
             self.id = "IPC_" + name.upper()
 
+
 class Proto:
-    calls = []
+    @classmethod
+    def parse(cls, data):
+        return cls(data)
 
-    def parse(data):
-        return Proto(data)
-
-    def loadAndParse(file):
+    @classmethod
+    def loadAndParse(cls, file):
         with open(file) as infile:
-            return Proto.parse(json.loads(infile.read()))
+            return cls.parse(json.loads(infile.read()))
 
     def dump(self):
         for call in self.calls:
@@ -125,8 +125,8 @@ class Proto:
         self.calls.append(Call(name, data))
 
     def __init__(self, data):
-        for name in data:
-            call = data[name]
+        self.calls = []
+        for name, call in data.items():
             self.addCall(name, call)
 
 
