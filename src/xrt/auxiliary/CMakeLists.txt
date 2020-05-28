@@ -151,6 +151,7 @@ target_link_libraries(aux_util PUBLIC aux-includes)
 target_link_libraries(aux_util PUBLIC aux_math)
 if(XRT_HAVE_JPEG)
 	target_link_libraries(aux_util PRIVATE ${JPEG_LIBRARIES})
+	target_include_directories(aux_util PRIVATE ${JPEG_INCLUDE_DIRS})
 endif()
 # for cJSON
 if(XRT_HAVE_SYSTEM_CJSON)
