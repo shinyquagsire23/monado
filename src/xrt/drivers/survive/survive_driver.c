@@ -228,7 +228,7 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
 	}
 
-	if (!math_vec3_validate(&out_relation->pose.position)) {
+	if (math_vec3_validate(&out_relation->pose.position)) {
 		out_relation->relation_flags |=
 		    XRT_SPACE_RELATION_POSITION_VALID_BIT |
 		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
