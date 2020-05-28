@@ -489,7 +489,21 @@ verify_quad_layer(struct xrt_compositor *xc,
 		return ret;
 	}
 
-	OXR_VERIFY_POSE(log, quad->pose);
+	if (!math_quat_validate((struct xrt_quat *)&quad->pose.orientation)) {
+		XrQuaternionf *q = &quad->pose.orientation;
+		return oxr_error(log, XR_ERROR_POSE_INVALID,
+		                 "(frameEndInfo->layers[%u]->pose.orientation "
+		                 "== {%f %f %f %f}) is not a valid quat",
+		                 layer_index, q->x, q->y, q->z, q->w);
+	}
+
+	if (!math_vec3_validate((struct xrt_vec3 *)&quad->pose.position)) {
+		XrVector3f *p = &quad->pose.position;
+		return oxr_error(log, XR_ERROR_POSE_INVALID,
+		                 "(frameEndInfo->layers[%u]->pose.position "
+		                 "== {%f %f %f}) is not valid",
+		                 layer_index, p->x, p->y, p->z);
+	}
 
 	if (quad->subImage.imageArrayIndex > 0 &&
 	    sc->swapchain->array_size <= quad->subImage.imageArrayIndex) {
@@ -553,6 +567,27 @@ verify_projection_layer(struct xrt_compositor *xc,
 	// Check for valid swapchain states.
 	for (uint32_t i = 0; i < proj->viewCount; i++) {
 		//! @todo More validation?
+		if (!math_quat_validate(
+		        (struct xrt_quat *)&proj->views[i].pose.orientation)) {
+			const XrQuaternionf *q =
+			    &proj->views[i].pose.orientation;
+			return oxr_error(
+			    log, XR_ERROR_POSE_INVALID,
+			    "(frameEndInfo->layers[%u]->views[%i]->pose."
+			    "orientation == {%f %f %f %f}) is not a valid quat",
+			    layer_index, i, q->x, q->y, q->z, q->w);
+		}
+
+		if (!math_vec3_validate(
+		        (struct xrt_vec3 *)&proj->views[i].pose.position)) {
+			const XrVector3f *p = &proj->views[i].pose.position;
+			return oxr_error(
+			    log, XR_ERROR_POSE_INVALID,
+			    "(frameEndInfo->layers[%u]->views[%i]->pose."
+			    "position == {%f %f %f}) is not valid",
+			    layer_index, i, p->x, p->y, p->z);
+		}
+
 		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
 		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
 
