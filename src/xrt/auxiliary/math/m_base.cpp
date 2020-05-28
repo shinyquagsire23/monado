@@ -151,7 +151,17 @@ math_quat_validate(const struct xrt_quat *quat)
 	auto rot = copy(*quat);
 
 	const float FLOAT_EPSILON = Eigen::NumTraits<float>::epsilon();
-	auto norm = rot.squaredNorm();
+	/*
+	 * This was originally squaredNorm, but that could result in a norm
+	 * value that was further from 1.0f then FLOAT_EPSILON (two).
+	 *
+	 * Our tracking system would produce such orientations and looping those
+	 * back into say a quad layer would cause this to fail. And even
+	 * normalizing the quat would not fix this as normalizations uses
+	 * non-squared "length" which does fall into the range and doesn't
+	 * change the elements of the quat.
+	 */
+	auto norm = rot.norm();
 	if (norm > 1.0f + FLOAT_EPSILON || norm < 1.0f - FLOAT_EPSILON) {
 		return false;
 	}
