@@ -317,6 +317,32 @@ print_space(const char *name, struct oxr_space *spc)
 	print_pose(spc->sess, "", &spc->pose);
 }
 
+static XrSpaceLocationFlags
+get_xr_space_location_flags(enum xrt_space_relation_flags relation_flags)
+{
+	// clang-format off
+	bool valid_ori = (relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
+	bool tracked_ori = (relation_flags & XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) != 0;
+	bool valid_pos = (relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0;
+	bool tracked_pos = (relation_flags & XRT_SPACE_RELATION_POSITION_TRACKED_BIT) != 0;
+	// clang-format on
+
+	XrSpaceLocationFlags location_flags = (XrSpaceLocationFlags)0;
+	if (valid_ori) {
+		location_flags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT;
+	}
+	if (tracked_ori) {
+		location_flags |= XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
+	}
+	if (valid_pos) {
+		location_flags |= XR_SPACE_LOCATION_POSITION_VALID_BIT;
+	}
+	if (tracked_pos) {
+		location_flags |= XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+	}
+	return location_flags;
+}
+
 XrResult
 oxr_space_locate(struct oxr_logger *log,
                  struct oxr_space *spc,
@@ -352,7 +378,8 @@ oxr_space_locate(struct oxr_logger *log,
 	safe_copy.xrt = result.pose;
 
 	location->pose = safe_copy.oxr;
-	location->locationFlags = result.relation_flags;
+	location->locationFlags =
+	    get_xr_space_location_flags(result.relation_flags);
 
 #if 0
 	location->linearVelocity = *(XrVector3f *)&result.linear_velocity;
