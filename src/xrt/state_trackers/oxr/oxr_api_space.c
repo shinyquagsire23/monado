@@ -7,10 +7,6 @@
  * @ingroup oxr_api
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "xrt/xrt_compiler.h"
 
 #include "math/m_api.h"
@@ -22,6 +18,11 @@
 
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <inttypes.h>
 
 
 XrResult
@@ -126,6 +127,12 @@ oxr_xrLocateSpace(XrSpace space,
 	OXR_VERIFY_SPACE_NOT_NULL(&log, baseSpace, baseSpc);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, location,
 	                                 XR_TYPE_SPACE_LOCATION);
+
+	if (time <= (XrTime)0) {
+		return oxr_error(&log, XR_ERROR_TIME_INVALID,
+		                 "(time == %" PRIi64 ") is not a valid time.",
+		                 time);
+	}
 
 	return oxr_space_locate(&log, spc, baseSpc, time, location);
 }
