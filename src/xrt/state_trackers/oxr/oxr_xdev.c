@@ -139,7 +139,7 @@ oxr_xdev_get_pose_at(struct oxr_logger *log,
                      enum xrt_input_name name,
                      XrTime at_time,
                      uint64_t *out_pose_timestamp_ns,
-                     struct xrt_pose *out_pose)
+                     struct xrt_space_relation *out_relation)
 {
 	struct xrt_space_relation relation;
 	U_ZERO(&relation);
@@ -147,6 +147,5 @@ oxr_xdev_get_pose_at(struct oxr_logger *log,
 	oxr_xdev_get_relation_at(log, inst, xdev, name, at_time,
 	                         out_pose_timestamp_ns, &relation);
 
-	out_pose->position = relation.pose.position;
-	out_pose->orientation = relation.pose.orientation;
+	*out_relation = relation;
 }

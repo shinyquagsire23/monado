@@ -732,7 +732,7 @@ oxr_xdev_get_pose_at(struct oxr_logger *log,
                      enum xrt_input_name name,
                      XrTime at_time,
                      uint64_t *out_pose_timestamp_ns,
-                     struct xrt_pose *out_pose);
+                     struct xrt_space_relation *out_relation);
 
 /*!
  * Returns the relation of the named input from the device, always ensures

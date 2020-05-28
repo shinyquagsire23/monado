@@ -246,7 +246,7 @@ oxr_space_action_relation(struct oxr_logger *log,
 
 	oxr_xdev_get_pose_at(log, sess->sys->inst, input->xdev,
 	                     input->input->name, at_time, &timestamp,
-	                     &out_relation->pose);
+	                     out_relation);
 
 	if (invert) {
 		math_pose_invert(&out_relation->pose, &out_relation->pose);
