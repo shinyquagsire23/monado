@@ -176,65 +176,59 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 
 	out_relation->relation_flags = 0;
 
-	for (const SurviveSimpleObject *it =
-	         survive_simple_get_first_object(ctx);
-	     it != 0; it = survive_simple_get_next_object(ctx, it)) {
-		// const char *codename = survive_simple_object_name(it);
-
-		if (survive_simple_object_get_type(it) !=
-		        SurviveSimpleObject_OBJECT &&
-		    survive_simple_object_get_type(it) !=
-		        SurviveSimpleObject_HMD) {
-			continue;
-		}
-
-		if (it != survive_object)
-			continue;
-
-		SurvivePose pose;
-
-		uint32_t timecode =
-		    survive_simple_object_get_latest_pose(it, &pose);
-		(void)timecode;
-
-		struct xrt_quat out_rot = {.x = pose.Rot[1],
-		                           .y = pose.Rot[2],
-		                           .z = pose.Rot[3],
-		                           .w = pose.Rot[0]};
-		// printf ("quat %f %f %f %f\n", out_rot.x, out_rot.y,
-		// out_rot.z, out_rot.w);
-
-		/* libsurvive looks down when it should be looking forward, so
-		 * rotate the quat.
-		 * because the HMD quat is the opposite of the in world
-		 * rotation, we rotate down. */
-
-		struct xrt_quat down_rot;
-		down_rot.x = sqrtf(2) / 2.;
-		down_rot.y = 0;
-		down_rot.z = 0;
-		down_rot.w = -sqrtf(2) / 2.;
-
-		math_quat_rotate(&down_rot, &out_rot, &out_rot);
-
-
-		math_quat_normalize(&out_rot);
-
-		out_relation->pose.orientation = out_rot;
-
-		/* because the quat is rotated, y and z axes are switched. */
-		out_relation->pose.position.x = pose.Pos[0];
-		out_relation->pose.position.y = pose.Pos[2];
-		out_relation->pose.position.z = -pose.Pos[1];
-
-
-		out_relation->relation_flags =
-		    (enum xrt_space_relation_flags)(
-		        XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-		        XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) |
-		    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
+	if (survive_simple_object_get_type(survive_object) !=
+	        SurviveSimpleObject_OBJECT &&
+	    survive_simple_object_get_type(survive_object) !=
+	        SurviveSimpleObject_HMD) {
+		return;
 	}
+
+	SurvivePose pose;
+
+	uint32_t timecode =
+	    survive_simple_object_get_latest_pose(survive_object, &pose);
+
+	(void)timecode;
+
+	struct xrt_quat out_rot = {.x = pose.Rot[1],
+	                           .y = pose.Rot[2],
+	                           .z = pose.Rot[3],
+	                           .w = pose.Rot[0]};
+	/*
+	printf("quat %f %f %f %f\n", out_rot.x, out_rot.y, out_rot.z,
+	out_rot.w);
+	*/
+
+	/* libsurvive looks down when it should be looking forward, so
+	 * rotate the quat.
+	 * because the HMD quat is the opposite of the in world
+	 * rotation, we rotate down. */
+
+	struct xrt_quat down_rot;
+	down_rot.x = sqrtf(2) / 2.;
+	down_rot.y = 0;
+	down_rot.z = 0;
+	down_rot.w = -sqrtf(2) / 2.;
+
+	math_quat_rotate(&down_rot, &out_rot, &out_rot);
+
+
+	math_quat_normalize(&out_rot);
+
+	out_relation->pose.orientation = out_rot;
+
+	/* because the quat is rotated, y and z axes are switched. */
+	out_relation->pose.position.x = pose.Pos[0];
+	out_relation->pose.position.y = pose.Pos[2];
+	out_relation->pose.position.z = -pose.Pos[1];
+
+
+	out_relation->relation_flags =
+	    (enum xrt_space_relation_flags)(
+	        XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	        XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) |
+	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
 }
 
 static bool
