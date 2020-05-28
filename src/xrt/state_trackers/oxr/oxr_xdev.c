@@ -95,9 +95,6 @@ ensure_valid_position_and_orientation(struct xrt_space_relation *relation,
 	if (!valid_pos) {
 		relation->pose.position = fallback->position;
 	}
-
-	relation->relation_flags |= XRT_SPACE_RELATION_POSITION_VALID_BIT;
-	relation->relation_flags |= XRT_SPACE_RELATION_ORIENTATION_VALID_BIT;
 }
 
 void
