@@ -286,6 +286,7 @@ compositor_layer_begin(struct xrt_compositor *xc,
 	uint32_t slot_id = 0;
 
 	c->slots[slot_id].env_blend_mode = env_blend_mode;
+	c->slots[slot_id].num_layers = 0;
 }
 
 static void
@@ -310,9 +311,9 @@ compositor_layer_stereo_projection(struct xrt_compositor *xc,
 {
 	struct comp_compositor *c = comp_compositor(xc);
 
-	// Always zero for now.
+	// Without IPC we only have one slot
 	uint32_t slot_id = 0;
-	uint32_t layer_id = 0;
+	uint32_t layer_id = c->slots[slot_id].num_layers;
 
 	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
 	layer->stereo.l.sc = comp_swapchain(l_sc);
@@ -321,6 +322,12 @@ compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	layer->stereo.r.sc = comp_swapchain(r_sc);
 	layer->stereo.r.image_index = r_image_index;
 	layer->stereo.r.array_index = r_array_index;
+
+	layer->flags = layer_flags;
+	layer->flip_y = flip_y;
+	layer->type = COMP_LAYER_STEREO_PROJECTION;
+
+	c->slots[slot_id].num_layers++;
 }
 
 static void
@@ -338,7 +345,26 @@ compositor_layer_quad(struct xrt_compositor *xc,
                       struct xrt_vec2 *size,
                       bool flip_y)
 {
-	// Noop!
+	struct comp_compositor *c = comp_compositor(xc);
+
+	// Without IPC we only have one slot
+	uint32_t slot_id = 0;
+	uint32_t layer_id = c->slots[slot_id].num_layers;
+
+	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
+	layer->quad.sc = comp_swapchain(sc);
+	layer->quad.visibility = visibility;
+	layer->quad.image_index = image_index;
+	layer->quad.rect = *rect;
+	layer->quad.array_index = array_index;
+	layer->quad.pose = *pose;
+	layer->quad.size = *size;
+
+	layer->flags = layer_flags;
+	layer->flip_y = flip_y;
+	layer->type = COMP_LAYER_QUAD;
+
+	c->slots[slot_id].num_layers++;
 }
 
 static void
@@ -348,23 +374,36 @@ compositor_layer_commit(struct xrt_compositor *xc)
 
 	COMP_SPEW(c, "LAYER_COMMIT");
 
-	struct comp_swapchain_image *right;
-	struct comp_swapchain_image *left;
-
 	// Always zero for now.
 	uint32_t slot_id = 0;
-	uint32_t layer_id = 0;
-
-	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
-	struct comp_layer_stereo *stereo = &layer->stereo;
-
-	left = &stereo->l.sc->images[stereo->l.image_index];
-	right = &stereo->l.sc->images[stereo->r.image_index];
+	uint32_t num_layers = c->slots[slot_id].num_layers;
 
 	comp_renderer_destroy_layers(c->r);
-	comp_renderer_allocate_layers(c->r, 1);
+	comp_renderer_allocate_layers(c->r, num_layers);
 
-	comp_renderer_set_projection_layer(c->r, left, right, layer->flip_y, 0);
+	for (uint32_t i = 0; i < num_layers; i++) {
+		struct comp_layer *layer = &c->slots[slot_id].layers[i];
+		switch (layer->type) {
+		case COMP_LAYER_QUAD: {
+			struct comp_layer_quad *quad = &layer->quad;
+			struct comp_swapchain_image *image;
+			image = &quad->sc->images[quad->image_index];
+			comp_renderer_set_quad_layer(c->r, image, &quad->pose,
+			                             &quad->size, layer->flip_y,
+			                             i);
+		} break;
+		case COMP_LAYER_STEREO_PROJECTION: {
+			struct comp_layer_stereo *stereo = &layer->stereo;
+			struct comp_swapchain_image *right;
+			struct comp_swapchain_image *left;
+			left = &stereo->l.sc->images[stereo->l.image_index];
+			right = &stereo->l.sc->images[stereo->r.image_index];
+
+			comp_renderer_set_projection_layer(c->r, left, right,
+			                                   layer->flip_y, i);
+		} break;
+		}
+	}
 
 	comp_renderer_draw(c->r);
 

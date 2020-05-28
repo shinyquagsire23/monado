@@ -73,13 +73,19 @@ enum comp_layer_type
 };
 
 /*!
- * A stereo projection layer.
+ * A quad layer.
  *
  * @ingroup comp_main
  */
 struct comp_layer_quad
 {
 	struct comp_swapchain *sc;
+	enum xrt_layer_eye_visibility visibility;
+	uint32_t image_index;
+	struct xrt_rect rect;
+	uint32_t array_index;
+	struct xrt_pose pose;
+	struct xrt_vec2 size;
 };
 
 /*!
@@ -106,6 +112,7 @@ struct comp_layer
 {
 	int64_t timestamp;
 	enum xrt_layer_composition_flags flags;
+	enum comp_layer_type type;
 	bool flip_y;
 	union {
 		struct comp_layer_quad quad;
@@ -123,6 +130,8 @@ struct comp_layer_slot
 	enum xrt_blend_mode env_blend_mode;
 
 	struct comp_layer layers[COMP_MAX_LAYERS];
+
+	uint32_t num_layers;
 };
 
 /*!
