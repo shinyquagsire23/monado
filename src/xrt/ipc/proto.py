@@ -39,6 +39,32 @@ class Arg:
             self.isAggregate = True
 
 
+def _write_common(f, start, args, indent):
+    "Write something like a declaration or call."
+    f.write("\n" + indent)
+    f.write(start)
+    # For parameter indenting
+    delim_pad = ",\n" + indent + (" " * len(start))
+    f.write(delim_pad.join(args))
+    f.write(")")
+
+
+def write_decl(f, return_type, function_name, args, indent=""):
+    f.write("\n" + indent)
+    f.write(return_type)
+    _write_common(f,
+                  "{}(".format(function_name),
+                  args,
+                  indent)
+
+
+def write_invocation(f, return_val, function_name, args, indent=""):
+    _write_common(f,
+                  "{} = {}(".format(return_val, function_name),
+                  args,
+                  indent)
+
+
 class Call:
 
     def dump(self):
@@ -53,25 +79,14 @@ class Call:
                 arg.dump()
 
     def writeCallDecl(self, f):
-        f.write("\nipc_result_t\n")
-        start = "ipc_call_" + self.name + "("
-        delim_pad = ",\n" + (" " * len(start))
-
-        f.write(start)
         args = ["struct ipc_connection *ipc_c"]
         args.extend(arg.getFuncArgumentIn() for arg in self.inArgs)
         args.extend(arg.getFuncArgumentOut() for arg in self.outArgs)
         if self.outFds:
             args.extend(("int *fds", "size_t num_fds"))
-        f.write(delim_pad.join(args))
-        f.write(")")
+        write_decl(f, 'ipc_result_t', 'ipc_call_' + self.name, args)
 
     def writeHandleDecl(self, f):
-        f.write("\nipc_result_t\n")
-        start = "ipc_handle_" + self.name + "("
-        delim_pad = ",\n" + (" " * len(start))
-
-        f.write(start)
         args = ["volatile struct ipc_client_state *cs"]
         args.extend(arg.getFuncArgumentIn() for arg in self.inArgs)
         args.extend(arg.getFuncArgumentOut() for arg in self.outArgs)
@@ -80,8 +95,7 @@ class Call:
                 "size_t max_num_fds",
                 "int *out_fds",
                 "size_t *out_num_fds"))
-        f.write(delim_pad.join(args))
-        f.write(")")
+        write_decl(f, 'ipc_result_t', 'ipc_handle_' + self.name, args)
 
     def __init__(self, name, data):
 
@@ -244,14 +258,13 @@ def doClientC(file, p):
         else:
             f.write("\tstruct ipc_result_reply _reply = {0};\n")
 
-        f.write('''
-\tipc_result_t ret = ipc_client_send_and_get_reply''')
+        func = 'ipc_client_send_and_get_reply'
+        args = ['ipc_c', '&_msg', 'sizeof(_msg)', '&_reply', 'sizeof(_reply)']
         if call.outFds:
-            f.write('''_fds(
-\t    ipc_c, &_msg, sizeof(_msg), &_reply, sizeof(_reply), fds, num_fds);''')
-        else:
-            f.write('''(
-\t    ipc_c, &_msg, sizeof(_msg), &_reply, sizeof(_reply));''')
+            func += '_fds'
+            args.extend(('fds', 'num_fds'))
+        write_invocation(f, 'ipc_result_t ret', func, args, indent="\t")
+        f.write(';')
         f.write('''
 \tif (ret != IPC_SUCCESS) {
 \t\treturn ret;
@@ -320,9 +333,8 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
             f.write("\t\tint fds[MAX_FDS] = {0};\n")
             f.write("\t\tsize_t num_fds = {0};\n")
         f.write("\n")
-        start = "reply.result = ipc_handle_" + call.name + "("
-        delim_pad = ",\n\t\t" + " " * len(start)
-        f.write("\t\t" + start)
+
+        # Write call to ipc_handle_CALLNAME
         args = ["cs"]
         for arg in call.inArgs:
             args.append(("&msg->" + arg.name)
@@ -333,8 +345,8 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
             args.extend(("MAX_FDS",
                          "fds",
                          "&num_fds",))
-        f.write(delim_pad.join(args))
-        f.write(");\n")
+        write_invocation(f, 'reply.result', 'ipc_handle_' + call.name, args, indent="\t\t")
+        f.write(";\n")
 
         if call.outFds:
             f.write(
