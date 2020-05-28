@@ -114,6 +114,36 @@ convert_create_flags(XrSwapchainCreateFlags xr_flags)
 	return flags;
 }
 
+static enum xrt_swapchain_usage_bits
+convert_usage_bits(XrSwapchainUsageFlags xr_usage)
+{
+	enum xrt_swapchain_usage_bits usage = 0;
+
+	if ((xr_usage & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) != 0) {
+		usage |= XRT_SWAPCHAIN_USAGE_COLOR;
+	}
+	if ((xr_usage & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) {
+		usage |= XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL;
+	}
+	if ((xr_usage & XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT) != 0) {
+		usage |= XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS;
+	}
+	if ((xr_usage & XR_SWAPCHAIN_USAGE_TRANSFER_SRC_BIT) != 0) {
+		usage |= XRT_SWAPCHAIN_USAGE_TRANSFER_SRC;
+	}
+	if ((xr_usage & XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT) != 0) {
+		usage |= XRT_SWAPCHAIN_USAGE_TRANSFER_DST;
+	}
+	if ((xr_usage & XR_SWAPCHAIN_USAGE_SAMPLED_BIT) != 0) {
+		usage |= XRT_SWAPCHAIN_USAGE_SAMPLED;
+	}
+	if ((xr_usage & XR_SWAPCHAIN_USAGE_MUTABLE_FORMAT_BIT) != 0) {
+		usage |= XRT_SWAPCHAIN_USAGE_MUTABLE_FORMAT;
+	}
+
+	return usage;
+}
+
 XrResult
 oxr_create_swapchain(struct oxr_logger *log,
                      struct oxr_session *sess,
@@ -122,10 +152,9 @@ oxr_create_swapchain(struct oxr_logger *log,
 {
 	struct xrt_swapchain *xsc = xrt_comp_create_swapchain(
 	    sess->compositor, convert_create_flags(createInfo->createFlags),
-	    (enum xrt_swapchain_usage_bits)createInfo->usageFlags,
-	    createInfo->format, createInfo->sampleCount, createInfo->width,
-	    createInfo->height, createInfo->faceCount, createInfo->arraySize,
-	    createInfo->mipCount);
+	    convert_usage_bits(createInfo->usageFlags), createInfo->format,
+	    createInfo->sampleCount, createInfo->width, createInfo->height,
+	    createInfo->faceCount, createInfo->arraySize, createInfo->mipCount);
 
 	if (xsc == NULL) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
