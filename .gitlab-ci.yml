@@ -69,7 +69,7 @@ stages:
     # no need to pull the whole tree for rebuilding the image - is this still needed?
     GIT_STRATEGY: none
     # Each most-derived container prep job has a script to set up stuff for it.
-    FDO_DISTRIBUTION_EXEC: "bash .gitlab-ci/${CI_JOB_NAME}.sh"
+    FDO_DISTRIBUTION_EXEC: "bash .gitlab-ci/$(echo ${CI_JOB_NAME} | sed 's/:/_/g').sh"
 
 # Debian Buster (x64 + i386)
 debian:container_prep:
