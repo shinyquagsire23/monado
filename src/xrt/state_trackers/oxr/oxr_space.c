@@ -248,12 +248,6 @@ oxr_space_action_relation(struct oxr_logger *log,
 	                     input->input->name, at_time, &timestamp,
 	                     &out_relation->pose);
 
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
-
 	if (invert) {
 		math_pose_invert(&out_relation->pose, &out_relation->pose);
 	}
