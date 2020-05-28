@@ -38,11 +38,10 @@ class Arg:
         """Construct an argument."""
         self.name = data['name']
         self.typename = data['type']
-        self.is_aggregate = False
-        if self.typename.find("struct ") == 0:
-            self.is_aggregate = True
-        if self.typename.find("union ") == 0:
-            self.is_aggregate = True
+        self.is_aggregate = (
+            self.typename.startswith("struct ")
+            or
+            self.typename.startswith("union "))
 
 
 def write_with_wrapped_args(f, start, args, indent):
