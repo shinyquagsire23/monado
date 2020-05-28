@@ -174,7 +174,7 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 	//! @todo adjust for latency here
 	*out_relation_timestamp_ns = now;
 
-	out_relation->relation_flags = 0;
+	out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 
 	if (survive_simple_object_get_type(survive_object) !=
 	        SurviveSimpleObject_OBJECT &&
@@ -222,13 +222,17 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 	out_relation->pose.position.y = pose.Pos[2];
 	out_relation->pose.position.z = -pose.Pos[1];
 
+	if (math_quat_validate(&out_rot)) {
+		out_relation->relation_flags |=
+		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
+	}
 
-	out_relation->relation_flags =
-	    (enum xrt_space_relation_flags)(
-	        XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	        XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) |
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
+	if (!math_vec3_validate(&out_relation->pose.position)) {
+		out_relation->relation_flags |=
+		    XRT_SPACE_RELATION_POSITION_VALID_BIT |
+		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
+	}
 }
 
 static bool
