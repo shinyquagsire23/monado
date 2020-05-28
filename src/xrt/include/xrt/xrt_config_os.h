@@ -29,6 +29,10 @@
 #define XRT_OS_WAS_AUTODETECTED
 #endif
 
+#if defined(_WIN32)
+#define XRT_OS_WINDOWS
+#define XRT_OS_WAS_AUTODETECTED
+#endif
 
 
 #ifndef XRT_OS_WAS_AUTODETECTED

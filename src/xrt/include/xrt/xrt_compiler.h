@@ -58,6 +58,8 @@
  */
 #if defined(__GNUC__)
 #define XRT_MAYBE_UNUSED __attribute__((unused))
+#elif defined(_MSC_VER) && defined(__cplusplus)
+#define XRT_MAYBE_UNUSED [[maybe_unused]]
 #else
 #define XRT_MAYBE_UNUSED
 #endif
@@ -68,6 +70,8 @@
  */
 #if defined(__GNUC__)
 #define XRT_NO_INLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define XRT_NO_INLINE __declspec(noinline)
 #else
 #define XRT_NO_INLINE
 #endif
@@ -125,6 +129,14 @@ xrt_atomic_s32_cmpxchg(xrt_atomic_s32_t *p, int32_t old_, int32_t new_)
 #error "compiler not supported"
 #endif
 }
+
+#ifdef _MSC_VER
+#ifdef XRT_64_BIT
+typedef int64_t ssize_t;
+#else
+typedef int32_t ssize_t;
+#endif
+#endif
 
 /*!
  * Get the holder from a pointer to a field.
