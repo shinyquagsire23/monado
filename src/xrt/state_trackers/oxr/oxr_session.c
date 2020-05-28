@@ -210,9 +210,6 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 	                         &timestamp, &relation);
 
 	// clang-format off
-	// Function above always makes the pose valid.
-	assert((relation.relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0);
-	assert((relation.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0);
 	*pose = relation.pose;
 
 	bool valid_vel = (relation.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0;

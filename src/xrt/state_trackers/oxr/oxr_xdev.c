@@ -147,12 +147,6 @@ oxr_xdev_get_pose_at(struct oxr_logger *log,
 	oxr_xdev_get_relation_at(log, inst, xdev, name, at_time,
 	                         out_pose_timestamp_ns, &relation);
 
-	// Function above makes them valid.
-	// clang-format off
-	assert((relation.relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0);
-	assert((relation.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0);
-	// clang-format on
-
 	out_pose->position = relation.pose.position;
 	out_pose->orientation = relation.pose.orientation;
 }
