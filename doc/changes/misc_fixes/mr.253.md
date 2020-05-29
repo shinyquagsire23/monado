@@ -1,1 +1,1 @@
-Stop changelog snippets from showing up in 'Related Pages'
+doc: Stop changelog snippets from showing up in 'Related Pages'

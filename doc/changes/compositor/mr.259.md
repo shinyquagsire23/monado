@@ -1,1 +1,1 @@
-Shorten Vulkan initializers.
+main: Shorten Vulkan initializers.

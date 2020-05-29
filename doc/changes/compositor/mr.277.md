@@ -1,1 +1,1 @@
-Improve synchronization and remove redundant vkDeviceWaitIdle calls.
+main: Improve synchronization and remove redundant vkDeviceWaitIdle calls.
