@@ -7,15 +7,16 @@
  * @ingroup comp_main
  */
 
-#include "comp_layer_renderer.h"
-
-#include <stdio.h>
-
 #include "util/u_misc.h"
 #include "math/m_api.h"
 
+#include "comp_layer_renderer.h"
+
 #include "shaders/quad.frag.h"
 #include "shaders/quad.vert.h"
+
+#include <stdio.h>
+#include <math.h>
 
 
 struct comp_layer_vertex
