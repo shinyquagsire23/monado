@@ -31,6 +31,11 @@ oxr_swapchain_acquire_image(struct oxr_logger *log,
 		                 " all images have been acquired");
 	}
 
+	if (sc->is_static && (sc->released.yes || sc->waited.yes)) {
+		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID,
+		                 "Can only acquire once on a static swapchain");
+	}
+
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 	if (!xsc->acquire_image(xsc, &index)) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
@@ -198,6 +203,8 @@ oxr_create_swapchain(struct oxr_logger *log,
 	sc->acquire_image = oxr_swapchain_acquire_image;
 	sc->wait_image = oxr_swapchain_wait_image;
 	sc->release_image = oxr_swapchain_release_image;
+	sc->is_static = (createInfo->createFlags &
+	                 XR_SWAPCHAIN_CREATE_STATIC_IMAGE_BIT) != 0;
 
 	*out_swapchain = sc;
 

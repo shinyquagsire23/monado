@@ -1332,6 +1332,8 @@ struct oxr_swapchain
 		int index;
 	} released;
 
+	// Is this a static swapchain, needed for acquire semantics.
+	bool is_static;
 
 
 	XrResult (*destroy)(struct oxr_logger *, struct oxr_swapchain *);
