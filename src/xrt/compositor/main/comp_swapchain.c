@@ -7,12 +7,13 @@
  * @ingroup comp_main
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "util/u_misc.h"
 
 #include "main/comp_compositor.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 
 static void
@@ -243,6 +244,11 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 	COMP_DEBUG(c, "CREATE %p %dx%d", (void *)sc, width, height);
 
+	// Make sure the fds are invalid.
+	for (uint32_t i = 0; i < ARRAY_SIZE(sc->base.images); i++) {
+		sc->base.images[i].fd = -1;
+	}
+
 	for (uint32_t i = 0; i < num_images; i++) {
 		ret =
 		    create_image_fd(c, bits, format, width, height, array_size,
@@ -359,6 +365,15 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc)
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
 		comp_swapchain_image_cleanup(vk, sc->base.base.array_size,
 		                             &sc->images[i]);
+	}
+
+	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
+		if (sc->base.images[i].fd < 0) {
+			continue;
+		}
+
+		close(sc->base.images[i].fd);
+		sc->base.images[i].fd = -1;
 	}
 
 	free(sc);
