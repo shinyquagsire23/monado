@@ -83,10 +83,25 @@ oxr_xrGetReferenceSpaceBoundsRect(XrSession session,
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetReferenceSpaceBoundsRect");
+	OXR_VERIFY_ARG_NOT_NULL(&log, bounds);
 
-	//! @todo Implement
-	return oxr_error(&log, XR_ERROR_FUNCTION_UNSUPPORTED,
-	                 " not implemented");
+
+	switch (referenceSpaceType) {
+	case XR_REFERENCE_SPACE_TYPE_VIEW:
+	case XR_REFERENCE_SPACE_TYPE_LOCAL:
+	case XR_REFERENCE_SPACE_TYPE_STAGE: break;
+	default:
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(referenceSpaceType == 0x%08x) is not a "
+		                 "valid XrReferenceSpaceType",
+		                 referenceSpaceType);
+	}
+
+	bounds->width = 0.0;
+	bounds->height = 0.0;
+
+	// Silently return that the bounds aren't available.
+	return XR_SPACE_BOUNDS_UNAVAILABLE;
 }
 
 XrResult
