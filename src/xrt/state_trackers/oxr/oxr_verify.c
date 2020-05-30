@@ -110,12 +110,12 @@ oxr_verify_localized_name(struct oxr_logger *log,
 	}
 
 	if (string[0] == '\0') {
-		return oxr_error(log, XR_ERROR_NAME_INVALID,
+		return oxr_error(log, XR_ERROR_LOCALIZED_NAME_INVALID,
 		                 "(%s) can not be empty", name);
 	}
 
 	if (!contains_zero(string, array_size)) {
-		return oxr_error(log, XR_ERROR_NAME_INVALID,
+		return oxr_error(log, XR_ERROR_LOCALIZED_NAME_INVALID,
 		                 "(%s) must include zero termination '\\0'.",
 		                 name);
 	}
