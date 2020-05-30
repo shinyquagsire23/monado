@@ -328,7 +328,7 @@ subaction_path_no_dups(struct oxr_logger *log,
 		size_t length = 0;
 
 		oxr_path_get_string(log, inst, path, &str, &length);
-		return oxr_error(log, XR_ERROR_PATH_INVALID,
+		return oxr_error(log, XR_ERROR_PATH_UNSUPPORTED,
 		                 "(%s[%u] == '%s') path is not a "
 		                 "valid subaction path.",
 		                 variable, index, str);
@@ -340,7 +340,7 @@ subaction_path_no_dups(struct oxr_logger *log,
 
 		oxr_path_get_string(log, inst, path, &str, &length);
 
-		return oxr_error(log, XR_ERROR_PATH_INVALID,
+		return oxr_error(log, XR_ERROR_PATH_UNSUPPORTED,
 		                 "(%s[%u] == '%s') duplicate paths", variable,
 		                 index, str);
 	}
