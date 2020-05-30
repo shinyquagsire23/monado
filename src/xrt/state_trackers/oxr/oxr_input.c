@@ -89,6 +89,22 @@ oxr_action_set_destroy_cb(struct oxr_logger *log, struct oxr_handle_base *hb)
 	//! @todo Move to oxr_objects.h
 	struct oxr_action_set *act_set = (struct oxr_action_set *)hb;
 
+	if (act_set->name_item != NULL) {
+		u_hashset_erase_item(act_set->inst->action_sets.name_store,
+		                     act_set->name_item);
+		free(act_set->name_item);
+		act_set->name_item = NULL;
+	}
+	if (act_set->loc_item != NULL) {
+		u_hashset_erase_item(act_set->inst->action_sets.loc_store,
+		                     act_set->loc_item);
+		free(act_set->loc_item);
+		act_set->loc_item = NULL;
+	}
+
+	u_hashset_destroy(&act_set->actions.name_store);
+	u_hashset_destroy(&act_set->actions.loc_store);
+
 	free(act_set);
 
 	return XR_SUCCESS;
@@ -102,17 +118,39 @@ oxr_action_set_create(struct oxr_logger *log,
 {
 	// Mod music for all!
 	static uint32_t key_gen = 1;
+	int h_ret;
 
 	//! @todo Implement more fully.
 	struct oxr_action_set *act_set = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, act_set, OXR_XR_DEBUG_ACTIONSET,
 	                              oxr_action_set_destroy_cb, &inst->handle);
 
+	h_ret = u_hashset_create(&act_set->actions.name_store);
+	if (h_ret != 0) {
+		oxr_handle_destroy(log, &act_set->handle);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to create name_store hashset");
+	}
+
+	h_ret = u_hashset_create(&act_set->actions.loc_store);
+	if (h_ret != 0) {
+		oxr_handle_destroy(log, &act_set->handle);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to create loc_store hashset");
+	}
+
 	act_set->key = key_gen++;
 
 	act_set->inst = inst;
 	strncpy(act_set->name, createInfo->actionSetName,
 	        sizeof(act_set->name));
+
+	u_hashset_create_and_insert_str_c(inst->action_sets.name_store,
+	                                  createInfo->actionSetName,
+	                                  &act_set->name_item);
+	u_hashset_create_and_insert_str_c(inst->action_sets.loc_store,
+	                                  createInfo->localizedActionSetName,
+	                                  &act_set->loc_item);
 
 	*out_act_set = act_set;
 
@@ -131,6 +169,19 @@ oxr_action_destroy_cb(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	//! @todo Move to oxr_objects.h
 	struct oxr_action *act = (struct oxr_action *)hb;
+
+	if (act->name_item != NULL) {
+		u_hashset_erase_item(act->act_set->actions.name_store,
+		                     act->name_item);
+		free(act->name_item);
+		act->name_item = NULL;
+	}
+	if (act->loc_item != NULL) {
+		u_hashset_erase_item(act->act_set->actions.loc_store,
+		                     act->loc_item);
+		free(act->loc_item);
+		act->loc_item = NULL;
+	}
 
 	free(act);
 
@@ -162,6 +213,13 @@ oxr_action_create(struct oxr_logger *log,
 	act->action_type = createInfo->actionType;
 
 	strncpy(act->name, createInfo->actionName, sizeof(act->name));
+
+	u_hashset_create_and_insert_str_c(act_set->actions.name_store,
+	                                  createInfo->actionName,
+	                                  &act->name_item);
+	u_hashset_create_and_insert_str_c(act_set->actions.loc_store,
+	                                  createInfo->localizedActionName,
+	                                  &act->loc_item);
 
 	*out_act = act;
 

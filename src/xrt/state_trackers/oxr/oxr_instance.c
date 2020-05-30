@@ -63,6 +63,9 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 
 	oxr_path_destroy(log, inst);
 
+	u_hashset_destroy(&inst->action_sets.name_store);
+	u_hashset_destroy(&inst->action_sets.loc_store);
+
 	for (size_t i = 0; i < inst->system.num_xdevs; i++) {
 		oxr_xdev_destroy(&inst->system.xdevs[i]);
 	}
@@ -102,7 +105,7 @@ oxr_instance_create(struct oxr_logger *log,
 {
 	struct oxr_instance *inst = NULL;
 	struct xrt_device *xdevs[NUM_XDEVS] = {0};
-	int xinst_ret, m_ret;
+	int xinst_ret, m_ret, h_ret;
 	XrResult ret;
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
@@ -128,6 +131,21 @@ oxr_instance_create(struct oxr_logger *log,
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
+
+	h_ret = u_hashset_create(&inst->action_sets.name_store);
+	if (h_ret != 0) {
+		oxr_instance_destroy(log, &inst->handle);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to create name_store hashset");
+	}
+
+	h_ret = u_hashset_create(&inst->action_sets.loc_store);
+	if (h_ret != 0) {
+		oxr_instance_destroy(log, &inst->handle);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to create loc_store hashset");
+	}
+
 
 	// Cache certain often looked up paths.
 	// clang-format off

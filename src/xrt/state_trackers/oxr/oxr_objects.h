@@ -971,6 +971,12 @@ struct oxr_instance
 
 	struct time_state *timekeeping;
 
+	struct
+	{
+		struct u_hashset *name_store;
+		struct u_hashset *loc_store;
+	} action_sets;
+
 	//! Path store, for looking up paths.
 	struct u_hashset *path_store;
 	//! Mapping from ID to path.
@@ -1392,6 +1398,18 @@ struct oxr_action_set
 
 	//! Unique key for the session hashmap.
 	uint32_t key;
+
+	//! The item in the name hashset.
+	struct u_hashset_item *name_item;
+
+	//! The item in the localized hashset.
+	struct u_hashset_item *loc_item;
+
+	struct
+	{
+		struct u_hashset *name_store;
+		struct u_hashset *loc_store;
+	} actions;
 };
 
 /*!
@@ -1418,6 +1436,12 @@ struct oxr_action
 
 	//! Which sub action paths that this action was created with.
 	struct oxr_sub_paths sub_paths;
+
+	//! The item in the name hashset.
+	struct u_hashset_item *name_item;
+
+	//! The item in the localized hashset.
+	struct u_hashset_item *loc_item;
 };
 
 /*!

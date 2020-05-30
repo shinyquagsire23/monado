@@ -151,7 +151,9 @@ oxr_xrCreateActionSet(XrInstance instance,
 {
 	struct oxr_action_set *act_set = NULL;
 	struct oxr_instance *inst = NULL;
+	struct u_hashset_item *d = NULL;
 	struct oxr_logger log;
+	int h_ret;
 	XrResult ret;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrCreateActionSet");
@@ -161,6 +163,34 @@ oxr_xrCreateActionSet(XrInstance instance,
 	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(
 	    &log, createInfo->actionSetName);
 	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionSetName);
+
+
+	/*
+	 * Dup checks.
+	 */
+
+	h_ret = u_hashset_find_c_str(inst->action_sets.name_store,
+	                             createInfo->actionSetName, &d);
+	if (h_ret >= 0) {
+		return oxr_error(
+		    &log, XR_ERROR_NAME_DUPLICATED,
+		    "(createInfo->actionSetName == '%s') is duplicated",
+		    createInfo->actionSetName);
+	}
+
+	h_ret = u_hashset_find_c_str(inst->action_sets.loc_store,
+	                             createInfo->localizedActionSetName, &d);
+	if (h_ret >= 0) {
+		return oxr_error(&log, XR_ERROR_LOCALIZED_NAME_DUPLICATED,
+		                 "(createInfo->localizedActionSetName == '%s') "
+		                 "is duplicated",
+		                 createInfo->localizedActionSetName);
+	}
+
+
+	/*
+	 * All ok.
+	 */
 
 	ret = oxr_action_set_create(&log, inst, createInfo, &act_set);
 	if (ret != XR_SUCCESS) {
@@ -196,9 +226,11 @@ oxr_xrCreateAction(XrActionSet actionSet,
                    XrAction *action)
 {
 	struct oxr_action_set *act_set;
+	struct u_hashset_item *d = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_logger log;
 	XrResult ret;
+	int h_ret;
 
 	OXR_VERIFY_ACTIONSET_AND_INIT_LOG(&log, actionSet, act_set,
 	                                  "xrCreateAction");
@@ -217,6 +249,34 @@ oxr_xrCreateAction(XrActionSet actionSet,
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
+
+
+	/*
+	 * Dup checks.
+	 */
+
+	h_ret = u_hashset_find_c_str(act_set->actions.name_store,
+	                             createInfo->actionName, &d);
+	if (h_ret >= 0) {
+		return oxr_error(
+		    &log, XR_ERROR_NAME_DUPLICATED,
+		    "(createInfo->actionName == '%s') is duplicated",
+		    createInfo->actionName);
+	}
+
+	h_ret = u_hashset_find_c_str(act_set->actions.loc_store,
+	                             createInfo->localizedActionName, &d);
+	if (h_ret >= 0) {
+		return oxr_error(&log, XR_ERROR_LOCALIZED_NAME_DUPLICATED,
+		                 "(createInfo->localizedActionName == '%s') "
+		                 "is duplicated",
+		                 createInfo->localizedActionName);
+	}
+
+
+	/*
+	 * All ok.
+	 */
 
 	ret = oxr_action_create(&log, act_set, createInfo, &act);
 	if (ret != XR_SUCCESS) {
