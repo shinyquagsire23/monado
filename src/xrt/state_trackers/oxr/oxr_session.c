@@ -36,15 +36,9 @@ DEBUG_GET_ONCE_NUM_OPTION(ipd, "OXR_DEBUG_IPD_MM", 63)
 DEBUG_GET_ONCE_NUM_OPTION(prediction_ms, "OXR_DEBUG_PREDICTION_MS", 11)
 
 static bool
-is_running(XrSessionState state)
+is_running(struct oxr_session *sess)
 {
-	switch (state) {
-	case XR_SESSION_STATE_SYNCHRONIZED: return true;
-	case XR_SESSION_STATE_VISIBLE: return true;
-	case XR_SESSION_STATE_FOCUSED: return true;
-	case XR_SESSION_STATE_STOPPING: return true;
-	default: return false;
-	}
+	return sess->has_begun;
 }
 
 static bool
@@ -55,6 +49,26 @@ should_render(XrSessionState state)
 	case XR_SESSION_STATE_FOCUSED: return true;
 	case XR_SESSION_STATE_STOPPING: return true;
 	default: return false;
+	}
+}
+
+XRT_MAYBE_UNUSED static const char *
+to_string(XrSessionState state)
+{
+	switch (state) {
+	case XR_SESSION_STATE_UNKNOWN: return "XR_SESSION_STATE_UNKNOWN";
+	case XR_SESSION_STATE_IDLE: return "XR_SESSION_STATE_IDLE";
+	case XR_SESSION_STATE_READY: return "XR_SESSION_STATE_READY";
+	case XR_SESSION_STATE_SYNCHRONIZED:
+		return "XR_SESSION_STATE_SYNCHRONIZED";
+	case XR_SESSION_STATE_VISIBLE: return "XR_SESSION_STATE_VISIBLE";
+	case XR_SESSION_STATE_FOCUSED: return "XR_SESSION_STATE_FOCUSED";
+	case XR_SESSION_STATE_STOPPING: return "XR_SESSION_STATE_STOPPING";
+	case XR_SESSION_STATE_LOSS_PENDING:
+		return "XR_SESSION_STATE_LOSS_PENDING";
+	case XR_SESSION_STATE_EXITING: return "XR_SESSION_STATE_EXITING";
+	case XR_SESSION_STATE_MAX_ENUM: return "XR_SESSION_STATE_MAX_ENUM";
+	default: return "";
 	}
 }
 
@@ -96,10 +110,11 @@ oxr_session_begin(struct oxr_logger *log,
                   struct oxr_session *sess,
                   const XrSessionBeginInfo *beginInfo)
 {
-	if (is_running(sess->state)) {
+	if (is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_RUNNING,
 		                 " session is already running");
 	}
+
 	struct xrt_compositor *xc = sess->compositor;
 	if (xc != NULL) {
 		XrViewConfigurationType view_type =
@@ -117,9 +132,7 @@ oxr_session_begin(struct oxr_logger *log,
 		                               ->primaryViewConfigurationType);
 	}
 
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED);
+	sess->has_begun = true;
 
 	return oxr_session_success_result(sess);
 }
@@ -129,7 +142,7 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 {
 	struct xrt_compositor *xc = sess->compositor;
 
-	if (!is_running(sess->state)) {
+	if (!is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
 		                 " session is not running");
 	}
@@ -150,19 +163,23 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
 	if (sess->exiting) {
 		oxr_session_change_state(log, sess, XR_SESSION_STATE_EXITING);
-	} else {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
 	}
+
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
+
+	sess->has_begun = false;
+
 	return oxr_session_success_result(sess);
 }
 
 XrResult
 oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
 {
-	if (!is_running(sess->state)) {
+	if (!is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
 		                 " session is not running");
 	}
+
 	if (sess->state == XR_SESSION_STATE_FOCUSED) {
 		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
 	}
@@ -170,6 +187,13 @@ oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
 		oxr_session_change_state(log, sess,
 		                         XR_SESSION_STATE_SYNCHRONIZED);
 	}
+	if (!sess->has_waited_once) {
+		oxr_session_change_state(log, sess,
+		                         XR_SESSION_STATE_SYNCHRONIZED);
+		// Fake the synchronization.
+		sess->has_waited_once = true;
+	}
+
 	//! @todo start fading out the app.
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_STOPPING);
 	sess->exiting = true;
@@ -182,7 +206,6 @@ oxr_session_poll(struct oxr_session *sess)
 	struct xrt_compositor *xc = sess->compositor;
 	(void)xc; // TODO: dispatch to compositor
 }
-
 
 XrResult
 oxr_session_get_view_pose_at(struct oxr_logger *log,
@@ -374,7 +397,7 @@ oxr_session_frame_wait(struct oxr_logger *log,
                        struct oxr_session *sess,
                        XrFrameState *frameState)
 {
-	if (!is_running(sess->state)) {
+	if (!is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
 		                 " session is not running");
 	}
@@ -413,13 +436,21 @@ oxr_session_frame_wait(struct oxr_logger *log,
 		    frameState->predictedDisplayTime);
 	}
 
+	if (!sess->has_waited_once) {
+		oxr_session_change_state(log, sess,
+		                         XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED);
+		sess->has_waited_once = true;
+	}
+
 	return oxr_session_success_result(sess);
 }
 
 XrResult
 oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 {
-	if (!is_running(sess->state)) {
+	if (!is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
 		                 " session is not running");
 	}
@@ -686,7 +717,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 * Session state and call order.
 	 */
 
-	if (!is_running(sess->state)) {
+	if (!is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
 		                 " session is not running");
 	}
@@ -964,11 +995,8 @@ oxr_session_create(struct oxr_logger *log,
 	sess->static_prediction_s =
 	    debug_get_num_option_prediction_ms() / 1000.0f;
 
-	oxr_event_push_XrEventDataSessionStateChanged(log, sess,
-	                                              XR_SESSION_STATE_IDLE, 0);
-	oxr_event_push_XrEventDataSessionStateChanged(
-	    log, sess, XR_SESSION_STATE_READY, 0);
-	sess->state = XR_SESSION_STATE_READY;
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
 
 	u_hashmap_int_create(&sess->act_sets);
 	u_hashmap_int_create(&sess->sources);
