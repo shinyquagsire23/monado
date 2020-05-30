@@ -436,7 +436,7 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
 
 		oxr_path_get_string(log, inst, path, &str, &length);
 
-		return oxr_error(log, XR_ERROR_PATH_INVALID,
+		return oxr_error(log, XR_ERROR_PATH_UNSUPPORTED,
 		                 "(%s == '%s') the subaction path was "
 		                 "not specified at action creation",
 		                 variable, str);
