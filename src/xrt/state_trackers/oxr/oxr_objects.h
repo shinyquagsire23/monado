@@ -17,6 +17,7 @@
 
 #include "os/os_threading.h"
 
+#include "util/u_index_fifo.h"
 #include "util/u_hashset.h"
 #include "util/u_hashmap.h"
 
@@ -112,6 +113,7 @@ struct oxr_binding;
 struct oxr_interaction_profile;
 
 #define XRT_MAX_HANDLE_CHILDREN 256
+#define OXR_MAX_SWAPCHAIN_IMAGES 8
 
 struct time_state;
 
@@ -144,6 +146,16 @@ enum oxr_sub_action_path
 	OXR_SUB_ACTION_PATH_LEFT,
 	OXR_SUB_ACTION_PATH_RIGHT,
 	OXR_SUB_ACTION_PATH_GAMEPAD,
+};
+
+/*!
+ * Tracks the state of a image that belongs to a @ref oxr_swapchain.
+ */
+enum oxr_image_state
+{
+	OXR_IMAGE_STATE_READY,
+	OXR_IMAGE_STATE_ACQUIRED,
+	OXR_IMAGE_STATE_WAITED,
 };
 
 
@@ -1297,9 +1309,30 @@ struct oxr_swapchain
 	//! Compositor swapchain.
 	struct xrt_swapchain *swapchain;
 
-	//! Actual state tracked! :D
-	int acquired_index;
-	int released_index;
+	struct
+	{
+		enum oxr_image_state state;
+	} images[OXR_MAX_SWAPCHAIN_IMAGES];
+
+	struct
+	{
+		size_t num;
+		struct u_index_fifo fifo;
+	} acquired;
+
+	struct
+	{
+		bool yes;
+		int index;
+	} waited;
+
+	struct
+	{
+		bool yes;
+		int index;
+	} released;
+
+
 
 	XrResult (*destroy)(struct oxr_logger *, struct oxr_swapchain *);
 

@@ -518,14 +518,14 @@ verify_quad_layer(struct xrt_compositor *xc,
 	}
 #endif
 
-	if (sc->released_index == -1) {
+	if (!sc->released.yes) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
 		                 "(frameEndInfo->layers[%u]->subImage."
 		                 "swapchain) swapchain has not been released!",
 		                 layer_index);
 	}
 
-	if (sc->released_index >= (int)sc->swapchain->num_images) {
+	if (sc->released.index >= (int)sc->swapchain->num_images) {
 		return oxr_error(
 		    log, XR_ERROR_RUNTIME_FAILURE,
 		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
@@ -597,7 +597,7 @@ verify_projection_layer(struct xrt_compositor *xc,
 		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
 		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
 
-		if (sc->released_index == -1) {
+		if (!sc->released.yes) {
 			return oxr_error(
 			    log, XR_ERROR_LAYER_INVALID,
 			    "(frameEndInfo->layers[%u]->views[%i].subImage."
@@ -605,7 +605,7 @@ verify_projection_layer(struct xrt_compositor *xc,
 			    layer_index, i);
 		}
 
-		if (sc->released_index >= (int)sc->swapchain->num_images) {
+		if (sc->released.index >= (int)sc->swapchain->num_images) {
 			return oxr_error(
 			    log, XR_ERROR_RUNTIME_FAILURE,
 			    "(frameEndInfo->layers[%u]->views[%i].subImage."
@@ -634,7 +634,7 @@ submit_quad_layer(struct xrt_compositor *xc,
 	xrt_comp_layer_quad(
 	    xc, timestamp, head, XRT_INPUT_GENERIC_HEAD_POSE, quad->layerFlags,
 	    (enum xrt_layer_eye_visibility)quad->eyeVisibility, sc->swapchain,
-	    sc->released_index, (struct xrt_rect *)&quad->subImage.imageRect,
+	    sc->released.index, (struct xrt_rect *)&quad->subImage.imageRect,
 	    quad->subImage.imageArrayIndex, &pose,
 	    (struct xrt_vec2 *)&quad->size, false);
 }
@@ -666,12 +666,12 @@ submit_projection_layer(struct xrt_compositor *xc,
 	xrt_comp_layer_stereo_projection(
 	    xc, timestamp, head, XRT_INPUT_GENERIC_HEAD_POSE, flags,
 	    scs[0]->swapchain, // Left
-	    scs[0]->released_index,
+	    scs[0]->released.index,
 	    (struct xrt_rect *)&proj->views[0].subImage.imageRect,
 	    proj->views[0].subImage.imageArrayIndex,
 	    (struct xrt_fov *)&proj->views[0].fov, &pose[0],
 	    scs[1]->swapchain, // Right
-	    scs[1]->released_index,
+	    scs[1]->released.index,
 	    (struct xrt_rect *)&proj->views[1].subImage.imageRect,
 	    proj->views[1].subImage.imageArrayIndex,
 	    (struct xrt_fov *)&proj->views[1].fov, &pose[1], false);

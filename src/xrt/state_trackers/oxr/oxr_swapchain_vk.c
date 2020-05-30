@@ -20,11 +20,17 @@
 static XrResult
 oxr_swapchain_vk_destroy(struct oxr_logger *log, struct oxr_swapchain *sc)
 {
-	if (sc->acquired_index >= 0) {
+	// Release any waited image.
+	if (sc->waited.yes) {
 		sc->release_image(log, sc, NULL);
 	}
 
-	sc->acquired_index = 0;
+	// Release any acquired images.
+	XrSwapchainImageWaitInfo waitInfo = {0};
+	while (!u_index_fifo_is_empty(&sc->acquired.fifo)) {
+		sc->wait_image(log, sc, &waitInfo);
+		sc->release_image(log, sc, NULL);
+	}
 
 	if (sc->swapchain != NULL) {
 		sc->swapchain->destroy(sc->swapchain);
