@@ -224,6 +224,8 @@ oxr_xrGetOpenGLESGraphicsRequirementsKHR(
 	graphicsRequirements->maxApiVersionSupported =
 	    XR_MAKE_VERSION(ver.max_major, ver.max_minor, ver.max_patch);
 
+	sys->gotten_requirements = true;
+
 	return XR_SUCCESS;
 }
 
@@ -261,6 +263,8 @@ oxr_xrGetOpenGLGraphicsRequirementsKHR(
 	    XR_MAKE_VERSION(ver.min_major, ver.min_minor, ver.min_patch);
 	graphicsRequirements->maxApiVersionSupported =
 	    XR_MAKE_VERSION(ver.max_major, ver.max_minor, ver.max_patch);
+
+	sys->gotten_requirements = true;
 
 	return XR_SUCCESS;
 }

@@ -63,6 +63,8 @@ oxr_vk_get_requirements(struct oxr_logger *log,
 	graphicsRequirements->maxApiVersionSupported =
 	    XR_MAKE_VERSION(ver.max_major, ver.max_minor, ver.max_patch);
 
+	sys->gotten_requirements = true;
+
 	return XR_SUCCESS;
 }
 

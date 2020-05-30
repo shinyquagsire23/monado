@@ -903,6 +903,9 @@ struct oxr_system
 
 	XrSystemId systemId;
 
+	//! Have the client application called the gfx api requirements func?
+	bool gotten_requirements;
+
 	XrFormFactor form_factor;
 	XrViewConfigurationType view_config_type;
 	XrViewConfigurationView views[2];

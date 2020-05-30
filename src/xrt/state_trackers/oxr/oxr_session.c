@@ -873,6 +873,13 @@ oxr_session_create_impl(struct oxr_logger *log,
 	                             XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
 	                             XrGraphicsBindingOpenGLXlibKHR);
 	if (opengl_xlib != NULL) {
+		if (!sys->gotten_requirements) {
+			return oxr_error(
+			    log, XR_ERROR_VALIDATION_FAILURE,
+			    "Has not called "
+			    "xrGetOpenGL[ES]GraphicsRequirementsKHR");
+		}
+
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
 		return oxr_session_populate_gl_xlib(log, sys, opengl_xlib,
 		                                    *out_session);
@@ -884,6 +891,12 @@ oxr_session_create_impl(struct oxr_logger *log,
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR,
 	    XrGraphicsBindingVulkanKHR);
 	if (vulkan != NULL) {
+		if (!sys->gotten_requirements) {
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+			                 "Has not called "
+			                 "xrGetVulkanGraphicsRequirementsKHR");
+		}
+
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
 		return oxr_session_populate_vk(log, sys, vulkan, *out_session);
 	}
@@ -894,6 +907,13 @@ oxr_session_create_impl(struct oxr_logger *log,
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MNDX,
 	    XrGraphicsBindingEGLMNDX);
 	if (egl != NULL) {
+		if (!sys->gotten_requirements) {
+			return oxr_error(
+			    log, XR_ERROR_VALIDATION_FAILURE,
+			    "Has not called "
+			    "xrGetOpenGL[ES]GraphicsRequirementsKHR");
+		}
+
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
 		return oxr_session_populate_egl(log, sys, egl, *out_session);
 	}
@@ -927,7 +947,6 @@ oxr_session_create(struct oxr_logger *log,
 
 	/* Try allocating and populating. */
 	XrResult ret = oxr_session_create_impl(log, sys, createInfo, &sess);
-
 	if (ret != XR_SUCCESS) {
 		if (sess != NULL) {
 			/* clean up allocation first */
