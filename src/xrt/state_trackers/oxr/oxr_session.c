@@ -502,6 +502,31 @@ verify_space(struct oxr_logger *log, uint32_t layer_index, XrSpace space)
 }
 
 static XrResult
+is_rect_neg(const XrRect2Di *imageRect)
+{
+	if (imageRect->offset.x < 0 || imageRect->offset.y < 0) {
+		return true;
+	}
+
+	return false;
+}
+
+static XrResult
+is_rect_out_of_bounds(const XrRect2Di *imageRect, struct oxr_swapchain *sc)
+{
+	uint32_t total_width = imageRect->offset.x + imageRect->extent.width;
+	if (total_width > sc->width) {
+		return true;
+	}
+	uint32_t total_height = imageRect->offset.y + imageRect->extent.height;
+	if (total_height > sc->height) {
+		return true;
+	}
+
+	return false;
+}
+
+static XrResult
 verify_quad_layer(struct xrt_compositor *xc,
                   struct oxr_logger *log,
                   uint32_t layer_index,
@@ -540,14 +565,15 @@ verify_quad_layer(struct xrt_compositor *xc,
 		                 layer_index, p->x, p->y, p->z);
 	}
 
-#if 0
-	if (quad->subImage.imageArrayIndex > 0 &&
-	    sc->swapchain->array_size <= quad->subImage.imageArrayIndex) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "Invalid swapchain array index for layer %u.",
-		                 layer_index);
+	if (sc->num_array_layers <= quad->subImage.imageArrayIndex) {
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "(frameEndInfo->layers[%u]->subImage.imageArrayIndex == "
+		    "%u) Invalid swapchain array "
+		    "index for quad layer (%u).",
+		    layer_index, quad->subImage.imageArrayIndex,
+		    sc->num_array_layers);
 	}
-#endif
 
 	if (!sc->released.yes) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
@@ -564,18 +590,25 @@ verify_quad_layer(struct xrt_compositor *xc,
 		    layer_index);
 	}
 
-	if (quad->subImage.imageRect.offset.x < 0 ||
-	    quad->subImage.imageRect.offset.y < 0) {
-		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		                 "imageRect offset is negative for layer %u.",
-		                 layer_index);
+	if (is_rect_neg(&quad->subImage.imageRect)) {
+		return oxr_error(
+		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		    "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
+		    "{%i, %i}) has negative component(s)",
+		    layer_index, quad->subImage.imageRect.offset.x,
+		    quad->subImage.imageRect.offset.y);
 	}
 
-	if (quad->subImage.imageRect.offset.x >= 1 ||
-	    quad->subImage.imageRect.offset.y >= 1) {
-		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		                 "imageRect offset out of bounds for layer %u.",
-		                 layer_index);
+	if (is_rect_out_of_bounds(&quad->subImage.imageRect, sc)) {
+		return oxr_error(
+		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		    "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
+		    "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
+		    layer_index, quad->subImage.imageRect.offset.x,
+		    quad->subImage.imageRect.offset.y,
+		    quad->subImage.imageRect.extent.width,
+		    quad->subImage.imageRect.extent.height, sc->width,
+		    sc->height);
 	}
 
 	return XR_SUCCESS;
@@ -603,11 +636,12 @@ verify_projection_layer(struct xrt_compositor *xc,
 
 	// Check for valid swapchain states.
 	for (uint32_t i = 0; i < proj->viewCount; i++) {
+		const XrCompositionLayerProjectionView *view = &proj->views[i];
+
 		//! @todo More validation?
 		if (!math_quat_validate(
-		        (struct xrt_quat *)&proj->views[i].pose.orientation)) {
-			const XrQuaternionf *q =
-			    &proj->views[i].pose.orientation;
+		        (struct xrt_quat *)&view->pose.orientation)) {
+			const XrQuaternionf *q = &view->pose.orientation;
 			return oxr_error(
 			    log, XR_ERROR_POSE_INVALID,
 			    "(frameEndInfo->layers[%u]->views[%i]->pose."
@@ -616,8 +650,8 @@ verify_projection_layer(struct xrt_compositor *xc,
 		}
 
 		if (!math_vec3_validate(
-		        (struct xrt_vec3 *)&proj->views[i].pose.position)) {
-			const XrVector3f *p = &proj->views[i].pose.position;
+		        (struct xrt_vec3 *)&view->pose.position)) {
+			const XrVector3f *p = &view->pose.position;
 			return oxr_error(
 			    log, XR_ERROR_POSE_INVALID,
 			    "(frameEndInfo->layers[%u]->views[%i]->pose."
@@ -626,7 +660,7 @@ verify_projection_layer(struct xrt_compositor *xc,
 		}
 
 		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
+		    struct oxr_swapchain *, view->subImage.swapchain);
 
 		if (!sc->released.yes) {
 			return oxr_error(
@@ -642,6 +676,39 @@ verify_projection_layer(struct xrt_compositor *xc,
 			    "(frameEndInfo->layers[%u]->views[%i].subImage."
 			    "swapchain) internal image index out of bounds",
 			    layer_index, i);
+		}
+
+		if (sc->num_array_layers <= view->subImage.imageArrayIndex) {
+			return oxr_error(
+			    log, XR_ERROR_VALIDATION_FAILURE,
+			    "(frameEndInfo->layers[%u]->views[%i]->subImage."
+			    "imageArrayIndex == %u) Invalid swapchain array "
+			    "index for projection layer (%u).",
+			    layer_index, i, view->subImage.imageArrayIndex,
+			    sc->num_array_layers);
+		}
+
+		if (is_rect_neg(&view->subImage.imageRect)) {
+			return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+			                 "(frameEndInfo->layers[%u]->views[%i]-"
+			                 ">subImage.imageRect.offset == {%i, "
+			                 "%i}) has negative component(s)",
+			                 layer_index, i,
+			                 view->subImage.imageRect.offset.x,
+			                 view->subImage.imageRect.offset.y);
+		}
+
+		if (is_rect_out_of_bounds(&view->subImage.imageRect, sc)) {
+			return oxr_error(
+			    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+			    "(frameEndInfo->layers[%u]->views[%i]->subImage."
+			    "imageRect == {{%i, %i}, {%u, %u}}) imageRect out "
+			    "of image bounds (%u, %u)",
+			    layer_index, i, view->subImage.imageRect.offset.x,
+			    view->subImage.imageRect.offset.y,
+			    view->subImage.imageRect.extent.width,
+			    view->subImage.imageRect.extent.height, sc->width,
+			    sc->height);
 		}
 	}
 

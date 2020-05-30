@@ -200,6 +200,9 @@ oxr_create_swapchain(struct oxr_logger *log,
 	                              oxr_swapchain_destroy, &sess->handle);
 	sc->sess = sess;
 	sc->swapchain = xsc;
+	sc->width = createInfo->width;
+	sc->height = createInfo->height;
+	sc->num_array_layers = createInfo->arraySize;
 	sc->acquire_image = oxr_swapchain_acquire_image;
 	sc->wait_image = oxr_swapchain_wait_image;
 	sc->release_image = oxr_swapchain_release_image;
