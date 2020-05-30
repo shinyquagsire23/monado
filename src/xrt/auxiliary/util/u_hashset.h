@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -67,6 +67,17 @@ int
 u_hashset_find_c_str(struct u_hashset *hs,
                      const char *c_str,
                      struct u_hashset_item **out_item);
+
+int
+u_hashset_create_and_insert_str(struct u_hashset *hs,
+                                const char *str,
+                                size_t length,
+                                struct u_hashset_item **out_item);
+
+int
+u_hashset_create_and_insert_str_c(struct u_hashset *hs,
+                                  const char *c_str,
+                                  struct u_hashset_item **out_item);
 
 int
 u_hashset_insert_item(struct u_hashset *hs, struct u_hashset_item *item);
