@@ -31,8 +31,9 @@ swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
 	COMP_SPEW(sc->c, "ACQUIRE_IMAGE");
-	*index = 0;
-	return true;
+
+	// Returns negative on empty fifo.
+	return u_index_fifo_pop(&sc->fifo, index) >= 0;
 }
 
 static bool
@@ -52,6 +53,9 @@ swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
 	COMP_SPEW(sc->c, "RELEASE_IMAGE");
+
+	u_index_fifo_push(&sc->fifo, index);
+
 	return true;
 }
 
@@ -271,6 +275,11 @@ comp_swapchain_create(struct xrt_compositor *xc,
 			               (VkFormat)format, subresource_range,
 			               &sc->images[i].views[layer]);
 		}
+	}
+
+	// Prime the fifo
+	for (uint32_t i = 0; i < num_images; i++) {
+		u_index_fifo_push(&sc->fifo, i);
 	}
 
 

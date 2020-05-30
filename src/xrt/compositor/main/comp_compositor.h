@@ -13,6 +13,7 @@
 #include "xrt/xrt_gfx_vk.h"
 
 #include "util/u_threading.h"
+#include "util/u_index_fifo.h"
 
 #include "main/comp_settings.h"
 #include "main/comp_window.h"
@@ -64,6 +65,12 @@ struct comp_swapchain
 	struct comp_compositor *c;
 
 	struct comp_swapchain_image images[XRT_MAX_SWAPCHAIN_IMAGES];
+
+	/*!
+	 * This fifo is used to always give out the oldest image to acquire
+	 * image, this should probably be made even smarter.
+	 */
+	struct u_index_fifo fifo;
 };
 
 enum comp_layer_type
