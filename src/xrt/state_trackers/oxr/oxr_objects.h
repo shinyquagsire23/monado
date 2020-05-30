@@ -692,6 +692,13 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
                                               XrSessionState state,
                                               XrTime time);
 
+/*!
+ * This clears all pending events refers to the given session.
+ */
+XrResult
+oxr_event_remove_session_events(struct oxr_logger *log,
+                                struct oxr_session *sess);
+
 
 /*
  *

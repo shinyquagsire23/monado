@@ -134,6 +134,44 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 }
 
 XrResult
+oxr_event_remove_session_events(struct oxr_logger *log,
+                                struct oxr_session *sess)
+{
+	struct oxr_instance *inst = sess->sys->inst;
+	XrSession session = oxr_session_to_openxr(sess);
+
+	lock(inst);
+
+	struct oxr_event *e = inst->next_event;
+	while (e != NULL) {
+		struct oxr_event *cur = e;
+		e = e->next;
+
+		XrEventDataSessionStateChanged *changed = oxr_event_extra(cur);
+		if (changed->type != XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED) {
+			continue;
+		}
+
+		if (changed->session != session) {
+			continue;
+		}
+
+		if (cur == inst->next_event) {
+			inst->next_event = cur->next;
+		}
+
+		if (cur == inst->last_event) {
+			inst->last_event = NULL;
+		}
+		free(cur);
+	}
+
+	unlock(inst);
+
+	return XR_SUCCESS;
+}
+
+XrResult
 oxr_poll_event(struct oxr_logger *log,
                struct oxr_instance *inst,
                XrEventDataBuffer *eventData)

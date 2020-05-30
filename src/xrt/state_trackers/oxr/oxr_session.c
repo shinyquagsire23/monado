@@ -840,6 +840,8 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	struct oxr_session *sess = (struct oxr_session *)hb;
 
+	XrResult ret = oxr_event_remove_session_events(log, sess);
+
 	// Does a null-ptr check.
 	xrt_comp_destroy(&sess->compositor);
 
@@ -848,7 +850,7 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 
 	free(sess);
 
-	return XR_SUCCESS;
+	return ret;
 }
 
 #define OXR_SESSION_ALLOCATE(LOG, SYS, OUT)                                    \
