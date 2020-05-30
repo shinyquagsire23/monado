@@ -91,9 +91,13 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
 		return IPC_FAILURE;
 	}
 
+	union {
+		uint8_t buf[512];
+		struct cmsghdr align;
+	} u;
 	const size_t fds_size = sizeof(int) * num_fds;
-	char buf[CMSG_SPACE(fds_size)];
-	memset(buf, 0, sizeof(buf));
+	const size_t cmsg_size = CMSG_SPACE(fds_size);
+	memset(u.buf, 0, cmsg_size);
 
 	struct iovec iov = {0};
 	iov.iov_base = reply_ptr;
@@ -102,8 +106,8 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
 	struct msghdr msg = {0};
 	msg.msg_iov = &iov;
 	msg.msg_iovlen = 1;
-	msg.msg_control = buf;
-	msg.msg_controllen = sizeof(buf);
+	msg.msg_control = u.buf;
+	msg.msg_controllen = cmsg_size;
 
 	ssize_t len = recvmsg(ipc_c->socket_fd, &msg, 0);
 
@@ -120,9 +124,14 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
 		return -1;
 	}
 
+	// Did the server actually return file descriptors.
 	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
-	memcpy(fds, (int *)CMSG_DATA(cmsg), fds_size);
+	if (cmsg == NULL) {
+		os_mutex_unlock(&ipc_c->mutex);
+		return IPC_SUCCESS;
+	}
 
+	memcpy(fds, (int *)CMSG_DATA(cmsg), fds_size);
 	os_mutex_unlock(&ipc_c->mutex);
 
 	return IPC_SUCCESS;

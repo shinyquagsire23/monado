@@ -53,7 +53,11 @@ ipc_reply(int socket, void *data, size_t len)
 int
 ipc_reply_fds(int socket, void *data, size_t size, int *fds, uint32_t num_fds)
 {
-	uint8_t cmsgbuf[CMSG_SPACE(sizeof(int) * num_fds)];
+	union {
+		uint8_t buf[512];
+		struct cmsghdr align;
+	} u;
+	size_t cmsg_size = CMSG_SPACE(sizeof(int) * num_fds);
 
 	struct iovec iov = {0};
 	iov.iov_base = data;
@@ -65,15 +69,16 @@ ipc_reply_fds(int socket, void *data, size_t size, int *fds, uint32_t num_fds)
 	msg.msg_iov = &iov;
 	msg.msg_iovlen = 1;
 	msg.msg_flags = 0;
-	msg.msg_control = cmsgbuf;
-	msg.msg_controllen = CMSG_LEN(sizeof(int) * num_fds);
+	msg.msg_control = u.buf;
+	msg.msg_controllen = cmsg_size;
 
+	const size_t fds_size = sizeof(int) * num_fds;
 	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
 	cmsg->cmsg_level = SOL_SOCKET;
 	cmsg->cmsg_type = SCM_RIGHTS;
-	cmsg->cmsg_len = CMSG_LEN(sizeof(int) * num_fds);
+	cmsg->cmsg_len = CMSG_LEN(fds_size);
 
-	memcpy(CMSG_DATA(cmsg), fds, num_fds * sizeof(int));
+	memcpy(CMSG_DATA(cmsg), fds, fds_size);
 
 	ssize_t ret = sendmsg(socket, &msg, MSG_NOSIGNAL);
 	if (ret < 0) {
