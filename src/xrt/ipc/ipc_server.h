@@ -61,7 +61,7 @@ extern "C" {
  */
 
 #define IPC_SERVER_NUM_XDEVS 8
-#define IPC_MAX_CLIENT_SWAPCHAINS 8
+#define IPC_MAX_CLIENT_SWAPCHAINS 32
 #define IPC_MAX_CLIENTS 8
 
 struct xrt_instance;
@@ -81,6 +81,8 @@ struct ipc_swapchain_data
 	uint32_t height;
 	uint64_t format;
 	uint32_t num_images;
+
+	bool active;
 };
 
 struct ipc_quad_render_state
@@ -142,9 +144,6 @@ struct ipc_client_state
 
 	//! Number of swapchains in use by client
 	uint32_t num_swapchains;
-
-	//! Handles for dealing with swapchains via ipc
-	uint32_t swapchain_handles[IPC_MAX_CLIENT_SWAPCHAINS];
 
 	//! Ptrs to the swapchains
 	struct xrt_swapchain *xscs[IPC_MAX_CLIENT_SWAPCHAINS];

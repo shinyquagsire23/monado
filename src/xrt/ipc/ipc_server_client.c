@@ -159,6 +159,22 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *cs,
                             int *out_fds,
                             size_t *out_num_fds)
 {
+	// Our handle is just the index for now.
+	uint32_t index = 0;
+	for (; index < IPC_MAX_CLIENT_SWAPCHAINS; index++) {
+		if (!cs->swapchain_data[index].active) {
+			break;
+		}
+	}
+
+	if (index >= IPC_MAX_CLIENT_SWAPCHAINS) {
+		fprintf(stderr, "ERROR: Too many swapchains!\n");
+		return IPC_FAILURE;
+	}
+
+	// It's now safe to increment the number of swapchains.
+	cs->num_swapchains++;
+
 	// create the swapchain
 	struct xrt_swapchain *xsc =
 	    xrt_comp_create_swapchain(cs->xc,       // Compositor
@@ -172,20 +188,14 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *cs,
 	                              array_size,   // Array size
 	                              mip_count);   // Mip count
 
-	uint32_t index = cs->num_swapchains;
 	uint32_t num_images = xsc->num_images;
-	// Our handle is just the index for now
-	uint32_t handle = index;
 
 	cs->xscs[index] = xsc;
+	cs->swapchain_data[index].active = true;
 	cs->swapchain_data[index].width = width;
 	cs->swapchain_data[index].height = height;
 	cs->swapchain_data[index].format = format;
 	cs->swapchain_data[index].num_images = num_images;
-	cs->swapchain_handles[index] = handle;
-
-	// It's now safe to increment the number of swapchains.
-	cs->num_swapchains++;
 
 	// return our result to the caller.
 	struct xrt_swapchain_fd *xcsfd = (struct xrt_swapchain_fd *)xsc;
@@ -194,7 +204,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *cs,
 	assert(num_images <= IPC_MAX_SWAPCHAIN_FDS);
 	assert(num_images <= max_num_fds);
 
-	*out_id = handle;
+	*out_id = index;
 	*out_size = xcsfd->images[0].size;
 	*out_num_images = num_images;
 
@@ -255,6 +265,11 @@ ipc_result_t
 ipc_handle_swapchain_destroy(volatile struct ipc_client_state *cs, uint32_t id)
 {
 	//! @todo Implement destroy swapchain.
+	cs->num_swapchains--;
+
+	xrt_swapchain_destroy((struct xrt_swapchain **)&cs->xscs[id]);
+	cs->swapchain_data[id].active = false;
+
 	return IPC_SUCCESS;
 }
 
@@ -458,7 +473,6 @@ client_loop(volatile struct ipc_client_state *cs)
 	// Destroy all swapchains now.
 	for (uint32_t j = 0; j < IPC_MAX_CLIENT_SWAPCHAINS; j++) {
 		xrt_swapchain_destroy((struct xrt_swapchain **)&cs->xscs[j]);
-		cs->swapchain_handles[j] = -1;
 	}
 
 	// Should we stop the server when a client disconnects?
