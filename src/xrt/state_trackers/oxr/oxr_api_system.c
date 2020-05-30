@@ -101,6 +101,23 @@ oxr_xrEnumerateViewConfigurations(
 	    viewConfigurationTypeCountOutput, viewConfigurationTypes);
 }
 
+static XrResult
+check_view_config_type(struct oxr_logger *log,
+                       struct oxr_instance *inst,
+                       XrViewConfigurationType view_conf)
+{
+	// These are always valid.
+	if (view_conf == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_MONO ||
+	    view_conf == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+		return XR_SUCCESS;
+	}
+
+	return oxr_error(
+	    log, XR_ERROR_VALIDATION_FAILURE,
+	    "(viewConfigurationType == 0x%08x) invalid view configuration type",
+	    view_conf);
+}
+
 XrResult
 oxr_xrEnumerateEnvironmentBlendModes(
     XrInstance instance,
@@ -112,9 +129,23 @@ oxr_xrEnumerateEnvironmentBlendModes(
 {
 	struct oxr_instance *inst;
 	struct oxr_logger log;
+	XrResult ret;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
 	                                 "xrEnumerateEnvironmentBlendModes");
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
+
+	ret = check_view_config_type(&log, inst, viewConfigurationType);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	if (viewConfigurationType != sys->view_config_type) {
+		return oxr_error(&log,
+		                 XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED,
+		                 "(viewConfigurationType == 0x%08x) "
+		                 "unsupported view configuration type",
+		                 viewConfigurationType);
+	}
 
 	return oxr_system_enumerate_blend_modes(
 	    &log, sys, viewConfigurationType, environmentBlendModeCapacityInput,
