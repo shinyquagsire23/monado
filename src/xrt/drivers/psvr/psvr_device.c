@@ -1,5 +1,5 @@
 // Copyright 2016, Joey Ferwerda.
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -937,12 +937,18 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
+
 		*out_relation_timestamp_ns = os_monotonic_get_ns();
 	} else {
 		xrt_tracked_psvr_get_tracked_pose(
 		    psvr->tracker, at_timestamp_ns, out_relation);
+
 		*out_relation_timestamp_ns = at_timestamp_ns;
 	}
+
+	//! @todo Move this to the tracker.
+	// Make sure that the orientation is valid.
+	math_quat_normalize(&out_relation->pose.orientation);
 }
 
 static void
