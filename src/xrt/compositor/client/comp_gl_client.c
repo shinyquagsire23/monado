@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -296,6 +296,10 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		glImportMemoryFdEXT(
 		    sc->base.memory[i], sc->xscfd->images[i].size,
 		    GL_HANDLE_TYPE_OPAQUE_FD_EXT, sc->xscfd->images[i].fd);
+
+		// We have consumed this fd now, make sure it's not freed again.
+		sc->xscfd->images[i].fd = -1;
+
 		if (array_size == 1) {
 			glTextureStorageMem2DEXT(sc->base.images[i], mip_count,
 			                         (GLuint)format, width, height,

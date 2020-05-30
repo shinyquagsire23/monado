@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -271,6 +271,10 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		    &c->vk, bits, format, width, height, array_size, mip_count,
 		    &sc->xscfd->images[i], &sc->base.images[i],
 		    &sc->base.mems[i]);
+
+		// We have consumed this fd now, make sure it's not freed again.
+		sc->xscfd->images[i].fd = -1;
+
 		if (ret != VK_SUCCESS) {
 			return NULL;
 		}
