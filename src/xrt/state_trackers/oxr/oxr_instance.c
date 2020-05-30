@@ -76,6 +76,9 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	// Does null checking and sets to null.
 	time_state_destroy(&inst->timekeeping);
 
+	// Mutex goes last.
+	os_mutex_destroy(&inst->event.mutex);
+
 	free(inst);
 
 	return XR_SUCCESS;
@@ -99,7 +102,7 @@ oxr_instance_create(struct oxr_logger *log,
 {
 	struct oxr_instance *inst = NULL;
 	struct xrt_device *xdevs[NUM_XDEVS] = {0};
-	int xinst_ret;
+	int xinst_ret, m_ret;
 	XrResult ret;
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
@@ -110,14 +113,20 @@ oxr_instance_create(struct oxr_logger *log,
 	inst->debug_views = debug_get_bool_option_debug_views();
 	inst->debug_bindings = debug_get_bool_option_debug_bindings();
 
+	m_ret = os_mutex_init(&inst->event.mutex);
+	if (m_ret < 0) {
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                "Failed to init mutex");
+		return ret;
+	}
+
 	/* ---- HACK ---- */
 	oxr_sdl2_hack_create(&inst->hack);
 	/* ---- HACK ---- */
 
 	ret = oxr_path_init(log, inst);
 	if (ret != XR_SUCCESS) {
-		free(inst);
-		return 0;
+		return ret;
 	}
 
 	// Cache certain often looked up paths.

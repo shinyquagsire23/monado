@@ -14,10 +14,14 @@
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_vulkan_includes.h"
 #include "xrt/xrt_openxr_includes.h"
+
+#include "os/os_threading.h"
+
 #include "util/u_hashset.h"
 #include "util/u_hashmap.h"
 
 #include "oxr_extension_support.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -965,8 +969,12 @@ struct oxr_instance
 	size_t path_num;
 
 	// Event queue.
-	struct oxr_event *last_event;
-	struct oxr_event *next_event;
+	struct
+	{
+		struct os_mutex mutex;
+		struct oxr_event *last;
+		struct oxr_event *next;
+	} event;
 
 	struct oxr_interaction_profile **profiles;
 	size_t num_profiles;
