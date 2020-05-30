@@ -18,6 +18,9 @@
         "Drivers": {
             "directory": "drivers"
         },
+        "IPC": {
+            "directory": "ipc"
+        },
         "Compositor": {
             "directory": "compositor"
         },
