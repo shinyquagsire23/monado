@@ -74,7 +74,7 @@ oxr_handle_init(struct oxr_logger *log,
 		if (parent->state != OXR_HANDLE_STATE_LIVE) {
 			return oxr_error(
 			    log, XR_ERROR_RUNTIME_FAILURE,
-			    " Handle %p given parent %p in invalid state: %s",
+			    "Handle %p given parent %p in invalid state: %s",
 			    (void *)parent, (void *)hb,
 			    oxr_handle_state_to_string(parent->state));
 		}
@@ -93,7 +93,7 @@ oxr_handle_init(struct oxr_logger *log,
 		}
 		if (!placed) {
 			return oxr_error(log, XR_ERROR_LIMIT_REACHED,
-			                 " parent handle has no more room for "
+			                 "Parent handle has no more room for "
 			                 "child handles");
 		}
 	}
@@ -167,7 +167,7 @@ oxr_handle_do_destroy(struct oxr_logger *log,
 		if (!found) {
 			return oxr_error(
 			    log, XR_ERROR_RUNTIME_FAILURE,
-			    " parent handle does not refer to this handle");
+			    "Parent handle does not refer to this handle");
 		}
 
 		/* clear parent pointer */

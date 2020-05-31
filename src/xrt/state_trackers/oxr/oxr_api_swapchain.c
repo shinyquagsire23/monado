@@ -50,9 +50,8 @@ oxr_xrCreateSwapchain(XrSession session,
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrCreateSwapchain");
 	if (sess->compositor == NULL) {
-		return oxr_error(
-		    &log, XR_ERROR_VALIDATION_FAILURE,
-		    "xrCreateSwapchain is illegal in headless sessions");
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "Is illegal in headless sessions");
 	}
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
 	                                 XR_TYPE_SWAPCHAIN_CREATE_INFO);
@@ -104,7 +103,7 @@ oxr_xrEnumerateSwapchainImages(XrSwapchain swapchain,
 	}
 	if (imageCapacityInput < xsc->num_images) {
 		return oxr_error(&log, XR_ERROR_SIZE_INSUFFICIENT,
-		                 "(imageCapacityInput = %u)",
+		                 "(imageCapacityInput == %u)",
 		                 imageCapacityInput);
 	}
 

@@ -63,7 +63,7 @@ oxr_swapchain_gl_enumerate_images(struct oxr_logger *log,
 		break;
 	default:
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "unsupported XrSwapchainImageBaseHeader type");
+		                 "Unsupported XrSwapchainImageBaseHeader type");
 	}
 
 	for (uint32_t i = 0; i < count; i++) {
@@ -71,7 +71,7 @@ oxr_swapchain_gl_enumerate_images(struct oxr_logger *log,
 		    (gles_imgs != NULL &&
 		     gles_imgs[i].type != images[0].type)) {
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-			                 "images array contains mixed types");
+			                 "Images array contains mixed types");
 		}
 		if (gl_imgs != NULL) {
 			gl_imgs[i].image = xsc->images[i];

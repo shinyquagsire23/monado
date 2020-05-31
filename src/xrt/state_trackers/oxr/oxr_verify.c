@@ -466,7 +466,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 
 	if (createInfo->createFlags != 0) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 " Non-zero session create flags");
+		                 "Non-zero session create flags");
 	}
 
 	XrResult result = oxr_system_verify_id(log, inst, createInfo->systemId);
@@ -568,7 +568,7 @@ oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *log,
 {
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 " Graphics binding has invalid type");
+		                 "Graphics binding has invalid type");
 	}
 
 	return XR_SUCCESS;
@@ -585,7 +585,7 @@ oxr_verify_XrGraphicsBindingEGLMNDX(struct oxr_logger *log,
 {
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_EGL_MNDX) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 " Graphics binding has invalid type");
+		                 "Graphics binding has invalid type");
 	}
 
 	return XR_SUCCESS;

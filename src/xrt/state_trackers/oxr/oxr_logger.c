@@ -23,8 +23,64 @@
 DEBUG_GET_ONCE_BOOL_OPTION(entrypoints, "OXR_DEBUG_ENTRYPOINTS", false)
 DEBUG_GET_ONCE_BOOL_OPTION(break_on_error, "OXR_BREAK_ON_ERROR", false)
 
+
+/*
+ *
+ * Helpers
+ *
+ */
+
 static const char *
 oxr_result_to_string(XrResult result);
+
+static bool
+is_fmt_func_arg_start(const char *fmt)
+{
+	if (fmt == NULL) {
+		return false;
+	}
+	if (fmt[0] == '(') {
+		return true;
+	}
+	return false;
+}
+
+/*!
+ * Prints the first part of a logging message, has three forms.
+ *
+ * ```c++
+ * print_prefix(l, "(myInfo->foo) is bad", "XR_ERROR_VALIDATION_FAILURE");
+ * // XR_ERROR_VALIDATION_FAILURE: xrMyFunc(myInfo->foo) is bad
+ *
+ * print_prefix(l, "This is bad", "XR_ERROR_VALIDATION_FAILURE");
+ * // XR_ERROR_VALIDATION_FAILURE in xrMyFunc: This is bad
+ *
+ * print_prefix(l, "No functions set now", "LOG");
+ * // LOG: No function set now
+ * ```
+ */
+static void
+print_prefix(struct oxr_logger *logger, const char *fmt, const char *prefix)
+{
+	if (logger->api_func_name != NULL) {
+		if (is_fmt_func_arg_start(fmt)) {
+			fprintf(stderr, "%s: %s", prefix,
+			        logger->api_func_name);
+		} else {
+			fprintf(stderr, "%s in %s: ", prefix,
+			        logger->api_func_name);
+		}
+	} else {
+		fprintf(stderr, "%s: ", prefix);
+	}
+}
+
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
 
 void
 oxr_log_init(struct oxr_logger *logger, const char *api_func_name)
@@ -46,9 +102,7 @@ oxr_log_set_instance(struct oxr_logger *logger, struct oxr_instance *inst)
 void
 oxr_log(struct oxr_logger *logger, const char *fmt, ...)
 {
-	if (logger->api_func_name != NULL) {
-		fprintf(stderr, " in %s", logger->api_func_name);
-	}
+	print_prefix(logger, fmt, "LOG");
 
 	va_list args;
 	va_start(args, fmt);
@@ -61,11 +115,7 @@ oxr_log(struct oxr_logger *logger, const char *fmt, ...)
 void
 oxr_warn(struct oxr_logger *logger, const char *fmt, ...)
 {
-	if (logger->api_func_name != NULL) {
-		fprintf(stderr, "%s WARNING: ", logger->api_func_name);
-	} else {
-		fprintf(stderr, "WARNING: ");
-	}
+	print_prefix(logger, fmt, "WARNING");
 
 	va_list args;
 	va_start(args, fmt);
@@ -82,13 +132,8 @@ oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
 		fprintf(stderr, "\t");
 	}
 
-	fprintf(stderr, "%s", oxr_result_to_string(result));
+	print_prefix(logger, fmt, oxr_result_to_string(result));
 
-	if (logger->api_func_name != NULL) {
-		fprintf(stderr, " in %s", logger->api_func_name);
-	}
-
-	fprintf(stderr, ": ");
 	va_list args;
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);

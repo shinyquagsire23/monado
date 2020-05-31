@@ -79,7 +79,7 @@ oxr_system_verify_id(struct oxr_logger *log,
 {
 	if (systemId != 1) {
 		return oxr_error(log, XR_ERROR_SYSTEM_INVALID,
-		                 "invalid system %" PRIu64, systemId);
+		                 "Invalid system %" PRIu64, systemId);
 	}
 	return XR_SUCCESS;
 }
@@ -124,7 +124,7 @@ oxr_system_fill_in(struct oxr_logger *log,
 
 	if (head == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 " failed to probe device");
+		                 "Failed to probe device");
 	}
 
 	if (head->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
@@ -266,7 +266,7 @@ oxr_system_get_view_conf_properties(
 	if (viewConfigurationType != sys->view_config_type) {
 		return oxr_error(log,
 		                 XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED,
-		                 "invalid view configuration type");
+		                 "Invalid view configuration type");
 	}
 
 	// clang-format off
@@ -303,7 +303,7 @@ oxr_system_enumerate_view_conf_views(
 	if (viewConfigurationType != sys->view_config_type) {
 		return oxr_error(log,
 		                 XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED,
-		                 "invalid view configuration type");
+		                 "Invalid view configuration type");
 	}
 
 	OXR_TWO_CALL_FILL_IN_HELPER(log, viewCapacityInput, viewCountOutput,

@@ -83,29 +83,31 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 
 	vk_ret = vkEnumeratePhysicalDevices(vkInstance, &count, NULL);
 	if (vk_ret != VK_SUCCESS) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 " vkEnumeratePhysicalDevices returned %u",
-		                 vk_ret);
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "Call to vkEnumeratePhysicalDevices returned %u", vk_ret);
 	}
 	if (count == 0) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 " vkEnumeratePhysicalDevices returned zero "
-		                 "VkPhysicalDevices");
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "Call to vkEnumeratePhysicalDevices returned zero "
+		    "VkPhysicalDevices");
 	}
 
 	VkPhysicalDevice *phys = U_TYPED_ARRAY_CALLOC(VkPhysicalDevice, count);
 	vk_ret = vkEnumeratePhysicalDevices(vkInstance, &count, phys);
 	if (vk_ret != VK_SUCCESS) {
 		free(phys);
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 " vkEnumeratePhysicalDevices returned %u",
-		                 vk_ret);
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "Call to vkEnumeratePhysicalDevices returned %u", vk_ret);
 	}
 	if (count == 0) {
 		free(phys);
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 " vkEnumeratePhysicalDevices returned zero "
-		                 "VkPhysicalDevices");
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "Call to vkEnumeratePhysicalDevices returned zero "
+		    "VkPhysicalDevices");
 	}
 
 	if (count > 1) {

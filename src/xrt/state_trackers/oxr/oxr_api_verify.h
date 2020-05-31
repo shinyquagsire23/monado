@@ -30,10 +30,10 @@ extern "C" {
 		}                                                              \
 		if (new_thing->handle.state != OXR_HANDLE_STATE_LIVE) {        \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
-			                 " state == %s (" #thing " == %p)",    \
+			                 "(" #thing " == %p) state == %s",     \
+			                 (void *)new_thing,                    \
 			                 oxr_handle_state_to_string(           \
-			                     new_thing->handle.state),         \
-			                 (void *)new_thing);                   \
+			                     new_thing->handle.state));        \
 		}                                                              \
 		oxr_log_set_instance(log, lookup);                             \
 	} while (0)
@@ -91,7 +91,7 @@ extern "C" {
 	do {                                                                   \
 		if (!(inst)->extensions.mixed_case_name) {                     \
 			return oxr_error((log), XR_ERROR_FUNCTION_UNSUPPORTED, \
-			                 " Requires XR_" #mixed_case_name      \
+			                 "Requires XR_" #mixed_case_name       \
 			                 " extension enabled");                \
 		}                                                              \
 	} while (false)
@@ -133,7 +133,8 @@ extern "C" {
 	do {                                                                   \
 		if (count > 0 && paths == NULL) {                              \
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
-			                 " " #count " is not zero but " #paths \
+			                 "(" #count                            \
+			                 ") is not zero but " #paths           \
 			                 " is NULL");                          \
 		}                                                              \
 	} while (false)

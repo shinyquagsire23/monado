@@ -37,8 +37,8 @@ check_reference_space_type(struct oxr_logger *log, XrReferenceSpaceType type)
 #endif
 	default:
 		return oxr_error(log, XR_ERROR_REFERENCE_SPACE_UNSUPPORTED,
-		                 "(createInfo->referenceSpaceType = "
-		                 "<UNKNOWN>)");
+		                 "(createInfo->referenceSpaceType == 0x%08x)",
+		                 type);
 	}
 }
 
@@ -222,7 +222,7 @@ oxr_space_action_relation(struct oxr_logger *log,
 	// Internal error check.
 	if (act_spc == NULL || act_spc->is_reference || ref_spc == NULL ||
 	    !ref_spc->is_reference) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "this is bad!");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "This is bad!");
 	}
 
 	// Reset so no relation is returned.

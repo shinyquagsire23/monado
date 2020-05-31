@@ -91,7 +91,7 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 	struct xrt_compositor *xc = sess->compositor;
 	if (formatCountOutput == NULL) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "(formatCountOutput)");
+		                 "(formatCountOutput == NULL) can not be null");
 	}
 	if (xc == NULL) {
 		if (formatCountOutput != NULL) {
@@ -112,7 +112,7 @@ oxr_session_begin(struct oxr_logger *log,
 {
 	if (is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_RUNNING,
-		                 " session is already running");
+		                 "Session is already running");
 	}
 
 	struct xrt_compositor *xc = sess->compositor;
@@ -125,7 +125,9 @@ oxr_session_begin(struct oxr_logger *log,
 			 * system right now */
 			return oxr_error(
 			    log, XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED,
-			    " view configuration type not supported");
+			    "(beginInfo->primaryViewConfigurationType == "
+			    "0x%08x) view configuration type not supported",
+			    view_type);
 		}
 
 		xrt_comp_begin_session(xc, (enum xrt_view_type)beginInfo
@@ -144,11 +146,11 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 
 	if (!is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
-		                 " session is not running");
+		                 "Session is not running");
 	}
 	if (sess->state != XR_SESSION_STATE_STOPPING) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_STOPPING,
-		                 " session is not stopping");
+		                 "Session is not stopping");
 	}
 
 	if (xc != NULL) {
@@ -177,7 +179,7 @@ oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
 {
 	if (!is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
-		                 " session is not running");
+		                 "Session is not running");
 	}
 
 	if (sess->state == XR_SESSION_STATE_FOCUSED) {
@@ -399,7 +401,7 @@ oxr_session_frame_wait(struct oxr_logger *log,
 {
 	if (!is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
-		                 " session is not running");
+		                 "Session is not running");
 	}
 
 	//! @todo this should be carefully synchronized, because there may be
@@ -420,7 +422,7 @@ oxr_session_frame_wait(struct oxr_logger *log,
 
 	if ((int64_t)predicted_display_time <= 0) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 " got a negative display time '%" PRIi64 "'",
+		                 "Got a negative display time '%" PRIi64 "'",
 		                 (int64_t)predicted_display_time);
 	}
 
@@ -432,7 +434,7 @@ oxr_session_frame_wait(struct oxr_logger *log,
 	if (frameState->predictedDisplayTime <= 0) {
 		return oxr_error(
 		    log, XR_ERROR_RUNTIME_FAILURE,
-		    " time_state_monotonic_to_ts_ns returned '%" PRIi64 "'",
+		    "Time_state_monotonic_to_ts_ns returned '%" PRIi64 "'",
 		    frameState->predictedDisplayTime);
 	}
 
@@ -452,7 +454,7 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 {
 	if (!is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
-		                 " session is not running");
+		                 "Session is not running");
 	}
 
 	struct xrt_compositor *xc = sess->compositor;
@@ -786,11 +788,11 @@ oxr_session_frame_end(struct oxr_logger *log,
 
 	if (!is_running(sess)) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
-		                 " session is not running");
+		                 "Session is not running");
 	}
 	if (!sess->frame_started) {
 		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID,
-		                 " frame not begun with xrBeginFrame");
+		                 "Frame not begun with xrBeginFrame");
 	}
 
 	if (frameEndInfo->displayTime <= 0) {
@@ -1034,7 +1036,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 		return XR_SUCCESS;
 	}
 	return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-	                 "(createInfo->next->type)");
+	                 "(createInfo->next->type) doesn't contain a valid "
+	                 "graphics binding structs");
 }
 
 XrResult

@@ -110,7 +110,7 @@ oxr_event_alloc(struct oxr_logger *log,
 
 	if (event == NULL) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 " out of memory");
+		                 "Out of memory");
 	}
 
 	event->next = NULL;

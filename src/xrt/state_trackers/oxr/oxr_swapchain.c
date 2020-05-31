@@ -28,7 +28,7 @@ oxr_swapchain_acquire_image(struct oxr_logger *log,
 	uint32_t index;
 	if (sc->acquired.num >= sc->swapchain->num_images) {
 		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID,
-		                 " all images have been acquired");
+		                 "All images have been acquired");
 	}
 
 	if (sc->is_static && (sc->released.yes || sc->waited.yes)) {
@@ -39,7 +39,7 @@ oxr_swapchain_acquire_image(struct oxr_logger *log,
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 	if (!xsc->acquire_image(xsc, &index)) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 " call to xsc->acquire_image failed");
+		                 "Call to xsc->acquire_image failed");
 	}
 
 	if (sc->images[index].state != OXR_IMAGE_STATE_READY) {
@@ -72,12 +72,12 @@ oxr_swapchain_wait_image(struct oxr_logger *log,
 	if (sc->waited.yes) {
 		return oxr_error(
 		    log, XR_ERROR_CALL_ORDER_INVALID,
-		    " swapchain has already been waited, call release");
+		    "Swapchain has already been waited, call release");
 	}
 
 	if (u_index_fifo_is_empty(&sc->acquired.fifo)) {
 		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID,
-		                 " no image acquired");
+		                 "No image acquired");
 	}
 
 	uint32_t index;
@@ -86,7 +86,7 @@ oxr_swapchain_wait_image(struct oxr_logger *log,
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 	if (!xsc->wait_image(xsc, waitInfo->timeout, index)) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 " call to xsc->wait_image failed");
+		                 "Call to xsc->wait_image failed");
 	}
 
 	// The app can only wait on one image.
@@ -104,7 +104,7 @@ oxr_swapchain_release_image(struct oxr_logger *log,
 {
 	if (!sc->waited.yes) {
 		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID,
-		                 " no swapchain images waited on");
+		                 "No swapchain images waited on");
 	}
 
 	sc->waited.yes = false;
@@ -113,7 +113,7 @@ oxr_swapchain_release_image(struct oxr_logger *log,
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 	if (!xsc->release_image(xsc, index)) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 " call to xsc->release_image failed");
+		                 "Call to xsc->release_image failed");
 	}
 
 	// Only decerement here.
@@ -192,7 +192,7 @@ oxr_create_swapchain(struct oxr_logger *log,
 
 	if (xsc == NULL) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 " failed to create swapchain");
+		                 "Failed to create swapchain");
 	}
 
 	struct oxr_swapchain *sc = NULL;

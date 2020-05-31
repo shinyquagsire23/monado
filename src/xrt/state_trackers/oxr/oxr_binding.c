@@ -417,7 +417,7 @@ oxr_action_get_current_interaction_profile(
 
 	if (!sess->actionsAttached) {
 		return oxr_error(log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
-		                 " xrAttachSessionActionSets has not been "
+		                 "xrAttachSessionActionSets has not been "
 		                 "called on this session.");
 	}
 
@@ -431,7 +431,7 @@ oxr_action_get_current_interaction_profile(
 		interactionProfile->interactionProfile = sess->gamepad;
 	} else {
 		return oxr_error(log, XR_ERROR_HANDLE_INVALID,
-		                 " not implemented");
+		                 "Not implemented");
 	}
 	return XR_SUCCESS;
 }
@@ -446,7 +446,7 @@ oxr_action_get_input_source_localized_name(
     char *buffer)
 {
 	//! @todo Implement
-	return oxr_error(log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_error(log, XR_ERROR_HANDLE_INVALID, "Not implemented");
 }
 
 XrResult
@@ -458,5 +458,5 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
                                    XrPath *sources)
 {
 	//! @todo Implement
-	return oxr_error(log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_error(log, XR_ERROR_HANDLE_INVALID, "Not implemented");
 }

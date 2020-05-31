@@ -200,7 +200,7 @@ oxr_xrGetVisibilityMaskKHR(XrSession session,
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetVisibilityMaskKHR");
 
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, "Not implemented");
 }
 
 #endif
@@ -224,7 +224,7 @@ oxr_xrPerfSettingsSetPerformanceLevelEXT(XrSession session,
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrPerfSettingsSetPerformanceLevelEXT");
 
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, "Not implemented");
 }
 
 #endif
@@ -251,7 +251,7 @@ oxr_xrThermalGetTemperatureTrendEXT(
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrThermalGetTemperatureTrendEXT");
 
-	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, " not implemented");
+	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, "Not implemented");
 }
 
 #endif

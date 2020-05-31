@@ -366,7 +366,7 @@ oxr_xrGetActionStateBoolean(XrSession session,
 
 	if (act->action_type != XR_ACTION_TYPE_BOOLEAN_INPUT) {
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 " not created with boolean type");
+		                 "Not created with boolean type");
 	}
 
 	ret = oxr_verify_subaction_path_get(
@@ -399,7 +399,7 @@ oxr_xrGetActionStateFloat(XrSession session,
 
 	if (act->action_type != XR_ACTION_TYPE_FLOAT_INPUT) {
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 " not created with float type");
+		                 "Not created with float type");
 	}
 
 	ret = oxr_verify_subaction_path_get(
@@ -432,7 +432,7 @@ oxr_xrGetActionStateVector2f(XrSession session,
 
 	if (act->action_type != XR_ACTION_TYPE_VECTOR2F_INPUT) {
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 " not created with float[2] type");
+		                 "Not created with float[2] type");
 	}
 
 	ret = oxr_verify_subaction_path_get(
@@ -464,7 +464,7 @@ oxr_xrGetActionStatePose(XrSession session,
 
 	if (act->action_type != XR_ACTION_TYPE_POSE_INPUT) {
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 " not created with pose type");
+		                 "Not created with pose type");
 	}
 
 	ret = oxr_verify_subaction_path_get(
@@ -540,7 +540,7 @@ oxr_xrApplyHapticFeedback(XrSession session,
 
 	if (act->action_type != XR_ACTION_TYPE_VIBRATION_OUTPUT) {
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 " not created with output vibration type");
+		                 "Not created with output vibration type");
 	}
 
 	return oxr_action_apply_haptic_feedback(&log, sess, act->key, sub_paths,
@@ -571,7 +571,7 @@ oxr_xrStopHapticFeedback(XrSession session,
 
 	if (act->action_type != XR_ACTION_TYPE_VIBRATION_OUTPUT) {
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 " not created with output vibration type");
+		                 "Not created with output vibration type");
 	}
 
 	return oxr_action_stop_haptic_feedback(&log, sess, act->key, sub_paths);

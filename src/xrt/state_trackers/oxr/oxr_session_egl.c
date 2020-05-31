@@ -47,21 +47,22 @@ oxr_session_populate_egl(struct oxr_logger *log,
 	PFNEGLQUERYCONTEXTPROC eglQueryContext =
 	    (PFNEGLQUERYCONTEXTPROC)next->getProcAddress("eglQueryContext");
 	if (!eglQueryContext) {
-		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "getProcAddress(eglQueryContext) failed");
+		return oxr_error(
+		    log, XR_ERROR_INITIALIZATION_FAILED,
+		    "Call to getProcAddress(eglQueryContext) failed");
 	}
 
 	if (!eglQueryContext(next->display, next->context,
 	                     EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
 		return oxr_error(
 		    log, XR_ERROR_INITIALIZATION_FAILED,
-		    "eglQueryContext(EGL_CONTEXT_CLIENT_TYPE) failed");
+		    "Call to eglQueryContext(EGL_CONTEXT_CLIENT_TYPE) failed");
 	}
 
 	if (egl_client_type != EGL_OPENGL_API &&
 	    egl_client_type != EGL_OPENGL_ES_API) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "unsupported EGL client type");
+		                 "Unsupported EGL client type");
 	}
 
 	struct xrt_compositor_fd *xcfd = NULL;
@@ -69,7 +70,7 @@ oxr_session_populate_egl(struct oxr_logger *log,
 	                                            true, &xcfd);
 	if (ret < 0 || xcfd == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 " failed create a fd compositor '%i'", ret);
+		                 "Failed create a fd compositor '%i'", ret);
 	}
 
 	struct xrt_compositor_gl *xcgl =
@@ -79,7 +80,7 @@ oxr_session_populate_egl(struct oxr_logger *log,
 	if (xcgl == NULL) {
 		xcfd->base.destroy(&xcfd->base);
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 " failed create a egl client compositor");
+		                 "Failed create a egl client compositor");
 	}
 
 	sess->compositor = &xcgl->base;
