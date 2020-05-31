@@ -64,6 +64,18 @@ oxr_xrAttachSessionActionSets(XrSession session,
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
 	    &log, bindInfo, XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO);
 
+	if (sess->actionsAttached) {
+		return oxr_error(&log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
+		                 "(session) has already had action sets "
+		                 "attached, can only attach action sets once.");
+	}
+
+	if (bindInfo->countActionSets == 0) {
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(bindInfo->countActionSets == 0) must attach "
+		                 "at least one action set.");
+	}
+
 	for (uint32_t i = 0; i < bindInfo->countActionSets; i++) {
 		struct oxr_action_set *act_set = NULL;
 		OXR_VERIFY_ACTIONSET_NOT_NULL(&log, bindInfo->actionSets[i],
@@ -130,6 +142,13 @@ oxr_xrGetInputSourceLocalizedName(
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetInputSourceLocalizedName");
+
+	if (!sess->actionsAttached) {
+		return oxr_error(
+		    &log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
+		    "ActionSet(s) have not been attached to this session");
+	}
+
 	//! @todo verify getInfo
 
 	return oxr_action_get_input_source_localized_name(
@@ -240,6 +259,12 @@ oxr_xrCreateAction(XrActionSet actionSet,
 	                                              createInfo->actionName);
 	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionName);
 	OXR_VERIFY_ARG_NOT_NULL(&log, action);
+
+	if (act_set->attached) {
+		return oxr_error(
+		    &log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
+		    "(actionSet) has been attached and is now immutable");
+	}
 
 	struct oxr_instance *inst = act_set->inst;
 
@@ -446,6 +471,12 @@ oxr_xrEnumerateBoundSourcesForAction(
 	    &log, enumerateInfo,
 	    XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, enumerateInfo->action, act);
+
+	if (!sess->actionsAttached) {
+		return oxr_error(&log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
+		                 "(session) xrAttachSessionActionSets has not "
+		                 "been called on this session.");
+	}
 
 	return oxr_action_enumerate_bound_sources(&log, sess, act->key,
 	                                          sourceCapacityInput,

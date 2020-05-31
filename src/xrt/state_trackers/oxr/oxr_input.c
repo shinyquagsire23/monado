@@ -1070,8 +1070,9 @@ oxr_action_sync_data(struct oxr_logger *log,
 		if (src_set == NULL) {
 			return oxr_error(
 			    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
-			    "(actionSets[%i].actionSet) has not been attached",
-			    i);
+			    "(actionSets[%i].actionSet) action set '%s' has "
+			    "not been attached to this session",
+			    i, act_set != NULL ? act_set->name : "NULL");
 		}
 	}
 
@@ -1226,13 +1227,15 @@ oxr_action_get_boolean(struct oxr_logger *log,
 	struct oxr_source *src = NULL;
 
 	oxr_session_get_source(sess, key, &src);
+	if (src == NULL) {
+		return oxr_error(
+		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
+		    "Action has not been attached to this session");
+	}
 
 	data->isActive = XR_FALSE;
 	U_ZERO(&data->currentState);
 
-	if (src == NULL) {
-		return oxr_session_success_result(sess);
-	}
 
 	OXR_ACTION_GET_FILLER(bool);
 
@@ -1249,13 +1252,14 @@ oxr_action_get_vector1f(struct oxr_logger *log,
 	struct oxr_source *src = NULL;
 
 	oxr_session_get_source(sess, key, &src);
+	if (src == NULL) {
+		return oxr_error(
+		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
+		    "Action has not been attached to this session");
+	}
 
 	data->isActive = XR_FALSE;
 	U_ZERO(&data->currentState);
-
-	if (src == NULL) {
-		return oxr_session_success_result(sess);
-	}
 
 	OXR_ACTION_GET_FILLER(vec1);
 
@@ -1272,13 +1276,14 @@ oxr_action_get_vector2f(struct oxr_logger *log,
 	struct oxr_source *src = NULL;
 
 	oxr_session_get_source(sess, key, &src);
+	if (src == NULL) {
+		return oxr_error(
+		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
+		    "Action has not been attached to this session");
+	}
 
 	data->isActive = XR_FALSE;
 	U_ZERO(&data->currentState);
-
-	if (src == NULL) {
-		return oxr_session_success_result(sess);
-	}
 
 	OXR_ACTION_GET_FILLER(vec2);
 
@@ -1295,12 +1300,13 @@ oxr_action_get_pose(struct oxr_logger *log,
 	struct oxr_source *src = NULL;
 
 	oxr_session_get_source(sess, key, &src);
+	if (src == NULL) {
+		return oxr_error(
+		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
+		    "Action has not been attached to this session");
+	}
 
 	data->isActive = XR_FALSE;
-
-	if (src == NULL) {
-		return oxr_session_success_result(sess);
-	}
 
 	if (sub_paths.user || sub_paths.any) {
 		data->isActive |= src->user.current.active;
@@ -1361,9 +1367,10 @@ oxr_action_apply_haptic_feedback(struct oxr_logger *log,
 	struct oxr_source *src = NULL;
 
 	oxr_session_get_source(sess, key, &src);
-
 	if (src == NULL) {
-		return oxr_session_success_result(sess);
+		return oxr_error(
+		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
+		    "Action has not been attached to this session");
 	}
 
 	const XrHapticVibration *data = (const XrHapticVibration *)hapticEvent;
@@ -1401,9 +1408,10 @@ oxr_action_stop_haptic_feedback(struct oxr_logger *log,
 	struct oxr_source *src = NULL;
 
 	oxr_session_get_source(sess, key, &src);
-
 	if (src == NULL) {
-		return oxr_session_success_result(sess);
+		return oxr_error(
+		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
+		    "Action has not been attached to this session");
 	}
 
 	// clang-format off
