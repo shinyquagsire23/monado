@@ -497,7 +497,6 @@ VkResult
 vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 {
 	VkResult ret = VK_SUCCESS;
-	VkQueue queue;
 	VkFence fence;
 	VkFenceCreateInfo fence_info = {
 	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
@@ -515,9 +514,6 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 		goto out;
 	}
 
-	// Get the queue.
-	vk->vkGetDeviceQueue(vk->device, vk->queue_family_index, 0, &queue);
-
 	// Create the fence.
 	ret = vk->vkCreateFence(vk->device, &fence_info, NULL, &fence);
 	if (ret != VK_SUCCESS) {
@@ -526,9 +522,9 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 	}
 
 	// Do the actual submitting.
-	ret = vk->vkQueueSubmit(queue, 1, &submitInfo, fence);
+	ret = vk->vkQueueSubmit(vk->queue, 1, &submitInfo, fence);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "Error: Could not submit queue.\n");
+		VK_ERROR(vk, "Error: Could not submit to queue.\n");
 		goto out_fence;
 	}
 
@@ -915,6 +911,7 @@ vk_create_device(struct vk_bundle *vk, int forced_index)
 	if (ret != VK_SUCCESS) {
 		goto err_destroy;
 	}
+	vk->vkGetDeviceQueue(vk->device, vk->queue_family_index, 0, &vk->queue);
 
 	return ret;
 
@@ -965,6 +962,8 @@ vk_init_from_given(struct vk_bundle *vk,
 	if (ret != VK_SUCCESS) {
 		goto err_memset;
 	}
+
+	vk->vkGetDeviceQueue(vk->device, vk->queue_family_index, 0, &vk->queue);
 
 	// Create the pool.
 	ret = vk_init_cmd_pool(vk);

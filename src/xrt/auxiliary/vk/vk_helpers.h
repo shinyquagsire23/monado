@@ -40,6 +40,7 @@ struct vk_bundle
 	VkDevice device;
 	uint32_t queue_family_index;
 	uint32_t queue_index;
+	VkQueue queue;
 
 	VkDebugReportCallbackEXT debug_report_cb;
 
