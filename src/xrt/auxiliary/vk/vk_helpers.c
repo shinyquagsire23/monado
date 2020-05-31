@@ -291,9 +291,6 @@ vk_create_image_from_fd(struct vk_bundle *vk,
 	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
 		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	}
-	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS) != 0) {
-		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	}
 	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_TRANSFER_SRC) != 0) {
 		image_usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	}
