@@ -7,8 +7,6 @@
  * @ingroup oxr_api
  */
 
-#include <stdio.h>
-
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_handle.h"
@@ -17,6 +15,9 @@
 
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
+
+#include <stdio.h>
+#include <inttypes.h>
 
 
 /*
@@ -98,12 +99,34 @@ oxr_xrSuggestInteractionProfileBindings(
 	    &log, suggestedBindings,
 	    XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING);
 
+	if (suggestedBindings->countSuggestedBindings == 0) {
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(suggestedBindings->countSuggestedBindings "
+		                 "== 0) can not suggest 0 bindings");
+	}
+
 	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
 		const XrActionSuggestedBinding *s =
 		    &suggestedBindings->suggestedBindings[i];
 
-		struct oxr_action *dummy;
-		OXR_VERIFY_ACTION_NOT_NULL(&log, s->action, dummy);
+		struct oxr_action *act;
+		OXR_VERIFY_ACTION_NOT_NULL(&log, s->action, act);
+
+		if (act->act_set->attached) {
+			return oxr_error(
+			    &log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
+			    "(suggestedBindings->suggestedBindings[%zu]->"
+			    "action) action '%s/%s' has already been attached",
+			    i, act->act_set->name, act->name);
+		}
+
+		if (!oxr_path_is_valid(&log, inst, s->binding)) {
+			return oxr_error(
+			    &log, XR_ERROR_PATH_INVALID,
+			    "(suggestedBindings->suggestedBindings[%zu]->"
+			    "binding == %" PRIu64 ") is not a valid path",
+			    i, s->binding);
+		}
 
 		//! @todo verify path (s->binding).
 	}
