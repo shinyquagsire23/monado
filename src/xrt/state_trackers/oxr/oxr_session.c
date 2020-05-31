@@ -509,12 +509,14 @@ verify_quad_layer(struct xrt_compositor *xc,
 		                 layer_index, p->x, p->y, p->z);
 	}
 
+#if 0
 	if (quad->subImage.imageArrayIndex > 0 &&
 	    sc->swapchain->array_size <= quad->subImage.imageArrayIndex) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "Invalid swapchain array index for layer %u.",
 		                 layer_index);
 	}
+#endif
 
 	if (sc->released_index == -1) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,

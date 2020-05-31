@@ -199,7 +199,6 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 
 	struct ipc_client_swapchain *ics =
 	    U_TYPED_CALLOC(struct ipc_client_swapchain);
-	ics->base.base.array_size = 1;
 	ics->base.base.num_images = num_images;
 	ics->base.base.wait_image = ipc_compositor_swapchain_wait_image;
 	ics->base.base.acquire_image = ipc_compositor_swapchain_acquire_image;

@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -49,6 +49,8 @@ struct comp_swapchain_image
 	//! Views used by the renderer and distortion code, for each array
 	//! layer.
 	VkImageView *views;
+	//! The number of array slices in a texture, 1 == regular 2D texture.
+	size_t array_size;
 };
 
 /*!
@@ -297,17 +299,6 @@ comp_swapchain_create(struct xrt_compositor *xc,
  */
 void
 comp_swapchain_really_destroy(struct comp_swapchain *sc);
-
-/*!
- * Free and destroy any initialized fields on the given image, safe to pass in
- * images that has one or all fields set to NULL.
- *
- * @ingroup comp_main
- */
-void
-comp_swapchain_image_cleanup(struct vk_bundle *vk,
-                             uint32_t array_size,
-                             struct comp_swapchain_image *image);
 
 /*!
  * Printer helper.

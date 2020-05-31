@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -80,11 +80,6 @@ struct xrt_swapchain
 	 * Number of images, the images themselves are on the subclasses.
 	 */
 	uint32_t num_images;
-
-	/*!
-	 * Number of array layers per image.
-	 */
-	uint32_t array_size;
 
 	/*!
 	 * Must have called release_image before calling this function.

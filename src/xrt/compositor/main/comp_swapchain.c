@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -239,7 +239,6 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.wait_image = swapchain_wait_image;
 	sc->base.base.release_image = swapchain_release_image;
 	sc->base.base.num_images = num_images;
-	sc->base.base.array_size = array_size;
 	sc->c = c;
 
 	COMP_DEBUG(c, "CREATE %p %dx%d", (void *)sc, width, height);
@@ -267,6 +266,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	for (uint32_t i = 0; i < num_images; i++) {
 		sc->images[i].views =
 		    U_TYPED_ARRAY_CALLOC(VkImageView, array_size);
+		sc->images[i].array_size = array_size;
 
 		for (uint32_t layer = 0; layer < array_size; ++layer) {
 			VkImageSubresourceRange subresource_range = {
@@ -318,15 +318,18 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	return &sc->base.base;
 }
 
-void
+/*!
+ * Free and destroy any initialized fields on the given image, safe to pass in
+ * images that has one or all fields set to NULL.
+ */
+static void
 comp_swapchain_image_cleanup(struct vk_bundle *vk,
-                             uint32_t array_size,
                              struct comp_swapchain_image *image)
 {
 	vk->vkDeviceWaitIdle(vk->device);
 
 	if (image->views != NULL) {
-		for (uint32_t i = 0; i < array_size; ++i) {
+		for (uint32_t i = 0; i < image->array_size; ++i) {
 			if (image->views[i] == VK_NULL_HANDLE) {
 				continue;
 			}
@@ -336,6 +339,7 @@ comp_swapchain_image_cleanup(struct vk_bundle *vk,
 			image->views[i] = VK_NULL_HANDLE;
 		}
 		free(image->views);
+		image->array_size = 0;
 		image->views = NULL;
 	}
 
@@ -363,8 +367,7 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc)
 	COMP_SPEW(sc->c, "REALLY DESTROY");
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
-		comp_swapchain_image_cleanup(vk, sc->base.base.array_size,
-		                             &sc->images[i]);
+		comp_swapchain_image_cleanup(vk, &sc->images[i]);
 	}
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
