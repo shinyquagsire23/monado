@@ -481,6 +481,13 @@ verify_quad_layer(struct xrt_compositor *xc,
 	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
 	    struct oxr_swapchain *, quad->subImage.swapchain);
 
+	if (sc == NULL) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "swapchain) swapchain is NULL!",
+		                 layer_index);
+	}
+
 	XrResult ret = verify_space(log, layer_index, quad->space);
 	if (ret != XR_SUCCESS) {
 		return ret;
