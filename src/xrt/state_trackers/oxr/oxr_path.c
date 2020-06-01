@@ -153,11 +153,20 @@ get_path_or_null(struct oxr_logger *log,
 	return inst->path_array[xr_path];
 }
 
+
 /*
  *
  * "Exported" functions.
  *
  */
+
+bool
+oxr_path_is_valid(struct oxr_logger *log,
+                  struct oxr_instance *inst,
+                  XrPath xr_path)
+{
+	return get_path_or_null(log, inst, xr_path) != NULL;
+}
 
 void *
 oxr_path_get_attached(struct oxr_logger *log,

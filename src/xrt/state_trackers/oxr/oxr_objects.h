@@ -231,6 +231,11 @@ oxr_instance_convert_timespec_to_time(struct oxr_logger *log,
 XrResult
 oxr_path_init(struct oxr_logger *log, struct oxr_instance *inst);
 
+bool
+oxr_path_is_valid(struct oxr_logger *log,
+                  struct oxr_instance *inst,
+                  XrPath path);
+
 void *
 oxr_path_get_attached(struct oxr_logger *log,
                       struct oxr_instance *inst,
