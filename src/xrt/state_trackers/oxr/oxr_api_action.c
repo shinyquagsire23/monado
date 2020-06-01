@@ -15,6 +15,7 @@
 
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
+#include "oxr_generated_bindings.h"
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -105,6 +106,51 @@ oxr_xrSuggestInteractionProfileBindings(
 		                 "== 0) can not suggest 0 bindings");
 	}
 
+	XrPath ip = suggestedBindings->interactionProfile;
+	const char *str = NULL;
+	size_t length;
+
+	XrResult ret = oxr_path_get_string(&log, inst, ip, &str, &length);
+	if (ret != XR_SUCCESS) {
+		oxr_error(
+		    &log, ret,
+		    "(suggestedBindings->countSuggestedBindings == 0x%08" PRIx64
+		    ") invalid path",
+		    ip);
+	}
+
+	// Used in the loop that verifies the suggested bindings paths.
+	bool (*func)(const char *, size_t) = NULL;
+
+	if (ip == inst->path_cache.khr_simple_controller) {
+		func = oxr_verify_khr_simple_controller_subpath;
+	} else if (ip == inst->path_cache.google_daydream_controller) {
+		func = oxr_verify_google_daydream_controller_subpath;
+	} else if (ip == inst->path_cache.htc_vive_controller) {
+		func = oxr_verify_htc_vive_controller_subpath;
+	} else if (ip == inst->path_cache.htc_vive_pro) {
+		func = oxr_verify_htc_vive_pro_subpath;
+	} else if (ip == inst->path_cache.microsoft_motion_controller) {
+		func = oxr_verify_microsoft_motion_controller_subpath;
+	} else if (ip == inst->path_cache.microsoft_xbox_controller) {
+		func = oxr_verify_microsoft_xbox_controller_subpath;
+	} else if (ip == inst->path_cache.oculus_go_controller) {
+		func = oxr_verify_oculus_go_controller_subpath;
+	} else if (ip == inst->path_cache.oculus_touch_controller) {
+		func = oxr_verify_oculus_touch_controller_subpath;
+	} else if (ip == inst->path_cache.valve_index_controller) {
+		func = oxr_verify_valve_index_controller_subpath;
+	} else if (ip == inst->path_cache.mnd_ball_on_stick_controller) {
+		func = oxr_verify_mnd_ball_on_a_stick_controller_subpath;
+	} else {
+		return oxr_error(
+		    &log, XR_ERROR_PATH_UNSUPPORTED,
+		    "(suggestedBindings->interactionProfile == \"%s\") is not "
+		    "a supported interaction profile",
+		    str);
+	}
+
+
 	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
 		const XrActionSuggestedBinding *s =
 		    &suggestedBindings->suggestedBindings[i];
@@ -120,7 +166,9 @@ oxr_xrSuggestInteractionProfileBindings(
 			    i, act->act_set->name, act->name);
 		}
 
-		if (!oxr_path_is_valid(&log, inst, s->binding)) {
+		ret =
+		    oxr_path_get_string(&log, inst, s->binding, &str, &length);
+		if (ret != XR_SUCCESS) {
 			return oxr_error(
 			    &log, XR_ERROR_PATH_INVALID,
 			    "(suggestedBindings->suggestedBindings[%zu]->"
@@ -128,7 +176,13 @@ oxr_xrSuggestInteractionProfileBindings(
 			    i, s->binding);
 		}
 
-		//! @todo verify path (s->binding).
+		if (!func(str, length)) {
+			return oxr_error(
+			    &log, XR_ERROR_PATH_UNSUPPORTED,
+			    "(suggestedBindings->suggestedBindings[%zu]->"
+			    "binding == \"%s\") is not a valid path",
+			    i, str);
+		}
 	}
 
 	return oxr_action_suggest_interaction_profile_bindings(
