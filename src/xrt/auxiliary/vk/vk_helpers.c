@@ -276,7 +276,8 @@ vk_create_image_from_fd(struct vk_bundle *vk,
                         VkImage *out_image,
                         VkDeviceMemory *out_mem)
 {
-	VkImageUsageFlags image_usage = (VkImageUsageFlags)0;
+	VkImageUsageFlags image_usage =
+	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	VkImage image = VK_NULL_HANDLE;
 	VkResult ret = VK_SUCCESS;
 
