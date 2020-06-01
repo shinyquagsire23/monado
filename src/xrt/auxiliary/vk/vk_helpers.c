@@ -347,6 +347,38 @@ vk_create_image_from_fd(struct vk_bundle *vk,
 }
 
 VkResult
+vk_create_semaphore_from_fd(struct vk_bundle *vk, int fd, VkSemaphore *out_sem)
+{
+	VkResult ret;
+
+	VkSemaphoreCreateInfo semaphore_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+	};
+	ret = vk->vkCreateSemaphore(vk->device, &semaphore_create_info, NULL,
+	                            out_sem);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkCreateSemaphore: %s", vk_result_string(ret));
+		// Nothing to cleanup
+		return ret;
+	}
+
+	VkImportSemaphoreFdInfoKHR import_semaphore_fd_info = {
+	    .sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR,
+	    .semaphore = *out_sem,
+	    .handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
+	    .fd = fd,
+	};
+	ret = vk->vkImportSemaphoreFdKHR(vk->device, &import_semaphore_fd_info);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkImportSemaphoreFdKHR: %s",
+		         vk_result_string(ret));
+		vk->vkDestroySemaphore(vk->device, *out_sem, NULL);
+		return ret;
+	}
+	return ret;
+}
+
+VkResult
 vk_create_sampler(struct vk_bundle *vk, VkSampler *out_sampler)
 {
 	VkSampler sampler;
@@ -705,6 +737,8 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkGetSwapchainImagesKHR       = GET_DEV_PROC(vk, vkGetSwapchainImagesKHR);
 	vk->vkAcquireNextImageKHR         = GET_DEV_PROC(vk, vkAcquireNextImageKHR);
 	vk->vkQueuePresentKHR             = GET_DEV_PROC(vk, vkQueuePresentKHR);
+	vk->vkImportSemaphoreFdKHR        = GET_DEV_PROC(vk, vkImportSemaphoreFdKHR);
+	vk->vkGetSemaphoreFdKHR           = GET_DEV_PROC(vk, vkGetSemaphoreFdKHR);
 	// clang-format on
 
 	return VK_SUCCESS;

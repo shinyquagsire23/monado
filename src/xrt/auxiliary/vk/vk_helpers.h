@@ -178,6 +178,9 @@ struct vk_bundle
 	PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR;
 	PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR;
 	PFN_vkQueuePresentKHR vkQueuePresentKHR;
+
+	PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
+	PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;
 	// clang-format on
 };
 
@@ -350,6 +353,12 @@ vk_create_image_from_fd(struct vk_bundle *vk,
                         struct xrt_image_fd *image_fd,
                         VkImage *out_image,
                         VkDeviceMemory *out_mem);
+
+/*!
+ * @ingroup aux_vk
+ */
+VkResult
+vk_create_semaphore_from_fd(struct vk_bundle *vk, int fd, VkSemaphore *out_sem);
 
 /*!
  * @ingroup aux_vk
