@@ -70,7 +70,7 @@ oxr_session_populate_egl(struct oxr_logger *log,
 	                                            true, &xcfd);
 	if (ret < 0 || xcfd == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Failed create a fd compositor '%i'", ret);
+		                 "Failed to create an fd compositor '%i'", ret);
 	}
 
 	struct xrt_compositor_gl *xcgl =
@@ -80,7 +80,7 @@ oxr_session_populate_egl(struct oxr_logger *log,
 	if (xcgl == NULL) {
 		xcfd->base.destroy(&xcfd->base);
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Failed create a egl client compositor");
+		                 "Failed to create an egl client compositor");
 	}
 
 	sess->compositor = &xcgl->base;
