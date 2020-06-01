@@ -1036,6 +1036,37 @@ vk_get_access_flags(VkImageLayout layout)
 	return 0;
 }
 
+VkAccessFlags
+vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits)
+{
+	VkAccessFlags result = 0;
+	if ((bits & XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS) != 0) {
+		result |= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+		if ((bits & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
+			result |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+		}
+		if ((bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
+			result |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+		}
+	}
+	if ((bits & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
+		result |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	}
+	if ((bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
+		result |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	}
+	if ((bits & XRT_SWAPCHAIN_USAGE_TRANSFER_SRC) != 0) {
+		result |= VK_ACCESS_TRANSFER_READ_BIT;
+	}
+	if ((bits & XRT_SWAPCHAIN_USAGE_TRANSFER_DST) != 0) {
+		result |= VK_ACCESS_TRANSFER_WRITE_BIT;
+	}
+	if ((bits & XRT_SWAPCHAIN_USAGE_SAMPLED) != 0) {
+		result |= VK_ACCESS_SHADER_READ_BIT;
+	}
+	return result;
+}
+
 bool
 vk_init_descriptor_pool(struct vk_bundle *vk,
                         const VkDescriptorPoolSize *pool_sizes,

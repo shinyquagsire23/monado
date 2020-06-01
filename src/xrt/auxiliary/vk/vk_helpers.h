@@ -416,6 +416,9 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
 VkAccessFlags
 vk_get_access_flags(VkImageLayout layout);
 
+VkAccessFlags
+vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits);
+
 bool
 vk_init_descriptor_pool(struct vk_bundle *vk,
                         const VkDescriptorPoolSize *pool_sizes,
