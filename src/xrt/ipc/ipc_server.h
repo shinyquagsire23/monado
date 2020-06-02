@@ -87,6 +87,7 @@ struct ipc_quad_render_state
 {
 	uint32_t swapchain_index;
 	uint32_t image_index;
+	uint32_t array_index;
 
 	struct xrt_pose pose;
 	struct xrt_vec2 size;
@@ -98,6 +99,7 @@ struct ipc_stereo_projection_render_state
 	{
 		uint32_t swapchain_index;
 		uint32_t image_index;
+		uint32_t array_index;
 	} l, r;
 };
 

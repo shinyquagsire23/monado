@@ -538,7 +538,9 @@ _update_projection_layer(struct comp_compositor *c,
 	l = &cl->images[layer->stereo.l.image_index];
 	r = &cr->images[layer->stereo.r.image_index];
 
-	comp_renderer_set_projection_layer(c->r, l, r, layer->flip_y, i);
+	comp_renderer_set_projection_layer(c->r, l, r, layer->flip_y, i,
+	                                   layer->stereo.l.array_index,
+	                                   layer->stereo.r.array_index);
 
 	return true;
 }
@@ -564,7 +566,7 @@ _update_quad_layer(struct comp_compositor *c,
 	struct xrt_vec2 size = layer->quad.size;
 
 	comp_renderer_set_quad_layer(c->r, image, &pose, &size, layer->flip_y,
-	                             i);
+	                             i, layer->quad.array_index);
 
 	return true;
 }

@@ -390,7 +390,7 @@ compositor_layer_commit(struct xrt_compositor *xc)
 			image = &quad->sc->images[quad->image_index];
 			comp_renderer_set_quad_layer(c->r, image, &quad->pose,
 			                             &quad->size, layer->flip_y,
-			                             i);
+			                             i, quad->array_index);
 		} break;
 		case COMP_LAYER_STEREO_PROJECTION: {
 			struct comp_layer_stereo *stereo = &layer->stereo;
@@ -399,8 +399,9 @@ compositor_layer_commit(struct xrt_compositor *xc)
 			left = &stereo->l.sc->images[stereo->l.image_index];
 			right = &stereo->l.sc->images[stereo->r.image_index];
 
-			comp_renderer_set_projection_layer(c->r, left, right,
-			                                   layer->flip_y, i);
+			comp_renderer_set_projection_layer(
+			    c->r, left, right, layer->flip_y, i,
+			    stereo->l.array_index, stereo->r.array_index);
 		} break;
 		}
 	}

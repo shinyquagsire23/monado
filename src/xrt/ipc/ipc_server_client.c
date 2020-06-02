@@ -119,12 +119,16 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 			rl->stereo.r.swapchain_index =
 			    sl->stereo.r.swapchain_id;
 			rl->stereo.r.image_index = sl->stereo.r.image_index;
+			rl->stereo.l.array_index = sl->stereo.l.array_index;
+			rl->stereo.r.array_index = sl->stereo.r.array_index;
+
 			break;
 		case IPC_LAYER_QUAD:
 			rl->quad.swapchain_index = sl->quad.swapchain_id;
 			rl->quad.image_index = sl->quad.image_index;
 			rl->quad.pose = sl->quad.pose;
 			rl->quad.size = sl->quad.size;
+			rl->quad.array_index = sl->quad.array_index;
 			break;
 		}
 	}

@@ -478,10 +478,11 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
                              struct xrt_pose *pose,
                              struct xrt_vec2 *size,
                              bool flip_y,
-                             uint32_t layer)
+                             uint32_t layer,
+                             uint32_t array_index)
 {
 	comp_layer_update_descriptors(r->lr->layers[layer], image->sampler,
-	                              image->views[0]);
+	                              image->views[array_index]);
 
 	struct xrt_matrix_4x4 model_matrix;
 	math_matrix_4x4_quad_model(pose, size, &model_matrix);
@@ -499,11 +500,14 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
                                    struct comp_swapchain_image *left_image,
                                    struct comp_swapchain_image *right_image,
                                    bool flip_y,
-                                   uint32_t layer)
+                                   uint32_t layer,
+                                   uint32_t left_array_index,
+                                   uint32_t right_array_index)
 {
 	comp_layer_update_stereo_descriptors(
 	    r->lr->layers[layer], left_image->sampler, right_image->sampler,
-	    left_image->views[0], right_image->views[0]);
+	    left_image->views[left_array_index],
+	    right_image->views[right_array_index]);
 
 	comp_layer_set_flip_y(r->lr->layers[layer], flip_y);
 

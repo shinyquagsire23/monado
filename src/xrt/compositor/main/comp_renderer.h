@@ -59,7 +59,9 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
                                    struct comp_swapchain_image *left_image,
                                    struct comp_swapchain_image *right_image,
                                    bool flip_y,
-                                   uint32_t layer);
+                                   uint32_t layer,
+                                   uint32_t left_array_index,
+                                   uint32_t right_array_index);
 
 void
 comp_renderer_set_quad_layer(struct comp_renderer *r,
@@ -67,7 +69,8 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
                              struct xrt_pose *pose,
                              struct xrt_vec2 *size,
                              bool flip_y,
-                             uint32_t layer);
+                             uint32_t layer,
+                             uint32_t array_index);
 
 
 void
