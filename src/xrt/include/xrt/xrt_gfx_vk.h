@@ -38,7 +38,10 @@ void
 xrt_gfx_vk_get_versions(struct xrt_api_requirements *ver);
 
 /*!
+ * Create a Vulkan compositor client.
+ *
  * @ingroup xrt_iface
+ * @public @memberof xrt_compositor_fd
  */
 struct xrt_compositor_vk *
 xrt_gfx_vk_provider_create(struct xrt_compositor_fd *xcfd,

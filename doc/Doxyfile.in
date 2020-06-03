@@ -48,6 +48,7 @@ ALWAYS_DETAILED_SEC    = YES
 
 WARN_IF_UNDOCUMENTED   = @DOXYGEN_WARN_UNDOCUMENTED@
 EXTRACT_ALL            = @DOXYGEN_EXTRACT_ALL@
+HIDE_UNDOC_RELATIONS   = NO
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of the
 # path mentioned in the documentation of a class, which tells the reader which
@@ -2243,7 +2244,7 @@ DIA_PATH               =
 # and usage relations if the target is undocumented or is not a class.
 # The default value is: YES.
 
-HIDE_UNDOC_RELATIONS   = YES
+# HIDE_UNDOC_RELATIONS   = YES
 
 # If you set the HAVE_DOT tag to YES then doxygen will assume the dot tool is
 # available from the path. This tool is part of Graphviz (see:

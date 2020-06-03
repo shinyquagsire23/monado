@@ -29,7 +29,10 @@
 
 #include <assert.h>
 
-
+/*!
+ * An OpenCV-based camera calibration scene.
+ * @implements gui_scene
+ */
 struct calibration_scene
 {
 	struct gui_scene base;

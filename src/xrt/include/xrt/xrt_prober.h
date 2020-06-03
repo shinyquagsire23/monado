@@ -224,8 +224,7 @@ struct xrt_prober
 /*!
  * Helper function for @ref xrt_prober::probe.
  *
- * @ingroup xrt_iface
- * @relates xrt_prober
+ * @public @memberof xrt_prober
  */
 static inline int
 xrt_prober_probe(struct xrt_prober *xp)
@@ -236,8 +235,7 @@ xrt_prober_probe(struct xrt_prober *xp)
 /*!
  * Helper function for @ref xrt_prober::dump.
  *
- * @ingroup xrt_iface
- * @relates xrt_prober
+ * @public @memberof xrt_prober
  */
 static inline int
 xrt_prober_dump(struct xrt_prober *xp)
@@ -248,8 +246,7 @@ xrt_prober_dump(struct xrt_prober *xp)
 /*!
  * Helper function for @ref xrt_prober::select.
  *
- * @ingroup xrt_iface
- * @relates xrt_prober
+ * @public @memberof xrt_prober
  */
 static inline int
 xrt_prober_select(struct xrt_prober *xp,
@@ -262,8 +259,7 @@ xrt_prober_select(struct xrt_prober *xp,
 /*!
  * Helper function for @ref xrt_prober::open_hid_interface.
  *
- * @ingroup xrt_iface
- * @relates xrt_prober
+ * @public @memberof xrt_prober
  */
 static inline int
 xrt_prober_open_hid_interface(struct xrt_prober *xp,
@@ -277,8 +273,7 @@ xrt_prober_open_hid_interface(struct xrt_prober *xp,
 /*!
  * Helper function for @ref xrt_prober::get_string_descriptor.
  *
- * @ingroup xrt_iface
- * @relates xrt_prober
+ * @public @memberof xrt_prober
  */
 static inline int
 xrt_prober_get_string_descriptor(struct xrt_prober *xp,
@@ -294,8 +289,7 @@ xrt_prober_get_string_descriptor(struct xrt_prober *xp,
 /*!
  * Helper function for @ref xrt_prober::can_open.
  *
- * @ingroup xrt_iface
- * @relates xrt_prober
+ * @public @memberof xrt_prober
  */
 static inline bool
 xrt_prober_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
@@ -307,8 +301,7 @@ xrt_prober_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 /*!
  * Helper function for @ref xrt_prober::xrt_prober_open_video_device.
  *
- * @ingroup xrt_iface
- * @relates xrt_prober
+ * @public @memberof xrt_prober
  */
 static inline int
 xrt_prober_open_video_device(struct xrt_prober *xp,
@@ -322,8 +315,7 @@ xrt_prober_open_video_device(struct xrt_prober *xp,
 /*!
  * Helper function for @ref xrt_prober::list_video_devices.
  *
- * @ingroup xrt_iface
- * @relates xrt_prober
+ * @public @memberof xrt_prober
  */
 static inline int
 xrt_prober_list_video_devices(struct xrt_prober *xp,
@@ -336,8 +328,7 @@ xrt_prober_list_video_devices(struct xrt_prober *xp,
 /*!
  * Helper function for @ref xrt_prober::destroy.
  *
- * @ingroup xrt_iface
- * @relates xrt_prober
+ * @public @memberof xrt_prober
  */
 static inline void
 xrt_prober_destroy(struct xrt_prober **xp_ptr)
@@ -360,13 +351,15 @@ xrt_prober_destroy(struct xrt_prober **xp_ptr)
  * created xrt_prober instance.
  * @param[in] list Prober entry list
  *
- * @ingroup xrt_iface
- * @relates xrt_prober
+ * @public @memberof xrt_prober
  */
 int
 xrt_prober_create_with_lists(struct xrt_prober **out_xp,
                              struct xrt_prober_entry_lists *list);
 
+/*!
+ * @public @memberof xrt_prober
+ */
 bool
 xrt_prober_match_string(struct xrt_prober *xp,
                         struct xrt_prober_device *dev,
@@ -380,7 +373,11 @@ xrt_prober_match_string(struct xrt_prober *xp,
  */
 
 /*!
- * A simple prober to probe for a HMD device connected to the system.
+ * @interface xrt_auto_prober
+ *
+ * An interface to be exposed by a device driver that should probe for the
+ * existence of its own device on the system, rather than using shared probers
+ * with vendor/product IDs, etc.
  *
  * @ingroup xrt_iface
  */

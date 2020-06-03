@@ -21,6 +21,8 @@ extern "C" {
 
 
 /*!
+ * @interface os_hid_device
+ *
  * Representing a single hid interface on a device.
  */
 struct os_hid_device
@@ -56,6 +58,8 @@ struct os_hid_device
  *
  * If milliseconds are negative, this call blocks indefinitely, 0 polls,
  * and positive will block for that amount of milliseconds.
+ *
+ * @public @memberof os_hid_device
  */
 static inline int
 os_hid_read(struct os_hid_device *hid_dev,
@@ -68,6 +72,8 @@ os_hid_read(struct os_hid_device *hid_dev,
 
 /*!
  * Write an output report to the given device.
+ *
+ * @public @memberof os_hid_device
  */
 static inline int
 os_hid_write(struct os_hid_device *hid_dev, const uint8_t *data, size_t size)
@@ -80,6 +86,8 @@ os_hid_write(struct os_hid_device *hid_dev, const uint8_t *data, size_t size)
  *
  * If the device doesn't have more than one feature report, just request
  * report 0.
+ *
+ * @public @memberof os_hid_device
  */
 static inline int
 os_hid_get_feature(struct os_hid_device *hid_dev,
@@ -92,6 +100,8 @@ os_hid_get_feature(struct os_hid_device *hid_dev,
 
 /*!
  * Get a feature report with a timeout.
+ *
+ * @public @memberof os_hid_device
  */
 static inline int
 os_hid_get_feature_timeout(struct os_hid_device *hid_dev,
@@ -107,6 +117,8 @@ os_hid_get_feature_timeout(struct os_hid_device *hid_dev,
  *
  * The first byte of the buffer is the report number, to be followed by
  * the data of the report.
+ *
+ * @public @memberof os_hid_device
  */
 static inline int
 os_hid_set_feature(struct os_hid_device *hid_dev,
@@ -118,6 +130,8 @@ os_hid_set_feature(struct os_hid_device *hid_dev,
 
 /*!
  * Close and free the given device.
+ *
+ * @public @memberof os_hid_device
  */
 static inline void
 os_hid_destroy(struct os_hid_device *hid_dev)
@@ -128,6 +142,9 @@ os_hid_destroy(struct os_hid_device *hid_dev)
 #ifdef XRT_OS_LINUX
 /*!
  * Open the given path as a hidraw device.
+ *
+ * @public @memberof hid_hidraw
+ * @relatesalso os_hid_device
  */
 int
 os_hid_open_hidraw(const char *path, struct os_hid_device **out_hid);

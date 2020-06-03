@@ -18,6 +18,10 @@
 #include "gui_imgui.h"
 
 
+/*!
+ * A GUI scene that lets the user select a user device.
+ * @implements gui_scene
+ */
 struct video_select
 {
 	struct gui_scene base;

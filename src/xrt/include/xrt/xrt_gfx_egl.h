@@ -25,7 +25,10 @@ typedef __eglMustCastToProperFunctionPointerType (*PFNEGLGETPROCADDRESSPROC)(
 struct time_state;
 
 /*!
+ * Create an OpenGL(ES) compositor client using EGL.
+ *
  * @ingroup xrt_iface
+ * @public @memberof xrt_compositor_fd
  */
 struct xrt_compositor_gl *
 xrt_gfx_provider_create_gl_egl(struct xrt_compositor_fd *xcfd,

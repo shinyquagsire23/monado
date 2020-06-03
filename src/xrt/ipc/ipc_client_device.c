@@ -35,6 +35,10 @@
  *
  */
 
+/*!
+ * An IPC client proxy for an @ref xrt_device.
+ * @implements xrt_device
+ */
 struct ipc_client_device
 {
 	struct xrt_device base;
@@ -125,6 +129,9 @@ ipc_client_device_set_output(struct xrt_device *xdev,
 	}
 }
 
+/*!
+ * @public @memberof ipc_client_device
+ */
 struct xrt_device *
 ipc_client_device_create(ipc_connection_t *ipc_c,
                          struct xrt_tracking_origin *xtrack,

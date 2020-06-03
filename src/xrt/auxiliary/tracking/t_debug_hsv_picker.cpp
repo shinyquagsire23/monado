@@ -28,6 +28,12 @@
 #define max(a, b) (a > b ? a : b)
 #define min(a, b) (a < b ? a : b)
 
+/*!
+ * An @ref xrt_frame_sink that can be used to select HSV thresholds
+ * interactively.
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 class DebugHSVPicker
 {
 public:

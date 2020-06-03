@@ -18,9 +18,11 @@ extern "C" {
 
 
 /*!
+ * @class client_gl_xlib_compositor
  * A client facing xlib OpenGL base compositor.
  *
  * @ingroup comp_client
+ * @extends client_gl_compositor
  */
 struct client_gl_xlib_compositor
 {
@@ -29,10 +31,9 @@ struct client_gl_xlib_compositor
 };
 
 /*!
- * Convenience function to convert a xrt_compositor to a
- * client_gl_xlib_compositor.
+ * Down-cast helper.
  *
- * @ingroup comp_client
+ * @private @memberof client_gl_xlib_compositor
  */
 static inline struct client_gl_xlib_compositor *
 client_gl_xlib_compositor(struct xrt_compositor *xc)
@@ -43,7 +44,8 @@ client_gl_xlib_compositor(struct xrt_compositor *xc)
 /*!
  * Create a new client_gl_xlib_compositor.
  *
- * @ingroup comp_client
+ * @public @memberof client_gl_xlib_compositor
+ * @relatesalso xrt_compositor_fd
  */
 struct client_gl_xlib_compositor *
 client_gl_xlib_compositor_create(struct xrt_compositor_fd *xcfd,

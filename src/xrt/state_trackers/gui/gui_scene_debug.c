@@ -31,6 +31,10 @@
 
 #include <float.h>
 
+/*!
+ * A GUI scene showing the variable tracking provided by @ref util/u_var.h
+ * @implements gui_scene
+ */
 struct debug_scene
 {
 	struct gui_scene base;

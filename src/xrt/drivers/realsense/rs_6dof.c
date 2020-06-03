@@ -28,6 +28,9 @@
 
 
 
+/*!
+ * @implements xrt_device
+ */
 struct rs_6dof
 {
 	struct xrt_device base;

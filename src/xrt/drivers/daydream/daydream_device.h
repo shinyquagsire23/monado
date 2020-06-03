@@ -61,6 +61,9 @@ struct daydream_parsed_input
 	struct daydream_parsed_sample sample;
 };
 
+/*!
+ * @implements xrt_device
+ */
 struct daydream_device
 {
 	struct xrt_device base;

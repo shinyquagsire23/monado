@@ -28,6 +28,10 @@
  *
  */
 
+/*!
+ * An implementation of @ref os_ble_device using a DBus connection to BlueZ.
+ * @implements os_ble_device
+ */
 struct ble_notify
 {
 	struct os_ble_device base;

@@ -39,6 +39,8 @@ struct comp_window_direct_randr_display
 /*!
  * Direct mode "window" into a device, using Vulkan direct mode extension
  * and xcb.
+ *
+ * @implements comp_window
  */
 struct comp_window_direct_randr
 {
@@ -56,7 +58,7 @@ struct comp_window_direct_randr
 
 /*
  *
- * Pre decalre functions
+ * Forward declare functions
  *
  */
 

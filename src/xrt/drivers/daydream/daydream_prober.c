@@ -27,7 +27,7 @@
  *
  */
 
-// Should the experimental PSVR driver be enabled.
+// Should the experimental Daydream driver be enabled.
 DEBUG_GET_ONCE_BOOL_OPTION(daydream_enable, "DAYDREAM_ENABLE", true)
 DEBUG_GET_ONCE_BOOL_OPTION(daydream_spew, "DAYDREAM_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(daydream_debug, "DAYDREAM_PRINT_DEBUG", false)
@@ -36,6 +36,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(daydream_debug, "DAYDREAM_PRINT_DEBUG", false)
  * Daydream prober struct.
  *
  * @ingroup drv_daydream
+ * @implements xrt_auto_prober
  */
 struct daydream_prober
 {
@@ -53,12 +54,14 @@ struct daydream_prober
  *
  */
 
+//! @private @memberof daydream_prober
 static inline struct daydream_prober *
 daydream_prober(struct xrt_auto_prober *p)
 {
 	return (struct daydream_prober *)p;
 }
 
+//! @public @memberof daydream_prober
 static void
 daydream_prober_destroy(struct xrt_auto_prober *p)
 {
@@ -67,6 +70,7 @@ daydream_prober_destroy(struct xrt_auto_prober *p)
 	free(pdaydream);
 }
 
+//! @public @memberof daydream_prober
 static struct xrt_device *
 daydream_prober_autoprobe(struct xrt_auto_prober *xap,
                           cJSON *attached_data,

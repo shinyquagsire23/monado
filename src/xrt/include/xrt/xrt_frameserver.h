@@ -27,6 +27,7 @@ extern "C" {
  * floats for broad applicability.
  *
  * @ingroup xrt_iface
+ * @see xrt_fs
  */
 struct xrt_fs_capture_parameters
 {
@@ -34,6 +35,10 @@ struct xrt_fs_capture_parameters
 	float exposure;
 };
 
+/*!
+ * @see xrt_fs
+ * @ingroup xrt_iface
+ */
 struct xrt_fs_mode
 {
 	uint32_t width;
@@ -43,7 +48,8 @@ struct xrt_fs_mode
 };
 
 /*!
- * Frameserver that generates frame, multiple subframes (like stereo and
+ * @interface xrt_fs
+ * Frameserver that generates frames. Multiple subframes (like stereo and
  * mipmaps) can be generate in one frame.
  *
  * @ingroup xrt_iface
@@ -56,7 +62,7 @@ struct xrt_fs
 	char name[512];
 
 	/*!
-	 * All frames produced by this frameserver is tagged with this id.
+	 * All frames produced by this frameserver are tagged with this id.
 	 */
 	uint64_t source_id;
 
@@ -100,9 +106,11 @@ struct xrt_fs
  */
 
 /*!
- * Helper for xrt_fs::enumerate_modes.
+ * @copydoc xrt_fs::enumerate_modes
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_fs
  */
 static inline bool
 xrt_fs_enumerate_modes(struct xrt_fs *xfs,
@@ -113,9 +121,11 @@ xrt_fs_enumerate_modes(struct xrt_fs *xfs,
 }
 
 /*!
- * Helper for xrt_fs::configure_capture.
+ * @copydoc xrt_fs::configure_capture
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_fs
  */
 static inline bool
 xrt_fs_configure_capture(struct xrt_fs *xfs,
@@ -125,9 +135,11 @@ xrt_fs_configure_capture(struct xrt_fs *xfs,
 }
 
 /*!
- * Helper for xrt_fs::stream_start.
+ * @copydoc xrt_fs::stream_start
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_fs
  */
 static inline bool
 xrt_fs_stream_start(struct xrt_fs *xfs,
@@ -138,9 +150,11 @@ xrt_fs_stream_start(struct xrt_fs *xfs,
 }
 
 /*!
- * Helper for xrt_fs::stream_stop.
+ * @copydoc xrt_fs::stream_stop
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_fs
  */
 static inline bool
 xrt_fs_stream_stop(struct xrt_fs *xfs)
@@ -149,9 +163,11 @@ xrt_fs_stream_stop(struct xrt_fs *xfs)
 }
 
 /*!
- * Helper for xrt_fs::is_running.
+ * @copydoc xrt_fs::is_running
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_fs
  */
 static inline bool
 xrt_fs_is_running(struct xrt_fs *xfs)

@@ -158,7 +158,9 @@ u_distortion_mesh_from_gen(struct u_uv_generator *gen,
 #define div_scalar m_vec2_div_scalar
 #define len m_vec2_len
 
-
+/*!
+ * @implements u_uv_generator
+ */
 struct panotools_state
 {
 	struct u_uv_generator base;

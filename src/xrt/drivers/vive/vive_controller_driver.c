@@ -127,6 +127,7 @@ enum controller_variant
  * A Vive Controller device, representing just a single controller.
  *
  * @ingroup drv_vive
+ * @implements xrt_device
  */
 struct vive_controller_device
 {

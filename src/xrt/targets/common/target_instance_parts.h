@@ -22,6 +22,13 @@
  *
  */
 
+/*!
+ * Main "real" instance implementation.
+ *
+ * Used in instances both with and without compositor access.
+ *
+ * @implements xrt_instance
+ */
 struct t_instance
 {
 	struct xrt_instance base;

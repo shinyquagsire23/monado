@@ -32,7 +32,10 @@
  * Internal structs and helpers.
  *
  */
-
+/*!
+ * Client proxy for an xrt_compositor_fd implementation over IPC.
+ * @implements xrt_compositor_fd
+ */
 struct ipc_client_compositor
 {
 	struct xrt_compositor_fd base;
@@ -50,6 +53,10 @@ struct ipc_client_compositor
 	} layers;
 };
 
+/*!
+ * Client proxy for an xrt_swapchain_fd implementation over IPC.
+ * @implements xrt_swapchain_fd
+ */
 struct ipc_client_swapchain
 {
 	struct xrt_swapchain_fd base;

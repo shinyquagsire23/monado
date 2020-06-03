@@ -35,6 +35,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(arduino_debug, "ARDUINO_PRINT_DEBUG", false)
  * Arduino prober struct.
  *
  * @ingroup drv_arduino
+ * @implements xrt_auto_prober
  */
 struct arduino_prober
 {
@@ -52,12 +53,14 @@ struct arduino_prober
  *
  */
 
+//! @private @memberof arduino_prober
 static inline struct arduino_prober *
 arduino_prober(struct xrt_auto_prober *p)
 {
 	return (struct arduino_prober *)p;
 }
 
+//! @public @memberof arduino_prober
 static void
 arduino_prober_destroy(struct xrt_auto_prober *p)
 {
@@ -66,6 +69,7 @@ arduino_prober_destroy(struct xrt_auto_prober *p)
 	free(ap);
 }
 
+//! @public @memberof arduino_prober
 static struct xrt_device *
 arduino_prober_autoprobe(struct xrt_auto_prober *xap,
                          cJSON *attached_data,

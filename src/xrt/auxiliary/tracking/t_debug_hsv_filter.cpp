@@ -27,6 +27,12 @@
 #define HSV2_WIN "HSV Channel #3 (Blue)"
 #define HSV3_WIN "HSV Channel #4 (White)"
 
+/*!
+ * An @ref xrt_frame_sink that can be used to debug the behavior of
+ * @ref t_hsv_filter.
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 class DebugHSVFilter
 {
 public:

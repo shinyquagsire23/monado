@@ -129,12 +129,16 @@ struct t_stereo_camera_calibration
 
 /*!
  * Allocates a new stereo calibration data, unreferences the old @p calib.
+ *
+ * @public @memberof t_stereo_camera_calibration
  */
 void
 t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **calib);
 
 /*!
  * Only to be called by @p t_stereo_camera_calibration_reference.
+ *
+ * @private @memberof t_stereo_camera_calibration
  */
 void
 t_stereo_camera_calibration_destroy(struct t_stereo_camera_calibration *c);
@@ -147,6 +151,8 @@ t_stereo_camera_calibration_destroy(struct t_stereo_camera_calibration *c);
  *                @p dst points to will be set to @p src.
  * @param[in] src Object to be have it's refcount increased @p dst is set to
  *                this.
+ *
+ * @relates t_stereo_camera_calibration
  */
 static inline void
 t_stereo_camera_calibration_reference(struct t_stereo_camera_calibration **dst,
@@ -257,6 +263,10 @@ struct t_hsv_filter_color
 	uint8_t v_min;
 };
 
+/*!
+ * Parameters for constructing an HSV filter.
+ * @relates t_hsv_filter
+ */
 struct t_hsv_filter_params
 {
 	struct t_hsv_filter_color color[3];
@@ -299,6 +309,12 @@ t_hsv_filter_sample(struct t_hsv_filter_optimized_table *t,
 	return t->v[y / T_HSV_STEP][u / T_HSV_STEP][v / T_HSV_STEP];
 }
 
+/*!
+ * Construct an HSV filter sink.
+ * @public @memberof t_hsv_filter
+ *
+ * @relates xrt_frame_context
+ */
 int
 t_hsv_filter_create(struct xrt_frame_context *xfctx,
                     struct t_hsv_filter_params *params,
@@ -312,9 +328,15 @@ t_hsv_filter_create(struct xrt_frame_context *xfctx,
  *
  */
 
+/*!
+ * @public @memberof xrt_tracked_psmv
+ */
 int
 t_psmv_start(struct xrt_tracked_psmv *xtmv);
 
+/*!
+ * @public @memberof xrt_tracked_psmv
+ */
 int
 t_psmv_create(struct xrt_frame_context *xfctx,
               struct xrt_colour_rgb_f32 *rgb,
@@ -322,9 +344,15 @@ t_psmv_create(struct xrt_frame_context *xfctx,
               struct xrt_tracked_psmv **out_xtmv,
               struct xrt_frame_sink **out_sink);
 
+/*!
+ * @public @memberof xrt_tracked_psvr
+ */
 int
 t_psvr_start(struct xrt_tracked_psvr *xtvr);
 
+/*!
+ * @public @memberof xrt_tracked_psvr
+ */
 int
 t_psvr_create(struct xrt_frame_context *xfctx,
               struct t_stereo_camera_calibration *data,
@@ -420,6 +448,7 @@ struct t_calibration_params
 
 /*!
  * Sets the calibration parameters to the their default values.
+ * @public @memberof t_calibration_params
  */
 static inline void
 t_calibration_params_default(struct t_calibration_params *p)
@@ -473,6 +502,8 @@ t_calibration_params_default(struct t_calibration_params *p)
  * retained, and pointed-to struct modified.
  * @param gui Frame sink
  * @param out_sink Output: created frame sink.
+ *
+ * @relates xrt_frame_context
  */
 int
 t_calibration_stereo_create(struct xrt_frame_context *xfctx,
@@ -488,22 +519,34 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
  *
  */
 
+/*!
+ * @relates xrt_frame_context
+ */
 int
 t_convert_yuv_or_yuyv_create(struct xrt_frame_sink *next,
                              struct xrt_frame_sink **out_sink);
 
 
 
+/*!
+ * @relates xrt_frame_context
+ */
 int
 t_debug_hsv_picker_create(struct xrt_frame_context *xfctx,
                           struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink);
 
+/*!
+ * @relates xrt_frame_context
+ */
 int
 t_debug_hsv_viewer_create(struct xrt_frame_context *xfctx,
                           struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink);
 
+/*!
+ * @relates xrt_frame_context
+ */
 int
 t_debug_hsv_filter_create(struct xrt_frame_context *xfctx,
                           struct xrt_frame_sink *passthrough,

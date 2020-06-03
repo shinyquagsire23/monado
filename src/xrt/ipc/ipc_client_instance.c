@@ -34,8 +34,12 @@
  *
  */
 
+/*!
+ * @implements xrt_instance
+ */
 struct ipc_client_instance
 {
+	//! @public Base
 	struct xrt_instance base;
 
 	ipc_connection_t ipc_c;
@@ -173,6 +177,11 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
  *
  */
 
+/*!
+ * Constructor for xrt_instance IPC client proxy.
+ *
+ * @public @memberof ipc_instance
+ */
 int
 ipc_instance_create(struct xrt_instance **out_xinst)
 {

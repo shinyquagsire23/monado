@@ -55,7 +55,10 @@ struct gui_program
 };
 
 /*!
+ * @interface gui_scene
  * A single currently running scene.
+ *
+ * @ingroup gui
  */
 struct gui_scene
 {

@@ -23,6 +23,7 @@ struct time_state;
  * Creates the main fd compositor.
  *
  * @ingroup xrt_iface
+ * @relates xrt_compositor_fd
  */
 struct xrt_compositor_fd *
 xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y);

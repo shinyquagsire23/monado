@@ -35,6 +35,13 @@
  *
  */
 
+/*!
+ * Spew level logging.
+ *
+ * Outputs a line, from the given format string and arguments, only if
+ * v4l2_fs::print_spew is true.
+ * @relates v4l2_fs
+ */
 #define V_SPEW(p, ...)                                                         \
 	do {                                                                   \
 		if (p->print_spew) {                                           \
@@ -44,6 +51,14 @@
 		}                                                              \
 	} while (false)
 
+/*!
+ * Debug level logging.
+ *
+ * Outputs a line, from the given format string and arguments, only if
+ * v4l2_fs::print_debug is true.
+ *
+ * @relates v4l2_fs
+ */
 #define V_DEBUG(p, ...)                                                        \
 	do {                                                                   \
 		if (p->print_debug) {                                          \
@@ -53,6 +68,13 @@
 		}                                                              \
 	} while (false)
 
+/*!
+ * Error level logging.
+ *
+ * Outputs a line, from the given format string and arguments.
+ *
+ * @relates v4l2_fs
+ */
 #define V_ERROR(p, ...)                                                        \
 	do {                                                                   \
 		fprintf(stderr, "%s - ", __func__);                            \
@@ -91,6 +113,10 @@ DEBUG_GET_ONCE_NUM_OPTION(v4l2_exposure_absolute, "V4L2_EXPOSURE_ABSOLUTE", 10)
  *
  */
 
+/*!
+ * @extends xrt_frame
+ * @ingroup drv_v4l2
+ */
 struct v4l2_frame
 {
 	struct xrt_frame base;
@@ -100,6 +126,9 @@ struct v4l2_frame
 	struct v4l2_buffer v_buf;
 };
 
+/*!
+ * @ingroup drv_v4l2
+ */
 struct v4l2_control_state
 {
 	int force;
@@ -110,7 +139,10 @@ struct v4l2_control_state
 };
 
 /*!
- * A single open v4l2 capture device, starts it's own thread and waits on it.
+ * A single open v4l2 capture device, starts its own thread and waits on it.
+ *
+ * @implements xrt_frame_node
+ * @implements xrt_fs
  */
 struct v4l2_fs
 {

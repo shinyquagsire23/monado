@@ -28,6 +28,7 @@ extern "C" {
  * Descriptor of a v4l2 source.
  *
  * @ingroup drv_v4l2
+ * @extends xrt_fs_mode
  */
 struct v4l2_source_descriptor
 {

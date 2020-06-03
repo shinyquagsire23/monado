@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  A @ref xrt_frame_sink queue.
+ * @brief  An @ref xrt_frame_sink queue.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_util
  */
@@ -14,6 +14,11 @@
 #include <pthread.h>
 
 
+/*!
+ * An @ref xrt_frame_sink queue.
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 struct u_sink_queue
 {
 	struct xrt_frame_sink base;

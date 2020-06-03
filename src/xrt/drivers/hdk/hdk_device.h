@@ -24,6 +24,9 @@ enum HDK_VARIANT
 	HDK_VARIANT_2
 };
 
+/*!
+ * @implements xrt_device
+ */
 struct hdk_device
 {
 	struct xrt_device base;

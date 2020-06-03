@@ -49,6 +49,8 @@ enum xrt_tracking_type
 
 /*!
  * A tracking system or device origin.
+ *
+ * Tracking systems will typically extend this structure.
  */
 struct xrt_tracking_origin
 {
@@ -66,6 +68,7 @@ struct xrt_tracking_origin
 };
 
 /*!
+ * @interface xrt_tracking_factory
  * Tracking factory.
  */
 struct xrt_tracking_factory
@@ -98,6 +101,8 @@ struct xrt_tracking_sample
 };
 
 /*!
+ * @interface xrt_tracked_psmv
+ *
  * A single tracked PS Move controller, camera and ball are not synced.
  *
  * @todo How do we communicate ball colour change?
@@ -140,6 +145,8 @@ struct xrt_tracked_psmv
 };
 
 /*!
+ * @interface xrt_tracked_psvr
+ *
  * A tracked PSVR headset.
  *
  * @todo How do we communicate led lighting status?
@@ -180,6 +187,7 @@ struct xrt_tracked_psvr
  *
  */
 
+//! @public @memberof xrt_tracked_psmv
 static inline void
 xrt_tracked_psmv_get_tracked_pose(struct xrt_tracked_psmv *psmv,
                                   enum xrt_input_name name,
@@ -189,6 +197,7 @@ xrt_tracked_psmv_get_tracked_pose(struct xrt_tracked_psmv *psmv,
 	psmv->get_tracked_pose(psmv, name, when_ns, out_relation);
 }
 
+//! @public @memberof xrt_tracked_psmv
 static inline void
 xrt_tracked_psmv_push_imu(struct xrt_tracked_psmv *psmv,
                           timepoint_ns timestamp_ns,
@@ -197,6 +206,7 @@ xrt_tracked_psmv_push_imu(struct xrt_tracked_psmv *psmv,
 	psmv->push_imu(psmv, timestamp_ns, sample);
 }
 
+//! @public @memberof xrt_tracked_psmv
 static inline void
 xrt_tracked_psmv_destroy(struct xrt_tracked_psmv **xtmv_ptr)
 {
@@ -209,6 +219,7 @@ xrt_tracked_psmv_destroy(struct xrt_tracked_psmv **xtmv_ptr)
 	*xtmv_ptr = NULL;
 }
 
+//! @public @memberof xrt_tracked_psmv
 static inline void
 xrt_tracked_psvr_get_tracked_pose(struct xrt_tracked_psvr *psvr,
                                   timepoint_ns when_ns,
@@ -217,6 +228,7 @@ xrt_tracked_psvr_get_tracked_pose(struct xrt_tracked_psvr *psvr,
 	psvr->get_tracked_pose(psvr, when_ns, out_relation);
 }
 
+//! @public @memberof xrt_tracked_psmv
 static inline void
 xrt_tracked_psvr_push_imu(struct xrt_tracked_psvr *psvr,
                           timepoint_ns timestamp_ns,
@@ -225,6 +237,7 @@ xrt_tracked_psvr_push_imu(struct xrt_tracked_psvr *psvr,
 	psvr->push_imu(psvr, timestamp_ns, sample);
 }
 
+//! @public @memberof xrt_tracked_psmv
 static inline void
 xrt_tracked_psvr_destroy(struct xrt_tracked_psvr **xtvr_ptr)
 {

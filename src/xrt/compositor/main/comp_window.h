@@ -25,6 +25,7 @@ extern "C" {
  */
 
 /*!
+ * @interface comp_window
  * A output device or a window, often directly connected to the device.
  *
  * @ingroup comp_main
@@ -61,6 +62,7 @@ struct comp_window
  * Create a xcb window.
  *
  * @ingroup comp_main
+ * @public @memberof comp_window_xcb
  */
 struct comp_window *
 comp_window_xcb_create(struct comp_compositor *c);
@@ -71,6 +73,7 @@ comp_window_xcb_create(struct comp_compositor *c);
  * Create a wayland window.
  *
  * @ingroup comp_main
+ * @public @memberof comp_window_wayland
  */
 struct comp_window *
 comp_window_wayland_create(struct comp_compositor *c);
@@ -78,17 +81,19 @@ comp_window_wayland_create(struct comp_compositor *c);
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 /*!
- * Create a direct surface to a HMD over RandR.
+ * Create a direct surface to an HMD over RandR.
  *
  * @ingroup comp_main
+ * @public @memberof comp_window_direct_randr
  */
 struct comp_window *
 comp_window_direct_randr_create(struct comp_compositor *c);
 
 /*!
- * Create a direct surface to a HMD on NVIDIA.
+ * Create a direct surface to an HMD on NVIDIA.
  *
  * @ingroup comp_main
+ * @public @memberof comp_window_direct_nvidia
  */
 struct comp_window *
 comp_window_direct_nvidia_create(struct comp_compositor *c);

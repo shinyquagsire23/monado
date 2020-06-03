@@ -44,7 +44,13 @@ struct xrt_frame
 
 
 /*!
+ * @interface xrt_frame_sink
+ *
  * A object that is sent frames.
+ *
+ * All objects that implement @ref xrt_frame_sink **must** also implement @ref
+ * xrt_frame_node, and should take an @ref xrt_frame_context to register
+ * themselves with in their constructor.
  *
  * @ingroup xrt_iface
  */
@@ -58,6 +64,8 @@ struct xrt_frame_sink
 };
 
 /*!
+ * @interface xrt_frame_node
+ *
  * A interface object used for destroying a frame graph.
  *
  * @see container_of
@@ -105,6 +113,7 @@ struct xrt_frame_context
  * @param[in] src Object to be have it's refcount increased @p dst is set to
  *                this.
  * @ingroup xrt_iface
+ * @relates xrt_frame
  */
 static inline void
 xrt_frame_reference(struct xrt_frame **dst, struct xrt_frame *src)
@@ -131,7 +140,7 @@ xrt_frame_reference(struct xrt_frame **dst, struct xrt_frame *src)
 /*!
  * Add a node to a context.
  *
- * @ingroup xrt_iface
+ * @public @memberof xrt_frame_context
  */
 static inline void
 xrt_frame_context_add(struct xrt_frame_context *xfctx,
@@ -142,9 +151,9 @@ xrt_frame_context_add(struct xrt_frame_context *xfctx,
 }
 
 /*!
- * Destroy all child nodes, but free the context itself.
+ * Destroy all child nodes, but do not free the context itself.
  *
- * @ingroup xrt_iface
+ * @public @memberof xrt_frame_context
  */
 static inline void
 xrt_frame_context_destroy_nodes(struct xrt_frame_context *xfctx)

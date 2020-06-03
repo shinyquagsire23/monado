@@ -33,6 +33,8 @@
 
 /*!
  * Single camera.
+ *
+ * @see TrackerPSMV
  */
 struct View
 {
@@ -63,6 +65,13 @@ struct View
 	}
 };
 
+/*!
+ * The core object of the PS Move tracking setup.
+ *
+ * @implements xrt_tracked_psmv
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 struct TrackerPSMV
 {
 	struct xrt_tracked_psmv base = {};

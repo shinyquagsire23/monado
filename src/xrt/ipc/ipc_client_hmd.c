@@ -35,6 +35,10 @@
  *
  */
 
+/*!
+ * An IPC client proxy for an HMD @ref xrt_device.
+ * @implements xrt_device
+ */
 struct ipc_client_hmd
 {
 	struct xrt_device base;
@@ -117,6 +121,9 @@ ipc_client_hmd_get_view_pose(struct xrt_device *xdev,
 	}
 }
 
+/*!
+ * @public @memberof ipc_client_hmd
+ */
 struct xrt_device *
 ipc_client_hmd_create(ipc_connection_t *ipc_c,
                       struct xrt_tracking_origin *xtrack,

@@ -49,6 +49,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(psvr_disco, "PSVR_DISCO", false)
  * Private struct for the @ref drv_psvr device.
  *
  * @ingroup drv_psvr
+ * @implements xrt_device
  */
 struct psvr_device
 {

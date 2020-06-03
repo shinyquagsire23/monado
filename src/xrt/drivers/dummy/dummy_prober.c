@@ -17,18 +17,22 @@
 
 #include "dummy_interface.h"
 
-
+/*!
+ * @implements xrt_auto_prober
+ */
 struct dummy_prober
 {
 	struct xrt_auto_prober base;
 };
 
+//! @private @memberof dummy_prober
 static inline struct dummy_prober *
 dummy_prober(struct xrt_auto_prober *p)
 {
 	return (struct dummy_prober *)p;
 }
 
+//! @public @memberof dummy_prober
 static void
 dummy_prober_destroy(struct xrt_auto_prober *p)
 {
@@ -37,6 +41,7 @@ dummy_prober_destroy(struct xrt_auto_prober *p)
 	free(dp);
 }
 
+//! @public @memberof dummy_prober
 static struct xrt_device *
 dummy_prober_autoprobe(struct xrt_auto_prober *xap,
                        cJSON *attached_data,

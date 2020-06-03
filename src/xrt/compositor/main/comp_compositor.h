@@ -37,6 +37,7 @@ extern "C" {
  * A single swapchain image, holds the needed state for tracking image usage.
  *
  * @ingroup comp_main
+ * @see comp_swapchain
  */
 struct comp_swapchain_image
 {
@@ -59,6 +60,8 @@ struct comp_swapchain_image
  * Not used by the window backend that uses the vk_swapchain to render to.
  *
  * @ingroup comp_main
+ * @implements xrt_swapchain_fd
+ * @see comp_compositor
  */
 struct comp_swapchain
 {
@@ -74,10 +77,14 @@ struct comp_swapchain
 	 */
 	struct u_index_fifo fifo;
 };
-
+/*!
+ * Tag for distinguishing the union contents of @ref comp_layer.
+ */
 enum comp_layer_type
 {
+	//! comp_layer::stereo is initialized
 	COMP_LAYER_STEREO_PROJECTION,
+	//! comp_layer::quad is initialized
 	COMP_LAYER_QUAD,
 };
 
@@ -85,6 +92,7 @@ enum comp_layer_type
  * A quad layer.
  *
  * @ingroup comp_main
+ * @see comp_layer
  */
 struct comp_layer_quad
 {
@@ -101,6 +109,7 @@ struct comp_layer_quad
  * A stereo projection layer.
  *
  * @ingroup comp_main
+ * @see comp_layer
  */
 struct comp_layer_stereo
 {
@@ -116,6 +125,7 @@ struct comp_layer_stereo
  * A single layer.
  *
  * @ingroup comp_main
+ * @see comp_layer_slot
  */
 struct comp_layer
 {
@@ -133,6 +143,7 @@ struct comp_layer
  * A stack of layers.
  *
  * @ingroup comp_main
+ * @see comp_compositor
  */
 struct comp_layer_slot
 {
@@ -147,6 +158,7 @@ struct comp_layer_slot
  * Main compositor struct tying everything in the compositor together.
  *
  * @ingroup comp_main
+ * @implements xrt_compositor_fd
  */
 struct comp_compositor
 {
@@ -245,7 +257,7 @@ struct comp_compositor
 /*!
  * Convenience function to convert a xrt_swapchain to a comp_swapchain.
  *
- * @ingroup comp_main
+ * @private @memberof comp_swapchain
  */
 static inline struct comp_swapchain *
 comp_swapchain(struct xrt_swapchain *xsc)
@@ -256,7 +268,7 @@ comp_swapchain(struct xrt_swapchain *xsc)
 /*!
  * Convenience function to convert a xrt_compositor to a comp_compositor.
  *
- * @ingroup comp_main
+ * @private @memberof comp_compositor
  */
 static inline struct comp_compositor *
 comp_compositor(struct xrt_compositor *xc)
@@ -268,7 +280,7 @@ comp_compositor(struct xrt_compositor *xc)
  * Do garbage collection, destroying any resources that has been scheduled for
  * destruction from other threads.
  *
- * @ingroup comp_main
+ * @public @memberof comp_compositor
  */
 void
 comp_compositor_garbage_collect(struct comp_compositor *c);
@@ -276,7 +288,7 @@ comp_compositor_garbage_collect(struct comp_compositor *c);
 /*!
  * A compositor function that is implemented in the swapchain code.
  *
- * @ingroup comp_main
+ * @public @memberof comp_compositor
  */
 struct xrt_swapchain *
 comp_swapchain_create(struct xrt_compositor *xc,
@@ -295,7 +307,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
  * does the actual destruction and is called from @ref
  * comp_compositor_garbage_collect.
  *
- * @ingroup comp_main
+ * @private @memberof comp_swapchain
  */
 void
 comp_swapchain_really_destroy(struct comp_swapchain *sc);
@@ -303,7 +315,7 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc);
 /*!
  * Printer helper.
  *
- * @ingroup comp_main
+ * @public @memberof comp_compositor
  */
 void
 comp_compositor_print(struct comp_compositor *c,
@@ -314,7 +326,7 @@ comp_compositor_print(struct comp_compositor *c,
 /*!
  * Spew level logging.
  *
- * @ingroup comp_main
+ * @relates comp_compositor
  */
 #define COMP_SPEW(c, ...)                                                      \
 	do {                                                                   \
@@ -326,7 +338,7 @@ comp_compositor_print(struct comp_compositor *c,
 /*!
  * Debug level logging.
  *
- * @ingroup comp_main
+ * @relates comp_compositor
  */
 #define COMP_DEBUG(c, ...)                                                     \
 	do {                                                                   \
@@ -338,7 +350,7 @@ comp_compositor_print(struct comp_compositor *c,
 /*!
  * Mode printing.
  *
- * @ingroup comp_main
+ * @relates comp_compositor
  */
 #define COMP_PRINT_MODE(c, ...)                                                \
 	do {                                                                   \
@@ -350,7 +362,7 @@ comp_compositor_print(struct comp_compositor *c,
 /*!
  * Error level logging.
  *
- * @ingroup comp_main
+ * @relates comp_compositor
  */
 #define COMP_ERROR(c, ...)                                                     \
 	do {                                                                   \

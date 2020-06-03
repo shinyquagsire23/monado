@@ -132,6 +132,11 @@ t_hsv_build_optimized_table(struct t_hsv_filter_params *params,
 
 #define NUM_CHANNELS 4
 
+/*!
+ * An @ref xrt_frame_sink that splits the input based on hue.
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 struct t_hsv_filter
 {
 	struct xrt_frame_sink base;

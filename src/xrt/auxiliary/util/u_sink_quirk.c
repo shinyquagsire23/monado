@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  A @ref xrt_frame_sink that quirks frames.
+ * @brief  An @ref xrt_frame_sink that quirks frames.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_util
  */
@@ -10,7 +10,11 @@
 #include "util/u_misc.h"
 #include "util/u_sink.h"
 
-
+/*!
+ * An @ref xrt_frame_sink that quirks frames.
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 struct u_sink_quirk
 {
 	struct xrt_frame_sink base;

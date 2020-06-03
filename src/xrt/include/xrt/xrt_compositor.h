@@ -70,7 +70,8 @@ enum xrt_view_type
 };
 
 /*!
- * Common swapchain base.
+ * @interface xrt_swapchain
+ * Common swapchain interface/base.
  *
  * @ingroup xrt_iface
  */
@@ -106,9 +107,11 @@ struct xrt_swapchain
 };
 
 /*!
- * Helper for xrt_swapchain::acquire_image.
+ * @copydoc xrt_swapchain::acquire_image
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_swapchain
  */
 static inline bool
 xrt_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
@@ -117,9 +120,11 @@ xrt_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
 }
 
 /*!
- * Helper for xrt_swapchain::wait_image.
+ * @copydoc xrt_swapchain::wait_image
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_swapchain
  */
 static inline bool
 xrt_swapchain_wait_image(struct xrt_swapchain *xsc,
@@ -130,9 +135,11 @@ xrt_swapchain_wait_image(struct xrt_swapchain *xsc,
 }
 
 /*!
- * Helper for xrt_swapchain::release_image.
+ * @copydoc xrt_swapchain::release_image
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_swapchain
  */
 static inline bool
 xrt_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
@@ -141,10 +148,12 @@ xrt_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 }
 
 /*!
- * Helper for xrt_swapchain::destroy, does a null check and sets xc_ptr to
- * null if freed.
+ * @copydoc xrt_swapchain::destroy
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer: does a null check and sets
+ * xsc_ptr to null if freed.
+ *
+ * @public @memberof xrt_swapchain
  */
 static inline void
 xrt_swapchain_destroy(struct xrt_swapchain **xsc_ptr)
@@ -159,7 +168,9 @@ xrt_swapchain_destroy(struct xrt_swapchain **xsc_ptr)
 }
 
 /*!
- * Common compositor base.
+ * @interface xrt_compositor
+ *
+ * Common compositor client interface/base.
  *
  * @ingroup xrt_iface
  */
@@ -241,8 +252,8 @@ struct xrt_compositor
 	void (*discard_frame)(struct xrt_compositor *xc);
 
 	/*!
-	 * Begins layer submission, this and the other layer_* calls equivalent
-	 * to xrEndFrame, except over multiple class. It's only after
+	 * Begins layer submission, this and the other layer_* calls are
+	 * equivalent to xrEndFrame, except over multiple calls. It's only after
 	 * @p layer_commit that layers will be displayed. From the point of view
 	 * of the swapchain the image is used as soon as it's given in a call.
 	 */
@@ -252,6 +263,7 @@ struct xrt_compositor
 	/*!
 	 * Adds a stereo projection layer for submissions.
 	 *
+	 * @param xc          Self pointer
 	 * @param timestamp     When should this layer be shown.
 	 * @param xdev          The device the layer is relative to.
 	 * @param name          Which pose this layer is relative to.
@@ -294,6 +306,7 @@ struct xrt_compositor
 	 * Adds a quad layer for submission, the center of the quad is specified
 	 * by the pose and extends outwards from it.
 	 *
+	 * @param xc          Self pointer
 	 * @param timestamp   When should this layer be shown.
 	 * @param xdev        The device the layer is relative to.
 	 * @param name        Which pose this layer is relative to.
@@ -337,9 +350,11 @@ struct xrt_compositor
 };
 
 /*!
- * Helper for xrt_compositor::create_swapchain
+ * @copydoc xrt_compositor::create_swapchain
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline struct xrt_swapchain *
 xrt_comp_create_swapchain(struct xrt_compositor *xc,
@@ -359,9 +374,11 @@ xrt_comp_create_swapchain(struct xrt_compositor *xc,
 }
 
 /*!
- * Helper for xrt_compositor::poll_events
+ * @copydoc xrt_compositor::poll_events
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_poll_events(struct xrt_compositor *xc, uint64_t *WIP)
@@ -370,9 +387,11 @@ xrt_comp_poll_events(struct xrt_compositor *xc, uint64_t *WIP)
 }
 
 /*!
- * Helper for xrt_compositor::prepare_session
+ * @copydoc xrt_compositor::prepare_session
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_prepare_session(struct xrt_compositor *xc)
@@ -381,9 +400,11 @@ xrt_comp_prepare_session(struct xrt_compositor *xc)
 }
 
 /*!
- * Helper for xrt_compositor::begin_session
+ * @copydoc xrt_compositor::begin_session
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
@@ -392,9 +413,11 @@ xrt_comp_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
 }
 
 /*!
- * Helper for xrt_compositor::end_session
+ * @copydoc xrt_compositor::end_session
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_end_session(struct xrt_compositor *xc)
@@ -403,9 +426,11 @@ xrt_comp_end_session(struct xrt_compositor *xc)
 }
 
 /*!
- * Helper for xrt_compositor::wait_frame
+ * @copydoc xrt_compositor::wait_frame
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_wait_frame(struct xrt_compositor *xc,
@@ -416,9 +441,11 @@ xrt_comp_wait_frame(struct xrt_compositor *xc,
 }
 
 /*!
- * Helper for xrt_compositor::begin_frame
+ * @copydoc xrt_compositor::begin_frame
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_begin_frame(struct xrt_compositor *xc)
@@ -427,9 +454,11 @@ xrt_comp_begin_frame(struct xrt_compositor *xc)
 }
 
 /*!
- * Helper for xrt_compositor::discard_frame
+ * @copydoc xrt_compositor::discard_frame
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_discard_frame(struct xrt_compositor *xc)
@@ -438,9 +467,11 @@ xrt_comp_discard_frame(struct xrt_compositor *xc)
 }
 
 /*!
- * Helper for xrt_compositor::layer_begin
+ * @copydoc xrt_compositor::layer_begin
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_layer_begin(struct xrt_compositor *xc,
@@ -450,9 +481,11 @@ xrt_comp_layer_begin(struct xrt_compositor *xc,
 }
 
 /*!
- * Helper for xrt_compositor::layer_stereo_projection
+ * @copydoc xrt_compositor::layer_stereo_projection
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
@@ -481,9 +514,11 @@ xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
 }
 
 /*!
- * Helper for xrt_compositor::layer_quad
+ * @copydoc xrt_compositor::layer_quad
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_layer_quad(struct xrt_compositor *xc,
@@ -505,9 +540,11 @@ xrt_comp_layer_quad(struct xrt_compositor *xc,
 }
 
 /*!
- * Helper for xrt_compositor::layer_commit
+ * @copydoc xrt_compositor::layer_commit
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_layer_commit(struct xrt_compositor *xc)
@@ -516,10 +553,12 @@ xrt_comp_layer_commit(struct xrt_compositor *xc)
 }
 
 /*!
- * Helper for xrt_compositor::destroy, does a null check and sets xc_ptr to
- * null if freed.
+ * @copydoc xrt_compositor::destroy
  *
- * @ingroup xrt_iface
+ * Helper for calling through the function pointer: does a null check and sets
+ * xc_ptr to null if freed.
+ *
+ * @public @memberof xrt_compositor
  */
 static inline void
 xrt_comp_destroy(struct xrt_compositor **xc_ptr)
@@ -541,10 +580,13 @@ xrt_comp_destroy(struct xrt_compositor **xc_ptr)
  */
 
 /*!
+ * Base class for an OpenGL (ES) client swapchain.
  * @ingroup xrt_iface comp_client
+ * @extends xrt_swapchain
  */
 struct xrt_swapchain_gl
 {
+	//! @public Base
 	struct xrt_swapchain base;
 
 	// GLuint
@@ -554,19 +596,35 @@ struct xrt_swapchain_gl
 };
 
 /*!
+ * Base class for an OpenGL (ES) client compositor.
  * @ingroup xrt_iface comp_client
+ * @extends xrt_compositor
  */
 struct xrt_compositor_gl
 {
 	struct xrt_compositor base;
 };
 
+/*!
+ * Down-cast helper.
+ *
+ * @private @memberof xrt_swapchain_gl
+ *
+ * @todo unused - remove?
+ */
 static inline struct xrt_swapchain_gl *
 xrt_swapchain_gl(struct xrt_swapchain *xsc)
 {
 	return (struct xrt_swapchain_gl *)xsc;
 }
 
+/*!
+ * Down-cast helper.
+ *
+ * @private @memberof xrt_compositor_gl
+ *
+ * @todo unused - remove?
+ */
 static inline struct xrt_compositor_gl *
 xrt_compositor_gl(struct xrt_compositor *xc)
 {
@@ -592,9 +650,11 @@ typedef uint64_t VkDeviceMemory;
  * Base class for a Vulkan client swapchain.
  *
  * @ingroup xrt_iface comp_client
+ * @extends xrt_swapchain
  */
 struct xrt_swapchain_vk
 {
+	//! @public Base
 	struct xrt_swapchain base;
 
 	VkImage images[XRT_MAX_SWAPCHAIN_IMAGES];
@@ -605,18 +665,34 @@ struct xrt_swapchain_vk
  * Base class for a Vulkan client compositor.
  *
  * @ingroup xrt_iface comp_client
+ * @extends xrt_compositor
  */
 struct xrt_compositor_vk
 {
+	//! @public Base
 	struct xrt_compositor base;
 };
 
+/*!
+ * Down-cast helper.
+ *
+ * @private @memberof xrt_swapchain_vk
+ *
+ * @todo unused - remove?
+ */
 static inline struct xrt_swapchain_vk *
 xrt_swapchain_vk(struct xrt_swapchain *xsc)
 {
 	return (struct xrt_swapchain_vk *)xsc;
 }
 
+/*!
+ * Down-cast helper.
+ *
+ * @private @memberof xrt_compositor_vk
+ *
+ * @todo unused - remove?
+ */
 static inline struct xrt_compositor_vk *
 xrt_compositor_vk(struct xrt_compositor *xc)
 {
@@ -634,6 +710,7 @@ xrt_compositor_vk(struct xrt_compositor *xc)
  * A single image of a fd based swapchain.
  *
  * @ingroup xrt_iface comp
+ * @see xrt_swapchain_fd
  */
 struct xrt_image_fd
 {
@@ -643,33 +720,52 @@ struct xrt_image_fd
 };
 
 /*!
- * A swapchain that exposes fd to be imported into a client API.
+ * @interface xrt_swapchain_fd
+ * Base class for a swapchain that exposes fd to be imported into a client API.
  *
  * @ingroup xrt_iface comp
+ * @extends xrt_swapchain
  */
 struct xrt_swapchain_fd
 {
+	//! @public Base
 	struct xrt_swapchain base;
 
 	struct xrt_image_fd images[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
 /*!
- * Main compositor.
+ * @interface xrt_compositor_fd
+ *
+ * Main compositor server interface.
  *
  * @ingroup xrt_iface comp
+ * @extends xrt_compositor
  */
 struct xrt_compositor_fd
 {
+	//! @public Base
 	struct xrt_compositor base;
 };
 
+/*!
+ * Down-cast helper.
+ *
+ * @public @memberof xrt_swapchain_fd
+ */
 static inline struct xrt_swapchain_fd *
 xrt_swapchain_fd(struct xrt_swapchain *xsc)
 {
 	return (struct xrt_swapchain_fd *)xsc;
 }
 
+/*!
+ * Down-cast helper.
+ *
+ * @public @memberof xrt_compositor_fd
+ *
+ * @todo unused - remove?
+ */
 static inline struct xrt_compositor_fd *
 xrt_compositor_fd(struct xrt_compositor *xc)
 {

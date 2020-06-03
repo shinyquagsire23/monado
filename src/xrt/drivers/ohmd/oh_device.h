@@ -19,6 +19,9 @@ extern "C" {
 typedef struct ohmd_context ohmd_context;
 typedef struct ohmd_device ohmd_device;
 
+/*!
+ * @implements xrt_device
+ */
 struct oh_device
 {
 	struct xrt_device base;

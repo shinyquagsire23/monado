@@ -24,7 +24,10 @@ typedef void *GLXContext;
 struct time_state;
 
 /*!
+ * Create an OpenGL compositor client using xlib.
+ *
  * @ingroup xrt_iface
+ * @public @memberof xrt_compositor_fd
  */
 struct xrt_compositor_gl *
 xrt_gfx_provider_create_gl_xlib(struct xrt_compositor_fd *xcfd,

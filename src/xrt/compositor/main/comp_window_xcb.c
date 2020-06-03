@@ -43,6 +43,8 @@ struct comp_window_xcb_display
 
 /*!
  * A xcb connection and window.
+ *
+ * @implements comp_window
  */
 struct comp_window_xcb
 {

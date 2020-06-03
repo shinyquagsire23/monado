@@ -106,6 +106,10 @@ typedef enum
 static bool survive_already_initialized = false;
 
 #define MAX_PENDING_EVENTS 30
+
+/*!
+ * @implements xrt_device
+ */
 struct survive_device
 {
 	struct xrt_device base;
@@ -128,6 +132,9 @@ enum VIVE_VARIANT
 	VIVE_VARIANT_INDEX
 };
 
+/*!
+ * @extends xrt_tracking_origin
+ */
 struct survive_system
 {
 	struct xrt_tracking_origin base;

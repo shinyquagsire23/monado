@@ -20,6 +20,7 @@ extern "C" {
 
 
 /*!
+ * @interface os_ble_device
  * Representing a single ble notify attribute on a device.
  *
  * @ingroup aux_os

@@ -57,6 +57,9 @@ struct arduino_parsed_input
 	struct arduino_parsed_sample sample;
 };
 
+/*!
+ * @implements xrt_device
+ */
 struct arduino_device
 {
 	struct xrt_device base;

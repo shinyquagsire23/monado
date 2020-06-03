@@ -48,6 +48,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(gui, "OXR_DEBUG_GUI", false)
 
 /*!
  * Common struct holding state for the GUI interface.
+ * @extends gui_program
  */
 struct sdl2_program
 {

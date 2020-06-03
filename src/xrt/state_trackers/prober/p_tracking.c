@@ -32,6 +32,10 @@
  *
  */
 
+/*!
+ * @implements xrt_tracking_factory
+ * @extends xrt_tracking_origin
+ */
 struct p_factory
 {
 	//! Base struct.

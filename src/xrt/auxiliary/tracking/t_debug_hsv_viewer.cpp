@@ -23,6 +23,11 @@
 
 #define HSV_WIN "HSV Filter Tester"
 
+/*!
+ * An @ref xrt_frame_sink related to debug viewing of HSV.
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 class DebugHSVViewer
 {
 public:

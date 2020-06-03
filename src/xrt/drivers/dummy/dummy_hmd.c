@@ -32,6 +32,9 @@
  *
  */
 
+/*!
+ * @implements xrt_device
+ */
 struct dummy_hmd
 {
 	struct xrt_device base;

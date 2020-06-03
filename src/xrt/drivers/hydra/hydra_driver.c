@@ -154,6 +154,7 @@ struct hydra_device;
  * A Razer Hydra system containing two controllers.
  *
  * @ingroup drv_hydra
+ * @extends xrt_tracking_origin
  */
 struct hydra_system
 {
@@ -191,6 +192,7 @@ struct hydra_system
  * A Razer Hydra device, representing just a single controller.
  *
  * @ingroup drv_hydra
+ * @implements xrt_device
  */
 struct hydra_device
 {

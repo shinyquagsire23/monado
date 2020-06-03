@@ -37,6 +37,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(psvr_debug, "PSVR_PRINT_DEBUG", false)
  * PSVR prober struct.
  *
  * @ingroup drv_psvr
+ * @implements xrt_auto_prober
  */
 struct psvr_prober
 {
@@ -54,12 +55,14 @@ struct psvr_prober
  *
  */
 
+//! @private @memberof psvr_prober
 static inline struct psvr_prober *
 psvr_prober(struct xrt_auto_prober *p)
 {
 	return (struct psvr_prober *)p;
 }
 
+//! @public @memberof psvr_prober
 static void
 psvr_prober_destroy(struct xrt_auto_prober *p)
 {
@@ -68,6 +71,7 @@ psvr_prober_destroy(struct xrt_auto_prober *p)
 	free(ppsvr);
 }
 
+//! @public @memberof psvr_prober
 static struct xrt_device *
 psvr_prober_autoprobe(struct xrt_auto_prober *xap,
                       cJSON *attached_data,

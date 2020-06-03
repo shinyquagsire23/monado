@@ -118,6 +118,7 @@ struct ns_eye
  * Information about the whole North Star headset.
  *
  * @ingroup drv_ns
+ * @implements xrt_device
  */
 struct ns_hmd
 {
@@ -139,6 +140,7 @@ struct ns_hmd
  * The mesh generator for the North Star distortion.
  *
  * @ingroup drv_ns
+ * @implements u_uv_generator
  */
 struct ns_mesh
 {

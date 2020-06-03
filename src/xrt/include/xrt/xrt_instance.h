@@ -26,6 +26,8 @@ struct xrt_compositor_fd;
  */
 
 /*!
+ * @interface xrt_instance
+ *
  * This interface acts as a root object for Monado.
  * It typically either wraps an @ref xrt_prober or forms a connection to an
  * out-of-process XR service.
@@ -37,6 +39,8 @@ struct xrt_compositor_fd;
  * interface, which is exposed by implementing xrt_instance_create().
  *
  * Additional information can be found in @ref md_targets
+ *
+ * @sa ipc_instance_create
  */
 struct xrt_instance
 {
@@ -130,17 +134,11 @@ struct xrt_instance
 };
 
 /*!
- * @name Method call helpers for xrt_instance
- * Calling code should prefer using these instead of directly using the function
- * pointer members.
- * @{
- */
-/*!
- * Helper function for @ref xrt_instance::select.
+ * @copydoc xrt_instance::select
  *
- * See @ref xrt_instance::select for documentation.
+ * Helper for calling through the function pointer.
  *
- * @relates xrt_instance
+ * @public @memberof xrt_instance
  */
 static inline int
 xrt_instance_select(struct xrt_instance *xinst,
@@ -151,11 +149,11 @@ xrt_instance_select(struct xrt_instance *xinst,
 }
 
 /*!
- * Helper function for @ref xrt_instance::create_fd_compositor.
+ * @copydoc xrt_instance::create_fd_compositor
  *
- * See @ref xrt_instance::create_fd_compositor for documentation.
+ * Helper for calling through the function pointer.
  *
- * @relates xrt_instance
+ * @public @memberof xrt_instance
  */
 static inline int
 xrt_instance_create_fd_compositor(struct xrt_instance *xinst,
@@ -167,11 +165,11 @@ xrt_instance_create_fd_compositor(struct xrt_instance *xinst,
 }
 
 /*!
- * Helper function for @ref xrt_instance::get_prober.
+ * @copydoc xrt_instance::get_prober
  *
- * See @ref xrt_instance::get_prober for documentation.
+ * Helper for calling through the function pointer.
  *
- * @relates xrt_instance
+ * @public @memberof xrt_instance
  */
 static inline int
 xrt_instance_get_prober(struct xrt_instance *xinst, struct xrt_prober **out_xp)
@@ -180,14 +178,14 @@ xrt_instance_get_prober(struct xrt_instance *xinst, struct xrt_prober **out_xp)
 }
 
 /*!
- * Helper function for @ref xrt_instance::destroy.
+ * Destroy an xrt_instance - helper function.
  *
  * @param[in,out] xinst_ptr A pointer to your instance implementation pointer.
  *
  * Will destroy the instance if *xinst_ptr is not NULL. Will then set *xinst_ptr
  * to NULL.
  *
- * @relates xrt_instance
+ * @public @memberof xrt_instance
  */
 static inline void
 xrt_instance_destroy(struct xrt_instance **xinst_ptr)
@@ -200,10 +198,6 @@ xrt_instance_destroy(struct xrt_instance **xinst_ptr)
 	xinst->destroy(xinst);
 	*xinst_ptr = NULL;
 }
-/*!
- * @}
- */
-
 
 /*!
  * @name Factory

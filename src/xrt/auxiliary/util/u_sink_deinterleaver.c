@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  A @ref xrt_frame_sink that deinterleaves stereo frames.
+ * @brief  An @ref xrt_frame_sink that deinterleaves stereo frames.
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_util
@@ -13,6 +13,11 @@
 #include "util/u_frame.h"
 
 
+/*!
+ * An @ref xrt_frame_sink that deinterleaves stereo frames.
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 struct u_sink_deinterleaver
 {
 	struct xrt_frame_sink base;

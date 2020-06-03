@@ -26,6 +26,11 @@
  *
  */
 
+/*!
+ * An @ref xrt_frame_sink that converts frames.
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 struct u_sink_converter
 {
 	struct xrt_frame_sink base;

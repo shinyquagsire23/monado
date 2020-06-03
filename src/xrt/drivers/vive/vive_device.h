@@ -48,6 +48,9 @@ enum VIVE_VARIANT
 	VIVE_VARIANT_INDEX
 };
 
+/*!
+ * @implements xrt_device
+ */
 struct vive_device
 {
 	struct xrt_device base;

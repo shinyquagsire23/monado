@@ -24,6 +24,9 @@ DEBUG_GET_ONCE_BOOL_OPTION(oh_spew, "OH_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(oh_debug, "OH_PRINT_DEBUG", false)
 DEBUG_GET_ONCE_BOOL_OPTION(oh_external, "OH_EXTERNAL_DRIVER", false)
 
+/*!
+ * @implements xrt_auto_prober
+ */
 struct oh_prober
 {
 	struct xrt_auto_prober base;
@@ -32,12 +35,14 @@ struct oh_prober
 	bool print_debug;
 };
 
+//! @private @memberof oh_prober
 static inline struct oh_prober *
 oh_prober(struct xrt_auto_prober *p)
 {
 	return (struct oh_prober *)p;
 }
 
+//! @public @memberof oh_prober
 static void
 oh_prober_destroy(struct xrt_auto_prober *p)
 {
@@ -51,6 +56,7 @@ oh_prober_destroy(struct xrt_auto_prober *p)
 	free(ohp);
 }
 
+//! @public @memberof oh_prober
 static struct xrt_device *
 oh_prober_autoprobe(struct xrt_auto_prober *xap,
                     cJSON *attached_data,

@@ -24,6 +24,9 @@ DEBUG_GET_ONCE_OPTION(ns_config_path, "NS_CONFIG_PATH", NULL)
 DEBUG_GET_ONCE_BOOL_OPTION(ns_spew, "NS_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(ns_debug, "NS_PRINT_DEBUG", false)
 
+/*!
+ * @implements xrt_auto_prober
+ */
 struct ns_prober
 {
 	struct xrt_auto_prober base;
@@ -32,12 +35,14 @@ struct ns_prober
 	bool print_debug;
 };
 
+//! @private @memberof ns_prober
 static inline struct ns_prober *
 ns_prober(struct xrt_auto_prober *p)
 {
 	return (struct ns_prober *)p;
 }
 
+//! @public @memberof ns_prober
 static void
 ns_prober_destroy(struct xrt_auto_prober *p)
 {
@@ -46,6 +51,7 @@ ns_prober_destroy(struct xrt_auto_prober *p)
 	free(nsp);
 }
 
+//! @public @memberof ns_prober
 static struct xrt_device *
 ns_prober_autoprobe(struct xrt_auto_prober *xap,
                     cJSON *attached_data,

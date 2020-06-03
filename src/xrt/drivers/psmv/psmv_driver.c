@@ -440,6 +440,8 @@ struct psmv_parsed_input
  * Translated to axis that means the ball is on the Y+ axis, the buttons on the
  * Z+ axis, the trigger on the Z- axis, the USB port on the Y- axis, the start
  * button on the X+ axis, select button on the X- axis.
+ *
+ * @implements xrt_device
  */
 struct psmv_device
 {

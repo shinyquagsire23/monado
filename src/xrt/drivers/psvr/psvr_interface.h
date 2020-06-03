@@ -24,6 +24,7 @@ extern "C" {
  * Create a probe for PSVR devices.
  *
  * @ingroup drv_psvr
+ * @relates xrt_auto_prober
  */
 struct xrt_auto_prober *
 psvr_create_auto_prober(void);

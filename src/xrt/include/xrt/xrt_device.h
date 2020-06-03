@@ -202,6 +202,8 @@ struct xrt_output
 };
 
 /*!
+ * @interface xrt_device
+ *
  * A single HMD or input device.
  *
  * @ingroup xrt_iface
@@ -311,6 +313,8 @@ struct xrt_device
 
 /*!
  * Helper function for @ref xrt_device::update_inputs.
+ *
+ * @public @memberof xrt_device
  */
 static inline void
 xrt_device_update_inputs(struct xrt_device *xdev)
@@ -320,6 +324,8 @@ xrt_device_update_inputs(struct xrt_device *xdev)
 
 /*!
  * Helper function for @ref xrt_device::get_tracked_pose.
+ *
+ * @public @memberof xrt_device
  */
 static inline void
 xrt_device_get_tracked_pose(struct xrt_device *xdev,
@@ -334,6 +340,8 @@ xrt_device_get_tracked_pose(struct xrt_device *xdev,
 
 /*!
  * Helper function for @ref xrt_device::set_output.
+ *
+ * @public @memberof xrt_device
  */
 static inline void
 xrt_device_set_output(struct xrt_device *xdev,
@@ -345,6 +353,8 @@ xrt_device_set_output(struct xrt_device *xdev,
 
 /*!
  * Helper function for @ref xrt_device::get_view_pose.
+ *
+ * @public @memberof xrt_device
  */
 static inline void
 xrt_device_get_view_pose(struct xrt_device *xdev,
@@ -357,6 +367,8 @@ xrt_device_get_view_pose(struct xrt_device *xdev,
 
 /*!
  * Helper function for @ref xrt_device::destroy.
+ *
+ * @public @memberof xrt_device
  */
 static inline void
 xrt_device_destroy(struct xrt_device **xdev_ptr)

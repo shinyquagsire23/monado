@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  A @ref xrt_frame_sink splitter.
+ * @brief  An @ref xrt_frame_sink splitter.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_util
  */
@@ -11,6 +11,11 @@
 #include "util/u_sink.h"
 
 
+/*!
+ * An @ref xrt_frame_sink splitter.
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 struct u_sink_split
 {
 	struct xrt_frame_sink base;

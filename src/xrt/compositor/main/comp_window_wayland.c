@@ -29,6 +29,8 @@
 
 /*!
  * A Wayland connection and window.
+ *
+ * @implements comp_window
  */
 struct comp_window_wayland
 {

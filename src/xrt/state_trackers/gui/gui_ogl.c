@@ -16,6 +16,11 @@
 #include <pthread.h>
 
 
+/*!
+ * An @ref xrt_frame_sink that shows sunk frames in the GUI.
+ * @implements xrt_frame_sink
+ * @implements xrt_frame_node
+ */
 struct gui_ogl_sink
 {
 	struct gui_ogl_texture tex;

@@ -28,6 +28,9 @@
 
 #include <stdio.h>
 
+/*!
+ * @implements os_hid_device
+ */
 struct hid_hidraw
 {
 	struct os_hid_device base;

@@ -15,6 +15,10 @@
 
 static ImVec2 button_dims = {256, 0};
 
+/*!
+ * A main menu GUI scene allowing selection of which scene to proceed to.
+ * @implements gui_scene
+ */
 struct main_menu
 {
 	struct gui_scene base;

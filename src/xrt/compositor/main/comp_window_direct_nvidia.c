@@ -31,6 +31,8 @@ struct comp_window_direct_nvidia_display
 /*!
  * Direct mode "window" into a device, using Vulkan direct mode extension
  * and xcb.
+ *
+ * @implements comp_window
  */
 struct comp_window_direct_nvidia
 {
@@ -43,7 +45,7 @@ struct comp_window_direct_nvidia
 
 /*
  *
- * Pre decalre functions
+ * Forward declare functions
  *
  */
 

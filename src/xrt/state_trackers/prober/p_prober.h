@@ -80,7 +80,9 @@ struct prober_v4l
 #endif
 
 /*!
- * A prober device.
+ * A single device found by a @ref prober.
+ *
+ * @implements xrt_prober_device
  */
 struct prober_device
 {
@@ -127,6 +129,9 @@ struct prober_device
 #endif
 };
 
+/*!
+ * @implements xrt_prober
+ */
 struct prober
 {
 	struct xrt_prober base;
@@ -180,24 +185,33 @@ struct prober
 
 /*!
  * Load the JSON config file.
+ *
+ * @public @memberof prober
  */
 void
 p_json_open_or_create_main_file(struct prober *p);
 
 /*!
  * Extract tracking settings from the JSON.
+ *
+ * @public @memberof prober
+ * @relatesalso xrt_settings_tracking
  */
 bool
 p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s);
 
 /*!
  * Dump the given device to stdout.
+ *
+ * @public @memberof prober
  */
 void
 p_dump_device(struct prober *p, struct prober_device *pdev, int id);
 
 /*!
  * Get or create a @ref prober_device from the device.
+ *
+ * @public @memberof prober
  */
 int
 p_dev_get_usb_dev(struct prober *p,
@@ -209,6 +223,8 @@ p_dev_get_usb_dev(struct prober *p,
 
 /*!
  * Get or create a @ref prober_device from the device.
+ *
+ * @public @memberof prober
  */
 int
 p_dev_get_bluetooth_dev(struct prober *p,
@@ -218,27 +234,57 @@ p_dev_get_bluetooth_dev(struct prober *p,
                         struct prober_device **out_pdev);
 
 /*!
+ * @name Tracking systems
+ * @{
+ */
+/*!
  * Init the tracking factory.
+ *
+ * @private @memberof prober
+ * @relatesalso xrt_tracking_factory
  */
 int
 p_tracking_init(struct prober *p);
 
 /*!
  * Teardown the tracking factory.
+ *
+ * @private @memberof prober
+ * @relatesalso xrt_tracking_factory
  */
 void
 p_tracking_teardown(struct prober *p);
 
+/*!
+ * @}
+ */
+
 #ifdef XRT_HAVE_LIBUSB
+/*!
+ * @name libusb
+ * @{
+ */
+/*!
+ * @private @memberof prober
+ */
 int
 p_libusb_init(struct prober *p);
 
+/*!
+ * @private @memberof prober
+ */
 void
 p_libusb_teardown(struct prober *p);
 
+/*!
+ * @private @memberof prober
+ */
 int
 p_libusb_probe(struct prober *p);
 
+/*!
+ * @private @memberof prober
+ */
 int
 p_libusb_get_string_descriptor(struct prober *p,
                                struct prober_device *pdev,
@@ -246,22 +292,56 @@ p_libusb_get_string_descriptor(struct prober *p,
                                unsigned char *buffer,
                                int length);
 
+/*!
+ * @private @memberof prober
+ */
 bool
 p_libusb_can_open(struct prober *p, struct prober_device *pdev);
+
+/*!
+ * @}
+ */
 #endif
 
 #ifdef XRT_HAVE_LIBUVC
+/*!
+ * @name libuvc
+ * @{
+ */
+/*!
+ * @private @memberof prober
+ */
 int
 p_libuvc_init(struct prober *p);
 
+/*!
+ * @private @memberof prober
+ */
 void
 p_libuvc_teardown(struct prober *p);
 
+/*!
+ * @private @memberof prober
+ */
 int
 p_libuvc_probe(struct prober *p);
+
+/*!
+ * @}
+ */
 #endif
 
 #ifdef XRT_HAVE_LIBUDEV
+/*!
+ * @name udev
+ * @{
+ */
+/*!
+ * @private @memberof prober
+ */
 int
 p_udev_probe(struct prober *p);
+/*!
+ * @}
+ */
 #endif
