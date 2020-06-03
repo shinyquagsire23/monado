@@ -19,6 +19,16 @@
 
 #include <inttypes.h>
 
+/*!
+ * Down-cast helper.
+ * @private @memberof client_gl_swapchain
+ */
+static inline struct client_gl_swapchain *
+client_gl_swapchain(struct xrt_swapchain *xsc)
+{
+	return (struct client_gl_swapchain *)xsc;
+}
+
 /*
  *
  * Swapchain functions.

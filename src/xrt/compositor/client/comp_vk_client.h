@@ -70,27 +70,6 @@ struct client_vk_compositor
  *
  */
 
-/*!
- * Down-cast helper.
- *
- * @private @memberof client_vk_swapchain
- */
-static inline struct client_vk_swapchain *
-client_vk_swapchain(struct xrt_swapchain *xsc)
-{
-	return (struct client_vk_swapchain *)xsc;
-}
-
-/*!
- * Down-cast helper.
- *
- * @private @memberof client_vk_compositor
- */
-static inline struct client_vk_compositor *
-client_vk_compositor(struct xrt_compositor *xc)
-{
-	return (struct client_vk_compositor *)xc;
-}
 
 /*!
  * Create a new client_vk_compositor.

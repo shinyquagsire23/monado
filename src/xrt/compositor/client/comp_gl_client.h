@@ -61,19 +61,10 @@ struct client_gl_compositor
  *
  */
 
-/*!
- * Down-cast helper.
- * @private @memberof client_gl_swapchain
- */
-static inline struct client_gl_swapchain *
-client_gl_swapchain(struct xrt_swapchain *xsc)
-{
-	return (struct client_gl_swapchain *)xsc;
-}
 
 /*!
  * Down-cast helper.
- * @private @memberof client_gl_compositor
+ * @protected @memberof client_gl_compositor
  */
 static inline struct client_gl_compositor *
 client_gl_compositor(struct xrt_compositor *xc)
