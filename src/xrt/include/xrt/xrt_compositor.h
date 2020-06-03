@@ -772,6 +772,34 @@ xrt_compositor_fd(struct xrt_compositor *xc)
 	return (struct xrt_compositor_fd *)xc;
 }
 
+/*!
+ * @brief Create an FD swapchain with a set of images.
+ *
+ * A specialized version of @ref xrt_comp_create_swapchain, for use only on @ref
+ * xrt_compositor_fd.
+ *
+ * Helper for calling through the base's function pointer then performing the
+ * known-safe downcast.
+ *
+ * @public @memberof xrt_compositor_fd
+ */
+static inline struct xrt_swapchain_fd *
+xrt_comp_fd_create_swapchain(struct xrt_compositor_fd *xcfd,
+                             enum xrt_swapchain_create_flags create,
+                             enum xrt_swapchain_usage_bits bits,
+                             int64_t format,
+                             uint32_t sample_count,
+                             uint32_t width,
+                             uint32_t height,
+                             uint32_t face_count,
+                             uint32_t array_size,
+                             uint32_t mip_count)
+{
+	struct xrt_swapchain *xsc = xrt_comp_create_swapchain(
+	    &xcfd->base, create, bits, format, sample_count, width, height,
+	    face_count, array_size, mip_count);
+	return (struct xrt_swapchain_fd *)xsc;
+}
 
 #ifdef __cplusplus
 }
