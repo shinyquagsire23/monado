@@ -27,6 +27,8 @@ extern "C" {
 /*!
  * Initialize a handle holder, and if a parent is specified, update its child
  * list to include this handle.
+ *
+ * @protected @memberof oxr_handle_base
  */
 XrResult
 oxr_handle_init(struct oxr_logger *log,
@@ -39,6 +41,8 @@ oxr_handle_init(struct oxr_logger *log,
  * Allocate some memory for use as a handle, and initialize it as a handle.
  *
  * Mainly for internal use - use OXR_ALLOCATE_HANDLE instead which wraps this.
+ *
+ * @relates oxr_handle_base
  */
 XrResult
 oxr_handle_allocate_and_init(struct oxr_logger *log,
@@ -58,6 +62,8 @@ oxr_handle_allocate_and_init(struct oxr_logger *log,
  *
  * Use when you want to do something other than immediately returning in case of
  * failure. If returning immediately is OK, see OXR_ALLOCATE_HANDLE_OR_RETURN().
+ *
+ * @relates oxr_handle_base
  */
 #define OXR_ALLOCATE_HANDLE(LOG, OUT, DEBUG, DESTROY, PARENT)                  \
 	oxr_handle_allocate_and_init(LOG, sizeof(*OUT), DEBUG, DESTROY,        \
@@ -74,6 +80,8 @@ oxr_handle_allocate_and_init(struct oxr_logger *log,
  *
  * Will return an XrResult from the current function if something fails.
  * If that's not OK, see OXR_ALLOCATE_HANDLE().
+ *
+ * @relates oxr_handle_base
  */
 #define OXR_ALLOCATE_HANDLE_OR_RETURN(LOG, OUT, DEBUG, DESTROY, PARENT)        \
 	do {                                                                   \

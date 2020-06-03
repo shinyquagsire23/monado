@@ -33,7 +33,18 @@ PREDEFINED             = VK_USE_PLATFORM_XCB_KHR \
                          XR_USE_GRAPHICS_API_VULKAN \
                          XR_USE_PLATFORM_XLIB \
                          XR_USE_TIMESPEC \
-                         XRT_DOXYGEN
+                         XRT_DOXYGEN \
+                         XRT_HAVE_JPEG \
+                         XRT_OS_LINUX \
+                         XRT_BUILD_DRIVER_RS \
+                         XRT_HAVE_SYSTEMD \
+                         XRT_HAVE_OPENCV \
+                         XRT_HAVE_LIBUVC \
+                         XRT_HAVE_LIBUSB \
+                         XRT_HAVE_V4L2 \
+                         XRT_HAVE_LIBUDEV \
+                         XRT_FEATURE_SERVICE \
+
 
 ALIASES                += TODO=todo
 ALIASES                += ep{1}="<b>\1</b>. \xrefitem entrypoints \"OpenXR Entry Point\" \"OpenXR Entry Points\" \1"
