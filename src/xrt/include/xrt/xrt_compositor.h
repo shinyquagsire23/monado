@@ -749,30 +749,6 @@ struct xrt_compositor_fd
 };
 
 /*!
- * Down-cast helper.
- *
- * @public @memberof xrt_swapchain_fd
- */
-static inline struct xrt_swapchain_fd *
-xrt_swapchain_fd(struct xrt_swapchain *xsc)
-{
-	return (struct xrt_swapchain_fd *)xsc;
-}
-
-/*!
- * Down-cast helper.
- *
- * @public @memberof xrt_compositor_fd
- *
- * @todo unused - remove?
- */
-static inline struct xrt_compositor_fd *
-xrt_compositor_fd(struct xrt_compositor *xc)
-{
-	return (struct xrt_compositor_fd *)xc;
-}
-
-/*!
  * @brief Create an FD swapchain with a set of images.
  *
  * A specialized version of @ref xrt_comp_create_swapchain, for use only on @ref
