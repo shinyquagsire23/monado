@@ -630,10 +630,11 @@ verify_projection_layer(struct xrt_compositor *xc,
 	}
 
 	if (proj->viewCount != 2) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "(frameEndInfo->layers[%u]->viewCount == %u)"
-		                 " must be 2",
-		                 layer_index, proj->viewCount);
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "(frameEndInfo->layers[%u]->viewCount == %u) must be 2 for "
+		    "projection layers and the current view configuration",
+		    layer_index, proj->viewCount);
 	}
 
 	// Check for valid swapchain states.
