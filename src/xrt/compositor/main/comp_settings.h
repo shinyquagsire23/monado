@@ -94,9 +94,6 @@ struct comp_settings
 	//! Nominal frame interval
 	uint64_t nominal_frame_interval_ns;
 
-	//! Enable vulkan validation for compositor
-	bool validate_vulkan;
-
 	//! Run the compositor on this Vulkan physical device
 	int gpu_index;
 

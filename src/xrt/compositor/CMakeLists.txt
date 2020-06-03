@@ -38,11 +38,6 @@ set(MAIN_SOURCE_FILES
 	main/comp_layer_renderer.c
 	)
 
-if (XRT_VULKAN_ENABLE_VALIDATION)
-	add_definitions(-DXRT_ENABLE_VK_VALIDATION)
-endif()
-
-
 ###
 # Client library
 #

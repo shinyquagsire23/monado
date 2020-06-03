@@ -10,7 +10,6 @@ if(POLICY CMP0072)
 endif()
 
 option(XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH "Use the absolute path to the runtime in the installed manifest, rather than a bare filename." ON)
-option(XRT_VULKAN_ENABLE_VALIDATION "Enable Vulkan validation for Compositor" ON)
 option(XRT_OPENXR_INSTALL_ACTIVE_RUNTIME "Make Monado the default OpenXR runtime on install" ON)
 
 ###

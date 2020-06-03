@@ -111,10 +111,6 @@ if build_wayland
 	compositor_deps += [wayland, wl_protos]
 endif
 
-if get_option('vulkan-validation')
-	compile_args += ['-DXRT_ENABLE_VK_VALIDATION']
-endif
-
 lib_comp = static_library(
 	'comp',
 	compositor_srcs,

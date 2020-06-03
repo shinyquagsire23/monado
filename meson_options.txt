@@ -32,11 +32,6 @@ option('tracking',
 	value: 'auto',
 	description: 'Enable tracking support')
 
-option('vulkan-validation',
-	type: 'boolean',
-	value: true,
-	description: 'Enable Vulkan validation for compositor')
-
 option('install-active-runtime',
 	type: 'boolean',
 	value: true,

@@ -95,8 +95,6 @@ compositor_destroy(struct xrt_compositor *xc)
 		vk->device = VK_NULL_HANDLE;
 	}
 
-	vk_destroy_validation_callback(vk);
-
 	if (vk->instance != VK_NULL_HANDLE) {
 		vk->vkDestroyInstance(vk->instance, NULL);
 		vk->instance = VK_NULL_HANDLE;
@@ -446,14 +444,7 @@ find_get_instance_proc_addr(struct comp_compositor *c)
 	return vk_get_loader_functions(&c->vk, vkGetInstanceProcAddr);
 }
 
-#ifdef XRT_ENABLE_VK_VALIDATION
-#define COMPOSITOR_DEBUG_VULKAN_EXTENSIONS VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-#else
-#define COMPOSITOR_DEBUG_VULKAN_EXTENSIONS
-#endif
-
 #define COMPOSITOR_COMMON_VULKAN_EXTENSIONS                                    \
-	COMPOSITOR_DEBUG_VULKAN_EXTENSIONS                                     \
 	VK_KHR_SURFACE_EXTENSION_NAME,                                         \
 	    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,            \
 	    VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,                \
@@ -550,17 +541,6 @@ create_instance(struct comp_compositor *c)
 	    .ppEnabledExtensionNames = instance_extensions,
 	};
 
-#ifdef XRT_ENABLE_VK_VALIDATION
-	const char *instance_layers[] = {
-	    "VK_LAYER_LUNARG_standard_validation",
-	};
-
-	if (c->settings.validate_vulkan) {
-		instance_info.enabledLayerCount = ARRAY_SIZE(instance_layers);
-		instance_info.ppEnabledLayerNames = instance_layers;
-	}
-#endif
-
 	ret = c->vk.vkCreateInstance(&instance_info, NULL, &c->vk.instance);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(c, "vkCreateInstance: %s\n", vk_result_string(ret));
@@ -574,11 +554,6 @@ create_instance(struct comp_compositor *c)
 		           vk_result_string(ret));
 		return ret;
 	}
-
-#ifdef XRT_ENABLE_VK_VALIDATION
-	if (c->settings.validate_vulkan)
-		vk_init_validation_callback(&c->vk);
-#endif
 
 	return ret;
 }

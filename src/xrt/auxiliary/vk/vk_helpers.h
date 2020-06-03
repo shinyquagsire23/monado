@@ -250,18 +250,6 @@ vk_has_error(VkResult res, const char *fun, const char *file, int line);
 /*!
  * @ingroup aux_vk
  */
-void
-vk_init_validation_callback(struct vk_bundle *vk);
-
-/*!
- * @ingroup aux_vk
- */
-void
-vk_destroy_validation_callback(struct vk_bundle *vk);
-
-/*!
- * @ingroup aux_vk
- */
 VkResult
 vk_get_loader_functions(struct vk_bundle *vk, PFN_vkGetInstanceProcAddr g);
 
