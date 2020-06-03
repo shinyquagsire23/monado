@@ -22,7 +22,7 @@ client_gl_xlib_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct client_gl_xlib_compositor *c = client_gl_xlib_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->base.xcfd->base.destroy(&c->base.xcfd->base);
+	xrt_comp_destroy((struct xrt_compositor **)c->base.xcfd);
 	free(c);
 }
 

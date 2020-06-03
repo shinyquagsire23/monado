@@ -43,7 +43,7 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 	}
 
 	// Destroy the fd swapchain as well.
-	sc->xscfd->base.destroy(&sc->xscfd->base);
+	xrt_swapchain_destroy((struct xrt_swapchain **)&sc->xscfd);
 
 	free(sc);
 }
@@ -54,7 +54,7 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 
 	// Pipe down call into fd swapchain.
-	return sc->xscfd->base.acquire_image(&sc->xscfd->base, index);
+	return xrt_swapchain_acquire_image(&sc->xscfd->base, index);
 }
 
 static bool
@@ -65,7 +65,7 @@ client_vk_swapchain_wait_image(struct xrt_swapchain *xsc,
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 
 	// Pipe down call into fd swapchain.
-	return sc->xscfd->base.wait_image(&sc->xscfd->base, timeout, index);
+	return xrt_swapchain_wait_image(&sc->xscfd->base, timeout, index);
 }
 
 static bool
@@ -74,7 +74,7 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 
 	// Pipe down call into fd swapchain.
-	return sc->xscfd->base.release_image(&sc->xscfd->base, index);
+	return xrt_swapchain_release_image(&sc->xscfd->base, index);
 }
 
 
@@ -95,7 +95,7 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 	}
 
 	// Pipe down call into fd compositor.
-	c->xcfd->base.destroy(&c->xcfd->base);
+	xrt_comp_destroy((struct xrt_compositor **)&c->xcfd);
 	free(c);
 }
 
@@ -105,7 +105,7 @@ client_vk_compositor_begin_session(struct xrt_compositor *xc,
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->xcfd->base.begin_session(&c->xcfd->base, type);
+	xrt_comp_begin_session(&c->xcfd->base, type);
 }
 
 static void
@@ -113,7 +113,7 @@ client_vk_compositor_end_session(struct xrt_compositor *xc)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->xcfd->base.end_session(&c->xcfd->base);
+	xrt_comp_end_session(&c->xcfd->base);
 }
 
 static void
@@ -123,8 +123,8 @@ client_vk_compositor_wait_frame(struct xrt_compositor *xc,
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->xcfd->base.wait_frame(&c->xcfd->base, predicted_display_time,
-	                         predicted_display_period);
+	xrt_comp_wait_frame(&c->xcfd->base, predicted_display_time,
+	                    predicted_display_period);
 }
 
 static void
@@ -132,7 +132,7 @@ client_vk_compositor_begin_frame(struct xrt_compositor *xc)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->xcfd->base.begin_frame(&c->xcfd->base);
+	xrt_comp_begin_frame(&c->xcfd->base);
 }
 
 static void
@@ -140,7 +140,7 @@ client_vk_compositor_discard_frame(struct xrt_compositor *xc)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->xcfd->base.discard_frame(&c->xcfd->base);
+	xrt_comp_discard_frame(&c->xcfd->base);
 }
 
 static void
@@ -234,13 +234,14 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	VkCommandBuffer cmd_buffer;
 	VkResult ret;
 
-	struct xrt_swapchain *xsc = c->xcfd->base.create_swapchain(
-	    &c->xcfd->base, create, bits, format, sample_count, width, height,
+	struct xrt_swapchain_fd *xscfd = xrt_comp_fd_create_swapchain(
+	    c->xcfd, create, bits, format, sample_count, width, height,
 	    face_count, array_size, mip_count);
 
-	if (xsc == NULL) {
+	if (xscfd == NULL) {
 		return NULL;
 	}
+	struct xrt_swapchain *xsc = &xscfd->base;
 
 	ret = vk_init_cmd_buffer(&c->vk, &cmd_buffer);
 	if (ret != VK_SUCCESS) {
@@ -264,16 +265,15 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	// Fetch the number of images from the fd swapchain.
 	sc->base.base.num_images = xsc->num_images;
 	sc->c = c;
-	sc->xscfd = xrt_swapchain_fd(xsc);
+	sc->xscfd = xscfd;
 
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
 		ret = vk_create_image_from_fd(
 		    &c->vk, bits, format, width, height, array_size, mip_count,
-		    &sc->xscfd->images[i], &sc->base.images[i],
-		    &sc->base.mems[i]);
+		    &xscfd->images[i], &sc->base.images[i], &sc->base.mems[i]);
 
 		// We have consumed this fd now, make sure it's not freed again.
-		sc->xscfd->images[i].fd = -1;
+		xscfd->images[i].fd = -1;
 
 		if (ret != VK_SUCCESS) {
 			return NULL;

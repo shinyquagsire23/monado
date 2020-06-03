@@ -95,6 +95,8 @@ client_vk_compositor(struct xrt_compositor *xc)
 /*!
  * Create a new client_vk_compositor.
  *
+ * Takes owenership of provided xcfd.
+ *
  * @public @memberof client_vk_compositor
  * @relatesalso xrt_compositor_fd
  */

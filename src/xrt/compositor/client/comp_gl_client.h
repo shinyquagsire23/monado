@@ -91,6 +91,8 @@ typedef client_gl_void_ptr_func (*client_gl_get_procaddr)(const char *name);
  * OpenGL can have multiple backing window systems we have to interact with, so
  * there isn't just one unified OpenGL client constructor.
  *
+ * Moves owenership of provided xcfd to the client_gl_compositor.
+ *
  * @public @memberof client_gl_compositor
  * @relatesalso xrt_compositor_fd
  */

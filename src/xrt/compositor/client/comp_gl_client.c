@@ -40,7 +40,7 @@ client_gl_swapchain_destroy(struct xrt_swapchain *xsc)
 	}
 
 	// Destroy the fd swapchain as well.
-	sc->xscfd->base.destroy(&sc->xscfd->base);
+	xrt_swapchain_destroy((struct xrt_swapchain **)&sc->xscfd);
 
 	free(sc);
 }
@@ -51,7 +51,7 @@ client_gl_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
 	struct client_gl_swapchain *sc = client_gl_swapchain(xsc);
 
 	// Pipe down call into fd swapchain.
-	return sc->xscfd->base.acquire_image(&sc->xscfd->base, index);
+	return xrt_swapchain_acquire_image(&sc->xscfd->base, index);
 }
 
 static bool
@@ -62,7 +62,7 @@ client_gl_swapchain_wait_image(struct xrt_swapchain *xsc,
 	struct client_gl_swapchain *sc = client_gl_swapchain(xsc);
 
 	// Pipe down call into fd swapchain.
-	return sc->xscfd->base.wait_image(&sc->xscfd->base, timeout, index);
+	return xrt_swapchain_wait_image(&sc->xscfd->base, timeout, index);
 }
 
 static bool
@@ -71,7 +71,7 @@ client_gl_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	struct client_gl_swapchain *sc = client_gl_swapchain(xsc);
 
 	// Pipe down call into fd swapchain.
-	return sc->xscfd->base.release_image(&sc->xscfd->base, index);
+	return xrt_swapchain_release_image(&sc->xscfd->base, index);
 }
 
 
@@ -87,7 +87,7 @@ client_gl_compositor_begin_session(struct xrt_compositor *xc,
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->xcfd->base.begin_session(&c->xcfd->base, type);
+	xrt_comp_begin_session(&c->xcfd->base, type);
 }
 
 static void
@@ -95,7 +95,7 @@ client_gl_compositor_end_session(struct xrt_compositor *xc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->xcfd->base.end_session(&c->xcfd->base);
+	xrt_comp_end_session(&c->xcfd->base);
 }
 
 static void
@@ -105,8 +105,8 @@ client_gl_compositor_wait_frame(struct xrt_compositor *xc,
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->xcfd->base.wait_frame(&c->xcfd->base, predicted_display_time,
-	                         predicted_display_period);
+	xrt_comp_wait_frame(&c->xcfd->base, predicted_display_time,
+	                    predicted_display_period);
 }
 
 static void
@@ -114,7 +114,7 @@ client_gl_compositor_begin_frame(struct xrt_compositor *xc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->xcfd->base.begin_frame(&c->xcfd->base);
+	xrt_comp_begin_frame(&c->xcfd->base);
 }
 
 static void
@@ -122,7 +122,7 @@ client_gl_compositor_discard_frame(struct xrt_compositor *xc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	// Pipe down call into fd compositor.
-	c->xcfd->base.discard_frame(&c->xcfd->base);
+	xrt_comp_discard_frame(&c->xcfd->base);
 }
 
 static void
@@ -257,14 +257,15 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		return NULL;
 	}
 
-	struct xrt_swapchain *xsc = c->xcfd->base.create_swapchain(
-	    &c->xcfd->base, create, bits, vk_format, sample_count, width,
-	    height, face_count, array_size, mip_count);
+	struct xrt_swapchain_fd *xscfd = xrt_comp_fd_create_swapchain(
+	    c->xcfd, create, bits, vk_format, sample_count, width, height,
+	    face_count, array_size, mip_count);
 
-	if (xsc == NULL) {
+
+	if (xscfd == NULL) {
 		return NULL;
 	}
-
+	struct xrt_swapchain *xsc = &xscfd->base;
 
 	struct client_gl_swapchain *sc =
 	    U_TYPED_CALLOC(struct client_gl_swapchain);
@@ -274,7 +275,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.release_image = client_gl_swapchain_release_image;
 	// Fetch the number of images from the fd swapchain.
 	sc->base.base.num_images = xsc->num_images;
-	sc->xscfd = xrt_swapchain_fd(xsc);
+	sc->xscfd = xscfd;
 
 	GLuint prev_texture = 0;
 	glGetIntegerv(array_size == 1 ? GL_TEXTURE_BINDING_2D
@@ -293,12 +294,12 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		glMemoryObjectParameterivEXT(sc->base.memory[i],
 		                             GL_DEDICATED_MEMORY_OBJECT_EXT,
 		                             &dedicated);
-		glImportMemoryFdEXT(
-		    sc->base.memory[i], sc->xscfd->images[i].size,
-		    GL_HANDLE_TYPE_OPAQUE_FD_EXT, sc->xscfd->images[i].fd);
+		glImportMemoryFdEXT(sc->base.memory[i], xscfd->images[i].size,
+		                    GL_HANDLE_TYPE_OPAQUE_FD_EXT,
+		                    xscfd->images[i].fd);
 
 		// We have consumed this fd now, make sure it's not freed again.
-		sc->xscfd->images[i].fd = -1;
+		xscfd->images[i].fd = -1;
 
 		if (array_size == 1) {
 			glTextureStorageMem2DEXT(sc->base.images[i], mip_count,
