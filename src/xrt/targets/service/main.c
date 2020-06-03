@@ -20,9 +20,3 @@ main(int argc, char *argv[])
 {
 	return ipc_server_main(argc, argv);
 }
-
-int
-xrt_prober_create(struct xrt_prober **out_xp)
-{
-	return xrt_prober_create_with_lists(out_xp, &target_lists);
-}
