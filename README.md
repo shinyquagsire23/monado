@@ -178,6 +178,22 @@ You can verify that it stuck with the command.
 xrandr --prop
 ```
 
+## Running Vulkan Validation
+
+To run Monado with Vulkan validation the loader's layer functionality can be used.
+```
+VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation ./build/src/xrt/targets/service/monado-service
+```
+The same can be done when launching a Vulkan client.
+
+If you want a backtrace to be produced at validation errors, create a `vk_layer_settings.txt`
+file with the following content:
+```
+khronos_validation.debug_action = VK_DBG_LAYER_ACTION_LOG_MSG,VK_DBG_LAYER_ACTION_BREAK
+khronos_validation.report_flags = error,warn
+khronos_validation.log_filename = stdout
+```
+
 ## Using libsurvive
 
 To enable the libsurvive driver, libsurvive has to be installed as a library with a pkgconfig file
