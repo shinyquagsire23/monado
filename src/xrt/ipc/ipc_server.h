@@ -88,11 +88,14 @@ struct ipc_swapchain_data
 struct ipc_quad_render_state
 {
 	uint32_t swapchain_index;
+
 	uint32_t image_index;
 	uint32_t array_index;
 
+	enum xrt_layer_eye_visibility visibility;
 	struct xrt_pose pose;
 	struct xrt_vec2 size;
+	struct xrt_rect rect;
 };
 
 struct ipc_stereo_projection_render_state
@@ -107,6 +110,7 @@ struct ipc_stereo_projection_render_state
 
 struct ipc_layer_render_state
 {
+	enum xrt_layer_composition_flags flags;
 	enum xrt_layer_type type;
 	bool flip_y;
 

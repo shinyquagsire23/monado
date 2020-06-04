@@ -368,10 +368,6 @@ ipc_compositor_layer_stereo_projection(
 	struct ipc_client_swapchain *l = ipc_client_swapchain(l_sc);
 	struct ipc_client_swapchain *r = ipc_client_swapchain(r_sc);
 
-	stereo->timestamp = timestamp;
-	stereo->xdev_id = 0; //! @todo Real id.
-	stereo->name = name;
-	stereo->layer_flags = layer_flags;
 	stereo->l.swapchain_id = l->id;
 	stereo->l.image_index = l_image_index;
 	stereo->l.rect = *l_rect;
@@ -385,8 +381,11 @@ ipc_compositor_layer_stereo_projection(
 	stereo->r.fov = *r_fov;
 	stereo->r.pose = *r_pose;
 
+	layer->xdev_id = 0; //! @todo Real id.
+	layer->name = name;
+	layer->timestamp = timestamp;
+	layer->layer_flags = layer_flags;
 	layer->flip_y = flip_y;
-
 	layer->type = XRT_LAYER_STEREO_PROJECTION;
 
 	// Increment the number of layers.
@@ -418,10 +417,6 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 	struct ipc_layer_quad *quad = &layer->quad;
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(sc);
 
-	quad->timestamp = timestamp;
-	quad->xdev_id = 0; //! @todo Real id.
-	quad->name = name;
-	quad->layer_flags = layer_flags;
 	quad->swapchain_id = ics->id;
 	quad->image_index = image_index;
 	quad->rect = *rect;
@@ -429,6 +424,10 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 	quad->pose = *pose;
 	quad->size = *size;
 
+	layer->xdev_id = 0; //! @todo Real id.
+	layer->name = name;
+	layer->timestamp = timestamp;
+	layer->layer_flags = layer_flags;
 	layer->flip_y = flip_y;
 	layer->type = XRT_LAYER_QUAD;
 

@@ -75,18 +75,13 @@ struct ipc_shared_device
 
 struct ipc_layer_stereo_projection
 {
-	uint64_t timestamp;
-
-	uint32_t xdev_id;
-	enum xrt_input_name name;
-	enum xrt_layer_composition_flags layer_flags;
-
 	struct
 	{
 		uint32_t swapchain_id;
 		uint32_t image_index;
-		struct xrt_rect rect;
 		uint32_t array_index;
+
+		struct xrt_rect rect;
 		struct xrt_fov fov;
 		struct xrt_pose pose;
 	} l, r;
@@ -94,22 +89,23 @@ struct ipc_layer_stereo_projection
 
 struct ipc_layer_quad
 {
-	uint64_t timestamp;
-
-	uint32_t xdev_id;
-	enum xrt_input_name name;
-	enum xrt_layer_composition_flags layer_flags;
-
 	uint32_t swapchain_id;
+
 	uint32_t image_index;
-	struct xrt_rect rect;
 	uint32_t array_index;
+
+	struct xrt_rect rect;
 	struct xrt_pose pose;
 	struct xrt_vec2 size;
 };
 
 struct ipc_layer_entry
 {
+	uint64_t timestamp;
+	uint32_t xdev_id;
+	enum xrt_input_name name;
+
+	enum xrt_layer_composition_flags layer_flags;
 	enum xrt_layer_type type;
 	bool flip_y;
 

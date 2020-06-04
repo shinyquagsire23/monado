@@ -87,10 +87,12 @@ struct comp_swapchain
 struct comp_layer_quad
 {
 	struct comp_swapchain *sc;
-	enum xrt_layer_eye_visibility visibility;
+
 	uint32_t image_index;
-	struct xrt_rect rect;
 	uint32_t array_index;
+
+	enum xrt_layer_eye_visibility visibility;
+	struct xrt_rect rect;
 	struct xrt_pose pose;
 	struct xrt_vec2 size;
 };
