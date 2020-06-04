@@ -96,8 +96,9 @@ compositor_disconnect(ipc_connection_t *ipc_c)
 	ipc_c->socket_fd = -1;
 }
 
-#define CALL_CHK(call)                                                         \
-	if ((call) != XRT_SUCCESS) {                                           \
+#define IPC_CALL_CHK(call)                                                     \
+	xrt_result_t res = (call);                                             \
+	if (res == XRT_ERROR_IPC_FAILURE) {                                    \
 		IPC_ERROR(icc->ipc_c, "IPC: %s call error!", __func__);        \
 	}
 
@@ -114,12 +115,12 @@ ipc_compositor_swapchain_destroy(struct xrt_swapchain *xsc)
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 	struct ipc_client_compositor *icc = ics->icc;
 
-	CALL_CHK(ipc_call_swapchain_destroy(icc->ipc_c, ics->id));
+	IPC_CALL_CHK(ipc_call_swapchain_destroy(icc->ipc_c, ics->id));
 
 	free(xsc);
 }
 
-static bool
+static xrt_result_t
 ipc_compositor_swapchain_wait_image(struct xrt_swapchain *xsc,
                                     uint64_t timeout,
                                     uint32_t index)
@@ -127,35 +128,36 @@ ipc_compositor_swapchain_wait_image(struct xrt_swapchain *xsc,
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 	struct ipc_client_compositor *icc = ics->icc;
 
-	CALL_CHK(
+	IPC_CALL_CHK(
 	    ipc_call_swapchain_wait_image(icc->ipc_c, ics->id, timeout, index));
 
-	return true;
+	return res;
 }
 
-static bool
+static xrt_result_t
 ipc_compositor_swapchain_acquire_image(struct xrt_swapchain *xsc,
                                        uint32_t *out_index)
 {
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 	struct ipc_client_compositor *icc = ics->icc;
 
-	CALL_CHK(
+	IPC_CALL_CHK(
 	    ipc_call_swapchain_acquire_image(icc->ipc_c, ics->id, out_index));
 
-	return true;
+	return res;
 }
 
-static bool
+static xrt_result_t
 ipc_compositor_swapchain_release_image(struct xrt_swapchain *xsc,
                                        uint32_t index)
 {
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 	struct ipc_client_compositor *icc = ics->icc;
 
-	CALL_CHK(ipc_call_swapchain_release_image(icc->ipc_c, ics->id, index));
+	IPC_CALL_CHK(
+	    ipc_call_swapchain_release_image(icc->ipc_c, ics->id, index));
 
-	return true;
+	return res;
 }
 
 
@@ -222,7 +224,7 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 	return &ics->base.base;
 }
 
-static void
+static xrt_result_t
 ipc_compositor_begin_session(struct xrt_compositor *xc,
                              enum xrt_view_type view_type)
 {
@@ -230,20 +232,24 @@ ipc_compositor_begin_session(struct xrt_compositor *xc,
 
 	IPC_SPEW(icc->ipc_c, "IPC: compositor begin session");
 
-	CALL_CHK(ipc_call_session_begin(icc->ipc_c));
+	IPC_CALL_CHK(ipc_call_session_begin(icc->ipc_c));
+
+	return res;
 }
 
-static void
+static xrt_result_t
 ipc_compositor_end_session(struct xrt_compositor *xc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	IPC_SPEW(icc->ipc_c, "IPC: compositor end session");
 
-	CALL_CHK(ipc_call_session_end(icc->ipc_c));
+	IPC_CALL_CHK(ipc_call_session_end(icc->ipc_c));
+
+	return res;
 }
 
-static void
+static xrt_result_t
 ipc_compositor_get_formats(struct xrt_compositor *xc,
                            uint32_t *num_formats,
                            int64_t *formats)
@@ -253,19 +259,21 @@ ipc_compositor_get_formats(struct xrt_compositor *xc,
 	IPC_SPEW(icc->ipc_c, "IPC: compositor get_formats");
 
 	struct ipc_formats_info info;
-	CALL_CHK(ipc_call_compositor_get_formats(icc->ipc_c, &info));
+	IPC_CALL_CHK(ipc_call_compositor_get_formats(icc->ipc_c, &info));
 
 	*num_formats = info.num_formats;
 	memcpy(formats, info.formats, sizeof(int64_t) * (*num_formats));
+
+	return res;
 }
 
-static void
+static bool
 wait_semaphore(struct ipc_client_compositor *icc, struct ipc_shared_memory *ism)
 {
 	struct timespec ts;
 	if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
 		IPC_ERROR(icc->ipc_c, "Error getting CLOCK_REALTIME\n");
-		return;
+		return false;
 	}
 
 	int s;
@@ -284,18 +292,20 @@ wait_semaphore(struct ipc_client_compositor *icc, struct ipc_shared_memory *ism)
 		} else {
 			IPC_ERROR(icc->ipc_c,
 			          "Error sem_timedwait() error '%i'\n", errno);
+			return false;
 		}
 	}
+	return true;
 }
 
-static void
+static xrt_result_t
 ipc_compositor_wait_frame(struct xrt_compositor *xc,
                           uint64_t *out_predicted_display_time,
                           uint64_t *out_predicted_display_period)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	CALL_CHK(ipc_call_compositor_wait_frame(icc->ipc_c));
+	IPC_CALL_CHK(ipc_call_compositor_wait_frame(icc->ipc_c));
 
 	wait_semaphore(icc, icc->ipc_c->ism);
 
@@ -303,26 +313,32 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 	    icc->ipc_c->ism->wait_frame.predicted_display_time;
 	*out_predicted_display_period =
 	    icc->ipc_c->ism->wait_frame.predicted_display_period;
+
+	return res;
 }
 
-static void
+static xrt_result_t
 ipc_compositor_begin_frame(struct xrt_compositor *xc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	CALL_CHK(ipc_call_compositor_begin_frame(icc->ipc_c));
+	IPC_CALL_CHK(ipc_call_compositor_begin_frame(icc->ipc_c));
+
+	return res;
 }
 
-static void
+static xrt_result_t
 ipc_compositor_layer_begin(struct xrt_compositor *xc,
                            enum xrt_blend_mode env_blend_mode)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	icc->layers.env_blend_mode = env_blend_mode;
+
+	return XRT_SUCCESS;
 }
 
-static void
+static xrt_result_t
 ipc_compositor_layer_stereo_projection(
     struct xrt_compositor *xc,
     uint64_t timestamp,
@@ -375,9 +391,11 @@ ipc_compositor_layer_stereo_projection(
 
 	// Increment the number of layers.
 	icc->layers.num_layers++;
+
+	return XRT_SUCCESS;
 }
 
-static void
+static xrt_result_t
 ipc_compositor_layer_quad(struct xrt_compositor *xc,
                           uint64_t timestamp,
                           struct xrt_device *xdev,
@@ -416,9 +434,11 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 
 	// Increment the number of layers.
 	icc->layers.num_layers++;
+
+	return XRT_SUCCESS;
 }
 
-static void
+static xrt_result_t
 ipc_compositor_layer_commit(struct xrt_compositor *xc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
@@ -429,19 +449,23 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc)
 	// Last bit of data to put in the shared memory area.
 	slot->num_layers = icc->layers.num_layers;
 
-	CALL_CHK(ipc_call_compositor_layer_sync(icc->ipc_c, icc->layers.slot_id,
-	                                        &icc->layers.slot_id));
+	IPC_CALL_CHK(ipc_call_compositor_layer_sync(
+	    icc->ipc_c, icc->layers.slot_id, &icc->layers.slot_id));
 
 	// Reset.
 	icc->layers.num_layers = 0;
+
+	return res;
 }
 
-static void
+static xrt_result_t
 ipc_compositor_discard_frame(struct xrt_compositor *xc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	CALL_CHK(ipc_call_compositor_discard_frame(icc->ipc_c));
+	IPC_CALL_CHK(ipc_call_compositor_discard_frame(icc->ipc_c));
+
+	return res;
 }
 
 static void

@@ -26,7 +26,7 @@ swapchain_destroy(struct xrt_swapchain *xsc)
 	u_threading_stack_push(&sc->c->threading.destroy_swapchains, sc);
 }
 
-static bool
+static xrt_result_t
 swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
@@ -34,10 +34,15 @@ swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
 	COMP_SPEW(sc->c, "ACQUIRE_IMAGE");
 
 	// Returns negative on empty fifo.
-	return u_index_fifo_pop(&sc->fifo, index) >= 0;
+	int res = u_index_fifo_pop(&sc->fifo, index);
+	if (res >= 0) {
+		return XRT_SUCCESS;
+	} else {
+		return XRT_ERROR_NO_IMAGE_AVAILABLE;
+	}
 }
 
-static bool
+static xrt_result_t
 swapchain_wait_image(struct xrt_swapchain *xsc,
                      uint64_t timeout,
                      uint32_t index)
@@ -45,19 +50,24 @@ swapchain_wait_image(struct xrt_swapchain *xsc,
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
 	COMP_SPEW(sc->c, "WAIT_IMAGE");
-	return true;
+	return XRT_SUCCESS;
 }
 
-static bool
+static xrt_result_t
 swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
 	COMP_SPEW(sc->c, "RELEASE_IMAGE");
 
-	u_index_fifo_push(&sc->fifo, index);
+	int res = u_index_fifo_push(&sc->fifo, index);
 
-	return true;
+	if (res >= 0) {
+		return XRT_SUCCESS;
+	} else {
+		// FIFO full
+		return XRT_ERROR_NO_IMAGE_AVAILABLE;
+	}
 }
 
 static VkResult

@@ -12,6 +12,8 @@
 #include "xrt/xrt_compiler.h"
 #include "util/u_time.h"
 
+#include "xrt/xrt_results.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -109,18 +109,20 @@ compositor_destroy(struct xrt_compositor *xc)
 	free(c);
 }
 
-static void
+static xrt_result_t
 compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_DEBUG(c, "BEGIN_SESSION");
+	return XRT_SUCCESS;
 }
 
-static void
+static xrt_result_t
 compositor_end_session(struct xrt_compositor *xc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_DEBUG(c, "END_SESSION");
+	return XRT_SUCCESS;
 }
 
 /*!
@@ -168,7 +170,7 @@ compositor_wait_vsync_or_time(struct comp_compositor *c, int64_t wake_up_time)
 	return ret;
 }
 
-static void
+static xrt_result_t
 compositor_wait_frame(struct xrt_compositor *xc,
                       uint64_t *predicted_display_time,
                       uint64_t *predicted_display_period)
@@ -186,7 +188,7 @@ compositor_wait_frame(struct xrt_compositor *xc,
 		*predicted_display_period = interval_ns;
 		c->last_next_display_time = now_ns + interval_ns;
 		*predicted_display_time = c->last_next_display_time;
-		return;
+		return XRT_SUCCESS;
 	}
 
 	// First estimate of next display time.
@@ -217,24 +219,26 @@ compositor_wait_frame(struct xrt_compositor *xc,
 			*predicted_display_time = next_display_time;
 
 			c->last_next_display_time = next_display_time;
-			return;
+			return XRT_SUCCESS;
 		}
 	}
 }
 
-static void
+static xrt_result_t
 compositor_begin_frame(struct xrt_compositor *xc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_SPEW(c, "BEGIN_FRAME");
 	c->app_profiling.last_begin = os_monotonic_get_ns();
+	return XRT_SUCCESS;
 }
 
-static void
+static xrt_result_t
 compositor_discard_frame(struct xrt_compositor *xc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_SPEW(c, "DISCARD_FRAME");
+	return XRT_SUCCESS;
 }
 
 static void
@@ -274,7 +278,7 @@ compositor_add_frame_timing(struct comp_compositor *c)
 	    (float)diff * 1. / 1000. * 1. / 1000.;
 }
 
-static void
+static xrt_result_t
 compositor_layer_begin(struct xrt_compositor *xc,
                        enum xrt_blend_mode env_blend_mode)
 {
@@ -285,9 +289,10 @@ compositor_layer_begin(struct xrt_compositor *xc,
 
 	c->slots[slot_id].env_blend_mode = env_blend_mode;
 	c->slots[slot_id].num_layers = 0;
+	return XRT_SUCCESS;
 }
 
-static void
+static xrt_result_t
 compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                    uint64_t timestamp,
                                    struct xrt_device *xdev,
@@ -326,9 +331,10 @@ compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	layer->type = COMP_LAYER_STEREO_PROJECTION;
 
 	c->slots[slot_id].num_layers++;
+	return XRT_SUCCESS;
 }
 
-static void
+static xrt_result_t
 compositor_layer_quad(struct xrt_compositor *xc,
                       uint64_t timestamp,
                       struct xrt_device *xdev,
@@ -363,9 +369,10 @@ compositor_layer_quad(struct xrt_compositor *xc,
 	layer->type = COMP_LAYER_QUAD;
 
 	c->slots[slot_id].num_layers++;
+	return XRT_SUCCESS;
 }
 
-static void
+static xrt_result_t
 compositor_layer_commit(struct xrt_compositor *xc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -418,6 +425,7 @@ compositor_layer_commit(struct xrt_compositor *xc)
 
 	// Now is a good point to garbage collect.
 	comp_compositor_garbage_collect(c);
+	return XRT_SUCCESS;
 }
 
 

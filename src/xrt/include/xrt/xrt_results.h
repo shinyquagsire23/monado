@@ -13,4 +13,5 @@ typedef enum xrt_result
 {
 	XRT_SUCCESS = 0,
 	XRT_ERROR_IPC_FAILURE = -1,
+	XRT_ERROR_NO_IMAGE_AVAILABLE = -2
 } xrt_result_t;

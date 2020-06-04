@@ -91,19 +91,21 @@ struct xrt_swapchain
 	 * See xrWaitSwapchainImage, must make sure that no image is acquired
 	 * before calling acquire_image.
 	 */
-	bool (*acquire_image)(struct xrt_swapchain *xsc, uint32_t *index);
+	xrt_result_t (*acquire_image)(struct xrt_swapchain *xsc,
+	                              uint32_t *index);
 
 	/*!
 	 * See xrWaitSwapchainImage, state tracker needs to track index.
 	 */
-	bool (*wait_image)(struct xrt_swapchain *xsc,
-	                   uint64_t timeout,
-	                   uint32_t index);
+	xrt_result_t (*wait_image)(struct xrt_swapchain *xsc,
+	                           uint64_t timeout,
+	                           uint32_t index);
 
 	/*!
 	 * See xrReleaseSwapchainImage, state tracker needs to track index.
 	 */
-	bool (*release_image)(struct xrt_swapchain *xsc, uint32_t index);
+	xrt_result_t (*release_image)(struct xrt_swapchain *xsc,
+	                              uint32_t index);
 };
 
 /*!
@@ -113,7 +115,7 @@ struct xrt_swapchain
  *
  * @public @memberof xrt_swapchain
  */
-static inline bool
+static inline xrt_result_t
 xrt_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
 {
 	return xsc->acquire_image(xsc, index);
@@ -126,7 +128,7 @@ xrt_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
  *
  * @public @memberof xrt_swapchain
  */
-static inline bool
+static inline xrt_result_t
 xrt_swapchain_wait_image(struct xrt_swapchain *xsc,
                          uint64_t timeout,
                          uint32_t index)
@@ -141,7 +143,7 @@ xrt_swapchain_wait_image(struct xrt_swapchain *xsc,
  *
  * @public @memberof xrt_swapchain
  */
-static inline bool
+static inline xrt_result_t
 xrt_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 {
 	return xsc->release_image(xsc, index);
@@ -216,27 +218,27 @@ struct xrt_compositor
 	/*!
 	 * See xrBeginSession.
 	 */
-	void (*begin_session)(struct xrt_compositor *xc,
-	                      enum xrt_view_type view_type);
+	xrt_result_t (*begin_session)(struct xrt_compositor *xc,
+	                              enum xrt_view_type view_type);
 
 	/*!
 	 * See xrEndSession, unlike the OpenXR one the state tracker is
 	 * responsible to call discard frame before calling this function. See
 	 * discard_frame.
 	 */
-	void (*end_session)(struct xrt_compositor *xc);
+	xrt_result_t (*end_session)(struct xrt_compositor *xc);
 
 	/*!
 	 * See xrWaitFrame.
 	 */
-	void (*wait_frame)(struct xrt_compositor *xc,
-	                   uint64_t *predicted_display_time,
-	                   uint64_t *predicted_display_period);
+	xrt_result_t (*wait_frame)(struct xrt_compositor *xc,
+	                           uint64_t *predicted_display_time,
+	                           uint64_t *predicted_display_period);
 
 	/*!
 	 * See xrBeginFrame.
 	 */
-	void (*begin_frame)(struct xrt_compositor *xc);
+	xrt_result_t (*begin_frame)(struct xrt_compositor *xc);
 
 	/*!
 	 * This isn't in the OpenXR API but is explicit in the XRT interfaces.
@@ -249,7 +251,7 @@ struct xrt_compositor
 	 * xc->begin_frame(xc)
 	 * ```
 	 */
-	void (*discard_frame)(struct xrt_compositor *xc);
+	xrt_result_t (*discard_frame)(struct xrt_compositor *xc);
 
 	/*!
 	 * Begins layer submission, this and the other layer_* calls are
@@ -257,8 +259,8 @@ struct xrt_compositor
 	 * @p layer_commit that layers will be displayed. From the point of view
 	 * of the swapchain the image is used as soon as it's given in a call.
 	 */
-	void (*layer_begin)(struct xrt_compositor *xc,
-	                    enum xrt_blend_mode env_blend_mode);
+	xrt_result_t (*layer_begin)(struct xrt_compositor *xc,
+	                            enum xrt_blend_mode env_blend_mode);
 
 	/*!
 	 * Adds a stereo projection layer for submissions.
@@ -282,7 +284,7 @@ struct xrt_compositor
 	 * @param r_pose        Right pose the left projection rendered with.
 	 * @param flip_y        Flip Y texture coordinates.
 	 */
-	void (*layer_stereo_projection)(
+	xrt_result_t (*layer_stereo_projection)(
 	    struct xrt_compositor *xc,
 	    uint64_t timestamp,
 	    struct xrt_device *xdev,
@@ -320,25 +322,25 @@ struct xrt_compositor
 	 * @param size        Size of the quad in meters.
 	 * @param flip_y      Flip Y texture coordinates.
 	 */
-	void (*layer_quad)(struct xrt_compositor *xc,
-	                   uint64_t timestamp,
-	                   struct xrt_device *xdev,
-	                   enum xrt_input_name name,
-	                   enum xrt_layer_composition_flags layer_flags,
-	                   enum xrt_layer_eye_visibility visibility,
-	                   struct xrt_swapchain *sc,
-	                   uint32_t image_index,
-	                   struct xrt_rect *rect,
-	                   uint32_t array_index,
-	                   struct xrt_pose *pose,
-	                   struct xrt_vec2 *size,
-	                   bool flip_y);
+	xrt_result_t (*layer_quad)(struct xrt_compositor *xc,
+	                           uint64_t timestamp,
+	                           struct xrt_device *xdev,
+	                           enum xrt_input_name name,
+	                           enum xrt_layer_composition_flags layer_flags,
+	                           enum xrt_layer_eye_visibility visibility,
+	                           struct xrt_swapchain *sc,
+	                           uint32_t image_index,
+	                           struct xrt_rect *rect,
+	                           uint32_t array_index,
+	                           struct xrt_pose *pose,
+	                           struct xrt_vec2 *size,
+	                           bool flip_y);
 
 	/*!
 	 * Commits all of the submitted layers, it's from this on that the
 	 * compositor will use the layers.
 	 */
-	void (*layer_commit)(struct xrt_compositor *xc);
+	xrt_result_t (*layer_commit)(struct xrt_compositor *xc);
 
 	/*!
 	 * Teardown the compositor.
@@ -406,10 +408,10 @@ xrt_comp_prepare_session(struct xrt_compositor *xc)
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
 {
-	xc->begin_session(xc, view_type);
+	return xc->begin_session(xc, view_type);
 }
 
 /*!
@@ -419,10 +421,10 @@ xrt_comp_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_end_session(struct xrt_compositor *xc)
 {
-	xc->end_session(xc);
+	return xc->end_session(xc);
 }
 
 /*!
@@ -432,12 +434,13 @@ xrt_comp_end_session(struct xrt_compositor *xc)
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_wait_frame(struct xrt_compositor *xc,
                     uint64_t *predicted_display_time,
                     uint64_t *predicted_display_period)
 {
-	xc->wait_frame(xc, predicted_display_time, predicted_display_period);
+	return xc->wait_frame(xc, predicted_display_time,
+	                      predicted_display_period);
 }
 
 /*!
@@ -447,10 +450,10 @@ xrt_comp_wait_frame(struct xrt_compositor *xc,
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_begin_frame(struct xrt_compositor *xc)
 {
-	xc->begin_frame(xc);
+	return xc->begin_frame(xc);
 }
 
 /*!
@@ -460,10 +463,10 @@ xrt_comp_begin_frame(struct xrt_compositor *xc)
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_discard_frame(struct xrt_compositor *xc)
 {
-	xc->discard_frame(xc);
+	return xc->discard_frame(xc);
 }
 
 /*!
@@ -473,11 +476,11 @@ xrt_comp_discard_frame(struct xrt_compositor *xc)
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_layer_begin(struct xrt_compositor *xc,
                      enum xrt_blend_mode env_blend_mode)
 {
-	xc->layer_begin(xc, env_blend_mode);
+	return xc->layer_begin(xc, env_blend_mode);
 }
 
 /*!
@@ -487,7 +490,7 @@ xrt_comp_layer_begin(struct xrt_compositor *xc,
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
                                  uint64_t timestamp,
                                  struct xrt_device *xdev,
@@ -507,10 +510,10 @@ xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
                                  struct xrt_pose *r_pose,
                                  bool flip_y)
 {
-	xc->layer_stereo_projection(xc, timestamp, xdev, name, layer_flags,
-	                            l_sc, l_image_index, l_rect, l_array_index,
-	                            l_fov, l_pose, r_sc, r_image_index, r_rect,
-	                            r_array_index, r_fov, r_pose, flip_y);
+	return xc->layer_stereo_projection(
+	    xc, timestamp, xdev, name, layer_flags, l_sc, l_image_index, l_rect,
+	    l_array_index, l_fov, l_pose, r_sc, r_image_index, r_rect,
+	    r_array_index, r_fov, r_pose, flip_y);
 }
 
 /*!
@@ -520,7 +523,7 @@ xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_layer_quad(struct xrt_compositor *xc,
                     uint64_t timestamp,
                     struct xrt_device *xdev,
@@ -535,8 +538,9 @@ xrt_comp_layer_quad(struct xrt_compositor *xc,
                     struct xrt_vec2 *size,
                     bool flip_y)
 {
-	xc->layer_quad(xc, timestamp, xdev, name, layer_flags, visibility, sc,
-	               image_index, rect, array_index, pose, size, flip_y);
+	return xc->layer_quad(xc, timestamp, xdev, name, layer_flags,
+	                      visibility, sc, image_index, rect, array_index,
+	                      pose, size, flip_y);
 }
 
 /*!
@@ -546,10 +550,10 @@ xrt_comp_layer_quad(struct xrt_compositor *xc,
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_layer_commit(struct xrt_compositor *xc)
 {
-	xc->layer_commit(xc);
+	return xc->layer_commit(xc);
 }
 
 /*!
