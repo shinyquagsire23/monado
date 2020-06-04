@@ -116,7 +116,7 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 	}
 
 	// Pipe down call into fd compositor.
-	xrt_comp_destroy((struct xrt_compositor **)&c->xcfd);
+	xrt_comp_fd_destroy(&c->xcfd);
 	free(c);
 }
 

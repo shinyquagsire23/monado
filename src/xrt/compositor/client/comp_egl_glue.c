@@ -31,7 +31,7 @@ client_egl_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	// Pipe down call into fd compositor.
-	xrt_comp_destroy((struct xrt_compositor **)c->xcfd);
+	xrt_comp_fd_destroy(&c->xcfd);
 	free(c);
 }
 

@@ -777,6 +777,27 @@ xrt_comp_fd_create_swapchain(struct xrt_compositor_fd *xcfd,
 	return (struct xrt_swapchain_fd *)xsc;
 }
 
+/*!
+ * @copydoc xrt_compositor::destroy
+ *
+ * Helper for calling through the function pointer: does a null check and sets
+ * xcfd_ptr to null if freed.
+ *
+ * @public @memberof xrt_compositor_fd
+ */
+static inline void
+xrt_comp_fd_destroy(struct xrt_compositor_fd **xcfd_ptr)
+{
+	struct xrt_compositor_fd *xcfd = *xcfd_ptr;
+	if (xcfd == NULL) {
+		return;
+	}
+
+	xcfd->base.destroy(&xcfd->base);
+	*xcfd_ptr = NULL;
+}
+
+
 #ifdef __cplusplus
 }
 #endif
