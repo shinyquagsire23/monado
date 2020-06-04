@@ -36,7 +36,7 @@
  *
  */
 
-ipc_result_t
+xrt_result_t
 ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *cs,
                                size_t max_num_fds,
                                int *out_fds,
@@ -46,24 +46,24 @@ ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *cs,
 
 	out_fds[0] = cs->server->ism_fd;
 	*out_num_fds = 1;
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_session_begin(volatile struct ipc_client_state *cs)
 {
 	cs->active = true;
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_session_end(volatile struct ipc_client_state *cs)
 {
 	cs->active = false;
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_compositor_get_formats(volatile struct ipc_client_state *cs,
                                   struct ipc_formats_info *out_info)
 {
@@ -72,29 +72,29 @@ ipc_handle_compositor_get_formats(volatile struct ipc_client_state *cs,
 		out_info->formats[i] = cs->xc->formats[i];
 	}
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_compositor_wait_frame(volatile struct ipc_client_state *cs)
 {
 	ipc_server_wait_add_frame(cs->server->iw, cs);
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_compositor_begin_frame(volatile struct ipc_client_state *cs)
 {
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_compositor_discard_frame(volatile struct ipc_client_state *cs)
 {
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
                                  uint32_t slot_id,
                                  uint32_t *out_free_slot_id)
@@ -138,10 +138,10 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 
 	*out_free_slot_id = (slot_id + 1) % IPC_MAX_SLOTS;
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_swapchain_create(volatile struct ipc_client_state *cs,
                             enum xrt_swapchain_create_flags create,
                             enum xrt_swapchain_usage_bits bits,
@@ -169,7 +169,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *cs,
 
 	if (index >= IPC_MAX_CLIENT_SWAPCHAINS) {
 		fprintf(stderr, "ERROR: Too many swapchains!\n");
-		return IPC_FAILURE;
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	// It's now safe to increment the number of swapchains.
@@ -214,10 +214,10 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *cs,
 		out_fds[i] = xcsfd->images[i].fd;
 	}
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_swapchain_wait_image(volatile struct ipc_client_state *cs,
                                 uint32_t id,
                                 uint64_t timeout,
@@ -229,10 +229,10 @@ ipc_handle_swapchain_wait_image(volatile struct ipc_client_state *cs,
 
 	xrt_swapchain_wait_image(xsc, timeout, index);
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_swapchain_acquire_image(volatile struct ipc_client_state *cs,
                                    uint32_t id,
                                    uint32_t *out_index)
@@ -244,10 +244,10 @@ ipc_handle_swapchain_acquire_image(volatile struct ipc_client_state *cs,
 
 	xrt_swapchain_acquire_image(xsc, out_index);
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_swapchain_release_image(volatile struct ipc_client_state *cs,
                                    uint32_t id,
                                    uint32_t index)
@@ -258,10 +258,10 @@ ipc_handle_swapchain_release_image(volatile struct ipc_client_state *cs,
 
 	xrt_swapchain_release_image(xsc, index);
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_swapchain_destroy(volatile struct ipc_client_state *cs, uint32_t id)
 {
 	//! @todo Implement destroy swapchain.
@@ -270,10 +270,10 @@ ipc_handle_swapchain_destroy(volatile struct ipc_client_state *cs, uint32_t id)
 	xrt_swapchain_destroy((struct xrt_swapchain **)&cs->xscs[id]);
 	cs->swapchain_data[id].active = false;
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_device_update_input(volatile struct ipc_client_state *cs,
                                uint32_t id)
 {
@@ -292,10 +292,10 @@ ipc_handle_device_update_input(volatile struct ipc_client_state *cs,
 	memcpy(dst, src, sizeof(struct xrt_input) * idev->num_inputs);
 
 	// Reply.
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_device_get_tracked_pose(volatile struct ipc_client_state *cs,
                                    uint32_t id,
                                    enum xrt_input_name name,
@@ -312,10 +312,10 @@ ipc_handle_device_get_tracked_pose(volatile struct ipc_client_state *cs,
 	xrt_device_get_tracked_pose(xdev, name, at_timestamp, out_timestamp,
 	                            out_relation);
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_device_get_view_pose(volatile struct ipc_client_state *cs,
                                 uint32_t id,
                                 struct xrt_vec3 *eye_relation,
@@ -330,10 +330,10 @@ ipc_handle_device_get_view_pose(volatile struct ipc_client_state *cs,
 	// Get the pose.
 	xrt_device_get_view_pose(xdev, eye_relation, view_index, out_pose);
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_handle_device_set_output(volatile struct ipc_client_state *cs,
                              uint32_t id,
                              enum xrt_output_name name,
@@ -346,7 +346,7 @@ ipc_handle_device_set_output(volatile struct ipc_client_state *cs,
 	// Set the output.
 	xrt_device_set_output(xdev, name, value);
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
 

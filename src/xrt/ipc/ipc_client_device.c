@@ -82,9 +82,9 @@ ipc_client_device_update_inputs(struct xrt_device *xdev)
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
 
-	ipc_result_t r =
+	xrt_result_t r =
 	    ipc_call_device_update_input(icd->ipc_c, icd->device_id);
-	if (r != IPC_SUCCESS) {
+	if (r != XRT_SUCCESS) {
 		IPC_DEBUG(icd->ipc_c, "IPC: Error sending input update!");
 	}
 }
@@ -98,10 +98,10 @@ ipc_client_device_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
 
-	ipc_result_t r = ipc_call_device_get_tracked_pose(
+	xrt_result_t r = ipc_call_device_get_tracked_pose(
 	    icd->ipc_c, icd->device_id, name, at_timestamp_ns,
 	    out_relation_timestamp_ns, out_relation);
-	if (r != IPC_SUCCESS) {
+	if (r != XRT_SUCCESS) {
 		IPC_DEBUG(icd->ipc_c, "IPC: Error sending input update!");
 	}
 }
@@ -122,9 +122,9 @@ ipc_client_device_set_output(struct xrt_device *xdev,
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
 
-	ipc_result_t r =
+	xrt_result_t r =
 	    ipc_call_device_set_output(icd->ipc_c, icd->device_id, name, value);
-	if (r != IPC_SUCCESS) {
+	if (r != XRT_SUCCESS) {
 		IPC_DEBUG(icd->ipc_c, "IPC: Error sending set output!");
 	}
 }

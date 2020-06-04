@@ -97,7 +97,7 @@ compositor_disconnect(ipc_connection_t *ipc_c)
 }
 
 #define CALL_CHK(call)                                                         \
-	if ((call) != IPC_SUCCESS) {                                           \
+	if ((call) != XRT_SUCCESS) {                                           \
 		IPC_ERROR(icc->ipc_c, "IPC: %s call error!", __func__);        \
 	}
 
@@ -180,7 +180,7 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	int remote_fds[IPC_MAX_SWAPCHAIN_FDS] = {0};
-	ipc_result_t r = 0;
+	xrt_result_t r = XRT_SUCCESS;
 	uint32_t handle;
 	uint32_t num_images;
 	uint64_t size;
@@ -200,7 +200,7 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 	                              &size,                  // out
 	                              remote_fds,             // fds
 	                              IPC_MAX_SWAPCHAIN_FDS); // fds
-	if (r != IPC_SUCCESS) {
+	if (r != XRT_SUCCESS) {
 		return NULL;
 	}
 

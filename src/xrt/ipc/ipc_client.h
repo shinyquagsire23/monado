@@ -91,17 +91,17 @@ typedef struct ipc_connection
  * These functions are called by generated IPC client code.
  * @{
  */
-ipc_result_t
+xrt_result_t
 ipc_client_send_message(ipc_connection_t *ipc_c, void *message, size_t size);
 
-ipc_result_t
+xrt_result_t
 ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
                               void *msg_ptr,
                               size_t msg_size,
                               void *reply_ptr,
                               size_t reply_size);
 
-ipc_result_t
+xrt_result_t
 ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
                                   void *msg_ptr,
                                   size_t msg_size,

@@ -94,7 +94,7 @@ class Call:
         args.extend(arg.get_func_argument_out() for arg in self.out_args)
         if self.out_fds:
             args.extend(("int *fds", "size_t num_fds"))
-        write_decl(f, 'ipc_result_t', 'ipc_call_' + self.name, args)
+        write_decl(f, 'xrt_result_t', 'ipc_call_' + self.name, args)
 
     def write_handle_decl(self, f):
         """Write declaration of ipc_handle_CALLNAME."""
@@ -106,7 +106,7 @@ class Call:
                 "size_t max_num_fds",
                 "int *out_fds",
                 "size_t *out_num_fds"))
-        write_decl(f, 'ipc_result_t', 'ipc_handle_' + self.name, args)
+        write_decl(f, 'xrt_result_t', 'ipc_handle_' + self.name, args)
 
     def __init__(self, name, data):
         """Construct a call from call name and call data dictionary."""
@@ -197,7 +197,7 @@ struct ipc_command_msg
 
 struct ipc_result_reply
 {
-\tipc_result_t result;
+\txrt_result_t result;
 };
 
 struct ipc_formats_info
@@ -231,7 +231,7 @@ ipc_cmd_to_str(ipc_command_t id)
         if call.out_args:
             f.write("\nstruct ipc_" + call.name + "_reply\n")
             f.write("{\n")
-            f.write("\tipc_result_t result;\n")
+            f.write("\txrt_result_t result;\n")
             for arg in call.out_args:
                 f.write("\t" + arg.get_struct_field() + ";\n")
             f.write("};\n")
@@ -280,10 +280,10 @@ def generate_client_c(file, p):
         if call.out_fds:
             func += '_fds'
             args.extend(('fds', 'num_fds'))
-        write_invocation(f, 'ipc_result_t ret', func, args, indent="\t")
+        write_invocation(f, 'xrt_result_t ret', func, args, indent="\t")
         f.write(';')
         f.write('''
-\tif (ret != IPC_SUCCESS) {
+\tif (ret != XRT_SUCCESS) {
 \t\treturn ret;
 \t}
 \n''')

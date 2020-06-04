@@ -82,9 +82,9 @@ ipc_client_hmd_update_inputs(struct xrt_device *xdev)
 {
 	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
 
-	ipc_result_t r =
+	xrt_result_t r =
 	    ipc_call_device_update_input(ich->ipc_c, ich->device_id);
-	if (r != IPC_SUCCESS) {
+	if (r != XRT_SUCCESS) {
 		IPC_DEBUG(ich->ipc_c, "IPC: Error calling input update!");
 	}
 }
@@ -98,10 +98,10 @@ ipc_client_hmd_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
 
-	ipc_result_t r = ipc_call_device_get_tracked_pose(
+	xrt_result_t r = ipc_call_device_get_tracked_pose(
 	    ich->ipc_c, ich->device_id, name, at_timestamp_ns,
 	    out_relation_timestamp_ns, out_relation);
-	if (r != IPC_SUCCESS) {
+	if (r != XRT_SUCCESS) {
 		IPC_DEBUG(ich->ipc_c, "IPC: Error calling tracked pose!");
 	}
 }
@@ -114,9 +114,9 @@ ipc_client_hmd_get_view_pose(struct xrt_device *xdev,
 {
 	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
 
-	ipc_result_t r = ipc_call_device_get_view_pose(
+	xrt_result_t r = ipc_call_device_get_view_pose(
 	    ich->ipc_c, ich->device_id, eye_relation, view_index, out_pose);
-	if (r != IPC_SUCCESS) {
+	if (r != XRT_SUCCESS) {
 		IPC_DEBUG(ich->ipc_c, "IPC: Error calling view pose!");
 	}
 }

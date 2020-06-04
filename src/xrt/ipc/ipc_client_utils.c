@@ -17,7 +17,7 @@
 #include <string.h>
 #include <sys/socket.h>
 
-ipc_result_t
+xrt_result_t
 ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
                               void *msg_ptr,
                               size_t msg_size,
@@ -30,14 +30,14 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
 	if (ipc_c->socket_fd < 0) {
 		IPC_ERROR(ipc_c, "Error sending - not connected!");
 		os_mutex_unlock(&ipc_c->mutex);
-		return IPC_FAILURE;
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	ssize_t len = send(ipc_c->socket_fd, msg_ptr, msg_size, 0);
 	if ((size_t)len != msg_size) {
 		IPC_ERROR(ipc_c, "Error sending - cannot continue!");
 		os_mutex_unlock(&ipc_c->mutex);
-		return IPC_FAILURE;
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 
@@ -60,21 +60,21 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
 		IPC_ERROR(ipc_c, "recvmsg failed with error: %s",
 		          strerror(errno));
 		os_mutex_unlock(&ipc_c->mutex);
-		return IPC_FAILURE;
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	if ((size_t)len != reply_size) {
 		IPC_ERROR(ipc_c, "recvmsg failed with error: wrong size %i %i",
 		          (int)len, (int)reply_size);
 		os_mutex_unlock(&ipc_c->mutex);
-		return IPC_FAILURE;
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	os_mutex_unlock(&ipc_c->mutex);
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
                                   void *msg_ptr,
                                   size_t msg_size,
@@ -88,7 +88,7 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
 	if (send(ipc_c->socket_fd, msg_ptr, msg_size, 0) == -1) {
 		IPC_ERROR(ipc_c, "Error sending - cannot continue!");
 		os_mutex_unlock(&ipc_c->mutex);
-		return IPC_FAILURE;
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	union {
@@ -115,29 +115,29 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
 		IPC_ERROR(ipc_c, "recvmsg failed with error: %s",
 		          strerror(errno));
 		os_mutex_unlock(&ipc_c->mutex);
-		return -1;
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	if (len == 0) {
 		IPC_ERROR(ipc_c, "recvmsg failed with error: no data");
 		os_mutex_unlock(&ipc_c->mutex);
-		return -1;
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	// Did the server actually return file descriptors.
 	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
 	if (cmsg == NULL) {
 		os_mutex_unlock(&ipc_c->mutex);
-		return IPC_SUCCESS;
+		return XRT_SUCCESS;
 	}
 
 	memcpy(fds, (int *)CMSG_DATA(cmsg), fds_size);
 	os_mutex_unlock(&ipc_c->mutex);
 
-	return IPC_SUCCESS;
+	return XRT_SUCCESS;
 }
 
-ipc_result_t
+xrt_result_t
 ipc_client_send_message(ipc_connection_t *ipc_c, void *message, size_t size)
 {
 	return ipc_client_send_and_get_reply(ipc_c, message, size, message,

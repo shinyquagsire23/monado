@@ -215,9 +215,9 @@ ipc_instance_create(struct xrt_instance **out_xinst)
 	}
 
 	// get our xdev shm from the server and mmap it
-	ipc_result_t r =
+	xrt_result_t r =
 	    ipc_call_instance_get_shm_fd(&ii->ipc_c, &ii->ipc_c.ism_fd, 1);
-	if (r != IPC_SUCCESS) {
+	if (r != XRT_SUCCESS) {
 		IPC_ERROR(&ii->ipc_c, "Failed to retrieve shm fd");
 		free(ii);
 		return -1;

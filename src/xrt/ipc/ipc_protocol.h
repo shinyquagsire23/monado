@@ -14,6 +14,8 @@
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_compositor.h"
 
+#include "xrt/xrt_results.h"
+
 #include <semaphore.h>
 
 #define IPC_MSG_SOCK_FILE "/tmp/monado_comp_ipc"
@@ -190,20 +192,6 @@ struct ipc_shared_memory
 		sem_t sem;
 	} wait_frame;
 };
-
-
-/*
- *
- * Enums
- *
- */
-
-typedef enum ipc_result
-{
-	IPC_SUCCESS = 0,
-	IPC_FAILURE,
-} ipc_result_t;
-
 
 /*
  *
