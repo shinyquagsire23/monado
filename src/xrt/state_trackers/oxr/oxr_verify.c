@@ -455,6 +455,23 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
  */
 
 XrResult
+oxr_verify_view_config_type(struct oxr_logger *log,
+                            struct oxr_instance *inst,
+                            XrViewConfigurationType view_conf,
+                            const char *view_conf_name)
+{
+	// These are always valid.
+	if (view_conf == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_MONO ||
+	    view_conf == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+		return XR_SUCCESS;
+	}
+
+	return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+	                 "(%s == 0x%08x) invalid view configuration type",
+	                 view_conf_name, view_conf);
+}
+
+XrResult
 oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
                                const struct oxr_instance *inst,
                                const XrSessionCreateInfo *createInfo)

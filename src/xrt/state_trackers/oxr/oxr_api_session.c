@@ -86,6 +86,8 @@ oxr_xrBeginSession(XrSession session, const XrSessionBeginInfo *beginInfo)
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrBeginSession");
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, beginInfo,
 	                                 XR_TYPE_SESSION_BEGIN_INFO);
+	OXR_VERIFY_VIEW_CONFIG_TYPE(&log, sess->sys->inst,
+	                            beginInfo->primaryViewConfigurationType);
 
 	return oxr_session_begin(&log, sess, beginInfo);
 }

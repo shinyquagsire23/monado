@@ -171,6 +171,16 @@ extern "C" {
 		}                                                              \
 	} while (false)
 
+#define OXR_VERIFY_VIEW_CONFIG_TYPE(log, inst, view_conf)                      \
+	do {                                                                   \
+		XrResult verify_ret = oxr_verify_view_config_type(             \
+		    log, inst, view_conf, #view_conf);                         \
+		if (verify_ret != XR_SUCCESS) {                                \
+			return verify_ret;                                     \
+		}                                                              \
+	} while (false)
+
+
 /*
  *
  * Implementation in oxr_verify.cpp
@@ -240,6 +250,12 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
                               const struct oxr_sub_paths *act_sub_paths,
                               struct oxr_sub_paths *out_sub_paths,
                               const char *variable);
+
+XrResult
+oxr_verify_view_config_type(struct oxr_logger *log,
+                            struct oxr_instance *inst,
+                            XrViewConfigurationType view_conf,
+                            const char *view_conf_name);
 
 XrResult
 oxr_verify_XrSessionCreateInfo(struct oxr_logger *,
