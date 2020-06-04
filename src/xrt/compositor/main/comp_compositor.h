@@ -77,16 +77,6 @@ struct comp_swapchain
 	 */
 	struct u_index_fifo fifo;
 };
-/*!
- * Tag for distinguishing the union contents of @ref comp_layer.
- */
-enum comp_layer_type
-{
-	//! comp_layer::stereo is initialized
-	COMP_LAYER_STEREO_PROJECTION,
-	//! comp_layer::quad is initialized
-	COMP_LAYER_QUAD,
-};
 
 /*!
  * A quad layer.
@@ -131,7 +121,7 @@ struct comp_layer
 {
 	int64_t timestamp;
 	enum xrt_layer_composition_flags flags;
-	enum comp_layer_type type;
+	enum xrt_layer_type type;
 	bool flip_y;
 	union {
 		struct comp_layer_quad quad;

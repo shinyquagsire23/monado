@@ -24,7 +24,7 @@ struct comp_render_layer
 
 	bool visible;
 
-	enum comp_layer_type type;
+	enum xrt_layer_type type;
 
 	struct layer_transformation transformation[2];
 	struct vk_buffer transformation_ubos[2];
@@ -37,7 +37,7 @@ struct comp_render_layer
 
 struct comp_render_layer *
 comp_layer_create(struct vk_bundle *vk,
-                  enum comp_layer_type type,
+                  enum xrt_layer_type type,
                   VkDescriptorSetLayout *layout);
 
 void

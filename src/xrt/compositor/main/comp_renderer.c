@@ -489,7 +489,7 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 
 	comp_layer_set_model_matrix(r->lr->layers[layer], &model_matrix);
 
-	r->lr->layers[layer]->type = COMP_LAYER_QUAD;
+	r->lr->layers[layer]->type = XRT_LAYER_QUAD;
 	comp_layer_set_flip_y(r->lr->layers[layer], flip_y);
 
 	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
@@ -511,7 +511,7 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 
 	comp_layer_set_flip_y(r->lr->layers[layer], flip_y);
 
-	r->lr->layers[layer]->type = COMP_LAYER_STEREO_PROJECTION;
+	r->lr->layers[layer]->type = XRT_LAYER_STEREO_PROJECTION;
 }
 
 void

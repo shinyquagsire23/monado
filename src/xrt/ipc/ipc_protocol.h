@@ -108,15 +108,9 @@ struct ipc_layer_quad
 	struct xrt_vec2 size;
 };
 
-enum ipc_layer_type
-{
-	IPC_LAYER_STEREO_PROJECTION,
-	IPC_LAYER_QUAD,
-};
-
 struct ipc_layer_entry
 {
-	enum ipc_layer_type type;
+	enum xrt_layer_type type;
 	bool flip_y;
 
 	union {

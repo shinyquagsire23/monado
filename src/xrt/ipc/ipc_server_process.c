@@ -590,13 +590,13 @@ _update_layers(struct comp_compositor *c,
 		volatile struct ipc_layer_render_state *layer =
 		    &render_state->layers[i];
 		switch (layer->type) {
-		case IPC_LAYER_STEREO_PROJECTION: {
+		case XRT_LAYER_STEREO_PROJECTION: {
 			if (!_update_projection_layer(c, active_client, layer,
 			                              i))
 				return false;
 			break;
 		}
-		case IPC_LAYER_QUAD: {
+		case XRT_LAYER_QUAD: {
 			if (!_update_quad_layer(c, active_client, layer, i))
 				return false;
 			break;

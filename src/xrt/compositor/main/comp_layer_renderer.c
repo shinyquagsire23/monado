@@ -451,7 +451,7 @@ comp_layer_renderer_allocate_layers(struct comp_layer_renderer *self,
 
 	for (uint32_t i = 0; i < self->num_layers; i++) {
 		self->layers[i] = comp_layer_create(
-		    vk, COMP_LAYER_QUAD, &self->descriptor_set_layout);
+		    vk, XRT_LAYER_QUAD, &self->descriptor_set_layout);
 	}
 }
 

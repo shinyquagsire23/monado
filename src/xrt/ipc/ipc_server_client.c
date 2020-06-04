@@ -112,7 +112,7 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 		rl->flip_y = sl->flip_y;
 
 		switch (slot->layers[i].type) {
-		case IPC_LAYER_STEREO_PROJECTION:
+		case XRT_LAYER_STEREO_PROJECTION:
 			rl->stereo.l.swapchain_index =
 			    sl->stereo.l.swapchain_id;
 			rl->stereo.l.image_index = sl->stereo.l.image_index;
@@ -123,7 +123,7 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 			rl->stereo.r.array_index = sl->stereo.r.array_index;
 
 			break;
-		case IPC_LAYER_QUAD:
+		case XRT_LAYER_QUAD:
 			rl->quad.swapchain_index = sl->quad.swapchain_id;
 			rl->quad.image_index = sl->quad.image_index;
 			rl->quad.pose = sl->quad.pose;

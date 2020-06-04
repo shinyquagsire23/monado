@@ -70,6 +70,17 @@ enum xrt_view_type
 };
 
 /*!
+ * Layer type.
+ *
+ * @ingroup xrt_iface
+ */
+enum xrt_layer_type
+{
+	XRT_LAYER_STEREO_PROJECTION,
+	XRT_LAYER_QUAD,
+};
+
+/*!
  * @interface xrt_swapchain
  * Common swapchain interface/base.
  *

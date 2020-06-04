@@ -107,7 +107,7 @@ struct ipc_stereo_projection_render_state
 
 struct ipc_layer_render_state
 {
-	enum ipc_layer_type type;
+	enum xrt_layer_type type;
 	bool flip_y;
 
 	union {

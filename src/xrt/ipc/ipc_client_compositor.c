@@ -387,7 +387,7 @@ ipc_compositor_layer_stereo_projection(
 
 	layer->flip_y = flip_y;
 
-	layer->type = IPC_LAYER_STEREO_PROJECTION;
+	layer->type = XRT_LAYER_STEREO_PROJECTION;
 
 	// Increment the number of layers.
 	icc->layers.num_layers++;
@@ -430,7 +430,7 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 	quad->size = *size;
 
 	layer->flip_y = flip_y;
-	layer->type = IPC_LAYER_QUAD;
+	layer->type = XRT_LAYER_QUAD;
 
 	// Increment the number of layers.
 	icc->layers.num_layers++;
