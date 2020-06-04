@@ -33,7 +33,7 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
-	ssize_t len = send(ipc_c->socket_fd, msg_ptr, msg_size, 0);
+	ssize_t len = send(ipc_c->socket_fd, msg_ptr, msg_size, MSG_NOSIGNAL);
 	if ((size_t)len != msg_size) {
 		IPC_ERROR(ipc_c, "Error sending - cannot continue!");
 		os_mutex_unlock(&ipc_c->mutex);
@@ -54,7 +54,7 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
 	msg.msg_iovlen = 1;
 	msg.msg_flags = 0;
 
-	len = recvmsg(ipc_c->socket_fd, &msg, 0);
+	len = recvmsg(ipc_c->socket_fd, &msg, MSG_NOSIGNAL);
 
 	if (len < 0) {
 		IPC_ERROR(ipc_c, "recvmsg failed with error: %s",
@@ -85,7 +85,7 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
 {
 	os_mutex_lock(&ipc_c->mutex);
 
-	if (send(ipc_c->socket_fd, msg_ptr, msg_size, 0) == -1) {
+	if (send(ipc_c->socket_fd, msg_ptr, msg_size, MSG_NOSIGNAL) == -1) {
 		IPC_ERROR(ipc_c, "Error sending - cannot continue!");
 		os_mutex_unlock(&ipc_c->mutex);
 		return XRT_ERROR_IPC_FAILURE;
@@ -109,7 +109,7 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
 	msg.msg_control = u.buf;
 	msg.msg_controllen = cmsg_size;
 
-	ssize_t len = recvmsg(ipc_c->socket_fd, &msg, 0);
+	ssize_t len = recvmsg(ipc_c->socket_fd, &msg, MSG_NOSIGNAL);
 
 	if (len < 0) {
 		IPC_ERROR(ipc_c, "recvmsg failed with error: %s",

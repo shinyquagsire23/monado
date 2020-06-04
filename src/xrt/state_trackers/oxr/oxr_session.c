@@ -35,6 +35,12 @@ DEBUG_GET_ONCE_BOOL_OPTION(dynamic_prediction, "OXR_DYNAMIC_PREDICTION", true)
 DEBUG_GET_ONCE_NUM_OPTION(ipd, "OXR_DEBUG_IPD_MM", 63)
 DEBUG_GET_ONCE_NUM_OPTION(prediction_ms, "OXR_DEBUG_PREDICTION_MS", 11)
 
+#define CALL_CHK(call)                                                         \
+	if ((call) == XRT_ERROR_IPC_FAILURE) {                                 \
+		return oxr_error(log, XR_ERROR_INSTANCE_LOST,                  \
+		                 "Error in function call over IPC");           \
+	}
+
 static bool
 is_running(struct oxr_session *sess)
 {
@@ -130,8 +136,9 @@ oxr_session_begin(struct oxr_logger *log,
 			    view_type);
 		}
 
-		xrt_comp_begin_session(xc, (enum xrt_view_type)beginInfo
-		                               ->primaryViewConfigurationType);
+		CALL_CHK(xrt_comp_begin_session(
+		    xc, (enum xrt_view_type)
+		            beginInfo->primaryViewConfigurationType));
 	}
 
 	sess->has_begun = true;
@@ -159,7 +166,7 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 			sess->frame_started = false;
 		}
 
-		xrt_comp_end_session(xc);
+		CALL_CHK(xrt_comp_end_session(xc));
 	}
 
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
@@ -417,8 +424,8 @@ oxr_session_frame_wait(struct oxr_logger *log,
 
 	uint64_t predicted_display_time;
 	uint64_t predicted_display_period;
-	xrt_comp_wait_frame(xc, &predicted_display_time,
-	                    &predicted_display_period);
+	CALL_CHK(xrt_comp_wait_frame(xc, &predicted_display_time,
+	                             &predicted_display_period));
 
 	if ((int64_t)predicted_display_time <= 0) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
@@ -463,14 +470,14 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 	if (sess->frame_started) {
 		ret = XR_FRAME_DISCARDED;
 		if (xc != NULL) {
-			xrt_comp_discard_frame(xc);
+			CALL_CHK(xrt_comp_discard_frame(xc));
 		}
 	} else {
 		ret = oxr_session_success_result(sess);
 		sess->frame_started = true;
 	}
 	if (xc != NULL) {
-		xrt_comp_begin_frame(xc);
+		CALL_CHK(xrt_comp_begin_frame(xc));
 	}
 
 	return ret;
@@ -718,7 +725,7 @@ verify_projection_layer(struct xrt_compositor *xc,
 	return XR_SUCCESS;
 }
 
-static void
+static XrResult
 submit_quad_layer(struct xrt_compositor *xc,
                   struct oxr_logger *log,
                   XrCompositionLayerQuad *quad,
@@ -732,15 +739,17 @@ submit_quad_layer(struct xrt_compositor *xc,
 	struct xrt_pose pose;
 	math_pose_transform(inv_offset, (struct xrt_pose *)&quad->pose, &pose);
 
-	xrt_comp_layer_quad(
+	CALL_CHK(xrt_comp_layer_quad(
 	    xc, timestamp, head, XRT_INPUT_GENERIC_HEAD_POSE, quad->layerFlags,
 	    (enum xrt_layer_eye_visibility)quad->eyeVisibility, sc->swapchain,
 	    sc->released.index, (struct xrt_rect *)&quad->subImage.imageRect,
 	    quad->subImage.imageArrayIndex, &pose,
-	    (struct xrt_vec2 *)&quad->size, false);
+	    (struct xrt_vec2 *)&quad->size, false));
+
+	return XR_SUCCESS;
 }
 
-static void
+static XrResult
 submit_projection_layer(struct xrt_compositor *xc,
                         struct oxr_logger *log,
                         XrCompositionLayerProjection *proj,
@@ -764,7 +773,7 @@ submit_projection_layer(struct xrt_compositor *xc,
 	math_pose_transform(inv_offset, (struct xrt_pose *)&proj->views[1].pose,
 	                    &pose[1]);
 
-	xrt_comp_layer_stereo_projection(
+	CALL_CHK(xrt_comp_layer_stereo_projection(
 	    xc, timestamp, head, XRT_INPUT_GENERIC_HEAD_POSE, flags,
 	    scs[0]->swapchain, // Left
 	    scs[0]->released.index,
@@ -775,7 +784,8 @@ submit_projection_layer(struct xrt_compositor *xc,
 	    scs[1]->released.index,
 	    (struct xrt_rect *)&proj->views[1].subImage.imageRect,
 	    proj->views[1].subImage.imageArrayIndex,
-	    (struct xrt_fov *)&proj->views[1].fov, &pose[1], false);
+	    (struct xrt_fov *)&proj->views[1].fov, &pose[1], false));
+	return XR_SUCCESS;
 }
 
 XrResult
@@ -845,7 +855,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 * Early out for discarded frame if layer count is 0.
 	 */
 	if (frameEndInfo->layerCount == 0) {
-		xrt_comp_discard_frame(xc);
+		CALL_CHK(xrt_comp_discard_frame(xc));
 		sess->frame_started = false;
 
 		return oxr_session_success_result(sess);
@@ -905,7 +915,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 	math_pose_invert(&sess->sys->head->tracking_origin->offset,
 	                 &inv_offset);
 
-	xrt_comp_layer_begin(xc, blend_mode);
+	CALL_CHK(xrt_comp_layer_begin(xc, blend_mode));
 
 	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
 		const XrCompositionLayerBaseHeader *layer =
@@ -929,7 +939,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 		}
 	}
 
-	xrt_comp_layer_commit(xc);
+	CALL_CHK(xrt_comp_layer_commit(xc));
 
 	sess->frame_started = false;
 
