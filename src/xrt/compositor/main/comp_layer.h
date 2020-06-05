@@ -22,7 +22,7 @@ struct comp_render_layer
 {
 	struct vk_bundle *vk;
 
-	bool visible;
+	enum xrt_layer_eye_visibility visibility;
 	bool view_space;
 
 	enum xrt_layer_type type;

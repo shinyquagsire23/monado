@@ -161,8 +161,8 @@ _init(struct comp_render_layer *self,
 
 	self->type = type;
 
-	self->visible = true;
 	self->view_space = true;
+	self->visibility = XRT_LAYER_EYE_VISIBILITY_BOTH;
 
 	math_matrix_4x4_identity(&self->model_matrix);
 
@@ -206,8 +206,15 @@ comp_layer_draw(struct comp_render_layer *self,
                 const struct xrt_matrix_4x4 *vp_world,
                 const struct xrt_matrix_4x4 *vp_eye)
 {
-	if (!self->visible)
+	if (eye == 0 &&
+	    (self->visibility & XRT_LAYER_EYE_VISIBILITY_LEFT_BIT) == 0) {
 		return;
+	}
+
+	if (eye == 1 &&
+	    (self->visibility & XRT_LAYER_EYE_VISIBILITY_RIGHT_BIT) == 0) {
+		return;
+	}
 
 	self->vk->vkCmdBindPipeline(cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                            pipeline);
