@@ -81,6 +81,32 @@ enum xrt_layer_type
 };
 
 /*!
+ * Bit field for holding information about how a layer should be composited.
+ *
+ * @ingroup xrt_iface
+ */
+enum xrt_layer_composition_flags
+{
+	XRT_LAYER_COMPOSITION_CORRECT_CHROMATIC_ABERRATION_BIT = 1 << 0,
+	XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT = 1 << 1,
+	XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT = 1 << 2,
+};
+
+/*!
+ * Which view is they layer visible to, used for quad layers. Doesn't have the
+ * same values as the OpenXR counter-parts.
+ *
+ * @ingroup xrt_iface
+ */
+enum xrt_layer_eye_visibility
+{
+	XRT_LAYER_EYE_VISIBILITY_NONE = 0x0,
+	XRT_LAYER_EYE_VISIBILITY_LEFT_BIT = 0x1,
+	XRT_LAYER_EYE_VISIBILITY_RIGHT_BIT = 0x2,
+	XRT_LAYER_EYE_VISIBILITY_BOTH = 0x3,
+};
+
+/*!
  * @interface xrt_swapchain
  * Common swapchain interface/base.
  *
