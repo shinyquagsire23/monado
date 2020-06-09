@@ -119,7 +119,7 @@ struct xrt_sub_image
 };
 
 /*!
- * All the pure data bits of a quad layer, the @ref xrt_swapchains and
+ * All the pure data bits of a quad layer, the @ref xrt_swapchain references and
  * @ref xrt_device are provided outside of this struct.
  *
  * @ingroup xrt_iface
@@ -148,8 +148,8 @@ struct xrt_layer_projection_view_data
 };
 
 /*!
- * All the pure data bits of a stereo projection layer, the @ref xrt_swapchains
- * and @ref xrt_device are provided outside of this struct.
+ * All the pure data bits of a stereo projection layer, the @ref xrt_swapchain
+ * references and @ref xrt_device are provided outside of this struct.
  *
  * @ingroup xrt_iface
  */
@@ -159,7 +159,7 @@ struct xrt_layer_stereo_projection_data
 };
 
 /*!
- * All the pure data bits of a layer, the @ref xrt_swapchains and
+ * All the pure data bits of a layer, the @ref xrt_swapchain references and
  * @ref xrt_device are provided outside of this struct.
  *
  * @ingroup xrt_iface
