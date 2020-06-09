@@ -79,24 +79,6 @@ struct comp_swapchain
 };
 
 /*!
- * A quad layer.
- *
- * @ingroup comp_main
- * @see comp_layer
- */
-struct comp_layer_quad
-{
-	enum xrt_layer_eye_visibility visibility;
-
-	uint32_t image_index;
-	uint32_t array_index;
-
-	struct xrt_rect rect;
-	struct xrt_pose pose;
-	struct xrt_vec2 size;
-};
-
-/*!
  * A single layer.
  *
  * @ingroup comp_main
@@ -104,8 +86,16 @@ struct comp_layer_quad
  */
 struct comp_layer
 {
+	/*!
+	 * Up to two compositor swapchains referenced per layer.
+	 *
+	 * Unused elements should be set to null.
+	 */
 	struct comp_swapchain *scs[2];
 
+	/*!
+	 * All basic (trivially-serializable) data associated with a layer.
+	 */
 	struct xrt_layer_data data;
 };
 
