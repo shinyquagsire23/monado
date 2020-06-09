@@ -89,13 +89,11 @@ struct ipc_quad_render_state
 {
 	uint32_t swapchain_index;
 
-	uint32_t image_index;
-	uint32_t array_index;
+	struct xrt_sub_image sub;
 
 	enum xrt_layer_eye_visibility visibility;
 	struct xrt_pose pose;
 	struct xrt_vec2 size;
-	struct xrt_rect rect;
 };
 
 struct ipc_stereo_projection_render_state
@@ -103,8 +101,7 @@ struct ipc_stereo_projection_render_state
 	struct
 	{
 		uint32_t swapchain_index;
-		uint32_t image_index;
-		uint32_t array_index;
+		struct xrt_sub_image sub;
 	} l, r;
 };
 
@@ -231,6 +228,8 @@ ipc_server_client_thread(void *_cs);
  * Create a single wait thread.
  *
  * @ingroup ipc_server
+ * @public @memberof ipc_server
+ * @relatesalso ipc_wait
  */
 int
 ipc_server_wait_alloc(struct ipc_server *s, struct ipc_wait **out_iw);
@@ -239,6 +238,7 @@ ipc_server_wait_alloc(struct ipc_server *s, struct ipc_wait **out_iw);
  * Destroy a wait thread, checks for NULL and sets to NULL.
  *
  * @ingroup ipc_server
+ * @public @memberof ipc_wait
  */
 void
 ipc_server_wait_free(struct ipc_wait **out_iw);
@@ -248,6 +248,7 @@ ipc_server_wait_free(struct ipc_wait **out_iw);
  * wait frame.
  *
  * @ingroup ipc_server
+ * @public @memberof ipc_wait
  */
 void
 ipc_server_wait_add_frame(struct ipc_wait *iw,
