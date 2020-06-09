@@ -736,15 +736,30 @@ submit_quad_layer(struct xrt_compositor *xc,
 	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
 	    struct oxr_swapchain *, quad->subImage.swapchain);
 
+	enum xrt_layer_composition_flags flags = quad->layerFlags;
+
 	struct xrt_pose pose;
 	math_pose_transform(inv_offset, (struct xrt_pose *)&quad->pose, &pose);
 
-	CALL_CHK(xrt_comp_layer_quad(
-	    xc, timestamp, head, XRT_INPUT_GENERIC_HEAD_POSE, quad->layerFlags,
-	    (enum xrt_layer_eye_visibility)quad->eyeVisibility, sc->swapchain,
-	    sc->released.index, (struct xrt_rect *)&quad->subImage.imageRect,
-	    quad->subImage.imageArrayIndex, &pose,
-	    (struct xrt_vec2 *)&quad->size, false));
+	struct xrt_layer_data data;
+	U_ZERO(&data);
+	data.type = XRT_LAYER_QUAD;
+	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
+	data.timestamp = timestamp;
+	data.flags = flags;
+
+	struct xrt_vec2 *size = (struct xrt_vec2 *)&quad->size;
+	struct xrt_rect *rect = (struct xrt_rect *)&quad->subImage.imageRect;
+
+	data.quad.visibility =
+	    (enum xrt_layer_eye_visibility)quad->eyeVisibility;
+	data.quad.image_index = sc->released.index;
+	data.quad.array_index = quad->subImage.imageArrayIndex;
+	data.quad.rect = *rect;
+	data.quad.pose = pose;
+	data.quad.size = *size;
+
+	CALL_CHK(xrt_comp_layer_quad(xc, head, sc->swapchain, &data));
 
 	return XR_SUCCESS;
 }
@@ -757,7 +772,7 @@ submit_projection_layer(struct xrt_compositor *xc,
                         struct xrt_pose *inv_offset,
                         uint64_t timestamp)
 {
-	enum xrt_layer_composition_flags flags = 0;
+	enum xrt_layer_composition_flags flags = proj->layerFlags;
 	struct oxr_swapchain *scs[2];
 
 	uint32_t num_chains = ARRAY_SIZE(scs);
@@ -773,18 +788,36 @@ submit_projection_layer(struct xrt_compositor *xc,
 	math_pose_transform(inv_offset, (struct xrt_pose *)&proj->views[1].pose,
 	                    &pose[1]);
 
-	CALL_CHK(xrt_comp_layer_stereo_projection(
-	    xc, timestamp, head, XRT_INPUT_GENERIC_HEAD_POSE, flags,
-	    scs[0]->swapchain, // Left
-	    scs[0]->released.index,
-	    (struct xrt_rect *)&proj->views[0].subImage.imageRect,
-	    proj->views[0].subImage.imageArrayIndex,
-	    (struct xrt_fov *)&proj->views[0].fov, &pose[0],
-	    scs[1]->swapchain, // Right
-	    scs[1]->released.index,
-	    (struct xrt_rect *)&proj->views[1].subImage.imageRect,
-	    proj->views[1].subImage.imageArrayIndex,
-	    (struct xrt_fov *)&proj->views[1].fov, &pose[1], false));
+	struct xrt_rect *l_rect =
+	    (struct xrt_rect *)&proj->views[0].subImage.imageRect;
+	struct xrt_fov *l_fov = (struct xrt_fov *)&proj->views[0].fov;
+	struct xrt_rect *r_rect =
+	    (struct xrt_rect *)&proj->views[1].subImage.imageRect;
+	struct xrt_fov *r_fov = (struct xrt_fov *)&proj->views[1].fov;
+
+	struct xrt_layer_data data;
+	U_ZERO(&data);
+	data.type = XRT_LAYER_STEREO_PROJECTION;
+	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
+	data.timestamp = timestamp;
+	data.flags = flags;
+
+	data.stereo.l.image_index = scs[0]->released.index;
+	data.stereo.l.array_index = proj->views[0].subImage.imageArrayIndex;
+	data.stereo.l.rect = *l_rect;
+	data.stereo.l.fov = *l_fov;
+	data.stereo.l.pose = pose[0];
+
+	data.stereo.r.image_index = scs[1]->released.index;
+	data.stereo.r.array_index = proj->views[1].subImage.imageArrayIndex;
+	data.stereo.r.rect = *r_rect;
+	data.stereo.r.fov = *r_fov;
+	data.stereo.r.pose = pose[1];
+
+	CALL_CHK(xrt_comp_layer_stereo_projection(xc, head,
+	                                          scs[0]->swapchain, // Left
+	                                          scs[1]->swapchain, // Right
+	                                          &data));
 	return XR_SUCCESS;
 }
 

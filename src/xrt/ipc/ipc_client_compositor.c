@@ -339,56 +339,24 @@ ipc_compositor_layer_begin(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_layer_stereo_projection(
-    struct xrt_compositor *xc,
-    uint64_t timestamp,
-    struct xrt_device *xdev,
-    enum xrt_input_name name,
-    enum xrt_layer_composition_flags layer_flags,
-    struct xrt_swapchain *l_sc,
-    uint32_t l_image_index,
-    struct xrt_rect *l_rect,
-    uint32_t l_array_index,
-    struct xrt_fov *l_fov,
-    struct xrt_pose *l_pose,
-    struct xrt_swapchain *r_sc,
-    uint32_t r_image_index,
-    struct xrt_rect *r_rect,
-    uint32_t r_array_index,
-    struct xrt_fov *r_fov,
-    struct xrt_pose *r_pose,
-    bool flip_y)
+ipc_compositor_layer_stereo_projection(struct xrt_compositor *xc,
+                                       struct xrt_device *xdev,
+                                       struct xrt_swapchain *l_sc,
+                                       struct xrt_swapchain *r_sc,
+                                       struct xrt_layer_data *data)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
-	struct xrt_layer_data *data = &layer->data;
-	struct xrt_layer_stereo_projection_data *stereo = &data->stereo;
 	struct ipc_client_swapchain *l = ipc_client_swapchain(l_sc);
 	struct ipc_client_swapchain *r = ipc_client_swapchain(r_sc);
 
 	layer->xdev_id = 0; //! @todo Real id.
 	layer->swapchain_ids[0] = l->id;
 	layer->swapchain_ids[1] = r->id;
-
-	data->type = XRT_LAYER_STEREO_PROJECTION;
-	data->name = name;
-	data->timestamp = timestamp;
-	data->flags = layer_flags;
-	data->flip_y = flip_y;
-
-	stereo->l.image_index = l_image_index;
-	stereo->l.rect = *l_rect;
-	stereo->l.array_index = l_array_index;
-	stereo->l.fov = *l_fov;
-	stereo->l.pose = *l_pose;
-	stereo->r.image_index = r_image_index;
-	stereo->r.rect = *r_rect;
-	stereo->r.array_index = r_array_index;
-	stereo->r.fov = *r_fov;
-	stereo->r.pose = *r_pose;
+	layer->data = *data;
 
 	// Increment the number of layers.
 	icc->layers.num_layers++;
@@ -398,43 +366,23 @@ ipc_compositor_layer_stereo_projection(
 
 static xrt_result_t
 ipc_compositor_layer_quad(struct xrt_compositor *xc,
-                          uint64_t timestamp,
                           struct xrt_device *xdev,
-                          enum xrt_input_name name,
-                          enum xrt_layer_composition_flags layer_flags,
-                          enum xrt_layer_eye_visibility visibility,
                           struct xrt_swapchain *sc,
-                          uint32_t image_index,
-                          struct xrt_rect *rect,
-                          uint32_t array_index,
-                          struct xrt_pose *pose,
-                          struct xrt_vec2 *size,
-                          bool flip_y)
+                          struct xrt_layer_data *data)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
-	struct xrt_layer_data *data = &layer->data;
-	struct xrt_layer_quad_data *quad = &data->quad;
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(sc);
+
+	assert(data->type == XRT_LAYER_QUAD);
 
 	layer->xdev_id = 0; //! @todo Real id.
 	layer->swapchain_ids[0] = ics->id;
 	layer->swapchain_ids[1] = -1;
-
-	data->type = XRT_LAYER_QUAD;
-	data->name = name;
-	data->timestamp = timestamp;
-	data->flags = layer_flags;
-	data->flip_y = flip_y;
-
-	quad->image_index = image_index;
-	quad->rect = *rect;
-	quad->array_index = array_index;
-	quad->pose = *pose;
-	quad->size = *size;
+	layer->data = *data;
 
 	// Increment the number of layers.
 	icc->layers.num_layers++;

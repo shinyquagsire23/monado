@@ -8,12 +8,13 @@
  * @ingroup comp_client
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "util/u_misc.h"
 
 #include "comp_vk_client.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 
 /*!
  * Down-cast helper.
@@ -174,61 +175,40 @@ client_vk_compositor_layer_begin(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_vk_compositor_layer_stereo_projection(
-    struct xrt_compositor *xc,
-    uint64_t timestamp,
-    struct xrt_device *xdev,
-    enum xrt_input_name name,
-    enum xrt_layer_composition_flags layer_flags,
-    struct xrt_swapchain *l_sc,
-    uint32_t l_image_index,
-    struct xrt_rect *l_rect,
-    uint32_t l_array_index,
-    struct xrt_fov *l_fov,
-    struct xrt_pose *l_pose,
-    struct xrt_swapchain *r_sc,
-    uint32_t r_image_index,
-    struct xrt_rect *r_rect,
-    uint32_t r_array_index,
-    struct xrt_fov *r_fov,
-    struct xrt_pose *r_pose,
-    bool flip_y)
+client_vk_compositor_layer_stereo_projection(struct xrt_compositor *xc,
+                                             struct xrt_device *xdev,
+                                             struct xrt_swapchain *l_sc,
+                                             struct xrt_swapchain *r_sc,
+                                             struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *l_xscfd, *r_xscfd;
 
+	assert(data->type == XRT_LAYER_STEREO_PROJECTION);
+
 	l_xscfd = &client_vk_swapchain(l_sc)->xscfd->base;
 	r_xscfd = &client_vk_swapchain(r_sc)->xscfd->base;
+	data->flip_y = false;
 
-	return xrt_comp_layer_stereo_projection(
-	    &c->xcfd->base, timestamp, xdev, name, layer_flags, l_xscfd,
-	    l_image_index, l_rect, l_array_index, l_fov, l_pose, r_xscfd,
-	    r_image_index, r_rect, r_array_index, r_fov, r_pose, false);
+	return xrt_comp_layer_stereo_projection(&c->xcfd->base, xdev, l_xscfd,
+	                                        r_xscfd, data);
 }
 
 static xrt_result_t
 client_vk_compositor_layer_quad(struct xrt_compositor *xc,
-                                uint64_t timestamp,
                                 struct xrt_device *xdev,
-                                enum xrt_input_name name,
-                                enum xrt_layer_composition_flags layer_flags,
-                                enum xrt_layer_eye_visibility visibility,
                                 struct xrt_swapchain *sc,
-                                uint32_t image_index,
-                                struct xrt_rect *rect,
-                                uint32_t array_index,
-                                struct xrt_pose *pose,
-                                struct xrt_vec2 *size,
-                                bool flip_y)
+                                struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *xscfb;
 
-	xscfb = &client_vk_swapchain(sc)->xscfd->base;
+	assert(data->type == XRT_LAYER_QUAD);
 
-	return xrt_comp_layer_quad(&c->xcfd->base, timestamp, xdev, name,
-	                           layer_flags, visibility, xscfb, image_index,
-	                           rect, array_index, pose, size, false);
+	xscfb = &client_vk_swapchain(sc)->xscfd->base;
+	data->flip_y = false;
+
+	return xrt_comp_layer_quad(&c->xcfd->base, xdev, xscfb, data);
 }
 
 static xrt_result_t
