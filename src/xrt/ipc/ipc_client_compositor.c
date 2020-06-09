@@ -341,8 +341,8 @@ ipc_compositor_layer_begin(struct xrt_compositor *xc,
 static xrt_result_t
 ipc_compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                        struct xrt_device *xdev,
-                                       struct xrt_swapchain *l_sc,
-                                       struct xrt_swapchain *r_sc,
+                                       struct xrt_swapchain *l_xsc,
+                                       struct xrt_swapchain *r_xsc,
                                        struct xrt_layer_data *data)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
@@ -350,8 +350,8 @@ ipc_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
-	struct ipc_client_swapchain *l = ipc_client_swapchain(l_sc);
-	struct ipc_client_swapchain *r = ipc_client_swapchain(r_sc);
+	struct ipc_client_swapchain *l = ipc_client_swapchain(l_xsc);
+	struct ipc_client_swapchain *r = ipc_client_swapchain(r_xsc);
 
 	layer->xdev_id = 0; //! @todo Real id.
 	layer->swapchain_ids[0] = l->id;
@@ -367,7 +367,7 @@ ipc_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 static xrt_result_t
 ipc_compositor_layer_quad(struct xrt_compositor *xc,
                           struct xrt_device *xdev,
-                          struct xrt_swapchain *sc,
+                          struct xrt_swapchain *xsc,
                           struct xrt_layer_data *data)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
@@ -375,7 +375,7 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
-	struct ipc_client_swapchain *ics = ipc_client_swapchain(sc);
+	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 
 	assert(data->type == XRT_LAYER_QUAD);
 

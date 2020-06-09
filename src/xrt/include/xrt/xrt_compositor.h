@@ -382,8 +382,8 @@ struct xrt_compositor
 	 */
 	xrt_result_t (*layer_stereo_projection)(struct xrt_compositor *xc,
 	                                        struct xrt_device *xdev,
-	                                        struct xrt_swapchain *l_sc,
-	                                        struct xrt_swapchain *r_sc,
+	                                        struct xrt_swapchain *l_xsc,
+	                                        struct xrt_swapchain *r_xsc,
 	                                        struct xrt_layer_data *data);
 
 	/*!
@@ -397,7 +397,7 @@ struct xrt_compositor
 	 */
 	xrt_result_t (*layer_quad)(struct xrt_compositor *xc,
 	                           struct xrt_device *xdev,
-	                           struct xrt_swapchain *sc,
+	                           struct xrt_swapchain *xsc,
 	                           struct xrt_layer_data *data);
 
 	/*!
@@ -557,11 +557,11 @@ xrt_comp_layer_begin(struct xrt_compositor *xc,
 static inline xrt_result_t
 xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
                                  struct xrt_device *xdev,
-                                 struct xrt_swapchain *l_sc,
-                                 struct xrt_swapchain *r_sc,
+                                 struct xrt_swapchain *l_xsc,
+                                 struct xrt_swapchain *r_xsc,
                                  struct xrt_layer_data *data)
 {
-	return xc->layer_stereo_projection(xc, xdev, l_sc, r_sc, data);
+	return xc->layer_stereo_projection(xc, xdev, l_xsc, r_xsc, data);
 }
 
 /*!
@@ -574,10 +574,10 @@ xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
 static inline xrt_result_t
 xrt_comp_layer_quad(struct xrt_compositor *xc,
                     struct xrt_device *xdev,
-                    struct xrt_swapchain *sc,
+                    struct xrt_swapchain *xsc,
                     struct xrt_layer_data *data)
 {
-	return xc->layer_quad(xc, xdev, sc, data);
+	return xc->layer_quad(xc, xdev, xsc, data);
 }
 
 /*!

@@ -295,8 +295,8 @@ compositor_layer_begin(struct xrt_compositor *xc,
 static xrt_result_t
 compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                    struct xrt_device *xdev,
-                                   struct xrt_swapchain *l_sc,
-                                   struct xrt_swapchain *r_sc,
+                                   struct xrt_swapchain *l_xsc,
+                                   struct xrt_swapchain *r_xsc,
                                    struct xrt_layer_data *data)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -306,8 +306,8 @@ compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	uint32_t layer_id = c->slots[slot_id].num_layers;
 
 	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
-	layer->scs[0] = comp_swapchain(l_sc);
-	layer->scs[1] = comp_swapchain(r_sc);
+	layer->scs[0] = comp_swapchain(l_xsc);
+	layer->scs[1] = comp_swapchain(r_xsc);
 	layer->data = *data;
 
 	c->slots[slot_id].num_layers++;
@@ -317,7 +317,7 @@ compositor_layer_stereo_projection(struct xrt_compositor *xc,
 static xrt_result_t
 compositor_layer_quad(struct xrt_compositor *xc,
                       struct xrt_device *xdev,
-                      struct xrt_swapchain *sc,
+                      struct xrt_swapchain *xsc,
                       struct xrt_layer_data *data)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -327,7 +327,7 @@ compositor_layer_quad(struct xrt_compositor *xc,
 	uint32_t layer_id = c->slots[slot_id].num_layers;
 
 	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
-	layer->scs[0] = comp_swapchain(sc);
+	layer->scs[0] = comp_swapchain(xsc);
 	layer->scs[1] = NULL;
 	layer->data = *data;
 

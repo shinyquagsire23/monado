@@ -177,8 +177,8 @@ client_vk_compositor_layer_begin(struct xrt_compositor *xc,
 static xrt_result_t
 client_vk_compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                              struct xrt_device *xdev,
-                                             struct xrt_swapchain *l_sc,
-                                             struct xrt_swapchain *r_sc,
+                                             struct xrt_swapchain *l_xsc,
+                                             struct xrt_swapchain *r_xsc,
                                              struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
@@ -186,8 +186,8 @@ client_vk_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 
 	assert(data->type == XRT_LAYER_STEREO_PROJECTION);
 
-	l_xscfd = &client_vk_swapchain(l_sc)->xscfd->base;
-	r_xscfd = &client_vk_swapchain(r_sc)->xscfd->base;
+	l_xscfd = &client_vk_swapchain(l_xsc)->xscfd->base;
+	r_xscfd = &client_vk_swapchain(r_xsc)->xscfd->base;
 	data->flip_y = false;
 
 	return xrt_comp_layer_stereo_projection(&c->xcfd->base, xdev, l_xscfd,
@@ -197,7 +197,7 @@ client_vk_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 static xrt_result_t
 client_vk_compositor_layer_quad(struct xrt_compositor *xc,
                                 struct xrt_device *xdev,
-                                struct xrt_swapchain *sc,
+                                struct xrt_swapchain *xsc,
                                 struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
@@ -205,7 +205,7 @@ client_vk_compositor_layer_quad(struct xrt_compositor *xc,
 
 	assert(data->type == XRT_LAYER_QUAD);
 
-	xscfb = &client_vk_swapchain(sc)->xscfd->base;
+	xscfb = &client_vk_swapchain(xsc)->xscfd->base;
 	data->flip_y = false;
 
 	return xrt_comp_layer_quad(&c->xcfd->base, xdev, xscfb, data);
