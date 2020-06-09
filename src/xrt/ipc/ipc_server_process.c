@@ -517,7 +517,7 @@ check_epoll(struct ipc_server *vs)
 static bool
 _update_projection_layer(struct comp_compositor *c,
                          volatile struct ipc_client_state *active_client,
-                         volatile struct ipc_layer_render_state *layer,
+                         volatile struct ipc_layer_entry *layer,
                          uint32_t i)
 {
 	// left
@@ -553,7 +553,7 @@ _update_projection_layer(struct comp_compositor *c,
 static bool
 _update_quad_layer(struct comp_compositor *c,
                    volatile struct ipc_client_state *active_client,
-                   volatile struct ipc_layer_render_state *layer,
+                   volatile struct ipc_layer_entry *layer,
                    uint32_t i)
 {
 	uint32_t sci = layer->swapchain_ids[0];
@@ -584,7 +584,7 @@ _update_layers(struct comp_compositor *c,
                volatile struct ipc_client_state *active_client,
                uint32_t *num_layers)
 {
-	volatile struct ipc_render_state *render_state =
+	volatile struct ipc_layer_slot *render_state =
 	    &active_client->render_state;
 
 	if (*num_layers != render_state->num_layers) {
@@ -595,7 +595,7 @@ _update_layers(struct comp_compositor *c,
 	}
 
 	for (uint32_t i = 0; i < render_state->num_layers; i++) {
-		volatile struct ipc_layer_render_state *layer =
+		volatile struct ipc_layer_entry *layer =
 		    &render_state->layers[i];
 		switch (layer->data.type) {
 		case XRT_LAYER_STEREO_PROJECTION: {
@@ -659,16 +659,13 @@ main_loop(struct ipc_server *vs)
 			// swapchain indices and toggle wait to false
 			// when the client calls end_frame, signalling
 			// us to render.
-			volatile struct ipc_render_state *render_state =
-			    &active_client->render_state;
-
-			if (render_state->rendering) {
+			if (active_client->rendering_state) {
 				if (!_update_layers(c, active_client,
 				                    &num_layers))
 					continue;
 
 				// set our client state back to waiting.
-				render_state->rendering = false;
+				active_client->rendering_state = false;
 			}
 		}
 

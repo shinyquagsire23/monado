@@ -102,27 +102,17 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 	struct ipc_shared_memory *ism = cs->server->ism;
 	struct ipc_layer_slot *slot = &ism->slots[slot_id];
 
+	//! @todo big copy instead of this sparse copy?
 	for (uint32_t i = 0; i < slot->num_layers; i++) {
 		struct ipc_layer_entry *sl = &slot->layers[i];
-		volatile struct ipc_layer_render_state *rl =
+		volatile struct ipc_layer_entry *rl =
 		    &cs->render_state.layers[i];
 
-		rl->data = sl->data;
-
-		switch (slot->layers[i].data.type) {
-		case XRT_LAYER_STEREO_PROJECTION:
-			rl->swapchain_ids[0] = sl->swapchain_ids[0];
-
-			rl->swapchain_ids[1] = sl->swapchain_ids[1];
-			break;
-		case XRT_LAYER_QUAD:
-			rl->swapchain_ids[0] = sl->swapchain_ids[0];
-			break;
-		}
+		*rl = *sl;
 	}
 
 	cs->render_state.num_layers = slot->num_layers;
-	cs->render_state.rendering = true;
+	cs->rendering_state = true;
 
 	*out_free_slot_id = (slot_id + 1) % IPC_MAX_SLOTS;
 
@@ -443,10 +433,10 @@ client_loop(volatile struct ipc_client_state *cs)
 	cs->num_swapchains = 0;
 
 	// Make sure to reset the renderstate fully.
+	cs->rendering_state = false;
 	cs->render_state.num_layers = 0;
-	cs->render_state.rendering = false;
 	for (uint32_t i = 0; i < ARRAY_SIZE(cs->render_state.layers); ++i) {
-		volatile struct ipc_layer_render_state *rl =
+		volatile struct ipc_layer_entry *rl =
 		    &cs->render_state.layers[i];
 
 		rl->swapchain_ids[0] = 0;
@@ -454,7 +444,7 @@ client_loop(volatile struct ipc_client_state *cs)
 		rl->data.flip_y = false;
 		/*!
 		 * @todo this is redundant, we're setting both elements of a
-		 * union. Why?
+		 * union. Why? Can we just zero the whole render_state?
 		 */
 		rl->data.stereo.l.sub.image_index = 0;
 		rl->data.stereo.r.sub.image_index = 0;

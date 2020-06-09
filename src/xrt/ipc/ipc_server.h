@@ -86,21 +86,6 @@ struct ipc_swapchain_data
 };
 
 /*!
- * Render state for a client.
- *
- * @todo De-dupe with @ref ipc_layer_slot? has everything but rendering
- *
- * @ingroup ipc_server
- */
-struct ipc_render_state
-{
-	bool rendering;
-	enum xrt_blend_mode env_blend_mode;
-	uint32_t num_layers;
-	struct ipc_layer_entry layers[IPC_MAX_LAYERS];
-};
-
-/*!
  * Holds the state for a single client.
  *
  * @ingroup ipc_server
@@ -126,7 +111,10 @@ struct ipc_client_state
 	int ipc_socket_fd;
 
 	//! State for rendering.
-	struct ipc_render_state render_state;
+	struct ipc_layer_slot render_state;
+
+	//! Whether we are currently rendering @ref render_state
+	bool rendering_state;
 
 	bool active;
 };
