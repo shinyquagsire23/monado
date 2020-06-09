@@ -107,6 +107,18 @@ enum xrt_layer_eye_visibility
 };
 
 /*!
+ * Specifies a sub-image in a layer.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_sub_image
+{
+	uint32_t image_index;
+	uint32_t array_index;
+	struct xrt_rect rect;
+};
+
+/*!
  * All the pure data bits of a quad layer, the @ref xrt_swapchains and
  * @ref xrt_device are provided outside of this struct.
  *
@@ -116,12 +128,23 @@ struct xrt_layer_quad_data
 {
 	enum xrt_layer_eye_visibility visibility;
 
-	uint32_t image_index;
-	uint32_t array_index;
+	struct xrt_sub_image sub;
 
-	struct xrt_rect rect;
 	struct xrt_pose pose;
 	struct xrt_vec2 size;
+};
+
+/*!
+ * All of the pure data bits for a single view in a projection layer.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_layer_projection_view_data
+{
+	struct xrt_sub_image sub;
+
+	struct xrt_fov fov;
+	struct xrt_pose pose;
 };
 
 /*!
@@ -132,15 +155,7 @@ struct xrt_layer_quad_data
  */
 struct xrt_layer_stereo_projection_data
 {
-	struct
-	{
-		uint32_t image_index;
-		uint32_t array_index;
-
-		struct xrt_rect rect;
-		struct xrt_fov fov;
-		struct xrt_pose pose;
-	} l, r;
+	struct xrt_layer_projection_view_data l, r;
 };
 
 /*!

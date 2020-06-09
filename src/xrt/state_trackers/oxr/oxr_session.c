@@ -791,9 +791,9 @@ submit_quad_layer(struct xrt_compositor *xc,
 	struct xrt_rect *rect = (struct xrt_rect *)&quad->subImage.imageRect;
 
 	data.quad.visibility = convert_eye_visibility(quad->eyeVisibility);
-	data.quad.image_index = sc->released.index;
-	data.quad.array_index = quad->subImage.imageArrayIndex;
-	data.quad.rect = *rect;
+	data.quad.sub.image_index = sc->released.index;
+	data.quad.sub.array_index = quad->subImage.imageArrayIndex;
+	data.quad.sub.rect = *rect;
 	data.quad.pose = pose;
 	data.quad.size = *size;
 
@@ -841,15 +841,15 @@ submit_projection_layer(struct xrt_compositor *xc,
 	data.timestamp = timestamp;
 	data.flags = flags;
 
-	data.stereo.l.image_index = scs[0]->released.index;
-	data.stereo.l.array_index = proj->views[0].subImage.imageArrayIndex;
-	data.stereo.l.rect = *l_rect;
+	data.stereo.l.sub.image_index = scs[0]->released.index;
+	data.stereo.l.sub.array_index = proj->views[0].subImage.imageArrayIndex;
+	data.stereo.l.sub.rect = *l_rect;
 	data.stereo.l.fov = *l_fov;
 	data.stereo.l.pose = pose[0];
 
-	data.stereo.r.image_index = scs[1]->released.index;
-	data.stereo.r.array_index = proj->views[1].subImage.imageArrayIndex;
-	data.stereo.r.rect = *r_rect;
+	data.stereo.r.sub.image_index = scs[1]->released.index;
+	data.stereo.r.sub.array_index = proj->views[1].subImage.imageArrayIndex;
+	data.stereo.r.sub.rect = *r_rect;
 	data.stereo.r.fov = *r_fov;
 	data.stereo.r.pose = pose[1];
 

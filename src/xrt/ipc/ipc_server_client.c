@@ -115,22 +115,22 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 		case XRT_LAYER_STEREO_PROJECTION:
 			rl->stereo.l.swapchain_index = sl->swapchain_ids[0];
 			rl->stereo.l.image_index =
-			    sl->data.stereo.l.image_index;
+			    sl->data.stereo.l.sub.image_index;
 			rl->stereo.r.swapchain_index = sl->swapchain_ids[1];
 			rl->stereo.r.image_index =
-			    sl->data.stereo.r.image_index;
+			    sl->data.stereo.r.sub.image_index;
 			rl->stereo.l.array_index =
-			    sl->data.stereo.l.array_index;
+			    sl->data.stereo.l.sub.array_index;
 			rl->stereo.r.array_index =
-			    sl->data.stereo.r.array_index;
+			    sl->data.stereo.r.sub.array_index;
 
 			break;
 		case XRT_LAYER_QUAD:
 			rl->quad.swapchain_index = sl->swapchain_ids[0];
-			rl->quad.image_index = sl->data.quad.image_index;
+			rl->quad.image_index = sl->data.quad.sub.image_index;
 			rl->quad.pose = sl->data.quad.pose;
 			rl->quad.size = sl->data.quad.size;
-			rl->quad.array_index = sl->data.quad.array_index;
+			rl->quad.array_index = sl->data.quad.sub.array_index;
 			break;
 		}
 	}

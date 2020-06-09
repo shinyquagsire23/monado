@@ -356,22 +356,25 @@ compositor_layer_commit(struct xrt_compositor *xc)
 		case XRT_LAYER_QUAD: {
 			struct xrt_layer_quad_data *quad = &layer->data.quad;
 			struct comp_swapchain_image *image;
-			image = &layer->scs[0]->images[quad->image_index];
+			image = &layer->scs[0]->images[quad->sub.image_index];
 			comp_renderer_set_quad_layer(c->r, image, &quad->pose,
 			                             &quad->size, data->flip_y,
-			                             i, quad->array_index);
+			                             i, quad->sub.array_index);
 		} break;
 		case XRT_LAYER_STEREO_PROJECTION: {
 			struct xrt_layer_stereo_projection_data *stereo =
 			    &data->stereo;
 			struct comp_swapchain_image *right;
 			struct comp_swapchain_image *left;
-			left = &layer->scs[0]->images[stereo->l.image_index];
-			right = &layer->scs[1]->images[stereo->r.image_index];
+			left =
+			    &layer->scs[0]->images[stereo->l.sub.image_index];
+			right =
+			    &layer->scs[1]->images[stereo->r.sub.image_index];
 
 			comp_renderer_set_projection_layer(
 			    c->r, left, right, data->flip_y, i,
-			    stereo->l.array_index, stereo->r.array_index);
+			    stereo->l.sub.array_index,
+			    stereo->r.sub.array_index);
 		} break;
 		}
 	}
