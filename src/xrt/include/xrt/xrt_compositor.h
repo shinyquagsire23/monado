@@ -376,8 +376,8 @@ struct xrt_compositor
 	 *
 	 * @param xc          Self pointer
 	 * @param xdev        The device the layer is relative to.
-	 * @param l_sc        Left swapchain.
-	 * @param r_sc        Right swapchain.
+	 * @param l_xsc       Left swapchain.
+	 * @param r_xsc       Right swapchain.
 	 * @param data        All of the pure data bits.
 	 */
 	xrt_result_t (*layer_stereo_projection)(struct xrt_compositor *xc,
@@ -392,7 +392,7 @@ struct xrt_compositor
 	 *
 	 * @param xc          Self pointer
 	 * @param xdev        The device the layer is relative to.
-	 * @param sc          Swapchain.
+	 * @param xsc         Swapchain.
 	 * @param data        All of the pure data bits.
 	 */
 	xrt_result_t (*layer_quad)(struct xrt_compositor *xc,
