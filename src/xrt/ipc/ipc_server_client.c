@@ -102,16 +102,8 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 	struct ipc_shared_memory *ism = cs->server->ism;
 	struct ipc_layer_slot *slot = &ism->slots[slot_id];
 
-	//! @todo big copy instead of this sparse copy?
-	for (uint32_t i = 0; i < slot->num_layers; i++) {
-		struct ipc_layer_entry *sl = &slot->layers[i];
-		volatile struct ipc_layer_entry *rl =
-		    &cs->render_state.layers[i];
-
-		*rl = *sl;
-	}
-
-	cs->render_state.num_layers = slot->num_layers;
+	// Copy current slot data to our state.
+	cs->render_state = *slot;
 	cs->rendering_state = true;
 
 	*out_free_slot_id = (slot_id + 1) % IPC_MAX_SLOTS;
