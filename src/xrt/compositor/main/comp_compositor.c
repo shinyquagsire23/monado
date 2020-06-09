@@ -319,7 +319,7 @@ compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	uint32_t layer_id = c->slots[slot_id].num_layers;
 
 	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
-	struct comp_layer_data *data = &layer->data;
+	struct xrt_layer_data *data = &layer->data;
 	layer->scs[0] = comp_swapchain(l_sc);
 	layer->scs[1] = comp_swapchain(r_sc);
 
@@ -358,9 +358,9 @@ compositor_layer_quad(struct xrt_compositor *xc,
 	uint32_t layer_id = c->slots[slot_id].num_layers;
 
 	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
-	struct comp_layer_data *data = &layer->data;
+	struct xrt_layer_data *data = &layer->data;
 	layer->scs[0] = comp_swapchain(sc);
-	layer->scs[0] = NULL;
+	layer->scs[1] = NULL;
 
 	data->quad.visibility = visibility;
 	data->quad.image_index = image_index;
@@ -393,10 +393,10 @@ compositor_layer_commit(struct xrt_compositor *xc)
 
 	for (uint32_t i = 0; i < num_layers; i++) {
 		struct comp_layer *layer = &c->slots[slot_id].layers[i];
-		struct comp_layer_data *data = &layer->data;
+		struct xrt_layer_data *data = &layer->data;
 		switch (data->type) {
 		case XRT_LAYER_QUAD: {
-			struct comp_layer_quad *quad = &layer->data.quad;
+			struct xrt_layer_quad_data *quad = &layer->data.quad;
 			struct comp_swapchain_image *image;
 			image = &layer->scs[0]->images[quad->image_index];
 			comp_renderer_set_quad_layer(c->r, image, &quad->pose,
@@ -404,7 +404,8 @@ compositor_layer_commit(struct xrt_compositor *xc)
 			                             i, quad->array_index);
 		} break;
 		case XRT_LAYER_STEREO_PROJECTION: {
-			struct comp_layer_stereo *stereo = &data->stereo;
+			struct xrt_layer_stereo_projection_data *stereo =
+			    &data->stereo;
 			struct comp_swapchain_image *right;
 			struct comp_swapchain_image *left;
 			left = &layer->scs[0]->images[stereo->l.image_index];

@@ -97,35 +97,6 @@ struct comp_layer_quad
 };
 
 /*!
- * A stereo projection layer.
- *
- * @ingroup comp_main
- * @see comp_layer
- */
-struct comp_layer_stereo
-{
-	struct
-	{
-		uint32_t image_index;
-		uint32_t array_index;
-	} l, r;
-};
-
-struct comp_layer_data
-{
-	enum xrt_layer_type type;
-	enum xrt_layer_composition_flags flags;
-	int64_t timestamp;
-
-	bool flip_y;
-
-	union {
-		struct comp_layer_quad quad;
-		struct comp_layer_stereo stereo;
-	};
-};
-
-/*!
  * A single layer.
  *
  * @ingroup comp_main
@@ -135,7 +106,7 @@ struct comp_layer
 {
 	struct comp_swapchain *scs[2];
 
-	struct comp_layer_data data;
+	struct xrt_layer_data data;
 };
 
 /*!

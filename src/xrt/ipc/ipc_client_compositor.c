@@ -364,8 +364,8 @@ ipc_compositor_layer_stereo_projection(
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
-	struct ipc_layer_data *data = &layer->data;
-	struct ipc_layer_stereo_projection *stereo = &data->stereo;
+	struct xrt_layer_data *data = &layer->data;
+	struct xrt_layer_stereo_projection_data *stereo = &data->stereo;
 	struct ipc_client_swapchain *l = ipc_client_swapchain(l_sc);
 	struct ipc_client_swapchain *r = ipc_client_swapchain(r_sc);
 
@@ -416,8 +416,8 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
-	struct ipc_layer_data *data = &layer->data;
-	struct ipc_layer_quad *quad = &data->quad;
+	struct xrt_layer_data *data = &layer->data;
+	struct xrt_layer_quad_data *quad = &data->quad;
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(sc);
 
 	layer->xdev_id = 0; //! @todo Real id.

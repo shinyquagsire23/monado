@@ -73,51 +73,12 @@ struct ipc_shared_device
 	uint32_t first_output_index;
 };
 
-struct ipc_layer_stereo_projection
-{
-	struct
-	{
-		uint32_t image_index;
-		uint32_t array_index;
-
-		struct xrt_rect rect;
-		struct xrt_fov fov;
-		struct xrt_pose pose;
-	} l, r;
-};
-
-struct ipc_layer_quad
-{
-	enum xrt_layer_eye_visibility visibility;
-
-	uint32_t image_index;
-	uint32_t array_index;
-
-	struct xrt_rect rect;
-	struct xrt_pose pose;
-	struct xrt_vec2 size;
-};
-
-struct ipc_layer_data
-{
-	enum xrt_layer_type type;
-	enum xrt_input_name name;
-	uint64_t timestamp;
-	enum xrt_layer_composition_flags flags;
-	bool flip_y;
-
-	union {
-		struct ipc_layer_quad quad;
-		struct ipc_layer_stereo_projection stereo;
-	};
-};
-
 struct ipc_layer_entry
 {
 	uint32_t xdev_id;
 	uint32_t swapchain_ids[2];
 
-	struct ipc_layer_data data;
+	struct xrt_layer_data data;
 };
 
 struct ipc_layer_slot
