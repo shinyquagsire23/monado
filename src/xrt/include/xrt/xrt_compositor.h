@@ -107,6 +107,63 @@ enum xrt_layer_eye_visibility
 };
 
 /*!
+ * All the pure data bits of a quad layer, the @ref xrt_swapchains and
+ * @ref xrt_device are provided outside of this struct.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_layer_quad_data
+{
+	enum xrt_layer_eye_visibility visibility;
+
+	uint32_t image_index;
+	uint32_t array_index;
+
+	struct xrt_rect rect;
+	struct xrt_pose pose;
+	struct xrt_vec2 size;
+};
+
+/*!
+ * All the pure data bits of a stereo projection layer, the @ref xrt_swapchains
+ * and @ref xrt_device are provided outside of this struct.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_layer_stereo_projection_data
+{
+	struct
+	{
+		uint32_t image_index;
+		uint32_t array_index;
+
+		struct xrt_rect rect;
+		struct xrt_fov fov;
+		struct xrt_pose pose;
+	} l, r;
+};
+
+/*!
+ * All the pure data bits of a layer, the @ref xrt_swapchains and
+ * @ref xrt_device are provided outside of this struct.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_layer_data
+{
+	enum xrt_layer_type type;
+	enum xrt_input_name name;
+	uint64_t timestamp;
+	enum xrt_layer_composition_flags flags;
+	bool flip_y;
+
+	union {
+		struct xrt_layer_quad_data quad;
+		struct xrt_layer_stereo_projection_data stereo;
+	};
+};
+
+/*!
  * @interface xrt_swapchain
  * Common swapchain interface/base.
  *
