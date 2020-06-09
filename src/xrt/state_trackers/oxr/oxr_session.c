@@ -725,6 +725,44 @@ verify_projection_layer(struct xrt_compositor *xc,
 	return XR_SUCCESS;
 }
 
+static enum xrt_layer_composition_flags
+convert_layer_flags(XrSwapchainUsageFlags xr_flags)
+{
+	enum xrt_layer_composition_flags flags = 0;
+
+	// clang-format off
+	if ((xr_flags & XR_COMPOSITION_LAYER_CORRECT_CHROMATIC_ABERRATION_BIT) != 0) {
+		flags |= XRT_LAYER_COMPOSITION_CORRECT_CHROMATIC_ABERRATION_BIT;
+	}
+	if ((xr_flags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT) != 0) {
+		flags |= XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
+	}
+	if ((xr_flags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT) != 0) {
+		flags |= XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT;
+	}
+	// clang-format on
+
+	return flags;
+}
+
+static enum xrt_layer_eye_visibility
+convert_eye_visibility(XrSwapchainUsageFlags xr_visibility)
+{
+	enum xrt_layer_composition_flags visibility = 0;
+
+	if (xr_visibility == XR_EYE_VISIBILITY_BOTH) {
+		visibility = XRT_LAYER_EYE_VISIBILITY_BOTH;
+	}
+	if (xr_visibility == XR_EYE_VISIBILITY_LEFT) {
+		visibility = XRT_LAYER_EYE_VISIBILITY_LEFT_BIT;
+	}
+	if (xr_visibility == XR_EYE_VISIBILITY_RIGHT) {
+		visibility = XRT_LAYER_EYE_VISIBILITY_RIGHT_BIT;
+	}
+
+	return visibility;
+}
+
 static XrResult
 submit_quad_layer(struct xrt_compositor *xc,
                   struct oxr_logger *log,
@@ -736,7 +774,8 @@ submit_quad_layer(struct xrt_compositor *xc,
 	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
 	    struct oxr_swapchain *, quad->subImage.swapchain);
 
-	enum xrt_layer_composition_flags flags = quad->layerFlags;
+	enum xrt_layer_composition_flags flags =
+	    convert_layer_flags(quad->layerFlags);
 
 	struct xrt_pose pose;
 	math_pose_transform(inv_offset, (struct xrt_pose *)&quad->pose, &pose);
@@ -751,8 +790,7 @@ submit_quad_layer(struct xrt_compositor *xc,
 	struct xrt_vec2 *size = (struct xrt_vec2 *)&quad->size;
 	struct xrt_rect *rect = (struct xrt_rect *)&quad->subImage.imageRect;
 
-	data.quad.visibility =
-	    (enum xrt_layer_eye_visibility)quad->eyeVisibility;
+	data.quad.visibility = convert_eye_visibility(quad->eyeVisibility);
 	data.quad.image_index = sc->released.index;
 	data.quad.array_index = quad->subImage.imageArrayIndex;
 	data.quad.rect = *rect;
@@ -772,11 +810,12 @@ submit_projection_layer(struct xrt_compositor *xc,
                         struct xrt_pose *inv_offset,
                         uint64_t timestamp)
 {
-	enum xrt_layer_composition_flags flags = proj->layerFlags;
 	struct oxr_swapchain *scs[2];
 
-	uint32_t num_chains = ARRAY_SIZE(scs);
+	enum xrt_layer_composition_flags flags =
+	    convert_layer_flags(proj->layerFlags);
 
+	uint32_t num_chains = ARRAY_SIZE(scs);
 	for (uint32_t i = 0; i < num_chains; i++) {
 		scs[i] = XRT_CAST_OXR_HANDLE_TO_PTR(
 		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
