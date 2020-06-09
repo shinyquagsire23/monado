@@ -93,8 +93,11 @@ enum xrt_layer_composition_flags
 };
 
 /*!
- * Which view is they layer visible to, used for quad layers. Doesn't have the
- * same values as the OpenXR counter-parts.
+ * Which view is the layer visible to?
+ *
+ * Used for quad layers.
+ *
+ * @note Doesn't have the same values as the OpenXR counterpart!
  *
  * @ingroup xrt_iface
  */
@@ -113,14 +116,19 @@ enum xrt_layer_eye_visibility
  */
 struct xrt_sub_image
 {
+	//! Image index in the (implicit) swapchain
 	uint32_t image_index;
+	//! Index in image array (for array textures)
 	uint32_t array_index;
+	//! The rectangle in the image to use
 	struct xrt_rect rect;
 };
 
 /*!
- * All the pure data bits of a quad layer, the @ref xrt_swapchain references and
- * @ref xrt_device are provided outside of this struct.
+ * All the pure data values associated with a quad layer.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
  *
  * @ingroup xrt_iface
  */
@@ -135,7 +143,11 @@ struct xrt_layer_quad_data
 };
 
 /*!
- * All of the pure data bits for a single view in a projection layer.
+ * All of the pure data values associated with a single view in a projection
+ * layer.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
  *
  * @ingroup xrt_iface
  */
@@ -148,8 +160,10 @@ struct xrt_layer_projection_view_data
 };
 
 /*!
- * All the pure data bits of a stereo projection layer, the @ref xrt_swapchain
- * references and @ref xrt_device are provided outside of this struct.
+ * All the pure data values associated with a stereo projection layer.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
  *
  * @ingroup xrt_iface
  */
@@ -159,19 +173,59 @@ struct xrt_layer_stereo_projection_data
 };
 
 /*!
- * All the pure data bits of a layer, the @ref xrt_swapchain references and
- * @ref xrt_device are provided outside of this struct.
+ * All the pure data values associated with a composition layer.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
  *
  * @ingroup xrt_iface
  */
 struct xrt_layer_data
 {
+	/*!
+	 * Tag for compositor layer type.
+	 */
 	enum xrt_layer_type type;
+
+	/*!
+	 * Often @ref XRT_INPUT_GENERIC_HEAD_POSE
+	 */
 	enum xrt_input_name name;
+
+	/*!
+	 * "Display no-earlier-than" timestamp for this layer.
+	 *
+	 * The layer may be displayed after this point, but must never be
+	 * displayed before.
+	 */
 	uint64_t timestamp;
+
+	/*!
+	 * Composition flags
+	 */
 	enum xrt_layer_composition_flags flags;
+
+	/*!
+	 * Whether the main compositor should flip the direction of y when
+	 * rendering.
+	 *
+	 * This is actually an input only to the "main" compositor
+	 * comp_compositor. It is overwritten by the various client
+	 * implementations of the @ref xrt_compositor interface depending on the
+	 * conventions of the associated graphics API. Other @ref
+	 * xrt_compositor_fd implementations that are not the main compositor
+	 * just pass this field along unchanged to the "real" compositor.
+	 */
 	bool flip_y;
 
+	/*!
+	 * Union of data values for the various layer types.
+	 *
+	 * The initialized member of this union should match the value of
+	 * xrt_layer_data::type. It also should be clear because of the layer
+	 * function called between xrt_compositor::layer_begin and
+	 * xrt_compositor::layer_commit where this data was passed.
+	 */
 	union {
 		struct xrt_layer_quad_data quad;
 		struct xrt_layer_stereo_projection_data stereo;
@@ -187,7 +241,9 @@ struct xrt_layer_data
 struct xrt_swapchain
 {
 	/*!
-	 * Number of images, the images themselves are on the subclasses.
+	 * Number of images.
+	 *
+	 * The images themselves are on the subclasses.
 	 */
 	uint32_t num_images;
 
@@ -197,8 +253,13 @@ struct xrt_swapchain
 	void (*destroy)(struct xrt_swapchain *xsc);
 
 	/*!
-	 * See xrWaitSwapchainImage, must make sure that no image is acquired
-	 * before calling acquire_image.
+	 * Obtain the index of the next image to use, without blocking on being
+	 * able to write to it.
+	 *
+	 * See xrAcquireSwapchainImage.
+	 *
+	 * Caller must make sure that no image is acquired before calling
+	 * acquire_image.
 	 */
 	xrt_result_t (*acquire_image)(struct xrt_swapchain *xsc,
 	                              uint32_t *index);
