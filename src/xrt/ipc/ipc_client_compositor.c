@@ -364,29 +364,31 @@ ipc_compositor_layer_stereo_projection(
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
-	struct ipc_layer_stereo_projection *stereo = &layer->stereo;
+	struct ipc_layer_data *data = &layer->data;
+	struct ipc_layer_stereo_projection *stereo = &data->stereo;
 	struct ipc_client_swapchain *l = ipc_client_swapchain(l_sc);
 	struct ipc_client_swapchain *r = ipc_client_swapchain(r_sc);
 
-	stereo->l.swapchain_id = l->id;
+	layer->xdev_id = 0; //! @todo Real id.
+	layer->swapchain_ids[0] = l->id;
+	layer->swapchain_ids[1] = r->id;
+
+	data->type = XRT_LAYER_STEREO_PROJECTION;
+	data->name = name;
+	data->timestamp = timestamp;
+	data->flags = layer_flags;
+	data->flip_y = flip_y;
+
 	stereo->l.image_index = l_image_index;
 	stereo->l.rect = *l_rect;
 	stereo->l.array_index = l_array_index;
 	stereo->l.fov = *l_fov;
 	stereo->l.pose = *l_pose;
-	stereo->r.swapchain_id = r->id;
 	stereo->r.image_index = r_image_index;
 	stereo->r.rect = *r_rect;
 	stereo->r.array_index = r_array_index;
 	stereo->r.fov = *r_fov;
 	stereo->r.pose = *r_pose;
-
-	layer->xdev_id = 0; //! @todo Real id.
-	layer->name = name;
-	layer->timestamp = timestamp;
-	layer->layer_flags = layer_flags;
-	layer->flip_y = flip_y;
-	layer->type = XRT_LAYER_STEREO_PROJECTION;
 
 	// Increment the number of layers.
 	icc->layers.num_layers++;
@@ -414,22 +416,25 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
-	struct ipc_layer_quad *quad = &layer->quad;
+	struct ipc_layer_data *data = &layer->data;
+	struct ipc_layer_quad *quad = &data->quad;
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(sc);
 
-	quad->swapchain_id = ics->id;
+	layer->xdev_id = 0; //! @todo Real id.
+	layer->swapchain_ids[0] = ics->id;
+	layer->swapchain_ids[1] = -1;
+
+	data->type = XRT_LAYER_QUAD;
+	data->name = name;
+	data->timestamp = timestamp;
+	data->flags = layer_flags;
+	data->flip_y = flip_y;
+
 	quad->image_index = image_index;
 	quad->rect = *rect;
 	quad->array_index = array_index;
 	quad->pose = *pose;
 	quad->size = *size;
-
-	layer->xdev_id = 0; //! @todo Real id.
-	layer->name = name;
-	layer->timestamp = timestamp;
-	layer->layer_flags = layer_flags;
-	layer->flip_y = flip_y;
-	layer->type = XRT_LAYER_QUAD;
 
 	// Increment the number of layers.
 	icc->layers.num_layers++;

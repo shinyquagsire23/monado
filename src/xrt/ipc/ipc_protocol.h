@@ -77,7 +77,6 @@ struct ipc_layer_stereo_projection
 {
 	struct
 	{
-		uint32_t swapchain_id;
 		uint32_t image_index;
 		uint32_t array_index;
 
@@ -89,7 +88,7 @@ struct ipc_layer_stereo_projection
 
 struct ipc_layer_quad
 {
-	uint32_t swapchain_id;
+	enum xrt_layer_eye_visibility visibility;
 
 	uint32_t image_index;
 	uint32_t array_index;
@@ -99,20 +98,26 @@ struct ipc_layer_quad
 	struct xrt_vec2 size;
 };
 
-struct ipc_layer_entry
+struct ipc_layer_data
 {
-	uint64_t timestamp;
-	uint32_t xdev_id;
-	enum xrt_input_name name;
-
-	enum xrt_layer_composition_flags layer_flags;
 	enum xrt_layer_type type;
+	enum xrt_input_name name;
+	uint64_t timestamp;
+	enum xrt_layer_composition_flags flags;
 	bool flip_y;
 
 	union {
 		struct ipc_layer_quad quad;
 		struct ipc_layer_stereo_projection stereo;
 	};
+};
+
+struct ipc_layer_entry
+{
+	uint32_t xdev_id;
+	uint32_t swapchain_ids[2];
+
+	struct ipc_layer_data data;
 };
 
 struct ipc_layer_slot

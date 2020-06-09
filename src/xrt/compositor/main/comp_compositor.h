@@ -86,12 +86,11 @@ struct comp_swapchain
  */
 struct comp_layer_quad
 {
-	struct comp_swapchain *sc;
+	enum xrt_layer_eye_visibility visibility;
 
 	uint32_t image_index;
 	uint32_t array_index;
 
-	enum xrt_layer_eye_visibility visibility;
 	struct xrt_rect rect;
 	struct xrt_pose pose;
 	struct xrt_vec2 size;
@@ -107,10 +106,23 @@ struct comp_layer_stereo
 {
 	struct
 	{
-		struct comp_swapchain *sc;
 		uint32_t image_index;
 		uint32_t array_index;
 	} l, r;
+};
+
+struct comp_layer_data
+{
+	enum xrt_layer_type type;
+	enum xrt_layer_composition_flags flags;
+	int64_t timestamp;
+
+	bool flip_y;
+
+	union {
+		struct comp_layer_quad quad;
+		struct comp_layer_stereo stereo;
+	};
 };
 
 /*!
@@ -121,14 +133,9 @@ struct comp_layer_stereo
  */
 struct comp_layer
 {
-	int64_t timestamp;
-	enum xrt_layer_composition_flags flags;
-	enum xrt_layer_type type;
-	bool flip_y;
-	union {
-		struct comp_layer_quad quad;
-		struct comp_layer_stereo stereo;
-	};
+	struct comp_swapchain *scs[2];
+
+	struct comp_layer_data data;
 };
 
 /*!

@@ -103,32 +103,34 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 	struct ipc_layer_slot *slot = &ism->slots[slot_id];
 
 	for (uint32_t i = 0; i < slot->num_layers; i++) {
-		cs->render_state.layers[i].type = slot->layers[i].type;
+		cs->render_state.layers[i].type = slot->layers[i].data.type;
 
 		struct ipc_layer_entry *sl = &slot->layers[i];
 		volatile struct ipc_layer_render_state *rl =
 		    &cs->render_state.layers[i];
 
-		rl->flip_y = sl->flip_y;
+		rl->flip_y = sl->data.flip_y;
 
-		switch (slot->layers[i].type) {
+		switch (slot->layers[i].data.type) {
 		case XRT_LAYER_STEREO_PROJECTION:
-			rl->stereo.l.swapchain_index =
-			    sl->stereo.l.swapchain_id;
-			rl->stereo.l.image_index = sl->stereo.l.image_index;
-			rl->stereo.r.swapchain_index =
-			    sl->stereo.r.swapchain_id;
-			rl->stereo.r.image_index = sl->stereo.r.image_index;
-			rl->stereo.l.array_index = sl->stereo.l.array_index;
-			rl->stereo.r.array_index = sl->stereo.r.array_index;
+			rl->stereo.l.swapchain_index = sl->swapchain_ids[0];
+			rl->stereo.l.image_index =
+			    sl->data.stereo.l.image_index;
+			rl->stereo.r.swapchain_index = sl->swapchain_ids[1];
+			rl->stereo.r.image_index =
+			    sl->data.stereo.r.image_index;
+			rl->stereo.l.array_index =
+			    sl->data.stereo.l.array_index;
+			rl->stereo.r.array_index =
+			    sl->data.stereo.r.array_index;
 
 			break;
 		case XRT_LAYER_QUAD:
-			rl->quad.swapchain_index = sl->quad.swapchain_id;
-			rl->quad.image_index = sl->quad.image_index;
-			rl->quad.pose = sl->quad.pose;
-			rl->quad.size = sl->quad.size;
-			rl->quad.array_index = sl->quad.array_index;
+			rl->quad.swapchain_index = sl->swapchain_ids[0];
+			rl->quad.image_index = sl->data.quad.image_index;
+			rl->quad.pose = sl->data.quad.pose;
+			rl->quad.size = sl->data.quad.size;
+			rl->quad.array_index = sl->data.quad.array_index;
 			break;
 		}
 	}
