@@ -260,9 +260,12 @@ struct xrt_swapchain
 	 *
 	 * Caller must make sure that no image is acquired before calling
 	 * acquire_image.
+	 *
+	 * @param xsc Self pointer
+	 * @param[out] out_index Image index to use next
 	 */
 	xrt_result_t (*acquire_image)(struct xrt_swapchain *xsc,
-	                              uint32_t *index);
+	                              uint32_t *out_index);
 
 	/*!
 	 * See xrWaitSwapchainImage, state tracker needs to track index.
@@ -286,9 +289,9 @@ struct xrt_swapchain
  * @public @memberof xrt_swapchain
  */
 static inline xrt_result_t
-xrt_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
+xrt_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 {
-	return xsc->acquire_image(xsc, index);
+	return xsc->acquire_image(xsc, out_index);
 }
 
 /*!

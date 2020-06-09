@@ -27,14 +27,14 @@ swapchain_destroy(struct xrt_swapchain *xsc)
 }
 
 static xrt_result_t
-swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
+swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
 	COMP_SPEW(sc->c, "ACQUIRE_IMAGE");
 
 	// Returns negative on empty fifo.
-	int res = u_index_fifo_pop(&sc->fifo, index);
+	int res = u_index_fifo_pop(&sc->fifo, out_index);
 	if (res >= 0) {
 		return XRT_SUCCESS;
 	} else {

@@ -71,12 +71,13 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 }
 
 static xrt_result_t
-client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *index)
+client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc,
+                                  uint32_t *out_index)
 {
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 
 	// Pipe down call into fd swapchain.
-	return xrt_swapchain_acquire_image(&sc->xscfd->base, index);
+	return xrt_swapchain_acquire_image(&sc->xscfd->base, out_index);
 }
 
 static xrt_result_t
