@@ -172,7 +172,7 @@ SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
     ([!266](https://gitlab.freedesktop.org/monado/monado/merge_requests/266))
   - u/json: Add bool getter function.
     ([!266](https://gitlab.freedesktop.org/monado/monado/merge_requests/266))
-  - tracking: Expose save function with none hardcode path for calibration data.
+  - tracking: Expose save function with non-hardcoded path for calibration data.
     ([!266](https://gitlab.freedesktop.org/monado/monado/merge_requests/266))
   - tracking: Remove all path hardcoded calibration data loading and saving
     functions.
@@ -180,7 +180,7 @@ SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
   - threading: New helper functions and structs for doing threaded work, these are
     on a higher level then the one in os wrappers.
     ([!278](https://gitlab.freedesktop.org/monado/monado/merge_requests/278))
-  - threading: Fix missing `#pragma once` in `os/os_threading.h`.
+  - threading: Fix missing `#``pragma once` in `os/os_threading.h`.
     ([!282](https://gitlab.freedesktop.org/monado/monado/merge_requests/282))
   - u/time: Temporarily disable the time skew in time state and used fixed offset
     instead to fix various time issues in `st/oxr`. Will be fixed properly later.
