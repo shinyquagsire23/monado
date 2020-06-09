@@ -582,7 +582,7 @@ _update_layers(struct comp_compositor *c,
 	    &active_client->render_state;
 
 	if (*num_layers != render_state->num_layers) {
-		// TODO: Resizing here would be faster
+		//! @todo Resizing here would be faster
 		*num_layers = render_state->num_layers;
 		comp_renderer_destroy_layers(c->r);
 		comp_renderer_allocate_layers(c->r, render_state->num_layers);

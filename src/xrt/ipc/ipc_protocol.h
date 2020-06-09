@@ -73,14 +73,37 @@ struct ipc_shared_device
 	uint32_t first_output_index;
 };
 
+/*!
+ * Data for a single composition layer.
+ *
+ * Similar in function to @ref comp_layer
+ *
+ * @ingroup ipc
+ */
 struct ipc_layer_entry
 {
+	//! @todo what is this used for?
 	uint32_t xdev_id;
+
+	/*!
+	 * Up to two indices of swapchains to use.
+	 *
+	 * How many are actually used depends on the value of @p data.type
+	 */
 	uint32_t swapchain_ids[2];
 
+	/*!
+	 * All basic (trivially-serializable) data associated with a layer,
+	 * aside from which swapchain(s) are used.
+	 */
 	struct xrt_layer_data data;
 };
 
+/*!
+ * Render state for a single client, including all layers.
+ *
+ * @ingroup ipc
+ */
 struct ipc_layer_slot
 {
 	enum xrt_blend_mode env_blend_mode;
@@ -151,7 +174,7 @@ struct ipc_shared_memory
 
 /*
  *
- * Reset of protocol is generated.
+ * Rest of protocol is generated.
  *
  */
 
