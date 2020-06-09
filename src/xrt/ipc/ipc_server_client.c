@@ -103,27 +103,20 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 	struct ipc_layer_slot *slot = &ism->slots[slot_id];
 
 	for (uint32_t i = 0; i < slot->num_layers; i++) {
-		cs->render_state.layers[i].type = slot->layers[i].data.type;
-
 		struct ipc_layer_entry *sl = &slot->layers[i];
 		volatile struct ipc_layer_render_state *rl =
 		    &cs->render_state.layers[i];
 
-		rl->flip_y = sl->data.flip_y;
+		rl->data = sl->data;
 
 		switch (slot->layers[i].data.type) {
 		case XRT_LAYER_STEREO_PROJECTION:
-			rl->stereo.l.swapchain_index = sl->swapchain_ids[0];
-			rl->stereo.l.sub = sl->data.stereo.l.sub;
+			rl->swapchain_ids[0] = sl->swapchain_ids[0];
 
-			rl->stereo.r.swapchain_index = sl->swapchain_ids[1];
-			rl->stereo.r.sub = sl->data.stereo.r.sub;
+			rl->swapchain_ids[1] = sl->swapchain_ids[1];
 			break;
 		case XRT_LAYER_QUAD:
-			rl->quad.swapchain_index = sl->swapchain_ids[0];
-			rl->quad.sub = sl->data.quad.sub;
-			rl->quad.pose = sl->data.quad.pose;
-			rl->quad.size = sl->data.quad.size;
+			rl->swapchain_ids[0] = sl->swapchain_ids[0];
 			break;
 		}
 	}
@@ -456,15 +449,18 @@ client_loop(volatile struct ipc_client_state *cs)
 		volatile struct ipc_layer_render_state *rl =
 		    &cs->render_state.layers[i];
 
-		rl->flip_y = false;
-		rl->stereo.l.swapchain_index = 0;
-		rl->stereo.l.sub.image_index = 0;
-		rl->stereo.r.swapchain_index = 0;
-		rl->stereo.r.sub.image_index = 0;
-		rl->quad.swapchain_index = 0;
-		rl->quad.sub.image_index = 0;
+		rl->swapchain_ids[0] = 0;
+		rl->swapchain_ids[1] = 0;
+		rl->data.flip_y = false;
+		/*!
+		 * @todo this is redundant, we're setting both elements of a
+		 * union. Why?
+		 */
+		rl->data.stereo.l.sub.image_index = 0;
+		rl->data.stereo.r.sub.image_index = 0;
+		rl->data.quad.sub.image_index = 0;
 
-		//! @todo set rects?
+		//! @todo set rects or array index?
 	}
 
 	// Destroy all swapchains now.

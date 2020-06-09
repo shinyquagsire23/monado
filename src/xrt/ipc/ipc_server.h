@@ -85,40 +85,10 @@ struct ipc_swapchain_data
 	bool active;
 };
 
-struct ipc_quad_render_state
-{
-	uint32_t swapchain_index;
-
-	struct xrt_sub_image sub;
-
-	enum xrt_layer_eye_visibility visibility;
-	struct xrt_pose pose;
-	struct xrt_vec2 size;
-};
-
-struct ipc_stereo_projection_render_state
-{
-	struct
-	{
-		uint32_t swapchain_index;
-		struct xrt_sub_image sub;
-	} l, r;
-};
-
-struct ipc_layer_render_state
-{
-	enum xrt_layer_composition_flags flags;
-	enum xrt_layer_type type;
-	bool flip_y;
-
-	union {
-		struct ipc_quad_render_state quad;
-		struct ipc_stereo_projection_render_state stereo;
-	};
-};
-
 /*!
  * Render state for a client.
+ *
+ * @todo De-dupe with @ref ipc_layer_slot? has everything but rendering
  *
  * @ingroup ipc_server
  */
@@ -127,7 +97,7 @@ struct ipc_render_state
 	bool rendering;
 	enum xrt_blend_mode env_blend_mode;
 	uint32_t num_layers;
-	struct ipc_layer_render_state layers[IPC_MAX_LAYERS];
+	struct ipc_layer_entry layers[IPC_MAX_LAYERS];
 };
 
 /*!

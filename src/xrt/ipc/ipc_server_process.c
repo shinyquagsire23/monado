@@ -520,8 +520,10 @@ _update_projection_layer(struct comp_compositor *c,
                          volatile struct ipc_layer_render_state *layer,
                          uint32_t i)
 {
-	uint32_t lsi = layer->stereo.l.swapchain_index;
-	uint32_t rsi = layer->stereo.r.swapchain_index;
+	// left
+	uint32_t lsi = layer->swapchain_ids[0];
+	// right
+	uint32_t rsi = layer->swapchain_ids[1];
 
 	if (active_client->xscs[lsi] == NULL ||
 	    active_client->xscs[rsi] == NULL) {
@@ -535,13 +537,15 @@ _update_projection_layer(struct comp_compositor *c,
 
 	struct comp_swapchain_image *l = NULL;
 	struct comp_swapchain_image *r = NULL;
-	l = &cl->images[layer->stereo.l.sub.image_index];
-	r = &cr->images[layer->stereo.r.sub.image_index];
+	l = &cl->images[layer->data.stereo.l.sub.image_index];
+	r = &cr->images[layer->data.stereo.r.sub.image_index];
 
 	//! @todo we are ignoring subrect here!
-	comp_renderer_set_projection_layer(c->r, l, r, layer->flip_y, i,
-	                                   layer->stereo.l.sub.array_index,
-	                                   layer->stereo.r.sub.array_index);
+	// (and perhaps can simplify by re-using some structs?)
+	comp_renderer_set_projection_layer(
+	    c->r, l, r, layer->data.flip_y, i,
+	    layer->data.stereo.l.sub.array_index,
+	    layer->data.stereo.r.sub.array_index);
 
 	return true;
 }
@@ -552,7 +556,7 @@ _update_quad_layer(struct comp_compositor *c,
                    volatile struct ipc_layer_render_state *layer,
                    uint32_t i)
 {
-	uint32_t sci = layer->quad.swapchain_index;
+	uint32_t sci = layer->swapchain_ids[0];
 
 	if (active_client->xscs[sci] == NULL) {
 		fprintf(stderr, "ERROR: Invalid swap chain for quad layer.\n");
@@ -561,14 +565,16 @@ _update_quad_layer(struct comp_compositor *c,
 
 	struct comp_swapchain *sc = comp_swapchain(active_client->xscs[sci]);
 	struct comp_swapchain_image *image = NULL;
-	image = &sc->images[layer->quad.sub.image_index];
+	image = &sc->images[layer->data.quad.sub.image_index];
 
-	struct xrt_pose pose = layer->quad.pose;
-	struct xrt_vec2 size = layer->quad.size;
+	struct xrt_pose pose = layer->data.quad.pose;
+	struct xrt_vec2 size = layer->data.quad.size;
 
 	//! @todo we are ignoring subrect here!
-	comp_renderer_set_quad_layer(c->r, image, &pose, &size, layer->flip_y,
-	                             i, layer->quad.sub.array_index);
+	// (and perhaps can simplify by re-using some structs?)
+	comp_renderer_set_quad_layer(c->r, image, &pose, &size,
+	                             layer->data.flip_y, i,
+	                             layer->data.quad.sub.array_index);
 
 	return true;
 }
@@ -591,7 +597,7 @@ _update_layers(struct comp_compositor *c,
 	for (uint32_t i = 0; i < render_state->num_layers; i++) {
 		volatile struct ipc_layer_render_state *layer =
 		    &render_state->layers[i];
-		switch (layer->type) {
+		switch (layer->data.type) {
 		case XRT_LAYER_STEREO_PROJECTION: {
 			if (!_update_projection_layer(c, active_client, layer,
 			                              i))
