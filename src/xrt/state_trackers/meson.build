@@ -6,3 +6,7 @@ st_include = include_directories('.')
 subdir('gui')
 subdir('oxr')
 subdir('prober')
+
+if get_option('steamvr_plugin')
+	subdir('steamvr_drv')
+endif

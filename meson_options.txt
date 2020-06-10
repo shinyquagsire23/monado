@@ -107,3 +107,10 @@ option('layer_equirect2',
 	value: true,
 	description: 'Enable support for Equirect2 Layers'
 )
+
+option('steamvr_plugin',
+	type: 'boolean',
+	value: true,
+	description: 'Enable SteamVR Plugin'
+)
+

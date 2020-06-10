@@ -123,6 +123,8 @@ option(XRT_FEATURE_SERVICE "Enable separate service module for OpenXR runtime" O
 cmake_dependent_option(XRT_HAVE_SYSTEMD "Enable systemd support (for socket activation of service)" ON "Systemd_FOUND AND XRT_FEATURE_SERVICE" OFF)
 cmake_dependent_option(XRT_INSTALL_SYSTEMD_UNIT_FILES "Install user unit files for systemd socket activation on installation" ON "XRT_HAVE_SYSTEMD" OFF)
 cmake_dependent_option(XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES "Use an absolute path to monado-system in installed user unit files for systemd socket activation" ON "XRT_INSTALL_SYSTEMD_UNIT_FILES" OFF)
+option(XRT_FEATURE_STEAMVR_PLUGIN "Build SteamVR plugin" ON)
+
 if(NOT DEFINED XRT_FEATURE_OPENXR_LAYER_DEPTH)
 	set(XRT_FEATURE_OPENXR_LAYER_DEPTH ON)
 endif()
@@ -283,6 +285,7 @@ message(STATUS "#    FEATURE_OPENXR_LAYER_CUBE:            ${XRT_FEATURE_OPENXR_
 message(STATUS "#    FEATURE_OPENXR_LAYER_CYLINDER:        ${XRT_FEATURE_OPENXR_LAYER_CYLINDER}")
 message(STATUS "#    FEATURE_OPENXR_LAYER_EQUIRECT:        ${XRT_FEATURE_OPENXR_LAYER_EQUIRECT}")
 message(STATUS "#    FEATURE_OPENXR_LAYER_EQUIRECT_LEGACY: ${XRT_FEATURE_OPENXR_LAYER_EQUIRECT_LEGACY}")
+message(STATUS "#    FEATURE_STEAMVR_PLUGIN:               ${XRT_FEATURE_STEAMVR_PLUGIN}")
 message(STATUS "#")
 message(STATUS "#    DRIVER_ANDROID:  ${XRT_BUILD_DRIVER_ANDROID}")
 message(STATUS "#    DRIVER_ARDUINO:  ${XRT_BUILD_DRIVER_ARDUINO}")

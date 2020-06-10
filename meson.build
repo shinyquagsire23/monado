@@ -245,3 +245,9 @@ if build_tracking
 else
 	message('    tracking: no')
 endif
+
+if get_option('steamvr_plugin')
+	message('steamvr plugin: yes')
+else
+	message('steamvr plugin: no')
+endif

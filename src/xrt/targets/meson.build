@@ -78,3 +78,6 @@ if get_option('service')
 	subdir('ctl')
 endif
 
+if get_option('steamvr_plugin')
+	subdir('steamvr_drv')
+endif

@@ -6,3 +6,7 @@ if(XRT_HAVE_OPENGL)
 endif()
 add_subdirectory(oxr)
 add_subdirectory(prober)
+
+if(XRT_FEATURE_STEAMVR_PLUGIN)
+	add_subdirectory(steamvr_drv)
+endif()
