@@ -1,6 +1,7 @@
 # Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+openvr_include = include_directories('openvr_includes')
 cjson_include = include_directories('cjson')
 flexkalman_include = include_directories('flexkalman')
 glad_include = include_directories('glad/include')

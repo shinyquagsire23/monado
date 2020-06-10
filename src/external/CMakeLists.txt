@@ -4,6 +4,9 @@
 # Catch2
 add_library(xrt-external-catch2 INTERFACE)
 target_include_directories(xrt-external-catch2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
+add_library(xrt-external-openvr INTERFACE)
+target_include_directories(xrt-external-openvr INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/openvr_includes)
+
 
 # cJSON
 add_library(xrt-external-cjson INTERFACE)
