@@ -131,13 +131,33 @@ struct ipc_layer_slot
  * 	return &ism->inputs[index];
  * }
  * ```
+ *
+ * @ingroup ipc
  */
 struct ipc_shared_memory
 {
-	// This array may be sparse.
+	/*!
+	 * Number of elements in @ref itracks that are populated/valid.
+	 */
 	size_t num_itracks;
+
+	/*!
+	 * @brief Array of shared tracking origin data.
+	 *
+	 * Only @ref num_itracks elements are populated/valid.
+	 */
 	struct ipc_shared_tracking_origin itracks[IPC_SHARED_MAX_DEVICES];
+
+	/*!
+	 * Number of elements in @ref idevs that are populated/valid.
+	 */
 	size_t num_idevs;
+
+	/*!
+	 * @brief Array of shared data per device.
+	 *
+	 * Only @ref num_idevs elements are populated/valid.
+	 */
 	struct ipc_shared_device idevs[IPC_SHARED_MAX_DEVICES];
 
 	struct
@@ -150,8 +170,11 @@ struct ipc_shared_memory
 			 * before any rotation is applied by xrt_view::rot.
 			 *
 			 * The xrt_view::display::w_pixels &
-			 * xrt_view::display::h_pixels become the recommdnded
+			 * xrt_view::display::h_pixels become the recommended
 			 * image size for this view.
+			 *
+			 * @todo doesn't account for overfill for timewarp or
+			 * distortion?
 			 */
 			struct
 			{
