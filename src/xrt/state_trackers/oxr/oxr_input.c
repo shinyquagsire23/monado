@@ -229,7 +229,7 @@ oxr_action_create(struct oxr_logger *log,
 
 /*
  *
- * "Exproted" helper functions.
+ * "Exported" helper functions.
  *
  */
 
@@ -365,6 +365,10 @@ do_outputs(struct oxr_binding *bind,
 	return found;
 }
 
+/*!
+ * Delegate to @ref do_outputs or @ref do_inputs depending on whether the action
+ * is output or input.
+ */
 static bool
 do_io_bindings(struct oxr_binding *b,
                struct oxr_action *act,

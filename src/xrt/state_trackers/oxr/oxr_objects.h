@@ -1292,7 +1292,10 @@ struct oxr_sub_paths
  */
 struct oxr_source_set
 {
-	//! Common structure for things referred to by OpenXR handles.
+	/*!
+	 * While this isn't an OpenXR handle type, we're using the handle base
+	 * here to easily handle ownership and destruction.
+	 */
 	struct oxr_handle_base handle;
 
 	//! Owning session.
@@ -1387,7 +1390,10 @@ struct oxr_source_cache
  */
 struct oxr_source
 {
-	//! Common structure for things referred to by OpenXR handles.
+	/*!
+	 * While this isn't an OpenXR handle type, we're using the handle base
+	 * here to easily handle ownership and destruction.
+	 */
 	struct oxr_handle_base handle;
 
 	//! Type the action this source was created from is.
