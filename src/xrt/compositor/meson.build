@@ -6,7 +6,7 @@ subdir('shaders')
 comp_include = include_directories('.')
 
 # TODO: Dependency resolution and subsequent configuration could be improved
-compositor_deps = [aux, shaders, vulkan, xrt_config_vulkan]
+compositor_deps = [aux, shaders, vulkan, xrt_config_vulkan, xcb_randr]
 compositor_includes = [xrt_include]
 
 compositor_srcs = [
