@@ -429,8 +429,8 @@ enum xrt_input_type
  *
  * @param name A xrt_input_name value
  *
- * @see xrt_input_name
- * @see xrt_input_type
+ * @relates xrt_input_name
+ * @returns @ref xrt_input_type
  * @ingroup xrt_iface
  */
 #define XRT_GET_INPUT_TYPE(name) (name & 0xff)
@@ -522,10 +522,8 @@ enum xrt_input_name
 union xrt_input_value {
 	struct xrt_vec1 vec1;
 	struct xrt_vec2 vec2;
-	struct xrt_vec3 vec3;
 	bool boolean;
 };
-
 
 /*!
  * Base type of this output.
