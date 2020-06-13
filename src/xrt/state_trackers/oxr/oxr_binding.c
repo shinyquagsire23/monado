@@ -14,9 +14,11 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 
+#include "oxr_binding_data.h"
+
 #include <stdio.h>
 
-#include "oxr_binding_data.h"
+
 static void
 setup_paths(struct oxr_logger *log,
             struct oxr_instance *inst,
@@ -82,21 +84,6 @@ setup_outputs(struct oxr_logger *log,
 	for (size_t x = 0; x < binding->num_outputs; x++) {
 		binding->outputs[x] = templ->outputs[x];
 	}
-}
-
-static bool
-is_valid_interaction_profile(struct oxr_instance *inst, XrPath path)
-{
-	return inst->path_cache.khr_simple_controller == path ||
-	       inst->path_cache.google_daydream_controller == path ||
-	       inst->path_cache.htc_vive_controller == path ||
-	       inst->path_cache.htc_vive_pro == path ||
-	       inst->path_cache.microsoft_motion_controller == path ||
-	       inst->path_cache.microsoft_xbox_controller == path ||
-	       inst->path_cache.oculus_go_controller == path ||
-	       inst->path_cache.oculus_touch_controller == path ||
-	       inst->path_cache.valve_index_controller == path ||
-	       inst->path_cache.mnd_ball_on_stick_controller == path;
 }
 
 static bool
@@ -360,24 +347,12 @@ oxr_action_suggest_interaction_profile_bindings(
     const XrInteractionProfileSuggestedBinding *suggestedBindings)
 {
 	struct oxr_interaction_profile *p = NULL;
+
+	// Path already validated.
 	XrPath path = suggestedBindings->interactionProfile;
-	const char *str;
-	size_t length;
-
-	// Check if this profile is valid.
-	if (!is_valid_interaction_profile(inst, path)) {
-		oxr_path_get_string(log, inst, path, &str, &length);
-
-		return oxr_error(log, XR_ERROR_PATH_UNSUPPORTED,
-		                 "(suggestedBindings->interactionProfile) "
-		                 "non-supported profile '%s'",
-		                 str);
-	}
-
 	interaction_profile_find_or_create(log, inst, path, &p);
 
 	// Valid path, but not used.
-	//! @todo Still needs to validate the paths.
 	if (p == NULL) {
 		return XR_SUCCESS;
 	}
@@ -385,7 +360,7 @@ oxr_action_suggest_interaction_profile_bindings(
 	struct oxr_binding *bindings = p->bindings;
 	size_t num_bindings = p->num_bindings;
 
-	//! @todo Validate keys **FIRST** then reset.
+	// Everything is now valid, reset the keys.
 	reset_all_keys(bindings, num_bindings);
 
 	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
@@ -393,11 +368,6 @@ oxr_action_suggest_interaction_profile_bindings(
 		    &suggestedBindings->suggestedBindings[i];
 		struct oxr_action *act =
 		    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action *, s->action);
-
-#if 0
-		oxr_path_get_string(log, inst, s->binding, &str, &length);
-		fprintf(stderr, "\t\t%s %i -> %s\n", act->name, act->key, str);
-#endif
 
 		add_key_to_matching_bindings(bindings, num_bindings, s->binding,
 		                             act->key);
