@@ -748,7 +748,7 @@ convert_layer_flags(XrSwapchainUsageFlags xr_flags)
 static enum xrt_layer_eye_visibility
 convert_eye_visibility(XrSwapchainUsageFlags xr_visibility)
 {
-	enum xrt_layer_composition_flags visibility = 0;
+	enum xrt_layer_eye_visibility visibility = 0;
 
 	if (xr_visibility == XR_EYE_VISIBILITY_BOTH) {
 		visibility = XRT_LAYER_EYE_VISIBILITY_BOTH;
