@@ -1317,21 +1317,12 @@ struct oxr_source_set
  */
 struct oxr_source_state
 {
-	union {
-		struct
-		{
-			float x;
-		} vec1;
+	/*!
+	 * The actual value - must interpret using action type
+	 */
+	union xrt_input_value value;
 
-		struct
-		{
-			float x;
-			float y;
-		} vec2;
-
-		bool boolean;
-	};
-
+	//! Is this active (bound and providing input)?
 	bool active;
 
 	// Was this changed.

@@ -757,31 +757,30 @@ oxr_source_cache_update(struct oxr_logger *log,
 		switch (XRT_GET_INPUT_TYPE(input->name)) {
 		case XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE:
 		case XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE: {
-			changed = (input->value.vec1.x != last.vec1.x);
-			cache->current.vec1.x = input->value.vec1.x;
+			changed = (input->value.vec1.x != last.value.vec1.x);
+			cache->current.value = input->value;
 			break;
 		}
 		case XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE: {
-			changed = (input->value.vec2.x != last.vec2.x) ||
-			          (input->value.vec2.y != last.vec2.y);
-			cache->current.vec2.x = input->value.vec2.x;
-			cache->current.vec2.y = input->value.vec2.y;
+			changed = (input->value.vec2.x != last.value.vec2.x) ||
+			          (input->value.vec2.y != last.value.vec2.y);
+			cache->current.value = input->value;
 			break;
 		}
 #if 0
 		case XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE: {
-			changed = (input->value.vec3.x != last.vec3.x) ||
-			          (input->value.vec3.y != last.vec3.y) ||
-			          (input->value.vec3.z != last.vec3.z);
-			cache->current.vec3.x = input->value.vec3.x;
-			cache->current.vec3.y = input->value.vec3.y;
-			cache->current.vec3.z = input->value.vec3.z;
+			changed = (input->value.vec3.x != last.value.vec3.x) ||
+			          (input->value.vec3.y != last.value.vec3.y) ||
+			          (input->value.vec3.z != last.value.vec3.z);
+			cache->current.value.vec3.x = input->value.vec3.x;
+			cache->current.value.vec3.y = input->value.vec3.y;
+			cache->current.value.vec3.z = input->value.vec3.z;
 			break;
 		}
 #endif
 		case XRT_INPUT_TYPE_BOOLEAN: {
-			changed = (input->value.boolean != last.boolean);
-			cache->current.boolean = input->value.boolean;
+			changed = (input->value.boolean != last.value.boolean);
+			cache->current.value.boolean = input->value.boolean;
 			break;
 		}
 		case XRT_INPUT_TYPE_POSE: return;
@@ -806,22 +805,22 @@ oxr_source_cache_update(struct oxr_logger *log,
 #define BOOL_CHECK(NAME)                                                       \
 	if (src->NAME.current.active) {                                        \
 		active |= true;                                                \
-		value |= src->NAME.current.boolean;                            \
+		value |= src->NAME.current.value.boolean;                      \
 		timestamp = src->NAME.current.timestamp;                       \
 	}
 #define VEC1_CHECK(NAME)                                                       \
 	if (src->NAME.current.active) {                                        \
 		active |= true;                                                \
-		if (value < src->NAME.current.vec1.x) {                        \
-			value = src->NAME.current.vec1.x;                      \
+		if (value < src->NAME.current.value.vec1.x) {                  \
+			value = src->NAME.current.value.vec1.x;                \
 			timestamp = src->NAME.current.timestamp;               \
 		}                                                              \
 	}
 #define VEC2_CHECK(NAME)                                                       \
 	if (src->NAME.current.active) {                                        \
 		active |= true;                                                \
-		float curr_x = src->NAME.current.vec2.x;                       \
-		float curr_y = src->NAME.current.vec2.y;                       \
+		float curr_x = src->NAME.current.value.vec2.x;                 \
+		float curr_y = src->NAME.current.value.vec2.y;                 \
 		float curr_d = curr_x * curr_x + curr_y * curr_y;              \
 		if (distance < curr_d) {                                       \
 			x = curr_x;                                            \
@@ -880,8 +879,8 @@ oxr_source_update(struct oxr_logger *log,
 		BOOL_CHECK(right);
 		BOOL_CHECK(gamepad);
 
-		changed = last.boolean != value;
-		src->any_state.boolean = value;
+		changed = (last.value.boolean != value);
+		src->any_state.value.boolean = value;
 		break;
 	}
 	case XR_ACTION_TYPE_FLOAT_INPUT: {
@@ -892,8 +891,8 @@ oxr_source_update(struct oxr_logger *log,
 		VEC1_CHECK(right);
 		VEC1_CHECK(gamepad);
 
-		changed = last.vec1.x != value;
-		src->any_state.vec1.x = value;
+		changed = last.value.vec1.x != value;
+		src->any_state.value.vec1.x = value;
 		break;
 	}
 	case XR_ACTION_TYPE_VECTOR2F_INPUT: {
@@ -906,9 +905,9 @@ oxr_source_update(struct oxr_logger *log,
 		VEC2_CHECK(right);
 		VEC2_CHECK(gamepad);
 
-		changed = last.vec2.x != x || last.vec2.y != y;
-		src->any_state.vec2.x = x;
-		src->any_state.vec2.y = y;
+		changed = (last.value.vec2.x != x) || (last.value.vec2.y != y);
+		src->any_state.value.vec2.x = x;
+		src->any_state.value.vec2.y = y;
 		break;
 	}
 	default:
@@ -1164,7 +1163,7 @@ get_state_from_state_bool(struct oxr_source_state *state,
                           XrActionStateBoolean *data,
                           enum xrt_source_value_redirect redirect)
 {
-	data->currentState = state->boolean;
+	data->currentState = state->value.boolean;
 	data->lastChangeTime = state->timestamp;
 	data->changedSinceLastSync = state->changed;
 	data->isActive = XR_TRUE;
@@ -1177,13 +1176,13 @@ get_state_from_state_vec1(struct oxr_source_state *state,
 {
 	switch (redirect) {
 	case INPUT_REDIRECT_VEC2_X_TO_VEC1:
-		data->currentState = state->vec2.x;
+		data->currentState = state->value.vec2.x;
 		break;
 	case INPUT_REDIRECT_VEC2_Y_TO_VEC1:
-		data->currentState = state->vec2.y;
+		data->currentState = state->value.vec2.y;
 		break;
 	case INPUT_REDIRECT_DEFAULT:
-	default: data->currentState = state->vec1.x; break;
+	default: data->currentState = state->value.vec1.x; break;
 	}
 
 	data->lastChangeTime = state->timestamp;
@@ -1196,8 +1195,8 @@ get_state_from_state_vec2(struct oxr_source_state *state,
                           XrActionStateVector2f *data,
                           enum xrt_source_value_redirect redirect)
 {
-	data->currentState.x = state->vec2.x;
-	data->currentState.y = state->vec2.y;
+	data->currentState.x = state->value.vec2.x;
+	data->currentState.y = state->value.vec2.y;
 	data->lastChangeTime = state->timestamp;
 	data->changedSinceLastSync = state->changed;
 	data->isActive = XR_TRUE;
