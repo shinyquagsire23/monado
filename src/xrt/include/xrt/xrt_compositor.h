@@ -90,6 +90,11 @@ enum xrt_layer_composition_flags
 	XRT_LAYER_COMPOSITION_CORRECT_CHROMATIC_ABERRATION_BIT = 1 << 0,
 	XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT = 1 << 1,
 	XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT = 1 << 2,
+	/*!
+	 * The layer is locked to the device and the pose should only be
+	 * adjusted for the IPD.
+	 */
+	XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT = 1 << 3,
 };
 
 /*!
