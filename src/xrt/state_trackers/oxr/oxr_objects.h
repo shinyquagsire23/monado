@@ -111,6 +111,8 @@ struct oxr_action_input;
 struct oxr_action_output;
 struct oxr_binding;
 struct oxr_interaction_profile;
+struct oxr_action_set_ref;
+struct oxr_action_ref;
 
 #define XRT_MAX_HANDLE_CHILDREN 256
 #define OXR_MAX_SWAPCHAIN_IMAGES 8
@@ -1344,6 +1346,9 @@ struct oxr_action_set_attachment
 	//! Owning session.
 	struct oxr_session *sess;
 
+	//! Action set refcounted data
+	struct oxr_action_set_ref *act_set_ref;
+
 	//! Unique key for the session hashmap.
 	uint32_t act_set_key;
 
@@ -1451,6 +1456,9 @@ struct oxr_action_attachment
 	//! The owning action set attachment
 	struct oxr_action_set_attachment *act_set_attached;
 
+	//! This action's refcounted data
+	struct oxr_action_ref *act_ref;
+
 	/*!
 	 * The corresponding session.
 	 *
@@ -1461,9 +1469,6 @@ struct oxr_action_attachment
 
 	//! Unique key for the session hashmap.
 	uint32_t act_key;
-
-	//! Type the action this source was created from is.
-	XrActionType action_type;
 
 	struct oxr_action_state any_state;
 
@@ -1586,6 +1591,62 @@ struct oxr_swapchain
 	                          const XrSwapchainImageReleaseInfo *);
 };
 
+struct oxr_refcounted
+{
+	struct xrt_reference base;
+	//! Destruction callback
+	void (*destroy)(struct oxr_refcounted *);
+};
+
+/*!
+ * Increase the reference count of @p orc.
+ */
+static inline void
+oxr_refcounted_ref(struct oxr_refcounted *orc)
+{
+	xrt_reference_inc(&orc->base);
+}
+
+/*!
+ * Decrease the reference count of @p orc, destroying it if it reaches 0.
+ */
+static inline void
+oxr_refcounted_unref(struct oxr_refcounted *orc)
+{
+	if (xrt_reference_dec(&orc->base)) {
+		orc->destroy(orc);
+	}
+}
+
+/*!
+ * The reference-counted data of an action set.
+ *
+ * One or more sessions may still need this data after the application destroys
+ * its XrActionSet handle, so this data is refcounted.
+ *
+ * @see oxr_action_set
+ * @extends oxr_refcounted
+ */
+struct oxr_action_set_ref
+{
+	struct oxr_refcounted base;
+
+	//! Application supplied name of this action.
+	char name[XR_MAX_ACTION_SET_NAME_SIZE];
+
+	//! Has this action set been attached.
+	bool attached;
+
+	//! Unique key for the session hashmap.
+	uint32_t act_set_key;
+
+	struct
+	{
+		struct u_hashset *name_store;
+		struct u_hashset *loc_store;
+	} actions;
+};
+
 /*!
  * A group of actions.
  *
@@ -1606,13 +1667,18 @@ struct oxr_action_set
 	//! Owner of this action set.
 	struct oxr_instance *inst;
 
-	//! Application supplied name of this action.
-	char name[XR_MAX_ACTION_SET_NAME_SIZE];
+	/*!
+	 * The data for this action set that must live as long as any session we
+	 * are attached to.
+	 */
+	struct oxr_action_set_ref *data;
 
-	//! Has this action set been attached.
-	bool attached;
 
-	//! Unique key for the session hashmap.
+	/*!
+	 * Unique key for the session hashmap.
+	 *
+	 * Duplicated from oxr_action_set_ref::act_set_key for efficiency.
+	 */
 	uint32_t act_set_key;
 
 	//! The item in the name hashset.
@@ -1620,12 +1686,32 @@ struct oxr_action_set
 
 	//! The item in the localized hashset.
 	struct u_hashset_item *loc_item;
+};
 
-	struct
-	{
-		struct u_hashset *name_store;
-		struct u_hashset *loc_store;
-	} actions;
+/*!
+ * The reference-counted data of an action.
+ *
+ * One or more sessions may still need this data after the application destroys
+ * its XrAction handle, so this data is refcounted.
+ *
+ * @see oxr_action
+ * @extends oxr_refcounted
+ */
+struct oxr_action_ref
+{
+	struct oxr_refcounted base;
+
+	//! Application supplied name of this action.
+	char name[XR_MAX_ACTION_NAME_SIZE];
+
+	//! Unique key for the session hashmap.
+	uint32_t act_key;
+
+	//! Type this action was created with.
+	XrActionType action_type;
+
+	//! Which sub action paths that this action was created with.
+	struct oxr_sub_paths sub_paths;
 };
 
 /*!
@@ -1647,17 +1733,16 @@ struct oxr_action
 	//! Owner of this action.
 	struct oxr_action_set *act_set;
 
-	//! Application supplied name of this action.
-	char name[XR_MAX_ACTION_NAME_SIZE];
+	//! The data for this action that must live as long as any session we
+	//! are attached to.
+	struct oxr_action_ref *data;
 
-	//! Unique key for the session hashmap.
+	/*!
+	 * Unique key for the session hashmap.
+	 *
+	 * Duplicated from oxr_action_ref::act_key for efficiency.
+	 */
 	uint32_t act_key;
-
-	//! Type this action was created with.
-	XrActionType action_type;
-
-	//! Which sub action paths that this action was created with.
-	struct oxr_sub_paths sub_paths;
 
 	//! The item in the name hashset.
 	struct u_hashset_item *name_item;

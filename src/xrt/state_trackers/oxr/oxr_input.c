@@ -106,6 +106,8 @@ oxr_action_attachment_teardown(struct oxr_action_attachment *act_attached)
 	oxr_source_cache_teardown(&(act_attached->left));
 	oxr_source_cache_teardown(&(act_attached->right));
 	oxr_source_cache_teardown(&(act_attached->gamepad));
+	// Unref this action's refcounted data
+	oxr_refcounted_unref(&act_attached->act_ref->base);
 }
 
 /*!
@@ -125,8 +127,11 @@ oxr_action_attachment_init(struct oxr_logger *log,
 	u_hashmap_int_insert(sess->act_attachments_by_key, act->act_key,
 	                     act_attached);
 
-	// Need to copy these, since we may outlive the action handle.
-	act_attached->action_type = act->action_type;
+	// Reference this action's refcounted data
+	act_attached->act_ref = act->data;
+	oxr_refcounted_ref(&act_attached->act_ref->base);
+
+	// Copy this for efficiency.
 	act_attached->act_key = act->act_key;
 	return XR_SUCCESS;
 }
@@ -150,10 +155,14 @@ oxr_action_set_attachment_init(
 {
 	act_set_attached->sess = sess;
 
+	// Reference this action set's refcounted data
+	act_set_attached->act_set_ref = act_set->data;
+	oxr_refcounted_ref(&act_set_attached->act_set_ref->base);
+
 	u_hashmap_int_insert(sess->act_sets_attachments_by_key,
 	                     act_set->act_set_key, act_set_attached);
 
-	// Need to copy these, since we may outlive the action handle.
+	// Copy this for efficiency.
 	act_set_attached->act_set_key = act_set->act_set_key;
 
 	return XR_SUCCESS;
@@ -174,6 +183,9 @@ oxr_action_set_attachment_teardown(
 	struct oxr_session *sess = act_set_attached->sess;
 	u_hashmap_int_erase(sess->act_sets_attachments_by_key,
 	                    act_set_attached->act_set_key);
+
+	// Unref this action set's refcounted data
+	oxr_refcounted_unref(&act_set_attached->act_set_ref->base);
 }
 
 
@@ -182,12 +194,25 @@ oxr_action_set_attachment_teardown(
  * Action set functions
  *
  */
+static void
+oxr_action_set_ref_destroy_cb(struct oxr_refcounted *orc)
+{
+	struct oxr_action_set_ref *act_set_ref =
+	    (struct oxr_action_set_ref *)orc;
+
+	u_hashset_destroy(&act_set_ref->actions.name_store);
+	u_hashset_destroy(&act_set_ref->actions.loc_store);
+
+	free(act_set_ref);
+}
 
 static XrResult
 oxr_action_set_destroy_cb(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
-	//! @todo Move to oxr_objects.h
 	struct oxr_action_set *act_set = (struct oxr_action_set *)hb;
+
+	oxr_refcounted_unref(&act_set->data->base);
+	act_set->data = NULL;
 
 	if (act_set->name_item != NULL) {
 		u_hashset_erase_item(act_set->inst->action_sets.name_store,
@@ -201,9 +226,6 @@ oxr_action_set_destroy_cb(struct oxr_logger *log, struct oxr_handle_base *hb)
 		free(act_set->loc_item);
 		act_set->loc_item = NULL;
 	}
-
-	u_hashset_destroy(&act_set->actions.name_store);
-	u_hashset_destroy(&act_set->actions.loc_store);
 
 	free(act_set);
 
@@ -220,30 +242,37 @@ oxr_action_set_create(struct oxr_logger *log,
 	static uint32_t key_gen = 1;
 	int h_ret;
 
-	//! @todo Implement more fully.
 	struct oxr_action_set *act_set = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, act_set, OXR_XR_DEBUG_ACTIONSET,
 	                              oxr_action_set_destroy_cb, &inst->handle);
 
-	h_ret = u_hashset_create(&act_set->actions.name_store);
+	struct oxr_action_set_ref *act_set_ref =
+	    U_TYPED_CALLOC(struct oxr_action_set_ref);
+	act_set_ref->base.destroy = oxr_action_set_ref_destroy_cb;
+	oxr_refcounted_ref(&act_set_ref->base);
+	act_set->data = act_set_ref;
+
+	act_set_ref->act_set_key = key_gen++;
+	act_set->act_set_key = act_set_ref->act_set_key;
+
+	act_set->inst = inst;
+
+	h_ret = u_hashset_create(&act_set_ref->actions.name_store);
 	if (h_ret != 0) {
 		oxr_handle_destroy(log, &act_set->handle);
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Failed to create name_store hashset");
 	}
 
-	h_ret = u_hashset_create(&act_set->actions.loc_store);
+	h_ret = u_hashset_create(&act_set_ref->actions.loc_store);
 	if (h_ret != 0) {
 		oxr_handle_destroy(log, &act_set->handle);
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Failed to create loc_store hashset");
 	}
 
-	act_set->act_set_key = key_gen++;
-
-	act_set->inst = inst;
-	strncpy(act_set->name, createInfo->actionSetName,
-	        sizeof(act_set->name));
+	strncpy(act_set_ref->name, createInfo->actionSetName,
+	        sizeof(act_set_ref->name));
 
 	u_hashset_create_and_insert_str_c(inst->action_sets.name_store,
 	                                  createInfo->actionSetName,
@@ -264,20 +293,29 @@ oxr_action_set_create(struct oxr_logger *log,
  *
  */
 
+static void
+oxr_action_ref_destroy_cb(struct oxr_refcounted *orc)
+{
+	struct oxr_action_ref *act_ref = (struct oxr_action_ref *)orc;
+	free(act_ref);
+}
+
 static XrResult
 oxr_action_destroy_cb(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
-	//! @todo Move to oxr_objects.h
 	struct oxr_action *act = (struct oxr_action *)hb;
 
+	oxr_refcounted_unref(&act->data->base);
+	act->data = NULL;
+
 	if (act->name_item != NULL) {
-		u_hashset_erase_item(act->act_set->actions.name_store,
+		u_hashset_erase_item(act->act_set->data->actions.name_store,
 		                     act->name_item);
 		free(act->name_item);
 		act->name_item = NULL;
 	}
 	if (act->loc_item != NULL) {
-		u_hashset_erase_item(act->act_set->actions.loc_store,
+		u_hashset_erase_item(act->act_set->data->actions.loc_store,
 		                     act->loc_item);
 		free(act->loc_item);
 		act->loc_item = NULL;
@@ -309,17 +347,26 @@ oxr_action_create(struct oxr_logger *log,
 	struct oxr_action *act = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, act, OXR_XR_DEBUG_ACTION,
 	                              oxr_action_destroy_cb, &act_set->handle);
-	act->act_key = key_gen++;
+
+
+	struct oxr_action_ref *act_ref = U_TYPED_CALLOC(struct oxr_action_ref);
+	act_ref->base.destroy = oxr_action_ref_destroy_cb;
+	oxr_refcounted_ref(&act_ref->base);
+	act->data = act_ref;
+
+	act_ref->act_key = key_gen++;
+	act->act_key = act_ref->act_key;
+
 	act->act_set = act_set;
-	act->sub_paths = sub_paths;
-	act->action_type = createInfo->actionType;
+	act_ref->sub_paths = sub_paths;
+	act_ref->action_type = createInfo->actionType;
 
-	strncpy(act->name, createInfo->actionName, sizeof(act->name));
+	strncpy(act_ref->name, createInfo->actionName, sizeof(act_ref->name));
 
-	u_hashset_create_and_insert_str_c(act_set->actions.name_store,
+	u_hashset_create_and_insert_str_c(act_set->data->actions.name_store,
 	                                  createInfo->actionName,
 	                                  &act->name_item);
-	u_hashset_create_and_insert_str_c(act_set->actions.loc_store,
+	u_hashset_create_and_insert_str_c(act_set->data->actions.loc_store,
 	                                  createInfo->localizedActionName,
 	                                  &act->loc_item);
 
@@ -491,7 +538,7 @@ do_io_bindings(struct oxr_binding *b,
 {
 	bool found = false;
 
-	if (act->action_type == XR_ACTION_TYPE_VIBRATION_OUTPUT) {
+	if (act->data->action_type == XR_ACTION_TYPE_VIBRATION_OUTPUT) {
 		found |= do_outputs(b, xdev, outputs, num_outputs);
 	} else {
 		found |= do_inputs(b, xdev, inputs, num_inputs);
@@ -533,7 +580,7 @@ oxr_source_cache_determine_redirect(struct oxr_logger *log,
 	// trackpad/thumbstick data is kept in vec2f values.
 	// When a float action binds to ../trackpad/x or ../thumbstick/y, store
 	// the information which vec2f component to read.
-	if (act->action_type == XR_ACTION_TYPE_FLOAT_INPUT &&
+	if (act->data->action_type == XR_ACTION_TYPE_FLOAT_INPUT &&
 	    t == XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE) {
 		if (ends_with(str, "/x")) {
 			cache->redirect = INPUT_REDIRECT_VEC2_X_TO_VEC1;
@@ -543,7 +590,7 @@ oxr_source_cache_determine_redirect(struct oxr_logger *log,
 			oxr_log(log,
 			        "No rule to get float from vec2f for action "
 			        "%s, binding %s\n",
-			        act->name, str);
+			        act->data->name, str);
 		}
 	}
 }
@@ -676,38 +723,39 @@ oxr_action_attachment_bind(struct oxr_logger *log,
                            struct oxr_interaction_profile *gamepad)
 {
 	struct oxr_sink_logger slog = {0};
-
+	struct oxr_action_ref *act_ref = act->data;
 	struct oxr_session *sess = act_attached->sess;
 
 	// Start logging into a single buffer.
-	oxr_slog(&slog, ": Binding %s/%s\n", act->act_set->name, act->name);
+	oxr_slog(&slog, ": Binding %s/%s\n", act->act_set->data->name,
+	         act_ref->name);
 
-	if (act->sub_paths.user || act->sub_paths.any) {
+	if (act_ref->sub_paths.user || act_ref->sub_paths.any) {
 #if 0
 		oxr_source_bind_inputs(log, slog, sess, act, &act_attached->user, user,
 		                       OXR_SUB_ACTION_PATH_USER);
 #endif
 	}
 
-	if (act->sub_paths.head || act->sub_paths.any) {
+	if (act_ref->sub_paths.head || act_ref->sub_paths.any) {
 		oxr_source_bind_inputs(log, &slog, sess, act,
 		                       &act_attached->head, head,
 		                       OXR_SUB_ACTION_PATH_HEAD);
 	}
 
-	if (act->sub_paths.left || act->sub_paths.any) {
+	if (act_ref->sub_paths.left || act_ref->sub_paths.any) {
 		oxr_source_bind_inputs(log, &slog, sess, act,
 		                       &act_attached->left, left,
 		                       OXR_SUB_ACTION_PATH_LEFT);
 	}
 
-	if (act->sub_paths.right || act->sub_paths.any) {
+	if (act_ref->sub_paths.right || act_ref->sub_paths.any) {
 		oxr_source_bind_inputs(log, &slog, sess, act,
 		                       &act_attached->right, right,
 		                       OXR_SUB_ACTION_PATH_RIGHT);
 	}
 
-	if (act->sub_paths.gamepad || act->sub_paths.any) {
+	if (act_ref->sub_paths.gamepad || act_ref->sub_paths.any) {
 		oxr_source_bind_inputs(log, &slog, sess, act,
 		                       &act_attached->gamepad, gamepad,
 		                       OXR_SUB_ACTION_PATH_GAMEPAD);
@@ -907,7 +955,7 @@ oxr_action_attachment_update(struct oxr_logger *log,
 	bool changed = false;
 	XrTime timestamp = 0;
 
-	switch (act_attached->action_type) {
+	switch (act_attached->act_ref->action_type) {
 	case XR_ACTION_TYPE_BOOLEAN_INPUT: {
 		bool value = false;
 		BOOL_CHECK(user);
@@ -1100,7 +1148,7 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 	for (uint32_t i = 0; i < bindInfo->countActionSets; i++) {
 		struct oxr_action_set *act_set = XRT_CAST_OXR_HANDLE_TO_PTR(
 		    struct oxr_action_set *, bindInfo->actionSets[i]);
-		if (act_set->attached) {
+		if (act_set->data->attached) {
 			return XR_ERROR_ACTIONSETS_ALREADY_ATTACHED;
 		}
 	}
@@ -1114,7 +1162,8 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 	for (uint32_t i = 0; i < sess->num_action_set_attachments; i++) {
 		struct oxr_action_set *act_set = XRT_CAST_OXR_HANDLE_TO_PTR(
 		    struct oxr_action_set *, bindInfo->actionSets[i]);
-		act_set->attached = true;
+		struct oxr_action_set_ref *act_set_ref = act_set->data;
+		act_set_ref->attached = true;
 		struct oxr_action_set_attachment *act_set_attached =
 		    &sess->act_set_attachments[i];
 		oxr_action_set_attachment_init(log, sess, act_set,
@@ -1179,7 +1228,7 @@ oxr_action_sync_data(struct oxr_logger *log,
 			    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
 			    "(actionSets[%i].actionSet) action set '%s' has "
 			    "not been attached to this session",
-			    i, act_set != NULL ? act_set->name : "NULL");
+			    i, act_set != NULL ? act_set->data->name : "NULL");
 		}
 	}
 
