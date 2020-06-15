@@ -42,7 +42,8 @@ struct comp_layer_renderer
 	VkPipelineLayout pipeline_layout;
 	VkPipelineCache pipeline_cache;
 
-	struct xrt_matrix_4x4 mat_view[2];
+	struct xrt_matrix_4x4 mat_world_view[2];
+	struct xrt_matrix_4x4 mat_eye_view[2];
 	struct xrt_matrix_4x4 mat_projection[2];
 
 	struct vk_buffer vertex_buffer;
@@ -68,12 +69,13 @@ comp_layer_renderer_draw(struct comp_layer_renderer *self);
 void
 comp_layer_renderer_set_fov(struct comp_layer_renderer *self,
                             const struct xrt_fov *fov,
-                            uint32_t view_id);
+                            uint32_t eye);
 
 void
 comp_layer_renderer_set_pose(struct comp_layer_renderer *self,
-                             const struct xrt_pose *pose,
-                             uint32_t view_id);
+                             const struct xrt_pose *eye_pose,
+                             const struct xrt_pose *world_pose,
+                             uint32_t eye);
 
 void
 comp_layer_renderer_allocate_layers(struct comp_layer_renderer *self,

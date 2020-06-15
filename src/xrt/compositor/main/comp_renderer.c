@@ -416,15 +416,15 @@ _get_view_projection(struct comp_renderer *r)
 
 		comp_layer_renderer_set_fov(r->lr, &fov, i);
 
-		struct xrt_pose view_pose;
+		struct xrt_pose eye_pose;
 		xrt_device_get_view_pose(r->c->xdev, &eye_relation, i,
-		                         &view_pose);
+		                         &eye_pose);
 
-		struct xrt_pose pose;
-		math_pose_openxr_locate(&view_pose, &relation.pose,
-		                        &base_space_pose, &pose);
+		struct xrt_pose world_pose;
+		math_pose_openxr_locate(&eye_pose, &relation.pose,
+		                        &base_space_pose, &world_pose);
 
-		comp_layer_renderer_set_pose(r->lr, &pose, i);
+		comp_layer_renderer_set_pose(r->lr, &eye_pose, &world_pose, i);
 	}
 }
 
@@ -474,44 +474,48 @@ renderer_init(struct comp_renderer *r)
 
 void
 comp_renderer_set_quad_layer(struct comp_renderer *r,
-                             struct comp_swapchain_image *image,
-                             struct xrt_pose *pose,
-                             struct xrt_vec2 *size,
-                             bool flip_y,
                              uint32_t layer,
-                             uint32_t array_index)
+                             struct comp_swapchain_image *image,
+                             struct xrt_layer_data *data)
 {
 	comp_layer_update_descriptors(r->lr->layers[layer], image->sampler,
-	                              image->views[array_index]);
+	                              image->views[data->quad.sub.array_index]);
 
 	struct xrt_matrix_4x4 model_matrix;
-	math_matrix_4x4_quad_model(pose, size, &model_matrix);
+	math_matrix_4x4_quad_model(&data->quad.pose, &data->quad.size,
+	                           &model_matrix);
 
 	comp_layer_set_model_matrix(r->lr->layers[layer], &model_matrix);
 
+	comp_layer_set_flip_y(r->lr->layers[layer], data->flip_y);
+
 	r->lr->layers[layer]->type = XRT_LAYER_QUAD;
-	comp_layer_set_flip_y(r->lr->layers[layer], flip_y);
+	r->lr->layers[layer]->view_space =
+	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
 
 	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
 }
 
 void
 comp_renderer_set_projection_layer(struct comp_renderer *r,
+                                   uint32_t layer,
                                    struct comp_swapchain_image *left_image,
                                    struct comp_swapchain_image *right_image,
-                                   bool flip_y,
-                                   uint32_t layer,
-                                   uint32_t left_array_index,
-                                   uint32_t right_array_index)
+                                   struct xrt_layer_data *data)
 {
+	uint32_t left_array_index = data->stereo.l.sub.array_index;
+	uint32_t right_array_index = data->stereo.r.sub.array_index;
+
 	comp_layer_update_stereo_descriptors(
 	    r->lr->layers[layer], left_image->sampler, right_image->sampler,
 	    left_image->views[left_array_index],
 	    right_image->views[right_array_index]);
 
-	comp_layer_set_flip_y(r->lr->layers[layer], flip_y);
+	comp_layer_set_flip_y(r->lr->layers[layer], data->flip_y);
 
 	r->lr->layers[layer]->type = XRT_LAYER_STEREO_PROJECTION;
+	r->lr->layers[layer]->view_space =
+	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
 }
 
 void

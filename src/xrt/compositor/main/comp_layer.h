@@ -23,6 +23,7 @@ struct comp_render_layer
 	struct vk_bundle *vk;
 
 	bool visible;
+	bool view_space;
 
 	enum xrt_layer_type type;
 
@@ -47,7 +48,8 @@ comp_layer_draw(struct comp_render_layer *self,
                 VkPipelineLayout pipeline_layout,
                 VkCommandBuffer cmd_buffer,
                 const struct vk_buffer *vertex_buffer,
-                const struct xrt_matrix_4x4 *vp);
+                const struct xrt_matrix_4x4 *vp_world,
+                const struct xrt_matrix_4x4 *vp_eye);
 
 void
 comp_layer_set_model_matrix(struct comp_render_layer *self,

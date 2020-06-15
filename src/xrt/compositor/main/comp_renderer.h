@@ -56,22 +56,16 @@ comp_renderer_draw(struct comp_renderer *r);
 
 void
 comp_renderer_set_projection_layer(struct comp_renderer *r,
+                                   uint32_t layer,
                                    struct comp_swapchain_image *left_image,
                                    struct comp_swapchain_image *right_image,
-                                   bool flip_y,
-                                   uint32_t layer,
-                                   uint32_t left_array_index,
-                                   uint32_t right_array_index);
+                                   struct xrt_layer_data *data);
 
 void
 comp_renderer_set_quad_layer(struct comp_renderer *r,
-                             struct comp_swapchain_image *image,
-                             struct xrt_pose *pose,
-                             struct xrt_vec2 *size,
-                             bool flip_y,
                              uint32_t layer,
-                             uint32_t array_index);
-
+                             struct comp_swapchain_image *image,
+                             struct xrt_layer_data *data);
 
 void
 comp_renderer_allocate_layers(struct comp_renderer *self, uint32_t num_layers);

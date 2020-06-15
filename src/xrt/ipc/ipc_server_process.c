@@ -540,12 +540,12 @@ _update_projection_layer(struct comp_compositor *c,
 	l = &cl->images[layer->data.stereo.l.sub.image_index];
 	r = &cr->images[layer->data.stereo.r.sub.image_index];
 
+
+	// Cast away volatile.
+	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
+
 	//! @todo we are ignoring subrect here!
-	// (and perhaps can simplify by re-using some structs?)
-	comp_renderer_set_projection_layer(
-	    c->r, l, r, layer->data.flip_y, i,
-	    layer->data.stereo.l.sub.array_index,
-	    layer->data.stereo.r.sub.array_index);
+	comp_renderer_set_projection_layer(c->r, i, l, r, data);
 
 	return true;
 }
@@ -567,14 +567,11 @@ _update_quad_layer(struct comp_compositor *c,
 	struct comp_swapchain_image *image = NULL;
 	image = &sc->images[layer->data.quad.sub.image_index];
 
-	struct xrt_pose pose = layer->data.quad.pose;
-	struct xrt_vec2 size = layer->data.quad.size;
+	// Cast away volatile.
+	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
 
 	//! @todo we are ignoring subrect here!
-	// (and perhaps can simplify by re-using some structs?)
-	comp_renderer_set_quad_layer(c->r, image, &pose, &size,
-	                             layer->data.flip_y, i,
-	                             layer->data.quad.sub.array_index);
+	comp_renderer_set_quad_layer(c->r, i, image, data);
 
 	return true;
 }

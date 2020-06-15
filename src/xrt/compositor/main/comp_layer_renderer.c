@@ -381,14 +381,18 @@ _render_eye(struct comp_layer_renderer *self,
             VkCommandBuffer cmd_buffer,
             VkPipelineLayout pipeline_layout)
 {
-	struct xrt_matrix_4x4 vp;
+	struct xrt_matrix_4x4 vp_world;
+	struct xrt_matrix_4x4 vp_eye;
 	math_matrix_4x4_multiply(&self->mat_projection[eye],
-	                         &self->mat_view[eye], &vp);
+	                         &self->mat_world_view[eye], &vp_world);
+	math_matrix_4x4_multiply(&self->mat_projection[eye],
+	                         &self->mat_eye_view[eye], &vp_eye);
 
-	for (uint32_t i = 0; i < self->num_layers; i++)
+	for (uint32_t i = 0; i < self->num_layers; i++) {
 		comp_layer_draw(self->layers[i], eye, self->pipeline,
 		                pipeline_layout, cmd_buffer,
-		                &self->vertex_buffer, &vp);
+		                &self->vertex_buffer, &vp_world, &vp_eye);
+	}
 }
 
 static bool
@@ -484,7 +488,8 @@ _init(struct comp_layer_renderer *self,
 
 	for (uint32_t i = 0; i < 2; i++) {
 		math_matrix_4x4_identity(&self->mat_projection[i]);
-		math_matrix_4x4_identity(&self->mat_view[i]);
+		math_matrix_4x4_identity(&self->mat_world_view[i]);
+		math_matrix_4x4_identity(&self->mat_eye_view[i]);
 	}
 
 	if (!_init_render_pass(vk, format,
@@ -649,7 +654,7 @@ comp_layer_renderer_destroy(struct comp_layer_renderer *self)
 void
 comp_layer_renderer_set_fov(struct comp_layer_renderer *self,
                             const struct xrt_fov *fov,
-                            uint32_t view_id)
+                            uint32_t eye)
 {
 	const float tan_left = tanf(fov->angle_left);
 	const float tan_right = tanf(fov->angle_right);
@@ -670,7 +675,7 @@ comp_layer_renderer_set_fov(struct comp_layer_renderer *self,
 	const float a43 = -(self->far * self->near) / (self->far - self->near);
 
 	// clang-format off
-	self->mat_projection[view_id] = (struct xrt_matrix_4x4) {
+	self->mat_projection[eye] = (struct xrt_matrix_4x4) {
 		.v = {
 			a11, 0, 0, 0,
 			0, a22, 0, 0,
@@ -683,8 +688,10 @@ comp_layer_renderer_set_fov(struct comp_layer_renderer *self,
 
 void
 comp_layer_renderer_set_pose(struct comp_layer_renderer *self,
-                             const struct xrt_pose *pose,
-                             uint32_t view_id)
+                             const struct xrt_pose *eye_pose,
+                             const struct xrt_pose *world_pose,
+                             uint32_t eye)
 {
-	math_matrix_4x4_view_from_pose(pose, &self->mat_view[view_id]);
+	math_matrix_4x4_view_from_pose(eye_pose, &self->mat_eye_view[eye]);
+	math_matrix_4x4_view_from_pose(world_pose, &self->mat_world_view[eye]);
 }

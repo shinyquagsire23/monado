@@ -162,6 +162,7 @@ _init(struct comp_render_layer *self,
 	self->type = type;
 
 	self->visible = true;
+	self->view_space = true;
 
 	math_matrix_4x4_identity(&self->model_matrix);
 
@@ -202,13 +203,17 @@ comp_layer_draw(struct comp_render_layer *self,
                 VkPipelineLayout pipeline_layout,
                 VkCommandBuffer cmd_buffer,
                 const struct vk_buffer *vertex_buffer,
-                const struct xrt_matrix_4x4 *vp)
+                const struct xrt_matrix_4x4 *vp_world,
+                const struct xrt_matrix_4x4 *vp_eye)
 {
 	if (!self->visible)
 		return;
 
 	self->vk->vkCmdBindPipeline(cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                            pipeline);
+
+	// Is this layer viewspace or not.
+	const struct xrt_matrix_4x4 *vp = self->view_space ? vp_eye : vp_world;
 
 	switch (self->type) {
 	case XRT_LAYER_STEREO_PROJECTION:
