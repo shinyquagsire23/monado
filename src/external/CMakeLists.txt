@@ -16,3 +16,6 @@ endif()
 
 add_library(xrt-external-flexkalman INTERFACE)
 target_include_directories(xrt-external-flexkalman INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/flexkalman)
+
+add_library(xrt-external-catch2 INTERFACE)
+target_include_directories(xrt-external-catch2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
