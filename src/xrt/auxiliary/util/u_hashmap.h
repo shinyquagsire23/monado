@@ -42,6 +42,12 @@ int
 u_hashmap_int_erase(struct u_hashmap_int *hmi, uint64_t key);
 
 /*!
+ * Is the hash map empty?
+ */
+bool
+u_hashmap_int_empty(const struct u_hashmap_int *hmi);
+
+/*!
  * First clear the hashmap and then call the given callback with each item that
  * was in the hashmap.
  *

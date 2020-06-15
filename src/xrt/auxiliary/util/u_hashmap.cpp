@@ -73,6 +73,12 @@ u_hashmap_int_erase(struct u_hashmap_int *hmi, uint64_t key)
 	return 0;
 }
 
+bool
+u_hashmap_int_empty(const struct u_hashmap_int *hmi)
+{
+	return hmi->map.empty();
+}
+
 extern "C" void
 u_hashmap_int_clear_and_call_for_each(struct u_hashmap_int *hmi,
                                       u_hashmap_int_callback cb,
