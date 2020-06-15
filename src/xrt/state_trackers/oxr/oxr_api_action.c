@@ -430,7 +430,8 @@ oxr_xrGetActionStateBoolean(XrSession session,
 		return ret;
 	}
 
-	return oxr_action_get_boolean(&log, sess, act->key, sub_paths, data);
+	return oxr_action_get_boolean(&log, sess, act->act_key, sub_paths,
+	                              data);
 }
 
 XrResult
@@ -463,7 +464,8 @@ oxr_xrGetActionStateFloat(XrSession session,
 		return ret;
 	}
 
-	return oxr_action_get_vector1f(&log, sess, act->key, sub_paths, data);
+	return oxr_action_get_vector1f(&log, sess, act->act_key, sub_paths,
+	                               data);
 }
 
 XrResult
@@ -496,7 +498,8 @@ oxr_xrGetActionStateVector2f(XrSession session,
 		return ret;
 	}
 
-	return oxr_action_get_vector2f(&log, sess, act->key, sub_paths, data);
+	return oxr_action_get_vector2f(&log, sess, act->act_key, sub_paths,
+	                               data);
 }
 
 XrResult
@@ -528,7 +531,7 @@ oxr_xrGetActionStatePose(XrSession session,
 		return ret;
 	}
 
-	return oxr_action_get_pose(&log, sess, act->key, sub_paths, data);
+	return oxr_action_get_pose(&log, sess, act->act_key, sub_paths, data);
 }
 
 XrResult
@@ -555,7 +558,7 @@ oxr_xrEnumerateBoundSourcesForAction(
 		                 "been called on this session.");
 	}
 
-	return oxr_action_enumerate_bound_sources(&log, sess, act->key,
+	return oxr_action_enumerate_bound_sources(&log, sess, act->act_key,
 	                                          sourceCapacityInput,
 	                                          sourceCountOutput, sources);
 }
@@ -597,8 +600,8 @@ oxr_xrApplyHapticFeedback(XrSession session,
 		                 "Not created with output vibration type");
 	}
 
-	return oxr_action_apply_haptic_feedback(&log, sess, act->key, sub_paths,
-	                                        hapticEvent);
+	return oxr_action_apply_haptic_feedback(&log, sess, act->act_key,
+	                                        sub_paths, hapticEvent);
 }
 
 XrResult
@@ -628,5 +631,6 @@ oxr_xrStopHapticFeedback(XrSession session,
 		                 "Not created with output vibration type");
 	}
 
-	return oxr_action_stop_haptic_feedback(&log, sess, act->key, sub_paths);
+	return oxr_action_stop_haptic_feedback(&log, sess, act->act_key,
+	                                       sub_paths);
 }

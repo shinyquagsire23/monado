@@ -430,7 +430,7 @@ oxr_action_sync_data(struct oxr_logger *log,
 XrResult
 oxr_action_get_boolean(struct oxr_logger *log,
                        struct oxr_session *sess,
-                       uint64_t key,
+                       uint32_t act_key,
                        struct oxr_sub_paths sub_paths,
                        XrActionStateBoolean *data);
 /*!
@@ -439,7 +439,7 @@ oxr_action_get_boolean(struct oxr_logger *log,
 XrResult
 oxr_action_get_vector1f(struct oxr_logger *log,
                         struct oxr_session *sess,
-                        uint64_t key,
+                        uint32_t act_key,
                         struct oxr_sub_paths sub_paths,
                         XrActionStateFloat *data);
 
@@ -449,7 +449,7 @@ oxr_action_get_vector1f(struct oxr_logger *log,
 XrResult
 oxr_action_get_vector2f(struct oxr_logger *log,
                         struct oxr_session *sess,
-                        uint64_t key,
+                        uint32_t act_key,
                         struct oxr_sub_paths sub_paths,
                         XrActionStateVector2f *data);
 /*!
@@ -458,7 +458,7 @@ oxr_action_get_vector2f(struct oxr_logger *log,
 XrResult
 oxr_action_get_pose(struct oxr_logger *log,
                     struct oxr_session *sess,
-                    uint64_t key,
+                    uint32_t act_key,
                     struct oxr_sub_paths sub_paths,
                     XrActionStatePose *data);
 /*!
@@ -467,7 +467,7 @@ oxr_action_get_pose(struct oxr_logger *log,
 XrResult
 oxr_action_apply_haptic_feedback(struct oxr_logger *log,
                                  struct oxr_session *sess,
-                                 uint64_t key,
+                                 uint32_t act_key,
                                  struct oxr_sub_paths sub_paths,
                                  const XrHapticBaseHeader *hapticEvent);
 /*!
@@ -476,7 +476,7 @@ oxr_action_apply_haptic_feedback(struct oxr_logger *log,
 XrResult
 oxr_action_stop_haptic_feedback(struct oxr_logger *log,
                                 struct oxr_session *sess,
-                                uint64_t key,
+                                uint32_t act_key,
                                 struct oxr_sub_paths sub_paths);
 
 /*!
@@ -1345,7 +1345,7 @@ struct oxr_action_set_attachment
 	struct oxr_session *sess;
 
 	//! Unique key for the session hashmap.
-	uint32_t key;
+	uint32_t act_set_key;
 
 	//! Which sub-action paths are requested on the latest sync.
 	struct oxr_sub_paths requested_sub_paths;
@@ -1460,7 +1460,7 @@ struct oxr_action_attachment
 	struct oxr_session *sess;
 
 	//! Unique key for the session hashmap.
-	uint32_t key;
+	uint32_t act_key;
 
 	//! Type the action this source was created from is.
 	XrActionType action_type;
@@ -1613,7 +1613,7 @@ struct oxr_action_set
 	bool attached;
 
 	//! Unique key for the session hashmap.
-	uint32_t key;
+	uint32_t act_set_key;
 
 	//! The item in the name hashset.
 	struct u_hashset_item *name_item;
@@ -1651,7 +1651,7 @@ struct oxr_action
 	char name[XR_MAX_ACTION_NAME_SIZE];
 
 	//! Unique key for the session hashmap.
-	uint32_t key;
+	uint32_t act_key;
 
 	//! Type this action was created with.
 	XrActionType action_type;

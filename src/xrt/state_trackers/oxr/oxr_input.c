@@ -99,7 +99,8 @@ static void
 oxr_action_attachment_teardown(struct oxr_action_attachment *act_attached)
 {
 	struct oxr_session *sess = act_attached->sess;
-	u_hashmap_int_erase(sess->act_attachments_by_key, act_attached->key);
+	u_hashmap_int_erase(sess->act_attachments_by_key,
+	                    act_attached->act_key);
 	oxr_source_cache_teardown(&(act_attached->user));
 	oxr_source_cache_teardown(&(act_attached->head));
 	oxr_source_cache_teardown(&(act_attached->left));
@@ -121,12 +122,12 @@ oxr_action_attachment_init(struct oxr_logger *log,
 	struct oxr_session *sess = act_set_attached->sess;
 	act_attached->sess = sess;
 	act_attached->act_set_attached = act_set_attached;
-	u_hashmap_int_insert(sess->act_attachments_by_key, act->key,
+	u_hashmap_int_insert(sess->act_attachments_by_key, act->act_key,
 	                     act_attached);
 
 	// Need to copy these, since we may outlive the action handle.
 	act_attached->action_type = act->action_type;
-	act_attached->key = act->key;
+	act_attached->act_key = act->act_key;
 	return XR_SUCCESS;
 }
 
@@ -149,11 +150,11 @@ oxr_action_set_attachment_init(
 {
 	act_set_attached->sess = sess;
 
-	u_hashmap_int_insert(sess->act_sets_attachments_by_key, act_set->key,
-	                     act_set_attached);
+	u_hashmap_int_insert(sess->act_sets_attachments_by_key,
+	                     act_set->act_set_key, act_set_attached);
 
 	// Need to copy these, since we may outlive the action handle.
-	act_set_attached->key = act_set->key;
+	act_set_attached->act_set_key = act_set->act_set_key;
 
 	return XR_SUCCESS;
 }
@@ -172,7 +173,7 @@ oxr_action_set_attachment_teardown(
 
 	struct oxr_session *sess = act_set_attached->sess;
 	u_hashmap_int_erase(sess->act_sets_attachments_by_key,
-	                    act_set_attached->key);
+	                    act_set_attached->act_set_key);
 }
 
 
@@ -238,7 +239,7 @@ oxr_action_set_create(struct oxr_logger *log,
 		                 "Failed to create loc_store hashset");
 	}
 
-	act_set->key = key_gen++;
+	act_set->act_set_key = key_gen++;
 
 	act_set->inst = inst;
 	strncpy(act_set->name, createInfo->actionSetName,
@@ -308,7 +309,7 @@ oxr_action_create(struct oxr_logger *log,
 	struct oxr_action *act = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, act, OXR_XR_DEBUG_ACTION,
 	                              oxr_action_destroy_cb, &act_set->handle);
-	act->key = key_gen++;
+	act->act_key = key_gen++;
 	act->act_set = act_set;
 	act->sub_paths = sub_paths;
 	act->action_type = createInfo->actionType;
@@ -552,7 +553,7 @@ get_matched_xrpath(struct oxr_binding *b, struct oxr_action *act)
 {
 	XrPath preferred_path = XR_NULL_PATH;
 	for (uint32_t i = 0; i < b->num_keys; i++) {
-		if (b->keys[i] == act->key) {
+		if (b->keys[i] == act->act_key) {
 			uint32_t preferred_path_index = XR_NULL_PATH;
 			preferred_path_index =
 			    b->preferred_binding_path_index[i];
@@ -626,7 +627,7 @@ get_binding(struct oxr_logger *log,
 	oxr_slog(slog, "\t\tProfile: %s\n", profile_str);
 
 	size_t num = 0;
-	oxr_binding_find_bindings_from_key(log, profile, act->key, bindings,
+	oxr_binding_find_bindings_from_key(log, profile, act->act_key, bindings,
 	                                   &num);
 	if (num == 0) {
 		oxr_slog(slog, "\t\tNo bindings\n");
@@ -1040,15 +1041,15 @@ oxr_session_get_action_set_attachment(
 	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action_set *, actionSet);
 
 	int ret = u_hashmap_int_find(sess->act_sets_attachments_by_key,
-	                             (*act_set)->key, &ptr);
+	                             (*act_set)->act_set_key, &ptr);
 	if (ret == 0) {
 		*act_set_attached = (struct oxr_action_set_attachment *)ptr;
 	}
 }
 
 /*!
- * Given an action key, look up the @ref oxr_action_attachment of the associated
- * action in the given Session.
+ * Given an action act_key, look up the @ref oxr_action_attachment of the
+ * associated action in the given Session.
  *
  * @private @memberof oxr_session
  */
@@ -1327,13 +1328,13 @@ get_state_from_state_vec2(struct oxr_action_state *state,
 XrResult
 oxr_action_get_boolean(struct oxr_logger *log,
                        struct oxr_session *sess,
-                       uint64_t key,
+                       uint32_t act_key,
                        struct oxr_sub_paths sub_paths,
                        XrActionStateBoolean *data)
 {
 	struct oxr_action_attachment *act_attached = NULL;
 
-	oxr_session_get_action_attachment(sess, key, &act_attached);
+	oxr_session_get_action_attachment(sess, act_key, &act_attached);
 	if (act_attached == NULL) {
 		return oxr_error(
 		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
@@ -1352,13 +1353,13 @@ oxr_action_get_boolean(struct oxr_logger *log,
 XrResult
 oxr_action_get_vector1f(struct oxr_logger *log,
                         struct oxr_session *sess,
-                        uint64_t key,
+                        uint32_t act_key,
                         struct oxr_sub_paths sub_paths,
                         XrActionStateFloat *data)
 {
 	struct oxr_action_attachment *act_attached = NULL;
 
-	oxr_session_get_action_attachment(sess, key, &act_attached);
+	oxr_session_get_action_attachment(sess, act_key, &act_attached);
 	if (act_attached == NULL) {
 		return oxr_error(
 		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
@@ -1376,13 +1377,13 @@ oxr_action_get_vector1f(struct oxr_logger *log,
 XrResult
 oxr_action_get_vector2f(struct oxr_logger *log,
                         struct oxr_session *sess,
-                        uint64_t key,
+                        uint32_t act_key,
                         struct oxr_sub_paths sub_paths,
                         XrActionStateVector2f *data)
 {
 	struct oxr_action_attachment *act_attached = NULL;
 
-	oxr_session_get_action_attachment(sess, key, &act_attached);
+	oxr_session_get_action_attachment(sess, act_key, &act_attached);
 	if (act_attached == NULL) {
 		return oxr_error(
 		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
@@ -1400,13 +1401,13 @@ oxr_action_get_vector2f(struct oxr_logger *log,
 XrResult
 oxr_action_get_pose(struct oxr_logger *log,
                     struct oxr_session *sess,
-                    uint64_t key,
+                    uint32_t act_key,
                     struct oxr_sub_paths sub_paths,
                     XrActionStatePose *data)
 {
 	struct oxr_action_attachment *act_attached = NULL;
 
-	oxr_session_get_action_attachment(sess, key, &act_attached);
+	oxr_session_get_action_attachment(sess, act_key, &act_attached);
 	if (act_attached == NULL) {
 		return oxr_error(
 		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
@@ -1467,13 +1468,13 @@ set_action_output_vibration(struct oxr_session *sess,
 XrResult
 oxr_action_apply_haptic_feedback(struct oxr_logger *log,
                                  struct oxr_session *sess,
-                                 uint64_t key,
+                                 uint32_t act_key,
                                  struct oxr_sub_paths sub_paths,
                                  const XrHapticBaseHeader *hapticEvent)
 {
 	struct oxr_action_attachment *act_attached = NULL;
 
-	oxr_session_get_action_attachment(sess, key, &act_attached);
+	oxr_session_get_action_attachment(sess, act_key, &act_attached);
 	if (act_attached == NULL) {
 		return oxr_error(
 		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
@@ -1509,12 +1510,12 @@ oxr_action_apply_haptic_feedback(struct oxr_logger *log,
 XrResult
 oxr_action_stop_haptic_feedback(struct oxr_logger *log,
                                 struct oxr_session *sess,
-                                uint64_t key,
+                                uint32_t act_key,
                                 struct oxr_sub_paths sub_paths)
 {
 	struct oxr_action_attachment *act_attached = NULL;
 
-	oxr_session_get_action_attachment(sess, key, &act_attached);
+	oxr_session_get_action_attachment(sess, act_key, &act_attached);
 	if (act_attached == NULL) {
 		return oxr_error(
 		    log, XR_ERROR_ACTIONSET_NOT_ATTACHED,

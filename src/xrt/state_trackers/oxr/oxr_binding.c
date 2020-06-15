@@ -370,7 +370,7 @@ oxr_action_suggest_interaction_profile_bindings(
 		    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action *, s->action);
 
 		add_key_to_matching_bindings(bindings, num_bindings, s->binding,
-		                             act->key);
+		                             act->act_key);
 	}
 
 	return XR_SUCCESS;

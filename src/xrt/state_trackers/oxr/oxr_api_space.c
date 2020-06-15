@@ -42,7 +42,7 @@ oxr_xrCreateActionSpace(XrSession session,
 
 	struct oxr_space *spc;
 	XrResult ret =
-	    oxr_space_action_create(&log, sess, act->key, createInfo, &spc);
+	    oxr_space_action_create(&log, sess, act->act_key, createInfo, &spc);
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
