@@ -773,12 +773,28 @@ submit_quad_layer(struct xrt_compositor *xc,
 {
 	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
 	    struct oxr_swapchain *, quad->subImage.swapchain);
+	struct oxr_space *spc =
+	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, quad->space);
 
 	enum xrt_layer_composition_flags flags =
 	    convert_layer_flags(quad->layerFlags);
 
-	struct xrt_pose pose;
-	math_pose_transform(inv_offset, (struct xrt_pose *)&quad->pose, &pose);
+	struct xrt_pose *pose_ptr = (struct xrt_pose *)&quad->pose;
+	struct xrt_pose pose = *pose_ptr;
+
+	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
+		// The space might have a pose, transform that in as well.
+		math_pose_transform(&spc->pose, &pose, &pose);
+	} else {
+		//! @todo Handle action spaces.
+
+		// The space might have a pose, transform that in as well.
+		math_pose_transform(&spc->pose, &pose, &pose);
+
+		// Remove the tracking system origin offset.
+		math_pose_transform(inv_offset, &pose, &pose);
+	}
 
 	struct xrt_layer_data data;
 	U_ZERO(&data);
@@ -810,7 +826,11 @@ submit_projection_layer(struct xrt_compositor *xc,
                         struct xrt_pose *inv_offset,
                         uint64_t timestamp)
 {
+	struct oxr_space *spc =
+	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, proj->space);
 	struct oxr_swapchain *scs[2];
+	struct xrt_pose *pose_ptr[2];
+	struct xrt_pose pose[2];
 
 	enum xrt_layer_composition_flags flags =
 	    convert_layer_flags(proj->layerFlags);
@@ -819,13 +839,26 @@ submit_projection_layer(struct xrt_compositor *xc,
 	for (uint32_t i = 0; i < num_chains; i++) {
 		scs[i] = XRT_CAST_OXR_HANDLE_TO_PTR(
 		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
+		pose_ptr[i] = (struct xrt_pose *)&proj->views[i].pose;
+		pose[i] = *pose_ptr[i];
 	}
 
-	struct xrt_pose pose[2];
-	math_pose_transform(inv_offset, (struct xrt_pose *)&proj->views[0].pose,
-	                    &pose[0]);
-	math_pose_transform(inv_offset, (struct xrt_pose *)&proj->views[1].pose,
-	                    &pose[1]);
+	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
+		// The space might have a pose, transform that in as well.
+		math_pose_transform(&spc->pose, &pose[0], &pose[0]);
+		math_pose_transform(&spc->pose, &pose[1], &pose[1]);
+	} else {
+		//! @todo Handle action spaces.
+
+		// The space might have a pose, transform that in as well.
+		math_pose_transform(&spc->pose, &pose[0], &pose[0]);
+		math_pose_transform(&spc->pose, &pose[1], &pose[1]);
+
+		// Remove the tracking system origin offset.
+		math_pose_transform(inv_offset, &pose[0], &pose[0]);
+		math_pose_transform(inv_offset, &pose[1], &pose[1]);
+	}
 
 	struct xrt_rect *l_rect =
 	    (struct xrt_rect *)&proj->views[0].subImage.imageRect;
