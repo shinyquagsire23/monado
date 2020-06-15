@@ -748,6 +748,7 @@ xrt_compositor_gl(struct xrt_compositor *xc)
  *
  */
 
+typedef struct VkCommandBuffer_T *VkCommandBuffer;
 #ifdef XRT_64_BIT
 typedef struct VkImage_T *VkImage;
 typedef struct VkDeviceMemory_T *VkDeviceMemory;
@@ -769,6 +770,10 @@ struct xrt_swapchain_vk
 
 	VkImage images[XRT_MAX_SWAPCHAIN_IMAGES];
 	VkDeviceMemory mems[XRT_MAX_SWAPCHAIN_IMAGES];
+
+	// Prerecorded swapchain image ownership/layout transition barriers
+	VkCommandBuffer acquire[XRT_MAX_SWAPCHAIN_IMAGES];
+	VkCommandBuffer release[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
 /*!
