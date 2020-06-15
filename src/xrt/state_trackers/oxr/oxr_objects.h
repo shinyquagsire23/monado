@@ -105,10 +105,10 @@ struct oxr_action;
 struct oxr_debug_messenger;
 struct oxr_handle_base;
 struct oxr_sub_paths;
-struct oxr_source;
-struct oxr_source_set;
-struct oxr_source_input;
-struct oxr_source_output;
+struct oxr_action_attachment;
+struct oxr_action_set_attachment;
+struct oxr_action_input;
+struct oxr_action_output;
 struct oxr_binding;
 struct oxr_interaction_profile;
 
@@ -363,9 +363,17 @@ oxr_action_to_openxr(struct oxr_action *act)
 /*!
  * Helper function to classify sub_paths.
  *
+ * Sets all members of @p sub_paths ( @ref oxr_sub_paths ) as appropriate based
+ * on the subaction paths found in the list.
+ *
+ * If no paths are provided, @p sub_paths->any will be true.
+ *
+ * @return false if an invalid subaction path is provided.
+ *
  * @public @memberof oxr_instance
+ * @relatesalso oxr_sub_paths
  */
-void
+bool
 oxr_classify_sub_action_paths(struct oxr_logger *log,
                               struct oxr_instance *inst,
                               uint32_t num_subaction_paths,
@@ -382,7 +390,7 @@ oxr_source_get_pose_input(struct oxr_logger *log,
                           struct oxr_session *sess,
                           uint32_t key,
                           const struct oxr_sub_paths *sub_paths,
-                          struct oxr_source_input **out_input);
+                          struct oxr_action_input **out_input);
 /*!
  * @public @memberof oxr_instance
  */
@@ -1177,7 +1185,7 @@ struct oxr_session
 	struct u_hashmap_int *sources;
 
 	//! List of created source sets.
-	struct oxr_source_set *src_set_list;
+	struct oxr_action_set_attachment *src_set_list;
 
 	//! Has xrAttachSessionActionSets been called?
 	bool actionsAttached;
@@ -1273,7 +1281,10 @@ struct oxr_binding
 };
 
 /*!
- * To carry around a sementic selection of sub action paths.
+ * A parsed equivalent of a list of sub-action paths.
+ *
+ * If @p any is true, then no paths were provided, which typically means any
+ * input is acceptable.
  */
 struct oxr_sub_paths
 {
@@ -1287,12 +1298,13 @@ struct oxr_sub_paths
 };
 
 /*!
- * Session input source.
+ * The data associated with the attachment of an Action Set (@ref
+ * oxr_action_set) to as Session (@ref oxr_session).
  *
  * @see oxr_action_set
  * @extends oxr_handle_base
  */
-struct oxr_source_set
+struct oxr_action_set_attachment
 {
 	/*!
 	 * While this isn't an OpenXR handle type, we're using the handle base
@@ -1307,15 +1319,28 @@ struct oxr_source_set
 	struct oxr_sub_paths requested_sub_paths;
 
 	//! Next source set on this session.
-	struct oxr_source_set *next;
+	struct oxr_action_set_attachment *next;
 };
 
 /*!
- * The state of a action input source.
+ * De-initialize an action set attachment and its action attachments.
  *
- * @see oxr_source
+ * Frees the action attachments, but does not de-allocate the action set
+ * attachment.
+ *
+ * @public @memberof oxr_action_set_attachment
  */
-struct oxr_source_state
+void
+oxr_action_set_attachment_teardown(
+    struct oxr_action_set_attachment *act_set_attached);
+
+
+/*!
+ * The state of a action input.
+ *
+ * @see oxr_action_attachment
+ */
+struct oxr_action_state
 {
 	/*!
 	 * The actual value - must interpret using action type
@@ -1333,24 +1358,24 @@ struct oxr_source_state
 };
 
 /*!
- * A input source pair of a @ref xrt_input and a @ref xrt_device.
+ * A input action pair of a @ref xrt_input and a @ref xrt_device.
  *
  * @see xrt_device
  * @see xrt_input
  */
-struct oxr_source_input
+struct oxr_action_input
 {
 	struct xrt_device *xdev;
 	struct xrt_input *input;
 };
 
 /*!
- * A output source pair of a @ref xrt_output_name and a @ref xrt_device.
+ * A output action pair of a @ref xrt_output_name and a @ref xrt_device.
  *
  * @see xrt_device
  * @see xrt_output_name
  */
-struct oxr_source_output
+struct oxr_action_output
 {
 	struct xrt_device *xdev;
 	enum xrt_output_name name;
@@ -1359,29 +1384,32 @@ struct oxr_source_output
 /*!
  * A set of inputs for a single sub action path.
  *
- * @see oxr_source
+ * @see oxr_action_attachment
  */
 struct oxr_source_cache
 {
-	struct oxr_source_state current;
+	struct oxr_action_state current;
 
 	size_t num_inputs;
-	struct oxr_source_input *inputs;
+	struct oxr_action_input *inputs;
 
 	int64_t stop_output_time;
 	size_t num_outputs;
-	struct oxr_source_output *outputs;
+	struct oxr_action_output *outputs;
 
 	enum xrt_source_value_redirect redirect;
 };
 
 /*!
- * Session input source.
+ * Data associated with an Action that has been attached to a Session.
+ *
+ * More information on the action vs action attachment and action set vs action
+ * set attachment parallel is in the docs for @ref oxr_action_set_attachment.
  *
  * @see oxr_action
- * @extends oxr_handle_base
+ * @see oxr_action_set_attachment
  */
-struct oxr_source
+struct oxr_action_attachment
 {
 	/*!
 	 * While this isn't an OpenXR handle type, we're using the handle base
@@ -1392,7 +1420,7 @@ struct oxr_source
 	//! Type the action this source was created from is.
 	XrActionType action_type;
 
-	struct oxr_source_state any_state;
+	struct oxr_action_state any_state;
 
 	struct oxr_source_cache user;
 	struct oxr_source_cache head;

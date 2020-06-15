@@ -197,7 +197,7 @@ oxr_space_action_relation(struct oxr_logger *log,
                           XrTime at_time,
                           struct xrt_space_relation *out_relation)
 {
-	struct oxr_source_input *input = NULL;
+	struct oxr_action_input *input = NULL;
 	struct oxr_space *act_spc, *ref_spc = NULL;
 	uint64_t timestamp = 0;
 	bool invert = false;
