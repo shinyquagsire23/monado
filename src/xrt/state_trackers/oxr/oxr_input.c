@@ -69,24 +69,111 @@ oxr_source_bind_inputs(struct oxr_logger *log,
                        struct oxr_interaction_profile *profile,
                        enum oxr_sub_action_path sub_path);
 
-static XrResult
-oxr_action_attachment_destroy_cb(struct oxr_logger *log,
-                                 struct oxr_handle_base *hb);
+/*
+ *
+ * Action attachment functions
+ *
+ */
 
 /*!
- * Create an action attachment in the given action set attachment, for the
- * specified action.
+ * De-initialize/de-allocate all dynamic members of @ref oxr_source_cache
+ * @private @memberof oxr_source_cache
+ */
+static void
+oxr_source_cache_teardown(struct oxr_source_cache *cache)
+{
+	free(cache->inputs);
+	cache->inputs = NULL;
+	free(cache->outputs);
+	cache->outputs = NULL;
+}
+
+/*!
+ * Tear down an action attachment struct.
  *
- * @private @memberof oxr_action_set_attachment
+ * Does not deallocate the struct itself.
+ *
+ * @public @memberof oxr_action_attachment
+ */
+static void
+oxr_action_attachment_teardown(struct oxr_action_attachment *act_attached)
+{
+	struct oxr_session *sess = act_attached->sess;
+	u_hashmap_int_erase(sess->act_attachments_by_key, act_attached->key);
+	oxr_source_cache_teardown(&(act_attached->user));
+	oxr_source_cache_teardown(&(act_attached->head));
+	oxr_source_cache_teardown(&(act_attached->left));
+	oxr_source_cache_teardown(&(act_attached->right));
+	oxr_source_cache_teardown(&(act_attached->gamepad));
+}
+
+/*!
+ * Set up an action attachment struct.
+ *
+ * @public @memberof oxr_action_attachment
  */
 static XrResult
-oxr_action_attachment_create(struct oxr_logger *log,
-                             struct oxr_action_set_attachment *act_set_attached,
-                             struct oxr_action *act,
-                             struct oxr_interaction_profile *head,
-                             struct oxr_interaction_profile *left,
-                             struct oxr_interaction_profile *right,
-                             struct oxr_interaction_profile *gamepad);
+oxr_action_attachment_init(struct oxr_logger *log,
+                           struct oxr_action_set_attachment *act_set_attached,
+                           struct oxr_action_attachment *act_attached,
+                           struct oxr_action *act)
+{
+	struct oxr_session *sess = act_set_attached->sess;
+	act_attached->sess = sess;
+	act_attached->act_set_attached = act_set_attached;
+	u_hashmap_int_insert(sess->act_attachments_by_key, act->key,
+	                     act_attached);
+
+	// Need to copy these, since we may outlive the action handle.
+	act_attached->action_type = act->action_type;
+	act_attached->key = act->key;
+	return XR_SUCCESS;
+}
+
+
+/*
+ *
+ * Action set attachment functions
+ *
+ */
+
+/*!
+ * @public @memberof oxr_action_set_attachment
+ */
+static XrResult
+oxr_action_set_attachment_init(
+    struct oxr_logger *log,
+    struct oxr_session *sess,
+    struct oxr_action_set *act_set,
+    struct oxr_action_set_attachment *act_set_attached)
+{
+	act_set_attached->sess = sess;
+
+	u_hashmap_int_insert(sess->act_sets_attachments_by_key, act_set->key,
+	                     act_set_attached);
+
+	// Need to copy these, since we may outlive the action handle.
+	act_set_attached->key = act_set->key;
+
+	return XR_SUCCESS;
+}
+
+void
+oxr_action_set_attachment_teardown(
+    struct oxr_action_set_attachment *act_set_attached)
+{
+	for (size_t i = 0; i < act_set_attached->num_action_attachments; ++i) {
+		oxr_action_attachment_teardown(
+		    &(act_set_attached->act_attachments[i]));
+	}
+	free(act_set_attached->act_attachments);
+	act_set_attached->act_attachments = NULL;
+	act_set_attached->num_action_attachments = 0;
+
+	struct oxr_session *sess = act_set_attached->sess;
+	u_hashmap_int_erase(sess->act_sets_attachments_by_key,
+	                    act_set_attached->key);
+}
 
 
 /*
@@ -574,104 +661,22 @@ get_binding(struct oxr_logger *log,
 }
 
 
-/*
- *
- * Source set functions
- *
- */
-
-static XrResult
-oxr_action_set_attachment_destroy_cb(struct oxr_logger *log, struct oxr_handle_base *hb)
-{
-	//! @todo Move to oxr_objects.h
-	struct oxr_action_set_attachment *act_set_attached =
-	    (struct oxr_action_set_attachment *)hb;
-
-	free(act_set_attached);
-
-	return XR_SUCCESS;
-}
-
-static XrResult
-oxr_action_set_attachment_create(struct oxr_logger *log,
-                      struct oxr_session *sess,
-                      struct oxr_action_set *act_set,
-                      struct oxr_action_set_attachment **out_src_set)
-{
-	struct oxr_action_set_attachment *act_set_attached = NULL;
-	OXR_ALLOCATE_HANDLE_OR_RETURN(log, act_set_attached,
-	                              OXR_XR_DEBUG_SOURCESET,
-	                              oxr_action_set_attachment_destroy_cb, &sess->handle);
-
-	act_set_attached->sess = sess;
-	u_hashmap_int_insert(sess->act_sets, act_set->key, act_set_attached);
-
-	act_set_attached->next = sess->src_set_list;
-	sess->src_set_list = act_set_attached;
-
-	*out_src_set = act_set_attached;
-
-	return XR_SUCCESS;
-}
-
-
-/*
- *
- * Source functions
- *
- */
 
 /*!
- * De-initialize/de-allocate all dynamic members of @ref oxr_source_cache
- * @private @memberof oxr_source_cache
+ * @public @memberof oxr_action_attachment
  */
-static void
-oxr_source_cache_teardown(struct oxr_source_cache *cache)
-{
-	free(cache->inputs);
-	cache->inputs = NULL;
-	free(cache->outputs);
-	cache->outputs = NULL;
-}
-
 static XrResult
-oxr_action_attachment_destroy_cb(struct oxr_logger *log,
-                                 struct oxr_handle_base *hb)
+oxr_action_attachment_bind(struct oxr_logger *log,
+                           struct oxr_action_attachment *act_attached,
+                           struct oxr_action *act,
+                           struct oxr_interaction_profile *head,
+                           struct oxr_interaction_profile *left,
+                           struct oxr_interaction_profile *right,
+                           struct oxr_interaction_profile *gamepad)
 {
-	//! @todo Move to oxr_objects.h
-	struct oxr_action_attachment *act_attached =
-	    (struct oxr_action_attachment *)hb;
-	oxr_source_cache_teardown(&(act_attached->user));
-	oxr_source_cache_teardown(&(act_attached->head));
-	oxr_source_cache_teardown(&(act_attached->left));
-	oxr_source_cache_teardown(&(act_attached->right));
-	oxr_source_cache_teardown(&(act_attached->gamepad));
-	free(act_attached);
-
-	return XR_SUCCESS;
-}
-
-static XrResult
-oxr_action_attachment_create(struct oxr_logger *log,
-                             struct oxr_action_set_attachment *act_set_attached,
-                             struct oxr_action *act,
-                             struct oxr_interaction_profile *head,
-                             struct oxr_interaction_profile *left,
-                             struct oxr_interaction_profile *right,
-                             struct oxr_interaction_profile *gamepad)
-{
-	struct oxr_session *sess = act_set_attached->sess;
-	struct oxr_action_attachment *act_attached = NULL;
 	struct oxr_sink_logger slog = {0};
-	OXR_ALLOCATE_HANDLE_OR_RETURN(log, act_attached, OXR_XR_DEBUG_SOURCE,
-	                              oxr_action_attachment_destroy_cb,
-	                              &act_set_attached->handle);
 
-	u_hashmap_int_insert(act_set_attached->sess->sources, act->key,
-	                     act_attached);
-
-	// Need to copy this.
-	act_attached->action_type = act->action_type;
+	struct oxr_session *sess = act_attached->sess;
 
 	// Start logging into a single buffer.
 	oxr_slog(&slog, ": Binding %s/%s\n", act->act_set->name, act->name);
@@ -1034,7 +1039,8 @@ oxr_session_get_action_set_attachment(
 	*act_set =
 	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action_set *, actionSet);
 
-	int ret = u_hashmap_int_find(sess->act_sets, (*act_set)->key, &ptr);
+	int ret = u_hashmap_int_find(sess->act_sets_attachments_by_key,
+	                             (*act_set)->key, &ptr);
 	if (ret == 0) {
 		*act_set_attached = (struct oxr_action_set_attachment *)ptr;
 	}
@@ -1054,10 +1060,23 @@ oxr_session_get_action_attachment(
 {
 	void *ptr = NULL;
 
-	int ret = u_hashmap_int_find(sess->sources, act_key, &ptr);
+	int ret =
+	    u_hashmap_int_find(sess->act_attachments_by_key, act_key, &ptr);
 	if (ret == 0) {
 		*out_act_attached = (struct oxr_action_attachment *)ptr;
 	}
+}
+
+static inline size_t
+oxr_handle_base_get_num_children(struct oxr_handle_base *hb)
+{
+	size_t ret = 0;
+	for (uint32_t i = 0; i < XRT_MAX_HANDLE_CHILDREN; ++i) {
+		if (hb->children[i] != NULL) {
+			++ret;
+		}
+	}
+	return ret;
 }
 
 XrResult
@@ -1069,30 +1088,60 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 	struct oxr_interaction_profile *head = NULL;
 	struct oxr_interaction_profile *left = NULL;
 	struct oxr_interaction_profile *right = NULL;
-	struct oxr_action_set *act_set = NULL;
-	struct oxr_action_set_attachment *act_set_attached = NULL;
-	struct oxr_action *act = NULL;
 
 	oxr_find_profile_for_device(log, inst, sess->sys->head, &head);
 	oxr_find_profile_for_device(log, inst, sess->sys->left, &left);
 	oxr_find_profile_for_device(log, inst, sess->sys->right, &right);
+	//! @todo add other subaction paths here
 
-	// Has any of the bound action sets been updated.
+	// Before allocating, make sure nothing has been attached yet.
+
 	for (uint32_t i = 0; i < bindInfo->countActionSets; i++) {
-		act_set = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action_set *,
-		                                     bindInfo->actionSets[i]);
+		struct oxr_action_set *act_set = XRT_CAST_OXR_HANDLE_TO_PTR(
+		    struct oxr_action_set *, bindInfo->actionSets[i]);
+		if (act_set->attached) {
+			return XR_ERROR_ACTIONSETS_ALREADY_ATTACHED;
+		}
+	}
+
+	// Allocate room for list.
+	sess->num_action_set_attachments = bindInfo->countActionSets;
+	sess->act_set_attachments = U_TYPED_ARRAY_CALLOC(
+	    struct oxr_action_set_attachment, sess->num_action_set_attachments);
+
+	// Set up the per-session data for these action sets.
+	for (uint32_t i = 0; i < sess->num_action_set_attachments; i++) {
+		struct oxr_action_set *act_set = XRT_CAST_OXR_HANDLE_TO_PTR(
+		    struct oxr_action_set *, bindInfo->actionSets[i]);
 		act_set->attached = true;
+		struct oxr_action_set_attachment *act_set_attached =
+		    &sess->act_set_attachments[i];
+		oxr_action_set_attachment_init(log, sess, act_set,
+		                               act_set_attached);
 
-		oxr_action_set_attachment_create(log, sess, act_set, &act_set_attached);
+		// Allocate the action attachments for this set.
+		act_set_attached->num_action_attachments =
+		    oxr_handle_base_get_num_children(&act_set->handle);
+		act_set_attached->act_attachments = U_TYPED_ARRAY_CALLOC(
+		    struct oxr_action_attachment,
+		    act_set_attached->num_action_attachments);
 
+		// Set up the per-session data for the actions.
+		uint32_t child_index = 0;
 		for (uint32_t k = 0; k < XRT_MAX_HANDLE_CHILDREN; k++) {
-			act = (struct oxr_action *)act_set->handle.children[k];
+			struct oxr_action *act =
+			    (struct oxr_action *)act_set->handle.children[k];
 			if (act == NULL) {
 				continue;
 			}
 
-			oxr_action_attachment_create(log, act_set_attached, act,
-			                             head, left, right, NULL);
+			struct oxr_action_attachment *act_attached =
+			    &act_set_attached->act_attachments[child_index];
+			oxr_action_attachment_init(log, act_set_attached,
+			                           act_attached, act);
+			oxr_action_attachment_bind(log, act_attached, act, head,
+			                           left, right, NULL);
+			++child_index;
 		}
 	}
 
@@ -1141,16 +1190,14 @@ oxr_action_sync_data(struct oxr_logger *log,
 		oxr_xdev_update(sess->sys->xdevs[i]);
 	}
 
-	// Reset all requested source sets.
-	act_set_attached = sess->src_set_list;
-	while (act_set_attached != NULL) {
+	// Reset all action set attachments.
+	for (size_t i = 0; i < sess->num_action_set_attachments; ++i) {
+		act_set_attached = &sess->act_set_attachments[i];
 		U_ZERO(&act_set_attached->requested_sub_paths);
-
-		// Grab the next one.
-		act_set_attached = act_set_attached->next;
 	}
 
-	// Go over all action sets and update them.
+	// Go over all requested action sets and update their attachment.
+	//! @todo can be listed more than once with different paths!
 	for (uint32_t i = 0; i < countActionSets; i++) {
 		struct oxr_sub_paths sub_paths;
 		oxr_session_get_action_set_attachment(
@@ -1172,19 +1219,17 @@ oxr_action_sync_data(struct oxr_logger *log,
 		    sub_paths.gamepad;
 	}
 
-	// Reset all source sets.
-	act_set_attached = sess->src_set_list;
-	while (act_set_attached != NULL) {
+	// Now, update all action attachments
+	for (size_t i = 0; i < sess->num_action_set_attachments; ++i) {
+		act_set_attached = &sess->act_set_attachments[i];
 		struct oxr_sub_paths sub_paths =
 		    act_set_attached->requested_sub_paths;
 
 
-		for (uint32_t k = 0; k < XRT_MAX_HANDLE_CHILDREN; k++) {
-			// This assumes that all children of a
-			// source set are actions.
+		for (uint32_t k = 0;
+		     k < act_set_attached->num_action_attachments; k++) {
 			struct oxr_action_attachment *act_attached =
-			    (struct oxr_action_attachment *)
-			        act_set_attached->handle.children[k];
+			    &act_set_attached->act_attachments[k];
 
 			if (act_attached == NULL) {
 				continue;
@@ -1193,9 +1238,6 @@ oxr_action_sync_data(struct oxr_logger *log,
 			oxr_action_attachment_update(log, sess, act_attached,
 			                             now, sub_paths);
 		}
-
-		// Grab the next one.
-		act_set_attached = act_set_attached->next;
 	}
 
 

@@ -1181,11 +1181,27 @@ struct oxr_session
 	bool frame_started;
 	bool exiting;
 
-	struct u_hashmap_int *act_sets;
-	struct u_hashmap_int *sources;
+	/*!
+	 * An array of action set attachments that this session owns.
+	 */
+	struct oxr_action_set_attachment *act_set_attachments;
+	/*!
+	 * Length of @ref oxr_session::act_set_attachments.
+	 */
+	size_t num_action_set_attachments;
 
-	//! List of created source sets.
-	struct oxr_action_set_attachment *src_set_list;
+	/*!
+	 * A map of action set key to action set attachments.
+	 */
+	struct u_hashmap_int *act_sets_attachments_by_key;
+
+	/*!
+	 * A map of action key to action attachment.
+	 *
+	 * The action attachments are actually owned by the action set
+	 * attachments, but we own the action set attachments, so this is OK.
+	 */
+	struct u_hashmap_int *act_attachments_by_key;
 
 	//! Has xrAttachSessionActionSets been called?
 	bool actionsAttached;
@@ -1301,25 +1317,46 @@ struct oxr_sub_paths
  * The data associated with the attachment of an Action Set (@ref
  * oxr_action_set) to as Session (@ref oxr_session).
  *
+ * Action sets are created as children of the Instance, but are primarily used
+ * with one or more Sessions. They may be used with multiple sessions at a time,
+ * so we can't just put the per-session information directly in the action set
+ * or action. Instead, we have the _attachment structures, which mirror the
+ * action sets and actions but are rooted under the Session:
+ *
+ * - For every action set attached to a session, that session owns a @ref
+ *   oxr_action_set_attachment.
+ * - For each action in those attached action sets, the action set attachment
+ *   owns an @ref oxr_action_attachment.
+ *
+ * We go from the public handle to the _attachment structure by using a `key`
+ * value and a hash map: specifically, we look up the oxr_action_set::key and
+ * oxr_action::key in the session.
+ *
+ * This structure has no pointer to the @ref oxr_action_set that created it
+ * because the application is allowed to destroy an action before the session,
+ * which should change nothing except not allow the application to access the
+ * corresponding data anymore.
+ *
  * @see oxr_action_set
- * @extends oxr_handle_base
  */
 struct oxr_action_set_attachment
 {
-	/*!
-	 * While this isn't an OpenXR handle type, we're using the handle base
-	 * here to easily handle ownership and destruction.
-	 */
-	struct oxr_handle_base handle;
-
 	//! Owning session.
 	struct oxr_session *sess;
+
+	//! Unique key for the session hashmap.
+	uint32_t key;
 
 	//! Which sub-action paths are requested on the latest sync.
 	struct oxr_sub_paths requested_sub_paths;
 
-	//! Next source set on this session.
-	struct oxr_action_set_attachment *next;
+	//! An array of action attachments we own.
+	struct oxr_action_attachment *act_attachments;
+
+	/*!
+	 * Length of @ref oxr_action_set_attachment::act_attachments.
+	 */
+	size_t num_action_attachments;
 };
 
 /*!
@@ -1411,11 +1448,19 @@ struct oxr_source_cache
  */
 struct oxr_action_attachment
 {
+	//! The owning action set attachment
+	struct oxr_action_set_attachment *act_set_attached;
+
 	/*!
-	 * While this isn't an OpenXR handle type, we're using the handle base
-	 * here to easily handle ownership and destruction.
+	 * The corresponding session.
+	 *
+	 * This will always be valid: the session outlives this object because
+	 * it owns act_set_attached.
 	 */
-	struct oxr_handle_base handle;
+	struct oxr_session *sess;
+
+	//! Unique key for the session hashmap.
+	uint32_t key;
 
 	//! Type the action this source was created from is.
 	XrActionType action_type;
@@ -1546,8 +1591,9 @@ struct oxr_swapchain
  *
  * Parent type/handle is @ref oxr_instance
  *
- * Note, however, that an action set must be "attached" to a session (@ref
- * oxr_session) to be used and not just configured.
+ * Note, however, that an action set must be "attached" to a session
+ * ( @ref oxr_session ) to be used and not just configured.
+ * The corresponding data is in @ref oxr_action_set_attachment.
  *
  * @obj{XrActionSet}
  * @extends oxr_handle_base
@@ -1586,6 +1632,9 @@ struct oxr_action_set
  * A single action.
  *
  * Parent type/handle is @ref oxr_action_set
+ *
+ * For actual usage, an action is attached to a session: the corresponding data
+ * is in @ref oxr_action_attachment
  *
  * @obj{XrAction}
  * @extends oxr_handle_base

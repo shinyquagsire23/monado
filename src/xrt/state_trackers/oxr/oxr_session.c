@@ -1027,9 +1027,20 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 
 	// Does a null-ptr check.
 	xrt_comp_destroy(&sess->compositor);
+	for (size_t i = 0; i < sess->num_action_set_attachments; ++i) {
+		oxr_action_set_attachment_teardown(
+		    &sess->act_set_attachments[i]);
+	}
+	free(sess->act_set_attachments);
+	sess->act_set_attachments = NULL;
+	sess->num_action_set_attachments = 0;
 
-	u_hashmap_int_destroy(&sess->act_sets);
-	u_hashmap_int_destroy(&sess->sources);
+	// If we tore everything down correctly, these are empty now.
+	assert(u_hashmap_int_empty(sess->act_sets_attachments_by_key));
+	assert(u_hashmap_int_empty(sess->act_attachments_by_key));
+
+	u_hashmap_int_destroy(&sess->act_sets_attachments_by_key);
+	u_hashmap_int_destroy(&sess->act_attachments_by_key);
 
 	free(sess);
 
@@ -1151,8 +1162,8 @@ oxr_session_create(struct oxr_logger *log,
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
 
-	u_hashmap_int_create(&sess->act_sets);
-	u_hashmap_int_create(&sess->sources);
+	u_hashmap_int_create(&sess->act_sets_attachments_by_key);
+	u_hashmap_int_create(&sess->act_attachments_by_key);
 
 	*out_session = sess;
 
