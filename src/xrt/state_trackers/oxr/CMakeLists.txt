@@ -42,6 +42,8 @@ set(OXR_SOURCE_FILES
 	oxr_extension_support.h
 	oxr_handle_base.c
 	oxr_input.c
+	oxr_input_transform.c
+	oxr_input_transform.h
 	oxr_instance.c
 	oxr_logger.c
 	oxr_logger.h
@@ -85,6 +87,8 @@ target_link_libraries(st_oxr PRIVATE
 	Vulkan::Vulkan
 	comp_client
 	)
-target_include_directories(st_oxr PRIVATE
+target_include_directories(st_oxr
+	PRIVATE
 	${CMAKE_CURRENT_BINARY_DIR}
-	)
+	INTERFACE
+	${CMAKE_CURRENT_SOURCE_DIR}/..)

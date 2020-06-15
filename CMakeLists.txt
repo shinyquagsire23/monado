@@ -68,6 +68,9 @@ else()
 	find_package(OpenGL)
 endif()
 
+# This one is named differently because that's what CTest uses
+option(BUILD_TESTING "Enable building of the test suite?" ON)
+
 cmake_dependent_option(CMAKE_INTERPROCEDURAL_OPTIMIZATION "Enable inter-procedural (link-time) optimization" OFF "HAS_IPO" OFF)
 cmake_dependent_option(XRT_HAVE_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND AND WAYLAND_SCANNER_FOUND AND WAYLAND_PROTOCOLS_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_XLIB "Enable xlib support" ON "X11_FOUND" OFF)
@@ -168,3 +171,8 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(doc)
+
+if(BUILD_TESTING)
+    include(CTest)
+    add_subdirectory(tests)
+endif()

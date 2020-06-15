@@ -1400,7 +1400,8 @@ struct oxr_action_state
 };
 
 /*!
- * A input action pair of a @ref xrt_input and a @ref xrt_device.
+ * A input action pair of a @ref xrt_input and a @ref xrt_device, along with the
+ * required transform.
  *
  * @see xrt_device
  * @see xrt_input
@@ -1409,6 +1410,8 @@ struct oxr_action_input
 {
 	struct xrt_device *xdev;
 	struct xrt_input *input;
+	struct oxr_input_transform *transforms;
+	size_t num_transforms;
 };
 
 /*!
@@ -1424,7 +1427,10 @@ struct oxr_action_output
 };
 
 /*!
- * A set of inputs for a single sub action path.
+ * The set of inputs/outputs for a single sub-action path for an action.
+ *
+ * Each @ref oxr_action_attachment has one of these for every known sub-action
+ * path in the spec. Many, or even most, will be "empty".
  *
  * @see oxr_action_attachment
  */
@@ -1438,8 +1444,6 @@ struct oxr_action_cache
 	int64_t stop_output_time;
 	size_t num_outputs;
 	struct oxr_action_output *outputs;
-
-	enum xrt_source_value_redirect redirect;
 };
 
 /*!

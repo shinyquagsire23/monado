@@ -143,6 +143,7 @@ format-and-spellcheck:
     # List build options
     - grep "^XRT_" CMakeCache.txt
     - ninja
+    - ctest --output-on-failure
 
 # "Base" job for a Meson build
 .monado.base-job.build-meson:

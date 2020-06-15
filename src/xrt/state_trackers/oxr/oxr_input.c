@@ -16,6 +16,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_handle.h"
+#include "oxr_input_transform.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -50,9 +51,6 @@ oxr_action_cache_update(struct oxr_logger *log,
                         int64_t time,
                         bool select);
 
-/*!
- * @private @memberof oxr_action_attachment
- */
 static void
 oxr_action_attachment_update(struct oxr_logger *log,
                              struct oxr_session *sess,
@@ -82,6 +80,12 @@ oxr_action_bind_inputs(struct oxr_logger *log,
 static void
 oxr_action_cache_teardown(struct oxr_action_cache *cache)
 {
+	// Clean up input transforms
+	for (uint32_t i = 0; i < cache->num_inputs; i++) {
+		struct oxr_action_input *action_input = &cache->inputs[i];
+		oxr_input_transform_destroy(&(action_input->transforms));
+		action_input->num_transforms = 0;
+	}
 	free(cache->inputs);
 	cache->inputs = NULL;
 	free(cache->outputs);
@@ -547,54 +551,6 @@ do_io_bindings(struct oxr_binding *b,
 	return found;
 }
 
-static bool
-ends_with(const char *str, const char *suffix)
-{
-	int len = strlen(str);
-	int suffix_len = strlen(suffix);
-
-	return (len >= suffix_len) &&
-	       (0 == strcmp(str + (len - suffix_len), suffix));
-}
-
-static void
-oxr_action_cache_determine_redirect(struct oxr_logger *log,
-                                    struct oxr_session *sess,
-                                    struct oxr_action *act,
-                                    struct oxr_action_cache *cache,
-                                    XrPath bound_path)
-{
-
-	cache->redirect = INPUT_REDIRECT_DEFAULT;
-
-	struct oxr_action_input *input = &cache->inputs[0];
-	if (input == NULL)
-		return;
-
-	const char *str;
-	size_t length;
-	oxr_path_get_string(log, sess->sys->inst, bound_path, &str, &length);
-
-	enum xrt_input_type t = XRT_GET_INPUT_TYPE(input->input->name);
-
-	// trackpad/thumbstick data is kept in vec2f values.
-	// When a float action binds to ../trackpad/x or ../thumbstick/y, store
-	// the information which vec2f component to read.
-	if (act->data->action_type == XR_ACTION_TYPE_FLOAT_INPUT &&
-	    t == XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE) {
-		if (ends_with(str, "/x")) {
-			cache->redirect = INPUT_REDIRECT_VEC2_X_TO_VEC1;
-		} else if (ends_with(str, "/y")) {
-			cache->redirect = INPUT_REDIRECT_VEC2_Y_TO_VEC1;
-		} else {
-			oxr_log(log,
-			        "No rule to get float from vec2f for action "
-			        "%s, binding %s\n",
-			        act->data->name, str);
-		}
-	}
-}
-
 static XrPath
 get_matched_xrpath(struct oxr_binding *b, struct oxr_action *act)
 {
@@ -732,7 +688,8 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 
 	if (act_ref->sub_paths.user || act_ref->sub_paths.any) {
 #if 0
-		oxr_action_bind_inputs(log, slog, sess, act, &act_attached->user, user,
+		oxr_action_bind_inputs(log, &slog, sess, act,
+		                       &act_attached->user, user,
 		                       OXR_SUB_ACTION_PATH_USER);
 #endif
 	}
@@ -791,6 +748,11 @@ oxr_action_cache_stop_output(struct oxr_logger *log,
 	}
 }
 
+/*!
+ * Called during xrSyncActions.
+ *
+ * @private @memberof oxr_action_cache
+ */
 static void
 oxr_action_cache_update(struct oxr_logger *log,
                         struct oxr_session *sess,
@@ -832,34 +794,50 @@ oxr_action_cache_update(struct oxr_logger *log,
 		cache->current.active = true;
 
 		/*!
-		 * @todo Combine multiple sources for a single subaction path
-		 * and convert type as required.
+		 * @todo Combine multiple sources for a single subaction path.
 		 */
-
-		struct xrt_input *input = cache->inputs[0].input;
+		struct oxr_action_input *action_input = &(cache->inputs[0]);
+		struct xrt_input *input = action_input->input;
+		struct oxr_input_value_tagged raw_input = {
+		    .type = XRT_GET_INPUT_TYPE(input->name),
+		    .value = input->value,
+		};
+		struct oxr_input_value_tagged transformed = {0};
+		if (!oxr_input_transform_process(action_input->transforms,
+		                                 action_input->num_transforms,
+		                                 &raw_input, &transformed)) {
+			// We couldn't transform, how strange. Reset all state.
+			// At this level we don't know what action this is, etc.
+			// so a warning message isn't very helpful.
+			U_ZERO(&cache->current);
+			return;
+		}
 		int64_t timestamp = input->timestamp;
 		bool changed = false;
-		switch (XRT_GET_INPUT_TYPE(input->name)) {
+		switch (transformed.type) {
 		case XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE:
 		case XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE: {
-			changed = (input->value.vec1.x != last.value.vec1.x);
-			cache->current.value = input->value;
+			changed =
+			    (transformed.value.vec1.x != last.value.vec1.x);
+			cache->current.value.vec1.x = transformed.value.vec1.x;
 			break;
 		}
 		case XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE: {
-			changed = (input->value.vec2.x != last.value.vec2.x) ||
-			          (input->value.vec2.y != last.value.vec2.y);
-			cache->current.value = input->value;
+			changed =
+			    (transformed.value.vec2.x != last.value.vec2.x) ||
+			    (transformed.value.vec2.y != last.value.vec2.y);
+			cache->current.value.vec2.x = transformed.value.vec2.x;
+			cache->current.value.vec2.y = transformed.value.vec2.y;
 			break;
 		}
 #if 0
 		case XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE: {
-			changed = (input->value.vec3.x != last.value.vec3.x) ||
-			          (input->value.vec3.y != last.value.vec3.y) ||
-			          (input->value.vec3.z != last.value.vec3.z);
-			cache->current.value.vec3.x = input->value.vec3.x;
-			cache->current.value.vec3.y = input->value.vec3.y;
-			cache->current.value.vec3.z = input->value.vec3.z;
+			changed = (transformed.value.vec3.x != last.vec3.x) ||
+			          (transformed.value.vec3.y != last.vec3.y) ||
+			          (transformed.value.vec3.z != last.vec3.z);
+			cache->current.vec3.x = transformed.value.vec3.x;
+			cache->current.vec3.y = transformed.value.vec3.y;
+			cache->current.vec3.z = transformed.value.vec3.z;
 			break;
 		}
 #endif
@@ -915,6 +893,11 @@ oxr_action_cache_update(struct oxr_logger *log,
 		}                                                              \
 	}
 
+/*!
+ * Called during each xrSyncActions.
+ *
+ * @private @memberof oxr_action_attachment
+ */
 static void
 oxr_action_attachment_update(struct oxr_logger *log,
                              struct oxr_session *sess,
@@ -1019,6 +1002,35 @@ oxr_action_attachment_update(struct oxr_logger *log,
 		act_attached->any_state.active = true;
 	}
 }
+/*!
+ * Try to produce a transform chain to convert the available input into the
+ * desired input type.
+ *
+ * Populates @p action_input->transforms and @p action_input->num_transforms on
+ * success.
+ *
+ * @returns false if it could not, true if it could
+ */
+static bool
+oxr_action_populate_input_transform(struct oxr_logger *log,
+                                    struct oxr_sink_logger *slog,
+                                    struct oxr_session *sess,
+                                    struct oxr_action *act,
+                                    struct oxr_action_input *action_input,
+                                    XrPath bound_path)
+{
+	assert(action_input->transforms == NULL);
+	assert(action_input->num_transforms == 0);
+	const char *str;
+	size_t length;
+	oxr_path_get_string(log, sess->sys->inst, bound_path, &str, &length);
+
+	enum xrt_input_type t = XRT_GET_INPUT_TYPE(action_input->input->name);
+
+	return oxr_input_transform_create_chain(
+	    log, slog, t, act->data->action_type, act->data->name, str,
+	    &action_input->transforms, &action_input->num_transforms);
+}
 
 static void
 oxr_action_bind_inputs(struct oxr_logger *log,
@@ -1034,7 +1046,7 @@ oxr_action_bind_inputs(struct oxr_logger *log,
 	struct oxr_action_output outputs[16] = {0};
 	uint32_t num_outputs = 0;
 
-	//! @todo Should this be asserted to be none-null?
+	//! @todo Should this be asserted to be non-null?
 	XrPath bound_path = XR_NULL_PATH;
 	get_binding(log, slog, sess, act, profile, sub_path, inputs,
 	            &num_inputs, outputs, &num_outputs, &bound_path);
@@ -1046,6 +1058,19 @@ oxr_action_bind_inputs(struct oxr_logger *log,
 		cache->inputs =
 		    U_TYPED_ARRAY_CALLOC(struct oxr_action_input, num_inputs);
 		for (uint32_t i = 0; i < num_inputs; i++) {
+			if (!oxr_action_populate_input_transform(
+			        log, slog, sess, act, &(inputs[i]),
+			        bound_path)) {
+				/*!
+				 * @todo de-populate this element if we couldn't
+				 * get a transform?
+				 */
+				oxr_slog(
+				    slog,
+				    "Could not populate a transform for %s "
+				    "despite it being bound!\n",
+				    act->data->name);
+			}
 			cache->inputs[i] = inputs[i];
 		}
 		cache->num_inputs = num_inputs;
@@ -1060,8 +1085,6 @@ oxr_action_bind_inputs(struct oxr_logger *log,
 		}
 		cache->num_outputs = num_outputs;
 	}
-
-	oxr_action_cache_determine_redirect(log, sess, act, cache, bound_path);
 }
 
 
@@ -1303,40 +1326,29 @@ oxr_action_sync_data(struct oxr_logger *log,
 
 static void
 get_state_from_state_bool(struct oxr_action_state *state,
-                          XrActionStateBoolean *data,
-                          enum xrt_source_value_redirect redirect)
+                          XrActionStateBoolean *data)
 {
 	data->currentState = state->value.boolean;
 	data->lastChangeTime = state->timestamp;
 	data->changedSinceLastSync = state->changed;
-	data->isActive = XR_TRUE;
+	data->isActive = state->active;
+	//! @todo
+	// data->isActive = XR_TRUE;
 }
 
 static void
 get_state_from_state_vec1(struct oxr_action_state *state,
-                          XrActionStateFloat *data,
-                          enum xrt_source_value_redirect redirect)
+                          XrActionStateFloat *data)
 {
-	switch (redirect) {
-	case INPUT_REDIRECT_VEC2_X_TO_VEC1:
-		data->currentState = state->value.vec2.x;
-		break;
-	case INPUT_REDIRECT_VEC2_Y_TO_VEC1:
-		data->currentState = state->value.vec2.y;
-		break;
-	case INPUT_REDIRECT_DEFAULT:
-	default: data->currentState = state->value.vec1.x; break;
-	}
-
+	data->currentState = state->value.vec1.x;
 	data->lastChangeTime = state->timestamp;
 	data->changedSinceLastSync = state->changed;
-	data->isActive = XR_TRUE;
+	data->isActive = state->active;
 }
 
 static void
 get_state_from_state_vec2(struct oxr_action_state *state,
-                          XrActionStateVector2f *data,
-                          enum xrt_source_value_redirect redirect)
+                          XrActionStateVector2f *data)
 {
 	data->currentState.x = state->value.vec2.x;
 	data->currentState.y = state->value.vec2.y;
@@ -1347,30 +1359,27 @@ get_state_from_state_vec2(struct oxr_action_state *state,
 
 #define OXR_ACTION_GET_FILLER(TYPE)                                            \
 	if (sub_paths.any && act_attached->any_state.active) {                 \
-		get_state_from_state_##TYPE(&act_attached->any_state, data,    \
-		                            INPUT_REDIRECT_DEFAULT);           \
+		get_state_from_state_##TYPE(&act_attached->any_state, data);   \
 	}                                                                      \
 	if (sub_paths.user && act_attached->user.current.active) {             \
-		get_state_from_state_##TYPE(&act_attached->user.current, data, \
-		                            act_attached->user.redirect);      \
+		get_state_from_state_##TYPE(&act_attached->user.current,       \
+		                            data);                             \
 	}                                                                      \
 	if (sub_paths.head && act_attached->head.current.active) {             \
-		get_state_from_state_##TYPE(&act_attached->head.current, data, \
-		                            act_attached->head.redirect);      \
+		get_state_from_state_##TYPE(&act_attached->head.current,       \
+		                            data);                             \
 	}                                                                      \
 	if (sub_paths.left && act_attached->left.current.active) {             \
-		get_state_from_state_##TYPE(&act_attached->left.current, data, \
-		                            act_attached->left.redirect);      \
+		get_state_from_state_##TYPE(&act_attached->left.current,       \
+		                            data);                             \
 	}                                                                      \
 	if (sub_paths.right && act_attached->right.current.active) {           \
 		get_state_from_state_##TYPE(&act_attached->right.current,      \
-		                            data,                              \
-		                            act_attached->right.redirect);     \
+		                            data);                             \
 	}                                                                      \
 	if (sub_paths.gamepad && act_attached->gamepad.current.active) {       \
 		get_state_from_state_##TYPE(&act_attached->gamepad.current,    \
-		                            data,                              \
-		                            act_attached->gamepad.redirect);   \
+		                            data);                             \
 	}
 
 

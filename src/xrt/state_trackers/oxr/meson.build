@@ -55,6 +55,8 @@ lib_st_oxr = static_library(
 		'oxr_extension_support.h',
 		'oxr_handle_base.c',
 		'oxr_input.c',
+		'oxr_input_transform.c',
+		'oxr_input_transform.h',
 		'oxr_instance.c',
 		'oxr_logger.c',
 		'oxr_logger.h',
