@@ -115,6 +115,28 @@ ipc_server_wait_add_frame(struct ipc_wait *iw,
 }
 
 void
+ipc_server_wait_reset_client(struct ipc_wait *iw,
+                             volatile struct ipc_client_state *cs)
+{
+	os_thread_helper_lock(&iw->oth);
+
+	/* ipc_server_wait_add_frame would overwrite dangling references,
+	 * but clean them up anyway to be less confusing. */
+	for (int i = 0; i < IPC_MAX_CLIENTS; i++) {
+		if (iw->cs[i] == cs) {
+			iw->cs[i] = NULL;
+		}
+	}
+
+	volatile struct ipc_shared_memory *ism = iw->s->ism;
+	sem_init((sem_t *)&ism->wait_frame.sem, true, 0);
+	ism->wait_frame.predicted_display_period = 0;
+	ism->wait_frame.predicted_display_time = 0;
+
+	os_thread_helper_unlock(&iw->oth);
+}
+
+void
 ipc_server_wait_free(struct ipc_wait **out_iw)
 {
 	struct ipc_wait *iw = *out_iw;

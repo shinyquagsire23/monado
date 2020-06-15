@@ -212,6 +212,15 @@ void
 ipc_server_wait_add_frame(struct ipc_wait *iw,
                           volatile struct ipc_client_state *cs);
 
+/*!
+ * Reset the wait state for wait frame, after the client disconnected
+ *
+ * @ingroup ipc_server
+ * @public @memberof ipc_wait
+ */
+void
+ipc_server_wait_reset_client(struct ipc_wait *iw,
+                             volatile struct ipc_client_state *cs);
 
 #ifdef __cplusplus
 }

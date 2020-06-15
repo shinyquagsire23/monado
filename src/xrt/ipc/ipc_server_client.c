@@ -454,6 +454,8 @@ client_loop(volatile struct ipc_client_state *cs)
 	if (cs->server->exit_on_disconnect) {
 		cs->server->running = false;
 	}
+
+	ipc_server_wait_reset_client(cs->server->iw, cs);
 }
 
 
