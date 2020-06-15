@@ -266,6 +266,8 @@ oxr_classify_sub_action_paths(struct oxr_logger *log,
 			sub_paths->right = true;
 		} else if (path == inst->path_cache.gamepad) {
 			sub_paths->gamepad = true;
+		} else if (path == inst->path_cache.treadmill) {
+			sub_paths->treadmill = true;
 		} else {
 			oxr_path_get_string(log, inst, path, &str, &length);
 

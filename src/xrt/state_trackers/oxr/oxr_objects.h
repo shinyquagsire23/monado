@@ -1123,6 +1123,7 @@ struct oxr_instance
 		XrPath left;
 		XrPath right;
 		XrPath gamepad;
+		XrPath treadmill;
 
 		XrPath khr_simple_controller;
 		XrPath google_daydream_controller;
@@ -1282,6 +1283,7 @@ struct oxr_sub_paths
 	bool left;
 	bool right;
 	bool gamepad;
+	bool treadmill;
 };
 
 /*!

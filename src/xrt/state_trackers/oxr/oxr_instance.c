@@ -154,6 +154,7 @@ oxr_instance_create(struct oxr_logger *log,
 	cache_path(log, inst, "/user/hand/left", &inst->path_cache.left);
 	cache_path(log, inst, "/user/hand/right", &inst->path_cache.right);
 	cache_path(log, inst, "/user/gamepad", &inst->path_cache.gamepad);
+	cache_path(log, inst, "/user/treadmill", &inst->path_cache.treadmill);
 	cache_path(log, inst, "/interaction_profiles/khr/simple_controller", &inst->path_cache.khr_simple_controller);
 	cache_path(log, inst, "/interaction_profiles/google/daydream_controller", &inst->path_cache.google_daydream_controller);
 	cache_path(log, inst, "/interaction_profiles/htc/vive_controller", &inst->path_cache.htc_vive_controller);
