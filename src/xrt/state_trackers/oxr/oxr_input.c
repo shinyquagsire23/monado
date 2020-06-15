@@ -598,22 +598,29 @@ oxr_source_set_create(struct oxr_logger *log,
  *
  */
 
+/*!
+ * De-initialize/de-allocate all dynamic members of @ref oxr_source_cache
+ * @private @memberof oxr_source_cache
+ */
+static void
+oxr_source_cache_teardown(struct oxr_source_cache *cache)
+{
+	free(cache->inputs);
+	cache->inputs = NULL;
+	free(cache->outputs);
+	cache->outputs = NULL;
+}
+
 static XrResult
 oxr_source_destroy_cb(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	//! @todo Move to oxr_objects.h
 	struct oxr_source *src = (struct oxr_source *)hb;
-
-	free(src->user.inputs);
-	free(src->user.outputs);
-	free(src->head.inputs);
-	free(src->head.outputs);
-	free(src->left.inputs);
-	free(src->left.outputs);
-	free(src->right.inputs);
-	free(src->right.outputs);
-	free(src->gamepad.inputs);
-	free(src->gamepad.outputs);
+	oxr_source_cache_teardown(&(src->user));
+	oxr_source_cache_teardown(&(src->head));
+	oxr_source_cache_teardown(&(src->left));
+	oxr_source_cache_teardown(&(src->right));
+	oxr_source_cache_teardown(&(src->gamepad));
 	free(src);
 
 	return XR_SUCCESS;
