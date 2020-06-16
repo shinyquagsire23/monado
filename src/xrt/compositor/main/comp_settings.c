@@ -33,7 +33,7 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	}
 
 	s->display = -1;
-	s->color_format = VK_FORMAT_B8G8R8A8_UNORM;
+	s->color_format = VK_FORMAT_B8G8R8A8_SRGB;
 	s->color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 	s->present_mode = VK_PRESENT_MODE_FIFO_KHR;
 	s->window_type = WINDOW_AUTO;

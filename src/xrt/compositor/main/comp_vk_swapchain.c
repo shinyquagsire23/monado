@@ -31,6 +31,7 @@
  * interested in should support one these.
  */
 static VkFormat preferred_color_formats[] = {
+    VK_FORMAT_R8G8B8A8_SRGB,
     VK_FORMAT_R8G8B8A8_UNORM,
     VK_FORMAT_B8G8R8A8_UNORM,
     VK_FORMAT_A8B8G8R8_UNORM_PACK32,
