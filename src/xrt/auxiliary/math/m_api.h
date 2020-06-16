@@ -167,6 +167,18 @@ void
 math_quat_normalize(struct xrt_quat *inout);
 
 /*!
+ * Normalizes a quaternion if it has accumulated float precision errors.
+ * Returns true if the quaternion was already normalized or was normalized after
+ * being found within a small float precision tolerance.
+ * Returns false if the quaternion was not at all normalized.
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+bool
+math_quat_ensure_normalized(struct xrt_quat *inout);
+
+/*!
  * Rotate a vector.
  *
  * @relates xrt_quat

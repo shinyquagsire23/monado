@@ -389,6 +389,13 @@ oxr_session_views(struct oxr_logger *log,
 		safe_copy.xrt = xdev->hmd->views[i].fov;
 		views[i].fov = safe_copy.oxr;
 
+		if (!math_quat_ensure_normalized(
+		        &((struct xrt_pose *)&views[i].pose)->orientation)) {
+			return oxr_error(
+			    log, XR_ERROR_RUNTIME_FAILURE,
+			    "Quaternion in xrLocateViews was invalid");
+		}
+
 		print_view_fov(sess, i, (struct xrt_fov *)&views[i].fov);
 		print_view_pose(sess, i, (struct xrt_pose *)&views[i].pose);
 	}

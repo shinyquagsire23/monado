@@ -183,6 +183,28 @@ math_quat_normalize(struct xrt_quat *inout)
 	map_quat(*inout).normalize();
 }
 
+extern "C" bool
+math_quat_ensure_normalized(struct xrt_quat *inout)
+{
+	assert(inout != NULL);
+
+	if (math_quat_validate(inout))
+		return true;
+
+	const float FLOAT_EPSILON = Eigen::NumTraits<float>::epsilon();
+	const float TOLERANCE = FLOAT_EPSILON * 5;
+
+	auto rot = copy(*inout);
+	auto norm = rot.norm();
+	if (norm > 1.0f + TOLERANCE || norm < 1.0f - TOLERANCE) {
+		return false;
+	}
+
+	map_quat(*inout).normalize();
+	return true;
+}
+
+
 extern "C" void
 math_quat_rotate(const struct xrt_quat *left,
                  const struct xrt_quat *right,
