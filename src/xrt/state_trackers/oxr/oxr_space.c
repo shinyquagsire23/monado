@@ -235,7 +235,7 @@ oxr_space_action_relation(struct oxr_logger *log,
 		return XR_SUCCESS;
 	}
 
-	oxr_source_get_pose_input(log, sess, act_spc->act_key,
+	oxr_action_get_pose_input(log, sess, act_spc->act_key,
 	                          &act_spc->sub_paths, &input);
 
 	// If the input isn't active.

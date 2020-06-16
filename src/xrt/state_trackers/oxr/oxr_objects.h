@@ -388,7 +388,7 @@ oxr_classify_sub_action_paths(struct oxr_logger *log,
  * @public @memberof oxr_session
  */
 XrResult
-oxr_source_get_pose_input(struct oxr_logger *log,
+oxr_action_get_pose_input(struct oxr_logger *log,
                           struct oxr_session *sess,
                           uint32_t key,
                           const struct oxr_sub_paths *sub_paths,
@@ -1428,7 +1428,7 @@ struct oxr_action_output
  *
  * @see oxr_action_attachment
  */
-struct oxr_source_cache
+struct oxr_action_cache
 {
 	struct oxr_action_state current;
 
@@ -1472,11 +1472,11 @@ struct oxr_action_attachment
 
 	struct oxr_action_state any_state;
 
-	struct oxr_source_cache user;
-	struct oxr_source_cache head;
-	struct oxr_source_cache left;
-	struct oxr_source_cache right;
-	struct oxr_source_cache gamepad;
+	struct oxr_action_cache user;
+	struct oxr_action_cache head;
+	struct oxr_action_cache left;
+	struct oxr_action_cache right;
+	struct oxr_action_cache gamepad;
 };
 
 /*!

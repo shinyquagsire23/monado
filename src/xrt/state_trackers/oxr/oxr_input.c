@@ -44,9 +44,9 @@ oxr_session_get_action_attachment(
     struct oxr_action_attachment **out_act_attached);
 
 static void
-oxr_source_cache_update(struct oxr_logger *log,
+oxr_action_cache_update(struct oxr_logger *log,
                         struct oxr_session *sess,
-                        struct oxr_source_cache *cache,
+                        struct oxr_action_cache *cache,
                         int64_t time,
                         bool select);
 
@@ -61,11 +61,11 @@ oxr_action_attachment_update(struct oxr_logger *log,
                              struct oxr_sub_paths sub_paths);
 
 static void
-oxr_source_bind_inputs(struct oxr_logger *log,
+oxr_action_bind_inputs(struct oxr_logger *log,
                        struct oxr_sink_logger *slog,
                        struct oxr_session *sess,
                        struct oxr_action *act,
-                       struct oxr_source_cache *cache,
+                       struct oxr_action_cache *cache,
                        struct oxr_interaction_profile *profile,
                        enum oxr_sub_action_path sub_path);
 
@@ -76,11 +76,11 @@ oxr_source_bind_inputs(struct oxr_logger *log,
  */
 
 /*!
- * De-initialize/de-allocate all dynamic members of @ref oxr_source_cache
- * @private @memberof oxr_source_cache
+ * De-initialize/de-allocate all dynamic members of @ref oxr_action_cache
+ * @private @memberof oxr_action_cache
  */
 static void
-oxr_source_cache_teardown(struct oxr_source_cache *cache)
+oxr_action_cache_teardown(struct oxr_action_cache *cache)
 {
 	free(cache->inputs);
 	cache->inputs = NULL;
@@ -101,11 +101,11 @@ oxr_action_attachment_teardown(struct oxr_action_attachment *act_attached)
 	struct oxr_session *sess = act_attached->sess;
 	u_hashmap_int_erase(sess->act_attachments_by_key,
 	                    act_attached->act_key);
-	oxr_source_cache_teardown(&(act_attached->user));
-	oxr_source_cache_teardown(&(act_attached->head));
-	oxr_source_cache_teardown(&(act_attached->left));
-	oxr_source_cache_teardown(&(act_attached->right));
-	oxr_source_cache_teardown(&(act_attached->gamepad));
+	oxr_action_cache_teardown(&(act_attached->user));
+	oxr_action_cache_teardown(&(act_attached->head));
+	oxr_action_cache_teardown(&(act_attached->left));
+	oxr_action_cache_teardown(&(act_attached->right));
+	oxr_action_cache_teardown(&(act_attached->gamepad));
 	// Unref this action's refcounted data
 	oxr_refcounted_unref(&act_attached->act_ref->base);
 }
@@ -430,7 +430,7 @@ oxr_classify_sub_action_paths(struct oxr_logger *log,
 }
 
 XrResult
-oxr_source_get_pose_input(struct oxr_logger *log,
+oxr_action_get_pose_input(struct oxr_logger *log,
                           struct oxr_session *sess,
                           uint32_t act_key,
                           const struct oxr_sub_paths *sub_paths,
@@ -558,10 +558,10 @@ ends_with(const char *str, const char *suffix)
 }
 
 static void
-oxr_source_cache_determine_redirect(struct oxr_logger *log,
+oxr_action_cache_determine_redirect(struct oxr_logger *log,
                                     struct oxr_session *sess,
                                     struct oxr_action *act,
-                                    struct oxr_source_cache *cache,
+                                    struct oxr_action_cache *cache,
                                     XrPath bound_path)
 {
 
@@ -732,31 +732,31 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 
 	if (act_ref->sub_paths.user || act_ref->sub_paths.any) {
 #if 0
-		oxr_source_bind_inputs(log, slog, sess, act, &act_attached->user, user,
+		oxr_action_bind_inputs(log, slog, sess, act, &act_attached->user, user,
 		                       OXR_SUB_ACTION_PATH_USER);
 #endif
 	}
 
 	if (act_ref->sub_paths.head || act_ref->sub_paths.any) {
-		oxr_source_bind_inputs(log, &slog, sess, act,
+		oxr_action_bind_inputs(log, &slog, sess, act,
 		                       &act_attached->head, head,
 		                       OXR_SUB_ACTION_PATH_HEAD);
 	}
 
 	if (act_ref->sub_paths.left || act_ref->sub_paths.any) {
-		oxr_source_bind_inputs(log, &slog, sess, act,
+		oxr_action_bind_inputs(log, &slog, sess, act,
 		                       &act_attached->left, left,
 		                       OXR_SUB_ACTION_PATH_LEFT);
 	}
 
 	if (act_ref->sub_paths.right || act_ref->sub_paths.any) {
-		oxr_source_bind_inputs(log, &slog, sess, act,
+		oxr_action_bind_inputs(log, &slog, sess, act,
 		                       &act_attached->right, right,
 		                       OXR_SUB_ACTION_PATH_RIGHT);
 	}
 
 	if (act_ref->sub_paths.gamepad || act_ref->sub_paths.any) {
-		oxr_source_bind_inputs(log, &slog, sess, act,
+		oxr_action_bind_inputs(log, &slog, sess, act,
 		                       &act_attached->gamepad, gamepad,
 		                       OXR_SUB_ACTION_PATH_GAMEPAD);
 	}
@@ -774,9 +774,9 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 }
 
 static void
-oxr_source_cache_stop_output(struct oxr_logger *log,
+oxr_action_cache_stop_output(struct oxr_logger *log,
                              struct oxr_session *sess,
-                             struct oxr_source_cache *cache)
+                             struct oxr_action_cache *cache)
 {
 	// Set this as stopped.
 	cache->stop_output_time = 0;
@@ -792,9 +792,9 @@ oxr_source_cache_stop_output(struct oxr_logger *log,
 }
 
 static void
-oxr_source_cache_update(struct oxr_logger *log,
+oxr_action_cache_update(struct oxr_logger *log,
                         struct oxr_session *sess,
-                        struct oxr_source_cache *cache,
+                        struct oxr_action_cache *cache,
                         int64_t time,
                         bool selected)
 {
@@ -802,7 +802,7 @@ oxr_source_cache_update(struct oxr_logger *log,
 
 	if (!selected) {
 		if (cache->stop_output_time > 0) {
-			oxr_source_cache_stop_output(log, sess, cache);
+			oxr_action_cache_stop_output(log, sess, cache);
 		}
 		U_ZERO(&cache->current);
 		return;
@@ -811,7 +811,7 @@ oxr_source_cache_update(struct oxr_logger *log,
 	if (cache->num_outputs > 0) {
 		cache->current.active = true;
 		if (cache->stop_output_time < time) {
-			oxr_source_cache_stop_output(log, sess, cache);
+			oxr_action_cache_stop_output(log, sess, cache);
 		}
 	}
 
@@ -936,10 +936,10 @@ oxr_action_attachment_update(struct oxr_logger *log,
 	bool select_gamepad = sub_paths.gamepad || sub_paths.any;
 
 	// clang-format off
-	oxr_source_cache_update(log, sess, &act_attached->head, time, select_head);
-	oxr_source_cache_update(log, sess, &act_attached->left, time, select_left);
-	oxr_source_cache_update(log, sess, &act_attached->right, time, select_right);
-	oxr_source_cache_update(log, sess, &act_attached->gamepad, time, select_gamepad);
+	oxr_action_cache_update(log, sess, &act_attached->head, time, select_head);
+	oxr_action_cache_update(log, sess, &act_attached->left, time, select_left);
+	oxr_action_cache_update(log, sess, &act_attached->right, time, select_right);
+	oxr_action_cache_update(log, sess, &act_attached->gamepad, time, select_gamepad);
 	// clang-format on
 
 	if (!select_any) {
@@ -1021,11 +1021,11 @@ oxr_action_attachment_update(struct oxr_logger *log,
 }
 
 static void
-oxr_source_bind_inputs(struct oxr_logger *log,
+oxr_action_bind_inputs(struct oxr_logger *log,
                        struct oxr_sink_logger *slog,
                        struct oxr_session *sess,
                        struct oxr_action *act,
-                       struct oxr_source_cache *cache,
+                       struct oxr_action_cache *cache,
                        struct oxr_interaction_profile *profile,
                        enum oxr_sub_action_path sub_path)
 {
@@ -1061,7 +1061,7 @@ oxr_source_bind_inputs(struct oxr_logger *log,
 		cache->num_outputs = num_outputs;
 	}
 
-	oxr_source_cache_determine_redirect(log, sess, act, cache, bound_path);
+	oxr_action_cache_determine_redirect(log, sess, act, cache, bound_path);
 }
 
 
@@ -1493,7 +1493,7 @@ oxr_action_get_pose(struct oxr_logger *log,
 
 static void
 set_action_output_vibration(struct oxr_session *sess,
-                            struct oxr_source_cache *cache,
+                            struct oxr_action_cache *cache,
                             int64_t stop,
                             const XrHapticVibration *data)
 {
@@ -1573,19 +1573,19 @@ oxr_action_stop_haptic_feedback(struct oxr_logger *log,
 
 	// clang-format off
 	if (act_attached->user.current.active && (sub_paths.user || sub_paths.any)) {
-		oxr_source_cache_stop_output(log, sess, &act_attached->user);
+		oxr_action_cache_stop_output(log, sess, &act_attached->user);
 	}
 	if (act_attached->head.current.active && (sub_paths.head || sub_paths.any)) {
-		oxr_source_cache_stop_output(log, sess, &act_attached->head);
+		oxr_action_cache_stop_output(log, sess, &act_attached->head);
 	}
 	if (act_attached->left.current.active && (sub_paths.left || sub_paths.any)) {
-		oxr_source_cache_stop_output(log, sess, &act_attached->left);
+		oxr_action_cache_stop_output(log, sess, &act_attached->left);
 	}
 	if (act_attached->right.current.active && (sub_paths.right || sub_paths.any)) {
-		oxr_source_cache_stop_output(log, sess, &act_attached->right);
+		oxr_action_cache_stop_output(log, sess, &act_attached->right);
 	}
 	if (act_attached->gamepad.current.active && (sub_paths.gamepad || sub_paths.any)) {
-		oxr_source_cache_stop_output(log, sess, &act_attached->gamepad);
+		oxr_action_cache_stop_output(log, sess, &act_attached->gamepad);
 	}
 	// clang-format on
 
