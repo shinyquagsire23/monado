@@ -25,7 +25,8 @@ IndentCaseLabels: false
 NamespaceIndentation: Inner
 
 # Line length/reflow
-ColumnLimit:          80
+# Longer for tests because of high levels of indentation
+ColumnLimit:          120
 ReflowComments:       true
 
 

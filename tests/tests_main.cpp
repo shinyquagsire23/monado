@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief Translation unit to build Catch2 main.
+ * @brief  Translation unit to build Catch2 main.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  */
 
