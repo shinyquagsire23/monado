@@ -842,8 +842,10 @@ oxr_action_cache_update(struct oxr_logger *log,
 		}
 #endif
 		case XRT_INPUT_TYPE_BOOLEAN: {
-			changed = (input->value.boolean != last.value.boolean);
-			cache->current.value.boolean = input->value.boolean;
+			changed =
+			    (transformed.value.boolean != last.value.boolean);
+			cache->current.value.boolean =
+			    transformed.value.boolean;
 			break;
 		}
 		case XRT_INPUT_TYPE_POSE: return;
