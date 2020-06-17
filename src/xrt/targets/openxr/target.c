@@ -14,12 +14,14 @@
 
 // Forward declaration
 int
-ipc_instance_create(struct xrt_instance **out_xinst);
+ipc_instance_create(struct xrt_instance **out_xinst,
+                    struct xrt_instance_info *i_info);
 
 int
-xrt_instance_create(struct xrt_instance **out_xinst)
+xrt_instance_create(struct xrt_instance **out_xinst,
+                    struct xrt_instance_info *i_info)
 {
-	return ipc_instance_create(out_xinst);
+	return ipc_instance_create(out_xinst, i_info);
 }
 
 #else

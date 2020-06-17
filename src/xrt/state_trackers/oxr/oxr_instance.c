@@ -7,11 +7,6 @@
  * @ingroup oxr_main
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
-
 #include "util/u_var.h"
 #include "util/u_time.h"
 #include "util/u_misc.h"
@@ -23,6 +18,13 @@
 #include "oxr_logger.h"
 #include "oxr_handle.h"
 #include "oxr_extension_support.h"
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <math.h>
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(debug_views, "OXR_DEBUG_VIEWS", false)
@@ -167,7 +169,15 @@ oxr_instance_create(struct oxr_logger *log,
 	cache_path(log, inst, "/interaction_profiles/mnd/ball_on_stick_controller", &inst->path_cache.mnd_ball_on_stick_controller);
 	// clang-format on
 
-	xinst_ret = xrt_instance_create(&inst->xinst);
+	// fill in our application info - @todo - replicate all createInfo
+	// fields?
+
+	struct xrt_instance_info i_info = {0};
+	snprintf(i_info.application_name,
+	         sizeof(inst->xinst->instance_info.application_name), "%s",
+	         createInfo->applicationInfo.applicationName);
+
+	xinst_ret = xrt_instance_create(&inst->xinst, &i_info);
 	if (xinst_ret != 0) {
 		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                "Failed to create prober");

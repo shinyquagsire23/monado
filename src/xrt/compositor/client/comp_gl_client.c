@@ -93,6 +93,17 @@ client_gl_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
  */
 
 static xrt_result_t
+client_gl_compositor_prepare_session(struct xrt_compositor *xc,
+                                     struct xrt_session_prepare_info *xspi)
+{
+	struct client_gl_compositor *c = client_gl_compositor(xc);
+
+	// Pipe down call into fd compositor.
+	return xrt_comp_prepare_session(&c->xcfd->base, xspi);
+}
+
+
+static xrt_result_t
 client_gl_compositor_begin_session(struct xrt_compositor *xc,
                                    enum xrt_view_type type)
 {
@@ -316,6 +327,16 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	return &sc->base.base;
 }
 
+static xrt_result_t
+client_gl_compositor_poll_events(struct xrt_compositor *xc,
+                                 union xrt_compositor_event *out_xce)
+{
+	struct client_gl_compositor *c = client_gl_compositor(xc);
+
+	// Pipe down call into fd compositor.
+	return xrt_comp_poll_events(&c->xcfd->base, out_xce);
+}
+
 static void
 client_gl_compositor_destroy(struct xrt_compositor *xc)
 {
@@ -328,6 +349,7 @@ client_gl_compositor_init(struct client_gl_compositor *c,
                           client_gl_get_procaddr get_gl_procaddr)
 {
 	c->base.base.create_swapchain = client_gl_swapchain_create;
+	c->base.base.prepare_session = client_gl_compositor_prepare_session;
 	c->base.base.begin_session = client_gl_compositor_begin_session;
 	c->base.base.end_session = client_gl_compositor_end_session;
 	c->base.base.wait_frame = client_gl_compositor_wait_frame;
@@ -339,6 +361,7 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.layer_quad = client_gl_compositor_layer_quad;
 	c->base.base.layer_commit = client_gl_compositor_layer_commit;
 	c->base.base.destroy = client_gl_compositor_destroy;
+	c->base.base.poll_events = client_gl_compositor_poll_events;
 	c->xcfd = xcfd;
 
 	// Passthrough our formats from the fd compositor to the client.

@@ -158,6 +158,26 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 }
 
 XrResult
+oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(
+    struct oxr_logger *log, struct oxr_session *sess, bool visible)
+{
+	struct oxr_instance *inst = sess->sys->inst;
+	XrEventDataMainSessionVisibilityChangedEXTX *changed;
+	struct oxr_event *event = NULL;
+
+	ALLOC(log, inst, &event, &changed);
+	changed->type = XR_TYPE_EVENT_DATA_MAIN_SESSION_VISIBILITY_CHANGED_EXTX;
+	changed->flags = 0;
+	changed->visible = visible;
+	event->result = XR_SUCCESS;
+	lock(inst);
+	push(inst, event);
+	unlock(inst);
+
+	return XR_SUCCESS;
+}
+
+XrResult
 oxr_event_remove_session_events(struct oxr_logger *log,
                                 struct oxr_session *sess)
 {
@@ -202,7 +222,7 @@ oxr_poll_event(struct oxr_logger *log,
 {
 	struct oxr_session *sess = inst->sessions;
 	while (sess) {
-		oxr_session_poll(sess);
+		oxr_session_poll(log, sess);
 		sess = sess->next;
 	}
 

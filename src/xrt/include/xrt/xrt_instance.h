@@ -10,6 +10,8 @@
 #pragma once
 
 #include "xrt/xrt_compiler.h"
+#include "xrt/xrt_defines.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,10 +22,21 @@ struct xrt_prober;
 struct xrt_device;
 struct xrt_compositor_fd;
 
+
 /*!
  * @ingroup xrt_iface
  * @{
  */
+
+#define XRT_MAX_APPLICATION_NAME_SIZE 128
+
+/*!
+ * Information provided by the application at instance create time.
+ */
+struct xrt_instance_info
+{
+	char application_name[XRT_MAX_APPLICATION_NAME_SIZE];
+};
 
 /*!
  * @interface xrt_instance
@@ -131,6 +144,7 @@ struct xrt_instance
 	/*!
 	 * @}
 	 */
+	struct xrt_instance_info instance_info;
 };
 
 /*!
@@ -220,7 +234,8 @@ xrt_instance_destroy(struct xrt_instance **xinst_ptr)
  * @relates xrt_instance
  */
 int
-xrt_instance_create(struct xrt_instance **out_xinst);
+xrt_instance_create(struct xrt_instance **out_xinst,
+                    struct xrt_instance_info *ii);
 
 /*!
  * @}

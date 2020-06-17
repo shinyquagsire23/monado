@@ -38,6 +38,7 @@ add_library(ipc_client STATIC
 	)
 target_include_directories(ipc_client INTERFACE
 	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_BINARY_DIR}
 	)
 target_include_directories(ipc_client PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}
@@ -65,6 +66,7 @@ add_library(ipc_server STATIC
 target_include_directories(ipc_server
 	INTERFACE
 	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_BINARY_DIR}
 	)
 target_include_directories(ipc_server PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/../compositor

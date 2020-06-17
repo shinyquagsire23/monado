@@ -615,7 +615,7 @@ XrResult
 oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess);
 
 void
-oxr_session_poll(struct oxr_session *sess);
+oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess);
 
 /*!
  * Get the view space position at the given time in relation to the
@@ -827,6 +827,10 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
                                               struct oxr_session *sess,
                                               XrSessionState state,
                                               XrTime time);
+
+XrResult
+oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(
+    struct oxr_logger *log, struct oxr_session *sess, bool visible);
 
 /*!
  * This clears all pending events refers to the given session.

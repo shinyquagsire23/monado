@@ -36,7 +36,7 @@ cli_cmd_test(int argc, const char **argv)
 	// Initialize the prober.
 	printf(" :: Creating instance!\n");
 
-	ret = xrt_instance_create(&xi);
+	ret = xrt_instance_create(&xi, NULL);
 	if (ret != 0) {
 		return do_exit(&xi, 0);
 	}

@@ -347,6 +347,61 @@ xrt_swapchain_destroy(struct xrt_swapchain **xsc_ptr)
 	*xsc_ptr = NULL;
 }
 
+enum xrt_compositor_event_type
+{
+	XRT_COMPOSITOR_EVENT_NONE = 0,
+	XRT_COMPOSITOR_EVENT_STATE_CHANGE = 1,
+	XRT_COMPOSITOR_EVENT_OVERLAY_CHANGE = 2,
+};
+
+/*!
+ * Session state changes event.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_compositor_event_state_change
+{
+	enum xrt_compositor_event_type type;
+	bool visible;
+	bool focused;
+};
+
+/*!
+ * Primary session state changes event.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_compositor_event_overlay
+{
+	enum xrt_compositor_event_type type;
+	bool primary_focused;
+};
+
+/*!
+ * Compositor events union.
+ *
+ * @ingroup xrt_iface
+ */
+union xrt_compositor_event {
+	enum xrt_compositor_event_type type;
+	struct xrt_compositor_event_state_change state;
+	struct xrt_compositor_event_state_change overlay;
+};
+
+
+
+/*!
+ * Session prepare information, mostly overlay extension data.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_session_prepare_info
+{
+	bool is_overlay;
+	uint64_t flags;
+	uint32_t z_order;
+};
+
 /*!
  * @interface xrt_compositor
  *
@@ -386,12 +441,14 @@ struct xrt_compositor
 	 *
 	 * This function is very much WIP.
 	 */
-	xrt_result_t (*poll_events)(struct xrt_compositor *xc, uint64_t *WIP);
+	xrt_result_t (*poll_events)(struct xrt_compositor *xc,
+	                            union xrt_compositor_event *out_xce);
 
 	/*!
 	 * This function is implicit in the OpenXR spec but made explicit here.
 	 */
-	xrt_result_t (*prepare_session)(struct xrt_compositor *xc);
+	xrt_result_t (*prepare_session)(struct xrt_compositor *xc,
+	                                struct xrt_session_prepare_info *xspi);
 
 	/*!
 	 * See xrBeginSession.
@@ -524,9 +581,10 @@ xrt_comp_create_swapchain(struct xrt_compositor *xc,
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_poll_events(struct xrt_compositor *xc, uint64_t *WIP)
+xrt_comp_poll_events(struct xrt_compositor *xc,
+                     union xrt_compositor_event *out_xce)
 {
-	return xc->poll_events(xc, WIP);
+	return xc->poll_events(xc, out_xce);
 }
 
 /*!
@@ -537,9 +595,10 @@ xrt_comp_poll_events(struct xrt_compositor *xc, uint64_t *WIP)
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_prepare_session(struct xrt_compositor *xc)
+xrt_comp_prepare_session(struct xrt_compositor *xc,
+                         struct xrt_session_prepare_info *xspi)
 {
-	return xc->prepare_session(xc);
+	return xc->prepare_session(xc, xspi);
 }
 
 /*!

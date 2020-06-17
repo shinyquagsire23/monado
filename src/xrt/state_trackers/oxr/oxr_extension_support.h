@@ -101,6 +101,16 @@
 #define OXR_EXTENSION_SUPPORT_MND_headless(_)
 #endif
 
+/*
+ * XR_EXTX_overlay
+ */
+#if defined(XR_EXTX_overlay)
+#define OXR_HAVE_EXTX_overlay
+#define OXR_EXTENSION_SUPPORT_EXTX_overlay(_) _(EXTX_overlay, EXTX_OVERLAY)
+#else
+#define OXR_EXTENSION_SUPPORT_EXTX_overlay(_)
+#endif
+
 // end of GENERATED per-extension defines - do not modify - used by scripts
 
 /*!
@@ -131,5 +141,6 @@
     OXR_EXTENSION_SUPPORT_KHR_opengl_es_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable(_) \
     OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_) \
-    OXR_EXTENSION_SUPPORT_MND_headless(_)
+    OXR_EXTENSION_SUPPORT_MND_headless(_) \
+    OXR_EXTENSION_SUPPORT_EXTX_overlay(_)
 // clang-format on

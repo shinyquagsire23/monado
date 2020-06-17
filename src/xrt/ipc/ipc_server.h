@@ -64,7 +64,7 @@ extern "C" {
 
 #define IPC_SERVER_NUM_XDEVS 8
 #define IPC_MAX_CLIENT_SWAPCHAINS 32
-#define IPC_MAX_CLIENTS 8
+//#define IPC_MAX_CLIENTS 8
 
 struct xrt_instance;
 struct xrt_compositor;
@@ -84,6 +84,14 @@ struct ipc_swapchain_data
 	uint32_t num_images;
 
 	bool active;
+};
+
+
+struct ipc_queued_event
+{
+	bool pending;
+	uint64_t timestamp;
+	union xrt_compositor_event event;
 };
 
 /*!
@@ -117,7 +125,28 @@ struct ipc_client_state
 	//! Whether we are currently rendering @ref render_state
 	bool rendering_state;
 
-	bool active;
+	//! The frame timing state.
+	struct u_rt_helper urth;
+
+	struct ipc_app_state client_state;
+	struct ipc_queued_event queued_events[IPC_EVENT_QUEUE_SIZE];
+
+	int server_thread_index;
+};
+
+enum ipc_thread_state
+{
+	IPC_THREAD_READY,
+	IPC_THREAD_STARTING,
+	IPC_THREAD_RUNNING,
+	IPC_THREAD_STOPPING,
+};
+
+struct ipc_thread
+{
+	struct os_thread thread;
+	volatile enum ipc_thread_state state;
+	volatile struct ipc_client_state ics;
 };
 
 /*!
@@ -159,14 +188,13 @@ struct ipc_server
 	bool print_debug;
 	bool print_spew;
 
-	// Hack for now.
-	struct os_thread thread;
-	volatile bool thread_started;
-	volatile bool thread_stopping;
-	volatile struct ipc_client_state thread_state;
+	struct ipc_thread threads[IPC_MAX_CLIENTS];
 
+	volatile uint32_t current_slot_index;
 
-	struct u_rt_helper urth;
+	int active_client_index;
+	int last_active_client_index;
+	struct os_mutex global_state_lock;
 };
 
 /*!
@@ -176,6 +204,14 @@ struct ipc_server
  */
 int
 ipc_server_main(int argc, char **argv);
+
+/*!
+ * Called by client threads to manage global state
+ *
+ * @ingroup ipc_server
+ */
+void
+update_server_state(struct ipc_server *vs);
 
 /*!
  * Thread function for the client side dispatching.

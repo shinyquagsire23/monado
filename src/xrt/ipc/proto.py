@@ -246,6 +246,7 @@ def generate_client_c(file, p):
     f.write(header.format(brief='Generated IPC client code', suffix='_client'))
     f.write('''
 #include "ipc_client.h"
+#include "ipc_protocol_generated.h"
 
 
 // clang-format off
@@ -305,6 +306,7 @@ def generate_client_h(file, p):
 #pragma once
 
 #include "ipc_protocol.h"
+#include "ipc_protocol_generated.h"
 #include "ipc_client.h"
 
 
@@ -409,6 +411,7 @@ def generate_server_header(file, p):
 #pragma once
 
 #include "ipc_protocol.h"
+#include "ipc_protocol_generated.h"
 #include "ipc_server.h"
 
 

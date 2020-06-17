@@ -19,5 +19,6 @@ if(XRT_HAVE_SDL2)
 endif()
 
 if(XRT_FEATURE_SERVICE)
+        add_subdirectory(ctl)
 	add_subdirectory(service)
 endif()

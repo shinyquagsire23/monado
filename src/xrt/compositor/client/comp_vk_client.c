@@ -140,6 +140,16 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
  *
  */
 
+static xrt_result_t
+client_vk_compositor_poll_events(struct xrt_compositor *xc,
+                                 union xrt_compositor_event *out_xce)
+{
+	struct client_vk_compositor *c = client_vk_compositor(xc);
+
+	// Pipe down call into fd compositor.
+	return xrt_comp_poll_events(&c->xcfd->base, out_xce);
+}
+
 static void
 client_vk_compositor_destroy(struct xrt_compositor *xc)
 {
@@ -157,6 +167,16 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 	// Pipe down call into fd compositor.
 	xrt_comp_fd_destroy(&c->xcfd);
 	free(c);
+}
+
+static xrt_result_t
+client_vk_compositor_prepare_session(struct xrt_compositor *xc,
+                                     struct xrt_session_prepare_info *xspi)
+{
+	struct client_vk_compositor *c = client_vk_compositor(xc);
+
+	// Pipe down call into fd compositor.
+	return xrt_comp_prepare_session(&c->xcfd->base, xspi);
 }
 
 static xrt_result_t
@@ -444,6 +464,7 @@ client_vk_compositor_create(struct xrt_compositor_fd *xcfd,
 	    U_TYPED_CALLOC(struct client_vk_compositor);
 
 	c->base.base.create_swapchain = client_vk_swapchain_create;
+	c->base.base.prepare_session = client_vk_compositor_prepare_session;
 	c->base.base.begin_session = client_vk_compositor_begin_session;
 	c->base.base.end_session = client_vk_compositor_end_session;
 	c->base.base.wait_frame = client_vk_compositor_wait_frame;
@@ -455,6 +476,8 @@ client_vk_compositor_create(struct xrt_compositor_fd *xcfd,
 	c->base.base.layer_quad = client_vk_compositor_layer_quad;
 	c->base.base.layer_commit = client_vk_compositor_layer_commit;
 	c->base.base.destroy = client_vk_compositor_destroy;
+	c->base.base.poll_events = client_vk_compositor_poll_events;
+
 	c->xcfd = xcfd;
 	// passthrough our formats from the fd compositor to the client
 	for (uint32_t i = 0; i < xcfd->base.num_formats; i++) {

@@ -16,6 +16,7 @@
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
+#include "os/os_time.h"
 
 #include "math/m_api.h"
 
@@ -215,10 +216,50 @@ oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
 }
 
 void
-oxr_session_poll(struct oxr_session *sess)
+oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 {
 	struct xrt_compositor *xc = sess->compositor;
-	(void)xc; // TODO: dispatch to compositor
+	union xrt_compositor_event xce;
+	while (true) {
+		xc->poll_events(xc, &xce);
+
+		// dispatch based on event type
+		switch (xce.type) {
+		case XRT_COMPOSITOR_EVENT_NONE:
+			// No more events.
+			return;
+		case XRT_COMPOSITOR_EVENT_STATE_CHANGE:
+			if (xce.state.visible &&
+			    sess->state == XR_SESSION_STATE_SYNCHRONIZED) {
+				oxr_session_change_state(
+				    log, sess, XR_SESSION_STATE_VISIBLE);
+			}
+			if (xce.state.focused &&
+			    sess->state == XR_SESSION_STATE_VISIBLE) {
+				oxr_session_change_state(
+				    log, sess, XR_SESSION_STATE_FOCUSED);
+			}
+
+			if (!xce.state.focused &&
+			    sess->state == XR_SESSION_STATE_FOCUSED) {
+				oxr_session_change_state(
+				    log, sess, XR_SESSION_STATE_VISIBLE);
+			}
+			if (!xce.state.visible &&
+			    sess->state == XR_SESSION_STATE_VISIBLE) {
+				oxr_session_change_state(
+				    log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+			}
+			break;
+		case XRT_COMPOSITOR_EVENT_OVERLAY_CHANGE:
+			oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(
+			    log, sess, xce.overlay.visible);
+			break;
+		default:
+			fprintf(stderr, "unhandled event type! %d", xce.type);
+			break;
+		}
+	}
 }
 
 XrResult
@@ -462,11 +503,15 @@ oxr_session_frame_wait(struct oxr_logger *log,
 		    frameState->predictedDisplayTime);
 	}
 
-	if (!sess->has_waited_once) {
+	if (!sess->has_waited_once && sess->state < XR_SESSION_STATE_VISIBLE) {
 		oxr_session_change_state(log, sess,
 		                         XR_SESSION_STATE_SYNCHRONIZED);
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED);
+		// oxr_session_change_state(log, sess,
+		// XR_SESSION_STATE_VISIBLE); //these states will be handled by
+		// messages received from the compositor
+		// oxr_session_change_state(log, sess,
+		// XR_SESSION_STATE_FOCUSED); //these states will be handled by
+		// messages received from the compositor
 		sess->has_waited_once = true;
 	}
 
@@ -1039,7 +1084,6 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 * Done verifying.
 	 */
 
-
 	struct xrt_pose inv_offset = {0};
 	math_pose_invert(&sess->sys->head->tracking_origin->offset,
 	                 &inv_offset);
@@ -1213,7 +1257,23 @@ oxr_session_create(struct oxr_logger *log,
 		return ret;
 	}
 
+	// Init the begin/wait frame semaphore.
 	os_semaphore_init(&sess->sem, 1);
+
+	struct xrt_compositor *xc = sess->compositor;
+	if (xc != NULL) {
+		struct xrt_session_prepare_info xspi = {0};
+		const XrSessionCreateInfoOverlayEXTX *overlay_info =
+		    OXR_GET_INPUT_FROM_CHAIN(
+		        createInfo, XR_TYPE_SESSION_CREATE_INFO_OVERLAY_EXTX,
+		        XrSessionCreateInfoOverlayEXTX);
+		if (overlay_info) {
+			xspi.is_overlay = true;
+			xspi.flags = overlay_info->createFlags;
+			xspi.z_order = overlay_info->sessionLayersPlacement;
+		}
+		xrt_comp_prepare_session(xc, &xspi);
+	}
 
 	sess->ipd_meters = debug_get_num_option_ipd() / 1000.0f;
 	sess->static_prediction_s =

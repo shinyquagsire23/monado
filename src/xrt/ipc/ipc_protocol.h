@@ -4,16 +4,20 @@
  * @file
  * @brief  Common protocol definition.
  * @author Pete Black <pblack@collabora.com>
+ * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup ipc
  */
 
 #pragma once
 
-#include "xrt/xrt_tracking.h"
-#include "xrt/xrt_device.h"
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_results.h"
+#include "xrt/xrt_defines.h"
+#include "xrt/xrt_instance.h"
+#include "xrt/xrt_compositor.h"
+#include "xrt/xrt_device.h"
+#include "xrt/xrt_tracking.h"
 
 
 #define IPC_MSG_SOCK_FILE "/tmp/monado_comp_ipc"
@@ -24,7 +28,9 @@
 #define IPC_MAX_FORMATS 32 // max formats our server-side compositor supports
 #define IPC_MAX_DEVICES 8  // max number of devices we will map via shared mem
 #define IPC_MAX_LAYERS 16
-#define IPC_MAX_SLOTS 3
+#define IPC_MAX_SLOTS 128
+#define IPC_MAX_CLIENTS 8
+#define IPC_EVENT_QUEUE_SIZE 32
 
 #define IPC_SHARED_MAX_DEVICES 8
 #define IPC_SHARED_MAX_INPUTS 1024
@@ -163,10 +169,24 @@ struct ipc_shared_memory
 	struct ipc_layer_slot slots[IPC_MAX_SLOTS];
 };
 
-/*
- *
- * Rest of protocol is generated.
- *
- */
+struct ipc_client_list
+{
+	int32_t ids[IPC_MAX_CLIENTS];
+};
 
-#include "ipc_protocol_generated.h"
+/*!
+ * State for a connected application.
+ *
+ * @ingroup ipc
+ */
+struct ipc_app_state
+{
+	bool primary_application;
+	bool session_active;
+	bool session_visible;
+	bool session_focused;
+	bool session_overlay;
+	uint32_t z_order;
+	pid_t pid;
+	struct xrt_instance_info info;
+};

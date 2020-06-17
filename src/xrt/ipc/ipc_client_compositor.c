@@ -227,6 +227,31 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
+ipc_compositor_prepare_session(struct xrt_compositor *xc,
+                               struct xrt_session_prepare_info *xspi)
+{
+	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+
+	IPC_SPEW(icc->ipc_c, "IPC: compositor create session");
+
+	IPC_CALL_CHK(ipc_call_session_create(icc->ipc_c, xspi));
+	return res;
+}
+
+static xrt_result_t
+ipc_compositor_poll_events(struct xrt_compositor *xc,
+                           union xrt_compositor_event *out_xce)
+{
+	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+
+	IPC_SPEW(icc->ipc_c, "IPC: polling for events");
+
+	IPC_CALL_CHK(ipc_call_compositor_poll_events(icc->ipc_c, out_xce));
+
+	return res;
+}
+
+static xrt_result_t
 ipc_compositor_begin_session(struct xrt_compositor *xc,
                              enum xrt_view_type view_type)
 {
@@ -458,6 +483,7 @@ ipc_client_compositor_create(ipc_connection_t *ipc_c,
 	    U_TYPED_CALLOC(struct ipc_client_compositor);
 
 	c->base.base.create_swapchain = ipc_compositor_swapchain_create;
+	c->base.base.prepare_session = ipc_compositor_prepare_session;
 	c->base.base.begin_session = ipc_compositor_begin_session;
 	c->base.base.end_session = ipc_compositor_end_session;
 	c->base.base.wait_frame = ipc_compositor_wait_frame;
@@ -469,6 +495,7 @@ ipc_client_compositor_create(ipc_connection_t *ipc_c,
 	c->base.base.layer_quad = ipc_compositor_layer_quad;
 	c->base.base.layer_commit = ipc_compositor_layer_commit;
 	c->base.base.destroy = ipc_compositor_destroy;
+	c->base.base.poll_events = ipc_compositor_poll_events;
 	c->ipc_c = ipc_c;
 
 	// fetch our format list on client compositor construction

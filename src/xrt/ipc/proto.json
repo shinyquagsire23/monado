@@ -3,6 +3,45 @@
 		"out_fds": true
 	},
 
+	"system_get_client_info": {
+		"in": [
+			{"name": "id", "type": "uint32_t"}
+		],
+		"out": [
+			{"name": "desc", "type": "struct ipc_app_state"}
+		]
+	},
+
+	"system_set_client_info": {
+		"in": [
+			{"name": "desc", "type": "struct ipc_app_state"}
+		]
+	},
+
+	"system_get_clients": {
+		"out": [
+			{"name": "clients", "type": "struct ipc_client_list"}
+		]
+	},
+
+	"system_set_primary_client": {
+		"in": [
+			{"name": "id", "type": "uint32_t"}
+		]
+	},
+
+	"system_set_focused_client": {
+		"in": [
+			{"name": "id", "type": "uint32_t"}
+		]
+	},
+
+	"session_create": {
+		"in": [
+			{"name": "overlay_info", "type": "struct xrt_session_prepare_info"}
+		]
+	},
+
 	"session_begin": {},
 
 	"session_end": {},
@@ -48,6 +87,12 @@
 		],
 		"out": [
 			{"name": "free_slot_id", "type": "uint32_t"}
+		]
+	},
+
+	"compositor_poll_events": {
+		"out": [
+			{"name": "event", "type": "union xrt_compositor_event"}
 		]
 	},
 
