@@ -855,12 +855,17 @@ oxr_action_cache_update(struct oxr_logger *log,
 		}
 
 		if (last.active && changed) {
+			// We were active last sync, and we've changed since
+			// then
 			cache->current.timestamp = timestamp;
 			cache->current.changed = true;
 		} else if (last.active) {
+			// We were active last sync, but we haven't changed
+			// since then.
 			cache->current.timestamp = last.timestamp;
 			cache->current.changed = false;
 		} else {
+			// We are active now but weren't active last time.
 			cache->current.timestamp = timestamp;
 			cache->current.changed = false;
 		}
@@ -1326,64 +1331,81 @@ oxr_action_sync_data(struct oxr_logger *log,
  *
  */
 
+#define OXR_ACTION_GET_XR_STATE_FROM_ACTION_STATE_COMMON(ACTION_STATE, DATA)   \
+	do {                                                                   \
+		DATA->lastChangeTime = ACTION_STATE->timestamp;                \
+		DATA->changedSinceLastSync = ACTION_STATE->changed;            \
+		DATA->isActive = XR_TRUE;                                      \
+	} while (0)
+
 static void
-get_state_from_state_bool(struct oxr_action_state *state,
-                          XrActionStateBoolean *data)
+get_xr_state_from_action_state_bool(struct oxr_action_state *state,
+                                    XrActionStateBoolean *data)
 {
+	/* only get here if the action is active! */
+	assert(state->active);
+	OXR_ACTION_GET_XR_STATE_FROM_ACTION_STATE_COMMON(state, data);
 	data->currentState = state->value.boolean;
-	data->lastChangeTime = state->timestamp;
-	data->changedSinceLastSync = state->changed;
-	data->isActive = state->active;
-	//! @todo
-	// data->isActive = XR_TRUE;
 }
 
 static void
-get_state_from_state_vec1(struct oxr_action_state *state,
-                          XrActionStateFloat *data)
+get_xr_state_from_action_state_vec1(struct oxr_action_state *state,
+                                    XrActionStateFloat *data)
 {
+	/* only get here if the action is active! */
+	assert(state->active);
+	OXR_ACTION_GET_XR_STATE_FROM_ACTION_STATE_COMMON(state, data);
 	data->currentState = state->value.vec1.x;
-	data->lastChangeTime = state->timestamp;
-	data->changedSinceLastSync = state->changed;
-	data->isActive = state->active;
 }
 
 static void
-get_state_from_state_vec2(struct oxr_action_state *state,
-                          XrActionStateVector2f *data)
+get_xr_state_from_action_state_vec2(struct oxr_action_state *state,
+                                    XrActionStateVector2f *data)
 {
+	/* only get here if the action is active! */
+	assert(state->active);
+	OXR_ACTION_GET_XR_STATE_FROM_ACTION_STATE_COMMON(state, data);
 	data->currentState.x = state->value.vec2.x;
 	data->currentState.y = state->value.vec2.y;
-	data->lastChangeTime = state->timestamp;
-	data->changedSinceLastSync = state->changed;
-	data->isActive = XR_TRUE;
 }
 
 #define OXR_ACTION_GET_FILLER(TYPE)                                            \
 	if (sub_paths.any && act_attached->any_state.active) {                 \
-		get_state_from_state_##TYPE(&act_attached->any_state, data);   \
+		get_xr_state_from_action_state_##TYPE(                         \
+		    &act_attached->any_state, data);                           \
 	}                                                                      \
 	if (sub_paths.user && act_attached->user.current.active) {             \
-		get_state_from_state_##TYPE(&act_attached->user.current,       \
-		                            data);                             \
+		get_xr_state_from_action_state_##TYPE(                         \
+		    &act_attached->user.current, data);                        \
 	}                                                                      \
 	if (sub_paths.head && act_attached->head.current.active) {             \
-		get_state_from_state_##TYPE(&act_attached->head.current,       \
-		                            data);                             \
+		get_xr_state_from_action_state_##TYPE(                         \
+		    &act_attached->head.current, data);                        \
 	}                                                                      \
 	if (sub_paths.left && act_attached->left.current.active) {             \
-		get_state_from_state_##TYPE(&act_attached->left.current,       \
-		                            data);                             \
+		get_xr_state_from_action_state_##TYPE(                         \
+		    &act_attached->left.current, data);                        \
 	}                                                                      \
 	if (sub_paths.right && act_attached->right.current.active) {           \
-		get_state_from_state_##TYPE(&act_attached->right.current,      \
-		                            data);                             \
+		get_xr_state_from_action_state_##TYPE(                         \
+		    &act_attached->right.current, data);                       \
 	}                                                                      \
 	if (sub_paths.gamepad && act_attached->gamepad.current.active) {       \
-		get_state_from_state_##TYPE(&act_attached->gamepad.current,    \
-		                            data);                             \
+		get_xr_state_from_action_state_##TYPE(                         \
+		    &act_attached->gamepad.current, data);                     \
 	}
 
+/*!
+ * Clear the actual data members of the XrActionState* types, to have the
+ * correct return value in case of the action being not active
+ */
+#define OXR_ACTION_RESET_XR_ACTION_STATE(data)                                 \
+	do {                                                                   \
+		data->isActive = XR_FALSE;                                     \
+		data->changedSinceLastSync = XR_FALSE;                         \
+		data->lastChangeTime = 0;                                      \
+		U_ZERO(&data->currentState);                                   \
+	} while (0)
 
 XrResult
 oxr_action_get_boolean(struct oxr_logger *log,
@@ -1401,9 +1423,7 @@ oxr_action_get_boolean(struct oxr_logger *log,
 		    "Action has not been attached to this session");
 	}
 
-	data->isActive = XR_FALSE;
-	U_ZERO(&data->currentState);
-
+	OXR_ACTION_RESET_XR_ACTION_STATE(data);
 
 	OXR_ACTION_GET_FILLER(bool);
 
@@ -1426,8 +1446,7 @@ oxr_action_get_vector1f(struct oxr_logger *log,
 		    "Action has not been attached to this session");
 	}
 
-	data->isActive = XR_FALSE;
-	U_ZERO(&data->currentState);
+	OXR_ACTION_RESET_XR_ACTION_STATE(data);
 
 	OXR_ACTION_GET_FILLER(vec1);
 
@@ -1450,8 +1469,7 @@ oxr_action_get_vector2f(struct oxr_logger *log,
 		    "Action has not been attached to this session");
 	}
 
-	data->isActive = XR_FALSE;
-	U_ZERO(&data->currentState);
+	OXR_ACTION_RESET_XR_ACTION_STATE(data);
 
 	OXR_ACTION_GET_FILLER(vec2);
 
