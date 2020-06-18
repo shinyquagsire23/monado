@@ -273,8 +273,17 @@ comp_swapchain_create(struct xrt_compositor *xc,
 		vk_create_sampler(&c->vk, &sc->images[i].sampler);
 	}
 
+	VkComponentMapping components = {
+	    .r = VK_COMPONENT_SWIZZLE_R,
+	    .g = VK_COMPONENT_SWIZZLE_G,
+	    .b = VK_COMPONENT_SWIZZLE_B,
+	    .a = VK_COMPONENT_SWIZZLE_ONE,
+	};
+
 	for (uint32_t i = 0; i < num_images; i++) {
-		sc->images[i].views =
+		sc->images[i].views.alpha =
+		    U_TYPED_ARRAY_CALLOC(VkImageView, array_size);
+		sc->images[i].views.no_alpha =
 		    U_TYPED_ARRAY_CALLOC(VkImageView, array_size);
 		sc->images[i].array_size = array_size;
 
@@ -287,9 +296,14 @@ comp_swapchain_create(struct xrt_compositor *xc,
 			    .layerCount = 1,
 			};
 
+
 			vk_create_view(&c->vk, sc->images[i].image,
 			               (VkFormat)format, subresource_range,
-			               &sc->images[i].views[layer]);
+			               &sc->images[i].views.alpha[layer]);
+			vk_create_view_swizzle(
+			    &c->vk, sc->images[i].image, (VkFormat)format,
+			    subresource_range, components,
+			    &sc->images[i].views.no_alpha[layer]);
 		}
 	}
 
@@ -328,6 +342,31 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	return &sc->base.base;
 }
 
+static void
+clean_image_views(struct vk_bundle *vk,
+                  size_t array_size,
+                  VkImageView **views_ptr)
+{
+	VkImageView *views = *views_ptr;
+	if (views == NULL) {
+		return;
+	}
+
+	for (uint32_t i = 0; i < array_size; ++i) {
+		if (views[i] == VK_NULL_HANDLE) {
+			continue;
+		}
+
+		vk->vkDestroyImageView(vk->device, views[i], NULL);
+		views[i] = VK_NULL_HANDLE;
+	}
+
+	free(views);
+	array_size = 0;
+
+	*views_ptr = NULL;
+}
+
 /*!
  * Free and destroy any initialized fields on the given image, safe to pass in
  * images that has one or all fields set to NULL.
@@ -338,20 +377,8 @@ comp_swapchain_image_cleanup(struct vk_bundle *vk,
 {
 	vk->vkDeviceWaitIdle(vk->device);
 
-	if (image->views != NULL) {
-		for (uint32_t i = 0; i < image->array_size; ++i) {
-			if (image->views[i] == VK_NULL_HANDLE) {
-				continue;
-			}
-
-			vk->vkDestroyImageView(vk->device, image->views[i],
-			                       NULL);
-			image->views[i] = VK_NULL_HANDLE;
-		}
-		free(image->views);
-		image->array_size = 0;
-		image->views = NULL;
-	}
+	clean_image_views(vk, image->array_size, &image->views.alpha);
+	clean_image_views(vk, image->array_size, &image->views.no_alpha);
 
 	if (image->sampler != VK_NULL_HANDLE) {
 		vk->vkDestroySampler(vk->device, image->sampler, NULL);

@@ -472,14 +472,26 @@ renderer_init(struct comp_renderer *r)
 	renderer_build_command_buffers(r);
 }
 
+VkImageView
+get_image_view(struct comp_swapchain_image *image,
+               enum xrt_layer_composition_flags flags,
+               uint32_t array_index)
+{
+	if (flags & XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT) {
+		return image->views.alpha[array_index];
+	} else {
+		return image->views.no_alpha[array_index];
+	}
+}
 void
 comp_renderer_set_quad_layer(struct comp_renderer *r,
                              uint32_t layer,
                              struct comp_swapchain_image *image,
                              struct xrt_layer_data *data)
 {
-	comp_layer_update_descriptors(r->lr->layers[layer], image->sampler,
-	                              image->views[data->quad.sub.array_index]);
+	comp_layer_update_descriptors(
+	    r->lr->layers[layer], image->sampler,
+	    get_image_view(image, data->flags, data->quad.sub.array_index));
 
 	struct xrt_matrix_4x4 model_matrix;
 	math_matrix_4x4_quad_model(&data->quad.pose, &data->quad.size,
@@ -508,8 +520,8 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 
 	comp_layer_update_stereo_descriptors(
 	    r->lr->layers[layer], left_image->sampler, right_image->sampler,
-	    left_image->views[left_array_index],
-	    right_image->views[right_array_index]);
+	    get_image_view(left_image, data->flags, left_array_index),
+	    get_image_view(right_image, data->flags, right_array_index));
 
 	comp_layer_set_flip_y(r->lr->layers[layer], data->flip_y);
 

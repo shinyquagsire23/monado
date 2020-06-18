@@ -49,7 +49,11 @@ struct comp_swapchain_image
 	VkSampler sampler;
 	//! Views used by the renderer and distortion code, for each array
 	//! layer.
-	VkImageView *views;
+	struct
+	{
+		VkImageView *alpha;
+		VkImageView *no_alpha;
+	} views;
 	//! The number of array slices in a texture, 1 == regular 2D texture.
 	size_t array_size;
 };
