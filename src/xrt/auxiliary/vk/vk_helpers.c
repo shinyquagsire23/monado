@@ -414,6 +414,25 @@ vk_create_view(struct vk_bundle *vk,
                VkImageSubresourceRange subresource_range,
                VkImageView *out_view)
 {
+	VkComponentMapping components = {
+	    .r = VK_COMPONENT_SWIZZLE_R,
+	    .g = VK_COMPONENT_SWIZZLE_G,
+	    .b = VK_COMPONENT_SWIZZLE_B,
+	    .a = VK_COMPONENT_SWIZZLE_A,
+	};
+
+	return vk_create_view_swizzle(vk, image, format, subresource_range,
+	                              components, out_view);
+}
+
+VkResult
+vk_create_view_swizzle(struct vk_bundle *vk,
+                       VkImage image,
+                       VkFormat format,
+                       VkImageSubresourceRange subresource_range,
+                       VkComponentMapping components,
+                       VkImageView *out_view)
+{
 	VkImageView view;
 	VkResult ret;
 
@@ -422,13 +441,7 @@ vk_create_view(struct vk_bundle *vk,
 	    .image = image,
 	    .viewType = VK_IMAGE_VIEW_TYPE_2D,
 	    .format = format,
-	    .components =
-	        {
-	            .r = VK_COMPONENT_SWIZZLE_R,
-	            .g = VK_COMPONENT_SWIZZLE_G,
-	            .b = VK_COMPONENT_SWIZZLE_B,
-	            .a = VK_COMPONENT_SWIZZLE_A,
-	        },
+	    .components = components,
 	    .subresourceRange = subresource_range,
 	};
 

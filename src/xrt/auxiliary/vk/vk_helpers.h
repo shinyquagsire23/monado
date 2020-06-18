@@ -391,6 +391,17 @@ vk_create_view(struct vk_bundle *vk,
  * @ingroup aux_vk
  */
 VkResult
+vk_create_view_swizzle(struct vk_bundle *vk,
+                       VkImage image,
+                       VkFormat format,
+                       VkImageSubresourceRange subresource_range,
+                       VkComponentMapping components,
+                       VkImageView *out_view);
+
+/*!
+ * @ingroup aux_vk
+ */
+VkResult
 vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
 
 /*!
