@@ -57,6 +57,8 @@ struct vive_device
 	struct xrt_device base;
 	struct os_hid_device *mainboard_dev;
 	struct os_hid_device *sensors_dev;
+	struct os_hid_device *watchman_dev;
+
 	enum VIVE_VARIANT variant;
 
 	struct os_thread_helper sensors_thread;
@@ -139,6 +141,7 @@ struct vive_device
 struct vive_device *
 vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *sensors_dev,
+                   struct os_hid_device *watchman_dev,
                    enum VIVE_VARIANT variant);
 
 #ifdef __cplusplus

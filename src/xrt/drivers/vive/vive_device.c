@@ -470,6 +470,27 @@ vive_mainboard_run_thread(void *ptr)
  *
  */
 
+static int
+vive_sensors_enable_watchman(struct vive_device *d, bool enable_sensors)
+{
+	uint8_t buf[5] = {0x04};
+	int ret;
+
+	/* Enable vsync timestamps, enable/disable sensor reports */
+	buf[1] = enable_sensors ? 0x00 : 0x01;
+	ret = os_hid_set_feature(d->sensors_dev, buf, sizeof(buf));
+	if (ret < 0)
+		return ret;
+
+	/*
+	 * Reset Lighthouse Rx registers? Without this, inactive channels are
+	 * not cleared to 0xff.
+	 */
+	buf[0] = 0x07;
+	buf[1] = 0x02;
+	return os_hid_set_feature(d->mainboard_dev, buf, sizeof(buf));
+}
+
 static bool
 vive_sensors_read_one_msg(struct vive_device *d)
 {
@@ -553,6 +574,7 @@ vive_init_defaults(struct vive_device *d)
 struct vive_device *
 vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *sensors_dev,
+                   struct os_hid_device *watchman_dev,
                    enum VIVE_VARIANT variant)
 {
 	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
@@ -570,6 +592,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->mainboard_dev = mainboard_dev;
 	d->sensors_dev = sensors_dev;
 	d->ll = debug_get_log_option_vive_log();
+	d->watchman_dev = watchman_dev;
 	d->variant = variant;
 
 	vive_init_defaults(d);
@@ -699,6 +722,17 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	u_var_add_vec3_f32(d, &d->last.gyro, "gyro");
 
 	int ret;
+
+	if (watchman_dev != NULL) {
+		ret = vive_sensors_enable_watchman(d, true);
+		if (ret < 0) {
+			VIVE_ERROR(d, "Could not enable watchman receiver.");
+		} else {
+			VIVE_DEBUG(d,
+			           "Successfully enabled watchman receiver.");
+		}
+	}
+
 	if (d->mainboard_dev) {
 		ret = os_thread_helper_start(&d->mainboard_thread,
 		                             vive_mainboard_run_thread, d);
