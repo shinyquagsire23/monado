@@ -540,7 +540,18 @@ _decode_pulse_report(struct vive_device *d, const void *buffer)
 	}
 }
 
-
+static const char *
+_sensors_get_report_string(uint32_t report_id)
+{
+	switch (report_id) {
+	case VIVE_IMU_REPORT_ID: return "VIVE_IMU_REPORT_ID";
+	case VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID:
+		return "VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID";
+	case VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID:
+		return "VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID";
+	default: return "Unknown";
+	}
+}
 
 static bool
 vive_sensors_read_one_msg(struct vive_device *d,
@@ -573,9 +584,10 @@ vive_sensors_read_one_msg(struct vive_device *d,
 		}
 		process_cb(d, buffer);
 	} else {
-		VIVE_ERROR(d, "Unknown sensor message type %d. Expected %d.",
-		           buffer[0], report_id);
-		return false;
+		VIVE_ERROR(d, "Unexpected sensor report type %s (0x%x).",
+		           _sensors_get_report_string(buffer[0]), buffer[0]);
+		VIVE_ERROR(d, "Expected %s (0x%x).",
+		           _sensors_get_report_string(report_id), report_id);
 	}
 
 	return true;
