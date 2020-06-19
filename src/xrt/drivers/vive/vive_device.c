@@ -898,6 +898,10 @@ vive_parse_config(struct vive_device *d, char *json_string)
 	if (d->variant != VIVE_VARIANT_INDEX) {
 		// clang-format off
 		d->firmware.mb_serial_number = _json_get_string(json, "mb_serial_number");
+		// clang-format on
+	}
+	if (d->variant == VIVE_VARIANT_VIVE) {
+		// clang-format off
 		d->display.lens_separation = _json_get_double(json, "lens_separation");
 		// clang-format on
 	}
