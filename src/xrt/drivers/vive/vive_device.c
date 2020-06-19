@@ -537,6 +537,9 @@ _decode_pulse_report(struct vive_device *d, const void *buffer)
 		duration = __le16_to_cpu(pulse->duration);
 
 		_print_v1_pulse(d, sensor_id, timestamp, duration);
+
+		lighthouse_watchman_handle_pulse(&d->watchman, sensor_id,
+		                                 duration, timestamp);
 	}
 }
 
@@ -809,6 +812,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		if (ret < 0) {
 			VIVE_ERROR(d, "Could not enable watchman receiver.");
 		} else {
+			lighthouse_watchman_init(&d->watchman, "headset");
 			VIVE_DEBUG(d,
 			           "Successfully enabled watchman receiver.");
 		}

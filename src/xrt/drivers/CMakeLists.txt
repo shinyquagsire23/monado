@@ -146,6 +146,8 @@ if(XRT_BUILD_DRIVER_VIVE)
 		vive/vive_controller.c
 		vive/vive_config.h
 		vive/vive_config.c
+		vive/vive_lighthouse.h
+		vive/vive_lighthouse.c
 		)
 
 	add_library(drv_vive STATIC ${VIVE_SOURCE_FILES})

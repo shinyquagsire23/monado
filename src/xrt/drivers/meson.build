@@ -129,7 +129,9 @@ lib_drv_vive = static_library(
 		'vive/vive_controller.c',
 		'vive/vive_controller.h',
 		'vive/vive_config.c',
-		'vive/vive_config.h'
+		'vive/vive_config.h',
+		'vive/vive_lighthouse.c',
+		'vive/vive_lighthouse.h',
 	),
 	include_directories: [
 		xrt_include,

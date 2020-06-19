@@ -14,6 +14,8 @@
 #include "os/os_threading.h"
 #include "util/u_logging.h"
 
+#include "vive_lighthouse.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,6 +60,8 @@ struct vive_device
 	struct os_hid_device *mainboard_dev;
 	struct os_hid_device *sensors_dev;
 	struct os_hid_device *watchman_dev;
+
+	struct lighthouse_watchman watchman;
 
 	enum VIVE_VARIANT variant;
 
