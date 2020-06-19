@@ -288,8 +288,9 @@ cald_dt_ns(uint32_t dt_raw)
 }
 
 static void
-update_imu(struct vive_device *d, struct vive_imu_report *report)
+update_imu(struct vive_device *d, const void *buffer)
 {
+	const struct vive_imu_report *report = buffer;
 	const struct vive_imu_sample *sample = report->sample;
 	uint8_t last_seq = d->imu.sequence;
 	int i, j;
@@ -488,35 +489,93 @@ vive_sensors_enable_watchman(struct vive_device *d, bool enable_sensors)
 	 */
 	buf[0] = 0x07;
 	buf[1] = 0x02;
-	return os_hid_set_feature(d->mainboard_dev, buf, sizeof(buf));
+	return os_hid_set_feature(d->sensors_dev, buf, sizeof(buf));
 }
 
+static void
+_print_v1_pulse(struct vive_device *d,
+                uint8_t sensor_id,
+                uint32_t timestamp,
+                uint16_t duration)
+{
+	VIVE_TRACE(d, "[sensor %02d] timestamp %8u ticks (%3.5fs) duration: %d",
+	           sensor_id, timestamp, timestamp / (float)VIVE_CLOCK_FREQ,
+	           duration);
+}
+
+static void
+_decode_pulse_report(struct vive_device *d, const void *buffer)
+{
+	const struct vive_headset_lighthouse_pulse_report *report = buffer;
+	unsigned int i;
+
+	/* The pulses may appear in arbitrary order */
+	for (i = 0; i < 9; i++) {
+		const struct vive_headset_lighthouse_pulse *pulse;
+		uint8_t sensor_id;
+		uint16_t duration;
+		uint32_t timestamp;
+
+		pulse = &report->pulse[i];
+
+		sensor_id = pulse->id;
+		if (sensor_id == 0xff)
+			continue;
+
+		timestamp = __le32_to_cpu(pulse->timestamp);
+		if (sensor_id == 0xfe) {
+			/* TODO: handle vsync timestamp */
+			continue;
+		}
+
+		if (sensor_id > 31) {
+			VIVE_ERROR(d, "Unexpected sensor id: %04x\n",
+			           sensor_id);
+			return;
+		}
+
+		duration = __le16_to_cpu(pulse->duration);
+
+		_print_v1_pulse(d, sensor_id, timestamp, duration);
+	}
+}
+
+
+
 static bool
-vive_sensors_read_one_msg(struct vive_device *d)
+vive_sensors_read_one_msg(struct vive_device *d,
+                          struct os_hid_device *dev,
+                          uint32_t report_id,
+                          int report_size,
+                          void (*process_cb)(struct vive_device *d,
+                                             const void *buffer))
 {
 	uint8_t buffer[64];
 
-	int ret = os_hid_read(d->sensors_dev, buffer, sizeof(buffer), 1000);
+	int ret = os_hid_read(dev, buffer, sizeof(buffer), 1000);
 	if (ret == 0) {
+		VIVE_ERROR(d, "Device %p timeout.", (void *)dev);
 		// Time out
 		return true;
 	}
 	if (ret < 0) {
-		VIVE_ERROR(d, "Failed to read device '%i'!", ret);
+		VIVE_ERROR(d, "Failed to read device %p: %i.", (void *)dev,
+		           ret);
 		return false;
 	}
 
-	switch (buffer[0]) {
-	case VIVE_IMU_REPORT_ID:
-		if (ret != 52) {
-			VIVE_ERROR(d, "Wrong IMU report size: %d", ret);
+	if (buffer[0] == report_id) {
+		if (ret != report_size) {
+			VIVE_WARN(d,
+			          "Wrong size %d for report %d. Expected %d.",
+			          ret, report_id, report_size);
 			return false;
 		}
-		update_imu(d, (struct vive_imu_report *)buffer);
-		break;
-	default:
-		VIVE_ERROR(d, "Unknown sensor message type %d", buffer[0]);
-		break;
+		process_cb(d, buffer);
+	} else {
+		VIVE_ERROR(d, "Unknown sensor message type %d. Expected %d.",
+		           buffer[0], report_id);
+		return false;
 	}
 
 	return true;
@@ -531,9 +590,19 @@ vive_sensors_run_thread(void *ptr)
 	while (os_thread_helper_is_running_locked(&d->sensors_thread)) {
 		os_thread_helper_unlock(&d->sensors_thread);
 
-		if (!vive_sensors_read_one_msg(d)) {
+		if (!vive_sensors_read_one_msg(d, d->sensors_dev,
+		                               VIVE_IMU_REPORT_ID, 52,
+		                               update_imu)) {
 			return NULL;
 		}
+
+		if (d->watchman_dev)
+			if (!vive_sensors_read_one_msg(
+			        d, d->watchman_dev,
+			        VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID, 64,
+			        _decode_pulse_report)) {
+				return NULL;
+			}
 
 		// Just keep swimming.
 		os_thread_helper_lock(&d->sensors_thread);
