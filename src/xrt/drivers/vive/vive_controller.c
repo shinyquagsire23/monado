@@ -32,7 +32,7 @@
 #include "os/os_time.h"
 
 #include "../vive/vive_protocol.h"
-#include "vive_controller_interface.h"
+#include "vive_controller.h"
 
 #include "math/m_imu_3dof.h"
 
