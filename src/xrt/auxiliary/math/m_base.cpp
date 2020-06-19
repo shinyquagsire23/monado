@@ -94,6 +94,11 @@ math_vec3_cross(const struct xrt_vec3 *l,
 	map_vec3(*result) = map_vec3(*l).cross(map_vec3(*r));
 }
 
+extern "C" void
+math_vec3_normalize(struct xrt_vec3 *in)
+{
+	map_vec3(*in) = map_vec3(*in).normalized();
+}
 
 /*
  *

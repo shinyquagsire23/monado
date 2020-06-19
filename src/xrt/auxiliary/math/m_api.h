@@ -106,6 +106,16 @@ math_vec3_cross(const struct xrt_vec3 *l,
                 const struct xrt_vec3 *r,
                 struct xrt_vec3 *result);
 
+
+/*!
+ * Normalize a vec3 in place.
+ *
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_vec3_normalize(struct xrt_vec3 *in);
+
 /*
  *
  * Quat functions.
