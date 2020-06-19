@@ -160,6 +160,8 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *cs,
 
 	uint32_t num_images = xsc->num_images;
 
+	IPC_SPEW(cs->server, "IPC: Created swapchain %d\n", index);
+
 	cs->xscs[index] = xsc;
 	cs->swapchain_data[index].active = true;
 	cs->swapchain_data[index].width = width;
@@ -448,6 +450,8 @@ client_loop(volatile struct ipc_client_state *cs)
 	// Destroy all swapchains now.
 	for (uint32_t j = 0; j < IPC_MAX_CLIENT_SWAPCHAINS; j++) {
 		xrt_swapchain_destroy((struct xrt_swapchain **)&cs->xscs[j]);
+		cs->swapchain_data[j].active = false;
+		IPC_SPEW(cs->server, "IPC: Destroyed swapchain %d\n", j);
 	}
 
 	// Should we stop the server when a client disconnects?
