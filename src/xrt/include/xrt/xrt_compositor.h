@@ -386,12 +386,12 @@ struct xrt_compositor
 	 *
 	 * This function is very much WIP.
 	 */
-	void (*poll_events)(struct xrt_compositor *xc, uint64_t *WIP);
+	xrt_result_t (*poll_events)(struct xrt_compositor *xc, uint64_t *WIP);
 
 	/*!
 	 * This function is implicit in the OpenXR spec but made explicit here.
 	 */
-	void (*prepare_session)(struct xrt_compositor *xc);
+	xrt_result_t (*prepare_session)(struct xrt_compositor *xc);
 
 	/*!
 	 * See xrBeginSession.
@@ -515,10 +515,10 @@ xrt_comp_create_swapchain(struct xrt_compositor *xc,
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_poll_events(struct xrt_compositor *xc, uint64_t *WIP)
 {
-	xc->poll_events(xc, WIP);
+	return xc->poll_events(xc, WIP);
 }
 
 /*!
@@ -528,10 +528,10 @@ xrt_comp_poll_events(struct xrt_compositor *xc, uint64_t *WIP)
  *
  * @public @memberof xrt_compositor
  */
-static inline void
+static inline xrt_result_t
 xrt_comp_prepare_session(struct xrt_compositor *xc)
 {
-	xc->prepare_session(xc);
+	return xc->prepare_session(xc);
 }
 
 /*!
