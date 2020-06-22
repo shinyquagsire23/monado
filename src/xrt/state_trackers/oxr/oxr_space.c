@@ -325,6 +325,9 @@ get_xr_space_location_flags(enum xrt_space_relation_flags relation_flags)
 	bool tracked_ori = (relation_flags & XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) != 0;
 	bool valid_pos = (relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0;
 	bool tracked_pos = (relation_flags & XRT_SPACE_RELATION_POSITION_TRACKED_BIT) != 0;
+
+	bool linear_vel = (relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) != 0;
+	bool angular_vel = (relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0;
 	// clang-format on
 
 	XrSpaceLocationFlags location_flags = (XrSpaceLocationFlags)0;
@@ -339,6 +342,12 @@ get_xr_space_location_flags(enum xrt_space_relation_flags relation_flags)
 	}
 	if (tracked_pos) {
 		location_flags |= XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+	}
+	if (linear_vel) {
+		location_flags |= XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+	}
+	if (angular_vel) {
+		location_flags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
 	}
 	return location_flags;
 }
@@ -380,6 +389,22 @@ oxr_space_locate(struct oxr_logger *log,
 	location->pose = safe_copy.oxr;
 	location->locationFlags =
 	    get_xr_space_location_flags(result.relation_flags);
+
+	XrSpaceVelocity *vel = (XrSpaceVelocity *)location->next;
+	if (vel) {
+		vel->linearVelocity.x = result.linear_velocity.x;
+		vel->linearVelocity.y = result.linear_velocity.y;
+		vel->linearVelocity.z = result.linear_velocity.z;
+
+		vel->angularVelocity.x = result.angular_velocity.x;
+		vel->angularVelocity.y = result.angular_velocity.y;
+		vel->angularVelocity.z = result.angular_velocity.z;
+
+		vel->velocityFlags |= (location->locationFlags &
+		                       XR_SPACE_VELOCITY_LINEAR_VALID_BIT);
+		vel->velocityFlags |= (location->locationFlags &
+		                       XR_SPACE_VELOCITY_ANGULAR_VALID_BIT);
+	}
 
 #if 0
 	location->linearVelocity = *(XrVector3f *)&result.linear_velocity;

@@ -143,6 +143,9 @@ oxr_xrLocateSpace(XrSpace space,
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, location,
 	                                 XR_TYPE_SPACE_LOCATION);
 
+	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(
+	    &log, ((XrSpaceVelocity *)location->next), XR_TYPE_SPACE_VELOCITY);
+
 	if (time <= (XrTime)0) {
 		return oxr_error(&log, XR_ERROR_TIME_INVALID,
 		                 "(time == %" PRIi64 ") is not a valid time.",
