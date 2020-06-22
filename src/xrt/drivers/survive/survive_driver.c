@@ -219,8 +219,13 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 
 	math_quat_rotate(&down_rot, &out_rot, &out_rot);
 
-
+	// just to be sure
 	math_quat_normalize(&out_rot);
+
+
+	SurviveVelocity vel;
+	timecode =
+	    survive_simple_object_get_latest_velocity(survive_object, &vel);
 
 	out_relation->pose.orientation = out_rot;
 
@@ -228,6 +233,13 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 	out_relation->pose.position.x = pose.Pos[0];
 	out_relation->pose.position.y = pose.Pos[2];
 	out_relation->pose.position.z = -pose.Pos[1];
+
+	struct xrt_vec3 linear_vel = {
+	    .x = vel.Pos[0], .y = vel.Pos[2], .z = -vel.Pos[1]};
+
+	struct xrt_vec3 angular_vel = {.x = vel.AxisAngleRot[0],
+	                               .y = vel.AxisAngleRot[2],
+	                               .z = -vel.AxisAngleRot[1]};
 
 	if (math_quat_validate(&out_rot)) {
 		out_relation->relation_flags |=
@@ -239,6 +251,18 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 		out_relation->relation_flags |=
 		    XRT_SPACE_RELATION_POSITION_VALID_BIT |
 		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
+	}
+
+	out_relation->linear_velocity = linear_vel;
+	if (math_vec3_validate(&out_relation->linear_velocity)) {
+		out_relation->relation_flags |=
+		    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT;
+	}
+
+	out_relation->angular_velocity = angular_vel;
+	if (math_vec3_validate(&out_relation->angular_velocity)) {
+		out_relation->relation_flags |=
+		    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT;
 	}
 }
 
