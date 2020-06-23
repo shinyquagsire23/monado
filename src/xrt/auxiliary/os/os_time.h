@@ -82,6 +82,17 @@ os_timespec_to_ns(struct timespec *spec)
 	ns += (uint64_t)spec->tv_nsec;
 	return ns;
 }
+
+/*!
+ * @brief Convert an nanosecond integer to a timespec struct.
+ * @ingroup aux_os_time_extra
+ */
+static inline void
+os_ns_to_timespec(uint64_t ns, struct timespec *spec)
+{
+	spec->tv_sec = (ns / (1000 * 1000 * 1000));
+	spec->tv_nsec = (ns % (1000 * 1000 * 1000));
+}
 #endif // XRT_HAVE_TIMESPEC
 
 
