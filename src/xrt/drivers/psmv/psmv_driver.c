@@ -607,11 +607,11 @@ psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t now)
  * Does the actual sending of the led control package to the device.
  */
 static int
-psmv_send_led_control(struct psmv_device *psmv,
-                      uint8_t red,
-                      uint8_t green,
-                      uint8_t blue,
-                      uint8_t rumble)
+psmv_send_led_control_locked(volatile struct psmv_device *psmv,
+                             uint8_t red,
+                             uint8_t green,
+                             uint8_t blue,
+                             uint8_t rumble)
 {
 	struct psmv_set_led msg;
 	U_ZERO(&msg);
@@ -625,7 +625,8 @@ psmv_send_led_control(struct psmv_device *psmv,
 }
 
 static void
-psmv_led_and_trigger_update_locked(struct psmv_device *psmv, int64_t time)
+psmv_led_and_trigger_update_locked(volatile struct psmv_device *psmv,
+                                   int64_t time)
 {
 	// Need to keep sending led control packets to keep the leds on.
 	if (psmv->wants.resend_time > time &&
@@ -642,8 +643,8 @@ psmv_led_and_trigger_update_locked(struct psmv_device *psmv, int64_t time)
 	psmv->state.rumble = psmv->wants.rumble;
 
 	psmv->wants.resend_time = time + 1000000000;
-	psmv_send_led_control(psmv, psmv->state.led.r, psmv->state.led.g,
-	                      psmv->state.led.b, psmv->state.rumble);
+	psmv_send_led_control_locked(psmv, psmv->state.led.r, psmv->state.led.g,
+	                             psmv->state.led.b, psmv->state.rumble);
 }
 
 static void
@@ -715,7 +716,8 @@ psmv_read_one_packet(struct psmv_device *psmv, uint8_t *buffer, size_t size)
 		int ret = os_hid_read(psmv->hid, buffer, size, 1000);
 
 		if (ret == 0) {
-			fprintf(stderr, "%s\n", __func__);
+			PSMV_DEBUG(psmv, "Timeout");
+
 			// Must lock thread before check in while.
 			os_thread_helper_lock(&psmv->oth);
 			continue;
@@ -836,7 +838,7 @@ psmv_device_destroy(struct xrt_device *xdev)
 	xrt_tracked_psmv_destroy(&psmv->ball);
 
 	if (psmv->hid != NULL) {
-		psmv_send_led_control(psmv, 0x00, 0x00, 0x00, 0x00);
+		psmv_send_led_control_locked(psmv, 0x00, 0x00, 0x00, 0x00);
 
 		os_hid_destroy(psmv->hid);
 		psmv->hid = NULL;
@@ -925,12 +927,16 @@ psmv_device_set_output(struct xrt_device *xdev,
 		return;
 	}
 
+	os_mutex_lock(&psmv->lock);
+
 	psmv->wants.rumble =
 	    psmv_clamp_zero_to_one_float_to_u8(value->vibration.amplitude);
 
 	// Resend if the rumble has been changed.
 	int64_t now = os_monotonic_get_ns();
-	psmv_led_and_trigger_update(psmv, now);
+	psmv_led_and_trigger_update_locked(psmv, now);
+
+	os_mutex_unlock(&psmv->lock);
 }
 
 
