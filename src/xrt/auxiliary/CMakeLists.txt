@@ -89,6 +89,8 @@ set(UTIL_SOURCE_FILES
 	util/u_hashset.h
 	util/u_json.c
 	util/u_json.h
+	util/u_render_timing.c
+	util/u_render_timing.h
 	util/u_sink.h
 	util/u_sink_converter.c
 	util/u_sink_deinterleaver.c

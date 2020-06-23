@@ -29,6 +29,8 @@ lib_aux_util = static_library(
 		'util/u_json.h',
 		'util/u_misc.c',
 		'util/u_misc.h',
+		'util/u_render_timing.c',
+		'util/u_render_timing.h',
 		'util/u_sink.h',
 		'util/u_sink_converter.c',
 		'util/u_sink_deinterleaver.c',
