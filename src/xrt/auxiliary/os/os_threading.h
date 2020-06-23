@@ -12,10 +12,15 @@
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_config_os.h"
+
 #include "util/u_misc.h"
+
+#include "os/os_time.h"
 
 #ifdef XRT_OS_LINUX
 #include <pthread.h>
+#include <semaphore.h>
+#include <assert.h>
 #else
 #error "OS not supported"
 #endif
@@ -87,7 +92,6 @@ os_mutex_destroy(struct os_mutex *om)
  *
  */
 
-
 /*!
  * A wrapper around a native mutex.
  */
@@ -137,6 +141,73 @@ os_thread_join(struct os_thread *ost)
 static inline void
 os_thread_destroy(struct os_thread *ost)
 {}
+
+
+/*
+ *
+ * Semaphore.
+ *
+ */
+
+/*!
+ * A wrapper around a native semaphore.
+ */
+struct os_semaphore
+{
+	sem_t sem;
+};
+
+/*!
+ * Init.
+ */
+static inline int
+os_semaphore_init(struct os_semaphore *os, int count)
+{
+	return sem_init(&os->sem, 0, count);
+}
+
+/*!
+ * Release.
+ */
+static inline void
+os_semaphore_release(struct os_semaphore *os)
+{
+	sem_post(&os->sem);
+}
+
+/*!
+ * Wait, if @p timeout_ns is zero then waits forever.
+ */
+static inline void
+os_semaphore_wait(struct os_semaphore *os, uint64_t timeout_ns)
+{
+	if (timeout_ns == 0) {
+		sem_wait(&os->sem);
+		return;
+	}
+
+	struct timespec ts;
+	if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+		assert(false);
+	}
+
+	uint64_t now_ns = os_timespec_to_ns(&ts);
+	uint64_t when_ns = timeout_ns + now_ns;
+
+	struct timespec abs_timeout = {0, 0};
+	os_ns_to_timespec(when_ns, &abs_timeout);
+
+	sem_timedwait(&os->sem, &abs_timeout);
+}
+
+/*!
+ * Clean up.
+ */
+static inline void
+os_semaphore_destroy(struct os_semaphore *os)
+{
+	sem_destroy(&os->sem);
+}
 
 
 /*
