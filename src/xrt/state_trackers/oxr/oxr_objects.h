@@ -1183,6 +1183,12 @@ struct oxr_session
 	bool frame_started;
 	bool exiting;
 
+	struct
+	{
+		int64_t waited;
+		int64_t begun;
+	} frame_id;
+
 	/*!
 	 * An array of action set attachments that this session owns.
 	 */

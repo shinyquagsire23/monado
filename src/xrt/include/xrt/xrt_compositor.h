@@ -408,15 +408,20 @@ struct xrt_compositor
 
 	/*!
 	 * See xrWaitFrame.
+	 *
+	 * The only requirement on the compositor for the @p frame_id
+	 * is that it is a positive number.
 	 */
 	xrt_result_t (*wait_frame)(struct xrt_compositor *xc,
+	                           int64_t *out_frame_id,
 	                           uint64_t *predicted_display_time,
 	                           uint64_t *predicted_display_period);
 
 	/*!
 	 * See xrBeginFrame.
 	 */
-	xrt_result_t (*begin_frame)(struct xrt_compositor *xc);
+	xrt_result_t (*begin_frame)(struct xrt_compositor *xc,
+	                            int64_t frame_id);
 
 	/*!
 	 * This isn't in the OpenXR API but is explicit in the XRT interfaces.
@@ -424,12 +429,13 @@ struct xrt_compositor
 	 * Two calls to xrBeginFrame will cause the state tracker to call.
 	 *
 	 * ```c
-	 * xc->begin_frame(xc)
-	 * xc->discard_frame(xc)
-	 * xc->begin_frame(xc)
+	 * xc->begin_frame(xc, frame_id)
+	 * xc->discard_frame(xc, frame_id)
+	 * xc->begin_frame(xc, frame_id)
 	 * ```
 	 */
-	xrt_result_t (*discard_frame)(struct xrt_compositor *xc);
+	xrt_result_t (*discard_frame)(struct xrt_compositor *xc,
+	                              int64_t frame_id);
 
 	/*!
 	 * Begins layer submission, this and the other layer_* calls are
@@ -438,6 +444,7 @@ struct xrt_compositor
 	 * of the swapchain the image is used as soon as it's given in a call.
 	 */
 	xrt_result_t (*layer_begin)(struct xrt_compositor *xc,
+	                            int64_t frame_id,
 	                            enum xrt_blend_mode env_blend_mode);
 
 	/*!
@@ -473,7 +480,8 @@ struct xrt_compositor
 	 * Commits all of the submitted layers, it's from this on that the
 	 * compositor will use the layers.
 	 */
-	xrt_result_t (*layer_commit)(struct xrt_compositor *xc);
+	xrt_result_t (*layer_commit)(struct xrt_compositor *xc,
+	                             int64_t frame_id);
 
 	/*!
 	 * Teardown the compositor.
@@ -569,10 +577,11 @@ xrt_comp_end_session(struct xrt_compositor *xc)
  */
 static inline xrt_result_t
 xrt_comp_wait_frame(struct xrt_compositor *xc,
+                    int64_t *out_frame_id,
                     uint64_t *predicted_display_time,
                     uint64_t *predicted_display_period)
 {
-	return xc->wait_frame(xc, predicted_display_time,
+	return xc->wait_frame(xc, out_frame_id, predicted_display_time,
 	                      predicted_display_period);
 }
 
@@ -584,9 +593,9 @@ xrt_comp_wait_frame(struct xrt_compositor *xc,
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_begin_frame(struct xrt_compositor *xc)
+xrt_comp_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
-	return xc->begin_frame(xc);
+	return xc->begin_frame(xc, frame_id);
 }
 
 /*!
@@ -597,9 +606,9 @@ xrt_comp_begin_frame(struct xrt_compositor *xc)
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_discard_frame(struct xrt_compositor *xc)
+xrt_comp_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
-	return xc->discard_frame(xc);
+	return xc->discard_frame(xc, frame_id);
 }
 
 /*!
@@ -611,9 +620,10 @@ xrt_comp_discard_frame(struct xrt_compositor *xc)
  */
 static inline xrt_result_t
 xrt_comp_layer_begin(struct xrt_compositor *xc,
+                     int64_t frame_id,
                      enum xrt_blend_mode env_blend_mode)
 {
-	return xc->layer_begin(xc, env_blend_mode);
+	return xc->layer_begin(xc, frame_id, env_blend_mode);
 }
 
 /*!
@@ -657,9 +667,9 @@ xrt_comp_layer_quad(struct xrt_compositor *xc,
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_commit(struct xrt_compositor *xc)
+xrt_comp_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 {
-	return xc->layer_commit(xc);
+	return xc->layer_commit(xc, frame_id);
 }
 
 /*!

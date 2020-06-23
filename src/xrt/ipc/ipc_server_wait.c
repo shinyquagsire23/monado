@@ -58,9 +58,12 @@ run(void *ptr)
 		// Unlock the mutex when we have waiting to do.
 		os_thread_helper_unlock(&iw->oth);
 
+		int64_t frame_id;
+
 		// Do the waiting.
 		uint64_t predicted_display_time, predicted_display_period;
-		xrt_comp_wait_frame(iw->s->xc, &predicted_display_time,
+		xrt_comp_wait_frame(iw->s->xc, &frame_id,
+		                    &predicted_display_time,
 		                    &predicted_display_period);
 
 		// Lock for broadcast.

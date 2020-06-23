@@ -161,10 +161,15 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 	}
 
 	if (xc != NULL) {
-		if (sess->frame_started) {
-			xrt_comp_discard_frame(xc);
-			sess->frame_started = false;
+		if (sess->frame_id.waited > 0) {
+			xrt_comp_discard_frame(xc, sess->frame_id.waited);
+			sess->frame_id.waited = -1;
 		}
+		if (sess->frame_id.begun > 0) {
+			xrt_comp_discard_frame(xc, sess->frame_id.begun);
+			sess->frame_id.begun = -1;
+		}
+		sess->frame_started = false;
 
 		CALL_CHK(xrt_comp_end_session(xc));
 	}
@@ -431,7 +436,8 @@ oxr_session_frame_wait(struct oxr_logger *log,
 
 	uint64_t predicted_display_time;
 	uint64_t predicted_display_period;
-	CALL_CHK(xrt_comp_wait_frame(xc, &predicted_display_time,
+	CALL_CHK(xrt_comp_wait_frame(xc, &sess->frame_id.waited,
+	                             &predicted_display_time,
 	                             &predicted_display_period));
 
 	if ((int64_t)predicted_display_time <= 0) {
@@ -477,14 +483,18 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 	if (sess->frame_started) {
 		ret = XR_FRAME_DISCARDED;
 		if (xc != NULL) {
-			CALL_CHK(xrt_comp_discard_frame(xc));
+			CALL_CHK(
+			    xrt_comp_discard_frame(xc, sess->frame_id.begun));
+			sess->frame_id.begun = -1;
 		}
 	} else {
 		ret = oxr_session_success_result(sess);
 		sess->frame_started = true;
 	}
 	if (xc != NULL) {
-		CALL_CHK(xrt_comp_begin_frame(xc));
+		CALL_CHK(xrt_comp_begin_frame(xc, sess->frame_id.waited));
+		sess->frame_id.begun = sess->frame_id.waited;
+		sess->frame_id.waited = -1;
 	}
 
 	return ret;
@@ -967,7 +977,8 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 * Early out for discarded frame if layer count is 0.
 	 */
 	if (frameEndInfo->layerCount == 0) {
-		CALL_CHK(xrt_comp_discard_frame(xc));
+		CALL_CHK(xrt_comp_discard_frame(xc, sess->frame_id.begun));
+		sess->frame_id.begun = -1;
 		sess->frame_started = false;
 
 		return oxr_session_success_result(sess);
@@ -1027,7 +1038,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 	math_pose_invert(&sess->sys->head->tracking_origin->offset,
 	                 &inv_offset);
 
-	CALL_CHK(xrt_comp_layer_begin(xc, blend_mode));
+	CALL_CHK(xrt_comp_layer_begin(xc, sess->frame_id.begun, blend_mode));
 
 	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
 		const XrCompositionLayerBaseHeader *layer =
@@ -1051,7 +1062,8 @@ oxr_session_frame_end(struct oxr_logger *log,
 		}
 	}
 
-	CALL_CHK(xrt_comp_layer_commit(xc));
+	CALL_CHK(xrt_comp_layer_commit(xc, sess->frame_id.begun));
+	sess->frame_id.begun = -1;
 
 	sess->frame_started = false;
 

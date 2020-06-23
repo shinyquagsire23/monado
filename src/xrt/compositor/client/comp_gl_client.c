@@ -111,38 +111,41 @@ client_gl_compositor_end_session(struct xrt_compositor *xc)
 
 static xrt_result_t
 client_gl_compositor_wait_frame(struct xrt_compositor *xc,
+                                int64_t *out_frame_id,
                                 uint64_t *predicted_display_time,
                                 uint64_t *predicted_display_period)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	// Pipe down call into fd compositor.
-	return xrt_comp_wait_frame(&c->xcfd->base, predicted_display_time,
+	return xrt_comp_wait_frame(&c->xcfd->base, out_frame_id,
+	                           predicted_display_time,
 	                           predicted_display_period);
 }
 
 static xrt_result_t
-client_gl_compositor_begin_frame(struct xrt_compositor *xc)
+client_gl_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	// Pipe down call into fd compositor.
-	return xrt_comp_begin_frame(&c->xcfd->base);
+	return xrt_comp_begin_frame(&c->xcfd->base, frame_id);
 }
 
 static xrt_result_t
-client_gl_compositor_discard_frame(struct xrt_compositor *xc)
+client_gl_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	// Pipe down call into fd compositor.
-	return xrt_comp_discard_frame(&c->xcfd->base);
+	return xrt_comp_discard_frame(&c->xcfd->base, frame_id);
 }
 
 static xrt_result_t
 client_gl_compositor_layer_begin(struct xrt_compositor *xc,
+                                 int64_t frame_id,
                                  enum xrt_blend_mode env_blend_mode)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	return xrt_comp_layer_begin(&c->xcfd->base, env_blend_mode);
+	return xrt_comp_layer_begin(&c->xcfd->base, frame_id, env_blend_mode);
 }
 
 static xrt_result_t
@@ -183,11 +186,11 @@ client_gl_compositor_layer_quad(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_gl_compositor_layer_commit(struct xrt_compositor *xc)
+client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	return xrt_comp_layer_commit(&c->xcfd->base);
+	return xrt_comp_layer_commit(&c->xcfd->base, frame_id);
 }
 
 static int64_t

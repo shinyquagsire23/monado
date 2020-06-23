@@ -172,6 +172,7 @@ compositor_wait_vsync_or_time(struct comp_compositor *c, int64_t wake_up_time)
 
 static xrt_result_t
 compositor_wait_frame(struct xrt_compositor *xc,
+                      int64_t *out_frame_id,
                       uint64_t *predicted_display_time,
                       uint64_t *predicted_display_period)
 {
@@ -188,6 +189,7 @@ compositor_wait_frame(struct xrt_compositor *xc,
 		*predicted_display_period = interval_ns;
 		c->last_next_display_time = now_ns + interval_ns;
 		*predicted_display_time = c->last_next_display_time;
+		*out_frame_id = c->last_next_display_time;
 		return XRT_SUCCESS;
 	}
 
@@ -217,6 +219,7 @@ compositor_wait_frame(struct xrt_compositor *xc,
 			*predicted_display_period =
 			    next_display_time - c->last_next_display_time;
 			*predicted_display_time = next_display_time;
+			*out_frame_id = c->last_next_display_time;
 
 			c->last_next_display_time = next_display_time;
 			return XRT_SUCCESS;
@@ -225,7 +228,7 @@ compositor_wait_frame(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-compositor_begin_frame(struct xrt_compositor *xc)
+compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_SPEW(c, "BEGIN_FRAME");
@@ -234,7 +237,7 @@ compositor_begin_frame(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
-compositor_discard_frame(struct xrt_compositor *xc)
+compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_SPEW(c, "DISCARD_FRAME");
@@ -280,6 +283,7 @@ compositor_add_frame_timing(struct comp_compositor *c)
 
 static xrt_result_t
 compositor_layer_begin(struct xrt_compositor *xc,
+                       int64_t frame_id,
                        enum xrt_blend_mode env_blend_mode)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -336,7 +340,7 @@ compositor_layer_quad(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-compositor_layer_commit(struct xrt_compositor *xc)
+compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 

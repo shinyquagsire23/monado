@@ -300,6 +300,7 @@ wait_semaphore(struct ipc_client_compositor *icc, struct ipc_shared_memory *ism)
 
 static xrt_result_t
 ipc_compositor_wait_frame(struct xrt_compositor *xc,
+                          int64_t *out_frame_id,
                           uint64_t *out_predicted_display_time,
                           uint64_t *out_predicted_display_period)
 {
@@ -309,6 +310,7 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 
 	wait_semaphore(icc, icc->ipc_c->ism);
 
+	*out_frame_id = 1;
 	*out_predicted_display_time =
 	    icc->ipc_c->ism->wait_frame.predicted_display_time;
 	*out_predicted_display_period =
@@ -318,7 +320,7 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_begin_frame(struct xrt_compositor *xc)
+ipc_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -329,6 +331,7 @@ ipc_compositor_begin_frame(struct xrt_compositor *xc)
 
 static xrt_result_t
 ipc_compositor_layer_begin(struct xrt_compositor *xc,
+                           int64_t frame_id,
                            enum xrt_blend_mode env_blend_mode)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
@@ -391,7 +394,7 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_layer_commit(struct xrt_compositor *xc)
+ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -411,7 +414,7 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
-ipc_compositor_discard_frame(struct xrt_compositor *xc)
+ipc_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
