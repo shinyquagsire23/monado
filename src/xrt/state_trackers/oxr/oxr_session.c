@@ -423,6 +423,7 @@ oxr_session_frame_wait(struct oxr_logger *log,
 		                 "Session is not running");
 	}
 
+
 	//! @todo this should be carefully synchronized, because there may be
 	//! more than one session per instance.
 	XRT_MAYBE_UNUSED timepoint_ns now =
@@ -433,6 +434,9 @@ oxr_session_frame_wait(struct oxr_logger *log,
 		frameState->shouldRender = XR_FALSE;
 		return oxr_session_success_result(sess);
 	}
+
+	// Before calling wait frame make sure that begin frame has been called.
+	os_semaphore_wait(&sess->sem, 0);
 
 	uint64_t predicted_display_time;
 	uint64_t predicted_display_period;
@@ -496,6 +500,8 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 		sess->frame_id.begun = sess->frame_id.waited;
 		sess->frame_id.waited = -1;
 	}
+
+	os_semaphore_release(&sess->sem);
 
 	return ret;
 }
@@ -1206,6 +1212,8 @@ oxr_session_create(struct oxr_logger *log,
 		}
 		return ret;
 	}
+
+	os_semaphore_init(&sess->sem, 1);
 
 	sess->ipd_meters = debug_get_num_option_ipd() / 1000.0f;
 	sess->static_prediction_s =

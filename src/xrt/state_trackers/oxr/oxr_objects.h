@@ -1189,6 +1189,8 @@ struct oxr_session
 		int64_t begun;
 	} frame_id;
 
+	struct os_semaphore sem;
+
 	/*!
 	 * An array of action set attachments that this session owns.
 	 */
