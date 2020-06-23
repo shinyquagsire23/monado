@@ -76,26 +76,50 @@ ipc_handle_compositor_get_formats(volatile struct ipc_client_state *cs,
 }
 
 xrt_result_t
-ipc_handle_compositor_wait_frame(volatile struct ipc_client_state *cs)
+ipc_handle_compositor_wait_frame(volatile struct ipc_client_state *cs,
+                                 int64_t *out_frame_id,
+                                 uint64_t *predicted_display_time,
+                                 uint64_t *wake_up_time,
+                                 uint64_t *predicted_display_period,
+                                 uint64_t *min_display_period)
 {
-	ipc_server_wait_add_frame(cs->server->iw, cs);
+	u_rt_helper_predict(&cs->server->urth, out_frame_id,
+	                    predicted_display_time, wake_up_time,
+	                    predicted_display_period, min_display_period);
+
 	return XRT_SUCCESS;
 }
 
 xrt_result_t
-ipc_handle_compositor_begin_frame(volatile struct ipc_client_state *cs)
+ipc_handle_compositor_wait_woke(volatile struct ipc_client_state *cs,
+                                int64_t frame_id)
 {
+	u_rt_helper_mark_wait_woke(&cs->server->urth, frame_id);
+
 	return XRT_SUCCESS;
 }
 
 xrt_result_t
-ipc_handle_compositor_discard_frame(volatile struct ipc_client_state *cs)
+ipc_handle_compositor_begin_frame(volatile struct ipc_client_state *cs,
+                                  int64_t frame_id)
 {
+	u_rt_helper_mark_begin(&cs->server->urth, frame_id);
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+ipc_handle_compositor_discard_frame(volatile struct ipc_client_state *cs,
+                                    int64_t frame_id)
+{
+	u_rt_helper_mark_discarded(&cs->server->urth, frame_id);
+
 	return XRT_SUCCESS;
 }
 
 xrt_result_t
 ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
+                                 int64_t frame_id,
                                  uint32_t slot_id,
                                  uint32_t *out_free_slot_id)
 {
@@ -107,6 +131,8 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *cs,
 	cs->rendering_state = true;
 
 	*out_free_slot_id = (slot_id + 1) % IPC_MAX_SLOTS;
+
+	u_rt_helper_mark_delivered(&cs->server->urth, frame_id);
 
 	return XRT_SUCCESS;
 }
@@ -423,6 +449,8 @@ client_loop(volatile struct ipc_client_state *cs)
 	close(cs->ipc_socket_fd);
 	cs->ipc_socket_fd = -1;
 
+	u_rt_helper_clear(&cs->server->urth);
+
 	cs->active = false;
 	cs->num_swapchains = 0;
 
@@ -458,8 +486,6 @@ client_loop(volatile struct ipc_client_state *cs)
 	if (cs->server->exit_on_disconnect) {
 		cs->server->running = false;
 	}
-
-	ipc_server_wait_reset_client(cs->server->iw, cs);
 }
 
 

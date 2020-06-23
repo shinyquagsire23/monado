@@ -8,7 +8,6 @@
  * @ingroup ipc_server
  */
 
-#include "ipc_server.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_compositor.h"
@@ -18,10 +17,8 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 
+#include "ipc_server.h"
 #include "ipc_server_utils.h"
-
-#include "main/comp_compositor.h"
-#include "main/comp_renderer.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -65,8 +62,6 @@ static void
 teardown_all(struct ipc_server *s)
 {
 	u_var_remove_root(s);
-
-	ipc_server_wait_free(&s->iw);
 
 	xrt_comp_destroy(&s->xc);
 
@@ -432,11 +427,13 @@ init_all(struct ipc_server *s)
 		return ret;
 	}
 
-	ret = ipc_server_wait_alloc(s, &s->iw);
 	if (ret < 0) {
 		teardown_all(s);
 		return ret;
 	}
+
+	// Init the frame helper.
+	u_rt_helper_init(&s->urth);
 
 	// Easier to use.
 	s->xc = &s->xcfd->base;
@@ -515,94 +512,90 @@ check_epoll(struct ipc_server *vs)
 }
 
 static bool
-_update_projection_layer(struct comp_compositor *c,
-                         volatile struct ipc_client_state *active_client,
+_update_projection_layer(struct xrt_compositor *xc,
+                         volatile struct ipc_client_state *ics,
                          volatile struct ipc_layer_entry *layer,
                          uint32_t i)
 {
+	// xdev
+	uint32_t xdevi = layer->xdev_id;
 	// left
-	uint32_t lsi = layer->swapchain_ids[0];
+	uint32_t lxsci = layer->swapchain_ids[0];
 	// right
-	uint32_t rsi = layer->swapchain_ids[1];
+	uint32_t rxsci = layer->swapchain_ids[1];
 
-	if (active_client->xscs[lsi] == NULL ||
-	    active_client->xscs[rsi] == NULL) {
+	struct xrt_device *xdev = ics->server->xdevs[xdevi];
+	struct xrt_swapchain *lxcs = ics->xscs[lxsci];
+	struct xrt_swapchain *rxcs = ics->xscs[rxsci];
+
+	if (lxcs == NULL || rxcs == NULL) {
 		fprintf(stderr,
 		        "ERROR: Invalid swap chain for projection layer.\n");
 		return false;
 	}
 
-	struct comp_swapchain *cl = comp_swapchain(active_client->xscs[lsi]);
-	struct comp_swapchain *cr = comp_swapchain(active_client->xscs[rsi]);
-
-	struct comp_swapchain_image *l = NULL;
-	struct comp_swapchain_image *r = NULL;
-	l = &cl->images[layer->data.stereo.l.sub.image_index];
-	r = &cr->images[layer->data.stereo.r.sub.image_index];
-
-
-	// Cast away volatile.
-	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
-
-	//! @todo we are ignoring subrect here!
-	comp_renderer_set_projection_layer(c->r, i, l, r, data);
-
-	return true;
-}
-
-static bool
-_update_quad_layer(struct comp_compositor *c,
-                   volatile struct ipc_client_state *active_client,
-                   volatile struct ipc_layer_entry *layer,
-                   uint32_t i)
-{
-	uint32_t sci = layer->swapchain_ids[0];
-
-	if (active_client->xscs[sci] == NULL) {
-		fprintf(stderr, "ERROR: Invalid swap chain for quad layer.\n");
+	if (xdev == NULL) {
+		fprintf(stderr, "ERROR: Invalid xdev for projection layer.\n");
 		return false;
 	}
 
-	struct comp_swapchain *sc = comp_swapchain(active_client->xscs[sci]);
-	struct comp_swapchain_image *image = NULL;
-	image = &sc->images[layer->data.quad.sub.image_index];
-
 	// Cast away volatile.
 	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
 
-	//! @todo we are ignoring subrect here!
-	comp_renderer_set_quad_layer(c->r, i, image, data);
+	xrt_comp_layer_stereo_projection(xc, xdev, lxcs, rxcs, data);
 
 	return true;
 }
 
 static bool
-_update_layers(struct comp_compositor *c,
-               volatile struct ipc_client_state *active_client,
-               uint32_t *num_layers)
+_update_quad_layer(struct xrt_compositor *xc,
+                   volatile struct ipc_client_state *ics,
+                   volatile struct ipc_layer_entry *layer,
+                   uint32_t i)
+{
+	uint32_t xdevi = layer->xdev_id;
+	uint32_t sci = layer->swapchain_ids[0];
+
+	struct xrt_device *xdev = ics->server->xdevs[xdevi];
+	struct xrt_swapchain *xcs = ics->xscs[sci];
+
+	if (xcs == NULL) {
+		fprintf(stderr, "ERROR: Invalid swapchain for quad layer.\n");
+		return false;
+	}
+
+	if (xdev == NULL) {
+		fprintf(stderr, "ERROR: Invalid xdev for quad layer.\n");
+		return false;
+	}
+
+	// Cast away volatile.
+	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
+
+	xrt_comp_layer_quad(xc, xdev, xcs, data);
+
+	return true;
+}
+
+static bool
+_update_layers(struct xrt_compositor *xc,
+               volatile struct ipc_client_state *active_client)
 {
 	volatile struct ipc_layer_slot *render_state =
 	    &active_client->render_state;
-
-	if (*num_layers != render_state->num_layers) {
-		//! @todo Resizing here would be faster
-		*num_layers = render_state->num_layers;
-		comp_renderer_destroy_layers(c->r);
-		comp_renderer_allocate_layers(c->r, render_state->num_layers);
-	}
 
 	for (uint32_t i = 0; i < render_state->num_layers; i++) {
 		volatile struct ipc_layer_entry *layer =
 		    &render_state->layers[i];
 		switch (layer->data.type) {
 		case XRT_LAYER_STEREO_PROJECTION: {
-			if (!_update_projection_layer(c, active_client, layer,
+			if (!_update_projection_layer(xc, active_client, layer,
 			                              i))
 				return false;
 			break;
 		}
 		case XRT_LAYER_QUAD: {
-			if (!_update_quad_layer(c, active_client, layer, i))
+			if (!_update_quad_layer(xc, active_client, layer, i))
 				return false;
 			break;
 		}
@@ -615,14 +608,11 @@ static int
 main_loop(struct ipc_server *vs)
 {
 	struct xrt_compositor *xc = vs->xc;
-	struct comp_compositor *c = comp_compositor(xc);
 
 	// make sure all our client connections have a handle to the compositor
 	// and consistent initial state
 	vs->thread_state.server = vs;
 	vs->thread_state.xc = xc;
-
-	uint32_t num_layers = 0;
 
 	while (vs->running) {
 
@@ -640,36 +630,27 @@ main_loop(struct ipc_server *vs)
 			active_client = &vs->thread_state;
 		}
 
-		/*
-		 * Render the swapchains.
-		 */
+		int64_t frame_id;
+		uint64_t predicted_display_time;
+		uint64_t predicted_display_period;
 
-		if (active_client == NULL || !active_client->active ||
-		    active_client->num_swapchains == 0) {
-			if (num_layers != 0) {
-				COMP_DEBUG(c, "Destroying layers.");
-				comp_renderer_destroy_layers(c->r);
-				num_layers = 0;
-			}
-		} else {
-			// our ipc server thread will fill in l & r
-			// swapchain indices and toggle wait to false
-			// when the client calls end_frame, signalling
-			// us to render.
-			if (active_client->rendering_state) {
-				if (!_update_layers(c, active_client,
-				                    &num_layers))
-					continue;
+		xrt_comp_wait_frame(xc, &frame_id, &predicted_display_time,
+		                    &predicted_display_period);
 
-				// set our client state back to waiting.
-				active_client->rendering_state = false;
-			}
+		uint64_t now = os_monotonic_get_ns();
+		uint64_t diff = predicted_display_time - now;
+
+		u_rt_helper_new_sample(&vs->urth, predicted_display_time, diff,
+		                       predicted_display_period);
+
+		xrt_comp_begin_frame(xc, frame_id);
+		xrt_comp_layer_begin(xc, frame_id, 0);
+
+		if (active_client != NULL && active_client->active) {
+			_update_layers(xc, active_client);
 		}
 
-		comp_renderer_draw(c->r);
-
-		// Now is a good time to destroy objects.
-		comp_compositor_garbage_collect(c);
+		xrt_comp_layer_commit(xc, frame_id);
 	}
 
 	return 0;

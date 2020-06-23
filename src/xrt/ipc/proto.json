@@ -14,14 +14,36 @@
 	},
 
 	"compositor_wait_frame": {
+		"out": [
+			{"name": "frame_id", "type": "int64_t"},
+			{"name": "predicted_display_time", "type": "uint64_t"},
+			{"name": "wake_up_time", "type": "uint64_t"},
+			{"name": "predicted_display_period", "type": "uint64_t"},
+			{"name": "min_display_period", "type": "uint64_t"}
+		]
 	},
 
-	"compositor_begin_frame": {},
+	"compositor_wait_woke": {
+		"in": [
+			{"name": "frame_id", "type": "int64_t"}
+		]
+	},
 
-	"compositor_discard_frame": {},
+	"compositor_begin_frame": {
+		"in": [
+			{"name": "frame_id", "type": "int64_t"}
+		]
+	},
+
+	"compositor_discard_frame": {
+		"in": [
+			{"name": "frame_id", "type": "int64_t"}
+		]
+	},
 
 	"compositor_layer_sync": {
 		"in": [
+			{"name": "frame_id", "type": "int64_t"},
 			{"name": "slot_id", "type": "uint32_t"}
 		],
 		"out": [

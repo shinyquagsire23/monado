@@ -14,6 +14,8 @@
 
 #include "util/u_misc.h"
 
+#include "os/os_time.h"
+
 #include "ipc_protocol.h"
 #include "ipc_client.h"
 #include "ipc_client_generated.h"
@@ -267,37 +269,6 @@ ipc_compositor_get_formats(struct xrt_compositor *xc,
 	return res;
 }
 
-static bool
-wait_semaphore(struct ipc_client_compositor *icc, struct ipc_shared_memory *ism)
-{
-	struct timespec ts;
-	if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-		IPC_ERROR(icc->ipc_c, "Error getting CLOCK_REALTIME\n");
-		return false;
-	}
-
-	int s;
-	ts.tv_sec += 2;
-
-	do {
-		s = sem_timedwait(&ism->wait_frame.sem, &ts);
-	} while (s < 0 && errno == EINTR);
-
-	/* Check what happened */
-
-	if (s < 0) {
-		if (errno == ETIMEDOUT) {
-			IPC_ERROR(icc->ipc_c,
-			          "Error sem_timedwait() timed out\n");
-		} else {
-			IPC_ERROR(icc->ipc_c,
-			          "Error sem_timedwait() error '%i'\n", errno);
-			return false;
-		}
-	}
-	return true;
-}
-
 static xrt_result_t
 ipc_compositor_wait_frame(struct xrt_compositor *xc,
                           int64_t *out_frame_id,
@@ -306,15 +277,54 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	IPC_CALL_CHK(ipc_call_compositor_wait_frame(icc->ipc_c));
+	uint64_t wake_up_time_ns = 0;
+	uint64_t min_display_period_ns = 0;
 
-	wait_semaphore(icc, icc->ipc_c->ism);
+	IPC_CALL_CHK(ipc_call_compositor_wait_frame(
+	    icc->ipc_c,                   // Connection
+	    out_frame_id,                 // Frame id
+	    out_predicted_display_time,   // Display time
+	    &wake_up_time_ns,             // When we should wake up
+	    out_predicted_display_period, // Current period
+	    &min_display_period_ns));     // Minimum display period
 
-	*out_frame_id = 1;
-	*out_predicted_display_time =
-	    icc->ipc_c->ism->wait_frame.predicted_display_time;
-	*out_predicted_display_period =
-	    icc->ipc_c->ism->wait_frame.predicted_display_period;
+	uint64_t now_ns = os_monotonic_get_ns();
+
+	// Lets hope its not to late.
+	if (wake_up_time_ns <= now_ns) {
+		res = ipc_call_compositor_wait_woke(icc->ipc_c, *out_frame_id);
+		return res;
+	}
+
+	const uint64_t _1ms_in_ns = 1000 * 1000;
+	const uint64_t measured_scheduler_latency_ns = 50 * 1000;
+
+	// Within one ms, just release the app right now.
+	if (wake_up_time_ns - _1ms_in_ns <= now_ns) {
+		res = ipc_call_compositor_wait_woke(icc->ipc_c, *out_frame_id);
+		return res;
+	}
+
+	// This is how much we should sleep.
+	uint64_t diff_ns = wake_up_time_ns - now_ns;
+
+	// A minor tweak that helps hit the time better.
+	diff_ns -= measured_scheduler_latency_ns;
+
+	os_nanosleep(diff_ns);
+
+	res = ipc_call_compositor_wait_woke(icc->ipc_c, *out_frame_id);
+
+#if 0
+	uint64_t then_ns = now_ns;
+	now_ns = os_monotonic_get_ns();
+
+	diff_ns = now_ns - then_ns;
+	uint64_t ms100 = diff_ns / (1000 * 10);
+
+	fprintf(stderr, "%s: Slept %i.%02ims\n", __func__, (int)ms100 / 100,
+	        (int)ms100 % 100);
+#endif
 
 	return res;
 }
@@ -324,7 +334,7 @@ ipc_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	IPC_CALL_CHK(ipc_call_compositor_begin_frame(icc->ipc_c));
+	IPC_CALL_CHK(ipc_call_compositor_begin_frame(icc->ipc_c, frame_id));
 
 	return res;
 }
@@ -405,7 +415,7 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 	slot->num_layers = icc->layers.num_layers;
 
 	IPC_CALL_CHK(ipc_call_compositor_layer_sync(
-	    icc->ipc_c, icc->layers.slot_id, &icc->layers.slot_id));
+	    icc->ipc_c, frame_id, icc->layers.slot_id, &icc->layers.slot_id));
 
 	// Reset.
 	icc->layers.num_layers = 0;
@@ -418,7 +428,7 @@ ipc_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	IPC_CALL_CHK(ipc_call_compositor_discard_frame(icc->ipc_c));
+	IPC_CALL_CHK(ipc_call_compositor_discard_frame(icc->ipc_c, frame_id));
 
 	return res;
 }

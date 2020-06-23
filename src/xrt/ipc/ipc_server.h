@@ -12,6 +12,8 @@
 
 #include "xrt/xrt_compiler.h"
 
+#include "util/u_render_timing.h"
+
 #include "os/os_threading.h"
 
 #include "ipc_protocol.h"
@@ -67,7 +69,6 @@ extern "C" {
 struct xrt_instance;
 struct xrt_compositor;
 struct xrt_compositor_fd;
-struct ipc_wait;
 
 
 /*!
@@ -159,11 +160,13 @@ struct ipc_server
 	bool print_spew;
 
 	// Hack for now.
-	struct ipc_wait *iw;
 	struct os_thread thread;
 	volatile bool thread_started;
 	volatile bool thread_stopping;
 	volatile struct ipc_client_state thread_state;
+
+
+	struct u_rt_helper urth;
 };
 
 /*!
@@ -182,45 +185,6 @@ ipc_server_main(int argc, char **argv);
 void *
 ipc_server_client_thread(void *_cs);
 
-/*!
- * Create a single wait thread.
- *
- * @ingroup ipc_server
- * @public @memberof ipc_server
- * @relatesalso ipc_wait
- */
-int
-ipc_server_wait_alloc(struct ipc_server *s, struct ipc_wait **out_iw);
-
-/*!
- * Destroy a wait thread, checks for NULL and sets to NULL.
- *
- * @ingroup ipc_server
- * @public @memberof ipc_wait
- */
-void
-ipc_server_wait_free(struct ipc_wait **out_iw);
-
-/*!
- * Add a client to wait for wait frame, if need be start waiting for the next
- * wait frame.
- *
- * @ingroup ipc_server
- * @public @memberof ipc_wait
- */
-void
-ipc_server_wait_add_frame(struct ipc_wait *iw,
-                          volatile struct ipc_client_state *cs);
-
-/*!
- * Reset the wait state for wait frame, after the client disconnected
- *
- * @ingroup ipc_server
- * @public @memberof ipc_wait
- */
-void
-ipc_server_wait_reset_client(struct ipc_wait *iw,
-                             volatile struct ipc_client_state *cs);
 
 #ifdef __cplusplus
 }

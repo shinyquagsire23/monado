@@ -61,7 +61,6 @@ add_library(ipc_server STATIC
 	ipc_server_process.c
 	ipc_server_utils.c
 	ipc_server_utils.h
-	ipc_server_wait.c
 	)
 target_include_directories(ipc_server
 	INTERFACE
