@@ -926,7 +926,7 @@ static struct binding_template valve_index_controller_bindings[44] = {
 	MAKE_INPUT(b, click, XRT_INPUT_INDEX_B_CLICK)
 	MAKE_INPUT(b, touch, XRT_INPUT_INDEX_B_TOUCH)
 	MAKE_INPUT(squeeze, value, XRT_INPUT_INDEX_SQUEEZE_VALUE)
-	MAKE_INPUT(squeeze, force, XRT_INPUT_INDEX_SQUEEZE_VALUE)
+	MAKE_INPUT(squeeze, force, XRT_INPUT_INDEX_SQUEEZE_FORCE)
 	MAKE_INPUT(trigger, click, XRT_INPUT_INDEX_TRIGGER_CLICK)
 	MAKE_INPUT(trigger, value, XRT_INPUT_INDEX_TRIGGER_VALUE)
 	MAKE_INPUT(trigger, touch, XRT_INPUT_INDEX_TRIGGER_TOUCH)
