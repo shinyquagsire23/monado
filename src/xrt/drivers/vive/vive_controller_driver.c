@@ -184,6 +184,17 @@ struct vive_controller_device
 		uint8_t buttons;
 		uint8_t last_buttons;
 
+		uint8_t touch;
+		uint8_t last_touch;
+
+		uint8_t middle_finger_handle;
+		uint8_t ring_finger_handle;
+		uint8_t pinky_finger_handle;
+		uint8_t index_finger_trigger;
+
+		uint8_t squeeze_force;
+		uint8_t trackpad_force;
+
 		bool charging;
 		uint8_t battery;
 	} state;
@@ -378,6 +389,57 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 
 	VIVE_CONTROLLER_SPEW(d, "Trigger: %f", d->state.trigger);
 
+
+	/* d->state.touch is bitmask of currently touched buttons.
+	 * (index n) nth bit in the bitmask -> input "name"
+	 */
+	const int touched_button_index_map[] = {
+	    0,
+	    0,
+	    0,
+	    VIVE_CONTROLLER_INDEX_SYSTEM_TOUCH,
+	    VIVE_CONTROLLER_INDEX_A_TOUCH,
+	    VIVE_CONTROLLER_INDEX_B_TOUCH,
+	    VIVE_CONTROLLER_INDEX_THUMBSTICK_TOUCH};
+	int touch_button_count = ARRAY_SIZE(touched_button_index_map);
+	uint8_t touch_buttons = d->state.touch;
+	for (int i = 0; i < touch_button_count; i++) {
+
+		bool touched = (touch_buttons >> i) & 1;
+		bool last_touched = (d->state.last_touch >> i) & 1;
+
+		if (touched != last_touched) {
+			struct xrt_input *input =
+			    &d->base.inputs[touched_button_index_map[i]];
+
+			input->timestamp = now;
+			input->value.boolean = touched;
+
+			VIVE_CONTROLLER_DEBUG(d, "button %d %s\n", i,
+			                      touched ? "touched"
+			                              : "untouched");
+		}
+	}
+	d->state.last_touch = d->state.touch;
+
+	d->base.inputs[VIVE_CONTROLLER_INDEX_SQUEEZE_FORCE].value.vec1.x =
+	    (float)d->state.squeeze_force / UINT8_MAX;
+	d->base.inputs[VIVE_CONTROLLER_INDEX_SQUEEZE_FORCE].timestamp = now;
+	if (d->state.squeeze_force > 0) {
+		VIVE_CONTROLLER_DEBUG(d, "Squeeze force: %f\n",
+		                      (float)d->state.squeeze_force /
+		                          UINT8_MAX);
+	}
+
+	d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_FORCE].value.vec1.x =
+	    (float)d->state.trackpad_force / UINT8_MAX;
+	d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_FORCE].timestamp = now;
+	if (d->state.trackpad_force > 0) {
+		VIVE_CONTROLLER_DEBUG(d, "Trackpad force: %f\n",
+		                      (float)d->state.trackpad_force /
+		                          UINT8_MAX);
+	}
+
 	os_thread_helper_unlock(&d->controller_thread);
 }
 
@@ -519,10 +581,12 @@ vive_controller_device_set_output(struct xrt_device *xdev,
 }
 
 static void
-controller_handle_battery(struct vive_controller_device *d, uint8_t battery)
+controller_handle_battery(struct vive_controller_device *d,
+                          struct vive_controller_battery_sample *sample)
 {
-	uint8_t charge_percent = battery & VIVE_CONTROLLER_BATTERY_CHARGE_MASK;
-	bool charging = battery & VIVE_CONTROLLER_BATTERY_CHARGING;
+	uint8_t charge_percent =
+	    sample->battery & VIVE_CONTROLLER_BATTERY_CHARGE_MASK;
+	bool charging = sample->battery & VIVE_CONTROLLER_BATTERY_CHARGING;
 	VIVE_CONTROLLER_DEBUG(d, "Charging %d, percent %d\n", charging,
 	                      charge_percent);
 	d->state.charging = charging;
@@ -530,16 +594,18 @@ controller_handle_battery(struct vive_controller_device *d, uint8_t battery)
 }
 
 static void
-controller_handle_buttons(struct vive_controller_device *d, uint8_t buttons)
+controller_handle_buttons(struct vive_controller_device *d,
+                          struct vive_controller_button_sample *sample)
 {
-	d->state.buttons = buttons;
+	d->state.buttons = sample->buttons;
 }
 
 static void
-controller_handle_touch_position(struct vive_controller_device *d, uint8_t *buf)
+controller_handle_touch_position(struct vive_controller_device *d,
+                                 struct vive_controller_touch_sample *sample)
 {
-	int16_t x = __le16_to_cpu(*(__le16 *)buf);
-	int16_t y = __le16_to_cpu(*(__le16 *)(buf + 2));
+	int16_t x = __le16_to_cpu(sample->touch[0]);
+	int16_t y = __le16_to_cpu(sample->touch[1]);
 	d->state.trackpad.x = (float)x / INT16_MAX;
 	d->state.trackpad.y = (float)y / INT16_MAX;
 	if (d->state.trackpad.x != 0 || d->state.trackpad.y != 0)
@@ -549,9 +615,9 @@ controller_handle_touch_position(struct vive_controller_device *d, uint8_t *buf)
 
 static void
 controller_handle_analog_trigger(struct vive_controller_device *d,
-                                 uint8_t analog)
+                                 struct vive_controller_trigger_sample *sample)
 {
-	d->state.trigger = (float)analog / UINT8_MAX;
+	d->state.trigger = (float)sample->trigger / UINT8_MAX;
 	VIVE_CONTROLLER_SPEW(d, "Trigger %f\n", d->state.trigger);
 }
 
@@ -583,23 +649,23 @@ cald_dt_ns(uint32_t dt_raw)
 
 static void
 vive_controller_handle_imu_sample(struct vive_controller_device *d,
-                                  struct vive_imu_report *report)
+                                  struct watchman_imu_sample *sample)
 {
-	/* Time in 48 MHz ticks, but we are missing the low byte */
-	uint32_t time_raw = d->last_ticks | report->id;
+	/* ouvrt: "Time in 48 MHz ticks, but we are missing the low byte" */
+	uint32_t time_raw = d->last_ticks | sample->timestamp_lo;
 	uint32_t dt_raw = calc_dt_raw_and_handle_overflow(d, time_raw);
 	uint64_t dt_ns = cald_dt_ns(dt_raw);
 
 	int16_t acc[3] = {
-	    __le16_to_cpu(report->sample->acc[0]),
-	    __le16_to_cpu(report->sample->acc[1]),
-	    __le16_to_cpu(report->sample->acc[2]),
+	    __le16_to_cpu(sample->acc[0]),
+	    __le16_to_cpu(sample->acc[1]),
+	    __le16_to_cpu(sample->acc[2]),
 	};
 
 	int16_t gyro[3] = {
-	    __le16_to_cpu(report->sample->gyro[0]),
-	    __le16_to_cpu(report->sample->gyro[1]),
-	    __le16_to_cpu(report->sample->gyro[2]),
+	    __le16_to_cpu(sample->gyro[0]),
+	    __le16_to_cpu(sample->gyro[1]),
+	    __le16_to_cpu(sample->gyro[2]),
 	};
 
 	float scale = (float)d->imu.acc_range / 32768.0f;
@@ -671,6 +737,21 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d,
 }
 
 static void
+controller_handle_touch_force(struct vive_controller_device *d,
+                              struct watchman_touch_force *sample)
+{
+	d->state.touch = sample->touch;
+
+	d->state.middle_finger_handle = sample->middle_finger_handle;
+	d->state.ring_finger_handle = sample->ring_finger_handle;
+	d->state.pinky_finger_handle = sample->pinky_finger_handle;
+	d->state.index_finger_trigger = sample->index_finger_trigger;
+
+	d->state.squeeze_force = sample->squeeze_force;
+	d->state.trackpad_force = sample->trackpad_force;
+}
+
+static void
 vive_controller_handle_lighthousev1(uint8_t *buf, uint8_t len)
 {
 	// stub
@@ -713,7 +794,7 @@ vive_controller_decode_watchmanv1(struct vive_controller_device *d,
 	 */
 
 	// input events have first three bits set
-	while ((*buf & 0xe0) == 0xe0 && buf < end) {
+	if ((*buf & 0xe0) == 0xe0 && buf < end) {
 
 		// clang-format off
 
@@ -734,23 +815,30 @@ vive_controller_decode_watchmanv1(struct vive_controller_device *d,
 		buf++;
 
 		if (has_battery) {
-			controller_handle_battery(d, *buf++);
+			controller_handle_battery(
+			    d, (struct vive_controller_battery_sample *)buf);
+			buf += sizeof(struct vive_controller_battery_sample);
 		}
 
 		if (has_buttons) {
-			controller_handle_buttons(d, *buf++);
+			controller_handle_buttons(
+			    d, (struct vive_controller_button_sample *)buf);
+			buf += sizeof(struct vive_controller_button_sample);
 		}
 		if (has_trigger) {
-			controller_handle_analog_trigger(d, *buf++);
+			controller_handle_analog_trigger(
+			    d, (struct vive_controller_trigger_sample *)buf);
+			buf += sizeof(struct vive_controller_trigger_sample);
 		}
 		if (has_trackpad) {
-			controller_handle_touch_position(d, buf);
+			controller_handle_touch_position(
+			    d, (struct vive_controller_touch_sample *)buf);
 			buf += 4;
 		}
 		if (has_imu) {
 			vive_controller_handle_imu_sample(
-			    d, (struct vive_imu_report *)buf);
-			buf += 13;
+			    d, (struct watchman_imu_sample *)buf);
+			buf += sizeof(struct watchman_imu_sample);
 		}
 	}
 
@@ -760,6 +848,8 @@ vive_controller_decode_watchmanv1(struct vive_controller_device *d,
 	if (buf < end)
 		vive_controller_handle_lighthousev1(buf, end - buf);
 }
+
+//#define WATCHMAN2_PRINT_HID
 
 /*
  * Handles battery, imu, trigger, buttons, trackpad.
@@ -772,75 +862,176 @@ vive_controller_decode_watchmanv2(struct vive_controller_device *d,
 	uint8_t *buf = message->payload;
 	uint8_t *end = message->payload + message->len - 1;
 
-	/*
+#ifdef WATCHMAN2_PRINT_HID
 	for (int i = 0; i < message->len; i++) {
-	        //printf("%02x ", buf[i]);
-	        int j = 8;
-	        while(j--) {
-	                putchar('0' + ((buf[i] >> j) & 1));
-	        }
-	        putchar(' ');
+		int j = 8;
+		while (j--) {
+			putchar('0' + ((buf[i] >> j) & 1));
+		}
+		putchar(' ');
 	}
 	printf("\n");
-	*/
+	for (int i = 0; i < message->len; i++) {
+		printf("%8.02x ", buf[i]);
+	}
+	printf("\n");
+#endif
 
-	/* payload starts with "event flags" byte.
-	 * If it does not start with 111, it contains only lighthouse data,
-	 * and possibly gen2 events.
-	 * If it starts with 111, events follow in this order, each of them
-	 * optional:
-	 *   - battery:  1 byte (1110???1)
-	 *   - trigger:  1 byte (1111?1??)
-	 *   - trackpad: 4 byte (1111??1?)
-	 *   - buttons:  1 byte (1111???1)
-	 *   - imu:     13 byte (111?1???)
+
+	/* payload starts with "event flags" byte. */
+
+	/*
+	 * If flags == 0xe1 == 11100001, battery follows.
+	 * Battery is always at the beginning of the payload.
+	 * after battery there may be another payload.
+	 * careful: 0xe1 often comes alone without actual data.
+	 */
+	if (*buf == 0xe1 && buf < end) {
+		buf++;
+		controller_handle_battery(
+		    d, (struct vive_controller_battery_sample *)buf);
+		buf += sizeof(struct vive_controller_battery_sample);
+
+#ifdef WATCHMAN2_PRINT_HID
+		printf(
+		    "         "
+		    "  battery");
+#endif
+	}
+
+
+	/*
+	 * If flags == 0xf0 == 11110000,  8 bytes touch+force follow.
+	 * This package is always at the beginning of the payload.
+	 */
+	if (*buf == 0xf0 && buf < end) {
+		buf++;
+		controller_handle_touch_force(
+		    d, (struct watchman_touch_force *)buf);
+		size_t s = sizeof(struct watchman_touch_force);
+		buf += s;
+
+#ifdef WATCHMAN2_PRINT_HID
+		printf("        ");
+		for (size_t i = 0; i < s; i++)
+			printf("  t&force");
+#endif
+	}
+
+	/*
+	 * If flags == 0xe8 == 11101000, imu data follows.
+	 * This package can be at the beginning of the payload or after battery.
+	 */
+	// TODO: it's possible we misparse non-im udata as imu data
+	if (*buf == 0xe8 && buf < end) {
+		buf++;
+		vive_controller_handle_imu_sample(
+		    d, (struct watchman_imu_sample *)buf);
+		size_t s = sizeof(struct watchman_imu_sample);
+		buf += s;
+
+#ifdef WATCHMAN2_PRINT_HID
+		printf("        ");
+		for (size_t i = 0; i < s; i++)
+			printf("      imu");
+#endif
+	}
+
+	/*
+	 * If flags starts with 1111, events follow in this order,
+	 * each of them optional:
+	 *   - trigger:      1 byte  (1111?1??)
+	 *   - trackpad:     4 byte  (1111??1?)
+	 *   - buttons:      1 byte  (1111???1)
+	 *   - touch&force+imu or imu: 8+13 or 13 byte (11111???)
 	 * There may be another input event after a battery event.
 	 */
-
-	// input events have first three bits set
-	if ((*buf & 0xe0) == 0xe0 && buf < end) {
+	if ((*buf & 0xf0) == 0xf0 && buf < end - 1) {
 
 		// clang-format off
 
-		// battery follows when 1110???1
-		bool has_battery  = (*buf & 0x10) != 0x10 && (*buf & 0x1) == 0x1;
-
-		// input follows when 1111?<trigger><trackpad><buttons>
-		bool has_trigger  = (*buf & 0x10) == 0x10 && (*buf & 0x4) == 0x4;
-		bool has_trackpad = (*buf & 0x10) == 0x10 && (*buf & 0x2) == 0x2;
-		bool has_buttons  = (*buf & 0x10) == 0x10 && (*buf & 0x1) == 0x1;
-
-		// imu event follows when 11101???
-		// there are imu-only messages, and imu-after-battery
-		bool has_imu      = (*buf & 0x08) == 0x8 && (*buf & 0x10) != 0x10;
-
-		//! @todo: Confirm that messages 4th bit == 1 have no valid
-		// imu data that we erroneously drop
+		// input flags 1111<touch_force><trigger><trackpad><buttons>
+		bool has_touch_force = (*buf & 0x8) == 0x8;
+		bool has_trigger     = (*buf & 0x4) == 0x4;
+		bool has_trackpad    = (*buf & 0x2) == 0x2;
+		bool has_buttons     = (*buf & 0x1) == 0x1;
 
 		// clang-format on
 
 		buf++;
 
-		if (has_battery) {
-			controller_handle_battery(d, *buf++);
-		}
+#ifdef WATCHMAN2_PRINT_HID
+		printf("        ");
+#endif
 
 		if (has_buttons) {
-			controller_handle_buttons(d, *buf++);
+			controller_handle_buttons(
+			    d, (struct vive_controller_button_sample *)buf);
+			buf += sizeof(struct vive_controller_button_sample);
+#ifdef WATCHMAN2_PRINT_HID
+			printf("  buttons");
+#endif
 		}
 		if (has_trigger) {
-			controller_handle_analog_trigger(d, *buf++);
+			controller_handle_analog_trigger(
+			    d, (struct vive_controller_trigger_sample *)buf);
+			buf += sizeof(struct vive_controller_trigger_sample);
+#ifdef WATCHMAN2_PRINT_HID
+			printf("  trigger");
+#endif
 		}
 		if (has_trackpad) {
-			controller_handle_touch_position(d, buf);
-			buf += 4;
+			controller_handle_touch_position(
+			    d, (struct vive_controller_touch_sample *)buf);
+			buf += sizeof(struct vive_controller_touch_sample);
+#ifdef WATCHMAN2_PRINT_HID
+			for (unsigned long i = 0;
+			     i < sizeof(struct vive_controller_touch_sample);
+			     i++)
+				printf(" trackpad");
+#endif
 		}
-		if (has_imu) {
+		if (has_touch_force) {
+			uint8_t type_flag = *buf;
+			if (type_flag == TYPE_FLAG_TOUCH_FORCE) {
+				controller_handle_touch_force(
+				    d, (struct watchman_touch_force *)buf);
+				size_t s = sizeof(struct watchman_touch_force);
+				buf += s;
+#ifdef WATCHMAN2_PRINT_HID
+				for (unsigned long i = 0;
+				     i < sizeof(struct watchman_touch_force);
+				     i++)
+					printf("  t&force");
+#endif
+			}
+		}
+		// if something still follows, usually imu
+		// sometimes it's 5 unknown bytes'
+		if (buf < end &&
+		    end - buf >= (long)sizeof(struct watchman_imu_sample)) {
 			vive_controller_handle_imu_sample(
-			    d, (struct vive_imu_report *)buf);
+			    d, (struct watchman_imu_sample *)buf);
+			size_t s = sizeof(struct watchman_imu_sample);
+			buf += s;
+#ifdef WATCHMAN2_PRINT_HID
+			for (unsigned long i = 0;
+			     i < sizeof(struct watchman_imu_sample); i++)
+				printf("      imu");
+#endif
 		}
 	}
 
+
+#ifdef WATCHMAN2_PRINT_HID
+	printf("\n");
+#endif
+
+	if (buf < end) {
+		VIVE_CONTROLLER_ERROR(d, "%ld bytes unparsed data in message\n",
+		                      message->len - (buf - message->payload) -
+		                          1);
+	}
 	if (buf > end)
 		VIVE_CONTROLLER_ERROR(d, "overshoot: %ld\n", buf - end);
 
