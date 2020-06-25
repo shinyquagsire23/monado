@@ -97,6 +97,7 @@ client_gl_compositor_begin_session(struct xrt_compositor *xc,
                                    enum xrt_view_type type)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
+
 	// Pipe down call into fd compositor.
 	return xrt_comp_begin_session(&c->xcfd->base, type);
 }
@@ -105,6 +106,7 @@ static xrt_result_t
 client_gl_compositor_end_session(struct xrt_compositor *xc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
+
 	// Pipe down call into fd compositor.
 	return xrt_comp_end_session(&c->xcfd->base);
 }
@@ -116,6 +118,7 @@ client_gl_compositor_wait_frame(struct xrt_compositor *xc,
                                 uint64_t *predicted_display_period)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
+
 	// Pipe down call into fd compositor.
 	return xrt_comp_wait_frame(&c->xcfd->base, out_frame_id,
 	                           predicted_display_time,
@@ -126,6 +129,7 @@ static xrt_result_t
 client_gl_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
+
 	// Pipe down call into fd compositor.
 	return xrt_comp_begin_frame(&c->xcfd->base, frame_id);
 }
@@ -134,6 +138,7 @@ static xrt_result_t
 client_gl_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
+
 	// Pipe down call into fd compositor.
 	return xrt_comp_discard_frame(&c->xcfd->base, frame_id);
 }
