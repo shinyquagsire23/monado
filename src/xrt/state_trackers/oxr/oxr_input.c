@@ -1333,13 +1333,15 @@ oxr_action_sync_data(struct oxr_logger *log,
 
 #define OXR_ACTION_GET_XR_STATE_FROM_ACTION_STATE_COMMON(ACTION_STATE, DATA)   \
 	do {                                                                   \
-		DATA->lastChangeTime = ACTION_STATE->timestamp;                \
+		DATA->lastChangeTime = time_state_monotonic_to_ts_ns(          \
+		    inst->timekeeping, ACTION_STATE->timestamp);               \
 		DATA->changedSinceLastSync = ACTION_STATE->changed;            \
 		DATA->isActive = XR_TRUE;                                      \
 	} while (0)
 
 static void
-get_xr_state_from_action_state_bool(struct oxr_action_state *state,
+get_xr_state_from_action_state_bool(struct oxr_instance *inst,
+                                    struct oxr_action_state *state,
                                     XrActionStateBoolean *data)
 {
 	/* only get here if the action is active! */
@@ -1349,7 +1351,8 @@ get_xr_state_from_action_state_bool(struct oxr_action_state *state,
 }
 
 static void
-get_xr_state_from_action_state_vec1(struct oxr_action_state *state,
+get_xr_state_from_action_state_vec1(struct oxr_instance *inst,
+                                    struct oxr_action_state *state,
                                     XrActionStateFloat *data)
 {
 	/* only get here if the action is active! */
@@ -1359,7 +1362,8 @@ get_xr_state_from_action_state_vec1(struct oxr_action_state *state,
 }
 
 static void
-get_xr_state_from_action_state_vec2(struct oxr_action_state *state,
+get_xr_state_from_action_state_vec2(struct oxr_instance *inst,
+                                    struct oxr_action_state *state,
                                     XrActionStateVector2f *data)
 {
 	/* only get here if the action is active! */
@@ -1372,27 +1376,27 @@ get_xr_state_from_action_state_vec2(struct oxr_action_state *state,
 #define OXR_ACTION_GET_FILLER(TYPE)                                            \
 	if (sub_paths.any && act_attached->any_state.active) {                 \
 		get_xr_state_from_action_state_##TYPE(                         \
-		    &act_attached->any_state, data);                           \
+		    sess->sys->inst, &act_attached->any_state, data);          \
 	}                                                                      \
 	if (sub_paths.user && act_attached->user.current.active) {             \
 		get_xr_state_from_action_state_##TYPE(                         \
-		    &act_attached->user.current, data);                        \
+		    sess->sys->inst, &act_attached->user.current, data);       \
 	}                                                                      \
 	if (sub_paths.head && act_attached->head.current.active) {             \
 		get_xr_state_from_action_state_##TYPE(                         \
-		    &act_attached->head.current, data);                        \
+		    sess->sys->inst, &act_attached->head.current, data);       \
 	}                                                                      \
 	if (sub_paths.left && act_attached->left.current.active) {             \
 		get_xr_state_from_action_state_##TYPE(                         \
-		    &act_attached->left.current, data);                        \
+		    sess->sys->inst, &act_attached->left.current, data);       \
 	}                                                                      \
 	if (sub_paths.right && act_attached->right.current.active) {           \
 		get_xr_state_from_action_state_##TYPE(                         \
-		    &act_attached->right.current, data);                       \
+		    sess->sys->inst, &act_attached->right.current, data);      \
 	}                                                                      \
 	if (sub_paths.gamepad && act_attached->gamepad.current.active) {       \
 		get_xr_state_from_action_state_##TYPE(                         \
-		    &act_attached->gamepad.current, data);                     \
+		    sess->sys->inst, &act_attached->gamepad.current, data);    \
 	}
 
 /*!
