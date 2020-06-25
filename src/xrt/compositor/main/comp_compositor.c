@@ -985,12 +985,22 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 	 * @todo Support more like, depth/float formats etc,
 	 * remember to update the GL client as well.
 	 */
-	// These are the available formats we will expose to our clients.
-	c->base.base.formats[0] = VK_FORMAT_B8G8R8A8_SRGB;
-	c->base.base.formats[1] = VK_FORMAT_R8G8B8A8_SRGB;
-	c->base.base.formats[2] = VK_FORMAT_B8G8R8A8_UNORM;
-	c->base.base.formats[3] = VK_FORMAT_R8G8B8A8_UNORM;
-	c->base.base.num_formats = 4;
+	/*
+	 * These are the available formats we will expose to our clients.
+	 *
+	 * In order of what we prefer. Start with a SRGB format that works on
+	 * both OpenGL and Vulkan. The two linear formats that works on both
+	 * OpenGL and Vulkan. A SRGB format that only works on Vulkan. The last
+	 * two formats should not be used as they are linear but doesn't have
+	 * enough bits to express it without resulting in banding.
+	 */
+	c->base.base.formats[0] = VK_FORMAT_R8G8B8A8_SRGB;            // OGL VK
+	c->base.base.formats[1] = VK_FORMAT_A2B10G10R10_UNORM_PACK32; // OGL VK
+	c->base.base.formats[2] = VK_FORMAT_R16G16B16A16_SFLOAT;      // OGL VK
+	c->base.base.formats[3] = VK_FORMAT_B8G8R8A8_SRGB;            // VK
+	c->base.base.formats[4] = VK_FORMAT_R8G8B8A8_UNORM;           // OGL VK
+	c->base.base.formats[5] = VK_FORMAT_B8G8R8A8_UNORM;           // VK
+	c->base.base.num_formats = 6;
 
 	u_var_add_root(c, "Compositor", true);
 	u_var_add_ro_f32(c, &c->compositor_frame_times.fps, "FPS (Compositor)");
