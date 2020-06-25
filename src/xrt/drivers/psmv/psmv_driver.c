@@ -489,6 +489,7 @@ struct psmv_device
 		{
 			struct xrt_quat rot;
 			struct xrt_vec3 rotvec;
+			struct xrt_vec3 angvel;
 			struct imu_fusion *fusion;
 			struct
 			{
@@ -691,9 +692,9 @@ update_fusion(struct psmv_device *psmv,
 		    psmv->fusion.fusion, timestamp_ns, &psmv->read.gyro,
 		    &psmv->fusion.variance.gyro, &psmv->read.accel,
 		    &psmv->fusion.variance.accel, NULL);
-		struct xrt_vec3 angvel_dummy;
 		imu_fusion_get_prediction(psmv->fusion.fusion, timestamp_ns,
-		                          &psmv->fusion.rot, &angvel_dummy);
+		                          &psmv->fusion.rot,
+		                          &psmv->fusion.angvel);
 		imu_fusion_get_prediction_rotation_vec(
 		    psmv->fusion.fusion, timestamp_ns, &psmv->fusion.rotvec);
 #endif
@@ -803,11 +804,17 @@ psmv_get_fusion_pose(struct psmv_device *psmv,
                      struct xrt_space_relation *out_relation)
 {
 	out_relation->pose.orientation = psmv->fusion.rot;
+	out_relation->angular_velocity = psmv->fusion.angvel;
+	out_relation->linear_velocity.x = 0.0f;
+	out_relation->linear_velocity.y = 0.0f;
+	out_relation->linear_velocity.z = 0.0f;
 
 	//! @todo assuming that orientation is actually currently tracked.
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT |
+	    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
 }
 
 
