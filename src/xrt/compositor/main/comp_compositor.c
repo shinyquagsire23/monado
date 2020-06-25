@@ -110,6 +110,18 @@ compositor_destroy(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
+compositor_prepare_session(struct xrt_compositor *xc,
+                           struct xrt_session_prepare_info *xspi)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+	COMP_DEBUG(c, "PREPARE_SESSION");
+
+	c->state = COMP_STATE_PREPARED;
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
 compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -190,6 +202,10 @@ compositor_wait_frame(struct xrt_compositor *xc,
 		c->last_next_display_time = now_ns + interval_ns;
 		*predicted_display_time = c->last_next_display_time;
 		*out_frame_id = c->last_next_display_time;
+
+		if (c->state == COMP_STATE_PREPARED) {
+			c->state = COMP_STATE_WAITED;
+		}
 		return XRT_SUCCESS;
 	}
 
@@ -222,6 +238,10 @@ compositor_wait_frame(struct xrt_compositor *xc,
 			*out_frame_id = c->last_next_display_time;
 
 			c->last_next_display_time = next_display_time;
+
+			if (c->state == COMP_STATE_PREPARED) {
+				c->state = COMP_STATE_WAITED;
+			}
 			return XRT_SUCCESS;
 		}
 	}
@@ -393,6 +413,44 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 
 	// Now is a good point to garbage collect.
 	comp_compositor_garbage_collect(c);
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+compositor_poll_events(struct xrt_compositor *xc,
+                       union xrt_compositor_event *out_xce)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+	COMP_SPEW(c, "POLL_EVENTS");
+
+	U_ZERO(out_xce);
+
+	switch (c->state) {
+	case COMP_STATE_READY:
+		out_xce->state.type = XRT_COMPOSITOR_EVENT_NONE;
+		break;
+	case COMP_STATE_PREPARED:
+		out_xce->state.type = XRT_COMPOSITOR_EVENT_NONE;
+		break;
+	case COMP_STATE_WAITED:
+		COMP_DEBUG(c, "WAITED -> VISIBLE");
+		out_xce->state.type = XRT_COMPOSITOR_EVENT_STATE_CHANGE;
+		out_xce->state.visible = true;
+		c->state = COMP_STATE_VISIBLE;
+		break;
+	case COMP_STATE_VISIBLE:
+		COMP_DEBUG(c, "VISIBLE -> FOCUSED");
+		out_xce->state.type = XRT_COMPOSITOR_EVENT_STATE_CHANGE;
+		out_xce->state.visible = true;
+		out_xce->state.focused = true;
+		c->state = COMP_STATE_FOCUSED;
+		break;
+	case COMP_STATE_FOCUSED:
+		// No more transitions.
+		out_xce->state.type = XRT_COMPOSITOR_EVENT_NONE;
+		break;
+	}
+
 	return XRT_SUCCESS;
 }
 
@@ -874,6 +932,7 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 
 	c->base.base.create_swapchain = comp_swapchain_create;
+	c->base.base.prepare_session = compositor_prepare_session;
 	c->base.base.begin_session = compositor_begin_session;
 	c->base.base.end_session = compositor_end_session;
 	c->base.base.wait_frame = compositor_wait_frame;
@@ -884,6 +943,7 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 	    compositor_layer_stereo_projection;
 	c->base.base.layer_quad = compositor_layer_quad;
 	c->base.base.layer_commit = compositor_layer_commit;
+	c->base.base.poll_events = compositor_poll_events;
 	c->base.base.destroy = compositor_destroy;
 	c->xdev = xdev;
 

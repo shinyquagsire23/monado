@@ -119,6 +119,20 @@ struct comp_layer_slot
 };
 
 /*!
+ * State to emulate state transitions correctly.
+ *
+ * @ingroup comp_main
+ */
+enum comp_state
+{
+	COMP_STATE_READY = 0,
+	COMP_STATE_PREPARED = 1,
+	COMP_STATE_WAITED = 2,
+	COMP_STATE_VISIBLE = 3,
+	COMP_STATE_FOCUSED = 4,
+};
+
+/*!
  * Main compositor struct tying everything in the compositor together.
  *
  * @ingroup comp_main
@@ -148,6 +162,9 @@ struct comp_compositor
 
 	//! Timestamp of last-rendered (immersive) frame.
 	int64_t last_frame_time_ns;
+
+	//! State for generating the correct set of events.
+	enum comp_state state;
 
 	//! Triple buffered layer stacks.
 	struct comp_layer_slot slots[3];
