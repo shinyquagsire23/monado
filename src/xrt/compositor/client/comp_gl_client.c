@@ -215,6 +215,8 @@ gl_format_to_vk(int64_t format)
 	switch (format) {
 	case GL_RGBA8: return 37 /*VK_FORMAT_R8G8B8A8_UNORM*/;
 	case GL_SRGB8_ALPHA8: return 43 /*VK_FORMAT_R8G8B8A8_SRGB*/;
+	case GL_RGB10_A2: return 64 /*VK_FORMAT_A2B10G10R10_UNORM_PACK32*/;
+	case GL_RGBA16F: return 97 /*VK_FORMAT_R16G16B16A16_SFLOAT*/;
 	default: return 0;
 	}
 }
@@ -227,6 +229,8 @@ vk_format_to_gl(int64_t format)
 	case 43 /*VK_FORMAT_R8G8B8A8_SRGB*/: return GL_SRGB8_ALPHA8;
 	case 44 /*VK_FORMAT_B8G8R8A8_UNORM*/: return 0;
 	case 50 /*VK_FORMAT_B8G8R8A8_SRGB*/: return 0;
+	case 64 /*VK_FORMAT_A2B10G10R10_UNORM_PACK32*/: return GL_RGB10_A2;
+	case 97 /*VK_FORMAT_R16G16B16A16_SFLOAT*/: return GL_RGBA16F;
 	default:
 		printf("Cannot convert VK format 0x%016" PRIx64
 		       " to GL format!\n",
