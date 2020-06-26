@@ -78,6 +78,14 @@ bool
 u_json_get_vec3(const cJSON *json, struct xrt_vec3 *out_vec3);
 
 /*!
+ * @brief Parse a vec3 from a JSON array.
+ *
+ * @return true if successful, false if not.
+ */
+bool
+u_json_get_vec3_array(const cJSON *json, struct xrt_vec3 *out_vec3);
+
+/*!
  * @brief Parse a quaternion from a JSON object.
  *
  * @return true if successful, false if not.

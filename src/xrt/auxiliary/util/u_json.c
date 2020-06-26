@@ -147,6 +147,43 @@ u_json_get_vec3(const cJSON *json, struct xrt_vec3 *out_vec3)
 }
 
 bool
+u_json_get_vec3_array(const cJSON *json, struct xrt_vec3 *out_vec3)
+{
+	assert(out_vec3 != NULL);
+
+	if (!json) {
+		return false;
+	}
+	if (!cJSON_IsArray(json)) {
+		return false;
+	}
+
+	float array[3];
+
+	if (cJSON_GetArraySize(json) != 3) {
+		return false;
+	}
+
+	const cJSON *item = NULL;
+	size_t i = 0;
+	cJSON_ArrayForEach(item, json)
+	{
+		assert(cJSON_IsNumber(item));
+		array[i] = (float)item->valuedouble;
+		++i;
+		if (i == 3) {
+			break;
+		}
+	}
+
+	out_vec3->x = array[0];
+	out_vec3->y = array[1];
+	out_vec3->z = array[2];
+
+	return true;
+}
+
+bool
 u_json_get_quat(const cJSON *json, struct xrt_quat *out_quat)
 {
 	assert(out_quat != NULL);
