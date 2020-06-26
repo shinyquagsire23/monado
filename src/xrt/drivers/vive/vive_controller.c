@@ -634,9 +634,11 @@ controller_handle_touch_force(struct vive_controller_device *d,
 }
 
 static void
-vive_controller_handle_lighthousev1(uint8_t *buf, uint8_t len)
+vive_controller_handle_lighthousev1(struct vive_controller_device *d,
+                                    uint8_t *buf,
+                                    uint8_t len)
 {
-	// stub
+	VIVE_CONTROLLER_SPEW(d, "Got lighthouse message with len %d.\n", len);
 }
 
 /*
@@ -734,7 +736,7 @@ vive_controller_decode_watchmanv1(struct vive_controller_device *d,
 		VIVE_CONTROLLER_ERROR(d, "overshoot: %ld\n", buf - end);
 
 	if (buf < end)
-		vive_controller_handle_lighthousev1(buf, end - buf);
+		vive_controller_handle_lighthousev1(d, buf, end - buf);
 }
 
 //#define WATCHMAN2_PRINT_HID
