@@ -563,10 +563,11 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d,
 	    scale * d->imu.gyro_scale.z * gyro[2] - d->imu.gyro_bias.z,
 	};
 
+	VIVE_CONTROLLER_SPEW(d, "ACC  %f %f %f", acceleration.x, acceleration.y,
+	                     acceleration.z);
+	VIVE_CONTROLLER_SPEW(d, "GYRO %f %f %f", angular_velocity.x,
+	                     angular_velocity.y, angular_velocity.z);
 	/*
-	 VIVE_CONTROLLER_SPEW(d, "ACC  %f %f %f", acceleration.x,
-	 acceleration.y, acceleration.z); VIVE_CONTROLLER_SPEW(d, "GYRO %f %f
-	 %f", angular_velocity.x, angular_velocity.y, angular_velocity.z);
 	 */
 
 	if (d->variant == CONTROLLER_VIVE_WAND) {
@@ -692,6 +693,12 @@ vive_controller_decode_watchmanv1(struct vive_controller_device *d,
 		bool has_imu      = (*buf & 0x08) == 0x8;
 
 		// clang-format on
+
+		VIVE_CONTROLLER_SPEW(d,
+		                     "battery %d trigger %d trackpad %d "
+		                     "buttons %d imu %d",
+		                     has_battery, has_trigger, has_trackpad,
+		                     has_buttons, has_imu);
 
 		buf++;
 
