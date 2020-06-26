@@ -1268,6 +1268,8 @@ vive_controller_found(struct xrt_prober *xp,
 	struct vive_controller_device *d = U_DEVICE_ALLOCATE(
 	    struct vive_controller_device, flags, VIVE_CONTROLLER_MAX_INDEX, 1);
 
+	d->print_spew = debug_get_bool_option_vive_controller_spew();
+	d->print_debug = debug_get_bool_option_vive_controller_debug();
 	d->watchman_gen = WATCHMAN_GEN_UNKNOWN;
 	d->variant = CONTROLLER_UNKNOWN;
 
@@ -1302,9 +1304,6 @@ vive_controller_found(struct xrt_prober *xp,
 	d->imu.gyro_bias.x = 0.0f;
 	d->imu.gyro_bias.y = 0.0f;
 	d->imu.gyro_bias.z = 0.0f;
-
-	d->print_spew = debug_get_bool_option_vive_controller_spew();
-	d->print_debug = debug_get_bool_option_vive_controller_debug();
 
 	d->controller_hid = controller_hid;
 
