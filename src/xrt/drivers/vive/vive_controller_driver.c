@@ -1144,9 +1144,9 @@ static void
 _get_pose_from_pos_x_z(const cJSON *obj, struct xrt_pose *pose)
 {
 	struct xrt_vec3 plus_x, plus_z;
-	u_json_get_vec3(u_json_get(obj, "plus_x"), &plus_x);
-	u_json_get_vec3(u_json_get(obj, "plus_z"), &plus_z);
-	u_json_get_vec3(u_json_get(obj, "position"), &pose->position);
+	u_json_get_vec3_array(u_json_get(obj, "plus_x"), &plus_x);
+	u_json_get_vec3_array(u_json_get(obj, "plus_z"), &plus_z);
+	u_json_get_vec3_array(u_json_get(obj, "position"), &pose->position);
 
 	math_quat_from_plus_x_z(&plus_x, &plus_z, &pose->orientation);
 }
@@ -1179,13 +1179,14 @@ vive_controller_parse_config(struct vive_controller_device *d,
 
 	switch (d->variant) {
 	case CONTROLLER_VIVE_WAND: {
-		u_json_get_vec3(u_json_get(json, "acc_bias"), &d->imu.acc_bias);
-		u_json_get_vec3(u_json_get(json, "acc_scale"),
-		                &d->imu.acc_scale);
-		u_json_get_vec3(u_json_get(json, "gyro_bias"),
-		                &d->imu.gyro_bias);
-		u_json_get_vec3(u_json_get(json, "gyro_scale"),
-		                &d->imu.gyro_scale);
+		u_json_get_vec3_array(u_json_get(json, "acc_bias"),
+		                      &d->imu.acc_bias);
+		u_json_get_vec3_array(u_json_get(json, "acc_scale"),
+		                      &d->imu.acc_scale);
+		u_json_get_vec3_array(u_json_get(json, "gyro_bias"),
+		                      &d->imu.gyro_bias);
+		u_json_get_vec3_array(u_json_get(json, "gyro_scale"),
+		                      &d->imu.gyro_scale);
 		d->firmware.mb_serial_number =
 		    _json_get_string(json, "mb_serial_number");
 	} break;
@@ -1194,11 +1195,12 @@ vive_controller_parse_config(struct vive_controller_device *d,
 		const cJSON *imu = u_json_get(json, "imu");
 		_get_pose_from_pos_x_z(imu, &d->imu.trackref);
 
-		u_json_get_vec3(u_json_get(imu, "acc_bias"), &d->imu.acc_bias);
-		u_json_get_vec3(u_json_get(imu, "acc_scale"),
-		                &d->imu.acc_scale);
-		u_json_get_vec3(u_json_get(imu, "gyro_bias"),
-		                &d->imu.gyro_bias);
+		u_json_get_vec3_array(u_json_get(imu, "acc_bias"),
+		                      &d->imu.acc_bias);
+		u_json_get_vec3_array(u_json_get(imu, "acc_scale"),
+		                      &d->imu.acc_scale);
+		u_json_get_vec3_array(u_json_get(imu, "gyro_bias"),
+		                      &d->imu.gyro_bias);
 	} break;
 	default:
 		VIVE_CONTROLLER_ERROR(d, "Unknown Vive watchman variant.\n");
