@@ -197,5 +197,10 @@ ipc_client_hmd_create(ipc_connection_t *ipc_c,
 	u_var_add_root(ich, ich->base.str, true);
 	u_var_add_ro_u32(ich, &ich->device_id, "device_id");
 
+	ich->base.orientation_tracking_supported =
+	    idev->orientation_tracking_supported;
+	ich->base.position_tracking_supported =
+	    idev->position_tracking_supported;
+
 	return &ich->base;
 }

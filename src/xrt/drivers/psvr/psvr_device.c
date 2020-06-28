@@ -1143,6 +1143,9 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 		psvr->base.tracking_origin = psvr->tracker->origin;
 	}
 
+	psvr->base.orientation_tracking_supported = true;
+	psvr->base.position_tracking_supported = false;
+
 	PSVR_DEBUG(psvr, "YES!");
 
 	return &psvr->base;

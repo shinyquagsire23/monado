@@ -1157,6 +1157,9 @@ vive_controller_create(struct os_hid_device *controller_hid,
 		}
 	}
 	VIVE_DEBUG(d, "Opened vive controller!\n");
+	d->base.orientation_tracking_supported = true;
+	d->base.position_tracking_supported = false;
+
 
 	return d;
 }

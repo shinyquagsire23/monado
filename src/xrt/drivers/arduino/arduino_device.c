@@ -432,6 +432,9 @@ arduino_device_create(struct os_ble_device *ble,
 	u_var_add_ro_vec3_f32(ad, &ad->fusion.last.accel, "last.accel");
 	u_var_add_ro_vec3_f32(ad, &ad->fusion.last.gyro, "last.gyro");
 
+	ad->base.orientation_tracking_supported = true;
+	ad->base.position_tracking_supported = false;
+
 	ARDUINO_DEBUG(ad, "Created device!");
 
 	return &ad->base;

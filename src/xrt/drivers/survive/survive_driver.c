@@ -973,6 +973,10 @@ _create_hmd_device(struct survive_system *sys)
 
 	survive->base.hmd->distortion.models = XRT_DISTORTION_MODEL_VIVE;
 	survive->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
+
+	survive->base.orientation_tracking_supported = true;
+	survive->base.position_tracking_supported = true;
+
 	return true;
 }
 
@@ -1103,6 +1107,8 @@ _create_controller_device(struct survive_system *sys, int controller_num)
 		    .value.boolean = false;
 	}
 
+	controller->base.orientation_tracking_supported = true;
+	controller->base.position_tracking_supported = true;
 
 	return true;
 }

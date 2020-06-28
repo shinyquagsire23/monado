@@ -225,6 +225,8 @@ struct xrt_device
 	//! Array of output structs.
 	struct xrt_output *outputs;
 
+	bool orientation_tracking_supported;
+	bool position_tracking_supported;
 
 	/*!
 	 * Update any attached inputs.

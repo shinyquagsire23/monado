@@ -75,6 +75,9 @@ struct ipc_shared_device
 	//! 'Offset' into the array of outputs where this devices outputs
 	//! starts.
 	uint32_t first_output_index;
+
+	bool orientation_tracking_supported;
+	bool position_tracking_supported;
 };
 
 /*!

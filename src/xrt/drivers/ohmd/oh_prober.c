@@ -75,6 +75,8 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 	/* Probe for devices */
 	int num_devices = ohmd_ctx_probe(ohp->ctx);
 
+	bool orientation_tracking_supported = false;
+	bool position_tracking_supported = false;
 	/* Then loop */
 	for (int i = 0; i < num_devices; i++) {
 		int device_class = 0, device_flags = 0;
@@ -108,6 +110,11 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 
 		OH_DEBUG(ohp, "Selecting device idx %i", i);
 		device_idx = i;
+
+		orientation_tracking_supported =
+		    (device_flags & OHMD_DEVICE_FLAGS_ROTATIONAL_TRACKING) != 0;
+		position_tracking_supported =
+		    (device_flags & OHMD_DEVICE_FLAGS_POSITIONAL_TRACKING) != 0;
 		break;
 	}
 
@@ -123,6 +130,11 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 
 	struct oh_device *ohd = oh_device_create(
 	    ohp->ctx, dev, prod, ohp->print_spew, ohp->print_debug);
+
+	ohd->base.orientation_tracking_supported =
+	    orientation_tracking_supported;
+	ohd->base.position_tracking_supported = position_tracking_supported;
+
 	return &ohd->base;
 }
 

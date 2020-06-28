@@ -709,6 +709,9 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		}
 	}
 
+	d->base.orientation_tracking_supported = true;
+	d->base.position_tracking_supported = false;
+
 	ret = os_thread_helper_start(&d->sensors_thread,
 	                             vive_sensors_run_thread, d);
 	if (ret != 0) {

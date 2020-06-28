@@ -713,6 +713,9 @@ hydra_found(struct xrt_prober *xp,
 		out_xdevs[i] = &(hd->base);
 	}
 
+	hs->devs[0]->base.orientation_tracking_supported = true;
+	hs->devs[1]->base.position_tracking_supported = true;
+
 	printf("Opened razer hydra!\n");
 	return 2;
 }

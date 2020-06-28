@@ -510,5 +510,8 @@ hdk_device_create(struct os_hid_device *dev,
 		u_device_dump_config(&hd->base, __func__, hd->base.str);
 	}
 
+	hd->base.orientation_tracking_supported = true;
+	hd->base.position_tracking_supported = false;
+
 	return hd;
 }

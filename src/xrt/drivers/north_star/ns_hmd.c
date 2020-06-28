@@ -361,6 +361,10 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 	// Do the mesh generation.
 	u_distortion_mesh_from_gen(&mesh.base, 2, ns->base.hmd);
 
+	ns->base.orientation_tracking_supported = true;
+	//! @todo: Set to true when T265 is used
+	ns->base.position_tracking_supported = false;
+
 	return &ns->base;
 
 cleanup:

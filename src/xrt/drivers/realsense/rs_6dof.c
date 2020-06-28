@@ -283,5 +283,8 @@ rs_6dof_create(void)
 		return NULL;
 	}
 
+	rs->base.orientation_tracking_supported = true;
+	rs->base.position_tracking_supported = true;
+
 	return &rs->base;
 }

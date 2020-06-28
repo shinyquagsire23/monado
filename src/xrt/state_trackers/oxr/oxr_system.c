@@ -222,8 +222,10 @@ oxr_system_get_properties(struct oxr_logger *log,
 	properties->graphicsProperties.maxLayerCount = max;
 	properties->graphicsProperties.maxSwapchainImageWidth = 1024 * 16;
 	properties->graphicsProperties.maxSwapchainImageHeight = 1024 * 16;
-	properties->trackingProperties.orientationTracking = XR_TRUE;
-	properties->trackingProperties.positionTracking = XR_FALSE;
+	properties->trackingProperties.orientationTracking =
+	    sys->head->orientation_tracking_supported;
+	properties->trackingProperties.positionTracking =
+	    sys->head->position_tracking_supported;
 
 	return XR_SUCCESS;
 }

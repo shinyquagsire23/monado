@@ -1151,6 +1151,9 @@ psmv_found(struct xrt_prober *xp,
 	u_var_add_log_level(psmv, &psmv->log_level, "Log level");
 	// clang-format on
 
+	psmv->base.orientation_tracking_supported = true;
+	psmv->base.position_tracking_supported = psmv->ball != NULL;
+
 	// And finally done
 	*out_xdevs = &psmv->base;
 

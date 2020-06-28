@@ -190,6 +190,11 @@ init_shm(struct ipc_server *s)
 		idev->name = xdev->name;
 		memcpy(idev->str, xdev->str, sizeof(idev->str));
 
+		idev->orientation_tracking_supported =
+		    xdev->orientation_tracking_supported;
+		idev->position_tracking_supported =
+		    xdev->position_tracking_supported;
+
 		// Is this a HMD?
 		if (xdev->hmd != NULL) {
 			ism->hmd.views[0].display.w_pixels =
