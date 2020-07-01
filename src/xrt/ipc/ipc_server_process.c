@@ -432,6 +432,11 @@ init_all(struct ipc_server *s)
 		return ret;
 	}
 
+	// Init all of the render riming helpers.
+	for (size_t i = 0; i < ARRAY_SIZE(s->threads); i++) {
+		u_rt_helper_init((struct u_rt_helper *)&s->threads[i].ics.urth);
+	}
+
 	ret = os_mutex_init(&s->global_state_lock);
 	if (ret < 0) {
 		teardown_all(s);
@@ -749,12 +754,6 @@ main_loop(struct ipc_server *s)
 	// compositor and consistent initial state
 
 	while (s->running) {
-
-		/*
-		 * Check polling.
-		 */
-		check_epoll(s);
-
 		int64_t frame_id;
 		uint64_t predicted_display_time;
 		uint64_t predicted_display_period;
@@ -777,12 +776,16 @@ main_loop(struct ipc_server *s)
 
 		os_mutex_unlock(&s->global_state_lock);
 
+
 		xrt_comp_begin_frame(xc, frame_id);
 		xrt_comp_layer_begin(xc, frame_id, 0);
 
 		_update_layers(s, xc);
 
 		xrt_comp_layer_commit(xc, frame_id);
+
+		// Check polling last, so we know we have valid timing data.
+		check_epoll(s);
 	}
 
 	return 0;

@@ -524,7 +524,8 @@ client_loop(volatile struct ipc_client_state *ics)
 {
 	fprintf(stderr, "SERVER: Client connected\n");
 
-	u_rt_helper_init((struct u_rt_helper *)&ics->urth);
+	// Make sure it's ready for the client.
+	u_rt_helper_client_clear((struct u_rt_helper *)&ics->urth);
 
 	// Claim the client fd.
 	int epoll_fd = setup_epoll(ics->ipc_socket_fd);
@@ -591,7 +592,8 @@ client_loop(volatile struct ipc_client_state *ics)
 	close(ics->ipc_socket_fd);
 	ics->ipc_socket_fd = -1;
 
-	u_rt_helper_clear((struct u_rt_helper *)&ics->urth);
+	// Reset the urth for the next client.
+	u_rt_helper_client_clear((struct u_rt_helper *)&ics->urth);
 
 	ics->num_swapchains = 0;
 

@@ -52,8 +52,12 @@ struct u_rt_helper
 void
 u_rt_helper_init(struct u_rt_helper *urth);
 
+/*!
+ * This function gets the client part of the render timing helper ready to be
+ * used. If you use init you will also clear all of the timing information.
+ */
 void
-u_rt_helper_clear(struct u_rt_helper *urth);
+u_rt_helper_client_clear(struct u_rt_helper *urth);
 
 void
 u_rt_helper_predict(struct u_rt_helper *urth,

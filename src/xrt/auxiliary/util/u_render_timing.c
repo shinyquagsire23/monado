@@ -39,6 +39,7 @@ get_last_input_plus_period_at_least_greater_then(struct u_rt_helper *urth,
 
 	while (val <= then_ns) {
 		val += urth->period;
+		assert(val != 0);
 	}
 
 	return val;
@@ -52,10 +53,8 @@ get_last_input_plus_period_at_least_greater_then(struct u_rt_helper *urth,
  */
 
 void
-u_rt_helper_clear(struct u_rt_helper *urth)
+u_rt_helper_client_clear(struct u_rt_helper *urth)
 {
-	U_ZERO(urth);
-
 	for (size_t i = 0; i < ARRAY_SIZE(urth->frames); i++) {
 		urth->frames[i].state = U_RT_READY;
 		urth->frames[i].frame_id = -1;
@@ -65,7 +64,8 @@ u_rt_helper_clear(struct u_rt_helper *urth)
 void
 u_rt_helper_init(struct u_rt_helper *urth)
 {
-	u_rt_helper_clear(urth);
+	U_ZERO(urth);
+	u_rt_helper_client_clear(urth);
 }
 
 void
