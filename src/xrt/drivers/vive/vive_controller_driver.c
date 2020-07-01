@@ -652,7 +652,7 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d,
                                   struct watchman_imu_sample *sample)
 {
 	/* ouvrt: "Time in 48 MHz ticks, but we are missing the low byte" */
-	uint32_t time_raw = d->last_ticks | sample->timestamp_lo;
+	uint32_t time_raw = d->last_ticks | (sample->timestamp_hi << 8);
 	uint32_t dt_raw = calc_dt_raw_and_handle_overflow(d, time_raw);
 	uint64_t dt_ns = cald_dt_ns(dt_raw);
 

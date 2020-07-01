@@ -185,9 +185,9 @@ struct watchman_imu_sample
 	 * The full timestamp is 4 bytes, formed by
 	 * first byte : vive_controller_message.timestamp_hi
 	 * second byte: vive_controller_message.timestamp_lo
-	 * fourth byte: watchman_imu_sample.timestamp_lo */
-	//! @todo: confirm timestamp_lo shouldn't be third byte instead.
-	uint8_t timestamp_lo;
+	 * third byte: watchman_imu_sample.timestamp_hi
+	 * fourth byte: remains zero */
+	uint8_t timestamp_hi;
 	uint16_t acc[3];
 	uint16_t gyro[3];
 } __attribute__((packed));
