@@ -273,6 +273,7 @@ vive_controller_found(struct xrt_prober *xp,
 	struct os_hid_device *controller_hid = NULL;
 	ret = xp->open_hid_interface(xp, dev, 0, &controller_hid);
 	if (ret != 0) {
+		VIVE_ERROR("Could not open Vive controller device.");
 		return -1;
 	}
 
