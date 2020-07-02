@@ -365,7 +365,10 @@ vive_config_parse_controller(struct vive_controller_device *d,
 	} else if (strcmp(d->firmware.model_number, "Vive Tracker PVT") == 0) {
 		d->variant = CONTROLLER_TRACKER_GEN1;
 		VIVE_CONTROLLER_DEBUG(d, "Found Gen 1 tracker.");
-
+	} else if (strcmp(d->firmware.model_number, "VIVE Tracker Pro MV") ==
+	           0) {
+		d->variant = CONTROLLER_TRACKER_GEN2;
+		VIVE_CONTROLLER_DEBUG(d, "Found Gen 2 tracker.");
 	} else {
 		VIVE_CONTROLLER_ERROR(d, "Failed to parse controller variant");
 	}
@@ -381,13 +384,17 @@ vive_config_parse_controller(struct vive_controller_device *d,
 		            d->firmware.mb_serial_number);
 	} break;
 	case CONTROLLER_INDEX_LEFT:
-	case CONTROLLER_INDEX_RIGHT: {
+	case CONTROLLER_INDEX_RIGHT:
+	case CONTROLLER_TRACKER_GEN2: {
 		const cJSON *imu = u_json_get(json, "imu");
 		_get_pose_from_pos_x_z(imu, &d->imu.trackref);
 
 		JSON_VEC3(imu, "acc_bias", &d->imu.acc_bias);
 		JSON_VEC3(imu, "acc_scale", &d->imu.acc_scale);
 		JSON_VEC3(imu, "gyro_bias", &d->imu.gyro_bias);
+
+		if (d->variant == CONTROLLER_TRACKER_GEN2)
+			JSON_VEC3(imu, "gyro_scale", &d->imu.gyro_scale);
 	} break;
 	default:
 		VIVE_CONTROLLER_ERROR(d, "Unknown Vive watchman variant.\n");

@@ -1145,6 +1145,9 @@ vive_controller_create(struct os_hid_device *controller_hid,
 	} else if (d->variant == CONTROLLER_TRACKER_GEN1) {
 		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN1;
 		d->base.update_inputs = _update_tracker_inputs;
+	} else if (d->variant == CONTROLLER_TRACKER_GEN2) {
+		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN2;
+		d->base.update_inputs = _update_tracker_inputs;
 	} else {
 		d->base.name = XRT_DEVICE_GENERIC_HMD;
 		VIVE_CONTROLLER_ERROR(d,
