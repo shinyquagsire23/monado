@@ -143,6 +143,8 @@ if(XRT_BUILD_DRIVER_VIVE)
 		vive/vive_protocol.h
 		vive/vive_controller_interface.h
 		vive/vive_controller_driver.c
+		vive/vive_config.h
+		vive/vive_config.c
 		)
 
 	add_library(drv_vive STATIC ${VIVE_SOURCE_FILES})
