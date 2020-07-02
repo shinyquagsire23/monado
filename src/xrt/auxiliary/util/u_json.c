@@ -286,3 +286,36 @@ u_json_get_double_array(const cJSON *json_array,
 
 	return i;
 }
+
+bool
+u_json_get_matrix_3x3(const cJSON *json, struct xrt_matrix_3x3 *out_matrix)
+{
+	assert(out_matrix != NULL);
+
+	if (!json) {
+		return false;
+	}
+	if (cJSON_GetArraySize(json) != 3) {
+		return false;
+	}
+
+	size_t total = 0;
+	const cJSON *vec = NULL;
+	cJSON_ArrayForEach(vec, json)
+	{
+		assert(cJSON_GetArraySize(vec) == 3);
+		const cJSON *elem = NULL;
+		cJSON_ArrayForEach(elem, vec)
+		{
+			// Just in case.
+			if (total >= 9) {
+				break;
+			}
+
+			assert(cJSON_IsNumber(elem));
+			out_matrix->v[total++] = (float)elem->valuedouble;
+		}
+	}
+
+	return true;
+}
