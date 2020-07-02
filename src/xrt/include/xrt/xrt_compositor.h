@@ -16,26 +16,41 @@ extern "C" {
 #endif
 
 
+/*
+ *
+ * Pre-declare things, also they should not be in the xrt_iface group.
+ *
+ */
+
 struct xrt_device;
+
+typedef struct VkCommandBuffer_T *VkCommandBuffer;
+#ifdef XRT_64_BIT
+typedef struct VkImage_T *VkImage;
+typedef struct VkDeviceMemory_T *VkDeviceMemory;
+#else
+typedef uint64_t VkImage;
+typedef uint64_t VkDeviceMemory;
+#endif
+
+
+/*!
+ * @ingroup xrt_iface
+ * @{
+ */
 
 /*!
  * Max swapchain images, artificial limit.
- *
- * @ingroup xrt_iface
  */
 #define XRT_MAX_SWAPCHAIN_IMAGES 8
 
 /*!
  * Max formats supported by a compositor, artificial limit.
- *
- * @ingroup xrt_iface
  */
 #define XRT_MAX_SWAPCHAIN_FORMATS 8
 
 /*!
  * Special flags for creating swapchain images.
- *
- * @ingroup xrt_iface
  */
 enum xrt_swapchain_create_flags
 {
@@ -44,8 +59,6 @@ enum xrt_swapchain_create_flags
 
 /*!
  * Usage of the swapchain images.
- *
- * @ingroup xrt_iface
  */
 enum xrt_swapchain_usage_bits
 {
@@ -60,8 +73,6 @@ enum xrt_swapchain_usage_bits
 
 /*!
  * View type to be rendered to by the compositor.
- *
- * @ingroup xrt_iface
  */
 enum xrt_view_type
 {
@@ -71,8 +82,6 @@ enum xrt_view_type
 
 /*!
  * Layer type.
- *
- * @ingroup xrt_iface
  */
 enum xrt_layer_type
 {
@@ -82,8 +91,6 @@ enum xrt_layer_type
 
 /*!
  * Bit field for holding information about how a layer should be composited.
- *
- * @ingroup xrt_iface
  */
 enum xrt_layer_composition_flags
 {
@@ -103,8 +110,6 @@ enum xrt_layer_composition_flags
  * Used for quad layers.
  *
  * @note Doesn't have the same values as the OpenXR counterpart!
- *
- * @ingroup xrt_iface
  */
 enum xrt_layer_eye_visibility
 {
@@ -116,8 +121,6 @@ enum xrt_layer_eye_visibility
 
 /*!
  * Specifies a sub-image in a layer.
- *
- * @ingroup xrt_iface
  */
 struct xrt_sub_image
 {
@@ -134,8 +137,6 @@ struct xrt_sub_image
  *
  * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
  * this struct.
- *
- * @ingroup xrt_iface
  */
 struct xrt_layer_quad_data
 {
@@ -153,8 +154,6 @@ struct xrt_layer_quad_data
  *
  * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
  * this struct.
- *
- * @ingroup xrt_iface
  */
 struct xrt_layer_projection_view_data
 {
@@ -169,8 +168,6 @@ struct xrt_layer_projection_view_data
  *
  * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
  * this struct.
- *
- * @ingroup xrt_iface
  */
 struct xrt_layer_stereo_projection_data
 {
@@ -182,8 +179,6 @@ struct xrt_layer_stereo_projection_data
  *
  * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
  * this struct.
- *
- * @ingroup xrt_iface
  */
 struct xrt_layer_data
 {
@@ -240,8 +235,6 @@ struct xrt_layer_data
 /*!
  * @interface xrt_swapchain
  * Common swapchain interface/base.
- *
- * @ingroup xrt_iface
  */
 struct xrt_swapchain
 {
@@ -347,6 +340,9 @@ xrt_swapchain_destroy(struct xrt_swapchain **xsc_ptr)
 	*xsc_ptr = NULL;
 }
 
+/*!
+ * Event type for compositor events, none means no event was returned.
+ */
 enum xrt_compositor_event_type
 {
 	XRT_COMPOSITOR_EVENT_NONE = 0,
@@ -356,8 +352,6 @@ enum xrt_compositor_event_type
 
 /*!
  * Session state changes event.
- *
- * @ingroup xrt_iface
  */
 struct xrt_compositor_event_state_change
 {
@@ -368,8 +362,6 @@ struct xrt_compositor_event_state_change
 
 /*!
  * Primary session state changes event.
- *
- * @ingroup xrt_iface
  */
 struct xrt_compositor_event_overlay
 {
@@ -379,8 +371,6 @@ struct xrt_compositor_event_overlay
 
 /*!
  * Compositor events union.
- *
- * @ingroup xrt_iface
  */
 union xrt_compositor_event {
 	enum xrt_compositor_event_type type;
@@ -388,12 +378,8 @@ union xrt_compositor_event {
 	struct xrt_compositor_event_state_change overlay;
 };
 
-
-
 /*!
  * Session prepare information, mostly overlay extension data.
- *
- * @ingroup xrt_iface
  */
 struct xrt_session_prepare_info
 {
@@ -406,8 +392,6 @@ struct xrt_session_prepare_info
  * @interface xrt_compositor
  *
  * Common compositor client interface/base.
- *
- * @ingroup xrt_iface
  */
 struct xrt_compositor
 {
@@ -760,6 +744,7 @@ xrt_comp_destroy(struct xrt_compositor **xc_ptr)
 
 /*!
  * Base class for an OpenGL (ES) client swapchain.
+ *
  * @ingroup xrt_iface comp_client
  * @extends xrt_swapchain
  */
@@ -776,6 +761,7 @@ struct xrt_swapchain_gl
 
 /*!
  * Base class for an OpenGL (ES) client compositor.
+ *
  * @ingroup xrt_iface comp_client
  * @extends xrt_compositor
  */
@@ -816,15 +802,6 @@ xrt_compositor_gl(struct xrt_compositor *xc)
  * Vulkan interface.
  *
  */
-
-typedef struct VkCommandBuffer_T *VkCommandBuffer;
-#ifdef XRT_64_BIT
-typedef struct VkImage_T *VkImage;
-typedef struct VkDeviceMemory_T *VkDeviceMemory;
-#else
-typedef uint64_t VkImage;
-typedef uint64_t VkDeviceMemory;
-#endif
 
 /*!
  * Base class for a Vulkan client swapchain.
@@ -980,6 +957,11 @@ xrt_comp_fd_destroy(struct xrt_compositor_fd **xcfd_ptr)
 	xcfd->base.destroy(&xcfd->base);
 	*xcfd_ptr = NULL;
 }
+
+
+/*!
+ * @}
+ */
 
 
 #ifdef __cplusplus
