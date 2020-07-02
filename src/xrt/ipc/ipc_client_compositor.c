@@ -171,15 +171,7 @@ ipc_compositor_swapchain_release_image(struct xrt_swapchain *xsc,
 
 static struct xrt_swapchain *
 ipc_compositor_swapchain_create(struct xrt_compositor *xc,
-                                enum xrt_swapchain_create_flags create,
-                                enum xrt_swapchain_usage_bits bits,
-                                int64_t format,
-                                uint32_t sample_count,
-                                uint32_t width,
-                                uint32_t height,
-                                uint32_t face_count,
-                                uint32_t array_size,
-                                uint32_t mip_count)
+                                struct xrt_swapchain_create_info *info)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -190,15 +182,7 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 	uint64_t size;
 
 	r = ipc_call_swapchain_create(icc->ipc_c,             // connection
-	                              create,                 // in
-	                              bits,                   // in
-	                              format,                 // in
-	                              sample_count,           // in
-	                              width,                  // in
-	                              height,                 // in
-	                              face_count,             // in
-	                              array_size,             // in
-	                              mip_count,              // in
+	                              info,                   // in
 	                              &handle,                // out
 	                              &num_images,            // out
 	                              &size,                  // out

@@ -287,23 +287,14 @@ client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 
 static struct xrt_swapchain *
 client_vk_swapchain_create(struct xrt_compositor *xc,
-                           enum xrt_swapchain_create_flags create,
-                           enum xrt_swapchain_usage_bits bits,
-                           int64_t format,
-                           uint32_t sample_count,
-                           uint32_t width,
-                           uint32_t height,
-                           uint32_t face_count,
-                           uint32_t array_size,
-                           uint32_t mip_count)
+                           struct xrt_swapchain_create_info *info)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	VkCommandBuffer cmd_buffer;
 	VkResult ret;
 
-	struct xrt_swapchain_fd *xscfd = xrt_comp_fd_create_swapchain(
-	    c->xcfd, create, bits, format, sample_count, width, height,
-	    face_count, array_size, mip_count);
+	struct xrt_swapchain_fd *xscfd =
+	    xrt_comp_fd_create_swapchain(c->xcfd, info);
 
 	if (xscfd == NULL) {
 		return NULL;
@@ -336,8 +327,9 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
 		ret = vk_create_image_from_fd(
-		    &c->vk, bits, format, width, height, array_size, mip_count,
-		    &xscfd->images[i], &sc->base.images[i], &sc->base.mems[i]);
+		    &c->vk, info->bits, info->format, info->width, info->height,
+		    info->array_size, info->mip_count, &xscfd->images[i],
+		    &sc->base.images[i], &sc->base.mems[i]);
 
 		// We have consumed this fd now, make sure it's not freed again.
 		xscfd->images[i].fd = -1;
@@ -402,7 +394,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		VkImageMemoryBarrier acquire = {
 		    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		    .srcAccessMask = 0,
-		    .dstAccessMask = vk_swapchain_access_flags(bits),
+		    .dstAccessMask = vk_swapchain_access_flags(info->bits),
 		    .oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 		    .newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		    .srcQueueFamilyIndex = c->vk.queue_family_index,
@@ -413,7 +405,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 		VkImageMemoryBarrier release = {
 		    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-		    .srcAccessMask = vk_swapchain_access_flags(bits),
+		    .srcAccessMask = vk_swapchain_access_flags(info->bits),
 		    .dstAccessMask = 0,
 		    .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		    .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,

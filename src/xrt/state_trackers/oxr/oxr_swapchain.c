@@ -198,11 +198,19 @@ oxr_create_swapchain(struct oxr_logger *log,
                      const XrSwapchainCreateInfo *createInfo,
                      struct oxr_swapchain **out_swapchain)
 {
-	struct xrt_swapchain *xsc = xrt_comp_create_swapchain(
-	    sess->compositor, convert_create_flags(createInfo->createFlags),
-	    convert_usage_bits(createInfo->usageFlags), createInfo->format,
-	    createInfo->sampleCount, createInfo->width, createInfo->height,
-	    createInfo->faceCount, createInfo->arraySize, createInfo->mipCount);
+	struct xrt_swapchain_create_info info;
+	info.create = convert_create_flags(createInfo->createFlags);
+	info.bits = convert_usage_bits(createInfo->usageFlags);
+	info.format = createInfo->format;
+	info.sample_count = createInfo->sampleCount;
+	info.width = createInfo->width;
+	info.height = createInfo->height;
+	info.face_count = createInfo->faceCount;
+	info.array_size = createInfo->arraySize;
+	info.mip_count = createInfo->mipCount;
+
+	struct xrt_swapchain *xsc =
+	    xrt_comp_create_swapchain(sess->compositor, &info);
 
 	if (xsc == NULL) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,

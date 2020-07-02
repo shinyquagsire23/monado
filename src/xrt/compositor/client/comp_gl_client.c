@@ -241,19 +241,11 @@ vk_format_to_gl(int64_t format)
 
 static struct xrt_swapchain *
 client_gl_swapchain_create(struct xrt_compositor *xc,
-                           enum xrt_swapchain_create_flags create,
-                           enum xrt_swapchain_usage_bits bits,
-                           int64_t format,
-                           uint32_t sample_count,
-                           uint32_t width,
-                           uint32_t height,
-                           uint32_t face_count,
-                           uint32_t array_size,
-                           uint32_t mip_count)
+                           struct xrt_swapchain_create_info *info)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	if (array_size > 1) {
+	if (info->array_size > 1) {
 		const char *version_str = (const char *)glGetString(GL_VERSION);
 		if (strstr(version_str, "OpenGL ES 2.") == version_str) {
 			fprintf(stderr,
@@ -264,15 +256,16 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		}
 	}
 
-	int64_t vk_format = gl_format_to_vk(format);
+	int64_t vk_format = gl_format_to_vk(info->format);
 	if (vk_format == 0) {
 		fprintf(stderr, "%s - Invalid format!\n", __func__);
 		return NULL;
 	}
 
-	struct xrt_swapchain_fd *xscfd = xrt_comp_fd_create_swapchain(
-	    c->xcfd, create, bits, vk_format, sample_count, width, height,
-	    face_count, array_size, mip_count);
+	struct xrt_swapchain_create_info vk_info = *info;
+	vk_info.format = vk_format;
+	struct xrt_swapchain_fd *xscfd =
+	    xrt_comp_fd_create_swapchain(c->xcfd, &vk_info);
 
 
 	if (xscfd == NULL) {
@@ -291,14 +284,14 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	sc->xscfd = xscfd;
 
 	GLuint prev_texture = 0;
-	glGetIntegerv(array_size == 1 ? GL_TEXTURE_BINDING_2D
-	                              : GL_TEXTURE_BINDING_2D_ARRAY,
+	glGetIntegerv(info->array_size == 1 ? GL_TEXTURE_BINDING_2D
+	                                    : GL_TEXTURE_BINDING_2D_ARRAY,
 	              (GLint *)&prev_texture);
 
 	glGenTextures(xsc->num_images, sc->base.images);
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
-		glBindTexture(array_size == 1 ? GL_TEXTURE_2D
-		                              : GL_TEXTURE_2D_ARRAY,
+		glBindTexture(info->array_size == 1 ? GL_TEXTURE_2D
+		                                    : GL_TEXTURE_2D_ARRAY,
 		              sc->base.images[i]);
 	}
 	glCreateMemoryObjectsEXT(xsc->num_images, &sc->base.memory[0]);
@@ -314,18 +307,21 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		// We have consumed this fd now, make sure it's not freed again.
 		xscfd->images[i].fd = -1;
 
-		if (array_size == 1) {
-			glTextureStorageMem2DEXT(sc->base.images[i], mip_count,
-			                         (GLuint)format, width, height,
-			                         sc->base.memory[i], 0);
+		if (info->array_size == 1) {
+			glTextureStorageMem2DEXT(
+			    sc->base.images[i], info->mip_count,
+			    (GLuint)info->format, info->width, info->height,
+			    sc->base.memory[i], 0);
 		} else {
 			glTextureStorageMem3DEXT(
-			    sc->base.images[i], mip_count, (GLuint)format,
-			    width, height, array_size, sc->base.memory[i], 0);
+			    sc->base.images[i], info->mip_count,
+			    (GLuint)info->format, info->width, info->height,
+			    info->array_size, sc->base.memory[i], 0);
 		}
 	}
 
-	glBindTexture(array_size == 1 ? GL_TEXTURE_2D : GL_TEXTURE_2D_ARRAY,
+	glBindTexture(info->array_size == 1 ? GL_TEXTURE_2D
+	                                    : GL_TEXTURE_2D_ARRAY,
 	              prev_texture);
 
 	return &sc->base.base;

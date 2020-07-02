@@ -223,15 +223,7 @@ err_image:
 
 struct xrt_swapchain *
 comp_swapchain_create(struct xrt_compositor *xc,
-                      enum xrt_swapchain_create_flags create,
-                      enum xrt_swapchain_usage_bits bits,
-                      int64_t format,
-                      uint32_t sample_count,
-                      uint32_t width,
-                      uint32_t height,
-                      uint32_t face_count,
-                      uint32_t array_size,
-                      uint32_t mip_count)
+                      struct xrt_swapchain_create_info *info)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	VkCommandBuffer cmd_buffer;
@@ -239,7 +231,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	VkResult ret;
 
 
-	if ((create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
+	if ((info->create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
 		num_images = 1;
 	}
 
@@ -251,7 +243,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.num_images = num_images;
 	sc->c = c;
 
-	COMP_DEBUG(c, "CREATE %p %dx%d", (void *)sc, width, height);
+	COMP_DEBUG(c, "CREATE %p %dx%d", (void *)sc, info->width, info->height);
 
 	// Make sure the fds are invalid.
 	for (uint32_t i = 0; i < ARRAY_SIZE(sc->base.images); i++) {
@@ -259,10 +251,10 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	}
 
 	for (uint32_t i = 0; i < num_images; i++) {
-		ret =
-		    create_image_fd(c, bits, format, width, height, array_size,
-		                    mip_count, &sc->images[i].image,
-		                    &sc->images[i].memory, &sc->base.images[i]);
+		ret = create_image_fd(
+		    c, info->bits, info->format, info->width, info->height,
+		    info->array_size, info->mip_count, &sc->images[i].image,
+		    &sc->images[i].memory, &sc->base.images[i]);
 		if (ret != VK_SUCCESS) {
 			//! @todo memory leak of image fds and swapchain
 			// see
@@ -282,12 +274,12 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 	for (uint32_t i = 0; i < num_images; i++) {
 		sc->images[i].views.alpha =
-		    U_TYPED_ARRAY_CALLOC(VkImageView, array_size);
+		    U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
 		sc->images[i].views.no_alpha =
-		    U_TYPED_ARRAY_CALLOC(VkImageView, array_size);
-		sc->images[i].array_size = array_size;
+		    U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
+		sc->images[i].array_size = info->array_size;
 
-		for (uint32_t layer = 0; layer < array_size; ++layer) {
+		for (uint32_t layer = 0; layer < info->array_size; ++layer) {
 			VkImageSubresourceRange subresource_range = {
 			    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 			    .baseMipLevel = 0,
@@ -298,10 +290,11 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 
 			vk_create_view(&c->vk, sc->images[i].image,
-			               (VkFormat)format, subresource_range,
+			               (VkFormat)info->format,
+			               subresource_range,
 			               &sc->images[i].views.alpha[layer]);
 			vk_create_view_swizzle(
-			    &c->vk, sc->images[i].image, (VkFormat)format,
+			    &c->vk, sc->images[i].image, (VkFormat)info->format,
 			    subresource_range, components,
 			    &sc->images[i].views.no_alpha[layer]);
 		}
@@ -326,7 +319,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	    .baseMipLevel = 0,
 	    .levelCount = 1,
 	    .baseArrayLayer = 0,
-	    .layerCount = array_size,
+	    .layerCount = info->array_size,
 	};
 
 	for (uint32_t i = 0; i < num_images; i++) {

@@ -379,6 +379,22 @@ union xrt_compositor_event {
 };
 
 /*!
+ * Swapchain creation info.
+ */
+struct xrt_swapchain_create_info
+{
+	enum xrt_swapchain_create_flags create;
+	enum xrt_swapchain_usage_bits bits;
+	int64_t format;
+	uint32_t sample_count;
+	uint32_t width;
+	uint32_t height;
+	uint32_t face_count;
+	uint32_t array_size;
+	uint32_t mip_count;
+};
+
+/*!
  * Session prepare information, mostly overlay extension data.
  */
 struct xrt_session_prepare_info
@@ -409,16 +425,7 @@ struct xrt_compositor
 	 * Create a swapchain with a set of images.
 	 */
 	struct xrt_swapchain *(*create_swapchain)(
-	    struct xrt_compositor *xc,
-	    enum xrt_swapchain_create_flags create,
-	    enum xrt_swapchain_usage_bits bits,
-	    int64_t format,
-	    uint32_t sample_count,
-	    uint32_t width,
-	    uint32_t height,
-	    uint32_t face_count,
-	    uint32_t array_size,
-	    uint32_t mip_count);
+	    struct xrt_compositor *xc, struct xrt_swapchain_create_info *info);
 
 	/*!
 	 * Poll events from this compositor.
@@ -542,19 +549,9 @@ struct xrt_compositor
  */
 static inline struct xrt_swapchain *
 xrt_comp_create_swapchain(struct xrt_compositor *xc,
-                          enum xrt_swapchain_create_flags create,
-                          enum xrt_swapchain_usage_bits bits,
-                          int64_t format,
-                          uint32_t sample_count,
-                          uint32_t width,
-                          uint32_t height,
-                          uint32_t face_count,
-                          uint32_t array_size,
-                          uint32_t mip_count)
+                          struct xrt_swapchain_create_info *info)
 {
-	return xc->create_swapchain(xc, create, bits, format, sample_count,
-	                            width, height, face_count, array_size,
-	                            mip_count);
+	return xc->create_swapchain(xc, info);
 }
 
 /*!
@@ -922,19 +919,10 @@ struct xrt_compositor_fd
  */
 static inline struct xrt_swapchain_fd *
 xrt_comp_fd_create_swapchain(struct xrt_compositor_fd *xcfd,
-                             enum xrt_swapchain_create_flags create,
-                             enum xrt_swapchain_usage_bits bits,
-                             int64_t format,
-                             uint32_t sample_count,
-                             uint32_t width,
-                             uint32_t height,
-                             uint32_t face_count,
-                             uint32_t array_size,
-                             uint32_t mip_count)
+                             struct xrt_swapchain_create_info *info)
 {
-	struct xrt_swapchain *xsc = xrt_comp_create_swapchain(
-	    &xcfd->base, create, bits, format, sample_count, width, height,
-	    face_count, array_size, mip_count);
+	struct xrt_swapchain *xsc =
+	    xrt_comp_create_swapchain(&xcfd->base, info);
 	return (struct xrt_swapchain_fd *)xsc;
 }
 

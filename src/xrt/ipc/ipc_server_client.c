@@ -273,15 +273,7 @@ ipc_handle_system_set_focused_client(volatile struct ipc_client_state *ics,
 
 xrt_result_t
 ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
-                            enum xrt_swapchain_create_flags create,
-                            enum xrt_swapchain_usage_bits bits,
-                            int64_t format,
-                            uint32_t sample_count,
-                            uint32_t width,
-                            uint32_t height,
-                            uint32_t face_count,
-                            uint32_t array_size,
-                            uint32_t mip_count,
+                            struct xrt_swapchain_create_info *info,
                             uint32_t *out_id,
                             uint32_t *out_num_images,
                             uint64_t *out_size,
@@ -306,17 +298,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	ics->num_swapchains++;
 
 	// create the swapchain
-	struct xrt_swapchain *xsc =
-	    xrt_comp_create_swapchain(ics->xc,      // Compositor
-	                              create,       // Flags
-	                              bits,         // Usage
-	                              format,       // Format
-	                              sample_count, // Sample count
-	                              width,        // Width
-	                              height,       // Height
-	                              face_count,   // Face count
-	                              array_size,   // Array size
-	                              mip_count);   // Mip count
+	struct xrt_swapchain *xsc = xrt_comp_create_swapchain(ics->xc, info);
 
 	uint32_t num_images = xsc->num_images;
 
@@ -324,9 +306,9 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 
 	ics->xscs[index] = xsc;
 	ics->swapchain_data[index].active = true;
-	ics->swapchain_data[index].width = width;
-	ics->swapchain_data[index].height = height;
-	ics->swapchain_data[index].format = format;
+	ics->swapchain_data[index].width = info->width;
+	ics->swapchain_data[index].height = info->height;
+	ics->swapchain_data[index].format = info->format;
 	ics->swapchain_data[index].num_images = num_images;
 
 	// return our result to the caller.

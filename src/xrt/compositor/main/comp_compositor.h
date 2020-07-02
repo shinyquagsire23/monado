@@ -273,15 +273,7 @@ comp_compositor_garbage_collect(struct comp_compositor *c);
  */
 struct xrt_swapchain *
 comp_swapchain_create(struct xrt_compositor *xc,
-                      enum xrt_swapchain_create_flags create,
-                      enum xrt_swapchain_usage_bits bits,
-                      int64_t format,
-                      uint32_t sample_count,
-                      uint32_t width,
-                      uint32_t height,
-                      uint32_t face_count,
-                      uint32_t array_size,
-                      uint32_t mip_count);
+                      struct xrt_swapchain_create_info *info);
 
 /*!
  * Swapchain destruct is delayed until it is safe to destroy them, this function
