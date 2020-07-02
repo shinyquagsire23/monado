@@ -91,8 +91,8 @@ struct vive_device
 	{
 		double lens_separation;
 		double persistence;
-		uint16_t eye_target_height_in_pixels;
-		uint16_t eye_target_width_in_pixels;
+		int eye_target_height_in_pixels;
+		int eye_target_width_in_pixels;
 
 		struct xrt_quat rot[2];
 
@@ -118,9 +118,9 @@ struct vive_device
 		uint8_t hardware_version_micro;
 		uint8_t hardware_version_minor;
 		uint8_t hardware_version_major;
-		char *mb_serial_number;
-		char *model_number;
-		char *device_serial_number;
+		char mb_serial_number[32];
+		char model_number[32];
+		char device_serial_number[32];
 	} firmware;
 
 	struct xrt_quat rot_filtered;
