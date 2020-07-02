@@ -116,9 +116,9 @@ struct vive_controller_device
 		uint8_t hardware_version_micro;
 		uint8_t hardware_version_minor;
 		uint8_t hardware_version_major;
-		char *mb_serial_number;
-		char *model_number;
-		char *device_serial_number;
+		char mb_serial_number[32];
+		char model_number[32];
+		char device_serial_number[32];
 	} firmware;
 
 	enum watchman_gen watchman_gen;
@@ -133,3 +133,28 @@ vive_controller_create(struct os_hid_device *controller_hid,
 #ifdef __cplusplus
 }
 #endif
+
+#define VIVE_CONTROLLER_SPEW(p, ...)                                           \
+	do {                                                                   \
+		if (p->print_spew) {                                           \
+			fprintf(stderr, "%s - ", __func__);                    \
+			fprintf(stderr, __VA_ARGS__);                          \
+			fprintf(stderr, "\n");                                 \
+		}                                                              \
+	} while (false)
+
+#define VIVE_CONTROLLER_DEBUG(p, ...)                                          \
+	do {                                                                   \
+		if (p->print_debug) {                                          \
+			fprintf(stderr, "%s - ", __func__);                    \
+			fprintf(stderr, __VA_ARGS__);                          \
+			fprintf(stderr, "\n");                                 \
+		}                                                              \
+	} while (false)
+
+#define VIVE_CONTROLLER_ERROR(p, ...)                                          \
+	do {                                                                   \
+		fprintf(stderr, "%s - ", __func__);                            \
+		fprintf(stderr, __VA_ARGS__);                                  \
+		fprintf(stderr, "\n");                                         \
+	} while (false)

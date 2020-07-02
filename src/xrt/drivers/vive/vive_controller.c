@@ -33,6 +33,7 @@
 
 #include "vive_protocol.h"
 #include "vive_controller.h"
+#include "vive_config.h"
 
 #ifdef XRT_OS_LINUX
 #include <unistd.h>
@@ -44,31 +45,6 @@
  * Defines & structs.
  *
  */
-
-#define VIVE_CONTROLLER_SPEW(p, ...)                                           \
-	do {                                                                   \
-		if (p->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define VIVE_CONTROLLER_DEBUG(p, ...)                                          \
-	do {                                                                   \
-		if (p->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define VIVE_CONTROLLER_ERROR(p, ...)                                          \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
 
 DEBUG_GET_ONCE_BOOL_OPTION(vive_controller_spew,
                            "VIVE_CONTROLLER_PRINT_SPEW",
@@ -153,7 +129,6 @@ vive_controller_device_update_wand_inputs(struct xrt_device *xdev)
 	}
 	printf("\n");
 	*/
-
 
 	uint64_t now = os_monotonic_get_ns();
 
@@ -1025,111 +1000,6 @@ vive_controller_run_thread(void *ptr)
 	return NULL;
 }
 
-static char *
-_json_get_string(const cJSON *json, const char *name)
-{
-	const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
-	return strdup(item->valuestring);
-}
-
-static void
-print_vec3(const char *title, struct xrt_vec3 *vec)
-{
-	printf("%s = %f %f %f\n", title, (double)vec->x, (double)vec->y,
-	       (double)vec->z);
-}
-
-static void
-_get_pose_from_pos_x_z(const cJSON *obj, struct xrt_pose *pose)
-{
-	struct xrt_vec3 plus_x, plus_z;
-	u_json_get_vec3_array(u_json_get(obj, "plus_x"), &plus_x);
-	u_json_get_vec3_array(u_json_get(obj, "plus_z"), &plus_z);
-	u_json_get_vec3_array(u_json_get(obj, "position"), &pose->position);
-
-	math_quat_from_plus_x_z(&plus_x, &plus_z, &pose->orientation);
-}
-
-static bool
-vive_controller_parse_config(struct vive_controller_device *d,
-                             char *json_string)
-{
-	VIVE_CONTROLLER_DEBUG(d, "JSON config:\n%s\n", json_string);
-
-	cJSON *json = cJSON_Parse(json_string);
-	if (!cJSON_IsObject(json)) {
-		VIVE_CONTROLLER_ERROR(d, "Could not parse JSON data.");
-		return false;
-	}
-
-	d->firmware.model_number = _json_get_string(json, "model_number");
-	if (strcmp(d->firmware.model_number, "Vive. Controller MV") == 0) {
-		d->variant = CONTROLLER_VIVE_WAND;
-		VIVE_CONTROLLER_DEBUG(d, "Found Vive Wand controller");
-	} else if (strcmp(d->firmware.model_number, "Knuckles Right") == 0) {
-		d->variant = CONTROLLER_INDEX_RIGHT;
-		VIVE_CONTROLLER_DEBUG(d, "Found Knuckles Right controller");
-	} else if (strcmp(d->firmware.model_number, "Knuckles Left") == 0) {
-		d->variant = CONTROLLER_INDEX_LEFT;
-		VIVE_CONTROLLER_DEBUG(d, "Found Knuckles Left controller");
-	} else {
-		VIVE_CONTROLLER_ERROR(d, "Failed to parse controller variant");
-	}
-
-	switch (d->variant) {
-	case CONTROLLER_VIVE_WAND: {
-		u_json_get_vec3_array(u_json_get(json, "acc_bias"),
-		                      &d->imu.acc_bias);
-		u_json_get_vec3_array(u_json_get(json, "acc_scale"),
-		                      &d->imu.acc_scale);
-		u_json_get_vec3_array(u_json_get(json, "gyro_bias"),
-		                      &d->imu.gyro_bias);
-		u_json_get_vec3_array(u_json_get(json, "gyro_scale"),
-		                      &d->imu.gyro_scale);
-		d->firmware.mb_serial_number =
-		    _json_get_string(json, "mb_serial_number");
-	} break;
-	case CONTROLLER_INDEX_LEFT:
-	case CONTROLLER_INDEX_RIGHT: {
-		const cJSON *imu = u_json_get(json, "imu");
-		_get_pose_from_pos_x_z(imu, &d->imu.trackref);
-
-		u_json_get_vec3_array(u_json_get(imu, "acc_bias"),
-		                      &d->imu.acc_bias);
-		u_json_get_vec3_array(u_json_get(imu, "acc_scale"),
-		                      &d->imu.acc_scale);
-		u_json_get_vec3_array(u_json_get(imu, "gyro_bias"),
-		                      &d->imu.gyro_bias);
-	} break;
-	default:
-		VIVE_CONTROLLER_ERROR(d, "Unknown Vive watchman variant.\n");
-		return false;
-	}
-
-	d->firmware.device_serial_number =
-	    _json_get_string(json, "device_serial_number");
-
-	cJSON_Delete(json);
-
-	// clang-format off
-	VIVE_CONTROLLER_DEBUG(d, "= Vive controller configuration =");
-
-	VIVE_CONTROLLER_DEBUG(d, "model_number: %s", d->firmware.model_number);
-	VIVE_CONTROLLER_DEBUG(d, "mb_serial_number: %s", d->firmware.mb_serial_number);
-	VIVE_CONTROLLER_DEBUG(d, "device_serial_number: %s", d->firmware.device_serial_number);
-
-	if (d->print_debug) {
-		print_vec3("acc_bias", &d->imu.acc_bias);
-		print_vec3("acc_scale", &d->imu.acc_scale);
-		print_vec3("gyro_bias", &d->imu.gyro_bias);
-		print_vec3("gyro_scale", &d->imu.gyro_scale);
-	}
-
-	// clang-format on
-
-	return true;
-}
-
 #define SET_WAND_INPUT(NAME, NAME2)                                            \
 	do {                                                                   \
 		(d->base.inputs[VIVE_CONTROLLER_INDEX_##NAME].name =           \
@@ -1207,7 +1077,7 @@ vive_controller_create(struct os_hid_device *controller_hid,
 	// successful config parsing determines d->variant
 	char *config = vive_read_config(d->controller_hid);
 	if (config != NULL) {
-		vive_controller_parse_config(d, config);
+		vive_config_parse_controller(d, config);
 		free(config);
 	} else {
 		VIVE_CONTROLLER_ERROR(d,

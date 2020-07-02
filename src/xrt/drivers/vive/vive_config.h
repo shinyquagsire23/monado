@@ -15,3 +15,10 @@ struct vive_device;
 
 bool
 vive_config_parse(struct vive_device *d, char *json_string);
+
+
+struct vive_controller_device;
+
+bool
+vive_config_parse_controller(struct vive_controller_device *d,
+                             char *json_string);

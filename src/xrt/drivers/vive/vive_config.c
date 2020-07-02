@@ -15,6 +15,7 @@
 #include "math/m_api.h"
 
 #include "vive_device.h"
+#include "vive_controller.h"
 
 #define JSON_INT(a, b, c) u_json_get_int(u_json_get(a, b), c)
 #define JSON_FLOAT(a, b, c) u_json_get_float(u_json_get(a, b), c)
@@ -328,6 +329,79 @@ vive_config_parse(struct vive_device *d, char *json_string)
 
 	VIVE_DEBUG(d, "undistort_r2_cutoff 0: %f", (double)d->base.hmd->distortion.vive.undistort_r2_cutoff[0]);
 	VIVE_DEBUG(d, "undistort_r2_cutoff 1: %f", (double)d->base.hmd->distortion.vive.undistort_r2_cutoff[1]);
+	// clang-format on
+
+	return true;
+}
+
+bool
+vive_config_parse_controller(struct vive_controller_device *d,
+                             char *json_string)
+{
+	VIVE_CONTROLLER_DEBUG(d, "JSON config:\n%s\n", json_string);
+
+	cJSON *json = cJSON_Parse(json_string);
+	if (!cJSON_IsObject(json)) {
+		VIVE_CONTROLLER_ERROR(d, "Could not parse JSON data.");
+		return false;
+	}
+
+	JSON_STRING(json, "model_number", d->firmware.model_number);
+	if (strcmp(d->firmware.model_number, "Vive. Controller MV") == 0) {
+		d->variant = CONTROLLER_VIVE_WAND;
+		VIVE_CONTROLLER_DEBUG(d, "Found Vive Wand controller");
+	} else if (strcmp(d->firmware.model_number, "Knuckles Right") == 0) {
+		d->variant = CONTROLLER_INDEX_RIGHT;
+		VIVE_CONTROLLER_DEBUG(d, "Found Knuckles Right controller");
+	} else if (strcmp(d->firmware.model_number, "Knuckles Left") == 0) {
+		d->variant = CONTROLLER_INDEX_LEFT;
+		VIVE_CONTROLLER_DEBUG(d, "Found Knuckles Left controller");
+	} else {
+		VIVE_CONTROLLER_ERROR(d, "Failed to parse controller variant");
+	}
+
+	switch (d->variant) {
+	case CONTROLLER_VIVE_WAND: {
+		JSON_VEC3(json, "acc_bias", &d->imu.acc_bias);
+		JSON_VEC3(json, "acc_scale", &d->imu.acc_scale);
+		JSON_VEC3(json, "gyro_bias", &d->imu.gyro_bias);
+		JSON_VEC3(json, "gyro_scale", &d->imu.gyro_scale);
+		JSON_STRING(json, "mb_serial_number",
+		            d->firmware.mb_serial_number);
+	} break;
+	case CONTROLLER_INDEX_LEFT:
+	case CONTROLLER_INDEX_RIGHT: {
+		const cJSON *imu = u_json_get(json, "imu");
+		_get_pose_from_pos_x_z(imu, &d->imu.trackref);
+
+		JSON_VEC3(imu, "acc_bias", &d->imu.acc_bias);
+		JSON_VEC3(imu, "acc_scale", &d->imu.acc_scale);
+		JSON_VEC3(imu, "gyro_bias", &d->imu.gyro_bias);
+	} break;
+	default:
+		VIVE_CONTROLLER_ERROR(d, "Unknown Vive watchman variant.\n");
+		return false;
+	}
+
+	JSON_STRING(json, "device_serial_number",
+	            d->firmware.device_serial_number);
+
+	cJSON_Delete(json);
+
+	// clang-format off
+	VIVE_CONTROLLER_DEBUG(d, "= Vive controller configuration =");
+
+	VIVE_CONTROLLER_DEBUG(d, "model_number: %s", d->firmware.model_number);
+	VIVE_CONTROLLER_DEBUG(d, "mb_serial_number: %s", d->firmware.mb_serial_number);
+	VIVE_CONTROLLER_DEBUG(d, "device_serial_number: %s", d->firmware.device_serial_number);
+
+	if (d->print_debug) {
+		_print_vec3("acc_bias", &d->imu.acc_bias);
+		_print_vec3("acc_scale", &d->imu.acc_scale);
+		_print_vec3("gyro_bias", &d->imu.gyro_bias);
+		_print_vec3("gyro_scale", &d->imu.gyro_scale);
+	}
+
 	// clang-format on
 
 	return true;
