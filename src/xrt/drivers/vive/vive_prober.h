@@ -35,6 +35,9 @@ extern "C" {
 #define VIVE_PRO_MAINBOARD_PID 0x0309
 #define VIVE_PRO_LHR_PID 0x2300
 
+#define VIVE_WATCHMAN_DONGLE 0x2101
+#define VIVE_WATCHMAN_DONGLE_GEN2 0x2102
+
 
 /*!
  * Probing function for Vive devices.
@@ -48,6 +51,20 @@ vive_found(struct xrt_prober *xp,
            size_t index,
            cJSON *attached_data,
            struct xrt_device **out_xdev);
+
+
+/*!
+ * Probing function for HTC Vive and Valve Index controllers.
+ *
+ * @ingroup drv_vive
+ */
+int
+vive_controller_found(struct xrt_prober *xp,
+                      struct xrt_prober_device **devices,
+                      size_t num_devices,
+                      size_t index,
+                      cJSON *attached_data,
+                      struct xrt_device **out_xdevs);
 
 /*!
  * @dir drivers/vive

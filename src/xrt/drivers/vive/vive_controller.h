@@ -11,6 +11,11 @@
 #pragma once
 
 #include <stdlib.h>
+#include <stdint.h>
+
+#include "xrt/xrt_device.h"
+#include "os/os_threading.h"
+#include "math/m_imu_3dof.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,22 +26,109 @@ extern "C" {
  * @brief Driver for the HTC Vive and Valve Index controllers.
  */
 
-#define VALVE_VID 0x28de
-#define VIVE_WATCHMAN_DONGLE 0x2101
-#define VIVE_WATCHMAN_DONGLE_GEN2 0x2102
+enum watchman_gen
+{
+	WATCHMAN_GEN1,
+	WATCHMAN_GEN2,
+	WATCHMAN_GEN_UNKNOWN
+};
+
+enum controller_variant
+{
+	CONTROLLER_VIVE_WAND,
+	CONTROLLER_INDEX_LEFT,
+	CONTROLLER_INDEX_RIGHT,
+	CONTROLLER_UNKNOWN
+};
 
 /*!
- * Probing function for HTC Vive and Valve Index devices.
+ * A Vive Controller device, representing just a single controller.
  *
  * @ingroup drv_vive
+ * @implements xrt_device
  */
-int
-vive_controller_found(struct xrt_prober *xp,
-                      struct xrt_prober_device **devices,
-                      size_t num_devices,
-                      size_t index,
-                      cJSON *attached_data,
-                      struct xrt_device **out_xdevs);
+struct vive_controller_device
+{
+	struct xrt_device base;
+
+	struct os_hid_device *controller_hid;
+	struct os_thread_helper controller_thread;
+
+	struct
+	{
+		uint64_t time_ns;
+		uint32_t last_sample_time_raw;
+		double acc_range;
+		double gyro_range;
+		struct xrt_vec3 acc_bias;
+		struct xrt_vec3 acc_scale;
+		struct xrt_vec3 gyro_bias;
+		struct xrt_vec3 gyro_scale;
+
+		//! IMU position in tracking space.
+		struct xrt_pose trackref;
+	} imu;
+
+	struct m_imu_3dof fusion;
+
+	struct
+	{
+		struct xrt_vec3 acc;
+		struct xrt_vec3 gyro;
+	} last;
+
+	struct xrt_quat rot_filtered;
+
+	bool print_spew;
+	bool print_debug;
+
+	uint32_t last_ticks;
+
+	//! Which vive controller in the system are we?
+	size_t index;
+
+	struct
+	{
+		struct xrt_vec2 trackpad;
+		float trigger;
+		uint8_t buttons;
+		uint8_t last_buttons;
+
+		uint8_t touch;
+		uint8_t last_touch;
+
+		uint8_t middle_finger_handle;
+		uint8_t ring_finger_handle;
+		uint8_t pinky_finger_handle;
+		uint8_t index_finger_trigger;
+
+		uint8_t squeeze_force;
+		uint8_t trackpad_force;
+
+		bool charging;
+		uint8_t battery;
+	} state;
+
+	struct
+	{
+		uint32_t firmware_version;
+		uint8_t hardware_revision;
+		uint8_t hardware_version_micro;
+		uint8_t hardware_version_minor;
+		uint8_t hardware_version_major;
+		char *mb_serial_number;
+		char *model_number;
+		char *device_serial_number;
+	} firmware;
+
+	enum watchman_gen watchman_gen;
+	enum controller_variant variant;
+};
+
+struct vive_controller_device *
+vive_controller_create(struct os_hid_device *controller_hid,
+                       enum watchman_gen watchman_gen,
+                       int controller_num);
 
 #ifdef __cplusplus
 }

@@ -31,10 +31,8 @@
 #include "os/os_threading.h"
 #include "os/os_time.h"
 
-#include "../vive/vive_protocol.h"
+#include "vive_protocol.h"
 #include "vive_controller.h"
-
-#include "math/m_imu_3dof.h"
 
 #ifdef XRT_OS_LINUX
 #include <unistd.h>
@@ -113,107 +111,8 @@ enum vive_controller_input_index
 
 #define VIVE_CLOCK_FREQ 48000000.0f // Hz = 48 MHz
 
-enum watchman_gen
-{
-	WATCHMAN_GEN1,
-	WATCHMAN_GEN2,
-	WATCHMAN_GEN_UNKNOWN
-};
-
-enum controller_variant
-{
-	CONTROLLER_VIVE_WAND,
-	CONTROLLER_INDEX_LEFT,
-	CONTROLLER_INDEX_RIGHT,
-	CONTROLLER_UNKNOWN
-};
-
 #define DEFAULT_HAPTIC_FREQ 150.0f
 #define MIN_HAPTIC_DURATION 0.05f
-
-/*!
- * A Vive Controller device, representing just a single controller.
- *
- * @ingroup drv_vive
- * @implements xrt_device
- */
-struct vive_controller_device
-{
-	struct xrt_device base;
-
-	struct os_hid_device *controller_hid;
-	struct os_thread_helper controller_thread;
-
-	struct
-	{
-		uint64_t time_ns;
-		uint32_t last_sample_time_raw;
-		double acc_range;
-		double gyro_range;
-		struct xrt_vec3 acc_bias;
-		struct xrt_vec3 acc_scale;
-		struct xrt_vec3 gyro_bias;
-		struct xrt_vec3 gyro_scale;
-
-		//! IMU position in tracking space.
-		struct xrt_pose trackref;
-	} imu;
-
-	struct m_imu_3dof fusion;
-
-	struct
-	{
-		struct xrt_vec3 acc;
-		struct xrt_vec3 gyro;
-	} last;
-
-	struct xrt_quat rot_filtered;
-
-	bool print_spew;
-	bool print_debug;
-
-	uint32_t last_ticks;
-
-	//! Which vive controller in the system are we?
-	size_t index;
-
-	struct
-	{
-		struct xrt_vec2 trackpad;
-		float trigger;
-		uint8_t buttons;
-		uint8_t last_buttons;
-
-		uint8_t touch;
-		uint8_t last_touch;
-
-		uint8_t middle_finger_handle;
-		uint8_t ring_finger_handle;
-		uint8_t pinky_finger_handle;
-		uint8_t index_finger_trigger;
-
-		uint8_t squeeze_force;
-		uint8_t trackpad_force;
-
-		bool charging;
-		uint8_t battery;
-	} state;
-
-	struct
-	{
-		uint32_t firmware_version;
-		uint8_t hardware_revision;
-		uint8_t hardware_version_micro;
-		uint8_t hardware_version_minor;
-		uint8_t hardware_version_major;
-		char *mb_serial_number;
-		char *model_number;
-		char *device_serial_number;
-	} firmware;
-
-	enum watchman_gen watchman_gen;
-	enum controller_variant variant;
-};
 
 static inline struct vive_controller_device *
 vive_controller_device(struct xrt_device *xdev)
@@ -1231,11 +1130,6 @@ vive_controller_parse_config(struct vive_controller_device *d,
 	return true;
 }
 
-/*
- *
- * Prober functions.
- *
- */
 #define SET_WAND_INPUT(NAME, NAME2)                                            \
 	do {                                                                   \
 		(d->base.inputs[VIVE_CONTROLLER_INDEX_##NAME].name =           \
@@ -1247,24 +1141,12 @@ vive_controller_parse_config(struct vive_controller_device *d,
 		(d->base.inputs[VIVE_CONTROLLER_INDEX_##NAME].name =           \
 		     XRT_INPUT_INDEX_##NAME2);                                 \
 	} while (0)
-int
-vive_controller_found(struct xrt_prober *xp,
-                      struct xrt_prober_device **devices,
-                      size_t num_devices,
-                      size_t index,
-                      cJSON *attached_data,
-                      struct xrt_device **out_xdevs)
+
+struct vive_controller_device *
+vive_controller_create(struct os_hid_device *controller_hid,
+                       enum watchman_gen watchman_gen,
+                       int controller_num)
 {
-	struct xrt_prober_device *dev = devices[index];
-	int ret;
-
-	static int controller_num = 0;
-
-	struct os_hid_device *controller_hid = NULL;
-	ret = xp->open_hid_interface(xp, dev, 0, &controller_hid);
-	if (ret != 0) {
-		return -1;
-	}
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
 	struct vive_controller_device *d = U_DEVICE_ALLOCATE(
@@ -1275,17 +1157,7 @@ vive_controller_found(struct xrt_prober *xp,
 	d->watchman_gen = WATCHMAN_GEN_UNKNOWN;
 	d->variant = CONTROLLER_UNKNOWN;
 
-	if (dev->vendor_id == VALVE_VID &&
-	    dev->product_id == VIVE_WATCHMAN_DONGLE) {
-		d->watchman_gen = WATCHMAN_GEN1;
-		VIVE_CONTROLLER_DEBUG(d, "Found watchman gen 1");
-	} else if (dev->vendor_id == VALVE_VID &&
-	           dev->product_id == VIVE_WATCHMAN_DONGLE_GEN2) {
-		d->watchman_gen = WATCHMAN_GEN2;
-		VIVE_CONTROLLER_DEBUG(d, "Found watchman gen 2");
-	} else {
-		VIVE_CONTROLLER_ERROR(d, "Unknown watchman gen");
-	}
+	d->watchman_gen = watchman_gen;
 
 	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
@@ -1400,8 +1272,8 @@ vive_controller_found(struct xrt_prober *xp,
 	}
 
 	if (d->controller_hid) {
-		ret = os_thread_helper_start(&d->controller_thread,
-		                             vive_controller_run_thread, d);
+		int ret = os_thread_helper_start(&d->controller_thread,
+		                                 vive_controller_run_thread, d);
 		if (ret != 0) {
 			VIVE_CONTROLLER_ERROR(
 			    d, "Failed to start mainboard thread!");
@@ -1409,10 +1281,7 @@ vive_controller_found(struct xrt_prober *xp,
 			return 0;
 		}
 	}
-
-	out_xdevs[0] = &(d->base);
 	VIVE_CONTROLLER_DEBUG(d, "Opened vive controller!\n");
 
-	controller_num++;
-	return 1;
+	return d;
 }

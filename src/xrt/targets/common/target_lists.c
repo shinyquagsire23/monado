@@ -48,7 +48,6 @@
 
 #ifdef XRT_BUILD_DRIVER_VIVE
 #include "vive/vive_prober.h"
-#include "vive/vive_controller.h"
 #endif
 
 #ifdef XRT_BUILD_DRIVER_DAYDREAM

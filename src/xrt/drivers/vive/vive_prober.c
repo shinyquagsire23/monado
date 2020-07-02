@@ -13,6 +13,7 @@
 #include "util/u_debug.h"
 
 #include "vive_device.h"
+#include "vive_controller.h"
 #include "vive_prober.h"
 
 static const char VIVE_PRODUCT_STRING[] = "HTC Vive";
@@ -254,4 +255,44 @@ vive_found(struct xrt_prober *xp,
 	}
 
 	return -1;
+}
+
+int
+vive_controller_found(struct xrt_prober *xp,
+                      struct xrt_prober_device **devices,
+                      size_t num_devices,
+                      size_t index,
+                      cJSON *attached_data,
+                      struct xrt_device **out_xdevs)
+{
+	struct xrt_prober_device *dev = devices[index];
+	int ret;
+
+	static int controller_num = 0;
+
+	struct os_hid_device *controller_hid = NULL;
+	ret = xp->open_hid_interface(xp, dev, 0, &controller_hid);
+	if (ret != 0) {
+		return -1;
+	}
+
+	enum watchman_gen gen = WATCHMAN_GEN_UNKNOWN;
+	if (dev->vendor_id == VALVE_VID &&
+	    dev->product_id == VIVE_WATCHMAN_DONGLE) {
+		gen = WATCHMAN_GEN1;
+	} else if (dev->vendor_id == VALVE_VID &&
+	           dev->product_id == VIVE_WATCHMAN_DONGLE_GEN2) {
+		gen = WATCHMAN_GEN2;
+	} else {
+		VIVE_ERROR("Unknown watchman gen");
+	}
+
+	struct vive_controller_device *d =
+	    vive_controller_create(controller_hid, gen, controller_num);
+
+	*out_xdevs = &d->base;
+
+	controller_num++;
+
+	return 1;
 }
