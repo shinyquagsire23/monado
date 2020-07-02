@@ -47,10 +47,13 @@ u_json_get_string_into_array(const cJSON *json, char *out_str, size_t max_size)
 
 	int ret = snprintf(out_str, max_size, "%s", json->valuestring);
 	if (ret < 0) {
+		fprintf(stderr, "Printing string failed: %d\n", ret);
 		return false;
 	} else if ((size_t)ret < max_size) {
 		return true;
 	} else {
+		fprintf(stderr, "String size %d is bigger than available %ld\n",
+		        ret, max_size);
 		return false;
 	}
 }
