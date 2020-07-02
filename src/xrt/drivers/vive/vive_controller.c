@@ -317,6 +317,13 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	os_thread_helper_unlock(&d->controller_thread);
 }
 
+
+static void
+_update_tracker_inputs(struct xrt_device *xdev)
+{
+	// Nothing to do here as the device does not send button reports.
+}
+
 static void
 vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
                                         enum xrt_input_name name,
@@ -1135,6 +1142,9 @@ vive_controller_create(struct os_hid_device *controller_hid,
 
 		d->base.update_inputs =
 		    vive_controller_device_update_index_inputs;
+	} else if (d->variant == CONTROLLER_TRACKER_GEN1) {
+		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN1;
+		d->base.update_inputs = _update_tracker_inputs;
 	} else {
 		d->base.name = XRT_DEVICE_GENERIC_HMD;
 		VIVE_CONTROLLER_ERROR(d,

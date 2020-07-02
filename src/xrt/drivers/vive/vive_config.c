@@ -346,7 +346,13 @@ vive_config_parse_controller(struct vive_controller_device *d,
 		return false;
 	}
 
-	JSON_STRING(json, "model_number", d->firmware.model_number);
+
+	if (u_json_get(json, "model_number")) {
+		JSON_STRING(json, "model_number", d->firmware.model_number);
+	} else {
+		JSON_STRING(json, "model_name", d->firmware.model_number);
+	}
+
 	if (strcmp(d->firmware.model_number, "Vive. Controller MV") == 0) {
 		d->variant = CONTROLLER_VIVE_WAND;
 		VIVE_CONTROLLER_DEBUG(d, "Found Vive Wand controller");
@@ -356,12 +362,17 @@ vive_config_parse_controller(struct vive_controller_device *d,
 	} else if (strcmp(d->firmware.model_number, "Knuckles Left") == 0) {
 		d->variant = CONTROLLER_INDEX_LEFT;
 		VIVE_CONTROLLER_DEBUG(d, "Found Knuckles Left controller");
+	} else if (strcmp(d->firmware.model_number, "Vive Tracker PVT") == 0) {
+		d->variant = CONTROLLER_TRACKER_GEN1;
+		VIVE_CONTROLLER_DEBUG(d, "Found Gen 1 tracker.");
+
 	} else {
 		VIVE_CONTROLLER_ERROR(d, "Failed to parse controller variant");
 	}
 
 	switch (d->variant) {
-	case CONTROLLER_VIVE_WAND: {
+	case CONTROLLER_VIVE_WAND:
+	case CONTROLLER_TRACKER_GEN1: {
 		JSON_VEC3(json, "acc_bias", &d->imu.acc_bias);
 		JSON_VEC3(json, "acc_scale", &d->imu.acc_scale);
 		JSON_VEC3(json, "gyro_bias", &d->imu.gyro_bias);
