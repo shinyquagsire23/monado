@@ -1148,7 +1148,7 @@ psmv_found(struct xrt_prober *xp,
 	u_var_add_gui_header(psmv, &psmv->gui.control, "Control");
 	u_var_add_rgb_u8(psmv, &psmv->wants.led, "Led");
 	u_var_add_u8(psmv, &psmv->wants.rumble, "Rumble");
-	u_var_add_i32(psmv, (int*)&psmv->log_level, "Log level");
+	u_var_add_log_level(psmv, &psmv->log_level, "Log level");
 	// clang-format on
 
 	// And finally done
