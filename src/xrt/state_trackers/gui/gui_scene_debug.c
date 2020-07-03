@@ -184,6 +184,7 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 		igDragScalar(name, ImGuiDataType_U8, ptr, drag_speed, NULL,
 		             NULL, NULL, power);
 		break;
+	case U_VAR_KIND_LOG_LEVEL:
 	case U_VAR_KIND_I32:
 		igInputInt(name, (int *)ptr, 1, 10, i_flags);
 		break;
