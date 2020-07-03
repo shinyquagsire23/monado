@@ -12,6 +12,7 @@
 #include "util/u_debug.h"
 #include "util/u_logging.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -131,6 +132,73 @@ debug_get_float_option(const char *name, float _default)
 
 	if (debug_get_bool_option_print()) {
 		U_LOG_RAW("%s=%f (%s)", name, ret, raw == NULL ? "nil" : raw);
+	}
+
+	return ret;
+}
+
+/*!
+ * This function checks @p str if it matches @p matches, it returns true as long
+ * as the complete @p str is in the starts of @p matches. Empty string does not
+ * match.
+ */
+static bool
+is_str_in_start_of(const char *str, const char *matches)
+{
+	if (str[0] == '\0') {
+		return false;
+	}
+
+	for (int i = 0; str[i] != '\0'; i++) {
+		if (matches[i] == '\0') {
+			return false;
+		}
+		if (matches[i] != tolower(str[i])) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static const char *
+level_to_str(enum u_logging_level level)
+{
+	switch (level) {
+	case U_LOGGING_TRACE: return "trace";
+	case U_LOGGING_DEBUG: return "debug";
+	case U_LOGGING_INFO: return "info";
+	case U_LOGGING_WARN: return "warn";
+	case U_LOGGING_ERROR: return "error";
+	default: return "???";
+	}
+}
+
+enum u_logging_level
+debug_get_log_option(const char *name, enum u_logging_level _default)
+{
+	const char *raw = os_getenv(name);
+	enum u_logging_level ret;
+
+	if (raw == NULL) {
+		ret = _default;
+	} else if (is_str_in_start_of(raw, "trace")) {
+		ret = U_LOGGING_TRACE;
+	} else if (is_str_in_start_of(raw, "debug")) {
+		ret = U_LOGGING_DEBUG;
+	} else if (is_str_in_start_of(raw, "info")) {
+		ret = U_LOGGING_INFO;
+	} else if (is_str_in_start_of(raw, "warn")) {
+		ret = U_LOGGING_WARN;
+	} else if (is_str_in_start_of(raw, "error")) {
+		ret = U_LOGGING_ERROR;
+	} else {
+		ret = _default;
+	}
+
+	if (debug_get_bool_option_print()) {
+		U_LOG_RAW("%s=%s (%s)", name, level_to_str(ret),
+		          raw == NULL ? "nil" : raw);
 	}
 
 	return ret;
