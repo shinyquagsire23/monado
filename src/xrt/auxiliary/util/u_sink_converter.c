@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -8,6 +8,7 @@
  */
 
 #include "xrt/xrt_config_have.h"
+#include "util/u_logging.h"
 #include "util/u_misc.h"
 #include "util/u_sink.h"
 #include "util/u_frame.h"
@@ -260,14 +261,12 @@ static bool
 check_header(size_t size, const uint8_t *data)
 {
 	if (size < 16) {
-		fprintf(stderr, "error: Invalid JPEG file size! %u\n",
-		        (uint32_t)size);
+		U_LOG_E("Invalid JPEG file size! %u", (uint32_t)size);
 		return false;
 	}
 
 	if (data[0] != 0xFF || data[1] != 0xD8) {
-		fprintf(stderr, "error: Invalid file header! 0x%02X 0x%02X\n",
-		        data[0], data[1]);
+		U_LOG_E("Invalid file header! 0x%02X 0x%02X", data[0], data[1]);
 		return false;
 	}
 
@@ -430,8 +429,7 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		break;
 #endif
 	default:
-		fprintf(stderr,
-		        "error: Can not convert from '%s' to R8G8B8 or L8!\n",
+		U_LOG_E("Can not convert from '%s' to R8G8B8 or L8!",
 		        u_format_str(xf->format));
 		return;
 	}
@@ -472,7 +470,7 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		break;
 #endif
 	default:
-		fprintf(stderr, "error: Can not convert from '%s' to R8G8B8!\n",
+		U_LOG_E("Can not convert from '%s' to R8G8B8!",
 		        u_format_str(xf->format));
 		return;
 	}
@@ -503,10 +501,10 @@ receive_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs,
 		break;
 #endif
 	default:
-		fprintf(stderr,
-		        "error: Can not convert from '%s' to either YUV, YUYV, "
-		        "UYVY or L8!\n",
-		        u_format_str(xf->format));
+		U_LOG_E(
+		    "Can not convert from '%s' to either YUV, YUYV, UYVY or "
+		    "L8!",
+		    u_format_str(xf->format));
 		return;
 	}
 
@@ -533,10 +531,8 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		break;
 #endif
 	default:
-		fprintf(
-		    stderr,
-		    "error: Can not convert from '%s' to either YUV or YUYV!\n",
-		    u_format_str(xf->format));
+		U_LOG_E("Can not convert from '%s' to either YUV or YUYV!",
+		        u_format_str(xf->format));
 		return;
 	}
 
@@ -570,8 +566,7 @@ u_sink_create_format_converter(struct xrt_frame_context *xfctx,
                                struct xrt_frame_sink **out_xfs)
 {
 	if (f != XRT_FORMAT_R8G8B8) {
-		fprintf(stderr, "error: Format '%s' not supported\n",
-		        u_format_str(f));
+		U_LOG_E("Format '%s' not supported", u_format_str(f));
 		return;
 	}
 

@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,13 +7,16 @@
  * @ingroup aux_util
  */
 
+#include "util/u_logging.h"
+#include "util/u_device.h"
+#include "util/u_misc.h"
+
+#include "math/m_api.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "math/m_api.h"
-#include "util/u_device.h"
-#include "util/u_misc.h"
 
 
 /*
@@ -62,22 +65,20 @@ const struct xrt_matrix_2x2 u_device_rotation_180 = {{
  *
  */
 
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#define PRINT_STR(name, val) U_LOG_RAW("\t%s = %s", name, val)
 
-#define PRINT_STR(name, val) PRINT("\t%s = %s\n", name, val)
-
-#define PRINT_INT(name, val) PRINT("\t%s = %u\n", name, val)
+#define PRINT_INT(name, val) U_LOG_RAW("\t%s = %u", name, val)
 
 #define PRINT_MM(name, val)                                                    \
-	PRINT("\t%s = %f (%i.%02imm)\n", name, val, (int32_t)(val * 1000.f),   \
-	      abs((int32_t)(val * 100000.f)) % 100)
+	U_LOG_RAW("\t%s = %f (%i.%02imm)", name, val, (int32_t)(val * 1000.f), \
+	          abs((int32_t)(val * 100000.f)) % 100)
 
 #define PRINT_ANGLE(name, val)                                                 \
-	PRINT("\t%s = %f (%i°)\n", name, val, (int32_t)(val * (180 / M_PI)))
+	U_LOG_RAW("\t%s = %f (%i°)", name, val, (int32_t)(val * (180 / M_PI)))
 
 #define PRINT_MAT2X2(name, rot)                                                \
-	PRINT("\t%s = {%f, %f} {%f, %f}\n", name, rot.v[0], rot.v[1],          \
-	      rot.v[2], rot.v[3])
+	U_LOG_RAW("\t%s = {%f, %f} {%f, %f}", name, rot.v[0], rot.v[1],        \
+	          rot.v[2], rot.v[3])
 
 /*!
  * Dump the device config to stderr.
@@ -88,7 +89,7 @@ u_device_dump_config(struct xrt_device *xdev,
                      const char *prod)
 {
 	// clang-format off
-	fprintf(stderr, "%s - device_setup\n", prefix);
+	U_LOG_RAW("%s - device_setup", prefix);
 	PRINT_STR(   "prod", prod);
 	if (xdev->hmd != NULL) {
 		PRINT_INT(   "screens[0].w_pixels ", xdev->hmd->screens[0].w_pixels);

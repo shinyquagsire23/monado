@@ -8,8 +8,8 @@
  */
 
 #include "util/u_misc.h"
-
-#include "u_render_timing.h"
+#include "util/u_logging.h"
+#include "util/u_render_timing.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -23,8 +23,7 @@
  */
 
 #if 0
-#define DEBUG_PRINT_FRAME_ID()
-	fprintf(stderr, "%s %" PRIi64 "\n", __func__, frame_id)
+#define DEBUG_PRINT_FRAME_ID() U_LOG_RAW("%" PRIi64, frame_id)
 #else
 #define DEBUG_PRINT_FRAME_ID()                                                 \
 	do {                                                                   \
@@ -167,8 +166,7 @@ u_rt_helper_mark_delivered(struct u_rt_helper *urth, int64_t frame_id)
 	uint64_t diff_ns = now_ns - then_ns;
 	uint64_t ms100 = diff_ns / (1000 * 10);
 
-	fprintf(stderr, "%s: Diff %i.%02ims\n", __func__, (int)ms100 / 100,
-	        (int)ms100 % 100);
+	U_LOG_RAW("Diff %i.%02ims", (int)ms100 / 100, (int)ms100 % 100);
 #endif
 }
 

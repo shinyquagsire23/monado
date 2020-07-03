@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,12 +9,12 @@
  * Debug get option helpers heavily inspired from mesa ones.
  */
 
+#include "util/u_debug.h"
+#include "util/u_logging.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "util/u_debug.h"
-
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(print, "XRT_PRINT_OPTIONS", false)
@@ -38,8 +38,7 @@ debug_get_option(const char *name, const char *_default)
 	}
 
 	if (debug_get_bool_option_print()) {
-		fprintf(stderr, "%s=%s (%s)\n", name, ret,
-		        raw == NULL ? "nil" : raw);
+		U_LOG_RAW("%s=%s (%s)", name, ret, raw == NULL ? "nil" : raw);
 	}
 
 	return ret;
@@ -80,8 +79,8 @@ debug_get_bool_option(const char *name, bool _default)
 	}
 
 	if (debug_get_bool_option_print()) {
-		fprintf(stderr, "%s=%s (%s)\n", name, ret ? "TRUE" : "FALSE",
-		        raw == NULL ? "nil" : raw);
+		U_LOG_RAW("%s=%s (%s)", name, ret ? "TRUE" : "FALSE",
+		          raw == NULL ? "nil" : raw);
 	}
 
 	return ret;
@@ -106,8 +105,7 @@ debug_get_num_option(const char *name, long _default)
 	}
 
 	if (debug_get_bool_option_print()) {
-		fprintf(stderr, "%s=%li (%s)\n", name, ret,
-		        raw == NULL ? "nil" : raw);
+		U_LOG_RAW("%s=%li (%s)", name, ret, raw == NULL ? "nil" : raw);
 	}
 
 	return ret;
@@ -132,8 +130,7 @@ debug_get_float_option(const char *name, float _default)
 	}
 
 	if (debug_get_bool_option_print()) {
-		fprintf(stderr, "%s=%f (%s)\n", name, ret,
-		        raw == NULL ? "nil" : raw);
+		U_LOG_RAW("%s=%f (%s)", name, ret, raw == NULL ? "nil" : raw);
 	}
 
 	return ret;
