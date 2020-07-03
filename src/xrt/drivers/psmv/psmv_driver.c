@@ -24,6 +24,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_logging.h"
 
 #include "psmv_interface.h"
 
@@ -47,32 +48,13 @@
 #define PSMV_BALL_DIAMETER_M 0.045  // 45 mm
 #define PSMV_BALL_FROM_IMU_Y_M 0.09 // 9 cm
 
-#define PSMV_SPEW(p, ...)                                                      \
-	do {                                                                   \
-		if (p->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
+// clang-format off
+#define PSMV_TRACE(p, ...) U_LOG_XDEV_IFL_T(&p->base, p->log_level, __VA_ARGS__)
+#define PSMV_DEBUG(p, ...) U_LOG_XDEV_IFL_D(&p->base, p->log_level, __VA_ARGS__)
+#define PSMV_ERROR(p, ...) U_LOG_XDEV_IFL_E(&p->base, p->log_level, __VA_ARGS__)
+// clang-format on
 
-#define PSMV_DEBUG(p, ...)                                                     \
-	do {                                                                   \
-		if (p->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define PSMV_ERROR(p, ...)                                                     \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
-
-DEBUG_GET_ONCE_BOOL_OPTION(psmv_spew, "PSMV_PRINT_SPEW", false)
+DEBUG_GET_ONCE_BOOL_OPTION(psmv_trace, "PSMV_PRINT_TRACE", false)
 DEBUG_GET_ONCE_BOOL_OPTION(psmv_debug, "PSMV_PRINT_DEBUG", false)
 
 /*!
@@ -511,8 +493,7 @@ struct psmv_device
 	// Product ID used to tell the difference between ZCM1 and ZCM2.
 	uint16_t pid;
 
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level log_level;
 
 	struct
 	{
@@ -987,8 +968,6 @@ psmv_found(struct xrt_prober *xp,
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
 	struct psmv_device *psmv =
 	    U_DEVICE_ALLOCATE(struct psmv_device, flags, 12, 1);
-	psmv->print_spew = debug_get_bool_option_psmv_spew();
-	psmv->print_debug = debug_get_bool_option_psmv_debug();
 	psmv->base.destroy = psmv_device_destroy;
 	psmv->base.update_inputs = psmv_device_update_inputs;
 	psmv->base.get_tracked_pose = psmv_device_get_tracked_pose;
@@ -1000,6 +979,14 @@ psmv_found(struct xrt_prober *xp,
 	psmv->hid = hid;
 	snprintf(psmv->base.str, XRT_DEVICE_NAME_LEN, "%s",
 	         "PS Move Controller");
+
+	if (debug_get_bool_option_psmv_trace()) {
+		psmv->log_level = U_LOGGING_TRACE;
+	} else if (debug_get_bool_option_psmv_debug()) {
+		psmv->log_level = U_LOGGING_DEBUG;
+	} else {
+		psmv->log_level = U_LOGGING_INFO;
+	}
 
 	m_imu_pre_filter_init(&psmv->calibration.prefilter, 1.f, 1.f);
 
@@ -1169,8 +1156,7 @@ psmv_found(struct xrt_prober *xp,
 	u_var_add_gui_header(psmv, &psmv->gui.control, "Control");
 	u_var_add_rgb_u8(psmv, &psmv->wants.led, "Led");
 	u_var_add_u8(psmv, &psmv->wants.rumble, "Rumble");
-	u_var_add_bool(psmv, &psmv->print_debug, "Debug");
-	u_var_add_bool(psmv, &psmv->print_spew, "Spew");
+	u_var_add_i32(psmv, (int*)&psmv->log_level, "Log level");
 	// clang-format on
 
 	// And finally done
@@ -1462,29 +1448,29 @@ psmv_parse_input_zcm1(struct psmv_device *psmv,
 	 * Print
 	 */
 
-	PSMV_SPEW(psmv,
-	          "\n\t"
-	          "missed: %s\n\t"
-	          "buttons: %08x\n\t"
-	          "battery: %x\n\t"
-	          "samples[0].accel: %6i %6i %6i\n\t"
-	          "samples[1].accel: %6i %6i %6i\n\t"
-	          "samples[0].gyro:  %6i %6i %6i\n\t"
-	          "samples[1].gyro:  %6i %6i %6i\n\t"
-	          "trigger_values[0]: %02x\n\t"
-	          "trigger_values[1]: %02x\n\t"
-	          "timestamp: %i\n\t"
-	          "diff: %i\n\t"
-	          "seq_no: %x\n",
-	          missed ? "yes" : "no", input->buttons, input->battery,
-	          input->samples[0].accel.x, input->samples[0].accel.y,
-	          input->samples[0].accel.z, input->samples[1].accel.x,
-	          input->samples[1].accel.y, input->samples[1].accel.z,
-	          input->samples[0].gyro.x, input->samples[0].gyro.y,
-	          input->samples[0].gyro.z, input->samples[1].gyro.x,
-	          input->samples[1].gyro.y, input->samples[1].gyro.z,
-	          input->trigger_values[0], input->trigger_values[1],
-	          input->timestamp, diff, input->seq_no);
+	PSMV_TRACE(psmv,
+	           "\n\t"
+	           "missed: %s\n\t"
+	           "buttons: %08x\n\t"
+	           "battery: %x\n\t"
+	           "samples[0].accel: %6i %6i %6i\n\t"
+	           "samples[1].accel: %6i %6i %6i\n\t"
+	           "samples[0].gyro:  %6i %6i %6i\n\t"
+	           "samples[1].gyro:  %6i %6i %6i\n\t"
+	           "trigger_values[0]: %02x\n\t"
+	           "trigger_values[1]: %02x\n\t"
+	           "timestamp: %i\n\t"
+	           "diff: %i\n\t"
+	           "seq_no: %x\n",
+	           missed ? "yes" : "no", input->buttons, input->battery,
+	           input->samples[0].accel.x, input->samples[0].accel.y,
+	           input->samples[0].accel.z, input->samples[1].accel.x,
+	           input->samples[1].accel.y, input->samples[1].accel.z,
+	           input->samples[0].gyro.x, input->samples[0].gyro.y,
+	           input->samples[0].gyro.z, input->samples[1].gyro.x,
+	           input->samples[1].gyro.y, input->samples[1].gyro.z,
+	           input->trigger_values[0], input->trigger_values[1],
+	           input->timestamp, diff, input->seq_no);
 
 	return 2;
 }
@@ -1712,30 +1698,30 @@ psmv_parse_input_zcm2(struct psmv_device *psmv,
 	 * Print
 	 */
 
-	PSMV_SPEW(psmv,
-	          "\n\t"
-	          "missed: %s\n\t"
-	          "buttons: %08x\n\t"
-	          "battery: %x\n\t"
-	          "sample.accel:      %6i %6i %6i\n\t"
-	          "sample_copy.accel: %6i %6i %6i\n\t"
-	          "sample.gyro:       %6i %6i %6i\n\t"
-	          "sample_copy.gyro:  %6i %6i %6i\n\t"
-	          "sample.trigger: %02x\n\t"
-	          "sample.trigger_low_pass: %02x\n\t"
-	          "timestamp:      %04x\n\t"
-	          "timestamp_copy: %04x\n\t"
-	          "diff: %i\n\t"
-	          "seq_no: %x\n",
-	          missed ? "yes" : "no", input->buttons, input->battery,
-	          input->samples[0].accel.x, input->samples[0].accel.y,
-	          input->samples[0].accel.z, input->samples[1].accel.x,
-	          input->samples[1].accel.y, input->samples[1].accel.z,
-	          input->samples[0].gyro.x, input->samples[0].gyro.y,
-	          input->samples[0].gyro.z, input->samples[1].gyro.x,
-	          input->samples[1].gyro.y, input->samples[1].gyro.z,
-	          input->trigger_low_pass, input->trigger, input->timestamp,
-	          input->timestamp_copy, diff, input->seq_no);
+	PSMV_TRACE(psmv,
+	           "\n\t"
+	           "missed: %s\n\t"
+	           "buttons: %08x\n\t"
+	           "battery: %x\n\t"
+	           "sample.accel:      %6i %6i %6i\n\t"
+	           "sample_copy.accel: %6i %6i %6i\n\t"
+	           "sample.gyro:       %6i %6i %6i\n\t"
+	           "sample_copy.gyro:  %6i %6i %6i\n\t"
+	           "sample.trigger: %02x\n\t"
+	           "sample.trigger_low_pass: %02x\n\t"
+	           "timestamp:      %04x\n\t"
+	           "timestamp_copy: %04x\n\t"
+	           "diff: %i\n\t"
+	           "seq_no: %x\n",
+	           missed ? "yes" : "no", input->buttons, input->battery,
+	           input->samples[0].accel.x, input->samples[0].accel.y,
+	           input->samples[0].accel.z, input->samples[1].accel.x,
+	           input->samples[1].accel.y, input->samples[1].accel.z,
+	           input->samples[0].gyro.x, input->samples[0].gyro.y,
+	           input->samples[0].gyro.z, input->samples[1].gyro.x,
+	           input->samples[1].gyro.y, input->samples[1].gyro.z,
+	           input->trigger_low_pass, input->trigger, input->timestamp,
+	           input->timestamp_copy, diff, input->seq_no);
 
 	return 1;
 }
