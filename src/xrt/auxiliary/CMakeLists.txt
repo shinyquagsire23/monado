@@ -68,8 +68,6 @@ endif()
 set(UTIL_SOURCE_FILES
 	util/u_bitwise.c
 	util/u_bitwise.h
-	util/u_misc.c
-	util/u_misc.h
 	util/u_debug.c
 	util/u_debug.h
 	util/u_device.c
@@ -89,6 +87,10 @@ set(UTIL_SOURCE_FILES
 	util/u_hashset.h
 	util/u_json.c
 	util/u_json.h
+	util/u_logging.c
+	util/u_logging.h
+	util/u_misc.c
+	util/u_misc.h
 	util/u_render_timing.c
 	util/u_render_timing.h
 	util/u_sink.h

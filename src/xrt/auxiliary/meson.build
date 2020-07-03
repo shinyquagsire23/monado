@@ -27,6 +27,8 @@ lib_aux_util = static_library(
 		'util/u_hashset.h',
 		'util/u_json.c',
 		'util/u_json.h',
+		'util/u_logging.c',
+		'util/u_logging.h',
 		'util/u_misc.c',
 		'util/u_misc.h',
 		'util/u_render_timing.c',
