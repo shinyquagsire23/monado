@@ -31,6 +31,7 @@
 #include "os/os_threading.h"
 #include "os/os_time.h"
 
+#include "vive.h"
 #include "vive_protocol.h"
 #include "vive_controller.h"
 #include "vive_config.h"
@@ -46,12 +47,8 @@
  *
  */
 
-DEBUG_GET_ONCE_BOOL_OPTION(vive_controller_spew,
-                           "VIVE_CONTROLLER_PRINT_SPEW",
-                           false)
-DEBUG_GET_ONCE_BOOL_OPTION(vive_controller_debug,
-                           "VIVE_CONTROLLER_PRINT_DEBUG",
-                           false)
+DEBUG_GET_ONCE_LOG_OPTION(vive_log, "VIVE_LOG", U_LOGGING_WARN)
+
 enum vive_controller_input_index
 {
 	// common inputs
@@ -155,8 +152,8 @@ vive_controller_device_update_wand_inputs(struct xrt_device *xdev)
 			input->timestamp = now;
 			input->value.boolean = pressed;
 
-			VIVE_CONTROLLER_DEBUG(d, "button %d %s\n", i,
-			                      pressed ? "pressed" : "released");
+			VIVE_DEBUG(d, "button %d %s\n", i,
+			           pressed ? "pressed" : "released");
 		}
 	}
 	d->state.last_buttons = d->state.buttons;
@@ -167,15 +164,15 @@ vive_controller_device_update_wand_inputs(struct xrt_device *xdev)
 	trackpad_input->timestamp = now;
 	trackpad_input->value.vec2.x = d->state.trackpad.x;
 	trackpad_input->value.vec2.y = d->state.trackpad.y;
-	VIVE_CONTROLLER_SPEW(d, "Trackpad: %f, %f", d->state.trackpad.x,
-	                     d->state.trackpad.y);
+	VIVE_TRACE(d, "Trackpad: %f, %f", d->state.trackpad.x,
+	           d->state.trackpad.y);
 
 
 	struct xrt_input *trigger_input =
 	    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRIGGER_VALUE];
 	trigger_input->timestamp = now;
 	trigger_input->value.vec1.x = d->state.trigger;
-	VIVE_CONTROLLER_SPEW(d, "Trigger: %f", d->state.trigger);
+	VIVE_TRACE(d, "Trigger: %f", d->state.trigger);
 
 	os_thread_helper_unlock(&d->controller_thread);
 }
@@ -224,8 +221,8 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 			input->timestamp = now;
 			input->value.boolean = pressed;
 
-			VIVE_CONTROLLER_DEBUG(d, "button %d %s\n", i,
-			                      pressed ? "pressed" : "released");
+			VIVE_DEBUG(d, "button %d %s\n", i,
+			           pressed ? "pressed" : "released");
 		}
 	}
 	d->state.last_buttons = d->state.buttons;
@@ -251,8 +248,8 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	const char *component = is_trackpad_touched || was_trackpad_touched
 	                            ? "Trackpad"
 	                            : "Thumbstick";
-	VIVE_CONTROLLER_SPEW(d, "%s: %f, %f", component, d->state.trackpad.x,
-	                     d->state.trackpad.y);
+	VIVE_TRACE(d, "%s: %f, %f", component, d->state.trackpad.x,
+	           d->state.trackpad.y);
 
 
 	struct xrt_input *trigger_input =
@@ -261,7 +258,7 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	trigger_input->timestamp = now;
 	trigger_input->value.vec1.x = d->state.trigger;
 
-	VIVE_CONTROLLER_SPEW(d, "Trigger: %f", d->state.trigger);
+	VIVE_TRACE(d, "Trigger: %f", d->state.trigger);
 
 
 	/* d->state.touch is bitmask of currently touched buttons.
@@ -289,9 +286,8 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 			input->timestamp = now;
 			input->value.boolean = touched;
 
-			VIVE_CONTROLLER_DEBUG(d, "button %d %s\n", i,
-			                      touched ? "touched"
-			                              : "untouched");
+			VIVE_DEBUG(d, "button %d %s\n", i,
+			           touched ? "touched" : "untouched");
 		}
 	}
 	d->state.last_touch = d->state.touch;
@@ -300,18 +296,16 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	    (float)d->state.squeeze_force / UINT8_MAX;
 	d->base.inputs[VIVE_CONTROLLER_INDEX_SQUEEZE_FORCE].timestamp = now;
 	if (d->state.squeeze_force > 0) {
-		VIVE_CONTROLLER_DEBUG(d, "Squeeze force: %f\n",
-		                      (float)d->state.squeeze_force /
-		                          UINT8_MAX);
+		VIVE_DEBUG(d, "Squeeze force: %f\n",
+		           (float)d->state.squeeze_force / UINT8_MAX);
 	}
 
 	d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_FORCE].value.vec1.x =
 	    (float)d->state.trackpad_force / UINT8_MAX;
 	d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_FORCE].timestamp = now;
 	if (d->state.trackpad_force > 0) {
-		VIVE_CONTROLLER_DEBUG(d, "Trackpad force: %f\n",
-		                      (float)d->state.trackpad_force /
-		                          UINT8_MAX);
+		VIVE_DEBUG(d, "Trackpad force: %f\n",
+		           (float)d->state.trackpad_force / UINT8_MAX);
 	}
 
 	os_thread_helper_unlock(&d->controller_thread);
@@ -338,7 +332,7 @@ vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
 	    name != XRT_INPUT_VIVE_GRIP_POSE &&
 	    name != XRT_INPUT_INDEX_AIM_POSE &&
 	    name != XRT_INPUT_INDEX_GRIP_POSE) {
-		VIVE_CONTROLLER_ERROR(d, "unknown input name");
+		VIVE_ERROR(d, "unknown input name");
 		return;
 	}
 
@@ -369,9 +363,8 @@ vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
 
 	struct xrt_vec3 pos = out_relation->pose.position;
 	struct xrt_quat quat = out_relation->pose.orientation;
-	VIVE_CONTROLLER_SPEW(
-	    d, "GET_TRACKED_POSE (%f, %f, %f) (%f, %f, %f, %f) ", pos.x, pos.y,
-	    pos.z, quat.x, quat.y, quat.z, quat.w);
+	VIVE_TRACE(d, "GET_TRACKED_POSE (%f, %f, %f) (%f, %f, %f, %f) ", pos.x,
+	           pos.y, pos.z, quat.x, quat.y, quat.z, quat.w);
 }
 
 static int
@@ -381,22 +374,21 @@ vive_controller_haptic_pulse(struct vive_controller_device *d,
 	float duration_seconds;
 	//! @todo: proper min duration value
 	if (value->vibration.duration == -1) {
-		VIVE_CONTROLLER_SPEW(d,
-		                     "Haptic pulse duration: using %f minimum",
-		                     MIN_HAPTIC_DURATION);
+		VIVE_TRACE(d, "Haptic pulse duration: using %f minimum",
+		           MIN_HAPTIC_DURATION);
 		duration_seconds = 0.1;
 	} else {
 		duration_seconds = time_ns_to_s(value->vibration.duration);
 	}
 
-	VIVE_CONTROLLER_SPEW(d, "Haptic pulse amp %f, %fHz, %fs",
-	                     value->vibration.amplitude,
-	                     value->vibration.frequency, duration_seconds);
+	VIVE_TRACE(d, "Haptic pulse amp %f, %fHz, %fs",
+	           value->vibration.amplitude, value->vibration.frequency,
+	           duration_seconds);
 	float frequency = value->vibration.frequency;
 
 	//! @todo: proper unspecified value
 	if (frequency == 0) {
-		VIVE_CONTROLLER_SPEW(
+		VIVE_TRACE(
 		    d, "Haptic pulse frequency unspecified, setting to %fHz",
 		    DEFAULT_HAPTIC_FREQ);
 		frequency = 200;
@@ -449,7 +441,7 @@ vive_controller_device_set_output(struct xrt_device *xdev,
 
 	if (name != XRT_OUTPUT_NAME_VIVE_HAPTIC &&
 	    name != XRT_OUTPUT_NAME_INDEX_HAPTIC) {
-		VIVE_CONTROLLER_ERROR(d, "Unknown output\n");
+		VIVE_ERROR(d, "Unknown output\n");
 		return;
 	}
 
@@ -468,8 +460,7 @@ controller_handle_battery(struct vive_controller_device *d,
 	uint8_t charge_percent =
 	    sample->battery & VIVE_CONTROLLER_BATTERY_CHARGE_MASK;
 	bool charging = sample->battery & VIVE_CONTROLLER_BATTERY_CHARGING;
-	VIVE_CONTROLLER_DEBUG(d, "Charging %d, percent %d\n", charging,
-	                      charge_percent);
+	VIVE_DEBUG(d, "Charging %d, percent %d\n", charging, charge_percent);
 	d->state.charging = charging;
 	d->state.battery = charge_percent;
 }
@@ -490,8 +481,8 @@ controller_handle_touch_position(struct vive_controller_device *d,
 	d->state.trackpad.x = (float)x / INT16_MAX;
 	d->state.trackpad.y = (float)y / INT16_MAX;
 	if (d->state.trackpad.x != 0 || d->state.trackpad.y != 0)
-		VIVE_CONTROLLER_SPEW(d, "Trackpad %f,%f\n", d->state.trackpad.x,
-		                     d->state.trackpad.y);
+		VIVE_TRACE(d, "Trackpad %f,%f\n", d->state.trackpad.x,
+		           d->state.trackpad.y);
 }
 
 static void
@@ -499,7 +490,7 @@ controller_handle_analog_trigger(struct vive_controller_device *d,
                                  struct vive_controller_trigger_sample *sample)
 {
 	d->state.trigger = (float)sample->trigger / UINT8_MAX;
-	VIVE_CONTROLLER_SPEW(d, "Trigger %f\n", d->state.trigger);
+	VIVE_TRACE(d, "Trigger %f\n", d->state.trigger);
 }
 
 static inline uint32_t
@@ -563,10 +554,10 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d,
 	    scale * d->imu.gyro_scale.z * gyro[2] - d->imu.gyro_bias.z,
 	};
 
-	VIVE_CONTROLLER_SPEW(d, "ACC  %f %f %f", acceleration.x, acceleration.y,
-	                     acceleration.z);
-	VIVE_CONTROLLER_SPEW(d, "GYRO %f %f %f", angular_velocity.x,
-	                     angular_velocity.y, angular_velocity.z);
+	VIVE_TRACE(d, "ACC  %f %f %f", acceleration.x, acceleration.y,
+	           acceleration.z);
+	VIVE_TRACE(d, "GYRO %f %f %f", angular_velocity.x, angular_velocity.y,
+	           angular_velocity.z);
 	/*
 	 */
 
@@ -614,7 +605,7 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d,
 
 	d->rot_filtered = d->fusion.rot;
 
-	//      VIVE_CONTROLLER_SPEW(d, "Rot %f %f %f", d->rot_filtered.x,
+	//      VIVE_TRACE(d, "Rot %f %f %f", d->rot_filtered.x,
 	//                           d->rot_filtered.y, d->rot_filtered.z);
 }
 
@@ -638,7 +629,7 @@ vive_controller_handle_lighthousev1(struct vive_controller_device *d,
                                     uint8_t *buf,
                                     uint8_t len)
 {
-	VIVE_CONTROLLER_SPEW(d, "Got lighthouse message with len %d.\n", len);
+	VIVE_TRACE(d, "Got lighthouse message with len %d.\n", len);
 }
 
 /*
@@ -696,11 +687,11 @@ vive_controller_decode_watchmanv1(struct vive_controller_device *d,
 
 		// clang-format on
 
-		VIVE_CONTROLLER_SPEW(d,
-		                     "battery %d trigger %d trackpad %d "
-		                     "buttons %d imu %d",
-		                     has_battery, has_trigger, has_trackpad,
-		                     has_buttons, has_imu);
+		VIVE_TRACE(d,
+		           "battery %d trigger %d trackpad %d "
+		           "buttons %d imu %d",
+		           has_battery, has_trigger, has_trackpad, has_buttons,
+		           has_imu);
 
 		buf++;
 
@@ -733,7 +724,7 @@ vive_controller_decode_watchmanv1(struct vive_controller_device *d,
 	}
 
 	if (buf > end)
-		VIVE_CONTROLLER_ERROR(d, "overshoot: %ld\n", buf - end);
+		VIVE_ERROR(d, "overshoot: %ld\n", buf - end);
 
 	if (buf < end)
 		vive_controller_handle_lighthousev1(d, buf, end - buf);
@@ -918,12 +909,11 @@ vive_controller_decode_watchmanv2(struct vive_controller_device *d,
 #endif
 
 	if (buf < end) {
-		VIVE_CONTROLLER_ERROR(d, "%ld bytes unparsed data in message\n",
-		                      message->len - (buf - message->payload) -
-		                          1);
+		VIVE_TRACE(d, "%ld bytes unparsed data in message\n",
+		           message->len - (buf - message->payload) - 1);
 	}
 	if (buf > end)
-		VIVE_CONTROLLER_ERROR(d, "overshoot: %ld\n", buf - end);
+		VIVE_ERROR(d, "overshoot: %ld\n", buf - end);
 
 	//! @todo: Parse lighthouse v2 data
 }
@@ -946,7 +936,7 @@ vive_controller_decode_message(struct vive_controller_device *d,
 	case WATCHMAN_GEN2:
 		vive_controller_decode_watchmanv2(d, message);
 		break;
-	default: VIVE_CONTROLLER_ERROR(d, "Can't decode unknown watchman gen");
+	default: VIVE_ERROR(d, "Can't decode unknown watchman gen");
 	}
 }
 
@@ -964,7 +954,7 @@ vive_controller_device_update(struct vive_controller_device *d)
 	}
 
 	if (ret < 0) {
-		VIVE_CONTROLLER_ERROR(d, "Failed to read device '%i'!", ret);
+		VIVE_ERROR(d, "Failed to read device '%i'!", ret);
 		return false;
 	}
 
@@ -981,11 +971,9 @@ vive_controller_device_update(struct vive_controller_device *d)
 		    d, &((struct vive_controller_report2 *)buf)->message[1]);
 		break;
 	case VIVE_CONTROLLER_DISCONNECT_REPORT_ID:
-		VIVE_CONTROLLER_DEBUG(d, "Controller disconnected.");
+		VIVE_DEBUG(d, "Controller disconnected.");
 		break;
-	default:
-		VIVE_CONTROLLER_ERROR(d, "Unknown controller message type: %u",
-		                      buf[0]);
+	default: VIVE_ERROR(d, "Unknown controller message type: %u", buf[0]);
 	}
 
 	return true;
@@ -1038,8 +1026,7 @@ vive_controller_create(struct os_hid_device *controller_hid,
 	struct vive_controller_device *d = U_DEVICE_ALLOCATE(
 	    struct vive_controller_device, flags, VIVE_CONTROLLER_MAX_INDEX, 1);
 
-	d->print_spew = debug_get_bool_option_vive_controller_spew();
-	d->print_debug = debug_get_bool_option_vive_controller_debug();
+	d->ll = debug_get_log_option_vive_log();
 	d->watchman_gen = WATCHMAN_GEN_UNKNOWN;
 	d->variant = CONTROLLER_UNKNOWN;
 
@@ -1079,16 +1066,15 @@ vive_controller_create(struct os_hid_device *controller_hid,
 	//! @todo: reading range report fails for powered off controller
 	if (vive_get_imu_range_report(d->controller_hid, &d->imu.gyro_range,
 	                              &d->imu.acc_range) != 0) {
-		VIVE_CONTROLLER_ERROR(
-		    d, "Could not get watchman IMU range packet!");
+		VIVE_ERROR(d, "Could not get watchman IMU range packet!");
 		free(d);
 		return 0;
 	}
 
-	VIVE_CONTROLLER_DEBUG(d, "Vive controller gyroscope range     %f",
-	                      d->imu.gyro_range);
-	VIVE_CONTROLLER_DEBUG(d, "Vive controller accelerometer range %f",
-	                      d->imu.acc_range);
+	VIVE_DEBUG(d, "Vive controller gyroscope range     %f",
+	           d->imu.gyro_range);
+	VIVE_DEBUG(d, "Vive controller accelerometer range %f",
+	           d->imu.acc_range);
 
 	// successful config parsing determines d->variant
 	char *config = vive_read_config(d->controller_hid);
@@ -1096,8 +1082,7 @@ vive_controller_create(struct os_hid_device *controller_hid,
 		vive_config_parse_controller(d, config);
 		free(config);
 	} else {
-		VIVE_CONTROLLER_ERROR(d,
-		                      "Could not get Vive controller config\n");
+		VIVE_ERROR(d, "Could not get Vive controller config\n");
 		free(d);
 		return 0;
 	}
@@ -1159,21 +1144,19 @@ vive_controller_create(struct os_hid_device *controller_hid,
 		d->base.update_inputs = _update_tracker_inputs;
 	} else {
 		d->base.name = XRT_DEVICE_GENERIC_HMD;
-		VIVE_CONTROLLER_ERROR(d,
-		                      "Failed to assign update input function");
+		VIVE_ERROR(d, "Failed to assign update input function");
 	}
 
 	if (d->controller_hid) {
 		int ret = os_thread_helper_start(&d->controller_thread,
 		                                 vive_controller_run_thread, d);
 		if (ret != 0) {
-			VIVE_CONTROLLER_ERROR(
-			    d, "Failed to start mainboard thread!");
+			VIVE_ERROR(d, "Failed to start mainboard thread!");
 			vive_controller_device_destroy((struct xrt_device *)d);
 			return 0;
 		}
 	}
-	VIVE_CONTROLLER_DEBUG(d, "Opened vive controller!\n");
+	VIVE_DEBUG(d, "Opened vive controller!\n");
 
 	return d;
 }

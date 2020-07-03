@@ -14,6 +14,7 @@
 #include "util/u_json.h"
 #include "math/m_api.h"
 
+#include "vive.h"
 #include "vive_device.h"
 #include "vive_controller.h"
 
@@ -208,8 +209,8 @@ _get_lighthouse(struct vive_device *d, const cJSON *json)
 static void
 _print_vec3(const char *title, struct xrt_vec3 *vec)
 {
-	printf("%s = %f %f %f\n", title, (double)vec->x, (double)vec->y,
-	       (double)vec->z);
+	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y,
+	        (double)vec->z);
 }
 
 bool
@@ -338,11 +339,11 @@ bool
 vive_config_parse_controller(struct vive_controller_device *d,
                              char *json_string)
 {
-	VIVE_CONTROLLER_DEBUG(d, "JSON config:\n%s", json_string);
+	VIVE_DEBUG(d, "JSON config:\n%s", json_string);
 
 	cJSON *json = cJSON_Parse(json_string);
 	if (!cJSON_IsObject(json)) {
-		VIVE_CONTROLLER_ERROR(d, "Could not parse JSON data.");
+		VIVE_ERROR(d, "Could not parse JSON data.");
 		return false;
 	}
 
@@ -355,22 +356,22 @@ vive_config_parse_controller(struct vive_controller_device *d,
 
 	if (strcmp(d->firmware.model_number, "Vive. Controller MV") == 0) {
 		d->variant = CONTROLLER_VIVE_WAND;
-		VIVE_CONTROLLER_DEBUG(d, "Found Vive Wand controller");
+		VIVE_DEBUG(d, "Found Vive Wand controller");
 	} else if (strcmp(d->firmware.model_number, "Knuckles Right") == 0) {
 		d->variant = CONTROLLER_INDEX_RIGHT;
-		VIVE_CONTROLLER_DEBUG(d, "Found Knuckles Right controller");
+		VIVE_DEBUG(d, "Found Knuckles Right controller");
 	} else if (strcmp(d->firmware.model_number, "Knuckles Left") == 0) {
 		d->variant = CONTROLLER_INDEX_LEFT;
-		VIVE_CONTROLLER_DEBUG(d, "Found Knuckles Left controller");
+		VIVE_DEBUG(d, "Found Knuckles Left controller");
 	} else if (strcmp(d->firmware.model_number, "Vive Tracker PVT") == 0) {
 		d->variant = CONTROLLER_TRACKER_GEN1;
-		VIVE_CONTROLLER_DEBUG(d, "Found Gen 1 tracker.");
+		VIVE_DEBUG(d, "Found Gen 1 tracker.");
 	} else if (strcmp(d->firmware.model_number, "VIVE Tracker Pro MV") ==
 	           0) {
 		d->variant = CONTROLLER_TRACKER_GEN2;
-		VIVE_CONTROLLER_DEBUG(d, "Found Gen 2 tracker.");
+		VIVE_DEBUG(d, "Found Gen 2 tracker.");
 	} else {
-		VIVE_CONTROLLER_ERROR(d, "Failed to parse controller variant");
+		VIVE_ERROR(d, "Failed to parse controller variant");
 	}
 
 	switch (d->variant) {
@@ -396,9 +397,7 @@ vive_config_parse_controller(struct vive_controller_device *d,
 		if (d->variant == CONTROLLER_TRACKER_GEN2)
 			JSON_VEC3(imu, "gyro_scale", &d->imu.gyro_scale);
 	} break;
-	default:
-		VIVE_CONTROLLER_ERROR(d, "Unknown Vive watchman variant.\n");
-		return false;
+	default: VIVE_ERROR(d, "Unknown Vive watchman variant."); return false;
 	}
 
 	JSON_STRING(json, "device_serial_number",
@@ -407,13 +406,13 @@ vive_config_parse_controller(struct vive_controller_device *d,
 	cJSON_Delete(json);
 
 	// clang-format off
-	VIVE_CONTROLLER_DEBUG(d, "= Vive controller configuration =");
+	VIVE_DEBUG(d, "= Vive controller configuration =");
 
-	VIVE_CONTROLLER_DEBUG(d, "model_number: %s", d->firmware.model_number);
-	VIVE_CONTROLLER_DEBUG(d, "mb_serial_number: %s", d->firmware.mb_serial_number);
-	VIVE_CONTROLLER_DEBUG(d, "device_serial_number: %s", d->firmware.device_serial_number);
+	VIVE_DEBUG(d, "model_number: %s", d->firmware.model_number);
+	VIVE_DEBUG(d, "mb_serial_number: %s", d->firmware.mb_serial_number);
+	VIVE_DEBUG(d, "device_serial_number: %s", d->firmware.device_serial_number);
 
-	if (d->print_debug) {
+	if (d->ll <= U_LOGGING_DEBUG) {
 		_print_vec3("acc_bias", &d->imu.acc_bias);
 		_print_vec3("acc_scale", &d->imu.acc_scale);
 		_print_vec3("gyro_bias", &d->imu.gyro_bias);

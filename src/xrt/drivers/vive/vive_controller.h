@@ -16,6 +16,7 @@
 #include "xrt/xrt_device.h"
 #include "os/os_threading.h"
 #include "math/m_imu_3dof.h"
+#include "util/u_logging.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -81,8 +82,7 @@ struct vive_controller_device
 
 	struct xrt_quat rot_filtered;
 
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level ll;
 
 	uint32_t last_ticks;
 
@@ -135,28 +135,3 @@ vive_controller_create(struct os_hid_device *controller_hid,
 #ifdef __cplusplus
 }
 #endif
-
-#define VIVE_CONTROLLER_SPEW(p, ...)                                           \
-	do {                                                                   \
-		if (p->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define VIVE_CONTROLLER_DEBUG(p, ...)                                          \
-	do {                                                                   \
-		if (p->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define VIVE_CONTROLLER_ERROR(p, ...)                                          \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
