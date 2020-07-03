@@ -184,7 +184,6 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 		igDragScalar(name, ImGuiDataType_U8, ptr, drag_speed, NULL,
 		             NULL, NULL, power);
 		break;
-	case U_VAR_KIND_LOG_LEVEL:
 	case U_VAR_KIND_I32:
 		igInputInt(name, (int *)ptr, 1, 10, i_flags);
 		break;
@@ -249,6 +248,10 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 		handle_draggable_quat(text, &pose->orientation);
 		break;
 	}
+	case U_VAR_KIND_LOG_LEVEL:
+		igComboStr(name, (int *)ptr,
+		           "Trace\0Debug\0Info\0Warn\0Error\0\0", 5);
+		break;
 	case U_VAR_KIND_RO_TEXT: igText("%s: '%s'", name, (char *)ptr); break;
 	case U_VAR_KIND_RO_I32:
 		igInputScalar(name, ImGuiDataType_S32, ptr, NULL, NULL, NULL,
