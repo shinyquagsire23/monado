@@ -54,8 +54,7 @@
 #define PSMV_ERROR(p, ...) U_LOG_XDEV_IFL_E(&p->base, p->log_level, __VA_ARGS__)
 // clang-format on
 
-DEBUG_GET_ONCE_BOOL_OPTION(psmv_trace, "PSMV_PRINT_TRACE", false)
-DEBUG_GET_ONCE_BOOL_OPTION(psmv_debug, "PSMV_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_LOG_OPTION(psmv_log, "PSMV_LOG", U_LOGGING_WARN)
 
 /*!
  * Indices where each input is in the input list.
@@ -975,18 +974,11 @@ psmv_found(struct xrt_prober *xp,
 	psmv->base.name = XRT_DEVICE_PSMV;
 	psmv->fusion.rot.w = 1.0f;
 	psmv->fusion.fusion = imu_fusion_create();
+	psmv->log_level = debug_get_log_option_psmv_log();
 	psmv->pid = devices[index]->product_id;
 	psmv->hid = hid;
 	snprintf(psmv->base.str, XRT_DEVICE_NAME_LEN, "%s",
 	         "PS Move Controller");
-
-	if (debug_get_bool_option_psmv_trace()) {
-		psmv->log_level = U_LOGGING_TRACE;
-	} else if (debug_get_bool_option_psmv_debug()) {
-		psmv->log_level = U_LOGGING_DEBUG;
-	} else {
-		psmv->log_level = U_LOGGING_INFO;
-	}
 
 	m_imu_pre_filter_init(&psmv->calibration.prefilter, 1.f, 1.f);
 
