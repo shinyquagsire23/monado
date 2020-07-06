@@ -385,7 +385,7 @@ oxr_action_get_current_interaction_profile(
 {
 	struct oxr_instance *inst = sess->sys->inst;
 
-	if (!sess->actionsAttached) {
+	if (sess->act_set_attachments == NULL) {
 		return oxr_error(log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
 		                 "xrAttachSessionActionSets has not been "
 		                 "called on this session.");

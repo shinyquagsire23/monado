@@ -66,7 +66,7 @@ oxr_xrAttachSessionActionSets(XrSession session,
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
 	    &log, bindInfo, XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO);
 
-	if (sess->actionsAttached) {
+	if (sess->act_set_attachments != NULL) {
 		return oxr_error(&log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
 		                 "(session) has already had action sets "
 		                 "attached, can only attach action sets once.");
@@ -158,7 +158,7 @@ oxr_xrSuggestInteractionProfileBindings(
 		struct oxr_action *act;
 		OXR_VERIFY_ACTION_NOT_NULL(&log, s->action, act);
 
-		if (act->act_set->data->attached) {
+		if (act->act_set->data->ever_attached) {
 			return oxr_error(
 			    &log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
 			    "(suggestedBindings->suggestedBindings[%zu]->"
@@ -220,7 +220,7 @@ oxr_xrGetInputSourceLocalizedName(
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetInputSourceLocalizedName");
 
-	if (!sess->actionsAttached) {
+	if (sess->act_set_attachments == NULL) {
 		return oxr_error(
 		    &log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
 		    "ActionSet(s) have not been attached to this session");
@@ -337,7 +337,7 @@ oxr_xrCreateAction(XrActionSet actionSet,
 	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionName);
 	OXR_VERIFY_ARG_NOT_NULL(&log, action);
 
-	if (act_set->data->attached) {
+	if (act_set->data->ever_attached) {
 		return oxr_error(
 		    &log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
 		    "(actionSet) has been attached and is now immutable");
@@ -552,7 +552,7 @@ oxr_xrEnumerateBoundSourcesForAction(
 	    XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, enumerateInfo->action, act);
 
-	if (!sess->actionsAttached) {
+	if (sess->act_set_attachments == NULL) {
 		return oxr_error(&log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
 		                 "(session) xrAttachSessionActionSets has not "
 		                 "been called on this session.");

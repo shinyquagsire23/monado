@@ -1197,8 +1197,12 @@ struct oxr_session
 
 	/*!
 	 * An array of action set attachments that this session owns.
+	 *
+	 * If non-null, this means action sets have been attached to this
+	 * session.
 	 */
 	struct oxr_action_set_attachment *act_set_attachments;
+
 	/*!
 	 * Length of @ref oxr_session::act_set_attachments.
 	 */
@@ -1206,6 +1210,10 @@ struct oxr_session
 
 	/*!
 	 * A map of action set key to action set attachments.
+	 *
+	 * If non-null, this means action sets have been attached to this
+	 * session, since this map points to elements of
+	 * oxr_session::act_set_attachments
 	 */
 	struct u_hashmap_int *act_sets_attachments_by_key;
 
@@ -1214,11 +1222,13 @@ struct oxr_session
 	 *
 	 * The action attachments are actually owned by the action set
 	 * attachments, but we own the action set attachments, so this is OK.
+	 *
+	 * If non-null, this means action sets have been attached to this
+	 * session, since this map points to @p oxr_action_attachment members of
+	 * oxr_session::act_set_attachments elements.
 	 */
 	struct u_hashmap_int *act_attachments_by_key;
 
-	//! Has xrAttachSessionActionSets been called?
-	bool actionsAttached;
 
 	/*!
 	 * Currently bound interaction profile.
@@ -1650,8 +1660,11 @@ struct oxr_action_set_ref
 	//! Application supplied name of this action.
 	char name[XR_MAX_ACTION_SET_NAME_SIZE];
 
-	//! Has this action set been attached.
-	bool attached;
+	/*!
+	 * Has this action set even been attached to any session, marking it as
+	 * immutable.
+	 */
+	bool ever_attached;
 
 	//! Unique key for the session hashmap.
 	uint32_t act_set_key;

@@ -1117,6 +1117,12 @@ oxr_session_get_action_set_attachment(
 	void *ptr = NULL;
 	*act_set =
 	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action_set *, actionSet);
+	*act_set_attached = NULL;
+
+	// In case no action_sets have been attached.
+	if (sess->act_sets_attachments_by_key == NULL) {
+		return;
+	}
 
 	int ret = u_hashmap_int_find(sess->act_sets_attachments_by_key,
 	                             (*act_set)->act_set_key, &ptr);
@@ -1173,17 +1179,8 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 	oxr_find_profile_for_device(log, inst, sess->sys->right, &right);
 	//! @todo add other subaction paths here
 
-	// Before allocating, make sure nothing has been attached yet.
-
-	for (uint32_t i = 0; i < bindInfo->countActionSets; i++) {
-		struct oxr_action_set *act_set = XRT_CAST_OXR_HANDLE_TO_PTR(
-		    struct oxr_action_set *, bindInfo->actionSets[i]);
-		if (act_set->data->attached) {
-			return XR_ERROR_ACTIONSETS_ALREADY_ATTACHED;
-		}
-	}
-
-	// Allocate room for list.
+	// Allocate room for list. No need to check if anything has been
+	// attached the API function does that.
 	sess->num_action_set_attachments = bindInfo->countActionSets;
 	sess->act_set_attachments = U_TYPED_ARRAY_CALLOC(
 	    struct oxr_action_set_attachment, sess->num_action_set_attachments);
@@ -1193,7 +1190,7 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 		struct oxr_action_set *act_set = XRT_CAST_OXR_HANDLE_TO_PTR(
 		    struct oxr_action_set *, bindInfo->actionSets[i]);
 		struct oxr_action_set_ref *act_set_ref = act_set->data;
-		act_set_ref->attached = true;
+		act_set_ref->ever_attached = true;
 		struct oxr_action_set_attachment *act_set_attached =
 		    &sess->act_set_attachments[i];
 		oxr_action_set_attachment_init(log, sess, act_set,
@@ -1234,8 +1231,6 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 	if (right != NULL) {
 		sess->right = right->path;
 	}
-
-	sess->actionsAttached = true;
 
 	return oxr_session_success_result(sess);
 }
