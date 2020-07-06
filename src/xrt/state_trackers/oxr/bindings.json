@@ -219,9 +219,9 @@
 		]
 	},
 
-	"/interaction_profiles/mnd/ball_on_a_stick_controller": {
+	"/interaction_profiles/mndx/ball_on_a_stick_controller": {
 		"title": "Monado ball on a stick controller",
-		"extension": "XR_MND_ball_on_a_stick_controller",
+		"extension": "XR_MNDX_ball_on_a_stick_controller",
 		"user_paths": [
 			"/user/hand/left",
 			"/user/hand/right"
@@ -231,13 +231,13 @@
 			{"subpath": "/input/menu/click"},
 			{"subpath": "/input/start/click"},
 			{"subpath": "/input/select/click"},
-			{"subpath": "/input/square_mnd/click"},
-			{"subpath": "/input/cross_mnd/click"},
-			{"subpath": "/input/circle_mnd/click"},
-			{"subpath": "/input/triangle_mnd/click"},
+			{"subpath": "/input/square_mndx/click"},
+			{"subpath": "/input/cross_mndx/click"},
+			{"subpath": "/input/circle_mndx/click"},
+			{"subpath": "/input/triangle_mndx/click"},
 			{"subpath": "/input/trigger/value"},
 			{"subpath": "/input/grip/pose"},
-			{"subpath": "/input/ball_mnd/pose"},
+			{"subpath": "/input/ball_mndx/pose"},
 			{"subpath": "/input/aim/pose"},
 			{"subpath": "/output/haptic"}
 		]

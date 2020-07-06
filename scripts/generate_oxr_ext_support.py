@@ -18,6 +18,7 @@ EXTENSIONS = (
     ['XR_MND_headless'],
     ['XR_EXTX_overlay'],
     ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
+    ['XR_MNDX_ball_on_a_stick_controller'],
 )
 
 ROOT = Path(__file__).resolve().parent.parent

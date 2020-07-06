@@ -241,7 +241,7 @@ oxr_find_profile_for_device(struct oxr_logger *log,
 	case XRT_DEVICE_PSMV:
 		// clang-format off
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		interaction_profile_find(log, inst, inst->path_cache.mnd_ball_on_stick_controller, out_p);
+		interaction_profile_find(log, inst, inst->path_cache.mndx_ball_on_a_stick_controller, out_p);
 		// clang-format on
 		return;
 	case XRT_DEVICE_DAYDREAM:

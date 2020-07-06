@@ -140,8 +140,8 @@ oxr_xrSuggestInteractionProfileBindings(
 		func = oxr_verify_oculus_touch_controller_subpath;
 	} else if (ip == inst->path_cache.valve_index_controller) {
 		func = oxr_verify_valve_index_controller_subpath;
-	} else if (ip == inst->path_cache.mnd_ball_on_stick_controller) {
-		func = oxr_verify_mnd_ball_on_a_stick_controller_subpath;
+	} else if (ip == inst->path_cache.mndx_ball_on_a_stick_controller) {
+		func = oxr_verify_mndx_ball_on_a_stick_controller_subpath;
 	} else {
 		return oxr_error(
 		    &log, XR_ERROR_PATH_UNSUPPORTED,

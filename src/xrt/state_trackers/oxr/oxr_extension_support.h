@@ -112,6 +112,18 @@
 #define OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_)
 #endif
 
+
+/*
+ * XR_MNDX_ball_on_a_stick_controller
+ */
+#if defined(XR_MNDX_ball_on_a_stick_controller)
+#define OXR_HAVE_MNDX_ball_on_a_stick_controller
+#define OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_)               \
+	_(MNDX_ball_on_a_stick_controller, MNDX_BALL_ON_A_STICK_CONTROLLER)
+#else
+#define OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_)
+#endif
+
 // end of GENERATED per-extension defines - do not modify - used by scripts
 
 /*!
@@ -143,5 +155,6 @@
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_) \
     OXR_EXTENSION_SUPPORT_EXTX_overlay(_) \
-    OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_)
+    OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_) \
+    OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_)
 // clang-format on

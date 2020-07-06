@@ -430,7 +430,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
  *
  */
 
-static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
+static struct binding_template mndx_ball_on_a_stick_controller_bindings[26] = {
     {
         .sub_path = OXR_SUB_ACTION_PATH_LEFT,
         .paths =
@@ -491,8 +491,8 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .sub_path = OXR_SUB_ACTION_PATH_LEFT,
         .paths =
             {
-                "/user/hand/left/input/square_mnd/click",
-                "/user/hand/left/input/square_mnd",
+                "/user/hand/left/input/square_mndx/click",
+                "/user/hand/left/input/square_mndx",
                 NULL,
             },
         .inputs =
@@ -505,8 +505,8 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .sub_path = OXR_SUB_ACTION_PATH_LEFT,
         .paths =
             {
-                "/user/hand/left/input/cross_mnd/click",
-                "/user/hand/left/input/cross_mnd",
+                "/user/hand/left/input/cross_mndx/click",
+                "/user/hand/left/input/cross_mndx",
                 NULL,
             },
         .inputs =
@@ -519,8 +519,8 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .sub_path = OXR_SUB_ACTION_PATH_LEFT,
         .paths =
             {
-                "/user/hand/left/input/circle_mnd/click",
-                "/user/hand/left/input/circle_mnd",
+                "/user/hand/left/input/circle_mndx/click",
+                "/user/hand/left/input/circle_mndx",
                 NULL,
             },
         .inputs =
@@ -533,8 +533,8 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .sub_path = OXR_SUB_ACTION_PATH_LEFT,
         .paths =
             {
-                "/user/hand/left/input/triangle_mnd/click",
-                "/user/hand/left/input/triangle_mnd",
+                "/user/hand/left/input/triangle_mndx/click",
+                "/user/hand/left/input/triangle_mndx",
                 NULL,
             },
         .inputs =
@@ -575,8 +575,8 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .sub_path = OXR_SUB_ACTION_PATH_LEFT,
         .paths =
             {
-                "/user/hand/left/input/ball_mnd/pose",
-                "/user/hand/left/input/ball_mnd",
+                "/user/hand/left/input/ball_mndx/pose",
+                "/user/hand/left/input/ball_mndx",
                 NULL,
             },
         .inputs =
@@ -672,8 +672,8 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
         .paths =
             {
-                "/user/hand/right/input/square_mnd/click",
-                "/user/hand/right/input/square_mnd",
+                "/user/hand/right/input/square_mndx/click",
+                "/user/hand/right/input/square_mndx",
                 NULL,
             },
         .inputs =
@@ -686,8 +686,8 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
         .paths =
             {
-                "/user/hand/right/input/cross_mnd/click",
-                "/user/hand/right/input/cross_mnd",
+                "/user/hand/right/input/cross_mndx/click",
+                "/user/hand/right/input/cross_mndx",
                 NULL,
             },
         .inputs =
@@ -700,8 +700,8 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
         .paths =
             {
-                "/user/hand/right/input/circle_mnd/click",
-                "/user/hand/right/input/circle_mnd",
+                "/user/hand/right/input/circle_mndx/click",
+                "/user/hand/right/input/circle_mndx",
                 NULL,
             },
         .inputs =
@@ -714,8 +714,8 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
         .paths =
             {
-                "/user/hand/right/input/triangle_mnd/click",
-                "/user/hand/right/input/triangle_mnd",
+                "/user/hand/right/input/triangle_mndx/click",
+                "/user/hand/right/input/triangle_mndx",
                 NULL,
             },
         .inputs =
@@ -756,8 +756,8 @@ static struct binding_template mnd_ball_on_stick_controller_bindings[26] = {
         .sub_path = OXR_SUB_ACTION_PATH_RIGHT,
         .paths =
             {
-                "/user/hand/right/input/ball_mnd/pose",
-                "/user/hand/right/input/ball_mnd",
+                "/user/hand/right/input/ball_mndx/pose",
+                "/user/hand/right/input/ball_mndx",
                 NULL,
             },
         .inputs =
@@ -972,9 +972,9 @@ static struct profile_template profiles[5] = {
         .num_bindings = ARRAY_SIZE(google_daydream_controller_bindings),
     },
     {
-        .path = "/interaction_profiles/mnd/ball_on_stick_controller",
-        .bindings = mnd_ball_on_stick_controller_bindings,
-        .num_bindings = ARRAY_SIZE(mnd_ball_on_stick_controller_bindings),
+        .path = "/interaction_profiles/mndx/ball_on_a_stick_controller",
+        .bindings = mndx_ball_on_a_stick_controller_bindings,
+        .num_bindings = ARRAY_SIZE(mndx_ball_on_a_stick_controller_bindings),
     },
     {
         .path = "/interaction_profiles/valve/index_controller",
