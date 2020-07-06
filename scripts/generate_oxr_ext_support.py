@@ -10,14 +10,14 @@ from pathlib import Path
 # the first one must be the name of the extension itself.
 # Keep sorted.
 EXTENSIONS = (
-    ['XR_EXT_debug_utils'],
     ['XR_KHR_convert_timespec_time', 'XR_USE_TIMESPEC'],
     ['XR_KHR_opengl_enable', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_KHR_opengl_es_enable', 'XR_USE_GRAPHICS_API_OPENGL_ES'],
     ['XR_KHR_vulkan_enable', 'XR_USE_GRAPHICS_API_VULKAN'],
-    ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
+    ['XR_EXT_debug_utils'],
     ['XR_MND_headless'],
     ['XR_EXTX_overlay'],
+    ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
 )
 
 ROOT = Path(__file__).resolve().parent.parent
