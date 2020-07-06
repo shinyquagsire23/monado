@@ -79,7 +79,7 @@
 
 
 /*
- * XR_MNDS_egl_enable
+ * XR_MNDX_egl_enable
  */
 #if defined(XR_MNDX_egl_enable) && defined(XR_USE_PLATFORM_EGL) &&             \
     defined(XR_USE_GRAPHICS_API_OPENGL)
@@ -100,6 +100,7 @@
 #else
 #define OXR_EXTENSION_SUPPORT_MND_headless(_)
 #endif
+
 
 /*
  * XR_EXTX_overlay

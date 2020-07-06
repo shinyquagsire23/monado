@@ -15,8 +15,9 @@ EXTENSIONS = (
     ['XR_KHR_opengl_enable', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_KHR_opengl_es_enable', 'XR_USE_GRAPHICS_API_OPENGL_ES'],
     ['XR_KHR_vulkan_enable', 'XR_USE_GRAPHICS_API_VULKAN'],
-    ['XR_MND_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
+    ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_MND_headless'],
+    ['XR_EXTX_overlay'],
 )
 
 ROOT = Path(__file__).resolve().parent.parent
