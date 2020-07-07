@@ -215,3 +215,46 @@ ipc_send_fds(struct ipc_message_channel *imc,
 	}
 	return XRT_SUCCESS;
 }
+
+xrt_result_t
+ipc_receive_handles_shmem(struct ipc_message_channel *imc,
+                          void *out_data,
+                          size_t size,
+                          xrt_shmem_handle_t *out_handles,
+                          size_t num_handles)
+{
+	return ipc_receive_fds(imc, out_data, size, out_handles, num_handles);
+}
+
+
+xrt_result_t
+ipc_send_handles_shmem(struct ipc_message_channel *imc,
+                       const void *data,
+                       size_t size,
+                       const xrt_shmem_handle_t *handles,
+                       size_t num_handles)
+{
+	return ipc_send_fds(imc, data, size, handles, num_handles);
+}
+
+
+xrt_result_t
+ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
+                                    void *out_data,
+                                    size_t size,
+                                    xrt_graphics_buffer_handle_t *out_handles,
+                                    size_t num_handles)
+{
+	return ipc_receive_fds(imc, out_data, size, out_handles, num_handles);
+}
+
+
+xrt_result_t
+ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
+                                 const void *data,
+                                 size_t size,
+                                 const xrt_graphics_buffer_handle_t *handles,
+                                 size_t num_handles)
+{
+	return ipc_send_fds(imc, data, size, handles, num_handles);
+}

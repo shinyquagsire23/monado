@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <xrt/xrt_handles.h>
 #include <xrt/xrt_results.h>
 
 #include <stddef.h>
@@ -53,6 +54,8 @@ ipc_receive(struct ipc_message_channel *imc, void *out_data, size_t size);
 
 /*!
  * @name File Descriptor utilities
+ * @brief These are typically called from within the send/receive_handles
+ * functions.
  * @{
  */
 /*!
@@ -75,6 +78,54 @@ ipc_send_fds(struct ipc_message_channel *imc,
              size_t size,
              const int *handles,
              size_t num_handles);
+/*!
+ * @}
+ */
+
+/*!
+ * @name Shared memory handle utilities
+ * @brief Send/receive shared memory handles along with scalar/aggregate message
+ * data.
+ * @{
+ */
+xrt_result_t
+ipc_receive_handles_shmem(struct ipc_message_channel *imc,
+                          void *out_data,
+                          size_t size,
+                          xrt_shmem_handle_t *out_handles,
+                          size_t num_handles);
+
+
+xrt_result_t
+ipc_send_handles_shmem(struct ipc_message_channel *imc,
+                       const void *data,
+                       size_t size,
+                       const xrt_shmem_handle_t *handles,
+                       size_t num_handles);
+/*!
+ * @}
+ */
+
+/*!
+ * @name Graphics buffer handle utilities
+ * @brief Send/receive graphics buffer handles along with scalar/aggregate
+ * message data.
+ * @{
+ */
+xrt_result_t
+ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
+                                    void *out_data,
+                                    size_t size,
+                                    xrt_graphics_buffer_handle_t *out_handles,
+                                    size_t num_handles);
+
+
+xrt_result_t
+ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
+                                 const void *data,
+                                 size_t size,
+                                 const xrt_graphics_buffer_handle_t *handles,
+                                 size_t num_handles);
 /*!
  * @}
  */
