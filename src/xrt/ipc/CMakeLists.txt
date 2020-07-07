@@ -11,6 +11,7 @@ function(proto_gen output)
 			${CMAKE_CURRENT_SOURCE_DIR}/proto.json
 			${output}
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/proto.py
+			${CMAKE_CURRENT_SOURCE_DIR}/ipcproto/common.py
 			${CMAKE_CURRENT_SOURCE_DIR}/proto.json
 			)
 endfunction(proto_gen)
