@@ -7,6 +7,11 @@
 
 prog_python = import('python').find_installation('python3')
 
+common_sources = [
+	'ipc_utils.c',
+	'ipc_utils.h',
+]
+
 generated = custom_target('protocol code',
 	command: [prog_python, '@INPUT@', '@OUTPUT@'],
 	input: ['proto.py', 'proto.json'],
@@ -25,7 +30,7 @@ generated = custom_target('protocol code',
 
 lib_ipc_client = static_library(
 	'ipc_client',
-	[
+	common_sources + [
 		generated[0],
 		generated[1],
 		generated[2],
@@ -48,7 +53,7 @@ lib_ipc_client = static_library(
 
 lib_ipc_server = static_library(
 	'ipc_server',
-	[
+	common_sources + [
 		generated[0],
 		generated[3],
 		generated[4],

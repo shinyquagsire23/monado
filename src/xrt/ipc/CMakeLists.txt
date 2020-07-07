@@ -22,14 +22,17 @@ proto_gen(${CMAKE_CURRENT_BINARY_DIR}/ipc_client_generated.c)
 proto_gen(${CMAKE_CURRENT_BINARY_DIR}/ipc_server_generated.h)
 proto_gen(${CMAKE_CURRENT_BINARY_DIR}/ipc_server_generated.c)
 
-
+set(IPC_COMMON_SOURCES
+	${CMAKE_CURRENT_BINARY_DIR}/ipc_protocol_generated.h
+	ipc_utils.c
+	ipc_utils.h)
 ###
 # Client
 
 add_library(ipc_client STATIC
-	${CMAKE_CURRENT_BINARY_DIR}/ipc_protocol_generated.h
 	${CMAKE_CURRENT_BINARY_DIR}/ipc_client_generated.c
 	${CMAKE_CURRENT_BINARY_DIR}/ipc_client_generated.h
+	${IPC_COMMON_SOURCES}
 	ipc_client.h
 	ipc_client_compositor.c
 	ipc_client_device.c
@@ -55,9 +58,9 @@ target_link_libraries(ipc_client PRIVATE
 # Server
 
 add_library(ipc_server STATIC
-	${CMAKE_CURRENT_BINARY_DIR}/ipc_protocol_generated.h
 	${CMAKE_CURRENT_BINARY_DIR}/ipc_server_generated.c
 	${CMAKE_CURRENT_BINARY_DIR}/ipc_server_generated.h
+	${IPC_COMMON_SOURCES}
 	ipc_server.h
 	ipc_server_client.c
 	ipc_server_process.c
