@@ -43,7 +43,7 @@ struct ipc_client_hmd
 {
 	struct xrt_device base;
 
-	ipc_connection_t *ipc_c;
+	struct ipc_connection *ipc_c;
 
 	uint32_t device_id;
 };
@@ -125,7 +125,7 @@ ipc_client_hmd_get_view_pose(struct xrt_device *xdev,
  * @public @memberof ipc_client_hmd
  */
 struct xrt_device *
-ipc_client_hmd_create(ipc_connection_t *ipc_c,
+ipc_client_hmd_create(struct ipc_connection *ipc_c,
                       struct xrt_tracking_origin *xtrack,
                       uint32_t device_id)
 {

@@ -72,7 +72,7 @@ struct xrt_compositor_fd;
 /*!
  * Connection.
  */
-typedef struct ipc_connection
+struct ipc_connection
 {
 	int socket_fd;
 
@@ -83,8 +83,7 @@ typedef struct ipc_connection
 
 	bool print_debug; // TODO: link to settings
 	bool print_spew;  // TODO: link to settings
-
-} ipc_connection_t;
+};
 
 /*!
  * @name IPC low-level interface
@@ -92,7 +91,9 @@ typedef struct ipc_connection
  * @{
  */
 xrt_result_t
-ipc_client_send_message(ipc_connection_t *ipc_c, void *message, size_t size);
+ipc_client_send_message(struct ipc_connection *ipc_c,
+                        void *message,
+                        size_t size);
 
 xrt_result_t
 ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
@@ -102,7 +103,7 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
                               size_t reply_size);
 
 xrt_result_t
-ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
+ipc_client_send_and_get_reply_fds(struct ipc_connection *ipc_c,
                                   void *msg_ptr,
                                   size_t msg_size,
                                   void *reply_ptr,
@@ -120,17 +121,17 @@ ipc_client_send_and_get_reply_fds(ipc_connection_t *ipc_c,
  */
 
 int
-ipc_client_compositor_create(ipc_connection_t *ipc_c,
+ipc_client_compositor_create(struct ipc_connection *ipc_c,
                              struct xrt_device *xdev,
                              bool flip_y,
                              struct xrt_compositor_fd **out_xcfd);
 
 struct xrt_device *
-ipc_client_hmd_create(ipc_connection_t *ipc_c,
+ipc_client_hmd_create(struct ipc_connection *ipc_c,
                       struct xrt_tracking_origin *xtrack,
                       uint32_t device_id);
 
 struct xrt_device *
-ipc_client_device_create(ipc_connection_t *ipc_c,
+ipc_client_device_create(struct ipc_connection *ipc_c,
                          struct xrt_tracking_origin *xtrack,
                          uint32_t device_id);

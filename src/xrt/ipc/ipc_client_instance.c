@@ -42,7 +42,7 @@ struct ipc_client_instance
 	//! @public Base
 	struct xrt_instance base;
 
-	ipc_connection_t ipc_c;
+	struct ipc_connection ipc_c;
 
 	struct xrt_tracking_origin *xtracks[8];
 	size_t num_xtracks;
@@ -58,7 +58,7 @@ ipc_client_instance(struct xrt_instance *xinst)
 }
 
 static bool
-ipc_connect(ipc_connection_t *ipc_c)
+ipc_connect(struct ipc_connection *ipc_c)
 {
 	struct sockaddr_un addr;
 	int ret;

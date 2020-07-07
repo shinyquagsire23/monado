@@ -27,7 +27,7 @@ typedef enum op_mode
 int
 main(int argc, char *argv[])
 {
-	ipc_connection_t ipc_c;
+	struct ipc_connection ipc_c;
 	os_mutex_init(&ipc_c.mutex);
 
 	op_mode_t op_mode = MODE_GET;

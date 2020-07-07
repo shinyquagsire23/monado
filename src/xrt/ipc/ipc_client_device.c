@@ -43,7 +43,7 @@ struct ipc_client_device
 {
 	struct xrt_device base;
 
-	ipc_connection_t *ipc_c;
+	struct ipc_connection *ipc_c;
 
 	uint32_t device_id;
 };
@@ -133,7 +133,7 @@ ipc_client_device_set_output(struct xrt_device *xdev,
  * @public @memberof ipc_client_device
  */
 struct xrt_device *
-ipc_client_device_create(ipc_connection_t *ipc_c,
+ipc_client_device_create(struct ipc_connection *ipc_c,
                          struct xrt_tracking_origin *xtrack,
                          uint32_t device_id)
 {

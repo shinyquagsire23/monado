@@ -42,7 +42,7 @@ struct ipc_client_compositor
 {
 	struct xrt_compositor_fd base;
 
-	ipc_connection_t *ipc_c;
+	struct ipc_connection *ipc_c;
 
 	struct
 	{
@@ -88,7 +88,7 @@ ipc_client_swapchain(struct xrt_swapchain *xs)
  */
 
 void
-compositor_disconnect(ipc_connection_t *ipc_c)
+compositor_disconnect(struct ipc_connection *ipc_c)
 {
 	if (ipc_c->socket_fd < 0) {
 		return;
@@ -458,7 +458,7 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
  */
 
 int
-ipc_client_compositor_create(ipc_connection_t *ipc_c,
+ipc_client_compositor_create(struct ipc_connection *ipc_c,
                              struct xrt_device *xdev,
                              bool flip_y,
                              struct xrt_compositor_fd **out_xcfd)
