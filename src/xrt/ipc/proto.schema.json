@@ -6,6 +6,7 @@
     "description": "The root schema for an entire protocol.",
     "definitions": {
         "scalar": {
+            "$comment": "Must keep this list synchronized with the one in ipcproto/common.py",
             "title": "Known scalar type",
             "type": "string",
             "enum": [
@@ -15,11 +16,13 @@
             ]
         },
         "aggregate": {
+            "$comment": "Must keep this pattern synchronized with the one in ipcproto/common.py",
             "title": "Struct or union type",
             "type": "string",
-            "pattern": "(struct|union) xrt_[a-z_]+"
+            "pattern": "(struct|union) (xrt|ipc)_[a-z_]+"
         },
         "scalar_enum": {
+            "$comment": "Must keep this list synchronized with the one in ipcproto/common.py",
             "title": "Custom enum (scalar)",
             "type": "string",
             "pattern": "enum xrt_[a-z_]+"

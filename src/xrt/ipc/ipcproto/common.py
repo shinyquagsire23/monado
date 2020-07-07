@@ -4,6 +4,7 @@
 """Generate code from a JSON file describing the IPC protocol."""
 
 import json
+import re
 
 
 def write_with_wrapped_args(f, start, args, indent):
@@ -37,6 +38,13 @@ def write_invocation(f, return_val, function_name, args, indent=""):
 class Arg:
     """An IPC call argument."""
 
+    # Keep all these synchronized with the definitions in the JSON Schema.
+    SCALAR_TYPES = set(("uint32_t",
+                        "int64_t",
+                        "uint64_t"))
+    AGGREGATE_RE = re.compile(r"(struct|union) (xrt|ipc)_[a-z_]+")
+    ENUM_RE = re.compile(r"enum xrt_[a-z_]+")
+
     @classmethod
     def parse_array(cls, a):
         """Turn an array of data into an array of Arg objects."""
@@ -65,10 +73,17 @@ class Arg:
         """Construct an argument."""
         self.name = data['name']
         self.typename = data['type']
-        self.is_aggregate = (
-            self.typename.startswith("struct ")
-            or
-            self.typename.startswith("union "))
+        self.is_standard_scalar = False
+        self.is_aggregate = False
+        self.is_enum = False
+        if self.typename in self.SCALAR_TYPES:
+            self.is_standard_scalar = True
+        elif self.AGGREGATE_RE.match(self.typename):
+            self.is_aggregate = True
+        elif self.ENUM_RE.match(self.typename):
+            self.is_enum = True
+        else:
+            raise RuntimeError("Could not process type name: " + self.typename)
 
 
 class Call:
