@@ -36,14 +36,14 @@
  */
 
 xrt_result_t
-ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *cs,
+ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *ics,
                                size_t max_num_handles,
                                xrt_shmem_handle_t *out_handles,
                                size_t *out_num_handles)
 {
 	assert(max_num_handles >= 1);
 
-	out_handles[0] = cs->server->ism_fd;
+	out_handles[0] = ics->server->ism_fd;
 	*out_num_handles = 1;
 	return XRT_SUCCESS;
 }
@@ -181,13 +181,13 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_compositor_poll_events(volatile struct ipc_client_state *cs,
+ipc_handle_compositor_poll_events(volatile struct ipc_client_state *ics,
                                   union xrt_compositor_event *out_xce)
 {
 	uint64_t l_timestamp = UINT64_MAX;
 	volatile struct ipc_queued_event *event_to_send = NULL;
 	for (uint32_t i = 0; i < IPC_EVENT_QUEUE_SIZE; i++) {
-		volatile struct ipc_queued_event *e = &cs->queued_events[i];
+		volatile struct ipc_queued_event *e = &ics->queued_events[i];
 		if (e->pending == true && e->timestamp < l_timestamp) {
 			event_to_send = e;
 		}

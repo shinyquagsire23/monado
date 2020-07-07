@@ -201,7 +201,7 @@ def generate_server_c(file, p):
 
     f.write('''
 xrt_result_t
-ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
+ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
 {
 \tswitch (*ipc_command) {
 ''')
@@ -225,7 +225,7 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
         f.write("\n")
 
         # Write call to ipc_handle_CALLNAME
-        args = ["cs"]
+        args = ["ics"]
         for arg in call.in_args:
             args.append(("&msg->" + arg.name)
                         if arg.is_aggregate
@@ -243,7 +243,7 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
         # error out before replying if it's not success?
 
         func = 'ipc_send'
-        args = ["(struct ipc_message_channel *)&cs->imc",
+        args = ["(struct ipc_message_channel *)&ics->imc",
                 "&reply",
                 "sizeof(reply)"]
         if call.out_handles:
@@ -283,7 +283,7 @@ def generate_server_header(file, p):
 // clang-format off
 
 xrt_result_t
-ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command);
+ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command);
 ''')
 
     for call in p.calls:

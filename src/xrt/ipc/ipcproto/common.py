@@ -185,7 +185,7 @@ class Call:
 
     def write_handler_decl(self, f):
         """Write declaration of ipc_handle_CALLNAME."""
-        args = ["volatile struct ipc_client_state *cs"]
+        args = ["volatile struct ipc_client_state *ics"]
         args.extend(arg.get_func_argument_in() for arg in self.in_args)
         args.extend(arg.get_func_argument_out() for arg in self.out_args)
         if self.out_handles:

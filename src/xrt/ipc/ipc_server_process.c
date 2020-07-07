@@ -469,7 +469,7 @@ handle_listen(struct ipc_server *vs)
 		vs->running = false;
 	}
 
-	volatile struct ipc_client_state *cs = NULL;
+	volatile struct ipc_client_state *ics = NULL;
 	int32_t cs_index = -1;
 
 	// The return is the new fd;
@@ -482,12 +482,12 @@ handle_listen(struct ipc_server *vs)
 	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
 		volatile struct ipc_client_state *_cs = &vs->threads[i].ics;
 		if (_cs->server_thread_index < 0) {
-			cs = _cs;
+			ics = _cs;
 			cs_index = i;
 			break;
 		}
 	}
-	if (cs == NULL) {
+	if (ics == NULL) {
 		close(fd);
 
 		// Unlock when we are done.
@@ -516,10 +516,10 @@ handle_listen(struct ipc_server *vs)
 	}
 
 	it->state = IPC_THREAD_STARTING;
-	cs->imc.socket_fd = fd;
-	cs->server = vs;
-	cs->server_thread_index = cs_index;
-	os_thread_start(&it->thread, ipc_server_client_thread, (void *)cs);
+	ics->imc.socket_fd = fd;
+	ics->server = vs;
+	ics->server_thread_index = cs_index;
+	os_thread_start(&it->thread, ipc_server_client_thread, (void *)ics);
 
 	// Unlock when we are done.
 	os_mutex_unlock(&vs->global_state_lock);
@@ -558,15 +558,15 @@ check_epoll(struct ipc_server *vs)
 }
 
 static uint32_t
-find_event_slot(volatile struct ipc_client_state *cs)
+find_event_slot(volatile struct ipc_client_state *ics)
 {
 	uint64_t oldest_event_timestamp = UINT64_MAX;
 	uint32_t oldest_event_index = 0;
 	for (uint32_t i = 0; i < IPC_EVENT_QUEUE_SIZE; i++) {
-		if (cs->queued_events->timestamp < oldest_event_timestamp) {
+		if (ics->queued_events->timestamp < oldest_event_timestamp) {
 			oldest_event_index = i;
 		}
-		if (!cs->queued_events[i].pending) {
+		if (!ics->queued_events[i].pending) {
 			return i;
 		}
 	}
@@ -576,13 +576,13 @@ find_event_slot(volatile struct ipc_client_state *cs)
 }
 
 static void
-transition_overlay_visibility(volatile struct ipc_client_state *cs,
+transition_overlay_visibility(volatile struct ipc_client_state *ics,
                               bool visible)
 {
-	uint32_t event_slot = find_event_slot(cs);
+	uint32_t event_slot = find_event_slot(ics);
 	uint64_t timestamp = os_monotonic_get_ns();
 
-	volatile struct ipc_queued_event *qe = &cs->queued_events[event_slot];
+	volatile struct ipc_queued_event *qe = &ics->queued_events[event_slot];
 
 	qe->timestamp = timestamp;
 	qe->pending = true;
@@ -880,10 +880,10 @@ init_server_state(struct ipc_server *s)
 	s->current_slot_index = 0;
 
 	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
-		volatile struct ipc_client_state *cs = &s->threads[i].ics;
-		cs->server = s;
-		cs->xc = s->xc;
-		cs->server_thread_index = -1;
+		volatile struct ipc_client_state *ics = &s->threads[i].ics;
+		ics->server = s;
+		ics->xc = s->xc;
+		ics->server_thread_index = -1;
 	}
 }
 
