@@ -93,5 +93,5 @@ ipc_reply_fds(int socket, void *data, size_t size, int *fds, uint32_t num_fds)
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
-	return ret;
+	return XRT_SUCCESS;
 }

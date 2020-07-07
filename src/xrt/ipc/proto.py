@@ -190,7 +190,7 @@ def generate_server_c(file, p):
 ''')
 
     f.write('''
-int
+xrt_result_t
 ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
 {
 \tswitch (*ipc_command) {
@@ -242,7 +242,7 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
         f.write("\t}\n")
     f.write('''\tdefault:
 \t\tprintf("UNHANDLED IPC MESSAGE! %d\\n", *ipc_command);
-\t\treturn -1;
+\t\treturn XRT_ERROR_IPC_FAILURE;
 \t}
 }
 
@@ -269,7 +269,7 @@ def generate_server_header(file, p):
 
 // clang-format off
 
-int
+xrt_result_t
 ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command);
 ''')
 
