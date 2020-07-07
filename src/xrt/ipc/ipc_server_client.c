@@ -37,14 +37,14 @@
 
 xrt_result_t
 ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *cs,
-                               size_t max_num_fds,
-                               int *out_fds,
-                               size_t *out_num_fds)
+                               size_t max_num_handles,
+                               xrt_shmem_handle_t *out_handles,
+                               size_t *out_num_handles)
 {
-	assert(max_num_fds >= 1);
+	assert(max_num_handles >= 1);
 
-	out_fds[0] = cs->server->ism_fd;
-	*out_num_fds = 1;
+	out_handles[0] = cs->server->ism_fd;
+	*out_num_handles = 1;
 	return XRT_SUCCESS;
 }
 xrt_result_t
@@ -277,8 +277,8 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
                             uint32_t *out_num_images,
                             uint64_t *out_size,
                             size_t max_num_fds,
-                            int *out_fds,
-                            size_t *out_num_fds)
+                            xrt_graphics_buffer_handle_t *out_handles,
+                            size_t *out_num_handles)
 {
 	// Our handle is just the index for now.
 	uint32_t index = 0;
@@ -322,9 +322,9 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	*out_num_images = num_images;
 
 	// Setup the fds.
-	*out_num_fds = num_images;
+	*out_num_handles = num_images;
 	for (size_t i = 0; i < num_images; i++) {
-		out_fds[i] = xcsfd->images[i].fd;
+		out_handles[i] = xcsfd->images[i].fd;
 	}
 
 	return XRT_SUCCESS;

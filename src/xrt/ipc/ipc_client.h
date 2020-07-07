@@ -86,35 +86,6 @@ struct ipc_connection
 	bool print_spew;  // TODO: link to settings
 };
 
-/*!
- * @name IPC low-level interface
- * These functions are called by generated IPC client code.
- * @{
- */
-xrt_result_t
-ipc_client_send_message(struct ipc_connection *ipc_c,
-                        void *message,
-                        size_t size);
-
-xrt_result_t
-ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
-                              const void *msg_ptr,
-                              size_t msg_size,
-                              void *reply_ptr,
-                              size_t reply_size);
-
-xrt_result_t
-ipc_client_send_and_get_reply_fds(struct ipc_connection *ipc_c,
-                                  const void *msg_ptr,
-                                  size_t msg_size,
-                                  void *reply_ptr,
-                                  size_t reply_size,
-                                  int *fds,
-                                  size_t num_fds);
-/*!
- * @}
- */
-
 /*
  *
  * Internal functions.

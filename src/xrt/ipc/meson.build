@@ -39,7 +39,6 @@ lib_ipc_client = static_library(
 		'ipc_client_device.c',
 		'ipc_client_hmd.c',
 		'ipc_client_instance.c',
-		'ipc_client_utils.c',
 	],
 	include_directories: [
 		xrt_include,

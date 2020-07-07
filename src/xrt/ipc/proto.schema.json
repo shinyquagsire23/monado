@@ -27,6 +27,12 @@
             "type": "string",
             "pattern": "enum xrt_[a-z_]+"
         },
+        "handle": {
+            "$comment": "Must keep this pattern synchronized with the one in ipcproto/common.py",
+            "title": "Native handle typedef",
+            "type": "string",
+            "pattern": "xrt_([a-z_]+)_handle_t"
+        },
         "param": {
             "type": "object",
             "title": "Parameter",
@@ -78,14 +84,18 @@
                 "title": "Call ID",
                 "description": "If left unspecified or empty, the ID will be constructed by prepending IPC_ to the call name in all upper-case."
             },
-            "out_fds": {
-                "$id": "#/call/properties/out_fds",
-                "type": "boolean",
-                "title": "Call returns fds?",
-                "default": false,
-                "examples": [
-                    true
-                ]
+            "out_handles": {
+                "$id": "#/call/properties/out_handles",
+                "type": "object",
+                "title": "Handles for call to return",
+                "required": [
+                    "type"
+                ],
+                "properties": {
+                    "type": {
+                        "$ref": "#/definitions/handle"
+                    }
+                }
             },
             "in": {
                 "title": "Input parameters",

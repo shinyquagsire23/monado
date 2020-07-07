@@ -35,6 +35,20 @@ def write_invocation(f, return_val, function_name, args, indent=""):
                             indent)
 
 
+def write_result_handler(f, result, cleanup="", indent=""):
+    """Write a check of an xrt_result_t value and early out."""
+    f.write("\n" + indent)
+    f.write("if (%s != XRT_SUCCESS) {" % result)
+    f.write("\n" + indent + "\t")
+
+    if cleanup:
+        f.write(cleanup)
+        f.write("\n" + indent + "\t")
+
+    f.write("return {};".format(result))
+    f.write("\n" + indent + "}\n")
+
+
 class Arg:
     """An IPC call argument."""
 
@@ -86,6 +100,65 @@ class Arg:
             raise RuntimeError("Could not process type name: " + self.typename)
 
 
+class HandleType:
+    """A native handle type requiring special treatment."""
+    # Keep this synchronized with the definition in the JSON Schema.
+    HANDLE_RE = re.compile(r"xrt_([a-z_]+)_handle_t")
+
+    def __init__(self, config_dict):
+        """Construct from dict, originating in JSON."""
+        match = self.HANDLE_RE.match(config_dict.get("type", ""))
+        if not match:
+            raise RuntimeError(
+                "Could not match handle regex to type of in/out handle! "
+                + str(config_dict))
+        self.typename = match.group(0)
+        self.stem = match.group(1)
+        self.argstem = 'handles'
+
+    def __str__(self):
+        """Convert to string by returning the type name."""
+        return self.typename
+
+    @property
+    def arg_name(self):
+        """Get the argument name."""
+        return self.argstem
+
+    @property
+    def count_arg_name(self):
+        """Get the name of the count argument."""
+        return 'num_'+self.argstem
+
+    @property
+    def arg_names(self):
+        """Get the argument names for the client proxy."""
+        return (self.arg_name,
+                self.count_arg_name)
+
+    @property
+    def arg_decls(self):
+        """Get the argument declarations for the client proxy."""
+        types = (self.typename + ' *',
+                 'size_t ')
+        return (x + y for x, y in zip(types, self.arg_names))
+
+    @property
+    def handler_arg_names(self):
+        """Get the argument names for the server handler."""
+        return ('max_' + self.count_arg_name,
+                'out_' + self.arg_name,
+                'out_' + self.count_arg_name)
+
+    @property
+    def handler_arg_decls(self):
+        """Get the argument declarations for the server handler."""
+        types = ('size_t ',
+                 self.typename + ' *',
+                 'size_t *')
+        return (x + y for x, y in zip(types, self.handler_arg_names))
+
+
 class Call:
     """A single IPC call."""
 
@@ -106,20 +179,17 @@ class Call:
         args = ["struct ipc_connection *ipc_c"]
         args.extend(arg.get_func_argument_in() for arg in self.in_args)
         args.extend(arg.get_func_argument_out() for arg in self.out_args)
-        if self.out_fds:
-            args.extend(("int *fds", "size_t num_fds"))
+        if self.out_handles:
+            args.extend(self.out_handles.arg_decls)
         write_decl(f, 'xrt_result_t', 'ipc_call_' + self.name, args)
 
-    def write_handle_decl(self, f):
+    def write_handler_decl(self, f):
         """Write declaration of ipc_handle_CALLNAME."""
         args = ["volatile struct ipc_client_state *cs"]
         args.extend(arg.get_func_argument_in() for arg in self.in_args)
         args.extend(arg.get_func_argument_out() for arg in self.out_args)
-        if self.out_fds:
-            args.extend((
-                "size_t max_num_fds",
-                "int *out_fds",
-                "size_t *out_num_fds"))
+        if self.out_handles:
+            args.extend(self.out_handles.handler_arg_decls)
         write_decl(f, 'xrt_result_t', 'ipc_handle_' + self.name, args)
 
     def __init__(self, name, data):
@@ -128,7 +198,7 @@ class Call:
         self.name = name
         self.in_args = []
         self.out_args = []
-        self.out_fds = False
+        self.out_handles = None
         for key, val in data.items():
             if key == 'id':
                 self.id = val
@@ -136,8 +206,8 @@ class Call:
                 self.in_args = Arg.parse_array(val)
             elif key == 'out':
                 self.out_args = Arg.parse_array(val)
-            elif key == 'out_fds':
-                self.out_fds = val
+            elif key == 'out_handles':
+                self.out_handles = HandleType(val)
             else:
                 raise RuntimeError("Unrecognized key")
         if not self.id:

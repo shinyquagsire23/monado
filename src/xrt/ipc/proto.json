@@ -2,7 +2,7 @@
 	"$schema": "./proto.schema.json",
 
 	"instance_get_shm_fd": {
-		"out_fds": true
+		"out_handles": {"type": "xrt_shmem_handle_t"}
 	},
 
 	"system_get_client_info": {
@@ -107,7 +107,7 @@
 			{"name": "num_images", "type": "uint32_t"},
 			{"name": "size", "type": "uint64_t"}
 		],
-		"out_fds": true
+		"out_handles": {"type": "xrt_graphics_buffer_handle_t"}
 	},
 
 	"swapchain_wait_image": {

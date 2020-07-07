@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSL-1.0
 """Generate code from a JSON file describing the IPC protocol."""
 
-from ipcproto.common import Proto, write_invocation
+from ipcproto.common import Proto, write_invocation, write_result_handler
 import argparse
 
 header = '''// Copyright 2020, Collabora, Ltd.
@@ -128,20 +128,29 @@ def generate_client_c(file, p):
         else:
             f.write("\tstruct ipc_result_reply _reply = {0};\n")
 
-        func = 'ipc_client_send_and_get_reply'
-        args = ['ipc_c', '&_msg', 'sizeof(_msg)', '&_reply', 'sizeof(_reply)']
-        if call.out_fds:
-            func += '_fds'
-            args.extend(('fds', 'num_fds'))
+        f.write("""
+\t// Other threads must not read/write the fd while we wait for reply
+\tos_mutex_lock(&ipc_c->mutex);
+""")
+        cleanup = "os_mutex_unlock(&ipc_c->mutex);"
+        func = 'ipc_send'
+        args = ['&ipc_c->imc', '&_msg', 'sizeof(_msg)']
         write_invocation(f, 'xrt_result_t ret', func, args, indent="\t")
         f.write(';')
-        f.write('''
-\tif (ret != XRT_SUCCESS) {
-\t\treturn ret;
-\t}
-\n''')
+        write_result_handler(f, 'ret', cleanup, indent="\t")
+
+        func = 'ipc_receive'
+        args = ['&ipc_c->imc', '&_reply', 'sizeof(_reply)']
+        if call.out_handles:
+            func += '_handles_' + call.out_handles.stem
+            args.extend(call.out_handles.arg_names)
+        write_invocation(f, 'ret', func, args, indent="\t")
+        f.write(';')
+        write_result_handler(f, 'ret', cleanup, indent="\t")
+
         for arg in call.out_args:
             f.write("\t*out_" + arg.name + " = _reply." + arg.name + ";\n")
+        f.write("\n\t" + cleanup)
         f.write("\n\treturn _reply.result;\n}\n")
     f.write("\n// clang-format off\n")
     f.close()
@@ -187,7 +196,7 @@ def generate_server_c(file, p):
 
 // clang-format off
 
-#define MAX_FDS 16
+#define MAX_HANDLES 16
 ''')
 
     f.write('''
@@ -209,9 +218,10 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
             f.write("\t\tstruct ipc_%s_reply reply = {0};\n" % call.name)
         else:
             f.write("\t\tstruct ipc_result_reply reply = {0};\n")
-        if call.out_fds:
-            f.write("\t\tint fds[MAX_FDS] = {0};\n")
-            f.write("\t\tsize_t num_fds = {0};\n")
+        if call.out_handles:
+            f.write("\t\t%s %s[MAX_HANDLES] = {0};\n" % (
+                call.out_handles.typename, call.out_handles.arg_name))
+            f.write("\t\tsize_t %s = {0};\n" % call.out_handles.count_arg_name)
         f.write("\n")
 
         # Write call to ipc_handle_CALLNAME
@@ -221,25 +231,27 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
                         if arg.is_aggregate
                         else ("msg->" + arg.name))
         args.extend("&reply." + arg.name for arg in call.out_args)
-        if call.out_fds:
-            args.extend(("MAX_FDS",
-                         "fds",
-                         "&num_fds",))
+        if call.out_handles:
+            args.extend(("MAX_HANDLES",
+                         call.out_handles.arg_name,
+                         "&" + call.out_handles.count_arg_name))
         write_invocation(f, 'reply.result', 'ipc_handle_' +
                          call.name, args, indent="\t\t")
         f.write(";\n")
 
-        if call.out_fds:
-            f.write(
-                "\t\t"
-                "return ipc_send_fds((struct ipc_message_channel *)&cs->imc, "
-                "&reply, sizeof(reply), "
-                "fds, num_fds);\n")
-        else:
-            f.write(
-                "\t\t"
-                "return ipc_send((struct ipc_message_channel *)&cs->imc, "
-                "&reply, sizeof(reply));\n")
+        # TODO do we check reply.result and
+        # error out before replying if it's not success?
+
+        func = 'ipc_send'
+        args = ["(struct ipc_message_channel *)&cs->imc",
+                "&reply",
+                "sizeof(reply)"]
+        if call.out_handles:
+            func += '_handles_' + call.out_handles.stem
+            args.extend(call.out_handles.arg_names)
+        write_invocation(f, 'xrt_result_t ret', func, args, indent="\t\t")
+        f.write(";")
+        f.write("\n\t\treturn ret;\n")
         f.write("\t}\n")
     f.write('''\tdefault:
 \t\tprintf("UNHANDLED IPC MESSAGE! %d\\n", *ipc_command);
@@ -275,7 +287,7 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command);
 ''')
 
     for call in p.calls:
-        call.write_handle_decl(f)
+        call.write_handler_decl(f)
         f.write(";\n")
     f.write("\n// clang-format on\n")
     f.close()

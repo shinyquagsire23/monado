@@ -38,7 +38,6 @@ add_library(ipc_client STATIC
 	ipc_client_device.c
 	ipc_client_hmd.c
 	ipc_client_instance.c
-	ipc_client_utils.c
 	)
 target_include_directories(ipc_client INTERFACE
 	${CMAKE_CURRENT_SOURCE_DIR}
