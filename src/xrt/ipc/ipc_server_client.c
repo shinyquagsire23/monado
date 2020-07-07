@@ -37,9 +37,9 @@
 
 xrt_result_t
 ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *ics,
-                               size_t max_num_handles,
+                               uint32_t max_num_handles,
                                xrt_shmem_handle_t *out_handles,
-                               size_t *out_num_handles)
+                               uint32_t *out_num_handles)
 {
 	assert(max_num_handles >= 1);
 
@@ -276,9 +276,9 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
                             uint32_t *out_id,
                             uint32_t *out_num_images,
                             uint64_t *out_size,
-                            size_t max_num_fds,
+                            uint32_t max_num_handles,
                             xrt_graphics_buffer_handle_t *out_handles,
-                            size_t *out_num_handles)
+                            uint32_t *out_num_handles)
 {
 	// Our handle is just the index for now.
 	uint32_t index = 0;
@@ -315,7 +315,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 
 	// Sanity checking.
 	assert(num_images <= IPC_MAX_SWAPCHAIN_FDS);
-	assert(num_images <= max_num_fds);
+	assert(num_images <= max_num_handles);
 
 	*out_id = index;
 	*out_size = xscn->images[0].size;
@@ -349,7 +349,6 @@ xrt_result_t
 ipc_handle_swapchain_acquire_image(volatile struct ipc_client_state *ics,
                                    uint32_t id,
                                    uint32_t *out_index)
-
 {
 	//! @todo Look up the index.
 	uint32_t sc_index = id;

@@ -102,6 +102,7 @@ class Arg:
 
 class HandleType:
     """A native handle type requiring special treatment."""
+
     # Keep this synchronized with the definition in the JSON Schema.
     HANDLE_RE = re.compile(r"xrt_([a-z_]+)_handle_t")
 
@@ -131,6 +132,11 @@ class HandleType:
         return 'num_'+self.argstem
 
     @property
+    def count_arg_type(self):
+        """Get the type of the count argument."""
+        return "uint32_t"
+
+    @property
     def arg_names(self):
         """Get the argument names for the client proxy."""
         return (self.arg_name,
@@ -140,7 +146,7 @@ class HandleType:
     def arg_decls(self):
         """Get the argument declarations for the client proxy."""
         types = (self.typename + ' *',
-                 'size_t ')
+                 self.count_arg_type + ' ')
         return (x + y for x, y in zip(types, self.arg_names))
 
     @property
@@ -153,9 +159,9 @@ class HandleType:
     @property
     def handler_arg_decls(self):
         """Get the argument declarations for the server handler."""
-        types = ('size_t ',
+        types = (self.count_arg_type + ' ',
                  self.typename + ' *',
-                 'size_t *')
+                 self.count_arg_type + ' *')
         return (x + y for x, y in zip(types, self.handler_arg_names))
 
 
@@ -178,6 +184,8 @@ class Call:
         """Write declaration of ipc_call_CALLNAME."""
         args = ["struct ipc_connection *ipc_c"]
         args.extend(arg.get_func_argument_in() for arg in self.in_args)
+        if self.in_handles:
+            args.extend(self.in_handles.arg_decls)
         args.extend(arg.get_func_argument_out() for arg in self.out_args)
         if self.out_handles:
             args.extend(self.out_handles.arg_decls)
@@ -190,7 +198,14 @@ class Call:
         args.extend(arg.get_func_argument_out() for arg in self.out_args)
         if self.out_handles:
             args.extend(self.out_handles.handler_arg_decls)
+        if self.in_handles:
+            args.extend(self.in_handles.arg_decls)
         write_decl(f, 'xrt_result_t', 'ipc_handle_' + self.name, args)
+
+    @property
+    def needs_msg_struct(self):
+        """Decide whether this call needs a msg struct."""
+        return self.in_args or self.in_handles
 
     def __init__(self, name, data):
         """Construct a call from call name and call data dictionary."""
@@ -198,6 +213,7 @@ class Call:
         self.name = name
         self.in_args = []
         self.out_args = []
+        self.in_handles = None
         self.out_handles = None
         for key, val in data.items():
             if key == 'id':
@@ -208,6 +224,8 @@ class Call:
                 self.out_args = Arg.parse_array(val)
             elif key == 'out_handles':
                 self.out_handles = HandleType(val)
+            elif key == 'in_handles':
+                self.in_handles = HandleType(val)
             else:
                 raise RuntimeError("Unrecognized key")
         if not self.id:

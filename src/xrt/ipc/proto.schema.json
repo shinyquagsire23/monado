@@ -97,6 +97,19 @@
                     }
                 }
             },
+            "in_handles": {
+                "$id": "#/call/properties/in_handles",
+                "type": "object",
+                "title": "Handles supplied to call",
+                "required": [
+                    "type"
+                ],
+                "properties": {
+                    "type": {
+                        "$ref": "#/definitions/handle"
+                    }
+                }
+            },
             "in": {
                 "title": "Input parameters",
                 "$ref": "#/definitions/param_list"

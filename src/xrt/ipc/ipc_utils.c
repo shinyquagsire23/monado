@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <assert.h>
 
 /*!
  * Debug level logging.
@@ -132,8 +133,13 @@ ipc_receive_fds(struct ipc_message_channel *imc,
                 void *out_data,
                 size_t size,
                 int *out_handles,
-                size_t num_handles)
+                uint32_t num_handles)
 {
+	assert(imc != NULL);
+	assert(out_data != NULL);
+	assert(size != 0);
+	assert(out_handles != NULL);
+	assert(num_handles != 0);
 	union imcontrol_buf u;
 	const size_t fds_size = sizeof(int) * num_handles;
 	const size_t cmsg_size = CMSG_SPACE(fds_size);
@@ -175,8 +181,13 @@ ipc_send_fds(struct ipc_message_channel *imc,
              const void *data,
              size_t size,
              const int *handles,
-             size_t num_handles)
+             uint32_t num_handles)
 {
+	assert(imc != NULL);
+	assert(data != NULL);
+	assert(size != 0);
+	assert(handles != NULL);
+	assert(num_handles != 0);
 	union imcontrol_buf u;
 	size_t cmsg_size = CMSG_SPACE(sizeof(int) * num_handles);
 
@@ -221,7 +232,7 @@ ipc_receive_handles_shmem(struct ipc_message_channel *imc,
                           void *out_data,
                           size_t size,
                           xrt_shmem_handle_t *out_handles,
-                          size_t num_handles)
+                          uint32_t num_handles)
 {
 	return ipc_receive_fds(imc, out_data, size, out_handles, num_handles);
 }
@@ -232,7 +243,7 @@ ipc_send_handles_shmem(struct ipc_message_channel *imc,
                        const void *data,
                        size_t size,
                        const xrt_shmem_handle_t *handles,
-                       size_t num_handles)
+                       uint32_t num_handles)
 {
 	return ipc_send_fds(imc, data, size, handles, num_handles);
 }
@@ -297,7 +308,7 @@ ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
                                     void *out_data,
                                     size_t size,
                                     xrt_graphics_buffer_handle_t *out_handles,
-                                    size_t num_handles)
+                                    uint32_t num_handles)
 {
 	return ipc_receive_fds(imc, out_data, size, out_handles, num_handles);
 }
@@ -308,7 +319,7 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
                                  const void *data,
                                  size_t size,
                                  const xrt_graphics_buffer_handle_t *handles,
-                                 size_t num_handles)
+                                 uint32_t num_handles)
 {
 	return ipc_send_fds(imc, data, size, handles, num_handles);
 }
