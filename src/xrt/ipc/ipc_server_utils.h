@@ -11,8 +11,10 @@
 
 #include "ipc_protocol.h"
 
+#include <xrt/xrt_results.h>
 
-int
+
+xrt_result_t
 ipc_reply(int socket, void *data, size_t len);
-int
+xrt_result_t
 ipc_reply_fds(int socket, void *data, size_t size, int *fds, uint32_t num_fds);

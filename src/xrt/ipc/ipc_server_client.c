@@ -555,8 +555,8 @@ client_loop(volatile struct ipc_client_state *ics)
 
 		// Check the first 4 bytes of the message and dispatch.
 		ipc_command_t *ipc_command = (uint32_t *)buf;
-		ret = ipc_dispatch(ics, ipc_command);
-		if (ret < 0) {
+		xrt_result_t result = ipc_dispatch(ics, ipc_command);
+		if (result != XRT_SUCCESS) {
 			fprintf(stderr,
 			        "ERROR: During packet handling, "
 			        "disconnecting "

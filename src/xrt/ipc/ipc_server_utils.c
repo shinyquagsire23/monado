@@ -24,7 +24,7 @@
  *
  */
 
-int
+xrt_result_t
 ipc_reply(int socket, void *data, size_t len)
 {
 	struct msghdr msg = {0};
@@ -45,12 +45,13 @@ ipc_reply(int socket, void *data, size_t len)
 		        "ERROR: Sending plain message on socket %d failed with "
 		        "error: '%i' '%s'\n",
 		        socket, errno, strerror(errno));
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
-	return ret;
+	return XRT_SUCCESS;
 }
 
-int
+xrt_result_t
 ipc_reply_fds(int socket, void *data, size_t size, int *fds, uint32_t num_fds)
 {
 	union {
@@ -89,6 +90,7 @@ ipc_reply_fds(int socket, void *data, size_t size, int *fds, uint32_t num_fds)
 		for (uint32_t i = 0; i < num_fds; i++) {
 			fprintf(stderr, "\tfd #%i: %i\n", i, fds[i]);
 		}
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	return ret;
