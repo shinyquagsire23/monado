@@ -90,8 +90,7 @@ main(int argc, char *argv[])
 	}
 
 	if (socket_connected) {
-
-		ipc_c.socket_fd = fd;
+		ipc_c.imc.socket_fd = fd;
 
 		struct ipc_app_state cs;
 		cs.pid = getpid();

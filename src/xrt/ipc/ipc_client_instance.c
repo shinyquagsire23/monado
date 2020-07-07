@@ -88,7 +88,8 @@ ipc_connect(struct ipc_connection *ipc_c)
 		return false;
 	}
 
-	ipc_c->socket_fd = socket;
+	ipc_c->imc.socket_fd = socket;
+	ipc_c->imc.print_debug = ipc_c->print_debug;
 
 	return true;
 }
@@ -154,9 +155,7 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
 
 	// service considers us to be connected until fd is closed
-	if (ii->ipc_c.socket_fd >= 0) {
-		close(ii->ipc_c.socket_fd);
-	}
+	ipc_message_channel_close(&ii->ipc_c.imc);
 
 	for (size_t i = 0; i < ii->num_xtracks; i++) {
 		u_var_remove_root(ii->xtracks[i]);
@@ -195,7 +194,7 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 	ii->base.destroy = ipc_client_instance_destroy;
 
 	// FDs needs to be set to something negative.
-	ii->ipc_c.socket_fd = -1;
+	ii->ipc_c.imc.socket_fd = -1;
 	ii->ipc_c.ism_fd = -1;
 
 	if (!ipc_connect(&ii->ipc_c)) {

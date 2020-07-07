@@ -90,12 +90,7 @@ ipc_client_swapchain(struct xrt_swapchain *xs)
 void
 compositor_disconnect(struct ipc_connection *ipc_c)
 {
-	if (ipc_c->socket_fd < 0) {
-		return;
-	}
-
-	close(ipc_c->socket_fd);
-	ipc_c->socket_fd = -1;
+	ipc_message_channel_close(&ipc_c->imc);
 }
 
 #define IPC_CALL_CHK(call)                                                     \

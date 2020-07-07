@@ -12,6 +12,7 @@
 
 #include "xrt/xrt_compiler.h"
 #include "ipc_protocol.h"
+#include "ipc_utils.h"
 
 #include "util/u_threading.h"
 
@@ -74,7 +75,7 @@ struct xrt_compositor_fd;
  */
 struct ipc_connection
 {
-	int socket_fd;
+	struct ipc_message_channel imc;
 
 	struct ipc_shared_memory *ism;
 	int ism_fd;
@@ -97,14 +98,14 @@ ipc_client_send_message(struct ipc_connection *ipc_c,
 
 xrt_result_t
 ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
-                              void *msg_ptr,
+                              const void *msg_ptr,
                               size_t msg_size,
                               void *reply_ptr,
                               size_t reply_size);
 
 xrt_result_t
 ipc_client_send_and_get_reply_fds(struct ipc_connection *ipc_c,
-                                  void *msg_ptr,
+                                  const void *msg_ptr,
                                   size_t msg_size,
                                   void *reply_ptr,
                                   size_t reply_size,

@@ -9,17 +9,18 @@
  */
 
 #include "ipc_client.h"
+#include "ipc_utils.h"
 
 #include "util/u_misc.h"
 
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/socket.h>
+
 
 xrt_result_t
 ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
-                              void *msg_ptr,
+                              const void *msg_ptr,
                               size_t msg_size,
                               void *reply_ptr,
                               size_t reply_size)
@@ -27,114 +28,40 @@ ipc_client_send_and_get_reply(struct ipc_connection *ipc_c,
 	// Other threads must not read/write the fd while we wait for reply
 	os_mutex_lock(&ipc_c->mutex);
 
-	if (ipc_c->socket_fd < 0) {
-		IPC_ERROR(ipc_c, "Error sending - not connected!");
+	xrt_result_t result = ipc_send(&ipc_c->imc, msg_ptr, msg_size);
+	if (result != XRT_SUCCESS) {
 		os_mutex_unlock(&ipc_c->mutex);
-		return XRT_ERROR_IPC_FAILURE;
+		return result;
 	}
 
-	ssize_t len = send(ipc_c->socket_fd, msg_ptr, msg_size, MSG_NOSIGNAL);
-	if ((size_t)len != msg_size) {
-		IPC_ERROR(ipc_c, "Error sending - cannot continue!");
-		os_mutex_unlock(&ipc_c->mutex);
-		return XRT_ERROR_IPC_FAILURE;
-	}
-
-
-	// wait for the response
-	struct iovec iov = {0};
-	struct msghdr msg = {0};
-
-	iov.iov_base = reply_ptr;
-	iov.iov_len = reply_size;
-
-	msg.msg_name = 0;
-	msg.msg_namelen = 0;
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-	msg.msg_flags = 0;
-
-	len = recvmsg(ipc_c->socket_fd, &msg, MSG_NOSIGNAL);
-
-	if (len < 0) {
-		IPC_ERROR(ipc_c, "recvmsg failed with error: %s",
-		          strerror(errno));
-		os_mutex_unlock(&ipc_c->mutex);
-		return XRT_ERROR_IPC_FAILURE;
-	}
-
-	if ((size_t)len != reply_size) {
-		IPC_ERROR(ipc_c, "recvmsg failed with error: wrong size %i %i",
-		          (int)len, (int)reply_size);
-		os_mutex_unlock(&ipc_c->mutex);
-		return XRT_ERROR_IPC_FAILURE;
-	}
-
+	result = ipc_receive(&ipc_c->imc, reply_ptr, reply_size);
 	os_mutex_unlock(&ipc_c->mutex);
-	return XRT_SUCCESS;
+	return result;
 }
 
 xrt_result_t
 ipc_client_send_and_get_reply_fds(struct ipc_connection *ipc_c,
-                                  void *msg_ptr,
+                                  const void *msg_ptr,
                                   size_t msg_size,
                                   void *reply_ptr,
                                   size_t reply_size,
                                   int *fds,
                                   size_t num_fds)
 {
+	// Other threads must not read/write the fd while we wait for reply
 	os_mutex_lock(&ipc_c->mutex);
 
-	if (send(ipc_c->socket_fd, msg_ptr, msg_size, MSG_NOSIGNAL) == -1) {
-		IPC_ERROR(ipc_c, "Error sending - cannot continue!");
+	xrt_result_t result = ipc_send(&ipc_c->imc, msg_ptr, msg_size);
+	if (result != XRT_SUCCESS) {
 		os_mutex_unlock(&ipc_c->mutex);
-		return XRT_ERROR_IPC_FAILURE;
+		return result;
 	}
 
-	union {
-		uint8_t buf[512];
-		struct cmsghdr align;
-	} u;
-	const size_t fds_size = sizeof(int) * num_fds;
-	const size_t cmsg_size = CMSG_SPACE(fds_size);
-	memset(u.buf, 0, cmsg_size);
+	result =
+	    ipc_receive_fds(&ipc_c->imc, reply_ptr, reply_size, fds, num_fds);
 
-	struct iovec iov = {0};
-	iov.iov_base = reply_ptr;
-	iov.iov_len = reply_size;
-
-	struct msghdr msg = {0};
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-	msg.msg_control = u.buf;
-	msg.msg_controllen = cmsg_size;
-
-	ssize_t len = recvmsg(ipc_c->socket_fd, &msg, MSG_NOSIGNAL);
-
-	if (len < 0) {
-		IPC_ERROR(ipc_c, "recvmsg failed with error: %s",
-		          strerror(errno));
-		os_mutex_unlock(&ipc_c->mutex);
-		return XRT_ERROR_IPC_FAILURE;
-	}
-
-	if (len == 0) {
-		IPC_ERROR(ipc_c, "recvmsg failed with error: no data");
-		os_mutex_unlock(&ipc_c->mutex);
-		return XRT_ERROR_IPC_FAILURE;
-	}
-
-	// Did the server actually return file descriptors.
-	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
-	if (cmsg == NULL) {
-		os_mutex_unlock(&ipc_c->mutex);
-		return XRT_SUCCESS;
-	}
-
-	memcpy(fds, (int *)CMSG_DATA(cmsg), fds_size);
 	os_mutex_unlock(&ipc_c->mutex);
-
-	return XRT_SUCCESS;
+	return result;
 }
 
 xrt_result_t
