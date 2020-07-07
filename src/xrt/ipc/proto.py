@@ -151,7 +151,9 @@ class Proto:
 
     def __init__(self, data):
         """Construct a protocol from a dictionary of calls."""
-        self.calls = [Call(name, call) for name, call in data.items()]
+        self.calls = [Call(name, call) for name, call
+                      in data.items()
+                      if not name.startswith("$")]
 
 
 header = '''// Copyright 2020, Collabora, Ltd.

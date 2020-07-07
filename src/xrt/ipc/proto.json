@@ -1,4 +1,6 @@
 {
+	"$schema": "./proto.schema.json",
+
 	"instance_get_shm_fd": {
 		"out_fds": true
 	},

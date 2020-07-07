@@ -1,0 +1,97 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://gitlab.freedesktop.org/monado/monado/src/xrt/ipc/proto.schema.json",
+    "type": "object",
+    "title": "Protocol schema",
+    "description": "The root schema for an entire protocol.",
+    "definitions": {
+        "scalar": {
+            "title": "Known scalar type",
+            "type": "string",
+            "enum": [
+                "uint32_t",
+                "int64_t",
+                "uint64_t"
+            ]
+        },
+        "aggregate": {
+            "title": "Struct or union type",
+            "type": "string",
+            "pattern": "(struct|union) xrt_[a-z_]+"
+        },
+        "scalar_enum": {
+            "title": "Custom enum (scalar)",
+            "type": "string",
+            "pattern": "enum xrt_[a-z_]+"
+        },
+        "param": {
+            "type": "object",
+            "title": "Parameter",
+            "required": [
+                "name",
+                "type"
+            ],
+            "properties": {
+                "name": {
+                    "title": "Parameter name",
+                    "type": "string"
+                },
+                "type": {
+                    "title": "Parameter type",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/scalar"
+                        },
+                        {
+                            "$ref": "#/definitions/aggregate"
+                        },
+                        {
+                            "$ref": "#/definitions/scalar_enum"
+                        }
+                    ]
+                }
+            }
+        },
+        "param_list": {
+            "title": "Parameter list",
+            "type": "array",
+            "additionalItems": {
+                "$ref": "#/definitions/param"
+            }
+        }
+    },
+    "properties": {
+        "$schema": {
+            "type": "string"
+        }
+    },
+    "additionalProperties": {
+        "$id": "#/call",
+        "type": "object",
+        "title": "IPC Call",
+        "properties": {
+            "id": {
+                "type": "string",
+                "title": "Call ID",
+                "description": "If left unspecified or empty, the ID will be constructed by prepending IPC_ to the call name in all upper-case."
+            },
+            "out_fds": {
+                "$id": "#/call/properties/out_fds",
+                "type": "boolean",
+                "title": "Call returns fds?",
+                "default": false,
+                "examples": [
+                    true
+                ]
+            },
+            "in": {
+                "title": "Input parameters",
+                "$ref": "#/definitions/param_list"
+            },
+            "out": {
+                "title": "Output parameters",
+                "$ref": "#/definitions/param_list"
+            }
+        }
+    }
+}
