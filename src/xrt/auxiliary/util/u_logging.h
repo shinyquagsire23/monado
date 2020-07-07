@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Tiny JSON wrapper around cJSON header.
+ * @brief  Basic logging functionality.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup aux_util aux_log
+ * @ingroup aux_log
  */
 
 
@@ -23,10 +23,11 @@ struct xrt_device;
 
 /*!
  * @defgroup aux_log Logging functions.
+ * @ingroup aux_util
  */
 
 /*!
- * @ingroup aux_util aux_log
+ * @ingroup aux_log
  * @{
  */
 
