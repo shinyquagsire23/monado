@@ -58,6 +58,7 @@ struct ipc_shared_device
 {
 	//! Enum identifier of the device.
 	enum xrt_device_name name;
+	enum xrt_device_type device_type;
 
 	//! Which tracking system origin is this device attached to.
 	uint32_t tracking_origin_index;

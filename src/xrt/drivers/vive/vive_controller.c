@@ -1106,6 +1106,8 @@ vive_controller_create(struct os_hid_device *controller_hid,
 
 		d->base.update_inputs =
 		    vive_controller_device_update_wand_inputs;
+
+		d->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 	} else if (d->variant == CONTROLLER_INDEX_LEFT ||
 	           d->variant == CONTROLLER_INDEX_RIGHT) {
 		d->base.name = XRT_DEVICE_INDEX_CONTROLLER;
@@ -1136,14 +1138,24 @@ vive_controller_create(struct os_hid_device *controller_hid,
 
 		d->base.update_inputs =
 		    vive_controller_device_update_index_inputs;
+		if (d->variant == CONTROLLER_INDEX_LEFT) {
+			d->base.device_type =
+			    XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
+		} else if (d->variant == CONTROLLER_INDEX_RIGHT) {
+			d->base.device_type =
+			    XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
+		}
 	} else if (d->variant == CONTROLLER_TRACKER_GEN1) {
 		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN1;
 		d->base.update_inputs = _update_tracker_inputs;
+		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
 	} else if (d->variant == CONTROLLER_TRACKER_GEN2) {
 		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN2;
 		d->base.update_inputs = _update_tracker_inputs;
+		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
 	} else {
 		d->base.name = XRT_DEVICE_GENERIC_HMD;
+		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
 		VIVE_ERROR(d, "Failed to assign update input function");
 	}
 

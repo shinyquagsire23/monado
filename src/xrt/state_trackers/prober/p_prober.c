@@ -530,29 +530,32 @@ handle_found_device(struct prober *p,
 {
 	P_DEBUG(p, "Found '%s' %p", xdev->str, (void *)xdev);
 
-	// For controllers we put them after the first found HMD.
-	if (xdev->hmd == NULL) {
-		for (size_t i = 1; i < num_xdevs; i++) {
-			if (xdevs[i] == NULL) {
-				xdevs[i] = xdev;
-				return;
-			}
+	bool have_hmd = false;
+	size_t i = 0;
+	for (; i < num_xdevs; i++) {
+		if (xdevs[i] == NULL) {
+			break;
 		}
+		if (xdevs[i]->device_type == XRT_DEVICE_TYPE_HMD) {
+			have_hmd = true;
+		}
+	}
 
-		P_ERROR(p, "Too many controller devices closing '%s'",
-		        xdev->str);
+	if (i + 1 > num_xdevs) {
+		P_ERROR(p, "Too many devices, closing '%s'", xdev->str);
 		xdev->destroy(xdev);
 		return;
 	}
 
-	// Not found a HMD before, add it first in the list.
-	if (xdevs[0] == NULL) {
-		xdevs[0] = xdev;
-		return;
+	// we can have only one HMD
+	if (xdev->device_type == XRT_DEVICE_TYPE_HMD) {
+		if (have_hmd) {
+			P_ERROR(p, "Too many HMDs, closing '%s'", xdev->str);
+			xdev->destroy(xdev);
+			return;
+		}
 	}
-
-	P_ERROR(p, "Found more than one, HMD closing '%s'", xdev->str);
-	xdev->destroy(xdev);
+	xdevs[i] = xdev;
 }
 
 static int

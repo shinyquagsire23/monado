@@ -1026,6 +1026,8 @@ struct oxr_handle_base
 	oxr_handle_destroyer destroy;
 };
 
+#define XRT_DEVICE_ROLE_UNASSIGNED (-1)
+
 /*!
  * Single or multiple devices grouped together to form a system that sessions
  * can be created from. Might need to open devices in order to get all
@@ -1040,17 +1042,15 @@ struct oxr_handle_base
 struct oxr_system
 {
 	struct oxr_instance *inst;
-
-	union {
-		struct
-		{
-			struct xrt_device *head;
-			struct xrt_device *left;
-			struct xrt_device *right;
-		};
-		struct xrt_device *xdevs[16];
-	};
+	struct xrt_device *xdevs[16];
 	size_t num_xdevs;
+	/* index for xdevs array */
+	struct
+	{
+		int head;
+		int left;
+		int right;
+	} role;
 
 	XrSystemId systemId;
 
@@ -1063,6 +1063,11 @@ struct oxr_system
 	uint32_t num_blend_modes;
 	XrEnvironmentBlendMode blend_modes[3];
 };
+
+#define GET_XDEV_BY_ROLE(SYS, ROLE)                                            \
+	SYS->role.ROLE == XRT_DEVICE_ROLE_UNASSIGNED                           \
+	    ? NULL                                                             \
+	    : SYS->xdevs[SYS->role.ROLE]
 
 #define MAKE_EXT_STATUS(mixed_case, all_caps) bool mixed_case;
 /*!

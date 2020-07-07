@@ -194,6 +194,7 @@ init_shm(struct ipc_server *s)
 		    xdev->orientation_tracking_supported;
 		idev->position_tracking_supported =
 		    xdev->position_tracking_supported;
+		idev->device_type = xdev->device_type;
 
 		// Is this a HMD?
 		if (xdev->hmd != NULL) {

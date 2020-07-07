@@ -201,6 +201,7 @@ ipc_client_hmd_create(ipc_connection_t *ipc_c,
 	    idev->orientation_tracking_supported;
 	ich->base.position_tracking_supported =
 	    idev->position_tracking_supported;
+	ich->base.device_type = idev->device_type;
 
 	return &ich->base;
 }

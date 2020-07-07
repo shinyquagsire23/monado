@@ -199,6 +199,7 @@ dummy_hmd_create(void)
 		// Setup the distortion mesh.
 		u_distortion_mesh_none(dh->base.hmd);
 	}
+	dh->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	return &dh->base;
 }

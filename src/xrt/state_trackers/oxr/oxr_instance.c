@@ -100,6 +100,47 @@ cache_path(struct oxr_logger *log,
 
 #define NUM_XDEVS 16
 
+static void
+assign_xdev_roles(struct oxr_instance *inst)
+{
+	struct oxr_system *sys = &inst->system;
+	for (size_t i = 0; i < NUM_XDEVS; i++) {
+		if (sys->xdevs[i] == NULL) {
+			continue;
+		}
+
+		if (sys->xdevs[i]->device_type == XRT_DEVICE_TYPE_HMD) {
+			sys->role.head = i;
+		} else if (sys->xdevs[i]->device_type ==
+		           XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) {
+			if (sys->role.left == XRT_DEVICE_ROLE_UNASSIGNED) {
+				sys->role.left = i;
+			}
+		} else if (sys->xdevs[i]->device_type ==
+		           XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER) {
+			if (sys->role.right == XRT_DEVICE_ROLE_UNASSIGNED) {
+				sys->role.right = i;
+			}
+		} else if (sys->xdevs[i]->device_type ==
+		           XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER) {
+			if (sys->role.left == XRT_DEVICE_ROLE_UNASSIGNED) {
+				sys->role.left = i;
+			} else if (sys->role.left ==
+			           XRT_DEVICE_ROLE_UNASSIGNED) {
+				sys->role.right = i;
+			} else {
+				//! @todo: do something with unassigend devices?
+			}
+		}
+	}
+}
+
+static inline size_t
+min_size_t(size_t a, size_t b)
+{
+	return a < b ? a : b;
+}
+
 XrResult
 oxr_instance_create(struct oxr_logger *log,
                     const XrInstanceCreateInfo *createInfo,
@@ -194,16 +235,32 @@ oxr_instance_create(struct oxr_logger *log,
 		return ret;
 	}
 
+	struct oxr_system *sys = &inst->system;
+
+	sys->role.head = XRT_DEVICE_ROLE_UNASSIGNED;
+	sys->role.left = XRT_DEVICE_ROLE_UNASSIGNED;
+	sys->role.right = XRT_DEVICE_ROLE_UNASSIGNED;
+
+	sys->num_xdevs = min_size_t(ARRAY_SIZE(sys->xdevs), NUM_XDEVS);
+
+	for (uint32_t i = 0; i < sys->num_xdevs; i++) {
+		sys->xdevs[i] = xdevs[i];
+	}
+	for (size_t i = sys->num_xdevs; i < NUM_XDEVS; i++) {
+		oxr_xdev_destroy(&xdevs[i]);
+	}
+
+	assign_xdev_roles(inst);
+
 	// Did we find any HMD
 	// @todo Headless with only controllers?
-	if (xdevs[0] == NULL) {
+	struct xrt_device *dev = GET_XDEV_BY_ROLE(sys, head);
+	if (dev == NULL) {
 		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                "Failed to find any HMD device");
 		oxr_instance_destroy(log, &inst->handle);
 		return ret;
 	}
-
-	struct xrt_device *dev = xdevs[0];
 
 	const float left_override = debug_get_float_option_lfov_left();
 	if (left_override != 0.0f) {

@@ -595,15 +595,15 @@ get_binding(struct oxr_logger *log,
 		break;
 	case OXR_SUB_ACTION_PATH_HEAD:
 		user_path_str = "/user/head";
-		xdev = sess->sys->head;
+		xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 		break;
 	case OXR_SUB_ACTION_PATH_LEFT:
 		user_path_str = "/user/hand/left";
-		xdev = sess->sys->left;
+		xdev = GET_XDEV_BY_ROLE(sess->sys, left);
 		break;
 	case OXR_SUB_ACTION_PATH_RIGHT:
 		user_path_str = "/user/hand/right";
-		xdev = sess->sys->right;
+		xdev = GET_XDEV_BY_ROLE(sess->sys, right);
 		break;
 	case OXR_SUB_ACTION_PATH_GAMEPAD:
 		user_path_str = "/user/hand/gamepad";
@@ -1170,13 +1170,18 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
                                const XrSessionActionSetsAttachInfo *bindInfo)
 {
 	struct oxr_instance *inst = sess->sys->inst;
+
+
 	struct oxr_interaction_profile *head = NULL;
 	struct oxr_interaction_profile *left = NULL;
 	struct oxr_interaction_profile *right = NULL;
 
-	oxr_find_profile_for_device(log, inst, sess->sys->head, &head);
-	oxr_find_profile_for_device(log, inst, sess->sys->left, &left);
-	oxr_find_profile_for_device(log, inst, sess->sys->right, &right);
+	oxr_find_profile_for_device(log, inst,
+	                            GET_XDEV_BY_ROLE(sess->sys, head), &head);
+	oxr_find_profile_for_device(log, inst,
+	                            GET_XDEV_BY_ROLE(sess->sys, left), &left);
+	oxr_find_profile_for_device(log, inst,
+	                            GET_XDEV_BY_ROLE(sess->sys, right), &right);
 	//! @todo add other subaction paths here
 
 	// Allocate room for list. No need to check if anything has been

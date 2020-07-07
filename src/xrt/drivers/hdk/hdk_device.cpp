@@ -512,6 +512,7 @@ hdk_device_create(struct os_hid_device *dev,
 
 	hd->base.orientation_tracking_supported = true;
 	hd->base.position_tracking_supported = false;
+	hd->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	return hd;
 }

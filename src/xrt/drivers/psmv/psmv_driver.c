@@ -1153,6 +1153,7 @@ psmv_found(struct xrt_prober *xp,
 
 	psmv->base.orientation_tracking_supported = true;
 	psmv->base.position_tracking_supported = psmv->ball != NULL;
+	psmv->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 
 	// And finally done
 	*out_xdevs = &psmv->base;

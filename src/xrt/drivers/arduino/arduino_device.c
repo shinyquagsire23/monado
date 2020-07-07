@@ -434,6 +434,7 @@ arduino_device_create(struct os_ble_device *ble,
 
 	ad->base.orientation_tracking_supported = true;
 	ad->base.position_tracking_supported = false;
+	ad->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 
 	ARDUINO_DEBUG(ad, "Created device!");
 

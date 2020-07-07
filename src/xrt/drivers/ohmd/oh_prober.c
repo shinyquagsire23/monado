@@ -134,6 +134,7 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 	ohd->base.orientation_tracking_supported =
 	    orientation_tracking_supported;
 	ohd->base.position_tracking_supported = position_tracking_supported;
+	ohd->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	return &ohd->base;
 }

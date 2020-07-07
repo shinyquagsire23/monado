@@ -178,5 +178,6 @@ ipc_client_device_create(ipc_connection_t *ipc_c,
 	u_var_add_root(icd, icd->base.str, true);
 	u_var_add_ro_u32(icd, &icd->device_id, "device_id");
 
+	icd->base.device_type = idev->device_type;
 	return &icd->base;
 }

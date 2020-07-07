@@ -24,12 +24,6 @@
 DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "OXR_VIEWPORT_SCALE_PERCENTAGE", 140)
 // clang-format on
 
-static inline size_t
-min_size_t(size_t a, size_t b)
-{
-	return a < b ? a : b;
-}
-
 static bool
 oxr_system_matches(struct oxr_logger *log,
                    struct oxr_system *sys,
@@ -109,18 +103,9 @@ oxr_system_fill_in(struct oxr_logger *log,
                    struct xrt_device **xdevs,
                    size_t num_xdevs)
 {
-	sys->num_xdevs = min_size_t(ARRAY_SIZE(sys->xdevs), num_xdevs);
-
-	for (uint32_t i = 0; i < sys->num_xdevs; i++) {
-		sys->xdevs[i] = xdevs[i];
-	}
-	for (size_t i = sys->num_xdevs; i < num_xdevs; i++) {
-		oxr_xdev_destroy(&xdevs[i]);
-	}
-
-	struct xrt_device *head = sys->head;
-	struct xrt_device *left = sys->left;
-	struct xrt_device *right = sys->right;
+	struct xrt_device *head = GET_XDEV_BY_ROLE(sys, head);
+	struct xrt_device *left = GET_XDEV_BY_ROLE(sys, left);
+	struct xrt_device *right = GET_XDEV_BY_ROLE(sys, right);
 
 	if (head == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
@@ -212,9 +197,11 @@ oxr_system_get_properties(struct oxr_logger *log,
 	properties->vendorId = 42;
 	properties->systemId = sys->systemId;
 
+	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sys, head);
+
 	// The magical 247 number, is to silence warnings.
 	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE,
-	         "Monado: %.*s", 247, sys->head->str);
+	         "Monado: %.*s", 247, xdev->str);
 
 	//! Get from compositor.
 	uint32_t max = XR_MIN_COMPOSITION_LAYERS_SUPPORTED;
@@ -223,9 +210,9 @@ oxr_system_get_properties(struct oxr_logger *log,
 	properties->graphicsProperties.maxSwapchainImageWidth = 1024 * 16;
 	properties->graphicsProperties.maxSwapchainImageHeight = 1024 * 16;
 	properties->trackingProperties.orientationTracking =
-	    sys->head->orientation_tracking_supported;
+	    xdev->orientation_tracking_supported;
 	properties->trackingProperties.positionTracking =
-	    sys->head->position_tracking_supported;
+	    xdev->position_tracking_supported;
 
 	return XR_SUCCESS;
 }

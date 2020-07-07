@@ -391,6 +391,21 @@ enum xrt_device_name
 };
 
 /*!
+ * How an xrt_device can be used.
+ *
+ * @ingroup xrt_iface
+ */
+enum xrt_device_type
+{
+	XRT_DEVICE_TYPE_UNKNOWN = 0,
+	XRT_DEVICE_TYPE_HMD,
+	XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER,
+	XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER,
+	XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER,
+	XRT_DEVICE_TYPE_GENERIC_TRACKER
+};
+
+/*!
  * Base type of this inputs.
  *
  * @ingroup xrt_iface

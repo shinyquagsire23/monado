@@ -205,6 +205,7 @@ struct xrt_device
 {
 	//! Enum identifier of the device.
 	enum xrt_device_name name;
+	enum xrt_device_type device_type;
 
 	//! A string describing the device.
 	char str[XRT_DEVICE_NAME_LEN];

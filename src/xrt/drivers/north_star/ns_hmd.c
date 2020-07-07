@@ -364,6 +364,7 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 	ns->base.orientation_tracking_supported = true;
 	//! @todo: Set to true when T265 is used
 	ns->base.position_tracking_supported = false;
+	ns->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	return &ns->base;
 

@@ -714,7 +714,9 @@ hydra_found(struct xrt_prober *xp,
 	}
 
 	hs->devs[0]->base.orientation_tracking_supported = true;
+	hs->devs[0]->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 	hs->devs[1]->base.position_tracking_supported = true;
+	hs->devs[1]->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 
 	printf("Opened razer hydra!\n");
 	return 2;

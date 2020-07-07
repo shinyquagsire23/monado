@@ -390,6 +390,7 @@ daydream_device_create(struct os_ble_device *ble,
 
 	dd->base.orientation_tracking_supported = true;
 	dd->base.position_tracking_supported = false;
+	dd->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 
 	DAYDREAM_DEBUG(dd, "Created device!");
 

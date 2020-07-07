@@ -66,7 +66,9 @@ oxr_session_populate_egl(struct oxr_logger *log,
 	}
 
 	struct xrt_compositor_fd *xcfd = NULL;
-	int ret = xrt_instance_create_fd_compositor(sys->inst->xinst, sys->head,
+	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
+
+	int ret = xrt_instance_create_fd_compositor(sys->inst->xinst, xdev,
 	                                            true, &xcfd);
 	if (ret < 0 || xcfd == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,

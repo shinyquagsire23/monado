@@ -278,7 +278,7 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 	// @todo If using orientation tracking only implement a neck model to
 	//       get at least a slightly better position.
 
-	struct xrt_device *xdev = sess->sys->head;
+	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 	struct xrt_space_relation relation;
 	uint64_t timestamp;
 
@@ -368,7 +368,7 @@ oxr_session_views(struct oxr_logger *log,
                   uint32_t *viewCountOutput,
                   XrView *views)
 {
-	struct xrt_device *xdev = sess->sys->head;
+	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(
 	    struct oxr_space *, viewLocateInfo->space);
 	uint32_t num_views = 2;
@@ -1015,7 +1015,8 @@ oxr_session_frame_end(struct oxr_logger *log,
 		                 frameEndInfo->environmentBlendMode);
 	}
 
-	if ((blend_mode & sess->sys->head->hmd->blend_mode) == 0) {
+	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
+	if ((blend_mode & xdev->hmd->blend_mode) == 0) {
 		//! @todo Make integer print to string.
 		return oxr_error(log,
 		                 XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED,
@@ -1060,12 +1061,12 @@ oxr_session_frame_end(struct oxr_logger *log,
 		case XR_TYPE_COMPOSITION_LAYER_PROJECTION:
 			res = verify_projection_layer(
 			    xc, log, i, (XrCompositionLayerProjection *)layer,
-			    sess->sys->head, frameEndInfo->displayTime);
+			    xdev, frameEndInfo->displayTime);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_QUAD:
 			res = verify_quad_layer(
-			    xc, log, i, (XrCompositionLayerQuad *)layer,
-			    sess->sys->head, frameEndInfo->displayTime);
+			    xc, log, i, (XrCompositionLayerQuad *)layer, xdev,
+			    frameEndInfo->displayTime);
 			break;
 		default:
 			return oxr_error(log, XR_ERROR_LAYER_INVALID,
@@ -1085,8 +1086,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 */
 
 	struct xrt_pose inv_offset = {0};
-	math_pose_invert(&sess->sys->head->tracking_origin->offset,
-	                 &inv_offset);
+	math_pose_invert(&xdev->tracking_origin->offset, &inv_offset);
 
 	CALL_CHK(xrt_comp_layer_begin(xc, sess->frame_id.begun, blend_mode));
 
@@ -1099,14 +1099,12 @@ oxr_session_frame_end(struct oxr_logger *log,
 		case XR_TYPE_COMPOSITION_LAYER_PROJECTION:
 			submit_projection_layer(
 			    xc, log, (XrCompositionLayerProjection *)layer,
-			    sess->sys->head, &inv_offset,
-			    frameEndInfo->displayTime);
+			    xdev, &inv_offset, frameEndInfo->displayTime);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_QUAD:
-			submit_quad_layer(xc, log,
-			                  (XrCompositionLayerQuad *)layer,
-			                  sess->sys->head, &inv_offset,
-			                  frameEndInfo->displayTime);
+			submit_quad_layer(
+			    xc, log, (XrCompositionLayerQuad *)layer, xdev,
+			    &inv_offset, frameEndInfo->displayTime);
 			break;
 		default: assert(false && "invalid layer type");
 		}

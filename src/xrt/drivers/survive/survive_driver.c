@@ -976,6 +976,7 @@ _create_hmd_device(struct survive_system *sys)
 
 	survive->base.orientation_tracking_supported = true;
 	survive->base.position_tracking_supported = true;
+	survive->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	return true;
 }
@@ -1053,6 +1054,11 @@ _create_controller_device(struct survive_system *sys, int controller_num)
 		    .name = XRT_INPUT_INDEX_TRACKPAD_TOUCH;
 		controller->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH]
 		    .value.boolean = false;
+
+		//! @todo: find out left/right hand from survive
+		controller->base.device_type =
+		    XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
+
 
 	} else {
 		controller->base.name = XRT_DEVICE_VIVE_WAND;

@@ -285,6 +285,7 @@ rs_6dof_create(void)
 
 	rs->base.orientation_tracking_supported = true;
 	rs->base.position_tracking_supported = true;
+	rs->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
 
 	return &rs->base;
 }
