@@ -525,8 +525,7 @@ client_loop(volatile struct ipc_client_state *ics)
 		int ret = epoll_wait(epoll_fd, &event, 1, half_a_second_ms);
 		if (ret < 0) {
 			fprintf(stderr,
-			        "ERROR: Failed epoll_wait '%i', "
-			        "disconnecting "
+			        "ERROR: Failed epoll_wait '%i', disconnecting "
 			        "client.\n",
 			        ret);
 			break;
