@@ -178,10 +178,11 @@ def generate_server_c(file, p):
     f = open(file, "w")
     f.write(header.format(brief='Generated IPC server code', suffix='_server'))
     f.write('''
+#include "ipc_server_generated.h"
+
 #include "ipc_protocol.h"
 #include "ipc_server.h"
-#include "ipc_server_utils.h"
-#include "ipc_server_generated.h"
+#include "ipc_utils.h"
 
 
 // clang-format off
@@ -231,13 +232,13 @@ ipc_dispatch(volatile struct ipc_client_state *cs, ipc_command_t *ipc_command)
         if call.out_fds:
             f.write(
                 "\t\t"
-                "return ipc_reply_fds(cs->ipc_socket_fd, "
+                "return ipc_send_fds((struct ipc_message_channel *)&cs->imc, "
                 "&reply, sizeof(reply), "
                 "fds, num_fds);\n")
         else:
             f.write(
                 "\t\t"
-                "return ipc_reply(cs->ipc_socket_fd, "
+                "return ipc_send((struct ipc_message_channel *)&cs->imc, "
                 "&reply, sizeof(reply));\n")
         f.write("\t}\n")
     f.write('''\tdefault:

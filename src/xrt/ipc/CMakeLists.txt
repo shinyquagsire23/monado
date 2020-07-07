@@ -64,8 +64,6 @@ add_library(ipc_server STATIC
 	ipc_server.h
 	ipc_server_client.c
 	ipc_server_process.c
-	ipc_server_utils.c
-	ipc_server_utils.h
 	)
 target_include_directories(ipc_server
 	INTERFACE

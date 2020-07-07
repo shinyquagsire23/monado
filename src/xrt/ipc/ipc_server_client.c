@@ -12,7 +12,6 @@
 #include "util/u_misc.h"
 
 #include "ipc_server.h"
-#include "ipc_server_utils.h"
 #include "ipc_server_generated.h"
 
 #include <stdlib.h>
@@ -216,7 +215,7 @@ ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
 	}
 	volatile struct ipc_client_state *ics = &_ics->server->threads[id].ics;
 
-	if (ics->ipc_socket_fd <= 0) {
+	if (ics->imc.socket_fd <= 0) {
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
@@ -510,7 +509,7 @@ client_loop(volatile struct ipc_client_state *ics)
 	u_rt_helper_client_clear((struct u_rt_helper *)&ics->urth);
 
 	// Claim the client fd.
-	int epoll_fd = setup_epoll(ics->ipc_socket_fd);
+	int epoll_fd = setup_epoll(ics->imc.socket_fd);
 	if (epoll_fd < 0) {
 		return;
 	}
@@ -543,7 +542,8 @@ client_loop(volatile struct ipc_client_state *ics)
 		}
 
 		// Finally get the data that is waiting for us.
-		ssize_t len = recv(ics->ipc_socket_fd, &buf, IPC_BUF_SIZE, 0);
+		//! @todo replace this call
+		ssize_t len = recv(ics->imc.socket_fd, &buf, IPC_BUF_SIZE, 0);
 		if (len < 4) {
 			fprintf(stderr,
 			        "ERROR: Invalid packet received, "
@@ -570,8 +570,7 @@ client_loop(volatile struct ipc_client_state *ics)
 	// Multiple threads might be looking at these fields.
 	os_mutex_lock(&ics->server->global_state_lock);
 
-	close(ics->ipc_socket_fd);
-	ics->ipc_socket_fd = -1;
+	ipc_message_channel_close((struct ipc_message_channel *)&ics->imc);
 
 	// Reset the urth for the next client.
 	u_rt_helper_client_clear((struct u_rt_helper *)&ics->urth);

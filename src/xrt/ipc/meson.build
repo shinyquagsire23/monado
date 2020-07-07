@@ -60,8 +60,6 @@ lib_ipc_server = static_library(
 		'ipc_server.h',
 		'ipc_server_client.c',
 		'ipc_server_process.c',
-		'ipc_server_utils.c',
-		'ipc_server_utils.h',
 	],
 	include_directories: [
 		xrt_include,

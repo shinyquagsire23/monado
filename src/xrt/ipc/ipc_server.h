@@ -17,6 +17,7 @@
 #include "os/os_threading.h"
 
 #include "ipc_protocol.h"
+#include "ipc_utils.h"
 
 #include <stdio.h>
 
@@ -117,7 +118,7 @@ struct ipc_client_state
 	struct ipc_swapchain_data swapchain_data[IPC_MAX_CLIENT_SWAPCHAINS];
 
 	//! Socket fd used for client comms
-	int ipc_socket_fd;
+	struct ipc_message_channel imc;
 
 	//! State for rendering.
 	struct ipc_layer_slot render_state;

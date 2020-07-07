@@ -19,7 +19,6 @@
 #include "util/u_debug.h"
 
 #include "ipc_server.h"
-#include "ipc_server_utils.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -517,7 +516,7 @@ handle_listen(struct ipc_server *vs)
 	}
 
 	it->state = IPC_THREAD_STARTING;
-	cs->ipc_socket_fd = fd;
+	cs->imc.socket_fd = fd;
 	cs->server = vs;
 	cs->server_thread_index = cs_index;
 	os_thread_start(&it->thread, ipc_server_client_thread, (void *)cs);
