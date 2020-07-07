@@ -68,6 +68,11 @@ else()
 	find_package(OpenGL)
 endif()
 
+find_library(RT_LIBRARY rt)
+if(ANDROID)
+	find_library(ANDROID_LIBRARY android)
+endif()
+
 # This one is named differently because that's what CTest uses
 option(BUILD_TESTING "Enable building of the test suite?" ON)
 

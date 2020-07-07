@@ -49,7 +49,6 @@ target_include_directories(ipc_client PRIVATE
 	)
 target_link_libraries(ipc_client PRIVATE
 	aux_util
-	rt
 	)
 
 
@@ -76,12 +75,25 @@ target_include_directories(ipc_server PRIVATE
 	)
 target_link_libraries(ipc_server PRIVATE
 	aux_util
-	rt
 	)
+
+if(RT_LIBRARY)
+	target_link_libraries(ipc_client PRIVATE
+		${RT_LIBRARY}
+		)
+	target_link_libraries(ipc_server PRIVATE
+		${RT_LIBRARY}
+		)
+endif()
 
 if(XRT_HAVE_SYSTEMD)
 	target_include_directories(ipc_server PRIVATE
 		${SYSTEMD_INCLUDE_DIRS})
 	target_link_libraries(ipc_server PRIVATE
 		${SYSTEMD_LIBRARIES})
+endif()
+
+if(ANDROID)
+	target_link_libraries(ipc_server PUBLIC ${ANDROID_LIBRARY})
+	target_link_libraries(ipc_client PUBLIC ${ANDROID_LIBRARY})
 endif()
