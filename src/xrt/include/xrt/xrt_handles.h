@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include "xrt_config_os.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -20,6 +22,12 @@ extern "C" {
  */
 typedef int xrt_shmem_handle_t;
 
+#if defined(XRT_OS_ANDROID)
+typedef struct AHardwareBuffer AHardwareBuffer;
+
+typedef AHardwareBuffer *xrt_graphics_buffer_handle_t;
+#else
+
 /*!
  * The type underlying buffers shared between compositor clients and the main
  * compositor.
@@ -27,6 +35,7 @@ typedef int xrt_shmem_handle_t;
  * On Linux, this is a file descriptor.
  */
 typedef int xrt_graphics_buffer_handle_t;
+#endif
 
 #ifdef __cplusplus
 }

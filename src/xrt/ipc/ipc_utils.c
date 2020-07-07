@@ -237,6 +237,60 @@ ipc_send_handles_shmem(struct ipc_message_channel *imc,
 	return ipc_send_fds(imc, data, size, handles, num_handles);
 }
 
+#if defined(XRT_OS_ANDROID)
+
+#include <android/hardware_buffer.h>
+
+#if __ANDROID_API__ < 26
+#error "Android API level 26 or higher needed for AHardwareBuffer"
+#endif
+
+xrt_result_t
+ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
+                                    void *out_data,
+                                    size_t size,
+                                    xrt_graphics_buffer_handle_t *out_handles,
+                                    uint32_t num_handles)
+{
+	xrt_result_t result = ipc_receive(imc, out_data, size);
+	if (result != XRT_SUCCESS) {
+		return result;
+	}
+	bool failed = false;
+	for (uint32_t i = 0; i < num_handles; ++i) {
+		int err = AHardwareBuffer_recvHandleFromUnixSocket(
+		    imc->socket_fd, &(out_handles[i]));
+		if (err != 0) {
+			failed = true;
+		}
+	}
+	return failed ? XRT_ERROR_IPC_FAILURE : XRT_SUCCESS;
+}
+
+
+xrt_result_t
+ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
+                                 const void *data,
+                                 size_t size,
+                                 const xrt_graphics_buffer_handle_t *handles,
+                                 uint32_t num_handles)
+{
+	xrt_result_t result = ipc_send(imc, data, size);
+	if (result != XRT_SUCCESS) {
+		return result;
+	}
+	bool failed = false;
+	for (uint32_t i = 0; i < num_handles; ++i) {
+		int err = AHardwareBuffer_sendHandleToUnixSocket(
+		    handles[i], imc->socket_fd);
+		if (err != 0) {
+			failed = true;
+		}
+	}
+	return failed ? XRT_ERROR_IPC_FAILURE : XRT_SUCCESS;
+}
+
+#else
 
 xrt_result_t
 ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
@@ -258,3 +312,5 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
 {
 	return ipc_send_fds(imc, data, size, handles, num_handles);
 }
+
+#endif
