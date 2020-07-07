@@ -47,3 +47,4 @@ obj-*/
 # Arduino toolchain files
 src/xrt/drivers/arduino/device/*.elf
 src/xrt/drivers/arduino/device/*.bin
+.vscode-ctags
