@@ -116,9 +116,11 @@ set(UTIL_SOURCE_FILES
 	)
 
 set(VK_SOURCE_FILES
+	vk/vk_documentation.h
 	vk/vk_helpers.c
 	vk/vk_helpers.h
-	vk/vk_documentation.h
+	vk/vk_image_allocator.c
+	vk/vk_image_allocator.h
 	)
 
 # Common includes
