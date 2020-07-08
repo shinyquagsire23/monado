@@ -38,7 +38,7 @@ gui_prober_init(struct gui_program *p)
 	int ret = 0;
 
 	// Initialize the prober.
-	ret = xrt_instance_create(&p->instance, NULL);
+	ret = xrt_instance_create(NULL, &p->instance);
 	if (ret != 0) {
 		return do_exit(p, ret);
 	}

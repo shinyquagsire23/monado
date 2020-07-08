@@ -177,7 +177,7 @@ oxr_instance_create(struct oxr_logger *log,
 	         sizeof(inst->xinst->instance_info.application_name), "%s",
 	         createInfo->applicationInfo.applicationName);
 
-	xinst_ret = xrt_instance_create(&inst->xinst, &i_info);
+	xinst_ret = xrt_instance_create(&i_info, &inst->xinst);
 	if (xinst_ret != 0) {
 		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                "Failed to create prober");

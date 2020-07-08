@@ -183,8 +183,8 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
  * @public @memberof ipc_instance
  */
 int
-ipc_instance_create(struct xrt_instance **out_xinst,
-                    struct xrt_instance_info *i_info)
+ipc_instance_create(struct xrt_instance_info *i_info,
+                    struct xrt_instance **out_xinst)
 {
 	struct ipc_client_instance *ii =
 	    U_TYPED_CALLOC(struct ipc_client_instance);

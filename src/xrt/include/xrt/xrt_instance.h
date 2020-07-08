@@ -226,6 +226,8 @@ xrt_instance_destroy(struct xrt_instance **xinst_ptr)
  *
  * Each target must implement this function.
  *
+ * @param[in] ii A pointer to a info struct containing information about the
+ *               application.
  * @param[out] out_xinst A pointer to an xrt_instance pointer. Will be
  * populated.
  *
@@ -234,8 +236,10 @@ xrt_instance_destroy(struct xrt_instance **xinst_ptr)
  * @relates xrt_instance
  */
 int
-xrt_instance_create(struct xrt_instance **out_xinst,
-                    struct xrt_instance_info *ii);
+xrt_instance_create(struct xrt_instance_info *ii,
+                    struct xrt_instance **out_xinst
+
+);
 
 /*!
  * @}

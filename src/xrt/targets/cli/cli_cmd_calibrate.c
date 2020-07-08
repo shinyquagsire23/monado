@@ -32,7 +32,7 @@ init(struct program *p)
 	int ret;
 
 	// Fist initialize the instance.
-	ret = xrt_instance_create(&p->xi, NULL);
+	ret = xrt_instance_create(NULL, &p->xi);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to create instance\n");
 		return ret;

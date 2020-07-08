@@ -384,7 +384,7 @@ init_all(struct ipc_server *s)
 	s->running = true;
 	s->exit_on_disconnect = debug_get_bool_option_exit_on_disconnect();
 
-	int ret = xrt_instance_create(&s->xinst, NULL);
+	int ret = xrt_instance_create(NULL, &s->xinst);
 	if (ret < 0) {
 		teardown_all(s);
 		return ret;
