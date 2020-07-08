@@ -1176,12 +1176,3 @@ vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk)
 	vk->vkDestroyBuffer(vk->device, self->handle, NULL);
 	vk->vkFreeMemory(vk->device, self->memory, NULL);
 }
-
-void
-vk_image_destroy(struct vk_image *self, struct vk_bundle *vk)
-{
-	vk->vkDestroySampler(vk->device, self->sampler, NULL);
-	vk->vkDestroyImageView(vk->device, self->view, NULL);
-	vk->vkDestroyImage(vk->device, self->handle, NULL);
-	vk->vkFreeMemory(vk->device, self->memory, NULL);
-}
