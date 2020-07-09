@@ -15,6 +15,8 @@
 #include "util/u_threading.h"
 #include "util/u_index_fifo.h"
 
+#include "vk/vk_image_allocator.h"
+
 #include "main/comp_settings.h"
 #include "main/comp_window.h"
 #include "main/comp_renderer.h"
@@ -41,10 +43,6 @@ extern "C" {
  */
 struct comp_swapchain_image
 {
-	//! Vulkan image to create view from.
-	VkImage image;
-	//! Exported memory backing the image.
-	VkDeviceMemory memory;
 	//! Sampler used by the renderer and distortion code.
 	VkSampler sampler;
 	//! Views used by the renderer and distortion code, for each array
@@ -73,6 +71,7 @@ struct comp_swapchain
 
 	struct comp_compositor *c;
 
+	struct vk_image_collection vkic;
 	struct comp_swapchain_image images[XRT_MAX_SWAPCHAIN_IMAGES];
 
 	/*!
