@@ -172,7 +172,7 @@ vive_mainboard_get_device_info(struct vive_device *d)
 	type = __le16_to_cpu(report.type);
 	if (type != VIVE_HEADSET_MAINBOARD_DEVICE_INFO_REPORT_TYPE ||
 	    report.len != 60) {
-		U_LOG_E("Unexpected device info!");
+		VIVE_WARN(d, "Unexpected device info!");
 		return -1;
 	}
 
@@ -181,11 +181,11 @@ vive_mainboard_get_device_info(struct vive_device *d)
 	d->firmware.display_firmware_version =
 	    __le32_to_cpu(report.display_firmware_version);
 
-	VIVE_DEBUG(d, "EDID Manufacturer ID: %c%c%c, Product code: 0x%04x",
-	           '@' + (edid_vid >> 10), '@' + ((edid_vid >> 5) & 0x1f),
-	           '@' + (edid_vid & 0x1f), __le16_to_cpu(report.edid_pid));
-	VIVE_DEBUG(d, "Display firmware version: %u",
-	           d->firmware.display_firmware_version);
+	VIVE_INFO(d, "EDID Manufacturer ID: %c%c%c, Product code: 0x%04x",
+	          '@' + (edid_vid >> 10), '@' + ((edid_vid >> 5) & 0x1f),
+	          '@' + (edid_vid & 0x1f), __le16_to_cpu(report.edid_pid));
+	VIVE_INFO(d, "Display firmware version: %u",
+	          d->firmware.display_firmware_version);
 
 	return 0;
 }
@@ -224,7 +224,7 @@ vive_mainboard_decode_message(struct vive_device *d,
 
 	if (__le16_to_cpu(report->unknown) != 0x2cd0 || report->len != 60 ||
 	    report->reserved1 || report->reserved2[0]) {
-		U_LOG_E("Unexpected message content.");
+		VIVE_WARN(d, "Unexpected message content.");
 	}
 
 	ipd = __le16_to_cpu(report->ipd);
@@ -235,7 +235,7 @@ vive_mainboard_decode_message(struct vive_device *d,
 		d->board.ipd = ipd;
 		d->board.lens_separation = lens_separation;
 		VIVE_TRACE(d, "IPD %4.1f mm. Lens separation %4.1f mm.",
-		          1e-2 * ipd, 1e-2 * lens_separation);
+		           1e-2 * ipd, 1e-2 * lens_separation);
 	}
 
 	if (d->board.proximity != proximity) {
@@ -347,10 +347,10 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 		};
 
 		VIVE_TRACE(d, "ACC  %f %f %f", acceleration.x, acceleration.y,
-		          acceleration.z);
+		           acceleration.z);
 
 		VIVE_TRACE(d, "GYRO %f %f %f", angular_velocity.x,
-		          angular_velocity.y, angular_velocity.z);
+		           angular_velocity.y, angular_velocity.z);
 
 		switch (d->variant) {
 		case VIVE_VARIANT_VIVE:
@@ -433,9 +433,7 @@ vive_mainboard_read_one_msg(struct vive_device *d)
 		vive_mainboard_decode_message(
 		    d, (struct vive_mainboard_status_report *)buffer);
 		break;
-	default:
-		U_LOG_E("Unknown mainboard message type %d", buffer[0]);
-		break;
+	default: U_LOG_E("Unknown mainboard message type %d", buffer[0]); break;
 	}
 
 	return true;
@@ -596,22 +594,22 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	                   &d->firmware.hardware_version_major);
 
 	/*
-	VIVE_DEBUG(d, "Firmware version %u %s@%s FPGA %u.%u",
-	           d->firmware.firmware_version, report.string1, report.string2,
-	           report.fpga_version_major, report.fpga_version_minor);
+	VIVE_INFO(d, "Firmware version %u %s@%s FPGA %u.%u",
+	          d->firmware.firmware_version, report.string1, report.string2,
+	          report.fpga_version_major, report.fpga_version_minor);
 	*/
 
-	VIVE_DEBUG(d, "Firmware version %u", d->firmware.firmware_version);
-	VIVE_DEBUG(d, "Hardware revision: %d rev %d.%d.%d",
-	           d->firmware.hardware_revision,
-	           d->firmware.hardware_version_major,
-	           d->firmware.hardware_version_minor,
-	           d->firmware.hardware_version_micro);
+	VIVE_INFO(d, "Firmware version %u", d->firmware.firmware_version);
+	VIVE_INFO(d, "Hardware revision: %d rev %d.%d.%d",
+	          d->firmware.hardware_revision,
+	          d->firmware.hardware_version_major,
+	          d->firmware.hardware_version_minor,
+	          d->firmware.hardware_version_micro);
 
 	vive_get_imu_range_report(d->sensors_dev, &d->imu.gyro_range,
 	                          &d->imu.acc_range);
-	VIVE_DEBUG(d, "Vive gyroscope range     %f", d->imu.gyro_range);
-	VIVE_DEBUG(d, "Vive accelerometer range %f", d->imu.acc_range);
+	VIVE_INFO(d, "Vive gyroscope range     %f", d->imu.gyro_range);
+	VIVE_INFO(d, "Vive accelerometer range %f", d->imu.acc_range);
 
 	char *config = vive_read_config(d->sensors_dev);
 	if (config != NULL) {
