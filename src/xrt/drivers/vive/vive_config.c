@@ -318,7 +318,7 @@ vive_config_parse(struct vive_device *d, char *json_string)
 	VIVE_DEBUG(d, "eye_target_height_in_pixels: %d", d->display.eye_target_height_in_pixels);
 	VIVE_DEBUG(d, "eye_target_width_in_pixels: %d", d->display.eye_target_width_in_pixels);
 
-	if (d->print_debug) {
+	if (d->ll >= U_LOGGING_DEBUG) {
 		_print_vec3("acc_bias", &d->imu.acc_bias);
 		_print_vec3("acc_scale", &d->imu.acc_scale);
 		_print_vec3("gyro_bias", &d->imu.gyro_bias);

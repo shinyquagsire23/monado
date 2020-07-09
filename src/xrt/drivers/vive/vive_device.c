@@ -30,8 +30,7 @@
 
 #define VIVE_CLOCK_FREQ 48e6 // 48 MHz
 
-DEBUG_GET_ONCE_BOOL_OPTION(vive_spew, "VIVE_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(vive_debug, "VIVE_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_LOG_OPTION(vive_log, "VIVE_LOG", U_LOGGING_WARN)
 
 static bool
 vive_mainboard_power_off(struct vive_device *d);
@@ -566,8 +565,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.name = XRT_DEVICE_GENERIC_HMD;
 	d->mainboard_dev = mainboard_dev;
 	d->sensors_dev = sensors_dev;
-	d->print_spew = debug_get_bool_option_vive_spew();
-	d->print_debug = debug_get_bool_option_vive_debug();
+	d->ll = debug_get_log_option_vive_log();
 	d->variant = variant;
 
 	vive_init_defaults(d);
