@@ -220,7 +220,7 @@ vive_config_parse(struct vive_device *d, char *json_string)
 
 	cJSON *json = cJSON_Parse(json_string);
 	if (!cJSON_IsObject(json)) {
-		U_LOG_E("Could not parse JSON data.");
+		VIVE_ERROR(d, "Could not parse JSON data.");
 		return false;
 	}
 
@@ -263,7 +263,7 @@ vive_config_parse(struct vive_device *d, char *json_string)
 
 		d->display.imuref = imu_to_head;
 	} break;
-	default: U_LOG_E("Unknown Vive variant."); return false;
+	default: VIVE_ERROR(d, "Unknown Vive variant."); return false;
 	}
 
 	JSON_STRING(json, "model_number", d->firmware.model_number);

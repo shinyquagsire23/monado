@@ -388,7 +388,7 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 			angular_velocity_fixed.z = -angular_velocity.z;
 			angular_velocity = angular_velocity_fixed;
 		} break;
-		default: U_LOG_E("Unhandled Vive variant"); return;
+		default: VIVE_ERROR(d, "Unhandled Vive variant"); return;
 		}
 
 		d->imu.time_ns += dt_ns;
@@ -421,20 +421,23 @@ vive_mainboard_read_one_msg(struct vive_device *d)
 		return true;
 	}
 	if (ret < 0) {
-		U_LOG_E("Failed to read device '%i'!", ret);
+		VIVE_ERROR(d, "Failed to read device '%i'!", ret);
 		return false;
 	}
 
 	switch (buffer[0]) {
 	case VIVE_MAINBOARD_STATUS_REPORT_ID:
 		if (ret != sizeof(struct vive_mainboard_status_report)) {
-			U_LOG_E("Mainboard status report has invalid size.");
+			VIVE_ERROR(d,
+			           "Mainboard status report has invalid size.");
 			return false;
 		}
 		vive_mainboard_decode_message(
 		    d, (struct vive_mainboard_status_report *)buffer);
 		break;
-	default: U_LOG_E("Unknown mainboard message type %d", buffer[0]); break;
+	default:
+		VIVE_ERROR(d, "Unknown mainboard message type %d", buffer[0]);
+		break;
 	}
 
 	return true;
@@ -478,19 +481,21 @@ vive_sensors_read_one_msg(struct vive_device *d)
 		return true;
 	}
 	if (ret < 0) {
-		U_LOG_E("Failed to read device '%i'!", ret);
+		VIVE_ERROR(d, "Failed to read device '%i'!", ret);
 		return false;
 	}
 
 	switch (buffer[0]) {
 	case VIVE_IMU_REPORT_ID:
 		if (ret != 52) {
-			U_LOG_E("Wrong IMU report size: %d", ret);
+			VIVE_ERROR(d, "Wrong IMU report size: %d", ret);
 			return false;
 		}
 		update_imu(d, (struct vive_imu_report *)buffer);
 		break;
-	default: U_LOG_E("Unknown sensor message type %d", buffer[0]); break;
+	default:
+		VIVE_ERROR(d, "Unknown sensor message type %d", buffer[0]);
+		break;
 	}
 
 	return true;
@@ -670,8 +675,8 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		        fov, h_meters,
 		        (double)d->base.hmd->views[eye].lens_center.y_meters, 0,
 		        &d->base.hmd->views[eye].fov)) {
-			U_LOG_E(
-			    "Failed to compute the partial fields of view.");
+			VIVE_ERROR(
+			    d, "Failed to compute the partial fields of view.");
 			free(d);
 			return NULL;
 		}
@@ -698,7 +703,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		ret = os_thread_helper_start(&d->mainboard_thread,
 		                             vive_mainboard_run_thread, d);
 		if (ret != 0) {
-			U_LOG_E("Failed to start mainboard thread!");
+			VIVE_ERROR(d, "Failed to start mainboard thread!");
 			vive_device_destroy((struct xrt_device *)d);
 			return NULL;
 		}
@@ -707,7 +712,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	ret = os_thread_helper_start(&d->sensors_thread,
 	                             vive_sensors_run_thread, d);
 	if (ret != 0) {
-		U_LOG_E("Failed to start sensors thread!");
+		VIVE_ERROR(d, "Failed to start sensors thread!");
 		vive_device_destroy((struct xrt_device *)d);
 		return NULL;
 	}
