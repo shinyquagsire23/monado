@@ -23,18 +23,18 @@
 static void
 print_prefix(const char *func, enum u_logging_level level)
 {
-	if (level != U_LOGGING_RAW && func != NULL) {
-		fprintf(stderr, "%s ", func);
-	}
-
 	switch (level) {
-	case U_LOGGING_TRACE: fprintf(stderr, "TRACE: "); break;
-	case U_LOGGING_DEBUG: fprintf(stderr, "DEBUG: "); break;
-	case U_LOGGING_INFO: fprintf(stderr, "INFO: "); break;
-	case U_LOGGING_WARN: fprintf(stderr, "WARN: "); break;
-	case U_LOGGING_ERROR: fprintf(stderr, "ERROR: "); break;
+	case U_LOGGING_TRACE: fprintf(stderr, "TRACE "); break;
+	case U_LOGGING_DEBUG: fprintf(stderr, "DEBUG "); break;
+	case U_LOGGING_INFO: fprintf(stderr, "INFO "); break;
+	case U_LOGGING_WARN: fprintf(stderr, "WARN "); break;
+	case U_LOGGING_ERROR: fprintf(stderr, "ERROR "); break;
 	case U_LOGGING_RAW: break;
 	default: break;
+	}
+
+	if (level != U_LOGGING_RAW && func != NULL) {
+		fprintf(stderr, "[%s] ", func);
 	}
 }
 
