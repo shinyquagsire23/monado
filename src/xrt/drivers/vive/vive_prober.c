@@ -25,9 +25,9 @@ static const char VIVE_MANUFACTURER_STRING[] = "HTC";
 DEBUG_GET_ONCE_LOG_OPTION(vive_log, "VIVE_LOG", U_LOGGING_WARN)
 
 static int
-_print_prober_string(struct xrt_prober *xp,
-                     struct xrt_prober_device *dev,
-                     enum xrt_prober_string type)
+log_vive_string(struct xrt_prober *xp,
+                struct xrt_prober_device *dev,
+                enum xrt_prober_string type)
 {
 	unsigned char s[256] = {0};
 	int len = xrt_prober_get_string_descriptor(xp, dev, type, s, sizeof(s));
@@ -37,23 +37,21 @@ _print_prober_string(struct xrt_prober *xp,
 }
 
 static void
-_print_device_info(enum u_logging_level log_level,
-		   struct xrt_prober *xp,
-		   struct xrt_prober_device *dev)
+log_vive_device(enum u_logging_level log_level,
+                struct xrt_prober *xp,
+                struct xrt_prober_device *dev)
 {
 	if (log_level > U_LOGGING_INFO)
 		return;
 
-	U_LOG_I("========================");
-	U_LOG_I("vive: Probing Device");
-	U_LOG_I("vive: Vendor %04x", dev->vendor_id);
-	U_LOG_I("vive: Product %04x", dev->product_id);
-	U_LOG_I("vive: Class %d", dev->usb_dev_class);
-	U_LOG_I("vive: %s", xrt_bus_type_to_string(dev->bus));
-	_print_prober_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER);
-	_print_prober_string(xp, dev, XRT_PROBER_STRING_PRODUCT);
-	_print_prober_string(xp, dev, XRT_PROBER_STRING_SERIAL_NUMBER);
-	U_LOG_I("========================");
+	U_LOG_I("====== vive device ======");
+	U_LOG_I("Vendor:   %04x", dev->vendor_id);
+	U_LOG_I("Product:  %04x", dev->product_id);
+	U_LOG_I("Class:    %d", dev->usb_dev_class);
+	U_LOG_I("Bus type: %s", xrt_bus_type_to_string(dev->bus));
+	log_vive_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER);
+	log_vive_string(xp, dev, XRT_PROBER_STRING_PRODUCT);
+	log_vive_string(xp, dev, XRT_PROBER_STRING_SERIAL_NUMBER);
 }
 
 static int
@@ -64,7 +62,7 @@ init_vive1(struct xrt_prober *xp,
            enum u_logging_level ll,
            struct xrt_device **out_xdev)
 {
-	_print_device_info(ll, xp, dev);
+	log_vive_device(ll, xp, dev);
 
 	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER,
 	                             VIVE_MANUFACTURER_STRING) ||
@@ -81,7 +79,7 @@ init_vive1(struct xrt_prober *xp,
 		    d->product_id != VIVE_LIGHTHOUSE_FPGA_RX)
 			continue;
 
-		_print_device_info(ll, xp, d);
+		log_vive_device(ll, xp, d);
 
 		int result =
 		    xrt_prober_open_hid_interface(xp, d, 0, &sensors_dev);
@@ -126,7 +124,7 @@ init_vive_pro(struct xrt_prober *xp,
               enum u_logging_level ll,
               struct xrt_device **out_xdev)
 {
-	_print_device_info(ll, xp, dev);
+	log_vive_device(ll, xp, dev);
 
 	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER,
 	                             VIVE_MANUFACTURER_STRING) ||
@@ -144,7 +142,7 @@ init_vive_pro(struct xrt_prober *xp,
 		    d->product_id != VIVE_PRO_LHR_PID)
 			continue;
 
-		_print_device_info(ll, xp, d);
+		log_vive_device(ll, xp, d);
 
 		int result =
 		    xrt_prober_open_hid_interface(xp, d, 0, &sensors_dev);
@@ -189,7 +187,7 @@ init_valve_index(struct xrt_prober *xp,
                  enum u_logging_level ll,
                  struct xrt_device **out_xdev)
 {
-	_print_device_info(ll, xp, dev);
+	log_vive_device(ll, xp, dev);
 
 	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER,
 	                             VALVE_INDEX_MANUFACTURER_STRING) ||
@@ -228,7 +226,7 @@ vive_found(struct xrt_prober *xp,
 
 	enum u_logging_level ll = debug_get_log_option_vive_log();
 
-	_print_device_info(ll, xp, dev);
+	log_vive_device(ll, xp, dev);
 
 	if (!xrt_prober_can_open(xp, dev)) {
 		U_LOG_E("Could not open Vive device.");
