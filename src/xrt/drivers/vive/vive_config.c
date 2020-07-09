@@ -215,11 +215,11 @@ _print_vec3(const char *title, struct xrt_vec3 *vec)
 bool
 vive_config_parse(struct vive_device *d, char *json_string)
 {
-	VIVE_DEBUG(d, "JSON config:\n%s\n", json_string);
+	VIVE_DEBUG(d, "JSON config:\n%s", json_string);
 
 	cJSON *json = cJSON_Parse(json_string);
 	if (!cJSON_IsObject(json)) {
-		VIVE_ERROR("Could not parse JSON data.");
+		U_LOG_E("Could not parse JSON data.");
 		return false;
 	}
 
@@ -262,7 +262,7 @@ vive_config_parse(struct vive_device *d, char *json_string)
 
 		d->display.imuref = imu_to_head;
 	} break;
-	default: VIVE_ERROR("Unknown Vive variant.\n"); return false;
+	default: U_LOG_E("Unknown Vive variant."); return false;
 	}
 
 	JSON_STRING(json, "model_number", d->firmware.model_number);
@@ -338,7 +338,7 @@ bool
 vive_config_parse_controller(struct vive_controller_device *d,
                              char *json_string)
 {
-	VIVE_CONTROLLER_DEBUG(d, "JSON config:\n%s\n", json_string);
+	VIVE_CONTROLLER_DEBUG(d, "JSON config:\n%s", json_string);
 
 	cJSON *json = cJSON_Parse(json_string);
 	if (!cJSON_IsObject(json)) {

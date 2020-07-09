@@ -80,7 +80,7 @@ static void
 vive_device_update_inputs(struct xrt_device *xdev)
 {
 	struct vive_device *d = vive_device(xdev);
-	VIVE_SPEW(d, "ENTER!");
+	VIVE_TRACE(d, "ENTER!");
 }
 
 static void
@@ -93,7 +93,7 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 	struct vive_device *d = vive_device(xdev);
 
 	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
-		VIVE_ERROR("unknown input name");
+		U_LOG_E("unknown input name");
 		return;
 	}
 
@@ -172,7 +172,7 @@ vive_mainboard_get_device_info(struct vive_device *d)
 	type = __le16_to_cpu(report.type);
 	if (type != VIVE_HEADSET_MAINBOARD_DEVICE_INFO_REPORT_TYPE ||
 	    report.len != 60) {
-		VIVE_ERROR("Unexpected device info!");
+		U_LOG_E("Unexpected device info!");
 		return -1;
 	}
 
@@ -224,7 +224,7 @@ vive_mainboard_decode_message(struct vive_device *d,
 
 	if (__le16_to_cpu(report->unknown) != 0x2cd0 || report->len != 60 ||
 	    report->reserved1 || report->reserved2[0]) {
-		VIVE_ERROR("Unexpected message content.");
+		U_LOG_E("Unexpected message content.");
 	}
 
 	ipd = __le16_to_cpu(report->ipd);
@@ -234,18 +234,18 @@ vive_mainboard_decode_message(struct vive_device *d,
 	if (d->board.ipd != ipd) {
 		d->board.ipd = ipd;
 		d->board.lens_separation = lens_separation;
-		VIVE_SPEW(d, "IPD %4.1f mm. Lens separation %4.1f mm.",
+		VIVE_TRACE(d, "IPD %4.1f mm. Lens separation %4.1f mm.",
 		          1e-2 * ipd, 1e-2 * lens_separation);
 	}
 
 	if (d->board.proximity != proximity) {
-		VIVE_SPEW(d, "Proximity %d", proximity);
+		VIVE_TRACE(d, "Proximity %d", proximity);
 		d->board.proximity = proximity;
 	}
 
 	if (d->board.button != report->button) {
 		d->board.button = report->button;
-		VIVE_SPEW(d, "Button %d.", report->button);
+		VIVE_TRACE(d, "Button %d.", report->button);
 		d->rot_filtered = (struct xrt_quat){0, 0, 0, 1};
 	}
 }
@@ -346,10 +346,10 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 		    scale * d->imu.gyro_scale.z * gyro[2] - d->imu.gyro_bias.z,
 		};
 
-		VIVE_SPEW(d, "ACC  %f %f %f", acceleration.x, acceleration.y,
+		VIVE_TRACE(d, "ACC  %f %f %f", acceleration.x, acceleration.y,
 		          acceleration.z);
 
-		VIVE_SPEW(d, "GYRO %f %f %f", angular_velocity.x,
+		VIVE_TRACE(d, "GYRO %f %f %f", angular_velocity.x,
 		          angular_velocity.y, angular_velocity.z);
 
 		switch (d->variant) {
@@ -387,7 +387,7 @@ update_imu(struct vive_device *d, struct vive_imu_report *report)
 			angular_velocity_fixed.z = -angular_velocity.z;
 			angular_velocity = angular_velocity_fixed;
 		} break;
-		default: VIVE_ERROR("Unhandled Vive variant\n"); return;
+		default: U_LOG_E("Unhandled Vive variant"); return;
 		}
 
 		d->imu.time_ns += dt_ns;
@@ -420,21 +420,21 @@ vive_mainboard_read_one_msg(struct vive_device *d)
 		return true;
 	}
 	if (ret < 0) {
-		VIVE_ERROR("Failed to read device '%i'!", ret);
+		U_LOG_E("Failed to read device '%i'!", ret);
 		return false;
 	}
 
 	switch (buffer[0]) {
 	case VIVE_MAINBOARD_STATUS_REPORT_ID:
 		if (ret != sizeof(struct vive_mainboard_status_report)) {
-			VIVE_ERROR("Mainboard status report has invalid size.");
+			U_LOG_E("Mainboard status report has invalid size.");
 			return false;
 		}
 		vive_mainboard_decode_message(
 		    d, (struct vive_mainboard_status_report *)buffer);
 		break;
 	default:
-		VIVE_ERROR("Unknown mainboard message type %d", buffer[0]);
+		U_LOG_E("Unknown mainboard message type %d", buffer[0]);
 		break;
 	}
 
@@ -479,19 +479,19 @@ vive_sensors_read_one_msg(struct vive_device *d)
 		return true;
 	}
 	if (ret < 0) {
-		VIVE_ERROR("Failed to read device '%i'!", ret);
+		U_LOG_E("Failed to read device '%i'!", ret);
 		return false;
 	}
 
 	switch (buffer[0]) {
 	case VIVE_IMU_REPORT_ID:
 		if (ret != 52) {
-			VIVE_ERROR("Wrong IMU report size: %d", ret);
+			U_LOG_E("Wrong IMU report size: %d", ret);
 			return false;
 		}
 		update_imu(d, (struct vive_imu_report *)buffer);
 		break;
-	default: VIVE_ERROR("Unknown sensor message type %d", buffer[0]); break;
+	default: U_LOG_E("Unknown sensor message type %d", buffer[0]); break;
 	}
 
 	return true;
@@ -671,7 +671,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		        fov, h_meters,
 		        (double)d->base.hmd->views[eye].lens_center.y_meters, 0,
 		        &d->base.hmd->views[eye].fov)) {
-			VIVE_ERROR(
+			U_LOG_E(
 			    "Failed to compute the partial fields of view.");
 			free(d);
 			return NULL;
@@ -699,7 +699,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		ret = os_thread_helper_start(&d->mainboard_thread,
 		                             vive_mainboard_run_thread, d);
 		if (ret != 0) {
-			VIVE_ERROR("Failed to start mainboard thread!");
+			U_LOG_E("Failed to start mainboard thread!");
 			vive_device_destroy((struct xrt_device *)d);
 			return NULL;
 		}
@@ -708,7 +708,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	ret = os_thread_helper_start(&d->sensors_thread,
 	                             vive_sensors_run_thread, d);
 	if (ret != 0) {
-		VIVE_ERROR("Failed to start sensors thread!");
+		U_LOG_E("Failed to start sensors thread!");
 		vive_device_destroy((struct xrt_device *)d);
 		return NULL;
 	}

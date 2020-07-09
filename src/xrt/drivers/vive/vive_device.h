@@ -147,36 +147,10 @@ vive_device_create(struct os_hid_device *mainboard_dev,
  *
  */
 
-#define VIVE_SPEW(p, ...)                                                      \
-	do {                                                                   \
-		if (p->ll <= U_LOGGING_TRACE) {                                \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-#define VIVE_DEBUG(p, ...)                                                     \
-	do {                                                                   \
-		if (p->ll <= U_LOGGING_DEBUG) {                                \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define VIVE_ERROR(...)                                                        \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
-
 // clang-format off
-//#define VIVE_TRACE(p, ...) U_LOG_XDEV_IFL_T(&p->base, p->log_level, __VA_ARGS__)
-//#define VIVE_DEBUG(p, ...) U_LOG_XDEV_IFL_D(&p->base, p->log_level, __VA_ARGS__)
-//#define VIVE_INFO (p, ...) U_LOG_XDEV_IFL_I(&p->base, p->log_level, __VA_ARGS__)
-//#define VIVE_WARN (p, ...) U_LOG_XDEV_IFL_W(&p->base, p->log_level, __VA_ARGS__)
-//#define VIVE_ERROR(p, ...) U_LOG_XDEV_IFL_E(&p->base, p->log_level, __VA_ARGS__)
+#define VIVE_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
+#define VIVE_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)
+#define VIVE_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
 // clang-format on
 
 #ifdef __cplusplus
