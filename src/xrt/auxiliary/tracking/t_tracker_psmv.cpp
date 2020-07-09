@@ -127,7 +127,7 @@ do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 	          view.frame_undist_rectified,  // dst
 	          view.undistort_rectify_map_x, // map1
 	          view.undistort_rectify_map_y, // map2
-	          cv::INTER_LINEAR,             // interpolation
+	          cv::INTER_NEAREST,            // interpolation
 	          cv::BORDER_CONSTANT,          // borderMode
 	          cv::Scalar(0, 0, 0));         // borderValue
 
@@ -213,8 +213,8 @@ world_point_from_blobs(cv::Point2f left,
 	// Transform
 	cv::Vec4d h_world = disparity_to_depth * xydw;
 
-	// Divide by scale to get 3D vector from homogeneous
-	// coordinate. invert x while we are here.
+	// Divide by scale to get 3D vector from homogeneous coordinate.  we
+	// also invert x here
 	cv::Point3f world_point(-h_world[0] / h_world[3],
 	                        h_world[1] / h_world[3],
 	                        h_world[2] / h_world[3]);
