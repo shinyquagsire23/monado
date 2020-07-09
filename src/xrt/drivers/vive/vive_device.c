@@ -23,6 +23,7 @@
 #include "os/os_hid.h"
 #include "os/os_time.h"
 
+#include "vive.h"
 #include "vive_device.h"
 #include "vive_protocol.h"
 #include "vive_config.h"
