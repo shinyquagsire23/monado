@@ -19,13 +19,7 @@
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_json.h"
-
-#define VIVE_ERROR(...)                                                        \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+#include "util/u_logging.h"
 
 const struct vive_headset_power_report power_on_report = {
     .id = VIVE_HEADSET_POWER_REPORT_ID,
@@ -76,7 +70,7 @@ vive_read_config(struct os_hid_device *hid_dev)
 	int ret = os_hid_get_feature_timeout(hid_dev, &start_report,
 	                                     sizeof(start_report), 100);
 	if (ret < 0) {
-		VIVE_ERROR("Could not get config start report.");
+		U_LOG_E("Could not get config start report.");
 		return NULL;
 	}
 
@@ -91,19 +85,19 @@ vive_read_config(struct os_hid_device *hid_dev)
 		ret = os_hid_get_feature_timeout(hid_dev, &report,
 		                                 sizeof(report), 100);
 		if (ret < 0) {
-			VIVE_ERROR("Read error after %d bytes: %d", count, ret);
+			U_LOG_E("Read error after %d bytes: %d", count, ret);
 			free(config_z);
 			return NULL;
 		}
 
 		if (report.len > 62) {
-			VIVE_ERROR("Invalid configuration data at %d", count);
+			U_LOG_E("Invalid configuration data at %d", count);
 			free(config_z);
 			return NULL;
 		}
 
 		if (count + report.len > 4096) {
-			VIVE_ERROR("Configuration data too large");
+			U_LOG_E("Configuration data too large");
 			free(config_z);
 			return NULL;
 		}
@@ -126,7 +120,7 @@ vive_read_config(struct os_hid_device *hid_dev)
 
 	ret = inflateInit(&strm);
 	if (ret != Z_OK) {
-		VIVE_ERROR("inflate_init failed: %d", ret);
+		U_LOG_E("inflate_init failed: %d", ret);
 		free(config_z);
 		free(config_json);
 		return NULL;
@@ -135,7 +129,7 @@ vive_read_config(struct os_hid_device *hid_dev)
 	ret = inflate(&strm, Z_FINISH);
 	free(config_z);
 	if (ret != Z_STREAM_END) {
-		VIVE_ERROR("Failed to inflate configuration data: %d", ret);
+		U_LOG_E("Failed to inflate configuration data: %d", ret);
 		free(config_json);
 		return NULL;
 	}
@@ -158,26 +152,25 @@ vive_get_imu_range_report(struct os_hid_device *hid_dev,
 
 	ret = os_hid_get_feature_timeout(hid_dev, &report, sizeof(report), 100);
 	if (ret < 0) {
-		printf("Could not get range report!\n");
+		U_LOG_E("Could not get range report!");
 		return ret;
 	}
 
 	if (!report.gyro_range || !report.accel_range) {
-		VIVE_ERROR(
-		    "Invalid gyroscope and accelerometer data. Trying to fetch "
-		    "again.");
+		U_LOG_W(
+		    "Invalid gyroscope and accelerometer data."
+		    "Trying to fetch again.");
 		ret = os_hid_get_feature(hid_dev, report.id, (uint8_t *)&report,
 		                         sizeof(report));
 		if (ret < 0) {
-			VIVE_ERROR("Could not get feature report %d.",
-			           report.id);
+			U_LOG_E("Could not get feature report %d.", report.id);
 			return ret;
 		}
 
 		if (!report.gyro_range || !report.accel_range) {
-			VIVE_ERROR(
-			    "Unexpected range mode report: %02x %02x %02x",
-			    report.id, report.gyro_range, report.accel_range);
+			U_LOG_E("Unexpected range mode report: %02x %02x %02x",
+			        report.id, report.gyro_range,
+			        report.accel_range);
 			for (int i = 0; i < 61; i++)
 				printf(" %02x", report.unknown[i]);
 			printf("\n");
@@ -186,9 +179,9 @@ vive_get_imu_range_report(struct os_hid_device *hid_dev,
 	}
 
 	if (report.gyro_range > 4 || report.accel_range > 4) {
-		VIVE_ERROR("Gyroscope or accelerometer range too large.");
-		VIVE_ERROR("Gyroscope: %d", report.gyro_range);
-		VIVE_ERROR("Accelerometer: %d", report.accel_range);
+		U_LOG_W("Gyroscope or accelerometer range too large.");
+		U_LOG_W("Gyroscope: %d", report.gyro_range);
+		U_LOG_W("Accelerometer: %d", report.accel_range);
 		return -1;
 	}
 
