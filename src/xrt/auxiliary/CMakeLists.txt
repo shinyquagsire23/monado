@@ -199,8 +199,10 @@ target_include_directories(aux_tracking SYSTEM
 	PRIVATE
 	${EIGEN3_INCLUDE_DIR}
 	)
-# for flexkalman
-target_link_libraries(aux_tracking PRIVATE xrt-external-flexkalman)
+target_link_libraries(aux_tracking PRIVATE
+	xrt-external-flexkalman
+	xrt-external-hungarian
+	)
 if(XRT_HAVE_OPENCV)
 	target_include_directories(aux_tracking SYSTEM
 		PRIVATE

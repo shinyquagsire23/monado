@@ -171,7 +171,11 @@ endif
 lib_aux_tracking = static_library(
 	'aux_tracking',
 	files(tracking_srcs),
-	include_directories: [xrt_include, flexkalman_include],
+	include_directories: [
+		xrt_include,
+		flexkalman_include,
+		hungarian_include,
+	],
 	dependencies: tracking_deps
 )
 
