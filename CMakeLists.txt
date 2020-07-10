@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSL-1.0
 
 cmake_minimum_required(VERSION 3.13.0)
-project(XRT VERSION 0.2.0)
+project(XRT VERSION 0.3.0)
 
 # CMake 3.11 introduced CMP0072 - Prefer GLVND
 if(POLICY CMP0072)
