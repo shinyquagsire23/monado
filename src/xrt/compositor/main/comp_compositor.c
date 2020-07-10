@@ -60,6 +60,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define WINDOW_TITLE "Monado"
 
 /*!
  */
@@ -978,6 +979,8 @@ xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
 		return NULL;
 	}
 	// clang-format on
+
+	c->window->update_window_title(c->window, WINDOW_TITLE);
 
 	COMP_DEBUG(c, "Done %p", (void *)c);
 
