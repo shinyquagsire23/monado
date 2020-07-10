@@ -51,7 +51,7 @@ client_gl_swapchain_destroy(struct xrt_swapchain *xsc)
 	if (num_images > 0) {
 		glDeleteTextures(num_images, &sc->base.images[0]);
 		U_ZERO_ARRAY(sc->base.images);
-		glDeleteMemoryObjectsEXT(num_images, &sc->base.memory[0]);
+		glDeleteMemoryObjectsEXT(num_images, &sc->memory[0]);
 		U_ZERO_ARRAY(sc->base.images);
 		sc->base.base.num_images = 0;
 	}
@@ -304,13 +304,12 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		                                    : GL_TEXTURE_2D_ARRAY,
 		              sc->base.images[i]);
 	}
-	glCreateMemoryObjectsEXT(xsc->num_images, &sc->base.memory[0]);
+	glCreateMemoryObjectsEXT(xsc->num_images, &sc->memory[0]);
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
 		GLint dedicated = GL_TRUE;
-		glMemoryObjectParameterivEXT(sc->base.memory[i],
-		                             GL_DEDICATED_MEMORY_OBJECT_EXT,
-		                             &dedicated);
-		glImportMemoryFdEXT(sc->base.memory[i], xscn->images[i].size,
+		glMemoryObjectParameterivEXT(
+		    sc->memory[i], GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
+		glImportMemoryFdEXT(sc->memory[i], xscn->images[i].size,
 		                    GL_HANDLE_TYPE_OPAQUE_FD_EXT,
 		                    xscn->images[i].fd);
 
@@ -321,12 +320,12 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 			glTextureStorageMem2DEXT(
 			    sc->base.images[i], info->mip_count,
 			    (GLuint)info->format, info->width, info->height,
-			    sc->base.memory[i], 0);
+			    sc->memory[i], 0);
 		} else {
 			glTextureStorageMem3DEXT(
 			    sc->base.images[i], info->mip_count,
 			    (GLuint)info->format, info->width, info->height,
-			    info->array_size, sc->base.memory[i], 0);
+			    info->array_size, sc->memory[i], 0);
 		}
 	}
 

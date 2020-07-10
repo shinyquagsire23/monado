@@ -37,6 +37,9 @@ struct client_gl_swapchain
 	struct xrt_swapchain_gl base;
 
 	struct xrt_swapchain_native *xscn;
+
+	// GLuint
+	unsigned int memory[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
 /*!

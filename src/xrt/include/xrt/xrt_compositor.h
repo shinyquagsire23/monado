@@ -753,8 +753,6 @@ struct xrt_swapchain_gl
 
 	// GLuint
 	unsigned int images[XRT_MAX_SWAPCHAIN_IMAGES];
-	// GLuint
-	unsigned int memory[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
 /*!
