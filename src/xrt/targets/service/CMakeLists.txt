@@ -67,11 +67,11 @@ if(XRT_INSTALL_SYSTEMD_UNIT_FILES)
 		mark_as_advanced(XRT_SYSTEMD_UNIT_INSTALL_DIR)
 	endif()
 	if(XRT_SYSTEMD_UNIT_INSTALL_DIR MATCHES "^/")
-		# Destination is absolute: prepend only destdir at install time
-		set(UNIT_DIR "\$ENV{DESTDIR}${XRT_SYSTEMD_UNIT_INSTALL_DIR}")
+		# Destination is absolute: prepend only destdir (implicitly) at install time
+		set(UNIT_DIR "${XRT_SYSTEMD_UNIT_INSTALL_DIR}")
 	else()
-		# Destination is relative: prepend destdir and install prefix at install time
-		set(UNIT_DIR "\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${XRT_SYSTEMD_UNIT_INSTALL_DIR}")
+		# Destination is relative: prepend destdir (implicitly) and install prefix at install time
+		set(UNIT_DIR "\${CMAKE_INSTALL_PREFIX}/${XRT_SYSTEMD_UNIT_INSTALL_DIR}")
 	endif()
 	configure_file(configure_and_install_units.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure_and_install_units.cmake @ONLY)
 
