@@ -812,12 +812,8 @@ struct xrt_swapchain_vk
 	//! @public Base
 	struct xrt_swapchain base;
 
+	//! Images to be used by the caller.
 	VkImage images[XRT_MAX_SWAPCHAIN_IMAGES];
-	VkDeviceMemory mems[XRT_MAX_SWAPCHAIN_IMAGES];
-
-	// Prerecorded swapchain image ownership/layout transition barriers
-	VkCommandBuffer acquire[XRT_MAX_SWAPCHAIN_IMAGES];
-	VkCommandBuffer release[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
 /*!

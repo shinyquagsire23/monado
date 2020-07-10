@@ -43,6 +43,13 @@ struct client_vk_swapchain
 
 	//! Non-owning reference to our parent compositor.
 	struct client_vk_compositor *c;
+
+	// Memory
+	VkDeviceMemory mems[XRT_MAX_SWAPCHAIN_IMAGES];
+
+	// Prerecorded swapchain image ownership/layout transition barriers
+	VkCommandBuffer acquire[XRT_MAX_SWAPCHAIN_IMAGES];
+	VkCommandBuffer release[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
 /*!

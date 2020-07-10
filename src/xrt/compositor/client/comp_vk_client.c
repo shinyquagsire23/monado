@@ -57,10 +57,9 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 			sc->base.images[i] = VK_NULL_HANDLE;
 		}
 
-		if (sc->base.mems[i] != VK_NULL_HANDLE) {
-			c->vk.vkFreeMemory(c->vk.device, sc->base.mems[i],
-			                   NULL);
-			sc->base.mems[i] = VK_NULL_HANDLE;
+		if (sc->mems[i] != VK_NULL_HANDLE) {
+			c->vk.vkFreeMemory(c->vk.device, sc->mems[i], NULL);
+			sc->mems[i] = VK_NULL_HANDLE;
 		}
 	}
 
@@ -88,7 +87,7 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc,
 	VkSubmitInfo submitInfo = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 	    .commandBufferCount = 1,
-	    .pCommandBuffers = &sc->base.acquire[*out_index],
+	    .pCommandBuffers = &sc->acquire[*out_index],
 	};
 	VkResult ret =
 	    vk->vkQueueSubmit(vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
@@ -120,7 +119,7 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	VkSubmitInfo submitInfo = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 	    .commandBufferCount = 1,
-	    .pCommandBuffers = &sc->base.release[index],
+	    .pCommandBuffers = &sc->release[index],
 	};
 	VkResult ret =
 	    vk->vkQueueSubmit(vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
@@ -329,7 +328,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		ret = vk_create_image_from_native(
 		    &c->vk, info->bits, info->format, info->width, info->height,
 		    info->array_size, info->mip_count, &xscn->images[i],
-		    &sc->base.images[i], &sc->base.mems[i]);
+		    &sc->base.images[i], &sc->mems[i]);
 
 
 		if (ret != VK_SUCCESS) {
@@ -356,11 +355,11 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	// Prerecord command buffers for swapchain image ownership/layout
 	// transitions
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
-		ret = vk_init_cmd_buffer(&c->vk, &sc->base.acquire[i]);
+		ret = vk_init_cmd_buffer(&c->vk, &sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
 			return NULL;
 		}
-		ret = vk_init_cmd_buffer(&c->vk, &sc->base.release[i]);
+		ret = vk_init_cmd_buffer(&c->vk, &sc->release[i]);
 		if (ret != VK_SUCCESS) {
 			return NULL;
 		}
@@ -414,22 +413,22 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		};
 
 		//! @todo less conservative pipeline stage masks based on usage
-		c->vk.vkCmdPipelineBarrier(sc->base.acquire[i],
+		c->vk.vkCmdPipelineBarrier(sc->acquire[i],
 		                           VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 		                           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 		                           0, 0, NULL, 0, NULL, 1, &acquire);
-		c->vk.vkCmdPipelineBarrier(sc->base.release[i],
+		c->vk.vkCmdPipelineBarrier(sc->release[i],
 		                           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 		                           VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 		                           0, 0, NULL, 0, NULL, 1, &release);
 
-		ret = c->vk.vkEndCommandBuffer(sc->base.acquire[i]);
+		ret = c->vk.vkEndCommandBuffer(sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
 			VK_ERROR(vk, "vkEndCommandBuffer: %s",
 			         vk_result_string(ret));
 			return NULL;
 		}
-		ret = c->vk.vkEndCommandBuffer(sc->base.release[i]);
+		ret = c->vk.vkEndCommandBuffer(sc->release[i]);
 		if (ret != VK_SUCCESS) {
 			VK_ERROR(vk, "vkEndCommandBuffer: %s",
 			         vk_result_string(ret));
