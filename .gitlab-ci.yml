@@ -362,7 +362,7 @@ reprepro:package:
     - .monado.variables.debian:buster-ndk
     - .fdo.suffixed-image@debian # from ci-templates
   variables:
-    ANDROID_PLATFORM: 24
+    ANDROID_PLATFORM: 26
   script:
     - mkdir build
     - pushd build
