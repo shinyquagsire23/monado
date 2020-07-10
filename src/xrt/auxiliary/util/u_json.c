@@ -163,12 +163,11 @@ u_json_get_vec3_array(const cJSON *json, struct xrt_vec3 *out_vec3)
 		return false;
 	}
 
-	float array[3];
-
 	if (cJSON_GetArraySize(json) != 3) {
 		return false;
 	}
 
+	float array[3] = {0, 0, 0};
 	const cJSON *item = NULL;
 	size_t i = 0;
 	cJSON_ArrayForEach(item, json)
