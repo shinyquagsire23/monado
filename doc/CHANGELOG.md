@@ -5,6 +5,185 @@ SPDX-License-Identifier: CC0-1.0
 SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
 ```
 
+## Monado 0.3.0 (2020-07-10)
+
+- Major changes
+  - Centralise the logging functionality in Monado to a single util helper.
+    Previously most of our logging was done via fprints and gated behind booleans,
+    now there are common functions to call and a predfined set of levels.
+    ([!408](https://gitlab.freedesktop.org/monado/monado/merge_requests/408),
+    [!409](https://gitlab.freedesktop.org/monado/monado/merge_requests/409))
+- XRT Interface
+  - compositor: Remove the `array_size` field from the struct, this was the only
+    state tracker supplied value that was on the struct, only have values that the
+    compositor decides over on the struct.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - Improve Doxygen documentation of interfaces. Now the inheritance structure and
+    implementation of interfaces is shown in the docs, and helper functions that
+    call through function pointers are listed as "member functions", to help
+    developers understand the internal structure of Monado better.
+    ([!365](https://gitlab.freedesktop.org/monado/monado/merge_requests/365),
+    [!367](https://gitlab.freedesktop.org/monado/monado/merge_requests/367))
+  - xrt: Add xrt_result_t return type to many compositor functions that previously
+    had no way to indicate failure.
+    ([!369](https://gitlab.freedesktop.org/monado/monado/merge_requests/369))
+  - compositor: Introduce `xrt_swapchain_create_info` simplifying the argument
+    passing between various layers of the compositor stack and also simplify future
+    refactoring projects.
+    ([!407](https://gitlab.freedesktop.org/monado/monado/merge_requests/407))
+- State Trackers
+  - OpenXR: Update headers to 1.0.9.
+    ([!358](https://gitlab.freedesktop.org/monado/monado/merge_requests/358))
+  - OpenXR: Verify that the XrViewConfigurationType is supported by the system as
+    required by the OpenXR spec in xrEnumerateEnvironmentBlendModes.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Return the correct error code when verifying the sub action, if it is
+    a
+    valid sub action path but not given at action creation we should return
+    `XR_ERROR_PATH_UNSUPPORTED`.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Validate the subImage data for both projection and quad layers layers,
+    refactor code out so it can be shared with the different types of layers. Need
+    to track some state on the `oxr_swapchain` in order to do the checking.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Correct the return error code for action and action set localized name
+    validation.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Correct the error messages on sub action paths errors.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Track the name and localized name for both actions and action sets,
+    that
+    way we can make sure that there are no duplicates. This is required by the
+    spec. ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Do better checking if action sets and actions have been attached to the
+    session or not.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Validate the arguments for `xrSuggestInteractionProfileBindings` better
+    so that it follows the spec better.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Rework the logging formatting of error messages, this makes it easier
+    to
+    read for the application developer.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Correctly ensure that the application has called the required get
+    graphics requirements function when creating a session.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: When a `XrSession` is destroyed purge the event queue of any events
+    that
+    references to it so that no events gets delivered to the applications with
+    stales handles.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Make the event queue thread safe, all done with a simple mutex that is
+    not held for long at all.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: A major overhaul of the swapchain acquire, wait and release code. This
+    makes it almost completely conformant with the spec. Tricky parts include that
+    multiple images can be acquired, but only one can be waited on before being
+    released.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Enforce that static swapchains can only be acquired once, this is
+    required by the spec and make sure that a image is only rendered to once, and
+    allows the runtime to perform special optimizations on the image.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Make the function `xrGetReferenceSpaceBoundsRect` at least conform to
+    the spec without actually implementing it, currently we do not track bounds in
+    Monado.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Make the session state changes obey the specification. The code is
+    fairly hair as is and should be improved at a later time.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Use the correct XrPath for `/user/gamepad` while it sits in the users
+    hand itsn't `/user/hand/gamepad` as previously believed.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - OpenXR: Where used make sure we verify the view configuration type is a valid
+    enum value, the code is setup so that we in the future can support new values
+    via extensions easily.
+    ([!368](https://gitlab.freedesktop.org/monado/monado/merge_requests/368))
+  - OpenXR: More correctly verify the interactive profile binding data, including
+    the given interactive profile is correct and the binding point is valid.
+    ([!377](https://gitlab.freedesktop.org/monado/monado/merge_requests/377))
+  - OpenXR: Transform input types in a somewhat flexible, composable way. Also, do
+    conversion at sync time, and use the transformed values to evaluate if the
+    input has changed, per the spec.
+    ([!379](https://gitlab.freedesktop.org/monado/monado/merge_requests/379))
+  - OpenXR: Tidy the extensions generated by the script and order them according
+    to
+    extension prefix, starting with KHR, EXT, Vendor, KHRX, EXTX, VendorX. Also
+    rename the `MND_ball_on_stick_controller` to `MNDX_ball_on_a_stick_controller`.
+    ([!410](https://gitlab.freedesktop.org/monado/monado/merge_requests/410))
+  - OpenXR: Fix overly attached action sets, which would appear to be attached to
+    a
+    session even after the session has been destroyed. Also tidy up comments and
+    other logic surrounding this.
+    ([!411](https://gitlab.freedesktop.org/monado/monado/merge_requests/411))
+- Drivers
+  - psvr: Normalize the rotation to not trip up the client app when it gives the
+    rotation back to `st/oxr` again.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - vive: Create vive_config module to isolate config code and avoid duplication
+    between controller and headset code.
+    vive: Probe for controllers in vive_proper
+    interface.
+    vive: Fix a bug where using the Vive Pro crashed Monado.
+    vive: Fix a
+    bug where the controller didn't parse JSON vectors correctly.
+    vive: Move
+    missing functions to and use u_json.
+    ([!405](https://gitlab.freedesktop.org/monado/monado/merge_requests/405))
+  - vive: Add support for Gen1 and Gen2 Vive Trackers.
+    ([!406](https://gitlab.freedesktop.org/monado/monado/merge_requests/406))
+  - vive: Port to new u_logging API.
+    ([!417](https://gitlab.freedesktop.org/monado/monado/merge_requests/417))
+  - comp: Set a compositor window title.
+    ([!418](https://gitlab.freedesktop.org/monado/monado/merge_requests/418))
+- IPC
+  - server: Almost completely overhaul the handling of swapchain life cycle
+    including: correctly track which swapchains are alive; reuse ids; enforce the
+    maximum number of swapchains; and destroy underlying swapchains when they are
+    destroyed by the client.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - util: Make sure to not access NULL control messages, say in the case of the
+    server failing to create a swapchain. Also add a whole bunch of paranoia when
+    it comes to the alignment of the control message buffers.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - ipc: Return XR_ERROR_INSTANCE_LOST on IPC errors.
+    ([!369](https://gitlab.freedesktop.org/monado/monado/merge_requests/369))
+- Compositor
+  - main: Include `<math.h>` in layers renderer for missing `tanf` function.
+    ([!358](https://gitlab.freedesktop.org/monado/monado/merge_requests/358))
+  - swapchain: Give out the oldset image index when a image is acquired. This logic
+    can be made better, but will work for the good case.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - swapchain: Close any FDs that are still valid, for instance the ipc server
+    copies the FDs to the client.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - client: When we give a image fd to the either OpenGL or Vulkan it is consumed
+    and can not be rused. So make sure that it is set to an invalid fd value on the
+    `xrt_image_fd` on the owning `xrt_swapchain_fd`.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - main: We were alpha blending all layers previously, but now we support the
+    layer flag that OpenXR gives us. We do this by using different `VkImageView`s
+    with different component swizzles.
+    ([!394](https://gitlab.freedesktop.org/monado/monado/merge_requests/394))
+  - layer_rendering: Use the visibility flags on quad to correctly show the layers
+    in each eye.
+    ([!394](https://gitlab.freedesktop.org/monado/monado/merge_requests/394))
+- Helper Libraries
+  - os/threading: Include `xrt_compiler.h` to fix missing stdint types.
+    ([!358](https://gitlab.freedesktop.org/monado/monado/merge_requests/358))
+  - util: Add a very simple fifo for indices, this is used to keep track of
+    swapchain in order of age (oldness).
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+  - util: Expand `u_hashset` to be able to automatically allocate a `u_hashet_item`
+    and insert it.
+    ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
+- Misc. Features
+  - build: Allow enabling inter-procedural optimization in CMake GUIs, if supported
+    by platform and compiler.
+    ([!330](https://gitlab.freedesktop.org/monado/monado/merge_requests/330))
+- Misc. Fixes
+  - No significant changes
+
 ## Monado 0.2 (2020-05-29)
 
 - Major changes
