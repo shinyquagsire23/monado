@@ -266,12 +266,7 @@ vk_create_image_simple(struct vk_bundle *vk,
 
 VkResult
 vk_create_image_from_native(struct vk_bundle *vk,
-                            enum xrt_swapchain_usage_bits swapchain_usage,
-                            int64_t format,
-                            uint32_t width,
-                            uint32_t height,
-                            uint32_t array_size,
-                            uint32_t mip_count,
+                            struct xrt_swapchain_create_info *info,
                             struct xrt_image_native *image_native,
                             VkImage *out_image,
                             VkDeviceMemory *out_mem)
@@ -286,30 +281,32 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	};
 
-	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
+	if ((info->bits & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
 		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	}
-	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
+	if ((info->bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
 		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	}
-	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_TRANSFER_SRC) != 0) {
+	if ((info->bits & XRT_SWAPCHAIN_USAGE_TRANSFER_SRC) != 0) {
 		image_usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	}
-	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_TRANSFER_DST) != 0) {
+	if ((info->bits & XRT_SWAPCHAIN_USAGE_TRANSFER_DST) != 0) {
 		image_usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	}
-	if ((swapchain_usage & XRT_SWAPCHAIN_USAGE_SAMPLED) != 0) {
+	if ((info->bits & XRT_SWAPCHAIN_USAGE_SAMPLED) != 0) {
 		image_usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 	}
 
-	VkImageCreateInfo info = {
+	VkImageCreateInfo vk_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .pNext = &external_memory_image_create_info,
 	    .imageType = VK_IMAGE_TYPE_2D,
-	    .format = (VkFormat)format,
-	    .extent = {.width = width, .height = height, .depth = 1},
-	    .mipLevels = mip_count,
-	    .arrayLayers = array_size,
+	    .format = (VkFormat)info->format,
+	    .extent = {.width = info->width,
+	               .height = info->height,
+	               .depth = 1},
+	    .mipLevels = info->mip_count,
+	    .arrayLayers = info->array_size,
 	    .samples = VK_SAMPLE_COUNT_1_BIT,
 	    .tiling = VK_IMAGE_TILING_OPTIMAL,
 	    .usage = image_usage,
@@ -317,7 +314,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 
-	ret = vk->vkCreateImage(vk->device, &info, NULL, &image);
+	ret = vk->vkCreateImage(vk->device, &vk_info, NULL, &image);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkCreateImage: %s", vk_result_string(ret));
 		// Nothing to cleanup

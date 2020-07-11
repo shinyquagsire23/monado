@@ -326,9 +326,8 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
 		ret = vk_create_image_from_native(
-		    &c->vk, info->bits, info->format, info->width, info->height,
-		    info->array_size, info->mip_count, &xscn->images[i],
-		    &sc->base.images[i], &sc->mems[i]);
+		    &c->vk, info, &xscn->images[i], &sc->base.images[i],
+		    &sc->mems[i]);
 
 
 		if (ret != VK_SUCCESS) {
