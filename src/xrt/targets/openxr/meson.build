@@ -113,5 +113,7 @@ manifest_json = configure_file(
 	install_dir: manifest_path,
 )
 
-meson.add_install_script('install_active_runtime.sh', get_option('sysconfdir'),
-	join_paths(manifest_path, runtime_target + '.json'), xr_api_major.to_string())
+if get_option('install-active-runtime')
+	meson.add_install_script('install_active_runtime.sh', get_option('sysconfdir'),
+		join_paths(manifest_path, runtime_target + '.json'), xr_api_major.to_string())
+endif
