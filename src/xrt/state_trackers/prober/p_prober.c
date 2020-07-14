@@ -526,18 +526,15 @@ static void
 handle_found_device(struct prober *p,
                     struct xrt_device **xdevs,
                     size_t num_xdevs,
+                    bool *have_hmd,
                     struct xrt_device *xdev)
 {
 	P_DEBUG(p, "Found '%s' %p", xdev->str, (void *)xdev);
 
-	bool have_hmd = false;
 	size_t i = 0;
 	for (; i < num_xdevs; i++) {
 		if (xdevs[i] == NULL) {
 			break;
-		}
-		if (xdevs[i]->device_type == XRT_DEVICE_TYPE_HMD) {
-			have_hmd = true;
 		}
 	}
 
@@ -549,11 +546,12 @@ handle_found_device(struct prober *p,
 
 	// we can have only one HMD
 	if (xdev->device_type == XRT_DEVICE_TYPE_HMD) {
-		if (have_hmd) {
+		if (*have_hmd) {
 			P_ERROR(p, "Too many HMDs, closing '%s'", xdev->str);
 			xdev->destroy(xdev);
 			return;
 		}
+		*have_hmd = true;
 	}
 	xdevs[i] = xdev;
 }
@@ -564,6 +562,7 @@ select_device(struct xrt_prober *xp,
               size_t num_xdevs)
 {
 	struct prober *p = (struct prober *)xp;
+	bool have_hmd = false;
 
 	// Build a list of all current probed devices.
 	struct xrt_prober_device **dev_list =
@@ -604,6 +603,7 @@ select_device(struct xrt_prober *xp,
 					continue;
 				}
 				handle_found_device(p, xdevs, num_xdevs,
+				                    &have_hmd,
 				                    new_xdevs[created_idx]);
 			}
 		}
@@ -613,13 +613,12 @@ select_device(struct xrt_prober *xp,
 	free(dev_list);
 
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
-
 		/*
 		 * If we have found a HMD, tell the auto probers not to open
 		 * any more HMDs. This is mostly to stop OpenHMD and Monado
 		 * fighting over devices.
 		 */
-		bool no_hmds = xdevs[0] != NULL;
+		bool no_hmds = have_hmd;
 
 		struct xrt_device *xdev =
 		    p->auto_probers[i]->lelo_dallas_autoprobe(
@@ -628,11 +627,29 @@ select_device(struct xrt_prober *xp,
 			continue;
 		}
 
-		handle_found_device(p, xdevs, num_xdevs, xdev);
+		handle_found_device(p, xdevs, num_xdevs, &have_hmd, xdev);
 	}
 
+	// It's easier if we just put the first hmd first,
+	// but keep other internal ordering of devices.
+	for (size_t i = 1; i < num_xdevs; i++) {
+		if (xdevs[i] == NULL) {
+			continue;
+		}
+		if (xdevs[i]->hmd == NULL) {
+			continue;
+		}
 
-	if (xdevs[0] != NULL) {
+		// This is a HMD, but it's not in the first slot.
+		struct xrt_device *hmd = xdevs[i];
+		for (size_t k = i; k > 0; k--) {
+			xdevs[k] = xdevs[k - 1];
+		}
+		xdevs[0] = hmd;
+		break;
+	}
+
+	if (have_hmd) {
 		P_DEBUG(p, "Found HMD! '%s'", xdevs[0]->str);
 		return 0;
 	}
