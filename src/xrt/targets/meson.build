@@ -66,4 +66,7 @@ if get_option('gui').enabled() or (get_option('gui').auto() and sdl2.found())
 	subdir('gui')
 endif
 
-subdir('service')
+if get_option('service')
+	subdir('service')
+endif
+

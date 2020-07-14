@@ -8,5 +8,7 @@ subdir('auxiliary')
 subdir('drivers')
 subdir('compositor')
 subdir('state_trackers')
-subdir('ipc')
+if get_option('service')
+	subdir('ipc')
+endif
 subdir('targets')

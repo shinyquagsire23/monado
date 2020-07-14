@@ -61,3 +61,9 @@ option('wayland',
 	type: 'feature',
 	value: 'auto',
 	description: 'Enable support for Wayland rendering.')
+
+option('service',
+	type: 'boolean',
+	value: true,
+	description: 'Enable separate service module for OpenXR runtime'
+)

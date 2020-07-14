@@ -75,7 +75,7 @@ xrt_config_have = declare_dependency(
 #
 
 build_conf = configuration_data()
-if true
+if get_option('service')
 	build_conf.set('XRT_FEATURE_SERVICE', true)
 endif
 
