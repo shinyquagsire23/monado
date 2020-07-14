@@ -331,8 +331,6 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		    info->array_size, info->mip_count, &xscn->images[i],
 		    &sc->base.images[i], &sc->base.mems[i]);
 
-		// We have consumed this fd now, make sure it's not freed again.
-		xscn->images[i].fd = -1;
 
 		if (ret != VK_SUCCESS) {
 			return NULL;

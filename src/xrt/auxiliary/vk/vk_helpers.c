@@ -338,6 +338,11 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	ret = vk_alloc_and_bind_image_memory(vk, image, image_native->size,
 	                                     &dedicated_memory_info, out_mem,
 	                                     NULL);
+
+
+	// We have consumed this fd now, make sure it's not freed again.
+	image_native->fd = -1;
+
 	if (ret != VK_SUCCESS) {
 		vk->vkDestroyImage(vk->device, image, NULL);
 		return ret;
