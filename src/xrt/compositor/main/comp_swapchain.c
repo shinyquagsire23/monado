@@ -94,16 +94,16 @@ get_device_memory_fd(struct comp_compositor *c,
 }
 
 static VkResult
-create_image_fd(struct comp_compositor *c,
-                enum xrt_swapchain_usage_bits swapchain_usage,
-                int64_t format,
-                uint32_t width,
-                uint32_t height,
-                uint32_t array_size,
-                uint32_t mip_count,
-                VkImage *out_image,
-                VkDeviceMemory *out_mem,
-                struct xrt_image_fd *out_image_fd)
+create_image_native(struct comp_compositor *c,
+                    enum xrt_swapchain_usage_bits swapchain_usage,
+                    int64_t format,
+                    uint32_t width,
+                    uint32_t height,
+                    uint32_t array_size,
+                    uint32_t mip_count,
+                    VkImage *out_image,
+                    VkDeviceMemory *out_mem,
+                    struct xrt_image_native *out_image_native)
 {
 	VkImageUsageFlags image_usage =
 	    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -202,8 +202,8 @@ create_image_fd(struct comp_compositor *c,
 
 	*out_image = image;
 	*out_mem = device_memory;
-	out_image_fd->fd = fd;
-	out_image_fd->size = size;
+	out_image_native->fd = fd;
+	out_image_native->size = size;
 
 	return ret;
 
@@ -251,7 +251,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	}
 
 	for (uint32_t i = 0; i < num_images; i++) {
-		ret = create_image_fd(
+		ret = create_image_native(
 		    c, info->bits, info->format, info->width, info->height,
 		    info->array_size, info->mip_count, &sc->images[i].image,
 		    &sc->images[i].memory, &sc->base.images[i]);

@@ -35,12 +35,12 @@
  *
  */
 /*!
- * Client proxy for an xrt_compositor_fd implementation over IPC.
- * @implements xrt_compositor_fd
+ * Client proxy for an xrt_compositor_native implementation over IPC.
+ * @implements xrt_compositor_native
  */
 struct ipc_client_compositor
 {
-	struct xrt_compositor_fd base;
+	struct xrt_compositor_native base;
 
 	struct ipc_connection *ipc_c;
 
@@ -56,12 +56,12 @@ struct ipc_client_compositor
 };
 
 /*!
- * Client proxy for an xrt_swapchain_fd implementation over IPC.
- * @implements xrt_swapchain_fd
+ * Client proxy for an xrt_swapchain_native implementation over IPC.
+ * @implements xrt_swapchain_native
  */
 struct ipc_client_swapchain
 {
-	struct xrt_swapchain_fd base;
+	struct xrt_swapchain_native base;
 
 	struct ipc_client_compositor *icc;
 
@@ -456,7 +456,7 @@ int
 ipc_client_compositor_create(struct ipc_connection *ipc_c,
                              struct xrt_device *xdev,
                              bool flip_y,
-                             struct xrt_compositor_fd **out_xcfd)
+                             struct xrt_compositor_native **out_xcn)
 {
 	struct ipc_client_compositor *c =
 	    U_TYPED_CALLOC(struct ipc_client_compositor);
@@ -490,7 +490,7 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 		}
 	}
 
-	*out_xcfd = &c->base;
+	*out_xcn = &c->base;
 
 	return 0;
 }

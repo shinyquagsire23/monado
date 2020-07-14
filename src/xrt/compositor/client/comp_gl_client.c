@@ -49,8 +49,8 @@ client_gl_swapchain_destroy(struct xrt_swapchain *xsc)
 		sc->base.base.num_images = 0;
 	}
 
-	// Destroy the fd swapchain as well.
-	xrt_swapchain_destroy((struct xrt_swapchain **)&sc->xscfd);
+	// Destroy the native swapchain as well.
+	xrt_swapchain_destroy((struct xrt_swapchain **)&sc->xscn);
 
 	free(sc);
 }
@@ -61,8 +61,8 @@ client_gl_swapchain_acquire_image(struct xrt_swapchain *xsc,
 {
 	struct client_gl_swapchain *sc = client_gl_swapchain(xsc);
 
-	// Pipe down call into fd swapchain.
-	return xrt_swapchain_acquire_image(&sc->xscfd->base, out_index);
+	// Pipe down call into native swapchain.
+	return xrt_swapchain_acquire_image(&sc->xscn->base, out_index);
 }
 
 static xrt_result_t
@@ -72,8 +72,8 @@ client_gl_swapchain_wait_image(struct xrt_swapchain *xsc,
 {
 	struct client_gl_swapchain *sc = client_gl_swapchain(xsc);
 
-	// Pipe down call into fd swapchain.
-	return xrt_swapchain_wait_image(&sc->xscfd->base, timeout, index);
+	// Pipe down call into native swapchain.
+	return xrt_swapchain_wait_image(&sc->xscn->base, timeout, index);
 }
 
 static xrt_result_t
@@ -81,8 +81,8 @@ client_gl_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 {
 	struct client_gl_swapchain *sc = client_gl_swapchain(xsc);
 
-	// Pipe down call into fd swapchain.
-	return xrt_swapchain_release_image(&sc->xscfd->base, index);
+	// Pipe down call into native swapchain.
+	return xrt_swapchain_release_image(&sc->xscn->base, index);
 }
 
 
@@ -98,8 +98,8 @@ client_gl_compositor_prepare_session(struct xrt_compositor *xc,
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_prepare_session(&c->xcfd->base, xspi);
+	// Pipe down call into native compositor.
+	return xrt_comp_prepare_session(&c->xcn->base, xspi);
 }
 
 
@@ -109,8 +109,8 @@ client_gl_compositor_begin_session(struct xrt_compositor *xc,
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_begin_session(&c->xcfd->base, type);
+	// Pipe down call into native compositor.
+	return xrt_comp_begin_session(&c->xcn->base, type);
 }
 
 static xrt_result_t
@@ -118,8 +118,8 @@ client_gl_compositor_end_session(struct xrt_compositor *xc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_end_session(&c->xcfd->base);
+	// Pipe down call into native compositor.
+	return xrt_comp_end_session(&c->xcn->base);
 }
 
 static xrt_result_t
@@ -130,8 +130,8 @@ client_gl_compositor_wait_frame(struct xrt_compositor *xc,
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_wait_frame(&c->xcfd->base, out_frame_id,
+	// Pipe down call into native compositor.
+	return xrt_comp_wait_frame(&c->xcn->base, out_frame_id,
 	                           predicted_display_time,
 	                           predicted_display_period);
 }
@@ -141,8 +141,8 @@ client_gl_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_begin_frame(&c->xcfd->base, frame_id);
+	// Pipe down call into native compositor.
+	return xrt_comp_begin_frame(&c->xcn->base, frame_id);
 }
 
 static xrt_result_t
@@ -150,8 +150,8 @@ client_gl_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_discard_frame(&c->xcfd->base, frame_id);
+	// Pipe down call into native compositor.
+	return xrt_comp_discard_frame(&c->xcn->base, frame_id);
 }
 
 static xrt_result_t
@@ -161,7 +161,7 @@ client_gl_compositor_layer_begin(struct xrt_compositor *xc,
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	return xrt_comp_layer_begin(&c->xcfd->base, frame_id, env_blend_mode);
+	return xrt_comp_layer_begin(&c->xcn->base, frame_id, env_blend_mode);
 }
 
 static xrt_result_t
@@ -172,16 +172,16 @@ client_gl_compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                              struct xrt_layer_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
-	struct xrt_swapchain *l_xscfd, *r_xscfd;
+	struct xrt_swapchain *l_xscn, *r_xscn;
 
 	assert(data->type == XRT_LAYER_STEREO_PROJECTION);
 
-	l_xscfd = &client_gl_swapchain(l_xsc)->xscfd->base;
-	r_xscfd = &client_gl_swapchain(r_xsc)->xscfd->base;
+	l_xscn = &client_gl_swapchain(l_xsc)->xscn->base;
+	r_xscn = &client_gl_swapchain(r_xsc)->xscn->base;
 	data->flip_y = true;
 
-	return xrt_comp_layer_stereo_projection(&c->xcfd->base, xdev, l_xscfd,
-	                                        r_xscfd, data);
+	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn,
+	                                        r_xscn, data);
 }
 
 static xrt_result_t
@@ -195,10 +195,10 @@ client_gl_compositor_layer_quad(struct xrt_compositor *xc,
 
 	assert(data->type == XRT_LAYER_QUAD);
 
-	xscfb = &client_gl_swapchain(xsc)->xscfd->base;
+	xscfb = &client_gl_swapchain(xsc)->xscn->base;
 	data->flip_y = true;
 
-	return xrt_comp_layer_quad(&c->xcfd->base, xdev, xscfb, data);
+	return xrt_comp_layer_quad(&c->xcn->base, xdev, xscfb, data);
 }
 
 static xrt_result_t
@@ -206,7 +206,7 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	return xrt_comp_layer_commit(&c->xcfd->base, frame_id);
+	return xrt_comp_layer_commit(&c->xcn->base, frame_id);
 }
 
 static int64_t
@@ -264,14 +264,14 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 
 	struct xrt_swapchain_create_info vk_info = *info;
 	vk_info.format = vk_format;
-	struct xrt_swapchain_fd *xscfd =
-	    xrt_comp_fd_create_swapchain(c->xcfd, &vk_info);
+	struct xrt_swapchain_native *xscn =
+	    xrt_comp_native_create_swapchain(c->xcn, &vk_info);
 
 
-	if (xscfd == NULL) {
+	if (xscn == NULL) {
 		return NULL;
 	}
-	struct xrt_swapchain *xsc = &xscfd->base;
+	struct xrt_swapchain *xsc = &xscn->base;
 
 	struct client_gl_swapchain *sc =
 	    U_TYPED_CALLOC(struct client_gl_swapchain);
@@ -279,9 +279,9 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.acquire_image = client_gl_swapchain_acquire_image;
 	sc->base.base.wait_image = client_gl_swapchain_wait_image;
 	sc->base.base.release_image = client_gl_swapchain_release_image;
-	// Fetch the number of images from the fd swapchain.
+	// Fetch the number of images from the native swapchain.
 	sc->base.base.num_images = xsc->num_images;
-	sc->xscfd = xscfd;
+	sc->xscn = xscn;
 
 	GLuint prev_texture = 0;
 	glGetIntegerv(info->array_size == 1 ? GL_TEXTURE_BINDING_2D
@@ -300,12 +300,12 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		glMemoryObjectParameterivEXT(sc->base.memory[i],
 		                             GL_DEDICATED_MEMORY_OBJECT_EXT,
 		                             &dedicated);
-		glImportMemoryFdEXT(sc->base.memory[i], xscfd->images[i].size,
+		glImportMemoryFdEXT(sc->base.memory[i], xscn->images[i].size,
 		                    GL_HANDLE_TYPE_OPAQUE_FD_EXT,
-		                    xscfd->images[i].fd);
+		                    xscn->images[i].fd);
 
 		// We have consumed this fd now, make sure it's not freed again.
-		xscfd->images[i].fd = -1;
+		xscn->images[i].fd = -1;
 
 		if (info->array_size == 1) {
 			glTextureStorageMem2DEXT(
@@ -333,8 +333,8 @@ client_gl_compositor_poll_events(struct xrt_compositor *xc,
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_poll_events(&c->xcfd->base, out_xce);
+	// Pipe down call into native compositor.
+	return xrt_comp_poll_events(&c->xcn->base, out_xce);
 }
 
 static void
@@ -345,7 +345,7 @@ client_gl_compositor_destroy(struct xrt_compositor *xc)
 
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
-                          struct xrt_compositor_fd *xcfd,
+                          struct xrt_compositor_native *xcn,
                           client_gl_get_procaddr get_gl_procaddr)
 {
 	c->base.base.create_swapchain = client_gl_swapchain_create;
@@ -362,12 +362,12 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.layer_commit = client_gl_compositor_layer_commit;
 	c->base.base.destroy = client_gl_compositor_destroy;
 	c->base.base.poll_events = client_gl_compositor_poll_events;
-	c->xcfd = xcfd;
+	c->xcn = xcn;
 
-	// Passthrough our formats from the fd compositor to the client.
+	// Passthrough our formats from the native compositor to the client.
 	size_t count = 0;
-	for (uint32_t i = 0; i < xcfd->base.num_formats; i++) {
-		int64_t f = vk_format_to_gl(xcfd->base.formats[i]);
+	for (uint32_t i = 0; i < xcn->base.num_formats; i++) {
+		int64_t f = vk_format_to_gl(xcn->base.formats[i]);
 		if (f == 0) {
 			continue;
 		}

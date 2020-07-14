@@ -69,7 +69,7 @@ extern "C" {
 
 struct xrt_instance;
 struct xrt_compositor;
-struct xrt_compositor_fd;
+struct xrt_compositor_native;
 
 
 /*!
@@ -160,7 +160,7 @@ struct ipc_server
 	struct xrt_instance *xinst;
 
 	struct xrt_compositor *xc;
-	struct xrt_compositor_fd *xcfd;
+	struct xrt_compositor_native *xcn;
 
 	struct xrt_device *xdevs[IPC_SERVER_NUM_XDEVS];
 	struct xrt_tracking_origin *xtracks[IPC_SERVER_NUM_XDEVS];

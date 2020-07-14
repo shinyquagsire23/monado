@@ -64,12 +64,12 @@ struct comp_swapchain_image
  * Not used by the window backend that uses the vk_swapchain to render to.
  *
  * @ingroup comp_main
- * @implements xrt_swapchain_fd
+ * @implements xrt_swapchain_native
  * @see comp_compositor
  */
 struct comp_swapchain
 {
-	struct xrt_swapchain_fd base;
+	struct xrt_swapchain_native base;
 
 	struct comp_compositor *c;
 
@@ -136,11 +136,11 @@ enum comp_state
  * Main compositor struct tying everything in the compositor together.
  *
  * @ingroup comp_main
- * @implements xrt_compositor_fd
+ * @implements xrt_compositor_native
  */
 struct comp_compositor
 {
-	struct xrt_compositor_fd base;
+	struct xrt_compositor_native base;
 
 	//! A link back to the compositor we are presenting to the client.
 	struct xrt_compositor *client;

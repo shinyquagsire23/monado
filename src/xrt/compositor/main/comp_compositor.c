@@ -927,8 +927,8 @@ compositor_init_renderer(struct comp_compositor *c)
 	return c->r != NULL;
 }
 
-struct xrt_compositor_fd *
-xrt_gfx_provider_create_fd(struct xrt_device *xdev, bool flip_y)
+struct xrt_compositor_native *
+xrt_gfx_provider_create_native(struct xrt_device *xdev, bool flip_y)
 {
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 

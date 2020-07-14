@@ -36,7 +36,7 @@ struct client_gl_swapchain
 {
 	struct xrt_swapchain_gl base;
 
-	struct xrt_swapchain_fd *xscfd;
+	struct xrt_swapchain_native *xscn;
 };
 
 /*!
@@ -51,7 +51,7 @@ struct client_gl_compositor
 {
 	struct xrt_compositor_gl base;
 
-	struct xrt_compositor_fd *xcfd;
+	struct xrt_compositor_native *xcn;
 };
 
 
@@ -82,14 +82,14 @@ typedef client_gl_void_ptr_func (*client_gl_get_procaddr)(const char *name);
  * OpenGL can have multiple backing window systems we have to interact with, so
  * there isn't just one unified OpenGL client constructor.
  *
- * Moves owenership of provided xcfd to the client_gl_compositor.
+ * Moves ownership of provided xcn to the client_gl_compositor.
  *
  * @public @memberof client_gl_compositor
- * @relatesalso xrt_compositor_fd
+ * @relatesalso xrt_compositor_native
  */
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
-                          struct xrt_compositor_fd *xcfd,
+                          struct xrt_compositor_native *xcn,
                           client_gl_get_procaddr get_gl_procaddr);
 
 

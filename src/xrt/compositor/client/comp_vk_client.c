@@ -64,8 +64,8 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 		}
 	}
 
-	// Destroy the fd swapchain as well.
-	xrt_swapchain_destroy((struct xrt_swapchain **)&sc->xscfd);
+	// Destroy the native swapchain as well.
+	xrt_swapchain_destroy((struct xrt_swapchain **)&sc->xscn);
 
 	free(sc);
 }
@@ -77,9 +77,9 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc,
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 	struct vk_bundle *vk = &sc->c->vk;
 
-	// Pipe down call into fd swapchain.
+	// Pipe down call into native swapchain.
 	xrt_result_t xret =
-	    xrt_swapchain_acquire_image(&sc->xscfd->base, out_index);
+	    xrt_swapchain_acquire_image(&sc->xscn->base, out_index);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -106,8 +106,8 @@ client_vk_swapchain_wait_image(struct xrt_swapchain *xsc,
 {
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 
-	// Pipe down call into fd swapchain.
-	return xrt_swapchain_wait_image(&sc->xscfd->base, timeout, index);
+	// Pipe down call into native swapchain.
+	return xrt_swapchain_wait_image(&sc->xscn->base, timeout, index);
 }
 
 static xrt_result_t
@@ -129,8 +129,8 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
 	}
 
-	// Pipe down call into fd swapchain.
-	return xrt_swapchain_release_image(&sc->xscfd->base, index);
+	// Pipe down call into native swapchain.
+	return xrt_swapchain_release_image(&sc->xscn->base, index);
 }
 
 
@@ -146,8 +146,8 @@ client_vk_compositor_poll_events(struct xrt_compositor *xc,
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_poll_events(&c->xcfd->base, out_xce);
+	// Pipe down call into native compositor.
+	return xrt_comp_poll_events(&c->xcn->base, out_xce);
 }
 
 static void
@@ -164,8 +164,8 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 		c->vk.cmd_pool = VK_NULL_HANDLE;
 	}
 
-	// Pipe down call into fd compositor.
-	xrt_comp_fd_destroy(&c->xcfd);
+	// Pipe down call into native compositor.
+	xrt_comp_native_destroy(&c->xcn);
 	free(c);
 }
 
@@ -175,8 +175,8 @@ client_vk_compositor_prepare_session(struct xrt_compositor *xc,
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_prepare_session(&c->xcfd->base, xspi);
+	// Pipe down call into native compositor.
+	return xrt_comp_prepare_session(&c->xcn->base, xspi);
 }
 
 static xrt_result_t
@@ -185,8 +185,8 @@ client_vk_compositor_begin_session(struct xrt_compositor *xc,
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_begin_session(&c->xcfd->base, type);
+	// Pipe down call into native compositor.
+	return xrt_comp_begin_session(&c->xcn->base, type);
 }
 
 static xrt_result_t
@@ -194,8 +194,8 @@ client_vk_compositor_end_session(struct xrt_compositor *xc)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_end_session(&c->xcfd->base);
+	// Pipe down call into native compositor.
+	return xrt_comp_end_session(&c->xcn->base);
 }
 
 static xrt_result_t
@@ -206,8 +206,8 @@ client_vk_compositor_wait_frame(struct xrt_compositor *xc,
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_wait_frame(&c->xcfd->base, out_frame_id,
+	// Pipe down call into native compositor.
+	return xrt_comp_wait_frame(&c->xcn->base, out_frame_id,
 	                           predicted_display_time,
 	                           predicted_display_period);
 }
@@ -217,8 +217,8 @@ client_vk_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_begin_frame(&c->xcfd->base, frame_id);
+	// Pipe down call into native compositor.
+	return xrt_comp_begin_frame(&c->xcn->base, frame_id);
 }
 
 static xrt_result_t
@@ -226,8 +226,8 @@ client_vk_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	// Pipe down call into fd compositor.
-	return xrt_comp_discard_frame(&c->xcfd->base, frame_id);
+	// Pipe down call into native compositor.
+	return xrt_comp_discard_frame(&c->xcn->base, frame_id);
 }
 
 static xrt_result_t
@@ -237,7 +237,7 @@ client_vk_compositor_layer_begin(struct xrt_compositor *xc,
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	return xrt_comp_layer_begin(&c->xcfd->base, frame_id, env_blend_mode);
+	return xrt_comp_layer_begin(&c->xcn->base, frame_id, env_blend_mode);
 }
 
 static xrt_result_t
@@ -248,16 +248,16 @@ client_vk_compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                              struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
-	struct xrt_swapchain *l_xscfd, *r_xscfd;
+	struct xrt_swapchain *l_xscn, *r_xscn;
 
 	assert(data->type == XRT_LAYER_STEREO_PROJECTION);
 
-	l_xscfd = &client_vk_swapchain(l_xsc)->xscfd->base;
-	r_xscfd = &client_vk_swapchain(r_xsc)->xscfd->base;
+	l_xscn = &client_vk_swapchain(l_xsc)->xscn->base;
+	r_xscn = &client_vk_swapchain(r_xsc)->xscn->base;
 	data->flip_y = false;
 
-	return xrt_comp_layer_stereo_projection(&c->xcfd->base, xdev, l_xscfd,
-	                                        r_xscfd, data);
+	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn,
+	                                        r_xscn, data);
 }
 
 static xrt_result_t
@@ -271,10 +271,10 @@ client_vk_compositor_layer_quad(struct xrt_compositor *xc,
 
 	assert(data->type == XRT_LAYER_QUAD);
 
-	xscfb = &client_vk_swapchain(xsc)->xscfd->base;
+	xscfb = &client_vk_swapchain(xsc)->xscn->base;
 	data->flip_y = false;
 
-	return xrt_comp_layer_quad(&c->xcfd->base, xdev, xscfb, data);
+	return xrt_comp_layer_quad(&c->xcn->base, xdev, xscfb, data);
 }
 
 static xrt_result_t
@@ -282,7 +282,7 @@ client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	return xrt_comp_layer_commit(&c->xcfd->base, frame_id);
+	return xrt_comp_layer_commit(&c->xcn->base, frame_id);
 }
 
 static struct xrt_swapchain *
@@ -293,13 +293,13 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	VkCommandBuffer cmd_buffer;
 	VkResult ret;
 
-	struct xrt_swapchain_fd *xscfd =
-	    xrt_comp_fd_create_swapchain(c->xcfd, info);
+	struct xrt_swapchain_native *xscn =
+	    xrt_comp_native_create_swapchain(c->xcn, info);
 
-	if (xscfd == NULL) {
+	if (xscn == NULL) {
 		return NULL;
 	}
-	struct xrt_swapchain *xsc = &xscfd->base;
+	struct xrt_swapchain *xsc = &xscn->base;
 
 	ret = vk_init_cmd_buffer(&c->vk, &cmd_buffer);
 	if (ret != VK_SUCCESS) {
@@ -320,19 +320,19 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.acquire_image = client_vk_swapchain_acquire_image;
 	sc->base.base.wait_image = client_vk_swapchain_wait_image;
 	sc->base.base.release_image = client_vk_swapchain_release_image;
-	// Fetch the number of images from the fd swapchain.
+	// Fetch the number of images from the native swapchain.
 	sc->base.base.num_images = xsc->num_images;
 	sc->c = c;
-	sc->xscfd = xscfd;
+	sc->xscn = xscn;
 
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
-		ret = vk_create_image_from_fd(
+		ret = vk_create_image_from_native(
 		    &c->vk, info->bits, info->format, info->width, info->height,
-		    info->array_size, info->mip_count, &xscfd->images[i],
+		    info->array_size, info->mip_count, &xscn->images[i],
 		    &sc->base.images[i], &sc->base.mems[i]);
 
 		// We have consumed this fd now, make sure it's not freed again.
-		xscfd->images[i].fd = -1;
+		xscn->images[i].fd = -1;
 
 		if (ret != VK_SUCCESS) {
 			return NULL;
@@ -443,7 +443,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 }
 
 struct client_vk_compositor *
-client_vk_compositor_create(struct xrt_compositor_fd *xcfd,
+client_vk_compositor_create(struct xrt_compositor_native *xcn,
                             VkInstance instance,
                             PFN_vkGetInstanceProcAddr getProc,
                             VkPhysicalDevice physicalDevice,
@@ -470,13 +470,13 @@ client_vk_compositor_create(struct xrt_compositor_fd *xcfd,
 	c->base.base.destroy = client_vk_compositor_destroy;
 	c->base.base.poll_events = client_vk_compositor_poll_events;
 
-	c->xcfd = xcfd;
-	// passthrough our formats from the fd compositor to the client
-	for (uint32_t i = 0; i < xcfd->base.num_formats; i++) {
-		c->base.base.formats[i] = xcfd->base.formats[i];
+	c->xcn = xcn;
+	// passthrough our formats from the native compositor to the client
+	for (uint32_t i = 0; i < xcn->base.num_formats; i++) {
+		c->base.base.formats[i] = xcn->base.formats[i];
 	}
 
-	c->base.base.num_formats = xcfd->base.num_formats;
+	c->base.base.num_formats = xcn->base.num_formats;
 
 	ret = vk_init_from_given(&c->vk, getProc, instance, physicalDevice,
 	                         device, queueFamilyIndex, queueIndex);

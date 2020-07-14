@@ -65,22 +65,23 @@ oxr_session_populate_egl(struct oxr_logger *log,
 		                 "Unsupported EGL client type");
 	}
 
-	struct xrt_compositor_fd *xcfd = NULL;
+	struct xrt_compositor_native *xcn = NULL;
 	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 
-	int ret = xrt_instance_create_fd_compositor(sys->inst->xinst, xdev,
-	                                            true, &xcfd);
-	if (ret < 0 || xcfd == NULL) {
+	int ret = xrt_instance_create_native_compositor(sys->inst->xinst, xdev,
+	                                                true, &xcn);
+	if (ret < 0 || xcn == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Failed to create an fd compositor '%i'", ret);
+		                 "Failed to create a native compositor '%i'",
+		                 ret);
 	}
 
 	struct xrt_compositor_gl *xcgl =
-	    xrt_gfx_provider_create_gl_egl(xcfd, next->display, next->config,
+	    xrt_gfx_provider_create_gl_egl(xcn, next->display, next->config,
 	                                   next->context, next->getProcAddress);
 
 	if (xcgl == NULL) {
-		xcfd->base.destroy(&xcfd->base);
+		xcn->base.destroy(&xcn->base);
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 "Failed to create an egl client compositor");
 	}

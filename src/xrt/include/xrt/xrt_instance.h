@@ -20,7 +20,7 @@ extern "C" {
 
 struct xrt_prober;
 struct xrt_device;
-struct xrt_compositor_fd;
+struct xrt_compositor_native;
 
 
 /*!
@@ -86,27 +86,27 @@ struct xrt_instance
 	              size_t num_xdevs);
 
 	/*!
-	 * Creates a @ref xrt_compositor_fd.
+	 * Creates a @ref xrt_compositor_native.
 	 *
 	 * Should only be called once.
 	 *
 	 * @note Code consuming this interface should use
-	 * xrt_instance_create_fd_compositor()
+	 * xrt_instance_create_native_compositor()
 	 *
 	 * @param xinst Pointer to self
 	 * @param[in] xdev Device to use for creating the compositor
 	 * @param[in] flip_y Whether to flip the direction of the y axis
-	 * @param[out] out_xcfd Pointer to xrt_compositor_fd pointer, will be
-	 * populated.
+	 * @param[out] out_xcn Pointer to xrt_compositor_native pointer, will
+	 * be populated.
 	 *
 	 * @return 0 on success, <0 on error.
 	 *
-	 * @see xrt_gfx_provider_create_fd
+	 * @see xrt_gfx_provider_create_native
 	 */
-	int (*create_fd_compositor)(struct xrt_instance *xinst,
-	                            struct xrt_device *xdev,
-	                            bool flip_y,
-	                            struct xrt_compositor_fd **out_xcfd);
+	int (*create_native_compositor)(struct xrt_instance *xinst,
+	                                struct xrt_device *xdev,
+	                                bool flip_y,
+	                                struct xrt_compositor_native **out_xcn);
 
 	/*!
 	 * Get the instance @ref xrt_prober, if any.
@@ -163,19 +163,19 @@ xrt_instance_select(struct xrt_instance *xinst,
 }
 
 /*!
- * @copydoc xrt_instance::create_fd_compositor
+ * @copydoc xrt_instance::create_native_compositor
  *
  * Helper for calling through the function pointer.
  *
  * @public @memberof xrt_instance
  */
 static inline int
-xrt_instance_create_fd_compositor(struct xrt_instance *xinst,
-                                  struct xrt_device *xdev,
-                                  bool flip_y,
-                                  struct xrt_compositor_fd **out_xcfd)
+xrt_instance_create_native_compositor(struct xrt_instance *xinst,
+                                      struct xrt_device *xdev,
+                                      bool flip_y,
+                                      struct xrt_compositor_native **out_xcn)
 {
-	return xinst->create_fd_compositor(xinst, xdev, flip_y, out_xcfd);
+	return xinst->create_native_compositor(xinst, xdev, flip_y, out_xcn);
 }
 
 /*!

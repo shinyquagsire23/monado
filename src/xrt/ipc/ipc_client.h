@@ -67,7 +67,7 @@
  *
  */
 
-struct xrt_compositor_fd;
+struct xrt_compositor_native;
 
 
 /*!
@@ -96,7 +96,7 @@ int
 ipc_client_compositor_create(struct ipc_connection *ipc_c,
                              struct xrt_device *xdev,
                              bool flip_y,
-                             struct xrt_compositor_fd **out_xcfd);
+                             struct xrt_compositor_native **out_xcn);
 
 struct xrt_device *
 ipc_client_hmd_create(struct ipc_connection *ipc_c,

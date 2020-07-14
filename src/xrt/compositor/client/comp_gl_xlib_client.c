@@ -32,8 +32,8 @@ static void
 client_gl_xlib_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct client_gl_xlib_compositor *c = client_gl_xlib_compositor(xc);
-	// Pipe down call into fd compositor.
-	xrt_comp_fd_destroy(&c->base.xcfd);
+	// Pipe down call into native compositor.
+	xrt_comp_native_destroy(&c->base.xcn);
 	free(c);
 }
 
@@ -46,7 +46,7 @@ extern "C"
     glXGetProcAddress(const char *procName);
 
 struct client_gl_xlib_compositor *
-client_gl_xlib_compositor_create(struct xrt_compositor_fd *xcfd,
+client_gl_xlib_compositor_create(struct xrt_compositor_native *xcn,
                                  Display *xDisplay,
                                  uint32_t visualid,
                                  GLXFBConfig glxFBConfig,
@@ -56,7 +56,7 @@ client_gl_xlib_compositor_create(struct xrt_compositor_fd *xcfd,
 	struct client_gl_xlib_compositor *c =
 	    U_TYPED_CALLOC(struct client_gl_xlib_compositor);
 
-	if (!client_gl_compositor_init(&c->base, xcfd, glXGetProcAddress)) {
+	if (!client_gl_compositor_init(&c->base, xcn, glXGetProcAddress)) {
 		free(c);
 		return NULL;
 	}

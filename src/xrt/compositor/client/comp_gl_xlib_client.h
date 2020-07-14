@@ -34,10 +34,10 @@ struct client_gl_xlib_compositor
  * Create a new client_gl_xlib_compositor.
  *
  * @public @memberof client_gl_xlib_compositor
- * @relatesalso xrt_compositor_fd
+ * @relatesalso xrt_compositor_native
  */
 struct client_gl_xlib_compositor *
-client_gl_xlib_compositor_create(struct xrt_compositor_fd *xcfd,
+client_gl_xlib_compositor_create(struct xrt_compositor_native *xcn,
                                  Display *xDisplay,
                                  uint32_t visualid,
                                  GLXFBConfig glxFBConfig,

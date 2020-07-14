@@ -11,12 +11,12 @@
 
 
 static int
-t_instance_create_fd_compositor_stub(struct xrt_instance *xinst,
-                                     struct xrt_device *xdev,
-                                     bool flip_y,
-                                     struct xrt_compositor_fd **out_xcfd)
+t_instance_create_native_compositor_stub(struct xrt_instance *xinst,
+                                         struct xrt_device *xdev,
+                                         bool flip_y,
+                                         struct xrt_compositor_native **out_xcn)
 {
-	*out_xcfd = NULL;
+	*out_xcn = NULL;
 
 	return -1;
 }
@@ -41,7 +41,8 @@ xrt_instance_create(struct xrt_instance_info *i_info,
 
 	struct t_instance *tinst = U_TYPED_CALLOC(struct t_instance);
 	tinst->base.select = t_instance_select;
-	tinst->base.create_fd_compositor = t_instance_create_fd_compositor_stub;
+	tinst->base.create_native_compositor =
+	    t_instance_create_native_compositor_stub;
 	tinst->base.get_prober = t_instance_get_prober;
 	tinst->base.destroy = t_instance_destroy;
 	tinst->xp = xp;

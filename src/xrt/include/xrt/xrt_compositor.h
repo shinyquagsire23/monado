@@ -213,8 +213,9 @@ struct xrt_layer_data
 	 * comp_compositor. It is overwritten by the various client
 	 * implementations of the @ref xrt_compositor interface depending on the
 	 * conventions of the associated graphics API. Other @ref
-	 * xrt_compositor_fd implementations that are not the main compositor
-	 * just pass this field along unchanged to the "real" compositor.
+	 * xrt_compositor_native implementations that are not the main
+	 * compositor just pass this field along unchanged to the "real"
+	 * compositor.
 	 */
 	bool flip_y;
 
@@ -860,17 +861,20 @@ xrt_compositor_vk(struct xrt_compositor *xc)
 
 /*
  *
- * FD interface, aka DMABUF.
+ * Native interface.
+ *
+ * These types are supported by underlying native buffers, which are DMABUF file
+ * descriptors on Linux.
  *
  */
 
 /*!
- * A single image of a fd based swapchain.
+ * A single image of a swapchain based on native buffer handles.
  *
  * @ingroup xrt_iface comp
- * @see xrt_swapchain_fd
+ * @see xrt_swapchain_native
  */
-struct xrt_image_fd
+struct xrt_image_native
 {
 	size_t size;
 	int fd;
@@ -878,72 +882,72 @@ struct xrt_image_fd
 };
 
 /*!
- * @interface xrt_swapchain_fd
- * Base class for a swapchain that exposes fd to be imported into a client API.
+ * @interface xrt_swapchain_native
+ * Base class for a swapchain that exposes a native buffer handle to be imported
+ * into a client API.
  *
  * @ingroup xrt_iface comp
  * @extends xrt_swapchain
  */
-struct xrt_swapchain_fd
+struct xrt_swapchain_native
 {
 	//! @public Base
 	struct xrt_swapchain base;
 
-	struct xrt_image_fd images[XRT_MAX_SWAPCHAIN_IMAGES];
+	struct xrt_image_native images[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
 /*!
- * @interface xrt_compositor_fd
+ * @interface xrt_compositor_native
  *
  * Main compositor server interface.
  *
  * @ingroup xrt_iface comp
  * @extends xrt_compositor
  */
-struct xrt_compositor_fd
+struct xrt_compositor_native
 {
 	//! @public Base
 	struct xrt_compositor base;
 };
 
 /*!
- * @brief Create an FD swapchain with a set of images.
+ * @brief Create a native swapchain with a set of images.
  *
  * A specialized version of @ref xrt_comp_create_swapchain, for use only on @ref
- * xrt_compositor_fd.
+ * xrt_compositor_native.
  *
  * Helper for calling through the base's function pointer then performing the
  * known-safe downcast.
  *
- * @public @memberof xrt_compositor_fd
+ * @public @memberof xrt_compositor_native
  */
-static inline struct xrt_swapchain_fd *
-xrt_comp_fd_create_swapchain(struct xrt_compositor_fd *xcfd,
-                             struct xrt_swapchain_create_info *info)
+static inline struct xrt_swapchain_native *
+xrt_comp_native_create_swapchain(struct xrt_compositor_native *xcn,
+                                 struct xrt_swapchain_create_info *info)
 {
-	struct xrt_swapchain *xsc =
-	    xrt_comp_create_swapchain(&xcfd->base, info);
-	return (struct xrt_swapchain_fd *)xsc;
+	struct xrt_swapchain *xsc = xrt_comp_create_swapchain(&xcn->base, info);
+	return (struct xrt_swapchain_native *)xsc;
 }
 
 /*!
  * @copydoc xrt_compositor::destroy
  *
  * Helper for calling through the function pointer: does a null check and sets
- * xcfd_ptr to null if freed.
+ * xcn_ptr to null if freed.
  *
- * @public @memberof xrt_compositor_fd
+ * @public @memberof xrt_compositor_native
  */
 static inline void
-xrt_comp_fd_destroy(struct xrt_compositor_fd **xcfd_ptr)
+xrt_comp_native_destroy(struct xrt_compositor_native **xcn_ptr)
 {
-	struct xrt_compositor_fd *xcfd = *xcfd_ptr;
-	if (xcfd == NULL) {
+	struct xrt_compositor_native *xcn = *xcn_ptr;
+	if (xcn == NULL) {
 		return;
 	}
 
-	xcfd->base.destroy(&xcfd->base);
-	*xcfd_ptr = NULL;
+	xcn->base.destroy(&xcn->base);
+	*xcn_ptr = NULL;
 }
 
 

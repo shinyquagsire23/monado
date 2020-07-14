@@ -412,8 +412,8 @@ init_all(struct ipc_server *s)
 		return -1;
 	}
 
-	ret = xrt_instance_create_fd_compositor(s->xinst, s->xdevs[0], false,
-	                                        &s->xcfd);
+	ret = xrt_instance_create_native_compositor(s->xinst, s->xdevs[0],
+	                                            false, &s->xcn);
 	if (ret < 0) {
 		teardown_all(s);
 		return ret;
@@ -449,7 +449,7 @@ init_all(struct ipc_server *s)
 	}
 
 	// Easier to use.
-	s->xc = &s->xcfd->base;
+	s->xc = &s->xcn->base;
 
 	u_var_add_root(s, "IPC Server", false);
 	u_var_add_bool(s, &s->print_debug, "print.debug");

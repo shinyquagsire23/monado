@@ -122,20 +122,21 @@ ipc_client_instance_select(struct xrt_instance *xinst,
 }
 
 static int
-ipc_client_instance_create_fd_compositor(struct xrt_instance *xinst,
-                                         struct xrt_device *xdev,
-                                         bool flip_y,
-                                         struct xrt_compositor_fd **out_xcfd)
+ipc_client_instance_create_native_compositor(
+    struct xrt_instance *xinst,
+    struct xrt_device *xdev,
+    bool flip_y,
+    struct xrt_compositor_native **out_xcn)
 {
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
-	struct xrt_compositor_fd *xcfd = NULL;
+	struct xrt_compositor_native *xcn = NULL;
 
-	int ret = ipc_client_compositor_create(&ii->ipc_c, xdev, flip_y, &xcfd);
-	if (ret < 0 || xcfd == NULL) {
+	int ret = ipc_client_compositor_create(&ii->ipc_c, xdev, flip_y, &xcn);
+	if (ret < 0 || xcn == NULL) {
 		return -1;
 	}
 
-	*out_xcfd = xcfd;
+	*out_xcn = xcn;
 
 	return 0;
 }
@@ -188,8 +189,8 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 	struct ipc_client_instance *ii =
 	    U_TYPED_CALLOC(struct ipc_client_instance);
 	ii->base.select = ipc_client_instance_select;
-	ii->base.create_fd_compositor =
-	    ipc_client_instance_create_fd_compositor;
+	ii->base.create_native_compositor =
+	    ipc_client_instance_create_native_compositor;
 	ii->base.get_prober = ipc_client_instance_get_prober;
 	ii->base.destroy = ipc_client_instance_destroy;
 

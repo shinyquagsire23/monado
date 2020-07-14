@@ -265,16 +265,16 @@ vk_create_image_simple(struct vk_bundle *vk,
 }
 
 VkResult
-vk_create_image_from_fd(struct vk_bundle *vk,
-                        enum xrt_swapchain_usage_bits swapchain_usage,
-                        int64_t format,
-                        uint32_t width,
-                        uint32_t height,
-                        uint32_t array_size,
-                        uint32_t mip_count,
-                        struct xrt_image_fd *image_fd,
-                        VkImage *out_image,
-                        VkDeviceMemory *out_mem)
+vk_create_image_from_native(struct vk_bundle *vk,
+                            enum xrt_swapchain_usage_bits swapchain_usage,
+                            int64_t format,
+                            uint32_t width,
+                            uint32_t height,
+                            uint32_t array_size,
+                            uint32_t mip_count,
+                            struct xrt_image_native *image_native,
+                            VkImage *out_image,
+                            VkDeviceMemory *out_mem)
 {
 	VkImageUsageFlags image_usage =
 	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -327,7 +327,7 @@ vk_create_image_from_fd(struct vk_bundle *vk,
 	VkImportMemoryFdInfoKHR import_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
 	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
-	    .fd = image_fd->fd,
+	    .fd = image_native->fd,
 	};
 	VkMemoryDedicatedAllocateInfoKHR dedicated_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
@@ -335,8 +335,9 @@ vk_create_image_from_fd(struct vk_bundle *vk,
 	    .image = image,
 	    .buffer = VK_NULL_HANDLE,
 	};
-	ret = vk_alloc_and_bind_image_memory(
-	    vk, image, image_fd->size, &dedicated_memory_info, out_mem, NULL);
+	ret = vk_alloc_and_bind_image_memory(vk, image, image_native->size,
+	                                     &dedicated_memory_info, out_mem,
+	                                     NULL);
 	if (ret != VK_SUCCESS) {
 		vk->vkDestroyImage(vk->device, image, NULL);
 		return ret;

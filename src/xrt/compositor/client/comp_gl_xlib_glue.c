@@ -16,7 +16,7 @@
 
 
 struct xrt_compositor_gl *
-xrt_gfx_provider_create_gl_xlib(struct xrt_compositor_fd *xcfd,
+xrt_gfx_provider_create_gl_xlib(struct xrt_compositor_native *xcn,
                                 Display *xDisplay,
                                 uint32_t visualid,
                                 GLXFBConfig glxFBConfig,
@@ -25,7 +25,7 @@ xrt_gfx_provider_create_gl_xlib(struct xrt_compositor_fd *xcfd,
 {
 	struct client_gl_xlib_compositor *xcc =
 	    client_gl_xlib_compositor_create(
-	        xcfd, xDisplay, visualid, glxFBConfig, glxDrawable, glxContext);
+	        xcn, xDisplay, visualid, glxFBConfig, glxDrawable, glxContext);
 
 	return &xcc->base.base;
 }

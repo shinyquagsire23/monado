@@ -27,10 +27,10 @@ struct time_state;
  * Create an OpenGL compositor client using xlib.
  *
  * @ingroup xrt_iface
- * @public @memberof xrt_compositor_fd
+ * @public @memberof xrt_compositor_native
  */
 struct xrt_compositor_gl *
-xrt_gfx_provider_create_gl_xlib(struct xrt_compositor_fd *xcfd,
+xrt_gfx_provider_create_gl_xlib(struct xrt_compositor_native *xcn,
                                 Display *xDisplay,
                                 uint32_t visualid,
                                 GLXFBConfig glxFBConfig,

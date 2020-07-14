@@ -30,13 +30,13 @@ static void
 client_egl_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
-	// Pipe down call into fd compositor.
-	xrt_comp_fd_destroy(&c->xcfd);
+	// Pipe down call into native compositor.
+	xrt_comp_native_destroy(&c->xcn);
 	free(c);
 }
 
 struct xrt_compositor_gl *
-xrt_gfx_provider_create_gl_egl(struct xrt_compositor_fd *xcfd,
+xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
                                EGLDisplay display,
                                EGLConfig config,
                                EGLContext context,
@@ -57,7 +57,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_fd *xcfd,
 
 	struct client_gl_compositor *c =
 	    U_TYPED_CALLOC(struct client_gl_compositor);
-	if (!client_gl_compositor_init(c, xcfd, getProcAddress)) {
+	if (!client_gl_compositor_init(c, xcn, getProcAddress)) {
 		free(c);
 		fprintf(stderr, "Failed to initialize compositor\n");
 		return NULL;
