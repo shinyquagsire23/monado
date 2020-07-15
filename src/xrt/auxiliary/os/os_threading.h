@@ -17,8 +17,13 @@
 
 #include "os/os_time.h"
 
-#ifdef XRT_OS_LINUX
+#if defined(XRT_OS_LINUX)
 #include <pthread.h>
+#include <semaphore.h>
+#include <assert.h>
+#elif defined(XRT_OS_WINDOWS)
+#include <pthread.h>
+#include <sched.h>
 #include <semaphore.h>
 #include <assert.h>
 #else
