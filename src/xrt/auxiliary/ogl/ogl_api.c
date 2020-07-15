@@ -7,4 +7,4 @@
  * @ingroup aux_ogl
  */
 
-#include "glad/gl.c"
+#include "../../external/glad/src/gl.c"

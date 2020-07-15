@@ -5,7 +5,7 @@ add_library(xrt-external-openxr INTERFACE)
 target_include_directories(xrt-external-openxr INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/openxr_includes)
 
 add_library(xrt-external-glad INTERFACE)
-target_include_directories(xrt-external-glad INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/glad)
+target_include_directories(xrt-external-glad INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/glad/include)
 
 add_library(xrt-external-cjson INTERFACE)
 if(XRT_HAVE_SYSTEM_CJSON)

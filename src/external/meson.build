@@ -4,5 +4,5 @@
 openxr_include = include_directories('openxr_includes')
 cjson_include = include_directories('cjson')
 flexkalman_include = include_directories('flexkalman')
-glad_include = include_directories('glad')
+glad_include = include_directories('glad/include')
 imgui_include = include_directories('imgui')
