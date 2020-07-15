@@ -7,6 +7,9 @@
  * @ingroup st_prober
  */
 
+#include "xrt/xrt_config_os.h"
+#include "xrt/xrt_config_have.h"
+
 #include "util/u_misc.h"
 #include "p_prober.h"
 

@@ -9,6 +9,7 @@
 
 
 #include "math/m_mathinclude.h"
+#include "xrt/xrt_config_os.h"
 
 #include <stdio.h>
 #include <stdlib.h>

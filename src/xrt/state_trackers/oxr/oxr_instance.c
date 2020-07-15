@@ -7,16 +7,15 @@
  * @ingroup oxr_main
  */
 
+#include "xrt/xrt_config_os.h"
+#include "xrt/xrt_config_build.h"
+#include "xrt/xrt_instance.h"
+
 #include "math/m_mathinclude.h"
 #include "util/u_var.h"
 #include "util/u_time.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
-
-#include "xrt/xrt_instance.h"
-#include "xrt/xrt_config_os.h"
-#include "xrt/xrt_config_build.h"
-
 
 #ifdef XRT_OS_ANDROID
 #include "android/android_globals.h"

@@ -9,6 +9,8 @@
  * @ingroup ipc_internal
  */
 
+#include "xrt/xrt_config_os.h"
+
 #include "ipc_utils.h"
 #include "ipc_protocol.h"
 

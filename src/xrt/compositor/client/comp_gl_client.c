@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "xrt/xrt_config_os.h"
 #include "util/u_misc.h"
 
 #include <xrt/xrt_config_have.h>
