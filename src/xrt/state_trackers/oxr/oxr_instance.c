@@ -30,7 +30,9 @@
 #include "oxr_chain.h"
 
 #include <sys/types.h>
+#ifdef XRT_OS_UNIX
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

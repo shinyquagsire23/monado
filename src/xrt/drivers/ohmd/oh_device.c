@@ -11,10 +11,12 @@
 #include "math/m_mathinclude.h"
 
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#ifndef XRT_OS_WINDOWS
+#include <unistd.h> // for sleep()
+#endif
 
 #include "os/os_time.h"
 
@@ -585,6 +587,7 @@ oh_device_create(ohmd_context *ctx,
 	if (info.quirks.delay_after_initialization) {
 		unsigned int time_to_sleep = 1;
 		do {
+			//! @todo convert to os_nanosleep
 			time_to_sleep = sleep(time_to_sleep);
 		} while (time_to_sleep);
 	}

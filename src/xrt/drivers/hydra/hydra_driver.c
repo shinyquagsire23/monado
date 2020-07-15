@@ -30,9 +30,6 @@
 
 #include "hydra_interface.h"
 
-#ifdef XRT_OS_LINUX
-#include <unistd.h>
-#endif
 
 
 /*
@@ -596,7 +593,7 @@ hydra_system_remove_child(struct hydra_system *hs, struct hydra_device *hd)
 			os_hid_set_feature(hs->command_hid,
 			                   HYDRA_REPORT_START_GAMEPAD,
 			                   sizeof(HYDRA_REPORT_START_GAMEPAD));
-			sleep(2);
+			os_nanosleep(2 * 1000 * 1000 * 1000);
 		}
 		if (hs->data_hid != NULL) {
 			os_hid_destroy(hs->data_hid);

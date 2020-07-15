@@ -11,7 +11,6 @@
 #include "math/m_mathinclude.h"
 #include <math.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
