@@ -503,6 +503,7 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 
 	r->lr->layers[layer]->type = XRT_LAYER_QUAD;
 	r->lr->layers[layer]->visibility = data->quad.visibility;
+	r->lr->layers[layer]->flags = data->flags;
 	r->lr->layers[layer]->view_space =
 	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
 

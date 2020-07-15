@@ -37,7 +37,8 @@ struct comp_layer_renderer
 	VkSampleCountFlagBits sample_count;
 
 	VkShaderModule shader_modules[2];
-	VkPipeline pipeline;
+	VkPipeline pipeline_premultiplied_alpha;
+	VkPipeline pipeline_unpremultiplied_alpha;
 	VkDescriptorSetLayout descriptor_set_layout;
 	VkPipelineLayout pipeline_layout;
 	VkPipelineCache pipeline_cache;

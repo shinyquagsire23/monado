@@ -193,9 +193,15 @@ _shader_load(struct vk_bundle *vk,
 }
 
 static bool
-_init_graphics_pipeline(struct comp_layer_renderer *self)
+_init_graphics_pipeline(struct comp_layer_renderer *self,
+                        bool premultiplied_alpha,
+                        VkPipeline *pipeline)
 {
 	struct vk_bundle *vk = self->vk;
+
+	VkBlendFactor blend_factor = premultiplied_alpha
+	                                 ? VK_BLEND_FACTOR_ONE
+	                                 : VK_BLEND_FACTOR_SRC_ALPHA;
 
 	struct comp_pipeline_config config = {
 	    .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
@@ -221,7 +227,7 @@ _init_graphics_pipeline(struct comp_layer_renderer *self)
 	            .colorWriteMask =
 	                VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
 	                VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
-	            .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+	            .srcColorBlendFactor = blend_factor,
 	            .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 	            .colorBlendOp = VK_BLEND_OP_ADD,
 	            .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
@@ -316,8 +322,7 @@ _init_graphics_pipeline(struct comp_layer_renderer *self)
 
 	VkResult res;
 	res = vk->vkCreateGraphicsPipelines(vk->device, self->pipeline_cache, 1,
-	                                    &pipeline_info, NULL,
-	                                    &self->pipeline);
+	                                    &pipeline_info, NULL, pipeline);
 
 	vk_check_error("vkCreateGraphicsPipelines", res, false);
 
@@ -388,10 +393,18 @@ _render_eye(struct comp_layer_renderer *self,
 	math_matrix_4x4_multiply(&self->mat_projection[eye],
 	                         &self->mat_eye_view[eye], &vp_eye);
 
+
 	for (uint32_t i = 0; i < self->num_layers; i++) {
-		comp_layer_draw(self->layers[i], eye, self->pipeline,
-		                pipeline_layout, cmd_buffer,
-		                &self->vertex_buffer, &vp_world, &vp_eye);
+		bool unpremultiplied_alpha =
+		    self->layers[i]->flags &
+		    XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT;
+		VkPipeline pipeline =
+		    unpremultiplied_alpha
+		        ? self->pipeline_premultiplied_alpha
+		        : self->pipeline_unpremultiplied_alpha;
+		comp_layer_draw(self->layers[i], eye, pipeline, pipeline_layout,
+		                cmd_buffer, &self->vertex_buffer, &vp_world,
+		                &vp_eye);
 	}
 }
 
@@ -507,7 +520,11 @@ _init(struct comp_layer_renderer *self,
 		return false;
 	if (!_init_pipeline_cache(self))
 		return false;
-	if (!_init_graphics_pipeline(self))
+	if (!_init_graphics_pipeline(self, false,
+	                             &self->pipeline_premultiplied_alpha))
+		return false;
+	if (!_init_graphics_pipeline(self, true,
+	                             &self->pipeline_unpremultiplied_alpha))
 		return false;
 	if (!_init_vertex_buffer(self))
 		return false;
@@ -640,7 +657,10 @@ comp_layer_renderer_destroy(struct comp_layer_renderer *self)
 	vk->vkDestroyPipelineLayout(vk->device, self->pipeline_layout, NULL);
 	vk->vkDestroyDescriptorSetLayout(vk->device,
 	                                 self->descriptor_set_layout, NULL);
-	vk->vkDestroyPipeline(vk->device, self->pipeline, NULL);
+	vk->vkDestroyPipeline(vk->device, self->pipeline_premultiplied_alpha,
+	                      NULL);
+	vk->vkDestroyPipeline(vk->device, self->pipeline_unpremultiplied_alpha,
+	                      NULL);
 
 	for (uint32_t i = 0; i < ARRAY_SIZE(self->shader_modules); i++)
 		vk->vkDestroyShaderModule(vk->device, self->shader_modules[i],
