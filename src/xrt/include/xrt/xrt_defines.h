@@ -28,7 +28,7 @@ extern "C" {
  */
 struct xrt_reference
 {
-	uint32_t count;
+	xrt_atomic_s32_t count;
 };
 
 /*!
@@ -617,14 +617,14 @@ union xrt_output_value {
 static inline bool
 xrt_reference_dec(struct xrt_reference *xref)
 {
-	int count = xrt_atomic_dec_return(&xref->count);
+	int32_t count = xrt_atomic_s32_dec_return(&xref->count);
 	return count == 0;
 }
 
 static inline void
 xrt_reference_inc(struct xrt_reference *xref)
 {
-	xrt_atomic_inc_return(&xref->count);
+	xrt_atomic_s32_inc_return(&xref->count);
 }
 
 
