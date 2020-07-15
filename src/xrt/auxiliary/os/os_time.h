@@ -25,6 +25,10 @@
 #define XRT_HAVE_TIMESPEC
 #define XRT_HAVE_TIMEVAL
 
+#elif defined(XRT_OS_WINDOWS)
+#include <time.h>
+#define XRT_HAVE_TIMESPEC
+
 #elif defined(XRT_DOXYGEN)
 #include <time.h>
 #define XRT_HAVE_TIMESPEC
@@ -114,6 +118,28 @@ os_timeval_to_ns(struct timeval *val)
 }
 #endif // XRT_HAVE_TIMEVAL
 
+#ifdef XRT_OS_WINDOWS
+#define CLOCK_MONOTONIC 0
+#define CLOCK_REALTIME 1
+
+static int
+clock_gettime(int clk_id, struct timespec *spec)
+{
+	__int64 wintime;
+
+	//! @todo We should be using QueryPerformanceCounter
+	GetSystemTimeAsFileTime((FILETIME *)&wintime);
+	// 1jan1601 to 1jan1970
+	wintime -= 116444736000000000i64;
+	// seconds
+	spec->tv_sec = wintime / 10000000i64;
+	// nano-seconds
+	spec->tv_nsec = wintime % 10000000i64 * 100;
+
+	return 0;
+}
+
+#endif // XRT_OS_WINDOWS
 
 /*!
  * @brief Return a monotonic clock in nanoseconds.
@@ -122,7 +148,7 @@ os_timeval_to_ns(struct timeval *val)
 static inline uint64_t
 os_monotonic_get_ns(void)
 {
-#ifdef XRT_OS_LINUX
+#if defined(XRT_OS_LINUX) || defined(XRT_OS_WINDOWS)
 	struct timespec ts;
 	int ret = clock_gettime(CLOCK_MONOTONIC, &ts);
 	if (ret != 0) {
