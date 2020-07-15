@@ -96,12 +96,10 @@ struct prober_device
 		uint16_t bus;
 		uint16_t addr;
 
-#ifdef XRT_OS_LINUX
 		const char *product;
 		const char *manufacturer;
 		const char *serial;
 		const char *path;
-#endif
 
 		uint8_t ports[8];
 		uint32_t num_ports;
@@ -123,10 +121,12 @@ struct prober_device
 	} uvc;
 #endif
 
-#ifdef XRT_OS_LINUX
+#ifdef XRT_HAVE_V4L2
 	size_t num_v4ls;
 	struct prober_v4l *v4ls;
+#endif
 
+#ifdef XRT_OS_LINUX
 	size_t num_hidraws;
 	struct prober_hidraw *hidraws;
 #endif

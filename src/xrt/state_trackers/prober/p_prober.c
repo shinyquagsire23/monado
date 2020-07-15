@@ -372,7 +372,6 @@ teardown_devices(struct prober *p)
 	for (size_t i = 0; i < p->num_devices; i++) {
 		struct prober_device *pdev = &p->devices[i];
 
-#ifdef XRT_OS_LINUX
 		if (pdev->usb.product != NULL) {
 			free((char *)pdev->usb.product);
 			pdev->usb.product = NULL;
@@ -393,6 +392,19 @@ teardown_devices(struct prober *p)
 			pdev->usb.path = NULL;
 		}
 
+#ifdef XRT_HAVE_LIBUSB
+		if (pdev->usb.dev != NULL) {
+			//! @todo Free somewhere else
+		}
+#endif
+
+#ifdef XRT_HAVE_LIBUVC
+		if (pdev->uvc.dev != NULL) {
+			//! @todo Free somewhere else
+		}
+#endif
+
+#ifdef XRT_HAVE_V4L2
 		for (size_t j = 0; j < pdev->num_v4ls; j++) {
 			struct prober_v4l *v4l = &pdev->v4ls[j];
 			free((char *)v4l->path);
@@ -404,7 +416,9 @@ teardown_devices(struct prober *p)
 			pdev->v4ls = NULL;
 			pdev->num_v4ls = 0;
 		}
+#endif
 
+#ifdef XRT_OS_LINUX
 		for (size_t j = 0; j < pdev->num_hidraws; j++) {
 			struct prober_hidraw *hidraw = &pdev->hidraws[j];
 			free((char *)hidraw->path);
@@ -679,6 +693,7 @@ open_hid_interface(struct xrt_prober *xp,
 	struct prober_device *pdev = (struct prober_device *)xpdev;
 	int ret;
 
+#ifdef XRT_OS_LINUX
 	for (size_t j = 0; j < pdev->num_hidraws; j++) {
 		struct prober_hidraw *hidraw = &pdev->hidraws[j];
 
@@ -695,6 +710,7 @@ open_hid_interface(struct xrt_prober *xp,
 
 		return 0;
 	}
+#endif // XRT_OS_LINUX
 
 	P_ERROR(p,
 	        "Could not find the requested "
@@ -745,7 +761,7 @@ list_video_devices(struct xrt_prober *xp,
 		has |= pdev->uvc.dev != NULL;
 #endif
 
-#ifdef XRT_OS_LINUX
+#ifdef XRT_HAVE_V4L2
 		has |= pdev->num_v4ls > 0;
 #endif
 		if (!has) {

@@ -139,7 +139,7 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 	}
 #endif
 
-#ifdef XRT_OS_LINUX
+#ifdef XRT_HAVE_V4L2
 	for (size_t j = 0; j < pdev->num_v4ls; j++) {
 		struct prober_v4l *v4l = &pdev->v4ls[j];
 
