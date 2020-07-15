@@ -41,7 +41,8 @@ u_threading_stack_push(struct u_threading_stack *uts, void *ptr)
 
 	if (uts->num + 1 > uts->length) {
 		uts->length += 8;
-		uts->arr = realloc(uts->arr, uts->length * sizeof(void *));
+		uts->arr =
+		    (void **)realloc(uts->arr, uts->length * sizeof(void *));
 	}
 
 	uts->arr[uts->num++] = ptr;
