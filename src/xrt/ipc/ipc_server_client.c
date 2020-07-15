@@ -7,7 +7,7 @@
  * @ingroup ipc_server
  */
 
-#include "xrt/xrt_gfx_fd.h"
+#include "xrt/xrt_gfx_native.h"
 
 #include "util/u_misc.h"
 

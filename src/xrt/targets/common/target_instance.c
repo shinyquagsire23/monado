@@ -8,7 +8,7 @@
 
 #include "target_instance_parts.h"
 
-#include "xrt/xrt_gfx_fd.h"
+#include "xrt/xrt_gfx_native.h"
 
 static int
 t_instance_create_native_compositor(struct xrt_instance *xinst,

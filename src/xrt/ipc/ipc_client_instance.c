@@ -8,7 +8,7 @@
  */
 
 #include "xrt/xrt_instance.h"
-#include "xrt/xrt_gfx_fd.h"
+#include "xrt/xrt_gfx_native.h"
 
 #include "util/u_misc.h"
 #include "util/u_var.h"
