@@ -380,15 +380,24 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.num_formats = count;
 
 	gladLoadGL(get_gl_procaddr);
+	// @todo log this to a proper logger.
+#define CHECK_REQUIRED_EXTENSION(EXT)                                          \
+	do {                                                                   \
+		if (!GLAD_##EXT) {                                             \
+			fprintf(stderr,                                        \
+			        "%s - Needed extension " #EXT                  \
+			        " not supported\n",                            \
+			        __func__);                                     \
+			return false;                                          \
+		}                                                              \
+	} while (0)
 
-	if (!GLAD_GL_EXT_memory_object_fd) {
-		// @todo log this to a proper logger.
-		fprintf(stderr,
-		        "%s - Needed extension"
-		        " GL_EXT_memory_object_fd not supported\n",
-		        __func__);
-		return false;
-	}
+	CHECK_REQUIRED_EXTENSION(GL_EXT_memory_object);
+#ifdef XRT_OS_LINUX
+	CHECK_REQUIRED_EXTENSION(GL_EXT_memory_object_fd);
+#endif
+
+#undef CHECK_REQUIRED_EXTENSION
 
 	return true;
 }
