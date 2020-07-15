@@ -23,6 +23,9 @@ src/xrt/targets/gui/monado-gui
 src/xrt/targets/openxr/intermediate_manifest.json
 src/xrt/targets/targets_enabled_drivers.h
 
+# Ignore Python caches
+__pycache__/
+
 # ignore build trees
 build/
 build*/
