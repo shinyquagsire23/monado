@@ -62,11 +62,13 @@ extern "C" {
 static inline void
 os_nanosleep(long nsec)
 {
-#ifdef XRT_OS_LINUX
+#if defined(XRT_OS_LINUX)
 	struct timespec spec;
 	spec.tv_sec = (nsec / (1000 * 1000 * 1000));
 	spec.tv_nsec = (nsec % (1000 * 1000 * 1000));
 	nanosleep(&spec, NULL);
+#elif defined(XRT_OS_WINDOWS)
+	Sleep(nsec / 1000);
 #endif
 }
 
