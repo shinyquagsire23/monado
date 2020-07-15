@@ -11,6 +11,7 @@
 #include "util/u_device.h"
 #include "util/u_misc.h"
 
+#include "math/m_mathinclude.h"
 #include "math/m_api.h"
 
 #include <math.h>

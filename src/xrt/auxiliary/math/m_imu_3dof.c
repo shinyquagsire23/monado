@@ -14,6 +14,7 @@
 #include "math/m_filter_fifo.h"
 #include "math/m_imu_3dof.h"
 #include "math/m_vec3.h"
+#include "math/m_mathinclude.h"
 
 #include <stdio.h>
 

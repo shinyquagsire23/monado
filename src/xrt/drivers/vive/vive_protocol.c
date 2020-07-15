@@ -9,9 +9,10 @@
  * @ingroup drv_vive
  */
 
+#include "math/m_mathinclude.h"
+
 #include <stdio.h>
 #include <zlib.h>
-#include <math.h>
 #include "math/m_api.h"
 
 #include "vive_protocol.h"

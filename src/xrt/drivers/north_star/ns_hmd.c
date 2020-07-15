@@ -9,7 +9,8 @@
  * @ingroup drv_ns
  */
 
-#include <math.h>
+#include "math/m_mathinclude.h"
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>

@@ -15,7 +15,8 @@
  */
 
 
-#include <math.h>
+#include "math/m_mathinclude.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

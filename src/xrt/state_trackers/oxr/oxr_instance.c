@@ -7,6 +7,7 @@
  * @ingroup oxr_main
  */
 
+#include "math/m_mathinclude.h"
 #include "util/u_var.h"
 #include "util/u_time.h"
 #include "util/u_misc.h"

@@ -26,7 +26,8 @@
 
 #include "math/m_imu_3dof.h"
 
-#include <math.h>
+#include "math/m_mathinclude.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

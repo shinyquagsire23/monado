@@ -7,7 +7,7 @@
  * @ingroup aux_math
  */
 
-
+#include "math/m_mathinclude.h"
 #include "math/m_api.h"
 #include "util/u_debug.h"
 

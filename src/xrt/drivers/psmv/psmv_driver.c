@@ -28,8 +28,9 @@
 
 #include "psmv_interface.h"
 
+#include "math/m_mathinclude.h"
+
 #include <stdio.h>
-#include <math.h>
 #include <assert.h>
 
 

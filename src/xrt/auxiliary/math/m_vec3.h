@@ -15,7 +15,7 @@
 
 #include "xrt/xrt_defines.h"
 
-#include <math.h>
+#include "m_mathinclude.h"
 #include <float.h>
 
 

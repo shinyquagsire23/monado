@@ -15,6 +15,7 @@
 
 #include "util/u_time.h"
 
+#include "math/m_mathinclude.h"
 #include <cmath>
 #include <type_traits>
 

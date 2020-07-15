@@ -13,7 +13,7 @@
 
 #include "xrt/xrt_defines.h"
 
-#include <math.h>
+#include "m_mathinclude.h"
 
 
 #ifdef __cplusplus
