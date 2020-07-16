@@ -25,16 +25,6 @@ extern "C" {
 typedef int xrt_shmem_handle_t;
 
 /*!
- * An invalid value for a shared memory block.
- *
- * Note that there may be more than one value that's invalid - use
- * @ref xrt_shmem_is_valid instead of comparing against this!
- *
- * @relates xrt_shmem_handle_t
- */
-#define XRT_SHMEM_HANDLE_INVALID (-1)
-
-/*!
  * Check whether a shared memory handle is valid.
  *
  * @public @memberof xrt_shmem_handle_t
@@ -44,6 +34,16 @@ xrt_shmem_is_valid(xrt_shmem_handle_t handle)
 {
 	return handle >= 0;
 }
+
+/*!
+ * An invalid value for a shared memory block.
+ *
+ * Note that there may be more than one value that's invalid - use
+ * @ref xrt_shmem_is_valid instead of comparing against this!
+ *
+ * @relates xrt_shmem_handle_t
+ */
+#define XRT_SHMEM_HANDLE_INVALID (-1)
 
 #if defined(XRT_OS_ANDROID)
 typedef struct AHardwareBuffer AHardwareBuffer;
@@ -57,16 +57,6 @@ typedef struct AHardwareBuffer AHardwareBuffer;
 typedef AHardwareBuffer *xrt_graphics_buffer_handle_t;
 
 /*!
- * An invalid value for a graphics buffer.
- *
- * Note that there may be more than one value that's invalid - use
- * @ref xrt_graphics_buffer_is_valid instead of comparing against this!
- *
- * @relates xrt_graphics_buffer_handle_t
- */
-#define XRT_GRAPHICS_BUFFER_HANDLE_INVALID NULL
-
-/*!
  * Check whether a graphics buffer handle is valid.
  *
  * @public @memberof xrt_graphics_buffer_handle_t
@@ -76,6 +66,17 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
 {
 	return handle != NULL;
 }
+
+/*!
+ * An invalid value for a graphics buffer.
+ *
+ * Note that there may be more than one value that's invalid - use
+ * xrt_graphics_buffer_is_valid() instead of comparing against this!
+ *
+ * @relates xrt_graphics_buffer_handle_t
+ */
+#define XRT_GRAPHICS_BUFFER_HANDLE_INVALID NULL
+
 #else
 
 /*!
@@ -87,16 +88,6 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
 typedef int xrt_graphics_buffer_handle_t;
 
 /*!
- * An invalid value for a graphics buffer.
- *
- * Note that there may be more than one value that's invalid - use
- * @ref xrt_graphics_buffer_is_valid instead of comparing against this!
- *
- * @relates xrt_graphics_buffer_handle_t
- */
-#define XRT_GRAPHICS_BUFFER_HANDLE_INVALID (-1)
-
-/*!
  * Check whether a graphics buffer handle is valid.
  *
  * @public @memberof xrt_graphics_buffer_handle_t
@@ -106,6 +97,17 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
 {
 	return handle >= 0;
 }
+
+/*!
+ * An invalid value for a graphics buffer.
+ *
+ * Note that there may be more than one value that's invalid - use
+ * xrt_graphics_buffer_is_valid() instead of comparing against this!
+ *
+ * @relates xrt_graphics_buffer_handle_t
+ */
+#define XRT_GRAPHICS_BUFFER_HANDLE_INVALID (-1)
+
 #endif
 
 #ifdef __cplusplus
