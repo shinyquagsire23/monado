@@ -528,16 +528,26 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 	uint32_t left_array_index = data->stereo.l.sub.array_index;
 	uint32_t right_array_index = data->stereo.r.sub.array_index;
 
+	struct comp_render_layer *l = r->lr->layers[layer];
 	comp_layer_update_stereo_descriptors(
-	    r->lr->layers[layer], left_image->sampler, right_image->sampler,
+	    l, left_image->sampler, right_image->sampler,
 	    get_image_view(left_image, data->flags, left_array_index),
 	    get_image_view(right_image, data->flags, right_array_index));
 
-	comp_layer_set_flip_y(r->lr->layers[layer], data->flip_y);
+	comp_layer_set_flip_y(l, data->flip_y);
 
-	r->lr->layers[layer]->type = XRT_LAYER_STEREO_PROJECTION;
-	r->lr->layers[layer]->view_space =
+	l->type = XRT_LAYER_STEREO_PROJECTION;
+	l->view_space =
 	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+
+	l->transformation[0].offset = data->stereo.l.sub.rect.offset;
+	l->transformation[0].extent = data->stereo.l.sub.rect.extent;
+	l->transformation[1].offset = data->stereo.r.sub.rect.offset;
+	l->transformation[1].extent = data->stereo.r.sub.rect.extent;
+
+	for (uint32_t i = 0; i < 2; i++) {
+		l->transformation[i].has_sub = true;
+	}
 }
 
 void
