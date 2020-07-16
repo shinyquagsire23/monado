@@ -911,13 +911,18 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              struct oxr_session *sess);
 #endif // XR_USE_PLATFORM_XLIB
 
+#endif // XR_USE_GRAPHICS_API_OPENGL
+
+#if defined(XR_USE_GRAPHICS_API_OPENGL) ||                                     \
+    defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 XrResult
 oxr_swapchain_gl_create(struct oxr_logger *,
                         struct oxr_session *sess,
                         const XrSwapchainCreateInfo *,
                         struct oxr_swapchain **out_swapchain);
 
-#endif // XR_USE_GRAPHICS_API_OPENGL
+#endif // XR_USE_GRAPHICS_API_OPENGL || XR_USE_GRAPHICS_API_OPENGL_ES
+
 
 
 /*

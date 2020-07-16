@@ -24,7 +24,11 @@ generated = custom_target('bindings code',
 
 compile_args = []
 if build_opengl
-	compile_args += ['-DXR_USE_GRAPHICS_API_OPENGL', '-DXR_USE_GRAPHICS_API_OPENGL_ES']
+	compile_args += ['-DXR_USE_GRAPHICS_API_OPENGL']
+endif
+
+if build_opengles
+	compile_args += ['-DXR_USE_GRAPHICS_API_OPENGL_ES']
 endif
 
 if build_egl

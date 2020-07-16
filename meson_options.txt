@@ -40,7 +40,12 @@ option('install-active-runtime',
 option('opengl',
 	type: 'feature',
 	value: 'auto',
-	description: 'Enable OpenGL/GLES application support.')
+	description: 'Enable OpenGL application support.')
+
+option('opengles',
+	type: 'feature',
+	value: 'auto',
+	description: 'Enable OpenGL|ES application support.')
 
 option('egl',
 	type: 'feature',

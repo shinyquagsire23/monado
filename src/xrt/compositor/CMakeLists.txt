@@ -45,12 +45,20 @@ if(XRT_HAVE_VULKAN)
 		client/comp_vk_glue.c
 		)
 endif()
-if(XRT_HAVE_OPENGL)
+if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_gl_client.c
 		client/comp_gl_client.h
+		)
+endif()
+if(XRT_HAVE_OPENGL)
+	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_gl_glue.c
-		client/comp_gles_glue.c # TODO separate config for GLES
+		)
+endif()
+if(XRT_HAVE_OPENGLES)
+	list(APPEND CLIENT_SOURCE_FILES
+		client/comp_gles_glue.c
 		)
 endif()
 if(XRT_HAVE_OPENGL AND XRT_HAVE_XLIB)
@@ -60,7 +68,7 @@ if(XRT_HAVE_OPENGL AND XRT_HAVE_XLIB)
 		client/comp_gl_xlib_glue.c
 		)
 endif()
-if(XRT_HAVE_OPENGL AND XRT_HAVE_EGL)
+if(XRT_HAVE_EGL)
 	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_egl_glue.c
 		)
@@ -73,7 +81,7 @@ target_include_directories(comp_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 if(XRT_HAVE_VULKAN)
 	target_link_libraries(comp_client PRIVATE aux_vk)
 endif()
-if(XRT_HAVE_OPENGL)
+if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	target_link_libraries(comp_client PRIVATE aux_ogl)
 endif()
 

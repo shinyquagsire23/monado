@@ -19,10 +19,20 @@ set(MATH_SOURCE_FILES
 	)
 
 set(OGL_SOURCE_FILES
-	ogl/ogl_api.c
-	ogl/ogl_api.h
 	ogl/ogl_documentation.h
 	)
+if(XRT_HAVE_OPENGL)
+	list(APPEND OGL_SOURCE_FILES
+		ogl/ogl_api.c
+		ogl/ogl_api.h
+		)
+elseif(XRT_HAVE_OPENGLES)
+	# Only want one of these two sets of files, to avoid duplicate definitions.
+	list(APPEND OGL_SOURCE_FILES
+		ogl/ogles_api.c
+		ogl/ogles_api.h
+		)
+endif()
 
 set(OS_SOURCE_FILES
 	os/os_ble.h
@@ -116,7 +126,7 @@ add_library(aux-includes INTERFACE)
 target_include_directories(aux-includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(aux-includes INTERFACE xrt-interfaces)
 
-if(XRT_HAVE_OPENGL)
+if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	# OpenGL library.
 	add_library(aux_ogl STATIC ${OGL_SOURCE_FILES})
 	target_link_libraries(aux_ogl PUBLIC aux-includes)

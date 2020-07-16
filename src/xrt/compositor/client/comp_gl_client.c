@@ -12,9 +12,16 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <xrt/xrt_config_have.h>
 #include "util/u_misc.h"
 
+#if defined(XRT_HAVE_OPENGL)
+// or both OpenGL and GL-ES
 #include "ogl/ogl_api.h"
+#elif defined(XRT_HAVE_OPENGLES)
+#include "ogl/ogles_api.h"
+#endif
+
 #include "client/comp_gl_client.h"
 
 #include <inttypes.h>
@@ -379,7 +386,11 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	}
 	c->base.base.num_formats = count;
 
+#if defined(XRT_HAVE_OPENGL)
 	gladLoadGL(get_gl_procaddr);
+#elif defined(XRT_HAVE_OPENGLES)
+	gladLoadGLES2(get_gl_procaddr);
+#endif
 	// @todo log this to a proper logger.
 #define CHECK_REQUIRED_EXTENSION(EXT)                                          \
 	do {                                                                   \

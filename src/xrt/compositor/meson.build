@@ -44,14 +44,25 @@ if build_xcb_xrandr_direct
 	compositor_deps += [xcb_randr, x11_xcb]
 endif
 
-if build_opengl
+if build_opengl or build_opengles
 	compositor_srcs += [
 		'client/comp_gl_client.c',
 		'client/comp_gl_client.h',
+	]
+endif
+
+if build_opengl
+	compositor_srcs += [
 		'client/comp_gl_glue.c',
-		'client/comp_gles_glue.c',
 	]
 	compositor_deps += [opengl]
+	compositor_includes += [glad_include]
+endif
+if build_opengles
+	compositor_srcs += [
+		'client/comp_gles_glue.c',
+	]
+	compositor_deps += [opengles]
 	compositor_includes += [glad_include]
 endif
 

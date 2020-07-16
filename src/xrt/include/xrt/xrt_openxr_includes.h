@@ -29,7 +29,7 @@ typedef void *GLXDrawable;
 typedef void *GLXContext;
 #endif
 
-#ifdef XR_USE_PLATFORM_EGL
+#if defined(XR_USE_PLATFORM_EGL) || defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 typedef void *EGLDisplay;
 typedef void *EGLContext;
 typedef void *EGLConfig;

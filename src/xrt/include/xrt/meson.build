@@ -53,6 +53,14 @@ if opencv.found()
 	have_conf.set('XRT_HAVE_OPENCV', true)
 endif
 
+if build_opengl
+	have_conf.set('XRT_HAVE_OPENGL', true)
+endif
+
+if build_opengles
+	have_conf.set('XRT_HAVE_OPENGLES', true)
+endif
+
 if sdl2.found()
 	have_conf.set('XRT_HAVE_SDL2', true)
 endif

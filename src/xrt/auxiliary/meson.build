@@ -58,23 +58,37 @@ aux_util = declare_dependency(
 	link_with: lib_aux_util,
 )
 
-lib_aux_ogl = static_library(
-	'aux_ogl',
-	files(
-		'ogl/ogl_api.h',
-		'ogl/ogl_api.c',
+if build_opengl or build_opengles
+	ogl_files = [
 		'ogl/ogl_documentation.h',
-	),
-	include_directories: [
-		xrt_include,
-		glad_include,
-	],
-)
+	]
 
-aux_ogl = declare_dependency(
-	include_directories: aux_include,
-	link_with: lib_aux_ogl,
-)
+	if build_opengl
+		ogl_files += [
+			'ogl/ogl_api.h',
+			'ogl/ogl_api.c',
+		]
+	elif build_opengles
+		ogl_files += [
+			'ogl/ogles_api.h',
+			'ogl/ogles_api.c',
+		]
+	endif
+
+	lib_aux_ogl = static_library(
+		'aux_ogl',
+		files(ogl_files),
+		include_directories: [
+			xrt_include,
+			glad_include,
+		],
+	)
+
+	aux_ogl = declare_dependency(
+		include_directories: aux_include,
+		link_with: lib_aux_ogl,
+	)
+endif
 
 lib_aux_os = static_library(
 	'aux_os',

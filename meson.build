@@ -54,20 +54,21 @@ glslangValidator = find_program('glslangValidator')
 pthreads = cc.find_library('pthread', required: true)
 rt = cc.find_library('rt', required: true)
 
-avcodec = dependency('libavcodec', required: false)
-egl     = dependency('egl', required: get_option('egl'))
-egl     = egl.partial_dependency(includes: true)
-eigen3  = dependency('eigen3')
-libjpeg = dependency('libjpeg', required: false)
-libusb  = dependency('libusb-1.0', required: false)
-opengl  = dependency('gl', required: get_option('opengl'))
-rs      = dependency('realsense2', required: false)
-sdl2    = dependency('sdl2', required: get_option('gui'))
-udev    = dependency('libudev', required: false)
-libuvc  = dependency('libuvc', required: false)
-vulkan  = dependency('vulkan', required: true)
-zlib    = dependency('zlib', required: false)
-survive = dependency('survive', required: false)
+avcodec  = dependency('libavcodec', required: false)
+egl      = dependency('egl', required: get_option('egl'))
+egl      = egl.partial_dependency(includes: true)
+eigen3   = dependency('eigen3')
+libjpeg  = dependency('libjpeg', required: false)
+libusb   = dependency('libusb-1.0', required: false)
+opengl   = dependency('gl', required: get_option('opengl'))
+opengles = dependency('glesv2', required: get_option('opengles'))
+rs       = dependency('realsense2', required: false)
+sdl2     = dependency('sdl2', required: get_option('gui'))
+udev     = dependency('libudev', required: false)
+libuvc   = dependency('libuvc', required: false)
+vulkan   = dependency('vulkan', required: true)
+zlib     = dependency('zlib', required: false)
+survive  = dependency('survive', required: false)
 
 opencv = dependency('opencv4', required: false)
 if not opencv.found()
@@ -98,6 +99,11 @@ endif
 build_opengl = false
 if get_option('opengl').enabled() or get_option('opengl').auto()
         build_opengl = opengl.found()
+endif
+
+build_opengles = false
+if get_option('opengles').enabled() or get_option('opengles').auto()
+        build_opengles = opengles.found() and egl.found()
 endif
 
 

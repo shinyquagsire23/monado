@@ -67,7 +67,13 @@ if(XRT_HAVE_VULKAN)
 endif()
 
 if(XRT_HAVE_OPENGL)
-	add_definitions(-DXR_USE_GRAPHICS_API_OPENGL -DXR_USE_GRAPHICS_API_OPENGL_ES)
+	add_definitions(-DXR_USE_GRAPHICS_API_OPENGL)
+endif()
+if(XRT_HAVE_OPENGLES)
+	add_definitions(-DXR_USE_GRAPHICS_API_OPENGL_ES)
+endif()
+
+if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	list(APPEND OXR_SOURCE_FILES
 		oxr_session_gl.c
 		oxr_swapchain_gl.c
