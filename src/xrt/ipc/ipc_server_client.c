@@ -346,7 +346,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	struct xrt_swapchain_native *xscn = (struct xrt_swapchain_native *)xsc;
 
 	// Sanity checking.
-	assert(xsc->num_images <= IPC_MAX_SWAPCHAIN_FDS);
+	assert(xsc->num_images <= IPC_MAX_SWAPCHAIN_HANDLES);
 	assert(xsc->num_images <= max_num_handles);
 
 	*out_id = index;
@@ -356,7 +356,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	// Setup the fds.
 	*out_num_handles = xsc->num_images;
 	for (size_t i = 0; i < xsc->num_images; i++) {
-		out_handles[i] = xscn->images[i].fd;
+		out_handles[i] = xscn->images[i].handle;
 	}
 
 	return XRT_SUCCESS;
@@ -378,9 +378,9 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 		return xret;
 	}
 
-	struct xrt_image_native xins[IPC_MAX_SWAPCHAIN_FDS] = {0};
+	struct xrt_image_native xins[IPC_MAX_SWAPCHAIN_HANDLES] = {0};
 	for (uint32_t i = 0; i < num_handles; i++) {
-		xins[i].fd = handles[i];
+		xins[i].handle = handles[i];
 		xins[i].size = args->sizes[i];
 	}
 

@@ -303,11 +303,13 @@ vk_create_image_from_native(struct vk_bundle *vk,
 		// Nothing to cleanup
 		return ret;
 	}
-
+#ifdef XRT_OS_ANDROID
+	ret = VK_ERROR_INITIALIZATION_FAILED;
+#else
 	VkImportMemoryFdInfoKHR import_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
 	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
-	    .fd = image_native->fd,
+	    .fd = image_native->handle,
 	};
 	VkMemoryDedicatedAllocateInfoKHR dedicated_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
@@ -318,10 +320,10 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	ret = vk_alloc_and_bind_image_memory(vk, image, image_native->size,
 	                                     &dedicated_memory_info, out_mem,
 	                                     NULL);
-
+#endif
 
 	// We have consumed this fd now, make sure it's not freed again.
-	image_native->fd = -1;
+	image_native->handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
 
 	if (ret != VK_SUCCESS) {
 		vk->vkDestroyImage(vk->device, image, NULL);

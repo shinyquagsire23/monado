@@ -315,10 +315,11 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		    sc->memory[i], GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
 		glImportMemoryFdEXT(sc->memory[i], xscn->images[i].size,
 		                    GL_HANDLE_TYPE_OPAQUE_FD_EXT,
-		                    xscn->images[i].fd);
+		                    xscn->images[i].handle);
 
-		// We have consumed this fd now, make sure it's not freed again.
-		xscn->images[i].fd = -1;
+		// We have consumed this handle now, make sure it's not freed
+		// again.
+		xscn->images[i].handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
 
 		if (info->array_size == 1) {
 			glTextureStorageMem2DEXT(

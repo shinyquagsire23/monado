@@ -92,9 +92,9 @@ alloc_and_set_funcs(struct comp_compositor *c, uint32_t num_images)
 	sc->base.base.num_images = num_images;
 	sc->c = c;
 
-	// Make sure the fds are invalid.
+	// Make sure the handles are invalid.
 	for (uint32_t i = 0; i < ARRAY_SIZE(sc->base.images); i++) {
-		sc->base.images[i].fd = -1;
+		sc->base.images[i].handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
 	}
 
 	return sc;
@@ -261,7 +261,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 	vk_ic_get_fds(&c->vk, &sc->vkic, ARRAY_SIZE(fds), fds);
 	for (uint32_t i = 0; i < sc->vkic.num_images; i++) {
-		sc->base.images[i].fd = fds[i];
+		sc->base.images[i].handle = fds[i];
 		sc->base.images[i].size = sc->vkic.images[i].size;
 	}
 #else
@@ -316,12 +316,11 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc)
 	}
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
-		if (sc->base.images[i].fd < 0) {
+		if (!xrt_graphics_buffer_is_valid(sc->base.images[i].handle)) {
 			continue;
 		}
-
-		close(sc->base.images[i].fd);
-		sc->base.images[i].fd = -1;
+		close(sc->base.images[i].handle);
+		sc->base.images[i].handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
 	}
 
 	vk_ic_destroy(vk, &sc->vkic);

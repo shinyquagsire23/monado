@@ -21,7 +21,7 @@
 
 
 #define IPC_MSG_SOCK_FILE "/tmp/monado_comp_ipc"
-#define IPC_MAX_SWAPCHAIN_FDS 8
+#define IPC_MAX_SWAPCHAIN_HANDLES 8
 #define IPC_CRED_SIZE 1    // auth not implemented
 #define IPC_BUF_SIZE 512   // must be >= largest message length in bytes
 #define IPC_MAX_VIEWS 8    // max views we will return configs for
@@ -224,5 +224,5 @@ struct ipc_app_state
  */
 struct ipc_arg_swapchain_from_native
 {
-	size_t sizes[IPC_MAX_SWAPCHAIN_FDS];
+	size_t sizes[IPC_MAX_SWAPCHAIN_HANDLES];
 };

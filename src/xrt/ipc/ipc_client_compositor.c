@@ -192,19 +192,20 @@ swapchain_server_create(struct ipc_client_compositor *icc,
                         const struct xrt_swapchain_create_info *info,
                         struct xrt_swapchain **out_xsc)
 {
-	int remote_fds[IPC_MAX_SWAPCHAIN_FDS] = {0};
+	xrt_graphics_buffer_handle_t remote_handles[IPC_MAX_SWAPCHAIN_HANDLES] =
+	    {0};
 	xrt_result_t r = XRT_SUCCESS;
 	uint32_t handle;
 	uint32_t num_images;
 	uint64_t size;
 
-	r = ipc_call_swapchain_create(icc->ipc_c,             // connection
-	                              info,                   // in
-	                              &handle,                // out
-	                              &num_images,            // out
-	                              &size,                  // out
-	                              remote_fds,             // fds
-	                              IPC_MAX_SWAPCHAIN_FDS); // fds
+	r = ipc_call_swapchain_create(icc->ipc_c,                 // connection
+	                              info,                       // in
+	                              &handle,                    // out
+	                              &num_images,                // out
+	                              &size,                      // out
+	                              remote_handles,             // handles
+	                              IPC_MAX_SWAPCHAIN_HANDLES); // handles
 	if (r != XRT_SUCCESS) {
 		return r;
 	}
@@ -220,7 +221,7 @@ swapchain_server_create(struct ipc_client_compositor *icc,
 	ics->id = handle;
 
 	for (uint32_t i = 0; i < num_images; i++) {
-		ics->base.images[i].fd = remote_fds[i];
+		ics->base.images[i].handle = remote_handles[i];
 		ics->base.images[i].size = size;
 	}
 
@@ -237,12 +238,12 @@ swapchain_server_import(struct ipc_client_compositor *icc,
                         struct xrt_swapchain **out_xsc)
 {
 	struct ipc_arg_swapchain_from_native args = {0};
-	xrt_graphics_buffer_handle_t handles[IPC_MAX_SWAPCHAIN_FDS] = {0};
+	xrt_graphics_buffer_handle_t handles[IPC_MAX_SWAPCHAIN_HANDLES] = {0};
 	xrt_result_t r = XRT_SUCCESS;
 	uint32_t id = 0;
 
 	for (uint32_t i = 0; i < num_images; i++) {
-		handles[i] = native_images[i].fd;
+		handles[i] = native_images[i].handle;
 		args.sizes[i] = native_images[i].size;
 	}
 

@@ -208,7 +208,7 @@ vk_ic_from_natives(struct vk_bundle *vk,
 #ifdef XRT_OS_LINUX
 	for (; i < num_images; i++) {
 		// Ensure that all fds are consumed or none are.
-		int fd = dup(native_images[i].fd);
+		int fd = dup(native_images[i].handle);
 
 		ret = vk_create_image_from_native(vk, xscci, &native_images[i],
 		                                  &out_vkic->images[i].handle,
@@ -217,7 +217,7 @@ vk_ic_from_natives(struct vk_bundle *vk,
 			close(fd);
 			break;
 		}
-		native_images[i].fd = fd;
+		native_images[i].handle = fd;
 	}
 #endif
 
@@ -230,8 +230,9 @@ vk_ic_from_natives(struct vk_bundle *vk,
 		// We have consumed all fds now, close all of the copies we
 		// made, all this to make sure we do all or nothing.
 		for (size_t k = 0; k < num_images; k++) {
-			close(native_images[k].fd);
-			native_images[k].fd = -1;
+			close(native_images[k].handle);
+			native_images[k].handle =
+			    XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
 			native_images[k].size = 0;
 		}
 #endif

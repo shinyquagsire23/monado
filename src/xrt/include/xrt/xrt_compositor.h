@@ -10,6 +10,7 @@
 #pragma once
 
 #include "xrt/xrt_defines.h"
+#include "xrt/xrt_handles.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -1140,8 +1141,11 @@ xrt_compositor_vk(struct xrt_compositor *xc)
 struct xrt_image_native
 {
 	size_t size;
-	int fd;
+	xrt_graphics_buffer_handle_t handle;
+#ifndef XRT_OS_ANDROID
+	// Only pad if we're using an int instead of a pointer
 	int _pad;
+#endif
 };
 
 /*!
