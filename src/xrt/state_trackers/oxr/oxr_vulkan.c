@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 #include "util/u_misc.h"
+#include "util/u_debug.h"
 
 #include "xrt/xrt_gfx_vk.h"
 
@@ -68,6 +69,8 @@ oxr_vk_get_requirements(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
+DEBUG_GET_ONCE_BOOL_OPTION(print_debug, "XRT_COMPOSITOR_PRINT_DEBUG", false)
+
 XrResult
 oxr_vk_get_physical_device(struct oxr_logger *log,
                            struct oxr_instance *inst,
@@ -77,7 +80,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
                            VkPhysicalDevice *vkPhysicalDevice)
 {
 	GET_PROC(vkEnumeratePhysicalDevices);
-	GET_PROC(vkGetPhysicalDeviceProperties);
+	GET_PROC(vkGetPhysicalDeviceProperties2);
 	VkResult vk_ret;
 	uint32_t count;
 
@@ -110,22 +113,52 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		    "VkPhysicalDevices");
 	}
 
-	if (count > 1) {
-		OXR_WARN_ONCE(log,
-		              "super intelligent device selection algorithm "
-		              "can't handle more then one VkPhysicalDevice, "
-		              "picking the first discrete gpu in the list.");
+	char suggested_uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
+	for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
+		sprintf(suggested_uuid_str + i * 3, "%02x ",
+		        sys->xcn->base.info.client_vk_deviceUUID[i]);
 	}
 
-	// as a first-step to 'intelligent' selection, prefer a 'discrete' gpu
-	// if it is present
-	uint32_t gpu_index = 0;
+	bool print_debug = debug_get_bool_option_print_debug();
+	int gpu_index = -1;
 	for (uint32_t i = 0; i < count; i++) {
-		VkPhysicalDeviceProperties pdp;
-		vkGetPhysicalDeviceProperties(phys[i], &pdp);
-		if (pdp.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-			gpu_index = i;
+		VkPhysicalDeviceIDProperties pdidp = {
+		    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
+
+		VkPhysicalDeviceProperties2 pdp2 = {
+		    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+		    .pNext = &pdidp};
+
+		vkGetPhysicalDeviceProperties2(phys[i], &pdp2);
+
+		char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
+		if (print_debug) {
+			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
+				sprintf(uuid_str + i * 3, "%02x ",
+				        pdidp.deviceUUID[i]);
+			}
+			oxr_log(log, "GPU %d: uuid %s", i, uuid_str);
 		}
+
+		if (memcmp(pdidp.deviceUUID,
+		           sys->xcn->base.info.client_vk_deviceUUID,
+		           XRT_GPU_UUID_SIZE) == 0) {
+			gpu_index = i;
+			if (print_debug) {
+				oxr_log(log,
+				        "Using GPU %d with uuid %s suggested "
+				        "by runtime",
+				        gpu_index, uuid_str);
+			}
+			break;
+		}
+	}
+
+	if (gpu_index == -1) {
+		oxr_warn(
+		    log,
+		    "Did not find runtime suggested GPU, fall back to GPU 0");
+		gpu_index = 0;
 	}
 
 	*vkPhysicalDevice = phys[gpu_index];

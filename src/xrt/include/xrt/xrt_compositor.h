@@ -443,6 +443,13 @@ struct xrt_compositor_info
 
 	//! Supported formats, never changes.
 	int64_t formats[XRT_MAX_SWAPCHAIN_FORMATS];
+
+
+	//! The vk device suggested used by the compositor
+	uint8_t compositor_vk_deviceUUID[XRT_GPU_UUID_SIZE];
+
+	//! The vk device suggested for rendering to Vulkan clients
+	uint8_t client_vk_deviceUUID[XRT_GPU_UUID_SIZE];
 };
 
 /*!

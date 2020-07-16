@@ -594,6 +594,34 @@ create_instance(struct comp_compositor *c)
 }
 
 static bool
+get_device_uuid(struct vk_bundle *vk,
+                struct comp_compositor *c,
+                int gpu_index,
+                uint8_t *uuid)
+{
+	VkPhysicalDeviceIDProperties pdidp = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
+
+	VkPhysicalDeviceProperties2 pdp2 = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+	    .pNext = &pdidp};
+
+	VkPhysicalDevice phys[16];
+	uint32_t gpu_count = ARRAY_SIZE(phys);
+	VkResult ret;
+
+	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, phys);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "Failed to enumerate physical devices!");
+		return false;
+	}
+	vk->vkGetPhysicalDeviceProperties2(phys[gpu_index], &pdp2);
+	memcpy(uuid, pdidp.deviceUUID, XRT_GPU_UUID_SIZE);
+
+	return true;
+}
+
+static bool
 compositor_init_vulkan(struct comp_compositor *c)
 {
 
@@ -611,9 +639,49 @@ compositor_init_vulkan(struct comp_compositor *c)
 		return false;
 	}
 
-	ret = vk_create_device(&c->vk, c->settings.gpu_index);
+	ret = vk_create_device(&c->vk, c->settings.selected_gpu_index);
 	if (ret != VK_SUCCESS) {
 		return false;
+	}
+	c->settings.selected_gpu_index = c->vk.physical_device_index;
+
+	// store physical device UUID for compositor in settings
+	if (c->settings.selected_gpu_index >= 0) {
+		if (get_device_uuid(&c->vk, c, c->settings.selected_gpu_index,
+		                    c->settings.selected_gpu_deviceUUID)) {
+			char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
+			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
+				sprintf(uuid_str + i * 3, "%02x ",
+				        c->settings.selected_gpu_deviceUUID[i]);
+			}
+			COMP_DEBUG(c, "Selected %d with uuid: %s",
+			           c->settings.selected_gpu_index, uuid_str);
+		} else {
+			COMP_ERROR(c, "Failed to get device %d uuid",
+			           c->settings.selected_gpu_index);
+		}
+	}
+
+	// by default suggest GPU used by compositor to clients
+	if (c->settings.client_gpu_index < 0) {
+		c->settings.client_gpu_index = c->settings.selected_gpu_index;
+	}
+
+	// store physical device UUID suggested to clients in settings
+	if (c->settings.client_gpu_index >= 0) {
+		if (get_device_uuid(&c->vk, c, c->settings.client_gpu_index,
+		                    c->settings.client_gpu_deviceUUID)) {
+			char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
+			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
+				sprintf(uuid_str + i * 3, "%02x ",
+				        c->settings.client_gpu_deviceUUID[i]);
+			}
+			COMP_DEBUG(c, "Suggest %d with uuid: %s to clients",
+			           c->settings.client_gpu_index, uuid_str);
+		} else {
+			COMP_ERROR(c, "Failed to get device %d uuid",
+			           c->settings.client_gpu_index);
+		}
 	}
 
 	ret = vk_init_cmd_pool(&c->vk);
@@ -768,7 +836,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	}
 
 	// follow same device selection logic as subsequent calls
-	ret = vk_create_device(&temp_vk, c->settings.gpu_index);
+	ret = vk_create_device(&temp_vk, c->settings.selected_gpu_index);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(c, "Failed to create VkDevice: %s",
 		           vk_result_string(ret));
@@ -985,6 +1053,12 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	COMP_DEBUG(c, "Done %p", (void *)c);
 
 	struct xrt_compositor_info *info = &c->base.base.info;
+
+	memcpy(info->compositor_vk_deviceUUID,
+	       c->settings.selected_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
+
+	memcpy(info->client_vk_deviceUUID, c->settings.client_gpu_deviceUUID,
+	       XRT_GPU_UUID_SIZE);
 
 	/*!
 	 * @todo Support more like, depth/float formats etc,

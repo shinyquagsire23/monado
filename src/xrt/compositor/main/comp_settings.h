@@ -94,8 +94,20 @@ struct comp_settings
 	//! Nominal frame interval
 	uint64_t nominal_frame_interval_ns;
 
-	//! Run the compositor on this Vulkan physical device
-	int gpu_index;
+	//! Vulkan physical device selected by comp_settings_check_vulkan_caps
+	//! may be forced by user
+	int selected_gpu_index;
+
+	//! Vulkan physical device index for clients to use, forced by user
+	int client_gpu_index;
+
+
+	//! Vulkan device UUID selected by comp_settings_check_vulkan_caps,
+	//! valid across Vulkan instances
+	uint8_t selected_gpu_deviceUUID[XRT_GPU_UUID_SIZE];
+
+	//! Vulkan device UUID to suggest to clients
+	uint8_t client_gpu_deviceUUID[XRT_GPU_UUID_SIZE];
 
 	//! Try to choose the mode with this index for direct mode
 	int desired_mode;

@@ -634,6 +634,7 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkCreateDevice                            = GET_INS_PROC(vk, vkCreateDevice);
 	vk->vkEnumeratePhysicalDevices                = GET_INS_PROC(vk, vkEnumeratePhysicalDevices);
 	vk->vkGetPhysicalDeviceProperties             = GET_INS_PROC(vk, vkGetPhysicalDeviceProperties);
+	vk->vkGetPhysicalDeviceProperties2            = GET_INS_PROC(vk, vkGetPhysicalDeviceProperties2);
 	vk->vkGetPhysicalDeviceMemoryProperties       = GET_INS_PROC(vk, vkGetPhysicalDeviceMemoryProperties);
 	vk->vkGetPhysicalDeviceQueueFamilyProperties  = GET_INS_PROC(vk, vkGetPhysicalDeviceQueueFamilyProperties);
 	vk->vkCreateDebugReportCallbackEXT            = GET_INS_PROC(vk, vkCreateDebugReportCallbackEXT);
@@ -835,11 +836,14 @@ vk_select_physical_device(struct vk_bundle *vk, int forced_index)
 	}
 
 	vk->physical_device = physical_devices[gpu_index];
+	vk->physical_device_index = gpu_index;
 
 	VkPhysicalDeviceProperties pdp;
 	vk->vkGetPhysicalDeviceProperties(physical_devices[gpu_index], &pdp);
 
-	vk_print_device_info_debug(vk, &pdp, gpu_index, "Selected device:\n");
+	char title[20];
+	snprintf(title, 20, "Selected GPU: %d\n", gpu_index);
+	vk_print_device_info_debug(vk, &pdp, gpu_index, title);
 
 	// Fill out the device memory props as well.
 	vk->vkGetPhysicalDeviceMemoryProperties(vk->physical_device,

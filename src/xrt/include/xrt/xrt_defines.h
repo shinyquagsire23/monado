@@ -18,6 +18,8 @@
 extern "C" {
 #endif
 
+//! internal define for VK_UUID_SIZE
+#define XRT_GPU_UUID_SIZE 16
 
 /*!
  * A base class for reference counted objects.
