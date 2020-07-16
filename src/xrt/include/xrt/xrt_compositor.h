@@ -23,6 +23,7 @@ extern "C" {
  */
 
 struct xrt_device;
+struct xrt_image_native;
 
 typedef struct VkCommandBuffer_T *VkCommandBuffer;
 #ifdef XRT_64_BIT
@@ -430,6 +431,15 @@ struct xrt_compositor
 	                                 struct xrt_swapchain **out_xsc);
 
 	/*!
+	 * Create a swapchain from a set of native images.
+	 */
+	xrt_result_t (*import_swapchain)(struct xrt_compositor *xc,
+	                                 struct xrt_swapchain_create_info *info,
+	                                 struct xrt_image_native *native_images,
+	                                 uint32_t num_images,
+	                                 struct xrt_swapchain **out_xsc);
+
+	/*!
 	 * Poll events from this compositor.
 	 *
 	 * This function is very much WIP.
@@ -555,6 +565,24 @@ xrt_comp_create_swapchain(struct xrt_compositor *xc,
                           struct xrt_swapchain **out_xsc)
 {
 	return xc->create_swapchain(xc, info, out_xsc);
+}
+
+/*!
+ * @copydoc xrt_compositor::import_swapchain
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_import_swapchain(struct xrt_compositor *xc,
+                          struct xrt_swapchain_create_info *info,
+                          struct xrt_image_native *native_images,
+                          uint32_t num_images,
+                          struct xrt_swapchain **out_xsc)
+{
+	return xc->import_swapchain(xc, info, native_images, num_images,
+	                            out_xsc);
 }
 
 /*!
