@@ -19,6 +19,8 @@ cpp = meson.get_compiler('cpp')
 add_project_arguments(cc.get_supported_arguments([
 	'-D_XOPEN_SOURCE=700',
 	'-Wno-unused-parameter',
+	'-Werror-implicit-function-declaration',
+	'-Werror=incompatible-pointer-types'
 ]), language: 'c')
 
 add_project_arguments(cpp.get_supported_arguments([
