@@ -249,11 +249,13 @@ vk_format_to_gl(int64_t format)
 	}
 }
 
-static struct xrt_swapchain *
+static xrt_result_t
 client_gl_swapchain_create(struct xrt_compositor *xc,
-                           struct xrt_swapchain_create_info *info)
+                           struct xrt_swapchain_create_info *info,
+                           struct xrt_swapchain **out_xsc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
+	xrt_result_t xret = XRT_SUCCESS;
 
 	if (info->array_size > 1) {
 		const char *version_str = (const char *)glGetString(GL_VERSION);
@@ -262,25 +264,27 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 			        "%s - only one array layer is supported with "
 			        "OpenGL ES 2\n",
 			        __func__);
-			return NULL;
+			return XRT_ERROR_OPENGL;
 		}
 	}
 
 	int64_t vk_format = gl_format_to_vk(info->format);
 	if (vk_format == 0) {
 		fprintf(stderr, "%s - Invalid format!\n", __func__);
-		return NULL;
+		return XRT_ERROR_VULKAN;
 	}
 
-	struct xrt_swapchain_create_info vk_info = *info;
-	vk_info.format = vk_format;
-	struct xrt_swapchain_native *xscn =
-	    xrt_comp_native_create_swapchain(c->xcn, &vk_info);
+	struct xrt_swapchain_create_info xinfo = *info;
+	xinfo.format = vk_format;
+	struct xrt_swapchain_native *xscn = NULL;
+	xret = xrt_comp_native_create_swapchain(c->xcn, &xinfo, &xscn);
 
 
-	if (xscn == NULL) {
-		return NULL;
+	if (xret != XRT_SUCCESS) {
+		return xret;
 	}
+	assert(xscn != NULL);
+
 	struct xrt_swapchain *xsc = &xscn->base;
 
 	struct client_gl_swapchain *sc =
@@ -333,7 +337,8 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	                                    : GL_TEXTURE_2D_ARRAY,
 	              prev_texture);
 
-	return &sc->base.base;
+	*out_xsc = &sc->base.base;
+	return XRT_SUCCESS;
 }
 
 static xrt_result_t

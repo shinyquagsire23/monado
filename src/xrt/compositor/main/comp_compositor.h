@@ -271,9 +271,10 @@ comp_compositor_garbage_collect(struct comp_compositor *c);
  *
  * @public @memberof comp_compositor
  */
-struct xrt_swapchain *
+xrt_result_t
 comp_swapchain_create(struct xrt_compositor *xc,
-                      struct xrt_swapchain_create_info *info);
+                      struct xrt_swapchain_create_info *info,
+                      struct xrt_swapchain **out_xsc);
 
 /*!
  * Swapchain destruct is delayed until it is safe to destroy them, this function

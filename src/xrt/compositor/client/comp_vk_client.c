@@ -284,25 +284,29 @@ client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 	return xrt_comp_layer_commit(&c->xcn->base, frame_id);
 }
 
-static struct xrt_swapchain *
+static xrt_result_t
 client_vk_swapchain_create(struct xrt_compositor *xc,
-                           struct xrt_swapchain_create_info *info)
+                           struct xrt_swapchain_create_info *info,
+                           struct xrt_swapchain **out_xsc)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	VkCommandBuffer cmd_buffer;
 	VkResult ret;
+	xrt_result_t xret;
 
-	struct xrt_swapchain_native *xscn =
-	    xrt_comp_native_create_swapchain(c->xcn, info);
+	struct xrt_swapchain_native *xscn = NULL;
+	xret = xrt_comp_native_create_swapchain(c->xcn, info, &xscn);
 
-	if (xscn == NULL) {
-		return NULL;
+	if (xret != XRT_SUCCESS) {
+		return xret;
 	}
+	assert(xscn != NULL);
+
 	struct xrt_swapchain *xsc = &xscn->base;
 
 	ret = vk_init_cmd_buffer(&c->vk, &cmd_buffer);
 	if (ret != VK_SUCCESS) {
-		return NULL;
+		return XRT_ERROR_VULKAN;
 	}
 
 	VkImageSubresourceRange subresource_range = {
@@ -331,7 +335,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 
 		if (ret != VK_SUCCESS) {
-			return NULL;
+			return XRT_ERROR_VULKAN;
 		}
 
 		/*
@@ -348,7 +352,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 	ret = vk_submit_cmd_buffer(&c->vk, cmd_buffer);
 	if (ret != VK_SUCCESS) {
-		return NULL;
+		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
 	}
 
 	// Prerecord command buffers for swapchain image ownership/layout
@@ -356,11 +360,11 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
 		ret = vk_init_cmd_buffer(&c->vk, &sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
-			return NULL;
+			return XRT_ERROR_VULKAN;
 		}
 		ret = vk_init_cmd_buffer(&c->vk, &sc->release[i]);
 		if (ret != VK_SUCCESS) {
-			return NULL;
+			return XRT_ERROR_VULKAN;
 		}
 
 		VkImageSubresourceRange subresource_range = {
@@ -425,17 +429,19 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		if (ret != VK_SUCCESS) {
 			VK_ERROR(vk, "vkEndCommandBuffer: %s",
 			         vk_result_string(ret));
-			return NULL;
+			return XRT_ERROR_VULKAN;
 		}
 		ret = c->vk.vkEndCommandBuffer(sc->release[i]);
 		if (ret != VK_SUCCESS) {
 			VK_ERROR(vk, "vkEndCommandBuffer: %s",
 			         vk_result_string(ret));
-			return NULL;
+			return XRT_ERROR_VULKAN;
 		}
 	}
 
-	return &sc->base.base;
+	*out_xsc = &sc->base.base;
+
+	return XRT_SUCCESS;
 }
 
 struct client_vk_compositor *

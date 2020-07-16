@@ -425,8 +425,9 @@ struct xrt_compositor
 	/*!
 	 * Create a swapchain with a set of images.
 	 */
-	struct xrt_swapchain *(*create_swapchain)(
-	    struct xrt_compositor *xc, struct xrt_swapchain_create_info *info);
+	xrt_result_t (*create_swapchain)(struct xrt_compositor *xc,
+	                                 struct xrt_swapchain_create_info *info,
+	                                 struct xrt_swapchain **out_xsc);
 
 	/*!
 	 * Poll events from this compositor.
@@ -548,11 +549,12 @@ struct xrt_compositor
  *
  * @public @memberof xrt_compositor
  */
-static inline struct xrt_swapchain *
+static inline xrt_result_t
 xrt_comp_create_swapchain(struct xrt_compositor *xc,
-                          struct xrt_swapchain_create_info *info)
+                          struct xrt_swapchain_create_info *info,
+                          struct xrt_swapchain **out_xsc)
 {
-	return xc->create_swapchain(xc, info);
+	return xc->create_swapchain(xc, info, out_xsc);
 }
 
 /*!
@@ -916,12 +918,17 @@ struct xrt_compositor_native
  *
  * @public @memberof xrt_compositor_native
  */
-static inline struct xrt_swapchain_native *
+static inline xrt_result_t
 xrt_comp_native_create_swapchain(struct xrt_compositor_native *xcn,
-                                 struct xrt_swapchain_create_info *info)
+                                 struct xrt_swapchain_create_info *info,
+                                 struct xrt_swapchain_native **out_xscn)
 {
-	struct xrt_swapchain *xsc = xrt_comp_create_swapchain(&xcn->base, info);
-	return (struct xrt_swapchain_native *)xsc;
+	struct xrt_swapchain *xsc = NULL;
+	xrt_result_t ret = xrt_comp_create_swapchain(&xcn->base, info, &xsc);
+	if (ret == XRT_SUCCESS) {
+		*out_xscn = (struct xrt_swapchain_native *)xsc;
+	}
+	return ret;
 }
 
 /*!

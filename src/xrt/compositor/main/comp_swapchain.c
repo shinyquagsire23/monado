@@ -221,9 +221,10 @@ err_image:
  *
  */
 
-struct xrt_swapchain *
+xrt_result_t
 comp_swapchain_create(struct xrt_compositor *xc,
-                      struct xrt_swapchain_create_info *info)
+                      struct xrt_swapchain_create_info *info,
+                      struct xrt_swapchain **out_xsc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	VkCommandBuffer cmd_buffer;
@@ -259,7 +260,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 			//! @todo memory leak of image fds and swapchain
 			// see
 			// https://gitlab.freedesktop.org/monado/monado/issues/20
-			return NULL;
+			return XRT_ERROR_VULKAN;
 		}
 
 		vk_create_sampler(&c->vk, &sc->images[i].sampler);
@@ -332,7 +333,8 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 	vk_submit_cmd_buffer(&c->vk, cmd_buffer);
 
-	return &sc->base.base;
+	*out_xsc = &sc->base.base;
+	return XRT_SUCCESS;
 }
 
 static void

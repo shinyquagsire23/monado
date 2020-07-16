@@ -198,6 +198,8 @@ oxr_create_swapchain(struct oxr_logger *log,
                      const XrSwapchainCreateInfo *createInfo,
                      struct oxr_swapchain **out_swapchain)
 {
+	xrt_result_t xret = XRT_SUCCESS;
+
 	struct xrt_swapchain_create_info info;
 	info.create = convert_create_flags(createInfo->createFlags);
 	info.bits = convert_usage_bits(createInfo->usageFlags);
@@ -209,13 +211,13 @@ oxr_create_swapchain(struct oxr_logger *log,
 	info.array_size = createInfo->arraySize;
 	info.mip_count = createInfo->mipCount;
 
-	struct xrt_swapchain *xsc =
-	    xrt_comp_create_swapchain(sess->compositor, &info);
-
-	if (xsc == NULL) {
+	struct xrt_swapchain *xsc = NULL;
+	xret = xrt_comp_create_swapchain(sess->compositor, &info, &xsc);
+	if (xret != XRT_SUCCESS) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Failed to create swapchain");
 	}
+	assert(xsc != NULL);
 
 	struct oxr_swapchain *sc = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, sc, OXR_XR_DEBUG_SWAPCHAIN,

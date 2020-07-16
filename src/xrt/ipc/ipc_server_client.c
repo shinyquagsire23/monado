@@ -280,6 +280,8 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
                             xrt_graphics_buffer_handle_t *out_handles,
                             uint32_t *out_num_handles)
 {
+	xrt_result_t xret = XRT_SUCCESS;
+
 	// Our handle is just the index for now.
 	uint32_t index = 0;
 	for (; index < IPC_MAX_CLIENT_SWAPCHAINS; index++) {
@@ -293,11 +295,15 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
+	// create the swapchain
+	struct xrt_swapchain *xsc = NULL;
+	xret = xrt_comp_create_swapchain(ics->xc, info, &xsc);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
 	// It's now safe to increment the number of swapchains.
 	ics->num_swapchains++;
-
-	// create the swapchain
-	struct xrt_swapchain *xsc = xrt_comp_create_swapchain(ics->xc, info);
 
 	uint32_t num_images = xsc->num_images;
 

@@ -164,9 +164,10 @@ ipc_compositor_swapchain_release_image(struct xrt_swapchain *xsc,
  *
  */
 
-static struct xrt_swapchain *
+static xrt_result_t
 ipc_compositor_swapchain_create(struct xrt_compositor *xc,
-                                struct xrt_swapchain_create_info *info)
+                                struct xrt_swapchain_create_info *info,
+                                struct xrt_swapchain **out_xsc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -184,7 +185,7 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 	                              remote_fds,             // fds
 	                              IPC_MAX_SWAPCHAIN_FDS); // fds
 	if (r != XRT_SUCCESS) {
-		return NULL;
+		return r;
 	}
 
 	struct ipc_client_swapchain *ics =
@@ -202,7 +203,8 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 		ics->base.images[i].size = size;
 	}
 
-	return &ics->base.base;
+	*out_xsc = &ics->base.base;
+	return XRT_SUCCESS;
 }
 
 static xrt_result_t
