@@ -8,6 +8,7 @@ from pathlib import Path
 # Each extension that we implement gets an entry in this tuple.
 # Each entry should be a list of defines that are checked for an extension:
 # the first one must be the name of the extension itself.
+# The second and later items might be modified using or_() and not_().
 # Keep sorted, KHR, EXT, Vendor, experimental (same order).
 EXTENSIONS = (
     ['XR_KHR_android_create_instance', 'XR_USE_PLATFORM_ANDROID'],
@@ -40,6 +41,31 @@ EXTENSIONS = (
     ['XR_MNDX_force_feedback_curl'],
 )
 
+
+def or_(*args):
+    """
+    Create an "OR" in the definition condition list.
+
+    Takes any number of strings directly or through e.g. "not_".
+    """
+    return "({})".format(" || ".join(_add_defined(s) for s in args))
+
+
+def not_(s):
+    """
+    Create a "NOT" in the condition list.
+
+    Takes a single string, directly or through e.g. "or_".
+    """
+    return "(!{})".format(_add_defined(s))
+
+
+def _add_defined(s):
+    if "defined" in s:
+        return s
+    return "defined({})".format(s)
+
+
 ROOT = Path(__file__).resolve().parent.parent
 FN = ROOT / 'src' / 'xrt'/'state_trackers' / 'oxr' / 'oxr_extension_support.h'
 
@@ -60,7 +86,7 @@ def generate_first_chunk():
         ext_name = data[0]
         trimmed_name = trim_ext_name(ext_name)
         upper_name = trimmed_name.upper()
-        condition = " && ".join("defined({})".format(x) for x in data)
+        condition = " && ".join(_add_defined(x) for x in data)
 
         parts.append(f"""
 /*
