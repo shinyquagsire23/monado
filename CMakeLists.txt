@@ -61,6 +61,7 @@ endif()
 
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	set(XRT_HAVE_LINUX YES)
 	# Compositor backend
 	find_package(X11)
 	find_package(PkgConfig)
@@ -139,7 +140,7 @@ cmake_dependent_option(XRT_HAVE_SYSTEM_CJSON "Enable cJSON from system, instead 
 
 cmake_dependent_option(XRT_BUILD_DRIVER_PSVR "Enable PSVR HMD driver" ON "HIDAPI_FOUND" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_RS "Enable RealSense device driver" ON "realsense2_FOUND" OFF)
-cmake_dependent_option(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" ON "ZLIB_FOUND" OFF)
+cmake_dependent_option(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" ON "ZLIB_FOUND AND XRT_HAVE_LINUX" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_OHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_DAYDREAM "Enable the Google Daydream View controller driver (BLE, via D-Bus)" ON "XRT_HAVE_DBUS" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_ARDUINO "Enable Arduino input device with BLE via via D-Bus" ON "XRT_HAVE_DBUS" OFF)
