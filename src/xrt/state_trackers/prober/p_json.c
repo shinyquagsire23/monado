@@ -46,6 +46,7 @@ read_content(FILE *file)
 void
 p_json_open_or_create_main_file(struct prober *p)
 {
+#ifdef XRT_OS_LINUX
 	char tmp[1024];
 	ssize_t ret =
 	    u_file_get_path_in_config_dir("config_v0.json", tmp, sizeof(tmp));
@@ -85,6 +86,10 @@ p_json_open_or_create_main_file(struct prober *p)
 	}
 
 	free(str);
+#else
+	//! @todo implement the underlying u_file_get_path_in_config_dir
+	return;
+#endif
 }
 
 static cJSON *
