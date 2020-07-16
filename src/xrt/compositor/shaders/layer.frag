@@ -20,8 +20,9 @@ layout (location = 0) out vec4 out_color;
 void main ()
 {
   if (ubo.has_sub) {
-    ivec2 uv_sub = ubo.offset + ivec2(uv * ubo.extent);
-    out_color = texelFetch(image, uv_sub, 0);
+    vec2 uv_sub = vec2(ubo.offset) + uv * vec2(ubo.extent);
+    uv_sub /= textureSize(image, 0);
+    out_color = texture(image, uv_sub);
   } else {
     out_color = texture(image, uv);
   }
