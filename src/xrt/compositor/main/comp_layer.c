@@ -154,12 +154,9 @@ comp_layer_update_stereo_descriptors(struct comp_render_layer *self,
 static bool
 _init(struct comp_render_layer *self,
       struct vk_bundle *vk,
-      enum xrt_layer_type type,
       VkDescriptorSetLayout *layout)
 {
 	self->vk = vk;
-
-	self->type = type;
 
 	self->view_space = true;
 	self->visibility = XRT_LAYER_EYE_VISIBILITY_BOTH;
@@ -241,13 +238,11 @@ comp_layer_draw(struct comp_render_layer *self,
 }
 
 struct comp_render_layer *
-comp_layer_create(struct vk_bundle *vk,
-                  enum xrt_layer_type type,
-                  VkDescriptorSetLayout *layout)
+comp_layer_create(struct vk_bundle *vk, VkDescriptorSetLayout *layout)
 {
 	struct comp_render_layer *q = U_TYPED_CALLOC(struct comp_render_layer);
 
-	_init(q, vk, type, layout);
+	_init(q, vk, layout);
 
 	return q;
 }

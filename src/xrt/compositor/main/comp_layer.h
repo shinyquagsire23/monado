@@ -41,9 +41,7 @@ struct comp_render_layer
 };
 
 struct comp_render_layer *
-comp_layer_create(struct vk_bundle *vk,
-                  enum xrt_layer_type type,
-                  VkDescriptorSetLayout *layout);
+comp_layer_create(struct vk_bundle *vk, VkDescriptorSetLayout *layout);
 
 void
 comp_layer_draw(struct comp_render_layer *self,
