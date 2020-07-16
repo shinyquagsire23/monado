@@ -9,6 +9,8 @@ ipc_include = include_directories('.')
 prog_python = import('python').find_installation('python3')
 
 common_sources = [
+	'ipc_shmem.c',
+	'ipc_shmem.h',
 	'ipc_utils.c',
 	'ipc_utils.h',
 ]
@@ -44,7 +46,7 @@ lib_ipc_client = static_library(
 	include_directories: [
 		xrt_include,
 	],
-	dependencies: [aux]
+	dependencies: [aux, rt]
 )
 
 

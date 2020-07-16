@@ -24,6 +24,8 @@ proto_gen(${CMAKE_CURRENT_BINARY_DIR}/ipc_server_generated.c)
 
 set(IPC_COMMON_SOURCES
 	${CMAKE_CURRENT_BINARY_DIR}/ipc_protocol_generated.h
+	ipc_shmem.c
+	ipc_shmem.h
 	ipc_utils.c
 	ipc_utils.h)
 ###
