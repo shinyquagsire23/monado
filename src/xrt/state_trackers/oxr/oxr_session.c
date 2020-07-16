@@ -836,7 +836,8 @@ convert_eye_visibility(XrSwapchainUsageFlags xr_visibility)
 }
 
 static XrResult
-submit_quad_layer(struct xrt_compositor *xc,
+submit_quad_layer(struct oxr_session *sess,
+                  struct xrt_compositor *xc,
                   struct oxr_logger *log,
                   XrCompositionLayerQuad *quad,
                   struct xrt_device *head,
@@ -859,10 +860,33 @@ submit_quad_layer(struct xrt_compositor *xc,
 		// The space might have a pose, transform that in as well.
 		math_pose_transform(&spc->pose, &pose, &pose);
 	} else {
-		//! @todo Handle action spaces.
+		//! @todo Action space handling not very complete
+
+		struct oxr_action_input *input = NULL;
+
+		oxr_action_get_pose_input(log, sess, spc->act_key,
+		                          &spc->sub_paths, &input);
+
+		// If the input isn't active.
+		if (input == NULL) {
+			//! @todo just don't render the quad here?
+			return XR_SUCCESS;
+		}
+
+		uint64_t xdev_timestamp = 0;
+
+		struct xrt_space_relation out_relation;
+
+		oxr_xdev_get_pose_at(log, sess->sys->inst, input->xdev,
+		                     input->input->name, timestamp,
+		                     &xdev_timestamp, &out_relation);
+
+		struct xrt_pose device_pose = out_relation.pose;
 
 		// The space might have a pose, transform that in as well.
-		math_pose_transform(&spc->pose, &pose, &pose);
+		math_pose_transform(&spc->pose, &device_pose, &device_pose);
+
+		math_pose_transform(&device_pose, &pose, &pose);
 
 		// Remove the tracking system origin offset.
 		math_pose_transform(inv_offset, &pose, &pose);
@@ -1107,8 +1131,8 @@ oxr_session_frame_end(struct oxr_logger *log,
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_QUAD:
 			submit_quad_layer(
-			    xc, log, (XrCompositionLayerQuad *)layer, xdev,
-			    &inv_offset, frameEndInfo->displayTime);
+			    sess, xc, log, (XrCompositionLayerQuad *)layer,
+			    xdev, &inv_offset, frameEndInfo->displayTime);
 			break;
 		default: assert(false && "invalid layer type");
 		}
