@@ -29,4 +29,5 @@ cli = executable(
 		pthreads,
 		udev,
 	] + driver_deps,
+	install: true,
 )

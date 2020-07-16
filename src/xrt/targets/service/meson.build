@@ -18,4 +18,5 @@ service = executable(
 		xrt_include,
 	],
 	dependencies: [pthreads, libjpeg],
+	install: true,
 )

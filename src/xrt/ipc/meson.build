@@ -1,6 +1,7 @@
 # Copyright 2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+ipc_include = include_directories('.')
 
 ###
 # Generated

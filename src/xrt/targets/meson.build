@@ -68,5 +68,6 @@ endif
 
 if get_option('service')
 	subdir('service')
+	subdir('ctl')
 endif
 

@@ -42,4 +42,5 @@ gui = executable(
 		imgui_include,
 	],
 	dependencies: gui_deps + driver_deps,
+	install: true,
 )
