@@ -9,22 +9,13 @@
 
 #pragma once
 
-#cmakedefine XRT_HAVE_LIBUDEV
-
-#cmakedefine XRT_HAVE_V4L2
-
-#cmakedefine XRT_HAVE_LIBUSB
-
-#cmakedefine XRT_HAVE_OPENCV
-
-#cmakedefine XRT_HAVE_JPEG
-
-#cmakedefine XRT_HAVE_LIBUVC
-
 #cmakedefine XRT_HAVE_FFMPEG
-
+#cmakedefine XRT_HAVE_JPEG
+#cmakedefine XRT_HAVE_LIBUDEV
+#cmakedefine XRT_HAVE_LIBUSB
+#cmakedefine XRT_HAVE_LIBUVC
+#cmakedefine XRT_HAVE_OPENCV
 #cmakedefine XRT_HAVE_SDL2
-
 #cmakedefine XRT_HAVE_SYSTEMD
-
+#cmakedefine XRT_HAVE_V4L2
 #cmakedefine XRT_HAVE_VULKAN
