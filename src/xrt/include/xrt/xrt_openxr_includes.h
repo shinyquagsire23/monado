@@ -18,6 +18,10 @@
 #define XR_USE_GRAPHICS_API_VULKAN
 #endif
 
+#ifdef XR_USE_PLATFORM_ANDROID
+#include <jni.h>
+#endif
+
 #ifdef XR_USE_PLATFORM_XLIB
 typedef struct _XDisplay Display;
 typedef void *GLXFBConfig;

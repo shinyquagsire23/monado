@@ -83,6 +83,11 @@ if(XRT_HAVE_EGL)
 	list(APPEND OXR_SOURCE_FILES oxr_session_egl.c)
 endif()
 
+
+if(ANDROID)
+	add_definitions(-DXR_USE_PLATFORM_ANDROID)
+endif()
+
 add_library(st_oxr STATIC ${OXR_SOURCE_FILES})
 target_link_libraries(st_oxr PRIVATE
 	xrt-interfaces
