@@ -16,7 +16,7 @@
 #include "xrt/xrt_settings.h"
 
 #ifdef XRT_HAVE_LIBUSB
-#include <libusb-1.0/libusb.h>
+#include <libusb.h>
 #endif
 
 #ifdef XRT_HAVE_LIBUVC

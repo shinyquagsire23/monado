@@ -60,7 +60,7 @@ endif()
 
 if(XRT_HAVE_LIBUSB)
 	target_include_directories(st_prober
-		PRIVATE
+		PUBLIC
 		${LIBUSB1_INCLUDE_DIRS}
 		)
 	target_link_libraries(st_prober PRIVATE
