@@ -84,7 +84,7 @@ cmake_dependent_option(XRT_HAVE_OPENGL "Enable OpenGL Graphics API support" ON "
 cmake_dependent_option(XRT_HAVE_VULKAN "Enable Vulkan Graphics API support (also needed for compositor)" ON "VULKAN_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_EGL "Enable OpenGL on EGL Graphics API support" ON "XRT_HAVE_OPENGL AND EGL_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_DBUS "Enable dbus support (for BLE support)" ON "DBUS_FOUND" OFF)
-cmake_dependent_option(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" ON "XRT_HAVE_VULKAN AND (XRT_HAVE_WAYLAND OR XRT_HAVE_XCB)" OFF)
+cmake_dependent_option(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" ON "XRT_HAVE_VULKAN; XRT_HAVE_WAYLAND OR XRT_HAVE_XCB" OFF)
 cmake_dependent_option(XRT_FEATURE_OPENXR "Build OpenXR runtime target" ON "XRT_FEATURE_COMPOSITOR_MAIN" OFF)
 cmake_dependent_option(XRT_FEATURE_SERVICE "Enable separate service module for OpenXR runtime" ON "XRT_FEATURE_COMPOSITOR_MAIN AND XRT_FEATURE_OPENXR" OFF)
 cmake_dependent_option(XRT_HAVE_SYSTEMD "Enable systemd support (for socket activation of service)" ON "Systemd_FOUND AND XRT_FEATURE_SERVICE" OFF)
