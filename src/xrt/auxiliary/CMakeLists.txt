@@ -156,7 +156,7 @@ endif()
 
 # OS library.
 add_library(aux_os STATIC ${OS_SOURCE_FILES})
-target_link_libraries(aux_os PUBLIC aux-includes PRIVATE Threads::Threads)
+target_link_libraries(aux_os PUBLIC aux-includes xrt-pthreads)
 if(XRT_HAVE_DBUS)
 	target_link_libraries(aux_os PRIVATE ${DBUS_LIBRARIES})
 	target_include_directories(aux_os SYSTEM
