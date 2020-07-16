@@ -276,6 +276,18 @@ comp_swapchain_create(struct xrt_compositor *xc,
                       struct xrt_swapchain **out_xsc);
 
 /*!
+ * A compositor function that is implemented in the swapchain code.
+ *
+ * @public @memberof comp_compositor
+ */
+xrt_result_t
+comp_swapchain_import(struct xrt_compositor *xc,
+                      struct xrt_swapchain_create_info *info,
+                      struct xrt_image_native *native_images,
+                      uint32_t num_images,
+                      struct xrt_swapchain **out_xsc);
+
+/*!
  * Swapchain destruct is delayed until it is safe to destroy them, this function
  * does the actual destruction and is called from @ref
  * comp_compositor_garbage_collect.

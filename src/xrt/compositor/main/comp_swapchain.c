@@ -16,6 +16,12 @@
 #include <unistd.h>
 
 
+/*
+ *
+ * Swapchain member functions.
+ *
+ */
+
 static void
 swapchain_destroy(struct xrt_swapchain *xsc)
 {
@@ -73,25 +79,13 @@ swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 
 /*
  *
- * Exported functions.
+ * Helper functions.
  *
  */
 
-xrt_result_t
-comp_swapchain_create(struct xrt_compositor *xc,
-                      struct xrt_swapchain_create_info *info,
-                      struct xrt_swapchain **out_xsc)
+static struct comp_swapchain *
+alloc_and_set_funcs(struct comp_compositor *c, uint32_t num_images)
 {
-	struct comp_compositor *c = comp_compositor(xc);
-	VkCommandBuffer cmd_buffer;
-	uint32_t num_images = 3;
-	VkResult ret;
-
-
-	if ((info->create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
-		num_images = 1;
-	}
-
 	struct comp_swapchain *sc = U_TYPED_CALLOC(struct comp_swapchain);
 	sc->base.base.destroy = swapchain_destroy;
 	sc->base.base.acquire_image = swapchain_acquire_image;
@@ -100,30 +94,21 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.num_images = num_images;
 	sc->c = c;
 
-	COMP_DEBUG(c, "CREATE %p %dx%d", (void *)sc, info->width, info->height);
-
 	// Make sure the fds are invalid.
 	for (uint32_t i = 0; i < ARRAY_SIZE(sc->base.images); i++) {
 		sc->base.images[i].fd = -1;
 	}
 
-	ret = vk_ic_allocate(&c->vk, info, num_images, &sc->vkic);
-	if (ret != VK_SUCCESS) {
-		free(sc);
-		return XRT_ERROR_VULKAN;
-	}
+	return sc;
+}
 
-#ifdef XRT_OS_LINUX
-	int fds[ARRAY_SIZE(sc->vkic.images)];
-
-	vk_ic_get_fds(&c->vk, &sc->vkic, ARRAY_SIZE(fds), fds);
-	for (uint32_t i = 0; i < num_images; i++) {
-		sc->base.images[i].fd = fds[i];
-		sc->base.images[i].size = sc->vkic.images[i].size;
-	}
-#else
-#error "OS not supported"
-#endif
+static void
+do_post_create_vulkan_setup(struct comp_compositor *c,
+                            struct comp_swapchain *sc)
+{
+	struct xrt_swapchain_create_info *info = &sc->vkic.info;
+	uint32_t num_images = sc->vkic.num_images;
+	VkCommandBuffer cmd_buffer;
 
 	VkComponentMapping components = {
 	    .r = VK_COMPONENT_SWIZZLE_R,
@@ -192,9 +177,6 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	}
 
 	vk_submit_cmd_buffer(&c->vk, cmd_buffer);
-
-	*out_xsc = &sc->base.base;
-	return XRT_SUCCESS;
 }
 
 static void
@@ -227,8 +209,7 @@ clean_image_views(struct vk_bundle *vk,
  * images that has one or all fields set to NULL.
  */
 static void
-comp_swapchain_image_cleanup(struct vk_bundle *vk,
-                             struct comp_swapchain_image *image)
+image_cleanup(struct vk_bundle *vk, struct comp_swapchain_image *image)
 {
 	vk->vkDeviceWaitIdle(vk->device);
 
@@ -241,6 +222,84 @@ comp_swapchain_image_cleanup(struct vk_bundle *vk,
 	}
 }
 
+/*
+ *
+ * Exported functions.
+ *
+ */
+
+xrt_result_t
+comp_swapchain_create(struct xrt_compositor *xc,
+                      struct xrt_swapchain_create_info *info,
+                      struct xrt_swapchain **out_xsc)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+	uint32_t num_images = 3;
+	VkResult ret;
+
+	if ((info->create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
+		num_images = 1;
+	}
+
+	struct comp_swapchain *sc = alloc_and_set_funcs(c, num_images);
+
+	COMP_DEBUG(c, "CREATE %p %dx%d", (void *)sc, info->width, info->height);
+
+	// Use the image helper to allocate the images.
+	ret = vk_ic_allocate(&c->vk, info, num_images, &sc->vkic);
+	if (ret != VK_SUCCESS) {
+		free(sc);
+		return XRT_ERROR_VULKAN;
+	}
+
+#ifdef XRT_OS_LINUX
+	int fds[ARRAY_SIZE(sc->vkic.images)];
+
+	vk_ic_get_fds(&c->vk, &sc->vkic, ARRAY_SIZE(fds), fds);
+	for (uint32_t i = 0; i < sc->vkic.num_images; i++) {
+		sc->base.images[i].fd = fds[i];
+		sc->base.images[i].size = sc->vkic.images[i].size;
+	}
+#else
+#error "OS not supported"
+#endif
+
+	do_post_create_vulkan_setup(c, sc);
+
+	*out_xsc = &sc->base.base;
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+comp_swapchain_import(struct xrt_compositor *xc,
+                      struct xrt_swapchain_create_info *info,
+                      struct xrt_image_native *native_images,
+                      uint32_t num_images,
+                      struct xrt_swapchain **out_xsc)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+	VkResult ret;
+
+	struct comp_swapchain *sc = alloc_and_set_funcs(c, num_images);
+
+	COMP_DEBUG(c, "CREATE FROM NATIVE %p %dx%d", (void *)sc, info->width,
+	           info->height);
+
+	// Use the image helper to get the images.
+	ret = vk_ic_from_natives(&c->vk, info, native_images, num_images,
+	                         &sc->vkic);
+	if (ret != VK_SUCCESS) {
+		return XRT_ERROR_VULKAN;
+	}
+
+	do_post_create_vulkan_setup(c, sc);
+
+	*out_xsc = &sc->base.base;
+
+	return XRT_SUCCESS;
+}
+
 void
 comp_swapchain_really_destroy(struct comp_swapchain *sc)
 {
@@ -249,7 +308,7 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc)
 	COMP_SPEW(sc->c, "REALLY DESTROY");
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
-		comp_swapchain_image_cleanup(vk, &sc->images[i]);
+		image_cleanup(vk, &sc->images[i]);
 	}
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {

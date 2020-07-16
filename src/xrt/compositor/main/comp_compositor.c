@@ -933,6 +933,7 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev, bool flip_y)
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 
 	c->base.base.create_swapchain = comp_swapchain_create;
+	c->base.base.import_swapchain = comp_swapchain_import;
 	c->base.base.prepare_session = compositor_prepare_session;
 	c->base.base.begin_session = compositor_begin_session;
 	c->base.base.end_session = compositor_end_session;
