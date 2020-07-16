@@ -104,6 +104,9 @@ target_link_libraries(st_oxr PRIVATE
 	aux_util
 	aux_math
 	comp_client
+	PUBLIC
+	aux_os
+	Vulkan::Vulkan
 	)
 if(XRT_HAVE_VULKAN)
 	target_link_libraries(st_oxr PRIVATE Vulkan::Vulkan)

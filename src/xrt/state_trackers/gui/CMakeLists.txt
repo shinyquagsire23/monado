@@ -44,6 +44,7 @@ add_library(st_gui STATIC
 target_link_libraries(st_gui PRIVATE
 	xrt-external-glad
 	aux_util
+	aux_os
 	)
 target_include_directories(st_gui PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/..
