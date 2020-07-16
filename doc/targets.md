@@ -34,8 +34,8 @@ instantiates your implementation.
 
 All methods of `xrt_instance` are required, though the `get_prober` method may
 output a null pointer if the instance is not using a prober, and targets that do
-not need compositing may stub out the `create_fd_compositor` method to always
-return an error. A fully-featured implementation is in
+not need compositing may stub out the `create_native_compositor` method to
+always return an error. A fully-featured implementation is in
 `src/targets/common/target_instance.c`, which calls
 `xrt_prober_create_with_lists` passing the common `target_lists` variable to
 include all supported devices.
@@ -61,7 +61,7 @@ various extra targets like `monado-cli` even when building with
 version, `target_instance_no_comp`, which stubs out the compositor creation
 call, but are otherwise the same.)
 
-![In-process OpenXR runtime diagram](images/in-process.svg)
+![In-process OpenXR runtime diagram](images/in-process.drawio.svg)
 
 ### XRT_FEATURE_SERVICE enabled
 
@@ -73,4 +73,4 @@ Note that in this case, there are two processes involved, which have different
 - The service has a normal or complete instance implementation that actually
   provides access to devices, etc.
 
-![Out-of-process OpenXR runtime diagram](images/out-of-proc.svg)
+![Out-of-process OpenXR runtime diagram](images/out-of-proc.drawio.svg)
