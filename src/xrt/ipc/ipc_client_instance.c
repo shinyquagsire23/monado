@@ -196,7 +196,7 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 
 	// FDs needs to be set to something negative.
 	ii->ipc_c.imc.socket_fd = -1;
-	ii->ipc_c.ism_fd = -1;
+	ii->ipc_c.ism_handle = XRT_SHMEM_HANDLE_INVALID;
 
 	if (!ipc_connect(&ii->ipc_c)) {
 		IPC_ERROR(
@@ -217,7 +217,7 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 
 	// get our xdev shm from the server and mmap it
 	xrt_result_t r =
-	    ipc_call_instance_get_shm_fd(&ii->ipc_c, &ii->ipc_c.ism_fd, 1);
+	    ipc_call_instance_get_shm_fd(&ii->ipc_c, &ii->ipc_c.ism_handle, 1);
 	if (r != XRT_SUCCESS) {
 		IPC_ERROR(&ii->ipc_c, "Failed to retrieve shm fd");
 		free(ii);
@@ -239,7 +239,8 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 	const int access = PROT_READ | PROT_WRITE;
 	const size_t size = sizeof(struct ipc_shared_memory);
 
-	ii->ipc_c.ism = mmap(NULL, size, access, flags, ii->ipc_c.ism_fd, 0);
+	ii->ipc_c.ism =
+	    mmap(NULL, size, access, flags, ii->ipc_c.ism_handle, 0);
 	if (ii->ipc_c.ism == NULL) {
 		IPC_ERROR(&ii->ipc_c, "Failed to mmap shm ");
 		free(ii);

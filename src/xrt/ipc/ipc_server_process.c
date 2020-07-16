@@ -19,6 +19,7 @@
 #include "util/u_debug.h"
 
 #include "ipc_server.h"
+#include "ipc_shmem.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -120,30 +121,15 @@ static int
 init_shm(struct ipc_server *s)
 {
 	const size_t size = sizeof(struct ipc_shared_memory);
-
-	int fd = shm_open("/monado_shm", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-	if (fd < 0) {
-		return -1;
-	}
-
-	if (ftruncate(fd, size) < 0) {
-		close(fd);
-		return -1;
-	}
-
-	const int access = PROT_READ | PROT_WRITE;
-	const int flags = MAP_SHARED;
-	s->ism = mmap(NULL, size, access, flags, fd, 0);
-	if (s->ism == NULL) {
-		close(fd);
+	xrt_shmem_handle_t handle;
+	xrt_result_t result = ipc_shmem_create(size, &handle, (void **)&s->ism);
+	if (result != XRT_SUCCESS) {
 		return -1;
 	}
 
 	// we have a filehandle, we will pass this to
 	// our client rather than access via filesystem
-	shm_unlink("/monado_shm");
-
-	s->ism_fd = fd;
+	s->ism_handle = handle;
 
 
 	/*

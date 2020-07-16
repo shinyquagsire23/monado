@@ -43,7 +43,7 @@ ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *ics,
 {
 	assert(max_num_handles >= 1);
 
-	out_handles[0] = ics->server->ism_fd;
+	out_handles[0] = ics->server->ism_handle;
 	*out_num_handles = 1;
 	return XRT_SUCCESS;
 }

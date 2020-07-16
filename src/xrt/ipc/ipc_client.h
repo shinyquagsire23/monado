@@ -78,7 +78,7 @@ struct ipc_connection
 	struct ipc_message_channel imc;
 
 	struct ipc_shared_memory *ism;
-	int ism_fd;
+	xrt_shmem_handle_t ism_handle;
 
 	struct os_mutex mutex;
 

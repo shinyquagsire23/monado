@@ -166,7 +166,7 @@ struct ipc_server
 	struct xrt_tracking_origin *xtracks[IPC_SERVER_NUM_XDEVS];
 
 	struct ipc_shared_memory *ism;
-	int ism_fd;
+	xrt_shmem_handle_t ism_handle;
 
 	//! Socket that we accept connections on.
 	int listen_socket;
