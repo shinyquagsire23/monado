@@ -8,8 +8,8 @@ spirv_shaders(SHADER_HEADERS
 	shaders/none.frag
 	shaders/panotools.frag
 	shaders/vive.frag
-	shaders/quad.frag
-	shaders/quad.vert
+	shaders/layer.frag
+	shaders/layer.vert
 	)
 
 set(CLIENT_SOURCE_FILES)

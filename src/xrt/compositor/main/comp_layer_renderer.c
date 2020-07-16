@@ -12,8 +12,8 @@
 
 #include "comp_layer_renderer.h"
 
-#include "shaders/quad.frag.h"
-#include "shaders/quad.vert.h"
+#include "shaders/layer.frag.h"
+#include "shaders/layer.vert.h"
 
 #include <stdio.h>
 #include <math.h>
@@ -247,9 +247,9 @@ _init_graphics_pipeline(struct comp_layer_renderer *self,
 	};
 
 	VkPipelineShaderStageCreateInfo shader_stages[2] = {
-	    _shader_load(vk, shaders_quad_vert, sizeof(shaders_quad_vert),
+	    _shader_load(vk, shaders_layer_vert, sizeof(shaders_layer_vert),
 	                 VK_SHADER_STAGE_VERTEX_BIT),
-	    _shader_load(vk, shaders_quad_frag, sizeof(shaders_quad_frag),
+	    _shader_load(vk, shaders_layer_frag, sizeof(shaders_layer_frag),
 	                 VK_SHADER_STAGE_FRAGMENT_BIT),
 	};
 
