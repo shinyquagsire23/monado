@@ -6,13 +6,24 @@
 
 layout (location = 0) in vec2 uv;
 
+layout (binding = 0, std140) uniform Transformation {
+  mat4 mvp;
+  ivec2 offset;
+  ivec2 extent;
+  bool has_sub;
+  bool flip_y;
+} ubo;
 layout (binding = 1) uniform sampler2D image;
 
 layout (location = 0) out vec4 out_color;
 
 void main ()
 {
-  vec4 texture_color = texture (image, uv);
-  out_color = texture_color;
+  if (ubo.has_sub) {
+    ivec2 uv_sub = ubo.offset + ivec2(uv * ubo.extent);
+    out_color = texelFetch(image, uv_sub, 0);
+  } else {
+    out_color = texture(image, uv);
+  }
 }
 

@@ -94,7 +94,8 @@ _init_descriptor_layout(struct comp_layer_renderer *self)
 	                .binding = 0,
 	                .descriptorCount = 1,
 	                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-	                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+	                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT |
+	                              VK_SHADER_STAGE_FRAGMENT_BIT,
 	            },
 	            // quad texture
 	            {

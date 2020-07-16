@@ -4,8 +4,11 @@
 
 #version 460
 
-layout (binding = 0) uniform Transformation {
+layout (binding = 0, std140) uniform Transformation {
   mat4 mvp;
+  ivec2 offset;
+  ivec2 extent;
+  bool has_sub;
   bool flip_y;
 } transformation;
 

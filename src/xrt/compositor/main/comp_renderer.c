@@ -501,11 +501,19 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 
 	comp_layer_set_flip_y(r->lr->layers[layer], data->flip_y);
 
-	r->lr->layers[layer]->type = XRT_LAYER_QUAD;
-	r->lr->layers[layer]->visibility = data->quad.visibility;
-	r->lr->layers[layer]->flags = data->flags;
-	r->lr->layers[layer]->view_space =
+
+	struct comp_render_layer *l = r->lr->layers[layer];
+	l->type = XRT_LAYER_QUAD;
+	l->visibility = data->quad.visibility;
+	l->flags = data->flags;
+	l->view_space =
 	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+
+	for (uint32_t i = 0; i < 2; i++) {
+		l->transformation[i].offset = data->quad.sub.rect.offset;
+		l->transformation[i].extent = data->quad.sub.rect.extent;
+		l->transformation[i].has_sub = true;
+	}
 
 	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
 }
