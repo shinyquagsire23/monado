@@ -65,7 +65,7 @@ time_ns_to_s(time_duration_ns ns)
 static inline time_duration_ns
 time_s_to_ns(float duration)
 {
-	return (time_duration_ns)(duration * 1000000000.0f);
+	return (time_duration_ns)((double)duration * 1000000000.0);
 }
 
 /*!
