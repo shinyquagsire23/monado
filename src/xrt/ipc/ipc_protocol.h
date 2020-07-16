@@ -194,3 +194,12 @@ struct ipc_app_state
 	pid_t pid;
 	struct xrt_instance_info info;
 };
+
+
+/*!
+ * Arguments for creating swapchains from native images.
+ */
+struct ipc_arg_swapchain_from_native
+{
+	size_t sizes[IPC_MAX_SWAPCHAIN_FDS];
+};

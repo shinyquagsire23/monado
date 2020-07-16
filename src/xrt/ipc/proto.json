@@ -110,6 +110,17 @@
 		"out_handles": {"type": "xrt_graphics_buffer_handle_t"}
 	},
 
+	"swapchain_import": {
+		"in": [
+			{"name": "info", "type": "struct xrt_swapchain_create_info"},
+			{"name": "args", "type": "struct ipc_arg_swapchain_from_native"}
+		],
+		"out": [
+			{"name": "id", "type": "uint32_t"}
+		],
+		"in_handles": {"type": "xrt_graphics_buffer_handle_t"}
+	},
+
 	"swapchain_wait_image": {
 		"in": [
 			{"name": "id", "type": "uint32_t"},

@@ -31,6 +31,49 @@
 
 /*
  *
+ * Helper functions.
+ *
+ */
+
+static xrt_result_t
+validate_swapchain_state(volatile struct ipc_client_state *ics,
+                         uint32_t *out_index)
+{
+	// Our handle is just the index for now.
+	uint32_t index = 0;
+	for (; index < IPC_MAX_CLIENT_SWAPCHAINS; index++) {
+		if (!ics->swapchain_data[index].active) {
+			break;
+		}
+	}
+
+	if (index >= IPC_MAX_CLIENT_SWAPCHAINS) {
+		fprintf(stderr, "ERROR: Too many swapchains!\n");
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	*out_index = index;
+
+	return XRT_SUCCESS;
+}
+
+static void
+set_swapchain_info(volatile struct ipc_client_state *ics,
+                   uint32_t index,
+                   struct xrt_swapchain_create_info *info,
+                   struct xrt_swapchain *xsc)
+{
+	ics->xscs[index] = xsc;
+	ics->swapchain_data[index].active = true;
+	ics->swapchain_data[index].width = info->width;
+	ics->swapchain_data[index].height = info->height;
+	ics->swapchain_data[index].format = info->format;
+	ics->swapchain_data[index].num_images = xsc->num_images;
+}
+
+
+/*
+ *
  * Handle functions.
  *
  */
@@ -281,18 +324,11 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
                             uint32_t *out_num_handles)
 {
 	xrt_result_t xret = XRT_SUCCESS;
-
-	// Our handle is just the index for now.
 	uint32_t index = 0;
-	for (; index < IPC_MAX_CLIENT_SWAPCHAINS; index++) {
-		if (!ics->swapchain_data[index].active) {
-			break;
-		}
-	}
 
-	if (index >= IPC_MAX_CLIENT_SWAPCHAINS) {
-		fprintf(stderr, "ERROR: Too many swapchains!\n");
-		return XRT_ERROR_IPC_FAILURE;
+	xret = validate_swapchain_state(ics, &index);
+	if (xret != XRT_SUCCESS) {
+		return xret;
 	}
 
 	// create the swapchain
@@ -305,33 +341,67 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	// It's now safe to increment the number of swapchains.
 	ics->num_swapchains++;
 
-	uint32_t num_images = xsc->num_images;
-
 	IPC_SPEW(ics->server, "IPC: Created swapchain %d\n", index);
 
-	ics->xscs[index] = xsc;
-	ics->swapchain_data[index].active = true;
-	ics->swapchain_data[index].width = info->width;
-	ics->swapchain_data[index].height = info->height;
-	ics->swapchain_data[index].format = info->format;
-	ics->swapchain_data[index].num_images = num_images;
+	set_swapchain_info(ics, index, info, xsc);
 
 	// return our result to the caller.
 	struct xrt_swapchain_native *xscn = (struct xrt_swapchain_native *)xsc;
 
 	// Sanity checking.
-	assert(num_images <= IPC_MAX_SWAPCHAIN_FDS);
-	assert(num_images <= max_num_handles);
+	assert(xsc->num_images <= IPC_MAX_SWAPCHAIN_FDS);
+	assert(xsc->num_images <= max_num_handles);
 
 	*out_id = index;
 	*out_size = xscn->images[0].size;
-	*out_num_images = num_images;
+	*out_num_images = xsc->num_images;
 
 	// Setup the fds.
-	*out_num_handles = num_images;
-	for (size_t i = 0; i < num_images; i++) {
+	*out_num_handles = xsc->num_images;
+	for (size_t i = 0; i < xsc->num_images; i++) {
 		out_handles[i] = xscn->images[i].fd;
 	}
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
+                            struct xrt_swapchain_create_info *info,
+                            struct ipc_arg_swapchain_from_native *args,
+                            uint32_t *out_id,
+                            xrt_graphics_buffer_handle_t *handles,
+                            uint32_t num_handles)
+{
+	xrt_result_t xret = XRT_SUCCESS;
+	uint32_t index = 0;
+
+	xret = validate_swapchain_state(ics, &index);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	struct xrt_image_native xins[IPC_MAX_SWAPCHAIN_FDS] = {0};
+	for (uint32_t i = 0; i < num_handles; i++) {
+		xins[i].fd = handles[i];
+		xins[i].size = args->sizes[i];
+	}
+
+	// create the swapchain
+	struct xrt_swapchain *xsc = NULL;
+	xret =
+	    xrt_comp_import_swapchain(ics->xc, info, xins, num_handles, &xsc);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	// It's now safe to increment the number of swapchains.
+	ics->num_swapchains++;
+
+	IPC_SPEW(ics->server, "IPC: Created swapchain %d\n", index);
+
+	set_swapchain_info(ics, index, info, xsc);
+	*out_id = index;
 
 	return XRT_SUCCESS;
 }
