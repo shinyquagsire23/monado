@@ -120,6 +120,7 @@ if(XRT_BUILD_DRIVER_PSVR)
 
 	add_library(drv_psvr STATIC ${PSVR_SOURCE_FILES})
 	target_link_libraries(drv_psvr PRIVATE xrt-interfaces HIDAPI::hidapi aux_util)
+	target_include_directories(drv_psvr PRIVATE ${HIDAPI_INCLUDE_DIRS})
 	list(APPEND ENABLED_HEADSET_DRIVERS psvr)
 endif()
 

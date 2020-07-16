@@ -15,7 +15,7 @@
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_prober.h"
 
-#include <hidapi/hidapi.h>
+#include <hidapi.h>
 
 
 #ifdef __cplusplus
