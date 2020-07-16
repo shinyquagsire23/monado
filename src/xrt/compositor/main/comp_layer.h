@@ -17,7 +17,6 @@ struct layer_transformation
 	struct xrt_matrix_4x4 mvp;
 	struct xrt_offset offset;
 	struct xrt_size extent;
-	bool has_sub;
 	bool flip_y;
 };
 

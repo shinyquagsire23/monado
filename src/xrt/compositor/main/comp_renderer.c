@@ -512,7 +512,6 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 	for (uint32_t i = 0; i < 2; i++) {
 		l->transformation[i].offset = data->quad.sub.rect.offset;
 		l->transformation[i].extent = data->quad.sub.rect.extent;
-		l->transformation[i].has_sub = true;
 	}
 
 	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
@@ -544,10 +543,6 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 	l->transformation[0].extent = data->stereo.l.sub.rect.extent;
 	l->transformation[1].offset = data->stereo.r.sub.rect.offset;
 	l->transformation[1].extent = data->stereo.r.sub.rect.extent;
-
-	for (uint32_t i = 0; i < 2; i++) {
-		l->transformation[i].has_sub = true;
-	}
 }
 
 void
