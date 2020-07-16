@@ -33,6 +33,7 @@ build*/
 # Ignore local settings
 .vscode
 *.autosave
+.vs
 
 # Ignore merge-conflict resolution files
 *.orig
