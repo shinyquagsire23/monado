@@ -50,16 +50,21 @@ set(OXR_SOURCE_FILES
 	oxr_objects.h
 	oxr_path.c
 	oxr_session.c
-	oxr_session_vk.c
 	oxr_space.c
 	oxr_swapchain.c
-	oxr_swapchain_vk.c
 	oxr_system.c
 	oxr_two_call.h
 	oxr_verify.c
-	oxr_vulkan.c
 	oxr_xdev.c
 	)
+
+if(XRT_HAVE_VULKAN)
+	list(APPEND OXR_SOURCE_FILES
+		oxr_session_vk.c
+		oxr_swapchain_vk.c
+		oxr_vulkan.c
+		)
+endif()
 
 if(XRT_HAVE_OPENGL)
 	add_definitions(-DXR_USE_GRAPHICS_API_OPENGL -DXR_USE_GRAPHICS_API_OPENGL_ES)
@@ -84,9 +89,11 @@ target_link_libraries(st_oxr PRIVATE
 	xrt-external-openxr
 	aux_util
 	aux_math
-	Vulkan::Vulkan
 	comp_client
 	)
+if(XRT_HAVE_VULKAN)
+	target_link_libraries(st_oxr PRIVATE Vulkan::Vulkan)
+endif()
 target_include_directories(st_oxr
 	PRIVATE
 	${CMAKE_CURRENT_BINARY_DIR}

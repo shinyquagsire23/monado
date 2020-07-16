@@ -21,8 +21,12 @@
 #include "math/m_api.h"
 
 #include "xrt/xrt_device.h"
+#ifdef XR_USE_PLATFORM_XLIB
 #include "xrt/xrt_gfx_xlib.h"
+#endif // XR_USE_PLATFORM_XLIB
+#ifdef XRT_HAVE_VULKAN
 #include "xrt/xrt_gfx_vk.h"
+#endif // XRT_HAVE_VULKAN
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"

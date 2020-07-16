@@ -10,6 +10,10 @@
 #pragma once
 
 #include "xrt/xrt_config_vulkan.h"
+#include "xrt/xrt_config_have.h"
+
+#ifdef XRT_HAVE_VULKAN
+
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 
@@ -23,3 +27,5 @@ vkGetInstanceProcAddr(VkInstance instance, const char *pName);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // XRT_HAVE_VULKAN

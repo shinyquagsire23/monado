@@ -179,7 +179,9 @@ if(XRT_HAVE_OPENCV)
 	target_link_libraries(aux_tracking PUBLIC ${OpenCV_LIBRARIES})
 endif()
 
-# Vulkan library.
-add_library(aux_vk STATIC ${VK_SOURCE_FILES})
-target_link_libraries(aux_vk PUBLIC aux-includes)
-target_link_libraries(aux_vk PUBLIC Vulkan::Vulkan)
+if(XRT_HAVE_VULKAN)
+	# Vulkan library.
+	add_library(aux_vk STATIC ${VK_SOURCE_FILES})
+	target_link_libraries(aux_vk PUBLIC aux-includes)
+	target_link_libraries(aux_vk PUBLIC Vulkan::Vulkan)
+endif()

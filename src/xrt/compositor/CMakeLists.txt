@@ -12,11 +12,7 @@ spirv_shaders(SHADER_HEADERS
 	shaders/quad.vert
 	)
 
-set(CLIENT_SOURCE_FILES
-	client/comp_vk_client.c
-	client/comp_vk_client.h
-	client/comp_vk_glue.c
-	)
+set(CLIENT_SOURCE_FILES)
 
 set(MAIN_SOURCE_FILES
 	main/comp_compositor.c
@@ -42,6 +38,13 @@ set(MAIN_SOURCE_FILES
 # Client library
 #
 
+if(XRT_HAVE_VULKAN)
+	list(APPEND CLIENT_SOURCE_FILES
+		client/comp_vk_client.c
+		client/comp_vk_client.h
+		client/comp_vk_glue.c
+		)
+endif()
 if(XRT_HAVE_OPENGL)
 	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_gl_client.c
@@ -64,9 +67,12 @@ if(XRT_HAVE_OPENGL AND XRT_HAVE_EGL)
 endif()
 
 add_library(comp_client STATIC ${CLIENT_SOURCE_FILES})
-target_link_libraries(comp_client PUBLIC xrt-interfaces PRIVATE aux_util aux_vk)
+target_link_libraries(comp_client PUBLIC xrt-interfaces PRIVATE aux_util)
 target_include_directories(comp_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(XRT_HAVE_VULKAN)
+	target_link_libraries(comp_client PRIVATE aux_vk)
+endif()
 if(XRT_HAVE_OPENGL)
 	target_link_libraries(comp_client PRIVATE aux_ogl)
 endif()
