@@ -15,6 +15,7 @@
 #include "xrt/xrt_gfx_xlib.h"
 
 #include "client/comp_gl_xlib_client.h"
+#include "client/comp_gl_memobj_swapchain.h"
 
 
 /*!
@@ -56,7 +57,8 @@ client_gl_xlib_compositor_create(struct xrt_compositor_native *xcn,
 	struct client_gl_xlib_compositor *c =
 	    U_TYPED_CALLOC(struct client_gl_xlib_compositor);
 
-	if (!client_gl_compositor_init(&c->base, xcn, glXGetProcAddress)) {
+	if (!client_gl_compositor_init(&c->base, xcn, glXGetProcAddress,
+	                               client_gl_memobj_swapchain_create)) {
 		free(c);
 		return NULL;
 	}

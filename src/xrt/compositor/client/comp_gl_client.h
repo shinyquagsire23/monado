@@ -15,7 +15,6 @@
 extern "C" {
 #endif
 
-
 /*
  *
  * Structs
@@ -37,10 +36,29 @@ struct client_gl_swapchain
 	struct xrt_swapchain_gl base;
 
 	struct xrt_swapchain_native *xscn;
-
-	// GLuint
-	unsigned int memory[XRT_MAX_SWAPCHAIN_IMAGES];
 };
+
+/*!
+ * The type of a swapchain create constructor.
+ *
+ * Because our swapchain creation varies depending on available extensions and
+ * application choices, the swapchain constructor parameter to
+ * client_gl_compositor is parameterized.
+ *
+ * Note that the "common" swapchain creation function does some setup before
+ * invoking this, and some cleanup after.
+ *
+ * - Must populate `destroy`
+ * - Does not need to save/restore texture binding
+ */
+typedef struct xrt_swapchain *(*client_gl_swapchain_create_func)(
+    struct xrt_compositor *xc,
+    const struct xrt_swapchain_create_info *info,
+    struct xrt_swapchain_native *xscn,
+    struct client_gl_swapchain **out_sc);
+
+typedef void (*client_gl_void_ptr_func)();
+typedef client_gl_void_ptr_func (*client_gl_get_procaddr)(const char *name);
 
 /*!
  * @class client_gl_compositor
@@ -55,6 +73,11 @@ struct client_gl_compositor
 	struct xrt_compositor_gl base;
 
 	struct xrt_compositor_native *xcn;
+
+	/*!
+	 * Function pointer for creating the client swapchain.
+	 */
+	client_gl_swapchain_create_func create_swapchain;
 };
 
 
@@ -63,7 +86,6 @@ struct client_gl_compositor
  * Functions and helpers.
  *
  */
-
 
 /*!
  * Down-cast helper.
@@ -74,10 +96,6 @@ client_gl_compositor(struct xrt_compositor *xc)
 {
 	return (struct client_gl_compositor *)xc;
 }
-
-typedef void (*client_gl_void_ptr_func)();
-
-typedef client_gl_void_ptr_func (*client_gl_get_procaddr)(const char *name);
 
 /*!
  * Fill in a client_gl_compositor and do common OpenGL sanity checking.
@@ -93,7 +111,8 @@ typedef client_gl_void_ptr_func (*client_gl_get_procaddr)(const char *name);
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_get_procaddr get_gl_procaddr);
+                          client_gl_get_procaddr get_gl_procaddr,
+                          client_gl_swapchain_create_func create_swapchain);
 
 
 #ifdef __cplusplus

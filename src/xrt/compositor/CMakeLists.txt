@@ -49,6 +49,8 @@ if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_gl_client.c
 		client/comp_gl_client.h
+		client/comp_gl_memobj_swapchain.c
+		client/comp_gl_memobj_swapchain.h
 		)
 endif()
 if(XRT_HAVE_OPENGL)
@@ -59,6 +61,8 @@ endif()
 if(XRT_HAVE_OPENGLES)
 	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_gles_glue.c
+		client/comp_gl_eglimage_swapchain.c
+		client/comp_gl_eglimage_swapchain.h
 		)
 endif()
 if(XRT_HAVE_OPENGL AND XRT_HAVE_XLIB)

@@ -42,26 +42,6 @@ client_gl_swapchain(struct xrt_swapchain *xsc)
  *
  */
 
-static void
-client_gl_swapchain_destroy(struct xrt_swapchain *xsc)
-{
-	struct client_gl_swapchain *sc = client_gl_swapchain(xsc);
-
-	uint32_t num_images = sc->base.base.num_images;
-	if (num_images > 0) {
-		glDeleteTextures(num_images, &sc->base.images[0]);
-		U_ZERO_ARRAY(sc->base.images);
-		glDeleteMemoryObjectsEXT(num_images, &sc->memory[0]);
-		U_ZERO_ARRAY(sc->base.images);
-		sc->base.base.num_images = 0;
-	}
-
-	// Destroy the native swapchain as well.
-	xrt_swapchain_destroy((struct xrt_swapchain **)&sc->xscn);
-
-	free(sc);
-}
-
 static xrt_result_t
 client_gl_swapchain_acquire_image(struct xrt_swapchain *xsc,
                                   uint32_t *out_index)
@@ -285,54 +265,31 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	}
 	assert(xscn != NULL);
 
-	struct xrt_swapchain *xsc = &xscn->base;
-
-	struct client_gl_swapchain *sc =
-	    U_TYPED_CALLOC(struct client_gl_swapchain);
-	sc->base.base.destroy = client_gl_swapchain_destroy;
-	sc->base.base.acquire_image = client_gl_swapchain_acquire_image;
-	sc->base.base.wait_image = client_gl_swapchain_wait_image;
-	sc->base.base.release_image = client_gl_swapchain_release_image;
-	// Fetch the number of images from the native swapchain.
-	sc->base.base.num_images = xsc->num_images;
-	sc->xscn = xscn;
-
+	// Save texture binding
 	GLuint prev_texture = 0;
 	glGetIntegerv(info->array_size == 1 ? GL_TEXTURE_BINDING_2D
 	                                    : GL_TEXTURE_BINDING_2D_ARRAY,
 	              (GLint *)&prev_texture);
 
-	glGenTextures(xsc->num_images, sc->base.images);
-	for (uint32_t i = 0; i < xsc->num_images; i++) {
-		glBindTexture(info->array_size == 1 ? GL_TEXTURE_2D
-		                                    : GL_TEXTURE_2D_ARRAY,
-		              sc->base.images[i]);
-	}
-	glCreateMemoryObjectsEXT(xsc->num_images, &sc->memory[0]);
-	for (uint32_t i = 0; i < xsc->num_images; i++) {
-		GLint dedicated = GL_TRUE;
-		glMemoryObjectParameterivEXT(
-		    sc->memory[i], GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
-		glImportMemoryFdEXT(sc->memory[i], xscn->images[i].size,
-		                    GL_HANDLE_TYPE_OPAQUE_FD_EXT,
-		                    xscn->images[i].handle);
+	struct xrt_swapchain *xsc = &xscn->base;
 
-		// We have consumed this handle now, make sure it's not freed
-		// again.
-		xscn->images[i].handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
-
-		if (info->array_size == 1) {
-			glTextureStorageMem2DEXT(
-			    sc->base.images[i], info->mip_count,
-			    (GLuint)info->format, info->width, info->height,
-			    sc->memory[i], 0);
-		} else {
-			glTextureStorageMem3DEXT(
-			    sc->base.images[i], info->mip_count,
-			    (GLuint)info->format, info->width, info->height,
-			    info->array_size, sc->memory[i], 0);
-		}
+	struct client_gl_swapchain *sc = NULL;
+	if (NULL == c->create_swapchain(xc, info, xscn, &sc)) {
+		xrt_swapchain_destroy(&xsc);
+		return XRT_ERROR_OPENGL;
 	}
+	if (NULL == sc->base.base.acquire_image) {
+		sc->base.base.acquire_image = client_gl_swapchain_acquire_image;
+	}
+	if (NULL == sc->base.base.wait_image) {
+		sc->base.base.wait_image = client_gl_swapchain_wait_image;
+	}
+	if (NULL == sc->base.base.release_image) {
+		sc->base.base.release_image = client_gl_swapchain_release_image;
+	}
+	// Fetch the number of images from the native swapchain.
+	sc->base.base.num_images = xsc->num_images;
+	sc->xscn = xscn;
 
 	glBindTexture(info->array_size == 1 ? GL_TEXTURE_2D
 	                                    : GL_TEXTURE_2D_ARRAY,
@@ -361,7 +318,8 @@ client_gl_compositor_destroy(struct xrt_compositor *xc)
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_get_procaddr get_gl_procaddr)
+                          client_gl_get_procaddr get_gl_procaddr,
+                          client_gl_swapchain_create_func create_swapchain)
 {
 	c->base.base.create_swapchain = client_gl_swapchain_create;
 	c->base.base.prepare_session = client_gl_compositor_prepare_session;
@@ -377,6 +335,7 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.layer_commit = client_gl_compositor_layer_commit;
 	c->base.base.destroy = client_gl_compositor_destroy;
 	c->base.base.poll_events = client_gl_compositor_poll_events;
+	c->create_swapchain = create_swapchain;
 	c->xcn = xcn;
 
 	// Passthrough our formats from the native compositor to the client.
@@ -395,6 +354,7 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	gladLoadGL(get_gl_procaddr);
 #elif defined(XRT_HAVE_OPENGLES)
 	gladLoadGLES2(get_gl_procaddr);
+	gladLoadEGL(display, get_gl_procaddr);
 #endif
 	// @todo log this to a proper logger.
 #define CHECK_REQUIRED_EXTENSION(EXT)                                          \

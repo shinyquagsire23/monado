@@ -48,6 +48,8 @@ if build_opengl or build_opengles
 	compositor_srcs += [
 		'client/comp_gl_client.c',
 		'client/comp_gl_client.h',
+		'client/comp_gl_memobj_swapchain.c',
+		'client/comp_gl_memobj_swapchain.h',
 	]
 endif
 
@@ -64,6 +66,12 @@ if build_opengles
 	]
 	compositor_deps += [opengles]
 	compositor_includes += [glad_include]
+endif
+if build_egl
+	compositor_srcs += [
+		'client/comp_gl_eglimage_swapchain.c',
+		'client/comp_gl_eglimage_swapchain.h',
+	]
 endif
 
 if build_opengl and build_xlib
