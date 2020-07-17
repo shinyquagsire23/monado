@@ -27,6 +27,16 @@ xrt_config_drivers = declare_dependency(
 #
 
 have_conf = configuration_data()
+
+if build_egl
+	have_conf.set('XRT_HAVE_EGL', true)
+endif
+if avcodec.found()
+	have_conf.set('XRT_HAVE_FFMPEG', true)
+endif
+if libjpeg.found()
+	have_conf.set('XRT_HAVE_JPEG', true)
+endif
 if udev.found()
 	have_conf.set('XRT_HAVE_LIBUDEV', true)
 endif
@@ -35,20 +45,12 @@ if libusb.found()
 	have_conf.set('XRT_HAVE_LIBUSB', true)
 endif
 
-if opencv.found()
-	have_conf.set('XRT_HAVE_OPENCV', true)
-endif
-
-if libjpeg.found()
-	have_conf.set('XRT_HAVE_JPEG', true)
-endif
-
 if libuvc.found()
 	have_conf.set('XRT_HAVE_LIBUVC', true)
 endif
 
-if avcodec.found()
-	have_conf.set('XRT_HAVE_FFMPEG', true)
+if opencv.found()
+	have_conf.set('XRT_HAVE_OPENCV', true)
 endif
 
 if sdl2.found()
