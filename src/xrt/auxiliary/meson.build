@@ -61,17 +61,14 @@ aux_util = declare_dependency(
 if build_opengl or build_opengles
 	ogl_files = [
 		'ogl/ogl_documentation.h',
-	]
-
-	if build_opengl
-		ogl_files += [
 			'ogl/ogl_api.h',
 			'ogl/ogl_api.c',
-		]
-	elif build_opengles
+	]
+
+	if build_opengles or build_egl
 		ogl_files += [
-			'ogl/ogles_api.h',
-			'ogl/ogles_api.c',
+			'ogl/egl_api.h',
+			'ogl/egl_api.c',
 		]
 	endif
 

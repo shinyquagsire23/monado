@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  OpenGL-ES API wrapper.
+ * @brief  EGL API wrapper header.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_ogl
  */
 
-#include "../../external/glad/src/gles2.c"
+#pragma once
+
+#include "glad/egl.h"

@@ -12,14 +12,14 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include <xrt/xrt_config_have.h>
 #include "util/u_misc.h"
 
-#if defined(XRT_HAVE_OPENGL)
-// or both OpenGL and GL-ES
+#include <xrt/xrt_config_have.h>
+#if defined(XRT_HAVE_EGL)
+#include "ogl/egl_api.h"
+#endif
+#if defined(XRT_HAVE_OPENGL) || defined(XRT_HAVE_OPENGLES)
 #include "ogl/ogl_api.h"
-#elif defined(XRT_HAVE_OPENGLES)
-#include "ogl/ogles_api.h"
 #endif
 
 #include "client/comp_gl_client.h"

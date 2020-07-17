@@ -21,16 +21,16 @@ set(MATH_SOURCE_FILES
 set(OGL_SOURCE_FILES
 	ogl/ogl_documentation.h
 	)
-if(XRT_HAVE_OPENGL)
+if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	list(APPEND OGL_SOURCE_FILES
 		ogl/ogl_api.c
 		ogl/ogl_api.h
 		)
-elseif(XRT_HAVE_OPENGLES)
-	# Only want one of these two sets of files, to avoid duplicate definitions.
+endif()
+if(XRT_HAVE_EGL)
 	list(APPEND OGL_SOURCE_FILES
-		ogl/ogles_api.c
-		ogl/ogles_api.h
+		ogl/egl_api.c
+		ogl/egl_api.h
 		)
 endif()
 
@@ -135,7 +135,7 @@ if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	# for GLAD
 	target_link_libraries(aux_ogl PUBLIC xrt-external-glad)
 	if(XRT_HAVE_OPENGLES)
-		target_link_libraries(aux_ogl PUBLIC OpenGLES::OpenGLESv3 EGL::EGL)
+		target_link_libraries(aux_ogl PUBLIC EGL::EGL)
 	endif()
 endif()
 
