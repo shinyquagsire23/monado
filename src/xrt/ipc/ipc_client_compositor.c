@@ -204,6 +204,56 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 	}
 
 	*out_xsc = &ics->base.base;
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+ipc_compositor_swapchain_import(struct xrt_compositor *xc,
+                                struct xrt_swapchain_create_info *info,
+                                struct xrt_image_native *native_images,
+                                uint32_t num_images,
+                                struct xrt_swapchain **out_xsc)
+{
+	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+	struct ipc_arg_swapchain_from_native args = {0};
+	xrt_graphics_buffer_handle_t handles[IPC_MAX_SWAPCHAIN_FDS] = {0};
+	xrt_result_t r = XRT_SUCCESS;
+	uint32_t id = 0;
+
+	for (uint32_t i = 0; i < num_images; i++) {
+		handles[i] = native_images[i].fd;
+		args.sizes[i] = native_images[i].size;
+	}
+
+	// This does not consume the handles, it copies them.
+	r = ipc_call_swapchain_import(icc->ipc_c, // connection
+	                              info,       // in
+	                              &args,      // in
+	                              handles,    // handles
+	                              num_images, // handles
+	                              &id);       // out
+	if (r != XRT_SUCCESS) {
+		return r;
+	}
+
+	struct ipc_client_swapchain *ics =
+	    U_TYPED_CALLOC(struct ipc_client_swapchain);
+	ics->base.base.num_images = num_images;
+	ics->base.base.wait_image = ipc_compositor_swapchain_wait_image;
+	ics->base.base.acquire_image = ipc_compositor_swapchain_acquire_image;
+	ics->base.base.release_image = ipc_compositor_swapchain_release_image;
+	ics->base.base.destroy = ipc_compositor_swapchain_destroy;
+	ics->icc = icc;
+	ics->id = id;
+
+	// The handles where copied in the IPC call so we can reuse them here.
+	for (uint32_t i = 0; i < num_images; i++) {
+		ics->base.images[i] = native_images[i];
+	}
+
+	*out_xsc = &ics->base.base;
+
 	return XRT_SUCCESS;
 }
 
@@ -464,6 +514,7 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	    U_TYPED_CALLOC(struct ipc_client_compositor);
 
 	c->base.base.create_swapchain = ipc_compositor_swapchain_create;
+	c->base.base.import_swapchain = ipc_compositor_swapchain_import;
 	c->base.base.prepare_session = ipc_compositor_prepare_session;
 	c->base.base.begin_session = ipc_compositor_begin_session;
 	c->base.base.end_session = ipc_compositor_end_session;
