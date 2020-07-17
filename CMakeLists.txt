@@ -40,6 +40,7 @@ find_package(Threads)
 find_package(ZLIB)
 find_package(cJSON)
 find_package(Systemd)
+find_package(OpenGLES COMPONENTS V3)
 
 # @TODO Turn into a find_package LIBUVC file.
 pkg_check_modules(LIBUVC libuvc)
@@ -82,9 +83,10 @@ cmake_dependent_option(CMAKE_INTERPROCEDURAL_OPTIMIZATION "Enable inter-procedur
 cmake_dependent_option(XRT_HAVE_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND AND WAYLAND_SCANNER_FOUND AND WAYLAND_PROTOCOLS_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_XLIB "Enable xlib support" ON "X11_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_XCB "Enable xcb support" ON "XCB_FOUND" OFF)
-cmake_dependent_option(XRT_HAVE_OPENGL "Enable OpenGL Graphics API support" ON "OPENGL_FOUND" OFF)
-cmake_dependent_option(XRT_HAVE_OPENGLES "Enable OpenGL-ES Graphics API support" ON "XRT_HAVE_OPENGL OR ANDROID" OFF)
+
 cmake_dependent_option(XRT_HAVE_VULKAN "Enable Vulkan Graphics API support (also needed for compositor)" ON "VULKAN_FOUND" OFF)
+cmake_dependent_option(XRT_HAVE_OPENGL "Enable OpenGL Graphics API support" ON "OPENGL_FOUND" OFF)
+cmake_dependent_option(XRT_HAVE_OPENGLES "Enable OpenGL-ES Graphics API support" ON "OpenGLES_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_EGL "Enable OpenGL on EGL Graphics API support" ON "EGL_FOUND; XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES" OFF)
 cmake_dependent_option(XRT_HAVE_DBUS "Enable dbus support (for BLE support)" ON "DBUS_FOUND" OFF)
 cmake_dependent_option(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" ON "XRT_HAVE_VULKAN; XRT_HAVE_WAYLAND OR XRT_HAVE_XCB" OFF)
@@ -138,6 +140,10 @@ list(APPEND AVAILABLE_DRIVERS ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 
 ###
 # Flags
 ###
+
+if(XRT_HAVE_OPENGLES AND NOT XRT_HAVE_EGL)
+	message(FATAL_ERROR "XRT_HAVE_OPENGLES requires XRT_HAVE_EGL but XRT_HAVE_EGL is disabled")
+endif()
 
 if(XRT_HAVE_SDL2)
 	# Arch work around

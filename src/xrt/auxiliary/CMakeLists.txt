@@ -132,6 +132,9 @@ if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	target_link_libraries(aux_ogl PUBLIC aux-includes)
 	# for GLAD
 	target_link_libraries(aux_ogl PUBLIC xrt-external-glad)
+	if(XRT_HAVE_OPENGLES)
+		target_link_libraries(aux_ogl PUBLIC OpenGLES::OpenGLESv3 EGL::EGL)
+	endif()
 endif()
 
 # OS library.
