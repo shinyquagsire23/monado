@@ -204,6 +204,9 @@ client_gl_compositor_layer_quad(struct xrt_compositor *xc,
 static xrt_result_t
 client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 {
+	//! @hack: The swapchain images should have been externally synchronized
+	glFlush();
+
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
 	return xrt_comp_layer_commit(&c->xcn->base, frame_id);
