@@ -859,6 +859,12 @@ submit_quad_layer(struct oxr_session *sess,
 		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
 		// The space might have a pose, transform that in as well.
 		math_pose_transform(&spc->pose, &pose, &pose);
+	} else if (spc->is_reference) {
+		// The space might have a pose, transform that in as well.
+		math_pose_transform(&spc->pose, &pose, &pose);
+
+		// Remove the tracking system origin offset.
+		math_pose_transform(inv_offset, &pose, &pose);
 	} else {
 		//! @todo Action space handling not very complete
 
