@@ -693,6 +693,11 @@ oxr_space_ref_relation(struct oxr_logger *log,
                        XrTime time,
                        struct xrt_space_relation *out_relation);
 
+bool
+initial_head_relation_valid(struct oxr_session *sess);
+
+bool
+global_to_local_space(struct oxr_session *sess, struct xrt_pose *pose);
 
 /*
  *
@@ -1266,6 +1271,10 @@ struct oxr_session
 	                             struct oxr_session *sess,
 	                             const XrSwapchainCreateInfo *,
 	                             struct oxr_swapchain **);
+
+	/*! initial relation of head in "global" space.
+	 * Used as reference for local space.  */
+	struct xrt_space_relation initial_head_relation;
 };
 
 /*!

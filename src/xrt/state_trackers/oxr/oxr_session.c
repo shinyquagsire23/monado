@@ -865,6 +865,15 @@ submit_quad_layer(struct oxr_session *sess,
 
 		// Remove the tracking system origin offset.
 		math_pose_transform(inv_offset, &pose, &pose);
+
+		if (spc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
+			if (!initial_head_relation_valid(sess)) {
+				return XR_SUCCESS;
+			}
+			math_pose_transform(&sess->initial_head_relation.pose,
+			                    &pose, &pose);
+		}
+
 	} else {
 		//! @todo Action space handling not very complete
 
