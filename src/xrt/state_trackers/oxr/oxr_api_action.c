@@ -195,12 +195,43 @@ oxr_xrGetCurrentInteractionProfile(
     XrPath topLevelUserPath,
     XrInteractionProfileState *interactionProfile)
 {
-	struct oxr_session *sess;
+	struct oxr_instance *inst = NULL;
+	struct oxr_session *sess = NULL;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetCurrentInteractionProfile");
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, interactionProfile,
 	                                 XR_TYPE_INTERACTION_PROFILE_STATE);
+
+	// Short hand.
+	inst = sess->sys->inst;
+
+	if (topLevelUserPath == XR_NULL_PATH) {
+		return oxr_error(&log, XR_ERROR_PATH_INVALID,
+		                 "(topLevelUserPath == XR_NULL_PATH) The null "
+		                 "path is not a valid argument");
+	}
+
+	if (!oxr_path_is_valid(&log, inst, topLevelUserPath)) {
+		return oxr_error(
+		    &log, XR_ERROR_PATH_INVALID,
+		    "(topLevelUserPath == %zu) Is not a valid path",
+		    topLevelUserPath);
+	}
+
+	if (topLevelUserPath != inst->path_cache.left &&
+	    topLevelUserPath != inst->path_cache.right &&
+	    topLevelUserPath != inst->path_cache.head &&
+	    topLevelUserPath != inst->path_cache.gamepad) {
+		const char *str = NULL;
+		size_t len = 0;
+		oxr_path_get_string(&log, inst, topLevelUserPath, &str, &len);
+
+		return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
+		                 "(topLevelUserPath == %s) Is not a valid top "
+		                 "level user path",
+		                 str);
+	}
 
 	/* XXX: How do we return XR_SESSION_LOSS_PENDING here? */
 	return oxr_action_get_current_interaction_profile(
