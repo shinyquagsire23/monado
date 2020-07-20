@@ -837,6 +837,10 @@ XrResult
 oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(
     struct oxr_logger *log, struct oxr_session *sess, bool visible);
 
+XrResult
+oxr_event_push_XrEventDataInteractionProfileChanged(struct oxr_logger *log,
+                                                    struct oxr_session *sess);
+
 /*!
  * This clears all pending events refers to the given session.
  */

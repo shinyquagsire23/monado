@@ -1229,12 +1229,18 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 
 	if (head != NULL) {
 		sess->head = head->path;
+		// Also push event
+		oxr_event_push_XrEventDataInteractionProfileChanged(log, sess);
 	}
 	if (left != NULL) {
 		sess->left = left->path;
+		// Also push event
+		oxr_event_push_XrEventDataInteractionProfileChanged(log, sess);
 	}
 	if (right != NULL) {
 		sess->right = right->path;
+		// Also push event
+		oxr_event_push_XrEventDataInteractionProfileChanged(log, sess);
 	}
 
 	return oxr_session_success_result(sess);

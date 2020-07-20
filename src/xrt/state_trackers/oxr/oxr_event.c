@@ -122,6 +122,25 @@ oxr_event_alloc(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
+static bool
+is_session_link_to_event(struct oxr_event *event, XrSession session)
+{
+	XrStructureType *type = oxr_event_extra(event);
+
+	switch (*type) {
+	case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED: {
+		XrEventDataSessionStateChanged *changed =
+		    (XrEventDataSessionStateChanged *)type;
+		return changed->session == session;
+	}
+	case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
+		XrEventDataInteractionProfileChanged *changed =
+		    (XrEventDataInteractionProfileChanged *)type;
+		return changed->session == session;
+	}
+	default: return false;
+	}
+}
 
 /*
  *
@@ -149,6 +168,27 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 	event->result = state == XR_SESSION_STATE_LOSS_PENDING
 	                    ? XR_SESSION_LOSS_PENDING
 	                    : XR_SUCCESS;
+
+	lock(inst);
+	push(inst, event);
+	unlock(inst);
+
+	return XR_SUCCESS;
+}
+
+
+XrResult
+oxr_event_push_XrEventDataInteractionProfileChanged(struct oxr_logger *log,
+                                                    struct oxr_session *sess)
+{
+	struct oxr_instance *inst = sess->sys->inst;
+	XrEventDataSessionStateChanged *changed;
+	struct oxr_event *event = NULL;
+
+	ALLOC(log, inst, &event, &changed);
+
+	changed->type = XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED;
+	changed->session = oxr_session_to_openxr(sess);
 
 	lock(inst);
 	push(inst, event);
@@ -191,12 +231,7 @@ oxr_event_remove_session_events(struct oxr_logger *log,
 		struct oxr_event *cur = e;
 		e = e->next;
 
-		XrEventDataSessionStateChanged *changed = oxr_event_extra(cur);
-		if (changed->type != XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED) {
-			continue;
-		}
-
-		if (changed->session != session) {
+		if (!is_session_link_to_event(cur, session)) {
 			continue;
 		}
 
