@@ -12,6 +12,7 @@
 
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_vulkan_includes.h"
+#include "xrt/xrt_handles.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -346,7 +347,9 @@ vk_create_image_from_native(struct vk_bundle *vk,
  * @ingroup aux_vk
  */
 VkResult
-vk_create_semaphore_from_fd(struct vk_bundle *vk, int fd, VkSemaphore *out_sem);
+vk_create_semaphore_from_native(struct vk_bundle *vk,
+                                xrt_graphics_sync_handle_t native,
+                                VkSemaphore *out_sem);
 
 /*!
  * @ingroup aux_vk

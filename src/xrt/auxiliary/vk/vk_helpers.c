@@ -350,7 +350,9 @@ vk_create_image_from_native(struct vk_bundle *vk,
 }
 
 VkResult
-vk_create_semaphore_from_fd(struct vk_bundle *vk, int fd, VkSemaphore *out_sem)
+vk_create_semaphore_from_native(struct vk_bundle *vk,
+                                xrt_graphics_sync_handle_t native,
+                                VkSemaphore *out_sem)
 {
 	VkResult ret;
 
@@ -364,12 +366,12 @@ vk_create_semaphore_from_fd(struct vk_bundle *vk, int fd, VkSemaphore *out_sem)
 		// Nothing to cleanup
 		return ret;
 	}
-
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 	VkImportSemaphoreFdInfoKHR import_semaphore_fd_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR,
 	    .semaphore = *out_sem,
 	    .handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
-	    .fd = fd,
+	    .fd = native,
 	};
 	ret = vk->vkImportSemaphoreFdKHR(vk->device, &import_semaphore_fd_info);
 	if (ret != VK_SUCCESS) {
@@ -378,6 +380,9 @@ vk_create_semaphore_from_fd(struct vk_bundle *vk, int fd, VkSemaphore *out_sem)
 		vk->vkDestroySemaphore(vk->device, *out_sem, NULL);
 		return ret;
 	}
+#else
+#error "Not implemented for this underlying handle type!"
+#endif
 	return ret;
 }
 
