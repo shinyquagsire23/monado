@@ -25,6 +25,13 @@ extern "C" {
 typedef int xrt_shmem_handle_t;
 
 /*!
+ * Defined to allow detection of the underlying type.
+ *
+ * @relates xrt_shmem_handle_t
+ */
+#define XRT_SHMEM_HANDLE_IS_FD 1
+
+/*!
  * Check whether a shared memory handle is valid.
  *
  * @public @memberof xrt_shmem_handle_t
@@ -57,6 +64,13 @@ typedef struct AHardwareBuffer AHardwareBuffer;
 typedef AHardwareBuffer *xrt_graphics_buffer_handle_t;
 
 /*!
+ * Defined to allow detection of the underlying type.
+ *
+ * @relates xrt_graphics_buffer_handle_t
+ */
+#define XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER 1
+
+/*!
  * Check whether a graphics buffer handle is valid.
  *
  * @public @memberof xrt_graphics_buffer_handle_t
@@ -86,6 +100,13 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
  * On Linux, this is a file descriptor.
  */
 typedef int xrt_graphics_buffer_handle_t;
+
+/*!
+ * Defined to allow detection of the underlying type.
+ *
+ * @relates xrt_graphics_buffer_handle_t
+ */
+#define XRT_GRAPHICS_BUFFER_HANDLE_IS_FD 1
 
 /*!
  * Check whether a graphics buffer handle is valid.
