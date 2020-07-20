@@ -187,7 +187,9 @@ oxr_space_ref_relation(struct oxr_logger *log,
 	math_relation_reset(out_relation);
 
 
-	if (space == XR_REFERENCE_SPACE_TYPE_VIEW) {
+	if (space == baseSpc) {
+		// math_relation_reset() sets to identity.
+	} else if (space == XR_REFERENCE_SPACE_TYPE_VIEW) {
 		oxr_session_get_view_pose_at(log, sess, time,
 		                             &out_relation->pose);
 
@@ -258,8 +260,6 @@ oxr_space_ref_relation(struct oxr_logger *log,
 			    XRT_SPACE_RELATION_BITMASK_NONE;
 			return XR_SUCCESS;
 		}
-	} else if (space == baseSpc) {
-		// math_relation_reset() sets to identity.
 	} else {
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return XR_SUCCESS;
