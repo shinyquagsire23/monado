@@ -135,6 +135,8 @@ def generate_client_c(file, p):
             f.write("\tstruct ipc_" + call.name + "_reply _reply;\n")
         else:
             f.write("\tstruct ipc_result_reply _reply = {0};\n")
+        if call.in_handles:
+            f.write("\tstruct ipc_result_reply _sync = {0};\n")
 
         f.write("""
 \t// Other threads must not read/write the fd while we wait for reply
@@ -151,9 +153,25 @@ def generate_client_c(file, p):
         write_result_handler(f, 'ret', cleanup, indent="\t")
 
         if call.in_handles:
+            f.write("\n\t// Send our handles separately\n")
+            f.write("\n\t// Wait for server sync")
+            # Must sync with the server so it's expecting the next message.
+            write_invocation(
+                f,
+                'ret',
+                'ipc_receive',
+                (
+                    '&ipc_c->imc',
+                    '&_sync',
+                    'sizeof(_sync)'
+                    ),
+                indent="\t"
+            )
+            f.write(';')
+            write_result_handler(f, 'ret', cleanup, indent="\t")
+
             # Must send these in a second message
             # since the server doesn't know how many to expect.
-            f.write("\n\t// Send our handles separately\n")
             f.write("\n\t// We need this message data as filler only\n")
             f.write("\tstruct ipc_command_msg _handle_msg = {\n")
             f.write("\t    .cmd = " + str(call.id) + ",\n")
@@ -254,6 +272,8 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
             f.write("\t\tstruct ipc_%s_reply reply = {0};\n" % call.name)
         else:
             f.write("\t\tstruct ipc_result_reply reply = {0};\n")
+        if call.in_handles:
+            f.write("\tstruct ipc_result_reply _sync = {XRT_SUCCESS};\n")
         if call.out_handles:
             f.write("\t\t%s %s[MAX_HANDLES] = {0};\n" % (
                 call.out_handles.typename, call.out_handles.arg_name))
@@ -267,6 +287,22 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
             f.write("\t\t%s in_%s[MAX_HANDLES] = {0};\n" % (
                 call.in_handles.typename, call.in_handles.arg_name))
             f.write("\t\tstruct ipc_command_msg _handle_msg = {0};\n")
+
+            # Let the client know we are ready to receive the handles.
+            write_invocation(
+                f,
+                'xrt_result_t sync_result',
+                'ipc_send',
+                (
+                    "(struct ipc_message_channel *)&ics->imc",
+                    "&_sync",
+                    "sizeof(_sync)"
+                ),
+                indent="\t\t"
+            )
+            f.write(";")
+            write_result_handler(f, "sync_result",
+                                 indent="\t\t")
             write_invocation(
                 f,
                 'xrt_result_t receive_handle_result',
