@@ -428,5 +428,9 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
                                    XrPath *sources)
 {
 	//! @todo Implement
-	return oxr_error(log, XR_ERROR_HANDLE_INVALID, "Not implemented");
+	if (sourceCountOutput != NULL) {
+		*sourceCountOutput = 0;
+	}
+
+	return XR_SUCCESS;
 }
