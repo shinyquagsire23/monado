@@ -186,6 +186,7 @@ oxr_space_ref_relation(struct oxr_logger *log,
 {
 	math_relation_reset(out_relation);
 
+
 	if (space == XR_REFERENCE_SPACE_TYPE_VIEW) {
 		oxr_session_get_view_pose_at(log, sess, time,
 		                             &out_relation->pose);
@@ -210,13 +211,6 @@ oxr_space_ref_relation(struct oxr_logger *log,
 			    XRT_SPACE_RELATION_BITMASK_NONE;
 			return XR_SUCCESS;
 		}
-
-		out_relation->relation_flags = (enum xrt_space_relation_flags)(
-		    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
-
 	} else if (baseSpc == XR_REFERENCE_SPACE_TYPE_VIEW) {
 		oxr_session_get_view_pose_at(log, sess, time,
 		                             &out_relation->pose);
@@ -239,22 +233,43 @@ oxr_space_ref_relation(struct oxr_logger *log,
 			    XRT_SPACE_RELATION_BITMASK_NONE;
 			return XR_SUCCESS;
 		}
-
 		math_pose_invert(&out_relation->pose, &out_relation->pose);
 
-		out_relation->relation_flags = (enum xrt_space_relation_flags)(
-		    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
-
+	} else if (space == XR_REFERENCE_SPACE_TYPE_STAGE) {
+		if (baseSpc == XR_REFERENCE_SPACE_TYPE_LOCAL) {
+			math_pose_invert(&sess->initial_head_relation.pose,
+			                 &out_relation->pose);
+		} else {
+			OXR_WARN_ONCE(
+			    log,
+			    "unsupported base space in space_ref_relation");
+			out_relation->relation_flags =
+			    XRT_SPACE_RELATION_BITMASK_NONE;
+			return XR_SUCCESS;
+		}
+	} else if (space == XR_REFERENCE_SPACE_TYPE_LOCAL) {
+		if (baseSpc == XR_REFERENCE_SPACE_TYPE_STAGE) {
+			out_relation->pose = sess->initial_head_relation.pose;
+		} else {
+			OXR_WARN_ONCE(
+			    log,
+			    "unsupported base space in space_ref_relation");
+			out_relation->relation_flags =
+			    XRT_SPACE_RELATION_BITMASK_NONE;
+			return XR_SUCCESS;
+		}
 	} else if (space == baseSpc) {
 		// math_relation_reset() sets to identity.
-
 	} else {
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return XR_SUCCESS;
 	}
+
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
 	return XR_SUCCESS;
 }
