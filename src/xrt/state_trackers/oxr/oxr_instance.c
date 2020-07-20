@@ -19,6 +19,7 @@
 #include "oxr_logger.h"
 #include "oxr_handle.h"
 #include "oxr_extension_support.h"
+#include "oxr_subaction.h"
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -192,13 +193,15 @@ oxr_instance_create(struct oxr_logger *log,
 
 
 	// Cache certain often looked up paths.
+
+
+#define CACHE_SUBACTION_PATHS(NAME, NAME_CAPS, PATH)                           \
+	cache_path(log, inst, PATH, &inst->path_cache.NAME);
+	OXR_FOR_EACH_SUBACTION_PATH_DETAILED(CACHE_SUBACTION_PATHS)
+
+#undef CACHE_SUBACTION_PATHS
 	// clang-format off
-	cache_path(log, inst, "/user", &inst->path_cache.user);
-	cache_path(log, inst, "/user/hand/head", &inst->path_cache.head);
-	cache_path(log, inst, "/user/hand/left", &inst->path_cache.left);
-	cache_path(log, inst, "/user/hand/right", &inst->path_cache.right);
-	cache_path(log, inst, "/user/gamepad", &inst->path_cache.gamepad);
-	cache_path(log, inst, "/user/treadmill", &inst->path_cache.treadmill);
+
 	cache_path(log, inst, "/interaction_profiles/khr/simple_controller", &inst->path_cache.khr_simple_controller);
 	cache_path(log, inst, "/interaction_profiles/google/daydream_controller", &inst->path_cache.google_daydream_controller);
 	cache_path(log, inst, "/interaction_profiles/htc/vive_controller", &inst->path_cache.htc_vive_controller);

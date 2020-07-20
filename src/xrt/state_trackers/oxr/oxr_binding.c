@@ -14,7 +14,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_two_call.h"
-
+#include "oxr_subaction.h"
 #include "oxr_binding_data.h"
 
 #include <stdio.h>
@@ -418,20 +418,18 @@ oxr_action_get_current_interaction_profile(
 		                 "xrAttachSessionActionSets has not been "
 		                 "called on this session.");
 	}
+#define IDENTIFY_TOP_LEVEL_PATH(X)                                             \
+	if (topLevelUserPath == inst->path_cache.X) {                          \
+		interactionProfile->interactionProfile = sess->X;              \
+	} else
 
-	if (topLevelUserPath == inst->path_cache.head) {
-		interactionProfile->interactionProfile = sess->head;
-	} else if (topLevelUserPath == inst->path_cache.left) {
-		interactionProfile->interactionProfile = sess->left;
-	} else if (topLevelUserPath == inst->path_cache.right) {
-		interactionProfile->interactionProfile = sess->right;
-	} else if (topLevelUserPath == inst->path_cache.gamepad) {
-		interactionProfile->interactionProfile = sess->gamepad;
-	} else {
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(IDENTIFY_TOP_LEVEL_PATH)
+	{
+		// else clause
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Top level path not handled?!");
 	}
-
+#undef IDENTIFY_TOP_LEVEL_PATH
 	return XR_SUCCESS;
 }
 

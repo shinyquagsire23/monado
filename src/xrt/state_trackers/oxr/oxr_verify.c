@@ -20,6 +20,7 @@
 #include "oxr_logger.h"
 #include "oxr_api_verify.h"
 #include "oxr_chain.h"
+#include "oxr_subaction.h"
 
 
 /*
@@ -293,37 +294,18 @@ subaction_path_no_dups(struct oxr_logger *log,
 		                 variable, index);
 	}
 
-	if (path == inst->path_cache.user) {
-		if (sub_paths->user) {
-			duplicate = true;
-		} else {
-			sub_paths->user = true;
-		}
-	} else if (path == inst->path_cache.head) {
-		if (sub_paths->head) {
-			duplicate = true;
-		} else {
-			sub_paths->head = true;
-		}
-	} else if (path == inst->path_cache.left) {
-		if (sub_paths->left) {
-			duplicate = true;
-		} else {
-			sub_paths->left = true;
-		}
-	} else if (path == inst->path_cache.right) {
-		if (sub_paths->right) {
-			duplicate = true;
-		} else {
-			sub_paths->right = true;
-		}
-	} else if (path == inst->path_cache.gamepad) {
-		if (sub_paths->gamepad) {
-			duplicate = true;
-		} else {
-			sub_paths->gamepad = true;
-		}
-	} else {
+#define HANDLE_SUBACTION_PATH(X)                                               \
+	if (path == inst->path_cache.X) {                                      \
+		if (sub_paths->X) {                                            \
+			duplicate = true;                                      \
+		} else {                                                       \
+			sub_paths->X = true;                                   \
+		}                                                              \
+	} else
+
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(HANDLE_SUBACTION_PATH)
+	{
+		// else clasue
 		const char *str = NULL;
 		size_t length = 0;
 
@@ -333,6 +315,7 @@ subaction_path_no_dups(struct oxr_logger *log,
 		                 "valid subaction path.",
 		                 variable, index, str);
 	}
+#undef HANDLE_SUBACTION_PATH
 
 	if (duplicate) {
 		const char *str = NULL;
@@ -377,12 +360,18 @@ oxr_verify_subaction_path_sync(struct oxr_logger *log,
                                XrPath path,
                                uint32_t index)
 {
-	if (path == XR_NULL_PATH || path == inst->path_cache.user ||
-	    path == inst->path_cache.head || path == inst->path_cache.left ||
-	    path == inst->path_cache.right ||
-	    path == inst->path_cache.gamepad) {
+#define VERIFY_PATH(X)                                                         \
+	else if (path == inst->path_cache.X)                                   \
+	{                                                                      \
+		return XR_SUCCESS;                                             \
+	}
+	if (path == XR_NULL_PATH) {
 		return XR_SUCCESS;
 	}
+	OXR_FOR_EACH_SUBACTION_PATH(VERIFY_PATH)
+
+#undef VERIFY_PATH
+
 	const char *str = NULL;
 	size_t length = 0;
 
@@ -403,19 +392,17 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
 {
 	struct oxr_sub_paths sub_paths = {0};
 
+#define GET_PATH(X)                                                            \
+	else if (path == inst->path_cache.X)                                   \
+	{                                                                      \
+		sub_paths.X = true;                                            \
+	}
+
 	if (path == XR_NULL_PATH) {
 		sub_paths.any = true;
-	} else if (path == inst->path_cache.user) {
-		sub_paths.user = true;
-	} else if (path == inst->path_cache.head) {
-		sub_paths.head = true;
-	} else if (path == inst->path_cache.left) {
-		sub_paths.left = true;
-	} else if (path == inst->path_cache.right) {
-		sub_paths.right = true;
-	} else if (path == inst->path_cache.gamepad) {
-		sub_paths.gamepad = true;
-	} else {
+	}
+	OXR_FOR_EACH_SUBACTION_PATH(GET_PATH) else
+	{
 		const char *str = NULL;
 		size_t length = 0;
 
@@ -425,12 +412,18 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
 		                 "a valid subaction path.",
 		                 variable, str);
 	}
+#undef GET_PATH
 
-	if ((sub_paths.user && !act_sub_paths->user) ||
-	    (sub_paths.head && !act_sub_paths->head) ||
-	    (sub_paths.left && !act_sub_paths->left) ||
-	    (sub_paths.right && !act_sub_paths->right) ||
-	    (sub_paths.gamepad && !act_sub_paths->gamepad)) {
+	bool fail = false;
+#define CHECK_CREATION_TIME(X)                                                 \
+	if (sub_paths.X && !act_sub_paths->X) {                                \
+		fail = true;                                                   \
+	}
+
+	OXR_FOR_EACH_SUBACTION_PATH(CHECK_CREATION_TIME);
+#undef CHECK_CREATION_TIME
+
+	if (fail) {
 		const char *str = NULL;
 		size_t length = 0;
 

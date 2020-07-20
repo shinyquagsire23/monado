@@ -18,6 +18,7 @@
 #include "oxr_handle.h"
 #include "oxr_two_call.h"
 #include "oxr_input_transform.h"
+#include "oxr_subaction.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -409,27 +410,25 @@ oxr_classify_sub_action_paths(struct oxr_logger *log,
 	for (uint32_t i = 0; i < num_subaction_paths; i++) {
 		XrPath path = subaction_paths[i];
 
+#define IDENTIFY_PATH(X)                                                       \
+	else if (path == inst->path_cache.X)                                   \
+	{                                                                      \
+		sub_paths->X = true;                                           \
+	}
+
+
 		if (path == XR_NULL_PATH) {
 			sub_paths->any = true;
-		} else if (path == inst->path_cache.user) {
-			sub_paths->user = true;
-		} else if (path == inst->path_cache.head) {
-			sub_paths->head = true;
-		} else if (path == inst->path_cache.left) {
-			sub_paths->left = true;
-		} else if (path == inst->path_cache.right) {
-			sub_paths->right = true;
-		} else if (path == inst->path_cache.gamepad) {
-			sub_paths->gamepad = true;
-		} else if (path == inst->path_cache.treadmill) {
-			sub_paths->treadmill = true;
-		} else {
+		}
+		OXR_FOR_EACH_VALID_SUBACTION_PATH(IDENTIFY_PATH) else
+		{
 			oxr_path_get_string(log, inst, path, &str, &length);
 
 			oxr_warn(log, " unrecognized sub action path '%s'",
 			         str);
 			ret = false;
 		}
+#undef IDENTIFY_PATH
 	}
 	return ret;
 }
@@ -695,29 +694,14 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 #endif
 	}
 
-	if (act_ref->sub_paths.head || act_ref->sub_paths.any) {
-		oxr_action_bind_inputs(log, &slog, sess, act,
-		                       &act_attached->head, head,
-		                       OXR_SUB_ACTION_PATH_HEAD);
+#define BIND_SUBACTION(NAME, NAME_CAPS, PATH)                                  \
+	if (act_ref->sub_paths.NAME || act_ref->sub_paths.any) {               \
+		oxr_action_bind_inputs(log, &slog, sess, act,                  \
+		                       &act_attached->NAME, NAME,              \
+		                       OXR_SUB_ACTION_PATH_##NAME_CAPS);       \
 	}
-
-	if (act_ref->sub_paths.left || act_ref->sub_paths.any) {
-		oxr_action_bind_inputs(log, &slog, sess, act,
-		                       &act_attached->left, left,
-		                       OXR_SUB_ACTION_PATH_LEFT);
-	}
-
-	if (act_ref->sub_paths.right || act_ref->sub_paths.any) {
-		oxr_action_bind_inputs(log, &slog, sess, act,
-		                       &act_attached->right, right,
-		                       OXR_SUB_ACTION_PATH_RIGHT);
-	}
-
-	if (act_ref->sub_paths.gamepad || act_ref->sub_paths.any) {
-		oxr_action_bind_inputs(log, &slog, sess, act,
-		                       &act_attached->gamepad, gamepad,
-		                       OXR_SUB_ACTION_PATH_GAMEPAD);
-	}
+	OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(BIND_SUBACTION)
+#undef BIND_SUBACTION
 
 	oxr_slog(&slog, "\tDone");
 
@@ -994,17 +978,13 @@ oxr_action_attachment_update(struct oxr_logger *log,
 	//! @todo "/user" sub-action path.
 
 	bool select_any = sub_paths.any;
-	bool select_head = sub_paths.head || sub_paths.any;
-	bool select_left = sub_paths.left || sub_paths.any;
-	bool select_right = sub_paths.right || sub_paths.any;
-	bool select_gamepad = sub_paths.gamepad || sub_paths.any;
 
-	// clang-format off
-	oxr_action_cache_update(log, sess, &act_attached->head, time, select_head);
-	oxr_action_cache_update(log, sess, &act_attached->left, time, select_left);
-	oxr_action_cache_update(log, sess, &act_attached->right, time, select_right);
-	oxr_action_cache_update(log, sess, &act_attached->gamepad, time, select_gamepad);
-	// clang-format on
+#define UPDATE_SELECT(X)                                                       \
+	bool select_##X = sub_paths.X || sub_paths.any;                        \
+	oxr_action_cache_update(log, sess, &act_attached->X, time, select_##X);
+
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(UPDATE_SELECT)
+#undef UPDATE_SELECT
 
 	if (!select_any) {
 		U_ZERO(&act_attached->any_state);
@@ -1373,12 +1353,12 @@ oxr_action_sync_data(struct oxr_logger *log,
 		}
 
 		act_set_attached->requested_sub_paths.any |= sub_paths.any;
-		act_set_attached->requested_sub_paths.user |= sub_paths.user;
-		act_set_attached->requested_sub_paths.head |= sub_paths.head;
-		act_set_attached->requested_sub_paths.left |= sub_paths.left;
-		act_set_attached->requested_sub_paths.right |= sub_paths.right;
-		act_set_attached->requested_sub_paths.gamepad |=
-		    sub_paths.gamepad;
+
+#define ACCUMULATE_REQUESTED(X)                                                \
+	act_set_attached->requested_sub_paths.X |= sub_paths.X;
+
+		OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_REQUESTED)
+#undef ACCUMULATE_REQUESTED
 	}
 
 	// Now, update all action attachments
@@ -1424,21 +1404,13 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
 		                 "act_key did not find any action");
 	}
 
-	if (act_attached->head.bound_path != XR_NULL_PATH) {
-		temp[num_paths++] = act_attached->head.bound_path;
+#define ACCUMULATE_PATHS(X)                                                    \
+	if (act_attached->X.bound_path != XR_NULL_PATH) {                      \
+		temp[num_paths++] = act_attached->X.bound_path;                \
 	}
-	if (act_attached->left.bound_path != XR_NULL_PATH) {
-		temp[num_paths++] = act_attached->left.bound_path;
-	}
-	if (act_attached->right.bound_path != XR_NULL_PATH) {
-		temp[num_paths++] = act_attached->right.bound_path;
-	}
-	if (act_attached->gamepad.bound_path != XR_NULL_PATH) {
-		temp[num_paths++] = act_attached->gamepad.bound_path;
-	}
-	if (act_attached->user.bound_path != XR_NULL_PATH) {
-		temp[num_paths++] = act_attached->user.bound_path;
-	}
+
+	OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_PATHS)
+#undef ACCUMULATE_PATHS
 
 	OXR_TWO_CALL_HELPER(log, sourceCapacityInput, sourceCountOutput,
 	                    sources, num_paths, temp,
@@ -1494,6 +1466,11 @@ get_xr_state_from_action_state_vec2(struct oxr_instance *inst,
 	data->currentState.y = state->value.vec2.y;
 }
 
+/*!
+ * This populates the internals of action get state functions.
+ *
+ * @note Keep this synchronized with OXR_FOR_EACH_SUBACTION_PATH!
+ */
 #define OXR_ACTION_GET_FILLER(TYPE)                                            \
 	if (sub_paths.any && act_attached->any_state.active) {                 \
 		get_xr_state_from_action_state_##TYPE(                         \
@@ -1619,22 +1596,13 @@ oxr_action_get_pose(struct oxr_logger *log,
 
 	data->isActive = XR_FALSE;
 
-	if (sub_paths.user || sub_paths.any) {
-		data->isActive |= act_attached->user.current.active;
-	}
-	if (sub_paths.head || sub_paths.any) {
-		data->isActive |= act_attached->head.current.active;
-	}
-	if (sub_paths.left || sub_paths.any) {
-		data->isActive |= act_attached->left.current.active;
-	}
-	if (sub_paths.right || sub_paths.any) {
-		data->isActive |= act_attached->right.current.active;
-	}
-	if (sub_paths.gamepad || sub_paths.any) {
-		data->isActive |= act_attached->gamepad.current.active;
+#define COMPUTE_ACTIVE(X)                                                      \
+	if (sub_paths.X || sub_paths.any) {                                    \
+		data->isActive |= act_attached->X.current.active;              \
 	}
 
+	OXR_FOR_EACH_SUBACTION_PATH(COMPUTE_ACTIVE)
+#undef COMPUTE_ACTIVE
 	return oxr_session_success_result(sess);
 }
 
@@ -1689,24 +1657,15 @@ oxr_action_apply_haptic_feedback(struct oxr_logger *log,
 	int64_t now = time_state_get_now(sess->sys->inst->timekeeping);
 	int64_t stop = data->duration <= 0 ? now : now + data->duration;
 
-	// clang-format off
-	if (act_attached->user.current.active && (sub_paths.user || sub_paths.any)) {
-		set_action_output_vibration(sess, &act_attached->user, stop, data);
+#define SET_OUT_VIBRATION(X)                                                   \
+	if (act_attached->X.current.active &&                                  \
+	    (sub_paths.X || sub_paths.any)) {                                  \
+		set_action_output_vibration(sess, &act_attached->X, stop,      \
+		                            data);                             \
 	}
-	if (act_attached->head.current.active && (sub_paths.head || sub_paths.any)) {
-		set_action_output_vibration(sess, &act_attached->head, stop, data);
-	}
-	if (act_attached->left.current.active && (sub_paths.left || sub_paths.any)) {
-		set_action_output_vibration(sess, &act_attached->left, stop, data);
-	}
-	if (act_attached->right.current.active && (sub_paths.right || sub_paths.any)) {
-		set_action_output_vibration(sess, &act_attached->right, stop, data);
-	}
-	if (act_attached->gamepad.current.active && (sub_paths.gamepad || sub_paths.any)) {
-		set_action_output_vibration(sess, &act_attached->gamepad, stop, data);
-	}
-	// clang-format on
 
+	OXR_FOR_EACH_SUBACTION_PATH(SET_OUT_VIBRATION)
+#undef SET_OUT_VIBRATION
 	return oxr_session_success_result(sess);
 }
 
@@ -1725,23 +1684,14 @@ oxr_action_stop_haptic_feedback(struct oxr_logger *log,
 		    "Action has not been attached to this session");
 	}
 
-	// clang-format off
-	if (act_attached->user.current.active && (sub_paths.user || sub_paths.any)) {
-		oxr_action_cache_stop_output(log, sess, &act_attached->user);
+#define STOP_VIBRATION(X)                                                      \
+	if (act_attached->X.current.active &&                                  \
+	    (sub_paths.X || sub_paths.any)) {                                  \
+		oxr_action_cache_stop_output(log, sess, &act_attached->X);     \
 	}
-	if (act_attached->head.current.active && (sub_paths.head || sub_paths.any)) {
-		oxr_action_cache_stop_output(log, sess, &act_attached->head);
-	}
-	if (act_attached->left.current.active && (sub_paths.left || sub_paths.any)) {
-		oxr_action_cache_stop_output(log, sess, &act_attached->left);
-	}
-	if (act_attached->right.current.active && (sub_paths.right || sub_paths.any)) {
-		oxr_action_cache_stop_output(log, sess, &act_attached->right);
-	}
-	if (act_attached->gamepad.current.active && (sub_paths.gamepad || sub_paths.any)) {
-		oxr_action_cache_stop_output(log, sess, &act_attached->gamepad);
-	}
-	// clang-format on
+
+	OXR_FOR_EACH_SUBACTION_PATH(STOP_VIBRATION)
+#undef STOP_VIBRATION
 
 	return oxr_session_success_result(sess);
 }

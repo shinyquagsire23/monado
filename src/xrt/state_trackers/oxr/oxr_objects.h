@@ -22,6 +22,7 @@
 #include "util/u_hashmap.h"
 
 #include "oxr_extension_support.h"
+#include "oxr_subaction.h"
 
 
 #ifdef __cplusplus
@@ -1157,12 +1158,12 @@ struct oxr_instance
 
 	struct
 	{
-		XrPath user;
-		XrPath head;
-		XrPath left;
-		XrPath right;
-		XrPath gamepad;
-		XrPath treadmill;
+
+#define SUBACTION_PATH_MEMBER(X) XrPath X;
+		OXR_FOR_EACH_SUBACTION_PATH(SUBACTION_PATH_MEMBER)
+
+#undef SUBACTION_PATH_MEMBER
+
 
 		XrPath khr_simple_controller;
 		XrPath google_daydream_controller;

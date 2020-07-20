@@ -15,6 +15,7 @@
 
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
+#include "oxr_subaction.h"
 #include "oxr_generated_bindings.h"
 
 #include <stdio.h>
@@ -219,10 +220,15 @@ oxr_xrGetCurrentInteractionProfile(
 		    topLevelUserPath);
 	}
 
-	if (topLevelUserPath != inst->path_cache.left &&
-	    topLevelUserPath != inst->path_cache.right &&
-	    topLevelUserPath != inst->path_cache.head &&
-	    topLevelUserPath != inst->path_cache.gamepad) {
+	bool fail = true;
+#define COMPUTE_FAIL(X)                                                        \
+	if (topLevelUserPath == inst->path_cache.X) {                          \
+		fail = false;                                                  \
+	}
+
+	OXR_FOR_EACH_SUBACTION_PATH(COMPUTE_FAIL)
+#undef COMPUTE_FAIL
+	if (fail) {
 		const char *str = NULL;
 		size_t len = 0;
 		oxr_path_get_string(&log, inst, topLevelUserPath, &str, &len);
