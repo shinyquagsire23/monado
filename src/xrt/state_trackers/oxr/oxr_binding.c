@@ -400,9 +400,10 @@ oxr_action_get_current_interaction_profile(
 	} else if (topLevelUserPath == inst->path_cache.gamepad) {
 		interactionProfile->interactionProfile = sess->gamepad;
 	} else {
-		return oxr_error(log, XR_ERROR_HANDLE_INVALID,
-		                 "Not implemented");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Top level path not handled?!");
 	}
+
 	return XR_SUCCESS;
 }
 
