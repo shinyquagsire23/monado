@@ -126,7 +126,7 @@ assign_xdev_roles(struct oxr_instance *inst)
 		           XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER) {
 			if (sys->role.left == XRT_DEVICE_ROLE_UNASSIGNED) {
 				sys->role.left = i;
-			} else if (sys->role.left ==
+			} else if (sys->role.right ==
 			           XRT_DEVICE_ROLE_UNASSIGNED) {
 				sys->role.right = i;
 			} else {
