@@ -12,6 +12,10 @@
 
 #include "vk/vk_image_allocator.h"
 
+#if defined(XRT_OS_ANDROID)
+#include <android/hardware_buffer.h>
+#endif
+
 #ifdef XRT_OS_LINUX
 #include <unistd.h>
 #endif
@@ -23,11 +27,12 @@
  *
  */
 
-#ifdef XRT_OS_LINUX
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+
 static VkResult
-get_device_memory_fd(struct vk_bundle *vk,
-                     VkDeviceMemory device_memory,
-                     int *out_fd)
+get_device_memory_handle(struct vk_bundle *vk,
+                         VkDeviceMemory device_memory,
+                         xrt_graphics_buffer_handle_t *out_handle)
 {
 	// vkGetMemoryFdKHR parameter
 	VkMemoryGetFdInfoKHR fd_info = {
@@ -35,6 +40,7 @@ get_device_memory_fd(struct vk_bundle *vk,
 	    .memory = device_memory,
 	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	};
+
 	int fd;
 	VkResult ret = vk->vkGetMemoryFdKHR(vk->device, &fd_info, &fd);
 	if (ret != VK_SUCCESS) {
@@ -42,9 +48,39 @@ get_device_memory_fd(struct vk_bundle *vk,
 		//           vk_result_string(ret));
 		return ret;
 	}
-	*out_fd = fd;
+
+	*out_handle = fd;
+
 	return ret;
 }
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+
+static VkResult
+get_device_memory_handle(struct vk_bundle *vk,
+                         VkDeviceMemory device_memory,
+                         xrt_graphics_buffer_handle_t *out_handle)
+{
+	// vkGetMemoryFdKHR parameter
+	VkMemoryGetAndroidHardwareBufferInfoANDROID ahb_info = {
+	    .sType =
+	        VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+	    .pNext = NULL,
+	    .memory = device_memory,
+	};
+
+	AHardwareBuffer *buf = NULL;
+	VkResult ret = vk->vkGetMemoryAndroidHardwareBufferANDROID(
+	    vk->device, &ahb_info, &buf);
+	if (ret != VK_SUCCESS) {
+		return ret;
+	}
+
+	*out_handle = buf;
+
+	return ret;
+}
+
 #endif
 
 static VkResult
@@ -94,7 +130,6 @@ create_image(struct vk_bundle *vk,
 	/*
 	 * Create and bind the memory.
 	 */
-#ifdef XRT_OS_LINUX
 	// vkAllocateMemory parameters
 	VkMemoryDedicatedAllocateInfoKHR dedicated_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
@@ -102,17 +137,29 @@ create_image(struct vk_bundle *vk,
 	    .buffer = VK_NULL_HANDLE,
 	};
 
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+
 	VkExportMemoryAllocateInfo export_alloc_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
 	    .pNext = &dedicated_memory_info,
 	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	};
 
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+
+	VkExportMemoryAllocateInfo export_alloc_info = {
+	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
+	    .pNext = &dedicated_memory_info,
+	    .handleTypes =
+	        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+	};
+
+#else
+#error "need port"
+#endif
+
 	ret = vk_alloc_and_bind_image_memory(
 	    vk, image, SIZE_MAX, &export_alloc_info, &device_memory, &size);
-#else
-	ret = VK_ERROR_INITIALIZATION_FAILED;
-#endif
 	if (ret != VK_SUCCESS) {
 		U_LOG_E("vkAllocateMemory: %s", vk_result_string(ret));
 		vk->vkDestroyImage(vk->device, image, NULL);
@@ -187,6 +234,48 @@ vk_ic_allocate(struct vk_bundle *vk,
 	return ret;
 }
 
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+
+static void
+release_handle(xrt_graphics_buffer_handle_t handle)
+{
+	if (handle != NULL) {
+		AHardwareBuffer_release(handle);
+	}
+}
+
+static xrt_graphics_buffer_handle_t
+ref_handle(xrt_graphics_buffer_handle_t handle)
+{
+	if (handle != NULL) {
+		AHardwareBuffer_acquire(handle);
+	}
+
+	return handle;
+}
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+
+static void
+release_handle(xrt_graphics_buffer_handle_t handle)
+{
+	if (handle >= 0) {
+		close(handle);
+	}
+}
+
+static xrt_graphics_buffer_handle_t
+ref_handle(xrt_graphics_buffer_handle_t handle)
+{
+	if (handle >= 0) {
+		return dup(handle);
+	}
+
+	return -1;
+}
+
+#endif
+
 /*!
  * Imports and set images from the given FDs.
  */
@@ -205,37 +294,33 @@ vk_ic_from_natives(struct vk_bundle *vk,
 
 
 	size_t i = 0;
-#ifdef XRT_OS_LINUX
 	for (; i < num_images; i++) {
-		// Ensure that all fds are consumed or none are.
-		int fd = dup(native_images[i].handle);
+		// Ensure that all handles are consumed or none are.
+		xrt_graphics_buffer_handle_t buf =
+		    ref_handle(native_images[i].handle);
 
 		ret = vk_create_image_from_native(vk, xscci, &native_images[i],
 		                                  &out_vkic->images[i].handle,
 		                                  &out_vkic->images[i].memory);
 		if (ret != VK_SUCCESS) {
-			close(fd);
+			release_handle(buf);
 			break;
 		}
-		native_images[i].handle = fd;
+		native_images[i].handle = buf;
 	}
-#endif
-
 	// Set the fields.
 	out_vkic->num_images = num_images;
 	out_vkic->info = *xscci;
 
 	if (ret == VK_SUCCESS) {
-#ifdef XRT_OS_LINUX
-		// We have consumed all fds now, close all of the copies we
+		// We have consumed all handles now, close all of the copies we
 		// made, all this to make sure we do all or nothing.
 		for (size_t k = 0; k < num_images; k++) {
-			close(native_images[k].handle);
+			release_handle(native_images[k].handle);
 			native_images[k].handle =
 			    XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
 			native_images[k].size = 0;
 		}
-#endif
 		return ret;
 	}
 
@@ -261,19 +346,18 @@ vk_ic_destroy(struct vk_bundle *vk, struct vk_image_collection *vkic)
 	U_ZERO(&vkic->info);
 }
 
-#ifdef XRT_OS_LINUX
 VkResult
-vk_ic_get_fds(struct vk_bundle *vk,
-              struct vk_image_collection *vkic,
-              uint32_t max_fds,
-              int *out_fds)
+vk_ic_get_handles(struct vk_bundle *vk,
+                  struct vk_image_collection *vkic,
+                  uint32_t max_handles,
+                  xrt_graphics_buffer_handle_t *out_handles)
 {
 	VkResult ret = VK_SUCCESS;
 
 	size_t i = 0;
-	for (; i < vkic->num_images && i < max_fds; i++) {
-		ret = get_device_memory_fd(vk, vkic->images[i].memory,
-		                           &out_fds[i]);
+	for (; i < vkic->num_images && i < max_handles; i++) {
+		ret = get_device_memory_handle(vk, vkic->images[i].memory,
+		                               &out_handles[i]);
 		if (ret != VK_SUCCESS) {
 			break;
 		}
@@ -287,10 +371,9 @@ vk_ic_get_fds(struct vk_bundle *vk,
 	// succeeded and needs to be closed. If i is zero no call succeeded.
 	while (i > 0) {
 		i--;
-		close(out_fds[i]);
-		out_fds[i] = -1;
+		release_handle(out_handles[i]);
+		out_handles[i] = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
 	}
 
 	return ret;
 }
-#endif

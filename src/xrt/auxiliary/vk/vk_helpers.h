@@ -109,6 +109,10 @@ struct vk_bundle
 	PFN_vkUnmapMemory vkUnmapMemory;
 	PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR;
 
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+	PFN_vkGetMemoryAndroidHardwareBufferANDROID vkGetMemoryAndroidHardwareBufferANDROID;
+#endif
+
 	PFN_vkCreateBuffer vkCreateBuffer;
 	PFN_vkDestroyBuffer vkDestroyBuffer;
 	PFN_vkBindBufferMemory vkBindBufferMemory;

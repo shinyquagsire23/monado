@@ -66,21 +66,20 @@ vk_ic_from_natives(struct vk_bundle *vk,
 void
 vk_ic_destroy(struct vk_bundle *vk, struct vk_image_collection *vkic);
 
-#ifdef XRT_OS_LINUX
 /*!
- * Get the FDs for the images, this is a all or nothing function.
- * The ownership is transferred from the images to the caller so it is
- * responsible for them to be closed just like with vkGetMemoryFdKHR.
+ * Get the native handles (FDs on desktop Linux) for the images, this is a all
+ * or nothing function. The ownership is transferred from the images to the
+ * caller so it is responsible for them to be closed just like with
+ * vkGetMemoryFdKHR.
  *
  * @see
  * https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_KHR_external_memory_fd.html
  */
 VkResult
-vk_ic_get_fds(struct vk_bundle *vk,
-              struct vk_image_collection *vkic,
-              uint32_t max_fds,
-              int *out_fds);
-#endif
+vk_ic_get_handles(struct vk_bundle *vk,
+                  struct vk_image_collection *vkic,
+                  uint32_t max_handles,
+                  xrt_graphics_buffer_handle_t *out_handles);
 
 
 /*!

@@ -15,6 +15,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+#include <android/hardware_buffer.h>
+#endif
+
 
 /*
  *
@@ -256,17 +260,13 @@ comp_swapchain_create(struct xrt_compositor *xc,
 		return XRT_ERROR_VULKAN;
 	}
 
-#ifdef XRT_OS_LINUX
-	int fds[ARRAY_SIZE(sc->vkic.images)];
+	xrt_graphics_buffer_handle_t handles[ARRAY_SIZE(sc->vkic.images)];
 
-	vk_ic_get_fds(&c->vk, &sc->vkic, ARRAY_SIZE(fds), fds);
+	vk_ic_get_handles(&c->vk, &sc->vkic, ARRAY_SIZE(handles), handles);
 	for (uint32_t i = 0; i < sc->vkic.num_images; i++) {
-		sc->base.images[i].handle = fds[i];
+		sc->base.images[i].handle = handles[i];
 		sc->base.images[i].size = sc->vkic.images[i].size;
 	}
-#else
-#error "OS not supported"
-#endif
 
 	do_post_create_vulkan_setup(c, sc);
 
@@ -319,7 +319,14 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc)
 		if (!xrt_graphics_buffer_is_valid(sc->base.images[i].handle)) {
 			continue;
 		}
+//! @todo move to helper functions - move them out of IPC
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+		AHardwareBuffer_release(sc->base.images[i].handle);
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 		close(sc->base.images[i].handle);
+#else
+#error "need port"
+#endif
 		sc->base.images[i].handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
 	}
 

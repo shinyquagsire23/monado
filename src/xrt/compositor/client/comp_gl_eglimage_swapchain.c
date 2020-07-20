@@ -223,9 +223,14 @@ client_gl_eglimage_swapchain_create(
 			free(sc);
 			return NULL;
 		}
+#if defined(XRT_OS_ANDROID)
+		glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES,
+		                             sc->egl_images[i]);
+#else
 		glEGLImageTargetTexture2DOES(
 		    info->array_size == 1 ? GL_TEXTURE_2D : GL_TEXTURE_2D_ARRAY,
 		    sc->egl_images[i]);
+#endif
 	}
 
 	return &sc->base.base.base;

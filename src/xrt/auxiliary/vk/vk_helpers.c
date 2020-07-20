@@ -303,14 +303,22 @@ vk_create_image_from_native(struct vk_bundle *vk,
 		// Nothing to cleanup
 		return ret;
 	}
-#ifdef XRT_OS_ANDROID
-	ret = VK_ERROR_INITIALIZATION_FAILED;
-#else
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 	VkImportMemoryFdInfoKHR import_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
 	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	    .fd = image_native->handle,
 	};
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	VkImportAndroidHardwareBufferInfoANDROID import_memory_info = {
+	    .sType =
+	        VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+	    .pNext = NULL,
+	    .buffer = image_native->handle,
+	};
+#else
+#error "need port"
+#endif
 	VkMemoryDedicatedAllocateInfoKHR dedicated_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
 	    .pNext = &import_memory_info,
@@ -320,7 +328,6 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	ret = vk_alloc_and_bind_image_memory(vk, image, image_native->size,
 	                                     &dedicated_memory_info, out_mem,
 	                                     NULL);
-#endif
 
 	// We have consumed this fd now, make sure it's not freed again.
 	image_native->handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
@@ -681,6 +688,9 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkMapMemory                   = GET_DEV_PROC(vk, vkMapMemory);
 	vk->vkUnmapMemory                 = GET_DEV_PROC(vk, vkUnmapMemory);
 	vk->vkGetMemoryFdKHR              = GET_DEV_PROC(vk, vkGetMemoryFdKHR);
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+	vk->vkGetMemoryAndroidHardwareBufferANDROID = GET_DEV_PROC(vk, vkGetMemoryAndroidHardwareBufferANDROID);
+#endif
 	vk->vkCreateBuffer                = GET_DEV_PROC(vk, vkCreateBuffer);
 	vk->vkDestroyBuffer               = GET_DEV_PROC(vk, vkDestroyBuffer);
 	vk->vkBindBufferMemory            = GET_DEV_PROC(vk, vkBindBufferMemory);

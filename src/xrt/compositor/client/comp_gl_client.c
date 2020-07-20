@@ -354,7 +354,6 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	gladLoadGL(get_gl_procaddr);
 #elif defined(XRT_HAVE_OPENGLES)
 	gladLoadGLES2(get_gl_procaddr);
-	gladLoadEGL(display, get_gl_procaddr);
 #endif
 	// @todo log this to a proper logger.
 #define CHECK_REQUIRED_EXTENSION(EXT)                                          \
