@@ -13,6 +13,7 @@
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
+#include "oxr_two_call.h"
 
 #include "oxr_binding_data.h"
 
@@ -209,6 +210,33 @@ add_key_to_matching_bindings(struct oxr_binding *bindings,
 		b->preferred_binding_path_index[b->num_keys] =
 		    preferred_path_index;
 		b->keys[b->num_keys++] = key;
+	}
+}
+
+static void
+add_path_string(struct oxr_logger *log,
+                struct oxr_instance *inst,
+                XrPath path,
+                char *temp,
+                size_t max,
+                ssize_t *current)
+{
+	const char *str = NULL;
+	size_t length = 0;
+	XrResult ret;
+
+	ret = oxr_path_get_string(log, inst, path, &str, &length);
+	if (ret != XR_SUCCESS) {
+		return;
+	}
+
+	if (*current > 0) {
+		temp[(*current)++] = ' ';
+	}
+
+	ssize_t len = snprintf(temp + *current, max - *current, "%s", str);
+	if (len > 0) {
+		*current += len;
 	}
 }
 
@@ -416,22 +444,38 @@ oxr_action_get_input_source_localized_name(
     uint32_t *bufferCountOutput,
     char *buffer)
 {
-	//! @todo Implement
-	return oxr_error(log, XR_ERROR_HANDLE_INVALID, "Not implemented");
-}
+	char temp[1024] = {0};
+	ssize_t current = 0;
 
-XrResult
-oxr_action_enumerate_bound_sources(struct oxr_logger *log,
-                                   struct oxr_session *sess,
-                                   uint64_t key,
-                                   uint32_t sourceCapacityInput,
-                                   uint32_t *sourceCountOutput,
-                                   XrPath *sources)
-{
-	//! @todo Implement
-	if (sourceCountOutput != NULL) {
-		*sourceCountOutput = 0;
+	//! @todo This implementation is very very very ugly.
+
+	if ((getInfo->whichComponents &
+	     XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT) != 0) {
+		add_path_string(log, sess->sys->inst, sess->left, temp,
+		                ARRAY_SIZE(temp), &current);
 	}
 
-	return XR_SUCCESS;
+	if (getInfo->whichComponents &
+	    XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT) {
+		if (current > 0) {
+			temp[current++] = ' ';
+		}
+
+		ssize_t len = snprintf(temp + current,
+		                       ARRAY_SIZE(temp) - current, "/user/???");
+
+		if (len > 0) {
+			current += len;
+		}
+	}
+
+	if ((getInfo->whichComponents &
+	     XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT) != 0) {
+		add_path_string(log, sess->sys->inst, getInfo->sourcePath, temp,
+		                ARRAY_SIZE(temp), &current);
+	}
+
+	OXR_TWO_CALL_HELPER(log, bufferCapacityInput, bufferCountOutput, buffer,
+	                    (size_t)current, temp,
+	                    oxr_session_success_result(sess));
 }
