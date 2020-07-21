@@ -429,6 +429,18 @@ oxr_action_sync_data(struct oxr_logger *log,
                      struct oxr_session *sess,
                      uint32_t countActionSets,
                      const XrActiveActionSet *actionSets);
+
+/*!
+ * @public @memberof oxr_session
+ */
+XrResult
+oxr_action_enumerate_bound_sources(struct oxr_logger *log,
+                                   struct oxr_session *sess,
+                                   uint32_t act_key,
+                                   uint32_t sourceCapacityInput,
+                                   uint32_t *sourceCountOutput,
+                                   XrPath *sources);
+
 /*!
  * @public @memberof oxr_session
  */
@@ -562,16 +574,6 @@ oxr_action_get_input_source_localized_name(
     uint32_t *bufferCountOutput,
     char *buffer);
 
-/*!
- * @public @memberof oxr_session
- */
-XrResult
-oxr_action_enumerate_bound_sources(struct oxr_logger *log,
-                                   struct oxr_session *sess,
-                                   uint64_t key,
-                                   uint32_t sourceCapacityInput,
-                                   uint32_t *sourceCountOutput,
-                                   XrPath *sources);
 /*!
  * @}
  */
@@ -1486,6 +1488,9 @@ struct oxr_action_output
 struct oxr_action_cache
 {
 	struct oxr_action_state current;
+
+	//! Which action is proving the binding.
+	XrPath bound_path;
 
 	size_t num_inputs;
 	struct oxr_action_input *inputs;

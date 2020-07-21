@@ -16,6 +16,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_handle.h"
+#include "oxr_two_call.h"
 #include "oxr_input_transform.h"
 
 #include <math.h>
@@ -1154,6 +1155,7 @@ oxr_action_bind_inputs(struct oxr_logger *log,
 			cache->inputs[i] = inputs[i];
 		}
 		cache->num_inputs = num_inputs;
+		cache->bound_path = bound_path;
 	}
 
 	if (num_outputs > 0) {
@@ -1164,6 +1166,7 @@ oxr_action_bind_inputs(struct oxr_logger *log,
 			cache->outputs[i] = outputs[i];
 		}
 		cache->num_outputs = num_outputs;
+		cache->bound_path = bound_path;
 	}
 }
 
@@ -1401,6 +1404,45 @@ oxr_action_sync_data(struct oxr_logger *log,
 
 
 	return oxr_session_success_focused_result(sess);
+}
+
+XrResult
+oxr_action_enumerate_bound_sources(struct oxr_logger *log,
+                                   struct oxr_session *sess,
+                                   uint32_t act_key,
+                                   uint32_t sourceCapacityInput,
+                                   uint32_t *sourceCountOutput,
+                                   XrPath *sources)
+{
+	struct oxr_action_attachment *act_attached = NULL;
+	size_t num_paths = 0;
+	XrPath temp[32] = {0};
+
+	oxr_session_get_action_attachment(sess, act_key, &act_attached);
+	if (act_attached == NULL) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "act_key did not find any action");
+	}
+
+	if (act_attached->head.bound_path != XR_NULL_PATH) {
+		temp[num_paths++] = act_attached->head.bound_path;
+	}
+	if (act_attached->left.bound_path != XR_NULL_PATH) {
+		temp[num_paths++] = act_attached->left.bound_path;
+	}
+	if (act_attached->right.bound_path != XR_NULL_PATH) {
+		temp[num_paths++] = act_attached->right.bound_path;
+	}
+	if (act_attached->gamepad.bound_path != XR_NULL_PATH) {
+		temp[num_paths++] = act_attached->gamepad.bound_path;
+	}
+	if (act_attached->user.bound_path != XR_NULL_PATH) {
+		temp[num_paths++] = act_attached->user.bound_path;
+	}
+
+	OXR_TWO_CALL_HELPER(log, sourceCapacityInput, sourceCountOutput,
+	                    sources, num_paths, temp,
+	                    oxr_session_success_result(sess));
 }
 
 
