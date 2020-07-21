@@ -308,7 +308,7 @@ oxr_path_only_get(struct oxr_logger *log,
  * Get a pointer and length of the internal string.
  *
  * The pointer has the same life time as the instance. The length is the number
- * of valid characters, not including the null termination character (but a
+ * of valid characters, not including the null termination character (but an
  * extra null byte is always reserved at the end so can strings can be given
  * to functions expecting null terminated strings).
  *
