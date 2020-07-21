@@ -866,18 +866,18 @@ oxr_action_cache_update(struct oxr_logger *log,
 		return;
 	}
 
+	struct oxr_input_value_tagged combined;
+	int64_t timestamp;
+	bool is_active;
+
+	/* a cache can only have outputs or inputs, not both */
 	if (cache->num_outputs > 0) {
 		cache->current.active = true;
 		if (cache->stop_output_time < time) {
 			oxr_action_cache_stop_output(log, sess, cache);
 		}
-	}
-
-	struct oxr_input_value_tagged combined;
-	int64_t timestamp;
-	bool is_active;
-	if (oxr_input_combine_input(cache->inputs, cache->num_inputs, &combined,
-	                            &timestamp, &is_active)) {
+	} else if (oxr_input_combine_input(cache->inputs, cache->num_inputs,
+	                                   &combined, &timestamp, &is_active)) {
 
 		// If the input is not active signal that.
 		if (!is_active) {
