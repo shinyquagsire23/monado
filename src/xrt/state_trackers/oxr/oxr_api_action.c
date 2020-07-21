@@ -246,10 +246,16 @@ oxr_xrGetInputSourceLocalizedName(
     uint32_t *bufferCountOutput,
     char *buffer)
 {
+	struct oxr_instance *inst = NULL;
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
 	                                "xrGetInputSourceLocalizedName");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
+	    &log, getInfo, XR_TYPE_INPUT_SOURCE_LOCALIZED_NAME_GET_INFO);
+
+	// Short hand.
+	inst = sess->sys->inst;
 
 	if (sess->act_set_attachments == NULL) {
 		return oxr_error(
@@ -257,7 +263,36 @@ oxr_xrGetInputSourceLocalizedName(
 		    "ActionSet(s) have not been attached to this session");
 	}
 
-	//! @todo verify getInfo
+	if (getInfo->sourcePath == XR_NULL_PATH) {
+		return oxr_error(&log, XR_ERROR_PATH_INVALID,
+		                 "(getInfo->sourcePath == XR_NULL_PATH) The "
+		                 "null path is not a valid argument");
+	}
+
+	if (!oxr_path_is_valid(&log, inst, getInfo->sourcePath)) {
+		return oxr_error(
+		    &log, XR_ERROR_PATH_INVALID,
+		    "(getInfo->sourcePath == %zu) Is not a valid path",
+		    getInfo->sourcePath);
+	}
+
+	const XrInputSourceLocalizedNameFlags all =
+	    XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT |
+	    XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT |
+	    XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT;
+
+	if ((getInfo->whichComponents & ~all) != 0) {
+		return oxr_error(
+		    &log, XR_ERROR_VALIDATION_FAILURE,
+		    "(getInfo->whichComponents == %08zx) contains invalid bits",
+		    getInfo->whichComponents);
+	}
+
+	if (getInfo->whichComponents == 0) {
+		return oxr_error(
+		    &log, XR_ERROR_VALIDATION_FAILURE,
+		    "(getInfo->whichComponents == 0) can not be zero");
+	}
 
 	return oxr_action_get_input_source_localized_name(
 	    &log, sess, getInfo, bufferCapacityInput, bufferCountOutput,
