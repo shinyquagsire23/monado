@@ -488,7 +488,8 @@ oxr_action_get_pose_input(struct oxr_logger *log,
 static bool
 do_inputs(struct oxr_binding *bind,
           struct xrt_device *xdev,
-          struct oxr_action_input inputs[16],
+          XrPath matched_path,
+          struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION],
           uint32_t *num_inputs)
 {
 	struct xrt_input *input = NULL;
@@ -499,6 +500,7 @@ do_inputs(struct oxr_binding *bind,
 			uint32_t index = (*num_inputs)++;
 			inputs[index].input = input;
 			inputs[index].xdev = xdev;
+			inputs[index].bound_path = matched_path;
 			found = true;
 		}
 	}
@@ -509,7 +511,8 @@ do_inputs(struct oxr_binding *bind,
 static bool
 do_outputs(struct oxr_binding *bind,
            struct xrt_device *xdev,
-           struct oxr_action_output outputs[16],
+           XrPath matched_path,
+           struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION],
            uint32_t *num_outputs)
 {
 	struct xrt_output *output = NULL;
@@ -520,6 +523,7 @@ do_outputs(struct oxr_binding *bind,
 			uint32_t index = (*num_outputs)++;
 			outputs[index].name = output->name;
 			outputs[index].xdev = xdev;
+			outputs[index].bound_path = matched_path;
 			found = true;
 		}
 	}
@@ -535,17 +539,19 @@ static bool
 do_io_bindings(struct oxr_binding *b,
                struct oxr_action *act,
                struct xrt_device *xdev,
-               struct oxr_action_input inputs[16],
+               XrPath matched_path,
+               struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION],
                uint32_t *num_inputs,
-               struct oxr_action_output outputs[16],
+               struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION],
                uint32_t *num_outputs)
 {
 	bool found = false;
 
 	if (act->data->action_type == XR_ACTION_TYPE_VIBRATION_OUTPUT) {
-		found |= do_outputs(b, xdev, outputs, num_outputs);
+		found |=
+		    do_outputs(b, xdev, matched_path, outputs, num_outputs);
 	} else {
-		found |= do_inputs(b, xdev, inputs, num_inputs);
+		found |= do_inputs(b, xdev, matched_path, inputs, num_inputs);
 	}
 
 	return found;
@@ -574,14 +580,13 @@ get_binding(struct oxr_logger *log,
             struct oxr_action *act,
             struct oxr_interaction_profile *profile,
             enum oxr_sub_action_path sub_path,
-            struct oxr_action_input inputs[16],
+            struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION],
             uint32_t *num_inputs,
-            struct oxr_action_output outputs[16],
-            uint32_t *num_outputs,
-            XrPath *bound_path)
+            struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION],
+            uint32_t *num_outputs)
 {
 	struct xrt_device *xdev = NULL;
-	struct oxr_binding *bindings[32];
+	struct oxr_binding *bindings[OXR_MAX_BINDINGS_PER_ACTION];
 	const char *profile_str;
 	const char *user_path_str;
 	size_t length;
@@ -636,7 +641,6 @@ get_binding(struct oxr_logger *log,
 		oxr_slog(slog, "\t\tNo bindings\n");
 		return;
 	}
-
 	for (size_t i = 0; i < num; i++) {
 		const char *str = NULL;
 		struct oxr_binding *b = bindings[i];
@@ -652,11 +656,10 @@ get_binding(struct oxr_logger *log,
 			continue;
 		}
 
-		bool found = do_io_bindings(b, act, xdev, inputs, num_inputs,
-		                            outputs, num_outputs);
+		bool found = do_io_bindings(b, act, xdev, matched_path, inputs,
+		                            num_inputs, outputs, num_outputs);
 
 		if (found) {
-			*bound_path = matched_path;
 			oxr_slog(slog, "\t\t\t\tBound!\n");
 		} else {
 			oxr_slog(slog, "\t\t\t\tRejected! (NO XDEV MAPPING)\n");
@@ -1077,14 +1080,14 @@ oxr_action_populate_input_transform(struct oxr_logger *log,
                                     struct oxr_sink_logger *slog,
                                     struct oxr_session *sess,
                                     struct oxr_action *act,
-                                    struct oxr_action_input *action_input,
-                                    XrPath bound_path)
+                                    struct oxr_action_input *action_input)
 {
 	assert(action_input->transforms == NULL);
 	assert(action_input->num_transforms == 0);
 	const char *str;
 	size_t length;
-	oxr_path_get_string(log, sess->sys->inst, bound_path, &str, &length);
+	oxr_path_get_string(log, sess->sys->inst, action_input->bound_path,
+	                    &str, &length);
 
 	enum xrt_input_type t = XRT_GET_INPUT_TYPE(action_input->input->name);
 
@@ -1102,15 +1105,13 @@ oxr_action_bind_inputs(struct oxr_logger *log,
                        struct oxr_interaction_profile *profile,
                        enum oxr_sub_action_path sub_path)
 {
-	struct oxr_action_input inputs[16] = {0};
+	struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION] = {0};
 	uint32_t num_inputs = 0;
-	struct oxr_action_output outputs[16] = {0};
+	struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION] = {0};
 	uint32_t num_outputs = 0;
 
-	//! @todo Should this be asserted to be non-null?
-	XrPath bound_path = XR_NULL_PATH;
 	get_binding(log, slog, sess, act, profile, sub_path, inputs,
-	            &num_inputs, outputs, &num_outputs, &bound_path);
+	            &num_inputs, outputs, &num_outputs);
 
 	cache->current.active = false;
 
@@ -1120,8 +1121,7 @@ oxr_action_bind_inputs(struct oxr_logger *log,
 		    U_TYPED_ARRAY_CALLOC(struct oxr_action_input, num_inputs);
 		for (uint32_t i = 0; i < num_inputs; i++) {
 			if (!oxr_action_populate_input_transform(
-			        log, slog, sess, act, &(inputs[i]),
-			        bound_path)) {
+			        log, slog, sess, act, &(inputs[i]))) {
 				/*!
 				 * @todo de-populate this element if we couldn't
 				 * get a transform?
@@ -1135,7 +1135,6 @@ oxr_action_bind_inputs(struct oxr_logger *log,
 			cache->inputs[i] = inputs[i];
 		}
 		cache->num_inputs = num_inputs;
-		cache->bound_path = bound_path;
 	}
 
 	if (num_outputs > 0) {
@@ -1146,7 +1145,6 @@ oxr_action_bind_inputs(struct oxr_logger *log,
 			cache->outputs[i] = outputs[i];
 		}
 		cache->num_outputs = num_outputs;
-		cache->bound_path = bound_path;
 	}
 }
 
@@ -1386,6 +1384,27 @@ oxr_action_sync_data(struct oxr_logger *log,
 	return oxr_session_success_focused_result(sess);
 }
 
+static void
+add_path_to_set(XrPath path_set[OXR_MAX_BINDINGS_PER_ACTION],
+                XrPath new_path,
+                uint32_t *inout_num_paths)
+{
+	const uint32_t n = *inout_num_paths;
+
+	// Shouldn't be full
+	assert(n < OXR_MAX_BINDINGS_PER_ACTION);
+
+	for (uint32_t i = 0; i < n; ++i) {
+		if (new_path == path_set[i]) {
+			return;
+		}
+		// Should have no gaps
+		assert(path_set[i] != 0);
+	}
+	path_set[n] = new_path;
+	(*inout_num_paths)++;
+}
+
 XrResult
 oxr_action_enumerate_bound_sources(struct oxr_logger *log,
                                    struct oxr_session *sess,
@@ -1395,8 +1414,8 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
                                    XrPath *sources)
 {
 	struct oxr_action_attachment *act_attached = NULL;
-	size_t num_paths = 0;
-	XrPath temp[32] = {0};
+	uint32_t num_paths = 0;
+	XrPath temp[OXR_MAX_BINDINGS_PER_ACTION] = {0};
 
 	oxr_session_get_action_attachment(sess, act_key, &act_attached);
 	if (act_attached == NULL) {
@@ -1405,8 +1424,12 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
 	}
 
 #define ACCUMULATE_PATHS(X)                                                    \
-	if (act_attached->X.bound_path != XR_NULL_PATH) {                      \
-		temp[num_paths++] = act_attached->X.bound_path;                \
+	if (act_attached->X.num_inputs > 0) {                                  \
+		for (uint32_t i = 0; i < act_attached->X.num_inputs; i++) {    \
+			add_path_to_set(temp,                                  \
+			                act_attached->X.inputs[i].bound_path,  \
+			                &num_paths);                           \
+		}                                                              \
 	}
 
 	OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_PATHS)

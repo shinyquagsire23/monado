@@ -1482,6 +1482,7 @@ struct oxr_action_input
 	struct xrt_input *input;
 	struct oxr_input_transform *transforms;
 	size_t num_transforms;
+	XrPath bound_path;
 };
 
 /*!
@@ -1496,7 +1497,11 @@ struct oxr_action_output
 {
 	struct xrt_device *xdev;
 	enum xrt_output_name name;
+	XrPath bound_path;
 };
+
+
+#define OXR_MAX_BINDINGS_PER_ACTION 16
 
 /*!
  * The set of inputs/outputs for a single sub-action path for an action.
@@ -1513,9 +1518,6 @@ struct oxr_action_output
 struct oxr_action_cache
 {
 	struct oxr_action_state current;
-
-	//! Which action is proving the binding.
-	XrPath bound_path;
 
 	size_t num_inputs;
 	struct oxr_action_input *inputs;
