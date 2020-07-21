@@ -748,6 +748,101 @@ oxr_action_cache_stop_output(struct oxr_logger *log,
 	}
 }
 
+static bool
+oxr_input_combine_input(struct oxr_action_input *inputs,
+                        size_t num_inputs,
+                        struct oxr_input_value_tagged *out_input,
+                        int64_t *timestamp,
+                        bool *is_active)
+{
+	if (num_inputs == 0) {
+		*is_active = false;
+		return true;
+	}
+
+	bool any_active = false;
+	struct oxr_input_value_tagged res = {0};
+	int64_t res_timestamp = inputs[0].input->timestamp;
+
+	for (size_t i = 0; i < num_inputs; i++) {
+		struct oxr_action_input *action_input = &(inputs[i]);
+		struct xrt_input *input = action_input->input;
+
+		if (input->active) {
+			any_active = true;
+		} else {
+			continue;
+		}
+
+		struct oxr_input_value_tagged raw_input = {
+		    .type = XRT_GET_INPUT_TYPE(input->name),
+		    .value = input->value,
+		};
+
+		struct oxr_input_value_tagged transformed = {0};
+		if (!oxr_input_transform_process(action_input->transforms,
+		                                 action_input->num_transforms,
+		                                 &raw_input, &transformed)) {
+			// We couldn't transform, how strange. Reset all state.
+			// At this level we don't know what action this is, etc.
+			// so a warning message isn't very helpful.
+			return false;
+		}
+
+		// at this stage type should be "compatible" to action
+		res.type = transformed.type;
+
+		switch (transformed.type) {
+		case XRT_INPUT_TYPE_BOOLEAN:
+			res.value.boolean |= transformed.value.boolean;
+
+			/* Special case bool: all bool inputs are combined with
+			 * OR. The action only changes to true on the earliest
+			 * input that sets it to true, and to false on the
+			 * latest input that is false. */
+			if (res.value.boolean && transformed.value.boolean &&
+			    input->timestamp < res_timestamp) {
+				res_timestamp = input->timestamp;
+			} else if (!res.value.boolean &&
+			           !transformed.value.boolean &&
+			           input->timestamp > res_timestamp) {
+				res_timestamp = input->timestamp;
+			}
+			break;
+		case XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE:
+		case XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE:
+			if (fabs(transformed.value.vec1.x) >
+			    fabs(res.value.vec1.x)) {
+				res.value.vec1.x = transformed.value.vec1.x;
+				res_timestamp = input->timestamp;
+			}
+			break;
+		case XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE: {
+			float res_sq = res.value.vec2.x * res.value.vec2.x +
+			               res.value.vec2.y * res.value.vec2.y;
+			float trans_sq =
+			    transformed.value.vec2.x *
+			        transformed.value.vec2.x +
+			    transformed.value.vec2.y * transformed.value.vec2.y;
+			if (trans_sq > res_sq) {
+				res.value.vec2 = transformed.value.vec2;
+				res_timestamp = input->timestamp;
+			}
+		} break;
+		case XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE: break;
+		case XRT_INPUT_TYPE_POSE:
+			// shouldn't be possible to get here
+			break;
+		}
+	}
+
+	*is_active = any_active;
+	*out_input = res;
+	*timestamp = res_timestamp;
+
+	return true;
+}
+
 /*!
  * Called during xrSyncActions.
  *
@@ -777,14 +872,14 @@ oxr_action_cache_update(struct oxr_logger *log,
 		}
 	}
 
-	if (cache->num_inputs > 0) {
-
-		/*!
-		 * @todo This logic should be a lot more smarter.
-		 */
+	struct oxr_input_value_tagged combined;
+	int64_t timestamp;
+	bool is_active;
+	if (oxr_input_combine_input(cache->inputs, cache->num_inputs, &combined,
+	                            &timestamp, &is_active)) {
 
 		// If the input is not active signal that.
-		if (!cache->inputs[0].input->active) {
+		if (!is_active) {
 			// Reset all state.
 			U_ZERO(&cache->current);
 			return;
@@ -793,59 +888,37 @@ oxr_action_cache_update(struct oxr_logger *log,
 		// Signal that the input is active, always set just to be sure.
 		cache->current.active = true;
 
-		/*!
-		 * @todo Combine multiple sources for a single subaction path.
-		 */
-		struct oxr_action_input *action_input = &(cache->inputs[0]);
-		struct xrt_input *input = action_input->input;
-		struct oxr_input_value_tagged raw_input = {
-		    .type = XRT_GET_INPUT_TYPE(input->name),
-		    .value = input->value,
-		};
-		struct oxr_input_value_tagged transformed = {0};
-		if (!oxr_input_transform_process(action_input->transforms,
-		                                 action_input->num_transforms,
-		                                 &raw_input, &transformed)) {
-			// We couldn't transform, how strange. Reset all state.
-			// At this level we don't know what action this is, etc.
-			// so a warning message isn't very helpful.
-			U_ZERO(&cache->current);
-			return;
-		}
-		int64_t timestamp = input->timestamp;
 		bool changed = false;
-		switch (transformed.type) {
+		switch (combined.type) {
 		case XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE:
 		case XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE: {
-			changed =
-			    (transformed.value.vec1.x != last.value.vec1.x);
-			cache->current.value.vec1.x = transformed.value.vec1.x;
+			changed = (combined.value.vec1.x != last.value.vec1.x);
+			cache->current.value.vec1.x = combined.value.vec1.x;
 			break;
 		}
 		case XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE: {
 			changed =
-			    (transformed.value.vec2.x != last.value.vec2.x) ||
-			    (transformed.value.vec2.y != last.value.vec2.y);
-			cache->current.value.vec2.x = transformed.value.vec2.x;
-			cache->current.value.vec2.y = transformed.value.vec2.y;
+			    (combined.value.vec2.x != last.value.vec2.x) ||
+			    (combined.value.vec2.y != last.value.vec2.y);
+			cache->current.value.vec2.x = combined.value.vec2.x;
+			cache->current.value.vec2.y = combined.value.vec2.y;
 			break;
 		}
 #if 0
 		case XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE: {
-			changed = (transformed.value.vec3.x != last.vec3.x) ||
-			          (transformed.value.vec3.y != last.vec3.y) ||
-			          (transformed.value.vec3.z != last.vec3.z);
-			cache->current.vec3.x = transformed.value.vec3.x;
-			cache->current.vec3.y = transformed.value.vec3.y;
-			cache->current.vec3.z = transformed.value.vec3.z;
+			changed = (combined.value.vec3.x != last.vec3.x) ||
+			          (combined.value.vec3.y != last.vec3.y) ||
+			          (combined.value.vec3.z != last.vec3.z);
+			cache->current.vec3.x = combined.value.vec3.x;
+			cache->current.vec3.y = combined.value.vec3.y;
+			cache->current.vec3.z = combined.value.vec3.z;
 			break;
 		}
 #endif
 		case XRT_INPUT_TYPE_BOOLEAN: {
 			changed =
-			    (transformed.value.boolean != last.value.boolean);
-			cache->current.value.boolean =
-			    transformed.value.boolean;
+			    (combined.value.boolean != last.value.boolean);
+			cache->current.value.boolean = combined.value.boolean;
 			break;
 		}
 		case XRT_INPUT_TYPE_POSE: return;
