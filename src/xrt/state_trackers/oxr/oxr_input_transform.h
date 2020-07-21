@@ -28,7 +28,7 @@ struct oxr_action_cache;
  * @defgroup oxr_input_transform OpenXR input transformation
  *
  *
- * @ingroup oxr
+ * @ingroup oxr_input
  * @{
  */
 

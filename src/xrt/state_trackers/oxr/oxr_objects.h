@@ -1351,10 +1351,37 @@ struct oxr_binding
 };
 
 /*!
+ * @defgroup oxr_input OpenXR input
+ * @ingroup oxr_main
+ *
+ * @brief The action-set/action-based input subsystem of OpenXR.
+ *
+ *
+ * Action sets are created as children of the Instance, but are primarily used
+ * with one or more Sessions. They may be used with multiple sessions at a time,
+ * so we can't just put the per-session information directly in the action set
+ * or action. Instead, we have the `_attachment `structures, which mirror the
+ * action sets and actions but are rooted under the Session:
+ *
+ * - For every action set attached to a session, that session owns a @ref
+ *   oxr_action_set_attachment.
+ * - For each action in those attached action sets, the action set attachment
+ *   owns an @ref oxr_action_attachment.
+ *
+ * We go from the public handle to the `_attachment` structure by using a `key`
+ * value and a hash map: specifically, we look up the
+ * oxr_action_set::act_set_key and oxr_action::act_key in the session.
+ *
+ * ![](monado-input-class-relationships.drawio.svg)
+ */
+
+/*!
  * A parsed equivalent of a list of sub-action paths.
  *
  * If @p any is true, then no paths were provided, which typically means any
  * input is acceptable.
+ *
+ * @ingroup oxr_input
  */
 struct oxr_sub_paths
 {
@@ -1371,25 +1398,12 @@ struct oxr_sub_paths
  * The data associated with the attachment of an Action Set (@ref
  * oxr_action_set) to as Session (@ref oxr_session).
  *
- * Action sets are created as children of the Instance, but are primarily used
- * with one or more Sessions. They may be used with multiple sessions at a time,
- * so we can't just put the per-session information directly in the action set
- * or action. Instead, we have the _attachment structures, which mirror the
- * action sets and actions but are rooted under the Session:
- *
- * - For every action set attached to a session, that session owns a @ref
- *   oxr_action_set_attachment.
- * - For each action in those attached action sets, the action set attachment
- *   owns an @ref oxr_action_attachment.
- *
- * We go from the public handle to the _attachment structure by using a `key`
- * value and a hash map: specifically, we look up the oxr_action_set::key and
- * oxr_action::key in the session.
- *
  * This structure has no pointer to the @ref oxr_action_set that created it
  * because the application is allowed to destroy an action before the session,
  * which should change nothing except not allow the application to access the
  * corresponding data anymore.
+ *
+ * @ingroup oxr_input
  *
  * @see oxr_action_set
  */
@@ -1432,6 +1446,8 @@ oxr_action_set_attachment_teardown(
 /*!
  * The state of a action input.
  *
+ * @ingroup oxr_input
+ *
  * @see oxr_action_attachment
  */
 struct oxr_action_state
@@ -1455,6 +1471,8 @@ struct oxr_action_state
  * A input action pair of a @ref xrt_input and a @ref xrt_device, along with the
  * required transform.
  *
+ * @ingroup oxr_input
+ *
  * @see xrt_device
  * @see xrt_input
  */
@@ -1468,6 +1486,8 @@ struct oxr_action_input
 
 /*!
  * A output action pair of a @ref xrt_output_name and a @ref xrt_device.
+ *
+ * @ingroup oxr_input
  *
  * @see xrt_device
  * @see xrt_output_name
@@ -1483,6 +1503,10 @@ struct oxr_action_output
  *
  * Each @ref oxr_action_attachment has one of these for every known sub-action
  * path in the spec. Many, or even most, will be "empty".
+ *
+ * A single action will either be input or output, not both.
+ *
+ * @ingroup oxr_input
  *
  * @see oxr_action_attachment
  */
@@ -1505,10 +1529,11 @@ struct oxr_action_cache
  * Data associated with an Action that has been attached to a Session.
  *
  * More information on the action vs action attachment and action set vs action
- * set attachment parallel is in the docs for @ref oxr_action_set_attachment.
+ * set attachment parallel is in the docs for @ref oxr_input
+ *
+ * @ingroup oxr_input
  *
  * @see oxr_action
- * @see oxr_action_set_attachment
  */
 struct oxr_action_attachment
 {
@@ -1683,6 +1708,8 @@ oxr_refcounted_unref(struct oxr_refcounted *orc)
  * One or more sessions may still need this data after the application destroys
  * its XrActionSet handle, so this data is refcounted.
  *
+ * @ingroup oxr_input
+ *
  * @see oxr_action_set
  * @extends oxr_refcounted
  */
@@ -1717,6 +1744,8 @@ struct oxr_action_set_ref
  * Note, however, that an action set must be "attached" to a session
  * ( @ref oxr_session ) to be used and not just configured.
  * The corresponding data is in @ref oxr_action_set_attachment.
+ *
+ * @ingroup oxr_input
  *
  * @obj{XrActionSet}
  * @extends oxr_handle_base
@@ -1756,6 +1785,8 @@ struct oxr_action_set
  * One or more sessions may still need this data after the application destroys
  * its XrAction handle, so this data is refcounted.
  *
+ * @ingroup oxr_input
+ *
  * @see oxr_action
  * @extends oxr_refcounted
  */
@@ -1783,6 +1814,8 @@ struct oxr_action_ref
  *
  * For actual usage, an action is attached to a session: the corresponding data
  * is in @ref oxr_action_attachment
+ *
+ * @ingroup oxr_input
  *
  * @obj{XrAction}
  * @extends oxr_handle_base
