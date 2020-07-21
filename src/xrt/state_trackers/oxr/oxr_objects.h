@@ -390,9 +390,10 @@ oxr_classify_sub_action_paths(struct oxr_logger *log,
 XrResult
 oxr_action_get_pose_input(struct oxr_logger *log,
                           struct oxr_session *sess,
-                          uint32_t key,
+                          uint32_t act_key,
                           const struct oxr_sub_paths *sub_paths,
                           struct oxr_action_input **out_input);
+
 /*!
  * @public @memberof oxr_instance
  */
@@ -410,6 +411,7 @@ oxr_action_create(struct oxr_logger *log,
                   struct oxr_action_set *act_set,
                   const XrActionCreateInfo *createInfo,
                   struct oxr_action **out_act);
+
 /*!
  * @public @memberof oxr_session
  * @relatesalso oxr_action_set
@@ -418,6 +420,7 @@ XrResult
 oxr_session_attach_action_sets(struct oxr_logger *log,
                                struct oxr_session *sess,
                                const XrSessionActionSetsAttachInfo *bindInfo);
+
 /*!
  * @public @memberof oxr_session
  */
@@ -435,6 +438,7 @@ oxr_action_get_boolean(struct oxr_logger *log,
                        uint32_t act_key,
                        struct oxr_sub_paths sub_paths,
                        XrActionStateBoolean *data);
+
 /*!
  * @public @memberof oxr_session
  */
