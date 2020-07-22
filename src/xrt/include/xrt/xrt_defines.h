@@ -368,6 +368,28 @@ struct xrt_space_relation
 	struct xrt_vec3 angular_acceleration;
 };
 
+/*!
+ * The maximum number of steps that can be in a space graph chain.
+ *
+ * @see xrt_space_graph::steps
+ * @ingroup xrt_iface math
+ */
+#define XRT_SPACE_GRAPHS_MAX 8
+
+/*!
+ * A graph of space relations, technically more of a chain of transformation
+ * since it's not branching, but a flat graph is still a graph. Functions for
+ * manipulating this are available in `math/m_space.h`.
+ *
+ * @see xrt_space_relation
+ * @ingroup xrt_iface math
+ */
+struct xrt_space_graph
+{
+	struct xrt_space_relation steps[XRT_SPACE_GRAPHS_MAX];
+	uint32_t num_steps;
+};
+
 
 /*
  *
