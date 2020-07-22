@@ -63,6 +63,8 @@ WARN_IF_UNDOCUMENTED   = @DOXYGEN_WARN_UNDOCUMENTED@
 EXTRACT_ALL            = @DOXYGEN_EXTRACT_ALL@
 HIDE_UNDOC_RELATIONS   = NO
 
+MACRO_EXPANSION        = YES
+
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of the
 # path mentioned in the documentation of a class, which tells the reader which
 # header file to include in order to use a class. If left blank only the name of
@@ -2111,7 +2113,7 @@ ENABLE_PREPROCESSING   = YES
 # The default value is: NO.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-MACRO_EXPANSION        = NO
+# MACRO_EXPANSION        = NO
 
 # If the EXPAND_ONLY_PREDEF and MACRO_EXPANSION tags are both set to YES then
 # the macro expansion is limited to the macros specified with the PREDEFINED and

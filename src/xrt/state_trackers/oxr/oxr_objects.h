@@ -1068,9 +1068,9 @@ struct oxr_system
 	/* index for xdevs array */
 	struct
 	{
-		int head;
-		int left;
-		int right;
+#define OXR_ROLE_FIELD(X) int X;
+		OXR_FOR_EACH_VALID_SUBACTION_PATH(OXR_ROLE_FIELD)
+#undef OXR_ROLE_FIELD
 	} role;
 
 	XrSystemId systemId;
@@ -1260,10 +1260,11 @@ struct oxr_session
 	 * Currently bound interaction profile.
 	 * @{
 	 */
-	XrPath left;
-	XrPath right;
-	XrPath head;
-	XrPath gamepad;
+
+#define OXR_PATH_MEMBER(X) XrPath X;
+
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(OXR_PATH_MEMBER)
+#undef OXR_PATH_MEMBER
 	/*!
 	 * @}
 	 */
@@ -1381,17 +1382,15 @@ struct oxr_binding
  * If @p any is true, then no paths were provided, which typically means any
  * input is acceptable.
  *
+ * @ingroup oxr_main
  * @ingroup oxr_input
  */
 struct oxr_sub_paths
 {
 	bool any;
-	bool user;
-	bool head;
-	bool left;
-	bool right;
-	bool gamepad;
-	bool treadmill;
+#define OXR_SUBPATH_MEMBER(X) bool X;
+	OXR_FOR_EACH_SUBACTION_PATH(OXR_SUBPATH_MEMBER)
+#undef OXR_SUBPATH_MEMBER
 };
 
 /*!
@@ -1558,11 +1557,9 @@ struct oxr_action_attachment
 
 	struct oxr_action_state any_state;
 
-	struct oxr_action_cache user;
-	struct oxr_action_cache head;
-	struct oxr_action_cache left;
-	struct oxr_action_cache right;
-	struct oxr_action_cache gamepad;
+#define OXR_CACHE_MEMBER(X) struct oxr_action_cache X;
+	OXR_FOR_EACH_SUBACTION_PATH(OXR_CACHE_MEMBER)
+#undef OXR_CACHE_MEMBER
 };
 
 /*!

@@ -133,6 +133,8 @@ oxr_system_fill_in(struct oxr_logger *log,
 		right->tracking_origin->offset.position.z = -0.5f;
 	}
 
+	//! @todo handle other subaction paths?
+
 	// clang-format off
 	sys->inst             = inst;
 	sys->systemId         = systemId;

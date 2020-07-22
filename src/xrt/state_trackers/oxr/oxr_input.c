@@ -107,11 +107,11 @@ oxr_action_attachment_teardown(struct oxr_action_attachment *act_attached)
 	struct oxr_session *sess = act_attached->sess;
 	u_hashmap_int_erase(sess->act_attachments_by_key,
 	                    act_attached->act_key);
-	oxr_action_cache_teardown(&(act_attached->user));
-	oxr_action_cache_teardown(&(act_attached->head));
-	oxr_action_cache_teardown(&(act_attached->left));
-	oxr_action_cache_teardown(&(act_attached->right));
-	oxr_action_cache_teardown(&(act_attached->gamepad));
+
+#define CACHE_TEARDOWN(X) oxr_action_cache_teardown(&(act_attached->X));
+	OXR_FOR_EACH_SUBACTION_PATH(CACHE_TEARDOWN)
+#undef CACHE_TEARDOWN
+
 	// Unref this action's refcounted data
 	oxr_refcounted_unref(&act_attached->act_ref->base);
 }
@@ -449,31 +449,17 @@ oxr_action_get_pose_input(struct oxr_logger *log,
 	}
 
 	// Priority of inputs.
-	if (act_attached->head.current.active &&
-	    (sub_paths->head || sub_paths->any)) {
-		*out_input = act_attached->head.inputs;
-		return XR_SUCCESS;
+#define GET_POSE_INPUT(X)                                                      \
+	if (act_attached->X.current.active &&                                  \
+	    (sub_paths->X || sub_paths->any)) {                                \
+		*out_input = act_attached->X.inputs;                           \
+		return XR_SUCCESS;                                             \
 	}
-	if (act_attached->left.current.active &&
-	    (sub_paths->left || sub_paths->any)) {
-		*out_input = act_attached->left.inputs;
-		return XR_SUCCESS;
-	}
-	if (act_attached->right.current.active &&
-	    (sub_paths->right || sub_paths->any)) {
-		*out_input = act_attached->right.inputs;
-		return XR_SUCCESS;
-	}
-	if (act_attached->gamepad.current.active &&
-	    (sub_paths->gamepad || sub_paths->any)) {
-		*out_input = act_attached->gamepad.inputs;
-		return XR_SUCCESS;
-	}
-	if (act_attached->user.current.active &&
-	    (sub_paths->user || sub_paths->any)) {
-		*out_input = act_attached->user.inputs;
-		return XR_SUCCESS;
-	}
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(GET_POSE_INPUT)
+
+	// plus a fallback invocation for user
+	GET_POSE_INPUT(user)
+#undef GET_POSE_INPUT
 
 	return XR_SUCCESS;
 }
@@ -594,24 +580,18 @@ get_binding(struct oxr_logger *log,
 	//! @todo This probably falls on its head if the application doesn't use
 	//! sub action paths.
 	switch (sub_path) {
+#define PATH_CASE(NAME, NAMECAPS, PATH)                                        \
+	case OXR_SUB_ACTION_PATH_##NAMECAPS:                                   \
+		user_path_str = PATH;                                          \
+		xdev = GET_XDEV_BY_ROLE(sess->sys, NAME);                      \
+		break;
+
+		OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(PATH_CASE)
+#undef PATH_CASE
+
+		// Manually-coded fallback for not-really-valid /user
 	case OXR_SUB_ACTION_PATH_USER:
 		user_path_str = "/user";
-		xdev = NULL;
-		break;
-	case OXR_SUB_ACTION_PATH_HEAD:
-		user_path_str = "/user/head";
-		xdev = GET_XDEV_BY_ROLE(sess->sys, head);
-		break;
-	case OXR_SUB_ACTION_PATH_LEFT:
-		user_path_str = "/user/hand/left";
-		xdev = GET_XDEV_BY_ROLE(sess->sys, left);
-		break;
-	case OXR_SUB_ACTION_PATH_RIGHT:
-		user_path_str = "/user/hand/right";
-		xdev = GET_XDEV_BY_ROLE(sess->sys, right);
-		break;
-	case OXR_SUB_ACTION_PATH_GAMEPAD:
-		user_path_str = "/user/hand/gamepad";
 		xdev = NULL;
 		break;
 	default: break;
@@ -668,6 +648,12 @@ get_binding(struct oxr_logger *log,
 }
 
 
+struct oxr_profiles_per_subaction
+{
+#define PROFILE_MEMBER(X) struct oxr_interaction_profile *X;
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(PROFILE_MEMBER)
+#undef PROFILE_MEMBER
+};
 
 /*!
  * @public @memberof oxr_action_attachment
@@ -676,10 +662,7 @@ static XrResult
 oxr_action_attachment_bind(struct oxr_logger *log,
                            struct oxr_action_attachment *act_attached,
                            struct oxr_action *act,
-                           struct oxr_interaction_profile *head,
-                           struct oxr_interaction_profile *left,
-                           struct oxr_interaction_profile *right,
-                           struct oxr_interaction_profile *gamepad)
+                           const struct oxr_profiles_per_subaction *profiles)
 {
 	struct oxr_sink_logger slog = {0};
 	struct oxr_action_ref *act_ref = act->data;
@@ -700,7 +683,7 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 #define BIND_SUBACTION(NAME, NAME_CAPS, PATH)                                  \
 	if (act_ref->sub_paths.NAME || act_ref->sub_paths.any) {               \
 		oxr_action_bind_inputs(log, &slog, sess, act,                  \
-		                       &act_attached->NAME, NAME,              \
+		                       &act_attached->NAME, profiles->NAME,    \
 		                       OXR_SUB_ACTION_PATH_##NAME_CAPS);       \
 	}
 	OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(BIND_SUBACTION)
@@ -1005,11 +988,7 @@ oxr_action_attachment_update(struct oxr_logger *log,
 	switch (act_attached->act_ref->action_type) {
 	case XR_ACTION_TYPE_BOOLEAN_INPUT: {
 		bool value = false;
-		BOOL_CHECK(user);
-		BOOL_CHECK(head);
-		BOOL_CHECK(left);
-		BOOL_CHECK(right);
-		BOOL_CHECK(gamepad);
+		OXR_FOR_EACH_VALID_SUBACTION_PATH(BOOL_CHECK)
 
 		changed = (last.value.boolean != value);
 		act_attached->any_state.value.boolean = value;
@@ -1017,11 +996,7 @@ oxr_action_attachment_update(struct oxr_logger *log,
 	}
 	case XR_ACTION_TYPE_FLOAT_INPUT: {
 		float value = -2.0;
-		VEC1_CHECK(user);
-		VEC1_CHECK(head);
-		VEC1_CHECK(left);
-		VEC1_CHECK(right);
-		VEC1_CHECK(gamepad);
+		OXR_FOR_EACH_VALID_SUBACTION_PATH(VEC1_CHECK)
 
 		changed = last.value.vec1.x != value;
 		act_attached->any_state.value.vec1.x = value;
@@ -1031,11 +1006,7 @@ oxr_action_attachment_update(struct oxr_logger *log,
 		float x = 0.0;
 		float y = 0.0;
 		float distance = -1.0;
-		VEC2_CHECK(user);
-		VEC2_CHECK(head);
-		VEC2_CHECK(left);
-		VEC2_CHECK(right);
-		VEC2_CHECK(gamepad);
+		OXR_FOR_EACH_VALID_SUBACTION_PATH(VEC2_CHECK)
 
 		changed = (last.value.vec2.x != x) || (last.value.vec2.y != y);
 		act_attached->any_state.value.vec2.x = x;
@@ -1224,19 +1195,12 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
                                const XrSessionActionSetsAttachInfo *bindInfo)
 {
 	struct oxr_instance *inst = sess->sys->inst;
-
-
-	struct oxr_interaction_profile *head = NULL;
-	struct oxr_interaction_profile *left = NULL;
-	struct oxr_interaction_profile *right = NULL;
-
-	oxr_find_profile_for_device(log, inst,
-	                            GET_XDEV_BY_ROLE(sess->sys, head), &head);
-	oxr_find_profile_for_device(log, inst,
-	                            GET_XDEV_BY_ROLE(sess->sys, left), &left);
-	oxr_find_profile_for_device(log, inst,
-	                            GET_XDEV_BY_ROLE(sess->sys, right), &right);
-	//! @todo add other subaction paths here
+	struct oxr_profiles_per_subaction profiles = {0};
+#define FIND_PROFILE(X)                                                        \
+	oxr_find_profile_for_device(log, inst, GET_XDEV_BY_ROLE(sess->sys, X), \
+	                            &profiles.X);
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(FIND_PROFILE)
+#undef FIND_PROFILE
 
 	// Allocate room for list. No need to check if anything has been
 	// attached the API function does that.
@@ -1275,28 +1239,20 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 			    &act_set_attached->act_attachments[child_index];
 			oxr_action_attachment_init(log, act_set_attached,
 			                           act_attached, act);
-			oxr_action_attachment_bind(log, act_attached, act, head,
-			                           left, right, NULL);
+			oxr_action_attachment_bind(log, act_attached, act,
+			                           &profiles);
 			++child_index;
 		}
 	}
 
-	if (head != NULL) {
-		sess->head = head->path;
-		// Also push event
-		oxr_event_push_XrEventDataInteractionProfileChanged(log, sess);
+#define POPULATE_PROFILE(X)                                                    \
+	if (profiles.X != NULL) {                                              \
+		sess->X = profiles.X->path;                                    \
+		oxr_event_push_XrEventDataInteractionProfileChanged(log,       \
+		                                                    sess);     \
 	}
-	if (left != NULL) {
-		sess->left = left->path;
-		// Also push event
-		oxr_event_push_XrEventDataInteractionProfileChanged(log, sess);
-	}
-	if (right != NULL) {
-		sess->right = right->path;
-		// Also push event
-		oxr_event_push_XrEventDataInteractionProfileChanged(log, sess);
-	}
-
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(POPULATE_PROFILE)
+#undef POPULATE_PROFILE
 	return oxr_session_success_result(sess);
 }
 
@@ -1624,7 +1580,7 @@ oxr_action_get_pose(struct oxr_logger *log,
 		data->isActive |= act_attached->X.current.active;              \
 	}
 
-	OXR_FOR_EACH_SUBACTION_PATH(COMPUTE_ACTIVE)
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(COMPUTE_ACTIVE)
 #undef COMPUTE_ACTIVE
 	return oxr_session_success_result(sess);
 }

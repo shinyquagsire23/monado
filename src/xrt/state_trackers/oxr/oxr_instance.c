@@ -241,9 +241,9 @@ oxr_instance_create(struct oxr_logger *log,
 
 	struct oxr_system *sys = &inst->system;
 
-	sys->role.head = XRT_DEVICE_ROLE_UNASSIGNED;
-	sys->role.left = XRT_DEVICE_ROLE_UNASSIGNED;
-	sys->role.right = XRT_DEVICE_ROLE_UNASSIGNED;
+#define POPULATE_ROLES(X) sys->role.X = XRT_DEVICE_ROLE_UNASSIGNED;
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(POPULATE_ROLES)
+#undef POPULATE_ROLES
 
 	sys->num_xdevs = min_size_t(ARRAY_SIZE(sys->xdevs), NUM_XDEVS);
 
