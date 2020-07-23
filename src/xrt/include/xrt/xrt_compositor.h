@@ -55,7 +55,7 @@ typedef uint64_t VkDeviceMemory;
  */
 enum xrt_swapchain_create_flags
 {
-	XRT_SWAPCHAIN_CREATE_STATIC_IMAGE = (1 << 0),
+	XRT_SWAPCHAIN_CREATE_STATIC_IMAGE = (1 << 1),
 };
 
 /*!
