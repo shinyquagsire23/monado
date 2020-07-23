@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -8,7 +8,10 @@
  */
 
 #include "os/os_time.h"
+
 #include "math/m_api.h"
+#include "math/m_space.h"
+
 #include "util/u_time.h"
 #include "util/u_misc.h"
 
@@ -79,73 +82,35 @@ oxr_xdev_find_output(struct xrt_device *xdev,
 	return false;
 }
 
-static void
-ensure_valid_position_and_orientation(struct xrt_space_relation *relation,
-                                      const struct xrt_pose *fallback)
-{
-	// clang-format off
-	bool valid_pos = (relation->relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0;
-	bool valid_ori = (relation->relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
-	// clang-format on
-
-	if (!valid_ori) {
-		relation->pose.orientation = fallback->orientation;
-	}
-
-	if (!valid_pos) {
-		relation->pose.position = fallback->position;
-	}
-}
-
 void
-oxr_xdev_get_relation_at(struct oxr_logger *log,
+oxr_xdev_get_space_graph(struct oxr_logger *log,
                          struct oxr_instance *inst,
                          struct xrt_device *xdev,
                          enum xrt_input_name name,
                          XrTime at_time,
-                         uint64_t *out_relation_timestamp_ns,
-                         struct xrt_space_relation *out_relation)
+                         struct xrt_space_graph *xsg)
 {
-	struct xrt_pose *offset = &xdev->tracking_origin->offset;
+	// Convert at_time to monotonic and give to device.
+	uint64_t at_timestamp_ns =
+	    time_state_ts_to_monotonic_ns(inst->timekeeping, at_time);
+	uint64_t dummy = 0;
 
-	//! @todo Convert at_time to monotonic and give to device.
-	uint64_t at_timestamp_ns = os_monotonic_get_ns();
-	(void)at_time;
-
-	uint64_t relation_timestamp_ns = 0;
-
-	struct xrt_space_relation relation;
-	U_ZERO(&relation);
-
-	xrt_device_get_tracked_pose(xdev, name, at_timestamp_ns,
-	                            &relation_timestamp_ns, &relation);
+	struct xrt_space_relation *rel = m_space_graph_reserve(xsg);
+	xrt_device_get_tracked_pose(xdev, name, at_timestamp_ns, &dummy, rel);
 
 	// Add in the offset from the tracking system.
-	math_relation_apply_offset(offset, &relation);
-
-	// Always make those to base things valid.
-	ensure_valid_position_and_orientation(&relation, offset);
-
-	*out_relation_timestamp_ns = time_state_monotonic_to_ts_ns(
-	    inst->timekeeping, relation_timestamp_ns);
-
-	*out_relation = relation;
+	m_space_graph_add_pose(xsg, &xdev->tracking_origin->offset);
 }
 
 void
-oxr_xdev_get_pose_at(struct oxr_logger *log,
-                     struct oxr_instance *inst,
-                     struct xrt_device *xdev,
-                     enum xrt_input_name name,
-                     XrTime at_time,
-                     uint64_t *out_pose_timestamp_ns,
-                     struct xrt_space_relation *out_relation)
+oxr_xdev_get_space_relation(struct oxr_logger *log,
+                            struct oxr_instance *inst,
+                            struct xrt_device *xdev,
+                            enum xrt_input_name name,
+                            XrTime at_time,
+                            struct xrt_space_relation *out_relation)
 {
-	struct xrt_space_relation relation;
-	U_ZERO(&relation);
-
-	oxr_xdev_get_relation_at(log, inst, xdev, name, at_time,
-	                         out_pose_timestamp_ns, &relation);
-
-	*out_relation = relation;
+	struct xrt_space_graph xsg = {0};
+	oxr_xdev_get_space_graph(log, inst, xdev, name, at_time, &xsg);
+	m_space_graph_resolve(&xsg, out_relation);
 }

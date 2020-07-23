@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "math/m_api.h"
+#include "math/m_space.h"
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 
@@ -184,14 +185,13 @@ oxr_space_ref_relation(struct oxr_logger *log,
                        XrTime time,
                        struct xrt_space_relation *out_relation)
 {
-	math_relation_reset(out_relation);
+	m_space_relation_ident(out_relation);
 
 
 	if (space == baseSpc) {
-		// math_relation_reset() sets to identity.
+		// m_space_relation_ident() sets to identity.
 	} else if (space == XR_REFERENCE_SPACE_TYPE_VIEW) {
-		oxr_session_get_view_pose_at(log, sess, time,
-		                             &out_relation->pose);
+		oxr_session_get_view_relation_at(log, sess, time, out_relation);
 
 		if (!ensure_initial_head_relation(sess, out_relation)) {
 			out_relation->relation_flags =
@@ -214,8 +214,7 @@ oxr_space_ref_relation(struct oxr_logger *log,
 			return XR_SUCCESS;
 		}
 	} else if (baseSpc == XR_REFERENCE_SPACE_TYPE_VIEW) {
-		oxr_session_get_view_pose_at(log, sess, time,
-		                             &out_relation->pose);
+		oxr_session_get_view_relation_at(log, sess, time, out_relation);
 
 		if (!ensure_initial_head_relation(sess, out_relation)) {
 			out_relation->relation_flags =
@@ -275,11 +274,27 @@ oxr_space_ref_relation(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
+static void
+remove_angular_and_linear_stuff(struct xrt_space_relation *out_relation)
+{
+	const enum xrt_space_relation_flags flags =
+	    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT |
+	    XRT_SPACE_RELATION_LINEAR_ACCELERATION_VALID_BIT |
+	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT |
+	    XRT_SPACE_RELATION_ANGULAR_ACCELERATION_VALID_BIT;
+
+	out_relation->relation_flags &= ~flags;
+	out_relation->linear_velocity = (struct xrt_vec3){0, 0, 0};
+	out_relation->linear_acceleration = (struct xrt_vec3){0, 0, 0};
+	out_relation->angular_velocity = (struct xrt_vec3){0, 0, 0};
+	out_relation->angular_acceleration = (struct xrt_vec3){0, 0, 0};
+}
+
 /*!
  * This returns only the relation between two spaces without any of the app
  * given relations applied, assumes that only one is a action space.
  */
-XrResult
+static XrResult
 oxr_space_action_relation(struct oxr_logger *log,
                           struct oxr_session *sess,
                           struct oxr_space *spc,
@@ -289,10 +304,7 @@ oxr_space_action_relation(struct oxr_logger *log,
 {
 	struct oxr_action_input *input = NULL;
 	struct oxr_space *act_spc, *ref_spc = NULL;
-	uint64_t timestamp = 0;
 	bool invert = false;
-
-
 
 	// Find the action space
 	if (baseSpc->is_reference) {
@@ -316,7 +328,7 @@ oxr_space_action_relation(struct oxr_logger *log,
 	}
 
 	// Reset so no relation is returned.
-	math_relation_reset(out_relation);
+	m_space_relation_ident(out_relation);
 
 	//! @todo Can not relate to the view space right now.
 	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
@@ -334,9 +346,8 @@ oxr_space_action_relation(struct oxr_logger *log,
 		return XR_SUCCESS;
 	}
 
-	oxr_xdev_get_pose_at(log, sess->sys->inst, input->xdev,
-	                     input->input->name, at_time, &timestamp,
-	                     out_relation);
+	oxr_xdev_get_space_relation(log, sess->sys->inst, input->xdev,
+	                            input->input->name, at_time, out_relation);
 
 	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
 		global_to_local_space(sess, &out_relation->pose);
@@ -344,6 +355,8 @@ oxr_space_action_relation(struct oxr_logger *log,
 
 	if (invert) {
 		math_pose_invert(&out_relation->pose, &out_relation->pose);
+		// Remove this since we can't (for now) invert the derivatives.
+		remove_angular_and_linear_stuff(out_relation);
 	}
 
 	return XR_SUCCESS;
@@ -471,7 +484,11 @@ oxr_space_locate(struct oxr_logger *log,
 
 	// Combine space and base space poses with pure relation
 	struct xrt_space_relation result;
-	math_relation_openxr_locate(&spc->pose, &pure, &baseSpc->pose, &result);
+	struct xrt_space_graph graph = {0};
+	m_space_graph_add_pose_if_not_identity(&graph, &spc->pose);
+	m_space_graph_add_relation(&graph, &pure);
+	m_space_graph_add_inverted_pose_if_not_identity(&graph, &baseSpc->pose);
+	m_space_graph_resolve(&graph, &result);
 
 	// Copy
 	union {

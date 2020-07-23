@@ -27,7 +27,7 @@
 
 #include "math/m_api.h"
 #include "math/m_mathinclude.h"
-
+#include "math/m_space.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -43,9 +43,7 @@
 #include <inttypes.h>
 
 
-DEBUG_GET_ONCE_BOOL_OPTION(dynamic_prediction, "OXR_DYNAMIC_PREDICTION", true)
 DEBUG_GET_ONCE_NUM_OPTION(ipd, "OXR_DEBUG_IPD_MM", 63)
-DEBUG_GET_ONCE_NUM_OPTION(prediction_ms, "OXR_DEBUG_PREDICTION_MS", 11)
 
 #define CALL_CHK(call)                                                         \
 	if ((call) == XRT_ERROR_IPC_FAILURE) {                                 \
@@ -278,10 +276,10 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 }
 
 XrResult
-oxr_session_get_view_pose_at(struct oxr_logger *log,
-                             struct oxr_session *sess,
-                             XrTime at_time,
-                             struct xrt_pose *pose)
+oxr_session_get_view_relation_at(struct oxr_logger *log,
+                                 struct oxr_session *sess,
+                                 XrTime at_time,
+                                 struct xrt_space_relation *out_relation)
 {
 	// @todo This function needs to be massively expanded to support all
 	//       use cases this drive. The main use of this function is to get
@@ -294,17 +292,16 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 	//       get at least a slightly better position.
 
 	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
-	struct xrt_space_relation relation;
-	uint64_t timestamp;
 
 	// Applies the offset in the function.
-	oxr_xdev_get_relation_at(log, sess->sys->inst, xdev,
-	                         XRT_INPUT_GENERIC_HEAD_POSE, at_time,
-	                         &timestamp, &relation);
+	struct xrt_space_graph xsg = {0};
+	oxr_xdev_get_space_graph(log, sess->sys->inst, xdev,
+	                         XRT_INPUT_GENERIC_HEAD_POSE, at_time, &xsg);
+	m_space_graph_resolve(&xsg, out_relation);
 
+
+#if 0
 	// clang-format off
-	*pose = relation.pose;
-
 	bool valid_vel = (relation.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0;
 	// clang-format on
 
@@ -340,6 +337,7 @@ oxr_session_get_view_pose_at(struct oxr_logger *log,
 
 		pose->orientation = predicted;
 	}
+#endif
 
 	return oxr_session_success_result(sess);
 }
@@ -420,8 +418,6 @@ oxr_session_views(struct oxr_logger *log,
 	                       baseSpc->type, viewLocateInfo->displayTime,
 	                       &pure_relation);
 
-	struct xrt_pose pure = pure_relation.pose;
-
 	// @todo the fov information that we get from xdev->hmd->views[i].fov is
 	//       not properly filled out in oh_device.c, fix before wasting time
 	//       on debugging weird rendering when adding stuff here.
@@ -439,16 +435,26 @@ oxr_session_views(struct oxr_logger *log,
 		xdev->get_view_pose(xdev, &eye_relation, i, &view_pose);
 
 		// Do the magical space relation dance here.
-		math_pose_openxr_locate(&view_pose, &pure, &baseSpc->pose,
-		                        (struct xrt_pose *)&views[i].pose);
+		struct xrt_space_relation result = {0};
+		struct xrt_space_graph xsg = {0};
+		m_space_graph_add_pose_if_not_identity(&xsg, &view_pose);
+		m_space_graph_add_relation(&xsg, &pure_relation);
+		m_space_graph_add_pose_if_not_identity(&xsg, &baseSpc->pose);
+		m_space_graph_resolve(&xsg, &result);
+		union {
+			struct xrt_pose xrt;
+			struct XrPosef oxr;
+		} safe_copy_pose = {0};
+		safe_copy_pose.xrt = result.pose;
+		views[i].pose = safe_copy_pose.oxr;
 
 		// Copy the fov information directly from the device.
 		union {
 			struct xrt_fov xrt;
 			XrFovf oxr;
-		} safe_copy = {0};
-		safe_copy.xrt = xdev->hmd->views[i].fov;
-		views[i].fov = safe_copy.oxr;
+		} safe_copy_fov = {0};
+		safe_copy_fov.xrt = xdev->hmd->views[i].fov;
+		views[i].fov = safe_copy_fov.oxr;
 
 		struct xrt_pose *pose = (struct xrt_pose *)&views[i].pose;
 		if (!math_quat_ensure_normalized(&pose->orientation)) {
@@ -1328,13 +1334,12 @@ handle_space(struct oxr_logger *log,
 			return false;
 		}
 
-		uint64_t xdev_timestamp = 0;
 
 		struct xrt_space_relation out_relation;
 
-		oxr_xdev_get_pose_at(log, sess->sys->inst, input->xdev,
-		                     input->input->name, timestamp,
-		                     &xdev_timestamp, &out_relation);
+		oxr_xdev_get_space_relation(log, sess->sys->inst, input->xdev,
+		                            input->input->name, timestamp,
+		                            &out_relation);
 
 		struct xrt_pose device_pose = out_relation.pose;
 
@@ -1995,8 +2000,6 @@ oxr_session_create(struct oxr_logger *log,
 	}
 
 	sess->ipd_meters = debug_get_num_option_ipd() / 1000.0f;
-	sess->static_prediction_s =
-	    debug_get_num_option_prediction_ms() / 1000.0f;
 
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);

@@ -625,14 +625,14 @@ void
 oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess);
 
 /*!
- * Get the view space position at the given time in relation to the
+ * Get the view space relation at the given time in relation to the
  * local or stage space.
  */
 XrResult
-oxr_session_get_view_pose_at(struct oxr_logger *,
-                             struct oxr_session *sess,
-                             XrTime at_time,
-                             struct xrt_pose *);
+oxr_session_get_view_relation_at(struct oxr_logger *,
+                                 struct oxr_session *sess,
+                                 XrTime at_time,
+                                 struct xrt_space_relation *out_relation);
 
 XrResult
 oxr_session_views(struct oxr_logger *log,
@@ -882,31 +882,21 @@ oxr_xdev_find_output(struct xrt_device *xdev,
                      enum xrt_output_name name,
                      struct xrt_output **out_output);
 
-/*!
- * Returns the pose of the named input from the device, if the pose isn't valid
- * uses the device offset instead.
- */
 void
-oxr_xdev_get_pose_at(struct oxr_logger *log,
-                     struct oxr_instance *inst,
-                     struct xrt_device *xdev,
-                     enum xrt_input_name name,
-                     XrTime at_time,
-                     uint64_t *out_pose_timestamp_ns,
-                     struct xrt_space_relation *out_relation);
-
-/*!
- * Returns the relation of the named input from the device, always ensures
- * that position and orientation is valid by using the device offset.
- */
-void
-oxr_xdev_get_relation_at(struct oxr_logger *log,
+oxr_xdev_get_space_graph(struct oxr_logger *log,
                          struct oxr_instance *inst,
                          struct xrt_device *xdev,
                          enum xrt_input_name name,
                          XrTime at_time,
-                         uint64_t *out_relation_timestamp_ns,
-                         struct xrt_space_relation *out_relation);
+                         struct xrt_space_graph *xsg);
+
+void
+oxr_xdev_get_space_relation(struct oxr_logger *log,
+                            struct oxr_instance *inst,
+                            struct xrt_device *xdev,
+                            enum xrt_input_name name,
+                            XrTime at_time,
+                            struct xrt_space_relation *out_relation);
 
 
 /*
@@ -1286,8 +1276,6 @@ struct oxr_session
 	 * IPD, to be expanded to a proper 3D relation.
 	 */
 	float ipd_meters;
-
-	float static_prediction_s;
 
 	/*!
 	 * To pipe swapchain creation to right code.
