@@ -296,6 +296,9 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	if ((info->bits & XRT_SWAPCHAIN_USAGE_SAMPLED) != 0) {
 		image_usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 	}
+	if ((info->bits & XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT) != 0) {
+		image_usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+	}
 
 	VkImageCreateInfo vk_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
