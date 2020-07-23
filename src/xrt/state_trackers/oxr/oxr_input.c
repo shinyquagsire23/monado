@@ -371,7 +371,7 @@ oxr_action_create(struct oxr_logger *log,
 
 bool
 oxr_classify_sub_action_paths(struct oxr_logger *log,
-                              struct oxr_instance *inst,
+                              const struct oxr_instance *inst,
                               uint32_t subaction_path_count,
                               const XrPath *subaction_paths,
                               struct oxr_subaction_paths *subaction_paths_out)

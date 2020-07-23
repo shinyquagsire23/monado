@@ -240,7 +240,7 @@ oxr_verify_subaction_paths_create(struct oxr_logger *log,
  * Verify a set of subaction paths for action sync.
  */
 XrResult
-oxr_verify_subaction_path_sync(struct oxr_logger *log, struct oxr_instance *inst, XrPath path, uint32_t index);
+oxr_verify_subaction_path_sync(struct oxr_logger *log, const struct oxr_instance *inst, XrPath path, uint32_t index);
 
 /*!
  * Verify a set of subaction paths for action state get.

@@ -395,7 +395,7 @@ oxr_path_only_get(struct oxr_logger *log, struct oxr_instance *inst, const char 
  */
 XrResult
 oxr_path_get_string(
-    struct oxr_logger *log, struct oxr_instance *inst, XrPath path, const char **out_str, size_t *out_length);
+    struct oxr_logger *log, const struct oxr_instance *inst, XrPath path, const char **out_str, size_t *out_length);
 
 /*!
  * Destroy the path system and all paths that the instance has created.
@@ -465,7 +465,7 @@ oxr_action_to_openxr(struct oxr_action *act)
  */
 bool
 oxr_classify_sub_action_paths(struct oxr_logger *log,
-                              struct oxr_instance *inst,
+                              const struct oxr_instance *inst,
                               uint32_t subaction_path_count,
                               const XrPath *subaction_paths,
                               struct oxr_subaction_paths *subaction_paths_out);
