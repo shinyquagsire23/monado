@@ -312,7 +312,7 @@ p_udev_enumerate_v4l2(struct prober *p, struct udev *udev)
 		    raw_dev, &dev_class, &vendor_id, &product_id, &usb_bus,
 		    &usb_addr, &usb_device);
 		if (ret != 0) {
-			P_ERROR(p, "skipping non-usb v4l device '%s'",
+			P_DEBUG(p, "skipping non-usb v4l device '%s'",
 			        dev_path);
 			goto next;
 		}
