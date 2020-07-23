@@ -513,8 +513,6 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 		l->transformation[i].offset = data->quad.sub.rect.offset;
 		l->transformation[i].extent = data->quad.sub.rect.extent;
 	}
-
-	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
 }
 
 void
@@ -550,7 +548,6 @@ comp_renderer_draw(struct comp_renderer *r)
 {
 	_get_view_projection(r);
 	comp_layer_renderer_draw(r->lr);
-	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
 
 	r->c->window->flush(r->c->window);
 	renderer_acquire_swapchain_image(r);
@@ -683,6 +680,12 @@ renderer_resize(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->vk;
 
+	/*
+	 * This makes sure that any pending command buffer has completed and all
+	 * resources referred by it can now be manipulated. This make sure that
+	 * validation doesn't complain. This is done during resize so isn't time
+	 * critical.
+	 */
 	vk->vkDeviceWaitIdle(vk->device);
 
 	vk_swapchain_create(&r->c->window->swapchain, r->c->current.width,

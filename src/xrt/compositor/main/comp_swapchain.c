@@ -211,6 +211,12 @@ clean_image_views(struct vk_bundle *vk,
 static void
 image_cleanup(struct vk_bundle *vk, struct comp_swapchain_image *image)
 {
+	/*
+	 * This makes sure that any pending command buffer has completed and all
+	 * resources referred by it can now be manipulated. This make sure that
+	 * validation doesn't complain. This is done during image destruction so
+	 * isn't time critical.
+	 */
 	vk->vkDeviceWaitIdle(vk->device);
 
 	clean_image_views(vk, image->array_size, &image->views.alpha);

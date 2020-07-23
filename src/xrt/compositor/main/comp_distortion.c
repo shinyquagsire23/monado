@@ -224,6 +224,12 @@ comp_distortion_destroy(struct comp_distortion *d)
 {
 	struct vk_bundle *vk = d->vk;
 
+	/*
+	 * This makes sure that any pending command buffer has completed and all
+	 * resources referred by it can now be manipulated. This make sure that
+	 * validation doesn't complain. This is done during destroy so isn't
+	 * time critical.
+	 */
 	vk->vkDeviceWaitIdle(vk->device);
 
 	vk->vkDestroyDescriptorSetLayout(vk->device, d->descriptor_set_layout,
