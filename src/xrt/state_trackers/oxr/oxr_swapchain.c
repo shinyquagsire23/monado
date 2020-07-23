@@ -192,6 +192,9 @@ convert_usage_bits(XrSwapchainUsageFlags xr_usage)
 	if ((xr_usage & XR_SWAPCHAIN_USAGE_MUTABLE_FORMAT_BIT) != 0) {
 		usage |= XRT_SWAPCHAIN_USAGE_MUTABLE_FORMAT;
 	}
+	if ((xr_usage & XR_SWAPCHAIN_USAGE_INPUT_ATTACHMENT_BIT_MND) != 0) {
+		usage |= XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT;
+	}
 
 	return usage;
 }
