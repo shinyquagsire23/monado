@@ -269,7 +269,7 @@ subaction_path_no_dups(struct oxr_logger *log,
 
 	OXR_FOR_EACH_VALID_SUBACTION_PATH(HANDLE_SUBACTION_PATH)
 	{
-		// else clasue
+		// else clause
 		const char *str = NULL;
 		size_t length = 0;
 
