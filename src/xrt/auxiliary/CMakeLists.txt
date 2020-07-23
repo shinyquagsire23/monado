@@ -23,6 +23,8 @@ set(MATH_SOURCE_FILES
 	math/m_permutation.c
 	math/m_permutation.h
 	math/m_quatexpmap.cpp
+	math/m_space.cpp
+	math/m_space.h
 	math/m_vec2.h
 	math/m_vec3.h
 	)
