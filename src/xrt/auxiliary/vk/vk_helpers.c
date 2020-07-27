@@ -271,8 +271,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
                             VkImage *out_image,
                             VkDeviceMemory *out_mem)
 {
-	VkImageUsageFlags image_usage =
-	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	VkImageUsageFlags image_usage = vk_swapchain_usage_flags(info->bits);
 	VkImage image = VK_NULL_HANDLE;
 	VkResult ret = VK_SUCCESS;
 
@@ -280,25 +279,6 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
 	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	};
-
-	if ((info->bits & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
-		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	}
-	if ((info->bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
-		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	}
-	if ((info->bits & XRT_SWAPCHAIN_USAGE_TRANSFER_SRC) != 0) {
-		image_usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-	}
-	if ((info->bits & XRT_SWAPCHAIN_USAGE_TRANSFER_DST) != 0) {
-		image_usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	}
-	if ((info->bits & XRT_SWAPCHAIN_USAGE_SAMPLED) != 0) {
-		image_usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-	}
-	if ((info->bits & XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT) != 0) {
-		image_usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-	}
 
 	VkImageCreateInfo vk_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -1089,6 +1069,34 @@ vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits)
 		result |= VK_ACCESS_SHADER_READ_BIT;
 	}
 	return result;
+}
+
+VkImageUsageFlags
+vk_swapchain_usage_flags(enum xrt_swapchain_usage_bits bits)
+{
+	VkImageUsageFlags image_usage =
+	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	if ((bits & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
+		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	}
+	if ((bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
+		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	}
+	if ((bits & XRT_SWAPCHAIN_USAGE_TRANSFER_SRC) != 0) {
+		image_usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	}
+	if ((bits & XRT_SWAPCHAIN_USAGE_TRANSFER_DST) != 0) {
+		image_usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	}
+	if ((bits & XRT_SWAPCHAIN_USAGE_SAMPLED) != 0) {
+		image_usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+	}
+	if ((bits & XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT) != 0) {
+		image_usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+	}
+
+	return image_usage;
 }
 
 bool
