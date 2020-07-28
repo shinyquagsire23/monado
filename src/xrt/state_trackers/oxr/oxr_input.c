@@ -49,13 +49,19 @@ oxr_session_get_action_attachment(
 static void
 oxr_action_cache_update(struct oxr_logger *log,
                         struct oxr_session *sess,
+                        uint32_t countActionSets,
+                        const XrActiveActionSet *actionSets,
+                        struct oxr_action_attachment *act_attached,
                         struct oxr_action_cache *cache,
                         int64_t time,
+                        struct oxr_sub_paths *sub_path,
                         bool select);
 
 static void
 oxr_action_attachment_update(struct oxr_logger *log,
                              struct oxr_session *sess,
+                             uint32_t countActionSets,
+                             const XrActiveActionSet *actionSets,
                              struct oxr_action_attachment *act_attached,
                              int64_t time,
                              struct oxr_sub_paths sub_paths);
@@ -68,6 +74,13 @@ oxr_action_bind_inputs(struct oxr_logger *log,
                        struct oxr_action_cache *cache,
                        struct oxr_interaction_profile *profile,
                        enum oxr_sub_action_path sub_path);
+
+static void
+oxr_session_get_action_set_attachment(
+    struct oxr_session *sess,
+    XrActionSet actionSet,
+    struct oxr_action_set_attachment **act_set_attached,
+    struct oxr_action_set **act_set);
 
 /*
  *
@@ -286,6 +299,8 @@ oxr_action_set_create(struct oxr_logger *log,
 	u_hashset_create_and_insert_str_c(inst->action_sets.loc_store,
 	                                  createInfo->localizedActionSetName,
 	                                  &act_set->loc_item);
+
+	act_set_ref->priority = createInfo->priority;
 
 	*out_act_set = act_set;
 
@@ -720,12 +735,113 @@ oxr_action_cache_stop_output(struct oxr_logger *log,
 }
 
 static bool
-oxr_input_combine_input(struct oxr_action_input *inputs,
-                        size_t num_inputs,
+oxr_input_is_input_for_cache(struct oxr_action_input *action_input,
+                             struct oxr_action_cache *cache)
+{
+	for (size_t i = 0; i < cache->num_inputs; i++) {
+		if (action_input->bound_path == cache->inputs[i].bound_path) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool
+oxr_input_is_bound_in_act_set(
+    struct oxr_action_input *action_input,
+    struct oxr_action_set_attachment *act_set_attached)
+{
+	for (size_t i = 0; i < act_set_attached->num_action_attachments; i++) {
+		struct oxr_action_attachment *act_attached =
+		    &act_set_attached->act_attachments[i];
+
+#define ACCUMULATE_PATHS(X)                                                    \
+	if (oxr_input_is_input_for_cache(action_input, &act_attached->X)) {    \
+		return true;                                                   \
+	}
+		OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_PATHS)
+#undef ACCUMULATE_PATHS
+	}
+	return false;
+}
+
+static bool
+oxr_input_supressed(struct oxr_session *sess,
+                    uint32_t countActionSets,
+                    const XrActiveActionSet *actionSets,
+                    struct oxr_sub_paths *sub_path,
+                    struct oxr_action_attachment *act_attached,
+                    struct oxr_action_input *action_input)
+{
+	struct oxr_action_set_ref *act_set_ref =
+	    act_attached->act_set_attached->act_set_ref;
+	uint32_t priority = act_set_ref->priority;
+
+	// find sources that are bound to an action in a set with higher prio
+	for (uint32_t i = 0; i < countActionSets; i++) {
+		XrActionSet set = actionSets[i].actionSet;
+
+		struct oxr_action_set *other_act_set = NULL;
+		struct oxr_action_set_attachment *other_act_set_attached = NULL;
+		oxr_session_get_action_set_attachment(
+		    sess, set, &other_act_set_attached, &other_act_set);
+
+		if (other_act_set_attached == NULL) {
+			continue;
+		}
+
+		/* skip the action set that the current action is in */
+		if (other_act_set_attached->act_set_ref == act_set_ref) {
+			continue;
+		}
+
+		/* input may be suppressed by action set with higher prio */
+		if (other_act_set_attached->act_set_ref->priority <= priority) {
+			continue;
+		}
+
+		/* Currently updated input source with subpath X can be
+		 * suppressed, if input source also occurs in action set with
+		 * higher priority if
+		 * - high prio set syncs w/ ANY subpath or
+		 * - high prio set syncs w/ subpath matching this input subpath
+		 */
+		bool relevant_subpath =
+		    other_act_set_attached->requested_sub_paths.any;
+
+#define ACCUMULATE_PATHS(X)                                                    \
+	relevant_subpath |=                                                    \
+	    (other_act_set_attached->requested_sub_paths.X && sub_path->X);
+		OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_PATHS)
+#undef ACCUMULATE_PATHS
+
+		if (!relevant_subpath) {
+			continue;
+		}
+
+		if (oxr_input_is_bound_in_act_set(action_input,
+		                                  other_act_set_attached)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool
+oxr_input_combine_input(struct oxr_session *sess,
+                        uint32_t countActionSets,
+                        const XrActiveActionSet *actionSets,
+                        struct oxr_action_attachment *act_attached,
+                        struct oxr_sub_paths *sub_path,
+                        struct oxr_action_cache *cache,
                         struct oxr_input_value_tagged *out_input,
                         int64_t *timestamp,
                         bool *is_active)
 {
+	struct oxr_action_input *inputs = cache->inputs;
+	size_t num_inputs = cache->num_inputs;
+
 	if (num_inputs == 0) {
 		*is_active = false;
 		return true;
@@ -738,6 +854,13 @@ oxr_input_combine_input(struct oxr_action_input *inputs,
 	for (size_t i = 0; i < num_inputs; i++) {
 		struct oxr_action_input *action_input = &(inputs[i]);
 		struct xrt_input *input = action_input->input;
+
+		// suppress input if it is also bound to action in set with
+		// higher priority
+		if (oxr_input_supressed(sess, countActionSets, actionSets,
+		                        sub_path, act_attached, action_input)) {
+			continue;
+		}
 
 		if (input->active) {
 			any_active = true;
@@ -822,8 +945,12 @@ oxr_input_combine_input(struct oxr_action_input *inputs,
 static void
 oxr_action_cache_update(struct oxr_logger *log,
                         struct oxr_session *sess,
+                        uint32_t countActionSets,
+                        const XrActiveActionSet *actionSets,
+                        struct oxr_action_attachment *act_attached,
                         struct oxr_action_cache *cache,
                         int64_t time,
+                        struct oxr_sub_paths *sub_path,
                         bool selected)
 {
 	struct oxr_action_state last = cache->current;
@@ -846,8 +973,14 @@ oxr_action_cache_update(struct oxr_logger *log,
 		if (cache->stop_output_time < time) {
 			oxr_action_cache_stop_output(log, sess, cache);
 		}
-	} else if (oxr_input_combine_input(cache->inputs, cache->num_inputs,
-	                                   &combined, &timestamp, &is_active)) {
+	} else if (cache->num_inputs > 0) {
+
+		if (!oxr_input_combine_input(
+		        sess, countActionSets, actionSets, act_attached,
+		        sub_path, cache, &combined, &timestamp, &is_active)) {
+			oxr_log(log, "Failed to get/combine input values");
+			return;
+		}
 
 		// If the input is not active signal that.
 		if (!is_active) {
@@ -952,6 +1085,8 @@ oxr_action_cache_update(struct oxr_logger *log,
 static void
 oxr_action_attachment_update(struct oxr_logger *log,
                              struct oxr_session *sess,
+                             uint32_t countActionSets,
+                             const XrActiveActionSet *actionSets,
                              struct oxr_action_attachment *act_attached,
                              int64_t time,
                              struct oxr_sub_paths sub_paths)
@@ -964,8 +1099,12 @@ oxr_action_attachment_update(struct oxr_logger *log,
 	//! @todo "/user" sub-action path.
 
 #define UPDATE_SELECT(X)                                                       \
+	struct oxr_sub_paths sub_paths_##X = {0};                              \
+	sub_paths_##X.X = true;                                                \
 	bool select_##X = sub_paths.X || sub_paths.any;                        \
-	oxr_action_cache_update(log, sess, &act_attached->X, time, select_##X);
+	oxr_action_cache_update(log, sess, countActionSets, actionSets,        \
+	                        act_attached, &act_attached->X, time,          \
+	                        &sub_paths_##X, select_##X);
 
 	OXR_FOR_EACH_VALID_SUBACTION_PATH(UPDATE_SELECT)
 #undef UPDATE_SELECT
@@ -1324,11 +1463,11 @@ oxr_action_sync_data(struct oxr_logger *log,
 				continue;
 			}
 
-			oxr_action_attachment_update(log, sess, act_attached,
+			oxr_action_attachment_update(log, sess, countActionSets,
+			                             actionSets, act_attached,
 			                             now, sub_paths);
 		}
 	}
-
 
 	return oxr_session_success_focused_result(sess);
 }

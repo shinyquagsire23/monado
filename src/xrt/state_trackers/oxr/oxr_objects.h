@@ -1728,6 +1728,9 @@ struct oxr_action_set_ref
 	//! Unique key for the session hashmap.
 	uint32_t act_set_key;
 
+	//! Application supplied action set priority.
+	uint32_t priority;
+
 	struct
 	{
 		struct u_hashset *name_store;
