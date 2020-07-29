@@ -155,6 +155,10 @@ static enum xrt_swapchain_create_flags
 convert_create_flags(XrSwapchainCreateFlags xr_flags)
 {
 	enum xrt_swapchain_create_flags flags = 0;
+
+	if ((xr_flags & XR_SWAPCHAIN_CREATE_PROTECTED_CONTENT_BIT) != 0) {
+		flags |= XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT;
+	}
 	if ((xr_flags & XR_SWAPCHAIN_CREATE_STATIC_IMAGE_BIT) != 0) {
 		flags |= XRT_SWAPCHAIN_CREATE_STATIC_IMAGE;
 	}

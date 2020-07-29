@@ -55,6 +55,9 @@ typedef uint64_t VkDeviceMemory;
  */
 enum xrt_swapchain_create_flags
 {
+	//! Our compositor just ignores this bit.
+	XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT = (1 << 0),
+	//! Signals that the allocator should only allocate one image.
 	XRT_SWAPCHAIN_CREATE_STATIC_IMAGE = (1 << 1),
 };
 
