@@ -552,8 +552,25 @@ _sensors_get_report_string(uint32_t report_id)
 		return "VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID";
 	case VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID:
 		return "VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID";
+	case VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_REPORT_ID:
+		return "VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_REPORT_ID";
 	default: return "Unknown";
 	}
+}
+
+static bool
+_is_report_size_valid(struct vive_device *d,
+                      int size,
+                      int report_size,
+                      int report_id)
+{
+	if (size != report_size) {
+		VIVE_WARN(d, "Wrong size %d for report %s (%02x). Expected %d.",
+		          size, _sensors_get_report_string(report_id),
+		          report_id, report_size);
+		return false;
+	}
+	return true;
 }
 
 static bool
@@ -579,18 +596,124 @@ vive_sensors_read_one_msg(struct vive_device *d,
 	}
 
 	if (buffer[0] == report_id) {
-		if (ret != report_size) {
-			VIVE_WARN(d,
-			          "Wrong size %d for report %d. Expected %d.",
-			          ret, report_id, report_size);
+		if (!_is_report_size_valid(d, ret, report_size, report_id))
 			return false;
-		}
 		process_cb(d, buffer);
 	} else {
 		VIVE_ERROR(d, "Unexpected sensor report type %s (0x%x).",
 		           _sensors_get_report_string(buffer[0]), buffer[0]);
 		VIVE_ERROR(d, "Expected %s (0x%x).",
 		           _sensors_get_report_string(report_id), report_id);
+	}
+
+	return true;
+}
+
+static void
+_print_v2_pulse(struct vive_device *d,
+                uint8_t sensor_id,
+                uint8_t flag,
+                uint32_t timestamp,
+                uint32_t data,
+                uint32_t mask)
+{
+	char data_str[32];
+
+	for (int k = 0; k < 32; k++) {
+		uint8_t idx = 32 - k - 1;
+		bool d = (data >> (idx)) & 1u;
+		bool m = (mask >> (idx)) & 1u;
+		if (m)
+			sprintf(&data_str[k], "%d", d);
+		else
+			sprintf(&data_str[k], "_");
+	}
+
+	VIVE_TRACE(d,
+	           "[sensor %02d] flag: %03u "
+	           "timestamp %8u ticks (%3.5fs) data: %s",
+	           sensor_id, flag, timestamp,
+	           timestamp / (float)VIVE_CLOCK_FREQ, data_str);
+}
+
+static bool
+_print_pulse_report_v2(struct vive_device *d, const void *buffer)
+{
+	const struct vive_headset_lighthouse_v2_pulse_report *report = buffer;
+
+	for (uint32_t i = 0; i < 4; i++) {
+		const struct vive_headset_lighthouse_v2_pulse *p =
+		    &report->pulse[i];
+
+		if (p->sensor_id == 0xff)
+			continue;
+
+		uint8_t sensor_id = p->sensor_id & 0x7fu;
+		if (sensor_id > 31) {
+			VIVE_ERROR(d, "Unexpected sensor id: %2u\n", sensor_id);
+			return false;
+		}
+
+		uint8_t flag = p->sensor_id & 0x80u;
+		if (flag != 0x80u && flag != 0) {
+			VIVE_WARN(d, "Unexpected flag: %02x\n", flag);
+			return false;
+		}
+
+		uint32_t timestamp = __le32_to_cpu(p->timestamp);
+		_print_v2_pulse(d, sensor_id, flag, timestamp, p->data,
+		                p->mask);
+	}
+
+	return true;
+}
+
+static bool
+vive_sensors_read_lighthouse_msg(struct vive_device *d)
+{
+	uint8_t buffer[64];
+
+	int ret = os_hid_read(d->watchman_dev, buffer, sizeof(buffer), 1000);
+	if (ret == 0) {
+		VIVE_ERROR(d, "Watchman device timed out.");
+		return true;
+	}
+	if (ret < 0) {
+		VIVE_ERROR(d, "Failed to read Watchman device: %i.", ret);
+		return false;
+	}
+	if (ret > 64) {
+		VIVE_ERROR(d,
+		           "Buffer too big from Watchman device: %i."
+		           " Max size is 64",
+		           ret);
+		return false;
+	}
+
+	int expected; // size;
+
+	switch (buffer[0]) {
+	case VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID:
+		expected = sizeof(struct vive_headset_lighthouse_pulse_report);
+		if (!_is_report_size_valid(d, ret, expected, buffer[0]))
+			return false;
+		_decode_pulse_report(d, buffer);
+		break;
+	case VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID:
+		expected = sizeof(struct vive_controller_report1);
+		// Vive pro gives unexpected size here with V2.
+		_is_report_size_valid(d, ret, expected, buffer[0]);
+		break;
+	case VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_REPORT_ID:
+		if (!_is_report_size_valid(d, ret, 59, buffer[0]))
+			return false;
+		if (!_print_pulse_report_v2(d, buffer))
+			return false;
+		break;
+	default:
+		VIVE_ERROR(
+		    d, "Unexpected sensor report type %s (0x%x). %d bytes.",
+		    _sensors_get_report_string(buffer[0]), buffer[0], ret);
 	}
 
 	return true;
@@ -612,12 +735,8 @@ vive_sensors_run_thread(void *ptr)
 		}
 
 		if (d->watchman_dev)
-			if (!vive_sensors_read_one_msg(
-			        d, d->watchman_dev,
-			        VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID, 64,
-			        _decode_pulse_report)) {
+			if (!vive_sensors_read_lighthouse_msg(d))
 				return NULL;
-			}
 
 		// Just keep swimming.
 		os_thread_helper_lock(&d->sensors_thread);

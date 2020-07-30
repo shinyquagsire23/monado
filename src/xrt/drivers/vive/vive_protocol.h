@@ -262,6 +262,30 @@ struct vive_controller_report2
 
 #define VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID 0x25
 
+struct vive_headset_lighthouse_v2_pulse
+{
+	uint8_t sensor_id;
+	uint32_t timestamp;
+	uint32_t data;
+	uint32_t mask;
+} __attribute__((packed));
+
+#define VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_REPORT_ID 0x27
+
+struct vive_headset_lighthouse_v2_pulse_report
+{
+	uint8_t id;
+	struct vive_headset_lighthouse_v2_pulse pulse[4];
+	/* Seen to be all values in range [0 - 53], related to hit sensor (and
+	 * imu?). */
+	uint8_t unknown1;
+	/* Always 0 */
+	uint8_t unknown2;
+	/* Always 0xde40daa */
+	uint32_t unknown3;
+
+} __attribute__((packed));
+
 struct vive_headset_lighthouse_pulse
 {
 	uint8_t id;
