@@ -453,14 +453,9 @@ struct xrt_compositor_info
 struct xrt_compositor
 {
 	/*!
-	 * Number of formats.
+	 * Capabilities and recommended values information.
 	 */
-	uint32_t num_formats;
-
-	/*!
-	 * Supported formats.
-	 */
-	int64_t formats[XRT_MAX_SWAPCHAIN_FORMATS];
+	struct xrt_compositor_info info;
 
 	/*!
 	 * Create a swapchain with a set of images.

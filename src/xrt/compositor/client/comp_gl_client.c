@@ -380,15 +380,15 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 
 	// Passthrough our formats from the native compositor to the client.
 	size_t count = 0;
-	for (uint32_t i = 0; i < xcn->base.num_formats; i++) {
-		int64_t f = vk_format_to_gl(xcn->base.formats[i]);
+	for (uint32_t i = 0; i < xcn->base.info.num_formats; i++) {
+		int64_t f = vk_format_to_gl(xcn->base.info.formats[i]);
 		if (f == 0) {
 			continue;
 		}
 
-		c->base.base.formats[count++] = f;
+		c->base.base.info.formats[count++] = f;
 	}
-	c->base.base.num_formats = count;
+	c->base.base.info.num_formats = count;
 
 #if defined(XRT_HAVE_OPENGL)
 	gladLoadGL(get_gl_procaddr);

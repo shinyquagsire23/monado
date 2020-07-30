@@ -535,11 +535,11 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	uint32_t num_formats = 0;
 	ipc_compositor_get_formats(&(c->base.base), &num_formats, formats);
 	// TODO: client compositor format count is hardcoded
-	c->base.base.num_formats = 0;
+	c->base.base.info.num_formats = 0;
 	for (uint32_t i = 0; i < 8; i++) {
 		if (i < num_formats) {
-			c->base.base.formats[i] = formats[i];
-			c->base.base.num_formats++;
+			c->base.base.info.formats[i] = formats[i];
+			c->base.base.info.num_formats++;
 		}
 	}
 

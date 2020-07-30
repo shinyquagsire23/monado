@@ -474,11 +474,11 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 
 	c->xcn = xcn;
 	// passthrough our formats from the native compositor to the client
-	for (uint32_t i = 0; i < xcn->base.num_formats; i++) {
-		c->base.base.formats[i] = xcn->base.formats[i];
+	for (uint32_t i = 0; i < xcn->base.info.num_formats; i++) {
+		c->base.base.info.formats[i] = xcn->base.info.formats[i];
 	}
 
-	c->base.base.num_formats = xcn->base.num_formats;
+	c->base.base.info.num_formats = xcn->base.info.num_formats;
 
 	ret = vk_init_from_given(&c->vk, getProc, instance, physicalDevice,
 	                         device, queueFamilyIndex, queueIndex);

@@ -998,13 +998,15 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	 * two formats should not be used as they are linear but doesn't have
 	 * enough bits to express it without resulting in banding.
 	 */
-	c->base.base.formats[0] = VK_FORMAT_R8G8B8A8_SRGB;            // OGL VK
-	c->base.base.formats[1] = VK_FORMAT_A2B10G10R10_UNORM_PACK32; // OGL VK
-	c->base.base.formats[2] = VK_FORMAT_R16G16B16A16_SFLOAT;      // OGL VK
-	c->base.base.formats[3] = VK_FORMAT_B8G8R8A8_SRGB;            // VK
-	c->base.base.formats[4] = VK_FORMAT_R8G8B8A8_UNORM;           // OGL VK
-	c->base.base.formats[5] = VK_FORMAT_B8G8R8A8_UNORM;           // VK
-	c->base.base.num_formats = 6;
+	// clang-format off
+	c->base.base.info.formats[0] = VK_FORMAT_R8G8B8A8_SRGB;            // OGL VK
+	c->base.base.info.formats[1] = VK_FORMAT_A2B10G10R10_UNORM_PACK32; // OGL VK
+	c->base.base.info.formats[2] = VK_FORMAT_R16G16B16A16_SFLOAT;      // OGL VK
+	c->base.base.info.formats[3] = VK_FORMAT_B8G8R8A8_SRGB;            // VK
+	c->base.base.info.formats[4] = VK_FORMAT_R8G8B8A8_UNORM;           // OGL VK
+	c->base.base.info.formats[5] = VK_FORMAT_B8G8R8A8_UNORM;           // VK
+	c->base.base.info.num_formats = 6;
+	// clang-format on
 
 	u_var_add_root(c, "Compositor", true);
 	u_var_add_ro_f32(c, &c->compositor_frame_times.fps, "FPS (Compositor)");

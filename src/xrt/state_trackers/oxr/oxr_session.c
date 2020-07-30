@@ -112,7 +112,7 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 	}
 
 	OXR_TWO_CALL_HELPER(log, formatCapacityInput, formatCountOutput,
-	                    formats, xc->num_formats, xc->formats,
+	                    formats, xc->info.num_formats, xc->info.formats,
 	                    oxr_session_success_result(sess));
 }
 

@@ -127,9 +127,9 @@ xrt_result_t
 ipc_handle_compositor_get_formats(volatile struct ipc_client_state *ics,
                                   struct ipc_formats_info *out_info)
 {
-	out_info->num_formats = ics->xc->num_formats;
-	for (size_t i = 0; i < ics->xc->num_formats; i++) {
-		out_info->formats[i] = ics->xc->formats[i];
+	out_info->num_formats = ics->xc->info.num_formats;
+	for (size_t i = 0; i < ics->xc->info.num_formats; i++) {
+		out_info->formats[i] = ics->xc->info.formats[i];
 	}
 
 	return XRT_SUCCESS;
