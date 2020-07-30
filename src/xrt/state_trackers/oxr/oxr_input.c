@@ -963,19 +963,12 @@ oxr_action_attachment_update(struct oxr_logger *log,
 
 	//! @todo "/user" sub-action path.
 
-	bool select_any = sub_paths.any;
-
 #define UPDATE_SELECT(X)                                                       \
 	bool select_##X = sub_paths.X || sub_paths.any;                        \
 	oxr_action_cache_update(log, sess, &act_attached->X, time, select_##X);
 
 	OXR_FOR_EACH_VALID_SUBACTION_PATH(UPDATE_SELECT)
 #undef UPDATE_SELECT
-
-	if (!select_any) {
-		U_ZERO(&act_attached->any_state);
-		return;
-	}
 
 	/*
 	 * Any state.
