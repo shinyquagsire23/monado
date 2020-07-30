@@ -411,6 +411,41 @@ struct xrt_session_prepare_info
 };
 
 /*!
+ * Capabilities and information about the compositor and device together.
+ */
+struct xrt_compositor_info
+{
+	struct
+	{
+		struct
+		{
+			uint32_t width_pixels;
+			uint32_t height_pixels;
+			uint32_t sample_count;
+		} recommended; //! Recommended for this view.
+
+		struct
+		{
+			uint32_t width_pixels;
+			uint32_t height_pixels;
+			uint32_t sample_count;
+		} max; //! Maximums for this view.
+	} views[2];    //!< View configuration information.
+
+	/*!
+	 * Blend modes supported by the system (the combination of the
+	 * compositor and the HMD capabilities), never changes.
+	 */
+	enum xrt_blend_mode supported_blend_modes;
+
+	//! Number of formats, never changes.
+	uint32_t num_formats;
+
+	//! Supported formats, never changes.
+	int64_t formats[XRT_MAX_SWAPCHAIN_FORMATS];
+};
+
+/*!
  * @interface xrt_compositor
  *
  * Common compositor client interface/base.
