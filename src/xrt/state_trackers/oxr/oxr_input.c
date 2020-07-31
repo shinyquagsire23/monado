@@ -1440,11 +1440,37 @@ oxr_action_sync_data(struct oxr_logger *log,
 
 		act_set_attached->requested_sub_paths.any |= sub_paths.any;
 
+		/* never error when requesting any subpath */
+		bool any_action_with_subpath = sub_paths.any;
+
 #define ACCUMULATE_REQUESTED(X)                                                \
 	act_set_attached->requested_sub_paths.X |= sub_paths.X;
 
 		OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_REQUESTED)
 #undef ACCUMULATE_REQUESTED
+
+		/* check if we have at least one action for requested subpath */
+		for (uint32_t k = 0;
+		     k < act_set_attached->num_action_attachments; k++) {
+			struct oxr_action_attachment *act_attached =
+			    &act_set_attached->act_attachments[k];
+
+			if (act_attached == NULL) {
+				continue;
+			}
+
+#define ACCUMULATE_REQUESTED(X)                                                \
+	any_action_with_subpath |=                                             \
+	    sub_paths.X && act_attached->act_ref->sub_paths.X;
+
+			OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_REQUESTED)
+#undef ACCUMULATE_REQUESTED
+		}
+		if (!any_action_with_subpath) {
+			return oxr_error(
+			    log, XR_ERROR_PATH_UNSUPPORTED,
+			    "No action with specified subpath in actionset");
+		}
 	}
 
 	// Now, update all action attachments
