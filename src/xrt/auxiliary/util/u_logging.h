@@ -45,6 +45,14 @@ struct xrt_device;
 		u_log(__FILE__, __LINE__, __func__, level, __VA_ARGS__);       \
 	} while (false)
 
+#define U_LOG_IFL(level, cond_level, ...)                                      \
+	do {                                                                   \
+		if (cond_level <= level) {                                     \
+			u_log(__FILE__, __LINE__, __func__, level,             \
+			      __VA_ARGS__);                                    \
+		}                                                              \
+	} while (false)
+
 #define U_LOG_XDEV(level, xdev, ...)                                           \
 	do {                                                                   \
 		u_log_xdev(__FILE__, __LINE__, __func__, level, xdev,          \
@@ -65,6 +73,12 @@ struct xrt_device;
 #define U_LOG_I(...) U_LOG(U_LOGGING_INFO, __VA_ARGS__)
 #define U_LOG_W(...) U_LOG(U_LOGGING_WARN, __VA_ARGS__)
 #define U_LOG_E(...) U_LOG(U_LOGGING_ERROR, __VA_ARGS__)
+
+#define U_LOG_IFL_T(...) U_LOG_IFL(U_LOGGING_TRACE, __VA_ARGS__)
+#define U_LOG_IFL_D(...) U_LOG_IFL(U_LOGGING_DEBUG, __VA_ARGS__)
+#define U_LOG_IFL_I(...) U_LOG_IFL(U_LOGGING_INFO, __VA_ARGS__)
+#define U_LOG_IFL_W(...) U_LOG_IFL(U_LOGGING_WARN, __VA_ARGS__)
+#define U_LOG_IFL_E(...) U_LOG_IFL(U_LOGGING_ERROR, __VA_ARGS__)
 
 #define U_LOG_XDEV_IFL_T(xdev, cond_level, ...) U_LOG_XDEV_IFL(U_LOGGING_TRACE, cond_level, xdev, __VA_ARGS__)
 #define U_LOG_XDEV_IFL_D(xdev, cond_level, ...) U_LOG_XDEV_IFL(U_LOGGING_DEBUG, cond_level, xdev, __VA_ARGS__)
