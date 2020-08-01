@@ -320,12 +320,13 @@ update_fusion(struct psvr_device *psvr,
 
 		xrt_tracked_psvr_push_imu(psvr->tracker, timestamp_ns, &sample);
 	} else {
-		float delta_secs = tick_delta / PSVR_TICKS_PER_SECOND;
-
 #if 1
-		m_imu_3dof_update(&psvr->fusion, delta_secs, &psvr->read.accel,
+		timepoint_ns now = os_monotonic_get_ns();
+		m_imu_3dof_update(&psvr->fusion, now, &psvr->read.accel,
 		                  &psvr->read.gyro);
 #else
+		float delta_secs = tick_delta / PSVR_TICKS_PER_SECOND;
+
 		math_quat_integrate_velocity(&psvr->fusion.rot,
 		                             &psvr->read.gyro, delta_secs,
 		                             &psvr->fusion.rot);
