@@ -99,6 +99,16 @@ compositor_disconnect(struct ipc_connection *ipc_c)
 		IPC_ERROR(icc->ipc_c, "IPC: %s call error!", __func__);        \
 	}
 
+static xrt_result_t
+get_info(struct xrt_compositor *xc, struct xrt_compositor_info *out_info)
+{
+	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+
+	IPC_CALL_CHK(ipc_call_compositor_get_info(icc->ipc_c, out_info));
+
+	return res;
+}
+
 
 /*
  *
@@ -308,24 +318,6 @@ ipc_compositor_end_session(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
-ipc_compositor_get_formats(struct xrt_compositor *xc,
-                           uint32_t *num_formats,
-                           int64_t *formats)
-{
-	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
-
-	IPC_SPEW(icc->ipc_c, "IPC: compositor get_formats");
-
-	struct ipc_formats_info info;
-	IPC_CALL_CHK(ipc_call_compositor_get_formats(icc->ipc_c, &info));
-
-	*num_formats = info.num_formats;
-	memcpy(formats, info.formats, sizeof(int64_t) * (*num_formats));
-
-	return res;
-}
-
-static xrt_result_t
 ipc_compositor_wait_frame(struct xrt_compositor *xc,
                           int64_t *out_frame_id,
                           uint64_t *out_predicted_display_time,
@@ -529,18 +521,8 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	c->base.base.poll_events = ipc_compositor_poll_events;
 	c->ipc_c = ipc_c;
 
-	// fetch our format list on client compositor construction
-	int64_t formats[IPC_MAX_FORMATS] = {0};
-	uint32_t num_formats = 0;
-	ipc_compositor_get_formats(&(c->base.base), &num_formats, formats);
-	// TODO: client compositor format count is hardcoded
-	c->base.base.info.num_formats = 0;
-	for (uint32_t i = 0; i < 8; i++) {
-		if (i < num_formats) {
-			c->base.base.info.formats[i] = formats[i];
-			c->base.base.info.num_formats++;
-		}
-	}
+	// Fetch info from the compositor, among it the format format list.
+	get_info(&(c->base.base), &c->base.base.info);
 
 	*out_xcn = &c->base;
 

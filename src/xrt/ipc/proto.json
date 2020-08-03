@@ -48,9 +48,9 @@
 
 	"session_end": {},
 
-	"compositor_get_formats": {
+	"compositor_get_info": {
 		"out": [
-			{"name": "info", "type": "struct ipc_formats_info"}
+			{"name": "info", "type": "struct xrt_compositor_info"}
 		]
 	},
 

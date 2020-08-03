@@ -124,13 +124,10 @@ ipc_handle_session_end(volatile struct ipc_client_state *ics)
 }
 
 xrt_result_t
-ipc_handle_compositor_get_formats(volatile struct ipc_client_state *ics,
-                                  struct ipc_formats_info *out_info)
+ipc_handle_compositor_get_info(volatile struct ipc_client_state *ics,
+                               struct xrt_compositor_info *out_info)
 {
-	out_info->num_formats = ics->xc->info.num_formats;
-	for (size_t i = 0; i < ics->xc->info.num_formats; i++) {
-		out_info->formats[i] = ics->xc->info.formats[i];
-	}
+	*out_info = ics->xc->info;
 
 	return XRT_SUCCESS;
 }

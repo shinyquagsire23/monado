@@ -54,11 +54,6 @@ struct ipc_result_reply
 \txrt_result_t result;
 };
 
-struct ipc_formats_info
-{
-\tuint64_t formats[IPC_MAX_FORMATS];
-\tuint32_t num_formats;
-};
 ''')
 
     f.write('''
