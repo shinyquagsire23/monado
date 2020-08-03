@@ -681,7 +681,8 @@ vive_sensors_read_lighthouse_msg(struct vive_device *d)
 
 	int ret = os_hid_read(d->watchman_dev, buffer, sizeof(buffer), 1000);
 	if (ret == 0) {
-		VIVE_ERROR(d, "Watchman device timed out.");
+		// basestations not present/powered off
+		VIVE_TRACE(d, "Watchman device timed out.");
 		return true;
 	}
 	if (ret < 0) {
