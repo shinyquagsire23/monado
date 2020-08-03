@@ -51,6 +51,7 @@ vive_device_destroy(struct xrt_device *xdev)
 
 	// Destroy the thread object.
 	os_thread_helper_destroy(&d->sensors_thread);
+	os_thread_helper_destroy(&d->watchman_thread);
 	os_thread_helper_destroy(&d->mainboard_thread);
 
 	m_imu_3dof_close(&d->fusion);
@@ -725,6 +726,26 @@ vive_sensors_read_lighthouse_msg(struct vive_device *d)
 }
 
 static void *
+vive_watchman_run_thread(void *ptr)
+{
+	struct vive_device *d = (struct vive_device *)ptr;
+
+	os_thread_helper_lock(&d->watchman_thread);
+	while (os_thread_helper_is_running_locked(&d->watchman_thread)) {
+		os_thread_helper_unlock(&d->watchman_thread);
+
+		if (d->watchman_dev)
+			if (!vive_sensors_read_lighthouse_msg(d))
+				return NULL;
+
+		// Just keep swimming.
+		os_thread_helper_lock(&d->watchman_thread);
+	}
+
+	return NULL;
+}
+
+static void *
 vive_sensors_run_thread(void *ptr)
 {
 	struct vive_device *d = (struct vive_device *)ptr;
@@ -738,10 +759,6 @@ vive_sensors_run_thread(void *ptr)
 		                               update_imu)) {
 			return NULL;
 		}
-
-		if (d->watchman_dev)
-			if (!vive_sensors_read_lighthouse_msg(d))
-				return NULL;
 
 		// Just keep swimming.
 		os_thread_helper_lock(&d->sensors_thread);
@@ -960,6 +977,14 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	                             vive_sensors_run_thread, d);
 	if (ret != 0) {
 		VIVE_ERROR(d, "Failed to start sensors thread!");
+		vive_device_destroy((struct xrt_device *)d);
+		return NULL;
+	}
+
+	ret = os_thread_helper_start(&d->watchman_thread,
+	                             vive_watchman_run_thread, d);
+	if (ret != 0) {
+		VIVE_ERROR(d, "Failed to start watchman thread!");
 		vive_device_destroy((struct xrt_device *)d);
 		return NULL;
 	}
