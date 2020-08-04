@@ -114,7 +114,7 @@ sopath = join_paths(get_option('prefix'),
 manifest_conf.set('runtime_path', sopath)
 
 manifest_path = join_paths(
-	get_option('prefix'), get_option('datadir'), xr_api_major.to_string())
+	get_option('prefix'), get_option('datadir'), 'openxr', xr_api_major.to_string())
 
 manifest_json = configure_file(
 	input: manifest_in,
