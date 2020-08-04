@@ -1179,8 +1179,10 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	sess->num_action_set_attachments = 0;
 
 	// If we tore everything down correctly, these are empty now.
-	assert(u_hashmap_int_empty(sess->act_sets_attachments_by_key));
-	assert(u_hashmap_int_empty(sess->act_attachments_by_key));
+	assert(sess->act_sets_attachments_by_key == NULL ||
+	       u_hashmap_int_empty(sess->act_sets_attachments_by_key));
+	assert(sess->act_attachments_by_key == NULL ||
+	       u_hashmap_int_empty(sess->act_attachments_by_key));
 
 	u_hashmap_int_destroy(&sess->act_sets_attachments_by_key);
 	u_hashmap_int_destroy(&sess->act_attachments_by_key);
