@@ -138,6 +138,9 @@ vive_read_config(struct os_hid_device *hid_dev)
 	config_json[strm.total_out] = '\0';
 
 	U_ARRAY_REALLOC_OR_FREE(config_json, unsigned char, strm.total_out + 1);
+
+	inflateEnd(&strm);
+
 	return (char *)config_json;
 }
 
