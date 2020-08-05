@@ -65,6 +65,11 @@ vive_device_destroy(struct xrt_device *xdev)
 		d->sensors_dev = NULL;
 	}
 
+	if (d->watchman_dev != NULL) {
+		os_hid_destroy(d->watchman_dev);
+		d->watchman_dev = NULL;
+	}
+
 	if (d->lh.sensors != NULL) {
 		free(d->lh.sensors);
 		d->lh.sensors = NULL;
