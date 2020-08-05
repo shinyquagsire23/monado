@@ -1,4 +1,5 @@
 {
+    "$schema": "https://ryanpavlik.gitlab.io/proclamation/proclamation.schema.json",
     "#": "This is a config file for Proclamation, the changelog combiner: https://gitlab.com/ryanpavlik/proclamation",
     "SPDX-License-Identifier: CC0-1.0": "",
     "SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Proclamation contributors": "",
@@ -13,10 +14,12 @@
             "directory": "xrt"
         },
         "State Trackers": {
-            "directory": "state_trackers"
+            "directory": "state_trackers",
+            "sort_by_prefix": true
         },
         "Drivers": {
-            "directory": "drivers"
+            "directory": "drivers",
+            "sort_by_prefix": true
         },
         "IPC": {
             "directory": "ipc"
@@ -25,7 +28,8 @@
             "directory": "compositor"
         },
         "Helper Libraries": {
-            "directory": "auxiliary"
+            "directory": "auxiliary",
+            "sort_by_prefix": true
         },
         "Misc. Features": {
             "directory": "misc_features"
