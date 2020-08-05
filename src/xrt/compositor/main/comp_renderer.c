@@ -898,6 +898,8 @@ renderer_destroy(struct comp_renderer *r)
 	}
 
 	comp_layer_renderer_destroy(r->lr);
+
+	free(r->lr);
 }
 
 void
