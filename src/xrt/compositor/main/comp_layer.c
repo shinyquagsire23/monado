@@ -255,4 +255,6 @@ comp_layer_destroy(struct comp_render_layer *self)
 
 	self->vk->vkDestroyDescriptorPool(self->vk->device,
 	                                  self->descriptor_pool, NULL);
+
+	free(self);
 }
