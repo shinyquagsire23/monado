@@ -30,7 +30,9 @@
 # ``OPENHMD_ROOT_DIR``
 #  The root to search for OpenHMD.
 
-set(OPENHMD_ROOT_DIR "${OPENHMD_ROOT_DIR}" CACHE PATH "Root to search for OpenHMD")
+set(OPENHMD_ROOT_DIR
+    "${OPENHMD_ROOT_DIR}"
+    CACHE PATH "Root to search for OpenHMD")
 
 find_package(PkgConfig QUIET)
 if(PKG_CONFIG_FOUND)
@@ -44,97 +46,83 @@ if(PKG_CONFIG_FOUND)
     set(CMAKE_PREFIX_PATH "${_old_prefix_path}")
 endif()
 
-find_path(OPENHMD_INCLUDE_DIR
-    NAMES
-    openhmd.h
-    PATHS
-    ${OPENHMD_ROOT_DIR}
-    HINTS
-    ${PC_OPENHMD_INCLUDE_DIRS}
-    PATH_SUFFIXES
-    include
-    openhmd
-    include/openhmd
-)
-find_library(OPENHMD_LIBRARY
-    NAMES
-    openhmd
-    PATHS
-    ${OPENHMD_ROOT_DIR}
-    ${OPENHMD_ROOT_DIR}/build
-    HINTS
-    ${PC_OPENHMD_LIBRARY_DIRS}
-    PATH_SUFFIXES
-    lib
-)
-
-
-if(NOT WIN32)
-        find_library(OPENHMD_LIBRT rt)
-        find_library(OPENHMD_LIBM m)
-endif()
+find_path(
+    OPENHMD_INCLUDE_DIR
+    NAMES openhmd.h
+    PATHS ${OPENHMD_ROOT_DIR}
+    HINTS ${PC_OPENHMD_INCLUDE_DIRS}
+    PATH_SUFFIXES include openhmd include/openhmd)
+find_library(
+    OPENHMD_LIBRARY
+    NAMES openhmd
+    PATHS ${OPENHMD_ROOT_DIR} ${OPENHMD_ROOT_DIR}/build
+    HINTS ${PC_OPENHMD_LIBRARY_DIRS}
+    PATH_SUFFIXES lib)
+find_library(OPENHMD_LIBRT rt)
+find_library(OPENHMD_LIBM m)
 
 find_package(Threads QUIET)
 
 set(_ohmd_extra_deps)
 
 set(OPENHMD_HIDAPI_TYPE)
-if(OPENHMD_LIBRARY AND "${OPENHMD_LIBRARY}" MATCHES "${CMAKE_STATIC_LIBRARY_SUFFIX}")
-        # Looks like a static library
-        if(PC_OPENHMD_FOUND)
-                # See if we need a particular hidapi.
-                list(REMOVE_ITEM PC_OPENHMD_LIBRARIES openhmd)
-                if("${PC_OPENHMD_LIBRARIES}" MATCHES hidapi-libusb)
-                set(OPENHMD_HIDAPI_TYPE libusb)
-                find_package(HIDAPI QUIET COMPONENTS libusb)
-                list(APPEND _ohmd_extra_deps HIDAPI_libusb_FOUND)
-                elseif("${PC_OPENHMD_LIBRARIES}" MATCHES hidapi-hidraw)
-                set(OPENHMD_HIDAPI_TYPE hidraw)
-                find_package(HIDAPI QUIET COMPONENTS hidraw)
-                list(APPEND _ohmd_extra_deps HIDAPI_hidraw_FOUND)
-                endif()
+if(OPENHMD_LIBRARY AND "${OPENHMD_LIBRARY}" MATCHES
+                       "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    # Looks like a static library
+    if(PC_OPENHMD_FOUND)
+        # See if we need a particular hidapi.
+        list(REMOVE_ITEM PC_OPENHMD_LIBRARIES openhmd)
+        if("${PC_OPENHMD_LIBRARIES}" MATCHES hidapi-libusb)
+            set(OPENHMD_HIDAPI_TYPE libusb)
+            find_package(HIDAPI QUIET COMPONENTS libusb)
+            list(APPEND _ohmd_extra_deps HIDAPI_libusb_FOUND)
+        elseif("${PC_OPENHMD_LIBRARIES}" MATCHES hidapi-hidraw)
+            set(OPENHMD_HIDAPI_TYPE hidraw)
+            find_package(HIDAPI QUIET COMPONENTS hidraw)
+            list(APPEND _ohmd_extra_deps HIDAPI_hidraw_FOUND)
         endif()
-        if(NOT PC_OPENHMD_FOUND OR NOT OPENHMD_HIDAPI_TYPE)
-                # Undifferentiated
-                set(OPENHMD_HIDAPI_TYPE undifferentiated)
-                find_package(HIDAPI QUIET)
-                list(APPEND _ohmd_extra_deps HIDAPI_FOUND)
-        endif()
+    endif()
+    if(NOT PC_OPENHMD_FOUND OR NOT OPENHMD_HIDAPI_TYPE)
+        # Undifferentiated
+        set(OPENHMD_HIDAPI_TYPE undifferentiated)
+        find_package(HIDAPI QUIET)
+        list(APPEND _ohmd_extra_deps HIDAPI_FOUND)
+    endif()
 endif()
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(OpenHMD
-    REQUIRED_VARS
-    OPENHMD_INCLUDE_DIR
-    OPENHMD_LIBRARY
-    THREADS_FOUND
-)
+find_package_handle_standard_args(
+    OpenHMD REQUIRED_VARS OPENHMD_INCLUDE_DIR OPENHMD_LIBRARY THREADS_FOUND)
 if(OPENHMD_FOUND)
     set(OPENHMD_INCLUDE_DIRS "${OPENHMD_INCLUDE_DIR}")
     set(OPENHMD_LIBRARIES "${OPENHMD_LIBRARY}")
     if(NOT TARGET OpenHMD::OpenHMD)
         add_library(OpenHMD::OpenHMD UNKNOWN IMPORTED)
     endif()
-    set_target_properties(OpenHMD::OpenHMD PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${OPENHMD_INCLUDE_DIR}")
-    set_target_properties(OpenHMD::OpenHMD PROPERTIES
-        IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-        IMPORTED_LOCATION "${OPENHMD_LIBRARY}")
-
-    set_property(TARGET OpenHMD::OpenHMD PROPERTY
-            IMPORTED_LINK_INTERFACE_LIBRARIES Threads::Threads)
+    set_target_properties(
+        OpenHMD::OpenHMD
+        PROPERTIES IMPORTED_LOCATION "${OPENHMD_LIBRARY}"
+                   INTERFACE_INCLUDE_DIRECTORIES "${OPENHMD_INCLUDE_DIR}"
+                   IMPORTED_LINK_INTERFACE_LANGUAGES "C"
+                   IMPORTED_LINK_INTERFACE_LIBRARIES Threads::Threads)
 
     if("${OPENHMD_HIDAPI_TYPE}" STREQUAL libusb)
-        set_property(TARGET OpenHMD::OpenHMD APPEND PROPERTY
-                IMPORTED_LINK_INTERFACE_LIBRARIES HIDAPI::hidapi-libusb)
+        set_property(
+            TARGET OpenHMD::OpenHMD
+            APPEND
+            PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES HIDAPI::hidapi-libusb)
         list(APPEND OPENHMD_LIBRARIES HIDAPI::hidapi-libusb)
     elseif("${OPENHMD_HIDAPI_TYPE}" STREQUAL hidraw)
-        set_property(TARGET OpenHMD::OpenHMD APPEND PROPERTY
-                IMPORTED_LINK_INTERFACE_LIBRARIES HIDAPI::hidapi-hidraw)
+        set_property(
+            TARGET OpenHMD::OpenHMD
+            APPEND
+            PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES HIDAPI::hidapi-hidraw)
         list(APPEND OPENHMD_LIBRARIES HIDAPI::hidapi-hidraw)
     elseif("${OPENHMD_HIDAPI_TYPE}" STREQUAL undifferentiated)
-        set_property(TARGET OpenHMD::OpenHMD APPEND PROPERTY
-                IMPORTED_LINK_INTERFACE_LIBRARIES HIDAPI::hidapi)
+        set_property(
+            TARGET OpenHMD::OpenHMD
+            APPEND
+            PROPERTY IMPORTED_LINK_INTERFACE_LIBRARIES HIDAPI::hidapi)
         list(APPEND OPENHMD_LIBRARIES HIDAPI::hidapi)
     endif()
     mark_as_advanced(OPENHMD_INCLUDE_DIR OPENHMD_LIBRARY)
