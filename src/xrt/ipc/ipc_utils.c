@@ -188,7 +188,7 @@ ipc_send_fds(struct ipc_message_channel *imc,
 	assert(size != 0);
 	assert(handles != NULL);
 	assert(num_handles != 0);
-	union imcontrol_buf u;
+	union imcontrol_buf u = {0};
 	size_t cmsg_size = CMSG_SPACE(sizeof(int) * num_handles);
 
 	struct iovec iov = {0};
