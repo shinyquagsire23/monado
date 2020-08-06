@@ -26,7 +26,7 @@ struct time_state;
  * @relates xrt_compositor_native
  */
 struct xrt_compositor_native *
-xrt_gfx_provider_create_native(struct xrt_device *xdev, bool flip_y);
+xrt_gfx_provider_create_native(struct xrt_device *xdev);
 
 
 #ifdef __cplusplus

@@ -13,11 +13,10 @@
 static int
 t_instance_create_native_compositor(struct xrt_instance *xinst,
                                     struct xrt_device *xdev,
-                                    bool flip_y,
                                     struct xrt_compositor_native **out_xcn)
 {
 	struct xrt_compositor_native *xcn =
-	    xrt_gfx_provider_create_native(xdev, flip_y);
+	    xrt_gfx_provider_create_native(xdev);
 
 	if (xcn == NULL) {
 		return -1;

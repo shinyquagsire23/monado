@@ -399,7 +399,7 @@ init_all(struct ipc_server *s)
 	}
 
 	ret = xrt_instance_create_native_compositor(s->xinst, s->xdevs[0],
-	                                            false, &s->xcn);
+	                                            &s->xcn);
 	if (ret < 0) {
 		teardown_all(s);
 		return ret;

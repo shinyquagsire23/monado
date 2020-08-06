@@ -68,8 +68,8 @@ oxr_session_populate_egl(struct oxr_logger *log,
 	struct xrt_compositor_native *xcn = NULL;
 	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 
-	int ret = xrt_instance_create_native_compositor(sys->inst->xinst, xdev,
-	                                                true, &xcn);
+	int ret =
+	    xrt_instance_create_native_compositor(sys->inst->xinst, xdev, &xcn);
 	if (ret < 0 || xcn == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 "Failed to create a native compositor '%i'",

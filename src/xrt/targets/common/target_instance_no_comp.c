@@ -13,7 +13,6 @@
 static int
 t_instance_create_native_compositor_stub(struct xrt_instance *xinst,
                                          struct xrt_device *xdev,
-                                         bool flip_y,
                                          struct xrt_compositor_native **out_xcn)
 {
 	*out_xcn = NULL;

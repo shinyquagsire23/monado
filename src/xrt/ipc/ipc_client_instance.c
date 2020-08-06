@@ -125,13 +125,12 @@ static int
 ipc_client_instance_create_native_compositor(
     struct xrt_instance *xinst,
     struct xrt_device *xdev,
-    bool flip_y,
     struct xrt_compositor_native **out_xcn)
 {
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
 	struct xrt_compositor_native *xcn = NULL;
 
-	int ret = ipc_client_compositor_create(&ii->ipc_c, xdev, flip_y, &xcn);
+	int ret = ipc_client_compositor_create(&ii->ipc_c, xdev, false, &xcn);
 	if (ret < 0 || xcn == NULL) {
 		return -1;
 	}

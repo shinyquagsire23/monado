@@ -95,7 +95,6 @@ struct xrt_instance
 	 *
 	 * @param xinst Pointer to self
 	 * @param[in] xdev Device to use for creating the compositor
-	 * @param[in] flip_y Whether to flip the direction of the y axis
 	 * @param[out] out_xcn Pointer to xrt_compositor_native pointer, will
 	 * be populated.
 	 *
@@ -105,7 +104,6 @@ struct xrt_instance
 	 */
 	int (*create_native_compositor)(struct xrt_instance *xinst,
 	                                struct xrt_device *xdev,
-	                                bool flip_y,
 	                                struct xrt_compositor_native **out_xcn);
 
 	/*!
@@ -172,10 +170,9 @@ xrt_instance_select(struct xrt_instance *xinst,
 static inline int
 xrt_instance_create_native_compositor(struct xrt_instance *xinst,
                                       struct xrt_device *xdev,
-                                      bool flip_y,
                                       struct xrt_compositor_native **out_xcn)
 {
-	return xinst->create_native_compositor(xinst, xdev, flip_y, out_xcn);
+	return xinst->create_native_compositor(xinst, xdev, out_xcn);
 }
 
 /*!

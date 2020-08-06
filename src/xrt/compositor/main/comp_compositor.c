@@ -928,7 +928,7 @@ compositor_init_renderer(struct comp_compositor *c)
 }
 
 struct xrt_compositor_native *
-xrt_gfx_provider_create_native(struct xrt_device *xdev, bool flip_y)
+xrt_gfx_provider_create_native(struct xrt_device *xdev)
 {
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 
@@ -956,7 +956,7 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev, bool flip_y)
 	// Init the settings to default.
 	comp_settings_init(&c->settings, xdev);
 
-	c->settings.flip_y = flip_y;
+	c->settings.flip_y = false;
 	c->last_frame_time_ns = os_monotonic_get_ns();
 	c->frame_overhead_ns = 2000000;
 	//! @todo set this to an estimate that's better than 6ms
