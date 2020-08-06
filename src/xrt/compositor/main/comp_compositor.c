@@ -984,6 +984,8 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 
 	COMP_DEBUG(c, "Done %p", (void *)c);
 
+	struct xrt_compositor_info *info = &c->base.base.info;
+
 	/*!
 	 * @todo Support more like, depth/float formats etc,
 	 * remember to update the GL client as well.
@@ -997,14 +999,45 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	 * two formats should not be used as they are linear but doesn't have
 	 * enough bits to express it without resulting in banding.
 	 */
+	info->formats[0] = VK_FORMAT_R8G8B8A8_SRGB;            // OGL VK
+	info->formats[1] = VK_FORMAT_A2B10G10R10_UNORM_PACK32; // OGL VK
+	info->formats[2] = VK_FORMAT_R16G16B16A16_SFLOAT;      // OGL VK
+	info->formats[3] = VK_FORMAT_B8G8R8A8_SRGB;            // VK
+	info->formats[4] = VK_FORMAT_R8G8B8A8_UNORM;           // OGL VK
+	info->formats[5] = VK_FORMAT_B8G8R8A8_UNORM;           // VK
+	info->num_formats = 6;
+
+	float scale = c->settings.viewport_scale;
+
+	if (scale > 2.0) {
+		scale = 2.0;
+		COMP_DEBUG(c, "Clamped scale to 200%%\n");
+	}
+
+	uint32_t w0 = (uint32_t)(xdev->hmd->views[0].display.w_pixels * scale);
+	uint32_t h0 = (uint32_t)(xdev->hmd->views[0].display.h_pixels * scale);
+	uint32_t w1 = (uint32_t)(xdev->hmd->views[1].display.w_pixels * scale);
+	uint32_t h1 = (uint32_t)(xdev->hmd->views[1].display.h_pixels * scale);
+
+	uint32_t w0_2 = xdev->hmd->views[0].display.w_pixels * 2;
+	uint32_t h0_2 = xdev->hmd->views[0].display.h_pixels * 2;
+	uint32_t w1_2 = xdev->hmd->views[1].display.w_pixels * 2;
+	uint32_t h1_2 = xdev->hmd->views[1].display.h_pixels * 2;
+
 	// clang-format off
-	c->base.base.info.formats[0] = VK_FORMAT_R8G8B8A8_SRGB;            // OGL VK
-	c->base.base.info.formats[1] = VK_FORMAT_A2B10G10R10_UNORM_PACK32; // OGL VK
-	c->base.base.info.formats[2] = VK_FORMAT_R16G16B16A16_SFLOAT;      // OGL VK
-	c->base.base.info.formats[3] = VK_FORMAT_B8G8R8A8_SRGB;            // VK
-	c->base.base.info.formats[4] = VK_FORMAT_R8G8B8A8_UNORM;           // OGL VK
-	c->base.base.info.formats[5] = VK_FORMAT_B8G8R8A8_UNORM;           // VK
-	c->base.base.info.num_formats = 6;
+	info->views[0].recommended.width_pixels  = w0;
+	info->views[0].recommended.height_pixels = h0;
+	info->views[0].recommended.sample_count  = 1;
+	info->views[0].max.width_pixels          = w0_2;
+	info->views[0].max.height_pixels         = h0_2;
+	info->views[0].max.sample_count          = 1;
+
+	info->views[1].recommended.width_pixels  = w1;
+	info->views[1].recommended.height_pixels = h1;
+	info->views[1].recommended.sample_count  = 1;
+	info->views[1].max.width_pixels          = w1_2;
+	info->views[1].max.height_pixels         = h1_2;
+	info->views[1].max.sample_count          = 1;
 	// clang-format on
 
 	u_var_add_root(c, "Compositor", true);
