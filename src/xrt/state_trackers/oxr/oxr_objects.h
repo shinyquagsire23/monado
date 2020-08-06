@@ -770,9 +770,7 @@ XrResult
 oxr_system_fill_in(struct oxr_logger *log,
                    struct oxr_instance *inst,
                    XrSystemId systemId,
-                   struct oxr_system *sys,
-                   struct xrt_device **xdevs,
-                   size_t num_xdevs);
+                   struct oxr_system *sys);
 
 XrResult
 oxr_system_verify_id(struct oxr_logger *log,
@@ -1063,8 +1061,13 @@ struct oxr_handle_base
 struct oxr_system
 {
 	struct oxr_instance *inst;
+
+	//! Native compositor that is wrapped by client compositors.
+	struct xrt_compositor_native *xcn;
+
 	struct xrt_device *xdevs[16];
 	size_t num_xdevs;
+
 	/* index for xdevs array */
 	struct
 	{

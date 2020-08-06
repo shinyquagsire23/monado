@@ -151,6 +151,7 @@ oxr_instance_create(struct oxr_logger *log,
 	struct oxr_instance *inst = NULL;
 	struct xrt_device *xdevs[NUM_XDEVS] = {0};
 	int xinst_ret, m_ret, h_ret;
+	xrt_result_t xret;
 	XrResult ret;
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
@@ -305,14 +306,6 @@ oxr_instance_create(struct oxr_logger *log,
 		dev->hmd->views[1].fov.angle_down = down_override;
 	}
 
-	ret = oxr_system_fill_in(log, inst, 1, &inst->system, xdevs, NUM_XDEVS);
-	if (ret != XR_SUCCESS) {
-		oxr_instance_destroy(log, &inst->handle);
-		return ret;
-	}
-
-	inst->timekeeping = time_state_create();
-
 
 	U_ZERO(&inst->extensions);
 	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
@@ -328,6 +321,28 @@ oxr_instance_create(struct oxr_logger *log,
 		//        "Should not be reached - oxr_xrCreateInstance should "
 		//        "have failed on unrecognized extension.");
 	}
+
+	// Create the compositor, if we are not headless.
+	if (!inst->extensions.MND_headless) {
+		xret = xrt_instance_create_native_compositor(inst->xinst, dev,
+		                                             &sys->xcn);
+		if (ret < 0 || sys->xcn == NULL) {
+			ret = oxr_error(
+			    log, XR_ERROR_INITIALIZATION_FAILED,
+			    "Failed to create a native compositor '%i'", xret);
+			oxr_instance_destroy(log, &inst->handle);
+			return ret;
+		}
+	}
+
+	ret = oxr_system_fill_in(log, inst, 1, &inst->system);
+	if (ret != XR_SUCCESS) {
+		oxr_instance_destroy(log, &inst->handle);
+		return ret;
+	}
+
+	inst->timekeeping = time_state_create();
+
 
 	//! @todo check if this (and other creates) failed?
 

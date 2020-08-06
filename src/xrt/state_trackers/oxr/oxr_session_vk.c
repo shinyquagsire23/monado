@@ -27,17 +27,7 @@ oxr_session_populate_vk(struct oxr_logger *log,
                         XrGraphicsBindingVulkanKHR const *next,
                         struct oxr_session *sess)
 {
-	struct xrt_compositor_native *xcn = NULL;
-	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
-
-	int ret =
-	    xrt_instance_create_native_compositor(sys->inst->xinst, xdev, &xcn);
-	if (ret < 0 || xcn == NULL) {
-		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Failed to create a native compositor '%i'",
-		                 ret);
-	}
-
+	struct xrt_compositor_native *xcn = sess->sys->xcn;
 	struct xrt_compositor_vk *xcvk = xrt_gfx_vk_provider_create(
 	    xcn, next->instance, vkGetInstanceProcAddr, next->physicalDevice,
 	    next->device, next->queueFamilyIndex, next->queueIndex);

@@ -33,18 +33,7 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              XrGraphicsBindingOpenGLXlibKHR const *next,
                              struct oxr_session *sess)
 {
-	struct xrt_compositor_native *xcn = NULL;
-	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
-
-	int ret =
-	    xrt_instance_create_native_compositor(sys->inst->xinst, xdev, &xcn);
-	if (ret < 0 || xcn == NULL) {
-		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Failed to create a native compositor '%i'",
-		                 ret);
-	}
-
-
+	struct xrt_compositor_native *xcn = sess->sys->xcn;
 	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_xlib(
 	    xcn, next->xDisplay, next->visualid, next->glxFBConfig,
 	    next->glxDrawable, next->glxContext);

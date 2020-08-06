@@ -99,9 +99,7 @@ XrResult
 oxr_system_fill_in(struct oxr_logger *log,
                    struct oxr_instance *inst,
                    XrSystemId systemId,
-                   struct oxr_system *sys,
-                   struct xrt_device **xdevs,
-                   size_t num_xdevs)
+                   struct oxr_system *sys)
 {
 	struct xrt_device *head = GET_XDEV_BY_ROLE(sys, head);
 	struct xrt_device *left = GET_XDEV_BY_ROLE(sys, left);
@@ -135,11 +133,17 @@ oxr_system_fill_in(struct oxr_logger *log,
 
 	//! @todo handle other subaction paths?
 
-	// clang-format off
-	sys->inst             = inst;
-	sys->systemId         = systemId;
-	sys->form_factor      = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
+	sys->inst = inst;
+	sys->systemId = systemId;
+	sys->form_factor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
 	sys->view_config_type = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+
+	// Headless.
+	if (sys->xcn == NULL) {
+		sys->blend_modes[0] = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
+		sys->num_blend_modes = 1;
+		return XR_SUCCESS;
+	}
 
 	double scale = debug_get_num_option_scale_percentage() / 100.0;
 	if (scale > 2.0) {
@@ -147,30 +151,41 @@ oxr_system_fill_in(struct oxr_logger *log,
 		oxr_log(log, "Clamped scale to 200%%\n");
 	}
 
+	struct xrt_compositor_info *info = &sys->xcn->base.info;
 
-	uint32_t w0 = (uint32_t)(head->hmd->views[0].display.w_pixels * scale);
-	uint32_t h0 = (uint32_t)(head->hmd->views[0].display.h_pixels * scale);
-	uint32_t w1 = (uint32_t)(head->hmd->views[1].display.w_pixels * scale);
-	uint32_t h1 = (uint32_t)(head->hmd->views[1].display.h_pixels * scale);
+	// clang-format off
+	uint32_t w0 = (uint32_t)(info->views[0].recommended.width_pixels * scale);
+	uint32_t h0 = (uint32_t)(info->views[0].recommended.height_pixels * scale);
+	uint32_t w1 = (uint32_t)(info->views[1].recommended.width_pixels * scale);
+	uint32_t h1 = (uint32_t)(info->views[1].recommended.height_pixels * scale);
 
-	uint32_t w0_2 = head->hmd->views[0].display.w_pixels * 2;
-	uint32_t h0_2 = head->hmd->views[0].display.h_pixels * 2;
-	uint32_t w1_2 = head->hmd->views[1].display.w_pixels * 2;
-	uint32_t h1_2 = head->hmd->views[1].display.h_pixels * 2;
+	uint32_t w0_2 = info->views[0].max.width_pixels;
+	uint32_t h0_2 = info->views[0].max.height_pixels;
+	uint32_t w1_2 = info->views[1].max.width_pixels;
+	uint32_t h1_2 = info->views[1].max.height_pixels;
+
+#define imin(a, b) (a < b ? a : b)
+
+	w0 = imin(w0, w0_2);
+	h0 = imin(h0, h0_2);
+	w1 = imin(w1, w1_2);
+	h1 = imin(h1, h1_2);
+
+#undef imin
 
 	sys->views[0].recommendedImageRectWidth       = w0;
 	sys->views[0].maxImageRectWidth               = w0_2;
 	sys->views[0].recommendedImageRectHeight      = h0;
 	sys->views[0].maxImageRectHeight              = h0_2;
-	sys->views[0].recommendedSwapchainSampleCount = 1;
-	sys->views[0].maxSwapchainSampleCount         = 1;
+	sys->views[0].recommendedSwapchainSampleCount = info->views[0].recommended.sample_count;
+	sys->views[0].maxSwapchainSampleCount         = info->views[0].max.sample_count;
 
 	sys->views[1].recommendedImageRectWidth       = w1;
 	sys->views[1].maxImageRectWidth               = w1_2;
 	sys->views[1].recommendedImageRectHeight      = h1;
 	sys->views[1].maxImageRectHeight              = h1_2;
-	sys->views[1].recommendedSwapchainSampleCount = 1;
-	sys->views[1].maxSwapchainSampleCount         = 1;
+	sys->views[1].recommendedSwapchainSampleCount = info->views[1].recommended.sample_count;
+	sys->views[1].maxSwapchainSampleCount         = info->views[1].max.sample_count;
 	// clang-format on
 
 	uint32_t i = 0;
