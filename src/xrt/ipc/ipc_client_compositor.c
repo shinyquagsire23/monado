@@ -507,7 +507,6 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 int
 ipc_client_compositor_create(struct ipc_connection *ipc_c,
                              struct xrt_device *xdev,
-                             bool flip_y,
                              struct xrt_compositor_native **out_xcn)
 {
 	struct ipc_client_compositor *c =
