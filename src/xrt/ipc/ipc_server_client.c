@@ -367,7 +367,7 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
                             const struct xrt_swapchain_create_info *info,
                             struct ipc_arg_swapchain_from_native *args,
                             uint32_t *out_id,
-                            xrt_graphics_buffer_handle_t *handles,
+                            const xrt_graphics_buffer_handle_t *handles,
                             uint32_t num_handles)
 {
 	xrt_result_t xret = XRT_SUCCESS;

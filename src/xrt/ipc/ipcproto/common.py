@@ -150,6 +150,11 @@ class HandleType:
         return (x + y for x, y in zip(types, self.arg_names))
 
     @property
+    def const_arg_decls(self):
+        """Get the const argument declarations for the client proxy."""
+        return ("const {}".format(x) for x in self.arg_decls)
+
+    @property
     def handler_arg_names(self):
         """Get the argument names for the server handler."""
         return ('max_' + self.count_arg_name,
@@ -185,7 +190,7 @@ class Call:
         args = ["struct ipc_connection *ipc_c"]
         args.extend(arg.get_func_argument_in() for arg in self.in_args)
         if self.in_handles:
-            args.extend(self.in_handles.arg_decls)
+            args.extend(self.in_handles.const_arg_decls)
         args.extend(arg.get_func_argument_out() for arg in self.out_args)
         if self.out_handles:
             args.extend(self.out_handles.arg_decls)
@@ -199,7 +204,7 @@ class Call:
         if self.out_handles:
             args.extend(self.out_handles.handler_arg_decls)
         if self.in_handles:
-            args.extend(self.in_handles.arg_decls)
+            args.extend(self.in_handles.const_arg_decls)
         write_decl(f, 'xrt_result_t', 'ipc_handle_' + self.name, args)
 
     @property
