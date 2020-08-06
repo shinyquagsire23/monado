@@ -26,13 +26,13 @@ public:
 	}
 
 	Vector2
-	RenderUVToDisplayUV(Vector3 inputUV);
+	RenderUVToDisplayUV(const Vector3 &inputUV);
 
 	Vector2
-	RenderUVToDisplayUV(Vector2 inputUV);
+	RenderUVToDisplayUV(const Vector2 &inputUV);
 
 	Vector2
-	SolveDisplayUVToRenderUV(Vector2 inputUV,
+	SolveDisplayUVToRenderUV(const Vector2 &inputUV,
 	                         Vector2 initailGuess,
 	                         int iterations);
 

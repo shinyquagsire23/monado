@@ -76,7 +76,7 @@ u_format_block_width(enum xrt_format f)
 	case XRT_FORMAT_BITMAP_8X8:
 	case XRT_FORMAT_BITMAP_8X1:
 		// Eight pixels per block.
-		return 8;
+		return 8; // NOLINT
 	default: assert(!"unsupported format"); return 0;
 	}
 }

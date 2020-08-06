@@ -75,13 +75,6 @@ oxr_action_bind_inputs(struct oxr_logger *log,
                        struct oxr_interaction_profile *profile,
                        enum oxr_sub_action_path sub_path);
 
-static void
-oxr_session_get_action_set_attachment(
-    struct oxr_session *sess,
-    XrActionSet actionSet,
-    struct oxr_action_set_attachment **act_set_attached,
-    struct oxr_action_set **act_set);
-
 /*
  *
  * Action attachment functions
@@ -905,8 +898,8 @@ oxr_input_combine_input(struct oxr_session *sess,
 			break;
 		case XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE:
 		case XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE:
-			if (fabs(transformed.value.vec1.x) >
-			    fabs(res.value.vec1.x)) {
+			if (fabsf(transformed.value.vec1.x) >
+			    fabsf(res.value.vec1.x)) {
 				res.value.vec1.x = transformed.value.vec1.x;
 				res_timestamp = input->timestamp;
 			}
@@ -923,7 +916,9 @@ oxr_input_combine_input(struct oxr_session *sess,
 				res_timestamp = input->timestamp;
 			}
 		} break;
-		case XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE: break;
+		case XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE:
+			// OpenXR has no vec3 right now.
+			break;
 		case XRT_INPUT_TYPE_POSE:
 			// shouldn't be possible to get here
 			break;
@@ -1127,7 +1122,8 @@ oxr_action_attachment_update(struct oxr_logger *log,
 		break;
 	}
 	case XR_ACTION_TYPE_FLOAT_INPUT: {
-		float value = -2.0;
+		// Smaller than any possible real value
+		float value = -2.0f; // NOLINT
 		OXR_FOR_EACH_VALID_SUBACTION_PATH(VEC1_CHECK)
 
 		changed = last.value.vec1.x != value;
@@ -1135,9 +1131,9 @@ oxr_action_attachment_update(struct oxr_logger *log,
 		break;
 	}
 	case XR_ACTION_TYPE_VECTOR2F_INPUT: {
-		float x = 0.0;
-		float y = 0.0;
-		float distance = -1.0;
+		float x = 0.0f;
+		float y = 0.0f;
+		float distance = -1.0f;
 		OXR_FOR_EACH_VALID_SUBACTION_PATH(VEC2_CHECK)
 
 		changed = (last.value.vec2.x != x) || (last.value.vec2.y != y);

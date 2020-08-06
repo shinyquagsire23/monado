@@ -125,9 +125,8 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 		                       strlen(templ->path), &t_path);
 		if (t_path == path) {
 			break;
-		} else {
-			templ = NULL;
 		}
+		templ = NULL;
 	}
 
 	if (templ == NULL) {

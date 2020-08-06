@@ -453,7 +453,8 @@ gatt_iface_get_flag_notifiable(const DBusMessageIter *iface_elm, bool *out_bool)
 	if (ret < 0) {
 		// Error
 		return ret;
-	} else if (ret > 0) {
+	}
+	if (ret > 0) {
 		// Found the notify field!
 		*out_bool = true;
 	}
@@ -744,7 +745,8 @@ init_ble_notify(const char *dev_uuid,
 	                            dbus_address, sizeof(dbus_address));
 	if (written == 0) {
 		return -1;
-	} else if (written < 0) {
+	}
+	if (written < 0) {
 		return -1;
 	}
 
@@ -773,7 +775,8 @@ init_ble_notify(const char *dev_uuid,
 		int type = dbus_message_iter_get_arg_type(&args);
 		if (type == DBUS_TYPE_INVALID) {
 			break;
-		} else if (type == DBUS_TYPE_STRING) {
+		}
+		if (type == DBUS_TYPE_STRING) {
 			dbus_message_iter_get_basic(&args, &response);
 			printf("DBus call returned message: %s\n", response);
 		} else if (type == DBUS_TYPE_UNIX_FD) {

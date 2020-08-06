@@ -108,7 +108,8 @@ init_tracking_origins(struct ipc_server *s)
 			if (s->xtracks[index] == NULL) {
 				s->xtracks[index] = xtrack;
 				break;
-			} else if (s->xtracks[index] == xtrack) {
+			}
+			if (s->xtracks[index] == xtrack) {
 				break;
 			}
 		}
@@ -664,7 +665,8 @@ _overlay_sort_func(const void *a, const void *b)
 	struct _z_sort_data *ob = (struct _z_sort_data *)b;
 	if (oa->z_order < ob->z_order) {
 		return -1;
-	} else if (oa->z_order > ob->z_order) {
+	}
+	if (oa->z_order > ob->z_order) {
 		return 1;
 	}
 	return 0;
@@ -960,7 +962,6 @@ update_server_state(struct ipc_server *s)
 	s->last_active_client_index = s->active_client_index;
 
 	os_mutex_unlock(&s->global_state_lock);
-	return;
 }
 
 int

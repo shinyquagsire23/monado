@@ -20,6 +20,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <sys/stat.h>
+#include <utility>
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(hsv_filter, "T_DEBUG_HSV_FILTER", false)
@@ -1380,7 +1381,7 @@ populateCacheMats(cv::Size size,
 }
 
 NormalizedCoordsCache::NormalizedCoordsCache(
-    cv::Size size,
+    cv::Size size, // NOLINT // small, pass by value
     const cv::Matx33d &intrinsics,
     const cv::Matx<double, 5, 1> &distortion)
 {
@@ -1394,7 +1395,7 @@ NormalizedCoordsCache::NormalizedCoordsCache(
 	populateCacheMats(size, inputCoords, outputCoords, cacheX_, cacheY_);
 }
 NormalizedCoordsCache::NormalizedCoordsCache(
-    cv::Size size,
+    cv::Size size, // NOLINT // small, pass by value
     const cv::Matx33d &intrinsics,
     const cv::Matx<double, 5, 1> &distortion,
     const cv::Matx33d &rectification,
@@ -1412,7 +1413,7 @@ NormalizedCoordsCache::NormalizedCoordsCache(
 }
 
 NormalizedCoordsCache::NormalizedCoordsCache(
-    cv::Size size,
+    cv::Size size, // NOLINT // small, pass by value
     const cv::Matx33d &intrinsics,
     const cv::Matx<double, 5, 1> &distortion,
     const cv::Matx33d &rectification,
@@ -1428,9 +1429,10 @@ NormalizedCoordsCache::NormalizedCoordsCache(
 
 	populateCacheMats(size, inputCoords, outputCoords, cacheX_, cacheY_);
 }
-NormalizedCoordsCache::NormalizedCoordsCache(cv::Size size,
-                                             const cv::Mat &intrinsics,
-                                             const cv::Mat &distortion)
+NormalizedCoordsCache::NormalizedCoordsCache(
+    cv::Size size, // NOLINT // small, pass by value
+    const cv::Mat &intrinsics,
+    const cv::Mat &distortion)
 {
 	std::vector<cv::Vec2f> outputCoords;
 	std::vector<cv::Vec2f> inputCoords =
@@ -1443,7 +1445,9 @@ NormalizedCoordsCache::NormalizedCoordsCache(cv::Size size,
 }
 
 cv::Vec2f
-NormalizedCoordsCache::getNormalizedImageCoords(cv::Point2f origCoords) const
+NormalizedCoordsCache::getNormalizedImageCoords(
+    // NOLINTNEXTLINE // small, pass by value
+    cv::Point2f origCoords) const
 {
 	/*
 	 * getRectSubPix is more strict than the docs would imply:
@@ -1465,7 +1469,7 @@ cv::Vec3f
 NormalizedCoordsCache::getNormalizedVector(cv::Point2f origCoords) const
 {
 	// cameras traditionally look along -z, so we want negative sqrt
-	auto pt = getNormalizedImageCoords(origCoords);
+	auto pt = getNormalizedImageCoords(std::move(origCoords));
 	auto z = -std::sqrt(1.f - pt.dot(pt));
 	return {pt[0], pt[1], z};
 }

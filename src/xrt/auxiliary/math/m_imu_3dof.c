@@ -126,11 +126,11 @@ gravity_correction(struct m_imu_3dof *f,
 		 */
 		float correction_radians = 0.5 * gyro_length * max_radians;
 		// Clamp to the range [min_radians, max_radians]
-		correction_radians = fmax(min_radians, correction_radians);
-		correction_radians = fmin(max_radians, correction_radians);
+		correction_radians = fmaxf(min_radians, correction_radians);
+		correction_radians = fminf(max_radians, correction_radians);
 		// Do not exceed the remaining error to correct for
 		correction_radians =
-		    -fmin(correction_radians, f->grav.error_angle);
+		    -fminf(correction_radians, f->grav.error_angle);
 
 		// Update how much is left.
 		f->grav.error_angle += correction_radians;

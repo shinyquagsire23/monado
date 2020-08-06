@@ -55,12 +55,12 @@ u_file_get_config_dir(char *out_path, size_t out_path_size)
 	const char *home = getenv("HOME");
 	if (xgd_home != NULL) {
 		return snprintf(out_path, out_path_size, "%s/monado", xgd_home);
-	} else if (home != NULL) {
+	}
+	if (home != NULL) {
 		return snprintf(out_path, out_path_size, "%s/.config/monado",
 		                home);
-	} else {
-		return -1;
 	}
+	return -1;
 }
 
 ssize_t

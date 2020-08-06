@@ -221,7 +221,8 @@ oxr_space_ref_relation(struct oxr_logger *log,
 			out_relation->relation_flags =
 			    XRT_SPACE_RELATION_BITMASK_NONE;
 			return XR_SUCCESS;
-		} else if (space == XR_REFERENCE_SPACE_TYPE_STAGE) {
+		}
+		if (space == XR_REFERENCE_SPACE_TYPE_STAGE) {
 			// device poses are already in stage = "global" space
 		} else if (space == XR_REFERENCE_SPACE_TYPE_LOCAL) {
 			global_to_local_space(sess, &out_relation->pose);

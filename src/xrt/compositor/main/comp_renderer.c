@@ -478,9 +478,8 @@ get_image_view(struct comp_swapchain_image *image,
 {
 	if (flags & XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT) {
 		return image->views.alpha[array_index];
-	} else {
-		return image->views.no_alpha[array_index];
 	}
+	return image->views.no_alpha[array_index];
 }
 void
 comp_renderer_set_quad_layer(struct comp_renderer *r,

@@ -42,7 +42,8 @@ oxr_swapchain_acquire_image(struct oxr_logger *log,
 	if (res == XRT_ERROR_IPC_FAILURE) {
 		return oxr_error(log, XR_ERROR_INSTANCE_LOST,
 		                 "Call to xsc->acquire_image failed");
-	} else if (res != XRT_SUCCESS) {
+	}
+	if (res != XRT_SUCCESS) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Call to xsc->acquire_image failed");
 	}
@@ -94,7 +95,8 @@ oxr_swapchain_wait_image(struct oxr_logger *log,
 	if (res == XRT_ERROR_IPC_FAILURE) {
 		return oxr_error(log, XR_ERROR_INSTANCE_LOST,
 		                 "Call to xsc->wait_image failed");
-	} else if (res != XRT_SUCCESS) {
+	}
+	if (res != XRT_SUCCESS) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Call to xsc->wait_image failed");
 	}
@@ -125,7 +127,8 @@ oxr_swapchain_release_image(struct oxr_logger *log,
 	if (res == XRT_ERROR_IPC_FAILURE) {
 		return oxr_error(log, XR_ERROR_INSTANCE_LOST,
 		                 "Call to xsc->release_image failed");
-	} else if (res != XRT_SUCCESS) {
+	}
+	if (res != XRT_SUCCESS) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Call to xsc->release_image failed");
 	}

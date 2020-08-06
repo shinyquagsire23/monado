@@ -183,8 +183,8 @@ ns_mesh(struct u_uv_generator *gen)
  * @ingroup drv_ns
  */
 void
-ns_display_uv_to_render_uv(struct ns_uv display_uv,
-                           struct ns_uv *render_uv,
+ns_display_uv_to_render_uv(struct ns_uv in,
+                           struct ns_uv *out,
                            struct ns_eye *eye);
 
 struct ns_optical_system *

@@ -109,7 +109,7 @@ OpticalSystem::RegenerateMesh()
 }
 
 Vector2
-OpticalSystem::RenderUVToDisplayUV(Vector2 inputUV)
+OpticalSystem::RenderUVToDisplayUV(const Vector2 &inputUV)
 {
 	Vector3 rayDir;
 	ViewportPointToRayDirection(inputUV, eyePosition, clipToWorld, rayDir);
@@ -118,7 +118,7 @@ OpticalSystem::RenderUVToDisplayUV(Vector2 inputUV)
 }
 
 Vector2
-OpticalSystem::RenderUVToDisplayUV(Vector3 inputUV)
+OpticalSystem::RenderUVToDisplayUV(const Vector3 &inputUV)
 {
 
 	Vector3 sphereSpaceRayOrigin =
@@ -188,7 +188,7 @@ OpticalSystem::RenderUVToDisplayUV(Vector3 inputUV)
 }
 
 Vector2
-OpticalSystem::SolveDisplayUVToRenderUV(Vector2 inputUV,
+OpticalSystem::SolveDisplayUVToRenderUV(const Vector2 &inputUV,
                                         Vector2 initailGuess,
                                         int iterations)
 {

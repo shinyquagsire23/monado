@@ -51,13 +51,12 @@ u_json_get_string_into_array(const cJSON *json, char *out_str, size_t max_size)
 	if (ret < 0) {
 		U_LOG_E("Printing string failed: %d", ret);
 		return false;
-	} else if ((size_t)ret < max_size) {
-		return true;
-	} else {
-		U_LOG_E("String size %d is bigger than available %zu", ret,
-		        max_size);
-		return false;
 	}
+	if ((size_t)ret < max_size) {
+		return true;
+	}
+	U_LOG_E("String size %d is bigger than available %zu", ret, max_size);
+	return false;
 }
 
 bool

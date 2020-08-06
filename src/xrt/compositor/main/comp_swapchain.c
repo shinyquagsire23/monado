@@ -43,9 +43,8 @@ swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 	int res = u_index_fifo_pop(&sc->fifo, out_index);
 	if (res >= 0) {
 		return XRT_SUCCESS;
-	} else {
-		return XRT_ERROR_NO_IMAGE_AVAILABLE;
 	}
+	return XRT_ERROR_NO_IMAGE_AVAILABLE;
 }
 
 static xrt_result_t
@@ -70,10 +69,9 @@ swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 
 	if (res >= 0) {
 		return XRT_SUCCESS;
-	} else {
-		// FIFO full
-		return XRT_ERROR_NO_IMAGE_AVAILABLE;
 	}
+	// FIFO full
+	return XRT_ERROR_NO_IMAGE_AVAILABLE;
 }
 
 

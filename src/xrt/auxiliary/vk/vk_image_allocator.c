@@ -216,9 +216,8 @@ vk_ic_from_natives(struct vk_bundle *vk,
 		if (ret != VK_SUCCESS) {
 			close(fd);
 			break;
-		} else {
-			native_images[i].fd = fd;
 		}
+		native_images[i].fd = fd;
 	}
 #endif
 

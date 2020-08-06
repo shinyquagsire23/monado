@@ -7,18 +7,20 @@
  * @author Pete Black <pete.black@collabora.com>
  * @ingroup aux_util
  */
-#include <stdio.h>
 #include "util/u_bitwise.h"
 
+#include <stdio.h>
+#include <limits.h>
+
 int
-get_bit(unsigned char *b, int num)
+get_bit(const unsigned char *b, int num)
 {
-	int index = num / 8;
-	return (b[index] >> (7 - (num % 8))) & 1;
+	int index = num / CHAR_BIT;
+	return (b[index] >> ((CHAR_BIT - 1) - (num % CHAR_BIT))) & 1;
 }
 
 int
-get_bits(unsigned char *b, int start, int num)
+get_bits(const unsigned char *b, int start, int num)
 {
 	int ret = 0;
 	for (int i = 0; i < num; i++) {
@@ -29,7 +31,10 @@ get_bits(unsigned char *b, int start, int num)
 }
 
 int
-sign_extend_13(unsigned int i)
+sign_extend_13(uint32_t i)
 {
-	return ((int)(i << 19)) >> 19;
+	static const size_t incoming_int_width = 13;
+	static const size_t adjustment =
+	    (sizeof(i) * CHAR_BIT) - incoming_int_width;
+	return ((int)(i << adjustment)) >> adjustment;
 }

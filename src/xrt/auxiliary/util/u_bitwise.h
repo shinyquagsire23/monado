@@ -10,18 +10,24 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 int
-get_bit(unsigned char *b, int num);
+get_bit(const unsigned char *b, int num);
 
 int
-get_bits(unsigned char *b, int start, int num);
+get_bits(const unsigned char *b, int start, int num);
 
+/*!
+ * Interpret the least-significant 13 bits as a signed 13-bit integer, and cast
+ * it to a signed int for normal usage.
+ */
 int
-sign_extend_13(unsigned int i);
+sign_extend_13(uint32_t i);
 
 
 #ifdef __cplusplus

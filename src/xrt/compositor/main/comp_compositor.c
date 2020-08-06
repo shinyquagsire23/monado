@@ -216,7 +216,7 @@ compositor_wait_frame(struct xrt_compositor *xc,
 		int64_t render_time_ns =
 		    c->expected_app_duration_ns + c->frame_overhead_ns;
 		int64_t swap_interval =
-		    ceil((float)render_time_ns / interval_ns);
+		    ceilf((float)render_time_ns / interval_ns);
 		int64_t render_interval_ns = swap_interval * interval_ns;
 		int64_t next_display_time =
 		    c->last_next_display_time + render_interval_ns;
@@ -475,6 +475,7 @@ compositor_poll_events(struct xrt_compositor *xc,
 #define GET_DEV_PROC(c, name)                                                  \
 	(PFN_##name) c->vk.vkGetDeviceProcAddr(c->vk.device, #name);
 
+// NOLINTNEXTLINE // don't remove the forward decl.
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
 vkGetInstanceProcAddr(VkInstance instance, const char *pName);
 
