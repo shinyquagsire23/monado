@@ -88,9 +88,6 @@ struct comp_settings
 	//! Print information about available modes for direct mode.
 	bool print_modes;
 
-	//! Should we flip y axis for compositor buffers (for GL)
-	bool flip_y;
-
 	//! Nominal frame interval
 	uint64_t nominal_frame_interval_ns;
 

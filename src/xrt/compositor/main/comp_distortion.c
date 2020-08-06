@@ -180,8 +180,7 @@ comp_distortion_init(struct comp_distortion *d,
                      VkPipelineCache pipeline_cache,
                      enum xrt_distortion_model distortion_model,
                      struct xrt_hmd_parts *parts,
-                     VkDescriptorPool descriptor_pool,
-                     bool flip_y)
+                     VkDescriptorPool descriptor_pool)
 {
 	d->vk = &c->vk;
 
@@ -207,8 +206,8 @@ comp_distortion_init(struct comp_distortion *d,
 	d->mesh.offset_indices[0] = parts->distortion.mesh.offset_indices[0];
 	d->mesh.offset_indices[1] = parts->distortion.mesh.offset_indices[1];
 
-	d->ubo_vp_data[0].flip_y = flip_y;
-	d->ubo_vp_data[1].flip_y = flip_y;
+	d->ubo_vp_data[0].flip_y = false;
+	d->ubo_vp_data[1].flip_y = false;
 	d->quirk_draw_lines = c->settings.debug.wireframe;
 
 	comp_distortion_init_buffers(d, c);

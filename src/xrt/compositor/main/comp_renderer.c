@@ -453,8 +453,7 @@ renderer_init(struct comp_renderer *r)
 
 	comp_distortion_init(r->distortion, r->c, r->render_pass,
 	                     r->pipeline_cache, r->settings->distortion_model,
-	                     r->c->xdev->hmd, r->descriptor_pool,
-	                     r->settings->flip_y);
+	                     r->c->xdev->hmd, r->descriptor_pool);
 
 	VkExtent2D extent = {
 	    .width = r->c->xdev->hmd->screens[0].w_pixels,

@@ -956,7 +956,6 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	// Init the settings to default.
 	comp_settings_init(&c->settings, xdev);
 
-	c->settings.flip_y = false;
 	c->last_frame_time_ns = os_monotonic_get_ns();
 	c->frame_overhead_ns = 2000000;
 	//! @todo set this to an estimate that's better than 6ms

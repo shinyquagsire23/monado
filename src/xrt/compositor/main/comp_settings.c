@@ -38,7 +38,6 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	s->present_mode = VK_PRESENT_MODE_FIFO_KHR;
 	s->window_type = WINDOW_AUTO;
 	s->fullscreen = false;
-	s->flip_y = false;
 	s->distortion_model = xdev->hmd->distortion.preferred;
 	s->width = xdev->hmd->screens[0].w_pixels;
 	s->height = xdev->hmd->screens[0].h_pixels;

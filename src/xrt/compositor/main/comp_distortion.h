@@ -125,8 +125,7 @@ comp_distortion_init(struct comp_distortion *d,
                      VkPipelineCache pipeline_cache,
                      enum xrt_distortion_model distortion_model,
                      struct xrt_hmd_parts *parts,
-                     VkDescriptorPool descriptor_pool,
-                     bool flip_y);
+                     VkDescriptorPool descriptor_pool);
 
 /*!
  * Free and destroy all fields, does not free the destortion itself.
