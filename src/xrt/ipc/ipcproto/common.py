@@ -56,7 +56,7 @@ class Arg:
     SCALAR_TYPES = set(("uint32_t",
                         "int64_t",
                         "uint64_t"))
-    AGGREGATE_RE = re.compile(r"(struct|union) (xrt|ipc)_[a-z_]+")
+    AGGREGATE_RE = re.compile(r"((const )?struct|union) (xrt|ipc)_[a-z_]+")
     ENUM_RE = re.compile(r"enum xrt_[a-z_]+")
 
     @classmethod

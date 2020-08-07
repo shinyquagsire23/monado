@@ -60,7 +60,7 @@ validate_swapchain_state(volatile struct ipc_client_state *ics,
 static void
 set_swapchain_info(volatile struct ipc_client_state *ics,
                    uint32_t index,
-                   struct xrt_swapchain_create_info *info,
+                   const struct xrt_swapchain_create_info *info,
                    struct xrt_swapchain *xsc)
 {
 	ics->xscs[index] = xsc;
@@ -312,7 +312,7 @@ ipc_handle_system_set_focused_client(volatile struct ipc_client_state *ics,
 
 xrt_result_t
 ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
-                            struct xrt_swapchain_create_info *info,
+                            const struct xrt_swapchain_create_info *info,
                             uint32_t *out_id,
                             uint32_t *out_num_images,
                             uint64_t *out_size,
@@ -364,7 +364,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 
 xrt_result_t
 ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
-                            struct xrt_swapchain_create_info *info,
+                            const struct xrt_swapchain_create_info *info,
                             struct ipc_arg_swapchain_from_native *args,
                             uint32_t *out_id,
                             xrt_graphics_buffer_handle_t *handles,

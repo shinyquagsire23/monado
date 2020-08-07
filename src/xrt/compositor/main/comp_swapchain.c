@@ -236,7 +236,7 @@ image_cleanup(struct vk_bundle *vk, struct comp_swapchain_image *image)
 
 xrt_result_t
 comp_swapchain_create(struct xrt_compositor *xc,
-                      struct xrt_swapchain_create_info *info,
+                      const struct xrt_swapchain_create_info *info,
                       struct xrt_swapchain **out_xsc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -279,7 +279,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 xrt_result_t
 comp_swapchain_import(struct xrt_compositor *xc,
-                      struct xrt_swapchain_create_info *info,
+                      const struct xrt_swapchain_create_info *info,
                       struct xrt_image_native *native_images,
                       uint32_t num_images,
                       struct xrt_swapchain **out_xsc)

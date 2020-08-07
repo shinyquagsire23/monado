@@ -176,7 +176,7 @@ ipc_compositor_swapchain_release_image(struct xrt_swapchain *xsc,
 
 static xrt_result_t
 ipc_compositor_swapchain_create(struct xrt_compositor *xc,
-                                struct xrt_swapchain_create_info *info,
+                                const struct xrt_swapchain_create_info *info,
                                 struct xrt_swapchain **out_xsc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
@@ -220,7 +220,7 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 
 static xrt_result_t
 ipc_compositor_swapchain_import(struct xrt_compositor *xc,
-                                struct xrt_swapchain_create_info *info,
+                                const struct xrt_swapchain_create_info *info,
                                 struct xrt_image_native *native_images,
                                 uint32_t num_images,
                                 struct xrt_swapchain **out_xsc)

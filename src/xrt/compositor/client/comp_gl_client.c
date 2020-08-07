@@ -251,7 +251,7 @@ vk_format_to_gl(int64_t format)
 
 static xrt_result_t
 client_gl_swapchain_create(struct xrt_compositor *xc,
-                           struct xrt_swapchain_create_info *info,
+                           const struct xrt_swapchain_create_info *info,
                            struct xrt_swapchain **out_xsc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);

@@ -467,18 +467,20 @@ struct xrt_compositor
 	/*!
 	 * Create a swapchain with a set of images.
 	 */
-	xrt_result_t (*create_swapchain)(struct xrt_compositor *xc,
-	                                 struct xrt_swapchain_create_info *info,
-	                                 struct xrt_swapchain **out_xsc);
+	xrt_result_t (*create_swapchain)(
+	    struct xrt_compositor *xc,
+	    const struct xrt_swapchain_create_info *info,
+	    struct xrt_swapchain **out_xsc);
 
 	/*!
 	 * Create a swapchain from a set of native images.
 	 */
-	xrt_result_t (*import_swapchain)(struct xrt_compositor *xc,
-	                                 struct xrt_swapchain_create_info *info,
-	                                 struct xrt_image_native *native_images,
-	                                 uint32_t num_images,
-	                                 struct xrt_swapchain **out_xsc);
+	xrt_result_t (*import_swapchain)(
+	    struct xrt_compositor *xc,
+	    const struct xrt_swapchain_create_info *info,
+	    struct xrt_image_native *native_images,
+	    uint32_t num_images,
+	    struct xrt_swapchain **out_xsc);
 
 	/*!
 	 * Poll events from this compositor.
@@ -602,7 +604,7 @@ struct xrt_compositor
  */
 static inline xrt_result_t
 xrt_comp_create_swapchain(struct xrt_compositor *xc,
-                          struct xrt_swapchain_create_info *info,
+                          const struct xrt_swapchain_create_info *info,
                           struct xrt_swapchain **out_xsc)
 {
 	return xc->create_swapchain(xc, info, out_xsc);
@@ -617,7 +619,7 @@ xrt_comp_create_swapchain(struct xrt_compositor *xc,
  */
 static inline xrt_result_t
 xrt_comp_import_swapchain(struct xrt_compositor *xc,
-                          struct xrt_swapchain_create_info *info,
+                          const struct xrt_swapchain_create_info *info,
                           struct xrt_image_native *native_images,
                           uint32_t num_images,
                           struct xrt_swapchain **out_xsc)
@@ -989,7 +991,7 @@ struct xrt_compositor_native
  */
 static inline xrt_result_t
 xrt_comp_native_create_swapchain(struct xrt_compositor_native *xcn,
-                                 struct xrt_swapchain_create_info *info,
+                                 const struct xrt_swapchain_create_info *info,
                                  struct xrt_swapchain_native **out_xscn)
 {
 	struct xrt_swapchain *xsc = NULL;

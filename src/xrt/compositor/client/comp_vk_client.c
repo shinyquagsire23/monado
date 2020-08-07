@@ -286,7 +286,7 @@ client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 
 static xrt_result_t
 client_vk_swapchain_create(struct xrt_compositor *xc,
-                           struct xrt_swapchain_create_info *info,
+                           const struct xrt_swapchain_create_info *info,
                            struct xrt_swapchain **out_xsc)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);

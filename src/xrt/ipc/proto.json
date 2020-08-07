@@ -100,7 +100,7 @@
 
 	"swapchain_create": {
 		"in": [
-			{"name": "info", "type": "struct xrt_swapchain_create_info"}
+			{"name": "info", "type": "const struct xrt_swapchain_create_info"}
 		],
 		"out": [
 			{"name": "id", "type": "uint32_t"},
@@ -112,7 +112,7 @@
 
 	"swapchain_import": {
 		"in": [
-			{"name": "info", "type": "struct xrt_swapchain_create_info"},
+			{"name": "info", "type": "const struct xrt_swapchain_create_info"},
 			{"name": "args", "type": "struct ipc_arg_swapchain_from_native"}
 		],
 		"out": [
