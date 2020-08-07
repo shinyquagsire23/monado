@@ -340,7 +340,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
  */
 VkResult
 vk_create_image_from_native(struct vk_bundle *vk,
-                            struct xrt_swapchain_create_info *info,
+                            const struct xrt_swapchain_create_info *info,
                             struct xrt_image_native *image_native,
                             VkImage *out_image,
                             VkDeviceMemory *out_mem);

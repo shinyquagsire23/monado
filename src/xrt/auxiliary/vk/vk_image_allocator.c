@@ -49,7 +49,7 @@ get_device_memory_fd(struct vk_bundle *vk,
 
 static VkResult
 create_image(struct vk_bundle *vk,
-             struct xrt_swapchain_create_info *info,
+             const struct xrt_swapchain_create_info *info,
              struct vk_image *out_image)
 {
 	VkImageUsageFlags image_usage = vk_swapchain_usage_flags(info->bits);
@@ -148,7 +148,7 @@ destroy_image(struct vk_bundle *vk, struct vk_image *image)
 
 VkResult
 vk_ic_allocate(struct vk_bundle *vk,
-               struct xrt_swapchain_create_info *xscci,
+               const struct xrt_swapchain_create_info *xscci,
                uint32_t num_images,
                struct vk_image_collection *out_vkic)
 {
@@ -192,7 +192,7 @@ vk_ic_allocate(struct vk_bundle *vk,
  */
 VkResult
 vk_ic_from_natives(struct vk_bundle *vk,
-                   struct xrt_swapchain_create_info *xscci,
+                   const struct xrt_swapchain_create_info *xscci,
                    struct xrt_image_native *native_images,
                    uint32_t num_images,
                    struct vk_image_collection *out_vkic)
