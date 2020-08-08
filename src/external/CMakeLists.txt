@@ -21,6 +21,10 @@ target_include_directories(xrt-external-flexkalman INTERFACE ${CMAKE_CURRENT_SOU
 add_library(xrt-external-glad INTERFACE)
 target_include_directories(xrt-external-glad INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/glad/include)
 
+# Hungarian graph algorithm
+add_library(xrt-external-hungarian INTERFACE)
+target_include_directories(xrt-external-hungarian INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/hungarian)
+
 # OpenXR
 add_library(xrt-external-openxr INTERFACE)
 target_include_directories(xrt-external-openxr INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/openxr_includes)
