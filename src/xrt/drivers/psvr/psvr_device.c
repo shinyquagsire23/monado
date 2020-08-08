@@ -1071,7 +1071,7 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	if (debug_get_bool_option_psvr_disco()) {
 		ret = disco_leds(psvr);
 	} else {
-		ret = control_leds(psvr, PSVR_LED_ALL, PSVR_LED_POWER_MAX,
+		ret = control_leds(psvr, PSVR_LED_FRONT, PSVR_LED_POWER_MAX,
 		                   (enum psvr_leds)0);
 	}
 	if (ret < 0) {
