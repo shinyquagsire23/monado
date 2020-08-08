@@ -36,10 +36,15 @@ get_last_input_plus_period_at_least_greater_then(struct u_rt_helper *urth,
 {
 	uint64_t val = urth->last_input;
 
+	if (urth->period == 0) {
+		return then_ns;
+	}
+
 	while (val <= then_ns) {
 		val += urth->period;
 		assert(val != 0);
 	}
+
 
 	return val;
 }
