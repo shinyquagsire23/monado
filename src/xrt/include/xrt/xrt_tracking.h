@@ -93,7 +93,7 @@ struct xrt_tracking_factory
 	                           struct xrt_tracked_psmv **out_psmv);
 
 	/*!
-	 * Create a tracked PSVR ball.
+	 * Create a tracked PSVR HMD.
 	 */
 	int (*create_tracked_psvr)(struct xrt_tracking_factory *,
 	                           struct xrt_device *xdev,
