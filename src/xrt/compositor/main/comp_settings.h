@@ -64,6 +64,9 @@ struct comp_settings
 	//! Window type to use.
 	enum window_type window_type;
 
+	//! display string forced by user or NULL
+	const char *nvidia_display;
+
 	//! Distortion type to use.
 	enum xrt_distortion_model distortion_model;
 

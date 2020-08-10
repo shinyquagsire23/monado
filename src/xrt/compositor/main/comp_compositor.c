@@ -775,6 +775,12 @@ _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 				return true;
 			}
 		}
+
+		if (c->settings.nvidia_display &&
+		    _match_wl_entry(c->settings.nvidia_display, disp)) {
+			free(display_props);
+			return true;
+		}
 	}
 
 	COMP_ERROR(c, "NVIDIA: No whitelisted displays found!");

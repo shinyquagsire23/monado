@@ -202,6 +202,12 @@ comp_window_direct_nvidia_init(struct comp_window *w)
 	// TODO: what if we have multiple whitelisted HMD displays connected?
 	for (uint32_t i = 0; i < display_count; i++) {
 		struct VkDisplayPropertiesKHR disp = *(display_props + i);
+
+		if (w->c->settings.nvidia_display) {
+			append_nvidia_entry_on_match(
+			    w_direct, w->c->settings.nvidia_display, &disp);
+		}
+
 		// check this display against our whitelist
 		for (uint32_t j = 0; j < ARRAY_SIZE(NV_DIRECT_WHITELIST); j++)
 			if (append_nvidia_entry_on_match(
