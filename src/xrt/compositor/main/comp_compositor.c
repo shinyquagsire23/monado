@@ -397,6 +397,12 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 			comp_renderer_set_projection_layer(c->r, i, left, right,
 			                                   data);
 		} break;
+		case XRT_LAYER_STEREO_PROJECTION_DEPTH:
+		case XRT_LAYER_CUBE:
+		case XRT_LAYER_CYLINDER:
+		case XRT_LAYER_EQUIRECT:
+			// Should never end up here.
+			assert(false);
 		}
 	}
 
