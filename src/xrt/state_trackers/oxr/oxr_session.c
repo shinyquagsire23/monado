@@ -223,8 +223,12 @@ void
 oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 {
 	struct xrt_compositor *xc = sess->compositor;
-	union xrt_compositor_event xce;
+	if (xc == NULL) {
+		return;
+	}
+
 	while (true) {
+		union xrt_compositor_event xce = {0};
 		xc->poll_events(xc, &xce);
 
 		// dispatch based on event type
