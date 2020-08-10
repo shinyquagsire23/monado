@@ -209,23 +209,6 @@ comp_window_direct_nvidia_init(struct comp_window *w)
 				break;
 	}
 
-	if (w_direct->num_displays == 0) {
-		COMP_ERROR(w->c,
-		           "NVIDIA: No machting displays found. "
-		           "Is your headset whitelisted?");
-
-		COMP_ERROR(w->c, "== Whitelist ==");
-		for (uint32_t i = 0; i < ARRAY_SIZE(NV_DIRECT_WHITELIST); i++)
-			COMP_ERROR(w->c, "%s", NV_DIRECT_WHITELIST[i]);
-
-		COMP_ERROR(w->c, "== Available ==");
-		for (uint32_t i = 0; i < display_count; i++)
-			COMP_ERROR(w->c, "%s", display_props[i].displayName);
-
-		free(display_props);
-		return false;
-	}
-
 	free(display_props);
 
 	return true;

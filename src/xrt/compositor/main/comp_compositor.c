@@ -777,6 +777,17 @@ _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 		}
 	}
 
+	COMP_ERROR(c, "NVIDIA: No whitelisted displays found!");
+
+	COMP_ERROR(c, "== Current Whitelist ==");
+	for (uint32_t i = 0; i < ARRAY_SIZE(NV_DIRECT_WHITELIST); i++)
+		COMP_ERROR(c, "%s", NV_DIRECT_WHITELIST[i]);
+
+	COMP_ERROR(c, "== Found Displays ==");
+	for (uint32_t i = 0; i < display_count; i++)
+		COMP_ERROR(c, "%s", display_props[i].displayName);
+
+
 	free(display_props);
 
 	return false;
