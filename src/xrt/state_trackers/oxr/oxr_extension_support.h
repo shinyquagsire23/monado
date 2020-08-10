@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "xrt/xrt_config_build.h"
+
 // beginning of GENERATED defines - do not modify - used by scripts
 
 /*
@@ -63,6 +65,58 @@
 	_(KHR_vulkan_enable, KHR_VULKAN_ENABLE)
 #else
 #define OXR_EXTENSION_SUPPORT_KHR_vulkan_enable(_)
+#endif
+
+
+/*
+ * XR_KHR_composition_layer_depth
+ */
+#if defined(XR_KHR_composition_layer_depth) &&                                 \
+    defined(XRT_FEATURE_OPENXR_LAYER_DEPTH)
+#define OXR_HAVE_KHR_composition_layer_depth
+#define OXR_EXTENSION_SUPPORT_KHR_composition_layer_depth(_)                   \
+	_(KHR_composition_layer_depth, KHR_COMPOSITION_LAYER_DEPTH)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_composition_layer_depth(_)
+#endif
+
+
+/*
+ * XR_KHR_composition_layer_cube
+ */
+#if defined(XR_KHR_composition_layer_cube) &&                                  \
+    defined(XRT_FEATURE_OPENXR_LAYER_CUBE)
+#define OXR_HAVE_KHR_composition_layer_cube
+#define OXR_EXTENSION_SUPPORT_KHR_composition_layer_cube(_)                    \
+	_(KHR_composition_layer_cube, KHR_COMPOSITION_LAYER_CUBE)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_composition_layer_cube(_)
+#endif
+
+
+/*
+ * XR_KHR_composition_layer_cylinder
+ */
+#if defined(XR_KHR_composition_layer_cylinder) &&                              \
+    defined(XRT_FEATURE_OPENXR_LAYER_CYLINDER)
+#define OXR_HAVE_KHR_composition_layer_cylinder
+#define OXR_EXTENSION_SUPPORT_KHR_composition_layer_cylinder(_)                \
+	_(KHR_composition_layer_cylinder, KHR_COMPOSITION_LAYER_CYLINDER)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_composition_layer_cylinder(_)
+#endif
+
+
+/*
+ * XR_KHR_composition_layer_equirect
+ */
+#if defined(XR_KHR_composition_layer_equirect) &&                              \
+    defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT)
+#define OXR_HAVE_KHR_composition_layer_equirect
+#define OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect(_)                \
+	_(KHR_composition_layer_equirect, KHR_COMPOSITION_LAYER_EQUIRECT)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect(_)
 #endif
 
 
@@ -165,6 +219,10 @@
     OXR_EXTENSION_SUPPORT_KHR_opengl_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_es_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable(_) \
+    OXR_EXTENSION_SUPPORT_KHR_composition_layer_depth(_) \
+    OXR_EXTENSION_SUPPORT_KHR_composition_layer_cube(_) \
+    OXR_EXTENSION_SUPPORT_KHR_composition_layer_cylinder(_) \
+    OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect(_) \
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_) \
     OXR_EXTENSION_SUPPORT_MND_swapchain_usage_input_attachment_bit(_) \

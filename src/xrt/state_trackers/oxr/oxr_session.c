@@ -801,6 +801,63 @@ verify_projection_layer(struct xrt_compositor *xc,
 	return XR_SUCCESS;
 }
 
+static XrResult
+verify_cube_layer(struct xrt_compositor *xc,
+                  struct oxr_logger *log,
+                  uint32_t layer_index,
+                  const XrCompositionLayerCubeKHR *cube,
+                  struct xrt_device *head,
+                  uint64_t timestamp)
+{
+#ifndef XRT_FEATURE_OPENXR_LAYER_CUBE
+	return oxr_error(log, XR_ERROR_LAYER_INVALID,
+	                 "(frameEndInfo->layers[%u]->type) layer type "
+	                 "XrCompositionLayerCubeKHR not supported",
+	                 layer_index);
+#else
+	return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+	                 "XrCompositionLayerCubeKHR not implemented");
+#endif
+}
+
+static XrResult
+verify_cylinder_layer(struct xrt_compositor *xc,
+                      struct oxr_logger *log,
+                      uint32_t layer_index,
+                      const XrCompositionLayerCylinderKHR *cylinder,
+                      struct xrt_device *head,
+                      uint64_t timestamp)
+{
+#ifndef XRT_FEATURE_OPENXR_LAYER_CYLINDER
+	return oxr_error(log, XR_ERROR_LAYER_INVALID,
+	                 "(frameEndInfo->layers[%u]->type) layer type "
+	                 "XrCompositionLayerCylinderKHR not supported",
+	                 layer_index);
+#else
+	return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+	                 "XrCompositionLayerCylinderKHR not implemented");
+#endif
+}
+
+static XrResult
+verify_equirect_layer(struct xrt_compositor *xc,
+                      struct oxr_logger *log,
+                      uint32_t layer_index,
+                      const XrCompositionLayerEquirectKHR *equirect,
+                      struct xrt_device *head,
+                      uint64_t timestamp)
+{
+#ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT
+	return oxr_error(log, XR_ERROR_LAYER_INVALID,
+	                 "(frameEndInfo->layers[%u]->type) layer type "
+	                 "XrCompositionLayerEquirectKHR not supported",
+	                 layer_index);
+#else
+	return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+	                 "XrCompositionLayerEquirectKHR not implemented");
+#endif
+}
+
 static enum xrt_layer_composition_flags
 convert_layer_flags(XrSwapchainUsageFlags xr_flags)
 {
@@ -1008,6 +1065,42 @@ submit_projection_layer(struct xrt_compositor *xc,
 	return XR_SUCCESS;
 }
 
+static void
+submit_cube_layer(struct oxr_session *sess,
+                  struct xrt_compositor *xc,
+                  struct oxr_logger *log,
+                  const XrCompositionLayerCubeKHR *cube,
+                  struct xrt_device *head,
+                  struct xrt_pose *inv_offset,
+                  uint64_t timestamp)
+{
+	// Not implemented
+}
+
+static void
+submit_cylinder_layer(struct oxr_session *sess,
+                      struct xrt_compositor *xc,
+                      struct oxr_logger *log,
+                      const XrCompositionLayerCylinderKHR *cylinder,
+                      struct xrt_device *head,
+                      struct xrt_pose *inv_offset,
+                      uint64_t timestamp)
+{
+	// Not implemented
+}
+
+static void
+submit_equirect_layer(struct oxr_session *sess,
+                      struct xrt_compositor *xc,
+                      struct oxr_logger *log,
+                      const XrCompositionLayerEquirectKHR *equirect,
+                      struct xrt_device *head,
+                      struct xrt_pose *inv_offset,
+                      uint64_t timestamp)
+{
+	// Not implemented
+}
+
 XrResult
 oxr_session_frame_end(struct oxr_logger *log,
                       struct oxr_session *sess,
@@ -1115,6 +1208,21 @@ oxr_session_frame_end(struct oxr_logger *log,
 			    xc, log, i, (XrCompositionLayerQuad *)layer, xdev,
 			    frameEndInfo->displayTime);
 			break;
+		case XR_TYPE_COMPOSITION_LAYER_CUBE_KHR:
+			res = verify_cube_layer(
+			    xc, log, i, (XrCompositionLayerCubeKHR *)layer,
+			    xdev, frameEndInfo->displayTime);
+			break;
+		case XR_TYPE_COMPOSITION_LAYER_CYLINDER_KHR:
+			res = verify_cylinder_layer(
+			    xc, log, i, (XrCompositionLayerCylinderKHR *)layer,
+			    xdev, frameEndInfo->displayTime);
+			break;
+		case XR_TYPE_COMPOSITION_LAYER_EQUIRECT_KHR:
+			res = verify_equirect_layer(
+			    xc, log, i, (XrCompositionLayerEquirectKHR *)layer,
+			    xdev, frameEndInfo->displayTime);
+			break;
 		default:
 			return oxr_error(log, XR_ERROR_LAYER_INVALID,
 			                 "(frameEndInfo->layers[%u]->type) "
@@ -1152,6 +1260,23 @@ oxr_session_frame_end(struct oxr_logger *log,
 			submit_quad_layer(
 			    sess, xc, log, (XrCompositionLayerQuad *)layer,
 			    xdev, &inv_offset, frameEndInfo->displayTime);
+			break;
+		case XR_TYPE_COMPOSITION_LAYER_CUBE_KHR:
+			submit_cube_layer(
+			    sess, xc, log, (XrCompositionLayerCubeKHR *)layer,
+			    xdev, &inv_offset, frameEndInfo->displayTime);
+			break;
+		case XR_TYPE_COMPOSITION_LAYER_CYLINDER_KHR:
+			submit_cylinder_layer(
+			    sess, xc, log,
+			    (XrCompositionLayerCylinderKHR *)layer, xdev,
+			    &inv_offset, frameEndInfo->displayTime);
+			break;
+		case XR_TYPE_COMPOSITION_LAYER_EQUIRECT_KHR:
+			submit_equirect_layer(
+			    sess, xc, log,
+			    (XrCompositionLayerEquirectKHR *)layer, xdev,
+			    &inv_offset, frameEndInfo->displayTime);
 			break;
 		default: assert(false && "invalid layer type");
 		}
