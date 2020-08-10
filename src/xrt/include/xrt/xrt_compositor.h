@@ -91,7 +91,11 @@ enum xrt_view_type
 enum xrt_layer_type
 {
 	XRT_LAYER_STEREO_PROJECTION,
+	XRT_LAYER_STEREO_PROJECTION_DEPTH,
 	XRT_LAYER_QUAD,
+	XRT_LAYER_CUBE,
+	XRT_LAYER_CYLINDER,
+	XRT_LAYER_EQUIRECT,
 };
 
 /*!
@@ -138,22 +142,6 @@ struct xrt_sub_image
 };
 
 /*!
- * All the pure data values associated with a quad layer.
- *
- * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
- * this struct.
- */
-struct xrt_layer_quad_data
-{
-	enum xrt_layer_eye_visibility visibility;
-
-	struct xrt_sub_image sub;
-
-	struct xrt_pose pose;
-	struct xrt_vec2 size;
-};
-
-/*!
  * All of the pure data values associated with a single view in a projection
  * layer.
  *
@@ -177,6 +165,103 @@ struct xrt_layer_projection_view_data
 struct xrt_layer_stereo_projection_data
 {
 	struct xrt_layer_projection_view_data l, r;
+};
+
+/*!
+ * All the pure data values associated with a depth information attached
+ * to a layer.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
+ */
+struct xrt_layer_depth_data
+{
+	struct xrt_sub_image sub;
+
+	float min_depth;
+	float max_depth;
+	float near_z;
+	float far_z;
+};
+
+/*!
+ * All the pure data values associated with a stereo projection layer with depth
+ * swapchain attached.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
+ */
+struct xrt_layer_stereo_projection_depth_data
+{
+	struct xrt_layer_projection_view_data l, r;
+
+	struct xrt_layer_depth_data l_d, r_d;
+};
+
+/*!
+ * All the pure data values associated with a quad layer.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
+ */
+struct xrt_layer_quad_data
+{
+	enum xrt_layer_eye_visibility visibility;
+
+	struct xrt_sub_image sub;
+
+	struct xrt_pose pose;
+	struct xrt_vec2 size;
+};
+
+/*!
+ * All the pure data values associated with a cube layer.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
+ */
+struct xrt_layer_cube_data
+{
+	enum xrt_layer_eye_visibility visibility;
+
+	struct xrt_sub_image sub;
+
+	struct xrt_pose pose;
+	uint32_t image_array_index;
+};
+
+/*!
+ * All the pure data values associated with a cylinder layer.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
+ */
+struct xrt_layer_cylinder_data
+{
+	enum xrt_layer_eye_visibility visibility;
+
+	struct xrt_sub_image sub;
+
+	struct xrt_pose pose;
+	float radius;
+	float central_angle;
+	float aspect_ratio;
+};
+
+/*!
+ * All the pure data values associated with a equirect layer.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
+ */
+struct xrt_layer_equirect_data
+{
+	enum xrt_layer_eye_visibility visibility;
+
+	struct xrt_sub_image sub;
+
+	struct xrt_pose pose;
+	float radius;
 };
 
 /*!
@@ -233,8 +318,12 @@ struct xrt_layer_data
 	 * xrt_compositor::layer_commit where this data was passed.
 	 */
 	union {
-		struct xrt_layer_quad_data quad;
 		struct xrt_layer_stereo_projection_data stereo;
+		struct xrt_layer_stereo_projection_depth_data stereo_depth;
+		struct xrt_layer_quad_data quad;
+		struct xrt_layer_cube_data cube;
+		struct xrt_layer_cylinder_data cylinder;
+		struct xrt_layer_equirect_data equirect;
 	};
 };
 
@@ -566,6 +655,26 @@ struct xrt_compositor
 	                                        struct xrt_layer_data *data);
 
 	/*!
+	 * Adds a stereo projection layer for submission, has depth information.
+	 *
+	 * @param xc          Self pointer
+	 * @param xdev        The device the layer is relative to.
+	 * @param l_xsc       Left swapchain.
+	 * @param r_xsc       Right swapchain.
+	 * @param l_d_xsc     Left depth swapchain.
+	 * @param r_d_xsc     Right depth swapchain.
+	 * @param data        All of the pure data bits.
+	 */
+	xrt_result_t (*layer_stereo_projection_depth)(
+	    struct xrt_compositor *xc,
+	    struct xrt_device *xdev,
+	    struct xrt_swapchain *l_xsc,
+	    struct xrt_swapchain *r_xsc,
+	    struct xrt_swapchain *l_d_xsc,
+	    struct xrt_swapchain *r_d_xsc,
+	    struct xrt_layer_data *data);
+
+	/*!
 	 * Adds a quad layer for submission, the center of the quad is specified
 	 * by the pose and extends outwards from it.
 	 *
@@ -578,6 +687,45 @@ struct xrt_compositor
 	                           struct xrt_device *xdev,
 	                           struct xrt_swapchain *xsc,
 	                           struct xrt_layer_data *data);
+
+	/*!
+	 * Adds a cube layer for submission.
+	 *
+	 * @param xc          Self pointer
+	 * @param xdev        The device the layer is relative to.
+	 * @param xsc         Swapchain.
+	 * @param data        All of the pure data bits.
+	 */
+	xrt_result_t (*layer_cube)(struct xrt_compositor *xc,
+	                           struct xrt_device *xdev,
+	                           struct xrt_swapchain *xsc,
+	                           struct xrt_layer_data *data);
+
+	/*!
+	 * Adds a cylinder layer for submission.
+	 *
+	 * @param xc          Self pointer
+	 * @param xdev        The device the layer is relative to.
+	 * @param xsc         Swapchain.
+	 * @param data        All of the pure data bits.
+	 */
+	xrt_result_t (*layer_cylinder)(struct xrt_compositor *xc,
+	                               struct xrt_device *xdev,
+	                               struct xrt_swapchain *xsc,
+	                               struct xrt_layer_data *data);
+
+	/*!
+	 * Adds a equirect layer for submission.
+	 *
+	 * @param xc          Self pointer
+	 * @param xdev        The device the layer is relative to.
+	 * @param xsc         Swapchain.
+	 * @param data        All of the pure data bits.
+	 */
+	xrt_result_t (*layer_equirect)(struct xrt_compositor *xc,
+	                               struct xrt_device *xdev,
+	                               struct xrt_swapchain *xsc,
+	                               struct xrt_layer_data *data);
 
 	/*!
 	 * Commits all of the submitted layers, it's from this on that the
@@ -771,6 +919,54 @@ xrt_comp_layer_quad(struct xrt_compositor *xc,
                     struct xrt_layer_data *data)
 {
 	return xc->layer_quad(xc, xdev, xsc, data);
+}
+
+/*!
+ * @copydoc xrt_compositor::layer_cube
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_layer_cube(struct xrt_compositor *xc,
+                    struct xrt_device *xdev,
+                    struct xrt_swapchain *xsc,
+                    struct xrt_layer_data *data)
+{
+	return xc->layer_cube(xc, xdev, xsc, data);
+}
+
+/*!
+ * @copydoc xrt_compositor::layer_cylinder
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_layer_cylinder(struct xrt_compositor *xc,
+                        struct xrt_device *xdev,
+                        struct xrt_swapchain *xsc,
+                        struct xrt_layer_data *data)
+{
+	return xc->layer_cylinder(xc, xdev, xsc, data);
+}
+
+/*!
+ * @copydoc xrt_compositor::layer_equirect
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_layer_equirect(struct xrt_compositor *xc,
+                        struct xrt_device *xdev,
+                        struct xrt_swapchain *xsc,
+                        struct xrt_layer_data *data)
+{
+	return xc->layer_equirect(xc, xdev, xsc, data);
 }
 
 /*!
