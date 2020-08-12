@@ -1219,6 +1219,95 @@ xrt_comp_native_destroy(struct xrt_compositor_native **xcn_ptr)
 }
 
 
+/*
+ *
+ * Image allocator.
+ *
+ */
+
+/*!
+ * Allocator for system native images, in general you do not need to free the
+ * images as they will be consumed by importing them to the graphics API.
+ *
+ * @see xrt_image_native
+ */
+struct xrt_image_native_allocator
+{
+	/*!
+	 * Allocate a set of images suitable to be used to back a swapchain
+	 * with the given create info properties (@p xsci).
+	 */
+	xrt_result_t (*images_allocate)(
+	    struct xrt_image_native_allocator *xina,
+	    const struct xrt_swapchain_create_info *xsci,
+	    size_t num_images,
+	    struct xrt_image_native *out_images);
+
+	/*!
+	 * Free the given images.
+	 */
+	xrt_result_t (*images_free)(struct xrt_image_native_allocator *xina,
+	                            size_t num_images,
+	                            struct xrt_image_native *images);
+
+	/*!
+	 * Destroy the image allocator.
+	 */
+	void (*destroy)(struct xrt_image_native_allocator *xina);
+};
+
+/*!
+ * @copydoc xrt_image_native_allocator::xrt_images_allocate
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_image_native_allocate
+ */
+static inline xrt_result_t
+xrt_images_allocate(struct xrt_image_native_allocator *xina,
+                    const struct xrt_swapchain_create_info *xsci,
+                    size_t num_images,
+                    struct xrt_image_native *out_images)
+{
+	return xina->images_allocate(xina, xsci, num_images, out_images);
+}
+
+/*!
+ * @copydoc xrt_image_native_allocator::images_free
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_image_native_allocate
+ */
+static inline xrt_result_t
+xrt_images_free(struct xrt_image_native_allocator *xina,
+                size_t num_images,
+                struct xrt_image_native *images)
+{
+	return xina->images_free(xina, num_images, images);
+}
+
+/*!
+ * @copydoc xrt_image_native_allocator::destroy
+ *
+ * Helper for calling through the function pointer: does a null check and sets
+ * xina_ptr to null if freed.
+ *
+ * @public @memberof xrt_image_native_allocator
+ */
+static inline void
+xrt_images_destroy(struct xrt_image_native_allocator **xina_ptr)
+{
+	struct xrt_image_native_allocator *xina = *xina_ptr;
+	if (xina == NULL) {
+		return;
+	}
+
+	xina->destroy(xina);
+	*xina_ptr = NULL;
+}
+
+
 /*!
  * @}
  */
