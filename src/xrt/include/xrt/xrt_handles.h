@@ -52,14 +52,14 @@ xrt_shmem_is_valid(xrt_shmem_handle_t handle)
  */
 #define XRT_SHMEM_HANDLE_INVALID (-1)
 
-#if defined(XRT_OS_ANDROID)
+#if defined(XRT_OS_ANDROID) && (__ANDROID_API__ >= 26)
 typedef struct AHardwareBuffer AHardwareBuffer;
 
 /*!
  * The type underlying buffers shared between compositor clients and the main
  * compositor.
  *
- * On Android, this is an @p AHardwareBuffer pointer.
+ * On Android platform 26+, this is an @p AHardwareBuffer pointer.
  */
 typedef AHardwareBuffer *xrt_graphics_buffer_handle_t;
 
