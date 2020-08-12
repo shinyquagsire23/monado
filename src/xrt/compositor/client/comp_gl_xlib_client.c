@@ -17,6 +17,8 @@
 #include "client/comp_gl_xlib_client.h"
 #include "client/comp_gl_memobj_swapchain.h"
 
+#include "ogl/ogl_api.h"
+
 
 /*!
  * Down-cast helper.
@@ -54,10 +56,31 @@ client_gl_xlib_compositor_create(struct xrt_compositor_native *xcn,
                                  GLXDrawable glxDrawable,
                                  GLXContext glxContext)
 {
+	gladLoadGL(glXGetProcAddress);
+
+	// @todo log this to a proper logger.
+#define CHECK_REQUIRED_EXTENSION(EXT)                                          \
+	do {                                                                   \
+		if (!GLAD_##EXT) {                                             \
+			fprintf(stderr,                                        \
+			        "%s - Required OpenGL extension " #EXT         \
+			        " not available\n",                            \
+			        __func__);                                     \
+			return NULL;                                           \
+		}                                                              \
+	} while (0)
+
+	CHECK_REQUIRED_EXTENSION(GL_EXT_memory_object);
+#ifdef XRT_OS_LINUX
+	CHECK_REQUIRED_EXTENSION(GL_EXT_memory_object_fd);
+#endif
+
+#undef CHECK_REQUIRED_EXTENSION
+
 	struct client_gl_xlib_compositor *c =
 	    U_TYPED_CALLOC(struct client_gl_xlib_compositor);
 
-	if (!client_gl_compositor_init(&c->base, xcn, glXGetProcAddress,
+	if (!client_gl_compositor_init(&c->base, xcn,
 	                               client_gl_memobj_swapchain_create)) {
 		free(c);
 		return NULL;

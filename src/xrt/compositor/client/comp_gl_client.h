@@ -57,9 +57,6 @@ typedef struct xrt_swapchain *(*client_gl_swapchain_create_func)(
     struct xrt_swapchain_native *xscn,
     struct client_gl_swapchain **out_sc);
 
-typedef void (*client_gl_void_ptr_func)();
-typedef client_gl_void_ptr_func (*client_gl_get_procaddr)(const char *name);
-
 /*!
  * @class client_gl_compositor
  *
@@ -105,13 +102,15 @@ client_gl_compositor(struct xrt_compositor *xc)
  *
  * Moves ownership of provided xcn to the client_gl_compositor.
  *
+ * Be sure to load your GL loader/wrapper (GLAD) before calling into here, it
+ * won't be called for you.
+ *
  * @public @memberof client_gl_compositor
  * @relatesalso xrt_compositor_native
  */
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_get_procaddr get_gl_procaddr,
                           client_gl_swapchain_create_func create_swapchain);
 
 

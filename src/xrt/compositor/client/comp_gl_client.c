@@ -318,7 +318,6 @@ client_gl_compositor_destroy(struct xrt_compositor *xc)
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_get_procaddr get_gl_procaddr,
                           client_gl_swapchain_create_func create_swapchain)
 {
 	c->base.base.create_swapchain = client_gl_swapchain_create;
@@ -349,30 +348,6 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 		c->base.base.info.formats[count++] = f;
 	}
 	c->base.base.info.num_formats = count;
-
-#if defined(XRT_HAVE_OPENGL)
-	gladLoadGL(get_gl_procaddr);
-#elif defined(XRT_HAVE_OPENGLES)
-	gladLoadGLES2(get_gl_procaddr);
-#endif
-	// @todo log this to a proper logger.
-#define CHECK_REQUIRED_EXTENSION(EXT)                                          \
-	do {                                                                   \
-		if (!GLAD_##EXT) {                                             \
-			fprintf(stderr,                                        \
-			        "%s - Needed extension " #EXT                  \
-			        " not supported\n",                            \
-			        __func__);                                     \
-			return false;                                          \
-		}                                                              \
-	} while (0)
-
-	CHECK_REQUIRED_EXTENSION(GL_EXT_memory_object);
-#ifdef XRT_OS_LINUX
-	CHECK_REQUIRED_EXTENSION(GL_EXT_memory_object_fd);
-#endif
-
-#undef CHECK_REQUIRED_EXTENSION
 
 	return true;
 }

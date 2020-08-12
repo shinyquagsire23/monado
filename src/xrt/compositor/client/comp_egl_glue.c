@@ -50,32 +50,67 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
                                EGLContext context,
                                PFNEGLGETPROCADDRESSPROC get_gl_procaddr)
 {
-#if defined(XRT_HAVE_OPENGL)
-	gladLoadGL(get_gl_procaddr);
-#elif defined(XRT_HAVE_OPENGLES)
-	gladLoadGLES2(get_gl_procaddr);
-#endif
-	gladLoadEGL(display, get_gl_procaddr);
 
+	gladLoadEGL(display, get_gl_procaddr);
 	if (!eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
 		fprintf(stderr, "Failed to make EGL context current\n");
 		return NULL;
 	}
 
+	EGLint egl_client_type;
+	if (!eglQueryContext(display, context, EGL_CONTEXT_CLIENT_TYPE,
+	                     &egl_client_type)) {
+		return NULL;
+	}
+	bool is_es = false;
+	switch (egl_client_type) {
+	case EGL_OPENGL_API:
+#if defined(XRT_HAVE_OPENGL)
+		gladLoadGL(get_gl_procaddr);
+		break;
+#else
+		fprintf(stderr,
+		        "OpenGL support not including in this runtime build\n");
+		return NULL;
+#endif
+
+	case EGL_OPENGL_ES_API:
+#if defined(XRT_HAVE_OPENGLES)
+		is_es = true;
+		gladLoadGLES2(get_gl_procaddr);
+		break;
+#else
+		fprintf(
+		    stderr,
+		    "OpenGL|ES support not including in this runtime build\n");
+		return NULL;
+#endif
+	}
 	struct client_gl_compositor *c =
 	    U_TYPED_CALLOC(struct client_gl_compositor);
 
-#if defined(XRT_OS_ANDROID)
 	client_gl_swapchain_create_func sc_create = NULL;
-#else
-	client_gl_swapchain_create_func sc_create =
-	    client_gl_memobj_swapchain_create;
-	if (!GLAD_GL_EXT_memory_object && GLAD_EGL_EXT_image_dma_buf_import) {
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+	if (GLAD_GL_EXT_memory_object && GLAD_GL_EXT_memory_object_fd) {
+		sc_create = client_gl_memobj_swapchain_create;
+	}
+	if (sc_create == NULL && GLAD_EGL_EXT_image_dma_buf_import) {
 		sc_create = client_gl_eglimage_swapchain_create;
 	}
+	if (sc_create == NULL) {
+		free(c);
+		fprintf(stderr,
+		        "Could not find a required extension: need either "
+		        "EGL_EXT_image_dma_buf_import or "
+		        "GL_EXT_memory_object_fd\n");
+		return NULL;
+	}
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	sc_create = client_gl_eglimage_swapchain_create;
 #endif
 
-	if (!client_gl_compositor_init(c, xcn, get_gl_procaddr, sc_create)) {
+	if (!client_gl_compositor_init(c, xcn, sc_create)) {
 
 		free(c);
 		fprintf(stderr, "Failed to initialize compositor\n");
