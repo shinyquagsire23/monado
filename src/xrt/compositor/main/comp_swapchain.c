@@ -11,9 +11,15 @@
 
 #include "main/comp_compositor.h"
 
+#include <xrt/xrt_handles.h>
+#include <xrt/xrt_config_os.h>
+
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef XRT_OS_LINUX
 #include <unistd.h>
+#endif
 
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 #include <android/hardware_buffer.h>

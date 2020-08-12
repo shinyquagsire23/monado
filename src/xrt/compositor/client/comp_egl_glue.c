@@ -22,6 +22,7 @@
 #include "client/comp_gl_eglimage_swapchain.h"
 #include "util/u_misc.h"
 #include "xrt/xrt_gfx_egl.h"
+#include "xrt/xrt_handles.h"
 
 
 #ifndef XRT_HAVE_EGL

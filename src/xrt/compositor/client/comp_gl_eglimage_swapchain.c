@@ -18,6 +18,7 @@
 
 #include <xrt/xrt_config_have.h>
 #include <xrt/xrt_config_os.h>
+#include <xrt/xrt_handles.h>
 
 #if defined(XRT_HAVE_EGL)
 #include "ogl/egl_api.h"
@@ -215,6 +216,8 @@ client_gl_eglimage_swapchain_create(
 		                  row_pitch,
 		                  EGL_NONE};
 		EGLenum target = EGL_LINUX_DMA_BUF_EXT;
+#else
+#error "need port"
 #endif
 		sc->egl_images[i] = eglCreateImageKHR(
 		    sc->display, EGL_NO_CONTEXT, target, native_buffer, attrs);

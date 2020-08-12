@@ -13,6 +13,8 @@
 #include <stdlib.h>
 
 #include <xrt/xrt_config_have.h>
+#include <xrt/xrt_handles.h>
+
 #include "util/u_misc.h"
 
 #include "ogl/ogl_api.h"
@@ -63,9 +65,7 @@ client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
                                   struct xrt_swapchain_native *xscn,
                                   struct client_gl_swapchain **out_cglsc)
 {
-#if defined(XRT_OS_ANDROID)
-	return NULL;
-#elif defined(XRT_OS_LINUX)
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	(void)c;
 
@@ -117,5 +117,10 @@ client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
 
 	*out_cglsc = &sc->base;
 	return client_xsc;
+#else
+
+	// silence unused function warning
+	(void)client_gl_memobj_swapchain_destroy;
+	return NULL;
 #endif
 }
