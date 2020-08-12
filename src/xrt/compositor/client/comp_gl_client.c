@@ -267,9 +267,15 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 
 	// Save texture binding
 	GLuint prev_texture = 0;
-	glGetIntegerv(info->array_size == 1 ? GL_TEXTURE_BINDING_2D
-	                                    : GL_TEXTURE_BINDING_2D_ARRAY,
-	              (GLint *)&prev_texture);
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	const GLuint binding_enum = GL_TEXTURE_BINDING_EXTERNAL_OES;
+#else
+	const GLuint binding_enum = info->array_size == 1
+	                                ? GL_TEXTURE_BINDING_2D
+	                                : GL_TEXTURE_BINDING_2D_ARRAY;
+#endif
+
+	glGetIntegerv(binding_enum, (GLint *)&prev_texture);
 
 	struct xrt_swapchain *xsc = &xscn->base;
 
@@ -291,9 +297,13 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.num_images = xsc->num_images;
 	sc->xscn = xscn;
 
-	glBindTexture(info->array_size == 1 ? GL_TEXTURE_2D
-	                                    : GL_TEXTURE_2D_ARRAY,
-	              prev_texture);
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	const GLuint binding_target_enum = GL_TEXTURE_EXTERNAL_OES;
+#else
+	const GLuint binding_target_enum =
+	    info->array_size == 1 ? GL_TEXTURE_2D : GL_TEXTURE_2D_ARRAY;
+#endif
+	glBindTexture(binding_target_enum, prev_texture);
 
 	*out_xsc = &sc->base.base;
 	return XRT_SUCCESS;
