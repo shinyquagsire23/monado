@@ -22,6 +22,7 @@
 #include "util/u_misc.h"
 #include "util/u_time.h"
 #include "util/u_device.h"
+#include "util/u_distortion_mesh.h"
 
 #include "../auxiliary/os/os_time.h"
 
@@ -904,6 +905,22 @@ get_distortion_properties(struct survive_device *d,
 }
 
 static bool
+compute_distortion(struct xrt_device *xdev,
+                   int view,
+                   float u,
+                   float v,
+                   struct xrt_vec2_triplet *result)
+{
+	struct xrt_hmd_parts *hmd = xdev->hmd;
+	return u_compute_distortion_vive(
+	    hmd->distortion.vive.aspect_x_over_y,
+	    hmd->distortion.vive.grow_for_undistort,
+	    hmd->distortion.vive.undistort_r2_cutoff[view],
+	    hmd->distortion.vive.center[view],
+	    hmd->distortion.vive.coefficients[view], u, v, result);
+}
+
+static bool
 _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 {
 	enum u_device_alloc_flags flags =
@@ -1076,8 +1093,10 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 		}
 	}
 
-	survive->base.hmd->distortion.models = XRT_DISTORTION_MODEL_VIVE;
-	survive->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
+	survive->base.hmd->distortion.models =
+	    XRT_DISTORTION_MODEL_VIVE | XRT_DISTORTION_MODEL_COMPUTE;
+	survive->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
+	survive->base.compute_distortion = compute_distortion;
 
 	survive->base.orientation_tracking_supported = true;
 	survive->base.position_tracking_supported = true;

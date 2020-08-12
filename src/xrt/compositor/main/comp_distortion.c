@@ -353,7 +353,7 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 		fragment_shader_code = shaders_none_frag;
 		fragment_shader_size = sizeof(shaders_none_frag);
 		break;
-	case XRT_DISTORTION_MODEL_PANOTOOLS:
+	case XRT_DISTORTION_MODEL_OPENHMD:
 		fragment_shader_code = shaders_panotools_frag;
 		fragment_shader_size = sizeof(shaders_panotools_frag);
 		break;
@@ -702,26 +702,30 @@ comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
 		break;
 	case XRT_DISTORTION_MODEL_MESHUV:
 		break;
+	case XRT_DISTORTION_MODEL_NONE:
+		break;
 	case XRT_DISTORTION_MODEL_PANOTOOLS:
+		break;
+	case XRT_DISTORTION_MODEL_OPENHMD:
 	default:
 		/*
 		 * Pano vision fragment shader
 		 */
-		d->ubo_pano.hmd_warp_param[0] = c->xdev->hmd->distortion.pano.distortion_k[0];
-		d->ubo_pano.hmd_warp_param[1] = c->xdev->hmd->distortion.pano.distortion_k[1];
-		d->ubo_pano.hmd_warp_param[2] = c->xdev->hmd->distortion.pano.distortion_k[2];
-		d->ubo_pano.hmd_warp_param[3] = c->xdev->hmd->distortion.pano.distortion_k[3];
-		d->ubo_pano.aberr[0] = c->xdev->hmd->distortion.pano.aberration_k[0];
-		d->ubo_pano.aberr[1] = c->xdev->hmd->distortion.pano.aberration_k[1];
-		d->ubo_pano.aberr[2] = c->xdev->hmd->distortion.pano.aberration_k[2];
-		d->ubo_pano.aberr[3] = c->xdev->hmd->distortion.pano.aberration_k[3];
+		d->ubo_pano.hmd_warp_param[0] = c->xdev->hmd->distortion.openhmd.distortion_k[0];
+		d->ubo_pano.hmd_warp_param[1] = c->xdev->hmd->distortion.openhmd.distortion_k[1];
+		d->ubo_pano.hmd_warp_param[2] = c->xdev->hmd->distortion.openhmd.distortion_k[2];
+		d->ubo_pano.hmd_warp_param[3] = c->xdev->hmd->distortion.openhmd.distortion_k[3];
+		d->ubo_pano.aberr[0] = c->xdev->hmd->distortion.openhmd.aberration_k[0];
+		d->ubo_pano.aberr[1] = c->xdev->hmd->distortion.openhmd.aberration_k[1];
+		d->ubo_pano.aberr[2] = c->xdev->hmd->distortion.openhmd.aberration_k[2];
+		d->ubo_pano.aberr[3] = c->xdev->hmd->distortion.openhmd.aberration_k[3];
 		d->ubo_pano.lens_center[0][0] = c->xdev->hmd->views[0].lens_center.x_meters;
 		d->ubo_pano.lens_center[0][1] = c->xdev->hmd->views[0].lens_center.y_meters;
 		d->ubo_pano.lens_center[1][0] = c->xdev->hmd->views[1].lens_center.x_meters;
 		d->ubo_pano.lens_center[1][1] = c->xdev->hmd->views[1].lens_center.y_meters;
 		d->ubo_pano.viewport_scale[0] = c->xdev->hmd->views[0].display.w_meters;
 		d->ubo_pano.viewport_scale[1] = c->xdev->hmd->views[0].display.h_meters;
-		d->ubo_pano.warp_scale = c->xdev->hmd->distortion.pano.warp_scale;
+		d->ubo_pano.warp_scale = c->xdev->hmd->distortion.openhmd.warp_scale;
 
 		memcpy(d->ubo_handle.mapped, &d->ubo_pano, sizeof(d->ubo_pano));
 		break;
@@ -859,7 +863,7 @@ comp_distortion_init_buffers(struct comp_distortion *d,
 	d->has_fragment_shader_ubo = true;
 
 	switch (d->distortion_model) {
-	case XRT_DISTORTION_MODEL_PANOTOOLS:
+	case XRT_DISTORTION_MODEL_OPENHMD:
 		ubo_size = sizeof(d->ubo_pano);
 		break;
 	case XRT_DISTORTION_MODEL_MESHUV:

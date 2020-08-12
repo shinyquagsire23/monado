@@ -112,19 +112,18 @@ ns_hmd_get_view_pose(struct xrt_device *xdev,
  *
  */
 
-static void
-ns_mesh_calc(struct u_uv_generator *gen,
+static bool
+ns_mesh_calc(struct xrt_device *xdev,
              int view,
              float u,
              float v,
-             struct u_uv_triplet *result)
+             struct xrt_vec2_triplet *result)
 {
-	struct ns_mesh *mesh = ns_mesh(gen);
+	struct ns_hmd *ns = ns_hmd(xdev);
 
 	struct ns_uv uv = {u, v};
 	struct ns_uv warped_uv = {0.0f, 0.0f};
-	ns_display_uv_to_render_uv(uv, &warped_uv,
-	                           &mesh->ns->eye_configs_v1[view]);
+	ns_display_uv_to_render_uv(uv, &warped_uv, &ns->eye_configs_v1[view]);
 
 	result->r.x = warped_uv.u;
 	result->r.y = warped_uv.v;
@@ -132,13 +131,7 @@ ns_mesh_calc(struct u_uv_generator *gen,
 	result->g.y = warped_uv.v;
 	result->b.x = warped_uv.u;
 	result->b.y = warped_uv.v;
-}
-
-static void
-ns_mesh_destroy(struct u_uv_generator *gen)
-{
-	struct ns_mesh *mesh = (struct ns_mesh *)gen;
-	(void)mesh; // Noop
+	return true;
 }
 
 /*
@@ -301,15 +294,14 @@ ns_v2_fov_calculate(struct ns_hmd *ns, int eye_index)
 
 
 
-static void
-ns_v2_mesh_calc(struct u_uv_generator *gen,
+static bool
+ns_v2_mesh_calc(struct xrt_device *xdev,
                 int view,
                 float u,
                 float v,
-                struct u_uv_triplet *result)
+                struct xrt_vec2_triplet *result)
 {
-
-
+	struct ns_hmd *ns = ns_hmd(xdev);
 
 	float x = 0.0f;
 	float y = 0.0f;
@@ -317,16 +309,15 @@ ns_v2_mesh_calc(struct u_uv_generator *gen,
 	u = 1.0 - u;
 	v = 1.0 - v;
 
-	struct ns_mesh *mesh = ns_mesh(gen);
-	float L = mesh->ns->eye_configs_v2[view].fov.angle_left;
-	float R = mesh->ns->eye_configs_v2[view].fov.angle_right;
-	float T = mesh->ns->eye_configs_v2[view].fov.angle_up;
-	float B = mesh->ns->eye_configs_v2[view].fov.angle_down;
+	float L = ns->eye_configs_v2[view].fov.angle_left;
+	float R = ns->eye_configs_v2[view].fov.angle_right;
+	float T = ns->eye_configs_v2[view].fov.angle_up;
+	float B = ns->eye_configs_v2[view].fov.angle_down;
 
-	float x_ray = ns_v2_polyval2d(
-	    u, v, mesh->ns->eye_configs_v2[view].x_coefficients);
-	float y_ray = ns_v2_polyval2d(
-	    u, v, mesh->ns->eye_configs_v2[view].y_coefficients);
+	float x_ray =
+	    ns_v2_polyval2d(u, v, ns->eye_configs_v2[view].x_coefficients);
+	float y_ray =
+	    ns_v2_polyval2d(u, v, ns->eye_configs_v2[view].y_coefficients);
 
 	x = (x_ray + L) / (L - R);
 	y = (y_ray + T) / (T - B);
@@ -338,6 +329,7 @@ ns_v2_mesh_calc(struct u_uv_generator *gen,
 	result->g.y = y;
 	result->b.x = x;
 	result->b.y = y;
+	return true;
 }
 
 
@@ -551,20 +543,10 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 		ns_v2_fov_calculate(ns, 0);
 		ns_v2_fov_calculate(ns, 1);
 
-
-
-		// Setup the distortion mesh.
-		struct ns_mesh mesh;
-		U_ZERO(&mesh);
-		mesh.ns = ns;
-		mesh.base.calc = ns_v2_mesh_calc;
-		mesh.base.destroy = ns_mesh_destroy;
-
-		// Do the mesh generation.
-		u_distortion_mesh_from_gen(&mesh.base, 2, ns->base.hmd);
-		// u_distortion_mesh_none(ns->base.hmd);
-
-
+		ns->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
+		ns->base.hmd->distortion.preferred =
+		    XRT_DISTORTION_MODEL_COMPUTE;
+		ns->base.compute_distortion = ns_v2_mesh_calc;
 
 	} else {
 		// V1
@@ -591,17 +573,10 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 		ns->tracker = rs_6dof_create();
 #endif
 
-
-
-		// Setup the distortion mesh.
-		struct ns_mesh mesh;
-		U_ZERO(&mesh);
-		mesh.ns = ns;
-		mesh.base.calc = ns_mesh_calc;
-		mesh.base.destroy = ns_mesh_destroy;
-
-		// Do the mesh generation.
-		u_distortion_mesh_from_gen(&mesh.base, 2, ns->base.hmd);
+		ns->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
+		ns->base.hmd->distortion.preferred =
+		    XRT_DISTORTION_MODEL_COMPUTE;
+		ns->base.compute_distortion = ns_mesh_calc;
 	}
 
 	// If built, try to load the realsense tracker.

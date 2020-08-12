@@ -24,6 +24,7 @@
 #include "openhmd.h"
 
 #include "math/m_api.h"
+#include "math/m_vec2.h"
 #include "xrt/xrt_device.h"
 #include "util/u_var.h"
 #include "util/u_misc.h"
@@ -372,6 +373,97 @@ get_info(struct oh_device *ohd, const char *prod)
 	return info;
 }
 
+#define mul m_vec2_mul
+#define mul_scalar m_vec2_mul_scalar
+#define add m_vec2_add
+#define sub m_vec2_sub
+#define div m_vec2_div
+#define div_scalar m_vec2_div_scalar
+#define len m_vec2_len
+
+// slightly different to u_compute_distortion_panotools in u_distortion_mesh
+static bool
+u_compute_distortion_openhmd(float distortion_k[5],
+                             float aberration_k[3],
+                             float scale,
+                             struct xrt_vec2 lens_center,
+                             struct xrt_vec2 viewport_size,
+                             float u,
+                             float v,
+                             struct xrt_vec2_triplet *result)
+{
+	struct xrt_vec2 r = {u, v};
+	r = mul(r, viewport_size);
+	r = sub(r, lens_center);
+	r = div_scalar(r, scale);
+
+	float r_mag = len(r);
+	r_mag = distortion_k[0] +                        // r^1
+	        distortion_k[1] * r_mag +                // r^2
+	        distortion_k[2] * r_mag * r_mag +        // r^3
+	        distortion_k[3] * r_mag * r_mag * r_mag; // r^4
+
+	struct xrt_vec2 r_dist = mul_scalar(r, r_mag);
+	r_dist = mul_scalar(r_dist, scale);
+
+	struct xrt_vec2 r_uv = mul_scalar(r_dist, aberration_k[0]);
+	r_uv = add(r_uv, lens_center);
+	r_uv = div(r_uv, viewport_size);
+
+	struct xrt_vec2 g_uv = mul_scalar(r_dist, aberration_k[1]);
+	g_uv = add(g_uv, lens_center);
+	g_uv = div(g_uv, viewport_size);
+
+	struct xrt_vec2 b_uv = mul_scalar(r_dist, aberration_k[2]);
+	b_uv = add(b_uv, lens_center);
+	b_uv = div(b_uv, viewport_size);
+
+	result->r = r_uv;
+	result->g = g_uv;
+	result->b = b_uv;
+	return true;
+}
+
+static bool
+compute_distortion_openhmd(struct xrt_device *xdev,
+                           int view,
+                           float u,
+                           float v,
+                           struct xrt_vec2_triplet *result)
+{
+	struct xrt_hmd_parts *hmd = xdev->hmd;
+	struct xrt_vec2 lens_center = {
+	    .x = hmd->views[view].lens_center.x_meters,
+	    .y = hmd->views[view].lens_center.y_meters};
+
+	struct xrt_vec2 viewport_size = {.x = hmd->views[view].display.w_meters,
+	                                 .y =
+	                                     hmd->views[view].display.h_meters};
+
+	//! @todo: support distortion per view
+	return u_compute_distortion_openhmd(
+	    hmd->distortion.openhmd.distortion_k,
+	    hmd->distortion.openhmd.aberration_k,
+	    hmd->distortion.openhmd.warp_scale, lens_center, viewport_size, u,
+	    v, result);
+}
+
+static bool
+compute_distortion_vive(struct xrt_device *xdev,
+                        int view,
+                        float u,
+                        float v,
+                        struct xrt_vec2_triplet *result)
+{
+	struct xrt_hmd_parts *hmd = xdev->hmd;
+	return u_compute_distortion_vive(
+	    hmd->distortion.vive.aspect_x_over_y,
+	    hmd->distortion.vive.grow_for_undistort,
+	    hmd->distortion.vive.undistort_r2_cutoff[view],
+	    hmd->distortion.vive.center[view],
+	    hmd->distortion.vive.coefficients[view], u, v, result);
+}
+
 struct oh_device *
 oh_device_create(ohmd_context *ctx,
                  ohmd_device *dev,
@@ -429,19 +521,17 @@ oh_device_create(ohmd_context *ctx,
 
 	// clang-format off
 	// Main display.
-	ohd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_PANOTOOLS;
-	ohd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_PANOTOOLS;
 	ohd->base.hmd->screens[0].w_pixels = info.display.w_pixels;
 	ohd->base.hmd->screens[0].h_pixels = info.display.h_pixels;
 	ohd->base.hmd->screens[0].nominal_frame_interval_ns = info.display.nominal_frame_interval_ns;
-	ohd->base.hmd->distortion.pano.distortion_k[0] = info.pano_distortion_k[0];
-	ohd->base.hmd->distortion.pano.distortion_k[1] = info.pano_distortion_k[1];
-	ohd->base.hmd->distortion.pano.distortion_k[2] = info.pano_distortion_k[2];
-	ohd->base.hmd->distortion.pano.distortion_k[3] = info.pano_distortion_k[3];
-	ohd->base.hmd->distortion.pano.aberration_k[0] = info.pano_aberration_k[0];
-	ohd->base.hmd->distortion.pano.aberration_k[1] = info.pano_aberration_k[1];
-	ohd->base.hmd->distortion.pano.aberration_k[2] = info.pano_aberration_k[2];
-	ohd->base.hmd->distortion.pano.warp_scale = info.pano_warp_scale;
+	ohd->base.hmd->distortion.openhmd.distortion_k[0] = info.pano_distortion_k[0];
+	ohd->base.hmd->distortion.openhmd.distortion_k[1] = info.pano_distortion_k[1];
+	ohd->base.hmd->distortion.openhmd.distortion_k[2] = info.pano_distortion_k[2];
+	ohd->base.hmd->distortion.openhmd.distortion_k[3] = info.pano_distortion_k[3];
+	ohd->base.hmd->distortion.openhmd.aberration_k[0] = info.pano_aberration_k[0];
+	ohd->base.hmd->distortion.openhmd.aberration_k[1] = info.pano_aberration_k[1];
+	ohd->base.hmd->distortion.openhmd.aberration_k[2] = info.pano_aberration_k[2];
+	ohd->base.hmd->distortion.openhmd.warp_scale = info.pano_warp_scale;
 
 	// Left
 	ohd->base.hmd->views[0].display.w_meters = info.views[0].display.w_meters;
@@ -470,6 +560,12 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.hmd->views[1].rot = u_device_rotation_ident;
 	// clang-format on
 
+	ohd->base.hmd->distortion.models |=
+	    XRT_DISTORTION_MODEL_COMPUTE | XRT_DISTORTION_MODEL_OPENHMD;
+	ohd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
+	ohd->base.compute_distortion = compute_distortion_openhmd;
+	;
+
 	// Which blend modes does the device support.
 	ohd->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
 	if (info.quirks.video_see_through) {
@@ -478,11 +574,6 @@ oh_device_create(ohmd_context *ctx,
 	}
 
 	if (info.quirks.video_distortion_vive) {
-		ohd->base.hmd->distortion.models = (enum xrt_distortion_model)(
-		    ohd->base.hmd->distortion.models |
-		    XRT_DISTORTION_MODEL_VIVE);
-		ohd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
-
 		// clang-format off
 		// These need to be acquired from the vive config
 		ohd->base.hmd->distortion.vive.aspect_x_over_y = 0.8999999761581421f;
@@ -526,15 +617,21 @@ oh_device_create(ohmd_context *ctx,
 		ohd->base.hmd->distortion.vive.coefficients[1][2][1] = -0.04517245633373419f;
 		ohd->base.hmd->distortion.vive.coefficients[1][2][2] = -0.0928909347763f;
 		// clang-format on
+
+		ohd->base.hmd->distortion.models |= XRT_DISTORTION_MODEL_VIVE;
+		ohd->base.hmd->distortion.preferred =
+		    XRT_DISTORTION_MODEL_COMPUTE;
+		ohd->base.compute_distortion = compute_distortion_vive;
 	}
 
 	if (info.quirks.video_distortion_none) {
 		ohd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
 		ohd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+		ohd->base.compute_distortion = NULL;
 	}
 
 	if (info.quirks.left_center_pano_scale) {
-		ohd->base.hmd->distortion.pano.warp_scale =
+		ohd->base.hmd->distortion.openhmd.warp_scale =
 		    info.views[0].lens_center_x_meters;
 	}
 
@@ -599,11 +696,6 @@ oh_device_create(ohmd_context *ctx,
 
 	u_var_add_root(ohd, "OpenHMD Wrapper", true);
 	u_var_add_ro_text(ohd, ohd->base.str, "Card");
-
-	if (ohd->base.hmd->distortion.preferred == XRT_DISTORTION_MODEL_NONE) {
-		// Setup the distortion mesh.
-		u_distortion_mesh_none(ohd->base.hmd);
-	}
 
 	return ohd;
 }

@@ -10,7 +10,6 @@
 #pragma once
 
 #include "math/m_api.h"
-#include "util/u_distortion_mesh.h"
 #include "util/u_json.h"
 #include "util/u_misc.h"
 #include "xrt/xrt_defines.h"
@@ -150,20 +149,6 @@ struct ns_hmd
 	            // be an enum or something
 };
 
-
-/*!
- * The mesh generator for the North Star distortion.
- *
- * @ingroup drv_ns
- * @implements u_uv_generator
- */
-struct ns_mesh
-{
-	struct u_uv_generator base;
-	struct ns_hmd *ns;
-};
-
-
 /*
  *
  * Functions
@@ -179,17 +164,6 @@ static inline struct ns_hmd *
 ns_hmd(struct xrt_device *xdev)
 {
 	return (struct ns_hmd *)xdev;
-}
-
-/*!
- * Get the North Star mesh generator from a @ref u_uv_generator.
- *
- * @ingroup drv_ns
- */
-static inline struct ns_mesh *
-ns_mesh(struct u_uv_generator *gen)
-{
-	return (struct ns_mesh *)gen;
 }
 
 /*!

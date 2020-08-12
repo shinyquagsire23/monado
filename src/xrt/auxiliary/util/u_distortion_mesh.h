@@ -16,6 +16,21 @@
 extern "C" {
 #endif
 
+/*!
+ * Distortion correction implementation for the Vive, Vive Pro, Valve Index
+ * distortion values found in the HMD configuration.
+ *
+ * @ingroup aux_util
+ */
+bool
+u_compute_distortion_vive(float aspect_x_over_y,
+                          float grow_for_undistort,
+                          float undistort_r2_cutoff,
+                          float center[2],
+                          float coefficients[3][3],
+                          float u,
+                          float v,
+                          struct xrt_vec2_triplet *result);
 
 /*!
  * Values to create a distortion mesh from panotools values.
@@ -37,80 +52,33 @@ struct u_panotools_values
 };
 
 /*!
- * Three UV pairs, one for each color channel in the source image.
+ * Distortion correction implementation for Panotools distortion values.
  *
  * @ingroup aux_util
  */
-struct u_uv_triplet
-{
-	struct xrt_vec2 r, g, b;
-};
+bool
+u_compute_distortion_panotools(struct u_panotools_values *values,
+                               float u,
+                               float v,
+                               struct xrt_vec2_triplet *result);
 
 /*!
- * @interface u_uv_generator
- *
- * Generator interface for building meshes, can be implemented by drivers for
- * special meshes.
+ * Identity distortion correction sets all result coordinates to u,v.
  *
  * @ingroup aux_util
  */
-struct u_uv_generator
-{
-	void (*calc)(struct u_uv_generator *,
-	             int view,
-	             float u,
-	             float v,
-	             struct u_uv_triplet *result);
-
-	void (*destroy)(struct u_uv_generator *);
-};
+bool
+u_compute_distortion_none(float u, float v, struct xrt_vec2_triplet *result);
 
 /*!
- * Given a @ref u_uv_generator generates num_views meshes, populates target.
+ * Given a @ref xrt_device generates meshes by calling
+ * xdev->compute_distortion(), populates xdev->hmd_parts.distortion.mesh
  *
  * @ingroup aux_util
- * @public @memberof u_uv_generator
- * @relatesalso xrt_hmd_parts
+ * @relatesalso xrt_device
  */
 void
-u_distortion_mesh_from_gen(struct u_uv_generator *,
-                           int num_views,
-                           struct xrt_hmd_parts *target);
-
-/*!
- * Given two sets of panotools values creates a mesh generator, copies the
- * values into it. This probably isn't the function you want.
- *
- * @ingroup aux_util
- * @see u_distortion_mesh_from_panotools
- */
-void
-u_distortion_mesh_generator_from_panotools(
-    const struct u_panotools_values *left,
-    const struct u_panotools_values *right,
-    struct u_uv_generator **out_gen);
-
-/*!
- * Given two sets of panotools values creates the left and th right uv meshes.
- * This is probably the function you want.
- *
- * @ingroup aux_util
- * @relates xrt_hmd_parts
- */
-void
-u_distortion_mesh_from_panotools(const struct u_panotools_values *left,
-                                 const struct u_panotools_values *right,
-                                 struct xrt_hmd_parts *target);
-
-/*!
- * Create two distortion meshes with no distortion.
- *
- * @ingroup aux_util
- * @relates xrt_hmd_parts
- */
-void
-u_distortion_mesh_none(struct xrt_hmd_parts *target);
-
+u_compute_distortion_mesh(struct xrt_device *xdev);
 
 #ifdef __cplusplus
 }

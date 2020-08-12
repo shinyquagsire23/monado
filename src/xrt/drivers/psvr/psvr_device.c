@@ -123,6 +123,7 @@ struct psvr_device
 		int last_packet;
 	} calibration;
 
+
 	struct
 	{
 		bool last_frame;
@@ -137,6 +138,9 @@ struct psvr_device
 		struct xrt_quat rot;
 	} fusion;
 #endif
+
+	//! For compute_distortion
+	struct u_panotools_values vals;
 };
 
 
@@ -983,6 +987,18 @@ psvr_device_destroy(struct xrt_device *xdev)
 	u_device_free(&psvr->base);
 }
 
+static bool
+psvr_compute_distortion(struct xrt_device *xdev,
+                        int view,
+                        float u,
+                        float v,
+                        struct xrt_vec2_triplet *result)
+{
+	struct psvr_device *psvr = psvr_device(xdev);
+
+	return u_compute_distortion_panotools(&psvr->vals, u, v, result);
+}
+
 
 /*
  *
@@ -1008,6 +1024,7 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	psvr->base.update_inputs = psvr_device_update_inputs;
 	psvr->base.get_tracked_pose = psvr_device_get_tracked_pose;
 	psvr->base.get_view_pose = psvr_device_get_view_pose;
+	psvr->base.compute_distortion = psvr_compute_distortion;
 	psvr->base.destroy = psvr_device_destroy;
 	psvr->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	psvr->base.name = XRT_DEVICE_GENERIC_HMD;
@@ -1029,7 +1046,11 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 		vals.lens_center.x = vals.viewport_size.x / 2.0;
 		vals.lens_center.y = vals.viewport_size.y / 2.0;
 
-		u_distortion_mesh_from_panotools(&vals, &vals, psvr->base.hmd);
+		psvr->vals = vals;
+
+		struct xrt_hmd_parts *hmd = psvr->base.hmd;
+		hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
+		hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 	}
 
 #if 1

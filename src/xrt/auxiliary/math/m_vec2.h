@@ -81,6 +81,12 @@ m_vec2_len(struct xrt_vec2 l)
 	return sqrtf(m_vec2_len_sqrd(l));
 }
 
+static inline float
+m_vec2_dot(struct xrt_vec2 l, struct xrt_vec2 r)
+{
+	return l.x * r.x + l.y * r.y;
+}
+
 
 #ifdef __cplusplus
 }

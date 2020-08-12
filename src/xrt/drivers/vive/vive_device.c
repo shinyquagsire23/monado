@@ -17,6 +17,7 @@
 #include "util/u_debug.h"
 #include "util/u_var.h"
 #include "util/u_time.h"
+#include "util/u_distortion_mesh.h"
 
 #include "math/m_api.h"
 
@@ -794,6 +795,23 @@ vive_init_defaults(struct vive_device *d)
 	hmd->distortion.vive.undistort_r2_cutoff[1] = 1.0f;
 }
 
+
+static bool
+compute_distortion(struct xrt_device *xdev,
+                   int view,
+                   float u,
+                   float v,
+                   struct xrt_vec2_triplet *result)
+{
+	struct xrt_hmd_parts *hmd = xdev->hmd;
+	return u_compute_distortion_vive(
+	    hmd->distortion.vive.aspect_x_over_y,
+	    hmd->distortion.vive.grow_for_undistort,
+	    hmd->distortion.vive.undistort_r2_cutoff[view],
+	    hmd->distortion.vive.center[view],
+	    hmd->distortion.vive.coefficients[view], u, v, result);
+}
+
 struct vive_device *
 vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *sensors_dev,
@@ -817,6 +835,11 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->ll = debug_get_log_option_vive_log();
 	d->watchman_dev = watchman_dev;
 	d->variant = variant;
+
+	d->base.hmd->distortion.models =
+	    XRT_DISTORTION_MODEL_VIVE | XRT_DISTORTION_MODEL_COMPUTE;
+	d->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
+	d->base.compute_distortion = compute_distortion;
 
 	vive_init_defaults(d);
 
@@ -934,9 +957,6 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 			return NULL;
 		}
 	}
-
-	d->base.hmd->distortion.models = XRT_DISTORTION_MODEL_VIVE;
-	d->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_VIVE;
 
 	// Init here.
 	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);

@@ -60,13 +60,16 @@ struct xrt_view
 	} display;
 
 	/*!
-	 * Position in meters relative to display origin, before any rotation
-	 * is applied by xrt_view::rot.
+	 * Position relative to display origin, before any rotation is applied
+	 * by xrt_view::rot. note: not set by most drivers, used only for
+	 * panotools/ohmd distortion
 	 */
 	struct
 	{
 		float x_meters;
 		float y_meters;
+		int x_pixels;
+		int y_pixels;
 	} lens_center;
 
 	/*!
@@ -132,7 +135,7 @@ struct xrt_hmd_parts
 			float aberration_k[4];
 			//! Panotools warp scale.
 			float warp_scale;
-		} pano;
+		} openhmd;
 
 		struct
 		{
@@ -295,6 +298,12 @@ struct xrt_device
 	                      struct xrt_vec3 *eye_relation,
 	                      uint32_t view_index,
 	                      struct xrt_pose *out_pose);
+
+	bool (*compute_distortion)(struct xrt_device *xdev,
+	                           int view,
+	                           float u,
+	                           float v,
+	                           struct xrt_vec2_triplet *result);
 
 	/*!
 	 * Destroy device.

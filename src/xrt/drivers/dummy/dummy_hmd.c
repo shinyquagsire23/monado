@@ -194,10 +194,10 @@ dummy_hmd_create(void)
 	u_var_add_root(dh, "Dummy HMD", true);
 	u_var_add_pose(dh, &dh->pose, "pose");
 
-	if (dh->base.hmd->distortion.preferred == XRT_DISTORTION_MODEL_NONE) {
-		// Setup the distortion mesh.
-		u_distortion_mesh_none(dh->base.hmd);
-	}
+	dh->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
+	dh->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+	dh->base.compute_distortion = NULL;
+
 	dh->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	return &dh->base;

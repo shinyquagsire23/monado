@@ -34,6 +34,7 @@
 #include "util/u_misc.h"
 #include "util/u_device.h"
 #include "util/u_time.h"
+#include "util/u_distortion_mesh.h"
 
 #include "hdk_device.h"
 
@@ -487,6 +488,7 @@ hdk_device_create(struct os_hid_device *dev,
 	// We only have a mesh for 2, so use "none" there until it's supported.
 	hd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
 	hd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+	hd->base.compute_distortion = NULL;
 	// if (variant == HDK_VARIANT_1_3_1_4) {
 	// 	hd->base.hmd->distortion.models =
 	// 	    xrt_distortion_model(hd->base.hmd->distortion.models |
