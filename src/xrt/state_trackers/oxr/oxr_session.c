@@ -815,8 +815,53 @@ verify_cube_layer(struct xrt_compositor *xc,
 	                 "XrCompositionLayerCubeKHR not supported",
 	                 layer_index);
 #else
-	return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-	                 "XrCompositionLayerCubeKHR not implemented");
+	struct oxr_swapchain *sc =
+	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, cube->swapchain);
+
+	if (sc == NULL) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "swapchain) swapchain is NULL!",
+		                 layer_index);
+	}
+
+	XrResult ret = verify_space(log, layer_index, cube->space);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	if (!math_quat_validate((struct xrt_quat *)&cube->orientation)) {
+		const XrQuaternionf *q = &cube->orientation;
+		return oxr_error(log, XR_ERROR_POSE_INVALID,
+		                 "(frameEndInfo->layers[%u]->pose.orientation "
+		                 "== {%f %f %f %f}) is not a valid quat",
+		                 layer_index, q->x, q->y, q->z, q->w);
+	}
+
+	if (sc->num_array_layers <= cube->imageArrayIndex) {
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "(frameEndInfo->layers[%u]->imageArrayIndex == %u) Invalid "
+		    "swapchain array index for cube layer (%u).",
+		    layer_index, cube->imageArrayIndex, sc->num_array_layers);
+	}
+
+	if (!sc->released.yes) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->swapchain) "
+		                 "swapchain has not been released!",
+		                 layer_index);
+	}
+
+	if (sc->released.index >= (int)sc->swapchain->num_images) {
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
+		    "image index out of bounds",
+		    layer_index);
+	}
+
+	return XR_SUCCESS;
 #endif
 }
 
@@ -834,8 +879,107 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 	                 "XrCompositionLayerCylinderKHR not supported",
 	                 layer_index);
 #else
-	return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-	                 "XrCompositionLayerCylinderKHR not implemented");
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_swapchain *, cylinder->subImage.swapchain);
+
+	if (sc == NULL) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "swapchain) swapchain is NULL!",
+		                 layer_index);
+	}
+
+	XrResult ret = verify_space(log, layer_index, cylinder->space);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	if (!math_quat_validate(
+	        (struct xrt_quat *)&cylinder->pose.orientation)) {
+		const XrQuaternionf *q = &cylinder->pose.orientation;
+		return oxr_error(log, XR_ERROR_POSE_INVALID,
+		                 "(frameEndInfo->layers[%u]->pose.orientation "
+		                 "== {%f %f %f %f}) is not a valid quat",
+		                 layer_index, q->x, q->y, q->z, q->w);
+	}
+
+	if (!math_vec3_validate((struct xrt_vec3 *)&cylinder->pose.position)) {
+		const XrVector3f *p = &cylinder->pose.position;
+		return oxr_error(log, XR_ERROR_POSE_INVALID,
+		                 "(frameEndInfo->layers[%u]->pose.position == "
+		                 "{%f %f %f}) is not valid",
+		                 layer_index, p->x, p->y, p->z);
+	}
+
+	if (sc->num_array_layers <= cylinder->subImage.imageArrayIndex) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "imageArrayIndex == %u) Invalid swapchain "
+		                 "array index for cylinder layer (%u).",
+		                 layer_index,
+		                 cylinder->subImage.imageArrayIndex,
+		                 sc->num_array_layers);
+	}
+
+	if (!sc->released.yes) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "swapchain) swapchain has not been released!",
+		                 layer_index);
+	}
+
+	if (sc->released.index >= (int)sc->swapchain->num_images) {
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
+		    "image index out of bounds",
+		    layer_index);
+	}
+
+	if (is_rect_neg(&cylinder->subImage.imageRect)) {
+		return oxr_error(
+		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		    "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
+		    "{%i, %i}) has negative component(s)",
+		    layer_index, cylinder->subImage.imageRect.offset.x,
+		    cylinder->subImage.imageRect.offset.y);
+	}
+
+	if (is_rect_out_of_bounds(&cylinder->subImage.imageRect, sc)) {
+		return oxr_error(
+		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		    "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
+		    "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
+		    layer_index, cylinder->subImage.imageRect.offset.x,
+		    cylinder->subImage.imageRect.offset.y,
+		    cylinder->subImage.imageRect.extent.width,
+		    cylinder->subImage.imageRect.extent.height, sc->width,
+		    sc->height);
+	}
+
+	if (cylinder->radius < 0.f) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->radius == %f) "
+		                 "radius can not be negative",
+		                 layer_index, cylinder->radius);
+	}
+
+	if (cylinder->centralAngle < 0.f ||
+	    cylinder->centralAngle > (M_PI * 2)) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->centralAngle == "
+		                 "%f) centralAngle out of bounds",
+		                 layer_index, cylinder->centralAngle);
+	}
+
+	if (cylinder->aspectRatio <= 0.f) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->aspectRatio == "
+		                 "%f) aspectRatio out of bounds",
+		                 layer_index, cylinder->aspectRatio);
+	}
+
+	return XR_SUCCESS;
 #endif
 }
 
@@ -853,6 +997,92 @@ verify_equirect_layer(struct xrt_compositor *xc,
 	                 "XrCompositionLayerEquirectKHR not supported",
 	                 layer_index);
 #else
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_swapchain *, equirect->subImage.swapchain);
+
+	if (sc == NULL) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "swapchain) swapchain is NULL!",
+		                 layer_index);
+	}
+
+	XrResult ret = verify_space(log, layer_index, equirect->space);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	if (!math_quat_validate(
+	        (struct xrt_quat *)&equirect->pose.orientation)) {
+		const XrQuaternionf *q = &equirect->pose.orientation;
+		return oxr_error(log, XR_ERROR_POSE_INVALID,
+		                 "(frameEndInfo->layers[%u]->pose.orientation "
+		                 "== {%f %f %f %f}) is not a valid quat",
+		                 layer_index, q->x, q->y, q->z, q->w);
+	}
+
+	if (!math_vec3_validate((struct xrt_vec3 *)&equirect->pose.position)) {
+		const XrVector3f *p = &equirect->pose.position;
+		return oxr_error(log, XR_ERROR_POSE_INVALID,
+		                 "(frameEndInfo->layers[%u]->pose.position == "
+		                 "{%f %f %f}) is not valid",
+		                 layer_index, p->x, p->y, p->z);
+	}
+
+	if (sc->num_array_layers <= equirect->subImage.imageArrayIndex) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "imageArrayIndex == %u) Invalid swapchain "
+		                 "array index for equirect layer (%u).",
+		                 layer_index,
+		                 equirect->subImage.imageArrayIndex,
+		                 sc->num_array_layers);
+	}
+
+	if (!sc->released.yes) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "swapchain) swapchain has not been released!",
+		                 layer_index);
+	}
+
+	if (sc->released.index >= (int)sc->swapchain->num_images) {
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
+		    "image index out of bounds",
+		    layer_index);
+	}
+
+	if (is_rect_neg(&equirect->subImage.imageRect)) {
+		return oxr_error(
+		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		    "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
+		    "{%i, %i}) has negative component(s)",
+		    layer_index, equirect->subImage.imageRect.offset.x,
+		    equirect->subImage.imageRect.offset.y);
+	}
+
+	if (is_rect_out_of_bounds(&equirect->subImage.imageRect, sc)) {
+		return oxr_error(
+		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		    "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
+		    "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
+		    layer_index, equirect->subImage.imageRect.offset.x,
+		    equirect->subImage.imageRect.offset.y,
+		    equirect->subImage.imageRect.extent.width,
+		    equirect->subImage.imageRect.extent.height, sc->width,
+		    sc->height);
+	}
+
+	if (equirect->radius < .0f) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->radius == %f) "
+		                 "radius out of bounds",
+		                 layer_index, equirect->radius);
+	}
+
+	//! @todo Not all fields validated.
 	return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 	                 "XrCompositionLayerEquirectKHR not implemented");
 #endif
