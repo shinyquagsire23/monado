@@ -17,4 +17,14 @@ typedef enum xrt_result
 	XRT_ERROR_VULKAN = -3,
 	XRT_ERROR_OPENGL = -4,
 	XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS = -5,
+	/*!
+	 *
+	 * Returned when a swapchain create flag is passed that is valid, but
+	 * not supported by the main compositor (and lack of support is also
+	 * valid).
+	 *
+	 * For use when e.g. the protected content image flag is requested but
+	 * isn't supported.
+	 */
+	XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED = -6,
 } xrt_result_t;
