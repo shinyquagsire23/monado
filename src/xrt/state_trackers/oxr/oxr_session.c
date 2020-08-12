@@ -1126,28 +1126,18 @@ convert_eye_visibility(XrSwapchainUsageFlags xr_visibility)
 	return visibility;
 }
 
-static XrResult
-submit_quad_layer(struct oxr_session *sess,
-                  struct xrt_compositor *xc,
-                  struct oxr_logger *log,
-                  XrCompositionLayerQuad *quad,
-                  struct xrt_device *head,
-                  struct xrt_pose *inv_offset,
-                  uint64_t timestamp)
+static bool
+handle_space(struct oxr_logger *log,
+             struct oxr_session *sess,
+             struct oxr_space *spc,
+             const struct xrt_pose *pose_ptr,
+             const struct xrt_pose *inv_offset,
+             uint64_t timestamp,
+             struct xrt_pose *out_pose)
 {
-	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_swapchain *, quad->subImage.swapchain);
-	struct oxr_space *spc =
-	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, quad->space);
-
-	enum xrt_layer_composition_flags flags =
-	    convert_layer_flags(quad->layerFlags);
-
-	struct xrt_pose *pose_ptr = (struct xrt_pose *)&quad->pose;
 	struct xrt_pose pose = *pose_ptr;
 
 	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
-		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
 		// The space might have a pose, transform that in as well.
 		math_pose_transform(&spc->pose, &pose, &pose);
 	} else if (spc->is_reference) {
@@ -1159,7 +1149,7 @@ submit_quad_layer(struct oxr_session *sess,
 
 		if (spc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
 			if (!initial_head_relation_valid(sess)) {
-				return XR_SUCCESS;
+				return false;
 			}
 			math_pose_transform(&sess->initial_head_relation.pose,
 			                    &pose, &pose);
@@ -1176,7 +1166,7 @@ submit_quad_layer(struct oxr_session *sess,
 		// If the input isn't active.
 		if (input == NULL) {
 			//! @todo just don't render the quad here?
-			return XR_SUCCESS;
+			return false;
 		}
 
 		uint64_t xdev_timestamp = 0;
@@ -1196,6 +1186,41 @@ submit_quad_layer(struct oxr_session *sess,
 
 		// Remove the tracking system origin offset.
 		math_pose_transform(inv_offset, &pose, &pose);
+	}
+
+
+	*out_pose = pose;
+
+	return true;
+}
+
+static XrResult
+submit_quad_layer(struct oxr_session *sess,
+                  struct xrt_compositor *xc,
+                  struct oxr_logger *log,
+                  XrCompositionLayerQuad *quad,
+                  struct xrt_device *head,
+                  struct xrt_pose *inv_offset,
+                  uint64_t timestamp)
+{
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_swapchain *, quad->subImage.swapchain);
+	struct oxr_space *spc =
+	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, quad->space);
+
+	enum xrt_layer_composition_flags flags =
+	    convert_layer_flags(quad->layerFlags);
+
+	struct xrt_pose *pose_ptr = (struct xrt_pose *)&quad->pose;
+
+	struct xrt_pose pose;
+	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp,
+	                  &pose)) {
+		return XR_SUCCESS;
+	}
+
+	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
 	}
 
 	struct xrt_layer_data data;
@@ -1307,7 +1332,7 @@ submit_cube_layer(struct oxr_session *sess,
 	// Not implemented
 }
 
-static void
+static XrResult
 submit_cylinder_layer(struct oxr_session *sess,
                       struct xrt_compositor *xc,
                       struct oxr_logger *log,
@@ -1316,7 +1341,46 @@ submit_cylinder_layer(struct oxr_session *sess,
                       struct xrt_pose *inv_offset,
                       uint64_t timestamp)
 {
-	// Not implemented
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_swapchain *, cylinder->subImage.swapchain);
+	struct oxr_space *spc =
+	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, cylinder->space);
+
+	enum xrt_layer_composition_flags flags =
+	    convert_layer_flags(cylinder->layerFlags);
+	enum xrt_layer_eye_visibility visibility =
+	    convert_eye_visibility(cylinder->eyeVisibility);
+
+	struct xrt_pose *pose_ptr = (struct xrt_pose *)&cylinder->pose;
+
+	struct xrt_pose pose;
+	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp,
+	                  &pose)) {
+		return XR_SUCCESS;
+	}
+
+	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
+	}
+
+	struct xrt_layer_data data;
+	U_ZERO(&data);
+	data.type = XRT_LAYER_CYLINDER;
+	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
+	data.timestamp = timestamp;
+	data.flags = flags;
+	data.cylinder.visibility = visibility;
+
+	data.cylinder.sub.image_index = sc->released.index;
+	data.cylinder.sub.array_index = cylinder->subImage.imageArrayIndex;
+	data.cylinder.pose = pose;
+	data.cylinder.radius = cylinder->radius;
+	data.cylinder.central_angle = cylinder->centralAngle;
+	data.cylinder.aspect_ratio = cylinder->aspectRatio;
+
+	CALL_CHK(xrt_comp_layer_cylinder(xc, head, sc->swapchain, &data));
+
+	return XR_SUCCESS;
 }
 
 static void
