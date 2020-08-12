@@ -223,6 +223,11 @@ oxr_create_swapchain(struct oxr_logger *log,
 
 	struct xrt_swapchain *xsc = NULL;
 	xret = xrt_comp_create_swapchain(sess->compositor, &info, &xsc);
+	if (xret == XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED) {
+		return oxr_error(log, XR_ERROR_FEATURE_UNSUPPORTED,
+		                 "Specified swapchain creation flag is valid, "
+		                 "but not supported");
+	}
 	if (xret != XRT_SUCCESS) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "Failed to create swapchain");
