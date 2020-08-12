@@ -94,6 +94,7 @@ struct ipc_connection
 
 int
 ipc_client_compositor_create(struct ipc_connection *ipc_c,
+                             struct xrt_image_native_allocator *xina,
                              struct xrt_device *xdev,
                              struct xrt_compositor_native **out_xcn);
 

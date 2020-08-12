@@ -44,6 +44,9 @@ struct ipc_client_compositor
 
 	struct ipc_connection *ipc_c;
 
+	//! Optional image allocator.
+	struct xrt_image_native_allocator *xina;
+
 	struct
 	{
 		//! Id that we are currently using for submitting layers.
@@ -174,13 +177,12 @@ ipc_compositor_swapchain_release_image(struct xrt_swapchain *xsc,
  *
  */
 
-static xrt_result_t
-ipc_compositor_swapchain_create(struct xrt_compositor *xc,
-                                const struct xrt_swapchain_create_info *info,
-                                struct xrt_swapchain **out_xsc)
-{
-	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
+static xrt_result_t
+swapchain_server_create(struct ipc_client_compositor *icc,
+                        const struct xrt_swapchain_create_info *info,
+                        struct xrt_swapchain **out_xsc)
+{
 	int remote_fds[IPC_MAX_SWAPCHAIN_FDS] = {0};
 	xrt_result_t r = XRT_SUCCESS;
 	uint32_t handle;
@@ -219,13 +221,12 @@ ipc_compositor_swapchain_create(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_swapchain_import(struct xrt_compositor *xc,
-                                const struct xrt_swapchain_create_info *info,
-                                struct xrt_image_native *native_images,
-                                uint32_t num_images,
-                                struct xrt_swapchain **out_xsc)
+swapchain_server_import(struct ipc_client_compositor *icc,
+                        const struct xrt_swapchain_create_info *info,
+                        struct xrt_image_native *native_images,
+                        uint32_t num_images,
+                        struct xrt_swapchain **out_xsc)
 {
-	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 	struct ipc_arg_swapchain_from_native args = {0};
 	xrt_graphics_buffer_handle_t handles[IPC_MAX_SWAPCHAIN_FDS] = {0};
 	xrt_result_t r = XRT_SUCCESS;
@@ -265,6 +266,67 @@ ipc_compositor_swapchain_import(struct xrt_compositor *xc,
 	*out_xsc = &ics->base.base;
 
 	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+swapchain_allocator_create(struct ipc_client_compositor *icc,
+                           struct xrt_image_native_allocator *xina,
+                           const struct xrt_swapchain_create_info *info,
+                           struct xrt_swapchain **out_xsc)
+{
+	struct xrt_image_native images[3];
+	uint32_t num_images = (uint32_t)ARRAY_SIZE(images);
+	xrt_result_t xret;
+
+	if ((info->create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
+		num_images = 1;
+	}
+
+	xret = xrt_images_allocate(xina, info, num_images, images);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	/*
+	 * The import function takes ownership of the handles,
+	 * we do not need free them if the call succeeds.
+	 */
+	xret = swapchain_server_import(icc, info, images, num_images, out_xsc);
+	if (xret != XRT_SUCCESS) {
+		xrt_images_free(xina, num_images, images);
+	}
+
+	return xret;
+}
+
+static xrt_result_t
+ipc_compositor_swapchain_create(struct xrt_compositor *xc,
+                                const struct xrt_swapchain_create_info *info,
+                                struct xrt_swapchain **out_xsc)
+{
+	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+	struct xrt_image_native_allocator *xina = icc->xina;
+	xrt_result_t r;
+
+	if (xina == NULL) {
+		r = swapchain_server_create(icc, info, out_xsc);
+	} else {
+		r = swapchain_allocator_create(icc, xina, info, out_xsc);
+	}
+
+	return r;
+}
+
+static xrt_result_t
+ipc_compositor_swapchain_import(struct xrt_compositor *xc,
+                                const struct xrt_swapchain_create_info *info,
+                                struct xrt_image_native *native_images,
+                                uint32_t num_images,
+                                struct xrt_swapchain **out_xsc)
+{
+	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+	return swapchain_server_import(icc, info, native_images, num_images,
+	                               out_xsc);
 }
 
 static xrt_result_t
@@ -486,6 +548,10 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
+	// Does null checking.
+	xrt_images_destroy(&icc->xina);
+
+	//! @todo Implement
 	IPC_SPEW(icc->ipc_c, "IPC:  NOT IMPLEMENTED compositor destroy");
 }
 
@@ -498,6 +564,7 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 
 int
 ipc_client_compositor_create(struct ipc_connection *ipc_c,
+                             struct xrt_image_native_allocator *xina,
                              struct xrt_device *xdev,
                              struct xrt_compositor_native **out_xcn)
 {
@@ -520,6 +587,7 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	c->base.base.destroy = ipc_compositor_destroy;
 	c->base.base.poll_events = ipc_compositor_poll_events;
 	c->ipc_c = ipc_c;
+	c->xina = xina;
 
 	// Fetch info from the compositor, among it the format format list.
 	get_info(&(c->base.base), &c->base.base.info);

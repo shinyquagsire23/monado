@@ -130,7 +130,7 @@ ipc_client_instance_create_native_compositor(
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
 	struct xrt_compositor_native *xcn = NULL;
 
-	int ret = ipc_client_compositor_create(&ii->ipc_c, xdev, &xcn);
+	int ret = ipc_client_compositor_create(&ii->ipc_c, NULL, xdev, &xcn);
 	if (ret < 0 || xcn == NULL) {
 		return -1;
 	}
