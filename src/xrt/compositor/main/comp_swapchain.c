@@ -244,6 +244,12 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	uint32_t num_images = 3;
 	VkResult ret;
 
+	if ((info->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT) != 0) {
+		// This compositor doesn't support creating protected content
+		// swapchains.
+		return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
+	}
+
 	if ((info->create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
 		num_images = 1;
 	}
