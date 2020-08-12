@@ -34,6 +34,10 @@
  * Internal structs and helpers.
  *
  */
+
+//! Define to test the loopback allocator.
+#undef IPC_USE_LOOPBACK_IMAGE_ALLOCATOR
+
 /*!
  * Client proxy for an xrt_compositor_native implementation over IPC.
  * @implements xrt_compositor_native
@@ -56,6 +60,11 @@ struct ipc_client_compositor
 
 		enum xrt_blend_mode env_blend_mode;
 	} layers;
+
+#ifdef IPC_USE_LOOPBACK_IMAGE_ALLOCATOR
+	//! To test image allocator.
+	struct xrt_image_native_allocator loopback_xina;
+#endif
 };
 
 /*!
@@ -558,6 +567,115 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 
 /*
  *
+ * Loopback image allocator.
+ *
+ */
+
+#ifdef IPC_USE_LOOPBACK_IMAGE_ALLOCATOR
+static inline xrt_result_t
+ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
+                               const struct xrt_swapchain_create_info *xsci,
+                               size_t in_num_images,
+                               struct xrt_image_native *out_images)
+{
+	struct ipc_client_compositor *icc =
+	    container_of(xina, struct ipc_client_compositor, loopback_xina);
+
+	int remote_fds[IPC_MAX_SWAPCHAIN_FDS] = {0};
+	xrt_result_t r = XRT_SUCCESS;
+	uint32_t num_images;
+	uint32_t handle;
+	uint64_t size;
+
+	for (size_t i = 0; ARRAY_SIZE(remote_fds); i++) {
+		remote_fds[i] = -1;
+	}
+
+	for (size_t i = 0; in_num_images; i++) {
+		out_images[i].fd = -1;
+		out_images[i].size = 0;
+	}
+
+	r = ipc_call_swapchain_create(icc->ipc_c,             // connection
+	                              xsci,                   // in
+	                              &handle,                // out
+	                              &num_images,            // out
+	                              &size,                  // out
+	                              remote_fds,             // fds
+	                              IPC_MAX_SWAPCHAIN_FDS); // fds
+	if (r != XRT_SUCCESS) {
+		return r;
+	}
+
+	/*
+	 * It's okay to destroy it immediately, the native handles are
+	 * now owned by us and we keep the buffers alive that way.
+	 */
+	r = ipc_call_swapchain_destroy(icc->ipc_c, handle);
+	assert(r == XRT_SUCCESS);
+
+	// Clumsy way of handling this.
+	if (num_images < in_num_images) {
+		for (uint32_t k = 0; k < num_images && k < in_num_images; k++) {
+			/*
+			 * Paranoia, we do know that any fd not touched by
+			 * ipc_call_swapchain_create will be -1.
+			 */
+			if (remote_fds[k] >= 0) {
+				close(remote_fds[k]);
+				remote_fds[k] = -1;
+			}
+		}
+
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	// Copy up to in_num_images, or num_images what ever is lowest.
+	uint32_t i = 0;
+	for (; i < num_images && i < in_num_images; i++) {
+		out_images[i].fd = remote_fds[i];
+		out_images[i].size = size;
+	}
+
+	// Close any fds we are not interested in.
+	for (; i < num_images; i++) {
+		/*
+		 * Paranoia, we do know that any fd not touched by
+		 * ipc_call_swapchain_create will be -1.
+		 */
+		if (remote_fds[i] >= 0) {
+			close(remote_fds[i]);
+			remote_fds[i] = -1;
+		}
+	}
+
+	return XRT_SUCCESS;
+}
+
+static inline xrt_result_t
+ipc_compositor_images_free(struct xrt_image_native_allocator *xina,
+                           size_t num_images,
+                           struct xrt_image_native *out_images)
+{
+	for (uint32_t i = 0; i < num_images; i++) {
+		close(out_images[i].fd);
+		out_images[i].fd = -1;
+		out_images[i].size = 0;
+	}
+
+	return XRT_SUCCESS;
+}
+
+static inline void
+ipc_compositor_images_destroy(struct xrt_image_native_allocator *xina)
+{
+	// Noop
+}
+#endif
+
+
+/*
+ *
  * 'Exported' functions.
  *
  */
@@ -588,6 +706,17 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	c->base.base.poll_events = ipc_compositor_poll_events;
 	c->ipc_c = ipc_c;
 	c->xina = xina;
+
+
+#ifdef IPC_USE_LOOPBACK_IMAGE_ALLOCATOR
+	c->loopback_xina.images_allocate = ipc_compositor_images_allocate;
+	c->loopback_xina.images_free = ipc_compositor_images_free;
+	c->loopback_xina.destroy = ipc_compositor_images_destroy;
+
+	if (c->xina == NULL) {
+		c->xina = &c->loopback_xina;
+	}
+#endif
 
 	// Fetch info from the compositor, among it the format format list.
 	get_info(&(c->base.base), &c->base.base.info);
