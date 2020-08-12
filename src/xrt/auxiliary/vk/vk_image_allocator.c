@@ -12,7 +12,9 @@
 
 #include "vk/vk_image_allocator.h"
 
-#if defined(XRT_OS_ANDROID)
+#include <xrt/xrt_handles.h>
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 #include <android/hardware_buffer.h>
 #endif
 

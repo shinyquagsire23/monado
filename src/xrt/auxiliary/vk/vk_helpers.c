@@ -17,6 +17,8 @@
 
 #include "vk/vk_helpers.h"
 
+#include <xrt/xrt_handles.h>
+
 
 /*
  *
