@@ -340,10 +340,10 @@ compositor_layer_stereo_projection(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-compositor_layer_quad(struct xrt_compositor *xc,
-                      struct xrt_device *xdev,
-                      struct xrt_swapchain *xsc,
-                      struct xrt_layer_data *data)
+do_single(struct xrt_compositor *xc,
+          struct xrt_device *xdev,
+          struct xrt_swapchain *xsc,
+          struct xrt_layer_data *data)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 
@@ -358,6 +358,54 @@ compositor_layer_quad(struct xrt_compositor *xc,
 
 	c->slots[slot_id].num_layers++;
 	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+compositor_layer_quad(struct xrt_compositor *xc,
+                      struct xrt_device *xdev,
+                      struct xrt_swapchain *xsc,
+                      struct xrt_layer_data *data)
+{
+	return do_single(xc, xdev, xsc, data);
+}
+
+static xrt_result_t
+compositor_layer_cube(struct xrt_compositor *xc,
+                      struct xrt_device *xdev,
+                      struct xrt_swapchain *xsc,
+                      struct xrt_layer_data *data)
+{
+#if 0
+	return do_single(xc, xdev, xsc, data);
+#else
+	return XRT_SUCCESS; //! @todo Implement
+#endif
+}
+
+static xrt_result_t
+compositor_layer_cylinder(struct xrt_compositor *xc,
+                          struct xrt_device *xdev,
+                          struct xrt_swapchain *xsc,
+                          struct xrt_layer_data *data)
+{
+#if 0
+	return do_single(xc, xdev, xsc, data);
+#else
+	return XRT_SUCCESS; //! @todo Implement
+#endif
+}
+
+static xrt_result_t
+compositor_layer_equirect(struct xrt_compositor *xc,
+                          struct xrt_device *xdev,
+                          struct xrt_swapchain *xsc,
+                          struct xrt_layer_data *data)
+{
+#if 0
+	return do_single(xc, xdev, xsc, data);
+#else
+	return XRT_SUCCESS; //! @todo Implement
+#endif
 }
 
 static xrt_result_t
@@ -1036,6 +1084,9 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	c->base.base.layer_stereo_projection =
 	    compositor_layer_stereo_projection;
 	c->base.base.layer_quad = compositor_layer_quad;
+	c->base.base.layer_cube = compositor_layer_cube;
+	c->base.base.layer_cylinder = compositor_layer_cylinder;
+	c->base.base.layer_equirect = compositor_layer_equirect;
 	c->base.base.layer_commit = compositor_layer_commit;
 	c->base.base.poll_events = compositor_poll_events;
 	c->base.base.destroy = compositor_destroy;
