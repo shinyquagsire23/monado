@@ -671,6 +671,9 @@ client_loop(volatile struct ipc_client_state *ics)
 		rl->data.stereo.l.sub.image_index = 0;
 		rl->data.stereo.r.sub.image_index = 0;
 		rl->data.quad.sub.image_index = 0;
+		rl->data.cube.sub.image_index = 0;
+		rl->data.cylinder.sub.image_index = 0;
+		rl->data.equirect.sub.image_index = 0;
 
 		//! @todo set rects or array index?
 	}

@@ -498,10 +498,11 @@ ipc_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_layer_quad(struct xrt_compositor *xc,
-                          struct xrt_device *xdev,
-                          struct xrt_swapchain *xsc,
-                          struct xrt_layer_data *data)
+handle_layer(struct xrt_compositor *xc,
+             struct xrt_device *xdev,
+             struct xrt_swapchain *xsc,
+             struct xrt_layer_data *data,
+             enum xrt_layer_type type)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -510,7 +511,7 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 
-	assert(data->type == XRT_LAYER_QUAD);
+	assert(data->type == type);
 
 	layer->xdev_id = 0; //! @todo Real id.
 	layer->swapchain_ids[0] = ics->id;
@@ -521,6 +522,42 @@ ipc_compositor_layer_quad(struct xrt_compositor *xc,
 	icc->layers.num_layers++;
 
 	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+ipc_compositor_layer_quad(struct xrt_compositor *xc,
+                          struct xrt_device *xdev,
+                          struct xrt_swapchain *xsc,
+                          struct xrt_layer_data *data)
+{
+	return handle_layer(xc, xdev, xsc, data, XRT_LAYER_QUAD);
+}
+
+static xrt_result_t
+ipc_compositor_layer_cube(struct xrt_compositor *xc,
+                          struct xrt_device *xdev,
+                          struct xrt_swapchain *xsc,
+                          struct xrt_layer_data *data)
+{
+	return handle_layer(xc, xdev, xsc, data, XRT_LAYER_CUBE);
+}
+
+static xrt_result_t
+ipc_compositor_layer_cylinder(struct xrt_compositor *xc,
+                              struct xrt_device *xdev,
+                              struct xrt_swapchain *xsc,
+                              struct xrt_layer_data *data)
+{
+	return handle_layer(xc, xdev, xsc, data, XRT_LAYER_CYLINDER);
+}
+
+static xrt_result_t
+ipc_compositor_layer_equirect(struct xrt_compositor *xc,
+                              struct xrt_device *xdev,
+                              struct xrt_swapchain *xsc,
+                              struct xrt_layer_data *data)
+{
+	return handle_layer(xc, xdev, xsc, data, XRT_LAYER_EQUIRECT);
 }
 
 static xrt_result_t
@@ -702,6 +739,9 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	c->base.base.layer_stereo_projection =
 	    ipc_compositor_layer_stereo_projection;
 	c->base.base.layer_quad = ipc_compositor_layer_quad;
+	c->base.base.layer_cube = ipc_compositor_layer_cube;
+	c->base.base.layer_cylinder = ipc_compositor_layer_cylinder;
+	c->base.base.layer_equirect = ipc_compositor_layer_equirect;
 	c->base.base.layer_commit = ipc_compositor_layer_commit;
 	c->base.base.destroy = ipc_compositor_destroy;
 	c->base.base.poll_events = ipc_compositor_poll_events;

@@ -629,10 +629,14 @@ _update_projection_layer(struct xrt_compositor *xc,
 }
 
 static bool
-_update_quad_layer(struct xrt_compositor *xc,
-                   volatile struct ipc_client_state *ics,
-                   volatile struct ipc_layer_entry *layer,
-                   uint32_t i)
+do_single(struct xrt_compositor *xc,
+          volatile struct ipc_client_state *ics,
+          volatile struct ipc_layer_entry *layer,
+          uint32_t i,
+          const char *name,
+          struct xrt_device **out_xdev,
+          struct xrt_swapchain **out_xcs,
+          struct xrt_layer_data **out_data)
 {
 	uint32_t xdevi = layer->xdev_id;
 	uint32_t sci = layer->swapchain_ids[0];
@@ -641,19 +645,99 @@ _update_quad_layer(struct xrt_compositor *xc,
 	struct xrt_swapchain *xcs = ics->xscs[sci];
 
 	if (xcs == NULL) {
-		fprintf(stderr, "ERROR: Invalid swapchain for quad layer.\n");
+		fprintf(stderr, "ERROR: Invalid swapchain for %u layer, %s.\n",
+		        i, name);
 		return false;
 	}
 
 	if (xdev == NULL) {
-		fprintf(stderr, "ERROR: Invalid xdev for quad layer.\n");
+		fprintf(stderr, "ERROR: Invalid xdev for %u layer, %s.\n", i,
+		        name);
 		return false;
 	}
 
 	// Cast away volatile.
 	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
 
+	*out_xdev = xdev;
+	*out_xcs = xcs;
+	*out_data = data;
+
+	return true;
+}
+
+static bool
+_update_quad_layer(struct xrt_compositor *xc,
+                   volatile struct ipc_client_state *ics,
+                   volatile struct ipc_layer_entry *layer,
+                   uint32_t i)
+{
+	struct xrt_device *xdev;
+	struct xrt_swapchain *xcs;
+	struct xrt_layer_data *data;
+
+	if (!do_single(xc, ics, layer, i, "quad", &xdev, &xcs, &data)) {
+		return false;
+	}
+
 	xrt_comp_layer_quad(xc, xdev, xcs, data);
+
+	return true;
+}
+
+static bool
+_update_cube_layer(struct xrt_compositor *xc,
+                   volatile struct ipc_client_state *ics,
+                   volatile struct ipc_layer_entry *layer,
+                   uint32_t i)
+{
+	struct xrt_device *xdev;
+	struct xrt_swapchain *xcs;
+	struct xrt_layer_data *data;
+
+	if (!do_single(xc, ics, layer, i, "cube", &xdev, &xcs, &data)) {
+		return false;
+	}
+
+	xrt_comp_layer_cube(xc, xdev, xcs, data);
+
+	return true;
+}
+
+static bool
+_update_cylinder_layer(struct xrt_compositor *xc,
+                       volatile struct ipc_client_state *ics,
+                       volatile struct ipc_layer_entry *layer,
+                       uint32_t i)
+{
+	struct xrt_device *xdev;
+	struct xrt_swapchain *xcs;
+	struct xrt_layer_data *data;
+
+	if (!do_single(xc, ics, layer, i, "cylinder", &xdev, &xcs, &data)) {
+		return false;
+	}
+
+	xrt_comp_layer_cylinder(xc, xdev, xcs, data);
+
+	return true;
+}
+
+static bool
+_update_equirect_layer(struct xrt_compositor *xc,
+                       volatile struct ipc_client_state *ics,
+                       volatile struct ipc_layer_entry *layer,
+                       uint32_t i)
+{
+	struct xrt_device *xdev;
+	struct xrt_swapchain *xcs;
+	struct xrt_layer_data *data;
+
+	if (!do_single(xc, ics, layer, i, "equirect", &xdev, &xcs, &data)) {
+		return false;
+	}
+
+	xrt_comp_layer_equirect(xc, xdev, xcs, data);
 
 	return true;
 }
@@ -725,6 +809,23 @@ _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 				break;
 			case XRT_LAYER_QUAD:
 				if (!_update_quad_layer(xc, ics, layer, i)) {
+					return false;
+				}
+				break;
+			case XRT_LAYER_CUBE:
+				if (!_update_cube_layer(xc, ics, layer, i)) {
+					return false;
+				}
+				break;
+			case XRT_LAYER_CYLINDER:
+				if (!_update_cylinder_layer(xc, ics, layer,
+				                            i)) {
+					return false;
+				}
+				break;
+			case XRT_LAYER_EQUIRECT:
+				if (!_update_equirect_layer(xc, ics, layer,
+				                            i)) {
 					return false;
 				}
 				break;
