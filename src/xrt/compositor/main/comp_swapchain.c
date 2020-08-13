@@ -8,6 +8,7 @@
  */
 
 #include "util/u_misc.h"
+#include "util/u_handles.h"
 
 #include "main/comp_compositor.h"
 
@@ -16,14 +17,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifdef XRT_OS_LINUX
-#include <unistd.h>
-#endif
-
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-#include <android/hardware_buffer.h>
-#endif
 
 
 /*
@@ -322,18 +315,7 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc)
 	}
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
-		if (!xrt_graphics_buffer_is_valid(sc->base.images[i].handle)) {
-			continue;
-		}
-//! @todo move to helper functions - move them out of IPC
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-		AHardwareBuffer_release(sc->base.images[i].handle);
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
-		close(sc->base.images[i].handle);
-#else
-#error "need port"
-#endif
-		sc->base.images[i].handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
+		u_graphics_buffer_unref(&sc->base.images[i].handle);
 	}
 
 	vk_ic_destroy(vk, &sc->vkic);
