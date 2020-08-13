@@ -9,14 +9,11 @@
 
 #include "util/u_misc.h"
 #include "util/u_logging.h"
+#include "util/u_handles.h"
 
 #include "vk/vk_image_allocator.h"
 
 #include <xrt/xrt_handles.h>
-
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-#include <android/hardware_buffer.h>
-#endif
 
 #ifdef XRT_OS_LINUX
 #include <unistd.h>
@@ -236,48 +233,6 @@ vk_ic_allocate(struct vk_bundle *vk,
 	return ret;
 }
 
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-
-static void
-release_handle(xrt_graphics_buffer_handle_t handle)
-{
-	if (handle != NULL) {
-		AHardwareBuffer_release(handle);
-	}
-}
-
-static xrt_graphics_buffer_handle_t
-ref_handle(xrt_graphics_buffer_handle_t handle)
-{
-	if (handle != NULL) {
-		AHardwareBuffer_acquire(handle);
-	}
-
-	return handle;
-}
-
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
-
-static void
-release_handle(xrt_graphics_buffer_handle_t handle)
-{
-	if (handle >= 0) {
-		close(handle);
-	}
-}
-
-static xrt_graphics_buffer_handle_t
-ref_handle(xrt_graphics_buffer_handle_t handle)
-{
-	if (handle >= 0) {
-		return dup(handle);
-	}
-
-	return -1;
-}
-
-#endif
-
 /*!
  * Imports and set images from the given FDs.
  */
@@ -299,13 +254,13 @@ vk_ic_from_natives(struct vk_bundle *vk,
 	for (; i < num_images; i++) {
 		// Ensure that all handles are consumed or none are.
 		xrt_graphics_buffer_handle_t buf =
-		    ref_handle(native_images[i].handle);
+		    u_graphics_buffer_ref(native_images[i].handle);
 
 		ret = vk_create_image_from_native(vk, xscci, &native_images[i],
 		                                  &out_vkic->images[i].handle,
 		                                  &out_vkic->images[i].memory);
 		if (ret != VK_SUCCESS) {
-			release_handle(buf);
+			u_graphics_buffer_unref(&buf);
 			break;
 		}
 		native_images[i].handle = buf;
@@ -318,9 +273,7 @@ vk_ic_from_natives(struct vk_bundle *vk,
 		// We have consumed all handles now, close all of the copies we
 		// made, all this to make sure we do all or nothing.
 		for (size_t k = 0; k < num_images; k++) {
-			release_handle(native_images[k].handle);
-			native_images[k].handle =
-			    XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
+			u_graphics_buffer_unref(&native_images[k].handle);
 			native_images[k].size = 0;
 		}
 		return ret;
@@ -373,8 +326,7 @@ vk_ic_get_handles(struct vk_bundle *vk,
 	// succeeded and needs to be closed. If i is zero no call succeeded.
 	while (i > 0) {
 		i--;
-		release_handle(out_handles[i]);
-		out_handles[i] = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
+		u_graphics_buffer_unref(&out_handles[i]);
 	}
 
 	return ret;
