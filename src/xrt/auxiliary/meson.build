@@ -21,6 +21,8 @@ lib_aux_util = static_library(
 		'util/u_format.h',
 		'util/u_frame.c',
 		'util/u_frame.h',
+		'util/u_handles.c',
+		'util/u_handles.h',
 		'util/u_hashmap.cpp',
 		'util/u_hashmap.h',
 		'util/u_hashset.cpp',
