@@ -277,6 +277,57 @@ client_vk_compositor_layer_quad(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
+client_vk_compositor_layer_cube(struct xrt_compositor *xc,
+                                struct xrt_device *xdev,
+                                struct xrt_swapchain *xsc,
+                                struct xrt_layer_data *data)
+{
+	struct client_vk_compositor *c = client_vk_compositor(xc);
+	struct xrt_swapchain *xscfb;
+
+	assert(data->type == XRT_LAYER_CUBE);
+
+	xscfb = &client_vk_swapchain(xsc)->xscn->base;
+	data->flip_y = false;
+
+	return xrt_comp_layer_cube(&c->xcn->base, xdev, xscfb, data);
+}
+
+static xrt_result_t
+client_vk_compositor_layer_cylinder(struct xrt_compositor *xc,
+                                    struct xrt_device *xdev,
+                                    struct xrt_swapchain *xsc,
+                                    struct xrt_layer_data *data)
+{
+	struct client_vk_compositor *c = client_vk_compositor(xc);
+	struct xrt_swapchain *xscfb;
+
+	assert(data->type == XRT_LAYER_CYLINDER);
+
+	xscfb = &client_vk_swapchain(xsc)->xscn->base;
+	data->flip_y = false;
+
+	return xrt_comp_layer_cylinder(&c->xcn->base, xdev, xscfb, data);
+}
+
+static xrt_result_t
+client_vk_compositor_layer_equirect(struct xrt_compositor *xc,
+                                    struct xrt_device *xdev,
+                                    struct xrt_swapchain *xsc,
+                                    struct xrt_layer_data *data)
+{
+	struct client_vk_compositor *c = client_vk_compositor(xc);
+	struct xrt_swapchain *xscfb;
+
+	assert(data->type == XRT_LAYER_EQUIRECT);
+
+	xscfb = &client_vk_swapchain(xsc)->xscn->base;
+	data->flip_y = false;
+
+	return xrt_comp_layer_equirect(&c->xcn->base, xdev, xscfb, data);
+}
+
+static xrt_result_t
 client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
@@ -468,6 +519,9 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	c->base.base.layer_stereo_projection =
 	    client_vk_compositor_layer_stereo_projection;
 	c->base.base.layer_quad = client_vk_compositor_layer_quad;
+	c->base.base.layer_cube = client_vk_compositor_layer_cube;
+	c->base.base.layer_cylinder = client_vk_compositor_layer_cylinder;
+	c->base.base.layer_equirect = client_vk_compositor_layer_equirect;
 	c->base.base.layer_commit = client_vk_compositor_layer_commit;
 	c->base.base.destroy = client_vk_compositor_destroy;
 	c->base.base.poll_events = client_vk_compositor_poll_events;
