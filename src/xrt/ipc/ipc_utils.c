@@ -248,13 +248,10 @@ ipc_send_handles_shmem(struct ipc_message_channel *imc,
 	return ipc_send_fds(imc, data, size, handles, num_handles);
 }
 
-#if defined(XRT_OS_ANDROID)
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 
 #include <android/hardware_buffer.h>
 
-#if __ANDROID_API__ < 26
-#error "Android API level 26 or higher needed for AHardwareBuffer"
-#endif
 
 xrt_result_t
 ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
@@ -301,7 +298,7 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
 	return failed ? XRT_ERROR_IPC_FAILURE : XRT_SUCCESS;
 }
 
-#else
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 
 xrt_result_t
 ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
@@ -324,4 +321,6 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
 	return ipc_send_fds(imc, data, size, handles, num_handles);
 }
 
+#else
+#error "Need port to transport these graphics buffers"
 #endif
