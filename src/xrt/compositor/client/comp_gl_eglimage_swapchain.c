@@ -15,22 +15,34 @@
 #include <stdlib.h>
 
 #include "util/u_misc.h"
+#include "util/u_logging.h"
+#include "util/u_debug.h"
 
 #include <xrt/xrt_config_have.h>
 #include <xrt/xrt_config_os.h>
 #include <xrt/xrt_handles.h>
 
-#if defined(XRT_HAVE_EGL)
 #include "ogl/egl_api.h"
-#endif
-#if defined(XRT_HAVE_OPENGL) || defined(XRT_HAVE_OPENGLES)
 #include "ogl/ogl_api.h"
-#endif
 
 #include "client/comp_gl_client.h"
 #include "client/comp_gl_eglimage_swapchain.h"
 
 #include <inttypes.h>
+
+
+static enum u_logging_level ll;
+
+#define EGL_SC_TRACE(...) U_LOG_IFL_T(ll, __VA_ARGS__)
+#define EGL_SC_DEBUG(...) U_LOG_IFL_D(ll, __VA_ARGS__)
+#define EGL_SC_INFO(...) U_LOG_IFL_I(ll, __VA_ARGS__)
+#define EGL_SC_WARN(...) U_LOG_IFL_W(ll, __VA_ARGS__)
+#define EGL_SC_ERROR(...) U_LOG_IFL_E(ll, __VA_ARGS__)
+
+DEBUG_GET_ONCE_LOG_OPTION(egl_swapchain_log,
+                          "EGL_SWAPCHAIN_LOG",
+                          U_LOGGING_WARN)
+
 
 /*!
  * Down-cast helper.
@@ -111,9 +123,9 @@ gl_format_to_drm_fourcc(uint64_t format)
 	case GL_RGBA16F:
 #endif
 	default:
-		printf("Cannot convert VK format 0x%016" PRIx64
-		       " to DRM FOURCC format!\n",
-		       format);
+		EGL_SC_ERROR("Cannot convert GL format 0x%08" PRIx64
+		             " to DRM FOURCC format!",
+		             format);
 		return 0;
 	}
 }
@@ -130,9 +142,9 @@ gl_format_to_bpp(uint64_t format)
 	case GL_RGBA16F:
 #endif
 	default:
-		printf("Cannot convert VK format 0x%016" PRIx64
-		       " to DRM FOURCC format!\n",
-		       format);
+		EGL_SC_ERROR("Cannot convert GL format 0x%08" PRIx64
+		             " to DRM FOURCC format!",
+		             format);
 		return 0;
 	}
 }
@@ -145,7 +157,10 @@ client_gl_eglimage_swapchain_create(
     struct xrt_swapchain_native *xscn,
     struct client_gl_swapchain **out_sc)
 {
+	ll = debug_get_log_option_egl_swapchain_log();
+
 	if (xscn == NULL) {
+		EGL_SC_ERROR("Native compositor is null");
 		return NULL;
 	}
 
@@ -154,11 +169,18 @@ client_gl_eglimage_swapchain_create(
 	if (format == 0) {
 		return NULL;
 	}
-	uint32_t row_bits = gl_format_to_bpp(info->format) * info->width;
-	uint32_t row_pitch = row_bits / 8;
-	if (row_pitch * 8 < row_bits) {
-		// round up
-		row_pitch += 1;
+	uint32_t row_pitch = 0;
+	{
+		uint32_t bpp = gl_format_to_bpp(info->format);
+		uint32_t row_bits = bpp * info->width;
+		row_pitch = row_bits / 8;
+		if (row_pitch * 8 < row_bits) {
+			// round up
+			row_pitch += 1;
+		}
+		EGL_SC_INFO("Computed row pitch is %" PRIu32 " bytes: %" PRIu32
+		            " bpp, %" PRIu32 " pixels wide",
+		            row_pitch, bpp, info->width);
 	}
 #endif // defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 
@@ -178,7 +200,6 @@ client_gl_eglimage_swapchain_create(
 	glGenTextures(native_xsc->num_images, xscgl->images);
 
 
-
 	for (uint32_t i = 0; i < native_xsc->num_images; i++) {
 #ifdef XRT_OS_ANDROID
 		glBindTexture(GL_TEXTURE_EXTERNAL_OES, xscgl->images[i]);
@@ -195,6 +216,7 @@ client_gl_eglimage_swapchain_create(
 		    eglGetNativeClientBufferANDROID(xscn->images[i].handle);
 
 		if (NULL == native_buffer) {
+			EGL_SC_ERROR("eglGetNativeClientBufferANDROID failed");
 			client_gl_eglimage_swapchain_teardown_storage(sc);
 			free(sc);
 			return NULL;
@@ -222,6 +244,7 @@ client_gl_eglimage_swapchain_create(
 		sc->egl_images[i] = eglCreateImageKHR(
 		    sc->display, EGL_NO_CONTEXT, target, native_buffer, attrs);
 		if (NULL == sc->egl_images[i]) {
+			EGL_SC_ERROR("eglCreateImageKHR failed");
 			client_gl_eglimage_swapchain_teardown_storage(sc);
 			free(sc);
 			return NULL;
@@ -230,6 +253,7 @@ client_gl_eglimage_swapchain_create(
 		glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES,
 		                             sc->egl_images[i]);
 #else
+		//! @todo this should be glTexImage2D I think.
 		glEGLImageTargetTexture2DOES(
 		    info->array_size == 1 ? GL_TEXTURE_2D : GL_TEXTURE_2D_ARRAY,
 		    sc->egl_images[i]);
