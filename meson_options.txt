@@ -72,3 +72,27 @@ option('service',
 	value: true,
 	description: 'Enable separate service module for OpenXR runtime'
 )
+
+option('layer_depth',
+	type: 'boolean',
+	value: false,
+	description: 'Enable support for Depth Layers'
+)
+
+option('layer_cube',
+	type: 'boolean',
+	value: false,
+  description: 'Enable support for Cube Layers'
+)
+
+option('layer_cylinder',
+	type: 'boolean',
+	value: false,
+  description: 'Enable support for Cylinder Layers'
+)
+
+option('layer_equirect',
+	type: 'boolean',
+	value: false,
+  description: 'Enable support for Equirect Layers'
+)

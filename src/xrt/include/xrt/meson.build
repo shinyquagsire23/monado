@@ -73,6 +73,22 @@ if true
 	have_conf.set('XRT_HAVE_VULKAN', true)	
 endif
 
+if get_option('layer_depth')
+	have_conf.set('XRT_FEATURE_OPENXR_LAYER_DEPTH', true)
+endif
+
+if get_option('layer_cube')
+	have_conf.set('XRT_FEATURE_OPENXR_LAYER_CUBE', true)
+endif
+
+if get_option('layer_cylinder')
+	have_conf.set('XRT_FEATURE_OPENXR_LAYER_CYLINDER', true)
+endif
+
+if get_option('layer_equirect')
+	have_conf.set('XRT_FEATURE_OPENXR_LAYER_EQUIRECT', true)
+endif
+
 xrt_config_have_h = configure_file(
 	output: 'xrt_config_have.h',
 	configuration: have_conf,
