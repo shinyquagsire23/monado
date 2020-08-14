@@ -1639,7 +1639,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 	if (opengl_xlib != NULL) {
 		if (!sys->gotten_requirements) {
 			return oxr_error(
-			    log, XR_ERROR_VALIDATION_FAILURE,
+			    log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			    "Has not called "
 			    "xrGetOpenGL[ES]GraphicsRequirementsKHR");
 		}
@@ -1656,9 +1656,10 @@ oxr_session_create_impl(struct oxr_logger *log,
 	    XrGraphicsBindingVulkanKHR);
 	if (vulkan != NULL) {
 		if (!sys->gotten_requirements) {
-			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-			                 "Has not called "
-			                 "xrGetVulkanGraphicsRequirementsKHR");
+			return oxr_error(
+			    log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
+			    "Has not called "
+			    "xrGetVulkanGraphicsRequirementsKHR");
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
@@ -1673,7 +1674,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 	if (egl != NULL) {
 		if (!sys->gotten_requirements) {
 			return oxr_error(
-			    log, XR_ERROR_VALIDATION_FAILURE,
+			    log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			    "Has not called "
 			    "xrGetOpenGL[ES]GraphicsRequirementsKHR");
 		}
