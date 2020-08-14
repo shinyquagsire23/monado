@@ -1656,6 +1656,26 @@ oxr_session_create_impl(struct oxr_logger *log,
 	}
 #endif
 
+
+#if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+	XrGraphicsBindingOpenGLESAndroidKHR const *opengles_android =
+	    OXR_GET_INPUT_FROM_CHAIN(
+	        createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR,
+	        XrGraphicsBindingOpenGLESAndroidKHR);
+	if (opengles_android != NULL) {
+		if (!sys->gotten_requirements) {
+			return oxr_error(
+			    log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
+			    "Has not called "
+			    "xrGetOpenGLESGraphicsRequirementsKHR");
+		}
+
+		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		return oxr_session_populate_gles_android(
+		    log, sys, opengles_android, *out_session);
+	}
+#endif
+
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 	XrGraphicsBindingVulkanKHR const *vulkan = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR,

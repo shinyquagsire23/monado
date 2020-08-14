@@ -937,6 +937,16 @@ oxr_swapchain_gl_create(struct oxr_logger *,
 
 #endif // XR_USE_GRAPHICS_API_OPENGL || XR_USE_GRAPHICS_API_OPENGL_ES
 
+#if defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+#if defined(XR_USE_PLATFORM_ANDROID)
+XrResult
+oxr_session_populate_gles_android(
+    struct oxr_logger *log,
+    struct oxr_system *sys,
+    XrGraphicsBindingOpenGLESAndroidKHR const *next,
+    struct oxr_session *sess);
+#endif // XR_USE_PLATFORM_ANDROID
+#endif // XR_USE_GRAPHICS_API_OPENGL_ES
 
 
 /*

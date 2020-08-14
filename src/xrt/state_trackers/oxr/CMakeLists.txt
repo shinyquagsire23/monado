@@ -92,6 +92,9 @@ endif()
 
 if(ANDROID)
 	add_definitions(-DXR_USE_PLATFORM_ANDROID)
+	list(APPEND OXR_SOURCE_FILES
+		oxr_session_gles_android.c
+		)
 endif()
 
 add_library(st_oxr STATIC ${OXR_SOURCE_FILES})
@@ -104,6 +107,9 @@ target_link_libraries(st_oxr PRIVATE
 	)
 if(XRT_HAVE_VULKAN)
 	target_link_libraries(st_oxr PRIVATE Vulkan::Vulkan)
+endif()
+if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
+	target_link_libraries(st_oxr PRIVATE aux_ogl)
 endif()
 target_include_directories(st_oxr
 	PRIVATE
