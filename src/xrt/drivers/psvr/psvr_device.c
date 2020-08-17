@@ -57,8 +57,8 @@ struct psvr_device
 {
 	struct xrt_device base;
 
-	hid_device *hmd_handle;
-	hid_device *hmd_control;
+	hid_device *hid_sensor;
+	hid_device *hid_control;
 
 	struct xrt_tracked_psvr *tracker;
 
@@ -219,7 +219,7 @@ open_hid(struct psvr_device *p,
 static int
 send_to_control(struct psvr_device *psvr, const uint8_t *data, size_t size)
 {
-	return hid_write(psvr->hmd_control, data, size);
+	return hid_write(psvr->hid_control, data, size);
 }
 
 static int
@@ -520,13 +520,13 @@ handle_control_0xA0(struct psvr_device *psvr, unsigned char *buffer, int size)
 }
 
 static int
-read_handle_packets(struct psvr_device *psvr)
+read_sensor_packets(struct psvr_device *psvr)
 {
 	uint8_t buffer[FEATURE_BUFFER_SIZE];
 	int size = 0;
 
 	do {
-		size = hid_read(psvr->hmd_handle, buffer, FEATURE_BUFFER_SIZE);
+		size = hid_read(psvr->hid_sensor, buffer, FEATURE_BUFFER_SIZE);
 		if (size == 0) {
 			return 0;
 		}
@@ -545,7 +545,7 @@ read_control_packets(struct psvr_device *psvr)
 	int size = 0;
 
 	do {
-		size = hid_read(psvr->hmd_control, buffer, FEATURE_BUFFER_SIZE);
+		size = hid_read(psvr->hid_control, buffer, FEATURE_BUFFER_SIZE);
 		if (size == 0) {
 			return 0;
 		}
@@ -664,7 +664,7 @@ static int
 wait_for_power(struct psvr_device *psvr, bool on)
 {
 	for (int i = 0; i < 5000; i++) {
-		read_handle_packets(psvr);
+		read_sensor_packets(psvr);
 		read_control_packets(psvr);
 
 		if (psvr->powered_on == on) {
@@ -681,7 +681,7 @@ static int
 wait_for_vr_mode(struct psvr_device *psvr, bool on)
 {
 	for (int i = 0; i < 5000; i++) {
-		read_handle_packets(psvr);
+		read_sensor_packets(psvr);
 		read_control_packets(psvr);
 
 		if (psvr->in_vr_mode == on) {
@@ -853,7 +853,7 @@ disco_leds(struct psvr_device *psvr)
 
 		// Sleep for a tenth of a second while polling for packages.
 		for (int k = 0; k < 100; k++) {
-			ret = read_handle_packets(psvr);
+			ret = read_sensor_packets(psvr);
 			if (ret < 0) {
 				return ret;
 			}
@@ -879,20 +879,20 @@ teardown(struct psvr_device *psvr)
 	// Includes null check, and sets to null.
 	xrt_tracked_psvr_destroy(&psvr->tracker);
 
-	if (psvr->hmd_control != NULL) {
+	if (psvr->hid_control != NULL) {
 		// Turn off VR-mode and power down headset.
 		if (control_vrmode_and_wait(psvr, false) < 0 ||
 		    control_power_and_wait(psvr, false) < 0) {
 			PSVR_ERROR(psvr, "Failed to shut down the headset!");
 		}
 
-		hid_close(psvr->hmd_control);
-		psvr->hmd_control = NULL;
+		hid_close(psvr->hid_control);
+		psvr->hid_control = NULL;
 	}
 
-	if (psvr->hmd_handle != NULL) {
-		hid_close(psvr->hmd_handle);
-		psvr->hmd_handle = NULL;
+	if (psvr->hid_sensor != NULL) {
+		hid_close(psvr->hid_sensor);
+		psvr->hid_sensor = NULL;
 	}
 
 	// Destroy the fusion.
@@ -911,7 +911,7 @@ psvr_device_update_inputs(struct xrt_device *xdev)
 {
 	struct psvr_device *psvr = psvr_device(xdev);
 
-	read_handle_packets(psvr);
+	read_sensor_packets(psvr);
 	update_leds_if_changed(psvr);
 }
 
@@ -929,7 +929,7 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 	}
 
 	// Read all packets.
-	read_handle_packets(psvr);
+	read_sensor_packets(psvr);
 	read_control_packets(psvr);
 
 	// Clear out the relation.
@@ -1008,8 +1008,8 @@ psvr_compute_distortion(struct xrt_device *xdev,
  */
 
 struct xrt_device *
-psvr_device_create(struct hid_device_info *hmd_handle_info,
-                   struct hid_device_info *hmd_control_info,
+psvr_device_create(struct hid_device_info *sensor_hid_info,
+                   struct hid_device_info *control_hid_info,
                    struct xrt_prober *xp,
                    enum u_logging_level log_level)
 {
@@ -1060,12 +1060,12 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 
 	snprintf(psvr->base.str, XRT_DEVICE_NAME_LEN, "PS VR Headset");
 
-	ret = open_hid(psvr, hmd_handle_info, &psvr->hmd_handle);
+	ret = open_hid(psvr, sensor_hid_info, &psvr->hid_sensor);
 	if (ret != 0) {
 		goto cleanup;
 	}
 
-	ret = open_hid(psvr, hmd_control_info, &psvr->hmd_control);
+	ret = open_hid(psvr, control_hid_info, &psvr->hid_control);
 	if (ret < 0) {
 		goto cleanup;
 	}

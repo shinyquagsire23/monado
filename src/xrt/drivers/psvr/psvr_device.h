@@ -124,8 +124,8 @@ struct psvr_parsed_status
  */
 
 struct xrt_device *
-psvr_device_create(struct hid_device_info *hmd_handle_info,
-                   struct hid_device_info *hmd_control_info,
+psvr_device_create(struct hid_device_info *sensor_hid_info,
+                   struct hid_device_info *control_hid_info,
                    struct xrt_prober *xp,
                    enum u_logging_level log_level);
 
