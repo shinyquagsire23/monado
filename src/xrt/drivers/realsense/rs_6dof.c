@@ -13,6 +13,7 @@
 #include "xrt/xrt_device.h"
 
 #include "os/os_time.h"
+#include "os/os_threading.h"
 
 #include "util/u_time.h"
 #include "util/u_device.h"
@@ -36,6 +37,8 @@ struct rs_6dof
 	struct xrt_device base;
 
 	struct xrt_pose pose;
+
+	struct os_thread_helper oth;
 
 	rs2_context *ctx;
 	rs2_pipeline *pipe;
@@ -125,8 +128,14 @@ create_6dof(struct rs_6dof *rs)
 		return 1;
 	}
 
-	rs2_config_enable_stream(rs->config, RS2_STREAM_POSE, 0, 0, 0,
-	                         RS2_FORMAT_6DOF, 200, &e);
+	rs2_config_enable_stream(rs->config,      //
+	                         RS2_STREAM_POSE, // Type
+	                         0,               // Index
+	                         0,               // Width
+	                         0,               // Height
+	                         RS2_FORMAT_6DOF, // Format
+	                         200,             // FPS
+	                         &e);
 	if (check_error(rs, e) != 0) {
 		close_6dof(rs);
 		return 1;
@@ -145,7 +154,7 @@ create_6dof(struct rs_6dof *rs)
  * Process a frame as 6DOF data, does not assume ownership of the frame.
  */
 static void
-process_frame(struct rs_6dof *rs, rs2_frame *frame, struct xrt_pose *out_pose)
+process_frame(struct rs_6dof *rs, rs2_frame *frame)
 {
 	rs2_error *e = NULL;
 	int ret = 0;
@@ -161,18 +170,22 @@ process_frame(struct rs_6dof *rs, rs2_frame *frame, struct xrt_pose *out_pose)
 		return;
 	}
 
-	out_pose->orientation.x = camera_pose.rotation.x;
-	out_pose->orientation.y = camera_pose.rotation.y;
-	out_pose->orientation.z = camera_pose.rotation.z;
-	out_pose->orientation.w = camera_pose.rotation.w;
+	os_thread_helper_lock(&rs->oth);
 
-	out_pose->position.x = camera_pose.translation.x;
-	out_pose->position.y = camera_pose.translation.y;
-	out_pose->position.z = camera_pose.translation.z;
+	rs->pose.orientation.x = camera_pose.rotation.x;
+	rs->pose.orientation.y = camera_pose.rotation.y;
+	rs->pose.orientation.z = camera_pose.rotation.z;
+	rs->pose.orientation.w = camera_pose.rotation.w;
+
+	rs->pose.position.x = camera_pose.translation.x;
+	rs->pose.position.y = camera_pose.translation.y;
+	rs->pose.position.z = camera_pose.translation.z;
+
+	os_thread_helper_unlock(&rs->oth);
 }
 
 static int
-update(struct rs_6dof *rs, struct xrt_pose *out_pose)
+update(struct rs_6dof *rs)
 {
 	rs2_frame *frames;
 	rs2_error *e = NULL;
@@ -197,7 +210,7 @@ update(struct rs_6dof *rs, struct xrt_pose *out_pose)
 		}
 
 		// Does not assume ownership of the frame.
-		process_frame(rs, frame, out_pose);
+		process_frame(rs, frame);
 		rs2_release_frame(frame);
 
 		rs2_release_frame(frames);
@@ -205,6 +218,26 @@ update(struct rs_6dof *rs, struct xrt_pose *out_pose)
 	}
 
 	return 0;
+}
+
+static void *
+rs_run_thread(void *ptr)
+{
+	struct rs_6dof *rs = (struct rs_6dof *)ptr;
+
+	os_thread_helper_lock(&rs->oth);
+
+	while (os_thread_helper_is_running_locked(&rs->oth)) {
+
+		os_thread_helper_unlock(&rs->oth);
+
+		int ret = update(rs);
+		if (ret < 0) {
+			return NULL;
+		}
+	}
+
+	return NULL;
 }
 
 static void
@@ -230,9 +263,10 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 	uint64_t now = os_monotonic_get_ns();
 	*out_relation_timestamp_ns = now;
 
-	update(rs, &rs->pose);
-
+	os_thread_helper_lock(&rs->oth);
 	out_relation->pose = rs->pose;
+	os_thread_helper_unlock(&rs->oth);
+
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
@@ -253,7 +287,12 @@ static void
 rs_6dof_destroy(struct xrt_device *xdev)
 {
 	struct rs_6dof *rs = rs_6dof(xdev);
+
+	// Destroy the thread object.
+	os_thread_helper_destroy(&rs->oth);
+
 	close_6dof(rs);
+
 	free(rs);
 }
 
@@ -277,8 +316,23 @@ rs_6dof_create(void)
 	// Setup input, this is a lie.
 	rs->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 
+	// Thread and other state.
+	ret = os_thread_helper_init(&rs->oth);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to init threading!\n");
+		rs_6dof_destroy(&rs->base);
+		return NULL;
+	}
+
 	ret = create_6dof(rs);
 	if (ret != 0) {
+		rs_6dof_destroy(&rs->base);
+		return NULL;
+	}
+
+	ret = os_thread_helper_start(&rs->oth, rs_run_thread, rs);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to start thread!\n");
 		rs_6dof_destroy(&rs->base);
 		return NULL;
 	}
