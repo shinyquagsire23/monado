@@ -445,9 +445,15 @@ oxr_session_views(struct oxr_logger *log,
 
 		struct xrt_pose *pose = (struct xrt_pose *)&views[i].pose;
 		if (!math_quat_ensure_normalized(&pose->orientation)) {
+			struct xrt_quat *q = &pose->orientation;
+			struct xrt_quat norm = *q;
+			math_quat_normalize(&norm);
 			return oxr_error(
 			    log, XR_ERROR_RUNTIME_FAILURE,
-			    "Quaternion in xrLocateViews was invalid");
+			    "Quaternion %a %a %a %a (normalized %a %a %a %a) "
+			    "in xrLocateViews was invalid",
+			    q->x, q->y, q->z, q->w, norm.x, norm.y, norm.z,
+			    norm.w);
 		}
 
 		print_view_fov(sess, i, (struct xrt_fov *)&views[i].fov);
