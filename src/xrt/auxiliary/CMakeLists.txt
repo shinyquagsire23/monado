@@ -29,6 +29,8 @@ set(MATH_SOURCE_FILES
 	math/m_optics.c
 	math/m_permutation.c
 	math/m_permutation.h
+	math/m_predict.c
+	math/m_predict.h
 	math/m_quatexpmap.cpp
 	math/m_space.cpp
 	math/m_space.h
