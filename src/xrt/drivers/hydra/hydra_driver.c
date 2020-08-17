@@ -659,7 +659,7 @@ hydra_found(struct xrt_prober *xp,
 
 	// Create the system
 	struct hydra_system *hs = U_TYPED_CALLOC(struct hydra_system);
-	hs->base.type = XRT_TRACKING_TYPE_NONE; // ??
+	hs->base.type = XRT_TRACKING_TYPE_HYDRA;
 	snprintf(hs->base.name, XRT_TRACKING_NAME_LEN, "%s",
 	         "Razer Hydra magnetic tracking");
 	// Dummy transform from local space to base.

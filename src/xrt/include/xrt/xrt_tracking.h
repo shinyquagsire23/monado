@@ -48,6 +48,9 @@ enum xrt_tracking_type
 
 	// The device(s) are tracked by Ligthhouse
 	XRT_TRACKING_TYPE_LIGHTHOUSE,
+
+	// The device(s) are tracked by Hydra
+	XRT_TRACKING_TYPE_HYDRA
 };
 
 /*!
