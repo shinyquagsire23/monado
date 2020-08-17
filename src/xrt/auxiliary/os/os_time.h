@@ -161,6 +161,24 @@ os_monotonic_get_ns(void)
 #endif
 }
 
+#ifdef XRT_OS_LINUX
+/*!
+ * @brief Return a realtime clock in nanoseconds.
+ * @ingroup aux_os_time
+ */
+static inline uint64_t
+os_realtime_get_ns(void)
+{
+	struct timespec ts;
+	int ret = clock_gettime(CLOCK_REALTIME, &ts);
+	if (ret != 0) {
+		return 0;
+	}
+
+	return os_timespec_to_ns(&ts);
+}
+#endif
+
 
 #ifdef __cplusplus
 }
