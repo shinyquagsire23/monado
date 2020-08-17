@@ -84,7 +84,7 @@ os_nanosleep(long nsec)
  * @ingroup aux_os_time_extra
  */
 static inline uint64_t
-os_timespec_to_ns(struct timespec *spec)
+os_timespec_to_ns(const struct timespec *spec)
 {
 	uint64_t ns = 0;
 	ns += (uint64_t)spec->tv_sec * U_1_000_000_000;
@@ -143,7 +143,6 @@ clock_gettime(int clk_id, struct timespec *spec)
 }
 
 #endif // XRT_OS_WINDOWS
-
 /*!
  * @brief Return a monotonic clock in nanoseconds.
  * @ingroup aux_os_time
