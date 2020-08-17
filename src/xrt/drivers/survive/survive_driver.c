@@ -1184,6 +1184,7 @@ survive_found(struct xrt_prober *xp,
 	printf("survive: Assuming variant %d\n", ss->variant);
 
 	ss->ctx = actx;
+	ss->base.type = XRT_TRACKING_TYPE_LIGHTHOUSE;
 	snprintf(ss->base.name, XRT_TRACKING_NAME_LEN, "%s",
 	         "Libsurvive Tracking");
 	ss->base.offset.position.x = 0.0f;

@@ -45,6 +45,9 @@ enum xrt_tracking_type
 
 	// The device(s) are tracked by RGB camera(s).
 	XRT_TRACKING_TYPE_RGB,
+
+	// The device(s) are tracked by Ligthhouse
+	XRT_TRACKING_TYPE_LIGHTHOUSE,
 };
 
 /*!
