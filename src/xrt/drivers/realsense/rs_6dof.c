@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 
 
@@ -37,7 +38,8 @@ struct rs_6dof
 {
 	struct xrt_device base;
 
-	struct xrt_pose pose;
+	uint64_t relation_timestamp_ns;
+	struct xrt_space_relation relation;
 
 	struct os_thread_helper oth;
 
@@ -171,17 +173,69 @@ process_frame(struct rs_6dof *rs, rs2_frame *frame)
 		return;
 	}
 
+#if 0
+	rs2_timestamp_domain domain = rs2_get_frame_timestamp_domain(frame, &e);
+	if (check_error(rs, e) != 0) {
+		return;
+	}
+#endif
+
+	double timestamp_miliseconds = rs2_get_frame_timestamp(frame, &e);
+	if (check_error(rs, e) != 0) {
+		return;
+	}
+
+	// Close enough
+	uint64_t now_real_ns = os_realtime_get_ns();
+	uint64_t now_monotonic_ns = os_monotonic_get_ns();
+	uint64_t timestamp_ns =
+	    (uint64_t)(timestamp_miliseconds * 1000.0 * 1000.0);
+
+	// How far in the past is it?
+	uint64_t diff_ns = now_real_ns - timestamp_ns;
+
+	// Adjust the timestamp to monotonic time.
+	timestamp_ns = now_monotonic_ns - diff_ns;
+
+
+	/*
+	 * Transfer the data to the struct.
+	 */
+
+	// Re-use the thread lock for the data.
 	os_thread_helper_lock(&rs->oth);
 
-	rs->pose.orientation.x = camera_pose.rotation.x;
-	rs->pose.orientation.y = camera_pose.rotation.y;
-	rs->pose.orientation.z = camera_pose.rotation.z;
-	rs->pose.orientation.w = camera_pose.rotation.w;
+	// clang-format off
+	// Timestamp
+	rs->relation_timestamp_ns = timestamp_ns;
 
-	rs->pose.position.x = camera_pose.translation.x;
-	rs->pose.position.y = camera_pose.translation.y;
-	rs->pose.position.z = camera_pose.translation.z;
+	// Rotation/angular
+	rs->relation.pose.orientation.x = camera_pose.rotation.x;
+	rs->relation.pose.orientation.y = camera_pose.rotation.y;
+	rs->relation.pose.orientation.z = camera_pose.rotation.z;
+	rs->relation.pose.orientation.w = camera_pose.rotation.w;
+	rs->relation.angular_velocity.x = camera_pose.angular_velocity.x;
+	rs->relation.angular_velocity.y = camera_pose.angular_velocity.y;
+	rs->relation.angular_velocity.z = camera_pose.angular_velocity.z;
 
+	// Position/linear
+	rs->relation.pose.position.x = camera_pose.translation.x;
+	rs->relation.pose.position.y = camera_pose.translation.y;
+	rs->relation.pose.position.z = camera_pose.translation.z;
+	rs->relation.linear_velocity.x = camera_pose.velocity.x;
+	rs->relation.linear_velocity.y = camera_pose.velocity.y;
+	rs->relation.linear_velocity.z = camera_pose.velocity.z;
+
+	rs->relation.relation_flags =
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT |
+	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
+	// clang-format on
+
+	// Re-use the thread lock for the data.
 	os_thread_helper_unlock(&rs->oth);
 }
 
@@ -203,7 +257,6 @@ update(struct rs_6dof *rs)
 	}
 
 	for (int i = 0; i < num_frames; i++) {
-
 		rs2_frame *frame = rs2_extract_frame(frames, i, &e);
 		if (check_error(rs, e) != 0) {
 			rs2_release_frame(frames);
@@ -215,7 +268,6 @@ update(struct rs_6dof *rs)
 		rs2_release_frame(frame);
 
 		rs2_release_frame(frames);
-		return 0;
 	}
 
 	return 0;
@@ -261,16 +313,11 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 	}
 
 	os_thread_helper_lock(&rs->oth);
-	out_relation->pose = rs->pose;
+	struct xrt_space_relation relation = rs->relation;
 	os_thread_helper_unlock(&rs->oth);
 
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+	*out_relation = relation;
 }
-
 static void
 rs_6dof_get_view_pose(struct xrt_device *xdev,
                       struct xrt_vec3 *eye_relation,
@@ -305,7 +352,7 @@ rs_6dof_create(void)
 	rs->base.get_view_pose = rs_6dof_get_view_pose;
 	rs->base.destroy = rs_6dof_destroy;
 	rs->base.name = XRT_DEVICE_GENERIC_HMD; // This is a lie.
-	rs->pose.orientation.w = 1.0f;          // All other values set to zero.
+	rs->relation.pose.orientation.w = 1.0f; // All other values set to zero.
 
 	rs->base.tracking_origin->type = XRT_TRACKING_TYPE_EXTERNAL_SLAM;
 
