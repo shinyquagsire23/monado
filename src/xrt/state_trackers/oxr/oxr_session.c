@@ -291,45 +291,6 @@ oxr_session_get_view_relation_at(struct oxr_logger *log,
 	                         XRT_INPUT_GENERIC_HEAD_POSE, at_time, &xsg);
 	m_space_graph_resolve(&xsg, out_relation);
 
-
-#if 0
-	// clang-format off
-	bool valid_vel = (relation.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0;
-	// clang-format on
-
-
-	if (valid_vel) {
-		//! @todo Forcing a fixed amount of prediction for now since
-		//! devices don't tell us timestamps yet.
-		int64_t ns_diff = at_time - timestamp;
-		float interval;
-		if (debug_get_bool_option_dynamic_prediction()) {
-			interval =
-			    time_ns_to_s(ns_diff) + sess->static_prediction_s;
-		} else {
-			interval = sess->static_prediction_s;
-		}
-
-		struct xrt_quat predicted;
-		math_quat_integrate_velocity(&pose->orientation,
-		                             &relation.angular_velocity,
-		                             interval, &predicted);
-
-		if (sess->sys->inst->debug_views) {
-			U_LOG_D("\toriginal quat = {%f, %f, %f, %f}   "
-			        "(time requested: %" PRIi64
-			        ", Interval %" PRIi64
-			        " nsec, with "
-			        "static interval %f s)",
-			        pose->orientation.x, pose->orientation.y,
-			        pose->orientation.z, pose->orientation.w,
-			        at_time, ns_diff, interval);
-		}
-
-		pose->orientation = predicted;
-	}
-#endif
-
 	return oxr_session_success_result(sess);
 }
 
