@@ -877,6 +877,14 @@ _create_hmd_device(struct survive_system *sys)
 	double h_meters = 0.068234;
 	double lens_horizontal_separation = 0.057863;
 	double eye_to_screen_distance = 0.023226876441867737;
+	if (sys->variant == VIVE_VARIANT_INDEX) {
+		lens_horizontal_separation = 0.06;
+		h_meters = 0.07;
+		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
+		eye_to_screen_distance = 0.0255;
+	}
+
+
 	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0,
 	                       eye_to_screen_distance);
 

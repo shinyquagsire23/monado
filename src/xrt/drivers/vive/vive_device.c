@@ -877,8 +877,6 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	double h_meters = 0.068234;
 	double lens_horizontal_separation = 0.057863;
 	double eye_to_screen_distance = 0.023226876441867737;
-	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0,
-	                       eye_to_screen_distance);
 
 	uint32_t w_pixels = d->display.eye_target_width_in_pixels;
 	uint32_t h_pixels = d->display.eye_target_height_in_pixels;
@@ -887,12 +885,21 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.hmd->screens[0].w_pixels = (int)w_pixels * 2;
 	d->base.hmd->screens[0].h_pixels = (int)h_pixels;
 
-	if (d->variant == VIVE_VARIANT_INDEX)
+	if (d->variant == VIVE_VARIANT_INDEX) {
+		lens_horizontal_separation = 0.06;
+		h_meters = 0.07;
+		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
+		eye_to_screen_distance = 0.0255;
+
 		d->base.hmd->screens[0].nominal_frame_interval_ns =
 		    (uint64_t)time_s_to_ns(1.0f / 144.0f);
-	else
+	} else {
 		d->base.hmd->screens[0].nominal_frame_interval_ns =
 		    (uint64_t)time_s_to_ns(1.0f / 90.0f);
+	}
+
+	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0,
+	                       eye_to_screen_distance);
 
 	for (uint8_t eye = 0; eye < 2; eye++) {
 		struct xrt_view *v = &d->base.hmd->views[eye];
