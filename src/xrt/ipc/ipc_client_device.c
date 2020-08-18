@@ -139,7 +139,7 @@ ipc_client_device_create(struct ipc_connection *ipc_c,
 {
 	// Helpers.
 	struct ipc_shared_memory *ism = ipc_c->ism;
-	struct ipc_shared_device *idev = &ism->idevs[device_id];
+	struct ipc_shared_device *isdev = &ism->isdevs[device_id];
 
 	// Allocate and setup the basics.
 	enum u_device_alloc_flags flags =
@@ -153,23 +153,23 @@ ipc_client_device_create(struct ipc_connection *ipc_c,
 	icd->base.set_output = ipc_client_device_set_output;
 	icd->base.destroy = ipc_client_device_destroy;
 
-	// Start copying the information from the idev.
+	// Start copying the information from the isdev.
 	icd->base.tracking_origin = xtrack;
-	icd->base.name = idev->name;
+	icd->base.name = isdev->name;
 	icd->device_id = device_id;
 
 	// Print name.
-	snprintf(icd->base.str, XRT_DEVICE_NAME_LEN, "%s", idev->str);
+	snprintf(icd->base.str, XRT_DEVICE_NAME_LEN, "%s", isdev->str);
 
 	// Setup inputs, by pointing directly to the shared memory.
-	assert(idev->num_inputs > 0);
-	icd->base.inputs = &ism->inputs[idev->first_input_index];
-	icd->base.num_inputs = idev->num_inputs;
+	assert(isdev->num_inputs > 0);
+	icd->base.inputs = &ism->inputs[isdev->first_input_index];
+	icd->base.num_inputs = isdev->num_inputs;
 
 	// Setup outputs, if any point directly into the shared memory.
-	icd->base.num_outputs = idev->num_outputs;
-	if (idev->num_outputs > 0) {
-		icd->base.outputs = &ism->outputs[idev->first_output_index];
+	icd->base.num_outputs = isdev->num_outputs;
+	if (isdev->num_outputs > 0) {
+		icd->base.outputs = &ism->outputs[isdev->first_output_index];
 	} else {
 		icd->base.outputs = NULL;
 	}
@@ -178,6 +178,6 @@ ipc_client_device_create(struct ipc_connection *ipc_c,
 	u_var_add_root(icd, icd->base.str, true);
 	u_var_add_ro_u32(icd, &icd->device_id, "device_id");
 
-	icd->base.device_type = idev->device_type;
+	icd->base.device_type = isdev->device_type;
 	return &icd->base;
 }

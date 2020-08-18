@@ -31,4 +31,9 @@ typedef enum xrt_result
 	 * Could not allocate native image buffer(s).
 	 */
 	XRT_ERROR_ALLOCATION = -7,
+	/*
+	 * The pose is no longer active, this happens when the application
+	 * tries to access a pose that is no longer active.
+	 */
+	XRT_ERROR_POSE_NOT_ACTIVE = -8,
 } xrt_result_t;

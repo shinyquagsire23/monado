@@ -130,7 +130,7 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c,
                       uint32_t device_id)
 {
 	struct ipc_shared_memory *ism = ipc_c->ism;
-	struct ipc_shared_device *idev = &ism->idevs[device_id];
+	struct ipc_shared_device *isdev = &ism->isdevs[device_id];
 
 
 
@@ -145,18 +145,18 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c,
 	ich->base.get_view_pose = ipc_client_hmd_get_view_pose;
 	ich->base.destroy = ipc_client_hmd_destroy;
 
-	// Start copying the information from the idev.
+	// Start copying the information from the isdev.
 	ich->base.tracking_origin = xtrack;
-	ich->base.name = idev->name;
+	ich->base.name = isdev->name;
 	ich->device_id = device_id;
 
 	// Print name.
-	snprintf(ich->base.str, XRT_DEVICE_NAME_LEN, "%s", idev->str);
+	snprintf(ich->base.str, XRT_DEVICE_NAME_LEN, "%s", isdev->str);
 
 	// Setup inputs, by pointing directly to the shared memory.
-	assert(idev->num_inputs > 0);
-	ich->base.inputs = &ism->inputs[idev->first_input_index];
-	ich->base.num_inputs = idev->num_inputs;
+	assert(isdev->num_inputs > 0);
+	ich->base.inputs = &ism->inputs[isdev->first_input_index];
+	ich->base.num_inputs = isdev->num_inputs;
 
 #if 0
 	// Setup info.
@@ -198,10 +198,10 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c,
 	u_var_add_ro_u32(ich, &ich->device_id, "device_id");
 
 	ich->base.orientation_tracking_supported =
-	    idev->orientation_tracking_supported;
+	    isdev->orientation_tracking_supported;
 	ich->base.position_tracking_supported =
-	    idev->position_tracking_supported;
-	ich->base.device_type = idev->device_type;
+	    isdev->position_tracking_supported;
+	ich->base.device_type = isdev->device_type;
 
 	return &ich->base;
 }

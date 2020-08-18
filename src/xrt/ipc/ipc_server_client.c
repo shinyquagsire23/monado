@@ -260,6 +260,7 @@ ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
 	}
 
 	*out_client_desc = ics->client_state;
+	out_client_desc->io_active = ics->io_active;
 
 	//@todo: track this data in the ipc_client_state struct
 	out_client_desc->primary_application = false;
@@ -306,6 +307,42 @@ ipc_handle_system_set_focused_client(volatile struct ipc_client_state *ics,
 {
 	printf("UNIMPLEMENTED: system setting focused client to %d\n",
 	       client_id);
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+ipc_handle_system_toggle_io_client(volatile struct ipc_client_state *_ics,
+                                   uint32_t client_id)
+{
+	volatile struct ipc_client_state *ics = NULL;
+
+	if (client_id >= IPC_MAX_CLIENTS) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	ics = &_ics->server->threads[client_id].ics;
+
+	if (ics->imc.socket_fd <= 0) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	ics->io_active = !ics->io_active;
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+ipc_handle_system_toggle_io_device(volatile struct ipc_client_state *ics,
+                                   uint32_t device_id)
+{
+	if (device_id >= IPC_MAX_DEVICES) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	struct ipc_device *idev = &ics->server->idevs[device_id];
+
+	idev->io_active = !idev->io_active;
 
 	return XRT_SUCCESS;
 }
@@ -466,19 +503,54 @@ ipc_handle_device_update_input(volatile struct ipc_client_state *ics,
 	// To make the code a bit more readable.
 	uint32_t device_id = id;
 	struct ipc_shared_memory *ism = ics->server->ism;
-	struct xrt_device *xdev = ics->server->xdevs[device_id];
-	struct ipc_shared_device *idev = &ism->idevs[device_id];
+	struct ipc_device *idev = get_idev(ics, device_id);
+	struct xrt_device *xdev = idev->xdev;
+	struct ipc_shared_device *isdev = &ism->isdevs[device_id];
 
 	// Update inputs.
 	xrt_device_update_inputs(xdev);
 
 	// Copy data into the shared memory.
 	struct xrt_input *src = xdev->inputs;
-	struct xrt_input *dst = &ism->inputs[idev->first_input_index];
-	memcpy(dst, src, sizeof(struct xrt_input) * idev->num_inputs);
+	struct xrt_input *dst = &ism->inputs[isdev->first_input_index];
+	size_t size = sizeof(struct xrt_input) * isdev->num_inputs;
+
+	bool io_active = ics->io_active && idev->io_active;
+	if (io_active) {
+		memcpy(dst, src, size);
+	} else {
+		memset(dst, 0, size);
+
+		for (uint32_t i = 0; i < isdev->num_inputs; i++) {
+			dst[i].name = src[i].name;
+
+			// Special case the rotation of the head.
+			if (dst[i].name == XRT_INPUT_GENERIC_HEAD_POSE) {
+				dst[i].active = src[i].active;
+			}
+		}
+	}
 
 	// Reply.
 	return XRT_SUCCESS;
+}
+
+static struct xrt_input *
+find_input(volatile struct ipc_client_state *ics,
+           uint32_t device_id,
+           enum xrt_input_name name)
+{
+	struct ipc_shared_memory *ism = ics->server->ism;
+	struct ipc_shared_device *isdev = &ism->isdevs[device_id];
+	struct xrt_input *io = &ism->inputs[isdev->first_input_index];
+
+	for (uint32_t i = 0; i < isdev->num_inputs; i++) {
+		if (io[i].name == name) {
+			return &io[i];
+		}
+	}
+
+	return NULL;
 }
 
 xrt_result_t
@@ -492,7 +564,30 @@ ipc_handle_device_get_tracked_pose(volatile struct ipc_client_state *ics,
 
 	// To make the code a bit more readable.
 	uint32_t device_id = id;
-	struct xrt_device *xdev = ics->server->xdevs[device_id];
+	struct ipc_device *isdev = &ics->server->idevs[device_id];
+	struct xrt_device *xdev = isdev->xdev;
+
+	// Find the input
+	struct xrt_input *input = find_input(ics, device_id, name);
+	if (input == NULL) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	// Special case the headpose.
+	bool disabled = (!isdev->io_active || !ics->io_active) &&
+	                name != XRT_INPUT_GENERIC_HEAD_POSE;
+	bool active_on_client = input->active;
+
+	// We have been disabled but the client hasn't called update.
+	if (disabled && active_on_client) {
+		U_ZERO(out_relation);
+		*out_timestamp = at_timestamp;
+		return XRT_SUCCESS;
+	}
+
+	if (disabled || !active_on_client) {
+		return XRT_ERROR_POSE_NOT_ACTIVE;
+	}
 
 	// Get the pose.
 	xrt_device_get_tracked_pose(xdev, name, at_timestamp, out_timestamp,
@@ -508,10 +603,9 @@ ipc_handle_device_get_view_pose(volatile struct ipc_client_state *ics,
                                 uint32_t view_index,
                                 struct xrt_pose *out_pose)
 {
-
 	// To make the code a bit more readable.
 	uint32_t device_id = id;
-	struct xrt_device *xdev = ics->server->xdevs[device_id];
+	struct xrt_device *xdev = get_xdev(ics, device_id);
 
 	// Get the pose.
 	xrt_device_get_view_pose(xdev, eye_relation, view_index, out_pose);
@@ -527,7 +621,7 @@ ipc_handle_device_set_output(volatile struct ipc_client_state *ics,
 {
 	// To make the code a bit more readable.
 	uint32_t device_id = id;
-	struct xrt_device *xdev = ics->server->xdevs[device_id];
+	struct xrt_device *xdev = get_xdev(ics, device_id);
 
 	// Set the output.
 	xrt_device_set_output(xdev, name, value);

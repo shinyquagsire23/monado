@@ -56,6 +56,24 @@ struct _z_sort_data
 	int32_t z_order;
 };
 
+static void
+init_idev(struct ipc_device *idev, struct xrt_device *xdev)
+{
+	if (xdev != NULL) {
+		idev->io_active = true;
+		idev->xdev = xdev;
+	} else {
+		idev->io_active = false;
+	}
+}
+
+static void
+teardown_idev(struct ipc_device *idev)
+{
+	xrt_device_destroy(&idev->xdev);
+	idev->io_active = false;
+}
+
 
 /*
  *
@@ -71,7 +89,7 @@ teardown_all(struct ipc_server *s)
 	xrt_comp_destroy(&s->xc);
 
 	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
-		xrt_device_destroy(&s->xdevs[i]);
+		teardown_idev(&s->idevs[i]);
 	}
 
 	xrt_instance_destroy(&s->xinst);
@@ -95,11 +113,11 @@ static int
 init_tracking_origins(struct ipc_server *s)
 {
 	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
-		if (s->xdevs[i] == NULL) {
+		struct xrt_device *xdev = s->idevs[i].xdev;
+		if (xdev == NULL) {
 			continue;
 		}
 
-		struct xrt_device *xdev = s->xdevs[i];
 		struct xrt_tracking_origin *xtrack = xdev->tracking_origin;
 		assert(xtrack != NULL);
 		size_t index = 0;
@@ -166,21 +184,21 @@ init_shm(struct ipc_server *s)
 	uint32_t input_index = 0;
 	uint32_t output_index = 0;
 	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
-		struct xrt_device *xdev = s->xdevs[i];
+		struct xrt_device *xdev = s->idevs[i].xdev;
 		if (xdev == NULL) {
 			continue;
 		}
 
-		struct ipc_shared_device *idev = &ism->idevs[count++];
+		struct ipc_shared_device *isdev = &ism->isdevs[count++];
 
-		idev->name = xdev->name;
-		memcpy(idev->str, xdev->str, sizeof(idev->str));
+		isdev->name = xdev->name;
+		memcpy(isdev->str, xdev->str, sizeof(isdev->str));
 
-		idev->orientation_tracking_supported =
+		isdev->orientation_tracking_supported =
 		    xdev->orientation_tracking_supported;
-		idev->position_tracking_supported =
+		isdev->position_tracking_supported =
 		    xdev->position_tracking_supported;
-		idev->device_type = xdev->device_type;
+		isdev->device_type = xdev->device_type;
 
 		// Is this a HMD?
 		if (xdev->hmd != NULL) {
@@ -197,17 +215,17 @@ init_shm(struct ipc_server *s)
 		}
 
 		// Setup the tracking origin.
-		idev->tracking_origin_index = (uint32_t)-1;
+		isdev->tracking_origin_index = (uint32_t)-1;
 		for (size_t k = 0; k < IPC_SERVER_NUM_XDEVS; k++) {
 			if (xdev->tracking_origin != s->xtracks[k]) {
 				continue;
 			}
 
-			idev->tracking_origin_index = k;
+			isdev->tracking_origin_index = k;
 			break;
 		}
 
-		assert(idev->tracking_origin_index != (uint32_t)-1);
+		assert(isdev->tracking_origin_index != (uint32_t)-1);
 
 		// Initial update.
 		xrt_device_update_inputs(xdev);
@@ -220,8 +238,8 @@ init_shm(struct ipc_server *s)
 
 		// Setup the 'offsets' and number of inputs.
 		if (input_start != input_index) {
-			idev->num_inputs = input_index - input_start;
-			idev->first_input_index = input_start;
+			isdev->num_inputs = input_index - input_start;
+			isdev->first_input_index = input_start;
 		}
 
 		// Copy the initial state and also count the number in outputs.
@@ -232,13 +250,13 @@ init_shm(struct ipc_server *s)
 
 		// Setup the 'offsets' and number of outputs.
 		if (output_start != output_index) {
-			idev->num_outputs = output_index - output_start;
-			idev->first_output_index = output_start;
+			isdev->num_outputs = output_index - output_start;
+			isdev->first_output_index = output_start;
 		}
 	}
 
 	// Finally tell the client how many devices we have.
-	s->ism->num_idevs = count;
+	s->ism->num_isdevs = count;
 
 	return 0;
 }
@@ -382,13 +400,25 @@ init_all(struct ipc_server *s)
 		return ret;
 	}
 
-	ret = xrt_instance_select(s->xinst, s->xdevs, IPC_SERVER_NUM_XDEVS);
+	struct xrt_device *xdevs[IPC_SERVER_NUM_XDEVS] = {0};
+	ret = xrt_instance_select(s->xinst, xdevs, IPC_SERVER_NUM_XDEVS);
 	if (ret < 0) {
 		teardown_all(s);
 		return ret;
 	}
 
-	if (s->xdevs[0] == NULL) {
+	// Copy the devices over into the idevs array.
+	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
+		if (xdevs[i] == NULL) {
+			continue;
+		}
+
+		init_idev(&s->idevs[i], xdevs[i]);
+		xdevs[i] = NULL;
+	}
+
+	// If we don't have a HMD shutdown.
+	if (s->idevs[0].xdev == NULL) {
 		teardown_all(s);
 		return -1;
 	}
@@ -399,7 +429,7 @@ init_all(struct ipc_server *s)
 		return -1;
 	}
 
-	ret = xrt_instance_create_native_compositor(s->xinst, s->xdevs[0],
+	ret = xrt_instance_create_native_compositor(s->xinst, s->idevs[0].xdev,
 	                                            &s->xcn);
 	if (ret < 0) {
 		teardown_all(s);
@@ -506,6 +536,7 @@ handle_listen(struct ipc_server *vs)
 	ics->imc.socket_fd = fd;
 	ics->server = vs;
 	ics->server_thread_index = cs_index;
+	ics->io_active = true;
 	os_thread_start(&it->thread, ipc_server_client_thread, (void *)ics);
 
 	// Unlock when we are done.
@@ -599,13 +630,13 @@ _update_projection_layer(struct xrt_compositor *xc,
                          uint32_t i)
 {
 	// xdev
-	uint32_t xdevi = layer->xdev_id;
+	uint32_t device_id = layer->xdev_id;
 	// left
 	uint32_t lxsci = layer->swapchain_ids[0];
 	// right
 	uint32_t rxsci = layer->swapchain_ids[1];
 
-	struct xrt_device *xdev = ics->server->xdevs[xdevi];
+	struct xrt_device *xdev = get_xdev(ics, device_id);
 	struct xrt_swapchain *lxcs = ics->xscs[lxsci];
 	struct xrt_swapchain *rxcs = ics->xscs[rxsci];
 
@@ -645,7 +676,7 @@ _update_projection_layer_depth(struct xrt_compositor *xc,
 	// right
 	uint32_t r_d_xsci = layer->swapchain_ids[3];
 
-	struct xrt_device *xdev = ics->server->xdevs[xdevi];
+	struct xrt_device *xdev = get_xdev(ics, xdevi);
 	struct xrt_swapchain *l_xcs = ics->xscs[l_xsci];
 	struct xrt_swapchain *r_xcs = ics->xscs[r_xsci];
 	struct xrt_swapchain *l_d_xcs = ics->xscs[l_d_xsci];
@@ -682,10 +713,10 @@ do_single(struct xrt_compositor *xc,
           struct xrt_swapchain **out_xcs,
           struct xrt_layer_data **out_data)
 {
-	uint32_t xdevi = layer->xdev_id;
+	uint32_t device_id = layer->xdev_id;
 	uint32_t sci = layer->swapchain_ids[0];
 
-	struct xrt_device *xdev = ics->server->xdevs[xdevi];
+	struct xrt_device *xdev = get_xdev(ics, device_id);
 	struct xrt_swapchain *xcs = ics->xscs[sci];
 
 	if (xcs == NULL) {

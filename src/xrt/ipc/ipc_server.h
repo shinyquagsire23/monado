@@ -108,6 +108,9 @@ struct ipc_client_state
 	//! Compositor for this client.
 	struct xrt_compositor *xc;
 
+	//! Is the inputs and outputs active.
+	bool io_active;
+
 	//! Number of swapchains in use by client
 	uint32_t num_swapchains;
 
@@ -150,6 +153,19 @@ struct ipc_thread
 	volatile struct ipc_client_state ics;
 };
 
+
+/*!
+ *
+ */
+struct ipc_device
+{
+	//! The actual device.
+	struct xrt_device *xdev;
+
+	//! Is the IO suppressed for this device.
+	bool io_active;
+};
+
 /*!
  * Main IPC object for the server.
  *
@@ -162,7 +178,7 @@ struct ipc_server
 	struct xrt_compositor *xc;
 	struct xrt_compositor_native *xcn;
 
-	struct xrt_device *xdevs[IPC_SERVER_NUM_XDEVS];
+	struct ipc_device idevs[IPC_SERVER_NUM_XDEVS];
 	struct xrt_tracking_origin *xtracks[IPC_SERVER_NUM_XDEVS];
 
 	struct ipc_shared_memory *ism;
@@ -221,6 +237,31 @@ update_server_state(struct ipc_server *vs);
  */
 void *
 ipc_server_client_thread(void *_cs);
+
+
+/*
+ *
+ * Helpers
+ *
+ */
+
+/*!
+ * Get a xdev with the given device_id.
+ */
+static inline struct xrt_device *
+get_xdev(volatile struct ipc_client_state *ics, uint32_t device_id)
+{
+	return ics->server->idevs[device_id].xdev;
+}
+
+/*!
+ * Get a idev with the given device_id.
+ */
+static inline struct ipc_device *
+get_idev(volatile struct ipc_client_state *ics, uint32_t device_id)
+{
+	return &ics->server->idevs[device_id];
+}
 
 
 #ifdef __cplusplus

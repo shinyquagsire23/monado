@@ -38,6 +38,18 @@
 		]
 	},
 
+	"system_toggle_io_client": {
+		"in": [
+			{"name": "id", "type": "uint32_t"}
+		]
+	},
+
+	"system_toggle_io_device": {
+		"in": [
+			{"name": "id", "type": "uint32_t"}
+		]
+	},
+
 	"session_create": {
 		"in": [
 			{"name": "overlay_info", "type": "const struct xrt_session_prepare_info"}

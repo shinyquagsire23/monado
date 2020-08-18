@@ -283,11 +283,11 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 
 	// Query the server for how many devices it has.
 	count = 0;
-	for (uint32_t i = 0; i < ism->num_idevs; i++) {
-		struct ipc_shared_device *idev = &ism->idevs[i];
-		xtrack = ii->xtracks[idev->tracking_origin_index];
+	for (uint32_t i = 0; i < ism->num_isdevs; i++) {
+		struct ipc_shared_device *isdev = &ism->isdevs[i];
+		xtrack = ii->xtracks[isdev->tracking_origin_index];
 
-		if (idev->name == XRT_DEVICE_GENERIC_HMD) {
+		if (isdev->name == XRT_DEVICE_GENERIC_HMD) {
 			ii->xdevs[count++] =
 			    ipc_client_hmd_create(&ii->ipc_c, xtrack, i);
 		} else {

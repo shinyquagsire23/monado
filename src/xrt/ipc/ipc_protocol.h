@@ -127,7 +127,7 @@ struct ipc_layer_slot
  * struct xrt_input *
  * helper(struct ipc_shared_memory *ism, uin32_t device_id, size_t input)
  * {
- * 	size_t index = ism->idevs[device_id]->first_input_index + input;
+ * 	size_t index = ism->isdevs[device_id]->first_input_index + input;
  * 	return &ism->inputs[index];
  * }
  * ```
@@ -149,16 +149,16 @@ struct ipc_shared_memory
 	struct ipc_shared_tracking_origin itracks[IPC_SHARED_MAX_DEVICES];
 
 	/*!
-	 * Number of elements in @ref idevs that are populated/valid.
+	 * Number of elements in @ref isdevs that are populated/valid.
 	 */
-	size_t num_idevs;
+	size_t num_isdevs;
 
 	/*!
 	 * @brief Array of shared data per device.
 	 *
-	 * Only @ref num_idevs elements are populated/valid.
+	 * Only @ref num_isdevs elements are populated/valid.
 	 */
-	struct ipc_shared_device idevs[IPC_SHARED_MAX_DEVICES];
+	struct ipc_shared_device isdevs[IPC_SHARED_MAX_DEVICES];
 
 	struct
 	{
@@ -213,6 +213,7 @@ struct ipc_app_state
 	bool session_visible;
 	bool session_focused;
 	bool session_overlay;
+	bool io_active;
 	uint32_t z_order;
 	pid_t pid;
 	struct xrt_instance_info info;
