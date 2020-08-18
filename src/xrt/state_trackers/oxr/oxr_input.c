@@ -972,7 +972,8 @@ oxr_action_cache_update(struct oxr_logger *log,
 		if (!oxr_input_combine_input(
 		        sess, countActionSets, actionSets, act_attached,
 		        sub_path, cache, &combined, &timestamp, &is_active)) {
-			oxr_log(log, "Failed to get/combine input values");
+			oxr_log(log, "Failed to get/combine input values '%s'",
+			        act_attached->act_ref->name);
 			return;
 		}
 
