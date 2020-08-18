@@ -29,7 +29,12 @@ int GLAD_EGL_ANDROID_get_native_client_buffer = 0;
 int GLAD_EGL_ANDROID_image_native_buffer = 0;
 int GLAD_EGL_EXT_image_dma_buf_import = 0;
 int GLAD_EGL_EXT_image_dma_buf_import_modifiers = 0;
+int GLAD_EGL_EXT_image_gl_colorspace = 0;
+int GLAD_EGL_IMG_context_priority = 0;
+int GLAD_EGL_KHR_create_context = 0;
+int GLAD_EGL_KHR_gl_colorspace = 0;
 int GLAD_EGL_KHR_image = 0;
+int GLAD_EGL_KHR_image_base = 0;
 int GLAD_EGL_KHR_platform_android = 0;
 
 
@@ -135,6 +140,11 @@ static void glad_egl_load_EGL_KHR_image( GLADuserptrloadfunc load, void* userptr
     glad_eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) load(userptr, "eglCreateImageKHR");
     glad_eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) load(userptr, "eglDestroyImageKHR");
 }
+static void glad_egl_load_EGL_KHR_image_base( GLADuserptrloadfunc load, void* userptr) {
+    if(!GLAD_EGL_KHR_image_base) return;
+    glad_eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) load(userptr, "eglCreateImageKHR");
+    glad_eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) load(userptr, "eglDestroyImageKHR");
+}
 
 
 
@@ -176,7 +186,12 @@ static int glad_egl_find_extensions_egl(EGLDisplay display) {
     GLAD_EGL_ANDROID_image_native_buffer = glad_egl_has_extension(extensions, "EGL_ANDROID_image_native_buffer");
     GLAD_EGL_EXT_image_dma_buf_import = glad_egl_has_extension(extensions, "EGL_EXT_image_dma_buf_import");
     GLAD_EGL_EXT_image_dma_buf_import_modifiers = glad_egl_has_extension(extensions, "EGL_EXT_image_dma_buf_import_modifiers");
+    GLAD_EGL_EXT_image_gl_colorspace = glad_egl_has_extension(extensions, "EGL_EXT_image_gl_colorspace");
+    GLAD_EGL_IMG_context_priority = glad_egl_has_extension(extensions, "EGL_IMG_context_priority");
+    GLAD_EGL_KHR_create_context = glad_egl_has_extension(extensions, "EGL_KHR_create_context");
+    GLAD_EGL_KHR_gl_colorspace = glad_egl_has_extension(extensions, "EGL_KHR_gl_colorspace");
     GLAD_EGL_KHR_image = glad_egl_has_extension(extensions, "EGL_KHR_image");
+    GLAD_EGL_KHR_image_base = glad_egl_has_extension(extensions, "EGL_KHR_image_base");
     GLAD_EGL_KHR_platform_android = glad_egl_has_extension(extensions, "EGL_KHR_platform_android");
 
     return 1;
@@ -241,6 +256,7 @@ int gladLoadEGLUserPtr(EGLDisplay display, GLADuserptrloadfunc load, void* userp
     glad_egl_load_EGL_ANDROID_get_native_client_buffer(load, userptr);
     glad_egl_load_EGL_EXT_image_dma_buf_import_modifiers(load, userptr);
     glad_egl_load_EGL_KHR_image(load, userptr);
+    glad_egl_load_EGL_KHR_image_base(load, userptr);
 
     return version;
 }
@@ -249,7 +265,7 @@ int gladLoadEGL(EGLDisplay display, GLADloadfunc load) {
     return gladLoadEGLUserPtr(display, glad_egl_get_proc_from_userptr, GLAD_GNUC_EXTENSION (void*) load);
 }
 
- 
+
 
 
 #ifdef __cplusplus
