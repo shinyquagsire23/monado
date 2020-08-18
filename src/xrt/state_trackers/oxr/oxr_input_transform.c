@@ -336,17 +336,21 @@ oxr_input_transform_create_chain(struct oxr_logger *log,
 		return false;
 	}
 
-	size_t num_transforms = 1;
-	if (result_type == XR_ACTION_TYPE_POSE_INPUT &&
-	    input_type == XRT_INPUT_TYPE_POSE) {
+	bool identity =
+	    (result_type == XR_ACTION_TYPE_POSE_INPUT &&
+	     input_type == XRT_INPUT_TYPE_POSE) ||
+	    oxr_type_matches_xrt(current_xform->result_type, result_type);
+
+	if (identity) {
 		// No transform needed, just return identity to keep this alive.
-		*out_num_transforms = num_transforms;
-		*out_transforms =
-		    oxr_input_transform_clone_chain(chain, num_transforms);
-		oxr_slog(slog, "\t\t\tUsing identity transform for pose.\n");
+		*out_num_transforms = 1;
+		*out_transforms = oxr_input_transform_clone_chain(chain, 1);
+		oxr_slog(slog, "\t\t\tUsing identity transform for input.\n");
 		return true;
 	}
 
+	// We start over here.
+	size_t num_transforms = 0;
 	while (!oxr_type_matches_xrt(current_xform->result_type, result_type)) {
 		if (num_transforms >= OXR_MAX_INPUT_TRANSFORMS) {
 			// Couldn't finish the transform to the desired type.
