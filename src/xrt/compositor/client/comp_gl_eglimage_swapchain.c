@@ -24,6 +24,7 @@
 
 #include "ogl/egl_api.h"
 #include "ogl/ogl_api.h"
+#include "ogl/ogl_helpers.h"
 
 #include "client/comp_gl_client.h"
 #include "client/comp_gl_eglimage_swapchain.h"
@@ -199,15 +200,15 @@ client_gl_eglimage_swapchain_create(
 
 	glGenTextures(native_xsc->num_images, xscgl->images);
 
+	GLuint binding_enum = 0;
+	GLuint tex_target = 0;
+	ogl_texture_target_for_swapchain_info(info, &tex_target, &binding_enum);
+	sc->base.tex_target = tex_target;
 
 	for (uint32_t i = 0; i < native_xsc->num_images; i++) {
-#ifdef XRT_OS_ANDROID
-		glBindTexture(GL_TEXTURE_EXTERNAL_OES, xscgl->images[i]);
-#else
-		glBindTexture(info->array_size == 1 ? GL_TEXTURE_2D
-		                                    : GL_TEXTURE_2D_ARRAY,
-		              xscgl->images[i]);
-#endif
+
+		// Bind new texture name to the target.
+		glBindTexture(tex_target, xscgl->images[i]);
 
 		EGLClientBuffer native_buffer = NULL;
 
@@ -224,7 +225,7 @@ client_gl_eglimage_swapchain_create(
 			return NULL;
 		}
 		EGLint attrs[] = {EGL_NONE};
-		EGLenum target = EGL_NATIVE_BUFFER_ANDROID;
+		EGLenum source = EGL_NATIVE_BUFFER_ANDROID;
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 		EGLint attrs[] = {EGL_WIDTH,
 		                  info->width,
@@ -239,27 +240,34 @@ client_gl_eglimage_swapchain_create(
 		                  EGL_DMA_BUF_PLANE0_PITCH_EXT,
 		                  row_pitch,
 		                  EGL_NONE};
-		EGLenum target = EGL_LINUX_DMA_BUF_EXT;
+		EGLenum source = EGL_LINUX_DMA_BUF_EXT;
 #else
 #error "need port"
 #endif
 		sc->egl_images[i] = eglCreateImageKHR(
-		    sc->display, EGL_NO_CONTEXT, target, native_buffer, attrs);
-		if (NULL == sc->egl_images[i]) {
+		    sc->display, EGL_NO_CONTEXT, source, native_buffer, attrs);
+		if (EGL_NO_IMAGE_KHR == sc->egl_images[i]) {
 			EGL_SC_ERROR("eglCreateImageKHR failed");
 			client_gl_eglimage_swapchain_teardown_storage(sc);
 			free(sc);
 			return NULL;
 		}
-#if defined(XRT_OS_ANDROID)
-		glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES,
-		                             sc->egl_images[i]);
-#else
-		//! @todo this should be glTexImage2D I think.
-		glEGLImageTargetTexture2DOES(
-		    info->array_size == 1 ? GL_TEXTURE_2D : GL_TEXTURE_2D_ARRAY,
-		    sc->egl_images[i]);
-#endif
+		/*!
+		 * @todo this matches the behavior of the Google test, but is
+		 * not itself tested or fully rationalized.
+		 *
+		 * Also, glEGLImageTargetTexStorageEXT was added in Android
+		 * platform 28, so fairly recently.
+		 */
+		if (GLAD_GL_EXT_EGL_image_storage &&
+		    glEGLImageTargetTexStorageEXT) {
+			glEGLImageTargetTexStorageEXT(tex_target,
+			                              sc->egl_images[i], NULL);
+		} else if (GLAD_GL_OES_EGL_image_external ||
+		           GLAD_GL_OES_EGL_image_external_essl3) {
+			glEGLImageTargetTexture2DOES(tex_target,
+			                             sc->egl_images[i]);
+		}
 	}
 
 	return &sc->base.base.base;

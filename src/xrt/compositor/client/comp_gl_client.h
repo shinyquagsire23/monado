@@ -36,6 +36,9 @@ struct client_gl_swapchain
 	struct xrt_swapchain_gl base;
 
 	struct xrt_swapchain_native *xscn;
+
+	//! The texture target of images in this swapchain.
+	uint32_t tex_target;
 };
 
 /*!

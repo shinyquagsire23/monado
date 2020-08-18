@@ -22,6 +22,8 @@
 #include "ogl/ogl_api.h"
 #endif
 
+#include "ogl/ogl_helpers.h"
+
 #include "client/comp_gl_client.h"
 
 #include <inttypes.h>
@@ -317,16 +319,13 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	assert(xscn != NULL);
 
 	// Save texture binding
-	GLuint prev_texture = 0;
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-	const GLuint binding_enum = GL_TEXTURE_BINDING_EXTERNAL_OES;
-#else
-	const GLuint binding_enum = info->array_size == 1
-	                                ? GL_TEXTURE_BINDING_2D
-	                                : GL_TEXTURE_BINDING_2D_ARRAY;
-#endif
+	GLint prev_texture = 0;
+	GLuint binding_enum = 0;
+	GLuint tex_target = 0;
+	ogl_texture_target_for_swapchain_info(&xinfo, &tex_target,
+	                                      &binding_enum);
 
-	glGetIntegerv(binding_enum, (GLint *)&prev_texture);
+	glGetIntegerv(binding_enum, &prev_texture);
 
 	struct xrt_swapchain *xsc = &xscn->base;
 
@@ -348,13 +347,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.num_images = xsc->num_images;
 	sc->xscn = xscn;
 
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-	const GLuint binding_target_enum = GL_TEXTURE_EXTERNAL_OES;
-#else
-	const GLuint binding_target_enum =
-	    info->array_size == 1 ? GL_TEXTURE_2D : GL_TEXTURE_2D_ARRAY;
-#endif
-	glBindTexture(binding_target_enum, prev_texture);
+	glBindTexture(tex_target, prev_texture);
 
 	*out_xsc = &sc->base.base;
 	return XRT_SUCCESS;
