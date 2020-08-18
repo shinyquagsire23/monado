@@ -328,10 +328,11 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 		return xret;
 	}
 
-	// create the swapchain
+	// Create the swapchain
 	struct xrt_swapchain *xsc = NULL;
 	xret = xrt_comp_create_swapchain(ics->xc, info, &xsc);
 	if (xret != XRT_SUCCESS) {
+		fprintf(stderr, "ERROR: xrt_comp_create_swapchain failed!\n");
 		return xret;
 	}
 
