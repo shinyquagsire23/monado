@@ -20,6 +20,7 @@ typedef enum op_mode
 	MODE_GET,
 	MODE_SET_PRIMARY,
 	MODE_SET_FOCUSED,
+	MODE_TOGGLE_IO,
 } op_mode_t;
 
 int
@@ -51,12 +52,23 @@ get_mode(struct ipc_connection *ipc_c)
 		}
 
 		printf(
-		    "id: %d\tact: %d\tdisp: "
-		    "%d\tfoc: %d\tovly: %d\tz: "
-		    "%d\tpid: "
-		    "%d\t %s\t\n",
-		    clients.ids[i], cs.session_active, cs.session_visible,
-		    cs.session_focused, cs.session_overlay, cs.z_order, cs.pid,
+		    "id: %d"
+		    "\tact: %d"
+		    "\tdisp: %d"
+		    "\tfoc: %d"
+		    "\tio: %d"
+		    "\tovly: %d"
+		    "\tz: %d"
+		    "\tpid: %d"
+		    "\t%s\n",
+		    clients.ids[i],     //
+		    cs.session_active,  //
+		    cs.session_visible, //
+		    cs.session_focused, //
+		    cs.io_active,       //
+		    cs.session_overlay, //
+		    cs.z_order,         //
+		    cs.pid,             //
 		    cs.info.application_name);
 	}
 
@@ -92,6 +104,20 @@ set_focused(struct ipc_connection *ipc_c, int client_id)
 }
 
 int
+toggle_io(struct ipc_connection *ipc_c, int client_id)
+{
+	xrt_result_t r;
+
+	r = ipc_call_system_toggle_io_device(ipc_c, client_id);
+	if (r != XRT_SUCCESS) {
+		printf("failed to set focused client to %d.\n", client_id);
+		return 1;
+	}
+
+	return 0;
+}
+
+int
 main(int argc, char *argv[])
 {
 	struct ipc_connection ipc_c;
@@ -104,7 +130,7 @@ main(int argc, char *argv[])
 	int s_val = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "p:f:")) != -1) {
+	while ((c = getopt(argc, argv, "p:f:i:")) != -1) {
 		switch (c) {
 		case 'p':
 			s_val = atoi(optarg);
@@ -118,7 +144,12 @@ main(int argc, char *argv[])
 				op_mode = MODE_SET_FOCUSED;
 			}
 			break;
-
+		case 'i':
+			s_val = atoi(optarg);
+			if (s_val >= 0 && s_val < IPC_MAX_CLIENTS) {
+				op_mode = MODE_TOGGLE_IO;
+			}
+			break;
 		case '?':
 			if (optopt == 's') {
 				fprintf(stderr,
@@ -172,15 +203,10 @@ main(int argc, char *argv[])
 		}
 
 		switch (op_mode) {
-		case MODE_GET:
-			exit(get_mode(&ipc_c));
-			break;
-		case MODE_SET_PRIMARY:
-			exit(set_primary(&ipc_c, s_val));
-			break;
-		case MODE_SET_FOCUSED:
-			exit(set_focused(&ipc_c, s_val));
-			break;
+		case MODE_GET: exit(get_mode(&ipc_c)); break;
+		case MODE_SET_PRIMARY: exit(set_primary(&ipc_c, s_val)); break;
+		case MODE_SET_FOCUSED: exit(set_focused(&ipc_c, s_val)); break;
+		case MODE_TOGGLE_IO: exit(toggle_io(&ipc_c, s_val)); break;
 		default: printf("Unrecognised operation mode.\n"); exit(1);
 		}
 	}
