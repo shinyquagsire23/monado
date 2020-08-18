@@ -625,11 +625,11 @@ ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
 	uint32_t handle;
 	uint64_t size;
 
-	for (size_t i = 0; ARRAY_SIZE(remote_fds); i++) {
+	for (size_t i = 0; i < ARRAY_SIZE(remote_fds); i++) {
 		remote_fds[i] = -1;
 	}
 
-	for (size_t i = 0; in_num_images; i++) {
+	for (size_t i = 0; i < in_num_images; i++) {
 		out_images[i].fd = -1;
 		out_images[i].size = 0;
 	}
