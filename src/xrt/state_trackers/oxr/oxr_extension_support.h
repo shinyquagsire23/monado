@@ -21,6 +21,18 @@
 // beginning of GENERATED defines - do not modify - used by scripts
 
 /*
+ * XR_KHR_android_create_instance
+ */
+#if defined(XR_KHR_android_create_instance) && defined(XR_USE_PLATFORM_ANDROID)
+#define OXR_HAVE_KHR_android_create_instance
+#define OXR_EXTENSION_SUPPORT_KHR_android_create_instance(_)                   \
+	_(KHR_android_create_instance, KHR_ANDROID_CREATE_INSTANCE)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_android_create_instance(_)
+#endif
+
+
+/*
  * XR_KHR_convert_timespec_time
  */
 #if defined(XR_KHR_convert_timespec_time) && defined(XR_USE_TIMESPEC)
@@ -215,6 +227,7 @@
  */
 // clang-format off
 #define OXR_EXTENSION_SUPPORT_GENERATE(_) \
+    OXR_EXTENSION_SUPPORT_KHR_android_create_instance(_) \
     OXR_EXTENSION_SUPPORT_KHR_convert_timespec_time(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_es_enable(_) \

@@ -14,12 +14,19 @@
 #include "util/u_debug.h"
 
 #include "xrt/xrt_instance.h"
+#include "xrt/xrt_config_os.h"
+
+
+#ifdef XRT_OS_ANDROID
+#include "util/u_android.h"
+#endif
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_handle.h"
 #include "oxr_extension_support.h"
 #include "oxr_subaction.h"
+#include "oxr_chain.h"
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -221,6 +228,16 @@ oxr_instance_create(struct oxr_logger *log,
 	snprintf(i_info.application_name,
 	         sizeof(inst->xinst->instance_info.application_name), "%s",
 	         createInfo->applicationInfo.applicationName);
+
+#ifdef XRT_OS_ANDROID
+	XrInstanceCreateInfoAndroidKHR const *create_info_android =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo,
+	                             XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR,
+	                             XrInstanceCreateInfoAndroidKHR);
+	u_android_store_vm_and_activity(
+	    (struct _JavaVM *)create_info_android->applicationVM,
+	    create_info_android->applicationActivity);
+#endif
 
 	xinst_ret = xrt_instance_create(&i_info, &inst->xinst);
 	if (xinst_ret != 0) {

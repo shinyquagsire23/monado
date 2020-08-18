@@ -15,6 +15,7 @@
 #include "oxr_logger.h"
 #include "oxr_two_call.h"
 #include "oxr_extension_support.h"
+#include "oxr_chain.h"
 
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
@@ -47,6 +48,60 @@ oxr_xrEnumerateInstanceExtensionProperties(const char *layerName,
 	                    properties, ARRAY_SIZE(extension_properties),
 	                    extension_properties, XR_SUCCESS);
 }
+
+#ifdef XRT_OS_ANDROID
+static XrResult
+oxr_check_android_extensions(struct oxr_logger *log,
+                             const XrInstanceCreateInfo *createInfo)
+{
+
+	bool foundAndroidExtension = false;
+	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
+		if (strcmp(createInfo->enabledExtensionNames[i],
+		           XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME) ==
+		    0) {
+			foundAndroidExtension = true;
+			break;
+		}
+	}
+	if (!foundAndroidExtension) {
+		return oxr_error(
+		    log, XR_ERROR_INITIALIZATION_FAILED,
+		    "(createInfo->enabledExtensionNames) "
+		    "Mandatory platform-specific "
+		    "extension"
+		    " " XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME
+		    " not specified");
+	}
+
+	{
+		// Verify that it exists and is populated.
+		XrInstanceCreateInfoAndroidKHR const *createInfoAndroid =
+		    OXR_GET_INPUT_FROM_CHAIN(
+		        createInfo, XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR,
+		        XrInstanceCreateInfoAndroidKHR);
+		if (createInfoAndroid == NULL) {
+			return oxr_error(
+			    log, XR_ERROR_VALIDATION_FAILURE,
+			    "(createInfo->next...) "
+			    "Did not find XrInstanceCreateInfoAndroidKHR in "
+			    "chain");
+		}
+		if (createInfoAndroid->applicationVM == NULL) {
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+			                 "(createInfo->next...->applicationVM) "
+			                 "applicationVM must be populated");
+		}
+		if (createInfoAndroid->applicationActivity == NULL) {
+			return oxr_error(
+			    log, XR_ERROR_VALIDATION_FAILURE,
+			    "(createInfo->next...->applicationActivity) "
+			    "applicationActivity must be populated");
+		}
+	}
+	return XR_SUCCESS;
+}
+#endif // XRT_OS_ANDROID
 
 XrResult
 oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo,
@@ -102,6 +157,13 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo,
 		                 i);
 	}
 
+
+#ifdef XRT_OS_ANDROID
+	ret = oxr_check_android_extensions(&log, createInfo);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+#endif
 	struct oxr_instance *inst = NULL;
 
 	ret = oxr_instance_create(&log, createInfo, &inst);
