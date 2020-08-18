@@ -86,8 +86,8 @@ TEST_CASE("input_transform")
 				                                       "float_action", "/dummy_vec2/x", &transforms,
 				                                       &num_transforms));
 
-				// Identity and a get-x
-				CHECK(num_transforms == 2);
+				// A get-x
+				CHECK(num_transforms == 1);
 				CHECK(transforms != nullptr);
 
 				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
@@ -100,8 +100,8 @@ TEST_CASE("input_transform")
 				                                       "float_action", "/dummy_vec2/y", &transforms,
 				                                       &num_transforms));
 
-				// Identity and a get-y
-				CHECK(num_transforms == 2);
+				// A get-y
+				CHECK(num_transforms == 1);
 				CHECK(transforms != nullptr);
 
 				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
@@ -129,8 +129,8 @@ TEST_CASE("input_transform")
 			CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type, "float_action",
 			                                       "/dummy_bool", &transforms, &num_transforms));
 
-			// Identity and a bool-to-float
-			CHECK(num_transforms == 2);
+			// A bool-to-float
+			CHECK(num_transforms == 1);
 			CHECK(transforms != nullptr);
 
 			SECTION("False")
@@ -178,7 +178,7 @@ TEST_CASE("input_transform")
 
 			CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type, "bool_action",
 			                                       "/dummy_float", &transforms, &num_transforms));
-			CHECK(num_transforms == 2);
+			CHECK(num_transforms == 1);
 			CHECK(transforms != nullptr);
 
 			SECTION("True")
@@ -206,7 +206,8 @@ TEST_CASE("input_transform")
 
 			CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type, "bool_action",
 			                                       "/dummy_float", &transforms, &num_transforms));
-			CHECK(num_transforms == 2);
+			// A bool to float
+			CHECK(num_transforms == 1);
 			CHECK(transforms != nullptr);
 
 			SECTION("True")
@@ -239,7 +240,7 @@ TEST_CASE("input_transform")
 				CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type,
 				                                       "float_action", "/dummy_vec2/x", &transforms,
 				                                       &num_transforms));
-				CHECK(num_transforms == 3);
+				CHECK(num_transforms == 2);
 				CHECK(transforms != nullptr);
 
 				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
@@ -251,7 +252,7 @@ TEST_CASE("input_transform")
 				CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type,
 				                                       "float_action", "/dummy_vec2/y", &transforms,
 				                                       &num_transforms));
-				CHECK(num_transforms == 3);
+				CHECK(num_transforms == 2);
 				CHECK(transforms != nullptr);
 
 				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
