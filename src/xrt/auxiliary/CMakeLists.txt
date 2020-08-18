@@ -116,6 +116,12 @@ set(UTIL_SOURCE_FILES
 	util/u_var.cpp
 	util/u_var.h
 	)
+if(ANDROID)
+	list(APPEND UTIL_SOURCE_FILES
+		util/u_android.c
+		util/u_android.h
+		)
+endif()
 
 set(VK_SOURCE_FILES
 	vk/vk_documentation.h
