@@ -67,13 +67,13 @@ oxr_action_attachment_update(struct oxr_logger *log,
                              struct oxr_sub_paths sub_paths);
 
 static void
-oxr_action_bind_inputs(struct oxr_logger *log,
-                       struct oxr_sink_logger *slog,
-                       struct oxr_session *sess,
-                       struct oxr_action *act,
-                       struct oxr_action_cache *cache,
-                       struct oxr_interaction_profile *profile,
-                       enum oxr_sub_action_path sub_path);
+oxr_action_bind_io(struct oxr_logger *log,
+                   struct oxr_sink_logger *slog,
+                   struct oxr_session *sess,
+                   struct oxr_action *act,
+                   struct oxr_action_cache *cache,
+                   struct oxr_interaction_profile *profile,
+                   enum oxr_sub_action_path sub_path);
 
 /*
  *
@@ -682,17 +682,16 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 
 	if (act_ref->sub_paths.user || act_ref->sub_paths.any) {
 #if 0
-		oxr_action_bind_inputs(log, &slog, sess, act,
-		                       &act_attached->user, user,
-		                       OXR_SUB_ACTION_PATH_USER);
+		oxr_action_bind_io(log, &slog, sess, act, &act_attached->user,
+		                   user, OXR_SUB_ACTION_PATH_USER);
 #endif
 	}
 
 #define BIND_SUBACTION(NAME, NAME_CAPS, PATH)                                  \
 	if (act_ref->sub_paths.NAME || act_ref->sub_paths.any) {               \
-		oxr_action_bind_inputs(log, &slog, sess, act,                  \
-		                       &act_attached->NAME, profiles->NAME,    \
-		                       OXR_SUB_ACTION_PATH_##NAME_CAPS);       \
+		oxr_action_bind_io(log, &slog, sess, act, &act_attached->NAME, \
+		                   profiles->NAME,                             \
+		                   OXR_SUB_ACTION_PATH_##NAME_CAPS);           \
 	}
 	OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(BIND_SUBACTION)
 #undef BIND_SUBACTION
@@ -1196,13 +1195,13 @@ oxr_action_populate_input_transform(struct oxr_logger *log,
 }
 
 static void
-oxr_action_bind_inputs(struct oxr_logger *log,
-                       struct oxr_sink_logger *slog,
-                       struct oxr_session *sess,
-                       struct oxr_action *act,
-                       struct oxr_action_cache *cache,
-                       struct oxr_interaction_profile *profile,
-                       enum oxr_sub_action_path sub_path)
+oxr_action_bind_io(struct oxr_logger *log,
+                   struct oxr_sink_logger *slog,
+                   struct oxr_session *sess,
+                   struct oxr_action *act,
+                   struct oxr_action_cache *cache,
+                   struct oxr_interaction_profile *profile,
+                   enum oxr_sub_action_path sub_path)
 {
 	struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION] = {0};
 	uint32_t num_inputs = 0;
@@ -1215,25 +1214,29 @@ oxr_action_bind_inputs(struct oxr_logger *log,
 	cache->current.active = false;
 
 	if (num_inputs > 0) {
+		uint32_t count = 0;
 		cache->current.active = true;
 		cache->inputs =
 		    U_TYPED_ARRAY_CALLOC(struct oxr_action_input, num_inputs);
 		for (uint32_t i = 0; i < num_inputs; i++) {
-			if (!oxr_action_populate_input_transform(
+
+			// Only add the input if we can find a transform.
+			if (oxr_action_populate_input_transform(
 			        log, slog, sess, act, &(inputs[i]))) {
-				/*!
-				 * @todo de-populate this element if we couldn't
-				 * get a transform?
-				 */
-				oxr_slog(
-				    slog,
-				    "Could not populate a transform for %s "
-				    "despite it being bound!\n",
-				    act->data->name);
+				cache->inputs[count++] = inputs[i];
+				continue;
 			}
-			cache->inputs[i] = inputs[i];
+
+			oxr_slog(slog, "\t\t\t\tRejected! (NO TRANSFORM)\n");
 		}
-		cache->num_inputs = num_inputs;
+
+		// No inputs found, prented we never bound it.
+		if (count == 0) {
+			free(cache->inputs);
+			cache->inputs = NULL;
+		}
+
+		cache->num_inputs = count;
 	}
 
 	if (num_outputs > 0) {
