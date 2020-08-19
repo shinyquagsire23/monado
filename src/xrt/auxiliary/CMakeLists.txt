@@ -25,6 +25,8 @@ if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	list(APPEND OGL_SOURCE_FILES
 		ogl/ogl_api.c
 		ogl/ogl_api.h
+		ogl/ogl_helpers.c
+		ogl/ogl_helpers.h
 		)
 endif()
 if(XRT_HAVE_EGL)
