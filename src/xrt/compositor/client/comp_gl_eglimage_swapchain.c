@@ -151,6 +151,32 @@ gl_format_to_bpp(uint64_t format)
 }
 #endif // defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+static inline bool
+vk_format_to_srgb(uint64_t format)
+{
+	switch (format) {
+	case 37 /*VK_FORMAT_R8G8B8A8_UNORM*/: return false;
+	case 64 /*VK_FORMAT_A2B10G10R10_UNORM_PACK32*/: return false;
+	case 50 /*VK_FORMAT_B8G8R8A8_SRGB*/: return true;
+	case 124 /*VK_FORMAT_D16_UNORM*/: return false;
+	case 44 /*VK_FORMAT_B8G8R8A8_UNORM*/: return false;
+	case 129 /*VK_FORMAT_D24_UNORM_S8_UINT*/: return false;
+	case 130 /*VK_FORMAT_D32_SFLOAT_S8_UINT*/: return false;
+	case 23 /*VK_FORMAT_R8G8B8_UNORM*/: return false;
+	case 127 /*VK_FORMAT_S8_UINT*/: return false;
+	case 4 /*VK_FORMAT_R5G6B5_UNORM_PACK16*/: return false;
+	case 97 /*VK_FORMAT_R16G16B16A16_SFLOAT*/: return false;
+	case 126 /*VK_FORMAT_D32_SFLOAT*/: return false;
+	case 125 /*VK_FORMAT_X8_D24_UNORM_PACK32*/: return false;
+	case 43 /*VK_FORMAT_R8G8B8A8_SRGB*/: return true;
+	default: return false;
+	}
+}
+#endif // defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+
+
 struct xrt_swapchain *
 client_gl_eglimage_swapchain_create(
     struct xrt_compositor *xc,
@@ -224,10 +250,22 @@ client_gl_eglimage_swapchain_create(
 			free(sc);
 			return NULL;
 		}
-		EGLint attrs[] = {EGL_NONE};
+		EGLint attrs[] = {
+		    EGL_IMAGE_PRESERVED_KHR,
+		    EGL_TRUE,
+		    EGL_NONE,
+		    EGL_NONE,
+		    EGL_NONE,
+		};
+		if (vk_format_to_srgb(info->format)) {
+			attrs[2] = EGL_GL_COLORSPACE_KHR;
+			attrs[3] = EGL_GL_COLORSPACE_SRGB_KHR;
+		}
 		EGLenum source = EGL_NATIVE_BUFFER_ANDROID;
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
-		EGLint attrs[] = {EGL_WIDTH,
+		EGLint attrs[] = {EGL_IMAGE_PRESERVED_KHR,
+		                  EGL_TRUE,
+		                  EGL_WIDTH,
 		                  info->width,
 		                  EGL_HEIGHT,
 		                  info->height,
