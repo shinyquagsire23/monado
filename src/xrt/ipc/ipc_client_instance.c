@@ -129,9 +129,16 @@ ipc_client_instance_create_native_compositor(
 {
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
 	struct xrt_compositor_native *xcn = NULL;
+	struct xrt_image_native_allocator *xina = NULL;
 
-	int ret = ipc_client_compositor_create(&ii->ipc_c, NULL, xdev, &xcn);
+#ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
+	// On Android, we allocate images natively on the client side.
+	xina = android_ahardwarebuffer_allocator_create();
+#endif // XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
+
+	int ret = ipc_client_compositor_create(&ii->ipc_c, xina, xdev, &xcn);
 	if (ret < 0 || xcn == NULL) {
+		xrt_images_destroy(&xina);
 		return -1;
 	}
 

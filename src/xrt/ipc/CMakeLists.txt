@@ -52,7 +52,11 @@ target_include_directories(ipc_client PRIVATE
 target_link_libraries(ipc_client PRIVATE
 	aux_util
 	)
-
+if(ANDROID)
+	target_link_libraries(ipc_client PRIVATE
+		aux_android
+		)
+endif()
 
 ###
 # Server
