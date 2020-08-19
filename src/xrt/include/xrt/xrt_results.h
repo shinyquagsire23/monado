@@ -27,4 +27,8 @@ typedef enum xrt_result
 	 * isn't supported.
 	 */
 	XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED = -6,
+	/*!
+	 * Could not allocate native image buffer(s).
+	 */
+	XRT_ERROR_ALLOCATION = -7,
 } xrt_result_t;

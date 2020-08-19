@@ -1,6 +1,11 @@
 # Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+set(ANDROID_SOURCE_FILES
+	android/android_ahardwarebuffer_allocator.c
+	android/android_ahardwarebuffer_allocator.h
+	)
+
 set(MATH_SOURCE_FILES
 	math/m_api.h
 	math/m_base.cpp
@@ -160,6 +165,7 @@ if(XRT_HAVE_DBUS)
 		)
 endif()
 
+
 # Math library.
 add_library(aux_math STATIC ${MATH_SOURCE_FILES})
 target_link_libraries(aux_math PUBLIC aux-includes)
@@ -213,4 +219,13 @@ if(XRT_HAVE_VULKAN)
 	if(ANDROID)
 		target_link_libraries(aux_vk PUBLIC ${ANDROID_LIBRARY})
 	endif()
+endif()
+
+
+if(ANDROID)
+	add_library(aux_android STATIC ${ANDROID_SOURCE_FILES})
+	target_link_libraries(aux_android
+		PUBLIC aux_util
+		PRIVATE ${ANDROID_LIBRARY}
+		)
 endif()
