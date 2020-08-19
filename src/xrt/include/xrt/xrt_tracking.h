@@ -50,7 +50,10 @@ enum xrt_tracking_type
 	XRT_TRACKING_TYPE_LIGHTHOUSE,
 
 	// The device(s) are tracked by Hydra
-	XRT_TRACKING_TYPE_HYDRA
+	XRT_TRACKING_TYPE_HYDRA,
+
+	// The device(s) are tracked by external SLAM
+	XRT_TRACKING_TYPE_EXTERNAL_SLAM,
 };
 
 /*!

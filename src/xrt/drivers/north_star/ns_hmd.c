@@ -364,6 +364,10 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 
 	ns->base.orientation_tracking_supported = true;
 	ns->base.position_tracking_supported = ns->tracker != NULL;
+	if (ns->tracker) {
+		ns->base.tracking_origin->type =
+		    ns->tracker->tracking_origin->type;
+	}
 	ns->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	return &ns->base;

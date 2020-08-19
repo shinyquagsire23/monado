@@ -310,6 +310,8 @@ rs_6dof_create(void)
 	rs->base.name = XRT_DEVICE_GENERIC_HMD; // This is a lie.
 	rs->pose.orientation.w = 1.0f;          // All other values set to zero.
 
+	rs->base.tracking_origin->type = XRT_TRACKING_TYPE_EXTERNAL_SLAM;
+
 	// Print name.
 	snprintf(rs->base.str, XRT_DEVICE_NAME_LEN, "Intel RealSense 6-DOF");
 
