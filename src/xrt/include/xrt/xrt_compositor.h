@@ -1140,12 +1140,18 @@ xrt_compositor_vk(struct xrt_compositor *xc)
  */
 struct xrt_image_native
 {
-	size_t size;
+	/*!
+	 * Native buffer handle.
+	 */
 	xrt_graphics_buffer_handle_t handle;
-#ifndef XRT_OS_ANDROID
-	// Only pad if we're using an int instead of a pointer
-	int _pad;
-#endif
+	/*!
+	 * @brief Buffer size in memory.
+	 *
+	 * Optional, set to 0 if unknown at allocation time.
+	 * If not zero, used for a max memory requirements check when importing
+	 * into Vulkan.
+	 */
+	size_t size;
 };
 
 /*!

@@ -169,7 +169,8 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	VkMemoryRequirements memory_requirements;
 	vk->vkGetImageMemoryRequirements(vk->device, image,
 	                                 &memory_requirements);
-	if (memory_requirements.size > max_size) {
+
+	if (max_size > 0 && memory_requirements.size > max_size) {
 		VK_ERROR(vk,
 		         "client_vk_swapchain - Got too little memory "
 		         "%u vs %u\n",
