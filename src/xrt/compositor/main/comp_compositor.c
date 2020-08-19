@@ -1073,6 +1073,12 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 			return true;
 		}
 #endif
+#ifdef XRT_OS_ANDROID
+		if (compositor_try_window(c, comp_window_android_create(c))) {
+			c->settings.window_type = WINDOW_ANDROID;
+			return true;
+		}
+#endif
 		COMP_ERROR(c, "Failed to auto detect window support!");
 		break;
 	case WINDOW_XCB:
@@ -1094,6 +1100,13 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 		compositor_try_window(c, comp_window_direct_randr_create(c));
 #else
 		COMP_ERROR(c, "Direct mode support not compiled in!");
+#endif
+		break;
+	case WINDOW_ANDROID:
+#ifdef XRT_OS_ANDROID
+		compositor_try_window(c, comp_window_android_create(c));
+#else
+		COMP_ERROR(c, "Android support not compiled in!");
 #endif
 		break;
 	default: COMP_ERROR(c, "Unknown window type!"); break;

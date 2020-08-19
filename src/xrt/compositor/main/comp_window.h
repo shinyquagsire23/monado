@@ -13,6 +13,8 @@
 #include "main/comp_vk_swapchain.h"
 #include "main/comp_compositor.h"
 
+#include "xrt/xrt_config_os.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -99,6 +101,19 @@ struct comp_window *
 comp_window_direct_nvidia_create(struct comp_compositor *c);
 #endif
 
+
+#ifdef XRT_OS_ANDROID
+
+/*!
+ * Create a surface to an HMD on Android.
+ *
+ * @ingroup comp_main
+ * @public @memberof comp_window_android
+ */
+struct comp_window *
+comp_window_android_create(struct comp_compositor *c);
+
+#endif // XRT_OS_ANDROID
 
 #ifdef __cplusplus
 }

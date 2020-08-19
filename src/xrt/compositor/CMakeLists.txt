@@ -139,6 +139,11 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 			main/comp_window_wayland.c
 			)
 	endif()
+	if(ANDROID)
+		list(APPEND MAIN_SOURCE_FILES
+			main/comp_window_android.c
+			)
+	endif()
 
 	add_library(comp_main STATIC ${SHADER_HEADERS} ${MAIN_SOURCE_FILES} ${WL_PROTOS_SRC})
 	target_link_libraries(comp_main PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk)
@@ -160,9 +165,12 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 	if(XRT_HAVE_XCB AND XRT_HAVE_XLIB)
 		target_link_libraries(comp_main PRIVATE ${X11_X11_LIB})
 	endif()
-	if(XRT_HAVE_EGL)
+	if(XRT_HAVE_EGL AND XRT_HAVE_XCB)
 		target_include_directories(comp_main SYSTEM PRIVATE ${EGL_INCLUDE_DIRS})
 		target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
+	endif()
+	if(ANDROID)
+		target_link_libraries(comp_main PRIVATE aux_ogl aux_android)
 	endif()
 
 	add_subdirectory(shaders)
