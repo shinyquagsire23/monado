@@ -34,7 +34,7 @@ struct client_gl_eglimage_swapchain
 	struct client_gl_swapchain base;
 
 	EGLDisplay display;
-	// GLuint
+
 	EGLImage egl_images[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
