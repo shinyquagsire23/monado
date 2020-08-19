@@ -25,20 +25,20 @@ struct _JavaVM;
  * Store the Java VM pointer and the android.app.Activity jobject.
  */
 void
-u_android_store_vm_and_activity(struct _JavaVM *vm, void *activity);
+android_globals_store_vm_and_activity(struct _JavaVM *vm, void *activity);
 
 
 /*!
  * Store the Java VM pointer and the android.content.Context jobject.
  */
 void
-u_android_store_vm_and_context(struct _JavaVM *vm, void *context);
+android_globals_store_vm_and_context(struct _JavaVM *vm, void *context);
 
 /*!
  * Retrieve the Java VM pointer previously stored, if any.
  */
 struct _JavaVM *
-u_android_get_vm();
+android_globals_get_vm();
 
 /*!
  * Retrieve the android.app.Activity jobject previously stored, if any.
@@ -47,7 +47,7 @@ u_android_get_vm();
  * differs between C (a void *) and C++ (a pointer to an empty class)
  */
 void *
-u_android_get_activity();
+android_globals_get_activity();
 
 /*!
  * Retrieve the android.content.Context jobject previously stored, if any.
@@ -59,7 +59,7 @@ u_android_get_activity();
  * differs between C (a void *) and C++ (a pointer to an empty class)
  */
 void *
-u_android_get_context();
+android_globals_get_context();
 
 #ifdef __cplusplus
 }

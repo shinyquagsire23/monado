@@ -7,7 +7,7 @@
  * @ingroup aux_util
  */
 
-#include "u_android.h"
+#include "android_globals.h"
 
 #include <stddef.h>
 
@@ -23,14 +23,14 @@ static struct
 } android_globals = {NULL, NULL, NULL};
 
 void
-u_android_store_vm_and_activity(struct _JavaVM *vm, void *activity)
+android_globals_store_vm_and_activity(struct _JavaVM *vm, void *activity)
 {
 	android_globals.vm = vm;
 	android_globals.activity = activity;
 }
 
 void
-u_android_store_vm_and_context(struct _JavaVM *vm, void *context)
+android_globals_store_vm_and_context(struct _JavaVM *vm, void *context)
 {
 
 	android_globals.vm = vm;
@@ -38,19 +38,19 @@ u_android_store_vm_and_context(struct _JavaVM *vm, void *context)
 }
 
 struct _JavaVM *
-u_android_get_vm()
+android_globals_get_vm()
 {
 	return android_globals.vm;
 }
 
 void *
-u_android_get_activity()
+android_globals_get_activity()
 {
 	return android_globals.activity;
 }
 
 void *
-u_android_get_context()
+android_globals_get_context()
 {
 	void *ret = android_globals.context;
 	if (ret == NULL) {

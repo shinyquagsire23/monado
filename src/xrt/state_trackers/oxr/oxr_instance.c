@@ -18,7 +18,7 @@
 
 
 #ifdef XRT_OS_ANDROID
-#include "util/u_android.h"
+#include "android/android_globals.h"
 #endif
 
 #include "oxr_objects.h"
@@ -234,7 +234,7 @@ oxr_instance_create(struct oxr_logger *log,
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo,
 	                             XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR,
 	                             XrInstanceCreateInfoAndroidKHR);
-	u_android_store_vm_and_activity(
+	android_globals_store_vm_and_activity(
 	    (struct _JavaVM *)create_info_android->applicationVM,
 	    create_info_android->applicationActivity);
 #endif

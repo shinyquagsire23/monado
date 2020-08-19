@@ -4,6 +4,8 @@
 set(ANDROID_SOURCE_FILES
 	android/android_ahardwarebuffer_allocator.c
 	android/android_ahardwarebuffer_allocator.h
+	android/android_globals.c
+	android/android_globals.h
 	)
 
 set(MATH_SOURCE_FILES
@@ -123,12 +125,6 @@ set(UTIL_SOURCE_FILES
 	util/u_var.cpp
 	util/u_var.h
 	)
-if(ANDROID)
-	list(APPEND UTIL_SOURCE_FILES
-		util/u_android.c
-		util/u_android.h
-		)
-endif()
 
 set(VK_SOURCE_FILES
 	vk/vk_documentation.h

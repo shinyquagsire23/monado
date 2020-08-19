@@ -111,6 +111,9 @@ endif()
 if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	target_link_libraries(st_oxr PRIVATE aux_ogl)
 endif()
+if(ANDROID)
+	target_link_libraries(st_oxr PRIVATE aux_android)
+endif()
 target_include_directories(st_oxr
 	PRIVATE
 	${CMAKE_CURRENT_BINARY_DIR}
