@@ -382,7 +382,9 @@ vk_create_semaphore_from_native(struct vk_bundle *vk,
 }
 
 VkResult
-vk_create_sampler(struct vk_bundle *vk, VkSampler *out_sampler)
+vk_create_sampler(struct vk_bundle *vk,
+                  VkSamplerAddressMode clamp_mode,
+                  VkSampler *out_sampler)
 {
 	VkSampler sampler;
 	VkResult ret;
@@ -392,9 +394,9 @@ vk_create_sampler(struct vk_bundle *vk, VkSampler *out_sampler)
 	    .magFilter = VK_FILTER_LINEAR,
 	    .minFilter = VK_FILTER_LINEAR,
 	    .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-	    .addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-	    .addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-	    .addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+	    .addressModeU = clamp_mode,
+	    .addressModeV = clamp_mode,
+	    .addressModeW = clamp_mode,
 	    .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
 	    .unnormalizedCoordinates = VK_FALSE,
 	};

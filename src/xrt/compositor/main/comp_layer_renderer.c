@@ -425,7 +425,8 @@ _init_frame_buffer(struct comp_layer_renderer *self,
 	                                      &self->framebuffers[eye].image);
 	vk_check_error("vk_create_image_simple", res, false);
 
-	vk_create_sampler(vk, &self->framebuffers[eye].sampler);
+	vk_create_sampler(vk, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+	                  &self->framebuffers[eye].sampler);
 
 	VkImageSubresourceRange subresource_range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,

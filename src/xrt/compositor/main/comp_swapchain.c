@@ -125,7 +125,8 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 		    U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
 		sc->images[i].array_size = info->array_size;
 
-		vk_create_sampler(&c->vk, &sc->images[i].sampler);
+		vk_create_sampler(&c->vk, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		                  &sc->images[i].sampler);
 
 		for (uint32_t layer = 0; layer < info->array_size; ++layer) {
 			VkImageSubresourceRange subresource_range = {

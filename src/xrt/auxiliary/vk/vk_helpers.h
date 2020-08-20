@@ -372,7 +372,9 @@ vk_create_image_simple(struct vk_bundle *vk,
  * @ingroup aux_vk
  */
 VkResult
-vk_create_sampler(struct vk_bundle *vk, VkSampler *out_sampler);
+vk_create_sampler(struct vk_bundle *vk,
+                  VkSamplerAddressMode clamp_mode,
+                  VkSampler *out_sampler);
 
 /*!
  * @ingroup aux_vk
