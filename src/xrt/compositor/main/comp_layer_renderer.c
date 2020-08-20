@@ -334,7 +334,8 @@ _init_graphics_pipeline(struct comp_layer_renderer *self,
 }
 
 // clang-format off
-float plane_vertices[6 * 5] = {
+#define PLANE_VERTICES 6
+static float plane_vertices[PLANE_VERTICES * 5] = {
 	-0.5, -0.5, 0, 0, 1,
 	 0.5, -0.5, 0, 1, 1,
 	 0.5,  0.5, 0, 1, 0,
@@ -358,7 +359,7 @@ _init_vertex_buffer(struct comp_layer_renderer *self)
 	                    &self->vertex_buffer.memory))
 		return false;
 
-	self->vertex_buffer.size = 6;
+	self->vertex_buffer.size = PLANE_VERTICES;
 
 	return vk_update_buffer(vk, plane_vertices,
 	                        sizeof(float) * ARRAY_SIZE(plane_vertices),
