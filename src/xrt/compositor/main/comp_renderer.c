@@ -491,9 +491,9 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 	    r->lr->layers[layer], image->sampler,
 	    get_image_view(image, data->flags, data->quad.sub.array_index));
 
+	struct xrt_vec3 s = {data->quad.size.x, data->quad.size.y, 1.0f};
 	struct xrt_matrix_4x4 model_matrix;
-	math_matrix_4x4_quad_model(&data->quad.pose, &data->quad.size,
-	                           &model_matrix);
+	math_matrix_4x4_model(&data->quad.pose, &s, &model_matrix);
 
 	comp_layer_set_model_matrix(r->lr->layers[layer], &model_matrix);
 

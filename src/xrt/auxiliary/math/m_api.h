@@ -297,9 +297,9 @@ math_matrix_4x4_view_from_pose(const struct xrt_pose *pose,
  * @ingroup aux_math
  */
 void
-math_matrix_4x4_quad_model(const struct xrt_pose *pose,
-                           const struct xrt_vec2 *size,
-                           struct xrt_matrix_4x4 *result);
+math_matrix_4x4_model(const struct xrt_pose *pose,
+                      const struct xrt_vec3 *size,
+                      struct xrt_matrix_4x4 *result);
 
 /*
  *

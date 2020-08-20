@@ -293,14 +293,14 @@ math_matrix_4x4_view_from_pose(const struct xrt_pose *pose,
 }
 
 void
-math_matrix_4x4_quad_model(const struct xrt_pose *pose,
-                           const struct xrt_vec2 *size,
-                           struct xrt_matrix_4x4 *result)
+math_matrix_4x4_model(const struct xrt_pose *pose,
+                      const struct xrt_vec3 *size,
+                      struct xrt_matrix_4x4 *result)
 {
 	Eigen::Vector3f position = copy(&pose->position);
 	Eigen::Quaternionf orientation = copy(&pose->orientation);
 
-	auto scale = Eigen::Scaling(size->x, size->y, 1.0f);
+	auto scale = Eigen::Scaling(size->x, size->y, size->z);
 
 	Eigen::Translation3f translation(position);
 	Eigen::Affine3f transformation = translation * orientation * scale;
