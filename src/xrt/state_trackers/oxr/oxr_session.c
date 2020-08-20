@@ -1375,10 +1375,14 @@ submit_cylinder_layer(struct oxr_session *sess,
 	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
 	data.timestamp = timestamp;
 	data.flags = flags;
-	data.cylinder.visibility = visibility;
 
+	struct xrt_rect *rect =
+	    (struct xrt_rect *)&cylinder->subImage.imageRect;
+
+	data.cylinder.visibility = visibility;
 	data.cylinder.sub.image_index = sc->released.index;
 	data.cylinder.sub.array_index = cylinder->subImage.imageArrayIndex;
+	data.cylinder.sub.rect = *rect;
 	data.cylinder.pose = pose;
 	data.cylinder.radius = cylinder->radius;
 	data.cylinder.central_angle = cylinder->centralAngle;
