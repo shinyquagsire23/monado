@@ -11,6 +11,7 @@
 
 #include "util/u_misc.h"
 #include "math/m_api.h"
+#include <math.h>
 
 #include <stdio.h>
 
@@ -224,9 +225,9 @@ comp_layer_draw(struct comp_render_layer *self,
 		_update_mvp_matrix(self, eye, &proj_scale);
 		break;
 	case XRT_LAYER_QUAD: _update_mvp_matrix(self, eye, vp); break;
+	case XRT_LAYER_CYLINDER: _update_mvp_matrix(self, eye, vp); break;
 	case XRT_LAYER_STEREO_PROJECTION_DEPTH:
 	case XRT_LAYER_CUBE:
-	case XRT_LAYER_CYLINDER:
 	case XRT_LAYER_EQUIRECT:
 		// Should never end up here.
 		assert(false);
@@ -243,12 +244,138 @@ comp_layer_draw(struct comp_render_layer *self,
 	self->vk->vkCmdDraw(cmd_buffer, vertex_buffer->size, 1, 0, 0);
 }
 
+// clang-format off
+#define CYLINDER_FACES 360
+#define CYLINDER_VERTICES CYLINDER_FACES * 6
+static float cylinder_vertices[CYLINDER_VERTICES * 5] = {0};
+// clang-format on
+
+static void
+_calculate_unit_cylinder_segment_vertices(float central_angle)
+{
+	// unit cylinder with diameter = 1.0, height = 1.0
+	double radius = .5;
+	double height = 1;
+	double angle_offset = M_PI / 2.0;
+
+	double start_angle = central_angle / 2. + angle_offset;
+	double angle_step_size = central_angle / (float)CYLINDER_FACES;
+
+	int vertex = 0;
+	for (int i = 0; i < CYLINDER_FACES; i++) {
+		double t = height / 2.;
+		double b = -height / 2.;
+
+		double uv_l = (double)i / (double)(CYLINDER_FACES);
+		double uv_r = (double)(i + 1) / (double)(CYLINDER_FACES);
+		double uv_t = 1.f;
+		double uv_b = 0.f;
+
+
+		double theta = start_angle - angle_step_size * i;
+		double next_theta = start_angle - angle_step_size * (i + 1);
+
+		if (i == CYLINDER_FACES - 1) {
+			// remove gap in approximately closed cylinder
+			if ((fabs(2 * M_PI - central_angle) < 0.001)) {
+				next_theta = start_angle;
+			}
+			uv_r = 1.0;
+		}
+
+		double l = radius * cos(theta);
+		double lz = -radius * sin(theta);
+
+		double r = radius * cos(next_theta);
+		double rz = -radius * sin(next_theta);
+
+		// cylinder face: quad of 2 triangles
+		cylinder_vertices[vertex++] = l;
+		cylinder_vertices[vertex++] = b;
+		cylinder_vertices[vertex++] = lz;
+		cylinder_vertices[vertex++] = uv_l;
+		cylinder_vertices[vertex++] = uv_t;
+
+		cylinder_vertices[vertex++] = r;
+		cylinder_vertices[vertex++] = b;
+		cylinder_vertices[vertex++] = rz;
+		cylinder_vertices[vertex++] = uv_r;
+		cylinder_vertices[vertex++] = uv_t;
+
+		cylinder_vertices[vertex++] = r;
+		cylinder_vertices[vertex++] = t;
+		cylinder_vertices[vertex++] = rz;
+		cylinder_vertices[vertex++] = uv_r;
+		cylinder_vertices[vertex++] = uv_b;
+
+		cylinder_vertices[vertex++] = r;
+		cylinder_vertices[vertex++] = t;
+		cylinder_vertices[vertex++] = rz;
+		cylinder_vertices[vertex++] = uv_r;
+		cylinder_vertices[vertex++] = uv_b;
+
+		cylinder_vertices[vertex++] = l;
+		cylinder_vertices[vertex++] = t;
+		cylinder_vertices[vertex++] = lz;
+		cylinder_vertices[vertex++] = uv_l;
+		cylinder_vertices[vertex++] = uv_b;
+
+		cylinder_vertices[vertex++] = l;
+		cylinder_vertices[vertex++] = b;
+		cylinder_vertices[vertex++] = lz;
+		cylinder_vertices[vertex++] = uv_l;
+		cylinder_vertices[vertex++] = uv_t;
+	}
+}
+
+bool
+comp_layer_update_cylinder_vertex_buffer(struct comp_render_layer *self,
+                                         float central_angle)
+{
+	_calculate_unit_cylinder_segment_vertices(central_angle);
+
+	struct vk_bundle *vk = self->vk;
+	return vk_update_buffer(vk, cylinder_vertices,
+	                        sizeof(float) * ARRAY_SIZE(cylinder_vertices),
+	                        self->cylinder.vertex_buffer.memory);
+
+	return true;
+}
+
+static bool
+_init_cylinder_vertex_buffer(struct comp_render_layer *self)
+{
+	struct vk_bundle *vk = self->vk;
+
+	VkBufferUsageFlags usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+	                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+	if (!vk_buffer_init(vk, sizeof(float) * ARRAY_SIZE(cylinder_vertices),
+	                    usage, properties,
+	                    &self->cylinder.vertex_buffer.handle,
+	                    &self->cylinder.vertex_buffer.memory))
+		return false;
+
+	self->cylinder.vertex_buffer.size = CYLINDER_VERTICES;
+	return true;
+}
+
+struct vk_buffer *
+comp_layer_get_cylinder_vertex_buffer(struct comp_render_layer *self)
+{
+	return &self->cylinder.vertex_buffer;
+}
+
 struct comp_render_layer *
 comp_layer_create(struct vk_bundle *vk, VkDescriptorSetLayout *layout)
 {
 	struct comp_render_layer *q = U_TYPED_CALLOC(struct comp_render_layer);
 
 	_init(q, vk, layout);
+
+	if (!_init_cylinder_vertex_buffer(q))
+		return NULL;
 
 	return q;
 }
@@ -261,6 +388,8 @@ comp_layer_destroy(struct comp_render_layer *self)
 
 	self->vk->vkDestroyDescriptorPool(self->vk->device,
 	                                  self->descriptor_pool, NULL);
+
+	vk_buffer_destroy(&self->cylinder.vertex_buffer, self->vk);
 
 	free(self);
 }

@@ -37,6 +37,12 @@ struct comp_render_layer
 	VkDescriptorSet descriptor_sets[2];
 
 	struct xrt_matrix_4x4 model_matrix;
+
+	// quad layers use shared quad vertex buffer from layer renderer
+	struct
+	{
+		struct vk_buffer vertex_buffer;
+	} cylinder;
 };
 
 struct comp_render_layer *
@@ -73,3 +79,10 @@ comp_layer_update_stereo_descriptors(struct comp_render_layer *self,
 
 void
 comp_layer_set_flip_y(struct comp_render_layer *self, bool flip_y);
+
+struct vk_buffer *
+comp_layer_get_cylinder_vertex_buffer(struct comp_render_layer *self);
+
+bool
+comp_layer_update_cylinder_vertex_buffer(struct comp_render_layer *self,
+                                         float central_angle);

@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <math.h>
 
 #include "util/u_misc.h"
 
@@ -511,6 +512,53 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 		l->transformation[i].offset = data->quad.sub.rect.offset;
 		l->transformation[i].extent = data->quad.sub.rect.extent;
 	}
+}
+
+void
+comp_renderer_set_cylinder_layer(struct comp_renderer *r,
+                                 uint32_t layer,
+                                 struct comp_swapchain_image *image,
+                                 struct xrt_layer_data *data)
+{
+	// skip "infinite cylinder"
+	if (data->cylinder.radius == 0.f ||
+	    data->cylinder.aspect_ratio == INFINITY) {
+		// if layer is cached, it should be disabled here
+		return;
+	}
+
+	comp_layer_update_descriptors(
+	    r->lr->layers[layer], image->sampler,
+	    get_image_view(image, data->flags, data->cylinder.sub.array_index));
+
+
+	float height = (data->cylinder.radius * data->cylinder.central_angle) /
+	               data->cylinder.aspect_ratio;
+
+	// scale unit cylinder to diameter
+	float diameter = data->cylinder.radius * 2;
+	struct xrt_vec3 scale = {diameter, height, diameter};
+	struct xrt_matrix_4x4 model_matrix;
+	math_matrix_4x4_model(&data->cylinder.pose, &scale, &model_matrix);
+
+	comp_layer_set_model_matrix(r->lr->layers[layer], &model_matrix);
+
+	comp_layer_set_flip_y(r->lr->layers[layer], data->flip_y);
+
+	struct comp_render_layer *l = r->lr->layers[layer];
+	l->type = XRT_LAYER_CYLINDER;
+	l->visibility = data->cylinder.visibility;
+	l->flags = data->flags;
+	l->view_space =
+	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+
+	for (uint32_t i = 0; i < 2; i++) {
+		l->transformation[i].offset = data->cylinder.sub.rect.offset;
+		l->transformation[i].extent = data->cylinder.sub.rect.extent;
+	}
+
+	comp_layer_update_cylinder_vertex_buffer(l,
+	                                         data->cylinder.central_angle);
 }
 
 void

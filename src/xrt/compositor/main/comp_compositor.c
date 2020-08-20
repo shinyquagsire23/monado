@@ -388,11 +388,7 @@ compositor_layer_cylinder(struct xrt_compositor *xc,
                           struct xrt_swapchain *xsc,
                           struct xrt_layer_data *data)
 {
-#if 0
 	return do_single(xc, xdev, xsc, data);
-#else
-	return XRT_SUCCESS; //! @todo Implement
-#endif
 }
 
 static xrt_result_t
@@ -445,9 +441,15 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 			comp_renderer_set_projection_layer(c->r, i, left, right,
 			                                   data);
 		} break;
+		case XRT_LAYER_CYLINDER: {
+			struct xrt_layer_cylinder_data *cyl =
+			    &layer->data.cylinder;
+			struct comp_swapchain_image *image;
+			image = &layer->scs[0]->images[cyl->sub.image_index];
+			comp_renderer_set_cylinder_layer(c->r, i, image, data);
+		} break;
 		case XRT_LAYER_STEREO_PROJECTION_DEPTH:
 		case XRT_LAYER_CUBE:
-		case XRT_LAYER_CYLINDER:
 		case XRT_LAYER_EQUIRECT:
 			// Should never end up here.
 			assert(false);

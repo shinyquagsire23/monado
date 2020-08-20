@@ -384,13 +384,21 @@ _render_eye(struct comp_layer_renderer *self,
 		bool unpremultiplied_alpha =
 		    self->layers[i]->flags &
 		    XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT;
+
+		struct vk_buffer *vertex_buffer;
+		if (self->layers[i]->type == XRT_LAYER_CYLINDER) {
+			vertex_buffer = comp_layer_get_cylinder_vertex_buffer(
+			    self->layers[i]);
+		} else {
+			vertex_buffer = &self->vertex_buffer;
+		}
+
 		VkPipeline pipeline =
 		    unpremultiplied_alpha
 		        ? self->pipeline_premultiplied_alpha
 		        : self->pipeline_unpremultiplied_alpha;
 		comp_layer_draw(self->layers[i], eye, pipeline, pipeline_layout,
-		                cmd_buffer, &self->vertex_buffer, &vp_world,
-		                &vp_eye);
+		                cmd_buffer, vertex_buffer, &vp_world, &vp_eye);
 	}
 }
 
