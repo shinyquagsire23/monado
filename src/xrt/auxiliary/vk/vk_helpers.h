@@ -462,6 +462,11 @@ vk_buffer_init(struct vk_bundle *vk,
 void
 vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk);
 
+bool
+vk_update_buffer(struct vk_bundle *vk,
+                 float *buffer,
+                 size_t buffer_size,
+                 VkDeviceMemory memory);
 
 #ifdef __cplusplus
 }

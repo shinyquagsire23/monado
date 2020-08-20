@@ -360,25 +360,9 @@ _init_vertex_buffer(struct comp_layer_renderer *self)
 
 	self->vertex_buffer.size = 6;
 
-	void *tmp;
-	VkResult res = vk->vkMapMemory(vk->device, self->vertex_buffer.memory,
-	                               0, VK_WHOLE_SIZE, 0, &tmp);
-	vk_check_error("vkMapMemory", res, false);
-
-	memcpy(tmp, plane_vertices, sizeof(float) * ARRAY_SIZE(plane_vertices));
-
-	VkMappedMemoryRange memory_range = {
-	    .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-	    .memory = self->vertex_buffer.memory,
-	    .size = VK_WHOLE_SIZE,
-	};
-
-	res = vk->vkFlushMappedMemoryRanges(vk->device, 1, &memory_range);
-	vk_check_error("vkFlushMappedMemoryRanges", res, false);
-
-	vk->vkUnmapMemory(vk->device, self->vertex_buffer.memory);
-
-	return true;
+	return vk_update_buffer(vk, plane_vertices,
+	                        sizeof(float) * ARRAY_SIZE(plane_vertices),
+	                        self->vertex_buffer.memory);
 }
 
 static void

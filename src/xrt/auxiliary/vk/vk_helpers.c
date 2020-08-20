@@ -1210,3 +1210,30 @@ vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk)
 	vk->vkDestroyBuffer(vk->device, self->handle, NULL);
 	vk->vkFreeMemory(vk->device, self->memory, NULL);
 }
+
+bool
+vk_update_buffer(struct vk_bundle *vk,
+                 float *buffer,
+                 size_t buffer_size,
+                 VkDeviceMemory memory)
+{
+	void *tmp;
+	VkResult res =
+	    vk->vkMapMemory(vk->device, memory, 0, VK_WHOLE_SIZE, 0, &tmp);
+	vk_check_error("vkMapMemory", res, false);
+
+	memcpy(tmp, buffer, buffer_size);
+
+	VkMappedMemoryRange memory_range = {
+	    .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+	    .memory = memory,
+	    .size = VK_WHOLE_SIZE,
+	};
+
+	res = vk->vkFlushMappedMemoryRanges(vk->device, 1, &memory_range);
+	vk_check_error("vkFlushMappedMemoryRanges", res, false);
+
+	vk->vkUnmapMemory(vk->device, memory);
+
+	return true;
+}
