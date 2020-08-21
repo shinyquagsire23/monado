@@ -25,6 +25,7 @@ int GLAD_EGL_VERSION_1_1 = 0;
 int GLAD_EGL_VERSION_1_2 = 0;
 int GLAD_EGL_VERSION_1_3 = 0;
 int GLAD_EGL_VERSION_1_4 = 0;
+int GLAD_EGL_ANDROID_front_buffer_auto_refresh = 0;
 int GLAD_EGL_ANDROID_get_native_client_buffer = 0;
 int GLAD_EGL_ANDROID_image_native_buffer = 0;
 int GLAD_EGL_EXT_image_dma_buf_import = 0;
@@ -182,6 +183,7 @@ static int glad_egl_find_extensions_egl(EGLDisplay display) {
     const char *extensions;
     if (!glad_egl_get_extensions(display, &extensions)) return 0;
 
+    GLAD_EGL_ANDROID_front_buffer_auto_refresh = glad_egl_has_extension(extensions, "EGL_ANDROID_front_buffer_auto_refresh");
     GLAD_EGL_ANDROID_get_native_client_buffer = glad_egl_has_extension(extensions, "EGL_ANDROID_get_native_client_buffer");
     GLAD_EGL_ANDROID_image_native_buffer = glad_egl_has_extension(extensions, "EGL_ANDROID_image_native_buffer");
     GLAD_EGL_EXT_image_dma_buf_import = glad_egl_has_extension(extensions, "EGL_EXT_image_dma_buf_import");
