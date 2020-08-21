@@ -7,26 +7,25 @@
  * @ingroup oxr_main
  */
 
+#include "xrt/xrt_device.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <inttypes.h>
+#ifdef XR_USE_PLATFORM_XLIB
+#include "xrt/xrt_gfx_xlib.h"
+#endif // XR_USE_PLATFORM_XLIB
+
+#ifdef XRT_HAVE_VULKAN
+#include "xrt/xrt_gfx_vk.h"
+#endif // XRT_HAVE_VULKAN
+
+#include "os/os_time.h"
 
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
-#include "os/os_time.h"
 
 #include "math/m_api.h"
+#include "math/m_mathinclude.h"
 
-#include "xrt/xrt_device.h"
-#ifdef XR_USE_PLATFORM_XLIB
-#include "xrt/xrt_gfx_xlib.h"
-#endif // XR_USE_PLATFORM_XLIB
-#ifdef XRT_HAVE_VULKAN
-#include "xrt/xrt_gfx_vk.h"
-#endif // XRT_HAVE_VULKAN
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -34,6 +33,11 @@
 #include "oxr_handle.h"
 #include "oxr_chain.h"
 #include "oxr_api_verify.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <inttypes.h>
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(dynamic_prediction, "OXR_DYNAMIC_PREDICTION", true)
