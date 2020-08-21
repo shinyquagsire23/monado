@@ -97,7 +97,7 @@ cmake_dependent_option(XRT_INSTALL_SYSTEMD_UNIT_FILES "Install user unit files f
 cmake_dependent_option(XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES "Use an absolute path to monado-system in installed user unit files for systemd socket activation" ON "XRT_INSTALL_SYSTEMD_UNIT_FILES" OFF)
 set(XRT_FEATURE_OPENXR_LAYER_DEPTH OFF)
 set(XRT_FEATURE_OPENXR_LAYER_CUBE OFF)
-set(XRT_FEATURE_OPENXR_LAYER_CYLINDER OFF)
+set(XRT_FEATURE_OPENXR_LAYER_CYLINDER ON)
 set(XRT_FEATURE_OPENXR_LAYER_EQUIRECT OFF)
 
 # Most users won't touch these.
