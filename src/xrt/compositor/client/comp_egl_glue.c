@@ -76,7 +76,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	                     &egl_client_type)) {
 		return NULL;
 	}
-	bool is_es = false;
+
 	switch (egl_client_type) {
 	case EGL_OPENGL_API:
 #if defined(XRT_HAVE_OPENGL)
@@ -89,7 +89,6 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 	case EGL_OPENGL_ES_API:
 #if defined(XRT_HAVE_OPENGLES)
-		is_es = true;
 		gladLoadGLES2(get_gl_procaddr);
 		break;
 #else
@@ -99,6 +98,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 #endif
 	default: EGL_ERROR("Unsupported EGL client type"); return NULL;
 	}
+
 	struct client_gl_compositor *c =
 	    U_TYPED_CALLOC(struct client_gl_compositor);
 
