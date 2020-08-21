@@ -237,7 +237,6 @@ ipc_receive_handles_shmem(struct ipc_message_channel *imc,
 	return ipc_receive_fds(imc, out_data, size, out_handles, num_handles);
 }
 
-
 xrt_result_t
 ipc_send_handles_shmem(struct ipc_message_channel *imc,
                        const void *data,
@@ -247,6 +246,13 @@ ipc_send_handles_shmem(struct ipc_message_channel *imc,
 {
 	return ipc_send_fds(imc, data, size, handles, num_handles);
 }
+
+
+/*
+ *
+ * AHardwareBuffer graphics buffer functions.
+ *
+ */
 
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 
@@ -298,6 +304,13 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
 	return failed ? XRT_ERROR_IPC_FAILURE : XRT_SUCCESS;
 }
 
+
+/*
+ *
+ * FD graphics buffer functions.
+ *
+ */
+
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 
 xrt_result_t
@@ -309,7 +322,6 @@ ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
 {
 	return ipc_receive_fds(imc, out_data, size, out_handles, num_handles);
 }
-
 
 xrt_result_t
 ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
