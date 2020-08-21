@@ -97,6 +97,8 @@ struct vk_bundle
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;
 	PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR;
 
+	PFN_vkGetPhysicalDeviceFormatProperties vkGetPhysicalDeviceFormatProperties;
+
 
 	// Device functions.
 	PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;
@@ -431,11 +433,13 @@ vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits);
 
 /*!
  * Always adds `VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT` and
- * `VK_IMAGE_USAGE_SAMPLED_BIT` so they can be used by the compositor and
- * client.
+ * `VK_IMAGE_USAGE_SAMPLED_BIT` to color formats so they can be used by the
+ * compositor and client.
  */
 VkImageUsageFlags
-vk_swapchain_usage_flags(enum xrt_swapchain_usage_bits bits);
+vk_swapchain_usage_flags(struct vk_bundle *vk,
+                         VkFormat format,
+                         enum xrt_swapchain_usage_bits bits);
 
 bool
 vk_init_descriptor_pool(struct vk_bundle *vk,

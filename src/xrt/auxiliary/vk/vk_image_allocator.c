@@ -87,7 +87,13 @@ create_image(struct vk_bundle *vk,
              const struct xrt_swapchain_create_info *info,
              struct vk_image *out_image)
 {
-	VkImageUsageFlags image_usage = vk_swapchain_usage_flags(info->bits);
+	VkImageUsageFlags image_usage =
+	    vk_swapchain_usage_flags(vk, (VkFormat)info->format, info->bits);
+	if (image_usage == 0) {
+		U_LOG_E("create_image: Unsupported swapchain usage flags");
+		return VK_ERROR_FEATURE_NOT_PRESENT;
+	}
+
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
 	VkImage image = VK_NULL_HANDLE;
 	VkResult ret = VK_SUCCESS;

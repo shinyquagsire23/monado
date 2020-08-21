@@ -84,6 +84,36 @@ vk_color_format_string(VkFormat code)
 }
 
 const char *
+vk_format_feature_string(VkFormatFeatureFlagBits code)
+{
+	switch (code) {
+		ENUM_TO_STR(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+		ENUM_TO_STR(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
+		ENUM_TO_STR(VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		ENUM_TO_STR(VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+		ENUM_TO_STR(VK_FORMAT_FEATURE_TRANSFER_DST_BIT);
+		ENUM_TO_STR(VK_FORMAT_R5G6B5_UNORM_PACK16);
+	default: return "UNKNOWN FORMAT FEATURE";
+	}
+}
+
+const char *
+xrt_swapchain_usage_string(enum xrt_swapchain_usage_bits code)
+{
+	switch (code) {
+		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_COLOR);
+		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL);
+		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS);
+		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_TRANSFER_SRC);
+		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_TRANSFER_DST);
+		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_SAMPLED);
+		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_MUTABLE_FORMAT);
+		ENUM_TO_STR(XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT);
+	default: return "UNKNOWN SWAPCHAIN USAGE";
+	}
+}
+
+const char *
 vk_present_mode_string(VkPresentModeKHR code)
 {
 	switch (code) {
@@ -274,7 +304,15 @@ vk_create_image_from_native(struct vk_bundle *vk,
                             VkImage *out_image,
                             VkDeviceMemory *out_mem)
 {
-	VkImageUsageFlags image_usage = vk_swapchain_usage_flags(info->bits);
+	VkImageUsageFlags image_usage =
+	    vk_swapchain_usage_flags(vk, (VkFormat)info->format, info->bits);
+	if (image_usage == 0) {
+		U_LOG_E(
+		    "vk_create_image_from_native: Unsupported swapchain usage "
+		    "flags");
+		return VK_ERROR_FEATURE_NOT_PRESENT;
+	}
+
 	VkImage image = VK_NULL_HANDLE;
 	VkResult ret = VK_SUCCESS;
 
@@ -658,6 +696,7 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkGetPhysicalDeviceSurfaceFormatsKHR      = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceFormatsKHR);
 	vk->vkGetPhysicalDeviceSurfacePresentModesKHR = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfacePresentModesKHR);
 	vk->vkGetPhysicalDeviceSurfaceSupportKHR      = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceSupportKHR);
+	vk->vkGetPhysicalDeviceFormatProperties       = GET_INS_PROC(vk, vkGetPhysicalDeviceFormatProperties);
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 	vk->vkCreateXcbSurfaceKHR = GET_INS_PROC(vk, vkCreateXcbSurfaceKHR);
@@ -1092,25 +1131,82 @@ vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits)
 	return result;
 }
 
-VkImageUsageFlags
-vk_swapchain_usage_flags(enum xrt_swapchain_usage_bits bits)
+static bool
+check_feature(VkFormat format,
+              enum xrt_swapchain_usage_bits usage,
+              VkFormatFeatureFlags format_features,
+              VkFormatFeatureFlags flag)
 {
-	VkImageUsageFlags image_usage =
-	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	if ((format_features & flag) == 0) {
+		U_LOG_E(
+		    "vk_swapchain_usage_flags: %s requested but %s not "
+		    "supported for format %s",
+		    xrt_swapchain_usage_string(usage),
+		    vk_format_feature_string(flag),
+		    vk_color_format_string(format));
+		return false;
+	}
+	return true;
+}
+
+VkImageUsageFlags
+vk_swapchain_usage_flags(struct vk_bundle *vk,
+                         VkFormat format,
+                         enum xrt_swapchain_usage_bits bits)
+{
+	VkFormatProperties prop;
+	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format,
+	                                        &prop);
+
+	VkImageUsageFlags image_usage = 0;
+
+	if ((bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
+		if (!check_feature(
+		        format, XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL,
+		        prop.optimalTilingFeatures,
+		        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
+			return 0;
+		}
+		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+		               VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+	}
+
+	if ((prop.optimalTilingFeatures &
+	     VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) != 0) {
+		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+		               VK_IMAGE_USAGE_SAMPLED_BIT;
+	}
 
 	if ((bits & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
+		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_COLOR,
+		                   prop.optimalTilingFeatures,
+		                   VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) {
+			return 0;
+		}
 		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	}
-	if ((bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
-		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	}
 	if ((bits & XRT_SWAPCHAIN_USAGE_TRANSFER_SRC) != 0) {
+		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_TRANSFER_SRC,
+		                   prop.optimalTilingFeatures,
+		                   VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)) {
+			return 0;
+		}
 		image_usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	}
 	if ((bits & XRT_SWAPCHAIN_USAGE_TRANSFER_DST) != 0) {
+		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_TRANSFER_DST,
+		                   prop.optimalTilingFeatures,
+		                   VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) {
+			return 0;
+		}
 		image_usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	}
 	if ((bits & XRT_SWAPCHAIN_USAGE_SAMPLED) != 0) {
+		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_SAMPLED,
+		                   prop.optimalTilingFeatures,
+		                   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)) {
+			return 0;
+		}
 		image_usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 	}
 	if ((bits & XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT) != 0) {
