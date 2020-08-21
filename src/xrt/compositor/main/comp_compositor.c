@@ -1150,13 +1150,26 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	 * two formats should not be used as they are linear but doesn't have
 	 * enough bits to express it without resulting in banding.
 	 */
-	info->formats[0] = VK_FORMAT_R8G8B8A8_SRGB;            // OGL VK
-	info->formats[1] = VK_FORMAT_A2B10G10R10_UNORM_PACK32; // OGL VK
-	info->formats[2] = VK_FORMAT_R16G16B16A16_SFLOAT;      // OGL VK
-	info->formats[3] = VK_FORMAT_B8G8R8A8_SRGB;            // VK
-	info->formats[4] = VK_FORMAT_R8G8B8A8_UNORM;           // OGL VK
-	info->formats[5] = VK_FORMAT_B8G8R8A8_UNORM;           // VK
-	info->num_formats = 6;
+	uint32_t formats = 0;
+
+	// color formats
+	info->formats[formats++] = VK_FORMAT_R8G8B8A8_SRGB;            // OGL VK
+	info->formats[formats++] = VK_FORMAT_A2B10G10R10_UNORM_PACK32; // OGL VK
+	info->formats[formats++] = VK_FORMAT_R16G16B16A16_SFLOAT;      // OGL VK
+	info->formats[formats++] = VK_FORMAT_B8G8R8A8_SRGB;            // VK
+	info->formats[formats++] = VK_FORMAT_R8G8B8A8_UNORM;           // OGL VK
+	info->formats[formats++] = VK_FORMAT_B8G8R8A8_UNORM;           // VK
+
+	// depth formats
+	info->formats[formats++] = VK_FORMAT_D16_UNORM;  // OGL VK
+	info->formats[formats++] = VK_FORMAT_D32_SFLOAT; // OGL VK
+
+	// depth stencil formats
+	info->formats[formats++] = VK_FORMAT_D24_UNORM_S8_UINT;  // OGL VK
+	info->formats[formats++] = VK_FORMAT_D32_SFLOAT_S8_UINT; // OGL VK
+
+	assert(formats <= XRT_MAX_SWAPCHAIN_FORMATS);
+	info->num_formats = formats;
 
 	float scale = c->settings.viewport_scale;
 

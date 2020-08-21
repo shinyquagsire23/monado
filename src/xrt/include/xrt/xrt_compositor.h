@@ -49,7 +49,7 @@ typedef uint64_t VkDeviceMemory;
 /*!
  * Max formats supported by a compositor, artificial limit.
  */
-#define XRT_MAX_SWAPCHAIN_FORMATS 8
+#define XRT_MAX_SWAPCHAIN_FORMATS 16
 
 /*!
  * Special flags for creating swapchain images.

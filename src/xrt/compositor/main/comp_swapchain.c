@@ -105,9 +105,9 @@ alloc_and_set_funcs(struct comp_compositor *c, uint32_t num_images)
 
 static void
 do_post_create_vulkan_setup(struct comp_compositor *c,
+                            const struct xrt_swapchain_create_info *info,
                             struct comp_swapchain *sc)
 {
-	struct xrt_swapchain_create_info *info = &sc->vkic.info;
 	uint32_t num_images = sc->vkic.num_images;
 	VkCommandBuffer cmd_buffer;
 
@@ -117,6 +117,10 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 	    .b = VK_COMPONENT_SWIZZLE_B,
 	    .a = VK_COMPONENT_SWIZZLE_ONE,
 	};
+
+	bool depth = (info->bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0;
+	VkImageAspectFlagBits aspect =
+	    depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
 	for (uint32_t i = 0; i < num_images; i++) {
 		sc->images[i].views.alpha =
@@ -128,9 +132,10 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 		vk_create_sampler(&c->vk, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 		                  &sc->images[i].sampler);
 
+
 		for (uint32_t layer = 0; layer < info->array_size; ++layer) {
 			VkImageSubresourceRange subresource_range = {
-			    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			    .aspectMask = aspect,
 			    .baseMipLevel = 0,
 			    .levelCount = 1,
 			    .baseArrayLayer = layer,
@@ -163,7 +168,7 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 	vk_init_cmd_buffer(&c->vk, &cmd_buffer);
 
 	VkImageSubresourceRange subresource_range = {
-	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .aspectMask = aspect,
 	    .baseMipLevel = 0,
 	    .levelCount = 1,
 	    .baseArrayLayer = 0,
@@ -274,7 +279,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 		sc->base.images[i].size = sc->vkic.images[i].size;
 	}
 
-	do_post_create_vulkan_setup(c, sc);
+	do_post_create_vulkan_setup(c, info, sc);
 
 	*out_xsc = &sc->base.base;
 
@@ -303,7 +308,7 @@ comp_swapchain_import(struct xrt_compositor *xc,
 		return XRT_ERROR_VULKAN;
 	}
 
-	do_post_create_vulkan_setup(c, sc);
+	do_post_create_vulkan_setup(c, info, sc);
 
 	*out_xsc = &sc->base.base;
 
