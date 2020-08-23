@@ -95,7 +95,7 @@ cmake_dependent_option(XRT_FEATURE_SERVICE "Enable separate service module for O
 cmake_dependent_option(XRT_HAVE_SYSTEMD "Enable systemd support (for socket activation of service)" ON "Systemd_FOUND AND XRT_FEATURE_SERVICE" OFF)
 cmake_dependent_option(XRT_INSTALL_SYSTEMD_UNIT_FILES "Install user unit files for systemd socket activation on installation" ON "XRT_HAVE_SYSTEMD" OFF)
 cmake_dependent_option(XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES "Use an absolute path to monado-system in installed user unit files for systemd socket activation" ON "XRT_INSTALL_SYSTEMD_UNIT_FILES" OFF)
-set(XRT_FEATURE_OPENXR_LAYER_DEPTH OFF)
+set(XRT_FEATURE_OPENXR_LAYER_DEPTH ON)
 set(XRT_FEATURE_OPENXR_LAYER_CUBE OFF)
 set(XRT_FEATURE_OPENXR_LAYER_CYLINDER ON)
 set(XRT_FEATURE_OPENXR_LAYER_EQUIRECT OFF)
