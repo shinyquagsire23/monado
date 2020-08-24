@@ -75,7 +75,7 @@ option('service',
 
 option('layer_depth',
 	type: 'boolean',
-	value: false,
+	value: true,
 	description: 'Enable support for Depth Layers'
 )
 
