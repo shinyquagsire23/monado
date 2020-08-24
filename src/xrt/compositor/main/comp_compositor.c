@@ -440,6 +440,21 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 
 			comp_renderer_set_projection_layer(c->r, i, left, right,
 			                                   data);
+		case XRT_LAYER_STEREO_PROJECTION_DEPTH: {
+			struct xrt_layer_stereo_projection_depth_data *stereo =
+			    &data->stereo_depth;
+			struct comp_swapchain_image *right;
+			struct comp_swapchain_image *left;
+			left =
+			    &layer->scs[0]->images[stereo->l.sub.image_index];
+			right =
+			    &layer->scs[1]->images[stereo->r.sub.image_index];
+
+			//! @todo: Make use of stereo->l_d and stereo->r_d
+
+			comp_renderer_set_projection_layer(c->r, i, left, right,
+			                                   data);
+		}
 		} break;
 		case XRT_LAYER_CYLINDER: {
 			struct xrt_layer_cylinder_data *cyl =
@@ -448,7 +463,6 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 			image = &layer->scs[0]->images[cyl->sub.image_index];
 			comp_renderer_set_cylinder_layer(c->r, i, image, data);
 		} break;
-		case XRT_LAYER_STEREO_PROJECTION_DEPTH:
 		case XRT_LAYER_CUBE:
 		case XRT_LAYER_EQUIRECT:
 			// Should never end up here.

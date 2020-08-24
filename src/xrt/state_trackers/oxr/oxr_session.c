@@ -927,7 +927,7 @@ verify_projection_layer(struct xrt_compositor *xc,
 
 		const XrCompositionLayerDepthInfoKHR *depth_info =
 		    OXR_GET_INPUT_FROM_CHAIN(
-		        view->next, XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
+		        view, XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
 		        XrCompositionLayerDepthInfoKHR);
 
 		if (depth_info) {
@@ -1453,6 +1453,54 @@ submit_projection_layer(struct xrt_compositor *xc,
 	data.stereo.r.sub.rect = *r_rect;
 	data.stereo.r.fov = *r_fov;
 	data.stereo.r.pose = pose[1];
+
+
+
+	const XrCompositionLayerDepthInfoKHR *d_l = OXR_GET_INPUT_FROM_CHAIN(
+	    &proj->views[0], XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
+	    XrCompositionLayerDepthInfoKHR);
+	if (d_l) {
+		data.type = XRT_LAYER_STEREO_PROJECTION_DEPTH;
+
+		data.stereo_depth.l_d.far_z = d_l->farZ;
+		data.stereo_depth.l_d.near_z = d_l->nearZ;
+		data.stereo_depth.l_d.max_depth = d_l->maxDepth;
+		data.stereo_depth.l_d.min_depth = d_l->minDepth;
+
+		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+		    struct oxr_swapchain *, d_l->subImage.swapchain);
+
+		struct xrt_rect *d_l_rect =
+		    (struct xrt_rect *)&d_l->subImage.imageRect;
+		data.stereo_depth.l_d.sub.image_index = sc->released.index;
+		data.stereo_depth.l_d.sub.array_index =
+		    d_l->subImage.imageArrayIndex;
+		data.stereo_depth.l_d.sub.rect = *d_l_rect;
+	}
+
+	const XrCompositionLayerDepthInfoKHR *d_r = OXR_GET_INPUT_FROM_CHAIN(
+	    &proj->views[1], XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
+	    XrCompositionLayerDepthInfoKHR);
+
+	if (d_r) {
+		data.type = XRT_LAYER_STEREO_PROJECTION_DEPTH;
+
+		data.stereo_depth.r_d.far_z = d_r->farZ;
+		data.stereo_depth.r_d.near_z = d_r->nearZ;
+		data.stereo_depth.r_d.max_depth = d_r->maxDepth;
+		data.stereo_depth.r_d.min_depth = d_r->minDepth;
+
+		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+		    struct oxr_swapchain *, d_r->subImage.swapchain);
+
+		struct xrt_rect *d_l_rect =
+		    (struct xrt_rect *)&d_r->subImage.imageRect;
+		data.stereo_depth.r_d.sub.image_index = sc->released.index;
+		data.stereo_depth.r_d.sub.array_index =
+		    d_r->subImage.imageArrayIndex;
+		data.stereo_depth.r_d.sub.rect = *d_l_rect;
+	}
+
 
 	CALL_CHK(xrt_comp_layer_stereo_projection(xc, head,
 	                                          scs[0]->swapchain, // Left
