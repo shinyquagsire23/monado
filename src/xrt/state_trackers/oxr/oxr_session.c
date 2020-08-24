@@ -755,6 +755,15 @@ verify_projection_layer(struct xrt_compositor *xc,
 			    layer_index, i, p->x, p->y, p->z);
 		}
 
+		if (view->subImage.swapchain == XR_NULL_HANDLE) {
+			printf("foo\n");
+			return oxr_error(
+			    log, XR_ERROR_HANDLE_INVALID,
+			    "(frameEndInfo->layers[%u]->views[%i]->subImage."
+			    "swapchain is XR_NULL_HANDLE",
+			    layer_index, i);
+		}
+
 		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
 		    struct oxr_swapchain *, view->subImage.swapchain);
 
