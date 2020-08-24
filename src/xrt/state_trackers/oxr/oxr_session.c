@@ -33,6 +33,7 @@
 #include "oxr_handle.h"
 #include "oxr_chain.h"
 #include "oxr_api_verify.h"
+#include "oxr_chain.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -710,6 +711,114 @@ verify_quad_layer(struct xrt_compositor *xc,
 }
 
 static XrResult
+verify_depth_layer(struct xrt_compositor *xc,
+                   struct oxr_logger *log,
+                   uint32_t layer_index,
+                   uint32_t i,
+                   const XrCompositionLayerDepthInfoKHR *depth)
+{
+	if (depth->subImage.swapchain == XR_NULL_HANDLE) {
+		return oxr_error(log, XR_ERROR_HANDLE_INVALID,
+		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
+		                 "XrCompositionLayerDepthInfoKHR>.subImage."
+		                 "swapchain) is XR_NULL_HANDLE",
+		                 layer_index, i);
+	}
+
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_swapchain *, depth->subImage.swapchain);
+
+	if (!sc->released.yes) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
+		                 "XrCompositionLayerDepthInfoKHR>.subImage."
+		                 "swapchain) swapchain has not been released",
+		                 layer_index, i);
+	}
+
+	if (sc->released.index >= (int)sc->swapchain->num_images) {
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "(frameEndInfo->layers[%u]->views[%i]->next<"
+		    "XrCompositionLayerDepthInfoKHR>.subImage."
+		    "swapchain) internal image index out of bounds",
+		    layer_index, i);
+	}
+
+	if (sc->num_array_layers <= depth->subImage.imageArrayIndex) {
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "(frameEndInfo->layers[%u]->views[%i]->next<"
+		    "XrCompositionLayerDepthInfoKHR>.subImage."
+		    "imageArrayIndex == %u) Invalid swapchain array "
+		    "index for projection layer (%u).",
+		    layer_index, i, depth->subImage.imageArrayIndex,
+		    sc->num_array_layers);
+	}
+
+	if (is_rect_neg(&depth->subImage.imageRect)) {
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
+		                 "XrCompositionLayerDepthInfoKHR>.subImage."
+		                 "imageRect.offset == {%i, "
+		                 "%i}) has negative component(s)",
+		                 layer_index, i,
+		                 depth->subImage.imageRect.offset.x,
+		                 depth->subImage.imageRect.offset.y);
+	}
+
+	if (is_rect_out_of_bounds(&depth->subImage.imageRect, sc)) {
+		return oxr_error(
+		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		    "(frameEndInfo->layers[%u]->views[%i]->next<"
+		    "XrCompositionLayerDepthInfoKHR>.subImage."
+		    "imageRect == {{%i, %i}, {%u, %u}}) imageRect out "
+		    "of image bounds (%u, %u)",
+		    layer_index, i, depth->subImage.imageRect.offset.x,
+		    depth->subImage.imageRect.offset.y,
+		    depth->subImage.imageRect.extent.width,
+		    depth->subImage.imageRect.extent.height, sc->width,
+		    sc->height);
+	}
+
+	if (depth->minDepth < 0.0f || depth->minDepth > 1.0f) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
+		                 "XrCompositionLayerDepthInfoKHR>.minDepth) %f "
+		                 "must be in [0.0,1.0]",
+		                 layer_index, i, depth->minDepth);
+	}
+
+	if (depth->maxDepth < 0.0f || depth->maxDepth > 1.0f) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
+		                 "XrCompositionLayerDepthInfoKHR>.maxDepth) %f "
+		                 "must be in [0.0,1.0]",
+		                 layer_index, i, depth->maxDepth);
+	}
+
+	if (depth->minDepth > depth->maxDepth) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
+		                 "XrCompositionLayerDepthInfoKHR>.minDepth) %f "
+		                 "must be <= maxDepth %f ",
+		                 layer_index, i, depth->minDepth,
+		                 depth->maxDepth);
+	}
+
+	if (depth->nearZ == depth->farZ) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
+		                 "XrCompositionLayerDepthInfoKHR>.nearZ) %f "
+		                 "must be != farZ %f ",
+		                 layer_index, i, depth->nearZ, depth->farZ);
+	}
+
+
+	return XR_SUCCESS;
+}
+
+static XrResult
 verify_projection_layer(struct xrt_compositor *xc,
                         struct oxr_logger *log,
                         uint32_t layer_index,
@@ -814,6 +923,19 @@ verify_projection_layer(struct xrt_compositor *xc,
 			    view->subImage.imageRect.extent.width,
 			    view->subImage.imageRect.extent.height, sc->width,
 			    sc->height);
+		}
+
+		const XrCompositionLayerDepthInfoKHR *depth_info =
+		    OXR_GET_INPUT_FROM_CHAIN(
+		        view->next, XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
+		        XrCompositionLayerDepthInfoKHR);
+
+		if (depth_info) {
+			ret = verify_depth_layer(xc, log, layer_index, i,
+			                         depth_info);
+			if (ret != XR_SUCCESS) {
+				return ret;
+			}
 		}
 	}
 
