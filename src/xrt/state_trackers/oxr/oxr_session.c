@@ -839,6 +839,9 @@ verify_projection_layer(struct xrt_compositor *xc,
 		    layer_index, proj->viewCount);
 	}
 
+	// number of depth layers must be 0 or proj->viewCount
+	uint32_t num_depth_layers = 0;
+
 	// Check for valid swapchain states.
 	for (uint32_t i = 0; i < proj->viewCount; i++) {
 		const XrCompositionLayerProjectionView *view = &proj->views[i];
@@ -936,7 +939,16 @@ verify_projection_layer(struct xrt_compositor *xc,
 			if (ret != XR_SUCCESS) {
 				return ret;
 			}
+			num_depth_layers++;
 		}
+	}
+
+	if (num_depth_layers > 0 && num_depth_layers != proj->viewCount) {
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "(frameEndInfo->layers[%u] projection layer must have %u "
+		    "depth layers or none, but has: %u)",
+		    layer_index, proj->viewCount, num_depth_layers);
 	}
 
 	return XR_SUCCESS;
