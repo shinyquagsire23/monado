@@ -25,11 +25,21 @@ target_include_directories(xrt-external-glad INTERFACE ${CMAKE_CURRENT_SOURCE_DI
 add_library(xrt-external-hungarian INTERFACE)
 target_include_directories(xrt-external-hungarian INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/hungarian)
 
-# JNIPP
+# JNIPP and Android JNI wrappers
 if(ANDROID)
 	add_library(xrt-external-jnipp STATIC
 		jnipp/jnipp.cpp)
 	target_include_directories(xrt-external-jnipp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/jnipp)
+
+	file(GLOB WRAP_SOURCES android-jni-wrap/wrap/*.cpp)
+	add_library(xrt-external-jni-wrap STATIC
+		${WRAP_SOURCES})
+	target_include_directories(xrt-external-jni-wrap PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/android-jni-wrap)
+	target_link_libraries(xrt-external-jni-wrap PUBLIC xrt-external-jnipp)
+	set_target_properties(xrt-external-jni-wrap
+		PROPERTIES
+		CXX_STANDARD 17
+		CXX_STANDARD_REQUIRED ON)
 endif()
 
 # OpenXR
