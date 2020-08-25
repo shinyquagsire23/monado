@@ -340,6 +340,30 @@ compositor_layer_stereo_projection(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
+compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
+                                         struct xrt_device *xdev,
+                                         struct xrt_swapchain *l_xsc,
+                                         struct xrt_swapchain *r_xsc,
+                                         struct xrt_swapchain *l_d_xsc,
+                                         struct xrt_swapchain *r_d_xsc,
+                                         struct xrt_layer_data *data)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+
+	// Without IPC we only have one slot
+	uint32_t slot_id = 0;
+	uint32_t layer_id = c->slots[slot_id].num_layers;
+
+	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
+	layer->scs[0] = comp_swapchain(l_xsc);
+	layer->scs[1] = comp_swapchain(r_xsc);
+	layer->data = *data;
+
+	c->slots[slot_id].num_layers++;
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
 do_single(struct xrt_compositor *xc,
           struct xrt_device *xdev,
           struct xrt_swapchain *xsc,
@@ -1099,6 +1123,8 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	c->base.base.layer_begin = compositor_layer_begin;
 	c->base.base.layer_stereo_projection =
 	    compositor_layer_stereo_projection;
+	c->base.base.layer_stereo_projection_depth =
+	    compositor_layer_stereo_projection_depth;
 	c->base.base.layer_quad = compositor_layer_quad;
 	c->base.base.layer_cube = compositor_layer_cube;
 	c->base.base.layer_cylinder = compositor_layer_cylinder;
