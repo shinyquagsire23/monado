@@ -716,6 +716,10 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkReleaseDisplayEXT                          = GET_INS_PROC(vk, vkReleaseDisplayEXT);
 	vk->vkGetRandROutputDisplayEXT                   = GET_INS_PROC(vk, vkGetRandROutputDisplayEXT);
 #endif
+
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+	vk->vkCreateAndroidSurfaceKHR                    = GET_INS_PROC(vk, vkCreateAndroidSurfaceKHR);
+#endif
 	// clang-format on
 
 	return VK_SUCCESS;

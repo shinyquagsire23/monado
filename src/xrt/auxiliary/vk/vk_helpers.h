@@ -85,6 +85,9 @@ struct vk_bundle
 	PFN_vkGetRandROutputDisplayEXT vkGetRandROutputDisplayEXT;
 #endif
 
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+	PFN_vkCreateAndroidSurfaceKHR vkCreateAndroidSurfaceKHR;
+#endif
 
 	// Physical device functions.
 	PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties;
