@@ -87,7 +87,7 @@ debug_get_log_option(const char *name, enum u_logging_level _default);
 	}
 
 #define DEBUG_GET_ONCE_LOG_OPTION(suffix, name, _default)                      \
-	static long debug_get_log_option_##suffix()                            \
+	static enum u_logging_level debug_get_log_option_##suffix()            \
 	{                                                                      \
 		static long gotten = false;                                    \
 		static enum u_logging_level stored;                            \
