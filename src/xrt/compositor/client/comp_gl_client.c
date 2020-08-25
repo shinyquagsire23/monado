@@ -175,6 +175,31 @@ client_gl_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
+client_gl_compositor_layer_stereo_projection_depth(
+    struct xrt_compositor *xc,
+    struct xrt_device *xdev,
+    struct xrt_swapchain *l_xsc,
+    struct xrt_swapchain *r_xsc,
+    struct xrt_swapchain *l_d_xsc,
+    struct xrt_swapchain *r_d_xsc,
+    struct xrt_layer_data *data)
+{
+	struct client_gl_compositor *c = client_gl_compositor(xc);
+	struct xrt_swapchain *l_xscn, *r_xscn, *l_d_xscn, *r_d_xscn;
+
+	assert(data->type == XRT_LAYER_STEREO_PROJECTION_DEPTH);
+
+	l_xscn = &client_gl_swapchain(l_xsc)->xscn->base;
+	r_xscn = &client_gl_swapchain(r_xsc)->xscn->base;
+	l_d_xscn = &client_gl_swapchain(l_d_xsc)->xscn->base;
+	r_d_xscn = &client_gl_swapchain(r_d_xsc)->xscn->base;
+	data->flip_y = true;
+
+	return xrt_comp_layer_stereo_projection_depth(
+	    &c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, data);
+}
+
+static xrt_result_t
 client_gl_compositor_layer_quad(struct xrt_compositor *xc,
                                 struct xrt_device *xdev,
                                 struct xrt_swapchain *xsc,
@@ -393,6 +418,8 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.layer_begin = client_gl_compositor_layer_begin;
 	c->base.base.layer_stereo_projection =
 	    client_gl_compositor_layer_stereo_projection;
+	c->base.base.layer_stereo_projection_depth =
+	    client_gl_compositor_layer_stereo_projection_depth;
 	c->base.base.layer_quad = client_gl_compositor_layer_quad;
 	c->base.base.layer_cube = client_gl_compositor_layer_cube;
 	c->base.base.layer_cylinder = client_gl_compositor_layer_cylinder;
