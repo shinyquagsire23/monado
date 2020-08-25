@@ -25,6 +25,13 @@ target_include_directories(xrt-external-glad INTERFACE ${CMAKE_CURRENT_SOURCE_DI
 add_library(xrt-external-hungarian INTERFACE)
 target_include_directories(xrt-external-hungarian INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/hungarian)
 
+# JNIPP
+if(ANDROID)
+	add_library(xrt-external-jnipp STATIC
+		jnipp/jnipp.cpp)
+	target_include_directories(xrt-external-jnipp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/jnipp)
+endif()
+
 # OpenXR
 add_library(xrt-external-openxr INTERFACE)
 target_include_directories(xrt-external-openxr INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/openxr_includes)
