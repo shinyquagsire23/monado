@@ -480,6 +480,8 @@ ipc_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
+	assert(data->type == XRT_LAYER_STEREO_PROJECTION);
+
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
