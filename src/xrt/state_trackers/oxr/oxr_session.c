@@ -1408,6 +1408,7 @@ submit_projection_layer(struct xrt_compositor *xc,
 {
 	struct oxr_space *spc =
 	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, proj->space);
+	struct oxr_swapchain *d_scs[2] = {NULL, NULL};
 	struct oxr_swapchain *scs[2];
 	struct xrt_pose *pose_ptr[2];
 	struct xrt_pose pose[2];
@@ -1472,8 +1473,6 @@ submit_projection_layer(struct xrt_compositor *xc,
 	    &proj->views[0], XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
 	    XrCompositionLayerDepthInfoKHR);
 	if (d_l) {
-		data.type = XRT_LAYER_STEREO_PROJECTION_DEPTH;
-
 		data.stereo_depth.l_d.far_z = d_l->farZ;
 		data.stereo_depth.l_d.near_z = d_l->nearZ;
 		data.stereo_depth.l_d.max_depth = d_l->maxDepth;
@@ -1488,6 +1487,9 @@ submit_projection_layer(struct xrt_compositor *xc,
 		data.stereo_depth.l_d.sub.array_index =
 		    d_l->subImage.imageArrayIndex;
 		data.stereo_depth.l_d.sub.rect = *d_l_rect;
+
+		// Need to pass this in.
+		d_scs[0] = sc;
 	}
 
 	const XrCompositionLayerDepthInfoKHR *d_r = OXR_GET_INPUT_FROM_CHAIN(
@@ -1495,8 +1497,6 @@ submit_projection_layer(struct xrt_compositor *xc,
 	    XrCompositionLayerDepthInfoKHR);
 
 	if (d_r) {
-		data.type = XRT_LAYER_STEREO_PROJECTION_DEPTH;
-
 		data.stereo_depth.r_d.far_z = d_r->farZ;
 		data.stereo_depth.r_d.near_z = d_r->nearZ;
 		data.stereo_depth.r_d.max_depth = d_r->maxDepth;
@@ -1511,13 +1511,28 @@ submit_projection_layer(struct xrt_compositor *xc,
 		data.stereo_depth.r_d.sub.array_index =
 		    d_r->subImage.imageArrayIndex;
 		data.stereo_depth.r_d.sub.rect = *d_l_rect;
+
+		// Need to pass this in.
+		d_scs[1] = sc;
 	}
 
+	if (d_scs[0] != NULL && d_scs[1] != NULL) {
+		data.type = XRT_LAYER_STEREO_PROJECTION_DEPTH;
+		CALL_CHK(xrt_comp_layer_stereo_projection_depth(
+		    xc, head,
+		    scs[0]->swapchain,   // Left
+		    scs[1]->swapchain,   // Right
+		    d_scs[0]->swapchain, // Left
+		    d_scs[1]->swapchain, // Right
+		    &data));
+	} else {
+		CALL_CHK(
+		    xrt_comp_layer_stereo_projection(xc, head,
+		                                     scs[0]->swapchain, // Left
+		                                     scs[1]->swapchain, // Right
+		                                     &data));
+	}
 
-	CALL_CHK(xrt_comp_layer_stereo_projection(xc, head,
-	                                          scs[0]->swapchain, // Left
-	                                          scs[1]->swapchain, // Right
-	                                          &data));
 	return XR_SUCCESS;
 }
 
