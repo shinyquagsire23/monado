@@ -9,6 +9,7 @@
 
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_gfx_native.h"
+#include "xrt/xrt_handles.h"
 
 #include "util/u_misc.h"
 #include "util/u_var.h"
@@ -27,6 +28,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+
+#ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
+#include "android/android_ahardwarebuffer_allocator.h"
+#endif
 
 /*
  *
