@@ -489,6 +489,42 @@ ipc_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	layer->xdev_id = 0; //! @todo Real id.
 	layer->swapchain_ids[0] = l->id;
 	layer->swapchain_ids[1] = r->id;
+	layer->swapchain_ids[2] = -1;
+	layer->swapchain_ids[3] = -1;
+	layer->data = *data;
+
+	// Increment the number of layers.
+	icc->layers.num_layers++;
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+ipc_compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
+                                             struct xrt_device *xdev,
+                                             struct xrt_swapchain *l_xsc,
+                                             struct xrt_swapchain *r_xsc,
+                                             struct xrt_swapchain *l_d_xsc,
+                                             struct xrt_swapchain *r_d_xsc,
+                                             struct xrt_layer_data *data)
+{
+	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+
+	assert(data->type == XRT_LAYER_STEREO_PROJECTION_DEPTH);
+
+	struct ipc_shared_memory *ism = icc->ipc_c->ism;
+	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
+	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
+	struct ipc_client_swapchain *l = ipc_client_swapchain(l_xsc);
+	struct ipc_client_swapchain *r = ipc_client_swapchain(r_xsc);
+	struct ipc_client_swapchain *l_d = ipc_client_swapchain(l_d_xsc);
+	struct ipc_client_swapchain *r_d = ipc_client_swapchain(r_d_xsc);
+
+	layer->xdev_id = 0; //! @todo Real id.
+	layer->swapchain_ids[0] = l->id;
+	layer->swapchain_ids[1] = r->id;
+	layer->swapchain_ids[2] = l_d->id;
+	layer->swapchain_ids[3] = r_d->id;
 	layer->data = *data;
 
 	// Increment the number of layers.
@@ -506,16 +542,18 @@ handle_layer(struct xrt_compositor *xc,
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
+	assert(data->type == type);
+
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 
-	assert(data->type == type);
-
 	layer->xdev_id = 0; //! @todo Real id.
 	layer->swapchain_ids[0] = ics->id;
 	layer->swapchain_ids[1] = -1;
+	layer->swapchain_ids[2] = -1;
+	layer->swapchain_ids[3] = -1;
 	layer->data = *data;
 
 	// Increment the number of layers.
@@ -738,6 +776,8 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	c->base.base.layer_begin = ipc_compositor_layer_begin;
 	c->base.base.layer_stereo_projection =
 	    ipc_compositor_layer_stereo_projection;
+	c->base.base.layer_stereo_projection_depth =
+	    ipc_compositor_layer_stereo_projection_depth;
 	c->base.base.layer_quad = ipc_compositor_layer_quad;
 	c->base.base.layer_cube = ipc_compositor_layer_cube;
 	c->base.base.layer_cylinder = ipc_compositor_layer_cylinder;

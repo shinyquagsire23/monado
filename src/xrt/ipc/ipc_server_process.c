@@ -629,6 +629,50 @@ _update_projection_layer(struct xrt_compositor *xc,
 }
 
 static bool
+_update_projection_layer_depth(struct xrt_compositor *xc,
+                               volatile struct ipc_client_state *ics,
+                               volatile struct ipc_layer_entry *layer,
+                               uint32_t i)
+{
+	// xdev
+	uint32_t xdevi = layer->xdev_id;
+	// left
+	uint32_t l_xsci = layer->swapchain_ids[0];
+	// right
+	uint32_t r_xsci = layer->swapchain_ids[1];
+	// left
+	uint32_t l_d_xsci = layer->swapchain_ids[2];
+	// right
+	uint32_t r_d_xsci = layer->swapchain_ids[3];
+
+	struct xrt_device *xdev = ics->server->xdevs[xdevi];
+	struct xrt_swapchain *l_xcs = ics->xscs[l_xsci];
+	struct xrt_swapchain *r_xcs = ics->xscs[r_xsci];
+	struct xrt_swapchain *l_d_xcs = ics->xscs[l_d_xsci];
+	struct xrt_swapchain *r_d_xcs = ics->xscs[r_d_xsci];
+
+	if (l_xcs == NULL || r_xcs == NULL || l_d_xcs == NULL ||
+	    r_d_xcs == NULL) {
+		fprintf(stderr,
+		        "ERROR: Invalid swap chain for projection layer.\n");
+		return false;
+	}
+
+	if (xdev == NULL) {
+		fprintf(stderr, "ERROR: Invalid xdev for projection layer.\n");
+		return false;
+	}
+
+	// Cast away volatile.
+	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
+
+	xrt_comp_layer_stereo_projection_depth(xc, xdev, l_xcs, r_xcs, l_d_xcs,
+	                                       r_d_xcs, data);
+
+	return true;
+}
+
+static bool
 do_single(struct xrt_compositor *xc,
           volatile struct ipc_client_state *ics,
           volatile struct ipc_layer_entry *layer,
@@ -807,6 +851,12 @@ _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 					return false;
 				}
 				break;
+			case XRT_LAYER_STEREO_PROJECTION_DEPTH:
+				if (!_update_projection_layer_depth(xc, ics,
+				                                    layer, i)) {
+					return false;
+				}
+				break;
 			case XRT_LAYER_QUAD:
 				if (!_update_quad_layer(xc, ics, layer, i)) {
 					return false;
@@ -829,7 +879,11 @@ _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 					return false;
 				}
 				break;
-			default: break;
+			default:
+				fprintf(stderr,
+				        "ERROR: Unhandled layer type '%i'!\n",
+				        layer->data.type);
+				break;
 			}
 		}
 	}

@@ -98,7 +98,7 @@ struct ipc_layer_entry
 	 *
 	 * How many are actually used depends on the value of @p data.type
 	 */
-	uint32_t swapchain_ids[2];
+	uint32_t swapchain_ids[4];
 
 	/*!
 	 * All basic (trivially-serializable) data associated with a layer,
