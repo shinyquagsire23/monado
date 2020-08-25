@@ -20,6 +20,8 @@ set(MATH_SOURCE_FILES
 	math/m_imu_pre.c
 	math/m_imu_pre.h
 	math/m_optics.c
+	math/m_permutation.c
+	math/m_permutation.h
 	math/m_quatexpmap.cpp
 	math/m_vec2.h
 	math/m_vec3.h
