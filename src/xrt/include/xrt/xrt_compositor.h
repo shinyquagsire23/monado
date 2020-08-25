@@ -907,6 +907,26 @@ xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
 }
 
 /*!
+ * @copydoc xrt_compositor::layer_stereo_projection_depth
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_layer_stereo_projection_depth(struct xrt_compositor *xc,
+                                       struct xrt_device *xdev,
+                                       struct xrt_swapchain *l_xsc,
+                                       struct xrt_swapchain *r_xsc,
+                                       struct xrt_swapchain *l_d_xsc,
+                                       struct xrt_swapchain *r_d_xsc,
+                                       struct xrt_layer_data *data)
+{
+	return xc->layer_stereo_projection_depth(xc, xdev, l_xsc, r_xsc,
+	                                         l_d_xsc, r_d_xsc, data);
+}
+
+/*!
  * @copydoc xrt_compositor::layer_quad
  *
  * Helper for calling through the function pointer.
