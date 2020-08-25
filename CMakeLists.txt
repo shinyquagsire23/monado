@@ -42,11 +42,13 @@ find_package(cJSON)
 find_package(Systemd)
 find_package(OpenGLES COMPONENTS V3)
 
-# @TODO Turn into a find_package LIBUVC file.
-pkg_check_modules(LIBUVC libuvc)
+if(NOT ANDROID)
+	# @TODO Turn into a find_package LIBUVC file.
+	pkg_check_modules(LIBUVC libuvc)
 
-# @TODO Turn into a find_package FFMPEG file.
-pkg_check_modules(FFMPEG libavcodec)
+	# @TODO Turn into a find_package FFMPEG file.
+	pkg_check_modules(FFMPEG libavcodec)
+endif()
 
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
