@@ -220,10 +220,10 @@ oxr_system_get_properties(struct oxr_logger *log,
 	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE,
 	         "Monado: %.*s", 247, xdev->str);
 
-	//! Get from compositor.
-	uint32_t max = XR_MIN_COMPOSITION_LAYERS_SUPPORTED;
+	// Get from compositor.
+	struct xrt_compositor_info *info = &sys->xcn->base.info;
 
-	properties->graphicsProperties.maxLayerCount = max;
+	properties->graphicsProperties.maxLayerCount = info->max_layers;
 	properties->graphicsProperties.maxSwapchainImageWidth = 1024 * 16;
 	properties->graphicsProperties.maxSwapchainImageHeight = 1024 * 16;
 	properties->trackingProperties.orientationTracking =
