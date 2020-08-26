@@ -24,6 +24,14 @@ extern "C" {
  * Use instead of a bare calloc, but only when U_TYPED_CALLOC and
  * U_TYPED_ARRAY_CALLOC do not meet your needs.
  *
+ * - If you are using `U_CALLOC_WITH_CAST(struct MyStruct, sizeof(MyStruct))` to
+ *   allocate a single structure of fixed size, you should actually use
+ *   `U_TYPED_CALLOC(struct MyStruct)`.
+ *
+ * - If you are using `U_CALLOC_WITH_CAST(struct MyStruct, sizeof(MyStruct) *
+ *   n)` to allocate an array, you should actually use
+ *   `U_TYPED_ARRAY_CALLOC(struct MyStruct, n)`.
+ *
  * @ingroup aux_util
  */
 #define U_CALLOC_WITH_CAST(TYPE, SIZE) ((TYPE *)calloc(1, SIZE))
