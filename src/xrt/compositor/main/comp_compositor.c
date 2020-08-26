@@ -1269,8 +1269,7 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	u_var_add_root(c, "Compositor", true);
 	u_var_add_ro_f32(c, &c->compositor_frame_times.fps, "FPS (Compositor)");
 
-	struct u_var_timing *ft = U_CALLOC_WITH_CAST(
-	    struct u_var_timing, sizeof(struct u_var_timing));
+	struct u_var_timing *ft = U_TYPED_CALLOC(struct u_var_timing);
 
 	float target_frame_time_ms =
 	    c->settings.nominal_frame_interval_ns * 1. / 1000. * 1. / 1000.;
