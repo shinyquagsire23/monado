@@ -14,6 +14,8 @@
 #include <sys/un.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <sys/mman.h>
+
 
 typedef enum op_mode
 {
@@ -22,6 +24,10 @@ typedef enum op_mode
 	MODE_SET_FOCUSED,
 	MODE_TOGGLE_IO,
 } op_mode_t;
+
+static int
+do_connect(struct ipc_connection *ipc_c);
+
 
 int
 get_mode(struct ipc_connection *ipc_c)
@@ -120,9 +126,6 @@ toggle_io(struct ipc_connection *ipc_c, int client_id)
 int
 main(int argc, char *argv[])
 {
-	struct ipc_connection ipc_c;
-	os_mutex_init(&ipc_c.mutex);
-
 	op_mode_t op_mode = MODE_GET;
 
 	// parse arguments
@@ -166,50 +169,89 @@ main(int argc, char *argv[])
 		}
 	}
 
-	bool socket_created = true;
-	bool socket_connected = true;
-
-	int fd;
-	struct sockaddr_un addr;
-
-	if ((fd = socket(PF_UNIX, SOCK_STREAM, 0)) < 0) {
-		printf("Socket Create Error!\n");
-		socket_created = false;
+	struct ipc_connection ipc_c;
+	os_mutex_init(&ipc_c.mutex);
+	int ret = do_connect(&ipc_c);
+	if (ret != 0) {
+		return ret;
 	}
 
-	if (socket_created) {
-		memset(&addr, 0, sizeof(addr));
-		addr.sun_family = AF_UNIX;
-		strcpy(addr.sun_path, IPC_MSG_SOCK_FILE);
-		if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-			printf("Socket Connect error!\n");
-			socket_connected = false;
-		}
+	switch (op_mode) {
+	case MODE_GET: exit(get_mode(&ipc_c)); break;
+	case MODE_SET_PRIMARY: exit(set_primary(&ipc_c, s_val)); break;
+	case MODE_SET_FOCUSED: exit(set_focused(&ipc_c, s_val)); break;
+	case MODE_TOGGLE_IO: exit(toggle_io(&ipc_c, s_val)); break;
+	default: printf("Unrecognised operation mode.\n"); exit(1);
 	}
 
-	if (socket_connected) {
-		ipc_c.imc.socket_fd = fd;
+	return 0;
+}
 
-		struct ipc_app_state cs;
-		cs.pid = getpid();
+static int
+do_connect(struct ipc_connection *ipc_c)
+{
+	int ret;
 
-		snprintf(cs.info.application_name,
-		         sizeof(cs.info.application_name), "%s", "monado-ctl");
 
-		xrt_result_t r = ipc_call_system_set_client_info(&ipc_c, &cs);
-		if (r != XRT_SUCCESS) {
-			printf("failed to set client info.\n");
-			exit(1);
-		}
+	/*
+	 * Conenct.
+	 */
 
-		switch (op_mode) {
-		case MODE_GET: exit(get_mode(&ipc_c)); break;
-		case MODE_SET_PRIMARY: exit(set_primary(&ipc_c, s_val)); break;
-		case MODE_SET_FOCUSED: exit(set_focused(&ipc_c, s_val)); break;
-		case MODE_TOGGLE_IO: exit(toggle_io(&ipc_c, s_val)); break;
-		default: printf("Unrecognised operation mode.\n"); exit(1);
-		}
+	ipc_c->imc.socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+	if (ipc_c->imc.socket_fd < 0) {
+		IPC_ERROR(ipc_c, "Socket Create Error!\n");
+		return -1;
 	}
 
-	close(fd);
+	struct sockaddr_un addr = {0};
+	addr.sun_family = AF_UNIX;
+	strcpy(addr.sun_path, IPC_MSG_SOCK_FILE);
+
+	ret = connect(ipc_c->imc.socket_fd,     // socket
+	              (struct sockaddr *)&addr, // address
+	              sizeof(addr));            // size
+	if (ret < 0) {
+		IPC_ERROR(ipc_c, "Socket Connect error!\n");
+		return -1;
+	}
+
+
+	/*
+	 * Client info.
+	 */
+
+	struct ipc_app_state cs;
+	cs.pid = getpid();
+	snprintf(cs.info.application_name, sizeof(cs.info.application_name),
+	         "%s", "monado-ctl");
+
+	xrt_result_t r = ipc_call_system_set_client_info(ipc_c, &cs);
+	if (r != XRT_SUCCESS) {
+		IPC_ERROR(ipc_c, "failed to set client info.\n");
+		return -1;
+	}
+
+
+	/*
+	 * Shared memory.
+	 */
+
+	// get our xdev shm from the server and mmap it
+	r = ipc_call_instance_get_shm_fd(ipc_c, &ipc_c->ism_handle, 1);
+	if (r != XRT_SUCCESS) {
+		IPC_ERROR(ipc_c, "Failed to retrieve shm fd");
+		return -1;
+	}
+
+	const int flags = MAP_SHARED;
+	const int access = PROT_READ | PROT_WRITE;
+	const size_t size = sizeof(struct ipc_shared_memory);
+
+	ipc_c->ism = mmap(NULL, size, access, flags, ipc_c->ism_handle, 0);
+	if (ipc_c->ism == NULL) {
+		IPC_ERROR(ipc_c, "Failed to mmap shm ");
+		return -1;
+	}
+
+	return 0;
 }
