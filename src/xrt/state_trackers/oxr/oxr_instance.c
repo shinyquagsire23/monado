@@ -15,6 +15,7 @@
 
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_config_os.h"
+#include "xrt/xrt_config_build.h"
 
 
 #ifdef XRT_OS_ANDROID
@@ -349,6 +350,39 @@ oxr_instance_create(struct oxr_logger *log,
 			oxr_instance_destroy(log, &inst->handle);
 			return ret;
 		}
+
+		// Make sure that the compositor we were given can do all the
+		// things the build config promised.
+#define CHECK_LAYER_TYPE(NAME, MEMBER_NAME)                                    \
+	do {                                                                   \
+		if (sys->xcn->base.MEMBER_NAME == NULL) {                      \
+			ret = oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,   \
+			                "Logic error: build config "           \
+			                "advertised support for " NAME         \
+			                " but compositor does not "            \
+			                "implement " #MEMBER_NAME);            \
+			oxr_instance_destroy(log, &inst->handle);              \
+			assert(false &&                                        \
+			       "Build configured with unsupported layers");    \
+			return ret;                                            \
+		}                                                              \
+	} while (0)
+
+		// Keep this list in sync with types in xrt_config_build.h
+#ifdef XRT_FEATURE_OPENXR_LAYER_CUBE
+		CHECK_LAYER_TYPE("cube layers", layer_cube);
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_CYLINDER
+		CHECK_LAYER_TYPE("cylinder layers", layer_cylinder);
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
+		CHECK_LAYER_TYPE("projection layers with depth images",
+		                 layer_stereo_projection_depth);
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT
+		CHECK_LAYER_TYPE("equirect layers", layer_equirect);
+#endif
+#undef CHECK_LAYER_TYPE
 	}
 
 	ret = oxr_system_fill_in(log, inst, 1, &inst->system);
