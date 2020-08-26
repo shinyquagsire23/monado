@@ -1171,6 +1171,9 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 
 	struct xrt_compositor_info *info = &c->base.base.info;
 
+	// Required by OpenXR spec.
+	info->max_layers = 16;
+
 	memcpy(info->compositor_vk_deviceUUID,
 	       c->settings.selected_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
 
