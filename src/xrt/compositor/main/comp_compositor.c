@@ -1107,6 +1107,25 @@ compositor_init_renderer(struct comp_compositor *c)
 	return c->r != NULL;
 }
 
+static bool
+is_format_supported(struct comp_compositor *c, VkFormat format)
+{
+	VkFormatProperties prop;
+	c->vk.vkGetPhysicalDeviceFormatProperties(c->vk.physical_device, format,
+	                                          &prop);
+
+	// This is a fairly crude way of checking support,
+	// but works well enough.
+	return prop.optimalTilingFeatures != 0;
+}
+
+#define ADD_IF_SUPPORTED(format)                                               \
+	do {                                                                   \
+		if (is_format_supported(c, format)) {                          \
+			info->formats[formats++] = format;                     \
+		}                                                              \
+	} while (false)
+
 struct xrt_compositor_native *
 xrt_gfx_provider_create_native(struct xrt_device *xdev)
 {
@@ -1196,20 +1215,20 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	uint32_t formats = 0;
 
 	// color formats
-	info->formats[formats++] = VK_FORMAT_R8G8B8A8_SRGB;            // OGL VK
-	info->formats[formats++] = VK_FORMAT_A2B10G10R10_UNORM_PACK32; // OGL VK
-	info->formats[formats++] = VK_FORMAT_R16G16B16A16_SFLOAT;      // OGL VK
-	info->formats[formats++] = VK_FORMAT_B8G8R8A8_SRGB;            // VK
-	info->formats[formats++] = VK_FORMAT_R8G8B8A8_UNORM;           // OGL VK
-	info->formats[formats++] = VK_FORMAT_B8G8R8A8_UNORM;           // VK
+	ADD_IF_SUPPORTED(VK_FORMAT_R8G8B8A8_SRGB);            // OGL VK
+	ADD_IF_SUPPORTED(VK_FORMAT_A2B10G10R10_UNORM_PACK32); // OGL VK
+	ADD_IF_SUPPORTED(VK_FORMAT_R16G16B16A16_SFLOAT);      // OGL VK
+	ADD_IF_SUPPORTED(VK_FORMAT_B8G8R8A8_SRGB);            // VK
+	ADD_IF_SUPPORTED(VK_FORMAT_R8G8B8A8_UNORM);           // OGL VK
+	ADD_IF_SUPPORTED(VK_FORMAT_B8G8R8A8_UNORM);           // VK
 
 	// depth formats
-	info->formats[formats++] = VK_FORMAT_D16_UNORM;  // OGL VK
-	info->formats[formats++] = VK_FORMAT_D32_SFLOAT; // OGL VK
+	ADD_IF_SUPPORTED(VK_FORMAT_D16_UNORM);  // OGL VK
+	ADD_IF_SUPPORTED(VK_FORMAT_D32_SFLOAT); // OGL VK
 
 	// depth stencil formats
-	info->formats[formats++] = VK_FORMAT_D24_UNORM_S8_UINT;  // OGL VK
-	info->formats[formats++] = VK_FORMAT_D32_SFLOAT_S8_UINT; // OGL VK
+	ADD_IF_SUPPORTED(VK_FORMAT_D24_UNORM_S8_UINT);  // OGL VK
+	ADD_IF_SUPPORTED(VK_FORMAT_D32_SFLOAT_S8_UINT); // OGL VK
 
 	assert(formats <= XRT_MAX_SWAPCHAIN_FORMATS);
 	info->num_formats = formats;
