@@ -582,8 +582,9 @@ struct xrt_compositor
 	/*!
 	 * This function is implicit in the OpenXR spec but made explicit here.
 	 */
-	xrt_result_t (*prepare_session)(struct xrt_compositor *xc,
-	                                struct xrt_session_prepare_info *xspi);
+	xrt_result_t (*prepare_session)(
+	    struct xrt_compositor *xc,
+	    const struct xrt_session_prepare_info *xspi);
 
 	/*!
 	 * See xrBeginSession.
@@ -648,11 +649,12 @@ struct xrt_compositor
 	 * @param r_xsc       Right swapchain.
 	 * @param data        All of the pure data bits.
 	 */
-	xrt_result_t (*layer_stereo_projection)(struct xrt_compositor *xc,
-	                                        struct xrt_device *xdev,
-	                                        struct xrt_swapchain *l_xsc,
-	                                        struct xrt_swapchain *r_xsc,
-	                                        struct xrt_layer_data *data);
+	xrt_result_t (*layer_stereo_projection)(
+	    struct xrt_compositor *xc,
+	    struct xrt_device *xdev,
+	    struct xrt_swapchain *l_xsc,
+	    struct xrt_swapchain *r_xsc,
+	    const struct xrt_layer_data *data);
 
 	/*!
 	 * Adds a stereo projection layer for submission, has depth information.
@@ -672,7 +674,7 @@ struct xrt_compositor
 	    struct xrt_swapchain *r_xsc,
 	    struct xrt_swapchain *l_d_xsc,
 	    struct xrt_swapchain *r_d_xsc,
-	    struct xrt_layer_data *data);
+	    const struct xrt_layer_data *data);
 
 	/*!
 	 * Adds a quad layer for submission, the center of the quad is specified
@@ -686,7 +688,7 @@ struct xrt_compositor
 	xrt_result_t (*layer_quad)(struct xrt_compositor *xc,
 	                           struct xrt_device *xdev,
 	                           struct xrt_swapchain *xsc,
-	                           struct xrt_layer_data *data);
+	                           const struct xrt_layer_data *data);
 
 	/*!
 	 * Adds a cube layer for submission.
@@ -699,7 +701,7 @@ struct xrt_compositor
 	xrt_result_t (*layer_cube)(struct xrt_compositor *xc,
 	                           struct xrt_device *xdev,
 	                           struct xrt_swapchain *xsc,
-	                           struct xrt_layer_data *data);
+	                           const struct xrt_layer_data *data);
 
 	/*!
 	 * Adds a cylinder layer for submission.
@@ -712,7 +714,7 @@ struct xrt_compositor
 	xrt_result_t (*layer_cylinder)(struct xrt_compositor *xc,
 	                               struct xrt_device *xdev,
 	                               struct xrt_swapchain *xsc,
-	                               struct xrt_layer_data *data);
+	                               const struct xrt_layer_data *data);
 
 	/*!
 	 * Adds a equirect layer for submission.
@@ -725,7 +727,7 @@ struct xrt_compositor
 	xrt_result_t (*layer_equirect)(struct xrt_compositor *xc,
 	                               struct xrt_device *xdev,
 	                               struct xrt_swapchain *xsc,
-	                               struct xrt_layer_data *data);
+	                               const struct xrt_layer_data *data);
 
 	/*!
 	 * Commits all of the submitted layers, it's from this on that the
@@ -799,7 +801,7 @@ xrt_comp_poll_events(struct xrt_compositor *xc,
  */
 static inline xrt_result_t
 xrt_comp_prepare_session(struct xrt_compositor *xc,
-                         struct xrt_session_prepare_info *xspi)
+                         const struct xrt_session_prepare_info *xspi)
 {
 	return xc->prepare_session(xc, xspi);
 }
@@ -900,7 +902,7 @@ xrt_comp_layer_stereo_projection(struct xrt_compositor *xc,
                                  struct xrt_device *xdev,
                                  struct xrt_swapchain *l_xsc,
                                  struct xrt_swapchain *r_xsc,
-                                 struct xrt_layer_data *data)
+                                 const struct xrt_layer_data *data)
 {
 	return xc->layer_stereo_projection(xc, xdev, l_xsc, r_xsc, data);
 }
@@ -919,7 +921,7 @@ xrt_comp_layer_stereo_projection_depth(struct xrt_compositor *xc,
                                        struct xrt_swapchain *r_xsc,
                                        struct xrt_swapchain *l_d_xsc,
                                        struct xrt_swapchain *r_d_xsc,
-                                       struct xrt_layer_data *data)
+                                       const struct xrt_layer_data *data)
 {
 	return xc->layer_stereo_projection_depth(xc, xdev, l_xsc, r_xsc,
 	                                         l_d_xsc, r_d_xsc, data);
@@ -936,7 +938,7 @@ static inline xrt_result_t
 xrt_comp_layer_quad(struct xrt_compositor *xc,
                     struct xrt_device *xdev,
                     struct xrt_swapchain *xsc,
-                    struct xrt_layer_data *data)
+                    const struct xrt_layer_data *data)
 {
 	return xc->layer_quad(xc, xdev, xsc, data);
 }
@@ -952,7 +954,7 @@ static inline xrt_result_t
 xrt_comp_layer_cube(struct xrt_compositor *xc,
                     struct xrt_device *xdev,
                     struct xrt_swapchain *xsc,
-                    struct xrt_layer_data *data)
+                    const struct xrt_layer_data *data)
 {
 	return xc->layer_cube(xc, xdev, xsc, data);
 }
@@ -968,7 +970,7 @@ static inline xrt_result_t
 xrt_comp_layer_cylinder(struct xrt_compositor *xc,
                         struct xrt_device *xdev,
                         struct xrt_swapchain *xsc,
-                        struct xrt_layer_data *data)
+                        const struct xrt_layer_data *data)
 {
 	return xc->layer_cylinder(xc, xdev, xsc, data);
 }
@@ -984,7 +986,7 @@ static inline xrt_result_t
 xrt_comp_layer_equirect(struct xrt_compositor *xc,
                         struct xrt_device *xdev,
                         struct xrt_swapchain *xsc,
-                        struct xrt_layer_data *data)
+                        const struct xrt_layer_data *data)
 {
 	return xc->layer_equirect(xc, xdev, xsc, data);
 }

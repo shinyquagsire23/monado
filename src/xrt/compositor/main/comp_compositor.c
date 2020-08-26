@@ -112,7 +112,7 @@ compositor_destroy(struct xrt_compositor *xc)
 
 static xrt_result_t
 compositor_prepare_session(struct xrt_compositor *xc,
-                           struct xrt_session_prepare_info *xspi)
+                           const struct xrt_session_prepare_info *xspi)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_DEBUG(c, "PREPARE_SESSION");
@@ -322,7 +322,7 @@ compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                    struct xrt_device *xdev,
                                    struct xrt_swapchain *l_xsc,
                                    struct xrt_swapchain *r_xsc,
-                                   struct xrt_layer_data *data)
+                                   const struct xrt_layer_data *data)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 
@@ -346,7 +346,7 @@ compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
                                          struct xrt_swapchain *r_xsc,
                                          struct xrt_swapchain *l_d_xsc,
                                          struct xrt_swapchain *r_d_xsc,
-                                         struct xrt_layer_data *data)
+                                         const struct xrt_layer_data *data)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 
@@ -367,7 +367,7 @@ static xrt_result_t
 do_single(struct xrt_compositor *xc,
           struct xrt_device *xdev,
           struct xrt_swapchain *xsc,
-          struct xrt_layer_data *data)
+          const struct xrt_layer_data *data)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 
@@ -388,7 +388,7 @@ static xrt_result_t
 compositor_layer_quad(struct xrt_compositor *xc,
                       struct xrt_device *xdev,
                       struct xrt_swapchain *xsc,
-                      struct xrt_layer_data *data)
+                      const struct xrt_layer_data *data)
 {
 	return do_single(xc, xdev, xsc, data);
 }
@@ -397,7 +397,7 @@ static xrt_result_t
 compositor_layer_cube(struct xrt_compositor *xc,
                       struct xrt_device *xdev,
                       struct xrt_swapchain *xsc,
-                      struct xrt_layer_data *data)
+                      const struct xrt_layer_data *data)
 {
 #if 0
 	return do_single(xc, xdev, xsc, data);
@@ -410,7 +410,7 @@ static xrt_result_t
 compositor_layer_cylinder(struct xrt_compositor *xc,
                           struct xrt_device *xdev,
                           struct xrt_swapchain *xsc,
-                          struct xrt_layer_data *data)
+                          const struct xrt_layer_data *data)
 {
 	return do_single(xc, xdev, xsc, data);
 }
@@ -419,7 +419,7 @@ static xrt_result_t
 compositor_layer_equirect(struct xrt_compositor *xc,
                           struct xrt_device *xdev,
                           struct xrt_swapchain *xsc,
-                          struct xrt_layer_data *data)
+                          const struct xrt_layer_data *data)
 {
 #if 0
 	return do_single(xc, xdev, xsc, data);

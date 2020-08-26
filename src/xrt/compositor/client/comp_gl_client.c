@@ -82,8 +82,8 @@ client_gl_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
  */
 
 static xrt_result_t
-client_gl_compositor_prepare_session(struct xrt_compositor *xc,
-                                     struct xrt_session_prepare_info *xspi)
+client_gl_compositor_prepare_session(
+    struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
@@ -158,7 +158,7 @@ client_gl_compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                              struct xrt_device *xdev,
                                              struct xrt_swapchain *l_xsc,
                                              struct xrt_swapchain *r_xsc,
-                                             struct xrt_layer_data *data)
+                                             const struct xrt_layer_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	struct xrt_swapchain *l_xscn, *r_xscn;
@@ -167,10 +167,12 @@ client_gl_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 
 	l_xscn = &client_gl_swapchain(l_xsc)->xscn->base;
 	r_xscn = &client_gl_swapchain(r_xsc)->xscn->base;
-	data->flip_y = true;
+
+	struct xrt_layer_data d = *data;
+	d.flip_y = !d.flip_y;
 
 	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn,
-	                                        r_xscn, data);
+	                                        r_xscn, &d);
 }
 
 static xrt_result_t
@@ -181,7 +183,7 @@ client_gl_compositor_layer_stereo_projection_depth(
     struct xrt_swapchain *r_xsc,
     struct xrt_swapchain *l_d_xsc,
     struct xrt_swapchain *r_d_xsc,
-    struct xrt_layer_data *data)
+    const struct xrt_layer_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	struct xrt_swapchain *l_xscn, *r_xscn, *l_d_xscn, *r_d_xscn;
@@ -192,17 +194,19 @@ client_gl_compositor_layer_stereo_projection_depth(
 	r_xscn = &client_gl_swapchain(r_xsc)->xscn->base;
 	l_d_xscn = &client_gl_swapchain(l_d_xsc)->xscn->base;
 	r_d_xscn = &client_gl_swapchain(r_d_xsc)->xscn->base;
-	data->flip_y = true;
+
+	struct xrt_layer_data d = *data;
+	d.flip_y = !d.flip_y;
 
 	return xrt_comp_layer_stereo_projection_depth(
-	    &c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, data);
+	    &c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, &d);
 }
 
 static xrt_result_t
 client_gl_compositor_layer_quad(struct xrt_compositor *xc,
                                 struct xrt_device *xdev,
                                 struct xrt_swapchain *xsc,
-                                struct xrt_layer_data *data)
+                                const struct xrt_layer_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	struct xrt_swapchain *xscfb;
@@ -210,16 +214,18 @@ client_gl_compositor_layer_quad(struct xrt_compositor *xc,
 	assert(data->type == XRT_LAYER_QUAD);
 
 	xscfb = &client_gl_swapchain(xsc)->xscn->base;
-	data->flip_y = true;
 
-	return xrt_comp_layer_quad(&c->xcn->base, xdev, xscfb, data);
+	struct xrt_layer_data d = *data;
+	d.flip_y = !d.flip_y;
+
+	return xrt_comp_layer_quad(&c->xcn->base, xdev, xscfb, &d);
 }
 
 static xrt_result_t
 client_gl_compositor_layer_cube(struct xrt_compositor *xc,
                                 struct xrt_device *xdev,
                                 struct xrt_swapchain *xsc,
-                                struct xrt_layer_data *data)
+                                const struct xrt_layer_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	struct xrt_swapchain *xscfb;
@@ -227,16 +233,18 @@ client_gl_compositor_layer_cube(struct xrt_compositor *xc,
 	assert(data->type == XRT_LAYER_CUBE);
 
 	xscfb = &client_gl_swapchain(xsc)->xscn->base;
-	data->flip_y = true;
 
-	return xrt_comp_layer_cube(&c->xcn->base, xdev, xscfb, data);
+	struct xrt_layer_data d = *data;
+	d.flip_y = !d.flip_y;
+
+	return xrt_comp_layer_cube(&c->xcn->base, xdev, xscfb, &d);
 }
 
 static xrt_result_t
 client_gl_compositor_layer_cylinder(struct xrt_compositor *xc,
                                     struct xrt_device *xdev,
                                     struct xrt_swapchain *xsc,
-                                    struct xrt_layer_data *data)
+                                    const struct xrt_layer_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	struct xrt_swapchain *xscfb;
@@ -244,16 +252,18 @@ client_gl_compositor_layer_cylinder(struct xrt_compositor *xc,
 	assert(data->type == XRT_LAYER_CYLINDER);
 
 	xscfb = &client_gl_swapchain(xsc)->xscn->base;
-	data->flip_y = true;
 
-	return xrt_comp_layer_cylinder(&c->xcn->base, xdev, xscfb, data);
+	struct xrt_layer_data d = *data;
+	d.flip_y = !d.flip_y;
+
+	return xrt_comp_layer_cylinder(&c->xcn->base, xdev, xscfb, &d);
 }
 
 static xrt_result_t
 client_gl_compositor_layer_equirect(struct xrt_compositor *xc,
                                     struct xrt_device *xdev,
                                     struct xrt_swapchain *xsc,
-                                    struct xrt_layer_data *data)
+                                    const struct xrt_layer_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	struct xrt_swapchain *xscfb;
@@ -261,9 +271,11 @@ client_gl_compositor_layer_equirect(struct xrt_compositor *xc,
 	assert(data->type == XRT_LAYER_EQUIRECT);
 
 	xscfb = &client_gl_swapchain(xsc)->xscn->base;
-	data->flip_y = true;
 
-	return xrt_comp_layer_equirect(&c->xcn->base, xdev, xscfb, data);
+	struct xrt_layer_data d = *data;
+	d.flip_y = !d.flip_y;
+
+	return xrt_comp_layer_equirect(&c->xcn->base, xdev, xscfb, &d);
 }
 
 static xrt_result_t

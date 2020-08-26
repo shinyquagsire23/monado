@@ -169,8 +169,8 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
-client_vk_compositor_prepare_session(struct xrt_compositor *xc,
-                                     struct xrt_session_prepare_info *xspi)
+client_vk_compositor_prepare_session(
+    struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
@@ -244,7 +244,7 @@ client_vk_compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                              struct xrt_device *xdev,
                                              struct xrt_swapchain *l_xsc,
                                              struct xrt_swapchain *r_xsc,
-                                             struct xrt_layer_data *data)
+                                             const struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *l_xscn, *r_xscn;
@@ -253,7 +253,6 @@ client_vk_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 
 	l_xscn = &client_vk_swapchain(l_xsc)->xscn->base;
 	r_xscn = &client_vk_swapchain(r_xsc)->xscn->base;
-	data->flip_y = false;
 
 	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn,
 	                                        r_xscn, data);
@@ -268,7 +267,7 @@ client_vk_compositor_layer_stereo_projection_depth(
     struct xrt_swapchain *r_xsc,
     struct xrt_swapchain *l_d_xsc,
     struct xrt_swapchain *r_d_xsc,
-    struct xrt_layer_data *data)
+    const struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *l_xscn, *r_xscn, *l_d_xscn, *r_d_xscn;
@@ -279,7 +278,6 @@ client_vk_compositor_layer_stereo_projection_depth(
 	r_xscn = &client_vk_swapchain(r_xsc)->xscn->base;
 	l_d_xscn = &client_vk_swapchain(l_d_xsc)->xscn->base;
 	r_d_xscn = &client_vk_swapchain(r_d_xsc)->xscn->base;
-	data->flip_y = false;
 
 	return xrt_comp_layer_stereo_projection_depth(
 	    &c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, data);
@@ -289,7 +287,7 @@ static xrt_result_t
 client_vk_compositor_layer_quad(struct xrt_compositor *xc,
                                 struct xrt_device *xdev,
                                 struct xrt_swapchain *xsc,
-                                struct xrt_layer_data *data)
+                                const struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *xscfb;
@@ -297,7 +295,6 @@ client_vk_compositor_layer_quad(struct xrt_compositor *xc,
 	assert(data->type == XRT_LAYER_QUAD);
 
 	xscfb = &client_vk_swapchain(xsc)->xscn->base;
-	data->flip_y = false;
 
 	return xrt_comp_layer_quad(&c->xcn->base, xdev, xscfb, data);
 }
@@ -306,7 +303,7 @@ static xrt_result_t
 client_vk_compositor_layer_cube(struct xrt_compositor *xc,
                                 struct xrt_device *xdev,
                                 struct xrt_swapchain *xsc,
-                                struct xrt_layer_data *data)
+                                const struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *xscfb;
@@ -314,7 +311,6 @@ client_vk_compositor_layer_cube(struct xrt_compositor *xc,
 	assert(data->type == XRT_LAYER_CUBE);
 
 	xscfb = &client_vk_swapchain(xsc)->xscn->base;
-	data->flip_y = false;
 
 	return xrt_comp_layer_cube(&c->xcn->base, xdev, xscfb, data);
 }
@@ -323,7 +319,7 @@ static xrt_result_t
 client_vk_compositor_layer_cylinder(struct xrt_compositor *xc,
                                     struct xrt_device *xdev,
                                     struct xrt_swapchain *xsc,
-                                    struct xrt_layer_data *data)
+                                    const struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *xscfb;
@@ -331,7 +327,6 @@ client_vk_compositor_layer_cylinder(struct xrt_compositor *xc,
 	assert(data->type == XRT_LAYER_CYLINDER);
 
 	xscfb = &client_vk_swapchain(xsc)->xscn->base;
-	data->flip_y = false;
 
 	return xrt_comp_layer_cylinder(&c->xcn->base, xdev, xscfb, data);
 }
@@ -340,7 +335,7 @@ static xrt_result_t
 client_vk_compositor_layer_equirect(struct xrt_compositor *xc,
                                     struct xrt_device *xdev,
                                     struct xrt_swapchain *xsc,
-                                    struct xrt_layer_data *data)
+                                    const struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *xscfb;
@@ -348,7 +343,6 @@ client_vk_compositor_layer_equirect(struct xrt_compositor *xc,
 	assert(data->type == XRT_LAYER_EQUIRECT);
 
 	xscfb = &client_vk_swapchain(xsc)->xscn->base;
-	data->flip_y = false;
 
 	return xrt_comp_layer_equirect(&c->xcn->base, xdev, xscfb, data);
 }
