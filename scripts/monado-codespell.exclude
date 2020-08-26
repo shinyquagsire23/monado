@@ -1,2 +1,3 @@
  * @author Simon Ser <contact@emersion.fr>
 #include <asm/byteorder.h>
+	if (stream.parm.capture.capability & V4L2_CAP_TIMEPERFRAME) {
