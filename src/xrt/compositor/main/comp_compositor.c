@@ -464,6 +464,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 
 			comp_renderer_set_projection_layer(c->r, i, left, right,
 			                                   data);
+		} break;
 		case XRT_LAYER_STEREO_PROJECTION_DEPTH: {
 			struct xrt_layer_stereo_projection_depth_data *stereo =
 			    &data->stereo_depth;
@@ -478,7 +479,6 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 
 			comp_renderer_set_projection_layer(c->r, i, left, right,
 			                                   data);
-		}
 		} break;
 		case XRT_LAYER_CYLINDER: {
 			struct xrt_layer_cylinder_data *cyl =
