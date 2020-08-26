@@ -522,6 +522,9 @@ struct xrt_compositor_info
 		} max; //! Maximums for this view.
 	} views[2];    //!< View configuration information.
 
+	//! Maximum number of layers supported by the compositor, never changes.
+	uint32_t max_layers;
+
 	/*!
 	 * Blend modes supported by the system (the combination of the
 	 * compositor and the HMD capabilities), never changes.
