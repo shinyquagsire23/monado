@@ -87,7 +87,7 @@ option('layer_cube',
 
 option('layer_cylinder',
 	type: 'boolean',
-	value: false,
+	value: true,
   description: 'Enable support for Cylinder Layers'
 )
 
