@@ -1140,10 +1140,10 @@ check_feature(VkFormat format,
 	if ((format_features & flag) == 0) {
 		U_LOG_E(
 		    "vk_swapchain_usage_flags: %s requested but %s not "
-		    "supported for format %s",
+		    "supported for format %s (%08x) (%08x)",
 		    xrt_swapchain_usage_string(usage),
 		    vk_format_feature_string(flag),
-		    vk_color_format_string(format));
+		    vk_color_format_string(format), format_features, flag);
 		return false;
 	}
 	return true;
