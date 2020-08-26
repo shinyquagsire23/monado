@@ -520,10 +520,19 @@ comp_renderer_set_cylinder_layer(struct comp_renderer *r,
                                  struct comp_swapchain_image *image,
                                  struct xrt_layer_data *data)
 {
+	struct comp_render_layer *l = r->lr->layers[layer];
+	l->type = XRT_LAYER_CYLINDER;
+	l->visibility = data->cylinder.visibility;
+	l->flags = data->flags;
+	l->view_space =
+	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+
 	// skip "infinite cylinder"
 	if (data->cylinder.radius == 0.f ||
 	    data->cylinder.aspect_ratio == INFINITY) {
-		// if layer is cached, it should be disabled here
+		/* skipping the descriptor set update means the renderer must
+		 * entirely skip rendering of invisible layer */
+		l->visibility = XRT_LAYER_EYE_VISIBILITY_NONE;
 		return;
 	}
 
@@ -544,13 +553,6 @@ comp_renderer_set_cylinder_layer(struct comp_renderer *r,
 	comp_layer_set_model_matrix(r->lr->layers[layer], &model_matrix);
 
 	comp_layer_set_flip_y(r->lr->layers[layer], data->flip_y);
-
-	struct comp_render_layer *l = r->lr->layers[layer];
-	l->type = XRT_LAYER_CYLINDER;
-	l->visibility = data->cylinder.visibility;
-	l->flags = data->flags;
-	l->view_space =
-	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
 
 	for (uint32_t i = 0; i < 2; i++) {
 		l->transformation[i].offset = data->cylinder.sub.rect.offset;
