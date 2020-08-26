@@ -151,7 +151,8 @@ endif
 
 openhmd = dependency('openhmd', required: openhmd_required)
 hidapi  = dependency('hidapi-libusb', required: hidapi_required)
-v4l2    = dependency('libv4l2', required: v4l2_required)
+
+has_v4l2_header =  cc.has_header('linux/v4l2-common.h')
 
 if openhmd.found() and ('auto' in drivers or 'ohmd' in drivers)
 	if 'ohmd' not in drivers
@@ -177,7 +178,7 @@ if rs.found() and ('auto' in drivers or 'rs' in drivers)
 	endif
 endif
 
-if v4l2.found() and ('auto' in drivers or 'v4l2' in drivers)
+if has_v4l2_header and ('auto' in drivers or 'v4l2' in drivers)
 	if 'v4l2' not in drivers
 		drivers += ['v4l2']
 	endif

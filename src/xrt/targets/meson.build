@@ -47,7 +47,6 @@ endif
 
 if 'v4l2' in drivers
 	driver_libs += [lib_drv_v4l2]
-	driver_deps += [v4l2]
 endif
 
 if 'vive' in drivers

@@ -113,7 +113,7 @@ lib_drv_v4l2 = static_library(
 		'v4l2/v4l2_driver.c',
 	),
 	include_directories: xrt_include,
-	dependencies: [aux, v4l2],
+	dependencies: [aux],
 	build_by_default: 'v4l2' in drivers,
 )
 

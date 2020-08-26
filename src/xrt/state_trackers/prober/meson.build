@@ -27,10 +27,6 @@ if libuvc.found()
 	prober_deps += [libuvc]
 endif
 
-if v4l2.found()
-	prober_deps += [v4l2]
-endif
-
 lib_st_prober = static_library(
 	'st_prober',
 	files(prober_sources),
