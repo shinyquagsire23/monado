@@ -8,6 +8,8 @@
  */
 
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_config_build.h"
+#include "xrt/xrt_config_have.h"
 
 #ifdef XR_USE_PLATFORM_XLIB
 #include "xrt/xrt_gfx_xlib.h"
@@ -928,6 +930,7 @@ verify_projection_layer(struct xrt_compositor *xc,
 			    sc->height);
 		}
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
 		const XrCompositionLayerDepthInfoKHR *depth_info =
 		    OXR_GET_INPUT_FROM_CHAIN(
 		        view, XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
@@ -941,8 +944,10 @@ verify_projection_layer(struct xrt_compositor *xc,
 			}
 			num_depth_layers++;
 		}
+#endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
 	}
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
 	if (num_depth_layers > 0 && num_depth_layers != proj->viewCount) {
 		return oxr_error(
 		    log, XR_ERROR_VALIDATION_FAILURE,
@@ -950,6 +955,7 @@ verify_projection_layer(struct xrt_compositor *xc,
 		    "depth layers or none, but has: %u)",
 		    layer_index, proj->viewCount, num_depth_layers);
 	}
+#endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
 
 	return XR_SUCCESS;
 }
@@ -1469,6 +1475,7 @@ submit_projection_layer(struct xrt_compositor *xc,
 
 
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
 	const XrCompositionLayerDepthInfoKHR *d_l = OXR_GET_INPUT_FROM_CHAIN(
 	    &proj->views[0], XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
 	    XrCompositionLayerDepthInfoKHR);
@@ -1515,8 +1522,10 @@ submit_projection_layer(struct xrt_compositor *xc,
 		// Need to pass this in.
 		d_scs[1] = sc;
 	}
+#endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
 
 	if (d_scs[0] != NULL && d_scs[1] != NULL) {
+#ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
 		data.type = XRT_LAYER_STEREO_PROJECTION_DEPTH;
 		CALL_CHK(xrt_comp_layer_stereo_projection_depth(
 		    xc, head,
@@ -1525,6 +1534,9 @@ submit_projection_layer(struct xrt_compositor *xc,
 		    d_scs[0]->swapchain, // Left
 		    d_scs[1]->swapchain, // Right
 		    &data));
+#else
+		assert(false && "Should not get here");
+#endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
 	} else {
 		CALL_CHK(
 		    xrt_comp_layer_stereo_projection(xc, head,
