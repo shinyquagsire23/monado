@@ -42,6 +42,7 @@ get_mode(struct ipc_connection *ipc_c)
 		exit(1);
 	}
 
+	printf("Clients:\n");
 	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
 		if (clients.ids[i] < 0) {
 			continue;
@@ -58,7 +59,7 @@ get_mode(struct ipc_connection *ipc_c)
 		}
 
 		printf(
-		    "id: %d"
+		    "\tid: %d"
 		    "\tact: %d"
 		    "\tdisp: %d"
 		    "\tfoc: %d"
@@ -76,6 +77,18 @@ get_mode(struct ipc_connection *ipc_c)
 		    cs.z_order,         //
 		    cs.pid,             //
 		    cs.info.application_name);
+	}
+
+	printf("\nDevices:\n");
+	for (uint32_t i = 0; i < ipc_c->ism->num_isdevs; i++) {
+		struct ipc_shared_device *isdev = &ipc_c->ism->isdevs[i];
+		printf(
+		    "\tid: %d"
+		    "\tname: %d"
+		    "\t\"%s\"\n",
+		    i,           //
+		    isdev->name, //
+		    isdev->str); //
 	}
 
 	return 0;
