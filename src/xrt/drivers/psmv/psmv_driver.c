@@ -71,9 +71,10 @@ enum psmv_input_index
 	PSMV_INDEX_CIRCLE_CLICK,
 	PSMV_INDEX_TRIANGLE_CLICK,
 	PSMV_INDEX_TRIGGER_VALUE,
+	PSMV_INDEX_GRIP_POSE,
+	PSMV_INDEX_AIM_POSE,
 	PSMV_INDEX_BODY_CENTER_POSE,
 	PSMV_INDEX_BALL_CENTER_POSE,
-	PSMV_INDEX_BALL_TIP_POSE,
 };
 
 /*!
@@ -886,13 +887,19 @@ psmv_device_get_tracked_pose(struct xrt_device *xdev,
 		*out_relation_timestamp_ns = now;
 	}
 
-	// Adjust from the normal body center pose to the ball tip.
-	if (name != XRT_INPUT_PSMV_BALL_TIP_POSE) {
+	/*
+	 * Both the grip and aim pose needs adjustments, the grip is a rotated
+	 * body center pose, while the aim pose needs to rotated and translated
+	 * to the tip of the ball.
+	 */
+	if (name != XRT_INPUT_PSMV_AIM_POSE &&
+	    name != XRT_INPUT_PSMV_GRIP_POSE) {
 		return;
 	}
 
-	float y = PSMV_BALL_FROM_IMU_Y_M;
-	if (name == XRT_INPUT_PSMV_BALL_TIP_POSE) {
+	float y = 0.0;
+	if (name == XRT_INPUT_PSMV_AIM_POSE) {
+		y += PSMV_BALL_FROM_IMU_Y_M;
 		y += PSMV_BALL_DIAMETER_M / 2.0;
 	}
 
@@ -967,7 +974,7 @@ psmv_found(struct xrt_prober *xp,
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
 	struct psmv_device *psmv =
-	    U_DEVICE_ALLOCATE(struct psmv_device, flags, 12, 1);
+	    U_DEVICE_ALLOCATE(struct psmv_device, flags, 13, 1);
 	psmv->base.destroy = psmv_device_destroy;
 	psmv->base.update_inputs = psmv_device_update_inputs;
 	psmv->base.get_tracked_pose = psmv_device_get_tracked_pose;
@@ -1019,9 +1026,10 @@ psmv_found(struct xrt_prober *xp,
 	SET_INPUT(CIRCLE_CLICK);
 	SET_INPUT(TRIANGLE_CLICK);
 	SET_INPUT(TRIGGER_VALUE);
+	SET_INPUT(GRIP_POSE);
+	SET_INPUT(AIM_POSE);
 	SET_INPUT(BODY_CENTER_POSE);
 	SET_INPUT(BALL_CENTER_POSE);
-	SET_INPUT(BALL_TIP_POSE);
 
 	// We only have one output.
 	psmv->base.outputs[0].name = XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION;

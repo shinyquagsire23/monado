@@ -93,7 +93,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
-                XRT_INPUT_PSMV_BODY_CENTER_POSE,
+                XRT_INPUT_PSMV_GRIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
                 XRT_INPUT_DAYDREAM_POSE,
                 XRT_INPUT_INDEX_GRIP_POSE,
@@ -111,7 +111,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
-                XRT_INPUT_PSMV_BALL_TIP_POSE,
+                XRT_INPUT_PSMV_AIM_POSE,
                 XRT_INPUT_HYDRA_POSE,
                 XRT_INPUT_DAYDREAM_POSE,
                 XRT_INPUT_INDEX_AIM_POSE,
@@ -180,7 +180,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
-                XRT_INPUT_PSMV_BODY_CENTER_POSE,
+                XRT_INPUT_PSMV_GRIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
                 XRT_INPUT_DAYDREAM_POSE,
                 XRT_INPUT_INDEX_GRIP_POSE,
@@ -198,7 +198,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
-                XRT_INPUT_PSMV_BALL_TIP_POSE,
+                XRT_INPUT_PSMV_AIM_POSE,
                 XRT_INPUT_HYDRA_POSE,
                 XRT_INPUT_DAYDREAM_POSE,
                 XRT_INPUT_INDEX_AIM_POSE,
@@ -303,7 +303,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
         .inputs =
             {
 #if 0
-                XRT_INPUT_PSMV_BODY_CENTER_POSE,
+                XRT_INPUT_PSMV_GRIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
 #endif
                 (enum xrt_input_name)0,
@@ -320,7 +320,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
         .inputs =
             {
 #if 0
-                XRT_INPUT_PSMV_BALL_TIP_POSE,
+                XRT_INPUT_PSMV_AIM_POSE,
                 XRT_INPUT_HYDRA_POSE,
 #endif
                 (enum xrt_input_name)0,
@@ -394,7 +394,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
         .inputs =
             {
 #if 0
-                XRT_INPUT_PSMV_BODY_CENTER_POSE,
+                XRT_INPUT_PSMV_GRIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
 #endif
                 (enum xrt_input_name)0,
@@ -411,7 +411,7 @@ static struct binding_template google_daydream_controller_bindings[12] = {
         .inputs =
             {
 #if 0
-                XRT_INPUT_PSMV_BALL_TIP_POSE,
+                XRT_INPUT_PSMV_AIM_POSE,
                 XRT_INPUT_HYDRA_POSE,
 #endif
                 (enum xrt_input_name)0,
@@ -567,7 +567,7 @@ static struct binding_template mndx_ball_on_a_stick_controller_bindings[26] = {
             },
         .inputs =
             {
-                XRT_INPUT_PSMV_BODY_CENTER_POSE,
+                XRT_INPUT_PSMV_GRIP_POSE,
                 (enum xrt_input_name)0,
             },
     },
@@ -595,7 +595,7 @@ static struct binding_template mndx_ball_on_a_stick_controller_bindings[26] = {
             },
         .inputs =
             {
-                XRT_INPUT_PSMV_BALL_TIP_POSE,
+                XRT_INPUT_PSMV_AIM_POSE,
                 (enum xrt_input_name)0,
             },
     },
@@ -748,7 +748,7 @@ static struct binding_template mndx_ball_on_a_stick_controller_bindings[26] = {
             },
         .inputs =
             {
-                XRT_INPUT_PSMV_BODY_CENTER_POSE,
+                XRT_INPUT_PSMV_GRIP_POSE,
                 (enum xrt_input_name)0,
             },
     },
@@ -776,7 +776,7 @@ static struct binding_template mndx_ball_on_a_stick_controller_bindings[26] = {
             },
         .inputs =
             {
-                XRT_INPUT_PSMV_BALL_TIP_POSE,
+                XRT_INPUT_PSMV_AIM_POSE,
                 (enum xrt_input_name)0,
             },
     },
