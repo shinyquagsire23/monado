@@ -83,7 +83,7 @@ gravity_correction(struct m_imu_3dof *f,
 		return;
 	}
 
-	const float gravity_tolerance = .4f, gyro_tolerance = .1f;
+	const float gravity_tolerance = .9f, gyro_tolerance = .1f;
 	const float min_tilt_error = 0.05f, max_tilt_error = 0.01f;
 
 	/*
@@ -139,10 +139,10 @@ gravity_correction(struct m_imu_3dof *f,
 	}
 
 	if (f->grav.error_angle > min_tilt_error) {
-		// Correct 180° over 10 seconds, when moving.
-		float max_radians = M_PI * dt / 10;
-		// Correct 180° over 120 seconds, when stationary.
-		float min_radians = M_PI * dt / 120;
+		// Correct 180° over 5 seconds, when moving.
+		float max_radians = M_PI * dt / 5;
+		// Correct 180° over 60 seconds, when stationary.
+		float min_radians = M_PI * dt / 60;
 
 		/*
 		 * We're treating 0.5 * gyro_length as a unitless scale factor.
