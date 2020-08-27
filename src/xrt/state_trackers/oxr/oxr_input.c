@@ -445,7 +445,7 @@ XrResult
 oxr_action_get_pose_input(struct oxr_logger *log,
                           struct oxr_session *sess,
                           uint32_t act_key,
-                          const struct oxr_sub_paths *sub_paths,
+                          const struct oxr_sub_paths *sub_paths_ptr,
                           struct oxr_action_input **out_input)
 {
 	struct oxr_action_attachment *act_attached = NULL;
@@ -456,10 +456,14 @@ oxr_action_get_pose_input(struct oxr_logger *log,
 		return XR_SUCCESS;
 	}
 
+	struct oxr_sub_paths sub_paths = *sub_paths_ptr;
+	if (sub_paths.any) {
+		sub_paths = act_attached->any_pose_sub_path;
+	}
+
 	// Priority of inputs.
 #define GET_POSE_INPUT(X)                                                      \
-	if (act_attached->X.current.active &&                                  \
-	    (sub_paths->X || sub_paths->any)) {                                \
+	if (act_attached->X.current.active && sub_paths.X) {                   \
 		*out_input = act_attached->X.inputs;                           \
 		return XR_SUCCESS;                                             \
 	}
@@ -695,6 +699,29 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 	}
 	OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(BIND_SUBACTION)
 #undef BIND_SUBACTION
+
+
+	/*!
+	 * The any sub path is special cased for poses, it binds to one sub path
+	 * and sticks with it.
+	 */
+	if (act_ref->action_type == XR_ACTION_TYPE_POSE_INPUT) {
+
+#define POSE_ANY(X)                                                            \
+	if (act_ref->sub_paths.X && act_attached->X.num_inputs > 0) {          \
+		act_attached->any_pose_sub_path.X = true;                      \
+		oxr_slog(&slog,                                                \
+		         "\tFor: <any>\n\t\tBinding any pose to " #X ".\n");   \
+	} else
+		OXR_FOR_EACH_VALID_SUBACTION_PATH(POSE_ANY)
+#undef POSE_ANY
+
+		{
+			oxr_slog(&slog,
+			         "\tFor: <any>\n\t\tNo active sub paths for "
+			         "the any pose!\n");
+		}
+	}
 
 	oxr_slog(&slog, "\tDone");
 
@@ -1731,15 +1758,24 @@ oxr_action_get_pose(struct oxr_logger *log,
 		    "Action has not been attached to this session");
 	}
 
+	// For poses on the any path we select a single path.
+	if (sub_paths.any) {
+		sub_paths = act_attached->any_pose_sub_path;
+	}
+
 	data->isActive = XR_FALSE;
 
+	/*
+	 * The sub path any is used as a catch all here to see if any
+	 */
 #define COMPUTE_ACTIVE(X)                                                      \
-	if (sub_paths.X || sub_paths.any) {                                    \
+	if (sub_paths.X) {                                                     \
 		data->isActive |= act_attached->X.current.active;              \
 	}
 
 	OXR_FOR_EACH_VALID_SUBACTION_PATH(COMPUTE_ACTIVE)
 #undef COMPUTE_ACTIVE
+
 	return oxr_session_success_result(sess);
 }
 
@@ -1770,8 +1806,6 @@ set_action_output_vibration(struct oxr_session *sess,
 		xrt_device_set_output(xdev, output->name, &value);
 	}
 }
-
-
 
 XrResult
 oxr_action_apply_haptic_feedback(struct oxr_logger *log,

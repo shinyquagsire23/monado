@@ -1568,6 +1568,13 @@ struct oxr_action_attachment
 	//! Unique key for the session hashmap.
 	uint32_t act_key;
 
+
+	/*!
+	 * For pose actions any sub paths are special treated, at bind time we
+	 * pick one sub path and stick to it as long as the action lives.
+	 */
+	struct oxr_sub_paths any_pose_sub_path;
+
 	struct oxr_action_state any_state;
 
 #define OXR_CACHE_MEMBER(X) struct oxr_action_cache X;
