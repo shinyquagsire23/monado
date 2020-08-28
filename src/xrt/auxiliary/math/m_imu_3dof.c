@@ -10,6 +10,8 @@
  */
 
 #include "util/u_misc.h"
+#include "util/u_var.h"
+
 #include "math/m_api.h"
 #include "math/m_filter_fifo.h"
 #include "math/m_imu_3dof.h"
@@ -40,6 +42,28 @@ m_imu_3dof_close(struct m_imu_3dof *f)
 {
 	m_ff_vec3_f32_free(&f->word_accel_ff);
 	m_ff_vec3_f32_free(&f->gyro_ff);
+}
+
+void
+m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix)
+{
+	char tmp[512];
+
+	snprintf(tmp, sizeof(tmp), "%slast.timepoint_ns", prefix);
+	u_var_add_ro_u64(root, &f->last.timepoint_ns, tmp);
+	snprintf(tmp, sizeof(tmp), "%slast.gyro", prefix);
+	u_var_add_ro_vec3_f32(root, &f->last.gyro, tmp);
+	snprintf(tmp, sizeof(tmp), "%slast.accel", prefix);
+	u_var_add_ro_vec3_f32(root, &f->last.accel, tmp);
+	snprintf(tmp, sizeof(tmp), "%slast.delta_ms", prefix);
+	u_var_add_ro_f32(root, &f->last.delta_ms, tmp);
+
+	snprintf(tmp, sizeof(tmp), "%sgrav.level_timepoint_ns", prefix);
+	u_var_add_ro_u64(root, &f->grav.level_timepoint_ns, tmp);
+	snprintf(tmp, sizeof(tmp), "%sgrav.error_axis", prefix);
+	u_var_add_ro_vec3_f32(root, &f->grav.error_axis, tmp);
+	snprintf(tmp, sizeof(tmp), "%sgrav.error_angle", prefix);
+	u_var_add_ro_f32(root, &f->grav.error_angle, tmp);
 }
 
 static void

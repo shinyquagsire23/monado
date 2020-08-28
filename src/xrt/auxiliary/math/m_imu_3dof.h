@@ -67,6 +67,9 @@ void
 m_imu_3dof_close(struct m_imu_3dof *f);
 
 void
+m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix);
+
+void
 m_imu_3dof_update(struct m_imu_3dof *f,
                   uint64_t timepoint_ns,
                   const struct xrt_vec3 *accel,
