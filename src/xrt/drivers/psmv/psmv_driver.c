@@ -17,6 +17,8 @@
 
 #include "math/m_api.h"
 #include "math/m_imu_pre.h"
+#include "math/m_space.h"
+
 #include "tracking/t_imu.h"
 
 #include "util/u_var.h"
@@ -804,6 +806,33 @@ psmv_get_fusion_pose(struct psmv_device *psmv,
 	    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
 }
 
+static void
+psmv_add_pose_offset(enum xrt_input_name name, struct xrt_space_graph *xsg)
+{
+	/*
+	 * Both the grip and aim pose needs adjustments, the grip is a rotated
+	 * body center pose, while the aim pose needs to rotated and translated
+	 * to the tip of the ball.
+	 */
+	if (name != XRT_INPUT_PSMV_AIM_POSE &&
+	    name != XRT_INPUT_PSMV_GRIP_POSE) {
+		return;
+	}
+
+	float y = 0.0;
+	if (name == XRT_INPUT_PSMV_AIM_POSE) {
+		y += PSMV_BALL_FROM_IMU_Y_M;
+		y += PSMV_BALL_DIAMETER_M / 2.0;
+	}
+
+	struct xrt_pose pose = {
+	    {0.7071068, 0, 0, 0.7071068},
+	    {0, y, 0},
+	};
+
+	m_space_graph_add_pose(xsg, &pose);
+}
+
 
 /*
  *
@@ -869,6 +898,28 @@ psmv_device_update_inputs(struct xrt_device *xdev)
 	os_mutex_unlock(&psmv->lock);
 }
 
+static xrt_result_t
+psmv_device_get_space_graph(struct xrt_device *xdev,
+                            enum xrt_input_name name,
+                            uint64_t at_timestamp_ns,
+                            struct xrt_space_graph *xgs)
+{
+	struct psmv_device *psmv = psmv_device(xdev);
+
+	psmv_add_pose_offset(name, xgs);
+
+	struct xrt_space_relation *rel = m_space_graph_reserve(xgs);
+
+	if (psmv->ball != NULL) {
+		xrt_tracked_psmv_get_tracked_pose(psmv->ball, name,
+		                                  at_timestamp_ns, rel);
+	} else {
+		psmv_get_fusion_pose(psmv, name, at_timestamp_ns, rel);
+	}
+
+	return XRT_SUCCESS;
+}
+
 static void
 psmv_device_get_tracked_pose(struct xrt_device *xdev,
                              enum xrt_input_name name,
@@ -876,42 +927,13 @@ psmv_device_get_tracked_pose(struct xrt_device *xdev,
                              uint64_t *out_relation_timestamp_ns,
                              struct xrt_space_relation *out_relation)
 {
-	struct psmv_device *psmv = psmv_device(xdev);
+	struct xrt_space_graph xgs = {0};
 
+	psmv_device_get_space_graph(xdev, name, at_timestamp_ns, &xgs);
 
-	// We have no tracking, don't return a position.
-	if (psmv->ball != NULL) {
-		xrt_tracked_psmv_get_tracked_pose(
-		    psmv->ball, name, at_timestamp_ns, out_relation);
-		*out_relation_timestamp_ns = at_timestamp_ns;
-	} else {
-		uint64_t now = os_monotonic_get_ns();
-		psmv_get_fusion_pose(psmv, name, now, out_relation);
-		*out_relation_timestamp_ns = now;
-	}
+	m_space_graph_resolve(&xgs, out_relation);
 
-	/*
-	 * Both the grip and aim pose needs adjustments, the grip is a rotated
-	 * body center pose, while the aim pose needs to rotated and translated
-	 * to the tip of the ball.
-	 */
-	if (name != XRT_INPUT_PSMV_AIM_POSE &&
-	    name != XRT_INPUT_PSMV_GRIP_POSE) {
-		return;
-	}
-
-	float y = 0.0;
-	if (name == XRT_INPUT_PSMV_AIM_POSE) {
-		y += PSMV_BALL_FROM_IMU_Y_M;
-		y += PSMV_BALL_DIAMETER_M / 2.0;
-	}
-
-	struct xrt_space_relation rel = {0};
-	rel.relation_flags = out_relation->relation_flags;
-	rel.pose.orientation = (struct xrt_quat){0.7071068, 0, 0, 0.7071068};
-	rel.pose.position = (struct xrt_vec3){0, y, 0};
-
-	math_relation_accumulate_relation(&rel, out_relation);
+	*out_relation_timestamp_ns = at_timestamp_ns;
 }
 
 static void
