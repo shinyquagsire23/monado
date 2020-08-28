@@ -97,11 +97,12 @@ m_vec3_normalize(struct xrt_vec3 l)
 		return l;
 	}
 
-	return (struct xrt_vec3){
+	struct xrt_vec3 ret = {
 	    l.x / len,
 	    l.y / len,
 	    l.z / len,
 	};
+	return ret;
 }
 
 static inline float
@@ -117,11 +118,60 @@ m_vec3_angle(struct xrt_vec3 l, struct xrt_vec3 r)
 	return acosf(dot / lengths);
 }
 
+
+#ifdef __cplusplus
+}
+
+static inline struct xrt_vec3
+operator+(const struct xrt_vec3 &a, const struct xrt_vec3 &b)
+{
+	return m_vec3_add(a, b);
+}
+
+static inline struct xrt_vec3
+operator-(const struct xrt_vec3 &a, const struct xrt_vec3 &b)
+{
+	return m_vec3_sub(a, b);
+}
+
+static inline struct xrt_vec3 operator*(const struct xrt_vec3 &a,
+                                        const struct xrt_vec3 &b)
+{
+	return m_vec3_mul(a, b);
+}
+
+static inline struct xrt_vec3
+operator/(const struct xrt_vec3 &a, const struct xrt_vec3 &b)
+{
+	return m_vec3_div(a, b);
+}
+
+static inline void
+operator+=(struct xrt_vec3 &a, const struct xrt_vec3 &b)
+{
+	a = a + b;
+}
+
+static inline void
+operator-=(struct xrt_vec3 &a, const struct xrt_vec3 &b)
+{
+	a = a - b;
+}
+
+static inline void
+operator*=(struct xrt_vec3 &a, const struct xrt_vec3 &b)
+{
+	a = a * b;
+}
+
+static inline void
+operator/=(struct xrt_vec3 &a, const struct xrt_vec3 &b)
+{
+	a = a / b;
+}
+
 /*!
  * @}
  */
 
-
-#ifdef __cplusplus
-}
 #endif
