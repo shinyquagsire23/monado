@@ -182,6 +182,12 @@ math_quat_validate(const struct xrt_quat *quat)
 }
 
 extern "C" void
+math_quat_invert(const struct xrt_quat *quat, struct xrt_quat *out_quat)
+{
+	map_quat(*out_quat) = map_quat(*quat).conjugate();
+}
+
+extern "C" void
 math_quat_normalize(struct xrt_quat *inout)
 {
 	assert(inout != NULL);

@@ -168,6 +168,15 @@ bool
 math_quat_validate(const struct xrt_quat *quat);
 
 /*!
+ * Invert a quaternion.
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+void
+math_quat_invert(const struct xrt_quat *quat, struct xrt_quat *out_quat);
+
+/*!
  * Normalize a quaternion.
  *
  * @relates xrt_quat
