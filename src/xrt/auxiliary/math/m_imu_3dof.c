@@ -49,8 +49,8 @@ m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix)
 {
 	char tmp[512];
 
-	snprintf(tmp, sizeof(tmp), "%slast.timepoint_ns", prefix);
-	u_var_add_ro_u64(root, &f->last.timepoint_ns, tmp);
+	snprintf(tmp, sizeof(tmp), "%slast.timestamp_ns", prefix);
+	u_var_add_ro_u64(root, &f->last.timestamp_ns, tmp);
 	snprintf(tmp, sizeof(tmp), "%slast.gyro", prefix);
 	u_var_add_ro_vec3_f32(root, &f->last.gyro, tmp);
 	snprintf(tmp, sizeof(tmp), "%slast.accel", prefix);
@@ -58,8 +58,8 @@ m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix)
 	snprintf(tmp, sizeof(tmp), "%slast.delta_ms", prefix);
 	u_var_add_ro_f32(root, &f->last.delta_ms, tmp);
 
-	snprintf(tmp, sizeof(tmp), "%sgrav.level_timepoint_ns", prefix);
-	u_var_add_ro_u64(root, &f->grav.level_timepoint_ns, tmp);
+	snprintf(tmp, sizeof(tmp), "%sgrav.level_timestamp_ns", prefix);
+	u_var_add_ro_u64(root, &f->grav.level_timestamp_ns, tmp);
 	snprintf(tmp, sizeof(tmp), "%sgrav.error_axis", prefix);
 	u_var_add_ro_vec3_f32(root, &f->grav.error_axis, tmp);
 	snprintf(tmp, sizeof(tmp), "%sgrav.error_angle", prefix);
@@ -68,7 +68,7 @@ m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix)
 
 static void
 gravity_correction(struct m_imu_3dof *f,
-                   uint64_t timepoint_ns,
+                   uint64_t timestamp_ns,
                    const struct xrt_vec3 *accel,
                    const struct xrt_vec3 *gyro,
                    double dt,
@@ -95,22 +95,22 @@ gravity_correction(struct m_imu_3dof *f,
 	bool is_accel = fabsf(m_vec3_len(*accel) - 9.82f) >= gravity_tolerance;
 	bool is_rotating = gyro_length >= gyro_tolerance;
 	if (is_accel || is_rotating) {
-		f->grav.level_timepoint_ns = timepoint_ns;
+		f->grav.level_timestamp_ns = timestamp_ns;
 	}
 
 	/*
 	 * Device has been level for long enough, grab mean from the
 	 * accelerometer filter queue (last n values) and use for correction.
 	 */
-	uint64_t level_ns = f->grav.level_timepoint_ns + dur_ns;
-	if (level_ns < timepoint_ns) {
+	uint64_t level_ns = f->grav.level_timestamp_ns + dur_ns;
+	if (level_ns < timestamp_ns) {
 		// Reset the timepoint
-		f->grav.level_timepoint_ns = timepoint_ns;
+		f->grav.level_timestamp_ns = timestamp_ns;
 
 		struct xrt_vec3 accel_mean;
 		m_ff_vec3_f32_filter(f->word_accel_ff,      // Filter
-		                     timepoint_ns - dur_ns, // Start time
-		                     timepoint_ns,          // End time
+		                     timestamp_ns - dur_ns, // Start time
+		                     timestamp_ns,          // End time
 		                     &accel_mean);          // Results
 		if ((m_vec3_len(accel_mean) - 9.82f) < gravity_tolerance) {
 			/*
@@ -170,14 +170,14 @@ gravity_correction(struct m_imu_3dof *f,
 
 void
 m_imu_3dof_update(struct m_imu_3dof *f,
-                  uint64_t timepoint_ns,
+                  uint64_t timestamp_ns,
                   const struct xrt_vec3 *accel,
                   const struct xrt_vec3 *gyro)
 {
 	//! Skip the first sample.
 	if (f->state == M_IMU_3DOF_STATE_START) {
 		f->state = M_IMU_3DOF_STATE_RUNNING;
-		f->last.timepoint_ns = timepoint_ns;
+		f->last.timestamp_ns = timestamp_ns;
 		return;
 	}
 
@@ -187,14 +187,14 @@ m_imu_3dof_update(struct m_imu_3dof *f,
 	struct xrt_vec3 world_accel = {0};
 	math_quat_rotate_vec3(&f->rot, accel, &world_accel);
 
-	uint64_t diff = timepoint_ns - f->last.timepoint_ns;
+	uint64_t diff = timestamp_ns - f->last.timestamp_ns;
 	double dt = (double)diff / DUR_1S_IN_NS;
 
 	f->last.delta_ms = dt * 1000.0;
-	f->last.timepoint_ns = timepoint_ns;
+	f->last.timestamp_ns = timestamp_ns;
 
-	m_ff_vec3_f32_push(f->word_accel_ff, &world_accel, timepoint_ns);
-	m_ff_vec3_f32_push(f->gyro_ff, gyro, timepoint_ns);
+	m_ff_vec3_f32_push(f->word_accel_ff, &world_accel, timestamp_ns);
+	m_ff_vec3_f32_push(f->gyro_ff, gyro, timestamp_ns);
 
 	float gyro_length = m_vec3_len(*gyro);
 
@@ -219,7 +219,7 @@ m_imu_3dof_update(struct m_imu_3dof *f,
 	}
 
 	// Gravity correction.
-	gravity_correction(f, timepoint_ns, accel, gyro, dt, gyro_length);
+	gravity_correction(f, timestamp_ns, accel, gyro, dt, gyro_length);
 
 	/*
 	 * Mitigate drift due to floating point

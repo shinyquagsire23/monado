@@ -37,7 +37,7 @@ struct m_imu_3dof
 
 	struct
 	{
-		uint64_t timepoint_ns;
+		uint64_t timestamp_ns;
 		struct xrt_vec3 gyro;  //!< Angular velocity
 		struct xrt_vec3 accel; //!< Acceleration
 		float delta_ms;
@@ -54,7 +54,7 @@ struct m_imu_3dof
 	// gravity correction
 	struct
 	{
-		uint64_t level_timepoint_ns;
+		uint64_t level_timestamp_ns;
 		struct xrt_vec3 error_axis;
 		float error_angle;
 	} grav;
