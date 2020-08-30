@@ -468,6 +468,9 @@ struct psmv_device
 		//! Last sensor read.
 		struct psmv_parsed_input last;
 
+		//! Last time we got a package.
+		uint64_t last_timestamp_ns;
+
 		struct
 		{
 			struct xrt_quat rot;
@@ -564,18 +567,18 @@ psmv_clamp_zero_to_one_float_to_u8(float v)
 static void
 psmv_update_input_click(struct psmv_device *psmv,
                         int index,
-                        int64_t now,
+                        int64_t when_ns,
                         uint32_t bit)
 {
-	psmv->base.inputs[index].timestamp = now;
+	psmv->base.inputs[index].timestamp = when_ns;
 	psmv->base.inputs[index].value.boolean =
 	    (psmv->last.buttons & bit) != 0;
 }
 
 static void
-psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t now)
+psmv_update_trigger_value(struct psmv_device *psmv, int index, int64_t when_ns)
 {
-	psmv->base.inputs[index].timestamp = now;
+	psmv->base.inputs[index].timestamp = when_ns;
 	psmv->base.inputs[index].value.vec1.x = psmv->last.trigger / 255.0f;
 }
 
@@ -765,9 +768,11 @@ psmv_run_thread(void *ptr)
 			              (delta_ns / 2.0));
 			update_fusion(psmv, &input.samples[1], now_ns,
 			              (delta_ns / 2.0));
+			psmv->last_timestamp_ns = now_ns;
 		} else if (num == 1) {
 			// ZCM2
 			update_fusion(psmv, &input.sample, now_ns, delta_ns);
+			psmv->last_timestamp_ns = now_ns;
 		} else {
 			assert(false);
 		}
@@ -841,22 +846,20 @@ psmv_device_update_inputs(struct xrt_device *xdev)
 {
 	struct psmv_device *psmv = psmv_device(xdev);
 
-	int64_t now = os_monotonic_get_ns();
-
-
 	// Lock the data.
 	os_mutex_lock(&psmv->lock);
 
 	// clang-format off
-	psmv_update_input_click(psmv, PSMV_INDEX_PS_CLICK, now, PSMV_BUTTON_BIT_PS);
-	psmv_update_input_click(psmv, PSMV_INDEX_MOVE_CLICK, now, PSMV_BUTTON_BIT_MOVE_ANY);
-	psmv_update_input_click(psmv, PSMV_INDEX_START_CLICK, now, PSMV_BUTTON_BIT_START);
-	psmv_update_input_click(psmv, PSMV_INDEX_SELECT_CLICK, now, PSMV_BUTTON_BIT_SELECT);
-	psmv_update_input_click(psmv, PSMV_INDEX_SQUARE_CLICK, now, PSMV_BUTTON_BIT_SQUARE);
-	psmv_update_input_click(psmv, PSMV_INDEX_CROSS_CLICK, now, PSMV_BUTTON_BIT_CROSS);
-	psmv_update_input_click(psmv, PSMV_INDEX_CIRCLE_CLICK, now, PSMV_BUTTON_BIT_CIRCLE);
-	psmv_update_input_click(psmv, PSMV_INDEX_TRIANGLE_CLICK, now, PSMV_BUTTON_BIT_TRIANGLE);
-	psmv_update_trigger_value(psmv, PSMV_INDEX_TRIGGER_VALUE, now);
+	uint64_t last_ns = psmv->last_timestamp_ns;
+	psmv_update_input_click(psmv, PSMV_INDEX_PS_CLICK, last_ns, PSMV_BUTTON_BIT_PS);
+	psmv_update_input_click(psmv, PSMV_INDEX_MOVE_CLICK, last_ns, PSMV_BUTTON_BIT_MOVE_ANY);
+	psmv_update_input_click(psmv, PSMV_INDEX_START_CLICK, last_ns, PSMV_BUTTON_BIT_START);
+	psmv_update_input_click(psmv, PSMV_INDEX_SELECT_CLICK, last_ns, PSMV_BUTTON_BIT_SELECT);
+	psmv_update_input_click(psmv, PSMV_INDEX_SQUARE_CLICK, last_ns, PSMV_BUTTON_BIT_SQUARE);
+	psmv_update_input_click(psmv, PSMV_INDEX_CROSS_CLICK, last_ns, PSMV_BUTTON_BIT_CROSS);
+	psmv_update_input_click(psmv, PSMV_INDEX_CIRCLE_CLICK, last_ns, PSMV_BUTTON_BIT_CIRCLE);
+	psmv_update_input_click(psmv, PSMV_INDEX_TRIANGLE_CLICK, last_ns, PSMV_BUTTON_BIT_TRIANGLE);
+	psmv_update_trigger_value(psmv, PSMV_INDEX_TRIGGER_VALUE, last_ns);
 
 	// Only report the ball as active if we can track it.
 	psmv->base.inputs[PSMV_INDEX_BALL_CENTER_POSE].active = psmv->ball != NULL;
