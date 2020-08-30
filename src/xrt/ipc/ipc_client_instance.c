@@ -76,7 +76,7 @@ ipc_connect(struct ipc_connection *ipc_c)
 
 	ret = socket(PF_UNIX, SOCK_STREAM, 0);
 	if (ret < 0) {
-		IPC_DEBUG(ipc_c, "Socket Create Error!");
+		IPC_ERROR(ipc_c, "Socket Create Error!");
 		return false;
 	}
 
@@ -88,7 +88,7 @@ ipc_connect(struct ipc_connection *ipc_c)
 
 	ret = connect(socket, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret < 0) {
-		IPC_DEBUG(ipc_c, "Socket Connect error!");
+		IPC_ERROR(ipc_c, "Socket Connect error!");
 		close(socket);
 		return false;
 	}
