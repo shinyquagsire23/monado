@@ -1146,7 +1146,7 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	}
 
 	psvr->base.orientation_tracking_supported = true;
-	psvr->base.position_tracking_supported = false;
+	psvr->base.position_tracking_supported = xp->tracking != NULL;
 	psvr->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	PSVR_DEBUG(psvr, "YES!");
