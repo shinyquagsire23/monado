@@ -213,7 +213,8 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	u_sink_quirk_create(&fact->xfctx, xsink, &qp, &xsink);
 
 	// Start the stream now.
-	xrt_fs_stream_start(fact->xfs, xsink, fact->settings.camera_mode);
+	xrt_fs_stream_start(fact->xfs, xsink, XRT_FS_CAPTURE_TYPE_TRACKING,
+	                    fact->settings.camera_mode);
 }
 #endif
 

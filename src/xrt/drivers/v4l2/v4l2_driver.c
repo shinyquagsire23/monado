@@ -676,6 +676,7 @@ v4l2_fs_configure_capture(struct xrt_fs *xfs,
 static bool
 v4l2_fs_stream_start(struct xrt_fs *xfs,
                      struct xrt_frame_sink *xs,
+                     enum xrt_fs_capture_type capture_type,
                      uint32_t descriptor_index)
 {
 	struct v4l2_fs *vid = v4l2_fs(xfs);

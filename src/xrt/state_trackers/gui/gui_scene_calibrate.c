@@ -374,7 +374,8 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	u_sink_quirk_create(cs->xfctx, cali, &qp, &cali);
 
 	// Now that we have setup a node graph, start it.
-	xrt_fs_stream_start(cs->xfs, cali, cs->settings->camera_mode);
+	xrt_fs_stream_start(cs->xfs, cali, XRT_FS_CAPTURE_TYPE_CALIBRATION,
+	                    cs->settings->camera_mode);
 #else
 	gui_scene_delete_me(p, &cs->base);
 #endif

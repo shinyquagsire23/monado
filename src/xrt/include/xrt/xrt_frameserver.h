@@ -48,6 +48,17 @@ struct xrt_fs_mode
 };
 
 /*!
+ * Enum describing which type of capture we are doing.
+ * @see xrt_fs
+ * @ingroup xrt_iface
+ */
+enum xrt_fs_capture_type
+{
+	XRT_FS_CAPTURE_TYPE_TRACKING = 0,
+	XRT_FS_CAPTURE_TYPE_CALIBRATION = 1,
+};
+
+/*!
  * @interface xrt_fs
  * Frameserver that generates frames. Multiple subframes (like stereo and
  * mipmaps) can be generate in one frame.
@@ -85,6 +96,7 @@ struct xrt_fs
 	 */
 	bool (*stream_start)(struct xrt_fs *xfs,
 	                     struct xrt_frame_sink *xs,
+	                     enum xrt_fs_capture_type capture_type,
 	                     uint32_t descriptor_index);
 
 	/*!
@@ -144,9 +156,10 @@ xrt_fs_configure_capture(struct xrt_fs *xfs,
 static inline bool
 xrt_fs_stream_start(struct xrt_fs *xfs,
                     struct xrt_frame_sink *xs,
+                    enum xrt_fs_capture_type capture_type,
                     uint32_t descriptor_index)
 {
-	return xfs->stream_start(xfs, xs, descriptor_index);
+	return xfs->stream_start(xfs, xs, capture_type, descriptor_index);
 }
 
 /*!
