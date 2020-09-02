@@ -126,15 +126,24 @@ struct v4l2_frame
 	struct v4l2_buffer v_buf;
 };
 
+struct v4l2_state_want
+{
+	bool active;
+	int value;
+};
+
 /*!
  * @ingroup drv_v4l2
  */
 struct v4l2_control_state
 {
-	int force;
 	int id;
-	int want;
+	int force;
+
+	struct v4l2_state_want want[2];
+
 	int value;
+
 	const char *name;
 };
 
@@ -158,7 +167,7 @@ struct v4l2_fs
 		bool timeperframe;
 	} has;
 
-
+	enum xrt_fs_capture_type capture_type;
 	struct v4l2_control_state states[256];
 	size_t num_states;
 
@@ -278,14 +287,18 @@ v4l2_control_set(struct v4l2_fs *vid, uint32_t id, int value)
 }
 
 static void
-v4l2_add_control_state(
-    struct v4l2_fs *vid, int control, int want, int force, const char *name)
+v4l2_add_control_state(struct v4l2_fs *vid,
+                       int control,
+                       struct v4l2_state_want want[2],
+                       int force,
+                       const char *name)
 {
 	struct v4l2_control_state *state = &vid->states[vid->num_states++];
 
 	state->id = control;
 	state->name = name;
-	state->want = want;
+	state->want[0] = want[0];
+	state->want[1] = want[1];
 	state->force = force;
 }
 
@@ -354,31 +367,48 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 	vid->quirks.ps4_cam =
 	    strcmp(card, "USB Camera-OV580: USB Camera-OV") == 0;
 
+#define ADD(CONTROL, WANT1, WANT2, WANT3, WANT4, NAME)                         \
+	do {                                                                   \
+		struct v4l2_state_want want[2] = {{WANT1, WANT2},              \
+		                                  {WANT3, WANT4}};             \
+		v4l2_add_control_state(vid, V4L2_CID_##CONTROL, want, 2,       \
+		                       NAME);                                  \
+	} while (false)
+
 	if (vid->quirks.ps4_cam) {
 		// The experimented best controls to best track things.
-		v4l2_add_control_state(vid, V4L2_CID_GAIN, 0, 2, "gain");
-		v4l2_add_control_state(vid, V4L2_CID_AUTO_WHITE_BALANCE, 0, 2,
-		                       "auto_white_balance");
-		v4l2_add_control_state(vid, V4L2_CID_WHITE_BALANCE_TEMPERATURE,
-		                       3900, 2, "white_balance_temperature");
-		v4l2_add_control_state(vid, V4L2_CID_EXPOSURE_AUTO, 2, 2,
-		                       "exposure_auto");
-		v4l2_add_control_state(
-		    vid, V4L2_CID_EXPOSURE_ABSOLUTE,
-		    debug_get_num_option_v4l2_exposure_absolute(), 2,
+		ADD(GAIN,              //
+		    true, 0, false, 0, //
+		    "gain");
+		ADD(AUTO_WHITE_BALANCE, //
+		    true, 0, true, 1,   //
+		    "auto_white_balance");
+		ADD(WHITE_BALANCE_TEMPERATURE, //
+		    true, 3900, false, 0,      //
+		    "white_balance_temperature");
+		ADD(EXPOSURE_AUTO,    //
+		    true, 2, true, 0, //
+		    "exposure_auto");
+		long num = debug_get_num_option_v4l2_exposure_absolute();
+		ADD(EXPOSURE_ABSOLUTE,   //
+		    true, num, false, 0, //
 		    "exposure_absolute");
 	}
 
 	if (strcmp(card, "3D USB Camera: 3D USB Camera") == 0) {
 		// The experimented best controls to best track things.
-		v4l2_add_control_state(vid, V4L2_CID_AUTO_WHITE_BALANCE, 0, 2,
-		                       "auto_white_balance");
-		v4l2_add_control_state(vid, V4L2_CID_WHITE_BALANCE_TEMPERATURE,
-		                       6500, 2, "white_balance_temperature");
-		v4l2_add_control_state(vid, V4L2_CID_EXPOSURE_AUTO, 1, 2,
-		                       "exposure_auto");
-		v4l2_add_control_state(vid, V4L2_CID_EXPOSURE_ABSOLUTE, 10, 2,
-		                       "exposure_absolute");
+		ADD(AUTO_WHITE_BALANCE, //
+		    true, 0, true, 1,   //
+		    "auto_white_balance");
+		ADD(WHITE_BALANCE_TEMPERATURE, //
+		    true, 6500, false, 0,      //
+		    "white_balance_temperature");
+		ADD(EXPOSURE_AUTO,    //
+		    true, 1, true, 3, //
+		    "exposure_auto");
+		ADD(EXPOSURE_ABSOLUTE,  //
+		    true, 10, false, 0, //
+		    "exposure_absolute");
 	}
 
 	// Done
@@ -594,12 +624,17 @@ v4l2_set_control_if_diff(struct v4l2_fs *vid, struct v4l2_control_state *state)
 	int value = 0;
 	int ret = 0;
 
+	struct v4l2_state_want *want = &state->want[vid->capture_type];
+	if (!want->active) {
+		return;
+	}
+
 	ret = v4l2_control_get(vid, state->id, &value);
 	if (ret != 0) {
 		return;
 	}
 
-	if (value == state->want && state->force <= 0) {
+	if (value == want->value && state->force <= 0) {
 		return;
 	}
 
@@ -610,7 +645,7 @@ v4l2_set_control_if_diff(struct v4l2_fs *vid, struct v4l2_control_state *state)
 	        state->want, value, state->force);
 #endif
 
-	ret = v4l2_control_set(vid, state->id, state->want);
+	ret = v4l2_control_set(vid, state->id, want->value);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to set ");
 		dump_contron_name(state->id);
@@ -690,6 +725,7 @@ v4l2_fs_stream_start(struct xrt_fs *xfs,
 
 	vid->sink = xs;
 	vid->is_running = true;
+	vid->capture_type = capture_type;
 	if (pthread_create(&vid->stream_thread, NULL, v4l2_fs_stream_run,
 	                   xfs)) {
 		vid->is_running = false;
@@ -813,7 +849,7 @@ v4l2_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	u_var_add_bool(vid, &vid->print_debug, "Debug");
 	u_var_add_bool(vid, &vid->print_spew, "Spew");
 	for (size_t i = 0; i < vid->num_states; i++) {
-		u_var_add_i32(vid, &vid->states[i].want, vid->states[i].name);
+		u_var_add_i32(vid, &vid->states[i].want[0].value, vid->states[0].name);
 	}
 	// clang-format on
 
