@@ -849,7 +849,7 @@ v4l2_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	u_var_add_bool(vid, &vid->print_debug, "Debug");
 	u_var_add_bool(vid, &vid->print_spew, "Spew");
 	for (size_t i = 0; i < vid->num_states; i++) {
-		u_var_add_i32(vid, &vid->states[i].want[0].value, vid->states[0].name);
+		u_var_add_i32(vid, &vid->states[i].want[0].value, vid->states[i].name);
 	}
 	// clang-format on
 
