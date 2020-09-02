@@ -199,6 +199,9 @@ if(XRT_HAVE_SYSTEM_CJSON)
 else()
 	target_link_libraries(aux_util PUBLIC xrt-external-cjson)
 endif()
+if(ANDROID)
+	target_link_libraries(aux_util PUBLIC ${ANDROID_LOG_LIBRARY})
+endif()
 
 # Tracking library.
 add_library(aux_tracking STATIC ${TRACKING_SOURCE_FILES})

@@ -88,6 +88,7 @@ endif()
 find_library(RT_LIBRARY rt)
 if(ANDROID)
 	find_library(ANDROID_LIBRARY android)
+	find_library(ANDROID_LOG_LIBRARY log)
 endif()
 
 # This one is named differently because that's what CTest uses
