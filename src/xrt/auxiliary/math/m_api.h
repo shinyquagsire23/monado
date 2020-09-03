@@ -257,6 +257,18 @@ math_quat_finite_difference(const struct xrt_quat *quat0,
                             float dt,
                             struct xrt_vec3 *out_ang_vel);
 
+/*!
+ * Used to rotate a derivative like a angular velocity.
+ *
+ * @relates xrt_quat
+ * @relatesalso xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_quat_rotate_derivative(const struct xrt_quat *rot,
+                            const struct xrt_vec3 *deriv,
+                            struct xrt_vec3 *result);
+
 
 /*
  *

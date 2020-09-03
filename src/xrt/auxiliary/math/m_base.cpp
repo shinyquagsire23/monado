@@ -250,6 +250,25 @@ math_quat_rotate_vec3(const struct xrt_quat *left,
 	map_vec3(*result) = v;
 }
 
+extern "C" void
+math_quat_rotate_derivative(const struct xrt_quat *quat,
+                            const struct xrt_vec3 *deriv,
+                            struct xrt_vec3 *result)
+{
+	assert(quat != NULL);
+	assert(deriv != NULL);
+	assert(result != NULL);
+
+	auto l = copy(quat);
+	auto m = Eigen::Quaternionf(0.0f, deriv->x, deriv->y, deriv->z);
+	auto r = l.conjugate();
+
+	auto v = l * m * r;
+
+	struct xrt_vec3 ret = {v.x(), v.y(), v.z()};
+	*result = ret;
+}
+
 
 /*
  *
