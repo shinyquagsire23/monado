@@ -798,6 +798,15 @@ psmv_get_fusion_pose(struct psmv_device *psmv,
 	out_relation->linear_velocity.y = 0.0f;
 	out_relation->linear_velocity.z = 0.0f;
 
+	/*!
+	 * @todo This is hack, fusion reports angvel relative to the device but
+	 * it needs to be in relation to the base space. Rotating it with the
+	 * device orientation is enough to get it into the right space, angular
+	 * velocity is a derivative so needs a special rotation.
+	 */
+	math_quat_rotate_derivative(&psmv->fusion.rot, &psmv->fusion.angvel,
+	                            &out_relation->angular_velocity);
+
 	//! @todo assuming that orientation is actually currently tracked.
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
