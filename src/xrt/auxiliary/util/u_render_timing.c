@@ -23,7 +23,7 @@
  */
 
 #if 0
-#define DEBUG_PRINT_FRAME_ID() U_LOG_RAW("%" PRIi64, frame_id)
+#define DEBUG_PRINT_FRAME_ID() U_LOG_RAW("%" PRIi64 " %s", frame_id, __func__)
 #else
 #define DEBUG_PRINT_FRAME_ID()                                                 \
 	do {                                                                   \
@@ -114,6 +114,8 @@ u_rt_helper_predict(struct u_rt_helper *urth,
 void
 u_rt_helper_mark_wait_woke(struct u_rt_helper *urth, int64_t frame_id)
 {
+	DEBUG_PRINT_FRAME_ID();
+
 	size_t index = (uint64_t)frame_id % ARRAY_SIZE(urth->frames);
 	assert(urth->frames[index].frame_id == frame_id);
 	assert(urth->frames[index].state == U_RT_PREDICTED);
@@ -125,7 +127,6 @@ u_rt_helper_mark_wait_woke(struct u_rt_helper *urth, int64_t frame_id)
 void
 u_rt_helper_mark_begin(struct u_rt_helper *urth, int64_t frame_id)
 {
-	DEBUG_PRINT_FRAME_ID();
 	DEBUG_PRINT_FRAME_ID();
 
 	size_t index = (uint64_t)frame_id % ARRAY_SIZE(urth->frames);
