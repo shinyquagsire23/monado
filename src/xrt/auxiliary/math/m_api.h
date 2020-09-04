@@ -375,83 +375,12 @@ math_pose_transform_point(const struct xrt_pose *transform,
                           const struct xrt_vec3 *point,
                           struct xrt_vec3 *out_point);
 
-/*!
- * Combine the poses of the target and base space with the relative pose of
- * those spaces. In a way that OpenXR specifies in the function xrLocateSpace.
- *
- * Performs roughly outPose = spacePose * relativePose * baseSpacePose^-1
- *
- * OK if input and output are the same addresses.
- *
- * @relates xrt_pose
- * @ingroup aux_math
- */
-void
-math_pose_openxr_locate(const struct xrt_pose *space_pose,
-                        const struct xrt_pose *relative_pose,
-                        const struct xrt_pose *base_space_pose,
-                        struct xrt_pose *result);
 
 /*
  *
- * Space relation functions
+ * Optics functions.
  *
  */
-
-/*!
- * Reset a relation to zero velocity, located at origin, and all validity flags.
- *
- * @relates xrt_space_relation
- * @ingroup aux_math
- */
-void
-math_relation_reset(struct xrt_space_relation *out);
-
-/*!
- * Apply a static pose on top of an existing relation.
- *
- * Updates all valid pose and derivative fields. Does not modify the validity
- * mask. Treats both position and orientation of transform as valid.
- *
- * @relates xrt_space_relation
- * @see xrt_pose
- * @ingroup aux_math
- */
-void
-math_relation_apply_offset(const struct xrt_pose *offset,
-                           struct xrt_space_relation *in_out_relation);
-
-/*!
- * Apply another step of space relation on top of an existing relation.
- *
- * Updates all valid pose and derivative fields, as well as the validity mask.
- *
- * @relates xrt_space_relation
- * @ingroup aux_math
- */
-void
-math_relation_accumulate_relation(
-    const struct xrt_space_relation *additional_relation,
-    struct xrt_space_relation *in_out_relation);
-
-/*!
- * Combine the poses of the target and base space with the relative relation of
- * those spaces. In a way that OpenXR specifies in the function xrLocateSpace.
- *
- * Performs roughly `out_relation->pose = space_pose * relative_relation->pose *
- * base_space_pose^-1`  for the poses, and appropriate rotation
- *
- * OK if input and output are the same addresses.
- *
- * @relates xrt_space_relation
- * @see xrt_pose
- * @ingroup aux_math
- */
-void
-math_relation_openxr_locate(const struct xrt_pose *space_pose,
-                            const struct xrt_space_relation *relative_relation,
-                            const struct xrt_pose *base_space_pose,
-                            struct xrt_space_relation *result);
 
 /*!
  * Perform the computations from
