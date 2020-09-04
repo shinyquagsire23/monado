@@ -44,21 +44,9 @@ dump_relation(const struct xrt_space_relation *r)
 		        r->linear_velocity.y, r->linear_velocity.z);
 	}
 
-	if (r->relation_flags &
-	    XRT_SPACE_RELATION_LINEAR_ACCELERATION_VALID_BIT) {
-		fprintf(stderr, " LA{%f %f %f}", r->linear_acceleration.x,
-		        r->linear_acceleration.y, r->linear_acceleration.z);
-	}
-
 	if (r->relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) {
 		fprintf(stderr, " AV{%f %f %f}", r->angular_velocity.x,
 		        r->angular_velocity.y, r->angular_velocity.z);
-	}
-
-	if (r->relation_flags &
-	    XRT_SPACE_RELATION_ANGULAR_ACCELERATION_VALID_BIT) {
-		fprintf(stderr, " AA{%f %f %f}", r->angular_acceleration.x,
-		        r->angular_acceleration.y, r->angular_acceleration.z);
 	}
 
 	fprintf(stderr, "\n");

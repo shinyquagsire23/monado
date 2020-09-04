@@ -279,15 +279,11 @@ remove_angular_and_linear_stuff(struct xrt_space_relation *out_relation)
 {
 	const enum xrt_space_relation_flags flags =
 	    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT |
-	    XRT_SPACE_RELATION_LINEAR_ACCELERATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT |
-	    XRT_SPACE_RELATION_ANGULAR_ACCELERATION_VALID_BIT;
+	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT;
 
 	out_relation->relation_flags &= ~flags;
 	out_relation->linear_velocity = (struct xrt_vec3){0, 0, 0};
-	out_relation->linear_acceleration = (struct xrt_vec3){0, 0, 0};
 	out_relation->angular_velocity = (struct xrt_vec3){0, 0, 0};
-	out_relation->angular_acceleration = (struct xrt_vec3){0, 0, 0};
 }
 
 /*!
