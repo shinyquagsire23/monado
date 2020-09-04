@@ -176,7 +176,6 @@
 			{"name": "at_timestamp", "type": "uint64_t"}
 		],
 		"out": [
-			{"name": "timestamp", "type": "uint64_t"},
 			{"name": "relation", "type": "struct xrt_space_relation"}
 		]
 	},

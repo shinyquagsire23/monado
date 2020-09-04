@@ -933,7 +933,6 @@ static void
 psmv_device_get_tracked_pose(struct xrt_device *xdev,
                              enum xrt_input_name name,
                              uint64_t at_timestamp_ns,
-                             uint64_t *out_relation_timestamp_ns,
                              struct xrt_space_relation *out_relation)
 {
 	struct xrt_space_graph xgs = {0};
@@ -941,8 +940,6 @@ psmv_device_get_tracked_pose(struct xrt_device *xdev,
 	psmv_device_get_space_graph(xdev, name, at_timestamp_ns, &xgs);
 
 	m_space_graph_resolve(&xgs, out_relation);
-
-	*out_relation_timestamp_ns = at_timestamp_ns;
 }
 
 static void

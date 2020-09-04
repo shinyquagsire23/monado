@@ -558,7 +558,6 @@ ipc_handle_device_get_tracked_pose(volatile struct ipc_client_state *ics,
                                    uint32_t id,
                                    enum xrt_input_name name,
                                    uint64_t at_timestamp,
-                                   uint64_t *out_timestamp,
                                    struct xrt_space_relation *out_relation)
 {
 
@@ -581,7 +580,6 @@ ipc_handle_device_get_tracked_pose(volatile struct ipc_client_state *ics,
 	// We have been disabled but the client hasn't called update.
 	if (disabled && active_on_client) {
 		U_ZERO(out_relation);
-		*out_timestamp = at_timestamp;
 		return XRT_SUCCESS;
 	}
 
@@ -590,8 +588,7 @@ ipc_handle_device_get_tracked_pose(volatile struct ipc_client_state *ics,
 	}
 
 	// Get the pose.
-	xrt_device_get_tracked_pose(xdev, name, at_timestamp, out_timestamp,
-	                            out_relation);
+	xrt_device_get_tracked_pose(xdev, name, at_timestamp, out_relation);
 
 	return XRT_SUCCESS;
 }

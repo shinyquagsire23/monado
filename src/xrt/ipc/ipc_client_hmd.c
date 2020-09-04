@@ -93,14 +93,12 @@ static void
 ipc_client_hmd_get_tracked_pose(struct xrt_device *xdev,
                                 enum xrt_input_name name,
                                 uint64_t at_timestamp_ns,
-                                uint64_t *out_relation_timestamp_ns,
                                 struct xrt_space_relation *out_relation)
 {
 	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
 
 	xrt_result_t r = ipc_call_device_get_tracked_pose(
-	    ich->ipc_c, ich->device_id, name, at_timestamp_ns,
-	    out_relation_timestamp_ns, out_relation);
+	    ich->ipc_c, ich->device_id, name, at_timestamp_ns, out_relation);
 	if (r != XRT_SUCCESS) {
 		IPC_DEBUG(ich->ipc_c, "IPC: Error calling tracked pose!");
 	}

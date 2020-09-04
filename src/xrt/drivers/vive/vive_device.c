@@ -94,7 +94,6 @@ static void
 vive_device_get_tracked_pose(struct xrt_device *xdev,
                              enum xrt_input_name name,
                              uint64_t at_timestamp_ns,
-                             uint64_t *out_relation_timestamp_ns,
                              struct xrt_space_relation *out_relation)
 {
 	struct vive_device *d = vive_device(xdev);
@@ -109,8 +108,6 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 
 	//! @todo Use this properly.
 	(void)at_timestamp_ns;
-	uint64_t when = os_monotonic_get_ns();
-	*out_relation_timestamp_ns = when;
 
 	os_thread_helper_lock(&d->sensors_thread);
 

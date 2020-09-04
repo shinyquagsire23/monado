@@ -399,11 +399,9 @@ static void
 _get_view_projection(struct comp_renderer *r)
 {
 	struct xrt_space_relation relation;
-	uint64_t out_timestamp;
 
 	xrt_device_get_tracked_pose(r->c->xdev, XRT_INPUT_GENERIC_HEAD_POSE,
-	                            r->c->last_frame_time_ns, &out_timestamp,
-	                            &relation);
+	                            r->c->last_frame_time_ns, &relation);
 
 	struct xrt_vec3 eye_relation = {
 	    0.063000f, /* TODO: get actual ipd_meters */

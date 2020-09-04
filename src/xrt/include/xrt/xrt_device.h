@@ -237,11 +237,9 @@ struct xrt_device
 	void (*update_inputs)(struct xrt_device *xdev);
 
 	/*!
-	 * Get relationship of a tracked device to the device "base space".
-	 *
-	 * Right now the base space is assumed to be local space.
-	 *
-	 * This is very very WIP and will need to be made a lot more advanced.
+	 * Get relationship of a tracked device to the tracking origin space as
+	 * the base space. It is the responsibility of the device driver to do
+	 * any prediction, there are helper functions available for this.
 	 *
 	 * The timestamps are system monotonic timestamps, such as returned by
 	 * os_monotonic_get_ns().
@@ -253,8 +251,6 @@ struct xrt_device
 	 * @param[in] at_timestamp_ns If the device can predict or has a history
 	 *                            of positions, this is when the caller
 	 *                            wants the pose to be from.
-	 * @param[out] out_relation_timestamp_ns Timestamp when this relation
-	 *                                       was captured.
 	 * @param[out] out_relation The relation read from the device.
 	 *
 	 * @see xrt_input_name
@@ -262,7 +258,6 @@ struct xrt_device
 	void (*get_tracked_pose)(struct xrt_device *xdev,
 	                         enum xrt_input_name name,
 	                         uint64_t at_timestamp_ns,
-	                         uint64_t *out_relation_timestamp_ns,
 	                         struct xrt_space_relation *out_relation);
 
 	/*!
@@ -327,11 +322,10 @@ static inline void
 xrt_device_get_tracked_pose(struct xrt_device *xdev,
                             enum xrt_input_name name,
                             uint64_t requested_timestamp_ns,
-                            uint64_t *out_actual_timestamp_ns,
                             struct xrt_space_relation *out_relation)
 {
 	xdev->get_tracked_pose(xdev, name, requested_timestamp_ns,
-	                       out_actual_timestamp_ns, out_relation);
+	                       out_relation);
 }
 
 /*!

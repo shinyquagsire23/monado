@@ -359,16 +359,12 @@ static void
 arduino_device_get_tracked_pose(struct xrt_device *xdev,
                                 enum xrt_input_name name,
                                 uint64_t at_timestamp_ns,
-                                uint64_t *out_relation_timestamp_ns,
                                 struct xrt_space_relation *out_relation)
 {
 	struct arduino_device *ad = arduino_device(xdev);
 
-	uint64_t now = os_monotonic_get_ns();
-
 	(void)at_timestamp_ns;
 	arduino_get_fusion_pose(ad, name, out_relation);
-	*out_relation_timestamp_ns = now;
 }
 
 

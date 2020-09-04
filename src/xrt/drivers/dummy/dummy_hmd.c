@@ -110,7 +110,6 @@ static void
 dummy_hmd_get_tracked_pose(struct xrt_device *xdev,
                            enum xrt_input_name name,
                            uint64_t at_timestamp_ns,
-                           uint64_t *out_relation_timestamp_ns,
                            struct xrt_space_relation *out_relation)
 {
 	struct dummy_hmd *dh = dummy_hmd(xdev);
@@ -120,9 +119,6 @@ dummy_hmd_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	uint64_t now = os_monotonic_get_ns();
-
-	*out_relation_timestamp_ns = now;
 	out_relation->pose = dh->pose;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |

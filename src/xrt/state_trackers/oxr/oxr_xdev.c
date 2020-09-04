@@ -93,10 +93,9 @@ oxr_xdev_get_space_graph(struct oxr_logger *log,
 	// Convert at_time to monotonic and give to device.
 	uint64_t at_timestamp_ns =
 	    time_state_ts_to_monotonic_ns(inst->timekeeping, at_time);
-	uint64_t dummy = 0;
 
 	struct xrt_space_relation *rel = m_space_graph_reserve(xsg);
-	xrt_device_get_tracked_pose(xdev, name, at_timestamp_ns, &dummy, rel);
+	xrt_device_get_tracked_pose(xdev, name, at_timestamp_ns, rel);
 
 	// Add in the offset from the tracking system.
 	m_space_graph_add_pose(xsg, &xdev->tracking_origin->offset);

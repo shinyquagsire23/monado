@@ -72,7 +72,6 @@ static void
 ns_hmd_get_tracked_pose(struct xrt_device *xdev,
                         enum xrt_input_name name,
                         uint64_t at_timestamp_ns,
-                        uint64_t *out_relation_timestamp_ns,
                         struct xrt_space_relation *out_relation)
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
@@ -81,7 +80,6 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
 	// If the tracking device is created use it.
 	if (ns->tracker != NULL) {
 		xrt_device_get_tracked_pose(ns->tracker, name, at_timestamp_ns,
-		                            out_relation_timestamp_ns,
 		                            out_relation);
 		return;
 	}
@@ -91,9 +89,6 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	uint64_t now = os_monotonic_get_ns();
-
-	*out_relation_timestamp_ns = now;
 	out_relation->pose = ns->pose;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |

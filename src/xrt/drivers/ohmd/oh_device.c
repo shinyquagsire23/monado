@@ -64,7 +64,6 @@ static void
 oh_device_get_tracked_pose(struct xrt_device *xdev,
                            enum xrt_input_name name,
                            uint64_t at_timestamp_ns,
-                           uint64_t *out_relation_timestamp_ns,
                            struct xrt_space_relation *out_relation)
 {
 	struct oh_device *ohd = oh_device(xdev);
@@ -80,7 +79,6 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	uint64_t now = os_monotonic_get_ns();
 
 	//! @todo adjust for latency here
-	*out_relation_timestamp_ns = now;
 	ohmd_device_getf(ohd->dev, OHMD_ROTATION_QUAT, &quat.x);
 	ohmd_device_getf(ohd->dev, OHMD_POSITION_VECTOR, &pos.x);
 	out_relation->pose.orientation = quat;
@@ -119,7 +117,6 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 		/*! @todo this is a hack - should really get a timestamp on the
 		 * USB data and use that instead.
 		 */
-		*out_relation_timestamp_ns = ohd->last_update;
 		*out_relation = ohd->last_relation;
 		OH_SPEW(ohd, "GET_TRACKED_POSE - no new data");
 		return;
@@ -131,8 +128,7 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	 */
 	if (ohd->enable_finite_difference && !have_ang_vel) {
 		// No angular velocity
-		float dt =
-		    time_ns_to_s(*out_relation_timestamp_ns - ohd->last_update);
+		float dt = time_ns_to_s(now - ohd->last_update);
 		if (ohd->last_update == 0) {
 			// This is the first report, so just print a warning
 			// instead of estimating ang vel.
@@ -165,7 +161,7 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	}
 
 	// Update state within driver
-	ohd->last_update = *out_relation_timestamp_ns;
+	ohd->last_update = now;
 	ohd->last_relation = *out_relation;
 }
 

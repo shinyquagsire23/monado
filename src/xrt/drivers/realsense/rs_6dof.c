@@ -250,7 +250,6 @@ static void
 rs_6dof_get_tracked_pose(struct xrt_device *xdev,
                          enum xrt_input_name name,
                          uint64_t at_timestamp_ns,
-                         uint64_t *out_relation_timestamp_ns,
                          struct xrt_space_relation *out_relation)
 {
 	struct rs_6dof *rs = rs_6dof(xdev);
@@ -259,9 +258,6 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 		fprintf(stderr, "unknown input name\n");
 		return;
 	}
-
-	uint64_t now = os_monotonic_get_ns();
-	*out_relation_timestamp_ns = now;
 
 	os_thread_helper_lock(&rs->oth);
 	out_relation->pose = rs->pose;

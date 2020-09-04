@@ -915,7 +915,6 @@ static void
 psvr_device_get_tracked_pose(struct xrt_device *xdev,
                              enum xrt_input_name name,
                              uint64_t at_timestamp_ns,
-                             uint64_t *out_relation_timestamp_ns,
                              struct xrt_space_relation *out_relation)
 {
 	struct psvr_device *psvr = psvr_device(xdev);
@@ -939,14 +938,9 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 		out_relation->relation_flags = (enum xrt_space_relation_flags)(
 		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
-
-
-		*out_relation_timestamp_ns = os_monotonic_get_ns();
 	} else {
 		xrt_tracked_psvr_get_tracked_pose(
 		    psvr->tracker, at_timestamp_ns, out_relation);
-
-		*out_relation_timestamp_ns = at_timestamp_ns;
 	}
 
 	//! @todo Move this to the tracker.
