@@ -8,18 +8,22 @@
  * @ingroup comp_main
  */
 
+#include "xrt/xrt_compositor.h"
+
+#include "math/m_space.h"
+
+#include "util/u_misc.h"
+
+#include "main/comp_distortion.h"
+#include "main/comp_layer_renderer.h"
+#include "math/m_api.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
 
-#include "util/u_misc.h"
-
-#include "xrt/xrt_compositor.h"
-#include "main/comp_distortion.h"
-#include "main/comp_layer_renderer.h"
-#include "math/m_api.h"
 
 /*
  *
@@ -421,11 +425,14 @@ _get_view_projection(struct comp_renderer *r)
 		xrt_device_get_view_pose(r->c->xdev, &eye_relation, i,
 		                         &eye_pose);
 
-		struct xrt_pose world_pose;
-		math_pose_openxr_locate(&eye_pose, &relation.pose,
-		                        &base_space_pose, &world_pose);
+		struct xrt_space_relation result = {0};
+		struct xrt_space_graph xsg = {0};
+		m_space_graph_add_pose_if_not_identity(&xsg, &eye_pose);
+		m_space_graph_add_relation(&xsg, &relation);
+		m_space_graph_add_pose_if_not_identity(&xsg, &base_space_pose);
+		m_space_graph_resolve(&xsg, &result);
 
-		comp_layer_renderer_set_pose(r->lr, &eye_pose, &world_pose, i);
+		comp_layer_renderer_set_pose(r->lr, &eye_pose, &result.pose, i);
 	}
 }
 
