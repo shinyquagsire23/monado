@@ -377,40 +377,9 @@ survive_device_get_view_pose(struct xrt_device *xdev,
 	*out_pose = pose;
 }
 
-struct display_info
-{
-	float w_meters;
-	float h_meters;
-	int w_pixels;
-	int h_pixels;
-};
-
-struct device_info
-{
-	struct display_info display;
-
-	float lens_horizontal_separation;
-	float lens_vertical_position;
-
-	float pano_distortion_k[4];
-	float pano_aberration_k[4];
-	float pano_warp_scale;
-
-	struct
-	{
-		float fov;
-
-		struct display_info display;
-
-		float lens_center_x_meters;
-		float lens_center_y_meters;
-	} views[2];
-};
-
 static void
 survive_hmd_update_inputs(struct xrt_device *xdev)
 {}
-
 static void
 _queue_event(struct survive_system *sys,
              SurviveSimpleObject *obj,
