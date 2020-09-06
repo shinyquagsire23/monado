@@ -67,10 +67,14 @@ enum xrt_fs_capture_type
  */
 struct xrt_fs
 {
-	/*!
-	 * Name of the frame server source.
-	 */
+	//! Name of the frame server source, from the subsystem.
 	char name[512];
+	//! Frame server product identifier, matches the prober device.
+	char product[32];
+	//! Frame server manufacturer, matches the prober device.
+	char manufacturer[32];
+	//! Frame server serial number, matches the prober device.
+	char serial[32];
 
 	/*!
 	 * All frames produced by this frameserver are tagged with this id.
