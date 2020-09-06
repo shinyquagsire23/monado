@@ -740,7 +740,11 @@ v4l2_fs_node_destroy(struct xrt_frame_node *node)
 }
 
 struct xrt_fs *
-v4l2_fs_create(struct xrt_frame_context *xfctx, const char *path)
+v4l2_fs_create(struct xrt_frame_context *xfctx,
+               const char *path,
+               const char *product,
+               const char *manufacturer,
+               const char *serial)
 {
 	struct v4l2_fs *vid = U_TYPED_CALLOC(struct v4l2_fs);
 	vid->base.enumerate_modes = v4l2_fs_enumerate_modes;
@@ -752,6 +756,10 @@ v4l2_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	vid->node.destroy = v4l2_fs_node_destroy;
 	vid->ll = debug_get_log_option_v4l2_log();
 	vid->fd = -1;
+
+	snprintf(vid->base.product, sizeof(vid->base.product), "%s", product);
+	snprintf(vid->base.manufacturer, sizeof(vid->base.manufacturer), "%s", manufacturer);
+	snprintf(vid->base.serial, sizeof(vid->base.serial), "%s", serial);
 
 	int fd = open(path, O_RDWR, 0);
 	if (fd < 0) {

@@ -758,7 +758,8 @@ open_video_device(struct xrt_prober *xp,
 		return -1;
 	}
 
-	struct xrt_fs *xfs = v4l2_fs_create(xfctx, pdev->v4ls[0].path);
+	struct xrt_fs *xfs =
+	    v4l2_fs_create(xfctx, pdev->v4ls[0].path, pdev->usb.product, pdev->usb.manufacturer, pdev->usb.serial);
 	if (xfs == NULL) {
 		return -1;
 	}

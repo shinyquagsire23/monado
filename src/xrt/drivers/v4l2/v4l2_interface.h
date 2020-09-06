@@ -58,13 +58,19 @@ struct v4l2_source_descriptor
 	uint32_t rate;
 };
 
+
+
 /*!
  * Create a v4l2 frameserver
  *
  * @ingroup drv_v4l2
  */
 struct xrt_fs *
-v4l2_fs_create(struct xrt_frame_context *xfctx, const char *path);
+v4l2_fs_create(struct xrt_frame_context *xfctx,
+               const char *path,
+               const char *product,
+               const char *manufacturer,
+               const char *serial);
 
 
 #ifdef __cplusplus
