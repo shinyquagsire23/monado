@@ -34,6 +34,8 @@
  */
 
 /*!
+ * A example HMD device.
+ *
  * @implements xrt_device
  */
 struct dummy_hmd
@@ -101,7 +103,7 @@ dummy_hmd_destroy(struct xrt_device *xdev)
 static void
 dummy_hmd_update_inputs(struct xrt_device *xdev)
 {
-	// Empty
+	// Empty, you should put code to update the attached inputs fields.
 }
 
 static void
