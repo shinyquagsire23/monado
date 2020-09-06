@@ -207,7 +207,7 @@ do_connect(struct ipc_connection *ipc_c)
 
 
 	/*
-	 * Conenct.
+	 * Connenct.
 	 */
 
 	ipc_c->imc.socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
