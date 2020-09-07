@@ -68,6 +68,9 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	struct oxr_instance *inst = (struct oxr_instance *)hb;
 
+	// Does a null-ptr check.
+	xrt_comp_destroy((struct xrt_compositor **)&inst->system.xcn);
+
 	u_var_remove_root((void *)inst);
 
 	oxr_binding_destroy_all(log, inst);
