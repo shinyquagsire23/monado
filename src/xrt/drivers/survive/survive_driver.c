@@ -240,24 +240,27 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 		out_relation->relation_flags |=
 		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
-	}
 
-	if (math_vec3_validate(&out_relation->pose.position)) {
-		out_relation->relation_flags |=
-		    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
-	}
+		// everything else is invalid if orientation is not valid
 
-	out_relation->linear_velocity = linear_vel;
-	if (math_vec3_validate(&out_relation->linear_velocity)) {
-		out_relation->relation_flags |=
-		    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT;
-	}
+		if (math_vec3_validate(&out_relation->pose.position)) {
+			out_relation->relation_flags |=
+			    XRT_SPACE_RELATION_POSITION_VALID_BIT |
+			    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
+		}
 
-	out_relation->angular_velocity = angular_vel;
-	if (math_vec3_validate(&out_relation->angular_velocity)) {
-		out_relation->relation_flags |=
-		    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT;
+
+		out_relation->linear_velocity = linear_vel;
+		if (math_vec3_validate(&out_relation->linear_velocity)) {
+			out_relation->relation_flags |=
+			    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT;
+		}
+
+		out_relation->angular_velocity = angular_vel;
+		if (math_vec3_validate(&out_relation->angular_velocity)) {
+			out_relation->relation_flags |=
+			    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT;
+		}
 	}
 }
 
