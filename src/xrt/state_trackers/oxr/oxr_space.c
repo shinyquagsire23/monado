@@ -129,11 +129,12 @@ get_ref_space_type_short_str(struct oxr_space *spc)
 }
 
 static bool
-ensure_initial_head_relation(struct oxr_session *sess,
+ensure_initial_head_relation(struct oxr_logger *log,
+                             struct oxr_session *sess,
                              struct xrt_space_relation *head_relation)
 {
-	if (!(head_relation->relation_flags &
-	      XRT_SPACE_RELATION_ORIENTATION_VALID_BIT)) {
+	if ((head_relation->relation_flags &
+	     XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) == 0) {
 		return false;
 	}
 
@@ -147,7 +148,7 @@ ensure_initial_head_relation(struct oxr_session *sess,
 		math_quat_normalize(
 		    &sess->initial_head_relation.pose.orientation);
 
-		//! @todo: Handle relation velocities
+		//! @todo: Handle relation velocities if necessary
 	}
 	return true;
 }
@@ -193,7 +194,7 @@ oxr_space_ref_relation(struct oxr_logger *log,
 	} else if (space == XR_REFERENCE_SPACE_TYPE_VIEW) {
 		oxr_session_get_view_relation_at(log, sess, time, out_relation);
 
-		if (!ensure_initial_head_relation(sess, out_relation)) {
+		if (!ensure_initial_head_relation(log, sess, out_relation)) {
 			out_relation->relation_flags =
 			    XRT_SPACE_RELATION_BITMASK_NONE;
 			return XR_SUCCESS;
@@ -216,7 +217,7 @@ oxr_space_ref_relation(struct oxr_logger *log,
 	} else if (baseSpc == XR_REFERENCE_SPACE_TYPE_VIEW) {
 		oxr_session_get_view_relation_at(log, sess, time, out_relation);
 
-		if (!ensure_initial_head_relation(sess, out_relation)) {
+		if (!ensure_initial_head_relation(log, sess, out_relation)) {
 			out_relation->relation_flags =
 			    XRT_SPACE_RELATION_BITMASK_NONE;
 			return XR_SUCCESS;
@@ -264,12 +265,6 @@ oxr_space_ref_relation(struct oxr_logger *log,
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return XR_SUCCESS;
 	}
-
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
 	return XR_SUCCESS;
 }

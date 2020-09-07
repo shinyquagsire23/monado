@@ -371,6 +371,24 @@ print_view_pose(struct oxr_session *sess,
 	        pose->position.y, pose->position.z);
 }
 
+static inline XrViewStateFlags
+xrt_to_view_state_flags(enum xrt_space_relation_flags flags)
+{
+	XrViewStateFlags res = 0;
+	if (flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) {
+		res |= XR_VIEW_STATE_ORIENTATION_VALID_BIT;
+	}
+	if (flags & XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) {
+		res |= XR_VIEW_STATE_ORIENTATION_TRACKED_BIT;
+	}
+	if (flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) {
+		res |= XR_VIEW_STATE_POSITION_VALID_BIT;
+	}
+	if (flags & XRT_SPACE_RELATION_POSITION_TRACKED_BIT) {
+		res |= XR_VIEW_STATE_POSITION_TRACKED_BIT;
+	}
+	return res;
+}
 
 XrResult
 oxr_session_views(struct oxr_logger *log,
@@ -421,6 +439,8 @@ oxr_session_views(struct oxr_logger *log,
 	// @todo the fov information that we get from xdev->hmd->views[i].fov is
 	//       not properly filled out in oh_device.c, fix before wasting time
 	//       on debugging weird rendering when adding stuff here.
+
+	viewState->viewStateFlags = 0;
 
 	for (uint32_t i = 0; i < num_views; i++) {
 		//! @todo Do not hardcode IPD.
@@ -473,12 +493,15 @@ oxr_session_views(struct oxr_logger *log,
 
 		print_view_fov(sess, i, (struct xrt_fov *)&views[i].fov);
 		print_view_pose(sess, i, (struct xrt_pose *)&views[i].pose);
-	}
 
-	// @todo Add tracking bit once we have them.
-	viewState->viewStateFlags = 0;
-	viewState->viewStateFlags |= XR_VIEW_STATE_POSITION_VALID_BIT;
-	viewState->viewStateFlags |= XR_VIEW_STATE_ORIENTATION_VALID_BIT;
+		if (i == 0) {
+			viewState->viewStateFlags = xrt_to_view_state_flags(
+			    pure_relation.relation_flags);
+		} else {
+			viewState->viewStateFlags &= xrt_to_view_state_flags(
+			    pure_relation.relation_flags);
+		}
+	}
 
 	return oxr_session_success_result(sess);
 }
