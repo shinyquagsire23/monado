@@ -96,7 +96,7 @@ struct ns_leap
  *
  * @ingroup drv_ns
  */
-struct ns_eye
+struct ns_v1_eye
 {
 	float ellipse_minor_axis;
 	float ellipse_major_axis;
@@ -114,27 +114,42 @@ struct ns_eye
 	struct ns_optical_system *optical_system;
 };
 
+struct ns_v2_eye
+{
+	float x_coefficients[16];
+	float y_coefficients[16];
+	struct xrt_pose eye_pose;
+	struct xrt_fov fov;
+};
+
 /*!
  * Information about the whole North Star headset.
  *
  * @ingroup drv_ns
  * @implements xrt_device
  */
+
 struct ns_hmd
 {
+
 	struct xrt_device base;
 	struct xrt_pose pose;
 
 	const char *config_path;
 
-	struct ns_eye eye_configs[2];
-	struct ns_leap leap_config;
+	struct ns_v1_eye eye_configs_v1[2]; // will be NULL if is_v2.
+	struct ns_v2_eye eye_configs_v2[2]; // will be NULL if !is_v2
+
+	struct ns_leap leap_config; // will be NULL if is_v2
 
 	struct xrt_device *tracker;
 
 	bool print_spew;
 	bool print_debug;
+	bool is_v2; // True if V2, false if V1. If we ever get a v3 this should
+	            // be an enum or something
 };
+
 
 /*!
  * The mesh generator for the North Star distortion.
@@ -185,10 +200,10 @@ ns_mesh(struct u_uv_generator *gen)
 void
 ns_display_uv_to_render_uv(struct ns_uv in,
                            struct ns_uv *out,
-                           struct ns_eye *eye);
+                           struct ns_v1_eye *eye);
 
 struct ns_optical_system *
-ns_create_optical_system(struct ns_eye *eye);
+ns_create_optical_system(struct ns_v1_eye *eye);
 
 
 #ifdef __cplusplus
