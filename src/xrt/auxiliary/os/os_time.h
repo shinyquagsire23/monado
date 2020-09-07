@@ -64,8 +64,9 @@ os_nanosleep(long nsec)
 {
 #ifdef XRT_OS_LINUX
 	struct timespec spec;
-	spec.tv_sec = 0;
-	spec.tv_nsec = nsec, nanosleep(&spec, NULL);
+	spec.tv_sec = (nsec / (1000 * 1000 * 1000));
+	spec.tv_nsec = (nsec % (1000 * 1000 * 1000));
+	nanosleep(&spec, NULL);
 #endif
 }
 
