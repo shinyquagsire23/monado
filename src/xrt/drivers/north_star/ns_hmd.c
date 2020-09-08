@@ -424,10 +424,10 @@ ns_config_load(struct ns_hmd *ns)
 			ns->eye_configs_v2[0].fov.angle_up = 0.6;
 			ns->eye_configs_v2[0].fov.angle_down = -0.6;
 
-			ns->eye_configs_v2[0].fov.angle_left = -0.6;
-			ns->eye_configs_v2[0].fov.angle_right = 0.6;
-			ns->eye_configs_v2[0].fov.angle_up = 0.6;
-			ns->eye_configs_v2[0].fov.angle_down = -0.6;
+			ns->eye_configs_v2[1].fov.angle_left = -0.6;
+			ns->eye_configs_v2[1].fov.angle_right = 0.6;
+			ns->eye_configs_v2[1].fov.angle_up = 0.6;
+			ns->eye_configs_v2[1].fov.angle_down = -0.6;
 
 
 
