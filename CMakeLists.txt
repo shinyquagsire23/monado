@@ -178,6 +178,17 @@ cmake_dependent_option(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" OFF "
 # All drivers must be listed in here to be included in the generated header!
 list(APPEND AVAILABLE_DRIVERS ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM REMOTE SURVIVE)
 
+
+# Package name needs to be known by the native code itself.
+# Can be overridden from outside/command line
+if(ANDROID AND NOT XRT_ANDROID_PACKAGE)
+	if(XRT_FEATURE_SERVICE)
+		set(XRT_ANDROID_PACKAGE "org.freedesktop.monado.openxr_runtime.out_of_process")
+	else()
+		set(XRT_ANDROID_PACKAGE "org.freedesktop.monado.openxr_runtime.in_process")
+	endif()
+endif()
+
 ###
 # Flags
 ###

@@ -30,3 +30,9 @@ configure_file(
 	${CMAKE_CURRENT_BINARY_DIR}/xrt_config_vulkan.h
 	@ONLY
 	)
+
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/xrt_config_android.h.cmake_in
+	${CMAKE_CURRENT_BINARY_DIR}/xrt_config_android.h
+	@ONLY
+	)
