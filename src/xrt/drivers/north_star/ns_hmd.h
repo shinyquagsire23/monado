@@ -117,6 +117,7 @@ struct ns_hmd
 
 	struct ns_v1_eye eye_configs_v1[2]; // will be NULL if is_v2.
 	struct ns_v2_eye eye_configs_v2[2]; // will be NULL if !is_v2
+	float ipd;
 
 	struct ns_leap leap_config; // will be NULL if is_v2
 

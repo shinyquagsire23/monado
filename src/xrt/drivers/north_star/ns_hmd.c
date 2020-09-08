@@ -241,10 +241,13 @@ ns_v2_hmd_get_view_pose(struct xrt_device *xdev,
                         struct xrt_pose *out_pose)
 {
 	// Copied from dummy driver
+
+	struct ns_hmd *ns = ns_hmd(xdev);
+
 	struct xrt_pose pose = {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}};
 	bool adjust = view_index == 0;
 
-	pose.position.x = eye_relation->x / 2.0f;
+	pose.position.x = ns->ipd / 2.0f;
 	pose.position.y = eye_relation->y / 2.0f;
 	pose.position.z = eye_relation->z / 2.0f;
 
@@ -385,7 +388,10 @@ ns_config_load(struct ns_hmd *ns)
 		// enough for public consumption - many cases where a malformed
 		// config json results in cryptic errors. Should get fixed
 		// whenever we have more than 5 people using this.
-
+		u_json_get_float(
+		    cJSON_GetObjectItemCaseSensitive(config_json, "baseline"),
+		    &ns->ipd);
+		ns->ipd = ns->ipd / 1000.0f; // converts from mm to m
 		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(
 		                           config_json, "left_uv_to_rect_x"),
 		                       ns->eye_configs_v2[0].y_coefficients,
@@ -532,7 +538,10 @@ ns_hmd_create(const char *config_path)
 	if (!ns_config_load(ns))
 		goto cleanup;
 
-	if (ns->is_v2) { // ns_config_load() sets ns->is_v2
+	// ns_config_load() sets ns->is_v2.
+	// to change how we switch between v1 and v2,
+	// you'll need to start in ns_config_load()
+	if (ns->is_v2) {
 		ns->base.get_view_pose = ns_v2_hmd_get_view_pose;
 		ns_v2_fov_calculate(ns, 0);
 		ns_v2_fov_calculate(ns, 1);
@@ -548,7 +557,6 @@ ns_hmd_create(const char *config_path)
 		ns->base.hmd->distortion.preferred =
 		    XRT_DISTORTION_MODEL_COMPUTE;
 		ns->base.compute_distortion = ns_v2_mesh_calc;
-
 	} else {
 		// V1
 		ns->base.get_view_pose = ns_hmd_get_view_pose;
