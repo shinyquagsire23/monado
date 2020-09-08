@@ -174,13 +174,8 @@ survive_device_destroy(struct xrt_device *xdev)
 static void
 _get_survive_pose(const SurviveSimpleObject *survive_object,
                   SurviveSimpleContext *ctx,
-                  uint64_t *out_relation_timestamp_ns,
                   struct xrt_space_relation *out_relation)
 {
-	int64_t now = os_monotonic_get_ns();
-	//! @todo adjust for latency here
-	*out_relation_timestamp_ns = now;
-
 	out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 
 	if (survive_simple_object_get_type(survive_object) !=
@@ -312,7 +307,6 @@ static void
 survive_device_get_tracked_pose(struct xrt_device *xdev,
                                 enum xrt_input_name name,
                                 uint64_t at_timestamp_ns,
-                                uint64_t *out_relation_timestamp_ns,
                                 struct xrt_space_relation *out_relation)
 {
 	struct survive_device *survive = (struct survive_device *)xdev;
@@ -336,8 +330,7 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 	}
 
 
-	_get_survive_pose(survive->survive_obj, survive->sys->ctx,
-	                  out_relation_timestamp_ns, out_relation);
+	_get_survive_pose(survive->survive_obj, survive->sys->ctx, out_relation);
 
 	/*
 	SURVIVE_SPEW(
