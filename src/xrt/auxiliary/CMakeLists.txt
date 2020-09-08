@@ -6,6 +6,8 @@ set(ANDROID_SOURCE_FILES
 	android/android_ahardwarebuffer_allocator.h
 	android/android_globals.c
 	android/android_globals.h
+	android/android_load_class.cpp
+	android/android_load_class.h
 	)
 
 set(MATH_SOURCE_FILES
@@ -240,6 +242,10 @@ if(ANDROID)
 	add_library(aux_android STATIC ${ANDROID_SOURCE_FILES})
 	target_link_libraries(aux_android
 		PUBLIC aux_util
-		PRIVATE ${ANDROID_LIBRARY}
+		PRIVATE ${ANDROID_LIBRARY} ${ANDROID_LOG_LIBRARY} xrt-external-jni-wrap xrt-external-jnipp
 		)
+	set_target_properties(aux_android
+		PROPERTIES
+		CXX_STANDARD 17
+		CXX_STANDARD_REQUIRED ON)
 endif()
