@@ -346,6 +346,18 @@ math_matrix_4x4_model(const struct xrt_pose *pose,
                       const struct xrt_vec3 *size,
                       struct xrt_matrix_4x4 *result);
 
+/*!
+ * Compute inverse view projection matrix,
+ * using only the starting 3x3 block of the view.
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_inverse_view_projection(const struct xrt_matrix_4x4 *view,
+                                        const struct xrt_matrix_4x4 *projection,
+                                        struct xrt_matrix_4x4 *result);
+
 /*
  *
  * Pose functions.

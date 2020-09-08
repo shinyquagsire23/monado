@@ -350,6 +350,18 @@ math_matrix_4x4_model(const struct xrt_pose *pose,
 	map_matrix_4x4(*result) = transformation.matrix();
 }
 
+void
+math_matrix_4x4_inverse_view_projection(const struct xrt_matrix_4x4 *view,
+                                        const struct xrt_matrix_4x4 *projection,
+                                        struct xrt_matrix_4x4 *result)
+{
+	Eigen::Matrix4f v = copy(view);
+	Eigen::Matrix4f v3 = Eigen::Matrix4f::Identity();
+	v3.block<3, 3>(0, 0) = v.block<3, 3>(0, 0);
+	Eigen::Matrix4f vp = copy(projection) * v3;
+	map_matrix_4x4(*result) = vp.inverse();
+}
+
 /*
  *
  * Exported pose functions.
