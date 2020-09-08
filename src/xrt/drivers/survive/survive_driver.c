@@ -368,14 +368,6 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 	_get_survive_pose(survive->survive_obj, survive->sys->ctx,
 	                  out_relation);
 
-	if (out_relation->pose.orientation.x == 0 &&
-	    out_relation->pose.orientation.y == 0 &&
-	    out_relation->pose.orientation.z == 0 &&
-	    out_relation->pose.orientation.w == 0) {
-		out_relation->pose.orientation.w = 1;
-	}
-
-
 	struct xrt_pose *p = &out_relation->pose;
 	SURVIVE_SPEW(survive->sys,
 	             "GET_POSITION (%f %f %f) GET_ORIENTATION (%f, %f, %f, %f)",
