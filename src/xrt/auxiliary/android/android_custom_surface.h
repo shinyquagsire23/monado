@@ -1,0 +1,82 @@
+// Copyright 2020, Collabora, Ltd.
+// SPDX-License-Identifier: BSL-1.0
+/*!
+ * @file
+ * @brief  Function for adding a new Surface to an activity.
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @ingroup aux_android
+ */
+
+#pragma once
+
+#include <xrt/xrt_config_os.h>
+
+#ifdef XRT_OS_ANDROID
+
+#include <android/native_window.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct _JNIEnv;
+struct _JavaVM;
+
+/*!
+ * Opaque type representing a custom surface added to an activity, and the async
+ * operation to perform this adding.
+ */
+struct android_custom_surface;
+
+/*!
+ * Start adding a custom surface to an activity.
+ *
+ * This is an asynchronous operation, so this creates an opaque pointer for you
+ * to check on the results and maintain a reference to the result.
+ *
+ * Uses org.freedesktop.monado.auxiliary.MonadoView
+ *
+ * @param vm Java VM pointer
+ * @param activity An android.app.Activity jobject, cast to
+ * `void *`.
+ *
+ * @return An opaque handle for monitoring this operation and referencing the
+ * surface, or NULL if there was an error.
+ *
+ * @public @memberof android_custom_surface
+ */
+struct android_custom_surface *
+android_custom_surface_async_start(struct _JavaVM *vm, void *activity);
+
+/*!
+ * Destroy the native handle for the custom surface and the async operation to
+ * add it.
+ *
+ * Depending on the state, this may not necessarily destroy the underlying
+ * surface, if other references exist.
+ *
+ * @param ptr_custom_surface Pointer to the opaque pointer: will be set to NULL.
+ *
+ * @public @memberof android_custom_surface
+ */
+void
+android_custom_surface_destroy(
+    struct android_custom_surface **ptr_custom_surface);
+
+/*!
+ * Get the ANativeWindow pointer corresponding to the added Surface, if
+ * available.
+ *
+ * This may return NULL because the underlying operation is asynchronous.
+ *
+ * @public @memberof android_custom_surface
+ */
+ANativeWindow *
+android_custom_surface_get_surface(
+    struct android_custom_surface *custom_surface);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // XRT_OS_ANDROID
