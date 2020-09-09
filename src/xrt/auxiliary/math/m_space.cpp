@@ -232,7 +232,7 @@ apply_relation(const struct xrt_space_relation *a,
 	if (af.has_tracked_position || bf.has_tracked_position) {
 		new_flags |= XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
 	}
-	if (af.has_tracked_position || bf.has_tracked_position) {
+	if (af.has_tracked_orientation || bf.has_tracked_orientation) {
 		new_flags |= XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
 	}
 	if (nf.has_linear_velocity) {
