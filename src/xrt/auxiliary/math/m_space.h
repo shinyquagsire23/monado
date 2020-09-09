@@ -116,10 +116,6 @@ m_space_graph_add_relation(struct xrt_space_graph *xsg,
 		return;
 	}
 
-	if (relation->relation_flags == 0) {
-		return;
-	}
-
 	xsg->steps[xsg->num_steps++] = *relation;
 }
 
