@@ -495,11 +495,11 @@ oxr_session_views(struct oxr_logger *log,
 		print_view_pose(sess, i, (struct xrt_pose *)&views[i].pose);
 
 		if (i == 0) {
-			viewState->viewStateFlags = xrt_to_view_state_flags(
-			    pure_relation.relation_flags);
+			viewState->viewStateFlags =
+			    xrt_to_view_state_flags(result.relation_flags);
 		} else {
-			viewState->viewStateFlags &= xrt_to_view_state_flags(
-			    pure_relation.relation_flags);
+			viewState->viewStateFlags &=
+			    xrt_to_view_state_flags(result.relation_flags);
 		}
 	}
 
