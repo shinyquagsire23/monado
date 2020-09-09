@@ -457,7 +457,9 @@ oxr_session_views(struct oxr_logger *log,
 		views[i].fov = safe_copy_fov.oxr;
 
 		struct xrt_pose *pose = (struct xrt_pose *)&views[i].pose;
-		if (!math_quat_ensure_normalized(&pose->orientation)) {
+		if ((result.relation_flags &
+		     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0 &&
+		    !math_quat_ensure_normalized(&pose->orientation)) {
 			struct xrt_quat *q = &pose->orientation;
 			struct xrt_quat norm = *q;
 			math_quat_normalize(&norm);
