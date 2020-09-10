@@ -15,8 +15,9 @@ set(GUI_SOURCE_FILES
 	gui_scene_main_menu.c
 	gui_scene_video.c
 	../../../external/imgui/imgui/cimgui.cpp
-	../../../external/imgui/imgui_monado/imgui_monado.cpp
 	../../../external/imgui/imgui/cimgui.h
+	../../../external/imgui/imgui/cimplot.cpp
+	../../../external/imgui/imgui/cimplot.h
 	../../../external/imgui/imgui/imconfig.h
 	../../../external/imgui/imgui/imgui.cpp
 	../../../external/imgui/imgui/imgui.h
@@ -26,9 +27,14 @@ set(GUI_SOURCE_FILES
 	../../../external/imgui/imgui/imgui_impl_opengl3.h
 	../../../external/imgui/imgui/imgui_internal.h
 	../../../external/imgui/imgui/imgui_widgets.cpp
+	../../../external/imgui/imgui/implot.cpp
+	../../../external/imgui/imgui/implot.h
+	../../../external/imgui/imgui/implot_internal.h
+	../../../external/imgui/imgui/implot_items.cpp
 	../../../external/imgui/imgui/imstb_rectpack.h
 	../../../external/imgui/imgui/imstb_textedit.h
 	../../../external/imgui/imgui/imstb_truetype.h
+	../../../external/imgui/imgui_monado/imgui_monado.cpp
 	)
 
 add_library(st_gui STATIC
