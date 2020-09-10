@@ -8,6 +8,9 @@
  */
 
 #include "xrt/xrt_config_have.h"
+
+#include "os/os_time.h"
+
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_sink.h"
@@ -23,6 +26,7 @@
 #include "xrt/xrt_frameserver.h"
 
 #include "math/m_api.h"
+#include "math/m_filter_fifo.h"
 
 #include "gui_common.h"
 #include "gui_imgui.h"
@@ -97,6 +101,76 @@ struct draw_state
 	struct gui_program *p;
 	bool hidden;
 };
+
+struct plot_state
+{
+	struct m_ff_vec3_f32 *ff;
+	uint64_t now;
+};
+
+#define PLOT_HELPER(elm)                                                       \
+	ImPlotPoint plot_##elm(void *ptr, int index)                           \
+	{                                                                      \
+		struct plot_state *state = (struct plot_state *)ptr;           \
+		struct xrt_vec3 value;                                         \
+		uint64_t timestamp;                                            \
+		m_ff_vec3_f32_get(state->ff, index, &value, &timestamp);       \
+		ImPlotPoint point = {time_ns_to_s(state->now - timestamp),     \
+		                     value.elm};                               \
+		return point;                                                  \
+	}
+
+PLOT_HELPER(x)
+PLOT_HELPER(y)
+PLOT_HELPER(z)
+
+static void
+on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
+{
+	char tmp[512];
+	const char *name = info->name;
+	struct m_ff_vec3_f32 *ff = (struct m_ff_vec3_f32 *)info->ptr;
+
+
+	struct xrt_vec3 value = {0};
+	uint64_t timestamp;
+
+	m_ff_vec3_f32_get(ff, 0, &value, &timestamp);
+
+	snprintf(tmp, sizeof(tmp), "%s.toggle", name);
+	igToggleButton(tmp, &info->gui.graphed);
+	igSameLine(0, 0);
+	igInputFloat3(name, &value.x, "%+f", ImGuiInputTextFlags_ReadOnly);
+
+	if (!info->gui.graphed) {
+		return;
+	}
+
+
+	/*
+	 * Showing the plot
+	 */
+
+	struct plot_state state = {ff, os_monotonic_get_ns()};
+	ImPlotFlags flags = 0;
+	ImPlotAxisFlags x_flags = 0;
+	ImPlotAxisFlags y_flags = 0;
+	ImPlotAxisFlags y2_flags = 0;
+	ImPlotAxisFlags y3_flags = 0;
+
+	ImVec2 size = {1024, 256};
+	bool shown = ImPlot_BeginPlot(name, "time", "value", size, flags,
+	                              x_flags, y_flags, y2_flags, y3_flags);
+	if (!shown) {
+		return;
+	}
+
+	ImPlot_PlotLineG("x", plot_x, &state, 1000, 0);
+	ImPlot_PlotLineG("y", plot_y, &state, 1000, 0);
+	ImPlot_PlotLineG("z", plot_z, &state, 1000, 0);
+
+	ImPlot_EndPlot();
+}
 
 static void
 on_sink_var(const char *name, void *ptr, struct gui_program *p)
@@ -295,6 +369,7 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_RO_QUAT_F32:
 		igInputFloat4(name, (float *)ptr, "%+f", ro_i_flags);
 		break;
+	case U_VAR_KIND_RO_FF_VEC3_F32: on_ff_vec3_var(info, state->p); break;
 	case U_VAR_KIND_GUI_HEADER: {
 		state->hidden = !igCollapsingHeaderBoolPtr(name, NULL, 0);
 		break;
