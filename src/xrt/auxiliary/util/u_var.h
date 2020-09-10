@@ -20,6 +20,8 @@ extern "C" {
 
 
 struct xrt_frame_sink;
+struct m_ff_f64;
+struct m_ff_vec3_f32;
 
 /*!
  * @ingroup aux_util
@@ -82,6 +84,8 @@ enum u_var_kind
 	U_VAR_KIND_RO_VEC3_I32,
 	U_VAR_KIND_RO_VEC3_F32,
 	U_VAR_KIND_RO_QUAT_F32,
+	U_VAR_KIND_RO_FF_F64,
+	U_VAR_KIND_RO_FF_VEC3_F32,
 	U_VAR_KIND_GUI_HEADER,
 };
 
@@ -168,6 +172,8 @@ u_var_force_on(void);
 	ADD_FUNC(ro_vec3_i32, struct xrt_vec3_i32, RO_VEC3_I32)                \
 	ADD_FUNC(ro_vec3_f32, struct xrt_vec3, RO_VEC3_F32)                    \
 	ADD_FUNC(ro_quat_f32, struct xrt_quat, RO_QUAT_F32)                    \
+	ADD_FUNC(ro_ff_f64, struct m_ff_f64, RO_FF_F64)                        \
+	ADD_FUNC(ro_ff_vec3_f32, struct m_ff_vec3_f32, RO_FF_VEC3_F32)         \
 	ADD_FUNC(gui_header, bool, GUI_HEADER)
 
 #define ADD_FUNC(SUFFIX, TYPE, ENUM)                                           \
