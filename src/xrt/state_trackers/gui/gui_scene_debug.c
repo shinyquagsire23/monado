@@ -112,7 +112,7 @@ on_sink_var(const char *name, void *ptr, struct gui_program *p)
 			continue;
 		}
 
-		if (!igCollapsingHeader(name, 0)) {
+		if (!igCollapsingHeaderBoolPtr(name, NULL, 0)) {
 			continue;
 		}
 
@@ -211,8 +211,9 @@ on_elem(struct u_var_info *info, void *priv)
 		float stats_min = FLT_MAX;
 		float stats_max = FLT_MAX;
 
-		igPlotLinesFnPtr(name, get_float_arr_val, arr, length, index,
-		                 NULL, stats_min, stats_max, graph_size);
+		igPlotLinesFnFloatPtr(name, get_float_arr_val, arr, length,
+		                      index, NULL, stats_min, stats_max,
+		                      graph_size);
 		break;
 	}
 	case U_VAR_KIND_TIMING: {
@@ -294,9 +295,10 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_RO_QUAT_F32:
 		igInputFloat4(name, (float *)ptr, "%+f", ro_i_flags);
 		break;
-	case U_VAR_KIND_GUI_HEADER:
-		state->hidden = !igCollapsingHeader(name, 0);
+	case U_VAR_KIND_GUI_HEADER: {
+		state->hidden = !igCollapsingHeaderBoolPtr(name, NULL, 0);
 		break;
+	}
 	case U_VAR_KIND_SINK: on_sink_var(name, ptr, state->p); break;
 	default: igLabelText(name, "Unknown tag '%i'", kind); break;
 	}

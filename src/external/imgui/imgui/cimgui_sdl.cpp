@@ -1,8 +1,6 @@
 #include "imgui.h"
-#include "cimgui.h"
-
 #include "imgui_internal.h"
-
+#include "cimgui.h"
 #include "imgui_impl_sdl.h"
 
 

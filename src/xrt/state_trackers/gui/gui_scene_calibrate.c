@@ -163,7 +163,7 @@ draw_texture(struct gui_ogl_texture *tex, bool header)
 	}
 
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
-	if (header && !igCollapsingHeader(tex->name, flags)) {
+	if (header && !igCollapsingHeaderBoolPtr(tex->name, NULL, flags)) {
 		return;
 	}
 
