@@ -11,3 +11,5 @@
 
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "imgui/cimgui.h"
+#include "imgui/cimplot.h"
+#include "imgui_monado/cimgui_monado.h"
