@@ -48,6 +48,10 @@ void
 m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix)
 {
 	char tmp[512];
+	snprintf(tmp, sizeof(tmp), "%sff.world_accel", prefix);
+	u_var_add_ro_ff_vec3_f32(root, f->word_accel_ff, tmp);
+	snprintf(tmp, sizeof(tmp), "%sff.gyro", prefix);
+	u_var_add_ro_ff_vec3_f32(root, f->gyro_ff, tmp);
 
 	snprintf(tmp, sizeof(tmp), "%slast.timestamp_ns", prefix);
 	u_var_add_ro_u64(root, &f->last.timestamp_ns, tmp);
