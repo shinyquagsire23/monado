@@ -20,6 +20,8 @@ void igPlotTimings(const char *label,
                    bool center_reference_timing, float range, const char *unit,
                    bool dynamic_rescale);
 
+void igToggleButton(const char *str_id, bool *v);
+
 #ifdef __cplusplus
 }
 #endif
