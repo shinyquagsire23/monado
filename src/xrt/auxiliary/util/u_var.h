@@ -90,6 +90,23 @@ enum u_var_kind
 };
 
 /*!
+ * Struct that keeps all of the information about the variable, some of the UI
+ * state is kept on it.
+ */
+struct u_var_info
+{
+	char name[256];
+	void *ptr;
+
+	enum u_var_kind kind;
+
+	struct
+	{
+		bool graphed;
+	} gui;
+};
+
+/*!
  * Callback for entering and leaving root nodes.
  */
 typedef void (*u_var_root_cb)(const char *, void *);
@@ -97,7 +114,7 @@ typedef void (*u_var_root_cb)(const char *, void *);
 /*!
  * Callback on each variable a root node has.
  */
-typedef void (*u_var_elm_cb)(const char *, enum u_var_kind, void *, void *);
+typedef void (*u_var_elm_cb)(struct u_var_info *info, void *);
 
 /*!
  * Add a named root object, the u_var subsystem is completely none-invasive

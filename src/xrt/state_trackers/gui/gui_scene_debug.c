@@ -41,6 +41,7 @@ struct debug_scene
 	struct xrt_frame_context *xfctx;
 };
 
+
 /*
  *
  * Internal functions.
@@ -150,8 +151,12 @@ get_float_arr_val(void *_data, int _idx)
 }
 
 static void
-on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
+on_elem(struct u_var_info *info, void *priv)
 {
+	const char *name = info->name;
+	void *ptr = info->ptr;
+	enum u_var_kind kind = info->kind;
+
 	struct draw_state *state = (struct draw_state *)priv;
 	if (state->hidden && kind != U_VAR_KIND_GUI_HEADER) {
 		return;
@@ -174,12 +179,15 @@ on_elem(const char *name, enum u_var_kind kind, void *ptr, void *priv)
 		igSameLine(0.0f, 4.0f);
 		igText("%s", name);
 		break;
-	case U_VAR_KIND_RGB_U8:;
+	case U_VAR_KIND_RGB_U8: {
 		struct xrt_colour_rgb_f32 tmp;
 		conv_rgb_u8_to_f32((struct xrt_colour_rgb_u8 *)ptr, &tmp);
-		on_elem(name, U_VAR_KIND_RGB_F32, &tmp, priv);
+		igColorEdit3(name, (float *)&tmp, flags);
+		igSameLine(0.0f, 4.0f);
+		igText("%s", name);
 		conv_rgb_f32_to_u8(&tmp, (struct xrt_colour_rgb_u8 *)ptr);
 		break;
+	}
 	case U_VAR_KIND_U8:
 		igDragScalar(name, ImGuiDataType_U8, ptr, drag_speed, NULL,
 		             NULL, NULL, power);
@@ -338,8 +346,11 @@ on_root_enter_sink(const char *name, void *priv)
 {}
 
 static void
-on_elem_sink(const char *name, enum u_var_kind kind, void *ptr, void *priv)
+on_elem_sink(struct u_var_info *info, void *priv)
 {
+	const char *name = info->name;
+	void *ptr = info->ptr;
+	enum u_var_kind kind = info->kind;
 	struct gui_program *p = (struct gui_program *)priv;
 
 	if (kind != U_VAR_KIND_SINK) {

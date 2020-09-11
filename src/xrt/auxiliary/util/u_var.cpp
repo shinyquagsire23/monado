@@ -29,9 +29,7 @@
 class Var
 {
 public:
-	std::string name;
-	u_var_kind kind;
-	void *ptr;
+	struct u_var_info info = {};
 };
 
 class Obj
@@ -91,9 +89,9 @@ add_var(void *root, void *ptr, u_var_kind kind, const char *c_name)
 	}
 
 	Var var;
-	var.name = std::string(c_name);
-	var.kind = kind;
-	var.ptr = ptr;
+	snprintf(var.info.name, 256, "%s", c_name);
+	var.info.kind = kind;
+	var.info.ptr = ptr;
 
 	s->second.vars.push_back(var);
 }
@@ -169,8 +167,7 @@ u_var_visit(u_var_root_cb enter_cb,
 		enter_cb(obj->name.c_str(), priv);
 
 		for (auto &var : obj->vars) {
-			elem_cb(var.name.c_str(), (u_var_kind)var.kind, var.ptr,
-			        priv);
+			elem_cb(&var.info, priv);
 		}
 
 		exit_cb(obj->name.c_str(), priv);
