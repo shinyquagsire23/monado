@@ -704,7 +704,7 @@ bool
 initial_head_relation_valid(struct oxr_session *sess);
 
 bool
-global_to_local_space(struct oxr_session *sess, struct xrt_pose *pose);
+global_to_local_space(struct oxr_session *sess, struct xrt_space_relation *rel);
 
 /*
  *

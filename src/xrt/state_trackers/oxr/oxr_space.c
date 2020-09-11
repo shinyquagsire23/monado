@@ -161,16 +161,18 @@ initial_head_relation_valid(struct oxr_session *sess)
 }
 
 bool
-global_to_local_space(struct oxr_session *sess, struct xrt_pose *pose)
+global_to_local_space(struct oxr_session *sess, struct xrt_space_relation *rel)
 {
 	if (!initial_head_relation_valid(sess)) {
 		return false;
 	}
 
-	struct xrt_pose inverse_initial_head_pose;
-	math_pose_invert(&sess->initial_head_relation.pose,
-	                 &inverse_initial_head_pose);
-	math_pose_transform(&inverse_initial_head_pose, pose, pose);
+	struct xrt_space_graph graph = {0};
+	m_space_graph_add_relation(&graph, rel);
+	m_space_graph_add_inverted_pose_if_not_identity(
+	    &graph, &sess->initial_head_relation.pose);
+	m_space_graph_resolve(&graph, rel);
+
 	return true;
 }
 
@@ -203,7 +205,7 @@ oxr_space_ref_relation(struct oxr_logger *log,
 		if (baseSpc == XR_REFERENCE_SPACE_TYPE_STAGE) {
 			// device poses are already in stage = "global" space
 		} else if (baseSpc == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-			global_to_local_space(sess, &out_relation->pose);
+			global_to_local_space(sess, out_relation);
 		} else if (baseSpc == XR_REFERENCE_SPACE_TYPE_VIEW) {
 
 		} else {
@@ -225,7 +227,7 @@ oxr_space_ref_relation(struct oxr_logger *log,
 		if (space == XR_REFERENCE_SPACE_TYPE_STAGE) {
 			// device poses are already in stage = "global" space
 		} else if (space == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-			global_to_local_space(sess, &out_relation->pose);
+			global_to_local_space(sess, out_relation);
 		} else if (space == XR_REFERENCE_SPACE_TYPE_VIEW) {
 
 		} else {
@@ -341,7 +343,7 @@ oxr_space_action_relation(struct oxr_logger *log,
 	                            input->input->name, at_time, out_relation);
 
 	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-		global_to_local_space(sess, &out_relation->pose);
+		global_to_local_space(sess, out_relation);
 	}
 
 	if (invert) {
