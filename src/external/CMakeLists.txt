@@ -49,3 +49,7 @@ endif()
 # OpenXR
 add_library(xrt-external-openxr INTERFACE)
 target_include_directories(xrt-external-openxr INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/openxr_includes)
+
+# STB
+add_library(xrt-external-stb INTERFACE)
+target_include_directories(xrt-external-stb INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/stb)
