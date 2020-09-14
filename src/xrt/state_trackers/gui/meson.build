@@ -13,6 +13,7 @@ gui_sources = [
 	'gui_scene_remote.c',
 	'gui_scene_video.c',
 	'gui_scene_tracking_overrides.c',
+	'gui_stb.c',
 	'../../../external/imgui/imgui/cimgui.cpp',
 	'../../../external/imgui/imgui/cimgui.h',
 	'../../../external/imgui/imgui/cimplot.cpp',
@@ -49,6 +50,7 @@ lib_st_gui = static_library(
 		glad_include,
 		cjson_include,
 		imgui_include,
+		stb_include,
 	],
 	dependencies: gui_deps,
 )

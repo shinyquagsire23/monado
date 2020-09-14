@@ -16,6 +16,7 @@ set(GUI_SOURCE_FILES
 	gui_scene_remote.c
 	gui_scene_video.c
 	gui_scene_tracking_overrides.c
+	gui_stb.c
 	../../../external/imgui/imgui/cimgui.cpp
 	../../../external/imgui/imgui/cimgui.h
 	../../../external/imgui/imgui/cimplot.cpp
@@ -46,6 +47,7 @@ add_library(st_gui STATIC
 
 target_link_libraries(st_gui PRIVATE
 	xrt-external-glad
+	xrt-external-stb
 	aux_util
 	aux_os
 	)
