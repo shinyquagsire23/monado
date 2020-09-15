@@ -14,6 +14,7 @@
 
 #include "util/u_threading.h"
 #include "util/u_index_fifo.h"
+#include "util/u_logging.h"
 
 #include "vk/vk_image_allocator.h"
 
@@ -298,27 +299,14 @@ void
 comp_swapchain_really_destroy(struct comp_swapchain *sc);
 
 /*!
- * Printer helper.
- *
- * @public @memberof comp_compositor
- */
-void
-comp_compositor_print(struct comp_compositor *c,
-                      const char *func,
-                      const char *fmt,
-                      ...) XRT_PRINTF_FORMAT(3, 4);
-
-/*!
  * Spew level logging.
  *
  * @relates comp_compositor
  */
 #define COMP_SPEW(c, ...)                                                      \
-	do {                                                                   \
-		if (c->settings.print_spew) {                                  \
-			comp_compositor_print(c, __func__, __VA_ARGS__);       \
-		}                                                              \
-	} while (false)
+	if (c->settings.print_spew) {                                          \
+		U_LOG_T(__VA_ARGS__);                                          \
+	}
 
 /*!
  * Debug level logging.
@@ -326,11 +314,9 @@ comp_compositor_print(struct comp_compositor *c,
  * @relates comp_compositor
  */
 #define COMP_DEBUG(c, ...)                                                     \
-	do {                                                                   \
-		if (c->settings.print_debug) {                                 \
-			comp_compositor_print(c, __func__, __VA_ARGS__);       \
-		}                                                              \
-	} while (false)
+	if (c->settings.print_debug) {                                         \
+		U_LOG_D(__VA_ARGS__);                                          \
+	}
 
 /*!
  * Mode printing.
@@ -338,21 +324,16 @@ comp_compositor_print(struct comp_compositor *c,
  * @relates comp_compositor
  */
 #define COMP_PRINT_MODE(c, ...)                                                \
-	do {                                                                   \
-		if (c->settings.print_modes) {                                 \
-			comp_compositor_print(c, __func__, __VA_ARGS__);       \
-		}                                                              \
-	} while (false)
+	if (c->settings.print_modes) {                                         \
+		U_LOG_I(__VA_ARGS__);                                          \
+	}
 
 /*!
  * Error level logging.
  *
  * @relates comp_compositor
  */
-#define COMP_ERROR(c, ...)                                                     \
-	do {                                                                   \
-		comp_compositor_print(c, __func__, __VA_ARGS__);               \
-	} while (false)
+#define COMP_ERROR(c, ...) U_LOG_E(__VA_ARGS__)
 
 
 #ifdef __cplusplus

@@ -790,22 +790,6 @@ compositor_init_vulkan(struct comp_compositor *c)
  *
  */
 
-void
-comp_compositor_print(struct comp_compositor *c,
-                      const char *func,
-                      const char *fmt,
-                      ...)
-{
-	fprintf(stderr, "%s - ", func);
-
-	va_list args;
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-
-	fprintf(stderr, "\n");
-}
-
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 static bool
 _match_wl_entry(const char *wl_entry, VkDisplayPropertiesKHR *disp)
