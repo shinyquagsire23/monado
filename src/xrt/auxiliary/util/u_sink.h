@@ -49,6 +49,15 @@ u_sink_create_to_r8g8b8_or_l8(struct xrt_frame_context *xfctx,
  * @relates xrt_frame_context
  */
 void
+u_sink_create_to_r8g8b8_bayer_or_l8(struct xrt_frame_context *xfctx,
+                                    struct xrt_frame_sink *downstream,
+                                    struct xrt_frame_sink **out_xfs);
+
+/*!
+ * @relatesalso xrt_frame_sink
+ * @relates xrt_frame_context
+ */
+void
 u_sink_create_to_yuv_yuyv_uyvy_or_l8(struct xrt_frame_context *xfctx,
                                      struct xrt_frame_sink *downstream,
                                      struct xrt_frame_sink **out_xfs);
