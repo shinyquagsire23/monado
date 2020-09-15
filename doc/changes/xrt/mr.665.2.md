@@ -1,0 +1,1 @@
+Add `XRT_FORMAT_BAYER_GR8` format.
