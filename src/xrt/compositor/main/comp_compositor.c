@@ -664,6 +664,13 @@ static const char *instance_extensions_direct_mode[] = {
 };
 #endif
 
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+static const char *instance_extensions_android[] = {
+    COMPOSITOR_COMMON_VULKAN_EXTENSIONS,
+    VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+};
+#endif
+
 static VkResult
 select_instances_extensions(struct comp_compositor *c,
                             const char ***out_exts,
@@ -691,6 +698,12 @@ select_instances_extensions(struct comp_compositor *c,
 	case WINDOW_DIRECT_NVIDIA:
 		*out_exts = instance_extensions_direct_mode;
 		*out_num = ARRAY_SIZE(instance_extensions_direct_mode);
+		break;
+#endif
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+	case WINDOW_ANDROID:
+		*out_exts = instance_extensions_android;
+		*out_num = ARRAY_SIZE(instance_extensions_android);
 		break;
 #endif
 	default: return VK_ERROR_INITIALIZATION_FAILED;
