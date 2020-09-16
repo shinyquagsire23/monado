@@ -23,6 +23,9 @@
 #include <libuvc/libuvc.h>
 #endif
 
+#ifndef __KERNEL__
+#include <sys/types.h>
+#endif
 
 /*
  *
