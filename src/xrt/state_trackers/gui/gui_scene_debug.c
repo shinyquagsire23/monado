@@ -165,9 +165,10 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 		return;
 	}
 
-	ImPlot_PlotLineG("x", plot_x, &state, 1000, 0);
-	ImPlot_PlotLineG("y", plot_y, &state, 1000, 0);
-	ImPlot_PlotLineG("z", plot_z, &state, 1000, 0);
+	size_t num = m_ff_vec3_f32_get_num(ff);
+	ImPlot_PlotLineG("x", plot_x, &state, num, 0);
+	ImPlot_PlotLineG("y", plot_y, &state, num, 0);
+	ImPlot_PlotLineG("z", plot_z, &state, num, 0);
 
 	ImPlot_EndPlot();
 }
