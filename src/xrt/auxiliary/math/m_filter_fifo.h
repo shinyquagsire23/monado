@@ -33,6 +33,12 @@ void
 m_ff_vec3_f32_free(struct m_ff_vec3_f32 **ff_ptr);
 
 /*!
+ * Return the number of samples that can fill the fifo.
+ */
+size_t
+m_ff_vec3_f32_get_num(struct m_ff_vec3_f32 *ff);
+
+/*!
  * Pushes a sample at the given timepoint, pushing samples out of order yields
  * unspecified behaviour, so samples must be pushed in time order.
  */
@@ -45,7 +51,7 @@ m_ff_vec3_f32_push(struct m_ff_vec3_f32 *ff,
  * Return the sample at the index, zero means the last sample push, one second
  * last and so on.
  */
-void
+bool
 m_ff_vec3_f32_get(struct m_ff_vec3_f32 *ff,
                   size_t num,
                   struct xrt_vec3 *out_sample,
@@ -83,6 +89,12 @@ void
 m_ff_f64_free(struct m_ff_f64 **ff_ptr);
 
 /*!
+ * Return the number of samples that can fill the fifo.
+ */
+size_t
+m_ff_f64_get_num(struct m_ff_f64 *ff);
+
+/*!
  * Pushes a sample at the given timepoint, pushing samples out of order yields
  * unspecified behaviour, so samples must be pushed in time order.
  */
@@ -93,7 +105,7 @@ m_ff_f64_push(struct m_ff_f64 *ff, const double *sample, uint64_t timestamp_ns);
  * Return the sample at the index, zero means the last sample push, one second
  * last and so on.
  */
-void
+bool
 m_ff_f64_get(struct m_ff_f64 *ff,
              size_t num,
              double *out_sample,

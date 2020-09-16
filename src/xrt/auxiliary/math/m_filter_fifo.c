@@ -88,6 +88,12 @@ m_ff_vec3_f32_free(struct m_ff_vec3_f32 **ff_ptr)
 	*ff_ptr = NULL;
 }
 
+size_t
+m_ff_vec3_f32_get_num(struct m_ff_vec3_f32 *ff)
+{
+	return ff->num;
+}
+
 void
 m_ff_vec3_f32_push(struct m_ff_vec3_f32 *ff,
                    const struct xrt_vec3 *sample,
@@ -103,15 +109,21 @@ m_ff_vec3_f32_push(struct m_ff_vec3_f32 *ff,
 	ff->timestamps_ns[i] = timestamp_ns;
 }
 
-void
+bool
 m_ff_vec3_f32_get(struct m_ff_vec3_f32 *ff,
                   size_t num,
                   struct xrt_vec3 *out_sample,
                   uint64_t *out_timestamp_ns)
 {
+	if (num >= ff->num) {
+		return false;
+	}
+
 	size_t pos = (ff->latest + num) % ff->num;
 	*out_sample = ff->samples[pos];
 	*out_timestamp_ns = ff->timestamps_ns[pos];
+
+	return true;
 }
 
 size_t
@@ -242,6 +254,12 @@ m_ff_f64_free(struct m_ff_f64 **ff_ptr)
 	*ff_ptr = NULL;
 }
 
+size_t
+m_ff_f64_get_num(struct m_ff_f64 *ff)
+{
+	return ff->num;
+}
+
 void
 m_ff_f64_push(struct m_ff_f64 *ff, const double *sample, uint64_t timestamp_ns)
 {
@@ -255,15 +273,21 @@ m_ff_f64_push(struct m_ff_f64 *ff, const double *sample, uint64_t timestamp_ns)
 	ff->timestamps_ns[i] = timestamp_ns;
 }
 
-void
+bool
 m_ff_f64_get(struct m_ff_f64 *ff,
              size_t num,
              double *out_sample,
              uint64_t *out_timestamp_ns)
 {
+	if (num >= ff->num) {
+		return false;
+	}
+
 	size_t pos = (ff->latest + num) % ff->num;
 	*out_sample = ff->samples[pos];
 	*out_timestamp_ns = ff->timestamps_ns[pos];
+
+	return true;
 }
 
 size_t
