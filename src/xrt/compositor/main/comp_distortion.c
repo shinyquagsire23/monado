@@ -234,7 +234,9 @@ comp_distortion_destroy(struct comp_distortion *d)
 	vk->vkDestroyDescriptorSetLayout(vk->device, d->descriptor_set_layout,
 	                                 NULL);
 
-	_buffer_destroy(vk, &d->ubo_handle);
+	if (d->has_fragment_shader_ubo) {
+		_buffer_destroy(vk, &d->ubo_handle);
+	}
 	_buffer_destroy(vk, &d->vbo_handle);
 	_buffer_destroy(vk, &d->index_handle);
 	_buffer_destroy(vk, &d->ubo_viewport_handles[0]);
@@ -512,19 +514,35 @@ comp_distortion_update_descriptor_set(struct comp_distortion *d,
 	    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 	};
 
-	VkWriteDescriptorSet write_descriptor_sets[3] = {
-	    // Binding 0 : Render texture target
-	    comp_distortion_get_image_write_descriptor_set(
-	        d->descriptor_sets[eye], &image_info, 0),
-	    // Binding 1 : Fragment shader uniform buffer
-	    comp_distortion_get_uniform_write_descriptor_set(d, 1, eye),
-	    // Binding 2 : view uniform buffer
-	    comp_distortion_get_uniform_write_descriptor_set_vp(d, 2, eye),
-	};
+	if (d->has_fragment_shader_ubo) {
+		VkWriteDescriptorSet write_descriptor_sets[3] = {
+		    // Binding 0 : Render texture target
+		    comp_distortion_get_image_write_descriptor_set(
+		        d->descriptor_sets[eye], &image_info, 0),
+		    // Binding 1 : Fragment shader uniform buffer
+		    comp_distortion_get_uniform_write_descriptor_set(d, 1, eye),
+		    // Binding 2 : view uniform buffer
+		    comp_distortion_get_uniform_write_descriptor_set_vp(d, 2,
+		                                                        eye),
+		};
 
-	vk->vkUpdateDescriptorSets(vk->device,
-	                           ARRAY_SIZE(write_descriptor_sets),
-	                           write_descriptor_sets, 0, NULL);
+		vk->vkUpdateDescriptorSets(vk->device,
+		                           ARRAY_SIZE(write_descriptor_sets),
+		                           write_descriptor_sets, 0, NULL);
+	} else {
+		VkWriteDescriptorSet write_descriptor_sets[2] = {
+		    // Binding 0 : Render texture target
+		    comp_distortion_get_image_write_descriptor_set(
+		        d->descriptor_sets[eye], &image_info, 0),
+		    // Binding 2 : view uniform buffer
+		    comp_distortion_get_uniform_write_descriptor_set_vp(d, 2,
+		                                                        eye),
+		};
+
+		vk->vkUpdateDescriptorSets(vk->device,
+		                           ARRAY_SIZE(write_descriptor_sets),
+		                           write_descriptor_sets, 0, NULL);
+	}
 
 	d->ubo_vp_data[eye].flip_y = flip_y;
 	memcpy(d->ubo_viewport_handles[eye].mapped, &d->ubo_vp_data[eye],
@@ -682,8 +700,9 @@ comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
 
 		memcpy(d->ubo_handle.mapped, &d->ubo_vive, sizeof(d->ubo_vive));
 		break;
-	case XRT_DISTORTION_MODEL_PANOTOOLS:
 	case XRT_DISTORTION_MODEL_MESHUV:
+		break;
+	case XRT_DISTORTION_MODEL_PANOTOOLS:
 	default:
 		/*
 		 * Pano vision fragment shader
@@ -836,12 +855,15 @@ comp_distortion_init_buffers(struct comp_distortion *d,
 	VkDeviceSize vbo_size = 0;
 	VkDeviceSize index_size = 0;
 
+	// overridden for mesh distortion in switch below
+	d->has_fragment_shader_ubo = true;
+
 	switch (d->distortion_model) {
 	case XRT_DISTORTION_MODEL_PANOTOOLS:
 		ubo_size = sizeof(d->ubo_pano);
 		break;
 	case XRT_DISTORTION_MODEL_MESHUV:
-		ubo_size = sizeof(d->ubo_pano);
+		d->has_fragment_shader_ubo = false;
 		vbo_size = d->mesh.stride * d->mesh.num_vertices;
 		index_size = sizeof(int) * d->mesh.total_num_indices;
 		break;
@@ -855,15 +877,17 @@ comp_distortion_init_buffers(struct comp_distortion *d,
 		break;
 	}
 
-	// fp ubo
-	ret = _create_buffer(vk, ubo_usage_flags, memory_property_flags,
-	                     &d->ubo_handle, ubo_size, NULL);
-	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "Failed to create warp ubo buffer!");
-	}
-	ret = _buffer_map(vk, &d->ubo_handle, VK_WHOLE_SIZE, 0);
-	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "Failed to map warp ubo buffer!");
+	if (d->has_fragment_shader_ubo) {
+		// fp ubo
+		ret = _create_buffer(vk, ubo_usage_flags, memory_property_flags,
+		                     &d->ubo_handle, ubo_size, NULL);
+		if (ret != VK_SUCCESS) {
+			VK_DEBUG(vk, "Failed to create warp ubo buffer!");
+		}
+		ret = _buffer_map(vk, &d->ubo_handle, VK_WHOLE_SIZE, 0);
+		if (ret != VK_SUCCESS) {
+			VK_DEBUG(vk, "Failed to map warp ubo buffer!");
+		}
 	}
 
 	// vp ubo[0]

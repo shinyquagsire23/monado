@@ -54,6 +54,7 @@ struct comp_distortion
 	// Holds all of the needed common Vulkan things.
 	struct vk_bundle *vk;
 
+	bool has_fragment_shader_ubo;
 	struct comp_uniform_buffer ubo_handle;
 	struct comp_uniform_buffer vbo_handle;
 	struct comp_uniform_buffer index_handle;
