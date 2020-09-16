@@ -305,34 +305,46 @@ ns_v2_mesh_calc(struct xrt_device *xdev,
                 float v,
                 struct xrt_uv_triplet *result)
 {
+	u = 1.0 - u; // Not sure why these are necessary: somewhat concerning.
+	v = 1.0 - v; // They make it work though, so hey.
+
 	struct ns_hmd *ns = ns_hmd(xdev);
-
-	float x = 0.0f;
-	float y = 0.0f;
-
-	u = 1.0 - u;
-	v = 1.0 - v;
-
-	float L = ns->eye_configs_v2[view].fov.angle_left;
-	float R = ns->eye_configs_v2[view].fov.angle_right;
-	float T = ns->eye_configs_v2[view].fov.angle_up;
-	float B = ns->eye_configs_v2[view].fov.angle_down;
 
 	float x_ray =
 	    ns_v2_polyval2d(u, v, ns->eye_configs_v2[view].x_coefficients);
 	float y_ray =
 	    ns_v2_polyval2d(u, v, ns->eye_configs_v2[view].y_coefficients);
 
-	x = (x_ray + L) / (L - R);
-	y = (y_ray + T) / (T - B);
+
+	float left_ray_bound = tan(ns->eye_configs_v2[view].fov.angle_left);
+	float right_ray_bound = tan(ns->eye_configs_v2[view].fov.angle_right);
+	float up_ray_bound = tan(ns->eye_configs_v2[view].fov.angle_up);
+	float down_ray_bound = tan(ns->eye_configs_v2[view].fov.angle_down);
 
 
-	result->r.x = x;
-	result->r.y = y;
-	result->g.x = x;
-	result->g.y = y;
-	result->b.x = x;
-	result->b.y = y;
+
+	// Both of these are very concise implementations of map() in Arduino.
+	// https://www.arduino.cc/reference/en/language/functions/math/map/
+	// In other words, a one-axis linear transformation.
+	// I wish I was better at linear algebra so I had could describe this
+	// better
+
+	// map(x_ray, left_ray_bound, right_ray_bound, 0, 1)
+	float u_eye =
+	    (x_ray + right_ray_bound) / (right_ray_bound - left_ray_bound);
+
+	// map(y_ray, down_ray_bound, up_ray_bound, 0, 1)
+	float v_eye = (y_ray + up_ray_bound) / (up_ray_bound - down_ray_bound);
+
+
+	// boilerplate, put the UV coordinates in all the RGB slots
+	result->r.x = u_eye;
+	result->r.y = v_eye;
+	result->g.x = u_eye;
+	result->g.y = v_eye;
+	result->b.x = u_eye;
+	result->b.y = v_eye;
+
 	return true;
 }
 
@@ -557,6 +569,7 @@ ns_hmd_create(const char *config_path)
 		ns->base.hmd->distortion.preferred =
 		    XRT_DISTORTION_MODEL_COMPUTE;
 		ns->base.compute_distortion = ns_v2_mesh_calc;
+
 	} else {
 		// V1
 		ns->base.get_view_pose = ns_hmd_get_view_pose;
