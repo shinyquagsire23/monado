@@ -239,6 +239,53 @@ add_path_string(struct oxr_logger *log,
 	}
 }
 
+static bool
+get_sub_path_from_path(struct oxr_logger *log,
+                       struct oxr_instance *inst,
+                       XrPath path,
+                       enum oxr_sub_action_path *out_sub_path)
+{
+	const char *str = NULL;
+	size_t length = 0;
+	XrResult ret;
+
+	ret = oxr_path_get_string(log, inst, path, &str, &length);
+	if (ret != XR_SUCCESS) {
+		return false;
+	}
+
+	if (length >= 10 && strncmp("/user/head", str, 10) == 0) {
+		*out_sub_path = OXR_SUB_ACTION_PATH_HEAD;
+		return true;
+	}
+	if (length >= 15 && strncmp("/user/hand/left", str, 15) == 0) {
+		*out_sub_path = OXR_SUB_ACTION_PATH_LEFT;
+		return true;
+	}
+	if (length >= 16 && strncmp("/user/hand/right", str, 16) == 0) {
+		*out_sub_path = OXR_SUB_ACTION_PATH_RIGHT;
+		return true;
+	}
+	if (length >= 13 && strncmp("/user/gamepad", str, 13) == 0) {
+		*out_sub_path = OXR_SUB_ACTION_PATH_GAMEPAD;
+		return true;
+	}
+
+	return false;
+}
+
+static const char *
+get_sub_path_str(enum oxr_sub_action_path sub_path)
+{
+	switch (sub_path) {
+	case OXR_SUB_ACTION_PATH_HEAD: return "Head";
+	case OXR_SUB_ACTION_PATH_LEFT: return "Left";
+	case OXR_SUB_ACTION_PATH_RIGHT: return "Right";
+	case OXR_SUB_ACTION_PATH_GAMEPAD: return "Gameped";
+	default: return NULL;
+	}
+}
+
 
 /*
  *
@@ -443,27 +490,32 @@ oxr_action_get_input_source_localized_name(
 {
 	char temp[1024] = {0};
 	ssize_t current = 0;
+	enum oxr_sub_action_path sub_path = 0;
 
-	//! @todo This implementation is very very very ugly.
-
-	if ((getInfo->whichComponents &
-	     XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT) != 0) {
-		add_path_string(log, sess->sys->inst, sess->left, temp,
-		                ARRAY_SIZE(temp), &current);
+	if (!get_sub_path_from_path(log, sess->sys->inst, getInfo->sourcePath,
+	                            &sub_path)) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(getInfo->sourcePath) doesn't start with a "
+		                 "valid sub_path");
 	}
 
 	if (getInfo->whichComponents &
 	    XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT) {
-		if (current > 0) {
-			temp[current++] = ' ';
-		}
-
-		ssize_t len = snprintf(temp + current,
-		                       ARRAY_SIZE(temp) - current, "/user/???");
-
+		// Get the localized string.
+		ssize_t len = snprintf(temp + current,             //
+		                       ARRAY_SIZE(temp) - current, //
+		                       "%s",                       //
+		                       get_sub_path_str(sub_path));
 		if (len > 0) {
 			current += len;
 		}
+	}
+
+	//! @todo This implementation is very very very ugly.
+	if ((getInfo->whichComponents &
+	     XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT) != 0) {
+		add_path_string(log, sess->sys->inst, sess->left, temp,
+		                ARRAY_SIZE(temp), &current);
 	}
 
 	if ((getInfo->whichComponents &
