@@ -140,6 +140,7 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 	p->num_bindings = templ->num_bindings;
 	p->bindings = U_TYPED_ARRAY_CALLOC(struct oxr_binding, p->num_bindings);
 	p->path = path;
+	p->localized_name = templ->localized_name;
 
 	for (size_t x = 0; x < templ->num_bindings; x++) {
 		struct binding_template *t = &templ->bindings[x];
@@ -213,6 +214,19 @@ add_key_to_matching_bindings(struct oxr_binding *bindings,
 }
 
 static void
+add_string(char *temp, size_t max, ssize_t *current, const char *str)
+{
+	if (*current > 0) {
+		temp[(*current)++] = ' ';
+	}
+
+	ssize_t len = snprintf(temp + *current, max - *current, "%s", str);
+	if (len > 0) {
+		*current += len;
+	}
+}
+
+static void
 add_path_string(struct oxr_logger *log,
                 struct oxr_instance *inst,
                 XrPath path,
@@ -229,14 +243,7 @@ add_path_string(struct oxr_logger *log,
 		return;
 	}
 
-	if (*current > 0) {
-		temp[(*current)++] = ' ';
-	}
-
-	ssize_t len = snprintf(temp + *current, max - *current, "%s", str);
-	if (len > 0) {
-		*current += len;
-	}
+	add_string(temp, max, current, str);
 }
 
 static bool
@@ -286,6 +293,19 @@ get_sub_path_str(enum oxr_sub_action_path sub_path)
 	}
 }
 
+static XrPath
+get_interaction_bound_to_sub_path(struct oxr_session *sess,
+                                  enum oxr_sub_action_path sub_path)
+{
+	switch (sub_path) {
+#define OXR_PATH_MEMBER(lower, CAP, _)                                         \
+	case OXR_SUB_ACTION_PATH_##CAP: return sess->lower;
+
+		OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(OXR_PATH_MEMBER)
+#undef OXR_PATH_MEMBER
+	default: return XR_NULL_PATH;
+	}
+}
 
 /*
  *
@@ -499,25 +519,36 @@ oxr_action_get_input_source_localized_name(
 		                 "valid sub_path");
 	}
 
+	// Get the interaction profile bound to this sub_path.
+	XrPath path = get_interaction_bound_to_sub_path(sess, sub_path);
+	if (path == XR_NULL_PATH) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(getInfo->sourcePath) no interaction profile "
+		                 "bound to sub path");
+	}
+
+	// Find the interaction profile.
+	struct oxr_interaction_profile *oip = NULL;
+	interaction_profile_find_or_create(log, sess->sys->inst, path, &oip);
+	if (oip == NULL) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "no interaction profile found");
+	}
+
+	// Add which hand to use.
 	if (getInfo->whichComponents &
 	    XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT) {
-		// Get the localized string.
-		ssize_t len = snprintf(temp + current,             //
-		                       ARRAY_SIZE(temp) - current, //
-		                       "%s",                       //
-		                       get_sub_path_str(sub_path));
-		if (len > 0) {
-			current += len;
-		}
+		add_string(temp, sizeof(temp), &current,
+		           get_sub_path_str(sub_path));
+	}
+
+	// Add a human readable and localized name of the device.
+	if ((getInfo->whichComponents &
+	     XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT) != 0) {
+		add_string(temp, sizeof(temp), &current, oip->localized_name);
 	}
 
 	//! @todo This implementation is very very very ugly.
-	if ((getInfo->whichComponents &
-	     XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT) != 0) {
-		add_path_string(log, sess->sys->inst, sess->left, temp,
-		                ARRAY_SIZE(temp), &current);
-	}
-
 	if ((getInfo->whichComponents &
 	     XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT) != 0) {
 		add_path_string(log, sess->sys->inst, getInfo->sourcePath, temp,

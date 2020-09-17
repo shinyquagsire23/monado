@@ -24,7 +24,7 @@ struct profile_template
 {
 	const char *path;
 
-
+	const char *localized_name;
 
 	struct binding_template *bindings;
 	size_t num_bindings;
@@ -963,26 +963,31 @@ static struct binding_template htc_vive_controller_bindings[24] = {
 static struct profile_template profiles[5] = {
     {
         .path = "/interaction_profiles/khr/simple_controller",
+        .localized_name = "Simple Controller",
         .bindings = khr_simple_controller_bindings,
         .num_bindings = ARRAY_SIZE(khr_simple_controller_bindings),
     },
     {
         .path = "/interaction_profiles/google/daydream_controller",
+        .localized_name = "Daydream Controller",
         .bindings = google_daydream_controller_bindings,
         .num_bindings = ARRAY_SIZE(google_daydream_controller_bindings),
     },
     {
         .path = "/interaction_profiles/mndx/ball_on_a_stick_controller",
+        .localized_name = "PS Move",
         .bindings = mndx_ball_on_a_stick_controller_bindings,
         .num_bindings = ARRAY_SIZE(mndx_ball_on_a_stick_controller_bindings),
     },
     {
         .path = "/interaction_profiles/valve/index_controller",
+        .localized_name = "Index Controller",
         .bindings = valve_index_controller_bindings,
         .num_bindings = ARRAY_SIZE(valve_index_controller_bindings),
     },
     {
         .path = "/interaction_profiles/htc/vive_controller",
+        .localized_name = "Vive Wand",
         .bindings = htc_vive_controller_bindings,
         .num_bindings = ARRAY_SIZE(htc_vive_controller_bindings),
     },

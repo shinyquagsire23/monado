@@ -1326,6 +1326,10 @@ oxr_session_success_focused_result(struct oxr_session *session)
 struct oxr_interaction_profile
 {
 	XrPath path;
+
+	//! Name presented to the user.
+	const char *localized_name;
+
 	struct oxr_binding *bindings;
 	size_t num_bindings;
 };
