@@ -1342,6 +1342,9 @@ struct oxr_binding
 	XrPath *paths;
 	size_t num_paths;
 
+	//! Name presented to the user.
+	const char *localized_name;
+
 	enum oxr_sub_action_path sub_path;
 
 	size_t num_keys;

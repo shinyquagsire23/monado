@@ -147,6 +147,7 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 		struct oxr_binding *b = &p->bindings[x];
 
 		b->sub_path = t->sub_path;
+		b->localized_name = t->localized_name;
 		setup_paths(log, inst, t, b);
 		setup_inputs(log, inst, t, b);
 		setup_outputs(log, inst, t, b);
@@ -226,26 +227,6 @@ add_string(char *temp, size_t max, ssize_t *current, const char *str)
 	}
 }
 
-static void
-add_path_string(struct oxr_logger *log,
-                struct oxr_instance *inst,
-                XrPath path,
-                char *temp,
-                size_t max,
-                ssize_t *current)
-{
-	const char *str = NULL;
-	size_t length = 0;
-	XrResult ret;
-
-	ret = oxr_path_get_string(log, inst, path, &str, &length);
-	if (ret != XR_SUCCESS) {
-		return;
-	}
-
-	add_string(temp, max, current, str);
-}
-
 static bool
 get_sub_path_from_path(struct oxr_logger *log,
                        struct oxr_instance *inst,
@@ -306,6 +287,38 @@ get_interaction_bound_to_sub_path(struct oxr_session *sess,
 	default: return XR_NULL_PATH;
 	}
 }
+
+static const char *
+get_identifier_str_in_profile(struct oxr_logger *log,
+                              struct oxr_instance *inst,
+                              XrPath path,
+                              struct oxr_interaction_profile *oip)
+{
+	const char *str = NULL;
+	size_t length = 0;
+	XrResult ret;
+
+	ret = oxr_path_get_string(log, inst, path, &str, &length);
+	if (ret != XR_SUCCESS) {
+		return NULL;
+	}
+
+	for (size_t i = 0; i < oip->num_bindings; i++) {
+		struct oxr_binding *binding = &oip->bindings[i];
+
+		for (size_t k = 0; k < binding->num_paths; k++) {
+			if (binding->paths[k] != path) {
+				continue;
+			}
+			str = binding->localized_name;
+			i = oip->num_bindings; // Break the outer loop as well.
+			break;
+		}
+	}
+
+	return str;
+}
+
 
 /*
  *
@@ -551,8 +564,13 @@ oxr_action_get_input_source_localized_name(
 	//! @todo This implementation is very very very ugly.
 	if ((getInfo->whichComponents &
 	     XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT) != 0) {
-		add_path_string(log, sess->sys->inst, getInfo->sourcePath, temp,
-		                ARRAY_SIZE(temp), &current);
+		/*
+		 * The above enum is miss-named it should be called identifier
+		 * instead of component.
+		 */
+		add_string(temp, sizeof(temp), &current,
+		           get_identifier_str_in_profile(
+		               log, sess->sys->inst, getInfo->sourcePath, oip));
 	}
 
 	OXR_TWO_CALL_HELPER(log, bufferCapacityInput, bufferCountOutput, buffer,
