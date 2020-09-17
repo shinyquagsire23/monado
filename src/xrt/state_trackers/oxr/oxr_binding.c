@@ -573,6 +573,9 @@ oxr_action_get_input_source_localized_name(
 		               log, sess->sys->inst, getInfo->sourcePath, oip));
 	}
 
+	// Include the null character.
+	current += 1;
+
 	OXR_TWO_CALL_HELPER(log, bufferCapacityInput, bufferCountOutput, buffer,
 	                    (size_t)current, temp,
 	                    oxr_session_success_result(sess));
