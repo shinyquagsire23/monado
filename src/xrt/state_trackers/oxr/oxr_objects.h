@@ -1633,13 +1633,11 @@ struct oxr_swapchain
 	//! Compositor swapchain.
 	struct xrt_swapchain *swapchain;
 
-	struct
-	{
-		//! Swapchain size.
-		uint32_t width, height;
-		//! For 1 is 2D texture, greater then 1 2D array texture.
-		uint32_t num_array_layers;
-	};
+	//! Swapchain size.
+	uint32_t width, height;
+
+	//! For 1 is 2D texture, greater then 1 2D array texture.
+	uint32_t num_array_layers;
 
 	struct
 	{
