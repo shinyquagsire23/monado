@@ -327,8 +327,6 @@ ns_v2_mesh_calc(struct u_uv_generator *gen,
 	    u, v, mesh->ns->eye_configs_v2[view].x_coefficients);
 	float y_ray = ns_v2_polyval2d(
 	    u, v, mesh->ns->eye_configs_v2[view].y_coefficients);
-	x_ray = x_ray;
-	y_ray = y_ray;
 
 	x = (x_ray + L) / (L - R);
 	y = (y_ray + T) / (T - B);
