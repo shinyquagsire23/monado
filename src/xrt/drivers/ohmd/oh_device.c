@@ -395,7 +395,7 @@ oh_device_create(ohmd_context *ctx,
 	ohd->print_debug = print_debug;
 	ohd->enable_finite_difference = debug_get_bool_option_oh_finite_diff();
 
-	snprintf(ohd->base.str, XRT_DEVICE_NAME_LEN, "%s", prod);
+	snprintf(ohd->base.str, XRT_DEVICE_NAME_LEN, "%s (OpenHMD)", prod);
 
 	const struct device_info info = get_info(ohd, prod);
 
