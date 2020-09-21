@@ -385,6 +385,7 @@ p_udev_add_v4l(struct prober_device *pdev,
                uint32_t usb_iface,
                const char *path)
 {
+#ifdef XRT_HAVE_V4L2
 	U_ARRAY_REALLOC_OR_FREE(pdev->v4ls, struct prober_v4l,
 	                        (pdev->num_v4ls + 1));
 
@@ -394,6 +395,7 @@ p_udev_add_v4l(struct prober_device *pdev,
 	v4l->usb_iface = usb_iface;
 	v4l->v4l_index = v4l_index;
 	v4l->path = strdup(path);
+#endif
 }
 
 static void
