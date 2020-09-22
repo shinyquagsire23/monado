@@ -12,6 +12,7 @@ package org.freedesktop.monado.auxiliary;
 import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
@@ -22,20 +23,42 @@ import androidx.annotation.Keep;
 @Keep
 public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, SurfaceHolder.Callback2 {
     private static final String TAG = "MonadoView";
-    public static MonadoView attachToActivity(@NonNull Activity activity) {
+
+    @Keep
+    public static MonadoView attachToActivity(@NonNull final Activity activity) {
         Log.i(TAG, "Starting to add a new surface!");
 
-        MonadoView view = new MonadoView(activity);
-        WindowManager windowManager =  activity.getWindowManager();
-        windowManager.addView(view, new WindowManager.LayoutParams());
-        view.requestFocus();
+        final MonadoView view = new MonadoView(activity);
+
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.i(TAG, "Starting runOnUiThread");
+                WindowManager windowManager = activity.getWindowManager();
+                windowManager.addView(view, new WindowManager.LayoutParams());
+                view.requestFocus();
+                SurfaceHolder surfaceHolder = view.getHolder();
+                surfaceHolder.addCallback(view);
+                Log.i(TAG, "Registered callbacks!");
+            }
+        });
         return view;
+
     }
 
     public SurfaceHolder currentSurfaceHolder;
 
     public MonadoView(Context context) {
         super(context);
+    }
+
+    public Surface getASurface() {
+        SurfaceHolder surfaceHolder = getHolder();
+        return surfaceHolder.getSurface();
+    }
+
+    public SurfaceHolder getSurfaceHolder() {
+        return currentSurfaceHolder;
     }
 
     @Override
@@ -46,8 +69,8 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int format, int width, int height) {
+        currentSurfaceHolder = surfaceHolder;
         Log.i(TAG, "surfaceChanged");
-
     }
 
     @Override
@@ -61,8 +84,8 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
 
     @Override
     public void surfaceRedrawNeeded(@NonNull SurfaceHolder surfaceHolder) {
+        currentSurfaceHolder = surfaceHolder;
         Log.i(TAG, "surfaceRedrawNeeded");
-
     }
 
 }
