@@ -33,7 +33,6 @@ oxr_session_populate_vk(struct oxr_logger *log,
 	    next->device, next->queueFamilyIndex, next->queueIndex);
 
 	if (xcvk == NULL) {
-		xcn->base.destroy(&xcn->base);
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 "Failed to create an vk client compositor");
 	}

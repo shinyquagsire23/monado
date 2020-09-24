@@ -39,7 +39,6 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
 	    next->glxDrawable, next->glxContext);
 
 	if (xcgl == NULL) {
-		xcn->base.destroy(&xcn->base);
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 "Failed to create an xlib client compositor");
 	}

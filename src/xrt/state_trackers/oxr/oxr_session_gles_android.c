@@ -82,7 +82,6 @@ oxr_session_populate_gles_android(
 	    xcn, next->display, next->config, next->context, get_proc_addr);
 
 	if (xcgl == NULL) {
-		xcn->base.destroy(&xcn->base);
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 "Failed to create an egl client compositor");
 	}
