@@ -316,10 +316,18 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	VkImage image = VK_NULL_HANDLE;
 	VkResult ret = VK_SUCCESS;
 
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
 	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 	};
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
+	    .handleTypes =
+	        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+	};
+#endif
 
 	VkImageCreateInfo vk_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
