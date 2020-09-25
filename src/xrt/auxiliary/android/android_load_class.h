@@ -11,35 +11,18 @@
 
 #include <xrt/xrt_config_os.h>
 
+#include "wrap/android.app.h"
+
 #ifdef XRT_OS_ANDROID
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+using wrap::android::content::pm::ApplicationInfo;
 
-struct _JavaVM;
+ApplicationInfo
+getAppInfo(std::string const &packageName, jobject application_context);
 
-/*!
- * Load a named class from a named package.
- *
- * @param vm Java VM pointer
- * @param pkgname Package name
- * @param application_context An android.content.Context jobject, cast to
- * `void *`.
- * @param classname A fully-qualified Java class name, delimited with ".",
- * which will be loaded using java.lang.Class.forName()
- *
- * @return The jobject for the java.lang.Class you requested (cast to a
- * `void *`), or NULL if there was an error.
- */
-void *
-android_load_class_from_package(struct _JavaVM *vm,
-                                const char *pkgname,
-                                void *application_context,
-                                const char *classname);
-
-#ifdef __cplusplus
-}
-#endif
+wrap::java::lang::Class
+loadClassFromPackage(ApplicationInfo applicationInfo,
+                     jobject application_context,
+                     const char *clazz_name);
 
 #endif // XRT_OS_ANDROID

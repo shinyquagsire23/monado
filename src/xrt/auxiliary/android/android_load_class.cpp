@@ -15,7 +15,7 @@ using wrap::android::content::Context;
 using wrap::android::content::pm::ApplicationInfo;
 using wrap::android::content::pm::PackageManager;
 
-static ApplicationInfo
+ApplicationInfo
 getAppInfo(std::string const &packageName, jobject application_context)
 {
 	try {
@@ -32,7 +32,7 @@ getAppInfo(std::string const &packageName, jobject application_context)
 	}
 }
 
-static wrap::java::lang::Class
+wrap::java::lang::Class
 loadClassFromPackage(ApplicationInfo applicationInfo,
                      jobject application_context,
                      const char *clazz_name)
