@@ -28,7 +28,11 @@ const char *xrt_gfx_vk_device_extensions =
     "VK_KHR_external_semaphore "
     "VK_KHR_external_semaphore_fd "
     "VK_KHR_get_memory_requirements2 "
-    "VK_KHR_swapchain";
+    "VK_KHR_swapchain "
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+    "VK_ANDROID_external_memory_android_hardware_buffer "
+#endif
+    ;
 
 void
 xrt_gfx_vk_get_versions(struct xrt_api_requirements *ver)
