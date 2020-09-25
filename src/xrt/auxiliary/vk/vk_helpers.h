@@ -116,6 +116,7 @@ struct vk_bundle
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 	PFN_vkGetMemoryAndroidHardwareBufferANDROID vkGetMemoryAndroidHardwareBufferANDROID;
+	PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID;
 #endif
 
 	PFN_vkCreateBuffer vkCreateBuffer;

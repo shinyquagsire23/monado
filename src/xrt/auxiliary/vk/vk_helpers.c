@@ -746,6 +746,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkGetMemoryFdKHR              = GET_DEV_PROC(vk, vkGetMemoryFdKHR);
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 	vk->vkGetMemoryAndroidHardwareBufferANDROID = GET_DEV_PROC(vk, vkGetMemoryAndroidHardwareBufferANDROID);
+	vk->vkGetAndroidHardwareBufferPropertiesANDROID = GET_DEV_PROC(vk, vkGetAndroidHardwareBufferPropertiesANDROID);
 #endif
 	vk->vkCreateBuffer                = GET_DEV_PROC(vk, vkCreateBuffer);
 	vk->vkDestroyBuffer               = GET_DEV_PROC(vk, vkDestroyBuffer);
