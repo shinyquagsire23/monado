@@ -27,6 +27,7 @@ getAppInfo(std::string const &packageName, jobject application_context)
 		                     PackageManager::GET_SHARED_LIBRARY_FILES);
 		return packageInfo.getApplicationInfo();
 	} catch (std::exception const &e) {
+		U_LOG_E("Could get App Info: %s", e.what());
 		return {};
 	}
 }
@@ -47,9 +48,20 @@ loadClassFromPackage(ApplicationInfo applicationInfo,
 	wrap::java::lang::ClassLoader pkgClassLoader =
 	    pkgContext.getClassLoader();
 
-	auto loadedClass = wrap::java::lang::Class::forName(
-	    clazz_name, true, pkgClassLoader.object());
-	return loadedClass;
+	try {
+		auto loadedClass =
+		    pkgClassLoader.loadClass(std::string(clazz_name));
+		if (loadedClass.isNull()) {
+			U_LOG_E("Could not load class for name %s", clazz_name);
+			return wrap::java::lang::Class();
+		}
+
+		return loadedClass;
+	} catch (std::exception const &e) {
+		U_LOG_E("Could load class '%s' forName: %s", clazz_name,
+		        e.what());
+		return wrap::java::lang::Class();
+	}
 }
 
 void *
