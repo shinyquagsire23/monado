@@ -22,6 +22,10 @@ extern "C" {
 struct xrt_image_native_allocator *
 android_ahardwarebuffer_allocator_create();
 
+xrt_result_t
+ahardwarebuffer_image_allocate(const struct xrt_swapchain_create_info *xsci,
+                               xrt_graphics_buffer_handle_t *out_image);
+
 #endif // XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
 
 #ifdef __cplusplus

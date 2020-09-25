@@ -66,6 +66,55 @@ vk_format_to_ahardwarebuffer(uint64_t format)
 	}
 }
 
+xrt_result_t
+ahardwarebuffer_image_allocate(const struct xrt_swapchain_create_info *xsci,
+                               xrt_graphics_buffer_handle_t *out_image)
+{
+	AHardwareBuffer_Desc desc;
+	U_ZERO(&desc);
+	enum AHardwareBuffer_Format ahb_format =
+	    vk_format_to_ahardwarebuffer(xsci->format);
+	if (ahb_format == 0) {
+		AHB_ERROR("Could not convert %04" PRIx64
+		          " to AHardwareBuffer_Format!",
+		          (uint64_t)xsci->format);
+		return XRT_ERROR_ALLOCATION;
+	}
+	desc.height = xsci->height;
+	desc.width = xsci->width;
+	desc.format = ahb_format;
+	desc.layers = xsci->array_size;
+	if (xsci->face_count == 6) {
+		desc.usage |= AHARDWAREBUFFER_USAGE_GPU_CUBE_MAP;
+		desc.layers *= 6;
+	}
+	if (0 != (xsci->bits & (XRT_SWAPCHAIN_USAGE_COLOR |
+	                        XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL))) {
+		desc.usage |= AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER;
+	}
+	if (0 != (xsci->bits & XRT_SWAPCHAIN_USAGE_SAMPLED)) {
+		desc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
+	}
+	if (0 != (xsci->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT)) {
+		desc.usage |= AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
+	}
+
+#if __ANDROID_API__ >= 29
+	if (0 == AHardwareBuffer_isSupported(&desc)) {
+		AHB_ERROR("Computed AHardwareBuffer_Desc is not supported.");
+		return XRT_ERROR_ALLOCATION;
+	}
+#endif
+
+	int ret = AHardwareBuffer_allocate(&desc, out_image);
+	if (ret != 0) {
+		AHB_ERROR("Failed allocating image.");
+		return XRT_ERROR_ALLOCATION;
+	}
+
+	return XRT_SUCCESS;
+}
+
 static xrt_result_t
 ahardwarebuffer_images_allocate(struct xrt_image_native_allocator *xina,
                                 const struct xrt_swapchain_create_info *xsci,
