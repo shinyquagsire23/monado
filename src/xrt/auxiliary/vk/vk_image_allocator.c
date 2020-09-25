@@ -19,7 +19,9 @@
 #include <unistd.h>
 #endif
 
-
+#ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
+#include "android/android_ahardwarebuffer_allocator.h"
+#endif
 /*
  *
  * Helper functions.
@@ -99,31 +101,86 @@ create_image(struct vk_bundle *vk,
 	VkResult ret = VK_SUCCESS;
 	VkDeviceSize size;
 
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	/*
+	 * Get AHardwareBuffer props
+	 */
+
+	AHardwareBuffer *a_buffer = NULL;
+
+	xrt_result_t xrt_res = ahardwarebuffer_image_allocate(info, &a_buffer);
+	if (xrt_res != XRT_SUCCESS) {
+		U_LOG_E("Failed to ahardwarebuffer_image_allocate.");
+		return ret;
+	}
+
+	VkAndroidHardwareBufferFormatPropertiesANDROID a_buffer_format_props = {
+	    .sType =
+	        VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID,
+	    .format = (VkFormat)info->format,
+	};
+
+	VkAndroidHardwareBufferPropertiesANDROID a_buffer_props = {
+	    .sType =
+	        VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
+	    .pNext = &a_buffer_format_props,
+	};
+
+	ret = vk->vkGetAndroidHardwareBufferPropertiesANDROID(
+	    vk->device, a_buffer, &a_buffer_props);
+	if (ret != VK_SUCCESS) {
+		U_LOG_E("vkGetAndroidHardwareBufferPropertiesANDROID: %s",
+		        vk_result_string(ret));
+		return ret;
+	}
+#endif
 
 	/*
 	 * Create the image.
 	 */
 
-	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
-	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
-	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info =
+	{.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	 .handleTypes =
+	     VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+#else
+	 .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+#endif
 	};
 
-	VkImageCreateInfo create_info = {
-	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+	VkFormat format = info->format;
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	VkExternalFormatANDROID format_android = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID,
 	    .pNext = &external_memory_image_create_info,
-	    .imageType = VK_IMAGE_TYPE_2D,
-	    .format = (VkFormat)info->format,
-	    .extent = {.width = info->width,
-	               .height = info->height,
-	               .depth = 1},
-	    .mipLevels = info->mip_count,
-	    .arrayLayers = info->array_size,
-	    .samples = VK_SAMPLE_COUNT_1_BIT,
-	    .tiling = VK_IMAGE_TILING_OPTIMAL,
-	    .usage = image_usage,
-	    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-	    .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+	    .externalFormat = a_buffer_format_props.externalFormat,
+	};
+
+	// Android can't allocate native sRGB.
+	// Use UNORM and correct gamma later.
+	if (format == VK_FORMAT_R8G8B8A8_SRGB) {
+		format = VK_FORMAT_R8G8B8A8_UNORM;
+	}
+#endif
+
+	VkImageCreateInfo create_info =
+	{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	 .pNext = &format_android,
+#else
+	 .pNext = &external_memory_image_create_info,
+#endif
+	 .imageType = VK_IMAGE_TYPE_2D,
+	 .format = format,
+	 .extent = {.width = info->width, .height = info->height, .depth = 1},
+	 .mipLevels = info->mip_count,
+	 .arrayLayers = info->array_size,
+	 .samples = VK_SAMPLE_COUNT_1_BIT,
+	 .tiling = VK_IMAGE_TILING_OPTIMAL,
+	 .usage = image_usage,
+	 .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+	 .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 
 	ret = vk->vkCreateImage(vk->device, &create_info, NULL, &image);

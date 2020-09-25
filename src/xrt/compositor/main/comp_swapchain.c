@@ -128,6 +128,14 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 	VkImageAspectFlagBits aspect =
 	    depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
+	VkFormat format = info->format;
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	// Force gamma conversion for sRGB on Android
+	if (format == VK_FORMAT_R8G8B8A8_SRGB) {
+		format = VK_FORMAT_R8G8B8A8_UNORM;
+	}
+#endif
+
 	for (uint32_t i = 0; i < num_images; i++) {
 		sc->images[i].views.alpha =
 		    U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
@@ -156,9 +164,9 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 			               subresource_range,
 			               &sc->images[i].views.alpha[layer]);
 			vk_create_view_swizzle(
-			    &c->vk, sc->vkic.images[i].handle,
-			    (VkFormat)info->format, subresource_range,
-			    components, &sc->images[i].views.no_alpha[layer]);
+			    &c->vk, sc->vkic.images[i].handle, format,
+			    subresource_range, components,
+			    &sc->images[i].views.no_alpha[layer]);
 		}
 	}
 
