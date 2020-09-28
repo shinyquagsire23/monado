@@ -54,6 +54,9 @@ struct comp_layer_renderer
 
 	struct comp_render_layer **layers;
 	uint32_t num_layers;
+
+	uint32_t transformation_ubo_binding;
+	uint32_t texture_binding;
 };
 
 struct comp_layer_renderer *

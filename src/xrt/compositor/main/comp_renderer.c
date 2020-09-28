@@ -493,8 +493,13 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
                              struct comp_swapchain_image *image,
                              struct xrt_layer_data *data)
 {
+	struct comp_render_layer *l = r->lr->layers[layer];
+
+	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
+	l->texture_binding = r->lr->texture_binding;
+
 	comp_layer_update_descriptors(
-	    r->lr->layers[layer], image->sampler,
+	    l, image->sampler,
 	    get_image_view(image, data->flags, data->quad.sub.array_index));
 
 	struct xrt_vec3 s = {data->quad.size.x, data->quad.size.y, 1.0f};
@@ -505,8 +510,6 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 
 	comp_layer_set_flip_y(r->lr->layers[layer], data->flip_y);
 
-
-	struct comp_render_layer *l = r->lr->layers[layer];
 	l->type = XRT_LAYER_QUAD;
 	l->visibility = data->quad.visibility;
 	l->flags = data->flags;
@@ -526,6 +529,10 @@ comp_renderer_set_cylinder_layer(struct comp_renderer *r,
                                  struct xrt_layer_data *data)
 {
 	struct comp_render_layer *l = r->lr->layers[layer];
+
+	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
+	l->texture_binding = r->lr->texture_binding;
+
 	l->type = XRT_LAYER_CYLINDER;
 	l->visibility = data->cylinder.visibility;
 	l->flags = data->flags;
@@ -579,6 +586,10 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 	uint32_t right_array_index = data->stereo.r.sub.array_index;
 
 	struct comp_render_layer *l = r->lr->layers[layer];
+
+	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
+	l->texture_binding = r->lr->texture_binding;
+
 	comp_layer_update_stereo_descriptors(
 	    l, left_image->sampler, right_image->sampler,
 	    get_image_view(left_image, data->flags, left_array_index),

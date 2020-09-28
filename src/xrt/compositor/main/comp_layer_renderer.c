@@ -89,17 +89,15 @@ _init_descriptor_layout(struct comp_layer_renderer *self)
 	    .bindingCount = 2,
 	    .pBindings =
 	        (VkDescriptorSetLayoutBinding[]){
-	            // transformation buffer
 	            {
-	                .binding = 0,
+	                .binding = self->transformation_ubo_binding,
 	                .descriptorCount = 1,
 	                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 	                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT |
 	                              VK_SHADER_STAGE_FRAGMENT_BIT,
 	            },
-	            // quad texture
 	            {
-	                .binding = 1,
+	                .binding = self->texture_binding,
 	                .descriptorCount = 1,
 	                .descriptorType =
 	                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -493,6 +491,10 @@ _init(struct comp_layer_renderer *self,
 	self->num_layers = 0;
 
 	self->extent = extent;
+
+	// binding indices used in layer.vert, layer.frag
+	self->transformation_ubo_binding = 0;
+	self->texture_binding = 1;
 
 	for (uint32_t i = 0; i < 2; i++) {
 		math_matrix_4x4_identity(&self->mat_projection[i]);

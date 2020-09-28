@@ -43,6 +43,9 @@ struct comp_render_layer
 	{
 		struct vk_buffer vertex_buffer;
 	} cylinder;
+
+	uint32_t transformation_ubo_binding;
+	uint32_t texture_binding;
 };
 
 struct comp_render_layer *

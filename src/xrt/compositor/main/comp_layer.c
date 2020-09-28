@@ -84,7 +84,8 @@ _init_ubos(struct comp_render_layer *self)
 }
 
 static void
-_update_descriptor(struct vk_bundle *vk,
+_update_descriptor(struct comp_render_layer *self,
+                   struct vk_bundle *vk,
                    VkDescriptorSet set,
                    VkBuffer transformation_buffer,
                    VkSampler sampler,
@@ -94,7 +95,7 @@ _update_descriptor(struct vk_bundle *vk,
 	    {
 	        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 	        .dstSet = set,
-	        .dstBinding = 0,
+	        .dstBinding = self->transformation_ubo_binding,
 	        .descriptorCount = 1,
 	        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 	        .pBufferInfo =
@@ -108,7 +109,7 @@ _update_descriptor(struct vk_bundle *vk,
 	    {
 	        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 	        .dstSet = set,
-	        .dstBinding = 1,
+	        .dstBinding = self->texture_binding,
 	        .descriptorCount = 1,
 	        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	        .pImageInfo =
@@ -131,7 +132,7 @@ comp_layer_update_descriptors(struct comp_render_layer *self,
                               VkImageView image_view)
 {
 	for (uint32_t eye = 0; eye < 2; eye++)
-		_update_descriptor(self->vk, self->descriptor_sets[eye],
+		_update_descriptor(self, self->vk, self->descriptor_sets[eye],
 		                   self->transformation_ubos[eye].handle,
 		                   sampler, image_view);
 }
@@ -143,11 +144,11 @@ comp_layer_update_stereo_descriptors(struct comp_render_layer *self,
                                      VkImageView left_image_view,
                                      VkImageView right_image_view)
 {
-	_update_descriptor(self->vk, self->descriptor_sets[0],
+	_update_descriptor(self, self->vk, self->descriptor_sets[0],
 	                   self->transformation_ubos[0].handle, left_sampler,
 	                   left_image_view);
 
-	_update_descriptor(self->vk, self->descriptor_sets[1],
+	_update_descriptor(self, self->vk, self->descriptor_sets[1],
 	                   self->transformation_ubos[1].handle, right_sampler,
 	                   right_image_view);
 }
