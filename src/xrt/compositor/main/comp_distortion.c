@@ -348,17 +348,17 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	switch (d->distortion_model) {
 	case XRT_DISTORTION_MODEL_MESHUV:
 		// clang-format off
-		vertex_input_attribute_descriptions[0].binding = 0;
+		vertex_input_attribute_descriptions[0].binding = d->render_texture_target_binding;
 		vertex_input_attribute_descriptions[0].location = 0;
 		vertex_input_attribute_descriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		vertex_input_attribute_descriptions[0].offset = 0;
 
-		vertex_input_attribute_descriptions[1].binding = 0;
+		vertex_input_attribute_descriptions[1].binding = d->render_texture_target_binding;
 		vertex_input_attribute_descriptions[1].location = 1;
 		vertex_input_attribute_descriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		vertex_input_attribute_descriptions[1].offset = 16;
 
-		vertex_input_binding_description.binding = 0;
+		vertex_input_binding_description.binding = d->render_texture_target_binding;
 		vertex_input_binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 		vertex_input_binding_description.stride = d->mesh.stride;
 
