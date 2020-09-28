@@ -26,8 +26,6 @@
 #include "shaders/mesh.frag.h"
 #include "shaders/mesh.vert.h"
 #include "shaders/none.frag.h"
-#include "shaders/panotools.frag.h"
-#include "shaders/vive.frag.h"
 
 
 #pragma GCC diagnostic pop
@@ -64,14 +62,11 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
                               VkPipelineCache pipeline_cache);
 
 static VkWriteDescriptorSet
-comp_distortion_get_uniform_write_descriptor_set(struct comp_distortion *d,
-                                                 uint32_t binding,
-                                                 uint32_t eye);
-
-static VkWriteDescriptorSet
-comp_distortion_get_uniform_write_descriptor_set_vp(struct comp_distortion *d,
-                                                    uint32_t binding,
-                                                    uint32_t eye);
+comp_distortion_get_uniform_write_descriptor_set(
+    struct comp_distortion *d,
+    uint32_t binding,
+    VkDescriptorSet descriptor_set,
+    struct comp_uniform_buffer *ubo_handle);
 
 static VkWriteDescriptorSet
 comp_distortion_get_image_write_descriptor_set(
@@ -210,6 +205,11 @@ comp_distortion_init(struct comp_distortion *d,
 	d->ubo_vp_data[1].flip_y = false;
 	d->quirk_draw_lines = c->settings.debug.wireframe;
 
+	// binding indices used in distortion.vert, mesh.vert, mesh.frag,
+	// none.frag
+	d->render_texture_target_binding = 0;
+	d->ubo_viewport_binding = 1;
+
 	comp_distortion_init_buffers(d, c);
 	comp_distortion_update_uniform_buffer_warp(d, c);
 	comp_distortion_init_descriptor_set_layout(d);
@@ -234,9 +234,6 @@ comp_distortion_destroy(struct comp_distortion *d)
 	vk->vkDestroyDescriptorSetLayout(vk->device, d->descriptor_set_layout,
 	                                 NULL);
 
-	if (d->has_fragment_shader_ubo) {
-		_buffer_destroy(vk, &d->ubo_handle);
-	}
 	_buffer_destroy(vk, &d->vbo_handle);
 	_buffer_destroy(vk, &d->index_handle);
 	_buffer_destroy(vk, &d->ubo_viewport_handles[0]);
@@ -349,18 +346,6 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	size_t vertex_shader_size = sizeof(shaders_distortion_vert);
 
 	switch (d->distortion_model) {
-	case XRT_DISTORTION_MODEL_NONE:
-		fragment_shader_code = shaders_none_frag;
-		fragment_shader_size = sizeof(shaders_none_frag);
-		break;
-	case XRT_DISTORTION_MODEL_OPENHMD:
-		fragment_shader_code = shaders_panotools_frag;
-		fragment_shader_size = sizeof(shaders_panotools_frag);
-		break;
-	case XRT_DISTORTION_MODEL_VIVE:
-		fragment_shader_code = shaders_vive_frag;
-		fragment_shader_size = sizeof(shaders_vive_frag);
-		break;
 	case XRT_DISTORTION_MODEL_MESHUV:
 		// clang-format off
 		vertex_input_attribute_descriptions[0].binding = 0;
@@ -388,9 +373,16 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 		fragment_shader_code = shaders_mesh_frag;
 		fragment_shader_size = sizeof(shaders_mesh_frag);
 		break;
+	case XRT_DISTORTION_MODEL_COMPUTE:
+		VK_ERROR(d->vk,
+		         "Mesh not computed, using no distortion shader!");
+		fragment_shader_code = shaders_none_frag;
+		fragment_shader_size = sizeof(shaders_none_frag);
+		break;
+	case XRT_DISTORTION_MODEL_NONE:
 	default:
-		fragment_shader_code = shaders_panotools_frag;
-		fragment_shader_size = sizeof(shaders_panotools_frag);
+		fragment_shader_code = shaders_none_frag;
+		fragment_shader_size = sizeof(shaders_none_frag);
 		break;
 	}
 
@@ -430,34 +422,22 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 }
 
 static VkWriteDescriptorSet
-comp_distortion_get_uniform_write_descriptor_set(struct comp_distortion *d,
-                                                 uint32_t binding,
-                                                 uint32_t eye)
+comp_distortion_get_uniform_write_descriptor_set(
+    struct comp_distortion *d,
+    uint32_t binding,
+    VkDescriptorSet descriptor_set,
+    struct comp_uniform_buffer *ubo_handle)
 {
 	return (VkWriteDescriptorSet){
 	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-	    .dstSet = d->descriptor_sets[eye],
+	    .dstSet = descriptor_set,
 	    .dstBinding = binding,
 	    .descriptorCount = 1,
 	    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-	    .pBufferInfo = &d->ubo_handle.descriptor,
+	    .pBufferInfo = &ubo_handle->descriptor,
 	};
 }
 
-static VkWriteDescriptorSet
-comp_distortion_get_uniform_write_descriptor_set_vp(struct comp_distortion *d,
-                                                    uint32_t binding,
-                                                    uint32_t eye)
-{
-	return (VkWriteDescriptorSet){
-	    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-	    .dstSet = d->descriptor_sets[eye],
-	    .dstBinding = binding,
-	    .descriptorCount = 1,
-	    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-	    .pBufferInfo = &d->ubo_viewport_handles[eye].descriptor,
-	};
-}
 
 static VkWriteDescriptorSet
 comp_distortion_get_image_write_descriptor_set(
@@ -514,35 +494,19 @@ comp_distortion_update_descriptor_set(struct comp_distortion *d,
 	    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 	};
 
-	if (d->has_fragment_shader_ubo) {
-		VkWriteDescriptorSet write_descriptor_sets[3] = {
-		    // Binding 0 : Render texture target
-		    comp_distortion_get_image_write_descriptor_set(
-		        d->descriptor_sets[eye], &image_info, 0),
-		    // Binding 1 : Fragment shader uniform buffer
-		    comp_distortion_get_uniform_write_descriptor_set(d, 1, eye),
-		    // Binding 2 : view uniform buffer
-		    comp_distortion_get_uniform_write_descriptor_set_vp(d, 2,
-		                                                        eye),
-		};
+	VkWriteDescriptorSet write_descriptor_sets[] = {
+	    // Binding 0 : Render texture target
+	    comp_distortion_get_image_write_descriptor_set(
+	        d->descriptor_sets[eye], &image_info,
+	        d->render_texture_target_binding),
+	    comp_distortion_get_uniform_write_descriptor_set(
+	        d, d->ubo_viewport_binding, d->descriptor_sets[eye],
+	        &d->ubo_viewport_handles[eye]),
+	};
 
-		vk->vkUpdateDescriptorSets(vk->device,
-		                           ARRAY_SIZE(write_descriptor_sets),
-		                           write_descriptor_sets, 0, NULL);
-	} else {
-		VkWriteDescriptorSet write_descriptor_sets[2] = {
-		    // Binding 0 : Render texture target
-		    comp_distortion_get_image_write_descriptor_set(
-		        d->descriptor_sets[eye], &image_info, 0),
-		    // Binding 2 : view uniform buffer
-		    comp_distortion_get_uniform_write_descriptor_set_vp(d, 2,
-		                                                        eye),
-		};
-
-		vk->vkUpdateDescriptorSets(vk->device,
-		                           ARRAY_SIZE(write_descriptor_sets),
-		                           write_descriptor_sets, 0, NULL);
-	}
+	vk->vkUpdateDescriptorSets(vk->device,
+	                           ARRAY_SIZE(write_descriptor_sets),
+	                           write_descriptor_sets, 0, NULL);
 
 	d->ubo_vp_data[eye].flip_y = flip_y;
 	memcpy(d->ubo_viewport_handles[eye].mapped, &d->ubo_vp_data[eye],
@@ -567,24 +531,15 @@ comp_distortion_init_descriptor_set_layout(struct comp_distortion *d)
 	struct vk_bundle *vk = d->vk;
 	VkResult ret;
 
-	VkDescriptorSetLayoutBinding set_layout_bindings[3] = {
-	    // Binding 0 : Render texture target left
+	VkDescriptorSetLayoutBinding set_layout_bindings[2] = {
 	    {
-	        .binding = 0,
+	        .binding = d->render_texture_target_binding,
 	        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	        .descriptorCount = 1,
 	        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 	    },
-	    // Binding 1 : Fragment shader uniform buffer
 	    {
-	        .binding = 1,
-	        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-	        .descriptorCount = 1,
-	        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-	    },
-	    // binding 2: viewport index
-	    {
-	        .binding = 2,
+	        .binding = d->ubo_viewport_binding,
 	        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 	        .descriptorCount = 1,
 	        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
@@ -677,61 +632,6 @@ static void
 comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
                                            struct comp_compositor *c)
 {
-	// clang-format off
-	switch (d->distortion_model) {
-	case XRT_DISTORTION_MODEL_VIVE:
-		/*
-		 * VIVE fragment shader
-		 */
-		d->ubo_vive.aspect_x_over_y = c->xdev->hmd->distortion.vive.aspect_x_over_y;
-		d->ubo_vive.grow_for_undistort = c->xdev->hmd->distortion.vive.grow_for_undistort;
-
-		for (uint32_t i = 0; i < 2; i++)
-			d->ubo_vive.undistort_r2_cutoff[i] = c->xdev->hmd->distortion.vive.undistort_r2_cutoff[i];
-
-		for (uint32_t i = 0; i < 2; i++)
-			for (uint32_t j = 0; j < 2; j++)
-				d->ubo_vive.center[i][j] = c->xdev->hmd->distortion.vive.center[i][j];
-
-		for (uint32_t i = 0; i < 2; i++)
-			for (uint32_t j = 0; j < 3; j++)
-				for (uint32_t k = 0; k < 3; k++)
-					d->ubo_vive.coefficients[i][j][k] = c->xdev->hmd->distortion.vive.coefficients[i][j][k];
-
-		memcpy(d->ubo_handle.mapped, &d->ubo_vive, sizeof(d->ubo_vive));
-		break;
-	case XRT_DISTORTION_MODEL_MESHUV:
-		break;
-	case XRT_DISTORTION_MODEL_NONE:
-		break;
-	case XRT_DISTORTION_MODEL_PANOTOOLS:
-		break;
-	case XRT_DISTORTION_MODEL_OPENHMD:
-	default:
-		/*
-		 * Pano vision fragment shader
-		 */
-		d->ubo_pano.hmd_warp_param[0] = c->xdev->hmd->distortion.openhmd.distortion_k[0];
-		d->ubo_pano.hmd_warp_param[1] = c->xdev->hmd->distortion.openhmd.distortion_k[1];
-		d->ubo_pano.hmd_warp_param[2] = c->xdev->hmd->distortion.openhmd.distortion_k[2];
-		d->ubo_pano.hmd_warp_param[3] = c->xdev->hmd->distortion.openhmd.distortion_k[3];
-		d->ubo_pano.aberr[0] = c->xdev->hmd->distortion.openhmd.aberration_k[0];
-		d->ubo_pano.aberr[1] = c->xdev->hmd->distortion.openhmd.aberration_k[1];
-		d->ubo_pano.aberr[2] = c->xdev->hmd->distortion.openhmd.aberration_k[2];
-		d->ubo_pano.aberr[3] = c->xdev->hmd->distortion.openhmd.aberration_k[3];
-		d->ubo_pano.lens_center[0][0] = c->xdev->hmd->views[0].lens_center.x_meters;
-		d->ubo_pano.lens_center[0][1] = c->xdev->hmd->views[0].lens_center.y_meters;
-		d->ubo_pano.lens_center[1][0] = c->xdev->hmd->views[1].lens_center.x_meters;
-		d->ubo_pano.lens_center[1][1] = c->xdev->hmd->views[1].lens_center.y_meters;
-		d->ubo_pano.viewport_scale[0] = c->xdev->hmd->views[0].display.w_meters;
-		d->ubo_pano.viewport_scale[1] = c->xdev->hmd->views[0].display.h_meters;
-		d->ubo_pano.warp_scale = c->xdev->hmd->distortion.openhmd.warp_scale;
-
-		memcpy(d->ubo_handle.mapped, &d->ubo_pano, sizeof(d->ubo_pano));
-		break;
-	}
-	// clang-format on
-
 	/*
 	 * Common vertex shader stuff.
 	 */
@@ -855,43 +755,19 @@ comp_distortion_init_buffers(struct comp_distortion *d,
 	memory_property_flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	// Distortion ubo and vbo sizes.
-	VkDeviceSize ubo_size = 0;
 	VkDeviceSize vbo_size = 0;
 	VkDeviceSize index_size = 0;
 
-	// overridden for mesh distortion in switch below
-	d->has_fragment_shader_ubo = true;
-
 	switch (d->distortion_model) {
-	case XRT_DISTORTION_MODEL_OPENHMD:
-		ubo_size = sizeof(d->ubo_pano);
-		break;
 	case XRT_DISTORTION_MODEL_MESHUV:
-		d->has_fragment_shader_ubo = false;
 		vbo_size = d->mesh.stride * d->mesh.num_vertices;
 		index_size = sizeof(int) * d->mesh.total_num_indices;
 		break;
-	case XRT_DISTORTION_MODEL_VIVE:
-		// Vive data
-		ubo_size = sizeof(d->ubo_vive);
-		break;
+	case XRT_DISTORTION_MODEL_NONE: break;
 	default:
 		// Should this be a error?
-		ubo_size = sizeof(d->ubo_pano);
+		COMP_ERROR(c, "Only mesh distortion and none is supported");
 		break;
-	}
-
-	if (d->has_fragment_shader_ubo) {
-		// fp ubo
-		ret = _create_buffer(vk, ubo_usage_flags, memory_property_flags,
-		                     &d->ubo_handle, ubo_size, NULL);
-		if (ret != VK_SUCCESS) {
-			VK_DEBUG(vk, "Failed to create warp ubo buffer!");
-		}
-		ret = _buffer_map(vk, &d->ubo_handle, VK_WHOLE_SIZE, 0);
-		if (ret != VK_SUCCESS) {
-			VK_DEBUG(vk, "Failed to map warp ubo buffer!");
-		}
 	}
 
 	// vp ubo[0]

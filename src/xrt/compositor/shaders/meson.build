@@ -3,8 +3,6 @@ shader_srcs = [
 	'mesh.frag',
 	'mesh.vert',
 	'none.frag',
-	'panotools.frag',
-	'vive.frag',
 	'layer.vert',
 	'layer.frag'
 ]

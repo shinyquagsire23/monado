@@ -560,11 +560,9 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.hmd->views[1].rot = u_device_rotation_ident;
 	// clang-format on
 
-	ohd->base.hmd->distortion.models |=
-	    XRT_DISTORTION_MODEL_COMPUTE | XRT_DISTORTION_MODEL_OPENHMD;
+	ohd->base.hmd->distortion.models |= XRT_DISTORTION_MODEL_COMPUTE;
 	ohd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 	ohd->base.compute_distortion = compute_distortion_openhmd;
-	;
 
 	// Which blend modes does the device support.
 	ohd->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
@@ -618,9 +616,6 @@ oh_device_create(ohmd_context *ctx,
 		ohd->base.hmd->distortion.vive.coefficients[1][2][2] = -0.0928909347763f;
 		// clang-format on
 
-		ohd->base.hmd->distortion.models |= XRT_DISTORTION_MODEL_VIVE;
-		ohd->base.hmd->distortion.preferred =
-		    XRT_DISTORTION_MODEL_COMPUTE;
 		ohd->base.compute_distortion = compute_distortion_vive;
 	}
 

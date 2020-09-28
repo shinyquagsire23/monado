@@ -7,7 +7,7 @@
 layout (location = 0) out vec2 out_uv;
 layout (location = 1) out  int out_view_index;
 
-layout (binding = 2, std140) uniform UBO
+layout (binding = 1, std140) uniform UBO
 {
 	vec4 rot;
 	int viewport_id;

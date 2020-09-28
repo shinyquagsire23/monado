@@ -1162,8 +1162,7 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	comp_settings_init(&c->settings, xdev);
 
 	if (c->xdev->hmd->distortion.preferred ==
-	        XRT_DISTORTION_MODEL_COMPUTE ||
-	    c->xdev->hmd->distortion.preferred == XRT_DISTORTION_MODEL_NONE) {
+	    XRT_DISTORTION_MODEL_COMPUTE) {
 		COMP_DEBUG(
 		    c, "Computing distortion mesh on compositor startup...");
 		u_compute_distortion_mesh(c->xdev);

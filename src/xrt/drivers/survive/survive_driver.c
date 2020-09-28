@@ -1093,8 +1093,7 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 		}
 	}
 
-	survive->base.hmd->distortion.models =
-	    XRT_DISTORTION_MODEL_VIVE | XRT_DISTORTION_MODEL_COMPUTE;
+	survive->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
 	survive->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 	survive->base.compute_distortion = compute_distortion;
 

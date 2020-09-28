@@ -54,31 +54,12 @@ struct comp_distortion
 	// Holds all of the needed common Vulkan things.
 	struct vk_bundle *vk;
 
-	bool has_fragment_shader_ubo;
-	struct comp_uniform_buffer ubo_handle;
 	struct comp_uniform_buffer vbo_handle;
 	struct comp_uniform_buffer index_handle;
 	struct comp_uniform_buffer ubo_viewport_handles[2];
+	uint32_t ubo_viewport_binding;
 
 	enum xrt_distortion_model distortion_model;
-
-	struct
-	{
-		float hmd_warp_param[4];
-		float aberr[4];
-		float lens_center[2][4];
-		float viewport_scale[2];
-		float warp_scale;
-	} ubo_pano;
-
-	struct
-	{
-		float coefficients[2][3][4];
-		float center[2][4];
-		float undistort_r2_cutoff[4];
-		float aspect_x_over_y;
-		float grow_for_undistort;
-	} ubo_vive;
 
 	struct
 	{
@@ -103,6 +84,7 @@ struct comp_distortion
 
 	VkDescriptorSetLayout descriptor_set_layout;
 	VkDescriptorSet descriptor_sets[2];
+	uint32_t render_texture_target_binding;
 
 	bool quirk_draw_lines;
 };

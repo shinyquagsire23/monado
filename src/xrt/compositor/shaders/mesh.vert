@@ -5,7 +5,7 @@
 
 #version 450
 
-layout (binding = 2, std140) uniform ubo
+layout (binding = 1, std140) uniform ubo
 {
 	vec4 rot;
 	int viewport_id;

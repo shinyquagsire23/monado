@@ -836,8 +836,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->watchman_dev = watchman_dev;
 	d->variant = variant;
 
-	d->base.hmd->distortion.models =
-	    XRT_DISTORTION_MODEL_VIVE | XRT_DISTORTION_MODEL_COMPUTE;
+	d->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
 	d->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 	d->base.compute_distortion = compute_distortion;
 
