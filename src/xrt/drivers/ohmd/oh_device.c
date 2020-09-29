@@ -398,10 +398,10 @@ u_compute_distortion_openhmd(float distortion_k[5],
 	r = div_scalar(r, scale);
 
 	float r_mag = len(r);
-	r_mag = distortion_k[0] +                        // r^1
-	        distortion_k[1] * r_mag +                // r^2
-	        distortion_k[2] * r_mag * r_mag +        // r^3
-	        distortion_k[3] * r_mag * r_mag * r_mag; // r^4
+	r_mag = distortion_k[3] +                        // r^1
+	        distortion_k[2] * r_mag +                // r^2
+	        distortion_k[1] * r_mag * r_mag +        // r^3
+	        distortion_k[0] * r_mag * r_mag * r_mag; // r^4
 
 	struct xrt_vec2 r_dist = mul_scalar(r, r_mag);
 	r_dist = mul_scalar(r_dist, scale);
