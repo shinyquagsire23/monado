@@ -49,7 +49,6 @@
 #include "util/u_misc.h"
 #include "util/u_time.h"
 #include "util/u_debug.h"
-#include "util/u_distortion_mesh.h"
 
 #include "main/comp_compositor.h"
 
@@ -1160,30 +1159,6 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 
 	// Init the settings to default.
 	comp_settings_init(&c->settings, xdev);
-
-	if (c->xdev->hmd->distortion.preferred ==
-	    XRT_DISTORTION_MODEL_COMPUTE) {
-		COMP_DEBUG(
-		    c, "Computing distortion mesh on compositor startup...");
-		u_compute_distortion_mesh(c->xdev);
-
-		if (c->xdev->hmd->distortion.preferred !=
-		    XRT_DISTORTION_MODEL_MESHUV) {
-			COMP_ERROR(c, "Failed to create mesh distortion for %s",
-			           c->xdev->str);
-
-			//! @todo Check if compositor supports current non-mesh
-			//! distortion model and bail if not.
-			// Monado will likely support only mesh in the future.
-
-			// c->base.base.destroy(&c->base.base);
-			// return NULL;
-		} else {
-			COMP_DEBUG(c, "Distortion mesh computed!");
-			c->settings.distortion_model =
-			    XRT_DISTORTION_MODEL_MESHUV;
-		}
-	}
 
 	c->last_frame_time_ns = os_monotonic_get_ns();
 	c->frame_overhead_ns = 2000000;

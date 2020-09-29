@@ -120,8 +120,7 @@ run_func(struct xrt_device *xdev,
 		}
 	}
 
-	target->distortion.models = XRT_DISTORTION_MODEL_MESHUV;
-	target->distortion.preferred = XRT_DISTORTION_MODEL_MESHUV;
+	target->distortion.models |= XRT_DISTORTION_MODEL_MESHUV;
 	target->distortion.mesh.vertices = verts;
 	target->distortion.mesh.stride = stride_in_floats * sizeof(float);
 	target->distortion.mesh.num_vertices = num_vertices;
