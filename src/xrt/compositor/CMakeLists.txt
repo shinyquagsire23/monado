@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: BSL-1.0
 
 spirv_shaders(SHADER_HEADERS
-	shaders/distortion.vert
 	shaders/mesh.frag
 	shaders/mesh.vert
 	shaders/none.frag
+	shaders/none.vert
 	shaders/layer.frag
 	shaders/layer.vert
 	)

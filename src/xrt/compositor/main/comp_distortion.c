@@ -22,10 +22,10 @@
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wnewline-eof"
 
-#include "shaders/distortion.vert.h"
 #include "shaders/mesh.frag.h"
 #include "shaders/mesh.vert.h"
 #include "shaders/none.frag.h"
+#include "shaders/none.vert.h"
 
 
 #pragma GCC diagnostic pop
@@ -332,8 +332,8 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	VkVertexInputAttributeDescription
 	    vertex_input_attribute_descriptions[2];
 
-	const uint32_t *fragment_shader_code;
-	size_t fragment_shader_size;
+	const uint32_t *fragment_shader_code = NULL;
+	size_t fragment_shader_size = 0;
 
 	/*
 	 * By default, we will generate positions and UVs for the full screen
@@ -342,8 +342,8 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	VkPipelineVertexInputStateCreateInfo vertex_input_state = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 	};
-	const uint32_t *vertex_shader_code = shaders_distortion_vert;
-	size_t vertex_shader_size = sizeof(shaders_distortion_vert);
+	const uint32_t *vertex_shader_code = NULL;
+	size_t vertex_shader_size = 0;
 
 	switch (d->distortion_model) {
 	case XRT_DISTORTION_MODEL_MESHUV:
@@ -376,11 +376,15 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	case XRT_DISTORTION_MODEL_COMPUTE:
 		VK_ERROR(d->vk,
 		         "Mesh not computed, using no distortion shader!");
+		vertex_shader_code = shaders_none_vert;
+		vertex_shader_size = sizeof(shaders_none_vert);
 		fragment_shader_code = shaders_none_frag;
 		fragment_shader_size = sizeof(shaders_none_frag);
 		break;
 	case XRT_DISTORTION_MODEL_NONE:
 	default:
+		vertex_shader_code = shaders_none_vert;
+		vertex_shader_size = sizeof(shaders_none_vert);
 		fragment_shader_code = shaders_none_frag;
 		fragment_shader_size = sizeof(shaders_none_frag);
 		break;
