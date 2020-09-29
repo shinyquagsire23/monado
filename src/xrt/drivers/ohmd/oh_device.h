@@ -50,7 +50,7 @@ struct oh_device
 			//! Panotools warp scale.
 			float warp_scale;
 		} openhmd;
-		struct u_vive_values vive;
+		struct u_vive_values vive[2];
 	} distortion;
 };
 

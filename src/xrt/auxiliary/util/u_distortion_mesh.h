@@ -17,22 +17,6 @@ extern "C" {
 #endif
 
 /*!
- * Distortion correction implementation for the Vive, Vive Pro, Valve Index
- * distortion values found in the HMD configuration.
- *
- * @ingroup aux_util
- */
-bool
-u_compute_distortion_vive(float aspect_x_over_y,
-                          float grow_for_undistort,
-                          float undistort_r2_cutoff,
-                          float center[2],
-                          float coefficients[3][3],
-                          float u,
-                          float v,
-                          struct xrt_vec2_triplet *result);
-
-/*!
  * Values to create a distortion mesh from panotools values.
  *
  * @ingroup aux_util
@@ -62,13 +46,13 @@ struct u_vive_values
 	float grow_for_undistort;
 
 	//! Left/right
-	float undistort_r2_cutoff[2];
+	float undistort_r2_cutoff;
 
 	//! Left/right, x/y
-	float center[2][2];
+	float center[2];
 
 	//! left/right, r/g/b, a/b/c
-	float coefficients[2][3][3];
+	float coefficients[3][3];
 };
 
 /*!
@@ -81,6 +65,18 @@ u_compute_distortion_panotools(struct u_panotools_values *values,
                                float u,
                                float v,
                                struct xrt_vec2_triplet *result);
+
+/*!
+ * Distortion correction implementation for the Vive, Vive Pro, Valve Index
+ * distortion values found in the HMD configuration.
+ *
+ * @ingroup aux_util
+ */
+bool
+u_compute_distortion_vive(struct u_vive_values *values,
+                          float u,
+                          float v,
+                          struct xrt_vec2_triplet *result);
 
 /*!
  * Identity distortion correction sets all result coordinates to u,v.

@@ -134,50 +134,48 @@ run_func(struct xrt_device *xdev,
 }
 
 bool
-u_compute_distortion_vive(float aspect_x_over_y,
-                          float grow_for_undistort,
-                          float undistort_r2_cutoff,
-                          float center[2],
-                          float coefficients[3][3],
+u_compute_distortion_vive(struct u_vive_values *values,
                           float u,
                           float v,
                           struct xrt_vec2_triplet *result)
 {
-	struct xrt_vec2 factor = {0.5 / (1.0 + grow_for_undistort),
-	                          aspect_x_over_y * 0.5 /
-	                              (1.0 + grow_for_undistort)};
+	const struct u_vive_values val = *values;
+
+	struct xrt_vec2 factor = {0.5 / (1.0 + val.grow_for_undistort),
+	                          val.aspect_x_over_y * 0.5 /
+	                              (1.0 + val.grow_for_undistort)};
 
 	struct xrt_vec2 texCoord = {2.0 * u - 1.0, 2.0 * v - 1.0};
 
-	texCoord.y /= aspect_x_over_y;
-	texCoord.x -= center[0];
-	texCoord.y -= center[1];
+	texCoord.y /= val.aspect_x_over_y;
+	texCoord.x -= val.center[0];
+	texCoord.y -= val.center[1];
 
 	float r2 = m_vec2_dot(texCoord, texCoord);
 
 
 	struct xrt_vec3 d_inv = {
-	    (r2 * coefficients[2][0] + coefficients[1][0]) * r2 +
-	        coefficients[0][0] * r2 + 1.0,
-	    (r2 * coefficients[2][1] + coefficients[1][1]) * r2 +
-	        coefficients[0][1] * r2 + 1.0,
-	    (r2 * coefficients[2][2] + coefficients[1][2]) * r2 +
-	        coefficients[0][2] * r2 + 1.0};
+	    (r2 * val.coefficients[2][0] + val.coefficients[1][0]) * r2 +
+	        val.coefficients[0][0] * r2 + 1.0,
+	    (r2 * val.coefficients[2][1] + val.coefficients[1][1]) * r2 +
+	        val.coefficients[0][1] * r2 + 1.0,
+	    (r2 * val.coefficients[2][2] + val.coefficients[1][2]) * r2 +
+	        val.coefficients[0][2] * r2 + 1.0};
 
 	struct xrt_vec3 d = {1.0 / d_inv.x, 1.0 / d_inv.y, 1.0 / d_inv.z};
 
 	struct xrt_vec2 offset = {0.5, 0.5};
 
 	struct xrt_vec2 tc_r = {
-	    offset.x + (texCoord.x * d.x + center[0]) * factor.x,
-	    offset.y + (texCoord.y * d.x + center[1]) * factor.y};
+	    offset.x + (texCoord.x * d.x + val.center[0]) * factor.x,
+	    offset.y + (texCoord.y * d.x + val.center[1]) * factor.y};
 
 	struct xrt_vec2 tc_g = {
-	    offset.x + (texCoord.x * d.y + center[0]) * factor.x,
-	    offset.y + (texCoord.y * d.y + center[1]) * factor.y};
+	    offset.x + (texCoord.x * d.y + val.center[0]) * factor.x,
+	    offset.y + (texCoord.y * d.y + val.center[1]) * factor.y};
 	struct xrt_vec2 tc_b = {
-	    offset.x + (texCoord.x * d.z + center[0]) * factor.x,
-	    offset.y + (texCoord.y * d.z + center[1]) * factor.y};
+	    offset.x + (texCoord.x * d.z + val.center[0]) * factor.x,
+	    offset.y + (texCoord.y * d.z + val.center[1]) * factor.y};
 
 	result->r = tc_r;
 	result->g = tc_g;

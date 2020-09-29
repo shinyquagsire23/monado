@@ -143,7 +143,7 @@ struct vive_device
 		bool last;
 	} gui;
 
-	struct u_vive_values distortion;
+	struct u_vive_values distortion[2];
 };
 
 struct vive_device *

@@ -787,10 +787,11 @@ vive_init_defaults(struct vive_device *d)
 
 	d->rot_filtered.w = 1.0f;
 
-	d->distortion.aspect_x_over_y = 0.89999997615814209f;
-	d->distortion.grow_for_undistort = 0.5f;
-	d->distortion.undistort_r2_cutoff[0] = 1.0f;
-	d->distortion.undistort_r2_cutoff[1] = 1.0f;
+	for (int view = 0; view < 2; view++) {
+		d->distortion[view].aspect_x_over_y = 0.89999997615814209f;
+		d->distortion[view].grow_for_undistort = 0.5f;
+		d->distortion[view].undistort_r2_cutoff = 1.0f;
+	}
 }
 
 
@@ -802,10 +803,7 @@ compute_distortion(struct xrt_device *xdev,
                    struct xrt_vec2_triplet *result)
 {
 	struct vive_device *d = vive_device(xdev);
-	return u_compute_distortion_vive(
-	    d->distortion.aspect_x_over_y, d->distortion.grow_for_undistort,
-	    d->distortion.undistort_r2_cutoff[view], d->distortion.center[view],
-	    d->distortion.coefficients[view], u, v, result);
+	return u_compute_distortion_vive(&d->distortion[view], u, v, result);
 }
 
 struct vive_device *

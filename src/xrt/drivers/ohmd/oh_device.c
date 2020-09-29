@@ -457,12 +457,8 @@ compute_distortion_vive(struct xrt_device *xdev,
                         struct xrt_vec2_triplet *result)
 {
 	struct oh_device *ohd = oh_device(xdev);
-	return u_compute_distortion_vive(
-	    ohd->distortion.vive.aspect_x_over_y,
-	    ohd->distortion.vive.grow_for_undistort,
-	    ohd->distortion.vive.undistort_r2_cutoff[view],
-	    ohd->distortion.vive.center[view],
-	    ohd->distortion.vive.coefficients[view], u, v, result);
+	return u_compute_distortion_vive(&ohd->distortion.vive[view], u, v,
+	                                 result);
 }
 
 struct oh_device *
@@ -575,46 +571,48 @@ oh_device_create(ohmd_context *ctx,
 	if (info.quirks.video_distortion_vive) {
 		// clang-format off
 		// These need to be acquired from the vive config
-		ohd->distortion.vive.aspect_x_over_y = 0.8999999761581421f;
-		ohd->distortion.vive.grow_for_undistort = 0.6000000238418579f;
-		ohd->distortion.vive.undistort_r2_cutoff[0] = 1.11622154712677f;
-		ohd->distortion.vive.undistort_r2_cutoff[1] = 1.101870775222778f;
-		ohd->distortion.vive.center[0][0] = 0.08946027017045266f;
-		ohd->distortion.vive.center[0][1] = -0.009002181016260827f;
-		ohd->distortion.vive.center[1][0] = -0.08933516629552526f;
-		ohd->distortion.vive.center[1][1] = -0.006014565287238661f;
+		for (int view = 0; view < 2; view++) {
+			ohd->distortion.vive[view].aspect_x_over_y = 0.8999999761581421f;
+			ohd->distortion.vive[view].grow_for_undistort = 0.6000000238418579f;
+		}
+		ohd->distortion.vive[0].undistort_r2_cutoff = 1.11622154712677f;
+		ohd->distortion.vive[1].undistort_r2_cutoff = 1.101870775222778f;
+		ohd->distortion.vive[0].center[0] = 0.08946027017045266f;
+		ohd->distortion.vive[0].center[1] = -0.009002181016260827f;
+		ohd->distortion.vive[1].center[0] = -0.08933516629552526f;
+		ohd->distortion.vive[1].center[1] = -0.006014565287238661f;
 
 		// left
 		// green
-		ohd->distortion.vive.coefficients[0][0][0] = -0.188236068524731f;
-		ohd->distortion.vive.coefficients[0][0][1] = -0.221086205321053f;
-		ohd->distortion.vive.coefficients[0][0][2] = -0.2537849057915209f;
+		ohd->distortion.vive[0].coefficients[0][0] = -0.188236068524731f;
+		ohd->distortion.vive[0].coefficients[0][1] = -0.221086205321053f;
+		ohd->distortion.vive[0].coefficients[0][2] = -0.2537849057915209f;
 
 		// blue
-		ohd->distortion.vive.coefficients[0][1][0] = -0.07316590815739493f;
-		ohd->distortion.vive.coefficients[0][1][1] = -0.02332400789561968f;
-		ohd->distortion.vive.coefficients[0][1][2] = 0.02469959434698275f;
+		ohd->distortion.vive[0].coefficients[1][0] = -0.07316590815739493f;
+		ohd->distortion.vive[0].coefficients[1][1] = -0.02332400789561968f;
+		ohd->distortion.vive[0].coefficients[1][2] = 0.02469959434698275f;
 
 		// red
-		ohd->distortion.vive.coefficients[0][2][0] = -0.02223805567703767f;
-		ohd->distortion.vive.coefficients[0][2][1] = -0.04931309279533211f;
-		ohd->distortion.vive.coefficients[0][2][2] = -0.07862881939243466f;
+		ohd->distortion.vive[0].coefficients[2][0] = -0.02223805567703767f;
+		ohd->distortion.vive[0].coefficients[2][1] = -0.04931309279533211f;
+		ohd->distortion.vive[0].coefficients[2][2] = -0.07862881939243466f;
 
 		// right
 		// green
-		ohd->distortion.vive.coefficients[1][0][0] = -0.1906209981894497f;
-		ohd->distortion.vive.coefficients[1][0][1] = -0.2248896677207884f;
-		ohd->distortion.vive.coefficients[1][0][2] = -0.2721364516782803f;
+		ohd->distortion.vive[1].coefficients[0][0] = -0.1906209981894497f;
+		ohd->distortion.vive[1].coefficients[0][1] = -0.2248896677207884f;
+		ohd->distortion.vive[1].coefficients[0][2] = -0.2721364516782803f;
 
 		// blue
-		ohd->distortion.vive.coefficients[1][1][0] = -0.07346071902951497f;
-		ohd->distortion.vive.coefficients[1][1][1] = -0.02189527566250131f;
-		ohd->distortion.vive.coefficients[1][1][2] = 0.0581378652359256f;
+		ohd->distortion.vive[1].coefficients[1][0] = -0.07346071902951497f;
+		ohd->distortion.vive[1].coefficients[1][1] = -0.02189527566250131f;
+		ohd->distortion.vive[1].coefficients[1][2] = 0.0581378652359256f;
 
 		// red
-		ohd->distortion.vive.coefficients[1][2][0] = -0.01755850332081247f;
-		ohd->distortion.vive.coefficients[1][2][1] = -0.04517245633373419f;
-		ohd->distortion.vive.coefficients[1][2][2] = -0.0928909347763f;
+		ohd->distortion.vive[1].coefficients[2][0] = -0.01755850332081247f;
+		ohd->distortion.vive[1].coefficients[2][1] = -0.04517245633373419f;
+		ohd->distortion.vive[1].coefficients[2][2] = -0.0928909347763f;
 		// clang-format on
 
 		ohd->base.compute_distortion = compute_distortion_vive;
