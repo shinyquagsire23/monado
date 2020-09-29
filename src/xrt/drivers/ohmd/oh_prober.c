@@ -128,15 +128,14 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 		return NULL;
 	}
 
-	struct oh_device *ohd = oh_device_create(
+	struct xrt_device *xdev = oh_device_create(
 	    ohp->ctx, dev, prod, ohp->print_spew, ohp->print_debug);
 
-	ohd->base.orientation_tracking_supported =
-	    orientation_tracking_supported;
-	ohd->base.position_tracking_supported = position_tracking_supported;
-	ohd->base.device_type = XRT_DEVICE_TYPE_HMD;
+	xdev->orientation_tracking_supported = orientation_tracking_supported;
+	xdev->position_tracking_supported = position_tracking_supported;
+	xdev->device_type = XRT_DEVICE_TYPE_HMD;
 
-	return &ohd->base;
+	return xdev;
 }
 
 struct xrt_auto_prober *

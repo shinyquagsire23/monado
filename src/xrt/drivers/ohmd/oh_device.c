@@ -31,6 +31,7 @@
 #include "util/u_debug.h"
 #include "util/u_device.h"
 #include "util/u_time.h"
+#include "util/u_distortion_mesh.h"
 
 #include "oh_device.h"
 
@@ -40,6 +41,46 @@ DEBUG_GET_ONCE_BOOL_OPTION(oh_finite_diff, "OH_ALLOW_FINITE_DIFF", true)
 
 // Define this if you have the appropriately hacked-up OpenHMD version.
 #undef OHMD_HAVE_ANG_VEL
+
+struct openhmd_values
+{
+	float hmd_warp_param[4];
+	float aberr[3];
+	struct xrt_vec2 lens_center;
+	struct xrt_vec2 viewport_scale;
+	float warp_scale;
+};
+
+/*!
+ * @implements xrt_device
+ */
+struct oh_device
+{
+	struct xrt_device base;
+	ohmd_context *ctx;
+	ohmd_device *dev;
+
+	bool skip_ang_vel;
+
+	int64_t last_update;
+	struct xrt_space_relation last_relation;
+
+	bool print_spew;
+	bool print_debug;
+	bool enable_finite_difference;
+
+	struct
+	{
+		struct u_vive_values vive[2];
+		struct openhmd_values openhmd[2];
+	} distortion;
+};
+
+static inline struct oh_device *
+oh_device(struct xrt_device *xdev)
+{
+	return (struct oh_device *)xdev;
+}
 
 static void
 oh_device_destroy(struct xrt_device *xdev)
@@ -212,7 +253,7 @@ struct device_info
 	float lens_vertical_position;
 
 	float pano_distortion_k[4];
-	float pano_aberration_k[4];
+	float pano_aberration_k[3];
 	float pano_warp_scale;
 
 	struct
@@ -382,40 +423,38 @@ get_info(struct oh_device *ohd, const char *prod)
 
 // slightly different to u_compute_distortion_panotools in u_distortion_mesh
 static bool
-u_compute_distortion_openhmd(float distortion_k[5],
-                             float aberration_k[3],
-                             float scale,
-                             struct xrt_vec2 lens_center,
-                             struct xrt_vec2 viewport_size,
+u_compute_distortion_openhmd(struct openhmd_values *values,
                              float u,
                              float v,
                              struct xrt_vec2_triplet *result)
 {
+	struct openhmd_values val = *values;
+
 	struct xrt_vec2 r = {u, v};
-	r = mul(r, viewport_size);
-	r = sub(r, lens_center);
-	r = div_scalar(r, scale);
+	r = mul(r, val.viewport_scale);
+	r = sub(r, val.lens_center);
+	r = div_scalar(r, val.warp_scale);
 
 	float r_mag = len(r);
-	r_mag = distortion_k[3] +                        // r^1
-	        distortion_k[2] * r_mag +                // r^2
-	        distortion_k[1] * r_mag * r_mag +        // r^3
-	        distortion_k[0] * r_mag * r_mag * r_mag; // r^4
+	r_mag = val.hmd_warp_param[3] +                        // r^1
+	        val.hmd_warp_param[2] * r_mag +                // r^2
+	        val.hmd_warp_param[1] * r_mag * r_mag +        // r^3
+	        val.hmd_warp_param[0] * r_mag * r_mag * r_mag; // r^4
 
 	struct xrt_vec2 r_dist = mul_scalar(r, r_mag);
-	r_dist = mul_scalar(r_dist, scale);
+	r_dist = mul_scalar(r_dist, val.warp_scale);
 
-	struct xrt_vec2 r_uv = mul_scalar(r_dist, aberration_k[0]);
-	r_uv = add(r_uv, lens_center);
-	r_uv = div(r_uv, viewport_size);
+	struct xrt_vec2 r_uv = mul_scalar(r_dist, val.aberr[0]);
+	r_uv = add(r_uv, val.lens_center);
+	r_uv = div(r_uv, val.viewport_scale);
 
-	struct xrt_vec2 g_uv = mul_scalar(r_dist, aberration_k[1]);
-	g_uv = add(g_uv, lens_center);
-	g_uv = div(g_uv, viewport_size);
+	struct xrt_vec2 g_uv = mul_scalar(r_dist, val.aberr[1]);
+	g_uv = add(g_uv, val.lens_center);
+	g_uv = div(g_uv, val.viewport_scale);
 
-	struct xrt_vec2 b_uv = mul_scalar(r_dist, aberration_k[2]);
-	b_uv = add(b_uv, lens_center);
-	b_uv = div(b_uv, viewport_size);
+	struct xrt_vec2 b_uv = mul_scalar(r_dist, val.aberr[2]);
+	b_uv = add(b_uv, val.lens_center);
+	b_uv = div(b_uv, val.viewport_scale);
 
 	result->r = r_uv;
 	result->g = g_uv;
@@ -431,22 +470,8 @@ compute_distortion_openhmd(struct xrt_device *xdev,
                            struct xrt_vec2_triplet *result)
 {
 	struct oh_device *ohd = oh_device(xdev);
-
-	struct xrt_hmd_parts *hmd = xdev->hmd;
-	struct xrt_vec2 lens_center = {
-	    .x = hmd->views[view].lens_center.x_meters,
-	    .y = hmd->views[view].lens_center.y_meters};
-
-	struct xrt_vec2 viewport_size = {.x = hmd->views[view].display.w_meters,
-	                                 .y =
-	                                     hmd->views[view].display.h_meters};
-
-	//! @todo: support distortion per view
-	return u_compute_distortion_openhmd(
-	    ohd->distortion.openhmd.distortion_k,
-	    ohd->distortion.openhmd.aberration_k,
-	    ohd->distortion.openhmd.warp_scale, lens_center, viewport_size, u,
-	    v, result);
+	return u_compute_distortion_openhmd(&ohd->distortion.openhmd[view], u,
+	                                    v, result);
 }
 
 static bool
@@ -461,7 +486,7 @@ compute_distortion_vive(struct xrt_device *xdev,
 	                                 result);
 }
 
-struct oh_device *
+struct xrt_device *
 oh_device_create(ohmd_context *ctx,
                  ohmd_device *dev,
                  const char *prod,
@@ -521,14 +546,6 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.hmd->screens[0].w_pixels = info.display.w_pixels;
 	ohd->base.hmd->screens[0].h_pixels = info.display.h_pixels;
 	ohd->base.hmd->screens[0].nominal_frame_interval_ns = info.display.nominal_frame_interval_ns;
-	ohd->distortion.openhmd.distortion_k[0] = info.pano_distortion_k[0];
-	ohd->distortion.openhmd.distortion_k[1] = info.pano_distortion_k[1];
-	ohd->distortion.openhmd.distortion_k[2] = info.pano_distortion_k[2];
-	ohd->distortion.openhmd.distortion_k[3] = info.pano_distortion_k[3];
-	ohd->distortion.openhmd.aberration_k[0] = info.pano_aberration_k[0];
-	ohd->distortion.openhmd.aberration_k[1] = info.pano_aberration_k[1];
-	ohd->distortion.openhmd.aberration_k[2] = info.pano_aberration_k[2];
-	ohd->distortion.openhmd.warp_scale = info.pano_warp_scale;
 
 	// Left
 	ohd->base.hmd->views[0].display.w_meters = info.views[0].display.w_meters;
@@ -555,6 +572,23 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.hmd->views[1].viewport.w_pixels = info.views[1].display.w_pixels;
 	ohd->base.hmd->views[1].viewport.h_pixels = info.views[1].display.h_pixels;
 	ohd->base.hmd->views[1].rot = u_device_rotation_ident;
+
+	for (int view = 0; view < 2; view++) {
+		ohd->distortion.openhmd[view].hmd_warp_param[0] = info.pano_distortion_k[0];
+		ohd->distortion.openhmd[view].hmd_warp_param[1] = info.pano_distortion_k[1];
+		ohd->distortion.openhmd[view].hmd_warp_param[2] = info.pano_distortion_k[2];
+		ohd->distortion.openhmd[view].hmd_warp_param[3] = info.pano_distortion_k[3];
+		ohd->distortion.openhmd[view].aberr[0] = info.pano_aberration_k[0];
+		ohd->distortion.openhmd[view].aberr[1] = info.pano_aberration_k[1];
+		ohd->distortion.openhmd[view].aberr[2] = info.pano_aberration_k[2];
+		ohd->distortion.openhmd[view].warp_scale = info.pano_warp_scale;
+
+		ohd->distortion.openhmd[view].lens_center.x = ohd->base.hmd->views[view].lens_center.x_meters;
+		ohd->distortion.openhmd[view].lens_center.y = ohd->base.hmd->views[view].lens_center.y_meters;
+
+		ohd->distortion.openhmd[view].viewport_scale.x = ohd->base.hmd->views[view].display.w_meters;
+		ohd->distortion.openhmd[view].viewport_scale.y = ohd->base.hmd->views[view].display.h_meters;
+	}
 	// clang-format on
 
 	ohd->base.hmd->distortion.models |= XRT_DISTORTION_MODEL_COMPUTE;
@@ -625,8 +659,10 @@ oh_device_create(ohmd_context *ctx,
 	}
 
 	if (info.quirks.left_center_pano_scale) {
-		ohd->distortion.openhmd.warp_scale =
-		    info.views[0].lens_center_x_meters;
+		for (int view = 0; view < 2; view++) {
+			ohd->distortion.openhmd[view].warp_scale =
+			    info.views[0].lens_center_x_meters;
+		}
 	}
 
 	if (info.quirks.rotate_lenses_right) {
@@ -691,5 +727,5 @@ oh_device_create(ohmd_context *ctx,
 	u_var_add_root(ohd, "OpenHMD Wrapper", true);
 	u_var_add_ro_text(ohd, ohd->base.str, "Card");
 
-	return ohd;
+	return &ohd->base;
 }
