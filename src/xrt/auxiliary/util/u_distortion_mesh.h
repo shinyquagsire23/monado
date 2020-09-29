@@ -52,6 +52,26 @@ struct u_panotools_values
 };
 
 /*!
+ * Values to create a distortion mesh from Vive configuration values.
+ *
+ * @ingroup aux_util
+ */
+struct u_vive_values
+{
+	float aspect_x_over_y;
+	float grow_for_undistort;
+
+	//! Left/right
+	float undistort_r2_cutoff[2];
+
+	//! Left/right, x/y
+	float center[2][2];
+
+	//! left/right, r/g/b, a/b/c
+	float coefficients[2][3][3];
+};
+
+/*!
  * Distortion correction implementation for Panotools distortion values.
  *
  * @ingroup aux_util

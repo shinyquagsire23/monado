@@ -163,6 +163,7 @@ struct survive_device
 			uint64_t curl_ts[FINGER_LAST];
 		} ctrl;
 	};
+	struct u_vive_values distortion;
 };
 
 //! @todo support more devices (trackers, ...)
@@ -817,7 +818,7 @@ _json_get_int(const cJSON *json, const char *name)
 }
 
 static void
-_get_color_coeffs(struct xrt_hmd_parts *hmd,
+_get_color_coeffs(struct u_vive_values *values,
                   const cJSON *coeffs,
                   uint8_t eye,
                   uint8_t channel)
@@ -829,7 +830,7 @@ _get_color_coeffs(struct xrt_hmd_parts *hmd,
 	size_t i = 0;
 	cJSON_ArrayForEach(item, coeffs)
 	{
-		hmd->distortion.vive.coefficients[eye][i][channel] =
+		values->coefficients[eye][i][channel] =
 		    (float)item->valuedouble;
 		++i;
 		if (i == 3) {
@@ -839,7 +840,7 @@ _get_color_coeffs(struct xrt_hmd_parts *hmd,
 }
 
 static void
-_get_color_coeffs_lookup(struct xrt_hmd_parts *hmd,
+_get_color_coeffs_lookup(struct u_vive_values *values,
                          const cJSON *eye_json,
                          const char *name,
                          uint8_t eye,
@@ -857,7 +858,7 @@ _get_color_coeffs_lookup(struct xrt_hmd_parts *hmd,
 		return;
 	}
 
-	_get_color_coeffs(hmd, coeffs, eye, channel);
+	_get_color_coeffs(values, coeffs, eye, channel);
 }
 
 static void
@@ -865,8 +866,6 @@ get_distortion_properties(struct survive_device *d,
                           const cJSON *eye_transform_json,
                           uint8_t eye)
 {
-	struct xrt_hmd_parts *hmd = d->base.hmd;
-
 	const cJSON *eye_json = cJSON_GetArrayItem(eye_transform_json, eye);
 	if (eye_json == NULL) {
 		return;
@@ -879,8 +878,8 @@ get_distortion_properties(struct survive_device *d,
 
 	// TODO: store grow_for_undistort per eye
 	// clang-format off
-	hmd->distortion.vive.grow_for_undistort = _json_get_float(eye_json, "grow_for_undistort");
-	hmd->distortion.vive.undistort_r2_cutoff[eye] = _json_get_float(eye_json, "undistort_r2_cutoff");
+	d->distortion.grow_for_undistort = _json_get_float(eye_json, "grow_for_undistort");
+	d->distortion.undistort_r2_cutoff[eye] = _json_get_float(eye_json, "undistort_r2_cutoff");
 	// clang-format on
 
 	const cJSON *distortion =
@@ -888,20 +887,22 @@ get_distortion_properties(struct survive_device *d,
 	if (distortion != NULL) {
 		// TODO: store center per color
 		// clang-format off
-		hmd->distortion.vive.center[eye][0] = _json_get_float(distortion, "center_x");
-		hmd->distortion.vive.center[eye][1] = _json_get_float(distortion, "center_y");
+		d->distortion.center[eye][0] = _json_get_float(distortion, "center_x");
+		d->distortion.center[eye][1] = _json_get_float(distortion, "center_y");
 		// clang-format on
 
 		// green
 		const cJSON *coeffs =
 		    cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
 		if (coeffs != NULL) {
-			_get_color_coeffs(hmd, coeffs, eye, 1);
+			_get_color_coeffs(&d->distortion, coeffs, eye, 1);
 		}
 	}
 
-	_get_color_coeffs_lookup(hmd, eye_json, "distortion_red", eye, 0);
-	_get_color_coeffs_lookup(hmd, eye_json, "distortion_blue", eye, 2);
+	_get_color_coeffs_lookup(&d->distortion, eye_json, "distortion_red",
+	                         eye, 0);
+	_get_color_coeffs_lookup(&d->distortion, eye_json, "distortion_blue",
+	                         eye, 2);
 }
 
 static bool
@@ -911,13 +912,11 @@ compute_distortion(struct xrt_device *xdev,
                    float v,
                    struct xrt_vec2_triplet *result)
 {
-	struct xrt_hmd_parts *hmd = xdev->hmd;
+	struct survive_device *d = (struct survive_device *)xdev;
 	return u_compute_distortion_vive(
-	    hmd->distortion.vive.aspect_x_over_y,
-	    hmd->distortion.vive.grow_for_undistort,
-	    hmd->distortion.vive.undistort_r2_cutoff[view],
-	    hmd->distortion.vive.center[view],
-	    hmd->distortion.vive.coefficients[view], u, v, result);
+	    d->distortion.aspect_x_over_y, d->distortion.grow_for_undistort,
+	    d->distortion.undistort_r2_cutoff[view], d->distortion.center[view],
+	    d->distortion.coefficients[view], u, v, result);
 }
 
 static bool
@@ -998,11 +997,10 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0,
 	                       eye_to_screen_distance);
 
-	survive->base.hmd->distortion.vive.aspect_x_over_y =
-	    0.89999997615814209f;
-	survive->base.hmd->distortion.vive.grow_for_undistort = 0.5f;
-	survive->base.hmd->distortion.vive.undistort_r2_cutoff[0] = 1.0f;
-	survive->base.hmd->distortion.vive.undistort_r2_cutoff[1] = 1.0f;
+	survive->distortion.aspect_x_over_y = 0.89999997615814209f;
+	survive->distortion.grow_for_undistort = 0.5f;
+	survive->distortion.undistort_r2_cutoff[0] = 1.0f;
+	survive->distortion.undistort_r2_cutoff[1] = 1.0f;
 
 	survive->hmd.rot[0].w = 1.0f;
 	survive->hmd.rot[1].w = 1.0f;
@@ -1017,9 +1015,8 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 	    cJSON_GetObjectItemCaseSensitive(json, "device");
 	if (device_json) {
 		if (survive->variant != VIVE_VARIANT_VALVE_INDEX) {
-			survive->base.hmd->distortion.vive.aspect_x_over_y =
-			    _json_get_float(device_json,
-			                    "physical_aspect_x_over_y");
+			survive->distortion.aspect_x_over_y = _json_get_float(
+			    device_json, "physical_aspect_x_over_y");
 
 			//! @todo: fov calculation needs to be fixed, only works
 			//! with hardcoded value

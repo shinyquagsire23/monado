@@ -12,6 +12,8 @@
 #include "vive_config.h"
 
 #include "util/u_json.h"
+#include "util/u_distortion_mesh.h"
+
 #include "math/m_api.h"
 
 #include "vive.h"
@@ -27,7 +29,7 @@
 	u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
 
 static void
-_get_color_coeffs(struct xrt_hmd_parts *hmd,
+_get_color_coeffs(struct u_vive_values *values,
                   const cJSON *coeffs,
                   uint8_t eye,
                   uint8_t channel)
@@ -39,7 +41,7 @@ _get_color_coeffs(struct xrt_hmd_parts *hmd,
 	size_t i = 0;
 	cJSON_ArrayForEach(item, coeffs)
 	{
-		hmd->distortion.vive.coefficients[eye][i][channel] =
+		values->coefficients[eye][i][channel] =
 		    (float)item->valuedouble;
 		++i;
 		if (i == 3) {
@@ -49,7 +51,7 @@ _get_color_coeffs(struct xrt_hmd_parts *hmd,
 }
 
 static void
-_get_color_coeffs_lookup(struct xrt_hmd_parts *hmd,
+_get_color_coeffs_lookup(struct u_vive_values *values,
                          const cJSON *eye_json,
                          const char *name,
                          uint8_t eye,
@@ -67,7 +69,7 @@ _get_color_coeffs_lookup(struct xrt_hmd_parts *hmd,
 		return;
 	}
 
-	_get_color_coeffs(hmd, coeffs, eye, channel);
+	_get_color_coeffs(values, coeffs, eye, channel);
 }
 
 static void
@@ -86,8 +88,6 @@ _get_distortion_properties(struct vive_device *d,
                            const cJSON *eye_transform_json,
                            uint8_t eye)
 {
-	struct xrt_hmd_parts *hmd = d->base.hmd;
-
 	const cJSON *eye_json = cJSON_GetArrayItem(eye_transform_json, eye);
 	if (eye_json == NULL) {
 		return;
@@ -100,8 +100,8 @@ _get_distortion_properties(struct vive_device *d,
 
 	// TODO: store grow_for_undistort per eye
 	// clang-format off
-	JSON_FLOAT(eye_json, "grow_for_undistort", &hmd->distortion.vive.grow_for_undistort);
-	JSON_FLOAT(eye_json, "undistort_r2_cutoff", &hmd->distortion.vive.undistort_r2_cutoff[eye]);
+	JSON_FLOAT(eye_json, "grow_for_undistort", &d->distortion.grow_for_undistort);
+	JSON_FLOAT(eye_json, "undistort_r2_cutoff", &d->distortion.undistort_r2_cutoff[eye]);
 	// clang-format on
 
 	const cJSON *distortion =
@@ -109,20 +109,22 @@ _get_distortion_properties(struct vive_device *d,
 	if (distortion != NULL) {
 		// TODO: store center per color
 		// clang-format off
-		JSON_FLOAT(eye_json, "center_x", &hmd->distortion.vive.center[eye][0]);
-		JSON_FLOAT(eye_json, "center_y", &hmd->distortion.vive.center[eye][1]);
+		JSON_FLOAT(eye_json, "center_x", &d->distortion.center[eye][0]);
+		JSON_FLOAT(eye_json, "center_y", &d->distortion.center[eye][1]);
 		// clang-format on
 
 		// green
 		const cJSON *coeffs =
 		    cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
 		if (coeffs != NULL) {
-			_get_color_coeffs(hmd, coeffs, eye, 1);
+			_get_color_coeffs(&d->distortion, coeffs, eye, 1);
 		}
 	}
 
-	_get_color_coeffs_lookup(hmd, eye_json, "distortion_red", eye, 0);
-	_get_color_coeffs_lookup(hmd, eye_json, "distortion_blue", eye, 2);
+	_get_color_coeffs_lookup(&d->distortion, eye_json, "distortion_red",
+	                         eye, 0);
+	_get_color_coeffs_lookup(&d->distortion, eye_json, "distortion_blue",
+	                         eye, 2);
 }
 
 static void
@@ -286,9 +288,8 @@ vive_config_parse(struct vive_device *d, char *json_string)
 		if (d->variant != VIVE_VARIANT_INDEX) {
 			JSON_DOUBLE(device_json, "persistence",
 			            &d->display.persistence);
-			JSON_FLOAT(
-			    device_json, "physical_aspect_x_over_y",
-			    &d->base.hmd->distortion.vive.aspect_x_over_y);
+			JSON_FLOAT(device_json, "physical_aspect_x_over_y",
+			           &d->distortion.aspect_x_over_y);
 		}
 		JSON_INT(device_json, "eye_target_height_in_pixels",
 		         &d->display.eye_target_height_in_pixels);
@@ -310,7 +311,7 @@ vive_config_parse(struct vive_device *d, char *json_string)
 	VIVE_DEBUG(d, "= Vive configuration =");
 	VIVE_DEBUG(d, "lens_separation: %f", d->display.lens_separation);
 	VIVE_DEBUG(d, "persistence: %f", d->display.persistence);
-	VIVE_DEBUG(d, "physical_aspect_x_over_y: %f", (double)d->base.hmd->distortion.vive.aspect_x_over_y);
+	VIVE_DEBUG(d, "physical_aspect_x_over_y: %f", (double)d->distortion.aspect_x_over_y);
 
 	VIVE_DEBUG(d, "model_number: %s", d->firmware.model_number);
 	VIVE_DEBUG(d, "mb_serial_number: %s", d->firmware.mb_serial_number);
@@ -326,10 +327,10 @@ vive_config_parse(struct vive_device *d, char *json_string)
 		_print_vec3("gyro_scale", &d->imu.gyro_scale);
 	}
 
-	VIVE_DEBUG(d, "grow_for_undistort: %f", (double)d->base.hmd->distortion.vive.grow_for_undistort);
+	VIVE_DEBUG(d, "grow_for_undistort: %f", (double)d->distortion.grow_for_undistort);
 
-	VIVE_DEBUG(d, "undistort_r2_cutoff 0: %f", (double)d->base.hmd->distortion.vive.undistort_r2_cutoff[0]);
-	VIVE_DEBUG(d, "undistort_r2_cutoff 1: %f", (double)d->base.hmd->distortion.vive.undistort_r2_cutoff[1]);
+	VIVE_DEBUG(d, "undistort_r2_cutoff 0: %f", (double)d->distortion.undistort_r2_cutoff[0]);
+	VIVE_DEBUG(d, "undistort_r2_cutoff 1: %f", (double)d->distortion.undistort_r2_cutoff[1]);
 	// clang-format on
 
 	return true;

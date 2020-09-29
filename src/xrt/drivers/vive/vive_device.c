@@ -17,7 +17,6 @@
 #include "util/u_debug.h"
 #include "util/u_var.h"
 #include "util/u_time.h"
-#include "util/u_distortion_mesh.h"
 
 #include "math/m_api.h"
 
@@ -788,11 +787,10 @@ vive_init_defaults(struct vive_device *d)
 
 	d->rot_filtered.w = 1.0f;
 
-	struct xrt_hmd_parts *hmd = d->base.hmd;
-	hmd->distortion.vive.aspect_x_over_y = 0.89999997615814209f;
-	hmd->distortion.vive.grow_for_undistort = 0.5f;
-	hmd->distortion.vive.undistort_r2_cutoff[0] = 1.0f;
-	hmd->distortion.vive.undistort_r2_cutoff[1] = 1.0f;
+	d->distortion.aspect_x_over_y = 0.89999997615814209f;
+	d->distortion.grow_for_undistort = 0.5f;
+	d->distortion.undistort_r2_cutoff[0] = 1.0f;
+	d->distortion.undistort_r2_cutoff[1] = 1.0f;
 }
 
 
@@ -803,13 +801,11 @@ compute_distortion(struct xrt_device *xdev,
                    float v,
                    struct xrt_vec2_triplet *result)
 {
-	struct xrt_hmd_parts *hmd = xdev->hmd;
+	struct vive_device *d = vive_device(xdev);
 	return u_compute_distortion_vive(
-	    hmd->distortion.vive.aspect_x_over_y,
-	    hmd->distortion.vive.grow_for_undistort,
-	    hmd->distortion.vive.undistort_r2_cutoff[view],
-	    hmd->distortion.vive.center[view],
-	    hmd->distortion.vive.coefficients[view], u, v, result);
+	    d->distortion.aspect_x_over_y, d->distortion.grow_for_undistort,
+	    d->distortion.undistort_r2_cutoff[view], d->distortion.center[view],
+	    d->distortion.coefficients[view], u, v, result);
 }
 
 struct vive_device *

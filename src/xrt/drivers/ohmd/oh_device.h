@@ -12,6 +12,8 @@
 #include "math/m_api.h"
 #include "xrt/xrt_device.h"
 
+#include "util/u_distortion_mesh.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,6 +38,20 @@ struct oh_device
 	bool print_spew;
 	bool print_debug;
 	bool enable_finite_difference;
+
+	struct
+	{
+		struct
+		{
+			//! Panotools universal distortion k.
+			float distortion_k[4];
+			//! Panotools post distortion scale, <r, g, b, _>.
+			float aberration_k[4];
+			//! Panotools warp scale.
+			float warp_scale;
+		} openhmd;
+		struct u_vive_values vive;
+	} distortion;
 };
 
 static inline struct oh_device *

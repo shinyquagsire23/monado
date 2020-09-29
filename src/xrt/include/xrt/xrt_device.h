@@ -129,31 +129,6 @@ struct xrt_hmd_parts
 
 		struct
 		{
-			//! Panotools universal distortion k.
-			float distortion_k[4];
-			//! Panotools post distortion scale, <r, g, b, _>.
-			float aberration_k[4];
-			//! Panotools warp scale.
-			float warp_scale;
-		} openhmd;
-
-		struct
-		{
-			float aspect_x_over_y;
-			float grow_for_undistort;
-
-			//! Left/right
-			float undistort_r2_cutoff[2];
-
-			//! Left/right, x/y
-			float center[2][2];
-
-			//! left/right, r/g/b, a/b/c
-			float coefficients[2][3][3];
-		} vive;
-
-		struct
-		{
 			//! Data.
 			float *vertices;
 			//! Number of vertices.

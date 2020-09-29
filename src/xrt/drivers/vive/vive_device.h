@@ -13,6 +13,7 @@
 #include "math/m_imu_3dof.h"
 #include "os/os_threading.h"
 #include "util/u_logging.h"
+#include "util/u_distortion_mesh.h"
 
 #include "vive_lighthouse.h"
 
@@ -141,6 +142,8 @@ struct vive_device
 		bool calibration;
 		bool last;
 	} gui;
+
+	struct u_vive_values distortion;
 };
 
 struct vive_device *
