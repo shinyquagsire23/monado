@@ -992,7 +992,7 @@ psvr_compute_distortion(struct xrt_device *xdev,
                         int view,
                         float u,
                         float v,
-                        struct xrt_vec2_triplet *result)
+                        struct xrt_uv_triplet *result)
 {
 	struct psvr_device *psvr = psvr_device(xdev);
 

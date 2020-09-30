@@ -426,7 +426,7 @@ static bool
 u_compute_distortion_openhmd(struct openhmd_values *values,
                              float u,
                              float v,
-                             struct xrt_vec2_triplet *result)
+                             struct xrt_uv_triplet *result)
 {
 	struct openhmd_values val = *values;
 
@@ -467,7 +467,7 @@ compute_distortion_openhmd(struct xrt_device *xdev,
                            int view,
                            float u,
                            float v,
-                           struct xrt_vec2_triplet *result)
+                           struct xrt_uv_triplet *result)
 {
 	struct oh_device *ohd = oh_device(xdev);
 	return u_compute_distortion_openhmd(&ohd->distortion.openhmd[view], u,
@@ -479,7 +479,7 @@ compute_distortion_vive(struct xrt_device *xdev,
                         int view,
                         float u,
                         float v,
-                        struct xrt_vec2_triplet *result)
+                        struct xrt_uv_triplet *result)
 {
 	struct oh_device *ohd = oh_device(xdev);
 	return u_compute_distortion_vive(&ohd->distortion.vive[view], u, v,

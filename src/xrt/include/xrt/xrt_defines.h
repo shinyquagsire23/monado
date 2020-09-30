@@ -129,11 +129,11 @@ struct xrt_vec2
 };
 
 /*!
- * Three xrt_vec2
+ * Represents a uv triplet for distortion, basically just three xrt_vec2.
  *
  * @ingroup xrt_iface_math
  */
-struct xrt_vec2_triplet
+struct xrt_uv_triplet
 {
 	struct xrt_vec2 r, g, b;
 };

@@ -909,7 +909,7 @@ compute_distortion(struct xrt_device *xdev,
                    int view,
                    float u,
                    float v,
-                   struct xrt_vec2_triplet *result)
+                   struct xrt_uv_triplet *result)
 {
 	struct survive_device *d = (struct survive_device *)xdev;
 	return u_compute_distortion_vive(&d->distortion[view], u, v, result);

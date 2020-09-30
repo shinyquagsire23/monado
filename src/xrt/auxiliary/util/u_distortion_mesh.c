@@ -26,7 +26,7 @@ typedef bool (*func_calc)(struct xrt_device *xdev,
                           int view,
                           float u,
                           float v,
-                          struct xrt_vec2_triplet *result);
+                          struct xrt_uv_triplet *result);
 
 static int
 index_for(int row, int col, int stride, int offset)
@@ -80,7 +80,7 @@ run_func(struct xrt_device *xdev,
 				verts[i + 1] = v * 2.0 - 1.0;
 
 				if (!calc(xdev, view, u, v,
-				          (struct xrt_vec2_triplet
+				          (struct xrt_uv_triplet
 				               *)&verts[i + 2])) {
 					// bail on error, without updating
 					// distortion.preferred
@@ -137,7 +137,7 @@ bool
 u_compute_distortion_vive(struct u_vive_values *values,
                           float u,
                           float v,
-                          struct xrt_vec2_triplet *result)
+                          struct xrt_uv_triplet *result)
 {
 	const struct u_vive_values val = *values;
 
@@ -195,7 +195,7 @@ bool
 u_compute_distortion_panotools(struct u_panotools_values *values,
                                float u,
                                float v,
-                               struct xrt_vec2_triplet *result)
+                               struct xrt_uv_triplet *result)
 {
 	const struct u_panotools_values val = *values;
 
@@ -233,7 +233,7 @@ u_compute_distortion_panotools(struct u_panotools_values *values,
 }
 
 bool
-u_compute_distortion_none(float u, float v, struct xrt_vec2_triplet *result)
+u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result)
 {
 	result->r.x = u;
 	result->r.y = v;
@@ -249,7 +249,7 @@ compute_distortion_none(struct xrt_device *xdev,
                         int view,
                         float u,
                         float v,
-                        struct xrt_vec2_triplet *result)
+                        struct xrt_uv_triplet *result)
 {
 	return u_compute_distortion_none(u, v, result);
 }

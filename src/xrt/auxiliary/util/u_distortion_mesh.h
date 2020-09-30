@@ -64,7 +64,7 @@ bool
 u_compute_distortion_panotools(struct u_panotools_values *values,
                                float u,
                                float v,
-                               struct xrt_vec2_triplet *result);
+                               struct xrt_uv_triplet *result);
 
 /*!
  * Distortion correction implementation for the Vive, Vive Pro, Valve Index
@@ -76,7 +76,7 @@ bool
 u_compute_distortion_vive(struct u_vive_values *values,
                           float u,
                           float v,
-                          struct xrt_vec2_triplet *result);
+                          struct xrt_uv_triplet *result);
 
 /*!
  * Identity distortion correction sets all result coordinates to u,v.
@@ -84,7 +84,7 @@ u_compute_distortion_vive(struct u_vive_values *values,
  * @ingroup aux_util
  */
 bool
-u_compute_distortion_none(float u, float v, struct xrt_vec2_triplet *result);
+u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result);
 
 /*!
  * Given a @ref xrt_device generates meshes by calling

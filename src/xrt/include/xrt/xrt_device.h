@@ -278,7 +278,7 @@ struct xrt_device
 	                           int view,
 	                           float u,
 	                           float v,
-	                           struct xrt_vec2_triplet *result);
+	                           struct xrt_uv_triplet *result);
 
 	/*!
 	 * Destroy device.

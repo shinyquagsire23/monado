@@ -117,7 +117,7 @@ ns_mesh_calc(struct xrt_device *xdev,
              int view,
              float u,
              float v,
-             struct xrt_vec2_triplet *result)
+             struct xrt_uv_triplet *result)
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
 
@@ -299,7 +299,7 @@ ns_v2_mesh_calc(struct xrt_device *xdev,
                 int view,
                 float u,
                 float v,
-                struct xrt_vec2_triplet *result)
+                struct xrt_uv_triplet *result)
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
 
