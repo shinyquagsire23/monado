@@ -42,6 +42,10 @@ struct dummy_hmd
 	struct xrt_device base;
 
 	struct xrt_pose pose;
+	struct xrt_vec3 center;
+
+	uint64_t created_ns;
+	float diameter_m;
 
 	bool print_spew;
 	bool print_debug;
@@ -118,6 +122,14 @@ dummy_hmd_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
+	double time_s = time_ns_to_s(at_timestamp_ns - dh->created_ns);
+	double d = dh->diameter_m;
+	double d2 = d * 2;
+	double t = 2.0;
+	double t2 = t * 2;
+	dh->pose.position.x = dh->center.x + sin((time_s / t2) * M_PI) * d2 - d;
+	dh->pose.position.y = dh->center.y + sin((time_s / t) * M_PI) * d;
+
 	out_relation->pose = dh->pose;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
@@ -164,6 +176,8 @@ dummy_hmd_create(void)
 	dh->base.destroy = dummy_hmd_destroy;
 	dh->base.name = XRT_DEVICE_GENERIC_HMD;
 	dh->pose.orientation.w = 1.0f; // All other values set to zero.
+	dh->created_ns = os_monotonic_get_ns();
+	dh->diameter_m = 0.05;
 	dh->print_spew = debug_get_bool_option_dummy_spew();
 	dh->print_debug = debug_get_bool_option_dummy_debug();
 
@@ -193,6 +207,8 @@ dummy_hmd_create(void)
 	// Setup variable tracker.
 	u_var_add_root(dh, "Dummy HMD", true);
 	u_var_add_pose(dh, &dh->pose, "pose");
+	u_var_add_vec3_f32(dh, &dh->center, "center");
+	u_var_add_f32(dh, &dh->diameter_m, "diameter_m");
 
 	dh->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
 	dh->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
