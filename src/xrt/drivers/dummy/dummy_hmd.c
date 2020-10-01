@@ -127,8 +127,15 @@ dummy_hmd_get_tracked_pose(struct xrt_device *xdev,
 	double d2 = d * 2;
 	double t = 2.0;
 	double t2 = t * 2;
+	double t3 = t * 3;
+	double t4 = t * 4;
 	dh->pose.position.x = dh->center.x + sin((time_s / t2) * M_PI) * d2 - d;
 	dh->pose.position.y = dh->center.y + sin((time_s / t) * M_PI) * d;
+	dh->pose.orientation.x = sin((time_s / t3) * M_PI) / 64.0;
+	dh->pose.orientation.y = sin((time_s / t4) * M_PI) / 16.0;
+	dh->pose.orientation.z = sin((time_s / t4) * M_PI) / 64.0;
+	dh->pose.orientation.w = 1;
+	math_quat_normalize(&dh->pose.orientation);
 
 	out_relation->pose = dh->pose;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
