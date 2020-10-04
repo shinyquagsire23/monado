@@ -71,8 +71,7 @@ os_ble_destroy(struct os_ble_device **ble_dev_ptr)
 
 #ifdef XRT_OS_LINUX
 /*!
- * Open the given mac and path to device endpoint (Currently Linux/BlueZ
- * specific).
+ * Returns a notification endpoint from the given device uuid and char uuid.
  *
  * @returns Negative on failure, zero on no device found and positive if a
  *          device has been found.
