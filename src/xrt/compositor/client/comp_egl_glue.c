@@ -51,8 +51,7 @@ static void
 client_egl_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
-	// Pipe down call into native compositor.
-	xrt_comp_native_destroy(&c->xcn);
+
 	free(c);
 }
 

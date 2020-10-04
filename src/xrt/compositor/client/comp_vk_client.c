@@ -163,8 +163,6 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 		c->vk.cmd_pool = VK_NULL_HANDLE;
 	}
 
-	// Pipe down call into native compositor.
-	xrt_comp_native_destroy(&c->xcn);
 	free(c);
 }
 

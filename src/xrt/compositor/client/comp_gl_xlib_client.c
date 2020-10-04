@@ -35,8 +35,7 @@ static void
 client_gl_xlib_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct client_gl_xlib_compositor *c = client_gl_xlib_compositor(xc);
-	// Pipe down call into native compositor.
-	xrt_comp_native_destroy(&c->base.xcn);
+
 	free(c);
 }
 
