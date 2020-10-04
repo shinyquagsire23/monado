@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -6,10 +6,10 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
+#include "cli_common.h"
+
 #include <string.h>
 #include <stdio.h>
-
-#include "cli_common.h"
 
 
 #define P(...) fprintf(stderr, __VA_ARGS__)
@@ -18,7 +18,7 @@ static int
 cli_print_help(int argc, const char **argv)
 {
 	if (argc >= 2) {
-		fprintf(stderr, "Unknown command '%s'\n\n", argv[1]);
+		P("Unknown command '%s'\n\n", argv[1]);
 	}
 
 	P("Monado-CLI 0.0.1\n");
@@ -27,6 +27,7 @@ cli_print_help(int argc, const char **argv)
 	P("Commands:\n");
 	P("  test       - List found devices, for prober testing.\n");
 	P("  probe      - Just probe and then exit.\n");
+	P("  lighthouse - Control the power of lighthouses [on|off].\n");
 	P("  calibrate  - Calibrate a camera and save config (not implemented "
 	  "yet).\n");
 
@@ -48,6 +49,9 @@ main(int argc, const char **argv)
 	}
 	if (strcmp(argv[1], "calibrate") == 0) {
 		return cli_cmd_calibrate(argc, argv);
+	}
+	if (strcmp(argv[1], "lighthouse") == 0) {
+		return cli_cmd_lighthouse(argc, argv);
 	}
 	return cli_print_help(argc, argv);
 }
