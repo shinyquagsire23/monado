@@ -1870,6 +1870,8 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	u_hashmap_int_destroy(&sess->act_sets_attachments_by_key);
 	u_hashmap_int_destroy(&sess->act_attachments_by_key);
 
+	xrt_comp_destroy(&sess->compositor);
+
 	free(sess);
 
 	return ret;
