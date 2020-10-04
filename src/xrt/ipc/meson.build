@@ -27,6 +27,7 @@ generated = custom_target('protocol code',
 	]
 )
 
+ipc_generated_client_header_target = generated[2]
 
 ###
 # Client

@@ -5,7 +5,7 @@ ctl = executable(
 	'monado-ctl',
 	files(
 		'main.c',
-	),
+	) + [ ipc_generated_client_header_target ],
 	link_whole: [
 		lib_ipc_client,
 	],
