@@ -640,6 +640,8 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 
 	//! @todo Implement
 	IPC_SPEW(icc->ipc_c, "IPC:  NOT IMPLEMENTED compositor destroy");
+
+	free(icc);
 }
 
 
