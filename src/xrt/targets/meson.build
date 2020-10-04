@@ -57,6 +57,14 @@ if 'survive' in drivers
 	driver_libs += [lib_drv_survive]
 endif
 
+if 'daydream' in drivers
+	driver_libs += [lib_drv_daydream]
+endif
+
+if 'arduino' in drivers
+	driver_libs += [lib_drv_arduino]
+endif
+
 subdir('common')
 subdir('openxr')
 subdir('cli')

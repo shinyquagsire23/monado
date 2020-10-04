@@ -191,6 +191,16 @@ if survive.found() and ('survive' in drivers)
 	endif
 endif
 
+if not get_option('dbus').disabled() and dbus.found()
+	if 'daydream' not in drivers
+		drivers += ['daydream']
+	endif
+
+	if 'arduino' not in drivers
+		drivers += ['arduino']
+	endif
+endif
+
 if drivers.length() == 0 or drivers == ['auto']
 	error('You must enable at least one driver.')
 endif

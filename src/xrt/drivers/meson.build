@@ -156,3 +156,32 @@ lib_drv_survive = static_library(
 	dependencies: [aux, zlib, survive],
 	build_by_default: 'survive' in drivers,
 )
+
+lib_drv_daydream = static_library(
+	'drv_daydream',
+	files(
+		'daydream/daydream_device.c',
+		'daydream/daydream_device.h',
+		'daydream/daydream_interface.h',
+		'daydream/daydream_prober.c',
+	),
+	include_directories: [
+		xrt_include,
+	],
+	dependencies: [dbus, aux],
+	build_by_default: 'daydream' in drivers,
+)
+
+lib_drv_arduino = static_library(
+	'drv_arduino',
+	files(
+		'arduino/arduino_device.c',
+		'arduino/arduino_interface.h',
+		'arduino/arduino_prober.c',
+	),
+		include_directories: [
+		xrt_include,
+	],
+	dependencies: [dbus, aux],
+	build_by_default: 'arduino' in drivers,
+)
