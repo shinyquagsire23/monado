@@ -48,6 +48,21 @@ struct ble_notify
  */
 
 static void
+add_single_byte_array(DBusMessage *msg, uint8_t value)
+{
+	// Create an array of bytes.
+	const char *container_signature = "y"; // dbus type signature string
+	DBusMessageIter iter, array;
+
+	// attach it to our dbus message
+	dbus_message_iter_init_append(msg, &iter);
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+	                                 container_signature, &array);
+	dbus_message_iter_append_basic(&array, DBUS_TYPE_BYTE, &value);
+	dbus_message_iter_close_container(&iter, &array);
+}
+
+static void
 add_empty_dict_sv(DBusMessage *msg)
 {
 	// Create an empty array of string variant dicts.
@@ -60,7 +75,6 @@ add_empty_dict_sv(DBusMessage *msg)
 	                                 container_signature, &options);
 	dbus_message_iter_close_container(&iter, &options);
 }
-
 
 static int
 send_message(DBusConnection *conn, DBusError *err, DBusMessage **msg_ptr)
@@ -579,6 +593,101 @@ device_has_uuid(const DBusMessageIter *dict,
 	return 0;
 }
 
+static int
+ble_connect(DBusConnection *conn, DBusError *err, const char *dbus_address)
+{
+	DBusMessage *msg = NULL;
+	DBusMessageIter args;
+	char *response = NULL;
+	int ret, type;
+
+
+	msg = dbus_message_new_method_call(
+	    "org.bluez",         // target for the method call
+	    dbus_address,        // object to call on
+	    "org.bluez.Device1", // interface to call on
+	    "Connect");          // method name
+	if (msg == NULL) {
+		fprintf(stderr, "Message NULL after construction\n");
+		return -1;
+	}
+
+	// Send the message, consumes our message and returns what we received.
+	ret = send_message(conn, err, &msg);
+	if (ret != 0) {
+		printf("Failed to send message '%i'\n", ret);
+		return -1;
+	}
+
+	// Function returns nothing on success, check for error message.
+	dbus_message_iter_init(msg, &args);
+	type = dbus_message_iter_get_arg_type(&args);
+	if (type == DBUS_TYPE_STRING) {
+		dbus_message_iter_get_basic(&args, &response);
+		printf("DBus call returned message: %s\n", response);
+
+		// Free reply.
+		dbus_message_unref(msg);
+		return -1;
+	}
+
+	// Free reply
+	dbus_message_unref(msg);
+
+	return 0;
+}
+
+static int
+ble_write_value(DBusConnection *conn,
+                DBusError *err,
+                const char *dbus_address,
+                uint8_t value)
+{
+	DBusMessage *msg = NULL;
+	DBusMessageIter args;
+	char *response = NULL;
+	int ret, type;
+
+
+	msg = dbus_message_new_method_call(
+	    "org.bluez",                     // target for the method call
+	    dbus_address,                    // object to call on
+	    "org.bluez.GattCharacteristic1", // interface to call on
+	    "WriteValue");                   // method name
+	if (msg == NULL) {
+		fprintf(stderr, "Message NULL after construction\n");
+		return -1;
+	}
+
+	// Write has a argument of Array of Bytes, Array of Dicts.
+	add_single_byte_array(msg, value);
+	add_empty_dict_sv(msg);
+
+	// Send the message, consumes our message and returns what we received.
+	ret = send_message(conn, err, &msg);
+	if (ret != 0) {
+		printf("Failed to send message '%i'\n", ret);
+		return -1;
+	}
+
+	// Function returns nothing on success, check for error message.
+	dbus_message_iter_init(msg, &args);
+	type = dbus_message_iter_get_arg_type(&args);
+	if (type == DBUS_TYPE_STRING) {
+		dbus_message_iter_get_basic(&args, &response);
+		printf("DBus call returned message: %s\n", response);
+
+		// Free reply.
+		dbus_message_unref(msg);
+		return -1;
+	}
+
+	// Free reply
+	dbus_message_unref(msg);
+
+	return 0;
+}
+
 static ssize_t
 get_path_to_notify_char(DBusConnection *conn,
                         const char *dev_uuid,
@@ -858,6 +967,13 @@ os_ble_notify_destroy(struct os_ble_device *bdev)
 	free(dev);
 }
 
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
 int
 os_ble_notify_open(const char *dev_uuid,
                    const char *char_uuid,
@@ -877,4 +993,107 @@ os_ble_notify_open(const char *dev_uuid,
 	*out_ble = &bledev->base;
 
 	return 1;
+}
+
+int
+os_ble_broadcast_write_value(const char *dev_uuid,
+                             const char *char_uuid,
+                             uint8_t value)
+{
+	DBusConnection *conn = NULL;
+	DBusMessage *msg = NULL;
+	DBusError err;
+	int ret = 0, type = 0;
+
+
+	/*
+	 * Connect
+	 */
+
+	dbus_error_init(&err);
+	conn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
+	if (dbus_error_is_set(&err)) {
+		fprintf(stderr, "DBUS Connection Error: %s\n", err.message);
+		dbus_error_free(&err);
+	}
+	if (conn == NULL) {
+		return -1;
+	}
+
+	// Check if org.bluez is running.
+	ret = has_dbus_name(conn, "org.bluez");
+	if (ret != 0) {
+		return -1;
+	}
+
+
+	/*
+	 * List
+	 */
+
+	msg = dbus_message_new_method_call(
+	    "org.bluez",                          // target for the method call
+	    "/",                                  // object to call on
+	    "org.freedesktop.DBus.ObjectManager", // interface to call on
+	    "GetManagedObjects");                 // method name
+	if (send_message(conn, &err, &msg) != 0) {
+		return -1;
+	}
+
+	DBusMessageIter args;
+	dbus_message_iter_init(msg, &args);
+
+	// Check if this is a error message.
+	type = dbus_message_iter_get_arg_type(&args);
+	if (type == DBUS_TYPE_STRING) {
+		char *response = NULL;
+		dbus_message_iter_get_basic(&args, &response);
+		fprintf(stderr, "Error getting objects:\n%s\n", response);
+		response = NULL;
+
+		// free reply
+		dbus_message_unref(msg);
+		return -1;
+	}
+
+	DBusMessageIter first_elm;
+	ret = array_get_first_elem_of_type(&args, DBUS_TYPE_DICT_ENTRY,
+	                                   &first_elm);
+	if (ret < 0) {
+		// free reply
+		dbus_message_unref(msg);
+		return -1;
+	}
+
+	for_each(elm, first_elm)
+	{
+		const char *dev_path_str;
+		const char *char_path_str;
+		ret = device_has_uuid(&elm, dev_uuid, &dev_path_str);
+		if (ret <= 0) {
+			continue;
+		}
+
+		ble_connect(conn, &err, dev_path_str);
+
+		for_each(c, first_elm)
+		{
+			ret = gatt_char_has_uuid_and_notify(&c, char_uuid,
+			                                    &char_path_str);
+			if (ret <= 0) {
+				continue;
+			}
+			if (!starts_with_and_has_slash(char_path_str,
+			                               dev_path_str)) {
+				continue;
+			}
+
+			ble_write_value(conn, &err, char_path_str, value);
+		}
+	}
+
+	// free reply
+	dbus_message_unref(msg);
+
+	return 0;
 }

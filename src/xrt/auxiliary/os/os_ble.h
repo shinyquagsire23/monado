@@ -82,6 +82,19 @@ int
 os_ble_notify_open(const char *dev_uuid,
                    const char *char_uuid,
                    struct os_ble_device **out_ble);
+
+/*!
+ * Returns write startpoints from the given device uuid and char uuid.
+ *
+ * @returns Negative on failure, zero on no device found and positive if a
+ *          device has been found.
+ *
+ * @ingroup aux_os
+ */
+int
+os_ble_broadcast_write_value(const char *dev_uuid,
+                             const char *char_uuid,
+                             uint8_t value);
 #endif
 
 
