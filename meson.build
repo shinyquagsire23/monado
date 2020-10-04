@@ -185,9 +185,9 @@ if has_v4l2_header and ('auto' in drivers or 'v4l2' in drivers)
 endif
 
 if survive.found() and ('survive' in drivers)
-  if 'survive' not in drivers
-    drivers += ['survive']
-    endif
+	if 'survive' not in drivers
+		drivers += ['survive']
+	endif
 endif
 
 if drivers.length() == 0 or drivers == ['auto']
