@@ -91,15 +91,28 @@ if build_opengl or build_opengles
 	)
 endif
 
+aux_os_files = files(
+	'os/os_documentation.h',
+	'os/os_hid.h',
+	'os/os_hid_hidraw.c',
+	'os/os_threading.h',
+	'os/os_time.h',
+	'os/os_ble.h',
+)
+
+aux_os_deps = []
+
+if dbus.found() and not get_option('dbus').disabled()
+	aux_os_files += files(
+		'os/os_ble_dbus.c'
+	)
+	aux_os_deps += dbus
+endif
+
 lib_aux_os = static_library(
 	'aux_os',
-	files(
-		'os/os_documentation.h',
-		'os/os_hid.h',
-		'os/os_hid_hidraw.c',
-		'os/os_threading.h',
-		'os/os_time.h',
-	),
+	aux_os_files,
+	dependencies: aux_os_deps,
 	include_directories: xrt_include,
 )
 

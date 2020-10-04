@@ -67,6 +67,11 @@ option('wayland',
 	value: 'auto',
 	description: 'Enable support for Wayland rendering.')
 
+option('dbus',
+	type: 'feature',
+	value: 'auto',
+	description: 'Enable support for dbus.')
+
 option('service',
 	type: 'boolean',
 	value: true,

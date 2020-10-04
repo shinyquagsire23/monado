@@ -69,6 +69,7 @@ libuvc   = dependency('libuvc', required: false)
 vulkan   = dependency('vulkan', required: true)
 zlib     = dependency('zlib', required: false)
 survive  = dependency('survive', required: false)
+dbus     = dependency('dbus-1', required: get_option('dbus'))
 
 opencv = dependency('opencv4', required: false)
 if not opencv.found()
