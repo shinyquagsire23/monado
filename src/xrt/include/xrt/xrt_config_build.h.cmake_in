@@ -9,7 +9,11 @@
 
 #pragma once
 
+#cmakedefine XRT_FEATURE_COMPOSITOR_MAIN
+
 #cmakedefine XRT_FEATURE_SERVICE
+
+#cmakedefine XRT_FEATURE_OPENXR
 
 #cmakedefine XRT_FEATURE_OPENXR_LAYER_CUBE
 
