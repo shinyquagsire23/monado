@@ -123,12 +123,25 @@
  * XR_KHR_composition_layer_equirect
  */
 #if defined(XR_KHR_composition_layer_equirect) &&                              \
-    defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT)
+    defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT_LEGACY)
 #define OXR_HAVE_KHR_composition_layer_equirect
 #define OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect(_)                \
 	_(KHR_composition_layer_equirect, KHR_COMPOSITION_LAYER_EQUIRECT)
 #else
 #define OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect(_)
+#endif
+
+
+/*
+ * XR_KHR_composition_layer_equirect2
+ */
+#if defined(XR_KHR_composition_layer_equirect2) &&                             \
+    defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT)
+#define OXR_HAVE_KHR_composition_layer_equirect2
+#define OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect2(_)               \
+	_(KHR_composition_layer_equirect2, KHR_COMPOSITION_LAYER_EQUIRECT2)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect2(_)
 #endif
 
 
@@ -236,6 +249,7 @@
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_cube(_) \
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_cylinder(_) \
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect(_) \
+    OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect2(_) \
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_) \
     OXR_EXTENSION_SUPPORT_MND_swapchain_usage_input_attachment_bit(_) \
