@@ -15,7 +15,6 @@
 #include "util/u_misc.h"
 #include "util/u_distortion_mesh.h"
 
-#include "main/comp_distortion.h"
 #include "main/comp_layer_renderer.h"
 #include "math/m_api.h"
 
@@ -42,9 +41,6 @@ struct comp_renderer
 	uint32_t current_buffer;
 
 	VkQueue queue;
-	VkRenderPass render_pass;
-	VkDescriptorPool descriptor_pool;
-	VkPipelineCache pipeline_cache;
 
 	struct
 	{
@@ -52,14 +48,12 @@ struct comp_renderer
 		VkSemaphore render_complete;
 	} semaphores;
 
-	VkCommandBuffer *cmd_buffers;
-	VkFramebuffer *frame_buffers;
+	struct comp_rendering *rrs;
 	VkFence *fences;
 	uint32_t num_buffers;
 
 	struct comp_compositor *c;
 	struct comp_settings *settings;
-	struct comp_distortion *distortion;
 
 	struct comp_layer_renderer *lr;
 };
@@ -81,42 +75,19 @@ static void
 renderer_submit_queue(struct comp_renderer *r);
 
 static void
-renderer_build_command_buffers(struct comp_renderer *r);
+renderer_build_renderings(struct comp_renderer *r);
 
 static void
-renderer_build_command_buffer(struct comp_renderer *r,
-                              VkCommandBuffer command_buffer,
-                              VkFramebuffer framebuffer);
+renderer_allocate_renderings(struct comp_renderer *r);
 
 static void
-renderer_init_descriptor_pool(struct comp_renderer *r);
-
-static void
-renderer_create_frame_buffer(struct comp_renderer *r,
-                             VkFramebuffer *frame_buffer,
-                             uint32_t num_attachements,
-                             VkImageView *attachments);
-
-static void
-renderer_allocate_command_buffers(struct comp_renderer *r);
-
-static void
-renderer_destroy_command_buffers(struct comp_renderer *r);
-
-static void
-renderer_create_pipeline_cache(struct comp_renderer *r);
+renderer_close_renderings(struct comp_renderer *r);
 
 static void
 renderer_init_semaphores(struct comp_renderer *r);
 
 static void
 renderer_resize(struct comp_renderer *r);
-
-static void
-renderer_create_frame_buffers(struct comp_renderer *r);
-
-static void
-renderer_create_render_pass(struct comp_renderer *r);
 
 static void
 renderer_acquire_swapchain_image(struct comp_renderer *r);
@@ -166,15 +137,10 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 
 	r->current_buffer = 0;
 	r->queue = VK_NULL_HANDLE;
-	r->render_pass = VK_NULL_HANDLE;
-	r->descriptor_pool = VK_NULL_HANDLE;
-	r->pipeline_cache = VK_NULL_HANDLE;
 	r->semaphores.present_complete = VK_NULL_HANDLE;
 	r->semaphores.render_complete = VK_NULL_HANDLE;
 
-	r->distortion = NULL;
-	r->cmd_buffers = NULL;
-	r->frame_buffers = NULL;
+	r->rrs = NULL;
 }
 
 static void
@@ -202,7 +168,7 @@ renderer_submit_queue(struct comp_renderer *r)
 	    .pWaitSemaphores = &r->semaphores.present_complete,
 	    .pWaitDstStageMask = stage_flags,
 	    .commandBufferCount = 1,
-	    .pCommandBuffers = &r->cmd_buffers[r->current_buffer],
+	    .pCommandBuffers = &r->rrs[r->current_buffer].cmd,
 	    .signalSemaphoreCount = 1,
 	    .pSignalSemaphores = &r->semaphores.render_complete,
 	};
@@ -215,151 +181,106 @@ renderer_submit_queue(struct comp_renderer *r)
 }
 
 static void
-renderer_build_command_buffers(struct comp_renderer *r)
+renderer_build_rendering(struct comp_renderer *r,
+                         struct comp_rendering *rr,
+                         uint32_t index)
 {
-	for (uint32_t i = 0; i < r->num_buffers; ++i)
-		renderer_build_command_buffer(r, r->cmd_buffers[i],
-		                              r->frame_buffers[i]);
-}
+	struct comp_compositor *c = r->c;
 
-static void
-renderer_set_viewport_scissor(float scale_x,
-                              float scale_y,
-                              VkViewport *v,
-                              VkRect2D *s,
-                              struct xrt_view *view)
-{
-	s->offset.x = (int32_t)(view->viewport.x_pixels * scale_x);
-	s->offset.y = (int32_t)(view->viewport.y_pixels * scale_y);
-	s->extent.width = (uint32_t)(view->viewport.w_pixels * scale_x);
-	s->extent.height = (uint32_t)(view->viewport.h_pixels * scale_y);
-
-	v->x = s->offset.x;
-	v->y = s->offset.y;
-	v->width = s->extent.width;
-	v->height = s->extent.height;
-}
-
-static void
-renderer_build_command_buffer(struct comp_renderer *r,
-                              VkCommandBuffer command_buffer,
-                              VkFramebuffer framebuffer)
-{
-	struct vk_bundle *vk = &r->c->vk;
-	VkResult ret;
-
-	VkClearValue clear_color = {
-	    .color = {.float32 = {0.0f, 0.0f, 0.0f, 0.0f}}};
-
-	VkCommandBufferBeginInfo command_buffer_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-	};
-
-	ret = vk->vkBeginCommandBuffer(command_buffer, &command_buffer_info);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkBeginCommandBuffer: %s",
-		           vk_result_string(ret));
-		return;
-	}
-
-	VkRenderPassBeginInfo render_pass_begin_info = {
-	    .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-	    .renderPass = r->render_pass,
-	    .framebuffer = framebuffer,
-	    .renderArea =
-	        {
-	            .offset =
-	                {
-	                    .x = 0,
-	                    .y = 0,
-	                },
-	            .extent =
-	                {
-	                    .width = r->c->current.width,
-	                    .height = r->c->current.height,
-	                },
-	        },
-	    .clearValueCount = 1,
-	    .pClearValues = &clear_color,
-	};
-	vk->vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info,
-	                         VK_SUBPASS_CONTENTS_INLINE);
-
+	struct comp_target_data data;
+	data.format = r->c->window->swapchain.surface_format.format;
+	data.is_external = true;
+	data.width = r->c->current.width;
+	data.height = r->c->current.height;
 
 	// clang-format off
-	float scale_x = (float)r->c->current.width /
-	                (float)r->c->xdev->hmd->screens[0].w_pixels;
-	float scale_y = (float)r->c->current.height /
-	                (float)r->c->xdev->hmd->screens[0].h_pixels;
+	float scale_x = (float)r->c->current.width / (float)r->c->xdev->hmd->screens[0].w_pixels;
+	float scale_y = (float)r->c->current.height / (float)r->c->xdev->hmd->screens[0].h_pixels;
 	// clang-format on
 
-	VkViewport viewport = {
-	    .x = 0,
-	    .y = 0,
-	    .width = 0,
-	    .height = 0,
-	    .minDepth = 0.0f,
-	    .maxDepth = 1.0f,
+	struct xrt_view *l_v = &r->c->xdev->hmd->views[0];
+	struct comp_viewport_data l_viewport_data = {
+	    .x = (uint32_t)(l_v->viewport.x_pixels * scale_x),
+	    .y = (uint32_t)(l_v->viewport.y_pixels * scale_y),
+	    .w = (uint32_t)(l_v->viewport.w_pixels * scale_x),
+	    .h = (uint32_t)(l_v->viewport.h_pixels * scale_y),
+	};
+	struct comp_mesh_ubo_data l_data = {
+	    .rot = l_v->rot,
+	    .flip_y = false,
 	};
 
-	VkRect2D scissor = {
-	    .offset = {.x = 0, .y = 0},
-	    .extent = {.width = 0, .height = 0},
+	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
+	struct comp_viewport_data r_viewport_data = {
+	    .x = (uint32_t)(r_v->viewport.x_pixels * scale_x),
+	    .y = (uint32_t)(r_v->viewport.y_pixels * scale_y),
+	    .w = (uint32_t)(r_v->viewport.w_pixels * scale_x),
+	    .h = (uint32_t)(r_v->viewport.h_pixels * scale_y),
+	};
+	struct comp_mesh_ubo_data r_data = {
+	    .rot = r_v->rot,
+	    .flip_y = false,
 	};
 
-	renderer_set_viewport_scissor(scale_x, scale_y, &viewport, &scissor,
-	                              &r->c->xdev->hmd->views[0]);
-	vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-	vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+
+	/*
+	 * Init
+	 */
+
+	comp_rendering_init(c, &c->nr, rr);
+
+	comp_draw_begin_target_single(
+	    rr,                                          //
+	    r->c->window->swapchain.buffers[index].view, //
+	    &data);                                      //
 
 
-	// Mesh distortion
-	comp_distortion_draw_mesh(r->distortion, command_buffer, 0);
-	renderer_set_viewport_scissor(scale_x, scale_y, &viewport, &scissor,
-	                              &r->c->xdev->hmd->views[1]);
-	vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-	vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-	comp_distortion_draw_mesh(r->distortion, command_buffer, 1);
+	/*
+	 * Viewport one
+	 */
 
-	vk->vkCmdEndRenderPass(command_buffer);
+	comp_draw_begin_view(rr,                //
+	                     0,                 // target_index
+	                     0,                 // view_index
+	                     &l_viewport_data); // viewport_data
 
-	ret = vk->vkEndCommandBuffer(command_buffer);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkEndCommandBuffer: %s",
-		           vk_result_string(ret));
-		return;
-	}
+	comp_draw_distortion(rr,                             //
+	                     r->lr->framebuffers[0].sampler, //
+	                     r->lr->framebuffers[0].view,    //
+	                     &l_data);                       //
+
+	comp_draw_end_view(rr);
+
+
+	/*
+	 * Viewport two
+	 */
+
+	comp_draw_begin_view(rr,                //
+	                     0,                 // target_index
+	                     1,                 // view_index
+	                     &r_viewport_data); // viewport_data
+
+	comp_draw_distortion(rr,                             //
+	                     r->lr->framebuffers[1].sampler, //
+	                     r->lr->framebuffers[1].view,    //
+	                     &r_data);                       //
+
+	comp_draw_end_view(rr);
+
+
+	/*
+	 * End
+	 */
+
+	comp_draw_end_target(rr);
 }
 
 static void
-renderer_init_descriptor_pool(struct comp_renderer *r)
+renderer_build_renderings(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
-	VkResult ret;
-
-	VkDescriptorPoolSize pool_sizes[2] = {
-	    {
-	        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-	        .descriptorCount = 4,
-	    },
-	    {
-	        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-	        .descriptorCount = 2,
-	    },
-	};
-
-	VkDescriptorPoolCreateInfo descriptor_pool_info = {
-	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-	    .maxSets = 2,
-	    .poolSizeCount = ARRAY_SIZE(pool_sizes),
-	    .pPoolSizes = pool_sizes,
-	};
-
-	ret = vk->vkCreateDescriptorPool(vk->device, &descriptor_pool_info,
-	                                 NULL, &r->descriptor_pool);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreateDescriptorPool: %s",
-		           vk_result_string(ret));
+	for (uint32_t i = 0; i < r->num_buffers; ++i) {
+		renderer_build_rendering(r, &r->rrs[i], i);
 	}
 }
 
@@ -431,28 +352,11 @@ renderer_init(struct comp_renderer *r)
 	vk->vkGetDeviceQueue(vk->device, r->c->vk.queue_family_index, 0,
 	                     &r->queue);
 	renderer_init_semaphores(r);
-	renderer_create_pipeline_cache(r);
-	renderer_create_render_pass(r);
-
 	assert(r->c->window->swapchain.image_count > 0);
 
 	r->num_buffers = r->c->window->swapchain.image_count;
 
 	renderer_create_fences(r);
-	renderer_create_frame_buffers(r);
-	renderer_allocate_command_buffers(r);
-
-	renderer_init_descriptor_pool(r);
-
-	r->distortion = U_TYPED_CALLOC(struct comp_distortion);
-
-	bool has_meshuv = (r->c->xdev->hmd->distortion.models &
-	                   XRT_DISTORTION_MODEL_MESHUV) != 0;
-	assert(has_meshuv);
-
-	comp_distortion_init(r->distortion, r->c, r->render_pass,
-	                     r->pipeline_cache, r->c->xdev->hmd,
-	                     r->descriptor_pool);
 
 	VkExtent2D extent = {
 	    .width = r->c->xdev->hmd->screens[0].w_pixels,
@@ -462,13 +366,8 @@ renderer_init(struct comp_renderer *r)
 	r->lr = comp_layer_renderer_create(vk, &r->c->shaders, extent,
 	                                   VK_FORMAT_B8G8R8A8_SRGB);
 
-	for (uint32_t i = 0; i < 2; i++) {
-		comp_distortion_update_descriptor_set(
-		    r->distortion, r->lr->framebuffers[i].sampler,
-		    r->lr->framebuffers[i].view, i, false);
-	}
-
-	renderer_build_command_buffers(r);
+	renderer_allocate_renderings(r);
+	renderer_build_renderings(r);
 }
 
 VkImageView
@@ -624,38 +523,8 @@ comp_renderer_draw(struct comp_renderer *r)
 }
 
 static void
-renderer_create_frame_buffer(struct comp_renderer *r,
-                             VkFramebuffer *frame_buffer,
-                             uint32_t num_attachements,
-                             VkImageView *attachments)
+renderer_allocate_renderings(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
-	VkResult ret;
-
-	VkFramebufferCreateInfo frame_buffer_info = {
-	    .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-	    .renderPass = r->render_pass,
-	    .attachmentCount = num_attachements,
-	    .pAttachments = attachments,
-	    .width = r->c->current.width,
-	    .height = r->c->current.height,
-	    .layers = 1,
-	};
-
-	ret = vk->vkCreateFramebuffer(vk->device, &frame_buffer_info, NULL,
-	                              frame_buffer);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreateFramebuffer: %s",
-		           vk_result_string(ret));
-	}
-}
-
-static void
-renderer_allocate_command_buffers(struct comp_renderer *r)
-{
-	struct vk_bundle *vk = &r->c->vk;
-	VkResult ret;
-
 	if (r->num_buffers == 0) {
 		COMP_ERROR(r->c, "Requested 0 command buffers.");
 		return;
@@ -663,50 +532,22 @@ renderer_allocate_command_buffers(struct comp_renderer *r)
 
 	COMP_DEBUG(r->c, "Allocating %d Command Buffers.", r->num_buffers);
 
-	if (r->cmd_buffers != NULL)
-		free(r->cmd_buffers);
-
-	r->cmd_buffers = U_TYPED_ARRAY_CALLOC(VkCommandBuffer, r->num_buffers);
-
-	VkCommandBufferAllocateInfo cmd_buffer_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-	    .commandPool = vk->cmd_pool,
-	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-	    .commandBufferCount = r->num_buffers,
-	};
-
-	ret = vk->vkAllocateCommandBuffers(vk->device, &cmd_buffer_info,
-	                                   r->cmd_buffers);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreateFramebuffer: %s",
-		           vk_result_string(ret));
+	if (r->rrs != NULL) {
+		free(r->rrs);
 	}
+
+	r->rrs = U_TYPED_ARRAY_CALLOC(struct comp_rendering, r->num_buffers);
 }
 
 static void
-renderer_destroy_command_buffers(struct comp_renderer *r)
+renderer_close_renderings(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
-
-	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, r->num_buffers,
-	                         r->cmd_buffers);
-}
-
-static void
-renderer_create_pipeline_cache(struct comp_renderer *r)
-{
-	struct vk_bundle *vk = &r->c->vk;
-	VkResult ret;
-
-	VkPipelineCacheCreateInfo pipeline_cache_info = {
-	    .sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
-	};
-	ret = vk->vkCreatePipelineCache(vk->device, &pipeline_cache_info, NULL,
-	                                &r->pipeline_cache);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreatePipelineCache: %s",
-		           vk_result_string(ret));
+	for (uint32_t i = 0; i < r->num_buffers; i++) {
+		comp_rendering_close(&r->rrs[i]);
 	}
+
+	free(r->rrs);
+	r->rrs = NULL;
 }
 
 static void
@@ -752,99 +593,12 @@ renderer_resize(struct comp_renderer *r)
 	                    r->settings->color_space,
 	                    r->settings->present_mode);
 
-	for (uint32_t i = 0; i < r->num_buffers; i++)
-		vk->vkDestroyFramebuffer(vk->device, r->frame_buffers[i], NULL);
-	renderer_destroy_command_buffers(r);
+	renderer_close_renderings(r);
 
 	r->num_buffers = r->c->window->swapchain.image_count;
 
-	renderer_create_frame_buffers(r);
-	renderer_allocate_command_buffers(r);
-	renderer_build_command_buffers(r);
-}
-
-static void
-renderer_create_frame_buffers(struct comp_renderer *r)
-{
-	if (r->frame_buffers != NULL)
-		free(r->frame_buffers);
-
-	r->frame_buffers = U_TYPED_ARRAY_CALLOC(VkFramebuffer, r->num_buffers);
-
-	for (uint32_t i = 0; i < r->num_buffers; i++) {
-		VkImageView attachments[1] = {
-		    r->c->window->swapchain.buffers[i].view,
-		};
-		renderer_create_frame_buffer(r, &r->frame_buffers[i],
-		                             ARRAY_SIZE(attachments),
-		                             attachments);
-	}
-}
-
-static void
-renderer_create_render_pass(struct comp_renderer *r)
-{
-	struct vk_bundle *vk = &r->c->vk;
-	VkResult ret;
-
-	VkAttachmentDescription attachments[1] = {
-	    (VkAttachmentDescription){
-	        .format = r->c->window->swapchain.surface_format.format,
-	        .samples = VK_SAMPLE_COUNT_1_BIT,
-	        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-	        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-	        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-	        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-	        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-	        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-	    },
-	};
-
-	VkAttachmentReference color_reference = {
-	    .attachment = 0,
-	    .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-
-	VkSubpassDescription subpass_description = {
-	    .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-	    .inputAttachmentCount = 0,
-	    .pInputAttachments = NULL,
-	    .colorAttachmentCount = 1,
-	    .pColorAttachments = &color_reference,
-	    .pResolveAttachments = NULL,
-	    .pDepthStencilAttachment = NULL,
-	    .preserveAttachmentCount = 0,
-	    .pPreserveAttachments = NULL,
-	};
-
-	VkSubpassDependency dependencies[1] = {
-	    (VkSubpassDependency){
-	        .srcSubpass = VK_SUBPASS_EXTERNAL,
-	        .dstSubpass = 0,
-	        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-	        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-	        .srcAccessMask = 0,
-	        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-	                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-	    },
-	};
-
-	VkRenderPassCreateInfo render_pass_info = {
-	    .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-	    .attachmentCount = ARRAY_SIZE(attachments),
-	    .pAttachments = attachments,
-	    .subpassCount = 1,
-	    .pSubpasses = &subpass_description,
-	    .dependencyCount = ARRAY_SIZE(dependencies),
-	    .pDependencies = dependencies,
-	};
-
-	ret = vk->vkCreateRenderPass(vk->device, &render_pass_info, NULL,
-	                             &r->render_pass);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreateRenderPass: %s",
-		           vk_result_string(ret));
-	}
+	renderer_allocate_renderings(r);
+	renderer_build_renderings(r);
 }
 
 static void
@@ -896,53 +650,18 @@ renderer_destroy(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->vk;
 
-	// Distortion
-	if (r->distortion != NULL) {
-		comp_distortion_destroy(r->distortion);
-		r->distortion = NULL;
-	}
-
-	// Discriptor pool
-	if (r->descriptor_pool != VK_NULL_HANDLE) {
-		vk->vkDestroyDescriptorPool(vk->device, r->descriptor_pool,
-		                            NULL);
-		r->descriptor_pool = VK_NULL_HANDLE;
-	}
-
 	// Fences
 	for (uint32_t i = 0; i < r->num_buffers; i++)
 		vk->vkDestroyFence(vk->device, r->fences[i], NULL);
 	free(r->fences);
 
 	// Command buffers
-	renderer_destroy_command_buffers(r);
-	if (r->cmd_buffers != NULL)
-		free(r->cmd_buffers);
-
-	// Render pass
-	if (r->render_pass != VK_NULL_HANDLE) {
-		vk->vkDestroyRenderPass(vk->device, r->render_pass, NULL);
-		r->render_pass = VK_NULL_HANDLE;
+	renderer_close_renderings(r);
+	if (r->rrs != NULL) {
+		free(r->rrs);
 	}
 
-	// Frame buffers
-	for (uint32_t i = 0; i < r->num_buffers; i++) {
-		if (r->frame_buffers[i] != VK_NULL_HANDLE) {
-			vk->vkDestroyFramebuffer(vk->device,
-			                         r->frame_buffers[i], NULL);
-			r->frame_buffers[i] = VK_NULL_HANDLE;
-		}
-	}
-	if (r->frame_buffers != NULL)
-		free(r->frame_buffers);
-	r->frame_buffers = NULL;
 	r->num_buffers = 0;
-
-	// Pipeline cache
-	if (r->pipeline_cache != VK_NULL_HANDLE) {
-		vk->vkDestroyPipelineCache(vk->device, r->pipeline_cache, NULL);
-		r->pipeline_cache = VK_NULL_HANDLE;
-	}
 
 	// Semaphores
 	if (r->semaphores.present_complete != VK_NULL_HANDLE) {

@@ -21,6 +21,7 @@
 #include "main/comp_settings.h"
 #include "main/comp_window.h"
 #include "main/comp_renderer.h"
+#include "render/comp_render.h"
 
 
 #ifdef __cplusplus
@@ -237,6 +238,9 @@ struct comp_compositor
 		//! Thread object for safely destroying swapchain.
 		struct u_threading_stack destroy_swapchains;
 	} threading;
+
+
+	struct comp_resources nr;
 };
 
 

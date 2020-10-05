@@ -81,6 +81,8 @@ compositor_destroy(struct xrt_compositor *xc)
 		c->r = NULL;
 	}
 
+	comp_resources_close(c, &c->nr);
+
 	// As long as vk_bundle is valid it's safe to call this function.
 	comp_shaders_close(&c->vk, &c->shaders);
 
@@ -1146,6 +1148,10 @@ compositor_init_shaders(struct comp_compositor *c)
 static bool
 compositor_init_renderer(struct comp_compositor *c)
 {
+	if (!comp_resources_init(c, &c->nr)) {
+		return false;
+	}
+
 	c->r = comp_renderer_create(c);
 	return c->r != NULL;
 }

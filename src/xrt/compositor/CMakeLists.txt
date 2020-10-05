@@ -13,8 +13,6 @@ set(CLIENT_SOURCE_FILES)
 set(MAIN_SOURCE_FILES
 	main/comp_compositor.c
 	main/comp_compositor.h
-	main/comp_distortion.c
-	main/comp_distortion.h
 	main/comp_documentation.h
 	main/comp_renderer.c
 	main/comp_renderer.h
@@ -29,6 +27,10 @@ set(MAIN_SOURCE_FILES
 	main/comp_layer.c
 	main/comp_layer_renderer.h
 	main/comp_layer_renderer.c
+	render/comp_buffer.c
+	render/comp_render.h
+	render/comp_rendering.c
+	render/comp_resources.c
 	)
 
 ###

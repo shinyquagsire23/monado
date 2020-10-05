@@ -15,8 +15,6 @@ compositor_srcs = [
 	'client/comp_vk_glue.c',
 	'main/comp_compositor.c',
 	'main/comp_compositor.h',
-	'main/comp_distortion.c',
-	'main/comp_distortion.h',
 	'main/comp_documentation.h',
 	'main/comp_renderer.c',
 	'main/comp_renderer.h',
@@ -29,6 +27,10 @@ compositor_srcs = [
 	'main/comp_window.h',
 	'main/comp_layer_renderer.c',
 	'main/comp_layer.c',
+	'render/comp_buffer.c',
+	'render/comp_render.h',
+	'render/comp_rendering.c',
+	'render/comp_resources.c',
 ]
 
 compile_args = []
