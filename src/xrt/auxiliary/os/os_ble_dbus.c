@@ -9,7 +9,9 @@
  */
 
 #include "os_ble.h"
+
 #include "util/u_misc.h"
+#include "util/u_logging.h"
 
 #include <poll.h>
 #include <errno.h>
@@ -28,7 +30,8 @@
  *
  */
 
-#define E(bch, ...) fprintf(stderr, __VA_ARGS__)
+#define I(bch, ...) U_LOG_I(__VA_ARGS__)
+#define E(bch, ...) U_LOG_E(__VA_ARGS__)
 
 
 /*
@@ -103,18 +106,18 @@ send_message(DBusConnection *conn, DBusError *err, DBusMessage **msg_ptr)
 	*msg_ptr = NULL;
 
 	if (msg == NULL) {
-		fprintf(stderr, "Message Null after construction\n");
+		U_LOG_E("Message Null after construction\n");
 		return -1;
 	}
 
 	// send message and get a handle for a reply
 	if (!dbus_connection_send_with_reply(conn, msg, &pending, -1)) {
 		// -1 is default timeout
-		fprintf(stderr, "Out Of Memory!\n");
+		U_LOG_E("Out Of Memory!\n");
 		return -1;
 	}
 	if (pending == NULL) {
-		fprintf(stderr, "Pending Call Null\n");
+		U_LOG_E("Pending Call Null\n");
 		return -1;
 	}
 	dbus_connection_flush(conn);
@@ -134,7 +137,7 @@ send_message(DBusConnection *conn, DBusError *err, DBusMessage **msg_ptr)
 	pending = NULL;
 
 	if (msg == NULL) {
-		fprintf(stderr, "Reply Null\n");
+		U_LOG_E("Reply Null\n");
 		return -1;
 	}
 
@@ -296,17 +299,17 @@ dict_get_string_and_varient_child(DBusMessageIter *dict,
 	DBusMessageIter child;
 	int type = dbus_message_iter_get_arg_type(dict);
 	if (type != DBUS_TYPE_DICT_ENTRY) {
-		fprintf(stderr, "Expected dict got '%c'!\n", type);
+		U_LOG_E("Expected dict got '%c'!\n", type);
 		return -1;
 	}
 
 	dbus_message_iter_recurse(dict, &child);
 	type = dbus_message_iter_get_arg_type(&child);
 	if (type != DBUS_TYPE_STRING && type != DBUS_TYPE_OBJECT_PATH) {
-		fprintf(stderr,
-		        "Expected dict first thing to be string or object "
-		        "path, got '%c'\n",
-		        type);
+		U_LOG_E(
+		    "Expected dict first thing to be string or object path, "
+		    "got '%c'\n",
+		    type);
 		return -1;
 	}
 
@@ -315,7 +318,7 @@ dict_get_string_and_varient_child(DBusMessageIter *dict,
 
 	type = dbus_message_iter_get_arg_type(&child);
 	if (type != DBUS_TYPE_VARIANT) {
-		fprintf(stderr, "Expected variant got '%c'\n", type);
+		U_LOG_E("Expected variant got '%c'\n", type);
 		return -1;
 	}
 
@@ -333,17 +336,17 @@ dict_get_string_and_array_elm(const DBusMessageIter *in_dict,
 	DBusMessageIter child;
 	int type = dbus_message_iter_get_arg_type(&dict);
 	if (type != DBUS_TYPE_DICT_ENTRY) {
-		fprintf(stderr, "Expected dict got '%c'!\n", type);
+		U_LOG_E("Expected dict got '%c'!\n", type);
 		return -1;
 	}
 
 	dbus_message_iter_recurse(&dict, &child);
 	type = dbus_message_iter_get_arg_type(&child);
 	if (type != DBUS_TYPE_STRING && type != DBUS_TYPE_OBJECT_PATH) {
-		fprintf(stderr,
-		        "Expected dict first thing to be string or object "
-		        "path, got '%c'\n",
-		        type);
+		U_LOG_E(
+		    "Expected dict first thing to be string or object path, "
+		    "got '%c'\n",
+		    type);
 		return -1;
 	}
 
@@ -352,7 +355,7 @@ dict_get_string_and_array_elm(const DBusMessageIter *in_dict,
 
 	type = dbus_message_iter_get_arg_type(&child);
 	if (type != DBUS_TYPE_ARRAY) {
-		fprintf(stderr, "Expected array got '%c'\n", type);
+		U_LOG_E("Expected array got '%c'\n", type);
 		return -1;
 	}
 
@@ -378,7 +381,7 @@ array_get_first_elem_of_type(const DBusMessageIter *in_parent,
 	DBusMessageIter parent = *in_parent;
 	int type = dbus_message_iter_get_arg_type(&parent);
 	if (type != DBUS_TYPE_ARRAY) {
-		fprintf(stderr, "Expected array got '%c'!\n", type);
+		U_LOG_E("Expected array got '%c'!\n", type);
 		return -1;
 	}
 
@@ -387,8 +390,8 @@ array_get_first_elem_of_type(const DBusMessageIter *in_parent,
 
 	type = dbus_message_iter_get_arg_type(&elm);
 	if (type != of_type) {
-		fprintf(stderr, "Expected elem type of '%c' got '%c'!\n",
-		        of_type, type);
+		U_LOG_E("Expected elem type of '%c' got '%c'!\n", of_type,
+		        type);
 		return -1;
 	}
 
@@ -433,13 +436,13 @@ array_match_string_element(const DBusMessageIter *in_array, const char *key)
 	DBusMessageIter array = *in_array;
 	int type = dbus_message_iter_get_arg_type(&array);
 	if (type != DBUS_TYPE_ARRAY) {
-		fprintf(stderr, "Expected array type ('%c')\n", type);
+		U_LOG_E("Expected array type ('%c')\n", type);
 		return -1;
 	}
 
 	int elm_type = dbus_message_iter_get_element_type(&array);
 	if (elm_type != DBUS_TYPE_STRING) {
-		fprintf(stderr, "Expected string element type ('%c')\n", type);
+		U_LOG_E("Expected string element type ('%c')\n", type);
 		return -1;
 	}
 
@@ -489,8 +492,7 @@ dbus_has_name(DBusConnection *conn, const char *name)
 	if (type == DBUS_TYPE_STRING) {
 		char *response = NULL;
 		dbus_message_iter_get_basic(&args, &response);
-		fprintf(stderr, "Error getting calling ListNames:\n%s\n",
-		        response);
+		U_LOG_E("Error getting calling ListNames:\n%s\n", response);
 		response = NULL;
 
 		// free reply
@@ -618,7 +620,7 @@ gatt_iface_get_uuid(const DBusMessageIter *iface_elm, const char **out_str)
 
 	int type = dbus_message_iter_get_arg_type(&value);
 	if (type != DBUS_TYPE_STRING) {
-		fprintf(stderr, "Invalid UUID value type ('%c')\n", type);
+		U_LOG_E("Invalid UUID value type ('%c')\n", type);
 		return -1;
 	}
 
@@ -776,6 +778,7 @@ ble_connect(struct ble_conn_helper *bch, const char *dbus_address)
 	char *response = NULL;
 	int ret, type;
 
+	I(bch, "Connecting '%s'", dbus_address);
 
 	msg = dbus_message_new_method_call(
 	    "org.bluez",         // target for the method call
@@ -783,14 +786,14 @@ ble_connect(struct ble_conn_helper *bch, const char *dbus_address)
 	    "org.bluez.Device1", // interface to call on
 	    "Connect");          // method name
 	if (msg == NULL) {
-		fprintf(stderr, "Message NULL after construction\n");
+		E(bch, "Message NULL after construction\n");
 		return -1;
 	}
 
 	// Send the message, consumes our message and returns what we received.
 	ret = ble_dbus_send(bch, &msg);
 	if (ret != 0) {
-		printf("Failed to send message '%i'\n", ret);
+		E(bch, "Failed to send message '%i'\n", ret);
 		return -1;
 	}
 
@@ -799,7 +802,7 @@ ble_connect(struct ble_conn_helper *bch, const char *dbus_address)
 	type = dbus_message_iter_get_arg_type(&args);
 	if (type == DBUS_TYPE_STRING) {
 		dbus_message_iter_get_basic(&args, &response);
-		printf("DBus call returned message: %s\n", response);
+		E(bch, "DBus call returned message: %s\n", response);
 
 		// Free reply.
 		dbus_message_unref(msg);
@@ -1012,7 +1015,8 @@ init_ble_notify(const char *dev_uuid,
 		}
 		if (type == DBUS_TYPE_STRING) {
 			dbus_message_iter_get_basic(&args, &response);
-			printf("DBus call returned message: %s\n", response);
+			E(&bledev->bch, "DBus call returned message: %s\n",
+			  response);
 		} else if (type == DBUS_TYPE_UNIX_FD) {
 			dbus_message_iter_get_basic(&args, &bledev->fd);
 		}
