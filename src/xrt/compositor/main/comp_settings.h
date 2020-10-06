@@ -14,6 +14,9 @@
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_vulkan_includes.h"
 
+#include "util/u_logging.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -85,11 +88,8 @@ struct comp_settings
 	//! Not used with direct mode.
 	bool fullscreen;
 
-	//! Should we debug print a lot!
-	bool print_spew;
-
-	//! Should we debug print.
-	bool print_debug;
+	//! Logging level.
+	enum u_logging_level log_level;
 
 	//! Print information about available modes for direct mode.
 	bool print_modes;

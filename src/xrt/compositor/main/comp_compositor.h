@@ -303,20 +303,14 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc);
  *
  * @relates comp_compositor
  */
-#define COMP_SPEW(c, ...)                                                      \
-	if (c->settings.print_spew) {                                          \
-		U_LOG_T(__VA_ARGS__);                                          \
-	}
+#define COMP_SPEW(c, ...) U_LOG_IFL_T(c->settings.log_level, __VA_ARGS__);
 
 /*!
  * Debug level logging.
  *
  * @relates comp_compositor
  */
-#define COMP_DEBUG(c, ...)                                                     \
-	if (c->settings.print_debug) {                                         \
-		U_LOG_D(__VA_ARGS__);                                          \
-	}
+#define COMP_DEBUG(c, ...) U_LOG_IFL_D(c->settings.log_level, __VA_ARGS__);
 
 /*!
  * Mode printing.

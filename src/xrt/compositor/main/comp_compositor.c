@@ -722,7 +722,7 @@ compositor_init_vulkan(struct comp_compositor *c)
 
 	VkResult ret;
 
-	c->vk.print = c->settings.print_debug;
+	c->vk.print = c->settings.log_level <= U_LOGGING_DEBUG;
 
 	ret = find_get_instance_proc_addr(c);
 	if (ret != VK_SUCCESS) {

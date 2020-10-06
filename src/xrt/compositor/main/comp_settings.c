@@ -11,8 +11,7 @@
 #include "comp_settings.h"
 
 // clang-format off
-DEBUG_GET_ONCE_BOOL_OPTION(print_spew, "XRT_COMPOSITOR_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(print_debug, "XRT_COMPOSITOR_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_LOG_OPTION(log, "XRT_COMPOSITOR_LOG", U_LOGGING_WARN)
 DEBUG_GET_ONCE_BOOL_OPTION(print_modes, "XRT_COMPOSITOR_PRINT_MODES", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_randr, "XRT_COMPOSITOR_FORCE_RANDR", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_nvidia, "XRT_COMPOSITOR_FORCE_NVIDIA", false)
@@ -45,8 +44,7 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	s->width = xdev->hmd->screens[0].w_pixels;
 	s->height = xdev->hmd->screens[0].h_pixels;
 	s->nominal_frame_interval_ns = interval_ns;
-	s->print_spew = debug_get_bool_option_print_spew();
-	s->print_debug = debug_get_bool_option_print_debug();
+	s->log_level = debug_get_log_option_log();
 	s->print_modes = debug_get_bool_option_print_modes();
 	s->selected_gpu_index = debug_get_num_option_force_gpu_index();
 	s->client_gpu_index = debug_get_num_option_force_client_gpu_index();
