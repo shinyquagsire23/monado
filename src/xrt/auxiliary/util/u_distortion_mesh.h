@@ -87,14 +87,50 @@ bool
 u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result);
 
 /*!
+ * Helper function for none distortion devices.
+ *
+ * @ingroup aux_util
+ */
+bool
+u_distortion_mesh_none(struct xrt_device *xdev,
+                       int view,
+                       float u,
+                       float v,
+                       struct xrt_uv_triplet *result);
+
+
+/*!
  * Given a @ref xrt_device generates meshes by calling
- * xdev->compute_distortion(), populates xdev->hmd_parts.distortion.mesh
+ * xdev->compute_distortion(), populates `xdev->hmd_parts.distortion.mesh` &
+ * `xdev->hmd_parts.distortion.models`.
  *
  * @ingroup aux_util
  * @relatesalso xrt_device
  */
 void
-u_compute_distortion_mesh(struct xrt_device *xdev);
+u_distortion_mesh_fill_in_compute(struct xrt_device *xdev);
+
+/*!
+ * Given a @ref xrt_device generates a no distortion mesh, populates
+ * `xdev->hmd_parts.distortion.mesh` & `xdev->hmd_parts.distortion.models`.
+ *
+ * @ingroup aux_util
+ * @relatesalso xrt_device
+ */
+void
+u_distortion_mesh_fill_in_none(struct xrt_device *xdev);
+
+/*!
+ * Given a @ref xrt_device generates a no distortion mesh, also sets
+ * `xdev->compute_distortion()` and populates `xdev->hmd_parts.distortion.mesh`
+ * & `xdev->hmd_parts.distortion.models`.
+ *
+ * @ingroup aux_util
+ * @relatesalso xrt_device
+ */
+void
+u_distortion_mesh_set_none(struct xrt_device *xdev);
+
 
 #ifdef __cplusplus
 }

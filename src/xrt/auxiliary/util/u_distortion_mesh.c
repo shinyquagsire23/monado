@@ -244,24 +244,72 @@ u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result)
 	return true;
 }
 
-static bool
-compute_distortion_none(struct xrt_device *xdev,
-                        int view,
-                        float u,
-                        float v,
-                        struct xrt_uv_triplet *result)
+
+/*
+ *
+ * No distortion.
+ *
+ */
+
+bool
+u_distortion_mesh_none(struct xrt_device *xdev,
+                       int view,
+                       float u,
+                       float v,
+                       struct xrt_uv_triplet *result)
 {
 	return u_compute_distortion_none(u, v, result);
 }
 
 void
-u_compute_distortion_mesh(struct xrt_device *xdev)
+u_distortion_mesh_fill_in_none(struct xrt_device *xdev)
 {
 	struct xrt_hmd_parts *target = xdev->hmd;
+
+	// Do the generation.
+	run_func(xdev, u_distortion_mesh_none, 2, target, 1);
+
+	// Make the target mostly usable.
+	target->distortion.models |= XRT_DISTORTION_MODEL_NONE;
+	target->distortion.models |= XRT_DISTORTION_MODEL_MESHUV;
+	target->distortion.preferred = XRT_DISTORTION_MODEL_MESHUV;
+}
+
+void
+u_distortion_mesh_set_none(struct xrt_device *xdev)
+{
+	struct xrt_hmd_parts *target = xdev->hmd;
+
+	// Reset to none.
+	target->distortion.models = XRT_DISTORTION_MODEL_NONE;
+
+	u_distortion_mesh_fill_in_none(xdev);
+
+	// Make sure that the xdev implements the compute_distortion function.
+	xdev->compute_distortion = u_distortion_mesh_none;
+
+	// Make the target completely usable.
+	target->distortion.models |= XRT_DISTORTION_MODEL_COMPUTE;
+}
+
+
+/*
+ *
+ *
+ *
+ */
+
+void
+u_distortion_mesh_fill_in_compute(struct xrt_device *xdev)
+{
 	func_calc calc = xdev->compute_distortion;
 	if (calc == NULL) {
-		calc = compute_distortion_none;
+		u_distortion_mesh_fill_in_none(xdev);
+		return;
 	}
+
+	struct xrt_hmd_parts *target = xdev->hmd;
+
 	size_t num = debug_get_num_option_mesh_size();
 	run_func(xdev, calc, 2, target, num);
 }
