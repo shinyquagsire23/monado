@@ -4,8 +4,6 @@
 spirv_shaders(SHADER_HEADERS
 	shaders/mesh.frag
 	shaders/mesh.vert
-	shaders/none.frag
-	shaders/none.vert
 	shaders/layer.frag
 	shaders/layer.vert
 	)

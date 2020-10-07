@@ -312,26 +312,14 @@ renderer_build_command_buffer(struct comp_renderer *r,
 	vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 	vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-	if (r->distortion->distortion_model == XRT_DISTORTION_MODEL_MESHUV) {
-		// Mesh distortion
-		comp_distortion_draw_mesh(r->distortion, command_buffer, 0);
-		renderer_set_viewport_scissor(scale_x, scale_y, &viewport,
-		                              &scissor,
-		                              &r->c->xdev->hmd->views[1]);
-		vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-		vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-		comp_distortion_draw_mesh(r->distortion, command_buffer, 1);
 
-	} else {
-		// Fragment shader distortion
-		comp_distortion_draw_quad(r->distortion, command_buffer, 0);
-		renderer_set_viewport_scissor(scale_x, scale_y, &viewport,
-		                              &scissor,
-		                              &r->c->xdev->hmd->views[1]);
-		vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-		vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-		comp_distortion_draw_quad(r->distortion, command_buffer, 1);
-	}
+	// Mesh distortion
+	comp_distortion_draw_mesh(r->distortion, command_buffer, 0);
+	renderer_set_viewport_scissor(scale_x, scale_y, &viewport, &scissor,
+	                              &r->c->xdev->hmd->views[1]);
+	vk->vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+	vk->vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+	comp_distortion_draw_mesh(r->distortion, command_buffer, 1);
 
 	vk->vkCmdEndRenderPass(command_buffer);
 
@@ -456,48 +444,15 @@ renderer_init(struct comp_renderer *r)
 
 	renderer_init_descriptor_pool(r);
 
-	enum xrt_distortion_model distortion_model = XRT_DISTORTION_MODEL_NONE;
-
-	if (r->c->xdev->hmd->distortion.preferred ==
-	    XRT_DISTORTION_MODEL_NONE) {
-		// nothing to do, will use none distortion shader
-		distortion_model = XRT_DISTORTION_MODEL_NONE;
-	} else if ((r->c->xdev->hmd->distortion.models &
-	            XRT_DISTORTION_MODEL_MESHUV) != 0) {
-		// xdev->hmd->distortion.mesh already has values for mesh shader
-		distortion_model = XRT_DISTORTION_MODEL_MESHUV;
-	} else if ((r->c->xdev->hmd->distortion.models &
-	            XRT_DISTORTION_MODEL_COMPUTE) != 0) {
-		COMP_DEBUG(r->c, "Computing distortion mesh...");
-		u_compute_distortion_mesh(r->c->xdev);
-
-		if ((r->c->xdev->hmd->distortion.models &
-		     XRT_DISTORTION_MODEL_MESHUV) != 0) {
-			COMP_DEBUG(r->c,
-			           "Distortion mesh successfully computed!");
-			distortion_model = XRT_DISTORTION_MODEL_MESHUV;
-		} else {
-			COMP_ERROR(r->c,
-			           "Failed to create distortion mesh for %s, "
-			           "falling back to no distortion",
-			           r->c->xdev->str);
-			distortion_model = XRT_DISTORTION_MODEL_NONE;
-		}
-	} else {
-		COMP_ERROR(r->c,
-		           "%s does not provide any supported distortion "
-		           "model, falling back to no distortion",
-		           r->c->xdev->str);
-		distortion_model = XRT_DISTORTION_MODEL_NONE;
-	}
-
-	r->c->settings.distortion_model = distortion_model;
-
 	r->distortion = U_TYPED_CALLOC(struct comp_distortion);
 
+	bool has_meshuv = (r->c->xdev->hmd->distortion.models &
+	                   XRT_DISTORTION_MODEL_MESHUV) != 0;
+	assert(has_meshuv);
+
 	comp_distortion_init(r->distortion, r->c, r->render_pass,
-	                     r->pipeline_cache, distortion_model,
-	                     r->c->xdev->hmd, r->descriptor_pool);
+	                     r->pipeline_cache, r->c->xdev->hmd,
+	                     r->descriptor_pool);
 
 	VkExtent2D extent = {
 	    .width = r->c->xdev->hmd->screens[0].w_pixels,
@@ -525,6 +480,7 @@ get_image_view(struct comp_swapchain_image *image,
 	}
 	return image->views.no_alpha[array_index];
 }
+
 void
 comp_renderer_set_quad_layer(struct comp_renderer *r,
                              uint32_t layer,
@@ -783,10 +739,10 @@ renderer_resize(struct comp_renderer *r)
 	struct vk_bundle *vk = &r->c->vk;
 
 	/*
-	 * This makes sure that any pending command buffer has completed and all
-	 * resources referred by it can now be manipulated. This make sure that
-	 * validation doesn't complain. This is done during resize so isn't time
-	 * critical.
+	 * This makes sure that any pending command buffer has completed
+	 * and all resources referred by it can now be manipulated. This
+	 * make sure that validation doesn't complain. This is done
+	 * during resize so isn't time critical.
 	 */
 	vk->vkDeviceWaitIdle(vk->device);
 

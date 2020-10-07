@@ -24,11 +24,9 @@
 
 #include "shaders/mesh.frag.h"
 #include "shaders/mesh.vert.h"
-#include "shaders/none.frag.h"
-#include "shaders/none.vert.h"
-
 
 #pragma GCC diagnostic pop
+
 
 /*
  *
@@ -173,13 +171,10 @@ comp_distortion_init(struct comp_distortion *d,
                      struct comp_compositor *c,
                      VkRenderPass render_pass,
                      VkPipelineCache pipeline_cache,
-                     enum xrt_distortion_model distortion_model,
                      struct xrt_hmd_parts *parts,
                      VkDescriptorPool descriptor_pool)
 {
 	d->vk = &c->vk;
-
-	d->distortion_model = distortion_model;
 
 	//! Add support for 1 channels as well.
 	assert(parts->distortion.mesh.vertices == NULL ||
@@ -205,8 +200,7 @@ comp_distortion_init(struct comp_distortion *d,
 	d->ubo_vp_data[1].flip_y = false;
 	d->quirk_draw_lines = c->settings.debug.wireframe;
 
-	// binding indices used in distortion.vert, mesh.vert, mesh.frag,
-	// none.frag
+	// binding indices used in mesh.vert & mesh.frag shaders.
 	d->render_texture_target_binding = 0;
 	d->ubo_viewport_binding = 1;
 
@@ -332,8 +326,7 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	VkVertexInputAttributeDescription
 	    vertex_input_attribute_descriptions[2];
 
-	const uint32_t *fragment_shader_code = NULL;
-	size_t fragment_shader_size = 0;
+
 
 	/*
 	 * By default, we will generate positions and UVs for the full screen
@@ -342,53 +335,37 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	VkPipelineVertexInputStateCreateInfo vertex_input_state = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 	};
+	// clang-format off
+	vertex_input_attribute_descriptions[0].binding = d->render_texture_target_binding;
+	vertex_input_attribute_descriptions[0].location = 0;
+	vertex_input_attribute_descriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+	vertex_input_attribute_descriptions[0].offset = 0;
+
+	vertex_input_attribute_descriptions[1].binding = d->render_texture_target_binding;
+	vertex_input_attribute_descriptions[1].location = 1;
+	vertex_input_attribute_descriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+	vertex_input_attribute_descriptions[1].offset = 16;
+
+	vertex_input_binding_description.binding = d->render_texture_target_binding;
+	vertex_input_binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	vertex_input_binding_description.stride = d->mesh.stride;
+
+	vertex_input_state.vertexAttributeDescriptionCount = 2;
+	vertex_input_state.pVertexAttributeDescriptions = vertex_input_attribute_descriptions;
+	vertex_input_state.vertexBindingDescriptionCount = 1;
+	vertex_input_state.pVertexBindingDescriptions = &vertex_input_binding_description;
+	// clang-format on
+
 	const uint32_t *vertex_shader_code = NULL;
 	size_t vertex_shader_size = 0;
 
-	switch (d->distortion_model) {
-	case XRT_DISTORTION_MODEL_MESHUV:
-		// clang-format off
-		vertex_input_attribute_descriptions[0].binding = d->render_texture_target_binding;
-		vertex_input_attribute_descriptions[0].location = 0;
-		vertex_input_attribute_descriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		vertex_input_attribute_descriptions[0].offset = 0;
+	const uint32_t *fragment_shader_code = NULL;
+	size_t fragment_shader_size = 0;
 
-		vertex_input_attribute_descriptions[1].binding = d->render_texture_target_binding;
-		vertex_input_attribute_descriptions[1].location = 1;
-		vertex_input_attribute_descriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		vertex_input_attribute_descriptions[1].offset = 16;
-
-		vertex_input_binding_description.binding = d->render_texture_target_binding;
-		vertex_input_binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		vertex_input_binding_description.stride = d->mesh.stride;
-
-		vertex_input_state.vertexAttributeDescriptionCount = 2;
-		vertex_input_state.pVertexAttributeDescriptions = vertex_input_attribute_descriptions;
-		vertex_input_state.vertexBindingDescriptionCount = 1;
-		vertex_input_state.pVertexBindingDescriptions = &vertex_input_binding_description;
-		// clang-format on
-
-		vertex_shader_code = shaders_mesh_vert;
-		vertex_shader_size = sizeof(shaders_mesh_vert);
-		fragment_shader_code = shaders_mesh_frag;
-		fragment_shader_size = sizeof(shaders_mesh_frag);
-		break;
-	case XRT_DISTORTION_MODEL_COMPUTE:
-		VK_ERROR(d->vk,
-		         "Mesh not computed, using no distortion shader!");
-		vertex_shader_code = shaders_none_vert;
-		vertex_shader_size = sizeof(shaders_none_vert);
-		fragment_shader_code = shaders_none_frag;
-		fragment_shader_size = sizeof(shaders_none_frag);
-		break;
-	case XRT_DISTORTION_MODEL_NONE:
-	default:
-		vertex_shader_code = shaders_none_vert;
-		vertex_shader_size = sizeof(shaders_none_vert);
-		fragment_shader_code = shaders_none_frag;
-		fragment_shader_size = sizeof(shaders_none_frag);
-		break;
-	}
+	vertex_shader_code = shaders_mesh_vert;
+	vertex_shader_size = sizeof(shaders_mesh_vert);
+	fragment_shader_code = shaders_mesh_frag;
+	fragment_shader_size = sizeof(shaders_mesh_frag);
 
 	VkPipelineShaderStageCreateInfo shader_stages[2] = {
 	    _shader_load(d->vk, vertex_shader_code, vertex_shader_size,
@@ -583,25 +560,6 @@ comp_distortion_init_pipeline_layout(struct comp_distortion *d)
 }
 
 void
-comp_distortion_draw_quad(struct comp_distortion *d,
-                          VkCommandBuffer command_buffer,
-                          int eye)
-{
-	struct vk_bundle *vk = d->vk;
-
-	vk->vkCmdBindDescriptorSets(
-	    command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, d->pipeline_layout,
-	    0, 1, &d->descriptor_sets[eye], 0, NULL);
-
-	vk->vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-	                      d->pipeline);
-
-	/* Draw 3 verts from which we construct the fullscreen quad in
-	 * the shader*/
-	vk->vkCmdDraw(command_buffer, 3, 1, 0, 0);
-}
-
-void
 comp_distortion_draw_mesh(struct comp_distortion *d,
                           VkCommandBuffer command_buffer,
                           int eye)
@@ -759,20 +717,8 @@ comp_distortion_init_buffers(struct comp_distortion *d,
 	memory_property_flags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	// Distortion ubo and vbo sizes.
-	VkDeviceSize vbo_size = 0;
-	VkDeviceSize index_size = 0;
-
-	switch (d->distortion_model) {
-	case XRT_DISTORTION_MODEL_MESHUV:
-		vbo_size = d->mesh.stride * d->mesh.num_vertices;
-		index_size = sizeof(int) * d->mesh.total_num_indices;
-		break;
-	case XRT_DISTORTION_MODEL_NONE: break;
-	default:
-		// Should this be a error?
-		COMP_ERROR(c, "Only mesh distortion and none is supported");
-		break;
-	}
+	VkDeviceSize vbo_size = d->mesh.stride * d->mesh.num_vertices;
+	VkDeviceSize index_size = sizeof(int) * d->mesh.total_num_indices;
 
 	// vp ubo[0]
 	ret = _create_buffer(vk, ubo_usage_flags, memory_property_flags,

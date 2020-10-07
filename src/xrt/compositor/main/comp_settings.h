@@ -70,9 +70,6 @@ struct comp_settings
 	//! display string forced by user or NULL
 	const char *nvidia_display;
 
-	//! Distortion type to use.
-	enum xrt_distortion_model distortion_model;
-
 	uint32_t width;
 	uint32_t height;
 

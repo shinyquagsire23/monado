@@ -1,8 +1,6 @@
 shader_srcs = [
 	'mesh.frag',
 	'mesh.vert',
-	'none.frag',
-	'none.vert',
 	'layer.vert',
 	'layer.frag'
 ]

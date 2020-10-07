@@ -59,8 +59,6 @@ struct comp_distortion
 	struct comp_uniform_buffer ubo_viewport_handles[2];
 	uint32_t ubo_viewport_binding;
 
-	enum xrt_distortion_model distortion_model;
-
 	struct
 	{
 		float *vertices;
@@ -106,7 +104,6 @@ comp_distortion_init(struct comp_distortion *d,
                      struct comp_compositor *c,
                      VkRenderPass render_pass,
                      VkPipelineCache pipeline_cache,
-                     enum xrt_distortion_model distortion_model,
                      struct xrt_hmd_parts *parts,
                      VkDescriptorPool descriptor_pool);
 
@@ -129,16 +126,6 @@ comp_distortion_update_descriptor_set(struct comp_distortion *d,
                                       VkImageView view,
                                       uint32_t eye,
                                       bool flip_y);
-
-/*!
- * Submit draw commands to the given command_buffer.
- *
- * @ingroup comp_main
- */
-void
-comp_distortion_draw_quad(struct comp_distortion *d,
-                          VkCommandBuffer command_buffer,
-                          int eye);
 
 void
 comp_distortion_draw_mesh(struct comp_distortion *d,

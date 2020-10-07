@@ -49,6 +49,7 @@
 #include "util/u_misc.h"
 #include "util/u_time.h"
 #include "util/u_debug.h"
+#include "util/u_distortion_mesh.h"
 
 #include "main/comp_compositor.h"
 
@@ -547,6 +548,55 @@ compositor_poll_events(struct xrt_compositor *xc,
 	}
 
 	return XRT_SUCCESS;
+}
+
+
+/*
+ *
+ * xdev functions.
+ *
+ */
+
+static bool
+compositor_check_and_prepare_xdev(struct comp_compositor *c,
+                                  struct xrt_device *xdev)
+{
+	// clang-format off
+	bool has_none = (xdev->hmd->distortion.models & XRT_DISTORTION_MODEL_NONE) != 0;
+	bool has_meshuv = (xdev->hmd->distortion.models & XRT_DISTORTION_MODEL_MESHUV) != 0;
+	bool has_compute = (xdev->hmd->distortion.models & XRT_DISTORTION_MODEL_COMPUTE) != 0;
+	// clang-format on
+
+	// Everything is okay! :D
+	if (has_meshuv) {
+		return true;
+	}
+
+	if (!has_none && !has_compute) {
+		COMP_ERROR(
+		    c, "The xdev '%s' didn't have none nor compute distortion.",
+		    xdev->str);
+		return false;
+	}
+
+	COMP_WARN(c,
+	          "Had to fill in meshuv on xdev '%s', "
+	          "this should be done in the driver.",
+	          xdev->str);
+
+	u_distortion_mesh_fill_in_compute(xdev);
+
+	// clang-format off
+	has_meshuv = (xdev->hmd->distortion.models & XRT_DISTORTION_MODEL_MESHUV) != 0;
+	// clang-format on
+
+	if (has_meshuv) {
+		return true;
+	}
+
+	COMP_ERROR(c, "Failed to fill in meshuv on the xdev '%s'.", xdev->str);
+
+	return false;
 }
 
 
@@ -1156,7 +1206,8 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	// window/swapchain.
 
 	// clang-format off
-	if (!compositor_check_vulkan_caps(c) ||
+	if (!compositor_check_and_prepare_xdev(c, xdev) ||
+	    !compositor_check_vulkan_caps(c) ||
 	    !compositor_init_window_pre_vulkan(c) ||
 	    !compositor_init_vulkan(c) ||
 	    !compositor_init_window_post_vulkan(c) ||
