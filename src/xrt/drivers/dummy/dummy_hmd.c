@@ -182,6 +182,7 @@ dummy_hmd_create(void)
 	dh->base.get_view_pose = dummy_hmd_get_view_pose;
 	dh->base.destroy = dummy_hmd_destroy;
 	dh->base.name = XRT_DEVICE_GENERIC_HMD;
+	dh->base.device_type = XRT_DEVICE_TYPE_HMD;
 	dh->pose.orientation.w = 1.0f; // All other values set to zero.
 	dh->created_ns = os_monotonic_get_ns();
 	dh->diameter_m = 0.05;
@@ -217,11 +218,8 @@ dummy_hmd_create(void)
 	u_var_add_vec3_f32(dh, &dh->center, "center");
 	u_var_add_f32(dh, &dh->diameter_m, "diameter_m");
 
-	dh->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
-	dh->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
-	dh->base.compute_distortion = NULL;
-
-	dh->base.device_type = XRT_DEVICE_TYPE_HMD;
+	// Distortion information, fills in xdev->compute_distortion().
+	u_distortion_mesh_set_none(&dh->base);
 
 	return &dh->base;
 }
