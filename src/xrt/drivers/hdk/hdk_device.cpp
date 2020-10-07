@@ -486,9 +486,8 @@ hdk_device_create(struct os_hid_device *dev,
 	// "None" is correct or at least acceptable for 1.2.
 	// We have coefficients for 1.3/1.4, though the mesh is better.
 	// We only have a mesh for 2, so use "none" there until it's supported.
-	hd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
-	hd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
-	hd->base.compute_distortion = NULL;
+	// Distortion information, fills in xdev->compute_distortion().
+	u_distortion_mesh_set_none(&hd->base);
 	// if (variant == HDK_VARIANT_1_3_1_4) {
 	// 	hd->base.hmd->distortion.models =
 	// 	    xrt_distortion_model(hd->base.hmd->distortion.models |
