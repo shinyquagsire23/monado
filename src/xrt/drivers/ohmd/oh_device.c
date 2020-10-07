@@ -653,9 +653,7 @@ oh_device_create(ohmd_context *ctx,
 	}
 
 	if (info.quirks.video_distortion_none) {
-		ohd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
-		ohd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
-		ohd->base.compute_distortion = NULL;
+		u_distortion_mesh_set_none(&ohd->base);
 	}
 
 	if (info.quirks.left_center_pano_scale) {
