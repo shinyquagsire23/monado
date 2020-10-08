@@ -13,6 +13,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef XRT_OS_WINDOWS
+#include "xrt_windows.h"
+#endif // XRT_OS_WINDOWS
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -129,6 +134,43 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
  */
 #define XRT_GRAPHICS_BUFFER_HANDLE_INVALID (-1)
 
+#elif defined(XRT_OS_WINDOWS)
+
+/*!
+ * The type underlying buffers shared between compositor clients and the main
+ * compositor.
+ *
+ * On Windows, this is a HANDLE.
+ */
+typedef HANDLE xrt_graphics_buffer_handle_t;
+
+/*!
+ * Defined to allow detection of the underlying type.
+ *
+ * @relates xrt_graphics_buffer_handle_t
+ */
+#define XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE 1
+
+/*!
+ * Check whether a graphics buffer handle is valid.
+ *
+ * @public @memberof xrt_graphics_buffer_handle_t
+ */
+static inline bool
+xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
+{
+	return handle != NULL;
+}
+
+/*!
+ * An invalid value for a graphics buffer.
+ *
+ * Note that there may be more than one value that's invalid - use
+ * xrt_graphics_buffer_is_valid() instead of comparing against this!
+ *
+ * @relates xrt_graphics_buffer_handle_t
+ */
+#define XRT_GRAPHICS_BUFFER_HANDLE_INVALID (NULL)
 #else
 #error "Not yet implemented for this platform"
 #endif
@@ -173,7 +215,41 @@ xrt_graphics_sync_handle_is_valid(xrt_graphics_sync_handle_t handle)
 
 #elif defined(XRT_OS_WINDOWS)
 
-#error "Use HANDLE here, etc."
+/*!
+ * The type underlying synchronization primitives (semaphores, etc) shared
+ * between compositor clients and the main compositor.
+ *
+ * On Windows, this is a HANDLE.
+ */
+typedef HANDLE xrt_graphics_sync_handle_t;
+
+/*!
+ * Defined to allow detection of the underlying type.
+ *
+ * @relates xrt_graphics_sync_handle_t
+ */
+#define XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE 1
+
+/*!
+ * Check whether a graphics sync handle is valid.
+ *
+ * @public @memberof xrt_graphics_sync_handle_t
+ */
+static inline bool
+xrt_graphics_sync_handle_is_valid(xrt_graphics_sync_handle_t handle)
+{
+	return handle != NULL;
+}
+
+/*!
+ * An invalid value for a graphics sync primitive.
+ *
+ * Note that there may be more than one value that's invalid - use
+ * xrt_graphics_sync_handle_is_valid() instead of comparing against this!
+ *
+ * @relates xrt_graphics_sync_handle_t
+ */
+#define XRT_GRAPHICS_SYNC_HANDLE_INVALID (NULL)
 
 #endif
 
