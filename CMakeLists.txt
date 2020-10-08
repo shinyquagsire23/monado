@@ -192,6 +192,9 @@ endif()
 if(ANDROID)
 	set(VK_USE_PLATFORM_ANDROID_KHR TRUE)
 endif()
+if(WIN32)
+	set(VK_USE_PLATFORM_WIN32_KHR TRUE)
+endif()
 
 
 if(NOT MSVC)
