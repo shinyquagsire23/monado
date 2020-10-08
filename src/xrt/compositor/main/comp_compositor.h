@@ -313,6 +313,20 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc);
 #define COMP_DEBUG(c, ...) U_LOG_IFL_D(c->settings.log_level, __VA_ARGS__);
 
 /*!
+ * Info level logging.
+ *
+ * @relates comp_compositor
+ */
+#define COMP_INFO(c, ...) U_LOG_IFL_I(c->settings.log_level, __VA_ARGS__);
+
+/*!
+ * Warn level logging.
+ *
+ * @relates comp_compositor
+ */
+#define COMP_WARN(c, ...) U_LOG_IFL_W(c->settings.log_level, __VA_ARGS__);
+
+/*!
  * Mode printing.
  *
  * @relates comp_compositor
