@@ -43,6 +43,28 @@ ref_graphics_handle(xrt_graphics_buffer_handle_t handle)
 	return dup(handle);
 }
 
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+
+static inline void
+release_graphics_handle(xrt_graphics_buffer_handle_t handle)
+{
+	CloseHandle(handle);
+}
+
+static inline xrt_graphics_buffer_handle_t
+ref_graphics_handle(xrt_graphics_buffer_handle_t handle)
+{
+	HANDLE self = GetCurrentProcess();
+	HANDLE result = NULL;
+	if (DuplicateHandle(self, handle, self, &result, 0, FALSE,
+	                    DUPLICATE_SAME_ACCESS) != 0) {
+		return result;
+	}
+	return NULL;
+}
+
+#else
+#error "need port"
 #endif
 
 xrt_graphics_buffer_handle_t
