@@ -8,6 +8,8 @@
 
 #include "cli_common.h"
 
+#include "xrt/xrt_config_os.h"
+
 #include <string.h>
 #include <stdio.h>
 
@@ -47,9 +49,11 @@ main(int argc, const char **argv)
 	if (strcmp(argv[1], "probe") == 0) {
 		return cli_cmd_probe(argc, argv);
 	}
+#ifndef XRT_OS_WINDOWS
 	if (strcmp(argv[1], "calibrate") == 0) {
 		return cli_cmd_calibrate(argc, argv);
 	}
+#endif // !XRT_OS_WINDOWS
 	if (strcmp(argv[1], "lighthouse") == 0) {
 		return cli_cmd_lighthouse(argc, argv);
 	}
