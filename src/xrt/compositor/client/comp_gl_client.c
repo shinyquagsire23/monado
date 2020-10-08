@@ -27,6 +27,8 @@
 
 #include "client/comp_gl_client.h"
 
+#include "util/u_logging.h"
+
 #include <inttypes.h>
 
 /*!
@@ -339,17 +341,16 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	if (info->array_size > 1) {
 		const char *version_str = (const char *)glGetString(GL_VERSION);
 		if (strstr(version_str, "OpenGL ES 2.") == version_str) {
-			fprintf(stderr,
-			        "%s - only one array layer is supported with "
-			        "OpenGL ES 2\n",
-			        __func__);
+			U_LOG_E(
+			    "Only one array layer is supported with OpenGL ES "
+			    "2");
 			return XRT_ERROR_OPENGL;
 		}
 	}
 
 	int64_t vk_format = gl_format_to_vk(info->format);
 	if (vk_format == 0) {
-		fprintf(stderr, "%s - Invalid format!\n", __func__);
+		U_LOG_E("Invalid format!");
 		return XRT_ERROR_VULKAN;
 	}
 
