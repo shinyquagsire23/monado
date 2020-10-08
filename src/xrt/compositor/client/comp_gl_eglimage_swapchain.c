@@ -308,5 +308,6 @@ client_gl_eglimage_swapchain_create(
 		}
 	}
 
+	*out_sc = &sc->base;
 	return &sc->base.base.base;
 }
