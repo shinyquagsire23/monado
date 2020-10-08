@@ -381,6 +381,12 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		xrt_swapchain_destroy(&xsc);
 		return XRT_ERROR_OPENGL;
 	}
+
+	if (sc == NULL) {
+		U_LOG_E("Could not create OpenGL swapchain.");
+		return XRT_ERROR_OPENGL;
+	}
+
 	if (NULL == sc->base.base.acquire_image) {
 		sc->base.base.acquire_image = client_gl_swapchain_acquire_image;
 	}
