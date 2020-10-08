@@ -516,6 +516,18 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 	}
 #endif // defined(OXR_HAVE_MNDX_egl_enable) && defined(XR_USE_PLATFORM_EGL_KHR)
 
+#if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+	XrGraphicsBindingOpenGLESAndroidKHR const *opengles_android =
+	    OXR_GET_INPUT_FROM_CHAIN(
+	        createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR,
+	        XrGraphicsBindingOpenGLESAndroidKHR);
+	if (opengles_android != NULL) {
+		OXR_VERIFY_EXTENSION(log, inst, KHR_opengl_es_enable);
+		return oxr_verify_XrGraphicsBindingOpenGLESAndroidKHR(
+		    log, opengles_android);
+	}
+#endif // OXR_HAVE_KHR_vulkan_enable
+
 	/*
 	 * Add any new graphics binding structs here - before the headless
 	 * check. (order for non-headless checks not specified in standard.)
@@ -629,3 +641,18 @@ oxr_verify_XrGraphicsBindingEGLMNDX(struct oxr_logger *log,
 }
 
 #endif
+
+#if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+XrResult
+oxr_verify_XrGraphicsBindingOpenGLESAndroidKHR(
+    struct oxr_logger *log, const XrGraphicsBindingOpenGLESAndroidKHR *next)
+{
+	if (next->type != XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "Graphics binding has invalid type");
+	}
+
+	return XR_SUCCESS;
+}
+#endif // defined(XR_USE_PLATFORM_ANDROID) &&
+       // defined(XR_USE_GRAPHICS_API_OPENGL_ES)

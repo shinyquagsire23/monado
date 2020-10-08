@@ -282,6 +282,13 @@ oxr_verify_XrGraphicsBindingEGLMNDX(struct oxr_logger *log,
                                     const XrGraphicsBindingEGLMNDX *next);
 #endif // defined(XR_USE_PLATFORM_EGL) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
+#if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+XrResult
+oxr_verify_XrGraphicsBindingOpenGLESAndroidKHR(
+    struct oxr_logger *, const XrGraphicsBindingOpenGLESAndroidKHR *);
+#endif // defined(XR_USE_PLATFORM_ANDROID) &&
+       // defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+
 /*!
  * @}
  */
