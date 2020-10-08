@@ -14,15 +14,15 @@ extern "C" {
 #endif
 
 
-#define _OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, THING, name,       \
-                                     lookup)                                   \
+#define _OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_thing, THING,  \
+                                     name, lookup)                             \
 	do {                                                                   \
 		oxr_log_init(log, name);                                       \
 		if (thing == XR_NULL_HANDLE) {                                 \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #thing " == NULL)");              \
 		}                                                              \
-		new_thing = (__typeof__(new_thing))(uintptr_t)thing;           \
+		new_thing = (struct oxr_thing *)((uintptr_t)thing);            \
 		if (new_thing->handle.debug != OXR_XR_DEBUG_##THING) {         \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #thing " == %p)",                 \
@@ -38,13 +38,13 @@ extern "C" {
 		oxr_log_set_instance(log, lookup);                             \
 	} while (0)
 
-#define _OXR_VERIFY_SET(log, arg, new_arg, THING)                              \
+#define _OXR_VERIFY_SET(log, arg, new_arg, oxr_thing, THING)                   \
 	do {                                                                   \
 		if (arg == XR_NULL_HANDLE) {                                   \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #arg " == NULL)");                \
 		}                                                              \
-		new_arg = (__typeof__(new_arg))(uintptr_t)arg;                 \
+		new_arg = (struct oxr_thing *)((uintptr_t)arg);                \
 		if (new_arg->handle.debug != OXR_XR_DEBUG_##THING) {           \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID,         \
 			                 "(" #arg " == %p)", (void *)new_arg); \
@@ -59,27 +59,27 @@ extern "C" {
 
 // clang-format off
 #define OXR_VERIFY_INSTANCE_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, INSTANCE, name, new_thing)
+	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_instance, INSTANCE, name, new_thing)
 #define OXR_VERIFY_MESSENGER_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, MESSENGER, name, new_thing->inst)
+	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_messenger, MESSENGER, name, new_thing->inst)
 #define OXR_VERIFY_SESSION_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, SESSION, name, new_thing->sys->inst)
+	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_session, SESSION, name, new_thing->sys->inst)
 #define OXR_VERIFY_SPACE_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, SPACE, name, new_thing->sess->sys->inst)
+	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_space, SPACE, name, new_thing->sess->sys->inst)
 #define OXR_VERIFY_ACTION_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, ACTION, name, new_thing->act_set->inst)
+	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_action, ACTION, name, new_thing->act_set->inst)
 #define OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, SWAPCHAIN, name, new_thing->sess->sys->inst)
+	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_swapchain, SWAPCHAIN, name, new_thing->sess->sys->inst)
 #define OXR_VERIFY_ACTIONSET_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, ACTIONSET, name, new_thing->inst)
+	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_action_set, ACTIONSET, name, new_thing->inst)
 
-#define OXR_VERIFY_INSTANCE_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, INSTANCE);
-#define OXR_VERIFY_MESSENGER_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, MESSENGER);
-#define OXR_VERIFY_SESSION_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, SESSION);
-#define OXR_VERIFY_SPACE_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, SPACE);
-#define OXR_VERIFY_ACTION_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, ACTION);
-#define OXR_VERIFY_SWAPCHAIN_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, SWAPCHAIN);
-#define OXR_VERIFY_ACTIONSET_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, ACTIONSET);
+#define OXR_VERIFY_INSTANCE_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_instance, INSTANCE);
+#define OXR_VERIFY_MESSENGER_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_messenger, MESSENGER);
+#define OXR_VERIFY_SESSION_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_session, SESSION);
+#define OXR_VERIFY_SPACE_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_space, SPACE);
+#define OXR_VERIFY_ACTION_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_action, ACTION);
+#define OXR_VERIFY_SWAPCHAIN_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_swapchain, SWAPCHAIN);
+#define OXR_VERIFY_ACTIONSET_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_action_set, ACTIONSET);
 // clang-format on
 
 /*!
