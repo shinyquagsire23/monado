@@ -177,7 +177,7 @@ target_include_directories(aux_math SYSTEM
 
 # Util library.
 add_library(aux_util STATIC ${UTIL_SOURCE_FILES})
-target_link_libraries(aux_util PUBLIC aux-includes)
+target_link_libraries(aux_util PUBLIC aux-includes xrt-pthreads)
 # for u_device
 target_link_libraries(aux_util PUBLIC aux_math)
 if(XRT_HAVE_JPEG)
@@ -218,6 +218,7 @@ if(XRT_HAVE_VULKAN)
 	add_library(aux_vk STATIC ${VK_SOURCE_FILES})
 	target_link_libraries(aux_vk PUBLIC aux-includes)
 	target_link_libraries(aux_vk PUBLIC Vulkan::Vulkan)
+	target_include_directories(aux_vk PUBLIC ${Vulkan_INCLUDE_DIR})
 	if(ANDROID)
 		target_link_libraries(aux_vk PUBLIC ${ANDROID_LIBRARY})
 	endif()
