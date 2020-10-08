@@ -62,7 +62,7 @@ get_device_memory_handle(struct vk_bundle *vk,
                          VkDeviceMemory device_memory,
                          xrt_graphics_buffer_handle_t *out_handle)
 {
-	// vkGetMemoryFdKHR parameter
+	// vkGetMemoryAndroidHardwareBufferANDROID parameter
 	VkMemoryGetAndroidHardwareBufferInfoANDROID ahb_info = {
 	    .sType =
 	        VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
@@ -82,6 +82,34 @@ get_device_memory_handle(struct vk_bundle *vk,
 	return ret;
 }
 
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+
+static VkResult
+get_device_memory_handle(struct vk_bundle *vk,
+                         VkDeviceMemory device_memory,
+                         xrt_graphics_buffer_handle_t *out_handle)
+{
+	// vkGetMemoryWin32HandleKHR parameter
+	VkMemoryGetWin32HandleInfoKHR win32_info = {
+	    .sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR,
+	    .pNext = NULL,
+	    .memory = device_memory,
+	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
+	};
+
+	HANDLE handle = NULL;
+	VkResult ret =
+	    vk->vkGetMemoryWin32HandleKHR(vk->device, &win32_info, &handle);
+	if (ret != VK_SUCCESS) {
+		return ret;
+	}
+
+	*out_handle = handle;
+
+	return ret;
+}
+#else
+#error "Needs port"
 #endif
 
 static VkResult
@@ -214,6 +242,14 @@ create_image(struct vk_bundle *vk,
 	    .pNext = &dedicated_memory_info,
 	    .handleTypes =
 	        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+	};
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+
+	VkExportMemoryAllocateInfo export_alloc_info = {
+	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
+	    .pNext = &dedicated_memory_info,
+	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
 	};
 
 #else

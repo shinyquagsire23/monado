@@ -89,6 +89,10 @@ struct vk_bundle
 	PFN_vkCreateAndroidSurfaceKHR vkCreateAndroidSurfaceKHR;
 #endif
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+	PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+#endif
+
 	// Physical device functions.
 	PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties;
 	PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
@@ -117,6 +121,10 @@ struct vk_bundle
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 	PFN_vkGetMemoryAndroidHardwareBufferANDROID vkGetMemoryAndroidHardwareBufferANDROID;
 	PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID;
+#endif
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+	PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR;
 #endif
 
 	PFN_vkCreateBuffer vkCreateBuffer;
@@ -193,8 +201,12 @@ struct vk_bundle
 	PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR;
 	PFN_vkQueuePresentKHR vkQueuePresentKHR;
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+	PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR;
+#else
 	PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
 	PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;
+#endif
 	// clang-format on
 };
 

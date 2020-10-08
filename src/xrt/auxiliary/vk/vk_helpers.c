@@ -327,6 +327,13 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .handleTypes =
 	        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
 	};
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
+	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+	};
+#else
+#error "need port"
 #endif
 
 	VkImageCreateInfo vk_info = {
@@ -364,6 +371,13 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	        VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
 	    .pNext = NULL,
 	    .buffer = image_native->handle,
+	};
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+	VkImportMemoryWin32HandleInfoKHR import_memory_info = {
+	    .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR,
+	    .pNext = NULL,
+	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+	    .handle = image_native->handle,
 	};
 #else
 #error "need port"
@@ -417,6 +431,21 @@ vk_create_semaphore_from_native(struct vk_bundle *vk,
 	ret = vk->vkImportSemaphoreFdKHR(vk->device, &import_semaphore_fd_info);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkImportSemaphoreFdKHR: %s",
+		         vk_result_string(ret));
+		vk->vkDestroySemaphore(vk->device, *out_sem, NULL);
+		return ret;
+	}
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	VkImportSemaphoreWin32HandleInfoKHR import_semaphore_handle_info = {
+	    .sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR,
+	    .semaphore = *out_sem,
+	    .handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+	    .handle = native,
+	};
+	ret = vk->vkImportSemaphoreWin32HandleKHR(
+	    vk->device, &import_semaphore_handle_info);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkImportSemaphoreWin32HandleKHR: %s",
 		         vk_result_string(ret));
 		vk->vkDestroySemaphore(vk->device, *out_sem, NULL);
 		return ret;
@@ -728,6 +757,10 @@ vk_get_instance_functions(struct vk_bundle *vk)
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 	vk->vkCreateAndroidSurfaceKHR                    = GET_INS_PROC(vk, vkCreateAndroidSurfaceKHR);
 #endif
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+	vk->vkCreateWin32SurfaceKHR                      = GET_INS_PROC(vk, vkCreateWin32SurfaceKHR);
+#endif
 	// clang-format on
 
 	return VK_SUCCESS;
@@ -748,6 +781,11 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkGetMemoryAndroidHardwareBufferANDROID = GET_DEV_PROC(vk, vkGetMemoryAndroidHardwareBufferANDROID);
 	vk->vkGetAndroidHardwareBufferPropertiesANDROID = GET_DEV_PROC(vk, vkGetAndroidHardwareBufferPropertiesANDROID);
 #endif
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+	vk->vkGetMemoryWin32HandleKHR     = GET_DEV_PROC(vk, vkGetMemoryWin32HandleKHR);
+#endif
+
 	vk->vkCreateBuffer                = GET_DEV_PROC(vk, vkCreateBuffer);
 	vk->vkDestroyBuffer               = GET_DEV_PROC(vk, vkDestroyBuffer);
 	vk->vkBindBufferMemory            = GET_DEV_PROC(vk, vkBindBufferMemory);
@@ -812,8 +850,13 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkGetSwapchainImagesKHR       = GET_DEV_PROC(vk, vkGetSwapchainImagesKHR);
 	vk->vkAcquireNextImageKHR         = GET_DEV_PROC(vk, vkAcquireNextImageKHR);
 	vk->vkQueuePresentKHR             = GET_DEV_PROC(vk, vkQueuePresentKHR);
+	
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+	vk->vkImportSemaphoreWin32HandleKHR = GET_DEV_PROC(vk, vkImportSemaphoreWin32HandleKHR);
+#else
 	vk->vkImportSemaphoreFdKHR        = GET_DEV_PROC(vk, vkImportSemaphoreFdKHR);
 	vk->vkGetSemaphoreFdKHR           = GET_DEV_PROC(vk, vkGetSemaphoreFdKHR);
+#endif
 	// clang-format on
 
 	return VK_SUCCESS;
