@@ -13,6 +13,7 @@
 #include "xrt/xrt_config_have.h"
 
 #ifdef XRT_HAVE_VULKAN
+#include "xrt/xrt_windows.h"
 
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
