@@ -33,8 +33,8 @@ get_bits(const unsigned char *b, int start, int num)
 int
 sign_extend_13(uint32_t i)
 {
-	static const size_t incoming_int_width = 13;
-	static const size_t adjustment =
-	    (sizeof(i) * CHAR_BIT) - incoming_int_width;
-	return ((int)(i << adjustment)) >> adjustment;
+
+#define INCOMING_INT_WIDTH (13)
+#define ADJUSTMENT ((sizeof(i) * CHAR_BIT) - INCOMING_INT_WIDTH)
+	return ((int)(i << ADJUSTMENT)) >> ADJUSTMENT;
 }
