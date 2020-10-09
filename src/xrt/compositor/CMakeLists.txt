@@ -6,6 +6,8 @@ spirv_shaders(SHADER_HEADERS
 	shaders/mesh.vert
 	shaders/layer.frag
 	shaders/layer.vert
+	shaders/equirect.vert
+	shaders/equirect.frag
 	)
 
 set(CLIENT_SOURCE_FILES)

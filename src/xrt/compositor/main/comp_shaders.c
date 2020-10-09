@@ -22,6 +22,8 @@
 
 #include "shaders/layer.frag.h"
 #include "shaders/layer.vert.h"
+#include "shaders/equirect.frag.h"
+#include "shaders/equirect.vert.h"
 #include "shaders/mesh.frag.h"
 #include "shaders/mesh.vert.h"
 
@@ -87,6 +89,15 @@ comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s)
 	              sizeof(shaders_mesh_frag), // size
 	              &s->mesh_frag));           // out
 
+	C(shader_load(vk,                            // vk_bundle
+	              shaders_equirect_vert,         // data
+	              sizeof(shaders_equirect_vert), // size
+	              &s->equirect_vert));           // out
+	C(shader_load(vk,                            // vk_bundle
+	              shaders_equirect_frag,         // data
+	              sizeof(shaders_equirect_frag), // size
+	              &s->equirect_frag));           // out
+
 	C(shader_load(vk,                         // vk_bundle
 	              shaders_layer_vert,         // data
 	              sizeof(shaders_layer_vert), // size
@@ -112,6 +123,8 @@ comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s)
 {
 	D(mesh_vert);
 	D(mesh_frag);
+	D(equirect_vert);
+	D(equirect_frag);
 	D(layer_vert);
 	D(layer_frag);
 

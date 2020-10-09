@@ -138,6 +138,10 @@ struct comp_shaders
 {
 	VkShaderModule mesh_vert;
 	VkShaderModule mesh_frag;
+
+	VkShaderModule equirect_vert;
+	VkShaderModule equirect_frag;
+
 	VkShaderModule layer_vert;
 	VkShaderModule layer_frag;
 };
