@@ -81,6 +81,9 @@ compositor_destroy(struct xrt_compositor *xc)
 		c->r = NULL;
 	}
 
+	// As long as vk_bundle is valid it's safe to call this function.
+	comp_shaders_close(&c->vk, &c->shaders);
+
 	if (c->window != NULL) {
 		vk_swapchain_cleanup(&c->window->swapchain);
 		c->window->destroy(c->window);
@@ -1135,6 +1138,12 @@ err_destroy:
 }
 
 static bool
+compositor_init_shaders(struct comp_compositor *c)
+{
+	return comp_shaders_load(&c->vk, &c->shaders);
+}
+
+static bool
 compositor_init_renderer(struct comp_compositor *c)
 {
 	c->r = comp_renderer_create(c);
@@ -1211,6 +1220,7 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	    !compositor_init_window_pre_vulkan(c) ||
 	    !compositor_init_vulkan(c) ||
 	    !compositor_init_window_post_vulkan(c) ||
+	    !compositor_init_shaders(c) ||
 	    !compositor_init_swapchain(c) ||
 	    !compositor_init_renderer(c)) {
 		COMP_DEBUG(c, "Failed to init compositor %p", (void *)c);

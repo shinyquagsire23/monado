@@ -61,6 +61,7 @@ struct comp_layer_renderer
 
 struct comp_layer_renderer *
 comp_layer_renderer_create(struct vk_bundle *vk,
+                           struct comp_shaders *s,
                            VkExtent2D extent,
                            VkFormat format);
 

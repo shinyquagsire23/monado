@@ -18,15 +18,6 @@
 
 #include "comp_distortion.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpragmas"
-#pragma GCC diagnostic ignored "-Wnewline-eof"
-
-#include "shaders/mesh.frag.h"
-#include "shaders/mesh.vert.h"
-
-#pragma GCC diagnostic pop
-
 
 /*
  *
@@ -56,6 +47,7 @@ comp_distortion_init_pipeline_layout(struct comp_distortion *d);
 
 static void
 comp_distortion_init_pipeline(struct comp_distortion *d,
+                              struct comp_shaders *s,
                               VkRenderPass render_pass,
                               VkPipelineCache pipeline_cache);
 
@@ -127,41 +119,6 @@ _buffer_setup_descriptor(struct vk_bundle *vk,
 
 /*
  *
- * Shader functions.
- *
- */
-
-static VkPipelineShaderStageCreateInfo
-_shader_load(struct vk_bundle *vk,
-             const uint32_t *code,
-             size_t size,
-             VkShaderStageFlagBits flags)
-{
-	VkResult ret;
-
-	VkShaderModuleCreateInfo info = {
-	    .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-	    .codeSize = size,
-	    .pCode = code,
-	};
-
-	VkShaderModule module;
-	ret = vk->vkCreateShaderModule(vk->device, &info, NULL, &module);
-	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkCreateShaderModule failed %u", ret);
-	}
-
-	return (VkPipelineShaderStageCreateInfo){
-	    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-	    .stage = flags,
-	    .module = module,
-	    .pName = "main",
-	};
-}
-
-
-/*
- *
  * Functions.
  *
  */
@@ -208,7 +165,8 @@ comp_distortion_init(struct comp_distortion *d,
 	comp_distortion_update_uniform_buffer_warp(d, c);
 	comp_distortion_init_descriptor_set_layout(d);
 	comp_distortion_init_pipeline_layout(d);
-	comp_distortion_init_pipeline(d, render_pass, pipeline_cache);
+	comp_distortion_init_pipeline(d, &c->shaders, render_pass,
+	                              pipeline_cache);
 	comp_distortion_init_descriptor_sets(d, descriptor_pool);
 }
 
@@ -241,6 +199,7 @@ comp_distortion_destroy(struct comp_distortion *d)
 
 static void
 comp_distortion_init_pipeline(struct comp_distortion *d,
+                              struct comp_shaders *s,
                               VkRenderPass render_pass,
                               VkPipelineCache pipeline_cache)
 {
@@ -356,22 +315,19 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	vertex_input_state.pVertexBindingDescriptions = &vertex_input_binding_description;
 	// clang-format on
 
-	const uint32_t *vertex_shader_code = NULL;
-	size_t vertex_shader_size = 0;
-
-	const uint32_t *fragment_shader_code = NULL;
-	size_t fragment_shader_size = 0;
-
-	vertex_shader_code = shaders_mesh_vert;
-	vertex_shader_size = sizeof(shaders_mesh_vert);
-	fragment_shader_code = shaders_mesh_frag;
-	fragment_shader_size = sizeof(shaders_mesh_frag);
-
 	VkPipelineShaderStageCreateInfo shader_stages[2] = {
-	    _shader_load(d->vk, vertex_shader_code, vertex_shader_size,
-	                 VK_SHADER_STAGE_VERTEX_BIT),
-	    _shader_load(d->vk, fragment_shader_code, fragment_shader_size,
-	                 VK_SHADER_STAGE_FRAGMENT_BIT),
+	    {
+	        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+	        .stage = VK_SHADER_STAGE_VERTEX_BIT,
+	        .module = s->mesh_vert,
+	        .pName = "main",
+	    },
+	    {
+	        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+	        .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+	        .module = s->mesh_frag,
+	        .pName = "main",
+	    },
 	};
 
 	VkGraphicsPipelineCreateInfo pipeline_info = {
@@ -397,9 +353,6 @@ comp_distortion_init_pipeline(struct comp_distortion *d,
 	if (ret != VK_SUCCESS) {
 		VK_DEBUG(d->vk, "vkCreateGraphicsPipelines failed %u!", ret);
 	}
-
-	vk->vkDestroyShaderModule(vk->device, shader_stages[0].module, NULL);
-	vk->vkDestroyShaderModule(vk->device, shader_stages[1].module, NULL);
 }
 
 static VkWriteDescriptorSet

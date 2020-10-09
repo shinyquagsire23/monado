@@ -20,6 +20,7 @@ set(MAIN_SOURCE_FILES
 	main/comp_renderer.h
 	main/comp_settings.c
 	main/comp_settings.h
+	main/comp_shaders.c
 	main/comp_swapchain.c
 	main/comp_vk_swapchain.c
 	main/comp_vk_swapchain.h

@@ -12,9 +12,6 @@
 
 #include "comp_layer_renderer.h"
 
-#include "shaders/layer.frag.h"
-#include "shaders/layer.vert.h"
-
 #include <stdio.h>
 #include <math.h>
 
@@ -163,36 +160,9 @@ struct __attribute__((__packed__)) comp_pipeline_config
 	const VkPipelineRasterizationStateCreateInfo *rasterization_state;
 };
 
-static VkPipelineShaderStageCreateInfo
-_shader_load(struct vk_bundle *vk,
-             const uint32_t *code,
-             size_t size,
-             VkShaderStageFlagBits flags)
-{
-	VkResult ret;
-
-	VkShaderModuleCreateInfo info = {
-	    .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-	    .codeSize = size,
-	    .pCode = code,
-	};
-
-	VkShaderModule module;
-	ret = vk->vkCreateShaderModule(vk->device, &info, NULL, &module);
-	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkCreateShaderModule failed %u", ret);
-	}
-
-	return (VkPipelineShaderStageCreateInfo){
-	    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-	    .stage = flags,
-	    .module = module,
-	    .pName = "main",
-	};
-}
-
 static bool
 _init_graphics_pipeline(struct comp_layer_renderer *self,
+                        struct comp_shaders *s,
                         bool premultiplied_alpha,
                         VkPipeline *pipeline)
 {
@@ -245,10 +215,18 @@ _init_graphics_pipeline(struct comp_layer_renderer *self,
 	};
 
 	VkPipelineShaderStageCreateInfo shader_stages[2] = {
-	    _shader_load(vk, shaders_layer_vert, sizeof(shaders_layer_vert),
-	                 VK_SHADER_STAGE_VERTEX_BIT),
-	    _shader_load(vk, shaders_layer_frag, sizeof(shaders_layer_frag),
-	                 VK_SHADER_STAGE_FRAGMENT_BIT),
+	    {
+	        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+	        .stage = VK_SHADER_STAGE_VERTEX_BIT,
+	        .module = s->layer_vert,
+	        .pName = "main",
+	    },
+	    {
+	        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+	        .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+	        .module = s->layer_frag,
+	        .pName = "main",
+	    },
 	};
 
 	VkGraphicsPipelineCreateInfo pipeline_info = {
@@ -324,9 +302,6 @@ _init_graphics_pipeline(struct comp_layer_renderer *self,
 	                                    &pipeline_info, NULL, pipeline);
 
 	vk_check_error("vkCreateGraphicsPipelines", res, false);
-
-	vk->vkDestroyShaderModule(vk->device, shader_stages[0].module, NULL);
-	vk->vkDestroyShaderModule(vk->device, shader_stages[1].module, NULL);
 
 	return true;
 }
@@ -478,6 +453,7 @@ comp_layer_renderer_destroy_layers(struct comp_layer_renderer *self)
 
 static bool
 _init(struct comp_layer_renderer *self,
+      struct comp_shaders *s,
       struct vk_bundle *vk,
       VkExtent2D extent,
       VkFormat format)
@@ -517,10 +493,10 @@ _init(struct comp_layer_renderer *self,
 		return false;
 	if (!_init_pipeline_cache(self))
 		return false;
-	if (!_init_graphics_pipeline(self, false,
+	if (!_init_graphics_pipeline(self, s, false,
 	                             &self->pipeline_premultiplied_alpha))
 		return false;
-	if (!_init_graphics_pipeline(self, true,
+	if (!_init_graphics_pipeline(self, s, true,
 	                             &self->pipeline_unpremultiplied_alpha))
 		return false;
 	if (!_init_vertex_buffer(self))
@@ -531,12 +507,13 @@ _init(struct comp_layer_renderer *self,
 
 struct comp_layer_renderer *
 comp_layer_renderer_create(struct vk_bundle *vk,
+                           struct comp_shaders *s,
                            VkExtent2D extent,
                            VkFormat format)
 {
 	struct comp_layer_renderer *r =
 	    U_TYPED_CALLOC(struct comp_layer_renderer);
-	_init(r, vk, extent, format);
+	_init(r, s, vk, extent, format);
 	return r;
 }
 

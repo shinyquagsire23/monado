@@ -459,7 +459,8 @@ renderer_init(struct comp_renderer *r)
 	    .height = r->c->xdev->hmd->screens[0].h_pixels,
 	};
 
-	r->lr = comp_layer_renderer_create(vk, extent, VK_FORMAT_B8G8R8A8_SRGB);
+	r->lr = comp_layer_renderer_create(vk, &r->c->shaders, extent,
+	                                   VK_FORMAT_B8G8R8A8_SRGB);
 
 	for (uint32_t i = 0; i < 2; i++) {
 		comp_distortion_update_descriptor_set(

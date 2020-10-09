@@ -132,6 +132,14 @@ enum comp_state
 	COMP_STATE_FOCUSED = 4,
 };
 
+struct comp_shaders
+{
+	VkShaderModule mesh_vert;
+	VkShaderModule mesh_frag;
+	VkShaderModule layer_vert;
+	VkShaderModule layer_frag;
+};
+
 /*!
  * Main compositor struct tying everything in the compositor together.
  *
@@ -159,6 +167,9 @@ struct comp_compositor
 
 	//! Vulkan bundle of things.
 	struct vk_bundle vk;
+
+	//! Vulkan shaders that the compositor uses.
+	struct comp_shaders shaders;
 
 	//! Timestamp of last-rendered (immersive) frame.
 	int64_t last_frame_time_ns;
@@ -297,6 +308,18 @@ comp_swapchain_import(struct xrt_compositor *xc,
  */
 void
 comp_swapchain_really_destroy(struct comp_swapchain *sc);
+
+/*!
+ * Loads all of the shaders that the compositor uses.
+ */
+bool
+comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s);
+
+/*!
+ * Loads all of the shaders that the compositor uses.
+ */
+void
+comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s);
 
 /*!
  * Spew level logging.
