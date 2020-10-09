@@ -1266,6 +1266,116 @@ verify_equirect_layer(struct xrt_compositor *xc,
 #endif
 }
 
+static XrResult
+verify_equirect2_layer(struct xrt_compositor *xc,
+                       struct oxr_logger *log,
+                       uint32_t layer_index,
+                       const XrCompositionLayerEquirect2KHR *equirect,
+                       struct xrt_device *head,
+                       uint64_t timestamp)
+{
+#ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT
+	return oxr_error(log, XR_ERROR_LAYER_INVALID,
+	                 "(frameEndInfo->layers[%u]->type) layer type "
+	                 "XrCompositionLayerEquirect2KHR not supported",
+	                 layer_index);
+#else
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_swapchain *, equirect->subImage.swapchain);
+
+	if (sc == NULL) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "swapchain) swapchain is NULL!",
+		                 layer_index);
+	}
+
+	XrResult ret = verify_space(log, layer_index, equirect->space);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	if (!math_quat_validate(
+	        (struct xrt_quat *)&equirect->pose.orientation)) {
+		const XrQuaternionf *q = &equirect->pose.orientation;
+		return oxr_error(log, XR_ERROR_POSE_INVALID,
+		                 "(frameEndInfo->layers[%u]->pose.orientation "
+		                 "== {%f %f %f %f}) is not a valid quat",
+		                 layer_index, q->x, q->y, q->z, q->w);
+	}
+
+	if (!math_vec3_validate((struct xrt_vec3 *)&equirect->pose.position)) {
+		const XrVector3f *p = &equirect->pose.position;
+		return oxr_error(log, XR_ERROR_POSE_INVALID,
+		                 "(frameEndInfo->layers[%u]->pose.position == "
+		                 "{%f %f %f}) is not valid",
+		                 layer_index, p->x, p->y, p->z);
+	}
+
+	if (sc->num_array_layers <= equirect->subImage.imageArrayIndex) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "imageArrayIndex == %u) Invalid swapchain "
+		                 "array index for equirect layer (%u).",
+		                 layer_index,
+		                 equirect->subImage.imageArrayIndex,
+		                 sc->num_array_layers);
+	}
+
+	if (!sc->released.yes) {
+		return oxr_error(log, XR_ERROR_LAYER_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage."
+		                 "swapchain) swapchain has not been released!",
+		                 layer_index);
+	}
+
+	if (sc->released.index >= (int)sc->swapchain->num_images) {
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
+		    "image index out of bounds",
+		    layer_index);
+	}
+
+	if (is_rect_neg(&equirect->subImage.imageRect)) {
+		return oxr_error(
+		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		    "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
+		    "{%i, %i}) has negative component(s)",
+		    layer_index, equirect->subImage.imageRect.offset.x,
+		    equirect->subImage.imageRect.offset.y);
+	}
+
+	if (is_rect_out_of_bounds(&equirect->subImage.imageRect, sc)) {
+		return oxr_error(
+		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		    "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
+		    "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
+		    layer_index, equirect->subImage.imageRect.offset.x,
+		    equirect->subImage.imageRect.offset.y,
+		    equirect->subImage.imageRect.extent.width,
+		    equirect->subImage.imageRect.extent.height, sc->width,
+		    sc->height);
+	}
+
+	if (equirect->centralHorizontalAngle < .0f) {
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "(frameEndInfo->layers[%u]->centralHorizontalAngle == %f) "
+		    "centralHorizontalAngle out of bounds",
+		    layer_index, equirect->centralHorizontalAngle);
+	}
+
+	/*
+	 * Accept all angle ranges here, since we are dealing with π
+	 * and we don't want floating point errors to prevent the client
+	 * to display the full sphere.
+	 */
+
+	return XR_SUCCESS;
+#endif
+}
+
 static enum xrt_layer_composition_flags
 convert_layer_flags(XrSwapchainUsageFlags xr_flags)
 {
@@ -1655,6 +1765,63 @@ do_synchronize_state_change(struct oxr_logger *log, struct oxr_session *sess)
 	}
 }
 
+static XrResult
+submit_equirect2_layer(struct oxr_session *sess,
+                       struct xrt_compositor *xc,
+                       struct oxr_logger *log,
+                       const XrCompositionLayerEquirect2KHR *equirect,
+                       struct xrt_device *head,
+                       struct xrt_pose *inv_offset,
+                       uint64_t timestamp)
+{
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_swapchain *, equirect->subImage.swapchain);
+	struct oxr_space *spc =
+	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, equirect->space);
+
+	enum xrt_layer_composition_flags flags =
+	    convert_layer_flags(equirect->layerFlags);
+
+	struct xrt_pose *pose_ptr = (struct xrt_pose *)&equirect->pose;
+
+	struct xrt_pose pose;
+	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp,
+	                  &pose)) {
+		return XR_SUCCESS;
+	}
+
+	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
+	}
+
+	struct xrt_layer_data data;
+	U_ZERO(&data);
+	data.type = XRT_LAYER_EQUIRECT;
+	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
+	data.timestamp = timestamp;
+	data.flags = flags;
+
+	struct xrt_rect *rect =
+	    (struct xrt_rect *)&equirect->subImage.imageRect;
+
+	data.equirect.visibility =
+	    convert_eye_visibility(equirect->eyeVisibility);
+	data.equirect.sub.image_index = sc->released.index;
+	data.equirect.sub.array_index = equirect->subImage.imageArrayIndex;
+	data.equirect.sub.rect = *rect;
+	data.equirect.pose = pose;
+
+	data.equirect.radius = equirect->radius;
+	data.equirect.central_horizontal_angle =
+	    equirect->centralHorizontalAngle;
+	data.equirect.upper_vertical_angle = equirect->upperVerticalAngle;
+	data.equirect.lower_vertical_angle = equirect->lowerVerticalAngle;
+
+	CALL_CHK(xrt_comp_layer_equirect(xc, head, sc->swapchain, &data));
+
+	return XR_SUCCESS;
+}
+
 XrResult
 oxr_session_frame_end(struct oxr_logger *log,
                       struct oxr_session *sess,
@@ -1782,6 +1949,11 @@ oxr_session_frame_end(struct oxr_logger *log,
 			    xc, log, i, (XrCompositionLayerEquirectKHR *)layer,
 			    xdev, frameEndInfo->displayTime);
 			break;
+		case XR_TYPE_COMPOSITION_LAYER_EQUIRECT2_KHR:
+			res = verify_equirect2_layer(
+			    xc, log, i, (XrCompositionLayerEquirect2KHR *)layer,
+			    xdev, frameEndInfo->displayTime);
+			break;
 		default:
 			return oxr_error(log, XR_ERROR_LAYER_INVALID,
 			                 "(frameEndInfo->layers[%u]->type) "
@@ -1838,6 +2010,12 @@ oxr_session_frame_end(struct oxr_logger *log,
 			submit_equirect_layer(
 			    sess, xc, log,
 			    (XrCompositionLayerEquirectKHR *)layer, xdev,
+			    &inv_offset, frameEndInfo->displayTime);
+			break;
+		case XR_TYPE_COMPOSITION_LAYER_EQUIRECT2_KHR:
+			submit_equirect2_layer(
+			    sess, xc, log,
+			    (XrCompositionLayerEquirect2KHR *)layer, xdev,
 			    &inv_offset, frameEndInfo->displayTime);
 			break;
 		default: assert(false && "invalid layer type");
