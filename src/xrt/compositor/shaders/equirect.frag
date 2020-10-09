@@ -6,13 +6,21 @@
 
 layout (location = 0) in vec2 uv;
 
-layout (binding = 0, std140) uniform Transformation {
+layout (set = 0, binding = 0, std140) uniform Transformation {
   mat4 mvp;
   ivec2 offset;
   ivec2 extent;
   bool flip_y;
 } ubo;
-layout (binding = 1) uniform sampler2D image;
+
+layout (set = 0, binding = 1) uniform sampler2D image;
+
+layout (set = 1, binding = 0, std140) uniform Equirect {
+  float radius;
+  float central_horizontal_angle;
+  float upper_vertical_angle;
+  float lower_vertical_angle;
+} equirect;
 
 layout (location = 0) out vec4 out_color;
 

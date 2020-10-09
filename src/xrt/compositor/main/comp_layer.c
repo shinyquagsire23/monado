@@ -83,6 +83,31 @@ _init_ubos(struct comp_render_layer *self)
 	return true;
 }
 
+static bool
+_init_equirect_ubo(struct comp_render_layer *self)
+{
+	VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	VkMemoryPropertyFlags properties =
+	    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+	    VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+
+	if (!vk_buffer_init(self->vk, sizeof(struct layer_transformation),
+	                    usage, properties, &self->equirect_ubo.handle,
+	                    &self->equirect_ubo.memory))
+		return false;
+
+	VkResult res = self->vk->vkMapMemory(
+	    self->vk->device, self->equirect_ubo.memory, 0, VK_WHOLE_SIZE, 0,
+	    &self->equirect_ubo.data);
+	vk_check_error("vkMapMemory", res, false);
+
+	memcpy(self->equirect_ubo.data, &self->equirect_data,
+	       sizeof(struct layer_equirect_data));
+
+	return true;
+}
+
 static void
 _update_descriptor(struct comp_render_layer *self,
                    struct vk_bundle *vk,
@@ -126,6 +151,31 @@ _update_descriptor(struct comp_render_layer *self,
 	vk->vkUpdateDescriptorSets(vk->device, 2, sets, 0, NULL);
 }
 
+static void
+_update_descriptor_equirect(struct comp_render_layer *self,
+                            VkDescriptorSet set,
+                            VkBuffer buffer)
+{
+	VkWriteDescriptorSet *sets = (VkWriteDescriptorSet[]){
+	    {
+	        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	        .dstSet = set,
+	        .dstBinding = 0,
+	        .descriptorCount = 1,
+	        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+	        .pBufferInfo =
+	            &(VkDescriptorBufferInfo){
+	                .buffer = buffer,
+	                .offset = 0,
+	                .range = VK_WHOLE_SIZE,
+	            },
+	        .pTexelBufferView = NULL,
+	    },
+	};
+
+	self->vk->vkUpdateDescriptorSets(self->vk->device, 1, sets, 0, NULL);
+}
+
 void
 comp_layer_update_descriptors(struct comp_render_layer *self,
                               VkSampler sampler,
@@ -135,6 +185,23 @@ comp_layer_update_descriptors(struct comp_render_layer *self,
 		_update_descriptor(self, self->vk, self->descriptor_sets[eye],
 		                   self->transformation_ubos[eye].handle,
 		                   sampler, image_view);
+}
+
+void
+comp_layer_update_equirect_descriptor(struct comp_render_layer *self,
+                                      struct xrt_layer_equirect_data *data)
+{
+	_update_descriptor_equirect(self, self->descriptor_equirect,
+	                            self->equirect_ubo.handle);
+
+	self->equirect_data = (struct layer_equirect_data){
+	    .radius = data->radius,
+	    .central_horizontal_angle = data->central_horizontal_angle,
+	    .upper_vertical_angle = data->upper_vertical_angle,
+	    .lower_vertical_angle = data->lower_vertical_angle,
+	};
+	memcpy(self->equirect_ubo.data, &self->equirect_data,
+	       sizeof(struct layer_equirect_data));
 }
 
 void
@@ -156,7 +223,8 @@ comp_layer_update_stereo_descriptors(struct comp_render_layer *self,
 static bool
 _init(struct comp_render_layer *self,
       struct vk_bundle *vk,
-      VkDescriptorSetLayout *layout)
+      VkDescriptorSetLayout *layout,
+      VkDescriptorSetLayout *layout_equirect)
 {
 	self->vk = vk;
 
@@ -168,29 +236,35 @@ _init(struct comp_render_layer *self,
 	if (!_init_ubos(self))
 		return false;
 
-	uint32_t set_count = 2;
+	if (!_init_equirect_ubo(self))
+		return false;
 
 	VkDescriptorPoolSize pool_sizes[] = {
 	    {
-	        .descriptorCount = set_count,
+	        .descriptorCount = 3,
 	        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 	    },
 	    {
-	        .descriptorCount = set_count,
+	        .descriptorCount = 2,
 	        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	    },
 	};
 
 	if (!vk_init_descriptor_pool(self->vk, pool_sizes,
-	                             ARRAY_SIZE(pool_sizes), set_count,
+	                             ARRAY_SIZE(pool_sizes), 3,
 	                             &self->descriptor_pool))
 		return false;
 
-	for (uint32_t eye = 0; eye < set_count; eye++)
+	for (uint32_t eye = 0; eye < 2; eye++)
 		if (!vk_allocate_descriptor_sets(
 		        self->vk, self->descriptor_pool, 1, layout,
 		        &self->descriptor_sets[eye]))
 			return false;
+
+	if (!vk_allocate_descriptor_sets(self->vk, self->descriptor_pool, 1,
+	                                 layout_equirect,
+	                                 &self->descriptor_equirect))
+		return false;
 
 	return true;
 }
@@ -225,18 +299,32 @@ comp_layer_draw(struct comp_render_layer *self,
 	case XRT_LAYER_STEREO_PROJECTION:
 		_update_mvp_matrix(self, eye, &proj_scale);
 		break;
-	case XRT_LAYER_QUAD: _update_mvp_matrix(self, eye, vp); break;
-	case XRT_LAYER_CYLINDER: _update_mvp_matrix(self, eye, vp); break;
+	case XRT_LAYER_QUAD:
+	case XRT_LAYER_CYLINDER:
+	case XRT_LAYER_EQUIRECT: _update_mvp_matrix(self, eye, vp); break;
 	case XRT_LAYER_STEREO_PROJECTION_DEPTH:
 	case XRT_LAYER_CUBE:
-	case XRT_LAYER_EQUIRECT:
 		// Should never end up here.
 		assert(false);
 	}
 
-	self->vk->vkCmdBindDescriptorSets(
-	    cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
-	    &self->descriptor_sets[eye], 0, NULL);
+
+	if (self->type == XRT_LAYER_EQUIRECT) {
+		const VkDescriptorSet sets[2] = {
+		    self->descriptor_sets[eye],
+		    self->descriptor_equirect,
+		};
+
+		self->vk->vkCmdBindDescriptorSets(
+		    cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		    pipeline_layout, 0, 2, sets, 0, NULL);
+
+	} else {
+		self->vk->vkCmdBindDescriptorSets(
+		    cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+		    pipeline_layout, 0, 1, &self->descriptor_sets[eye], 0,
+		    NULL);
+	}
 
 	VkDeviceSize offsets[1] = {0};
 	self->vk->vkCmdBindVertexBuffers(cmd_buffer, 0, 1,
@@ -369,11 +457,13 @@ comp_layer_get_cylinder_vertex_buffer(struct comp_render_layer *self)
 }
 
 struct comp_render_layer *
-comp_layer_create(struct vk_bundle *vk, VkDescriptorSetLayout *layout)
+comp_layer_create(struct vk_bundle *vk,
+                  VkDescriptorSetLayout *layout,
+                  VkDescriptorSetLayout *layout_equirect)
 {
 	struct comp_render_layer *q = U_TYPED_CALLOC(struct comp_render_layer);
 
-	_init(q, vk, layout);
+	_init(q, vk, layout, layout_equirect);
 
 	if (!_init_cylinder_vertex_buffer(q))
 		return NULL;
@@ -386,6 +476,8 @@ comp_layer_destroy(struct comp_render_layer *self)
 {
 	for (uint32_t eye = 0; eye < 2; eye++)
 		vk_buffer_destroy(&self->transformation_ubos[eye], self->vk);
+
+	vk_buffer_destroy(&self->equirect_ubo, self->vk);
 
 	self->vk->vkDestroyDescriptorPool(self->vk->device,
 	                                  self->descriptor_pool, NULL);

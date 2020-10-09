@@ -263,6 +263,9 @@ struct xrt_layer_equirect_data
 
 	struct xrt_pose pose;
 	float radius;
+	float central_horizontal_angle;
+	float upper_vertical_angle;
+	float lower_vertical_angle;
 };
 
 /*!

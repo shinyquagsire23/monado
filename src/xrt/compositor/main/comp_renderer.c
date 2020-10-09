@@ -502,6 +502,40 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 }
 
 void
+comp_renderer_set_equirect_layer(struct comp_renderer *r,
+                                 uint32_t layer,
+                                 struct comp_swapchain_image *image,
+                                 struct xrt_layer_data *data)
+{
+
+	struct xrt_vec3 s = {1.0f, 1.0f, 1.0f};
+	struct xrt_matrix_4x4 model_matrix;
+	math_matrix_4x4_model(&data->equirect.pose, &s, &model_matrix);
+
+	comp_layer_set_flip_y(r->lr->layers[layer], data->flip_y);
+
+	struct comp_render_layer *l = r->lr->layers[layer];
+	l->type = XRT_LAYER_EQUIRECT;
+	l->visibility = data->equirect.visibility;
+	l->flags = data->flags;
+	l->view_space =
+	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
+	l->texture_binding = r->lr->texture_binding;
+
+	comp_layer_update_descriptors(
+	    l, image->repeat_sampler,
+	    get_image_view(image, data->flags, data->equirect.sub.array_index));
+
+	comp_layer_update_equirect_descriptor(l, &data->equirect);
+
+	for (uint32_t i = 0; i < 2; i++) {
+		l->transformation[i].offset = data->equirect.sub.rect.offset;
+		l->transformation[i].extent = data->equirect.sub.rect.extent;
+	}
+}
+
+void
 comp_renderer_draw(struct comp_renderer *r)
 {
 	renderer_get_view_projection(r);

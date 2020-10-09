@@ -39,7 +39,10 @@ struct comp_layer_renderer
 	VkShaderModule shader_modules[2];
 	VkPipeline pipeline_premultiplied_alpha;
 	VkPipeline pipeline_unpremultiplied_alpha;
+	VkPipeline pipeline_equirect;
 	VkDescriptorSetLayout descriptor_set_layout;
+	VkDescriptorSetLayout descriptor_set_layout_equirect;
+
 	VkPipelineLayout pipeline_layout;
 	VkPipelineCache pipeline_cache;
 

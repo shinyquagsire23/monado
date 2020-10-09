@@ -427,11 +427,7 @@ compositor_layer_equirect(struct xrt_compositor *xc,
                           struct xrt_swapchain *xsc,
                           const struct xrt_layer_data *data)
 {
-#if 0
 	return do_single(xc, xdev, xsc, data);
-#else
-	return XRT_SUCCESS; //! @todo Implement
-#endif
 }
 
 static xrt_result_t
@@ -493,8 +489,14 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 			image = &layer->scs[0]->images[cyl->sub.image_index];
 			comp_renderer_set_cylinder_layer(c->r, i, image, data);
 		} break;
+		case XRT_LAYER_EQUIRECT: {
+			struct xrt_layer_equirect_data *eq =
+			    &layer->data.equirect;
+			struct comp_swapchain_image *image;
+			image = &layer->scs[0]->images[eq->sub.image_index];
+			comp_renderer_set_equirect_layer(c->r, i, image, data);
+		} break;
 		case XRT_LAYER_CUBE:
-		case XRT_LAYER_EQUIRECT:
 			// Should never end up here.
 			assert(false);
 		}

@@ -112,16 +112,44 @@ _init_descriptor_layout(struct comp_layer_renderer *self)
 }
 
 static bool
+_init_descriptor_layout_equirect(struct comp_layer_renderer *self)
+{
+	struct vk_bundle *vk = self->vk;
+
+	VkDescriptorSetLayoutCreateInfo info = {
+	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+	    .bindingCount = 1,
+	    .pBindings =
+	        (VkDescriptorSetLayoutBinding[]){
+	            {
+	                .binding = 0,
+	                .descriptorCount = 1,
+	                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+	                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+	            },
+	        },
+	};
+
+	VkResult res = vk->vkCreateDescriptorSetLayout(
+	    vk->device, &info, NULL, &self->descriptor_set_layout_equirect);
+
+	vk_check_error("vkCreateDescriptorSetLayout", res, false);
+
+	return true;
+}
+
+static bool
 _init_pipeline_layout(struct comp_layer_renderer *self)
 {
 	struct vk_bundle *vk = self->vk;
 
+	const VkDescriptorSetLayout set_layouts[2] = {
+	    self->descriptor_set_layout, self->descriptor_set_layout_equirect};
+
 	VkPipelineLayoutCreateInfo info = {
 	    .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-	    .setLayoutCount = 1,
-	    .pSetLayouts = &self->descriptor_set_layout,
-	    .pushConstantRangeCount = 0,
-	    .pPushConstantRanges = NULL,
+	    .setLayoutCount = 2,
+	    .pSetLayouts = set_layouts,
 	};
 
 	VkResult res = vk->vkCreatePipelineLayout(vk->device, &info, NULL,
@@ -162,7 +190,8 @@ struct __attribute__((__packed__)) comp_pipeline_config
 
 static bool
 _init_graphics_pipeline(struct comp_layer_renderer *self,
-                        struct comp_shaders *s,
+                        VkShaderModule shader_vert,
+                        VkShaderModule shader_frag,
                         bool premultiplied_alpha,
                         VkPipeline *pipeline)
 {
@@ -218,13 +247,13 @@ _init_graphics_pipeline(struct comp_layer_renderer *self,
 	    {
 	        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 	        .stage = VK_SHADER_STAGE_VERTEX_BIT,
-	        .module = s->layer_vert,
+	        .module = shader_vert,
 	        .pName = "main",
 	    },
 	    {
 	        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 	        .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-	        .module = s->layer_frag,
+	        .module = shader_frag,
 	        .pName = "main",
 	    },
 	};
@@ -347,11 +376,14 @@ _render_eye(struct comp_layer_renderer *self,
 {
 	struct xrt_matrix_4x4 vp_world;
 	struct xrt_matrix_4x4 vp_eye;
+	struct xrt_matrix_4x4 vp_inv;
 	math_matrix_4x4_multiply(&self->mat_projection[eye],
 	                         &self->mat_world_view[eye], &vp_world);
 	math_matrix_4x4_multiply(&self->mat_projection[eye],
 	                         &self->mat_eye_view[eye], &vp_eye);
 
+	math_matrix_4x4_inverse_view_projection(
+	    &self->mat_world_view[eye], &self->mat_projection[eye], &vp_inv);
 
 	for (uint32_t i = 0; i < self->num_layers; i++) {
 		bool unpremultiplied_alpha =
@@ -370,8 +402,17 @@ _render_eye(struct comp_layer_renderer *self,
 		    unpremultiplied_alpha
 		        ? self->pipeline_premultiplied_alpha
 		        : self->pipeline_unpremultiplied_alpha;
-		comp_layer_draw(self->layers[i], eye, pipeline, pipeline_layout,
-		                cmd_buffer, vertex_buffer, &vp_world, &vp_eye);
+
+		if (self->layers[i]->type == XRT_LAYER_EQUIRECT) {
+			pipeline = self->pipeline_equirect;
+			comp_layer_draw(self->layers[i], eye, pipeline,
+			                pipeline_layout, cmd_buffer,
+			                vertex_buffer, &vp_inv, &vp_inv);
+		} else {
+			comp_layer_draw(self->layers[i], eye, pipeline,
+			                pipeline_layout, cmd_buffer,
+			                vertex_buffer, &vp_world, &vp_eye);
+		}
 	}
 }
 
@@ -436,7 +477,8 @@ comp_layer_renderer_allocate_layers(struct comp_layer_renderer *self,
 
 	for (uint32_t i = 0; i < self->num_layers; i++) {
 		self->layers[i] =
-		    comp_layer_create(vk, &self->descriptor_set_layout);
+		    comp_layer_create(vk, &self->descriptor_set_layout,
+		                      &self->descriptor_set_layout_equirect);
 	}
 }
 
@@ -489,16 +531,29 @@ _init(struct comp_layer_renderer *self,
 
 	if (!_init_descriptor_layout(self))
 		return false;
+	if (!_init_descriptor_layout_equirect(self))
+		return false;
 	if (!_init_pipeline_layout(self))
 		return false;
 	if (!_init_pipeline_cache(self))
 		return false;
-	if (!_init_graphics_pipeline(self, s, false,
-	                             &self->pipeline_premultiplied_alpha))
+
+
+	if (!_init_graphics_pipeline(self, s->layer_vert, s->layer_frag, false,
+	                             &self->pipeline_premultiplied_alpha)) {
 		return false;
-	if (!_init_graphics_pipeline(self, s, true,
-	                             &self->pipeline_unpremultiplied_alpha))
+	}
+
+	if (!_init_graphics_pipeline(self, s->layer_vert, s->layer_frag, true,
+	                             &self->pipeline_unpremultiplied_alpha)) {
 		return false;
+	}
+
+	if (!_init_graphics_pipeline(self, s->equirect_vert, s->equirect_frag,
+	                             true, &self->pipeline_equirect)) {
+		return false;
+	}
+
 	if (!_init_vertex_buffer(self))
 		return false;
 
@@ -631,10 +686,13 @@ comp_layer_renderer_destroy(struct comp_layer_renderer *self)
 	vk->vkDestroyPipelineLayout(vk->device, self->pipeline_layout, NULL);
 	vk->vkDestroyDescriptorSetLayout(vk->device,
 	                                 self->descriptor_set_layout, NULL);
+	vk->vkDestroyDescriptorSetLayout(
+	    vk->device, self->descriptor_set_layout_equirect, NULL);
 	vk->vkDestroyPipeline(vk->device, self->pipeline_premultiplied_alpha,
 	                      NULL);
 	vk->vkDestroyPipeline(vk->device, self->pipeline_unpremultiplied_alpha,
 	                      NULL);
+	vk->vkDestroyPipeline(vk->device, self->pipeline_equirect, NULL);
 
 	for (uint32_t i = 0; i < ARRAY_SIZE(self->shader_modules); i++)
 		vk->vkDestroyShaderModule(vk->device, self->shader_modules[i],
