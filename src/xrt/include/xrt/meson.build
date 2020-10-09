@@ -90,6 +90,10 @@ if get_option('layer_cylinder')
 endif
 
 if get_option('layer_equirect')
+	have_conf.set('XRT_FEATURE_OPENXR_LAYER_EQUIRECT_LEGACY', true)
+endif
+
+if get_option('layer_equirect2')
 	have_conf.set('XRT_FEATURE_OPENXR_LAYER_EQUIRECT', true)
 endif
 

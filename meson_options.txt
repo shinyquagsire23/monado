@@ -101,3 +101,9 @@ option('layer_equirect',
 	value: false,
   description: 'Enable support for Equirect Layers'
 )
+
+option('layer_equirect2',
+	type: 'boolean',
+	value: true,
+	description: 'Enable support for Equirect2 Layers'
+)
