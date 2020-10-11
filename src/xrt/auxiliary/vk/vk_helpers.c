@@ -781,6 +781,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCreateDescriptorPool        = GET_DEV_PROC(vk, vkCreateDescriptorPool);
 	vk->vkDestroyDescriptorPool       = GET_DEV_PROC(vk, vkDestroyDescriptorPool);
 	vk->vkAllocateDescriptorSets      = GET_DEV_PROC(vk, vkAllocateDescriptorSets);
+	vk->vkFreeDescriptorSets          = GET_DEV_PROC(vk, vkFreeDescriptorSets);
 	vk->vkCreateGraphicsPipelines     = GET_DEV_PROC(vk, vkCreateGraphicsPipelines);
 	vk->vkDestroyPipeline             = GET_DEV_PROC(vk, vkDestroyPipeline);
 	vk->vkCreatePipelineLayout        = GET_DEV_PROC(vk, vkCreatePipelineLayout);

@@ -165,6 +165,7 @@ struct vk_bundle
 	PFN_vkCreateDescriptorPool vkCreateDescriptorPool;
 	PFN_vkDestroyDescriptorPool vkDestroyDescriptorPool;
 	PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets;
+	PFN_vkFreeDescriptorSets vkFreeDescriptorSets;
 	PFN_vkCreateGraphicsPipelines vkCreateGraphicsPipelines;
 	PFN_vkDestroyPipeline vkDestroyPipeline;
 	PFN_vkCreatePipelineLayout vkCreatePipelineLayout;
