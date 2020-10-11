@@ -552,9 +552,7 @@ comp_distortion_update_uniform_buffer_warp(struct comp_distortion *d,
 	 */
 
 	// clang-format off
-	d->ubo_vp_data[0].viewport_id = 0;
 	d->ubo_vp_data[0].rot = c->xdev->hmd->views[0].rot;
-	d->ubo_vp_data[1].viewport_id = 1;
 	d->ubo_vp_data[1].rot = c->xdev->hmd->views[1].rot;
 
 	memcpy(d->ubo_viewport_handles[0].mapped, &d->ubo_vp_data[0], sizeof(d->ubo_vp_data[0]));

@@ -73,7 +73,6 @@ struct comp_distortion
 	struct
 	{
 		struct xrt_matrix_2x2 rot;
-		int viewport_id;
 		bool flip_y;
 	} ubo_vp_data[2];
 
