@@ -364,7 +364,7 @@ renderer_init_descriptor_pool(struct comp_renderer *r)
 }
 
 static void
-_create_fences(struct comp_renderer *r)
+renderer_create_fences(struct comp_renderer *r)
 {
 	r->fences = U_TYPED_ARRAY_CALLOC(VkFence, r->num_buffers);
 
@@ -385,7 +385,7 @@ _create_fences(struct comp_renderer *r)
 }
 
 static void
-_get_view_projection(struct comp_renderer *r)
+renderer_get_view_projection(struct comp_renderer *r)
 {
 	struct xrt_space_relation relation;
 
@@ -438,7 +438,7 @@ renderer_init(struct comp_renderer *r)
 
 	r->num_buffers = r->c->window->swapchain.image_count;
 
-	_create_fences(r);
+	renderer_create_fences(r);
 	renderer_create_frame_buffers(r);
 	renderer_allocate_command_buffers(r);
 
@@ -605,7 +605,7 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 void
 comp_renderer_draw(struct comp_renderer *r)
 {
-	_get_view_projection(r);
+	renderer_get_view_projection(r);
 	comp_layer_renderer_draw(r->lr);
 
 	r->c->window->flush(r->c->window);
