@@ -229,15 +229,15 @@ renderer_set_viewport_scissor(float scale_x,
                               VkRect2D *s,
                               struct xrt_view *view)
 {
-	v->x = view->viewport.x_pixels * scale_x;
-	v->y = view->viewport.y_pixels * scale_y;
-	v->width = view->viewport.w_pixels * scale_x;
-	v->height = view->viewport.h_pixels * scale_y;
-
 	s->offset.x = (int32_t)(view->viewport.x_pixels * scale_x);
 	s->offset.y = (int32_t)(view->viewport.y_pixels * scale_y);
 	s->extent.width = (uint32_t)(view->viewport.w_pixels * scale_x);
 	s->extent.height = (uint32_t)(view->viewport.h_pixels * scale_y);
+
+	v->x = s->offset.x;
+	v->y = s->offset.y;
+	v->width = s->extent.width;
+	v->height = s->extent.height;
 }
 
 static void
