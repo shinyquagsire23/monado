@@ -82,6 +82,8 @@ enum vive_controller_input_index
 	VIVE_CONTROLLER_MAX_INDEX,
 };
 
+
+
 #define VIVE_CLOCK_FREQ 48000000.0f // Hz = 48 MHz
 
 #define DEFAULT_HAPTIC_FREQ 150.0f
@@ -316,6 +318,56 @@ static void
 _update_tracker_inputs(struct xrt_device *xdev)
 {
 	// Nothing to do here as the device does not send button reports.
+}
+
+static void
+vive_controller_get_hand_tracking(struct xrt_device *xdev,
+                                  enum xrt_input_name name,
+                                  uint64_t at_timestamp_ns,
+                                  union xrt_hand_joint_set *out_value)
+{
+	struct vive_controller_device *d = vive_controller_device(xdev);
+
+	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_DEFAULT_SET) {
+		VIVE_ERROR(d, "unknown input name for hand tracker");
+		return;
+	}
+
+	enum xrt_hand hand = d->variant == CONTROLLER_INDEX_LEFT
+	                         ? XRT_HAND_LEFT
+	                         : XRT_HAND_RIGHT;
+
+	struct u_hand_tracking_curl_values values = {
+	    .little = (float)d->state.pinky_finger_handle / UINT8_MAX,
+	    .ring = (float)d->state.ring_finger_handle / UINT8_MAX,
+	    .middle = (float)d->state.middle_finger_handle / UINT8_MAX,
+	    .index = (float)d->state.index_finger_trigger / UINT8_MAX,
+	    .thumb = 0};
+
+	u_hand_joints_update_curl(&d->hand_tracking, hand, &values);
+
+
+	/* Because IMU is at the very -z end of the controller, the rotation
+	 * pivot point is there too. By offsetting the IMU pose by this z value
+	 * we move the pivot point of the hand.
+	 * This only makes sense with 3dof.
+	 */
+
+	float pivot_offset_z = 0.15;
+
+	struct xrt_space_relation controller_relation = {
+	    .pose = {.orientation = d->rot_filtered,
+	             .position = {0, 0, pivot_offset_z}}};
+
+	struct xrt_vec3 static_offset = {0, 0, 0};
+
+	struct xrt_pose hand_on_handle_pose;
+	u_hand_joints_offset_valve_index_controller(hand, &static_offset,
+	                                            &hand_on_handle_pose);
+
+	u_hand_joints_set_out_data(&d->hand_tracking, hand,
+	                           &controller_relation, &hand_on_handle_pose,
+	                           out_value);
 }
 
 static void
@@ -1134,6 +1186,18 @@ vive_controller_create(struct os_hid_device *controller_hid,
 
 		d->base.update_inputs =
 		    vive_controller_device_update_index_inputs;
+
+		d->base.get_hand_tracking = vive_controller_get_hand_tracking;
+
+		enum xrt_hand hand = d->variant == CONTROLLER_INDEX_LEFT
+		                         ? XRT_HAND_LEFT
+		                         : XRT_HAND_RIGHT;
+
+		u_hand_joints_init_default_set(
+		    &d->hand_tracking, hand,
+		    XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
+
+
 		if (d->variant == CONTROLLER_INDEX_LEFT) {
 			d->base.device_type =
 			    XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
@@ -1164,10 +1228,12 @@ vive_controller_create(struct os_hid_device *controller_hid,
 			return 0;
 		}
 	}
+
 	VIVE_DEBUG(d, "Opened vive controller!\n");
 	d->base.orientation_tracking_supported = true;
 	d->base.position_tracking_supported = false;
-
+	d->base.hand_tracking_supported = d->variant == CONTROLLER_INDEX_LEFT ||
+	                                  d->variant == CONTROLLER_INDEX_RIGHT;
 
 	return d;
 }

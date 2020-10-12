@@ -18,6 +18,8 @@
 #include "math/m_imu_3dof.h"
 #include "util/u_logging.h"
 
+#include "util/u_hand_tracking.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -125,6 +127,8 @@ struct vive_controller_device
 
 	enum watchman_gen watchman_gen;
 	enum controller_variant variant;
+
+	struct u_hand_tracking hand_tracking;
 };
 
 struct vive_controller_device *
