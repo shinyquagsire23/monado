@@ -128,6 +128,8 @@ set(UTIL_SOURCE_FILES
 	util/u_time.h
 	util/u_var.cpp
 	util/u_var.h
+	util/u_hand_tracking.c
+	util/u_hand_tracking.h
 	)
 
 set(VK_SOURCE_FILES

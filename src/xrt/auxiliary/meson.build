@@ -45,6 +45,8 @@ lib_aux_util = static_library(
 		'util/u_time.h',
 		'util/u_var.cpp',
 		'util/u_var.h',
+		'util/u_hand_tracking.c',
+		'util/u_hand_tracking.h',
 	),
 	include_directories: [
 		xrt_include,
