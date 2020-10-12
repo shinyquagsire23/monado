@@ -568,11 +568,6 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 			goto cleanup;
 		}
 
-		// If built, try to load the realsense tracker.
-#ifdef XRT_BUILD_DRIVER_RS
-		ns->tracker = rs_6dof_create();
-#endif
-
 		ns->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
 		ns->base.hmd->distortion.preferred =
 		    XRT_DISTORTION_MODEL_COMPUTE;
