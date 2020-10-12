@@ -96,6 +96,30 @@ void
 math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut);
 
 /*!
+ * Subtract from a vector in-place.
+ *
+ * Logically, *inAndOut -= *subtrahend
+ * OK if the two arguments are the same addresses.
+ *
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_vec3_subtract(const struct xrt_vec3 *subtrahend,
+                   struct xrt_vec3 *inAndOut);
+
+/*!
+ * Multiply a vector in-place.
+ *
+ * Logically, *inAndOut *= scalar
+ *
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_vec3_scalar_mul(float scalar, struct xrt_vec3 *inAndOut);
+
+/*!
  * Cross product of a vector.
  *
  * @relates xrt_vec3

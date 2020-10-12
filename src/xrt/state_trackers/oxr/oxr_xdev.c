@@ -102,6 +102,24 @@ oxr_xdev_get_space_graph(struct oxr_logger *log,
 }
 
 void
+oxr_xdev_get_hand_tracking_at(struct oxr_logger *log,
+                              struct oxr_instance *inst,
+                              struct xrt_device *xdev,
+                              enum xrt_input_name name,
+                              XrTime at_time,
+                              union xrt_hand_joint_set *out_value)
+{
+	//! @todo Convert at_time to monotonic and give to device.
+	uint64_t at_timestamp_ns = os_monotonic_get_ns();
+	(void)at_time;
+
+	union xrt_hand_joint_set value;
+
+	xrt_device_get_hand_tracking(xdev, name, at_timestamp_ns, &value);
+
+	*out_value = value;
+}
+void
 oxr_xdev_get_space_relation(struct oxr_logger *log,
                             struct oxr_instance *inst,
                             struct xrt_device *xdev,

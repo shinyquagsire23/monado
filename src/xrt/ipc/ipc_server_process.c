@@ -199,6 +199,7 @@ init_shm(struct ipc_server *s)
 		isdev->position_tracking_supported =
 		    xdev->position_tracking_supported;
 		isdev->device_type = xdev->device_type;
+		isdev->hand_tracking_supported = xdev->hand_tracking_supported;
 
 		// Is this a HMD?
 		if (xdev->hmd != NULL) {

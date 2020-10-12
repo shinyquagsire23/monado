@@ -2036,3 +2036,94 @@ oxr_session_create(struct oxr_logger *log,
 
 	return ret;
 }
+
+void
+xrt_to_xr_pose(struct xrt_pose *xrt_pose, XrPosef *xr_pose)
+{
+	xr_pose->orientation.x = xrt_pose->orientation.x;
+	xr_pose->orientation.y = xrt_pose->orientation.y;
+	xr_pose->orientation.z = xrt_pose->orientation.z;
+	xr_pose->orientation.w = xrt_pose->orientation.w;
+
+	xr_pose->position.x = xrt_pose->position.x;
+	xr_pose->position.y = xrt_pose->position.y;
+	xr_pose->position.z = xrt_pose->position.z;
+}
+
+XrResult
+oxr_session_hand_joints(struct oxr_logger *log,
+                        struct oxr_hand_tracker *hand_tracker,
+                        const XrHandJointsLocateInfoEXT *locateInfo,
+                        XrHandJointLocationsEXT *locations)
+{
+	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_space *, locateInfo->baseSpace);
+
+	struct oxr_session *sess = hand_tracker->sess;
+
+	struct xrt_device *xdev = NULL;
+	if (hand_tracker->hand == XR_HAND_LEFT_EXT) {
+		xdev = GET_XDEV_BY_ROLE(sess->sys, left);
+	} else if (hand_tracker->hand == XR_HAND_RIGHT_EXT) {
+		xdev = GET_XDEV_BY_ROLE(sess->sys, right);
+	} else {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "invalid hand value");
+	}
+
+	if (xdev == NULL) {
+		//! @todo spec is not clear on whether we could have failed
+		//! creating a hand tracker if we don't have a device for it
+		locations->isActive = false;
+		return XR_SUCCESS;
+	}
+
+	struct xrt_pose *tracking_origin_offset =
+	    &xdev->tracking_origin->offset;
+
+	XrTime at_time = locateInfo->time;
+	union xrt_hand_joint_set value;
+
+	enum xrt_input_name name;
+	if (hand_tracker->hand_joint_set == XR_HAND_JOINT_SET_DEFAULT_EXT) {
+		name = XRT_INPUT_GENERIC_HAND_TRACKING_DEFAULT_SET;
+	} else {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "invalid hand joint set");
+	}
+
+	oxr_xdev_get_hand_tracking_at(log, sess->sys->inst, xdev, name, at_time,
+	                              &value);
+
+	for (uint32_t i = 0; i < locations->jointCount; i++) {
+		locations->jointLocations[i]
+		    .locationFlags = xrt_to_xr_space_location_flags(
+		    value.hand_joint_set_default[i].relation.relation_flags);
+		locations->jointLocations[i].radius =
+		    value.hand_joint_set_default[i].radius;
+
+		struct xrt_space_relation r =
+		    value.hand_joint_set_default[i].relation;
+
+		struct xrt_space_relation result;
+		struct xrt_space_graph graph = {0};
+		m_space_graph_add_relation(&graph, &r);
+		m_space_graph_add_pose_if_not_identity(&graph,
+		                                       tracking_origin_offset);
+		m_space_graph_add_inverted_pose_if_not_identity(&graph,
+		                                                &baseSpc->pose);
+		m_space_graph_resolve(&graph, &result);
+
+		//! @todo need general handling of local space
+		if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
+			global_to_local_space(sess, &result);
+		}
+
+		xrt_to_xr_pose(&result.pose,
+		               &locations->jointLocations[i].pose);
+	}
+
+	locations->isActive = true;
+
+	return true;
+}

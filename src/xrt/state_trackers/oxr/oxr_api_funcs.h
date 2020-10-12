@@ -536,6 +536,21 @@ XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrStopHapticFeedback(XrSession session,
                          const XrHapticActionInfo *hapticActionInfo);
 
+//! OpenXR API function @ep{xrCreateHandTrackerEXT}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrCreateHandTrackerEXT(XrSession session,
+                           const XrHandTrackerCreateInfoEXT *createInfo,
+                           XrHandTrackerEXT *handTracker);
+
+//! OpenXR API function @ep{xrDestroyHandTrackerEXT}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker);
+
+//! OpenXR API function @ep{xrLocateHandJointsEXT}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
+                          const XrHandJointsLocateInfoEXT *locateInfo,
+                          XrHandJointLocationsEXT *locations);
 
 /*!
  * @}

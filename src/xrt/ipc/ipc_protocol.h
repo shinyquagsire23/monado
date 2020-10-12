@@ -79,6 +79,7 @@ struct ipc_shared_device
 
 	bool orientation_tracking_supported;
 	bool position_tracking_supported;
+	bool hand_tracking_supported;
 };
 
 /*!

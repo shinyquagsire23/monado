@@ -104,6 +104,21 @@ ipc_client_device_get_tracked_pose(struct xrt_device *xdev,
 	}
 }
 
+void
+ipc_client_device_get_hand_tracking(struct xrt_device *xdev,
+                                    enum xrt_input_name name,
+                                    uint64_t at_timestamp_ns,
+                                    union xrt_hand_joint_set *out_value)
+{
+	struct ipc_client_device *icd = ipc_client_device(xdev);
+
+	xrt_result_t r = ipc_call_device_get_hand_tracking(
+	    icd->ipc_c, icd->device_id, name, at_timestamp_ns, out_value);
+	if (r != XRT_SUCCESS) {
+		IPC_ERROR(icd->ipc_c, "IPC: Error sending input update!");
+	}
+}
+
 static void
 ipc_client_device_get_view_pose(struct xrt_device *xdev,
                                 struct xrt_vec3 *eye_relation,
@@ -147,6 +162,7 @@ ipc_client_device_create(struct ipc_connection *ipc_c,
 	icd->ipc_c = ipc_c;
 	icd->base.update_inputs = ipc_client_device_update_inputs;
 	icd->base.get_tracked_pose = ipc_client_device_get_tracked_pose;
+	icd->base.get_hand_tracking = ipc_client_device_get_hand_tracking;
 	icd->base.get_view_pose = ipc_client_device_get_view_pose;
 	icd->base.set_output = ipc_client_device_set_output;
 	icd->base.destroy = ipc_client_device_destroy;
@@ -175,6 +191,10 @@ ipc_client_device_create(struct ipc_connection *ipc_c,
 	// Setup variable tracker.
 	u_var_add_root(icd, icd->base.str, true);
 	u_var_add_ro_u32(icd, &icd->device_id, "device_id");
+
+	icd->base.orientation_tracking_supported =
+	    isdev->orientation_tracking_supported;
+	icd->base.hand_tracking_supported = isdev->hand_tracking_supported;
 
 	icd->base.device_type = isdev->device_type;
 	return &icd->base;

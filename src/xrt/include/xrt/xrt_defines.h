@@ -454,6 +454,8 @@ enum xrt_input_type
 	XRT_INPUT_TYPE_BOOLEAN               = 0x04,
 	//! A tracked pose
 	XRT_INPUT_TYPE_POSE                  = 0x05,
+	//! A tracked hand
+	XRT_INPUT_TYPE_HAND_TRACKING         = 0x06,
 	// clang-format on
 };
 
@@ -492,6 +494,7 @@ enum xrt_input_name
 	// clang-format off
 	XRT_INPUT_GENERIC_HEAD_POSE                  = XRT_INPUT_NAME(0x0000, POSE),
 	XRT_INPUT_GENERIC_HEAD_DETECT                = XRT_INPUT_NAME(0x0001, BOOLEAN),
+	XRT_INPUT_GENERIC_HAND_TRACKING_DEFAULT_SET  = XRT_INPUT_NAME(0x0002, HAND_TRACKING),
 
 	XRT_INPUT_PSMV_PS_CLICK                      = XRT_INPUT_NAME(0x0020, BOOLEAN),
 	XRT_INPUT_PSMV_MOVE_CLICK                    = XRT_INPUT_NAME(0x0021, BOOLEAN),
@@ -558,6 +561,103 @@ enum xrt_input_name
 	XRT_INPUT_VIVE_AIM_POSE                      = XRT_INPUT_NAME(0x0079, POSE),
 
 	// clang-format on
+};
+
+/*!
+ * Number of joints in a hand. Corresponds to XR_HAND_JOINT_COUNT_EXT.
+ *
+ * @see xrt_hand_joint
+ * @ingroup xrt_iface
+ */
+#define XRT_HAND_JOINT_COUNT 26
+
+/*!
+ * Number of joints in a hand. Corresponds to XrHandJointEXT.
+ *
+ * @ingroup xrt_iface
+ */
+enum xrt_hand_joint
+{
+	XRT_HAND_JOINT_PALM = 0,
+	XRT_HAND_JOINT_WRIST = 1,
+	XRT_HAND_JOINT_THUMB_METACARPAL = 2,
+	XRT_HAND_JOINT_THUMB_PROXIMAL = 3,
+	XRT_HAND_JOINT_THUMB_DISTAL = 4,
+	XRT_HAND_JOINT_THUMB_TIP = 5,
+	XRT_HAND_JOINT_INDEX_METACARPAL = 6,
+	XRT_HAND_JOINT_INDEX_PROXIMAL = 7,
+	XRT_HAND_JOINT_INDEX_INTERMEDIATE = 8,
+	XRT_HAND_JOINT_INDEX_DISTAL = 9,
+	XRT_HAND_JOINT_INDEX_TIP = 10,
+	XRT_HAND_JOINT_MIDDLE_METACARPAL = 11,
+	XRT_HAND_JOINT_MIDDLE_PROXIMAL = 12,
+	XRT_HAND_JOINT_MIDDLE_INTERMEDIATE = 13,
+	XRT_HAND_JOINT_MIDDLE_DISTAL = 14,
+	XRT_HAND_JOINT_MIDDLE_TIP = 15,
+	XRT_HAND_JOINT_RING_METACARPAL = 16,
+	XRT_HAND_JOINT_RING_PROXIMAL = 17,
+	XRT_HAND_JOINT_RING_INTERMEDIATE = 18,
+	XRT_HAND_JOINT_RING_DISTAL = 19,
+	XRT_HAND_JOINT_RING_TIP = 20,
+	XRT_HAND_JOINT_LITTLE_METACARPAL = 21,
+	XRT_HAND_JOINT_LITTLE_PROXIMAL = 22,
+	XRT_HAND_JOINT_LITTLE_INTERMEDIATE = 23,
+	XRT_HAND_JOINT_LITTLE_DISTAL = 24,
+	XRT_HAND_JOINT_LITTLE_TIP = 25,
+	XRT_HAND_JOINT_MAX_ENUM = 0x7FFFFFFF
+};
+
+/*!
+ * Enumeration for left and right hand.
+ *
+ * @ingroup xrt_iface
+ */
+enum xrt_hand
+{
+	XRT_HAND_LEFT = 0,
+	XRT_HAND_RIGHT = 1
+};
+
+/*!
+ * Location of a single hand joint. Corresponds to XrHandJointLocationEXT.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_hand_joint_value
+{
+	struct xrt_space_relation relation;
+	float radius;
+};
+
+/*!
+ * Number of fingers on a hand.
+ *
+ * @ingroup xrt_iface
+ */
+#define XRT_FINGER_COUNT 5
+
+/*!
+ * Names for fingers on a hand.
+ *
+ * @ingroup xrt_iface
+ */
+enum xrt_finger
+{
+	XRT_FINGER_LITTLE = 0,
+	XRT_FINGER_RING,
+	XRT_FINGER_MIDDLE,
+	XRT_FINGER_INDEX,
+	XRT_FINGER_THUMB
+};
+
+/*!
+ * Joint set type used for hand tracking. Corresponds to XrHandJointSetEXT.
+ *
+ * @ingroup xrt_iface
+ */
+union xrt_hand_joint_set {
+	struct xrt_hand_joint_value
+	    hand_joint_set_default[XRT_HAND_JOINT_COUNT];
 };
 
 /*!

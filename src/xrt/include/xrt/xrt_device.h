@@ -206,6 +206,7 @@ struct xrt_device
 
 	bool orientation_tracking_supported;
 	bool position_tracking_supported;
+	bool hand_tracking_supported;
 
 	/*!
 	 * Update any attached inputs.
@@ -238,6 +239,30 @@ struct xrt_device
 	                         uint64_t at_timestamp_ns,
 	                         struct xrt_space_relation *out_relation);
 
+	/*!
+	 * Get relationship of hand joints to the tracking origin space as
+	 * the base space. It is the responsibility of the device driver to do
+	 * any prediction, there are helper functions available for this.
+	 *
+	 * The timestamps are system monotonic timestamps, such as returned by
+	 * os_monotonic_get_ns().
+	 *
+	 * @param[in] xdev           The device.
+	 * @param[in] name           Some devices may have multiple poses on
+	 *                           them, select the one using this field. For
+	 *                           hand tracking use @p
+	 * XRT_INPUT_GENERIC_HAND_TRACKING_DEFAULT_SET.
+	 * @param[in] at_timestamp_ns If the device can predict or has a history
+	 *                            of positions, this is when the caller
+	 *                            wants the pose to be from.
+	 * @param[out] out_relation The relation read from the device.
+	 *
+	 * @see xrt_input_name
+	 */
+	void (*get_hand_tracking)(struct xrt_device *xdev,
+	                          enum xrt_input_name name,
+	                          uint64_t at_timestamp_ns,
+	                          union xrt_hand_joint_set *out_value);
 	/*!
 	 * Set a output value.
 	 *
@@ -310,6 +335,20 @@ xrt_device_get_tracked_pose(struct xrt_device *xdev,
 {
 	xdev->get_tracked_pose(xdev, name, requested_timestamp_ns,
 	                       out_relation);
+}
+
+/*!
+ * Helper function for @ref xrt_device::get_hand_tracking.
+ *
+ * @public @memberof xrt_device
+ */
+static inline void
+xrt_device_get_hand_tracking(struct xrt_device *xdev,
+                             enum xrt_input_name name,
+                             uint64_t requested_timestamp_ns,
+                             union xrt_hand_joint_set *out_value)
+{
+	xdev->get_hand_tracking(xdev, name, requested_timestamp_ns, out_value);
 }
 
 /*!

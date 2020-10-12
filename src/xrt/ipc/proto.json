@@ -180,6 +180,17 @@
 		]
 	},
 
+	"device_get_hand_tracking": {
+		"in": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "name", "type": "enum xrt_input_name"},
+			{"name": "at_timestamp", "type": "uint64_t"}
+		],
+		"out": [
+			{"name": "value", "type": "union xrt_hand_joint_set"}
+		]
+	},
+
 	"device_get_view_pose": {
 		"in": [
 			{"name": "id", "type": "uint32_t"},

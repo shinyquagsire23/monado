@@ -417,8 +417,8 @@ print_space(const char *name, struct oxr_space *spc)
 	print_pose(spc->sess, "", &spc->pose);
 }
 
-static XrSpaceLocationFlags
-get_xr_space_location_flags(enum xrt_space_relation_flags relation_flags)
+XrSpaceLocationFlags
+xrt_to_xr_space_location_flags(enum xrt_space_relation_flags relation_flags)
 {
 	// clang-format off
 	bool valid_ori = (relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
@@ -492,7 +492,7 @@ oxr_space_locate(struct oxr_logger *log,
 
 	location->pose = safe_copy.oxr;
 	location->locationFlags =
-	    get_xr_space_location_flags(result.relation_flags);
+	    xrt_to_xr_space_location_flags(result.relation_flags);
 
 	XrSpaceVelocity *vel = (XrSpaceVelocity *)location->next;
 	if (vel) {

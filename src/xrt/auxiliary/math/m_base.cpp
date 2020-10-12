@@ -87,6 +87,23 @@ math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut)
 }
 
 extern "C" void
+math_vec3_subtract(const struct xrt_vec3 *subtrahend, struct xrt_vec3 *inAndOut)
+{
+	assert(subtrahend != NULL);
+	assert(inAndOut != NULL);
+
+	map_vec3(*inAndOut) -= map_vec3(*subtrahend);
+}
+
+extern "C" void
+math_vec3_scalar_mul(float scalar, struct xrt_vec3 *inAndOut)
+{
+	assert(inAndOut != NULL);
+
+	map_vec3(*inAndOut) *= scalar;
+}
+
+extern "C" void
 math_vec3_cross(const struct xrt_vec3 *l,
                 const struct xrt_vec3 *r,
                 struct xrt_vec3 *result)

@@ -84,6 +84,7 @@ extern "C" {
 #define OXR_XR_DEBUG_MESSENGER (*(uint64_t *)"oxrmess\0")
 #define OXR_XR_DEBUG_SOURCESET (*(uint64_t *)"oxrsrcs\0")
 #define OXR_XR_DEBUG_SOURCE    (*(uint64_t *)"oxrsrc_\0")
+#define OXR_XR_DEBUG_HTRACKER  (*(uint64_t *)"oxrhtra\0")
 // clang-format on
 
 
@@ -114,6 +115,7 @@ struct oxr_binding;
 struct oxr_interaction_profile;
 struct oxr_action_set_ref;
 struct oxr_action_ref;
+struct oxr_hand_tracker;
 
 #define XRT_MAX_HANDLE_CHILDREN 256
 #define OXR_MAX_SWAPCHAIN_IMAGES 8
@@ -347,6 +349,17 @@ oxr_action_set_to_openxr(struct oxr_action_set *act_set)
 /*!
  * To go back to a OpenXR object.
  *
+ * @relates oxr_hand_tracker
+ */
+static inline XrHandTrackerEXT
+oxr_hand_tracker_to_openxr(struct oxr_hand_tracker *hand_tracker)
+{
+	return XRT_CAST_PTR_TO_OXR_HANDLE(XrHandTrackerEXT, hand_tracker);
+}
+
+/*!
+ * To go back to a OpenXR object.
+ *
  * @relates oxr_action
  */
 static inline XrAction
@@ -497,6 +510,15 @@ oxr_action_stop_haptic_feedback(struct oxr_logger *log,
                                 struct oxr_session *sess,
                                 uint32_t act_key,
                                 struct oxr_sub_paths sub_paths);
+
+/*!
+ * @public @memberof oxr_instance
+ */
+XrResult
+oxr_hand_tracker_create(struct oxr_logger *log,
+                        struct oxr_session *sess,
+                        const XrHandTrackerCreateInfoEXT *createInfo,
+                        struct oxr_hand_tracker **out_hand_tracker);
 
 /*!
  * @}
@@ -656,6 +678,11 @@ oxr_session_frame_end(struct oxr_logger *log,
                       struct oxr_session *sess,
                       const XrFrameEndInfo *frameEndInfo);
 
+XrResult
+oxr_session_hand_joints(struct oxr_logger *log,
+                        struct oxr_hand_tracker *hand_tracker,
+                        const XrHandJointsLocateInfoEXT *locateInfo,
+                        XrHandJointLocationsEXT *locations);
 
 /*
  *
@@ -702,6 +729,9 @@ oxr_space_ref_relation(struct oxr_logger *log,
 
 bool
 initial_head_relation_valid(struct oxr_session *sess);
+
+XrSpaceLocationFlags
+xrt_to_xr_space_location_flags(enum xrt_space_relation_flags relation_flags);
 
 bool
 global_to_local_space(struct oxr_session *sess, struct xrt_space_relation *rel);
@@ -820,6 +850,9 @@ oxr_system_enumerate_view_conf_views(
     uint32_t *viewCountOutput,
     XrViewConfigurationView *views);
 
+bool
+oxr_system_get_hand_tracking_support(struct oxr_logger *log,
+                                     struct oxr_instance *inst);
 
 /*
  *
@@ -898,6 +931,17 @@ oxr_xdev_get_space_relation(struct oxr_logger *log,
                             XrTime at_time,
                             struct xrt_space_relation *out_relation);
 
+/*!
+ * Returns the hand tracking value of the named input from the device.
+ * Does NOT apply tracking origin offset to each joint.
+ */
+void
+oxr_xdev_get_hand_tracking_at(struct oxr_logger *log,
+                              struct oxr_instance *inst,
+                              struct xrt_device *xdev,
+                              enum xrt_input_name name,
+                              XrTime at_time,
+                              union xrt_hand_joint_set *out_value);
 
 /*
  *
@@ -1887,6 +1931,27 @@ struct oxr_debug_messenger
 
 	//! Opaque user data
 	void *XR_MAY_ALIAS user_data;
+};
+
+/*!
+ * A hand tracker.
+ *
+ * Parent type/handle is @ref oxr_instance
+ *
+ *
+ * @obj{XrHandTrackerEXT}
+ * @extends oxr_handle_base
+ */
+struct oxr_hand_tracker
+{
+	//! Common structure for things referred to by OpenXR handles.
+	struct oxr_handle_base handle;
+
+	//! Owner of this hand tracker.
+	struct oxr_session *sess;
+
+	XrHandEXT hand;
+	XrHandJointSetEXT hand_joint_set;
 };
 
 /*!

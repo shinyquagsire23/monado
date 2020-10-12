@@ -19,6 +19,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_two_call.h"
+#include "oxr_chain.h"
 
 // clang-format off
 DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "OXR_VIEWPORT_SCALE_PERCENTAGE", 100)
@@ -206,6 +207,19 @@ oxr_system_fill_in(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
+bool
+oxr_system_get_hand_tracking_support(struct oxr_logger *log,
+                                     struct oxr_instance *inst)
+{
+	struct oxr_system *sys = &inst->system;
+	struct xrt_device *left = GET_XDEV_BY_ROLE(sys, left);
+	struct xrt_device *right = GET_XDEV_BY_ROLE(sys, right);
+
+	bool left_supported = left && left->hand_tracking_supported;
+	bool right_supported = right && right->hand_tracking_supported;
+	return left_supported || right_supported;
+}
+
 XrResult
 oxr_system_get_properties(struct oxr_logger *log,
                           struct oxr_system *sys,
@@ -230,6 +244,21 @@ oxr_system_get_properties(struct oxr_logger *log,
 	    xdev->orientation_tracking_supported;
 	properties->trackingProperties.positionTracking =
 	    xdev->position_tracking_supported;
+
+	XrSystemHandTrackingPropertiesEXT *hand_tracking_props =
+	    OXR_GET_OUTPUT_FROM_CHAIN(
+	        properties, XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT,
+	        XrSystemHandTrackingPropertiesEXT);
+
+	if (hand_tracking_props) {
+		if (!sys->inst->extensions.EXT_hand_tracking) {
+			return oxr_error(
+			    log, XR_ERROR_VALIDATION_FAILURE,
+			    "XR_EXT_hand_tracking is not enabled.");
+		}
+		hand_tracking_props->supportsHandTracking =
+		    oxr_system_get_hand_tracking_support(log, sys->inst);
+	}
 
 	return XR_SUCCESS;
 }

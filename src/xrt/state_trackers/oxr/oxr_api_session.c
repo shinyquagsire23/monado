@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "xrt/xrt_compiler.h"
 
@@ -21,7 +22,7 @@
 
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
-
+#include "oxr_handle.h"
 
 
 XrResult
@@ -254,6 +255,133 @@ oxr_xrThermalGetTemperatureTrendEXT(
 	                                "xrThermalGetTemperatureTrendEXT");
 
 	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, "Not implemented");
+}
+
+/*
+ *
+ * XR_EXT_hand_tracking
+ *
+ */
+
+static XrResult
+oxr_hand_tracker_destroy_cb(struct oxr_logger *log, struct oxr_handle_base *hb)
+{
+	struct oxr_hand_tracker *hand_tracker = (struct oxr_hand_tracker *)hb;
+
+	free(hand_tracker);
+
+	return XR_SUCCESS;
+}
+
+XrResult
+oxr_hand_tracker_create(struct oxr_logger *log,
+                        struct oxr_session *sess,
+                        const XrHandTrackerCreateInfoEXT *createInfo,
+                        struct oxr_hand_tracker **out_hand_tracker)
+{
+	if (!oxr_system_get_hand_tracking_support(log, sess->sys->inst)) {
+		return oxr_error(log, XR_ERROR_FEATURE_UNSUPPORTED,
+		                 "System does not support hand tracking");
+	}
+
+	struct oxr_hand_tracker *hand_tracker = NULL;
+	OXR_ALLOCATE_HANDLE_OR_RETURN(log, hand_tracker, OXR_XR_DEBUG_HTRACKER,
+	                              oxr_hand_tracker_destroy_cb,
+	                              &sess->handle);
+
+	hand_tracker->sess = sess;
+	hand_tracker->hand = createInfo->hand;
+	hand_tracker->hand_joint_set = createInfo->handJointSet;
+
+	*out_hand_tracker = hand_tracker;
+
+	return XR_SUCCESS;
+}
+
+XrResult
+oxr_xrCreateHandTrackerEXT(XrSession session,
+                           const XrHandTrackerCreateInfoEXT *createInfo,
+                           XrHandTrackerEXT *handTracker)
+{
+	struct oxr_hand_tracker *hand_tracker = NULL;
+	struct oxr_session *sess = NULL;
+	struct oxr_logger log;
+	XrResult ret;
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
+	                                "xrCreateHandTrackerEXT");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
+	                                 XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT);
+	OXR_VERIFY_ARG_NOT_NULL(&log, handTracker);
+
+	OXR_VERIFY_EXTENSION(&log, sess->sys->inst, EXT_hand_tracking);
+
+	if (createInfo->hand != XR_HAND_LEFT_EXT &&
+	    createInfo->hand != XR_HAND_RIGHT_EXT) {
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "Invalid hand value %d\n", createInfo->hand);
+	}
+
+	if (createInfo->handJointSet != XR_HAND_JOINT_SET_DEFAULT_EXT) {
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "Invalid handJointSet value %d\n",
+		                 createInfo->handJointSet);
+	}
+
+	ret = oxr_hand_tracker_create(&log, sess, createInfo, &hand_tracker);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	*handTracker = oxr_hand_tracker_to_openxr(hand_tracker);
+
+	return XR_SUCCESS;
+}
+
+XrResult
+oxr_xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker)
+{
+	struct oxr_hand_tracker *hand_tracker;
+	struct oxr_logger log;
+	OXR_VERIFY_HAND_TRACKER_AND_INIT_LOG(&log, handTracker, hand_tracker,
+	                                     "xrDestroyHandTrackerEXT");
+
+	return oxr_handle_destroy(&log, &hand_tracker->handle);
+}
+
+XrResult
+oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
+                          const XrHandJointsLocateInfoEXT *locateInfo,
+                          XrHandJointLocationsEXT *locations)
+{
+	struct oxr_hand_tracker *hand_tracker;
+	struct oxr_space *spc;
+	struct oxr_logger log;
+	OXR_VERIFY_HAND_TRACKER_AND_INIT_LOG(&log, handTracker, hand_tracker,
+	                                     "xrLocateHandJointsEXT");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, locateInfo,
+	                                 XR_TYPE_HAND_JOINTS_LOCATE_INFO_EXT);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, locations,
+	                                 XR_TYPE_HAND_JOINT_LOCATIONS_EXT);
+	OXR_VERIFY_SPACE_NOT_NULL(&log, locateInfo->baseSpace, spc);
+
+
+	if (locateInfo->time <= (XrTime)0) {
+		return oxr_error(&log, XR_ERROR_TIME_INVALID,
+		                 "(time == %" PRIi64 ") is not a valid time.",
+		                 locateInfo->time);
+	}
+
+	if (hand_tracker->hand_joint_set == XR_HAND_JOINT_SET_DEFAULT_EXT) {
+		if (locations->jointCount != XR_HAND_JOINT_COUNT_EXT) {
+			return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+			                 "joint count must be %d, not %d\n",
+			                 XR_HAND_JOINT_COUNT_EXT,
+			                 locations->jointCount);
+		}
+	};
+
+	return oxr_session_hand_joints(&log, hand_tracker, locateInfo,
+	                               locations);
 }
 
 #endif
