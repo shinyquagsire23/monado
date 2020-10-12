@@ -337,12 +337,23 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	                         ? XRT_HAND_LEFT
 	                         : XRT_HAND_RIGHT;
 
+	float thumb_curl = 0.0f;
+	//! @todo place thumb preciely on the button that is touched/pressed
+	if (d->base.inputs[VIVE_CONTROLLER_INDEX_A_TOUCH].value.boolean ||
+	    d->base.inputs[VIVE_CONTROLLER_INDEX_B_TOUCH].value.boolean ||
+	    d->base.inputs[VIVE_CONTROLLER_INDEX_THUMBSTICK_TOUCH]
+	        .value.boolean ||
+	    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH]
+	        .value.boolean) {
+		thumb_curl = 1.0;
+	}
+
 	struct u_hand_tracking_curl_values values = {
 	    .little = (float)d->state.pinky_finger_handle / UINT8_MAX,
 	    .ring = (float)d->state.ring_finger_handle / UINT8_MAX,
 	    .middle = (float)d->state.middle_finger_handle / UINT8_MAX,
 	    .index = (float)d->state.index_finger_trigger / UINT8_MAX,
-	    .thumb = 0};
+	    .thumb = thumb_curl};
 
 	u_hand_joints_update_curl(&d->hand_tracking, hand, &values);
 
