@@ -35,6 +35,7 @@
 
 #include "util/u_json.h"
 
+#include "util/u_hand_tracking.h"
 
 // public documentation
 //! @todo move to vive_protocol
@@ -117,15 +118,6 @@ typedef enum
 
 static bool survive_already_initialized = false;
 
-enum
-{
-	FINGER_LITTLE = 0,
-	FINGER_RING,
-	FINGER_MIDDLE,
-	FINGER_INDEX,
-	FINGER_LAST,
-};
-
 enum VIVE_VARIANT
 {
 	VIVE_UNKNOWN = 0,
@@ -133,7 +125,10 @@ enum VIVE_VARIANT
 	VIVE_VARIANT_PRO,
 	VIVE_VARIANT_VALVE_INDEX,
 	VIVE_VARIANT_HTC_VIVE_CONTROLLER,
-	VIVE_VARIANT_VALVE_INDEX_CONTROLLER,
+	VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER,
+	VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER,
+	VIVE_VARIANT_TRACKER_V1,
+	VIVE_VARIANT_TRACKER_v2
 };
 
 /*!
@@ -144,6 +139,8 @@ struct survive_device
 	struct xrt_device base;
 	struct survive_system *sys;
 	const SurviveSimpleObject *survive_obj;
+
+	struct xrt_space_relation last_relation;
 
 	int num;
 
@@ -159,8 +156,9 @@ struct survive_device
 
 		struct
 		{
-			float curl[FINGER_LAST];
-			uint64_t curl_ts[FINGER_LAST];
+			float curl[XRT_FINGER_COUNT];
+			uint64_t curl_ts[XRT_FINGER_COUNT];
+			struct u_hand_tracking hand_tracking;
 		} ctrl;
 	};
 	struct u_vive_values distortion[2];
@@ -298,6 +296,8 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 	}
 }
 
+//! @todo: Hotplugging, with get_variant_from_json()
+#if 0
 static bool
 _update_survive_devices(struct survive_system *sys)
 {
@@ -339,6 +339,7 @@ _update_survive_devices(struct survive_system *sys)
 
 	return true;
 }
+#endif
 
 static void
 survive_device_get_tracked_pose(struct xrt_device *xdev,
@@ -360,7 +361,7 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	_update_survive_devices(survive->sys);
+	//_update_survive_devices(survive->sys);
 	if (!survive->survive_obj) {
 		// printf("Obj not set for %p\n", (void*)survive);
 		return;
@@ -370,12 +371,60 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 	_get_survive_pose(survive->survive_obj, survive->sys->ctx,
 	                  out_relation);
 
+	survive->last_relation = *out_relation;
+
 	struct xrt_pose *p = &out_relation->pose;
 	SURVIVE_SPEW(survive->sys,
 	             "GET_POSITION (%f %f %f) GET_ORIENTATION (%f, %f, %f, %f)",
 	             p->position.x, p->position.y, p->position.z,
 	             p->orientation.x, p->orientation.y, p->orientation.z,
 	             p->orientation.w);
+}
+
+#define PI 3.14159265358979323846
+#define DEG_TO_RAD(DEG) (DEG * PI / 180.)
+
+static void
+survive_controller_get_hand_tracking(struct xrt_device *xdev,
+                                     enum xrt_input_name name,
+                                     uint64_t at_timestamp_ns,
+                                     union xrt_hand_joint_set *out_value)
+{
+	struct survive_device *survive = (struct survive_device *)xdev;
+
+	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_DEFAULT_SET) {
+		SURVIVE_ERROR(survive, "unknown input name for hand tracker");
+		return;
+	}
+
+
+	bool left =
+	    survive->variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER;
+	enum xrt_hand hand = left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
+
+
+
+	struct u_hand_tracking_curl_values values = {
+	    .little = survive->ctrl.curl[XRT_FINGER_LITTLE],
+	    .ring = survive->ctrl.curl[XRT_FINGER_RING],
+	    .middle = survive->ctrl.curl[XRT_FINGER_MIDDLE],
+	    .index = survive->ctrl.curl[XRT_FINGER_INDEX],
+	    .thumb = 0};
+
+	/* The tracked controller position is at the very -z end of the
+	 * controller. Move the hand back offset_z meter to the handle center.
+	 */
+	struct xrt_vec3 static_offset = {.x = 0, .y = 0, .z = 0.11};
+
+	u_hand_joints_update_curl(&survive->ctrl.hand_tracking, hand, &values);
+
+	struct xrt_pose hand_on_handle_pose;
+	u_hand_joints_offset_valve_index_controller(hand, &static_offset,
+	                                            &hand_on_handle_pose);
+
+	u_hand_joints_set_out_data(&survive->ctrl.hand_tracking, hand,
+	                           &survive->last_relation,
+	                           &hand_on_handle_pose, out_value);
 }
 
 static void
@@ -562,9 +611,9 @@ _calculate_squeeze_value(struct survive_device *survive)
 {
 	/*! @todo find a good formula for squeeze value */
 	float val = 0;
-	val = fmaxf(val, survive->ctrl.curl[FINGER_LITTLE]);
-	val = fmaxf(val, survive->ctrl.curl[FINGER_RING]);
-	val = fmaxf(val, survive->ctrl.curl[FINGER_MIDDLE]);
+	val = fmaxf(val, survive->ctrl.curl[XRT_FINGER_LITTLE]);
+	val = fmaxf(val, survive->ctrl.curl[XRT_FINGER_RING]);
+	val = fmaxf(val, survive->ctrl.curl[XRT_FINGER_MIDDLE]);
 	return val;
 }
 
@@ -584,20 +633,20 @@ _process_button_event(struct survive_device *survive,
 
 			} else if (e->axis_ids[i] ==
 			           SURVIVE_AXIS_TRIGGER_FINGER_PROXIMITY) {
-				survive->ctrl.curl[FINGER_INDEX] = val;
-				survive->ctrl.curl_ts[FINGER_INDEX] = now;
+				survive->ctrl.curl[XRT_FINGER_INDEX] = val;
+				survive->ctrl.curl_ts[XRT_FINGER_INDEX] = now;
 			} else if (e->axis_ids[i] ==
 			           SURVIVE_AXIS_MIDDLE_FINGER_PROXIMITY) {
-				survive->ctrl.curl[FINGER_MIDDLE] = val;
-				survive->ctrl.curl_ts[FINGER_MIDDLE] = now;
+				survive->ctrl.curl[XRT_FINGER_MIDDLE] = val;
+				survive->ctrl.curl_ts[XRT_FINGER_MIDDLE] = now;
 			} else if (e->axis_ids[i] ==
 			           SURVIVE_AXIS_RING_FINGER_PROXIMITY) {
-				survive->ctrl.curl[FINGER_RING] = val;
-				survive->ctrl.curl_ts[FINGER_RING] = now;
+				survive->ctrl.curl[XRT_FINGER_RING] = val;
+				survive->ctrl.curl_ts[XRT_FINGER_RING] = now;
 			} else if (e->axis_ids[i] ==
 			           SURVIVE_AXIS_PINKY_FINGER_PROXIMITY) {
-				survive->ctrl.curl[FINGER_LITTLE] = val;
-				survive->ctrl.curl_ts[FINGER_LITTLE] = now;
+				survive->ctrl.curl[XRT_FINGER_LITTLE] = val;
+				survive->ctrl.curl_ts[XRT_FINGER_LITTLE] = now;
 			} else {
 				printf("axis id: %d val %f\n", e->axis_ids[i],
 				       e->axis_val[i]);
@@ -676,6 +725,10 @@ get_device_by_object(struct survive_system *sys,
 	}
 
 	for (int i = 0; i < CONTROLLER_COUNT; i++) {
+		if (sys->controllers[i] == NULL) {
+			continue;
+		}
+
 		if (sys->controllers[i]->survive_obj == object) {
 			return sys->controllers[i];
 		}
@@ -1119,7 +1172,7 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 
 static bool
 _create_controller_device(struct survive_system *sys,
-                          int controller_num,
+                          const SurviveSimpleObject *sso,
                           enum VIVE_VARIANT variant)
 {
 
@@ -1128,12 +1181,40 @@ _create_controller_device(struct survive_system *sys,
 	int outputs = 0;
 	struct survive_device *survive =
 	    U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
-	sys->controllers[controller_num] = survive;
+
+	int idx = -1;
+	if (variant == VIVE_VARIANT_HTC_VIVE_CONTROLLER) {
+		if (sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL) {
+			idx = SURVIVE_LEFT_CONTROLLER;
+		} else if (sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
+			idx = SURVIVE_RIGHT_CONTROLLER;
+		} else {
+			SURVIVE_ERROR(sys, "Only creating 2 controllers!\n");
+			return false;
+		}
+	} else if (variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER) {
+		if (sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL) {
+			idx = SURVIVE_LEFT_CONTROLLER;
+		} else {
+			SURVIVE_ERROR(sys,
+			              "Only creating 1 left controller!\n");
+			return false;
+		}
+	} else if (variant == VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
+		if (sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
+			idx = SURVIVE_RIGHT_CONTROLLER;
+		} else {
+			SURVIVE_ERROR(sys,
+			              "Only creating 1 right controller!\n");
+			return false;
+		}
+	}
+	sys->controllers[idx] = survive;
 	survive->sys = sys;
 	survive->variant = variant;
-	survive->survive_obj = NULL;
+	survive->survive_obj = sso;
 
-	survive->num = controller_num;
+	survive->num = idx;
 	survive->base.tracking_origin = &sys->base;
 
 	survive->base.destroy = survive_device_destroy;
@@ -1142,10 +1223,11 @@ _create_controller_device(struct survive_system *sys,
 
 	//! @todo: May use Vive Wands + Index HMDs or Index Controllers + Vive
 	//! HMD
-	if (survive->variant == VIVE_VARIANT_VALVE_INDEX_CONTROLLER) {
+	if (variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER ||
+	    variant == VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
 		survive->base.name = XRT_DEVICE_INDEX_CONTROLLER;
 		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN,
-		         "Survive Valve Index Controller %d", controller_num);
+		         "Survive Valve Index Controller %d", idx);
 
 		SET_INDEX_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
 		SET_INDEX_INPUT(A_CLICK, A_CLICK);
@@ -1169,14 +1251,34 @@ _create_controller_device(struct survive_system *sys,
 		SET_INDEX_INPUT(AIM_POSE, AIM_POSE);
 		SET_INDEX_INPUT(GRIP_POSE, GRIP_POSE);
 
-		//! @todo: find out left/right hand from survive
-		survive->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
+		if (variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER) {
+			survive->base.device_type =
+			    XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
+		} else if (variant ==
+		           VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
+			survive->base.device_type =
+			    XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
+		} else {
+			survive->base.device_type =
+			    XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
+		}
 
+		survive->base.get_hand_tracking =
+		    survive_controller_get_hand_tracking;
+
+		enum xrt_hand hand = idx == SURVIVE_LEFT_CONTROLLER
+		                         ? XRT_HAND_LEFT
+		                         : XRT_HAND_RIGHT;
+		u_hand_joints_init_default_set(
+		    &survive->ctrl.hand_tracking, hand,
+		    XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
+
+		survive->base.hand_tracking_supported = true;
 
 	} else if (survive->variant == VIVE_VARIANT_HTC_VIVE_CONTROLLER) {
 		survive->base.name = XRT_DEVICE_VIVE_WAND;
 		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN,
-		         "Survive Vive Wand Controller %d", controller_num);
+		         "Survive Vive Wand Controller %d", idx);
 
 		SET_WAND_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
 		SET_WAND_INPUT(SQUEEZE_CLICK, SQUEEZE_CLICK);
@@ -1196,6 +1298,8 @@ _create_controller_device(struct survive_system *sys,
 	survive->base.orientation_tracking_supported = true;
 	survive->base.position_tracking_supported = true;
 
+	SURVIVE_DEBUG(sys, "Created Controller %d\n", idx);
+
 	return true;
 }
 
@@ -1213,6 +1317,44 @@ _product_to_variant(uint16_t product_id)
 		printf("No product ids matched %.4x\n", product_id);
 		return VIVE_UNKNOWN;
 	}
+}
+
+#define JSON_STRING(a, b, c)                                                   \
+	u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
+
+static enum VIVE_VARIANT
+get_variant_from_json(struct survive_system *ss, cJSON *json)
+{
+	char model_number[32];
+
+	if (u_json_get(json, "model_number")) {
+		JSON_STRING(json, "model_number", model_number);
+	} else {
+		JSON_STRING(json, "model_name", model_number);
+	}
+
+	enum VIVE_VARIANT variant = VIVE_UNKNOWN;
+
+	if (strcmp(model_number, "Vive. Controller MV") == 0) {
+		variant = VIVE_VARIANT_HTC_VIVE_CONTROLLER;
+		SURVIVE_DEBUG(ss, "Found Vive Wand controller");
+	} else if (strcmp(model_number, "Knuckles Right") == 0) {
+		variant = VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER;
+		SURVIVE_DEBUG(ss, "Found Knuckles Right controller");
+	} else if (strcmp(model_number, "Knuckles Left") == 0) {
+		variant = VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER;
+		SURVIVE_DEBUG(ss, "Found Knuckles Left controller");
+	} else if (strcmp(model_number, "Vive Tracker PVT") == 0) {
+		variant = VIVE_VARIANT_TRACKER_V1;
+		SURVIVE_DEBUG(ss, "Found Gen 1 tracker.");
+	} else if (strcmp(model_number, "VIVE Tracker Pro MV") == 0) {
+		variant = VIVE_VARIANT_TRACKER_v2;
+		SURVIVE_DEBUG(ss, "Found Gen 2 tracker.");
+	} else {
+		SURVIVE_ERROR(ss, "Failed to parse controller variant");
+	}
+
+	return variant;
 }
 
 int
@@ -1255,14 +1397,6 @@ survive_found(struct xrt_prober *xp,
 	enum VIVE_VARIANT variant = _product_to_variant(dev->product_id);
 	printf("survive: Assuming variant %d\n", variant);
 
-	//! @todo: read controller variant from controller config (or hotplug)
-	enum VIVE_VARIANT controller_variant = VIVE_UNKNOWN;
-	if (variant == VIVE_VARIANT_VALVE_INDEX) {
-		controller_variant = VIVE_VARIANT_VALVE_INDEX_CONTROLLER;
-	} else if (variant == VIVE_VARIANT_VIVE) {
-		controller_variant = VIVE_VARIANT_HTC_VIVE_CONTROLLER;
-	}
-
 	ss->ctx = actx;
 	ss->base.type = XRT_TRACKING_TYPE_LIGHTHOUSE;
 	snprintf(ss->base.name, XRT_TRACKING_NAME_LEN, "%s",
@@ -1276,8 +1410,42 @@ survive_found(struct xrt_prober *xp,
 	ss->print_debug = debug_get_bool_option_survive_debug();
 
 	_create_hmd_device(ss, variant);
-	_create_controller_device(ss, 0, controller_variant);
-	_create_controller_device(ss, 1, controller_variant);
+
+	/* iterate over all devices, if SurviveSimpleObject_OBJECT parse config
+	 * and if controller, add it with variant from config.
+	 */
+	for (const SurviveSimpleObject *it =
+	         survive_simple_get_first_object(ss->ctx);
+	     it != 0; it = survive_simple_get_next_object(ss->ctx, it)) {
+
+		enum SurviveSimpleObject_type type =
+		    survive_simple_object_get_type(it);
+		if (type == SurviveSimpleObject_OBJECT) {
+			char *json_string = survive_get_json_config(it);
+			cJSON *json = cJSON_Parse(json_string);
+			if (!cJSON_IsObject(json)) {
+				printf("Could not parse JSON data.");
+				continue;
+			}
+
+			enum VIVE_VARIANT variant =
+			    get_variant_from_json(ss, json);
+
+			switch (variant) {
+			case VIVE_VARIANT_HTC_VIVE_CONTROLLER:
+			case VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER:
+			case VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER:
+				SURVIVE_DEBUG(ss, "Adding controller.");
+				_create_controller_device(ss, it, variant);
+				break;
+			default:
+				SURVIVE_DEBUG(ss, "Skip non controller obj.");
+				break;
+			}
+
+			cJSON_Delete(json);
+		}
+	}
 
 	// printf("Survive HMD %p, controller %p %p\n", ss->hmd,
 	// ss->controllers[0], ss->controllers[1]);
@@ -1286,10 +1454,17 @@ survive_found(struct xrt_prober *xp,
 		u_device_dump_config(&ss->hmd->base, __func__, "libsurvive");
 	}
 
-	out_xdevs[0] = &ss->hmd->base;
-	out_xdevs[1] = &ss->controllers[0]->base;
-	out_xdevs[2] = &ss->controllers[1]->base;
+	int out_idx = 0;
+	out_xdevs[out_idx++] = &ss->hmd->base;
+	if (&ss->controllers[SURVIVE_LEFT_CONTROLLER]) {
+		out_xdevs[out_idx++] =
+		    &ss->controllers[SURVIVE_LEFT_CONTROLLER]->base;
+	}
+	if (&ss->controllers[SURVIVE_LEFT_CONTROLLER]) {
+		out_xdevs[out_idx++] =
+		    &ss->controllers[SURVIVE_RIGHT_CONTROLLER]->base;
+	}
 
 	survive_already_initialized = true;
-	return 3;
+	return out_idx;
 }
