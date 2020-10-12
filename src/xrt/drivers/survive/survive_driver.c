@@ -402,14 +402,23 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 	    survive->variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER;
 	enum xrt_hand hand = left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
 
-
+	float thumb_curl = 0.0f;
+	//! @todo place thumb preciely on the button that is touched/pressed
+	if (survive->base.inputs[VIVE_CONTROLLER_A_TOUCH].value.boolean ||
+	    survive->base.inputs[VIVE_CONTROLLER_B_TOUCH].value.boolean ||
+	    survive->base.inputs[VIVE_CONTROLLER_THUMBSTICK_TOUCH]
+	        .value.boolean ||
+	    survive->base.inputs[VIVE_CONTROLLER_TRACKPAD_TOUCH]
+	        .value.boolean) {
+		thumb_curl = 1.0;
+	}
 
 	struct u_hand_tracking_curl_values values = {
 	    .little = survive->ctrl.curl[XRT_FINGER_LITTLE],
 	    .ring = survive->ctrl.curl[XRT_FINGER_RING],
 	    .middle = survive->ctrl.curl[XRT_FINGER_MIDDLE],
 	    .index = survive->ctrl.curl[XRT_FINGER_INDEX],
-	    .thumb = 0};
+	    .thumb = thumb_curl};
 
 	/* The tracked controller position is at the very -z end of the
 	 * controller. Move the hand back offset_z meter to the handle center.
