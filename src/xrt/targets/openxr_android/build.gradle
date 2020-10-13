@@ -1,0 +1,66 @@
+// Copyright 2020, Collabora, Ltd.
+// SPDX-License-Identifier: BSL-1.0
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdkVersion project.sharedTargetSdk
+    buildToolsVersion '30.0.2'
+
+    ndkVersion "${ndk_version}"
+
+    defaultConfig {
+        applicationId 'org.freedesktop.monado.openxr_runtime'
+        minSdkVersion project.sharedMinSdk
+        targetSdkVersion project.sharedTargetSdk
+        versionCode 1
+        versionName '1.0'
+        externalNativeBuild {
+            cmake {
+                arguments "-DEIGEN3_INCLUDE_DIR=${project.eigenIncludeDir}", "-DANDROID_PLATFORM=26", "-DANDROID_STL=c++_shared", "-DANDROID_ARM_NEON=TRUE"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "../../../../CMakeLists.txt"
+        }
+    }
+
+    flavorDimensions 'deployment'
+    productFlavors {
+        inProcess {
+            dimension 'deployment'
+            applicationIdSuffix '.in_process'
+            externalNativeBuild.cmake.arguments += "-DXRT_FEATURE_SERVICE=OFF"
+            externalNativeBuild.cmake.targets "openxr_monado"
+        }
+        outOfProcess {
+            dimension 'deployment'
+            applicationIdSuffix '.out_of_process'
+            externalNativeBuild.cmake.arguments += "-DXRT_FEATURE_SERVICE=ON"
+            externalNativeBuild.cmake.targets "openxr_monado", "monado-service"
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    outOfProcessImplementation project(':src:xrt:ipc_android')
+    implementation project(':src:xrt:auxiliary:android')
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
+}
