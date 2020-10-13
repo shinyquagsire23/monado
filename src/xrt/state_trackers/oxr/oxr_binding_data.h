@@ -61,6 +61,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
+                XRT_INPUT_SIMPLE_SELECT_CLICK,
                 XRT_INPUT_PSMV_TRIGGER_VALUE,
                 XRT_INPUT_HYDRA_TRIGGER_VALUE,
                 XRT_INPUT_DAYDREAM_TOUCHPAD_CLICK,
@@ -80,6 +81,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
+                XRT_INPUT_SIMPLE_MENU_CLICK,
                 XRT_INPUT_PSMV_MOVE_CLICK,
                 XRT_INPUT_HYDRA_MIDDLE_CLICK,
                 XRT_INPUT_DAYDREAM_BAR_CLICK,
@@ -99,6 +101,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
+                XRT_INPUT_SIMPLE_GRIP_POSE,
                 XRT_INPUT_PSMV_GRIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
                 XRT_INPUT_DAYDREAM_POSE,
@@ -118,6 +121,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
+                XRT_INPUT_SIMPLE_AIM_POSE,
                 XRT_INPUT_PSMV_AIM_POSE,
                 XRT_INPUT_HYDRA_POSE,
                 XRT_INPUT_DAYDREAM_POSE,
@@ -136,6 +140,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .outputs =
             {
+                XRT_OUTPUT_NAME_SIMPLE_VIBRATION,
                 XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION,
                 XRT_OUTPUT_NAME_INDEX_HAPTIC,
                 XRT_OUTPUT_NAME_VIVE_HAPTIC,
@@ -153,6 +158,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
+                XRT_INPUT_SIMPLE_SELECT_CLICK,
                 XRT_INPUT_PSMV_TRIGGER_VALUE,
                 XRT_INPUT_HYDRA_TRIGGER_VALUE,
                 XRT_INPUT_DAYDREAM_TOUCHPAD_CLICK,
@@ -172,6 +178,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
+                XRT_INPUT_SIMPLE_MENU_CLICK,
                 XRT_INPUT_PSMV_MOVE_CLICK,
                 XRT_INPUT_HYDRA_MIDDLE_CLICK,
                 XRT_INPUT_DAYDREAM_BAR_CLICK,
@@ -191,6 +198,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
+                XRT_INPUT_SIMPLE_GRIP_POSE,
                 XRT_INPUT_PSMV_GRIP_POSE,
                 XRT_INPUT_HYDRA_POSE,
                 XRT_INPUT_DAYDREAM_POSE,
@@ -210,6 +218,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .inputs =
             {
+                XRT_INPUT_SIMPLE_AIM_POSE,
                 XRT_INPUT_PSMV_AIM_POSE,
                 XRT_INPUT_HYDRA_POSE,
                 XRT_INPUT_DAYDREAM_POSE,
@@ -228,6 +237,7 @@ static struct binding_template khr_simple_controller_bindings[10] = {
             },
         .outputs =
             {
+                XRT_OUTPUT_NAME_SIMPLE_VIBRATION,
                 XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION,
                 XRT_OUTPUT_NAME_INDEX_HAPTIC,
                 XRT_OUTPUT_NAME_VIVE_HAPTIC,

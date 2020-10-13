@@ -355,6 +355,11 @@ oxr_find_profile_for_device(struct oxr_logger *log,
 		interaction_profile_find(
 		    log, inst, inst->path_cache.khr_simple_controller, out_p);
 		return;
+	case XRT_DEVICE_SIMPLE_CONTROLLER:
+		// clang-format off
+		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
+		// clang-format on
+		return;
 	case XRT_DEVICE_INDEX_CONTROLLER:
 		// clang-format off
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
