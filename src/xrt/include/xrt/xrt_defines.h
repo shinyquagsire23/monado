@@ -702,6 +702,22 @@ enum xrt_output_name
 };
 
 /*!
+ * Value used to indicate a haptic pulse of the minimal supported duration.
+ *
+ * @ingroup xrt_iface
+ */
+#define XRT_MIN_HAPTIC_DURATION -1
+
+/*!
+ * Value used to indicate a haptic pulse of some runtime defined optimal
+ * frequency.
+ *
+ * @ingroup xrt_iface
+ */
+
+#define XRT_FREQUENCY_UNSPECIFIED 0
+
+/*!
  * A union of all output types.
  *
  * @see xrt_output_type
