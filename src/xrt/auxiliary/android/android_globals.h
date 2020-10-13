@@ -4,7 +4,7 @@
  * @file
  * @brief  Functions for Android-specific global state.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
- * @ingroup aux_util
+ * @ingroup aux_android
  */
 
 #pragma once
