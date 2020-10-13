@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.freedesktop.monado.auxiliary">
+<!--
+    Copyright 2020, Collabora, Ltd.
+    SPDX-License-Identifier: BSL-1.0
+-->
+
+</manifest>
