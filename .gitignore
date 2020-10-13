@@ -68,3 +68,7 @@ local.properties
 # .idea/assetWizardSettings.xml
 .externalNativeBuild
 .cxx
+
+gradlew
+gradlew.bat
+gradle-wrapper.jar
