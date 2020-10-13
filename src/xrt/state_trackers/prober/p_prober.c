@@ -570,14 +570,12 @@ handle_found_device(struct prober *p,
 	xdevs[i] = xdev;
 }
 
-static int
-select_device(struct xrt_prober *xp,
-              struct xrt_device **xdevs,
-              size_t num_xdevs)
+static void
+add_from_devices(struct prober *p,
+                 struct xrt_device **xdevs,
+                 size_t num_xdevs,
+                 bool *have_hmd)
 {
-	struct prober *p = (struct prober *)xp;
-	bool have_hmd = false;
-
 	// Build a list of all current probed devices.
 	struct xrt_prober_device **dev_list =
 	    U_TYPED_ARRAY_CALLOC(struct xrt_prober_device *, p->num_devices);
@@ -599,8 +597,8 @@ select_device(struct xrt_prober *xp,
 			struct xrt_device
 			    *new_xdevs[XRT_MAX_DEVICES_PER_PROBE] = {NULL};
 			int num_found =
-			    entry->found(xp, dev_list, p->num_devices, i, NULL,
-			                 &(new_xdevs[0]));
+			    entry->found(&p->base, dev_list, p->num_devices, i,
+			                 NULL, &(new_xdevs[0]));
 
 			if (num_found <= 0) {
 				continue;
@@ -617,7 +615,7 @@ select_device(struct xrt_prober *xp,
 					continue;
 				}
 				handle_found_device(p, xdevs, num_xdevs,
-				                    &have_hmd,
+				                    have_hmd,
 				                    new_xdevs[created_idx]);
 			}
 		}
@@ -625,24 +623,43 @@ select_device(struct xrt_prober *xp,
 
 	// Free the temporary list.
 	free(dev_list);
+}
 
+static void
+add_from_auto_probers(struct prober *p,
+                      struct xrt_device **xdevs,
+                      size_t num_xdevs,
+                      bool *have_hmd)
+{
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
 		/*
 		 * If we have found a HMD, tell the auto probers not to open
 		 * any more HMDs. This is mostly to stop OpenHMD and Monado
 		 * fighting over devices.
 		 */
-		bool no_hmds = have_hmd;
+		bool no_hmds = *have_hmd;
 
 		struct xrt_device *xdev =
 		    p->auto_probers[i]->lelo_dallas_autoprobe(
-		        p->auto_probers[i], NULL, no_hmds, xp);
+		        p->auto_probers[i], NULL, no_hmds, &p->base);
 		if (xdev == NULL) {
 			continue;
 		}
 
-		handle_found_device(p, xdevs, num_xdevs, &have_hmd, xdev);
+		handle_found_device(p, xdevs, num_xdevs, have_hmd, xdev);
 	}
+}
+
+static int
+select_device(struct xrt_prober *xp,
+              struct xrt_device **xdevs,
+              size_t num_xdevs)
+{
+	struct prober *p = (struct prober *)xp;
+	bool have_hmd = false;
+
+	add_from_devices(p, xdevs, num_xdevs, &have_hmd);
+	add_from_auto_probers(p, xdevs, num_xdevs, &have_hmd);
 
 	// It's easier if we just put the first hmd first,
 	// but keep other internal ordering of devices.
