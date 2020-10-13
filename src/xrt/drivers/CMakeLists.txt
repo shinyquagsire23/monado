@@ -134,6 +134,20 @@ if(XRT_BUILD_DRIVER_RS)
 	list(APPEND ENABLED_HEADSET_DRIVERS rs)
 endif()
 
+if(XRT_BUILD_DRIVER_REMOTE)
+	set(REMOTE_SOURCE_FILES
+		remote/r_device.c
+		remote/r_hmd.c
+		remote/r_hub.c
+		remote/r_interface.h
+		remote/r_internal.h
+		)
+
+	add_library(drv_remote STATIC ${REMOTE_SOURCE_FILES})
+	target_link_libraries(drv_remote PRIVATE xrt-interfaces aux_util)
+	list(APPEND ENABLED_HEADSET_DRIVERS remote)
+endif()
+
 if(XRT_BUILD_DRIVER_VIVE)
 	set(VIVE_SOURCE_FILES
 		vive/vive_device.h

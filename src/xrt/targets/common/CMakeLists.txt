@@ -60,6 +60,10 @@ if(XRT_BUILD_DRIVER_RS)
 	target_link_libraries(target_lists PRIVATE drv_rs)
 endif()
 
+if(XRT_BUILD_DRIVER_REMOTE)
+	target_link_libraries(target_lists PRIVATE drv_remote)
+endif()
+
 if(XRT_HAVE_V4L2)
 	target_link_libraries(target_lists PRIVATE drv_v4l2)
 endif()

@@ -148,8 +148,8 @@ cmake_dependent_option(XRT_BUILD_DRIVER_OHMD "Enable OpenHMD driver" ON "OPENHMD
 cmake_dependent_option(XRT_BUILD_DRIVER_DAYDREAM "Enable the Google Daydream View controller driver (BLE, via D-Bus)" ON "XRT_HAVE_DBUS" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_ARDUINO "Enable Arduino input device with BLE via via D-Bus" ON "XRT_HAVE_DBUS" OFF)
 
-
 option(XRT_BUILD_DRIVER_DUMMY "Enable dummy driver" ON)
+option(XRT_BUILD_DRIVER_REMOTE "Enable remote debugging driver" ON)
 
 # These all use the Monado internal hid wrapper.
 cmake_dependent_option(XRT_BUILD_DRIVER_HDK "Enable HDK driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
@@ -162,7 +162,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" OFF "
 
 # You can set this from a superproject to add a driver
 # All drivers must be listed in here to be included in the generated header!
-list(APPEND AVAILABLE_DRIVERS ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM SURVIVE)
+list(APPEND AVAILABLE_DRIVERS ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM REMOTE SURVIVE)
 
 ###
 # Flags
@@ -263,6 +263,7 @@ message(STATUS "#    DRIVER_OHMD:     ${XRT_BUILD_DRIVER_OHMD}")
 message(STATUS "#    DRIVER_PSMV:     ${XRT_BUILD_DRIVER_PSMV}")
 message(STATUS "#    DRIVER_PSVR:     ${XRT_BUILD_DRIVER_PSVR}")
 message(STATUS "#    DRIVER_RS:       ${XRT_BUILD_DRIVER_RS}")
+message(STATUS "#    DRIVER_REMOTE:   ${XRT_BUILD_DRIVER_REMOTE}")
 message(STATUS "#    DRIVER_SURVIVE:  ${XRT_BUILD_DRIVER_SURVIVE}")
 message(STATUS "#    DRIVER_VIVE:     ${XRT_BUILD_DRIVER_VIVE}")
 message(STATUS "#####----- Config -----#####")
