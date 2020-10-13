@@ -434,7 +434,7 @@ vive_controller_haptic_pulse(struct vive_controller_device *d,
 	if (value->vibration.duration == XRT_MIN_HAPTIC_DURATION) {
 		VIVE_TRACE(d, "Haptic pulse duration: using %f minimum",
 		           MIN_HAPTIC_DURATION);
-		duration_seconds = 0.1;
+		duration_seconds = MIN_HAPTIC_DURATION;
 	} else {
 		duration_seconds = time_ns_to_s(value->vibration.duration);
 	}
@@ -448,7 +448,7 @@ vive_controller_haptic_pulse(struct vive_controller_device *d,
 		VIVE_TRACE(
 		    d, "Haptic pulse frequency unspecified, setting to %fHz",
 		    DEFAULT_HAPTIC_FREQ);
-		frequency = 200;
+		frequency = DEFAULT_HAPTIC_FREQ;
 	}
 
 
