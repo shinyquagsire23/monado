@@ -55,15 +55,16 @@ src/xrt/drivers/arduino/device/*.bin
 # Ignore VSCode files
 .vscode-ctags
 
-# Ignore gradle-related things
+# Ignore gradle-related and android studio-related things
 *.iml
 .gradle/
 local.properties
-.idea/caches
-.idea/libraries
-.idea/modules.xml
-.idea/workspace.xml
-.idea/navEditor.xml
-.idea/assetWizardSettings.xml
+.idea/*
+# .idea/caches
+# .idea/libraries
+# .idea/modules.xml
+# .idea/workspace.xml
+# .idea/navEditor.xml
+# .idea/assetWizardSettings.xml
 .externalNativeBuild
 .cxx
