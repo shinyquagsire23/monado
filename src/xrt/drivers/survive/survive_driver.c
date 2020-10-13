@@ -14,6 +14,7 @@
 #include <string.h>
 #include <assert.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "math/m_api.h"
 #include "xrt/xrt_device.h"
@@ -42,6 +43,8 @@
 #define INDEX_MIN_IPD 0.058
 #define INDEX_MAX_IPD 0.07
 
+#define DEFAULT_HAPTIC_FREQ 150.0f
+#define MIN_HAPTIC_DURATION 0.05f
 
 #define SURVIVE_SPEW(p, ...)                                                   \
 	do {                                                                   \
@@ -379,6 +382,69 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 	             p->position.x, p->position.y, p->position.z,
 	             p->orientation.x, p->orientation.y, p->orientation.z,
 	             p->orientation.w);
+}
+
+static int
+survive_controller_haptic_pulse(struct survive_device *survive,
+                                union xrt_output_value *value)
+{
+	float duration_seconds;
+	if (value->vibration.duration == XRT_MIN_HAPTIC_DURATION) {
+		SURVIVE_SPEW(survive->sys,
+		             "Haptic pulse duration: using %f minimum",
+		             MIN_HAPTIC_DURATION);
+		duration_seconds = MIN_HAPTIC_DURATION;
+	} else {
+		duration_seconds = time_ns_to_s(value->vibration.duration);
+	}
+
+	float frequency = value->vibration.frequency;
+
+	if (frequency == XRT_FREQUENCY_UNSPECIFIED) {
+		SURVIVE_SPEW(
+		    survive->sys,
+		    "Haptic pulse frequency unspecified, setting to %fHz",
+		    DEFAULT_HAPTIC_FREQ);
+		frequency = DEFAULT_HAPTIC_FREQ;
+	}
+
+	float amplitude = value->vibration.amplitude;
+
+	SURVIVE_SPEW(survive->sys,
+	             "Got Haptic pulse amp %f, %fHz, %" PRId64 "ns",
+	             value->vibration.amplitude, value->vibration.frequency,
+	             value->vibration.duration);
+	SURVIVE_SPEW(survive->sys, "Doing Haptic pulse amp %f, %fHz, %fs",
+	             amplitude, frequency, duration_seconds);
+
+	return survive_simple_object_haptic(
+	    (struct SurviveSimpleObject *)survive->survive_obj, frequency,
+	    amplitude, duration_seconds);
+}
+
+static void
+survive_controller_device_set_output(struct xrt_device *xdev,
+                                     enum xrt_output_name name,
+                                     union xrt_output_value *value)
+{
+	struct survive_device *survive = (struct survive_device *)xdev;
+
+	if (name != XRT_OUTPUT_NAME_VIVE_HAPTIC &&
+	    name != XRT_OUTPUT_NAME_INDEX_HAPTIC) {
+		SURVIVE_ERROR(survive, "Unknown output\n");
+		return;
+	}
+
+	bool pulse = value->vibration.amplitude > 0.01;
+	if (!pulse) {
+		return;
+	}
+
+	int ret = survive_controller_haptic_pulse(survive, value);
+
+	if (ret != 0) {
+		SURVIVE_ERROR(survive->sys, "haptic failed %d\n", ret);
+	}
 }
 
 #define PI 3.14159265358979323846
@@ -1187,7 +1253,7 @@ _create_controller_device(struct survive_system *sys,
 
 	enum u_device_alloc_flags flags = 0;
 	int inputs = VIVE_CONTROLLER_MAX_INDEX;
-	int outputs = 0;
+	int outputs = 1;
 	struct survive_device *survive =
 	    U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
 
@@ -1229,6 +1295,7 @@ _create_controller_device(struct survive_system *sys,
 	survive->base.destroy = survive_device_destroy;
 	survive->base.update_inputs = survive_device_update_inputs;
 	survive->base.get_tracked_pose = survive_device_get_tracked_pose;
+	survive->base.set_output = survive_controller_device_set_output;
 
 	//! @todo: May use Vive Wands + Index HMDs or Index Controllers + Vive
 	//! HMD
@@ -1282,6 +1349,8 @@ _create_controller_device(struct survive_system *sys,
 		    &survive->ctrl.hand_tracking, hand,
 		    XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
 
+		survive->base.outputs[0].name = XRT_OUTPUT_NAME_INDEX_HAPTIC;
+
 		survive->base.hand_tracking_supported = true;
 
 	} else if (survive->variant == VIVE_VARIANT_HTC_VIVE_CONTROLLER) {
@@ -1300,6 +1369,8 @@ _create_controller_device(struct survive_system *sys,
 
 		SET_WAND_INPUT(AIM_POSE, AIM_POSE);
 		SET_WAND_INPUT(GRIP_POSE, GRIP_POSE);
+
+		survive->base.outputs[0].name = XRT_OUTPUT_NAME_VIVE_HAPTIC;
 
 		survive->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 	}
