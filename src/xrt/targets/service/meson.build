@@ -49,3 +49,29 @@ service = executable(
 	dependencies: [pthreads, libjpeg] + hack_deps + service_deps,
 	install: true,
 )
+
+service_install_path = join_paths(get_option('prefix'), 'bin', 'monado-service')
+systemd_dir = join_paths(get_option('prefix'), get_option('libdir'), 'systemd', 'user')
+
+service_conf_data = configuration_data()
+service_conf_data.set('UNIT_NAME', 'monado')
+service_conf_data.set('conflicts', 'monado-dev')
+service_conf_data.set('exit_on_disconnect', 'off')
+service_conf_data.set('extra_desc', '')
+service_conf_data.set('service_path', service_install_path)
+configure_file(
+	input: 'monado.in.service',
+	output: 'monado.service',
+	configuration: service_conf_data,
+	install_dir: systemd_dir
+)
+
+socket_conf_data = configuration_data()
+socket_conf_data.set('conflicts', 'monado-dev')
+socket_conf_data.set('extra_desc', '')
+configure_file(
+	input: 'monado.in.socket',
+	output: 'monado.socket',
+	configuration: socket_conf_data,
+	install_dir: systemd_dir
+)
