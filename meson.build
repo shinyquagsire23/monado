@@ -274,3 +274,51 @@ if get_option('steamvr_plugin')
 else
 	message('steamvr plugin: no')
 endif
+
+if build_opengl
+	message('      opengl: yes')
+else
+	message('      opengl: no')
+endif
+
+if build_opengles
+	message('    opengles: yes')
+else
+	message('    opengles: no')
+endif
+
+if build_egl
+	message('         egl: yes')
+else
+	message('         egl: no')
+endif
+
+if build_xlib
+	message('        xlib: yes')
+else
+	message('        xlib: no')
+endif
+
+if build_xcb
+	message('         xcb: yes')
+else
+	message('         xcb: no')
+endif
+
+if build_wayland
+	message('     wayland: yes')
+else
+	message('     wayland: no')
+endif
+
+if not get_option('systemd').disabled() and systemd.found()
+	message('     systemd: yes')
+else
+	message('     systemd: no')
+endif
+
+if not get_option('dbus').disabled() and dbus.found()
+	message('        dbus: yes')
+else
+	message('        dbus: no')
+endif
