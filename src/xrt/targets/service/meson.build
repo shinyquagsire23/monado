@@ -1,6 +1,11 @@
 # Copyright 2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+service_deps = [pthreads, libjpeg]
+if systemd.found() and not get_option('systemd').disabled()
+	service_deps += systemd
+endif
+
 hack_deps = []
 hack_src = [ '../openxr/oxr_sdl2_hack.c']
 hack_libs = []
@@ -41,6 +46,6 @@ service = executable(
 		common_include,
 		xrt_include,
 	] + hack_incs,
-	dependencies: [pthreads, libjpeg] + hack_deps,
+	dependencies: [pthreads, libjpeg] + hack_deps + service_deps,
 	install: true,
 )

@@ -77,6 +77,11 @@ option('dbus',
 	value: 'auto',
 	description: 'Enable support for dbus.')
 
+option('systemd',
+	type: 'feature',
+	value: 'auto',
+	description: 'Enable systemd support (for socket activation of service)')
+
 option('service',
 	type: 'boolean',
 	value: true,

@@ -76,6 +76,10 @@ if dbus.found() and not get_option('dbus').disabled()
 	have_conf.set('XRT_HAVE_DBUS', true)
 endif
 
+if systemd.found() and not get_option('systemd').disabled()
+	have_conf.set('XRT_HAVE_SYSTEMD', true)
+endif
+
 if get_option('layer_depth')
 	have_conf.set('XRT_FEATURE_OPENXR_LAYER_DEPTH', true)
 endif
