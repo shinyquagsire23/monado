@@ -20,6 +20,7 @@
 #include "openxr/openxr_reflection.h"
 
 
+DEBUG_GET_ONCE_BOOL_OPTION(no_printing, "OXR_NO_STDERR_PRINTING", false)
 DEBUG_GET_ONCE_BOOL_OPTION(entrypoints, "OXR_DEBUG_ENTRYPOINTS", false)
 DEBUG_GET_ONCE_BOOL_OPTION(break_on_error, "OXR_BREAK_ON_ERROR", false)
 
@@ -102,6 +103,10 @@ oxr_log_set_instance(struct oxr_logger *logger, struct oxr_instance *inst)
 void
 oxr_log(struct oxr_logger *logger, const char *fmt, ...)
 {
+	if (debug_get_bool_option_no_printing()) {
+		return;
+	}
+
 	print_prefix(logger, fmt, "LOG");
 
 	va_list args;
@@ -115,6 +120,10 @@ oxr_log(struct oxr_logger *logger, const char *fmt, ...)
 void
 oxr_warn(struct oxr_logger *logger, const char *fmt, ...)
 {
+	if (debug_get_bool_option_no_printing()) {
+		return;
+	}
+
 	print_prefix(logger, fmt, "WARNING");
 
 	va_list args;
@@ -128,6 +137,10 @@ oxr_warn(struct oxr_logger *logger, const char *fmt, ...)
 XrResult
 oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
 {
+	if (debug_get_bool_option_no_printing()) {
+		return result;
+	}
+
 	if (debug_get_bool_option_entrypoints()) {
 		fprintf(stderr, "\t");
 	}
