@@ -707,11 +707,12 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 	 */
 	if (act_ref->action_type == XR_ACTION_TYPE_POSE_INPUT) {
 
-#define POSE_ANY(X)                                                            \
-	if (act_ref->sub_paths.X && act_attached->X.num_inputs > 0) {          \
-		act_attached->any_pose_sub_path.X = true;                      \
-		oxr_slog(&slog,                                                \
-		         "\tFor: <any>\n\t\tBinding any pose to " #X ".\n");   \
+#define POSE_ANY(NAME)                                                         \
+	if ((act_ref->sub_paths.NAME || act_ref->sub_paths.any) &&             \
+	    act_attached->NAME.num_inputs > 0) {                               \
+		act_attached->any_pose_sub_path.NAME = true;                   \
+		oxr_slog(&slog, "\tFor: <any>\n\t\tBinding any pose to " #NAME \
+		                ".\n");                                        \
 	} else
 		OXR_FOR_EACH_VALID_SUBACTION_PATH(POSE_ANY)
 #undef POSE_ANY
