@@ -13,6 +13,7 @@ set(GUI_SOURCE_FILES
 	gui_scene_calibrate.c
 	gui_scene_debug.c
 	gui_scene_main_menu.c
+	gui_scene_remote.c
 	gui_scene_video.c
 	../../../external/imgui/imgui/cimgui.cpp
 	../../../external/imgui/imgui/cimgui.h
@@ -49,7 +50,14 @@ target_link_libraries(st_gui PRIVATE
 target_include_directories(st_gui PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/..
 	${CMAKE_CURRENT_SOURCE_DIR}/../../../external/imgui
+	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
 	)
+
+if(XRT_BUILD_DRIVER_REMOTE)
+	target_link_libraries(st_gui PRIVATE
+		drv_remote
+		)
+endif()
 
 if(XRT_HAVE_SDL2)
 	add_library(imgui_impl_sdl STATIC

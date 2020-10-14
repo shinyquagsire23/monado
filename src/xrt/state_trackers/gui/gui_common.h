@@ -208,6 +208,14 @@ void
 gui_scene_debug(struct gui_program *p);
 
 /*!
+ * Remote control debugging UI.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_remote(struct gui_program *p);
+
+/*!
  * Given the frameserver runs the calibration code on it.
  * Claims ownership of @p s.
  *

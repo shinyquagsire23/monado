@@ -45,6 +45,12 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		gui_scene_debug(p);
 	}
 
+	if (igButton("Remote", button_dims)) {
+		gui_scene_delete_me(p, scene);
+
+		gui_scene_remote(p);
+	}
+
 	igSeparator();
 
 	if (igButton("Exit", button_dims)) {

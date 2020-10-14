@@ -39,6 +39,8 @@ main(int argc, char **argv)
 		gui_scene_debug(&p.base);
 	} else if (argc >= 2 && strcmp("calibrate", argv[1]) == 0) {
 		gui_scene_select_video_calibrate(&p.base);
+	} else if (argc >= 2 && strcmp("remote", argv[1]) == 0) {
+		gui_scene_remote(&p.base);
 	} else {
 		gui_scene_main_menu(&p.base);
 	}

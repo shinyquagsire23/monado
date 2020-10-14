@@ -10,6 +10,7 @@ gui_sources = [
 	'gui_scene_calibrate.c',
 	'gui_scene_debug.c',
 	'gui_scene_main_menu.c',
+	'gui_scene_remote.c',
 	'gui_scene_video.c',
 	'../../../external/imgui/imgui/cimgui.cpp',
 	'../../../external/imgui/imgui/cimgui.h',
@@ -42,6 +43,7 @@ lib_st_gui = static_library(
 	files(gui_sources),
 	include_directories: [
 		xrt_include,
+		drv_include,
 		glad_include,
 		cjson_include,
 		imgui_include,
