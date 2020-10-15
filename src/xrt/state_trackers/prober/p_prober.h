@@ -67,6 +67,7 @@ enum p_active_config
 {
 	P_ACTIVE_CONFIG_NONE = 0,
 	P_ACTIVE_CONFIG_TRACKING = 1,
+	P_ACTIVE_CONFIG_REMOTE = 2,
 };
 
 #ifdef XRT_OS_LINUX
@@ -219,6 +220,14 @@ p_json_get_active(struct prober *p, enum p_active_config *out_active);
  */
 bool
 p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s);
+
+/*!
+ * Extract remote settings from the JSON.
+ *
+ * @public @memberof prober
+ */
+bool
+p_json_get_remote_port(struct prober *p, int *out_port);
 
 /*!
  * Dump the given device to stdout.

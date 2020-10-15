@@ -177,6 +177,8 @@ parse_active(const char *str,
 		*out_active = P_ACTIVE_CONFIG_NONE;
 	} else if (strcmp(str, "tracking") == 0) {
 		*out_active = P_ACTIVE_CONFIG_TRACKING;
+	} else if (strcmp(str, "remote") == 0) {
+		*out_active = P_ACTIVE_CONFIG_REMOTE;
 	} else {
 		fprintf(stderr, "Unknown active config '%s' from %s.\n", str,
 		        from);
@@ -203,6 +205,35 @@ p_json_get_active(struct prober *p, enum p_active_config *out_active)
 	}
 
 	parse_active(tmp, "json", out_active);
+}
+
+bool
+p_json_get_remote_port(struct prober *p, int *out_port)
+{
+	cJSON *t = cJSON_GetObjectItemCaseSensitive(p->json.root, "remote");
+	if (t == NULL) {
+		fprintf(stderr, "No remote node\n");
+		return false;
+	}
+
+	int ver = -1;
+	if (!get_obj_int(t, "version", &ver)) {
+		fprintf(stderr, "Missing version tag!\n");
+		return false;
+	}
+	if (ver >= 1) {
+		fprintf(stderr, "Unknown version tag '%i'!\n", ver);
+		return false;
+	}
+
+	int port = 0;
+	if (!get_obj_int(t, "port", &port)) {
+		return false;
+	}
+
+	*out_port = port;
+
+	return true;
 }
 
 bool

@@ -7,6 +7,8 @@
  * @ingroup st_prober
  */
 
+#include "xrt/xrt_config_drivers.h"
+
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_json.h"
@@ -16,6 +18,10 @@
 
 #ifdef XRT_HAVE_V4L2
 #include "v4l2/v4l2_interface.h"
+#endif
+
+#ifdef XRT_BUILD_DRIVER_REMOTE
+#include "remote/r_interface.h"
 #endif
 
 #include <stdio.h>
@@ -651,6 +657,27 @@ add_from_auto_probers(struct prober *p,
 	}
 }
 
+static void
+add_from_remote(struct prober *p,
+                struct xrt_device **xdevs,
+                size_t num_xdevs,
+                bool *have_hmd)
+{
+	if (num_xdevs < 3) {
+		return;
+	}
+
+#ifdef XRT_BUILD_DRIVER_REMOTE
+	int port = 4242;
+	if (!p_json_get_remote_port(p, &port)) {
+		port = 4242;
+	}
+
+	r_create_devices(port, &xdevs[0], &xdevs[1], &xdevs[2]);
+	*have_hmd = xdevs[0] != NULL;
+#endif
+}
+
 static int
 select_device(struct xrt_prober *xp,
               struct xrt_device **xdevs,
@@ -667,6 +694,9 @@ select_device(struct xrt_prober *xp,
 	case P_ACTIVE_CONFIG_TRACKING:
 		add_from_devices(p, xdevs, num_xdevs, &have_hmd);
 		add_from_auto_probers(p, xdevs, num_xdevs, &have_hmd);
+		break;
+	case P_ACTIVE_CONFIG_REMOTE:
+		add_from_remote(p, xdevs, num_xdevs, &have_hmd);
 		break;
 	default: assert(false);
 	}
