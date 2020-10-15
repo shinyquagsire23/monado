@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 
 /*
@@ -656,10 +657,19 @@ select_device(struct xrt_prober *xp,
               size_t num_xdevs)
 {
 	struct prober *p = (struct prober *)xp;
+	enum p_active_config active;
 	bool have_hmd = false;
 
-	add_from_devices(p, xdevs, num_xdevs, &have_hmd);
-	add_from_auto_probers(p, xdevs, num_xdevs, &have_hmd);
+	p_json_get_active(p, &active);
+
+	switch (active) {
+	case P_ACTIVE_CONFIG_NONE:
+	case P_ACTIVE_CONFIG_TRACKING:
+		add_from_devices(p, xdevs, num_xdevs, &have_hmd);
+		add_from_auto_probers(p, xdevs, num_xdevs, &have_hmd);
+		break;
+	default: assert(false);
+	}
 
 	// It's easier if we just put the first hmd first,
 	// but keep other internal ordering of devices.

@@ -10,12 +10,15 @@
 #include "util/u_file.h"
 #include "util/u_json.h"
 #include "util/u_debug.h"
+
 #include "p_prober.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+DEBUG_GET_ONCE_OPTION(active_config, "P_OVERRIDE_ACTIVE_CONFIG", NULL)
 
 
 char *
@@ -148,6 +151,58 @@ get_obj_str(cJSON *json, const char *name, char *array, size_t array_size)
 	}
 
 	return true;
+}
+
+static bool
+is_json_ok(struct prober *p)
+{
+	if (p->json.root == NULL) {
+		if (p->json.file_loaded) {
+			fprintf(stderr, "JSON not parsed!\n");
+		} else {
+			fprintf(stderr, "No config file!\n");
+		}
+		return false;
+	}
+
+	return true;
+}
+
+static bool
+parse_active(const char *str,
+             const char *from,
+             enum p_active_config *out_active)
+{
+	if (strcmp(str, "none") == 0) {
+		*out_active = P_ACTIVE_CONFIG_NONE;
+	} else if (strcmp(str, "tracking") == 0) {
+		*out_active = P_ACTIVE_CONFIG_TRACKING;
+	} else {
+		fprintf(stderr, "Unknown active config '%s' from %s.\n", str,
+		        from);
+		*out_active = P_ACTIVE_CONFIG_NONE;
+		return false;
+	}
+
+	return true;
+}
+
+void
+p_json_get_active(struct prober *p, enum p_active_config *out_active)
+{
+	const char *str = debug_get_option_active_config();
+	if (str != NULL && parse_active(str, "environment", out_active)) {
+		return;
+	}
+
+	char tmp[256];
+	if (!is_json_ok(p) ||
+	    !get_obj_str(p->json.root, "active", tmp, sizeof(tmp))) {
+		*out_active = P_ACTIVE_CONFIG_NONE;
+		return;
+	}
+
+	parse_active(tmp, "json", out_active);
 }
 
 bool

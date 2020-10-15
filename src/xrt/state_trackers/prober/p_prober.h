@@ -60,6 +60,14 @@
 
 #define MAX_AUTO_PROBERS 8
 
+/*!
+ * What config is currently active in the config file.
+ */
+enum p_active_config
+{
+	P_ACTIVE_CONFIG_NONE = 0,
+	P_ACTIVE_CONFIG_TRACKING = 1,
+};
 
 #ifdef XRT_OS_LINUX
 /*!
@@ -193,6 +201,15 @@ struct prober
  */
 void
 p_json_open_or_create_main_file(struct prober *p);
+
+/*!
+ * Read from the JSON loaded json config file and returns the active config,
+ * can be overridden by `P_OVERRIDE_ACTIVE_CONFIG` envirmental variable.
+ *
+ * @public @memberof prober
+ */
+void
+p_json_get_active(struct prober *p, enum p_active_config *out_active);
 
 /*!
  * Extract tracking settings from the JSON.
