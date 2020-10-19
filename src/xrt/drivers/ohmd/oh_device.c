@@ -339,6 +339,11 @@ get_info(struct oh_device *ohd, const char *prod)
 		info.quirks.delay_after_initialization = true;
 	}
 
+	if (strcmp(prod, "Rift S") == 0) {
+		info.quirks.delay_after_initialization = true;
+		info.quirks.rotate_lenses_left = true;
+	}
+
 	/* Only the WVR2 display is rotated. OpenHMD can't easily tell us
 	 * the WVR SKU, so just recognize it by resolution */
 	if (strcmp(prod, "VR-Tek WVR") == 0 &&
