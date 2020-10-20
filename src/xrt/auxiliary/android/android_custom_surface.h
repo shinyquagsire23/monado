@@ -75,6 +75,17 @@ ANativeWindow *
 android_custom_surface_get_surface(
     struct android_custom_surface *custom_surface);
 
+/*!
+ * Get the ANativeWindow pointer corresponding to the added Surface, if
+ * available, waiting up to the specified duration.
+ *
+ * This may return NULL because the underlying operation is asynchronous.
+ *
+ * @public @memberof android_custom_surface
+ */
+ANativeWindow *
+android_custom_surface_wait_get_surface(
+    struct android_custom_surface *custom_surface, uint64_t timeout_ms);
 #ifdef __cplusplus
 }
 #endif

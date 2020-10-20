@@ -17,6 +17,8 @@
 #include "jni.h"
 
 #include <memory>
+#include <chrono>
+#include <thread>
 
 using wrap::android::app::Activity;
 using wrap::android::view::SurfaceHolder;
@@ -85,9 +87,7 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 		    "attachToActivity",
 		    "(Landroid/app/Activity;)Lorg/freedesktop/monado/auxiliary/"
 		    "MonadoView;");
-		jni::method_t attachToActivity =
-		    ret->monadoViewClass.getStaticMethod(
-		        "attachToActivity", "Landroid.app.Activity");
+
 		ret->monadoView = ret->monadoViewClass.call<jni::Object>(
 		    attachToActivity, ret->activity.object());
 		return ret.release();
@@ -121,15 +121,58 @@ ANativeWindow *
 android_custom_surface_get_surface(
     struct android_custom_surface *custom_surface)
 {
-	auto holder =
-	    custom_surface->monadoView.get<jni::Object>("currentSurfaceHolder");
-	if (holder.isNull()) {
+	jni::field_t curSurfaceId = nullptr;
+	jni::Object holder = nullptr;
+	try {
+		curSurfaceId = custom_surface->monadoViewClass.getField(
+		    "currentSurfaceHolder", "Landroid/view/SurfaceHolder;");
+		holder =
+		    custom_surface->monadoView.get<jni::Object>(curSurfaceId);
+	} catch (std::exception const &e) {
+		U_LOG_E("Could not get currentSurfaceHolder: %s", e.what());
 		return nullptr;
 	}
+
 	SurfaceHolder surfaceHolder(holder);
 	auto surf = surfaceHolder.getSurface();
 	if (surf.isNull()) {
 		return nullptr;
 	}
 	return ANativeWindow_fromSurface(jni::env(), surf.object().getHandle());
+}
+
+
+ANativeWindow *
+android_custom_surface_wait_get_surface(
+    struct android_custom_surface *custom_surface, uint64_t timeout_ms)
+{
+	using clock = std::chrono::system_clock;
+	using std::chrono::duration_cast;
+	using std::chrono::milliseconds;
+	try {
+		auto start = clock::now();
+		auto end = start + milliseconds(timeout_ms);
+		ANativeWindow *ret =
+		    android_custom_surface_get_surface(custom_surface);
+		if (ret != nullptr) {
+			return ret;
+		}
+		while (clock::now() < end) {
+			//! @todo replace this with a block on the Java code
+			std::this_thread::sleep_for(
+			    milliseconds(timeout_ms / 5));
+			ANativeWindow *ret =
+			    android_custom_surface_get_surface(custom_surface);
+			if (ret != nullptr) {
+				return ret;
+			}
+		}
+	} catch (std::exception const &e) {
+		// do nothing right now.
+		U_LOG_E(
+		    "Could not wait for our custom surface: "
+		    "%s",
+		    e.what());
+	}
+	return nullptr;
 }
