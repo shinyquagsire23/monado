@@ -1254,9 +1254,10 @@ struct oxr_session
 	bool has_begun;
 	/*!
 	 * There is a extra state between xrBeginSession has been called and
-	 * the first xrWaitFrame has been called. These are to track this.
+	 * the first xrEndFrame has been called. These are to track this.
 	 */
-	bool has_waited_once;
+	bool has_ended_once;
+
 	bool frame_started;
 	bool exiting;
 

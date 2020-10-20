@@ -211,11 +211,11 @@ oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
 		oxr_session_change_state(log, sess,
 		                         XR_SESSION_STATE_SYNCHRONIZED);
 	}
-	if (!sess->has_waited_once) {
+	if (!sess->has_ended_once) {
 		oxr_session_change_state(log, sess,
 		                         XR_SESSION_STATE_SYNCHRONIZED);
 		// Fake the synchronization.
-		sess->has_waited_once = true;
+		sess->has_ended_once = true;
 	}
 
 	//! @todo start fading out the app.
@@ -553,18 +553,6 @@ oxr_session_frame_wait(struct oxr_logger *log,
 		    log, XR_ERROR_RUNTIME_FAILURE,
 		    "Time_state_monotonic_to_ts_ns returned '%" PRIi64 "'",
 		    frameState->predictedDisplayTime);
-	}
-
-	if (!sess->has_waited_once && sess->state < XR_SESSION_STATE_VISIBLE) {
-		oxr_session_change_state(log, sess,
-		                         XR_SESSION_STATE_SYNCHRONIZED);
-		// oxr_session_change_state(log, sess,
-		// XR_SESSION_STATE_VISIBLE); //these states will be handled by
-		// messages received from the compositor
-		// oxr_session_change_state(log, sess,
-		// XR_SESSION_STATE_FOCUSED); //these states will be handled by
-		// messages received from the compositor
-		sess->has_waited_once = true;
 	}
 
 	return oxr_session_success_result(sess);
@@ -1657,6 +1645,16 @@ submit_equirect_layer(struct oxr_session *sess,
 	// Not implemented
 }
 
+static void
+do_synchronize_state_change(struct oxr_logger *log, struct oxr_session *sess)
+{
+	if (!sess->has_ended_once && sess->state < XR_SESSION_STATE_VISIBLE) {
+		oxr_session_change_state(log, sess,
+		                         XR_SESSION_STATE_SYNCHRONIZED);
+		sess->has_ended_once = true;
+	}
+}
+
 XrResult
 oxr_session_frame_end(struct oxr_logger *log,
                       struct oxr_session *sess,
@@ -1690,6 +1688,8 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 */
 	if (xc == NULL) {
 		sess->frame_started = false;
+
+		do_synchronize_state_change(log, sess);
 
 		return oxr_session_success_result(sess);
 	}
@@ -1729,8 +1729,11 @@ oxr_session_frame_end(struct oxr_logger *log,
 		sess->frame_id.begun = -1;
 		sess->frame_started = false;
 
+		do_synchronize_state_change(log, sess);
+
 		return oxr_session_success_result(sess);
 	}
+
 
 	/*
 	 * Layers.
@@ -1795,6 +1798,9 @@ oxr_session_frame_end(struct oxr_logger *log,
 	/*
 	 * Done verifying.
 	 */
+
+	// Do state change if needed.
+	do_synchronize_state_change(log, sess);
 
 	struct xrt_pose inv_offset = {0};
 	math_pose_invert(&xdev->tracking_origin->offset, &inv_offset);
