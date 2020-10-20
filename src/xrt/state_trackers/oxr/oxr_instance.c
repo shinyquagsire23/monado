@@ -16,6 +16,7 @@
 #include "util/u_time.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "util/u_git_tag.h"
 
 #ifdef XRT_OS_ANDROID
 #include "android/android_globals.h"
@@ -418,8 +419,8 @@ oxr_instance_get_properties(struct oxr_logger *log,
                             XrInstanceProperties *instanceProperties)
 {
 	instanceProperties->runtimeVersion = XR_MAKE_VERSION(0, 1, 42);
-	strncpy(instanceProperties->runtimeName,
-	        "Monado(XRT) by Collabora et al", XR_MAX_RUNTIME_NAME_SIZE - 1);
+	snprintf(instanceProperties->runtimeName, XR_MAX_RUNTIME_NAME_SIZE - 1,
+	         "Monado(XRT) by Collabora et al '%s'", u_git_tag);
 
 	return XR_SUCCESS;
 }

@@ -104,6 +104,7 @@ set(UTIL_SOURCE_FILES
 	util/u_format.h
 	util/u_frame.c
 	util/u_frame.h
+	util/u_git_tag.h
 	util/u_handles.c
 	util/u_handles.h
 	util/u_hashmap.cpp
@@ -131,6 +132,9 @@ set(UTIL_SOURCE_FILES
 	util/u_hand_tracking.c
 	util/u_hand_tracking.h
 	)
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/util/u_git_tag.c.in" "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c" @ONLY)
+list(APPEND UTIL_SOURCE_FILES "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c")
 
 set(VK_SOURCE_FILES
 	vk/vk_documentation.h

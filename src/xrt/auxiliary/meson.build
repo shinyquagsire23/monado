@@ -3,6 +3,12 @@
 
 aux_include = include_directories('.')
 
+u_git_tag_c = vcs_tag(
+	input: 'util/u_git_tag.c.in',
+	output: 'u_git_tag.c',
+	replace_string: '@GIT_DESC@',
+)
+
 lib_aux_util = static_library(
 	'aux_util',
 	files(
@@ -21,6 +27,7 @@ lib_aux_util = static_library(
 		'util/u_format.h',
 		'util/u_frame.c',
 		'util/u_frame.h',
+		'util/u_git_tag.h',
 		'util/u_handles.c',
 		'util/u_handles.h',
 		'util/u_hashmap.cpp',
@@ -47,7 +54,9 @@ lib_aux_util = static_library(
 		'util/u_var.h',
 		'util/u_hand_tracking.c',
 		'util/u_hand_tracking.h',
-	),
+	) + [
+		u_git_tag_c
+	],
 	include_directories: [
 		xrt_include,
 		cjson_include,
