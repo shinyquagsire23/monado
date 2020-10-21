@@ -88,15 +88,26 @@ create_listen_socket(struct ipc_server_mainloop *ml, int *out_fd)
 	strcpy(addr.sun_path, IPC_MSG_SOCK_FILE);
 
 	ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
+
+#ifdef XRT_HAVE_LIBBSD
+	// no other instance is running, or we would have never arrived here
+	if (ret < 0 && errno == EADDRINUSE) {
+		U_LOG_W("Removing stale socket file %s", IPC_MSG_SOCK_FILE);
+
+		ret = unlink(IPC_MSG_SOCK_FILE);
+		if (ret < 0) {
+			U_LOG_E("Failed to remove stale socket file %s: %s", IPC_MSG_SOCK_FILE, strerror(errno));
+			return ret;
+		}
+		ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
+	}
+#endif
+
 	if (ret < 0) {
-		U_LOG_E(
-		    "Could not bind socket to path %s: is the "
-		    "service running already?",
-		    IPC_MSG_SOCK_FILE);
+		U_LOG_E("Could not bind socket to path %s: %s. Is the service running already?", IPC_MSG_SOCK_FILE,
+		        strerror(errno));
 #ifdef XRT_HAVE_SYSTEMD
-		U_LOG_E(
-		    "Or, is the systemd unit monado.socket or "
-		    "monado-dev.socket active?");
+		U_LOG_E("Or, is the systemd unit monado.socket or monado-dev.socket active?");
 #endif
 		if (errno == EADDRINUSE) {
 			U_LOG_E("If monado-service is not running, delete %s before starting a new instance",
@@ -113,7 +124,7 @@ create_listen_socket(struct ipc_server_mainloop *ml, int *out_fd)
 		close(fd);
 		return ret;
 	}
-	U_LOG_D("Created listening socket.");
+	U_LOG_D("Created listening socket %s.", IPC_MSG_SOCK_FILE);
 	*out_fd = fd;
 	return 0;
 }

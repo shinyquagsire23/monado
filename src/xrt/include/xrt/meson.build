@@ -100,6 +100,10 @@ if get_option('layer_equirect2')
 	have_conf.set('XRT_FEATURE_OPENXR_LAYER_EQUIRECT2', true)
 endif
 
+if libbsd.found() and not get_option('libbsd').disabled()
+	have_conf.set('XRT_HAVE_LIBBSD', true)
+endif
+
 xrt_config_have_h = configure_file(
 	output: 'xrt_config_have.h',
 	configuration: have_conf,

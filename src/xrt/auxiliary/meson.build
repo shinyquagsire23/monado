@@ -11,6 +11,11 @@ u_git_tag_c = vcs_tag(
 	replace_string: '@GIT_DESC@',
 )
 
+aux_util_deps = [ xrt_config_have ]
+if libbsd.found() and not get_option('libbsd').disabled()
+	aux_util_deps += libbsd
+endif
+
 lib_aux_util = static_library(
 	'aux_util',
 	files(
@@ -65,6 +70,8 @@ lib_aux_util = static_library(
 		'util/u_config_json.c',
 		'util/u_config_json.h',
 		'util/u_verify.h',
+		'util/u_process.c',
+		'util/u_process.h',
 	) + [
 		u_git_tag_c,
 	],
@@ -73,6 +80,7 @@ lib_aux_util = static_library(
 		cjson_include,
 	],
 	dependencies: [
+		aux_util_deps,
 		xrt_config_have,
 	]
 )

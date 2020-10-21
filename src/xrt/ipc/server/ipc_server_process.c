@@ -21,6 +21,7 @@
 #include "util/u_debug.h"
 #include "util/u_trace_marker.h"
 #include "util/u_verify.h"
+#include "util/u_process.h"
 
 #include "shared/ipc_shmem.h"
 #include "server/ipc_server.h"
@@ -109,6 +110,7 @@ teardown_all(struct ipc_server *s)
 	ipc_server_mainloop_deinit(&s->ml);
 
 	os_mutex_destroy(&s->global_state.lock);
+	u_process_destroy(s->process);
 }
 
 static int
@@ -394,6 +396,14 @@ ipc_server_start_client_listener_thread(struct ipc_server *vs, int fd)
 static int
 init_all(struct ipc_server *s)
 {
+	s->process = u_process_create_if_not_running();
+
+	if (!s->process) {
+		U_LOG_E("monado-service is already running! Use XRT_LOG=trace for more information.");
+		teardown_all(s);
+		return 1;
+	}
+
 	// Yes we should be running.
 	s->running = true;
 	s->exit_on_disconnect = debug_get_bool_option_exit_on_disconnect();

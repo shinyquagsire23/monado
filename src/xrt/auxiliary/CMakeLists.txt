@@ -159,6 +159,8 @@ set(UTIL_SOURCE_FILES
 	util/u_config_json.c
 	util/u_config_json.h
 	util/u_verify.h
+	util/u_process.c
+	util/u_process.h
 	)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/util/u_git_tag.c.in" "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c" @ONLY)
@@ -224,6 +226,10 @@ if(XRT_HAVE_SYSTEM_CJSON)
 	target_compile_definitions(aux_util PRIVATE XRT_HAVE_SYSTEM_CJSON)
 else()
 	target_link_libraries(aux_util PUBLIC xrt-external-cjson)
+endif()
+if(XRT_HAVE_LIBBSD)
+	target_include_directories(aux_util SYSTEM PRIVATE ${LIBBSD_INCLUDE_DIRS})
+	target_link_libraries(aux_util PUBLIC ${LIBBSD_LIBRARIES})
 endif()
 if(ANDROID)
 	target_link_libraries(aux_util PUBLIC ${ANDROID_LOG_LIBRARY})

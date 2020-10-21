@@ -107,6 +107,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	endif()
 	find_package(OpenGL COMPONENTS GLX)
 	pkg_search_module(DBUS dbus-1)
+	pkg_search_module(LIBBSD libbsd)
 
 	pkg_check_modules(GST
 		gstreamer-1.0
@@ -143,6 +144,7 @@ cmake_dependent_option(XRT_HAVE_OPENGLES "Enable OpenGL-ES Graphics API support"
 cmake_dependent_option(XRT_HAVE_EGL "Enable OpenGL on EGL Graphics API support" ON "EGL_FOUND; XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES" OFF)
 cmake_dependent_option(XRT_HAVE_DBUS "Enable dbus support (for BLE support)" ON "DBUS_FOUND" OFF)
 cmake_dependent_option(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" ON "XRT_HAVE_VULKAN; XRT_HAVE_WAYLAND OR XRT_HAVE_XCB OR ANDROID OR WIN32" OFF)
+cmake_dependent_option(XRT_HAVE_LIBBSD "Enable libbsd support" ON "LIBBSD_FOUND" OFF)
 cmake_dependent_option(XRT_FEATURE_OPENXR "Build OpenXR runtime target" ON "XRT_FEATURE_COMPOSITOR_MAIN" OFF)
 cmake_dependent_option(XRT_FEATURE_SERVICE "Enable separate service module for OpenXR runtime" ON "NOT WIN32 AND XRT_FEATURE_OPENXR" OFF)
 cmake_dependent_option(XRT_HAVE_SYSTEMD "Enable systemd support (for socket activation of service)" ON "Systemd_FOUND AND XRT_FEATURE_SERVICE" OFF)
@@ -335,6 +337,7 @@ message(STATUS "#    OPENGLES:     ${XRT_HAVE_OPENGLES}")
 message(STATUS "#    EGL:          ${XRT_HAVE_EGL}")
 message(STATUS "#    DBUS:         ${XRT_HAVE_DBUS}")
 message(STATUS "#    VF:           ${XRT_HAVE_VF}")
+message(STATUS "#    LIBBSD:       ${XRT_HAVE_LIBBSD}")
 message(STATUS "#    SYSTEMD:      ${XRT_HAVE_SYSTEMD}")
 message(STATUS "#    LIBUSB:       ${XRT_HAVE_LIBUSB}")
 message(STATUS "#    JPEG:         ${XRT_HAVE_JPEG}")

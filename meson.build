@@ -72,6 +72,7 @@ zlib     = dependency('zlib', required: false)
 survive  = dependency('survive', required: false)
 dbus     = dependency('dbus-1', required: get_option('dbus'))
 systemd  = dependency('libsystemd', required: get_option('systemd'))
+libbsd   = dependency('libbsd', required: get_option('libbsd'))
 gst      = dependency('gstreamer-1.0', required: false)
 gst_app  = dependency('gstreamer-app-1.0', required: false)
 gst_video= dependency('gstreamer-video-1.0', required: false)
@@ -334,4 +335,10 @@ if not get_option('dbus').disabled() and dbus.found()
 	message('        dbus: yes')
 else
 	message('        dbus: no')
+endif
+
+if not get_option('libbsd').disabled() and libbsd.found()
+	message('      libbsd: yes')
+else
+	message('      libbsd: no')
 endif

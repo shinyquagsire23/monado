@@ -268,6 +268,9 @@ struct ipc_server
 {
 	struct xrt_instance *xinst;
 
+	//! Handle for the current process, e.g. pidfile on linux
+	struct u_process *process;
+
 	/* ---- HACK ---- */
 	void *hack;
 	/* ---- HACK ---- */
