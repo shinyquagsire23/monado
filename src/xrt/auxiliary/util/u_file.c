@@ -54,10 +54,10 @@ mkpath(const char *path)
 ssize_t
 u_file_get_config_dir(char *out_path, size_t out_path_size)
 {
-	const char *xgd_home = getenv("XDG_CONFIG_HOME");
+	const char *xdg_home = getenv("XDG_CONFIG_HOME");
 	const char *home = getenv("HOME");
-	if (xgd_home != NULL) {
-		return snprintf(out_path, out_path_size, "%s/monado", xgd_home);
+	if (xdg_home != NULL) {
+		return snprintf(out_path, out_path_size, "%s/monado", xdg_home);
 	}
 	if (home != NULL) {
 		return snprintf(out_path, out_path_size, "%s/.config/monado", home);
