@@ -25,6 +25,14 @@ extern "C" {
 #endif
 
 /*!
+ * The number of nanoseconds in a second.
+ *
+ * @see timepoint_ns
+ * @ingroup time_ns_to_s
+ */
+#define U_1_000_000_000 (1000000000)
+
+/*!
  * Integer timestamp type.
  *
  * @see time_state
@@ -53,7 +61,7 @@ typedef int64_t time_duration_ns;
 static inline float
 time_ns_to_s(time_duration_ns ns)
 {
-	return (float)(ns) / 1000000000.0f;
+	return (float)(ns) / (float)U_1_000_000_000;
 }
 
 /*!
@@ -65,7 +73,7 @@ time_ns_to_s(time_duration_ns ns)
 static inline time_duration_ns
 time_s_to_ns(float duration)
 {
-	return (time_duration_ns)((double)duration * 1000000000.0);
+	return (time_duration_ns)((double)duration * (double)U_1_000_000_000);
 }
 
 /*!

@@ -85,8 +85,8 @@ time_state_to_timespec(struct time_state const *state,
 
 	uint64_t ns = time_state_ts_to_monotonic_ns(state, timestamp);
 
-	out->tv_sec = ns / (1000 * 1000 * 1000);
-	out->tv_nsec = ns % (1000 * 1000 * 1000);
+	out->tv_sec = ns / (U_1_000_000_000);
+	out->tv_nsec = ns % (U_1_000_000_000);
 }
 
 extern "C" timepoint_ns
@@ -98,7 +98,7 @@ time_state_from_timespec(struct time_state const *state,
 
 	uint64_t ns = 0;
 	ns += timespecTime->tv_nsec;
-	ns += timespecTime->tv_sec * 1000 * 1000 * 1000;
+	ns += timespecTime->tv_sec * U_1_000_000_000;
 
 	return time_state_monotonic_to_ts_ns(state, ns);
 }
