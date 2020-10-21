@@ -7,7 +7,7 @@ ConditionUser=!root
 Conflicts=@conflicts@.socket
 
 [Socket]
-ListenStream=/tmp/monado_comp_ipc
+ListenStream=%t/monado_comp_ipc
 RemoveOnStop=true
 
 [Install]

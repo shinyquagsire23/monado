@@ -20,6 +20,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_trace_marker.h"
+#include "util/u_file.h"
 
 #include "shared/ipc_shmem.h"
 #include "server/ipc_server.h"
@@ -39,6 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 #ifdef XRT_HAVE_SYSTEMD
 #include <systemd/sd-daemon.h>
@@ -82,21 +84,30 @@ create_listen_socket(struct ipc_server_mainloop *ml, int *out_fd)
 		return fd;
 	}
 
+
+	char sock_file[PATH_MAX];
+
+	int size = u_file_get_path_in_runtime_dir(IPC_MSG_SOCK_FILE, sock_file, PATH_MAX);
+	if (size == -1) {
+		U_LOG_E("Could not get socket file name");
+		return -1;
+	}
+
 	memset(&addr, 0, sizeof(addr));
 
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, IPC_MSG_SOCK_FILE);
+	strcpy(addr.sun_path, sock_file);
 
 	ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
 
 #ifdef XRT_HAVE_LIBBSD
 	// no other instance is running, or we would have never arrived here
 	if (ret < 0 && errno == EADDRINUSE) {
-		U_LOG_W("Removing stale socket file %s", IPC_MSG_SOCK_FILE);
+		U_LOG_W("Removing stale socket file %s", sock_file);
 
-		ret = unlink(IPC_MSG_SOCK_FILE);
+		ret = unlink(sock_file);
 		if (ret < 0) {
-			U_LOG_E("Failed to remove stale socket file %s: %s", IPC_MSG_SOCK_FILE, strerror(errno));
+			U_LOG_E("Failed to remove stale socket file %s: %s", sock_file, strerror(errno));
 			return ret;
 		}
 		ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
@@ -104,27 +115,27 @@ create_listen_socket(struct ipc_server_mainloop *ml, int *out_fd)
 #endif
 
 	if (ret < 0) {
-		U_LOG_E("Could not bind socket to path %s: %s. Is the service running already?", IPC_MSG_SOCK_FILE,
+		U_LOG_E("Could not bind socket to path %s: %s. Is the service running already?", sock_file,
 		        strerror(errno));
 #ifdef XRT_HAVE_SYSTEMD
 		U_LOG_E("Or, is the systemd unit monado.socket or monado-dev.socket active?");
 #endif
 		if (errno == EADDRINUSE) {
 			U_LOG_E("If monado-service is not running, delete %s before starting a new instance",
-			        IPC_MSG_SOCK_FILE);
+			        sock_file);
 		}
 		close(fd);
 		return ret;
 	}
 	// Save for later
-	ml->socket_filename = strdup(IPC_MSG_SOCK_FILE);
+	ml->socket_filename = strdup(sock_file);
 
 	ret = listen(fd, IPC_MAX_CLIENTS);
 	if (ret < 0) {
 		close(fd);
 		return ret;
 	}
-	U_LOG_D("Created listening socket %s.", IPC_MSG_SOCK_FILE);
+	U_LOG_D("Created listening socket %s.", sock_file);
 	*out_fd = fd;
 	return 0;
 }

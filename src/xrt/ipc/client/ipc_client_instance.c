@@ -20,6 +20,7 @@
 #include "shared/ipc_protocol.h"
 #include "client/ipc_client.h"
 #include "ipc_client_generated.h"
+#include "util/u_file.h"
 
 #include <stdio.h>
 #include <sys/socket.h>
@@ -31,7 +32,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
-
+#include <limits.h>
 
 #ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
 #include "android/android_ahardwarebuffer_allocator.h"
@@ -126,9 +127,17 @@ ipc_connect(struct ipc_connection *ipc_c)
 
 	int socket = ret;
 
+	char sock_file[PATH_MAX];
+
+	int size = u_file_get_path_in_runtime_dir(IPC_MSG_SOCK_FILE, sock_file, PATH_MAX);
+	if (size == -1) {
+		IPC_ERROR(ipc_c, "Could not get socket file name");
+		return -1;
+	}
+
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, IPC_MSG_SOCK_FILE);
+	strcpy(addr.sun_path, sock_file);
 
 	ret = connect(socket, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret < 0) {

@@ -16,6 +16,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/mman.h>
+#include <limits.h>
+
+#include "util/u_file.h"
 
 #define P(...) fprintf(stdout, __VA_ARGS__)
 #define PE(...) fprintf(stderr, __VA_ARGS__)
@@ -212,9 +215,17 @@ do_connect(struct ipc_connection *ipc_c)
 		return -1;
 	}
 
+	char sock_file[PATH_MAX];
+
+	int rt_size = u_file_get_path_in_runtime_dir(IPC_MSG_SOCK_FILE, sock_file, PATH_MAX);
+	if (rt_size == -1) {
+		PE("Could not get socket file name");
+		return -1;
+	}
+
 	struct sockaddr_un addr = {0};
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, IPC_MSG_SOCK_FILE);
+	strcpy(addr.sun_path, sock_file);
 
 	ret = connect(ipc_c->imc.socket_fd,     // socket
 	              (struct sockaddr *)&addr, // address

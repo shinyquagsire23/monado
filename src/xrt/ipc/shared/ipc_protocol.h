@@ -20,7 +20,7 @@
 #include "xrt/xrt_tracking.h"
 
 
-#define IPC_MSG_SOCK_FILE "/tmp/monado_comp_ipc"
+#define IPC_MSG_SOCK_FILE "monado_comp_ipc"
 #define IPC_MAX_SWAPCHAIN_HANDLES 8
 #define IPC_CRED_SIZE 1    // auth not implemented
 #define IPC_BUF_SIZE 512   // must be >= largest message length in bytes
