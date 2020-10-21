@@ -33,7 +33,7 @@ public:
 
 	Vector2
 	SolveDisplayUVToRenderUV(const Vector2 &inputUV,
-	                         Vector2 initailGuess,
+	                         Vector2 const &initialGuess,
 	                         int iterations);
 
 	Vector2

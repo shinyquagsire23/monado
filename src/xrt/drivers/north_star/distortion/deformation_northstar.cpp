@@ -189,14 +189,14 @@ OpticalSystem::RenderUVToDisplayUV(const Vector3 &inputUV)
 
 Vector2
 OpticalSystem::SolveDisplayUVToRenderUV(const Vector2 &inputUV,
-                                        Vector2 initailGuess,
+                                        Vector2 const &initialGuess,
                                         int iterations)
 {
 
-	float epsilon = 0.0001f;
+	static const float epsilon = 0.0001f;
 	Vector2 curCameraUV;
-	curCameraUV.x = initailGuess.x;
-	curCameraUV.y = initailGuess.y;
+	curCameraUV.x = initialGuess.x;
+	curCameraUV.y = initialGuess.y;
 	Vector2 curDisplayUV;
 
 	for (int i = 0; i < iterations; i++) {
