@@ -120,13 +120,13 @@ public:
 	}
 
 	inline Vector3
-	operator/(const float &d)
+	operator/(const float &d) const
 	{
-		Vector3 *ret = new Vector3();
-		ret->x = (x / d);
-		ret->y = (y / d);
-		ret->z = (z / d);
-		return *ret;
+		Vector3 ret;
+		ret.x = (x / d);
+		ret.y = (y / d);
+		ret.z = (z / d);
+		return ret;
 	}
 
 	inline Vector3 operator*(const float &d)
