@@ -85,7 +85,7 @@ public:
 	};
 
 	inline Vector3
-	operator-(Vector3 &rhs)
+	operator-(Vector3 &rhs) const
 	{
 		Vector3 ret;
 		ret.x = (x - rhs.x);
@@ -95,13 +95,13 @@ public:
 	}
 
 	inline Vector3
-	operator-()
+	operator-() const
 	{
 		return Vector3(-x, -y, -z);
 	}
 
 	inline Vector3
-	operator+(const Vector3 &rhs)
+	operator+(const Vector3 &rhs) const
 	{
 		Vector3 ret;
 		ret.x = (x + rhs.x);
@@ -129,7 +129,7 @@ public:
 		return ret;
 	}
 
-	inline Vector3 operator*(const float &d)
+	inline Vector3 operator*(const float &d) const
 	{
 		Vector3 ret;
 		ret.x = (x * d);
@@ -139,16 +139,12 @@ public:
 	}
 
 	inline Vector3
-	Inverse()
+	Inverse() const
 	{
-		Vector3 ret;
-		ret.x = -x;
-		ret.y = -y;
-		ret.z = -z;
-		return ret;
+		return {-x, -y, -z};
 	}
 
-	inline float static Dot(Vector3 lhs, Vector3 rhs)
+	inline float static Dot(Vector3 const &lhs, Vector3 const &rhs)
 	{
 		float result =
 		    (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z);
@@ -156,7 +152,7 @@ public:
 	}
 
 	inline float
-	Dot(Vector3 rhs)
+	Dot(Vector3 const &rhs) const
 	{
 		float result = (x * rhs.x) + (y * rhs.y) + (z * rhs.z);
 		return result;
@@ -177,13 +173,13 @@ public:
 	}
 
 	inline float
-	sqrMagnitude()
+	sqrMagnitude() const
 	{
 		return x * x + y * y + z * z;
 	}
 
 	inline float
-	Magnitude()
+	Magnitude() const
 	{
 		return sqrt(x * x + y * y + z * z);
 	}
@@ -191,21 +187,13 @@ public:
 	inline static Vector3
 	Zero()
 	{
-		Vector3 ret;
-		ret.x = 0.f;
-		ret.y = 0.f;
-		ret.z = 0.f;
-		return ret;
+		return {0.f, 0.f, 0.f};
 	}
 
 	inline static Vector3
 	One()
 	{
-		Vector3 ret;
-		ret.x = 1.f;
-		ret.y = 1.f;
-		ret.z = 1.f;
-		return ret;
+		return {1.f, 1.f, 1.f};
 	}
 
 	inline static Vector3
@@ -231,7 +219,7 @@ public:
 	}
 
 	inline Vector3
-	Normalized()
+	Normalized() const
 	{
 		Vector3 ret;
 		float mag = Magnitude();
@@ -265,7 +253,7 @@ public:
 	}
 
 	inline Vector3
-	Cross(const Vector3 in)
+	Cross(const Vector3 in) const
 	{
 		Vector3 ret;
 		ret.x = y * in.z - z * in.y;
@@ -328,7 +316,7 @@ public:
 	}
 
 	inline Vector2
-	operator/(const float &d)
+	operator/(float d) const
 	{
 		Vector2 ret;
 		ret.x = (x / d);
@@ -336,7 +324,7 @@ public:
 		return ret;
 	}
 
-	inline Vector2 operator*(const float &d)
+	inline Vector2 operator*(float d) const
 	{
 		Vector2 ret;
 		ret.x = (x * d);
@@ -344,7 +332,7 @@ public:
 		return ret;
 	}
 	inline Vector2
-	operator-(const Vector2 &rhs)
+	operator-(const Vector2 &rhs) const
 	{
 		Vector2 ret;
 		ret.x = (x - rhs.x);
@@ -353,7 +341,7 @@ public:
 	}
 
 	inline Vector2
-	operator+(const Vector2 &rhs)
+	operator+(const Vector2 &rhs) const
 	{
 		Vector2 ret;
 		ret.x = (x + rhs.x);
@@ -490,7 +478,7 @@ public:
 
 	// Returns a 3x3 rotation matrix (padded to a Matrix4x4).
 	inline static Matrix4x4
-	RotationAlign(Vector3 fromDir, Vector3 toDir)
+	RotationAlign(Vector3 const &fromDir, Vector3 const &toDir)
 	{
 		const Vector3 v = fromDir.Cross(toDir);
 		const float c = fromDir.Dot(toDir);
@@ -548,7 +536,7 @@ public:
 	}
 
 	inline Vector3
-	MultiplyPoint(Vector3 point)
+	MultiplyPoint(Vector3 const &point) const
 	{
 		Vector3 res;
 		float w;
@@ -589,7 +577,7 @@ public:
 	}
 
 	inline Vector3
-	MultiplyVector(Vector3 vector)
+	MultiplyVector(Vector3 vector) const
 	{
 		Vector3 res;
 		res.x = m00 * vector.x + m01 * vector.y + m02 * vector.z;
@@ -599,7 +587,7 @@ public:
 	}
 
 	inline Vector3
-	MultiplyPoint3x4(Vector3 point)
+	MultiplyPoint3x4(Vector3 point) const
 	{
 		Vector3 res;
 		res.x = m00 * point.x + m01 * point.y + m02 * point.z + m03;
@@ -609,7 +597,7 @@ public:
 	}
 
 	inline Matrix4x4
-	Transpose()
+	Transpose() const
 	{
 		Matrix4x4 r;
 		r.m00 = m00;
@@ -632,7 +620,7 @@ public:
 	}
 
 	inline Matrix4x4
-	Inverse()
+	Inverse() const
 	{
 		float A2323 = m22 * m33 - m23 * m32;
 		float A1323 = m21 * m33 - m23 * m31;
@@ -722,6 +710,10 @@ public:
 	constexpr Vector4 &
 	operator=(const Vector4 &lhr)
 	{
+		if (this == &lhr) {
+			// avoid self-assign
+			return *this;
+		}
 		this->x = lhr.x;
 		this->y = lhr.y;
 		this->z = lhr.z;
@@ -730,7 +722,7 @@ public:
 	}
 
 	inline Matrix4x4
-	ComposeProjection()
+	ComposeProjection() const
 	{
 		const float zNear = 0.07f;
 		const float zFar = 1000.f;
@@ -798,6 +790,18 @@ public:
 	Vector3 m_Direction;
 };
 
+static inline float
+SIGN(float x)
+{
+	return (x >= 0.0f) ? +1.0f : -1.0f;
+}
+
+static inline float
+NORM(float a, float b, float c, float d)
+{
+	return sqrt(a * a + b * b + c * c + d * d);
+}
+
 class Quaternion
 {
 public:
@@ -817,23 +821,10 @@ public:
 		w = _w;
 	};
 
-	inline Quaternion(const Quaternion &_in)
-	{
-		x = _in.x;
-		y = _in.y;
-		z = _in.z;
-		w = _in.w;
-	};
+	inline Quaternion(const Quaternion &_in) = default;
 
-	constexpr Quaternion &
-	operator=(const Quaternion &lhr)
-	{
-		this->x = lhr.x;
-		this->y = lhr.y;
-		this->z = lhr.z;
-		this->w = lhr.w;
-		return *this;
-	}
+	Quaternion &
+	operator=(const Quaternion &lhr) = default;
 
 	inline static Quaternion
 	Identity()
@@ -842,43 +833,43 @@ public:
 	}
 
 	inline Quaternion
-	conjugate()
+	conjugate() const
 	{
 		return Quaternion(-x, -y, -z, w);
 	}
 
 	inline float
-	norm()
+	norm() const
 	{
 		return sqrt((x * x) + (y * y) + (z * z) + (w * w));
 	}
 
 	inline Quaternion
-	scale(float s)
+	scale(float s) const
 	{
 		return Quaternion(w * s, x * s, y * s, z * s);
 	}
 
 	inline Quaternion
-	Inverse()
+	Inverse() const
 	{
 		return conjugate() / norm();
 	}
 
 	inline Vector3
-	Right()
+	Right() const
 	{
 		return *this * Vector3::Right();
 	}
 
 	inline Vector3
-	Up()
+	Up() const
 	{
 		return *this * Vector3::Up();
 	}
 
 	inline Vector3
-	Forward()
+	Forward() const
 	{
 		return *this * Vector3::Forward();
 	}
@@ -936,7 +927,7 @@ public:
 		return euler;
 	}
 
-	inline Vector3 operator*(Vector3 vec)
+	inline Vector3 operator*(Vector3 const &vec) const
 	{
 		float num = x * 2.f;
 		float num2 = y * 2.f;
@@ -982,7 +973,7 @@ public:
 
 
 	Matrix4x4
-	ToMatrix4x4()
+	ToMatrix4x4() const
 	{
 		float qw = w;
 		float qx = x;
@@ -1008,7 +999,7 @@ public:
 		                 0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
-	inline Quaternion operator*(const Quaternion &q)
+	inline Quaternion operator*(const Quaternion &q) const
 	{
 		return Quaternion(y * q.z - z * q.y + x * q.w + w * q.x,
 		                  z * q.x - x * q.z + y * q.w + w * q.y,
@@ -1017,7 +1008,7 @@ public:
 	}
 
 	Quaternion
-	operator/(const float div)
+	operator/(const float div) const
 	{
 		return Quaternion(x / div, y / div, z / div, w / div);
 	}
@@ -1113,19 +1104,6 @@ public:
 		quaternion.z = 0.5f * num5;
 		quaternion.w = (m01 - m10) * num2;
 		return quaternion;
-	}
-
-
-	inline float
-	SIGN(float x)
-	{
-		return (x >= 0.0f) ? +1.0f : -1.0f;
-	}
-
-	inline float
-	NORM(float a, float b, float c, float d)
-	{
-		return sqrt(a * a + b * b + c * c + d * d);
 	}
 
 	inline static Quaternion
@@ -1250,17 +1228,17 @@ public:
 	Vector3 position;
 	Quaternion rotation;
 
-	Pose(Vector3 pos)
+	explicit Pose(Vector3 const &pos)
 	{
 		position = pos;
 		rotation = Quaternion::Identity();
 	}
-	Pose(Quaternion rot)
+	explicit Pose(Quaternion const &rot)
 	{
 		position = Vector3::Zero();
 		rotation = rot;
 	}
-	Pose(Vector3 pos, Quaternion rot)
+	Pose(Vector3 const &pos, Quaternion const &rot)
 	{
 		position = pos;
 		rotation = rot;
@@ -1273,25 +1251,25 @@ public:
 	}
 
 	inline Pose
-	Inverse()
+	Inverse() const
 	{
 		Quaternion invQ = rotation.Inverse();
 		return Pose(invQ * -position, invQ);
 	}
 
 	inline Matrix4x4
-	Matrix()
+	Matrix() const
 	{
 		return Matrix4x4::Translate(position) * rotation.ToMatrix4x4();
 	}
 
-	inline Pose operator*(Pose rhs)
+	inline Pose operator*(Pose const &rhs) const
 	{
 		return Pose(position + (rotation * rhs.position),
 		            rotation * rhs.rotation);
 	}
 
-	inline Pose operator*(Vector3 rhs)
+	inline Pose operator*(Vector3 const &rhs) const
 	{
 		return Pose(position + rotation * rhs, rotation);
 	}
