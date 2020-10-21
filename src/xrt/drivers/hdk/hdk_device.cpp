@@ -38,6 +38,7 @@
 
 #include "hdk_device.h"
 
+static constexpr uint8_t BITS_PER_BYTE = 8;
 
 /**
  * A fixed-point to float conversion function.
@@ -45,34 +46,34 @@
  * Values are signed, two's-complement, if the supplied integer is.
  *
  * The conversion is effectively from the fixed-point arithmetic type known
- * "unambiguously" as Q INTEGER_BITS.FRACTIONAL_BITS - the number of integer
+ * "unambiguously" as Q INT_BITS.FRAC_BITS - the number of integer
  * bits is not inferred, though it is checked to ensure it adds up.
  *
- * @tparam INTEGER_BITS The number of bits devoted to the integer part.
- * @tparam FRACTIONAL_BITS The number of bits devoted to the fractional
+ * @tparam INT_BITS The number of bits devoted to the integer part.
+ * @tparam FRAC_BITS The number of bits devoted to the fractional
  * part.
  * @tparam IntegerType The input integer type, typically deduced (do not need to
  * specify explicitly)
  * @param v An input "integer" that is actually a fixed-point value.
  *
- * INTEGER_BITS and FRACTIONAL_BITS must sum to 8 * sizeof(v), the bit width of
+ * INT_BITS and FRAC_BITS must sum to 8 * sizeof(v), the bit width of
  * the input integer, for unsigned values, or to one less than that (for the
  * sign bit) for signed values.
  *
  * Based in part on the VRPN header vrpn_FixedPoint.h,
  * available under BSL-1.0.
  */
-template <size_t INTEGER_BITS, size_t FRACTIONAL_BITS, typename IntegerType>
+template <size_t INT_BITS, size_t FRAC_BITS, typename IntegerType>
 static inline float
 fromFixedPoint(IntegerType v)
 {
 	constexpr size_t SIGN_BIT = std::is_signed<IntegerType>::value ? 1 : 0;
-	static_assert(INTEGER_BITS + FRACTIONAL_BITS + SIGN_BIT ==
-	                  8 * sizeof(IntegerType),
-	              "INTEGER_BITS and FRACTIONAL_BITS, plus 1 for a sign bit "
+	static_assert(INT_BITS + FRAC_BITS + SIGN_BIT ==
+	                  BITS_PER_BYTE * sizeof(IntegerType),
+	              "INT_BITS and FRAC_BITS, plus 1 for a sign bit "
 	              "if applicable, must sum to the input "
 	              "integer width, but do not.");
-	return static_cast<float>(v) / (1 << FRACTIONAL_BITS);
+	return static_cast<float>(v) / (1 << FRAC_BITS);
 }
 
 static inline uint16_t
@@ -80,7 +81,7 @@ hdk_get_le_uint16(uint8_t *&bufPtr)
 {
 	assert(bufPtr != nullptr);
 	uint16_t ret = static_cast<uint16_t>(*bufPtr) |
-	               (static_cast<uint16_t>(*(bufPtr + 1)) << 8);
+	               (static_cast<uint16_t>(*(bufPtr + 1)) << BITS_PER_BYTE);
 	bufPtr += 2;
 	return ret;
 }
@@ -112,10 +113,13 @@ hdk_device_update_inputs(struct xrt_device *xdev)
 	// Empty
 }
 
+static constexpr uint8_t MSG_LEN_LARGE = 32;
+static constexpr uint8_t MSG_LEN_SMALL = 16;
+
 static int
 hdk_device_update(struct hdk_device *hd)
 {
-	uint8_t buffer[32];
+	uint8_t buffer[MSG_LEN_LARGE];
 
 	auto bytesRead = os_hid_read(hd->dev, buffer, sizeof(buffer), 0);
 	if (bytesRead == -1) {
@@ -130,7 +134,7 @@ hdk_device_update(struct hdk_device *hd)
 		return 0;
 	}
 	while (bytesRead > 0) {
-		if (bytesRead != 32 && bytesRead != 16) {
+		if (bytesRead != MSG_LEN_LARGE && bytesRead != MSG_LEN_SMALL) {
 			HDK_DEBUG(hd, "Only got %d bytes", bytesRead);
 			hd->quat_valid = false;
 			return 1;
@@ -154,10 +158,14 @@ hdk_device_update(struct hdk_device *hd)
 	buf++;
 
 	struct xrt_quat quat;
-	quat.x = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
-	quat.z = fromFixedPoint<1, 14>(hdk_get_le_int16(buf)) * -1;
-	quat.y = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
-	quat.w = fromFixedPoint<1, 14>(hdk_get_le_int16(buf));
+	static constexpr int INT_BITS = 1;
+	static constexpr int FRAC_BITS = 14;
+	quat.x = fromFixedPoint<INT_BITS, FRAC_BITS>(hdk_get_le_int16(buf));
+	quat.z =
+	    fromFixedPoint<INT_BITS, FRAC_BITS>(hdk_get_le_int16(buf)) * -1;
+	quat.y = fromFixedPoint<INT_BITS, FRAC_BITS>(hdk_get_le_int16(buf));
+	quat.w = fromFixedPoint<INT_BITS, FRAC_BITS>(hdk_get_le_int16(buf));
+
 // Used to produce 90 degree rotations
 #define HDK_SIN_PI_OVER_4 0.7071068f
 	struct xrt_quat rot_90_about_x
