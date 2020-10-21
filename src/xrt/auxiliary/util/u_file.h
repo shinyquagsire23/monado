@@ -28,8 +28,14 @@ u_file_get_path_in_config_dir(const char *suffix, char *out_path, size_t out_pat
 FILE *
 u_file_open_file_in_config_dir(const char *filename, const char *mode);
 
+ssize_t
+u_file_get_runtime_dir(char *out_path, size_t out_path_size);
+
 char *
 u_file_read_content(FILE *file);
+
+ssize_t
+u_file_get_path_in_runtime_dir(const char *filename, char *out_path, size_t out_path_size);
 
 #ifdef __cplusplus
 }

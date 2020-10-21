@@ -104,6 +104,30 @@ u_file_open_file_in_config_dir(const char *filename, const char *mode)
 	return fopen(file_str, mode);
 }
 
+ssize_t
+u_file_get_runtime_dir(char *out_path, size_t out_path_size)
+{
+	const char *xgd_rt = getenv("XDG_RUNTIME_DIR");
+	if (xgd_rt != NULL) {
+		return snprintf(out_path, out_path_size, "%s", xgd_rt);
+	}
+
+	const char *tmp = "/tmp";
+	return snprintf(out_path, out_path_size, "%s", tmp);
+}
+
+ssize_t
+u_file_get_path_in_runtime_dir(const char *filename, char *out_path, size_t out_path_size)
+{
+	char tmp[PATH_MAX];
+	ssize_t i = u_file_get_runtime_dir(tmp, sizeof(tmp));
+	if (i <= 0) {
+		return -1;
+	}
+
+	return snprintf(out_path, out_path_size, "%s/%s", tmp, filename);
+}
+
 #endif
 
 char *
