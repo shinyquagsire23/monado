@@ -19,6 +19,8 @@
 #include "xrt/xrt_config_os.h"
 #include "xrt/xrt_compiler.h"
 
+#include "util/u_time.h"
+
 #ifdef XRT_OS_LINUX
 #include <time.h>
 #include <sys/time.h>
@@ -68,8 +70,8 @@ os_nanosleep(long nsec)
 {
 #if defined(XRT_OS_LINUX)
 	struct timespec spec;
-	spec.tv_sec = (nsec / (1000 * 1000 * 1000));
-	spec.tv_nsec = (nsec % (1000 * 1000 * 1000));
+	spec.tv_sec = (nsec / U_1_000_000_000);
+	spec.tv_nsec = (nsec % U_1_000_000_000);
 	nanosleep(&spec, NULL);
 #elif defined(XRT_OS_WINDOWS)
 	Sleep(nsec / 1000);
@@ -85,7 +87,7 @@ static inline uint64_t
 os_timespec_to_ns(struct timespec *spec)
 {
 	uint64_t ns = 0;
-	ns += (uint64_t)spec->tv_sec * 1000 * 1000 * 1000;
+	ns += (uint64_t)spec->tv_sec * U_1_000_000_000;
 	ns += (uint64_t)spec->tv_nsec;
 	return ns;
 }
@@ -97,8 +99,8 @@ os_timespec_to_ns(struct timespec *spec)
 static inline void
 os_ns_to_timespec(uint64_t ns, struct timespec *spec)
 {
-	spec->tv_sec = (ns / (1000 * 1000 * 1000));
-	spec->tv_nsec = (ns % (1000 * 1000 * 1000));
+	spec->tv_sec = (ns / U_1_000_000_000);
+	spec->tv_nsec = (ns % U_1_000_000_000);
 }
 #endif // XRT_HAVE_TIMESPEC
 
@@ -112,8 +114,9 @@ static inline uint64_t
 os_timeval_to_ns(struct timeval *val)
 {
 	uint64_t ns = 0;
-	ns += (uint64_t)val->tv_sec * 1000 * 1000 * 1000;
-	ns += (uint64_t)val->tv_usec * 1000;
+	ns += (uint64_t)val->tv_sec * U_1_000_000_000;
+#define OS_NS_PER_USEC (1000)
+	ns += (uint64_t)val->tv_usec * OS_NS_PER_USEC;
 	return ns;
 }
 #endif // XRT_HAVE_TIMEVAL
