@@ -98,6 +98,10 @@ create_listen_socket(struct ipc_server_mainloop *ml, int *out_fd)
 		    "Or, is the systemd unit monado.socket or "
 		    "monado-dev.socket active?");
 #endif
+		if (errno == EADDRINUSE) {
+			U_LOG_E("If monado-service is not running, delete %s before starting a new instance",
+			        IPC_MSG_SOCK_FILE);
+		}
 		close(fd);
 		return ret;
 	}
