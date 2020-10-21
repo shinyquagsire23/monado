@@ -32,9 +32,6 @@ debug_get_num_option(const char *name, long _default);
 float
 debug_get_float_option(const char *name, float _default);
 
-float
-debug_get_float_option(const char *name, float _default);
-
 enum u_logging_level
 debug_get_log_option(const char *name, enum u_logging_level _default);
 
