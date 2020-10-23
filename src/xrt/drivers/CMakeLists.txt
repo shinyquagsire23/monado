@@ -194,6 +194,19 @@ if (XRT_BUILD_DRIVER_SURVIVE)
 	list(APPEND ENABLED_HEADSET_DRIVERS survive)
 endif()
 
+if(XRT_BUILD_DRIVER_ANDROID)
+	set(ANDROID_SOURCE_FILES
+		android/android_prober.c
+		android/android_prober.h
+		android/android_sensors.c
+		android/android_sensors.h
+		)
+
+	add_library(drv_android STATIC ${ANDROID_SOURCE_FILES})
+	target_link_libraries(drv_android PRIVATE xrt-interfaces aux_util aux_os ${ANDROID_LIBRARY})
+	list(APPEND ENABLED_DRIVERS android)
+endif()
+
 if(ENABLED_HEADSET_DRIVERS)
 	set(ENABLED_DRIVERS ${ENABLED_HEADSET_DRIVERS} ${ENABLED_DRIVERS})
 	list(SORT ENABLED_DRIVERS)

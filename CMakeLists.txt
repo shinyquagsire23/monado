@@ -174,9 +174,11 @@ cmake_dependent_option(XRT_BUILD_DRIVER_NS "Enable North Star driver" ON "XRT_HA
 # This one defaults to off, even if we find the deps.
 cmake_dependent_option(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" OFF "SURVIVE_FOUND" OFF)
 
+cmake_dependent_option(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" ON "ANDROID" OFF)
+
 # You can set this from a superproject to add a driver
 # All drivers must be listed in here to be included in the generated header!
-list(APPEND AVAILABLE_DRIVERS ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM REMOTE SURVIVE)
+list(APPEND AVAILABLE_DRIVERS "ANDROID" ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM REMOTE SURVIVE)
 
 
 # Package name needs to be known by the native code itself.
@@ -280,6 +282,7 @@ message(STATUS "#    FEATURE_OPENXR_LAYER_CYLINDER:        ${XRT_FEATURE_OPENXR_
 message(STATUS "#    FEATURE_OPENXR_LAYER_EQUIRECT:        ${XRT_FEATURE_OPENXR_LAYER_EQUIRECT}")
 message(STATUS "#    FEATURE_OPENXR_LAYER_EQUIRECT_LEGACY: ${XRT_FEATURE_OPENXR_LAYER_EQUIRECT_LEGACY}")
 message(STATUS "#")
+message(STATUS "#    DRIVER_ANDROID:  ${XRT_BUILD_DRIVER_ANDROID}")
 message(STATUS "#    DRIVER_ARDUINO:  ${XRT_BUILD_DRIVER_ARDUINO}")
 message(STATUS "#    DRIVER_DAYDREAM: ${XRT_BUILD_DRIVER_DAYDREAM}")
 message(STATUS "#    DRIVER_DUMMY:    ${XRT_BUILD_DRIVER_DUMMY}")

@@ -76,6 +76,10 @@ if(XRT_BUILD_DRIVER_SURVIVE)
 	target_link_libraries(target_lists PRIVATE drv_survive)
 endif()
 
+if(XRT_BUILD_DRIVER_ANDROID)
+	target_link_libraries(target_lists PRIVATE drv_android)
+endif()
+
 ####
 # Instance
 #
