@@ -129,6 +129,9 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 		    U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
 		sc->images[i].array_size = info->array_size;
 
+		vk_create_sampler(&c->vk, VK_SAMPLER_ADDRESS_MODE_REPEAT,
+		                  &sc->images[i].repeat_sampler);
+
 		vk_create_sampler(&c->vk, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 		                  &sc->images[i].sampler);
 
