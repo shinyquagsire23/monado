@@ -1326,7 +1326,7 @@ handle_space(struct oxr_logger *log,
 
 		struct oxr_action_input *input = NULL;
 
-		oxr_action_get_pose_input(log, sess, spc->act_key, &spc->sub_paths, &input);
+		oxr_action_get_pose_input(log, sess, spc->act_key, &spc->subaction_paths, &input);
 
 		// If the input isn't active.
 		if (input == NULL) {
@@ -2182,7 +2182,7 @@ oxr_session_hand_joints(struct oxr_logger *log,
 			// action space
 
 			struct oxr_action_input *input = NULL;
-			oxr_action_get_pose_input(log, sess, baseSpc->act_key, &baseSpc->sub_paths, &input);
+			oxr_action_get_pose_input(log, sess, baseSpc->act_key, &baseSpc->subaction_paths, &input);
 
 			// If the input isn't active.
 			if (input == NULL) {

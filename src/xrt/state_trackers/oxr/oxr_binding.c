@@ -99,7 +99,7 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 		struct binding_template *t = &templ->bindings[x];
 		struct oxr_binding *b = &p->bindings[x];
 
-		b->sub_path = t->sub_path;
+		b->subaction_path = t->subaction_path;
 		b->localized_name = t->localized_name;
 		setup_paths(log, inst, t, b);
 		b->input = t->input;
@@ -174,10 +174,10 @@ add_string(char *temp, size_t max, ssize_t *current, const char *str)
 }
 
 static bool
-get_sub_path_from_path(struct oxr_logger *log,
-                       struct oxr_instance *inst,
-                       XrPath path,
-                       enum oxr_sub_action_path *out_sub_path)
+get_subaction_path_from_path(struct oxr_logger *log,
+                             struct oxr_instance *inst,
+                             XrPath path,
+                             enum oxr_subaction_path *out_subaction_path)
 {
 	const char *str = NULL;
 	size_t length = 0;
@@ -189,19 +189,19 @@ get_sub_path_from_path(struct oxr_logger *log,
 	}
 
 	if (length >= 10 && strncmp("/user/head", str, 10) == 0) {
-		*out_sub_path = OXR_SUB_ACTION_PATH_HEAD;
+		*out_subaction_path = OXR_SUB_ACTION_PATH_HEAD;
 		return true;
 	}
 	if (length >= 15 && strncmp("/user/hand/left", str, 15) == 0) {
-		*out_sub_path = OXR_SUB_ACTION_PATH_LEFT;
+		*out_subaction_path = OXR_SUB_ACTION_PATH_LEFT;
 		return true;
 	}
 	if (length >= 16 && strncmp("/user/hand/right", str, 16) == 0) {
-		*out_sub_path = OXR_SUB_ACTION_PATH_RIGHT;
+		*out_subaction_path = OXR_SUB_ACTION_PATH_RIGHT;
 		return true;
 	}
 	if (length >= 13 && strncmp("/user/gamepad", str, 13) == 0) {
-		*out_sub_path = OXR_SUB_ACTION_PATH_GAMEPAD;
+		*out_subaction_path = OXR_SUB_ACTION_PATH_GAMEPAD;
 		return true;
 	}
 
@@ -209,9 +209,9 @@ get_sub_path_from_path(struct oxr_logger *log,
 }
 
 static const char *
-get_sub_path_str(enum oxr_sub_action_path sub_path)
+get_subaction_path_str(enum oxr_subaction_path subaction_path)
 {
-	switch (sub_path) {
+	switch (subaction_path) {
 	case OXR_SUB_ACTION_PATH_HEAD: return "Head";
 	case OXR_SUB_ACTION_PATH_LEFT: return "Left";
 	case OXR_SUB_ACTION_PATH_RIGHT: return "Right";
@@ -221,9 +221,9 @@ get_sub_path_str(enum oxr_sub_action_path sub_path)
 }
 
 static XrPath
-get_interaction_bound_to_sub_path(struct oxr_session *sess, enum oxr_sub_action_path sub_path)
+get_interaction_bound_to_sub_path(struct oxr_session *sess, enum oxr_subaction_path subaction_path)
 {
-	switch (sub_path) {
+	switch (subaction_path) {
 #define OXR_PATH_MEMBER(lower, CAP, _)                                                                                 \
 	case OXR_SUB_ACTION_PATH_##CAP: return sess->lower;
 
@@ -450,20 +450,20 @@ oxr_action_get_input_source_localized_name(struct oxr_logger *log,
 {
 	char temp[1024] = {0};
 	ssize_t current = 0;
-	enum oxr_sub_action_path sub_path = 0;
+	enum oxr_subaction_path subaction_path = 0;
 
-	if (!get_sub_path_from_path(log, sess->sys->inst, getInfo->sourcePath, &sub_path)) {
+	if (!get_subaction_path_from_path(log, sess->sys->inst, getInfo->sourcePath, &subaction_path)) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(getInfo->sourcePath) doesn't start with a "
-		                 "valid sub_path");
+		                 "valid subaction_path");
 	}
 
-	// Get the interaction profile bound to this sub_path.
-	XrPath path = get_interaction_bound_to_sub_path(sess, sub_path);
+	// Get the interaction profile bound to this subaction_path.
+	XrPath path = get_interaction_bound_to_sub_path(sess, subaction_path);
 	if (path == XR_NULL_PATH) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(getInfo->sourcePath) no interaction profile "
-		                 "bound to sub path");
+		                 "bound to subaction path");
 	}
 
 	// Find the interaction profile.
@@ -475,7 +475,7 @@ oxr_action_get_input_source_localized_name(struct oxr_logger *log,
 
 	// Add which hand to use.
 	if (getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT) {
-		add_string(temp, sizeof(temp), &current, get_sub_path_str(sub_path));
+		add_string(temp, sizeof(temp), &current, get_subaction_path_str(subaction_path));
 	}
 
 	// Add a human readable and localized name of the device.

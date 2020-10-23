@@ -242,12 +242,12 @@ oxr_verify_full_path(struct oxr_logger *log, const char *path, size_t length, co
 static XrResult
 subaction_path_no_dups(struct oxr_logger *log,
                        struct oxr_instance *inst,
-                       struct oxr_sub_paths *sub_paths,
+                       struct oxr_subaction_paths *subaction_paths,
                        XrPath path,
                        const char *variable,
                        uint32_t index)
 {
-	assert(sub_paths);
+	assert(subaction_paths);
 	bool duplicate = false;
 
 	if (path == XR_NULL_PATH) {
@@ -259,10 +259,10 @@ subaction_path_no_dups(struct oxr_logger *log,
 
 #define HANDLE_SUBACTION_PATH(X)                                                                                       \
 	if (path == inst->path_cache.X) {                                                                              \
-		if (sub_paths->X) {                                                                                    \
+		if (subaction_paths->X) {                                                                              \
 			duplicate = true;                                                                              \
 		} else {                                                                                               \
-			sub_paths->X = true;                                                                           \
+			subaction_paths->X = true;                                                                     \
 		}                                                                                                      \
 	} else
 
@@ -301,12 +301,12 @@ oxr_verify_subaction_paths_create(struct oxr_logger *log,
                                   const XrPath *subactionPaths,
                                   const char *variable)
 {
-	struct oxr_sub_paths sub_paths = {0};
+	struct oxr_subaction_paths subaction_paths = {0};
 
 	for (uint32_t i = 0; i < countSubactionPaths; i++) {
 		XrPath path = subactionPaths[i];
 
-		XrResult ret = subaction_path_no_dups(log, inst, &sub_paths, path, variable, i);
+		XrResult ret = subaction_path_no_dups(log, inst, &subaction_paths, path, variable, i);
 		if (ret != XR_SUCCESS) {
 			return ret;
 		}
@@ -344,20 +344,20 @@ XrResult
 oxr_verify_subaction_path_get(struct oxr_logger *log,
                               struct oxr_instance *inst,
                               XrPath path,
-                              const struct oxr_sub_paths *act_sub_paths,
-                              struct oxr_sub_paths *out_sub_paths,
+                              const struct oxr_subaction_paths *act_subaction_paths,
+                              struct oxr_subaction_paths *out_subaction_paths,
                               const char *variable)
 {
-	struct oxr_sub_paths sub_paths = {0};
+	struct oxr_subaction_paths subaction_paths = {0};
 
 #define GET_PATH(X)                                                                                                    \
 	else if (path == inst->path_cache.X)                                                                           \
 	{                                                                                                              \
-		sub_paths.X = true;                                                                                    \
+		subaction_paths.X = true;                                                                              \
 	}
 
 	if (path == XR_NULL_PATH) {
-		sub_paths.any = true;
+		subaction_paths.any = true;
 	}
 	OXR_FOR_EACH_SUBACTION_PATH(GET_PATH) else
 	{
@@ -374,7 +374,7 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
 
 	bool fail = false;
 #define CHECK_CREATION_TIME(X)                                                                                         \
-	if (sub_paths.X && !act_sub_paths->X) {                                                                        \
+	if (subaction_paths.X && !act_subaction_paths->X) {                                                            \
 		fail = true;                                                                                           \
 	}
 
@@ -393,7 +393,7 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
 		                 variable, str);
 	}
 
-	*out_sub_paths = sub_paths;
+	*out_subaction_paths = subaction_paths;
 
 	return XR_SUCCESS;
 }

@@ -234,8 +234,8 @@ XrResult
 oxr_verify_subaction_path_get(struct oxr_logger *log,
                               struct oxr_instance *inst,
                               XrPath path,
-                              const struct oxr_sub_paths *act_sub_paths,
-                              struct oxr_sub_paths *out_sub_paths,
+                              const struct oxr_subaction_paths *act_subaction_paths,
+                              struct oxr_subaction_paths *out_subaction_paths,
                               const char *variable);
 
 XrResult

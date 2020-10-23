@@ -417,7 +417,7 @@ oxr_xrGetActionStateBoolean(XrSession session, const XrActionStateGetInfo *getIn
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
-	struct oxr_sub_paths sub_paths = {0};
+	struct oxr_subaction_paths subaction_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetActionStateBoolean");
@@ -429,13 +429,13 @@ oxr_xrGetActionStateBoolean(XrSession session, const XrActionStateGetInfo *getIn
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with boolean type");
 	}
 
-	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath, &act->data->sub_paths,
-	                                    &sub_paths, "getInfo->subactionPath");
+	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath,
+	                                    &act->data->subaction_paths, &subaction_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 
-	return oxr_action_get_boolean(&log, sess, act->act_key, sub_paths, data);
+	return oxr_action_get_boolean(&log, sess, act->act_key, subaction_paths, data);
 }
 
 XrResult
@@ -443,7 +443,7 @@ oxr_xrGetActionStateFloat(XrSession session, const XrActionStateGetInfo *getInfo
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
-	struct oxr_sub_paths sub_paths = {0};
+	struct oxr_subaction_paths subaction_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetActionStateFloat");
@@ -455,13 +455,13 @@ oxr_xrGetActionStateFloat(XrSession session, const XrActionStateGetInfo *getInfo
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with float type");
 	}
 
-	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath, &act->data->sub_paths,
-	                                    &sub_paths, "getInfo->subactionPath");
+	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath,
+	                                    &act->data->subaction_paths, &subaction_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 
-	return oxr_action_get_vector1f(&log, sess, act->act_key, sub_paths, data);
+	return oxr_action_get_vector1f(&log, sess, act->act_key, subaction_paths, data);
 }
 
 XrResult
@@ -469,7 +469,7 @@ oxr_xrGetActionStateVector2f(XrSession session, const XrActionStateGetInfo *getI
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
-	struct oxr_sub_paths sub_paths = {0};
+	struct oxr_subaction_paths subaction_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetActionStateVector2f");
@@ -481,13 +481,13 @@ oxr_xrGetActionStateVector2f(XrSession session, const XrActionStateGetInfo *getI
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with float[2] type");
 	}
 
-	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath, &act->data->sub_paths,
-	                                    &sub_paths, "getInfo->subactionPath");
+	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath,
+	                                    &act->data->subaction_paths, &subaction_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 
-	return oxr_action_get_vector2f(&log, sess, act->act_key, sub_paths, data);
+	return oxr_action_get_vector2f(&log, sess, act->act_key, subaction_paths, data);
 }
 
 XrResult
@@ -495,7 +495,7 @@ oxr_xrGetActionStatePose(XrSession session, const XrActionStateGetInfo *getInfo,
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
-	struct oxr_sub_paths sub_paths = {0};
+	struct oxr_subaction_paths subaction_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetActionStatePose");
@@ -507,13 +507,13 @@ oxr_xrGetActionStatePose(XrSession session, const XrActionStateGetInfo *getInfo,
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with pose type");
 	}
 
-	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath, &act->data->sub_paths,
-	                                    &sub_paths, "getInfo->subactionPath");
+	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath,
+	                                    &act->data->subaction_paths, &subaction_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 
-	return oxr_action_get_pose(&log, sess, act->act_key, sub_paths, data);
+	return oxr_action_get_pose(&log, sess, act->act_key, subaction_paths, data);
 }
 
 XrResult
@@ -554,7 +554,7 @@ oxr_xrApplyHapticFeedback(XrSession session,
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
-	struct oxr_sub_paths sub_paths = {0};
+	struct oxr_subaction_paths subaction_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrApplyHapticFeedback");
@@ -563,7 +563,7 @@ oxr_xrApplyHapticFeedback(XrSession session,
 	OXR_VERIFY_ACTION_NOT_NULL(&log, hapticActionInfo->action, act);
 
 	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, hapticActionInfo->subactionPath,
-	                                    &act->data->sub_paths, &sub_paths, "getInfo->subactionPath");
+	                                    &act->data->subaction_paths, &subaction_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
@@ -572,7 +572,7 @@ oxr_xrApplyHapticFeedback(XrSession session,
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with output vibration type");
 	}
 
-	return oxr_action_apply_haptic_feedback(&log, sess, act->act_key, sub_paths, hapticEvent);
+	return oxr_action_apply_haptic_feedback(&log, sess, act->act_key, subaction_paths, hapticEvent);
 }
 
 XrResult
@@ -580,7 +580,7 @@ oxr_xrStopHapticFeedback(XrSession session, const XrHapticActionInfo *hapticActi
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
-	struct oxr_sub_paths sub_paths = {0};
+	struct oxr_subaction_paths subaction_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrStopHapticFeedback");
@@ -588,7 +588,7 @@ oxr_xrStopHapticFeedback(XrSession session, const XrHapticActionInfo *hapticActi
 	OXR_VERIFY_ACTION_NOT_NULL(&log, hapticActionInfo->action, act);
 
 	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, hapticActionInfo->subactionPath,
-	                                    &act->data->sub_paths, &sub_paths, "getInfo->subactionPath");
+	                                    &act->data->subaction_paths, &subaction_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
@@ -597,5 +597,5 @@ oxr_xrStopHapticFeedback(XrSession session, const XrHapticActionInfo *hapticActi
 		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with output vibration type");
 	}
 
-	return oxr_action_stop_haptic_feedback(&log, sess, act->act_key, sub_paths);
+	return oxr_action_stop_haptic_feedback(&log, sess, act->act_key, subaction_paths);
 }

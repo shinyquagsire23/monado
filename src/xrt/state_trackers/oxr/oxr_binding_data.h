@@ -12,7 +12,7 @@
 
 struct binding_template
 {
-	enum oxr_sub_action_path sub_path;
+	enum oxr_subaction_path subaction_path;
 
 	const char *localized_name;
 
@@ -42,7 +42,7 @@ struct profile_template
 
 #define MAKE_INPUT(COMPONENT, NAME, SUFFIX, INPUT)                                                                     \
 	{                                                                                                              \
-	    .sub_path = OXR_SUB_ACTION_PATH_LEFT,                                                                      \
+	    .subaction_path = OXR_SUB_ACTION_PATH_LEFT,                                                                \
 	    .localized_name = NAME,                                                                                    \
 	    .paths =                                                                                                   \
 	        {                                                                                                      \
@@ -53,7 +53,7 @@ struct profile_template
 	    .input = INPUT,                                                                                            \
 	},                                                                                                             \
 	    {                                                                                                          \
-	        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,                                                                 \
+	        .subaction_path = OXR_SUB_ACTION_PATH_RIGHT,                                                           \
 	        .localized_name = NAME,                                                                                \
 	        .paths =                                                                                               \
 	            {                                                                                                  \
@@ -68,7 +68,7 @@ struct profile_template
 // e.g. don't bind ../trackpad/click, ../trackpad/touch with just ../trackpad
 #define MAKE_INPUT_SUFFIX_ONLY(COMPONENT, NAME, SUFFIX, INPUT)                                                         \
 	{                                                                                                              \
-	    .sub_path = OXR_SUB_ACTION_PATH_LEFT,                                                                      \
+	    .subaction_path = OXR_SUB_ACTION_PATH_LEFT,                                                                \
 	    .localized_name = NAME,                                                                                    \
 	    .paths =                                                                                                   \
 	        {                                                                                                      \
@@ -78,7 +78,7 @@ struct profile_template
 	    .input = INPUT,                                                                                            \
 	},                                                                                                             \
 	    {                                                                                                          \
-	        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,                                                                 \
+	        .subaction_path = OXR_SUB_ACTION_PATH_RIGHT,                                                           \
 	        .localized_name = NAME,                                                                                \
 	        .paths =                                                                                               \
 	            {                                                                                                  \
@@ -91,7 +91,7 @@ struct profile_template
 // creates an input with a top level path and /x and /y sub paths
 #define MAKE_INPUT_VEC2F(COMPONENT, NAME, INPUT)                                                                       \
 	{                                                                                                              \
-	    .sub_path = OXR_SUB_ACTION_PATH_LEFT,                                                                      \
+	    .subaction_path = OXR_SUB_ACTION_PATH_LEFT,                                                                \
 	    .localized_name = NAME,                                                                                    \
 	    .paths =                                                                                                   \
 	        {                                                                                                      \
@@ -103,7 +103,7 @@ struct profile_template
 	    .input = INPUT,                                                                                            \
 	},                                                                                                             \
 	    {                                                                                                          \
-	        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,                                                                 \
+	        .subaction_path = OXR_SUB_ACTION_PATH_RIGHT,                                                           \
 	        .localized_name = NAME,                                                                                \
 	        .paths =                                                                                               \
 	            {                                                                                                  \
@@ -117,7 +117,7 @@ struct profile_template
 
 #define MAKE_OUTPUT(COMPONENT, NAME, OUTPUT)                                                                           \
 	{                                                                                                              \
-	    .sub_path = OXR_SUB_ACTION_PATH_LEFT,                                                                      \
+	    .subaction_path = OXR_SUB_ACTION_PATH_LEFT,                                                                \
 	    .localized_name = NAME,                                                                                    \
 	    .paths =                                                                                                   \
 	        {                                                                                                      \
@@ -127,7 +127,7 @@ struct profile_template
 	    .output = OUTPUT,                                                                                          \
 	},                                                                                                             \
 	    {                                                                                                          \
-	        .sub_path = OXR_SUB_ACTION_PATH_RIGHT,                                                                 \
+	        .subaction_path = OXR_SUB_ACTION_PATH_RIGHT,                                                           \
 	        .localized_name = NAME,                                                                                \
 	        .paths =                                                                                               \
 	            {                                                                                                  \

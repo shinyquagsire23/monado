@@ -105,7 +105,7 @@ struct oxr_action_set;
 struct oxr_action;
 struct oxr_debug_messenger;
 struct oxr_handle_base;
-struct oxr_sub_paths;
+struct oxr_subaction_paths;
 struct oxr_action_attachment;
 struct oxr_action_set_attachment;
 struct oxr_action_input;
@@ -147,7 +147,7 @@ enum oxr_handle_state
 /*!
  * Sub action paths.
  */
-enum oxr_sub_action_path
+enum oxr_subaction_path
 {
 	OXR_SUB_ACTION_PATH_USER,
 	OXR_SUB_ACTION_PATH_HEAD,
@@ -359,10 +359,10 @@ oxr_action_to_openxr(struct oxr_action *act)
  */
 
 /*!
- * Helper function to classify sub_paths.
+ * Helper function to classify subaction_paths.
  *
- * Sets all members of @p sub_paths ( @ref oxr_sub_paths ) as appropriate based
- * on the subaction paths found in the list.
+ * Sets all members of @p subaction_paths ( @ref oxr_subaction_paths ) as
+ * appropriate based on the subaction paths found in the list.
  *
  * If no paths are provided, @p sub_paths->any will be true.
  *
@@ -376,10 +376,10 @@ oxr_classify_sub_action_paths(struct oxr_logger *log,
                               struct oxr_instance *inst,
                               uint32_t num_subaction_paths,
                               const XrPath *subaction_paths,
-                              struct oxr_sub_paths *sub_paths);
+                              struct oxr_subaction_paths *subaction_paths_out);
 
 /*!
- * Find the pose input for the set of sub_paths
+ * Find the pose input for the set of subaction_paths
  *
  * @public @memberof oxr_session
  */
@@ -387,7 +387,7 @@ XrResult
 oxr_action_get_pose_input(struct oxr_logger *log,
                           struct oxr_session *sess,
                           uint32_t act_key,
-                          const struct oxr_sub_paths *sub_paths,
+                          const struct oxr_subaction_paths *subaction_paths_ptr,
                           struct oxr_action_input **out_input);
 
 /*!
@@ -444,7 +444,7 @@ XrResult
 oxr_action_get_boolean(struct oxr_logger *log,
                        struct oxr_session *sess,
                        uint32_t act_key,
-                       struct oxr_sub_paths sub_paths,
+                       struct oxr_subaction_paths subaction_paths,
                        XrActionStateBoolean *data);
 
 /*!
@@ -454,7 +454,7 @@ XrResult
 oxr_action_get_vector1f(struct oxr_logger *log,
                         struct oxr_session *sess,
                         uint32_t act_key,
-                        struct oxr_sub_paths sub_paths,
+                        struct oxr_subaction_paths subaction_paths,
                         XrActionStateFloat *data);
 
 /*!
@@ -464,7 +464,7 @@ XrResult
 oxr_action_get_vector2f(struct oxr_logger *log,
                         struct oxr_session *sess,
                         uint32_t act_key,
-                        struct oxr_sub_paths sub_paths,
+                        struct oxr_subaction_paths subaction_paths,
                         XrActionStateVector2f *data);
 /*!
  * @public @memberof oxr_session
@@ -473,7 +473,7 @@ XrResult
 oxr_action_get_pose(struct oxr_logger *log,
                     struct oxr_session *sess,
                     uint32_t act_key,
-                    struct oxr_sub_paths sub_paths,
+                    struct oxr_subaction_paths subaction_paths,
                     XrActionStatePose *data);
 /*!
  * @public @memberof oxr_session
@@ -482,7 +482,7 @@ XrResult
 oxr_action_apply_haptic_feedback(struct oxr_logger *log,
                                  struct oxr_session *sess,
                                  uint32_t act_key,
-                                 struct oxr_sub_paths sub_paths,
+                                 struct oxr_subaction_paths subaction_paths,
                                  const XrHapticBaseHeader *hapticEvent);
 /*!
  * @public @memberof oxr_session
@@ -491,7 +491,7 @@ XrResult
 oxr_action_stop_haptic_feedback(struct oxr_logger *log,
                                 struct oxr_session *sess,
                                 uint32_t act_key,
-                                struct oxr_sub_paths sub_paths);
+                                struct oxr_subaction_paths subaction_paths);
 
 /*!
  * @public @memberof oxr_instance
@@ -1372,7 +1372,7 @@ struct oxr_binding
 	//! Name presented to the user.
 	const char *localized_name;
 
-	enum oxr_sub_action_path sub_path;
+	enum oxr_subaction_path subaction_path;
 
 	size_t num_keys;
 	uint32_t *keys;
@@ -1418,7 +1418,7 @@ struct oxr_binding
  * @ingroup oxr_main
  * @ingroup oxr_input
  */
-struct oxr_sub_paths
+struct oxr_subaction_paths
 {
 	bool any;
 #define OXR_SUBPATH_MEMBER(X) bool X;
@@ -1451,7 +1451,7 @@ struct oxr_action_set_attachment
 	uint32_t act_set_key;
 
 	//! Which sub-action paths are requested on the latest sync.
-	struct oxr_sub_paths requested_sub_paths;
+	struct oxr_subaction_paths requested_subaction_paths;
 
 	//! An array of action attachments we own.
 	struct oxr_action_attachment *act_attachments;
@@ -1589,10 +1589,11 @@ struct oxr_action_attachment
 
 
 	/*!
-	 * For pose actions any sub paths are special treated, at bind time we
-	 * pick one sub path and stick to it as long as the action lives.
+	 * For pose actions any subactoin paths are special treated, at bind
+	 * time we pick one subaction path and stick to it as long as the action
+	 * lives.
 	 */
-	struct oxr_sub_paths any_pose_sub_path;
+	struct oxr_subaction_paths any_pose_subaction_path;
 
 	struct oxr_action_state any_state;
 
@@ -1635,7 +1636,7 @@ struct oxr_space
 	bool is_reference;
 
 	//! Which sub action path is this?
-	struct oxr_sub_paths sub_paths;
+	struct oxr_subaction_paths subaction_paths;
 };
 
 /*!
@@ -1839,7 +1840,7 @@ struct oxr_action_ref
 	XrActionType action_type;
 
 	//! Which sub action paths that this action was created with.
-	struct oxr_sub_paths sub_paths;
+	struct oxr_subaction_paths subaction_paths;
 };
 
 /*!

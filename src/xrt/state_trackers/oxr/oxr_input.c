@@ -52,7 +52,7 @@ oxr_action_cache_update(struct oxr_logger *log,
                         struct oxr_action_attachment *act_attached,
                         struct oxr_action_cache *cache,
                         int64_t time,
-                        struct oxr_sub_paths *sub_path,
+                        struct oxr_subaction_paths *subaction_path,
                         bool select);
 
 static void
@@ -62,7 +62,7 @@ oxr_action_attachment_update(struct oxr_logger *log,
                              const XrActiveActionSet *actionSets,
                              struct oxr_action_attachment *act_attached,
                              int64_t time,
-                             struct oxr_sub_paths sub_paths);
+                             struct oxr_subaction_paths subaction_paths);
 
 static void
 oxr_action_bind_io(struct oxr_logger *log,
@@ -71,7 +71,7 @@ oxr_action_bind_io(struct oxr_logger *log,
                    struct oxr_action *act,
                    struct oxr_action_cache *cache,
                    struct oxr_interaction_profile *profile,
-                   enum oxr_sub_action_path sub_path);
+                   enum oxr_subaction_path subaction_path);
 
 /*
  *
@@ -325,13 +325,13 @@ oxr_action_create(struct oxr_logger *log,
                   struct oxr_action **out_act)
 {
 	struct oxr_instance *inst = act_set->inst;
-	struct oxr_sub_paths sub_paths = {0};
+	struct oxr_subaction_paths subaction_paths = {0};
 
 	// Mod music for all!
 	static uint32_t key_gen = 1;
 
 	if (!oxr_classify_sub_action_paths(log, inst, createInfo->countSubactionPaths, createInfo->subactionPaths,
-	                                   &sub_paths)) {
+	                                   &subaction_paths)) {
 		return XR_ERROR_PATH_UNSUPPORTED;
 	}
 
@@ -348,7 +348,7 @@ oxr_action_create(struct oxr_logger *log,
 	act->act_key = act_ref->act_key;
 
 	act->act_set = act_set;
-	act_ref->sub_paths = sub_paths;
+	act_ref->subaction_paths = subaction_paths;
 	act_ref->action_type = createInfo->actionType;
 
 	strncpy(act_ref->name, createInfo->actionName, sizeof(act_ref->name));
@@ -374,17 +374,17 @@ oxr_classify_sub_action_paths(struct oxr_logger *log,
                               struct oxr_instance *inst,
                               uint32_t num_subaction_paths,
                               const XrPath *subaction_paths,
-                              struct oxr_sub_paths *sub_paths)
+                              struct oxr_subaction_paths *subaction_paths_out)
 {
 	const char *str = NULL;
 	size_t length = 0;
 	bool ret = true;
 
-	// Reset the sub_paths completely.
-	U_ZERO(sub_paths);
+	// Reset the subaction_paths completely.
+	U_ZERO(subaction_paths_out);
 
 	if (num_subaction_paths == 0) {
-		sub_paths->any = true;
+		subaction_paths_out->any = true;
 		return ret;
 	}
 
@@ -394,12 +394,12 @@ oxr_classify_sub_action_paths(struct oxr_logger *log,
 #define IDENTIFY_PATH(X)                                                                                               \
 	else if (path == inst->path_cache.X)                                                                           \
 	{                                                                                                              \
-		sub_paths->X = true;                                                                                   \
+		subaction_paths_out->X = true;                                                                         \
 	}
 
 
 		if (path == XR_NULL_PATH) {
-			sub_paths->any = true;
+			subaction_paths_out->any = true;
 		}
 		OXR_FOR_EACH_VALID_SUBACTION_PATH(IDENTIFY_PATH) else
 		{
@@ -417,7 +417,7 @@ XrResult
 oxr_action_get_pose_input(struct oxr_logger *log,
                           struct oxr_session *sess,
                           uint32_t act_key,
-                          const struct oxr_sub_paths *sub_paths_ptr,
+                          const struct oxr_subaction_paths *subaction_paths_ptr,
                           struct oxr_action_input **out_input)
 {
 	struct oxr_action_attachment *act_attached = NULL;
@@ -428,14 +428,14 @@ oxr_action_get_pose_input(struct oxr_logger *log,
 		return XR_SUCCESS;
 	}
 
-	struct oxr_sub_paths sub_paths = *sub_paths_ptr;
-	if (sub_paths.any) {
-		sub_paths = act_attached->any_pose_sub_path;
+	struct oxr_subaction_paths subaction_paths = *subaction_paths_ptr;
+	if (subaction_paths.any) {
+		subaction_paths = act_attached->any_pose_subaction_path;
 	}
 
 	// Priority of inputs.
 #define GET_POSE_INPUT(X)                                                                                              \
-	if (act_attached->X.current.active && sub_paths.X) {                                                           \
+	if (act_attached->X.current.active && subaction_paths.X) {                                                     \
 		*out_input = act_attached->X.inputs;                                                                   \
 		return XR_SUCCESS;                                                                                     \
 	}
@@ -602,7 +602,7 @@ get_binding(struct oxr_logger *log,
             struct oxr_session *sess,
             struct oxr_action *act,
             struct oxr_interaction_profile *profile,
-            enum oxr_sub_action_path sub_path,
+            enum oxr_subaction_path subaction_path,
             struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION],
             uint32_t *num_inputs,
             struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION],
@@ -616,7 +616,7 @@ get_binding(struct oxr_logger *log,
 
 	//! @todo This probably falls on its head if the application doesn't use
 	//! sub action paths.
-	switch (sub_path) {
+	switch (subaction_path) {
 #define PATH_CASE(NAME, NAMECAPS, PATH)                                                                                \
 	case OXR_SUB_ACTION_PATH_##NAMECAPS:                                                                           \
 		user_path_str = PATH;                                                                                  \
@@ -680,7 +680,7 @@ get_binding(struct oxr_logger *log,
 		oxr_path_get_string(log, sess->sys->inst, matched_path, &str, &length);
 		oxr_slog(slog, "\t\t\tBinding: %s\n", str);
 
-		if (binding_point->sub_path != sub_path) {
+		if (binding_point->subaction_path != subaction_path) {
 			oxr_slog(slog, "\t\t\t\tRejected! (SUB PATH)\n");
 			continue;
 		}
@@ -737,7 +737,7 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 	// Start logging into a single buffer.
 	oxr_slog(&slog, ": Binding %s/%s\n", act->act_set->data->name, act_ref->name);
 
-	if (act_ref->sub_paths.user || act_ref->sub_paths.any) {
+	if (act_ref->subaction_paths.user || act_ref->subaction_paths.any) {
 #if 0
 		oxr_action_bind_io(log, &slog, sess, act, &act_attached->user,
 		                   user, OXR_SUB_ACTION_PATH_USER);
@@ -745,7 +745,7 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 	}
 
 #define BIND_SUBACTION(NAME, NAME_CAPS, PATH)                                                                          \
-	if (act_ref->sub_paths.NAME || act_ref->sub_paths.any) {                                                       \
+	if (act_ref->subaction_paths.NAME || act_ref->subaction_paths.any) {                                           \
 		oxr_action_bind_io(log, &slog, sess, act, &act_attached->NAME, profiles->NAME,                         \
 		                   OXR_SUB_ACTION_PATH_##NAME_CAPS);                                                   \
 	}
@@ -760,8 +760,8 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 	if (act_ref->action_type == XR_ACTION_TYPE_POSE_INPUT) {
 
 #define POSE_ANY(NAME)                                                                                                 \
-	if ((act_ref->sub_paths.NAME || act_ref->sub_paths.any) && act_attached->NAME.num_inputs > 0) {                \
-		act_attached->any_pose_sub_path.NAME = true;                                                           \
+	if ((act_ref->subaction_paths.NAME || act_ref->subaction_paths.any) && act_attached->NAME.num_inputs > 0) {    \
+		act_attached->any_pose_subaction_path.NAME = true;                                                     \
 		oxr_slog(&slog, "\tFor: <any>\n\t\tBinding any pose to " #NAME ".\n");                                 \
 	} else
 		OXR_FOR_EACH_VALID_SUBACTION_PATH(POSE_ANY)
@@ -833,7 +833,7 @@ static bool
 oxr_input_supressed(struct oxr_session *sess,
                     uint32_t countActionSets,
                     const XrActiveActionSet *actionSets,
-                    struct oxr_sub_paths *sub_path,
+                    struct oxr_subaction_paths *subaction_path,
                     struct oxr_action_attachment *act_attached,
                     struct oxr_action_input *action_input)
 {
@@ -862,19 +862,21 @@ oxr_input_supressed(struct oxr_session *sess,
 			continue;
 		}
 
-		/* Currently updated input source with subpath X can be
+		/* Currently updated input source with subactionpath X can be
 		 * suppressed, if input source also occurs in action set with
 		 * higher priority if
-		 * - high prio set syncs w/ ANY subpath or
-		 * - high prio set syncs w/ subpath matching this input subpath
+		 * - high prio set syncs w/ ANY subactionpath or
+		 * - high prio set syncs w/ subactionpath matching this input
+		 *   subactionpath
 		 */
-		bool relevant_subpath = other_act_set_attached->requested_sub_paths.any;
+		bool relevant_subactionpath = other_act_set_attached->requested_subaction_paths.any;
 
-#define ACCUMULATE_PATHS(X) relevant_subpath |= (other_act_set_attached->requested_sub_paths.X && sub_path->X);
+#define ACCUMULATE_PATHS(X)                                                                                            \
+	relevant_subactionpath |= (other_act_set_attached->requested_subaction_paths.X && subaction_path->X);
 		OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_PATHS)
 #undef ACCUMULATE_PATHS
 
-		if (!relevant_subpath) {
+		if (!relevant_subactionpath) {
 			continue;
 		}
 
@@ -891,7 +893,7 @@ oxr_input_combine_input(struct oxr_session *sess,
                         uint32_t countActionSets,
                         const XrActiveActionSet *actionSets,
                         struct oxr_action_attachment *act_attached,
-                        struct oxr_sub_paths *sub_path,
+                        struct oxr_subaction_paths *subaction_path,
                         struct oxr_action_cache *cache,
                         struct oxr_input_value_tagged *out_input,
                         int64_t *timestamp,
@@ -915,7 +917,8 @@ oxr_input_combine_input(struct oxr_session *sess,
 
 		// suppress input if it is also bound to action in set with
 		// higher priority
-		if (oxr_input_supressed(sess, countActionSets, actionSets, sub_path, act_attached, action_input)) {
+		if (oxr_input_supressed(sess, countActionSets, actionSets, subaction_path, act_attached,
+		                        action_input)) {
 			continue;
 		}
 
@@ -1005,7 +1008,7 @@ oxr_action_cache_update(struct oxr_logger *log,
                         struct oxr_action_attachment *act_attached,
                         struct oxr_action_cache *cache,
                         int64_t time,
-                        struct oxr_sub_paths *sub_path,
+                        struct oxr_subaction_paths *subaction_path,
                         bool selected)
 {
 	struct oxr_action_state last = cache->current;
@@ -1030,7 +1033,7 @@ oxr_action_cache_update(struct oxr_logger *log,
 		}
 	} else if (cache->num_inputs > 0) {
 
-		if (!oxr_input_combine_input(sess, countActionSets, actionSets, act_attached, sub_path, cache,
+		if (!oxr_input_combine_input(sess, countActionSets, actionSets, act_attached, subaction_path, cache,
 		                             &combined, &timestamp, &is_active)) {
 			oxr_log(log, "Failed to get/combine input values '%s'", act_attached->act_ref->name);
 			return;
@@ -1141,7 +1144,7 @@ oxr_action_attachment_update(struct oxr_logger *log,
                              const XrActiveActionSet *actionSets,
                              struct oxr_action_attachment *act_attached,
                              int64_t time,
-                             struct oxr_sub_paths sub_paths)
+                             struct oxr_subaction_paths subaction_paths)
 {
 	// This really shouldn't be happening.
 	if (act_attached == NULL) {
@@ -1151,11 +1154,11 @@ oxr_action_attachment_update(struct oxr_logger *log,
 	//! @todo "/user" sub-action path.
 
 #define UPDATE_SELECT(X)                                                                                               \
-	struct oxr_sub_paths sub_paths_##X = {0};                                                                      \
-	sub_paths_##X.X = true;                                                                                        \
-	bool select_##X = sub_paths.X || sub_paths.any;                                                                \
+	struct oxr_subaction_paths subaction_paths_##X = {0};                                                          \
+	subaction_paths_##X.X = true;                                                                                  \
+	bool select_##X = subaction_paths.X || subaction_paths.any;                                                    \
 	oxr_action_cache_update(log, sess, countActionSets, actionSets, act_attached, &act_attached->X, time,          \
-	                        &sub_paths_##X, select_##X);
+	                        &subaction_paths_##X, select_##X);
 
 	OXR_FOR_EACH_VALID_SUBACTION_PATH(UPDATE_SELECT)
 #undef UPDATE_SELECT
@@ -1256,14 +1259,14 @@ oxr_action_bind_io(struct oxr_logger *log,
                    struct oxr_action *act,
                    struct oxr_action_cache *cache,
                    struct oxr_interaction_profile *profile,
-                   enum oxr_sub_action_path sub_path)
+                   enum oxr_subaction_path subaction_path)
 {
 	struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION] = {0};
 	uint32_t num_inputs = 0;
 	struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION] = {0};
 	uint32_t num_outputs = 0;
 
-	get_binding(log, slog, sess, act, profile, sub_path, inputs, &num_inputs, outputs, &num_outputs);
+	get_binding(log, slog, sess, act, profile, subaction_path, inputs, &num_inputs, outputs, &num_outputs);
 
 	cache->current.active = false;
 
@@ -1453,31 +1456,32 @@ oxr_action_sync_data(struct oxr_logger *log,
 	// Reset all action set attachments.
 	for (size_t i = 0; i < sess->num_action_set_attachments; ++i) {
 		act_set_attached = &sess->act_set_attachments[i];
-		U_ZERO(&act_set_attached->requested_sub_paths);
+		U_ZERO(&act_set_attached->requested_subaction_paths);
 	}
 
 	// Go over all requested action sets and update their attachment.
 	//! @todo can be listed more than once with different paths!
 	for (uint32_t i = 0; i < countActionSets; i++) {
-		struct oxr_sub_paths sub_paths;
+		struct oxr_subaction_paths subaction_paths;
 		oxr_session_get_action_set_attachment(sess, actionSets[i].actionSet, &act_set_attached, &act_set);
 		assert(act_set_attached != NULL);
 
-		if (!oxr_classify_sub_action_paths(log, sess->sys->inst, 1, &actionSets[i].subactionPath, &sub_paths)) {
+		if (!oxr_classify_sub_action_paths(log, sess->sys->inst, 1, &actionSets[i].subactionPath,
+		                                   &subaction_paths)) {
 			return XR_ERROR_PATH_UNSUPPORTED;
 		}
 
-		act_set_attached->requested_sub_paths.any |= sub_paths.any;
+		act_set_attached->requested_subaction_paths.any |= subaction_paths.any;
 
-		/* never error when requesting any subpath */
-		bool any_action_with_subpath = sub_paths.any;
+		/* never error when requesting any subactionpath */
+		bool any_action_with_subactionpath = subaction_paths.any;
 
-#define ACCUMULATE_REQUESTED(X) act_set_attached->requested_sub_paths.X |= sub_paths.X;
+#define ACCUMULATE_REQUESTED(X) act_set_attached->requested_subaction_paths.X |= subaction_paths.X;
 
 		OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_REQUESTED)
 #undef ACCUMULATE_REQUESTED
 
-		/* check if we have at least one action for requested subpath */
+		/* check if we have at least one action for requested subactionpath */
 		for (uint32_t k = 0; k < act_set_attached->num_action_attachments; k++) {
 			struct oxr_action_attachment *act_attached = &act_set_attached->act_attachments[k];
 
@@ -1485,21 +1489,21 @@ oxr_action_sync_data(struct oxr_logger *log,
 				continue;
 			}
 
-#define ACCUMULATE_REQUESTED(X) any_action_with_subpath |= sub_paths.X && act_attached->act_ref->sub_paths.X;
-
+#define ACCUMULATE_REQUESTED(X)                                                                                        \
+	any_action_with_subactionpath |= subaction_paths.X && act_attached->act_ref->subaction_paths.X;
 			OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_REQUESTED)
 #undef ACCUMULATE_REQUESTED
 		}
-		if (!any_action_with_subpath) {
+		if (!any_action_with_subactionpath) {
 			return oxr_error(log, XR_ERROR_PATH_UNSUPPORTED,
-			                 "No action with specified subpath in actionset");
+			                 "No action with specified subactionpath in actionset");
 		}
 	}
 
 	// Now, update all action attachments
 	for (size_t i = 0; i < sess->num_action_set_attachments; ++i) {
 		act_set_attached = &sess->act_set_attachments[i];
-		struct oxr_sub_paths sub_paths = act_set_attached->requested_sub_paths;
+		struct oxr_subaction_paths subaction_paths = act_set_attached->requested_subaction_paths;
 
 
 		for (uint32_t k = 0; k < act_set_attached->num_action_attachments; k++) {
@@ -1510,7 +1514,7 @@ oxr_action_sync_data(struct oxr_logger *log,
 			}
 
 			oxr_action_attachment_update(log, sess, countActionSets, actionSets, act_attached, now,
-			                             sub_paths);
+			                             subaction_paths);
 		}
 	}
 
@@ -1619,22 +1623,22 @@ get_xr_state_from_action_state_vec2(struct oxr_instance *inst,
  * @note Keep this synchronized with OXR_FOR_EACH_SUBACTION_PATH!
  */
 #define OXR_ACTION_GET_FILLER(TYPE)                                                                                    \
-	if (sub_paths.any && act_attached->any_state.active) {                                                         \
+	if (subaction_paths.any && act_attached->any_state.active) {                                                   \
 		get_xr_state_from_action_state_##TYPE(sess->sys->inst, &act_attached->any_state, data);                \
 	}                                                                                                              \
-	if (sub_paths.user && act_attached->user.current.active) {                                                     \
+	if (subaction_paths.user && act_attached->user.current.active) {                                               \
 		get_xr_state_from_action_state_##TYPE(sess->sys->inst, &act_attached->user.current, data);             \
 	}                                                                                                              \
-	if (sub_paths.head && act_attached->head.current.active) {                                                     \
+	if (subaction_paths.head && act_attached->head.current.active) {                                               \
 		get_xr_state_from_action_state_##TYPE(sess->sys->inst, &act_attached->head.current, data);             \
 	}                                                                                                              \
-	if (sub_paths.left && act_attached->left.current.active) {                                                     \
+	if (subaction_paths.left && act_attached->left.current.active) {                                               \
 		get_xr_state_from_action_state_##TYPE(sess->sys->inst, &act_attached->left.current, data);             \
 	}                                                                                                              \
-	if (sub_paths.right && act_attached->right.current.active) {                                                   \
+	if (subaction_paths.right && act_attached->right.current.active) {                                             \
 		get_xr_state_from_action_state_##TYPE(sess->sys->inst, &act_attached->right.current, data);            \
 	}                                                                                                              \
-	if (sub_paths.gamepad && act_attached->gamepad.current.active) {                                               \
+	if (subaction_paths.gamepad && act_attached->gamepad.current.active) {                                         \
 		get_xr_state_from_action_state_##TYPE(sess->sys->inst, &act_attached->gamepad.current, data);          \
 	}
 
@@ -1654,7 +1658,7 @@ XrResult
 oxr_action_get_boolean(struct oxr_logger *log,
                        struct oxr_session *sess,
                        uint32_t act_key,
-                       struct oxr_sub_paths sub_paths,
+                       struct oxr_subaction_paths subaction_paths,
                        XrActionStateBoolean *data)
 {
 	struct oxr_action_attachment *act_attached = NULL;
@@ -1675,7 +1679,7 @@ XrResult
 oxr_action_get_vector1f(struct oxr_logger *log,
                         struct oxr_session *sess,
                         uint32_t act_key,
-                        struct oxr_sub_paths sub_paths,
+                        struct oxr_subaction_paths subaction_paths,
                         XrActionStateFloat *data)
 {
 	struct oxr_action_attachment *act_attached = NULL;
@@ -1696,7 +1700,7 @@ XrResult
 oxr_action_get_vector2f(struct oxr_logger *log,
                         struct oxr_session *sess,
                         uint32_t act_key,
-                        struct oxr_sub_paths sub_paths,
+                        struct oxr_subaction_paths subaction_paths,
                         XrActionStateVector2f *data)
 {
 	struct oxr_action_attachment *act_attached = NULL;
@@ -1717,7 +1721,7 @@ XrResult
 oxr_action_get_pose(struct oxr_logger *log,
                     struct oxr_session *sess,
                     uint32_t act_key,
-                    struct oxr_sub_paths sub_paths,
+                    struct oxr_subaction_paths subaction_paths,
                     XrActionStatePose *data)
 {
 	struct oxr_action_attachment *act_attached = NULL;
@@ -1728,8 +1732,8 @@ oxr_action_get_pose(struct oxr_logger *log,
 	}
 
 	// For poses on the any path we select a single path.
-	if (sub_paths.any) {
-		sub_paths = act_attached->any_pose_sub_path;
+	if (subaction_paths.any) {
+		subaction_paths = act_attached->any_pose_subaction_path;
 	}
 
 	data->isActive = XR_FALSE;
@@ -1738,7 +1742,7 @@ oxr_action_get_pose(struct oxr_logger *log,
 	 * The sub path any is used as a catch all here to see if any
 	 */
 #define COMPUTE_ACTIVE(X)                                                                                              \
-	if (sub_paths.X) {                                                                                             \
+	if (subaction_paths.X) {                                                                                       \
 		data->isActive |= act_attached->X.current.active;                                                      \
 	}
 
@@ -1780,7 +1784,7 @@ XrResult
 oxr_action_apply_haptic_feedback(struct oxr_logger *log,
                                  struct oxr_session *sess,
                                  uint32_t act_key,
-                                 struct oxr_sub_paths sub_paths,
+                                 struct oxr_subaction_paths subaction_paths,
                                  const XrHapticBaseHeader *hapticEvent)
 {
 	struct oxr_action_attachment *act_attached = NULL;
@@ -1803,7 +1807,7 @@ oxr_action_apply_haptic_feedback(struct oxr_logger *log,
 	}
 
 #define SET_OUT_VIBRATION(X)                                                                                           \
-	if (act_attached->X.current.active && (sub_paths.X || sub_paths.any)) {                                        \
+	if (act_attached->X.current.active && (subaction_paths.X || subaction_paths.any)) {                            \
 		set_action_output_vibration(sess, &act_attached->X, stop_ns, data);                                    \
 	}
 
@@ -1816,7 +1820,7 @@ XrResult
 oxr_action_stop_haptic_feedback(struct oxr_logger *log,
                                 struct oxr_session *sess,
                                 uint32_t act_key,
-                                struct oxr_sub_paths sub_paths)
+                                struct oxr_subaction_paths subaction_paths)
 {
 	struct oxr_action_attachment *act_attached = NULL;
 
@@ -1826,7 +1830,7 @@ oxr_action_stop_haptic_feedback(struct oxr_logger *log,
 	}
 
 #define STOP_VIBRATION(X)                                                                                              \
-	if (act_attached->X.current.active && (sub_paths.X || sub_paths.any)) {                                        \
+	if (act_attached->X.current.active && (subaction_paths.X || subaction_paths.any)) {                            \
 		oxr_action_cache_stop_output(log, sess, &act_attached->X);                                             \
 	}
 

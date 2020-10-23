@@ -58,16 +58,16 @@ oxr_space_action_create(struct oxr_logger *log,
                         struct oxr_space **out_space)
 {
 	struct oxr_instance *inst = sess->sys->inst;
-	struct oxr_sub_paths sub_paths = {0};
+	struct oxr_subaction_paths subaction_paths = {0};
 
 	struct oxr_space *spc = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, spc, OXR_XR_DEBUG_SPACE, oxr_space_destroy, &sess->handle);
 
-	oxr_classify_sub_action_paths(log, inst, 1, &createInfo->subactionPath, &sub_paths);
+	oxr_classify_sub_action_paths(log, inst, 1, &createInfo->subactionPath, &subaction_paths);
 
 	spc->sess = sess;
 	spc->is_reference = false;
-	spc->sub_paths = sub_paths;
+	spc->subaction_paths = subaction_paths;
 	spc->act_key = key;
 	memcpy(&spc->pose, &createInfo->poseInActionSpace, sizeof(spc->pose));
 
@@ -300,7 +300,7 @@ oxr_space_action_relation(struct oxr_logger *log,
 		return XR_SUCCESS;
 	}
 
-	oxr_action_get_pose_input(log, sess, act_spc->act_key, &act_spc->sub_paths, &input);
+	oxr_action_get_pose_input(log, sess, act_spc->act_key, &act_spc->subaction_paths, &input);
 
 	// If the input isn't active.
 	if (input == NULL) {
