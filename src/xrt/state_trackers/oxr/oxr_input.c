@@ -1829,13 +1829,20 @@ oxr_action_apply_haptic_feedback(struct oxr_logger *log,
 
 	const XrHapticVibration *data = (const XrHapticVibration *)hapticEvent;
 
-	int64_t now = time_state_get_now(sess->sys->inst->timekeeping);
-	int64_t stop = data->duration <= 0 ? now : now + data->duration;
+	// This should all be moved into the drivers.
+	const int64_t min_pulse_time_ns = time_s_to_ns(0.1);
+	int64_t now_ns = time_state_get_now(sess->sys->inst->timekeeping);
+	int64_t stop_ns = 0;
+	if (data->duration <= 0) {
+		stop_ns = now_ns + min_pulse_time_ns;
+	} else {
+		stop_ns = now_ns + data->duration;
+	}
 
 #define SET_OUT_VIBRATION(X)                                                   \
 	if (act_attached->X.current.active &&                                  \
 	    (sub_paths.X || sub_paths.any)) {                                  \
-		set_action_output_vibration(sess, &act_attached->X, stop,      \
+		set_action_output_vibration(sess, &act_attached->X, stop_ns,   \
 		                            data);                             \
 	}
 
