@@ -207,7 +207,7 @@ handle_non_null(struct oxr_instance *inst,
 	ENTRY(xrStopHapticFeedback);
 
 #ifdef OXR_HAVE_KHR_visibility_mask
-	ENTRY_IF_EXT(xrGetVisibilityMaskKHR, KHR_visibility_mask)
+	ENTRY_IF_EXT(xrGetVisibilityMaskKHR, KHR_visibility_mask);
 #endif // OXR_HAVE_KHR_visibility_mask
 
 #ifdef OXR_HAVE_KHR_convert_timespec_time
@@ -217,11 +217,11 @@ handle_non_null(struct oxr_instance *inst,
 
 #ifdef OXR_HAVE_EXT_performance_settings
 	ENTRY_IF_EXT(xrPerfSettingsSetPerformanceLevelEXT,
-	             EXT_performance_settings)
+	             EXT_performance_settings);
 #endif // OXR_HAVE_EXT_performance_settings
 
 #ifdef OXR_HAVE_EXT_thermal_query
-	ENTRY_IF_EXT(xrThermalGetTemperatureTrendEXT, EXT_thermal_query)
+	ENTRY_IF_EXT(xrThermalGetTemperatureTrendEXT, EXT_thermal_query);
 #endif // OXR_HAVE_EXT_thermal_query
 
 	ENTRY_IF_EXT(xrCreateHandTrackerEXT, EXT_hand_tracking);
