@@ -13,6 +13,7 @@
 #include "xrt/xrt_device.h"
 #include "cli_common.h"
 
+#include "xrt/xrt_config_drivers.h"
 
 static int
 do_exit(struct xrt_instance **xi_ptr, int ret)
@@ -32,6 +33,62 @@ cli_cmd_probe(int argc, const char **argv)
 	struct xrt_device *xdevs[NUM_XDEVS] = {0};
 	struct xrt_instance *xi = NULL;
 	int ret = 0;
+
+	printf(" :: Built in drivers:");
+
+#ifdef XRT_BUILD_DRIVER_PSVR
+	printf(" PSVR,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_RS
+	printf(" RealSense,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_VIVE
+	printf(" Vive,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_OHMD
+	printf(" OpenHMD,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_DAYDREAM
+	printf(" Daydream,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_ARDUINO
+	printf(" Arduino,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_DUMMY
+	printf(" Dummy,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_REMOTE
+	printf(" Remote Debugging,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_HDK
+	printf(" OSVR HDK 1.x/2.x,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_PSMV
+	printf(" PS Move,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_HYDRA
+	printf(" Razer Hydra,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_NS
+	printf(" Project Northstar,");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_SURVIVE
+	printf(" libsurvive,");
+#endif
+
+	printf("\n");
 
 	// Initialize the prober.
 	printf(" :: Creating instance!\n");
