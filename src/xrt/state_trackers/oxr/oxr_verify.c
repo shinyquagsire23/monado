@@ -593,9 +593,36 @@ XrResult
 oxr_verify_XrGraphicsBindingEGLMNDX(struct oxr_logger *log,
                                     const XrGraphicsBindingEGLMNDX *next)
 {
+	// Here for internal error checking
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_EGL_MNDX) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "Graphics binding has invalid type");
+		return oxr_error(
+		    log, XR_ERROR_RUNTIME_FAILURE,
+		    "XrGraphicsBindingEGLMNDX::type is invalid '%i'",
+		    next->type);
+	}
+
+	if (next->getProcAddress == NULL) {
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "XrGraphicsBindingEGLMNDX::getProcAddress cannot be NULL");
+	}
+
+	if (next->display == NULL) {
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "XrGraphicsBindingEGLMNDX::display cannot be NULL");
+	}
+
+	if (next->config == NULL) {
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "XrGraphicsBindingEGLMNDX::config cannot be NULL");
+	}
+
+	if (next->context == NULL) {
+		return oxr_error(
+		    log, XR_ERROR_VALIDATION_FAILURE,
+		    "XrGraphicsBindingEGLMNDX::context cannot be NULL");
 	}
 
 	return XR_SUCCESS;
