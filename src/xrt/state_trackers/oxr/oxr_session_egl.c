@@ -42,7 +42,7 @@ oxr_session_populate_egl(struct oxr_logger *log,
                          XrGraphicsBindingEGLMNDX const *next,
                          struct oxr_session *sess)
 {
-	EGLint egl_client_type;
+	EGLint egl_client_type = -1;
 
 	PFNEGLQUERYCONTEXTPROC eglQueryContext =
 	    (PFNEGLQUERYCONTEXTPROC)next->getProcAddress("eglQueryContext");
@@ -62,7 +62,8 @@ oxr_session_populate_egl(struct oxr_logger *log,
 	if (egl_client_type != EGL_OPENGL_API &&
 	    egl_client_type != EGL_OPENGL_ES_API) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Unsupported EGL client type");
+		                 "Unsupported EGL client type: '%i'",
+		                 egl_client_type);
 	}
 
 	struct xrt_compositor_native *xcn = sess->sys->xcn;
