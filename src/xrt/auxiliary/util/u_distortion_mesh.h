@@ -4,7 +4,7 @@
  * @file
  * @brief  Code to generate disortion meshes.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup aux_util
+ * @ingroup aux_distortion
  */
 
 #pragma once
@@ -12,15 +12,13 @@
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_defines.h"
 
+#include "util/u_distortion.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-/*!
- * @ingroup aux_util
- * @{
- */
 
 /*
  *
@@ -30,6 +28,8 @@ extern "C" {
 
 /*!
  * Values to create a distortion mesh from panotools values.
+ *
+ * @ingroup aux_distortion
  */
 struct u_panotools_values
 {
@@ -47,6 +47,8 @@ struct u_panotools_values
 
 /*!
  * Distortion correction implementation for Panotools distortion values.
+ *
+ * @ingroup aux_distortion
  */
 bool
 u_compute_distortion_panotools(struct u_panotools_values *values,
@@ -63,6 +65,8 @@ u_compute_distortion_panotools(struct u_panotools_values *values,
 
 /*!
  * Values to create a distortion mesh from Vive configuration values.
+ *
+ * @ingroup aux_distortion
  */
 struct u_vive_values
 {
@@ -82,6 +86,8 @@ struct u_vive_values
 /*!
  * Distortion correction implementation for the Vive, Vive Pro, Valve Index
  * distortion values found in the HMD configuration.
+ *
+ * @ingroup aux_distortion
  */
 bool
 u_compute_distortion_vive(struct u_vive_values *values,
@@ -92,18 +98,40 @@ u_compute_distortion_vive(struct u_vive_values *values,
 
 /*
  *
+ * Cardboard mesh distortion parameters.
+ *
+ */
+
+/*!
+ * Distortion correction implementation for the Cardboard devices.
+ *
+ * @ingroup aux_distortion
+ */
+bool
+u_compute_distortion_cardboard(struct u_cardboard_distortion_values *values,
+                               float u,
+                               float v,
+                               struct xrt_uv_triplet *result);
+
+
+/*
+ *
  * None distortion
  *
  */
 
 /*!
  * Identity distortion correction sets all result coordinates to u,v.
+ *
+ * @ingroup aux_distortion
  */
 bool
 u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result);
 
 /*!
  * Helper function for none distortion devices.
+ *
+ * @ingroup aux_distortion
  */
 bool
 u_distortion_mesh_none(struct xrt_device *xdev,
@@ -124,8 +152,8 @@ u_distortion_mesh_none(struct xrt_device *xdev,
  * xdev->compute_distortion(), populates `xdev->hmd_parts.distortion.mesh` &
  * `xdev->hmd_parts.distortion.models`.
  *
- * @ingroup aux_util
  * @relatesalso xrt_device
+ * @ingroup aux_distortion
  */
 void
 u_distortion_mesh_fill_in_compute(struct xrt_device *xdev);
@@ -135,6 +163,7 @@ u_distortion_mesh_fill_in_compute(struct xrt_device *xdev);
  * `xdev->hmd_parts.distortion.mesh` & `xdev->hmd_parts.distortion.models`.
  *
  * @relatesalso xrt_device
+ * @ingroup aux_distortion
  */
 void
 u_distortion_mesh_fill_in_none(struct xrt_device *xdev);
@@ -145,14 +174,10 @@ u_distortion_mesh_fill_in_none(struct xrt_device *xdev);
  * & `xdev->hmd_parts.distortion.models`.
  *
  * @relatesalso xrt_device
+ * @ingroup aux_distortion
  */
 void
 u_distortion_mesh_set_none(struct xrt_device *xdev);
-
-
-/*!
- * @}
- */
 
 
 #ifdef __cplusplus

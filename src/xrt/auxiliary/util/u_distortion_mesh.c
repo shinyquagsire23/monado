@@ -4,7 +4,7 @@
  * @file
  * @brief  Code to generate disortion meshes.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup aux_util
+ * @ingroup aux_distortion
  */
 
 #include "util/u_misc.h"
@@ -190,6 +190,7 @@ u_compute_distortion_vive(struct u_vive_values *values,
 #define div m_vec2_div
 #define div_scalar m_vec2_div_scalar
 #define len m_vec2_len
+#define len_sqrd m_vec2_len_sqrd
 
 bool
 u_compute_distortion_panotools(struct u_panotools_values *values,
@@ -229,6 +230,42 @@ u_compute_distortion_panotools(struct u_panotools_values *values,
 	result->r = r_uv;
 	result->g = g_uv;
 	result->b = b_uv;
+	return true;
+}
+
+bool
+u_compute_distortion_cardboard(struct u_cardboard_distortion_values *values,
+                               float u,
+                               float v,
+                               struct xrt_uv_triplet *result)
+{
+	struct xrt_vec2 uv = {u, v};
+	uv = sub(mul(uv, values->screen.size), values->screen.offset);
+
+	float sqrd = len_sqrd(uv);
+	float r = 1.0f;
+	float fact = 1.0f;
+	r *= sqrd;
+	fact += values->distortion_k[0] * r;
+	r *= sqrd;
+	fact += values->distortion_k[1] * r;
+	r *= sqrd;
+	fact += values->distortion_k[2] * r;
+	r *= sqrd;
+	fact += values->distortion_k[3] * r;
+	r *= sqrd;
+	fact += values->distortion_k[4] * r;
+
+	uv = mul_scalar(uv, fact);
+
+	uv = div(add(uv, values->texture.offset), values->texture.size);
+
+	result->r.x = uv.x;
+	result->r.y = uv.y;
+	result->g.x = uv.x;
+	result->g.y = uv.y;
+	result->b.x = uv.x;
+	result->b.y = uv.y;
 	return true;
 }
 
