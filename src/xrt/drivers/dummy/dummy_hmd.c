@@ -192,6 +192,7 @@ dummy_hmd_create(void)
 	u_var_add_pose(dh, &dh->pose, "pose");
 	u_var_add_vec3_f32(dh, &dh->center, "center");
 	u_var_add_f32(dh, &dh->diameter_m, "diameter_m");
+	u_var_add_log_level(dh, &dh->log_level, "log_level");
 
 	// Distortion information, fills in xdev->compute_distortion().
 	u_distortion_mesh_set_none(&dh->base);
