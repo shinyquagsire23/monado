@@ -7,23 +7,21 @@
  * @ingroup drv_dummy
  */
 
-
-#include "math/m_mathinclude.h"
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include "xrt/xrt_device.h"
 
 #include "os/os_time.h"
+
 #include "math/m_api.h"
-#include "xrt/xrt_device.h"
+#include "math/m_mathinclude.h"
+
 #include "util/u_var.h"
 #include "util/u_misc.h"
+#include "util/u_time.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
-#include "util/u_time.h"
 #include "util/u_distortion_mesh.h"
+
+#include <stdio.h>
 
 
 /*
