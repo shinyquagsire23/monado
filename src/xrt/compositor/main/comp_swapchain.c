@@ -84,6 +84,12 @@ swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
  *
  */
 
+#define D(TYPE, thing)                                                         \
+	if (thing != VK_NULL_HANDLE) {                                         \
+		vk->vkDestroy##TYPE(vk->device, thing, NULL);                  \
+		thing = VK_NULL_HANDLE;                                        \
+	}
+
 static struct comp_swapchain *
 alloc_and_set_funcs(struct comp_compositor *c, uint32_t num_images)
 {
@@ -204,8 +210,7 @@ clean_image_views(struct vk_bundle *vk,
 			continue;
 		}
 
-		vk->vkDestroyImageView(vk->device, views[i], NULL);
-		views[i] = VK_NULL_HANDLE;
+		D(ImageView, views[i]);
 	}
 
 	free(views);
@@ -232,10 +237,8 @@ image_cleanup(struct vk_bundle *vk, struct comp_swapchain_image *image)
 	clean_image_views(vk, image->array_size, &image->views.alpha);
 	clean_image_views(vk, image->array_size, &image->views.no_alpha);
 
-	if (image->sampler != VK_NULL_HANDLE) {
-		vk->vkDestroySampler(vk->device, image->sampler, NULL);
-		image->sampler = VK_NULL_HANDLE;
-	}
+	D(Sampler, image->sampler);
+	D(Sampler, image->repeat_sampler);
 }
 
 /*
