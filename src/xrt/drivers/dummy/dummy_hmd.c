@@ -19,6 +19,7 @@
 #include "util/u_time.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
 
 #include <stdio.h>
@@ -45,8 +46,7 @@ struct dummy_hmd
 	uint64_t created_ns;
 	float diameter_m;
 
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level log_level;
 };
 
 
@@ -62,33 +62,11 @@ dummy_hmd(struct xrt_device *xdev)
 	return (struct dummy_hmd *)xdev;
 }
 
-DEBUG_GET_ONCE_BOOL_OPTION(dummy_spew, "DUMMY_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(dummy_debug, "DUMMY_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_LOG_OPTION(dummy_log, "DUMMY_LOG", U_LOGGING_WARN)
 
-#define DH_SPEW(dh, ...)                                                       \
-	do {                                                                   \
-		if (dh->print_spew) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define DH_DEBUG(dh, ...)                                                      \
-	do {                                                                   \
-		if (dh->print_debug) {                                         \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define DH_ERROR(dh, ...)                                                      \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+#define DH_TRACE(p, ...) U_LOG_XDEV_IFL_T(&dh->base, dh->log_level, __VA_ARGS__)
+#define DH_DEBUG(p, ...) U_LOG_XDEV_IFL_D(&dh->base, dh->log_level, __VA_ARGS__)
+#define DH_ERROR(p, ...) U_LOG_XDEV_IFL_E(&dh->base, dh->log_level, __VA_ARGS__)
 
 static void
 dummy_hmd_destroy(struct xrt_device *xdev)
@@ -184,8 +162,7 @@ dummy_hmd_create(void)
 	dh->pose.orientation.w = 1.0f; // All other values set to zero.
 	dh->created_ns = os_monotonic_get_ns();
 	dh->diameter_m = 0.05;
-	dh->print_spew = debug_get_bool_option_dummy_spew();
-	dh->print_debug = debug_get_bool_option_dummy_debug();
+	dh->log_level = debug_get_log_option_dummy_log();
 
 	// Print name.
 	snprintf(dh->base.str, XRT_DEVICE_NAME_LEN, "Dummy HMD");
