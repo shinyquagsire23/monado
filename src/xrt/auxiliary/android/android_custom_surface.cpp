@@ -16,20 +16,16 @@
 
 #include "jni.h"
 
-#include <memory>
-#include <chrono>
-#include <thread>
-
 using wrap::android::app::Activity;
 using wrap::android::view::SurfaceHolder;
 
-using wrap::android::content::Context;
 
 struct android_custom_surface
 {
 	Activity activity;
 	jni::Class monadoViewClass;
 	jni::Object monadoView;
+	jni::method_t waitGetSurfaceHolderMethod;
 };
 
 struct android_custom_surface *
@@ -42,7 +38,6 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 		    std::make_unique<android_custom_surface>();
 
 		ret->activity = Activity((jobject)activity);
-		Context context((jobject)activity);
 		auto info = getAppInfo(XRT_ANDROID_PACKAGE, (jobject)activity);
 		if (info.isNull()) {
 			U_LOG_E(
@@ -62,8 +57,10 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 			return nullptr;
 		}
 
+		// the 0 is to avoid this being considered "temporary" and to
+		// create a global ref.
 		ret->monadoViewClass =
-		    jni::Class((jclass)clazz.object().getHandle());
+		    jni::Class((jclass)clazz.object().getHandle(), 0);
 
 		if (ret->monadoViewClass.isNull()) {
 			U_LOG_E("monadoViewClass was null");
@@ -82,6 +79,11 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 			U_LOG_E("MonadoView was null.");
 			return nullptr;
 		}
+
+		ret->waitGetSurfaceHolderMethod =
+		    ret->monadoViewClass.getMethod(
+		        "waitGetSurfaceHolder",
+		        "(I)Landroid/view/SurfaceHolder;");
 
 		attachToActivity = ret->monadoViewClass.getStaticMethod(
 		    "attachToActivity",
@@ -118,61 +120,32 @@ android_custom_surface_destroy(
 }
 
 ANativeWindow *
-android_custom_surface_get_surface(
-    struct android_custom_surface *custom_surface)
-{
-	jni::field_t curSurfaceId = nullptr;
-	jni::Object holder = nullptr;
-	try {
-		curSurfaceId = custom_surface->monadoViewClass.getField(
-		    "currentSurfaceHolder", "Landroid/view/SurfaceHolder;");
-		holder =
-		    custom_surface->monadoView.get<jni::Object>(curSurfaceId);
-	} catch (std::exception const &e) {
-		U_LOG_E("Could not get currentSurfaceHolder: %s", e.what());
-		return nullptr;
-	}
-
-	SurfaceHolder surfaceHolder(holder);
-	auto surf = surfaceHolder.getSurface();
-	if (surf.isNull()) {
-		return nullptr;
-	}
-	return ANativeWindow_fromSurface(jni::env(), surf.object().getHandle());
-}
-
-
-ANativeWindow *
 android_custom_surface_wait_get_surface(
     struct android_custom_surface *custom_surface, uint64_t timeout_ms)
 {
-	using clock = std::chrono::system_clock;
-	using std::chrono::duration_cast;
-	using std::chrono::milliseconds;
+	jni::Object holder = nullptr;
 	try {
-		auto start = clock::now();
-		auto end = start + milliseconds(timeout_ms);
-		ANativeWindow *ret =
-		    android_custom_surface_get_surface(custom_surface);
-		if (ret != nullptr) {
-			return ret;
-		}
-		while (clock::now() < end) {
-			//! @todo replace this with a block on the Java code
-			std::this_thread::sleep_for(
-			    milliseconds(timeout_ms / 5));
-			ANativeWindow *ret =
-			    android_custom_surface_get_surface(custom_surface);
-			if (ret != nullptr) {
-				return ret;
-			}
-		}
+
+		holder = custom_surface->monadoView.call<jni::Object>(
+		    custom_surface->waitGetSurfaceHolderMethod,
+		    (int)timeout_ms);
+
 	} catch (std::exception const &e) {
 		// do nothing right now.
 		U_LOG_E(
 		    "Could not wait for our custom surface: "
 		    "%s",
 		    e.what());
+		return nullptr;
 	}
-	return nullptr;
+
+	SurfaceHolder surfaceHolder(holder);
+	if (surfaceHolder.isNull()) {
+		return nullptr;
+	}
+	auto surf = surfaceHolder.getSurface();
+	if (surf.isNull()) {
+		return nullptr;
+	}
+	return ANativeWindow_fromSurface(jni::env(), surf.object().getHandle());
 }

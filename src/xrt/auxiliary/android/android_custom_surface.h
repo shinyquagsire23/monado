@@ -25,6 +25,8 @@ struct _JavaVM;
 /*!
  * Opaque type representing a custom surface added to an activity, and the async
  * operation to perform this adding.
+ *
+ * @note You must keep this around for as long as you're using the surface.
  */
 struct android_custom_surface;
 
@@ -49,8 +51,7 @@ struct android_custom_surface *
 android_custom_surface_async_start(struct _JavaVM *vm, void *activity);
 
 /*!
- * Destroy the native handle for the custom surface and the async operation to
- * add it.
+ * Destroy the native handle for the custom surface.
  *
  * Depending on the state, this may not necessarily destroy the underlying
  * surface, if other references exist.
@@ -62,18 +63,6 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity);
 void
 android_custom_surface_destroy(
     struct android_custom_surface **ptr_custom_surface);
-
-/*!
- * Get the ANativeWindow pointer corresponding to the added Surface, if
- * available.
- *
- * This may return NULL because the underlying operation is asynchronous.
- *
- * @public @memberof android_custom_surface
- */
-ANativeWindow *
-android_custom_surface_get_surface(
-    struct android_custom_surface *custom_surface);
 
 /*!
  * Get the ANativeWindow pointer corresponding to the added Surface, if
