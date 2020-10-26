@@ -21,11 +21,6 @@ extern "C" {
 #endif
 
 
-/*!
- * @ingroup aux_math
- * @{
- */
-
 static inline struct xrt_vec2
 m_vec2_mul(struct xrt_vec2 l, struct xrt_vec2 r)
 {
@@ -139,10 +134,6 @@ operator/=(struct xrt_vec2 &a, const struct xrt_vec2 &b)
 {
 	a = a / b;
 }
-
-/*!
- * @}
- */
 
 
 #endif
