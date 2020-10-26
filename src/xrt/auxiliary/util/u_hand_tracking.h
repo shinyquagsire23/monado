@@ -12,6 +12,7 @@
 #include "xrt/xrt_defines.h"
 #include "util/u_misc.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -97,12 +98,17 @@ struct u_hand_tracking
 	struct u_hand_joint_default_set joints;
 };
 
+/*!
+ * @ingroup aux_util
+ */
 bool
 u_hand_joint_is_tip(enum xrt_hand_joint joint);
 
+/*!
+ * @ingroup aux_util
+ */
 bool
 u_hand_joint_is_metacarpal(enum xrt_hand_joint joint);
-
 
 /*!
  * Initializes a hand tracking set with default data.
@@ -130,13 +136,15 @@ u_hand_joints_set_out_data(struct u_hand_tracking *set,
                            union xrt_hand_joint_set *out_value);
 
 
-
 /*
  *
  * Curl model specific functions
  *
  */
 
+/*!
+ * @ingroup aux_util
+ */
 void
 u_hand_joint_compute_next_by_curl(struct u_hand_tracking *set,
                                   struct u_joint_space_relation *prev,
@@ -144,20 +152,23 @@ u_hand_joint_compute_next_by_curl(struct u_hand_tracking *set,
                                   struct u_joint_space_relation *out_joint,
                                   float curl_value);
 
+/*!
+ * @ingroup aux_util
+ */
 void
 u_hand_joints_update_curl(struct u_hand_tracking *set,
                           enum xrt_hand hand,
                           struct u_hand_tracking_curl_values *curl_values);
 
-// simple helper function for positioning hands on Valve Index controllers
+/*!
+ * Simple helper function for positioning hands on Valve Index controllers.
+ *
+ * @ingroup aux_util
+ */
 void
 u_hand_joints_offset_valve_index_controller(enum xrt_hand hand,
                                             struct xrt_vec3 *static_offset,
                                             struct xrt_pose *offset);
-
-/*!
- * @}
- */
 
 
 #ifdef __cplusplus
