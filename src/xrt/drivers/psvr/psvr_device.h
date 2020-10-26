@@ -15,6 +15,8 @@
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_prober.h"
 
+#include "util/u_logging.h"
+
 #include <hidapi.h>
 
 
@@ -125,8 +127,7 @@ struct xrt_device *
 psvr_device_create(struct hid_device_info *hmd_handle_info,
                    struct hid_device_info *hmd_control_info,
                    struct xrt_prober *xp,
-                   bool print_spew,
-                   bool print_debug);
+                   enum u_logging_level log_level);
 
 bool
 psvr_parse_sensor_packet(struct psvr_parsed_sensor *sensor,
@@ -137,37 +138,6 @@ bool
 psvr_parse_status_packet(struct psvr_parsed_status *status,
                          const uint8_t *buffer,
                          int size);
-
-
-/*
- *
- * Printing functions.
- *
- */
-
-#define PSVR_SPEW(p, ...)                                                      \
-	do {                                                                   \
-		if (p->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-#define PSVR_DEBUG(p, ...)                                                     \
-	do {                                                                   \
-		if (p->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define PSVR_ERROR(p, ...)                                                     \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
 
 
 #ifdef __cplusplus

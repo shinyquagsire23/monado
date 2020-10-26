@@ -42,6 +42,8 @@
  */
 
 DEBUG_GET_ONCE_BOOL_OPTION(psvr_disco, "PSVR_DISCO", false)
+#define PSVR_DEBUG(p, ...) U_LOG_XDEV_IFL_D(&p->base, p->log_level, __VA_ARGS__)
+#define PSVR_ERROR(p, ...) U_LOG_XDEV_IFL_E(&p->base, p->log_level, __VA_ARGS__)
 
 #define FEATURE_BUFFER_SIZE 256
 
@@ -85,8 +87,7 @@ struct psvr_device
 	bool powered_on;
 	bool in_vr_mode;
 
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level log_level;
 
 	struct
 	{
@@ -1010,8 +1011,7 @@ struct xrt_device *
 psvr_device_create(struct hid_device_info *hmd_handle_info,
                    struct hid_device_info *hmd_control_info,
                    struct xrt_prober *xp,
-                   bool print_spew,
-                   bool print_debug)
+                   enum u_logging_level log_level)
 {
 	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
 	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
@@ -1019,8 +1019,7 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	    U_DEVICE_ALLOCATE(struct psvr_device, flags, 1, 0);
 	int ret;
 
-	psvr->print_spew = print_spew;
-	psvr->print_debug = print_debug;
+	psvr->log_level = log_level;
 	psvr->base.update_inputs = psvr_device_update_inputs;
 	psvr->base.get_tracked_pose = psvr_device_get_tracked_pose;
 	psvr->base.get_view_pose = psvr_device_get_view_pose;
@@ -1136,15 +1135,14 @@ psvr_device_create(struct hid_device_info *hmd_handle_info,
 	u_var_add_u8(psvr, &psvr->wants.leds[6], "Led G");
 	u_var_add_u8(psvr, &psvr->wants.leds[7], "Led H");
 	u_var_add_u8(psvr, &psvr->wants.leds[8], "Led I");
-	u_var_add_bool(psvr, &psvr->print_debug, "Debug");
-	u_var_add_bool(psvr, &psvr->print_spew, "Spew");
+	u_var_add_log_level(psvr, &psvr->log_level, "Log level");
 	// clang-format on
 
 	/*
 	 * Finishing touches.
 	 */
 
-	if (psvr->print_debug) {
+	if (psvr->log_level <= U_LOGGING_DEBUG) {
 		u_device_dump_config(&psvr->base, __func__, "Sony PSVR");
 	}
 
