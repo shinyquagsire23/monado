@@ -15,6 +15,7 @@
 #include "util/u_debug.h"
 #include "util/u_device.h"
 #include "util/u_var.h"
+#include "util/u_distortion_mesh.h"
 
 // 60 events per second (in us).
 #define POLL_RATE_USEC (1000L / 60) * 1000
@@ -202,6 +203,19 @@ android_device_get_view_pose(struct xrt_device *xdev,
  *
  */
 
+static bool
+android_device_compute_distortion(struct xrt_device *xdev,
+                                  int view,
+                                  float u,
+                                  float v,
+                                  struct xrt_uv_triplet *result)
+{
+	struct android_device *d = android_device(xdev);
+	return u_compute_distortion_cardboard(&d->cardboard.values[view], u, v,
+	                                      result);
+}
+
+
 struct android_device *
 android_device_create()
 {
@@ -215,6 +229,7 @@ android_device_create()
 	d->base.update_inputs = android_device_update_inputs;
 	d->base.get_tracked_pose = android_device_get_tracked_pose;
 	d->base.get_view_pose = android_device_get_view_pose;
+	d->base.compute_distortion = android_device_compute_distortion;
 	d->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	d->base.device_type = XRT_DEVICE_TYPE_HMD;
 
@@ -230,22 +245,37 @@ android_device_create()
 		return NULL;
 	}
 
-	// Setup info.
-	struct u_device_simple_info info;
-	info.display.w_pixels = 1280;
-	info.display.h_pixels = 720;
-	info.display.w_meters = 0.13f;
-	info.display.h_meters = 0.07f;
-	info.lens_horizontal_separation_meters = 0.13f / 2.0f;
-	info.lens_vertical_position_meters = 0.07f / 2.0f;
-	info.views[0].fov = 85.0f * (M_PI / 180.0f);
-	info.views[1].fov = 85.0f * (M_PI / 180.0f);
+	const uint32_t w_pixels = 2960;
+	const uint32_t h_pixels = 1440;
+	const uint32_t ppi = 572;
 
-	if (!u_device_setup_split_side_by_side(&d->base, &info)) {
-		ANDROID_ERROR(d, "Failed to setup basic device info");
-		android_device_destroy(&d->base);
-		return NULL;
-	}
+	const float angle = 45 * M_PI / 180.0; // 0.698132; // 40Deg in rads
+	const float w_meters = ((float)w_pixels / (float)ppi) * 0.0254f;
+	const float h_meters = ((float)h_pixels / (float)ppi) * 0.0254f;
+
+	struct u_cardboard_distortion_arguments args = {
+	    .distortion_k = {0.441f, 0.156f, 0.f, 0.f, 0.f},
+	    .screen =
+	        {
+	            .w_pixels = w_pixels,
+	            .h_pixels = h_pixels,
+	            .w_meters = w_meters,
+	            .h_meters = h_meters,
+	        },
+	    .inter_lens_distance_meters = 0.06f,
+	    .lens_y_center_on_screen_meters = h_meters / 2.0f,
+	    .screen_to_lens_distance_meters = 0.042f,
+	    .fov =
+	        {
+	            .angle_left = -angle,
+	            .angle_right = angle,
+	            .angle_up = angle,
+	            .angle_down = -angle,
+	        },
+	};
+
+	u_distortion_cardboard_calculate(&args, d->base.hmd, &d->cardboard);
+
 
 	u_var_add_root(d, "Android phone", true);
 	u_var_add_ro_vec3_f32(d, &d->fusion.last.accel, "last.accel");
@@ -253,6 +283,9 @@ android_device_create()
 
 	d->base.orientation_tracking_supported = true;
 	d->base.position_tracking_supported = false;
+
+	// Distortion information.
+	u_distortion_mesh_fill_in_compute(&d->base);
 
 	ANDROID_DEBUG(d, "Created device!");
 

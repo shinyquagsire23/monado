@@ -20,6 +20,7 @@
 #include "os/os_threading.h"
 
 #include "util/u_logging.h"
+#include "util/u_distortion.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,6 +38,8 @@ struct android_device
 	const ASensor *accelerometer;
 	const ASensor *gyroscope;
 	ASensorEventQueue *event_queue;
+	struct u_cardboard_distortion cardboard;
+
 
 	struct
 	{
