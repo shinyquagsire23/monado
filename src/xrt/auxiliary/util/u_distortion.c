@@ -29,6 +29,11 @@ u_distortion_cardboard_calculate(
 	uint32_t w_pixels = args->screen.w_pixels / 2;
 	uint32_t h_pixels = args->screen.h_pixels;
 
+	// Base assumption, the driver can change afterwards.
+	if (parts->blend_mode == 0) {
+		parts->blend_mode = XRT_BLEND_MODE_OPAQUE;
+	}
+
 	// Use the full screen.
 	parts->screens[0].w_pixels = args->screen.w_pixels;
 	parts->screens[0].h_pixels = args->screen.h_pixels;
