@@ -296,5 +296,8 @@ m_space_graph_resolve(const struct xrt_space_graph *xsg,
 	(void)dump_graph;
 #endif
 
+	// Ensure no errors has crept in.
+	math_quat_normalize(&r.pose.orientation);
+
 	*out_relation = r;
 }
