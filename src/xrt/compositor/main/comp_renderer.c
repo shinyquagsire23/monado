@@ -492,6 +492,7 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 	comp_layer_set_flip_y(l, data->flip_y);
 
 	l->type = XRT_LAYER_STEREO_PROJECTION;
+	l->flags = data->flags;
 	l->view_space =
 	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
 
