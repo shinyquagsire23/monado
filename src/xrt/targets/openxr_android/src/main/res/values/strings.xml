@@ -3,7 +3,7 @@
     Copyright 2020, Collabora, Ltd.
     SPDX-License-Identifier: BSL-1.0
 -->
-    <string name="app_name">FD.O Monado</string>
+    <string name="app_name">FD.O Monado XR</string>
     <string name="owered_by_monado">An XR Runtime, powered by Monado</string>
     <string name="notice">NOTICE text goes here</string>
 </resources>
