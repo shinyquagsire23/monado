@@ -43,13 +43,18 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
 
     /// Guards currentSurfaceHolder
     private final Object currentSurfaceHolderSync = new Object();
+    /// Guards the usedByNativeCode flag
+    private final Object usedByNativeCodeSync = new Object();
     private final Method viewSetSysUiVis;
+
     public int width = -1;
     public int height = -1;
     public int format = -1;
 
     /// Guarded by currentSurfaceHolderSync
     private SurfaceHolder currentSurfaceHolder = null;
+    /// Guarded by usedByNativeCodeSync
+    private boolean usedByNativeCode = false;
 
     private MonadoView(Activity activity) {
         super(activity);
@@ -124,7 +129,32 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
                 }
             }
         }
+        if (ret != null) {
+            synchronized (usedByNativeCodeSync) {
+                usedByNativeCode = true;
+                usedByNativeCodeSync.notifyAll();
+            }
+        }
         return ret;
+    }
+
+    /**
+     * Change the flag and notify those waiting on it, to indicate that native code is done with
+     * this object.
+     * <p>
+     * Called by native code!
+     */
+    @Keep
+    public void markAsDiscardedByNative() {
+
+        synchronized (usedByNativeCodeSync) {
+            if (!usedByNativeCode) {
+                Log.w(TAG, "This should not have happened: Discarding by native code, but not marked as used!");
+            }
+            usedByNativeCode = false;
+            usedByNativeCodeSync.notifyAll();
+        }
+
     }
 
     private boolean makeFullscreen() {
@@ -190,11 +220,26 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
 
     @Override
     public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
-        //! @todo this function should block until the surface is no longer used in the native code.
         Log.i(TAG, "surfaceDestroyed: Lost our surface.");
+        boolean lost = false;
         synchronized (currentSurfaceHolderSync) {
             if (surfaceHolder == currentSurfaceHolder) {
                 currentSurfaceHolder = null;
+                lost = true;
+            }
+        }
+        if (lost) {
+            //! @todo this function should notify native code that the surface is gone.
+            try {
+                synchronized (usedByNativeCodeSync) {
+                    while (usedByNativeCode) {
+                        usedByNativeCodeSync.wait();
+                    }
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                Log.i(TAG,
+                        "Interrupted in surfaceDestroyed while waiting for native code to finish up: " + e.toString());
             }
         }
     }

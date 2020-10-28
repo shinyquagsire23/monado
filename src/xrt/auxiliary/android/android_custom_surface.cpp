@@ -27,11 +27,26 @@ using wrap::android::view::SurfaceHolder;
 
 struct android_custom_surface
 {
-	Activity activity;
-	jni::Class monadoViewClass;
-	jni::Object monadoView;
-	jni::method_t waitGetSurfaceHolderMethod;
+	~android_custom_surface();
+	Activity activity{};
+	jni::Class monadoViewClass{};
+	jni::Object monadoView{};
+	jni::method_t waitGetSurfaceHolderMethod = nullptr;
+	jni::method_t markAsDiscardedMethod = nullptr;
 };
+
+android_custom_surface::~android_custom_surface()
+{
+	if (!monadoView.isNull() && markAsDiscardedMethod != nullptr) {
+		try {
+			monadoView.call<void>(markAsDiscardedMethod);
+		} catch (std::exception const &e) {
+			U_LOG_E(
+			    "Failure while marking MonadoView as discarded: %s",
+			    e.what());
+		}
+	}
+}
 
 constexpr auto FULLY_QUALIFIED_CLASSNAME =
     "org.freedesktop.monado.auxiliary.MonadoView";
@@ -89,6 +104,8 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 		    ret->monadoViewClass.getMethod(
 		        "waitGetSurfaceHolder",
 		        "(I)Landroid/view/SurfaceHolder;");
+		ret->markAsDiscardedMethod = ret->monadoViewClass.getMethod(
+		    "markAsDiscardedByNative", "()V;");
 
 		attachToActivity = ret->monadoViewClass.getStaticMethod(
 		    "attachToActivity",

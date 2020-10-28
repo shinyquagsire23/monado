@@ -55,7 +55,8 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity);
  * Destroy the native handle for the custom surface.
  *
  * Depending on the state, this may not necessarily destroy the underlying
- * surface, if other references exist.
+ * surface, if other references exist. However, a flag will be set to indicate
+ * that native code is done using it.
  *
  * @param ptr_custom_surface Pointer to the opaque pointer: will be set to NULL.
  *
