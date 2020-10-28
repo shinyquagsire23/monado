@@ -13,6 +13,8 @@ import android.text.method.LinkMovementMethod;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -23,5 +25,13 @@ public class MainActivity extends AppCompatActivity {
         // Make our Monado link clickable
         ((TextView) findViewById(R.id.textPowered)).setMovementMethod(LinkMovementMethod.getInstance());
 
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+        @VrModeStatus.Status
+        int status = VrModeStatus.detectStatus(this, BuildConfig.APPLICATION_ID);
+        VrModeStatus statusFrag = VrModeStatus.newInstance(status);
+        fragmentTransaction.add(R.id.statusFrame, statusFrag, null);
+        fragmentTransaction.commit();
     }
 }
