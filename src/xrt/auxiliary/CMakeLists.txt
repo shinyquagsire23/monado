@@ -9,7 +9,7 @@ set(ANDROID_SOURCE_FILES
 	android/android_globals.c
 	android/android_globals.h
 	android/android_load_class.cpp
-	android/android_load_class.h
+	android/android_load_class.hpp
 	)
 
 set(MATH_SOURCE_FILES

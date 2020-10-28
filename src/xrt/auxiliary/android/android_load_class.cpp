@@ -7,7 +7,7 @@
  * @ingroup aux_android
  */
 
-#include "android_load_class.h"
+#include "android_load_class.hpp"
 
 #include "util/u_logging.h"
 

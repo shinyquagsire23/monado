@@ -9,7 +9,7 @@
  */
 
 #include "android_custom_surface.h"
-#include "android_load_class.h"
+#include "android_load_class.hpp"
 
 #include "xrt/xrt_config_android.h"
 #include "util/u_logging.h"
