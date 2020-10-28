@@ -19,7 +19,6 @@
 
 #include <android/native_window_jni.h>
 
-#include "jni.h"
 
 using wrap::android::app::Activity;
 using wrap::android::view::SurfaceHolder;
@@ -27,6 +26,7 @@ using wrap::android::view::SurfaceHolder;
 
 struct android_custom_surface
 {
+	explicit android_custom_surface(jobject act);
 	~android_custom_surface();
 	Activity activity{};
 	jni::Class monadoViewClass{};
@@ -35,8 +35,12 @@ struct android_custom_surface
 	jni::method_t markAsDiscardedMethod = nullptr;
 };
 
+
+android_custom_surface::android_custom_surface(jobject act) : activity(act) {}
+
 android_custom_surface::~android_custom_surface()
 {
+	// Tell Java that native code is done with this.
 	if (!monadoView.isNull() && markAsDiscardedMethod != nullptr) {
 		try {
 			monadoView.call<void>(markAsDiscardedMethod);
@@ -58,9 +62,7 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 	jni::method_t attachToActivity;
 	try {
 		std::unique_ptr<android_custom_surface> ret =
-		    std::make_unique<android_custom_surface>();
-
-		ret->activity = Activity((jobject)activity);
+		    std::make_unique<android_custom_surface>((jobject)activity);
 		auto info = getAppInfo(XRT_ANDROID_PACKAGE, (jobject)activity);
 		if (info.isNull()) {
 			U_LOG_E(
