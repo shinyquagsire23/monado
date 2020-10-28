@@ -1,6 +1,11 @@
 // Copyright 2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
-// Author: Ryan Pavlik <ryan.pavlik@collabora.com>
+/*!
+ * @file
+ * @brief  Implementations for loading Java code from a package.
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @ingroup aux_android
+ */
 
 #include "android_load_class.h"
 

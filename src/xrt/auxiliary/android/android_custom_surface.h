@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Function for adding a new Surface to an activity.
+ * @brief  Functions for adding a new Surface to an activity and otherwise
+ *         interacting with an Android View.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_android
  */
