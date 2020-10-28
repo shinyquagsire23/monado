@@ -33,6 +33,9 @@ struct android_custom_surface
 	jni::method_t waitGetSurfaceHolderMethod;
 };
 
+constexpr auto FULLY_QUALIFIED_CLASSNAME =
+    "org.freedesktop.monado.auxiliary.MonadoView";
+
 struct android_custom_surface *
 android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 {
@@ -51,14 +54,12 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 			return nullptr;
 		}
 
-		auto clazz = loadClassFromPackage(
-		    info, (jobject)activity,
-		    "org.freedesktop.monado.auxiliary.MonadoView");
+		auto clazz = loadClassFromPackage(info, (jobject)activity,
+		                                  FULLY_QUALIFIED_CLASSNAME);
 
 		if (clazz.isNull()) {
 			U_LOG_E("Could not load class '%s' from package '%s'",
-			        "org.freedesktop.monado.auxiliary.MonadoView",
-			        XRT_ANDROID_PACKAGE);
+			        FULLY_QUALIFIED_CLASSNAME, XRT_ANDROID_PACKAGE);
 			return nullptr;
 		}
 
@@ -73,8 +74,7 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 		}
 
 		std::string clazz_name = ret->monadoViewClass.getName();
-		if (clazz_name !=
-		    "org.freedesktop.monado.auxiliary.MonadoView") {
+		if (clazz_name != FULLY_QUALIFIED_CLASSNAME) {
 			U_LOG_E("Unexpected class name: %s",
 			        clazz_name.c_str());
 			return nullptr;
