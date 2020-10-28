@@ -10,6 +10,9 @@ set(ANDROID_SOURCE_FILES
 	android/android_globals.h
 	android/android_load_class.cpp
 	android/android_load_class.hpp
+	android/org.freedesktop.monado.auxiliary.cpp
+	android/org.freedesktop.monado.auxiliary.hpp
+	android/org.freedesktop.monado.auxiliary.impl.hpp
 	)
 
 set(MATH_SOURCE_FILES
