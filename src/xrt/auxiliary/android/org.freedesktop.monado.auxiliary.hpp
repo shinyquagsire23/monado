@@ -47,14 +47,15 @@ namespace org::freedesktop::monado::auxiliary {
 		 *
 		 * Java prototype:
 		 * `public static org.freedesktop.monado.auxiliary.MonadoView
-		 * attachToActivity(android.app.Activity);`
+		 * attachToActivity(android.app.Activity, long);`
 		 *
 		 * JNI signature:
-		 * (Landroid/app/Activity;)Lorg/freedesktop/monado/auxiliary/MonadoView;
+		 * (Landroid/app/Activity;J)Lorg/freedesktop/monado/auxiliary/MonadoView;
 		 *
 		 */
 		static MonadoView
-		attachToActivity(android::app::Activity const &activity);
+		attachToActivity(android::app::Activity const &activity,
+		                 void *nativePointer);
 
 		/*!
 		 * Wrapper for the waitGetSurfaceHolder method

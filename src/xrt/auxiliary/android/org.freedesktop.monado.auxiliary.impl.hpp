@@ -16,10 +16,13 @@
 namespace wrap {
 namespace org::freedesktop::monado::auxiliary {
 	inline MonadoView
-	MonadoView::attachToActivity(android::app::Activity const &activity)
+	MonadoView::attachToActivity(android::app::Activity const &activity,
+	                             void *nativePointer)
 	{
 		return MonadoView(Meta::data().clazz().call<jni::Object>(
-		    Meta::data().attachToActivity, activity.object()));
+		    Meta::data().attachToActivity, activity.object(),
+		    static_cast<long long>(
+		        reinterpret_cast<intptr_t>(nativePointer))));
 	}
 
 	inline android::view::SurfaceHolder

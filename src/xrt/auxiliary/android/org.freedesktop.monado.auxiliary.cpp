@@ -16,8 +16,8 @@ namespace org::freedesktop::monado::auxiliary {
 	    : MetaBase(MonadoView::getTypeName(), clazz),
 	      attachToActivity(classRef().getStaticMethod(
 	          "attachToActivity",
-	          "(Landroid/app/Activity;)Lorg/freedesktop/monado/"
-	          "auxiliary/MonadoView;")),
+	          "(Landroid/app/Activity;J)Lorg/freedesktop/"
+	          "monado/auxiliary/MonadoView;")),
 	      waitGetSurfaceHolder(classRef().getMethod(
 	          "waitGetSurfaceHolder", "(I)Landroid/view/SurfaceHolder;")),
 	      markAsDiscardedByNative(

@@ -55,10 +55,13 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     private SurfaceHolder currentSurfaceHolder = null;
     /// Guarded by usedByNativeCodeSync
     private boolean usedByNativeCode = false;
+    /// Contains the pointer to the native android_custom_surface object.
+    private long nativePointer = 0;
 
-    private MonadoView(Activity activity) {
+    private MonadoView(Activity activity, long nativePointer) {
         super(activity);
         this.activity = activity;
+        this.nativePointer = nativePointer;
         Method method;
         try {
             method = activity.getWindow().getDecorView().getClass().getMethod("setSystemUiVisibility", int.class);
@@ -78,10 +81,10 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     @NonNull
     @Keep
     @SuppressWarnings("deprecation")
-    public static MonadoView attachToActivity(@NonNull final Activity activity) {
+    public static MonadoView attachToActivity(@NonNull final Activity activity, long nativePointer) {
         Log.i(TAG, "Starting to add a new surface!");
 
-        final MonadoView view = new MonadoView(activity);
+        final MonadoView view = new MonadoView(activity, nativePointer);
 
         activity.runOnUiThread(() -> {
             Log.i(TAG, "Starting runOnUiThread");
@@ -152,6 +155,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
                 Log.w(TAG, "This should not have happened: Discarding by native code, but not marked as used!");
             }
             usedByNativeCode = false;
+            nativePointer = 0;
             usedByNativeCodeSync.notifyAll();
         }
 

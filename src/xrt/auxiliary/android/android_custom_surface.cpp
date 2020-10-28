@@ -99,7 +99,8 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 			return nullptr;
 		}
 
-		ret->monadoView = MonadoView::attachToActivity(ret->activity);
+		ret->monadoView =
+		    MonadoView::attachToActivity(ret->activity, ret.get());
 
 		return ret.release();
 	} catch (std::exception const &e) {
