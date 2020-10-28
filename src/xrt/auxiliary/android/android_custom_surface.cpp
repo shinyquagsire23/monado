@@ -16,12 +16,14 @@
 
 #include "wrap/android.app.h"
 #include "wrap/android.view.h"
+#include "org.freedesktop.monado.auxiliary.hpp"
 
 #include <android/native_window_jni.h>
 
 
 using wrap::android::app::Activity;
 using wrap::android::view::SurfaceHolder;
+using wrap::org::freedesktop::monado::auxiliary::MonadoView;
 
 
 struct android_custom_surface
@@ -29,10 +31,8 @@ struct android_custom_surface
 	explicit android_custom_surface(jobject act);
 	~android_custom_surface();
 	Activity activity{};
+	MonadoView monadoView{};
 	jni::Class monadoViewClass{};
-	jni::Object monadoView{};
-	jni::method_t waitGetSurfaceHolderMethod = nullptr;
-	jni::method_t markAsDiscardedMethod = nullptr;
 };
 
 
@@ -41,14 +41,14 @@ android_custom_surface::android_custom_surface(jobject act) : activity(act) {}
 android_custom_surface::~android_custom_surface()
 {
 	// Tell Java that native code is done with this.
-	if (!monadoView.isNull() && markAsDiscardedMethod != nullptr) {
-		try {
-			monadoView.call<void>(markAsDiscardedMethod);
-		} catch (std::exception const &e) {
-			U_LOG_E(
-			    "Failure while marking MonadoView as discarded: %s",
-			    e.what());
+	try {
+		if (!monadoView.isNull()) {
+			monadoView.markAsDiscardedByNative();
 		}
+	} catch (std::exception const &e) {
+		// Must catch and ignore any exceptions in the destructor!
+		U_LOG_E("Failure while marking MonadoView as discarded: %s",
+		        e.what());
 	}
 }
 
@@ -59,10 +59,7 @@ struct android_custom_surface *
 android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 {
 	jni::init(vm);
-	jni::method_t attachToActivity;
 	try {
-		std::unique_ptr<android_custom_surface> ret =
-		    std::make_unique<android_custom_surface>((jobject)activity);
 		auto info = getAppInfo(XRT_ANDROID_PACKAGE, (jobject)activity);
 		if (info.isNull()) {
 			U_LOG_E(
@@ -79,6 +76,11 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 			        FULLY_QUALIFIED_CLASSNAME, XRT_ANDROID_PACKAGE);
 			return nullptr;
 		}
+
+		// Teach the wrapper our class before we start to use it.
+		MonadoView::staticInitClass((jclass)clazz.object().getHandle());
+		std::unique_ptr<android_custom_surface> ret =
+		    std::make_unique<android_custom_surface>((jobject)activity);
 
 		// the 0 is to avoid this being considered "temporary" and to
 		// create a global ref.
@@ -97,25 +99,8 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 			return nullptr;
 		}
 
-		if (ret->monadoViewClass.isNull()) {
-			U_LOG_E("MonadoView was null.");
-			return nullptr;
-		}
+		ret->monadoView = MonadoView::attachToActivity(ret->activity);
 
-		ret->waitGetSurfaceHolderMethod =
-		    ret->monadoViewClass.getMethod(
-		        "waitGetSurfaceHolder",
-		        "(I)Landroid/view/SurfaceHolder;");
-		ret->markAsDiscardedMethod = ret->monadoViewClass.getMethod(
-		    "markAsDiscardedByNative", "()V;");
-
-		attachToActivity = ret->monadoViewClass.getStaticMethod(
-		    "attachToActivity",
-		    "(Landroid/app/Activity;)Lorg/freedesktop/monado/auxiliary/"
-		    "MonadoView;");
-
-		ret->monadoView = ret->monadoViewClass.call<jni::Object>(
-		    attachToActivity, ret->activity.object());
 		return ret.release();
 	} catch (std::exception const &e) {
 
@@ -147,12 +132,10 @@ ANativeWindow *
 android_custom_surface_wait_get_surface(
     struct android_custom_surface *custom_surface, uint64_t timeout_ms)
 {
-	jni::Object holder = nullptr;
+	SurfaceHolder surfaceHolder{};
 	try {
-
-		holder = custom_surface->monadoView.call<jni::Object>(
-		    custom_surface->waitGetSurfaceHolderMethod,
-		    (int)timeout_ms);
+		surfaceHolder =
+		    custom_surface->monadoView.waitGetSurfaceHolder(timeout_ms);
 
 	} catch (std::exception const &e) {
 		// do nothing right now.
@@ -163,7 +146,6 @@ android_custom_surface_wait_get_surface(
 		return nullptr;
 	}
 
-	SurfaceHolder surfaceHolder(holder);
 	if (surfaceHolder.isNull()) {
 		return nullptr;
 	}
@@ -171,5 +153,6 @@ android_custom_surface_wait_get_surface(
 	if (surf.isNull()) {
 		return nullptr;
 	}
-	return ANativeWindow_fromSurface(jni::env(), surf.object().getHandle());
+	return ANativeWindow_fromSurface(jni::env(),
+	                                 surf.object().makeLocalReference());
 }
