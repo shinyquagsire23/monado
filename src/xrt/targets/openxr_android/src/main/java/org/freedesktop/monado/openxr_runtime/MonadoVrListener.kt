@@ -9,11 +9,14 @@
 package org.freedesktop.monado.openxr_runtime
 
 import android.content.ComponentName
+import android.os.Build
 import android.service.vr.VrListenerService
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 
-class OpenXRListener : VrListenerService() {
+@RequiresApi(Build.VERSION_CODES.N)
+class MonadoVrListener : VrListenerService() {
     // Would like to override
     // void onCurrentVrActivityChanged(
     //            ComponentName component, boolean running2dInVr, int pid)
