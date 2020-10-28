@@ -143,9 +143,17 @@ class MetaBase {
      *
      * @param classname The class name, fully qualified, with namespaces
      * delimited by `/`.
+     * @param clazz The jclass object for the class in question, if known.
      */
-    explicit MetaBase(const char *classname)
-        : classname_(classname), clazz_(classname_) {}
+    explicit MetaBase(const char *classname, jni::jclass clazz = nullptr)
+        : classname_(classname), clazz_() {
+        if (clazz != nullptr) {
+            // The 0 makes it a global ref.
+            clazz_ = jni::Class{clazz, 0};
+        } else {
+            clazz_ = jni::Class{classname};
+        }
+    }
 
   private:
     const char *classname_;
@@ -192,9 +200,18 @@ class MetaBaseDroppable {
      *
      * @param classname The class name, fully qualified, with namespaces
      * delimited by `/`.
+     * @param clazz The jclass object for the class in question, if known.
      */
-    explicit MetaBaseDroppable(const char *classname)
-        : classname_(classname), clazz_(classname_) {}
+    explicit MetaBaseDroppable(const char *classname,
+                               jni::jclass clazz = nullptr)
+        : classname_(classname), clazz_() {
+        if (clazz != nullptr) {
+            // The 0 makes it a global ref.
+            clazz_ = jni::Class{clazz, 0};
+        } else {
+            clazz_ = jni::Class{classname};
+        }
+    }
 
     /*!
      * Gets a reference to the class object, but is non-null only if it's still
