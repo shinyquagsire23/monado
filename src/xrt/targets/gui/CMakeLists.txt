@@ -27,8 +27,12 @@ target_link_libraries(gui PRIVATE
 	st_gui
 	target_instance_no_comp
 	imgui_impl_sdl
+	${SDL2_LIBRARIES}
 	)
-target_include_directories(gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(gui PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}/..
+	${SDL2_INCLUDE_DIRS}
+	)
 
 install(TARGETS gui
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

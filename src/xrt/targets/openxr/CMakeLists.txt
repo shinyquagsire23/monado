@@ -35,8 +35,16 @@ target_link_libraries(${RUNTIME_TARGET} PUBLIC
 if(XRT_HAVE_OPENGL)
 	target_link_libraries(${RUNTIME_TARGET} PUBLIC aux_ogl)
 endif()
+
 if(XRT_HAVE_SDL2)
-	target_link_libraries(${RUNTIME_TARGET} PUBLIC st_gui imgui_impl_sdl)
+	target_link_libraries(${RUNTIME_TARGET} PRIVATE
+		st_gui
+		imgui_impl_sdl
+		${SDL2_LIBRARIES}
+		)
+	target_include_directories(${RUNTIME_TARGET} PRIVATE
+		${SDL2_INCLUDE_DIRS}
+		)
 endif()
 
 if(XRT_FEATURE_SERVICE)
