@@ -4,7 +4,7 @@
  * @file
  * @brief  Shared memory helpers
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
- * @ingroup ipc_internal
+ * @ingroup ipc_shared
  */
 
 #pragma once

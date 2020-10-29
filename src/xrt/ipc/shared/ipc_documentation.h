@@ -18,6 +18,13 @@
  */
 
 /*!
+ * @defgroup ipc_shared Shared IPC code
+ * @ingroup ipc
+ *
+ * @brief Shared IPC code.
+ */
+
+/*!
  * @defgroup ipc_client Client IPC
  * @ingroup ipc
  *

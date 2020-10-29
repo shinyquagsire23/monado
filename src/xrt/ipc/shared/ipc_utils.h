@@ -4,7 +4,7 @@
  * @file
  * @brief  IPC util helpers, for internal use only
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
- * @ingroup ipc_internal
+ * @ingroup ipc_shared
  */
 
 #pragma once

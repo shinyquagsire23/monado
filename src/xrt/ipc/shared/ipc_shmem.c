@@ -6,7 +6,7 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup ipc_internal
+ * @ingroup ipc_shared
  */
 
 #include <xrt/xrt_config_os.h>

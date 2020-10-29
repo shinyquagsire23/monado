@@ -5,7 +5,7 @@
  * @brief  Common protocol definition.
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup ipc
+ * @ingroup ipc_shared
  */
 
 #pragma once
