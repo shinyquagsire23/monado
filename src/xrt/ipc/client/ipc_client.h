@@ -11,8 +11,8 @@
 #pragma once
 
 #include "xrt/xrt_compiler.h"
-#include "ipc_protocol.h"
-#include "ipc_utils.h"
+#include "shared/ipc_protocol.h"
+#include "shared/ipc_utils.h"
 
 #include "util/u_threading.h"
 

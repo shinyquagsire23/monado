@@ -11,7 +11,7 @@
 
 #include <xrt/xrt_config_os.h>
 
-#include "ipc_shmem.h"
+#include "shared/ipc_shmem.h"
 
 #if defined(XRT_OS_UNIX)
 #include <sys/mman.h>

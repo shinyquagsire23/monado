@@ -7,7 +7,7 @@
  * @ingroup ipc
  */
 
-#include "ipc_client.h"
+#include "client/ipc_client.h"
 #include "ipc_client_generated.h"
 
 #include <sys/socket.h>

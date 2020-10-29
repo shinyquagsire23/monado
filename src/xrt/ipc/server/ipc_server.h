@@ -16,8 +16,8 @@
 
 #include "os/os_threading.h"
 
-#include "ipc_protocol.h"
-#include "ipc_utils.h"
+#include "shared/ipc_protocol.h"
+#include "shared/ipc_utils.h"
 
 #include <stdio.h>
 

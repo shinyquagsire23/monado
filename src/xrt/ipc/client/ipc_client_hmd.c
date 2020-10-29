@@ -26,7 +26,7 @@
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
 
-#include "ipc_client.h"
+#include "client/ipc_client.h"
 #include "ipc_client_generated.h"
 
 

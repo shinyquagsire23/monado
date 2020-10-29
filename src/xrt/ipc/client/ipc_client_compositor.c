@@ -16,8 +16,8 @@
 
 #include "os/os_time.h"
 
-#include "ipc_protocol.h"
-#include "ipc_client.h"
+#include "shared/ipc_protocol.h"
+#include "client/ipc_client.h"
 #include "ipc_client_generated.h"
 
 #include <string.h>

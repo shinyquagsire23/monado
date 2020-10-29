@@ -37,3 +37,31 @@
  *
  * @brief Inter-Process Communication layer
  */
+
+/*!
+ * @dir xrt/ipc/shared
+ * @ingroup ipc
+ *
+ * @brief Inter-Process Communication layer shared code
+ */
+
+/*!
+ * @dir xrt/ipc/server
+ * @ingroup ipc
+ *
+ * @brief Inter-Process Communication layer server code
+ */
+
+/*!
+ * @dir xrt/ipc/client
+ * @ingroup ipc
+ *
+ * @brief Inter-Process Communication layer client code
+ */
+
+/*!
+ * @dir xrt/ipc/android
+ * @ingroup ipc
+ *
+ * @brief Inter-Process Communication layer android code
+ */

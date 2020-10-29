@@ -11,8 +11,8 @@
 
 #include "xrt/xrt_config_os.h"
 
-#include "ipc_utils.h"
-#include "ipc_protocol.h"
+#include "shared/ipc_utils.h"
+#include "shared/ipc_protocol.h"
 
 #include <errno.h>
 #include <sys/socket.h>

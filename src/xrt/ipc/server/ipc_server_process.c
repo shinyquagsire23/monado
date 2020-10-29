@@ -18,8 +18,8 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 
-#include "ipc_server.h"
-#include "ipc_shmem.h"
+#include "shared/ipc_shmem.h"
+#include "server/ipc_server.h"
 
 #include <stdlib.h>
 #include <unistd.h>

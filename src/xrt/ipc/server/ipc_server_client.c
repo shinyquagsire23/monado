@@ -11,7 +11,7 @@
 
 #include "util/u_misc.h"
 
-#include "ipc_server.h"
+#include "server/ipc_server.h"
 #include "ipc_server_generated.h"
 
 #include <stdlib.h>

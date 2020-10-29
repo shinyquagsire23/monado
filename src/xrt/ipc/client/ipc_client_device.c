@@ -25,7 +25,7 @@
 #include "util/u_debug.h"
 #include "util/u_device.h"
 
-#include "ipc_client.h"
+#include "client/ipc_client.h"
 #include "ipc_client_generated.h"
 
 

@@ -14,8 +14,8 @@
 #include "util/u_misc.h"
 #include "util/u_var.h"
 
-#include "ipc_protocol.h"
-#include "ipc_client.h"
+#include "shared/ipc_protocol.h"
+#include "client/ipc_client.h"
 #include "ipc_client_generated.h"
 
 #include <stdio.h>

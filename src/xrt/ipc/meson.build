@@ -9,15 +9,15 @@ ipc_include = include_directories('.')
 prog_python = import('python').find_installation('python3')
 
 common_sources = [
-	'ipc_shmem.c',
-	'ipc_shmem.h',
-	'ipc_utils.c',
-	'ipc_utils.h',
+	'shared/ipc_shmem.c',
+	'shared/ipc_shmem.h',
+	'shared/ipc_utils.c',
+	'shared/ipc_utils.h',
 ]
 
 generated = custom_target('protocol code',
 	command: [prog_python, '@INPUT@', '@OUTPUT@'],
-	input: ['proto.py', 'proto.json'],
+	input: ['shared/proto.py', 'shared/proto.json'],
 	output: [
 		'ipc_protocol_generated.h',
 		'ipc_client_generated.c',
@@ -38,11 +38,11 @@ lib_ipc_client = static_library(
 		generated[0],
 		generated[1],
 		generated[2],
-		'ipc_client.h',
-		'ipc_client_compositor.c',
-		'ipc_client_device.c',
-		'ipc_client_hmd.c',
-		'ipc_client_instance.c',
+		'client/ipc_client.h',
+		'client/ipc_client_compositor.c',
+		'client/ipc_client_device.c',
+		'client/ipc_client_hmd.c',
+		'client/ipc_client_instance.c',
 	],
 	include_directories: [
 		xrt_include,
@@ -60,9 +60,9 @@ lib_ipc_server = static_library(
 		generated[0],
 		generated[3],
 		generated[4],
-		'ipc_server.h',
-		'ipc_server_client.c',
-		'ipc_server_process.c',
+		'server/ipc_server.h',
+		'server/ipc_server_client.c',
+		'server/ipc_server_process.c',
 	],
 	include_directories: [
 		xrt_include,

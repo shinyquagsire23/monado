@@ -58,7 +58,7 @@ android {
 }
 
 dependencies {
-    outOfProcessImplementation project(':src:xrt:ipc_android')
+    outOfProcessImplementation project(':src:xrt:ipc:android')
     implementation project(':src:xrt:auxiliary:android')
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
