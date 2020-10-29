@@ -17,6 +17,8 @@
 #include "util/u_var.h"
 #include "util/u_distortion_mesh.h"
 
+#include <xrt/xrt_config_android.h>
+
 // 60 events per second (in us).
 #define POLL_RATE_USEC (1000L / 60) * 1000
 
@@ -87,7 +89,13 @@ android_run_thread(void *ptr)
 {
 	struct android_device *d = (struct android_device *)ptr;
 
+#if __ANDROID_API__ >= 26
+	d->sensor_manager =
+	    ASensorManager_getInstanceForPackage(XRT_ANDROID_PACKAGE);
+#else
 	d->sensor_manager = ASensorManager_getInstance();
+#endif
+
 	d->accelerometer = ASensorManager_getDefaultSensor(
 	    d->sensor_manager, ASENSOR_TYPE_ACCELEROMETER);
 	d->gyroscope = ASensorManager_getDefaultSensor(d->sensor_manager,
