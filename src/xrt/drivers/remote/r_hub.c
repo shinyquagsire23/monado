@@ -81,7 +81,7 @@ do_accept(struct r_hub *r)
 	struct sockaddr_in addr = {0};
 	int ret, conn_fd;
 
-	unsigned addr_length = sizeof(addr);
+	socklen_t addr_length = (socklen_t)sizeof(addr);
 	ret = accept(r->accept_fd, (struct sockaddr *)&addr, &addr_length);
 	if (ret < 0) {
 		U_LOG_E("accept failed: %i", ret);
