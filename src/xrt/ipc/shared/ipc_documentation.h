@@ -39,6 +39,13 @@
  */
 
 /*!
+ * @defgroup ipc_android Android IPC code
+ * @ingroup ipc
+ *
+ * @brief Android IPC code.
+ */
+
+/*!
  * @dir xrt/ipc
  * @ingroup xrt
  *

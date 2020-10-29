@@ -4,7 +4,7 @@
  * @file
  * @brief  Interface to bootstrap the Monado IPC connection.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
- * @ingroup aux_android_java
+ * @ingroup ipc_android
  */
 
 package org.freedesktop.monado.ipc;

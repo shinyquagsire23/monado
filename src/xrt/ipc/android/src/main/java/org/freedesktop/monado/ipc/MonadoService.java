@@ -4,6 +4,7 @@
  * @file
  * @brief  Service implementation for exposing IMonado.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @ingroup ipc_android
  */
 
 
