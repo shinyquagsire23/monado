@@ -22,8 +22,9 @@ ext {
     sharedTargetSdk = 30
     sharedMinSdk = 26
 
-    // If you get an error here, make sure you have this set in local.properties
-    eigenIncludeDir = project.property('eigenIncludeDir')
+    // If you are building on Windows, you will need to explicitly set eigenIncludeDir in your
+    // local.properties file since the default value provided below only makes sense on *nix
+    eigenIncludeDir = project.findProperty('eigenIncludeDir') ?: '/usr/include/eigen3'
 }
 
 allprojects {
