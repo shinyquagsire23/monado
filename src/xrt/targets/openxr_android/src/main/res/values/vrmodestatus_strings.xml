@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+
+    <!-- Strings for the VR Mode status fragment -->
+    <string name="vr_mode_enabled">Built-in Android VR Mode features are <b>enabled</b> for this runtime.</string>
+    <string name="vr_mode_disabled">Built-in Android VR Mode features are available on this device, but are <b>not enabled</b> for this runtime. You can enable them below.</string>
+    <string name="vr_mode_not_avail">No built-in Android VR Mode features are available on this device, but %1$s does not require them.</string>
+    <string name="launch_settings">Open Android VR Settings</string>
+    <string name="monado_logo">Monado logo</string>
+
+</resources>

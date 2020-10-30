@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.service.vr.VrListenerService;
@@ -152,6 +153,7 @@ public class VrModeStatus extends Fragment {
     private void updateState(View v) {
         TextView textEnabledDisabled = v.findViewById(R.id.textEnabledDisabled);
         Button button = v.findViewById(R.id.btnLaunchVrSettings);
+        Resources res = getResources();
         switch (status_) {
             case STATUS_DISABLED:
                 textEnabledDisabled.setText(R.string.vr_mode_disabled);
@@ -164,7 +166,7 @@ public class VrModeStatus extends Fragment {
                 button.setVisibility(View.VISIBLE);
                 break;
             case STATUS_NOT_AVAIL:
-                textEnabledDisabled.setText(R.string.vr_mode_not_avail);
+                textEnabledDisabled.setText(res.getString(R.string.vr_mode_not_avail, res.getString(R.string.app_name)));
                 textEnabledDisabled.setVisibility(View.VISIBLE);
                 button.setVisibility(View.GONE);
                 break;
