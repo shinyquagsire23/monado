@@ -4,6 +4,10 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+androidGitVersion {
+    tagPattern(/^v[0-9]+.*/)
+    codeFormat = 'MNNPPPBBB'
+}
 android {
     compileSdkVersion project.sharedTargetSdk
     buildToolsVersion '30.0.2'
@@ -14,8 +18,9 @@ android {
         applicationId 'org.freedesktop.monado.openxr_runtime'
         minSdkVersion project.sharedMinSdk
         targetSdkVersion project.sharedTargetSdk
-        versionCode 1
-        versionName '1.0'
+
+        versionCode androidGitVersion.code()
+        versionName androidGitVersion.name()
         externalNativeBuild {
             cmake {
                 arguments "-DEIGEN3_INCLUDE_DIR=${project.eigenIncludeDir}", "-DANDROID_PLATFORM=26", "-DANDROID_STL=c++_shared", "-DANDROID_ARM_NEON=TRUE"
