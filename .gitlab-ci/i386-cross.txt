@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2020, Collabora, Ltd. and the Monado contributors
+# SPDX-License-Identifier: CC0-1.0
+
 [binaries]
 c = '/usr/bin/i686-linux-gnu-gcc'
 cpp = '/usr/bin/i686-linux-gnu-g++'

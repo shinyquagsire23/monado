@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright 2019-2020, Mesa contributors
+# Copyright 2020, Collabora, Ltd.
+# SPDX-License-Identifier: MIT
 
 # Based on https://gitlab.freedesktop.org/mesa/mesa/-/blob/master/.gitlab-ci/container/x86_build.sh
 

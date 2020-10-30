@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright 2018-2020, Collabora, Ltd. and the Monado contributors
+# SPDX-License-Identifier: BSL-1.0
 
 # Install the OpenXR SDK, whatever version, installed system-wide.
 git clone https://github.com/KhronosGroup/OpenXR-SDK
