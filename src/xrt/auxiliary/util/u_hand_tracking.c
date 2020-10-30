@@ -9,12 +9,11 @@
 
 #include "u_hand_tracking.h"
 
-#include <math.h>
+#include "math/m_mathinclude.h"
 #include "math/m_api.h"
 #include "math/m_space.h"
 
-#define PI 3.14159265358979323846
-#define DEG_TO_RAD(DEG) (DEG * PI / 180.)
+#define DEG_TO_RAD(DEG) (DEG * M_PI / 180.)
 
 struct u_joint_curl_model
 {
