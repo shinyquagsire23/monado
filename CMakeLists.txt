@@ -167,7 +167,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_DAYDREAM "Enable the Google Daydream Vie
 cmake_dependent_option(XRT_BUILD_DRIVER_ARDUINO "Enable Arduino input device with BLE via via D-Bus" ON "XRT_HAVE_DBUS" OFF)
 
 option(XRT_BUILD_DRIVER_DUMMY "Enable dummy driver" ON)
-option(XRT_BUILD_DRIVER_REMOTE "Enable remote debugging driver" ON)
+cmake_dependent_option(XRT_BUILD_DRIVER_REMOTE "Enable remote debugging driver" ON "XRT_HAVE_LINUX OR ANDROID" OFF)
 
 # These all use the Monado internal hid wrapper.
 cmake_dependent_option(XRT_BUILD_DRIVER_HDK "Enable HDK driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
