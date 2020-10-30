@@ -21,6 +21,9 @@ android {
 
         versionCode androidGitVersion.code()
         versionName androidGitVersion.name()
+
+        resValue "string", "monado_lib_version", "${versionName}"
+        resValue "string", "app_name", "Monado XR"
         externalNativeBuild {
             cmake {
                 arguments "-DEIGEN3_INCLUDE_DIR=${project.eigenIncludeDir}", "-DANDROID_PLATFORM=26", "-DANDROID_STL=c++_shared", "-DANDROID_ARM_NEON=TRUE"
