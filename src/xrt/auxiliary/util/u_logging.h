@@ -74,11 +74,11 @@ struct xrt_device;
 #define U_LOG_W(...) U_LOG(U_LOGGING_WARN, __VA_ARGS__)
 #define U_LOG_E(...) U_LOG(U_LOGGING_ERROR, __VA_ARGS__)
 
-#define U_LOG_IFL_T(...) U_LOG_IFL(U_LOGGING_TRACE, __VA_ARGS__)
-#define U_LOG_IFL_D(...) U_LOG_IFL(U_LOGGING_DEBUG, __VA_ARGS__)
-#define U_LOG_IFL_I(...) U_LOG_IFL(U_LOGGING_INFO, __VA_ARGS__)
-#define U_LOG_IFL_W(...) U_LOG_IFL(U_LOGGING_WARN, __VA_ARGS__)
-#define U_LOG_IFL_E(...) U_LOG_IFL(U_LOGGING_ERROR, __VA_ARGS__)
+#define U_LOG_IFL_T(cond_level, ...) U_LOG_IFL(U_LOGGING_TRACE, cond_level, __VA_ARGS__)
+#define U_LOG_IFL_D(cond_level, ...) U_LOG_IFL(U_LOGGING_DEBUG, cond_level, __VA_ARGS__)
+#define U_LOG_IFL_I(cond_level, ...) U_LOG_IFL(U_LOGGING_INFO, cond_level, __VA_ARGS__)
+#define U_LOG_IFL_W(cond_level, ...) U_LOG_IFL(U_LOGGING_WARN, cond_level, __VA_ARGS__)
+#define U_LOG_IFL_E(cond_level, ...) U_LOG_IFL(U_LOGGING_ERROR, cond_level, __VA_ARGS__)
 
 #define U_LOG_XDEV_IFL_T(xdev, cond_level, ...) U_LOG_XDEV_IFL(U_LOGGING_TRACE, cond_level, xdev, __VA_ARGS__)
 #define U_LOG_XDEV_IFL_D(xdev, cond_level, ...) U_LOG_XDEV_IFL(U_LOGGING_DEBUG, cond_level, xdev, __VA_ARGS__)
