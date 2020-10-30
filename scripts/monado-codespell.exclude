@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2019-2020, Collabora, Ltd.
+# SPDX-License-Identifier: CC0-1.0
+
  * @author Simon Ser <contact@emersion.fr>
 #include <asm/byteorder.h>
 	if (stream.parm.capture.capability & V4L2_CAP_TIMEPERFRAME) {

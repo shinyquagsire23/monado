@@ -1,3 +1,6 @@
+# Copyright 2019-2020, Collabora, Ltd.
+# SPDX-License-Identifier: BSL-1.0
+
 shader_srcs = [
 	'mesh.frag',
 	'mesh.vert',
