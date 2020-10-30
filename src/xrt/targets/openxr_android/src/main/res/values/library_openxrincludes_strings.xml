@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+    <string name="define_plu_openxrheaders">type</string>
+    <string name="library_openxrheaders_author">The Khronos Group Inc.</string>
+    <string name="library_openxrheaders_authorWebsite">https://khronos.org/openxr</string>
+    <string name="library_openxrheaders_libraryName">OpenXR Headers</string>
+    <string name="library_openxrheaders_licenseIds">apache_2_0,mit</string>
+    <string name="library_openxrheaders_isOpenSource">true</string>
+    <string name="library_openxrheaders_repositoryLink">https://github.com/KhronosGroup/OpenXR-SDK</string>
+    <string name="library_openxrheaders_type">native</string>
+
+
+</resources>

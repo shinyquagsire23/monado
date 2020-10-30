@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+    <string name="define_plu_quatexpmap">type</string>
+    <string name="library_quatexpmap_author">Sensics, Inc., Collabora, Ltd.</string>
+    <string name="library_quatexpmap_libraryName">Quaternion Exponential Map</string>
+    <string name="library_quatexpmap_licenseIds">apache_2_0</string>
+    <string name="library_quatexpmap_isOpenSource">true</string>
+    <string name="library_quatexpmap_repositoryLink">https://gitlab.freedesktop.org/monado/monado/-/blob/master/src/xrt/auxiliary/math/m_quatexpmap.cpp</string>
+    <string name="library_quatexpmap_type">native</string>
+
+</resources>

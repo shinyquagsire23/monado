@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+    <string name="define_plu_Monado">type</string>
+    <string name="library_Monado_author">Collabora, Ltd. and the Monado contributors</string>
+    <string name="library_Monado_authorWebsite">https://monado.freedesktop.org</string>
+    <string name="library_Monado_libraryName">Monado</string>
+    <string name="library_Monado_libraryDescription">XR runtime construction kit</string>
+    <string name="library_Monado_libraryVersion">@string/monado_lib_version</string>
+    <string name="library_Monado_licenseIds">bsl_1_0</string>
+    <string name="library_Monado_isOpenSource">true</string>
+    <string name="library_Monado_repositoryLink">https://gitlab.freedesktop.org/monado/monado</string>
+    <string name="library_Monado_type">native</string>
+
+
+</resources>

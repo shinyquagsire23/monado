@@ -3,11 +3,19 @@
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'com.mikepenz.aboutlibraries.plugin'
 
 androidGitVersion {
     tagPattern(/^v[0-9]+.*/)
     codeFormat = 'MNNPPPBBB'
 }
+
+def parseOpenXRVersion(def fn) {
+    def matches = file(fn).readLines().find { it.contains('XR_CURRENT_API_VERSION') }  =~ ~/XR_MAKE_VERSION\(([^\)]+)\)/
+    def components = matches[0][1].split(',').each { it.replace(' ', '').trim() }
+    String.join('.', components)
+}
+
 android {
     compileSdkVersion project.sharedTargetSdk
     buildToolsVersion '30.0.2'
@@ -24,6 +32,9 @@ android {
 
         resValue "string", "monado_lib_version", "${versionName}"
         resValue "string", "app_name", "Monado XR"
+
+        resValue "string", "library_openxrheaders_libraryVersion", parseOpenXRVersion("../../../external/openxr_includes/openxr/openxr.h")
+
         externalNativeBuild {
             cmake {
                 arguments "-DEIGEN3_INCLUDE_DIR=${project.eigenIncludeDir}", "-DANDROID_PLATFORM=26", "-DANDROID_STL=c++_shared", "-DANDROID_ARM_NEON=TRUE"
@@ -34,7 +45,8 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            // proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Gradle plugin produces proguard-android-optimize.txt from @Keep annotations
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
@@ -65,10 +77,20 @@ android {
     }
 }
 
+aboutLibraries {
+    configPath = "config"
+}
+
 dependencies {
     outOfProcessImplementation project(':src:xrt:ipc:android')
     implementation project(':src:xrt:auxiliary:android')
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
+    implementation "com.mikepenz:aboutlibraries-core:${latestAboutLibsRelease}"
+    implementation "com.mikepenz:aboutlibraries:${latestAboutLibsRelease}"
+    implementation "androidx.cardview:cardview:1.*.*"
+    implementation "androidx.recyclerview:recyclerview:1.1.*"
+    implementation "com.google.android.material:material:1.1.*"
+
 }

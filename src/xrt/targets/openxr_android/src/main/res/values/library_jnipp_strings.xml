@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+    <string name="define_plu_jnipp">type</string>
+    <string name="library_jnipp_author">Mitchell Dowd, Ryan Pavlik</string>
+    <string name="library_jnipp_authorWebsite">https://github.com/rpavlik/jnipp</string>
+    <string name="library_jnipp_libraryName">JNIPP</string>
+    <string name="library_jnipp_libraryDescription">C++ wrapper for the Java Native Interface</string>
+    <string name="library_jnipp_licenseIds">mit</string>
+    <string name="library_jnipp_isOpenSource">true</string>
+    <string name="library_jnipp_repositoryLink">https://github.com/rpavlik/jnipp</string>
+    <string name="library_jnipp_type">native</string>
+
+</resources>

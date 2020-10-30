@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+    <string name="define_plu_openxrloaderinterfaces">type</string>
+    <string name="library_openxrloaderinterfaces_author">The Khronos Group Inc., Valve Corporation, LunarG, Inc.</string>
+    <string name="library_openxrloaderinterfaces_authorWebsite">https://khronos.org/openxr</string>
+    <string name="library_openxrloaderinterfaces_libraryName">OpenXR Loader Interfaces</string>
+    <string name="library_openxrloaderinterfaces_licenseIds">apache_2_0</string>
+    <string name="library_openxrloaderinterfaces_libraryVersion">1.0</string>
+    <string name="library_openxrloaderinterfaces_isOpenSource">true</string>
+    <string name="library_openxrloaderinterfaces_repositoryLink">https://github.com/KhronosGroup/OpenXR-SDK</string>
+    <string name="library_openxrloaderinterfaces_type">native</string>
+
+</resources>

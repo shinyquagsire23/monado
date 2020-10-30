@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+    <string name="define_plu_cjson">type</string>
+    <string name="library_cjson_author">Dave Gamble and cJSON contributors</string>
+    <string name="library_cjson_authorWebsite">https://github.com/DaveGamble/cJSON</string>
+    <string name="library_cjson_libraryName">cJSON</string>
+    <string name="library_cjson_libraryDescription">cJSON is a parser that tries to share the same philosophy as JSON itself. Simple, dumb, out of the way.</string>
+    <string name="library_cjson_libraryVersion">1.7.12</string>
+    <string name="library_cjson_licenseIds">mit</string>
+    <string name="library_cjson_isOpenSource">true</string>
+    <string name="library_cjson_repositoryLink">https://github.com/DaveGamble/cJSON</string>
+    <string name="library_cjson_type">native</string>
+
+
+</resources>
