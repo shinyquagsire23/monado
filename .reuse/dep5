@@ -6,6 +6,10 @@ Files: doc/changes/drivers/*
   doc/changes/misc_features/*
   doc/changes/misc_fixes/*
   doc/changes/state_trackers/*
+  doc/changes/ipc/*
+  doc/changes/xrt/*
+  doc/changes/auxiliary/*
+  doc/changes/compositor/*
 Copyright: 2020, Collabora, Ltd. and the Monado contributors
 License: CC0-1.0
 Comment: Prevents needing a license header per fragment between releases.

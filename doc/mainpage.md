@@ -1,5 +1,10 @@
 # Monado
 
+<!--
+Copyright 2018-2020, Collabora, Ltd. and the Monado contributors
+SPDX-License-Identifier: BSL-1.0
+-->
+
 This documentation is intended for developers wanting to dive into the code of
 Monado. And assumes that you have read [README.md][], the file also holds
 getting started information and general documentation.

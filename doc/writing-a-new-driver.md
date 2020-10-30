@@ -1,5 +1,10 @@
 # Writing a new driver
 
+<!--
+Copyright 2018-2020, Collabora, Ltd. and the Monado contributors
+SPDX-License-Identifier: BSL-1.0
+-->
+
 This document will tell you in broad strokes what you need to do to create a
 driver in Monado. Like the many ones already in there @ref drv. It is not a step
 by step guide to making a driver. Also what you need to do can vary a lot

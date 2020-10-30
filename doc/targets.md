@@ -1,5 +1,10 @@
 # Understanding and Writing Targets
 
+<!--
+Copyright 2018-2020, Collabora, Ltd. and the Monado contributors
+SPDX-License-Identifier: BSL-1.0
+-->
+
 Monado is designed to be a collection of related but independent modules. The
 final build product that brings all the desired components together, potentially
 with additional code, is called the "target". There are several targets included

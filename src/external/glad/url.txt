@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2020, Collabora, Ltd. and the Monado contributors
+SPDX-License-Identifier: CC0-1.0
+-->
+
 http://gen.glad.sh/#profile=gl%3Dcore%2Cgles1%3Dcommon&api=egl%3D1.4%2Cgl%3D4.5%2Cgles2%3D3.2&extensions=EGL_ANDROID_get_native_client_buffer%2CEGL_ANDROID_image_native_buffer%2CEGL_EXT_image_dma_buf_import%2CEGL_EXT_image_dma_buf_import_modifiers%2CEGL_KHR_image%2CEGL_KHR_platform_android%2CGL_EXT_memory_object%2CGL_EXT_memory_object_fd%2CGL_EXT_memory_object_win32%2CGL_OES_EGL_image%2CGL_OES_EGL_image_external%2CGL_OES_EGL_image_external_essl3&options=MERGE%2CMERGE&generator=c
 
 

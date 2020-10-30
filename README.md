@@ -1,5 +1,13 @@
 # Monado - XR Runtime (XRT)
 
+<!--
+Copyright 2018-2020, Collabora, Ltd.
+SPDX-License-Identifier: CC-BY-4.0
+
+This must stay in sync with the last section!
+-->
+
+
 > * Promotional homepage: <https://monado.dev>
 > * Maintained at <https://gitlab.freedesktop.org/monado/monado>
 > * Latest API documentation: <https://monado.pages.freedesktop.org/monado>
@@ -266,7 +274,7 @@ reported by contacting:
 
 For this file only:
 
-> Copyright 2018-2019 Collabora, Ltd.
+> Copyright 2018-2020, Collabora, Ltd.
 > Code of Conduct section: excerpt adapted from the [Contributor Covenant](https://www.contributor-covenant.org), version 1.4.1,
 > available at <https://www.contributor-covenant.org/version/1/4/code-of-conduct.html>,
 > and from the freedesktop.org-specific version of that code,
@@ -274,3 +282,5 @@ For this file only:
 >
 >
 > SPDX-License-Identifier: CC-BY-4.0
+
+<!-- This must stay in sync with the comment at the start! -->

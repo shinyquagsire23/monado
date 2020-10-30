@@ -1,5 +1,10 @@
 # Roadmap
 
+<!--
+Copyright 2018-2020, Collabora, Ltd. and the Monado contributors
+SPDX-License-Identifier: BSL-1.0
+-->
+
 ## Short term
 
 * **cmake**: Make a proper FindXCB.cmake file.
