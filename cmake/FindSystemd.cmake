@@ -23,6 +23,7 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the License for more information.
 #=============================================================================
+# SPDX-License-Identifier: BSD-3-Clause
 
 include(FeatureSummary)
 set_package_properties(
