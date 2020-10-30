@@ -5,3 +5,4 @@ This is a C++ wrapper with slight modification of a hungarian algorithm implemen
 The original code is a few mex-functions for use in MATLAB, found here: 
 http://www.mathworks.com/matlabcentral/fileexchange/6543-functions-for-the-rectangular-assignment-problem
 
+Upstream source: https://github.com/mcximing/hungarian-algorithm-cpp

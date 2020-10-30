@@ -15,7 +15,7 @@ License: CC0-1.0
 Comment: Prevents needing a license header per fragment between releases.
 
 Files: src/external/flexkalman/.clang-format
-       src/external/flexkalman/README.md
+       src/external/flexkalman/flexkalman/README.md
 Copyright: 2015, 2016, Sensics, Inc.
  2019, Collabora, Ltd.
 License: Apache-2.0
@@ -24,17 +24,79 @@ Comment: Copyright statement and license identifier missing.
 Files: src/external/cjson/*
 Copyright: 2009-2017, Dave Gamble and cJSON contributors
 License: MIT
-Comment: SPDX-Licence-Identifier missing.
+Comment: SPDX-License-Identifier missing.
  Debian calls this "Expat" for clarity.
 
-Files: src/external/openxr_includes/*
-Copyright: 2017-2019, The Khronos Group Inc.
-License: Apache-2.0
-Comment: SPDX-Licence-Identifier missing.
+Files: src/external/Catch2/catch/*
+Copyright: 2020, Two Blue Cubes Ltd.
+License: BSL-1.0
+Comment: SPDX-License-Identifier missing.
 
 Files: src/external/openxr_includes/loader_interfaces.h
 Copyright: 2017, LunarG, Inc.
  2017, Valve Corporation
  2017-2019, The Khronos Group Inc.
 License: Apache-2.0
-Comment: SPDX-Licence-Identifier missing.
+Comment: SPDX-License-Identifier missing.
+
+
+Files: src/external/jnipp/*
+Copyright: 2016-2020, Mitchell Dowd
+ 2020, Collabora, Ltd.
+License: MIT
+Comment: SPDX-License-Identifier missing.
+ Debian calls this "Expat" for clarity.
+
+Files: src/external/hungarian/*
+Copyright: 2016, mcximing
+License: BSD-2-Clause
+Comment: SPDX-License-Identifier missing.
+
+Files: src/external/imgui/imgui*
+ src/external/imgui/imconfig.h
+Copyright: 2014-2020, Omar Cornut
+License: MIT
+Comment: Copyright statement and license identifier missing.
+ Debian calls this "Expat" for clarity.
+
+Files: src/external/imgui/implot*
+Copyright: 2020, Evan Pezent
+License: MIT
+Comment: SPDX-License-Identifier missing.
+ Debian calls this "Expat" for clarity.
+
+Files: src/external/imgui/cim*
+Copyright: 2015, Stephan Dilly
+License: MIT
+Comment: Copyright statement and license identifier missing.
+ Debian calls this "Expat" for clarity.
+
+Files: src/external/imgui/imstb*
+Copyright: 2017, Sean Barrett
+License: MIT OR Unlicense
+Comment: SPDX-License-Identifier missing.
+
+Files: src/external/glad/include/EGL/eglplatform.h
+Copyright: 2007-2016, The Khronos Group Inc.
+License: LicenseRef-Khronos-Free-Use-License-for-Software-and-Documentation
+Comment: SPDX-License-Identifier missing.
+
+Files:  src/external/glad/include/KHR/khrplatform.h
+Copyright: 2008-2018, The Khronos Group Inc.
+License: LicenseRef-Khronos-Free-Use-License-for-Software-and-Documentation
+Comment: SPDX-License-Identifier missing.
+
+Files: src/external/glad/include/glad/egl.h
+Copyright: 2013-2020, The Khronos Group, Inc.
+License: Apache-2.0
+Comment: This is generated from the specification XML (licensed as above) by GLAD2.
+
+Files: src/external/glad/include/glad/gl.h
+Copyright: 2013-2020, The Khronos Group, Inc.
+License: Apache-2.0
+Comment: This is generated from the specification XML (licensed as above) by GLAD2.
+
+Files:  src/external/glad/src/*
+Copyright: 2013-2020, David Herberth
+License: MIT
+Comment: SPDX-License-Identifier missing.
