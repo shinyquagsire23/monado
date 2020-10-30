@@ -31,7 +31,7 @@
 
 // Should the experimental PSVR driver be enabled.
 DEBUG_GET_ONCE_BOOL_OPTION(psvr_enable, "PSVR_ENABLE", true)
-DEBUG_GET_ONCE_LOG_OPTION(psvr_log, "DUMMY_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(psvr_log, "PSVR_LOG", U_LOGGING_WARN)
 
 #define PSVR_DEBUG(p, ...) U_LOG_IFL_D(p->log_level, __VA_ARGS__)
 
