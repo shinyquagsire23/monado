@@ -1,1 +1,0 @@
-OpenXR: Implement the MND_swapchain_usage_input_attachment_bit extension.

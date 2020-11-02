@@ -1,1 +1,0 @@
-compositor: Implement cylinder layers.

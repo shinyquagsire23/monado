@@ -1,1 +1,0 @@
-survive: Implement haptic feedback.
