@@ -43,6 +43,8 @@ find_package(cJSON)
 find_package(Systemd)
 find_package(OpenGLES COMPONENTS V3)
 
+# Android SDK doesn't look for 3.8 and 3.9, which is what new distros ship with.
+set(Python_ADDITIONAL_VERSIONS 3.8 3.9)
 if(NOT CMAKE_VERSION VERSION_LESS 3.12)
 	find_package(Python3 REQUIRED Interpreter)
 	set(PYTHON_EXECUTABLE Python3::Interpreter)
