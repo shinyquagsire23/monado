@@ -49,6 +49,8 @@
  */
 
 DEBUG_GET_ONCE_BOOL_OPTION(exit_on_disconnect, "IPC_EXIT_ON_DISCONNECT", false)
+DEBUG_GET_ONCE_BOOL_OPTION(print_spew, "IPC_PRINT_SPEW", false)
+DEBUG_GET_ONCE_BOOL_OPTION(print_debug, "IPC_PRINT_DEBUG", false)
 
 struct _z_sort_data
 {
@@ -468,6 +470,9 @@ init_all(struct ipc_server *s)
 
 	// Easier to use.
 	s->xc = &s->xcn->base;
+
+	s->print_spew = debug_get_bool_option_print_spew();
+	s->print_debug = debug_get_bool_option_print_debug();
 
 	u_var_add_root(s, "IPC Server", false);
 	u_var_add_bool(s, &s->print_debug, "print.debug");

@@ -13,6 +13,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_var.h"
+#include "util/u_debug.h"
 
 #include "shared/ipc_protocol.h"
 #include "client/ipc_client.h"
@@ -32,6 +33,9 @@
 #ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
 #include "android/android_ahardwarebuffer_allocator.h"
 #endif
+
+DEBUG_GET_ONCE_BOOL_OPTION(print_spew, "IPC_PRINT_SPEW", false)
+DEBUG_GET_ONCE_BOOL_OPTION(print_debug, "IPC_PRINT_DEBUG", false)
 
 /*
  *
@@ -68,9 +72,8 @@ ipc_connect(struct ipc_connection *ipc_c)
 	struct sockaddr_un addr;
 	int ret;
 
-	ipc_c->print_spew = false;  // TODO: hardcoded - fetch from settings
-	ipc_c->print_debug = false; // TODO: hardcoded - fetch from settings
-
+	ipc_c->print_spew = debug_get_bool_option_print_spew();
+	ipc_c->print_debug = debug_get_bool_option_print_debug();
 
 	// create our IPC socket
 
