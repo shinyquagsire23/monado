@@ -5,6 +5,301 @@ SPDX-License-Identifier: CC0-1.0
 SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
 ```
 
+## Monado 0.4.0 (2020-11-02)
+
+- XRT Interface
+  - add `xrt_device_type` to `xrt_device` to differentiate handed controllers
+    from
+    controllers that can be held in either hand.
+    ([!412](https://gitlab.freedesktop.org/monado/monado/merge_requests/412))
+  - Rename functions and types that assumed the native graphics buffer handle type
+    was an FD: in `auxiliary/vk/vk_helpers.{h,c}` `vk_create_image_from_fd` ->
+    `vk_create_image_from_native`, in the XRT headers `struct xrt_compositor_fd` ->
+    `xrt_compositor_native` (and method name changes from `xrt_comp_fd_...` ->
+    `xrt_comp_native_...`), `struct xrt_swapchain_fd` -> `struct
+    xrt_swapchain_native`, `struct xrt_image_fd` -> `struct xrt_image_native`, and
+    corresponding parameter/member/variable name changes (e.g. `struct
+    xrt_swapchain_fd *xscfd` becomes `struct xrt_swapchain_native *xscn`).
+    ([!426](https://gitlab.freedesktop.org/monado/monado/merge_requests/426),
+    [!428](https://gitlab.freedesktop.org/monado/monado/merge_requests/428))
+  - Make some fields on `xrt_gl_swapchain` and `xrt_vk_swapchain` private moving
+    them into the client compositor code instead of exposing them.
+    ([!444](https://gitlab.freedesktop.org/monado/monado/merge_requests/444))
+  - Make `xrt_compositor::create_swapchain` return xrt_result_t instead of the
+    swapchain, this makes the methods on `xrt_compositor` more uniform.
+    ([!444](https://gitlab.freedesktop.org/monado/monado/merge_requests/444))
+  - Add the method `xrt_compositor::import_swapchain` allowing a state tracker to
+    create a swapchain from a set of pre-allocated images. Uses the same
+    `xrt_swapchain_create_info` as `xrt_compositor::create_swapchain`.
+    ([!444](https://gitlab.freedesktop.org/monado/monado/merge_requests/444))
+  - Make `xrt_swapchain_create_flags` swapchain static image bit match OpenXR.
+    ([!454](https://gitlab.freedesktop.org/monado/monado/merge_requests/454))
+  - Add `XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT` flag to `xrt_swapchain_usage_bits`
+    so that a client can create a Vulkan swapchain that can be used as input
+    attachment.
+    ([!459](https://gitlab.freedesktop.org/monado/monado/merge_requests/459))
+  - Remove the `flip_y` parameter to the creation of the native compositor, this
+    is
+    now a per layer thing.
+    ([!461](https://gitlab.freedesktop.org/monado/monado/merge_requests/461))
+  - Add `xrt_compositor_info` struct that allows the compositor carry information
+    to about it's capbilities and it's recommended values. Not everything is hooked
+    up at the moment.
+    ([!461](https://gitlab.freedesktop.org/monado/monado/merge_requests/461))
+  - Add defines for underlying handle types.
+    ([!469](https://gitlab.freedesktop.org/monado/monado/merge_requests/469))
+  - Add a native handle type for graphics sync primitives (currently file
+    descriptors on all platforms).
+    ([!469](https://gitlab.freedesktop.org/monado/monado/merge_requests/469))
+  - Add a whole bunch of structs and functions for all of the different layers
+    in
+    OpenXR. The depth layer information only applies to the stereo projection
+    so
+    make a special stereo projection with depth layer.
+    ([!476](https://gitlab.freedesktop.org/monado/monado/merge_requests/476))
+  - Add `xrt_image_native_allocator` as a friend to the compositor interface. This
+    simple interface is intended to be used by the IPC interface to allocate
+    `xrt_image_native` on the client side and send those to the service.
+    ([!478](https://gitlab.freedesktop.org/monado/monado/merge_requests/478))
+  - Re-arrange and document `xrt_image_native`, making the `size` field optional.
+    ([!493](https://gitlab.freedesktop.org/monado/monado/merge_requests/493))
+  - Add const to all compositor arguments that are info structs, making the
+    interface safer and
+    more clear. Also add `max_layers` field to the
+    `xrt_compositor_info` struct.
+    ([!501](https://gitlab.freedesktop.org/monado/monado/merge_requests/501))
+  - Add `xrt_space_graph` struct for calculating space relations. This struct and
+    accompanying makes it easier to reason about space relations than just
+    functions
+    operating directly on `xrt_space_relation`. The code base is changed
+    to use
+    these new functions.
+    ([!519](https://gitlab.freedesktop.org/monado/monado/merge_requests/519))
+  - Remove the `linear_acceleration` and `angular_acceleration` fields from the
+    `xrt_space_relation` struct, these were not used in the codebase and are not
+    exposed in the OpenXR API. They can easily be added back should they be
+    required again by code or a future feature. Drivers are free to retain this
+    information internally, but no longer expose it.
+    ([!519](https://gitlab.freedesktop.org/monado/monado/merge_requests/519))
+  - Remove the `out_timestamp` argument to the `xrt_device::get_tracked_pose`
+    function, it's not needed anymore and the devices can do prediction better
+    as
+    it knows more about it's tracking system the the state tracker.
+    ([!521](https://gitlab.freedesktop.org/monado/monado/merge_requests/521))
+  - Replace mesh generator with `compute_distortion` function on `xrt_device`. This
+    is used to both make it possible to use mesh shaders for devices and to provide
+    compatibility with SteamVR which requires a `compute_distortion` function as
+    well.
+
+    The compositor uses this function automatically to create a mesh and
+    uses mesh
+    distortion for all drivers. The function `compute_distortion` default
+    implementations for `none`, `panotools` and `vive` distortion models are
+    provided in util.
+    ([!536](https://gitlab.freedesktop.org/monado/monado/merge_requests/536))
+  - Add a simple curl value based finger tracking model and use it for vive and
+    survive controllers.
+    ([!555](https://gitlab.freedesktop.org/monado/monado/merge_requests/555))
+- State Trackers
+  - OpenXR: Add support for attaching Quad layers to action sapces.
+    ([!437](https://gitlab.freedesktop.org/monado/monado/merge_requests/437))
+  - OpenXR: Use initial head pose as origin for local space.
+    ([!443](https://gitlab.freedesktop.org/monado/monado/merge_requests/443))
+  - OpenXR: Minor fixes for various bits of code: copy-typo in device assignment
+    code; better stub for the unimplemented function
+    `xrEnumerateBoundSourcesForAction`; better error message on internal error in
+    `xrGetCurrentInteractionProfile`.
+    ([!448](https://gitlab.freedesktop.org/monado/monado/merge_requests/448))
+  - OpenXR: Make the `xrGetCurrentInteractionProfile` conformance tests pass,
+    needed
+    to implement better error checking as well as generating
+    `XrEventDataInteractionProfileChanged` events to the client.
+    ([!448](https://gitlab.freedesktop.org/monado/monado/merge_requests/448))
+  - OpenXR: Centralize all sub-action path iteration in some x-macros.
+    ([!449](https://gitlab.freedesktop.org/monado/monado/merge_requests/449),
+    [!456](https://gitlab.freedesktop.org/monado/monado/merge_requests/456))
+  - OpenXR: Improve the validation in the API function for
+    `xrGetInputSourceLocalizedName`.
+    ([!451](https://gitlab.freedesktop.org/monado/monado/merge_requests/451))
+  - OpenXR: Implement the function `xrEnumerateBoundSourcesForAction`, currently we
+    only bind one input per top level user path and it's easy to track this.
+    ([!451](https://gitlab.freedesktop.org/monado/monado/merge_requests/451))
+  - OpenXR: Properly handle more than one input source being bound to the same
+    action
+    according to the combination rules of the specification.
+    ([!452](https://gitlab.freedesktop.org/monado/monado/merge_requests/452))
+  - OpenXR: Fix multiplicity of bounds paths per action - there's one per
+    input/output.
+    ([!456](https://gitlab.freedesktop.org/monado/monado/merge_requests/456))
+  - OpenXR: Implement the MND_swapchain_usage_input_attachment_bit extension.
+    ([!459](https://gitlab.freedesktop.org/monado/monado/merge_requests/459))
+  - OpenXR: Refactor the native compositor handling a bit, this creates the
+    compositor earlier then before. This allows us to get the viewport information
+    from it.
+    ([!461](https://gitlab.freedesktop.org/monado/monado/merge_requests/461))
+  - OpenXR: Implement action set priorities and fix remaining action conformance
+    tests.
+    ([!462](https://gitlab.freedesktop.org/monado/monado/merge_requests/462))
+  - st/oxr: Fix crash when calling `xrPollEvents` when headless mode is selected.
+    ([!475](https://gitlab.freedesktop.org/monado/monado/merge_requests/475))
+  - OpenXR: Add stub functions and support plumbing for a lot of layer extensions.
+    ([!476](https://gitlab.freedesktop.org/monado/monado/merge_requests/476))
+  - OpenXR: Be sure to return `XR_ERROR_FEATURE_UNSUPPORTED` if the protected
+    content bit is set and the compositor does not support it.
+    ([!481](https://gitlab.freedesktop.org/monado/monado/merge_requests/481))
+  - OpenXR: Update to 1.0.11 and start returning the new
+    `XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING` code added in this release.
+    ([!482](https://gitlab.freedesktop.org/monado/monado/merge_requests/482))
+  - OpenXR: Enable the `XR_KHR_android_create_instance` extension.
+    ([!492](https://gitlab.freedesktop.org/monado/monado/merge_requests/492))
+  - OpenXR: Add support for creating swapchains with depth formats and submitting
+    depth layers. The depth layers are passed through to the compositor, but are
+    not used yet.
+    ([!498](https://gitlab.freedesktop.org/monado/monado/merge_requests/498))
+  - OpenXR: For pose actions the any path (`XR_NULL_PATH`) needs to be special
+    cased, essentially turning into a separate action sub path, that is assigned
+    at
+    binding time.
+    ([!510](https://gitlab.freedesktop.org/monado/monado/merge_requests/510))
+  - OpenXR: More correctly implement `xrGetInputSourceLocalizedName` allowing apps
+    to more accurently tell the user which input to use.
+    ([!532](https://gitlab.freedesktop.org/monado/monado/merge_requests/532))
+  - OpenXR: Pass through equirect layer data to the compositor.
+    ([!566](https://gitlab.freedesktop.org/monado/monado/merge_requests/566))
+- Drivers
+  - psvr: We were sending in the wrong type of time to the 3DOF fusion code,
+    switch
+    to nanoseconds instead of fractions of seconds.
+    ([!474](https://gitlab.freedesktop.org/monado/monado/merge_requests/474))
+  - rs: Make the pose getting from the T265 be threaded. Before we where getting
+    the
+    pose from the update input function, this would cause some the main thread
+    to
+    block and would therefore cause jitter in the rendering.
+    ([!486](https://gitlab.freedesktop.org/monado/monado/merge_requests/486))
+  - survive: Add lighthouse tracking system type
+    hydra: Add lighthouse tracking
+    system type
+    ([!489](https://gitlab.freedesktop.org/monado/monado/merge_requests/489))
+  - rs: Add slam tracking system type
+    northstar: Use tracking system from tracker
+    (e.g. rs) if available.
+    ([!494](https://gitlab.freedesktop.org/monado/monado/merge_requests/494))
+  - psmv: Introduce proper grip and aim poses, correctly rotate the grip pose to
+    follow the spec more closely. The aim poses replaces the previous ball tip pose
+    that was used before for aim.
+    ([!509](https://gitlab.freedesktop.org/monado/monado/merge_requests/509))
+  - survive: Implement haptic feedback.
+    ([!557](https://gitlab.freedesktop.org/monado/monado/merge_requests/557))
+  - dummy: Tidy the code a bit and switch over to the new
+    logging API.
+    ([!572](https://gitlab.freedesktop.org/monado/monado/merge_requests/572),
+    [!573](https://gitlab.freedesktop.org/monado/monado/merge_requests/573))
+  - psvr: Switch to the new logging API.
+    ([!573](https://gitlab.freedesktop.org/monado/monado/merge_requests/573))
+  - Add initial "Cardboard" phone-holder driver for Android.
+    ([!581](https://gitlab.freedesktop.org/monado/monado/merge_requests/581))
+- IPC
+  - Generalize handling of native-platform handles in IPC code, allow bi-
+    directional handle transfer, and de-duplicate code between server and client.
+    ([!413](https://gitlab.freedesktop.org/monado/monado/merge_requests/413),
+    [!427](https://gitlab.freedesktop.org/monado/monado/merge_requests/427))
+  - generation: Fix handling 'in_handle' by adding a extra sync round-trip, this
+    might be solvable by using `SOCK_SEQPACKET`.
+    ([!444](https://gitlab.freedesktop.org/monado/monado/merge_requests/444))
+  - Implement the `xrt_compositor::import_swapchain` function, uses the earlier
+    `in_handle` work.
+    ([!444](https://gitlab.freedesktop.org/monado/monado/merge_requests/444))
+  - proto: Transport the `xrt_compositor_info` over the wire so that the client can
+    get the needed information.
+    ([!461](https://gitlab.freedesktop.org/monado/monado/merge_requests/461))
+  - client: Implement the usage of the `xrt_image_native_allocator`, currently not
+    used. But it is needed for platforms where for various reasons the allocation
+    must happen on the client side.
+    ([!478](https://gitlab.freedesktop.org/monado/monado/merge_requests/478))
+  - client: Add a "loopback" image allocator, this code allocates a swapchain from
+    the service then imports that back to the service as if it was imported. This
+    tests both the import code and the image allocator code.
+    ([!478](https://gitlab.freedesktop.org/monado/monado/merge_requests/478))
+  - ipc: Allow sending zero handles as a reply, at least the Linux fd handling code
+    allows this.
+    ([!491](https://gitlab.freedesktop.org/monado/monado/merge_requests/491))
+  - Use a native AHardwareBuffer allocator on the client side when building for
+    recent-enough Android.
+    ([!493](https://gitlab.freedesktop.org/monado/monado/merge_requests/493))
+  - ipc: Add functionality to disable a device input via the `monado-ctl` utility,
+    this allows us to pass the conformance tests that requires the runtime to turn
+    off a device.
+    ([!511](https://gitlab.freedesktop.org/monado/monado/merge_requests/511))
+- Compositor
+  - compositor: Add support for alpha blending with premultiplied alpha.
+    ([!425](https://gitlab.freedesktop.org/monado/monado/merge_requests/425))
+  - compositor: Implement subimage rectangle rendering for quad layers.
+    ([!433](https://gitlab.freedesktop.org/monado/monado/merge_requests/433))
+  - compositor: Enable subimage rectangle rendering for projection layers.
+    ([!436](https://gitlab.freedesktop.org/monado/monado/merge_requests/436))
+  - compositor: Fix printing of current connected displays on nvidia when no
+    whitelisted display is found.
+    ([!477](https://gitlab.freedesktop.org/monado/monado/merge_requests/477))
+  - compositor: Add env var to temporarily add display string to nvidia whitelist.
+    ([!477](https://gitlab.freedesktop.org/monado/monado/merge_requests/477))
+  - compositor and clients: Use a generic typedef to represent the platform-
+    specific graphics buffer, allowing use of `AHardwareBuffer` on recent Android.
+    ([!479](https://gitlab.freedesktop.org/monado/monado/merge_requests/479))
+  - compositor: Check the protected content bit, and return a non-success code if
+    it's set. Supporting this is optional in OpenXR, but lack of support must be
+    reported to the application.
+    ([!481](https://gitlab.freedesktop.org/monado/monado/merge_requests/481))
+  - compositor: Implement cylinder layers.
+    ([!495](https://gitlab.freedesktop.org/monado/monado/merge_requests/495))
+  - main: Set the maximum layers supported to 16, we technically support more than
+    16, but things get out of hand if multiple clients are running and all are
+    using
+    max layers.
+    ([!501](https://gitlab.freedesktop.org/monado/monado/merge_requests/501))
+  - main: Add code to check that a format is supported by the GPU before exposing.
+    ([!502](https://gitlab.freedesktop.org/monado/monado/merge_requests/502))
+  - compositor: Remove panotools and vive shaders from compositor.
+    ([!538](https://gitlab.freedesktop.org/monado/monado/merge_requests/538))
+  - Initial work on a port of the compositor to Android.
+    ([!547](https://gitlab.freedesktop.org/monado/monado/merge_requests/547))
+  - render: Implement equirect layer rendering.
+    ([!566](https://gitlab.freedesktop.org/monado/monado/merge_requests/566))
+  - main: Fix leaks of sampler objects that was introduced in !566.
+    ([!571](https://gitlab.freedesktop.org/monado/monado/merge_requests/571))
+- Helper Libraries
+  - u/vk: Remove unused vk_image struct, this is later recreated for the image
+    allocator code.
+    ([!444](https://gitlab.freedesktop.org/monado/monado/merge_requests/444))
+  - u/vk: Add a new image allocate helper, this is used by the main compositor to
+    create, export and import swapchain images.
+    ([!444](https://gitlab.freedesktop.org/monado/monado/merge_requests/444))
+  - u/vk: Rename `vk_create_semaphore_from_fd` to `vk_create_semaphore_from_native`
+    ([!469](https://gitlab.freedesktop.org/monado/monado/merge_requests/469))
+  - aux/android: New Android utility library added.
+    ([!493](https://gitlab.freedesktop.org/monado/monado/merge_requests/493),
+    [!547](https://gitlab.freedesktop.org/monado/monado/merge_requests/547),
+    [!581](https://gitlab.freedesktop.org/monado/monado/merge_requests/581))
+  - aux/ogl: Add a function to compute the texture target and binding enum for a
+    given swapchain image creation info.
+    ([!493](https://gitlab.freedesktop.org/monado/monado/merge_requests/493))
+  - util: Tidy hand tracking header.
+    ([!574](https://gitlab.freedesktop.org/monado/monado/merge_requests/574))
+  - math: Fix doxygen warnings in vector headers.
+    ([!574](https://gitlab.freedesktop.org/monado/monado/merge_requests/574))
+- Misc. Features
+  - Support building in-process Monado with meson.
+    ([!421](https://gitlab.freedesktop.org/monado/monado/merge_requests/421))
+  - Allow building some components without Vulkan. Vulkan is still required for the
+    compositor and therefore the OpenXR runtime target.
+    ([!429](https://gitlab.freedesktop.org/monado/monado/merge_requests/429))
+  - Add an OpenXR Android target: an APK which provides an "About" activity and
+    eventually, an OpenXR runtime.
+    ([!574](https://gitlab.freedesktop.org/monado/monado/merge_requests/574),
+    [!581](https://gitlab.freedesktop.org/monado/monado/merge_requests/581))
+- Misc. Fixes
+  - No significant changes
+
 ## Monado 0.3.0 (2020-07-10)
 
 - Major changes
