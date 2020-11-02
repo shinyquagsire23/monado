@@ -38,6 +38,11 @@ android {
         externalNativeBuild {
             cmake {
                 arguments "-DEIGEN3_INCLUDE_DIR=${project.eigenIncludeDir}", "-DANDROID_PLATFORM=26", "-DANDROID_STL=c++_shared", "-DANDROID_ARM_NEON=TRUE"
+
+            }
+            if (project.pythonBinary != null) {
+                println "Path to Python 3 explicitly specified: ${project.pythonBinary}"
+                cmake.arguments "-DPYTHON_EXECUTABLE=${project.pythonBinary}"
             }
         }
     }
