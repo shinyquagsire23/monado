@@ -109,6 +109,8 @@ def generate_client_c(file, p):
         call.write_call_decl(f)
         f.write("\n{\n")
 
+        f.write("\tIPC_SPEW(ipc_c, \"Calling " + call.name + "\");\n\n")
+
         # Message struct
         if call.needs_msg_struct:
             f.write("\tstruct ipc_" + call.name + "_msg _msg = {\n")
@@ -258,6 +260,10 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
 
     for call in p.calls:
         f.write("\tcase " + call.id + ": {\n")
+
+        f.write("\t\tIPC_SPEW(ics->server, \"Dispatching " + call.name +
+                "\");\n\n")
+
         if call.needs_msg_struct:
             f.write(
                 "\t\tstruct ipc_{}_msg *msg =\n".format(call.name))
