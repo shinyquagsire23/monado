@@ -1,6 +1,12 @@
 // Copyright 2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 
+import groovy.xml.XmlUtil
+
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+}
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'com.mikepenz.aboutlibraries.plugin'
@@ -8,12 +14,36 @@ apply plugin: 'com.mikepenz.aboutlibraries.plugin'
 androidGitVersion {
     tagPattern(/^v[0-9]+.*/)
     codeFormat = 'MNNPPPBBB'
+    format = '%tag%%-count%%-gcommit%%-dirty%'
 }
 
 def parseOpenXRVersion(def fn) {
-    def matches = file(fn).readLines().find { it.contains('XR_CURRENT_API_VERSION') }  =~ ~/XR_MAKE_VERSION\(([^\)]+)\)/
+    def matches = file(fn).readLines().find {
+        it.contains('XR_CURRENT_API_VERSION')
+    } =~ ~/XR_MAKE_VERSION\(([^\)]+)\)/
     def components = matches[0][1].split(',').each { it.replace(' ', '').trim() }
     String.join('.', components)
+}
+
+
+// TODO: this copies to the source dir for simplicity right now, but it's not great!
+task copyLicenses(type: Copy) {
+    from "${rootDir}/LICENSES/"
+    include 'BSL-1.0.txt'
+    rename {
+        String name ->
+            def lowerNoExtension = name.toLowerCase().replace(".txt", "")
+            def result = lowerNoExtension.replaceAll(~/[\-.]/, "_") + ".txt"
+            return result
+    }
+    into project.layout.projectDirectory.dir('src/main/res/raw').asFile
+    filter { line ->
+        if (line.trim().isEmpty()) {
+            return '<br /><br />'
+        } else {
+            return groovy.xml.XmlUtil.escapeXml(line)
+        }
+    }
 }
 
 android {
@@ -30,10 +60,12 @@ android {
         versionCode androidGitVersion.code()
         versionName androidGitVersion.name()
 
+        println versionName
+
         resValue "string", "monado_lib_version", "${versionName}"
         resValue "string", "app_name", "Monado XR"
 
-        resValue "string", "library_openxrheaders_libraryVersion", parseOpenXRVersion("../../../external/openxr_includes/openxr/openxr.h")
+        resValue "string", "library_openxrheaders_libraryVersion", parseOpenXRVersion("${rootDir}/src/external/openxr_includes/openxr/openxr.h")
 
         externalNativeBuild {
             cmake {
@@ -45,6 +77,9 @@ android {
                 cmake.arguments "-DPYTHON_EXECUTABLE=${project.pythonBinary}"
             }
         }
+
+        // Be sure to copy over licenses formatted as required.
+        preBuild.dependsOn(copyLicenses)
     }
 
     buildTypes {
@@ -57,7 +92,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            path "../../../../CMakeLists.txt"
+            path "${rootDir}/CMakeLists.txt"
         }
     }
 
@@ -80,10 +115,11 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
 }
 
 aboutLibraries {
-    configPath = "config"
+    configPath = "${projectDir}/config"
 }
 
 dependencies {
@@ -91,7 +127,7 @@ dependencies {
     implementation project(':src:xrt:auxiliary:android')
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.3'
     implementation "com.mikepenz:aboutlibraries-core:${latestAboutLibsRelease}"
     implementation "com.mikepenz:aboutlibraries:${latestAboutLibsRelease}"
     implementation "androidx.cardview:cardview:1.*.*"

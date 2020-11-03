@@ -34,6 +34,7 @@ build*/
 .vscode
 *.autosave
 .vs
+CMakeSettings.json
 
 # Ignore merge-conflict resolution files
 *.orig
@@ -68,6 +69,8 @@ local.properties
 # .idea/assetWizardSettings.xml
 .externalNativeBuild
 .cxx
+.settings
+.project
 
 gradlew
 gradlew.bat
