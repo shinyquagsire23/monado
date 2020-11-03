@@ -47,7 +47,7 @@ read_u16(const uint8_t **buffer, uint16_t *out_value)
 	*buffer += 2;
 }
 
-inline static void
+inline static XRT_MAYBE_UNUSED void
 read_i16(const uint8_t **buffer, int16_t *out_value)
 {
 	*out_value = (*(*buffer + 0) << 0) | // Byte 0
