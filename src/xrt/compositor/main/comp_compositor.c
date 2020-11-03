@@ -210,6 +210,9 @@ compositor_wait_frame(struct xrt_compositor *xc,
 		*predicted_display_time = c->last_next_display_time;
 		*out_frame_id = c->last_next_display_time;
 
+		if (c->state == COMP_STATE_PREPARED) {
+			c->state = COMP_STATE_WAITED;
+		}
 		return XRT_SUCCESS;
 	}
 
@@ -242,6 +245,10 @@ compositor_wait_frame(struct xrt_compositor *xc,
 			*out_frame_id = c->last_next_display_time;
 
 			c->last_next_display_time = next_display_time;
+
+			if (c->state == COMP_STATE_PREPARED) {
+				c->state = COMP_STATE_WAITED;
+			}
 			return XRT_SUCCESS;
 		}
 	}
@@ -507,10 +514,6 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 	c->expected_app_duration_ns =
 	    c->app_profiling.last_end - c->app_profiling.last_begin;
 
-	if (c->state == COMP_STATE_PREPARED) {
-		c->state = COMP_STATE_COMMITTED;
-	}
-
 	// Now is a good point to garbage collect.
 	comp_compositor_garbage_collect(c);
 	return XRT_SUCCESS;
@@ -532,8 +535,8 @@ compositor_poll_events(struct xrt_compositor *xc,
 	case COMP_STATE_PREPARED:
 		out_xce->state.type = XRT_COMPOSITOR_EVENT_NONE;
 		break;
-	case COMP_STATE_COMMITTED:
-		COMP_DEBUG(c, "COMMITTED -> VISIBLE");
+	case COMP_STATE_WAITED:
+		COMP_DEBUG(c, "WAITED -> VISIBLE");
 		out_xce->state.type = XRT_COMPOSITOR_EVENT_STATE_CHANGE;
 		out_xce->state.visible = true;
 		c->state = COMP_STATE_VISIBLE;

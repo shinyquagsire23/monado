@@ -1898,11 +1898,6 @@ oxr_session_frame_end(struct oxr_logger *log,
 
 		do_synchronize_state_change(log, sess);
 
-		// For emitting state changes, the compositor has to know
-		// whether the client is synchronized, i.e. has called
-		// xrEndFrame, even with 0 layers.
-		CALL_CHK(xrt_comp_layer_commit(xc, -1));
-
 		return oxr_session_success_result(sess);
 	}
 
