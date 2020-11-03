@@ -201,7 +201,7 @@ comp_window_wayland_init_swapchain(struct comp_window *w,
 	VkResult ret;
 
 	ret = comp_window_wayland_create_surface(w_wayland,
-	                                         &w->swapchain.surface);
+	                                         &w->swapchain.surface.handle);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->c, "Failed to create surface!");
 		return false;

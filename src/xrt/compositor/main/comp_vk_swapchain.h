@@ -50,16 +50,27 @@ struct vk_swapchain
 {
 	struct vk_bundle *vk;
 
-	VkSwapchainKHR swap_chain;
+	struct
+	{
+		VkSwapchainKHR handle;
+	} swapchain;
 
-	VkSurfaceKHR surface;
-	VkSurfaceFormatKHR surface_format;
+	struct
+	{
+		VkSurfaceKHR handle;
+		VkSurfaceFormatKHR format;
+	} surface;
 
 	struct vk_swapchain_buffer *buffers;
 	uint32_t image_count;
 
-	VkFormat color_format;
-	VkColorSpaceKHR color_space;
+	struct
+	{
+		VkFormat color_format;
+		VkColorSpaceKHR color_space;
+	} preferred;
+
+	//! Present mode that the system must support.
 	VkPresentModeKHR present_mode;
 
 	void *cb_priv;

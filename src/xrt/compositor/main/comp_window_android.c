@@ -52,6 +52,7 @@ comp_window_android_init(struct comp_window *w)
 	struct comp_window_android *w_android = (struct comp_window_android *)w;
 	return true;
 }
+
 static void
 comp_window_android_destroy(struct comp_window *w)
 {
@@ -107,6 +108,7 @@ comp_window_android_create_surface(struct comp_window_android *w,
 
 	return VK_SUCCESS;
 }
+
 static bool
 comp_window_android_init_swapchain(struct comp_window *w,
                                    uint32_t width,
@@ -116,7 +118,7 @@ comp_window_android_init_swapchain(struct comp_window *w,
 	VkResult ret;
 
 	ret = comp_window_android_create_surface(w_android,
-	                                         &w->swapchain.surface);
+	                                         &w->swapchain.surface.handle);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->c, "Failed to create surface!");
 		return false;

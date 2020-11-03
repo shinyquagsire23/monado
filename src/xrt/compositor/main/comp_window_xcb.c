@@ -239,7 +239,8 @@ comp_window_xcb_init_swapchain(struct comp_window *w,
 	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)w;
 	VkResult ret;
 
-	ret = comp_window_xcb_create_surface(w_xcb, &w->swapchain.surface);
+	ret =
+	    comp_window_xcb_create_surface(w_xcb, &w->swapchain.surface.handle);
 	if (ret != VK_SUCCESS) {
 		return false;
 	}

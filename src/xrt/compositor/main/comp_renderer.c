@@ -188,7 +188,7 @@ renderer_build_rendering(struct comp_renderer *r,
 	struct comp_compositor *c = r->c;
 
 	struct comp_target_data data;
-	data.format = r->c->window->swapchain.surface_format.format;
+	data.format = r->c->window->swapchain.surface.format.format;
 	data.is_external = true;
 	data.width = r->c->current.width;
 	data.height = r->c->current.height;

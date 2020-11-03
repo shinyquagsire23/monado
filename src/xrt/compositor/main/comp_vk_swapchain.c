@@ -101,51 +101,51 @@ vk_swapchain_create(struct vk_swapchain *sc,
 	// Free old image views.
 	vk_swapchain_destroy_image_views(sc);
 
-	VkSwapchainKHR old_swap_chain = sc->swap_chain;
+	VkSwapchainKHR old_swapchain_handle = sc->swapchain.handle;
 
 	sc->image_count = 0;
-	sc->swap_chain = VK_NULL_HANDLE;
-	sc->color_format = color_format;
-	sc->color_space = color_space;
+	sc->swapchain.handle = VK_NULL_HANDLE;
 	sc->present_mode = present_mode;
+	sc->preferred.color_format = color_format;
+	sc->preferred.color_space = color_space;
 
 
 	// Sanity check.
-	sc->vk->vkGetPhysicalDeviceSurfaceSupportKHR(sc->vk->physical_device, 0,
-	                                             sc->surface, &supported);
+	sc->vk->vkGetPhysicalDeviceSurfaceSupportKHR(
+	    sc->vk->physical_device, 0, sc->surface.handle, &supported);
 	if (!supported) {
 		VK_ERROR(sc->vk,
 		         "vkGetPhysicalDeviceSurfaceSupportKHR: "
 		         "surface not supported!");
 	}
 
-
 	// More sanity checks.
-	if (!_check_surface_present_mode(sc->vk, sc->surface,
+	if (!_check_surface_present_mode(sc->vk, sc->surface.handle,
 	                                 sc->present_mode)) {
 		// Free old.
-		vk_swapchain_destroy_old(sc, old_swap_chain);
+		vk_swapchain_destroy_old(sc, old_swapchain_handle);
 		return;
 	}
 
 	// Find the correct format.
-	if (!_find_surface_format(sc, sc->surface, &sc->surface_format)) {
+	if (!_find_surface_format(sc, sc->surface.handle,
+	                          &sc->surface.format)) {
 		// Free old.
-		vk_swapchain_destroy_old(sc, old_swap_chain);
+		vk_swapchain_destroy_old(sc, old_swapchain_handle);
 		return;
 	}
 
 	// Get the caps first.
 	VkSurfaceCapabilitiesKHR surface_caps;
 	ret = sc->vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-	    sc->vk->physical_device, sc->surface, &surface_caps);
+	    sc->vk->physical_device, sc->surface.handle, &surface_caps);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(sc->vk,
 		         "vkGetPhysicalDeviceSurfaceCapabilitiesKHR: %s",
 		         vk_result_string(ret));
 
 		// Free old.
-		vk_swapchain_destroy_old(sc, old_swap_chain);
+		vk_swapchain_destroy_old(sc, old_swapchain_handle);
 		return;
 	}
 
@@ -155,10 +155,10 @@ vk_swapchain_create(struct vk_swapchain *sc,
 
 	VkSwapchainCreateInfoKHR swap_chain_info = {
 	    .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-	    .surface = sc->surface,
+	    .surface = sc->surface.handle,
 	    .minImageCount = surface_caps.minImageCount,
-	    .imageFormat = sc->surface_format.format,
-	    .imageColorSpace = sc->surface_format.colorSpace,
+	    .imageFormat = sc->surface.format.format,
+	    .imageColorSpace = sc->surface.format.colorSpace,
 	    .imageExtent =
 	        {
 	            .width = extent.width,
@@ -172,14 +172,14 @@ vk_swapchain_create(struct vk_swapchain *sc,
 	    .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 	    .presentMode = sc->present_mode,
 	    .clipped = VK_TRUE,
-	    .oldSwapchain = old_swap_chain,
+	    .oldSwapchain = old_swapchain_handle,
 	};
 
 	ret = sc->vk->vkCreateSwapchainKHR(sc->vk->device, &swap_chain_info,
-	                                   NULL, &sc->swap_chain);
+	                                   NULL, &sc->swapchain.handle);
 
 	// Always destroy the old.
-	vk_swapchain_destroy_old(sc, old_swap_chain);
+	vk_swapchain_destroy_old(sc, old_swapchain_handle);
 
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(sc->vk, "vkCreateSwapchainKHR: %s",
@@ -232,11 +232,15 @@ vk_swapchain_destroy_old(struct vk_swapchain *sc, VkSwapchainKHR old)
 VkResult
 vk_swapchain_acquire_next_image(struct vk_swapchain *sc,
                                 VkSemaphore semaphore,
-                                uint32_t *index)
+                                uint32_t *out_index)
 {
-	return sc->vk->vkAcquireNextImageKHR(sc->vk->device, sc->swap_chain,
-	                                     UINT64_MAX, semaphore,
-	                                     VK_NULL_HANDLE, index);
+	return sc->vk->vkAcquireNextImageKHR( //
+	    sc->vk->device,                   // device
+	    sc->swapchain.handle,             // timeout
+	    UINT64_MAX,                       // timeout
+	    semaphore,                        // semaphore
+	    VK_NULL_HANDLE,                   // fence
+	    out_index);                       // pImageIndex
 }
 
 VkResult
@@ -250,7 +254,7 @@ vk_swapchain_present(struct vk_swapchain *sc,
 	    .waitSemaphoreCount = 1,
 	    .pWaitSemaphores = &semaphore,
 	    .swapchainCount = 1,
-	    .pSwapchains = &sc->swap_chain,
+	    .pSwapchains = &sc->swapchain.handle,
 	    .pImageIndices = &index,
 	};
 
@@ -281,14 +285,13 @@ _find_surface_format(struct vk_swapchain *sc,
 	    U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, num_formats);
 
 	uint32_t num_formats_cs = 0;
-	uint32_t num_pref_formats = sizeof(preferred_color_formats) /
-	                            sizeof(preferred_color_formats[0]);
+	uint32_t num_pref_formats = ARRAY_SIZE(preferred_color_formats);
 
 	// Gather formats that match our color space, we will select
 	// from these in preference to others.
 
 	for (uint32_t i = 0; i < num_formats; i++) {
-		if (formats[i].colorSpace == sc->color_space) {
+		if (formats[i].colorSpace == sc->preferred.color_space) {
 			formats_for_colorspace[num_formats_cs] = formats[i];
 			num_formats_cs++;
 		}
@@ -300,7 +303,7 @@ _find_surface_format(struct vk_swapchain *sc,
 
 		for (uint32_t i = 0; i < num_formats_cs; i++) {
 			if (formats_for_colorspace[i].format ==
-			    sc->color_format) {
+			    sc->preferred.color_format) {
 				// perfect match.
 				*format = formats_for_colorspace[i];
 				goto cleanup;
@@ -426,14 +429,20 @@ vk_swapchain_destroy_image_views(struct vk_swapchain *sc)
 static void
 vk_swapchain_create_image_views(struct vk_swapchain *sc)
 {
-	sc->vk->vkGetSwapchainImagesKHR(sc->vk->device, sc->swap_chain,
-	                                &sc->image_count, NULL);
+	sc->vk->vkGetSwapchainImagesKHR( //
+	    sc->vk->device,              // device
+	    sc->swapchain.handle,        // swapchain
+	    &sc->image_count,            // pSwapchainImageCount
+	    NULL);                       // pSwapchainImages
 	assert(sc->image_count > 0);
 	VK_DEBUG(sc->vk, "Creating %d image views.", sc->image_count);
 
 	VkImage *images = U_TYPED_ARRAY_CALLOC(VkImage, sc->image_count);
-	sc->vk->vkGetSwapchainImagesKHR(sc->vk->device, sc->swap_chain,
-	                                &sc->image_count, images);
+	sc->vk->vkGetSwapchainImagesKHR( //
+	    sc->vk->device,              // device
+	    sc->swapchain.handle,        // swapchain
+	    &sc->image_count,            // pSwapchainImageCount
+	    images);                     // pSwapchainImages
 
 	vk_swapchain_destroy_image_views(sc);
 
@@ -451,7 +460,7 @@ vk_swapchain_create_image_views(struct vk_swapchain *sc)
 	for (uint32_t i = 0; i < sc->image_count; i++) {
 		sc->buffers[i].image = images[i];
 		vk_create_view(sc->vk, sc->buffers[i].image,
-		               sc->surface_format.format, subresource_range,
+		               sc->surface.format.format, subresource_range,
 		               &sc->buffers[i].view);
 	}
 
@@ -463,15 +472,19 @@ vk_swapchain_cleanup(struct vk_swapchain *sc)
 {
 	vk_swapchain_destroy_image_views(sc);
 
-	if (sc->swap_chain != VK_NULL_HANDLE) {
-		sc->vk->vkDestroySwapchainKHR(sc->vk->device, sc->swap_chain,
-		                              NULL);
-		sc->swap_chain = VK_NULL_HANDLE;
+	if (sc->swapchain.handle != VK_NULL_HANDLE) {
+		sc->vk->vkDestroySwapchainKHR( //
+		    sc->vk->device,            // device
+		    sc->swapchain.handle,      // swapchain
+		    NULL);                     //
+		sc->swapchain.handle = VK_NULL_HANDLE;
 	}
 
-	if (sc->surface != VK_NULL_HANDLE) {
-		sc->vk->vkDestroySurfaceKHR(sc->vk->instance, sc->surface,
-		                            NULL);
-		sc->swap_chain = VK_NULL_HANDLE;
+	if (sc->surface.handle != VK_NULL_HANDLE) {
+		sc->vk->vkDestroySurfaceKHR( //
+		    sc->vk->instance,        // instance
+		    sc->surface.handle,      // surface
+		    NULL);                   //
+		sc->swapchain.handle = VK_NULL_HANDLE;
 	}
 }

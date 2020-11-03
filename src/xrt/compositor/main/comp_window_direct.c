@@ -226,7 +226,7 @@ comp_window_direct_create_surface(struct comp_window *w,
 	};
 
 	VkResult result = vk->vkCreateDisplayPlaneSurfaceKHR(
-	    vk->instance, &surface_info, NULL, &w->swapchain.surface);
+	    vk->instance, &surface_info, NULL, &w->swapchain.surface.handle);
 
 	free(plane_properties);
 
