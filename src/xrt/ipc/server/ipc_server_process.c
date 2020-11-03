@@ -138,6 +138,46 @@ init_tracking_origins(struct ipc_server *s)
 	return 0;
 }
 
+static void
+handle_binding(struct ipc_shared_memory *ism,
+               struct xrt_binding_profile *xbp,
+               struct ipc_shared_binding_profile *isbp,
+               uint32_t *input_pair_index_ptr,
+               uint32_t *output_pair_index_ptr)
+{
+	uint32_t input_pair_index = *input_pair_index_ptr;
+	uint32_t output_pair_index = *output_pair_index_ptr;
+
+	isbp->name = xbp->name;
+
+	// Copy the initial state and also count the number in input_pairs.
+	size_t input_pair_start = input_pair_index;
+	for (size_t k = 0; k < xbp->num_inputs; k++) {
+		ism->input_pairs[input_pair_index++] = xbp->inputs[k];
+	}
+
+	// Setup the 'offsets' and number of input_pairs.
+	if (input_pair_start != input_pair_index) {
+		isbp->num_inputs = input_pair_index - input_pair_start;
+		isbp->first_input_index = input_pair_start;
+	}
+
+	// Copy the initial state and also count the number in outputs.
+	size_t output_pair_start = output_pair_index;
+	for (size_t k = 0; k < xbp->num_outputs; k++) {
+		ism->output_pairs[output_pair_index++] = xbp->outputs[k];
+	}
+
+	// Setup the 'offsets' and number of output_pairs.
+	if (output_pair_start != output_pair_index) {
+		isbp->num_outputs = output_pair_index - output_pair_start;
+		isbp->first_output_index = output_pair_start;
+	}
+
+	*input_pair_index_ptr = input_pair_index;
+	*output_pair_index_ptr = output_pair_index;
+}
+
 static int
 init_shm(struct ipc_server *s)
 {
@@ -185,6 +225,10 @@ init_shm(struct ipc_server *s)
 	count = 0;
 	uint32_t input_index = 0;
 	uint32_t output_index = 0;
+	uint32_t binding_index = 0;
+	uint32_t input_pair_index = 0;
+	uint32_t output_pair_index = 0;
+
 	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
 		struct xrt_device *xdev = s->idevs[i].xdev;
 		if (xdev == NULL) {
@@ -232,6 +276,21 @@ init_shm(struct ipc_server *s)
 
 		// Initial update.
 		xrt_device_update_inputs(xdev);
+
+		// Bindings
+		size_t binding_start = binding_index;
+		for (size_t k = 0; k < xdev->num_binding_profiles; k++) {
+			handle_binding(ism, &xdev->binding_profiles[k],
+			               &ism->binding_profiles[binding_index++],
+			               &input_pair_index, &output_pair_index);
+		}
+
+		// Setup the 'offsets' and number of bindings.
+		if (binding_start != binding_index) {
+			isdev->num_binding_profiles =
+			    binding_index - binding_start;
+			isdev->first_binding_profile_index = binding_start;
+		}
 
 		// Copy the initial state and also count the number in inputs.
 		size_t input_start = input_index;

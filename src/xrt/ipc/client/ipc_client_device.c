@@ -188,6 +188,32 @@ ipc_client_device_create(struct ipc_connection *ipc_c,
 		icd->base.outputs = NULL;
 	}
 
+	if (isdev->num_binding_profiles > 0) {
+		icd->base.binding_profiles = U_TYPED_ARRAY_CALLOC(
+		    struct xrt_binding_profile, isdev->num_binding_profiles);
+		icd->base.num_binding_profiles = isdev->num_binding_profiles;
+	}
+
+	for (size_t i = 0; i < isdev->num_binding_profiles; i++) {
+		struct xrt_binding_profile *xbp =
+		    &icd->base.binding_profiles[i];
+		struct ipc_shared_binding_profile *isbp =
+		    &ism->binding_profiles[isdev->first_binding_profile_index +
+		                           i];
+
+		xbp->name = isbp->name;
+		if (isbp->num_inputs > 0) {
+			xbp->inputs =
+			    &ism->input_pairs[isbp->first_input_index];
+			xbp->num_inputs = isbp->num_inputs;
+		}
+		if (isbp->num_outputs > 0) {
+			xbp->outputs =
+			    &ism->output_pairs[isbp->first_output_index];
+			xbp->num_outputs = isbp->num_inputs;
+		}
+	}
+
 	// Setup variable tracker.
 	u_var_add_root(icd, icd->base.str, true);
 	u_var_add_ro_u32(icd, &icd->device_id, "device_id");

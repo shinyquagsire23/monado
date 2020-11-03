@@ -35,6 +35,8 @@
 #define IPC_SHARED_MAX_DEVICES 8
 #define IPC_SHARED_MAX_INPUTS 1024
 #define IPC_SHARED_MAX_OUTPUTS 128
+#define IPC_SHARED_MAX_BINDINGS 64
+
 
 /*
  *
@@ -42,6 +44,11 @@
  *
  */
 
+/*!
+ * A tracking in the shared memory area.
+ *
+ * @ingroup ipc
+ */
 struct ipc_shared_tracking_origin
 {
 	//! For debugging.
@@ -54,6 +61,31 @@ struct ipc_shared_tracking_origin
 	struct xrt_pose offset;
 };
 
+/*!
+ * A binding in the shared memory area.
+ *
+ * @ingroup ipc
+ */
+struct ipc_shared_binding_profile
+{
+	enum xrt_device_name name;
+
+	//! Number of inputs.
+	uint32_t num_inputs;
+	//! Offset into the array of pairs where this input bindings starts.
+	uint32_t first_input_index;
+
+	//! Number of outputs.
+	uint32_t num_outputs;
+	//! Offset into the array of pairs where this output bindings starts.
+	uint32_t first_output_index;
+};
+
+/*!
+ * A device in the shared memory area.
+ *
+ * @ingroup ipc
+ */
 struct ipc_shared_device
 {
 	//! Enum identifier of the device.
@@ -66,15 +98,19 @@ struct ipc_shared_device
 	//! A string describing the device.
 	char str[XRT_DEVICE_NAME_LEN];
 
+	//! Number of bindings.
+	uint32_t num_binding_profiles;
+	//! 'Offset' into the array of bindings where the bindings starts.
+	uint32_t first_binding_profile_index;
+
 	//! Number of inputs.
 	uint32_t num_inputs;
-	//! 'Offset' into the array of inputs where this devices inputs starts.
+	//! 'Offset' into the array of inputs where the inputs starts.
 	uint32_t first_input_index;
 
 	//! Number of outputs.
 	uint32_t num_outputs;
-	//! 'Offset' into the array of outputs where this devices outputs
-	//! starts.
+	//! 'Offset' into the array of outputs where the outputs starts.
 	uint32_t first_output_index;
 
 	bool orientation_tracking_supported;
@@ -193,6 +229,11 @@ struct ipc_shared_memory
 	struct xrt_input inputs[IPC_SHARED_MAX_INPUTS];
 
 	struct xrt_output outputs[IPC_SHARED_MAX_OUTPUTS];
+
+	struct ipc_shared_binding_profile
+	    binding_profiles[IPC_SHARED_MAX_BINDINGS];
+	struct xrt_binding_input_pair input_pairs[IPC_SHARED_MAX_INPUTS];
+	struct xrt_binding_output_pair output_pairs[IPC_SHARED_MAX_OUTPUTS];
 
 	struct ipc_layer_slot slots[IPC_MAX_SLOTS];
 };
