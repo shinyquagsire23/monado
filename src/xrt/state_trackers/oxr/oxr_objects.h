@@ -1258,6 +1258,9 @@ struct oxr_session
 	 */
 	bool has_ended_once;
 
+	bool compositor_visible;
+	bool compositor_focused;
+
 	bool frame_started;
 	bool exiting;
 

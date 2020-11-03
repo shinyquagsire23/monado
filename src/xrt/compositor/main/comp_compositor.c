@@ -210,9 +210,6 @@ compositor_wait_frame(struct xrt_compositor *xc,
 		*predicted_display_time = c->last_next_display_time;
 		*out_frame_id = c->last_next_display_time;
 
-		if (c->state == COMP_STATE_PREPARED) {
-			c->state = COMP_STATE_WAITED;
-		}
 		return XRT_SUCCESS;
 	}
 
@@ -246,9 +243,6 @@ compositor_wait_frame(struct xrt_compositor *xc,
 
 			c->last_next_display_time = next_display_time;
 
-			if (c->state == COMP_STATE_PREPARED) {
-				c->state = COMP_STATE_WAITED;
-			}
 			return XRT_SUCCESS;
 		}
 	}
@@ -529,14 +523,15 @@ compositor_poll_events(struct xrt_compositor *xc,
 	U_ZERO(out_xce);
 
 	switch (c->state) {
+	case COMP_STATE_UNINITIALIZED:
+		COMP_ERROR(c, "Polled uninitialized compositor");
+		out_xce->state.type = XRT_COMPOSITOR_EVENT_NONE;
+		break;
 	case COMP_STATE_READY:
 		out_xce->state.type = XRT_COMPOSITOR_EVENT_NONE;
 		break;
 	case COMP_STATE_PREPARED:
-		out_xce->state.type = XRT_COMPOSITOR_EVENT_NONE;
-		break;
-	case COMP_STATE_WAITED:
-		COMP_DEBUG(c, "WAITED -> VISIBLE");
+		COMP_DEBUG(c, "PREPARED -> VISIBLE");
 		out_xce->state.type = XRT_COMPOSITOR_EVENT_STATE_CHANGE;
 		out_xce->state.visible = true;
 		c->state = COMP_STATE_VISIBLE;
@@ -1372,6 +1367,8 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	u_var_add_f32_timing(c, ft, "Frame Times (Compositor)");
 
 	c->compositor_frame_times.debug_var = ft;
+
+	c->state = COMP_STATE_READY;
 
 	return &c->base;
 }

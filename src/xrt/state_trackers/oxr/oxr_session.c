@@ -232,7 +232,8 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 		return;
 	}
 
-	while (true) {
+	bool read_more_events = true;
+	while (read_more_events) {
 		union xrt_compositor_event xce = {0};
 		xc->poll_events(xc, &xce);
 
@@ -240,29 +241,11 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 		switch (xce.type) {
 		case XRT_COMPOSITOR_EVENT_NONE:
 			// No more events.
-			return;
+			read_more_events = false;
+			break;
 		case XRT_COMPOSITOR_EVENT_STATE_CHANGE:
-			if (xce.state.visible &&
-			    sess->state == XR_SESSION_STATE_SYNCHRONIZED) {
-				oxr_session_change_state(
-				    log, sess, XR_SESSION_STATE_VISIBLE);
-			}
-			if (xce.state.focused &&
-			    sess->state == XR_SESSION_STATE_VISIBLE) {
-				oxr_session_change_state(
-				    log, sess, XR_SESSION_STATE_FOCUSED);
-			}
-
-			if (!xce.state.focused &&
-			    sess->state == XR_SESSION_STATE_FOCUSED) {
-				oxr_session_change_state(
-				    log, sess, XR_SESSION_STATE_VISIBLE);
-			}
-			if (!xce.state.visible &&
-			    sess->state == XR_SESSION_STATE_VISIBLE) {
-				oxr_session_change_state(
-				    log, sess, XR_SESSION_STATE_SYNCHRONIZED);
-			}
+			sess->compositor_visible = xce.state.visible;
+			sess->compositor_focused = xce.state.focused;
 			break;
 		case XRT_COMPOSITOR_EVENT_OVERLAY_CHANGE:
 			oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(
@@ -272,6 +255,16 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 			fprintf(stderr, "unhandled event type! %d", xce.type);
 			break;
 		}
+	}
+
+	if (sess->state == XR_SESSION_STATE_SYNCHRONIZED &&
+	    sess->compositor_visible) {
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+	}
+
+	if (sess->state == XR_SESSION_STATE_VISIBLE &&
+	    sess->compositor_focused) {
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED);
 	}
 }
 
