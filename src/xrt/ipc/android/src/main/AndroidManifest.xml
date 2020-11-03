@@ -5,7 +5,7 @@
         SPDX-License-Identifier: BSL-1.0
     -->
     <application>
-        <service android:name=".MonadoService">
+        <service android:name=".MonadoService" android:enabled="true" android:exported="true" android:externalService="true">
             <intent-filter>
                 <action android:name="org.freedesktop.monado.CONNECT" />
             </intent-filter>
