@@ -167,9 +167,54 @@ struct xrt_input
 	union xrt_input_value value;
 };
 
+/*!
+ * A single named output, that sits on a @ref xrt_device.
+ *
+ * @ingroup xrt_iface
+ */
 struct xrt_output
 {
 	enum xrt_output_name name;
+};
+
+
+/*!
+ * A binding pair, going @p from a binding point to a @p device input.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_binding_input_pair
+{
+	enum xrt_input_name from;   //!< From which name.
+	enum xrt_input_name device; //!< To input on the device.
+};
+
+/*!
+ * A binding pair, going @p from a binding point to a @p device output.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_binding_output_pair
+{
+	enum xrt_output_name from;   //!< From which name.
+	enum xrt_output_name device; //!< To output on the device.
+};
+
+/*!
+ * A binding profile, has lists of binding pairs to goes from device in @p name
+ * to the device it hangs off on.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_binding_profile
+{
+	//! Device this binding emulates.
+	enum xrt_device_name name;
+
+	struct xrt_binding_input_pair *inputs;
+	size_t num_inputs;
+	struct xrt_binding_output_pair *outputs;
+	size_t num_outputs;
 };
 
 /*!
@@ -193,6 +238,11 @@ struct xrt_device
 
 	//! Always set, pointing to the tracking system for this device.
 	struct xrt_tracking_origin *tracking_origin;
+
+	//! Number of bindings.
+	size_t num_binding_profiles;
+	// Array of alternative binding profiles.
+	struct xrt_binding_profile *binding_profiles;
 
 	//! Number of inputs.
 	size_t num_inputs;
