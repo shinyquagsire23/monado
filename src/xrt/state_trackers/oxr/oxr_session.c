@@ -521,7 +521,12 @@ oxr_session_frame_wait(struct oxr_logger *log,
 		return oxr_session_success_result(sess);
 	}
 
-	// Before calling wait frame make sure that begin frame has been called.
+	os_mutex_lock(&sess->active_wait_frames_lock);
+	sess->active_wait_frames++;
+	os_mutex_unlock(&sess->active_wait_frames_lock);
+
+	// A subsequent xrWaitFrame call must: block until the previous frame
+	// has been begun
 	os_semaphore_wait(&sess->sem, 0);
 
 	uint64_t predicted_display_time;
@@ -561,13 +566,34 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 
 	struct xrt_compositor *xc = sess->compositor;
 
+	os_mutex_lock(&sess->active_wait_frames_lock);
+	int active_wait_frames = sess->active_wait_frames;
+	os_mutex_unlock(&sess->active_wait_frames_lock);
+
 	XrResult ret;
+	if (active_wait_frames == 0) {
+		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID,
+		                 "xrBeginFrame without xrWaitFrame");
+	}
+
 	if (sess->frame_started) {
+		// max 2 xrWaitFrame can be in flight so a second xrBeginFrame
+		// is only valid if we have a second xrWaitFrame in flight
+		if (active_wait_frames != 2) {
+			return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID,
+			                 "xrBeginFrame without xrWaitFrame");
+		}
+
+
 		ret = XR_FRAME_DISCARDED;
 		if (xc != NULL) {
 			CALL_CHK(
 			    xrt_comp_discard_frame(xc, sess->frame_id.begun));
 			sess->frame_id.begun = -1;
+
+			os_mutex_lock(&sess->active_wait_frames_lock);
+			sess->active_wait_frames--;
+			os_mutex_unlock(&sess->active_wait_frames_lock);
 		}
 	} else {
 		ret = oxr_session_success_result(sess);
@@ -1849,6 +1875,10 @@ oxr_session_frame_end(struct oxr_logger *log,
 	if (xc == NULL) {
 		sess->frame_started = false;
 
+		os_mutex_lock(&sess->active_wait_frames_lock);
+		sess->active_wait_frames--;
+		os_mutex_unlock(&sess->active_wait_frames_lock);
+
 		do_synchronize_state_change(log, sess);
 
 		return oxr_session_success_result(sess);
@@ -1885,6 +1915,9 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 * Early out for discarded frame if layer count is 0.
 	 */
 	if (frameEndInfo->layerCount == 0) {
+
+		sess->active_wait_frames--;
+
 		CALL_CHK(xrt_comp_discard_frame(xc, sess->frame_id.begun));
 		sess->frame_id.begun = -1;
 		sess->frame_started = false;
@@ -2020,6 +2053,10 @@ oxr_session_frame_end(struct oxr_logger *log,
 
 	sess->frame_started = false;
 
+	os_mutex_lock(&sess->active_wait_frames_lock);
+	sess->active_wait_frames--;
+	os_mutex_unlock(&sess->active_wait_frames_lock);
+
 	return oxr_session_success_result(sess);
 }
 
@@ -2048,6 +2085,9 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	u_hashmap_int_destroy(&sess->act_attachments_by_key);
 
 	xrt_comp_destroy(&sess->compositor);
+
+	os_semaphore_destroy(&sess->sem);
+	os_mutex_destroy(&sess->active_wait_frames_lock);
 
 	free(sess);
 
@@ -2185,6 +2225,9 @@ oxr_session_create(struct oxr_logger *log,
 
 	// Init the begin/wait frame semaphore.
 	os_semaphore_init(&sess->sem, 1);
+
+	sess->active_wait_frames = 0;
+	os_mutex_init(&sess->active_wait_frames_lock);
 
 	struct xrt_compositor *xc = sess->compositor;
 	if (xc != NULL) {
