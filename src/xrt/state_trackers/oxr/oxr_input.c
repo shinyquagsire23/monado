@@ -484,49 +484,83 @@ oxr_action_get_pose_input(struct oxr_logger *log,
  */
 
 static bool
-do_inputs(struct oxr_binding *bind,
+do_inputs(struct oxr_binding *binding_point,
           struct xrt_device *xdev,
+          struct xrt_binding_profile *xbp,
           XrPath matched_path,
           struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION],
           uint32_t *num_inputs)
 {
-	struct xrt_input *input = NULL;
-	bool found = false;
+	enum xrt_input_name name = 0;
+	if (xbp == NULL) {
+		name = binding_point->input;
+	} else {
+		for (size_t i = 0; i < xbp->num_inputs; i++) {
+			if (binding_point->input != xbp->inputs[i].from) {
+				continue;
+			}
 
-	for (size_t i = 0; i < bind->num_inputs; i++) {
-		if (oxr_xdev_find_input(xdev, bind->inputs[i], &input)) {
-			uint32_t index = (*num_inputs)++;
-			inputs[index].input = input;
-			inputs[index].xdev = xdev;
-			inputs[index].bound_path = matched_path;
-			found = true;
+			// We have found a device mapping.
+			name = xbp->inputs[i].device;
+			break;
+		}
+
+		// Didn't find a mapping.
+		if (name == 0) {
+			return false;
 		}
 	}
 
-	return found;
+	struct xrt_input *input = NULL;
+	if (oxr_xdev_find_input(xdev, name, &input)) {
+		uint32_t index = (*num_inputs)++;
+		inputs[index].input = input;
+		inputs[index].xdev = xdev;
+		inputs[index].bound_path = matched_path;
+		return true;
+	}
+
+	return false;
 }
 
 static bool
-do_outputs(struct oxr_binding *bind,
+do_outputs(struct oxr_binding *binding_point,
            struct xrt_device *xdev,
+           struct xrt_binding_profile *xbp,
            XrPath matched_path,
            struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION],
            uint32_t *num_outputs)
 {
-	struct xrt_output *output = NULL;
-	bool found = false;
+	enum xrt_output_name name = 0;
+	if (xbp == NULL) {
+		name = binding_point->output;
+	} else {
+		for (size_t i = 0; i < xbp->num_outputs; i++) {
+			if (binding_point->output != xbp->outputs[i].from) {
+				continue;
+			}
 
-	for (size_t i = 0; i < bind->num_outputs; i++) {
-		if (oxr_xdev_find_output(xdev, bind->outputs[i], &output)) {
-			uint32_t index = (*num_outputs)++;
-			outputs[index].name = output->name;
-			outputs[index].xdev = xdev;
-			outputs[index].bound_path = matched_path;
-			found = true;
+			// We have found a device mapping.
+			name = xbp->outputs[i].device;
+			break;
+		}
+
+		// Didn't find a mapping.
+		if (name == 0) {
+			return false;
 		}
 	}
 
-	return found;
+	struct xrt_output *output = NULL;
+	if (oxr_xdev_find_output(xdev, name, &output)) {
+		uint32_t index = (*num_outputs)++;
+		outputs[index].name = name;
+		outputs[index].xdev = xdev;
+		outputs[index].bound_path = matched_path;
+		return true;
+	}
+
+	return false;
 }
 
 /*!
@@ -534,25 +568,46 @@ do_outputs(struct oxr_binding *bind,
  * is output or input.
  */
 static bool
-do_io_bindings(struct oxr_binding *b,
+do_io_bindings(struct oxr_binding *binding_point,
                struct oxr_action *act,
                struct xrt_device *xdev,
+               struct xrt_binding_profile *xbp,
                XrPath matched_path,
                struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION],
                uint32_t *num_inputs,
                struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION],
                uint32_t *num_outputs)
 {
-	bool found = false;
-
 	if (act->data->action_type == XR_ACTION_TYPE_VIBRATION_OUTPUT) {
-		found |=
-		    do_outputs(b, xdev, matched_path, outputs, num_outputs);
+		return do_outputs( //
+		    binding_point, //
+		    xdev,          //
+		    xbp,           //
+		    matched_path,  //
+		    outputs,       //
+		    num_outputs);  //
 	} else {
-		found |= do_inputs(b, xdev, matched_path, inputs, num_inputs);
+		return do_inputs(  //
+		    binding_point, //
+		    xdev,          //
+		    xbp,           //
+		    matched_path,  //
+		    inputs,        //
+		    num_inputs);   //
+	}
+}
+
+static struct xrt_binding_profile *
+get_matching_binding_profile(struct oxr_interaction_profile *profile,
+                             struct xrt_device *xdev)
+{
+	for (size_t i = 0; i < xdev->num_binding_profiles; i++) {
+		if (xdev->binding_profiles[i].name == profile->xname) {
+			return &xdev->binding_profiles[i];
+		}
 	}
 
-	return found;
+	return NULL;
 }
 
 static XrPath
@@ -584,7 +639,7 @@ get_binding(struct oxr_logger *log,
             uint32_t *num_outputs)
 {
 	struct xrt_device *xdev = NULL;
-	struct oxr_binding *bindings[OXR_MAX_BINDINGS_PER_ACTION];
+	struct oxr_binding *binding_points[OXR_MAX_BINDINGS_PER_ACTION];
 	const char *profile_str;
 	const char *user_path_str;
 	size_t length;
@@ -626,35 +681,69 @@ get_binding(struct oxr_logger *log,
 
 	oxr_slog(slog, "\t\tProfile: %s\n", profile_str);
 
-	size_t num = 0;
-	oxr_binding_find_bindings_from_key(log, profile, act->act_key, bindings,
-	                                   &num);
-	if (num == 0) {
-		oxr_slog(slog, "\t\tNo bindings\n");
+	/*!
+	 * Lookup device binding that matches the interactive profile, this
+	 * is used as a fallback should the device not match the interactive
+	 * profile. This allows the device to provide a mapping from one device
+	 * to itself.
+	 */
+	struct xrt_binding_profile *xbp =
+	    get_matching_binding_profile(profile, xdev);
+
+	// No point in proceeding here without either.
+	if (profile->xname != xdev->name && xbp == NULL) {
+		oxr_slog(slog,
+		         "\t\t\tProfile not for device and no xbp fallback!\n");
 		return;
 	}
+
+	size_t num = 0;
+	oxr_binding_find_bindings_from_key(log, profile, act->act_key,
+	                                   binding_points, &num);
+	if (num == 0) {
+		oxr_slog(slog, "\t\t\tNo bindings!\n");
+		return;
+	}
+
 	for (size_t i = 0; i < num; i++) {
 		const char *str = NULL;
-		struct oxr_binding *b = bindings[i];
+		struct oxr_binding *binding_point = binding_points[i];
 
-		XrPath matched_path = get_matched_xrpath(b, act);
+		XrPath matched_path = get_matched_xrpath(binding_point, act);
 
 		oxr_path_get_string(log, sess->sys->inst, matched_path, &str,
 		                    &length);
 		oxr_slog(slog, "\t\t\tBinding: %s\n", str);
 
-		if (b->sub_path != sub_path) {
+		if (binding_point->sub_path != sub_path) {
 			oxr_slog(slog, "\t\t\t\tRejected! (SUB PATH)\n");
 			continue;
 		}
 
-		bool found = do_io_bindings(b, act, xdev, matched_path, inputs,
-		                            num_inputs, outputs, num_outputs);
+		bool found = do_io_bindings( //
+		    binding_point,           //
+		    act,                     //
+		    xdev,                    //
+		    xbp,                     //
+		    matched_path,            //
+		    inputs,                  //
+		    num_inputs,              //
+		    outputs,                 //
+		    num_outputs);            //
 
 		if (found) {
-			oxr_slog(slog, "\t\t\t\tBound!\n");
+			if (xbp == NULL) {
+				oxr_slog(slog, "\t\t\t\tBound (xdev)!\n");
+			} else {
+				oxr_slog(slog, "\t\t\t\tBound (xbp)!\n");
+			}
+			continue;
+		}
+
+		if (xbp == NULL) {
+			oxr_slog(slog, "\t\t\t\tRejected! (NO XDEV NAME)\n");
 		} else {
-			oxr_slog(slog, "\t\t\t\tRejected! (NO XDEV MAPPING)\n");
+			oxr_slog(slog, "\t\t\t\tRejected! (NO XBINDING)\n");
 		}
 	}
 }

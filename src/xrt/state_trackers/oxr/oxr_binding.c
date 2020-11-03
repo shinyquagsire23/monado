@@ -41,52 +41,6 @@ setup_paths(struct oxr_logger *log,
 	}
 }
 
-static void
-setup_inputs(struct oxr_logger *log,
-             struct oxr_instance *inst,
-             struct binding_template *templ,
-             struct oxr_binding *binding)
-{
-	size_t count = 0;
-	while (templ->inputs[count] != 0) {
-		count++;
-	}
-
-	if (count == 0) {
-		return;
-	}
-
-	binding->num_inputs = count;
-	binding->inputs = U_TYPED_ARRAY_CALLOC(enum xrt_input_name, count);
-
-	for (size_t x = 0; x < binding->num_inputs; x++) {
-		binding->inputs[x] = templ->inputs[x];
-	}
-}
-
-static void
-setup_outputs(struct oxr_logger *log,
-              struct oxr_instance *inst,
-              struct binding_template *templ,
-              struct oxr_binding *binding)
-{
-	size_t count = 0;
-	while (templ->outputs[count] != 0) {
-		count++;
-	}
-
-	if (count == 0) {
-		return;
-	}
-
-	binding->num_outputs = count;
-	binding->outputs = U_TYPED_ARRAY_CALLOC(enum xrt_output_name, count);
-
-	for (size_t x = 0; x < binding->num_outputs; x++) {
-		binding->outputs[x] = templ->outputs[x];
-	}
-}
-
 static bool
 interaction_profile_find(struct oxr_logger *log,
                          struct oxr_instance *inst,
@@ -137,6 +91,7 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 	struct oxr_interaction_profile *p =
 	    U_TYPED_CALLOC(struct oxr_interaction_profile);
 
+	p->xname = templ->name;
 	p->num_bindings = templ->num_bindings;
 	p->bindings = U_TYPED_ARRAY_CALLOC(struct oxr_binding, p->num_bindings);
 	p->path = path;
@@ -149,8 +104,8 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 		b->sub_path = t->sub_path;
 		b->localized_name = t->localized_name;
 		setup_paths(log, inst, t, b);
-		setup_inputs(log, inst, t, b);
-		setup_outputs(log, inst, t, b);
+		b->input = t->input;
+		b->output = t->output;
 	}
 
 	// Add to the list of currently created interaction profiles.
@@ -422,15 +377,10 @@ oxr_binding_destroy_all(struct oxr_logger *log, struct oxr_instance *inst)
 
 			reset_binding_keys(b);
 			free(b->paths);
-			free(b->inputs);
-			free(b->outputs);
-
 			b->paths = NULL;
-			b->inputs = NULL;
-			b->outputs = NULL;
 			b->num_paths = 0;
-			b->num_inputs = 0;
-			b->num_outputs = 0;
+			b->input = 0;
+			b->output = 0;
 		}
 
 		free(p->bindings);

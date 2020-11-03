@@ -1380,6 +1380,9 @@ struct oxr_interaction_profile
 {
 	XrPath path;
 
+	//! Used to lookup @ref xrt_binding for fallback.
+	enum xrt_device_name xname;
+
 	//! Name presented to the user.
 	const char *localized_name;
 
@@ -1405,11 +1408,9 @@ struct oxr_binding
 	//! store which entry in paths was suggested, for each action key
 	uint32_t *preferred_binding_path_index;
 
-	enum xrt_input_name *inputs;
-	size_t num_inputs;
+	enum xrt_input_name input;
 
-	enum xrt_output_name *outputs;
-	size_t num_outputs;
+	enum xrt_output_name output;
 };
 
 /*!
