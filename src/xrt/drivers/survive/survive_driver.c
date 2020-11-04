@@ -1232,6 +1232,53 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 	return true;
 }
 
+/*
+ *
+ * Bindings
+ *
+ */
+
+static struct xrt_binding_input_pair simple_inputs_index[4] = {
+    {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_INDEX_TRIGGER_VALUE},
+    {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_INDEX_B_CLICK},
+    {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_INDEX_GRIP_POSE},
+    {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_INDEX_AIM_POSE},
+};
+
+static struct xrt_binding_output_pair simple_outputs_index[1] = {
+    {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_INDEX_HAPTIC},
+};
+
+static struct xrt_binding_input_pair simple_inputs_vive[4] = {
+    {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_VIVE_TRIGGER_VALUE},
+    {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_VIVE_MENU_CLICK},
+    {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_VIVE_GRIP_POSE},
+    {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_VIVE_AIM_POSE},
+};
+
+static struct xrt_binding_output_pair simple_outputs_vive[1] = {
+    {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_VIVE_HAPTIC},
+};
+
+static struct xrt_binding bindings_index[1] = {
+    {
+        .name = XRT_DEVICE_SIMPLE_CONTROLLER,
+        .inputs = simple_inputs_index,
+        .num_inputs = ARRAY_SIZE(simple_inputs_index),
+        .outputs = simple_outputs_index,
+        .num_outputs = ARRAY_SIZE(simple_outputs_index),
+    },
+};
+
+static struct xrt_binding bindings_vive[1] = {
+    {
+        .name = XRT_DEVICE_SIMPLE_CONTROLLER,
+        .inputs = simple_inputs_vive,
+        .num_inputs = ARRAY_SIZE(simple_inputs_vive),
+        .outputs = simple_outputs_vive,
+        .num_outputs = ARRAY_SIZE(simple_outputs_vive),
+    },
+};
 
 #define SET_WAND_INPUT(NAME, NAME2)                                            \
 	do {                                                                   \
@@ -1351,6 +1398,9 @@ _create_controller_device(struct survive_system *sys,
 
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_INDEX_HAPTIC;
 
+		survive->base.bindings = bindings_index;
+		survive->base.num_binding_profiles = ARRAY_SIZE(bindings_index);
+
 		survive->base.hand_tracking_supported = true;
 
 	} else if (survive->variant == VIVE_VARIANT_HTC_VIVE_CONTROLLER) {
@@ -1371,6 +1421,9 @@ _create_controller_device(struct survive_system *sys,
 		SET_WAND_INPUT(GRIP_POSE, GRIP_POSE);
 
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_VIVE_HAPTIC;
+
+		survive->base.bindings = bindings_vive;
+		survive->base.num_binding_profiles = ARRAY_SIZE(bindings_vive);
 
 		survive->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 	}
