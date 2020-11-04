@@ -1916,7 +1916,9 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 */
 	if (frameEndInfo->layerCount == 0) {
 
+		os_mutex_lock(&sess->active_wait_frames_lock);
 		sess->active_wait_frames--;
+		os_mutex_unlock(&sess->active_wait_frames_lock);
 
 		CALL_CHK(xrt_comp_discard_frame(xc, sess->frame_id.begun));
 		sess->frame_id.begun = -1;
