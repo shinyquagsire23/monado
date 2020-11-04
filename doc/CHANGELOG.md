@@ -5,6 +5,15 @@ SPDX-License-Identifier: CC0-1.0
 SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
 ```
 
+## Monado 0.4.1 (2020-11-04)
+
+- State Trackers
+  - st/oxr: Fix for new conformance tests for xrWaitFrame, xrBeginFrame,
+    xrEndFrame call order. Also fix OpenXR state transition logic depending on a
+    synchronized frame loop.
+    ([!589](https://gitlab.freedesktop.org/monado/monado/merge_requests/589),
+    [!590](https://gitlab.freedesktop.org/monado/monado/merge_requests/590))
+
 ## Monado 0.4.0 (2020-11-02)
 
 - XRT Interface
