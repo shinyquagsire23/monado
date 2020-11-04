@@ -1061,6 +1061,54 @@ vive_controller_run_thread(void *ptr)
 	return NULL;
 }
 
+/*
+ *
+ * Bindings
+ *
+ */
+
+static struct xrt_binding_input_pair simple_inputs_index[4] = {
+    {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_INDEX_TRIGGER_VALUE},
+    {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_INDEX_B_CLICK},
+    {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_INDEX_GRIP_POSE},
+    {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_INDEX_AIM_POSE},
+};
+
+static struct xrt_binding_output_pair simple_outputs_index[1] = {
+    {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_INDEX_HAPTIC},
+};
+
+static struct xrt_binding_input_pair simple_inputs_vive[4] = {
+    {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_VIVE_TRIGGER_VALUE},
+    {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_VIVE_MENU_CLICK},
+    {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_VIVE_GRIP_POSE},
+    {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_VIVE_AIM_POSE},
+};
+
+static struct xrt_binding_output_pair simple_outputs_vive[1] = {
+    {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_VIVE_HAPTIC},
+};
+
+static struct xrt_binding_profile binding_profiles_index[1] = {
+    {
+        .name = XRT_DEVICE_SIMPLE_CONTROLLER,
+        .inputs = simple_inputs_index,
+        .num_inputs = ARRAY_SIZE(simple_inputs_index),
+        .outputs = simple_outputs_index,
+        .num_outputs = ARRAY_SIZE(simple_outputs_index),
+    },
+};
+
+static struct xrt_binding_profile binding_profiles_vive[1] = {
+    {
+        .name = XRT_DEVICE_SIMPLE_CONTROLLER,
+        .inputs = simple_inputs_vive,
+        .num_inputs = ARRAY_SIZE(simple_inputs_vive),
+        .outputs = simple_outputs_vive,
+        .num_outputs = ARRAY_SIZE(simple_outputs_vive),
+    },
+};
+
 #define SET_WAND_INPUT(NAME, NAME2)                                            \
 	do {                                                                   \
 		(d->base.inputs[VIVE_CONTROLLER_INDEX_##NAME].name =           \
@@ -1164,6 +1212,10 @@ vive_controller_create(struct os_hid_device *controller_hid,
 		d->base.update_inputs =
 		    vive_controller_device_update_wand_inputs;
 
+		d->base.binding_profiles = binding_profiles_vive;
+		d->base.num_binding_profiles =
+		    ARRAY_SIZE(binding_profiles_vive);
+
 		d->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 	} else if (d->variant == CONTROLLER_INDEX_LEFT ||
 	           d->variant == CONTROLLER_INDEX_RIGHT) {
@@ -1206,6 +1258,9 @@ vive_controller_create(struct os_hid_device *controller_hid,
 		    &d->hand_tracking, hand,
 		    XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
 
+		d->base.binding_profiles = binding_profiles_index;
+		d->base.num_binding_profiles =
+		    ARRAY_SIZE(binding_profiles_index);
 
 		if (d->variant == CONTROLLER_INDEX_LEFT) {
 			d->base.device_type =
