@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+    <string name="define_plu_eigen"></string>
+    <string name="library_eigen_author">Benoît Jacob, Gaël Guennebaud</string>
+    <string name="library_eigen_libraryWebsite">http://http://eigen.tuxfamily.org</string>
+    <string name="library_eigen_libraryName">Eigen</string>
+    <string name="library_eigen_libraryDescription">Eigen is a C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.</string>
+    <string name="library_eigen_licenseIds">mpl_2_0</string>
+    <string name="library_eigen_isOpenSource">true</string>
+    <string name="library_eigen_repositoryLink">https://gitlab.com/libeigen/eigen</string>
+    <!--<string name="library_eigen_libraryVersion">3.3.7</string>-->
+
+</resources>

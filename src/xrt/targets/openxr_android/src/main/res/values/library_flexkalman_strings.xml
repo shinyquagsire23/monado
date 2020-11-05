@@ -9,7 +9,7 @@
     <string name="library_flexkalman_authorWebsite">https://github.com/rpavlik/UVBI-and-KalmanFramework-Standalone</string>
     <string name="library_flexkalman_libraryName">flexkalman</string>
     <string name="library_flexkalman_libraryDescription">Flexible Kalman filter framework.</string>
-    <string name="library_flexkalman_licenseIds">apache_2_0</string>
+    <string name="library_flexkalman_licenseIds">apache_2_0,bsl_1_0</string>
     <string name="library_flexkalman_isOpenSource">true</string>
     <string name="library_flexkalman_repositoryLink">https://github.com/rpavlik/UVBI-and-KalmanFramework-Standalone</string>
     <string name="library_flexkalman_type">native</string>
