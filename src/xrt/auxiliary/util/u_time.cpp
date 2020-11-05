@@ -28,8 +28,7 @@
 
 struct time_state
 {
-	// Hardcoded to one second offset.
-	timepoint_ns offset = 1000 * 1000 * 1000;
+	timepoint_ns offset;
 };
 
 
@@ -43,6 +42,7 @@ extern "C" struct time_state *
 time_state_create()
 {
 	time_state *state = new (std::nothrow) time_state;
+	state->offset = os_monotonic_get_ns();
 	return state;
 }
 
@@ -109,12 +109,14 @@ time_state_monotonic_to_ts_ns(struct time_state const *state,
 {
 	assert(state != NULL);
 
-	return monotonic_ns + state->offset;
+	return monotonic_ns - state->offset;
 }
 
 extern "C" uint64_t
 time_state_ts_to_monotonic_ns(struct time_state const *state,
                               timepoint_ns timestamp)
 {
-	return timestamp - state->offset;
+	assert(state != NULL);
+
+	return timestamp + state->offset;
 }
