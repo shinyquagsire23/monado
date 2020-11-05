@@ -63,6 +63,20 @@
 
 #define WINDOW_TITLE "Monado"
 
+static double
+ns_to_ms(int64_t ns)
+{
+	double ms = ((double)ns) * 1. / 1000. * 1. / 1000.;
+	return ms;
+}
+
+static double
+ts_ms()
+{
+	int64_t monotonic = os_monotonic_get_ns();
+	return ns_to_ms(monotonic);
+}
+
 /*!
  */
 static void
@@ -196,12 +210,14 @@ compositor_wait_frame(struct xrt_compositor *xc,
                       uint64_t *predicted_display_period)
 {
 	struct comp_compositor *c = comp_compositor(xc);
-	COMP_SPEW(c, "WAIT_FRAME");
 
 	// A little bit easier to read.
 	int64_t interval_ns = (int64_t)c->settings.nominal_frame_interval_ns;
 
 	int64_t now_ns = os_monotonic_get_ns();
+
+	COMP_SPEW(c, "WAIT_FRAME at %8.3fms", ns_to_ms(now_ns));
+
 	if (c->last_next_display_time == 0) {
 		// First frame, we'll just assume we will display immediately
 
@@ -209,6 +225,12 @@ compositor_wait_frame(struct xrt_compositor *xc,
 		c->last_next_display_time = now_ns + interval_ns;
 		*predicted_display_time = c->last_next_display_time;
 		*out_frame_id = c->last_next_display_time;
+
+		COMP_SPEW(c,
+		          "WAIT_FRAME Finished at %8.3fms, predicted display "
+		          "time %8.3fms, period %8.3fms",
+		          ns_to_ms(now_ns), ns_to_ms(*predicted_display_time),
+		          ns_to_ms(*predicted_display_period));
 
 		return XRT_SUCCESS;
 	}
@@ -243,6 +265,13 @@ compositor_wait_frame(struct xrt_compositor *xc,
 
 			c->last_next_display_time = next_display_time;
 
+			COMP_SPEW(c,
+			          "WAIT_FRAME Finished at %8.3fms, predicted "
+			          "display time %8.3fms, period %8.3fms",
+			          ns_to_ms(now_ns),
+			          ns_to_ms(*predicted_display_time),
+			          ns_to_ms(*predicted_display_period));
+
 			return XRT_SUCCESS;
 		}
 	}
@@ -261,7 +290,7 @@ static xrt_result_t
 compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct comp_compositor *c = comp_compositor(xc);
-	COMP_SPEW(c, "DISCARD_FRAME");
+	COMP_SPEW(c, "DISCARD_FRAME at %8.3fms", ts_ms());
 	return XRT_SUCCESS;
 }
 
@@ -429,7 +458,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 
-	COMP_SPEW(c, "LAYER_COMMIT");
+	COMP_SPEW(c, "LAYER_COMMIT at %8.3fms", ts_ms());
 
 	// Always zero for now.
 	uint32_t slot_id = 0;
@@ -441,6 +470,11 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 	for (uint32_t i = 0; i < num_layers; i++) {
 		struct comp_layer *layer = &c->slots[slot_id].layers[i];
 		struct xrt_layer_data *data = &layer->data;
+
+		COMP_SPEW(c,
+		          "LAYER_COMMIT (%d) predicted display time: %8.3fms",
+		          i, ns_to_ms(data->timestamp));
+
 		switch (data->type) {
 		case XRT_LAYER_QUAD: {
 			struct xrt_layer_quad_data *quad = &layer->data.quad;
@@ -507,6 +541,9 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 	//! @todo do a time-weighted average or something.
 	c->expected_app_duration_ns =
 	    c->app_profiling.last_end - c->app_profiling.last_begin;
+
+	COMP_SPEW(c, "LAYER_COMMIT finished drawing at %8.3fms",
+	          ns_to_ms(c->last_frame_time_ns));
 
 	// Now is a good point to garbage collect.
 	comp_compositor_garbage_collect(c);
