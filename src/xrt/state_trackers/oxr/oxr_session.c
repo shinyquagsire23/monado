@@ -44,6 +44,7 @@
 
 
 DEBUG_GET_ONCE_NUM_OPTION(ipd, "OXR_DEBUG_IPD_MM", 63)
+DEBUG_GET_ONCE_BOOL_OPTION(frame_timing_spew, "OXR_FRAME_TIMING_SPEW", false)
 
 #define CALL_CHK(call)                                                         \
 	if ((call) == XRT_ERROR_IPC_FAILURE) {                                 \
@@ -499,6 +500,22 @@ oxr_session_views(struct oxr_logger *log,
 	return oxr_session_success_result(sess);
 }
 
+static double
+ns_to_ms(int64_t ns)
+{
+	double ms = ((double)ns) * 1. / 1000. * 1. / 1000.;
+	return ms;
+}
+
+static double
+ts_ms(struct oxr_session *sess)
+{
+	timepoint_ns now = time_state_get_now(sess->sys->inst->timekeeping);
+	int64_t monotonic =
+	    time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, now);
+	return ns_to_ms(monotonic);
+}
+
 XrResult
 oxr_session_frame_wait(struct oxr_logger *log,
                        struct oxr_session *sess,
@@ -525,9 +542,19 @@ oxr_session_frame_wait(struct oxr_logger *log,
 	sess->active_wait_frames++;
 	os_mutex_unlock(&sess->active_wait_frames_lock);
 
+	if (sess->frame_timing_spew) {
+		oxr_log(log, "Called at %8.3fms", ts_ms(sess));
+	}
+
 	// A subsequent xrWaitFrame call must: block until the previous frame
 	// has been begun
 	os_semaphore_wait(&sess->sem, 0);
+
+	if (sess->frame_timing_spew) {
+		oxr_log(log,
+		        "Finished waiting for previous frame begin at %8.3fms",
+		        ts_ms(sess));
+	}
 
 	uint64_t predicted_display_time;
 	uint64_t predicted_display_period;
@@ -551,6 +578,15 @@ oxr_session_frame_wait(struct oxr_logger *log,
 		    log, XR_ERROR_RUNTIME_FAILURE,
 		    "Time_state_monotonic_to_ts_ns returned '%" PRIi64 "'",
 		    frameState->predictedDisplayTime);
+	}
+
+	if (sess->frame_timing_spew) {
+		oxr_log(log,
+		        "Waiting finished at %8.3fms. Predicted display time "
+		        "%8.3fms, "
+		        "period %8.3fms",
+		        ts_ms(sess), ns_to_ms(predicted_display_time),
+		        ns_to_ms(predicted_display_period));
 	}
 
 	return oxr_session_success_result(sess);
@@ -1867,6 +1903,13 @@ oxr_session_frame_end(struct oxr_logger *log,
 		    frameEndInfo->displayTime);
 	}
 
+	int64_t timestamp = time_state_ts_to_monotonic_ns(
+	    sess->sys->inst->timekeeping, frameEndInfo->displayTime);
+	if (sess->frame_timing_spew) {
+		oxr_log(log, "End frame at %8.3fms with display time %8.3fms",
+		        ts_ms(sess), ns_to_ms(timestamp));
+	}
+
 	struct xrt_compositor *xc = sess->compositor;
 
 	/*
@@ -2250,6 +2293,7 @@ oxr_session_create(struct oxr_logger *log,
 	}
 
 	sess->ipd_meters = debug_get_num_option_ipd() / 1000.0f;
+	sess->frame_timing_spew = debug_get_bool_option_frame_timing_spew();
 
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);

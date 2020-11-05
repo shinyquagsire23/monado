@@ -1331,6 +1331,11 @@ struct oxr_session
 	float ipd_meters;
 
 	/*!
+	 * Frame timing debug output.
+	 */
+	bool frame_timing_spew;
+
+	/*!
 	 * To pipe swapchain creation to right code.
 	 */
 	XrResult (*create_swapchain)(struct oxr_logger *,
