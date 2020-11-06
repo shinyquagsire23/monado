@@ -1260,7 +1260,7 @@ static struct xrt_binding_output_pair simple_outputs_vive[1] = {
     {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_VIVE_HAPTIC},
 };
 
-static struct xrt_binding bindings_index[1] = {
+static struct xrt_binding_profile binding_profiles_index[1] = {
     {
         .name = XRT_DEVICE_SIMPLE_CONTROLLER,
         .inputs = simple_inputs_index,
@@ -1270,7 +1270,7 @@ static struct xrt_binding bindings_index[1] = {
     },
 };
 
-static struct xrt_binding bindings_vive[1] = {
+static struct xrt_binding_profile binding_profiles_vive[1] = {
     {
         .name = XRT_DEVICE_SIMPLE_CONTROLLER,
         .inputs = simple_inputs_vive,
@@ -1398,8 +1398,9 @@ _create_controller_device(struct survive_system *sys,
 
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_INDEX_HAPTIC;
 
-		survive->base.bindings = bindings_index;
-		survive->base.num_binding_profiles = ARRAY_SIZE(bindings_index);
+		survive->base.binding_profiles = binding_profiles_index;
+		survive->base.num_binding_profiles =
+		    ARRAY_SIZE(binding_profiles_index);
 
 		survive->base.hand_tracking_supported = true;
 
@@ -1422,8 +1423,9 @@ _create_controller_device(struct survive_system *sys,
 
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_VIVE_HAPTIC;
 
-		survive->base.bindings = bindings_vive;
-		survive->base.num_binding_profiles = ARRAY_SIZE(bindings_vive);
+		survive->base.binding_profiles = binding_profiles_vive;
+		survive->base.num_binding_profiles =
+		    ARRAY_SIZE(binding_profiles_vive);
 
 		survive->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 	}
