@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -50,18 +50,19 @@ struct comp_window_direct_nvidia
  */
 
 static void
-comp_window_direct_nvidia_destroy(struct comp_window *w);
+comp_window_direct_nvidia_destroy(struct comp_target *ct);
 
 static bool
-comp_window_direct_nvidia_init(struct comp_window *w);
+comp_window_direct_nvidia_init(struct comp_target *ct);
 
 static struct comp_window_direct_nvidia_display *
 comp_window_direct_nvidia_current_display(struct comp_window_direct_nvidia *w);
 
 static bool
-comp_window_direct_nvidia_init_swapchain(struct comp_window *w,
+comp_window_direct_nvidia_init_swapchain(struct comp_target *ct,
                                          uint32_t width,
                                          uint32_t height);
+
 
 /*
  *
@@ -70,12 +71,17 @@ comp_window_direct_nvidia_init_swapchain(struct comp_window *w,
  */
 
 static void
-_flush(struct comp_window *w)
-{}
+_flush(struct comp_target *ct)
+{
+	(void)ct;
+}
 
 static void
-_update_window_title(struct comp_window *w, const char *title)
-{}
+_update_window_title(struct comp_target *ct, const char *title)
+{
+	(void)ct;
+	(void)title;
+}
 
 struct comp_window *
 comp_window_direct_nvidia_create(struct comp_compositor *c)
@@ -83,22 +89,27 @@ comp_window_direct_nvidia_create(struct comp_compositor *c)
 	struct comp_window_direct_nvidia *w =
 	    U_TYPED_CALLOC(struct comp_window_direct_nvidia);
 
-	w->base.name = "direct";
-	w->base.destroy = comp_window_direct_nvidia_destroy;
-	w->base.flush = _flush;
-	w->base.init = comp_window_direct_nvidia_init;
-	w->base.init_swapchain = comp_window_direct_nvidia_init_swapchain;
-	w->base.update_window_title = _update_window_title;
+	comp_window_init_target(&w->base);
+
+	w->base.swapchain.base.name = "direct";
+	w->base.swapchain.base.destroy = comp_window_direct_nvidia_destroy;
+	w->base.swapchain.base.flush = _flush;
+	w->base.swapchain.base.init_pre_vulkan = comp_window_direct_nvidia_init;
+	w->base.swapchain.base.init_post_vulkan =
+	    comp_window_direct_nvidia_init_swapchain;
+	w->base.swapchain.base.set_title = _update_window_title;
 	w->base.c = c;
 
 	return &w->base;
 }
 
 static void
-comp_window_direct_nvidia_destroy(struct comp_window *w)
+comp_window_direct_nvidia_destroy(struct comp_target *ct)
 {
 	struct comp_window_direct_nvidia *w_direct =
-	    (struct comp_window_direct_nvidia *)w;
+	    (struct comp_window_direct_nvidia *)ct;
+
+	vk_swapchain_cleanup(&w_direct->base.swapchain);
 
 	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
 		struct comp_window_direct_nvidia_display *d =
@@ -115,7 +126,7 @@ comp_window_direct_nvidia_destroy(struct comp_window *w)
 		w_direct->dpy = NULL;
 	}
 
-	free(w);
+	free(ct);
 }
 
 static bool
@@ -132,8 +143,8 @@ append_nvidia_entry_on_match(struct comp_window_direct_nvidia *w,
 		return false;
 
 	// we have a match with this whitelist entry.
-	w->base.c->settings.width = disp->physicalResolution.width;
-	w->base.c->settings.height = disp->physicalResolution.height;
+	w->base.c->settings.preferred.width = disp->physicalResolution.width;
+	w->base.c->settings.preferred.height = disp->physicalResolution.height;
 	struct comp_window_direct_nvidia_display d = {
 	    .name = U_TYPED_ARRAY_CALLOC(char, disp_entry_length + 1),
 	    .display_properties = *disp,
@@ -157,16 +168,18 @@ append_nvidia_entry_on_match(struct comp_window_direct_nvidia *w,
 }
 
 static bool
-comp_window_direct_nvidia_init(struct comp_window *w)
+comp_window_direct_nvidia_init(struct comp_target *ct)
 {
+	struct comp_window_direct_nvidia *w_direct =
+	    (struct comp_window_direct_nvidia *)ct;
+	struct comp_window *w = &w_direct->base;
+
 	// Sanity check.
 	if (w->c->vk.instance == VK_NULL_HANDLE) {
 		COMP_ERROR(w->c, "Vulkan not initialized before NVIDIA init!");
 		return false;
 	}
 
-	struct comp_window_direct_nvidia *w_direct =
-	    (struct comp_window_direct_nvidia *)w;
 
 	if (!comp_window_direct_connect(w, &w_direct->dpy)) {
 		return false;
@@ -234,12 +247,15 @@ comp_window_direct_nvidia_current_display(struct comp_window_direct_nvidia *w)
 }
 
 static bool
-comp_window_direct_nvidia_init_swapchain(struct comp_window *w,
+comp_window_direct_nvidia_init_swapchain(struct comp_target *ct,
                                          uint32_t width,
                                          uint32_t height)
 {
 	struct comp_window_direct_nvidia *w_direct =
-	    (struct comp_window_direct_nvidia *)w;
+	    (struct comp_window_direct_nvidia *)ct;
+	struct comp_window *w = &w_direct->base;
+
+	vk_swapchain_init(&w->swapchain, &w->c->vk);
 
 	struct comp_window_direct_nvidia_display *d =
 	    comp_window_direct_nvidia_current_display(w_direct);

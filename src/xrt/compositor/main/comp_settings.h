@@ -71,8 +71,11 @@ struct comp_settings
 	//! display string forced by user or NULL
 	const char *nvidia_display;
 
-	uint32_t width;
-	uint32_t height;
+	struct
+	{
+		uint32_t width;
+		uint32_t height;
+	} preferred;
 
 	struct
 	{

@@ -47,26 +47,30 @@ struct comp_window_android
  */
 
 static bool
-comp_window_android_init(struct comp_window *w)
+comp_window_android_init(struct comp_target *ct)
 {
-	struct comp_window_android *w_android = (struct comp_window_android *)w;
+	(void)ct;
+
 	return true;
 }
 
 static void
-comp_window_android_destroy(struct comp_window *w)
+comp_window_android_destroy(struct comp_target *ct)
 {
-	struct comp_window_android *w_android = (struct comp_window_android *)w;
-	android_custom_surface_destroy(&w_android->custom_surface);
+	struct comp_window_android *cwa = (struct comp_window_android *)ct;
 
-	free(w);
+	vk_swapchain_cleanup(&cwa->base.swapchain);
+
+	android_custom_surface_destroy(&cwa->custom_surface);
+
+	free(ct);
 }
 
 static void
-comp_window_android_update_window_title(struct comp_window *w,
+comp_window_android_update_window_title(struct comp_target *ct,
                                         const char *title)
 {
-	struct comp_window_android *w_android = (struct comp_window_android *)w;
+	(void)ct;
 }
 
 static VkResult
@@ -110,11 +114,13 @@ comp_window_android_create_surface(struct comp_window_android *w,
 }
 
 static bool
-comp_window_android_init_swapchain(struct comp_window *w,
+comp_window_android_init_swapchain(struct comp_target *ct,
                                    uint32_t width,
                                    uint32_t height)
 {
-	struct comp_window_android *w_android = (struct comp_window_android *)w;
+	struct comp_window_android *w_android =
+	    (struct comp_window_android *)ct;
+	struct comp_window *w = &w_android->base;
 	VkResult ret;
 
 	ret = comp_window_android_create_surface(w_android,
@@ -124,18 +130,14 @@ comp_window_android_init_swapchain(struct comp_window *w,
 		return false;
 	}
 
-	vk_swapchain_create(
-	    &w->swapchain, width, height, w->c->settings.color_format,
-	    w->c->settings.color_space, w->c->settings.present_mode);
-
 	return true;
 }
 
 
 static void
-comp_window_android_flush(struct comp_window *w)
+comp_window_android_flush(struct comp_target *ct)
 {
-	struct comp_window_android *w_android = (struct comp_window_android *)w;
+	(void)ct;
 }
 
 struct comp_window *
@@ -144,12 +146,14 @@ comp_window_android_create(struct comp_compositor *c)
 	struct comp_window_android *w =
 	    U_TYPED_CALLOC(struct comp_window_android);
 
-	w->base.name = "Android";
-	w->base.destroy = comp_window_android_destroy;
-	w->base.flush = comp_window_android_flush;
-	w->base.init = comp_window_android_init;
-	w->base.init_swapchain = comp_window_android_init_swapchain;
-	w->base.update_window_title = comp_window_android_update_window_title;
+	w->base.swapchain.base.name = "Android";
+	w->base.swapchain.base.destroy = comp_window_android_destroy;
+	w->base.swapchain.base.flush = comp_window_android_flush;
+	w->base.swapchain.base.init_pre_vulkan = comp_window_android_init;
+	w->base.swapchain.base.init_post_vulkan =
+	    comp_window_android_init_swapchain;
+	w->base.swapchain.base.set_title =
+	    comp_window_android_update_window_title;
 	w->base.c = c;
 
 	return &w->base;

@@ -77,14 +77,9 @@ _check_surface_present_mode(struct vk_bundle *vk,
  */
 
 void
-vk_swapchain_init(struct vk_swapchain *sc,
-                  struct vk_bundle *vk,
-                  vk_swapchain_cb dimension_cb,
-                  void *priv)
+vk_swapchain_init(struct vk_swapchain *sc, struct vk_bundle *vk)
 {
 	sc->vk = vk;
-	sc->cb_priv = priv;
-	sc->dimension_cb = dimension_cb;
 }
 
 void
@@ -103,7 +98,7 @@ vk_swapchain_create(struct vk_swapchain *sc,
 
 	VkSwapchainKHR old_swapchain_handle = sc->swapchain.handle;
 
-	sc->image_count = 0;
+	sc->base.num_images = 0;
 	sc->swapchain.handle = VK_NULL_HANDLE;
 	sc->present_mode = present_mode;
 	sc->preferred.color_format = color_format;
@@ -149,11 +144,12 @@ vk_swapchain_create(struct vk_swapchain *sc,
 		return;
 	}
 
-
+	// Get the extents of the swapchain.
 	VkExtent2D extent =
 	    vk_swapchain_select_extent(sc, surface_caps, width, height);
 
-	VkSwapchainCreateInfoKHR swap_chain_info = {
+	// Create the swapchain now.
+	VkSwapchainCreateInfoKHR swapchain_info = {
 	    .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 	    .surface = sc->surface.handle,
 	    .minImageCount = surface_caps.minImageCount,
@@ -175,7 +171,7 @@ vk_swapchain_create(struct vk_swapchain *sc,
 	    .oldSwapchain = old_swapchain_handle,
 	};
 
-	ret = sc->vk->vkCreateSwapchainKHR(sc->vk->device, &swap_chain_info,
+	ret = sc->vk->vkCreateSwapchainKHR(sc->vk->device, &swapchain_info,
 	                                   NULL, &sc->swapchain.handle);
 
 	// Always destroy the old.
@@ -187,6 +183,15 @@ vk_swapchain_create(struct vk_swapchain *sc,
 		return;
 	}
 
+
+	/*
+	 * Set target info.
+	 */
+
+	sc->base.width = extent.width;
+	sc->base.height = extent.height;
+	sc->base.format = sc->surface.format.format;
+
 	vk_swapchain_create_image_views(sc);
 }
 
@@ -196,29 +201,26 @@ vk_swapchain_select_extent(struct vk_swapchain *sc,
                            uint32_t width,
                            uint32_t height)
 {
-	VkExtent2D extent;
-	U_ZERO(&extent);
-
 	// If width (and height) equals the special value 0xFFFFFFFF,
 	// the size of the surface will be set by the swapchain
 	if (caps.currentExtent.width == (uint32_t)-1) {
-		extent.width = width;
-		extent.height = height;
-	} else {
-		extent = caps.currentExtent;
-		if (caps.currentExtent.width != width ||
-		    caps.currentExtent.height != height) {
-			VK_DEBUG(sc->vk,
-			         "Using swap chain extent dimensions %dx%d "
-			         "instead of requested %dx%d.",
-			         caps.currentExtent.width,
-			         caps.currentExtent.height, width, height);
-			sc->dimension_cb(caps.currentExtent.width,
-			                 caps.currentExtent.height,
-			                 sc->cb_priv);
-		}
+		VkExtent2D extent = {
+		    .width = width,
+		    .height = height,
+		};
+		return extent;
 	}
-	return extent;
+
+	if (caps.currentExtent.width != width ||
+	    caps.currentExtent.height != height) {
+		VK_DEBUG(sc->vk,
+		         "Using swap chain extent dimensions %dx%d instead of "
+		         "requested %dx%d.",
+		         caps.currentExtent.width, caps.currentExtent.height,
+		         width, height);
+	}
+
+	return caps.currentExtent;
 }
 
 static void
@@ -408,22 +410,22 @@ _check_surface_present_mode(struct vk_bundle *vk,
 static void
 vk_swapchain_destroy_image_views(struct vk_swapchain *sc)
 {
-	if (sc->buffers == NULL) {
+	if (sc->base.images == NULL) {
 		return;
 	}
 
-	for (uint32_t i = 0; i < sc->image_count; i++) {
-		if (sc->buffers[i].view == VK_NULL_HANDLE) {
+	for (uint32_t i = 0; i < sc->base.num_images; i++) {
+		if (sc->base.images[i].view == VK_NULL_HANDLE) {
 			continue;
 		}
 
-		sc->vk->vkDestroyImageView(sc->vk->device, sc->buffers[i].view,
-		                           NULL);
-		sc->buffers[i].view = VK_NULL_HANDLE;
+		sc->vk->vkDestroyImageView(sc->vk->device,
+		                           sc->base.images[i].view, NULL);
+		sc->base.images[i].view = VK_NULL_HANDLE;
 	}
 
-	free(sc->buffers);
-	sc->buffers = NULL;
+	free(sc->base.images);
+	sc->base.images = NULL;
 }
 
 static void
@@ -432,22 +434,22 @@ vk_swapchain_create_image_views(struct vk_swapchain *sc)
 	sc->vk->vkGetSwapchainImagesKHR( //
 	    sc->vk->device,              // device
 	    sc->swapchain.handle,        // swapchain
-	    &sc->image_count,            // pSwapchainImageCount
+	    &sc->base.num_images,        // pSwapchainImageCount
 	    NULL);                       // pSwapchainImages
-	assert(sc->image_count > 0);
-	VK_DEBUG(sc->vk, "Creating %d image views.", sc->image_count);
+	assert(sc->base.num_images > 0);
+	VK_DEBUG(sc->vk, "Creating %d image views.", sc->base.num_images);
 
-	VkImage *images = U_TYPED_ARRAY_CALLOC(VkImage, sc->image_count);
+	VkImage *images = U_TYPED_ARRAY_CALLOC(VkImage, sc->base.num_images);
 	sc->vk->vkGetSwapchainImagesKHR( //
 	    sc->vk->device,              // device
 	    sc->swapchain.handle,        // swapchain
-	    &sc->image_count,            // pSwapchainImageCount
+	    &sc->base.num_images,        // pSwapchainImageCount
 	    images);                     // pSwapchainImages
 
 	vk_swapchain_destroy_image_views(sc);
 
-	sc->buffers =
-	    U_TYPED_ARRAY_CALLOC(struct vk_swapchain_buffer, sc->image_count);
+	sc->base.images =
+	    U_TYPED_ARRAY_CALLOC(struct comp_target_image, sc->base.num_images);
 
 	VkImageSubresourceRange subresource_range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -457,11 +459,11 @@ vk_swapchain_create_image_views(struct vk_swapchain *sc)
 	    .layerCount = 1,
 	};
 
-	for (uint32_t i = 0; i < sc->image_count; i++) {
-		sc->buffers[i].image = images[i];
-		vk_create_view(sc->vk, sc->buffers[i].image,
+	for (uint32_t i = 0; i < sc->base.num_images; i++) {
+		sc->base.images[i].handle = images[i];
+		vk_create_view(sc->vk, sc->base.images[i].handle,
 		               sc->surface.format.format, subresource_range,
-		               &sc->buffers[i].view);
+		               &sc->base.images[i].view);
 	}
 
 	free(images);

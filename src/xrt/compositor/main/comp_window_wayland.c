@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -55,13 +55,13 @@ struct comp_window_wayland
  */
 
 static void
-comp_window_wayland_destroy(struct comp_window *w);
+comp_window_wayland_destroy(struct comp_target *ct);
 
 static bool
-comp_window_wayland_init(struct comp_window *w);
+comp_window_wayland_init(struct comp_target *ct);
 
 static void
-comp_window_wayland_update_window_title(struct comp_window *w,
+comp_window_wayland_update_window_title(struct comp_target *ct,
                                         const char *title);
 
 static void
@@ -74,7 +74,7 @@ static void
 comp_window_wayland_fullscreen(struct comp_window_wayland *w);
 
 static bool
-comp_window_wayland_init_swapchain(struct comp_window *w,
+comp_window_wayland_init_swapchain(struct comp_target *ct,
                                    uint32_t width,
                                    uint32_t height);
 
@@ -83,7 +83,7 @@ comp_window_wayland_create_surface(struct comp_window_wayland *w,
                                    VkSurfaceKHR *vk_surface);
 
 static void
-comp_window_wayland_flush(struct comp_window *w);
+comp_window_wayland_flush(struct comp_target *ct);
 
 static void
 comp_window_wayland_configure(struct comp_window_wayland *w,
@@ -103,43 +103,48 @@ comp_window_wayland_create(struct comp_compositor *c)
 	struct comp_window_wayland *w =
 	    U_TYPED_CALLOC(struct comp_window_wayland);
 
-	w->base.name = "wayland";
-	w->base.destroy = comp_window_wayland_destroy;
-	w->base.flush = comp_window_wayland_flush;
-	w->base.init = comp_window_wayland_init;
-	w->base.init_swapchain = comp_window_wayland_init_swapchain;
-	w->base.update_window_title = comp_window_wayland_update_window_title;
+	w->base.swapchain.base.name = "wayland";
+	w->base.swapchain.base.destroy = comp_window_wayland_destroy;
+	w->base.swapchain.base.flush = comp_window_wayland_flush;
+	w->base.swapchain.base.init_pre_vulkan = comp_window_wayland_init;
+	w->base.swapchain.base.init_post_vulkan =
+	    comp_window_wayland_init_swapchain;
+	w->base.swapchain.base.set_title =
+	    comp_window_wayland_update_window_title;
 	w->base.c = c;
 
 	return &w->base;
 }
 
 static void
-comp_window_wayland_destroy(struct comp_window *w)
+comp_window_wayland_destroy(struct comp_target *ct)
 {
-	struct comp_window_wayland *w_wayland = (struct comp_window_wayland *)w;
+	struct comp_window_wayland *cww = (struct comp_window_wayland *)ct;
 
-	if (w_wayland->surface) {
-		wl_surface_destroy(w_wayland->surface);
-		w_wayland->surface = NULL;
+	vk_swapchain_cleanup(&cww->base.swapchain);
+
+	if (cww->surface) {
+		wl_surface_destroy(cww->surface);
+		cww->surface = NULL;
 	}
-	if (w_wayland->compositor) {
-		wl_compositor_destroy(w_wayland->compositor);
-		w_wayland->compositor = NULL;
+	if (cww->compositor) {
+		wl_compositor_destroy(cww->compositor);
+		cww->compositor = NULL;
 	}
-	if (w_wayland->display) {
-		wl_display_disconnect(w_wayland->display);
-		w_wayland->display = NULL;
+	if (cww->display) {
+		wl_display_disconnect(cww->display);
+		cww->display = NULL;
 	}
 
-	free(w);
+	free(ct);
 }
 
 static void
-comp_window_wayland_update_window_title(struct comp_window *w,
+comp_window_wayland_update_window_title(struct comp_target *ct,
                                         const char *title)
 {
-	struct comp_window_wayland *w_wayland = (struct comp_window_wayland *)w;
+	struct comp_window_wayland *w_wayland =
+	    (struct comp_window_wayland *)ct;
 	xdg_toplevel_set_title(w_wayland->xdg_toplevel, title);
 }
 
@@ -193,12 +198,16 @@ static const struct xdg_wm_base_listener xdg_wm_base_listener = {
 };
 
 static bool
-comp_window_wayland_init_swapchain(struct comp_window *w,
+comp_window_wayland_init_swapchain(struct comp_target *ct,
                                    uint32_t width,
                                    uint32_t height)
 {
-	struct comp_window_wayland *w_wayland = (struct comp_window_wayland *)w;
+	struct comp_window_wayland *w_wayland =
+	    (struct comp_window_wayland *)ct;
+	struct comp_window *w = &w_wayland->base;
 	VkResult ret;
+
+	vk_swapchain_init(&w->swapchain, &w->c->vk);
 
 	ret = comp_window_wayland_create_surface(w_wayland,
 	                                         &w->swapchain.surface.handle);
@@ -206,10 +215,6 @@ comp_window_wayland_init_swapchain(struct comp_window *w,
 		COMP_ERROR(w->c, "Failed to create surface!");
 		return false;
 	}
-
-	vk_swapchain_create(
-	    &w->swapchain, width, height, w->c->settings.color_format,
-	    w->c->settings.color_space, w->c->settings.present_mode);
 
 	xdg_toplevel_set_min_size(w_wayland->xdg_toplevel, width, height);
 	xdg_toplevel_set_max_size(w_wayland->xdg_toplevel, width, height);
@@ -242,9 +247,10 @@ comp_window_wayland_create_surface(struct comp_window_wayland *w,
 }
 
 static void
-comp_window_wayland_flush(struct comp_window *w)
+comp_window_wayland_flush(struct comp_target *ct)
 {
-	struct comp_window_wayland *w_wayland = (struct comp_window_wayland *)w;
+	struct comp_window_wayland *w_wayland =
+	    (struct comp_window_wayland *)ct;
 
 	while (wl_display_prepare_read(w_wayland->display) != 0)
 		wl_display_dispatch_pending(w_wayland->display);
@@ -309,9 +315,10 @@ comp_window_wayland_registry_global(struct comp_window_wayland *w,
 }
 
 static bool
-comp_window_wayland_init(struct comp_window *w)
+comp_window_wayland_init(struct comp_target *ct)
 {
-	struct comp_window_wayland *w_wayland = (struct comp_window_wayland *)w;
+	struct comp_window_wayland *w_wayland =
+	    (struct comp_window_wayland *)ct;
 
 	w_wayland->display = wl_display_connect(NULL);
 	if (!w_wayland->display) {
@@ -363,6 +370,4 @@ comp_window_wayland_configure(struct comp_window_wayland *w,
 		comp_window_wayland_fullscreen(w);
 		w->fullscreen_requested = true;
 	}
-	// TODO: resize cb
-	// resize_cb(m->size.first, m->size.second);
 }

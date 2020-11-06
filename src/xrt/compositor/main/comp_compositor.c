@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -100,11 +100,8 @@ compositor_destroy(struct xrt_compositor *xc)
 	// As long as vk_bundle is valid it's safe to call this function.
 	comp_shaders_close(&c->vk, &c->shaders);
 
-	if (c->window != NULL) {
-		vk_swapchain_cleanup(&c->window->swapchain);
-		c->window->destroy(c->window);
-		c->window = NULL;
-	}
+	// Does NULL checking.
+	comp_target_destroy(&c->target);
 
 	if (vk->cmd_pool != VK_NULL_HANDLE) {
 		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
@@ -1063,22 +1060,24 @@ compositor_try_window(struct comp_compositor *c, struct comp_window *window)
 		return false;
 	}
 
-	if (!window->init(window)) {
-		window->destroy(window);
+	struct comp_target *ct = &window->swapchain.base;
+
+	if (!comp_target_init_pre_vulkan(ct)) {
+		ct->destroy(ct);
 		return false;
 	}
-	COMP_DEBUG(c, "Window backend %s initialized!", window->name);
-	c->window = window;
+
+	COMP_DEBUG(c, "Window backend %s initialized!",
+	           window->swapchain.base.name);
+
+	c->target = ct;
+
 	return true;
 }
 
 static bool
 compositor_init_window_pre_vulkan(struct comp_compositor *c)
 {
-	// Setup the initial width from the settings.
-	c->current.width = c->settings.width;
-	c->current.height = c->settings.height;
-
 	// Nothing to do for nvidia.
 	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA) {
 		return true;
@@ -1145,7 +1144,7 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 	}
 
 	// Failed to create?
-	return c->window != NULL;
+	return c->target != NULL;
 }
 
 static bool
@@ -1164,39 +1163,29 @@ compositor_init_window_post_vulkan(struct comp_compositor *c)
 #endif
 }
 
-static void
-_sc_dimension_cb(uint32_t width, uint32_t height, void *ptr)
-{
-	struct comp_compositor *c = (struct comp_compositor *)ptr;
-
-	COMP_DEBUG(c, "_sc_dimension_cb %dx%d", width, height);
-
-	c->current.width = width;
-	c->current.height = height;
-}
-
 static bool
 compositor_init_swapchain(struct comp_compositor *c)
 {
-	//! @todo Make c->window->init_swachain call vk_swapchain_init
-	//! and give
-	//!       _sc_dimension_cb to window or just have it call a
-	//!       function?
-
-	vk_swapchain_init(&c->window->swapchain, &c->vk, _sc_dimension_cb,
-	                  (void *)c);
-	if (!c->window->init_swapchain(c->window, c->current.width,
-	                               c->current.height)) {
+	if (!comp_target_init_post_vulkan(c->target,                   //
+	                                  c->settings.preferred.width, //
+	                                  c->settings.preferred.height)) {
 		COMP_ERROR(c, "Window init_swapchain failed!");
 		goto err_destroy;
 	}
+
+	comp_target_create_images(        //
+	    c->target,                    //
+	    c->settings.preferred.width,  //
+	    c->settings.preferred.height, //
+	    c->settings.color_format,     //
+	    c->settings.color_space,      //
+	    c->settings.present_mode);    //
 
 	return true;
 
 	// Error path.
 err_destroy:
-	c->window->destroy(c->window);
-	c->window = NULL;
+	comp_target_destroy(&c->target);
 
 	return false;
 }
@@ -1297,7 +1286,7 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	}
 	// clang-format on
 
-	c->window->update_window_title(c->window, WINDOW_TITLE);
+	comp_target_set_title(c->target, WINDOW_TITLE);
 
 	COMP_DEBUG(c, "Done %p", (void *)c);
 

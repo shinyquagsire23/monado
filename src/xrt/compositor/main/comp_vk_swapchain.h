@@ -12,6 +12,9 @@
 
 #include "vk/vk_helpers.h"
 
+#include "main/comp_target.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -24,30 +27,15 @@ extern "C" {
  */
 
 /*!
- * Callback when a @ref vk_swapchain changes size.
- *
- * @ingroup comp_main
- */
-typedef void (*vk_swapchain_cb)(uint32_t width, uint32_t height, void *priv);
-
-/*!
- * A pair of VkImage and VkImageView.
- *
- * @ingroup comp_main
- */
-struct vk_swapchain_buffer
-{
-	VkImage image;
-	VkImageView view;
-};
-
-/*!
  * Wraps and manage VkSwapchainKHR and VkSurfaceKHR, used by @ref comp code.
  *
  * @ingroup comp_main
  */
 struct vk_swapchain
 {
+	//! Base target.
+	struct comp_target base;
+
 	struct vk_bundle *vk;
 
 	struct
@@ -61,9 +49,6 @@ struct vk_swapchain
 		VkSurfaceFormatKHR format;
 	} surface;
 
-	struct vk_swapchain_buffer *buffers;
-	uint32_t image_count;
-
 	struct
 	{
 		VkFormat color_format;
@@ -72,9 +57,6 @@ struct vk_swapchain
 
 	//! Present mode that the system must support.
 	VkPresentModeKHR present_mode;
-
-	void *cb_priv;
-	vk_swapchain_cb dimension_cb;
 };
 
 
@@ -90,10 +72,7 @@ struct vk_swapchain
  * @ingroup comp_main
  */
 void
-vk_swapchain_init(struct vk_swapchain *sc,
-                  struct vk_bundle *vk,
-                  vk_swapchain_cb dimension_cb,
-                  void *priv);
+vk_swapchain_init(struct vk_swapchain *sc, struct vk_bundle *vk);
 
 /*!
  * Initialize the given @ref vk_swapchain, does not allocate.

@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -63,19 +63,19 @@ struct comp_window_direct_randr
  */
 
 static void
-comp_window_direct_randr_destroy(struct comp_window *w);
+comp_window_direct_randr_destroy(struct comp_target *ct);
 
 XRT_MAYBE_UNUSED static void
 comp_window_direct_randr_list_screens(struct comp_window_direct_randr *w);
 
 static bool
-comp_window_direct_randr_init(struct comp_window *w);
+comp_window_direct_randr_init(struct comp_target *ct);
 
 static struct comp_window_direct_randr_display *
 comp_window_direct_randr_current_display(struct comp_window_direct_randr *w);
 
 static bool
-comp_window_direct_randr_init_swapchain(struct comp_window *w,
+comp_window_direct_randr_init_swapchain(struct comp_target *ct,
                                         uint32_t width,
                                         uint32_t height);
 
@@ -93,12 +93,17 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w);
  */
 
 static void
-_flush(struct comp_window *w)
-{}
+_flush(struct comp_target *ct)
+{
+	(void)ct;
+}
 
 static void
-_update_window_title(struct comp_window *w, const char *title)
-{}
+_update_window_title(struct comp_target *ct, const char *title)
+{
+	(void)ct;
+	(void)title;
+}
 
 struct comp_window *
 comp_window_direct_randr_create(struct comp_compositor *c)
@@ -106,23 +111,29 @@ comp_window_direct_randr_create(struct comp_compositor *c)
 	struct comp_window_direct_randr *w =
 	    U_TYPED_CALLOC(struct comp_window_direct_randr);
 
-	w->base.name = "direct";
-	w->base.destroy = comp_window_direct_randr_destroy;
-	w->base.flush = _flush;
-	w->base.init = comp_window_direct_randr_init;
-	w->base.init_swapchain = comp_window_direct_randr_init_swapchain;
-	w->base.update_window_title = _update_window_title;
+	comp_window_init_target(&w->base);
+
+	w->base.swapchain.base.name = "direct";
+	w->base.swapchain.base.destroy = comp_window_direct_randr_destroy;
+	w->base.swapchain.base.flush = _flush;
+	w->base.swapchain.base.init_pre_vulkan = comp_window_direct_randr_init;
+	w->base.swapchain.base.init_post_vulkan =
+	    comp_window_direct_randr_init_swapchain;
+	w->base.swapchain.base.set_title = _update_window_title;
 	w->base.c = c;
 
 	return &w->base;
 }
 
 static void
-comp_window_direct_randr_destroy(struct comp_window *w)
+comp_window_direct_randr_destroy(struct comp_target *ct)
 {
 	struct comp_window_direct_randr *w_direct =
-	    (struct comp_window_direct_randr *)w;
-	struct vk_bundle *vk = &w->c->vk;
+	    (struct comp_window_direct_randr *)ct;
+
+	vk_swapchain_cleanup(&w_direct->base.swapchain);
+
+	struct vk_bundle *vk = &w_direct->base.c->vk;
 
 	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
 		struct comp_window_direct_randr_display *d =
@@ -145,7 +156,7 @@ comp_window_direct_randr_destroy(struct comp_window *w)
 		w_direct->dpy = NULL;
 	}
 
-	free(w);
+	free(ct);
 }
 
 static void
@@ -163,16 +174,18 @@ comp_window_direct_randr_list_screens(struct comp_window_direct_randr *w)
 }
 
 static bool
-comp_window_direct_randr_init(struct comp_window *w)
+comp_window_direct_randr_init(struct comp_target *ct)
 {
+	struct comp_window_direct_randr *w_direct =
+	    (struct comp_window_direct_randr *)ct;
+	struct comp_window *w = &w_direct->base;
+
 	// Sanity check.
 	if (w->c->vk.instance != VK_NULL_HANDLE) {
 		COMP_ERROR(w->c, "Vulkan initialized before RANDR init!");
 		return false;
 	}
 
-	struct comp_window_direct_randr *w_direct =
-	    (struct comp_window_direct_randr *)w;
 
 	if (!comp_window_direct_connect(w, &w_direct->dpy)) {
 		return false;
@@ -213,10 +226,8 @@ comp_window_direct_randr_init(struct comp_window *w)
 
 	struct comp_window_direct_randr_display *d =
 	    comp_window_direct_randr_current_display(w_direct);
-	w->c->settings.width = d->primary_mode.width;
-	w->c->settings.height = d->primary_mode.height;
-	// TODO: size callback
-	// set_size_cb(settings->width, settings->height);
+	w->c->settings.preferred.width = d->primary_mode.width;
+	w->c->settings.preferred.height = d->primary_mode.height;
 
 	return true;
 }
@@ -235,12 +246,15 @@ comp_window_direct_randr_current_display(struct comp_window_direct_randr *w)
 }
 
 static bool
-comp_window_direct_randr_init_swapchain(struct comp_window *w,
+comp_window_direct_randr_init_swapchain(struct comp_target *ct,
                                         uint32_t width,
                                         uint32_t height)
 {
 	struct comp_window_direct_randr *w_direct =
-	    (struct comp_window_direct_randr *)w;
+	    (struct comp_window_direct_randr *)ct;
+	struct comp_window *w = &w_direct->base;
+
+	vk_swapchain_init(&w->swapchain, &w->c->vk);
 
 	struct comp_window_direct_randr_display *d =
 	    comp_window_direct_randr_current_display(w_direct);

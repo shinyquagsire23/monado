@@ -40,8 +40,8 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	s->present_mode = VK_PRESENT_MODE_FIFO_KHR;
 	s->window_type = WINDOW_AUTO;
 	s->fullscreen = false;
-	s->width = xdev->hmd->screens[0].w_pixels;
-	s->height = xdev->hmd->screens[0].h_pixels;
+	s->preferred.width = xdev->hmd->screens[0].w_pixels;
+	s->preferred.height = xdev->hmd->screens[0].h_pixels;
 	s->nominal_frame_interval_ns = interval_ns;
 	s->log_level = debug_get_log_option_log();
 	s->print_modes = debug_get_bool_option_print_modes();
@@ -64,13 +64,13 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	if (debug_get_bool_option_force_xcb()) {
 		s->window_type = WINDOW_XCB;
 		// HMD screen tends to be much larger then monitors.
-		s->width /= 2;
-		s->height /= 2;
+		s->preferred.width /= 2;
+		s->preferred.height /= 2;
 	}
 	if (debug_get_bool_option_force_wayland()) {
 		s->window_type = WINDOW_WAYLAND;
 		// HMD screen tends to be much larger then monitors.
-		s->width /= 2;
-		s->height /= 2;
+		s->preferred.width /= 2;
+		s->preferred.height /= 2;
 	}
 }

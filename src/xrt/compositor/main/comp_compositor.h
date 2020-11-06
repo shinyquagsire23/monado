@@ -21,6 +21,8 @@
 #include "main/comp_settings.h"
 #include "main/comp_window.h"
 #include "main/comp_renderer.h"
+#include "main/comp_target.h"
+
 #include "render/comp_render.h"
 
 
@@ -162,8 +164,8 @@ struct comp_compositor
 	//! Renderer helper.
 	struct comp_renderer *r;
 
-	//! The window or display we are using.
-	struct comp_window *window;
+	//! The target we are displaying to.
+	struct comp_target *target;
 
 	//! The device we are displaying to.
 	struct xrt_device *xdev;
@@ -226,17 +228,6 @@ struct comp_compositor
 	int64_t expected_app_duration_ns;
 	//! The last time we provided in the results of wait_frame
 	int64_t last_next_display_time;
-
-	/*!
-	 * The current state we are tracking.
-	 *
-	 * Settings is supposed to be read only.
-	 */
-	struct
-	{
-		uint32_t width;
-		uint32_t height;
-	} current;
 
 	struct
 	{

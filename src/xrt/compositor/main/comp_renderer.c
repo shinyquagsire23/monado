@@ -188,14 +188,14 @@ renderer_build_rendering(struct comp_renderer *r,
 	struct comp_compositor *c = r->c;
 
 	struct comp_target_data data;
-	data.format = r->c->window->swapchain.surface.format.format;
+	data.format = r->c->target->format;
 	data.is_external = true;
-	data.width = r->c->current.width;
-	data.height = r->c->current.height;
+	data.width = r->c->target->width;
+	data.height = r->c->target->height;
 
 	// clang-format off
-	float scale_x = (float)r->c->current.width / (float)r->c->xdev->hmd->screens[0].w_pixels;
-	float scale_y = (float)r->c->current.height / (float)r->c->xdev->hmd->screens[0].h_pixels;
+	float scale_x = (float)r->c->target->width / (float)r->c->xdev->hmd->screens[0].w_pixels;
+	float scale_y = (float)r->c->target->height / (float)r->c->xdev->hmd->screens[0].h_pixels;
 	// clang-format on
 
 	struct xrt_view *l_v = &r->c->xdev->hmd->views[0];
@@ -229,10 +229,10 @@ renderer_build_rendering(struct comp_renderer *r,
 
 	comp_rendering_init(c, &c->nr, rr);
 
-	comp_draw_begin_target_single(
-	    rr,                                          //
-	    r->c->window->swapchain.buffers[index].view, //
-	    &data);                                      //
+	comp_draw_begin_target_single(        //
+	    rr,                               //
+	    r->c->target->images[index].view, //
+	    &data);                           //
 
 
 	/*
@@ -352,9 +352,9 @@ renderer_init(struct comp_renderer *r)
 	vk->vkGetDeviceQueue(vk->device, r->c->vk.queue_family_index, 0,
 	                     &r->queue);
 	renderer_init_semaphores(r);
-	assert(r->c->window->swapchain.image_count > 0);
+	assert(r->c->target->num_images > 0);
 
-	r->num_buffers = r->c->window->swapchain.image_count;
+	r->num_buffers = r->c->target->num_images;
 
 	renderer_create_fences(r);
 
@@ -542,7 +542,8 @@ comp_renderer_draw(struct comp_renderer *r)
 	renderer_get_view_projection(r);
 	comp_layer_renderer_draw(r->lr);
 
-	r->c->window->flush(r->c->window);
+	comp_target_flush(r->c->target);
+
 	renderer_acquire_swapchain_image(r);
 	renderer_submit_queue(r);
 	renderer_present_swapchain_image(r);
@@ -623,14 +624,17 @@ renderer_resize(struct comp_renderer *r)
 	 */
 	vk->vkDeviceWaitIdle(vk->device);
 
-	vk_swapchain_create(&r->c->window->swapchain, r->c->current.width,
-	                    r->c->current.height, r->settings->color_format,
-	                    r->settings->color_space,
-	                    r->settings->present_mode);
+	comp_target_create_images(      //
+	    r->c->target,               //
+	    r->c->target->width,        //
+	    r->c->target->height,       //
+	    r->settings->color_format,  //
+	    r->settings->color_space,   //
+	    r->settings->present_mode); //
 
 	renderer_close_renderings(r);
 
-	r->num_buffers = r->c->window->swapchain.image_count;
+	r->num_buffers = r->c->target->num_images;
 
 	renderer_allocate_renderings(r);
 	renderer_build_renderings(r);
@@ -641,17 +645,17 @@ renderer_acquire_swapchain_image(struct comp_renderer *r)
 {
 	VkResult ret;
 
-	ret = vk_swapchain_acquire_next_image(&r->c->window->swapchain,
-	                                      r->semaphores.present_complete,
-	                                      &r->current_buffer);
+	ret = comp_target_acquire(r->c->target, r->semaphores.present_complete,
+	                          &r->current_buffer);
 
 	if ((ret == VK_ERROR_OUT_OF_DATE_KHR) || (ret == VK_SUBOPTIMAL_KHR)) {
 		COMP_DEBUG(r->c, "Received %s.", vk_result_string(ret));
 		renderer_resize(r);
+
 		/* Acquire image again to silence validation error */
-		ret = vk_swapchain_acquire_next_image(
-		    &r->c->window->swapchain, r->semaphores.present_complete,
-		    &r->current_buffer);
+		ret = comp_target_acquire(r->c->target,
+		                          r->semaphores.present_complete,
+		                          &r->current_buffer);
 		if (ret != VK_SUCCESS) {
 			COMP_ERROR(r->c, "vk_swapchain_acquire_next_image: %s",
 			           vk_result_string(ret));
@@ -667,9 +671,8 @@ renderer_present_swapchain_image(struct comp_renderer *r)
 {
 	VkResult ret;
 
-	ret = vk_swapchain_present(&r->c->window->swapchain, r->queue,
-	                           r->current_buffer,
-	                           r->semaphores.render_complete);
+	ret = comp_target_present(r->c->target, r->queue, r->current_buffer,
+	                          r->semaphores.render_complete);
 	if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
 		renderer_resize(r);
 		return;

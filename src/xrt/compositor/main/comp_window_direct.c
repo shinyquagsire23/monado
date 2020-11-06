@@ -277,6 +277,8 @@ comp_window_direct_init_swapchain(struct comp_window *w,
                                   uint32_t width,
                                   uint32_t height)
 {
+	vk_swapchain_init(&w->swapchain, &w->c->vk);
+
 	VkResult ret;
 	ret = comp_window_direct_acquire_xlib_display(w, dpy, display);
 
@@ -289,10 +291,6 @@ comp_window_direct_init_swapchain(struct comp_window *w,
 		COMP_ERROR(w->c, "Failed to create surface!");
 		return false;
 	}
-
-	vk_swapchain_create(
-	    &w->swapchain, width, height, w->c->settings.color_format,
-	    w->c->settings.color_space, w->c->settings.present_mode);
 
 	return true;
 }

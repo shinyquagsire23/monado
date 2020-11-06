@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -69,22 +69,22 @@ struct comp_window_xcb
  */
 
 static void
-comp_window_xcb_destroy(struct comp_window *w);
+comp_window_xcb_destroy(struct comp_target *ct);
 
 static void
-comp_window_xcb_flush(struct comp_window *w);
+comp_window_xcb_flush(struct comp_target *ct);
 
 XRT_MAYBE_UNUSED static void
 comp_window_xcb_list_screens(struct comp_window_xcb *w, xcb_screen_t *screen);
 
 static bool
-comp_window_xcb_init(struct comp_window *w);
+comp_window_xcb_init(struct comp_target *ct);
 
 static struct comp_window_xcb_display *
 comp_window_xcb_current_display(struct comp_window_xcb *w);
 
 static bool
-comp_window_xcb_init_swapchain(struct comp_window *w,
+comp_window_xcb_init_swapchain(struct comp_target *ct,
                                uint32_t width,
                                uint32_t height);
 
@@ -113,7 +113,7 @@ comp_window_xcb_create_surface(struct comp_window_xcb *w,
                                VkSurfaceKHR *surface);
 
 static void
-comp_window_xcb_update_window_title(struct comp_window *w, const char *title);
+comp_window_xcb_update_window_title(struct comp_target *ct, const char *title);
 
 
 /*
@@ -127,21 +127,27 @@ comp_window_xcb_create(struct comp_compositor *c)
 {
 	struct comp_window_xcb *w = U_TYPED_CALLOC(struct comp_window_xcb);
 
-	w->base.name = "xcb";
-	w->base.destroy = comp_window_xcb_destroy;
-	w->base.flush = comp_window_xcb_flush;
-	w->base.init = comp_window_xcb_init;
-	w->base.init_swapchain = comp_window_xcb_init_swapchain;
-	w->base.update_window_title = comp_window_xcb_update_window_title;
+	comp_window_init_target(&w->base);
+
+	w->base.swapchain.base.name = "xcb";
+	w->base.swapchain.base.destroy = comp_window_xcb_destroy;
+	w->base.swapchain.base.flush = comp_window_xcb_flush;
+	w->base.swapchain.base.init_pre_vulkan = comp_window_xcb_init;
+	w->base.swapchain.base.init_post_vulkan =
+	    comp_window_xcb_init_swapchain;
+	w->base.swapchain.base.set_title = comp_window_xcb_update_window_title;
 	w->base.c = c;
 
 	return &w->base;
 }
 
 static void
-comp_window_xcb_destroy(struct comp_window *w)
+comp_window_xcb_destroy(struct comp_target *ct)
 {
-	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)w;
+	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
+
+	vk_swapchain_cleanup(&w_xcb->base.swapchain);
+
 	xcb_destroy_window(w_xcb->connection, w_xcb->window);
 	xcb_disconnect(w_xcb->connection);
 
@@ -150,7 +156,7 @@ comp_window_xcb_destroy(struct comp_window *w)
 
 	free(w_xcb->displays);
 
-	free(w);
+	free(ct);
 }
 
 static void
@@ -169,9 +175,10 @@ comp_window_xcb_list_screens(struct comp_window_xcb *w, xcb_screen_t *screen)
 }
 
 static bool
-comp_window_xcb_init(struct comp_window *w)
+comp_window_xcb_init(struct comp_target *ct)
 {
-	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)w;
+	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
+	struct comp_window *w = &w_xcb->base;
 
 	if (!comp_window_xcb_connect(w_xcb)) {
 		return false;
@@ -202,14 +209,14 @@ comp_window_xcb_init(struct comp_window *w)
 
 		struct comp_window_xcb_display *d =
 		    comp_window_xcb_current_display(w_xcb);
-		w->c->settings.width = d->size.width;
-		w->c->settings.height = d->size.height;
+		w->c->settings.preferred.width = d->size.width;
+		w->c->settings.preferred.height = d->size.height;
 		// TODO: size cb
 		// set_size_cb(settings->width, settings->height);
 	}
 
-	comp_window_xcb_create_window(w_xcb, w->c->settings.width,
-	                              w->c->settings.height);
+	comp_window_xcb_create_window(w_xcb, w->c->settings.preferred.width,
+	                              w->c->settings.preferred.height);
 
 	comp_window_xcb_connect_delete_event(w_xcb);
 
@@ -228,28 +235,27 @@ comp_window_xcb_current_display(struct comp_window_xcb *w)
 }
 
 static void
-comp_window_xcb_flush(struct comp_window *w)
-{}
+comp_window_xcb_flush(struct comp_target *ct)
+{
+	(void)ct;
+}
 
 static bool
-comp_window_xcb_init_swapchain(struct comp_window *w,
+comp_window_xcb_init_swapchain(struct comp_target *ct,
                                uint32_t width,
                                uint32_t height)
 {
-	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)w;
+	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
+	struct comp_window *w = &w_xcb->base;
 	VkResult ret;
+
+	vk_swapchain_init(&w->swapchain, &w->c->vk);
 
 	ret =
 	    comp_window_xcb_create_surface(w_xcb, &w->swapchain.surface.handle);
 	if (ret != VK_SUCCESS) {
 		return false;
 	}
-
-	// vk_swapchain_set_dimension_cb(&swapchain, set_size_cb);
-	// vk_swapchain_set_settings(&w->swapchain, w->settings);
-	vk_swapchain_create(
-	    &w->swapchain, width, height, w->c->settings.color_format,
-	    w->c->settings.color_space, w->c->settings.present_mode);
 
 	return true;
 }
@@ -409,9 +415,10 @@ comp_window_xcb_create_surface(struct comp_window_xcb *w, VkSurfaceKHR *surface)
 }
 
 static void
-comp_window_xcb_update_window_title(struct comp_window *w, const char *title)
+comp_window_xcb_update_window_title(struct comp_target *ct, const char *title)
 {
-	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)w;
+	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
+
 	xcb_change_property(w_xcb->connection, XCB_PROP_MODE_REPLACE,
 	                    w_xcb->window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8,
 	                    strlen(title), title);

@@ -12,6 +12,7 @@
 
 #include "main/comp_vk_swapchain.h"
 #include "main/comp_compositor.h"
+#include "render/comp_render.h"
 
 #include "xrt/xrt_config_os.h"
 
@@ -34,22 +35,11 @@ extern "C" {
  */
 struct comp_window
 {
-	//! Owning compositor.
-	struct comp_compositor *c;
-
-	//! Name of the window system.
-	const char *name;
-
-	//! Helper struct.
+	//! This has to be first.
 	struct vk_swapchain swapchain;
 
-	void (*destroy)(struct comp_window *w);
-	void (*flush)(struct comp_window *w);
-	bool (*init)(struct comp_window *w);
-	bool (*init_swapchain)(struct comp_window *w,
-	                       uint32_t width,
-	                       uint32_t height);
-	void (*update_window_title)(struct comp_window *w, const char *title);
+	//! Owning compositor.
+	struct comp_compositor *c;
 };
 
 
@@ -58,6 +48,9 @@ struct comp_window
  * Functions.
  *
  */
+
+void
+comp_window_init_target(struct comp_window *wt);
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 /*!
