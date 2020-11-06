@@ -20,6 +20,7 @@
 #include "util/u_index_fifo.h"
 #include "util/u_hashset.h"
 #include "util/u_hashmap.h"
+#include "util/u_device.h"
 
 #include "oxr_extension_support.h"
 #include "oxr_subaction.h"
@@ -1088,8 +1089,6 @@ struct oxr_handle_base
 	 */
 	oxr_handle_destroyer destroy;
 };
-
-#define XRT_DEVICE_ROLE_UNASSIGNED (-1)
 
 /*!
  * Single or multiple devices grouped together to form a system that sessions

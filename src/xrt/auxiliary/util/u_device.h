@@ -98,6 +98,20 @@ void
 u_device_free(struct xrt_device *xdev);
 
 
+#define XRT_DEVICE_ROLE_UNASSIGNED (-1)
+
+/*!
+ * Helper function to assign head, left hand and right hand roles.
+ *
+ * @ingroup aux_util
+ */
+void
+u_device_assign_xdev_roles(struct xrt_device **xdevs,
+                           size_t num_xdevs,
+                           int *head,
+                           int *left,
+                           int *right);
+
 #ifdef __cplusplus
 }
 #endif

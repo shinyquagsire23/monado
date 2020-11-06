@@ -294,3 +294,68 @@ u_device_free(struct xrt_device *xdev)
 
 	free(xdev);
 }
+
+/*
+ * move the assigned xdev from hand to other_hand if:
+ * - controller of type "any hand" is assigned to hand
+ * - other_hand is unassiged
+ */
+static void
+try_move_assignment(struct xrt_device **xdevs, int *hand, int *other_hand)
+{
+	if (*hand != XRT_DEVICE_ROLE_UNASSIGNED &&
+	    xdevs[*hand]->device_type == XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER &&
+	    *other_hand == XRT_DEVICE_ROLE_UNASSIGNED) {
+
+		*other_hand = *hand;
+		*hand = XRT_DEVICE_ROLE_UNASSIGNED;
+	}
+}
+
+void
+u_device_assign_xdev_roles(struct xrt_device **xdevs,
+                           size_t num_xdevs,
+                           int *head,
+                           int *left,
+                           int *right)
+{
+	*head = XRT_DEVICE_ROLE_UNASSIGNED;
+	*left = XRT_DEVICE_ROLE_UNASSIGNED;
+	*right = XRT_DEVICE_ROLE_UNASSIGNED;
+
+	for (size_t i = 0; i < num_xdevs; i++) {
+		if (xdevs[i] == NULL) {
+			continue;
+		}
+
+		switch (xdevs[i]->device_type) {
+		case XRT_DEVICE_TYPE_HMD:
+			if (*head == XRT_DEVICE_ROLE_UNASSIGNED) {
+				*head = i;
+			}
+			break;
+		case XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER:
+			try_move_assignment(xdevs, left, right);
+			if (*left == XRT_DEVICE_ROLE_UNASSIGNED) {
+				*left = i;
+			}
+			break;
+		case XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER:
+			try_move_assignment(xdevs, right, left);
+			if (*right == XRT_DEVICE_ROLE_UNASSIGNED) {
+				*right = i;
+			}
+			break;
+		case XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER:
+			if (*left == XRT_DEVICE_ROLE_UNASSIGNED) {
+				*left = i;
+			} else if (*right == XRT_DEVICE_ROLE_UNASSIGNED) {
+				*right = i;
+			} else {
+				//! @todo: do something with unassigend devices?
+			}
+			break;
+		default: break;
+		}
+	}
+}

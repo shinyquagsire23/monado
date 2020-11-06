@@ -114,41 +114,6 @@ cache_path(struct oxr_logger *log,
 
 #define NUM_XDEVS 16
 
-static void
-assign_xdev_roles(struct oxr_instance *inst)
-{
-	struct oxr_system *sys = &inst->system;
-	for (size_t i = 0; i < NUM_XDEVS; i++) {
-		if (sys->xdevs[i] == NULL) {
-			continue;
-		}
-
-		if (sys->xdevs[i]->device_type == XRT_DEVICE_TYPE_HMD) {
-			sys->role.head = i;
-		} else if (sys->xdevs[i]->device_type ==
-		           XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) {
-			if (sys->role.left == XRT_DEVICE_ROLE_UNASSIGNED) {
-				sys->role.left = i;
-			}
-		} else if (sys->xdevs[i]->device_type ==
-		           XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER) {
-			if (sys->role.right == XRT_DEVICE_ROLE_UNASSIGNED) {
-				sys->role.right = i;
-			}
-		} else if (sys->xdevs[i]->device_type ==
-		           XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER) {
-			if (sys->role.left == XRT_DEVICE_ROLE_UNASSIGNED) {
-				sys->role.left = i;
-			} else if (sys->role.right ==
-			           XRT_DEVICE_ROLE_UNASSIGNED) {
-				sys->role.right = i;
-			} else {
-				//! @todo: do something with unassigend devices?
-			}
-		}
-	}
-}
-
 static inline size_t
 min_size_t(size_t a, size_t b)
 {
@@ -277,7 +242,8 @@ oxr_instance_create(struct oxr_logger *log,
 		oxr_xdev_destroy(&xdevs[i]);
 	}
 
-	assign_xdev_roles(inst);
+	u_device_assign_xdev_roles(xdevs, NUM_XDEVS, &sys->role.head,
+	                           &sys->role.left, &sys->role.right);
 
 	// Did we find any HMD
 	// @todo Headless with only controllers?
