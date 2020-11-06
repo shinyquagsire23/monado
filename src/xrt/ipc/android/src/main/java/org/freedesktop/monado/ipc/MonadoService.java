@@ -18,7 +18,7 @@ import androidx.annotation.Nullable;
 
 /**
  * Minimal implementation of a Service.
- *
+ * <p>
  * This is needed so that the APK can expose the binder service implemented in MonadoImpl.
  */
 public class MonadoService extends Service {
