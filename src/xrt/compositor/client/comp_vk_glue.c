@@ -13,24 +13,24 @@
 
 
 const char *xrt_gfx_vk_instance_extensions =
-    "VK_KHR_external_fence_capabilities "
-    "VK_KHR_external_memory_capabilities "
-    "VK_KHR_external_semaphore_capabilities "
-    "VK_KHR_get_physical_device_properties2 "
-    "VK_KHR_surface";
+    "VK_KHR_external_fence_capabilities"
+    " VK_KHR_external_memory_capabilities"
+    " VK_KHR_external_semaphore_capabilities"
+    " VK_KHR_get_physical_device_properties2"
+    " VK_KHR_surface";
 
 const char *xrt_gfx_vk_device_extensions =
-    "VK_KHR_dedicated_allocation "
-    "VK_KHR_external_fence "
-    "VK_KHR_external_fence_fd "
-    "VK_KHR_external_memory "
-    "VK_KHR_external_memory_fd "
-    "VK_KHR_external_semaphore "
-    "VK_KHR_external_semaphore_fd "
-    "VK_KHR_get_memory_requirements2 "
-    "VK_KHR_swapchain "
+    "VK_KHR_dedicated_allocation"
+    " VK_KHR_external_fence"
+    " VK_KHR_external_fence_fd"
+    " VK_KHR_external_memory"
+    " VK_KHR_external_memory_fd"
+    " VK_KHR_external_semaphore"
+    " VK_KHR_external_semaphore_fd"
+    " VK_KHR_get_memory_requirements2"
+    " VK_KHR_swapchain"
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-    "VK_ANDROID_external_memory_android_hardware_buffer "
+    " VK_ANDROID_external_memory_android_hardware_buffer"
 #endif
     ;
 
