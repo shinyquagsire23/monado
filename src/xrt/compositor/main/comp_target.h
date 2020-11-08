@@ -40,6 +40,9 @@ struct comp_target_image
  */
 struct comp_target
 {
+	//! Owning compositor.
+	struct comp_compositor *c;
+
 	//! Name of the backing system.
 	const char *name;
 

@@ -136,7 +136,7 @@ comp_window_xcb_create(struct comp_compositor *c)
 	w->base.swapchain.base.init_post_vulkan =
 	    comp_window_xcb_init_swapchain;
 	w->base.swapchain.base.set_title = comp_window_xcb_update_window_title;
-	w->base.c = c;
+	w->base.swapchain.base.c = c;
 
 	return &w->base;
 }
@@ -162,15 +162,15 @@ comp_window_xcb_destroy(struct comp_target *ct)
 static void
 comp_window_xcb_list_screens(struct comp_window_xcb *w, xcb_screen_t *screen)
 {
-	COMP_DEBUG(w->base.c, "Screen 0 %dx%d", screen->width_in_pixels,
-	           screen->height_in_pixels);
+	COMP_DEBUG(w->base.swapchain.base.c, "Screen 0 %dx%d",
+	           screen->width_in_pixels, screen->height_in_pixels);
 	comp_window_xcb_get_randr_outputs(w);
 
 	for (uint16_t i = 0; i < w->num_displays; i++) {
 		struct comp_window_xcb_display *d = &w->displays[i];
-		COMP_DEBUG(w->base.c, "%d: %s %dx%d [%d, %d]", i, d->name,
-		           d->size.width, d->size.height, d->position.x,
-		           d->position.y);
+		COMP_DEBUG(w->base.swapchain.base.c, "%d: %s %dx%d [%d, %d]", i,
+		           d->name, d->size.width, d->size.height,
+		           d->position.x, d->position.y);
 	}
 }
 
@@ -178,7 +178,6 @@ static bool
 comp_window_xcb_init(struct comp_target *ct)
 {
 	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
-	struct comp_window *w = &w_xcb->base;
 
 	if (!comp_window_xcb_connect(w_xcb)) {
 		return false;
@@ -189,38 +188,39 @@ comp_window_xcb_init(struct comp_target *ct)
 
 	w_xcb->screen = iter.data;
 
-	if (w->c->settings.fullscreen) {
+	if (ct->c->settings.fullscreen) {
 		comp_window_xcb_get_randr_outputs(w_xcb);
 
-		if (w->c->settings.display > (int)w_xcb->num_displays - 1) {
-			COMP_DEBUG(w->c,
+		if (ct->c->settings.display > (int)w_xcb->num_displays - 1) {
+			COMP_DEBUG(ct->c,
 			           "Requested display %d, but only %d "
 			           "displays are available.",
-			           w->c->settings.display, w_xcb->num_displays);
+			           ct->c->settings.display,
+			           w_xcb->num_displays);
 
-			w->c->settings.display = 0;
+			ct->c->settings.display = 0;
 			struct comp_window_xcb_display *d =
 			    comp_window_xcb_current_display(w_xcb);
-			COMP_DEBUG(w->c, "Selecting '%s' instead.", d->name);
+			COMP_DEBUG(ct->c, "Selecting '%s' instead.", d->name);
 		}
 
-		if (w->c->settings.display == -1)
-			w->c->settings.display = 0;
+		if (ct->c->settings.display == -1)
+			ct->c->settings.display = 0;
 
 		struct comp_window_xcb_display *d =
 		    comp_window_xcb_current_display(w_xcb);
-		w->c->settings.preferred.width = d->size.width;
-		w->c->settings.preferred.height = d->size.height;
+		ct->c->settings.preferred.width = d->size.width;
+		ct->c->settings.preferred.height = d->size.height;
 		// TODO: size cb
 		// set_size_cb(settings->width, settings->height);
 	}
 
-	comp_window_xcb_create_window(w_xcb, w->c->settings.preferred.width,
-	                              w->c->settings.preferred.height);
+	comp_window_xcb_create_window(w_xcb, ct->c->settings.preferred.width,
+	                              ct->c->settings.preferred.height);
 
 	comp_window_xcb_connect_delete_event(w_xcb);
 
-	if (w->c->settings.fullscreen)
+	if (ct->c->settings.fullscreen)
 		comp_window_xcb_set_full_screen(w_xcb);
 
 	xcb_map_window(w_xcb->connection, w_xcb->window);
@@ -231,7 +231,7 @@ comp_window_xcb_init(struct comp_target *ct)
 static struct comp_window_xcb_display *
 comp_window_xcb_current_display(struct comp_window_xcb *w)
 {
-	return &w->displays[w->base.c->settings.display];
+	return &w->displays[w->base.swapchain.base.c->settings.display];
 }
 
 static void
@@ -249,7 +249,7 @@ comp_window_xcb_init_swapchain(struct comp_target *ct,
 	struct comp_window *w = &w_xcb->base;
 	VkResult ret;
 
-	comp_target_swapchain_init_post_vulkan(&w->swapchain, &w->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w->swapchain, &ct->c->vk);
 
 	ret =
 	    comp_window_xcb_create_surface(w_xcb, &w->swapchain.surface.handle);
@@ -277,7 +277,7 @@ comp_window_xcb_create_window(struct comp_window_xcb *w,
 	int x = 0;
 	int y = 0;
 
-	if (w->base.c->settings.fullscreen) {
+	if (w->base.swapchain.base.c->settings.fullscreen) {
 		x = comp_window_xcb_current_display(w)->position.x;
 		y = comp_window_xcb_current_display(w)->position.y;
 	}
@@ -304,7 +304,8 @@ comp_window_xcb_get_randr_outputs(struct comp_window_xcb *w)
 	w->num_displays =
 	    xcb_randr_get_screen_resources_outputs_length(resources_reply);
 	if (w->num_displays < 1)
-		COMP_ERROR(w->base.c, "Failed to retrieve randr outputs");
+		COMP_ERROR(w->base.swapchain.base.c,
+		           "Failed to retrieve randr outputs");
 
 	w->displays =
 	    calloc(w->num_displays, sizeof(struct comp_window_xcb_display));
@@ -406,8 +407,8 @@ comp_window_xcb_create_surface(struct comp_window_xcb *w, VkSurfaceKHR *surface)
 	ret = vk->vkCreateXcbSurfaceKHR(vk->instance, &surface_info, NULL,
 	                                surface);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.c, "vkCreateXcbSurfaceKHR: %s",
-		           vk_result_string(ret));
+		COMP_ERROR(w->base.swapchain.base.c,
+		           "vkCreateXcbSurfaceKHR: %s", vk_result_string(ret));
 		return ret;
 	}
 

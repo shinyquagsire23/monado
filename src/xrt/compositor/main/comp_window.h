@@ -36,9 +36,6 @@ struct comp_window
 {
 	//! This has to be first.
 	struct comp_target_swapchain swapchain;
-
-	//! Owning compositor.
-	struct comp_compositor *c;
 };
 
 

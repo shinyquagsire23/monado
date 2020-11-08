@@ -15,7 +15,7 @@
 #include "util/u_misc.h"
 
 static int
-choose_best_vk_mode_auto(struct comp_window *w,
+choose_best_vk_mode_auto(struct comp_target *ct,
                          VkDisplayModePropertiesKHR *mode_properties,
                          int mode_count)
 {
@@ -29,7 +29,7 @@ choose_best_vk_mode_auto(struct comp_window *w,
 	for (int i = 1; i < mode_count; i++) {
 		VkDisplayModeParametersKHR current =
 		    mode_properties[i].parameters;
-		COMP_DEBUG(w->c, "Available Vk direct mode %d: %dx%d@%.2f", i,
+		COMP_DEBUG(ct->c, "Available Vk direct mode %d: %dx%d@%.2f", i,
 		           current.visibleRegion.width,
 		           current.visibleRegion.height,
 		           (float)current.refreshRate / 1000.);
@@ -51,83 +51,85 @@ choose_best_vk_mode_auto(struct comp_window *w,
 	}
 	VkDisplayModeParametersKHR best =
 	    mode_properties[best_index].parameters;
-	COMP_DEBUG(w->c, "Auto choosing Vk direct mode %d: %dx%d@%.2f",
+	COMP_DEBUG(ct->c, "Auto choosing Vk direct mode %d: %dx%d@%.2f",
 	           best_index, best.visibleRegion.width,
 	           best.visibleRegion.width, (float)best.refreshRate / 1000.);
 	return best_index;
 }
 
 static void
-print_modes(struct comp_window *w,
+print_modes(struct comp_target *ct,
             VkDisplayModePropertiesKHR *mode_properties,
             int mode_count)
 {
-	COMP_PRINT_MODE(w->c, "Available Vk modes for direct mode");
+	COMP_PRINT_MODE(ct->c, "Available Vk modes for direct mode");
 	for (int i = 0; i < mode_count; i++) {
 		VkDisplayModePropertiesKHR props = mode_properties[i];
 		uint16_t width = props.parameters.visibleRegion.width;
 		uint16_t height = props.parameters.visibleRegion.height;
 		float refresh = (float)props.parameters.refreshRate / 1000.;
 
-		COMP_PRINT_MODE(w->c, "| %2d | %dx%d@%.2f", i, width, height,
+		COMP_PRINT_MODE(ct->c, "| %2d | %dx%d@%.2f", i, width, height,
 		                refresh);
 	}
-	COMP_PRINT_MODE(w->c, "Listed %d modes", mode_count);
+	COMP_PRINT_MODE(ct->c, "Listed %d modes", mode_count);
 }
 
 VkDisplayModeKHR
-comp_window_direct_get_primary_display_mode(struct comp_window *w,
+comp_window_direct_get_primary_display_mode(struct comp_target_swapchain *cts,
                                             VkDisplayKHR display)
 {
-	struct vk_bundle *vk = w->swapchain.vk;
+	struct vk_bundle *vk = cts->vk;
+	struct comp_target *ct = &cts->base;
 	uint32_t mode_count;
 	VkResult ret;
 
 	ret = vk->vkGetDisplayModePropertiesKHR(vk->physical_device, display,
 	                                        &mode_count, NULL);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c, "vkGetDisplayModePropertiesKHR: %s",
+		COMP_ERROR(ct->c, "vkGetDisplayModePropertiesKHR: %s",
 		           vk_result_string(ret));
 		return VK_NULL_HANDLE;
 	}
 
-	COMP_DEBUG(w->c, "Found %d modes", mode_count);
+	COMP_DEBUG(ct->c, "Found %d modes", mode_count);
 
 	VkDisplayModePropertiesKHR *mode_properties =
 	    U_TYPED_ARRAY_CALLOC(VkDisplayModePropertiesKHR, mode_count);
 	ret = vk->vkGetDisplayModePropertiesKHR(vk->physical_device, display,
 	                                        &mode_count, mode_properties);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c, "vkGetDisplayModePropertiesKHR: %s",
+		COMP_ERROR(ct->c, "vkGetDisplayModePropertiesKHR: %s",
 		           vk_result_string(ret));
 		free(mode_properties);
 		return VK_NULL_HANDLE;
 	}
 
-	print_modes(w, mode_properties, mode_count);
+	print_modes(ct, mode_properties, mode_count);
 
 
 	int chosen_mode = 0;
 
-	int desired_mode = w->c->settings.desired_mode;
+	int desired_mode = ct->c->settings.desired_mode;
 	if (desired_mode + 1 > (int)mode_count) {
-		COMP_ERROR(w->c,
+		COMP_ERROR(ct->c,
 		           "Requested mode index %d, but max is %d. Falling "
 		           "back to automatic mode selection",
 		           desired_mode, mode_count);
 		chosen_mode =
-		    choose_best_vk_mode_auto(w, mode_properties, mode_count);
+		    choose_best_vk_mode_auto(ct, mode_properties, mode_count);
 	} else if (desired_mode < 0) {
 		chosen_mode =
-		    choose_best_vk_mode_auto(w, mode_properties, mode_count);
+		    choose_best_vk_mode_auto(ct, mode_properties, mode_count);
 	} else {
-		COMP_DEBUG(w->c, "Using manually chosen mode %d", desired_mode);
+		COMP_DEBUG(ct->c, "Using manually chosen mode %d",
+		           desired_mode);
 		chosen_mode = desired_mode;
 	}
 
 	VkDisplayModePropertiesKHR props = mode_properties[chosen_mode];
 
-	COMP_DEBUG(w->c, "found display mode %dx%d@%.2f",
+	COMP_DEBUG(ct->c, "found display mode %dx%d@%.2f",
 	           props.parameters.visibleRegion.width,
 	           props.parameters.visibleRegion.height,
 	           (float)props.parameters.refreshRate / 1000.);
@@ -136,15 +138,15 @@ comp_window_direct_get_primary_display_mode(struct comp_window *w,
 	    1000. * 1000. * 1000. * 1000. / props.parameters.refreshRate;
 
 	COMP_DEBUG(
-	    w->c,
+	    ct->c,
 	    "Updating compositor settings nominal frame interval from %" PRIu64
 	    " (%f Hz) to %" PRIu64 " (%f Hz)",
-	    w->c->settings.nominal_frame_interval_ns,
+	    ct->c->settings.nominal_frame_interval_ns,
 	    1000. * 1000. * 1000. /
-	        (float)w->c->settings.nominal_frame_interval_ns,
+	        (float)ct->c->settings.nominal_frame_interval_ns,
 	    new_frame_interval, (float)props.parameters.refreshRate / 1000.);
 
-	w->c->settings.nominal_frame_interval_ns = new_frame_interval;
+	ct->c->settings.nominal_frame_interval_ns = new_frame_interval;
 
 	free(mode_properties);
 
@@ -164,34 +166,34 @@ choose_alpha_mode(VkDisplayPlaneAlphaFlagsKHR flags)
 }
 
 VkResult
-comp_window_direct_create_surface(struct comp_window *w,
+comp_window_direct_create_surface(struct comp_target_swapchain *cts,
                                   VkDisplayKHR display,
                                   uint32_t width,
                                   uint32_t height)
 {
-	struct vk_bundle *vk = w->swapchain.vk;
+	struct vk_bundle *vk = cts->vk;
 
 	// Get plane properties
 	uint32_t plane_property_count;
 	VkResult ret = vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
-	    w->swapchain.vk->physical_device, &plane_property_count, NULL);
+	    cts->vk->physical_device, &plane_property_count, NULL);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c,
+		COMP_ERROR(cts->base.c,
 		           "vkGetPhysicalDeviceDisplayPlanePropertiesKHR: %s",
 		           vk_result_string(ret));
 		return ret;
 	}
 
-	COMP_DEBUG(w->c, "Found %d plane properites.", plane_property_count);
+	COMP_DEBUG(cts->base.c, "Found %d plane properites.",
+	           plane_property_count);
 
 	VkDisplayPlanePropertiesKHR *plane_properties = U_TYPED_ARRAY_CALLOC(
 	    VkDisplayPlanePropertiesKHR, plane_property_count);
 
 	ret = vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
-	    w->swapchain.vk->physical_device, &plane_property_count,
-	    plane_properties);
+	    cts->vk->physical_device, &plane_property_count, plane_properties);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c,
+		COMP_ERROR(cts->base.c,
 		           "vkGetPhysicalDeviceDisplayPlanePropertiesKHR: %s",
 		           vk_result_string(ret));
 		free(plane_properties);
@@ -201,12 +203,11 @@ comp_window_direct_create_surface(struct comp_window *w,
 	uint32_t plane_index = 0;
 
 	VkDisplayModeKHR display_mode =
-	    comp_window_direct_get_primary_display_mode(w, display);
+	    comp_window_direct_get_primary_display_mode(cts, display);
 
 	VkDisplayPlaneCapabilitiesKHR plane_caps;
-	vk->vkGetDisplayPlaneCapabilitiesKHR(w->swapchain.vk->physical_device,
-	                                     display_mode, plane_index,
-	                                     &plane_caps);
+	vk->vkGetDisplayPlaneCapabilitiesKHR(
+	    cts->vk->physical_device, display_mode, plane_index, &plane_caps);
 
 	VkDisplaySurfaceCreateInfoKHR surface_info = {
 	    .sType = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR,
@@ -226,7 +227,7 @@ comp_window_direct_create_surface(struct comp_window *w,
 	};
 
 	VkResult result = vk->vkCreateDisplayPlaneSurfaceKHR(
-	    vk->instance, &surface_info, NULL, &w->swapchain.surface.handle);
+	    vk->instance, &surface_info, NULL, &cts->surface.handle);
 
 	free(plane_properties);
 
@@ -234,33 +235,33 @@ comp_window_direct_create_surface(struct comp_window *w,
 }
 
 int
-comp_window_direct_connect(struct comp_window *w, Display **dpy)
+comp_window_direct_connect(struct comp_target_swapchain *cts, Display **dpy)
 {
 	*dpy = XOpenDisplay(NULL);
 	if (*dpy == NULL) {
-		COMP_ERROR(w->c, "Could not open X display.");
+		COMP_ERROR(cts->base.c, "Could not open X display.");
 		return false;
 	}
 	return true;
 }
 
 VkResult
-comp_window_direct_acquire_xlib_display(struct comp_window *w,
+comp_window_direct_acquire_xlib_display(struct comp_target_swapchain *cts,
                                         Display *dpy,
                                         VkDisplayKHR display)
 {
-	struct vk_bundle *vk = w->swapchain.vk;
+	struct vk_bundle *vk = cts->vk;
 	VkResult ret;
 
-	ret = vk->vkAcquireXlibDisplayEXT(w->swapchain.vk->physical_device, dpy,
-	                                  display);
+	ret =
+	    vk->vkAcquireXlibDisplayEXT(cts->vk->physical_device, dpy, display);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c,
+		COMP_ERROR(cts->base.c,
 		           "vkAcquireXlibDisplayEXT: %s (0x%016" PRIx64 ")",
 		           vk_result_string(ret), (uint64_t)display);
-		if (w->c->settings.window_type == WINDOW_DIRECT_NVIDIA &&
+		if (cts->base.c->settings.window_type == WINDOW_DIRECT_NVIDIA &&
 		    ret == VK_ERROR_INITIALIZATION_FAILED) {
-			COMP_ERROR(w->c,
+			COMP_ERROR(cts->base.c,
 			           "This can be caused by the AllowHMD "
 			           "xorg.conf option. Please make sure that "
 			           "AllowHMD is not set (like in '99-HMD.conf' "
@@ -271,24 +272,25 @@ comp_window_direct_acquire_xlib_display(struct comp_window *w,
 }
 
 bool
-comp_window_direct_init_swapchain(struct comp_window *w,
+comp_window_direct_init_swapchain(struct comp_target_swapchain *cts,
                                   Display *dpy,
                                   VkDisplayKHR display,
                                   uint32_t width,
                                   uint32_t height)
 {
-	comp_target_swapchain_init_post_vulkan(&w->swapchain, &w->c->vk);
+	comp_target_swapchain_init_post_vulkan(cts, &cts->base.c->vk);
 
 	VkResult ret;
-	ret = comp_window_direct_acquire_xlib_display(w, dpy, display);
+	ret = comp_window_direct_acquire_xlib_display(cts, dpy, display);
 
 	if (ret != VK_SUCCESS) {
 		return false;
 	}
 
-	ret = comp_window_direct_create_surface(w, display, width, height);
+	ret = comp_window_direct_create_surface(cts, display, width, height);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c, "Failed to create surface!");
+		COMP_ERROR(cts->base.c, "Failed to create surface! '%s'",
+		           vk_result_string(ret));
 		return false;
 	}
 

@@ -111,7 +111,7 @@ comp_window_wayland_create(struct comp_compositor *c)
 	    comp_window_wayland_init_swapchain;
 	w->base.swapchain.base.set_title =
 	    comp_window_wayland_update_window_title;
-	w->base.c = c;
+	w->base.swapchain.base.c = c;
 
 	return &w->base;
 }
@@ -207,12 +207,12 @@ comp_window_wayland_init_swapchain(struct comp_target *ct,
 	struct comp_window *w = &w_wayland->base;
 	VkResult ret;
 
-	comp_target_swapchain_init_post_vulkan(&w->swapchain, &w->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w->swapchain, &ct->c->vk);
 
 	ret = comp_window_wayland_create_surface(w_wayland,
 	                                         &w->swapchain.surface.handle);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c, "Failed to create surface!");
+		COMP_ERROR(ct->c, "Failed to create surface!");
 		return false;
 	}
 
@@ -238,7 +238,7 @@ comp_window_wayland_create_surface(struct comp_window_wayland *w,
 	ret = vk->vkCreateWaylandSurfaceKHR(vk->instance, &surface_info, NULL,
 	                                    vk_surface);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.c, "vkCreateWaylandSurfaceKHR: %s",
+		COMP_ERROR(w->base.base.c, "vkCreateWaylandSurfaceKHR: %s",
 		           vk_result_string(ret));
 		return ret;
 	}
@@ -337,7 +337,7 @@ comp_window_wayland_init(struct comp_target *ct)
 	    wl_compositor_create_surface(w_wayland->compositor);
 
 	if (!w_wayland->wm_base) {
-		COMP_ERROR(w->c, "Compositor is missing xdg-shell support");
+		COMP_ERROR(ct->c, "Compositor is missing xdg-shell support");
 	}
 
 	w_wayland->xdg_surface =
@@ -365,8 +365,9 @@ comp_window_wayland_configure(struct comp_window_wayland *w,
                               int32_t width,
                               int32_t height)
 {
-	if (w->base.c->settings.fullscreen && !w->fullscreen_requested) {
-		COMP_DEBUG(w->base.c, "Setting full screen");
+	if (w->base.swapchain.base.c->settings.fullscreen &&
+	    !w->fullscreen_requested) {
+		COMP_DEBUG(w->base.swapchain.base.c, "Setting full screen");
 		comp_window_wayland_fullscreen(w);
 		w->fullscreen_requested = true;
 	}

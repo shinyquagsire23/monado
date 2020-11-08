@@ -120,7 +120,7 @@ comp_window_direct_randr_create(struct comp_compositor *c)
 	w->base.swapchain.base.init_post_vulkan =
 	    comp_window_direct_randr_init_swapchain;
 	w->base.swapchain.base.set_title = _update_window_title;
-	w->base.c = c;
+	w->base.swapchain.base.c = c;
 
 	return &w->base;
 }
@@ -133,7 +133,7 @@ comp_window_direct_randr_destroy(struct comp_target *ct)
 
 	comp_target_swapchain_cleanup(&w_direct->base.swapchain);
 
-	struct vk_bundle *vk = &w_direct->base.c->vk;
+	struct vk_bundle *vk = w_direct->base.swapchain.vk;
 
 	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
 		struct comp_window_direct_randr_display *d =
@@ -166,7 +166,7 @@ comp_window_direct_randr_list_screens(struct comp_window_direct_randr *w)
 		const struct comp_window_direct_randr_display *d =
 		    &w->displays[i];
 		COMP_DEBUG(
-		    w->base.c, "%d: %s %dx%d@%.2f", i, d->name,
+		    w->base.swapchain.base.c, "%d: %s %dx%d@%.2f", i, d->name,
 		    d->primary_mode.width, d->primary_mode.height,
 		    (double)d->primary_mode.dot_clock /
 		        (d->primary_mode.htotal * d->primary_mode.vtotal));
@@ -178,16 +178,16 @@ comp_window_direct_randr_init(struct comp_target *ct)
 {
 	struct comp_window_direct_randr *w_direct =
 	    (struct comp_window_direct_randr *)ct;
-	struct comp_window *w = &w_direct->base;
 
 	// Sanity check.
-	if (w->c->vk.instance != VK_NULL_HANDLE) {
-		COMP_ERROR(w->c, "Vulkan initialized before RANDR init!");
+	if (ct->c->vk.instance != VK_NULL_HANDLE) {
+		COMP_ERROR(ct->c, "Vulkan initialized before RANDR init!");
 		return false;
 	}
 
 
-	if (!comp_window_direct_connect(w, &w_direct->dpy)) {
+	if (!comp_window_direct_connect(&w_direct->base.swapchain,
+	                                &w_direct->dpy)) {
 		return false;
 	}
 
@@ -201,33 +201,33 @@ comp_window_direct_randr_init(struct comp_target *ct)
 	comp_window_direct_randr_get_outputs(w_direct);
 
 	if (w_direct->num_displays == 0) {
-		COMP_ERROR(w->c, "No non-desktop output available.");
+		COMP_ERROR(ct->c, "No non-desktop output available.");
 		return false;
 	}
 
-	if (w->c->settings.display > (int)w_direct->num_displays - 1) {
-		COMP_DEBUG(w->c,
+	if (ct->c->settings.display > (int)w_direct->num_displays - 1) {
+		COMP_DEBUG(ct->c,
 		           "Requested display %d, but only %d displays are "
 		           "available.",
-		           w->c->settings.display, w_direct->num_displays);
+		           ct->c->settings.display, w_direct->num_displays);
 
-		w->c->settings.display = 0;
+		ct->c->settings.display = 0;
 		struct comp_window_direct_randr_display *d =
 		    comp_window_direct_randr_current_display(w_direct);
-		COMP_DEBUG(w->c, "Selecting '%s' instead.", d->name);
+		COMP_DEBUG(ct->c, "Selecting '%s' instead.", d->name);
 	}
 
-	if (w->c->settings.display < 0) {
-		w->c->settings.display = 0;
+	if (ct->c->settings.display < 0) {
+		ct->c->settings.display = 0;
 		struct comp_window_direct_randr_display *d =
 		    comp_window_direct_randr_current_display(w_direct);
-		COMP_DEBUG(w->c, "Selecting '%s' first display.", d->name);
+		COMP_DEBUG(ct->c, "Selecting '%s' first display.", d->name);
 	}
 
 	struct comp_window_direct_randr_display *d =
 	    comp_window_direct_randr_current_display(w_direct);
-	w->c->settings.preferred.width = d->primary_mode.width;
-	w->c->settings.preferred.height = d->primary_mode.height;
+	ct->c->settings.preferred.width = d->primary_mode.width;
+	ct->c->settings.preferred.height = d->primary_mode.height;
 
 	return true;
 }
@@ -235,7 +235,7 @@ comp_window_direct_randr_init(struct comp_target *ct)
 static struct comp_window_direct_randr_display *
 comp_window_direct_randr_current_display(struct comp_window_direct_randr *w)
 {
-	int index = w->base.c->settings.display;
+	int index = w->base.swapchain.base.c->settings.display;
 	if (index == -1)
 		index = 0;
 
@@ -254,17 +254,17 @@ comp_window_direct_randr_init_swapchain(struct comp_target *ct,
 	    (struct comp_window_direct_randr *)ct;
 	struct comp_window *w = &w_direct->base;
 
-	comp_target_swapchain_init_post_vulkan(&w->swapchain, &w->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w->swapchain, &ct->c->vk);
 
 	struct comp_window_direct_randr_display *d =
 	    comp_window_direct_randr_current_display(w_direct);
 
 	if (!d) {
-		COMP_ERROR(w->c, "RandR could not find any HMDs.");
+		COMP_ERROR(ct->c, "RandR could not find any HMDs.");
 		return false;
 	}
 
-	COMP_DEBUG(w->c, "Will use display: %s %dx%d@%.2f", d->name,
+	COMP_DEBUG(ct->c, "Will use display: %s %dx%d@%.2f", d->name,
 	           d->primary_mode.width, d->primary_mode.height,
 	           (double)d->primary_mode.dot_clock /
 	               (d->primary_mode.htotal * d->primary_mode.vtotal));
@@ -274,8 +274,8 @@ comp_window_direct_randr_init_swapchain(struct comp_target *ct,
 		return false;
 	}
 
-	return comp_window_direct_init_swapchain(w, w_direct->dpy, d->display,
-	                                         width, height);
+	return comp_window_direct_init_swapchain(&w->swapchain, w_direct->dpy,
+	                                         d->display, width, height);
 }
 
 static VkDisplayKHR
@@ -289,13 +289,14 @@ comp_window_direct_randr_get_output(struct comp_window_direct_randr *w,
 	ret = vk->vkGetRandROutputDisplayEXT(
 	    w->base.swapchain.vk->physical_device, w->dpy, output, &display);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.c, "vkGetRandROutputDisplayEXT: %s",
+		COMP_ERROR(w->base.swapchain.base.c,
+		           "vkGetRandROutputDisplayEXT: %s",
 		           vk_result_string(ret));
 		return VK_NULL_HANDLE;
 	}
 
 	if (display == VK_NULL_HANDLE) {
-		COMP_DEBUG(w->base.c,
+		COMP_DEBUG(w->base.swapchain.base.c,
 		           "vkGetRandROutputDisplayEXT"
 		           " returned a null display! 0x%016" PRIx64,
 		           (uint64_t)display);
@@ -319,7 +320,7 @@ append_randr_display(struct comp_window_direct_randr *w,
 
 	int num_modes = xcb_randr_get_output_info_modes_length(output_reply);
 	if (num_modes == 0) {
-		COMP_ERROR(w->base.c,
+		COMP_ERROR(w->base.swapchain.base.c,
 		           "%s does not have any modes "
 		           "available. "
 		           "Check `xrandr --prop`.",
@@ -337,8 +338,8 @@ append_randr_display(struct comp_window_direct_randr *w,
 			mode_info = &mode_infos[i];
 
 	if (mode_info == NULL)
-		COMP_ERROR(w->base.c, "No mode with id %d found??",
-		           output_modes[0]);
+		COMP_ERROR(w->base.swapchain.base.c,
+		           "No mode with id %d found??", output_modes[0]);
 
 
 	struct comp_window_direct_randr_display d = {
@@ -358,7 +359,8 @@ append_randr_display(struct comp_window_direct_randr *w,
 	                        w->num_displays);
 
 	if (w->displays == NULL)
-		COMP_ERROR(w->base.c, "Unable to reallocate randr_displays");
+		COMP_ERROR(w->base.swapchain.base.c,
+		           "Unable to reallocate randr_displays");
 
 	w->displays[w->num_displays - 1] = d;
 }
@@ -366,6 +368,8 @@ append_randr_display(struct comp_window_direct_randr *w,
 static void
 comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 {
+	struct comp_target *ct = &w->base.swapchain.base;
+
 	xcb_connection_t *connection = XGetXCBConnection(w->dpy);
 	xcb_randr_query_version_cookie_t version_cookie =
 	    xcb_randr_query_version(connection, XCB_RANDR_MAJOR_VERSION,
@@ -374,16 +378,16 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 	    xcb_randr_query_version_reply(connection, version_cookie, NULL);
 
 	if (version_reply == NULL) {
-		COMP_ERROR(w->base.c, "Could not get RandR version.");
+		COMP_ERROR(ct->c, "Could not get RandR version.");
 		return;
 	}
 
-	COMP_DEBUG(w->base.c, "RandR version %d.%d",
-	           version_reply->major_version, version_reply->minor_version);
+	COMP_DEBUG(ct->c, "RandR version %d.%d", version_reply->major_version,
+	           version_reply->minor_version);
 
 	if (version_reply->major_version < 1 ||
 	    version_reply->minor_version < 6) {
-		COMP_DEBUG(w->base.c, "RandR version below 1.6.");
+		COMP_DEBUG(ct->c, "RandR version below 1.6.");
 	}
 
 	free(version_reply);
@@ -395,18 +399,18 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 	    xcb_intern_atom_reply(connection, non_desktop_cookie, &error);
 
 	if (error != NULL) {
-		COMP_ERROR(w->base.c, "xcb_intern_atom_reply returned error %d",
+		COMP_ERROR(ct->c, "xcb_intern_atom_reply returned error %d",
 		           error->error_code);
 		return;
 	}
 
 	if (non_desktop_reply == NULL) {
-		COMP_ERROR(w->base.c, "non-desktop reply NULL");
+		COMP_ERROR(ct->c, "non-desktop reply NULL");
 		return;
 	}
 
 	if (non_desktop_reply->atom == XCB_NONE) {
-		COMP_ERROR(w->base.c, "No output has non-desktop property");
+		COMP_ERROR(ct->c, "No output has non-desktop property");
 		return;
 	}
 
@@ -421,7 +425,7 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 	int count =
 	    xcb_randr_get_screen_resources_outputs_length(resources_reply);
 	if (count < 1) {
-		COMP_ERROR(w->base.c, "failed to retrieve randr outputs");
+		COMP_ERROR(ct->c, "failed to retrieve randr outputs");
 	}
 
 	for (int i = 0; i < count; i++) {
@@ -448,7 +452,7 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 		prop_reply = xcb_randr_get_output_property_reply(
 		    connection, prop_cookie, &error);
 		if (error != NULL) {
-			COMP_ERROR(w->base.c,
+			COMP_ERROR(ct->c,
 			           "xcb_randr_get_output_property_reply "
 			           "returned error %d",
 			           error->error_code);
@@ -457,14 +461,14 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 		}
 
 		if (prop_reply == NULL) {
-			COMP_ERROR(w->base.c, "property reply == NULL");
+			COMP_ERROR(ct->c, "property reply == NULL");
 			free(prop_reply);
 			continue;
 		}
 
 		if (prop_reply->type != XCB_ATOM_INTEGER ||
 		    prop_reply->num_items != 1 || prop_reply->format != 32) {
-			COMP_ERROR(w->base.c, "Invalid non-desktop reply");
+			COMP_ERROR(ct->c, "Invalid non-desktop reply");
 			free(prop_reply);
 			continue;
 		}

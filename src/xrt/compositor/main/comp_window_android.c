@@ -83,7 +83,7 @@ comp_window_android_create_surface(struct comp_window_android *w,
 	    android_globals_get_vm(), android_globals_get_activity());
 	if (w->custom_surface == NULL) {
 		COMP_ERROR(
-		    w->base.c,
+		    w->base.swapchain.base.c,
 		    "comp_window_android_create_surface: could not "
 		    "start asynchronous attachment of our custom surface");
 		return VK_ERROR_INITIALIZATION_FAILED;
@@ -91,7 +91,7 @@ comp_window_android_create_surface(struct comp_window_android *w,
 	struct ANativeWindow *window =
 	    android_custom_surface_wait_get_surface(w->custom_surface, 2000);
 	if (window == NULL) {
-		COMP_ERROR(w->base.c,
+		COMP_ERROR(w->base.swapchain.base.c,
 		           "comp_window_android_create_surface: could not "
 		           "convert surface to ANativeWindow");
 		return VK_ERROR_INITIALIZATION_FAILED;
@@ -105,7 +105,8 @@ comp_window_android_create_surface(struct comp_window_android *w,
 	ret = vk->vkCreateAndroidSurfaceKHR(vk->instance, &surface_info, NULL,
 	                                    vk_surface);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.c, "vkCreateAndroidSurfaceKHR: %s",
+		COMP_ERROR(w->base.swapchain.base.c,
+		           "vkCreateAndroidSurfaceKHR: %s",
 		           vk_result_string(ret));
 		return ret;
 	}
@@ -126,7 +127,7 @@ comp_window_android_init_swapchain(struct comp_target *ct,
 	ret = comp_window_android_create_surface(w_android,
 	                                         &w->swapchain.surface.handle);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->c, "Failed to create surface!");
+		COMP_ERROR(ct->c, "Failed to create surface!");
 		return false;
 	}
 
@@ -156,7 +157,7 @@ comp_window_android_create(struct comp_compositor *c)
 	    comp_window_android_init_swapchain;
 	w->base.swapchain.base.set_title =
 	    comp_window_android_update_window_title;
-	w->base.c = c;
+	w->base.swapchain.base.c = c;
 
 	return &w->base;
 }

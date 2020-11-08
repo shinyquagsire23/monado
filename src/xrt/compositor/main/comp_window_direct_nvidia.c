@@ -98,7 +98,7 @@ comp_window_direct_nvidia_create(struct comp_compositor *c)
 	w->base.swapchain.base.init_post_vulkan =
 	    comp_window_direct_nvidia_init_swapchain;
 	w->base.swapchain.base.set_title = _update_window_title;
-	w->base.c = c;
+	w->base.swapchain.base.c = c;
 
 	return &w->base;
 }
@@ -143,8 +143,10 @@ append_nvidia_entry_on_match(struct comp_window_direct_nvidia *w,
 		return false;
 
 	// we have a match with this whitelist entry.
-	w->base.c->settings.preferred.width = disp->physicalResolution.width;
-	w->base.c->settings.preferred.height = disp->physicalResolution.height;
+	w->base.swapchain.base.c->settings.preferred.width =
+	    disp->physicalResolution.width;
+	w->base.swapchain.base.c->settings.preferred.height =
+	    disp->physicalResolution.height;
 	struct comp_window_direct_nvidia_display d = {
 	    .name = U_TYPED_ARRAY_CALLOC(char, disp_entry_length + 1),
 	    .display_properties = *disp,
@@ -160,7 +162,8 @@ append_nvidia_entry_on_match(struct comp_window_direct_nvidia *w,
 	                        w->num_displays);
 
 	if (w->displays == NULL)
-		COMP_ERROR(w->base.c, "Unable to reallocate randr_displays");
+		COMP_ERROR(w->base.base.c,
+		           "Unable to reallocate randr_displays");
 
 	w->displays[w->num_displays - 1] = d;
 
@@ -172,32 +175,32 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 {
 	struct comp_window_direct_nvidia *w_direct =
 	    (struct comp_window_direct_nvidia *)ct;
-	struct comp_window *w = &w_direct->base;
 
 	// Sanity check.
-	if (w->c->vk.instance == VK_NULL_HANDLE) {
-		COMP_ERROR(w->c, "Vulkan not initialized before NVIDIA init!");
+	if (ct->c->vk.instance == VK_NULL_HANDLE) {
+		COMP_ERROR(ct->c, "Vulkan not initialized before NVIDIA init!");
 		return false;
 	}
 
 
-	if (!comp_window_direct_connect(w, &w_direct->dpy)) {
+	if (!comp_window_direct_connect(&w_direct->base.swapchain,
+	                                &w_direct->dpy)) {
 		return false;
 	}
 
-	struct vk_bundle comp_vk = w->c->vk;
+	struct vk_bundle comp_vk = ct->c->vk;
 
 	// find our display using nvidia whitelist, enumerate its modes, and
 	// pick the best one get a list of attached displays
 	uint32_t display_count;
 	if (comp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(
 	        comp_vk.physical_device, &display_count, NULL) != VK_SUCCESS) {
-		COMP_ERROR(w->c, "Failed to get vulkan display count");
+		COMP_ERROR(ct->c, "Failed to get vulkan display count");
 		return false;
 	}
 
 	if (display_count == 0) {
-		COMP_ERROR(w->c, "NVIDIA: No Vulkan displays found.");
+		COMP_ERROR(ct->c, "NVIDIA: No Vulkan displays found.");
 		return false;
 	}
 
@@ -207,7 +210,7 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 	if (display_props && comp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(
 	                         comp_vk.physical_device, &display_count,
 	                         display_props) != VK_SUCCESS) {
-		COMP_ERROR(w->c, "Failed to get display properties");
+		COMP_ERROR(ct->c, "Failed to get display properties");
 		free(display_props);
 		return false;
 	}
@@ -216,9 +219,9 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 	for (uint32_t i = 0; i < display_count; i++) {
 		struct VkDisplayPropertiesKHR disp = *(display_props + i);
 
-		if (w->c->settings.nvidia_display) {
+		if (ct->c->settings.nvidia_display) {
 			append_nvidia_entry_on_match(
-			    w_direct, w->c->settings.nvidia_display, &disp);
+			    w_direct, ct->c->settings.nvidia_display, &disp);
 		}
 
 		// check this display against our whitelist
@@ -236,7 +239,7 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 static struct comp_window_direct_nvidia_display *
 comp_window_direct_nvidia_current_display(struct comp_window_direct_nvidia *w)
 {
-	int index = w->base.c->settings.display;
+	int index = w->base.swapchain.base.c->settings.display;
 	if (index == -1)
 		index = 0;
 
@@ -255,17 +258,18 @@ comp_window_direct_nvidia_init_swapchain(struct comp_target *ct,
 	    (struct comp_window_direct_nvidia *)ct;
 	struct comp_window *w = &w_direct->base;
 
-	comp_target_swapchain_init_post_vulkan(&w->swapchain, &w->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w->swapchain, &ct->c->vk);
 
 	struct comp_window_direct_nvidia_display *d =
 	    comp_window_direct_nvidia_current_display(w_direct);
 	if (!d) {
-		COMP_ERROR(w->c, "NVIDIA could not find any HMDs.");
+		COMP_ERROR(ct->c, "NVIDIA could not find any HMDs.");
 		return false;
 	}
 
-	COMP_DEBUG(w->c, "Will use display: %s", d->name);
+	COMP_DEBUG(ct->c, "Will use display: %s", d->name);
 
-	return comp_window_direct_init_swapchain(w, w_direct->dpy, d->display,
+	return comp_window_direct_init_swapchain(&w_direct->base.swapchain,
+	                                         w_direct->dpy, d->display,
 	                                         width, height);
 }
