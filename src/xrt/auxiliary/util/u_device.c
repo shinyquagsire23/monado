@@ -359,3 +359,30 @@ u_device_assign_xdev_roles(struct xrt_device **xdevs,
 		}
 	}
 }
+
+void
+u_device_setup_tracking_origins(struct xrt_device *head,
+                                struct xrt_device *left,
+                                struct xrt_device *right)
+{
+	if (head->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
+		// "nominal height" 1.6m
+		head->tracking_origin->offset.position.x = 0.0f;
+		head->tracking_origin->offset.position.y = 1.6f;
+		head->tracking_origin->offset.position.z = 0.0f;
+	}
+
+	if (left != NULL &&
+	    left->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
+		left->tracking_origin->offset.position.x = -0.2f;
+		left->tracking_origin->offset.position.y = 1.3f;
+		left->tracking_origin->offset.position.z = -0.5f;
+	}
+
+	if (right != NULL &&
+	    right->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
+		right->tracking_origin->offset.position.x = 0.2f;
+		right->tracking_origin->offset.position.y = 1.3f;
+		right->tracking_origin->offset.position.z = -0.5f;
+	}
+}

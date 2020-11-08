@@ -102,36 +102,6 @@ oxr_system_fill_in(struct oxr_logger *log,
                    XrSystemId systemId,
                    struct oxr_system *sys)
 {
-	struct xrt_device *head = GET_XDEV_BY_ROLE(sys, head);
-	struct xrt_device *left = GET_XDEV_BY_ROLE(sys, left);
-	struct xrt_device *right = GET_XDEV_BY_ROLE(sys, right);
-
-	if (head == NULL) {
-		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Failed to probe device");
-	}
-
-	if (head->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
-		// "nominal height" 1.6m
-		head->tracking_origin->offset.position.x = 0.0f;
-		head->tracking_origin->offset.position.y = 1.6f;
-		head->tracking_origin->offset.position.z = 0.0f;
-	}
-
-	if (left != NULL &&
-	    left->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
-		left->tracking_origin->offset.position.x = -0.2f;
-		left->tracking_origin->offset.position.y = 1.3f;
-		left->tracking_origin->offset.position.z = -0.5f;
-	}
-
-	if (right != NULL &&
-	    right->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
-		right->tracking_origin->offset.position.x = 0.2f;
-		right->tracking_origin->offset.position.y = 1.3f;
-		right->tracking_origin->offset.position.z = -0.5f;
-	}
-
 	//! @todo handle other subaction paths?
 
 	sys->inst = inst;
@@ -188,6 +158,8 @@ oxr_system_fill_in(struct oxr_logger *log,
 	sys->views[1].recommendedSwapchainSampleCount = info->views[1].recommended.sample_count;
 	sys->views[1].maxSwapchainSampleCount         = info->views[1].max.sample_count;
 	// clang-format on
+
+	struct xrt_device *head = GET_XDEV_BY_ROLE(sys, head);
 
 	uint32_t i = 0;
 	if (head->hmd->blend_mode & XRT_BLEND_MODE_OPAQUE) {

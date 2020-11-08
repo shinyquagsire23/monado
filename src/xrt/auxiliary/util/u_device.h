@@ -112,6 +112,16 @@ u_device_assign_xdev_roles(struct xrt_device **xdevs,
                            int *left,
                            int *right);
 
+/*!
+ * Helper function to assign head, left hand and right hand roles.
+ *
+ * @ingroup aux_util
+ */
+void
+u_device_setup_tracking_origins(struct xrt_device *head,
+                                struct xrt_device *left,
+                                struct xrt_device *right);
+
 #ifdef __cplusplus
 }
 #endif

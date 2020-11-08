@@ -255,6 +255,9 @@ oxr_instance_create(struct oxr_logger *log,
 		return ret;
 	}
 
+	u_device_setup_tracking_origins(dev, GET_XDEV_BY_ROLE(sys, left),
+	                                GET_XDEV_BY_ROLE(sys, right));
+
 	const float left_override = debug_get_float_option_lfov_left();
 	if (left_override != 0.0f) {
 		printf(
