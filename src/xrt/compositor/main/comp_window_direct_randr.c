@@ -40,11 +40,11 @@ struct comp_window_direct_randr_display
  * Direct mode "window" into a device, using Vulkan direct mode extension
  * and xcb.
  *
- * @implements comp_window
+ * @implements comp_target_swapchain
  */
 struct comp_window_direct_randr
 {
-	struct comp_window base;
+	struct comp_target_swapchain base;
 
 	Display *dpy;
 	xcb_screen_t *screen;
@@ -105,24 +105,23 @@ _update_window_title(struct comp_target *ct, const char *title)
 	(void)title;
 }
 
-struct comp_window *
+struct comp_target *
 comp_window_direct_randr_create(struct comp_compositor *c)
 {
 	struct comp_window_direct_randr *w =
 	    U_TYPED_CALLOC(struct comp_window_direct_randr);
 
-	comp_target_swapchain_init_set_fnptrs(&w->base.swapchain);
+	comp_target_swapchain_init_set_fnptrs(&w->base);
 
-	w->base.swapchain.base.name = "direct";
-	w->base.swapchain.base.destroy = comp_window_direct_randr_destroy;
-	w->base.swapchain.base.flush = _flush;
-	w->base.swapchain.base.init_pre_vulkan = comp_window_direct_randr_init;
-	w->base.swapchain.base.init_post_vulkan =
-	    comp_window_direct_randr_init_swapchain;
-	w->base.swapchain.base.set_title = _update_window_title;
-	w->base.swapchain.base.c = c;
+	w->base.base.name = "direct";
+	w->base.base.destroy = comp_window_direct_randr_destroy;
+	w->base.base.flush = _flush;
+	w->base.base.init_pre_vulkan = comp_window_direct_randr_init;
+	w->base.base.init_post_vulkan = comp_window_direct_randr_init_swapchain;
+	w->base.base.set_title = _update_window_title;
+	w->base.base.c = c;
 
-	return &w->base;
+	return &w->base.base;
 }
 
 static void
@@ -131,9 +130,9 @@ comp_window_direct_randr_destroy(struct comp_target *ct)
 	struct comp_window_direct_randr *w_direct =
 	    (struct comp_window_direct_randr *)ct;
 
-	comp_target_swapchain_cleanup(&w_direct->base.swapchain);
+	comp_target_swapchain_cleanup(&w_direct->base);
 
-	struct vk_bundle *vk = w_direct->base.swapchain.vk;
+	struct vk_bundle *vk = w_direct->base.vk;
 
 	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
 		struct comp_window_direct_randr_display *d =
@@ -166,7 +165,7 @@ comp_window_direct_randr_list_screens(struct comp_window_direct_randr *w)
 		const struct comp_window_direct_randr_display *d =
 		    &w->displays[i];
 		COMP_DEBUG(
-		    w->base.swapchain.base.c, "%d: %s %dx%d@%.2f", i, d->name,
+		    w->base.base.c, "%d: %s %dx%d@%.2f", i, d->name,
 		    d->primary_mode.width, d->primary_mode.height,
 		    (double)d->primary_mode.dot_clock /
 		        (d->primary_mode.htotal * d->primary_mode.vtotal));
@@ -186,8 +185,7 @@ comp_window_direct_randr_init(struct comp_target *ct)
 	}
 
 
-	if (!comp_window_direct_connect(&w_direct->base.swapchain,
-	                                &w_direct->dpy)) {
+	if (!comp_window_direct_connect(&w_direct->base, &w_direct->dpy)) {
 		return false;
 	}
 
@@ -235,7 +233,7 @@ comp_window_direct_randr_init(struct comp_target *ct)
 static struct comp_window_direct_randr_display *
 comp_window_direct_randr_current_display(struct comp_window_direct_randr *w)
 {
-	int index = w->base.swapchain.base.c->settings.display;
+	int index = w->base.base.c->settings.display;
 	if (index == -1)
 		index = 0;
 
@@ -252,9 +250,8 @@ comp_window_direct_randr_init_swapchain(struct comp_target *ct,
 {
 	struct comp_window_direct_randr *w_direct =
 	    (struct comp_window_direct_randr *)ct;
-	struct comp_window *w = &w_direct->base;
 
-	comp_target_swapchain_init_post_vulkan(&w->swapchain, &ct->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w_direct->base, &ct->c->vk);
 
 	struct comp_window_direct_randr_display *d =
 	    comp_window_direct_randr_current_display(w_direct);
@@ -274,7 +271,7 @@ comp_window_direct_randr_init_swapchain(struct comp_target *ct,
 		return false;
 	}
 
-	return comp_window_direct_init_swapchain(&w->swapchain, w_direct->dpy,
+	return comp_window_direct_init_swapchain(&w_direct->base, w_direct->dpy,
 	                                         d->display, width, height);
 }
 
@@ -282,21 +279,20 @@ static VkDisplayKHR
 comp_window_direct_randr_get_output(struct comp_window_direct_randr *w,
                                     RROutput output)
 {
-	struct vk_bundle *vk = w->base.swapchain.vk;
+	struct vk_bundle *vk = w->base.vk;
 	VkResult ret;
 
 	VkDisplayKHR display;
-	ret = vk->vkGetRandROutputDisplayEXT(
-	    w->base.swapchain.vk->physical_device, w->dpy, output, &display);
+	ret = vk->vkGetRandROutputDisplayEXT(w->base.vk->physical_device,
+	                                     w->dpy, output, &display);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.swapchain.base.c,
-		           "vkGetRandROutputDisplayEXT: %s",
+		COMP_ERROR(w->base.base.c, "vkGetRandROutputDisplayEXT: %s",
 		           vk_result_string(ret));
 		return VK_NULL_HANDLE;
 	}
 
 	if (display == VK_NULL_HANDLE) {
-		COMP_DEBUG(w->base.swapchain.base.c,
+		COMP_DEBUG(w->base.base.c,
 		           "vkGetRandROutputDisplayEXT"
 		           " returned a null display! 0x%016" PRIx64,
 		           (uint64_t)display);
@@ -320,7 +316,7 @@ append_randr_display(struct comp_window_direct_randr *w,
 
 	int num_modes = xcb_randr_get_output_info_modes_length(output_reply);
 	if (num_modes == 0) {
-		COMP_ERROR(w->base.swapchain.base.c,
+		COMP_ERROR(w->base.base.c,
 		           "%s does not have any modes "
 		           "available. "
 		           "Check `xrandr --prop`.",
@@ -338,8 +334,8 @@ append_randr_display(struct comp_window_direct_randr *w,
 			mode_info = &mode_infos[i];
 
 	if (mode_info == NULL)
-		COMP_ERROR(w->base.swapchain.base.c,
-		           "No mode with id %d found??", output_modes[0]);
+		COMP_ERROR(w->base.base.c, "No mode with id %d found??",
+		           output_modes[0]);
 
 
 	struct comp_window_direct_randr_display d = {
@@ -359,7 +355,7 @@ append_randr_display(struct comp_window_direct_randr *w,
 	                        w->num_displays);
 
 	if (w->displays == NULL)
-		COMP_ERROR(w->base.swapchain.base.c,
+		COMP_ERROR(w->base.base.c,
 		           "Unable to reallocate randr_displays");
 
 	w->displays[w->num_displays - 1] = d;
@@ -368,7 +364,7 @@ append_randr_display(struct comp_window_direct_randr *w,
 static void
 comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 {
-	struct comp_target *ct = &w->base.swapchain.base;
+	struct comp_target *ct = &w->base.base;
 
 	xcb_connection_t *connection = XGetXCBConnection(w->dpy);
 	xcb_randr_query_version_cookie_t version_cookie =

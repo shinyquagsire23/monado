@@ -32,11 +32,11 @@ struct comp_window_direct_nvidia_display
  * Direct mode "window" into a device, using Vulkan direct mode extension
  * and xcb.
  *
- * @implements comp_window
+ * @implements comp_target_swapchain
  */
 struct comp_window_direct_nvidia
 {
-	struct comp_window base;
+	struct comp_target_swapchain base;
 
 	Display *dpy;
 	struct comp_window_direct_nvidia_display *displays;
@@ -83,24 +83,24 @@ _update_window_title(struct comp_target *ct, const char *title)
 	(void)title;
 }
 
-struct comp_window *
+struct comp_target *
 comp_window_direct_nvidia_create(struct comp_compositor *c)
 {
 	struct comp_window_direct_nvidia *w =
 	    U_TYPED_CALLOC(struct comp_window_direct_nvidia);
 
-	comp_target_swapchain_init_set_fnptrs(&w->base.swapchain);
+	comp_target_swapchain_init_set_fnptrs(&w->base);
 
-	w->base.swapchain.base.name = "direct";
-	w->base.swapchain.base.destroy = comp_window_direct_nvidia_destroy;
-	w->base.swapchain.base.flush = _flush;
-	w->base.swapchain.base.init_pre_vulkan = comp_window_direct_nvidia_init;
-	w->base.swapchain.base.init_post_vulkan =
+	w->base.base.name = "direct";
+	w->base.base.destroy = comp_window_direct_nvidia_destroy;
+	w->base.base.flush = _flush;
+	w->base.base.init_pre_vulkan = comp_window_direct_nvidia_init;
+	w->base.base.init_post_vulkan =
 	    comp_window_direct_nvidia_init_swapchain;
-	w->base.swapchain.base.set_title = _update_window_title;
-	w->base.swapchain.base.c = c;
+	w->base.base.set_title = _update_window_title;
+	w->base.base.c = c;
 
-	return &w->base;
+	return &w->base.base;
 }
 
 static void
@@ -109,7 +109,7 @@ comp_window_direct_nvidia_destroy(struct comp_target *ct)
 	struct comp_window_direct_nvidia *w_direct =
 	    (struct comp_window_direct_nvidia *)ct;
 
-	comp_target_swapchain_cleanup(&w_direct->base.swapchain);
+	comp_target_swapchain_cleanup(&w_direct->base);
 
 	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
 		struct comp_window_direct_nvidia_display *d =
@@ -143,9 +143,9 @@ append_nvidia_entry_on_match(struct comp_window_direct_nvidia *w,
 		return false;
 
 	// we have a match with this whitelist entry.
-	w->base.swapchain.base.c->settings.preferred.width =
+	w->base.base.c->settings.preferred.width =
 	    disp->physicalResolution.width;
-	w->base.swapchain.base.c->settings.preferred.height =
+	w->base.base.c->settings.preferred.height =
 	    disp->physicalResolution.height;
 	struct comp_window_direct_nvidia_display d = {
 	    .name = U_TYPED_ARRAY_CALLOC(char, disp_entry_length + 1),
@@ -183,8 +183,7 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 	}
 
 
-	if (!comp_window_direct_connect(&w_direct->base.swapchain,
-	                                &w_direct->dpy)) {
+	if (!comp_window_direct_connect(&w_direct->base, &w_direct->dpy)) {
 		return false;
 	}
 
@@ -239,7 +238,7 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 static struct comp_window_direct_nvidia_display *
 comp_window_direct_nvidia_current_display(struct comp_window_direct_nvidia *w)
 {
-	int index = w->base.swapchain.base.c->settings.display;
+	int index = w->base.base.c->settings.display;
 	if (index == -1)
 		index = 0;
 
@@ -256,9 +255,8 @@ comp_window_direct_nvidia_init_swapchain(struct comp_target *ct,
 {
 	struct comp_window_direct_nvidia *w_direct =
 	    (struct comp_window_direct_nvidia *)ct;
-	struct comp_window *w = &w_direct->base;
 
-	comp_target_swapchain_init_post_vulkan(&w->swapchain, &ct->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w_direct->base, &ct->c->vk);
 
 	struct comp_window_direct_nvidia_display *d =
 	    comp_window_direct_nvidia_current_display(w_direct);
@@ -269,7 +267,6 @@ comp_window_direct_nvidia_init_swapchain(struct comp_target *ct,
 
 	COMP_DEBUG(ct->c, "Will use display: %s", d->name);
 
-	return comp_window_direct_init_swapchain(&w_direct->base.swapchain,
-	                                         w_direct->dpy, d->display,
-	                                         width, height);
+	return comp_window_direct_init_swapchain(&w_direct->base, w_direct->dpy,
+	                                         d->display, width, height);
 }

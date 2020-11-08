@@ -44,11 +44,11 @@ struct comp_window_xcb_display
 /*!
  * A xcb connection and window.
  *
- * @implements comp_window
+ * @implements comp_target_swapchain
  */
 struct comp_window_xcb
 {
-	struct comp_window base;
+	struct comp_target_swapchain base;
 
 	xcb_connection_t *connection;
 	xcb_window_t window;
@@ -122,23 +122,23 @@ comp_window_xcb_update_window_title(struct comp_target *ct, const char *title);
  *
  */
 
-struct comp_window *
+struct comp_target *
 comp_window_xcb_create(struct comp_compositor *c)
 {
 	struct comp_window_xcb *w = U_TYPED_CALLOC(struct comp_window_xcb);
 
-	comp_target_swapchain_init_set_fnptrs(&w->base.swapchain);
+	comp_target_swapchain_init_set_fnptrs(&w->base);
 
-	w->base.swapchain.base.name = "xcb";
-	w->base.swapchain.base.destroy = comp_window_xcb_destroy;
-	w->base.swapchain.base.flush = comp_window_xcb_flush;
-	w->base.swapchain.base.init_pre_vulkan = comp_window_xcb_init;
-	w->base.swapchain.base.init_post_vulkan =
+	w->base.base.name = "xcb";
+	w->base.base.destroy = comp_window_xcb_destroy;
+	w->base.base.flush = comp_window_xcb_flush;
+	w->base.base.init_pre_vulkan = comp_window_xcb_init;
+	w->base.base.init_post_vulkan =
 	    comp_window_xcb_init_swapchain;
-	w->base.swapchain.base.set_title = comp_window_xcb_update_window_title;
-	w->base.swapchain.base.c = c;
+	w->base.base.set_title = comp_window_xcb_update_window_title;
+	w->base.base.c = c;
 
-	return &w->base;
+	return &w->base.base;
 }
 
 static void
@@ -146,7 +146,7 @@ comp_window_xcb_destroy(struct comp_target *ct)
 {
 	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
 
-	comp_target_swapchain_cleanup(&w_xcb->base.swapchain);
+	comp_target_swapchain_cleanup(&w_xcb->base);
 
 	xcb_destroy_window(w_xcb->connection, w_xcb->window);
 	xcb_disconnect(w_xcb->connection);
@@ -162,13 +162,13 @@ comp_window_xcb_destroy(struct comp_target *ct)
 static void
 comp_window_xcb_list_screens(struct comp_window_xcb *w, xcb_screen_t *screen)
 {
-	COMP_DEBUG(w->base.swapchain.base.c, "Screen 0 %dx%d",
+	COMP_DEBUG(w->base.base.c, "Screen 0 %dx%d",
 	           screen->width_in_pixels, screen->height_in_pixels);
 	comp_window_xcb_get_randr_outputs(w);
 
 	for (uint16_t i = 0; i < w->num_displays; i++) {
 		struct comp_window_xcb_display *d = &w->displays[i];
-		COMP_DEBUG(w->base.swapchain.base.c, "%d: %s %dx%d [%d, %d]", i,
+		COMP_DEBUG(w->base.base.c, "%d: %s %dx%d [%d, %d]", i,
 		           d->name, d->size.width, d->size.height,
 		           d->position.x, d->position.y);
 	}
@@ -231,7 +231,7 @@ comp_window_xcb_init(struct comp_target *ct)
 static struct comp_window_xcb_display *
 comp_window_xcb_current_display(struct comp_window_xcb *w)
 {
-	return &w->displays[w->base.swapchain.base.c->settings.display];
+	return &w->displays[w->base.base.c->settings.display];
 }
 
 static void
@@ -246,13 +246,12 @@ comp_window_xcb_init_swapchain(struct comp_target *ct,
                                uint32_t height)
 {
 	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
-	struct comp_window *w = &w_xcb->base;
 	VkResult ret;
 
-	comp_target_swapchain_init_post_vulkan(&w->swapchain, &ct->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w_xcb->base, &ct->c->vk);
 
 	ret =
-	    comp_window_xcb_create_surface(w_xcb, &w->swapchain.surface.handle);
+	    comp_window_xcb_create_surface(w_xcb, &w_xcb->base.surface.handle);
 	if (ret != VK_SUCCESS) {
 		return false;
 	}
@@ -277,7 +276,7 @@ comp_window_xcb_create_window(struct comp_window_xcb *w,
 	int x = 0;
 	int y = 0;
 
-	if (w->base.swapchain.base.c->settings.fullscreen) {
+	if (w->base.base.c->settings.fullscreen) {
 		x = comp_window_xcb_current_display(w)->position.x;
 		y = comp_window_xcb_current_display(w)->position.y;
 	}
@@ -304,7 +303,7 @@ comp_window_xcb_get_randr_outputs(struct comp_window_xcb *w)
 	w->num_displays =
 	    xcb_randr_get_screen_resources_outputs_length(resources_reply);
 	if (w->num_displays < 1)
-		COMP_ERROR(w->base.swapchain.base.c,
+		COMP_ERROR(w->base.base.c,
 		           "Failed to retrieve randr outputs");
 
 	w->displays =
@@ -395,7 +394,7 @@ comp_window_xcb_get_atom(struct comp_window_xcb *w, const char *name)
 static VkResult
 comp_window_xcb_create_surface(struct comp_window_xcb *w, VkSurfaceKHR *surface)
 {
-	struct vk_bundle *vk = w->base.swapchain.vk;
+	struct vk_bundle *vk = w->base.vk;
 	VkResult ret;
 
 	VkXcbSurfaceCreateInfoKHR surface_info = {
@@ -407,7 +406,7 @@ comp_window_xcb_create_surface(struct comp_window_xcb *w, VkSurfaceKHR *surface)
 	ret = vk->vkCreateXcbSurfaceKHR(vk->instance, &surface_info, NULL,
 	                                surface);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.swapchain.base.c,
+		COMP_ERROR(w->base.base.c,
 		           "vkCreateXcbSurfaceKHR: %s", vk_result_string(ret));
 		return ret;
 	}

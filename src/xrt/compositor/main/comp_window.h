@@ -22,25 +22,6 @@ extern "C" {
 
 /*
  *
- * Structs
- *
- */
-
-/*!
- * @interface comp_window
- * A output device or a window, often directly connected to the device.
- *
- * @ingroup comp_main
- */
-struct comp_window
-{
-	//! This has to be first.
-	struct comp_target_swapchain swapchain;
-};
-
-
-/*
- *
  * Functions.
  *
  */
@@ -52,7 +33,7 @@ struct comp_window
  * @ingroup comp_main
  * @public @memberof comp_window_xcb
  */
-struct comp_window *
+struct comp_target *
 comp_window_xcb_create(struct comp_compositor *c);
 #endif
 
@@ -63,7 +44,7 @@ comp_window_xcb_create(struct comp_compositor *c);
  * @ingroup comp_main
  * @public @memberof comp_window_wayland
  */
-struct comp_window *
+struct comp_target *
 comp_window_wayland_create(struct comp_compositor *c);
 #endif
 
@@ -74,7 +55,7 @@ comp_window_wayland_create(struct comp_compositor *c);
  * @ingroup comp_main
  * @public @memberof comp_window_direct_randr
  */
-struct comp_window *
+struct comp_target *
 comp_window_direct_randr_create(struct comp_compositor *c);
 
 /*!
@@ -83,7 +64,7 @@ comp_window_direct_randr_create(struct comp_compositor *c);
  * @ingroup comp_main
  * @public @memberof comp_window_direct_nvidia
  */
-struct comp_window *
+struct comp_target *
 comp_window_direct_nvidia_create(struct comp_compositor *c);
 #endif
 
@@ -96,7 +77,7 @@ comp_window_direct_nvidia_create(struct comp_compositor *c);
  * @ingroup comp_main
  * @public @memberof comp_window_android
  */
-struct comp_window *
+struct comp_target *
 comp_window_android_create(struct comp_compositor *c);
 
 #endif // XRT_OS_ANDROID

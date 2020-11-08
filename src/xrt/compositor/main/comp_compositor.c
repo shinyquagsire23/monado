@@ -1054,21 +1054,18 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 }
 
 static bool
-compositor_try_window(struct comp_compositor *c, struct comp_window *window)
+compositor_try_window(struct comp_compositor *c, struct comp_target *ct)
 {
-	if (window == NULL) {
+	if (ct == NULL) {
 		return false;
 	}
-
-	struct comp_target *ct = &window->swapchain.base;
 
 	if (!comp_target_init_pre_vulkan(ct)) {
 		ct->destroy(ct);
 		return false;
 	}
 
-	COMP_DEBUG(c, "Window backend %s initialized!",
-	           window->swapchain.base.name);
+	COMP_DEBUG(c, "Window backend %s initialized!", ct->name);
 
 	c->target = ct;
 

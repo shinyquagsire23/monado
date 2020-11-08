@@ -30,11 +30,11 @@
 /*!
  * A Wayland connection and window.
  *
- * @implements comp_window
+ * @implements comp_target_swapchain
  */
 struct comp_window_wayland
 {
-	struct comp_window base;
+	struct comp_target_swapchain base;
 
 	struct wl_display *display;
 	struct wl_compositor *compositor;
@@ -97,23 +97,21 @@ comp_window_wayland_configure(struct comp_window_wayland *w,
  *
  */
 
-struct comp_window *
+struct comp_target *
 comp_window_wayland_create(struct comp_compositor *c)
 {
 	struct comp_window_wayland *w =
 	    U_TYPED_CALLOC(struct comp_window_wayland);
 
-	w->base.swapchain.base.name = "wayland";
-	w->base.swapchain.base.destroy = comp_window_wayland_destroy;
-	w->base.swapchain.base.flush = comp_window_wayland_flush;
-	w->base.swapchain.base.init_pre_vulkan = comp_window_wayland_init;
-	w->base.swapchain.base.init_post_vulkan =
-	    comp_window_wayland_init_swapchain;
-	w->base.swapchain.base.set_title =
-	    comp_window_wayland_update_window_title;
-	w->base.swapchain.base.c = c;
+	w->base.base.name = "wayland";
+	w->base.base.destroy = comp_window_wayland_destroy;
+	w->base.base.flush = comp_window_wayland_flush;
+	w->base.base.init_pre_vulkan = comp_window_wayland_init;
+	w->base.base.init_post_vulkan = comp_window_wayland_init_swapchain;
+	w->base.base.set_title = comp_window_wayland_update_window_title;
+	w->base.base.c = c;
 
-	return &w->base;
+	return &w->base.base;
 }
 
 static void
@@ -121,7 +119,7 @@ comp_window_wayland_destroy(struct comp_target *ct)
 {
 	struct comp_window_wayland *cww = (struct comp_window_wayland *)ct;
 
-	comp_target_swapchain_cleanup(&cww->base.swapchain);
+	comp_target_swapchain_cleanup(&cww->base);
 
 	if (cww->surface) {
 		wl_surface_destroy(cww->surface);
@@ -204,13 +202,12 @@ comp_window_wayland_init_swapchain(struct comp_target *ct,
 {
 	struct comp_window_wayland *w_wayland =
 	    (struct comp_window_wayland *)ct;
-	struct comp_window *w = &w_wayland->base;
 	VkResult ret;
 
-	comp_target_swapchain_init_post_vulkan(&w->swapchain, &ct->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w_wayland->base, &ct->c->vk);
 
-	ret = comp_window_wayland_create_surface(w_wayland,
-	                                         &w->swapchain.surface.handle);
+	ret = comp_window_wayland_create_surface(
+	    w_wayland, &w_wayland->base.surface.handle);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(ct->c, "Failed to create surface!");
 		return false;
@@ -226,7 +223,7 @@ static VkResult
 comp_window_wayland_create_surface(struct comp_window_wayland *w,
                                    VkSurfaceKHR *vk_surface)
 {
-	struct vk_bundle *vk = w->base.swapchain.vk;
+	struct vk_bundle *vk = w->base.vk;
 	VkResult ret;
 
 	VkWaylandSurfaceCreateInfoKHR surface_info = {
@@ -365,9 +362,8 @@ comp_window_wayland_configure(struct comp_window_wayland *w,
                               int32_t width,
                               int32_t height)
 {
-	if (w->base.swapchain.base.c->settings.fullscreen &&
-	    !w->fullscreen_requested) {
-		COMP_DEBUG(w->base.swapchain.base.c, "Setting full screen");
+	if (w->base.base.c->settings.fullscreen && !w->fullscreen_requested) {
+		COMP_DEBUG(w->base.base.c, "Setting full screen");
 		comp_window_wayland_fullscreen(w);
 		w->fullscreen_requested = true;
 	}
