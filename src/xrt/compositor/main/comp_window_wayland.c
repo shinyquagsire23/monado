@@ -121,7 +121,7 @@ comp_window_wayland_destroy(struct comp_target *ct)
 {
 	struct comp_window_wayland *cww = (struct comp_window_wayland *)ct;
 
-	vk_swapchain_cleanup(&cww->base.swapchain);
+	comp_target_swapchain_cleanup(&cww->base.swapchain);
 
 	if (cww->surface) {
 		wl_surface_destroy(cww->surface);
@@ -207,7 +207,7 @@ comp_window_wayland_init_swapchain(struct comp_target *ct,
 	struct comp_window *w = &w_wayland->base;
 	VkResult ret;
 
-	vk_swapchain_init(&w->swapchain, &w->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w->swapchain, &w->c->vk);
 
 	ret = comp_window_wayland_create_surface(w_wayland,
 	                                         &w->swapchain.surface.handle);

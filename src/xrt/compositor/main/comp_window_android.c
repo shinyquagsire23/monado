@@ -59,7 +59,7 @@ comp_window_android_destroy(struct comp_target *ct)
 {
 	struct comp_window_android *cwa = (struct comp_window_android *)ct;
 
-	vk_swapchain_cleanup(&cwa->base.swapchain);
+	comp_target_swapchain_cleanup(&cwa->base.swapchain);
 
 	android_custom_surface_destroy(&cwa->custom_surface);
 
@@ -145,6 +145,8 @@ comp_window_android_create(struct comp_compositor *c)
 {
 	struct comp_window_android *w =
 	    U_TYPED_CALLOC(struct comp_window_android);
+
+	comp_target_swapchain_init_set_fnptrs(&w->base.swapchain);
 
 	w->base.swapchain.base.name = "Android";
 	w->base.swapchain.base.destroy = comp_window_android_destroy;

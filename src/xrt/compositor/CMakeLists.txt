@@ -23,10 +23,9 @@ set(MAIN_SOURCE_FILES
 	main/comp_shaders.c
 	main/comp_swapchain.c
 	main/comp_target.h
-	main/comp_vk_swapchain.c
-	main/comp_vk_swapchain.h
+	main/comp_target_swapchain.c
+	main/comp_target_swapchain.h
 	main/comp_window.h
-	main/comp_window_target.c
 	main/comp_layer.h
 	main/comp_layer.c
 	main/comp_layer_renderer.h

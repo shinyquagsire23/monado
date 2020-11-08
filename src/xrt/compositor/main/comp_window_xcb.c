@@ -127,7 +127,7 @@ comp_window_xcb_create(struct comp_compositor *c)
 {
 	struct comp_window_xcb *w = U_TYPED_CALLOC(struct comp_window_xcb);
 
-	comp_window_init_target(&w->base);
+	comp_target_swapchain_init_set_fnptrs(&w->base.swapchain);
 
 	w->base.swapchain.base.name = "xcb";
 	w->base.swapchain.base.destroy = comp_window_xcb_destroy;
@@ -146,7 +146,7 @@ comp_window_xcb_destroy(struct comp_target *ct)
 {
 	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
 
-	vk_swapchain_cleanup(&w_xcb->base.swapchain);
+	comp_target_swapchain_cleanup(&w_xcb->base.swapchain);
 
 	xcb_destroy_window(w_xcb->connection, w_xcb->window);
 	xcb_disconnect(w_xcb->connection);
@@ -249,7 +249,7 @@ comp_window_xcb_init_swapchain(struct comp_target *ct,
 	struct comp_window *w = &w_xcb->base;
 	VkResult ret;
 
-	vk_swapchain_init(&w->swapchain, &w->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w->swapchain, &w->c->vk);
 
 	ret =
 	    comp_window_xcb_create_surface(w_xcb, &w->swapchain.surface.handle);

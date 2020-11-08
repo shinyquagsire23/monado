@@ -111,7 +111,7 @@ comp_window_direct_randr_create(struct comp_compositor *c)
 	struct comp_window_direct_randr *w =
 	    U_TYPED_CALLOC(struct comp_window_direct_randr);
 
-	comp_window_init_target(&w->base);
+	comp_target_swapchain_init_set_fnptrs(&w->base.swapchain);
 
 	w->base.swapchain.base.name = "direct";
 	w->base.swapchain.base.destroy = comp_window_direct_randr_destroy;
@@ -131,7 +131,7 @@ comp_window_direct_randr_destroy(struct comp_target *ct)
 	struct comp_window_direct_randr *w_direct =
 	    (struct comp_window_direct_randr *)ct;
 
-	vk_swapchain_cleanup(&w_direct->base.swapchain);
+	comp_target_swapchain_cleanup(&w_direct->base.swapchain);
 
 	struct vk_bundle *vk = &w_direct->base.c->vk;
 
@@ -254,7 +254,7 @@ comp_window_direct_randr_init_swapchain(struct comp_target *ct,
 	    (struct comp_window_direct_randr *)ct;
 	struct comp_window *w = &w_direct->base;
 
-	vk_swapchain_init(&w->swapchain, &w->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w->swapchain, &w->c->vk);
 
 	struct comp_window_direct_randr_display *d =
 	    comp_window_direct_randr_current_display(w_direct);

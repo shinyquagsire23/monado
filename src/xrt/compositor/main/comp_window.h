@@ -10,9 +10,8 @@
 
 #pragma once
 
-#include "main/comp_vk_swapchain.h"
+#include "main/comp_target_swapchain.h"
 #include "main/comp_compositor.h"
-#include "render/comp_render.h"
 
 #include "xrt/xrt_config_os.h"
 
@@ -36,7 +35,7 @@ extern "C" {
 struct comp_window
 {
 	//! This has to be first.
-	struct vk_swapchain swapchain;
+	struct comp_target_swapchain swapchain;
 
 	//! Owning compositor.
 	struct comp_compositor *c;
@@ -48,9 +47,6 @@ struct comp_window
  * Functions.
  *
  */
-
-void
-comp_window_init_target(struct comp_window *wt);
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 /*!

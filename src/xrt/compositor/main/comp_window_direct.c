@@ -277,7 +277,7 @@ comp_window_direct_init_swapchain(struct comp_window *w,
                                   uint32_t width,
                                   uint32_t height)
 {
-	vk_swapchain_init(&w->swapchain, &w->c->vk);
+	comp_target_swapchain_init_post_vulkan(&w->swapchain, &w->c->vk);
 
 	VkResult ret;
 	ret = comp_window_direct_acquire_xlib_display(w, dpy, display);
