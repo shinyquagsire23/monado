@@ -10,6 +10,7 @@
 package org.freedesktop.monado.auxiliary;
 
 import android.app.Activity;
+import android.os.Build;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -19,6 +20,7 @@ import android.view.WindowManager;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -43,9 +45,8 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
 
     /// Guards currentSurfaceHolder
     private final Object currentSurfaceHolderSync = new Object();
-    /// Guards the usedByNativeCode flag
-    private final Object usedByNativeCodeSync = new Object();
     private final Method viewSetSysUiVis;
+    private final NativeCounterpart nativeCounterpart;
 
     public int width = -1;
     public int height = -1;
@@ -53,15 +54,11 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
 
     /// Guarded by currentSurfaceHolderSync
     private SurfaceHolder currentSurfaceHolder = null;
-    /// Guarded by usedByNativeCodeSync
-    private boolean usedByNativeCode = false;
-    /// Contains the pointer to the native android_custom_surface object.
-    private long nativePointer = 0;
 
     private MonadoView(Activity activity, long nativePointer) {
         super(activity);
         this.activity = activity;
-        this.nativePointer = nativePointer;
+        this.nativeCounterpart = new NativeCounterpart(nativePointer);
         Method method;
         try {
             method = activity.getWindow().getDecorView().getClass().getMethod("setSystemUiVisibility", int.class);
@@ -133,10 +130,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             }
         }
         if (ret != null) {
-            synchronized (usedByNativeCodeSync) {
-                usedByNativeCode = true;
-                usedByNativeCodeSync.notifyAll();
-            }
+            nativeCounterpart.markAsUsedByNativeCode();
         }
         return ret;
     }
@@ -149,16 +143,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
      */
     @Keep
     public void markAsDiscardedByNative() {
-
-        synchronized (usedByNativeCodeSync) {
-            if (!usedByNativeCode) {
-                Log.w(TAG, "This should not have happened: Discarding by native code, but not marked as used!");
-            }
-            usedByNativeCode = false;
-            nativePointer = 0;
-            usedByNativeCodeSync.notifyAll();
-        }
-
+        nativeCounterpart.markAsDiscardedByNative(TAG);
     }
 
     private boolean makeFullscreen() {
@@ -184,6 +169,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     /**
      * Add a listener so that if our system UI display state doesn't include all we want, we re-apply.
      */
+    @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
     @SuppressWarnings("deprecation")
     private void setSystemUiVisChangeListener() {
         activity.getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(visibility -> {
@@ -234,16 +220,9 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
         }
         if (lost) {
             //! @todo this function should notify native code that the surface is gone.
-            try {
-                synchronized (usedByNativeCodeSync) {
-                    while (usedByNativeCode) {
-                        usedByNativeCodeSync.wait();
-                    }
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            if (!nativeCounterpart.blockUntilNativeDiscard(TAG)) {
                 Log.i(TAG,
-                        "Interrupted in surfaceDestroyed while waiting for native code to finish up: " + e.toString());
+                        "Interrupted in surfaceDestroyed while waiting for native code to finish up.");
             }
         }
     }
