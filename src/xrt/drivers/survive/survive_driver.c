@@ -39,6 +39,8 @@
 #include "util/u_hand_tracking.h"
 #include "util/u_logging.h"
 
+#include "math/m_predict.h"
+
 // public documentation
 //! @todo move to vive_protocol
 #define INDEX_MIN_IPD 0.058
@@ -189,11 +191,23 @@ survive_device_destroy(struct xrt_device *xdev)
 	free(survive);
 }
 
+// libsurvive timecode may not be exactly comparable with monotonic ns.
+// see OGGetAbsoluteTimeUS in libsurvive redist/os_generic.unix.h
+static double
+survive_timecode_now_s()
+{
+	struct timeval tv;
+	gettimeofday(&tv, 0);
+	return ((double)tv.tv_usec) / 1000000. + (tv.tv_sec);
+}
+
 static void
-_get_survive_pose(const SurviveSimpleObject *survive_object,
-                  SurviveSimpleContext *ctx,
+_get_survive_pose(struct survive_device *survive,
+                  uint64_t at_timestamp_ns,
                   struct xrt_space_relation *out_relation)
 {
+	const SurviveSimpleObject *survive_object = survive->survive_obj;
+
 	out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 
 	if (survive_simple_object_get_type(survive_object) !=
@@ -206,11 +220,36 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 	// Initially pose can be zeroed. That's okay, we report it without
 	// orientation etc. valid flag then.
 	SurvivePose pose;
-	uint32_t timecode =
+	SurviveVelocity vel;
+
+	// "device time" in seconds
+	double timecode_s =
 	    survive_simple_object_get_latest_pose(survive_object, &pose);
 
-	//! @todo: Integrate prediction to get pose at requested time.
-	(void)timecode;
+	double vel_timecode_s =
+	    survive_simple_object_get_latest_velocity(survive_object, &vel);
+	(void)vel_timecode_s;
+
+	// do calculations in ns due to large numbers
+	timepoint_ns timecode_ns = time_s_to_ns(timecode_s);
+
+	timepoint_ns monotonic_now_ns = os_monotonic_get_ns();
+	timepoint_ns remaining_ns = at_timestamp_ns - monotonic_now_ns;
+
+	timepoint_ns survive_now_ns = time_s_to_ns(survive_timecode_now_s());
+	timepoint_ns survive_pose_age_ns = survive_now_ns - timecode_ns;
+
+	timepoint_ns prediction_ns = remaining_ns + survive_pose_age_ns;
+
+	double prediction_s = time_ns_to_s(prediction_ns);
+
+	SURVIVE_TRACE(survive,
+	              "dev %s At %ldns: Pose requested for +%ldns (%ldns). "
+	              "Libsurvive Pose Timecode: %ldns, Pose gotten at -%ldns "
+	              "from now (%ldns), predicting %ldns",
+	              survive->base.str, monotonic_now_ns, remaining_ns,
+	              at_timestamp_ns, timecode_ns, survive_pose_age_ns,
+	              survive_now_ns, prediction_ns);
 
 	struct xrt_quat out_rot = {.x = pose.Rot[1],
 	                           .y = pose.Rot[2],
@@ -234,9 +273,6 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 	math_quat_normalize(&out_rot);
 
 
-	SurviveVelocity vel;
-	timecode =
-	    survive_simple_object_get_latest_velocity(survive_object, &vel);
 
 	out_relation->pose.orientation = out_rot;
 
@@ -278,6 +314,12 @@ _get_survive_pose(const SurviveSimpleObject *survive_object,
 			    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT;
 		}
 	}
+
+	SURVIVE_TRACE(survive, "Predicting %fs for %s", prediction_s,
+	              survive->base.str);
+
+	struct xrt_space_relation rel = *out_relation;
+	m_predict_relation(&rel, prediction_s, out_relation);
 }
 
 //! @todo: Hotplugging, with get_variant_from_json()
@@ -352,8 +394,7 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 	}
 
 
-	_get_survive_pose(survive->survive_obj, survive->sys->ctx,
-	                  out_relation);
+	_get_survive_pose(survive, at_timestamp_ns, out_relation);
 
 	survive->last_relation = *out_relation;
 
