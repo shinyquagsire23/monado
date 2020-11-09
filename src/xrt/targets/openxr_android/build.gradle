@@ -120,6 +120,13 @@ android {
 
 aboutLibraries {
     configPath = "${projectDir}/config"
+
+    // Full license text for license IDs mentioned here
+    // will be included, even if no detected dependency uses them.
+    additionalLicenses {
+        mit
+        mpl_2_0
+    }
 }
 
 dependencies {
