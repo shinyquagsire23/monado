@@ -123,7 +123,7 @@ cmake_dependent_option(XRT_FEATURE_SERVICE "Enable separate service module for O
 cmake_dependent_option(XRT_HAVE_SYSTEMD "Enable systemd support (for socket activation of service)" ON "Systemd_FOUND AND XRT_FEATURE_SERVICE" OFF)
 cmake_dependent_option(XRT_INSTALL_SYSTEMD_UNIT_FILES "Install user unit files for systemd socket activation on installation" ON "XRT_HAVE_SYSTEMD" OFF)
 cmake_dependent_option(XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES "Use an absolute path to monado-system in installed user unit files for systemd socket activation" ON "XRT_INSTALL_SYSTEMD_UNIT_FILES" OFF)
-option(XRT_FEATURE_STEAMVR_PLUGIN "Build SteamVR plugin" ON)
+cmake_dependent_option(XRT_FEATURE_STEAMVR_PLUGIN "Build SteamVR plugin" ON "NOT ANDROID" OFF)
 
 if(NOT DEFINED XRT_FEATURE_OPENXR_LAYER_DEPTH)
 	set(XRT_FEATURE_OPENXR_LAYER_DEPTH ON)
