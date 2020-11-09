@@ -256,8 +256,6 @@ comp_window_direct_nvidia_init_swapchain(struct comp_target *ct,
 	struct comp_window_direct_nvidia *w_direct =
 	    (struct comp_window_direct_nvidia *)ct;
 
-	comp_target_swapchain_init_post_vulkan(&w_direct->base, &ct->c->vk);
-
 	struct comp_window_direct_nvidia_display *d =
 	    comp_window_direct_nvidia_current_display(w_direct);
 	if (!d) {

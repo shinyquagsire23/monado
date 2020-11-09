@@ -47,6 +47,12 @@ struct comp_window_android
  *
  */
 
+static inline struct vk_bundle *
+get_vk(struct comp_window_android *cwa)
+{
+	return &cwa->base.base.c->vk;
+}
+
 static bool
 comp_window_android_init(struct comp_target *ct)
 {
@@ -78,8 +84,9 @@ static VkResult
 comp_window_android_create_surface(struct comp_window_android *w,
                                    VkSurfaceKHR *vk_surface)
 {
-	struct vk_bundle *vk = w->base.vk;
+	struct vk_bundle *vk = get_vk(w);
 	VkResult ret;
+
 	w->custom_surface = android_custom_surface_async_start(
 	    android_globals_get_vm(), android_globals_get_activity());
 	if (w->custom_surface == NULL) {

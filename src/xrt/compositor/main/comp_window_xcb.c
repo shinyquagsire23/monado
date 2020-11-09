@@ -122,6 +122,12 @@ comp_window_xcb_update_window_title(struct comp_target *ct, const char *title);
  *
  */
 
+static inline struct vk_bundle *
+get_vk(struct comp_window_xcb *cwx)
+{
+	return &cwx->base.base.c->vk;
+}
+
 struct comp_target *
 comp_window_xcb_create(struct comp_compositor *c)
 {
@@ -133,8 +139,7 @@ comp_window_xcb_create(struct comp_compositor *c)
 	w->base.base.destroy = comp_window_xcb_destroy;
 	w->base.base.flush = comp_window_xcb_flush;
 	w->base.base.init_pre_vulkan = comp_window_xcb_init;
-	w->base.base.init_post_vulkan =
-	    comp_window_xcb_init_swapchain;
+	w->base.base.init_post_vulkan = comp_window_xcb_init_swapchain;
 	w->base.base.set_title = comp_window_xcb_update_window_title;
 	w->base.base.c = c;
 
@@ -162,15 +167,15 @@ comp_window_xcb_destroy(struct comp_target *ct)
 static void
 comp_window_xcb_list_screens(struct comp_window_xcb *w, xcb_screen_t *screen)
 {
-	COMP_DEBUG(w->base.base.c, "Screen 0 %dx%d",
-	           screen->width_in_pixels, screen->height_in_pixels);
+	COMP_DEBUG(w->base.base.c, "Screen 0 %dx%d", screen->width_in_pixels,
+	           screen->height_in_pixels);
 	comp_window_xcb_get_randr_outputs(w);
 
 	for (uint16_t i = 0; i < w->num_displays; i++) {
 		struct comp_window_xcb_display *d = &w->displays[i];
-		COMP_DEBUG(w->base.base.c, "%d: %s %dx%d [%d, %d]", i,
-		           d->name, d->size.width, d->size.height,
-		           d->position.x, d->position.y);
+		COMP_DEBUG(w->base.base.c, "%d: %s %dx%d [%d, %d]", i, d->name,
+		           d->size.width, d->size.height, d->position.x,
+		           d->position.y);
 	}
 }
 
@@ -248,8 +253,6 @@ comp_window_xcb_init_swapchain(struct comp_target *ct,
 	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
 	VkResult ret;
 
-	comp_target_swapchain_init_post_vulkan(&w_xcb->base, &ct->c->vk);
-
 	ret =
 	    comp_window_xcb_create_surface(w_xcb, &w_xcb->base.surface.handle);
 	if (ret != VK_SUCCESS) {
@@ -303,8 +306,7 @@ comp_window_xcb_get_randr_outputs(struct comp_window_xcb *w)
 	w->num_displays =
 	    xcb_randr_get_screen_resources_outputs_length(resources_reply);
 	if (w->num_displays < 1)
-		COMP_ERROR(w->base.base.c,
-		           "Failed to retrieve randr outputs");
+		COMP_ERROR(w->base.base.c, "Failed to retrieve randr outputs");
 
 	w->displays =
 	    calloc(w->num_displays, sizeof(struct comp_window_xcb_display));
@@ -394,7 +396,7 @@ comp_window_xcb_get_atom(struct comp_window_xcb *w, const char *name)
 static VkResult
 comp_window_xcb_create_surface(struct comp_window_xcb *w, VkSurfaceKHR *surface)
 {
-	struct vk_bundle *vk = w->base.vk;
+	struct vk_bundle *vk = get_vk(w);
 	VkResult ret;
 
 	VkXcbSurfaceCreateInfoKHR surface_info = {
@@ -406,8 +408,8 @@ comp_window_xcb_create_surface(struct comp_window_xcb *w, VkSurfaceKHR *surface)
 	ret = vk->vkCreateXcbSurfaceKHR(vk->instance, &surface_info, NULL,
 	                                surface);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.base.c,
-		           "vkCreateXcbSurfaceKHR: %s", vk_result_string(ret));
+		COMP_ERROR(w->base.base.c, "vkCreateXcbSurfaceKHR: %s",
+		           vk_result_string(ret));
 		return ret;
 	}
 

@@ -92,6 +92,12 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w);
  *
  */
 
+static inline struct vk_bundle *
+get_vk(struct comp_window_direct_randr *cwdr)
+{
+	return &cwdr->base.base.c->vk;
+}
+
 static void
 _flush(struct comp_target *ct)
 {
@@ -132,7 +138,7 @@ comp_window_direct_randr_destroy(struct comp_target *ct)
 
 	comp_target_swapchain_cleanup(&w_direct->base);
 
-	struct vk_bundle *vk = w_direct->base.vk;
+	struct vk_bundle *vk = get_vk(w_direct);
 
 	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
 		struct comp_window_direct_randr_display *d =
@@ -251,8 +257,6 @@ comp_window_direct_randr_init_swapchain(struct comp_target *ct,
 	struct comp_window_direct_randr *w_direct =
 	    (struct comp_window_direct_randr *)ct;
 
-	comp_target_swapchain_init_post_vulkan(&w_direct->base, &ct->c->vk);
-
 	struct comp_window_direct_randr_display *d =
 	    comp_window_direct_randr_current_display(w_direct);
 
@@ -279,12 +283,12 @@ static VkDisplayKHR
 comp_window_direct_randr_get_output(struct comp_window_direct_randr *w,
                                     RROutput output)
 {
-	struct vk_bundle *vk = w->base.vk;
+	struct vk_bundle *vk = get_vk(w);
 	VkResult ret;
 
 	VkDisplayKHR display;
-	ret = vk->vkGetRandROutputDisplayEXT(w->base.vk->physical_device,
-	                                     w->dpy, output, &display);
+	ret = vk->vkGetRandROutputDisplayEXT(vk->physical_device, w->dpy,
+	                                     output, &display);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->base.base.c, "vkGetRandROutputDisplayEXT: %s",
 		           vk_result_string(ret));

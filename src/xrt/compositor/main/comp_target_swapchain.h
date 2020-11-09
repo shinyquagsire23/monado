@@ -36,8 +36,6 @@ struct comp_target_swapchain
 	//! Base target.
 	struct comp_target base;
 
-	struct vk_bundle *vk;
-
 	struct
 	{
 		VkSwapchainKHR handle;
@@ -71,15 +69,6 @@ struct comp_target_swapchain
  */
 void
 comp_target_swapchain_init_set_fnptrs(struct comp_target_swapchain *cts);
-
-/*!
- * Initialize the given @ref comp_target_swapchain, does not allocate.
- *
- * @ingroup comp_main
- */
-void
-comp_target_swapchain_init_post_vulkan(struct comp_target_swapchain *cts,
-                                       struct vk_bundle *vk);
 
 /*!
  * See comp_target::create_images.

@@ -14,6 +14,13 @@
 
 #include "util/u_misc.h"
 
+
+static inline struct vk_bundle *
+get_vk(struct comp_target_swapchain *cts)
+{
+	return &cts->base.c->vk;
+}
+
 static int
 choose_best_vk_mode_auto(struct comp_target *ct,
                          VkDisplayModePropertiesKHR *mode_properties,
@@ -79,7 +86,7 @@ VkDisplayModeKHR
 comp_window_direct_get_primary_display_mode(struct comp_target_swapchain *cts,
                                             VkDisplayKHR display)
 {
-	struct vk_bundle *vk = cts->vk;
+	struct vk_bundle *vk = get_vk(cts);
 	struct comp_target *ct = &cts->base;
 	uint32_t mode_count;
 	VkResult ret;
@@ -171,12 +178,12 @@ comp_window_direct_create_surface(struct comp_target_swapchain *cts,
                                   uint32_t width,
                                   uint32_t height)
 {
-	struct vk_bundle *vk = cts->vk;
+	struct vk_bundle *vk = get_vk(cts);
 
 	// Get plane properties
 	uint32_t plane_property_count;
 	VkResult ret = vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
-	    cts->vk->physical_device, &plane_property_count, NULL);
+	    vk->physical_device, &plane_property_count, NULL);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(cts->base.c,
 		           "vkGetPhysicalDeviceDisplayPlanePropertiesKHR: %s",
@@ -191,7 +198,7 @@ comp_window_direct_create_surface(struct comp_target_swapchain *cts,
 	    VkDisplayPlanePropertiesKHR, plane_property_count);
 
 	ret = vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
-	    cts->vk->physical_device, &plane_property_count, plane_properties);
+	    vk->physical_device, &plane_property_count, plane_properties);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(cts->base.c,
 		           "vkGetPhysicalDeviceDisplayPlanePropertiesKHR: %s",
@@ -206,8 +213,8 @@ comp_window_direct_create_surface(struct comp_target_swapchain *cts,
 	    comp_window_direct_get_primary_display_mode(cts, display);
 
 	VkDisplayPlaneCapabilitiesKHR plane_caps;
-	vk->vkGetDisplayPlaneCapabilitiesKHR(
-	    cts->vk->physical_device, display_mode, plane_index, &plane_caps);
+	vk->vkGetDisplayPlaneCapabilitiesKHR(vk->physical_device, display_mode,
+	                                     plane_index, &plane_caps);
 
 	VkDisplaySurfaceCreateInfoKHR surface_info = {
 	    .sType = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR,
@@ -250,11 +257,10 @@ comp_window_direct_acquire_xlib_display(struct comp_target_swapchain *cts,
                                         Display *dpy,
                                         VkDisplayKHR display)
 {
-	struct vk_bundle *vk = cts->vk;
+	struct vk_bundle *vk = get_vk(cts);
 	VkResult ret;
 
-	ret =
-	    vk->vkAcquireXlibDisplayEXT(cts->vk->physical_device, dpy, display);
+	ret = vk->vkAcquireXlibDisplayEXT(vk->physical_device, dpy, display);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(cts->base.c,
 		           "vkAcquireXlibDisplayEXT: %s (0x%016" PRIx64 ")",
@@ -278,8 +284,6 @@ comp_window_direct_init_swapchain(struct comp_target_swapchain *cts,
                                   uint32_t width,
                                   uint32_t height)
 {
-	comp_target_swapchain_init_post_vulkan(cts, &cts->base.c->vk);
-
 	VkResult ret;
 	ret = comp_window_direct_acquire_xlib_display(cts, dpy, display);
 

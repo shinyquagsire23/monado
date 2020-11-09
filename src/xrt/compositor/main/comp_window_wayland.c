@@ -97,6 +97,12 @@ comp_window_wayland_configure(struct comp_window_wayland *w,
  *
  */
 
+static inline struct vk_bundle *
+get_vk(struct comp_window_wayland *cww)
+{
+	return &cww->base.base.c->vk;
+}
+
 struct comp_target *
 comp_window_wayland_create(struct comp_compositor *c)
 {
@@ -204,8 +210,6 @@ comp_window_wayland_init_swapchain(struct comp_target *ct,
 	    (struct comp_window_wayland *)ct;
 	VkResult ret;
 
-	comp_target_swapchain_init_post_vulkan(&w_wayland->base, &ct->c->vk);
-
 	ret = comp_window_wayland_create_surface(
 	    w_wayland, &w_wayland->base.surface.handle);
 	if (ret != VK_SUCCESS) {
@@ -223,7 +227,7 @@ static VkResult
 comp_window_wayland_create_surface(struct comp_window_wayland *w,
                                    VkSurfaceKHR *vk_surface)
 {
-	struct vk_bundle *vk = w->base.vk;
+	struct vk_bundle *vk = get_vk(w);
 	VkResult ret;
 
 	VkWaylandSurfaceCreateInfoKHR surface_info = {
