@@ -38,9 +38,7 @@ import java.util.List;
 
 
 /**
- * A simple {@link Fragment} subclass.
- * Use the {@link VrModeStatus#newInstance} factory method to
- * create an instance of this fragment.
+ * A Fragment for displaying/affecting VR Listener status.
  */
 public class VrModeStatus extends Fragment {
     public static final int STATUS_UNKNOWN = -2;
