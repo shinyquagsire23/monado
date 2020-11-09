@@ -153,3 +153,17 @@ xrt_config_vulkan = declare_dependency(
 	sources: xrt_config_vulkan_h,
 	include_directories: xrt_include,
 )
+
+
+#####
+# Mock Android config
+#
+
+android_conf = configuration_data()
+
+# No actual config data in here.
+
+xrt_config_android_h = configure_file(
+	output: 'xrt_config_android.h',
+	configuration: android_conf,
+)
