@@ -44,7 +44,7 @@ ovrd_log(const char *fmt, ...)
 
 	char buf[1024];
 #if defined(WIN32)
-	vsprintf_s(buf, pMsgFormat, args);
+	vsprintf_s(buf, fmt, args);
 #else
 	vsnprintf(buf, sizeof(buf), fmt, args);
 #endif
