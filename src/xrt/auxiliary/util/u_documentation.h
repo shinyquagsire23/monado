@@ -26,14 +26,14 @@
 
 
 /*!
- * @dir auxiliary
+ * @dir src/xrt/auxiliary
  * @ingroup xrt
  *
  * @brief Shared code and helpers for Monado.
  */
 
 /*!
- * @dir auxiliary/util
+ * @dir src/xrt/auxiliary/util
  * @ingroup aux
  *
  * @brief Smaller pieces of auxiliary utilities code.
