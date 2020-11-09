@@ -53,9 +53,6 @@ target_link_libraries(ipc_client PRIVATE
 	aux_util
 	)
 if(ANDROID)
-	target_link_libraries(ipc_client PRIVATE
-		aux_android
-		)
 endif()
 
 ###
@@ -100,6 +97,32 @@ if(XRT_HAVE_SYSTEMD)
 endif()
 
 if(ANDROID)
-	target_link_libraries(ipc_server PUBLIC ${ANDROID_LIBRARY})
-	target_link_libraries(ipc_client PUBLIC ${ANDROID_LIBRARY})
+	add_library(ipc_android STATIC
+		android/ipc_client_android.cpp
+		android/ipc_client_android.h
+		android/org.freedesktop.monado.ipc.cpp
+		android/org.freedesktop.monado.ipc.hpp
+		android/org.freedesktop.monado.ipc.impl.hpp
+		)
+	target_link_libraries(ipc_android PUBLIC
+		xrt-external-jni-wrap
+		xrt-external-jnipp
+		aux_android
+		)
+	set_target_properties(ipc_android
+		PROPERTIES
+		CXX_STANDARD 17
+		CXX_STANDARD_REQUIRED ON)
+	target_link_libraries(ipc_server PUBLIC
+		${ANDROID_LIBRARY}
+		PRIVATE
+		aux_android
+		ipc_android
+		)
+	target_link_libraries(ipc_client PUBLIC
+		${ANDROID_LIBRARY}
+		PRIVATE
+		aux_android
+		ipc_android
+		)
 endif()
