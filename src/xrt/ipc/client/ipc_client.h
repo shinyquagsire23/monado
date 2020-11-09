@@ -11,6 +11,7 @@
 #pragma once
 
 #include "xrt/xrt_compiler.h"
+#include "xrt/xrt_config_os.h"
 #include "shared/ipc_protocol.h"
 #include "shared/ipc_utils.h"
 
@@ -52,6 +53,10 @@ struct ipc_connection
 	xrt_shmem_handle_t ism_handle;
 
 	struct os_mutex mutex;
+
+#ifdef XRT_OS_ANDROID
+	struct ipc_client_android *ica;
+#endif // XRT_OS_ANDROID
 
 	enum u_logging_level ll;
 };

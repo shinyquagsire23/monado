@@ -10,6 +10,8 @@
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_gfx_native.h"
 #include "xrt/xrt_handles.h"
+#include "xrt/xrt_config_os.h"
+#include "xrt/xrt_config_android.h"
 
 #include "util/u_misc.h"
 #include "util/u_var.h"
@@ -33,6 +35,11 @@
 #ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
 #include "android/android_ahardwarebuffer_allocator.h"
 #endif
+
+#ifdef XRT_OS_ANDROID
+#include "android/android_globals.h"
+#include "android/ipc_client_android.h"
+#endif // XRT_OS_ANDROID
 
 DEBUG_GET_ONCE_LOG_OPTION(ipc_log, "IPC_LOG", U_LOGGING_WARN)
 
@@ -65,6 +72,35 @@ ipc_client_instance(struct xrt_instance *xinst)
 	return (struct ipc_client_instance *)xinst;
 }
 
+#ifdef XRT_OS_ANDROID
+
+static bool
+ipc_connect(struct ipc_connection *ipc_c)
+{
+	ipc_c->ll = debug_get_log_option_ipc_log();
+
+	ipc_c->ica = ipc_client_android_create(android_globals_get_vm(),
+	                                       android_globals_get_activity());
+
+	if (ipc_c->ica == NULL) {
+		IPC_ERROR(ipc_c, "Client create error!");
+		return false;
+	}
+
+	int socket = ipc_client_android_blocking_connect(ipc_c->ica);
+	if (socket < 0) {
+		IPC_ERROR(ipc_c, "Service Connect error!");
+		return false;
+	}
+
+	ipc_c->imc.socket_fd = socket;
+	ipc_c->imc.ll = ipc_c->ll;
+
+	return true;
+}
+
+
+#else
 static bool
 ipc_connect(struct ipc_connection *ipc_c)
 {
@@ -99,7 +135,7 @@ ipc_connect(struct ipc_connection *ipc_c)
 
 	return true;
 }
-
+#endif
 
 
 /*
@@ -178,6 +214,10 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
 	ii->num_xtracks = 0;
 
 	os_mutex_destroy(&ii->ipc_c.mutex);
+
+#ifdef XRT_OS_ANDROID
+	ipc_client_android_destroy(&(ii->ipc_c.ica));
+#endif
 
 	free(ii);
 }
