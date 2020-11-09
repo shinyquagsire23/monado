@@ -1384,7 +1384,7 @@ struct oxr_interaction_profile
 {
 	XrPath path;
 
-	//! Used to lookup @ref xrt_binding for fallback.
+	//! Used to lookup @ref xrt_binding_profile for fallback.
 	enum xrt_device_name xname;
 
 	//! Name presented to the user.
