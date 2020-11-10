@@ -95,7 +95,10 @@ struct xrt_view
 struct xrt_hmd_parts
 {
 	/*!
-	 * The hmd screen, right now hardcoded to one.
+	 * The hmd screen as an unrotated display, like the HMD presents it to
+	 * the OS.
+	 *
+	 * This field is used by @ref comp to setup the extended mode window.
 	 */
 	struct
 	{
