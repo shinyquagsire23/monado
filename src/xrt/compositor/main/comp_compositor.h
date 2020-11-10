@@ -350,6 +350,13 @@ comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s);
 #define COMP_WARN(c, ...) U_LOG_IFL_W(c->settings.log_level, __VA_ARGS__);
 
 /*!
+ * Error level logging.
+ *
+ * @relates comp_compositor
+ */
+#define COMP_ERROR(c, ...) U_LOG_IFL_E(c->settings.log_level, __VA_ARGS__);
+
+/*!
  * Mode printing.
  *
  * @relates comp_compositor
@@ -358,13 +365,6 @@ comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s);
 	if (c->settings.print_modes) {                                         \
 		U_LOG_I(__VA_ARGS__);                                          \
 	}
-
-/*!
- * Error level logging.
- *
- * @relates comp_compositor
- */
-#define COMP_ERROR(c, ...) U_LOG_E(__VA_ARGS__)
 
 
 #ifdef __cplusplus
