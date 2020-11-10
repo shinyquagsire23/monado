@@ -66,6 +66,8 @@ struct comp_target_swapchain
 
 /*!
  * Pre Vulkan initialisation, sets function pointers.
+ *
+ * @ingroup comp_main
  */
 void
 comp_target_swapchain_init_set_fnptrs(struct comp_target_swapchain *cts);
