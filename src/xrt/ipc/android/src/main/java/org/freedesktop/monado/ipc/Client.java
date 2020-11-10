@@ -14,6 +14,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
@@ -38,6 +39,10 @@ public class Client implements ServiceConnection {
      */
     private final Object connectSync = new Object();
     /**
+     * Keep track of the ipc_client_android instance over on the native side.
+     */
+    private final NativeCounterpart nativeCounterpart;
+    /**
      * Pointer to local IPC proxy: calling methods on it automatically transports arguments across binder IPC.
      * <p>
      * May be null!
@@ -53,10 +58,6 @@ public class Client implements ServiceConnection {
     @Keep
     public boolean failed = false;
     /**
-     * Keep track of the ipc_client_android instance over on the native side.
-     */
-    private final NativeCounterpart nativeCounterpart;
-    /**
      * "Our" side of the socket pair - the other side is sent to the server automatically on connection.
      */
     private ParcelFileDescriptor fd = null;
@@ -64,6 +65,10 @@ public class Client implements ServiceConnection {
      * Context provided by app.
      */
     private Context context;
+    /**
+     * Context of the runtime package
+     */
+    private Context runtimePackageContext;
 
     /**
      * Constructor
@@ -104,7 +109,10 @@ public class Client implements ServiceConnection {
     @Keep
     public int blockingConnect(Context context_, String packageName) {
         synchronized (connectSync) {
-            bind(context_, packageName);
+            if (!bind(context_, packageName)) {
+                // Bind failed immediately
+                return -1;
+            }
             try {
                 while (fd == null) {
                     connectSync.wait();
@@ -130,17 +138,28 @@ public class Client implements ServiceConnection {
      *                    must specify the package name explicitly to avoid violating security
      *                    restrictions.
      */
-    public void bind(Context context_, String packageName) {
+    public boolean bind(Context context_, String packageName) {
         context = context_.getApplicationContext();
         if (context == null) {
             // in case app context returned null
             context = context_;
         }
-        context.bindService(
-                new Intent("org.freedesktop.monado.CONNECT")
-                        .setPackage(packageName),
-                this, Context.BIND_AUTO_CREATE);
+        try {
+            runtimePackageContext = context.createPackageContext(packageName, Context.CONTEXT_IGNORE_SECURITY | Context.CONTEXT_INCLUDE_CODE);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            Log.e(TAG, "bind: Could not find package " + packageName);
+            return false;
+        }
+
+        Intent intent = new Intent("org.freedesktop.monado.ipc.CONNECT")
+                .setPackage(packageName);
+
+        context.startForegroundService(intent);
+        context.bindService(intent,
+                this, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT | Context.BIND_INCLUDE_CAPABILITIES | Context.BIND_ABOVE_CLIENT);
         // does not bind right away! This takes some time.
+        return true;
     }
 
     /**
