@@ -1287,14 +1287,14 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 
 	u_device_setup_tracking_origins(m_xhmd, left_xdev, right_xdev);
 
-	if (left) {
+	if (left != XRT_DEVICE_ROLE_UNASSIGNED) {
 		m_left = new CDeviceDriver_Monado_Controller(m_xinst, left_xdev,
 		                                             XRT_HAND_LEFT);
 		vr::VRServerDriverHost()->TrackedDeviceAdded(
 		    m_left->GetSerialNumber().c_str(),
 		    vr::TrackedDeviceClass_Controller, m_left);
 	}
-	if (right) {
+	if (right != XRT_DEVICE_ROLE_UNASSIGNED) {
 		m_right = new CDeviceDriver_Monado_Controller(
 		    m_xinst, right_xdev, XRT_HAND_RIGHT);
 		vr::VRServerDriverHost()->TrackedDeviceAdded(
