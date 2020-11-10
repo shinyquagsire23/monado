@@ -241,8 +241,8 @@ begin_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer)
 
 	ret = vk->vkBeginCommandBuffer(command_buffer, &command_buffer_info);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkBeginCommandBuffer failed: %s",
-		           vk_result_string(ret));
+		VK_ERROR(vk, "vkBeginCommandBuffer failed: %s",
+		         vk_result_string(ret));
 		return ret;
 	}
 

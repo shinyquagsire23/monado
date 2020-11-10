@@ -44,8 +44,8 @@ create_pipeline_cache(struct vk_bundle *vk, VkPipelineCache *out_pipeline_cache)
 	                                NULL,                 //
 	                                &pipeline_cache);     //
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(vk, "vkCreatePipelineCache failed: %s",
-		           vk_result_string(ret));
+		VK_ERROR(vk, "vkCreatePipelineCache failed: %s",
+		         vk_result_string(ret));
 		return ret;
 	}
 
