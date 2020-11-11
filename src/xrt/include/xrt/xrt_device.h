@@ -44,12 +44,14 @@ struct xrt_view
 	} viewport;
 
 	/*!
-	 * Pixel and physical properties of this display, not in absolute
-	 * screen coordinates that the compositor sees. So before any rotation
-	 * is applied by xrt_view::rot.
+	 * Physical properties of this display (or the part of a display that
+	 * covers this view), not in absolute screen coordinates but like the
+	 * clients see them i.e. after rotation is applied by xrt_view::rot.
+	 * This field is only used for the clients' swapchain setup.
 	 *
 	 * The xrt_view::display::w_pixels and xrt_view::display::h_pixels
-	 * become the recommended image size for this view.
+	 * become the recommended image size for this view, after being scaled
+	 * by XRT_COMPOSITOR_SCALE_PERCENTAGE.
 	 */
 	struct
 	{
