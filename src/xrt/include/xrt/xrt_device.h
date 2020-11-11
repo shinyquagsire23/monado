@@ -28,7 +28,8 @@ struct xrt_tracking;
 struct xrt_view
 {
 	/*!
-	 * Viewport position on the screen, in absolute screen coordinates.
+	 * Viewport position on the screen, in absolute screen coordinates on
+	 * an unrotated display, like the HMD presents it to the OS.
 	 * This field is only used by @ref comp to setup the device rendering.
 	 *
 	 * If the view is being rotated by xrt_view.rot 90° right in the
