@@ -555,8 +555,6 @@ oh_device_create(ohmd_context *ctx,
 	// Left
 	ohd->base.hmd->views[0].display.w_meters = info.views[0].display.w_meters;
 	ohd->base.hmd->views[0].display.h_meters = info.views[0].display.h_meters;
-	ohd->base.hmd->views[0].lens_center.x_meters = info.views[0].lens_center_x_meters;
-	ohd->base.hmd->views[0].lens_center.y_meters = info.views[0].lens_center_y_meters;
 	ohd->base.hmd->views[0].display.w_pixels = info.views[0].display.w_pixels;
 	ohd->base.hmd->views[0].display.h_pixels = info.views[0].display.h_pixels;
 	ohd->base.hmd->views[0].viewport.x_pixels = 0;
@@ -568,8 +566,6 @@ oh_device_create(ohmd_context *ctx,
 	// Right
 	ohd->base.hmd->views[1].display.w_meters = info.views[1].display.w_meters;
 	ohd->base.hmd->views[1].display.h_meters = info.views[1].display.h_meters;
-	ohd->base.hmd->views[1].lens_center.x_meters = info.views[1].lens_center_x_meters;
-	ohd->base.hmd->views[1].lens_center.y_meters = info.views[1].lens_center_y_meters;
 	ohd->base.hmd->views[1].display.w_pixels = info.views[1].display.w_pixels;
 	ohd->base.hmd->views[1].display.h_pixels = info.views[1].display.h_pixels;
 	ohd->base.hmd->views[1].viewport.x_pixels = info.views[0].display.w_pixels;
@@ -588,8 +584,8 @@ oh_device_create(ohmd_context *ctx,
 		ohd->distortion.openhmd[view].aberr[2] = info.pano_aberration_k[2];
 		ohd->distortion.openhmd[view].warp_scale = info.pano_warp_scale;
 
-		ohd->distortion.openhmd[view].lens_center.x = ohd->base.hmd->views[view].lens_center.x_meters;
-		ohd->distortion.openhmd[view].lens_center.y = ohd->base.hmd->views[view].lens_center.y_meters;
+		ohd->distortion.openhmd[view].lens_center.x = info.views[view].lens_center_x_meters;
+		ohd->distortion.openhmd[view].lens_center.y = info.views[view].lens_center_y_meters;
 
 		ohd->distortion.openhmd[view].viewport_scale.x = ohd->base.hmd->views[view].display.w_meters;
 		ohd->distortion.openhmd[view].viewport_scale.y = ohd->base.hmd->views[view].display.h_meters;

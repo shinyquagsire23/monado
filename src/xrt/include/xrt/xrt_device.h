@@ -63,19 +63,6 @@ struct xrt_view
 	} display;
 
 	/*!
-	 * Position relative to display origin, before any rotation is applied
-	 * by xrt_view::rot. note: not set by most drivers, used only for
-	 * panotools/ohmd distortion
-	 */
-	struct
-	{
-		float x_meters;
-		float y_meters;
-		int x_pixels;
-		int y_pixels;
-	} lens_center;
-
-	/*!
 	 * Rotation 2d matrix used to rotate the position of the output of the
 	 * distortion shaders onto the screen. If the distortion shader is
 	 * based on mesh, then this matrix rotates the vertex positions.

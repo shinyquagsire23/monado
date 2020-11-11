@@ -914,6 +914,8 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0,
 	                       eye_to_screen_distance);
 
+	struct xrt_vec2 lens_center[2];
+
 	for (uint8_t eye = 0; eye < 2; eye++) {
 		struct xrt_view *v = &d->base.hmd->views[eye];
 		v->display.w_meters = (float)w_meters;
@@ -923,27 +925,23 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		v->viewport.w_pixels = w_pixels;
 		v->viewport.h_pixels = h_pixels;
 		v->viewport.y_pixels = 0;
-		v->lens_center.y_meters = (float)h_meters / 2.0f;
+		lens_center[eye].y = (float)h_meters / 2.0f;
 		v->rot = u_device_rotation_ident;
 	}
 
 	// Left
-	d->base.hmd->views[0].lens_center.x_meters =
-	    (float)(w_meters - lens_horizontal_separation / 2.0);
+	lens_center[0].x = (float)(w_meters - lens_horizontal_separation / 2.0);
 	d->base.hmd->views[0].viewport.x_pixels = 0;
 
 	// Right
-	d->base.hmd->views[1].lens_center.x_meters =
-	    (float)lens_horizontal_separation / 2.0f;
+	lens_center[1].x = (float)lens_horizontal_separation / 2.0f;
 	d->base.hmd->views[1].viewport.x_pixels = w_pixels;
 
 	for (uint8_t eye = 0; eye < 2; eye++) {
-		if (!math_compute_fovs(
-		        w_meters,
-		        (double)d->base.hmd->views[eye].lens_center.x_meters,
-		        fov, h_meters,
-		        (double)d->base.hmd->views[eye].lens_center.y_meters, 0,
-		        &d->base.hmd->views[eye].fov)) {
+		if (!math_compute_fovs(w_meters, (double)lens_center[eye].x,
+		                       fov, h_meters,
+		                       (double)lens_center[eye].y, 0,
+		                       &d->base.hmd->views[eye].fov)) {
 			VIVE_ERROR(
 			    d, "Failed to compute the partial fields of view.");
 			free(d);
