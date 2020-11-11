@@ -350,7 +350,7 @@ get_info(struct oh_device *ohd, const char *prod)
 
 	if (strcmp(prod, "Rift S") == 0) {
 		info.quirks.delay_after_initialization = true;
-		info.quirks.rotate_lenses_left = true;
+		info.quirks.rotate_lenses_right = true;
 	}
 
 	/* Only the WVR2 display is rotated. OpenHMD can't easily tell us
