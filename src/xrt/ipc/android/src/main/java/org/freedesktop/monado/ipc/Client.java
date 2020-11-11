@@ -187,6 +187,7 @@ public class Client implements ServiceConnection {
         }
         synchronized (connectSync) {
             fd = ours;
+            connectSync.notify();
         }
     }
 
