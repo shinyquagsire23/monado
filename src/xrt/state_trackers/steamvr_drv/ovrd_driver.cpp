@@ -1083,14 +1083,9 @@ CDeviceDriver_Monado::GetWindowBounds(int32_t *pnX,
 	*pnX = 1920;
 	*pnY = 0;
 
-	*pnWidth = m_xdev->hmd->views[0].viewport.w_pixels +
-	           m_xdev->hmd->views[1].viewport.w_pixels;
-
-	uint32_t max_height = m_xdev->hmd->views[0].viewport.h_pixels >
-	                              m_xdev->hmd->views[1].viewport.h_pixels
-	                          ? m_xdev->hmd->views[0].viewport.h_pixels
-	                          : m_xdev->hmd->views[1].viewport.h_pixels;
-	*pnHeight = max_height;
+	*pnWidth = m_xdev->hmd->screens[0].w_pixels;
+	*pnHeight = m_xdev->hmd->screens[0].h_pixels;
+	;
 
 	ovrd_log("Window Bounds: %dx%d\n", *pnWidth, *pnHeight);
 }
@@ -1133,12 +1128,8 @@ CDeviceDriver_Monado::GetEyeOutputViewport(vr::EVREye eEye,
 	*pnWidth = m_xdev->hmd->views[eEye].viewport.w_pixels;
 	*pnHeight = m_xdev->hmd->views[eEye].viewport.h_pixels;
 
-	*pnY = 0;
-	if (eEye == vr::Eye_Left) {
-		*pnX = 0;
-	} else {
-		*pnX = m_xdev->hmd->views[0].viewport.w_pixels;
-	}
+	*pnX = m_xdev->hmd->views[eEye].viewport.x_pixels;
+	*pnY = m_xdev->hmd->views[eEye].viewport.y_pixels;
 
 	ovrd_log("Output Viewport for eye %d: %dx%d offset %dx%d\n", eEye,
 	         *pnWidth, *pnHeight, *pnX, *pnY);
@@ -1166,19 +1157,29 @@ CDeviceDriver_Monado::ComputeDistortion(vr::EVREye eEye, float fU, float fV)
 	 * UVs range from 0 to 1 with 0,0 in the upper left corner of the
 	 * source render target. The 0,0 to 1,1 range covers a single eye. */
 
+	struct xrt_vec2 *rot = m_xdev->hmd->views[eEye].rot.vecs;
+
+	// multiply 2x2 rotation matrix with fU, fV scaled to [-1, 1]
+	float U = rot[0].x * (fU * 2 - 1) + rot[0].y * (fV * 2 - 1);
+	float V = rot[1].x * (fU * 2 - 1) + rot[1].y * (fV * 2 - 1);
+
+	// scale U, V back to [0, 1]
+	U = (U + 1) / 2;
+	V = (V + 1) / 2;
+
 	struct xrt_uv_triplet d;
 
-	if (!m_xdev->compute_distortion(m_xdev, eEye, fU, fV, &d)) {
+	if (!m_xdev->compute_distortion(m_xdev, eEye, U, V, &d)) {
 		ovrd_log("Failed to compute distortion for view %d at %f,%f!\n",
-		         eEye, fU, fV);
+		         eEye, U, V);
 
 		vr::DistortionCoordinates_t coordinates;
-		coordinates.rfBlue[0] = fU;
-		coordinates.rfBlue[1] = fV;
-		coordinates.rfGreen[0] = fU;
-		coordinates.rfGreen[1] = fV;
-		coordinates.rfRed[0] = fU;
-		coordinates.rfRed[1] = fV;
+		coordinates.rfBlue[0] = U;
+		coordinates.rfBlue[1] = V;
+		coordinates.rfGreen[0] = U;
+		coordinates.rfGreen[1] = V;
+		coordinates.rfRed[0] = U;
+		coordinates.rfRed[1] = V;
 		return coordinates;
 	}
 
@@ -1191,7 +1192,7 @@ CDeviceDriver_Monado::ComputeDistortion(vr::EVREye eEye, float fU, float fV)
 	coordinates.rfBlue[1] = d.b.y;
 
 	// ovrd_log("Computed distortion for view %d at %f,%f -> %f,%f | %f,%f |
-	// %f,%f!\n", eEye, fU, fV, d.r.x, d.r.y, d.g.x, d.g.y, d.b.x, d.b.y);
+	// %f,%f!\n", eEye, U, V, d.r.x, d.r.y, d.g.x, d.g.y, d.b.x, d.b.y);
 
 	return coordinates;
 }
