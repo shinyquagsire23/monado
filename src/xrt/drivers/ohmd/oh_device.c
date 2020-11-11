@@ -247,6 +247,10 @@ struct display_info
 
 struct device_info
 {
+	/* the display (or virtual display consisting of multiple physical
+	 * displays) in its "physical" configuration as the user looks at it.
+	 * e.g. a 1440x2560 portrait display that is rotated and built
+	 * into a HMD in landscape mode, will be treated as 2560x1440. */
 	struct display_info display;
 
 	float lens_horizontal_separation;
@@ -260,6 +264,11 @@ struct device_info
 	{
 		float fov;
 
+		/* the display or part of the display covering this view in its
+		 * "physical" configuration as the user looks at it.
+		 * e.g. a 1440x2560 portrait display that is rotated and built
+		 * into a HMD in landscape mode, will be treated as 1280x1440
+		 * per view */
 		struct display_info display;
 
 		float lens_center_x_meters;
@@ -491,6 +500,14 @@ compute_distortion_vive(struct xrt_device *xdev,
 	                                 result);
 }
 
+static inline void
+swap(int *a, int *b)
+{
+	int temp = *a;
+	*a = *b;
+	*b = temp;
+}
+
 struct xrt_device *
 oh_device_create(ohmd_context *ctx,
                  ohmd_device *dev,
@@ -573,6 +590,22 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.hmd->views[1].viewport.w_pixels = info.views[1].display.w_pixels;
 	ohd->base.hmd->views[1].viewport.h_pixels = info.views[1].display.h_pixels;
 	ohd->base.hmd->views[1].rot = u_device_rotation_ident;
+
+	OH_DEBUG(ohd,
+	         "Display/viewport/offset before rotation %dx%d/%dx%d/%dx%d, "
+	         "%dx%d/%dx%d/%dx%d",
+	         ohd->base.hmd->views[0].display.w_pixels,
+	         ohd->base.hmd->views[0].display.h_pixels,
+	         ohd->base.hmd->views[0].viewport.w_pixels,
+	         ohd->base.hmd->views[0].viewport.h_pixels,
+	         ohd->base.hmd->views[0].viewport.x_pixels,
+	         ohd->base.hmd->views[0].viewport.y_pixels,
+	         ohd->base.hmd->views[1].display.w_pixels,
+	         ohd->base.hmd->views[1].display.h_pixels,
+	         ohd->base.hmd->views[1].viewport.w_pixels,
+	         ohd->base.hmd->views[1].viewport.h_pixels,
+	         ohd->base.hmd->views[0].viewport.x_pixels,
+	         ohd->base.hmd->views[0].viewport.y_pixels);
 
 	for (int view = 0; view < 2; view++) {
 		ohd->distortion.openhmd[view].hmd_warp_param[0] = info.pano_distortion_k[0];
@@ -665,51 +698,98 @@ oh_device_create(ohmd_context *ctx,
 	}
 
 	if (info.quirks.rotate_lenses_right) {
-		int w = info.display.w_pixels;
-		int h = info.display.h_pixels;
+		OH_DEBUG(ohd, "Displays rotated right");
 
+		// openhmd display dimensions are *after* all rotations
+		swap(&ohd->base.hmd->screens->w_pixels,
+		     &ohd->base.hmd->screens->h_pixels);
+
+		// display dimensions are *after* all rotations
+		int w0 = info.views[0].display.w_pixels;
+		int w1 = info.views[1].display.w_pixels;
+		int h0 = info.views[0].display.h_pixels;
+		int h1 = info.views[1].display.h_pixels;
+
+		// viewports is *before* rotations, as the OS sees the display
 		ohd->base.hmd->views[0].viewport.x_pixels = 0;
 		ohd->base.hmd->views[0].viewport.y_pixels = 0;
-		ohd->base.hmd->views[0].viewport.w_pixels = w;
-		ohd->base.hmd->views[0].viewport.h_pixels = h / 2;
+		ohd->base.hmd->views[0].viewport.w_pixels = h0;
+		ohd->base.hmd->views[0].viewport.h_pixels = w0;
 		ohd->base.hmd->views[0].rot = u_device_rotation_right;
 
 		ohd->base.hmd->views[1].viewport.x_pixels = 0;
-		ohd->base.hmd->views[1].viewport.y_pixels = h / 2;
-		ohd->base.hmd->views[1].viewport.w_pixels = w;
-		ohd->base.hmd->views[1].viewport.h_pixels = h / 2;
+		ohd->base.hmd->views[1].viewport.y_pixels = h0;
+		ohd->base.hmd->views[1].viewport.w_pixels = w1;
+		ohd->base.hmd->views[1].viewport.h_pixels = h1;
 		ohd->base.hmd->views[1].rot = u_device_rotation_right;
 	}
 
 	if (info.quirks.rotate_lenses_left) {
-		int w = info.display.w_pixels;
-		int h = info.display.h_pixels;
+		OH_DEBUG(ohd, "Displays rotated left");
 
+		// openhmd display dimensions are *after* all rotations
+		swap(&ohd->base.hmd->screens->w_pixels,
+		     &ohd->base.hmd->screens->h_pixels);
+
+		// display dimensions are *after* all rotations
+		int w0 = info.views[0].display.w_pixels;
+		int w1 = info.views[1].display.w_pixels;
+		int h0 = info.views[0].display.h_pixels;
+		int h1 = info.views[1].display.h_pixels;
+
+		// viewports is *before* rotations, as the OS sees the display
 		ohd->base.hmd->views[0].viewport.x_pixels = 0;
-		ohd->base.hmd->views[0].viewport.y_pixels = 0;
-		ohd->base.hmd->views[0].viewport.w_pixels = w;
-		ohd->base.hmd->views[0].viewport.h_pixels = h / 2;
+		ohd->base.hmd->views[0].viewport.y_pixels = w0;
+		ohd->base.hmd->views[0].viewport.w_pixels = h1;
+		ohd->base.hmd->views[0].viewport.h_pixels = w1;
 		ohd->base.hmd->views[0].rot = u_device_rotation_left;
 
 		ohd->base.hmd->views[1].viewport.x_pixels = 0;
-		ohd->base.hmd->views[1].viewport.y_pixels = h / 2;
-		ohd->base.hmd->views[1].viewport.w_pixels = w;
-		ohd->base.hmd->views[1].viewport.h_pixels = h / 2;
+		ohd->base.hmd->views[1].viewport.y_pixels = 0;
+		ohd->base.hmd->views[1].viewport.w_pixels = h0;
+		ohd->base.hmd->views[1].viewport.h_pixels = w0;
 		ohd->base.hmd->views[1].rot = u_device_rotation_left;
 	}
 
 	if (info.quirks.rotate_lenses_inwards) {
+		OH_DEBUG(ohd, "Displays rotated inwards");
+
 		int w2 = info.display.w_pixels / 2;
 		int h = info.display.h_pixels;
 
 		ohd->base.hmd->views[0].display.w_pixels = h;
 		ohd->base.hmd->views[0].display.h_pixels = w2;
+		ohd->base.hmd->views[0].viewport.x_pixels = 0;
+		ohd->base.hmd->views[0].viewport.y_pixels = 0;
+		ohd->base.hmd->views[0].viewport.w_pixels = w2;
+		ohd->base.hmd->views[0].viewport.h_pixels = h;
 		ohd->base.hmd->views[0].rot = u_device_rotation_right;
 
 		ohd->base.hmd->views[1].display.w_pixels = h;
 		ohd->base.hmd->views[1].display.h_pixels = w2;
+		ohd->base.hmd->views[1].viewport.x_pixels = w2;
+		ohd->base.hmd->views[1].viewport.y_pixels = 0;
+		ohd->base.hmd->views[1].viewport.w_pixels = w2;
+		ohd->base.hmd->views[1].viewport.h_pixels = h;
 		ohd->base.hmd->views[1].rot = u_device_rotation_left;
 	}
+
+	OH_DEBUG(ohd,
+	         "Display/viewport/offset after rotation %dx%d/%dx%d/%dx%d, "
+	         "%dx%d/%dx%d/%dx%d",
+	         ohd->base.hmd->views[0].display.w_pixels,
+	         ohd->base.hmd->views[0].display.h_pixels,
+	         ohd->base.hmd->views[0].viewport.w_pixels,
+	         ohd->base.hmd->views[0].viewport.h_pixels,
+	         ohd->base.hmd->views[0].viewport.x_pixels,
+	         ohd->base.hmd->views[0].viewport.y_pixels,
+	         ohd->base.hmd->views[1].display.w_pixels,
+	         ohd->base.hmd->views[1].display.h_pixels,
+	         ohd->base.hmd->views[1].viewport.w_pixels,
+	         ohd->base.hmd->views[1].viewport.h_pixels,
+	         ohd->base.hmd->views[0].viewport.x_pixels,
+	         ohd->base.hmd->views[0].viewport.y_pixels);
+
 
 	if (info.quirks.delay_after_initialization) {
 		unsigned int time_to_sleep = 1;
