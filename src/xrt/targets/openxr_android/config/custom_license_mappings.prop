@@ -1,1 +1,3 @@
-cjson:mit
+# Copyright 2020, Collabora, Ltd.
+# SPDX-License-Identifier: BSL-1.0
+javax_annotation__jsr250_api:cddl_1_0

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+    <string name="define_license_cddl_1_0" translatable="false" />
+    <string name="license_cddl_1_0_licenseName" translatable="false">Common Development and Distribution License 1.0</string>
+
+    <!-- name of the license file under the raw folder -->
+    <string name="license_cddl_1_0_licenseDescription" translatable="false">raw:cddl_1_0</string>
+</resources>

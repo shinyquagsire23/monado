@@ -25,27 +25,51 @@ def parseOpenXRVersion(def fn) {
     String.join('.', components)
 }
 
+// For JSR250 used by Hilt
+task getCDDL {
+    doLast {
+        ant.invokeMethod("get", [src: "https://spdx.org/licenses/CDDL-1.0.txt", dest: "${} "])
+    }
+
+}
+
+project.ext.renameLicense = { String name ->
+    def lowerNoExtension = name.toLowerCase().replace(".txt", "")
+    def result = lowerNoExtension.replaceAll(~/[\-.]/, "_") + ".txt"
+    return result
+}
+
+project.ext.filterLicense = {String line ->
+    if (line.trim().isEmpty()) {
+        return '<br /><br />'
+    } else {
+        return groovy.xml.XmlUtil.escapeXml(line)
+    }
+}
 
 // TODO: this copies to the source dir for simplicity right now, but it's not great!
 task copyLicenses(type: Copy) {
     from "${rootDir}/LICENSES/"
     include 'BSL-1.0.txt'
-    rename {
-        String name ->
-            def lowerNoExtension = name.toLowerCase().replace(".txt", "")
-            def result = lowerNoExtension.replaceAll(~/[\-.]/, "_") + ".txt"
-            return result
-    }
+    rename(renameLicense)
     into project.layout.projectDirectory.dir('src/main/res/raw').asFile
-    filter { line ->
-        if (line.trim().isEmpty()) {
-            return '<br /><br />'
-        } else {
-            return groovy.xml.XmlUtil.escapeXml(line)
-        }
-    }
+    filter(filterLicense)
+}
+project.ext.licenseDir = new File(project.buildDir, 'intermediates/licenses/')
+
+task downloadCddl(type: Download) {
+    src 'https://spdx.org/licenses/CDDL-1.0.txt'
+    dest "${project.licenseDir}/CDDL-1.0.txt"
+    overwrite false
 }
 
+task copyDownloadedLicenses(type: Copy) {
+    from downloadCddl.dest
+    rename(renameLicense)
+    into project.layout.projectDirectory.dir('src/main/res/raw').asFile
+    filter(filterLicense)
+    dependsOn downloadCddl
+}
 android {
     compileSdkVersion project.sharedTargetSdk
     buildToolsVersion '30.0.2'
@@ -79,6 +103,7 @@ android {
 
         // Be sure to copy over licenses formatted as required.
         preBuild.dependsOn(copyLicenses)
+        preBuild.dependsOn(copyDownloadedLicenses)
     }
 
     buildTypes {
