@@ -329,14 +329,13 @@ get_systemd_socket(struct ipc_server *s, int *out_fd)
 	// We may have been launched with socket activation
 	int num_fds = sd_listen_fds(0);
 	if (num_fds > 1) {
-		fprintf(stderr,
-		        "Too many file descriptors passed by systemd.\n");
+		U_LOG_E("Too many file descriptors passed by systemd.");
 		return -1;
 	}
 	if (num_fds == 1) {
 		*out_fd = SD_LISTEN_FDS_START + 0;
 		s->launched_by_socket = true;
-		printf("Got existing socket from systemd.\n");
+		U_LOG_D("Got existing socket from systemd.");
 	}
 #endif
 	return 0;
@@ -351,7 +350,7 @@ create_listen_socket(struct ipc_server *s, int *out_fd)
 
 	fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0) {
-		fprintf(stderr, "Message Socket Create Error!\n");
+		U_LOG_E("Message Socket Create Error!");
 		return fd;
 	}
 
@@ -362,14 +361,14 @@ create_listen_socket(struct ipc_server *s, int *out_fd)
 
 	ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret < 0) {
-		fprintf(stderr,
-		        "ERROR: Could not bind socket to path %s: is the "
-		        "service running already?\n",
-		        IPC_MSG_SOCK_FILE);
+		U_LOG_E(
+		    "Could not bind socket to path %s: is the "
+		    "service running already?",
+		    IPC_MSG_SOCK_FILE);
 #ifdef XRT_HAVE_SYSTEMD
-		fprintf(stderr,
-		        "Or, is the systemd unit monado.socket or "
-		        "monado-dev.socket active?\n");
+		U_LOG_E(
+		    "Or, is the systemd unit monado.socket or "
+		    "monado-dev.socket active?");
 #endif
 		close(fd);
 		return ret;
@@ -382,7 +381,7 @@ create_listen_socket(struct ipc_server *s, int *out_fd)
 		close(fd);
 		return ret;
 	}
-	printf("Created listening socket.\n");
+	U_LOG_D("Created listening socket.");
 	*out_fd = fd;
 	return 0;
 }
@@ -406,7 +405,7 @@ init_listen_socket(struct ipc_server *s)
 	}
 	// All ok!
 	s->listen_socket = fd;
-	printf("Listening socket is fd %d\n", s->listen_socket);
+	U_LOG_D("Listening socket is fd %d", s->listen_socket);
 
 	return fd;
 }
@@ -430,8 +429,7 @@ init_epoll(struct ipc_server *s)
 		ev.data.fd = 0; // stdin
 		ret = epoll_ctl(s->epoll_fd, EPOLL_CTL_ADD, 0, &ev);
 		if (ret < 0) {
-			fprintf(stderr, "ERROR: epoll_ctl(stdin) failed '%i'\n",
-			        ret);
+			U_LOG_E("epoll_ctl(stdin) failed '%i'", ret);
 			return ret;
 		}
 	}
@@ -440,8 +438,7 @@ init_epoll(struct ipc_server *s)
 	ev.data.fd = s->listen_socket;
 	ret = epoll_ctl(s->epoll_fd, EPOLL_CTL_ADD, s->listen_socket, &ev);
 	if (ret < 0) {
-		fprintf(stderr, "ERROR: epoll_ctl(listen_socket) failed '%i'\n",
-		        ret);
+		U_LOG_E("epoll_ctl(listen_socket) failed '%i'", ret);
 		return ret;
 	}
 
@@ -544,7 +541,7 @@ handle_listen(struct ipc_server *vs)
 {
 	int ret = accept(vs->listen_socket, NULL, NULL);
 	if (ret < 0) {
-		fprintf(stderr, "ERROR: accept '%i'\n", ret);
+		U_LOG_E("accept '%i'", ret);
 		vs->running = false;
 	}
 
@@ -572,7 +569,7 @@ handle_listen(struct ipc_server *vs)
 		// Unlock when we are done.
 		os_mutex_unlock(&vs->global_state_lock);
 
-		fprintf(stderr, "ERROR: Max client count reached!\n");
+		U_LOG_E("Max client count reached!");
 		return;
 	}
 
@@ -584,7 +581,7 @@ handle_listen(struct ipc_server *vs)
 		// Unlock when we are done.
 		os_mutex_unlock(&vs->global_state_lock);
 
-		fprintf(stderr, "ERROR: Client state management error!\n");
+		U_LOG_E("Client state management error!");
 		return;
 	}
 
@@ -618,7 +615,7 @@ check_epoll(struct ipc_server *vs)
 	// No sleeping, returns immediately.
 	int ret = epoll_wait(epoll_fd, events, NUM_POLL_EVENTS, NO_SLEEP);
 	if (ret < 0) {
-		fprintf(stderr, "EPOLL ERROR! \"%i\"\n", ret);
+		U_LOG_E("epoll_wait failed with '%i'.", ret);
 		vs->running = false;
 		return;
 	}
@@ -651,7 +648,7 @@ find_event_slot(volatile struct ipc_client_state *ics)
 		}
 	}
 
-	fprintf(stderr, "ERROR! event queue full - unconsumed event lost!\n");
+	U_LOG_E("Event queue full - unconsumed event lost!");
 	return oldest_event_index;
 }
 
@@ -703,13 +700,12 @@ _update_projection_layer(struct xrt_compositor *xc,
 	struct xrt_swapchain *rxcs = ics->xscs[rxsci];
 
 	if (lxcs == NULL || rxcs == NULL) {
-		fprintf(stderr,
-		        "ERROR: Invalid swap chain for projection layer.\n");
+		U_LOG_E("Invalid swap chain for projection layer.");
 		return false;
 	}
 
 	if (xdev == NULL) {
-		fprintf(stderr, "ERROR: Invalid xdev for projection layer.\n");
+		U_LOG_E("Invalid xdev for projection layer.");
 		return false;
 	}
 
@@ -746,13 +742,12 @@ _update_projection_layer_depth(struct xrt_compositor *xc,
 
 	if (l_xcs == NULL || r_xcs == NULL || l_d_xcs == NULL ||
 	    r_d_xcs == NULL) {
-		fprintf(stderr,
-		        "ERROR: Invalid swap chain for projection layer.\n");
+		U_LOG_E("Invalid swap chain for projection layer.");
 		return false;
 	}
 
 	if (xdev == NULL) {
-		fprintf(stderr, "ERROR: Invalid xdev for projection layer.\n");
+		U_LOG_E("Invalid xdev for projection layer.");
 		return false;
 	}
 
@@ -782,14 +777,12 @@ do_single(struct xrt_compositor *xc,
 	struct xrt_swapchain *xcs = ics->xscs[sci];
 
 	if (xcs == NULL) {
-		fprintf(stderr, "ERROR: Invalid swapchain for %u layer, %s.\n",
-		        i, name);
+		U_LOG_E("Invalid swapchain for %u layer, %s.", i, name);
 		return false;
 	}
 
 	if (xdev == NULL) {
-		fprintf(stderr, "ERROR: Invalid xdev for %u layer, %s.\n", i,
-		        name);
+		U_LOG_E("Invalid xdev for %u layer, %s.", i, name);
 		return false;
 	}
 
@@ -973,8 +966,7 @@ _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 				}
 				break;
 			default:
-				fprintf(stderr,
-				        "ERROR: Unhandled layer type '%i'!\n",
+				U_LOG_E("Unhandled layer type '%i'!",
 				        layer->data.type);
 				break;
 			}
@@ -1228,7 +1220,7 @@ ipc_server_main(int argc, char **argv)
 	teardown_all(s);
 	free(s);
 
-	fprintf(stderr, "SERVER: Exiting! '%i'\n", ret);
+	U_LOG_E("Server exiting! '%i'", ret);
 
 	return ret;
 }
