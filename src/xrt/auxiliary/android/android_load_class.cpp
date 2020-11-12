@@ -25,11 +25,30 @@ getAppInfo(std::string const &packageName, jobject application_context)
 {
 	try {
 		auto context = Context{application_context};
+		if (context.isNull()) {
+			U_LOG_E("getAppInfo: application_context was null");
+			return {};
+		}
 		auto packageManager =
 		    PackageManager{context.getPackageManager()};
+		if (packageManager.isNull()) {
+			U_LOG_E(
+			    "getAppInfo: "
+			    "application_context.getPackageManager() returned "
+			    "null");
+			return {};
+		}
 		auto packageInfo = packageManager.getPackageInfo(
 		    packageName, PackageManager::GET_META_DATA |
 		                     PackageManager::GET_SHARED_LIBRARY_FILES);
+
+		if (packageInfo.isNull()) {
+			U_LOG_E(
+			    "getAppInfo: "
+			    "application_context.getPackageManager()."
+			    "getPackaegInfo() returned null");
+			return {};
+		}
 		return packageInfo.getApplicationInfo();
 	} catch (std::exception const &e) {
 		U_LOG_E("Could get App Info: %s", e.what());
