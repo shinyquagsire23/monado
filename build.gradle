@@ -12,6 +12,8 @@ buildscript {
         androidxLifecycleVersion = "2.2.0"
         androidxConstraintLayoutVersion = '2.0.4'
 
+        hiltVersion = "2.29.1-alpha"
+
         // Saw some breakage when updating to 1.2?
         materialVersion = "1.1.0"
     }
@@ -25,6 +27,8 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "com.mikepenz.aboutlibraries.plugin:aboutlibraries-plugin:${latestAboutLibsRelease}"
         classpath 'com.quittle:svg-2-android-vector:0.0.5'
+        classpath "com.google.dagger:hilt-android-gradle-plugin:$hiltVersion"
+
     }
 }
 plugins {
