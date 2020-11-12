@@ -108,8 +108,10 @@ public class Client implements ServiceConnection {
      */
     @Keep
     public int blockingConnect(Context context_, String packageName) {
+        Log.i(TAG, "blockingConnect");
         synchronized (connectSync) {
             if (!bind(context_, packageName)) {
+                Log.e(TAG, "Bind failed immediately");
                 // Bind failed immediately
                 return -1;
             }
@@ -118,6 +120,7 @@ public class Client implements ServiceConnection {
                     connectSync.wait();
                 }
             } catch (InterruptedException e) {
+                Log.e(TAG, "Interrupted: " + e.toString());
                 return -1;
             }
         }
@@ -139,13 +142,15 @@ public class Client implements ServiceConnection {
      *                    restrictions.
      */
     public boolean bind(Context context_, String packageName) {
+        Log.i(TAG, "bind");
         context = context_.getApplicationContext();
         if (context == null) {
             // in case app context returned null
             context = context_;
         }
         try {
-            runtimePackageContext = context.createPackageContext(packageName, Context.CONTEXT_IGNORE_SECURITY | Context.CONTEXT_INCLUDE_CODE);
+            runtimePackageContext = context.createPackageContext(packageName,
+                    Context.CONTEXT_IGNORE_SECURITY | Context.CONTEXT_INCLUDE_CODE);
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
             Log.e(TAG, "bind: Could not find package " + packageName);
@@ -183,6 +188,7 @@ public class Client implements ServiceConnection {
      */
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
+        Log.i(TAG, "onServiceConnected");
         monado = IMonado.Stub.asInterface(service);
         ParcelFileDescriptor theirs;
         ParcelFileDescriptor ours;
