@@ -14,6 +14,9 @@
 
 #include "wrap/android.view.h"
 
+#include "server/ipc_server.h"
+#include "util/u_logging.h"
+
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 
@@ -25,11 +28,10 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeAddClient(JNIEnv *env,
                                                            int fd)
 {
 	jni::init(env);
-	//! @todo do something!
-	// This may be the "entry point" of the native code, or we could already
-	// have another client running, etc.
-
 	jni::Object monadoImpl(thiz);
+	U_LOG_D("service: Called nativeAddClient with fd %d", fd);
+	// "entry point" of the native code
+	ipc_server_main_android(fd);
 }
 
 extern "C" void
