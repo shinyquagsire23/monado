@@ -12,6 +12,13 @@ android {
         // needed for ASharedMemory, etc.
         minSdkVersion 26
         targetSdkVersion project.sharedTargetSdk
+
+        // Single point of truth for this name.
+        def serviceAction = "org.freedesktop.monado.ipc.CONNECT"
+        manifestPlaceholders = [
+                serviceActionName: serviceAction
+        ]
+        buildConfigField("String", "SERVICE_ACTION", "\"${serviceAction}\"")
     }
 
     buildTypes {

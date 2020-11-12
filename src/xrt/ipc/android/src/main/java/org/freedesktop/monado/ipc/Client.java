@@ -152,7 +152,7 @@ public class Client implements ServiceConnection {
             return false;
         }
 
-        Intent intent = new Intent("org.freedesktop.monado.ipc.CONNECT")
+        intent = new Intent(BuildConfig.SERVICE_ACTION)
                 .setPackage(packageName);
 
         context.startForegroundService(intent);

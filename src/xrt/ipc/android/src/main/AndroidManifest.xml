@@ -12,7 +12,7 @@
             android:exported="true"
             android:foregroundServiceType="connectedDevice|mediaPlayback">
             <intent-filter>
-                <action android:name="org.freedesktop.monado.ipc.CONNECT" />
+                <action android:name="${serviceActionName}" />
             </intent-filter>
         </service>
     </application>
