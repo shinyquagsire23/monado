@@ -13,6 +13,7 @@
 #include "xrt/xrt_compiler.h"
 
 #include "util/u_render_timing.h"
+#include "util/u_logging.h"
 
 #include "os/os_threading.h"
 
@@ -25,37 +26,17 @@
 extern "C" {
 #endif
 
-
 /*
  *
  * Logging
  *
  */
 
-/*!
- * Spew level logging.
- */
-#define IPC_SPEW(c, ...)                                                       \
-	do {                                                                   \
-		if (c->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-/*!
- * Debug level logging.
- */
-#define IPC_DEBUG(c, ...)                                                      \
-	do {                                                                   \
-		if (c->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
+#define IPC_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
+#define IPC_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
+#define IPC_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
+#define IPC_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
+#define IPC_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
 
 /*
  *
@@ -202,8 +183,7 @@ struct ipc_server
 	//! The socket filename we bound to, if any.
 	char *socket_filename;
 
-	bool print_debug;
-	bool print_spew;
+	enum u_logging_level ll;
 
 	struct ipc_thread threads[IPC_MAX_CLIENTS];
 

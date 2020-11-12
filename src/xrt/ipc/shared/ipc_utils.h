@@ -16,6 +16,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "util/u_logging.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,7 +28,7 @@ extern "C" {
 struct ipc_message_channel
 {
 	int socket_fd;
-	bool print_debug;
+	enum u_logging_level ll;
 };
 
 /*!

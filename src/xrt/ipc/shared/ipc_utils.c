@@ -23,28 +23,19 @@
 #include <stdint.h>
 #include <assert.h>
 
-/*!
- * Debug level logging.
- */
-#define IPC_DEBUG(c, ...)                                                      \
-	do {                                                                   \
-		if ((c)->print_debug) {                                        \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
+#include "util/u_logging.h"
 
-/*!
- * Error level logging.
+/*
+ *
+ * Logging
+ *
  */
-#define IPC_ERROR(c, ...)                                                      \
-	do {                                                                   \
-		(void)(c)->print_debug;                                        \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+
+#define IPC_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
+#define IPC_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
+#define IPC_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
+#define IPC_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
+#define IPC_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
 
 void
 ipc_message_channel_close(struct ipc_message_channel *imc)

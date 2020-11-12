@@ -15,6 +15,7 @@
 #include "shared/ipc_utils.h"
 
 #include "util/u_threading.h"
+#include "util/u_logging.h"
 
 #include <stdio.h>
 
@@ -25,41 +26,11 @@
  *
  */
 
-/*!
- * Spew level logging.
- */
-#define IPC_SPEW(c, ...)                                                       \
-	do {                                                                   \
-		if ((c)->print_spew) {                                         \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-/*!
- * Debug level logging.
- */
-#define IPC_DEBUG(c, ...)                                                      \
-	do {                                                                   \
-		if ((c)->print_debug) {                                        \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-/*!
- * Error level logging.
- */
-#define IPC_ERROR(c, ...)                                                      \
-	do {                                                                   \
-		(void)(c)->print_debug;                                        \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
-
+#define IPC_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
+#define IPC_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
+#define IPC_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
+#define IPC_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
+#define IPC_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
 
 /*
  *
@@ -82,8 +53,7 @@ struct ipc_connection
 
 	struct os_mutex mutex;
 
-	bool print_debug; // TODO: link to settings
-	bool print_spew;  // TODO: link to settings
+	enum u_logging_level ll;
 };
 
 /*

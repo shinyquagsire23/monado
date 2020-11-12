@@ -49,8 +49,7 @@
  */
 
 DEBUG_GET_ONCE_BOOL_OPTION(exit_on_disconnect, "IPC_EXIT_ON_DISCONNECT", false)
-DEBUG_GET_ONCE_BOOL_OPTION(print_spew, "IPC_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(print_debug, "IPC_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_LOG_OPTION(ipc_log, "IPC_LOG", U_LOGGING_WARN)
 
 struct _z_sort_data
 {
@@ -530,12 +529,10 @@ init_all(struct ipc_server *s)
 	// Easier to use.
 	s->xc = &s->xcn->base;
 
-	s->print_spew = debug_get_bool_option_print_spew();
-	s->print_debug = debug_get_bool_option_print_debug();
+	s->ll = debug_get_log_option_ipc_log();
 
 	u_var_add_root(s, "IPC Server", false);
-	u_var_add_bool(s, &s->print_debug, "print.debug");
-	u_var_add_bool(s, &s->print_spew, "print.spew");
+	u_var_add_ro_u32(s, &s->ll, "log level");
 	u_var_add_bool(s, &s->exit_on_disconnect, "exit_on_disconnect");
 	u_var_add_bool(s, (void *)&s->running, "running");
 

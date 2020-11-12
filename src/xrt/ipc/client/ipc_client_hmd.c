@@ -86,7 +86,7 @@ ipc_client_hmd_update_inputs(struct xrt_device *xdev)
 	xrt_result_t r =
 	    ipc_call_device_update_input(ich->ipc_c, ich->device_id);
 	if (r != XRT_SUCCESS) {
-		IPC_ERROR(ich->ipc_c, "IPC: Error calling input update!");
+		IPC_ERROR(ich->ipc_c, "Error calling input update!");
 	}
 }
 
@@ -101,7 +101,7 @@ ipc_client_hmd_get_tracked_pose(struct xrt_device *xdev,
 	xrt_result_t r = ipc_call_device_get_tracked_pose(
 	    ich->ipc_c, ich->device_id, name, at_timestamp_ns, out_relation);
 	if (r != XRT_SUCCESS) {
-		IPC_ERROR(ich->ipc_c, "IPC: Error calling tracked pose!");
+		IPC_ERROR(ich->ipc_c, "Error calling tracked pose!");
 	}
 }
 

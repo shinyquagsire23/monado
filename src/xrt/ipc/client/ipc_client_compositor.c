@@ -345,7 +345,7 @@ ipc_compositor_prepare_session(struct xrt_compositor *xc,
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	IPC_SPEW(icc->ipc_c, "IPC: compositor create session");
+	IPC_TRACE(icc->ipc_c, "IPC: compositor create session");
 
 	IPC_CALL_CHK(ipc_call_session_create(icc->ipc_c, xspi));
 	return res;
@@ -357,7 +357,7 @@ ipc_compositor_poll_events(struct xrt_compositor *xc,
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	IPC_SPEW(icc->ipc_c, "IPC: polling for events");
+	IPC_TRACE(icc->ipc_c, "IPC: polling for events");
 
 	IPC_CALL_CHK(ipc_call_compositor_poll_events(icc->ipc_c, out_xce));
 
@@ -370,7 +370,7 @@ ipc_compositor_begin_session(struct xrt_compositor *xc,
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	IPC_SPEW(icc->ipc_c, "IPC: compositor begin session");
+	IPC_TRACE(icc->ipc_c, "IPC: compositor begin session");
 
 	IPC_CALL_CHK(ipc_call_session_begin(icc->ipc_c));
 
@@ -382,7 +382,7 @@ ipc_compositor_end_session(struct xrt_compositor *xc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	IPC_SPEW(icc->ipc_c, "IPC: compositor end session");
+	IPC_TRACE(icc->ipc_c, "IPC: compositor end session");
 
 	IPC_CALL_CHK(ipc_call_session_end(icc->ipc_c));
 
@@ -639,7 +639,7 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 	xrt_images_destroy(&icc->xina);
 
 	//! @todo Implement
-	IPC_SPEW(icc->ipc_c, "IPC:  NOT IMPLEMENTED compositor destroy");
+	IPC_TRACE(icc->ipc_c, "IPC:  NOT IMPLEMENTED compositor destroy");
 
 	free(icc);
 }

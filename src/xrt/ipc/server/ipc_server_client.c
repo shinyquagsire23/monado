@@ -376,7 +376,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	// It's now safe to increment the number of swapchains.
 	ics->num_swapchains++;
 
-	IPC_SPEW(ics->server, "IPC: Created swapchain %d\n", index);
+	IPC_TRACE(ics->server, "IPC: Created swapchain %d\n", index);
 
 	set_swapchain_info(ics, index, info, xsc);
 
@@ -433,7 +433,7 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 	// It's now safe to increment the number of swapchains.
 	ics->num_swapchains++;
 
-	IPC_SPEW(ics->server, "IPC: Created swapchain %d\n", index);
+	IPC_TRACE(ics->server, "IPC: Created swapchain %d\n", index);
 
 	set_swapchain_info(ics, index, info, xsc);
 	*out_id = index;
@@ -791,7 +791,7 @@ client_loop(volatile struct ipc_client_state *ics)
 	for (uint32_t j = 0; j < IPC_MAX_CLIENT_SWAPCHAINS; j++) {
 		xrt_swapchain_destroy((struct xrt_swapchain **)&ics->xscs[j]);
 		ics->swapchain_data[j].active = false;
-		IPC_SPEW(ics->server, "IPC: Destroyed swapchain %d\n", j);
+		IPC_TRACE(ics->server, "IPC: Destroyed swapchain %d\n", j);
 	}
 
 	os_mutex_unlock(&ics->server->global_state_lock);

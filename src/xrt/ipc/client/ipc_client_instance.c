@@ -34,8 +34,7 @@
 #include "android/android_ahardwarebuffer_allocator.h"
 #endif
 
-DEBUG_GET_ONCE_BOOL_OPTION(print_spew, "IPC_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(print_debug, "IPC_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_LOG_OPTION(ipc_log, "IPC_LOG", U_LOGGING_WARN)
 
 /*
  *
@@ -72,8 +71,7 @@ ipc_connect(struct ipc_connection *ipc_c)
 	struct sockaddr_un addr;
 	int ret;
 
-	ipc_c->print_spew = debug_get_bool_option_print_spew();
-	ipc_c->print_debug = debug_get_bool_option_print_debug();
+	ipc_c->ll = debug_get_log_option_ipc_log();
 
 	// create our IPC socket
 
@@ -97,7 +95,7 @@ ipc_connect(struct ipc_connection *ipc_c)
 	}
 
 	ipc_c->imc.socket_fd = socket;
-	ipc_c->imc.print_debug = ipc_c->print_debug;
+	ipc_c->imc.ll = ipc_c->ll;
 
 	return true;
 }
@@ -214,7 +212,7 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 
 	if (!ipc_connect(&ii->ipc_c)) {
 		IPC_ERROR(
-		    &ii->ipc_c,
+		    (&ii->ipc_c),
 		    "Failed to connect to monado service process\n\n"
 		    "###\n"
 		    "#\n"
@@ -233,7 +231,7 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 	xrt_result_t r =
 	    ipc_call_instance_get_shm_fd(&ii->ipc_c, &ii->ipc_c.ism_handle, 1);
 	if (r != XRT_SUCCESS) {
-		IPC_ERROR(&ii->ipc_c, "Failed to retrieve shm fd");
+		IPC_ERROR((&ii->ipc_c), "Failed to retrieve shm fd");
 		free(ii);
 		return -1;
 	}
@@ -244,7 +242,7 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 
 	r = ipc_call_system_set_client_info(&ii->ipc_c, &desc);
 	if (r != XRT_SUCCESS) {
-		IPC_ERROR(&ii->ipc_c, "Failed to set instance info");
+		IPC_ERROR((&ii->ipc_c), "Failed to set instance info");
 		free(ii);
 		return -1;
 	}
@@ -256,7 +254,7 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 	ii->ipc_c.ism =
 	    mmap(NULL, size, access, flags, ii->ipc_c.ism_handle, 0);
 	if (ii->ipc_c.ism == NULL) {
-		IPC_ERROR(&ii->ipc_c, "Failed to mmap shm ");
+		IPC_ERROR((&ii->ipc_c), "Failed to mmap shm ");
 		free(ii);
 		return -1;
 	}
