@@ -28,5 +28,5 @@ android {
 
 dependencies {
     implementation project(':src:xrt:auxiliary:android')
-    implementation 'androidx.annotation:annotation:1.1.0'
+    implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
 }

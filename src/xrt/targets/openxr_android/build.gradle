@@ -132,13 +132,15 @@ aboutLibraries {
 dependencies {
     outOfProcessImplementation project(':src:xrt:ipc:android')
     implementation project(':src:xrt:auxiliary:android')
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.3'
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    implementation "androidx.constraintlayout:constraintlayout:$androidxConstraintLayoutVersion"
+    implementation "com.google.android.material:material:$materialVersion"
+
+    // Dependencies related only to AboutLibraries
     implementation "com.mikepenz:aboutlibraries-core:${latestAboutLibsRelease}"
     implementation "com.mikepenz:aboutlibraries:${latestAboutLibsRelease}"
     implementation "androidx.cardview:cardview:1.*.*"
     implementation "androidx.recyclerview:recyclerview:1.1.*"
-    implementation "com.google.android.material:material:1.1.*"
 
 }
