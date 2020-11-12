@@ -64,11 +64,15 @@ public class Client implements ServiceConnection {
     /**
      * Context provided by app.
      */
-    private Context context;
+    private Context context = null;
     /**
      * Context of the runtime package
      */
-    private Context runtimePackageContext;
+    private Context runtimePackageContext = null;
+    /**
+     * Intent for connecting to service
+     */
+    private Intent intent = null;
 
     /**
      * Constructor
@@ -81,12 +85,24 @@ public class Client implements ServiceConnection {
         this.nativeCounterpart.markAsUsedByNativeCode();
     }
 
+    private void shutdown() {
+        monado = null;
+        if (context != null) {
+            context.unbindService(this);
+        }
+        intent = null;
+
+        //! @todo do we close this first?
+        fd = null;
+    }
+
     /**
      * Let the native code notify us that it is no longer using this class.
      */
     @Keep
     public void markAsDiscardedByNative() {
         nativeCounterpart.markAsDiscardedByNative(TAG);
+        shutdown();
     }
 
     /**
@@ -161,8 +177,15 @@ public class Client implements ServiceConnection {
                 .setPackage(packageName);
 
         context.startForegroundService(intent);
-        context.bindService(intent,
-                this, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT | Context.BIND_INCLUDE_CAPABILITIES | Context.BIND_ABOVE_CLIENT);
+        if (!context.bindService(intent,
+                this,
+                Context.BIND_AUTO_CREATE
+                        | Context.BIND_IMPORTANT
+                        | Context.BIND_INCLUDE_CAPABILITIES
+                        | Context.BIND_ABOVE_CLIENT)) {
+            Log.e(TAG, "bindService: Service " + intent.toString() + " could not be found to bind!");
+            return false;
+        }
         // does not bind right away! This takes some time.
         return true;
     }
@@ -172,8 +195,7 @@ public class Client implements ServiceConnection {
      */
     private void handleFailure() {
         failed = true;
-        if (context != null) context.unbindService(this);
-        monado = null;
+        shutdown();
     }
 
     /**
@@ -223,7 +245,8 @@ public class Client implements ServiceConnection {
      */
     @Override
     public void onServiceDisconnected(ComponentName name) {
-        monado = null;
+        Log.i(TAG, "onServiceDisconnected");
+        shutdown();
         //! @todo tell native that the world is crumbling, then close the fd here.
     }
 
