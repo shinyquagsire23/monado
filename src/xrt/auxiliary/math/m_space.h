@@ -85,6 +85,9 @@ m_space_relation_ident(struct xrt_space_relation *out_relation)
 	m_space_relation_from_pose(&identity, out_relation);
 }
 
+void
+m_space_relation_invert(struct xrt_space_relation *relation,
+                        struct xrt_space_relation *out_relation);
 
 /*
  *

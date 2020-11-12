@@ -15,7 +15,22 @@
 #include "math/m_space.h"
 
 #include <stdio.h>
+#include <assert.h>
 
+extern "C" void
+m_space_relation_invert(struct xrt_space_relation *relation,
+                        struct xrt_space_relation *out_relation)
+{
+	assert(relation != NULL);
+	assert(out_relation != NULL);
+
+	out_relation->relation_flags = relation->relation_flags;
+	math_pose_invert(&relation->pose, &out_relation->pose);
+	out_relation->linear_velocity =
+	    m_vec3_mul_scalar(relation->linear_velocity, -1);
+	out_relation->angular_velocity =
+	    m_vec3_mul_scalar(relation->angular_velocity, -1);
+}
 
 /*
  *
