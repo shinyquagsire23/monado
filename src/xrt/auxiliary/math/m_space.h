@@ -123,6 +123,17 @@ m_space_graph_add_relation(struct xrt_space_graph *xsg,
 }
 
 static inline void
+m_space_graph_add_inverted_relation(struct xrt_space_graph *xsg,
+                                    const struct xrt_space_relation *relation)
+{
+	struct xrt_space_relation r = *relation;
+
+	struct xrt_space_relation invert;
+	m_space_relation_invert(&r, &invert);
+	m_space_graph_add_relation(xsg, &invert);
+}
+
+static inline void
 m_space_graph_add_pose(struct xrt_space_graph *xsg, const struct xrt_pose *pose)
 {
 	struct xrt_space_relation relation;
