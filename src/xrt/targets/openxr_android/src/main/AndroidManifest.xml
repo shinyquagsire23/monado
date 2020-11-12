@@ -27,6 +27,17 @@
         android:required="false"
         android:version="1" />
 
+    <!-- for sensor access -->
+    <uses-feature
+        android:name="android.hardware.sensor.accelerometer"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.sensor.gyroscope"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.sensor.hifi_sensors"
+        android:required="false" />
+
     <application
         android:allowBackup="true"
         android:extractNativeLibs="true"
