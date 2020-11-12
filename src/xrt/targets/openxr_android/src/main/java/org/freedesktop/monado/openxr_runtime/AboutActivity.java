@@ -36,7 +36,17 @@ public class AboutActivity extends AppCompatActivity {
         VrModeStatus statusFrag = VrModeStatus.newInstance(status);
         fragmentTransaction.add(R.id.statusFrame, statusFrag, null);
 
+        boolean inProcess = true;
+        try {
+            Class clientClass = getClassLoader().loadClass("org/freedesktop/monado/ipc/Client");
+            inProcess = false;
+        } catch (ClassNotFoundException e) {
+            // ok, we're in-process.
+        }
 
+        if (!inProcess) {
+            new ShutdownProcess().adjustLayout(this);
+        }
         Fragment libsFragment = (new LibsBuilder())
                 .withFields(R.string.class.getFields())
 
