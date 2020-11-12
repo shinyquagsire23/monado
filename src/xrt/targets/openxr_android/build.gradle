@@ -96,6 +96,10 @@ android {
         }
     }
 
+    lintOptions {
+        fatal 'StopShip'
+    }
+
     flavorDimensions 'deployment'
     productFlavors {
         inProcess {
