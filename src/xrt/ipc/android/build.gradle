@@ -9,7 +9,8 @@ android {
 
 
     defaultConfig {
-        minSdkVersion 24
+        // needed for ASharedMemory, etc.
+        minSdkVersion 26
         targetSdkVersion project.sharedTargetSdk
     }
 
