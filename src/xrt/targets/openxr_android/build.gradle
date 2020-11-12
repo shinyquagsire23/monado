@@ -63,7 +63,6 @@ android {
         println versionName
 
         resValue "string", "monado_lib_version", "${versionName}"
-        resValue "string", "app_name", "Monado XR"
 
         resValue "string", "library_openxrheaders_libraryVersion", parseOpenXRVersion("${rootDir}/src/external/openxr_includes/openxr/openxr.h")
 
@@ -107,12 +106,16 @@ android {
             applicationIdSuffix '.in_process'
             externalNativeBuild.cmake.arguments += "-DXRT_FEATURE_SERVICE=OFF"
             externalNativeBuild.cmake.targets "openxr_monado"
+
+            resValue "string", "app_name", "Monado XR"
         }
         outOfProcess {
             dimension 'deployment'
             applicationIdSuffix '.out_of_process'
             externalNativeBuild.cmake.arguments += "-DXRT_FEATURE_SERVICE=ON"
             externalNativeBuild.cmake.targets "openxr_monado", "monado-service"
+
+            resValue "string", "app_name", "Monado XR (Out-of-Proc)"
         }
     }
     compileOptions {
