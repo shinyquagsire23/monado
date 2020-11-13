@@ -1,0 +1,10 @@
+<resources>
+    <!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+    <string name="channel_desc">%1$s Runtime</string>
+    <string name="notif_text">An application is currently running that is using the %1$s service.</string>
+    <string name="notifExitRuntime">Exit Runtime</string>
+    <string name="notifConfigure">Settings</string>
+</resources>
