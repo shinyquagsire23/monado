@@ -11,20 +11,27 @@
 package org.freedesktop.monado.ipc;
 
 import android.os.ParcelFileDescriptor;
+import android.util.Log;
 import android.view.Surface;
 
 import androidx.annotation.Keep;
+import androidx.annotation.NonNull;
+
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Java implementation of the IMonado IPC interface.
  * <p>
  * (This is the server-side code.)
  * <p>
- * All this does is delegate calls to native JNI implementations
+ * All this does is delegate calls to native JNI implementations.
+ * The warning suppression is because Android Studio tends to have a hard time finding
+ * the (very real) implementations of these in service-lib.
  */
-@SuppressWarnings("JavaJniMissingFunction")
 @Keep
 public class MonadoImpl extends IMonado.Stub {
+
+    private static final String TAG = "MonadoImpl";
 
     static {
         // Load the shared library with the native parts of this class
@@ -32,11 +39,19 @@ public class MonadoImpl extends IMonado.Stub {
         System.loadLibrary("monado-service");
     }
 
-    public void connect(ParcelFileDescriptor parcelFileDescriptor) {
+    @Override
+    public void connect(@NotNull ParcelFileDescriptor parcelFileDescriptor) {
+        Log.i(TAG, "connect");
         nativeAddClient(parcelFileDescriptor.detachFd());
     }
 
+    @Override
     public void passAppSurface(Surface surface) {
+        Log.i(TAG, "passAppSurface");
+        if (surface == null) {
+            Log.e(TAG, "Received a null Surface from the client!");
+            return;
+        }
         nativeAppSurface(surface);
     }
 
@@ -44,15 +59,14 @@ public class MonadoImpl extends IMonado.Stub {
      * Native handling of receiving a surface: should convert it to an ANativeWindow then do stuff
      * with it.
      * <p>
-     * Ignore Android Studio complaining that this function is missing: it is not, it is just in a
-     * different module. See `src/xrt/targets/service-lib/lib.cpp` for the implementation.
-     * (Ignore the warning saying that file isn't included in the build: it is, Android Studio
-     * is just confused.)
+     * Ignore warnings that this function is missing: it is not, it is just in a different module.
+     * See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
      *
      * @param surface The surface to pass to native code
      * @todo figure out a good way to make the MonadoImpl pointer a client ID
      */
-    private native void nativeAppSurface(Surface surface);
+    @SuppressWarnings("JavaJniMissingFunction")
+    private native void nativeAppSurface(@NonNull Surface surface);
 
     /**
      * Native handling of receiving an FD for a new client: the FD should be used to start up the
@@ -62,13 +76,12 @@ public class MonadoImpl extends IMonado.Stub {
      * running, this will be called in it. If it's not already running, a process will be created,
      * and this will be the first native code executed in that process.
      * <p>
-     * Ignore Android Studio complaining that this function is missing: it is not, it is just in a
-     * different module. See `src/xrt/targets/service-lib/lib.cpp` for the implementation.
-     * (Ignore the warning saying that file isn't included in the build: it is, Android Studio
-     * is just confused.)
+     * Ignore warnings that this function is missing: it is not, it is just in a different module.
+     * See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
      *
      * @param fd The incoming file descriptor: ownership is transferred to native code here.
      * @todo figure out a good way to make the MonadoImpl pointer a client ID
      */
+    @SuppressWarnings("JavaJniMissingFunction")
     private native void nativeAddClient(int fd);
 }

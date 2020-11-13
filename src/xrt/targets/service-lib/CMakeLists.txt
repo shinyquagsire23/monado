@@ -3,7 +3,7 @@
 
 
 add_library(monado-service MODULE
-	lib.cpp
+	service_target.cpp
 	)
 
 target_link_libraries(monado-service PRIVATE
