@@ -90,6 +90,9 @@ public class Client implements ServiceConnection {
         if (context != null) {
             context.unbindService(this);
         }
+        if (intent != null) {
+            context.stopService(intent);
+        }
         intent = null;
 
         //! @todo do we close this first?
@@ -176,7 +179,10 @@ public class Client implements ServiceConnection {
         Intent intent = new Intent(BuildConfig.SERVICE_ACTION)
                 .setPackage(packageName);
 
-        context.startForegroundService(intent);
+        if (context.startForegroundService(intent) == null) {
+            Log.e(TAG, "startForegroundService: Service " + intent.toString() + " does not exist!");
+            return false;
+        }
         if (!context.bindService(intent,
                 this,
                 Context.BIND_AUTO_CREATE

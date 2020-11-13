@@ -19,12 +19,15 @@ android {
         minSdkVersion 26
         targetSdkVersion project.sharedTargetSdk
 
-        // Single point of truth for this name.
+        // Single point of truth for these names.
         def serviceAction = "org.freedesktop.monado.ipc.CONNECT"
+        def shutdownAction = "org.freedesktop.monado.ipc.SHUTDOWN"
         manifestPlaceholders = [
-                serviceActionName: serviceAction
+                serviceActionName : serviceAction,
+                shutdownActionName: shutdownAction
         ]
         buildConfigField("String", "SERVICE_ACTION", "\"${serviceAction}\"")
+        buildConfigField("String", "SHUTDOWN_ACTION", "\"${shutdownAction}\"")
     }
 
     buildTypes {
