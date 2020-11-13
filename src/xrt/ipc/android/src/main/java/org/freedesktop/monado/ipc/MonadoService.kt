@@ -11,16 +11,18 @@ package org.freedesktop.monado.ipc
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * Minimal implementation of a Service.
  *
  * This is needed so that the APK can expose the binder service implemented in MonadoImpl.
  */
+@AndroidEntryPoint
 class MonadoService : Service() {
     val monado: MonadoImpl = MonadoImpl()
 
     override fun onBind(intent: Intent): IBinder? {
-        return monado;
+        return monado
     }
 }

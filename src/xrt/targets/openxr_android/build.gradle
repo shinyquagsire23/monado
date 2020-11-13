@@ -6,6 +6,13 @@ import groovy.xml.XmlUtil
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+
+    // Hilt dependency injection
+    id 'kotlin-kapt'
+    id 'dagger.hilt.android.plugin'
+
+    // SVG files in the "raw" resource directory will be transformed into vector drawables of the same name.
+    id 'com.quittle.svg-2-android-vector'
 }
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
@@ -177,5 +184,10 @@ dependencies {
     implementation "com.mikepenz:aboutlibraries:${latestAboutLibsRelease}"
     implementation "androidx.cardview:cardview:1.*.*"
     implementation "androidx.recyclerview:recyclerview:1.1.*"
+
+
+    // for Hilt dependency injection
+    implementation "com.google.dagger:hilt-android:$hiltVersion"
+    kapt "com.google.dagger:hilt-compiler:$hiltVersion"
 
 }

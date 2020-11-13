@@ -32,14 +32,22 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import org.freedesktop.monado.auxiliary.NameAndLogoProvider;
+import org.freedesktop.monado.auxiliary.UiProvider;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
+
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
 
 
 /**
  * A Fragment for displaying/affecting VR Listener status.
  */
+@AndroidEntryPoint
 public class VrModeStatus extends Fragment {
     public static final int STATUS_UNKNOWN = -2;
     public static final int STATUS_DISABLED = 0;
@@ -47,6 +55,13 @@ public class VrModeStatus extends Fragment {
     public static final int STATUS_NOT_AVAIL = -1;
     private static final String TAG = "MonadoVrModeStatus";
     private static final String ARG_STATUS = "status";
+
+    @Inject
+    UiProvider uiProvider;
+
+    @Inject
+    NameAndLogoProvider nameAndLogoProvider;
+
     private @Status
     int status_ = STATUS_UNKNOWN;
 
@@ -164,7 +179,9 @@ public class VrModeStatus extends Fragment {
                 button.setVisibility(View.VISIBLE);
                 break;
             case STATUS_NOT_AVAIL:
-                textEnabledDisabled.setText(res.getString(R.string.vr_mode_not_avail, res.getString(R.string.app_name)));
+                textEnabledDisabled.setText(
+                        res.getString(R.string.vr_mode_not_avail,
+                                nameAndLogoProvider.getLocalizedRuntimeName()));
                 textEnabledDisabled.setVisibility(View.VISIBLE);
                 button.setVisibility(View.GONE);
                 break;

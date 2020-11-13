@@ -39,6 +39,7 @@
         android:required="false" />
 
     <application
+        android:name=".MonadoOpenXrApplication"
         android:allowBackup="true"
         android:extractNativeLibs="true"
         android:icon="@drawable/ic_monado_logo"

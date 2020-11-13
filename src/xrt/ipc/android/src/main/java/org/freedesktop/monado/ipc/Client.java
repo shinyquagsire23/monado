@@ -157,7 +157,7 @@ public class Client implements ServiceConnection {
             return false;
         }
 
-        intent = new Intent(BuildConfig.SERVICE_ACTION)
+        Intent intent = new Intent(BuildConfig.SERVICE_ACTION)
                 .setPackage(packageName);
 
         context.startForegroundService(intent);

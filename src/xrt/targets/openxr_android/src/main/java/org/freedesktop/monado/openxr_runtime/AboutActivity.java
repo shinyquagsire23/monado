@@ -19,6 +19,9 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.mikepenz.aboutlibraries.LibsBuilder;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class AboutActivity extends AppCompatActivity {
 
     @Override

@@ -4,6 +4,7 @@
 plugins {
     id 'com.android.library'
     id 'kotlin-android'
+    id 'dagger.hilt.android.plugin'
 }
 
 android {
@@ -39,4 +40,9 @@ dependencies {
     implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
     implementation "androidx.core:core-ktx:$androidxCoreVersion"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+
+    // for Hilt dependency injection
+    implementation "com.google.dagger:hilt-android:$hiltVersion"
+    // Only a Java file has annotations right now, so we don't yet need kapt
+    annotationProcessor "com.google.dagger:hilt-compiler:$hiltVersion"
 }
