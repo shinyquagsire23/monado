@@ -6,27 +6,21 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup ipc_android
  */
+package org.freedesktop.monado.ipc
 
-
-package org.freedesktop.monado.ipc;
-
-import android.app.Service;
-import android.content.Intent;
-import android.os.IBinder;
-
-import androidx.annotation.Nullable;
+import android.app.Service
+import android.content.Intent
+import android.os.IBinder
 
 /**
  * Minimal implementation of a Service.
- * <p>
+ *
  * This is needed so that the APK can expose the binder service implemented in MonadoImpl.
  */
-public class MonadoService extends Service {
+class MonadoService : Service() {
+    val monado: MonadoImpl = MonadoImpl()
 
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return new MonadoImpl();
+    override fun onBind(intent: Intent): IBinder? {
+        return monado;
     }
-
 }

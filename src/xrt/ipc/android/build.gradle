@@ -1,7 +1,10 @@
 // Copyright 2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 
-apply plugin: 'com.android.library'
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+}
 
 android {
     compileSdkVersion project.sharedTargetSdk
@@ -41,4 +44,6 @@ android {
 dependencies {
     implementation project(':src:xrt:auxiliary:android')
     implementation "androidx.annotation:annotation:$androidxAnnotationVersion"
+    implementation "androidx.core:core-ktx:$androidxCoreVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
 }
