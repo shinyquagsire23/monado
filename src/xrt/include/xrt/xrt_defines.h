@@ -663,9 +663,15 @@ enum xrt_finger
  *
  * @ingroup xrt_iface
  */
-union xrt_hand_joint_set {
-	struct xrt_hand_joint_value
-	    hand_joint_set_default[XRT_HAND_JOINT_COUNT];
+struct xrt_hand_joint_set
+{
+	union {
+		struct xrt_hand_joint_value
+		    hand_joint_set_default[XRT_HAND_JOINT_COUNT];
+	} values;
+
+	// in driver global space, without tracking_origin offset
+	struct xrt_space_relation hand_origin;
 };
 
 /*!

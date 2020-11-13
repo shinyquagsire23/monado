@@ -2351,7 +2351,7 @@ oxr_session_hand_joints(struct oxr_logger *log,
 	    &xdev->tracking_origin->offset;
 
 	XrTime at_time = locateInfo->time;
-	union xrt_hand_joint_set value;
+	struct xrt_hand_joint_set value;
 
 	enum xrt_input_name name;
 	if (hand_tracker->hand_joint_set == XR_HAND_JOINT_SET_DEFAULT_EXT) {
@@ -2365,27 +2365,74 @@ oxr_session_hand_joints(struct oxr_logger *log,
 	                              &value);
 
 	for (uint32_t i = 0; i < locations->jointCount; i++) {
-		locations->jointLocations[i]
-		    .locationFlags = xrt_to_xr_space_location_flags(
-		    value.hand_joint_set_default[i].relation.relation_flags);
+		locations->jointLocations[i].locationFlags =
+		    xrt_to_xr_space_location_flags(
+		        value.values.hand_joint_set_default[i]
+		            .relation.relation_flags);
 		locations->jointLocations[i].radius =
-		    value.hand_joint_set_default[i].radius;
+		    value.values.hand_joint_set_default[i].radius;
 
 		struct xrt_space_relation r =
-		    value.hand_joint_set_default[i].relation;
+		    value.values.hand_joint_set_default[i].relation;
 
 		struct xrt_space_relation result;
 		struct xrt_space_graph graph = {0};
 		m_space_graph_add_relation(&graph, &r);
-		m_space_graph_add_pose_if_not_identity(&graph,
-		                                       tracking_origin_offset);
+
+
+		if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
+
+			m_space_graph_add_relation(&graph, &value.hand_origin);
+			m_space_graph_add_pose_if_not_identity(
+			    &graph, tracking_origin_offset);
+
+		} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
+
+			// for local space, first do stage space and transform
+			// result to local @todo: improve local space
+			m_space_graph_add_relation(&graph, &value.hand_origin);
+			m_space_graph_add_pose_if_not_identity(
+			    &graph, tracking_origin_offset);
+
+		} else if (!baseSpc->is_reference) {
+			// action space
+
+			struct oxr_action_input *input = NULL;
+			oxr_action_get_pose_input(log, sess, baseSpc->act_key,
+			                          &baseSpc->sub_paths, &input);
+
+			// If the input isn't active.
+			if (input == NULL) {
+				locations->isActive = false;
+				return XR_SUCCESS;
+			}
+
+			struct xrt_space_relation act_space_relation;
+
+			oxr_xdev_get_space_relation(
+			    log, sess->sys->inst, input->xdev,
+			    input->input->name, at_time, &act_space_relation);
+
+
+			m_space_graph_add_relation(&graph, &value.hand_origin);
+			m_space_graph_add_pose_if_not_identity(
+			    &graph, tracking_origin_offset);
+
+			m_space_graph_add_inverted_relation(
+			    &graph, &act_space_relation);
+			m_space_graph_add_inverted_pose_if_not_identity(
+			    &graph, &input->xdev->tracking_origin->offset);
+		}
+
 		m_space_graph_add_inverted_pose_if_not_identity(&graph,
 		                                                &baseSpc->pose);
 		m_space_graph_resolve(&graph, &result);
 
-		//! @todo need general handling of local space
 		if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-			global_to_local_space(sess, &result);
+			if (!global_to_local_space(sess, &result)) {
+				locations->isActive = false;
+				return XR_SUCCESS;
+			}
 		}
 
 		xrt_to_xr_pose(&result.pose,
@@ -2394,5 +2441,5 @@ oxr_session_hand_joints(struct oxr_logger *log,
 
 	locations->isActive = true;
 
-	return true;
+	return XR_SUCCESS;
 }

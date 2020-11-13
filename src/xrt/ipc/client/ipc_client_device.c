@@ -108,7 +108,7 @@ void
 ipc_client_device_get_hand_tracking(struct xrt_device *xdev,
                                     enum xrt_input_name name,
                                     uint64_t at_timestamp_ns,
-                                    union xrt_hand_joint_set *out_value)
+                                    struct xrt_hand_joint_set *out_value)
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
 

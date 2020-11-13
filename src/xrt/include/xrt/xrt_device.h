@@ -305,7 +305,7 @@ struct xrt_device
 	void (*get_hand_tracking)(struct xrt_device *xdev,
 	                          enum xrt_input_name name,
 	                          uint64_t at_timestamp_ns,
-	                          union xrt_hand_joint_set *out_value);
+	                          struct xrt_hand_joint_set *out_value);
 	/*!
 	 * Set a output value.
 	 *
@@ -389,7 +389,7 @@ static inline void
 xrt_device_get_hand_tracking(struct xrt_device *xdev,
                              enum xrt_input_name name,
                              uint64_t requested_timestamp_ns,
-                             union xrt_hand_joint_set *out_value)
+                             struct xrt_hand_joint_set *out_value)
 {
 	xdev->get_hand_tracking(xdev, name, requested_timestamp_ns, out_value);
 }

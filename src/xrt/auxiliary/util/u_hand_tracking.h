@@ -133,7 +133,7 @@ u_hand_joints_set_out_data(struct u_hand_tracking *set,
                            enum xrt_hand hand,
                            struct xrt_space_relation *hand_relation,
                            struct xrt_pose *hand_offset,
-                           union xrt_hand_joint_set *out_value);
+                           struct xrt_hand_joint_set *out_value);
 
 
 /*

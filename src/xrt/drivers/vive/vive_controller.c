@@ -324,7 +324,7 @@ static void
 vive_controller_get_hand_tracking(struct xrt_device *xdev,
                                   enum xrt_input_name name,
                                   uint64_t at_timestamp_ns,
-                                  union xrt_hand_joint_set *out_value)
+                                  struct xrt_hand_joint_set *out_value)
 {
 	struct vive_controller_device *d = vive_controller_device(xdev);
 
@@ -369,6 +369,10 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	struct xrt_space_relation controller_relation = {
 	    .pose = {.orientation = d->rot_filtered,
 	             .position = {0, 0, pivot_offset_z}}};
+	controller_relation.relation_flags =
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	    XRT_SPACE_RELATION_POSITION_VALID_BIT;
 
 	struct xrt_vec3 static_offset = {0, 0, 0};
 

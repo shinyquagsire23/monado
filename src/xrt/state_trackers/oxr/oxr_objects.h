@@ -942,7 +942,7 @@ oxr_xdev_get_hand_tracking_at(struct oxr_logger *log,
                               struct xrt_device *xdev,
                               enum xrt_input_name name,
                               XrTime at_time,
-                              union xrt_hand_joint_set *out_value);
+                              struct xrt_hand_joint_set *out_value);
 
 /*
  *

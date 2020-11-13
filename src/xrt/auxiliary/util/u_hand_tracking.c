@@ -668,10 +668,11 @@ u_hand_joints_set_out_data(struct u_hand_tracking *set,
                            enum xrt_hand hand,
                            struct xrt_space_relation *hand_relation,
                            struct xrt_pose *hand_offset,
-                           union xrt_hand_joint_set *out_value)
+                           struct xrt_hand_joint_set *out_value)
 {
 
-	struct xrt_hand_joint_value *l = out_value->hand_joint_set_default;
+	struct xrt_hand_joint_value *l =
+	    out_value->values.hand_joint_set_default;
 
 	for (int i = 0; i < XRT_HAND_JOINT_COUNT; i++) {
 		l[i].relation.relation_flags |=
@@ -685,23 +686,13 @@ u_hand_joints_set_out_data(struct u_hand_tracking *set,
 
 		struct u_joint_space_relation *data = get_joint_data(set, i);
 
-		// transform poses from "hand space" to "controller space in
-		// world space"
-		struct xrt_space_relation transformed;
-
-		transformed.pose = data->relation.pose;
-
-		//! @todo: transform velocities
-		math_pose_transform(hand_offset, &data->relation.pose,
-		                    &transformed.pose);
-
-		math_pose_transform(&hand_relation->pose, &transformed.pose,
-		                    &transformed.pose);
-
-
-		//! @todo handle velocities
-		l[i].relation.pose = transformed.pose;
+		struct xrt_space_graph graph = {0};
+		m_space_graph_add_relation(&graph, &data->relation);
+		m_space_graph_add_pose(&graph, hand_offset);
+		m_space_graph_resolve(&graph, &l[i].relation);
 	}
+
+	out_value->hand_origin = *hand_relation;
 }
 
 void

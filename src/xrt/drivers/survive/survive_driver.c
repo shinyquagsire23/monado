@@ -454,7 +454,7 @@ static void
 survive_controller_get_hand_tracking(struct xrt_device *xdev,
                                      enum xrt_input_name name,
                                      uint64_t at_timestamp_ns,
-                                     union xrt_hand_joint_set *out_value)
+                                     struct xrt_hand_joint_set *out_value)
 {
 	struct survive_device *survive = (struct survive_device *)xdev;
 
