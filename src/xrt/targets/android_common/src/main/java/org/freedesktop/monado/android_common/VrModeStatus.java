@@ -6,7 +6,7 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  */
 
-package org.freedesktop.monado.openxr_runtime;
+package org.freedesktop.monado.android_common;
 
 import android.annotation.SuppressLint;
 import android.content.ComponentName;

@@ -1,0 +1,56 @@
+// Copyright 2020, Collabora, Ltd.
+// SPDX-License-Identifier: BSL-1.0
+
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+
+    // Hilt dependency injection
+    id 'kotlin-kapt'
+    id 'dagger.hilt.android.plugin'
+
+    // SVG files in the "raw" resource directory will be transformed into vector drawables of the same name.
+    id 'com.quittle.svg-2-android-vector'
+}
+
+
+android {
+    compileSdkVersion project.sharedTargetSdk
+    buildToolsVersion '30.0.2'
+
+    defaultConfig {
+        minSdkVersion project.sharedMinSdk
+        targetSdkVersion project.sharedTargetSdk
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Gradle plugin produces proguard-android-optimize.txt from @Keep annotations
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    lintOptions {
+        fatal 'StopShip'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    packagingOptions {
+        exclude("META-INF/*.kotlin_module")
+    }
+}
+
+dependencies {
+    implementation project(':src:xrt:auxiliary:android')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    implementation "androidx.constraintlayout:constraintlayout:$androidxConstraintLayoutVersion"
+    implementation "com.google.android.material:material:$materialVersion"
+
+    // for Hilt dependency injection
+    implementation "com.google.dagger:hilt-android:$hiltVersion"
+    kapt "com.google.dagger:hilt-compiler:$hiltVersion"
+}

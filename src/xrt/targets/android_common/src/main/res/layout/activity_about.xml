@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
     Copyright 2020, Collabora, Ltd.
     SPDX-License-Identifier: BSL-1.0
 -->
@@ -15,7 +14,7 @@
         android:layout_width="@android:dimen/thumbnail_width"
         android:layout_height="@android:dimen/thumbnail_height"
         android:layout_marginTop="8dp"
-        android:contentDescription="@string/monado_logo"
+        android:contentDescription="@string/logo_text"
         android:scaleType="fitCenter"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
@@ -24,11 +23,11 @@
         app:srcCompat="@drawable/ic_monado_logo" />
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/textName"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
-        android:text="@string/app_name"
+        android:text="name"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
@@ -55,7 +54,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView" />
+        app:layout_constraintTop_toBottomOf="@+id/textName" />
 
     <Button
         android:id="@+id/shutdown"
@@ -75,7 +74,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:barrierDirection="bottom"
-        app:constraint_referenced_ids="imageView,textPowered,textView,versionView,shutdown"
+        app:constraint_referenced_ids="imageView,textPowered,textName,versionView,shutdown"
         tools:layout_editor_absoluteY="252dp" />
 
     <FrameLayout

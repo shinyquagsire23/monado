@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+        Copyright 2020, Collabora, Ltd.
+        SPDX-License-Identifier: BSL-1.0
+    -->
+<resources>
+    <color name="colorPrimary">#2196F3</color>
+    <color name="colorPrimaryDark">#3F51B5</color>
+    <color name="colorAccent">#FF9800</color>
+</resources>

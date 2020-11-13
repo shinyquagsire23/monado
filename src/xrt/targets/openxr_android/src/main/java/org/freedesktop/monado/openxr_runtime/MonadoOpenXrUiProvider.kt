@@ -14,6 +14,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
 import dagger.hilt.android.qualifiers.ApplicationContext
+import org.freedesktop.monado.android_common.AboutActivity
 import org.freedesktop.monado.auxiliary.UiProvider
 import javax.inject.Inject
 

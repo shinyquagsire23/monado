@@ -5,4 +5,5 @@ rootProject.name = 'monado'
 
 include ':src:xrt:auxiliary:android'
 include ':src:xrt:ipc:android'
+include ':src:xrt:targets:android_common'
 include ':src:xrt:targets:openxr_android'

@@ -12,6 +12,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ApplicationComponent
+import org.freedesktop.monado.android_common.NoticeFragmentProvider
 import org.freedesktop.monado.auxiliary.NameAndLogoProvider
 import org.freedesktop.monado.auxiliary.UiProvider
 
@@ -30,4 +31,6 @@ abstract class MonadoOpenXrAndroidModule {
     @Binds
     abstract fun bindNameAndLogo(monadoOpenXrBrandingUiProvider: MonadoOpenXrBrandingUiProvider): NameAndLogoProvider
 
+    @Binds
+    abstract fun bindNoticeFragment(noticeFragmentProvider: AboutLibrariesNoticeFragmentProvider): NoticeFragmentProvider
 }
