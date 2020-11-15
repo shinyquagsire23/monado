@@ -47,6 +47,51 @@ typedef EGLBoolean EGLAPIENTRY (*PFNEGLMAKECURRENTPROC)(EGLDisplay dpy,
                                                         EGLSurface read,
                                                         EGLContext ctx);
 
+
+/*
+ *
+ * Old helper.
+ *
+ */
+
+struct old_helper
+{
+	EGLDisplay dpy;
+	EGLContext ctx;
+	EGLSurface read, draw;
+};
+
+static inline struct old_helper
+old_save(void)
+{
+	struct old_helper old = {
+	    .dpy = eglGetCurrentDisplay(),
+	    .ctx = eglGetCurrentContext(),
+	    .read = eglGetCurrentSurface(EGL_READ),
+	    .draw = eglGetCurrentSurface(EGL_DRAW),
+	};
+
+	return old;
+}
+
+static inline void
+old_restore(struct old_helper *old)
+{
+	if (eglMakeCurrent(old->dpy, old->draw, old->read, old->ctx)) {
+		return;
+	}
+
+	EGL_ERROR("Failed to make old EGL context current! (%p, %p, %p, %p)",
+	          old->dpy, old->draw, old->read, old->ctx);
+}
+
+
+/*
+ *
+ * Functions.
+ *
+ */
+
 static void
 client_egl_compositor_destroy(struct xrt_compositor *xc)
 {
@@ -65,14 +110,20 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	ll = debug_get_log_option_egl_log();
 
 	gladLoadEGL(display, get_gl_procaddr);
+
+	// Save old display, context and drawables.
+	struct old_helper old = old_save();
+
 	if (!eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
 		EGL_ERROR("Failed to make EGL context current");
+		// No need to restore on failure.
 		return NULL;
 	}
 
 	EGLint egl_client_type;
 	if (!eglQueryContext(display, context, EGL_CONTEXT_CLIENT_TYPE,
 	                     &egl_client_type)) {
+		old_restore(&old);
 		return NULL;
 	}
 
@@ -83,6 +134,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		break;
 #else
 		EGL_ERROR("OpenGL support not including in this runtime build");
+		old_restore(&old);
 		return NULL;
 #endif
 
@@ -93,6 +145,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 #else
 		EGL_ERROR(
 		    "OpenGL|ES support not including in this runtime build");
+		old_restore(&old);
 		return NULL;
 #endif
 	default: EGL_ERROR("Unsupported EGL client type"); return NULL;
@@ -130,6 +183,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		    "Could not find a required extension: need either "
 		    "EGL_EXT_image_dma_buf_import or "
 		    "GL_EXT_memory_object_fd");
+		old_restore(&old);
 		return NULL;
 	}
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
@@ -139,12 +193,13 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 #endif
 
 	if (!client_gl_compositor_init(c, xcn, sc_create)) {
-
 		free(c);
 		fprintf(stderr, "Failed to initialize compositor\n");
+		old_restore(&old);
 		return NULL;
 	}
 
 	c->base.base.destroy = client_egl_compositor_destroy;
+	old_restore(&old);
 	return &c->base;
 }
