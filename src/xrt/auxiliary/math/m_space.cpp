@@ -218,12 +218,11 @@ apply_relation(const struct xrt_space_relation *a,
 	struct xrt_pose body_pose = {};
 	struct xrt_pose base_pose = {};
 
-	/* Only valid poses handled in graph. Flags are determined later. */
+	// Only valid poses handled in graph. Flags are determined later.
 	make_valid_pose(af, &a->pose, &body_pose);
 	make_valid_pose(bf, &b->pose, &base_pose);
-	math_pose_transform(&base_pose, &body_pose, &pose);
 
-	// pose will be undefined if we don't have at least rotation
+	// Pose will be undefined if we don't have at least rotation.
 	math_pose_transform(&base_pose, &body_pose, &pose);
 
 	/*
@@ -231,15 +230,19 @@ apply_relation(const struct xrt_space_relation *a,
 	 */
 
 	int new_flags = 0;
-
-	if (af.has_orientation && bf.has_orientation) {
+	// Make sure to not drop a orientation, even if just one is valid.
+	if (af.has_orientation || bf.has_orientation) {
 		new_flags |= XRT_SPACE_RELATION_ORIENTATION_VALID_BIT;
 	}
 
-	/* When position is valid, always set orientation valid to "upgrade"
+	/*
+	 * Make sure to not drop a position, even if just one is valid.
+	 *
+	 * When position is valid, always set orientation valid to "upgrade"
 	 * poses with valid position but invalid orientation to fully valid
-	 * pose using identity quat, see  make_valid_pose() */
-	if (af.has_position && bf.has_position) {
+	 * pose using identity quat, @see make_valid_pose.
+	 */
+	if (af.has_position || bf.has_position) {
 		new_flags |= XRT_SPACE_RELATION_POSITION_VALID_BIT;
 		new_flags |= XRT_SPACE_RELATION_ORIENTATION_VALID_BIT;
 	}
