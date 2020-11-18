@@ -14,6 +14,7 @@ if(XRT_HAVE_SYSTEM_CJSON)
 	target_link_libraries(xrt-external-cjson INTERFACE cJSON::cJSON)
 else()
 	target_include_directories(xrt-external-cjson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/cjson)
+	target_compile_definitions(xrt-external-cjson INTERFACE CJSON_HIDE_SYMBOLS)
 endif()
 
 # FlexKalman
