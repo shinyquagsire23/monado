@@ -33,7 +33,14 @@ DEBUG_GET_ONCE_BOOL_OPTION(negotiate, "OXR_DEBUG_NEGOTIATE", false)
 	} while (false)
 
 
-XrResult
+#ifdef _WIN32
+__declspec(dllexport) XRAPI_ATTR XrResult XRAPI_CALL
+    xrNegotiateLoaderRuntimeInterface(
+        const XrNegotiateLoaderInfo *loaderInfo,
+        XrNegotiateRuntimeRequest *runtimeRequest);
+#endif
+
+XRAPI_ATTR XrResult XRAPI_CALL
 xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo,
                                   XrNegotiateRuntimeRequest *runtimeRequest)
 {
