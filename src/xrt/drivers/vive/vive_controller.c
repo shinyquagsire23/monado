@@ -355,7 +355,8 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	    .index = (float)d->state.index_finger_trigger / UINT8_MAX,
 	    .thumb = thumb_curl};
 
-	u_hand_joints_update_curl(&d->hand_tracking, hand, &values);
+	u_hand_joints_update_curl(&d->hand_tracking, hand, at_timestamp_ns,
+	                          &values);
 
 
 	/* Because IMU is at the very -z end of the controller, the rotation

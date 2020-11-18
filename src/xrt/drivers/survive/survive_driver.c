@@ -491,7 +491,8 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 	 */
 	struct xrt_vec3 static_offset = {.x = 0, .y = 0, .z = 0.11};
 
-	u_hand_joints_update_curl(&survive->ctrl.hand_tracking, hand, &values);
+	u_hand_joints_update_curl(&survive->ctrl.hand_tracking, hand,
+	                          at_timestamp_ns, &values);
 
 	struct xrt_pose hand_on_handle_pose;
 	u_hand_joints_offset_valve_index_controller(hand, &static_offset,

@@ -96,6 +96,8 @@ struct u_hand_tracking
 	} model_data;
 
 	struct u_hand_joint_default_set joints;
+
+	uint64_t timestamp_ns;
 };
 
 /*!
@@ -149,6 +151,7 @@ void
 u_hand_joint_compute_next_by_curl(struct u_hand_tracking *set,
                                   struct u_joint_space_relation *prev,
                                   enum xrt_hand hand,
+                                  uint64_t at_timestamp_ns,
                                   struct u_joint_space_relation *out_joint,
                                   float curl_value);
 
@@ -158,6 +161,7 @@ u_hand_joint_compute_next_by_curl(struct u_hand_tracking *set,
 void
 u_hand_joints_update_curl(struct u_hand_tracking *set,
                           enum xrt_hand hand,
+                          uint64_t at_timestamp_ns,
                           struct u_hand_tracking_curl_values *curl_values);
 
 /*!

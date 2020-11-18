@@ -12,8 +12,20 @@
 #include "math/m_mathinclude.h"
 #include "math/m_api.h"
 #include "math/m_space.h"
+#include "math/m_vec3.h"
+#include "math/m_api.h"
 
 #define DEG_TO_RAD(DEG) (DEG * M_PI / 180.)
+
+#define VELOCIY_VALID_FLAGS                                                    \
+	(XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT |                        \
+	 XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT)
+
+#define POSE_VALID_FLAGS                                                       \
+	(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |                            \
+	 XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |                          \
+	 XRT_SPACE_RELATION_POSITION_VALID_BIT |                               \
+	 XRT_SPACE_RELATION_POSITION_VALID_BIT)
 
 struct u_joint_curl_model
 {
@@ -283,9 +295,12 @@ void
 u_hand_joint_compute_next_by_curl(struct u_hand_tracking *set,
                                   struct u_joint_space_relation *prev,
                                   enum xrt_hand hand,
+                                  uint64_t at_timestamp_ns,
                                   struct u_joint_space_relation *out_joint,
                                   float curl_value)
 {
+	struct xrt_space_relation old_relation = out_joint->relation;
+
 	struct u_joint_curl_model prev_defaults =
 	    hand_joint_default_set_curl_model_defaults[prev->joint_id];
 	struct u_joint_curl_model defaults =
@@ -352,14 +367,37 @@ u_hand_joint_compute_next_by_curl(struct u_hand_tracking *set,
 
 	//! @todo: full relation with velocities
 	out_joint->relation.pose = pose;
+
+	double time_diff_s = time_ns_to_s(at_timestamp_ns - set->timestamp_ns);
+
+	// linear velocity =
+	// diff of current and old joint position, divided by timestamp diff
+	out_joint->relation.linear_velocity = out_joint->relation.pose.position;
+	math_vec3_subtract(&old_relation.pose.position,
+	                   &out_joint->relation.linear_velocity);
+	math_vec3_scalar_mul(1. / time_diff_s,
+	                     &out_joint->relation.linear_velocity);
+
+	if (time_diff_s > 0) {
+		math_quat_finite_difference(
+		    &old_relation.pose.orientation,
+		    &out_joint->relation.pose.orientation, time_diff_s,
+		    &out_joint->relation.angular_velocity);
+	} else {
+		out_joint->relation.angular_velocity =
+		    (struct xrt_vec3){0, 0, 0};
+	}
+
+	out_joint->relation.relation_flags =
+	    POSE_VALID_FLAGS | VELOCIY_VALID_FLAGS;
 }
 
 void
 u_hand_joints_update_curl(struct u_hand_tracking *set,
                           enum xrt_hand hand,
+                          uint64_t at_timestamp_ns,
                           struct u_hand_tracking_curl_values *curl_values)
 {
-
 	float curl_little = curl_values->little;
 	float curl_ring = curl_values->ring;
 	float curl_middle = curl_values->middle;
@@ -376,12 +414,21 @@ u_hand_joints_update_curl(struct u_hand_tracking *set,
 	        hand_joint_default_set_curl_model_defaults[XRT_HAND_JOINT_WRIST]
 	            .position_offset,
 	    .orientation = identity_quat};
+	set->joints.wrist.relation.linear_velocity = (struct xrt_vec3){0, 0, 0};
+	set->joints.wrist.relation.angular_velocity =
+	    (struct xrt_vec3){0, 0, 0};
+	set->joints.wrist.relation.relation_flags =
+	    POSE_VALID_FLAGS | VELOCIY_VALID_FLAGS;
 
 	set->joints.palm.relation.pose = (struct xrt_pose){
 	    .position =
 	        hand_joint_default_set_curl_model_defaults[XRT_HAND_JOINT_PALM]
 	            .position_offset,
 	    .orientation = identity_quat};
+	set->joints.palm.relation.linear_velocity = (struct xrt_vec3){0, 0, 0};
+	set->joints.palm.relation.angular_velocity = (struct xrt_vec3){0, 0, 0};
+	set->joints.palm.relation.relation_flags =
+	    POSE_VALID_FLAGS | VELOCIY_VALID_FLAGS;
 
 	struct u_joint_space_relation *prev = &set->joints.wrist;
 	for (int joint_num = 0;
@@ -389,8 +436,8 @@ u_hand_joints_update_curl(struct u_hand_tracking *set,
 	     joint_num++) {
 		struct u_joint_space_relation *joint =
 		    &set->joints.fingers[XRT_FINGER_LITTLE].joints[joint_num];
-		u_hand_joint_compute_next_by_curl(set, prev, hand, joint,
-		                                  curl_little);
+		u_hand_joint_compute_next_by_curl(
+		    set, prev, hand, at_timestamp_ns, joint, curl_little);
 		prev = joint;
 	}
 
@@ -400,8 +447,8 @@ u_hand_joints_update_curl(struct u_hand_tracking *set,
 	     joint_num++) {
 		struct u_joint_space_relation *joint =
 		    &set->joints.fingers[XRT_FINGER_RING].joints[joint_num];
-		u_hand_joint_compute_next_by_curl(set, prev, hand, joint,
-		                                  curl_ring);
+		u_hand_joint_compute_next_by_curl(
+		    set, prev, hand, at_timestamp_ns, joint, curl_ring);
 		prev = joint;
 	}
 
@@ -411,8 +458,8 @@ u_hand_joints_update_curl(struct u_hand_tracking *set,
 	     joint_num++) {
 		struct u_joint_space_relation *joint =
 		    &set->joints.fingers[XRT_FINGER_MIDDLE].joints[joint_num];
-		u_hand_joint_compute_next_by_curl(set, prev, hand, joint,
-		                                  curl_middle);
+		u_hand_joint_compute_next_by_curl(
+		    set, prev, hand, at_timestamp_ns, joint, curl_middle);
 		prev = joint;
 	}
 
@@ -422,8 +469,8 @@ u_hand_joints_update_curl(struct u_hand_tracking *set,
 	     joint_num++) {
 		struct u_joint_space_relation *joint =
 		    &set->joints.fingers[XRT_FINGER_INDEX].joints[joint_num];
-		u_hand_joint_compute_next_by_curl(set, prev, hand, joint,
-		                                  curl_index);
+		u_hand_joint_compute_next_by_curl(
+		    set, prev, hand, at_timestamp_ns, joint, curl_index);
 		prev = joint;
 	}
 
@@ -433,12 +480,13 @@ u_hand_joints_update_curl(struct u_hand_tracking *set,
 	     joint_num++) {
 		struct u_joint_space_relation *joint =
 		    &set->joints.fingers[XRT_FINGER_THUMB].joints[joint_num];
-		u_hand_joint_compute_next_by_curl(set, prev, hand, joint,
-		                                  curl_thumb);
+		u_hand_joint_compute_next_by_curl(
+		    set, prev, hand, at_timestamp_ns, joint, curl_thumb);
 		prev = joint;
 	}
 
 	set->model_data.curl_values = *curl_values;
+	set->timestamp_ns = at_timestamp_ns;
 }
 
 void
@@ -594,7 +642,7 @@ u_hand_joints_init_default_set(struct u_hand_tracking *set,
 	set->scale = scale;
 
 	struct u_hand_tracking_curl_values values = {0, 0, 0, 0, 0};
-	u_hand_joints_update_curl(set, hand, &values);
+	u_hand_joints_update_curl(set, hand, 0, &values);
 }
 
 static struct u_joint_space_relation *
@@ -675,16 +723,11 @@ u_hand_joints_set_out_data(struct u_hand_tracking *set,
 	    out_value->values.hand_joint_set_default;
 
 	for (int i = 0; i < XRT_HAND_JOINT_COUNT; i++) {
-		l[i].relation.relation_flags |=
-		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
-		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-		    XRT_SPACE_RELATION_POSITION_VALID_BIT;
+		struct u_joint_space_relation *data = get_joint_data(set, i);
 
+		l[i].relation.relation_flags |= data->relation.relation_flags;
 		l[i].radius =
 		    hand_joint_default_set_curl_model_defaults[i].radius;
-
-		struct u_joint_space_relation *data = get_joint_data(set, i);
 
 		struct xrt_space_graph graph = {0};
 		m_space_graph_add_relation(&graph, &data->relation);

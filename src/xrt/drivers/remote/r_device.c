@@ -121,7 +121,7 @@ static void
 r_device_get_hand_tracking(struct xrt_device *xdev,
                            enum xrt_input_name name,
                            uint64_t at_timestamp_ns,
-                           union xrt_hand_joint_set *out_value)
+                           struct xrt_hand_joint_set *out_value)
 {
 	struct r_device *rd = r_device(xdev);
 	struct r_hub *r = rd->r;
@@ -144,7 +144,8 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 	};
 
 	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-	u_hand_joints_update_curl(&rd->hand_tracking, hand, &values);
+	u_hand_joints_update_curl(&rd->hand_tracking, hand, at_timestamp_ns,
+	                          &values);
 
 	struct xrt_pose hand_on_handle_pose = {
 	    {0, 0, 0, 1},

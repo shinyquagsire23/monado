@@ -2330,6 +2330,10 @@ oxr_session_hand_joints(struct oxr_logger *log,
 
 	struct oxr_session *sess = hand_tracker->sess;
 
+	XrHandJointVelocitiesEXT *vel = OXR_GET_OUTPUT_FROM_CHAIN(
+	    locations, XR_TYPE_HAND_JOINT_VELOCITIES_EXT,
+	    XrHandJointVelocitiesEXT);
+
 	struct xrt_device *xdev = NULL;
 	if (hand_tracker->hand == XR_HAND_LEFT_EXT) {
 		xdev = GET_XDEV_BY_ROLE(sess->sys, left);
@@ -2437,6 +2441,30 @@ oxr_session_hand_joints(struct oxr_logger *log,
 
 		xrt_to_xr_pose(&result.pose,
 		               &locations->jointLocations[i].pose);
+
+		if (vel) {
+			XrHandJointVelocityEXT *v = &vel->jointVelocities[i];
+
+			v->velocityFlags = 0;
+			if ((result.relation_flags &
+			     XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT)) {
+				v->velocityFlags |=
+				    XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+			}
+			if ((result.relation_flags &
+			     XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT)) {
+				v->velocityFlags |=
+				    XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
+			}
+
+			v->linearVelocity.x = result.linear_velocity.x;
+			v->linearVelocity.y = result.linear_velocity.y;
+			v->linearVelocity.z = result.linear_velocity.z;
+
+			v->angularVelocity.x = result.angular_velocity.x;
+			v->angularVelocity.y = result.angular_velocity.y;
+			v->angularVelocity.z = result.angular_velocity.z;
+		}
 	}
 
 	locations->isActive = true;
