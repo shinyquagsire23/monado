@@ -52,6 +52,9 @@ target_include_directories(st_gui PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/../../../external/imgui
 	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
 	)
+target_compile_definitions(st_gui PUBLIC
+	CIMGUI_NO_EXPORT
+	)
 
 if(XRT_BUILD_DRIVER_REMOTE)
 	target_link_libraries(st_gui PRIVATE
