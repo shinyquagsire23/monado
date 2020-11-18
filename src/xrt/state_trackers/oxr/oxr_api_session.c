@@ -23,7 +23,7 @@
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
 #include "oxr_handle.h"
-
+#include "oxr_chain.h"
 
 XrResult
 oxr_xrCreateSession(XrInstance instance,
@@ -379,6 +379,29 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
 			                 locations->jointCount);
 		}
 	};
+
+	XrHandJointVelocitiesEXT *vel = OXR_GET_OUTPUT_FROM_CHAIN(
+	    locations, XR_TYPE_HAND_JOINT_VELOCITIES_EXT,
+	    XrHandJointVelocitiesEXT);
+	if (vel) {
+		if (vel->jointCount <= 0) {
+			return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+			                 "XrHandJointVelocitiesEXT joint count "
+			                 "must be >0, is %d\n",
+			                 vel->jointCount);
+		}
+		if (hand_tracker->hand_joint_set ==
+		    XR_HAND_JOINT_SET_DEFAULT_EXT) {
+			if (vel->jointCount != XR_HAND_JOINT_COUNT_EXT) {
+				return oxr_error(
+				    &log, XR_ERROR_VALIDATION_FAILURE,
+				    "XrHandJointVelocitiesEXT joint count must "
+				    "be %d, not %d\n",
+				    XR_HAND_JOINT_COUNT_EXT,
+				    locations->jointCount);
+			}
+		}
+	}
 
 	return oxr_session_hand_joints(&log, hand_tracker, locateInfo,
 	                               locations);
