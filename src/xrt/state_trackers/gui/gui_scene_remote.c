@@ -235,14 +235,27 @@ render_cheat_menu(struct gui_remote *gr, struct gui_program *p)
 		igCheckbox("Active", &d->prefix.active);                       \
 	} while (false)
 
+#define CURL(prefix, name, index)                                              \
+	igDragFloat(#prefix "." #name, &d->prefix.hand_curl[index], 0.01, 0.0, \
+	            1.0, "%f", 0);
+#define HAND(prefix)                                                           \
+	do {                                                                   \
+		CURL(prefix, little, 0);                                       \
+		CURL(prefix, ring, 1);                                         \
+		CURL(prefix, middle, 2);                                       \
+		CURL(prefix, index, 3);                                        \
+		CURL(prefix, thumb, 4);                                        \
+	} while (false)
+
 static void
 on_connected(struct gui_remote *gr, struct gui_program *p)
 {
 	const struct r_remote_data *r = &gr->reset;
 	struct r_remote_data *d = &gr->data;
 
-	const ImVec2 hmd_size = {0, 42 + 4};
-	const ImVec2 ctrl_size = {0, 64 + 24 + 24 + 4};
+	const ImVec2 hmd_size = {0, 46};
+	const uint32_t hand_size = 23 * 5;
+	const ImVec2 ctrl_size = {0, 64 + hand_size + 52};
 
 	igBeginChildStr("hmd", hmd_size, false, 0);
 	POSE(hmd);
@@ -252,12 +265,14 @@ on_connected(struct gui_remote *gr, struct gui_program *p)
 	POSE(left);
 	LIN_ANG(left);
 	BUTTONS(left);
+	HAND(left);
 	igEndChild();
 
 	igBeginChildStr("right", ctrl_size, false, 0);
 	POSE(right);
 	LIN_ANG(right);
 	BUTTONS(right);
+	HAND(right);
 	igEndChild();
 
 	igCheckbox("Predefined poses", &gr->cheat_menu);
