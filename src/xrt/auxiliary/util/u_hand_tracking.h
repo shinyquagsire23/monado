@@ -26,7 +26,7 @@ extern "C" {
  *
  * @ingroup aux_util
  */
-enum u__hand_tracking_model
+enum u_hand_tracking_model
 {
 	XRT_HAND_TRACKING_MODEL_FINGERL_CURL,
 };
@@ -90,7 +90,7 @@ struct u_hand_tracking
 	// scales dimensions like bone lengths
 	float scale;
 
-	enum u__hand_tracking_model model;
+	enum u_hand_tracking_model model;
 	union {
 		struct u_hand_tracking_curl_values curl_values;
 	} model_data;
@@ -118,7 +118,7 @@ u_hand_joint_is_metacarpal(enum xrt_hand_joint joint);
 void
 u_hand_joints_init_default_set(struct u_hand_tracking *set,
                                enum xrt_hand hand,
-                               enum u__hand_tracking_model model,
+                               enum u_hand_tracking_model model,
                                float scale);
 
 /*!

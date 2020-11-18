@@ -444,7 +444,7 @@ u_hand_joints_update_curl(struct u_hand_tracking *set,
 void
 u_hand_joints_init_default_set(struct u_hand_tracking *set,
                                enum xrt_hand hand,
-                               enum u__hand_tracking_model model,
+                               enum u_hand_tracking_model model,
                                float scale)
 {
 	struct xrt_space_relation identity;
