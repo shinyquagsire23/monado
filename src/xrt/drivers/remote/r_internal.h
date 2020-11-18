@@ -14,6 +14,8 @@
 
 #include "os/os_threading.h"
 
+#include "util/u_hand_tracking.h"
+
 #include "r_interface.h"
 
 #ifdef __cplusplus
@@ -74,6 +76,8 @@ struct r_device
 	struct xrt_device base;
 
 	struct r_hub *r;
+
+	struct u_hand_tracking hand_tracking;
 
 	bool is_left;
 };

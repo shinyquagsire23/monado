@@ -47,6 +47,8 @@ struct r_remote_controller_data
 	struct xrt_vec3 linear_velocity;
 	struct xrt_vec3 angular_velocity;
 
+	float hand_curl[5];
+
 	bool active;
 	bool select;
 	bool menu;

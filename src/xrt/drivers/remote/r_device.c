@@ -13,6 +13,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_hand_tracking.h"
 
 #include "math/m_api.h"
 
@@ -122,7 +123,40 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
                            uint64_t at_timestamp_ns,
                            union xrt_hand_joint_set *out_value)
 {
-	// Empty
+	struct r_device *rd = r_device(xdev);
+	struct r_hub *r = rd->r;
+
+
+	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_DEFAULT_SET) {
+		U_LOG_E("Unknown input name for hand tracker");
+		return;
+	}
+
+	struct r_remote_controller_data *latest =
+	    rd->is_left ? &r->latest.left : &r->latest.right;
+
+	struct u_hand_tracking_curl_values values = {
+	    .little = latest->hand_curl[0],
+	    .ring = latest->hand_curl[1],
+	    .middle = latest->hand_curl[2],
+	    .index = latest->hand_curl[3],
+	    .thumb = latest->hand_curl[4],
+	};
+
+	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
+	u_hand_joints_update_curl(&rd->hand_tracking, hand, &values);
+
+	struct xrt_pose hand_on_handle_pose = {
+	    {0, 0, 0, 1},
+	    {0, 0, 0},
+	};
+
+	struct xrt_space_relation relation;
+	xrt_device_get_tracked_pose(xdev, XRT_INPUT_SIMPLE_GRIP_POSE,
+	                            at_timestamp_ns, &relation);
+
+	u_hand_joints_set_out_data(&rd->hand_tracking, hand, &relation,
+	                           &hand_on_handle_pose, out_value);
 }
 
 static void
@@ -166,7 +200,7 @@ r_device_create(struct r_hub *r, bool is_left)
 	rd->base.tracking_origin = &r->base;
 	rd->base.orientation_tracking_supported = true;
 	rd->base.position_tracking_supported = true;
-	rd->base.hand_tracking_supported = false;
+	rd->base.hand_tracking_supported = true;
 	rd->base.name = XRT_DEVICE_SIMPLE_CONTROLLER;
 	rd->r = r;
 	rd->is_left = is_left;
@@ -187,6 +221,11 @@ r_device_create(struct r_hub *r, bool is_left)
 	} else {
 		rd->base.device_type = XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
 	}
+
+	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
+	u_hand_joints_init_default_set(&rd->hand_tracking, hand,
+	                               XRT_HAND_TRACKING_MODEL_FINGERL_CURL,
+	                               1.0);
 
 	// Setup variable tracker.
 	u_var_add_root(rd, rd->base.str, true);
