@@ -7,11 +7,11 @@
  * @ingroup comp_main
  */
 
+#include "math/m_mathinclude.h"
 #include "comp_layer.h"
 
 #include "util/u_misc.h"
 #include "math/m_api.h"
-#include <math.h>
 
 #include <stdio.h>
 
