@@ -177,7 +177,10 @@ _init_pipeline_cache(struct comp_layer_renderer *self)
 	return true;
 }
 
-struct __attribute__((__packed__)) comp_pipeline_config
+// These are MSVC-style pragmas, but supported by GCC since early in the 4
+// series.
+#pragma pack(push, 1)
+struct comp_pipeline_config
 {
 	VkPrimitiveTopology topology;
 	uint32_t stride;
@@ -187,6 +190,7 @@ struct __attribute__((__packed__)) comp_pipeline_config
 	const VkPipelineColorBlendAttachmentState *blend_attachments;
 	const VkPipelineRasterizationStateCreateInfo *rasterization_state;
 };
+#pragma pack(pop)
 
 static bool
 _init_graphics_pipeline(struct comp_layer_renderer *self,
