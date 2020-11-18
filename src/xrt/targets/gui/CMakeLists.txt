@@ -29,6 +29,10 @@ target_link_libraries(gui PRIVATE
 	imgui_impl_sdl
 	${SDL2_LIBRARIES}
 	)
+if(WIN32)
+	target_link_libraries(gui PRIVATE SDL2::SDL2main)
+endif()
+
 target_include_directories(gui PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/..
 	${SDL2_INCLUDE_DIRS}
