@@ -52,8 +52,8 @@ struct comp_layer_renderer
 
 	struct vk_buffer vertex_buffer;
 
-	float near;
-	float far;
+	float nearZ;
+	float farZ;
 
 	struct comp_render_layer **layers;
 	uint32_t num_layers;

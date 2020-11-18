@@ -502,8 +502,8 @@ _init(struct comp_layer_renderer *self,
 {
 	self->vk = vk;
 
-	self->near = 0.001f;
-	self->far = 100.0f;
+	self->nearZ = 0.001f;
+	self->farZ = 100.0f;
 	self->sample_count = VK_SAMPLE_COUNT_1_BIT;
 
 	self->num_layers = 0;
@@ -722,9 +722,10 @@ comp_layer_renderer_set_fov(struct comp_layer_renderer *self,
 
 	const float a31 = (tan_right + tan_left) / tan_width;
 	const float a32 = (tan_up + tan_down) / tan_height;
-	const float a33 = -self->far / (self->far - self->near);
+	const float a33 = -self->farZ / (self->farZ - self->nearZ);
 
-	const float a43 = -(self->far * self->near) / (self->far - self->near);
+	const float a43 =
+	    -(self->farZ * self->nearZ) / (self->farZ - self->nearZ);
 
 	// clang-format off
 	self->mat_projection[eye] = (struct xrt_matrix_4x4) {
