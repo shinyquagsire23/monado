@@ -62,51 +62,54 @@ struct u_joint_curl_model
  */
 static struct u_joint_curl_model
     hand_joint_default_set_curl_model_defaults[XRT_HAND_JOINT_COUNT] = {
-        // special cases: wrist and palm without bone lengths
+        // special cases: wrist and palm without bone lengths, offsets are
+        // absolute, relative to hand origin (palm)
         [XRT_HAND_JOINT_PALM] = {.position_offset = {.x = 0, .y = 0, .z = 0},
                                  .axis_angle_offset = {0, 0, 0},
                                  .bone_length = 0,
-                                 .radius = 0.015,
+                                 .radius = 0.018,
                                  .joint_id = XRT_HAND_JOINT_PALM},
 
         [XRT_HAND_JOINT_WRIST] = {.position_offset = {.x = 0,
                                                       .y = 0,
-                                                      .z = 0.15},
+                                                      .z = 0.07},
                                   .axis_angle_offset = {0, 0, 0},
                                   .bone_length = 0,
-                                  .radius = 0.015,
+                                  .radius = 0.03,
                                   .joint_id = XRT_HAND_JOINT_WRIST},
 
 
         // fingers
         // metacarpal bones are angled outwards a little,
         // proximal bones copmpensate most of it, making fingers parallel again
+        // finger position offsets are relative to previous bone
+        // previous bone of metacarpal: wrist
         [XRT_HAND_JOINT_LITTLE_METACARPAL] =
-            {.position_offset = {.x = -0.02, .y = 0, .z = -0.04},
-             .axis_angle_offset = {0, DEG_TO_RAD(-30), 0},
-             .bone_length = 0.09,
+            {.position_offset = {.x = -0.03, .y = 0, .z = -0.037},
+             .axis_angle_offset = {0, DEG_TO_RAD(-25), 0},
+             .bone_length = 0.048,
              .radius = 0.015,
              .joint_id = XRT_HAND_JOINT_LITTLE_METACARPAL},
 
         [XRT_HAND_JOINT_LITTLE_PROXIMAL] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
-             .axis_angle_offset = {0, DEG_TO_RAD(25), 0},
-             .bone_length = 0.04,
-             .radius = 0.015,
+             .axis_angle_offset = {0, DEG_TO_RAD(20), 0},
+             .bone_length = 0.037,
+             .radius = 0.01,
              .joint_id = XRT_HAND_JOINT_LITTLE_PROXIMAL},
 
         [XRT_HAND_JOINT_LITTLE_INTERMEDIATE] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
              .bone_length = 0.02,
-             .radius = 0.012,
+             .radius = 0.009,
              .joint_id = XRT_HAND_JOINT_LITTLE_INTERMEDIATE},
 
         [XRT_HAND_JOINT_LITTLE_DISTAL] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
              .bone_length = 0.02,
-             .radius = 0.012,
+             .radius = 0.009,
              .joint_id = XRT_HAND_JOINT_LITTLE_DISTAL},
 
         [XRT_HAND_JOINT_LITTLE_TIP] = {.position_offset = {.x = 0,
@@ -119,140 +122,140 @@ static struct u_joint_curl_model
 
 
         [XRT_HAND_JOINT_RING_METACARPAL] =
-            {.position_offset = {.x = -0.01, .y = 0, .z = -0.042},
-             .axis_angle_offset = {0, DEG_TO_RAD(-15), 0},
-             .bone_length = 0.1,
-             .radius = 0.0175,
+            {.position_offset = {.x = -0.015, .y = 0, .z = -0.038},
+             .axis_angle_offset = {0, DEG_TO_RAD(-12), 0},
+             .bone_length = 0.052,
+             .radius = 0.015,
              .joint_id = XRT_HAND_JOINT_RING_METACARPAL},
 
         [XRT_HAND_JOINT_RING_PROXIMAL] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
-             .axis_angle_offset = {0, DEG_TO_RAD(12), 0},
-             .bone_length = 0.045,
-             .radius = 0.0175,
+             .axis_angle_offset = {0, DEG_TO_RAD(10), 0},
+             .bone_length = 0.047,
+             .radius = 0.012,
              .joint_id = XRT_HAND_JOINT_RING_PROXIMAL},
 
         [XRT_HAND_JOINT_RING_INTERMEDIATE] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
-             .bone_length = 0.03,
-             .radius = 0.0175,
+             .bone_length = 0.027,
+             .radius = 0.01,
              .joint_id = XRT_HAND_JOINT_RING_INTERMEDIATE},
 
         [XRT_HAND_JOINT_RING_DISTAL] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
-             .bone_length = 0.025,
-             .radius = 0.0175,
+             .bone_length = 0.017,
+             .radius = 0.01,
              .joint_id = XRT_HAND_JOINT_RING_DISTAL},
 
         [XRT_HAND_JOINT_RING_TIP] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
              .bone_length = 0,
-             .radius = 0.0175,
+             .radius = 0.012,
              .joint_id = XRT_HAND_JOINT_RING_TIP},
 
 
         [XRT_HAND_JOINT_MIDDLE_METACARPAL] =
-            {.position_offset = {.x = 0, .y = 0, .z = -0.044},
+            {.position_offset = {.x = 0.00, .y = 0, .z = -0.039},
              .axis_angle_offset = {0, 0, 0},
-             .bone_length = 0.11,
-             .radius = 0.0175,
+             .bone_length = 0.055,
+             .radius = 0.012,
              .joint_id = XRT_HAND_JOINT_MIDDLE_METACARPAL},
 
         [XRT_HAND_JOINT_MIDDLE_PROXIMAL] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
-             .bone_length = 0.045,
-             .radius = 0.0175,
+             .bone_length = 0.05,
+             .radius = 0.01,
              .joint_id = XRT_HAND_JOINT_MIDDLE_PROXIMAL},
 
         [XRT_HAND_JOINT_MIDDLE_INTERMEDIATE] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
              .bone_length = 0.03,
-             .radius = 0.0175,
+             .radius = 0.01,
              .joint_id = XRT_HAND_JOINT_MIDDLE_INTERMEDIATE},
 
         [XRT_HAND_JOINT_MIDDLE_DISTAL] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
-             .bone_length = 0.025,
-             .radius = 0.0175,
+             .bone_length = 0.02,
+             .radius = 0.01,
              .joint_id = XRT_HAND_JOINT_MIDDLE_DISTAL},
 
         [XRT_HAND_JOINT_MIDDLE_TIP] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
              .bone_length = 0,
-             .radius = 0.0175,
+             .radius = 0.01,
              .joint_id = XRT_HAND_JOINT_MIDDLE_TIP},
 
 
         [XRT_HAND_JOINT_INDEX_METACARPAL] =
-            {.position_offset = {.x = 0.01, .y = 0, .z = -0.042},
-             .axis_angle_offset = {0, DEG_TO_RAD(15), 0},
-             .bone_length = 0.1,
-             .radius = 0.0175,
+            {.position_offset = {.x = 0.015, .y = 0, .z = -0.038},
+             .axis_angle_offset = {0, DEG_TO_RAD(12), 0},
+             .bone_length = 0.05,
+             .radius = 0.012,
              .joint_id = XRT_HAND_JOINT_INDEX_METACARPAL},
 
         [XRT_HAND_JOINT_INDEX_PROXIMAL] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
-             .axis_angle_offset = {0, DEG_TO_RAD(-12), 0},
-             .bone_length = 0.045,
-             .radius = 0.0175,
+             .axis_angle_offset = {0, DEG_TO_RAD(-10), 0},
+             .bone_length = 0.048,
+             .radius = 0.011,
              .joint_id = XRT_HAND_JOINT_INDEX_PROXIMAL},
 
         [XRT_HAND_JOINT_INDEX_INTERMEDIATE] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
-             .bone_length = 0.03,
-             .radius = 0.0175,
+             .bone_length = 0.021,
+             .radius = 0.01,
              .joint_id = XRT_HAND_JOINT_INDEX_INTERMEDIATE},
 
         [XRT_HAND_JOINT_INDEX_DISTAL] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
-             .bone_length = 0.025,
-             .radius = 0.0175,
+             .bone_length = 0.021,
+             .radius = 0.01,
              .joint_id = XRT_HAND_JOINT_INDEX_DISTAL},
 
         [XRT_HAND_JOINT_INDEX_TIP] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
              .bone_length = 0,
-             .radius = 0.0175,
+             .radius = 0.01,
              .joint_id = XRT_HAND_JOINT_INDEX_TIP},
 
 
         [XRT_HAND_JOINT_THUMB_METACARPAL] =
-            {.position_offset = {.x = 0.02, .y = 0, .z = -0.038},
-             .axis_angle_offset = {0, DEG_TO_RAD(45), 0},
-             .bone_length = 0.08,
-             .radius = 0.02,
+            {.position_offset = {.x = 0.03, .y = 0, .z = -0.033},
+             .axis_angle_offset = {0, DEG_TO_RAD(40), 0},
+             .bone_length = 0.037,
+             .radius = 0.0175,
              .joint_id = XRT_HAND_JOINT_THUMB_METACARPAL},
 
         [XRT_HAND_JOINT_THUMB_PROXIMAL] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
-             .axis_angle_offset = {0, DEG_TO_RAD(-10), 0},
-             .bone_length = 0.04,
-             .radius = 0.02,
+             .axis_angle_offset = {0, DEG_TO_RAD(-12), 0},
+             .bone_length = 0.038,
+             .radius = 0.017,
              .joint_id = XRT_HAND_JOINT_THUMB_PROXIMAL},
         // no intermediate
 
         [XRT_HAND_JOINT_THUMB_DISTAL] =
             {.position_offset = {.x = 0, .y = 0, .z = 0},
              .axis_angle_offset = {0, 0, 0},
-             .bone_length = 0.03,
-             .radius = 0.02,
+             .bone_length = 0.026,
+             .radius = 0.017,
              .joint_id = XRT_HAND_JOINT_THUMB_DISTAL},
 
         [XRT_HAND_JOINT_THUMB_TIP] = {
             .position_offset = {.x = 0, .y = 0, .z = 0},
             .axis_angle_offset = {0, 0, 0},
             .bone_length = 0,
-            .radius = 0.02,
+            .radius = 0.016,
             .joint_id = XRT_HAND_JOINT_THUMB_TIP}};
 
 inline static void
