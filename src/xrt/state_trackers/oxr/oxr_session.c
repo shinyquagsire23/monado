@@ -2398,6 +2398,26 @@ oxr_session_hand_joints(struct oxr_logger *log,
 			m_space_graph_add_pose_if_not_identity(
 			    &graph, tracking_origin_offset);
 
+		} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+			/*! @todo: testing, relating to view space unsupported
+			 * in other parts of monado */
+
+			struct xrt_device *head_xdev =
+			    GET_XDEV_BY_ROLE(sess->sys, head);
+
+			struct xrt_space_relation view_relation;
+			oxr_session_get_view_relation_at(log, sess, at_time,
+			                                 &view_relation);
+
+			m_space_graph_add_relation(&graph, &value.hand_origin);
+			m_space_graph_add_pose_if_not_identity(
+			    &graph, tracking_origin_offset);
+
+			m_space_graph_add_inverted_relation(&graph,
+			                                    &view_relation);
+			m_space_graph_add_inverted_pose_if_not_identity(
+			    &graph, &head_xdev->tracking_origin->offset);
+
 		} else if (!baseSpc->is_reference) {
 			// action space
 
