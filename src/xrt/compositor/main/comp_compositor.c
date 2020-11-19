@@ -660,33 +660,30 @@ find_get_instance_proc_addr(struct comp_compositor *c)
 	return vk_get_loader_functions(&c->vk, vkGetInstanceProcAddr);
 }
 
-#define COMPOSITOR_COMMON_VULKAN_EXTENSIONS                                    \
-	VK_KHR_SURFACE_EXTENSION_NAME,                                         \
-	    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,            \
+#define COMP_INSTANCE_EXTENSIONS_COMMON                                        \
+	VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME,                     \
 	    VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,                \
-	    VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME,                 \
-	    VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME
+	    VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,             \
+	    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,            \
+	    VK_KHR_SURFACE_EXTENSION_NAME
+#define MAKE_ARRAY_ELT(NAME) NAME,
 
 static const char *instance_extensions_none[] = {
-    COMPOSITOR_COMMON_VULKAN_EXTENSIONS};
+    COMP_INSTANCE_EXTENSIONS_COMMON};
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 static const char *instance_extensions_xcb[] = {
-    COMPOSITOR_COMMON_VULKAN_EXTENSIONS,
-    VK_KHR_XCB_SURFACE_EXTENSION_NAME,
-};
+    COMP_INSTANCE_EXTENSIONS_COMMON, VK_KHR_XCB_SURFACE_EXTENSION_NAME};
 #endif
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
 static const char *instance_extensions_wayland[] = {
-    COMPOSITOR_COMMON_VULKAN_EXTENSIONS,
-    VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
-};
+    COMP_INSTANCE_EXTENSIONS_COMMON, VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME};
 #endif
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 static const char *instance_extensions_direct_mode[] = {
-    COMPOSITOR_COMMON_VULKAN_EXTENSIONS,
+    COMP_INSTANCE_EXTENSIONS_COMMON,
     VK_KHR_DISPLAY_EXTENSION_NAME,
     VK_EXT_DIRECT_MODE_DISPLAY_EXTENSION_NAME,
     VK_EXT_ACQUIRE_XLIB_DISPLAY_EXTENSION_NAME,
@@ -695,10 +692,46 @@ static const char *instance_extensions_direct_mode[] = {
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 static const char *instance_extensions_android[] = {
-    COMPOSITOR_COMMON_VULKAN_EXTENSIONS,
-    VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
-};
+    COMP_INSTANCE_EXTENSIONS_COMMON, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
 #endif
+
+// Note: Keep synchronized with comp_vk_glue - we should have everything they
+// do, plus VK_KHR_SWAPCHAIN_EXTENSION_NAME
+static const char *device_extensions[] = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
+    VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
+
+// Platform version of "external_memory"
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+    VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+    VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME,
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+    VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
+
+#else
+#error "Need port!"
+#endif
+
+// Platform version of "external_fence" and "external_semaphore"
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+    VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME,
+
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+    VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME,
+
+#else
+#error "Need port!"
+#endif
+};
 
 static VkResult
 select_instances_extensions(struct comp_compositor *c,
@@ -1000,16 +1033,12 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 		return false;
 	}
 
-	const char *extension_names[] = {
-		VK_KHR_SURFACE_EXTENSION_NAME,
-		VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-		VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
-		VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME,
-		VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,
-#if !defined(XRT_OS_ANDROID)
-		VK_KHR_DISPLAY_EXTENSION_NAME,
+	const char *extension_names[] = {COMP_INSTANCE_EXTENSIONS_COMMON,
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
+	                                 VK_KHR_DISPLAY_EXTENSION_NAME
 #endif
 	};
+
 
 	VkInstanceCreateInfo instance_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
