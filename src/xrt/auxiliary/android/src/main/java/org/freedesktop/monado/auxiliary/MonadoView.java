@@ -27,10 +27,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Calendar;
 
-import dagger.hilt.android.AndroidEntryPoint;
-
 @Keep
-@AndroidEntryPoint
 public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, SurfaceHolder.Callback2 {
     private static final String TAG = "MonadoView";
     @SuppressWarnings("deprecation")
