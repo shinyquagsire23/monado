@@ -107,6 +107,20 @@ lib_drv_rs = static_library(
 	build_by_default: 'rs' in drivers,
 )
 
+lib_drv_remote = static_library(
+	'drv_remote',
+	files(
+		'remote/r_device.c',
+		'remote/r_hmd.c',
+		'remote/r_hub.c',
+		'remote/r_interface.h',
+		'remote/r_internal.h',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux],
+	build_by_default: 'remote' in drivers,
+)
+
 lib_drv_v4l2 = static_library(
 	'drv_v4l2',
 	files(

@@ -65,6 +65,10 @@ if 'arduino' in drivers
 	driver_libs += [lib_drv_arduino]
 endif
 
+if 'remote' in drivers
+	driver_libs += [lib_drv_remote]
+endif
+
 subdir('common')
 subdir('openxr')
 subdir('cli')

@@ -24,8 +24,9 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
 
+#define __USE_MISC // SOL_TCP on C11
+#include <netinet/tcp.h>
 
 /*
  *

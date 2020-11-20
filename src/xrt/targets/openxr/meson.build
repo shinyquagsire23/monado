@@ -82,6 +82,10 @@ else
 	]
 endif
 
+if 'remote' in drivers
+	libs += lib_drv_remote
+endif
+
 mapfile = 'libopenxr.version'
 version_script_flag = '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(), mapfile)
 openxr = library(
