@@ -15,7 +15,7 @@
 #include <stdarg.h>
 
 
-#ifdef XRT_OS_ANDROID
+#if defined(XRT_OS_ANDROID)
 
 #include <android/log.h>
 
@@ -64,6 +64,89 @@ u_log_xdev(const char *file,
 	__android_log_vprint(prio, func, format, args);
 	va_end(args);
 }
+
+
+#elif defined(XRT_OS_WINDOWS)
+
+#include <debugapi.h>
+
+static int
+print_prefix(int remainingBuf,
+             char *buf,
+             const char *func,
+             enum u_logging_level level)
+{
+	int printed = 0;
+	switch (level) {
+	case U_LOGGING_TRACE:
+		printed = sprintf_s(buf, remainingBuf, "TRACE ");
+		break;
+	case U_LOGGING_DEBUG:
+		printed = sprintf_s(buf, remainingBuf, "DEBUG ");
+		break;
+	case U_LOGGING_INFO:
+		printed = sprintf_s(buf, remainingBuf, "INFO ");
+		break;
+	case U_LOGGING_WARN:
+		printed = sprintf_s(buf, remainingBuf, "WARN ");
+		break;
+	case U_LOGGING_ERROR:
+		printed = sprintf_s(buf, remainingBuf, "ERROR ");
+		break;
+	case U_LOGGING_RAW: break;
+	default: break;
+	}
+
+	if (level != U_LOGGING_RAW && func != NULL) {
+		printed = sprintf_s(buf + printed, remainingBuf - printed,
+		                    "[%s] ", func);
+	}
+	return printed;
+}
+
+void
+u_log(const char *file,
+      int line,
+      const char *func,
+      enum u_logging_level level,
+      const char *format,
+      ...)
+{
+	char buf[16384] = {0};
+
+	int remainingBuffer = sizeof(buf) - 2;
+	int printed = print_prefix(remainingBuffer, buf, func, level);
+
+	va_list args;
+	va_start(args, format);
+	printed +=
+	    vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
+	va_end(args);
+	*(buf + printed) = '\n';
+	OutputDebugStringA(buf);
+}
+
+void
+u_log_xdev(const char *file,
+           int line,
+           const char *func,
+           enum u_logging_level level,
+           struct xrt_device *xdev,
+           const char *format,
+           ...)
+{
+	char buf[16384] = {0};
+
+	int remainingBuffer = sizeof(buf) - 1;
+	int printed = print_prefix(remainingBuffer, buf, func, level);
+
+	va_list args;
+	va_start(args, format);
+	vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
+	va_end(args);
+	OutputDebugStringA(buf);
+}
+
 
 #else
 /*
