@@ -85,13 +85,9 @@ comp_window_android_update_window_title(struct comp_target *ct,
 	(void)ct;
 }
 
-static VkResult
-comp_window_android_create_surface(struct comp_window_android *cwa,
-                                   VkSurfaceKHR *vk_surface)
+static struct ANativeWindow *
+_create_android_window(struct comp_window_android *cwa)
 {
-	struct vk_bundle *vk = get_vk(cwa);
-	VkResult ret;
-
 	cwa->custom_surface = android_custom_surface_async_start(
 	    android_globals_get_vm(), android_globals_get_activity());
 	if (cwa->custom_surface == NULL) {
@@ -99,17 +95,20 @@ comp_window_android_create_surface(struct comp_window_android *cwa,
 		    cwa->base.base.c,
 		    "comp_window_android_create_surface: could not "
 		    "start asynchronous attachment of our custom surface");
-		return VK_ERROR_INITIALIZATION_FAILED;
+		return NULL;
 	}
 
-	struct ANativeWindow *window =
-	    android_custom_surface_wait_get_surface(cwa->custom_surface, 2000);
-	if (window == NULL) {
-		COMP_ERROR(cwa->base.base.c,
-		           "comp_window_android_create_surface: could not "
-		           "convert surface to ANativeWindow");
-		return VK_ERROR_INITIALIZATION_FAILED;
-	}
+	return android_custom_surface_wait_get_surface(cwa->custom_surface,
+	                                               2000);
+}
+
+static VkResult
+comp_window_android_create_surface(struct comp_window_android *cwa,
+                                   struct ANativeWindow *window,
+                                   VkSurfaceKHR *vk_surface)
+{
+	struct vk_bundle *vk = get_vk(cwa);
+	VkResult ret;
 
 	VkAndroidSurfaceCreateInfoKHR surface_info = {
 	    .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
@@ -139,8 +138,23 @@ comp_window_android_init_swapchain(struct comp_target *ct,
 	struct comp_window_android *cwa = (struct comp_window_android *)ct;
 	VkResult ret;
 
-	ret =
-	    comp_window_android_create_surface(cwa, &cwa->base.surface.handle);
+	struct ANativeWindow *window = NULL;
+
+	if (android_globals_get_activity() != NULL) {
+		/* In process: Creating surface from activity */
+		window = _create_android_window(cwa);
+	} else {
+		/* Out of process: Getting cached surface */
+		window = (struct ANativeWindow *)android_globals_get_window();
+	}
+
+	if (window == NULL) {
+		COMP_ERROR(cwa->base.base.c, "could not get ANativeWindow");
+		return false;
+	}
+
+	ret = comp_window_android_create_surface(cwa, window,
+	                                         &cwa->base.surface.handle);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(ct->c, "Failed to create surface '%s'!",
 		           vk_result_string(ret));
