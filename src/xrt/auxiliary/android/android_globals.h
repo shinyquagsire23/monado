@@ -19,7 +19,7 @@ extern "C" {
 
 struct _JNIEnv;
 struct _JavaVM;
-
+struct _ANativeWindow;
 
 /*!
  * Store the Java VM pointer and the android.app.Activity jobject.
@@ -60,6 +60,13 @@ android_globals_get_activity();
  */
 void *
 android_globals_get_context();
+
+
+void
+android_globals_store_window(struct _ANativeWindow *window);
+
+struct _ANativeWindow *
+android_globals_get_window();
 
 #ifdef __cplusplus
 }

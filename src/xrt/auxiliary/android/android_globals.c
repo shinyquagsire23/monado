@@ -20,6 +20,7 @@ static struct
 	struct _JavaVM *vm;
 	void *activity;
 	void *context;
+	struct _ANativeWindow *window;
 } android_globals = {NULL, NULL, NULL};
 
 void
@@ -35,6 +36,18 @@ android_globals_store_vm_and_context(struct _JavaVM *vm, void *context)
 
 	android_globals.vm = vm;
 	android_globals.context = context;
+}
+
+void
+android_globals_store_window(struct _ANativeWindow *window)
+{
+	android_globals.window = window;
+}
+
+struct _ANativeWindow *
+android_globals_get_window()
+{
+	return android_globals.window;
 }
 
 struct _JavaVM *
