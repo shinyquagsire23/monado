@@ -10,6 +10,7 @@
 
 package org.freedesktop.monado.ipc;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -19,9 +20,11 @@ import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.SurfaceHolder;
 
 import androidx.annotation.Keep;
 
+import org.freedesktop.monado.auxiliary.MonadoView;
 import org.freedesktop.monado.auxiliary.NativeCounterpart;
 
 import java.io.IOException;
@@ -73,6 +76,8 @@ public class Client implements ServiceConnection {
      * Intent for connecting to service
      */
     private Intent intent = null;
+
+    private SurfaceHolder surfaceHolder;
 
     /**
      * Constructor
@@ -128,6 +133,12 @@ public class Client implements ServiceConnection {
     @Keep
     public int blockingConnect(Context context_, String packageName) {
         Log.i(TAG, "blockingConnect");
+
+        Activity activity = (Activity) context_;
+
+        MonadoView monadoView = MonadoView.attachToActivity(activity);
+        surfaceHolder = monadoView.waitGetSurfaceHolder(2000);
+
         synchronized (connectSync) {
             if (!bind(context_, packageName)) {
                 Log.e(TAG, "Bind failed immediately");
@@ -218,6 +229,14 @@ public class Client implements ServiceConnection {
     public void onServiceConnected(ComponentName name, IBinder service) {
         Log.i(TAG, "onServiceConnected");
         monado = IMonado.Stub.asInterface(service);
+
+        try {
+            monado.passAppSurface(surfaceHolder.getSurface());
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Could not pass app surface: " + e.toString());
+        }
+
         ParcelFileDescriptor theirs;
         ParcelFileDescriptor ours;
         try {
