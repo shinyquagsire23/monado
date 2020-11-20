@@ -20,6 +20,8 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 
+#include "android/android_globals.h"
+
 using wrap::android::view::Surface;
 
 extern "C" void
@@ -42,7 +44,8 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeAppSurface(JNIEnv *env,
 	jni::init(env);
 	Surface surf(surface);
 	jni::Object monadoImpl(thiz);
-	ANativeWindow *nativeWindow = ANativeWindow_fromSurface(env, surface);
 
-	//! @todo do something!
+	ANativeWindow *nativeWindow = ANativeWindow_fromSurface(env, surface);
+	android_globals_store_window((struct _ANativeWindow *)nativeWindow);
+	U_LOG_D("Stored ANativeWindow: %p", nativeWindow);
 }
