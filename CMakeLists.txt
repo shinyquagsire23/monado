@@ -204,9 +204,12 @@ if(XRT_HAVE_OPENGLES AND NOT XRT_HAVE_EGL)
 endif()
 
 if(XRT_HAVE_SDL2)
-	# Arch work around
 	if(NOT DEFINED SDL2_LIBRARIES)
-		set(SDL2_LIBRARIES SDL2::SDL2)
+		if(TARGET SDL2::SDL2-static)
+			set(SDL2_LIBRARIES SDL2::SDL2-static)
+		elseif(TARGET SDL2::SDL2)
+			set(SDL2_LIBRARIES SDL2::SDL2)
+		endif()
 	endif()
 endif()
 
