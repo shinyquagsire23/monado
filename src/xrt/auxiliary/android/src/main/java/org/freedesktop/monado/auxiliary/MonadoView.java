@@ -47,7 +47,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     /// Guards currentSurfaceHolder
     private final Object currentSurfaceHolderSync = new Object();
     private final Method viewSetSysUiVis;
-    private final NativeCounterpart nativeCounterpart;
+    private NativeCounterpart nativeCounterpart;
 
     public int width = -1;
     public int height = -1;
@@ -56,10 +56,9 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     /// Guarded by currentSurfaceHolderSync
     private SurfaceHolder currentSurfaceHolder = null;
 
-    private MonadoView(Activity activity, long nativePointer) {
+    public MonadoView(Activity activity) {
         super(activity);
         this.activity = activity;
-        this.nativeCounterpart = new NativeCounterpart(nativePointer);
         Method method;
         try {
             method = activity.getWindow().getDecorView().getClass().getMethod("setSystemUiVisibility", int.class);
@@ -68,6 +67,27 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             method = null;
         }
         viewSetSysUiVis = method;
+    }
+
+    private MonadoView(Activity activity, long nativePointer) {
+        this(activity);
+        nativeCounterpart = new NativeCounterpart(nativePointer);
+    }
+
+    private void createSurface() {
+        Log.i(TAG, "Starting to add a new surface!");
+        activity.runOnUiThread(() -> {
+            Log.i(TAG, "Starting runOnUiThread");
+            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+            WindowManager windowManager = activity.getWindowManager();
+            windowManager.addView(this, new WindowManager.LayoutParams(WindowManager.LayoutParams.FLAG_FULLSCREEN));
+
+            requestFocus();
+            SurfaceHolder surfaceHolder = getHolder();
+            surfaceHolder.addCallback(this);
+            Log.i(TAG, "Registered callbacks!");
+        });
     }
 
     /**
@@ -80,24 +100,17 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     @Keep
     @SuppressWarnings("deprecation")
     public static MonadoView attachToActivity(@NonNull final Activity activity, long nativePointer) {
-        Log.i(TAG, "Starting to add a new surface!");
-
         final MonadoView view = new MonadoView(activity, nativePointer);
-
-        activity.runOnUiThread(() -> {
-            Log.i(TAG, "Starting runOnUiThread");
-            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-            WindowManager windowManager = activity.getWindowManager();
-            windowManager.addView(view, new WindowManager.LayoutParams(WindowManager.LayoutParams.FLAG_FULLSCREEN));
-
-            view.requestFocus();
-            SurfaceHolder surfaceHolder = view.getHolder();
-            surfaceHolder.addCallback(view);
-            Log.i(TAG, "Registered callbacks!");
-        });
+        view.createSurface();
         return view;
+    }
 
+    @NonNull
+    @Keep
+    public static MonadoView attachToActivity(@NonNull final Activity activity) {
+        final MonadoView view = new MonadoView(activity);
+        view.createSurface();
+        return view;
     }
 
     /**
@@ -131,7 +144,8 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             }
         }
         if (ret != null) {
-            nativeCounterpart.markAsUsedByNativeCode();
+            if (nativeCounterpart != null)
+                nativeCounterpart.markAsUsedByNativeCode();
         }
         return ret;
     }
@@ -144,7 +158,8 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
      */
     @Keep
     public void markAsDiscardedByNative() {
-        nativeCounterpart.markAsDiscardedByNative(TAG);
+        if (nativeCounterpart != null)
+            nativeCounterpart.markAsDiscardedByNative(TAG);
     }
 
     private boolean makeFullscreen() {
@@ -221,7 +236,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
         }
         if (lost) {
             //! @todo this function should notify native code that the surface is gone.
-            if (!nativeCounterpart.blockUntilNativeDiscard(TAG)) {
+            if (nativeCounterpart != null && !nativeCounterpart.blockUntilNativeDiscard(TAG)) {
                 Log.i(TAG,
                         "Interrupted in surfaceDestroyed while waiting for native code to finish up.");
             }
