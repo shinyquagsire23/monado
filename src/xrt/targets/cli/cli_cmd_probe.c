@@ -52,6 +52,10 @@ cli_cmd_probe(int argc, const char **argv)
 	printf(" OpenHMD,");
 #endif
 
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+	printf(" Hand Tracking,");
+#endif
+
 #ifdef XRT_BUILD_DRIVER_DAYDREAM
 	printf(" Daydream,");
 #endif

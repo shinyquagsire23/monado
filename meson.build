@@ -161,6 +161,12 @@ if openhmd.found() and ('auto' in drivers or 'ohmd' in drivers)
 	endif
 endif
 
+if has_v4l2_header and ('auto' in drivers or 'handtracking' in drivers)
+	if 'handtracking' not in drivers
+		drivers += ['handtracking']
+	endif
+endif
+
 if hidapi.found() and ('auto' in drivers or 'psvr' in drivers or 'hdk' in drivers)
 	if 'psvr' not in drivers
 		drivers += ['psvr']

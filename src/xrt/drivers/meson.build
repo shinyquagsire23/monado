@@ -58,6 +58,19 @@ lib_drv_ns = static_library(
 	build_by_default: 'ns' in drivers,
 )
 
+lib_drv_ht = static_library(
+	'drv_ht',
+	files(
+		'ht/ht_driver.c',
+		'ht/ht_driver.h',
+		'ht/ht_interface.h',
+		'ht/ht_prober.c',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux],
+	build_by_default: 'handtracking' in drivers,
+)
+
 lib_drv_ohmd = static_library(
 	'drv_ohmd',
 	files(

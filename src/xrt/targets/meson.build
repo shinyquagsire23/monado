@@ -32,6 +32,10 @@ if 'ohmd' in drivers
 	driver_libs += [lib_drv_ohmd]
 endif
 
+if 'handtracking' in drivers
+	driver_libs += [lib_drv_ht]
+endif
+
 if 'psmv' in drivers
 	driver_libs += [lib_drv_psmv]
 endif

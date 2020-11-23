@@ -97,6 +97,18 @@ if(XRT_BUILD_DRIVER_OHMD)
 	list(APPEND ENABLED_HEADSET_DRIVERS openhmd)
 endif()
 
+if(XRT_BUILD_DRIVER_HANDTRACKING)
+	set(HT_SOURCE_FILES
+		ht/ht_driver.c
+		ht/ht_driver.h
+		ht/ht_interface.h
+		ht/ht_prober.c
+		)
+
+	add_library(drv_ht STATIC ${HT_SOURCE_FILES})
+	target_link_libraries(drv_ht PRIVATE xrt-interfaces aux_util aux_math)
+	list(APPEND ENABLED_DRIVERS ht)
+endif()
 
 if(XRT_BUILD_DRIVER_PSMV)
 	set(PSMOVE_SOURCE_FILES

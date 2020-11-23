@@ -48,6 +48,10 @@ if(XRT_BUILD_DRIVER_OHMD)
 	target_link_libraries(target_lists PRIVATE drv_ohmd)
 endif()
 
+if(XRT_BUILD_DRIVER_HANDTRACKING)
+	target_link_libraries(target_lists PRIVATE drv_ht)
+endif()
+
 if(XRT_BUILD_DRIVER_PSMV)
 	target_link_libraries(target_lists PRIVATE drv_psmv)
 endif()

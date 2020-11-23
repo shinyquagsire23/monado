@@ -163,6 +163,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_PSVR "Enable PSVR HMD driver" ON "HIDAPI
 cmake_dependent_option(XRT_BUILD_DRIVER_RS "Enable RealSense device driver" ON "realsense2_FOUND" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" ON "ZLIB_FOUND AND XRT_HAVE_LINUX" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_OHMD "Enable OpenHMD driver" ON "OPENHMD_FOUND" OFF)
+cmake_dependent_option(XRT_BUILD_DRIVER_HANDTRACKING "Enable Camera Hand Tracking driver" ON "XRT_HAVE_V4L2" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_DAYDREAM "Enable the Google Daydream View controller driver (BLE, via D-Bus)" ON "XRT_HAVE_DBUS" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_ARDUINO "Enable Arduino input device with BLE via via D-Bus" ON "XRT_HAVE_DBUS" OFF)
 
@@ -182,7 +183,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" 
 
 # You can set this from a superproject to add a driver
 # All drivers must be listed in here to be included in the generated header!
-list(APPEND AVAILABLE_DRIVERS "ANDROID" ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM REMOTE SURVIVE)
+list(APPEND AVAILABLE_DRIVERS "ANDROID" ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM REMOTE SURVIVE HANDTRACKING)
 
 
 # Package name needs to be known by the native code itself.
@@ -290,18 +291,19 @@ message(STATUS "#    FEATURE_OPENXR_LAYER_EQUIRECT:        ${XRT_FEATURE_OPENXR_
 message(STATUS "#    FEATURE_OPENXR_LAYER_EQUIRECT_LEGACY: ${XRT_FEATURE_OPENXR_LAYER_EQUIRECT_LEGACY}")
 message(STATUS "#    FEATURE_STEAMVR_PLUGIN:               ${XRT_FEATURE_STEAMVR_PLUGIN}")
 message(STATUS "#")
-message(STATUS "#    DRIVER_ANDROID:  ${XRT_BUILD_DRIVER_ANDROID}")
-message(STATUS "#    DRIVER_ARDUINO:  ${XRT_BUILD_DRIVER_ARDUINO}")
-message(STATUS "#    DRIVER_DAYDREAM: ${XRT_BUILD_DRIVER_DAYDREAM}")
-message(STATUS "#    DRIVER_DUMMY:    ${XRT_BUILD_DRIVER_DUMMY}")
-message(STATUS "#    DRIVER_HDK:      ${XRT_BUILD_DRIVER_HDK}")
-message(STATUS "#    DRIVER_HYDRA:    ${XRT_BUILD_DRIVER_HYDRA}")
-message(STATUS "#    DRIVER_NS:       ${XRT_BUILD_DRIVER_NS}")
-message(STATUS "#    DRIVER_OHMD:     ${XRT_BUILD_DRIVER_OHMD}")
-message(STATUS "#    DRIVER_PSMV:     ${XRT_BUILD_DRIVER_PSMV}")
-message(STATUS "#    DRIVER_PSVR:     ${XRT_BUILD_DRIVER_PSVR}")
-message(STATUS "#    DRIVER_RS:       ${XRT_BUILD_DRIVER_RS}")
-message(STATUS "#    DRIVER_REMOTE:   ${XRT_BUILD_DRIVER_REMOTE}")
-message(STATUS "#    DRIVER_SURVIVE:  ${XRT_BUILD_DRIVER_SURVIVE}")
-message(STATUS "#    DRIVER_VIVE:     ${XRT_BUILD_DRIVER_VIVE}")
+message(STATUS "#    DRIVER_ANDROID:      ${XRT_BUILD_DRIVER_ANDROID}")
+message(STATUS "#    DRIVER_ARDUINO:      ${XRT_BUILD_DRIVER_ARDUINO}")
+message(STATUS "#    DRIVER_DAYDREAM:     ${XRT_BUILD_DRIVER_DAYDREAM}")
+message(STATUS "#    DRIVER_DUMMY:        ${XRT_BUILD_DRIVER_DUMMY}")
+message(STATUS "#    DRIVER_HDK:          ${XRT_BUILD_DRIVER_HDK}")
+message(STATUS "#    DRIVER_HYDRA:        ${XRT_BUILD_DRIVER_HYDRA}")
+message(STATUS "#    DRIVER_NS:           ${XRT_BUILD_DRIVER_NS}")
+message(STATUS "#    DRIVER_OHMD:         ${XRT_BUILD_DRIVER_OHMD}")
+message(STATUS "#    DRIVER_HANDTRACKING: ${XRT_BUILD_DRIVER_HANDTRACKING}")
+message(STATUS "#    DRIVER_PSMV:         ${XRT_BUILD_DRIVER_PSMV}")
+message(STATUS "#    DRIVER_PSVR:         ${XRT_BUILD_DRIVER_PSVR}")
+message(STATUS "#    DRIVER_RS:           ${XRT_BUILD_DRIVER_RS}")
+message(STATUS "#    DRIVER_REMOTE:       ${XRT_BUILD_DRIVER_REMOTE}")
+message(STATUS "#    DRIVER_SURVIVE:      ${XRT_BUILD_DRIVER_SURVIVE}")
+message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
 message(STATUS "#####----- Config -----#####")
