@@ -866,7 +866,9 @@ compositor_init_vulkan(struct comp_compositor *c)
 		return false;
 	}
 
-	ret = vk_create_device(&c->vk, c->settings.selected_gpu_index);
+	ret =
+	    vk_create_device(&c->vk, c->settings.selected_gpu_index,
+	                     device_extensions, ARRAY_SIZE(device_extensions));
 	if (ret != VK_SUCCESS) {
 		return false;
 	}
@@ -1062,7 +1064,9 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	}
 
 	// follow same device selection logic as subsequent calls
-	ret = vk_create_device(&temp_vk, c->settings.selected_gpu_index);
+	ret =
+	    vk_create_device(&temp_vk, c->settings.selected_gpu_index,
+	                     device_extensions, ARRAY_SIZE(device_extensions));
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(c, "Failed to create VkDevice: %s",
 		           vk_result_string(ret));

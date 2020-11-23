@@ -1008,7 +1008,10 @@ err_free:
 }
 
 VkResult
-vk_create_device(struct vk_bundle *vk, int forced_index)
+vk_create_device(struct vk_bundle *vk,
+                 int forced_index,
+                 const char *const *device_extensions,
+                 size_t num_device_extensions)
 {
 	VkResult ret;
 
@@ -1031,27 +1034,11 @@ vk_create_device(struct vk_bundle *vk, int forced_index)
 		return ret;
 	}
 
-	const char *device_extensions[] =
-	{ VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-	  VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
-	  VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
-	  VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME,
-	  VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME,
-	  VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
-	  VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
-	  VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
-	  VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-	  VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME,
-#endif
-	  // VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
-	};
-
 	VkDeviceCreateInfo device_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 	    .queueCreateInfoCount = 1,
 	    .pQueueCreateInfos = &queue_create_info,
-	    .enabledExtensionCount = ARRAY_SIZE(device_extensions),
+	    .enabledExtensionCount = num_device_extensions,
 	    .ppEnabledExtensionNames = device_extensions,
 	    .pEnabledFeatures = enabled_features,
 	};
