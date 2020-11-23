@@ -1036,8 +1036,9 @@ vr::DriverPose_t
 CDeviceDriver_Monado::GetPose()
 {
 
+	timepoint_ns now_ns = os_monotonic_get_ns();
 	struct xrt_space_relation rel;
-	xrt_device_get_tracked_pose(m_xdev, XRT_INPUT_GENERIC_HEAD_POSE, 1,
+	xrt_device_get_tracked_pose(m_xdev, XRT_INPUT_GENERIC_HEAD_POSE, now_ns,
 	                            &rel);
 
 	struct xrt_pose *offset = &m_xdev->tracking_origin->offset;
