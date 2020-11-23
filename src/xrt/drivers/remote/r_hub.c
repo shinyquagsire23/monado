@@ -25,7 +25,10 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#ifndef __USE_MISC
 #define __USE_MISC // SOL_TCP on C11
+#endif
+
 #include <netinet/tcp.h>
 
 /*
