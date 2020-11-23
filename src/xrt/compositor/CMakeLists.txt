@@ -112,6 +112,12 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 			main/comp_window_direct_nvidia.c
 			)
 	endif()
+	if(WIN32)
+		list(APPEND MAIN_SOURCE_FILES
+			main/comp_window_mswin.c
+			)
+	endif()
+
 
 	# generate wayland protocols
 	if(XRT_HAVE_WAYLAND)

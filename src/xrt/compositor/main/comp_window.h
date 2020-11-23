@@ -82,6 +82,19 @@ comp_window_android_create(struct comp_compositor *c);
 
 #endif // XRT_OS_ANDROID
 
+#ifdef XRT_OS_WINDOWS
+
+/*!
+ * Create a rendering window on Windows.
+ *
+ * @ingroup comp_main
+ * @public @memberof comp_window_mswin
+ */
+struct comp_target *
+comp_window_mswin_create(struct comp_compositor *c);
+
+#endif // XRT_OS_WINDOWS
+
 #ifdef __cplusplus
 }
 #endif

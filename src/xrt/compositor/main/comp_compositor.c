@@ -694,6 +694,11 @@ static const char *instance_extensions_android[] = {
     COMP_INSTANCE_EXTENSIONS_COMMON, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
 #endif
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+static const char *instance_extensions_windows[] = {
+    COMP_INSTANCE_EXTENSIONS_COMMON, VK_KHR_WIN32_SURFACE_EXTENSION_NAME};
+#endif
+
 // Note: Keep synchronized with comp_vk_glue - we should have everything they
 // do, plus VK_KHR_SWAPCHAIN_EXTENSION_NAME
 static const char *device_extensions[] = {
@@ -765,6 +770,12 @@ select_instances_extensions(struct comp_compositor *c,
 	case WINDOW_ANDROID:
 		*out_exts = instance_extensions_android;
 		*out_num = ARRAY_SIZE(instance_extensions_android);
+		break;
+#endif
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+	case WINDOW_MSWIN:
+		*out_exts = instance_extensions_windows;
+		*out_num = ARRAY_SIZE(instance_extensions_windows);
 		break;
 #endif
 	default: return VK_ERROR_INITIALIZATION_FAILED;
@@ -1139,6 +1150,12 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 			return true;
 		}
 #endif
+#ifdef XRT_OS_WINDOWS
+		if (compositor_try_window(c, comp_window_mswin_create(c))) {
+			c->settings.window_type = WINDOW_MSWIN;
+			return true;
+		}
+#endif
 		COMP_ERROR(c, "Failed to auto detect window support!");
 		break;
 	case WINDOW_XCB:
@@ -1169,6 +1186,13 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 		COMP_ERROR(c, "Android support not compiled in!");
 #endif
 		break;
+
+	case WINDOW_MSWIN:
+#ifdef XRT_OS_WINDOWS
+		compositor_try_window(c, comp_window_mswin_create(c));
+#else
+		COMP_ERROR(c, "Windows support not compiled in!");
+#endif
 	default: COMP_ERROR(c, "Unknown window type!"); break;
 	}
 
