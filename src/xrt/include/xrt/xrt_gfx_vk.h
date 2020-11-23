@@ -22,11 +22,15 @@ struct time_state;
 
 
 /*!
+ * @brief A space-delimited string of Vulkan instance extensions required from a
+ * client.
  * @ingroup xrt_iface
  */
 extern const char *xrt_gfx_vk_instance_extensions;
 
 /*!
+ * @brief A space-delimited string of Vulkan device extensions required from a
+ * client.
  * @ingroup xrt_iface
  */
 extern const char *xrt_gfx_vk_device_extensions;
