@@ -1964,6 +1964,12 @@ struct oxr_hand_tracker
 	//! Owner of this hand tracker.
 	struct oxr_session *sess;
 
+	//! xrt_device backing this hand tracker
+	struct xrt_device *xdev;
+
+	//! the input name associated with this hand tracker
+	enum xrt_input_name input_name;
+
 	XrHandEXT hand;
 	XrHandJointSetEXT hand_joint_set;
 };

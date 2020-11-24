@@ -127,7 +127,8 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 	struct r_hub *r = rd->r;
 
 
-	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_DEFAULT_SET) {
+	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT &&
+	    name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
 		U_LOG_E("Unknown input name for hand tracker");
 		return;
 	}
@@ -186,7 +187,7 @@ r_device_create(struct r_hub *r, bool is_left)
 {
 	// Allocate.
 	const enum u_device_alloc_flags flags = 0;
-	const uint32_t num_inputs = 4;
+	const uint32_t num_inputs = 5;
 	const uint32_t num_outputs = 1;
 	struct r_device *rd = U_DEVICE_ALLOCATE( //
 	    struct r_device, flags, num_inputs, num_outputs);
@@ -215,6 +216,11 @@ r_device_create(struct r_hub *r, bool is_left)
 	rd->base.inputs[1].name = XRT_INPUT_SIMPLE_MENU_CLICK;
 	rd->base.inputs[2].name = XRT_INPUT_SIMPLE_GRIP_POSE;
 	rd->base.inputs[3].name = XRT_INPUT_SIMPLE_AIM_POSE;
+	if (is_left) {
+		rd->base.inputs[4].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
+	} else {
+		rd->base.inputs[4].name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
+	}
 	rd->base.outputs[0].name = XRT_OUTPUT_NAME_SIMPLE_VIBRATION;
 
 	if (is_left) {

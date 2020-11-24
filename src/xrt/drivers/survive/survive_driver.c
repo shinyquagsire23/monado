@@ -75,10 +75,8 @@ struct survive_system;
 
 enum input_index
 {
-	GENERIC_HEAD_POSE = 0,
-
 	// common inputs
-	VIVE_CONTROLLER_AIM_POSE,
+	VIVE_CONTROLLER_AIM_POSE = 0,
 	VIVE_CONTROLLER_GRIP_POSE,
 	VIVE_CONTROLLER_SYSTEM_CLICK,
 	VIVE_CONTROLLER_TRIGGER_CLICK,
@@ -105,8 +103,7 @@ enum input_index
 	VIVE_CONTROLLER_TRIGGER_TOUCH,
 	VIVE_CONTROLLER_TRACKPAD_FORCE,
 
-	VIVE_CONTROLLER_FINGERTRACKING,
-	VIVE_CONTROLLER_HAND_BASE,
+	VIVE_CONTROLLER_HAND_TRACKING,
 
 	VIVE_CONTROLLER_MAX_INDEX,
 };
@@ -458,7 +455,8 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 {
 	struct survive_device *survive = (struct survive_device *)xdev;
 
-	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_DEFAULT_SET) {
+	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT &&
+	    name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
 		SURVIVE_ERROR(survive, "unknown input name for hand tracker");
 		return;
 	}
@@ -1297,6 +1295,7 @@ _create_controller_device(struct survive_system *sys,
 {
 
 	enum u_device_alloc_flags flags = 0;
+
 	int inputs = VIVE_CONTROLLER_MAX_INDEX;
 	int outputs = 1;
 	struct survive_device *survive =
@@ -1375,10 +1374,14 @@ _create_controller_device(struct survive_system *sys,
 		if (variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER) {
 			survive->base.device_type =
 			    XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
+			survive->base.inputs[VIVE_CONTROLLER_HAND_TRACKING]
+			    .name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
 		} else if (variant ==
 		           VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
 			survive->base.device_type =
 			    XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
+			survive->base.inputs[VIVE_CONTROLLER_HAND_TRACKING]
+			    .name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
 		} else {
 			survive->base.device_type =
 			    XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;

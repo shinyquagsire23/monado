@@ -293,6 +293,34 @@ oxr_hand_tracker_create(struct oxr_logger *log,
 	hand_tracker->hand = createInfo->hand;
 	hand_tracker->hand_joint_set = createInfo->handJointSet;
 
+	//! @todo: Implement choice when more than one device has hand tracking
+	for (uint32_t i = 0; i < sess->sys->num_xdevs; i++) {
+		struct xrt_device *xdev = sess->sys->xdevs[i];
+
+		if (!xdev->hand_tracking_supported) {
+			continue;
+		}
+
+		for (uint32_t j = 0; j < xdev->num_inputs; j++) {
+			struct xrt_input *input = &xdev->inputs[j];
+
+			if ((input->name ==
+			         XRT_INPUT_GENERIC_HAND_TRACKING_LEFT &&
+			     createInfo->hand == XR_HAND_LEFT_EXT) ||
+			    (input->name ==
+			         XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT &&
+			     createInfo->hand == XR_HAND_RIGHT_EXT)) {
+				hand_tracker->xdev = xdev;
+				hand_tracker->input_name = input->name;
+				break;
+			}
+		}
+
+		if (hand_tracker->xdev != NULL) {
+			break;
+		}
+	}
+
 	*out_hand_tracker = hand_tracker;
 
 	return XR_SUCCESS;
