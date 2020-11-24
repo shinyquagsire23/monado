@@ -659,6 +659,10 @@ find_get_instance_proc_addr(struct comp_compositor *c)
 	return vk_get_loader_functions(&c->vk, vkGetInstanceProcAddr);
 }
 
+
+// If any of these lists are updated, please also update the appropriate column
+// in `vulkan-extensions.md`
+
 #define COMP_INSTANCE_EXTENSIONS_COMMON                                        \
 	VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME,                     \
 	    VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,                \

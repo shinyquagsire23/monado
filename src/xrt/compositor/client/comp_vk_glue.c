@@ -11,6 +11,9 @@
 
 #include <stdlib.h>
 
+// If you update either list of extensions here, please update the "Client"
+// column in `vulkan-extensions.md`
+
 // Note: Most of the time, the instance extensions required do **not** vary by
 // platform!
 const char *xrt_gfx_vk_instance_extensions =
