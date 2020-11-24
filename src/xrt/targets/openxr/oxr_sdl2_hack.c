@@ -224,7 +224,8 @@ sdl2_close(struct sdl2_program *p)
 	}
 
 	if (p->sdl_initialized) {
-		SDL_Quit();
+		//! @todo: Properly quit SDL without crashing SDL client apps
+		// SDL_Quit();
 		p->sdl_initialized = false;
 	}
 }
