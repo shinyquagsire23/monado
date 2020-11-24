@@ -1029,6 +1029,7 @@ _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 static bool
 compositor_check_vulkan_caps(struct comp_compositor *c)
 {
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	VkResult ret;
 
 	// this is duplicative, but seems to be the easiest way to
@@ -1049,10 +1050,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	}
 
 	const char *extension_names[] = {COMP_INSTANCE_EXTENSIONS_COMMON,
-#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-	                                 VK_KHR_DISPLAY_EXTENSION_NAME
-#endif
-	};
+	                                 VK_KHR_DISPLAY_EXTENSION_NAME};
 
 
 	VkInstanceCreateInfo instance_create_info = {
@@ -1086,16 +1084,15 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 		return false;
 	}
 
-#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	if (_test_for_nvidia(c, &temp_vk)) {
 		c->settings.window_type = WINDOW_DIRECT_NVIDIA;
 		COMP_DEBUG(c, "Selecting direct NVIDIA window type!");
 	}
-#endif // VK_USE_PLATFORM_XLIB_XRANDR_EXT
 
 	temp_vk.vkDestroyDevice(temp_vk.device, NULL);
 	temp_vk.vkDestroyInstance(temp_vk.instance, NULL);
 
+#endif // VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	return true;
 }
 
