@@ -235,7 +235,7 @@ android_device_create()
 	struct android_device *d =
 	    U_DEVICE_ALLOCATE(struct android_device, flags, 1, 0);
 
-	d->base.name = XRT_DEVICE_ANDROID;
+	d->base.name = XRT_DEVICE_GENERIC_HMD;
 	d->base.destroy = android_device_destroy;
 	d->base.update_inputs = android_device_update_inputs;
 	d->base.get_tracked_pose = android_device_get_tracked_pose;
