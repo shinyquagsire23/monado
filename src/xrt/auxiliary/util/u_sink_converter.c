@@ -39,8 +39,6 @@ struct u_sink_converter
 
 	struct xrt_frame_sink *downstream;
 
-	struct xrt_frame *frame;
-
 	enum xrt_format format;
 };
 
@@ -371,27 +369,11 @@ create_one_off_with_format(struct xrt_frame *xf,
                            struct xrt_frame **one_off)
 {
 	u_frame_create_one_off(format, xf->width, xf->height, one_off);
-}
-
-static void
-push_data_downstream(struct u_sink_converter *s, struct xrt_frame *xf)
-{
-	// The frame has a single reference on it when it's on the converter
-	// struct, we move it so no need to change the ref count.
-	struct xrt_frame *frame = s->frame;
-	s->frame = NULL;
-
-	// Copy directly from original frame.
-	frame->timestamp = xf->timestamp;
-	frame->source_timestamp = xf->source_timestamp;
-	frame->source_sequence = xf->source_sequence;
-	frame->source_id = xf->source_id;
-	frame->stereo_format = xf->stereo_format;
-
-	s->downstream->push_frame(s->downstream, frame);
-
-	// Refcount in case it's being held downstream.
-	xrt_frame_reference(&frame, NULL);
+	(*one_off)->timestamp = xf->timestamp;
+	(*one_off)->source_timestamp = xf->source_timestamp;
+	(*one_off)->source_sequence = xf->source_sequence;
+	(*one_off)->source_id = xf->source_id;
+	(*one_off)->stereo_format = xf->stereo_format;
 }
 
 static void
@@ -399,30 +381,32 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 {
 	struct u_sink_converter *s = (struct u_sink_converter *)xs;
 
+	struct xrt_frame *converted = NULL;
+
 	switch (xf->format) {
 	case XRT_FORMAT_L8:
 	case XRT_FORMAT_R8G8B8:
 		s->downstream->push_frame(s->downstream, xf);
 		return;
 	case XRT_FORMAT_YUYV422:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_YUYV422_to_R8G8B8(s->frame, xf->width, xf->height,
+		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		from_YUYV422_to_R8G8B8(converted, xf->width, xf->height,
 		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_UYVY422:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_UYVY422_to_R8G8B8(s->frame, xf->width, xf->height,
+		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		from_UYVY422_to_R8G8B8(converted, xf->width, xf->height,
 		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_YUV888:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_YUV888_to_R8G8B8(s->frame, xf->width, xf->height,
+		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		from_YUV888_to_R8G8B8(converted, xf->width, xf->height,
 		                      xf->stride, xf->data);
 		break;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		if (!from_MJPEG_to_R8G8B8(s->frame, xf->size, xf->data)) {
+		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		if (!from_MJPEG_to_R8G8B8(converted, xf->size, xf->data)) {
 			return;
 		}
 		break;
@@ -433,7 +417,10 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		return;
 	}
 
-	push_data_downstream(s, xf);
+	s->downstream->push_frame(s->downstream, converted);
+
+	// Refcount in case it's being held downstream.
+	xrt_frame_reference(&converted, NULL);
 }
 
 static void
@@ -441,29 +428,31 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 {
 	struct u_sink_converter *s = (struct u_sink_converter *)xs;
 
+	struct xrt_frame *converted = NULL;
+
 	switch (xf->format) {
 	case XRT_FORMAT_R8G8B8:
 		s->downstream->push_frame(s->downstream, xf);
 		return;
 	case XRT_FORMAT_YUYV422:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_YUYV422_to_R8G8B8(s->frame, xf->width, xf->height,
+		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		from_YUYV422_to_R8G8B8(converted, xf->width, xf->height,
 		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_UYVY422:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_UYVY422_to_R8G8B8(s->frame, xf->width, xf->height,
+		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		from_UYVY422_to_R8G8B8(converted, xf->width, xf->height,
 		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_YUV888:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_YUV888_to_R8G8B8(s->frame, xf->width, xf->height,
+		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		from_YUV888_to_R8G8B8(converted, xf->width, xf->height,
 		                      xf->stride, xf->data);
 		break;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		if (!from_MJPEG_to_R8G8B8(s->frame, xf->size, xf->data)) {
+		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		if (!from_MJPEG_to_R8G8B8(converted, xf->size, xf->data)) {
 			return;
 		}
 		break;
@@ -474,7 +463,10 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		return;
 	}
 
-	push_data_downstream(s, xf);
+	s->downstream->push_frame(s->downstream, converted);
+
+	// Refcount in case it's being held downstream.
+	xrt_frame_reference(&converted, NULL);
 }
 
 static void
@@ -483,6 +475,7 @@ receive_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs,
 {
 	struct u_sink_converter *s = (struct u_sink_converter *)xs;
 
+	struct xrt_frame *converted = NULL;
 
 	switch (xf->format) {
 	case XRT_FORMAT_L8:
@@ -493,8 +486,8 @@ receive_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs,
 		return;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		create_one_off_with_format(xf, XRT_FORMAT_YUV888, &s->frame);
-		if (!from_MJPEG_to_YUV888(s->frame, xf->size, xf->data)) {
+		create_one_off_with_format(xf, XRT_FORMAT_YUV888, &converted);
+		if (!from_MJPEG_to_YUV888(converted, xf->size, xf->data)) {
 			return;
 		}
 		break;
@@ -507,7 +500,10 @@ receive_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs,
 		return;
 	}
 
-	push_data_downstream(s, xf);
+	s->downstream->push_frame(s->downstream, converted);
+
+	// Refcount in case it's being held downstream.
+	xrt_frame_reference(&converted, NULL);
 }
 
 static void
@@ -515,6 +511,7 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 {
 	struct u_sink_converter *s = (struct u_sink_converter *)xs;
 
+	struct xrt_frame *converted = NULL;
 
 	switch (xf->format) {
 	case XRT_FORMAT_YUYV422:
@@ -523,8 +520,8 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		return;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		create_one_off_with_format(xf, XRT_FORMAT_YUV888, &s->frame);
-		if (!from_MJPEG_to_YUV888(s->frame, xf->size, xf->data)) {
+		create_one_off_with_format(xf, XRT_FORMAT_YUV888, &converted);
+		if (!from_MJPEG_to_YUV888(converted, xf->size, xf->data)) {
 			return;
 		}
 		break;
@@ -535,7 +532,10 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		return;
 	}
 
-	push_data_downstream(s, xf);
+	s->downstream->push_frame(s->downstream, converted);
+
+	// Refcount in case it's being held downstream.
+	xrt_frame_reference(&converted, NULL);
 }
 
 static void
