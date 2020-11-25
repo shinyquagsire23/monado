@@ -346,7 +346,7 @@ os_thread_helper_unlock(struct os_thread_helper *oth)
 }
 
 /*!
- * Is the thread running, or suppised to be running.
+ * Is the thread running, or supposed to be running.
  *
  * Must be called with the helper locked.
  */
