@@ -557,6 +557,7 @@ init_all(struct ipc_server *s)
 		return ret;
 	}
 
+#ifndef XRT_OS_ANDROID
 	ret = init_listen_socket(s);
 	if (ret < 0) {
 		teardown_all(s);
@@ -568,6 +569,7 @@ init_all(struct ipc_server *s)
 		teardown_all(s);
 		return ret;
 	}
+#endif
 
 	// Init all of the render riming helpers.
 	for (size_t i = 0; i < ARRAY_SIZE(s->threads); i++) {
@@ -1019,8 +1021,10 @@ main_loop(struct ipc_server *s)
 
 		xrt_comp_layer_commit(xc, frame_id);
 
+#ifndef XRT_OS_ANDROID
 		// Check polling last, so we know we have valid timing data.
 		check_epoll(s);
+#endif
 	}
 
 	return 0;
