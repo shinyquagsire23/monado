@@ -38,6 +38,7 @@ struct u_sink_converter
 	struct xrt_frame_node node;
 
 	struct xrt_frame_sink *downstream;
+	struct xrt_frame_sink *downstream2;
 
 	enum xrt_format format;
 };

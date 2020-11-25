@@ -17,6 +17,11 @@ struct ht_device
 {
 	struct xrt_device base;
 
+	struct xrt_tracked_hand *tracker;
+
+	struct xrt_space_relation hand_relation[2];
+	struct u_hand_tracking u_tracking[2];
+
 	enum u_logging_level ll;
 };
 
@@ -64,6 +69,20 @@ ht_device_get_hand_tracking(struct xrt_device *xdev,
 		return;
 	}
 
+
+
+	htd->tracker->get_tracked_joints(htd->tracker, name, at_timestamp_ns,
+	                                 &htd->u_tracking[index].joints,
+	                                 &htd->hand_relation[index]);
+	htd->u_tracking[index].timestamp_ns = at_timestamp_ns;
+
+	struct xrt_pose identity = {
+	    .orientation = {.x = 0, .y = 0, .z = 0, .w = 1},
+	    .position = {.x = 0, .y = 0, .z = 0}};
+
+	u_hand_joints_set_out_data(&htd->u_tracking[index], hand,
+	                           &htd->hand_relation[index], &identity,
+	                           out_value);
 }
 
 static void
@@ -104,6 +123,18 @@ ht_device_create(struct xrt_auto_prober *xap,
 	htd->base.inputs[1].name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
 
 	htd->base.name = XRT_DEVICE_HAND_TRACKER;
+
+	if (xp->tracking->create_tracked_hand(xp->tracking, &htd->base,
+	                                      &htd->tracker) < 0) {
+		HT_ERROR(htd, "Failed to create hand tracker module");
+	}
+
+	u_hand_joints_init_default_set(&htd->u_tracking[XRT_HAND_LEFT],
+	                               XRT_HAND_LEFT,
+	                               XRT_HAND_TRACKING_MODEL_CAMERA, 1.0);
+	u_hand_joints_init_default_set(&htd->u_tracking[XRT_HAND_RIGHT],
+	                               XRT_HAND_RIGHT,
+	                               XRT_HAND_TRACKING_MODEL_CAMERA, 1.0);
 
 	u_var_add_root(htd, "Camera based Hand Tracker", true);
 	u_var_add_ro_text(htd, htd->base.str, "Name");

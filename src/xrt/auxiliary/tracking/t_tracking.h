@@ -71,6 +71,7 @@ extern "C" {
 
 struct xrt_tracked_psmv;
 struct xrt_tracked_psvr;
+struct xrt_tracked_hand;
 
 
 /*
@@ -359,6 +360,20 @@ t_psvr_create(struct xrt_frame_context *xfctx,
               struct xrt_tracked_psvr **out_xtvr,
               struct xrt_frame_sink **out_sink);
 
+/*!
+ * @public @memberof xrt_tracked_hand
+ */
+int
+t_hand_create(struct xrt_frame_context *xfctx,
+              struct t_stereo_camera_calibration *data,
+              struct xrt_tracked_hand **out_xth,
+              struct xrt_frame_sink **out_sink);
+
+/*!
+ * @public @memberof xrt_tracked_hand
+ */
+int
+t_hand_start(struct xrt_tracked_hand *xth);
 
 /*
  *

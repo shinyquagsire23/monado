@@ -102,7 +102,6 @@ u_sink_split_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink *right,
                     struct xrt_frame_sink **out_xfs);
 
-
 #ifdef __cplusplus
 }
 #endif

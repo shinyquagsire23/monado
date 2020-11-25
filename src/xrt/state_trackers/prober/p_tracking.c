@@ -60,11 +60,17 @@ struct p_factory
 	//! Data to be given to the trackers.
 	struct t_stereo_camera_calibration *data;
 
-	//! Keep track of how many psmv trackers that has been handed out.
+	//! Keep track of how many psmv trackers have been handed out.
 	size_t num_xtmv;
 
 	//! Pre-created psmv trackers.
 	struct xrt_tracked_psmv *xtmv[2];
+
+	//! Have we handed out the hand tracker.
+	bool started_xth;
+
+	//! Pre-created hand trackers.
+	struct xrt_tracked_hand *xth;
 
 	//! Have we handed out the psvr tracker.
 	bool started_xtvr;
@@ -183,6 +189,11 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	// Put a queue before it to multi-thread the filter.
 	u_sink_queue_create(&fact->xfctx, xsink, &xsink);
 
+	struct xrt_frame_sink *ht_sink = NULL;
+	t_hand_create(&fact->xfctx, fact->data, &fact->xth, &ht_sink);
+	u_sink_create_to_r8g8b8_or_l8(&fact->xfctx, ht_sink, &ht_sink);
+	u_sink_split_create(&fact->xfctx, xsink, ht_sink, &xsink);
+
 	// Hardcoded quirk sink.
 	struct u_sink_quirk_params qp;
 	U_ZERO(&qp);
@@ -286,6 +297,35 @@ p_factory_create_tracked_psvr(struct xrt_tracking_factory *xfact,
 #endif
 }
 
+static int
+p_factory_create_tracked_hand(struct xrt_tracking_factory *xfact,
+                              struct xrt_device *xdev,
+                              struct xrt_tracked_hand **out_xth)
+{
+#ifdef XRT_HAVE_OPENCV
+	struct p_factory *fact = p_factory(xfact);
+
+	struct xrt_tracked_hand *xth = NULL;
+
+	p_factory_ensure_frameserver(fact);
+
+	if (!fact->started_xth) {
+		xth = fact->xth;
+	}
+
+	if (xth == NULL) {
+		return -1;
+	}
+
+	fact->started_xth = true;
+	t_hand_start(xth);
+	*out_xth = xth;
+
+	return 0;
+#else
+	return -1;
+#endif
+}
 
 /*
  *
@@ -301,6 +341,7 @@ p_tracking_init(struct prober *p)
 	fact->base.xfctx = &fact->xfctx;
 	fact->base.create_tracked_psmv = p_factory_create_tracked_psmv;
 	fact->base.create_tracked_psvr = p_factory_create_tracked_psvr;
+	fact->base.create_tracked_hand = p_factory_create_tracked_hand;
 	fact->origin.type = XRT_TRACKING_TYPE_RGB;
 	fact->origin.offset.orientation.y = 1.0f;
 	fact->origin.offset.position.z = -2.0f;

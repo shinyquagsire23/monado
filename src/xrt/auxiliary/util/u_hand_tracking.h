@@ -29,6 +29,7 @@ extern "C" {
 enum u_hand_tracking_model
 {
 	XRT_HAND_TRACKING_MODEL_FINGERL_CURL,
+	XRT_HAND_TRACKING_MODEL_CAMERA,
 };
 
 /*!
