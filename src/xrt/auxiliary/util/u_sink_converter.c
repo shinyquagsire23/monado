@@ -192,7 +192,7 @@ YUV444_to_R8G8B8(const uint8_t *input, uint8_t *dst)
 }
 
 static void
-from_YUYV422_to_R8G8B8(struct u_sink_converter *s,
+from_YUYV422_to_R8G8B8(struct xrt_frame *dst_frame,
                        uint32_t w,
                        uint32_t h,
                        size_t stride,
@@ -201,17 +201,17 @@ from_YUYV422_to_R8G8B8(struct u_sink_converter *s,
 	for (uint32_t y = 0; y < h; y++) {
 		for (uint32_t x = 0; x < w; x += 2) {
 			const uint8_t *src = data;
-			uint8_t *dst = s->frame->data;
+			uint8_t *dst = dst_frame->data;
 
 			src = src + (y * stride) + (x * 2);
-			dst = dst + (y * s->frame->stride) + (x * 3);
+			dst = dst + (y * dst_frame->stride) + (x * 3);
 			YUYV422_to_R8G8B8(src, dst);
 		}
 	}
 }
 
 static void
-from_UYVY422_to_R8G8B8(struct u_sink_converter *s,
+from_UYVY422_to_R8G8B8(struct xrt_frame *dst_frame,
                        uint32_t w,
                        uint32_t h,
                        size_t stride,
@@ -220,10 +220,10 @@ from_UYVY422_to_R8G8B8(struct u_sink_converter *s,
 	for (uint32_t y = 0; y < h; y++) {
 		for (uint32_t x = 0; x < w; x += 2) {
 			const uint8_t *src = data;
-			uint8_t *dst = s->frame->data;
+			uint8_t *dst = dst_frame->data;
 
 			src = src + (y * stride) + (x * 2);
-			dst = dst + (y * s->frame->stride) + (x * 3);
+			dst = dst + (y * dst_frame->stride) + (x * 3);
 			UYVY422_to_R8G8B8(src, dst);
 		}
 	}
@@ -231,7 +231,7 @@ from_UYVY422_to_R8G8B8(struct u_sink_converter *s,
 
 
 static void
-from_YUV888_to_R8G8B8(struct u_sink_converter *s,
+from_YUV888_to_R8G8B8(struct xrt_frame *dst_frame,
                       uint32_t w,
                       uint32_t h,
                       size_t stride,
@@ -240,10 +240,10 @@ from_YUV888_to_R8G8B8(struct u_sink_converter *s,
 	for (uint32_t y = 0; y < h; y++) {
 		for (uint32_t x = 0; x < w; x++) {
 			const uint8_t *src = data;
-			uint8_t *dst = s->frame->data;
+			uint8_t *dst = dst_frame->data;
 
 			src = src + (y * stride) + (x * 3);
-			dst = dst + (y * s->frame->stride) + (x * 3);
+			dst = dst + (y * dst_frame->stride) + (x * 3);
 			YUV444_to_R8G8B8(src, dst);
 		}
 	}
@@ -274,7 +274,7 @@ check_header(size_t size, const uint8_t *data)
 }
 
 static bool
-from_MJPEG_to_R8G8B8(struct u_sink_converter *s,
+from_MJPEG_to_R8G8B8(struct xrt_frame *dst_frame,
                      size_t size,
                      const uint8_t *data)
 {
@@ -300,12 +300,12 @@ from_MJPEG_to_R8G8B8(struct u_sink_converter *s,
 	cinfo.out_color_space = JCS_RGB;
 	jpeg_start_decompress(&cinfo);
 
-	uint8_t *moving_ptr = s->frame->data;
+	uint8_t *moving_ptr = dst_frame->data;
 
 	uint32_t scanlines_read = 0;
 	while (scanlines_read < cinfo.image_height) {
 		int read_count = jpeg_read_scanlines(&cinfo, &moving_ptr, 16);
-		moving_ptr += read_count * s->frame->stride;
+		moving_ptr += read_count * dst_frame->stride;
 		scanlines_read += read_count;
 	}
 
@@ -316,7 +316,7 @@ from_MJPEG_to_R8G8B8(struct u_sink_converter *s,
 }
 
 static bool
-from_MJPEG_to_YUV888(struct u_sink_converter *s,
+from_MJPEG_to_YUV888(struct xrt_frame *dst_frame,
                      size_t size,
                      const uint8_t *data)
 {
@@ -342,12 +342,12 @@ from_MJPEG_to_YUV888(struct u_sink_converter *s,
 	cinfo.out_color_space = JCS_YCbCr;
 	jpeg_start_decompress(&cinfo);
 
-	uint8_t *moving_ptr = s->frame->data;
+	uint8_t *moving_ptr = dst_frame->data;
 
 	uint32_t scanlines_read = 0;
 	while (scanlines_read < cinfo.image_height) {
 		int read_count = jpeg_read_scanlines(&cinfo, &moving_ptr, 16);
-		moving_ptr += read_count * s->frame->stride;
+		moving_ptr += read_count * dst_frame->stride;
 		scanlines_read += read_count;
 	}
 
@@ -406,23 +406,23 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		return;
 	case XRT_FORMAT_YUYV422:
 		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_YUYV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
-		                       xf->data);
+		from_YUYV422_to_R8G8B8(s->frame, xf->width, xf->height,
+		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_UYVY422:
 		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_UYVY422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
-		                       xf->data);
+		from_UYVY422_to_R8G8B8(s->frame, xf->width, xf->height,
+		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_YUV888:
 		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_YUV888_to_R8G8B8(s, xf->width, xf->height, xf->stride,
-		                      xf->data);
+		from_YUV888_to_R8G8B8(s->frame, xf->width, xf->height,
+		                      xf->stride, xf->data);
 		break;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
 		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		if (!from_MJPEG_to_R8G8B8(s, xf->size, xf->data)) {
+		if (!from_MJPEG_to_R8G8B8(s->frame, xf->size, xf->data)) {
 			return;
 		}
 		break;
@@ -447,23 +447,23 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		return;
 	case XRT_FORMAT_YUYV422:
 		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_YUYV422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
-		                       xf->data);
+		from_YUYV422_to_R8G8B8(s->frame, xf->width, xf->height,
+		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_UYVY422:
 		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_UYVY422_to_R8G8B8(s, xf->width, xf->height, xf->stride,
-		                       xf->data);
+		from_UYVY422_to_R8G8B8(s->frame, xf->width, xf->height,
+		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_YUV888:
 		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		from_YUV888_to_R8G8B8(s, xf->width, xf->height, xf->stride,
-		                      xf->data);
+		from_YUV888_to_R8G8B8(s->frame, xf->width, xf->height,
+		                      xf->stride, xf->data);
 		break;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
 		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &s->frame);
-		if (!from_MJPEG_to_R8G8B8(s, xf->size, xf->data)) {
+		if (!from_MJPEG_to_R8G8B8(s->frame, xf->size, xf->data)) {
 			return;
 		}
 		break;
@@ -494,7 +494,7 @@ receive_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs,
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
 		create_one_off_with_format(xf, XRT_FORMAT_YUV888, &s->frame);
-		if (!from_MJPEG_to_YUV888(s, xf->size, xf->data)) {
+		if (!from_MJPEG_to_YUV888(s->frame, xf->size, xf->data)) {
 			return;
 		}
 		break;
@@ -524,7 +524,7 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
 		create_one_off_with_format(xf, XRT_FORMAT_YUV888, &s->frame);
-		if (!from_MJPEG_to_YUV888(s, xf->size, xf->data)) {
+		if (!from_MJPEG_to_YUV888(s->frame, xf->size, xf->data)) {
 			return;
 		}
 		break;
