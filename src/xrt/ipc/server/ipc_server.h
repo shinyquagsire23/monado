@@ -203,6 +203,16 @@ int
 ipc_server_main(int argc, char **argv);
 
 /*!
+ * Android entry point to the IPC server process.
+ *
+ * @ingroup ipc_server
+ */
+#ifdef XRT_OS_ANDROID
+int
+ipc_server_main_android(int fd);
+#endif
+
+/*!
  * Called by client threads to manage global state
  *
  * @ingroup ipc_server

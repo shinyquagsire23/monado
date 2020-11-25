@@ -1230,3 +1230,29 @@ ipc_server_main(int argc, char **argv)
 
 	return ret;
 }
+
+#ifdef XRT_OS_ANDROID
+int
+ipc_server_main_android(int fd)
+{
+	struct ipc_server *s = U_TYPED_CALLOC(struct ipc_server);
+	U_LOG_D("Created IPC server on fd %d", fd);
+
+	int ret = init_all(s);
+	if (ret < 0) {
+		free(s);
+		return ret;
+	}
+
+	init_server_state(s);
+	start_client_listener_thread(s, fd);
+	ret = main_loop(s);
+
+	teardown_all(s);
+	free(s);
+
+	U_LOG_E("Server exiting! '%i'", ret);
+
+	return ret;
+}
+#endif
