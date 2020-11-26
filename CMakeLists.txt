@@ -93,6 +93,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	find_package(OpenGL COMPONENTS GLX)
 	pkg_search_module(DBUS dbus-1)
 
+	pkg_check_modules(GST
+		gstreamer-1.0
+		gstreamer-app-1.0
+		gstreamer-video-1.0
+	)
+
 	pkg_check_modules(SURVIVE IMPORTED_TARGET survive)
 else()
 	find_package(OpenGL)
@@ -117,6 +123,7 @@ cmake_dependent_option(XRT_HAVE_OPENGL "Enable OpenGL Graphics API support" ON "
 cmake_dependent_option(XRT_HAVE_OPENGLES "Enable OpenGL-ES Graphics API support" ON "OpenGLES_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_EGL "Enable OpenGL on EGL Graphics API support" ON "EGL_FOUND; XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES" OFF)
 cmake_dependent_option(XRT_HAVE_DBUS "Enable dbus support (for BLE support)" ON "DBUS_FOUND" OFF)
+cmake_dependent_option(XRT_HAVE_VF "Enable gstreamer support (for video file support)" ON "GST_FOUND" OFF)
 cmake_dependent_option(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" ON "XRT_HAVE_VULKAN; XRT_HAVE_WAYLAND OR XRT_HAVE_XCB OR ANDROID OR WIN32" OFF)
 cmake_dependent_option(XRT_FEATURE_OPENXR "Build OpenXR runtime target" ON "XRT_FEATURE_COMPOSITOR_MAIN" OFF)
 cmake_dependent_option(XRT_FEATURE_SERVICE "Enable separate service module for OpenXR runtime" ON "NOT WIN32" OFF)
@@ -273,6 +280,7 @@ message(STATUS "#    OPENGLES:     ${XRT_HAVE_OPENGLES}")
 message(STATUS "#    VULKAN:       ${XRT_HAVE_VULKAN}")
 message(STATUS "#    EGL:          ${XRT_HAVE_EGL}")
 message(STATUS "#    DBUS:         ${XRT_HAVE_DBUS}")
+message(STATUS "#    VF:           ${XRT_HAVE_VF}")
 message(STATUS "#    LIBUSB:       ${XRT_HAVE_LIBUSB}")
 message(STATUS "#    JPEG:         ${XRT_HAVE_JPEG}")
 message(STATUS "#    OPENCV:       ${XRT_HAVE_OPENCV}")

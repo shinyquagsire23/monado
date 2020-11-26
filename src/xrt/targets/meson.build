@@ -53,6 +53,10 @@ if 'v4l2' in drivers
 	driver_libs += [lib_drv_v4l2]
 endif
 
+if 'vf' in drivers
+	driver_libs += [lib_drv_vf]
+endif
+
 if 'vive' in drivers
 	driver_libs += [lib_drv_vive]
 endif

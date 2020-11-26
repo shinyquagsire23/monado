@@ -20,6 +20,10 @@
 #include "v4l2/v4l2_interface.h"
 #endif
 
+#ifdef XRT_HAVE_VF
+#include "vf/vf_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_REMOTE
 #include "remote/r_interface.h"
 #endif
@@ -776,6 +780,8 @@ open_hid_interface(struct xrt_prober *xp,
 	return -1;
 }
 
+DEBUG_GET_ONCE_OPTION(vf_path, "VF_PATH", NULL)
+
 static int
 open_video_device(struct xrt_prober *xp,
                   struct xrt_prober_device *xpdev,
@@ -784,6 +790,17 @@ open_video_device(struct xrt_prober *xp,
 {
 	XRT_MAYBE_UNUSED struct prober_device *pdev =
 	    (struct prober_device *)xpdev;
+
+#if defined(XRT_HAVE_VF)
+	const char *path = debug_get_option_vf_path();
+	if (path != NULL) {
+		struct xrt_fs *xfs = vf_fs_create(xfctx, path);
+		if (xfs) {
+			*out_xfs = xfs;
+			return 0;
+		}
+	}
+#endif
 
 #if defined(XRT_HAVE_V4L2)
 	if (pdev->num_v4ls == 0) {

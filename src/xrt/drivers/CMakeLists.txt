@@ -193,6 +193,18 @@ if(XRT_HAVE_V4L2)
 	list(APPEND ENABLED_DRIVERS v4l2)
 endif()
 
+if(XRT_HAVE_VF)
+	set(VF_SOURCE_FILES
+		vf/vf_driver.c
+		)
+
+	add_library(drv_vf STATIC ${VF_SOURCE_FILES})
+	target_link_libraries(drv_vf PRIVATE xrt-interfaces aux_os ${GST_LIBRARIES})
+	target_include_directories(drv_vf PRIVATE ${GST_INCLUDE_DIRS})
+	MESSAGE("GST include ${GST_INCLUDE_DIRS}")
+	list(APPEND ENABLED_DRIVERS vf)
+endif()
+
 if (XRT_BUILD_DRIVER_SURVIVE)
 	set(SURVIVE_SOURCE_FILES
 		survive/survive_driver.c

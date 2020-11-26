@@ -10,6 +10,7 @@
 #pragma once
 
 #cmakedefine XRT_HAVE_DBUS
+#cmakedefine XRT_HAVE_VF
 #cmakedefine XRT_HAVE_EGL
 #cmakedefine XRT_HAVE_FFMPEG
 #cmakedefine XRT_HAVE_JPEG

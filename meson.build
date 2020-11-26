@@ -70,6 +70,11 @@ vulkan   = dependency('vulkan', required: true)
 zlib     = dependency('zlib', required: false)
 survive  = dependency('survive', required: false)
 dbus     = dependency('dbus-1', required: get_option('dbus'))
+gst      = dependency('gstreamer-1.0', required: false)
+gst_app  = dependency('gstreamer-app-1.0', required: false)
+gst_video= dependency('gstreamer-video-1.0', required: false)
+
+gst_found = gst.found() and gst_app.found() and gst_video.found()
 
 opencv = dependency('opencv4', required: false)
 if not opencv.found()
@@ -188,6 +193,12 @@ endif
 if has_v4l2_header and ('auto' in drivers or 'v4l2' in drivers)
 	if 'v4l2' not in drivers
 		drivers += ['v4l2']
+	endif
+endif
+
+if gst_found and ('auto' in drivers or 'vf' in drivers)
+	if 'vf' not in drivers
+		drivers += ['vf']
 	endif
 endif
 

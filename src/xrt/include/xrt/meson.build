@@ -69,6 +69,10 @@ if has_v4l2_header and 'v4l2' in drivers
 	have_conf.set('XRT_HAVE_V4L2', true)
 endif
 
+if 'vf' in drivers
+	have_conf.set('XRT_HAVE_VF', true)
+endif
+
 if true
 	have_conf.set('XRT_HAVE_VULKAN', true)	
 endif

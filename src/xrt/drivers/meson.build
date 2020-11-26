@@ -134,6 +134,16 @@ lib_drv_remote = static_library(
 	build_by_default: 'remote' in drivers,
 )
 
+lib_drv_vf = static_library(
+	'drv_vf',
+	files(
+		'vf/vf_driver.c'
+	),
+	include_directories: xrt_include,
+	dependencies: [aux, gst, gst_app, gst_video],
+	build_by_default: 'vf' in drivers,
+)
+
 lib_drv_v4l2 = static_library(
 	'drv_v4l2',
 	files(
