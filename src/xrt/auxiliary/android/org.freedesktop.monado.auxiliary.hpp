@@ -83,6 +83,9 @@ namespace org::freedesktop::monado::auxiliary {
 		markAsDiscardedByNative();
 
 
+		static jni::Object
+		getDisplayMetrics(android::app::Activity const &activity);
+
 		/*!
 		 * Initialize the static metadata of this wrapper with a known
 		 * (non-null) Java class.
@@ -101,6 +104,7 @@ namespace org::freedesktop::monado::auxiliary {
 			jni::method_t attachToActivity;
 			jni::method_t waitGetSurfaceHolder;
 			jni::method_t markAsDiscardedByNative;
+			jni::method_t getDisplayMetrics;
 
 			/*!
 			 * Singleton accessor

@@ -21,7 +21,10 @@ namespace org::freedesktop::monado::auxiliary {
 	      waitGetSurfaceHolder(classRef().getMethod(
 	          "waitGetSurfaceHolder", "(I)Landroid/view/SurfaceHolder;")),
 	      markAsDiscardedByNative(
-	          classRef().getMethod("markAsDiscardedByNative", "()V"))
+	          classRef().getMethod("markAsDiscardedByNative", "()V")),
+	      getDisplayMetrics(classRef().getStaticMethod(
+	          "getDisplayMetrics",
+	          "(Landroid/app/Activity;)Landroid/util/DisplayMetrics;"))
 	{}
 } // namespace org::freedesktop::monado::auxiliary
 } // namespace wrap

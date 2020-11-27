@@ -11,6 +11,7 @@ package org.freedesktop.monado.auxiliary;
 
 import android.app.Activity;
 import android.os.Build;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -231,6 +232,14 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     public void surfaceRedrawNeeded(@NonNull SurfaceHolder surfaceHolder) {
 //        currentSurfaceHolder = surfaceHolder;
         Log.i(TAG, "surfaceRedrawNeeded");
+    }
+
+    @NonNull
+    @Keep
+    public static DisplayMetrics getDisplayMetrics(Activity activity) {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        activity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        return displayMetrics;
     }
 
 }

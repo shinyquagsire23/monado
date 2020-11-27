@@ -157,3 +157,50 @@ android_custom_surface_wait_get_surface(
 	return ANativeWindow_fromSurface(jni::env(),
 	                                 surf.object().makeLocalReference());
 }
+
+bool
+android_custom_surface_get_display_metrics(
+    struct _JavaVM *vm,
+    void *activity,
+    struct xrt_android_display_metrics *out_metrics)
+{
+	jni::init(vm);
+	try {
+		auto info = getAppInfo(XRT_ANDROID_PACKAGE, (jobject)activity);
+		if (info.isNull()) {
+			U_LOG_E(
+			    "Could not get application info for package '%s'",
+			    "org.freedesktop.monado.openxr_runtime");
+			return false;
+		}
+
+		auto clazz = loadClassFromPackage(info, (jobject)activity,
+		                                  FULLY_QUALIFIED_CLASSNAME);
+
+		if (clazz.isNull()) {
+			U_LOG_E("Could not load class '%s' from package '%s'",
+			        FULLY_QUALIFIED_CLASSNAME, XRT_ANDROID_PACKAGE);
+			return false;
+		}
+
+		// Teach the wrapper our class before we start to use it.
+		MonadoView::staticInitClass((jclass)clazz.object().getHandle());
+
+		jni::Object displayMetrics =
+		    MonadoView::getDisplayMetrics(Activity((jobject)activity));
+
+		*out_metrics = {
+		    .width_pixels = displayMetrics.get<int>("widthPixels"),
+		    .height_pixels = displayMetrics.get<int>("heightPixels"),
+		    .density_dpi = displayMetrics.get<int>("densityDpi"),
+		    .density = displayMetrics.get<float>("xdpi"),
+		    .scaled_density = displayMetrics.get<float>("ydpi"),
+		    .xdpi = displayMetrics.get<float>("density"),
+		    .ydpi = displayMetrics.get<float>("scaledDensity")};
+		return true;
+
+	} catch (std::exception const &e) {
+		U_LOG_E("Could not get display metrics: %s", e.what());
+		return false;
+	}
+}

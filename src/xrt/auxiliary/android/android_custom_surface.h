@@ -23,6 +23,17 @@ extern "C" {
 struct _JNIEnv;
 struct _JavaVM;
 
+struct xrt_android_display_metrics
+{
+	int width_pixels;
+	int height_pixels;
+	int density_dpi;
+	float density;
+	float scaled_density;
+	float xdpi;
+	float ydpi;
+};
+
 /*!
  * Opaque type representing a custom surface added to an activity, and the async
  * operation to perform this adding.
@@ -77,6 +88,13 @@ android_custom_surface_destroy(
 ANativeWindow *
 android_custom_surface_wait_get_surface(
     struct android_custom_surface *custom_surface, uint64_t timeout_ms);
+
+bool
+android_custom_surface_get_display_metrics(
+    struct _JavaVM *vm,
+    void *activity,
+    struct xrt_android_display_metrics *out_metrics);
+
 #ifdef __cplusplus
 }
 #endif

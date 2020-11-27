@@ -40,5 +40,13 @@ namespace org::freedesktop::monado::auxiliary {
 		return object().call<void>(
 		    Meta::data().markAsDiscardedByNative);
 	}
+
+	inline jni::Object
+	MonadoView::getDisplayMetrics(android::app::Activity const &activity)
+	{
+		return Meta::data().clazz().call<jni::Object>(
+		    Meta::data().getDisplayMetrics, activity.object());
+	}
+
 } // namespace org::freedesktop::monado::auxiliary
 } // namespace wrap
