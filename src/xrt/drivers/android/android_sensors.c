@@ -17,6 +17,9 @@
 #include "util/u_var.h"
 #include "util/u_distortion_mesh.h"
 
+#include "android/android_globals.h"
+#include "android/android_custom_surface.h"
+
 #include <xrt/xrt_config_android.h>
 
 // 60 events per second (in us).
@@ -253,9 +256,20 @@ android_device_create()
 		return NULL;
 	}
 
-	const uint32_t w_pixels = 2960;
-	const uint32_t h_pixels = 1440;
-	const uint32_t ppi = 572;
+	struct xrt_android_display_metrics metrics;
+	if (!android_custom_surface_get_display_metrics(
+	        android_globals_get_vm(), android_globals_get_activity(),
+	        &metrics)) {
+		U_LOG_E("Could not get Android display metrics.");
+		/* Fallback to default values (Pixel 3) */
+		metrics.width_pixels = 2960;
+		metrics.height_pixels = 1440;
+		metrics.density_dpi = 572;
+	}
+
+	const uint32_t w_pixels = metrics.width_pixels;
+	const uint32_t h_pixels = metrics.height_pixels;
+	const uint32_t ppi = metrics.density_dpi;
 
 	const float angle = 45 * M_PI / 180.0; // 0.698132; // 40Deg in rads
 	const float w_meters = ((float)w_pixels / (float)ppi) * 0.0254f;

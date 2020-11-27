@@ -203,7 +203,7 @@ if(XRT_BUILD_DRIVER_ANDROID)
 		)
 
 	add_library(drv_android STATIC ${ANDROID_SOURCE_FILES})
-	target_link_libraries(drv_android PRIVATE xrt-interfaces aux_util aux_os ${ANDROID_LIBRARY})
+	target_link_libraries(drv_android PRIVATE xrt-interfaces aux_util aux_os aux_android ${ANDROID_LIBRARY})
 	list(APPEND ENABLED_DRIVERS android)
 endif()
 
