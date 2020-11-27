@@ -300,6 +300,17 @@ math_quat_rotate_derivative(const struct xrt_quat *rot,
  *
  */
 
+/*!
+ * Multiply Matrix2x2.
+ *
+ * @relates xrt_matrix_2x2
+ * @ingroup aux_math
+ */
+void
+math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
+                         const struct xrt_matrix_2x2 *right,
+                         struct xrt_matrix_2x2 *result);
+
 void
 math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
                                const struct xrt_vec3 *right,
