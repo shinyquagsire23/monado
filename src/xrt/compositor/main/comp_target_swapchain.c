@@ -152,6 +152,19 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	VkExtent2D extent = comp_target_swapchain_select_extent(
 	    cts, surface_caps, width, height);
 
+	if (surface_caps.currentTransform &
+	        VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+	    surface_caps.currentTransform &
+	        VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+		COMP_DEBUG(ct->c,
+		           "Swapping width and height,"
+		           "since we are going to pre rotate");
+		uint32_t w2 = extent.width;
+		uint32_t h2 = extent.height;
+		extent.width = h2;
+		extent.height = w2;
+	}
+
 	// Create the swapchain now.
 	VkSwapchainCreateInfoKHR swapchain_info = {
 	    .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -168,7 +181,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	    .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 	    .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	    .queueFamilyIndexCount = 0,
-	    .preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+	    .preTransform = surface_caps.currentTransform,
 	    .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 	    .presentMode = cts->present_mode,
 	    .clipped = VK_TRUE,
@@ -195,6 +208,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	cts->base.width = extent.width;
 	cts->base.height = extent.height;
 	cts->base.format = cts->surface.format.format;
+	cts->base.surface_transform = surface_caps.currentTransform;
 
 	comp_target_swapchain_create_image_views(cts);
 }

@@ -57,6 +57,8 @@ struct comp_target
 	//! Array of images and image views for rendering.
 	struct comp_target_image *images;
 
+	//! Transformation of the current surface, required for pre-rotation
+	VkSurfaceTransformFlagBitsKHR surface_transform;
 
 	/*!
 	 * Do any initialization that is required to happen before Vulkan has

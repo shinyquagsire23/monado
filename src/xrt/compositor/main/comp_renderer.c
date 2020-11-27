@@ -193,35 +193,95 @@ renderer_build_rendering(struct comp_renderer *r,
 	data.width = r->c->target->width;
 	data.height = r->c->target->height;
 
-	// clang-format off
-	float scale_x = (float)r->c->target->width / (float)r->c->xdev->hmd->screens[0].w_pixels;
-	float scale_y = (float)r->c->target->height / (float)r->c->xdev->hmd->screens[0].h_pixels;
-	// clang-format on
+	bool pre_rotate = false;
+	if (r->c->target->surface_transform &
+	        VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+	    r->c->target->surface_transform &
+	        VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+		COMP_DEBUG(c,
+		           "Swapping width and height,"
+		           "since we are pre rotating");
+		pre_rotate = true;
+	}
+
+
+	float w = pre_rotate ? r->c->xdev->hmd->screens[0].h_pixels
+	                     : r->c->xdev->hmd->screens[0].w_pixels;
+	float h = pre_rotate ? r->c->xdev->hmd->screens[0].w_pixels
+	                     : r->c->xdev->hmd->screens[0].h_pixels;
+
+	float scale_x = (float)r->c->target->width / w;
+	float scale_y = (float)r->c->target->height / h;
 
 	struct xrt_view *l_v = &r->c->xdev->hmd->views[0];
-	struct comp_viewport_data l_viewport_data = {
-	    .x = (uint32_t)(l_v->viewport.x_pixels * scale_x),
-	    .y = (uint32_t)(l_v->viewport.y_pixels * scale_y),
-	    .w = (uint32_t)(l_v->viewport.w_pixels * scale_x),
-	    .h = (uint32_t)(l_v->viewport.h_pixels * scale_y),
-	};
+
+
+	struct comp_viewport_data l_viewport_data;
+
+	if (pre_rotate) {
+		l_viewport_data = (struct comp_viewport_data){
+		    .x = (uint32_t)(l_v->viewport.y_pixels * scale_x),
+		    .y = (uint32_t)(l_v->viewport.x_pixels * scale_y),
+		    .w = (uint32_t)(l_v->viewport.h_pixels * scale_x),
+		    .h = (uint32_t)(l_v->viewport.w_pixels * scale_y),
+		};
+	} else {
+		l_viewport_data = (struct comp_viewport_data){
+		    .x = (uint32_t)(l_v->viewport.x_pixels * scale_x),
+		    .y = (uint32_t)(l_v->viewport.y_pixels * scale_y),
+		    .w = (uint32_t)(l_v->viewport.w_pixels * scale_x),
+		    .h = (uint32_t)(l_v->viewport.h_pixels * scale_y),
+		};
+	}
+
+	const struct xrt_matrix_2x2 rotation_90_cw = {{
+	    .vecs =
+	        {
+	            {0, 1},
+	            {-1, 0},
+	        },
+	}};
+
+
 	struct comp_mesh_ubo_data l_data = {
 	    .rot = l_v->rot,
 	    .flip_y = false,
 	};
 
+	if (pre_rotate) {
+		math_matrix_2x2_multiply(&l_v->rot, &rotation_90_cw,
+		                         &l_data.rot);
+	}
+
 	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
-	struct comp_viewport_data r_viewport_data = {
-	    .x = (uint32_t)(r_v->viewport.x_pixels * scale_x),
-	    .y = (uint32_t)(r_v->viewport.y_pixels * scale_y),
-	    .w = (uint32_t)(r_v->viewport.w_pixels * scale_x),
-	    .h = (uint32_t)(r_v->viewport.h_pixels * scale_y),
-	};
+
+	struct comp_viewport_data r_viewport_data;
+
+	if (pre_rotate) {
+		r_viewport_data = (struct comp_viewport_data){
+		    .x = (uint32_t)(r_v->viewport.y_pixels * scale_x),
+		    .y = (uint32_t)(r_v->viewport.x_pixels * scale_y),
+		    .w = (uint32_t)(r_v->viewport.h_pixels * scale_x),
+		    .h = (uint32_t)(r_v->viewport.w_pixels * scale_y),
+		};
+	} else {
+		r_viewport_data = (struct comp_viewport_data){
+		    .x = (uint32_t)(r_v->viewport.x_pixels * scale_y),
+		    .y = (uint32_t)(r_v->viewport.y_pixels * scale_x),
+		    .w = (uint32_t)(r_v->viewport.w_pixels * scale_y),
+		    .h = (uint32_t)(r_v->viewport.h_pixels * scale_x),
+		};
+	}
+
 	struct comp_mesh_ubo_data r_data = {
 	    .rot = r_v->rot,
 	    .flip_y = false,
 	};
 
+	if (pre_rotate) {
+		math_matrix_2x2_multiply(&r_v->rot, &rotation_90_cw,
+		                         &r_data.rot);
+	}
 
 	/*
 	 * Init
@@ -358,10 +418,22 @@ renderer_init(struct comp_renderer *r)
 
 	renderer_create_fences(r);
 
-	VkExtent2D extent = {
-	    .width = r->c->xdev->hmd->screens[0].w_pixels,
-	    .height = r->c->xdev->hmd->screens[0].h_pixels,
-	};
+	VkExtent2D extent;
+	if (r->c->target->surface_transform &
+	        VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+	    r->c->target->surface_transform &
+	        VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+		// Swapping width and height, since we are pre rotating
+		extent = (VkExtent2D){
+		    .width = r->c->xdev->hmd->screens[0].h_pixels,
+		    .height = r->c->xdev->hmd->screens[0].w_pixels,
+		};
+	} else {
+		extent = (VkExtent2D){
+		    .width = r->c->xdev->hmd->screens[0].w_pixels,
+		    .height = r->c->xdev->hmd->screens[0].h_pixels,
+		};
+	}
 
 	r->lr = comp_layer_renderer_create(vk, &r->c->shaders, extent,
 	                                   VK_FORMAT_B8G8R8A8_SRGB);
