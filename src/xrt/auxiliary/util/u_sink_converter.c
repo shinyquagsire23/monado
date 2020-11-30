@@ -363,17 +363,34 @@ from_MJPEG_to_YUV888(struct xrt_frame *dst_frame,
  *
  */
 
-static void
-create_one_off_with_format(struct xrt_frame *xf,
-                           enum xrt_format format,
-                           struct xrt_frame **one_off)
+
+/*!
+ * Creates a frame that the conversion should happen to.
+ *
+ * @todo Allocate from a pool of frames.
+ */
+static bool
+create_frame_with_format(struct xrt_frame *xf,
+                         enum xrt_format format,
+                         struct xrt_frame **out_frame)
 {
-	u_frame_create_one_off(format, xf->width, xf->height, one_off);
-	(*one_off)->timestamp = xf->timestamp;
-	(*one_off)->source_timestamp = xf->source_timestamp;
-	(*one_off)->source_sequence = xf->source_sequence;
-	(*one_off)->source_id = xf->source_id;
-	(*one_off)->stereo_format = xf->stereo_format;
+	struct xrt_frame *frame = NULL;
+	u_frame_create_one_off(format, xf->width, xf->height, &frame);
+	if (frame == NULL) {
+		U_LOG_E("Failed to create target frame!");
+		*out_frame = NULL;
+		return false;
+	}
+
+	frame->timestamp = xf->timestamp;
+	frame->source_timestamp = xf->source_timestamp;
+	frame->source_sequence = xf->source_sequence;
+	frame->source_id = xf->source_id;
+	frame->stereo_format = xf->stereo_format;
+
+	*out_frame = frame;
+
+	return true;
 }
 
 static void
@@ -389,23 +406,35 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		s->downstream->push_frame(s->downstream, xf);
 		return;
 	case XRT_FORMAT_YUYV422:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
+		                              &converted)) {
+			return;
+		}
 		from_YUYV422_to_R8G8B8(converted, xf->width, xf->height,
 		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_UYVY422:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
+		                              &converted)) {
+			return;
+		}
 		from_UYVY422_to_R8G8B8(converted, xf->width, xf->height,
 		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_YUV888:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
+		                              &converted)) {
+			return;
+		}
 		from_YUV888_to_R8G8B8(converted, xf->width, xf->height,
 		                      xf->stride, xf->data);
 		break;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
+		                              &converted)) {
+			return;
+		}
 		if (!from_MJPEG_to_R8G8B8(converted, xf->size, xf->data)) {
 			return;
 		}
@@ -435,23 +464,35 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		s->downstream->push_frame(s->downstream, xf);
 		return;
 	case XRT_FORMAT_YUYV422:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
+		                              &converted)) {
+			return;
+		}
 		from_YUYV422_to_R8G8B8(converted, xf->width, xf->height,
 		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_UYVY422:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
+		                              &converted)) {
+			return;
+		}
 		from_UYVY422_to_R8G8B8(converted, xf->width, xf->height,
 		                       xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_YUV888:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
+		                              &converted)) {
+			return;
+		}
 		from_YUV888_to_R8G8B8(converted, xf->width, xf->height,
 		                      xf->stride, xf->data);
 		break;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		create_one_off_with_format(xf, XRT_FORMAT_R8G8B8, &converted);
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
+		                              &converted)) {
+			return;
+		}
 		if (!from_MJPEG_to_R8G8B8(converted, xf->size, xf->data)) {
 			return;
 		}
@@ -486,7 +527,10 @@ receive_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs,
 		return;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		create_one_off_with_format(xf, XRT_FORMAT_YUV888, &converted);
+		if (!create_frame_with_format(xf, XRT_FORMAT_YUV888,
+		                              &converted)) {
+			return;
+		}
 		if (!from_MJPEG_to_YUV888(converted, xf->size, xf->data)) {
 			return;
 		}
@@ -520,7 +564,10 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		return;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		create_one_off_with_format(xf, XRT_FORMAT_YUV888, &converted);
+		if (!create_frame_with_format(xf, XRT_FORMAT_YUV888,
+		                              &converted)) {
+			return;
+		}
 		if (!from_MJPEG_to_YUV888(converted, xf->size, xf->data)) {
 			return;
 		}
