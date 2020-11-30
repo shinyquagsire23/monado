@@ -101,7 +101,7 @@ generate_lookup_YUV_to_RGBX()
 }
 #endif
 
-inline static void
+XRT_MAYBE_UNUSED inline static void
 YUYV422_to_R8G8B8X8(const uint8_t *input, uint32_t *rgb1, uint32_t *rgb2)
 {
 	uint8_t y0 = input[0];
