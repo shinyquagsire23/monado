@@ -155,15 +155,28 @@ process(TrackerHand &t, struct xrt_frame *xf)
 		return;
 	}
 
+
+	int cols = xf->width / 2;
+	int rows = xf->height;
+	int stride = xf->stride;
+
+	int rect_cols = t.view[0].undistort_rectify_map_x.cols;
+	int rect_rows = t.view[0].undistort_rectify_map_x.rows;
+
+	if (cols != rect_cols || rows != rect_rows) {
+		fprintf(stderr,
+		        "Error: %dx%d rectification matrix does not fit %dx%d "
+		        "Image\n",
+		        rect_cols, rect_rows, cols, rows);
+		return;
+	}
+
+
 	// Create the debug frame if needed.
 	t.debug.refresh(xf);
 
 	t.view[0].keypoints.clear();
 	t.view[1].keypoints.clear();
-
-	int cols = xf->width / 2;
-	int rows = xf->height;
-	int stride = xf->stride;
 
 #if 0
 	cv::Mat l_grey(rows, cols, CV_8UC1, xf->data, stride);
