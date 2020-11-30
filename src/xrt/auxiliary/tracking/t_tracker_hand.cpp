@@ -106,6 +106,7 @@ static void
 do_view(TrackerHand &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 {
 	// Undistort and rectify the whole image.
+	//! @todo: This is an expensive operation, skip it if possible
 	cv::remap(grey,                         // src
 	          view.frame_undist_rectified,  // dst
 	          view.undistort_rectify_map_x, // map1
