@@ -266,10 +266,10 @@ renderer_build_rendering(struct comp_renderer *r,
 		};
 	} else {
 		r_viewport_data = (struct comp_viewport_data){
-		    .x = (uint32_t)(r_v->viewport.x_pixels * scale_y),
-		    .y = (uint32_t)(r_v->viewport.y_pixels * scale_x),
-		    .w = (uint32_t)(r_v->viewport.w_pixels * scale_y),
-		    .h = (uint32_t)(r_v->viewport.h_pixels * scale_x),
+		    .x = (uint32_t)(r_v->viewport.x_pixels * scale_x),
+		    .y = (uint32_t)(r_v->viewport.y_pixels * scale_y),
+		    .w = (uint32_t)(r_v->viewport.w_pixels * scale_x),
+		    .h = (uint32_t)(r_v->viewport.h_pixels * scale_y),
 		};
 	}
 
