@@ -1315,9 +1315,7 @@ verify_equirect1_layer(struct xrt_compositor *xc,
 		                 layer_index, equirect->radius);
 	}
 
-	//! @todo Not all fields validated.
-	return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-	                 "XrCompositionLayerEquirectKHR not implemented");
+	return XR_SUCCESS;
 #endif
 }
 
@@ -1798,7 +1796,7 @@ submit_cylinder_layer(struct oxr_session *sess,
 	return XR_SUCCESS;
 }
 
-static void
+static XrResult
 submit_equirect1_layer(struct oxr_session *sess,
                        struct xrt_compositor *xc,
                        struct oxr_logger *log,
@@ -1807,7 +1805,54 @@ submit_equirect1_layer(struct oxr_session *sess,
                        struct xrt_pose *inv_offset,
                        uint64_t timestamp)
 {
-	// Not implemented
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
+	    struct oxr_swapchain *, equirect->subImage.swapchain);
+	struct oxr_space *spc =
+	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, equirect->space);
+
+	enum xrt_layer_composition_flags flags =
+	    convert_layer_flags(equirect->layerFlags);
+
+	struct xrt_pose *pose_ptr = (struct xrt_pose *)&equirect->pose;
+
+	struct xrt_pose pose;
+	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp,
+	                  &pose)) {
+		return XR_SUCCESS;
+	}
+
+	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
+	}
+
+	struct xrt_layer_data data;
+	U_ZERO(&data);
+	data.type = XRT_LAYER_EQUIRECT1;
+	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
+	data.timestamp = timestamp;
+	data.flags = flags;
+
+	struct xrt_rect *rect =
+	    (struct xrt_rect *)&equirect->subImage.imageRect;
+
+	data.equirect1.visibility =
+	    convert_eye_visibility(equirect->eyeVisibility);
+	data.equirect1.sub.image_index = sc->released.index;
+	data.equirect1.sub.array_index = equirect->subImage.imageArrayIndex;
+	data.equirect1.sub.rect = *rect;
+	data.equirect1.pose = pose;
+
+	data.equirect1.radius = equirect->radius;
+
+	struct xrt_vec2 *scale = (struct xrt_vec2 *)&equirect->scale;
+	struct xrt_vec2 *bias = (struct xrt_vec2 *)&equirect->bias;
+
+	data.equirect1.scale = *scale;
+	data.equirect1.bias = *bias;
+
+	CALL_CHK(xrt_comp_layer_equirect1(xc, head, sc->swapchain, &data));
+
+	return XR_SUCCESS;
 }
 
 static void

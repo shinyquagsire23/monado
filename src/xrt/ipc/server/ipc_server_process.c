@@ -869,6 +869,25 @@ _update_cylinder_layer(struct xrt_compositor *xc,
 }
 
 static bool
+_update_equirect1_layer(struct xrt_compositor *xc,
+                        volatile struct ipc_client_state *ics,
+                        volatile struct ipc_layer_entry *layer,
+                        uint32_t i)
+{
+	struct xrt_device *xdev;
+	struct xrt_swapchain *xcs;
+	struct xrt_layer_data *data;
+
+	if (!do_single(xc, ics, layer, i, "equirect1", &xdev, &xcs, &data)) {
+		return false;
+	}
+
+	xrt_comp_layer_equirect1(xc, xdev, xcs, data);
+
+	return true;
+}
+
+static bool
 _update_equirect2_layer(struct xrt_compositor *xc,
                         volatile struct ipc_client_state *ics,
                         volatile struct ipc_layer_entry *layer,
@@ -971,6 +990,12 @@ _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 			case XRT_LAYER_CYLINDER:
 				if (!_update_cylinder_layer(xc, ics, layer,
 				                            i)) {
+					return false;
+				}
+				break;
+			case XRT_LAYER_EQUIRECT1:
+				if (!_update_equirect1_layer(xc, ics, layer,
+				                             i)) {
 					return false;
 				}
 				break;

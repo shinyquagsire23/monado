@@ -441,6 +441,15 @@ compositor_layer_cylinder(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
+compositor_layer_equirect1(struct xrt_compositor *xc,
+                           struct xrt_device *xdev,
+                           struct xrt_swapchain *xsc,
+                           const struct xrt_layer_data *data)
+{
+	return do_single(xc, xdev, xsc, data);
+}
+
+static xrt_result_t
 compositor_layer_equirect2(struct xrt_compositor *xc,
                            struct xrt_device *xdev,
                            struct xrt_swapchain *xsc,
@@ -512,6 +521,13 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 			struct comp_swapchain_image *image;
 			image = &layer->scs[0]->images[cyl->sub.image_index];
 			comp_renderer_set_cylinder_layer(c->r, i, image, data);
+		} break;
+		case XRT_LAYER_EQUIRECT1: {
+			struct xrt_layer_equirect1_data *eq =
+			    &layer->data.equirect1;
+			struct comp_swapchain_image *image;
+			image = &layer->scs[0]->images[eq->sub.image_index];
+			comp_renderer_set_equirect1_layer(c->r, i, image, data);
 		} break;
 		case XRT_LAYER_EQUIRECT2: {
 			struct xrt_layer_equirect2_data *eq =
@@ -1308,6 +1324,7 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	c->base.base.layer_quad = compositor_layer_quad;
 	c->base.base.layer_cube = compositor_layer_cube;
 	c->base.base.layer_cylinder = compositor_layer_cylinder;
+	c->base.base.layer_equirect1 = compositor_layer_equirect1;
 	c->base.base.layer_equirect2 = compositor_layer_equirect2;
 	c->base.base.layer_commit = compositor_layer_commit;
 	c->base.base.poll_events = compositor_poll_events;

@@ -96,6 +96,7 @@ enum xrt_layer_type
 	XRT_LAYER_QUAD,
 	XRT_LAYER_CUBE,
 	XRT_LAYER_CYLINDER,
+	XRT_LAYER_EQUIRECT1,
 	XRT_LAYER_EQUIRECT2,
 };
 
@@ -250,6 +251,24 @@ struct xrt_layer_cylinder_data
 };
 
 /*!
+ * All the pure data values associated with a equirect1 layer.
+ *
+ * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
+ * this struct.
+ */
+struct xrt_layer_equirect1_data
+{
+	enum xrt_layer_eye_visibility visibility;
+
+	struct xrt_sub_image sub;
+
+	struct xrt_pose pose;
+	float radius;
+	struct xrt_vec2 scale;
+	struct xrt_vec2 bias;
+};
+
+/*!
  * All the pure data values associated with a equirect2 layer.
  *
  * The @ref xrt_swapchain references and @ref xrt_device are provided outside of
@@ -327,6 +346,7 @@ struct xrt_layer_data
 		struct xrt_layer_quad_data quad;
 		struct xrt_layer_cube_data cube;
 		struct xrt_layer_cylinder_data cylinder;
+		struct xrt_layer_equirect1_data equirect1;
 		struct xrt_layer_equirect2_data equirect2;
 	};
 };
@@ -723,6 +743,20 @@ struct xrt_compositor
 	                               const struct xrt_layer_data *data);
 
 	/*!
+	 * Adds a equirect1 layer for submission.
+	 *
+	 * @param xc          Self pointer
+	 * @param xdev        The device the layer is relative to.
+	 * @param xsc         Swapchain.
+	 * @param data        All of the pure data bits.
+	 */
+	xrt_result_t (*layer_equirect1)(struct xrt_compositor *xc,
+	                                struct xrt_device *xdev,
+	                                struct xrt_swapchain *xsc,
+	                                const struct xrt_layer_data *data);
+
+
+	/*!
 	 * Adds a equirect2 layer for submission.
 	 *
 	 * @param xc          Self pointer
@@ -979,6 +1013,23 @@ xrt_comp_layer_cylinder(struct xrt_compositor *xc,
                         const struct xrt_layer_data *data)
 {
 	return xc->layer_cylinder(xc, xdev, xsc, data);
+}
+
+
+/*!
+ * @copydoc xrt_compositor::layer_equirect1
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_layer_equirect1(struct xrt_compositor *xc,
+                         struct xrt_device *xdev,
+                         struct xrt_swapchain *xsc,
+                         const struct xrt_layer_data *data)
+{
+	return xc->layer_equirect1(xc, xdev, xsc, data);
 }
 
 /*!

@@ -263,6 +263,25 @@ client_gl_compositor_layer_cylinder(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
+client_gl_compositor_layer_equirect1(struct xrt_compositor *xc,
+                                     struct xrt_device *xdev,
+                                     struct xrt_swapchain *xsc,
+                                     const struct xrt_layer_data *data)
+{
+	struct client_gl_compositor *c = client_gl_compositor(xc);
+	struct xrt_swapchain *xscfb;
+
+	assert(data->type == XRT_LAYER_EQUIRECT1);
+
+	xscfb = &client_gl_swapchain(xsc)->xscn->base;
+
+	struct xrt_layer_data d = *data;
+	d.flip_y = !d.flip_y;
+
+	return xrt_comp_layer_equirect1(&c->xcn->base, xdev, xscfb, &d);
+}
+
+static xrt_result_t
 client_gl_compositor_layer_equirect2(struct xrt_compositor *xc,
                                      struct xrt_device *xdev,
                                      struct xrt_swapchain *xsc,
@@ -442,6 +461,7 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.layer_quad = client_gl_compositor_layer_quad;
 	c->base.base.layer_cube = client_gl_compositor_layer_cube;
 	c->base.base.layer_cylinder = client_gl_compositor_layer_cylinder;
+	c->base.base.layer_equirect1 = client_gl_compositor_layer_equirect1;
 	c->base.base.layer_equirect2 = client_gl_compositor_layer_equirect2;
 	c->base.base.layer_commit = client_gl_compositor_layer_commit;
 	c->base.base.destroy = client_gl_compositor_destroy;

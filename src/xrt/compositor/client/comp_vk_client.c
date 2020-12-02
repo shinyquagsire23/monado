@@ -330,6 +330,22 @@ client_vk_compositor_layer_cylinder(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
+client_vk_compositor_layer_equirect1(struct xrt_compositor *xc,
+                                     struct xrt_device *xdev,
+                                     struct xrt_swapchain *xsc,
+                                     const struct xrt_layer_data *data)
+{
+	struct client_vk_compositor *c = client_vk_compositor(xc);
+	struct xrt_swapchain *xscfb;
+
+	assert(data->type == XRT_LAYER_EQUIRECT1);
+
+	xscfb = &client_vk_swapchain(xsc)->xscn->base;
+
+	return xrt_comp_layer_equirect1(&c->xcn->base, xdev, xscfb, data);
+}
+
+static xrt_result_t
 client_vk_compositor_layer_equirect2(struct xrt_compositor *xc,
                                      struct xrt_device *xdev,
                                      struct xrt_swapchain *xsc,
@@ -541,6 +557,7 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	c->base.base.layer_quad = client_vk_compositor_layer_quad;
 	c->base.base.layer_cube = client_vk_compositor_layer_cube;
 	c->base.base.layer_cylinder = client_vk_compositor_layer_cylinder;
+	c->base.base.layer_equirect1 = client_vk_compositor_layer_equirect1;
 	c->base.base.layer_equirect2 = client_vk_compositor_layer_equirect2;
 	c->base.base.layer_commit = client_vk_compositor_layer_commit;
 	c->base.base.destroy = client_vk_compositor_destroy;

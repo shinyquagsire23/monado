@@ -74,6 +74,12 @@ comp_renderer_set_cylinder_layer(struct comp_renderer *r,
                                  struct xrt_layer_data *data);
 
 void
+comp_renderer_set_equirect1_layer(struct comp_renderer *r,
+                                  uint32_t layer,
+                                  struct comp_swapchain_image *image,
+                                  struct xrt_layer_data *data);
+
+void
 comp_renderer_set_equirect2_layer(struct comp_renderer *r,
                                   uint32_t layer,
                                   struct comp_swapchain_image *image,
