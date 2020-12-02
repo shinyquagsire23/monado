@@ -93,8 +93,8 @@ if get_option('layer_cylinder')
 	have_conf.set('XRT_FEATURE_OPENXR_LAYER_CYLINDER', true)
 endif
 
-if get_option('layer_equirect')
-	have_conf.set('XRT_FEATURE_OPENXR_LAYER_EQUIRECT_LEGACY', true)
+if get_option('layer_equirect1')
+	have_conf.set('XRT_FEATURE_OPENXR_LAYER_EQUIRECT1', true)
 endif
 
 if get_option('layer_equirect2')

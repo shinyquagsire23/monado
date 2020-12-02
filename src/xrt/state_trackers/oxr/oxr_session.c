@@ -1217,14 +1217,14 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 }
 
 static XrResult
-verify_equirect_layer(struct xrt_compositor *xc,
-                      struct oxr_logger *log,
-                      uint32_t layer_index,
-                      const XrCompositionLayerEquirectKHR *equirect,
-                      struct xrt_device *head,
-                      uint64_t timestamp)
+verify_equirect1_layer(struct xrt_compositor *xc,
+                       struct oxr_logger *log,
+                       uint32_t layer_index,
+                       const XrCompositionLayerEquirectKHR *equirect,
+                       struct xrt_device *head,
+                       uint64_t timestamp)
 {
-#ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
+#ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 	return oxr_error(log, XR_ERROR_LAYER_INVALID,
 	                 "(frameEndInfo->layers[%u]->type) layer type "
 	                 "XrCompositionLayerEquirectKHR not supported",
@@ -1799,13 +1799,13 @@ submit_cylinder_layer(struct oxr_session *sess,
 }
 
 static void
-submit_equirect_layer(struct oxr_session *sess,
-                      struct xrt_compositor *xc,
-                      struct oxr_logger *log,
-                      const XrCompositionLayerEquirectKHR *equirect,
-                      struct xrt_device *head,
-                      struct xrt_pose *inv_offset,
-                      uint64_t timestamp)
+submit_equirect1_layer(struct oxr_session *sess,
+                       struct xrt_compositor *xc,
+                       struct oxr_logger *log,
+                       const XrCompositionLayerEquirectKHR *equirect,
+                       struct xrt_device *head,
+                       struct xrt_pose *inv_offset,
+                       uint64_t timestamp)
 {
 	// Not implemented
 }
@@ -2016,7 +2016,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 			    xdev, frameEndInfo->displayTime);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_EQUIRECT_KHR:
-			res = verify_equirect_layer(
+			res = verify_equirect1_layer(
 			    xc, log, i, (XrCompositionLayerEquirectKHR *)layer,
 			    xdev, frameEndInfo->displayTime);
 			break;
@@ -2081,7 +2081,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 			    &inv_offset, timestamp);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_EQUIRECT_KHR:
-			submit_equirect_layer(
+			submit_equirect1_layer(
 			    sess, xc, log,
 			    (XrCompositionLayerEquirectKHR *)layer, xdev,
 			    &inv_offset, timestamp);

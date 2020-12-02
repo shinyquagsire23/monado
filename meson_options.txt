@@ -96,10 +96,10 @@ option('layer_cylinder',
   description: 'Enable support for Cylinder Layers'
 )
 
-option('layer_equirect',
+option('layer_equirect1',
 	type: 'boolean',
-	value: false,
-  description: 'Enable support for Equirect Layers'
+	value: true,
+  description: 'Enable support for legacy Equirect Layers'
 )
 
 option('layer_equirect2',
