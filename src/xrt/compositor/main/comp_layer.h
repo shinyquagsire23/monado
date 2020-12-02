@@ -20,7 +20,7 @@ struct layer_transformation
 	bool flip_y;
 };
 
-struct layer_equirect_data
+struct layer_equirect2_data
 {
 	float radius;
 	float central_horizontal_angle;
@@ -41,8 +41,8 @@ struct comp_render_layer
 	struct layer_transformation transformation[2];
 	struct vk_buffer transformation_ubos[2];
 
-	struct layer_equirect_data equirect_data;
-	struct vk_buffer equirect_ubo;
+	struct layer_equirect2_data equirect2_data;
+	struct vk_buffer equirect2_ubo;
 
 	VkDescriptorPool descriptor_pool;
 	VkDescriptorSet descriptor_sets[2];
@@ -105,5 +105,5 @@ comp_layer_update_cylinder_vertex_buffer(struct comp_render_layer *self,
                                          float central_angle);
 
 void
-comp_layer_update_equirect_descriptor(struct comp_render_layer *self,
-                                      struct xrt_layer_equirect_data *data);
+comp_layer_update_equirect2_descriptor(struct comp_render_layer *self,
+                                       struct xrt_layer_equirect2_data *data);

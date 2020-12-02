@@ -407,8 +407,8 @@ _render_eye(struct comp_layer_renderer *self,
 		        ? self->pipeline_premultiplied_alpha
 		        : self->pipeline_unpremultiplied_alpha;
 
-		if (self->layers[i]->type == XRT_LAYER_EQUIRECT) {
-			pipeline = self->pipeline_equirect;
+		if (self->layers[i]->type == XRT_LAYER_EQUIRECT2) {
+			pipeline = self->pipeline_equirect2;
 			comp_layer_draw(self->layers[i], eye, pipeline,
 			                pipeline_layout, cmd_buffer,
 			                vertex_buffer, &vp_inv, &vp_inv);
@@ -553,8 +553,8 @@ _init(struct comp_layer_renderer *self,
 		return false;
 	}
 
-	if (!_init_graphics_pipeline(self, s->equirect_vert, s->equirect_frag,
-	                             true, &self->pipeline_equirect)) {
+	if (!_init_graphics_pipeline(self, s->equirect2_vert, s->equirect2_frag,
+	                             true, &self->pipeline_equirect2)) {
 		return false;
 	}
 
@@ -696,7 +696,7 @@ comp_layer_renderer_destroy(struct comp_layer_renderer *self)
 	                      NULL);
 	vk->vkDestroyPipeline(vk->device, self->pipeline_unpremultiplied_alpha,
 	                      NULL);
-	vk->vkDestroyPipeline(vk->device, self->pipeline_equirect, NULL);
+	vk->vkDestroyPipeline(vk->device, self->pipeline_equirect2, NULL);
 
 	for (uint32_t i = 0; i < ARRAY_SIZE(self->shader_modules); i++)
 		vk->vkDestroyShaderModule(vk->device, self->shader_modules[i],

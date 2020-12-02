@@ -136,7 +136,7 @@
  * XR_KHR_composition_layer_equirect2
  */
 #if defined(XR_KHR_composition_layer_equirect2) &&                             \
-    defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT)
+    defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT2)
 #define OXR_HAVE_KHR_composition_layer_equirect2
 #define OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect2(_)               \
 	_(KHR_composition_layer_equirect2, KHR_COMPOSITION_LAYER_EQUIRECT2)

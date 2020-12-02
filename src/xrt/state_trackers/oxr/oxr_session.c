@@ -1224,7 +1224,7 @@ verify_equirect_layer(struct xrt_compositor *xc,
                       struct xrt_device *head,
                       uint64_t timestamp)
 {
-#ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT
+#ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 	return oxr_error(log, XR_ERROR_LAYER_INVALID,
 	                 "(frameEndInfo->layers[%u]->type) layer type "
 	                 "XrCompositionLayerEquirectKHR not supported",
@@ -1329,7 +1329,7 @@ verify_equirect2_layer(struct xrt_compositor *xc,
                        struct xrt_device *head,
                        uint64_t timestamp)
 {
-#ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT
+#ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 	return oxr_error(log, XR_ERROR_LAYER_INVALID,
 	                 "(frameEndInfo->layers[%u]->type) layer type "
 	                 "XrCompositionLayerEquirect2KHR not supported",
@@ -1851,7 +1851,7 @@ submit_equirect2_layer(struct oxr_session *sess,
 
 	struct xrt_layer_data data;
 	U_ZERO(&data);
-	data.type = XRT_LAYER_EQUIRECT;
+	data.type = XRT_LAYER_EQUIRECT2;
 	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
 	data.timestamp = timestamp;
 	data.flags = flags;
@@ -1859,20 +1859,20 @@ submit_equirect2_layer(struct oxr_session *sess,
 	struct xrt_rect *rect =
 	    (struct xrt_rect *)&equirect->subImage.imageRect;
 
-	data.equirect.visibility =
+	data.equirect2.visibility =
 	    convert_eye_visibility(equirect->eyeVisibility);
-	data.equirect.sub.image_index = sc->released.index;
-	data.equirect.sub.array_index = equirect->subImage.imageArrayIndex;
-	data.equirect.sub.rect = *rect;
-	data.equirect.pose = pose;
+	data.equirect2.sub.image_index = sc->released.index;
+	data.equirect2.sub.array_index = equirect->subImage.imageArrayIndex;
+	data.equirect2.sub.rect = *rect;
+	data.equirect2.pose = pose;
 
-	data.equirect.radius = equirect->radius;
-	data.equirect.central_horizontal_angle =
+	data.equirect2.radius = equirect->radius;
+	data.equirect2.central_horizontal_angle =
 	    equirect->centralHorizontalAngle;
-	data.equirect.upper_vertical_angle = equirect->upperVerticalAngle;
-	data.equirect.lower_vertical_angle = equirect->lowerVerticalAngle;
+	data.equirect2.upper_vertical_angle = equirect->upperVerticalAngle;
+	data.equirect2.lower_vertical_angle = equirect->lowerVerticalAngle;
 
-	CALL_CHK(xrt_comp_layer_equirect(xc, head, sc->swapchain, &data));
+	CALL_CHK(xrt_comp_layer_equirect2(xc, head, sc->swapchain, &data));
 
 	return XR_SUCCESS;
 }

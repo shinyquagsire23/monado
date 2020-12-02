@@ -84,7 +84,7 @@ _init_ubos(struct comp_render_layer *self)
 }
 
 static bool
-_init_equirect_ubo(struct comp_render_layer *self)
+_init_equirect2_ubo(struct comp_render_layer *self)
 {
 	VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	VkMemoryPropertyFlags properties =
@@ -93,17 +93,17 @@ _init_equirect_ubo(struct comp_render_layer *self)
 	    VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
 
 	if (!vk_buffer_init(self->vk, sizeof(struct layer_transformation),
-	                    usage, properties, &self->equirect_ubo.handle,
-	                    &self->equirect_ubo.memory))
+	                    usage, properties, &self->equirect2_ubo.handle,
+	                    &self->equirect2_ubo.memory))
 		return false;
 
 	VkResult res = self->vk->vkMapMemory(
-	    self->vk->device, self->equirect_ubo.memory, 0, VK_WHOLE_SIZE, 0,
-	    &self->equirect_ubo.data);
+	    self->vk->device, self->equirect2_ubo.memory, 0, VK_WHOLE_SIZE, 0,
+	    &self->equirect2_ubo.data);
 	vk_check_error("vkMapMemory", res, false);
 
-	memcpy(self->equirect_ubo.data, &self->equirect_data,
-	       sizeof(struct layer_equirect_data));
+	memcpy(self->equirect2_ubo.data, &self->equirect2_data,
+	       sizeof(struct layer_equirect2_data));
 
 	return true;
 }
@@ -188,20 +188,20 @@ comp_layer_update_descriptors(struct comp_render_layer *self,
 }
 
 void
-comp_layer_update_equirect_descriptor(struct comp_render_layer *self,
-                                      struct xrt_layer_equirect_data *data)
+comp_layer_update_equirect2_descriptor(struct comp_render_layer *self,
+                                       struct xrt_layer_equirect2_data *data)
 {
 	_update_descriptor_equirect(self, self->descriptor_equirect,
-	                            self->equirect_ubo.handle);
+	                            self->equirect2_ubo.handle);
 
-	self->equirect_data = (struct layer_equirect_data){
+	self->equirect2_data = (struct layer_equirect2_data){
 	    .radius = data->radius,
 	    .central_horizontal_angle = data->central_horizontal_angle,
 	    .upper_vertical_angle = data->upper_vertical_angle,
 	    .lower_vertical_angle = data->lower_vertical_angle,
 	};
-	memcpy(self->equirect_ubo.data, &self->equirect_data,
-	       sizeof(struct layer_equirect_data));
+	memcpy(self->equirect2_ubo.data, &self->equirect2_data,
+	       sizeof(struct layer_equirect2_data));
 }
 
 void
@@ -236,7 +236,7 @@ _init(struct comp_render_layer *self,
 	if (!_init_ubos(self))
 		return false;
 
-	if (!_init_equirect_ubo(self))
+	if (!_init_equirect2_ubo(self))
 		return false;
 
 	VkDescriptorPoolSize pool_sizes[] = {
@@ -301,7 +301,7 @@ comp_layer_draw(struct comp_render_layer *self,
 		break;
 	case XRT_LAYER_QUAD:
 	case XRT_LAYER_CYLINDER:
-	case XRT_LAYER_EQUIRECT: _update_mvp_matrix(self, eye, vp); break;
+	case XRT_LAYER_EQUIRECT2: _update_mvp_matrix(self, eye, vp); break;
 	case XRT_LAYER_STEREO_PROJECTION_DEPTH:
 	case XRT_LAYER_CUBE:
 		// Should never end up here.
@@ -309,7 +309,7 @@ comp_layer_draw(struct comp_render_layer *self,
 	}
 
 
-	if (self->type == XRT_LAYER_EQUIRECT) {
+	if (self->type == XRT_LAYER_EQUIRECT2) {
 		const VkDescriptorSet sets[2] = {
 		    self->descriptor_sets[eye],
 		    self->descriptor_equirect,
@@ -477,7 +477,7 @@ comp_layer_destroy(struct comp_render_layer *self)
 	for (uint32_t eye = 0; eye < 2; eye++)
 		vk_buffer_destroy(&self->transformation_ubos[eye], self->vk);
 
-	vk_buffer_destroy(&self->equirect_ubo, self->vk);
+	vk_buffer_destroy(&self->equirect2_ubo, self->vk);
 
 	self->vk->vkDestroyDescriptorPool(self->vk->device,
 	                                  self->descriptor_pool, NULL);

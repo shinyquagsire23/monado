@@ -98,7 +98,7 @@ if get_option('layer_equirect')
 endif
 
 if get_option('layer_equirect2')
-	have_conf.set('XRT_FEATURE_OPENXR_LAYER_EQUIRECT', true)
+	have_conf.set('XRT_FEATURE_OPENXR_LAYER_EQUIRECT2', true)
 endif
 
 xrt_config_have_h = configure_file(

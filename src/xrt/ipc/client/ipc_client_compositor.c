@@ -592,12 +592,12 @@ ipc_compositor_layer_cylinder(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_layer_equirect(struct xrt_compositor *xc,
-                              struct xrt_device *xdev,
-                              struct xrt_swapchain *xsc,
-                              const struct xrt_layer_data *data)
+ipc_compositor_layer_equirect2(struct xrt_compositor *xc,
+                               struct xrt_device *xdev,
+                               struct xrt_swapchain *xsc,
+                               const struct xrt_layer_data *data)
 {
-	return handle_layer(xc, xdev, xsc, data, XRT_LAYER_EQUIRECT);
+	return handle_layer(xc, xdev, xsc, data, XRT_LAYER_EQUIRECT2);
 }
 
 static xrt_result_t
@@ -785,7 +785,7 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	c->base.base.layer_quad = ipc_compositor_layer_quad;
 	c->base.base.layer_cube = ipc_compositor_layer_cube;
 	c->base.base.layer_cylinder = ipc_compositor_layer_cylinder;
-	c->base.base.layer_equirect = ipc_compositor_layer_equirect;
+	c->base.base.layer_equirect2 = ipc_compositor_layer_equirect2;
 	c->base.base.layer_commit = ipc_compositor_layer_commit;
 	c->base.base.destroy = ipc_compositor_destroy;
 	c->base.base.poll_events = ipc_compositor_poll_events;

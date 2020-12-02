@@ -353,8 +353,8 @@ oxr_instance_create(struct oxr_logger *log,
 		CHECK_LAYER_TYPE("projection layers with depth images",
 		                 layer_stereo_projection_depth);
 #endif
-#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT
-		CHECK_LAYER_TYPE("equirect layers", layer_equirect);
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
+		CHECK_LAYER_TYPE("equirect2 layers", layer_equirect2);
 #endif
 #undef CHECK_LAYER_TYPE
 	}
