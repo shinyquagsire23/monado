@@ -257,7 +257,10 @@ to just re-format your changes, in case version differences in tools result in o
 
 See `CONTRIBUTING.md` for details of contribution guidelines. GitLab Issues and
 Merge Requests are the preferred wait to discuss problems, suggest enhancements,
-or submit changes for review.
+or submit changes for review. **In case of a security issue**, you should choose
+the "confidential" option when using the GitLab issues page. For highest
+security, you can send encrypted email (using GPG/OpenPGP) to Ryan Pavlik, with
+the address below and the associated key on <https://keys.openpgp.org>.
 
 Please note that this project is released with a Contributor Code of Conduct.
 By participating in this project you agree to abide by its terms.
