@@ -15,6 +15,7 @@ set(XR_API_MAJOR "1")
 set(SOURCE_FILES
 	target.c
 	oxr_sdl2_hack.c
+	libopenxr.def
 	)
 
 # depends on above generated files
