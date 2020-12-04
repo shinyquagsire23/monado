@@ -7,7 +7,7 @@ SPDX-License-Identifier: CC-BY-4.0
 This must stay in sync with the last section!
 -->
 
-
+> * Main homepage and documentation: <https://monado.freedesktop.org/>
 > * Promotional homepage: <https://monado.dev>
 > * Maintained at <https://gitlab.freedesktop.org/monado/monado>
 > * Latest API documentation: <https://monado.pages.freedesktop.org/monado>
@@ -253,7 +253,9 @@ to just re-format your changes, in case version differences in tools result in o
 
 ## Contributing, Code of Conduct
 
-See `CONTRIBUTING.md` for details of contribution guidelines.
+See `CONTRIBUTING.md` for details of contribution guidelines. GitLab Issues and
+Merge Requests are the preferred wait to discuss problems, suggest enhancements,
+or submit changes for review.
 
 Please note that this project is released with a Contributor Code of Conduct.
 By participating in this project you agree to abide by its terms.
