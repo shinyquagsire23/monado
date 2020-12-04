@@ -161,7 +161,7 @@ if 'v4l2' in drivers
 endif
 
 if 'auto' in drivers
-	drivers += ['dummy', 'hdk', 'hydra', 'ns', 'psmv', 'remote']
+	drivers += ['dummy', 'hdk', 'hydra', 'ns', 'psmv', 'remote', 'wmr']
 endif
 
 openhmd = dependency('openhmd', required: openhmd_required)

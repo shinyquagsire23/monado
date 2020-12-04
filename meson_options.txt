@@ -3,7 +3,7 @@
 
 option('drivers',
 	type: 'array',
-	choices: ['auto', 'dummy', 'hdk', 'hydra', 'ns', 'ohmd', 'psmv', 'psvr', 'rs', 'v4l2', 'vf', 'vive', 'survive', 'daydream', 'arduino', 'remote', 'handtracking', 'qwerty', 'ulv2'],
+	choices: ['auto', 'dummy', 'hdk', 'hydra', 'ns', 'ohmd', 'psmv', 'psvr', 'rs', 'v4l2', 'vf', 'vive', 'wmr', 'survive', 'daydream', 'arduino', 'remote', 'handtracking', 'qwerty', 'ulv2'],
 	value: ['auto'],
 	description: 'Set of drivers to build')
 

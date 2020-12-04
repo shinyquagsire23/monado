@@ -198,10 +198,10 @@ cmake_dependent_option(XRT_BUILD_DRIVER_HANDTRACKING "Enable Camera Hand Trackin
 cmake_dependent_option(XRT_BUILD_DRIVER_DAYDREAM "Enable the Google Daydream View controller driver (BLE, via D-Bus)" ON "XRT_HAVE_DBUS" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_ARDUINO "Enable Arduino input device with BLE via via D-Bus" ON "XRT_HAVE_DBUS" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_ILLIXR "Enable ILLIXR driver" ON "ILLIXR_PATH" OFF)
-
 option(XRT_BUILD_DRIVER_DUMMY "Enable dummy driver" ON)
 cmake_dependent_option(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" ON "Leap" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_REMOTE "Enable remote debugging driver" ON "XRT_HAVE_LINUX OR ANDROID" OFF)
+option(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" ON)
 
 # These all use the Monado internal hid wrapper.
 cmake_dependent_option(XRT_BUILD_DRIVER_HDK "Enable HDK driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
@@ -239,6 +239,7 @@ list(APPEND AVAILABLE_DRIVERS
 	"VF"
 	"VIVE"
 	"QWERTY"
+	"WMR"
 	)
 
 
@@ -378,6 +379,7 @@ message(STATUS "#    DRIVER_SURVIVE:      ${XRT_BUILD_DRIVER_SURVIVE}")
 message(STATUS "#    DRIVER_VF:           ${XRT_BUILD_DRIVER_VF}")
 message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
 message(STATUS "#    DRIVER_QWERTY:       ${XRT_BUILD_DRIVER_QWERTY}")
+message(STATUS "#    DRIVER_WMR:          ${XRT_BUILD_DRIVER_WMR}")
 message(STATUS "#####----- Config -----#####")
 
 if(XRT_FEATURE_SERVICE AND NOT XRT_FEATURE_OPENXR)

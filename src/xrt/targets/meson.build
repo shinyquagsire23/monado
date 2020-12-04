@@ -61,6 +61,10 @@ if 'vive' in drivers
 	driver_libs += [lib_drv_vive]
 endif
 
+if 'wmr' in drivers
+	driver_libs += [lib_drv_wmr]
+endif
+
 if 'survive' in drivers
 	driver_libs += [lib_drv_survive]
 endif

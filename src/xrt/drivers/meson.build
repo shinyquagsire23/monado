@@ -268,3 +268,19 @@ lib_drv_qwerty = static_library(
 )
 
 drv_qwerty_include = include_directories('qwerty')
+
+lib_drv_wmr = static_library(
+	'drv_wmr',
+	files(
+		'wmr/wmr_common.h',
+		'wmr/wmr_hmd.c',
+		'wmr/wmr_hmd.h',
+		'wmr/wmr_interface.h',
+		'wmr/wmr_prober.c',
+		'wmr/wmr_protocol.c',
+		'wmr/wmr_protocol.h',
+	),
+	include_directories: xrt_include,
+	dependencies: [aux],
+	build_by_default: 'wmr' in drivers,
+)

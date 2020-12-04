@@ -78,6 +78,12 @@
 #include "qwerty/qwerty_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_WMR
+#include "wmr/wmr_interface.h"
+#include "wmr/wmr_common.h"
+#endif
+
+
 /*!
  * Each entry should be a vendor ID (VID), product ID (PID), a "found" function,
  * and a string literal name.
@@ -120,6 +126,10 @@ struct xrt_prober_entry target_entry_list[] = {
 #ifdef XRT_BUILD_DRIVER_ULV2
     {ULV2_VID, ULV2_PID, ulv2_found, "Leap Motion Controller", "ulv2"},
 #endif
+
+#ifdef XRT_BUILD_DRIVER_WMR
+    {MICROSOFT_VID, HOLOLENS_SENSORS_PID, wmr_found, "Microsoft HoloLens Sensors", "wmr"},
+#endif // XRT_BUILD_DRIVER_WMR
 
     {0x0000, 0x0000, NULL, NULL, NULL}, // Terminate
 };

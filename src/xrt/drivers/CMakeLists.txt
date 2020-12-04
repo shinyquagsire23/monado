@@ -288,6 +288,22 @@ add_library(drv_multi STATIC ${MUlTI_SOURCE_FILES})
 target_link_libraries(drv_multi PUBLIC xrt-interfaces aux_util)
 list(APPEND ENABLED_HEADSET_DRIVERS drv_multi)
 
+if(XRT_BUILD_DRIVER_WMR)
+	set(WMR_SOURCE_FILES
+		wmr/wmr_common.h
+		wmr/wmr_hmd.c
+		wmr/wmr_hmd.h
+		wmr/wmr_interface.h
+		wmr/wmr_prober.c
+		wmr/wmr_protocol.c
+		wmr/wmr_protocol.h
+		)
+
+	add_library(drv_wmr STATIC ${WMR_SOURCE_FILES})
+	target_link_libraries(drv_wmr PRIVATE xrt-interfaces aux_util)
+	list(APPEND ENABLED_HEADSET_DRIVERS wmr)
+endif()
+
 if(ENABLED_HEADSET_DRIVERS)
 	set(ENABLED_DRIVERS ${ENABLED_HEADSET_DRIVERS} ${ENABLED_DRIVERS})
 	list(SORT ENABLED_DRIVERS)
