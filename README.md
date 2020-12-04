@@ -11,6 +11,8 @@ This must stay in sync with the last section!
 > * Promotional homepage: <https://monado.dev>
 > * Maintained at <https://gitlab.freedesktop.org/monado/monado>
 > * Latest API documentation: <https://monado.pages.freedesktop.org/monado>
+> * Continuously-updated changelog of the default branch:
+>   <https://monado.pages.freedesktop.org/monado/md__c_h_a_n_g_e_l_o_g.html>
 
 Monado is an open source XR runtime delivering immersive experiences such as VR
 and AR on mobile, PC/desktop, and any other device
