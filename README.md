@@ -39,12 +39,12 @@ and aims to support other operating systems in the near future.
 Dependencies include:
 
 * [CMake][] 3.13 or newer (Note Ubuntu 18.04 only has 3.10) or meson >= 0.49
-* Vulkan headers
+* Vulkan headers and loader - Fedora package `vulkan-loader-devel`
 * OpenGL headers
 * Eigen3
-* glslangValidator - Debian/Ubuntu package `glslang-tools`.
+* glslangValidator - Debian/Ubuntu package `glslang-tools`, Fedora package `glslang`.
 * libusb
-* libudev
+* libudev - Fedora package `systemd-devel`
 * Video 4 Linux - Debian/Ubuntu package `libv4l-dev`.
 
 Optional (but recommended) dependencies:
