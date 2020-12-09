@@ -61,7 +61,7 @@ lib_ipc_server = static_library(
 		generated[3],
 		generated[4],
 		'server/ipc_server.h',
-		'server/ipc_server_client.c',
+		'server/ipc_server_handler.c',
 		'server/ipc_server_per_client_thread.c',
 		'server/ipc_server_process.c',
 	],

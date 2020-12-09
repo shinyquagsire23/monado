@@ -63,7 +63,7 @@ add_library(ipc_server STATIC
 	${CMAKE_CURRENT_BINARY_DIR}/ipc_server_generated.h
 	${IPC_COMMON_SOURCES}
 	server/ipc_server.h
-	server/ipc_server_client.c
+	server/ipc_server_handler.c
 	server/ipc_server_per_client_thread.c
 	server/ipc_server_process.c
 	)
