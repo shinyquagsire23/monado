@@ -29,14 +29,6 @@ def parseOpenXRVersion(def fn) {
     String.join('.', components)
 }
 
-// For JSR250 used by Hilt
-task getCDDL {
-    doLast {
-        ant.invokeMethod("get", [src: "https://spdx.org/licenses/CDDL-1.0.txt", dest: "${} "])
-    }
-
-}
-
 project.ext.renameLicense = { String name ->
     def lowerNoExtension = name.toLowerCase().replace(".txt", "")
     def result = lowerNoExtension.replaceAll(~/[\-.]/, "_") + ".txt"
@@ -61,6 +53,7 @@ task copyLicenses(type: Copy) {
 }
 project.ext.licenseDir = new File(project.buildDir, 'intermediates/licenses/')
 
+// For JSR250 used by Hilt
 task downloadCddl(type: Download) {
     src 'https://spdx.org/licenses/CDDL-1.0.txt'
     dest "${project.licenseDir}/CDDL-1.0.txt"
