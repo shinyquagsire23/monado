@@ -64,6 +64,7 @@ add_library(ipc_server STATIC
 	${IPC_COMMON_SOURCES}
 	server/ipc_server.h
 	server/ipc_server_client.c
+	server/ipc_server_per_client_thread.c
 	server/ipc_server_process.c
 	)
 target_include_directories(ipc_server
