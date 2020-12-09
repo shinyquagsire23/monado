@@ -60,6 +60,23 @@
                 <action android:name="android.service.vr.VrListenerService" />
             </intent-filter>
         </service>
+
+
+        <service
+            android:name="org.freedesktop.monado.android_common.RuntimeService"
+            android:label="@string/service_name"
+            android:exported="true">
+            <meta-data
+                android:name="org.khronos.openxr.OpenXRRuntime.SoFilename"
+                android:value="libopenxr_monado.so" />
+            <meta-data
+                android:name="org.khronos.openxr.OpenXRRuntime.MajorVersion"
+                android:value="1" />
+
+            <intent-filter>
+                <action android:name="org.khronos.openxr.OpenXRRuntimeService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
