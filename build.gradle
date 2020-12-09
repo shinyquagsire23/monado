@@ -32,7 +32,7 @@ buildscript {
     }
 }
 plugins {
-    // Used for getting the eigen dir from local.properties
+    // Used for getting the eigen dir, explicit python binary, etc. from local.properties
     id 'com.github.b3er.local.properties' version '1.1'
 
     // For getting git describe data and formatting it how Android wants.
