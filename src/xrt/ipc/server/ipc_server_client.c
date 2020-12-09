@@ -34,7 +34,7 @@ validate_swapchain_state(volatile struct ipc_client_state *ics,
 	}
 
 	if (index >= IPC_MAX_CLIENT_SWAPCHAINS) {
-		fprintf(stderr, "ERROR: Too many swapchains!\n");
+		IPC_ERROR(ics->server, "Too many swapchains!\n");
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
@@ -282,7 +282,8 @@ ipc_handle_system_set_primary_client(volatile struct ipc_client_state *ics,
 {
 
 	ics->server->active_client_index = client_id;
-	printf("system setting active client to %d\n", client_id);
+	IPC_INFO(ics->server, "system setting active client to %d\n",
+	         client_id);
 	update_server_state(ics->server);
 	return XRT_SUCCESS;
 }
@@ -291,8 +292,9 @@ xrt_result_t
 ipc_handle_system_set_focused_client(volatile struct ipc_client_state *ics,
                                      uint32_t client_id)
 {
-	printf("UNIMPLEMENTED: system setting focused client to %d\n",
-	       client_id);
+	IPC_INFO(ics->server,
+	         "UNIMPLEMENTED: system setting focused client to %d\n",
+	         client_id);
 
 	return XRT_SUCCESS;
 }
@@ -355,7 +357,8 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	struct xrt_swapchain *xsc = NULL;
 	xret = xrt_comp_create_swapchain(ics->xc, info, &xsc);
 	if (xret != XRT_SUCCESS) {
-		fprintf(stderr, "ERROR: xrt_comp_create_swapchain failed!\n");
+		IPC_ERROR(ics->server,
+		          "ERROR: xrt_comp_create_swapchain failed!\n");
 		return xret;
 	}
 
