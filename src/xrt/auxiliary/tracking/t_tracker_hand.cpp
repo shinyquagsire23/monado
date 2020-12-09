@@ -140,7 +140,6 @@ do_view(TrackerHand &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 static void
 process(TrackerHand &t, struct xrt_frame *xf)
 {
-	printf("process frame\n");
 	if (xf == NULL) {
 		return;
 	}
