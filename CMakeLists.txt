@@ -211,7 +211,7 @@ endif()
 ###
 
 if(XRT_HAVE_XLIB AND NOT XRT_HAVE_XRANDR)
-	message(FATAL_ERROR "XRT_HAVE_XLIB requires XRT_HAVE_XRANDR but XRT_HAVE_XRANDR is disabled")
+	message(WARNING "XRT_HAVE_XLIB requires XRT_HAVE_XRANDR but XRT_HAVE_XRANDR is disabled")
 endif()
 
 if(XRT_HAVE_OPENGLES AND NOT XRT_HAVE_EGL)
