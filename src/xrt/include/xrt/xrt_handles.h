@@ -22,6 +22,13 @@
 extern "C" {
 #endif
 
+
+/*
+ *
+ * xrt_shmem_handle_t
+ *
+ */
+
 /*!
  * The type for shared memory blocks shared over IPC.
  *
@@ -56,6 +63,13 @@ xrt_shmem_is_valid(xrt_shmem_handle_t handle)
  * @relates xrt_shmem_handle_t
  */
 #define XRT_SHMEM_HANDLE_INVALID (-1)
+
+
+/*
+ *
+ * xrt_graphics_buffer_handle_t
+ *
+ */
 
 #if defined(XRT_OS_ANDROID) && (__ANDROID_API__ >= 26)
 typedef struct AHardwareBuffer AHardwareBuffer;
@@ -176,6 +190,13 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
 #endif
 
 #ifdef XRT_OS_UNIX
+
+
+/*
+ *
+ * xrt_graphics_sync_handle_t
+ *
+ */
 
 /*!
  * The type underlying synchronization primitives (semaphores, etc) shared
