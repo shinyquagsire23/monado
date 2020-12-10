@@ -23,6 +23,8 @@ DEBUG_GET_ONCE_NUM_OPTION(force_gpu_index, "XRT_COMPOSITOR_FORCE_GPU_INDEX", -1)
 DEBUG_GET_ONCE_NUM_OPTION(force_client_gpu_index, "XRT_COMPOSITOR_FORCE_CLIENT_GPU_INDEX", -1)
 DEBUG_GET_ONCE_NUM_OPTION(desired_mode, "XRT_COMPOSITOR_DESIRED_MODE", -1)
 DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "XRT_COMPOSITOR_SCALE_PERCENTAGE", 140)
+DEBUG_GET_ONCE_BOOL_OPTION(xcb_fullscreen, "XRT_COMPOSITOR_XCB_FULLSCREEN", false)
+DEBUG_GET_ONCE_NUM_OPTION(xcb_display, "XRT_COMPOSITOR_XCB_DISPLAY", -1)
 // clang-format on
 
 void
@@ -34,12 +36,12 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 		interval_ns = (1000 * 1000 * 1000) / 60;
 	}
 
-	s->display = -1;
+	s->display = debug_get_num_option_xcb_display();
 	s->color_format = VK_FORMAT_B8G8R8A8_SRGB;
 	s->color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 	s->present_mode = VK_PRESENT_MODE_FIFO_KHR;
 	s->window_type = WINDOW_AUTO;
-	s->fullscreen = false;
+	s->fullscreen = debug_get_bool_option_xcb_fullscreen();
 	s->preferred.width = xdev->hmd->screens[0].w_pixels;
 	s->preferred.height = xdev->hmd->screens[0].h_pixels;
 	s->nominal_frame_interval_ns = interval_ns;
