@@ -1141,6 +1141,11 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 #ifdef VK_USE_PLATFORM_XCB_KHR
 		if (compositor_try_window(c, comp_window_xcb_create(c))) {
 			c->settings.window_type = WINDOW_XCB;
+			COMP_DEBUG(c,
+			           "Using VK_PRESENT_MODE_IMMEDIATE_KHR for "
+			           "xcb window")
+			c->settings.present_mode =
+			    VK_PRESENT_MODE_IMMEDIATE_KHR;
 			return true;
 		}
 #endif
@@ -1161,6 +1166,9 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 	case WINDOW_XCB:
 #ifdef VK_USE_PLATFORM_XCB_KHR
 		compositor_try_window(c, comp_window_xcb_create(c));
+		COMP_DEBUG(c,
+		           "Using VK_PRESENT_MODE_IMMEDIATE_KHR for xcb window")
+		c->settings.present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 #else
 		COMP_ERROR(c, "XCB support not compiled in!");
 #endif
