@@ -25,15 +25,17 @@ DEBUG_GET_ONCE_NUM_OPTION(desired_mode, "XRT_COMPOSITOR_DESIRED_MODE", -1)
 DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "XRT_COMPOSITOR_SCALE_PERCENTAGE", 140)
 DEBUG_GET_ONCE_BOOL_OPTION(xcb_fullscreen, "XRT_COMPOSITOR_XCB_FULLSCREEN", false)
 DEBUG_GET_ONCE_NUM_OPTION(xcb_display, "XRT_COMPOSITOR_XCB_DISPLAY", -1)
+DEBUG_GET_ONCE_NUM_OPTION(default_framerate, "XRT_COMPOSITOR_DEFAULT_FRAMERATE", 60)
 // clang-format on
 
 void
 comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 {
+	int default_framerate = debug_get_num_option_default_framerate();
+
 	uint64_t interval_ns = xdev->hmd->screens[0].nominal_frame_interval_ns;
 	if (interval_ns == 0) {
-		// 60hz
-		interval_ns = (1000 * 1000 * 1000) / 60;
+		interval_ns = (1000 * 1000 * 1000) / default_framerate;
 	}
 
 	s->display = debug_get_num_option_xcb_display();
