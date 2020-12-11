@@ -601,8 +601,7 @@ comp_renderer_set_equirect1_layer(struct comp_renderer *r,
 	    get_image_view(image, data->flags,
 	                   data->equirect1.sub.array_index));
 
-	// TODO!
-	// comp_layer_update_equirect1_descriptor(l, &data->equirect1);
+	comp_layer_update_equirect1_descriptor(l, &data->equirect1);
 
 	for (uint32_t i = 0; i < 2; i++) {
 		l->transformation[i].offset = data->equirect1.sub.rect.offset;

@@ -6,6 +6,8 @@ shader_srcs = [
 	'mesh.vert',
 	'layer.vert',
 	'layer.frag',
+	'equirect1.vert',
+	'equirect1.frag',
 	'equirect2.vert',
 	'equirect2.frag'
 ]

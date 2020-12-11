@@ -6,6 +6,8 @@ spirv_shaders(SHADER_HEADERS
 	shaders/mesh.vert
 	shaders/layer.frag
 	shaders/layer.vert
+	shaders/equirect1.vert
+	shaders/equirect1.frag
 	shaders/equirect2.vert
 	shaders/equirect2.frag
 	)

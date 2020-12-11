@@ -412,6 +412,11 @@ _render_eye(struct comp_layer_renderer *self,
 			comp_layer_draw(self->layers[i], eye, pipeline,
 			                pipeline_layout, cmd_buffer,
 			                vertex_buffer, &vp_inv, &vp_inv);
+		} else if (self->layers[i]->type == XRT_LAYER_EQUIRECT1) {
+			pipeline = self->pipeline_equirect1;
+			comp_layer_draw(self->layers[i], eye, pipeline,
+			                pipeline_layout, cmd_buffer,
+			                vertex_buffer, &vp_inv, &vp_inv);
 		} else {
 			comp_layer_draw(self->layers[i], eye, pipeline,
 			                pipeline_layout, cmd_buffer,
@@ -550,6 +555,11 @@ _init(struct comp_layer_renderer *self,
 
 	if (!_init_graphics_pipeline(self, s->layer_vert, s->layer_frag, true,
 	                             &self->pipeline_unpremultiplied_alpha)) {
+		return false;
+	}
+
+	if (!_init_graphics_pipeline(self, s->equirect1_vert, s->equirect1_frag,
+	                             true, &self->pipeline_equirect1)) {
 		return false;
 	}
 
@@ -696,6 +706,7 @@ comp_layer_renderer_destroy(struct comp_layer_renderer *self)
 	                      NULL);
 	vk->vkDestroyPipeline(vk->device, self->pipeline_unpremultiplied_alpha,
 	                      NULL);
+	vk->vkDestroyPipeline(vk->device, self->pipeline_equirect1, NULL);
 	vk->vkDestroyPipeline(vk->device, self->pipeline_equirect2, NULL);
 
 	for (uint32_t i = 0; i < ARRAY_SIZE(self->shader_modules); i++)
