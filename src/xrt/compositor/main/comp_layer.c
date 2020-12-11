@@ -83,6 +83,7 @@ _init_ubos(struct comp_render_layer *self)
 	return true;
 }
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 static bool
 _init_equirect1_ubo(struct comp_render_layer *self)
 {
@@ -107,7 +108,8 @@ _init_equirect1_ubo(struct comp_render_layer *self)
 
 	return true;
 }
-
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 static bool
 _init_equirect2_ubo(struct comp_render_layer *self)
 {
@@ -132,6 +134,7 @@ _init_equirect2_ubo(struct comp_render_layer *self)
 
 	return true;
 }
+#endif
 
 static void
 _update_descriptor(struct comp_render_layer *self,
@@ -176,6 +179,8 @@ _update_descriptor(struct comp_render_layer *self,
 	vk->vkUpdateDescriptorSets(vk->device, 2, sets, 0, NULL);
 }
 
+#if defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT1) ||                             \
+    defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT2)
 static void
 _update_descriptor_equirect(struct comp_render_layer *self,
                             VkDescriptorSet set,
@@ -200,6 +205,7 @@ _update_descriptor_equirect(struct comp_render_layer *self,
 
 	self->vk->vkUpdateDescriptorSets(self->vk->device, 1, sets, 0, NULL);
 }
+#endif
 
 void
 comp_layer_update_descriptors(struct comp_render_layer *self,
@@ -212,6 +218,7 @@ comp_layer_update_descriptors(struct comp_render_layer *self,
 		                   sampler, image_view);
 }
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 void
 comp_layer_update_equirect1_descriptor(struct comp_render_layer *self,
                                        struct xrt_layer_equirect1_data *data)
@@ -227,7 +234,8 @@ comp_layer_update_equirect1_descriptor(struct comp_render_layer *self,
 	memcpy(self->equirect1_ubo.data, &self->equirect1_data,
 	       sizeof(struct layer_equirect1_data));
 }
-
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 void
 comp_layer_update_equirect2_descriptor(struct comp_render_layer *self,
                                        struct xrt_layer_equirect2_data *data)
@@ -244,6 +252,7 @@ comp_layer_update_equirect2_descriptor(struct comp_render_layer *self,
 	memcpy(self->equirect2_ubo.data, &self->equirect2_data,
 	       sizeof(struct layer_equirect2_data));
 }
+#endif
 
 void
 comp_layer_update_stereo_descriptors(struct comp_render_layer *self,
@@ -277,11 +286,14 @@ _init(struct comp_render_layer *self,
 	if (!_init_ubos(self))
 		return false;
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 	if (!_init_equirect1_ubo(self))
 		return false;
-
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 	if (!_init_equirect2_ubo(self))
 		return false;
+#endif
 
 	VkDescriptorPoolSize pool_sizes[] = {
 	    {
@@ -305,11 +317,13 @@ _init(struct comp_render_layer *self,
 		        &self->descriptor_sets[eye]))
 			return false;
 
+#if defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT1) ||                             \
+    defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT2)
 	if (!vk_allocate_descriptor_sets(self->vk, self->descriptor_pool, 1,
 	                                 layout_equirect,
 	                                 &self->descriptor_equirect))
 		return false;
-
+#endif
 	return true;
 }
 
@@ -523,9 +537,12 @@ comp_layer_destroy(struct comp_render_layer *self)
 	for (uint32_t eye = 0; eye < 2; eye++)
 		vk_buffer_destroy(&self->transformation_ubos[eye], self->vk);
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 	vk_buffer_destroy(&self->equirect1_ubo, self->vk);
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 	vk_buffer_destroy(&self->equirect2_ubo, self->vk);
-
+#endif
 	self->vk->vkDestroyDescriptorPool(self->vk->device,
 	                                  self->descriptor_pool, NULL);
 

@@ -20,13 +20,16 @@ struct layer_transformation
 	bool flip_y;
 };
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 struct layer_equirect1_data
 {
 	struct xrt_vec2 scale;
 	struct xrt_vec2 bias;
 	float radius;
 };
+#endif
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 struct layer_equirect2_data
 {
 	float radius;
@@ -34,6 +37,7 @@ struct layer_equirect2_data
 	float upper_vertical_angle;
 	float lower_vertical_angle;
 };
+#endif
 
 struct comp_render_layer
 {
@@ -48,12 +52,14 @@ struct comp_render_layer
 	struct layer_transformation transformation[2];
 	struct vk_buffer transformation_ubos[2];
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 	struct layer_equirect1_data equirect1_data;
 	struct vk_buffer equirect1_ubo;
-
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 	struct layer_equirect2_data equirect2_data;
 	struct vk_buffer equirect2_ubo;
-
+#endif
 	VkDescriptorPool descriptor_pool;
 	VkDescriptorSet descriptor_sets[2];
 	VkDescriptorSet descriptor_equirect;
@@ -114,10 +120,13 @@ bool
 comp_layer_update_cylinder_vertex_buffer(struct comp_render_layer *self,
                                          float central_angle);
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 void
 comp_layer_update_equirect1_descriptor(struct comp_render_layer *self,
                                        struct xrt_layer_equirect1_data *data);
-
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 void
 comp_layer_update_equirect2_descriptor(struct comp_render_layer *self,
                                        struct xrt_layer_equirect2_data *data);
+#endif

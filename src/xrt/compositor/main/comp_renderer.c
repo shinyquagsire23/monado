@@ -574,6 +574,7 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 	l->transformation[1].extent = data->stereo.r.sub.rect.extent;
 }
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 void
 comp_renderer_set_equirect1_layer(struct comp_renderer *r,
                                   uint32_t layer,
@@ -608,7 +609,8 @@ comp_renderer_set_equirect1_layer(struct comp_renderer *r,
 		l->transformation[i].extent = data->equirect1.sub.rect.extent;
 	}
 }
-
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 void
 comp_renderer_set_equirect2_layer(struct comp_renderer *r,
                                   uint32_t layer,
@@ -643,6 +645,7 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
 		l->transformation[i].extent = data->equirect2.sub.rect.extent;
 	}
 }
+#endif
 
 void
 comp_renderer_draw(struct comp_renderer *r)

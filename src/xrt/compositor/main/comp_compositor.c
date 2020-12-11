@@ -522,6 +522,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 			image = &layer->scs[0]->images[cyl->sub.image_index];
 			comp_renderer_set_cylinder_layer(c->r, i, image, data);
 		} break;
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 		case XRT_LAYER_EQUIRECT1: {
 			struct xrt_layer_equirect1_data *eq =
 			    &layer->data.equirect1;
@@ -529,6 +530,8 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 			image = &layer->scs[0]->images[eq->sub.image_index];
 			comp_renderer_set_equirect1_layer(c->r, i, image, data);
 		} break;
+#endif
+#ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 		case XRT_LAYER_EQUIRECT2: {
 			struct xrt_layer_equirect2_data *eq =
 			    &layer->data.equirect2;
@@ -536,6 +539,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 			image = &layer->scs[0]->images[eq->sub.image_index];
 			comp_renderer_set_equirect2_layer(c->r, i, image, data);
 		} break;
+#endif
 		case XRT_LAYER_CUBE:
 			// Should never end up here.
 			assert(false);
