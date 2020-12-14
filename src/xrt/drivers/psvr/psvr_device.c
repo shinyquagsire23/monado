@@ -14,6 +14,7 @@
 #include "xrt/xrt_tracking.h"
 
 #include "os/os_time.h"
+#include "os/os_threading.h"
 
 #include "math/m_api.h"
 
@@ -59,6 +60,7 @@ struct psvr_device
 
 	hid_device *hid_sensor;
 	hid_device *hid_control;
+	struct os_mutex device_mutex;
 
 	struct xrt_tracked_psvr *tracker;
 
@@ -897,6 +899,8 @@ teardown(struct psvr_device *psvr)
 
 	// Destroy the fusion.
 	m_imu_3dof_close(&psvr->fusion);
+
+	os_mutex_destroy(&psvr->device_mutex);
 }
 
 
@@ -928,6 +932,8 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
+	os_mutex_lock(&psvr->device_mutex);
+
 	// Read all packets.
 	read_sensor_packets(psvr);
 	read_control_packets(psvr);
@@ -946,6 +952,8 @@ psvr_device_get_tracked_pose(struct xrt_device *xdev,
 		xrt_tracked_psvr_get_tracked_pose(
 		    psvr->tracker, at_timestamp_ns, out_relation);
 	}
+
+	os_mutex_unlock(&psvr->device_mutex);
 
 	//! @todo Move this to the tracker.
 	// Make sure that the orientation is valid.
@@ -1162,6 +1170,8 @@ psvr_device_create(struct hid_device_info *sensor_hid_info,
 	psvr->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	PSVR_DEBUG(psvr, "YES!");
+
+	os_mutex_init(&psvr->device_mutex);
 
 	return &psvr->base;
 
