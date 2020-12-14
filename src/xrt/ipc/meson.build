@@ -68,6 +68,7 @@ lib_ipc_server = static_library(
 	include_directories: [
 		xrt_include,
 		comp_include,
+		glad_include,
 	],
 	dependencies: [aux_util, rt, aux_vk, aux_ogl]
 )

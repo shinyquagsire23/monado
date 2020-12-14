@@ -156,6 +156,10 @@ struct ipc_server
 {
 	struct xrt_instance *xinst;
 
+	/* ---- HACK ---- */
+	void *hack;
+	/* ---- HACK ---- */
+
 	struct xrt_compositor *xc;
 	struct xrt_compositor_native *xcn;
 

@@ -4,6 +4,7 @@
 
 add_executable(monado-service
 	main.c
+	../openxr/oxr_sdl2_hack.c
 	)
 
 target_link_libraries(monado-service PRIVATE
@@ -77,4 +78,16 @@ if(XRT_INSTALL_SYSTEMD_UNIT_FILES)
 
 	# This script will configure the units and install them at install time.
 	install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/configure_and_install_units.cmake)
+endif()
+
+if(XRT_HAVE_SDL2)
+	target_link_libraries(monado-service PRIVATE
+		st_gui
+		imgui_impl_sdl
+		${SDL2_LIBRARIES}
+		aux_ogl
+		)
+	target_include_directories(monado-service PRIVATE
+		${SDL2_INCLUDE_DIRS}
+		)
 endif()

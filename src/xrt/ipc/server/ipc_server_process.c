@@ -12,6 +12,7 @@
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_config_have.h"
+#include "xrt/xrt_config_os.h"
 
 #include "os/os_time.h"
 #include "util/u_var.h"
@@ -41,6 +42,16 @@
 #include <systemd/sd-daemon.h>
 #endif
 
+/* ---- HACK ---- */
+extern int
+oxr_sdl2_hack_create(void **out_hack);
+
+extern void
+oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst);
+
+extern void
+oxr_sdl2_hack_stop(void **hack_ptr);
+/* ---- HACK ---- */
 
 /*
  *
@@ -1214,6 +1225,14 @@ int
 ipc_server_main(int argc, char **argv)
 {
 	struct ipc_server *s = U_TYPED_CALLOC(struct ipc_server);
+
+#ifndef XRT_OS_ANDROID
+	/* ---- HACK ---- */
+	// need to create early before any vars are added
+	oxr_sdl2_hack_create(&s->hack);
+	/* ---- HACK ---- */
+#endif
+
 	int ret = init_all(s);
 	if (ret < 0) {
 		free(s);
@@ -1221,7 +1240,20 @@ ipc_server_main(int argc, char **argv)
 	}
 
 	init_server_state(s);
+
+#ifndef XRT_OS_ANDROID
+	/* ---- HACK ---- */
+	oxr_sdl2_hack_start(s->hack, s->xinst);
+	/* ---- HACK ---- */
+#endif
+
 	ret = main_loop(s);
+
+#ifndef XRT_OS_ANDROID
+	/* ---- HACK ---- */
+	oxr_sdl2_hack_stop(&s->hack);
+	/* ---- HACK ---- */
+#endif
 
 	teardown_all(s);
 	free(s);
