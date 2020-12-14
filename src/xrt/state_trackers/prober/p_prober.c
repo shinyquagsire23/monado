@@ -826,6 +826,11 @@ list_video_devices(struct xrt_prober *xp,
 {
 	struct prober *p = (struct prober *)xp;
 
+	const char *path = debug_get_option_vf_path();
+	if (path != NULL) {
+		cb(xp, NULL, "Video File", "Collabora", path, ptr);
+	}
+
 	// Loop over all devices and find video devices.
 	for (size_t i = 0; i < p->num_devices; i++) {
 		struct prober_device *pdev = &p->devices[i];

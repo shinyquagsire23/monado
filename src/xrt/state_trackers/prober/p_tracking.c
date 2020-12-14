@@ -111,7 +111,8 @@ on_video_device(struct xrt_prober *xp,
 		return;
 	}
 
-	if (strcmp(product, fact->settings.camera_name) != 0) {
+	if (strcmp(product, fact->settings.camera_name) != 0 &&
+	    strcmp(product, "Video File") != 0) {
 		return;
 	}
 
