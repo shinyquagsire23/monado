@@ -1227,7 +1227,7 @@ CServerDriver_Monado::HandleHapticEvent(vr::VREvent_t *event)
 		case XRT_DEVICE_PSMV: name = XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION; break;
 		default:
 			//! @todo
-			name = XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION;
+			name = XRT_OUTPUT_NAME_SIMPLE_VIBRATION;
 			break;
 		}
 
