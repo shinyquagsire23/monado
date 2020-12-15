@@ -9,6 +9,40 @@ u_git_tag_c = vcs_tag(
 	replace_string: '@GIT_DESC@',
 )
 
+###
+# Binding generation
+#
+
+prog_python = import('python').find_installation('python3')
+
+generated_bindings = custom_target('bindings code',
+	command: [prog_python, '@INPUT@', '@OUTPUT@'],
+	input: ['bindings/bindings.py', 'bindings/bindings.json'],
+	output: [
+		'xrt_generated_bindings.h',
+		'xrt_generated_bindings.c',
+	]
+)
+
+generated_bindings_h = generated_bindings[0]
+generated_bindings_c = generated_bindings[1]
+
+lib_aux_generated_bindings = static_library(
+	'aux_generated_bindings',
+	generated_bindings_c,
+	include_directories: [
+		xrt_include,
+	],
+	dependencies: [
+		xrt_config_have,
+	]
+)
+
+aux_generated_bindings = declare_dependency(
+	include_directories: aux_include,
+	link_with: lib_aux_generated_bindings,
+)
+
 lib_aux_util = static_library(
 	'aux_util',
 	files(
@@ -57,14 +91,14 @@ lib_aux_util = static_library(
 		'util/u_hand_tracking.c',
 		'util/u_hand_tracking.h',
 	) + [
-		u_git_tag_c
+		u_git_tag_c,
 	],
 	include_directories: [
 		xrt_include,
 		cjson_include,
 	],
 	dependencies: [
-		xrt_config_have
+		xrt_config_have,
 	]
 )
 
@@ -235,6 +269,6 @@ aux_vk = declare_dependency(
 )
 
 
-all_aux = [aux_util, aux_os, aux_math, aux_tracking]
+all_aux = [aux_util, aux_os, aux_math, aux_tracking, aux_generated_bindings]
 
 aux = declare_dependency(dependencies: all_aux)

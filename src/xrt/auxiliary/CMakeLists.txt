@@ -1,6 +1,34 @@
 # Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+###
+# Binding generation
+#
+
+function(bindings_gen output custom_target)
+	add_custom_command(OUTPUT ${output}
+		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/bindings/bindings.py
+			${CMAKE_CURRENT_SOURCE_DIR}/bindings/bindings.json
+			${output}
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/bindings/bindings.py
+			${CMAKE_CURRENT_SOURCE_DIR}/bindings/bindings.json
+			)
+	add_custom_target(${custom_target} DEPENDS ${output})
+endfunction(bindings_gen)
+
+bindings_gen(${CMAKE_CURRENT_BINARY_DIR}/xrt_generated_bindings.h generated_bindings_h)
+bindings_gen(${CMAKE_CURRENT_BINARY_DIR}/xrt_generated_bindings.c generated_bindings_c)
+
+# Bindings library.
+add_library(aux_generated_bindings STATIC ${CMAKE_CURRENT_BINARY_DIR}/xrt_generated_bindings.c)
+add_dependencies(aux_generated_bindings generated_bindings_h)
+
+
+target_include_directories(aux_generated_bindings PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" ".")
+target_link_libraries(aux_generated_bindings INTERFACE xrt-interfaces aux_util)
+# HACK: linking xrt-interfaces doesn't work for some reason
+target_include_directories(aux_generated_bindings PUBLIC "../include")
+
 set(ANDROID_SOURCE_FILES
 	android/android_ahardwarebuffer_allocator.c
 	android/android_ahardwarebuffer_allocator.h

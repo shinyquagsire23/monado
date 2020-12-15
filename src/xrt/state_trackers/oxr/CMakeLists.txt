@@ -1,32 +1,11 @@
 # Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-
-###
-# Binding generation
-#
-
-function(bindings_gen output)
-	add_custom_command(OUTPUT ${output}
-		COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/bindings.py
-			${CMAKE_CURRENT_SOURCE_DIR}/bindings.json
-			${output}
-		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/bindings.py
-			${CMAKE_CURRENT_SOURCE_DIR}/bindings.json
-			)
-endfunction(bindings_gen)
-
-bindings_gen(${CMAKE_CURRENT_BINARY_DIR}/oxr_generated_bindings.h)
-bindings_gen(${CMAKE_CURRENT_BINARY_DIR}/oxr_generated_bindings.c)
-
-
 ###
 # Main code
 #
 
 set(OXR_SOURCE_FILES
-	${CMAKE_CURRENT_BINARY_DIR}/oxr_generated_bindings.h
-	${CMAKE_CURRENT_BINARY_DIR}/oxr_generated_bindings.c
 	oxr_api_action.c
 	oxr_api_funcs.h
 	oxr_api_instance.c
@@ -103,6 +82,7 @@ target_link_libraries(st_oxr PRIVATE
 	xrt-external-openxr
 	aux_util
 	aux_math
+	aux_generated_bindings
 	comp_client
 	PUBLIC
 	aux_os

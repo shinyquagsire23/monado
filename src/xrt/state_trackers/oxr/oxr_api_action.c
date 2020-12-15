@@ -16,11 +16,11 @@
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
 #include "oxr_subaction.h"
-#include "oxr_generated_bindings.h"
 
 #include <stdio.h>
 #include <inttypes.h>
 
+#include "xrt_generated_bindings.h"
 
 /*
  *

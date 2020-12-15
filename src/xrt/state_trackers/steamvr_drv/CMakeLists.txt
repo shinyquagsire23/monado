@@ -16,4 +16,5 @@ target_link_libraries(st_ovrd PRIVATE
 	xrt-interfaces
 	xrt-external-openvr
 	aux_math
+	aux_generated_bindings
 	)

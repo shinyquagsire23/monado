@@ -10,12 +10,12 @@
 #include "util/u_misc.h"
 
 #include "xrt/xrt_compiler.h"
+#include "xrt_generated_bindings.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_two_call.h"
 #include "oxr_subaction.h"
-#include "oxr_binding_data.h"
 
 #include <stdio.h>
 
@@ -61,6 +61,12 @@ interaction_profile_find(struct oxr_logger *log,
 }
 
 static bool
+get_subaction_path_from_path(struct oxr_logger *log,
+                             struct oxr_instance *inst,
+                             XrPath path,
+                             enum oxr_subaction_path *out_subaction_path);
+
+static bool
 interaction_profile_find_or_create(struct oxr_logger *log,
                                    struct oxr_instance *inst,
                                    XrPath path,
@@ -71,15 +77,16 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 	}
 
 	struct profile_template *templ = NULL;
-	for (size_t x = 0; x < ARRAY_SIZE(profiles); x++) {
-		templ = &profiles[x];
+
+	for (size_t x = 0; x < NUM_PROFILE_TEMPLATES; x++) {
 		XrPath t_path = XR_NULL_PATH;
 
-		oxr_path_get_or_create(log, inst, templ->path, strlen(templ->path), &t_path);
+		oxr_path_get_or_create(log, inst, profile_templates[x].path, strlen(profile_templates[x].path),
+		                       &t_path);
 		if (t_path == path) {
+			templ = &profile_templates[x];
 			break;
 		}
-		templ = NULL;
 	}
 
 	if (templ == NULL) {
@@ -99,7 +106,17 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 		struct binding_template *t = &templ->bindings[x];
 		struct oxr_binding *b = &p->bindings[x];
 
-		b->subaction_path = t->subaction_path;
+		XrPath subaction_path;
+		XrResult r =
+		    oxr_path_get_or_create(log, inst, t->subaction_path, strlen(t->subaction_path), &subaction_path);
+		if (r != XR_SUCCESS) {
+			oxr_log(log, "Couldn't get subaction path %s\n", t->subaction_path);
+		}
+
+		if (!get_subaction_path_from_path(log, inst, subaction_path, &b->subaction_path)) {
+			oxr_log(log, "Invalid subaction path %s\n", t->subaction_path);
+		}
+
 		b->localized_name = t->localized_name;
 		setup_paths(log, inst, t, b);
 		b->input = t->input;
