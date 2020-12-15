@@ -540,6 +540,12 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
 			comp_renderer_set_equirect2_layer(c->r, i, image, data);
 		} break;
 #endif
+#ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
+		case XRT_LAYER_EQUIRECT1:
+#endif
+#ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
+		case XRT_LAYER_EQUIRECT2:
+#endif
 		case XRT_LAYER_CUBE:
 			// Should never end up here.
 			assert(false);

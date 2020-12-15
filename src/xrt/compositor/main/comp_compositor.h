@@ -11,6 +11,7 @@
 #pragma once
 
 #include "xrt/xrt_gfx_vk.h"
+#include "xrt/xrt_config_build.h"
 
 #include "util/u_threading.h"
 #include "util/u_index_fifo.h"
