@@ -203,10 +203,8 @@ if gst_found and ('auto' in drivers or 'vf' in drivers)
 	endif
 endif
 
-if survive.found() and ('survive' in drivers)
-	if 'survive' not in drivers
-		drivers += ['survive']
-	endif
+if survive.found() and ('auto' in drivers and 'survive' not in drivers)
+	drivers += ['survive']
 endif
 
 if not get_option('dbus').disabled() and dbus.found()
