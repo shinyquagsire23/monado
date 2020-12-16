@@ -343,9 +343,9 @@ print_gst_error(GstMessage *message)
 	gchar *dbg_info = NULL;
 
 	gst_message_parse_error(message, &err, &dbg_info);
-	V_ERROR("ERROR from element %s: %s\n", GST_OBJECT_NAME(message->src),
+	U_LOG_E("ERROR from element %s: %s\n", GST_OBJECT_NAME(message->src),
 	        err->message);
-	V_ERROR("Debugging info: %s\n", (dbg_info) ? dbg_info : "none");
+	U_LOG_E("Debugging info: %s\n", (dbg_info) ? dbg_info : "none");
 	g_error_free(err);
 	g_free(dbg_info);
 }
