@@ -27,6 +27,7 @@ add_project_arguments(cpp.get_supported_arguments([
 	'-D_XOPEN_SOURCE=700',
 	'-Wno-unused-parameter',
 	'-Wno-deprecated-copy', # Eigen
+	'-Wno-c11-extensions' # clang OpenCV
 ]), language: 'cpp')
 
 
