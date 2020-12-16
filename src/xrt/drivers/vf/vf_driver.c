@@ -17,6 +17,7 @@
 #include "util/u_debug.h"
 #include "util/u_format.h"
 #include "util/u_frame.h"
+#include "util/u_logging.h"
 
 
 #include <stdio.h>
@@ -34,55 +35,19 @@
  *
  */
 
-/*!
- * Spew level logging.
+/*
  *
- * Outputs a line, from the given format string and arguments, only if
- * vf_fs::print_spew is true.
- * @relates vf_fs
+ * Printing functions.
+ *
  */
-#define V_SPEW(p, ...)                                                         \
-	do {                                                                   \
-		if (p->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
 
-/*!
- * Debug level logging.
- *
- * Outputs a line, from the given format string and arguments, only if
- * vf_fs::print_debug is true.
- *
- * @relates vf_fs
- */
-#define V_DEBUG(p, ...)                                                        \
-	do {                                                                   \
-		if (p->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
+#define VF_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
+#define VF_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
+#define VF_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
+#define VF_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
+#define VF_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
 
-/*!
- * Error level logging.
- *
- * Outputs a line, from the given format string and arguments.
- *
- * @relates vf_fs
- */
-#define V_ERROR(p, ...)                                                        \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
-
-DEBUG_GET_ONCE_BOOL_OPTION(vf_spew, "VF_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(vf_debug, "VF_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_LOG_OPTION(vf_log, "VF_LOG", U_LOGGING_WARN)
 
 /*!
  * A frame server operating on a video file.
@@ -123,8 +88,7 @@ struct vf_fs
 
 	bool is_configured;
 	bool is_running;
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level ll;
 };
 
 /*!
@@ -196,7 +160,7 @@ vf_fs_stream_start(struct xrt_fs *xfs,
 
 	gst_element_set_state(vid->source, GST_STATE_PLAYING);
 
-	V_SPEW(vid, "info: Started!");
+	VF_TRACE(vid, "info: Started!");
 
 	// we're off to the races!
 	return true;
@@ -298,7 +262,7 @@ vf_fs_frame(struct vf_fs *vid, GstSample *sample)
 		}
 		gst_video_frame_unmap(&frame);
 	} else {
-		V_ERROR(vid, "Failed to map frame %d", seq);
+		VF_ERROR(vid, "Failed to map frame %d", seq);
 	}
 
 	seq++;
@@ -320,7 +284,7 @@ on_new_sample_from_sink(GstElement *elt, struct vf_fs *vid)
 		gst_structure_get_int(structure, "width", &width);
 		gst_structure_get_int(structure, "height", &height);
 
-		V_DEBUG(vid, "video size is %dx%d\n", width, height);
+		VF_DEBUG(vid, "video size is %dx%d\n", width, height);
 		vid->got_sample = true;
 		vid->width = width;
 		vid->height = height;
@@ -356,11 +320,11 @@ on_source_message(GstBus *bus, GstMessage *message, struct vf_fs *vid)
 	/* nil */
 	switch (GST_MESSAGE_TYPE(message)) {
 	case GST_MESSAGE_EOS:
-		V_DEBUG(vid, "Finished playback\n");
+		VF_DEBUG(vid, "Finished playback\n");
 		g_main_loop_quit(vid->loop);
 		break;
 	case GST_MESSAGE_ERROR:
-		V_ERROR(vid, "Received error\n");
+		VF_ERROR(vid, "Received error\n");
 		print_gst_error(message);
 		g_main_loop_quit(vid->loop);
 		break;
@@ -374,9 +338,9 @@ run_play_thread(void *ptr)
 {
 	struct vf_fs *vid = (struct vf_fs *)ptr;
 
-	V_DEBUG(vid, "Let's run!\n");
+	VF_DEBUG(vid, "Let's run!\n");
 	g_main_loop_run(vid->loop);
-	V_DEBUG(vid, "Going out\n");
+	VF_DEBUG(vid, "Going out\n");
 
 	gst_object_unref(vid->testsink);
 	gst_element_set_state(vid->source, GST_STATE_NULL);
@@ -392,7 +356,7 @@ struct xrt_fs *
 vf_fs_create(struct xrt_frame_context *xfctx, const char *path)
 {
 	if (path == NULL) {
-		V_ERROR(p, "No path given");
+		U_LOG_E("No path given");
 		return NULL;
 	}
 
@@ -410,7 +374,7 @@ vf_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	gst_init(0, NULL);
 
 	if (!g_file_test(path, G_FILE_TEST_EXISTS)) {
-		V_ERROR(vid, "File %s does not exist\n", path);
+		VF_ERROR(vid, "File %s does not exist\n", path);
 		return NULL;
 	}
 
@@ -432,12 +396,12 @@ vf_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	    "multifilesrc location=\"%s\" loop=%s ! decodebin ! videoconvert ! "
 	    "appsink caps=\"%s\" name=testsink",
 	    path, loop, caps);
-	V_DEBUG(vid, "Pipeline: %s\n", string);
+	VF_DEBUG(vid, "Pipeline: %s\n", string);
 	vid->source = gst_parse_launch(string, NULL);
 	g_free(string);
 
 	if (vid->source == NULL) {
-		V_ERROR(vid, "Bad source\n");
+		VF_ERROR(vid, "Bad source\n");
 		g_main_loop_unref(vid->loop);
 		free(vid);
 		return NULL;
@@ -456,7 +420,7 @@ vf_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	int ret =
 	    os_thread_helper_start(&vid->play_thread, run_play_thread, vid);
 	if (!ret) {
-		V_ERROR(vid, "Failed to start thread");
+		VF_ERROR(vid, "Failed to start thread");
 	}
 
 	// we need one sample to determine frame size
@@ -473,8 +437,7 @@ vf_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	vid->base.is_running = vf_fs_is_running;
 	vid->node.break_apart = vf_fs_node_break_apart;
 	vid->node.destroy = vf_fs_node_destroy;
-	vid->print_spew = debug_get_bool_option_vf_spew();
-	vid->print_debug = debug_get_bool_option_vf_debug();
+	vid->ll = debug_get_log_option_vf_log();
 
 	// It's now safe to add it to the context.
 	xrt_frame_context_add(xfctx, &vid->node);
@@ -483,8 +446,7 @@ vf_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	// clang-format off
 	u_var_add_root(vid, "Video File Frameserver", true);
 	u_var_add_ro_text(vid, vid->base.name, "Card");
-	u_var_add_bool(vid, &vid->print_debug, "Debug");
-	u_var_add_bool(vid, &vid->print_spew, "Spew");
+	u_var_add_ro_u32(vid, &vid->ll, "Log Level");
 	// clang-format on
 
 	return &(vid->base);
