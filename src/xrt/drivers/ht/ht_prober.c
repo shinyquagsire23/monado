@@ -46,8 +46,6 @@ ht_prober_autoprobe(struct xrt_auto_prober *xap,
                     bool no_hmds,
                     struct xrt_prober *xp)
 {
-	struct ht_prober *htp = ht_prober(xap);
-
 	struct xrt_device *xdev = ht_device_create(xap, attached_data, xp);
 
 	xdev->orientation_tracking_supported = true;
