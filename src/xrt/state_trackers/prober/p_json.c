@@ -54,9 +54,9 @@ p_json_open_or_create_main_file(struct prober *p)
 	ssize_t ret =
 	    u_file_get_path_in_config_dir("config_v0.json", tmp, sizeof(tmp));
 	if (ret <= 0) {
-		fprintf(stderr,
-		        "ERROR:Could not load or create config file no $HOME "
-		        "or $XDG_CONFIG_HOME env variables defined\n");
+		U_LOG_E(
+		    "Could not load or create config file no $HOME "
+		    "or $XDG_CONFIG_HOME env variables defined");
 		return;
 	}
 
@@ -70,8 +70,7 @@ p_json_open_or_create_main_file(struct prober *p)
 	char *str = read_content(file);
 	fclose(file);
 	if (str == NULL) {
-		fprintf(stderr, "ERROR: Could not read the contents of '%s'!\n",
-		        tmp);
+		U_LOG_E("Could not read the contents of '%s'!", tmp);
 		return;
 	}
 
@@ -83,9 +82,8 @@ p_json_open_or_create_main_file(struct prober *p)
 
 	p->json.root = cJSON_Parse(str);
 	if (p->json.root == NULL) {
-		fprintf(stderr, "Failed to parse JSON in '%s':\n%s\n#######\n",
-		        tmp, str);
-		fprintf(stderr, "'%s'\n", cJSON_GetErrorPtr());
+		U_LOG_E("Failed to parse JSON in '%s':\n%s\n#######", tmp, str);
+		U_LOG_E("'%s'", cJSON_GetErrorPtr());
 	}
 
 	free(str);
@@ -100,7 +98,7 @@ get_obj(cJSON *json, const char *name)
 {
 	cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
 	if (item == NULL) {
-		fprintf(stderr, "Failed to find node '%s'!\n", name);
+		U_LOG_E("Failed to find node '%s'!", name);
 	}
 	return item;
 }
@@ -114,7 +112,7 @@ get_obj_bool(cJSON *json, const char *name, bool *out_bool)
 	}
 
 	if (!u_json_get_bool(item, out_bool)) {
-		fprintf(stderr, "Failed to parse '%s'!\n", name);
+		U_LOG_E("Failed to parse '%s'!", name);
 		return false;
 	}
 
@@ -130,7 +128,7 @@ get_obj_int(cJSON *json, const char *name, int *out_int)
 	}
 
 	if (!u_json_get_int(item, out_int)) {
-		fprintf(stderr, "Failed to parse '%s'!\n", name);
+		U_LOG_E("Failed to parse '%s'!", name);
 		return false;
 	}
 
@@ -146,7 +144,7 @@ get_obj_str(cJSON *json, const char *name, char *array, size_t array_size)
 	}
 
 	if (!u_json_get_string_into_array(item, array, array_size)) {
-		fprintf(stderr, "Failed to parse '%s'!\n", name);
+		U_LOG_E("Failed to parse '%s'!", name);
 		return false;
 	}
 
@@ -158,9 +156,9 @@ is_json_ok(struct prober *p)
 {
 	if (p->json.root == NULL) {
 		if (p->json.file_loaded) {
-			fprintf(stderr, "JSON not parsed!\n");
+			U_LOG_E("JSON not parsed!");
 		} else {
-			fprintf(stderr, "No config file!\n");
+			U_LOG_W("No config file!");
 		}
 		return false;
 	}
@@ -180,8 +178,7 @@ parse_active(const char *str,
 	} else if (strcmp(str, "remote") == 0) {
 		*out_active = P_ACTIVE_CONFIG_REMOTE;
 	} else {
-		fprintf(stderr, "Unknown active config '%s' from %s.\n", str,
-		        from);
+		U_LOG_E("Unknown active config '%s' from %s.", str, from);
 		*out_active = P_ACTIVE_CONFIG_NONE;
 		return false;
 	}
@@ -212,17 +209,17 @@ p_json_get_remote_port(struct prober *p, int *out_port)
 {
 	cJSON *t = cJSON_GetObjectItemCaseSensitive(p->json.root, "remote");
 	if (t == NULL) {
-		fprintf(stderr, "No remote node\n");
+		U_LOG_E("No remote node");
 		return false;
 	}
 
 	int ver = -1;
 	if (!get_obj_int(t, "version", &ver)) {
-		fprintf(stderr, "Missing version tag!\n");
+		U_LOG_E("Missing version tag!");
 		return false;
 	}
 	if (ver >= 1) {
-		fprintf(stderr, "Unknown version tag '%i'!\n", ver);
+		U_LOG_E("Unknown version tag '%i'!", ver);
 		return false;
 	}
 
@@ -241,16 +238,16 @@ p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s)
 {
 	if (p->json.root == NULL) {
 		if (p->json.file_loaded) {
-			fprintf(stderr, "JSON not parsed!\n");
+			U_LOG_E("JSON not parsed!");
 		} else {
-			fprintf(stderr, "No config file!\n");
+			U_LOG_W("No config file!");
 		}
 		return false;
 	}
 
 	cJSON *t = cJSON_GetObjectItemCaseSensitive(p->json.root, "tracking");
 	if (t == NULL) {
-		fprintf(stderr, "No tracking node\n");
+		U_LOG_E("No tracking node");
 		return false;
 	}
 
@@ -261,7 +258,7 @@ p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s)
 
 	bad |= !get_obj_int(t, "version", &ver);
 	if (bad || ver >= 1) {
-		fprintf(stderr, "Missing or unknown version  tag '%i'\n", ver);
+		U_LOG_E("Missing or unknown version  tag '%i'", ver);
 		return false;
 	}
 
@@ -284,7 +281,7 @@ p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s)
 	} else if (strcmp(tmp, "leap_motion") == 0) {
 		s->camera_type = XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION;
 	} else {
-		fprintf(stderr, "Unknown camera type '%s'\n", tmp);
+		U_LOG_W("Unknown camera type '%s'", tmp);
 		return false;
 	}
 

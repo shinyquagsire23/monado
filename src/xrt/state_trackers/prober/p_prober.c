@@ -39,8 +39,7 @@
  *
  */
 
-DEBUG_GET_ONCE_BOOL_OPTION(prober_spew, "PROBER_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(prober_debug, "PROBER_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_LOG_OPTION(prober_log, "PROBER_LOG", U_LOGGING_WARN)
 
 static void
 add_device(struct prober *p, struct prober_device **out_dev);
@@ -330,12 +329,10 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 	p->base.can_open = can_open;
 	p->base.destroy = destroy;
 	p->lists = lists;
-	p->print_spew = debug_get_bool_option_prober_spew();
-	p->print_debug = debug_get_bool_option_prober_debug();
+	p->ll = debug_get_log_option_prober_log();
 
 	u_var_add_root((void *)p, "Prober", true);
-	u_var_add_bool((void *)p, &p->print_debug, "Debug");
-	u_var_add_bool((void *)p, &p->print_spew, "Spew");
+	u_var_add_ro_u32(p, &p->ll, "Log Level");
 
 	int ret;
 
@@ -764,7 +761,7 @@ open_hid_interface(struct xrt_prober *xp,
 
 		ret = os_hid_open_hidraw(hidraw->path, out_hid_dev);
 		if (ret != 0) {
-			P_ERROR(p, "Failed to open device '%s' got '%i'",
+			U_LOG_E("Failed to open device '%s' got '%i'",
 			        hidraw->path, ret);
 			return ret;
 		}
@@ -773,10 +770,10 @@ open_hid_interface(struct xrt_prober *xp,
 	}
 #endif // XRT_OS_LINUX
 
-	P_ERROR(p,
-	        "Could not find the requested "
-	        "hid interface (%i) on the device!",
-	        interface);
+	U_LOG_E(
+	    "Could not find the requested "
+	    "hid interface (%i) on the device!",
+	    interface);
 	return -1;
 }
 

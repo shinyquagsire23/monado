@@ -71,18 +71,18 @@ p_libuvc_probe(struct prober *p)
 
 		ret = p_dev_get_usb_dev(p, bus, addr, vendor, product, &pdev);
 
-		P_SPEW(p,
-		       "libuvc\n"
-		       "\t\tptr:        %p (%i)\n"
-		       "\t\tvendor_id:  %04x\n"
-		       "\t\tproduct_id: %04x\n"
-		       "\t\tbus:        %i\n"
-		       "\t\taddr:       %i\n"
-		       "\t\tserial:     %s\n"
-		       "\t\tmanuf:      %s\n"
-		       "\t\tproduct:    %s",
-		       (void *)pdev, ret, vendor, product, bus, addr,
-		       desc->serialNumber, desc->manufacturer, desc->product);
+		P_TRACE(p,
+		        "libuvc\n"
+		        "\t\tptr:        %p (%i)\n"
+		        "\t\tvendor_id:  %04x\n"
+		        "\t\tproduct_id: %04x\n"
+		        "\t\tbus:        %i\n"
+		        "\t\taddr:       %i\n"
+		        "\t\tserial:     %s\n"
+		        "\t\tmanuf:      %s\n"
+		        "\t\tproduct:    %s",
+		        (void *)pdev, ret, vendor, product, bus, addr,
+		        desc->serialNumber, desc->manufacturer, desc->product);
 
 		uvc_free_device_descriptor(desc);
 

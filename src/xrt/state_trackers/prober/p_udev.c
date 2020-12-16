@@ -137,7 +137,7 @@ p_udev_probe(struct prober *p)
 {
 	struct udev *udev = udev_new();
 	if (!udev) {
-		P_ERROR(p, "Can't create udev\n");
+		P_ERROR(p, "Can't create udev");
 		return -1;
 	}
 
@@ -213,22 +213,22 @@ p_udev_enumerate_usb(struct prober *p, struct udev *udev)
 		ret = p_dev_get_usb_dev(p, usb_bus, usb_addr, vendor_id,
 		                        product_id, &pdev);
 
-		P_SPEW(p,
-		       "usb\n"
-		       "\t\tptr:          %p (%i)\n"
-		       "\t\tsysfs_path:   '%s'\n"
-		       "\t\tdev_path:     '%s'\n"
-		       "\t\tdev_class:    %02x\n"
-		       "\t\tvendor_id:    %04x\n"
-		       "\t\tproduct_id:   %04x\n"
-		       "\t\tusb_bus:      %i\n"
-		       "\t\tusb_addr:     %i\n"
-		       "\t\tserial:       '%s'\n"
-		       "\t\tproduct:      '%s'\n"
-		       "\t\tmanufacturer: '%s'",
-		       (void *)pdev, ret, sysfs_path, dev_path, dev_class,
-		       vendor_id, product_id, usb_bus, usb_addr, serial,
-		       product, manufacturer);
+		P_TRACE(p,
+		        "usb\n"
+		        "\t\tptr:          %p (%i)\n"
+		        "\t\tsysfs_path:   '%s'\n"
+		        "\t\tdev_path:     '%s'\n"
+		        "\t\tdev_class:    %02x\n"
+		        "\t\tvendor_id:    %04x\n"
+		        "\t\tproduct_id:   %04x\n"
+		        "\t\tusb_bus:      %i\n"
+		        "\t\tusb_addr:     %i\n"
+		        "\t\tserial:       '%s'\n"
+		        "\t\tproduct:      '%s'\n"
+		        "\t\tmanufacturer: '%s'",
+		        (void *)pdev, ret, sysfs_path, dev_path, dev_class,
+		        vendor_id, product_id, usb_bus, usb_addr, serial,
+		        product, manufacturer);
 
 		if (ret != 0) {
 			P_ERROR(p, "p_dev_get_usb_device failed!");
@@ -346,23 +346,23 @@ p_udev_enumerate_v4l2(struct prober *p, struct udev *udev)
 		ret = p_dev_get_usb_dev(p, usb_bus, usb_addr, vendor_id,
 		                        product_id, &pdev);
 
-		P_SPEW(p,
-		       "v4l\n"
-		       "\t\tptr:          %p (%i)\n"
-		       "\t\tsysfs_path:   '%s'\n"
-		       "\t\tdev_path:     '%s'\n"
-		       "\t\tvendor_id:    %04x\n"
-		       "\t\tproduct_id:   %04x\n"
-		       "\t\tv4l_index:    %u\n"
-		       "\t\tusb_iface:    %i\n"
-		       "\t\tusb_bus:      %i\n"
-		       "\t\tusb_addr:     %i\n"
-		       "\t\tserial:       '%s'\n"
-		       "\t\tproduct:      '%s'\n"
-		       "\t\tmanufacturer: '%s'",
-		       (void *)pdev, ret, sysfs_path, dev_path, vendor_id,
-		       product_id, v4l_index, usb_iface, usb_bus, usb_addr,
-		       serial, product, manufacturer);
+		P_TRACE(p,
+		        "v4l\n"
+		        "\t\tptr:          %p (%i)\n"
+		        "\t\tsysfs_path:   '%s'\n"
+		        "\t\tdev_path:     '%s'\n"
+		        "\t\tvendor_id:    %04x\n"
+		        "\t\tproduct_id:   %04x\n"
+		        "\t\tv4l_index:    %u\n"
+		        "\t\tusb_iface:    %i\n"
+		        "\t\tusb_bus:      %i\n"
+		        "\t\tusb_addr:     %i\n"
+		        "\t\tserial:       '%s'\n"
+		        "\t\tproduct:      '%s'\n"
+		        "\t\tmanufacturer: '%s'",
+		        (void *)pdev, ret, sysfs_path, dev_path, vendor_id,
+		        product_id, v4l_index, usb_iface, usb_bus, usb_addr,
+		        serial, product, manufacturer);
 
 		if (ret != 0) {
 			P_ERROR(p, "p_dev_get_usb_device failed!");
@@ -482,21 +482,21 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 			goto next;
 		}
 
-		P_SPEW(p,
-		       "hidraw\n"
-		       "\t\tptr:          %p (%i)\n"
-		       "\t\tsysfs_path:   '%s'\n"
-		       "\t\tdev_path:     '%s'\n"
-		       "\t\tbus_type:     %i\n"
-		       "\t\tvendor_id:    %04x\n"
-		       "\t\tproduct_id:   %04x\n"
-		       "\t\tinterface:    %i\n"
-		       "\t\tusb_bus:      %i\n"
-		       "\t\tusb_addr:     %i\n"
-		       "\t\tbluetooth_id: %012" PRIx64,
-		       (void *)pdev, ret, sysfs_path, dev_path, bus_type,
-		       vendor_id, product_id, interface, usb_bus, usb_addr,
-		       bluetooth_id);
+		P_TRACE(p,
+		        "hidraw\n"
+		        "\t\tptr:          %p (%i)\n"
+		        "\t\tsysfs_path:   '%s'\n"
+		        "\t\tdev_path:     '%s'\n"
+		        "\t\tbus_type:     %i\n"
+		        "\t\tvendor_id:    %04x\n"
+		        "\t\tproduct_id:   %04x\n"
+		        "\t\tinterface:    %i\n"
+		        "\t\tusb_bus:      %i\n"
+		        "\t\tusb_addr:     %i\n"
+		        "\t\tbluetooth_id: %012" PRIx64,
+		        (void *)pdev, ret, sysfs_path, dev_path, bus_type,
+		        vendor_id, product_id, interface, usb_bus, usb_addr,
+		        bluetooth_id);
 
 		if (ret != 0) {
 			P_ERROR(p, "p_dev_get_usb_device failed!");
@@ -624,10 +624,10 @@ p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
 				ok = true;
 			}
 		} else if (strncmp(line, "HID_NAME=", 9) == 0) {
-			// printf("\t\tprocuct_name: '%s'\n", line + 9);
+			// U_LOG_D("\t\tprocuct_name: '%s'", line + 9);
 		} else if (strncmp(line, "HID_UNIQ=", 9) == 0) {
 			serial_utf8 = &line[9];
-			// printf("\t\tserial: '%s'\n", line + 9);
+			// U_LOG_D("\t\tserial: '%s'", line + 9);
 		}
 
 		line = strtok_r(NULL, "\n", &saveptr);
@@ -854,22 +854,21 @@ p_udev_get_sysattr_u32_base10(struct udev_device *dev,
 static void
 p_udev_dump_device(struct udev_device *udev_dev, const char *name)
 {
-	// clang-format off
-	fprintf(stderr, "\t%s\n", name);
-	fprintf(stderr, "\t\tptr:       %p\n", (void*)udev_dev);
+	U_LOG_I("\t%s", name);
+	U_LOG_I("\t\tptr:       %p", (void *)udev_dev);
 
 	if (udev_dev == NULL) {
 		return;
 	}
 
-	fprintf(stderr, "\t\tparent:    %p\n", (void*)udev_device_get_parent(udev_dev));
-	fprintf(stderr, "\t\tdevpath:   %s\n", udev_device_get_devpath(udev_dev));
-	fprintf(stderr, "\t\tdevnode:   %s\n", udev_device_get_devnode(udev_dev));
-	fprintf(stderr, "\t\tdevtype:   %s\n", udev_device_get_devtype(udev_dev));
-	fprintf(stderr, "\t\tsysname:   %s\n", udev_device_get_sysname(udev_dev));
-	fprintf(stderr, "\t\tsysnum:    %s\n", udev_device_get_sysnum(udev_dev));
-	fprintf(stderr, "\t\tsyspath:   %s\n", udev_device_get_syspath(udev_dev));
-	fprintf(stderr, "\t\tsubsystem: %s\n", udev_device_get_subsystem(udev_dev));
-	fprintf(stderr, "\t\tsysfs.product: %s\n", udev_device_get_sysattr_value(udev_dev, "product"));
-	// clang-format on
+	U_LOG_I("\t\tparent:    %p", (void *)udev_device_get_parent(udev_dev));
+	U_LOG_I("\t\tdevpath:   %s", udev_device_get_devpath(udev_dev));
+	U_LOG_I("\t\tdevnode:   %s", udev_device_get_devnode(udev_dev));
+	U_LOG_I("\t\tdevtype:   %s", udev_device_get_devtype(udev_dev));
+	U_LOG_I("\t\tsysname:   %s", udev_device_get_sysname(udev_dev));
+	U_LOG_I("\t\tsysnum:    %s", udev_device_get_sysnum(udev_dev));
+	U_LOG_I("\t\tsyspath:   %s", udev_device_get_syspath(udev_dev));
+	U_LOG_I("\t\tsubsystem: %s", udev_device_get_subsystem(udev_dev));
+	U_LOG_I("\t\tsysfs.product: %s",
+	        udev_device_get_sysattr_value(udev_dev, "product"));
 }

@@ -15,6 +15,8 @@
 #include "xrt/xrt_prober.h"
 #include "xrt/xrt_settings.h"
 
+#include "util/u_logging.h"
+
 #ifdef XRT_HAVE_LIBUSB
 #include <libusb.h>
 #endif
@@ -33,30 +35,11 @@
  *
  */
 
-#define P_SPEW(p, ...)                                                         \
-	do {                                                                   \
-		if (p->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define P_DEBUG(p, ...)                                                        \
-	do {                                                                   \
-		if (p->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define P_ERROR(p, ...)                                                        \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+#define P_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
+#define P_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
+#define P_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
+#define P_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
+#define P_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
 
 #define MAX_AUTO_PROBERS 8
 
@@ -184,8 +167,7 @@ struct prober
 	size_t num_entries;
 	struct xrt_prober_entry **entries;
 
-	bool print_debug;
-	bool print_spew;
+	enum u_logging_level ll;
 };
 
 

@@ -71,14 +71,14 @@ p_libusb_probe(struct prober *p)
 
 		ret = p_dev_get_usb_dev(p, bus, addr, vendor, product, &pdev);
 
-		P_SPEW(p,
-		       "libusb\n"
-		       "\t\tptr:        %p (%i)\n"
-		       "\t\tvendor_id:  %04x\n"
-		       "\t\tproduct_id: %04x\n"
-		       "\t\tbus:        %i\n"
-		       "\t\taddr:       %i",
-		       (void *)pdev, ret, vendor, product, bus, addr);
+		P_TRACE(p,
+		        "libusb\n"
+		        "\t\tptr:        %p (%i)\n"
+		        "\t\tvendor_id:  %04x\n"
+		        "\t\tproduct_id: %04x\n"
+		        "\t\tbus:        %i\n"
+		        "\t\taddr:       %i",
+		        (void *)pdev, ret, vendor, product, bus, addr);
 
 		if (ret != 0) {
 			P_ERROR(p, "p_dev_get_usb_device failed!");
@@ -144,11 +144,11 @@ p_libusb_get_string_descriptor(struct prober *p,
 	case XRT_PROBER_STRING_SERIAL_NUMBER: which = desc.iSerialNumber; break;
 	default: break;
 	}
-	P_SPEW(p,
-	       "libusb\n"
-	       "\t\tptr:        %p\n"
-	       "\t\trequested string index:  %i",
-	       (void *)pdev, which);
+	P_TRACE(p,
+	        "libusb\n"
+	        "\t\tptr:        %p\n"
+	        "\t\trequested string index:  %i",
+	        (void *)pdev, which);
 	if (which == 0) {
 		// Not available?
 		return 0;
