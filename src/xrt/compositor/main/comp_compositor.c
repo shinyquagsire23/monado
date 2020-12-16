@@ -1227,6 +1227,7 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 #else
 		COMP_ERROR(c, "Windows support not compiled in!");
 #endif
+		break;
 	default: COMP_ERROR(c, "Unknown window type!"); break;
 	}
 
