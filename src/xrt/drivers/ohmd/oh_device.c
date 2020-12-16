@@ -32,12 +32,14 @@
 #include "util/u_device.h"
 #include "util/u_time.h"
 #include "util/u_distortion_mesh.h"
+#include "util/u_logging.h"
 
 #include "oh_device.h"
 
 // Should we permit finite differencing to compute angular velocities when not
 // directly retrieved?
 DEBUG_GET_ONCE_BOOL_OPTION(ohmd_finite_diff, "OHMD_ALLOW_FINITE_DIFF", true)
+DEBUG_GET_ONCE_LOG_OPTION(ohmd_log, "OHMD_LOG", U_LOGGING_WARN)
 
 // Define this if you have the appropriately hacked-up OpenHMD version.
 #undef OHMD_HAVE_ANG_VEL
@@ -65,8 +67,7 @@ struct oh_device
 	int64_t last_update;
 	struct xrt_space_relation last_relation;
 
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level ll;
 	bool enable_finite_difference;
 
 	struct
@@ -115,7 +116,7 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	struct xrt_vec3 pos = {0.f, 0.f, 0.f};
 
 	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
-		OH_ERROR(ohd, "unknown input name");
+		OHMD_ERROR(ohd, "unknown input name");
 		return;
 	}
 
@@ -162,7 +163,7 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 		 * USB data and use that instead.
 		 */
 		*out_relation = ohd->last_relation;
-		OH_SPEW(ohd, "GET_TRACKED_POSE - no new data");
+		OHMD_TRACE(ohd, "GET_TRACKED_POSE - no new data");
 		return;
 	}
 
@@ -176,9 +177,9 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 		if (ohd->last_update == 0) {
 			// This is the first report, so just print a warning
 			// instead of estimating ang vel.
-			OH_DEBUG(ohd,
-			         "Will use finite differencing to estimate "
-			         "angular velocity.");
+			OHMD_DEBUG(ohd,
+			           "Will use finite differencing to estimate "
+			           "angular velocity.");
 		} else if (dt < 1.0f && dt > 0.0005) {
 			// but we can compute it:
 			// last report was not long ago but not
@@ -196,12 +197,13 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 		    out_relation->relation_flags |
 		    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
 
-		OH_SPEW(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f) (%f, %f, %f)",
-		        quat.x, quat.y, quat.z, quat.w, ang_vel.x, ang_vel.y,
-		        ang_vel.z);
+		OHMD_TRACE(ohd,
+		           "GET_TRACKED_POSE (%f, %f, %f, %f) (%f, %f, %f)",
+		           quat.x, quat.y, quat.z, quat.w, ang_vel.x, ang_vel.y,
+		           ang_vel.z);
 	} else {
-		OH_SPEW(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f)", quat.x,
-		        quat.y, quat.z, quat.w);
+		OHMD_TRACE(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f)", quat.x,
+		           quat.y, quat.z, quat.w);
 	}
 
 	// Update state within driver
@@ -513,11 +515,7 @@ swap(int *a, int *b)
 }
 
 struct xrt_device *
-oh_device_create(ohmd_context *ctx,
-                 ohmd_device *dev,
-                 const char *prod,
-                 bool print_spew,
-                 bool print_debug)
+oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 {
 	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
 	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
@@ -531,8 +529,7 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.name = XRT_DEVICE_GENERIC_HMD;
 	ohd->ctx = ctx;
 	ohd->dev = dev;
-	ohd->print_spew = print_spew;
-	ohd->print_debug = print_debug;
+	ohd->ll = debug_get_log_option_ohmd_log();
 	ohd->enable_finite_difference =
 	    debug_get_bool_option_ohmd_finite_diff();
 
@@ -548,7 +545,7 @@ oh_device_create(ohmd_context *ctx,
 		                       info.views[1].display.h_meters,
 		                       info.views[1].lens_center_y_meters, 0,
 		                       &ohd->base.hmd->views[1].fov)) {
-			OH_ERROR(
+			OHMD_ERROR(
 			    ohd,
 			    "Failed to compute the partial fields of view.");
 			free(ohd);
@@ -596,7 +593,7 @@ oh_device_create(ohmd_context *ctx,
 	ohd->base.hmd->views[1].viewport.h_pixels = info.views[1].display.h_pixels;
 	ohd->base.hmd->views[1].rot = u_device_rotation_ident;
 
-	OH_DEBUG(ohd,
+	OHMD_DEBUG(ohd,
 	         "Display/viewport/offset before rotation %dx%d/%dx%d/%dx%d, "
 	         "%dx%d/%dx%d/%dx%d",
 	         ohd->base.hmd->views[0].display.w_pixels,
@@ -703,7 +700,7 @@ oh_device_create(ohmd_context *ctx,
 	}
 
 	if (info.quirks.rotate_lenses_right) {
-		OH_DEBUG(ohd, "Displays rotated right");
+		OHMD_DEBUG(ohd, "Displays rotated right");
 
 		// openhmd display dimensions are *after* all rotations
 		swap(&ohd->base.hmd->screens->w_pixels,
@@ -730,7 +727,7 @@ oh_device_create(ohmd_context *ctx,
 	}
 
 	if (info.quirks.rotate_lenses_left) {
-		OH_DEBUG(ohd, "Displays rotated left");
+		OHMD_DEBUG(ohd, "Displays rotated left");
 
 		// openhmd display dimensions are *after* all rotations
 		swap(&ohd->base.hmd->screens->w_pixels,
@@ -757,7 +754,7 @@ oh_device_create(ohmd_context *ctx,
 	}
 
 	if (info.quirks.rotate_lenses_inwards) {
-		OH_DEBUG(ohd, "Displays rotated inwards");
+		OHMD_DEBUG(ohd, "Displays rotated inwards");
 
 		int w2 = info.display.w_pixels / 2;
 		int h = info.display.h_pixels;
@@ -779,21 +776,21 @@ oh_device_create(ohmd_context *ctx,
 		ohd->base.hmd->views[1].rot = u_device_rotation_left;
 	}
 
-	OH_DEBUG(ohd,
-	         "Display/viewport/offset after rotation %dx%d/%dx%d/%dx%d, "
-	         "%dx%d/%dx%d/%dx%d",
-	         ohd->base.hmd->views[0].display.w_pixels,
-	         ohd->base.hmd->views[0].display.h_pixels,
-	         ohd->base.hmd->views[0].viewport.w_pixels,
-	         ohd->base.hmd->views[0].viewport.h_pixels,
-	         ohd->base.hmd->views[0].viewport.x_pixels,
-	         ohd->base.hmd->views[0].viewport.y_pixels,
-	         ohd->base.hmd->views[1].display.w_pixels,
-	         ohd->base.hmd->views[1].display.h_pixels,
-	         ohd->base.hmd->views[1].viewport.w_pixels,
-	         ohd->base.hmd->views[1].viewport.h_pixels,
-	         ohd->base.hmd->views[0].viewport.x_pixels,
-	         ohd->base.hmd->views[0].viewport.y_pixels);
+	OHMD_DEBUG(ohd,
+	           "Display/viewport/offset after rotation %dx%d/%dx%d/%dx%d, "
+	           "%dx%d/%dx%d/%dx%d",
+	           ohd->base.hmd->views[0].display.w_pixels,
+	           ohd->base.hmd->views[0].display.h_pixels,
+	           ohd->base.hmd->views[0].viewport.w_pixels,
+	           ohd->base.hmd->views[0].viewport.h_pixels,
+	           ohd->base.hmd->views[0].viewport.x_pixels,
+	           ohd->base.hmd->views[0].viewport.y_pixels,
+	           ohd->base.hmd->views[1].display.w_pixels,
+	           ohd->base.hmd->views[1].display.h_pixels,
+	           ohd->base.hmd->views[1].viewport.w_pixels,
+	           ohd->base.hmd->views[1].viewport.h_pixels,
+	           ohd->base.hmd->views[0].viewport.x_pixels,
+	           ohd->base.hmd->views[0].viewport.y_pixels);
 
 
 	if (info.quirks.delay_after_initialization) {
@@ -804,7 +801,7 @@ oh_device_create(ohmd_context *ctx,
 		} while (time_to_sleep);
 	}
 
-	if (ohd->print_debug) {
+	if (ohd->ll <= U_LOGGING_DEBUG) {
 		u_device_dump_config(&ohd->base, __func__, prod);
 	}
 

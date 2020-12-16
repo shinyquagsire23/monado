@@ -17,36 +17,13 @@ extern "C" {
 #endif
 
 struct xrt_device *
-oh_device_create(ohmd_context *ctx,
-                 ohmd_device *dev,
-                 const char *prod,
-                 bool print_spew,
-                 bool print_debug);
+oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod);
 
-#define OH_SPEW(c, ...)                                                        \
-	do {                                                                   \
-		if (c->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define OH_DEBUG(c, ...)                                                       \
-	do {                                                                   \
-		if (c->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define OH_ERROR(c, ...)                                                       \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+#define OHMD_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
+#define OHMD_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)
+#define OHMD_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->ll, __VA_ARGS__)
+#define OHMD_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->ll, __VA_ARGS__)
+#define OHMD_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
 
 
 #ifdef __cplusplus

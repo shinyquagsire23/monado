@@ -20,8 +20,6 @@
 #include "oh_device.h"
 
 
-DEBUG_GET_ONCE_BOOL_OPTION(oh_spew, "OH_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(oh_debug, "OH_PRINT_DEBUG", false)
 DEBUG_GET_ONCE_BOOL_OPTION(ohmd_external, "OHMD_EXTERNAL_DRIVER", false)
 
 /*!
@@ -31,8 +29,6 @@ struct oh_prober
 {
 	struct xrt_auto_prober base;
 	ohmd_context *ctx;
-	bool print_spew;
-	bool print_debug;
 };
 
 //! @private @memberof oh_prober
@@ -86,15 +82,13 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 		ohmd_list_geti(ohp->ctx, i, OHMD_DEVICE_FLAGS, &device_flags);
 
 		if (device_class != OHMD_DEVICE_CLASS_HMD) {
-			OH_DEBUG(ohp, "Rejecting device idx %i, is not a HMD.",
-			         i);
+			U_LOG_D("Rejecting device idx %i, is not a HMD.", i);
 			continue;
 		}
 
 		if (device_flags & OHMD_DEVICE_FLAGS_NULL_DEVICE) {
-			OH_DEBUG(ohp,
-			         "Rejecting device idx %i, is a NULL device.",
-			         i);
+			U_LOG_D("Rejecting device idx %i, is a NULL device.",
+			        i);
 			continue;
 		}
 
@@ -107,7 +101,7 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 			continue;
 		}
 
-		OH_DEBUG(ohp, "Selecting device idx %i", i);
+		U_LOG_D("Selecting device idx %i", i);
 		device_idx = i;
 
 		orientation_tracking_supported =
@@ -127,8 +121,7 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 		return NULL;
 	}
 
-	struct xrt_device *xdev = oh_device_create(
-	    ohp->ctx, dev, prod, ohp->print_spew, ohp->print_debug);
+	struct xrt_device *xdev = oh_device_create(ohp->ctx, dev, prod);
 
 	xdev->orientation_tracking_supported = orientation_tracking_supported;
 	xdev->position_tracking_supported = position_tracking_supported;
@@ -145,8 +138,6 @@ oh_create_auto_prober()
 	ohp->base.destroy = oh_prober_destroy;
 	ohp->base.lelo_dallas_autoprobe = oh_prober_autoprobe;
 	ohp->ctx = ohmd_ctx_create();
-	ohp->print_spew = debug_get_bool_option_oh_spew();
-	ohp->print_debug = debug_get_bool_option_oh_debug();
 
 	return &ohp->base;
 }
