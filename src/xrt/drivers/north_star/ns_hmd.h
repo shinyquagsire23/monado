@@ -14,44 +14,23 @@
 #include "util/u_misc.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
-
+#include "util/u_logging.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
 /*
  *
- * Defines
+ * Printing functions.
  *
  */
 
-#define NS_SPEW(c, ...)                                                        \
-	do {                                                                   \
-		if (c->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define NS_DEBUG(c, ...)                                                       \
-	do {                                                                   \
-		if (c->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define NS_ERROR(c, ...)                                                       \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
-
+#define NS_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
+#define NS_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)
+#define NS_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->ll, __VA_ARGS__)
+#define NS_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->ll, __VA_ARGS__)
+#define NS_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
 
 /*
  *
@@ -143,8 +122,7 @@ struct ns_hmd
 
 	struct xrt_device *tracker;
 
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level ll;
 	bool is_v2; // True if V2, false if V1. If we ever get a v3 this should
 	            // be an enum or something
 };

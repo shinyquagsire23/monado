@@ -36,7 +36,7 @@ ns_create_auto_prober(void);
  * @ingroup drv_ns
  */
 struct xrt_device *
-ns_hmd_create(const char *config_path, bool print_spew, bool print_debug);
+ns_hmd_create(const char *config_path);
 
 /*!
  * @dir drivers/north_star

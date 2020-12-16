@@ -21,8 +21,6 @@
 
 
 DEBUG_GET_ONCE_OPTION(ns_config_path, "NS_CONFIG_PATH", NULL)
-DEBUG_GET_ONCE_BOOL_OPTION(ns_spew, "NS_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(ns_debug, "NS_PRINT_DEBUG", false)
 
 /*!
  * @implements xrt_auto_prober
@@ -31,8 +29,6 @@ struct ns_prober
 {
 	struct xrt_auto_prober base;
 	const char *config_path;
-	bool print_spew;
-	bool print_debug;
 };
 
 //! @private @memberof ns_prober
@@ -68,8 +64,7 @@ ns_prober_autoprobe(struct xrt_auto_prober *xap,
 		return NULL;
 	}
 
-	return ns_hmd_create(nsp->config_path, nsp->print_spew,
-	                     nsp->print_debug);
+	return ns_hmd_create(nsp->config_path);
 }
 
 struct xrt_auto_prober *
@@ -79,8 +74,6 @@ ns_create_auto_prober()
 	nsp->base.destroy = ns_prober_destroy;
 	nsp->base.lelo_dallas_autoprobe = ns_prober_autoprobe;
 	nsp->config_path = debug_get_option_ns_config_path();
-	nsp->print_spew = debug_get_bool_option_ns_spew();
-	nsp->print_debug = debug_get_bool_option_ns_debug();
 
 	return &nsp->base;
 }

@@ -33,6 +33,7 @@
 #include "../realsense/rs_interface.h"
 #endif
 
+DEBUG_GET_ONCE_LOG_OPTION(ns_log, "NS_LOG", U_LOGGING_WARN)
 
 /*
  *
@@ -412,12 +413,12 @@ ns_config_load(struct ns_hmd *ns)
 			                     // because i smell a rat there -
 			                     // that value seems to unexpectedly
 			                     // change during init process.
-			printf(
-			    "Just so you know, you can add tunable FoV "
-			    "parameters to your v2 json file. There's an "
-			    "example in "
-			    "src/xrt/drivers/north_star/"
-			    "v2_example_config.json.\n");
+			NS_INFO(ns,
+			        "Just so you know, you can add tunable FoV "
+			        "parameters to your v2 json file. There's an "
+			        "example in "
+			        "src/xrt/drivers/north_star/"
+			        "v2_example_config.json.");
 			ns->eye_configs_v2[0].fov.angle_left = -0.6;
 			ns->eye_configs_v2[0].fov.angle_right = 0.6;
 			ns->eye_configs_v2[0].fov.angle_up = 0.6;
@@ -476,10 +477,11 @@ ns_config_load(struct ns_hmd *ns)
 		                                               "leapTracker"));
 		ns->is_v2 = false;
 	} else {
-		printf(
+		NS_ERROR(
+		    ns,
 		    "Bad config file. There are examples of v1 and v2 files in "
 		    "src/xrt/drivers/north_star - if those don't work, "
-		    "something's really wrong.\n");
+		    "something's really wrong.");
 	}
 
 	cJSON_Delete(config_json);
@@ -494,7 +496,7 @@ ns_config_load(struct ns_hmd *ns)
  */
 
 struct xrt_device *
-ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
+ns_hmd_create(const char *config_path)
 {
 	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
 	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
@@ -508,8 +510,7 @@ ns_hmd_create(const char *config_path, bool print_spew, bool print_debug)
 	ns->base.name = XRT_DEVICE_GENERIC_HMD;
 	ns->pose.orientation.w = 1.0f; // All other values set to zero.
 	ns->config_path = config_path;
-	ns->print_spew = print_spew;
-	ns->print_debug = print_debug;
+	ns->ll = debug_get_log_option_ns_log();
 
 	// Print name.
 	snprintf(ns->base.str, XRT_DEVICE_NAME_LEN, "North Star");
