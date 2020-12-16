@@ -38,9 +38,7 @@ arduino_create_auto_prober();
  * @ingroup drv_arduino
  */
 struct xrt_device *
-arduino_device_create(struct os_ble_device *ble,
-                      bool print_spew,
-                      bool print_debug);
+arduino_device_create(struct os_ble_device *ble);
 
 /*!
  * @dir drivers/arduino

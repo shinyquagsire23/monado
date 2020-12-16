@@ -28,8 +28,6 @@
  */
 
 DEBUG_GET_ONCE_BOOL_OPTION(arduino_enable, "ARDUINO_ENABLE", true)
-DEBUG_GET_ONCE_BOOL_OPTION(arduino_spew, "ARDUINO_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(arduino_debug, "ARDUINO_PRINT_DEBUG", false)
 
 /*!
  * Arduino prober struct.
@@ -41,8 +39,6 @@ struct arduino_prober
 {
 	struct xrt_auto_prober base;
 
-	bool print_spew;
-	bool print_debug;
 	bool enabled;
 };
 
@@ -90,7 +86,7 @@ arduino_prober_autoprobe(struct xrt_auto_prober *xap,
 		return NULL;
 	}
 
-	return arduino_device_create(ble, ap->print_spew, ap->print_debug);
+	return arduino_device_create(ble);
 }
 
 
@@ -108,8 +104,6 @@ arduino_create_auto_prober()
 	ap->base.destroy = arduino_prober_destroy;
 	ap->base.lelo_dallas_autoprobe = arduino_prober_autoprobe;
 	ap->enabled = debug_get_bool_option_arduino_enable();
-	ap->print_spew = debug_get_bool_option_arduino_spew();
-	ap->print_debug = debug_get_bool_option_arduino_debug();
 
 	return &ap->base;
 }

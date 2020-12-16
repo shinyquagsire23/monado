@@ -26,6 +26,7 @@
 #include "util/u_debug.h"
 #include "util/u_device.h"
 #include "util/u_bitwise.h"
+#include "util/u_logging.h"
 
 #include "arduino_interface.h"
 
@@ -33,6 +34,8 @@
 #include <math.h>
 #include <assert.h>
 
+
+DEBUG_GET_ONCE_LOG_OPTION(arduino_log, "ARDUINO_LOG", U_LOGGING_WARN)
 
 /*
  *
@@ -91,8 +94,7 @@ struct arduino_device
 		bool last;
 	} gui;
 
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level ll;
 };
 
 
@@ -102,30 +104,11 @@ struct arduino_device
  *
  */
 
-#define ARDUINO_SPEW(c, ...)                                                   \
-	do {                                                                   \
-		if (c->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define ARDUINO_DEBUG(c, ...)                                                  \
-	do {                                                                   \
-		if (c->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define ARDUINO_ERROR(c, ...)                                                  \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+#define ARDUINO_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
+#define ARDUINO_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)
+#define ARDUINO_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->ll, __VA_ARGS__)
+#define ARDUINO_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->ll, __VA_ARGS__)
+#define ARDUINO_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
 
 static inline struct arduino_device *
 arduino_device(struct xrt_device *xdev)
@@ -181,7 +164,7 @@ update_fusion(struct arduino_device *ad,
 	    ad, "fusion sample %u (ax %d ay %d az %d) (gx %d gy %d gz %d)",
 	    sample->time, sample->accel.x, sample->accel.y, sample->accel.z,
 	    sample->gyro.x, sample->gyro.y, sample->gyro.z);
-	ARDUINO_DEBUG(ad, "\n");
+	ARDUINO_DEBUG(ad, " ");
 }
 
 static void
@@ -191,7 +174,7 @@ arduino_parse_input(struct arduino_device *ad,
 {
 	U_ZERO(input);
 	unsigned char *b = (unsigned char *)data;
-	ARDUINO_SPEW(
+	ARDUINO_TRACE(
 	    ad,
 	    "raw input: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
 	    "%02x %02x %02x %02x %02x %02x %02x %02x %02x",
@@ -235,14 +218,13 @@ arduino_read_one_packet(struct arduino_device *ad, uint8_t *buffer, size_t size)
 			retries--;
 		}
 		if (ret == 0) {
-			fprintf(stderr, "%s\n", __func__);
+			ARDUINO_ERROR(ad, "%s", __func__);
 			// Must lock thread before check in while.
 			os_thread_helper_lock(&ad->oth);
 			continue;
 		}
 		if (ret < 0) {
-			ARDUINO_ERROR(arduino, "Failed to read device '%i'!",
-			              ret);
+			ARDUINO_ERROR(ad, "Failed to read device '%i'!", ret);
 			return false;
 		}
 		return true;
@@ -399,9 +381,7 @@ static struct xrt_binding_profile binding_profiles[1] = {
  */
 
 struct xrt_device *
-arduino_device_create(struct os_ble_device *ble,
-                      bool print_spew,
-                      bool print_debug)
+arduino_device_create(struct os_ble_device *ble)
 {
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_TRACKING_NONE);
@@ -423,8 +403,7 @@ arduino_device_create(struct os_ble_device *ble,
 	ad->base.num_binding_profiles = ARRAY_SIZE(binding_profiles);
 
 	ad->ble = ble;
-	ad->print_spew = print_spew;
-	ad->print_debug = print_debug;
+	ad->ll = debug_get_log_option_arduino_log();
 
 	m_imu_3dof_init(&ad->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_300MS);
 
@@ -444,7 +423,7 @@ arduino_device_create(struct os_ble_device *ble,
 	// Everything done, finally start the thread.
 	int ret = os_thread_helper_start(&ad->oth, arduino_run_thread, ad);
 	if (ret != 0) {
-		ARDUINO_ERROR(dd, "Failed to start thread!");
+		ARDUINO_ERROR(ad, "Failed to start thread!");
 		arduino_device_destroy(&ad->base);
 		return NULL;
 	}
