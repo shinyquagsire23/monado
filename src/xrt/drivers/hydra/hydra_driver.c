@@ -27,6 +27,7 @@
 #include "util/u_device.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
+#include "util/u_logging.h"
 
 #include "hydra_interface.h"
 
@@ -38,33 +39,14 @@
  *
  */
 
-#define HYDRA_SPEW(p, ...)                                                     \
-	do {                                                                   \
-		if (p->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
+#define HYDRA_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->sys->ll, __VA_ARGS__)
+#define HYDRA_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->sys->ll, __VA_ARGS__)
+#define HYDRA_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->sys->ll, __VA_ARGS__)
+#define HYDRA_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->sys->ll, __VA_ARGS__)
+#define HYDRA_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->sys->ll, __VA_ARGS__)
 
-#define HYDRA_DEBUG(p, ...)                                                    \
-	do {                                                                   \
-		if (p->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
+DEBUG_GET_ONCE_LOG_OPTION(hydra_log, "HYDRA_LOG", U_LOGGING_WARN)
 
-#define HYDRA_ERROR(p, ...)                                                    \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
-
-DEBUG_GET_ONCE_BOOL_OPTION(hydra_spew, "HYDRA_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(hydra_debug, "HYDRA_PRINT_DEBUG", false)
 enum hydra_input_index
 {
 	HYDRA_INDEX_1_CLICK,
@@ -181,8 +163,7 @@ struct hydra_system
 	bool was_in_gamepad_mode;
 	int motion_attempt_number;
 
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level ll;
 };
 
 /*!
@@ -208,9 +189,6 @@ struct hydra_device
 
 	//! Which hydra controller in the system are we?
 	size_t index;
-
-	bool print_spew;
-	bool print_debug;
 };
 
 /*
@@ -337,19 +315,19 @@ hydra_device_parse_controller(struct hydra_device *hd, uint8_t *buf)
 
 	state->trigger = hydra_read_uint8(&buf) * SCALE_UINT8_TO_FLOAT_0_TO_1;
 
-	HYDRA_SPEW(hd,
-	           "\n\t"
-	           "controller:  %i\n\t"
-	           "position:    (%-1.2f, %-1.2f, %-1.2f)\n\t"
-	           "orientation: (%-1.2f, %-1.2f, %-1.2f, %-1.2f)\n\t"
-	           "buttons:     %08x\n\t"
-	           "joystick:    (%-1.2f, %-1.2f)\n\t"
-	           "trigger:     %01.2f\n",
-	           (int)hd->index, state->pose.position.x,
-	           state->pose.position.y, state->pose.position.z,
-	           state->pose.orientation.x, state->pose.orientation.y,
-	           state->pose.orientation.z, state->pose.orientation.w,
-	           state->buttons, state->js.x, state->js.y, state->trigger);
+	HYDRA_TRACE(hd,
+	            "\n\t"
+	            "controller:  %i\n\t"
+	            "position:    (%-1.2f, %-1.2f, %-1.2f)\n\t"
+	            "orientation: (%-1.2f, %-1.2f, %-1.2f, %-1.2f)\n\t"
+	            "buttons:     %08x\n\t"
+	            "joystick:    (%-1.2f, %-1.2f)\n\t"
+	            "trigger:     %01.2f\n",
+	            (int)hd->index, state->pose.position.x,
+	            state->pose.position.y, state->pose.position.z,
+	            state->pose.orientation.x, state->pose.orientation.y,
+	            state->pose.orientation.z, state->pose.orientation.w,
+	            state->buttons, state->js.x, state->js.y, state->trigger);
 }
 
 static int
@@ -367,7 +345,7 @@ hydra_system_read_data_hid(struct hydra_system *hs, timepoint_ns now)
 			return got_message ? 1 : 0;
 		}
 		if (ret != 52) {
-			HYDRA_ERROR(hs, "Unexpected data report of size %d",
+			U_LOG_IFL_E(hs->ll, "Unexpected data report of size %d",
 			            ret);
 			return -1;
 		}
@@ -389,11 +367,11 @@ hydra_system_read_data_hid(struct hydra_system *hs, timepoint_ns now)
 		}
 
 		hs->report_time = now;
-		HYDRA_SPEW(hs,
-		           "\n\t"
-		           "missed: %s\n\t"
-		           "seq_no: %x\n",
-		           missed ? "yes" : "no", new_counter);
+		U_LOG_IFL_T(hs->ll,
+		            "\n\t"
+		            "missed: %s\n\t"
+		            "seq_no: %x\n",
+		            missed ? "yes" : "no", new_counter);
 	} while (true);
 
 	return 0;
@@ -410,7 +388,7 @@ hydra_system_enter_motion_control(struct hydra_system *hs, timepoint_ns now)
 
 	hs->was_in_gamepad_mode = true;
 	hs->motion_attempt_number++;
-	HYDRA_DEBUG(hs,
+	U_LOG_IFL_D(hs->ll,
 	            "Setting feature report to start motion-controller mode, "
 	            "attempt %d",
 	            hs->motion_attempt_number);
@@ -585,8 +563,8 @@ hydra_system_remove_child(struct hydra_system *hs, struct hydra_device *hd)
 		    hs->sm.current_state == HYDRA_SM_REPORTING &&
 		    hs->was_in_gamepad_mode) {
 
-			HYDRA_DEBUG(
-			    hs,
+			U_LOG_IFL_D(
+			    hs->ll,
 			    "hydra: Sending command to re-enter gamepad mode "
 			    "and pausing while it takes effect.");
 
@@ -676,8 +654,7 @@ hydra_found(struct xrt_prober *xp,
 	hs->report_counter = -1;
 	hs->refs = 2;
 
-	hs->print_spew = debug_get_bool_option_hydra_spew();
-	hs->print_debug = debug_get_bool_option_hydra_debug();
+	hs->ll = debug_get_log_option_hydra_log();
 
 	// Populate the individual devices
 	for (size_t i = 0; i < 2; ++i) {
@@ -702,8 +679,6 @@ hydra_found(struct xrt_prober *xp,
 		SET_INPUT(POSE);
 		hd->index = i;
 		hd->sys = hs;
-		hd->print_spew = hs->print_spew;
-		hd->print_debug = hs->print_debug;
 
 		out_xdevs[i] = &(hd->base);
 	}
@@ -713,6 +688,6 @@ hydra_found(struct xrt_prober *xp,
 	hs->devs[1]->base.position_tracking_supported = true;
 	hs->devs[1]->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 
-	printf("Opened razer hydra!\n");
+	U_LOG_I("Opened razer hydra!");
 	return 2;
 }
