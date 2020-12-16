@@ -29,6 +29,9 @@ extern "C" {
 #include "xrt/xrt_instance.h"
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+
 //! When set, all controllers pretend to be Index controllers. Provides best
 //! compatibility with legacy games due to steamvr's legacy binding for Index
 //! controllers, but input mapping may be incomplete or not ideal.
@@ -1557,3 +1560,5 @@ ovrd_hmd_driver_impl(const char *pInterfaceName, int *pReturnCode)
 
 	return NULL;
 }
+
+#pragma GCC diagnostic pop
