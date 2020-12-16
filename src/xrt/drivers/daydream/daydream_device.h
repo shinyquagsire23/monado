@@ -18,6 +18,8 @@
 #include "os/os_threading.h"
 #include "os/os_ble.h"
 
+#include "util/u_logging.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,8 +86,7 @@ struct daydream_device
 		struct m_imu_3dof fusion;
 	};
 
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level ll;
 
 	struct
 	{
@@ -95,35 +96,14 @@ struct daydream_device
 
 
 struct daydream_device *
-daydream_device_create(struct os_ble_device *ble,
-                       bool print_spew,
-                       bool print_debug);
+daydream_device_create(struct os_ble_device *ble);
 
 
-#define DAYDREAM_SPEW(c, ...)                                                  \
-	do {                                                                   \
-		if (c->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define DAYDREAM_DEBUG(c, ...)                                                 \
-	do {                                                                   \
-		if (c->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define DAYDREAM_ERROR(c, ...)                                                 \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+#define DAYDREAM_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
+#define DAYDREAM_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)
+#define DAYDREAM_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->ll, __VA_ARGS__)
+#define DAYDREAM_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->ll, __VA_ARGS__)
+#define DAYDREAM_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
 
 
 #ifdef __cplusplus

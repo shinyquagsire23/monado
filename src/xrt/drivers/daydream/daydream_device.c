@@ -29,6 +29,7 @@
 #include <math.h>
 #include <assert.h>
 
+DEBUG_GET_ONCE_LOG_OPTION(daydream_log, "DAYDREAM_LOG", U_LOGGING_WARN)
 
 /*!
  * Indices where each input is in the input list.
@@ -174,7 +175,7 @@ daydream_read_one_packet(struct daydream_device *daydream,
 			retries--;
 		}
 		if (ret == 0) {
-			fprintf(stderr, "%s\n", __func__);
+			U_LOG_W("Retrying Bluetooth read.");
 			// Must lock thread before check in while.
 			os_thread_helper_lock(&daydream->oth);
 			continue;
@@ -363,9 +364,7 @@ static struct xrt_binding_profile binding_profiles[1] = {
  */
 
 struct daydream_device *
-daydream_device_create(struct os_ble_device *ble,
-                       bool print_spew,
-                       bool print_debug)
+daydream_device_create(struct os_ble_device *ble)
 {
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_TRACKING_NONE);
@@ -387,8 +386,7 @@ daydream_device_create(struct os_ble_device *ble,
 	dd->base.num_binding_profiles = ARRAY_SIZE(binding_profiles);
 
 	dd->ble = ble;
-	dd->print_spew = print_spew;
-	dd->print_debug = print_debug;
+	dd->ll = debug_get_log_option_daydream_log();
 
 	float accel_ticks_to_float = MATH_GRAVITY_M_S2 / 520.0;
 	float gyro_ticks_to_float = 1.0 / 120.0;
