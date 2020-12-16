@@ -11,6 +11,7 @@
 #pragma once
 
 #include "os/os_threading.h"
+#include "util/u_logging.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,8 +36,7 @@ struct hdk_device
 
 	struct os_thread_helper imu_thread;
 
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level ll;
 	bool disconnect_notified;
 
 	struct xrt_quat quat;
@@ -51,35 +51,20 @@ hdk_device(struct xrt_device *xdev)
 }
 
 struct hdk_device *
-hdk_device_create(struct os_hid_device *dev,
-                  enum HDK_VARIANT variant,
-                  bool print_spew,
-                  bool print_debug);
+hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant);
 
-#define HDK_SPEW(c, ...)                                                       \
-	do {                                                                   \
-		if (c->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-#define HDK_DEBUG(c, ...)                                                      \
-	do {                                                                   \
-		if (c->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
 
-#define HDK_ERROR(c, ...)                                                      \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+/*
+ *
+ * Printing functions.
+ *
+ */
 
+#define HDK_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
+#define HDK_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)
+#define HDK_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->ll, __VA_ARGS__)
+#define HDK_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->ll, __VA_ARGS__)
+#define HDK_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
 
 #ifdef __cplusplus
 }

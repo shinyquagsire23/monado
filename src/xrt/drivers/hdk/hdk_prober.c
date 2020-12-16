@@ -20,9 +20,6 @@
 #include "hdk_device.h"
 
 
-DEBUG_GET_ONCE_BOOL_OPTION(hdk_spew, "HDK_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(hdk_debug, "HDK_PRINT_DEBUG", false)
-
 static const char HDK2_PRODUCT_STRING[] = "OSVR HDK 2";
 static const char HDK13_PRODUCT_STRING[] = "OSVR HDK 1.3/1.4";
 static const char HDK1_PRODUCT_STRING[] = "OSVR  HDK 1.x";
@@ -37,9 +34,6 @@ hdk_found(struct xrt_prober *xp,
           struct xrt_device **out_xdev)
 {
 	struct xrt_prober_device *dev = devices[index];
-
-	bool print_spew = debug_get_bool_option_hdk_spew();
-	bool print_debug = debug_get_bool_option_hdk_debug();
 
 	unsigned char buf[256] = {0};
 	int result = xrt_prober_get_string_descriptor(
@@ -60,8 +54,8 @@ hdk_found(struct xrt_prober *xp,
 		name = HDK13_PRODUCT_STRING;
 	}
 
-	printf("%s - Found at least the tracker of some HDK -- %s -- opening\n",
-	       __func__, name);
+	U_LOG_I("%s - Found at least the tracker of some HDK (%s) -- opening\n",
+	        __func__, name);
 
 	struct os_hid_device *hid = NULL;
 	// Interface 2 is the HID interface.
@@ -69,8 +63,7 @@ hdk_found(struct xrt_prober *xp,
 	if (result != 0) {
 		return -1;
 	}
-	struct hdk_device *hd =
-	    hdk_device_create(hid, variant, print_spew, print_debug);
+	struct hdk_device *hd = hdk_device_create(hid, variant);
 	if (hd == NULL) {
 		return -1;
 	}

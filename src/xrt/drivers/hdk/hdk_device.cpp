@@ -40,6 +40,8 @@
 
 static constexpr uint8_t BITS_PER_BYTE = 8;
 
+DEBUG_GET_ONCE_LOG_OPTION(hdk_log, "HDK_LOG", U_LOGGING_WARN)
+
 /**
  * A fixed-point to float conversion function.
  *
@@ -231,7 +233,7 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 
 	if (!hd->quat_valid) {
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		HDK_SPEW(hd, "GET_TRACKED_POSE: No pose");
+		HDK_TRACE(hd, "GET_TRACKED_POSE: No pose");
 		return;
 	}
 
@@ -250,9 +252,9 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 
 	os_thread_helper_unlock(&hd->imu_thread);
 
-	HDK_SPEW(hd, "GET_TRACKED_POSE (%f, %f, %f, %f) ANG_VEL (%f, %f, %f)",
-	         hd->quat.x, hd->quat.y, hd->quat.z, hd->quat.w,
-	         hd->ang_vel_quat.x, hd->ang_vel_quat.y, hd->ang_vel_quat.z);
+	HDK_TRACE(hd, "GET_TRACKED_POSE (%f, %f, %f, %f) ANG_VEL (%f, %f, %f)",
+	          hd->quat.x, hd->quat.y, hd->quat.z, hd->quat.w,
+	          hd->ang_vel_quat.x, hd->ang_vel_quat.y, hd->ang_vel_quat.z);
 }
 
 static void
@@ -316,10 +318,7 @@ hdk_device_run_thread(void *ptr)
 	          rot.v[2], rot.v[3])
 
 struct hdk_device *
-hdk_device_create(struct os_hid_device *dev,
-                  enum HDK_VARIANT variant,
-                  bool print_spew,
-                  bool print_debug)
+hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 {
 	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
 	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
@@ -334,8 +333,7 @@ hdk_device_create(struct os_hid_device *dev,
 	hd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	hd->base.name = XRT_DEVICE_GENERIC_HMD;
 	hd->dev = dev;
-	hd->print_spew = print_spew;
-	hd->print_debug = print_debug;
+	hd->ll = debug_get_log_option_hdk_log();
 
 	snprintf(hd->base.str, XRT_DEVICE_NAME_LEN, "OSVR HDK-family Device");
 
@@ -508,13 +506,13 @@ hdk_device_create(struct os_hid_device *dev,
 		int ret = os_thread_helper_start(&hd->imu_thread,
 		                                 hdk_device_run_thread, hd);
 		if (ret != 0) {
-			HDK_ERROR(d, "Failed to start mainboard thread!");
+			HDK_ERROR(hd, "Failed to start mainboard thread!");
 			hdk_device_destroy((struct xrt_device *)hd);
 			return 0;
 		}
 	}
 
-	if (hd->print_debug) {
+	if (hd->ll <= U_LOGGING_DEBUG) {
 		u_device_dump_config(&hd->base, __func__, hd->base.str);
 	}
 
