@@ -69,7 +69,7 @@ oxr_vk_get_requirements(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
-DEBUG_GET_ONCE_BOOL_OPTION(print_debug, "XRT_COMPOSITOR_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_LOG_OPTION(compositor_log, "XRT_COMPOSITOR_LOG", U_LOGGING_WARN)
 
 XrResult
 oxr_vk_get_physical_device(struct oxr_logger *log,
@@ -119,7 +119,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		        sys->xcn->base.info.client_vk_deviceUUID[i]);
 	}
 
-	bool print_debug = debug_get_bool_option_print_debug();
+	enum u_logging_level ll = debug_get_log_option_compositor_log();
 	int gpu_index = -1;
 	for (uint32_t i = 0; i < count; i++) {
 		VkPhysicalDeviceIDProperties pdidp = {
@@ -132,7 +132,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		vkGetPhysicalDeviceProperties2(phys[i], &pdp2);
 
 		char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
-		if (print_debug) {
+		if (ll <= U_LOGGING_DEBUG) {
 			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
 				sprintf(uuid_str + i * 3, "%02x ",
 				        pdidp.deviceUUID[i]);
@@ -144,7 +144,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		           sys->xcn->base.info.client_vk_deviceUUID,
 		           XRT_GPU_UUID_SIZE) == 0) {
 			gpu_index = i;
-			if (print_debug) {
+			if (ll <= U_LOGGING_DEBUG) {
 				oxr_log(log,
 				        "Using GPU %d with uuid %s suggested "
 				        "by runtime",

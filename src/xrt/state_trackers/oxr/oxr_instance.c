@@ -260,9 +260,9 @@ oxr_instance_create(struct oxr_logger *log,
 
 	const float left_override = debug_get_float_option_lfov_left();
 	if (left_override != 0.0f) {
-		printf(
+		U_LOG_I(
 		    "Overriding left eye angle_left with %f radians (%i°), "
-		    "and right eye angle_right with %f radians (%i°)\n",
+		    "and right eye angle_right with %f radians (%i°)",
 		    left_override, radtodeg_for_display(left_override),
 		    -left_override, radtodeg_for_display(-left_override));
 		dev->hmd->views[0].fov.angle_left = left_override;
@@ -271,9 +271,9 @@ oxr_instance_create(struct oxr_logger *log,
 
 	const float right_override = debug_get_float_option_lfov_right();
 	if (right_override != 0.0f) {
-		printf(
+		U_LOG_I(
 		    "Overriding left eye angle_right with %f radians (%i°), "
-		    "and right eye angle_left with %f radians (%i°)\n",
+		    "and right eye angle_left with %f radians (%i°)",
 		    right_override, radtodeg_for_display(right_override),
 		    -right_override, radtodeg_for_display(-right_override));
 		dev->hmd->views[0].fov.angle_right = right_override;
@@ -282,17 +282,16 @@ oxr_instance_create(struct oxr_logger *log,
 
 	const float up_override = debug_get_float_option_lfov_up();
 	if (up_override != 0.0f) {
-		printf("Overriding both eyes angle_up with %f radians (%i°)\n",
-		       up_override, radtodeg_for_display(up_override));
+		U_LOG_I("Overriding both eyes angle_up with %f radians (%i°)",
+		        up_override, radtodeg_for_display(up_override));
 		dev->hmd->views[0].fov.angle_up = up_override;
 		dev->hmd->views[1].fov.angle_up = up_override;
 	}
 
 	const float down_override = debug_get_float_option_lfov_down();
 	if (down_override != 0.0f) {
-		printf(
-		    "Overriding both eyes angle_down with %f radians (%i°)\n",
-		    down_override, radtodeg_for_display(down_override));
+		U_LOG_I("Overriding both eyes angle_down with %f radians (%i°)",
+		        down_override, radtodeg_for_display(down_override));
 		dev->hmd->views[0].fov.angle_down = down_override;
 		dev->hmd->views[1].fov.angle_down = down_override;
 	}

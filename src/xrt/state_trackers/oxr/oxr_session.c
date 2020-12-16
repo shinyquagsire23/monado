@@ -252,9 +252,7 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 			oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(
 			    log, sess, xce.overlay.visible);
 			break;
-		default:
-			fprintf(stderr, "unhandled event type! %d", xce.type);
-			break;
+		default: U_LOG_W("unhandled event type! %d", xce.type); break;
 		}
 	}
 
@@ -318,12 +316,11 @@ oxr_session_get_view_relation_at(struct oxr_logger *log,
 		                             interval, &predicted);
 
 		if (sess->sys->inst->debug_views) {
-			fprintf(stderr,
-			        "\toriginal quat = {%f, %f, %f, %f}   "
+			U_LOG_D("\toriginal quat = {%f, %f, %f, %f}   "
 			        "(time requested: %" PRIi64
 			        ", Interval %" PRIi64
 			        " nsec, with "
-			        "static interval %f s)\n",
+			        "static interval %f s)",
 			        pose->orientation.x, pose->orientation.y,
 			        pose->orientation.z, pose->orientation.w,
 			        at_time, ns_diff, interval);
@@ -345,9 +342,8 @@ print_view_fov(struct oxr_session *sess,
 		return;
 	}
 
-	fprintf(stderr, "\tviews[%i].fov = {%f, %f, %f, %f}\n", index,
-	        fov->angle_left, fov->angle_right, fov->angle_up,
-	        fov->angle_down);
+	U_LOG_D("views[%i].fov = {%f, %f, %f, %f}", index, fov->angle_left,
+	        fov->angle_right, fov->angle_up, fov->angle_down);
 }
 
 void
@@ -359,10 +355,10 @@ print_view_pose(struct oxr_session *sess,
 		return;
 	}
 
-	fprintf(stderr, "\tviews[%i].pose = {{%f, %f, %f, %f}, {%f, %f, %f}}\n",
-	        index, pose->orientation.x, pose->orientation.y,
-	        pose->orientation.z, pose->orientation.w, pose->position.x,
-	        pose->position.y, pose->position.z);
+	U_LOG_D("views[%i].pose = {{%f, %f, %f, %f}, {%f, %f, %f}}", index,
+	        pose->orientation.x, pose->orientation.y, pose->orientation.z,
+	        pose->orientation.w, pose->position.x, pose->position.y,
+	        pose->position.z);
 }
 
 static inline XrViewStateFlags
@@ -419,8 +415,7 @@ oxr_session_views(struct oxr_logger *log,
 	// End two call handling.
 
 	if (sess->sys->inst->debug_views) {
-		fprintf(stderr, "%s\n", __func__);
-		fprintf(stderr, "\tviewLocateInfo->displayTime %" PRIu64 "\n",
+		U_LOG_D("viewLocateInfo->displayTime %" PRIu64,
 		        viewLocateInfo->displayTime);
 	}
 
@@ -944,7 +939,6 @@ verify_projection_layer(struct xrt_compositor *xc,
 		}
 
 		if (view->subImage.swapchain == XR_NULL_HANDLE) {
-			printf("foo\n");
 			return oxr_error(
 			    log, XR_ERROR_HANDLE_INVALID,
 			    "(frameEndInfo->layers[%u]->views[%i]->subImage."

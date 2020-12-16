@@ -401,8 +401,8 @@ print_pose(struct oxr_session *sess, const char *prefix, struct xrt_pose *pose)
 	struct xrt_vec3 *p = &pose->position;
 	struct xrt_quat *q = &pose->orientation;
 
-	fprintf(stderr, "%s (%f, %f, %f) (%f, %f, %f, %f)\n", prefix, p->x,
-	        p->y, p->z, q->x, q->y, q->z, q->w);
+	U_LOG_D("%s (%f, %f, %f) (%f, %f, %f, %f)", prefix, p->x, p->y, p->z,
+	        q->x, q->y, q->z, q->w);
 }
 
 static void
@@ -413,7 +413,7 @@ print_space(const char *name, struct oxr_space *spc)
 	}
 
 	const char *type_str = get_ref_space_type_short_str(spc);
-	fprintf(stderr, "\t%s->type %s\n\t%s->pose", name, type_str, name);
+	U_LOG_D("\t%s->type %s\n\t%s->pose", name, type_str, name);
 	print_pose(spc->sess, "", &spc->pose);
 }
 
@@ -460,7 +460,7 @@ oxr_space_locate(struct oxr_logger *log,
                  XrSpaceLocation *location)
 {
 	if (spc->sess->sys->inst->debug_spaces) {
-		fprintf(stderr, "%s\n", __func__);
+		U_LOG_D("%s", __func__);
 	}
 	print_space("space", spc);
 	print_space("baseSpace", baseSpc);
