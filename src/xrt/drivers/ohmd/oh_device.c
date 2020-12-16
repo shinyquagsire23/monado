@@ -37,7 +37,7 @@
 
 // Should we permit finite differencing to compute angular velocities when not
 // directly retrieved?
-DEBUG_GET_ONCE_BOOL_OPTION(oh_finite_diff, "OH_ALLOW_FINITE_DIFF", true)
+DEBUG_GET_ONCE_BOOL_OPTION(ohmd_finite_diff, "OHMD_ALLOW_FINITE_DIFF", true)
 
 // Define this if you have the appropriately hacked-up OpenHMD version.
 #undef OHMD_HAVE_ANG_VEL
@@ -533,7 +533,8 @@ oh_device_create(ohmd_context *ctx,
 	ohd->dev = dev;
 	ohd->print_spew = print_spew;
 	ohd->print_debug = print_debug;
-	ohd->enable_finite_difference = debug_get_bool_option_oh_finite_diff();
+	ohd->enable_finite_difference =
+	    debug_get_bool_option_ohmd_finite_diff();
 
 	snprintf(ohd->base.str, XRT_DEVICE_NAME_LEN, "%s (OpenHMD)", prod);
 

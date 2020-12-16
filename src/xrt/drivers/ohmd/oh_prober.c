@@ -22,7 +22,7 @@
 
 DEBUG_GET_ONCE_BOOL_OPTION(oh_spew, "OH_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(oh_debug, "OH_PRINT_DEBUG", false)
-DEBUG_GET_ONCE_BOOL_OPTION(oh_external, "OH_EXTERNAL_DRIVER", false)
+DEBUG_GET_ONCE_BOOL_OPTION(ohmd_external, "OHMD_EXTERNAL_DRIVER", false)
 
 /*!
  * @implements xrt_auto_prober
@@ -100,9 +100,8 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 
 		prod = ohmd_list_gets(ohp->ctx, i, OHMD_PRODUCT);
 		if (strcmp(prod, "External Device") == 0 &&
-		    !debug_get_bool_option_oh_external()) {
-			OH_DEBUG(
-			    ohp,
+		    !debug_get_bool_option_ohmd_external()) {
+			U_LOG_D(
 			    "Rejecting device idx %i, is a External device.",
 			    i);
 			continue;
