@@ -37,6 +37,7 @@
 #include "util/u_json.h"
 
 #include "util/u_hand_tracking.h"
+#include "util/u_logging.h"
 
 // public documentation
 //! @todo move to vive_protocol
@@ -46,30 +47,14 @@
 #define DEFAULT_HAPTIC_FREQ 150.0f
 #define MIN_HAPTIC_DURATION 0.05f
 
-#define SURVIVE_SPEW(p, ...)                                                   \
-	do {                                                                   \
-		if (p->print_spew) {                                           \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define SURVIVE_DEBUG(p, ...)                                                  \
-	do {                                                                   \
-		if (p->print_debug) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define SURVIVE_ERROR(p, ...)                                                  \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+#define SURVIVE_TRACE(d, ...)                                                  \
+	U_LOG_XDEV_IFL_T(&d->base, d->sys->ll, __VA_ARGS__)
+#define SURVIVE_DEBUG(d, ...)                                                  \
+	U_LOG_XDEV_IFL_D(&d->base, d->sys->ll, __VA_ARGS__)
+#define SURVIVE_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->sys->ll, __VA_ARGS__)
+#define SURVIVE_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->sys->ll, __VA_ARGS__)
+#define SURVIVE_ERROR(d, ...)                                                  \
+	U_LOG_XDEV_IFL_E(&d->base, d->sys->ll, __VA_ARGS__)
 
 struct survive_system;
 
@@ -176,14 +161,13 @@ struct survive_system
 	SurviveSimpleContext *ctx;
 	struct survive_device *hmd;
 	struct survive_device *controllers[CONTROLLER_COUNT];
-	bool print_spew;
-	bool print_debug;
+	enum u_logging_level ll;
 };
 
 static void
 survive_device_destroy(struct xrt_device *xdev)
 {
-	printf("destroying survive device\n");
+	U_LOG_D("destroying survive device");
 	struct survive_device *survive = (struct survive_device *)xdev;
 
 	if (survive == survive->sys->hmd)
@@ -196,7 +180,7 @@ survive_device_destroy(struct xrt_device *xdev)
 	if (survive->sys->hmd == NULL &&
 	    survive->sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL &&
 	    survive->sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
-		printf("Tearing down libsurvive context\n");
+		U_LOG_D("Tearing down libsurvive context");
 		survive_simple_close(survive->sys->ctx);
 
 		free(survive->sys);
@@ -318,7 +302,7 @@ _update_survive_devices(struct survive_system *sys)
 		    survive_simple_object_get_type(it);
 		if (type == SurviveSimpleObject_HMD &&
 		    sys->hmd->survive_obj == NULL) {
-			printf("Found HMD: %s\n", codename);
+			U_LOG_D("Found HMD: %s", codename);
 			sys->hmd->survive_obj = it;
 		}
 		if (type == SurviveSimpleObject_OBJECT) {
@@ -328,8 +312,8 @@ _update_survive_devices(struct survive_system *sys)
 				}
 
 				if (sys->controllers[i]->survive_obj == NULL) {
-					printf("Found Controller %d: %s\n", i,
-					       codename);
+					U_LOG_D("Found Controller %d: %s", i,
+					        codename);
 					sys->controllers[i]->survive_obj = it;
 					break;
 				}
@@ -363,7 +347,7 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 
 	//_update_survive_devices(survive->sys);
 	if (!survive->survive_obj) {
-		// printf("Obj not set for %p\n", (void*)survive);
+		// U_LOG_D("Obj not set for %p", (void*)survive);
 		return;
 	}
 
@@ -374,11 +358,10 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 	survive->last_relation = *out_relation;
 
 	struct xrt_pose *p = &out_relation->pose;
-	SURVIVE_SPEW(survive->sys,
-	             "GET_POSITION (%f %f %f) GET_ORIENTATION (%f, %f, %f, %f)",
-	             p->position.x, p->position.y, p->position.z,
-	             p->orientation.x, p->orientation.y, p->orientation.z,
-	             p->orientation.w);
+	SURVIVE_TRACE(
+	    survive, "GET_POSITION (%f %f %f) GET_ORIENTATION (%f, %f, %f, %f)",
+	    p->position.x, p->position.y, p->position.z, p->orientation.x,
+	    p->orientation.y, p->orientation.z, p->orientation.w);
 }
 
 static int
@@ -387,9 +370,9 @@ survive_controller_haptic_pulse(struct survive_device *survive,
 {
 	float duration_seconds;
 	if (value->vibration.duration == XRT_MIN_HAPTIC_DURATION) {
-		SURVIVE_SPEW(survive->sys,
-		             "Haptic pulse duration: using %f minimum",
-		             MIN_HAPTIC_DURATION);
+		SURVIVE_TRACE(survive,
+		              "Haptic pulse duration: using %f minimum",
+		              MIN_HAPTIC_DURATION);
 		duration_seconds = MIN_HAPTIC_DURATION;
 	} else {
 		duration_seconds = time_ns_to_s(value->vibration.duration);
@@ -398,8 +381,8 @@ survive_controller_haptic_pulse(struct survive_device *survive,
 	float frequency = value->vibration.frequency;
 
 	if (frequency == XRT_FREQUENCY_UNSPECIFIED) {
-		SURVIVE_SPEW(
-		    survive->sys,
+		SURVIVE_TRACE(
+		    survive,
 		    "Haptic pulse frequency unspecified, setting to %fHz",
 		    DEFAULT_HAPTIC_FREQ);
 		frequency = DEFAULT_HAPTIC_FREQ;
@@ -407,12 +390,11 @@ survive_controller_haptic_pulse(struct survive_device *survive,
 
 	float amplitude = value->vibration.amplitude;
 
-	SURVIVE_SPEW(survive->sys,
-	             "Got Haptic pulse amp %f, %fHz, %" PRId64 "ns",
-	             value->vibration.amplitude, value->vibration.frequency,
-	             value->vibration.duration);
-	SURVIVE_SPEW(survive->sys, "Doing Haptic pulse amp %f, %fHz, %fs",
-	             amplitude, frequency, duration_seconds);
+	SURVIVE_TRACE(survive, "Got Haptic pulse amp %f, %fHz, %" PRId64 "ns",
+	              value->vibration.amplitude, value->vibration.frequency,
+	              value->vibration.duration);
+	SURVIVE_TRACE(survive, "Doing Haptic pulse amp %f, %fHz, %fs",
+	              amplitude, frequency, duration_seconds);
 
 	return survive_simple_object_haptic(
 	    (struct SurviveSimpleObject *)survive->survive_obj, frequency,
@@ -428,7 +410,7 @@ survive_controller_device_set_output(struct xrt_device *xdev,
 
 	if (name != XRT_OUTPUT_NAME_VIVE_HAPTIC &&
 	    name != XRT_OUTPUT_NAME_INDEX_HAPTIC) {
-		SURVIVE_ERROR(survive, "Unknown output\n");
+		SURVIVE_ERROR(survive, "Unknown output");
 		return;
 	}
 
@@ -440,7 +422,7 @@ survive_controller_device_set_output(struct xrt_device *xdev,
 	int ret = survive_controller_haptic_pulse(survive, value);
 
 	if (ret != 0) {
-		SURVIVE_ERROR(survive->sys, "haptic failed %d\n", ret);
+		SURVIVE_ERROR(survive, "haptic failed %d", ret);
 	}
 }
 
@@ -600,10 +582,10 @@ update_axis(struct survive_device *survive,
 	case COMP_1D: in->value.vec1.x = fval; break;
 	case COMP_2DX: in->value.vec2.x = fval; break;
 	case COMP_2DY: in->value.vec2.y = fval; break;
-	default: printf("Unknown axis component %d\n", axis->comp);
+	default: SURVIVE_WARN(survive, "Unknown axis component %d", axis->comp);
 	}
 
-	// printf("input %u Axis %d: %f\n", axis->input, i, fval);
+	// SURVIVE_DEBUG("input %u Axis %d: %f", axis->input, i, fval);
 
 	in->timestamp = now;
 	return true;
@@ -722,8 +704,8 @@ _process_button_event(struct survive_device *survive,
 				survive->ctrl.curl[XRT_FINGER_LITTLE] = val;
 				survive->ctrl.curl_ts[XRT_FINGER_LITTLE] = now;
 			} else {
-				printf("axis id: %d val %f\n", e->axis_ids[i],
-				       e->axis_val[i]);
+				SURVIVE_DEBUG(survive, "axis id: %d val %f",
+				              e->axis_ids[i], e->axis_val[i]);
 			}
 		}
 		struct xrt_input *squeeze_value_in =
@@ -755,7 +737,7 @@ _process_hmd_button_event(struct survive_device *survive,
 				ipd += INDEX_MIN_IPD;
 				survive->hmd.ipd = ipd;
 
-				// printf("ipd: %f meter\n", ipd);
+				// SURVIVE_DEBUG(survive, "ipd: %f meter", ipd);
 			} else if (e->axis_ids[i] ==
 			           SURVIVE_AXIS_FACE_PROXIMITY) {
 				// Valve Index:
@@ -779,12 +761,13 @@ _process_hmd_button_event(struct survive_device *survive,
 				if (engagement) {
 					//! @todo engagement changed
 				}
-				// printf("Proximity %f\n", proximity);
+				// SURVIVE_DEBUG(survive, "Proximity %f",
+				// proximity);
 
 				survive->hmd.proximity = proximity;
 			} else {
-				printf("axis id: %d val %f\n", e->axis_ids[i],
-				       e->axis_val[i]);
+				SURVIVE_DEBUG(survive, "axis id: %d val %f",
+				              e->axis_ids[i], e->axis_val[i]);
 			}
 		}
 	}
@@ -883,8 +866,8 @@ wait_for_hmd_config(SurviveSimpleContext *ctx)
 void
 print_vec3(const char *title, struct xrt_vec3 *vec)
 {
-	printf("%s = %f %f %f\n", title, (double)vec->x, (double)vec->y,
-	       (double)vec->z);
+	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y,
+	        (double)vec->z);
 }
 
 static long long
@@ -1070,13 +1053,13 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 	//! @todo support hotplugging for hmd and controllers, don't block
 	//! monado until hmd available'
 	while (!wait_for_hmd_config(sys->ctx)) {
-		printf("Waiting for survive HMD config parsing\n");
+		SURVIVE_INFO(survive, "Waiting for survive HMD config parsing");
 		os_nanosleep(1000 * 1000 * 100);
 	}
-	printf("survive got HMD config\n");
+	SURVIVE_INFO(survive, "survive got HMD config");
 
 	while (!survive->survive_obj) {
-		printf("Waiting for survive HMD to be found...\n");
+		SURVIVE_INFO(survive, "Waiting for survive HMD to be found...");
 		for (const SurviveSimpleObject *it =
 		         survive_simple_get_first_object(sys->ctx);
 		     it != 0;
@@ -1087,19 +1070,20 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 			    survive_simple_object_get_type(it);
 			if (type == SurviveSimpleObject_HMD &&
 			    sys->hmd->survive_obj == NULL) {
-				printf("Found HMD: %s\n", codename);
+				SURVIVE_INFO(survive, "Found HMD: %s",
+				             codename);
 				survive->survive_obj = it;
 			}
 		}
 	}
-	printf("survive HMD present\n");
+	SURVIVE_INFO(survive, "survive HMD present");
 
 	survive->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
 
 	char *json_string = survive_get_json_config(survive->survive_obj);
 	cJSON *json = cJSON_Parse(json_string);
 	if (!cJSON_IsObject(json)) {
-		printf("Could not parse JSON data.");
+		SURVIVE_ERROR(survive, "Could not parse JSON data.");
 		return false;
 	}
 
@@ -1166,7 +1150,8 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 		}
 	}
 
-	printf("Survive eye resolution %dx%d\n", w_pixels, h_pixels);
+	SURVIVE_INFO(survive, "Survive eye resolution %dx%d", w_pixels,
+	             h_pixels);
 
 	cJSON_Delete(json);
 
@@ -1209,7 +1194,9 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 		                       fov, h_meters,
 		                       (double)lens_center[eye].y, 0,
 		                       &survive->base.hmd->views[eye].fov)) {
-			printf("Failed to compute the partial fields of view.");
+			SURVIVE_ERROR(
+			    survive,
+			    "Failed to compute the partial fields of view.");
 			free(survive);
 			return NULL;
 		}
@@ -1308,23 +1295,23 @@ _create_controller_device(struct survive_system *sys,
 		} else if (sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
 			idx = SURVIVE_RIGHT_CONTROLLER;
 		} else {
-			SURVIVE_ERROR(sys, "Only creating 2 controllers!\n");
+			SURVIVE_ERROR(survive, "Only creating 2 controllers!");
 			return false;
 		}
 	} else if (variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER) {
 		if (sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL) {
 			idx = SURVIVE_LEFT_CONTROLLER;
 		} else {
-			SURVIVE_ERROR(sys,
-			              "Only creating 1 left controller!\n");
+			SURVIVE_ERROR(survive,
+			              "Only creating 1 left controller!");
 			return false;
 		}
 	} else if (variant == VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
 		if (sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
 			idx = SURVIVE_RIGHT_CONTROLLER;
 		} else {
-			SURVIVE_ERROR(sys,
-			              "Only creating 1 right controller!\n");
+			SURVIVE_ERROR(survive,
+			              "Only creating 1 right controller!");
 			return false;
 		}
 	}
@@ -1434,13 +1421,12 @@ _create_controller_device(struct survive_system *sys,
 	survive->base.orientation_tracking_supported = true;
 	survive->base.position_tracking_supported = true;
 
-	SURVIVE_DEBUG(sys, "Created Controller %d\n", idx);
+	SURVIVE_DEBUG(survive, "Created Controller %d", idx);
 
 	return true;
 }
 
-DEBUG_GET_ONCE_BOOL_OPTION(survive_spew, "SURVIVE_PRINT_SPEW", false)
-DEBUG_GET_ONCE_BOOL_OPTION(survive_debug, "SURVIVE_PRINT_DEBUG", false)
+DEBUG_GET_ONCE_LOG_OPTION(survive_log, "SURVIVE_LOG", U_LOGGING_WARN)
 
 static enum VIVE_VARIANT
 _product_to_variant(uint16_t product_id)
@@ -1450,7 +1436,7 @@ _product_to_variant(uint16_t product_id)
 	case VIVE_PRO_MAINBOARD_PID: return VIVE_VARIANT_PRO;
 	case VIVE_PRO_LHR_PID: return VIVE_VARIANT_VALVE_INDEX;
 	default:
-		printf("No product ids matched %.4x\n", product_id);
+		U_LOG_W("No product ids matched %.4x", product_id);
 		return VIVE_UNKNOWN;
 	}
 }
@@ -1473,21 +1459,21 @@ get_variant_from_json(struct survive_system *ss, cJSON *json)
 
 	if (strcmp(model_number, "Vive. Controller MV") == 0) {
 		variant = VIVE_VARIANT_HTC_VIVE_CONTROLLER;
-		SURVIVE_DEBUG(ss, "Found Vive Wand controller");
+		U_LOG_D("Found Vive Wand controller");
 	} else if (strcmp(model_number, "Knuckles Right") == 0) {
 		variant = VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER;
-		SURVIVE_DEBUG(ss, "Found Knuckles Right controller");
+		U_LOG_D("Found Knuckles Right controller");
 	} else if (strcmp(model_number, "Knuckles Left") == 0) {
 		variant = VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER;
-		SURVIVE_DEBUG(ss, "Found Knuckles Left controller");
+		U_LOG_D("Found Knuckles Left controller");
 	} else if (strcmp(model_number, "Vive Tracker PVT") == 0) {
 		variant = VIVE_VARIANT_TRACKER_V1;
-		SURVIVE_DEBUG(ss, "Found Gen 1 tracker.");
+		U_LOG_D("Found Gen 1 tracker.");
 	} else if (strcmp(model_number, "VIVE Tracker Pro MV") == 0) {
 		variant = VIVE_VARIANT_TRACKER_v2;
-		SURVIVE_DEBUG(ss, "Found Gen 2 tracker.");
+		U_LOG_D("Found Gen 2 tracker.");
 	} else {
-		SURVIVE_ERROR(ss, "Failed to parse controller variant");
+		U_LOG_E("Failed to parse controller variant");
 	}
 
 	return variant;
@@ -1502,9 +1488,9 @@ survive_found(struct xrt_prober *xp,
               struct xrt_device **out_xdevs)
 {
 	if (survive_already_initialized) {
-		printf(
+		U_LOG_I(
 		    "Skipping libsurvive initialization, already "
-		    "initialized\n");
+		    "initialized");
 		return 0;
 	}
 
@@ -1523,7 +1509,7 @@ survive_found(struct xrt_prober *xp,
 #endif
 
 	if (!actx) {
-		SURVIVE_ERROR(survive, "failed to init survive");
+		U_LOG_E("failed to init survive");
 		return false;
 	}
 
@@ -1531,7 +1517,7 @@ survive_found(struct xrt_prober *xp,
 
 	struct xrt_prober_device *dev = devices[index];
 	enum VIVE_VARIANT variant = _product_to_variant(dev->product_id);
-	printf("survive: Assuming variant %d\n", variant);
+	U_LOG_I("survive: Assuming variant %d", variant);
 
 	ss->ctx = actx;
 	ss->base.type = XRT_TRACKING_TYPE_LIGHTHOUSE;
@@ -1542,8 +1528,7 @@ survive_found(struct xrt_prober *xp,
 	ss->base.offset.position.z = 0.0f;
 	ss->base.offset.orientation.w = 1.0f;
 
-	ss->print_spew = debug_get_bool_option_survive_spew();
-	ss->print_debug = debug_get_bool_option_survive_debug();
+	ss->ll = debug_get_log_option_survive_log();
 
 	_create_hmd_device(ss, variant);
 
@@ -1560,7 +1545,8 @@ survive_found(struct xrt_prober *xp,
 			char *json_string = survive_get_json_config(it);
 			cJSON *json = cJSON_Parse(json_string);
 			if (!cJSON_IsObject(json)) {
-				printf("Could not parse JSON data.");
+				U_LOG_IFL_E(ss->ll,
+				            "Could not parse JSON data.");
 				continue;
 			}
 
@@ -1571,11 +1557,11 @@ survive_found(struct xrt_prober *xp,
 			case VIVE_VARIANT_HTC_VIVE_CONTROLLER:
 			case VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER:
 			case VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER:
-				SURVIVE_DEBUG(ss, "Adding controller.");
+				U_LOG_IFL_D(ss->ll, "Adding controller.");
 				_create_controller_device(ss, it, variant);
 				break;
 			default:
-				SURVIVE_DEBUG(ss, "Skip non controller obj.");
+				U_LOG_IFL_D(ss->ll, "Skip non controller obj.");
 				break;
 			}
 
@@ -1583,10 +1569,10 @@ survive_found(struct xrt_prober *xp,
 		}
 	}
 
-	// printf("Survive HMD %p, controller %p %p\n", ss->hmd,
-	// ss->controllers[0], ss->controllers[1]);
+	// U_LOG_D("Survive HMD %p, controller %p %p", (void *)ss->hmd,
+	//        (void *)ss->controllers[0], (void *)ss->controllers[1]);
 
-	if (ss->print_debug) {
+	if (ss->ll <= U_LOGGING_DEBUG) {
 		u_device_dump_config(&ss->hmd->base, __func__, "libsurvive");
 	}
 
