@@ -1,8 +1,6 @@
 # Copyright 2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-plugin_dir = 'steamvr-monado'
-
 driver_monado = shared_library(
 	'driver_monado',
 	files(
@@ -25,12 +23,38 @@ driver_monado = shared_library(
 	name_prefix: '',
 )
 
+if meson.version().version_compare('<0.56')
+	build_root = meson.build_root()
+else
+	build_root = meson.project_build_root()
+endif
+
+plugin_dir = join_paths(build_root, 'steamvr-monado')
+resources_dir = join_paths(plugin_dir, 'resources')
+driver_manifest_path = join_paths(plugin_dir, 'driver.vrdrivermanifest')
+
 copy_asset = find_program('copy_assets.py')
 copy_plugin = find_program('copy_plugin.py')
 
 
-run_command(copy_asset, 'FILE', 'driver.vrdrivermanifest', join_paths(plugin_dir, 'driver.vrdrivermanifest'))
-run_command(copy_asset, 'DIRECTORY', 'resources', join_paths(plugin_dir, 'resources'))
+fake_driver_manifest = custom_target(
+	'driver_manifest_copy',
+	depends : driver_monado,
+	input : 'driver.vrdrivermanifest',
+	output : 'fake_driver_manifest',
+	command : [copy_asset, 'FILE', '@INPUT@', driver_manifest_path],
+	build_by_default : true
+)
+
+fake_driver_resources = custom_target(
+	'driver_resources_copy',
+	depends : driver_monado,
+	input : 'resources',
+	output : 'fake_driver_resources',
+	command : [copy_asset, 'DIRECTORY', '@INPUT@', resources_dir],
+	build_by_default : true
+)
+
 
 plugin_archdir = ''
 
@@ -50,16 +74,12 @@ endif
 
 custom_target(
 	'plugin_copy',
-	depends : driver_monado,
+	depends : [driver_monado, fake_driver_manifest, fake_driver_resources],
 	input : driver_monado,
 	output : 'fake_plugin',
 	command : [copy_plugin, '@INPUT@', join_paths(plugin_dir, 'bin', plugin_archdir, '@PLAINNAME@')],
 	build_by_default : true
 )
 
-if meson.version().version_compare('<0.56')
-	build_root = meson.build_root()
-else
-	build_root = meson.project_build_root()
-endif
-install_subdir(join_paths(build_root, plugin_dir), install_dir: join_paths(get_option('prefix'), 'share'))
+
+install_subdir(join_paths(plugin_dir), install_dir: join_paths(get_option('prefix'), 'share'))
