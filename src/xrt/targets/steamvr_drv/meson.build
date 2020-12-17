@@ -30,12 +30,15 @@ else
 endif
 
 plugin_dir = join_paths(build_root, 'steamvr-monado')
+
+bindings_json_path = join_paths(aux_bindings_dir, 'bindings.json')
 resources_dir = join_paths(plugin_dir, 'resources')
+input_profile_dir = join_paths(resources_dir, 'input')
 driver_manifest_path = join_paths(plugin_dir, 'driver.vrdrivermanifest')
 
 copy_asset = find_program('copy_assets.py')
 copy_plugin = find_program('copy_plugin.py')
-
+generate_profiles = find_program(join_paths(aux_bindings_dir, 'steamvr_profiles.py'))
 
 fake_driver_manifest = custom_target(
 	'driver_manifest_copy',
@@ -49,12 +52,20 @@ fake_driver_manifest = custom_target(
 fake_driver_resources = custom_target(
 	'driver_resources_copy',
 	depends : driver_monado,
-	input : 'resources',
+	input : 'resources',  # https://github.com/mesonbuild/meson/issues/4717
 	output : 'fake_driver_resources',
 	command : [copy_asset, 'DIRECTORY', '@INPUT@', resources_dir],
 	build_by_default : true
 )
 
+custom_target(
+	'driver_input_profiles_generate',
+	depends : driver_monado,
+	input : bindings_json_path,
+	output : 'fake_input_profiles_generate',
+	command : [generate_profiles, '@INPUT@', input_profile_dir],
+	build_by_default : true
+)
 
 plugin_archdir = ''
 

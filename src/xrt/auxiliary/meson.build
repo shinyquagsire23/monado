@@ -13,6 +13,8 @@ u_git_tag_c = vcs_tag(
 # Binding generation
 #
 
+aux_bindings_dir = join_paths(meson.current_source_dir(), 'bindings')
+
 prog_python = import('python').find_installation('python3')
 
 generated_bindings = custom_target('bindings code',
