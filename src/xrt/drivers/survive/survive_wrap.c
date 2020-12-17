@@ -12,8 +12,14 @@
 
 #include "survive_wrap.h"
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+
 // TODO: expose config values we need through actual survive API
 #include "survive.h"
+
+#pragma GCC diagnostic pop
 
 bool
 survive_config_ready(const SurviveSimpleObject *sso)
