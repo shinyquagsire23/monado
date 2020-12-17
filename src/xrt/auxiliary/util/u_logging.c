@@ -85,10 +85,10 @@ print_prefix(int remainingBuf,
 		printed = sprintf_s(buf, remainingBuf, "DEBUG ");
 		break;
 	case U_LOGGING_INFO:
-		printed = sprintf_s(buf, remainingBuf, "INFO ");
+		printed = sprintf_s(buf, remainingBuf, " INFO ");
 		break;
 	case U_LOGGING_WARN:
-		printed = sprintf_s(buf, remainingBuf, "WARN ");
+		printed = sprintf_s(buf, remainingBuf, " WARN ");
 		break;
 	case U_LOGGING_ERROR:
 		printed = sprintf_s(buf, remainingBuf, "ERROR ");
@@ -161,8 +161,8 @@ print_prefix(const char *func, enum u_logging_level level)
 	switch (level) {
 	case U_LOGGING_TRACE: fprintf(stderr, "TRACE "); break;
 	case U_LOGGING_DEBUG: fprintf(stderr, "DEBUG "); break;
-	case U_LOGGING_INFO: fprintf(stderr, "INFO "); break;
-	case U_LOGGING_WARN: fprintf(stderr, "WARN "); break;
+	case U_LOGGING_INFO: fprintf(stderr, " INFO "); break;
+	case U_LOGGING_WARN: fprintf(stderr, " WARN "); break;
 	case U_LOGGING_ERROR: fprintf(stderr, "ERROR "); break;
 	case U_LOGGING_RAW: break;
 	default: break;
