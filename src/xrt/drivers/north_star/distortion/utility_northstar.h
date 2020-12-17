@@ -1197,7 +1197,7 @@ public:
 	//		z *= +1.0f;
 	//	}
 	//	else {
-	//		//printf("coding error\n");
+	//		//U_LOG_E("coding error");
 	//	}
 	//	float r = NORM(w, x, w, z);
 	//	w /= r;

@@ -132,8 +132,7 @@ typedef void (*u_var_elm_cb)(struct u_var_info *info, void *);
  * // On create
  * u_var_add_root((void*)psmv, "PS Move Controller", true);
  * u_var_add_rgb_u8((void*)psmv, &psmv->led_color, "LED");
- * u_var_add_bool((void*)psmv, &psmv->print_spew, "Spew");
- * u_var_add_bool((void*)psmv, &psmv->print_debug, "Debug");
+ * u_var_add_log_level(psmv, &psmv->log_level, "Log level");
  *
  * // On destroy, only need to destroy the root object.
  * u_var_remove_root((void*)psmv);

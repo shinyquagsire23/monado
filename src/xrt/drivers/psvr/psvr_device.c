@@ -646,7 +646,7 @@ read_calibration_data(struct psvr_device *psvr)
 	int *data = (int*)&psvr->calibration.data[0];
 	for (size_t i = 0; i < (sizeof(psvr->calibration.data) / 4); i++) {
 		int v = data[i];
-		fprintf(stderr, "%i %f\n", v, *(float*)&v);
+		U_LOG_E("%i %f", v, *(float*)&v);
 	}
 #endif
 
