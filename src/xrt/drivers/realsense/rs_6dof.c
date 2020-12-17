@@ -17,6 +17,7 @@
 
 #include "util/u_time.h"
 #include "util/u_device.h"
+#include "util/u_logging.h"
 
 #include <librealsense2/rs.h>
 #include <librealsense2/h/rs_pipeline.h>
@@ -66,9 +67,9 @@ check_error(struct rs_6dof *rs, rs2_error *e)
 		return 0;
 	}
 
-	fprintf(stderr, "rs_error was raised when calling %s(%s): \n",
+	U_LOG_E("rs_error was raised when calling %s(%s):",
 	        rs2_get_failed_function(e), rs2_get_failed_args(e));
-	fprintf(stderr, "%s\n", rs2_get_error_message(e));
+	U_LOG_E("%s", rs2_get_error_message(e));
 
 	return 1;
 }
@@ -255,7 +256,7 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 	struct rs_6dof *rs = rs_6dof(xdev);
 
 	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
-		fprintf(stderr, "unknown input name\n");
+		U_LOG_E("unknown input name");
 		return;
 	}
 
@@ -317,7 +318,7 @@ rs_6dof_create(void)
 	// Thread and other state.
 	ret = os_thread_helper_init(&rs->oth);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to init threading!\n");
+		U_LOG_E("Failed to init threading!");
 		rs_6dof_destroy(&rs->base);
 		return NULL;
 	}
@@ -330,7 +331,7 @@ rs_6dof_create(void)
 
 	ret = os_thread_helper_start(&rs->oth, rs_run_thread, rs);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to start thread!\n");
+		U_LOG_E("Failed to start thread!");
 		rs_6dof_destroy(&rs->base);
 		return NULL;
 	}
