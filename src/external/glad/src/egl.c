@@ -28,31 +28,39 @@ int GLAD_EGL_VERSION_1_4 = 0;
 int GLAD_EGL_ANDROID_front_buffer_auto_refresh = 0;
 int GLAD_EGL_ANDROID_get_native_client_buffer = 0;
 int GLAD_EGL_ANDROID_image_native_buffer = 0;
+int GLAD_EGL_ANDROID_native_fence_sync = 0;
 int GLAD_EGL_EXT_image_dma_buf_import = 0;
 int GLAD_EGL_EXT_image_dma_buf_import_modifiers = 0;
 int GLAD_EGL_EXT_image_gl_colorspace = 0;
 int GLAD_EGL_IMG_context_priority = 0;
 int GLAD_EGL_KHR_create_context = 0;
+int GLAD_EGL_KHR_fence_sync = 0;
 int GLAD_EGL_KHR_gl_colorspace = 0;
 int GLAD_EGL_KHR_image = 0;
 int GLAD_EGL_KHR_image_base = 0;
 int GLAD_EGL_KHR_platform_android = 0;
+int GLAD_EGL_KHR_reusable_sync = 0;
+int GLAD_EGL_KHR_wait_sync = 0;
 
 
 
 PFNEGLBINDAPIPROC glad_eglBindAPI = NULL;
 PFNEGLBINDTEXIMAGEPROC glad_eglBindTexImage = NULL;
 PFNEGLCHOOSECONFIGPROC glad_eglChooseConfig = NULL;
+PFNEGLCLIENTWAITSYNCKHRPROC glad_eglClientWaitSyncKHR = NULL;
 PFNEGLCOPYBUFFERSPROC glad_eglCopyBuffers = NULL;
 PFNEGLCREATECONTEXTPROC glad_eglCreateContext = NULL;
 PFNEGLCREATEIMAGEKHRPROC glad_eglCreateImageKHR = NULL;
 PFNEGLCREATEPBUFFERFROMCLIENTBUFFERPROC glad_eglCreatePbufferFromClientBuffer = NULL;
 PFNEGLCREATEPBUFFERSURFACEPROC glad_eglCreatePbufferSurface = NULL;
 PFNEGLCREATEPIXMAPSURFACEPROC glad_eglCreatePixmapSurface = NULL;
+PFNEGLCREATESYNCKHRPROC glad_eglCreateSyncKHR = NULL;
 PFNEGLCREATEWINDOWSURFACEPROC glad_eglCreateWindowSurface = NULL;
 PFNEGLDESTROYCONTEXTPROC glad_eglDestroyContext = NULL;
 PFNEGLDESTROYIMAGEKHRPROC glad_eglDestroyImageKHR = NULL;
 PFNEGLDESTROYSURFACEPROC glad_eglDestroySurface = NULL;
+PFNEGLDESTROYSYNCKHRPROC glad_eglDestroySyncKHR = NULL;
+PFNEGLDUPNATIVEFENCEFDANDROIDPROC glad_eglDupNativeFenceFDANDROID = NULL;
 PFNEGLGETCONFIGATTRIBPROC glad_eglGetConfigAttrib = NULL;
 PFNEGLGETCONFIGSPROC glad_eglGetConfigs = NULL;
 PFNEGLGETCURRENTCONTEXTPROC glad_eglGetCurrentContext = NULL;
@@ -62,6 +70,7 @@ PFNEGLGETDISPLAYPROC glad_eglGetDisplay = NULL;
 PFNEGLGETERRORPROC glad_eglGetError = NULL;
 PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC glad_eglGetNativeClientBufferANDROID = NULL;
 PFNEGLGETPROCADDRESSPROC glad_eglGetProcAddress = NULL;
+PFNEGLGETSYNCATTRIBKHRPROC glad_eglGetSyncAttribKHR = NULL;
 PFNEGLINITIALIZEPROC glad_eglInitialize = NULL;
 PFNEGLMAKECURRENTPROC glad_eglMakeCurrent = NULL;
 PFNEGLQUERYAPIPROC glad_eglQueryAPI = NULL;
@@ -72,6 +81,7 @@ PFNEGLQUERYSTRINGPROC glad_eglQueryString = NULL;
 PFNEGLQUERYSURFACEPROC glad_eglQuerySurface = NULL;
 PFNEGLRELEASETEXIMAGEPROC glad_eglReleaseTexImage = NULL;
 PFNEGLRELEASETHREADPROC glad_eglReleaseThread = NULL;
+PFNEGLSIGNALSYNCKHRPROC glad_eglSignalSyncKHR = NULL;
 PFNEGLSURFACEATTRIBPROC glad_eglSurfaceAttrib = NULL;
 PFNEGLSWAPBUFFERSPROC glad_eglSwapBuffers = NULL;
 PFNEGLSWAPINTERVALPROC glad_eglSwapInterval = NULL;
@@ -79,6 +89,7 @@ PFNEGLTERMINATEPROC glad_eglTerminate = NULL;
 PFNEGLWAITCLIENTPROC glad_eglWaitClient = NULL;
 PFNEGLWAITGLPROC glad_eglWaitGL = NULL;
 PFNEGLWAITNATIVEPROC glad_eglWaitNative = NULL;
+PFNEGLWAITSYNCKHRPROC glad_eglWaitSyncKHR = NULL;
 
 
 static void glad_egl_load_EGL_VERSION_1_0( GLADuserptrloadfunc load, void* userptr) {
@@ -131,10 +142,21 @@ static void glad_egl_load_EGL_ANDROID_get_native_client_buffer( GLADuserptrloadf
     if(!GLAD_EGL_ANDROID_get_native_client_buffer) return;
     glad_eglGetNativeClientBufferANDROID = (PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC) load(userptr, "eglGetNativeClientBufferANDROID");
 }
+static void glad_egl_load_EGL_ANDROID_native_fence_sync( GLADuserptrloadfunc load, void* userptr) {
+    if(!GLAD_EGL_ANDROID_native_fence_sync) return;
+    glad_eglDupNativeFenceFDANDROID = (PFNEGLDUPNATIVEFENCEFDANDROIDPROC) load(userptr, "eglDupNativeFenceFDANDROID");
+}
 static void glad_egl_load_EGL_EXT_image_dma_buf_import_modifiers( GLADuserptrloadfunc load, void* userptr) {
     if(!GLAD_EGL_EXT_image_dma_buf_import_modifiers) return;
     glad_eglQueryDmaBufFormatsEXT = (PFNEGLQUERYDMABUFFORMATSEXTPROC) load(userptr, "eglQueryDmaBufFormatsEXT");
     glad_eglQueryDmaBufModifiersEXT = (PFNEGLQUERYDMABUFMODIFIERSEXTPROC) load(userptr, "eglQueryDmaBufModifiersEXT");
+}
+static void glad_egl_load_EGL_KHR_fence_sync( GLADuserptrloadfunc load, void* userptr) {
+    if(!GLAD_EGL_KHR_fence_sync) return;
+    glad_eglClientWaitSyncKHR = (PFNEGLCLIENTWAITSYNCKHRPROC) load(userptr, "eglClientWaitSyncKHR");
+    glad_eglCreateSyncKHR = (PFNEGLCREATESYNCKHRPROC) load(userptr, "eglCreateSyncKHR");
+    glad_eglDestroySyncKHR = (PFNEGLDESTROYSYNCKHRPROC) load(userptr, "eglDestroySyncKHR");
+    glad_eglGetSyncAttribKHR = (PFNEGLGETSYNCATTRIBKHRPROC) load(userptr, "eglGetSyncAttribKHR");
 }
 static void glad_egl_load_EGL_KHR_image( GLADuserptrloadfunc load, void* userptr) {
     if(!GLAD_EGL_KHR_image) return;
@@ -145,6 +167,18 @@ static void glad_egl_load_EGL_KHR_image_base( GLADuserptrloadfunc load, void* us
     if(!GLAD_EGL_KHR_image_base) return;
     glad_eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) load(userptr, "eglCreateImageKHR");
     glad_eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC) load(userptr, "eglDestroyImageKHR");
+}
+static void glad_egl_load_EGL_KHR_reusable_sync( GLADuserptrloadfunc load, void* userptr) {
+    if(!GLAD_EGL_KHR_reusable_sync) return;
+    glad_eglClientWaitSyncKHR = (PFNEGLCLIENTWAITSYNCKHRPROC) load(userptr, "eglClientWaitSyncKHR");
+    glad_eglCreateSyncKHR = (PFNEGLCREATESYNCKHRPROC) load(userptr, "eglCreateSyncKHR");
+    glad_eglDestroySyncKHR = (PFNEGLDESTROYSYNCKHRPROC) load(userptr, "eglDestroySyncKHR");
+    glad_eglGetSyncAttribKHR = (PFNEGLGETSYNCATTRIBKHRPROC) load(userptr, "eglGetSyncAttribKHR");
+    glad_eglSignalSyncKHR = (PFNEGLSIGNALSYNCKHRPROC) load(userptr, "eglSignalSyncKHR");
+}
+static void glad_egl_load_EGL_KHR_wait_sync( GLADuserptrloadfunc load, void* userptr) {
+    if(!GLAD_EGL_KHR_wait_sync) return;
+    glad_eglWaitSyncKHR = (PFNEGLWAITSYNCKHRPROC) load(userptr, "eglWaitSyncKHR");
 }
 
 
@@ -186,15 +220,19 @@ static int glad_egl_find_extensions_egl(EGLDisplay display) {
     GLAD_EGL_ANDROID_front_buffer_auto_refresh = glad_egl_has_extension(extensions, "EGL_ANDROID_front_buffer_auto_refresh");
     GLAD_EGL_ANDROID_get_native_client_buffer = glad_egl_has_extension(extensions, "EGL_ANDROID_get_native_client_buffer");
     GLAD_EGL_ANDROID_image_native_buffer = glad_egl_has_extension(extensions, "EGL_ANDROID_image_native_buffer");
+    GLAD_EGL_ANDROID_native_fence_sync = glad_egl_has_extension(extensions, "EGL_ANDROID_native_fence_sync");
     GLAD_EGL_EXT_image_dma_buf_import = glad_egl_has_extension(extensions, "EGL_EXT_image_dma_buf_import");
     GLAD_EGL_EXT_image_dma_buf_import_modifiers = glad_egl_has_extension(extensions, "EGL_EXT_image_dma_buf_import_modifiers");
     GLAD_EGL_EXT_image_gl_colorspace = glad_egl_has_extension(extensions, "EGL_EXT_image_gl_colorspace");
     GLAD_EGL_IMG_context_priority = glad_egl_has_extension(extensions, "EGL_IMG_context_priority");
     GLAD_EGL_KHR_create_context = glad_egl_has_extension(extensions, "EGL_KHR_create_context");
+    GLAD_EGL_KHR_fence_sync = glad_egl_has_extension(extensions, "EGL_KHR_fence_sync");
     GLAD_EGL_KHR_gl_colorspace = glad_egl_has_extension(extensions, "EGL_KHR_gl_colorspace");
     GLAD_EGL_KHR_image = glad_egl_has_extension(extensions, "EGL_KHR_image");
     GLAD_EGL_KHR_image_base = glad_egl_has_extension(extensions, "EGL_KHR_image_base");
     GLAD_EGL_KHR_platform_android = glad_egl_has_extension(extensions, "EGL_KHR_platform_android");
+    GLAD_EGL_KHR_reusable_sync = glad_egl_has_extension(extensions, "EGL_KHR_reusable_sync");
+    GLAD_EGL_KHR_wait_sync = glad_egl_has_extension(extensions, "EGL_KHR_wait_sync");
 
     return 1;
 }
@@ -256,9 +294,13 @@ int gladLoadEGLUserPtr(EGLDisplay display, GLADuserptrloadfunc load, void* userp
 
     if (!glad_egl_find_extensions_egl(display)) return 0;
     glad_egl_load_EGL_ANDROID_get_native_client_buffer(load, userptr);
+    glad_egl_load_EGL_ANDROID_native_fence_sync(load, userptr);
     glad_egl_load_EGL_EXT_image_dma_buf_import_modifiers(load, userptr);
+    glad_egl_load_EGL_KHR_fence_sync(load, userptr);
     glad_egl_load_EGL_KHR_image(load, userptr);
     glad_egl_load_EGL_KHR_image_base(load, userptr);
+    glad_egl_load_EGL_KHR_reusable_sync(load, userptr);
+    glad_egl_load_EGL_KHR_wait_sync(load, userptr);
 
     return version;
 }
