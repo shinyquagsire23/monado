@@ -397,7 +397,7 @@ vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct vive_controller_device *d = vive_controller_device(xdev);
 
-	// printf("input name %d %d\n", name, XRT_INPUT_VIVE_GRIP_POSE);
+	// U_LOG_D("input name %d %d", name, XRT_INPUT_VIVE_GRIP_POSE);
 	if (name != XRT_INPUT_VIVE_AIM_POSE &&
 	    name != XRT_INPUT_VIVE_GRIP_POSE &&
 	    name != XRT_INPUT_INDEX_AIM_POSE &&
