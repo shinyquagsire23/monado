@@ -99,13 +99,13 @@ sdl2_window_init(struct sdl2_program *p)
 
 	p->win = SDL_CreateWindow(title, x, y, w, h, window_flags);
 	if (p->win == NULL) {
-		fprintf(stderr, "Failed to create window!\n");
+		U_LOG_E("Failed to create window!");
 		return;
 	}
 
 	p->ctx = SDL_GL_CreateContext(p->win);
 	if (p->ctx == NULL) {
-		fprintf(stderr, "Failed to create GL context!\n");
+		U_LOG_E("Failed to create GL context!");
 		return;
 	}
 
@@ -115,7 +115,7 @@ sdl2_window_init(struct sdl2_program *p)
 	// Setup OpenGL bindings.
 	bool err = gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress) == 0;
 	if (err) {
-		fprintf(stderr, "Failed to load GL functions!\n");
+		U_LOG_E("Failed to load GL functions!");
 		return;
 	}
 
@@ -276,7 +276,7 @@ oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst)
 	xrt_instance_get_prober(xinst, &p->base.xp);
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
-		fprintf(stderr, "Failed to init SDL2!\n");
+		U_LOG_E("Failed to init SDL2!");
 		return;
 	}
 	p->sdl_initialized = true;
