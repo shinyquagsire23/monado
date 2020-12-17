@@ -194,7 +194,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 	if (!client_gl_compositor_init(c, xcn, sc_create)) {
 		free(c);
-		fprintf(stderr, "Failed to initialize compositor\n");
+		U_LOG_E("Failed to initialize compositor");
 		old_restore(&old);
 		return NULL;
 	}

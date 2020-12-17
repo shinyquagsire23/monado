@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "util/u_misc.h"
+#include "util/u_logging.h"
 
 #include "xrt/xrt_gfx_xlib.h"
 
@@ -57,13 +58,11 @@ client_gl_xlib_compositor_create(struct xrt_compositor_native *xcn,
 {
 	gladLoadGL(glXGetProcAddress);
 
-	// @todo log this to a proper logger.
 #define CHECK_REQUIRED_EXTENSION(EXT)                                          \
 	do {                                                                   \
 		if (!GLAD_##EXT) {                                             \
-			fprintf(stderr,                                        \
-			        "%s - Required OpenGL extension " #EXT         \
-			        " not available\n",                            \
+			U_LOG_E("%s - Required OpenGL extension " #EXT         \
+			        " not available",                              \
 			        __func__);                                     \
 			return NULL;                                           \
 		}                                                              \
