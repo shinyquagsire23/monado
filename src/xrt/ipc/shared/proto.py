@@ -359,7 +359,7 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
         f.write("\n\t\treturn ret;\n")
         f.write("\t}\n")
     f.write('''\tdefault:
-\t\tprintf("UNHANDLED IPC MESSAGE! %d\\n", *ipc_command);
+\t\tU_LOG_E("UNHANDLED IPC MESSAGE! %d", *ipc_command);
 \t\treturn XRT_ERROR_IPC_FAILURE;
 \t}
 }

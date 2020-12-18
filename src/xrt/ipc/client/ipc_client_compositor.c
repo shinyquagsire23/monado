@@ -442,7 +442,7 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 	diff_ns = now_ns - then_ns;
 	uint64_t ms100 = diff_ns / (1000 * 10);
 
-	fprintf(stderr, "%s: Slept %i.%02ims\n", __func__, (int)ms100 / 100,
+	U_LOG_D("%s: Slept %i.%02ims", __func__, (int)ms100 / 100,
 	        (int)ms100 % 100);
 #endif
 
