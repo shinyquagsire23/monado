@@ -78,8 +78,8 @@ client_gl_xlib_compositor_create(struct xrt_compositor_native *xcn,
 	struct client_gl_xlib_compositor *c =
 	    U_TYPED_CALLOC(struct client_gl_xlib_compositor);
 
-	if (!client_gl_compositor_init(&c->base, xcn,
-	                               client_gl_memobj_swapchain_create)) {
+	if (!client_gl_compositor_init(
+	        &c->base, xcn, client_gl_memobj_swapchain_create, NULL)) {
 		free(c);
 		return NULL;
 	}

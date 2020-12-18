@@ -21,6 +21,8 @@ extern "C" {
  *
  */
 
+struct client_gl_compositor;
+
 /*!
  * @class client_gl_swapchain
  *
@@ -61,6 +63,16 @@ typedef struct xrt_swapchain *(*client_gl_swapchain_create_func)(
     struct client_gl_swapchain **out_sc);
 
 /*!
+ * The type of a fence insertion function.
+ *
+ * This function is called in xrt_compositor::layer_commit.
+ *
+ * The returned graphics sync handle is given to xrt_compositor::layer_commit.
+ */
+typedef xrt_result_t (*client_gl_insert_fence_func)(
+    struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle);
+
+/*!
  * @class client_gl_compositor
  *
  * Wraps the real compositor providing a OpenGL based interface.
@@ -78,6 +90,12 @@ struct client_gl_compositor
 	 * Function pointer for creating the client swapchain.
 	 */
 	client_gl_swapchain_create_func create_swapchain;
+
+	/*!
+	 * Function pointer for inserting fences on
+	 * xrt_compositor::layer_commit.
+	 */
+	client_gl_insert_fence_func insert_fence;
 };
 
 
@@ -114,7 +132,8 @@ client_gl_compositor(struct xrt_compositor *xc)
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_swapchain_create_func create_swapchain);
+                          client_gl_swapchain_create_func create_swapchain,
+                          client_gl_insert_fence_func insert_fence);
 
 
 #ifdef __cplusplus

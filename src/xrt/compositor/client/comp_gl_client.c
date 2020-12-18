@@ -305,16 +305,29 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc,
                                   int64_t frame_id,
                                   xrt_graphics_sync_handle_t sync_handle)
 {
-	//! @hack: The swapchain images should have been externally synchronized
-	glFlush();
-
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	//! @todo We should be creating the handle ourselves in the future.
+	// We make the sync object, not st/oxr which is our user.
 	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
 
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id,
-	                             XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+	xrt_result_t xret = XRT_SUCCESS;
+	sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+
+	if (c->insert_fence != NULL) {
+		xret = c->insert_fence(xc, &sync_handle);
+	} else {
+		/*!
+		 * @hack: The swapchain images should have been externally
+		 * synchronized.
+		 */
+		glFlush();
+	}
+
+	if (xret != XRT_SUCCESS) {
+		return XRT_SUCCESS;
+	}
+
+	return xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
 }
 
 static int64_t
@@ -450,7 +463,8 @@ client_gl_compositor_destroy(struct xrt_compositor *xc)
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_swapchain_create_func create_swapchain)
+                          client_gl_swapchain_create_func create_swapchain,
+                          client_gl_insert_fence_func insert_fence)
 {
 	c->base.base.create_swapchain = client_gl_swapchain_create;
 	c->base.base.prepare_session = client_gl_compositor_prepare_session;
@@ -473,6 +487,7 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.destroy = client_gl_compositor_destroy;
 	c->base.base.poll_events = client_gl_compositor_poll_events;
 	c->create_swapchain = create_swapchain;
+	c->insert_fence = insert_fence;
 	c->xcn = xcn;
 
 	// Passthrough our formats from the native compositor to the client.

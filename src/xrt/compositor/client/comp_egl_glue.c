@@ -1,31 +1,32 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Glue code to EGL client side glue code.
  * @author Drew DeVault <sir@cmpwn.com>
  * @author Simon Ser <contact@emersion.fr>
+ * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup comp_client
  */
 
-#include <xrt/xrt_config_os.h>
-#include <xrt/xrt_config_have.h>
+#include "xrt/xrt_config_os.h"
+#include "xrt/xrt_config_have.h"
+#include "xrt/xrt_gfx_egl.h"
+#include "xrt/xrt_handles.h"
+
+#include "util/u_misc.h"
+#include "util/u_logging.h"
+#include "util/u_debug.h"
 
 #include "ogl/egl_api.h"
 #include "ogl/ogl_api.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "client/comp_gl_client.h"
 #include "client/comp_gl_memobj_swapchain.h"
 #include "client/comp_gl_eglimage_swapchain.h"
-#include "util/u_misc.h"
-#include "util/u_logging.h"
-#include "util/u_debug.h"
-#include "xrt/xrt_gfx_egl.h"
-#include "xrt/xrt_handles.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifndef XRT_HAVE_EGL
 #error "This file shouldn't be compiled without EGL"
@@ -39,13 +40,33 @@ static enum u_logging_level ll;
 #define EGL_WARN(...) U_LOG_IFL_W(ll, __VA_ARGS__)
 #define EGL_ERROR(...) U_LOG_IFL_E(ll, __VA_ARGS__)
 
-DEBUG_GET_ONCE_LOG_OPTION(egl_log, "EGL_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(egl_log, "EGL_LOG", U_LOGGING_INFO)
 
 // Not forward declared by mesa
 typedef EGLBoolean EGLAPIENTRY (*PFNEGLMAKECURRENTPROC)(EGLDisplay dpy,
                                                         EGLSurface draw,
                                                         EGLSurface read,
                                                         EGLContext ctx);
+
+/*!
+ * EGL based compositor.
+ */
+struct client_egl_compositor
+{
+	struct client_gl_compositor base;
+
+	EGLDisplay dpy;
+};
+
+/*!
+ * Down-cast helper.
+ * @protected @memberof client_egl_compositor
+ */
+static inline struct client_egl_compositor *
+client_egl_compositor(struct xrt_compositor *xc)
+{
+	return (struct client_egl_compositor *)xc;
+}
 
 
 /*
@@ -92,12 +113,47 @@ old_restore(struct old_helper *old)
  *
  */
 
+static xrt_result_t
+insert_fence(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle)
+{
+	struct client_egl_compositor *ceglc = client_egl_compositor(xc);
+
+	*out_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+	EGLDisplay dpy = ceglc->dpy;
+
+#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
+
+	EGLSyncKHR sync =
+	    eglCreateSyncKHR(dpy, EGL_SYNC_NATIVE_FENCE_ANDROID, NULL);
+	if (sync == EGL_NO_SYNC_KHR) {
+		EGL_ERROR("Failed to insert fence!");
+		return XRT_ERROR_FENCE_CREATE_FAILED;
+	}
+
+	glFlush();
+
+	int fence_fd = eglDupNativeFenceFDANDROID(dpy, sync);
+	eglDestroySyncKHR(dpy, sync);
+
+	if (fence_fd == EGL_NO_NATIVE_FENCE_FD_ANDROID) {
+		EGL_ERROR("Failed to get FD from fence!");
+		return XRT_ERROR_NATIVE_HANDLE_FENCE_ERROR;
+	}
+
+	*out_handle = fence_fd;
+#else
+	(void)cglc;
+#endif
+
+	return XRT_SUCCESS;
+}
+
 static void
 client_egl_compositor_destroy(struct xrt_compositor *xc)
 {
-	struct client_gl_compositor *c = client_gl_compositor(xc);
+	struct client_egl_compositor *ceglc = client_egl_compositor(xc);
 
-	free(c);
+	free(ceglc);
 }
 
 struct xrt_compositor_gl *
@@ -151,8 +207,9 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	default: EGL_ERROR("Unsupported EGL client type"); return NULL;
 	}
 
-	struct client_gl_compositor *c =
-	    U_TYPED_CALLOC(struct client_gl_compositor);
+	struct client_egl_compositor *ceglc =
+	    U_TYPED_CALLOC(struct client_egl_compositor);
+	ceglc->dpy = display;
 
 	client_gl_swapchain_create_func sc_create = NULL;
 
@@ -163,10 +220,17 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	DUMP_EXTENSION_STATUS(GL_EXT_memory_object);
 	DUMP_EXTENSION_STATUS(GL_EXT_memory_object_fd);
 	DUMP_EXTENSION_STATUS(GL_EXT_memory_object_win32);
-	DUMP_EXTENSION_STATUS(EGL_EXT_image_dma_buf_import);
 	DUMP_EXTENSION_STATUS(GL_OES_EGL_image_external);
+
+	DUMP_EXTENSION_STATUS(EGL_ANDROID_get_native_client_buffer);
+	DUMP_EXTENSION_STATUS(EGL_ANDROID_native_fence_sync);
+	DUMP_EXTENSION_STATUS(EGL_EXT_image_dma_buf_import_modifiers);
+	DUMP_EXTENSION_STATUS(EGL_KHR_fence_sync);
 	DUMP_EXTENSION_STATUS(EGL_KHR_image);
-	// DUMP_EXTENSION_STATUS(EGL_KHR_image_base);
+	DUMP_EXTENSION_STATUS(EGL_KHR_image_base);
+	DUMP_EXTENSION_STATUS(EGL_KHR_reusable_sync);
+	DUMP_EXTENSION_STATUS(EGL_KHR_wait_sync);
+
 
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 	if (GLAD_GL_EXT_memory_object && GLAD_GL_EXT_memory_object_fd) {
@@ -178,7 +242,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		sc_create = client_gl_eglimage_swapchain_create;
 	}
 	if (sc_create == NULL) {
-		free(c);
+		free(ceglc);
 		EGL_ERROR(
 		    "Could not find a required extension: need either "
 		    "EGL_EXT_image_dma_buf_import or "
@@ -192,14 +256,15 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	sc_create = client_gl_eglimage_swapchain_create;
 #endif
 
-	if (!client_gl_compositor_init(c, xcn, sc_create)) {
-		free(c);
+	if (!client_gl_compositor_init(&ceglc->base, xcn, sc_create,
+	                               insert_fence)) {
+		free(ceglc);
 		U_LOG_E("Failed to initialize compositor");
 		old_restore(&old);
 		return NULL;
 	}
 
-	c->base.base.destroy = client_egl_compositor_destroy;
+	ceglc->base.base.base.destroy = client_egl_compositor_destroy;
 	old_restore(&old);
-	return &c->base;
+	return &ceglc->base.base;
 }
