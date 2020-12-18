@@ -60,6 +60,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
+#include <unistd.h>
+#endif
+
+
 #define WINDOW_TITLE "Monado"
 
 static double
@@ -465,9 +470,18 @@ compositor_layer_commit(struct xrt_compositor *xc,
 {
 	struct comp_compositor *c = comp_compositor(xc);
 
-	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
-
 	COMP_SPEW(c, "LAYER_COMMIT at %8.3fms", ts_ms());
+
+#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
+	// Need to consume this handle.
+	if (xrt_graphics_sync_handle_is_valid(sync_handle)) {
+		close(sync_handle);
+		sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+	}
+#else
+#error "Not yet implemented for this platform"
+#endif
+
 
 	// Always zero for now.
 	uint32_t slot_id = 0;
