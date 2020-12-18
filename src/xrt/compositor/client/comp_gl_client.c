@@ -301,14 +301,20 @@ client_gl_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
+client_gl_compositor_layer_commit(struct xrt_compositor *xc,
+                                  int64_t frame_id,
+                                  xrt_graphics_sync_handle_t sync_handle)
 {
 	//! @hack: The swapchain images should have been externally synchronized
 	glFlush();
 
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id);
+	//! @todo We should be creating the handle ourselves in the future.
+	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
+
+	return xrt_comp_layer_commit(&c->xcn->base, frame_id,
+	                             XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 }
 
 static int64_t

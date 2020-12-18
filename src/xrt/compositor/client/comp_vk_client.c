@@ -362,11 +362,17 @@ client_vk_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
+client_vk_compositor_layer_commit(struct xrt_compositor *xc,
+                                  int64_t frame_id,
+                                  xrt_graphics_sync_handle_t sync_handle)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id);
+	//! @todo We should be creating the handle ourselves in the future.
+	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
+
+	return xrt_comp_layer_commit(&c->xcn->base, frame_id,
+	                             XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 }
 
 static xrt_result_t

@@ -459,9 +459,13 @@ compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
+compositor_layer_commit(struct xrt_compositor *xc,
+                        int64_t frame_id,
+                        xrt_graphics_sync_handle_t sync_handle)
 {
 	struct comp_compositor *c = comp_compositor(xc);
+
+	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
 
 	COMP_SPEW(c, "LAYER_COMMIT at %8.3fms", ts_ms());
 

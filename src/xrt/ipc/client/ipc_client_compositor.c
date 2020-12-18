@@ -610,9 +610,13 @@ ipc_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
+ipc_compositor_layer_commit(struct xrt_compositor *xc,
+                            int64_t frame_id,
+                            xrt_graphics_sync_handle_t sync_handle)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+
+	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
 
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];

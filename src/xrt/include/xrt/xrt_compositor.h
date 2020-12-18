@@ -774,7 +774,8 @@ struct xrt_compositor
 	 * compositor will use the layers.
 	 */
 	xrt_result_t (*layer_commit)(struct xrt_compositor *xc,
-	                             int64_t frame_id);
+	                             int64_t frame_id,
+	                             xrt_graphics_sync_handle_t sync_handle);
 
 	/*!
 	 * Teardown the compositor.
@@ -1056,9 +1057,11 @@ xrt_comp_layer_equirect2(struct xrt_compositor *xc,
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_commit(struct xrt_compositor *xc, int64_t frame_id)
+xrt_comp_layer_commit(struct xrt_compositor *xc,
+                      int64_t frame_id,
+                      xrt_graphics_sync_handle_t sync_handle)
 {
-	return xc->layer_commit(xc, frame_id);
+	return xc->layer_commit(xc, frame_id, sync_handle);
 }
 
 /*!

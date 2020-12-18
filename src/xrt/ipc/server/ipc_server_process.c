@@ -1055,7 +1055,8 @@ main_loop(struct ipc_server *s)
 
 		_update_layers(s, xc);
 
-		xrt_comp_layer_commit(xc, frame_id);
+		xrt_comp_layer_commit(xc, frame_id,
+		                      XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 
 #ifndef XRT_OS_ANDROID
 		// Check polling last, so we know we have valid timing data.

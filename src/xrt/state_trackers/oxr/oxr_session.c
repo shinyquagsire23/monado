@@ -2135,7 +2135,8 @@ oxr_session_frame_end(struct oxr_logger *log,
 		}
 	}
 
-	CALL_CHK(xrt_comp_layer_commit(xc, sess->frame_id.begun));
+	CALL_CHK(xrt_comp_layer_commit(xc, sess->frame_id.begun,
+	                               XRT_GRAPHICS_SYNC_HANDLE_INVALID));
 	sess->frame_id.begun = -1;
 
 	sess->frame_started = false;
