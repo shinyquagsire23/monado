@@ -13,6 +13,7 @@
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_vulkan_includes.h"
 #include "xrt/xrt_handles.h"
+#include "util/u_logging.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,7 +35,7 @@ extern "C" {
  */
 struct vk_bundle
 {
-	bool print;
+	enum u_logging_level ll;
 
 	VkInstance instance;
 	VkPhysicalDevice physical_device;
@@ -247,21 +248,11 @@ vk_color_space_string(VkColorSpaceKHR code);
  *
  */
 
-#define VK_DEBUG(vk, ...)                                                      \
-	do {                                                                   \
-		if (vk->print) {                                               \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
-	} while (false)
-
-#define VK_ERROR(vk, ...)                                                      \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
-	} while (false)
+#define VK_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
+#define VK_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
+#define VK_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
+#define VK_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
+#define VK_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
 
 bool
 vk_has_error(VkResult res, const char *fun, const char *file, int line);

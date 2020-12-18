@@ -512,13 +512,13 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 		ret = c->vk.vkEndCommandBuffer(sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
-			VK_ERROR(vk, "vkEndCommandBuffer: %s",
+			VK_ERROR((&c->vk), "vkEndCommandBuffer: %s",
 			         vk_result_string(ret));
 			return XRT_ERROR_VULKAN;
 		}
 		ret = c->vk.vkEndCommandBuffer(sc->release[i]);
 		if (ret != VK_SUCCESS) {
-			VK_ERROR(vk, "vkEndCommandBuffer: %s",
+			VK_ERROR((&c->vk), "vkEndCommandBuffer: %s",
 			         vk_result_string(ret));
 			return XRT_ERROR_VULKAN;
 		}

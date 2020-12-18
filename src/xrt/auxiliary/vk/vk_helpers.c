@@ -151,7 +151,7 @@ bool
 vk_has_error(VkResult res, const char *fun, const char *file, int line)
 {
 	if (res != VK_SUCCESS) {
-		fprintf(stderr, "ERROR: %s failed with %s in %s:%d\n", fun,
+		U_LOG_E("%s failed with %s in %s:%d", fun,
 		        vk_result_string(res), file, line);
 		return true;
 	}
@@ -216,7 +216,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	if (!vk_get_memory_type(vk, memory_requirements.memoryTypeBits,
 	                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 	                        &memory_type_index)) {
-		VK_ERROR(c, "vk_get_memory_type failed!");
+		VK_ERROR(vk, "vk_get_memory_type failed!");
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
 	}
 
@@ -527,7 +527,7 @@ vk_create_view_swizzle(struct vk_bundle *vk,
 
 	ret = vk->vkCreateImageView(vk->device, &imageView, NULL, &view);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(c, "vkCreateImageView: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateImageView: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -1140,9 +1140,7 @@ vk_get_access_flags(VkImageLayout layout)
 		return VK_ACCESS_TRANSFER_WRITE_BIT;
 	case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
 		return VK_ACCESS_SHADER_READ_BIT;
-	default:
-		fprintf(stderr, "Unhandled access mask case for layout %d.\n",
-		        layout);
+	default: U_LOG_E("Unhandled access mask case for layout %d.", layout);
 	}
 	return 0;
 }
@@ -1333,8 +1331,8 @@ vk_buffer_init(struct vk_bundle *vk,
 
 	if (!vk_get_memory_type(vk, requirements.memoryTypeBits, properties,
 	                        &alloc_info.memoryTypeIndex)) {
-		fprintf(stderr,
-		        "Failed to find matching memoryTypeIndex for buffer\n");
+		VK_ERROR(vk,
+		         "Failed to find matching memoryTypeIndex for buffer");
 		return false;
 	}
 

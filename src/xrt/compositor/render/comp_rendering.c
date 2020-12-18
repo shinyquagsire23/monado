@@ -220,7 +220,7 @@ create_command_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd)
 	                                   &cmd_buffer_info, //
 	                                   &cmd);            //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(r->c, "vkCreateFramebuffer failed: %s",
+		VK_ERROR(vk, "vkCreateFramebuffer failed: %s",
 		         vk_result_string(ret));
 		return ret;
 	}
