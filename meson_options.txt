@@ -114,3 +114,8 @@ option('steamvr_plugin',
 	description: 'Enable SteamVR Plugin'
 )
 
+option('color_log',
+	type: 'boolean',
+	value: true,
+	description: 'Log in color'
+)

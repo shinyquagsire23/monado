@@ -121,6 +121,10 @@ if get_option('service')
 	build_conf.set('XRT_FEATURE_SERVICE', true)
 endif
 
+if get_option('color_log')
+	build_conf.set('XRT_FEATURE_COLOR_LOG', true)
+endif
+
 xrt_config_build_h = configure_file(
 	output: 'xrt_config_build.h',
 	configuration: build_conf,

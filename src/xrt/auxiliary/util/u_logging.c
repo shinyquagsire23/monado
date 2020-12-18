@@ -9,6 +9,7 @@
 
 #include "util/u_logging.h"
 #include "xrt/xrt_config_os.h"
+#include "xrt/xrt_config_build.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -149,14 +150,51 @@ u_log_xdev(const char *file,
 
 
 #else
+
+#include <unistd.h>
+
 /*
  *
  * Helper functions.
  *
  */
 
+
+#ifdef XRT_FEATURE_COLOR_LOG
+#define COLOR_TRACE "\033[2m"
+#define COLOR_DEBUG "\033[36m"
+#define COLOR_INFO "\033[32m"
+#define COLOR_WARN "\033[33m"
+#define COLOR_ERROR "\033[31m"
+#define COLOR_RESET "\033[0m"
+
 static void
-print_prefix(const char *func, enum u_logging_level level)
+print_prefix_color(const char *func, enum u_logging_level level)
+{
+	switch (level) {
+	case U_LOGGING_TRACE:
+		fprintf(stderr, COLOR_TRACE "TRACE " COLOR_RESET);
+		break;
+	case U_LOGGING_DEBUG:
+		fprintf(stderr, COLOR_DEBUG "DEBUG " COLOR_RESET);
+		break;
+	case U_LOGGING_INFO:
+		fprintf(stderr, COLOR_INFO " INFO " COLOR_RESET);
+		break;
+	case U_LOGGING_WARN:
+		fprintf(stderr, COLOR_WARN " WARN " COLOR_RESET);
+		break;
+	case U_LOGGING_ERROR:
+		fprintf(stderr, COLOR_ERROR "ERROR " COLOR_RESET);
+		break;
+	case U_LOGGING_RAW: break;
+	default: break;
+	}
+}
+#endif
+
+static void
+print_prefix_mono(const char *func, enum u_logging_level level)
 {
 	switch (level) {
 	case U_LOGGING_TRACE: fprintf(stderr, "TRACE "); break;
@@ -167,6 +205,20 @@ print_prefix(const char *func, enum u_logging_level level)
 	case U_LOGGING_RAW: break;
 	default: break;
 	}
+}
+
+static void
+print_prefix(const char *func, enum u_logging_level level)
+{
+#ifdef XRT_FEATURE_COLOR_LOG
+	if (isatty(STDERR_FILENO)) {
+		print_prefix_color(func, level);
+	} else {
+		print_prefix_mono(func, level);
+	}
+#else
+	print_prefix_mono(func, level);
+#endif
 
 	if (level != U_LOGGING_RAW && func != NULL) {
 		fprintf(stderr, "[%s] ", func);
