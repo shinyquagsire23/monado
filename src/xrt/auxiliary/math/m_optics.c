@@ -98,11 +98,10 @@ math_solve_triangle(double w_total,
 	if (debug_get_bool_option_views()) {
 		const double rad_to_deg = M_1_PI * 180.0;
 		// comments are to force wrapping
-		fprintf(stderr,
-		        "w=" METERS_FORMAT " theta=" DEG_FORMAT
+		U_LOG_D("w=" METERS_FORMAT " theta=" DEG_FORMAT
 		        "    w1=" METERS_FORMAT " theta1=" DEG_FORMAT
 		        "    w2=" METERS_FORMAT " theta2=" DEG_FORMAT
-		        "    d=" METERS_FORMAT "\n",
+		        "    d=" METERS_FORMAT,
 		        w_total, theta_total * rad_to_deg,         //
 		        w_1, (theta_total - theta_2) * rad_to_deg, //
 		        w_2, theta_2 * rad_to_deg,                 //

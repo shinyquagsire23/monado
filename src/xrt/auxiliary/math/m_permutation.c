@@ -9,6 +9,7 @@
 
 
 #include "util/u_misc.h"
+#include "util/u_logging.h"
 
 #include "m_permutation.h"
 
@@ -142,7 +143,7 @@ m_do_the_thing()
 
 	m_permutator_reset(&mp);
 
-	fprintf(stderr, "BLARG!\n");
+	U_LOG_D("BLARG!");
 }
 
 #endif
