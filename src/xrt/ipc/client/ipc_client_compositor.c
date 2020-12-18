@@ -28,6 +28,10 @@
 #include <errno.h>
 #include <assert.h>
 
+#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
+#include <unistd.h>
+#endif
+
 
 /*
  *
@@ -616,7 +620,7 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc,
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
+	bool valid_sync = xrt_graphics_sync_handle_is_valid(sync_handle);
 
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
@@ -624,11 +628,26 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc,
 	// Last bit of data to put in the shared memory area.
 	slot->num_layers = icc->layers.num_layers;
 
-	IPC_CALL_CHK(ipc_call_compositor_layer_sync(
-	    icc->ipc_c, frame_id, icc->layers.slot_id, &icc->layers.slot_id));
+	IPC_CALL_CHK(ipc_call_compositor_layer_sync( //
+	    icc->ipc_c,                              //
+	    frame_id,                                //
+	    icc->layers.slot_id,                     //
+	    &sync_handle,                            //
+	    valid_sync ? 1 : 0,                      //
+	    &icc->layers.slot_id));                  //
 
 	// Reset.
 	icc->layers.num_layers = 0;
+
+#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
+	// Need to consume this handle.
+	if (valid_sync) {
+		close(sync_handle);
+		sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+	}
+#else
+#error "Not yet implemented for this platform"
+#endif
 
 	return res;
 }

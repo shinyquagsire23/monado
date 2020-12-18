@@ -99,6 +99,7 @@
 			{"name": "frame_id", "type": "int64_t"},
 			{"name": "slot_id", "type": "uint32_t"}
 		],
+		"in_handles": {"type": "xrt_graphics_sync_handle_t"},
 		"out": [
 			{"name": "free_slot_id", "type": "uint32_t"}
 		]

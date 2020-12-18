@@ -14,6 +14,10 @@
 #include "server/ipc_server.h"
 #include "ipc_server_generated.h"
 
+#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
+#include <unistd.h>
+#endif
+
 
 /*
  *
@@ -183,10 +187,23 @@ xrt_result_t
 ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
                                  int64_t frame_id,
                                  uint32_t slot_id,
-                                 uint32_t *out_free_slot_id)
+                                 uint32_t *out_free_slot_id,
+                                 const xrt_graphics_sync_handle_t *handles,
+                                 const uint32_t num_handles)
 {
 	struct ipc_shared_memory *ism = ics->server->ism;
 	struct ipc_layer_slot *slot = &ism->slots[slot_id];
+
+	for (uint32_t i = 0; i < num_handles; i++) {
+		if (!xrt_graphics_sync_handle_is_valid(handles[i])) {
+			continue;
+		}
+#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
+		close(handles[i]);
+#else
+#error "Need port to transport these graphics buffers"
+#endif
+	}
 
 	// Copy current slot data to our state.
 	ics->render_state = *slot;
