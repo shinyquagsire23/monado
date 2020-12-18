@@ -728,7 +728,7 @@ public:
 				    handle, state, 0);
 				// ovrd_log("Update %s: %d\n",
 				// m_controls[i].steamvr_control_path, state);
-				// printf("Update %s: %d\n",
+				// U_LOG_D("Update %s: %d",
 				//       m_controls[i].steamvr_control_path,
 				//       state);
 			}
@@ -754,7 +754,7 @@ public:
 				// ovrd_log("Update %s: %f\n",
 				// m_controls[i].steamvr_control_path,
 				// state->x);
-				// printf("Update %s: %f\n",
+				// U_LOG_D("Update %s: %f",
 				//       m_controls[i].steamvr_control_path,
 				//       value);
 			}

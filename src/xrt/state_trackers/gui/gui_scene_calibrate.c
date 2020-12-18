@@ -128,7 +128,7 @@ save_calibration(struct calibration_scene *cs)
 	                        cs->settings->calibration_path);
 
 	char *str = cJSON_Print(root);
-	fprintf(stderr, "%s\n", str);
+	U_LOG_D("%s", str);
 	cJSON_Delete(root);
 
 	FILE *config_file =

@@ -10,6 +10,7 @@
 #include "xrt/xrt_config_drivers.h"
 
 #include "util/u_misc.h"
+#include "util/u_logging.h"
 
 #include "math/m_api.h"
 
@@ -182,27 +183,27 @@ render_cheat_menu(struct gui_remote *gr, struct gui_program *p)
 	}
 
 	if (igButton("Dump left", zero_dims)) {
-		fprintf(stderr,
-		        "d->left.pose.position.x = %ff;\n"
-		        "d->left.pose.position.y = %ff;\n"
-		        "d->left.pose.position.z = %ff;\n"
-		        "d->left.pose.orientation.x = %ff;\n"
-		        "d->left.pose.orientation.y = %ff;\n"
-		        "d->left.pose.orientation.z = %ff;\n"
-		        "d->left.pose.orientation.w = %ff;\n"
-		        "d->left.linear_velocity.x = %ff;\n"
-		        "d->left.linear_velocity.y = %ff;\n"
-		        "d->left.linear_velocity.z = %ff;\n"
-		        "d->left.angular_velocity.x = %ff;\n"
-		        "d->left.angular_velocity.y = %ff;\n"
-		        "d->left.angular_velocity.z = %ff;\n",
-		        d->left.pose.position.x, d->left.pose.position.y,
-		        d->left.pose.position.z, d->left.pose.orientation.x,
-		        d->left.pose.orientation.y, d->left.pose.orientation.z,
-		        d->left.pose.orientation.w, d->left.linear_velocity.x,
-		        d->left.linear_velocity.y, d->left.linear_velocity.z,
-		        d->left.angular_velocity.x, d->left.angular_velocity.y,
-		        d->left.angular_velocity.z);
+		U_LOG_RAW(
+		    "d->left.pose.position.x = %ff;\n"
+		    "d->left.pose.position.y = %ff;\n"
+		    "d->left.pose.position.z = %ff;\n"
+		    "d->left.pose.orientation.x = %ff;\n"
+		    "d->left.pose.orientation.y = %ff;\n"
+		    "d->left.pose.orientation.z = %ff;\n"
+		    "d->left.pose.orientation.w = %ff;\n"
+		    "d->left.linear_velocity.x = %ff;\n"
+		    "d->left.linear_velocity.y = %ff;\n"
+		    "d->left.linear_velocity.z = %ff;\n"
+		    "d->left.angular_velocity.x = %ff;\n"
+		    "d->left.angular_velocity.y = %ff;\n"
+		    "d->left.angular_velocity.z = %ff;\n",
+		    d->left.pose.position.x, d->left.pose.position.y,
+		    d->left.pose.position.z, d->left.pose.orientation.x,
+		    d->left.pose.orientation.y, d->left.pose.orientation.z,
+		    d->left.pose.orientation.w, d->left.linear_velocity.x,
+		    d->left.linear_velocity.y, d->left.linear_velocity.z,
+		    d->left.angular_velocity.x, d->left.angular_velocity.y,
+		    d->left.angular_velocity.z);
 	}
 }
 
