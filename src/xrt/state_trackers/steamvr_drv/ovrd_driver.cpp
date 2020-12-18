@@ -28,6 +28,8 @@ extern "C" {
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_instance.h"
+
+#include "xrt_generated_bindings.h"
 }
 
 #pragma GCC diagnostic push
@@ -36,7 +38,7 @@ extern "C" {
 //! When set, all controllers pretend to be Index controllers. Provides best
 //! compatibility with legacy games due to steamvr's legacy binding for Index
 //! controllers, but input mapping may be incomplete or not ideal.
-DEBUG_GET_ONCE_BOOL_OPTION(emulate_index_controller, "STEAMVR_EMULATE_INDEX_CONTROLLER", true)
+DEBUG_GET_ONCE_BOOL_OPTION(emulate_index_controller, "STEAMVR_EMULATE_INDEX_CONTROLLER", false)
 
 DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "XRT_COMPOSITOR_SCALE_PERCENTAGE", 140)
 
@@ -59,9 +61,20 @@ struct SteamVRDriverControl
 {
 	const char *steamvr_control_path;
 	vr::VRInputComponentHandle_t control_handle;
+};
+
+struct SteamVRDriverControlInput : SteamVRDriverControl
+{
 	enum xrt_input_type monado_input_type;
 	enum xrt_input_name monado_input_name;
+
 	struct MonadoInputComponent component;
+};
+
+struct SteamVRDriverControlOutput : SteamVRDriverControl
+{
+	enum xrt_output_type monado_output_type;
+	enum xrt_output_name monado_output_name;
 };
 
 static void
@@ -143,6 +156,9 @@ public:
 		strncpy(m_sSerialNumber, name.c_str(), XRT_DEVICE_NAME_LEN);
 		strncpy(m_sModelNumber, name.c_str(), XRT_DEVICE_NAME_LEN);
 
+		strncpy(m_sSerialNumber, name.c_str(), XRT_DEVICE_NAME_LEN);
+		strncpy(m_sModelNumber, name.c_str(), XRT_DEVICE_NAME_LEN);
+
 		switch (this->m_xdev->name) {
 		case XRT_DEVICE_INDEX_CONTROLLER:
 			if (hand == XRT_HAND_LEFT) {
@@ -167,233 +183,237 @@ public:
 		}
 
 		ovrd_log("Render model based on Monado: %s\n", m_render_model);
+
+		vr::VRServerDriverHost()->TrackedDeviceAdded(GetSerialNumber().c_str(),
+		                                             vr::TrackedDeviceClass_Controller, this);
 	}
 	virtual ~CDeviceDriver_Monado_Controller() {}
 
 	void
-	AddControl(enum xrt_input_type monado_input_type,
-	           const char *steamvr_control_path,
+	AddControl(const char *steamvr_control_path,
 	           enum xrt_input_name monado_input_name,
 	           struct MonadoInputComponent *component)
 	{
-		m_controls[m_control_count].monado_input_type = monado_input_type;
-		m_controls[m_control_count].steamvr_control_path = steamvr_control_path;
-		m_controls[m_control_count].monado_input_name = monado_input_name;
+		enum xrt_input_type monado_input_type = XRT_GET_INPUT_TYPE(monado_input_name);
+
+		SteamVRDriverControlInput in;
+
+		in.monado_input_type = monado_input_type;
+		in.steamvr_control_path = steamvr_control_path;
+		in.monado_input_name = monado_input_name;
 		if (component != NULL) {
-			m_controls[m_control_count].component = *component;
+			in.component = *component;
 		} else {
-			m_controls[m_control_count].component.has_component = false;
+			in.component.has_component = false;
 		}
 
 		if (monado_input_type == XRT_INPUT_TYPE_BOOLEAN) {
 			vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, steamvr_control_path,
-			                                            &m_controls[m_control_count].control_handle);
+			                                            &in.control_handle);
 
 		} else if (monado_input_type == XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE) {
-			vr::VRDriverInput()->CreateScalarComponent(
-			    m_ulPropertyContainer, steamvr_control_path, &m_controls[m_control_count].control_handle,
-			    vr::VRScalarType_Absolute, vr::VRScalarUnits_NormalizedTwoSided);
+			vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, steamvr_control_path,
+			                                           &in.control_handle, vr::VRScalarType_Absolute,
+			                                           vr::VRScalarUnits_NormalizedTwoSided);
 
 		} else if (monado_input_type == XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE) {
-			vr::VRDriverInput()->CreateScalarComponent(
-			    m_ulPropertyContainer, steamvr_control_path, &m_controls[m_control_count].control_handle,
-			    vr::VRScalarType_Absolute, vr::VRScalarUnits_NormalizedOneSided);
+			vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, steamvr_control_path,
+			                                           &in.control_handle, vr::VRScalarType_Absolute,
+			                                           vr::VRScalarUnits_NormalizedOneSided);
 
 		} else if (monado_input_type == XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE) {
-			vr::VRDriverInput()->CreateScalarComponent(
-			    m_ulPropertyContainer, steamvr_control_path, &m_controls[m_control_count].control_handle,
-			    vr::VRScalarType_Absolute, vr::VRScalarUnits_NormalizedTwoSided);
+			// 2D values are added as 2 1D values
+			// usually those are [-1,1]
+			vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, steamvr_control_path,
+			                                           &in.control_handle, vr::VRScalarType_Absolute,
+			                                           vr::VRScalarUnits_NormalizedTwoSided);
 		}
 
+		m_input_controls.push_back(in);
 		ovrd_log("Added input %s\n", steamvr_control_path);
-		m_control_count++;
 	}
 
+	void
+	AddOutputControl(enum xrt_output_name monado_output_name, const char *steamvr_control_path)
+	{
+		SteamVRDriverControlOutput out;
+
+		// for the future: XRT_GET_OUTPUT_TYPE(monado_output_name);
+		enum xrt_output_type monado_output_type = XRT_OUTPUT_TYPE_VIBRATION;
+
+		out.monado_output_type = monado_output_type;
+		out.steamvr_control_path = steamvr_control_path;
+		out.monado_output_name = monado_output_name;
+
+		vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, out.steamvr_control_path,
+		                                           &out.control_handle);
+
+		m_output_controls.push_back(out);
+		ovrd_log("Added output %s\n", steamvr_control_path);
+	}
 	void
 	AddEmulatedIndexControls()
 	{
 		switch (this->m_xdev->name) {
 		case XRT_DEVICE_INDEX_CONTROLLER: {
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trigger/value",
-			           XRT_INPUT_INDEX_TRIGGER_VALUE, NULL);
+			AddControl("/input/trigger/value", XRT_INPUT_INDEX_TRIGGER_VALUE, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/click", XRT_INPUT_INDEX_TRIGGER_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/touch", XRT_INPUT_INDEX_TRIGGER_TOUCH, NULL);
-
-
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/click", XRT_INPUT_INDEX_SYSTEM_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/touch", XRT_INPUT_INDEX_SYSTEM_TOUCH, NULL);
-
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click", XRT_INPUT_INDEX_A_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/touch", XRT_INPUT_INDEX_A_TOUCH, NULL);
-
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click", XRT_INPUT_INDEX_B_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/touch", XRT_INPUT_INDEX_B_TOUCH, NULL);
+			AddControl("/input/trigger/click", XRT_INPUT_INDEX_TRIGGER_CLICK, NULL);
+			AddControl("/input/trigger/touch", XRT_INPUT_INDEX_TRIGGER_TOUCH, NULL);
 
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/grip/force", XRT_INPUT_INDEX_SQUEEZE_FORCE,
-			           NULL);
+			AddControl("/input/system/click", XRT_INPUT_INDEX_SYSTEM_CLICK, NULL);
+			AddControl("/input/system/touch", XRT_INPUT_INDEX_SYSTEM_TOUCH, NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/grip/value", XRT_INPUT_INDEX_SQUEEZE_VALUE,
-			           NULL);
+			AddControl("/input/a/click", XRT_INPUT_INDEX_A_CLICK, NULL);
+			AddControl("/input/a/touch", XRT_INPUT_INDEX_A_TOUCH, NULL);
+
+			AddControl("/input/b/click", XRT_INPUT_INDEX_B_CLICK, NULL);
+			AddControl("/input/b/touch", XRT_INPUT_INDEX_B_TOUCH, NULL);
+
+
+			AddControl("/input/grip/force", XRT_INPUT_INDEX_SQUEEZE_FORCE, NULL);
+
+			AddControl("/input/grip/value", XRT_INPUT_INDEX_SQUEEZE_VALUE, NULL);
 
 			struct MonadoInputComponent x = {true, true, false};
 			struct MonadoInputComponent y = {true, false, true};
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/thumbstick/click", XRT_INPUT_INDEX_THUMBSTICK_CLICK,
-			           NULL);
+			AddControl("/input/thumbstick/click", XRT_INPUT_INDEX_THUMBSTICK_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/thumbstick/touch", XRT_INPUT_INDEX_THUMBSTICK_TOUCH,
-			           NULL);
+			AddControl("/input/thumbstick/touch", XRT_INPUT_INDEX_THUMBSTICK_TOUCH, NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/thumbstick/x",
-			           XRT_INPUT_INDEX_THUMBSTICK, &x);
+			AddControl("/input/thumbstick/x", XRT_INPUT_INDEX_THUMBSTICK, &x);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/thumbstick/y",
-			           XRT_INPUT_INDEX_THUMBSTICK, &y);
+			AddControl("/input/thumbstick/y", XRT_INPUT_INDEX_THUMBSTICK, &y);
 
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trackpad/force",
-			           XRT_INPUT_INDEX_TRACKPAD_FORCE, NULL);
+			AddControl("/input/trackpad/force", XRT_INPUT_INDEX_TRACKPAD_FORCE, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trackpad/touch", XRT_INPUT_INDEX_TRACKPAD_TOUCH,
-			           NULL);
+			AddControl("/input/trackpad/touch", XRT_INPUT_INDEX_TRACKPAD_TOUCH, NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/x", XRT_INPUT_INDEX_TRACKPAD,
-			           &x);
+			AddControl("/input/trackpad/x", XRT_INPUT_INDEX_TRACKPAD, &x);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/y", XRT_INPUT_INDEX_TRACKPAD,
-			           &y);
+			AddControl("/input/trackpad/y", XRT_INPUT_INDEX_TRACKPAD, &y);
 
-			vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic",
-			                                           &m_hapticHandle);
+
+			AddOutputControl(XRT_OUTPUT_NAME_INDEX_HAPTIC, "/output/haptic");
 		}
 
 		break;
 		case XRT_DEVICE_VIVE_WAND: {
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trigger/value",
-			           XRT_INPUT_VIVE_TRIGGER_VALUE, NULL);
+			AddControl("/input/trigger/value", XRT_INPUT_VIVE_TRIGGER_VALUE, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/click", XRT_INPUT_VIVE_TRIGGER_CLICK, NULL);
+			AddControl("/input/trigger/click", XRT_INPUT_VIVE_TRIGGER_CLICK, NULL);
 
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/click", XRT_INPUT_VIVE_SYSTEM_CLICK, NULL);
+			AddControl("/input/system/click", XRT_INPUT_VIVE_SYSTEM_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click", XRT_INPUT_VIVE_TRACKPAD_CLICK, NULL);
+			AddControl("/input/a/click", XRT_INPUT_VIVE_TRACKPAD_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click", XRT_INPUT_VIVE_MENU_CLICK, NULL);
+			AddControl("/input/b/click", XRT_INPUT_VIVE_MENU_CLICK, NULL);
 
 			struct MonadoInputComponent x = {true, true, false};
 			struct MonadoInputComponent y = {true, false, true};
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trackpad/touch", XRT_INPUT_VIVE_TRACKPAD_TOUCH,
-			           NULL);
+			AddControl("/input/trackpad/touch", XRT_INPUT_VIVE_TRACKPAD_TOUCH, NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/x", XRT_INPUT_VIVE_TRACKPAD,
-			           &x);
+			AddControl("/input/trackpad/x", XRT_INPUT_VIVE_TRACKPAD, &x);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/y", XRT_INPUT_VIVE_TRACKPAD,
-			           &y);
+			AddControl("/input/trackpad/y", XRT_INPUT_VIVE_TRACKPAD, &y);
 
-			vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic",
-			                                           &m_hapticHandle);
+			AddOutputControl(XRT_OUTPUT_NAME_VIVE_HAPTIC, "/output/haptic");
 		} break;
-		case XRT_DEVICE_VIVE_TRACKER_GEN1:
-		case XRT_DEVICE_VIVE_TRACKER_GEN2: break;
 		case XRT_DEVICE_PSMV: {
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trigger/value",
-			           XRT_INPUT_PSMV_TRIGGER_VALUE, NULL);
+			AddControl("/input/trigger/value", XRT_INPUT_PSMV_TRIGGER_VALUE, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/click", XRT_INPUT_PSMV_MOVE_CLICK, NULL);
+			AddControl("/input/trigger/click", XRT_INPUT_PSMV_MOVE_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/click", XRT_INPUT_PSMV_PS_CLICK, NULL);
+			AddControl("/input/system/click", XRT_INPUT_PSMV_PS_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click", XRT_INPUT_PSMV_CROSS_CLICK, NULL);
+			AddControl("/input/a/click", XRT_INPUT_PSMV_CROSS_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click", XRT_INPUT_PSMV_SQUARE_CLICK, NULL);
+			AddControl("/input/b/click", XRT_INPUT_PSMV_SQUARE_CLICK, NULL);
 
-			vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic",
-			                                           &m_hapticHandle);
-		}
+			AddOutputControl(XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION, "/output/haptic");
+		} break;
 
-		break;
-		case XRT_DEVICE_HYDRA:
-		case XRT_DEVICE_DAYDREAM:
+		case XRT_DEVICE_TOUCH_CONTROLLER: break;  // TODO
+		case XRT_DEVICE_WMR_CONTROLLER: break;    // TODO
+		case XRT_DEVICE_XBOX_CONTROLLER: break;   // TODO
+		case XRT_DEVICE_VIVE_TRACKER_GEN1: break; // TODO
+		case XRT_DEVICE_VIVE_TRACKER_GEN2: break; // TODO
+
+		case XRT_DEVICE_HAND_INTERACTION: break;  // there is no hardware
+		case XRT_DEVICE_GO_CONTROLLER: break;     // hardware has no haptics
+		case XRT_DEVICE_DAYDREAM: break;          // hardware has no haptics
+		case XRT_DEVICE_HYDRA: break;             // hardware has no haptics
+		case XRT_DEVICE_SIMPLE_CONTROLLER: break; // shouldn't happen
+		case XRT_DEVICE_HAND_TRACKER: break;      // shouldn't happen
 		case XRT_DEVICE_GENERIC_HMD:
-		default: break;
+		case XRT_DEVICE_VIVE_PRO: break; // no
+		}
+	}
+
+	struct profile_template *
+	get_profile_template(enum xrt_device_name device_name)
+	{
+		for (int i = 0; i < NUM_PROFILE_TEMPLATES; i++) {
+			if (profile_templates[i].name == device_name)
+				return &profile_templates[i];
+		}
+		return NULL;
+	}
+
+	void
+	AddMonadoInput(struct binding_template *b)
+	{
+		enum xrt_input_name monado_input_name = b->input;
+		const char *steamvr_path = b->steamvr_path;
+
+		enum xrt_input_type monado_input_type = XRT_GET_INPUT_TYPE(monado_input_name);
+
+		switch (monado_input_type) {
+		case XRT_INPUT_TYPE_BOOLEAN:
+		case XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE:
+		case XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE: AddControl(steamvr_path, monado_input_name, NULL); break;
+
+		case XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE: {
+			std::string xpath = std::string(steamvr_path) + std::string("/x");
+			std::string ypath = std::string(steamvr_path) + std::string("/y");
+
+			struct MonadoInputComponent x = {true, true, false};
+			struct MonadoInputComponent y = {true, false, true};
+
+			AddControl(xpath.c_str(), monado_input_name, &x);
+			AddControl(ypath.c_str(), monado_input_name, &y);
+		} break;
+		case XRT_INPUT_TYPE_POSE:
+			//! @todo how to handle poses?
+		case XRT_INPUT_TYPE_HAND_TRACKING:
+		case XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE: break;
 		}
 	}
 
 	void
 	AddMonadoControls()
 	{
-		switch (this->m_xdev->name) {
-		case XRT_DEVICE_INDEX_CONTROLLER: {
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trigger/value",
-			           XRT_INPUT_INDEX_TRIGGER_VALUE, NULL);
-
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/click", XRT_INPUT_INDEX_TRIGGER_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/touch", XRT_INPUT_INDEX_TRIGGER_TOUCH, NULL);
-
-
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/click", XRT_INPUT_INDEX_SYSTEM_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/touch", XRT_INPUT_INDEX_SYSTEM_TOUCH, NULL);
-
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click", XRT_INPUT_INDEX_A_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/touch", XRT_INPUT_INDEX_A_TOUCH, NULL);
-
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click", XRT_INPUT_INDEX_B_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/touch", XRT_INPUT_INDEX_B_TOUCH, NULL);
-
-
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/grip/force", XRT_INPUT_INDEX_SQUEEZE_FORCE,
-			           NULL);
-
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/grip/value", XRT_INPUT_INDEX_SQUEEZE_VALUE,
-			           NULL);
-
-			struct MonadoInputComponent x = {true, true, false};
-			struct MonadoInputComponent y = {true, false, true};
-
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/thumbstick/click", XRT_INPUT_INDEX_THUMBSTICK_CLICK,
-			           NULL);
-
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/thumbstick/touch", XRT_INPUT_INDEX_THUMBSTICK_TOUCH,
-			           NULL);
-
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/thumbstick/x",
-			           XRT_INPUT_INDEX_THUMBSTICK, &x);
-
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/thumbstick/y",
-			           XRT_INPUT_INDEX_THUMBSTICK, &y);
-
-
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trackpad/force",
-			           XRT_INPUT_INDEX_TRACKPAD_FORCE, NULL);
-
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trackpad/touch", XRT_INPUT_INDEX_TRACKPAD_TOUCH,
-			           NULL);
-
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/x", XRT_INPUT_INDEX_TRACKPAD,
-			           &x);
-
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/y", XRT_INPUT_INDEX_TRACKPAD,
-			           &y);
-
-			vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic",
-			                                           &m_hapticHandle);
+		struct profile_template *p = get_profile_template(m_xdev->name);
+		if (!p) {
+			ovrd_log("No profile template for %s\n", m_xdev->str);
+			return;
 		}
 
-		break;
-		case XRT_DEVICE_VIVE_WAND: break;
-		case XRT_DEVICE_VIVE_TRACKER_GEN1:
-		case XRT_DEVICE_VIVE_TRACKER_GEN2: break;
-		case XRT_DEVICE_PSMV:
-		case XRT_DEVICE_HYDRA:
-		case XRT_DEVICE_DAYDREAM:
-		case XRT_DEVICE_GENERIC_HMD:
-		default: break;
+		for (size_t i = 0; i < p->num_bindings; i++) {
+			struct binding_template *b = &p->bindings[i];
+
+			if (b->input != 0) {
+				AddMonadoInput(b);
+			}
+			if (b->output != 0) {
+				AddOutputControl(b->output, b->steamvr_path);
+			}
 		}
 	}
 
@@ -455,7 +475,7 @@ public:
 		m_pose.willDriftInYaw = !m_xdev->position_tracking_supported;
 
 		if (m_emulate_index_controller) {
-			m_input_profile = "{indexcontroller}/input/index_controller_profile.json";
+			m_input_profile = std::string("{indexcontroller}/input/index_controller_profile.json");
 			m_controller_type = "knuckles";
 			if (m_hand == XRT_HAND_LEFT) {
 				m_render_model = "{indexcontroller}valve_controller_knu_1_0_left";
@@ -463,19 +483,22 @@ public:
 				m_render_model = "{indexcontroller}valve_controller_knu_1_0_right";
 			}
 		} else {
-			m_input_profile = "{monado}/input/monado_controller_profile.json";
-			m_controller_type = "monado_controller";
+
+			struct profile_template *p = get_profile_template(m_xdev->name);
+
+			m_input_profile = std::string("{monado}/input/") + std::string(p->steamvr_input_profile_path);
+			m_controller_type = p->steamvr_controller_type;
 		}
 
-		ovrd_log("Using input profile %s\n", m_input_profile);
+		ovrd_log("Using input profile %s\n", m_input_profile.c_str());
 		ovrd_log("Using render model%s\n", m_render_model);
-		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_InputProfilePath_String, m_input_profile);
+		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_InputProfilePath_String, m_input_profile.c_str());
 		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, m_render_model);
 		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ModelNumber_String, m_xdev->str);
 
 		// clang-format on
 
-		m_control_count = 0;
+		m_input_controls.clear();
 		if (m_emulate_index_controller) {
 			AddEmulatedIndexControls();
 		} else {
@@ -589,29 +612,29 @@ public:
 		m_xdev->update_inputs(m_xdev);
 
 
-		for (int i = 0; i < m_control_count; i++) {
+		for (auto in : m_input_controls) {
 
 			// ovrd_log("Update %d: %s\n", i,
 			// m_controls[i].steamvr_control_path);
 
-			enum xrt_input_name input_name = m_controls[i].monado_input_name;
+			enum xrt_input_name binding_name = in.monado_input_name;
 
 			struct xrt_input *input = NULL;
 			for (uint32_t ii = 0; ii < m_xdev->num_inputs; ii++) {
-				if (m_xdev->inputs[ii].name == input_name) {
+				if (m_xdev->inputs[ii].name == binding_name) {
 					input = &m_xdev->inputs[ii];
 					break;
 				}
 			}
 
 			if (input == NULL) {
-				ovrd_log("Input for %s not found!\n", m_controls[i].steamvr_control_path);
+				ovrd_log("Input for %s not found!\n", in.steamvr_control_path);
 				continue;
 			}
 
-			vr::VRInputComponentHandle_t handle = m_controls[i].control_handle;
+			vr::VRInputComponentHandle_t handle = in.control_handle;
 
-			if (m_controls[i].monado_input_type == XRT_INPUT_TYPE_BOOLEAN) {
+			if (in.monado_input_type == XRT_INPUT_TYPE_BOOLEAN) {
 				bool state = input->value.boolean;
 				vr::VRDriverInput()->UpdateBooleanComponent(handle, state, 0);
 				// ovrd_log("Update %s: %d\n",
@@ -620,13 +643,14 @@ public:
 				//       m_controls[i].steamvr_control_path,
 				//       state);
 			}
-			if (m_controls[i].monado_input_type == XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE ||
-			    m_controls[i].monado_input_type == XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE) {
+			if (in.monado_input_type == XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE ||
+			    in.monado_input_type == XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE ||
+			    in.monado_input_type == XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE) {
 
 				float value;
-				if (m_controls[i].component.has_component && m_controls[i].component.x) {
+				if (in.component.has_component && in.component.x) {
 					value = input->value.vec2.x;
-				} else if (m_controls[i].component.has_component && m_controls[i].component.y) {
+				} else if (in.component.has_component && in.component.y) {
 					value = input->value.vec2.y;
 				} else {
 					value = input->value.vec1.x;
@@ -674,6 +698,9 @@ public:
 
 	bool m_emulate_index_controller = false;
 
+	std::vector<struct SteamVRDriverControlInput> m_input_controls;
+	std::vector<struct SteamVRDriverControlOutput> m_output_controls;
+
 private:
 	char m_sSerialNumber[XRT_DEVICE_NAME_LEN];
 	char m_sModelNumber[XRT_DEVICE_NAME_LEN];
@@ -684,12 +711,7 @@ private:
 	enum xrt_hand m_hand;
 	bool m_handed_controller;
 
-	const char *m_input_profile = NULL;
-
-	struct SteamVRDriverControl m_controls[50];
-	int m_control_count;
-
-	vr::VRInputComponentHandle_t m_hapticHandle = 0;
+	std::string m_input_profile;
 
 	bool m_poseUpdating = true;
 	std::thread *m_poseUpdateThread = NULL;
@@ -1135,31 +1157,19 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 	//! @todo provide a serial number
 	vr::VRServerDriverHost()->TrackedDeviceAdded(m_xhmd->str, vr::TrackedDeviceClass_HMD, m_MonadoDeviceDriver);
 
-	struct xrt_device *left_xdev = NULL;
-	if (left != XRT_DEVICE_ROLE_UNASSIGNED) {
-		left_xdev = xdevs[left];
-	}
-	struct xrt_device *right_xdev = NULL;
-	if (right != XRT_DEVICE_ROLE_UNASSIGNED) {
-		right_xdev = xdevs[right];
-	}
-
-	ovrd_log("Left Controller: %s\n", left_xdev ? left_xdev->str : "");
-	ovrd_log("Right Controller: %s\n", right_xdev ? right_xdev->str : "");
-
+	struct xrt_device *left_xdev = left == XRT_DEVICE_ROLE_UNASSIGNED ? NULL : xdevs[left];
+	struct xrt_device *right_xdev = right == XRT_DEVICE_ROLE_UNASSIGNED ? NULL : xdevs[right];
 	// use steamvr room setup instead
 	struct xrt_vec3 offset = {0, 0, 0};
 	u_device_setup_tracking_origins(m_xhmd, left_xdev, right_xdev, &offset);
 
-	if (left != XRT_DEVICE_ROLE_UNASSIGNED) {
+	if (left_xdev) {
 		m_left = new CDeviceDriver_Monado_Controller(m_xinst, left_xdev, XRT_HAND_LEFT);
-		vr::VRServerDriverHost()->TrackedDeviceAdded(m_left->GetSerialNumber().c_str(),
-		                                             vr::TrackedDeviceClass_Controller, m_left);
+		ovrd_log("Added left Controller: %s\n", left_xdev->str);
 	}
-	if (right != XRT_DEVICE_ROLE_UNASSIGNED) {
+	if (right_xdev) {
 		m_right = new CDeviceDriver_Monado_Controller(m_xinst, right_xdev, XRT_HAND_RIGHT);
-		vr::VRServerDriverHost()->TrackedDeviceAdded(m_right->GetSerialNumber().c_str(),
-		                                             vr::TrackedDeviceClass_Controller, m_right);
+		ovrd_log("Added right Controller: %s\n", right_xdev->str);
 	}
 
 	return vr::VRInitError_None;
@@ -1200,15 +1210,17 @@ CServerDriver_Monado::HandleHapticEvent(vr::VREvent_t *event)
 
 	ovrd_log("Haptic vibration %fs %fHz %famp\n", duration, freq, amp);
 
-	struct xrt_device *xdev = NULL;
+	CDeviceDriver_Monado_Controller *controller = NULL;
+
 	if (m_left && m_left->m_ulPropertyContainer == event->data.hapticVibration.containerHandle) {
-		xdev = m_left->m_xdev;
+		controller = m_left;
 		ovrd_log("Haptic vibration left\n");
 	} else if (m_right && m_right->m_ulPropertyContainer == event->data.hapticVibration.containerHandle) {
-		xdev = m_right->m_xdev;
+		controller = m_right;
 		ovrd_log("Haptic vibration right\n");
 	} else {
 		ovrd_log("Haptic vibration ignored\n");
+		return;
 	}
 
 	union xrt_output_value out;
@@ -1219,20 +1231,18 @@ CServerDriver_Monado::HandleHapticEvent(vr::VREvent_t *event)
 		out.vibration.duration = XRT_MIN_HAPTIC_DURATION;
 	}
 	out.vibration.frequency = freq;
-	if (xdev != NULL) {
-		enum xrt_output_name name;
-		switch (xdev->name) {
-		case XRT_DEVICE_INDEX_CONTROLLER: name = XRT_OUTPUT_NAME_INDEX_HAPTIC; break;
-		case XRT_DEVICE_VIVE_WAND: name = XRT_OUTPUT_NAME_VIVE_HAPTIC; break;
-		case XRT_DEVICE_PSMV: name = XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION; break;
-		default:
-			//! @todo
-			name = XRT_OUTPUT_NAME_SIMPLE_VIBRATION;
-			break;
-		}
 
-		xdev->set_output(xdev, name, &out);
+	if (controller->m_output_controls.size() < 1) {
+		ovrd_log("Controller %s has no outputs\n", controller->m_xdev->str);
+		return;
 	}
+
+	// TODO: controllers with more than 1 haptic motors
+	SteamVRDriverControlOutput *control = &controller->m_output_controls.at(0);
+
+	enum xrt_output_name name = control->monado_output_name;
+	ovrd_log("Haptic vibration %s, %d\n", control->steamvr_control_path, name);
+	controller->m_xdev->set_output(controller->m_xdev, name, &out);
 }
 
 void
