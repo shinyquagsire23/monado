@@ -483,7 +483,7 @@ enum xrt_input_type
  * @returns @ref xrt_input_type
  * @ingroup xrt_iface
  */
-#define XRT_GET_INPUT_TYPE(name) (name & 0xff)
+#define XRT_GET_INPUT_TYPE(name) ((enum xrt_input_type)(name & 0xff))
 
 /*!
  * Name of a input with a baked in type.
