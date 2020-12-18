@@ -68,11 +68,11 @@ struct xrt_device;
 	} while (false)
 
 // clang-format off
-#define U_LOG_T(...) U_LOG(U_LOGGING_TRACE, __VA_ARGS__)
-#define U_LOG_D(...) U_LOG(U_LOGGING_DEBUG, __VA_ARGS__)
-#define U_LOG_I(...) U_LOG(U_LOGGING_INFO, __VA_ARGS__)
-#define U_LOG_W(...) U_LOG(U_LOGGING_WARN, __VA_ARGS__)
-#define U_LOG_E(...) U_LOG(U_LOGGING_ERROR, __VA_ARGS__)
+#define U_LOG_T(...) U_LOG_IFL_T(global_log_level, __VA_ARGS__)
+#define U_LOG_D(...) U_LOG_IFL_D(global_log_level, __VA_ARGS__)
+#define U_LOG_I(...) U_LOG_IFL_I(global_log_level, __VA_ARGS__)
+#define U_LOG_W(...) U_LOG_IFL_W(global_log_level, __VA_ARGS__)
+#define U_LOG_E(...) U_LOG_IFL_E(global_log_level, __VA_ARGS__)
 
 #define U_LOG_IFL_T(cond_level, ...) U_LOG_IFL(U_LOGGING_TRACE, cond_level, __VA_ARGS__)
 #define U_LOG_IFL_D(cond_level, ...) U_LOG_IFL(U_LOGGING_DEBUG, cond_level, __VA_ARGS__)
@@ -102,6 +102,8 @@ enum u_logging_level
 	U_LOGGING_ERROR,
 	U_LOGGING_RAW, //!< Special level for raw printing, prints a new-line.
 };
+
+extern enum u_logging_level global_log_level;
 
 void
 u_log(const char *file,

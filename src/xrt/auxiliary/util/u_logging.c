@@ -11,10 +11,26 @@
 #include "xrt/xrt_config_os.h"
 #include "xrt/xrt_config_build.h"
 
+#include "util/u_debug.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
 
+DEBUG_GET_ONCE_LOG_OPTION(global_log, "XRT_LOG", U_LOGGING_WARN)
+
+enum u_logging_level global_log_level;
+
+static bool _is_log_level_initialized;
+
+void
+_log_level_init()
+{
+	if (!_is_log_level_initialized) {
+		global_log_level = debug_get_log_option_global_log();
+		_is_log_level_initialized = true;
+	}
+}
 
 #if defined(XRT_OS_ANDROID)
 
@@ -42,6 +58,7 @@ u_log(const char *file,
       const char *format,
       ...)
 {
+	_log_level_init();
 	// print_prefix(func, level);
 	android_LogPriority prio = u_log_convert_priority(level);
 	va_list args;
@@ -59,6 +76,7 @@ u_log_xdev(const char *file,
            const char *format,
            ...)
 {
+	_log_level_init();
 	android_LogPriority prio = u_log_convert_priority(level);
 	va_list args;
 	va_start(args, format);
@@ -113,6 +131,8 @@ u_log(const char *file,
       const char *format,
       ...)
 {
+	_log_level_init();
+
 	char buf[16384] = {0};
 
 	int remainingBuffer = sizeof(buf) - 2;
@@ -136,6 +156,8 @@ u_log_xdev(const char *file,
            const char *format,
            ...)
 {
+	_log_level_init();
+
 	char buf[16384] = {0};
 
 	int remainingBuffer = sizeof(buf) - 1;
@@ -240,6 +262,8 @@ u_log(const char *file,
       const char *format,
       ...)
 {
+	_log_level_init();
+
 	print_prefix(func, level);
 
 	va_list args;
@@ -259,6 +283,8 @@ u_log_xdev(const char *file,
            const char *format,
            ...)
 {
+	_log_level_init();
+
 	print_prefix(func, level);
 
 	va_list args;
