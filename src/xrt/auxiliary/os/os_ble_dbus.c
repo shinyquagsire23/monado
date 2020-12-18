@@ -167,59 +167,59 @@ dump_one_element(DBusMessageIter *element, int level)
 
 	switch (type) {
 	case DBUS_TYPE_INVALID: {
-		fprintf(stderr, "<>\n");
+		U_LOG_E("<>");
 		return -1;
 	}
 	case DBUS_TYPE_BOOLEAN: {
 		int val;
 		dbus_message_iter_get_basic(element, &val);
-		fprintf(stderr, "BOOLEAN: %s\n", val == 0 ? "false" : "true");
+		U_LOG_D("BOOLEAN: %s", val == 0 ? "false" : "true");
 		return 0;
 	}
 	case DBUS_TYPE_BYTE: {
 		int8_t val;
 		dbus_message_iter_get_basic(element, &val);
-		fprintf(stderr, "BYTE: %02x\n", val);
+		U_LOG_D("BYTE: %02x", val);
 		return 0;
 	}
 	case DBUS_TYPE_INT32: {
 		int32_t val;
 		dbus_message_iter_get_basic(element, &val);
-		fprintf(stderr, "INT32: %" PRIi32 "\n", val);
+		U_LOG_D("INT32: %" PRIi32, val);
 		return 0;
 	}
 	case DBUS_TYPE_UINT32: {
 		uint32_t val;
 		dbus_message_iter_get_basic(element, &val);
-		fprintf(stderr, "UINT32: %" PRIu32 "\n", val);
+		U_LOG_D("UINT32: %" PRIu32, val);
 		return 0;
 	}
 	case DBUS_TYPE_INT64: {
 		int64_t val;
 		dbus_message_iter_get_basic(element, &val);
-		fprintf(stderr, "INT64: %" PRIi64 "\n", val);
+		U_LOG_D("INT64: %" PRIi64, val);
 		return 0;
 	}
 	case DBUS_TYPE_UINT64: {
 		uint64_t val;
 		dbus_message_iter_get_basic(element, &val);
-		fprintf(stderr, "UINT32: %" PRIu64 "\n", val);
+		U_LOG_D("UINT32: %" PRIu64, val);
 		return 0;
 	}
 	case DBUS_TYPE_STRING: {
 		dbus_message_iter_get_basic(element, &str);
-		fprintf(stderr, "STRING: %s\n", str);
+		U_LOG_D("STRING: %s", str);
 		return 0;
 	}
 	case DBUS_TYPE_OBJECT_PATH: {
 		dbus_message_iter_get_basic(element, &str);
-		fprintf(stderr, "OBJECT_PATH: %s\n", str);
+		U_LOG_D("OBJECT_PATH: %s", str);
 		return 0;
 	}
 	case DBUS_TYPE_ARRAY: {
 		int elm_type = dbus_message_iter_get_element_type(element);
 		int elm_count = dbus_message_iter_get_element_count(element);
-		fprintf(stderr, "ARRAY: %c:%i\n", elm_type, elm_count);
+		U_LOG_D("ARRAY: %c:%i", elm_type, elm_count);
 		DBusMessageIter sub;
 		dbus_message_iter_recurse(element, &sub);
 		dump_recurse(element, &sub, level + 2);
@@ -229,19 +229,19 @@ dump_one_element(DBusMessageIter *element, int level)
 		DBusMessageIter var;
 		dbus_message_iter_recurse(element, &var);
 		int var_type = dbus_message_iter_get_arg_type(&var);
-		fprintf(stderr, "VARIANT: %c\n", var_type);
+		U_LOG_D("VARIANT: %c", var_type);
 		dump_one_element(&var, level + 2);
 		return 0;
 	}
 	case DBUS_TYPE_DICT_ENTRY: {
-		fprintf(stderr, "DICT\n");
+		U_LOG_D("DICT");
 		DBusMessageIter sub;
 		dbus_message_iter_recurse(element, &sub);
 		dump_recurse(element, &sub, level + 2);
 		return 0;
 	}
 	default:
-		fprintf(stderr, "Got! %c\n", type); // line break
+		U_LOG_D("Got! %c", type); // line break
 		return 0;
 	}
 }
