@@ -329,3 +329,47 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
 #else
 #error "Need port to transport these graphics buffers"
 #endif
+
+
+/*
+ *
+ * FD graphics sync functions.
+ *
+ */
+
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+
+xrt_result_t
+ipc_receive_handles_graphics_sync(struct ipc_message_channel *imc,
+                                  void *out_data,
+                                  size_t size,
+                                  xrt_graphics_sync_handle_t *out_handles,
+                                  uint32_t num_handles)
+{
+	//! @todo Temporary hack to send no handles.
+	if (num_handles == 0) {
+		return ipc_receive(imc, out_data, size);
+	} else {
+		return ipc_receive_fds(imc, out_data, size, out_handles,
+		                       num_handles);
+	}
+}
+
+xrt_result_t
+ipc_send_handles_graphics_sync(struct ipc_message_channel *imc,
+                               const void *data,
+                               size_t size,
+                               const xrt_graphics_sync_handle_t *handles,
+                               uint32_t num_handles)
+{
+	//! @todo Temporary hack to send no handles.
+	if (num_handles == 0) {
+		return ipc_send(imc, data, size);
+	} else {
+		return ipc_send_fds(imc, data, size, handles, num_handles);
+	}
+}
+
+#else
+#error "Need port to transport these graphics buffers"
+#endif

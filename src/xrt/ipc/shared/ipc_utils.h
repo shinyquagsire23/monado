@@ -181,12 +181,14 @@ ipc_send_handles_shmem(struct ipc_message_channel *imc,
  * @}
  */
 
+
 /*!
  * @name Graphics buffer handle utilities
  * @brief Send/receive graphics buffer handles along with scalar/aggregate
  * message data.
  * @{
  */
+
 /*!
  * Receive a message along with a known number of graphics buffer handles over
  * the IPC channel.
@@ -234,6 +236,64 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
                                  size_t size,
                                  const xrt_graphics_buffer_handle_t *handles,
                                  uint32_t num_handles);
+
+/*!
+ * @}
+ */
+
+
+/*!
+ * @name Graphics buffer handle utilities
+ * @brief Send/receive graphics buffer handles along with scalar/aggregate
+ * message data.
+ * @{
+ */
+
+/*!
+ * Receive a message along with a known number of graphics sync handles over
+ * the IPC channel.
+ *
+ * @param imc Message channel to use
+ * @param[out] out_data Pointer to the sync to fill with data. Must not be null.
+ * @param[in] size Maximum size to read, must be greater than 0
+ * @param[out] out_handles Array of graphics sync handles to populate. Must not
+ * be null.
+ * @param[in] num_handles Number of elements to receive into @p out_handles,
+ * must be greater than 0 and must match the value provided at the other end.
+ *
+ * @public @memberof ipc_message_channel
+ * @relatesalso xrt_graphics_sync_handle_t
+ */
+xrt_result_t
+ipc_receive_handles_graphics_sync(struct ipc_message_channel *imc,
+                                  void *out_data,
+                                  size_t size,
+                                  xrt_graphics_sync_handle_t *out_handles,
+                                  uint32_t num_handles);
+
+/*!
+ * Send a message along with native graphics sync handles over the IPC channel.
+ *
+ * @param imc Message channel to use
+ * @param[in] data Pointer to the data sync to send. Must not be null: use a
+ * filler message if necessary.
+ * @param[in] size Size of data pointed-to by @p data, must be greater than 0
+ * @param[out] handles Array of graphics sync handles to send.  Must not be
+ * null.
+ * @param[in] num_handles Number of elements in @p handles, must be greater than
+ * 0. If this is variable, it must also be separately transmitted ahead of time,
+ * because the receiver must have the same value in its receive call.
+ *
+ * @public @memberof ipc_message_channel
+ * @relatesalso xrt_graphics_sync_handle_t
+ */
+xrt_result_t
+ipc_send_handles_graphics_sync(struct ipc_message_channel *imc,
+                               const void *data,
+                               size_t size,
+                               const xrt_graphics_sync_handle_t *handles,
+                               uint32_t num_handles);
+
 /*!
  * @}
  */
