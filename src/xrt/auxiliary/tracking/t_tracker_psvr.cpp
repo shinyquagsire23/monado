@@ -585,7 +585,7 @@ remove_outliers(std::vector<blob_point_t> *orig_points,
 		    sqrt((error_x * error_x) + (error_y * error_y) +
 		         (error_z * error_z));
 
-		// printf("ERROR: %f %f %f  %f %f %f\n", temp_points[i].p.x,
+		// U_LOG_D("%f %f %f  %f %f %f", temp_points[i].p.x,
 		//       temp_points[i].p.y, temp_points[i].p.z, error_x,
 		//       error_y, error_z);
 		if (rms_error < outlier_thresh) {
@@ -993,7 +993,7 @@ disambiguate(TrackerPSVR &t,
 		    solve_for_measurement(&t, measured_points, solved);
 		float diff = last_diff(t, solved, &t.last_vertices);
 		if (diff < PSVR_HOLD_THRESH) {
-			// printf("diff from last: %f\n", diff);
+			// U_LOG_D("diff from last: %f", diff);
 
 			return res;
 		}
@@ -1105,13 +1105,13 @@ disambiguate(TrackerPSVR &t,
 			// 'bottom
 
 			if (has_bl && has_tl && bl_pos.y() > tl_pos.y()) {
-				// printf("IGNORING BL > TL %f %f\n",
+				// U_LOG_D("IGNORING BL > TL %f %f",
 				// bl_pos.y(),
 				//      br_pos.y());
 				// ignore = true;
 			}
 			if (has_br && has_tr && br_pos.y() > tr_pos.y()) {
-				// printf("IGNORING TL > TR %f %f\n",
+				// U_LOG_D("IGNORING TL > TR %f %f",
 				// tl_pos.y(),
 				//       tr_pos.y());
 				// ignore = true;
@@ -1127,9 +1127,9 @@ disambiguate(TrackerPSVR &t,
 			}
 
 			// useful for debugging
-			// printf(
+			// U_LOG_D(
 			//    "match %d dist to last: %f dist to imu: %f "
-			//    "rmsError: %f squaredSum:%f %d\n",
+			//    "rmsError: %f squaredSum:%f %d",
 			//    i, prev_diff, imu_diff, avg_error, error_sum,
 			//    ignore);
 		}
@@ -1143,7 +1143,7 @@ disambiguate(TrackerPSVR &t,
 		}
 	}
 
-	// printf("lowest_error %f\n", lowest_error);
+	// U_LOG_D("lowest_error %f", lowest_error);
 	if (best_model == -1) {
 		PSVR_INFO("COULD NOT MATCH MODEL!");
 		return Eigen::Matrix4f().Identity();
@@ -1698,7 +1698,7 @@ process(TrackerPSVR &t, struct xrt_frame *xf)
 			cv::KeyPoint rkp = t.view[1].keypoints.at(r_index);
 			t.l_blobs.push_back(lkp);
 			t.r_blobs.push_back(rkp);
-			// printf("2D coords: LX %f LY %f RX %f RY %f\n",
+			// U_LOG_D("2D coords: LX %f LY %f RX %f RY %f",
 			// lkp.pt.x,
 			//       lkp.pt.y, rkp.pt.x, rkp.pt.y);
 		}

@@ -18,30 +18,20 @@
 #include "math/m_api.h"
 #include "util/u_time.h"
 #include "util/u_debug.h"
+#include "util/u_logging.h"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 #include "flexkalman/EigenQuatExponentialMap.h"
 
-DEBUG_GET_ONCE_BOOL_OPTION(simple_imu_debug, "SIMPLE_IMU_DEBUG", false)
-DEBUG_GET_ONCE_BOOL_OPTION(simple_imu_spew, "SIMPLE_IMU_SPEW", false)
+DEBUG_GET_ONCE_LOG_OPTION(simple_imu_log, "SIMPLE_IMU_LOG", U_LOGGING_WARN)
 
-#define SIMPLE_IMU_DEBUG(MSG)                                                  \
-	do {                                                                   \
-		if (debug_) {                                                  \
-			printf("SimpleIMU(%p): " MSG "\n",                     \
-			       (const void *)this);                            \
-		}                                                              \
-	} while (0)
-
-#define SIMPLE_IMU_SPEW(MSG)                                                   \
-	do {                                                                   \
-		if (spew_) {                                                   \
-			printf("SimpleIMU(%p): " MSG "\n",                     \
-			       (const void *)this);                            \
-		}                                                              \
-	} while (0)
+#define SIMPLE_IMU_TRACE(...) U_LOG_IFL_T(ll, __VA_ARGS__)
+#define SIMPLE_IMU_DEBUG(...) U_LOG_IFL_D(ll, __VA_ARGS__)
+#define SIMPLE_IMU_INFO(...) U_LOG_IFL_I(ll, __VA_ARGS__)
+#define SIMPLE_IMU_WARN(...) U_LOG_IFL_W(ll, __VA_ARGS__)
+#define SIMPLE_IMU_ERROR(...) U_LOG_IFL_E(ll, __VA_ARGS__)
 
 namespace xrt_fusion {
 class SimpleIMUFusion
@@ -54,8 +44,7 @@ public:
 	 */
 	explicit SimpleIMUFusion(double gravity_rate = 0.9)
 	    : gravity_scale_(gravity_rate),
-	      debug_(debug_get_bool_option_simple_imu_debug()),
-	      spew_(debug_get_bool_option_simple_imu_spew())
+	      ll(debug_get_log_option_simple_imu_log())
 	{
 		SIMPLE_IMU_DEBUG("Creating instance");
 	}
@@ -212,8 +201,7 @@ private:
 	uint64_t last_gyro_timestamp_{0};
 	double gyro_min_squared_length_{1.e-8};
 	bool started_{false};
-	bool debug_{false};
-	bool spew_{false};
+	enum u_logging_level ll;
 };
 
 inline Eigen::Quaterniond
@@ -254,7 +242,7 @@ SimpleIMUFusion::handleGyro(Eigen::Vector3d const &gyro, timepoint_ns timestamp)
 	Eigen::Vector3d incRot = gyro * dt;
 	// Crude handling of "approximately zero"
 	if (incRot.squaredNorm() < gyro_min_squared_length_) {
-		SIMPLE_IMU_SPEW(
+		SIMPLE_IMU_TRACE(
 		    "Discarding gyro data that is approximately zero");
 		return false;
 	}
@@ -310,7 +298,7 @@ SimpleIMUFusion::handleAccel(Eigen::Vector3d const &accel,
 	if (scale <= 0) {
 		// Too far from gravity to be useful/trusted for orientation
 		// purposes.
-		SIMPLE_IMU_SPEW("Too far from gravity to be useful/trusted.");
+		SIMPLE_IMU_TRACE("Too far from gravity to be useful/trusted.");
 		return false;
 	}
 

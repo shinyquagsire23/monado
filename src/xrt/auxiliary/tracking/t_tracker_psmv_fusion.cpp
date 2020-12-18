@@ -142,18 +142,18 @@ namespace {
 			orientation_state.tracked = true;
 			orientation_state.valid = true;
 		} else {
-			fprintf(stderr,
-			        "Got non-finite something when filtering IMU - "
-			        "resetting filter and IMU fusion!\n");
+			U_LOG_E(
+			    "Got non-finite something when filtering IMU - "
+			    "resetting filter and IMU fusion!");
 			reset_filter_and_imu();
 		}
 		// 7200 deg/sec
 		constexpr double max_rad_per_sec = 20 * double(EIGEN_PI) * 2;
 		if (filter_state.angularVelocity().squaredNorm() >
 		    max_rad_per_sec * max_rad_per_sec) {
-			fprintf(stderr,
-			        "Got excessive angular velocity when filtering "
-			        "IMU - resetting filter and IMU fusion!\n");
+			U_LOG_E(
+			    "Got excessive angular velocity when filtering "
+			    "IMU - resetting filter and IMU fusion!");
 			reset_filter_and_imu();
 		}
 	}
@@ -183,10 +183,9 @@ namespace {
 
 		if (resid > residual_limit) {
 			// Residual arbitrarily "too large"
-			fprintf(
-			    stderr,
-			    "Warning - measurement residual is %f, resetting "
-			    "filter state\n",
+			U_LOG_W(
+			    "measurement residual is %f, resetting "
+			    "filter state",
 			    resid);
 			reset_filter();
 			return;
@@ -196,9 +195,9 @@ namespace {
 			position_state.valid = true;
 			position_state.tracked = true;
 		} else {
-			fprintf(stderr,
-			        "Got non-finite something when filtering "
-			        "tracker - resetting filter!\n");
+			U_LOG_W(
+			    "Got non-finite something when filtering "
+			    "tracker - resetting filter!");
 			reset_filter();
 		}
 	}

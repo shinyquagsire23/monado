@@ -540,7 +540,7 @@ t_psmv_create(struct xrt_frame_context *xfctx,
               struct xrt_tracked_psmv **out_xtmv,
               struct xrt_frame_sink **out_sink)
 {
-	fprintf(stderr, "%s\n", __func__);
+	U_LOG_D("Creating PSMV tracker.");
 
 	auto &t = *(new TrackerPSMV());
 	int ret;

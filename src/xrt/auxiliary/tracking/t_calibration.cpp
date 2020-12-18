@@ -654,15 +654,15 @@ process_view_samples(class Calibration &c,
 	cv::Mat distortion_fisheye_mat = {};
 
 	if (c.dump_measurements) {
-		printf("...measured = (ArrayOfMeasurements){\n");
+		U_LOG_RAW("...measured = (ArrayOfMeasurements){");
 		for (MeasurementF32 &m : view.measured_f32) {
-			printf("  {\n");
+			U_LOG_RAW("  {");
 			for (cv::Point2f &p : m) {
-				printf("   {%+ff, %+ff},\n", p.x, p.y);
+				U_LOG_RAW("   {%+ff, %+ff},", p.x, p.y);
 			}
-			printf("  },\n");
+			U_LOG_RAW("  },");
 		}
-		printf("};\n");
+		U_LOG_RAW("};");
 	}
 
 	if (c.use_fisheye) {
@@ -1149,17 +1149,16 @@ process_load_image(class Calibration &c, struct xrt_frame *xf)
 		c.gray = cv::imread(buf, cv::IMREAD_GRAYSCALE);
 
 		if (c.gray.rows == 0 || c.gray.cols == 0) {
-			fprintf(stderr, "Could not find image '%s'!\n", buf);
+			U_LOG_E("Could not find image '%s'!", buf);
 			continue;
 		}
 
 		if (c.gray.rows != (int)xf->height ||
 		    c.gray.cols != (int)xf->width) {
-			fprintf(stderr,
-			        "Image size does not match frame size! Image: "
-			        "(%ix%i) Frame: (%ux%u)\n",
-			        c.gray.cols, c.gray.rows, xf->width,
-			        xf->height);
+			U_LOG_E(
+			    "Image size does not match frame size! Image: "
+			    "(%ix%i) Frame: (%ux%u)",
+			    c.gray.cols, c.gray.rows, xf->width, xf->height);
 			continue;
 		}
 

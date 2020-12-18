@@ -306,10 +306,7 @@ push_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 		ensure_buf_allocated(f, xf);
 		process_frame_yuyv(f, xf);
 		break;
-	default:
-		fprintf(stderr, "ERROR: Bad format '%s'",
-		        u_format_str(xf->format));
-		return;
+	default: U_LOG_E("Bad format '%s'", u_format_str(xf->format)); return;
 	}
 
 	push_buf(f, xf, f->sinks[0], &f->frame0);

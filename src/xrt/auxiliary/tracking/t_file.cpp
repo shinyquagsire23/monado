@@ -11,7 +11,7 @@
 
 #include "tracking/t_calibration_opencv.hpp"
 #include "util/u_misc.h"
-
+#include "util/u_logging.h"
 
 /*
  *
@@ -213,7 +213,7 @@ t_stereo_camera_calibration_load_v1(
 	result = result && read_cv_mat(calib_file, &mat_image_size, "mat_image_size");
 
 	if (!result) {
-		fprintf(stderr, "\tRe-run calibration!\n");
+		U_LOG_W("Re-run calibration!");
 		return false;
 	}
 	wrapped.view[0].image_size_pixels.w = uint32_t(mat_image_size(0, 0));
@@ -226,22 +226,22 @@ t_stereo_camera_calibration_load_v1(
 	}
 
 	if (!read_cv_mat(calib_file, &wrapped.camera_translation_mat, "translation")) {
-		fprintf(stderr, "\tRe-run calibration!\n");
+		U_LOG_W("Re-run calibration!");
 	}
 	if (!read_cv_mat(calib_file, &wrapped.camera_rotation_mat, "rotation")) {
-		fprintf(stderr, "\tRe-run calibration!\n");
+		U_LOG_W("Re-run calibration!");
 	}
 	if (!read_cv_mat(calib_file, &wrapped.camera_essential_mat, "essential")) {
-		fprintf(stderr, "\tRe-run calibration!\n");
+		U_LOG_W("Re-run calibration!");
 	}
 	if (!read_cv_mat(calib_file, &wrapped.camera_fundamental_mat, "fundamental")) {
-		fprintf(stderr, "\tRe-run calibration!\n");
+		U_LOG_W("Re-run calibration!");
 	}
 
 	cv::Mat_<float> mat_use_fisheye(1, 1);
 	if (!read_cv_mat(calib_file, &mat_use_fisheye, "use_fisheye")) {
 		wrapped.view[0].use_fisheye = false;
-		fprintf(stderr, "\tRe-run calibration! (Assuming not fisheye)\n");
+		U_LOG_W("Re-run calibration! (Assuming not fisheye)");
 	} else {
 		wrapped.view[0].use_fisheye = mat_use_fisheye(0, 0) != 0.0f;
 	}
@@ -338,8 +338,8 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 	cv::Mat temp;
 	read = fread(static_cast<void *>(header), sizeof(uint32_t), 3, f);
 	if (read != 3) {
-		printf("Failed to read mat header: '%i' '%s'\n", (int)read,
-		       name);
+		U_LOG_E("Failed to read mat header: '%i' '%s'", (int)read,
+		        name);
 		return false;
 	}
 
@@ -358,20 +358,20 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 	read = fread(static_cast<void *>(temp.data), header[0],
 	             header[1] * header[2], f);
 	if (read != (header[1] * header[2])) {
-		printf("Failed to read mat body: '%i' '%s'\n", (int)read, name);
+		U_LOG_E("Failed to read mat body: '%i' '%s'", (int)read, name);
 		return false;
 	}
 	if (m->empty()) {
 		m->create(header[1], header[2], temp.type());
 	}
 	if (temp.type() != m->type()) {
-		printf("Mat body type does not match: %i vs %i for '%s'\n",
-		       (int)temp.type(), (int)m->type(), name);
+		U_LOG_E("Mat body type does not match: %i vs %i for '%s'",
+		        (int)temp.type(), (int)m->type(), name);
 		return false;
 	}
 	if (temp.total() != m->total()) {
-		printf("Mat total size does not match: %i vs %i for '%s'\n",
-		       (int)temp.total(), (int)m->total(), name);
+		U_LOG_E("Mat total size does not match: %i vs %i for '%s'",
+		        (int)temp.total(), (int)m->total(), name);
 		return false;
 	}
 	if (temp.size() == m->size()) {
@@ -381,12 +381,12 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 	}
 	if (temp.size().width == m->size().height &&
 	    temp.size().height == m->size().width) {
-		printf("Mat transposing on load: '%s'\n", name);
+		U_LOG_W("Mat transposing on load: '%s'", name);
 		// needs transpose
 		cv::transpose(temp, *m);
 		return true;
 	}
 	// highly unlikely so minimally-helpful error message.
-	printf("Mat dimension unknown mismatch: '%s'\n", name);
+	U_LOG_E("Mat dimension unknown mismatch: '%s'", name);
 	return false;
 }

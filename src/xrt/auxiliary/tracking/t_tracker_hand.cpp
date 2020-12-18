@@ -163,9 +163,7 @@ process(TrackerHand &t, struct xrt_frame *xf)
 	int rect_rows = t.view[0].undistort_rectify_map_x.rows;
 
 	if (cols != rect_cols || rows != rect_rows) {
-		fprintf(stderr,
-		        "Error: %dx%d rectification matrix does not fit %dx%d "
-		        "Image\n",
+		U_LOG_E("%dx%d rectification matrix does not fit %dx%d Image",
 		        rect_cols, rect_rows, cols, rows);
 		return;
 	}
@@ -347,7 +345,7 @@ t_hand_create(struct xrt_frame_context *xfctx,
               struct xrt_tracked_hand **out_xth,
               struct xrt_frame_sink **out_sink)
 {
-	fprintf(stderr, "%s\n", __func__);
+	U_LOG_D("Creating hand tracker.");
 
 	auto &t = *(new TrackerHand());
 	int ret;
