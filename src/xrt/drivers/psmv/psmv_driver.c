@@ -942,6 +942,20 @@ psmv_device_get_tracked_pose(struct xrt_device *xdev,
 	m_space_graph_resolve(&xgs, out_relation);
 }
 
+static float
+amp_scale(struct psmv_device *psmv, float amp)
+{
+	float min = 0.0;
+	float max = 1.0;
+
+	if (psmv->pid == PSMV_PID_ZCM1) {
+		// motor does not rumble below 0.25
+		min = 0.25;
+	}
+
+	return amp * (max - min) + min;
+}
+
 static void
 psmv_device_set_output(struct xrt_device *xdev,
                        enum xrt_output_name name,
@@ -955,8 +969,12 @@ psmv_device_set_output(struct xrt_device *xdev,
 
 	os_mutex_lock(&psmv->lock);
 
-	psmv->wants.rumble =
-	    psmv_clamp_zero_to_one_float_to_u8(value->vibration.amplitude);
+	float amp = value->vibration.amplitude;
+	// don't scale amp = 0, it disables rumble
+	if (amp > 0) {
+		amp = amp_scale(psmv, value->vibration.amplitude);
+	}
+	psmv->wants.rumble = psmv_clamp_zero_to_one_float_to_u8(amp);
 
 	// Resend if the rumble has been changed.
 	int64_t now = os_monotonic_get_ns();
