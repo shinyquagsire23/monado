@@ -528,6 +528,9 @@ public:
 	vr::DriverPose_t
 	GetPose()
 	{
+		// monado predicts pose "now", see xrt_device_get_tracked_pose
+		m_pose.poseTimeOffset = 0;
+
 		m_pose.poseIsValid = true;
 		m_pose.result = vr::TrackingResult_Running_OK;
 		m_pose.deviceIsConnected = true;
@@ -912,6 +915,10 @@ CDeviceDriver_Monado::GetPose()
 	m_space_graph_resolve(&graph, &rel);
 
 	vr::DriverPose_t t = {};
+
+
+	// monado predicts pose "now", see xrt_device_get_tracked_pose
+	t.poseTimeOffset = 0;
 
 	//! @todo: Monado head model?
 	t.shouldApplyHeadModel = !m_xdev->position_tracking_supported;
