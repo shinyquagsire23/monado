@@ -344,6 +344,10 @@ get_info(struct oh_device *ohd, const char *prod)
 		info.quirks.video_distortion_none = true;
 	}
 
+       if (strcmp(prod, "Rift (DK2)") == 0) {
+               info.quirks.rotate_lenses_left = true;
+       }
+
 	if (strcmp(prod, "Rift (CV1)") == 0) {
 		info.quirks.delay_after_initialization = true;
 	}
