@@ -114,6 +114,36 @@ bool
 u_hand_joint_is_metacarpal(enum xrt_hand_joint joint);
 
 /*!
+ * @ingroup aux_util
+ */
+bool
+u_hand_joint_is_proximal(enum xrt_hand_joint joint);
+
+/*!
+ * @ingroup aux_util
+ */
+bool
+u_hand_joint_is_intermediate(enum xrt_hand_joint joint);
+
+/*!
+ * @ingroup aux_util
+ */
+bool
+u_hand_joint_is_distal(enum xrt_hand_joint joint);
+
+/*!
+ * @ingroup aux_util
+ */
+bool
+u_hand_joint_is_tip(enum xrt_hand_joint joint);
+
+/*!
+ * @ingroup aux_util
+ */
+bool
+u_hand_joint_is_thumb(enum xrt_hand_joint joint);
+
+/*!
  * Initializes a hand tracking set with default data.
  *
  * @ingroup aux_util
