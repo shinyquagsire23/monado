@@ -120,7 +120,8 @@ u_device_assign_xdev_roles(struct xrt_device **xdevs,
 void
 u_device_setup_tracking_origins(struct xrt_device *head,
                                 struct xrt_device *left,
-                                struct xrt_device *right);
+                                struct xrt_device *right,
+                                struct xrt_vec3 *global_tracking_origin_offset);
 
 #ifdef __cplusplus
 }

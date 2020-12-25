@@ -1294,7 +1294,9 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 	ovrd_log("Left Controller: %s\n", left_xdev ? left_xdev->str : "");
 	ovrd_log("Right Controller: %s\n", right_xdev ? right_xdev->str : "");
 
-	u_device_setup_tracking_origins(m_xhmd, left_xdev, right_xdev);
+	// use steamvr room setup instead
+	struct xrt_vec3 offset = {0, 0, 0};
+	u_device_setup_tracking_origins(m_xhmd, left_xdev, right_xdev, &offset);
 
 	if (left != XRT_DEVICE_ROLE_UNASSIGNED) {
 		m_left = new CDeviceDriver_Monado_Controller(m_xinst, left_xdev,
@@ -1346,7 +1348,6 @@ CServerDriver_Monado::HandleHapticEvent(vr::VREvent_t *event)
 	float freq = event->data.hapticVibration.fFrequency;
 	float amp = event->data.hapticVibration.fAmplitude;
 	float duration = event->data.hapticVibration.fDurationSeconds;
-
 
 	ovrd_log("Haptic vibration %fs %fHz %famp\n", duration, freq, amp);
 

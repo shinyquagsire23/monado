@@ -48,6 +48,16 @@ DEBUG_GET_ONCE_FLOAT_OPTION(lfov_right, "OXR_OVERRIDE_LFOV_RIGHT", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_up, "OXR_OVERRIDE_LFOV_UP", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_down, "OXR_OVERRIDE_LFOV_DOWN", 0.0f)
 
+DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_x,
+                            "OXR_TRACKING_ORIGIN_OFFSET_X",
+                            0.0f)
+DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_y,
+                            "OXR_TRACKING_ORIGIN_OFFSET_Y",
+                            0.0f)
+DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_z,
+                            "OXR_TRACKING_ORIGIN_OFFSET_Z",
+                            0.0f)
+
 /* ---- HACK ---- */
 extern int
 oxr_sdl2_hack_create(void **out_hack);
@@ -255,8 +265,14 @@ oxr_instance_create(struct oxr_logger *log,
 		return ret;
 	}
 
+	struct xrt_vec3 global_tracking_origin_offset = {
+	    debug_get_float_option_tracking_origin_offset_x(),
+	    debug_get_float_option_tracking_origin_offset_y(),
+	    debug_get_float_option_tracking_origin_offset_z()};
+
 	u_device_setup_tracking_origins(dev, GET_XDEV_BY_ROLE(sys, left),
-	                                GET_XDEV_BY_ROLE(sys, right));
+	                                GET_XDEV_BY_ROLE(sys, right),
+	                                &global_tracking_origin_offset);
 
 	const float left_override = debug_get_float_option_lfov_left();
 	if (left_override != 0.0f) {
