@@ -10,6 +10,7 @@
 
 #include <cstring>
 #include <thread>
+#include <sstream>
 
 #include "ovrd_log.hpp"
 #include "openvr_driver.h"
@@ -146,9 +147,13 @@ public:
 		m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
 		m_pose = {};
 
-		strncpy(m_sSerialNumber, xdev->str, XRT_DEVICE_NAME_LEN);
-		strncpy(m_sModelNumber, xdev->str, XRT_DEVICE_NAME_LEN);
+		// append xrt_hand because SteamVR serial must be unique
+		std::stringstream ss;
+		ss << "[Monado] " << xdev->str << " " << hand;
+		std::string name = ss.str();
 
+		strncpy(m_sSerialNumber, name.c_str(), XRT_DEVICE_NAME_LEN);
+		strncpy(m_sModelNumber, name.c_str(), XRT_DEVICE_NAME_LEN);
 
 		switch (this->m_xdev->name) {
 		case XRT_DEVICE_INDEX_CONTROLLER:
