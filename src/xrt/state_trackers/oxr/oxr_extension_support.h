@@ -81,6 +81,18 @@
 
 
 /*
+ * XR_KHR_vulkan_enable2
+ */
+#if defined(XR_KHR_vulkan_enable2) && defined(XR_USE_GRAPHICS_API_VULKAN)
+#define OXR_HAVE_KHR_vulkan_enable2
+#define OXR_EXTENSION_SUPPORT_KHR_vulkan_enable2(_)                            \
+	_(KHR_vulkan_enable2, KHR_VULKAN_ENABLE2)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_vulkan_enable2(_)
+#endif
+
+
+/*
  * XR_KHR_composition_layer_depth
  */
 #if defined(XR_KHR_composition_layer_depth) &&                                 \
@@ -257,6 +269,7 @@
     OXR_EXTENSION_SUPPORT_KHR_opengl_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_es_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable(_) \
+    OXR_EXTENSION_SUPPORT_KHR_vulkan_enable2(_) \
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_depth(_) \
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_cube(_) \
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_cylinder(_) \

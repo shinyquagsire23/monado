@@ -15,6 +15,7 @@ EXTENSIONS = (
     ['XR_KHR_opengl_enable', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_KHR_opengl_es_enable', 'XR_USE_GRAPHICS_API_OPENGL_ES'],
     ['XR_KHR_vulkan_enable', 'XR_USE_GRAPHICS_API_VULKAN'],
+    ['XR_KHR_vulkan_enable2', 'XR_USE_GRAPHICS_API_VULKAN'],
     ['XR_KHR_composition_layer_depth', 'XRT_FEATURE_OPENXR_LAYER_DEPTH'],
     ['XR_KHR_composition_layer_cube', 'XRT_FEATURE_OPENXR_LAYER_CUBE'],
     ['XR_KHR_composition_layer_cylinder', 'XRT_FEATURE_OPENXR_LAYER_CYLINDER'],
