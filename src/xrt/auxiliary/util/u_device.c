@@ -350,6 +350,22 @@ u_device_assign_xdev_roles(struct xrt_device **xdevs,
 		default: break;
 		}
 	}
+
+	// fill unassigned left/right with hand trackers if available
+	for (size_t i = 0; i < num_xdevs; i++) {
+		if (xdevs[i] == NULL) {
+			continue;
+		}
+		if (xdevs[i]->device_type == XRT_DEVICE_TYPE_HAND_TRACKER) {
+			if (*left == XRT_DEVICE_ROLE_UNASSIGNED) {
+				*left = i;
+			}
+			if (*right == XRT_DEVICE_ROLE_UNASSIGNED) {
+				*right = i;
+			}
+			break;
+		}
+	}
 }
 
 static void
