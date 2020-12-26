@@ -48,6 +48,10 @@ ht_prober_autoprobe(struct xrt_auto_prober *xap,
 {
 	struct xrt_device *xdev = ht_device_create(xap, attached_data, xp);
 
+	if (xdev == NULL) {
+		return NULL;
+	}
+
 	xdev->orientation_tracking_supported = true;
 	xdev->position_tracking_supported = true;
 	xdev->hand_tracking_supported = true;

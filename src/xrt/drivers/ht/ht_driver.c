@@ -127,6 +127,7 @@ ht_device_create(struct xrt_auto_prober *xap,
 	if (xp->tracking->create_tracked_hand(xp->tracking, &htd->base,
 	                                      &htd->tracker) < 0) {
 		HT_ERROR(htd, "Failed to create hand tracker module");
+		return NULL;
 	}
 
 	u_hand_joints_init_default_set(&htd->u_tracking[XRT_HAND_LEFT],
