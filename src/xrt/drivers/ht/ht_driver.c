@@ -22,6 +22,8 @@ struct ht_device
 	struct xrt_space_relation hand_relation[2];
 	struct u_hand_tracking u_tracking[2];
 
+	struct xrt_tracking_origin tracking_origin;
+
 	enum u_logging_level ll;
 };
 
@@ -101,14 +103,21 @@ ht_device_create(struct xrt_auto_prober *xap,
                  cJSON *attached_data,
                  struct xrt_prober *xp)
 {
-	enum u_device_alloc_flags flags =
-	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_TRACKING_NONE);
+	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_NO_FLAGS;
 
 	//! @todo 2 hands hardcoded
 	int num_hands = 2;
 
 	struct ht_device *htd =
 	    U_DEVICE_ALLOCATE(struct ht_device, flags, num_hands, 0);
+
+
+	htd->base.tracking_origin = &htd->tracking_origin;
+	htd->base.tracking_origin->type = XRT_TRACKING_TYPE_RGB;
+	htd->base.tracking_origin->offset.position.x = 0.0f;
+	htd->base.tracking_origin->offset.position.y = 0.0f;
+	htd->base.tracking_origin->offset.position.z = 0.0f;
+	htd->base.tracking_origin->offset.orientation.w = 1.0f;
 
 	htd->ll = debug_get_log_option_ht_log();
 
