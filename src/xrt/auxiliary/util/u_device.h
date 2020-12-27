@@ -26,6 +26,7 @@ extern const struct xrt_matrix_2x2 u_device_rotation_180;
 enum u_device_alloc_flags
 {
 	// clang-format off
+	U_DEVICE_ALLOC_NO_FLAGS      = 0,
 	U_DEVICE_ALLOC_HMD           = 1 << 0,
 	U_DEVICE_ALLOC_TRACKING_NONE = 1 << 1,
 	// clang-format on
