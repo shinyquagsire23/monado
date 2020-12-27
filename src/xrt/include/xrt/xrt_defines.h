@@ -674,7 +674,7 @@ struct xrt_hand_joint_set
 	} values;
 
 	// in driver global space, without tracking_origin offset
-	struct xrt_space_relation hand_origin;
+	struct xrt_space_relation hand_pose;
 };
 
 /*!

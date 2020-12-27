@@ -2404,7 +2404,7 @@ oxr_session_hand_joints(struct oxr_logger *log,
 
 		if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
 
-			m_space_graph_add_relation(&graph, &value.hand_origin);
+			m_space_graph_add_relation(&graph, &value.hand_pose);
 			m_space_graph_add_pose_if_not_identity(
 			    &graph, tracking_origin_offset);
 
@@ -2412,7 +2412,7 @@ oxr_session_hand_joints(struct oxr_logger *log,
 
 			// for local space, first do stage space and transform
 			// result to local @todo: improve local space
-			m_space_graph_add_relation(&graph, &value.hand_origin);
+			m_space_graph_add_relation(&graph, &value.hand_pose);
 			m_space_graph_add_pose_if_not_identity(
 			    &graph, tracking_origin_offset);
 
@@ -2427,7 +2427,7 @@ oxr_session_hand_joints(struct oxr_logger *log,
 			oxr_session_get_view_relation_at(log, sess, at_time,
 			                                 &view_relation);
 
-			m_space_graph_add_relation(&graph, &value.hand_origin);
+			m_space_graph_add_relation(&graph, &value.hand_pose);
 			m_space_graph_add_pose_if_not_identity(
 			    &graph, tracking_origin_offset);
 
@@ -2456,7 +2456,7 @@ oxr_session_hand_joints(struct oxr_logger *log,
 			    input->input->name, at_time, &act_space_relation);
 
 
-			m_space_graph_add_relation(&graph, &value.hand_origin);
+			m_space_graph_add_relation(&graph, &value.hand_pose);
 			m_space_graph_add_pose_if_not_identity(
 			    &graph, tracking_origin_offset);
 

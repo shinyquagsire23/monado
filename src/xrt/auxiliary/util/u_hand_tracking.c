@@ -738,7 +738,7 @@ u_hand_joints_set_out_data(struct u_hand_tracking *set,
 		m_space_graph_resolve(&graph, &l[i].relation);
 	}
 
-	out_value->hand_origin = *hand_relation;
+	out_value->hand_pose = *hand_relation;
 }
 
 void
