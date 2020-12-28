@@ -14,8 +14,11 @@
 #include <sys/un.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/mman.h>
 
+#define P(...) fprintf(stdout, __VA_ARGS__)
+#define PE(...) fprintf(stderr, __VA_ARGS__)
 
 typedef enum op_mode
 {
@@ -38,11 +41,11 @@ get_mode(struct ipc_connection *ipc_c)
 
 	r = ipc_call_system_get_clients(ipc_c, &clients);
 	if (r != XRT_SUCCESS) {
-		printf("failed to get client list.\n");
+		PE("Failed to get client list.\n");
 		exit(1);
 	}
 
-	printf("Clients:\n");
+	P("Clients:\n");
 	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
 		if (clients.ids[i] < 0) {
 			continue;
@@ -51,44 +54,39 @@ get_mode(struct ipc_connection *ipc_c)
 		struct ipc_app_state cs;
 		r = ipc_call_system_get_client_info(ipc_c, i, &cs);
 		if (r != XRT_SUCCESS) {
-			printf(
-			    "failed to get client info "
-			    "for client %d.\n",
-			    i);
+			PE("Failed to get client info for client %d.\n", i);
 			return 1;
 		}
 
-		printf(
-		    "\tid: %d"
-		    "\tact: %d"
-		    "\tdisp: %d"
-		    "\tfoc: %d"
-		    "\tio: %d"
-		    "\tovly: %d"
-		    "\tz: %d"
-		    "\tpid: %d"
-		    "\t%s\n",
-		    clients.ids[i],     //
-		    cs.session_active,  //
-		    cs.session_visible, //
-		    cs.session_focused, //
-		    cs.io_active,       //
-		    cs.session_overlay, //
-		    cs.z_order,         //
-		    cs.pid,             //
-		    cs.info.application_name);
+		P("\tid: %d"
+		  "\tact: %d"
+		  "\tdisp: %d"
+		  "\tfoc: %d"
+		  "\tio: %d"
+		  "\tovly: %d"
+		  "\tz: %d"
+		  "\tpid: %d"
+		  "\t%s\n",
+		  clients.ids[i],     //
+		  cs.session_active,  //
+		  cs.session_visible, //
+		  cs.session_focused, //
+		  cs.io_active,       //
+		  cs.session_overlay, //
+		  cs.z_order,         //
+		  cs.pid,             //
+		  cs.info.application_name);
 	}
 
-	printf("\nDevices:\n");
+	P("\nDevices:\n");
 	for (uint32_t i = 0; i < ipc_c->ism->num_isdevs; i++) {
 		struct ipc_shared_device *isdev = &ipc_c->ism->isdevs[i];
-		printf(
-		    "\tid: %d"
-		    "\tname: %d"
-		    "\t\"%s\"\n",
-		    i,           //
-		    isdev->name, //
-		    isdev->str); //
+		P("\tid: %d"
+		  "\tname: %d"
+		  "\t\"%s\"\n",
+		  i,           //
+		  isdev->name, //
+		  isdev->str); //
 	}
 
 	return 0;
@@ -101,7 +99,7 @@ set_primary(struct ipc_connection *ipc_c, int client_id)
 
 	r = ipc_call_system_set_primary_client(ipc_c, client_id);
 	if (r != XRT_SUCCESS) {
-		printf("failed to set active client to %d.\n", client_id);
+		PE("Failed to set active client to %d.\n", client_id);
 		return 1;
 	}
 
@@ -115,7 +113,7 @@ set_focused(struct ipc_connection *ipc_c, int client_id)
 
 	r = ipc_call_system_set_focused_client(ipc_c, client_id);
 	if (r != XRT_SUCCESS) {
-		printf("failed to set focused client to %d.\n", client_id);
+		PE("Failed to set focused client to %d.\n", client_id);
 		return 1;
 	}
 
@@ -129,7 +127,7 @@ toggle_io(struct ipc_connection *ipc_c, int client_id)
 
 	r = ipc_call_system_toggle_io_device(ipc_c, client_id);
 	if (r != XRT_SUCCESS) {
-		printf("failed to set focused client to %d.\n", client_id);
+		PE("Failed to set focused client to %d.\n", client_id);
 		return 1;
 	}
 
@@ -168,14 +166,11 @@ main(int argc, char *argv[])
 			break;
 		case '?':
 			if (optopt == 's') {
-				fprintf(stderr,
-				        "Option -s requires an id to set.\n");
+				PE("Option -s requires an id to set.\n");
 			} else if (isprint(optopt)) {
-				fprintf(stderr, "Option `-%c' unknown.\n",
-				        optopt);
+				PE("Option `-%c' unknown.\n", optopt);
 			} else {
-				fprintf(stderr, "Option `\\x%x' unknown.\n",
-				        optopt);
+				PE("Option `\\x%x' unknown.\n", optopt);
 			}
 			exit(1);
 		default: exit(0);
@@ -194,7 +189,7 @@ main(int argc, char *argv[])
 	case MODE_SET_PRIMARY: exit(set_primary(&ipc_c, s_val)); break;
 	case MODE_SET_FOCUSED: exit(set_focused(&ipc_c, s_val)); break;
 	case MODE_TOGGLE_IO: exit(toggle_io(&ipc_c, s_val)); break;
-	default: printf("Unrecognised operation mode.\n"); exit(1);
+	default: P("Unrecognised operation mode.\n"); exit(1);
 	}
 
 	return 0;
@@ -212,7 +207,8 @@ do_connect(struct ipc_connection *ipc_c)
 
 	ipc_c->imc.socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	if (ipc_c->imc.socket_fd < 0) {
-		IPC_ERROR(ipc_c, "Socket Create Error!\n");
+		ret = ipc_c->imc.socket_fd;
+		PE("Socket create error '%i'!\n", ret);
 		return -1;
 	}
 
@@ -224,7 +220,7 @@ do_connect(struct ipc_connection *ipc_c)
 	              (struct sockaddr *)&addr, // address
 	              sizeof(addr));            // size
 	if (ret < 0) {
-		IPC_ERROR(ipc_c, "Socket Connect error!\n");
+		PE("Socket connect error '%i'!\n", ret);
 		return -1;
 	}
 
@@ -238,9 +234,9 @@ do_connect(struct ipc_connection *ipc_c)
 	snprintf(cs.info.application_name, sizeof(cs.info.application_name),
 	         "%s", "monado-ctl");
 
-	xrt_result_t r = ipc_call_system_set_client_info(ipc_c, &cs);
-	if (r != XRT_SUCCESS) {
-		IPC_ERROR(ipc_c, "failed to set client info.\n");
+	xrt_result_t xret = ipc_call_system_set_client_info(ipc_c, &cs);
+	if (xret != XRT_SUCCESS) {
+		PE("Failed to set client info '%i'!\n", xret);
 		return -1;
 	}
 
@@ -250,9 +246,9 @@ do_connect(struct ipc_connection *ipc_c)
 	 */
 
 	// get our xdev shm from the server and mmap it
-	r = ipc_call_instance_get_shm_fd(ipc_c, &ipc_c->ism_handle, 1);
-	if (r != XRT_SUCCESS) {
-		IPC_ERROR(ipc_c, "Failed to retrieve shm fd");
+	xret = ipc_call_instance_get_shm_fd(ipc_c, &ipc_c->ism_handle, 1);
+	if (xret != XRT_SUCCESS) {
+		PE("Failed to retrieve shm fd '%i'!\n", xret);
 		return -1;
 	}
 
@@ -262,7 +258,8 @@ do_connect(struct ipc_connection *ipc_c)
 
 	ipc_c->ism = mmap(NULL, size, access, flags, ipc_c->ism_handle, 0);
 	if (ipc_c->ism == NULL) {
-		IPC_ERROR(ipc_c, "Failed to mmap shm ");
+		ret = errno;
+		PE("Failed to mmap shm '%i'!\n", ret);
 		return -1;
 	}
 
