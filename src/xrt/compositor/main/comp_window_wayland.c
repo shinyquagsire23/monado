@@ -109,6 +109,8 @@ comp_window_wayland_create(struct comp_compositor *c)
 	struct comp_window_wayland *w =
 	    U_TYPED_CALLOC(struct comp_window_wayland);
 
+	comp_target_swapchain_init_set_fnptrs(&w->base);
+
 	w->base.base.name = "wayland";
 	w->base.base.destroy = comp_window_wayland_destroy;
 	w->base.base.flush = comp_window_wayland_flush;
