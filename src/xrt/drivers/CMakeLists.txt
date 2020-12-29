@@ -231,6 +231,22 @@ if(XRT_BUILD_DRIVER_ANDROID)
 	list(APPEND ENABLED_DRIVERS android)
 endif()
 
+if (XRT_BUILD_DRIVER_ILLIXR)
+	set(ILLIXR_SOURCE_FILES
+		illixr/illixr_device.cpp
+		illixr/illixr_interface.h
+		illixr/illixr_prober.c
+		illixr/illixr_component.cpp
+		illixr/illixr_component.h
+		)
+
+	add_library(drv_illixr STATIC ${ILLIXR_SOURCE_FILES})
+	target_link_libraries(drv_illixr PUBLIC ${CMAKE_DL_LIBS} xrt-interfaces aux_util aux_os)
+	target_include_directories(drv_illixr PUBLIC ${ILLIXR_PATH})
+	target_compile_options(drv_illixr PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
+	list(APPEND ENABLED_HEADSET_DRIVERS illixr)
+endif()
+
 if(ENABLED_HEADSET_DRIVERS)
 	set(ENABLED_DRIVERS ${ENABLED_HEADSET_DRIVERS} ${ENABLED_DRIVERS})
 	list(SORT ENABLED_DRIVERS)

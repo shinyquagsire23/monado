@@ -92,6 +92,10 @@ cli_cmd_probe(int argc, const char **argv)
 	printf(" libsurvive,");
 #endif
 
+#ifdef XRT_BUILD_DRIVER_ILLIXR
+	printf(" ILLIXR,");
+#endif
+
 	printf("\n");
 
 	// Initialize the prober.

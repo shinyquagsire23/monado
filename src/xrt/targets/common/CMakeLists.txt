@@ -88,6 +88,10 @@ if(XRT_BUILD_DRIVER_ANDROID)
 	target_link_libraries(target_lists PRIVATE drv_android)
 endif()
 
+if(XRT_BUILD_DRIVER_ILLIXR)
+	target_link_libraries(target_lists PRIVATE drv_illixr)
+endif()
+
 ####
 # Instance
 #
