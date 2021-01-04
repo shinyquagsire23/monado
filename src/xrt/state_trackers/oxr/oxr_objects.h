@@ -1012,6 +1012,20 @@ oxr_vk_get_requirements(struct oxr_logger *log,
                         XrGraphicsRequirementsVulkanKHR *graphicsRequirements);
 
 XrResult
+oxr_vk_create_vulkan_instance(struct oxr_logger *log,
+                              struct oxr_system *sys,
+                              const XrVulkanInstanceCreateInfoKHR *createInfo,
+                              VkInstance *vulkanInstance,
+                              VkResult *vulkanResult);
+
+XrResult
+oxr_vk_create_vulkan_device(struct oxr_logger *log,
+                            struct oxr_system *sys,
+                            const XrVulkanDeviceCreateInfoKHR *createInfo,
+                            VkDevice *vulkanDevice,
+                            VkResult *vulkanResult);
+
+XrResult
 oxr_vk_get_physical_device(struct oxr_logger *log,
                            struct oxr_instance *inst,
                            struct oxr_system *sys,
@@ -1129,6 +1143,10 @@ struct oxr_system
 	XrViewConfigurationView views[2];
 	uint32_t num_blend_modes;
 	XrEnvironmentBlendMode blend_modes[3];
+
+	//! The instance/device we create when vulkan_enable2 is used
+	VkInstance vulkan_enable2_instance;
+	VkPhysicalDevice vulkan_enable2_physical_device;
 };
 
 #define GET_XDEV_BY_ROLE(SYS, ROLE)                                            \

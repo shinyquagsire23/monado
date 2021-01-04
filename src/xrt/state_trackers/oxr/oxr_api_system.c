@@ -315,6 +315,27 @@ oxr_xrGetVulkanGraphicsDeviceKHR(XrInstance instance,
 }
 
 XrResult
+oxr_xrGetVulkanGraphicsDevice2KHR(
+    XrInstance instance,
+    const XrVulkanGraphicsDeviceGetInfoKHR *getInfo,
+    VkPhysicalDevice *vkPhysicalDevice)
+{
+	struct oxr_instance *inst;
+	struct oxr_logger log;
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
+	                                 "xrGetVulkanGraphicsDeviceKHR");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
+	    &log, getInfo, XR_TYPE_VULKAN_GRAPHICS_DEVICE_GET_INFO_KHR);
+
+	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, getInfo->systemId, sys);
+	OXR_VERIFY_ARG_NOT_NULL(&log, vkPhysicalDevice);
+
+	return oxr_vk_get_physical_device(
+	    &log, inst, sys, getInfo->vulkanInstance, vkGetInstanceProcAddr,
+	    vkPhysicalDevice);
+}
+
+XrResult
 oxr_xrGetVulkanGraphicsRequirementsKHR(
     XrInstance instance,
     XrSystemId systemId,
@@ -332,4 +353,96 @@ oxr_xrGetVulkanGraphicsRequirementsKHR(
 	return oxr_vk_get_requirements(&log, sys, graphicsRequirements);
 }
 
+XrResult
+oxr_xrGetVulkanGraphicsRequirements2KHR(
+    XrInstance instance,
+    XrSystemId systemId,
+    XrGraphicsRequirementsVulkan2KHR *graphicsRequirements)
+{
+	struct oxr_instance *inst;
+	struct oxr_logger log;
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
+	                                 "xrGetVulkanGraphicsRequirementsKHR");
+	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
+	/* XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN2_KHR aliased to
+	 * XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR */
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
+	    &log, graphicsRequirements,
+	    XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR);
+
+	return oxr_vk_get_requirements(&log, sys, graphicsRequirements);
+}
+
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrCreateVulkanInstanceKHR(XrInstance instance,
+                              const XrVulkanInstanceCreateInfoKHR *createInfo,
+                              VkInstance *vulkanInstance,
+                              VkResult *vulkanResult)
+{
+	struct oxr_instance *inst;
+	struct oxr_logger log;
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
+	                                 "xrCreateVulkanInstanceKHR");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
+	    &log, createInfo, XR_TYPE_VULKAN_INSTANCE_CREATE_INFO_KHR);
+
+	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, createInfo->systemId, sys);
+	OXR_VERIFY_ARG_NOT_NULL(&log, createInfo->pfnGetInstanceProcAddr);
+	OXR_VERIFY_ARG_ZERO(&log, createInfo->createFlags);
+
+	OXR_VERIFY_ARG_NOT_NULL(&log, createInfo->pfnGetInstanceProcAddr);
+	OXR_VERIFY_ARG_NOT_NULL(&log, createInfo->vulkanCreateInfo);
+
+	// createInfo->vulkanAllocator can be NULL
+
+	if (createInfo->vulkanCreateInfo->sType !=
+	    VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO) {
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "createInfo->vulkanCreateInfo->sType must be "
+		                 "VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO");
+	}
+
+	return oxr_vk_create_vulkan_instance(&log, sys, createInfo,
+	                                     vulkanInstance, vulkanResult);
+}
+
+XrResult
+oxr_xrCreateVulkanDeviceKHR(XrInstance instance,
+                            const XrVulkanDeviceCreateInfoKHR *createInfo,
+                            VkDevice *vulkanDevice,
+                            VkResult *vulkanResult)
+{
+	struct oxr_instance *inst;
+	struct oxr_logger log;
+
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
+	                                 "xrGetVulkanGraphicsDeviceKHR");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
+	                                 XR_TYPE_VULKAN_DEVICE_CREATE_INFO_KHR);
+
+	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, createInfo->systemId, sys);
+	OXR_VERIFY_ARG_ZERO(&log, createInfo->createFlags);
+
+	OXR_VERIFY_ARG_NOT_NULL(&log, createInfo->pfnGetInstanceProcAddr);
+	OXR_VERIFY_ARG_NOT_NULL(&log, createInfo->vulkanCreateInfo);
+
+	// VK_NULL_HANDLE is 0
+	OXR_VERIFY_ARG_NOT_NULL(&log, createInfo->vulkanPhysicalDevice);
+
+	//! @todo require xrCreateVulkanInstanceKHR to be called in the spec
+	OXR_VERIFY_ARG_NOT_NULL(&log, sys->vulkan_enable2_instance);
+
+	if (sys->vulkan_enable2_physical_device !=
+	    createInfo->vulkanPhysicalDevice) {
+		return oxr_error(
+		    &log, XR_ERROR_HANDLE_INVALID,
+		    "createInfo->vulkanPhysicalDevice must be the device "
+		    "returned by xrGetVulkanGraphicsDeviceKHR");
+	}
+
+	// createInfo->vulkanAllocator can be NULL
+
+	return oxr_vk_create_vulkan_device(&log, sys, createInfo, vulkanDevice,
+	                                   vulkanResult);
+}
 #endif

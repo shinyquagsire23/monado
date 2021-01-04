@@ -98,6 +98,23 @@ extern "C" {
 		}                                                              \
 	} while (false)
 
+/*!
+ * Checks if either one of two required extensions is enabled.
+ *
+ * mixed_case_name should be the extension name without the XR_ prefix.
+ */
+#define OXR_VERIFY_EXTENSIONS_OR(log, inst, mixed_case_name1,                  \
+                                 mixed_case_name2)                             \
+	do {                                                                   \
+		if (!(inst)->extensions.mixed_case_name1 &&                    \
+		    !(inst)->extensions.mixed_case_name2) {                    \
+			return oxr_error((log), XR_ERROR_FUNCTION_UNSUPPORTED, \
+			                 "Requires XR_" #mixed_case_name1      \
+			                 "or XR_" #mixed_case_name2            \
+			                 " extension enabled");                \
+		}                                                              \
+	} while (false)
+
 #define OXR_VERIFY_ARG_NOT_NULL(log, arg)                                      \
 	do {                                                                   \
 		if (arg == NULL) {                                             \
@@ -111,6 +128,14 @@ extern "C" {
 		if (arg == 0) {                                                \
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
 			                 "(" #arg " == 0) must be non-zero");  \
+		}                                                              \
+	} while (false)
+
+#define OXR_VERIFY_ARG_ZERO(log, arg)                                          \
+	do {                                                                   \
+		if (arg != 0) {                                                \
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,     \
+			                 "(" #arg " == 0) must be zero");      \
 		}                                                              \
 	} while (false)
 

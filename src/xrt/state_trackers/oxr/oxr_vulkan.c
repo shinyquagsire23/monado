@@ -71,6 +71,242 @@ oxr_vk_get_requirements(struct oxr_logger *log,
 
 DEBUG_GET_ONCE_LOG_OPTION(compositor_log, "XRT_COMPOSITOR_LOG", U_LOGGING_WARN)
 
+//! @todo extension lists are duplicated as long strings in comp_vk_glue.c
+static const char *required_vk_instance_extensions[] = {
+    VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+};
+
+// The device extensions do vary by platform, but in a very regular way.
+// This should match the list in comp_compositor, except it shouldn't include
+// VK_KHR_SWAPCHAIN_EXTENSION_NAME
+static const char *required_vk_device_extensions[] = {
+    VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
+    VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
+
+// Platform version of "external_memory"
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+    VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+    VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME,
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+    VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
+#else
+#error "Need port!"
+#endif
+
+// Platform version of "external_fence" and "external_semaphore"
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+    VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME,
+
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+    VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME,
+
+#else
+#error "Need port!"
+#endif
+};
+
+static void
+find_to_add(char const *const *enabled,
+            uint32_t num_enabled,
+            const char **required,
+            uint32_t num_required,
+            const char **to_add,
+            uint32_t *num_to_add)
+{
+	for (uint32_t i = 0; i < num_required; i++) {
+		bool already_in_list = false;
+		for (uint32_t j = 0; j < num_enabled; j++) {
+			if (strcmp(enabled[j], required[i]) == 0) {
+				already_in_list = true;
+				break;
+			}
+		}
+
+		if (!already_in_list) {
+			to_add[(*num_to_add)++] = required[i];
+		}
+	}
+}
+
+static bool
+extend_instance_extensions(struct oxr_logger *log,
+                           VkInstanceCreateInfo *create_info)
+{
+	uint32_t num_required = ARRAY_SIZE(required_vk_instance_extensions);
+
+	uint32_t num_to_add = 0;
+	const char *to_add[ARRAY_SIZE(required_vk_instance_extensions)];
+
+	uint32_t num_enabled = create_info->enabledExtensionCount;
+	char const *const *enabled = create_info->ppEnabledExtensionNames;
+
+	find_to_add(enabled, num_enabled, required_vk_instance_extensions,
+	            num_required, to_add, &num_to_add);
+
+	enum u_logging_level ll = debug_get_log_option_compositor_log();
+
+	if (num_to_add == 0) {
+		if (ll <= U_LOGGING_DEBUG) {
+			oxr_log(log, "App enabled all required instance exts");
+		}
+		return false;
+	}
+
+	uint32_t total = num_enabled + num_to_add;
+	char const **new_enabled = malloc(sizeof(char *) * total);
+
+	for (uint32_t i = 0; i < num_enabled; i++) {
+		new_enabled[i] = enabled[i];
+		if (ll <= U_LOGGING_DEBUG) {
+			oxr_log(log, "Instance ext (app): %s", enabled[i]);
+		}
+	}
+
+	for (uint32_t i = 0; i < num_to_add; i++) {
+		new_enabled[num_enabled + i] = to_add[i];
+		if (ll <= U_LOGGING_DEBUG) {
+			oxr_log(log, "Instance ext (rt): %s", to_add[i]);
+		}
+	}
+
+	create_info->ppEnabledExtensionNames = new_enabled;
+	create_info->enabledExtensionCount = total;
+
+	return true;
+}
+
+static bool
+extend_device_extensions(struct oxr_logger *log,
+                         VkDeviceCreateInfo *create_info)
+{
+	uint32_t num_required = ARRAY_SIZE(required_vk_device_extensions);
+
+	uint32_t num_to_add = 0;
+	const char *to_add[ARRAY_SIZE(required_vk_device_extensions)];
+
+	uint32_t num_enabled = create_info->enabledExtensionCount;
+	char const *const *enabled = create_info->ppEnabledExtensionNames;
+
+	find_to_add(enabled, num_enabled, required_vk_device_extensions,
+	            num_required, to_add, &num_to_add);
+
+	enum u_logging_level ll = debug_get_log_option_compositor_log();
+
+	if (num_to_add == 0) {
+		if (ll <= U_LOGGING_DEBUG) {
+			oxr_log(log, "App enabled all required device exts");
+		}
+		return false;
+	}
+
+	uint32_t total = num_enabled + num_to_add;
+	char const **new_enabled = malloc(sizeof(char *) * total);
+
+	for (uint32_t i = 0; i < num_enabled; i++) {
+		new_enabled[i] = enabled[i];
+		if (ll <= U_LOGGING_DEBUG) {
+			oxr_log(log, "Device ext (app): %s", enabled[i]);
+		}
+	}
+
+	for (uint32_t i = 0; i < num_to_add; i++) {
+		new_enabled[num_enabled + i] = to_add[i];
+		if (ll <= U_LOGGING_DEBUG) {
+			oxr_log(log, "Device ext (rt): %s", to_add[i]);
+		}
+	}
+
+	create_info->ppEnabledExtensionNames = new_enabled;
+	create_info->enabledExtensionCount = total;
+
+	return true;
+}
+
+XrResult
+oxr_vk_create_vulkan_instance(struct oxr_logger *log,
+                              struct oxr_system *sys,
+                              const XrVulkanInstanceCreateInfoKHR *createInfo,
+                              VkInstance *vulkanInstance,
+                              VkResult *vulkanResult)
+{
+
+	PFN_vkGetInstanceProcAddr GetInstanceProcAddr =
+	    createInfo->pfnGetInstanceProcAddr;
+
+	PFN_vkCreateInstance CreateInstance =
+	    (PFN_vkCreateInstance)GetInstanceProcAddr(NULL, "vkCreateInstance");
+	if (!CreateInstance) {
+		//! @todo: clarify in spec
+		*vulkanResult = VK_ERROR_INITIALIZATION_FAILED;
+		return XR_SUCCESS;
+	}
+
+	const VkAllocationCallbacks *vulkanAllocator =
+	    createInfo->vulkanAllocator;
+
+	VkInstanceCreateInfo modified_info = *createInfo->vulkanCreateInfo;
+	bool free_list = extend_instance_extensions(log, &modified_info);
+
+	*vulkanResult =
+	    CreateInstance(&modified_info, vulkanAllocator, vulkanInstance);
+
+	if (free_list) {
+		free((void *)modified_info.ppEnabledExtensionNames);
+	}
+
+	sys->vulkan_enable2_instance = *vulkanInstance;
+
+	return XR_SUCCESS;
+}
+
+XrResult
+oxr_vk_create_vulkan_device(struct oxr_logger *log,
+                            struct oxr_system *sys,
+                            const XrVulkanDeviceCreateInfoKHR *createInfo,
+                            VkDevice *vulkanDevice,
+                            VkResult *vulkanResult)
+{
+	PFN_vkGetInstanceProcAddr GetInstanceProcAddr =
+	    createInfo->pfnGetInstanceProcAddr;
+
+	PFN_vkCreateDevice CreateDevice =
+	    (PFN_vkCreateDevice)GetInstanceProcAddr(
+	        sys->vulkan_enable2_instance, "vkCreateDevice");
+	if (!CreateDevice) {
+		//! @todo: clarify in spec
+		*vulkanResult = VK_ERROR_INITIALIZATION_FAILED;
+		return XR_SUCCESS;
+	}
+
+	const VkAllocationCallbacks *vulkanAllocator =
+	    createInfo->vulkanAllocator;
+	VkPhysicalDevice physical_device = createInfo->vulkanPhysicalDevice;
+
+	VkDeviceCreateInfo modified_info = *createInfo->vulkanCreateInfo;
+	bool free_list = extend_device_extensions(log, &modified_info);
+
+	*vulkanResult = CreateDevice(physical_device, &modified_info,
+	                             vulkanAllocator, vulkanDevice);
+
+	if (free_list) {
+		free((void *)modified_info.ppEnabledExtensionNames);
+	}
+
+	return XR_SUCCESS;
+}
+
+
 XrResult
 oxr_vk_get_physical_device(struct oxr_logger *log,
                            struct oxr_instance *inst,
@@ -162,6 +398,11 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 	}
 
 	*vkPhysicalDevice = phys[gpu_index];
+
+	// vulkan_enable2 needs the physical device in xrCreateVulkanDeviceKHR
+	if (inst->extensions.KHR_vulkan_enable2) {
+		sys->vulkan_enable2_physical_device = *vkPhysicalDevice;
+	}
 
 	free(phys);
 

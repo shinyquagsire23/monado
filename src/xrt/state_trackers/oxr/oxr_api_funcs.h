@@ -210,12 +210,40 @@ oxr_xrGetVulkanGraphicsDeviceKHR(XrInstance instance,
                                  VkInstance vkInstance,
                                  VkPhysicalDevice *vkPhysicalDevice);
 
+//! OpenXR API function @ep{xrGetVulkanGraphicsDeviceKHR}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrGetVulkanGraphicsDevice2KHR(
+    XrInstance instance,
+    const XrVulkanGraphicsDeviceGetInfoKHR *getInfo,
+    VkPhysicalDevice *vkPhysicalDevice);
+
 //! OpenXR API function @ep{xrGetVulkanGraphicsRequirementsKHR}
 XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanGraphicsRequirementsKHR(
     XrInstance instance,
     XrSystemId systemId,
     XrGraphicsRequirementsVulkanKHR *graphicsRequirements);
+
+//! OpenXR API function @ep{xrGetVulkanGraphicsRequirements2KHR}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrGetVulkanGraphicsRequirements2KHR(
+    XrInstance instance,
+    XrSystemId systemId,
+    XrGraphicsRequirementsVulkan2KHR *graphicsRequirements);
+
+//! OpenXR API function @ep{xrCreateVulkanInstanceKHR}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrCreateVulkanInstanceKHR(XrInstance instance,
+                              const XrVulkanInstanceCreateInfoKHR *createInfo,
+                              VkInstance *vulkanInstance,
+                              VkResult *vulkanResult);
+
+//! OpenXR API function @ep{xrCreateVulkanDeviceKHR}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrCreateVulkanDeviceKHR(XrInstance instance,
+                            const XrVulkanDeviceCreateInfoKHR *createInfo,
+                            VkDevice *vulkanDevice,
+                            VkResult *vulkanResult);
 #endif
 
 

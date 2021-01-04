@@ -263,6 +263,13 @@ handle_non_null(struct oxr_instance *inst,
 	ENTRY_IF_EXT(xrGetVulkanGraphicsRequirementsKHR, KHR_vulkan_enable);
 #endif // OXR_HAVE_KHR_vulkan_enable
 
+#ifdef OXR_HAVE_KHR_vulkan_enable2
+	ENTRY_IF_EXT(xrGetVulkanGraphicsDevice2KHR, KHR_vulkan_enable2);
+	ENTRY_IF_EXT(xrCreateVulkanDeviceKHR, KHR_vulkan_enable2);
+	ENTRY_IF_EXT(xrGetVulkanGraphicsRequirements2KHR, KHR_vulkan_enable2);
+	ENTRY_IF_EXT(xrCreateVulkanInstanceKHR, KHR_vulkan_enable2);
+#endif // OXR_HAVE_KHR_vulkan_enable2
+
 	/*
 	 * Not logging here because there's no need to loudly advertise
 	 * which extensions the loader knows about (it calls this on
