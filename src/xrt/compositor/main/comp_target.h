@@ -21,6 +21,16 @@ extern "C" {
 
 
 /*!
+ * For marking timepoints on a frame's lifetime, not a async event.
+ */
+enum comp_target_timing_point
+{
+	COMP_TARGET_TIMING_POINT_WAKE_UP, //<! Woke up after sleeping in wait frame.
+	COMP_TARGET_TIMING_POINT_BEGIN,   //<! Began CPU side work for GPU.
+	COMP_TARGET_TIMING_POINT_SUBMIT,  //<! Submitted work to the GPU.
+};
+
+/*!
  * Image and view pair for @ref comp_target.
  *
  * @ingroup comp_main
@@ -60,6 +70,13 @@ struct comp_target
 	//! Transformation of the current surface, required for pre-rotation
 	VkSurfaceTransformFlagBitsKHR surface_transform;
 
+
+	/*
+	 *
+	 * Vulkan functions.
+	 *
+	 */
+
 	/*!
 	 * Do any initialization that is required to happen before Vulkan has
 	 * been loaded.
@@ -91,12 +108,58 @@ struct comp_target
 	/*!
 	 * Present the image at index to the screen.
 	 */
-	VkResult (*present)(struct comp_target *ct, VkQueue queue, uint32_t index, VkSemaphore semaphore);
+	VkResult (*present)(struct comp_target *ct,
+	                    VkQueue queue,
+	                    uint32_t index,
+	                    VkSemaphore semaphore,
+	                    uint64_t desired_present_time_ns,
+	                    uint64_t present_slop_ns);
 
 	/*!
 	 * Flush any WSI state before rendering.
 	 */
 	void (*flush)(struct comp_target *ct);
+
+
+	/*
+	 *
+	 * Timing functions.
+	 *
+	 */
+
+	/*!
+	 * Predict when the next frame should be started and when it will be
+	 * turned into photons by the hardware.
+	 */
+	void (*calc_frame_timings)(struct comp_target *ct,
+	                           int64_t *out_frame_id,
+	                           uint64_t *out_wake_up_time_ns,
+	                           uint64_t *out_desired_present_time_ns,
+	                           uint64_t *out_present_slop_ns,
+	                           uint64_t *out_predicted_display_time_ns);
+
+	/*!
+	 * The compositor tells the target a timing information about a single
+	 * timing point on the frames lifecycle.
+	 */
+	void (*mark_timing_point)(struct comp_target *ct,
+	                          enum comp_target_timing_point point,
+	                          int64_t frame_id,
+	                          uint64_t when_ns);
+
+	/*!
+	 * Update timing information for this target, this function should be
+	 * lightweight and is called multiple times during a frame to make sure
+	 * that we get the timing data as soon as possible.
+	 */
+	VkResult (*update_timings)(struct comp_target *ct);
+
+
+	/*
+	 *
+	 * Misc functions.
+	 *
+	 */
 
 	/*!
 	 * If the target can show a title (like a window) set the title.
@@ -170,10 +233,21 @@ comp_target_acquire(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out
  * @ingroup comp_main
  */
 static inline VkResult
-comp_target_present(struct comp_target *ct, VkQueue queue, uint32_t index, VkSemaphore semaphore)
+comp_target_present(struct comp_target *ct,
+                    VkQueue queue,
+                    uint32_t index,
+                    VkSemaphore semaphore,
+                    uint64_t desired_present_time_ns,
+                    uint64_t present_slop_ns)
 
 {
-	return ct->present(ct, queue, index, semaphore);
+	return ct->present(          //
+	    ct,                      //
+	    queue,                   //
+	    index,                   //
+	    semaphore,               //
+	    desired_present_time_ns, //
+	    present_slop_ns);        //
 }
 
 /*!
@@ -186,6 +260,80 @@ static inline void
 comp_target_flush(struct comp_target *ct)
 {
 	ct->flush(ct);
+}
+
+/*!
+ * @copydoc comp_target::calc_frame_timings
+ *
+ * @public @memberof comp_target
+ * @ingroup comp_main
+ */
+static inline void
+comp_target_calc_frame_timings(struct comp_target *ct,
+                               int64_t *out_frame_id,
+                               uint64_t *out_wake_up_time_ns,
+                               uint64_t *out_desired_present_time_ns,
+                               uint64_t *out_present_slop_ns,
+                               uint64_t *out_predicted_display_time_ns)
+{
+	ct->calc_frame_timings(             //
+	    ct,                             //
+	    out_frame_id,                   //
+	    out_wake_up_time_ns,            //
+	    out_desired_present_time_ns,    //
+	    out_present_slop_ns,            //
+	    out_predicted_display_time_ns); //
+}
+
+/*!
+ * Quick helper for marking wake up.
+ * @copydoc comp_target::mark_timing_point
+ *
+ * @public @memberof comp_target
+ * @ingroup comp_main
+ */
+static inline void
+comp_target_mark_wake_up(struct comp_target *ct, int64_t frame_id, uint64_t when_woke_ns)
+{
+	ct->mark_timing_point(ct, COMP_TARGET_TIMING_POINT_WAKE_UP, frame_id, when_woke_ns);
+}
+
+/*!
+ * Quick helper for marking begin.
+ * @copydoc comp_target::mark_timing_point
+ *
+ * @public @memberof comp_target
+ * @ingroup comp_main
+ */
+static inline void
+comp_target_mark_begin(struct comp_target *ct, int64_t frame_id, uint64_t when_began_ns)
+{
+	ct->mark_timing_point(ct, COMP_TARGET_TIMING_POINT_BEGIN, frame_id, when_began_ns);
+}
+
+/*!
+ * Quick helper for marking submit.
+ * @copydoc comp_target::mark_timing_point
+ *
+ * @public @memberof comp_target
+ * @ingroup comp_main
+ */
+static inline void
+comp_target_mark_submit(struct comp_target *ct, int64_t frame_id, uint64_t when_submitted_ns)
+{
+	ct->mark_timing_point(ct, COMP_TARGET_TIMING_POINT_SUBMIT, frame_id, when_submitted_ns);
+}
+
+/*!
+ * @copydoc comp_target::update_timings
+ *
+ * @public @memberof comp_target
+ * @ingroup comp_main
+ */
+static inline VkResult
+comp_target_update_timings(struct comp_target *ct)
+{
+	return ct->update_timings(ct);
 }
 
 /*!

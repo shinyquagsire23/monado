@@ -153,6 +153,16 @@ struct comp_shaders
 };
 
 /*!
+ * Tracking frame state.
+ */
+struct comp_frame
+{
+	int64_t id;
+	uint64_t desired_present_time_ns;
+	uint64_t present_slop_ns;
+};
+
+/*!
  * Main compositor struct tying everything in the compositor together.
  *
  * @ingroup comp_main
@@ -220,6 +230,12 @@ struct comp_compositor
 
 		struct u_var_timing *debug_var;
 	} compositor_frame_times;
+
+	struct
+	{
+		struct comp_frame waited;
+		struct comp_frame rendering;
+	} frame;
 
 	/*!
 	 * @brief Estimated rendering time per frame of the application.

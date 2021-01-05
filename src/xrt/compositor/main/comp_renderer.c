@@ -10,6 +10,8 @@
 
 #include "xrt/xrt_compositor.h"
 
+#include "os/os_time.h"
+
 #include "math/m_space.h"
 
 #include "util/u_misc.h"
@@ -93,7 +95,7 @@ static void
 renderer_acquire_swapchain_image(struct comp_renderer *r);
 
 static void
-renderer_present_swapchain_image(struct comp_renderer *r);
+renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_present_time_ns, uint64_t present_slop_ns);
 
 static void
 renderer_destroy(struct comp_renderer *r);
@@ -622,14 +624,37 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
 void
 comp_renderer_draw(struct comp_renderer *r)
 {
+	struct comp_target *ct = r->c->target;
+	struct comp_compositor *c = r->c;
+
+	assert(c->frame.rendering.id == -1);
+
+	c->frame.rendering = c->frame.waited;
+	c->frame.waited.id = -1;
+
+	comp_target_mark_begin(ct, c->frame.rendering.id, os_monotonic_get_ns());
+
+	comp_target_flush(ct);
+
+	comp_target_update_timings(ct);
+
+	renderer_acquire_swapchain_image(r);
+
+	comp_target_update_timings(ct);
+
+	comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+
 	renderer_get_view_projection(r);
 	comp_layer_renderer_draw(r->lr);
 
-	comp_target_flush(r->c->target);
+	comp_target_update_timings(ct);
 
-	renderer_acquire_swapchain_image(r);
 	renderer_submit_queue(r);
-	renderer_present_swapchain_image(r);
+	renderer_present_swapchain_image(r, c->frame.rendering.desired_present_time_ns,
+	                                 c->frame.rendering.present_slop_ns);
+
+	// Clear the frame.
+	c->frame.rendering.id = -1;
 
 	/*
 	 * This fixes a lot of validation issues as it makes sure that the
@@ -639,6 +664,8 @@ comp_renderer_draw(struct comp_renderer *r)
 	 * This is done after a swap so isn't time critical.
 	 */
 	renderer_wait_gpu_idle(r);
+
+	comp_target_update_timings(ct);
 }
 
 static void
@@ -743,11 +770,12 @@ renderer_acquire_swapchain_image(struct comp_renderer *r)
 }
 
 static void
-renderer_present_swapchain_image(struct comp_renderer *r)
+renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_present_time_ns, uint64_t present_slop_ns)
 {
 	VkResult ret;
 
-	ret = comp_target_present(r->c->target, r->queue, r->current_buffer, r->semaphores.render_complete);
+	ret = comp_target_present(r->c->target, r->queue, r->current_buffer, r->semaphores.render_complete,
+	                          desired_present_time_ns, present_slop_ns);
 	if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
 		renderer_resize(r);
 		return;

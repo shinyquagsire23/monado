@@ -26,6 +26,8 @@ extern "C" {
  *
  */
 
+struct u_frame_timing;
+
 /*!
  * Wraps and manage VkSwapchainKHR and VkSurfaceKHR, used by @ref comp code.
  *
@@ -35,6 +37,12 @@ struct comp_target_swapchain
 {
 	//! Base target.
 	struct comp_target base;
+
+	//! Frame timing tracker.
+	struct u_frame_timing *uft;
+
+	//! Also works as a frame index.
+	int64_t current_frame_id;
 
 	struct
 	{

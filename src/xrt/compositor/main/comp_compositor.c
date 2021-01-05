@@ -111,116 +111,52 @@ compositor_end_session(struct xrt_compositor *xc)
 	return XRT_SUCCESS;
 }
 
-/*!
- * @brief Utility for waiting (for rendering purposes) until the next vsync or a
- * specified time point, whichever comes first.
- *
- * Only for rendering - this will busy-wait if needed.
- *
- * @return true if we waited until the time indicated
- *
- * @todo In the future, this may differ between platforms since some have ways
- * to directly wait on a vsync.
- */
-static bool
-compositor_wait_vsync_or_time(struct comp_compositor *c, int64_t wake_up_time)
-{
-
-	int64_t now_ns = os_monotonic_get_ns();
-	/*!
-	 * @todo this is not accurate, but it serves the purpose of not letting
-	 * us sleep longer than the next vsync usually
-	 */
-	int64_t next_vsync = now_ns + c->settings.nominal_frame_interval_ns / 2;
-
-	bool ret = true;
-	// Sleep until the sooner of vsync or our deadline.
-	if (next_vsync < wake_up_time) {
-		ret = false;
-		wake_up_time = next_vsync;
-	}
-	int64_t wait_duration = wake_up_time - now_ns;
-	if (wait_duration <= 0) {
-		// Don't wait at all
-		return ret;
-	}
-
-	if (wait_duration > 1000000) {
-		os_nanosleep(wait_duration - (wait_duration % 1000000));
-	}
-	// Busy-wait for fine-grained delays.
-	while (now_ns < wake_up_time) {
-		now_ns = os_monotonic_get_ns();
-	}
-
-	return ret;
-}
-
 static xrt_result_t
 compositor_wait_frame(struct xrt_compositor *xc,
                       int64_t *out_frame_id,
-                      uint64_t *predicted_display_time,
-                      uint64_t *predicted_display_period)
+                      uint64_t *out_predicted_display_time_ns,
+                      uint64_t *out_predicted_display_period_ns)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 
 	// A little bit easier to read.
-	int64_t interval_ns = (int64_t)c->settings.nominal_frame_interval_ns;
+	uint64_t interval_ns = (int64_t)c->settings.nominal_frame_interval_ns;
 
-	int64_t now_ns = os_monotonic_get_ns();
+	comp_target_update_timings(c->target);
 
-	COMP_SPEW(c, "WAIT_FRAME at %8.3fms", ns_to_ms(now_ns));
+	assert(c->frame.waited.id == -1);
 
-	if (c->last_next_display_time == 0) {
-		// First frame, we'll just assume we will display immediately
+	int64_t frame_id = -1;
+	uint64_t wake_up_time_ns = 0;
+	uint64_t present_slop_ns = 0;
+	uint64_t desired_present_time_ns = 0;
+	uint64_t predicted_display_time_ns = 0;
+	comp_target_calc_frame_timings(c->target,                   //
+	                               &frame_id,                   //
+	                               &wake_up_time_ns,            //
+	                               &desired_present_time_ns,    //
+	                               &present_slop_ns,            //
+	                               &predicted_display_time_ns); //
 
-		*predicted_display_period = interval_ns;
-		c->last_next_display_time = now_ns + interval_ns;
-		*predicted_display_time = c->last_next_display_time;
-		*out_frame_id = c->last_next_display_time;
+	c->frame.waited.id = frame_id;
+	c->frame.waited.desired_present_time_ns = desired_present_time_ns;
+	c->frame.waited.present_slop_ns = present_slop_ns;
 
-		COMP_SPEW(c,
-		          "WAIT_FRAME Finished at %8.3fms, predicted display "
-		          "time %8.3fms, period %8.3fms",
-		          ns_to_ms(now_ns), ns_to_ms(*predicted_display_time), ns_to_ms(*predicted_display_period));
-
-		return XRT_SUCCESS;
+	uint64_t now_ns = os_monotonic_get_ns();
+	if (now_ns < wake_up_time_ns) {
+		os_nanosleep(wake_up_time_ns - now_ns);
 	}
 
-	// First estimate of next display time.
-	while (1) {
+	now_ns = os_monotonic_get_ns();
+	comp_target_mark_wake_up(c->target, frame_id, now_ns);
 
-		int64_t render_time_ns = c->expected_app_duration_ns + c->frame_overhead_ns;
-		int64_t swap_interval = ceilf((float)render_time_ns / interval_ns);
-		int64_t render_interval_ns = swap_interval * interval_ns;
-		int64_t next_display_time = c->last_next_display_time + render_interval_ns;
-		/*!
-		 * @todo adjust next_display_time to be a multiple of
-		 * interval_ns from c->last_frame_time_ns
-		 */
+	comp_target_update_timings(c->target);
 
-		while ((next_display_time - render_time_ns) < now_ns) {
-			// we can't unblock in the past
-			next_display_time += render_interval_ns;
-		}
-		if (compositor_wait_vsync_or_time(c, (next_display_time - render_time_ns))) {
-			// True return val means we actually waited for the
-			// deadline.
-			*predicted_display_period = next_display_time - c->last_next_display_time;
-			*predicted_display_time = next_display_time;
-			*out_frame_id = c->last_next_display_time;
+	*out_frame_id = frame_id;
+	*out_predicted_display_time_ns = predicted_display_time_ns;
+	*out_predicted_display_period_ns = interval_ns;
 
-			c->last_next_display_time = next_display_time;
-
-			COMP_SPEW(c,
-			          "WAIT_FRAME Finished at %8.3fms, predicted "
-			          "display time %8.3fms, period %8.3fms",
-			          ns_to_ms(now_ns), ns_to_ms(*predicted_display_time),
-			          ns_to_ms(*predicted_display_period));
-
-			return XRT_SUCCESS;
-		}
-	}
+	return XRT_SUCCESS;
 }
 
 static xrt_result_t
@@ -1356,6 +1292,8 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	c->base.base.layer_commit = compositor_layer_commit;
 	c->base.base.poll_events = compositor_poll_events;
 	c->base.base.destroy = compositor_destroy;
+	c->frame.waited.id = -1;
+	c->frame.rendering.id = -1;
 	c->system.create_native_compositor = system_compositor_create_native_compositor;
 	c->system.destroy = system_compositor_destroy;
 	c->xdev = xdev;

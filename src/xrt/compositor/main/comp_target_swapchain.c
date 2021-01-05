@@ -8,7 +8,10 @@
  * @ingroup comp_main
  */
 
+#include "xrt/xrt_config_os.h"
+
 #include "util/u_misc.h"
+#include "util/u_timing.h"
 
 #include "main/comp_compositor.h"
 #include "main/comp_target_swapchain.h"
@@ -17,6 +20,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 
 /*
@@ -90,6 +94,17 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	struct vk_bundle *vk = get_vk(cts);
 	VkBool32 supported;
 	VkResult ret;
+
+#ifndef XRT_OS_ANDROID
+	if (cts->uft == NULL && vk->has_GOOGLE_display_timing) {
+		u_frame_timing_display_timing_create(ct->c->settings.nominal_frame_interval_ns, &cts->uft);
+	} else if (cts->uft == NULL) {
+		u_frame_timing_fake_create(ct->c->settings.nominal_frame_interval_ns, &cts->uft);
+	}
+#else
+	COMP_INFO(ct->c, "Always using the fake timing code on Android.");
+	u_frame_timing_fake_create(ct->c->settings.nominal_frame_interval_ns, &cts->uft);
+#endif
 
 	// Free old image views.
 	comp_target_swapchain_destroy_image_views(cts);
@@ -250,13 +265,33 @@ comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore sem
 }
 
 static VkResult
-comp_target_swapchain_present(struct comp_target *ct, VkQueue queue, uint32_t index, VkSemaphore semaphore)
+comp_target_swapchain_present(struct comp_target *ct,
+                              VkQueue queue,
+                              uint32_t index,
+                              VkSemaphore semaphore,
+                              uint64_t desired_present_time_ns,
+                              uint64_t present_slop_ns)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 	struct vk_bundle *vk = get_vk(cts);
 
+	assert(cts->current_frame_id >= 0);
+	assert(cts->current_frame_id <= UINT32_MAX);
+
+	VkPresentTimeGOOGLE times = {
+	    .presentID = (uint32_t)cts->current_frame_id,
+	    .desiredPresentTime = desired_present_time_ns - present_slop_ns,
+	};
+
+	VkPresentTimesInfoGOOGLE timings = {
+	    .sType = VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE,
+	    .swapchainCount = 1,
+	    .pTimes = &times,
+	};
+
 	VkPresentInfoKHR presentInfo = {
 	    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+	    .pNext = vk->has_GOOGLE_display_timing ? &timings : NULL,
 	    .waitSemaphoreCount = 1,
 	    .pWaitSemaphores = &semaphore,
 	    .swapchainCount = 1,
@@ -469,6 +504,116 @@ comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts)
 
 /*
  *
+ * Timing functions.
+ *
+ */
+
+static void
+comp_target_swapchain_calc_frame_timings(struct comp_target *ct,
+                                         int64_t *out_frame_id,
+                                         uint64_t *out_wake_up_time_ns,
+                                         uint64_t *out_desired_present_time_ns,
+                                         uint64_t *out_present_slop_ns,
+                                         uint64_t *out_predicted_display_time_ns)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+
+	int64_t frame_id = -1;
+	uint64_t wake_up_time_ns = 0;
+	uint64_t desired_present_time_ns = 0;
+	uint64_t present_slop_ns = 0;
+	uint64_t predicted_display_time_ns = 0;
+	uint64_t predicted_display_period_ns = 0;
+	uint64_t min_display_period_ns = 0;
+
+	u_frame_timing_predict(cts->uft,                     //
+	                       &frame_id,                    //
+	                       &wake_up_time_ns,             //
+	                       &desired_present_time_ns,     //
+	                       &present_slop_ns,             //
+	                       &predicted_display_time_ns,   //
+	                       &predicted_display_period_ns, //
+	                       &min_display_period_ns);      //
+
+	cts->current_frame_id = frame_id;
+
+	*out_frame_id = frame_id;
+	*out_wake_up_time_ns = wake_up_time_ns;
+	*out_desired_present_time_ns = desired_present_time_ns;
+	*out_predicted_display_time_ns = predicted_display_time_ns;
+	*out_present_slop_ns = present_slop_ns;
+}
+
+static void
+comp_target_swapchain_mark_timing_point(struct comp_target *ct,
+                                        enum comp_target_timing_point point,
+                                        int64_t frame_id,
+                                        uint64_t when_ns)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	assert(frame_id == cts->current_frame_id);
+
+	switch (point) {
+	case COMP_TARGET_TIMING_POINT_WAKE_UP:
+		u_frame_timing_mark_point(cts->uft, U_TIMING_POINT_WAKE_UP, cts->current_frame_id, when_ns);
+		break;
+	case COMP_TARGET_TIMING_POINT_BEGIN:
+		u_frame_timing_mark_point(cts->uft, U_TIMING_POINT_BEGIN, cts->current_frame_id, when_ns);
+		break;
+	case COMP_TARGET_TIMING_POINT_SUBMIT:
+		u_frame_timing_mark_point(cts->uft, U_TIMING_POINT_SUBMIT, cts->current_frame_id, when_ns);
+		break;
+	default: assert(false);
+	}
+}
+
+static VkResult
+comp_target_swapchain_update_timings(struct comp_target *ct)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	struct comp_compositor *c = ct->c;
+	struct vk_bundle *vk = &c->vk;
+
+	if (!vk->has_GOOGLE_display_timing) {
+		return VK_SUCCESS;
+	}
+
+	if (cts->swapchain.handle == VK_NULL_HANDLE) {
+		return VK_SUCCESS;
+	}
+
+	uint32_t count = 0;
+	c->vk.vkGetPastPresentationTimingGOOGLE( //
+	    vk->device,                          //
+	    cts->swapchain.handle,               //
+	    &count,                              //
+	    NULL);                               //
+	if (count <= 0) {
+		return VK_SUCCESS;
+	}
+
+	VkPastPresentationTimingGOOGLE timings[count];
+	c->vk.vkGetPastPresentationTimingGOOGLE( //
+	    vk->device,                          //
+	    cts->swapchain.handle,               //
+	    &count,                              //
+	    timings);                            //
+
+	for (uint32_t i = 0; i < count; i++) {
+		u_frame_timing_info(cts->uft,                       //
+		                    timings[i].presentID,           //
+		                    timings[i].desiredPresentTime,  //
+		                    timings[i].actualPresentTime,   //
+		                    timings[i].earliestPresentTime, //
+		                    timings[i].presentMargin);      //
+	}
+
+	return VK_SUCCESS;
+}
+
+
+/*
+ *
  * 'Exported' functions.
  *
  */
@@ -495,6 +640,8 @@ comp_target_swapchain_cleanup(struct comp_target_swapchain *cts)
 		    NULL);               //
 		cts->swapchain.handle = VK_NULL_HANDLE;
 	}
+
+	u_frame_timing_destroy(&cts->uft);
 }
 
 void
@@ -503,4 +650,7 @@ comp_target_swapchain_init_set_fnptrs(struct comp_target_swapchain *cts)
 	cts->base.create_images = comp_target_swapchain_create_images;
 	cts->base.acquire = comp_target_swapchain_acquire_next_image;
 	cts->base.present = comp_target_swapchain_present;
+	cts->base.calc_frame_timings = comp_target_swapchain_calc_frame_timings;
+	cts->base.mark_timing_point = comp_target_swapchain_mark_timing_point;
+	cts->base.update_timings = comp_target_swapchain_update_timings;
 }
