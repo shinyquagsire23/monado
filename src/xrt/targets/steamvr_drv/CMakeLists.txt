@@ -1,7 +1,25 @@
 # Copyright 2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+get_property(AUX_BINDINGS_DIR GLOBAL PROPERTY AUX_BINDINGS_DIR_PROP)
+set(INPUT_PROFILES_INPUT_DIR ${AUX_BINDINGS_DIR})
+set(INPUT_PROFILES_OUTPUT_DIR "${PROJECT_BINARY_DIR}/steamvr-monado/resources/input/")
+
+function(input_profiles_gen output custom_target)
+	add_custom_command(OUTPUT ${output}
+		COMMAND ${PYTHON_EXECUTABLE} ${INPUT_PROFILES_INPUT_DIR}/steamvr_profiles.py
+			${INPUT_PROFILES_INPUT_DIR}/bindings.json
+			${output}
+		DEPENDS ${INPUT_PROFILES_INPUT_DIR}/bindings.py
+			${INPUT_PROFILES_INPUT_DIR}/bindings.json
+			)
+	add_custom_target(${custom_target} DEPENDS ${output})
+endfunction(input_profiles_gen)
+
+input_profiles_gen(${INPUT_PROFILES_OUTPUT_DIR} generated_input_profiles)
+
 add_library(driver_monado MODULE main.c)
+add_dependencies(driver_monado generated_input_profiles)
 
 target_link_libraries(
 	driver_monado PRIVATE xrt-external-openvr aux_util st_ovrd st_prober target_lists target_instance_no_comp

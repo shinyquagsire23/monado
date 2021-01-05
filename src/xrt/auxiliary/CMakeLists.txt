@@ -23,6 +23,8 @@ bindings_gen(${CMAKE_CURRENT_BINARY_DIR}/xrt_generated_bindings.c generated_bind
 add_library(aux_generated_bindings STATIC ${CMAKE_CURRENT_BINARY_DIR}/xrt_generated_bindings.c)
 add_dependencies(aux_generated_bindings generated_bindings_h)
 
+# needed globally for steamvr input profile generation in steamvr target
+set_property(GLOBAL PROPERTY AUX_BINDINGS_DIR_PROP "${CMAKE_CURRENT_SOURCE_DIR}/bindings")
 
 target_include_directories(aux_generated_bindings PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" ".")
 target_link_libraries(aux_generated_bindings INTERFACE xrt-interfaces aux_util)
