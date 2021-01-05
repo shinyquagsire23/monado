@@ -193,7 +193,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_HYDRA "Enable Hydra driver" ON "XRT_HAVE
 cmake_dependent_option(XRT_BUILD_DRIVER_NS "Enable North Star driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
 
 # This one defaults to off, even if we find the deps.
-cmake_dependent_option(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" OFF "SURVIVE_FOUND" OFF)
+cmake_dependent_option(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" ON "SURVIVE_FOUND" OFF)
 
 cmake_dependent_option(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" ON "ANDROID" OFF)
 
