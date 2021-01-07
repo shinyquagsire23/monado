@@ -734,6 +734,7 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkGetPhysicalDeviceSurfacePresentModesKHR = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfacePresentModesKHR);
 	vk->vkGetPhysicalDeviceSurfaceSupportKHR      = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceSupportKHR);
 	vk->vkGetPhysicalDeviceFormatProperties       = GET_INS_PROC(vk, vkGetPhysicalDeviceFormatProperties);
+	vk->vkEnumerateDeviceExtensionProperties      = GET_INS_PROC(vk, vkEnumerateDeviceExtensionProperties);
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 	vk->vkCreateXcbSurfaceKHR = GET_INS_PROC(vk, vkCreateXcbSurfaceKHR);
@@ -850,7 +851,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkGetSwapchainImagesKHR       = GET_DEV_PROC(vk, vkGetSwapchainImagesKHR);
 	vk->vkAcquireNextImageKHR         = GET_DEV_PROC(vk, vkAcquireNextImageKHR);
 	vk->vkQueuePresentKHR             = GET_DEV_PROC(vk, vkQueuePresentKHR);
-	
+
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 	vk->vkImportSemaphoreWin32HandleKHR = GET_DEV_PROC(vk, vkImportSemaphoreWin32HandleKHR);
 #else
@@ -1007,17 +1008,125 @@ err_free:
 	return VK_ERROR_INITIALIZATION_FAILED;
 }
 
+static bool
+vk_check_extension(struct vk_bundle *vk,
+                   VkExtensionProperties *props,
+                   uint32_t num_props,
+                   const char *ext)
+{
+	for (uint32_t i = 0; i < num_props; i++) {
+		if (strcmp(props[i].extensionName, ext) == 0) {
+
+			if (strcmp(ext,
+			           VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) ==
+			    0) {
+				vk->has_GOOGLE_display_timing = true;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool
+vk_get_device_ext_props(struct vk_bundle *vk,
+                        VkPhysicalDevice physical_device,
+                        VkExtensionProperties **props,
+                        uint32_t *num_props)
+{
+	VkResult res = vk->vkEnumerateDeviceExtensionProperties(
+	    physical_device, NULL, num_props, NULL);
+	vk_check_error("vkEnumerateDeviceExtensionProperties", res, false);
+
+	*props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, *num_props);
+
+	res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL,
+	                                               num_props, *props);
+	vk_check_error_with_free("vkEnumerateDeviceExtensionProperties", res,
+	                         false, props);
+
+	return true;
+}
+
+static bool
+vk_build_device_extensions(struct vk_bundle *vk,
+                           VkPhysicalDevice physical_device,
+                           const char *const *required_device_extensions,
+                           size_t num_required_device_extensions,
+                           const char *const *optional_device_extensions,
+                           size_t num_optional_device_extensions,
+                           const char ***out_device_extensions,
+                           size_t *out_num_device_extensions)
+{
+	VkExtensionProperties *props;
+	uint32_t num_props;
+	if (!vk_get_device_ext_props(vk, physical_device, &props, &num_props)) {
+		return false;
+	}
+
+	int max_exts =
+	    num_required_device_extensions + num_optional_device_extensions;
+
+	const char **device_extensions =
+	    U_TYPED_ARRAY_CALLOC(const char *, max_exts);
+
+	for (uint32_t i = 0; i < num_required_device_extensions; i++) {
+		const char *ext = required_device_extensions[i];
+		if (!vk_check_extension(vk, props, num_props, ext)) {
+			U_LOG_E(
+			    "VkPhysicalDevice does not support required "
+			    "extension %s",
+			    ext);
+			free(props);
+			return false;
+		}
+		device_extensions[i] = ext;
+	}
+
+	uint32_t num_device_extensions = num_required_device_extensions;
+	for (uint32_t i = 0; i < num_optional_device_extensions; i++) {
+		const char *ext = optional_device_extensions[i];
+		if (vk_check_extension(vk, props, num_props, ext)) {
+			U_LOG_D("Using optional ext %s", ext);
+			device_extensions[num_device_extensions++] = ext;
+		} else {
+			continue;
+		}
+	}
+
+	free(props);
+
+	*out_device_extensions = device_extensions;
+	*out_num_device_extensions = num_device_extensions;
+
+	return true;
+}
+
 VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
-                 const char *const *device_extensions,
-                 size_t num_device_extensions)
+                 const char *const *required_device_extensions,
+                 size_t num_required_device_extensions,
+                 const char *const *optional_device_extensions,
+                 size_t num_optional_device_extensions)
 {
 	VkResult ret;
 
 	ret = vk_select_physical_device(vk, forced_index);
 	if (ret != VK_SUCCESS) {
 		return ret;
+	}
+
+	const char **device_extensions;
+	size_t num_device_extensions;
+	if (!vk_build_device_extensions(
+	        vk, vk->physical_device, required_device_extensions,
+	        num_required_device_extensions, optional_device_extensions,
+	        num_optional_device_extensions, &device_extensions,
+	        &num_device_extensions)) {
+		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 
 	VkPhysicalDeviceFeatures *enabled_features = NULL;
@@ -1045,6 +1154,9 @@ vk_create_device(struct vk_bundle *vk,
 
 	ret = vk->vkCreateDevice(vk->physical_device, &device_create_info, NULL,
 	                         &vk->device);
+
+	free(device_extensions);
+
 	if (ret != VK_SUCCESS) {
 		VK_DEBUG(vk, "vkCreateDevice: %s", vk_result_string(ret));
 		return ret;

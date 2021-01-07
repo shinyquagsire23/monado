@@ -748,7 +748,7 @@ static const char *instance_extensions_windows[] = {
 
 // Note: Keep synchronized with comp_vk_glue - we should have everything they
 // do, plus VK_KHR_SWAPCHAIN_EXTENSION_NAME
-static const char *device_extensions[] = {
+static const char *required_device_extensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
     VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME,
@@ -783,6 +783,11 @@ static const char *device_extensions[] = {
 #error "Need port!"
 #endif
 };
+
+static const char *optional_device_extensions[] = {
+    VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME,
+};
+
 
 static VkResult
 select_instances_extensions(struct comp_compositor *c,
@@ -923,9 +928,10 @@ compositor_init_vulkan(struct comp_compositor *c)
 		return false;
 	}
 
-	ret =
-	    vk_create_device(&c->vk, c->settings.selected_gpu_index,
-	                     device_extensions, ARRAY_SIZE(device_extensions));
+	ret = vk_create_device(
+	    &c->vk, c->settings.selected_gpu_index, required_device_extensions,
+	    ARRAY_SIZE(required_device_extensions), optional_device_extensions,
+	    ARRAY_SIZE(optional_device_extensions));
 	if (ret != VK_SUCCESS) {
 		return false;
 	}
@@ -1119,9 +1125,11 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	}
 
 	// follow same device selection logic as subsequent calls
-	ret =
-	    vk_create_device(&temp_vk, c->settings.selected_gpu_index,
-	                     device_extensions, ARRAY_SIZE(device_extensions));
+	ret = vk_create_device(
+	    &temp_vk, c->settings.selected_gpu_index,
+	    required_device_extensions, ARRAY_SIZE(required_device_extensions),
+	    optional_device_extensions, ARRAY_SIZE(optional_device_extensions));
+
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(c, "Failed to create VkDevice: %s",
 		           vk_result_string(ret));

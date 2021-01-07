@@ -45,6 +45,8 @@ struct vk_bundle
 	uint32_t queue_index;
 	VkQueue queue;
 
+	bool has_GOOGLE_display_timing;
+
 	VkDebugReportCallbackEXT debug_report_cb;
 
 	VkPhysicalDeviceMemoryProperties device_memory_props;
@@ -63,6 +65,7 @@ struct vk_bundle
 	PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT;
 	PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices;
 	PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
+	PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties;
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 	PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
@@ -261,6 +264,12 @@ vk_has_error(VkResult res, const char *fun, const char *file, int line);
 	if (vk_has_error(res, fun, __FILE__, __LINE__))                        \
 	return ret
 
+#define vk_check_error_with_free(fun, res, ret, to_free)                       \
+	if (vk_has_error(res, fun, __FILE__, __LINE__)) {                      \
+		free(to_free);                                                 \
+		return ret;                                                    \
+	}
+
 /*!
  * @ingroup aux_vk
  */
@@ -285,8 +294,10 @@ vk_init_cmd_pool(struct vk_bundle *vk);
 VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
-                 const char *const *device_extensions,
-                 size_t num_device_extensions);
+                 const char *const *required_device_extensions,
+                 size_t num_required_device_extensions,
+                 const char *const *optional_device_extensions,
+                 size_t num_optional_device_extension);
 
 /*!
  * Initialize a bundle with objects given to us by client code,
