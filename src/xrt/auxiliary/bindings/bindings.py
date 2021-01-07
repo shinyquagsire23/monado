@@ -177,7 +177,7 @@ def generate_bindings_c(file, p):
     f = open(file, "w")
     f.write(header.format(brief='Generated bindings data', group='oxr_main'))
     f.write('''
-#include "xrt_generated_bindings.h"
+#include "b_generated_bindings.h"
 #include <string.h>
 
 // clang-format off
@@ -316,9 +316,9 @@ def main():
     p = Bindings.load_and_parse(args.bindings)
 
     for output in args.output:
-        if output.endswith("xrt_generated_bindings.c"):
+        if output.endswith("generated_bindings.c"):
             generate_bindings_c(output, p)
-        if output.endswith("xrt_generated_bindings.h"):
+        if output.endswith("generated_bindings.h"):
             generate_bindings_h(output, p)
 
 

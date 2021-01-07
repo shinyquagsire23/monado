@@ -10,7 +10,7 @@
 #include "util/u_misc.h"
 
 #include "xrt/xrt_compiler.h"
-#include "xrt_generated_bindings.h"
+#include "b_generated_bindings.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"

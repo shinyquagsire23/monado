@@ -16,11 +16,11 @@ function(bindings_gen output custom_target)
 	add_custom_target(${custom_target} DEPENDS ${output})
 endfunction(bindings_gen)
 
-bindings_gen(${CMAKE_CURRENT_BINARY_DIR}/xrt_generated_bindings.h generated_bindings_h)
-bindings_gen(${CMAKE_CURRENT_BINARY_DIR}/xrt_generated_bindings.c generated_bindings_c)
+bindings_gen(${CMAKE_CURRENT_BINARY_DIR}/b_generated_bindings.h generated_bindings_h)
+bindings_gen(${CMAKE_CURRENT_BINARY_DIR}/b_generated_bindings.c generated_bindings_c)
 
 # Bindings library.
-add_library(aux_generated_bindings STATIC ${CMAKE_CURRENT_BINARY_DIR}/xrt_generated_bindings.c)
+add_library(aux_generated_bindings STATIC ${CMAKE_CURRENT_BINARY_DIR}/b_generated_bindings.c)
 add_dependencies(aux_generated_bindings generated_bindings_h)
 
 # needed globally for steamvr input profile generation in steamvr target

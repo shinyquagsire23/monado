@@ -21,8 +21,8 @@ generated_bindings = custom_target('bindings code',
 	command: [prog_python, '@INPUT@', '@OUTPUT@'],
 	input: ['bindings/bindings.py', 'bindings/bindings.json'],
 	output: [
-		'xrt_generated_bindings.h',
-		'xrt_generated_bindings.c',
+		'b_generated_bindings.h',
+		'b_generated_bindings.c',
 	]
 )
 
