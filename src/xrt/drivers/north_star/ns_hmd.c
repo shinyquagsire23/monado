@@ -33,13 +33,19 @@
 #include "../realsense/rs_interface.h"
 #endif
 
-DEBUG_GET_ONCE_LOG_OPTION(ns_log, "NS_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(ns_log, "NS_LOG", U_LOGGING_INFO)
 
 /*
  *
  * Common functions
  *
  */
+
+
+static double map(double value, double fromLow, double fromHigh, double toLow, double toHigh) {
+  return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow;
+} // Math copied from https://www.arduino.cc/reference/en/language/functions/math/map/
+// This is pure math so it is still under the Boost Software License.
 
 static void
 ns_hmd_destroy(struct xrt_device *xdev)
@@ -224,14 +230,15 @@ ns_fov_calculate(struct xrt_fov *fov, struct xrt_quat projection)
 	fov->angle_left =
 	    projection.z; // atanf(fabsf(projection.z) / near_plane);
 	fov->angle_right =
-	    projection.w; // atanf(fabsf(projection.w) / near_plane);
+		projection.w; // atanf(fabsf(projection.w) / near_plane);
 }
 
 /*
- *
+ * 
  * V2 optics.
- *
- */
+ * 
+ * 
+ */ 
 
 
 static void
@@ -305,8 +312,15 @@ ns_v2_mesh_calc(struct xrt_device *xdev,
                 float v,
                 struct xrt_uv_triplet *result)
 {
-	u = 1.0 - u; // Not sure why these are necessary: somewhat concerning.
-	v = 1.0 - v; // They make it work though, so hey.
+	/*! @todo (Moses Turner) It should not be necessary to reverse the U and V coords.
+	 * I have no idea why it is like this. It shouldn't be like this.
+	 * It must be something wrong with the undistortion calibrator.
+	 * The V2 undistortion calibrator software is here if you want to look:
+	 * https://github.com/BryanChrisBrown/ProjectNorthStar/tree/feat-gen-2-software/Software/North%20Star%20Gen%202/North%20Star%20Calibrator
+	 */
+	//u = 1.0 - u;
+	v = 1.0 - v;
+
 
 	struct ns_hmd *ns = ns_hmd(xdev);
 
@@ -321,20 +335,9 @@ ns_v2_mesh_calc(struct xrt_device *xdev,
 	float up_ray_bound = tan(ns->eye_configs_v2[view].fov.angle_up);
 	float down_ray_bound = tan(ns->eye_configs_v2[view].fov.angle_down);
 
+	float u_eye =	map(x_ray, left_ray_bound, right_ray_bound, 0, 1);
 
-
-	// Both of these are very concise implementations of map() in Arduino.
-	// https://www.arduino.cc/reference/en/language/functions/math/map/
-	// In other words, a one-axis linear transformation.
-	// I wish I was better at linear algebra so I had could describe this
-	// better
-
-	// map(x_ray, left_ray_bound, right_ray_bound, 0, 1)
-	float u_eye =
-	    (x_ray + right_ray_bound) / (right_ray_bound - left_ray_bound);
-
-	// map(y_ray, down_ray_bound, up_ray_bound, 0, 1)
-	float v_eye = (y_ray + up_ray_bound) / (up_ray_bound - down_ray_bound);
+	float v_eye = map(y_ray, down_ray_bound, up_ray_bound, 0, 1);
 
 
 	// boilerplate, put the UV coordinates in all the RGB slots
@@ -404,6 +407,9 @@ ns_config_load(struct ns_hmd *ns)
 		    cJSON_GetObjectItemCaseSensitive(config_json, "baseline"),
 		    &ns->ipd);
 		ns->ipd = ns->ipd / 1000.0f; // converts from mm to m
+		/*! @todo (Moses Turner) Next four u_json_get_float_array calls don't make any sense.
+		 * They put the X coefficients from the JSON file into the Y coefficients in the structs, which is totally wrong, but the distortion looks totally wrong if we don't do this.
+		 */
 		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(
 		                           config_json, "left_uv_to_rect_x"),
 		                       ns->eye_configs_v2[0].y_coefficients,
@@ -423,7 +429,7 @@ ns_config_load(struct ns_hmd *ns)
 
 		if (!u_json_get_float(
 		        cJSON_GetObjectItemCaseSensitive(config_json,
-		                                         "leftEyeAngleLeft"),
+		                                         "left_fov_radians_left"),
 		        &ns->eye_configs_v2[0]
 		             .fov
 		             .angle_left)) { // not putting this directly in
@@ -437,43 +443,46 @@ ns_config_load(struct ns_hmd *ns)
 			        "example in "
 			        "src/xrt/drivers/north_star/"
 			        "v2_example_config.json.");
-			ns->eye_configs_v2[0].fov.angle_left = -0.6;
-			ns->eye_configs_v2[0].fov.angle_right = 0.6;
-			ns->eye_configs_v2[0].fov.angle_up = 0.6;
-			ns->eye_configs_v2[0].fov.angle_down = -0.6;
+			ns->eye_configs_v2[0].fov.angle_left = -0.8;
+			ns->eye_configs_v2[0].fov.angle_right = 0.8;
+			ns->eye_configs_v2[0].fov.angle_up = 0.8;
+			ns->eye_configs_v2[0].fov.angle_down = -0.8;
 
-			ns->eye_configs_v2[1].fov.angle_left = -0.6;
-			ns->eye_configs_v2[1].fov.angle_right = 0.6;
-			ns->eye_configs_v2[1].fov.angle_up = 0.6;
-			ns->eye_configs_v2[1].fov.angle_down = -0.6;
+			ns->eye_configs_v2[1].fov.angle_left = -0.8;
+			ns->eye_configs_v2[1].fov.angle_right = 0.8;
+			ns->eye_configs_v2[1].fov.angle_up = 0.8;
+			ns->eye_configs_v2[1].fov.angle_down = -0.8;
 
 
 
 		} else {
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        config_json, "leftEyeAngleRight"),
-			    &ns->eye_configs_v2[0].fov.angle_right);
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     config_json, "leftEyeAngleUp"),
-			                 &ns->eye_configs_v2[0].fov.angle_up);
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     config_json, "leftEyeAngleDown"),
-			                 &ns->eye_configs_v2[0].fov.angle_down);
+
 
 			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     config_json, "rightEyeAngleLeft"),
-			                 &ns->eye_configs_v2[1].fov.angle_left);
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        config_json, "rightEyeAngleRight"),
-			    &ns->eye_configs_v2[1].fov.angle_right);
+			        config_json, "left_fov_radians_left"),
+			        &ns->eye_configs_v2[0].fov.angle_left);
 			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     config_json, "rightEyeAngleUp"),
-			                 &ns->eye_configs_v2[1].fov.angle_up);
+			        config_json, "left_fov_radians_right"),
+			        &ns->eye_configs_v2[0].fov.angle_right);
 			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     config_json, "rightEyeAngleDown"),
-			                 &ns->eye_configs_v2[1].fov.angle_down);
+			        config_json, "left_fov_radians_up"),
+			        &ns->eye_configs_v2[0].fov.angle_up);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			        config_json, "left_fov_radians_down"),
+			        &ns->eye_configs_v2[0].fov.angle_down);
+
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			        config_json, "right_fov_radians_left"),
+			        &ns->eye_configs_v2[1].fov.angle_left);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			        config_json, "right_fov_radians_right"),
+			        &ns->eye_configs_v2[1].fov.angle_right);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			        config_json, "right_fov_radians_up"),
+			        &ns->eye_configs_v2[1].fov.angle_up);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			        config_json, "right_fov_radians_down"),
+			        &ns->eye_configs_v2[1].fov.angle_down);
 		}
 
 		ns->is_v2 = true;
