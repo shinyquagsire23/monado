@@ -231,6 +231,9 @@ if build_docs
 	subdir('doc')
 endif
 
+if not get_option('tests').disabled()
+	subdir('tests')
+endif
 
 #
 # Final bits

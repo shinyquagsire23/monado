@@ -12,6 +12,11 @@ option('docs',
 	value: 'auto',
 	description: 'Build the documentation')
 
+option('tests',
+	type: 'feature',
+	value: 'auto',
+	description: 'Build the tests')
+
 option('doxygen-warn-undocumented',
 	type: 'boolean',
 	value: false,
