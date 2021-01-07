@@ -243,6 +243,7 @@ android_device_create()
 	d->base.compute_distortion = android_device_compute_distortion;
 	d->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	d->base.device_type = XRT_DEVICE_TYPE_HMD;
+	snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Android Sensors");
 
 	d->ll = debug_get_log_option_android_log();
 
