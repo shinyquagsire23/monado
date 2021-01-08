@@ -42,6 +42,13 @@ static enum u_logging_level ll;
 
 DEBUG_GET_ONCE_LOG_OPTION(egl_log, "EGL_LOG", U_LOGGING_INFO)
 
+
+#ifdef XRT_OS_ANDROID
+typedef const char *
+    EGLAPIENTRY (*PFNEGLQUERYSTRINGIMPLEMENTATIONANDROIDPROC)(EGLDisplay dpy,
+                                                              EGLint name);
+#endif
+
 // Not forward declared by mesa
 typedef EGLBoolean EGLAPIENTRY (*PFNEGLMAKECURRENTPROC)(EGLDisplay dpy,
                                                         EGLSurface draw,
@@ -58,6 +65,13 @@ struct client_egl_compositor
 	EGLDisplay dpy;
 };
 
+
+/*
+ *
+ * Helper functions.
+ *
+ */
+
 /*!
  * Down-cast helper.
  * @protected @memberof client_egl_compositor
@@ -66,6 +80,59 @@ static inline struct client_egl_compositor *
 client_egl_compositor(struct xrt_compositor *xc)
 {
 	return (struct client_egl_compositor *)xc;
+}
+
+XRT_MAYBE_UNUSED static bool
+has_extension(const char *extensions, const char *ext)
+{
+	const char *loc = NULL;
+	const char *terminator = NULL;
+
+	if (extensions == NULL) {
+		return false;
+	}
+
+	while (1) {
+		loc = strstr(extensions, ext);
+		if (loc == NULL) {
+			return false;
+		}
+
+		terminator = loc + strlen(ext);
+		if ((loc == extensions || *(loc - 1) == ' ') &&
+		    (*terminator == ' ' || *terminator == '\0')) {
+			return true;
+		}
+		extensions = terminator;
+	}
+}
+
+static void
+ensure_native_fence_is_loaded(EGLDisplay dpy,
+                              PFNEGLGETPROCADDRESSPROC get_gl_procaddr)
+{
+#ifdef XRT_OS_ANDROID
+	// clang-format off
+	PFNEGLQUERYSTRINGIMPLEMENTATIONANDROIDPROC eglQueryStringImplementationANDROID;
+	// clang-format on
+
+	eglQueryStringImplementationANDROID =
+	    (PFNEGLQUERYSTRINGIMPLEMENTATIONANDROIDPROC)get_gl_procaddr(
+	        "eglQueryStringImplementationANDROID");
+
+	// On Android, EGL_ANDROID_native_fence_sync only shows up in this
+	// extension list, not the normal one.
+	const char *ext =
+	    eglQueryStringImplementationANDROID(dpy, EGL_EXTENSIONS);
+	if (!has_extension(ext, "EGL_ANDROID_native_fence_sync")) {
+		return;
+	}
+
+	GLAD_EGL_ANDROID_native_fence_sync = true;
+	glad_eglDupNativeFenceFDANDROID =
+	    (PFNEGLDUPNATIVEFENCEFDANDROIDPROC)get_gl_procaddr(
+	        "eglDupNativeFenceFDANDROID");
+#endif
 }
 
 
@@ -121,6 +188,10 @@ insert_fence(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle)
 	*out_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 	EGLDisplay dpy = ceglc->dpy;
 
+	if (!GLAD_EGL_ANDROID_native_fence_sync) {
+		return XRT_SUCCESS;
+	}
+
 #ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
 
 	EGLSyncKHR sync =
@@ -166,6 +237,9 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	ll = debug_get_log_option_egl_log();
 
 	gladLoadEGL(display, get_gl_procaddr);
+
+	// On Android this extension is 'hidden'.
+	ensure_native_fence_is_loaded(display, get_gl_procaddr);
 
 	// Save old display, context and drawables.
 	struct old_helper old = old_save();
