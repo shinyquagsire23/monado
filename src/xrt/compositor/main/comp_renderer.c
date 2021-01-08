@@ -173,8 +173,10 @@ renderer_submit_queue(struct comp_renderer *r)
 	    .pSignalSemaphores = &r->semaphores.render_complete,
 	};
 
+	os_mutex_lock(&vk->queue_mutex);
 	ret = vk->vkQueueSubmit(r->queue, 1, &comp_submit_info,
 	                        r->fences[r->current_buffer]);
+	os_mutex_unlock(&vk->queue_mutex);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
 	}

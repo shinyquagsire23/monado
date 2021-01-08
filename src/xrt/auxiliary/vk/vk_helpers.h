@@ -14,6 +14,7 @@
 #include "xrt/xrt_vulkan_includes.h"
 #include "xrt/xrt_handles.h"
 #include "util/u_logging.h"
+#include "os/os_threading.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,6 +45,8 @@ struct vk_bundle
 	uint32_t queue_family_index;
 	uint32_t queue_index;
 	VkQueue queue;
+
+	struct os_mutex queue_mutex;
 
 	bool has_GOOGLE_display_timing;
 

@@ -645,7 +645,9 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 	}
 
 	// Do the actual submitting.
+	os_mutex_lock(&vk->queue_mutex);
 	ret = vk->vkQueueSubmit(vk->queue, 1, &submitInfo, fence);
+	os_mutex_unlock(&vk->queue_mutex);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Error: Could not submit to queue.\n");
 		goto out_fence;
