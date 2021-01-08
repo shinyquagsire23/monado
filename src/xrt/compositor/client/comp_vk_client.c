@@ -163,7 +163,9 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 	if (c->vk.cmd_pool != VK_NULL_HANDLE) {
 		// Make sure that any of the command buffers from this command
 		// pool are n used here, this pleases the validation layer.
+		os_mutex_lock(&c->vk.queue_mutex);
 		c->vk.vkDeviceWaitIdle(c->vk.device);
+		os_mutex_unlock(&c->vk.queue_mutex);
 
 		c->vk.vkDestroyCommandPool(c->vk.device, c->vk.cmd_pool, NULL);
 		c->vk.cmd_pool = VK_NULL_HANDLE;

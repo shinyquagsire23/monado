@@ -688,7 +688,9 @@ comp_layer_renderer_destroy(struct comp_layer_renderer *self)
 	if (vk->device == VK_NULL_HANDLE)
 		return;
 
+	os_mutex_lock(&vk->queue_mutex);
 	vk->vkDeviceWaitIdle(vk->device);
+	os_mutex_unlock(&vk->queue_mutex);
 
 	comp_layer_renderer_destroy_layers(self);
 

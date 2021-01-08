@@ -240,7 +240,9 @@ image_cleanup(struct vk_bundle *vk, struct comp_swapchain_image *image)
 	 * validation doesn't complain. This is done during image destruction so
 	 * isn't time critical.
 	 */
+	os_mutex_lock(&vk->queue_mutex);
 	vk->vkDeviceWaitIdle(vk->device);
+	os_mutex_unlock(&vk->queue_mutex);
 
 	clean_image_views(vk, image->array_size, &image->views.alpha);
 	clean_image_views(vk, image->array_size, &image->views.no_alpha);

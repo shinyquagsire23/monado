@@ -668,7 +668,9 @@ comp_renderer_draw(struct comp_renderer *r)
 	 *
 	 * This is done after a swap so isn't time critical.
 	 */
+	os_mutex_lock(&r->c->vk.queue_mutex);
 	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
+	os_mutex_unlock(&r->c->vk.queue_mutex);
 }
 
 static void
@@ -735,7 +737,9 @@ renderer_resize(struct comp_renderer *r)
 	 * make sure that validation doesn't complain. This is done
 	 * during resize so isn't time critical.
 	 */
+	os_mutex_lock(&vk->queue_mutex);
 	vk->vkDeviceWaitIdle(vk->device);
+	os_mutex_unlock(&vk->queue_mutex);
 
 	comp_target_create_images(      //
 	    r->c->target,               //
