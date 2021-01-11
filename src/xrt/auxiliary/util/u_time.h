@@ -71,9 +71,9 @@ time_ns_to_s(time_duration_ns ns)
  * @ingroup aux_util
  */
 static inline time_duration_ns
-time_s_to_ns(float duration)
+time_s_to_ns(double duration)
 {
-	return (time_duration_ns)((double)duration * (double)U_1_000_000_000);
+	return (time_duration_ns)(duration * (double)U_1_000_000_000);
 }
 
 /*!
