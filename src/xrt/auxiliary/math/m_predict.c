@@ -18,6 +18,12 @@ do_orientation(const struct xrt_space_relation *rel,
                double delta_s,
                struct xrt_space_relation *out_rel)
 {
+	if (delta_s == 0) {
+		out_rel->pose.orientation = rel->pose.orientation;
+		out_rel->angular_velocity = rel->angular_velocity;
+		return;
+	}
+
 	struct xrt_vec3 accum = {0};
 	bool valid_orientation =
 	    (flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
@@ -75,6 +81,12 @@ do_position(const struct xrt_space_relation *rel,
             double delta_s,
             struct xrt_space_relation *out_rel)
 {
+	if (delta_s == 0) {
+		out_rel->pose.position = rel->pose.position;
+		out_rel->linear_velocity = rel->linear_velocity;
+		return;
+	}
+
 	struct xrt_vec3 accum = {0};
 	bool valid_position =
 	    (flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0;
