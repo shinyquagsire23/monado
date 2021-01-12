@@ -11,6 +11,8 @@
 
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
+#include "math/m_api.h"
+#include "math/m_space.h"
 
 #include "os/os_time.h"
 #include "os/os_threading.h"
@@ -30,6 +32,13 @@
 #include <inttypes.h>
 
 
+/*!
+ * Stupid convenience macro to print out a pose, only used for debugging
+ */
+#define print_pose(msg, pose)                                                  \
+	U_LOG_E(msg " %f %f %f  %f %f %f %f", pose.position.x,                 \
+	        pose.position.y, pose.position.z, pose.orientation.x,          \
+	        pose.orientation.y, pose.orientation.z, pose.orientation.w)
 
 /*!
  * @implements xrt_device
@@ -40,6 +49,9 @@ struct rs_6dof
 
 	uint64_t relation_timestamp_ns;
 	struct xrt_space_relation relation;
+
+	// arbitrary offset to apply to the pose the t265 gives us
+	struct xrt_pose offset;
 
 	struct os_thread_helper oth;
 
@@ -153,6 +165,15 @@ create_6dof(struct rs_6dof *rs)
 	return 0;
 }
 
+
+void
+rs_update_offset(struct xrt_pose offset, struct xrt_device *xdev)
+{
+	struct rs_6dof *rs = rs_6dof(xdev);
+	memcpy(&rs->offset, &offset, sizeof(struct xrt_pose));
+}
+
+
 /*!
  * Process a frame as 6DOF data, does not assume ownership of the frame.
  */
@@ -196,7 +217,6 @@ process_frame(struct rs_6dof *rs, rs2_frame *frame)
 
 	// Adjust the timestamp to monotonic time.
 	timestamp_ns = now_monotonic_ns - diff_ns;
-
 
 	/*
 	 * Transfer the data to the struct.
@@ -316,7 +336,11 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 	struct xrt_space_relation relation = rs->relation;
 	os_thread_helper_unlock(&rs->oth);
 
-	*out_relation = relation;
+	struct xrt_space_graph xsg = {0};
+
+	m_space_graph_add_pose(&xsg, &rs->offset);
+	m_space_graph_add_relation(&xsg, &relation);
+	m_space_graph_resolve(&xsg, out_relation);
 }
 static void
 rs_6dof_get_view_pose(struct xrt_device *xdev,

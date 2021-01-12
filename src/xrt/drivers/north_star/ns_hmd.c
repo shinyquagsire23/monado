@@ -35,16 +35,22 @@
 
 DEBUG_GET_ONCE_LOG_OPTION(ns_log, "NS_LOG", U_LOGGING_INFO)
 
+struct xrt_pose t265_to_nose_bridge = {.orientation = {0, 0, 0, 1},
+                                       .position = {0, 0, 0}};
+
 /*
  *
  * Common functions
  *
  */
 
-
-static double map(double value, double fromLow, double fromHigh, double toLow, double toHigh) {
-  return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow;
-} // Math copied from https://www.arduino.cc/reference/en/language/functions/math/map/
+static double
+map(double value, double fromLow, double fromHigh, double toLow, double toHigh)
+{
+	return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) +
+	       toLow;
+} // Math copied from
+  // https://www.arduino.cc/reference/en/language/functions/math/map/
 // This is pure math so it is still under the Boost Software License.
 
 static void
@@ -230,15 +236,15 @@ ns_fov_calculate(struct xrt_fov *fov, struct xrt_quat projection)
 	fov->angle_left =
 	    projection.z; // atanf(fabsf(projection.z) / near_plane);
 	fov->angle_right =
-		projection.w; // atanf(fabsf(projection.w) / near_plane);
+	    projection.w; // atanf(fabsf(projection.w) / near_plane);
 }
 
 /*
- * 
+ *
  * V2 optics.
- * 
- * 
- */ 
+ *
+ *
+ */
 
 
 static void
@@ -312,13 +318,13 @@ ns_v2_mesh_calc(struct xrt_device *xdev,
                 float v,
                 struct xrt_uv_triplet *result)
 {
-	/*! @todo (Moses Turner) It should not be necessary to reverse the U and V coords.
-	 * I have no idea why it is like this. It shouldn't be like this.
-	 * It must be something wrong with the undistortion calibrator.
+	/*! @todo (Moses Turner) It should not be necessary to reverse the U and
+	 * V coords. I have no idea why it is like this. It shouldn't be like
+	 * this. It must be something wrong with the undistortion calibrator.
 	 * The V2 undistortion calibrator software is here if you want to look:
 	 * https://github.com/BryanChrisBrown/ProjectNorthStar/tree/feat-gen-2-software/Software/North%20Star%20Gen%202/North%20Star%20Calibrator
 	 */
-	//u = 1.0 - u;
+	// u = 1.0 - u;
 	v = 1.0 - v;
 
 
@@ -335,7 +341,7 @@ ns_v2_mesh_calc(struct xrt_device *xdev,
 	float up_ray_bound = tan(ns->eye_configs_v2[view].fov.angle_up);
 	float down_ray_bound = tan(ns->eye_configs_v2[view].fov.angle_down);
 
-	float u_eye =	map(x_ray, left_ray_bound, right_ray_bound, 0, 1);
+	float u_eye = map(x_ray, left_ray_bound, right_ray_bound, 0, 1);
 
 	float v_eye = map(y_ray, down_ray_bound, up_ray_bound, 0, 1);
 
@@ -407,8 +413,11 @@ ns_config_load(struct ns_hmd *ns)
 		    cJSON_GetObjectItemCaseSensitive(config_json, "baseline"),
 		    &ns->ipd);
 		ns->ipd = ns->ipd / 1000.0f; // converts from mm to m
-		/*! @todo (Moses Turner) Next four u_json_get_float_array calls don't make any sense.
-		 * They put the X coefficients from the JSON file into the Y coefficients in the structs, which is totally wrong, but the distortion looks totally wrong if we don't do this.
+		/*! @todo (Moses Turner) Next four u_json_get_float_array calls
+		 * don't make any sense. They put the X coefficients from the
+		 * JSON file into the Y coefficients in the structs, which is
+		 * totally wrong, but the distortion looks totally wrong if we
+		 * don't do this.
 		 */
 		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(
 		                           config_json, "left_uv_to_rect_x"),
@@ -426,10 +435,10 @@ ns_config_load(struct ns_hmd *ns)
 		                           config_json, "right_uv_to_rect_y"),
 		                       ns->eye_configs_v2[1].x_coefficients,
 		                       16);
-
+		bool said_first_thing = false;
 		if (!u_json_get_float(
-		        cJSON_GetObjectItemCaseSensitive(config_json,
-		                                         "left_fov_radians_left"),
+		        cJSON_GetObjectItemCaseSensitive(
+		            config_json, "left_fov_radians_left"),
 		        &ns->eye_configs_v2[0]
 		             .fov
 		             .angle_left)) { // not putting this directly in
@@ -442,7 +451,8 @@ ns_config_load(struct ns_hmd *ns)
 			        "parameters to your v2 json file. There's an "
 			        "example in "
 			        "src/xrt/drivers/north_star/"
-			        "v2_example_config.json.");
+			        "v2_example_config.json.\n");
+			said_first_thing = true;
 			ns->eye_configs_v2[0].fov.angle_left = -0.8;
 			ns->eye_configs_v2[0].fov.angle_right = 0.8;
 			ns->eye_configs_v2[0].fov.angle_up = 0.8;
@@ -457,32 +467,97 @@ ns_config_load(struct ns_hmd *ns)
 
 		} else {
 
-
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			/*! @todo (Moses Turner) Something's wrong with either
+			 * ns_v2_mesh_calc or this code, because when you have
+			 * uneven FOV bounds, the distortion looks totally
+			 * wrong.*/
+			u_json_get_float(
+			    cJSON_GetObjectItemCaseSensitive(
 			        config_json, "left_fov_radians_left"),
-			        &ns->eye_configs_v2[0].fov.angle_left);
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			    &ns->eye_configs_v2[0].fov.angle_left);
+			u_json_get_float(
+			    cJSON_GetObjectItemCaseSensitive(
 			        config_json, "left_fov_radians_right"),
-			        &ns->eye_configs_v2[0].fov.angle_right);
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			    &ns->eye_configs_v2[0].fov.angle_right);
+			u_json_get_float(
+			    cJSON_GetObjectItemCaseSensitive(
 			        config_json, "left_fov_radians_up"),
-			        &ns->eye_configs_v2[0].fov.angle_up);
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			    &ns->eye_configs_v2[0].fov.angle_up);
+			u_json_get_float(
+			    cJSON_GetObjectItemCaseSensitive(
 			        config_json, "left_fov_radians_down"),
-			        &ns->eye_configs_v2[0].fov.angle_down);
+			    &ns->eye_configs_v2[0].fov.angle_down);
+
+			u_json_get_float(
+			    cJSON_GetObjectItemCaseSensitive(
+			        config_json, "right_fov_radians_left"),
+			    &ns->eye_configs_v2[1].fov.angle_left);
+			u_json_get_float(
+			    cJSON_GetObjectItemCaseSensitive(
+			        config_json, "right_fov_radians_right"),
+			    &ns->eye_configs_v2[1].fov.angle_right);
+			u_json_get_float(
+			    cJSON_GetObjectItemCaseSensitive(
+			        config_json, "right_fov_radians_up"),
+			    &ns->eye_configs_v2[1].fov.angle_up);
+			u_json_get_float(
+			    cJSON_GetObjectItemCaseSensitive(
+			        config_json, "right_fov_radians_down"),
+			    &ns->eye_configs_v2[1].fov.angle_down);
+		}
+
+		struct cJSON *offset = cJSON_GetObjectItemCaseSensitive(
+		    config_json, "t265_to_nose_bridge");
+		if (offset == NULL) {
+			if (said_first_thing) {
+				NS_INFO(
+				    ns,
+				    "Also, you should put an offset parameter "
+				    "into the json file to transform your head "
+				    "pose from the realsense to your nose "
+				    "bridge. There are some examples in "
+				    "src/xrt/drivers/north_star/"
+				    "example_configs/ .\n");
+			} else {
+				NS_INFO(
+				    ns,
+				    "You should put an offset parameter into "
+				    "the json file to transform your head pose "
+				    "from the realsense to your nose bridge. "
+				    "There are some examples in "
+				    "src/xrt/drivers/north_star/"
+				    "example_configs/ .\n");
+			}
+		} else {
+			struct cJSON *translation_meters =
+			    cJSON_GetObjectItemCaseSensitive(
+			        offset, "translation_meters");
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			                     translation_meters, "x"),
+			                 &t265_to_nose_bridge.position.x);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			                     translation_meters, "y"),
+			                 &t265_to_nose_bridge.position.y);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			                     translation_meters, "z"),
+			                 &t265_to_nose_bridge.position.z);
+
+			struct cJSON *rotation_quaternion =
+			    cJSON_GetObjectItemCaseSensitive(
+			        offset, "rotation_quaternion");
 
 			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			        config_json, "right_fov_radians_left"),
-			        &ns->eye_configs_v2[1].fov.angle_left);
+			                     rotation_quaternion, "x"),
+			                 &t265_to_nose_bridge.orientation.x);
 			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			        config_json, "right_fov_radians_right"),
-			        &ns->eye_configs_v2[1].fov.angle_right);
+			                     rotation_quaternion, "y"),
+			                 &t265_to_nose_bridge.orientation.y);
 			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			        config_json, "right_fov_radians_up"),
-			        &ns->eye_configs_v2[1].fov.angle_up);
+			                     rotation_quaternion, "z"),
+			                 &t265_to_nose_bridge.orientation.z);
 			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			        config_json, "right_fov_radians_down"),
-			        &ns->eye_configs_v2[1].fov.angle_down);
+			                     rotation_quaternion, "w"),
+			                 &t265_to_nose_bridge.orientation.w);
 		}
 
 		ns->is_v2 = true;
@@ -608,6 +683,11 @@ ns_hmd_create(const char *config_path)
 	// If built, try to load the realsense tracker.
 #ifdef XRT_BUILD_DRIVER_RS
 	ns->tracker = rs_6dof_create();
+	if (ns->tracker == NULL) {
+		NS_ERROR(ns, "Couldn't create realsense device!");
+	} else {
+		rs_update_offset(t265_to_nose_bridge, ns->tracker);
+	}
 #endif
 	// Setup variable tracker.
 	u_var_add_root(ns, "North Star", true);
