@@ -41,6 +41,20 @@ def steamvr_subpath_name(sub_path_name, sub_path_obj):
     return sub_path_name
 
 
+def get_required_features(path_type):
+    if path_type == "button":
+        return ["click", "touch"]
+    if path_type == "trigger":
+        return ["click", "touch", "value", "force"]
+    if path_type == "joystick":
+        return ["click", "touch"]
+    if path_type == "pose":
+        return []
+    if path_type == "vibration":
+        return []
+    return []
+
+
 def main():
     """Handle command line and generate a file."""
     parser = argparse.ArgumentParser(description='Bindings generator.')
@@ -65,19 +79,19 @@ def main():
 
         input_source = {}
 
-        pg: PathGroup
-        for idx, pg in enumerate(p.pathgroups):
-            sp_name = steamvr_subpath_name(pg.sub_path_name, pg.sub_path_obj)
-            sp = pg.sub_path_obj
+        feature: Feature
+        for idx, feature in enumerate(p.features):
+            sp_name = steamvr_subpath_name(feature.sub_path_name, feature.sub_path_obj)
+            sp = feature.sub_path_obj
 
             input_source[sp_name] = {
                 "type": sp["type"],
                 "binding_image_point": [0, 0],  # TODO
                 "order": idx
             }
-            for component in ["click", "touch", "value", "force"]:
-                if component in sp:
-                    input_source[sp_name][component] = sp[component]
+
+            for req in get_required_features(sp["type"]):
+                input_source[sp_name][req] = req in sp["features"]
 
         j = {
             "json_id": "input_profile",

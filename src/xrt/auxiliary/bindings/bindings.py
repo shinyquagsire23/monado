@@ -8,14 +8,7 @@ import json
 import argparse
 
 
-class BindingPath:
-    def __init__(self, subaction_path, path):
-        """Construct an component."""
-        self.subaction_path = subaction_path
-        self.path = path
-
-
-def handle_subpath(pathgroup_cls, pathgroup_list, subaction_path, sub_path_itm):
+def handle_subpath(pathgroup_cls, feature_list, subaction_path, sub_path_itm):
     sub_path_name = sub_path_itm[0]
     sub_path_obj = sub_path_itm[1]
 
@@ -23,88 +16,54 @@ def handle_subpath(pathgroup_cls, pathgroup_list, subaction_path, sub_path_itm):
     if "side" in sub_path_obj and sub_path_obj["side"] not in subaction_path:
         return
 
-    # path without the component, e.g. /user/hand/left/input/a, without /click
-    base_path = subaction_path + sub_path_name
-
-    # Add each component with a base path as a separate PathGroup, e.g.
-    # /user/hand/left/input/a/click and /user/hand/input/a map to the same a click.
-    # /user/hand/left/input/a/touch and /user/hand/input/a map to the same a touch.
-    # Code later will have to decide how /user/hand/input/a is actually bound
-    if sub_path_obj["type"] in ["button", "trigger", "trackpad", "joystick"]:
-        # Add component paths like /user/hand/left/input/a/touch
-        for component in ["click", "touch", "value", "force"]:
-            if component in sub_path_obj and sub_path_obj[component]:
-                binding_key = component
-                pathgroup = []
-
-                comp_path = base_path + "/" + component
-                pathgroup.append(BindingPath(subaction_path, comp_path))
-
-                # Add a base path like /user/hand/left/input/a with the same
-                # binding_key as the component
-                pathgroup.append(BindingPath(subaction_path, base_path))
-
-                pathgroup_list.append(pathgroup_cls(subaction_path, pathgroup, sub_path_itm, binding_key))
-
-    # same for joystick and trackpad, but with special x/y components
-    if sub_path_obj["type"] in ["joystick", "trackpad"]:
-        binding_key = "position"
-        pathgroup = []
-
-        pathgroup.append(BindingPath(subaction_path, base_path + "/x"))
-        pathgroup.append(BindingPath(subaction_path, base_path + "/y"))
-
-        # Add a base path like /user/hand/left/input/trackpad with the same binding_key as the /x and /y component
-        pathgroup.append(BindingPath(subaction_path, base_path))
-
-        pathgroup_list.append(pathgroup_cls(subaction_path, pathgroup, sub_path_itm, binding_key))
-
-    # pose inputs can be bound with or without pose component
-    if sub_path_obj["type"] == "pose":
-        binding_key = "pose"
-        pathgroup = []
-
-        pathgroup.append(BindingPath(subaction_path, base_path))
-        pathgroup.append(BindingPath(subaction_path, base_path + "/pose"))
-
-        pathgroup_list.append(pathgroup_cls(subaction_path, pathgroup, sub_path_itm, binding_key))
-
-    # haptic feedback only has a base path
-    if sub_path_obj["type"] == "vibration":
-        binding_key = "haptic"
-        pathgroup = []
-
-        pathgroup.append(BindingPath(subaction_path, base_path))
-
-        pathgroup_list.append(pathgroup_cls(subaction_path, pathgroup, sub_path_itm, binding_key))
+    for feature in sub_path_obj["features"]:
+        feature_list.append(Feature(subaction_path, sub_path_itm, feature))
 
 
-class PathGroup:
-    """Group of paths associated with a single input, for example
-    * /user/hand/left/input/trackpad
-    * /user/hand/left/input/trackpad/x
-    * /user/hand/left/input/trackpad/y
+class Feature:
+    """Features roughly correlate with data sources. For example a trackpad may
+    have several features: position, click, touch, force, ...
     """
 
     @classmethod
-    def parse_paths(pathgroup_cls, subaction_paths, paths):
-        """Turn a profile's input paths into an array of PathGroup objects.
-        Creates a PathGroup for each subaction_path and stripped subpaths.
-        """
-        pathgroup_list = []
+    def parse_features(feature_cls, subaction_paths, paths):
+        """Turn a profile's input paths into a list of Feature objects."""
+        feature_list = []
         for subaction_path in subaction_paths:
             for sub_path_itm in paths.items():
-                handle_subpath(pathgroup_cls, pathgroup_list, subaction_path, sub_path_itm)
-        return pathgroup_list
+                handle_subpath(feature_cls, feature_list, subaction_path, sub_path_itm)
+        return feature_list
 
-    def __init__(self, subaction_path, pathgroup, sub_path_itm, binding_key=None):
+    def __init__(self, subaction_path, sub_path_itm, feature_str):
         self.sub_path_name = sub_path_itm[0]
         self.sub_path_obj = sub_path_itm[1]
         self.subaction_path = subaction_path
-        self.pathgroup = pathgroup
-        self.binding_key = binding_key
-        self.is_output = self.sub_path_obj["type"] == "vibration"
-        self.is_input = not self.is_output
+        self.feature_str = feature_str
+
+    """A group of paths that derive from the same input.
+    For example .../thumbstick, .../thumbstick/x, .../thumbstick/y
+    """
+    def to_monado_paths(self):
+        paths = []
+
+        basepath = self.subaction_path + "/" + self.sub_path_name
+
+        if self.feature_str == "position":
+            paths.append(basepath + "/" + "x")
+            paths.append(basepath + "/" + "y")
+            paths.append(basepath)
+        else:
+            paths.append(basepath + "/" + self.feature_str)
+            paths.append(basepath)
+
+        return paths
+
+    def is_input(self):
+        # only haptics is output so far, everythine else is input
+        return self.feature_str != "haptic"
+
+    def is_output(self):
+        return not self.is_input()
 
 
 class Profile:
@@ -115,18 +74,18 @@ class Profile:
         self.monado_device = data["monado_device"]
         self.title = data['title']
         self.func = name[22:].replace("/", "_")
-        self.pathgroups = PathGroup.parse_paths(data["subaction_paths"],
-                                                data["subpaths"])
+        self.features = Feature.parse_features(data["subaction_paths"],
+                                               data["subpaths"])
         self.hw_type = data["type"]
 
         self.by_length = {}
-        for pathgroup in self.pathgroups:
-            for input_path in pathgroup.pathgroup:
-                length = len(input_path.path)
+        for feature in self.features:
+            for path in feature.to_monado_paths():
+                length = len(path)
                 if (length in self.by_length):
-                    self.by_length[length].append(input_path)
+                    self.by_length[length].append(path)
                 else:
-                    self.by_length[length] = [input_path]
+                    self.by_length[length] = [path]
 
 
 class Bindings:
@@ -187,8 +146,8 @@ def generate_bindings_c(file, p):
         f.write(func_start.format(func=profile.func))
         for length in profile.by_length:
             f.write("\tcase " + str(length) + ":\n\t\t")
-            for component in profile.by_length[length]:
-                f.write(if_strcmp.format(check=component.path))
+            for path in profile.by_length[length]:
+                f.write(if_strcmp.format(check=path))
             f.write("{\n\t\t\treturn false;\n\t\t}\n")
         f.write("\tdefault:\n\t\treturn false;\n\t}\n}\n")
 
@@ -199,7 +158,7 @@ def generate_bindings_c(file, p):
         fname = vendor_name + "_" + hw_name + "_profile.json"
         controller_type = "monado_" + vendor_name + "_" + hw_name
 
-        num_bindings = len(profile.pathgroups)
+        num_bindings = len(profile.features)
         f.write(f'\t{{ // profile_template\n')
         f.write(f'\t\t.name = {profile.monado_device},\n')
         f.write(f'\t\t.path = "{profile.name}",\n')
@@ -209,34 +168,41 @@ def generate_bindings_c(file, p):
         f.write(f'\t\t.num_bindings = {num_bindings},\n')
         f.write(f'\t\t.bindings = (struct binding_template[]){{ // array of binding_template\n')
 
-        pathgroup: PathGroup
-        for idx, pathgroup in enumerate(profile.pathgroups):
-            sp_obj = pathgroup.sub_path_obj
+        feature: Feature
+        for idx, feature in enumerate(profile.features):
+            sp_obj = feature.sub_path_obj
 
-            steamvr_path = pathgroup.sub_path_name
-            if pathgroup.binding_key in ["click", "touch", "force", "value"]:
-                steamvr_path += "/" + pathgroup.binding_key
+            steamvr_path = feature.sub_path_name
+            if feature.feature_str in ["click", "touch", "force", "value"]:
+                steamvr_path += "/" + feature.feature_str
 
             f.write(f'\t\t\t{{ // binding_template {idx}\n')
-            f.write(f'\t\t\t\t.subaction_path = "{pathgroup.subaction_path}",\n')
+            f.write(f'\t\t\t\t.subaction_path = "{feature.subaction_path}",\n')
             f.write(f'\t\t\t\t.steamvr_path = "{steamvr_path}",\n')
             f.write(f'\t\t\t\t.localized_name = "{sp_obj["localized_name"]}",\n')
 
             f.write('\t\t\t\t.paths = { // array of paths\n')
-            for input_path in pathgroup.pathgroup:
-                f.write(f'\t\t\t\t\t"{input_path.path}",\n')
+            for path in feature.to_monado_paths():
+                f.write(f'\t\t\t\t\t"{path}",\n')
             f.write('\t\t\t\t\tNULL\n')
             f.write('\t\t\t\t}, // /array of paths\n')
 
-            binding_key = pathgroup.binding_key
-            monado_binding = sp_obj["monado_bindings"][binding_key]
+            # print("feature", feature.__dict__)
 
-            if pathgroup.is_input and monado_binding is not None:
+            feature_str = feature.feature_str
+
+            # controllers can have input that we don't have bindings for'
+            if feature_str not in sp_obj["monado_bindings"]:
+                continue
+
+            monado_binding = sp_obj["monado_bindings"][feature_str]
+
+            if feature.is_input() and monado_binding is not None:
                 f.write(f'\t\t\t\t.input = {monado_binding},\n')
             else:
                 f.write(f'\t\t\t\t.input = 0,\n')
 
-            if pathgroup.is_output and monado_binding is not None:
+            if feature.is_output() and monado_binding is not None:
                 f.write(f'\t\t\t\t.output = {monado_binding},\n')
             else:
                 f.write(f'\t\t\t\t.output = 0,\n')
