@@ -90,10 +90,8 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc,
 	    .pCommandBuffers = &sc->acquire[*out_index],
 	};
 
-	os_mutex_lock(&vk->queue_mutex);
 	VkResult ret =
-	    vk->vkQueueSubmit(vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
-	os_mutex_unlock(&vk->queue_mutex);
+	    vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Could not submit to queue: %d", ret);
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
@@ -125,10 +123,8 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	    .pCommandBuffers = &sc->release[index],
 	};
 
-	os_mutex_lock(&vk->queue_mutex);
 	VkResult ret =
-	    vk->vkQueueSubmit(vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
-	os_mutex_unlock(&vk->queue_mutex);
+	    vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Could not submit to queue: %d", ret);
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;

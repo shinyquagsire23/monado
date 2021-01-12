@@ -575,7 +575,11 @@ vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
 	VkCommandBufferBeginInfo begin_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 	};
+
+	os_mutex_lock(&vk->cmd_pool_mutex);
 	ret = vk->vkBeginCommandBuffer(cmd_buffer, &begin_info);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkBeginCommandBuffer: %s", vk_result_string(ret));
 		goto err_buffer;
@@ -636,7 +640,9 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 	};
 
 	// Finish the command buffer first.
+	os_mutex_lock(&vk->cmd_pool_mutex);
 	ret = vk->vkEndCommandBuffer(cmd_buffer);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
 		goto out;
@@ -650,9 +656,7 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 	}
 
 	// Do the actual submitting.
-	os_mutex_lock(&vk->queue_mutex);
-	ret = vk->vkQueueSubmit(vk->queue, 1, &submitInfo, fence);
-	os_mutex_unlock(&vk->queue_mutex);
+	ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, fence);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Error: Could not submit to queue.\n");
 		goto out_fence;
@@ -1498,4 +1502,20 @@ vk_update_buffer(struct vk_bundle *vk,
 	vk->vkUnmapMemory(vk->device, memory);
 
 	return true;
+}
+
+VkResult
+vk_locked_submit(struct vk_bundle *vk,
+                 VkQueue queue,
+                 uint32_t count,
+                 const VkSubmitInfo *infos,
+                 VkFence fence)
+{
+	VkResult ret;
+	os_mutex_lock(&vk->queue_mutex);
+	os_mutex_lock(&vk->cmd_pool_mutex);
+	ret = vk->vkQueueSubmit(queue, count, infos, fence);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+	os_mutex_unlock(&vk->queue_mutex);
+	return ret;
 }

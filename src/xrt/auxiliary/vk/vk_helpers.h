@@ -499,6 +499,13 @@ vk_update_buffer(struct vk_bundle *vk,
                  size_t buffer_size,
                  VkDeviceMemory memory);
 
+VkResult
+vk_locked_submit(struct vk_bundle *vk,
+                 VkQueue queue,
+                 uint32_t count,
+                 const VkSubmitInfo *infos,
+                 VkFence fence);
+
 #ifdef __cplusplus
 }
 #endif

@@ -662,7 +662,9 @@ comp_layer_renderer_draw(struct comp_layer_renderer *self)
 	if (vk_init_cmd_buffer(vk, &cmd_buffer) != VK_SUCCESS)
 		return;
 
+	os_mutex_lock(&vk->cmd_pool_mutex);
 	_render_stereo(self, vk, cmd_buffer);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	VkResult res = vk_submit_cmd_buffer(vk, cmd_buffer);
 	vk_check_error("vk_submit_cmd_buffer", res, );
