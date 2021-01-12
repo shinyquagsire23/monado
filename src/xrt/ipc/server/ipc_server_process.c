@@ -98,7 +98,9 @@ teardown_all(struct ipc_server *s)
 {
 	u_var_remove_root(s);
 
-	xrt_comp_destroy(&s->xc);
+	xrt_comp_native_destroy(&s->xcn);
+
+	xrt_syscomp_destroy(&s->xsysc);
 
 	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
 		teardown_idev(&s->idevs[i]);
@@ -546,7 +548,13 @@ init_all(struct ipc_server *s)
 		return -1;
 	}
 
-	ret = xrt_instance_create_native_compositor(s->xinst, s->idevs[0].xdev, &s->xcn);
+	ret = xrt_instance_create_system_compositor(s->xinst, s->idevs[0].xdev, &s->xsysc);
+	if (ret < 0) {
+		teardown_all(s);
+		return ret;
+	}
+
+	ret = xrt_syscomp_create_native_compositor(s->xsysc, &s->xcn);
 	if (ret < 0) {
 		teardown_all(s);
 		return ret;
@@ -582,9 +590,6 @@ init_all(struct ipc_server *s)
 		teardown_all(s);
 		return ret;
 	}
-
-	// Easier to use.
-	s->xc = &s->xcn->base;
 
 	s->ll = debug_get_log_option_ipc_log();
 
@@ -997,7 +1002,7 @@ _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 static int
 main_loop(struct ipc_server *s)
 {
-	struct xrt_compositor *xc = s->xc;
+	struct xrt_compositor *xc = &s->xcn->base;
 
 	// make sure all our client connections have a handle to the
 	// compositor and consistent initial state
@@ -1107,7 +1112,6 @@ handle_focused_client_events(volatile struct ipc_client_state *ics, int active_i
 	}
 }
 
-
 void
 init_server_state(struct ipc_server *s)
 {
@@ -1121,10 +1125,11 @@ init_server_state(struct ipc_server *s)
 	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
 		volatile struct ipc_client_state *ics = &s->threads[i].ics;
 		ics->server = s;
-		ics->xc = s->xc;
+		ics->xc = &s->xcn->base;
 		ics->server_thread_index = -1;
 	}
 }
+
 
 /*
  *

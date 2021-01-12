@@ -44,4 +44,8 @@ typedef enum xrt_result
 	 * Getting or giving the native fence handle caused a error.
 	 */
 	XRT_ERROR_NATIVE_HANDLE_FENCE_ERROR = -10,
+	/*!
+	 * Multiple not supported on this layer level (IPC, compositor).
+	 */
+	XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED = -11,
 } xrt_result_t;

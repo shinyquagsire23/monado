@@ -21,6 +21,7 @@ extern "C" {
 struct xrt_prober;
 struct xrt_device;
 struct xrt_compositor_native;
+struct xrt_system_compositor;
 
 
 /*!
@@ -84,25 +85,25 @@ struct xrt_instance
 	int (*select)(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t num_xdevs);
 
 	/*!
-	 * Creates a @ref xrt_compositor_native.
+	 * Creates a @ref xrt_system_compositor.
 	 *
 	 * Should only be called once.
 	 *
 	 * @note Code consuming this interface should use
-	 * xrt_instance_create_native_compositor()
+	 * xrt_instance_create_system_compositor()
 	 *
 	 * @param xinst Pointer to self
 	 * @param[in] xdev Device to use for creating the compositor
-	 * @param[out] out_xcn Pointer to xrt_compositor_native pointer, will
+	 * @param[out] out_xsc Pointer to create_system_compositor pointer, will
 	 * be populated.
 	 *
 	 * @return 0 on success, <0 on error.
 	 *
 	 * @see xrt_gfx_provider_create_native
 	 */
-	int (*create_native_compositor)(struct xrt_instance *xinst,
+	int (*create_system_compositor)(struct xrt_instance *xinst,
 	                                struct xrt_device *xdev,
-	                                struct xrt_compositor_native **out_xcn);
+	                                struct xrt_system_compositor **out_xsc);
 
 	/*!
 	 * Get the instance @ref xrt_prober, if any.
@@ -156,18 +157,18 @@ xrt_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_
 }
 
 /*!
- * @copydoc xrt_instance::create_native_compositor
+ * @copydoc xrt_instance::create_system_compositor
  *
  * Helper for calling through the function pointer.
  *
  * @public @memberof xrt_instance
  */
 static inline int
-xrt_instance_create_native_compositor(struct xrt_instance *xinst,
+xrt_instance_create_system_compositor(struct xrt_instance *xinst,
                                       struct xrt_device *xdev,
-                                      struct xrt_compositor_native **out_xcn)
+                                      struct xrt_system_compositor **out_xsc)
 {
-	return xinst->create_native_compositor(xinst, xdev, out_xcn);
+	return xinst->create_system_compositor(xinst, xdev, out_xsc);
 }
 
 /*!

@@ -1067,8 +1067,8 @@ struct oxr_system
 {
 	struct oxr_instance *inst;
 
-	//! Native compositor that is wrapped by client compositors.
-	struct xrt_compositor_native *xcn;
+	//! System compositor, used to create session compositors.
+	struct xrt_system_compositor *xsysc;
 
 	struct xrt_device *xdevs[16];
 	size_t num_xdevs;
@@ -1208,6 +1208,10 @@ struct oxr_session
 	//! Common structure for things referred to by OpenXR handles.
 	struct oxr_handle_base handle;
 	struct oxr_system *sys;
+
+	//! Native compositor that is wrapped by client compositors.
+	struct xrt_compositor_native *xcn;
+
 	struct xrt_compositor *compositor;
 
 	struct oxr_session *next;

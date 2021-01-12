@@ -162,6 +162,8 @@ struct comp_compositor
 {
 	struct xrt_compositor_native base;
 
+	struct xrt_system_compositor system;
+
 	//! Renderer helper.
 	struct comp_renderer *r;
 
@@ -238,6 +240,9 @@ struct comp_compositor
 
 
 	struct comp_resources nr;
+
+	//! To insure only one compositor is created.
+	bool compositor_created;
 };
 
 

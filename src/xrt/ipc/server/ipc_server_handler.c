@@ -79,6 +79,16 @@ ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *ics,
 	*out_num_handles = 1;
 	return XRT_SUCCESS;
 }
+
+xrt_result_t
+ipc_handle_system_compositor_get_info(volatile struct ipc_client_state *ics,
+                                      struct xrt_system_compositor_info *out_info)
+{
+	*out_info = ics->server->xsysc->info;
+
+	return XRT_SUCCESS;
+}
+
 xrt_result_t
 ipc_handle_session_create(volatile struct ipc_client_state *ics, const struct xrt_session_prepare_info *xspi)
 {

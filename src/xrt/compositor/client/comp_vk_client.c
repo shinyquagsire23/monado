@@ -545,8 +545,6 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	}
 
 	c->base.base.info.num_formats = xcn->base.info.num_formats;
-	memcpy(c->base.base.info.compositor_vk_deviceUUID, xcn->base.info.compositor_vk_deviceUUID, XRT_GPU_UUID_SIZE);
-	memcpy(c->base.base.info.client_vk_deviceUUID, xcn->base.info.client_vk_deviceUUID, XRT_GPU_UUID_SIZE);
 
 	ret = vk_init_from_given(&c->vk, getProc, instance, physicalDevice, device, queueFamilyIndex, queueIndex);
 	if (ret != VK_SUCCESS) {

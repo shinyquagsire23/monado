@@ -353,7 +353,12 @@ struct xrt_layer_data
 
 /*!
  * @interface xrt_swapchain
+ *
  * Common swapchain interface/base.
+ *
+ * Swapchains are owned by the @ref xrt_compositor that they where created from,
+ * it's the state trackers job to ensure all swapchains are destroyed before
+ * destroying the @ref xrt_compositor.
  */
 struct xrt_swapchain
 {
@@ -519,52 +524,25 @@ struct xrt_session_prepare_info
 
 /*!
  * Capabilities and information about the compositor and device together.
+ *
+ * For client compositors the formats of the native compositor are translated.
  */
 struct xrt_compositor_info
 {
-	struct
-	{
-		struct
-		{
-			uint32_t width_pixels;
-			uint32_t height_pixels;
-			uint32_t sample_count;
-		} recommended; //! Recommended for this view.
-
-		struct
-		{
-			uint32_t width_pixels;
-			uint32_t height_pixels;
-			uint32_t sample_count;
-		} max; //! Maximums for this view.
-	} views[2];    //!< View configuration information.
-
-	//! Maximum number of layers supported by the compositor, never changes.
-	uint32_t max_layers;
-
-	/*!
-	 * Blend modes supported by the system (the combination of the
-	 * compositor and the HMD capabilities), never changes.
-	 */
-	enum xrt_blend_mode supported_blend_modes;
-
 	//! Number of formats, never changes.
 	uint32_t num_formats;
 
 	//! Supported formats, never changes.
 	int64_t formats[XRT_MAX_SWAPCHAIN_FORMATS];
-
-	//! The vk device as used by the compositor, never changes.
-	uint8_t compositor_vk_deviceUUID[XRT_GPU_UUID_SIZE];
-
-	//! The vk device suggested for Vulkan clients, never changes.
-	uint8_t client_vk_deviceUUID[XRT_GPU_UUID_SIZE];
 };
 
 /*!
  * @interface xrt_compositor
  *
  * Common compositor client interface/base.
+ *
+ * A compositor is very much analogous to a `XrSession` but without any of the
+ * input functionality, and does have the same life time as a `XrSession`.
  */
 struct xrt_compositor
 {
@@ -1280,6 +1258,114 @@ xrt_comp_native_destroy(struct xrt_compositor_native **xcn_ptr)
 
 	xcn->base.destroy(&xcn->base);
 	*xcn_ptr = NULL;
+}
+
+
+/*
+ *
+ * System compositor.
+ *
+ */
+
+/*!
+ * Capabilities and information about the system compositor and device together.
+ */
+struct xrt_system_compositor_info
+{
+	struct
+	{
+		struct
+		{
+			uint32_t width_pixels;
+			uint32_t height_pixels;
+			uint32_t sample_count;
+		} recommended; //!< Recommended for this view.
+
+		struct
+		{
+			uint32_t width_pixels;
+			uint32_t height_pixels;
+			uint32_t sample_count;
+		} max; //!< Maximums for this view.
+	} views[2];    //!< View configuration information.
+
+	//! Maximum number of layers supported by the compositor, never changes.
+	uint32_t max_layers;
+
+	/*!
+	 * Blend modes supported by the system (the combination of the
+	 * compositor and the HMD capabilities), never changes.
+	 */
+	enum xrt_blend_mode supported_blend_modes;
+
+	//! The vk device as used by the compositor, never changes.
+	uint8_t compositor_vk_deviceUUID[XRT_GPU_UUID_SIZE];
+
+	//! The vk device suggested for Vulkan clients, never changes.
+	uint8_t client_vk_deviceUUID[XRT_GPU_UUID_SIZE];
+};
+
+/*!
+ * The system compositor is a long lived object, it has the same life time as a
+ * XrSystemID.
+ */
+struct xrt_system_compositor
+{
+	//! Info regarding the system.
+	struct xrt_system_compositor_info info;
+
+	/*!
+	 * Create a new native compositor.
+	 *
+	 * This signals that you want to start XR, and as such implicitly brings
+	 * up a new session. Does not "call" `xrBeginSession`.
+	 *
+	 * Some system compositors might only support that one  `xrt_compositor`
+	 * is always at a time, will return `XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED`
+	 * if this is the case.
+	 */
+	xrt_result_t (*create_native_compositor)(struct xrt_system_compositor *xsc,
+	                                         struct xrt_compositor_native **out_xcn);
+
+	/*!
+	 * Teardown the system compositor.
+	 *
+	 * The state tracker must make sure that no compositors are alive.
+	 */
+	void (*destroy)(struct xrt_system_compositor *xsc);
+};
+
+/*!
+ * @copydoc xrt_system_compositor::create_native_compositor
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_system_compositor
+ */
+static inline xrt_result_t
+xrt_syscomp_create_native_compositor(struct xrt_system_compositor *xsc, struct xrt_compositor_native **out_xcn)
+{
+	return xsc->create_native_compositor(xsc, out_xcn);
+}
+
+/*!
+ * @copydoc xrt_system_compositor::destroy
+ *
+ * Helper for calling through the function pointer: does a null check and sets
+ * xcn_ptr to null if freed.
+ *
+ * @public @memberof xrt_system_compositor
+ */
+static inline void
+xrt_syscomp_destroy(struct xrt_system_compositor **xsc_ptr)
+{
+	struct xrt_system_compositor *xsc = *xsc_ptr;
+	if (xsc == NULL) {
+		return;
+	}
+
+	xsc->destroy(xsc);
+	*xsc_ptr = NULL;
 }
 
 

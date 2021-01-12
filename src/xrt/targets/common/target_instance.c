@@ -11,17 +11,18 @@
 #include "xrt/xrt_gfx_native.h"
 
 static int
-t_instance_create_native_compositor(struct xrt_instance *xinst,
+t_instance_create_system_compositor(struct xrt_instance *xinst,
                                     struct xrt_device *xdev,
-                                    struct xrt_compositor_native **out_xcn)
+                                    struct xrt_system_compositor **out_xsysc)
 {
-	struct xrt_compositor_native *xcn = xrt_gfx_provider_create_native(xdev);
 
-	if (xcn == NULL) {
+	struct xrt_system_compositor *xsysc = NULL;
+	xrt_result_t ret = xrt_gfx_provider_create_system(xdev, &xsysc);
+	if (ret < 0 || xsysc == NULL) {
 		return -1;
 	}
 
-	*out_xcn = xcn;
+	*out_xsysc = xsysc;
 
 	return 0;
 }
@@ -44,7 +45,7 @@ xrt_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 
 	struct t_instance *tinst = U_TYPED_CALLOC(struct t_instance);
 	tinst->base.select = t_instance_select;
-	tinst->base.create_native_compositor = t_instance_create_native_compositor;
+	tinst->base.create_system_compositor = t_instance_create_system_compositor;
 	tinst->base.get_prober = t_instance_get_prober;
 	tinst->base.destroy = t_instance_destroy;
 	tinst->xp = xp;

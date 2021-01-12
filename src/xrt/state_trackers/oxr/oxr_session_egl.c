@@ -59,9 +59,13 @@ oxr_session_populate_egl(struct oxr_logger *log,
 		                 egl_client_type);
 	}
 
-	struct xrt_compositor_native *xcn = sess->sys->xcn;
-	struct xrt_compositor_gl *xcgl =
-	    xrt_gfx_provider_create_gl_egl(xcn, next->display, next->config, next->context, next->getProcAddress);
+	struct xrt_compositor_native *xcn = sess->xcn;
+	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_egl( //
+	    xcn,                                                         //
+	    next->display,                                               //
+	    next->config,                                                //
+	    next->context,                                               //
+	    next->getProcAddress);                                       //
 
 	if (xcgl == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Failed to create an egl client compositor");

@@ -161,12 +161,12 @@ ipc_client_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs
 }
 
 static int
-ipc_client_instance_create_native_compositor(struct xrt_instance *xinst,
+ipc_client_instance_create_system_compositor(struct xrt_instance *xinst,
                                              struct xrt_device *xdev,
-                                             struct xrt_compositor_native **out_xcn)
+                                             struct xrt_system_compositor **out_xsysc)
 {
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
-	struct xrt_compositor_native *xcn = NULL;
+	struct xrt_system_compositor *xsysc = NULL;
 	struct xrt_image_native_allocator *xina = NULL;
 
 #ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
@@ -174,13 +174,13 @@ ipc_client_instance_create_native_compositor(struct xrt_instance *xinst,
 	xina = android_ahardwarebuffer_allocator_create();
 #endif // XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
 
-	int ret = ipc_client_compositor_create(&ii->ipc_c, xina, xdev, &xcn);
-	if (ret < 0 || xcn == NULL) {
+	int ret = ipc_client_create_system_compositor(&ii->ipc_c, xina, xdev, &xsysc);
+	if (ret < 0 || xsysc == NULL) {
 		xrt_images_destroy(&xina);
 		return -1;
 	}
 
-	*out_xcn = xcn;
+	*out_xsysc = xsysc;
 
 	return 0;
 }
@@ -234,7 +234,7 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 {
 	struct ipc_client_instance *ii = U_TYPED_CALLOC(struct ipc_client_instance);
 	ii->base.select = ipc_client_instance_select;
-	ii->base.create_native_compositor = ipc_client_instance_create_native_compositor;
+	ii->base.create_system_compositor = ipc_client_instance_create_system_compositor;
 	ii->base.get_prober = ipc_client_instance_get_prober;
 	ii->base.destroy = ipc_client_instance_destroy;
 

@@ -67,6 +67,13 @@
 
 #define WINDOW_TITLE "Monado"
 
+
+/*
+ *
+ * Helper functions.
+ *
+ */
+
 static double
 ns_to_ms(int64_t ns)
 {
@@ -81,58 +88,12 @@ ts_ms()
 	return ns_to_ms(monotonic);
 }
 
-/*!
+
+/*
+ *
+ * Compositor functions.
+ *
  */
-static void
-compositor_destroy(struct xrt_compositor *xc)
-{
-	struct comp_compositor *c = comp_compositor(xc);
-	struct vk_bundle *vk = &c->vk;
-
-	COMP_DEBUG(c, "DESTROY");
-
-	// Make sure we don't have anything to destroy.
-	comp_compositor_garbage_collect(c);
-
-	if (c->r) {
-		comp_renderer_destroy(c->r);
-		c->r = NULL;
-	}
-
-	comp_resources_close(c, &c->nr);
-
-	// As long as vk_bundle is valid it's safe to call this function.
-	comp_shaders_close(&c->vk, &c->shaders);
-
-	// Does NULL checking.
-	comp_target_destroy(&c->target);
-
-	if (vk->cmd_pool != VK_NULL_HANDLE) {
-		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
-		vk->cmd_pool = VK_NULL_HANDLE;
-	}
-
-	if (vk->device != VK_NULL_HANDLE) {
-		vk->vkDestroyDevice(vk->device, NULL);
-		vk->device = VK_NULL_HANDLE;
-	}
-
-	os_mutex_destroy(&vk->queue_mutex);
-	os_mutex_destroy(&vk->cmd_pool_mutex);
-
-	if (vk->instance != VK_NULL_HANDLE) {
-		vk->vkDestroyInstance(vk->instance, NULL);
-		vk->instance = VK_NULL_HANDLE;
-	}
-
-	if (c->compositor_frame_times.debug_var) {
-		free(c->compositor_frame_times.debug_var);
-	}
-
-	u_threading_stack_fini(&c->threading.destroy_swapchains);
-
-	free(c);
-}
 
 static xrt_result_t
 compositor_prepare_session(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
@@ -595,6 +556,93 @@ compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *ou
 	}
 
 	return XRT_SUCCESS;
+}
+
+static void
+compositor_destroy(struct xrt_compositor *xc)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+
+	COMP_DEBUG(c, "COMP_DESTROY");
+
+	assert(c->compositor_created);
+
+	c->compositor_created = false;
+}
+
+
+/*
+ *
+ * System compositor functions.
+ *
+ */
+
+static xrt_result_t
+system_compositor_create_native_compositor(struct xrt_system_compositor *xsc, struct xrt_compositor_native **out_xcn)
+{
+	struct comp_compositor *c = container_of(xsc, struct comp_compositor, system);
+
+	COMP_DEBUG(c, "SYSCOMP_CREATE_NATIVE_COMPOSITOR");
+
+	if (c->compositor_created) {
+		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
+	}
+
+	c->compositor_created = true;
+	*out_xcn = &c->base;
+
+	return XRT_SUCCESS;
+}
+
+static void
+system_compositor_destroy(struct xrt_system_compositor *xsc)
+{
+	struct comp_compositor *c = container_of(xsc, struct comp_compositor, system);
+	struct vk_bundle *vk = &c->vk;
+
+	COMP_DEBUG(c, "SYSCOMP_DESTROY");
+
+	// Make sure we don't have anything to destroy.
+	comp_compositor_garbage_collect(c);
+
+	if (c->r) {
+		comp_renderer_destroy(c->r);
+		c->r = NULL;
+	}
+
+	comp_resources_close(c, &c->nr);
+
+	// As long as vk_bundle is valid it's safe to call this function.
+	comp_shaders_close(&c->vk, &c->shaders);
+
+	// Does NULL checking.
+	comp_target_destroy(&c->target);
+
+	if (vk->cmd_pool != VK_NULL_HANDLE) {
+		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
+		vk->cmd_pool = VK_NULL_HANDLE;
+	}
+
+	if (vk->device != VK_NULL_HANDLE) {
+		vk->vkDestroyDevice(vk->device, NULL);
+		vk->device = VK_NULL_HANDLE;
+	}
+
+	os_mutex_destroy(&vk->queue_mutex);
+	os_mutex_destroy(&vk->cmd_pool_mutex);
+
+	if (vk->instance != VK_NULL_HANDLE) {
+		vk->vkDestroyInstance(vk->instance, NULL);
+		vk->instance = VK_NULL_HANDLE;
+	}
+
+	if (c->compositor_frame_times.debug_var) {
+		free(c->compositor_frame_times.debug_var);
+	}
+
+	u_threading_stack_fini(&c->threading.destroy_swapchains);
+
+	free(c);
 }
 
 
@@ -1293,8 +1341,8 @@ is_format_supported(struct comp_compositor *c, VkFormat format)
 		}                                                                                                      \
 	} while (false)
 
-struct xrt_compositor_native *
-xrt_gfx_provider_create_native(struct xrt_device *xdev)
+xrt_result_t
+xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compositor **out_xsysc)
 {
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 
@@ -1317,6 +1365,8 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	c->base.base.layer_commit = compositor_layer_commit;
 	c->base.base.poll_events = compositor_poll_events;
 	c->base.base.destroy = compositor_destroy;
+	c->system.create_native_compositor = system_compositor_create_native_compositor;
+	c->system.destroy = system_compositor_destroy;
 	c->xdev = xdev;
 
 	u_threading_stack_init(&c->threading.destroy_swapchains);
@@ -1347,8 +1397,9 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	    !compositor_init_swapchain(c) ||
 	    !compositor_init_renderer(c)) {
 		COMP_DEBUG(c, "Failed to init compositor %p", (void *)c);
-		c->base.base.destroy(&c->base.base);
-		return NULL;
+		c->system.destroy(&c->system);
+
+		return XRT_ERROR_VULKAN;
 	}
 	// clang-format on
 
@@ -1356,19 +1407,12 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 
 	COMP_DEBUG(c, "Done %p", (void *)c);
 
-	struct xrt_compositor_info *info = &c->base.base.info;
-
-	// Required by OpenXR spec.
-	info->max_layers = 16;
-
-	memcpy(info->compositor_vk_deviceUUID, c->settings.selected_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
-
-	memcpy(info->client_vk_deviceUUID, c->settings.client_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
-
 	/*!
 	 * @todo Support more like, depth/float formats etc,
 	 * remember to update the GL client as well.
 	 */
+
+	struct xrt_compositor_info *info = &c->base.base.info;
 	/*
 	 * These are the available formats we will expose to our clients.
 	 *
@@ -1399,6 +1443,14 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	assert(formats <= XRT_MAX_SWAPCHAIN_FORMATS);
 	info->num_formats = formats;
 
+	struct xrt_system_compositor_info *sys_info = &c->system.info;
+
+	// Required by OpenXR spec.
+	sys_info->max_layers = 16;
+
+	memcpy(sys_info->compositor_vk_deviceUUID, c->settings.selected_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
+	memcpy(sys_info->client_vk_deviceUUID, c->settings.client_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
+
 	float scale = c->settings.viewport_scale;
 
 	if (scale > 2.0) {
@@ -1417,19 +1469,19 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 	uint32_t h1_2 = xdev->hmd->views[1].display.h_pixels * 2;
 
 	// clang-format off
-	info->views[0].recommended.width_pixels  = w0;
-	info->views[0].recommended.height_pixels = h0;
-	info->views[0].recommended.sample_count  = 1;
-	info->views[0].max.width_pixels          = w0_2;
-	info->views[0].max.height_pixels         = h0_2;
-	info->views[0].max.sample_count          = 1;
+	sys_info->views[0].recommended.width_pixels  = w0;
+	sys_info->views[0].recommended.height_pixels = h0;
+	sys_info->views[0].recommended.sample_count  = 1;
+	sys_info->views[0].max.width_pixels          = w0_2;
+	sys_info->views[0].max.height_pixels         = h0_2;
+	sys_info->views[0].max.sample_count          = 1;
 
-	info->views[1].recommended.width_pixels  = w1;
-	info->views[1].recommended.height_pixels = h1;
-	info->views[1].recommended.sample_count  = 1;
-	info->views[1].max.width_pixels          = w1_2;
-	info->views[1].max.height_pixels         = h1_2;
-	info->views[1].max.sample_count          = 1;
+	sys_info->views[1].recommended.width_pixels  = w1;
+	sys_info->views[1].recommended.height_pixels = h1;
+	sys_info->views[1].recommended.sample_count  = 1;
+	sys_info->views[1].max.width_pixels          = w1_2;
+	sys_info->views[1].max.height_pixels         = h1_2;
+	sys_info->views[1].max.sample_count          = 1;
 	// clang-format on
 
 	u_var_add_root(c, "Compositor", true);
@@ -1459,7 +1511,9 @@ xrt_gfx_provider_create_native(struct xrt_device *xdev)
 
 	c->state = COMP_STATE_READY;
 
-	return &c->base;
+	*out_xsysc = &c->system;
+
+	return XRT_SUCCESS;
 }
 
 void

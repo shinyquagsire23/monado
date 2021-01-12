@@ -50,6 +50,9 @@ struct ipc_client_compositor
 {
 	struct xrt_compositor_native base;
 
+	//! Should be turned into it's own object.
+	struct xrt_system_compositor system;
+
 	struct ipc_connection *ipc_c;
 
 	//! Optional image allocator.
@@ -64,6 +67,9 @@ struct ipc_client_compositor
 
 		enum xrt_blend_mode env_blend_mode;
 	} layers;
+
+	//! Has the native compositor been created, only supports one for now.
+	bool compositor_created;
 
 #ifdef IPC_USE_LOOPBACK_IMAGE_ALLOCATOR
 	//! To test image allocator.
@@ -121,6 +127,14 @@ get_info(struct xrt_compositor *xc, struct xrt_compositor_info *out_info)
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	IPC_CALL_CHK(ipc_call_compositor_get_info(icc->ipc_c, out_info));
+
+	return res;
+}
+
+static xrt_result_t
+get_system_info(struct ipc_client_compositor *icc, struct xrt_system_compositor_info *out_info)
+{
+	IPC_CALL_CHK(ipc_call_system_compositor_get_info(icc->ipc_c, out_info));
 
 	return res;
 }
@@ -648,13 +662,9 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	// Does null checking.
-	xrt_images_destroy(&icc->xina);
+	assert(icc->compositor_created);
 
-	//! @todo Implement
-	IPC_TRACE(icc->ipc_c, "IPC:  NOT IMPLEMENTED compositor destroy");
-
-	free(icc);
+	icc->compositor_created = false;
 }
 
 
@@ -768,15 +778,51 @@ ipc_compositor_images_destroy(struct xrt_image_native_allocator *xina)
 
 /*
  *
+ * System compositor.
+ *
+ */
+
+xrt_result_t
+ipc_syscomp_create_native_compositor(struct xrt_system_compositor *xsc, struct xrt_compositor_native **out_xcn)
+{
+	struct ipc_client_compositor *icc = container_of(xsc, struct ipc_client_compositor, system);
+
+	if (icc->compositor_created) {
+		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
+	}
+
+	icc->compositor_created = true;
+	*out_xcn = &icc->base;
+
+	return XRT_SUCCESS;
+}
+
+void
+ipc_syscomp_destroy(struct xrt_system_compositor *xsc)
+{
+	struct ipc_client_compositor *icc = container_of(xsc, struct ipc_client_compositor, system);
+
+	// Does null checking.
+	xrt_images_destroy(&icc->xina);
+
+	//! @todo Implement
+	IPC_TRACE(icc->ipc_c, "IPC:  NOT IMPLEMENTED compositor destroy");
+
+	free(icc);
+}
+
+
+/*
+ *
  * 'Exported' functions.
  *
  */
 
 int
-ipc_client_compositor_create(struct ipc_connection *ipc_c,
-                             struct xrt_image_native_allocator *xina,
-                             struct xrt_device *xdev,
-                             struct xrt_compositor_native **out_xcn)
+ipc_client_create_system_compositor(struct ipc_connection *ipc_c,
+                                    struct xrt_image_native_allocator *xina,
+                                    struct xrt_device *xdev,
+                                    struct xrt_system_compositor **out_xcs)
 {
 	struct ipc_client_compositor *c = U_TYPED_CALLOC(struct ipc_client_compositor);
 
@@ -799,6 +845,8 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	c->base.base.layer_commit = ipc_compositor_layer_commit;
 	c->base.base.destroy = ipc_compositor_destroy;
 	c->base.base.poll_events = ipc_compositor_poll_events;
+	c->system.create_native_compositor = ipc_syscomp_create_native_compositor;
+	c->system.destroy = ipc_syscomp_destroy;
 	c->ipc_c = ipc_c;
 	c->xina = xina;
 
@@ -816,7 +864,10 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	// Fetch info from the compositor, among it the format format list.
 	get_info(&(c->base.base), &c->base.base.info);
 
-	*out_xcn = &c->base;
+	// Fetch info from the system compositor.
+	get_system_info(c, &c->system.info);
+
+	*out_xcs = &c->system;
 
 	return 0;
 }

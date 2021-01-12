@@ -20,13 +20,13 @@ extern "C" {
 struct time_state;
 
 /*!
- * Creates the main native compositor.
+ * Creates the main system compositor.
  *
  * @ingroup xrt_iface
- * @relates xrt_compositor_native
+ * @relates xrt_system_compositor
  */
-struct xrt_compositor_native *
-xrt_gfx_provider_create_native(struct xrt_device *xdev);
+xrt_result_t
+xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compositor **out_xsysc);
 
 
 #ifdef __cplusplus

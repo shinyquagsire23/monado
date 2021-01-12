@@ -1931,6 +1931,7 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	u_hashmap_int_destroy(&sess->act_attachments_by_key);
 
 	xrt_comp_destroy(&sess->compositor);
+	xrt_comp_native_destroy(&sess->xcn);
 
 	os_semaphore_destroy(&sess->sem);
 	os_mutex_destroy(&sess->active_wait_frames_lock);
@@ -1940,12 +1941,25 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	return ret;
 }
 
+
+#define OXR_ALLOCATE_NATIVE_COMPOSITOR(LOG, SESS)                                                                      \
+	do {                                                                                                           \
+		xrt_result_t xret = xrt_syscomp_create_native_compositor((SESS)->sys->xsysc, &(SESS)->xcn);            \
+		if (xret == XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED) {                                                 \
+			return oxr_error((LOG), XR_ERROR_LIMIT_REACHED, "Per instance multi-session not supported.");  \
+		} else if (xret != XRT_SUCCESS) {                                                                      \
+			return oxr_error((LOG), XR_ERROR_RUNTIME_FAILURE, "Failed to create native compositor! '%i'",  \
+			                 xret);                                                                        \
+		}                                                                                                      \
+	} while (false)
+
 #define OXR_SESSION_ALLOCATE(LOG, SYS, OUT)                                                                            \
 	do {                                                                                                           \
 		OXR_ALLOCATE_HANDLE_OR_RETURN(LOG, OUT, OXR_XR_DEBUG_SESSION, oxr_session_destroy,                     \
 		                              &(SYS)->inst->handle);                                                   \
 		(OUT)->sys = (SYS);                                                                                    \
 	} while (0)
+
 
 /* Just the allocation and populate part, so we can use early-returns to
  * simplify code flow and avoid weird if/else */
@@ -1966,6 +1980,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, *out_session);
 		return oxr_session_populate_gl_xlib(log, sys, opengl_xlib, *out_session);
 	}
 #endif
@@ -1982,6 +1997,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, *out_session);
 		return oxr_session_populate_gles_android(log, sys, opengles_android, *out_session);
 	}
 #endif
@@ -1997,6 +2013,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, *out_session);
 		return oxr_session_populate_vk(log, sys, vulkan, *out_session);
 	}
 #endif
@@ -2012,6 +2029,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, *out_session);
 		return oxr_session_populate_egl(log, sys, egl, *out_session);
 	}
 #endif

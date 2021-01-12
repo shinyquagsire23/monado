@@ -100,7 +100,7 @@ oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId
 	sys->vulkan_enable2_physical_device = VK_NULL_HANDLE;
 
 	// Headless.
-	if (sys->xcn == NULL) {
+	if (sys->xsysc == NULL) {
 		sys->blend_modes[0] = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
 		sys->num_blend_modes = 1;
 		return XR_SUCCESS;
@@ -112,7 +112,7 @@ oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId
 		oxr_log(log, "Clamped scale to 200%%\n");
 	}
 
-	struct xrt_compositor_info *info = &sys->xcn->base.info;
+	struct xrt_system_compositor_info *info = &sys->xsysc->info;
 
 	uint32_t w0 = (uint32_t)(info->views[0].recommended.width_pixels * scale);
 	uint32_t h0 = (uint32_t)(info->views[0].recommended.height_pixels * scale);
@@ -193,7 +193,7 @@ oxr_system_get_properties(struct oxr_logger *log, struct oxr_system *sys, XrSyst
 	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE, "Monado: %.*s", 247, xdev->str);
 
 	// Get from compositor.
-	struct xrt_compositor_info *info = &sys->xcn->base.info;
+	struct xrt_system_compositor_info *info = &sys->xsysc->info;
 
 	properties->graphicsProperties.maxLayerCount = info->max_layers;
 	properties->graphicsProperties.maxSwapchainImageWidth = 1024 * 16;

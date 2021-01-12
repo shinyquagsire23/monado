@@ -75,7 +75,7 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	struct oxr_instance *inst = (struct oxr_instance *)hb;
 
 	// Does a null-ptr check.
-	xrt_comp_native_destroy(&inst->system.xcn);
+	xrt_syscomp_destroy(&inst->system.xsysc);
 
 	u_var_remove_root((void *)inst);
 
@@ -303,14 +303,16 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 
 	// Create the compositor, if we are not headless.
 	if (!inst->extensions.MND_headless) {
-		xret = xrt_instance_create_native_compositor(inst->xinst, dev, &sys->xcn);
-		if (ret < 0 || sys->xcn == NULL) {
+		xret = xrt_instance_create_system_compositor(inst->xinst, dev, &sys->xsysc);
+		if (ret < 0 || sys->xsysc == NULL) {
 			ret = oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-			                "Failed to create a native compositor '%i'", xret);
+			                "Failed to create the system compositor '%i'", xret);
+
 			oxr_instance_destroy(log, &inst->handle);
 			return ret;
 		}
 
+#if 0
 		// Make sure that the compositor we were given can do all the
 		// things the build config promised.
 #define CHECK_LAYER_TYPE(NAME, MEMBER_NAME)                                                                            \
@@ -344,6 +346,7 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 		CHECK_LAYER_TYPE("equirect2 layers", layer_equirect2);
 #endif
 #undef CHECK_LAYER_TYPE
+#endif
 	}
 
 	ret = oxr_system_fill_in(log, inst, 1, &inst->system);

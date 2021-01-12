@@ -11,11 +11,11 @@
 
 
 static int
-t_instance_create_native_compositor_stub(struct xrt_instance *xinst,
+t_instance_create_system_compositor_stub(struct xrt_instance *xinst,
                                          struct xrt_device *xdev,
-                                         struct xrt_compositor_native **out_xcn)
+                                         struct xrt_system_compositor **out_xsysc)
 {
-	*out_xcn = NULL;
+	*out_xsysc = NULL;
 
 	return -1;
 }
@@ -39,7 +39,7 @@ xrt_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 
 	struct t_instance *tinst = U_TYPED_CALLOC(struct t_instance);
 	tinst->base.select = t_instance_select;
-	tinst->base.create_native_compositor = t_instance_create_native_compositor_stub;
+	tinst->base.create_system_compositor = t_instance_create_system_compositor_stub;
 	tinst->base.get_prober = t_instance_get_prober;
 	tinst->base.destroy = t_instance_destroy;
 	tinst->xp = xp;

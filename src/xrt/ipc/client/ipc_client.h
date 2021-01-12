@@ -68,19 +68,19 @@ struct ipc_connection
  */
 
 /*!
- * Create an IPC client compositor.
+ * Create an IPC client system compositor.
  *
  * @param ipc_c IPC connection
  * @param xina Optional native image allocator for client-side allocation. Takes
  * ownership if one is supplied.
  * @param xdev Taken in but not used currently @todo remove this param?
- * @param[out] out_xcn Pointer to receive the created xrt_compositor_native.
+ * @param[out] out_xcn Pointer to receive the created xrt_system_compositor.
  */
 int
-ipc_client_compositor_create(struct ipc_connection *ipc_c,
-                             struct xrt_image_native_allocator *xina,
-                             struct xrt_device *xdev,
-                             struct xrt_compositor_native **out_xcn);
+ipc_client_create_system_compositor(struct ipc_connection *ipc_c,
+                                    struct xrt_image_native_allocator *xina,
+                                    struct xrt_device *xdev,
+                                    struct xrt_system_compositor **out_xcs);
 
 struct xrt_device *
 ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *xtrack, uint32_t device_id);

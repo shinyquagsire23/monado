@@ -328,7 +328,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 
 	char suggested_uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
 	for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
-		sprintf(suggested_uuid_str + i * 3, "%02x ", sys->xcn->base.info.client_vk_deviceUUID[i]);
+		sprintf(suggested_uuid_str + i * 3, "%02x ", sys->xsysc->info.client_vk_deviceUUID[i]);
 	}
 
 	enum u_logging_level ll = debug_get_log_option_compositor_log();
@@ -349,7 +349,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 			oxr_log(log, "GPU %d: uuid %s", i, uuid_str);
 		}
 
-		if (memcmp(pdidp.deviceUUID, sys->xcn->base.info.client_vk_deviceUUID, XRT_GPU_UUID_SIZE) == 0) {
+		if (memcmp(pdidp.deviceUUID, sys->xsysc->info.client_vk_deviceUUID, XRT_GPU_UUID_SIZE) == 0) {
 			gpu_index = i;
 			if (ll <= U_LOGGING_DEBUG) {
 				oxr_log(log,

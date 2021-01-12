@@ -160,7 +160,10 @@ struct ipc_server
 	void *hack;
 	/* ---- HACK ---- */
 
-	struct xrt_compositor *xc;
+
+	//! System compositor.
+	struct xrt_system_compositor *xsysc;
+	//! Native compositor.
 	struct xrt_compositor_native *xcn;
 
 	struct ipc_device idevs[IPC_SERVER_NUM_XDEVS];

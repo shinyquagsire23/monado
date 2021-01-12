@@ -33,7 +33,7 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              XrGraphicsBindingOpenGLXlibKHR const *next,
                              struct oxr_session *sess)
 {
-	struct xrt_compositor_native *xcn = sess->sys->xcn;
+	struct xrt_compositor_native *xcn = sess->xcn;
 	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_xlib(
 	    xcn, next->xDisplay, next->visualid, next->glxFBConfig, next->glxDrawable, next->glxContext);
 
