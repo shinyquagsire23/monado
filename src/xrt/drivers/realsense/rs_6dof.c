@@ -13,6 +13,7 @@
 #include "xrt/xrt_device.h"
 #include "math/m_api.h"
 #include "math/m_space.h"
+#include "math/m_predict.h"
 
 #include "os/os_time.h"
 #include "os/os_threading.h"
@@ -333,11 +334,18 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 	}
 
 	os_thread_helper_lock(&rs->oth);
-	struct xrt_space_relation relation = rs->relation;
+	struct xrt_space_relation relation_not_predicted = rs->relation;
+	uint64_t relation_timestamp_ns = rs->relation_timestamp_ns;
 	os_thread_helper_unlock(&rs->oth);
 
-	struct xrt_space_graph xsg = {0};
+	int64_t diff_prediction_ns = 0;
+	diff_prediction_ns = at_timestamp_ns - relation_timestamp_ns;
+	struct xrt_space_relation relation;
 
+	double delta_s = time_ns_to_s(diff_prediction_ns);
+	m_predict_relation(&relation_not_predicted, delta_s, &relation);
+
+	struct xrt_space_graph xsg = {0};
 	m_space_graph_add_pose(&xsg, &rs->offset);
 	m_space_graph_add_relation(&xsg, &relation);
 	m_space_graph_resolve(&xsg, out_relation);
