@@ -84,6 +84,7 @@ target_link_libraries(st_oxr PRIVATE
 	aux_math
 	aux_generated_bindings
 	comp_client
+	aux-includes
 	PUBLIC
 	aux_os
 	Vulkan::Vulkan

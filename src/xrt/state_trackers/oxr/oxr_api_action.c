@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "b_generated_bindings.h"
+#include "bindings/b_generated_bindings.h"
 
 /*
  *

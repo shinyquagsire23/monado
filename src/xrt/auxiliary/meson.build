@@ -3,46 +3,12 @@
 
 aux_include = include_directories('.')
 
+subdir('bindings')
+
 u_git_tag_c = vcs_tag(
 	input: 'util/u_git_tag.c.in',
 	output: 'u_git_tag.c',
 	replace_string: '@GIT_DESC@',
-)
-
-###
-# Binding generation
-#
-
-aux_bindings_dir = join_paths(meson.current_source_dir(), 'bindings')
-
-prog_python = import('python').find_installation('python3')
-
-generated_bindings = custom_target('bindings code',
-	command: [prog_python, '@INPUT@', '@OUTPUT@'],
-	input: ['bindings/bindings.py', 'bindings/bindings.json'],
-	output: [
-		'b_generated_bindings.h',
-		'b_generated_bindings.c',
-	]
-)
-
-generated_bindings_h = generated_bindings[0]
-generated_bindings_c = generated_bindings[1]
-
-lib_aux_generated_bindings = static_library(
-	'aux_generated_bindings',
-	generated_bindings_c,
-	include_directories: [
-		xrt_include,
-	],
-	dependencies: [
-		xrt_config_have,
-	]
-)
-
-aux_generated_bindings = declare_dependency(
-	include_directories: aux_include,
-	link_with: lib_aux_generated_bindings,
 )
 
 lib_aux_util = static_library(

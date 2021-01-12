@@ -29,7 +29,7 @@ extern "C" {
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_instance.h"
 
-#include "b_generated_bindings.h"
+#include "bindings/b_generated_bindings.h"
 }
 
 #pragma GCC diagnostic push
