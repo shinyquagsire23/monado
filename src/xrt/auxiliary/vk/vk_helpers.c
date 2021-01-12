@@ -557,8 +557,13 @@ vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
 	    .commandBufferCount = 1,
 	};
 
+	os_mutex_lock(&vk->cmd_pool_mutex);
+
 	ret = vk->vkAllocateCommandBuffers(vk->device, &cmd_buffer_info,
 	                                   &cmd_buffer);
+
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkAllocateCommandBuffers: %s",
 		         vk_result_string(ret));
@@ -665,7 +670,9 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 out_fence:
 	vk->vkDestroyFence(vk->device, fence, NULL);
 out:
+	os_mutex_lock(&vk->cmd_pool_mutex);
 	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &cmd_buffer);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	return ret;
 }

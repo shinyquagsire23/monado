@@ -56,6 +56,8 @@ struct vk_bundle
 
 	VkCommandPool cmd_pool;
 
+	struct os_mutex cmd_pool_mutex;
+
 	// clang-format off
 	// Loader functions
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;

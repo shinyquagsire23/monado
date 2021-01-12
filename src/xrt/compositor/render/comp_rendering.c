@@ -216,9 +216,15 @@ create_command_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd)
 	};
 
 	VkCommandBuffer cmd = VK_NULL_HANDLE;
+
+	os_mutex_lock(&vk->cmd_pool_mutex);
+
 	ret = vk->vkAllocateCommandBuffers(vk->device,       //
 	                                   &cmd_buffer_info, //
 	                                   &cmd);            //
+
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkCreateFramebuffer failed: %s",
 		         vk_result_string(ret));

@@ -118,6 +118,7 @@ compositor_destroy(struct xrt_compositor *xc)
 	}
 
 	os_mutex_destroy(&vk->queue_mutex);
+	os_mutex_destroy(&vk->cmd_pool_mutex);
 
 	if (vk->instance != VK_NULL_HANDLE) {
 		vk->vkDestroyInstance(vk->instance, NULL);
@@ -936,6 +937,10 @@ compositor_init_vulkan(struct comp_compositor *c)
 	    ARRAY_SIZE(optional_device_extensions));
 
 	if (os_mutex_init(&c->vk.queue_mutex) != 0) {
+		return false;
+	}
+
+	if (os_mutex_init(&c->vk.cmd_pool_mutex) != 0) {
 		return false;
 	}
 
