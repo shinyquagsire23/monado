@@ -162,9 +162,6 @@ struct comp_compositor
 {
 	struct xrt_compositor_native base;
 
-	//! A link back to the compositor we are presenting to the client.
-	struct xrt_compositor *client;
-
 	//! Renderer helper.
 	struct comp_renderer *r;
 
