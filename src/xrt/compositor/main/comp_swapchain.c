@@ -109,6 +109,27 @@ alloc_and_set_funcs(struct comp_compositor *c, uint32_t num_images)
 	return sc;
 }
 
+static bool
+is_depth_only_format(VkFormat format)
+{
+	return format == VK_FORMAT_D16_UNORM || format == VK_FORMAT_D32_SFLOAT;
+}
+
+static bool
+is_depth_stencil_format(VkFormat format)
+{
+
+	return format == VK_FORMAT_D16_UNORM_S8_UINT ||
+	       format == VK_FORMAT_D24_UNORM_S8_UINT ||
+	       format == VK_FORMAT_D32_SFLOAT_S8_UINT;
+}
+
+static bool
+is_stencil_only_format(VkFormat format)
+{
+	return format == VK_FORMAT_S8_UINT;
+}
+
 static void
 do_post_create_vulkan_setup(struct comp_compositor *c,
                             const struct xrt_swapchain_create_info *info,
@@ -125,8 +146,22 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 	};
 
 	bool depth = (info->bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0;
-	VkImageAspectFlagBits aspect =
-	    depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+	VkImageAspectFlagBits aspect = 0;
+	if (depth) {
+		if (is_depth_only_format(info->format)) {
+			aspect |= VK_IMAGE_ASPECT_DEPTH_BIT;
+		}
+		if (is_depth_stencil_format(info->format)) {
+			aspect |= VK_IMAGE_ASPECT_DEPTH_BIT |
+			          VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+		if (is_stencil_only_format(info->format)) {
+			aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+	} else {
+		aspect |= VK_IMAGE_ASPECT_COLOR_BIT;
+	}
 
 	VkFormat format = info->format;
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
