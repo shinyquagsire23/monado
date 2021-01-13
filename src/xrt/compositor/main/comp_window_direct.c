@@ -271,7 +271,8 @@ comp_window_direct_acquire_xlib_display(struct comp_target_swapchain *cts,
 			           "This can be caused by the AllowHMD "
 			           "xorg.conf option. Please make sure that "
 			           "AllowHMD is not set (like in '99-HMD.conf' "
-			           "from OpenHMD).");
+			           "from OpenHMD) and that the desktop is not "
+			           "currently extended to this display.");
 		}
 	}
 	return ret;
