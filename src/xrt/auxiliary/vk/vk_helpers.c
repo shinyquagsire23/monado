@@ -618,9 +618,11 @@ vk_set_image_layout(struct vk_bundle *vk,
 	    .subresourceRange = subresource_range,
 	};
 
+	os_mutex_lock(&vk->cmd_pool_mutex);
 	vk->vkCmdPipelineBarrier(cmd_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 	                         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL,
 	                         0, NULL, 1, &barrier);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	return VK_SUCCESS;
 }
