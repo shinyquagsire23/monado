@@ -69,10 +69,8 @@ r_hmd_get_tracked_pose(struct xrt_device *xdev,
 
 	out_relation->pose = rh->r->latest.hmd.pose;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
 }
 
 static void
@@ -113,9 +111,7 @@ r_hmd_get_view_pose(struct xrt_device *xdev,
 }
 
 static void
-r_hmd_set_output(struct xrt_device *xdev,
-                 enum xrt_output_name name,
-                 union xrt_output_value *value)
+r_hmd_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
 {
 	// Empty
 }

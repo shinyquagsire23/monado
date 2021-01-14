@@ -18,18 +18,15 @@
 #include <assert.h>
 
 extern "C" void
-m_space_relation_invert(struct xrt_space_relation *relation,
-                        struct xrt_space_relation *out_relation)
+m_space_relation_invert(struct xrt_space_relation *relation, struct xrt_space_relation *out_relation)
 {
 	assert(relation != NULL);
 	assert(out_relation != NULL);
 
 	out_relation->relation_flags = relation->relation_flags;
 	math_pose_invert(&relation->pose, &out_relation->pose);
-	out_relation->linear_velocity =
-	    m_vec3_mul_scalar(relation->linear_velocity, -1);
-	out_relation->angular_velocity =
-	    m_vec3_mul_scalar(relation->angular_velocity, -1);
+	out_relation->linear_velocity = m_vec3_mul_scalar(relation->linear_velocity, -1);
+	out_relation->angular_velocity = m_vec3_mul_scalar(relation->angular_velocity, -1);
 }
 
 /*
@@ -44,24 +41,20 @@ dump_relation(const struct xrt_space_relation *r)
 	fprintf(stderr, "%04x", r->relation_flags);
 
 	if (r->relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) {
-		fprintf(stderr, " P{%f %f %f}", r->pose.position.x,
-		        r->pose.position.y, r->pose.position.z);
+		fprintf(stderr, " P{%f %f %f}", r->pose.position.x, r->pose.position.y, r->pose.position.z);
 	}
 
 	if (r->relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) {
-		fprintf(stderr, " O{%f %f %f %f}", r->pose.orientation.x,
-		        r->pose.orientation.y, r->pose.orientation.z,
+		fprintf(stderr, " O{%f %f %f %f}", r->pose.orientation.x, r->pose.orientation.y, r->pose.orientation.z,
 		        r->pose.orientation.w);
 	}
 
 	if (r->relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) {
-		fprintf(stderr, " LV{%f %f %f}", r->linear_velocity.x,
-		        r->linear_velocity.y, r->linear_velocity.z);
+		fprintf(stderr, " LV{%f %f %f}", r->linear_velocity.x, r->linear_velocity.y, r->linear_velocity.z);
 	}
 
 	if (r->relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) {
-		fprintf(stderr, " AV{%f %f %f}", r->angular_velocity.x,
-		        r->angular_velocity.y, r->angular_velocity.z);
+		fprintf(stderr, " AV{%f %f %f}", r->angular_velocity.x, r->angular_velocity.y, r->angular_velocity.z);
 	}
 
 	fprintf(stderr, "\n");
@@ -88,10 +81,8 @@ dump_graph(const struct xrt_space_graph *xsg)
 static bool
 has_step_with_no_pose(const struct xrt_space_graph *xsg)
 {
-	const enum xrt_space_relation_flags pose_flags =
-	    (enum xrt_space_relation_flags)(
-	        XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	        XRT_SPACE_RELATION_ORIENTATION_VALID_BIT);
+	const enum xrt_space_relation_flags pose_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_VALID_BIT);
 
 	for (uint32_t i = 0; i < xsg->num_steps; i++) {
 		const struct xrt_space_relation *r = &xsg->steps[i];
@@ -130,9 +121,7 @@ get_flags(const struct xrt_space_relation *r)
 }
 
 static void
-make_valid_pose(flags flags,
-                const struct xrt_pose *in_pose,
-                struct xrt_pose *out_pose)
+make_valid_pose(flags flags, const struct xrt_pose *in_pose, struct xrt_pose *out_pose)
 {
 	if (flags.has_orientation) {
 		out_pose->orientation = in_pose->orientation;
@@ -193,10 +182,9 @@ apply_relation(const struct xrt_space_relation *a,
 		nf.has_angular_velocity = true;
 		struct xrt_vec3 tmp = {};
 
-		math_quat_rotate_derivative(
-		    &b->pose.orientation, // Base rotation
-		    &a->angular_velocity, // In base space
-		    &tmp);                // Output
+		math_quat_rotate_derivative(&b->pose.orientation, // Base rotation
+		                            &a->angular_velocity, // In base space
+		                            &tmp);                // Output
 
 		angular_velocity += tmp;
 	}
@@ -293,8 +281,7 @@ apply_relation(const struct xrt_space_relation *a,
  */
 
 void
-m_space_graph_resolve(const struct xrt_space_graph *xsg,
-                      struct xrt_space_relation *out_relation)
+m_space_graph_resolve(const struct xrt_space_graph *xsg, struct xrt_space_relation *out_relation)
 {
 	if (xsg->num_steps == 0 || has_step_with_no_pose(xsg)) {
 		U_ZERO(out_relation);

@@ -150,8 +150,7 @@ update_fusion(struct arduino_device *ad,
               time_duration_ns delta_ns)
 {
 	struct xrt_vec3 accel, gyro;
-	m_imu_pre_filter_data(&ad->pre_filter, &sample->accel, &sample->gyro,
-	                      &accel, &gyro);
+	m_imu_pre_filter_data(&ad->pre_filter, &sample->accel, &sample->gyro, &accel, &gyro);
 
 	ad->device_time += (uint64_t)sample->delta * 1000;
 
@@ -160,32 +159,26 @@ update_fusion(struct arduino_device *ad,
 	double delta_device_ms = (double)sample->delta / 1000.0;
 	double delta_host_ms = (double)delta_ns / (1000.0 * 1000.0);
 	ARDUINO_DEBUG(ad, "%+fms %+fms", delta_host_ms, delta_device_ms);
-	ARDUINO_DEBUG(
-	    ad, "fusion sample %u (ax %d ay %d az %d) (gx %d gy %d gz %d)",
-	    sample->time, sample->accel.x, sample->accel.y, sample->accel.z,
-	    sample->gyro.x, sample->gyro.y, sample->gyro.z);
+	ARDUINO_DEBUG(ad, "fusion sample %u (ax %d ay %d az %d) (gx %d gy %d gz %d)", sample->time, sample->accel.x,
+	              sample->accel.y, sample->accel.z, sample->gyro.x, sample->gyro.y, sample->gyro.z);
 	ARDUINO_DEBUG(ad, " ");
 }
 
 static void
-arduino_parse_input(struct arduino_device *ad,
-                    void *data,
-                    struct arduino_parsed_input *input)
+arduino_parse_input(struct arduino_device *ad, void *data, struct arduino_parsed_input *input)
 {
 	U_ZERO(input);
 	unsigned char *b = (unsigned char *)data;
-	ARDUINO_TRACE(
-	    ad,
-	    "raw input: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
-	    "%02x %02x %02x %02x %02x %02x %02x %02x %02x",
-	    b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10],
-	    b[11], b[12], b[13], b[14], b[15], b[16], b[17], b[18], b[19]);
+	ARDUINO_TRACE(ad,
+	              "raw input: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
+	              "%02x %02x %02x %02x %02x %02x %02x %02x %02x",
+	              b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14],
+	              b[15], b[16], b[17], b[18], b[19]);
 
 	uint32_t time = b[5] | b[4] << 8 | b[3] << 16;
 
 	input->sample.time = time;
-	input->sample.delta =
-	    calc_delta_and_handle_rollover(time, ad->last_time);
+	input->sample.delta = calc_delta_and_handle_rollover(time, ad->last_time);
 	ad->last_time = time;
 
 	input->sample.accel.x = read_i16(b, 6);
@@ -279,16 +272,13 @@ arduino_run_thread(void *ptr)
  */
 
 static void
-arduino_get_fusion_pose(struct arduino_device *ad,
-                        enum xrt_input_name name,
-                        struct xrt_space_relation *out_relation)
+arduino_get_fusion_pose(struct arduino_device *ad, enum xrt_input_name name, struct xrt_space_relation *out_relation)
 {
 	out_relation->pose.orientation = ad->fusion.rot;
 
 	//! @todo assuming that orientation is actually currently tracked.
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	                                                               XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 }
 
 static void
@@ -383,10 +373,8 @@ static struct xrt_binding_profile binding_profiles[1] = {
 struct xrt_device *
 arduino_device_create(struct os_ble_device *ble)
 {
-	enum u_device_alloc_flags flags =
-	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_TRACKING_NONE);
-	struct arduino_device *ad =
-	    U_DEVICE_ALLOCATE(struct arduino_device, flags, 8, 0);
+	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(U_DEVICE_ALLOC_TRACKING_NONE);
+	struct arduino_device *ad = U_DEVICE_ALLOCATE(struct arduino_device, flags, 8, 0);
 
 	ad->base.name = XRT_DEVICE_DAYDREAM;
 	ad->base.destroy = arduino_device_destroy;
@@ -411,8 +399,7 @@ arduino_device_create(struct os_ble_device *ble)
 	float accel_ticks_to_float = (4.0 * MATH_GRAVITY_M_S2) / INT16_MAX;
 	float gyro_ticks_to_float = (2000.0 * DEG_TO_RAD) / INT16_MAX;
 
-	m_imu_pre_filter_init(&ad->pre_filter, accel_ticks_to_float,
-	                      gyro_ticks_to_float);
+	m_imu_pre_filter_init(&ad->pre_filter, accel_ticks_to_float, gyro_ticks_to_float);
 	m_imu_pre_filter_set_switch_x_and_y(&ad->pre_filter);
 
 #if 0

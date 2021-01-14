@@ -63,20 +63,14 @@ t_convert_make_h8s8v8_to_r8g8b8(struct t_convert_table *t)
 }
 
 extern "C" void
-t_convert_in_place_y8u8v8_to_r8g8b8(uint32_t width,
-                                    uint32_t height,
-                                    size_t stride,
-                                    void *data_ptr)
+t_convert_in_place_y8u8v8_to_r8g8b8(uint32_t width, uint32_t height, size_t stride, void *data_ptr)
 {
 	cv::Mat data(height, width, CV_8UC3, data_ptr, stride);
 	cv::cvtColor(data, data, cv::COLOR_YUV2RGB);
 }
 
 extern "C" void
-t_convert_in_place_y8u8v8_to_h8s8v8(uint32_t width,
-                                    uint32_t height,
-                                    size_t stride,
-                                    void *data_ptr)
+t_convert_in_place_y8u8v8_to_h8s8v8(uint32_t width, uint32_t height, size_t stride, void *data_ptr)
 {
 	cv::Mat data(height, width, CV_8UC3, data_ptr, stride);
 	cv::Mat temp(height, width, CV_32FC3);
@@ -85,10 +79,7 @@ t_convert_in_place_y8u8v8_to_h8s8v8(uint32_t width,
 }
 
 extern "C" void
-t_convert_in_place_h8s8v8_to_r8g8b8(uint32_t width,
-                                    uint32_t height,
-                                    size_t stride,
-                                    void *data_ptr)
+t_convert_in_place_h8s8v8_to_r8g8b8(uint32_t width, uint32_t height, size_t stride, void *data_ptr)
 {
 	cv::Mat data(height, width, CV_8UC3, data_ptr, stride);
 	cv::cvtColor(data, data, cv::COLOR_YUV2RGB);

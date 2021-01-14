@@ -35,8 +35,7 @@
 
 DEBUG_GET_ONCE_LOG_OPTION(ns_log, "NS_LOG", U_LOGGING_INFO)
 
-struct xrt_pose t265_to_nose_bridge = {.orientation = {0, 0, 0, 1},
-                                       .position = {0, 0, 0}};
+struct xrt_pose t265_to_nose_bridge = {.orientation = {0, 0, 0, 1}, .position = {0, 0, 0}};
 
 /*
  *
@@ -47,8 +46,7 @@ struct xrt_pose t265_to_nose_bridge = {.orientation = {0, 0, 0, 1},
 static double
 map(double value, double fromLow, double fromHigh, double toLow, double toHigh)
 {
-	return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) +
-	       toLow;
+	return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow;
 } // Math copied from
   // https://www.arduino.cc/reference/en/language/functions/math/map/
 // This is pure math so it is still under the Boost Software License.
@@ -91,8 +89,7 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
 
 	// If the tracking device is created use it.
 	if (ns->tracker != NULL) {
-		xrt_device_get_tracked_pose(ns->tracker, name, at_timestamp_ns,
-		                            out_relation);
+		xrt_device_get_tracked_pose(ns->tracker, name, at_timestamp_ns, out_relation);
 		return;
 	}
 
@@ -102,10 +99,9 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
 	}
 
 	out_relation->pose = ns->pose;
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	                                                               XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	                                                               XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 }
 
 static void
@@ -126,11 +122,7 @@ ns_hmd_get_view_pose(struct xrt_device *xdev,
  */
 
 static bool
-ns_mesh_calc(struct xrt_device *xdev,
-             int view,
-             float u,
-             float v,
-             struct xrt_uv_triplet *result)
+ns_mesh_calc(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
 
@@ -167,58 +159,34 @@ ns_leap_parse(struct ns_leap *leap, struct cJSON *leap_data)
 	*/
 
 	u_json_get_vec3(
-	    cJSON_GetObjectItemCaseSensitive(
-	        cJSON_GetObjectItemCaseSensitive(leap_data, "localPose"),
-	        "position"),
+	    cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(leap_data, "localPose"), "position"),
 	    &leap->pose.position);
 	u_json_get_quat(
-	    cJSON_GetObjectItemCaseSensitive(
-	        cJSON_GetObjectItemCaseSensitive(leap_data, "localPose"),
-	        "rotation"),
+	    cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(leap_data, "localPose"), "rotation"),
 	    &leap->pose.orientation);
 }
 
 static void
 ns_eye_parse(struct ns_v1_eye *eye, struct cJSON *eye_data)
 {
-	u_json_get_float(
-	    cJSON_GetObjectItemCaseSensitive(eye_data, "ellipseMinorAxis"),
-	    &eye->ellipse_minor_axis);
-	u_json_get_float(
-	    cJSON_GetObjectItemCaseSensitive(eye_data, "ellipseMajorAxis"),
-	    &eye->ellipse_major_axis);
-	u_json_get_vec3(
-	    cJSON_GetObjectItemCaseSensitive(eye_data, "screenForward"),
-	    &eye->screen_forward);
-	u_json_get_vec3(
-	    cJSON_GetObjectItemCaseSensitive(eye_data, "screenPosition"),
-	    &eye->screen_position);
-	u_json_get_vec3(
-	    cJSON_GetObjectItemCaseSensitive(eye_data, "eyePosition"),
-	    &eye->eye_pose.position);
-	u_json_get_quat(
-	    cJSON_GetObjectItemCaseSensitive(eye_data, "eyeRotation"),
-	    &eye->eye_pose.orientation);
-	u_json_get_quat(
-	    cJSON_GetObjectItemCaseSensitive(eye_data, "cameraProjection"),
-	    &eye->camera_projection);
+	u_json_get_float(cJSON_GetObjectItemCaseSensitive(eye_data, "ellipseMinorAxis"), &eye->ellipse_minor_axis);
+	u_json_get_float(cJSON_GetObjectItemCaseSensitive(eye_data, "ellipseMajorAxis"), &eye->ellipse_major_axis);
+	u_json_get_vec3(cJSON_GetObjectItemCaseSensitive(eye_data, "screenForward"), &eye->screen_forward);
+	u_json_get_vec3(cJSON_GetObjectItemCaseSensitive(eye_data, "screenPosition"), &eye->screen_position);
+	u_json_get_vec3(cJSON_GetObjectItemCaseSensitive(eye_data, "eyePosition"), &eye->eye_pose.position);
+	u_json_get_quat(cJSON_GetObjectItemCaseSensitive(eye_data, "eyeRotation"), &eye->eye_pose.orientation);
+	u_json_get_quat(cJSON_GetObjectItemCaseSensitive(eye_data, "cameraProjection"), &eye->camera_projection);
 	for (int x = 0; x < 4; ++x) {
 		for (int y = 0; y < 4; ++y) {
 			char key[4];
 			sprintf(key, "e%d%d", x, y);
 
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        cJSON_GetObjectItemCaseSensitive(
-			            eye_data, "sphereToWorldSpace"),
-			        key),
-			    &eye->sphere_to_world_space.v[(x * 4) + y]);
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        cJSON_GetObjectItemCaseSensitive(
-			            eye_data, "worldToScreenSpace"),
-			        key),
-			    &eye->world_to_screen_space.v[(x * 4) + y]);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			                     cJSON_GetObjectItemCaseSensitive(eye_data, "sphereToWorldSpace"), key),
+			                 &eye->sphere_to_world_space.v[(x * 4) + y]);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
+			                     cJSON_GetObjectItemCaseSensitive(eye_data, "worldToScreenSpace"), key),
+			                 &eye->world_to_screen_space.v[(x * 4) + y]);
 		}
 	}
 }
@@ -229,14 +197,11 @@ ns_fov_calculate(struct xrt_fov *fov, struct xrt_quat projection)
 { // All of these are wrong - gets "hidden" by the simple_fov making it look
   // okay. Needs to be fixed.
 
-	fov->angle_up = projection.x; // atanf(fabsf(projection.x) /
-	                              // near_plane);
-	fov->angle_down =
-	    projection.y; // atanf(fabsf(projection.y) / near_plane);
-	fov->angle_left =
-	    projection.z; // atanf(fabsf(projection.z) / near_plane);
-	fov->angle_right =
-	    projection.w; // atanf(fabsf(projection.w) / near_plane);
+	fov->angle_up = projection.x;    // atanf(fabsf(projection.x) /
+	                                 // near_plane);
+	fov->angle_down = projection.y;  // atanf(fabsf(projection.y) / near_plane);
+	fov->angle_left = projection.z;  // atanf(fabsf(projection.z) / near_plane);
+	fov->angle_right = projection.w; // atanf(fabsf(projection.w) / near_plane);
 }
 
 /*
@@ -285,13 +250,10 @@ ns_v2_polyval2d(float X, float Y, float C[16])
 	float X3 = X2 * X;
 	float Y2 = Y * Y;
 	float Y3 = Y2 * Y;
-	return (
-	    ((C[0]) + (C[1] * Y) + (C[2] * Y2) + (C[3] * Y3)) +
-	    ((C[4] * X) + (C[5] * X * Y) + (C[6] * X * Y2) + (C[7] * X * Y3)) +
-	    ((C[8] * X2) + (C[9] * X2 * Y) + (C[10] * X2 * Y2) +
-	     (C[11] * X2 * Y3)) +
-	    ((C[12] * X3) + (C[13] * X3 * Y) + (C[14] * X3 * Y2) +
-	     (C[15] * X3 * Y3)));
+	return (((C[0]) + (C[1] * Y) + (C[2] * Y2) + (C[3] * Y3)) +
+	        ((C[4] * X) + (C[5] * X * Y) + (C[6] * X * Y2) + (C[7] * X * Y3)) +
+	        ((C[8] * X2) + (C[9] * X2 * Y) + (C[10] * X2 * Y2) + (C[11] * X2 * Y3)) +
+	        ((C[12] * X3) + (C[13] * X3 * Y) + (C[14] * X3 * Y2) + (C[15] * X3 * Y3)));
 }
 
 
@@ -299,24 +261,16 @@ ns_v2_polyval2d(float X, float Y, float C[16])
 static void
 ns_v2_fov_calculate(struct ns_hmd *ns, int eye_index)
 {
-	ns->base.hmd->views[eye_index].fov.angle_down =
-	    ns->eye_configs_v2[eye_index].fov.angle_down;
-	ns->base.hmd->views[eye_index].fov.angle_up =
-	    ns->eye_configs_v2[eye_index].fov.angle_up;
-	ns->base.hmd->views[eye_index].fov.angle_left =
-	    ns->eye_configs_v2[eye_index].fov.angle_left;
-	ns->base.hmd->views[eye_index].fov.angle_right =
-	    ns->eye_configs_v2[eye_index].fov.angle_right;
+	ns->base.hmd->views[eye_index].fov.angle_down = ns->eye_configs_v2[eye_index].fov.angle_down;
+	ns->base.hmd->views[eye_index].fov.angle_up = ns->eye_configs_v2[eye_index].fov.angle_up;
+	ns->base.hmd->views[eye_index].fov.angle_left = ns->eye_configs_v2[eye_index].fov.angle_left;
+	ns->base.hmd->views[eye_index].fov.angle_right = ns->eye_configs_v2[eye_index].fov.angle_right;
 }
 
 
 
 static bool
-ns_v2_mesh_calc(struct xrt_device *xdev,
-                int view,
-                float u,
-                float v,
-                struct xrt_uv_triplet *result)
+ns_v2_mesh_calc(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
 	/*! @todo (Moses Turner) It should not be necessary to reverse the U and
 	 * V coords. I have no idea why it is like this. It shouldn't be like
@@ -330,10 +284,8 @@ ns_v2_mesh_calc(struct xrt_device *xdev,
 
 	struct ns_hmd *ns = ns_hmd(xdev);
 
-	float x_ray =
-	    ns_v2_polyval2d(u, v, ns->eye_configs_v2[view].x_coefficients);
-	float y_ray =
-	    ns_v2_polyval2d(u, v, ns->eye_configs_v2[view].y_coefficients);
+	float x_ray = ns_v2_polyval2d(u, v, ns->eye_configs_v2[view].x_coefficients);
+	float y_ray = ns_v2_polyval2d(u, v, ns->eye_configs_v2[view].y_coefficients);
 
 
 	float left_ray_bound = tan(ns->eye_configs_v2[view].fov.angle_left);
@@ -374,10 +326,7 @@ ns_config_load(struct ns_hmd *ns)
 	// Open the JSON file and put its contents into a string
 	FILE *config_file = fopen(ns->config_path, "r");
 	if (config_file == NULL) {
-		NS_ERROR(
-		    ns,
-		    "The configuration file at path \"%s\" was unable to load",
-		    ns->config_path);
+		NS_ERROR(ns, "The configuration file at path \"%s\" was unable to load", ns->config_path);
 		return false;
 	}
 
@@ -394,24 +343,19 @@ ns_config_load(struct ns_hmd *ns)
 	config_json = cJSON_Parse(json);
 	if (config_json == NULL) {
 		const char *error_ptr = cJSON_GetErrorPtr();
-		NS_ERROR(ns, "The JSON file at path \"%s\" was unable to parse",
-		         ns->config_path);
+		NS_ERROR(ns, "The JSON file at path \"%s\" was unable to parse", ns->config_path);
 		if (error_ptr != NULL) {
-			NS_ERROR(ns, "because of an error before %s",
-			         error_ptr);
+			NS_ERROR(ns, "because of an error before %s", error_ptr);
 		}
 		return false;
 	}
 	if (cJSON_GetObjectItemCaseSensitive(config_json, "leftEye") == NULL &&
-	    cJSON_GetObjectItemCaseSensitive(config_json,
-	                                     "left_uv_to_rect_x") != NULL) {
+	    cJSON_GetObjectItemCaseSensitive(config_json, "left_uv_to_rect_x") != NULL) {
 		// Bad hack to tell that we're v2. Error checking is not good
 		// enough for public consumption - many cases where a malformed
 		// config json results in cryptic errors. Should get fixed
 		// whenever we have more than 5 people using this.
-		u_json_get_float(
-		    cJSON_GetObjectItemCaseSensitive(config_json, "baseline"),
-		    &ns->ipd);
+		u_json_get_float(cJSON_GetObjectItemCaseSensitive(config_json, "baseline"), &ns->ipd);
 		ns->ipd = ns->ipd / 1000.0f; // converts from mm to m
 		/*! @todo (Moses Turner) Next four u_json_get_float_array calls
 		 * don't make any sense. They put the X coefficients from the
@@ -419,33 +363,21 @@ ns_config_load(struct ns_hmd *ns)
 		 * totally wrong, but the distortion looks totally wrong if we
 		 * don't do this.
 		 */
-		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(
-		                           config_json, "left_uv_to_rect_x"),
-		                       ns->eye_configs_v2[0].y_coefficients,
-		                       16);
-		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(
-		                           config_json, "left_uv_to_rect_y"),
-		                       ns->eye_configs_v2[0].x_coefficients,
-		                       16);
-		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(
-		                           config_json, "right_uv_to_rect_x"),
-		                       ns->eye_configs_v2[1].y_coefficients,
-		                       16);
-		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(
-		                           config_json, "right_uv_to_rect_y"),
-		                       ns->eye_configs_v2[1].x_coefficients,
-		                       16);
+		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(config_json, "left_uv_to_rect_x"),
+		                       ns->eye_configs_v2[0].y_coefficients, 16);
+		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(config_json, "left_uv_to_rect_y"),
+		                       ns->eye_configs_v2[0].x_coefficients, 16);
+		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(config_json, "right_uv_to_rect_x"),
+		                       ns->eye_configs_v2[1].y_coefficients, 16);
+		u_json_get_float_array(cJSON_GetObjectItemCaseSensitive(config_json, "right_uv_to_rect_y"),
+		                       ns->eye_configs_v2[1].x_coefficients, 16);
 		bool said_first_thing = false;
-		if (!u_json_get_float(
-		        cJSON_GetObjectItemCaseSensitive(
-		            config_json, "left_fov_radians_left"),
-		        &ns->eye_configs_v2[0]
-		             .fov
-		             .angle_left)) { // not putting this directly in
-			                     // (&ns->base.hmd->views[eye_index].fov
-			                     // because i smell a rat there -
-			                     // that value seems to unexpectedly
-			                     // change during init process.
+		if (!u_json_get_float(cJSON_GetObjectItemCaseSensitive(config_json, "left_fov_radians_left"),
+		                      &ns->eye_configs_v2[0].fov.angle_left)) { // not putting this directly in
+			                                                        // (&ns->base.hmd->views[eye_index].fov
+			                                                        // because i smell a rat there -
+			                                                        // that value seems to unexpectedly
+			                                                        // change during init process.
 			NS_INFO(ns,
 			        "Just so you know, you can add tunable FoV "
 			        "parameters to your v2 json file. There's an "
@@ -471,119 +403,82 @@ ns_config_load(struct ns_hmd *ns)
 			 * ns_v2_mesh_calc or this code, because when you have
 			 * uneven FOV bounds, the distortion looks totally
 			 * wrong.*/
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        config_json, "left_fov_radians_left"),
-			    &ns->eye_configs_v2[0].fov.angle_left);
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        config_json, "left_fov_radians_right"),
-			    &ns->eye_configs_v2[0].fov.angle_right);
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        config_json, "left_fov_radians_up"),
-			    &ns->eye_configs_v2[0].fov.angle_up);
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        config_json, "left_fov_radians_down"),
-			    &ns->eye_configs_v2[0].fov.angle_down);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(config_json, "left_fov_radians_left"),
+			                 &ns->eye_configs_v2[0].fov.angle_left);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(config_json, "left_fov_radians_right"),
+			                 &ns->eye_configs_v2[0].fov.angle_right);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(config_json, "left_fov_radians_up"),
+			                 &ns->eye_configs_v2[0].fov.angle_up);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(config_json, "left_fov_radians_down"),
+			                 &ns->eye_configs_v2[0].fov.angle_down);
 
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        config_json, "right_fov_radians_left"),
-			    &ns->eye_configs_v2[1].fov.angle_left);
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        config_json, "right_fov_radians_right"),
-			    &ns->eye_configs_v2[1].fov.angle_right);
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        config_json, "right_fov_radians_up"),
-			    &ns->eye_configs_v2[1].fov.angle_up);
-			u_json_get_float(
-			    cJSON_GetObjectItemCaseSensitive(
-			        config_json, "right_fov_radians_down"),
-			    &ns->eye_configs_v2[1].fov.angle_down);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(config_json, "right_fov_radians_left"),
+			                 &ns->eye_configs_v2[1].fov.angle_left);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(config_json, "right_fov_radians_right"),
+			                 &ns->eye_configs_v2[1].fov.angle_right);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(config_json, "right_fov_radians_up"),
+			                 &ns->eye_configs_v2[1].fov.angle_up);
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(config_json, "right_fov_radians_down"),
+			                 &ns->eye_configs_v2[1].fov.angle_down);
 		}
 
-		struct cJSON *offset = cJSON_GetObjectItemCaseSensitive(
-		    config_json, "t265_to_nose_bridge");
+		struct cJSON *offset = cJSON_GetObjectItemCaseSensitive(config_json, "t265_to_nose_bridge");
 		if (offset == NULL) {
 			if (said_first_thing) {
-				NS_INFO(
-				    ns,
-				    "Also, you should put an offset parameter "
-				    "into the json file to transform your head "
-				    "pose from the realsense to your nose "
-				    "bridge. There are some examples in "
-				    "src/xrt/drivers/north_star/"
-				    "example_configs/ .\n");
+				NS_INFO(ns,
+				        "Also, you should put an offset parameter "
+				        "into the json file to transform your head "
+				        "pose from the realsense to your nose "
+				        "bridge. There are some examples in "
+				        "src/xrt/drivers/north_star/"
+				        "example_configs/ .\n");
 			} else {
-				NS_INFO(
-				    ns,
-				    "You should put an offset parameter into "
-				    "the json file to transform your head pose "
-				    "from the realsense to your nose bridge. "
-				    "There are some examples in "
-				    "src/xrt/drivers/north_star/"
-				    "example_configs/ .\n");
+				NS_INFO(ns,
+				        "You should put an offset parameter into "
+				        "the json file to transform your head pose "
+				        "from the realsense to your nose bridge. "
+				        "There are some examples in "
+				        "src/xrt/drivers/north_star/"
+				        "example_configs/ .\n");
 			}
 		} else {
 			struct cJSON *translation_meters =
-			    cJSON_GetObjectItemCaseSensitive(
-			        offset, "translation_meters");
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     translation_meters, "x"),
+			    cJSON_GetObjectItemCaseSensitive(offset, "translation_meters");
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(translation_meters, "x"),
 			                 &t265_to_nose_bridge.position.x);
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     translation_meters, "y"),
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(translation_meters, "y"),
 			                 &t265_to_nose_bridge.position.y);
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     translation_meters, "z"),
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(translation_meters, "z"),
 			                 &t265_to_nose_bridge.position.z);
 
 			struct cJSON *rotation_quaternion =
-			    cJSON_GetObjectItemCaseSensitive(
-			        offset, "rotation_quaternion");
+			    cJSON_GetObjectItemCaseSensitive(offset, "rotation_quaternion");
 
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     rotation_quaternion, "x"),
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(rotation_quaternion, "x"),
 			                 &t265_to_nose_bridge.orientation.x);
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     rotation_quaternion, "y"),
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(rotation_quaternion, "y"),
 			                 &t265_to_nose_bridge.orientation.y);
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     rotation_quaternion, "z"),
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(rotation_quaternion, "z"),
 			                 &t265_to_nose_bridge.orientation.z);
-			u_json_get_float(cJSON_GetObjectItemCaseSensitive(
-			                     rotation_quaternion, "w"),
+			u_json_get_float(cJSON_GetObjectItemCaseSensitive(rotation_quaternion, "w"),
 			                 &t265_to_nose_bridge.orientation.w);
 		}
 
 		ns->is_v2 = true;
 
 
-	} else if (cJSON_GetObjectItemCaseSensitive(config_json, "leftEye") !=
-	               NULL &&
-	           cJSON_GetObjectItemCaseSensitive(
-	               config_json, "left_uv_to_rect_x") == NULL) {
-		ns_eye_parse(
-		    &ns->eye_configs_v1[0],
-		    cJSON_GetObjectItemCaseSensitive(config_json, "leftEye"));
+	} else if (cJSON_GetObjectItemCaseSensitive(config_json, "leftEye") != NULL &&
+	           cJSON_GetObjectItemCaseSensitive(config_json, "left_uv_to_rect_x") == NULL) {
+		ns_eye_parse(&ns->eye_configs_v1[0], cJSON_GetObjectItemCaseSensitive(config_json, "leftEye"));
 
-		ns_eye_parse(
-		    &ns->eye_configs_v1[1],
-		    cJSON_GetObjectItemCaseSensitive(config_json, "rightEye"));
-		ns_leap_parse(&ns->leap_config,
-		              cJSON_GetObjectItemCaseSensitive(config_json,
-		                                               "leapTracker"));
+		ns_eye_parse(&ns->eye_configs_v1[1], cJSON_GetObjectItemCaseSensitive(config_json, "rightEye"));
+		ns_leap_parse(&ns->leap_config, cJSON_GetObjectItemCaseSensitive(config_json, "leapTracker"));
 		ns->is_v2 = false;
 	} else {
-		NS_ERROR(
-		    ns,
-		    "Bad config file. There are examples of v1 and v2 files in "
-		    "src/xrt/drivers/north_star - if those don't work, "
-		    "something's really wrong.");
+		NS_ERROR(ns,
+		         "Bad config file. There are examples of v1 and v2 files in "
+		         "src/xrt/drivers/north_star - if those don't work, "
+		         "something's really wrong.");
 	}
 
 	cJSON_Delete(config_json);
@@ -600,8 +495,8 @@ ns_config_load(struct ns_hmd *ns)
 struct xrt_device *
 ns_hmd_create(const char *config_path)
 {
-	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
-	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	enum u_device_alloc_flags flags =
+	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 
 
 	struct ns_hmd *ns = U_DEVICE_ALLOCATE(struct ns_hmd, flags, 1, 0);
@@ -650,23 +545,18 @@ ns_hmd_create(const char *config_path)
 		ns_v2_fov_calculate(ns, 1);
 
 		ns->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
-		ns->base.hmd->distortion.preferred =
-		    XRT_DISTORTION_MODEL_COMPUTE;
+		ns->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 		ns->base.compute_distortion = ns_v2_mesh_calc;
 
 	} else {
 		// V1
 		ns->base.get_view_pose = ns_hmd_get_view_pose;
-		ns_fov_calculate(&ns->base.hmd->views[0].fov,
-		                 ns->eye_configs_v1[0].camera_projection);
-		ns_fov_calculate(&ns->base.hmd->views[1].fov,
-		                 ns->eye_configs_v1[1].camera_projection);
+		ns_fov_calculate(&ns->base.hmd->views[0].fov, ns->eye_configs_v1[0].camera_projection);
+		ns_fov_calculate(&ns->base.hmd->views[1].fov, ns->eye_configs_v1[1].camera_projection);
 
 		// Create the optical systems
-		ns->eye_configs_v1[0].optical_system =
-		    ns_create_optical_system(&ns->eye_configs_v1[0]);
-		ns->eye_configs_v1[1].optical_system =
-		    ns_create_optical_system(&ns->eye_configs_v1[1]);
+		ns->eye_configs_v1[0].optical_system = ns_create_optical_system(&ns->eye_configs_v1[0]);
+		ns->eye_configs_v1[1].optical_system = ns_create_optical_system(&ns->eye_configs_v1[1]);
 
 		// Setup the north star basic info
 		if (!u_device_setup_split_side_by_side(&ns->base, &info)) {
@@ -675,8 +565,7 @@ ns_hmd_create(const char *config_path)
 		}
 
 		ns->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
-		ns->base.hmd->distortion.preferred =
-		    XRT_DISTORTION_MODEL_COMPUTE;
+		ns->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 		ns->base.compute_distortion = ns_mesh_calc;
 	}
 
@@ -695,8 +584,7 @@ ns_hmd_create(const char *config_path)
 	ns->base.orientation_tracking_supported = true;
 	ns->base.position_tracking_supported = ns->tracker != NULL;
 	if (ns->tracker) {
-		ns->base.tracking_origin->type =
-		    ns->tracker->tracking_origin->type;
+		ns->base.tracking_origin->type = ns->tracker->tracking_origin->type;
 	}
 	ns->base.device_type = XRT_DEVICE_TYPE_HMD;
 

@@ -44,16 +44,12 @@ DEBUG_GET_ONCE_LOG_OPTION(egl_log, "EGL_LOG", U_LOGGING_INFO)
 
 
 #ifdef XRT_OS_ANDROID
-typedef const char *
-    EGLAPIENTRY (*PFNEGLQUERYSTRINGIMPLEMENTATIONANDROIDPROC)(EGLDisplay dpy,
-                                                              EGLint name);
+typedef const char *EGLAPIENTRY (*PFNEGLQUERYSTRINGIMPLEMENTATIONANDROIDPROC)(EGLDisplay dpy, EGLint name);
 #endif
 
 // Not forward declared by mesa
-typedef EGLBoolean EGLAPIENTRY (*PFNEGLMAKECURRENTPROC)(EGLDisplay dpy,
-                                                        EGLSurface draw,
-                                                        EGLSurface read,
-                                                        EGLContext ctx);
+typedef EGLBoolean
+    EGLAPIENTRY (*PFNEGLMAKECURRENTPROC)(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx);
 
 /*!
  * EGL based compositor.
@@ -99,8 +95,7 @@ has_extension(const char *extensions, const char *ext)
 		}
 
 		terminator = loc + strlen(ext);
-		if ((loc == extensions || *(loc - 1) == ' ') &&
-		    (*terminator == ' ' || *terminator == '\0')) {
+		if ((loc == extensions || *(loc - 1) == ' ') && (*terminator == ' ' || *terminator == '\0')) {
 			return true;
 		}
 		extensions = terminator;
@@ -108,8 +103,7 @@ has_extension(const char *extensions, const char *ext)
 }
 
 static void
-ensure_native_fence_is_loaded(EGLDisplay dpy,
-                              PFNEGLGETPROCADDRESSPROC get_gl_procaddr)
+ensure_native_fence_is_loaded(EGLDisplay dpy, PFNEGLGETPROCADDRESSPROC get_gl_procaddr)
 {
 #ifdef XRT_OS_ANDROID
 	// clang-format off
@@ -117,21 +111,18 @@ ensure_native_fence_is_loaded(EGLDisplay dpy,
 	// clang-format on
 
 	eglQueryStringImplementationANDROID =
-	    (PFNEGLQUERYSTRINGIMPLEMENTATIONANDROIDPROC)get_gl_procaddr(
-	        "eglQueryStringImplementationANDROID");
+	    (PFNEGLQUERYSTRINGIMPLEMENTATIONANDROIDPROC)get_gl_procaddr("eglQueryStringImplementationANDROID");
 
 	// On Android, EGL_ANDROID_native_fence_sync only shows up in this
 	// extension list, not the normal one.
-	const char *ext =
-	    eglQueryStringImplementationANDROID(dpy, EGL_EXTENSIONS);
+	const char *ext = eglQueryStringImplementationANDROID(dpy, EGL_EXTENSIONS);
 	if (!has_extension(ext, "EGL_ANDROID_native_fence_sync")) {
 		return;
 	}
 
 	GLAD_EGL_ANDROID_native_fence_sync = true;
 	glad_eglDupNativeFenceFDANDROID =
-	    (PFNEGLDUPNATIVEFENCEFDANDROIDPROC)get_gl_procaddr(
-	        "eglDupNativeFenceFDANDROID");
+	    (PFNEGLDUPNATIVEFENCEFDANDROIDPROC)get_gl_procaddr("eglDupNativeFenceFDANDROID");
 #endif
 }
 
@@ -169,8 +160,7 @@ old_restore(struct old_helper *old)
 		return;
 	}
 
-	EGL_ERROR("Failed to make old EGL context current! (%p, %p, %p, %p)",
-	          old->dpy, old->draw, old->read, old->ctx);
+	EGL_ERROR("Failed to make old EGL context current! (%p, %p, %p, %p)", old->dpy, old->draw, old->read, old->ctx);
 }
 
 
@@ -194,8 +184,7 @@ insert_fence(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle)
 
 #ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
 
-	EGLSyncKHR sync =
-	    eglCreateSyncKHR(dpy, EGL_SYNC_NATIVE_FENCE_ANDROID, NULL);
+	EGLSyncKHR sync = eglCreateSyncKHR(dpy, EGL_SYNC_NATIVE_FENCE_ANDROID, NULL);
 	if (sync == EGL_NO_SYNC_KHR) {
 		EGL_ERROR("Failed to insert fence!");
 		return XRT_ERROR_FENCE_CREATE_FAILED;
@@ -251,8 +240,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	}
 
 	EGLint egl_client_type;
-	if (!eglQueryContext(display, context, EGL_CONTEXT_CLIENT_TYPE,
-	                     &egl_client_type)) {
+	if (!eglQueryContext(display, context, EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
 		old_restore(&old);
 		return NULL;
 	}
@@ -273,23 +261,20 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		gladLoadGLES2(get_gl_procaddr);
 		break;
 #else
-		EGL_ERROR(
-		    "OpenGL|ES support not including in this runtime build");
+		EGL_ERROR("OpenGL|ES support not including in this runtime build");
 		old_restore(&old);
 		return NULL;
 #endif
 	default: EGL_ERROR("Unsupported EGL client type"); return NULL;
 	}
 
-	struct client_egl_compositor *ceglc =
-	    U_TYPED_CALLOC(struct client_egl_compositor);
+	struct client_egl_compositor *ceglc = U_TYPED_CALLOC(struct client_egl_compositor);
 	ceglc->dpy = display;
 
 	client_gl_swapchain_create_func sc_create = NULL;
 
 	EGL_INFO("Extension availability:");
-#define DUMP_EXTENSION_STATUS(EXT)                                             \
-	EGL_INFO("  - " #EXT ": %s", GLAD_##EXT ? "true" : "false")
+#define DUMP_EXTENSION_STATUS(EXT) EGL_INFO("  - " #EXT ": %s", GLAD_##EXT ? "true" : "false")
 
 	DUMP_EXTENSION_STATUS(GL_EXT_memory_object);
 	DUMP_EXTENSION_STATUS(GL_EXT_memory_object_fd);
@@ -325,13 +310,11 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		return NULL;
 	}
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-	EGL_INFO(
-	    "Using EGL_Image swapchain implementation with AHardwareBuffer");
+	EGL_INFO("Using EGL_Image swapchain implementation with AHardwareBuffer");
 	sc_create = client_gl_eglimage_swapchain_create;
 #endif
 
-	if (!client_gl_compositor_init(&ceglc->base, xcn, sc_create,
-	                               insert_fence)) {
+	if (!client_gl_compositor_init(&ceglc->base, xcn, sc_create, insert_fence)) {
 		free(ceglc);
 		U_LOG_E("Failed to initialize compositor");
 		old_restore(&old);

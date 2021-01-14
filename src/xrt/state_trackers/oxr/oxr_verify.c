@@ -60,25 +60,18 @@ contains_zero(const char *path, uint32_t size)
 }
 
 XrResult
-oxr_verify_fixed_size_single_level_path(struct oxr_logger *log,
-                                        const char *path,
-                                        uint32_t array_size,
-                                        const char *name)
+oxr_verify_fixed_size_single_level_path(struct oxr_logger *log, const char *path, uint32_t array_size, const char *name)
 {
 	if (array_size == 0) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "(%s) internal runtime error", name);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "(%s) internal runtime error", name);
 	}
 
 	if (path[0] == '\0') {
-		return oxr_error(log, XR_ERROR_NAME_INVALID,
-		                 "(%s) can not be empty", name);
+		return oxr_error(log, XR_ERROR_NAME_INVALID, "(%s) can not be empty", name);
 	}
 
 	if (!contains_zero(path, array_size)) {
-		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
-		                 "(%s) must include zero termination '\\0'.",
-		                 name);
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID, "(%s) must include zero termination '\\0'.", name);
 	}
 
 	size_t length = strlen(path);
@@ -90,34 +83,26 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger *log,
 			continue;
 		}
 
-		return oxr_error(
-		    log, XR_ERROR_PATH_FORMAT_INVALID,
-		    "(%s) 0x%02x is not a valid character at position %u", name,
-		    c, (uint32_t)i);
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
+		                 "(%s) 0x%02x is not a valid character at position %u", name, c, (uint32_t)i);
 	}
 
 	return XR_SUCCESS;
 }
 
 XrResult
-oxr_verify_localized_name(struct oxr_logger *log,
-                          const char *string,
-                          uint32_t array_size,
-                          const char *name)
+oxr_verify_localized_name(struct oxr_logger *log, const char *string, uint32_t array_size, const char *name)
 {
 	if (array_size == 0) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "(%s) internal runtime error", name);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "(%s) internal runtime error", name);
 	}
 
 	if (string[0] == '\0') {
-		return oxr_error(log, XR_ERROR_LOCALIZED_NAME_INVALID,
-		                 "(%s) can not be empty", name);
+		return oxr_error(log, XR_ERROR_LOCALIZED_NAME_INVALID, "(%s) can not be empty", name);
 	}
 
 	if (!contains_zero(string, array_size)) {
-		return oxr_error(log, XR_ERROR_LOCALIZED_NAME_INVALID,
-		                 "(%s) must include zero termination '\\0'.",
+		return oxr_error(log, XR_ERROR_LOCALIZED_NAME_INVALID, "(%s) must include zero termination '\\0'.",
 		                 name);
 	}
 
@@ -134,9 +119,7 @@ enum verify_state
 };
 
 XrResult
-oxr_verify_full_path_c(struct oxr_logger *log,
-                       const char *path,
-                       const char *name)
+oxr_verify_full_path_c(struct oxr_logger *log, const char *path, const char *name)
 {
 	// XR_MAX_PATH_LENGTH is max including null terminator,
 	// length will not include null terminator
@@ -152,18 +135,14 @@ oxr_verify_full_path_c(struct oxr_logger *log,
 }
 
 XrResult
-oxr_verify_full_path(struct oxr_logger *log,
-                     const char *path,
-                     size_t length,
-                     const char *name)
+oxr_verify_full_path(struct oxr_logger *log, const char *path, size_t length, const char *name)
 {
 	enum verify_state state = VERIFY_START;
 	bool valid = true;
 
 	if (length >= XR_MAX_PATH_LENGTH) {
 		char formatted_path[XR_MAX_PATH_LENGTH + 6];
-		snprintf(formatted_path, XR_MAX_PATH_LENGTH + 6, "%s[...]",
-		         path);
+		snprintf(formatted_path, XR_MAX_PATH_LENGTH + 6, "%s[...]", path);
 		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
 		                 "(%s) is too long for a path, must be shorter "
 		                 "than %u characters",
@@ -175,8 +154,7 @@ oxr_verify_full_path(struct oxr_logger *log,
 		switch (state) {
 		case VERIFY_START:
 			if (c != '/') {
-				return oxr_error(log,
-				                 XR_ERROR_PATH_FORMAT_INVALID,
+				return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
 				                 "(%s) does not start with a "
 				                 "fowrward slash",
 				                 name);
@@ -190,35 +168,26 @@ oxr_verify_full_path(struct oxr_logger *log,
 				state = VERIFY_SLASHDOTS;
 				break;
 			case '/':
-				return oxr_error(
-				    log, XR_ERROR_PATH_FORMAT_INVALID,
-				    "(%s) '//' is not a valid in a path", name);
-			default:
-				valid = valid_path_char(c);
-				state = VERIFY_MIDDLE;
+				return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
+				                 "(%s) '//' is not a valid in a path", name);
+			default: valid = valid_path_char(c); state = VERIFY_MIDDLE;
 			}
 			break;
 		case VERIFY_MIDDLE:
 			switch (c) {
 			case '/': state = VERIFY_SLASH; break;
-			default:
-				valid = valid_path_char(c);
-				state = VERIFY_MIDDLE;
+			default: valid = valid_path_char(c); state = VERIFY_MIDDLE;
 			}
 			break;
 		case VERIFY_SLASHDOTS:
 			switch (c) {
 			case '/':
-				return oxr_error(
-				    log, XR_ERROR_PATH_FORMAT_INVALID,
-				    "(%s) '/.[.]*/' is not a valid in a path",
-				    name);
+				return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
+				                 "(%s) '/.[.]*/' is not a valid in a path", name);
 			case '.':
 				// It's valid, more ShashDot(s).
 				break;
-			default:
-				valid = valid_path_char(c);
-				state = VERIFY_MIDDLE;
+			default: valid = valid_path_char(c); state = VERIFY_MIDDLE;
 			}
 			break;
 		}
@@ -238,9 +207,7 @@ oxr_verify_full_path(struct oxr_logger *log,
 	switch (state) {
 	case VERIFY_START:
 		// Empty string
-		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
-		                 "(%s) a empty string is not a valid path",
-		                 name);
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID, "(%s) a empty string is not a valid path", name);
 	case VERIFY_SLASH:
 		// Is this '/foo/' or '/'
 		if (length > 1) {
@@ -248,24 +215,20 @@ oxr_verify_full_path(struct oxr_logger *log,
 			return XR_SUCCESS;
 		}
 		// It was '/'
-		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID,
-		                 "(%s) the string '%s' is not a valid path",
-		                 name, path);
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID, "(%s) the string '%s' is not a valid path", name,
+		                 path);
 	case VERIFY_SLASHDOTS:
 		// Does the path ends with '/..'
-		return oxr_error(
-		    log, XR_ERROR_PATH_FORMAT_INVALID,
-		    "(%s) strings ending with '/.[.]*' is not a valid", name);
+		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID, "(%s) strings ending with '/.[.]*' is not a valid",
+		                 name);
 
 	case VERIFY_MIDDLE:
 		// '/foo/bar' okay!
 		return XR_SUCCESS;
 	default:
 		// We should not end up here.
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "(%s) internal runtime error validating path (%s)", name,
-		    path);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "(%s) internal runtime error validating path (%s)",
+		                 name, path);
 	}
 }
 
@@ -294,13 +257,13 @@ subaction_path_no_dups(struct oxr_logger *log,
 		                 variable, index);
 	}
 
-#define HANDLE_SUBACTION_PATH(X)                                               \
-	if (path == inst->path_cache.X) {                                      \
-		if (sub_paths->X) {                                            \
-			duplicate = true;                                      \
-		} else {                                                       \
-			sub_paths->X = true;                                   \
-		}                                                              \
+#define HANDLE_SUBACTION_PATH(X)                                                                                       \
+	if (path == inst->path_cache.X) {                                                                              \
+		if (sub_paths->X) {                                                                                    \
+			duplicate = true;                                                                              \
+		} else {                                                                                               \
+			sub_paths->X = true;                                                                           \
+		}                                                                                                      \
 	} else
 
 	OXR_FOR_EACH_VALID_SUBACTION_PATH(HANDLE_SUBACTION_PATH)
@@ -323,9 +286,8 @@ subaction_path_no_dups(struct oxr_logger *log,
 
 		oxr_path_get_string(log, inst, path, &str, &length);
 
-		return oxr_error(log, XR_ERROR_PATH_UNSUPPORTED,
-		                 "(%s[%u] == '%s') duplicate paths", variable,
-		                 index, str);
+		return oxr_error(log, XR_ERROR_PATH_UNSUPPORTED, "(%s[%u] == '%s') duplicate paths", variable, index,
+		                 str);
 	}
 
 	return XR_SUCCESS;
@@ -344,8 +306,7 @@ oxr_verify_subaction_paths_create(struct oxr_logger *log,
 	for (uint32_t i = 0; i < countSubactionPaths; i++) {
 		XrPath path = subactionPaths[i];
 
-		XrResult ret = subaction_path_no_dups(log, inst, &sub_paths,
-		                                      path, variable, i);
+		XrResult ret = subaction_path_no_dups(log, inst, &sub_paths, path, variable, i);
 		if (ret != XR_SUCCESS) {
 			return ret;
 		}
@@ -355,15 +316,12 @@ oxr_verify_subaction_paths_create(struct oxr_logger *log,
 }
 
 XrResult
-oxr_verify_subaction_path_sync(struct oxr_logger *log,
-                               struct oxr_instance *inst,
-                               XrPath path,
-                               uint32_t index)
+oxr_verify_subaction_path_sync(struct oxr_logger *log, struct oxr_instance *inst, XrPath path, uint32_t index)
 {
-#define VERIFY_PATH(X)                                                         \
-	else if (path == inst->path_cache.X)                                   \
-	{                                                                      \
-		return XR_SUCCESS;                                             \
+#define VERIFY_PATH(X)                                                                                                 \
+	else if (path == inst->path_cache.X)                                                                           \
+	{                                                                                                              \
+		return XR_SUCCESS;                                                                                     \
 	}
 	if (path == XR_NULL_PATH) {
 		return XR_SUCCESS;
@@ -392,10 +350,10 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
 {
 	struct oxr_sub_paths sub_paths = {0};
 
-#define GET_PATH(X)                                                            \
-	else if (path == inst->path_cache.X)                                   \
-	{                                                                      \
-		sub_paths.X = true;                                            \
+#define GET_PATH(X)                                                                                                    \
+	else if (path == inst->path_cache.X)                                                                           \
+	{                                                                                                              \
+		sub_paths.X = true;                                                                                    \
 	}
 
 	if (path == XR_NULL_PATH) {
@@ -415,9 +373,9 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
 #undef GET_PATH
 
 	bool fail = false;
-#define CHECK_CREATION_TIME(X)                                                 \
-	if (sub_paths.X && !act_sub_paths->X) {                                \
-		fail = true;                                                   \
+#define CHECK_CREATION_TIME(X)                                                                                         \
+	if (sub_paths.X && !act_sub_paths->X) {                                                                        \
+		fail = true;                                                                                           \
 	}
 
 	OXR_FOR_EACH_SUBACTION_PATH(CHECK_CREATION_TIME);
@@ -459,8 +417,7 @@ oxr_verify_view_config_type(struct oxr_logger *log,
 		return XR_SUCCESS;
 	}
 
-	return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-	                 "(%s == 0x%08x) invalid view configuration type",
+	return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "(%s == 0x%08x) invalid view configuration type",
 	                 view_conf_name, view_conf);
 }
 
@@ -470,13 +427,11 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
                                const XrSessionCreateInfo *createInfo)
 {
 	if (createInfo->type != XR_TYPE_SESSION_CREATE_INFO) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "(createInfo->type)");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "(createInfo->type)");
 	}
 
 	if (createInfo->createFlags != 0) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "Non-zero session create flags");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Non-zero session create flags");
 	}
 
 	XrResult result = oxr_system_verify_id(log, inst, createInfo->systemId);
@@ -485,35 +440,29 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 	}
 
 #if defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_XLIB)
-	XrGraphicsBindingOpenGLXlibKHR const *opengl_xlib =
-	    OXR_GET_INPUT_FROM_CHAIN(createInfo,
-	                             XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
-	                             XrGraphicsBindingOpenGLXlibKHR);
+	XrGraphicsBindingOpenGLXlibKHR const *opengl_xlib = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR, XrGraphicsBindingOpenGLXlibKHR);
 	if (opengl_xlib != NULL) {
 		OXR_VERIFY_EXTENSION(log, inst, KHR_opengl_enable);
-		return oxr_verify_XrGraphicsBindingOpenGLXlibKHR(log,
-		                                                 opengl_xlib);
+		return oxr_verify_XrGraphicsBindingOpenGLXlibKHR(log, opengl_xlib);
 	}
 #endif // defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_XLIB)
 
 #if defined(OXR_HAVE_KHR_vulkan_enable) || defined(OXR_HAVE_KHR_vulkan_enable2)
 	/* XR_TYPE_GRAPHICS_BINDING_VULKAN2_KHR aliased to
 	 * XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR */
-	XrGraphicsBindingVulkanKHR const *vulkan = OXR_GET_INPUT_FROM_CHAIN(
-	    createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR,
-	    XrGraphicsBindingVulkanKHR);
+	XrGraphicsBindingVulkanKHR const *vulkan =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR, XrGraphicsBindingVulkanKHR);
 	if (vulkan != NULL) {
-		OXR_VERIFY_EXTENSIONS_OR(log, inst, KHR_vulkan_enable,
-		                         KHR_vulkan_enable2);
+		OXR_VERIFY_EXTENSIONS_OR(log, inst, KHR_vulkan_enable, KHR_vulkan_enable2);
 		return oxr_verify_XrGraphicsBindingVulkanKHR(log, vulkan);
 	}
 #endif // defined(OXR_HAVE_KHR_vulkan_enable) ||
        // defined(OXR_HAVE_KHR_vulkan_enable2)
 
 #if defined(OXR_HAVE_MNDX_egl_enable) && defined(XR_USE_PLATFORM_EGL)
-	XrGraphicsBindingEGLMNDX const *egl = OXR_GET_INPUT_FROM_CHAIN(
-	    createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MNDX,
-	    XrGraphicsBindingEGLMNDX);
+	XrGraphicsBindingEGLMNDX const *egl =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MNDX, XrGraphicsBindingEGLMNDX);
 	if (egl != NULL) {
 		OXR_VERIFY_EXTENSION(log, inst, MNDX_egl_enable);
 		return oxr_verify_XrGraphicsBindingEGLMNDX(log, egl);
@@ -521,14 +470,11 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 #endif // defined(OXR_HAVE_MNDX_egl_enable) && defined(XR_USE_PLATFORM_EGL_KHR)
 
 #if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
-	XrGraphicsBindingOpenGLESAndroidKHR const *opengles_android =
-	    OXR_GET_INPUT_FROM_CHAIN(
-	        createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR,
-	        XrGraphicsBindingOpenGLESAndroidKHR);
+	XrGraphicsBindingOpenGLESAndroidKHR const *opengles_android = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR, XrGraphicsBindingOpenGLESAndroidKHR);
 	if (opengles_android != NULL) {
 		OXR_VERIFY_EXTENSION(log, inst, KHR_opengl_es_enable);
-		return oxr_verify_XrGraphicsBindingOpenGLESAndroidKHR(
-		    log, opengles_android);
+		return oxr_verify_XrGraphicsBindingOpenGLESAndroidKHR(log, opengles_android);
 	}
 #endif // OXR_HAVE_KHR_vulkan_enable
 
@@ -556,27 +502,22 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 #if defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
 XrResult
-oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
-    struct oxr_logger *log, const XrGraphicsBindingOpenGLXlibKHR *next)
+oxr_verify_XrGraphicsBindingOpenGLXlibKHR(struct oxr_logger *log, const XrGraphicsBindingOpenGLXlibKHR *next)
 {
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "Graphics binding has invalid type");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Graphics binding has invalid type");
 	}
 
 	if (next->xDisplay == NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "xDisplay is NULL");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "xDisplay is NULL");
 	}
 
 	if (next->glxContext == NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "glxContext is NULL");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "glxContext is NULL");
 	}
 
 	if (next->glxDrawable == NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "glxDrawable is NULL");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "glxDrawable is NULL");
 	}
 
 
@@ -589,14 +530,12 @@ oxr_verify_XrGraphicsBindingOpenGLXlibKHR(
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 
 XrResult
-oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *log,
-                                      const XrGraphicsBindingVulkanKHR *next)
+oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *log, const XrGraphicsBindingVulkanKHR *next)
 {
 	/* XR_TYPE_GRAPHICS_BINDING_VULKAN2_KHR aliased to
 	 * XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR */
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "Graphics binding has invalid type");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Graphics binding has invalid type");
 	}
 
 	return XR_SUCCESS;
@@ -608,39 +547,29 @@ oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *log,
 #ifdef XR_USE_PLATFORM_EGL
 
 XrResult
-oxr_verify_XrGraphicsBindingEGLMNDX(struct oxr_logger *log,
-                                    const XrGraphicsBindingEGLMNDX *next)
+oxr_verify_XrGraphicsBindingEGLMNDX(struct oxr_logger *log, const XrGraphicsBindingEGLMNDX *next)
 {
 	// Here for internal error checking
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_EGL_MNDX) {
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "XrGraphicsBindingEGLMNDX::type is invalid '%i'",
-		    next->type);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "XrGraphicsBindingEGLMNDX::type is invalid '%i'",
+		                 next->type);
 	}
 
 	if (next->getProcAddress == NULL) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "XrGraphicsBindingEGLMNDX::getProcAddress cannot be NULL");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "XrGraphicsBindingEGLMNDX::getProcAddress cannot be NULL");
 	}
 
 	if (next->display == NULL) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "XrGraphicsBindingEGLMNDX::display cannot be NULL");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "XrGraphicsBindingEGLMNDX::display cannot be NULL");
 	}
 
 	if (next->config == NULL) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "XrGraphicsBindingEGLMNDX::config cannot be NULL");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "XrGraphicsBindingEGLMNDX::config cannot be NULL");
 	}
 
 	if (next->context == NULL) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "XrGraphicsBindingEGLMNDX::context cannot be NULL");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "XrGraphicsBindingEGLMNDX::context cannot be NULL");
 	}
 
 	return XR_SUCCESS;
@@ -650,12 +579,10 @@ oxr_verify_XrGraphicsBindingEGLMNDX(struct oxr_logger *log,
 
 #if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 XrResult
-oxr_verify_XrGraphicsBindingOpenGLESAndroidKHR(
-    struct oxr_logger *log, const XrGraphicsBindingOpenGLESAndroidKHR *next)
+oxr_verify_XrGraphicsBindingOpenGLESAndroidKHR(struct oxr_logger *log, const XrGraphicsBindingOpenGLESAndroidKHR *next)
 {
 	if (next->type != XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "Graphics binding has invalid type");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Graphics binding has invalid type");
 	}
 
 	return XR_SUCCESS;

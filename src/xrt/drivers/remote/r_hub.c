@@ -52,8 +52,7 @@ setup_accept_fd(struct r_hub *r)
 	r->accept_fd = ret;
 
 	int flag = 1;
-	ret = setsockopt(r->accept_fd, SOL_SOCKET, SO_REUSEADDR, &flag,
-	                 sizeof(flag));
+	ret = setsockopt(r->accept_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
 	if (ret < 0) {
 		U_LOG_E("setsockopt failed: %i", ret);
 		close(r->accept_fd);
@@ -65,8 +64,7 @@ setup_accept_fd(struct r_hub *r)
 	server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 	server_address.sin_port = htons(r->port);
 
-	ret = bind(r->accept_fd, (struct sockaddr *)&server_address,
-	           sizeof(server_address));
+	ret = bind(r->accept_fd, (struct sockaddr *)&server_address, sizeof(server_address));
 	if (ret < 0) {
 		U_LOG_E("bind failed: %i", ret);
 		close(r->accept_fd);
@@ -95,8 +93,7 @@ do_accept(struct r_hub *r)
 	conn_fd = ret;
 
 	int flags = 1;
-	ret = setsockopt(conn_fd, SOL_TCP, TCP_NODELAY, (void *)&flags,
-	                 sizeof(flags));
+	ret = setsockopt(conn_fd, SOL_TCP, TCP_NODELAY, (void *)&flags, sizeof(flags));
 	if (ret < 0) {
 		U_LOG_E("setsockopt failed: %i", ret);
 		close(conn_fd);
@@ -227,9 +224,7 @@ r_create_devices(uint16_t port,
 }
 
 int
-r_remote_connection_init(struct r_remote_connection *rc,
-                         const char *ip_addr,
-                         uint16_t port)
+r_remote_connection_init(struct r_remote_connection *rc, const char *ip_addr, uint16_t port)
 {
 	struct sockaddr_in addr = {0};
 	int conn_fd;
@@ -260,8 +255,7 @@ r_remote_connection_init(struct r_remote_connection *rc,
 	}
 
 	int flags = 1;
-	ret = setsockopt(conn_fd, SOL_TCP, TCP_NODELAY, (void *)&flags,
-	                 sizeof(flags));
+	ret = setsockopt(conn_fd, SOL_TCP, TCP_NODELAY, (void *)&flags, sizeof(flags));
 	if (ret < 0) {
 		U_LOG_E("setsockopt failed: %i", ret);
 		close(conn_fd);
@@ -274,8 +268,7 @@ r_remote_connection_init(struct r_remote_connection *rc,
 }
 
 int
-r_remote_connection_read_one(struct r_remote_connection *rc,
-                             struct r_remote_data *data)
+r_remote_connection_read_one(struct r_remote_connection *rc, struct r_remote_data *data)
 {
 	const size_t size = sizeof(*data);
 	size_t current = 0;
@@ -298,8 +291,7 @@ r_remote_connection_read_one(struct r_remote_connection *rc,
 }
 
 int
-r_remote_connection_write_one(struct r_remote_connection *rc,
-                              const struct r_remote_data *data)
+r_remote_connection_write_one(struct r_remote_connection *rc, const struct r_remote_data *data)
 {
 	const size_t size = sizeof(*data);
 	size_t current = 0;

@@ -80,10 +80,7 @@ void
 u_rt_helper_mark_delivered(struct u_rt_helper *urth, int64_t frame_id);
 
 void
-u_rt_helper_new_sample(struct u_rt_helper *urth,
-                       uint64_t predict,
-                       uint64_t extra,
-                       uint64_t min_period);
+u_rt_helper_new_sample(struct u_rt_helper *urth, uint64_t predict, uint64_t extra, uint64_t min_period);
 
 
 #ifdef __cplusplus

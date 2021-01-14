@@ -32,11 +32,9 @@ check_range(struct t_hsv_filter_color color, uint32_t h, uint32_t s, uint32_t v)
 }
 
 void
-t_hsv_build_convert_table(struct t_hsv_filter_params *params,
-                          struct t_convert_table *t)
+t_hsv_build_convert_table(struct t_hsv_filter_params *params, struct t_convert_table *t)
 {
-	struct t_hsv_filter_large_table *temp =
-	    U_TYPED_CALLOC(struct t_hsv_filter_large_table);
+	struct t_hsv_filter_large_table *temp = U_TYPED_CALLOC(struct t_hsv_filter_large_table);
 	t_hsv_build_large_table(params, temp);
 
 	uint8_t *dst = &t->v[0][0][0][0];
@@ -59,8 +57,7 @@ t_hsv_build_convert_table(struct t_hsv_filter_params *params,
 }
 
 void
-t_hsv_build_large_table(struct t_hsv_filter_params *params,
-                        struct t_hsv_filter_large_table *t)
+t_hsv_build_large_table(struct t_hsv_filter_params *params, struct t_hsv_filter_large_table *t)
 {
 	struct t_convert_table *temp = U_TYPED_CALLOC(struct t_convert_table);
 	t_convert_make_y8u8v8_to_h8s8v8(temp);
@@ -73,17 +70,12 @@ t_hsv_build_large_table(struct t_hsv_filter_params *params,
 				uint8_t s = temp->v[y][u][v][1];
 				uint8_t v2 = temp->v[y][u][v][2];
 
-				bool f0 =
-				    check_range(params->color[0], h, s, v2);
-				bool f1 =
-				    check_range(params->color[1], h, s, v2);
-				bool f2 =
-				    check_range(params->color[2], h, s, v2);
-				bool f3 = s <= params->white.s_max &&
-				          v2 >= params->white.v_min;
+				bool f0 = check_range(params->color[0], h, s, v2);
+				bool f1 = check_range(params->color[1], h, s, v2);
+				bool f2 = check_range(params->color[2], h, s, v2);
+				bool f3 = s <= params->white.s_max && v2 >= params->white.v_min;
 
-				*dst = (f0 << 0) | (f1 << 1) | (f2 << 2) |
-				       (f3 << 3);
+				*dst = (f0 << 0) | (f1 << 1) | (f2 << 2) | (f3 << 3);
 				dst += 1;
 			}
 		}
@@ -93,11 +85,9 @@ t_hsv_build_large_table(struct t_hsv_filter_params *params,
 }
 
 void
-t_hsv_build_optimized_table(struct t_hsv_filter_params *params,
-                            struct t_hsv_filter_optimized_table *t)
+t_hsv_build_optimized_table(struct t_hsv_filter_params *params, struct t_hsv_filter_optimized_table *t)
 {
-	struct t_hsv_filter_large_table *temp =
-	    U_TYPED_CALLOC(struct t_hsv_filter_large_table);
+	struct t_hsv_filter_large_table *temp = U_TYPED_CALLOC(struct t_hsv_filter_large_table);
 	t_hsv_build_large_table(params, temp);
 
 	// Half of step, minues one
@@ -230,10 +220,8 @@ process_frame_yuyv(struct t_hsv_filter *f, struct xrt_frame *xf)
 			uint8_t cr = src[3];
 			src += 4;
 
-			uint8_t bits0 =
-			    t_hsv_filter_sample(&f->table, y1, cb, cr);
-			uint8_t bits1 =
-			    t_hsv_filter_sample(&f->table, y2, cb, cr);
+			uint8_t bits0 = t_hsv_filter_sample(&f->table, y1, cb, cr);
+			uint8_t bits1 = t_hsv_filter_sample(&f->table, y2, cb, cr);
 
 			uint8_t v0 = (bits0 & (1 << 0)) ? 0xff : 0x00;
 			uint8_t v1 = (bits0 & (1 << 1)) ? 0xff : 0x00;
@@ -270,10 +258,7 @@ ensure_buf_allocated(struct t_hsv_filter *f, struct xrt_frame *xf)
 }
 
 static void
-push_buf(struct t_hsv_filter *f,
-         struct xrt_frame *xf,
-         struct xrt_frame_sink *xsink,
-         struct xrt_frame **frame)
+push_buf(struct t_hsv_filter *f, struct xrt_frame *xf, struct xrt_frame_sink *xsink, struct xrt_frame **frame)
 {
 	if (xsink == NULL) {
 		xrt_frame_reference(frame, NULL);

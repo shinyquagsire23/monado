@@ -79,8 +79,7 @@ static void
 update_r8g8b8(struct gui_ogl_sink *s, GLint w, GLint h, uint8_t *data)
 {
 	glBindTexture(GL_TEXTURE_2D, s->tex.id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGB,
-	             GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -88,8 +87,7 @@ static void
 update_l8(struct gui_ogl_sink *s, GLint w, GLint h, uint8_t *data)
 {
 	glBindTexture(GL_TEXTURE_2D, s->tex.id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED,
-	             GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 	GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
 	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -140,9 +138,7 @@ gui_ogl_sink_update(struct gui_ogl_texture *tex)
 }
 
 struct gui_ogl_texture *
-gui_ogl_sink_create(const char *name,
-                    struct xrt_frame_context *xfctx,
-                    struct xrt_frame_sink **out_sink)
+gui_ogl_sink_create(const char *name, struct xrt_frame_context *xfctx, struct xrt_frame_sink **out_sink)
 {
 	struct gui_ogl_sink *s = U_TYPED_CALLOC(struct gui_ogl_sink);
 	int ret = 0;
@@ -170,8 +166,7 @@ gui_ogl_sink_create(const char *name,
 	GLint h = 1;
 	struct xrt_colour_rgb_u8 pink = {255, 0, 255};
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGB,
-	             GL_UNSIGNED_BYTE, &pink.r);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, &pink.r);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 

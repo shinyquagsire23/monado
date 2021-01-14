@@ -362,9 +362,9 @@ comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s);
  *
  * @relates comp_compositor
  */
-#define COMP_PRINT_MODE(c, ...)                                                \
-	if (c->settings.print_modes) {                                         \
-		U_LOG_I(__VA_ARGS__);                                          \
+#define COMP_PRINT_MODE(c, ...)                                                                                        \
+	if (c->settings.print_modes) {                                                                                 \
+		U_LOG_I(__VA_ARGS__);                                                                                  \
 	}
 
 

@@ -75,8 +75,7 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 		templ = &profiles[x];
 		XrPath t_path = XR_NULL_PATH;
 
-		oxr_path_get_or_create(log, inst, templ->path,
-		                       strlen(templ->path), &t_path);
+		oxr_path_get_or_create(log, inst, templ->path, strlen(templ->path), &t_path);
 		if (t_path == path) {
 			break;
 		}
@@ -88,8 +87,7 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 		return false;
 	}
 
-	struct oxr_interaction_profile *p =
-	    U_TYPED_CALLOC(struct oxr_interaction_profile);
+	struct oxr_interaction_profile *p = U_TYPED_CALLOC(struct oxr_interaction_profile);
 
 	p->xname = templ->name;
 	p->num_bindings = templ->num_bindings;
@@ -109,9 +107,7 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 	}
 
 	// Add to the list of currently created interaction profiles.
-	U_ARRAY_REALLOC_OR_FREE(inst->profiles,
-	                        struct oxr_interaction_profile *,
-	                        (inst->num_profiles + 1));
+	U_ARRAY_REALLOC_OR_FREE(inst->profiles, struct oxr_interaction_profile *, (inst->num_profiles + 1));
 	inst->profiles[inst->num_profiles++] = p;
 
 	*out_p = p;
@@ -138,10 +134,7 @@ reset_all_keys(struct oxr_binding *bindings, size_t num_bindings)
 }
 
 static void
-add_key_to_matching_bindings(struct oxr_binding *bindings,
-                             size_t num_bindings,
-                             XrPath path,
-                             uint32_t key)
+add_key_to_matching_bindings(struct oxr_binding *bindings, size_t num_bindings, XrPath path, uint32_t key)
 {
 	for (size_t x = 0; x < num_bindings; x++) {
 		struct oxr_binding *b = &bindings[x];
@@ -161,10 +154,8 @@ add_key_to_matching_bindings(struct oxr_binding *bindings,
 		}
 
 		U_ARRAY_REALLOC_OR_FREE(b->keys, uint32_t, (b->num_keys + 1));
-		U_ARRAY_REALLOC_OR_FREE(b->preferred_binding_path_index,
-		                        uint32_t, (b->num_keys + 1));
-		b->preferred_binding_path_index[b->num_keys] =
-		    preferred_path_index;
+		U_ARRAY_REALLOC_OR_FREE(b->preferred_binding_path_index, uint32_t, (b->num_keys + 1));
+		b->preferred_binding_path_index[b->num_keys] = preferred_path_index;
 		b->keys[b->num_keys++] = key;
 	}
 }
@@ -230,11 +221,10 @@ get_sub_path_str(enum oxr_sub_action_path sub_path)
 }
 
 static XrPath
-get_interaction_bound_to_sub_path(struct oxr_session *sess,
-                                  enum oxr_sub_action_path sub_path)
+get_interaction_bound_to_sub_path(struct oxr_session *sess, enum oxr_sub_action_path sub_path)
 {
 	switch (sub_path) {
-#define OXR_PATH_MEMBER(lower, CAP, _)                                         \
+#define OXR_PATH_MEMBER(lower, CAP, _)                                                                                 \
 	case OXR_SUB_ACTION_PATH_##CAP: return sess->lower;
 
 		OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(OXR_PATH_MEMBER)
@@ -307,8 +297,7 @@ oxr_find_profile_for_device(struct oxr_logger *log,
 		// clang-format on
 		return;
 	case XRT_DEVICE_DAYDREAM:
-		interaction_profile_find(
-		    log, inst, inst->path_cache.khr_simple_controller, out_p);
+		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
 		return;
 	case XRT_DEVICE_SIMPLE_CONTROLLER:
 		// clang-format off
@@ -403,10 +392,9 @@ oxr_binding_destroy_all(struct oxr_logger *log, struct oxr_instance *inst)
  */
 
 XrResult
-oxr_action_suggest_interaction_profile_bindings(
-    struct oxr_logger *log,
-    struct oxr_instance *inst,
-    const XrInteractionProfileSuggestedBinding *suggestedBindings)
+oxr_action_suggest_interaction_profile_bindings(struct oxr_logger *log,
+                                                struct oxr_instance *inst,
+                                                const XrInteractionProfileSuggestedBinding *suggestedBindings)
 {
 	struct oxr_interaction_profile *p = NULL;
 
@@ -426,24 +414,20 @@ oxr_action_suggest_interaction_profile_bindings(
 	reset_all_keys(bindings, num_bindings);
 
 	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
-		const XrActionSuggestedBinding *s =
-		    &suggestedBindings->suggestedBindings[i];
-		struct oxr_action *act =
-		    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action *, s->action);
+		const XrActionSuggestedBinding *s = &suggestedBindings->suggestedBindings[i];
+		struct oxr_action *act = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action *, s->action);
 
-		add_key_to_matching_bindings(bindings, num_bindings, s->binding,
-		                             act->act_key);
+		add_key_to_matching_bindings(bindings, num_bindings, s->binding, act->act_key);
 	}
 
 	return XR_SUCCESS;
 }
 
 XrResult
-oxr_action_get_current_interaction_profile(
-    struct oxr_logger *log,
-    struct oxr_session *sess,
-    XrPath topLevelUserPath,
-    XrInteractionProfileState *interactionProfile)
+oxr_action_get_current_interaction_profile(struct oxr_logger *log,
+                                           struct oxr_session *sess,
+                                           XrPath topLevelUserPath,
+                                           XrInteractionProfileState *interactionProfile)
 {
 	struct oxr_instance *inst = sess->sys->inst;
 
@@ -452,36 +436,33 @@ oxr_action_get_current_interaction_profile(
 		                 "xrAttachSessionActionSets has not been "
 		                 "called on this session.");
 	}
-#define IDENTIFY_TOP_LEVEL_PATH(X)                                             \
-	if (topLevelUserPath == inst->path_cache.X) {                          \
-		interactionProfile->interactionProfile = sess->X;              \
+#define IDENTIFY_TOP_LEVEL_PATH(X)                                                                                     \
+	if (topLevelUserPath == inst->path_cache.X) {                                                                  \
+		interactionProfile->interactionProfile = sess->X;                                                      \
 	} else
 
 	OXR_FOR_EACH_VALID_SUBACTION_PATH(IDENTIFY_TOP_LEVEL_PATH)
 	{
 		// else clause
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Top level path not handled?!");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Top level path not handled?!");
 	}
 #undef IDENTIFY_TOP_LEVEL_PATH
 	return XR_SUCCESS;
 }
 
 XrResult
-oxr_action_get_input_source_localized_name(
-    struct oxr_logger *log,
-    struct oxr_session *sess,
-    const XrInputSourceLocalizedNameGetInfo *getInfo,
-    uint32_t bufferCapacityInput,
-    uint32_t *bufferCountOutput,
-    char *buffer)
+oxr_action_get_input_source_localized_name(struct oxr_logger *log,
+                                           struct oxr_session *sess,
+                                           const XrInputSourceLocalizedNameGetInfo *getInfo,
+                                           uint32_t bufferCapacityInput,
+                                           uint32_t *bufferCountOutput,
+                                           char *buffer)
 {
 	char temp[1024] = {0};
 	ssize_t current = 0;
 	enum oxr_sub_action_path sub_path = 0;
 
-	if (!get_sub_path_from_path(log, sess->sys->inst, getInfo->sourcePath,
-	                            &sub_path)) {
+	if (!get_sub_path_from_path(log, sess->sys->inst, getInfo->sourcePath, &sub_path)) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(getInfo->sourcePath) doesn't start with a "
 		                 "valid sub_path");
@@ -499,39 +480,32 @@ oxr_action_get_input_source_localized_name(
 	struct oxr_interaction_profile *oip = NULL;
 	interaction_profile_find_or_create(log, sess->sys->inst, path, &oip);
 	if (oip == NULL) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "no interaction profile found");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "no interaction profile found");
 	}
 
 	// Add which hand to use.
-	if (getInfo->whichComponents &
-	    XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT) {
-		add_string(temp, sizeof(temp), &current,
-		           get_sub_path_str(sub_path));
+	if (getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT) {
+		add_string(temp, sizeof(temp), &current, get_sub_path_str(sub_path));
 	}
 
 	// Add a human readable and localized name of the device.
-	if ((getInfo->whichComponents &
-	     XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT) != 0) {
+	if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT) != 0) {
 		add_string(temp, sizeof(temp), &current, oip->localized_name);
 	}
 
 	//! @todo This implementation is very very very ugly.
-	if ((getInfo->whichComponents &
-	     XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT) != 0) {
+	if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT) != 0) {
 		/*
 		 * The above enum is miss-named it should be called identifier
 		 * instead of component.
 		 */
 		add_string(temp, sizeof(temp), &current,
-		           get_identifier_str_in_profile(
-		               log, sess->sys->inst, getInfo->sourcePath, oip));
+		           get_identifier_str_in_profile(log, sess->sys->inst, getInfo->sourcePath, oip));
 	}
 
 	// Include the null character.
 	current += 1;
 
-	OXR_TWO_CALL_HELPER(log, bufferCapacityInput, bufferCountOutput, buffer,
-	                    (size_t)current, temp,
+	OXR_TWO_CALL_HELPER(log, bufferCapacityInput, bufferCountOutput, buffer, (size_t)current, temp,
 	                    oxr_session_success_result(sess));
 }

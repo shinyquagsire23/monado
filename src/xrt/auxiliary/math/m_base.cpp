@@ -104,9 +104,7 @@ math_vec3_scalar_mul(float scalar, struct xrt_vec3 *inAndOut)
 }
 
 extern "C" void
-math_vec3_cross(const struct xrt_vec3 *l,
-                const struct xrt_vec3 *r,
-                struct xrt_vec3 *result)
+math_vec3_cross(const struct xrt_vec3 *l, const struct xrt_vec3 *r, struct xrt_vec3 *result)
 {
 	map_vec3(*result) = map_vec3(*l).cross(map_vec3(*r));
 }
@@ -124,29 +122,23 @@ math_vec3_normalize(struct xrt_vec3 *in)
  */
 
 extern "C" void
-math_quat_from_angle_vector(float angle_rads,
-                            const struct xrt_vec3 *vector,
-                            struct xrt_quat *result)
+math_quat_from_angle_vector(float angle_rads, const struct xrt_vec3 *vector, struct xrt_quat *result)
 {
 	map_quat(*result) = Eigen::AngleAxisf(angle_rads, copy(vector));
 }
 
 extern "C" void
-math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat,
-                          struct xrt_quat *result)
+math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat, struct xrt_quat *result)
 {
 	Eigen::Matrix3f m;
-	m << mat->v[0], mat->v[1], mat->v[2], mat->v[3], mat->v[4], mat->v[5],
-	    mat->v[6], mat->v[7], mat->v[8];
+	m << mat->v[0], mat->v[1], mat->v[2], mat->v[3], mat->v[4], mat->v[5], mat->v[6], mat->v[7], mat->v[8];
 
 	Eigen::Quaternionf q(m);
 	map_quat(*result) = q;
 }
 
 extern "C" void
-math_quat_from_plus_x_z(const struct xrt_vec3 *plus_x,
-                        const struct xrt_vec3 *plus_z,
-                        struct xrt_quat *result)
+math_quat_from_plus_x_z(const struct xrt_vec3 *plus_x, const struct xrt_vec3 *plus_z, struct xrt_quat *result)
 {
 	xrt_vec3 plus_y;
 	math_vec3_cross(plus_z, plus_x, &plus_y);
@@ -234,9 +226,7 @@ math_quat_ensure_normalized(struct xrt_quat *inout)
 
 
 extern "C" void
-math_quat_rotate(const struct xrt_quat *left,
-                 const struct xrt_quat *right,
-                 struct xrt_quat *result)
+math_quat_rotate(const struct xrt_quat *left, const struct xrt_quat *right, struct xrt_quat *result)
 {
 	assert(left != NULL);
 	assert(right != NULL);
@@ -251,9 +241,7 @@ math_quat_rotate(const struct xrt_quat *left,
 }
 
 extern "C" void
-math_quat_rotate_vec3(const struct xrt_quat *left,
-                      const struct xrt_vec3 *right,
-                      struct xrt_vec3 *result)
+math_quat_rotate_vec3(const struct xrt_quat *left, const struct xrt_vec3 *right, struct xrt_vec3 *result)
 {
 	assert(left != NULL);
 	assert(right != NULL);
@@ -268,9 +256,7 @@ math_quat_rotate_vec3(const struct xrt_quat *left,
 }
 
 extern "C" void
-math_quat_rotate_derivative(const struct xrt_quat *quat,
-                            const struct xrt_vec3 *deriv,
-                            struct xrt_vec3 *result)
+math_quat_rotate_derivative(const struct xrt_quat *quat, const struct xrt_vec3 *deriv, struct xrt_vec3 *result)
 {
 	assert(quat != NULL);
 	assert(deriv != NULL);
@@ -305,9 +291,7 @@ math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
 }
 
 extern "C" void
-math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
-                               const struct xrt_vec3 *right,
-                               struct xrt_vec3 *result)
+math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left, const struct xrt_vec3 *right, struct xrt_vec3 *result)
 {
 	Eigen::Matrix3f m;
 	m << left->v[0], left->v[1], left->v[2], // 1
@@ -333,8 +317,7 @@ math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
 }
 
 void
-math_matrix_4x4_view_from_pose(const struct xrt_pose *pose,
-                               struct xrt_matrix_4x4 *result)
+math_matrix_4x4_view_from_pose(const struct xrt_pose *pose, struct xrt_matrix_4x4 *result)
 {
 	Eigen::Vector3f position = copy(&pose->position);
 	Eigen::Quaternionf orientation = copy(&pose->orientation);
@@ -346,9 +329,7 @@ math_matrix_4x4_view_from_pose(const struct xrt_pose *pose,
 }
 
 void
-math_matrix_4x4_model(const struct xrt_pose *pose,
-                      const struct xrt_vec3 *size,
-                      struct xrt_matrix_4x4 *result)
+math_matrix_4x4_model(const struct xrt_pose *pose, const struct xrt_vec3 *size, struct xrt_matrix_4x4 *result)
 {
 	Eigen::Vector3f position = copy(&pose->position);
 	Eigen::Quaternionf orientation = copy(&pose->orientation);
@@ -384,8 +365,7 @@ math_pose_validate(const struct xrt_pose *pose)
 {
 	assert(pose != NULL);
 
-	return math_vec3_validate(&pose->position) &&
-	       math_quat_validate(&pose->orientation);
+	return math_vec3_validate(&pose->position) && math_quat_validate(&pose->orientation);
 }
 
 extern "C" void
@@ -430,9 +410,7 @@ transform_pose(const xrt_pose &transform, const xrt_pose &pose)
 }
 
 extern "C" void
-math_pose_transform(const struct xrt_pose *transform,
-                    const struct xrt_pose *pose,
-                    struct xrt_pose *outPose)
+math_pose_transform(const struct xrt_pose *transform, const struct xrt_pose *pose, struct xrt_pose *outPose)
 {
 	assert(pose != NULL);
 	assert(transform != NULL);
@@ -443,9 +421,7 @@ math_pose_transform(const struct xrt_pose *transform,
 }
 
 extern "C" void
-math_pose_transform_point(const struct xrt_pose *transform,
-                          const struct xrt_vec3 *point,
-                          struct xrt_vec3 *out_point)
+math_pose_transform_point(const struct xrt_pose *transform, const struct xrt_vec3 *point, struct xrt_vec3 *out_point)
 {
 	assert(transform != NULL);
 	assert(point != NULL);

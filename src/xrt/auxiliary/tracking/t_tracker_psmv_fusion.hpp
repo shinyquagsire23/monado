@@ -39,10 +39,9 @@ public:
 	clear_position_tracked_flag() = 0;
 
 	virtual void
-	process_imu_data(
-	    timepoint_ns timestamp_ns,
-	    const struct xrt_tracking_sample *sample,
-	    const struct xrt_vec3 *orientation_variance_optional) = 0;
+	process_imu_data(timepoint_ns timestamp_ns,
+	                 const struct xrt_tracking_sample *sample,
+	                 const struct xrt_vec3 *orientation_variance_optional) = 0;
 	virtual void
 	process_3d_vision_data(timepoint_ns timestamp_ns,
 	                       const struct xrt_vec3 *position,
@@ -51,7 +50,6 @@ public:
 	                       float residual_limit) = 0;
 
 	virtual void
-	get_prediction(timepoint_ns when_ns,
-	               struct xrt_space_relation *out_relation) = 0;
+	get_prediction(timepoint_ns when_ns, struct xrt_space_relation *out_relation) = 0;
 };
 } // namespace xrt_fusion

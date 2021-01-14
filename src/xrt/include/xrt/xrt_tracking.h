@@ -140,9 +140,7 @@ struct xrt_tracked_psmv
 	/*!
 	 * Push a IMU sample into the tracking system.
 	 */
-	void (*push_imu)(struct xrt_tracked_psmv *,
-	                 timepoint_ns timestamp_ns,
-	                 struct xrt_tracking_sample *sample);
+	void (*push_imu)(struct xrt_tracked_psmv *, timepoint_ns timestamp_ns, struct xrt_tracking_sample *sample);
 
 	/*!
 	 * Called by the owning @ref xrt_device @ref xdev to get the pose of
@@ -181,9 +179,7 @@ struct xrt_tracked_psvr
 	/*!
 	 * Push a IMU sample into the tracking system.
 	 */
-	void (*push_imu)(struct xrt_tracked_psvr *,
-	                 timepoint_ns timestamp_ns,
-	                 struct xrt_tracking_sample *sample);
+	void (*push_imu)(struct xrt_tracked_psvr *, timepoint_ns timestamp_ns, struct xrt_tracking_sample *sample);
 
 	/*!
 	 * Called by the owning @ref xrt_device @ref xdev to get the pose of
@@ -246,9 +242,7 @@ xrt_tracked_psmv_get_tracked_pose(struct xrt_tracked_psmv *psmv,
 
 //! @public @memberof xrt_tracked_psmv
 static inline void
-xrt_tracked_psmv_push_imu(struct xrt_tracked_psmv *psmv,
-                          timepoint_ns timestamp_ns,
-                          struct xrt_tracking_sample *sample)
+xrt_tracked_psmv_push_imu(struct xrt_tracked_psmv *psmv, timepoint_ns timestamp_ns, struct xrt_tracking_sample *sample)
 {
 	psmv->push_imu(psmv, timestamp_ns, sample);
 }
@@ -277,9 +271,7 @@ xrt_tracked_psvr_get_tracked_pose(struct xrt_tracked_psvr *psvr,
 
 //! @public @memberof xrt_tracked_psmv
 static inline void
-xrt_tracked_psvr_push_imu(struct xrt_tracked_psvr *psvr,
-                          timepoint_ns timestamp_ns,
-                          struct xrt_tracking_sample *sample)
+xrt_tracked_psvr_push_imu(struct xrt_tracked_psvr *psvr, timepoint_ns timestamp_ns, struct xrt_tracking_sample *sample)
 {
 	psvr->push_imu(psvr, timestamp_ns, sample);
 }

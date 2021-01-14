@@ -315,9 +315,7 @@ struct xrt_device
 	 *                           @todo make this param a pointer to const.
 	 * @see xrt_output_name
 	 */
-	void (*set_output)(struct xrt_device *xdev,
-	                   enum xrt_output_name name,
-	                   union xrt_output_value *value);
+	void (*set_output)(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value);
 
 	/*!
 	 * Get the per view pose in relation to the view space. Does not do any
@@ -342,11 +340,7 @@ struct xrt_device
 	                      uint32_t view_index,
 	                      struct xrt_pose *out_pose);
 
-	bool (*compute_distortion)(struct xrt_device *xdev,
-	                           int view,
-	                           float u,
-	                           float v,
-	                           struct xrt_uv_triplet *result);
+	bool (*compute_distortion)(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result);
 
 	/*!
 	 * Destroy device.
@@ -376,8 +370,7 @@ xrt_device_get_tracked_pose(struct xrt_device *xdev,
                             uint64_t requested_timestamp_ns,
                             struct xrt_space_relation *out_relation)
 {
-	xdev->get_tracked_pose(xdev, name, requested_timestamp_ns,
-	                       out_relation);
+	xdev->get_tracked_pose(xdev, name, requested_timestamp_ns, out_relation);
 }
 
 /*!
@@ -400,9 +393,7 @@ xrt_device_get_hand_tracking(struct xrt_device *xdev,
  * @public @memberof xrt_device
  */
 static inline void
-xrt_device_set_output(struct xrt_device *xdev,
-                      enum xrt_output_name name,
-                      union xrt_output_value *value)
+xrt_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
 {
 	xdev->set_output(xdev, name, value);
 }

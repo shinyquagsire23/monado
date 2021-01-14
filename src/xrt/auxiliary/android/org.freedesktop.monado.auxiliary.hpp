@@ -54,8 +54,7 @@ namespace org::freedesktop::monado::auxiliary {
 		 *
 		 */
 		static MonadoView
-		attachToActivity(android::app::Activity const &activity,
-		                 void *nativePointer);
+		attachToActivity(android::app::Activity const &activity, void *nativePointer);
 
 		/*!
 		 * Wrapper for the waitGetSurfaceHolder method

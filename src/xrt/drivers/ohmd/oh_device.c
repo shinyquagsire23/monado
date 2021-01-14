@@ -129,24 +129,21 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	out_relation->pose.orientation = quat;
 	out_relation->pose.position = pos;
 	//! @todo assuming that orientation is actually currently tracked
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT);
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	                                                               XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
+	                                                               XRT_SPACE_RELATION_POSITION_VALID_BIT);
 
 	// we assume the position is tracked if and only if it is not zero
 	if (pos.x != 0.0 || pos.y != 0.0 || pos.z != 0.0) {
-		out_relation->relation_flags = (enum xrt_space_relation_flags)(
-		    out_relation->relation_flags |
-		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+		out_relation->relation_flags = (enum xrt_space_relation_flags)(out_relation->relation_flags |
+		                                                               XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
 	}
 
 	bool have_ang_vel = false;
 	struct xrt_vec3 ang_vel;
 #ifdef OHMD_HAVE_ANG_VEL
 	if (!ohd->skip_ang_vel) {
-		if (0 == ohmd_device_getf(ohd->dev, OHMD_ANGULAR_VELOCITY,
-		                          &ang_vel.x)) {
+		if (0 == ohmd_device_getf(ohd->dev, OHMD_ANGULAR_VELOCITY, &ang_vel.x)) {
 			have_ang_vel = true;
 		} else {
 			// we now know this device doesn't return angular
@@ -185,8 +182,7 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 			// last report was not long ago but not
 			// instantaneously (at least half a millisecond),
 			// so approximately safe to do this.
-			math_quat_finite_difference(&old_quat, &quat, dt,
-			                            &ang_vel);
+			math_quat_finite_difference(&old_quat, &quat, dt, &ang_vel);
 			have_ang_vel = true;
 		}
 	}
@@ -194,16 +190,12 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	if (have_ang_vel) {
 		out_relation->angular_velocity = ang_vel;
 		out_relation->relation_flags = (enum xrt_space_relation_flags)(
-		    out_relation->relation_flags |
-		    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
+		    out_relation->relation_flags | XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
 
-		OHMD_TRACE(ohd,
-		           "GET_TRACKED_POSE (%f, %f, %f, %f) (%f, %f, %f)",
-		           quat.x, quat.y, quat.z, quat.w, ang_vel.x, ang_vel.y,
-		           ang_vel.z);
+		OHMD_TRACE(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f) (%f, %f, %f)", quat.x, quat.y, quat.z, quat.w,
+		           ang_vel.x, ang_vel.y, ang_vel.z);
 	} else {
-		OHMD_TRACE(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f)", quat.x,
-		           quat.y, quat.z, quat.w);
+		OHMD_TRACE(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f)", quat.x, quat.y, quat.z, quat.w);
 	}
 
 	// Update state within driver
@@ -443,10 +435,7 @@ get_info(struct oh_device *ohd, const char *prod)
 
 // slightly different to u_compute_distortion_panotools in u_distortion_mesh
 static bool
-u_compute_distortion_openhmd(struct openhmd_values *values,
-                             float u,
-                             float v,
-                             struct xrt_uv_triplet *result)
+u_compute_distortion_openhmd(struct openhmd_values *values, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct openhmd_values val = *values;
 
@@ -483,27 +472,17 @@ u_compute_distortion_openhmd(struct openhmd_values *values,
 }
 
 static bool
-compute_distortion_openhmd(struct xrt_device *xdev,
-                           int view,
-                           float u,
-                           float v,
-                           struct xrt_uv_triplet *result)
+compute_distortion_openhmd(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct oh_device *ohd = oh_device(xdev);
-	return u_compute_distortion_openhmd(&ohd->distortion.openhmd[view], u,
-	                                    v, result);
+	return u_compute_distortion_openhmd(&ohd->distortion.openhmd[view], u, v, result);
 }
 
 static bool
-compute_distortion_vive(struct xrt_device *xdev,
-                        int view,
-                        float u,
-                        float v,
-                        struct xrt_uv_triplet *result)
+compute_distortion_vive(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct oh_device *ohd = oh_device(xdev);
-	return u_compute_distortion_vive(&ohd->distortion.vive[view], u, v,
-	                                 result);
+	return u_compute_distortion_vive(&ohd->distortion.vive[view], u, v, result);
 }
 
 static inline void
@@ -517,10 +496,9 @@ swap(int *a, int *b)
 struct xrt_device *
 oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 {
-	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
-	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
-	struct oh_device *ohd =
-	    U_DEVICE_ALLOCATE(struct oh_device, flags, 1, 0);
+	enum u_device_alloc_flags flags =
+	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	struct oh_device *ohd = U_DEVICE_ALLOCATE(struct oh_device, flags, 1, 0);
 	ohd->base.update_inputs = oh_device_update_inputs;
 	ohd->base.get_tracked_pose = oh_device_get_tracked_pose;
 	ohd->base.get_view_pose = oh_device_get_view_pose;
@@ -530,8 +508,7 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 	ohd->ctx = ctx;
 	ohd->dev = dev;
 	ohd->ll = debug_get_log_option_ohmd_log();
-	ohd->enable_finite_difference =
-	    debug_get_bool_option_ohmd_finite_diff();
+	ohd->enable_finite_difference = debug_get_bool_option_ohmd_finite_diff();
 
 	snprintf(ohd->base.str, XRT_DEVICE_NAME_LEN, "%s (OpenHMD)", prod);
 
@@ -539,30 +516,21 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 
 	{
 		/* right eye */
-		if (!math_compute_fovs(info.views[1].display.w_meters,
-		                       info.views[1].lens_center_x_meters,
-		                       info.views[1].fov,
-		                       info.views[1].display.h_meters,
-		                       info.views[1].lens_center_y_meters, 0,
-		                       &ohd->base.hmd->views[1].fov)) {
-			OHMD_ERROR(
-			    ohd,
-			    "Failed to compute the partial fields of view.");
+		if (!math_compute_fovs(info.views[1].display.w_meters, info.views[1].lens_center_x_meters,
+		                       info.views[1].fov, info.views[1].display.h_meters,
+		                       info.views[1].lens_center_y_meters, 0, &ohd->base.hmd->views[1].fov)) {
+			OHMD_ERROR(ohd, "Failed to compute the partial fields of view.");
 			free(ohd);
 			return NULL;
 		}
 	}
 	{
 		/* left eye - just mirroring right eye now */
-		ohd->base.hmd->views[0].fov.angle_up =
-		    ohd->base.hmd->views[1].fov.angle_up;
-		ohd->base.hmd->views[0].fov.angle_down =
-		    ohd->base.hmd->views[1].fov.angle_down;
+		ohd->base.hmd->views[0].fov.angle_up = ohd->base.hmd->views[1].fov.angle_up;
+		ohd->base.hmd->views[0].fov.angle_down = ohd->base.hmd->views[1].fov.angle_down;
 
-		ohd->base.hmd->views[0].fov.angle_left =
-		    -ohd->base.hmd->views[1].fov.angle_right;
-		ohd->base.hmd->views[0].fov.angle_right =
-		    -ohd->base.hmd->views[1].fov.angle_left;
+		ohd->base.hmd->views[0].fov.angle_left = -ohd->base.hmd->views[1].fov.angle_right;
+		ohd->base.hmd->views[0].fov.angle_right = -ohd->base.hmd->views[1].fov.angle_left;
 	}
 
 	// clang-format off
@@ -634,8 +602,8 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 	// Which blend modes does the device support.
 	ohd->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
 	if (info.quirks.video_see_through) {
-		ohd->base.hmd->blend_mode = (enum xrt_blend_mode)(
-		    ohd->base.hmd->blend_mode | XRT_BLEND_MODE_ALPHA_BLEND);
+		ohd->base.hmd->blend_mode =
+		    (enum xrt_blend_mode)(ohd->base.hmd->blend_mode | XRT_BLEND_MODE_ALPHA_BLEND);
 	}
 
 	if (info.quirks.video_distortion_vive) {
@@ -694,8 +662,7 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 
 	if (info.quirks.left_center_pano_scale) {
 		for (int view = 0; view < 2; view++) {
-			ohd->distortion.openhmd[view].warp_scale =
-			    info.views[0].lens_center_x_meters;
+			ohd->distortion.openhmd[view].warp_scale = info.views[0].lens_center_x_meters;
 		}
 	}
 
@@ -703,8 +670,7 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 		OHMD_DEBUG(ohd, "Displays rotated right");
 
 		// openhmd display dimensions are *after* all rotations
-		swap(&ohd->base.hmd->screens->w_pixels,
-		     &ohd->base.hmd->screens->h_pixels);
+		swap(&ohd->base.hmd->screens->w_pixels, &ohd->base.hmd->screens->h_pixels);
 
 		// display dimensions are *after* all rotations
 		int w0 = info.views[0].display.w_pixels;
@@ -730,8 +696,7 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 		OHMD_DEBUG(ohd, "Displays rotated left");
 
 		// openhmd display dimensions are *after* all rotations
-		swap(&ohd->base.hmd->screens->w_pixels,
-		     &ohd->base.hmd->screens->h_pixels);
+		swap(&ohd->base.hmd->screens->w_pixels, &ohd->base.hmd->screens->h_pixels);
 
 		// display dimensions are *after* all rotations
 		int w0 = info.views[0].display.w_pixels;
@@ -779,18 +744,12 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 	OHMD_DEBUG(ohd,
 	           "Display/viewport/offset after rotation %dx%d/%dx%d/%dx%d, "
 	           "%dx%d/%dx%d/%dx%d",
-	           ohd->base.hmd->views[0].display.w_pixels,
-	           ohd->base.hmd->views[0].display.h_pixels,
-	           ohd->base.hmd->views[0].viewport.w_pixels,
-	           ohd->base.hmd->views[0].viewport.h_pixels,
-	           ohd->base.hmd->views[0].viewport.x_pixels,
-	           ohd->base.hmd->views[0].viewport.y_pixels,
-	           ohd->base.hmd->views[1].display.w_pixels,
-	           ohd->base.hmd->views[1].display.h_pixels,
-	           ohd->base.hmd->views[1].viewport.w_pixels,
-	           ohd->base.hmd->views[1].viewport.h_pixels,
-	           ohd->base.hmd->views[0].viewport.x_pixels,
-	           ohd->base.hmd->views[0].viewport.y_pixels);
+	           ohd->base.hmd->views[0].display.w_pixels, ohd->base.hmd->views[0].display.h_pixels,
+	           ohd->base.hmd->views[0].viewport.w_pixels, ohd->base.hmd->views[0].viewport.h_pixels,
+	           ohd->base.hmd->views[0].viewport.x_pixels, ohd->base.hmd->views[0].viewport.y_pixels,
+	           ohd->base.hmd->views[1].display.w_pixels, ohd->base.hmd->views[1].display.h_pixels,
+	           ohd->base.hmd->views[1].viewport.w_pixels, ohd->base.hmd->views[1].viewport.h_pixels,
+	           ohd->base.hmd->views[0].viewport.x_pixels, ohd->base.hmd->views[0].viewport.y_pixels);
 
 
 	if (info.quirks.delay_after_initialization) {

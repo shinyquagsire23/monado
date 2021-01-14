@@ -41,8 +41,7 @@ cli_cmd_lighthouse(int argc, const char **argv)
 	}
 
 	P("Turning lighthouse %s!\n", str);
-	os_ble_broadcast_write_value("00001523-1212-efde-1523-785feabcd124",
-	                             "00001525-1212-efde-1523-785feabcd124",
+	os_ble_broadcast_write_value("00001523-1212-efde-1523-785feabcd124", "00001525-1212-efde-1523-785feabcd124",
 	                             value);
 	return 0;
 #else

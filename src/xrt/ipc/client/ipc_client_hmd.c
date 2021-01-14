@@ -83,8 +83,7 @@ ipc_client_hmd_update_inputs(struct xrt_device *xdev)
 {
 	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
 
-	xrt_result_t r =
-	    ipc_call_device_update_input(ich->ipc_c, ich->device_id);
+	xrt_result_t r = ipc_call_device_update_input(ich->ipc_c, ich->device_id);
 	if (r != XRT_SUCCESS) {
 		IPC_ERROR(ich->ipc_c, "Error calling input update!");
 	}
@@ -98,8 +97,8 @@ ipc_client_hmd_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
 
-	xrt_result_t r = ipc_call_device_get_tracked_pose(
-	    ich->ipc_c, ich->device_id, name, at_timestamp_ns, out_relation);
+	xrt_result_t r =
+	    ipc_call_device_get_tracked_pose(ich->ipc_c, ich->device_id, name, at_timestamp_ns, out_relation);
 	if (r != XRT_SUCCESS) {
 		IPC_ERROR(ich->ipc_c, "Error calling tracked pose!");
 	}
@@ -113,8 +112,7 @@ ipc_client_hmd_get_view_pose(struct xrt_device *xdev,
 {
 	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
 
-	xrt_result_t r = ipc_call_device_get_view_pose(
-	    ich->ipc_c, ich->device_id, eye_relation, view_index, out_pose);
+	xrt_result_t r = ipc_call_device_get_view_pose(ich->ipc_c, ich->device_id, eye_relation, view_index, out_pose);
 	if (r != XRT_SUCCESS) {
 		IPC_ERROR(ich->ipc_c, "IPC: Error calling view pose!");
 	}
@@ -124,19 +122,15 @@ ipc_client_hmd_get_view_pose(struct xrt_device *xdev,
  * @public @memberof ipc_client_hmd
  */
 struct xrt_device *
-ipc_client_hmd_create(struct ipc_connection *ipc_c,
-                      struct xrt_tracking_origin *xtrack,
-                      uint32_t device_id)
+ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *xtrack, uint32_t device_id)
 {
 	struct ipc_shared_memory *ism = ipc_c->ism;
 	struct ipc_shared_device *isdev = &ism->isdevs[device_id];
 
 
 
-	enum u_device_alloc_flags flags =
-	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD);
-	struct ipc_client_hmd *ich =
-	    U_DEVICE_ALLOCATE(struct ipc_client_hmd, flags, 0, 0);
+	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD);
+	struct ipc_client_hmd *ich = U_DEVICE_ALLOCATE(struct ipc_client_hmd, flags, 0, 0);
 	ich->ipc_c = ipc_c;
 	ich->device_id = device_id;
 	ich->base.update_inputs = ipc_client_hmd_update_inputs;
@@ -178,15 +172,11 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c,
 
 	// clang-foramt off
 	ich->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
-	ich->base.hmd->views[0].display.w_pixels =
-	    ipc_c->ism->hmd.views[0].display.w_pixels;
-	ich->base.hmd->views[0].display.h_pixels =
-	    ipc_c->ism->hmd.views[0].display.h_pixels;
+	ich->base.hmd->views[0].display.w_pixels = ipc_c->ism->hmd.views[0].display.w_pixels;
+	ich->base.hmd->views[0].display.h_pixels = ipc_c->ism->hmd.views[0].display.h_pixels;
 	ich->base.hmd->views[0].fov = ipc_c->ism->hmd.views[0].fov;
-	ich->base.hmd->views[1].display.w_pixels =
-	    ipc_c->ism->hmd.views[1].display.w_pixels;
-	ich->base.hmd->views[1].display.h_pixels =
-	    ipc_c->ism->hmd.views[1].display.h_pixels;
+	ich->base.hmd->views[1].display.w_pixels = ipc_c->ism->hmd.views[1].display.w_pixels;
+	ich->base.hmd->views[1].display.h_pixels = ipc_c->ism->hmd.views[1].display.h_pixels;
 	ich->base.hmd->views[1].fov = ipc_c->ism->hmd.views[1].fov;
 	// clang-foramt on
 
@@ -197,10 +187,8 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c,
 	u_var_add_root(ich, ich->base.str, true);
 	u_var_add_ro_u32(ich, &ich->device_id, "device_id");
 
-	ich->base.orientation_tracking_supported =
-	    isdev->orientation_tracking_supported;
-	ich->base.position_tracking_supported =
-	    isdev->position_tracking_supported;
+	ich->base.orientation_tracking_supported = isdev->orientation_tracking_supported;
+	ich->base.position_tracking_supported = isdev->position_tracking_supported;
 	ich->base.device_type = isdev->device_type;
 	ich->base.hand_tracking_supported = isdev->hand_tracking_supported;
 

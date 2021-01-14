@@ -39,7 +39,7 @@ struct xrt_frame
 	uint64_t timestamp;
 	uint64_t source_timestamp;
 	uint64_t source_sequence; //!< sequence id
-	uint64_t source_id; //!< Which @ref xrt_fs this frame originated from.
+	uint64_t source_id;       //!< Which @ref xrt_fs this frame originated from.
 };
 
 
@@ -59,8 +59,7 @@ struct xrt_frame_sink
 	/*!
 	 * Push a frame into the sink.
 	 */
-	void (*push_frame)(struct xrt_frame_sink *sink,
-	                   struct xrt_frame *frame);
+	void (*push_frame)(struct xrt_frame_sink *sink, struct xrt_frame *frame);
 };
 
 /*!
@@ -143,8 +142,7 @@ xrt_frame_reference(struct xrt_frame **dst, struct xrt_frame *src)
  * @public @memberof xrt_frame_context
  */
 static inline void
-xrt_frame_context_add(struct xrt_frame_context *xfctx,
-                      struct xrt_frame_node *node)
+xrt_frame_context_add(struct xrt_frame_context *xfctx, struct xrt_frame_node *node)
 {
 	node->next = xfctx->nodes;
 	xfctx->nodes = node;

@@ -43,19 +43,14 @@ m_ff_vec3_f32_get_num(struct m_ff_vec3_f32 *ff);
  * unspecified behaviour, so samples must be pushed in time order.
  */
 void
-m_ff_vec3_f32_push(struct m_ff_vec3_f32 *ff,
-                   const struct xrt_vec3 *sample,
-                   uint64_t timestamp_ns);
+m_ff_vec3_f32_push(struct m_ff_vec3_f32 *ff, const struct xrt_vec3 *sample, uint64_t timestamp_ns);
 
 /*!
  * Return the sample at the index, zero means the last sample push, one second
  * last and so on.
  */
 bool
-m_ff_vec3_f32_get(struct m_ff_vec3_f32 *ff,
-                  size_t num,
-                  struct xrt_vec3 *out_sample,
-                  uint64_t *out_timestamp_ns);
+m_ff_vec3_f32_get(struct m_ff_vec3_f32 *ff, size_t num, struct xrt_vec3 *out_sample, uint64_t *out_timestamp_ns);
 
 /*!
  * Averages all samples in the fifo between the two timepoints, returns number
@@ -70,10 +65,7 @@ m_ff_vec3_f32_get(struct m_ff_vec3_f32 *ff,
  * @param out_average Average of all samples in the given timeframe.
  */
 size_t
-m_ff_vec3_f32_filter(struct m_ff_vec3_f32 *ff,
-                     uint64_t start_ns,
-                     uint64_t stop_ns,
-                     struct xrt_vec3 *out_average);
+m_ff_vec3_f32_filter(struct m_ff_vec3_f32 *ff, uint64_t start_ns, uint64_t stop_ns, struct xrt_vec3 *out_average);
 
 /*!
  * Allocates a filter fifo tracking @p num samples and fills it with @p num
@@ -106,10 +98,7 @@ m_ff_f64_push(struct m_ff_f64 *ff, const double *sample, uint64_t timestamp_ns);
  * last and so on.
  */
 bool
-m_ff_f64_get(struct m_ff_f64 *ff,
-             size_t num,
-             double *out_sample,
-             uint64_t *out_timestamp_ns);
+m_ff_f64_get(struct m_ff_f64 *ff, size_t num, double *out_sample, uint64_t *out_timestamp_ns);
 
 /*!
  * Averages all samples in the fifo between the two timepoints, returns number
@@ -124,10 +113,7 @@ m_ff_f64_get(struct m_ff_f64 *ff,
  * @param out_average Average of all samples in the given timeframe.
  */
 size_t
-m_ff_f64_filter(struct m_ff_f64 *ff,
-                uint64_t start_ns,
-                uint64_t stop_ns,
-                double *out_average);
+m_ff_f64_filter(struct m_ff_f64 *ff, uint64_t start_ns, uint64_t stop_ns, double *out_average);
 
 
 #ifdef __cplusplus
@@ -168,9 +154,7 @@ public:
 	}
 
 	inline size_t
-	filter(uint64_t start_ns,
-	       uint64_t stop_ns,
-	       struct xrt_vec3 *out_average)
+	filter(uint64_t start_ns, uint64_t stop_ns, struct xrt_vec3 *out_average)
 	{
 		return m_ff_vec3_f32_filter(ff, start_ns, stop_ns, out_average);
 	}

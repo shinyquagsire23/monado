@@ -25,14 +25,13 @@
 #if 0
 #define DEBUG_PRINT_FRAME_ID() U_LOG_RAW("%" PRIi64 " %s", frame_id, __func__)
 #else
-#define DEBUG_PRINT_FRAME_ID()                                                 \
-	do {                                                                   \
+#define DEBUG_PRINT_FRAME_ID()                                                                                         \
+	do {                                                                                                           \
 	} while (false)
 #endif
 
 static uint64_t
-get_last_input_plus_period_at_least_greater_then(struct u_rt_helper *urth,
-                                                 uint64_t then_ns)
+get_last_input_plus_period_at_least_greater_then(struct u_rt_helper *urth, uint64_t then_ns)
 {
 	uint64_t val = urth->last_input;
 
@@ -92,8 +91,7 @@ u_rt_helper_predict(struct u_rt_helper *urth,
 		at_least_ns = urth->last_returned;
 	}
 
-	uint64_t predict_ns =
-	    get_last_input_plus_period_at_least_greater_then(urth, at_least_ns);
+	uint64_t predict_ns = get_last_input_plus_period_at_least_greater_then(urth, at_least_ns);
 
 	urth->last_returned = predict_ns;
 
@@ -144,8 +142,7 @@ u_rt_helper_mark_discarded(struct u_rt_helper *urth, int64_t frame_id)
 
 	size_t index = (uint64_t)frame_id % ARRAY_SIZE(urth->frames);
 	assert(urth->frames[index].frame_id == frame_id);
-	assert(urth->frames[index].state == U_RT_WAIT_LEFT ||
-	       urth->frames[index].state == U_RT_BEGUN);
+	assert(urth->frames[index].state == U_RT_WAIT_LEFT || urth->frames[index].state == U_RT_BEGUN);
 
 	urth->frames[index].end_frame = os_monotonic_get_ns();
 	urth->frames[index].state = U_RT_READY;
@@ -177,10 +174,7 @@ u_rt_helper_mark_delivered(struct u_rt_helper *urth, int64_t frame_id)
 }
 
 void
-u_rt_helper_new_sample(struct u_rt_helper *urth,
-                       uint64_t predict,
-                       uint64_t extra,
-                       uint64_t min_period)
+u_rt_helper_new_sample(struct u_rt_helper *urth, uint64_t predict, uint64_t extra, uint64_t min_period)
 {
 	urth->last_input = predict;
 	urth->extra = extra;

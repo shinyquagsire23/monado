@@ -95,9 +95,7 @@ m_ff_vec3_f32_get_num(struct m_ff_vec3_f32 *ff)
 }
 
 void
-m_ff_vec3_f32_push(struct m_ff_vec3_f32 *ff,
-                   const struct xrt_vec3 *sample,
-                   uint64_t timestamp_ns)
+m_ff_vec3_f32_push(struct m_ff_vec3_f32 *ff, const struct xrt_vec3 *sample, uint64_t timestamp_ns)
 {
 	assert(ff->timestamps_ns[ff->latest] <= timestamp_ns);
 
@@ -110,10 +108,7 @@ m_ff_vec3_f32_push(struct m_ff_vec3_f32 *ff,
 }
 
 bool
-m_ff_vec3_f32_get(struct m_ff_vec3_f32 *ff,
-                  size_t num,
-                  struct xrt_vec3 *out_sample,
-                  uint64_t *out_timestamp_ns)
+m_ff_vec3_f32_get(struct m_ff_vec3_f32 *ff, size_t num, struct xrt_vec3 *out_sample, uint64_t *out_timestamp_ns)
 {
 	if (num >= ff->num) {
 		return false;
@@ -127,10 +122,7 @@ m_ff_vec3_f32_get(struct m_ff_vec3_f32 *ff,
 }
 
 size_t
-m_ff_vec3_f32_filter(struct m_ff_vec3_f32 *ff,
-                     uint64_t start_ns,
-                     uint64_t stop_ns,
-                     struct xrt_vec3 *out_average)
+m_ff_vec3_f32_filter(struct m_ff_vec3_f32 *ff, uint64_t start_ns, uint64_t stop_ns, struct xrt_vec3 *out_average)
 {
 	size_t num_sampled = 0;
 	size_t count = 0;
@@ -274,10 +266,7 @@ m_ff_f64_push(struct m_ff_f64 *ff, const double *sample, uint64_t timestamp_ns)
 }
 
 bool
-m_ff_f64_get(struct m_ff_f64 *ff,
-             size_t num,
-             double *out_sample,
-             uint64_t *out_timestamp_ns)
+m_ff_f64_get(struct m_ff_f64 *ff, size_t num, double *out_sample, uint64_t *out_timestamp_ns)
 {
 	if (num >= ff->num) {
 		return false;
@@ -291,10 +280,7 @@ m_ff_f64_get(struct m_ff_f64 *ff,
 }
 
 size_t
-m_ff_f64_filter(struct m_ff_f64 *ff,
-                uint64_t start_ns,
-                uint64_t stop_ns,
-                double *out_average)
+m_ff_f64_filter(struct m_ff_f64 *ff, uint64_t start_ns, uint64_t stop_ns, double *out_average)
 {
 	size_t num_sampled = 0;
 	size_t count = 0;

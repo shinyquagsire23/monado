@@ -25,24 +25,22 @@
 
 DEBUG_GET_ONCE_BOOL_OPTION(negotiate, "OXR_DEBUG_NEGOTIATE", false)
 
-#define PRINT_NEGOTIATE(...)                                                   \
-	do {                                                                   \
-		if (debug_get_bool_option_negotiate()) {                       \
-			fprintf(stderr, __VA_ARGS__);                          \
-		}                                                              \
+#define PRINT_NEGOTIATE(...)                                                                                           \
+	do {                                                                                                           \
+		if (debug_get_bool_option_negotiate()) {                                                               \
+			fprintf(stderr, __VA_ARGS__);                                                                  \
+		}                                                                                                      \
 	} while (false)
 
 
 #ifdef _WIN32
 __declspec(dllexport) XRAPI_ATTR XrResult XRAPI_CALL
-    xrNegotiateLoaderRuntimeInterface(
-        const XrNegotiateLoaderInfo *loaderInfo,
-        XrNegotiateRuntimeRequest *runtimeRequest);
+    xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo,
+                                      XrNegotiateRuntimeRequest *runtimeRequest);
 #endif
 
 XRAPI_ATTR XrResult XRAPI_CALL
-xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo,
-                                  XrNegotiateRuntimeRequest *runtimeRequest)
+xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo, XrNegotiateRuntimeRequest *runtimeRequest)
 {
 	PRINT_NEGOTIATE("xrNegotiateLoaderRuntimeInterface\n");
 
@@ -55,10 +53,8 @@ xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo,
 	}
 
 	// Make sure that we understand the structs passed to this function.
-	if (runtimeRequest->structType !=
-	        XR_LOADER_INTERFACE_STRUCT_RUNTIME_REQUEST ||
-	    runtimeRequest->structVersion !=
-	        XR_CURRENT_LOADER_RUNTIME_VERSION ||
+	if (runtimeRequest->structType != XR_LOADER_INTERFACE_STRUCT_RUNTIME_REQUEST ||
+	    runtimeRequest->structVersion != XR_CURRENT_LOADER_RUNTIME_VERSION ||
 	    runtimeRequest->structSize != sizeof(XrNegotiateRuntimeRequest)) {
 		PRINT_NEGOTIATE("\truntimeRequest bad!\n");
 		return XR_ERROR_INITIALIZATION_FAILED;
@@ -70,8 +66,7 @@ xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo,
 	uint32_t requested_min_major = loaderInfo->minInterfaceVersion;
 	uint32_t requested_max_major = loaderInfo->maxInterfaceVersion;
 
-	if (supported_major > requested_max_major ||
-	    supported_major < requested_min_major) {
+	if (supported_major > requested_max_major || supported_major < requested_min_major) {
 		PRINT_NEGOTIATE(
 		    "\tXRT - OpenXR doesn't support requested version %d <= "
 		    "%d <= %d\n",
@@ -80,8 +75,7 @@ xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo,
 	}
 
 	runtimeRequest->getInstanceProcAddr = oxr_xrGetInstanceProcAddr;
-	runtimeRequest->runtimeInterfaceVersion =
-	    XR_CURRENT_LOADER_RUNTIME_VERSION;
+	runtimeRequest->runtimeInterfaceVersion = XR_CURRENT_LOADER_RUNTIME_VERSION;
 	runtimeRequest->runtimeApiVersion = XR_CURRENT_API_VERSION;
 
 	PRINT_NEGOTIATE("\tall ok!\n");
@@ -110,13 +104,13 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
  *
  * Use for functions that should be unconditionally available.
  */
-#define ENTRY(funcName)                                                        \
-	do {                                                                   \
-		if (strcmp(name, #funcName) == 0) {                            \
-			PFN_##funcName ret = &oxr_##funcName;                  \
-			*out_function = (PFN_xrVoidFunction)(ret);             \
-			return XR_SUCCESS;                                     \
-		}                                                              \
+#define ENTRY(funcName)                                                                                                \
+	do {                                                                                                           \
+		if (strcmp(name, #funcName) == 0) {                                                                    \
+			PFN_##funcName ret = &oxr_##funcName;                                                          \
+			*out_function = (PFN_xrVoidFunction)(ret);                                                     \
+			return XR_SUCCESS;                                                                             \
+		}                                                                                                      \
 	} while (false)
 
 /*!
@@ -125,16 +119,16 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
  *
  * Checks the extra condition to e.g. find out if the extension is enabled
  */
-#define ENTRY_IF(funcName, extraCondition, message)                            \
-	do {                                                                   \
-		if (strcmp(name, #funcName) == 0) {                            \
-			if (extraCondition) {                                  \
-				PFN_##funcName ret = &oxr_##funcName;          \
-				*out_function = (PFN_xrVoidFunction)(ret);     \
-				return XR_SUCCESS;                             \
-			}                                                      \
-			return XR_ERROR_FUNCTION_UNSUPPORTED;                  \
-		}                                                              \
+#define ENTRY_IF(funcName, extraCondition, message)                                                                    \
+	do {                                                                                                           \
+		if (strcmp(name, #funcName) == 0) {                                                                    \
+			if (extraCondition) {                                                                          \
+				PFN_##funcName ret = &oxr_##funcName;                                                  \
+				*out_function = (PFN_xrVoidFunction)(ret);                                             \
+				return XR_SUCCESS;                                                                     \
+			}                                                                                              \
+			return XR_ERROR_FUNCTION_UNSUPPORTED;                                                          \
+		}                                                                                                      \
 	} while (false)
 
 /*!
@@ -146,17 +140,13 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
  * Pass the function name and the (mixed-case) extension name without the
  * leading XR_.
  */
-#define ENTRY_IF_EXT(funcName, short_ext_name)                                 \
-	ENTRY_IF(funcName, inst->extensions.short_ext_name,                    \
-	         "Required extension XR_" #short_ext_name " not enabled")
+#define ENTRY_IF_EXT(funcName, short_ext_name)                                                                         \
+	ENTRY_IF(funcName, inst->extensions.short_ext_name, "Required extension XR_" #short_ext_name " not enabled")
 /*!
  * Handle a non-null instance pointer.
  */
 static XrResult
-handle_non_null(struct oxr_instance *inst,
-                struct oxr_logger *log,
-                const char *name,
-                PFN_xrVoidFunction *out_function)
+handle_non_null(struct oxr_instance *inst, struct oxr_logger *log, const char *name, PFN_xrVoidFunction *out_function)
 {
 	ENTRY(xrGetInstanceProcAddr);
 	ENTRY(xrEnumerateInstanceExtensionProperties);
@@ -223,8 +213,7 @@ handle_non_null(struct oxr_instance *inst,
 #endif // OXR_HAVE_KHR_convert_timespec_time
 
 #ifdef OXR_HAVE_EXT_performance_settings
-	ENTRY_IF_EXT(xrPerfSettingsSetPerformanceLevelEXT,
-	             EXT_performance_settings);
+	ENTRY_IF_EXT(xrPerfSettingsSetPerformanceLevelEXT, EXT_performance_settings);
 #endif // OXR_HAVE_EXT_performance_settings
 
 #ifdef OXR_HAVE_EXT_thermal_query
@@ -252,8 +241,7 @@ handle_non_null(struct oxr_instance *inst,
 #endif // OXR_HAVE_KHR_opengl_enable
 
 #ifdef OXR_HAVE_KHR_opengl_es_enable
-	ENTRY_IF_EXT(xrGetOpenGLESGraphicsRequirementsKHR,
-	             KHR_opengl_es_enable);
+	ENTRY_IF_EXT(xrGetOpenGLESGraphicsRequirementsKHR, KHR_opengl_es_enable);
 #endif // OXR_HAVE_KHR_opengl_es_enable
 
 #ifdef OXR_HAVE_KHR_vulkan_enable
@@ -282,9 +270,7 @@ handle_non_null(struct oxr_instance *inst,
  * Special case a null instance pointer.
  */
 static XrResult
-handle_null(struct oxr_logger *log,
-            const char *name,
-            PFN_xrVoidFunction *out_function)
+handle_null(struct oxr_logger *log, const char *name, PFN_xrVoidFunction *out_function)
 {
 	ENTRY(xrCreateInstance);
 	ENTRY(xrEnumerateInstanceExtensionProperties);
@@ -294,14 +280,11 @@ handle_null(struct oxr_logger *log,
 	 * This is fine to log, since there should not be other
 	 * null-instance calls.
 	 */
-	return oxr_error(log, XR_ERROR_FUNCTION_UNSUPPORTED, "(name = \"%s\")",
-	                 name);
+	return oxr_error(log, XR_ERROR_FUNCTION_UNSUPPORTED, "(name = \"%s\")", name);
 }
 
 XrResult
-oxr_xrGetInstanceProcAddr(XrInstance instance,
-                          const char *name,
-                          PFN_xrVoidFunction *function)
+oxr_xrGetInstanceProcAddr(XrInstance instance, const char *name, PFN_xrVoidFunction *function)
 {
 	struct oxr_logger log;
 
@@ -314,7 +297,6 @@ oxr_xrGetInstanceProcAddr(XrInstance instance,
 	}
 
 	struct oxr_instance *inst;
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrGetInstanceProcAddr");
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetInstanceProcAddr");
 	return handle_non_null(inst, &log, name, function);
 }

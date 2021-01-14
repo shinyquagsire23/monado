@@ -54,9 +54,7 @@ u_hashmap_int_empty(const struct u_hashmap_int *hmi);
  * @ingroup aux_util
  */
 void
-u_hashmap_int_clear_and_call_for_each(struct u_hashmap_int *hmi,
-                                      u_hashmap_int_callback cb,
-                                      void *priv);
+u_hashmap_int_clear_and_call_for_each(struct u_hashmap_int *hmi, u_hashmap_int_callback cb, void *priv);
 
 
 #ifdef __cplusplus

@@ -333,9 +333,7 @@ char *
 vive_read_config(struct os_hid_device *hid_dev);
 
 int
-vive_get_imu_range_report(struct os_hid_device *hid_dev,
-                          double *gyro_range,
-                          double *acc_range);
+vive_get_imu_range_report(struct os_hid_device *hid_dev, double *gyro_range, double *acc_range);
 
 int
 vive_read_firmware(struct os_hid_device *hid_dev,

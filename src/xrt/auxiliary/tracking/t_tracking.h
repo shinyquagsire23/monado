@@ -156,8 +156,7 @@ t_stereo_camera_calibration_destroy(struct t_stereo_camera_calibration *c);
  * @relates t_stereo_camera_calibration
  */
 static inline void
-t_stereo_camera_calibration_reference(struct t_stereo_camera_calibration **dst,
-                                      struct t_stereo_camera_calibration *src)
+t_stereo_camera_calibration_reference(struct t_stereo_camera_calibration **dst, struct t_stereo_camera_calibration *src)
 {
 	struct t_stereo_camera_calibration *old_dst = *dst;
 
@@ -182,15 +181,13 @@ t_stereo_camera_calibration_reference(struct t_stereo_camera_calibration **dst,
  * Load stereo calibration data from a given file.
  */
 bool
-t_stereo_camera_calibration_load_v1(
-    FILE *calib_file, struct t_stereo_camera_calibration **out_data);
+t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_calibration **out_data);
 
 /*!
  * Save the given stereo calibration data to the given file.
  */
 bool
-t_stereo_camera_calibration_save_v1(FILE *calib_file,
-                                    struct t_stereo_camera_calibration *data);
+t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_calibration *data);
 
 
 /*
@@ -217,22 +214,13 @@ void
 t_convert_make_h8s8v8_to_r8g8b8(struct t_convert_table *t);
 
 void
-t_convert_in_place_y8u8v8_to_r8g8b8(uint32_t width,
-                                    uint32_t height,
-                                    size_t stride,
-                                    void *data_ptr);
+t_convert_in_place_y8u8v8_to_r8g8b8(uint32_t width, uint32_t height, size_t stride, void *data_ptr);
 
 void
-t_convert_in_place_y8u8v8_to_h8s8v8(uint32_t width,
-                                    uint32_t height,
-                                    size_t stride,
-                                    void *data_ptr);
+t_convert_in_place_y8u8v8_to_h8s8v8(uint32_t width, uint32_t height, size_t stride, void *data_ptr);
 
 void
-t_convert_in_place_h8s8v8_to_r8g8b8(uint32_t width,
-                                    uint32_t height,
-                                    size_t stride,
-                                    void *data_ptr);
+t_convert_in_place_h8s8v8_to_r8g8b8(uint32_t width, uint32_t height, size_t stride, void *data_ptr);
 
 
 /*
@@ -244,14 +232,14 @@ t_convert_in_place_h8s8v8_to_r8g8b8(uint32_t width,
 #define T_HSV_SIZE 32
 #define T_HSV_STEP (256 / T_HSV_SIZE)
 
-#define T_HSV_DEFAULT_PARAMS()                                                 \
-	{                                                                      \
-		{                                                              \
-		    {165, 30, 160, 100},                                       \
-		    {135, 30, 160, 100},                                       \
-		    {95, 30, 160, 100},                                        \
-		},                                                             \
-		    {128, 80},                                                 \
+#define T_HSV_DEFAULT_PARAMS()                                                                                         \
+	{                                                                                                              \
+		{                                                                                                      \
+		    {165, 30, 160, 100},                                                                               \
+		    {135, 30, 160, 100},                                                                               \
+		    {95, 30, 160, 100},                                                                                \
+		},                                                                                                     \
+		    {128, 80},                                                                                         \
 	}
 
 struct t_hsv_filter_color
@@ -290,22 +278,16 @@ struct t_hsv_filter_optimized_table
 };
 
 void
-t_hsv_build_convert_table(struct t_hsv_filter_params *params,
-                          struct t_convert_table *t);
+t_hsv_build_convert_table(struct t_hsv_filter_params *params, struct t_convert_table *t);
 
 void
-t_hsv_build_large_table(struct t_hsv_filter_params *params,
-                        struct t_hsv_filter_large_table *t);
+t_hsv_build_large_table(struct t_hsv_filter_params *params, struct t_hsv_filter_large_table *t);
 
 void
-t_hsv_build_optimized_table(struct t_hsv_filter_params *params,
-                            struct t_hsv_filter_optimized_table *t);
+t_hsv_build_optimized_table(struct t_hsv_filter_params *params, struct t_hsv_filter_optimized_table *t);
 
 static inline uint8_t
-t_hsv_filter_sample(struct t_hsv_filter_optimized_table *t,
-                    uint32_t y,
-                    uint32_t u,
-                    uint32_t v)
+t_hsv_filter_sample(struct t_hsv_filter_optimized_table *t, uint32_t y, uint32_t u, uint32_t v)
 {
 	return t->v[y / T_HSV_STEP][u / T_HSV_STEP][v / T_HSV_STEP];
 }
@@ -538,8 +520,7 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
  * @relates xrt_frame_context
  */
 int
-t_convert_yuv_or_yuyv_create(struct xrt_frame_sink *next,
-                             struct xrt_frame_sink **out_sink);
+t_convert_yuv_or_yuyv_create(struct xrt_frame_sink *next, struct xrt_frame_sink **out_sink);
 
 
 

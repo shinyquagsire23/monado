@@ -39,8 +39,7 @@ ipc_client_android::~ipc_client_android()
 		}
 	} catch (std::exception const &e) {
 		// Must catch and ignore any exceptions in the destructor!
-		U_LOG_E("Failure while marking IPC client as discarded: %s",
-		        e.what());
+		U_LOG_E("Failure while marking IPC client as discarded: %s", e.what());
 	}
 }
 
@@ -52,27 +51,22 @@ ipc_client_android_create(struct _JavaVM *vm, void *activity)
 	try {
 		auto info = getAppInfo(XRT_ANDROID_PACKAGE, (jobject)activity);
 		if (info.isNull()) {
-			U_LOG_E(
-			    "Could not get application info for package '%s'",
-			    "org.freedesktop.monado.openxr_runtime");
+			U_LOG_E("Could not get application info for package '%s'",
+			        "org.freedesktop.monado.openxr_runtime");
 			return nullptr;
 		}
 
-		auto clazz =
-		    loadClassFromPackage(info, (jobject)activity,
-		                         Client::getFullyQualifiedTypeName());
+		auto clazz = loadClassFromPackage(info, (jobject)activity, Client::getFullyQualifiedTypeName());
 
 		if (clazz.isNull()) {
-			U_LOG_E("Could not load class '%s' from package '%s'",
-			        Client::getFullyQualifiedTypeName(),
+			U_LOG_E("Could not load class '%s' from package '%s'", Client::getFullyQualifiedTypeName(),
 			        XRT_ANDROID_PACKAGE);
 			return nullptr;
 		}
 
 		// Teach the wrapper our class before we start to use it.
 		Client::staticInitClass((jclass)clazz.object().getHandle());
-		std::unique_ptr<ipc_client_android> ret =
-		    std::make_unique<ipc_client_android>((jobject)activity);
+		std::unique_ptr<ipc_client_android> ret = std::make_unique<ipc_client_android>((jobject)activity);
 
 		ret->client = Client::construct(ret.get());
 
@@ -88,8 +82,7 @@ int
 ipc_client_android_blocking_connect(struct ipc_client_android *ica)
 {
 	try {
-		int fd = ica->client.blockingConnect(ica->activity,
-		                                     XRT_ANDROID_PACKAGE);
+		int fd = ica->client.blockingConnect(ica->activity, XRT_ANDROID_PACKAGE);
 		return fd;
 	} catch (std::exception const &e) {
 		// Must catch and ignore any exceptions in the destructor!

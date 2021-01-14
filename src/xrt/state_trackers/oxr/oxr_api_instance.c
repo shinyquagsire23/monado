@@ -29,11 +29,9 @@
 #include <inttypes.h>
 
 
-#define MAKE_EXTENSION_PROPERTIES(mixed_case, all_caps)                        \
-	{XR_TYPE_EXTENSION_PROPERTIES, NULL, XR_##all_caps##_EXTENSION_NAME,   \
-	 XR_##mixed_case##_SPEC_VERSION},
-static const XrExtensionProperties extension_properties[] = {
-    OXR_EXTENSION_SUPPORT_GENERATE(MAKE_EXTENSION_PROPERTIES)};
+#define MAKE_EXTENSION_PROPERTIES(mixed_case, all_caps)                                                                \
+	{XR_TYPE_EXTENSION_PROPERTIES, NULL, XR_##all_caps##_EXTENSION_NAME, XR_##mixed_case##_SPEC_VERSION},
+static const XrExtensionProperties extension_properties[] = {OXR_EXTENSION_SUPPORT_GENERATE(MAKE_EXTENSION_PROPERTIES)};
 
 XrResult
 oxr_xrEnumerateInstanceExtensionProperties(const char *layerName,
@@ -44,48 +42,39 @@ oxr_xrEnumerateInstanceExtensionProperties(const char *layerName,
 	struct oxr_logger log;
 	oxr_log_init(&log, "xrEnumerateInstanceExtensionProperties");
 
-	OXR_TWO_CALL_HELPER(&log, propertyCapacityInput, propertyCountOutput,
-	                    properties, ARRAY_SIZE(extension_properties),
-	                    extension_properties, XR_SUCCESS);
+	OXR_TWO_CALL_HELPER(&log, propertyCapacityInput, propertyCountOutput, properties,
+	                    ARRAY_SIZE(extension_properties), extension_properties, XR_SUCCESS);
 }
 
 #ifdef XRT_OS_ANDROID
 static XrResult
-oxr_check_android_extensions(struct oxr_logger *log,
-                             const XrInstanceCreateInfo *createInfo)
+oxr_check_android_extensions(struct oxr_logger *log, const XrInstanceCreateInfo *createInfo)
 {
 
 	bool foundAndroidExtension = false;
 	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
-		if (strcmp(createInfo->enabledExtensionNames[i],
-		           XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME) ==
-		    0) {
+		if (strcmp(createInfo->enabledExtensionNames[i], XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME) == 0) {
 			foundAndroidExtension = true;
 			break;
 		}
 	}
 	if (!foundAndroidExtension) {
-		return oxr_error(
-		    log, XR_ERROR_INITIALIZATION_FAILED,
-		    "(createInfo->enabledExtensionNames) "
-		    "Mandatory platform-specific "
-		    "extension"
-		    " " XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME
-		    " not specified");
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
+		                 "(createInfo->enabledExtensionNames) "
+		                 "Mandatory platform-specific "
+		                 "extension"
+		                 " " XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME " not specified");
 	}
 
 	{
 		// Verify that it exists and is populated.
-		XrInstanceCreateInfoAndroidKHR const *createInfoAndroid =
-		    OXR_GET_INPUT_FROM_CHAIN(
-		        createInfo, XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR,
-		        XrInstanceCreateInfoAndroidKHR);
+		XrInstanceCreateInfoAndroidKHR const *createInfoAndroid = OXR_GET_INPUT_FROM_CHAIN(
+		    createInfo, XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR, XrInstanceCreateInfoAndroidKHR);
 		if (createInfoAndroid == NULL) {
-			return oxr_error(
-			    log, XR_ERROR_VALIDATION_FAILURE,
-			    "(createInfo->next...) "
-			    "Did not find XrInstanceCreateInfoAndroidKHR in "
-			    "chain");
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+			                 "(createInfo->next...) "
+			                 "Did not find XrInstanceCreateInfoAndroidKHR in "
+			                 "chain");
 		}
 		if (createInfoAndroid->applicationVM == NULL) {
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
@@ -93,10 +82,9 @@ oxr_check_android_extensions(struct oxr_logger *log,
 			                 "applicationVM must be populated");
 		}
 		if (createInfoAndroid->applicationActivity == NULL) {
-			return oxr_error(
-			    log, XR_ERROR_VALIDATION_FAILURE,
-			    "(createInfo->next...->applicationActivity) "
-			    "applicationActivity must be populated");
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+			                 "(createInfo->next...->applicationActivity) "
+			                 "applicationActivity must be populated");
 		}
 	}
 	return XR_SUCCESS;
@@ -104,49 +92,42 @@ oxr_check_android_extensions(struct oxr_logger *log,
 #endif // XRT_OS_ANDROID
 
 XrResult
-oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo,
-                     XrInstance *out_instance)
+oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo, XrInstance *out_instance)
 {
 	XrResult ret;
 	struct oxr_logger log;
 	oxr_log_init(&log, "xrCreateInstance");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
-	                                 XR_TYPE_INSTANCE_CREATE_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo, XR_TYPE_INSTANCE_CREATE_INFO);
 	const uint32_t major = XR_VERSION_MAJOR(XR_CURRENT_API_VERSION);
 	const uint32_t minor = XR_VERSION_MINOR(XR_CURRENT_API_VERSION);
 #if 0
 	const uint32_t patch = XR_VERSION_PATCH(XR_CURRENT_API_VERSION);
 #endif
 
-	if (createInfo->applicationInfo.apiVersion <
-	    XR_MAKE_VERSION(major, minor, 0)) {
-		return oxr_error(
-		    &log, XR_ERROR_API_VERSION_UNSUPPORTED,
-		    "(createInfo->applicationInfo.apiVersion) "
-		    "Cannot satisfy request for version less than %d.%d.%d",
-		    major, minor, 0);
+	if (createInfo->applicationInfo.apiVersion < XR_MAKE_VERSION(major, minor, 0)) {
+		return oxr_error(&log, XR_ERROR_API_VERSION_UNSUPPORTED,
+		                 "(createInfo->applicationInfo.apiVersion) "
+		                 "Cannot satisfy request for version less than %d.%d.%d",
+		                 major, minor, 0);
 	}
 
 	/*
 	 * This is a slight fib, to let us approximately run things between 1.0
 	 * and 2.0
 	 */
-	if (createInfo->applicationInfo.apiVersion >=
-	    XR_MAKE_VERSION(2, 0, 0)) {
-		return oxr_error(
-		    &log, XR_ERROR_API_VERSION_UNSUPPORTED,
-		    "(createInfo->applicationInfo.apiVersion) "
-		    "Cannot satisfy request for version: too high");
+	if (createInfo->applicationInfo.apiVersion >= XR_MAKE_VERSION(2, 0, 0)) {
+		return oxr_error(&log, XR_ERROR_API_VERSION_UNSUPPORTED,
+		                 "(createInfo->applicationInfo.apiVersion) "
+		                 "Cannot satisfy request for version: too high");
 	}
 
 	/*
 	 * Check that all extension names are recognized, so oxr_instance_create
 	 * doesn't need to check for bad extension names.
 	 */
-#define CHECK_EXT_NAME(mixed_case, all_caps)                                   \
-	if (strcmp(createInfo->enabledExtensionNames[i],                       \
-	           XR_##all_caps##_EXTENSION_NAME) == 0) {                     \
-		continue;                                                      \
+#define CHECK_EXT_NAME(mixed_case, all_caps)                                                                           \
+	if (strcmp(createInfo->enabledExtensionNames[i], XR_##all_caps##_EXTENSION_NAME) == 0) {                       \
+		continue;                                                                                              \
 	}
 	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
 		OXR_EXTENSION_SUPPORT_GENERATE(CHECK_EXT_NAME)
@@ -181,20 +162,17 @@ oxr_xrDestroyInstance(XrInstance instance)
 {
 	struct oxr_instance *inst;
 	struct oxr_logger log;
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrDestroyInstance");
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrDestroyInstance");
 
 	return oxr_handle_destroy(&log, &inst->handle);
 }
 
 XrResult
-oxr_xrGetInstanceProperties(XrInstance instance,
-                            XrInstanceProperties *instanceProperties)
+oxr_xrGetInstanceProperties(XrInstance instance, XrInstanceProperties *instanceProperties)
 {
 	struct oxr_instance *inst;
 	struct oxr_logger log;
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrGetInstanceProperties");
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetInstanceProperties");
 
 	return oxr_instance_get_properties(&log, inst, instanceProperties);
 }
@@ -211,22 +189,19 @@ oxr_xrPollEvent(XrInstance instance, XrEventDataBuffer *eventData)
 }
 
 XrResult
-oxr_xrResultToString(XrInstance instance,
-                     XrResult value,
-                     char buffer[XR_MAX_RESULT_STRING_SIZE])
+oxr_xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RESULT_STRING_SIZE])
 {
 	struct oxr_instance *inst;
 	struct oxr_logger log;
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrResultToString");
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrResultToString");
 
-#define MAKE_RESULT_CASE(VAL, _)                                               \
+#define MAKE_RESULT_CASE(VAL, _)                                                                                       \
 	case VAL: strncpy(buffer, #VAL, XR_MAX_RESULT_STRING_SIZE); break;
 	switch (value) {
 		XR_LIST_ENUM_XrResult(MAKE_RESULT_CASE);
 	default:
-		snprintf(buffer, XR_MAX_RESULT_STRING_SIZE, "XR_UNKNOWN_%s_%d",
-		         value < 0 ? "FAILURE" : "SUCCESS", value);
+		snprintf(buffer, XR_MAX_RESULT_STRING_SIZE, "XR_UNKNOWN_%s_%d", value < 0 ? "FAILURE" : "SUCCESS",
+		         value);
 	}
 	buffer[XR_MAX_RESULT_STRING_SIZE - 1] = '\0';
 
@@ -234,22 +209,17 @@ oxr_xrResultToString(XrInstance instance,
 }
 
 XrResult
-oxr_xrStructureTypeToString(XrInstance instance,
-                            XrStructureType value,
-                            char buffer[XR_MAX_STRUCTURE_NAME_SIZE])
+oxr_xrStructureTypeToString(XrInstance instance, XrStructureType value, char buffer[XR_MAX_STRUCTURE_NAME_SIZE])
 {
 	struct oxr_instance *inst;
 	struct oxr_logger log;
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrStructureTypeToString");
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrStructureTypeToString");
 
-#define MAKE_TYPE_CASE(VAL, _)                                                 \
+#define MAKE_TYPE_CASE(VAL, _)                                                                                         \
 	case VAL: strncpy(buffer, #VAL, XR_MAX_RESULT_STRING_SIZE); break;
 	switch (value) {
 		XR_LIST_ENUM_XrStructureType(MAKE_TYPE_CASE);
-	default:
-		snprintf(buffer, XR_MAX_RESULT_STRING_SIZE,
-		         "XR_UNKNOWN_STRUCTURE_TYPE_%d", value);
+	default: snprintf(buffer, XR_MAX_RESULT_STRING_SIZE, "XR_UNKNOWN_STRUCTURE_TYPE_%d", value);
 	}
 	buffer[XR_MAX_RESULT_STRING_SIZE - 1] = '\0';
 
@@ -257,24 +227,20 @@ oxr_xrStructureTypeToString(XrInstance instance,
 }
 
 XrResult
-oxr_xrStringToPath(XrInstance instance,
-                   const char *pathString,
-                   XrPath *out_path)
+oxr_xrStringToPath(XrInstance instance, const char *pathString, XrPath *out_path)
 {
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	XrResult ret;
 	XrPath path;
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrStringToPath");
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrStringToPath");
 
 	ret = oxr_verify_full_path_c(&log, pathString, "pathString");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 
-	ret = oxr_path_get_or_create(&log, inst, pathString, strlen(pathString),
-	                             &path);
+	ret = oxr_path_get_or_create(&log, inst, pathString, strlen(pathString), &path);
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
@@ -285,11 +251,8 @@ oxr_xrStringToPath(XrInstance instance,
 }
 
 XrResult
-oxr_xrPathToString(XrInstance instance,
-                   XrPath path,
-                   uint32_t bufferCapacityInput,
-                   uint32_t *bufferCountOutput,
-                   char *buffer)
+oxr_xrPathToString(
+    XrInstance instance, XrPath path, uint32_t bufferCapacityInput, uint32_t *bufferCountOutput, char *buffer)
 {
 	struct oxr_instance *inst;
 	struct oxr_logger log;
@@ -297,11 +260,9 @@ oxr_xrPathToString(XrInstance instance,
 	size_t length;
 	XrResult ret;
 
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrPathToString");
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrPathToString");
 	if (path == XR_NULL_PATH) {
-		return oxr_error(&log, XR_ERROR_PATH_INVALID,
-		                 "(path == XR_NULL_PATH)");
+		return oxr_error(&log, XR_ERROR_PATH_INVALID, "(path == XR_NULL_PATH)");
 	}
 
 	ret = oxr_path_get_string(&log, inst, path, &str, &length);
@@ -312,8 +273,7 @@ oxr_xrPathToString(XrInstance instance,
 	// Length is the number of valid characters, not including the
 	// null termination character (but a extra null byte is always
 	// reserved).
-	OXR_TWO_CALL_HELPER(&log, bufferCapacityInput, bufferCountOutput,
-	                    buffer, length + 1, str, XR_SUCCESS);
+	OXR_TWO_CALL_HELPER(&log, bufferCapacityInput, bufferCountOutput, buffer, length + 1, str, XR_SUCCESS);
 
 	return XR_SUCCESS;
 }
@@ -321,43 +281,33 @@ oxr_xrPathToString(XrInstance instance,
 // ---- XR_KHR_convert_timespec_time extension
 #ifdef XR_USE_TIMESPEC
 XrResult
-oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance,
-                                   const struct timespec *timespecTime,
-                                   XrTime *time)
+oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance, const struct timespec *timespecTime, XrTime *time)
 {
 	//! @todo do we need to check and see if this extension was
 	//! enabled first?
 	struct oxr_instance *inst;
 	struct oxr_logger log;
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrConvertTimespecTimeToTimeKHR");
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrConvertTimespecTimeToTimeKHR");
 	OXR_VERIFY_EXTENSION(&log, inst, KHR_convert_timespec_time);
 	OXR_VERIFY_ARG_NOT_NULL(&log, timespecTime);
 	OXR_VERIFY_ARG_NOT_NULL(&log, time);
-	return oxr_instance_convert_timespec_to_time(&log, inst, timespecTime,
-	                                             time);
+	return oxr_instance_convert_timespec_to_time(&log, inst, timespecTime, time);
 }
 
 XrResult
-oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance,
-                                   XrTime time,
-                                   struct timespec *timespecTime)
+oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance, XrTime time, struct timespec *timespecTime)
 {
 	struct oxr_instance *inst;
 	struct oxr_logger log;
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrConvertTimeToTimespecTimeKHR");
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrConvertTimeToTimespecTimeKHR");
 	OXR_VERIFY_EXTENSION(&log, inst, KHR_convert_timespec_time);
 	OXR_VERIFY_ARG_NOT_NULL(&log, timespecTime);
 
 	if (time <= (XrTime)0) {
-		return oxr_error(&log, XR_ERROR_TIME_INVALID,
-		                 "(time == %" PRIi64 ") is not a valid time.",
-		                 time);
+		return oxr_error(&log, XR_ERROR_TIME_INVALID, "(time == %" PRIi64 ") is not a valid time.", time);
 	}
 
-	return oxr_instance_convert_time_to_timespec(&log, inst, time,
-	                                             timespecTime);
+	return oxr_instance_convert_time_to_timespec(&log, inst, time, timespecTime);
 }
 
 #endif // XR_USE_TIMESPEC

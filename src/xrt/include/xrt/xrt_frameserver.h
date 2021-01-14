@@ -80,16 +80,13 @@ struct xrt_fs
 	/*!
 	 * Enumerate all available modes that this frameserver supports.
 	 */
-	bool (*enumerate_modes)(struct xrt_fs *xfs,
-	                        struct xrt_fs_mode **out_modes,
-	                        uint32_t *out_count);
+	bool (*enumerate_modes)(struct xrt_fs *xfs, struct xrt_fs_mode **out_modes, uint32_t *out_count);
 
 	/*!
 	 * Set the capture parameters, may not be supported on all capture
 	 * devices.
 	 */
-	bool (*configure_capture)(struct xrt_fs *xfs,
-	                          struct xrt_fs_capture_parameters *cp);
+	bool (*configure_capture)(struct xrt_fs *xfs, struct xrt_fs_capture_parameters *cp);
 
 	/*!
 	 * Start the capture stream.
@@ -125,9 +122,7 @@ struct xrt_fs
  * @public @memberof xrt_fs
  */
 static inline bool
-xrt_fs_enumerate_modes(struct xrt_fs *xfs,
-                       struct xrt_fs_mode **out_modes,
-                       uint32_t *out_count)
+xrt_fs_enumerate_modes(struct xrt_fs *xfs, struct xrt_fs_mode **out_modes, uint32_t *out_count)
 {
 	return xfs->enumerate_modes(xfs, out_modes, out_count);
 }
@@ -140,8 +135,7 @@ xrt_fs_enumerate_modes(struct xrt_fs *xfs,
  * @public @memberof xrt_fs
  */
 static inline bool
-xrt_fs_configure_capture(struct xrt_fs *xfs,
-                         struct xrt_fs_capture_parameters *cp)
+xrt_fs_configure_capture(struct xrt_fs *xfs, struct xrt_fs_capture_parameters *cp)
 {
 	return xfs->configure_capture(xfs, cp);
 }

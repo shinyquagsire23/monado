@@ -129,8 +129,7 @@ operator-(const struct xrt_vec3 &a, const struct xrt_vec3 &b)
 	return m_vec3_sub(a, b);
 }
 
-static inline struct xrt_vec3 operator*(const struct xrt_vec3 &a,
-                                        const struct xrt_vec3 &b)
+static inline struct xrt_vec3 operator*(const struct xrt_vec3 &a, const struct xrt_vec3 &b)
 {
 	return m_vec3_mul(a, b);
 }

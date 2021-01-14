@@ -22,6 +22,4 @@
  * @aux_math
  */
 void
-m_predict_relation(const struct xrt_space_relation *rel,
-                   double delta_s,
-                   struct xrt_space_relation *out_rel);
+m_predict_relation(const struct xrt_space_relation *rel, double delta_s, struct xrt_space_relation *out_rel);

@@ -73,18 +73,14 @@ ht_device_get_hand_tracking(struct xrt_device *xdev,
 
 
 
-	htd->tracker->get_tracked_joints(htd->tracker, name, at_timestamp_ns,
-	                                 &htd->u_tracking[index].joints,
+	htd->tracker->get_tracked_joints(htd->tracker, name, at_timestamp_ns, &htd->u_tracking[index].joints,
 	                                 &htd->hand_relation[index]);
 	htd->u_tracking[index].timestamp_ns = at_timestamp_ns;
 
-	struct xrt_pose identity = {
-	    .orientation = {.x = 0, .y = 0, .z = 0, .w = 1},
-	    .position = {.x = 0, .y = 0, .z = 0}};
+	struct xrt_pose identity = {.orientation = {.x = 0, .y = 0, .z = 0, .w = 1},
+	                            .position = {.x = 0, .y = 0, .z = 0}};
 
-	u_hand_joints_set_out_data(&htd->u_tracking[index], hand,
-	                           &htd->hand_relation[index], &identity,
-	                           out_value);
+	u_hand_joints_set_out_data(&htd->u_tracking[index], hand, &htd->hand_relation[index], &identity, out_value);
 }
 
 static void
@@ -99,17 +95,14 @@ ht_device_destroy(struct xrt_device *xdev)
 }
 
 struct xrt_device *
-ht_device_create(struct xrt_auto_prober *xap,
-                 cJSON *attached_data,
-                 struct xrt_prober *xp)
+ht_device_create(struct xrt_auto_prober *xap, cJSON *attached_data, struct xrt_prober *xp)
 {
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_NO_FLAGS;
 
 	//! @todo 2 hands hardcoded
 	int num_hands = 2;
 
-	struct ht_device *htd =
-	    U_DEVICE_ALLOCATE(struct ht_device, flags, num_hands, 0);
+	struct ht_device *htd = U_DEVICE_ALLOCATE(struct ht_device, flags, num_hands, 0);
 
 
 	htd->base.tracking_origin = &htd->tracking_origin;
@@ -125,26 +118,22 @@ ht_device_create(struct xrt_auto_prober *xap,
 	htd->base.get_hand_tracking = ht_device_get_hand_tracking;
 	htd->base.destroy = ht_device_destroy;
 
-	strncpy(htd->base.str, "Camera based Hand Tracker",
-	        XRT_DEVICE_NAME_LEN);
+	strncpy(htd->base.str, "Camera based Hand Tracker", XRT_DEVICE_NAME_LEN);
 
 	htd->base.inputs[0].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
 	htd->base.inputs[1].name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
 
 	htd->base.name = XRT_DEVICE_HAND_TRACKER;
 
-	if (xp->tracking->create_tracked_hand(xp->tracking, &htd->base,
-	                                      &htd->tracker) < 0) {
+	if (xp->tracking->create_tracked_hand(xp->tracking, &htd->base, &htd->tracker) < 0) {
 		HT_ERROR(htd, "Failed to create hand tracker module");
 		return NULL;
 	}
 
-	u_hand_joints_init_default_set(&htd->u_tracking[XRT_HAND_LEFT],
-	                               XRT_HAND_LEFT,
-	                               XRT_HAND_TRACKING_MODEL_CAMERA, 1.0);
-	u_hand_joints_init_default_set(&htd->u_tracking[XRT_HAND_RIGHT],
-	                               XRT_HAND_RIGHT,
-	                               XRT_HAND_TRACKING_MODEL_CAMERA, 1.0);
+	u_hand_joints_init_default_set(&htd->u_tracking[XRT_HAND_LEFT], XRT_HAND_LEFT, XRT_HAND_TRACKING_MODEL_CAMERA,
+	                               1.0);
+	u_hand_joints_init_default_set(&htd->u_tracking[XRT_HAND_RIGHT], XRT_HAND_RIGHT, XRT_HAND_TRACKING_MODEL_CAMERA,
+	                               1.0);
 
 	u_var_add_root(htd, "Camera based Hand Tracker", true);
 	u_var_add_ro_text(htd, htd->base.str, "Name");

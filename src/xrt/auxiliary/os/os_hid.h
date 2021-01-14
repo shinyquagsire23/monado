@@ -27,28 +27,15 @@ extern "C" {
  */
 struct os_hid_device
 {
-	int (*read)(struct os_hid_device *hid_dev,
-	            uint8_t *data,
-	            size_t size,
-	            int milliseconds);
+	int (*read)(struct os_hid_device *hid_dev, uint8_t *data, size_t size, int milliseconds);
 
-	int (*write)(struct os_hid_device *hid_dev,
-	             const uint8_t *data,
-	             size_t size);
+	int (*write)(struct os_hid_device *hid_dev, const uint8_t *data, size_t size);
 
-	int (*get_feature)(struct os_hid_device *hid_dev,
-	                   uint8_t report_num,
-	                   uint8_t *data,
-	                   size_t size);
+	int (*get_feature)(struct os_hid_device *hid_dev, uint8_t report_num, uint8_t *data, size_t size);
 
-	int (*get_feature_timeout)(struct os_hid_device *hid_dev,
-	                           void *data,
-	                           size_t size,
-	                           uint32_t timeout);
+	int (*get_feature_timeout)(struct os_hid_device *hid_dev, void *data, size_t size, uint32_t timeout);
 
-	int (*set_feature)(struct os_hid_device *hid_dev,
-	                   const uint8_t *data,
-	                   size_t size);
+	int (*set_feature)(struct os_hid_device *hid_dev, const uint8_t *data, size_t size);
 
 	void (*destroy)(struct os_hid_device *hid_dev);
 };
@@ -62,10 +49,7 @@ struct os_hid_device
  * @public @memberof os_hid_device
  */
 static inline int
-os_hid_read(struct os_hid_device *hid_dev,
-            uint8_t *data,
-            size_t size,
-            int milliseconds)
+os_hid_read(struct os_hid_device *hid_dev, uint8_t *data, size_t size, int milliseconds)
 {
 	return hid_dev->read(hid_dev, data, size, milliseconds);
 }
@@ -90,10 +74,7 @@ os_hid_write(struct os_hid_device *hid_dev, const uint8_t *data, size_t size)
  * @public @memberof os_hid_device
  */
 static inline int
-os_hid_get_feature(struct os_hid_device *hid_dev,
-                   uint8_t report_num,
-                   uint8_t *data,
-                   size_t size)
+os_hid_get_feature(struct os_hid_device *hid_dev, uint8_t report_num, uint8_t *data, size_t size)
 {
 	return hid_dev->get_feature(hid_dev, report_num, data, size);
 }
@@ -104,10 +85,7 @@ os_hid_get_feature(struct os_hid_device *hid_dev,
  * @public @memberof os_hid_device
  */
 static inline int
-os_hid_get_feature_timeout(struct os_hid_device *hid_dev,
-                           void *data,
-                           size_t size,
-                           uint32_t timeout)
+os_hid_get_feature_timeout(struct os_hid_device *hid_dev, void *data, size_t size, uint32_t timeout)
 {
 	return hid_dev->get_feature_timeout(hid_dev, data, size, timeout);
 }
@@ -121,9 +99,7 @@ os_hid_get_feature_timeout(struct os_hid_device *hid_dev,
  * @public @memberof os_hid_device
  */
 static inline int
-os_hid_set_feature(struct os_hid_device *hid_dev,
-                   const uint8_t *data,
-                   size_t size)
+os_hid_set_feature(struct os_hid_device *hid_dev, const uint8_t *data, size_t size)
 {
 	return hid_dev->set_feature(hid_dev, data, size);
 }

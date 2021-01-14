@@ -53,8 +53,7 @@ r_device_update_inputs(struct xrt_device *xdev)
 	struct r_hub *r = rd->r;
 
 	uint64_t now = os_monotonic_get_ns();
-	struct r_remote_controller_data *latest =
-	    rd->is_left ? &r->latest.left : &r->latest.right;
+	struct r_remote_controller_data *latest = rd->is_left ? &r->latest.left : &r->latest.right;
 
 	if (!latest->active) {
 		xdev->inputs[0].active = false;
@@ -88,33 +87,27 @@ r_device_get_tracked_pose(struct xrt_device *xdev,
 	struct r_device *rd = r_device(xdev);
 	struct r_hub *r = rd->r;
 
-	if (name != XRT_INPUT_SIMPLE_AIM_POSE &&
-	    name != XRT_INPUT_SIMPLE_GRIP_POSE) {
+	if (name != XRT_INPUT_SIMPLE_AIM_POSE && name != XRT_INPUT_SIMPLE_GRIP_POSE) {
 		U_LOG_E("Unknown input name");
 		return;
 	}
 
-	struct r_remote_controller_data *latest =
-	    rd->is_left ? &r->latest.left : &r->latest.right;
+	struct r_remote_controller_data *latest = rd->is_left ? &r->latest.left : &r->latest.right;
 
 	/*
 	 * It's easier to reason about angular velocity if it's controlled in
 	 * body space, but the angular velocity returned in the relation is in
 	 * the base space.
 	 */
-	math_quat_rotate_derivative(&latest->pose.orientation,
-	                            &latest->angular_velocity,
+	math_quat_rotate_derivative(&latest->pose.orientation, &latest->angular_velocity,
 	                            &out_relation->angular_velocity);
 
 	out_relation->pose = latest->pose;
 	out_relation->linear_velocity = latest->linear_velocity;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT |
-	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT | XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
 }
 
 static void
@@ -127,14 +120,12 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 	struct r_hub *r = rd->r;
 
 
-	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT &&
-	    name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
+	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT && name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
 		U_LOG_E("Unknown input name for hand tracker");
 		return;
 	}
 
-	struct r_remote_controller_data *latest =
-	    rd->is_left ? &r->latest.left : &r->latest.right;
+	struct r_remote_controller_data *latest = rd->is_left ? &r->latest.left : &r->latest.right;
 
 	struct u_hand_tracking_curl_values values = {
 	    .little = latest->hand_curl[0],
@@ -145,8 +136,7 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 	};
 
 	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-	u_hand_joints_update_curl(&rd->hand_tracking, hand, at_timestamp_ns,
-	                          &values);
+	u_hand_joints_update_curl(&rd->hand_tracking, hand, at_timestamp_ns, &values);
 
 	struct xrt_pose hand_on_handle_pose = {
 	    {0, 0, 0, 1},
@@ -154,11 +144,9 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 	};
 
 	struct xrt_space_relation relation;
-	xrt_device_get_tracked_pose(xdev, XRT_INPUT_SIMPLE_GRIP_POSE,
-	                            at_timestamp_ns, &relation);
+	xrt_device_get_tracked_pose(xdev, XRT_INPUT_SIMPLE_GRIP_POSE, at_timestamp_ns, &relation);
 
-	u_hand_joints_set_out_data(&rd->hand_tracking, hand, &relation,
-	                           &hand_on_handle_pose, out_value);
+	u_hand_joints_set_out_data(&rd->hand_tracking, hand, &relation, &hand_on_handle_pose, out_value);
 }
 
 static void
@@ -171,9 +159,7 @@ r_device_get_view_pose(struct xrt_device *xdev,
 }
 
 static void
-r_device_set_output(struct xrt_device *xdev,
-                    enum xrt_output_name name,
-                    union xrt_output_value *value)
+r_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
 {
 	struct r_device *rd = r_device(xdev);
 	(void)rd;
@@ -208,8 +194,7 @@ r_device_create(struct r_hub *r, bool is_left)
 	rd->is_left = is_left;
 
 	// Print name.
-	snprintf(rd->base.str, sizeof(rd->base.str), "Remote %s Controller",
-	         is_left ? "Left" : "Right");
+	snprintf(rd->base.str, sizeof(rd->base.str), "Remote %s Controller", is_left ? "Left" : "Right");
 
 	// Inputs and outputs.
 	rd->base.inputs[0].name = XRT_INPUT_SIMPLE_SELECT_CLICK;
@@ -230,9 +215,7 @@ r_device_create(struct r_hub *r, bool is_left)
 	}
 
 	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-	u_hand_joints_init_default_set(&rd->hand_tracking, hand,
-	                               XRT_HAND_TRACKING_MODEL_FINGERL_CURL,
-	                               1.0);
+	u_hand_joints_init_default_set(&rd->hand_tracking, hand, XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
 
 	// Setup variable tracker.
 	u_var_add_root(rd, rd->base.str, true);

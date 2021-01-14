@@ -46,8 +46,7 @@ create_buffer(struct vk_bundle *vk,
 	                         NULL,         //
 	                         &buffer);     //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateBuffer failed: '%s'",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateBuffer failed: '%s'", vk_result_string(ret));
 		return ret;
 	}
 
@@ -76,8 +75,7 @@ create_buffer(struct vk_bundle *vk,
 	                           NULL,       //
 	                           &memory);   //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkAllocateMemory failed: '%s'",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkAllocateMemory failed: '%s'", vk_result_string(ret));
 		goto err_buffer;
 	}
 
@@ -88,8 +86,7 @@ create_buffer(struct vk_bundle *vk,
 	                             memory,     // memory
 	                             0);         // memoryOffset
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkBindBufferMemory failed: '%s'",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkBindBufferMemory failed: '%s'", vk_result_string(ret));
 		goto err_memory;
 	}
 
@@ -168,10 +165,7 @@ comp_buffer_unmap(struct vk_bundle *vk, struct comp_buffer *buffer)
 }
 
 VkResult
-comp_buffer_map_and_write(struct vk_bundle *vk,
-                          struct comp_buffer *buffer,
-                          void *data,
-                          VkDeviceSize size)
+comp_buffer_map_and_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, VkDeviceSize size)
 {
 	VkResult ret;
 
@@ -193,10 +187,7 @@ comp_buffer_map_and_write(struct vk_bundle *vk,
 }
 
 VkResult
-comp_buffer_write(struct vk_bundle *vk,
-                  struct comp_buffer *buffer,
-                  void *data,
-                  VkDeviceSize size)
+comp_buffer_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, VkDeviceSize size)
 {
 	if (size > buffer->allocation_size) {
 		VK_ERROR(vk, "Trying to write more the buffer size!");

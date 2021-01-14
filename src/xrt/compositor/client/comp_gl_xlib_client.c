@@ -58,14 +58,12 @@ client_gl_xlib_compositor_create(struct xrt_compositor_native *xcn,
 {
 	gladLoadGL(glXGetProcAddress);
 
-#define CHECK_REQUIRED_EXTENSION(EXT)                                          \
-	do {                                                                   \
-		if (!GLAD_##EXT) {                                             \
-			U_LOG_E("%s - Required OpenGL extension " #EXT         \
-			        " not available",                              \
-			        __func__);                                     \
-			return NULL;                                           \
-		}                                                              \
+#define CHECK_REQUIRED_EXTENSION(EXT)                                                                                  \
+	do {                                                                                                           \
+		if (!GLAD_##EXT) {                                                                                     \
+			U_LOG_E("%s - Required OpenGL extension " #EXT " not available", __func__);                    \
+			return NULL;                                                                                   \
+		}                                                                                                      \
 	} while (0)
 
 	CHECK_REQUIRED_EXTENSION(GL_EXT_memory_object);
@@ -75,11 +73,9 @@ client_gl_xlib_compositor_create(struct xrt_compositor_native *xcn,
 
 #undef CHECK_REQUIRED_EXTENSION
 
-	struct client_gl_xlib_compositor *c =
-	    U_TYPED_CALLOC(struct client_gl_xlib_compositor);
+	struct client_gl_xlib_compositor *c = U_TYPED_CALLOC(struct client_gl_xlib_compositor);
 
-	if (!client_gl_compositor_init(
-	        &c->base, xcn, client_gl_memobj_swapchain_create, NULL)) {
+	if (!client_gl_compositor_init(&c->base, xcn, client_gl_memobj_swapchain_create, NULL)) {
 		free(c);
 		return NULL;
 	}

@@ -53,12 +53,8 @@ DEBUG_GET_ONCE_BOOL_OPTION(views, "MATH_DEBUG_VIEWS", false)
  * @return true if successful.
  */
 static bool
-math_solve_triangle(double w_total,
-                    double w_1,
-                    double theta_total,
-                    double *out_theta_1,
-                    double *out_theta_2,
-                    double *out_d)
+math_solve_triangle(
+    double w_total, double w_1, double theta_total, double *out_theta_1, double *out_theta_2, double *out_d)
 {
 	/* should have at least one out-variable */
 	assert(out_theta_1 || out_theta_2 || out_d);
@@ -98,10 +94,8 @@ math_solve_triangle(double w_total,
 	if (debug_get_bool_option_views()) {
 		const double rad_to_deg = M_1_PI * 180.0;
 		// comments are to force wrapping
-		U_LOG_D("w=" METERS_FORMAT " theta=" DEG_FORMAT
-		        "    w1=" METERS_FORMAT " theta1=" DEG_FORMAT
-		        "    w2=" METERS_FORMAT " theta2=" DEG_FORMAT
-		        "    d=" METERS_FORMAT,
+		U_LOG_D("w=" METERS_FORMAT " theta=" DEG_FORMAT "    w1=" METERS_FORMAT " theta1=" DEG_FORMAT
+		        "    w2=" METERS_FORMAT " theta2=" DEG_FORMAT "    d=" METERS_FORMAT,
 		        w_total, theta_total * rad_to_deg,         //
 		        w_1, (theta_total - theta_2) * rad_to_deg, //
 		        w_2, theta_2 * rad_to_deg,                 //
@@ -132,8 +126,7 @@ math_compute_fovs(double w_total,
 	double d = 0;
 	double theta_1 = 0;
 	double theta_2 = 0;
-	if (!math_solve_triangle(w_total, w_1, horizfov_total, &theta_1,
-	                         &theta_2, &d)) {
+	if (!math_solve_triangle(w_total, w_1, horizfov_total, &theta_1, &theta_2, &d)) {
 		/* failure is contagious */
 		return false;
 	}
@@ -153,8 +146,7 @@ math_compute_fovs(double w_total,
 		phi_2 = atan(h_2 / d);
 	} else {
 		/* Run the same algorithm again for vertical. */
-		if (!math_solve_triangle(h_total, h_1, vertfov_total, &phi_1,
-		                         &phi_2, NULL)) {
+		if (!math_solve_triangle(h_total, h_1, vertfov_total, &phi_1, &phi_2, NULL)) {
 			/* failure is contagious */
 			return false;
 		}

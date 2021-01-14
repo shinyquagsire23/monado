@@ -92,11 +92,7 @@ ipc_receive(struct ipc_message_channel *imc, void *out_data, size_t size);
  * @public @memberof ipc_message_channel
  */
 xrt_result_t
-ipc_receive_fds(struct ipc_message_channel *imc,
-                void *out_data,
-                size_t size,
-                int *out_handles,
-                uint32_t num_handles);
+ipc_receive_fds(struct ipc_message_channel *imc, void *out_data, size_t size, int *out_handles, uint32_t num_handles);
 
 /*!
  * Send a message along with file descriptors over the IPC channel.
@@ -114,11 +110,7 @@ ipc_receive_fds(struct ipc_message_channel *imc,
  * @public @memberof ipc_message_channel
  */
 xrt_result_t
-ipc_send_fds(struct ipc_message_channel *imc,
-             const void *data,
-             size_t size,
-             const int *handles,
-             uint32_t num_handles);
+ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, const int *handles, uint32_t num_handles);
 #endif // XRT_OS_UNIX
 /*!
  * @}

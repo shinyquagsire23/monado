@@ -41,10 +41,7 @@ ht_prober_destroy(struct xrt_auto_prober *p)
 
 //! @public @memberof ht_prober
 static struct xrt_device *
-ht_prober_autoprobe(struct xrt_auto_prober *xap,
-                    cJSON *attached_data,
-                    bool no_hmds,
-                    struct xrt_prober *xp)
+ht_prober_autoprobe(struct xrt_auto_prober *xap, cJSON *attached_data, bool no_hmds, struct xrt_prober *xp)
 {
 	struct xrt_device *xdev = ht_device_create(xap, attached_data, xp);
 

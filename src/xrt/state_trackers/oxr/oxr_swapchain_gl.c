@@ -18,8 +18,7 @@
 #include "oxr_logger.h"
 
 
-#if defined(XR_USE_GRAPHICS_API_OPENGL) ||                                     \
-    defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+#if defined(XR_USE_GRAPHICS_API_OPENGL) || defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 
 static XrResult
 oxr_swapchain_gl_destroy(struct oxr_logger *log, struct oxr_swapchain *sc)
@@ -54,8 +53,7 @@ oxr_swapchain_gl_enumerate_images_gl(struct oxr_logger *log,
 	struct xrt_swapchain_gl *xsc = (struct xrt_swapchain_gl *)sc->swapchain;
 	for (uint32_t i = 0; i < count; i++) {
 		if (images[i].type != images[0].type) {
-			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-			                 "Images array contains mixed types");
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Images array contains mixed types");
 		}
 		images[i].image = xsc->images[i];
 	}
@@ -75,8 +73,7 @@ oxr_swapchain_gl_enumerate_images_gles(struct oxr_logger *log,
 	struct xrt_swapchain_gl *xsc = (struct xrt_swapchain_gl *)sc->swapchain;
 	for (uint32_t i = 0; i < count; i++) {
 		if (images[i].type != images[0].type) {
-			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-			                 "Images array contains mixed types");
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Images array contains mixed types");
 		}
 		images[i].image = xsc->images[i];
 	}
@@ -95,17 +92,13 @@ oxr_swapchain_gl_enumerate_images(struct oxr_logger *log,
 	switch (images[0].type) {
 #if defined(XR_USE_GRAPHICS_API_OPENGL)
 	case XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR:
-		return oxr_swapchain_gl_enumerate_images_gl(
-		    log, sc, count, (XrSwapchainImageOpenGLKHR *)images);
+		return oxr_swapchain_gl_enumerate_images_gl(log, sc, count, (XrSwapchainImageOpenGLKHR *)images);
 #endif // XR_USE_GRAPHICS_API_OPENGL
 #if defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 	case XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR:
-		return oxr_swapchain_gl_enumerate_images_gles(
-		    log, sc, count, (XrSwapchainImageOpenGLESKHR *)images);
+		return oxr_swapchain_gl_enumerate_images_gles(log, sc, count, (XrSwapchainImageOpenGLESKHR *)images);
 #endif // XR_USE_GRAPHICS_API_OPENGL_ES
-	default:
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "Unsupported XrSwapchainImageBaseHeader type");
+	default: return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Unsupported XrSwapchainImageBaseHeader type");
 	}
 }
 

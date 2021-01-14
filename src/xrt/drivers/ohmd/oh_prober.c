@@ -54,10 +54,7 @@ oh_prober_destroy(struct xrt_auto_prober *p)
 
 //! @public @memberof oh_prober
 static struct xrt_device *
-oh_prober_autoprobe(struct xrt_auto_prober *xap,
-                    cJSON *attached_data,
-                    bool no_hmds,
-                    struct xrt_prober *xp)
+oh_prober_autoprobe(struct xrt_auto_prober *xap, cJSON *attached_data, bool no_hmds, struct xrt_prober *xp)
 {
 	struct oh_prober *ohp = oh_prober(xap);
 
@@ -87,27 +84,21 @@ oh_prober_autoprobe(struct xrt_auto_prober *xap,
 		}
 
 		if (device_flags & OHMD_DEVICE_FLAGS_NULL_DEVICE) {
-			U_LOG_D("Rejecting device idx %i, is a NULL device.",
-			        i);
+			U_LOG_D("Rejecting device idx %i, is a NULL device.", i);
 			continue;
 		}
 
 		prod = ohmd_list_gets(ohp->ctx, i, OHMD_PRODUCT);
-		if (strcmp(prod, "External Device") == 0 &&
-		    !debug_get_bool_option_ohmd_external()) {
-			U_LOG_D(
-			    "Rejecting device idx %i, is a External device.",
-			    i);
+		if (strcmp(prod, "External Device") == 0 && !debug_get_bool_option_ohmd_external()) {
+			U_LOG_D("Rejecting device idx %i, is a External device.", i);
 			continue;
 		}
 
 		U_LOG_D("Selecting device idx %i", i);
 		device_idx = i;
 
-		orientation_tracking_supported =
-		    (device_flags & OHMD_DEVICE_FLAGS_ROTATIONAL_TRACKING) != 0;
-		position_tracking_supported =
-		    (device_flags & OHMD_DEVICE_FLAGS_POSITIONAL_TRACKING) != 0;
+		orientation_tracking_supported = (device_flags & OHMD_DEVICE_FLAGS_ROTATIONAL_TRACKING) != 0;
+		position_tracking_supported = (device_flags & OHMD_DEVICE_FLAGS_POSITIONAL_TRACKING) != 0;
 		break;
 	}
 

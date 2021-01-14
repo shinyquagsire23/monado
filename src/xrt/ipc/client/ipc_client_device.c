@@ -82,8 +82,7 @@ ipc_client_device_update_inputs(struct xrt_device *xdev)
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
 
-	xrt_result_t r =
-	    ipc_call_device_update_input(icd->ipc_c, icd->device_id);
+	xrt_result_t r = ipc_call_device_update_input(icd->ipc_c, icd->device_id);
 	if (r != XRT_SUCCESS) {
 		IPC_ERROR(icd->ipc_c, "Error sending input update!");
 	}
@@ -97,8 +96,8 @@ ipc_client_device_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
 
-	xrt_result_t r = ipc_call_device_get_tracked_pose(
-	    icd->ipc_c, icd->device_id, name, at_timestamp_ns, out_relation);
+	xrt_result_t r =
+	    ipc_call_device_get_tracked_pose(icd->ipc_c, icd->device_id, name, at_timestamp_ns, out_relation);
 	if (r != XRT_SUCCESS) {
 		IPC_ERROR(icd->ipc_c, "Error sending input update!");
 	}
@@ -112,8 +111,8 @@ ipc_client_device_get_hand_tracking(struct xrt_device *xdev,
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
 
-	xrt_result_t r = ipc_call_device_get_hand_tracking(
-	    icd->ipc_c, icd->device_id, name, at_timestamp_ns, out_value);
+	xrt_result_t r =
+	    ipc_call_device_get_hand_tracking(icd->ipc_c, icd->device_id, name, at_timestamp_ns, out_value);
 	if (r != XRT_SUCCESS) {
 		IPC_ERROR(icd->ipc_c, "IPC: Error sending input update!");
 	}
@@ -129,14 +128,11 @@ ipc_client_device_get_view_pose(struct xrt_device *xdev,
 }
 
 static void
-ipc_client_device_set_output(struct xrt_device *xdev,
-                             enum xrt_output_name name,
-                             union xrt_output_value *value)
+ipc_client_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
 
-	xrt_result_t r =
-	    ipc_call_device_set_output(icd->ipc_c, icd->device_id, name, value);
+	xrt_result_t r = ipc_call_device_set_output(icd->ipc_c, icd->device_id, name, value);
 	if (r != XRT_SUCCESS) {
 		IPC_ERROR(icd->ipc_c, "IPC: Error sending set output!");
 	}
@@ -146,19 +142,15 @@ ipc_client_device_set_output(struct xrt_device *xdev,
  * @public @memberof ipc_client_device
  */
 struct xrt_device *
-ipc_client_device_create(struct ipc_connection *ipc_c,
-                         struct xrt_tracking_origin *xtrack,
-                         uint32_t device_id)
+ipc_client_device_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *xtrack, uint32_t device_id)
 {
 	// Helpers.
 	struct ipc_shared_memory *ism = ipc_c->ism;
 	struct ipc_shared_device *isdev = &ism->isdevs[device_id];
 
 	// Allocate and setup the basics.
-	enum u_device_alloc_flags flags =
-	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD);
-	struct ipc_client_device *icd =
-	    U_DEVICE_ALLOCATE(struct ipc_client_device, flags, 0, 0);
+	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD);
+	struct ipc_client_device *icd = U_DEVICE_ALLOCATE(struct ipc_client_device, flags, 0, 0);
 	icd->ipc_c = ipc_c;
 	icd->base.update_inputs = ipc_client_device_update_inputs;
 	icd->base.get_tracked_pose = ipc_client_device_get_tracked_pose;
@@ -189,27 +181,23 @@ ipc_client_device_create(struct ipc_connection *ipc_c,
 	}
 
 	if (isdev->num_binding_profiles > 0) {
-		icd->base.binding_profiles = U_TYPED_ARRAY_CALLOC(
-		    struct xrt_binding_profile, isdev->num_binding_profiles);
+		icd->base.binding_profiles =
+		    U_TYPED_ARRAY_CALLOC(struct xrt_binding_profile, isdev->num_binding_profiles);
 		icd->base.num_binding_profiles = isdev->num_binding_profiles;
 	}
 
 	for (size_t i = 0; i < isdev->num_binding_profiles; i++) {
-		struct xrt_binding_profile *xbp =
-		    &icd->base.binding_profiles[i];
+		struct xrt_binding_profile *xbp = &icd->base.binding_profiles[i];
 		struct ipc_shared_binding_profile *isbp =
-		    &ism->binding_profiles[isdev->first_binding_profile_index +
-		                           i];
+		    &ism->binding_profiles[isdev->first_binding_profile_index + i];
 
 		xbp->name = isbp->name;
 		if (isbp->num_inputs > 0) {
-			xbp->inputs =
-			    &ism->input_pairs[isbp->first_input_index];
+			xbp->inputs = &ism->input_pairs[isbp->first_input_index];
 			xbp->num_inputs = isbp->num_inputs;
 		}
 		if (isbp->num_outputs > 0) {
-			xbp->outputs =
-			    &ism->output_pairs[isbp->first_output_index];
+			xbp->outputs = &ism->output_pairs[isbp->first_output_index];
 			xbp->num_outputs = isbp->num_inputs;
 		}
 	}
@@ -218,10 +206,8 @@ ipc_client_device_create(struct ipc_connection *ipc_c,
 	u_var_add_root(icd, icd->base.str, true);
 	u_var_add_ro_u32(icd, &icd->device_id, "device_id");
 
-	icd->base.orientation_tracking_supported =
-	    isdev->orientation_tracking_supported;
-	icd->base.position_tracking_supported =
-	    isdev->position_tracking_supported;
+	icd->base.orientation_tracking_supported = isdev->orientation_tracking_supported;
+	icd->base.position_tracking_supported = isdev->position_tracking_supported;
 	icd->base.hand_tracking_supported = isdev->hand_tracking_supported;
 
 	icd->base.device_type = isdev->device_type;

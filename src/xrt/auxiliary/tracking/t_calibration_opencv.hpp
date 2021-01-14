@@ -39,12 +39,10 @@ struct CameraCalibrationWrapper
 
 	CameraCalibrationWrapper(t_camera_calibration &calib)
 	    : base(calib), image_size_pixels(calib.image_size_pixels),
-	      image_size_pixels_cv(calib.image_size_pixels.w,
-	                           calib.image_size_pixels.h),
+	      image_size_pixels_cv(calib.image_size_pixels.w, calib.image_size_pixels.h),
 	      intrinsics_mat(3, 3, &calib.intrinsics[0][0]),
 	      distortion_mat(XRT_DISTORTION_MAX_DIM, 1, &calib.distortion[0]),
-	      distortion_fisheye_mat(4, 1, &calib.distortion_fisheye[0]),
-	      use_fisheye(calib.use_fisheye)
+	      distortion_fisheye_mat(4, 1, &calib.distortion_fisheye[0]), use_fisheye(calib.use_fisheye)
 	{
 		assert(isDataStorageValid());
 	}
@@ -54,16 +52,13 @@ struct CameraCalibrationWrapper
 	isDataStorageValid() const noexcept
 	{
 		return intrinsics_mat.size() == cv::Size(3, 3) &&
-		       (double *)intrinsics_mat.data ==
-		           &(base.intrinsics[0][0]) &&
+		       (double *)intrinsics_mat.data == &(base.intrinsics[0][0]) &&
 
-		       distortion_mat.size() ==
-		           cv::Size(1, XRT_DISTORTION_MAX_DIM) &&
+		       distortion_mat.size() == cv::Size(1, XRT_DISTORTION_MAX_DIM) &&
 		       (double *)distortion_mat.data == &(base.distortion[0]) &&
 
 		       distortion_fisheye_mat.size() == cv::Size(1, 4) &&
-		       (double *)distortion_fisheye_mat.data ==
-		           &(base.distortion_fisheye[0]);
+		       (double *)distortion_fisheye_mat.data == &(base.distortion_fisheye[0]);
 	}
 };
 
@@ -93,8 +88,7 @@ struct StereoCameraCalibrationWrapper
 	}
 
 	StereoCameraCalibrationWrapper(t_stereo_camera_calibration *stereo)
-	    : base(stereo), view{CameraCalibrationWrapper{stereo->view[0]},
-	                         CameraCalibrationWrapper{stereo->view[1]}},
+	    : base(stereo), view{CameraCalibrationWrapper{stereo->view[0]}, CameraCalibrationWrapper{stereo->view[1]}},
 	      camera_translation_mat(3, 1, &stereo->camera_translation[0]),
 	      camera_rotation_mat(3, 3, &stereo->camera_rotation[0][0]),
 	      camera_essential_mat(3, 3, &stereo->camera_essential[0][0]),
@@ -107,8 +101,7 @@ struct StereoCameraCalibrationWrapper
 		assert(isDataStorageValid());
 	}
 
-	StereoCameraCalibrationWrapper()
-	    : StereoCameraCalibrationWrapper(allocData())
+	StereoCameraCalibrationWrapper() : StereoCameraCalibrationWrapper(allocData())
 	{
 
 		// The function allocData returns with a ref count of one,
@@ -127,23 +120,18 @@ struct StereoCameraCalibrationWrapper
 	isDataStorageValid() const noexcept
 	{
 		return camera_translation_mat.size() == cv::Size(1, 3) &&
-		       (double *)camera_translation_mat.data ==
-		           &base->camera_translation[0] &&
+		       (double *)camera_translation_mat.data == &base->camera_translation[0] &&
 
 		       camera_rotation_mat.size() == cv::Size(3, 3) &&
-		       (double *)camera_rotation_mat.data ==
-		           &base->camera_rotation[0][0] &&
+		       (double *)camera_rotation_mat.data == &base->camera_rotation[0][0] &&
 
 		       camera_essential_mat.size() == cv::Size(3, 3) &&
-		       (double *)camera_essential_mat.data ==
-		           &base->camera_essential[0][0] &&
+		       (double *)camera_essential_mat.data == &base->camera_essential[0][0] &&
 
 		       camera_fundamental_mat.size() == cv::Size(3, 3) &&
-		       (double *)camera_fundamental_mat.data ==
-		           &base->camera_fundamental[0][0] &&
+		       (double *)camera_fundamental_mat.data == &base->camera_fundamental[0][0] &&
 
-		       view[0].isDataStorageValid() &&
-		       view[1].isDataStorageValid();
+		       view[0].isDataStorageValid() && view[1].isDataStorageValid();
 	}
 };
 
@@ -170,10 +158,9 @@ struct RemapPair
  * here uses the input camera matrix as your output camera matrix.
  */
 RemapPair
-calibration_get_undistort_map(
-    t_camera_calibration &calib,
-    cv::InputArray rectify_transform_optional = cv::noArray(),
-    cv::Mat new_camera_matrix_optional = cv::Mat());
+calibration_get_undistort_map(t_camera_calibration &calib,
+                              cv::InputArray rectify_transform_optional = cv::noArray(),
+                              cv::Mat new_camera_matrix_optional = cv::Mat());
 
 /*!
  * @brief Rectification, rotation, projection data for a single view in a stereo
@@ -230,9 +217,7 @@ public:
 	 * This overload applies no rectification (`R`) and uses a
 	 * normalized/identity new camera matrix (`P`).
 	 */
-	NormalizedCoordsCache(cv::Size size,
-	                      const cv::Matx33d &intrinsics,
-	                      const cv::Matx<double, 5, 1> &distortion);
+	NormalizedCoordsCache(cv::Size size, const cv::Matx33d &intrinsics, const cv::Matx<double, 5, 1> &distortion);
 	/*!
 	 * @brief Set up the precomputed cache for a given camera (overload for
 	 * rectification and new camera matrix)
@@ -263,12 +248,11 @@ public:
 	 * @param new_projection_matrix A 3x4 new projection matrix -
 	 * corresponds to parameter `P` to cv::undistortPoints().
 	 */
-	NormalizedCoordsCache(
-	    cv::Size size,
-	    const cv::Matx33d &intrinsics,
-	    const cv::Matx<double, 5, 1> &distortion,
-	    const cv::Matx33d &rectification,
-	    const cv::Matx<double, 3, 4> &new_projection_matrix);
+	NormalizedCoordsCache(cv::Size size,
+	                      const cv::Matx33d &intrinsics,
+	                      const cv::Matx<double, 5, 1> &distortion,
+	                      const cv::Matx33d &rectification,
+	                      const cv::Matx<double, 3, 4> &new_projection_matrix);
 
 	/*!
 	 * @brief Set up the precomputed cache for a given camera.
@@ -280,9 +264,7 @@ public:
 	 * This overload applies no rectification (`R`) and uses a
 	 * normalized/identity new camera matrix (`P`).
 	 */
-	NormalizedCoordsCache(cv::Size size,
-	                      const cv::Mat &intrinsics,
-	                      const cv::Mat &distortion);
+	NormalizedCoordsCache(cv::Size size, const cv::Mat &intrinsics, const cv::Mat &distortion);
 
 	/*!
 	 * @brief Get normalized, undistorted coordinates from a point in the

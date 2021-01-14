@@ -51,10 +51,7 @@ struct u_panotools_values
  * @ingroup aux_distortion
  */
 bool
-u_compute_distortion_panotools(struct u_panotools_values *values,
-                               float u,
-                               float v,
-                               struct xrt_uv_triplet *result);
+u_compute_distortion_panotools(struct u_panotools_values *values, float u, float v, struct xrt_uv_triplet *result);
 
 
 /*
@@ -90,10 +87,7 @@ struct u_vive_values
  * @ingroup aux_distortion
  */
 bool
-u_compute_distortion_vive(struct u_vive_values *values,
-                          float u,
-                          float v,
-                          struct xrt_uv_triplet *result);
+u_compute_distortion_vive(struct u_vive_values *values, float u, float v, struct xrt_uv_triplet *result);
 
 
 /*
@@ -134,11 +128,7 @@ u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result);
  * @ingroup aux_distortion
  */
 bool
-u_distortion_mesh_none(struct xrt_device *xdev,
-                       int view,
-                       float u,
-                       float v,
-                       struct xrt_uv_triplet *result);
+u_distortion_mesh_none(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result);
 
 
 /*

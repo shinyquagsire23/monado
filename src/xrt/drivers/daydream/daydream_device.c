@@ -67,15 +67,11 @@ daydream_device(struct xrt_device *xdev)
 }
 
 static void
-daydream_update_input_click(struct daydream_device *daydream,
-                            int index,
-                            int64_t now,
-                            uint32_t bit)
+daydream_update_input_click(struct daydream_device *daydream, int index, int64_t now, uint32_t bit)
 {
 
 	daydream->base.inputs[index].timestamp = now;
-	daydream->base.inputs[index].value.boolean =
-	    (daydream->last.buttons & bit) != 0;
+	daydream->base.inputs[index].value.boolean = (daydream->last.buttons & bit) != 0;
 }
 
 
@@ -93,16 +89,14 @@ update_fusion(struct daydream_device *dd,
 {
 
 	struct xrt_vec3 accel, gyro;
-	m_imu_pre_filter_data(&dd->pre_filter, &sample->accel, &sample->gyro,
-	                      &accel, &gyro);
+	m_imu_pre_filter_data(&dd->pre_filter, &sample->accel, &sample->gyro, &accel, &gyro);
 
 	DAYDREAM_DEBUG(dd,
 	               "fusion sample"
 	               " (mx %d my %d mz %d)"
 	               " (ax %d ay %d az %d)"
 	               " (gx %d gy %d gz %d)",
-	               sample->mag.x, sample->mag.y, sample->mag.z,
-	               sample->accel.x, sample->accel.y, sample->accel.z,
+	               sample->mag.x, sample->mag.y, sample->mag.z, sample->accel.x, sample->accel.y, sample->accel.z,
 	               sample->gyro.x, sample->gyro.y, sample->gyro.z);
 	DAYDREAM_DEBUG(dd,
 	               "fusion calibrated sample"
@@ -115,18 +109,15 @@ update_fusion(struct daydream_device *dd,
 }
 
 static int
-daydream_parse_input(struct daydream_device *daydream,
-                     void *data,
-                     struct daydream_parsed_input *input)
+daydream_parse_input(struct daydream_device *daydream, void *data, struct daydream_parsed_input *input)
 {
 	U_ZERO(input);
 	unsigned char *b = (unsigned char *)data;
-	DAYDREAM_DEBUG(
-	    daydream,
-	    "raw input: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
-	    "%02x %02x %02x %02x %02x %02x %02x %02x %02x",
-	    b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10],
-	    b[11], b[12], b[13], b[14], b[15], b[16], b[17], b[18], b[19]);
+	DAYDREAM_DEBUG(daydream,
+	               "raw input: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
+	               "%02x %02x %02x %02x %02x %02x %02x %02x %02x",
+	               b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14],
+	               b[15], b[16], b[17], b[18], b[19]);
 	input->timestamp = get_bits(b, 0, 14);
 	input->sample.mag.x = sign_extend_13(get_bits(b, 14, 13));
 	input->sample.mag.y = sign_extend_13(get_bits(b, 27, 13));
@@ -156,9 +147,7 @@ daydream_parse_input(struct daydream_device *daydream,
  * the thread has been told to shut down.
  */
 static bool
-daydream_read_one_packet(struct daydream_device *daydream,
-                         uint8_t *buffer,
-                         size_t size)
+daydream_read_one_packet(struct daydream_device *daydream, uint8_t *buffer, size_t size)
 {
 	os_thread_helper_lock(&daydream->oth);
 
@@ -181,8 +170,7 @@ daydream_read_one_packet(struct daydream_device *daydream,
 			continue;
 		}
 		if (ret < 0) {
-			DAYDREAM_ERROR(daydream, "Failed to read device '%i'!",
-			               ret);
+			DAYDREAM_ERROR(daydream, "Failed to read device '%i'!", ret);
 			return false;
 		}
 		return true;
@@ -257,9 +245,8 @@ daydream_get_fusion_pose(struct daydream_device *daydream,
 	out_relation->pose.orientation = daydream->fusion.rot;
 
 	//! @todo assuming that orientation is actually currently tracked.
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	                                                               XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 }
 
 static void
@@ -366,10 +353,8 @@ static struct xrt_binding_profile binding_profiles[1] = {
 struct daydream_device *
 daydream_device_create(struct os_ble_device *ble)
 {
-	enum u_device_alloc_flags flags =
-	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_TRACKING_NONE);
-	struct daydream_device *dd =
-	    U_DEVICE_ALLOCATE(struct daydream_device, flags, 8, 0);
+	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(U_DEVICE_ALLOC_TRACKING_NONE);
+	struct daydream_device *dd = U_DEVICE_ALLOCATE(struct daydream_device, flags, 8, 0);
 
 	dd->base.name = XRT_DEVICE_DAYDREAM;
 	dd->base.destroy = daydream_device_destroy;
@@ -390,8 +375,7 @@ daydream_device_create(struct os_ble_device *ble)
 
 	float accel_ticks_to_float = MATH_GRAVITY_M_S2 / 520.0;
 	float gyro_ticks_to_float = 1.0 / 120.0;
-	m_imu_pre_filter_init(&dd->pre_filter, accel_ticks_to_float,
-	                      gyro_ticks_to_float);
+	m_imu_pre_filter_init(&dd->pre_filter, accel_ticks_to_float, gyro_ticks_to_float);
 	m_imu_3dof_init(&dd->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_300MS);
 
 	daydream_get_calibration(dd);

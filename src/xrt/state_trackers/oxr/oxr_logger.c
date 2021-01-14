@@ -65,11 +65,9 @@ print_prefix(struct oxr_logger *logger, const char *fmt, const char *prefix)
 {
 	if (logger->api_func_name != NULL) {
 		if (is_fmt_func_arg_start(fmt)) {
-			fprintf(stderr, "%s: %s", prefix,
-			        logger->api_func_name);
+			fprintf(stderr, "%s: %s", prefix, logger->api_func_name);
 		} else {
-			fprintf(stderr, "%s in %s: ", prefix,
-			        logger->api_func_name);
+			fprintf(stderr, "%s in %s: ", prefix, logger->api_func_name);
 		}
 	} else {
 		fprintf(stderr, "%s: ", prefix);
@@ -153,8 +151,7 @@ oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
 	va_end(args);
 
 	fprintf(stderr, "\n");
-	if (debug_get_bool_option_break_on_error() &&
-	    result != XR_ERROR_FUNCTION_UNSUPPORTED) {
+	if (debug_get_bool_option_break_on_error() && result != XR_ERROR_FUNCTION_UNSUPPORTED) {
 		/// Trigger a debugger breakpoint.
 		XRT_DEBUGBREAK();
 	}
@@ -221,8 +218,7 @@ oxr_slog(struct oxr_sink_logger *slog, const char *fmt, ...)
 	oxr_slog_ensure(slog, ret + 1);
 
 	va_start(args, fmt);
-	ret = vsnprintf(slog->store + slog->length,
-	                slog->store_size - slog->length, fmt, args);
+	ret = vsnprintf(slog->store + slog->length, slog->store_size - slog->length, fmt, args);
 	va_end(args);
 
 	slog->length += ret;
@@ -249,9 +245,7 @@ oxr_warn_slog(struct oxr_logger *log, struct oxr_sink_logger *slog)
 }
 
 XrResult
-oxr_error_slog(struct oxr_logger *log,
-               XrResult res,
-               struct oxr_sink_logger *slog)
+oxr_error_slog(struct oxr_logger *log, XrResult res, struct oxr_sink_logger *slog)
 {
 	oxr_error(log, res, "%s", slog->store);
 	slog_free_store(slog);

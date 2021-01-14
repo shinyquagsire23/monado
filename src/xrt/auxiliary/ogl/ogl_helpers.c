@@ -11,10 +11,9 @@
 #include "ogl_api.h"
 
 void
-ogl_texture_target_for_swapchain_info(
-    const struct xrt_swapchain_create_info *info,
-    uint32_t *out_tex_target,
-    uint32_t *out_tex_param_name)
+ogl_texture_target_for_swapchain_info(const struct xrt_swapchain_create_info *info,
+                                      uint32_t *out_tex_target,
+                                      uint32_t *out_tex_param_name)
 {
 	// see reference:
 	// https://android.googlesource.com/platform/cts/+/master/tests/tests/nativehardware/jni/AHardwareBufferGLTest.cpp#1261

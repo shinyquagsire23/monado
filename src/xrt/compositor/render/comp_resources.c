@@ -15,18 +15,18 @@
 #include <stdio.h>
 
 
-#define C(c)                                                                   \
-	do {                                                                   \
-		VkResult ret = c;                                              \
-		if (ret != VK_SUCCESS) {                                       \
-			return false;                                          \
-		}                                                              \
+#define C(c)                                                                                                           \
+	do {                                                                                                           \
+		VkResult ret = c;                                                                                      \
+		if (ret != VK_SUCCESS) {                                                                               \
+			return false;                                                                                  \
+		}                                                                                                      \
 	} while (false)
 
-#define D(TYPE, thing)                                                         \
-	if (thing != VK_NULL_HANDLE) {                                         \
-		vk->vkDestroy##TYPE(vk->device, thing, NULL);                  \
-		thing = VK_NULL_HANDLE;                                        \
+#define D(TYPE, thing)                                                                                                 \
+	if (thing != VK_NULL_HANDLE) {                                                                                 \
+		vk->vkDestroy##TYPE(vk->device, thing, NULL);                                                          \
+		thing = VK_NULL_HANDLE;                                                                                \
 	}
 
 static VkResult
@@ -44,8 +44,7 @@ create_pipeline_cache(struct vk_bundle *vk, VkPipelineCache *out_pipeline_cache)
 	                                NULL,                 //
 	                                &pipeline_cache);     //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreatePipelineCache failed: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkCreatePipelineCache failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -73,8 +72,7 @@ create_pipeline_layout(struct vk_bundle *vk,
 	                                 NULL,                  //
 	                                 &pipeline_layout);     //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreatePipelineLayout failed: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkCreatePipelineLayout failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -118,8 +116,7 @@ create_descriptor_pool(struct vk_bundle *vk,
 	                                 NULL,                  //
 	                                 &descriptor_pool);     //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateRenderPass failed: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateRenderPass failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -136,11 +133,10 @@ create_descriptor_pool(struct vk_bundle *vk,
  */
 
 static VkResult
-create_mesh_descriptor_set_layout(
-    struct vk_bundle *vk,
-    uint32_t src_binding,
-    uint32_t ubo_binding,
-    VkDescriptorSetLayout *out_descriptor_set_layout)
+create_mesh_descriptor_set_layout(struct vk_bundle *vk,
+                                  uint32_t src_binding,
+                                  uint32_t ubo_binding,
+                                  VkDescriptorSetLayout *out_descriptor_set_layout)
 {
 	VkResult ret;
 
@@ -171,8 +167,7 @@ create_mesh_descriptor_set_layout(
 	                                      NULL,                    //
 	                                      &descriptor_set_layout); //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateDescriptorSetLayout failed: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateDescriptorSetLayout failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -196,8 +191,7 @@ init_mesh_vertex_buffers(struct vk_bundle *vk,
 	VkBufferUsageFlags vbo_usage_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	VkBufferUsageFlags ibo_usage_flags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 	VkMemoryPropertyFlags memory_property_flags =
-	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-	    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
 	// Distortion vbo and ibo sizes.
 	VkDeviceSize vbo_size = stride * num_vertices;
@@ -280,23 +274,20 @@ comp_resources_init(struct comp_compositor *c, struct comp_resources *r)
 	 * Mesh static.
 	 */
 
-	C(create_descriptor_pool(
-	    vk,                         // vk_bundle
-	    1,                          // num_uniform_per_desc
-	    1,                          // num_sampler_per_desc
-	    16 * 2,                     // num_descs
-	    &r->mesh_descriptor_pool)); // out_descriptor_pool
+	C(create_descriptor_pool(vk,                         // vk_bundle
+	                         1,                          // num_uniform_per_desc
+	                         1,                          // num_sampler_per_desc
+	                         16 * 2,                     // num_descs
+	                         &r->mesh_descriptor_pool)); // out_descriptor_pool
 
-	C(create_mesh_descriptor_set_layout(
-	    vk,                               // vk_bundle
-	    r->mesh.src_binding,              // src_binding
-	    r->mesh.ubo_binding,              // ubo_binding
-	    &r->mesh.descriptor_set_layout)); // out_mesh_descriptor_set_layout
+	C(create_mesh_descriptor_set_layout(vk,                               // vk_bundle
+	                                    r->mesh.src_binding,              // src_binding
+	                                    r->mesh.ubo_binding,              // ubo_binding
+	                                    &r->mesh.descriptor_set_layout)); // out_mesh_descriptor_set_layout
 
-	C(create_pipeline_layout(
-	    vk,                            // vk_bundle
-	    r->mesh.descriptor_set_layout, // descriptor_set_layout
-	    &r->mesh.pipeline_layout));    // out_pipeline_layout
+	C(create_pipeline_layout(vk,                            // vk_bundle
+	                         r->mesh.descriptor_set_layout, // descriptor_set_layout
+	                         &r->mesh.pipeline_layout));    // out_pipeline_layout
 
 	if (!init_mesh_vertex_buffers(vk,                                //
 	                              &r->mesh.vbo,                      //

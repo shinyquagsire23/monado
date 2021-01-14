@@ -84,8 +84,7 @@ debug_get_bool_option(const char *name, bool _default)
 	}
 
 	if (debug_get_bool_option_print()) {
-		U_LOG_RAW("%s=%s (%s)", name, ret ? "TRUE" : "FALSE",
-		          raw == NULL ? "nil" : raw);
+		U_LOG_RAW("%s=%s (%s)", name, ret ? "TRUE" : "FALSE", raw == NULL ? "nil" : raw);
 	}
 
 	return ret;
@@ -201,8 +200,7 @@ debug_get_log_option(const char *name, enum u_logging_level _default)
 	}
 
 	if (debug_get_bool_option_print()) {
-		U_LOG_RAW("%s=%s (%s)", name, level_to_str(ret),
-		          raw == NULL ? "nil" : raw);
+		U_LOG_RAW("%s=%s (%s)", name, level_to_str(ret), raw == NULL ? "nil" : raw);
 	}
 
 	return ret;

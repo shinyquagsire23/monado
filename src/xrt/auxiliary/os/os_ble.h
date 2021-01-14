@@ -27,10 +27,7 @@ extern "C" {
  */
 struct os_ble_device
 {
-	int (*read)(struct os_ble_device *ble_dev,
-	            uint8_t *data,
-	            size_t size,
-	            int milliseconds);
+	int (*read)(struct os_ble_device *ble_dev, uint8_t *data, size_t size, int milliseconds);
 
 	void (*destroy)(struct os_ble_device *ble_dev);
 };
@@ -44,10 +41,7 @@ struct os_ble_device
  * @ingroup aux_os
  */
 XRT_MAYBE_UNUSED static inline int
-os_ble_read(struct os_ble_device *ble_dev,
-            uint8_t *data,
-            size_t size,
-            int milliseconds)
+os_ble_read(struct os_ble_device *ble_dev, uint8_t *data, size_t size, int milliseconds)
 {
 	return ble_dev->read(ble_dev, data, size, milliseconds);
 }
@@ -79,9 +73,7 @@ os_ble_destroy(struct os_ble_device **ble_dev_ptr)
  * @ingroup aux_os
  */
 int
-os_ble_notify_open(const char *dev_uuid,
-                   const char *char_uuid,
-                   struct os_ble_device **out_ble);
+os_ble_notify_open(const char *dev_uuid, const char *char_uuid, struct os_ble_device **out_ble);
 
 /*!
  * Returns write startpoints from the given device uuid and char uuid.
@@ -92,9 +84,7 @@ os_ble_notify_open(const char *dev_uuid,
  * @ingroup aux_os
  */
 int
-os_ble_broadcast_write_value(const char *dev_uuid,
-                             const char *char_uuid,
-                             uint8_t value);
+os_ble_broadcast_write_value(const char *dev_uuid, const char *char_uuid, uint8_t value);
 #endif
 
 

@@ -238,11 +238,8 @@ p_dev_get_usb_dev(struct prober *p,
  * @public @memberof prober
  */
 int
-p_dev_get_bluetooth_dev(struct prober *p,
-                        uint64_t id,
-                        uint16_t vendor_id,
-                        uint16_t product_id,
-                        struct prober_device **out_pdev);
+p_dev_get_bluetooth_dev(
+    struct prober *p, uint64_t id, uint16_t vendor_id, uint16_t product_id, struct prober_device **out_pdev);
 
 /*!
  * @name Tracking systems

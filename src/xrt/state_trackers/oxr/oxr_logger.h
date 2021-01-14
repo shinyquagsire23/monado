@@ -19,13 +19,13 @@ extern "C" {
  *
  * @ingroup oxr_main
  */
-#define OXR_WARN_ONCE(log, ...)                                                \
-	do {                                                                   \
-		static bool _once = false;                                     \
-		if (!_once) {                                                  \
-			_once = true;                                          \
-			oxr_warn(log, __VA_ARGS__);                            \
-		}                                                              \
+#define OXR_WARN_ONCE(log, ...)                                                                                        \
+	do {                                                                                                           \
+		static bool _once = false;                                                                             \
+		if (!_once) {                                                                                          \
+			_once = true;                                                                                  \
+			oxr_warn(log, __VA_ARGS__);                                                                    \
+		}                                                                                                      \
 	} while (false)
 
 /*!
@@ -50,11 +50,9 @@ oxr_log_init(struct oxr_logger *logger, const char *api_func_name);
 void
 oxr_log_set_instance(struct oxr_logger *logger, struct oxr_instance *inst);
 void
-oxr_log(struct oxr_logger *logger, const char *fmt, ...)
-    XRT_PRINTF_FORMAT(2, 3);
+oxr_log(struct oxr_logger *logger, const char *fmt, ...) XRT_PRINTF_FORMAT(2, 3);
 void
-oxr_warn(struct oxr_logger *logger, const char *fmt, ...)
-    XRT_PRINTF_FORMAT(2, 3);
+oxr_warn(struct oxr_logger *logger, const char *fmt, ...) XRT_PRINTF_FORMAT(2, 3);
 
 /*!
  * Output an error and return the result code.
@@ -70,8 +68,7 @@ oxr_warn(struct oxr_logger *logger, const char *fmt, ...)
  * msg`.
  */
 XrResult
-oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
-    XRT_PRINTF_FORMAT(3, 4);
+oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...) XRT_PRINTF_FORMAT(3, 4);
 
 
 
@@ -119,9 +116,7 @@ oxr_warn_slog(struct oxr_logger *log, struct oxr_sink_logger *slog);
  * Flush sink as a error message, frees all internal data.
  */
 XrResult
-oxr_error_slog(struct oxr_logger *log,
-               XrResult res,
-               struct oxr_sink_logger *slog);
+oxr_error_slog(struct oxr_logger *log, XrResult res, struct oxr_sink_logger *slog);
 
 
 /*!

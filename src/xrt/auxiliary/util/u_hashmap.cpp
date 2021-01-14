@@ -80,9 +80,7 @@ u_hashmap_int_empty(const struct u_hashmap_int *hmi)
 }
 
 extern "C" void
-u_hashmap_int_clear_and_call_for_each(struct u_hashmap_int *hmi,
-                                      u_hashmap_int_callback cb,
-                                      void *priv)
+u_hashmap_int_clear_and_call_for_each(struct u_hashmap_int *hmi, u_hashmap_int_callback cb, void *priv)
 {
 	std::vector<void *> tmp;
 	tmp.reserve(hmi->map.size());

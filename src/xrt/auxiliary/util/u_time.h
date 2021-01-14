@@ -143,9 +143,7 @@ time_state_get_now_and_update(struct time_state *state);
  * @ingroup aux_util
  */
 void
-time_state_to_timespec(struct time_state const *state,
-                       timepoint_ns timestamp,
-                       struct timespec *out);
+time_state_to_timespec(struct time_state const *state, timepoint_ns timestamp, struct timespec *out);
 
 /*!
  * Convert a struct timespec (system time) to an integer timestamp.
@@ -156,8 +154,7 @@ time_state_to_timespec(struct time_state const *state,
  * @ingroup aux_util
  */
 timepoint_ns
-time_state_from_timespec(struct time_state const *state,
-                         const struct timespec *timespecTime);
+time_state_from_timespec(struct time_state const *state, const struct timespec *timespecTime);
 
 /*!
  * Convert a monotonic system time (such as from @ref aux_os_time) to an
@@ -172,8 +169,7 @@ time_state_from_timespec(struct time_state const *state,
  * @ingroup aux_util
  */
 timepoint_ns
-time_state_monotonic_to_ts_ns(struct time_state const *state,
-                              uint64_t monotonic_ns);
+time_state_monotonic_to_ts_ns(struct time_state const *state, uint64_t monotonic_ns);
 
 /*!
  * Convert a adjusted integer timestamp to an monotonic system time (such as
@@ -185,8 +181,7 @@ time_state_monotonic_to_ts_ns(struct time_state const *state,
  * @ingroup aux_util
  */
 uint64_t
-time_state_ts_to_monotonic_ns(struct time_state const *state,
-                              timepoint_ns timestamp);
+time_state_ts_to_monotonic_ns(struct time_state const *state, timepoint_ns timestamp);
 
 
 #ifdef __cplusplus

@@ -25,9 +25,7 @@
 using wrap::android::view::Surface;
 
 extern "C" void
-Java_org_freedesktop_monado_ipc_MonadoImpl_nativeAddClient(JNIEnv *env,
-                                                           jobject thiz,
-                                                           int fd)
+Java_org_freedesktop_monado_ipc_MonadoImpl_nativeAddClient(JNIEnv *env, jobject thiz, int fd)
 {
 	jni::init(env);
 	jni::Object monadoImpl(thiz);
@@ -37,9 +35,7 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeAddClient(JNIEnv *env,
 }
 
 extern "C" void
-Java_org_freedesktop_monado_ipc_MonadoImpl_nativeAppSurface(JNIEnv *env,
-                                                            jobject thiz,
-                                                            jobject surface)
+Java_org_freedesktop_monado_ipc_MonadoImpl_nativeAppSurface(JNIEnv *env, jobject thiz, jobject surface)
 {
 	jni::init(env);
 	Surface surf(surface);

@@ -157,9 +157,7 @@ destroy(struct xrt_frame_node *node)
  */
 
 bool
-u_sink_queue_create(struct xrt_frame_context *xfctx,
-                    struct xrt_frame_sink *downstream,
-                    struct xrt_frame_sink **out_xfs)
+u_sink_queue_create(struct xrt_frame_context *xfctx, struct xrt_frame_sink *downstream, struct xrt_frame_sink **out_xfs)
 {
 	struct u_sink_queue *q = U_TYPED_CALLOC(struct u_sink_queue);
 	int ret = 0;

@@ -40,9 +40,7 @@ public:
 	 * lower in frequency will be passed through the filter, while signal
 	 * changes much higher in frequency will be blocked.
 	 */
-	explicit LowPassIIRVectorFilter(Scalar cutoff_hz) noexcept
-	    : impl_(cutoff_hz, Vector::Zero())
-	{}
+	explicit LowPassIIRVectorFilter(Scalar cutoff_hz) noexcept : impl_(cutoff_hz, Vector::Zero()) {}
 
 
 	/*!
@@ -64,9 +62,7 @@ public:
 	 * the first call, this is always assumed to be 1.
 	 */
 	void
-	addSample(Vector const &sample,
-	          std::uint64_t timestamp_ns,
-	          Scalar weight = 1)
+	addSample(Vector const &sample, std::uint64_t timestamp_ns, Scalar weight = 1)
 	{
 		impl_.addSample(sample, timestamp_ns, weight);
 	}

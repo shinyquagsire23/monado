@@ -96,8 +96,8 @@ process_frame_yuv(class DebugHSVPicker &d, struct xrt_frame *xf)
 		}
 	}
 
-	cv::inRange(d.debug.hsv, cv::Scalar(low_H, low_S, low_V),
-	            cv::Scalar(high_H, high_S, high_V), d.debug.threshold);
+	cv::inRange(d.debug.hsv, cv::Scalar(low_H, low_S, low_V), cv::Scalar(high_H, high_S, high_V),
+	            d.debug.threshold);
 	cv::imshow(PICK_WIN, d.debug.threshold);
 }
 
@@ -128,8 +128,8 @@ process_frame_yuyv(class DebugHSVPicker &d, struct xrt_frame *xf)
 		}
 	}
 
-	cv::inRange(d.debug.hsv, cv::Scalar(low_H, low_S, low_V),
-	            cv::Scalar(high_H, high_S, high_V), d.debug.threshold);
+	cv::inRange(d.debug.hsv, cv::Scalar(low_H, low_S, low_V), cv::Scalar(high_H, high_S, high_V),
+	            d.debug.threshold);
 	cv::imshow(PICK_WIN, d.debug.threshold);
 }
 
@@ -230,18 +230,12 @@ t_debug_hsv_picker_create(struct xrt_frame_context *xfctx,
 	d.passthrough = passthrough;
 
 	// Trackbars to set thresholds for HSV values
-	cv::createTrackbar("Low H", PICK_WIN, &low_H, max_value_H,
-	                   on_low_H_thresh_trackbar);
-	cv::createTrackbar("High H", PICK_WIN, &high_H, max_value_H,
-	                   on_high_H_thresh_trackbar);
-	cv::createTrackbar("Low S", PICK_WIN, &low_S, max_value,
-	                   on_low_S_thresh_trackbar);
-	cv::createTrackbar("High S", PICK_WIN, &high_S, max_value,
-	                   on_high_S_thresh_trackbar);
-	cv::createTrackbar("Low V", PICK_WIN, &low_V, max_value,
-	                   on_low_V_thresh_trackbar);
-	cv::createTrackbar("High V", PICK_WIN, &high_V, max_value,
-	                   on_high_V_thresh_trackbar);
+	cv::createTrackbar("Low H", PICK_WIN, &low_H, max_value_H, on_low_H_thresh_trackbar);
+	cv::createTrackbar("High H", PICK_WIN, &high_H, max_value_H, on_high_H_thresh_trackbar);
+	cv::createTrackbar("Low S", PICK_WIN, &low_S, max_value, on_low_S_thresh_trackbar);
+	cv::createTrackbar("High S", PICK_WIN, &high_S, max_value, on_high_S_thresh_trackbar);
+	cv::createTrackbar("Low V", PICK_WIN, &low_V, max_value, on_low_V_thresh_trackbar);
+	cv::createTrackbar("High V", PICK_WIN, &high_V, max_value, on_high_V_thresh_trackbar);
 
 	cv::startWindowThread();
 

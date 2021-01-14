@@ -230,8 +230,7 @@ struct ipc_shared_memory
 
 	struct xrt_output outputs[IPC_SHARED_MAX_OUTPUTS];
 
-	struct ipc_shared_binding_profile
-	    binding_profiles[IPC_SHARED_MAX_BINDINGS];
+	struct ipc_shared_binding_profile binding_profiles[IPC_SHARED_MAX_BINDINGS];
 	struct xrt_binding_input_pair input_pairs[IPC_SHARED_MAX_INPUTS];
 	struct xrt_binding_output_pair output_pairs[IPC_SHARED_MAX_OUTPUTS];
 

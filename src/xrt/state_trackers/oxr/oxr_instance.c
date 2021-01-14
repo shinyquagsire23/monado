@@ -48,15 +48,9 @@ DEBUG_GET_ONCE_FLOAT_OPTION(lfov_right, "OXR_OVERRIDE_LFOV_RIGHT", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_up, "OXR_OVERRIDE_LFOV_UP", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(lfov_down, "OXR_OVERRIDE_LFOV_DOWN", 0.0f)
 
-DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_x,
-                            "OXR_TRACKING_ORIGIN_OFFSET_X",
-                            0.0f)
-DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_y,
-                            "OXR_TRACKING_ORIGIN_OFFSET_Y",
-                            0.0f)
-DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_z,
-                            "OXR_TRACKING_ORIGIN_OFFSET_Z",
-                            0.0f)
+DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_x, "OXR_TRACKING_ORIGIN_OFFSET_X", 0.0f)
+DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_y, "OXR_TRACKING_ORIGIN_OFFSET_Y", 0.0f)
+DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_z, "OXR_TRACKING_ORIGIN_OFFSET_Z", 0.0f)
 
 /* ---- HACK ---- */
 extern int
@@ -114,10 +108,7 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 }
 
 static void
-cache_path(struct oxr_logger *log,
-           struct oxr_instance *inst,
-           const char *str,
-           XrPath *out_path)
+cache_path(struct oxr_logger *log, struct oxr_instance *inst, const char *str, XrPath *out_path)
 {
 	oxr_path_get_or_create(log, inst, str, strlen(str), out_path);
 }
@@ -131,9 +122,7 @@ min_size_t(size_t a, size_t b)
 }
 
 XrResult
-oxr_instance_create(struct oxr_logger *log,
-                    const XrInstanceCreateInfo *createInfo,
-                    struct oxr_instance **out_instance)
+oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createInfo, struct oxr_instance **out_instance)
 {
 	struct oxr_instance *inst = NULL;
 	struct xrt_device *xdevs[NUM_XDEVS] = {0};
@@ -141,8 +130,7 @@ oxr_instance_create(struct oxr_logger *log,
 	xrt_result_t xret;
 	XrResult ret;
 
-	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE,
-	                              oxr_instance_destroy, NULL);
+	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE, oxr_instance_destroy, NULL);
 
 	inst->lifecycle_verbose = debug_get_bool_option_lifecycle_verbose();
 	inst->debug_spaces = debug_get_bool_option_debug_spaces();
@@ -151,8 +139,7 @@ oxr_instance_create(struct oxr_logger *log,
 
 	m_ret = os_mutex_init(&inst->event.mutex);
 	if (m_ret < 0) {
-		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                "Failed to init mutex");
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to init mutex");
 		return ret;
 	}
 
@@ -168,23 +155,20 @@ oxr_instance_create(struct oxr_logger *log,
 	h_ret = u_hashset_create(&inst->action_sets.name_store);
 	if (h_ret != 0) {
 		oxr_instance_destroy(log, &inst->handle);
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Failed to create name_store hashset");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to create name_store hashset");
 	}
 
 	h_ret = u_hashset_create(&inst->action_sets.loc_store);
 	if (h_ret != 0) {
 		oxr_instance_destroy(log, &inst->handle);
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Failed to create loc_store hashset");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to create loc_store hashset");
 	}
 
 
 	// Cache certain often looked up paths.
 
 
-#define CACHE_SUBACTION_PATHS(NAME, NAME_CAPS, PATH)                           \
-	cache_path(log, inst, PATH, &inst->path_cache.NAME);
+#define CACHE_SUBACTION_PATHS(NAME, NAME_CAPS, PATH) cache_path(log, inst, PATH, &inst->path_cache.NAME);
 	OXR_FOR_EACH_SUBACTION_PATH_DETAILED(CACHE_SUBACTION_PATHS)
 
 #undef CACHE_SUBACTION_PATHS
@@ -206,24 +190,19 @@ oxr_instance_create(struct oxr_logger *log,
 	// fields?
 
 	struct xrt_instance_info i_info = {0};
-	snprintf(i_info.application_name,
-	         sizeof(inst->xinst->instance_info.application_name), "%s",
+	snprintf(i_info.application_name, sizeof(inst->xinst->instance_info.application_name), "%s",
 	         createInfo->applicationInfo.applicationName);
 
 #ifdef XRT_OS_ANDROID
-	XrInstanceCreateInfoAndroidKHR const *create_info_android =
-	    OXR_GET_INPUT_FROM_CHAIN(createInfo,
-	                             XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR,
-	                             XrInstanceCreateInfoAndroidKHR);
-	android_globals_store_vm_and_activity(
-	    (struct _JavaVM *)create_info_android->applicationVM,
-	    create_info_android->applicationActivity);
+	XrInstanceCreateInfoAndroidKHR const *create_info_android = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR, XrInstanceCreateInfoAndroidKHR);
+	android_globals_store_vm_and_activity((struct _JavaVM *)create_info_android->applicationVM,
+	                                      create_info_android->applicationActivity);
 #endif
 
 	xinst_ret = xrt_instance_create(&i_info, &inst->xinst);
 	if (xinst_ret != 0) {
-		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                "Failed to create prober");
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to create prober");
 		oxr_instance_destroy(log, &inst->handle);
 		return ret;
 	}
@@ -231,8 +210,7 @@ oxr_instance_create(struct oxr_logger *log,
 
 	xinst_ret = xrt_instance_select(inst->xinst, xdevs, NUM_XDEVS);
 	if (xinst_ret != 0) {
-		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                "Failed to select device(s)");
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to select device(s)");
 		oxr_instance_destroy(log, &inst->handle);
 		return ret;
 	}
@@ -252,26 +230,22 @@ oxr_instance_create(struct oxr_logger *log,
 		oxr_xdev_destroy(&xdevs[i]);
 	}
 
-	u_device_assign_xdev_roles(xdevs, NUM_XDEVS, &sys->role.head,
-	                           &sys->role.left, &sys->role.right);
+	u_device_assign_xdev_roles(xdevs, NUM_XDEVS, &sys->role.head, &sys->role.left, &sys->role.right);
 
 	// Did we find any HMD
 	// @todo Headless with only controllers?
 	struct xrt_device *dev = GET_XDEV_BY_ROLE(sys, head);
 	if (dev == NULL) {
-		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                "Failed to find any HMD device");
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to find any HMD device");
 		oxr_instance_destroy(log, &inst->handle);
 		return ret;
 	}
 
-	struct xrt_vec3 global_tracking_origin_offset = {
-	    debug_get_float_option_tracking_origin_offset_x(),
-	    debug_get_float_option_tracking_origin_offset_y(),
-	    debug_get_float_option_tracking_origin_offset_z()};
+	struct xrt_vec3 global_tracking_origin_offset = {debug_get_float_option_tracking_origin_offset_x(),
+	                                                 debug_get_float_option_tracking_origin_offset_y(),
+	                                                 debug_get_float_option_tracking_origin_offset_z()};
 
-	u_device_setup_tracking_origins(dev, GET_XDEV_BY_ROLE(sys, left),
-	                                GET_XDEV_BY_ROLE(sys, right),
+	u_device_setup_tracking_origins(dev, GET_XDEV_BY_ROLE(sys, left), GET_XDEV_BY_ROLE(sys, right),
 	                                &global_tracking_origin_offset);
 
 	const float left_override = debug_get_float_option_lfov_left();
@@ -279,8 +253,8 @@ oxr_instance_create(struct oxr_logger *log,
 		U_LOG_I(
 		    "Overriding left eye angle_left with %f radians (%i°), "
 		    "and right eye angle_right with %f radians (%i°)",
-		    left_override, radtodeg_for_display(left_override),
-		    -left_override, radtodeg_for_display(-left_override));
+		    left_override, radtodeg_for_display(left_override), -left_override,
+		    radtodeg_for_display(-left_override));
 		dev->hmd->views[0].fov.angle_left = left_override;
 		dev->hmd->views[1].fov.angle_right = -left_override;
 	}
@@ -290,24 +264,24 @@ oxr_instance_create(struct oxr_logger *log,
 		U_LOG_I(
 		    "Overriding left eye angle_right with %f radians (%i°), "
 		    "and right eye angle_left with %f radians (%i°)",
-		    right_override, radtodeg_for_display(right_override),
-		    -right_override, radtodeg_for_display(-right_override));
+		    right_override, radtodeg_for_display(right_override), -right_override,
+		    radtodeg_for_display(-right_override));
 		dev->hmd->views[0].fov.angle_right = right_override;
 		dev->hmd->views[1].fov.angle_left = -right_override;
 	}
 
 	const float up_override = debug_get_float_option_lfov_up();
 	if (up_override != 0.0f) {
-		U_LOG_I("Overriding both eyes angle_up with %f radians (%i°)",
-		        up_override, radtodeg_for_display(up_override));
+		U_LOG_I("Overriding both eyes angle_up with %f radians (%i°)", up_override,
+		        radtodeg_for_display(up_override));
 		dev->hmd->views[0].fov.angle_up = up_override;
 		dev->hmd->views[1].fov.angle_up = up_override;
 	}
 
 	const float down_override = debug_get_float_option_lfov_down();
 	if (down_override != 0.0f) {
-		U_LOG_I("Overriding both eyes angle_down with %f radians (%i°)",
-		        down_override, radtodeg_for_display(down_override));
+		U_LOG_I("Overriding both eyes angle_down with %f radians (%i°)", down_override,
+		        radtodeg_for_display(down_override));
 		dev->hmd->views[0].fov.angle_down = down_override;
 		dev->hmd->views[1].fov.angle_down = down_override;
 	}
@@ -316,11 +290,10 @@ oxr_instance_create(struct oxr_logger *log,
 	U_ZERO(&inst->extensions);
 	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
 
-#define ENABLE_EXT(mixed_case, all_caps)                                       \
-	if (strcmp(createInfo->enabledExtensionNames[i],                       \
-	           XR_##all_caps##_EXTENSION_NAME) == 0) {                     \
-		inst->extensions.mixed_case = true;                            \
-		continue;                                                      \
+#define ENABLE_EXT(mixed_case, all_caps)                                                                               \
+	if (strcmp(createInfo->enabledExtensionNames[i], XR_##all_caps##_EXTENSION_NAME) == 0) {                       \
+		inst->extensions.mixed_case = true;                                                                    \
+		continue;                                                                                              \
 	}
 		OXR_EXTENSION_SUPPORT_GENERATE(ENABLE_EXT)
 		// assert(false &&
@@ -330,31 +303,28 @@ oxr_instance_create(struct oxr_logger *log,
 
 	// Create the compositor, if we are not headless.
 	if (!inst->extensions.MND_headless) {
-		xret = xrt_instance_create_native_compositor(inst->xinst, dev,
-		                                             &sys->xcn);
+		xret = xrt_instance_create_native_compositor(inst->xinst, dev, &sys->xcn);
 		if (ret < 0 || sys->xcn == NULL) {
-			ret = oxr_error(
-			    log, XR_ERROR_INITIALIZATION_FAILED,
-			    "Failed to create a native compositor '%i'", xret);
+			ret = oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
+			                "Failed to create a native compositor '%i'", xret);
 			oxr_instance_destroy(log, &inst->handle);
 			return ret;
 		}
 
 		// Make sure that the compositor we were given can do all the
 		// things the build config promised.
-#define CHECK_LAYER_TYPE(NAME, MEMBER_NAME)                                    \
-	do {                                                                   \
-		if (sys->xcn->base.MEMBER_NAME == NULL) {                      \
-			ret = oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,   \
-			                "Logic error: build config "           \
-			                "advertised support for " NAME         \
-			                " but compositor does not "            \
-			                "implement " #MEMBER_NAME);            \
-			oxr_instance_destroy(log, &inst->handle);              \
-			assert(false &&                                        \
-			       "Build configured with unsupported layers");    \
-			return ret;                                            \
-		}                                                              \
+#define CHECK_LAYER_TYPE(NAME, MEMBER_NAME)                                                                            \
+	do {                                                                                                           \
+		if (sys->xcn->base.MEMBER_NAME == NULL) {                                                              \
+			ret = oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,                                           \
+			                "Logic error: build config "                                                   \
+			                "advertised support for " NAME                                                 \
+			                " but compositor does not "                                                    \
+			                "implement " #MEMBER_NAME);                                                    \
+			oxr_instance_destroy(log, &inst->handle);                                                      \
+			assert(false && "Build configured with unsupported layers");                                   \
+			return ret;                                                                                    \
+		}                                                                                                      \
 	} while (0)
 
 		// Keep this list in sync with types in xrt_config_build.h
@@ -365,8 +335,7 @@ oxr_instance_create(struct oxr_logger *log,
 		CHECK_LAYER_TYPE("cylinder layers", layer_cylinder);
 #endif
 #ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
-		CHECK_LAYER_TYPE("projection layers with depth images",
-		                 layer_stereo_projection_depth);
+		CHECK_LAYER_TYPE("projection layers with depth images", layer_stereo_projection_depth);
 #endif
 #ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 		CHECK_LAYER_TYPE("equirect1 layers", layer_equirect1);
@@ -401,13 +370,11 @@ oxr_instance_create(struct oxr_logger *log,
 
 
 XrResult
-oxr_instance_get_properties(struct oxr_logger *log,
-                            struct oxr_instance *inst,
-                            XrInstanceProperties *instanceProperties)
+oxr_instance_get_properties(struct oxr_logger *log, struct oxr_instance *inst, XrInstanceProperties *instanceProperties)
 {
 	instanceProperties->runtimeVersion = XR_MAKE_VERSION(0, 1, 42);
-	snprintf(instanceProperties->runtimeName, XR_MAX_RUNTIME_NAME_SIZE - 1,
-	         "Monado(XRT) by Collabora et al '%s'", u_git_tag);
+	snprintf(instanceProperties->runtimeName, XR_MAX_RUNTIME_NAME_SIZE - 1, "Monado(XRT) by Collabora et al '%s'",
+	         u_git_tag);
 
 	return XR_SUCCESS;
 }

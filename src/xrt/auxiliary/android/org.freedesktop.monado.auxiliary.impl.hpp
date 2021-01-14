@@ -16,36 +16,32 @@
 namespace wrap {
 namespace org::freedesktop::monado::auxiliary {
 	inline MonadoView
-	MonadoView::attachToActivity(android::app::Activity const &activity,
-	                             void *nativePointer)
+	MonadoView::attachToActivity(android::app::Activity const &activity, void *nativePointer)
 	{
 		return MonadoView(Meta::data().clazz().call<jni::Object>(
 		    Meta::data().attachToActivity, activity.object(),
-		    static_cast<long long>(
-		        reinterpret_cast<intptr_t>(nativePointer))));
+		    static_cast<long long>(reinterpret_cast<intptr_t>(nativePointer))));
 	}
 
 	inline android::view::SurfaceHolder
 	MonadoView::waitGetSurfaceHolder(int32_t wait_ms)
 	{
 		assert(!isNull());
-		return android::view::SurfaceHolder(object().call<jni::Object>(
-		    Meta::data().waitGetSurfaceHolder, wait_ms));
+		return android::view::SurfaceHolder(
+		    object().call<jni::Object>(Meta::data().waitGetSurfaceHolder, wait_ms));
 	}
 
 	inline void
 	MonadoView::markAsDiscardedByNative()
 	{
 		assert(!isNull());
-		return object().call<void>(
-		    Meta::data().markAsDiscardedByNative);
+		return object().call<void>(Meta::data().markAsDiscardedByNative);
 	}
 
 	inline jni::Object
 	MonadoView::getDisplayMetrics(android::app::Activity const &activity)
 	{
-		return Meta::data().clazz().call<jni::Object>(
-		    Meta::data().getDisplayMetrics, activity.object());
+		return Meta::data().clazz().call<jni::Object>(Meta::data().getDisplayMetrics, activity.object());
 	}
 
 } // namespace org::freedesktop::monado::auxiliary

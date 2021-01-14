@@ -108,8 +108,7 @@ namespace org::freedesktop::monado::ipc {
 		 *
 		 */
 		int32_t
-		blockingConnect(android::content::Context const &context,
-		                std::string const &packageName);
+		blockingConnect(android::content::Context const &context, std::string const &packageName);
 
 		/*!
 		 * Initialize the static metadata of this wrapper with a known

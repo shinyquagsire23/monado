@@ -35,12 +35,10 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
 {
 	struct xrt_compositor_native *xcn = sess->sys->xcn;
 	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_xlib(
-	    xcn, next->xDisplay, next->visualid, next->glxFBConfig,
-	    next->glxDrawable, next->glxContext);
+	    xcn, next->xDisplay, next->visualid, next->glxFBConfig, next->glxDrawable, next->glxContext);
 
 	if (xcgl == NULL) {
-		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Failed to create an xlib client compositor");
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Failed to create an xlib client compositor");
 	}
 
 	sess->compositor = &xcgl->base;

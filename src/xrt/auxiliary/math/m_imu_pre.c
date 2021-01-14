@@ -12,9 +12,7 @@
 
 
 void
-m_imu_pre_filter_init(struct m_imu_pre_filter *imu,
-                      float ticks_to_float_accel,
-                      float ticks_to_float_gyro)
+m_imu_pre_filter_init(struct m_imu_pre_filter *imu, float ticks_to_float_accel, float ticks_to_float_gyro)
 {
 	imu->accel.gain.x = 1.0;
 	imu->accel.gain.y = 1.0;

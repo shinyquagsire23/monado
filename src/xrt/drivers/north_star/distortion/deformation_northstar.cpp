@@ -94,14 +94,11 @@ OpticalSystem::RegenerateMesh()
 	// walk all the requested stored UVs and regeneate the response values
 	// you probably should have updated the eye position before doing this
 	// :-D
-	for (outerIter = m_requestedUVs.begin();
-	     outerIter != m_requestedUVs.end(); outerIter++) {
-		for (innerIter = outerIter->second.begin();
-		     innerIter != outerIter->second.end(); innerIter++) {
-			Vector2 result = SolveDisplayUVToRenderUV(
-			    Vector2(outerIter->first, innerIter->first),
-			    Vector2(innerIter->second.x, innerIter->second.y),
-			    m_iniSolverIters);
+	for (outerIter = m_requestedUVs.begin(); outerIter != m_requestedUVs.end(); outerIter++) {
+		for (innerIter = outerIter->second.begin(); innerIter != outerIter->second.end(); innerIter++) {
+			Vector2 result = SolveDisplayUVToRenderUV(Vector2(outerIter->first, innerIter->first),
+			                                          Vector2(innerIter->second.x, innerIter->second.y),
+			                                          m_iniSolverIters);
 			innerIter->second.x = result.x;
 			innerIter->second.y = result.y;
 		}
@@ -121,49 +118,34 @@ Vector2
 OpticalSystem::RenderUVToDisplayUV(const Vector3 &inputUV)
 {
 
-	Vector3 sphereSpaceRayOrigin =
-	    worldToSphereSpace.MultiplyPoint(eyePosition);
+	Vector3 sphereSpaceRayOrigin = worldToSphereSpace.MultiplyPoint(eyePosition);
 	Vector3 sphereSpaceRayDirection =
-	    (worldToSphereSpace.MultiplyPoint(eyePosition + inputUV) -
-	     sphereSpaceRayOrigin);
-	sphereSpaceRayDirection =
-	    sphereSpaceRayDirection / sphereSpaceRayDirection.Magnitude();
+	    (worldToSphereSpace.MultiplyPoint(eyePosition + inputUV) - sphereSpaceRayOrigin);
+	sphereSpaceRayDirection = sphereSpaceRayDirection / sphereSpaceRayDirection.Magnitude();
 
 	float intersectionTime =
-	    intersectLineSphere(sphereSpaceRayOrigin, sphereSpaceRayDirection,
-	                        Vector3::Zero(), 0.5f * 0.5f, false);
+	    intersectLineSphere(sphereSpaceRayOrigin, sphereSpaceRayDirection, Vector3::Zero(), 0.5f * 0.5f, false);
 
 	if (intersectionTime < 0.f) {
 		// m_logger->DriverLog("No line->ellipsoid intersection. %g %g",
 		// inputUV.x, inputUV.y);
 		return Vector2::zero();
 	}
-	Vector3 sphereSpaceIntersection =
-	    sphereSpaceRayOrigin + (sphereSpaceRayDirection * intersectionTime);
+	Vector3 sphereSpaceIntersection = sphereSpaceRayOrigin + (sphereSpaceRayDirection * intersectionTime);
 
 	// Ellipsoid  Normals
-	Vector3 sphereSpaceNormal =
-	    (Vector3::Zero() - sphereSpaceIntersection) /
-	    sphereSpaceIntersection.Magnitude();
-	sphereSpaceNormal.x =
-	    sphereSpaceNormal.x / powf(ellipseMinorAxis / 2.f, 2.f);
-	sphereSpaceNormal.y =
-	    sphereSpaceNormal.y / powf(ellipseMinorAxis / 2.f, 2.f);
-	sphereSpaceNormal.z =
-	    sphereSpaceNormal.z / powf(ellipseMajorAxis / 2.f, 2.f);
+	Vector3 sphereSpaceNormal = (Vector3::Zero() - sphereSpaceIntersection) / sphereSpaceIntersection.Magnitude();
+	sphereSpaceNormal.x = sphereSpaceNormal.x / powf(ellipseMinorAxis / 2.f, 2.f);
+	sphereSpaceNormal.y = sphereSpaceNormal.y / powf(ellipseMinorAxis / 2.f, 2.f);
+	sphereSpaceNormal.z = sphereSpaceNormal.z / powf(ellipseMajorAxis / 2.f, 2.f);
 	sphereSpaceNormal = sphereSpaceNormal / sphereSpaceNormal.Magnitude();
 
-	Vector3 worldSpaceIntersection =
-	    sphereToWorldSpace.MultiplyPoint(sphereSpaceIntersection);
-	Vector3 worldSpaceNormal =
-	    sphereToWorldSpace.MultiplyVector(sphereSpaceNormal);
+	Vector3 worldSpaceIntersection = sphereToWorldSpace.MultiplyPoint(sphereSpaceIntersection);
+	Vector3 worldSpaceNormal = sphereToWorldSpace.MultiplyVector(sphereSpaceNormal);
 	worldSpaceNormal = worldSpaceNormal / worldSpaceNormal.Magnitude();
 
-	Ray firstBounce(worldSpaceIntersection,
-	                Vector3::Reflect(inputUV, worldSpaceNormal));
-	intersectionTime =
-	    intersectPlane(screenForward, screenPosition, firstBounce.m_Origin,
-	                   firstBounce.m_Direction);
+	Ray firstBounce(worldSpaceIntersection, Vector3::Reflect(inputUV, worldSpaceNormal));
+	intersectionTime = intersectPlane(screenForward, screenPosition, firstBounce.m_Origin, firstBounce.m_Direction);
 
 	if (intersectionTime < 0.f) {
 		// m_logger->DriverLog("No bounce->screen intersection. %g %g",
@@ -172,8 +154,7 @@ OpticalSystem::RenderUVToDisplayUV(const Vector3 &inputUV)
 	}
 	Vector3 planeIntersection = firstBounce.GetPoint(intersectionTime);
 
-	Vector3 ScreenUVZ =
-	    worldToScreenSpace.MultiplyPoint3x4(planeIntersection);
+	Vector3 ScreenUVZ = worldToScreenSpace.MultiplyPoint3x4(planeIntersection);
 
 	Vector2 ScreenUV;
 	ScreenUV.x = ScreenUVZ.x;
@@ -188,9 +169,7 @@ OpticalSystem::RenderUVToDisplayUV(const Vector3 &inputUV)
 }
 
 Vector2
-OpticalSystem::SolveDisplayUVToRenderUV(const Vector2 &inputUV,
-                                        Vector2 const &initialGuess,
-                                        int iterations)
+OpticalSystem::SolveDisplayUVToRenderUV(const Vector2 &inputUV, Vector2 const &initialGuess, int iterations)
 {
 
 	static const float epsilon = 0.0001f;
@@ -207,15 +186,9 @@ OpticalSystem::SolveDisplayUVToRenderUV(const Vector2 &inputUV,
 		// the uvs if we have a list of them
 		curDisplayUV = RenderUVToDisplayUV(curCameraUV);
 		Vector2 displayUVGradX =
-		    (RenderUVToDisplayUV(curCameraUV +
-		                         (Vector2(1, 0) * epsilon)) -
-		     curDisplayUV) /
-		    epsilon;
+		    (RenderUVToDisplayUV(curCameraUV + (Vector2(1, 0) * epsilon)) - curDisplayUV) / epsilon;
 		Vector2 displayUVGradY =
-		    (RenderUVToDisplayUV(curCameraUV +
-		                         (Vector2(0, 1) * epsilon)) -
-		     curDisplayUV) /
-		    epsilon;
+		    (RenderUVToDisplayUV(curCameraUV + (Vector2(0, 1) * epsilon)) - curDisplayUV) / epsilon;
 
 		Vector2 error = curDisplayUV - inputUV;
 		Vector2 step = Vector2::zero();
@@ -247,14 +220,10 @@ OpticalSystem::DisplayUVToRenderUVPreviousSeed(Vector2 inputUV)
 		// if the outer value is not there we know the inner is not
 		// so we just slam both in and call it a day
 		std::map<float, Vector2> inner;
-		curDisplayUV = SolveDisplayUVToRenderUV(
-		    inputUV, Vector2(0.5f, 0.5f), m_iniSolverIters);
+		curDisplayUV = SolveDisplayUVToRenderUV(inputUV, Vector2(0.5f, 0.5f), m_iniSolverIters);
 
-		inner.insert(
-		    std::pair<float, Vector2>(inputUV.y, curDisplayUV));
-		m_requestedUVs.insert(
-		    std::pair<float, std::map<float, Vector2>>(inputUV.x,
-		                                               inner));
+		inner.insert(std::pair<float, Vector2>(inputUV.y, curDisplayUV));
+		m_requestedUVs.insert(std::pair<float, std::map<float, Vector2>>(inputUV.x, inner));
 		// Logger->DriverLog("NorthStar  Generated UV %g %g ",
 		// inputUV.x, inputUV.y);
 
@@ -266,11 +235,9 @@ OpticalSystem::DisplayUVToRenderUVPreviousSeed(Vector2 inputUV)
 			// we assume there is no reason to ask for the same
 			// value so no need to check if it exists already so
 			// just add it.
-			curDisplayUV = SolveDisplayUVToRenderUV(
-			    inputUV, Vector2(0.5f, 0.5f), m_iniSolverIters);
+			curDisplayUV = SolveDisplayUVToRenderUV(inputUV, Vector2(0.5f, 0.5f), m_iniSolverIters);
 
-			outerIter->second.insert(
-			    std::pair<float, Vector2>(inputUV.y, curDisplayUV));
+			outerIter->second.insert(std::pair<float, Vector2>(inputUV.y, curDisplayUV));
 			// Logger->DriverLog("NorthStar  Generated UV %g %g ",
 			// outerIter->first, innerIter->first);
 		} else {
@@ -281,9 +248,7 @@ OpticalSystem::DisplayUVToRenderUVPreviousSeed(Vector2 inputUV)
 			// curDisplayUV.y = innerIter->second.y;
 
 			curDisplayUV = SolveDisplayUVToRenderUV(
-			    inputUV,
-			    Vector2(innerIter->second.x, innerIter->second.y),
-			    m_optSolverIters);
+			    inputUV, Vector2(innerIter->second.x, innerIter->second.y), m_optSolverIters);
 
 			// Logger->DriverLog("NorthStar  Found UV %g %g ",
 			// outerIter->first, innerIter->first);
@@ -304,9 +269,7 @@ ns_create_optical_system(struct ns_v1_eye *eye)
 }
 
 extern "C" void
-ns_display_uv_to_render_uv(struct ns_uv in,
-                           struct ns_uv *out,
-                           struct ns_v1_eye *eye)
+ns_display_uv_to_render_uv(struct ns_uv in, struct ns_uv *out, struct ns_v1_eye *eye)
 {
 	OpticalSystem *opticalSystem = (OpticalSystem *)eye->optical_system;
 	Vector2 inUV = Vector2(in.u, 1.f - in.v);

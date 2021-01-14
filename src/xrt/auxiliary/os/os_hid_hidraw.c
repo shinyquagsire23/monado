@@ -39,10 +39,7 @@ struct hid_hidraw
 };
 
 static int
-os_hidraw_read(struct os_hid_device *ohdev,
-               uint8_t *data,
-               size_t length,
-               int milliseconds)
+os_hidraw_read(struct os_hid_device *ohdev, uint8_t *data, size_t length, int milliseconds)
 {
 	struct hid_hidraw *hrdev = (struct hid_hidraw *)ohdev;
 	struct pollfd fds;
@@ -83,10 +80,7 @@ os_hidraw_write(struct os_hid_device *ohdev, const uint8_t *data, size_t length)
 }
 
 static int
-os_hidraw_get_feature(struct os_hid_device *ohdev,
-                      uint8_t report_num,
-                      uint8_t *data,
-                      size_t length)
+os_hidraw_get_feature(struct os_hid_device *ohdev, uint8_t report_num, uint8_t *data, size_t length)
 {
 	struct hid_hidraw *hrdev = (struct hid_hidraw *)ohdev;
 	// The ioctl expects the report number in the first byte of the buffer,
@@ -96,10 +90,7 @@ os_hidraw_get_feature(struct os_hid_device *ohdev,
 }
 
 static int
-os_hidraw_get_feature_timeout(struct os_hid_device *ohdev,
-                              void *data,
-                              size_t length,
-                              uint32_t timeout)
+os_hidraw_get_feature_timeout(struct os_hid_device *ohdev, void *data, size_t length, uint32_t timeout)
 {
 	struct hid_hidraw *hrdev = (struct hid_hidraw *)ohdev;
 
@@ -121,9 +112,7 @@ os_hidraw_get_feature_timeout(struct os_hid_device *ohdev,
 }
 
 static int
-os_hidraw_set_feature(struct os_hid_device *ohdev,
-                      const uint8_t *data,
-                      size_t length)
+os_hidraw_set_feature(struct os_hid_device *ohdev, const uint8_t *data, size_t length)
 {
 	struct hid_hidraw *hrdev = (struct hid_hidraw *)ohdev;
 

@@ -33,8 +33,7 @@ oxr_messenger_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 			return XR_SUCCESS;
 		}
 	}
-	return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-	                 " debug messenger not found in parent instance");
+	return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, " debug messenger not found in parent instance");
 }
 
 //! @todo call into inst to create this instead?
@@ -53,14 +52,11 @@ oxr_create_messenger(struct oxr_logger *log,
 		}
 	}
 	if (parent_slot == NULL) {
-		return oxr_error(
-		    log, XR_ERROR_LIMIT_REACHED,
-		    " Instance cannot hold any more debug messengers");
+		return oxr_error(log, XR_ERROR_LIMIT_REACHED, " Instance cannot hold any more debug messengers");
 	}
 
 	struct oxr_debug_messenger *mssngr = NULL;
-	OXR_ALLOCATE_HANDLE_OR_RETURN(log, mssngr, OXR_XR_DEBUG_MESSENGER,
-	                              oxr_messenger_destroy, &inst->handle);
+	OXR_ALLOCATE_HANDLE_OR_RETURN(log, mssngr, OXR_XR_DEBUG_MESSENGER, oxr_messenger_destroy, &inst->handle);
 
 	mssngr->inst = inst;
 	mssngr->message_severities = createInfo->messageSeverities;

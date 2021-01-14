@@ -62,11 +62,7 @@ u_format_block_size(enum xrt_format f);
  * @ingroup aux_util
  */
 void
-u_format_size_for_dimensions(enum xrt_format f,
-                             uint32_t width,
-                             uint32_t height,
-                             size_t *out_stride,
-                             size_t *out_size);
+u_format_size_for_dimensions(enum xrt_format f, uint32_t width, uint32_t height, size_t *out_stride, size_t *out_size);
 
 
 #ifdef __cplusplus

@@ -111,13 +111,11 @@ on_video_device(struct xrt_prober *xp,
 		return;
 	}
 
-	if (strcmp(product, fact->settings.camera_name) != 0 &&
-	    strcmp(product, "Video File") != 0) {
+	if (strcmp(product, fact->settings.camera_name) != 0 && strcmp(product, "Video File") != 0) {
 		return;
 	}
 
-	xrt_prober_open_video_device(&fact->p->base, pdev, &fact->xfctx,
-	                             &fact->xfs);
+	xrt_prober_open_video_device(&fact->p->base, pdev, &fact->xfctx, &fact->xfs);
 }
 
 static void
@@ -225,8 +223,7 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	u_sink_quirk_create(&fact->xfctx, xsink, &qp, &xsink);
 
 	// Start the stream now.
-	xrt_fs_stream_start(fact->xfs, xsink, XRT_FS_CAPTURE_TYPE_TRACKING,
-	                    fact->settings.camera_mode);
+	xrt_fs_stream_start(fact->xfs, xsink, XRT_FS_CAPTURE_TYPE_TRACKING, fact->settings.camera_mode);
 }
 #endif
 
@@ -349,8 +346,7 @@ p_tracking_init(struct prober *p)
 	fact->origin.offset.position.y = 1.0f;
 	fact->p = p;
 
-	snprintf(fact->origin.name, sizeof(fact->origin.name),
-	         "PSVR & PSMV tracking");
+	snprintf(fact->origin.name, sizeof(fact->origin.name), "PSVR & PSMV tracking");
 
 	u_var_add_root(fact, "Tracking Factory", false);
 	u_var_add_pose(fact, &fact->origin.offset, "offset");

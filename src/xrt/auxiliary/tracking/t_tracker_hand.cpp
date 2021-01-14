@@ -40,8 +40,7 @@ struct View
 	cv::Mat frame_undist_rectified;
 
 	void
-	populate_from_calib(t_camera_calibration &calib,
-	                    const RemapPair &rectification)
+	populate_from_calib(t_camera_calibration &calib, const RemapPair &rectification)
 	{
 		CameraCalibrationWrapper wrap(calib);
 		intrinsics = wrap.intrinsics_mat;
@@ -125,12 +124,11 @@ do_view(TrackerHand &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 
 	// Debug is wanted, draw the keypoints.
 	if (rgb.cols > 0) {
-		cv::drawKeypoints(
-		    view.frame_undist_rectified,                // image
-		    view.keypoints,                             // keypoints
-		    rgb,                                        // outImage
-		    cv::Scalar(255, 0, 0),                      // color
-		    cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS); // flags
+		cv::drawKeypoints(view.frame_undist_rectified,                // image
+		                  view.keypoints,                             // keypoints
+		                  rgb,                                        // outImage
+		                  cv::Scalar(255, 0, 0),                      // color
+		                  cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS); // flags
 	}
 }
 
@@ -163,8 +161,7 @@ process(TrackerHand &t, struct xrt_frame *xf)
 	int rect_rows = t.view[0].undistort_rectify_map_x.rows;
 
 	if (cols != rect_cols || rows != rect_rows) {
-		U_LOG_E("%dx%d rectification matrix does not fit %dx%d Image",
-		        rect_cols, rect_rows, cols, rows);
+		U_LOG_E("%dx%d rectification matrix does not fit %dx%d Image", rect_cols, rect_rows, cols, rows);
 		return;
 	}
 
@@ -398,10 +395,8 @@ t_hand_create(struct xrt_frame_context *xfctx,
 
 	// Everything is safe, now setup the variable tracking.
 	u_var_add_root(&t, "Hand Tracker", true);
-	u_var_add_vec3_f32(&t, &t.hand_data[0].hand_relation.pose.position,
-	                   "hand.tracker.pos.0");
-	u_var_add_vec3_f32(&t, &t.hand_data[1].hand_relation.pose.position,
-	                   "hand.tracker.pos.1");
+	u_var_add_vec3_f32(&t, &t.hand_data[0].hand_relation.pose.position, "hand.tracker.pos.0");
+	u_var_add_vec3_f32(&t, &t.hand_data[1].hand_relation.pose.position, "hand.tracker.pos.1");
 	u_var_add_sink(&t, &t.debug.sink, "Debug");
 
 	*out_sink = &t.sink;

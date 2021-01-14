@@ -64,8 +64,7 @@ imu_fusion_incorporate_gyros(struct imu_fusion *fusion,
 		assert(ang_vel_variance);
 		assert(timestamp_ns != 0);
 
-		fusion->simple_fusion.handleGyro(
-		    map_vec3(*ang_vel).cast<double>(), timestamp_ns);
+		fusion->simple_fusion.handleGyro(map_vec3(*ang_vel).cast<double>(), timestamp_ns);
 		return 0;
 	} catch (...) {
 		assert(false && "Caught exception on incorporate gyros");
@@ -88,15 +87,12 @@ imu_fusion_incorporate_accelerometer(struct imu_fusion *fusion,
 		Eigen::Vector3d accelVec = map_vec3(*accel).cast<double>();
 		fusion->simple_fusion.handleAccel(accelVec, timestamp_ns);
 		if (out_world_accel != NULL) {
-			Eigen::Vector3d worldAccel =
-			    fusion->simple_fusion.getCorrectedWorldAccel(
-			        accelVec);
+			Eigen::Vector3d worldAccel = fusion->simple_fusion.getCorrectedWorldAccel(accelVec);
 			map_vec3(*out_world_accel) = worldAccel.cast<float>();
 		}
 		return 0;
 	} catch (...) {
-		assert(false &&
-		       "Caught exception on incorporate accelerometer");
+		assert(false && "Caught exception on incorporate accelerometer");
 		return -1;
 	}
 }
@@ -116,17 +112,14 @@ imu_fusion_get_prediction(struct imu_fusion const *fusion,
 			return -2;
 		}
 
-		map_vec3(*out_ang_vel) =
-		    fusion->simple_fusion.getAngVel().cast<float>();
+		map_vec3(*out_ang_vel) = fusion->simple_fusion.getAngVel().cast<float>();
 
 		if (timestamp_ns == fusion->time_ns) {
 			// No need to predict here.
-			map_quat(*out_quat) =
-			    fusion->simple_fusion.getQuat().cast<float>();
+			map_quat(*out_quat) = fusion->simple_fusion.getQuat().cast<float>();
 			return 0;
 		}
-		Eigen::Quaterniond predicted_quat =
-		    fusion->simple_fusion.getPredictedQuat(timestamp_ns);
+		Eigen::Quaterniond predicted_quat = fusion->simple_fusion.getPredictedQuat(timestamp_ns);
 		map_quat(*out_quat) = predicted_quat.cast<float>();
 		return 0;
 
@@ -151,16 +144,10 @@ imu_fusion_get_prediction_rotation_vec(struct imu_fusion const *fusion,
 		}
 		if (timestamp_ns == fusion->time_ns) {
 			// No need to predict here.
-			map_vec3(*out_rotation_vec) =
-			    fusion->simple_fusion.getRotationVec()
-			        .cast<float>();
+			map_vec3(*out_rotation_vec) = fusion->simple_fusion.getRotationVec().cast<float>();
 		} else {
-			Eigen::Quaterniond predicted_quat =
-			    fusion->simple_fusion.getPredictedQuat(
-			        timestamp_ns);
-			map_vec3(*out_rotation_vec) =
-			    flexkalman::util::quat_ln(predicted_quat)
-			        .cast<float>();
+			Eigen::Quaterniond predicted_quat = fusion->simple_fusion.getPredictedQuat(timestamp_ns);
+			map_vec3(*out_rotation_vec) = flexkalman::util::quat_ln(predicted_quat).cast<float>();
 		}
 		return 0;
 	} catch (...) {
@@ -170,14 +157,13 @@ imu_fusion_get_prediction_rotation_vec(struct imu_fusion const *fusion,
 }
 
 int
-imu_fusion_incorporate_gyros_and_accelerometer(
-    struct imu_fusion *fusion,
-    uint64_t timestamp_ns,
-    struct xrt_vec3 const *ang_vel,
-    struct xrt_vec3 const *ang_vel_variance,
-    struct xrt_vec3 const *accel,
-    struct xrt_vec3 const *accel_variance,
-    struct xrt_vec3 *out_world_accel)
+imu_fusion_incorporate_gyros_and_accelerometer(struct imu_fusion *fusion,
+                                               uint64_t timestamp_ns,
+                                               struct xrt_vec3 const *ang_vel,
+                                               struct xrt_vec3 const *ang_vel_variance,
+                                               struct xrt_vec3 const *accel,
+                                               struct xrt_vec3 const *accel_variance,
+                                               struct xrt_vec3 *out_world_accel)
 {
 	try {
 		assert(fusion);
@@ -193,16 +179,12 @@ imu_fusion_incorporate_gyros_and_accelerometer(
 		fusion->simple_fusion.handleGyro(angVelVec, timestamp_ns);
 		fusion->simple_fusion.postCorrect();
 		if (out_world_accel != NULL) {
-			Eigen::Vector3d worldAccel =
-			    fusion->simple_fusion.getCorrectedWorldAccel(
-			        accelVec);
+			Eigen::Vector3d worldAccel = fusion->simple_fusion.getCorrectedWorldAccel(accelVec);
 			map_vec3(*out_world_accel) = worldAccel.cast<float>();
 		}
 		return 0;
 	} catch (...) {
-		assert(
-		    false &&
-		    "Caught exception on incorporate gyros and accelerometer");
+		assert(false && "Caught exception on incorporate gyros and accelerometer");
 		return -1;
 	}
 }

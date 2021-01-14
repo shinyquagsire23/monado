@@ -265,14 +265,14 @@ vk_color_space_string(VkColorSpaceKHR code);
 bool
 vk_has_error(VkResult res, const char *fun, const char *file, int line);
 
-#define vk_check_error(fun, res, ret)                                          \
-	if (vk_has_error(res, fun, __FILE__, __LINE__))                        \
+#define vk_check_error(fun, res, ret)                                                                                  \
+	if (vk_has_error(res, fun, __FILE__, __LINE__))                                                                \
 	return ret
 
-#define vk_check_error_with_free(fun, res, ret, to_free)                       \
-	if (vk_has_error(res, fun, __FILE__, __LINE__)) {                      \
-		free(to_free);                                                 \
-		return ret;                                                    \
+#define vk_check_error_with_free(fun, res, ret, to_free)                                                               \
+	if (vk_has_error(res, fun, __FILE__, __LINE__)) {                                                              \
+		free(to_free);                                                                                         \
+		return ret;                                                                                            \
 	}
 
 /*!
@@ -323,10 +323,7 @@ vk_init_from_given(struct vk_bundle *vk,
  * @ingroup aux_vk
  */
 bool
-vk_get_memory_type(struct vk_bundle *vk,
-                   uint32_t type_bits,
-                   VkMemoryPropertyFlags memory_props,
-                   uint32_t *out_type_id);
+vk_get_memory_type(struct vk_bundle *vk, uint32_t type_bits, VkMemoryPropertyFlags memory_props, uint32_t *out_type_id);
 
 /*!
  * Allocate memory for an image and bind it to that image.
@@ -382,9 +379,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
  * @ingroup aux_vk
  */
 VkResult
-vk_create_semaphore_from_native(struct vk_bundle *vk,
-                                xrt_graphics_sync_handle_t native,
-                                VkSemaphore *out_sem);
+vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem);
 
 /*!
  * @ingroup aux_vk
@@ -401,9 +396,7 @@ vk_create_image_simple(struct vk_bundle *vk,
  * @ingroup aux_vk
  */
 VkResult
-vk_create_sampler(struct vk_bundle *vk,
-                  VkSamplerAddressMode clamp_mode,
-                  VkSampler *out_sampler);
+vk_create_sampler(struct vk_bundle *vk, VkSamplerAddressMode clamp_mode, VkSampler *out_sampler);
 
 /*!
  * @ingroup aux_vk
@@ -464,9 +457,7 @@ vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits);
  * compositor and client.
  */
 VkImageUsageFlags
-vk_swapchain_usage_flags(struct vk_bundle *vk,
-                         VkFormat format,
-                         enum xrt_swapchain_usage_bits bits);
+vk_swapchain_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits);
 
 bool
 vk_init_descriptor_pool(struct vk_bundle *vk,
@@ -494,17 +485,10 @@ void
 vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk);
 
 bool
-vk_update_buffer(struct vk_bundle *vk,
-                 float *buffer,
-                 size_t buffer_size,
-                 VkDeviceMemory memory);
+vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDeviceMemory memory);
 
 VkResult
-vk_locked_submit(struct vk_bundle *vk,
-                 VkQueue queue,
-                 uint32_t count,
-                 const VkSubmitInfo *infos,
-                 VkFence fence);
+vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence);
 
 #ifdef __cplusplus
 }

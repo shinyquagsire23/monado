@@ -22,11 +22,7 @@
 DEBUG_GET_ONCE_NUM_OPTION(mesh_size, "XRT_MESH_SIZE", 64)
 
 
-typedef bool (*func_calc)(struct xrt_device *xdev,
-                          int view,
-                          float u,
-                          float v,
-                          struct xrt_uv_triplet *result);
+typedef bool (*func_calc)(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result);
 
 static int
 index_for(int row, int col, int stride, int offset)
@@ -35,11 +31,7 @@ index_for(int row, int col, int stride, int offset)
 }
 
 void
-run_func(struct xrt_device *xdev,
-         func_calc calc,
-         int num_views,
-         struct xrt_hmd_parts *target,
-         size_t num)
+run_func(struct xrt_device *xdev, func_calc calc, int num_views, struct xrt_hmd_parts *target, size_t num)
 {
 	assert(calc != NULL);
 	assert(num_views == 2);
@@ -79,9 +71,7 @@ run_func(struct xrt_device *xdev,
 				verts[i + 0] = u * 2.0 - 1.0;
 				verts[i + 1] = v * 2.0 - 1.0;
 
-				if (!calc(xdev, view, u, v,
-				          (struct xrt_uv_triplet
-				               *)&verts[i + 2])) {
+				if (!calc(xdev, view, u, v, (struct xrt_uv_triplet *)&verts[i + 2])) {
 					// bail on error, without updating
 					// distortion.preferred
 					return;
@@ -109,14 +99,12 @@ run_func(struct xrt_device *xdev,
 
 			for (int c = 0; c < vert_cols; c++) {
 				indices[i++] = index_for(r, c, vert_cols, off);
-				indices[i++] =
-				    index_for(r + 1, c, vert_cols, off);
+				indices[i++] = index_for(r + 1, c, vert_cols, off);
 			}
 
 			// Bottom vertex row for this cell row, right most
 			// vertex.
-			indices[i++] =
-			    index_for(r + 1, vert_cols - 1, vert_cols, off);
+			indices[i++] = index_for(r + 1, vert_cols - 1, vert_cols, off);
 		}
 	}
 
@@ -134,16 +122,12 @@ run_func(struct xrt_device *xdev,
 }
 
 bool
-u_compute_distortion_vive(struct u_vive_values *values,
-                          float u,
-                          float v,
-                          struct xrt_uv_triplet *result)
+u_compute_distortion_vive(struct u_vive_values *values, float u, float v, struct xrt_uv_triplet *result)
 {
 	const struct u_vive_values val = *values;
 
 	struct xrt_vec2 factor = {0.5 / (1.0 + val.grow_for_undistort),
-	                          val.aspect_x_over_y * 0.5 /
-	                              (1.0 + val.grow_for_undistort)};
+	                          val.aspect_x_over_y * 0.5 / (1.0 + val.grow_for_undistort)};
 
 	struct xrt_vec2 texCoord = {2.0 * u - 1.0, 2.0 * v - 1.0};
 
@@ -155,27 +139,21 @@ u_compute_distortion_vive(struct u_vive_values *values,
 
 
 	struct xrt_vec3 d_inv = {
-	    (r2 * val.coefficients[2][0] + val.coefficients[1][0]) * r2 +
-	        val.coefficients[0][0] * r2 + 1.0,
-	    (r2 * val.coefficients[2][1] + val.coefficients[1][1]) * r2 +
-	        val.coefficients[0][1] * r2 + 1.0,
-	    (r2 * val.coefficients[2][2] + val.coefficients[1][2]) * r2 +
-	        val.coefficients[0][2] * r2 + 1.0};
+	    (r2 * val.coefficients[2][0] + val.coefficients[1][0]) * r2 + val.coefficients[0][0] * r2 + 1.0,
+	    (r2 * val.coefficients[2][1] + val.coefficients[1][1]) * r2 + val.coefficients[0][1] * r2 + 1.0,
+	    (r2 * val.coefficients[2][2] + val.coefficients[1][2]) * r2 + val.coefficients[0][2] * r2 + 1.0};
 
 	struct xrt_vec3 d = {1.0 / d_inv.x, 1.0 / d_inv.y, 1.0 / d_inv.z};
 
 	struct xrt_vec2 offset = {0.5, 0.5};
 
-	struct xrt_vec2 tc_r = {
-	    offset.x + (texCoord.x * d.x + val.center[0]) * factor.x,
-	    offset.y + (texCoord.y * d.x + val.center[1]) * factor.y};
+	struct xrt_vec2 tc_r = {offset.x + (texCoord.x * d.x + val.center[0]) * factor.x,
+	                        offset.y + (texCoord.y * d.x + val.center[1]) * factor.y};
 
-	struct xrt_vec2 tc_g = {
-	    offset.x + (texCoord.x * d.y + val.center[0]) * factor.x,
-	    offset.y + (texCoord.y * d.y + val.center[1]) * factor.y};
-	struct xrt_vec2 tc_b = {
-	    offset.x + (texCoord.x * d.z + val.center[0]) * factor.x,
-	    offset.y + (texCoord.y * d.z + val.center[1]) * factor.y};
+	struct xrt_vec2 tc_g = {offset.x + (texCoord.x * d.y + val.center[0]) * factor.x,
+	                        offset.y + (texCoord.y * d.y + val.center[1]) * factor.y};
+	struct xrt_vec2 tc_b = {offset.x + (texCoord.x * d.z + val.center[0]) * factor.x,
+	                        offset.y + (texCoord.y * d.z + val.center[1]) * factor.y};
 
 	result->r = tc_r;
 	result->g = tc_g;
@@ -193,10 +171,7 @@ u_compute_distortion_vive(struct u_vive_values *values,
 #define len_sqrd m_vec2_len_sqrd
 
 bool
-u_compute_distortion_panotools(struct u_panotools_values *values,
-                               float u,
-                               float v,
-                               struct xrt_uv_triplet *result)
+u_compute_distortion_panotools(struct u_panotools_values *values, float u, float v, struct xrt_uv_triplet *result)
 {
 	const struct u_panotools_values val = *values;
 
@@ -289,11 +264,7 @@ u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result)
  */
 
 bool
-u_distortion_mesh_none(struct xrt_device *xdev,
-                       int view,
-                       float u,
-                       float v,
-                       struct xrt_uv_triplet *result)
+u_distortion_mesh_none(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
 	return u_compute_distortion_none(u, v, result);
 }

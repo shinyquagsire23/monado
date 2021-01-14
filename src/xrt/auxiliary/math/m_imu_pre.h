@@ -60,9 +60,7 @@ struct m_imu_pre_filter
  * other values are set to identity.
  */
 void
-m_imu_pre_filter_init(struct m_imu_pre_filter *imu,
-                      float ticks_to_float_accel,
-                      float ticks_to_float_gyro);
+m_imu_pre_filter_init(struct m_imu_pre_filter *imu, float ticks_to_float_accel, float ticks_to_float_gyro);
 
 /*!
  * Sets the transformation to flip X and Y axis. This changes the handedness

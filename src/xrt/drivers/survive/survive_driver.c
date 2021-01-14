@@ -52,14 +52,11 @@
 #define DEFAULT_HAPTIC_FREQ 150.0f
 #define MIN_HAPTIC_DURATION 0.05f
 
-#define SURVIVE_TRACE(d, ...)                                                  \
-	U_LOG_XDEV_IFL_T(&d->base, d->sys->ll, __VA_ARGS__)
-#define SURVIVE_DEBUG(d, ...)                                                  \
-	U_LOG_XDEV_IFL_D(&d->base, d->sys->ll, __VA_ARGS__)
+#define SURVIVE_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->sys->ll, __VA_ARGS__)
+#define SURVIVE_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->sys->ll, __VA_ARGS__)
 #define SURVIVE_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->sys->ll, __VA_ARGS__)
 #define SURVIVE_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->sys->ll, __VA_ARGS__)
-#define SURVIVE_ERROR(d, ...)                                                  \
-	U_LOG_XDEV_IFL_E(&d->base, d->sys->ll, __VA_ARGS__)
+#define SURVIVE_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->sys->ll, __VA_ARGS__)
 
 struct survive_system;
 
@@ -182,8 +179,7 @@ survive_device_destroy(struct xrt_device *xdev)
 	if (survive == survive->sys->controllers[SURVIVE_RIGHT_CONTROLLER])
 		survive->sys->controllers[SURVIVE_RIGHT_CONTROLLER] = NULL;
 
-	if (survive->sys->hmd == NULL &&
-	    survive->sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL &&
+	if (survive->sys->hmd == NULL && survive->sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL &&
 	    survive->sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
 		U_LOG_D("Tearing down libsurvive context");
 		survive_simple_close(survive->sys->ctx);
@@ -205,18 +201,14 @@ survive_timecode_now_s()
 }
 
 static void
-_get_survive_pose(struct survive_device *survive,
-                  uint64_t at_timestamp_ns,
-                  struct xrt_space_relation *out_relation)
+_get_survive_pose(struct survive_device *survive, uint64_t at_timestamp_ns, struct xrt_space_relation *out_relation)
 {
 	const SurviveSimpleObject *survive_object = survive->survive_obj;
 
 	out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 
-	if (survive_simple_object_get_type(survive_object) !=
-	        SurviveSimpleObject_OBJECT &&
-	    survive_simple_object_get_type(survive_object) !=
-	        SurviveSimpleObject_HMD) {
+	if (survive_simple_object_get_type(survive_object) != SurviveSimpleObject_OBJECT &&
+	    survive_simple_object_get_type(survive_object) != SurviveSimpleObject_HMD) {
 		return;
 	}
 
@@ -226,11 +218,9 @@ _get_survive_pose(struct survive_device *survive,
 	SurviveVelocity vel;
 
 	// "device time" in seconds
-	double timecode_s =
-	    survive_simple_object_get_latest_pose(survive_object, &pose);
+	double timecode_s = survive_simple_object_get_latest_pose(survive_object, &pose);
 
-	double vel_timecode_s =
-	    survive_simple_object_get_latest_velocity(survive_object, &vel);
+	double vel_timecode_s = survive_simple_object_get_latest_velocity(survive_object, &vel);
 	(void)vel_timecode_s;
 
 	// do calculations in ns due to large numbers
@@ -250,14 +240,10 @@ _get_survive_pose(struct survive_device *survive,
 	              "dev %s At %ldns: Pose requested for +%ldns (%ldns). "
 	              "Libsurvive Pose Timecode: %ldns, Pose gotten at -%ldns "
 	              "from now (%ldns), predicting %ldns",
-	              survive->base.str, monotonic_now_ns, remaining_ns,
-	              at_timestamp_ns, timecode_ns, survive_pose_age_ns,
-	              survive_now_ns, prediction_ns);
+	              survive->base.str, monotonic_now_ns, remaining_ns, at_timestamp_ns, timecode_ns,
+	              survive_pose_age_ns, survive_now_ns, prediction_ns);
 
-	struct xrt_quat out_rot = {.x = pose.Rot[1],
-	                           .y = pose.Rot[2],
-	                           .z = pose.Rot[3],
-	                           .w = pose.Rot[0]};
+	struct xrt_quat out_rot = {.x = pose.Rot[1], .y = pose.Rot[2], .z = pose.Rot[3], .w = pose.Rot[0]};
 
 	/* libsurvive looks down when it should be looking forward, so
 	 * rotate the quat.
@@ -284,42 +270,34 @@ _get_survive_pose(struct survive_device *survive,
 	out_relation->pose.position.y = pose.Pos[2];
 	out_relation->pose.position.z = -pose.Pos[1];
 
-	struct xrt_vec3 linear_vel = {
-	    .x = vel.Pos[0], .y = vel.Pos[2], .z = -vel.Pos[1]};
+	struct xrt_vec3 linear_vel = {.x = vel.Pos[0], .y = vel.Pos[2], .z = -vel.Pos[1]};
 
-	struct xrt_vec3 angular_vel = {.x = vel.AxisAngleRot[0],
-	                               .y = vel.AxisAngleRot[2],
-	                               .z = -vel.AxisAngleRot[1]};
+	struct xrt_vec3 angular_vel = {.x = vel.AxisAngleRot[0], .y = vel.AxisAngleRot[2], .z = -vel.AxisAngleRot[1]};
 
 	if (math_quat_validate(&out_rot)) {
 		out_relation->relation_flags |=
-		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
+		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
 
 		// everything else is invalid if orientation is not valid
 
 		if (math_vec3_validate(&out_relation->pose.position)) {
 			out_relation->relation_flags |=
-			    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-			    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
+			    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
 		}
 
 
 		out_relation->linear_velocity = linear_vel;
 		if (math_vec3_validate(&out_relation->linear_velocity)) {
-			out_relation->relation_flags |=
-			    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT;
+			out_relation->relation_flags |= XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT;
 		}
 
 		out_relation->angular_velocity = angular_vel;
 		if (math_vec3_validate(&out_relation->angular_velocity)) {
-			out_relation->relation_flags |=
-			    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT;
+			out_relation->relation_flags |= XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT;
 		}
 	}
 
-	SURVIVE_TRACE(survive, "Predicting %fs for %s", prediction_s,
-	              survive->base.str);
+	SURVIVE_TRACE(survive, "Predicting %fs for %s", prediction_s, survive->base.str);
 
 	struct xrt_space_relation rel = *out_relation;
 	m_predict_relation(&rel, prediction_s, out_relation);
@@ -377,14 +355,10 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
                                 struct xrt_space_relation *out_relation)
 {
 	struct survive_device *survive = (struct survive_device *)xdev;
-	if ((survive == survive->sys->hmd &&
-	     name != XRT_INPUT_GENERIC_HEAD_POSE) ||
-	    ((survive == survive->sys->controllers[0] ||
-	      survive == survive->sys->controllers[1]) &&
-	     (name != XRT_INPUT_INDEX_AIM_POSE &&
-	      name != XRT_INPUT_INDEX_GRIP_POSE) &&
-	     (name != XRT_INPUT_VIVE_AIM_POSE &&
-	      name != XRT_INPUT_VIVE_GRIP_POSE))) {
+	if ((survive == survive->sys->hmd && name != XRT_INPUT_GENERIC_HEAD_POSE) ||
+	    ((survive == survive->sys->controllers[0] || survive == survive->sys->controllers[1]) &&
+	     (name != XRT_INPUT_INDEX_AIM_POSE && name != XRT_INPUT_INDEX_GRIP_POSE) &&
+	     (name != XRT_INPUT_VIVE_AIM_POSE && name != XRT_INPUT_VIVE_GRIP_POSE))) {
 
 		SURVIVE_ERROR(survive, "unknown input name");
 		return;
@@ -402,21 +376,16 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 	survive->last_relation = *out_relation;
 
 	struct xrt_pose *p = &out_relation->pose;
-	SURVIVE_TRACE(
-	    survive, "GET_POSITION (%f %f %f) GET_ORIENTATION (%f, %f, %f, %f)",
-	    p->position.x, p->position.y, p->position.z, p->orientation.x,
-	    p->orientation.y, p->orientation.z, p->orientation.w);
+	SURVIVE_TRACE(survive, "GET_POSITION (%f %f %f) GET_ORIENTATION (%f, %f, %f, %f)", p->position.x, p->position.y,
+	              p->position.z, p->orientation.x, p->orientation.y, p->orientation.z, p->orientation.w);
 }
 
 static int
-survive_controller_haptic_pulse(struct survive_device *survive,
-                                union xrt_output_value *value)
+survive_controller_haptic_pulse(struct survive_device *survive, union xrt_output_value *value)
 {
 	float duration_seconds;
 	if (value->vibration.duration == XRT_MIN_HAPTIC_DURATION) {
-		SURVIVE_TRACE(survive,
-		              "Haptic pulse duration: using %f minimum",
-		              MIN_HAPTIC_DURATION);
+		SURVIVE_TRACE(survive, "Haptic pulse duration: using %f minimum", MIN_HAPTIC_DURATION);
 		duration_seconds = MIN_HAPTIC_DURATION;
 	} else {
 		duration_seconds = time_ns_to_s(value->vibration.duration);
@@ -425,35 +394,26 @@ survive_controller_haptic_pulse(struct survive_device *survive,
 	float frequency = value->vibration.frequency;
 
 	if (frequency == XRT_FREQUENCY_UNSPECIFIED) {
-		SURVIVE_TRACE(
-		    survive,
-		    "Haptic pulse frequency unspecified, setting to %fHz",
-		    DEFAULT_HAPTIC_FREQ);
+		SURVIVE_TRACE(survive, "Haptic pulse frequency unspecified, setting to %fHz", DEFAULT_HAPTIC_FREQ);
 		frequency = DEFAULT_HAPTIC_FREQ;
 	}
 
 	float amplitude = value->vibration.amplitude;
 
-	SURVIVE_TRACE(survive, "Got Haptic pulse amp %f, %fHz, %" PRId64 "ns",
-	              value->vibration.amplitude, value->vibration.frequency,
-	              value->vibration.duration);
-	SURVIVE_TRACE(survive, "Doing Haptic pulse amp %f, %fHz, %fs",
-	              amplitude, frequency, duration_seconds);
+	SURVIVE_TRACE(survive, "Got Haptic pulse amp %f, %fHz, %" PRId64 "ns", value->vibration.amplitude,
+	              value->vibration.frequency, value->vibration.duration);
+	SURVIVE_TRACE(survive, "Doing Haptic pulse amp %f, %fHz, %fs", amplitude, frequency, duration_seconds);
 
-	return survive_simple_object_haptic(
-	    (struct SurviveSimpleObject *)survive->survive_obj, frequency,
-	    amplitude, duration_seconds);
+	return survive_simple_object_haptic((struct SurviveSimpleObject *)survive->survive_obj, frequency, amplitude,
+	                                    duration_seconds);
 }
 
 static void
-survive_controller_device_set_output(struct xrt_device *xdev,
-                                     enum xrt_output_name name,
-                                     union xrt_output_value *value)
+survive_controller_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
 {
 	struct survive_device *survive = (struct survive_device *)xdev;
 
-	if (name != XRT_OUTPUT_NAME_VIVE_HAPTIC &&
-	    name != XRT_OUTPUT_NAME_INDEX_HAPTIC) {
+	if (name != XRT_OUTPUT_NAME_VIVE_HAPTIC && name != XRT_OUTPUT_NAME_INDEX_HAPTIC) {
 		SURVIVE_ERROR(survive, "Unknown output");
 		return;
 	}
@@ -481,50 +441,42 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 {
 	struct survive_device *survive = (struct survive_device *)xdev;
 
-	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT &&
-	    name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
+	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT && name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
 		SURVIVE_ERROR(survive, "unknown input name for hand tracker");
 		return;
 	}
 
 
-	bool left =
-	    survive->variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER;
+	bool left = survive->variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER;
 	enum xrt_hand hand = left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
 
 	float thumb_curl = 0.0f;
 	//! @todo place thumb preciely on the button that is touched/pressed
 	if (survive->base.inputs[VIVE_CONTROLLER_A_TOUCH].value.boolean ||
 	    survive->base.inputs[VIVE_CONTROLLER_B_TOUCH].value.boolean ||
-	    survive->base.inputs[VIVE_CONTROLLER_THUMBSTICK_TOUCH]
-	        .value.boolean ||
-	    survive->base.inputs[VIVE_CONTROLLER_TRACKPAD_TOUCH]
-	        .value.boolean) {
+	    survive->base.inputs[VIVE_CONTROLLER_THUMBSTICK_TOUCH].value.boolean ||
+	    survive->base.inputs[VIVE_CONTROLLER_TRACKPAD_TOUCH].value.boolean) {
 		thumb_curl = 1.0;
 	}
 
-	struct u_hand_tracking_curl_values values = {
-	    .little = survive->ctrl.curl[XRT_FINGER_LITTLE],
-	    .ring = survive->ctrl.curl[XRT_FINGER_RING],
-	    .middle = survive->ctrl.curl[XRT_FINGER_MIDDLE],
-	    .index = survive->ctrl.curl[XRT_FINGER_INDEX],
-	    .thumb = thumb_curl};
+	struct u_hand_tracking_curl_values values = {.little = survive->ctrl.curl[XRT_FINGER_LITTLE],
+	                                             .ring = survive->ctrl.curl[XRT_FINGER_RING],
+	                                             .middle = survive->ctrl.curl[XRT_FINGER_MIDDLE],
+	                                             .index = survive->ctrl.curl[XRT_FINGER_INDEX],
+	                                             .thumb = thumb_curl};
 
 	/* The tracked controller position is at the very -z end of the
 	 * controller. Move the hand back offset_z meter to the handle center.
 	 */
 	struct xrt_vec3 static_offset = {.x = 0, .y = 0, .z = 0.11};
 
-	u_hand_joints_update_curl(&survive->ctrl.hand_tracking, hand,
-	                          at_timestamp_ns, &values);
+	u_hand_joints_update_curl(&survive->ctrl.hand_tracking, hand, at_timestamp_ns, &values);
 
 	struct xrt_pose hand_on_handle_pose;
-	u_hand_joints_offset_valve_index_controller(hand, &static_offset,
-	                                            &hand_on_handle_pose);
+	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
 
-	u_hand_joints_set_out_data(&survive->ctrl.hand_tracking, hand,
-	                           &survive->last_relation,
-	                           &hand_on_handle_pose, out_value);
+	u_hand_joints_set_out_data(&survive->ctrl.hand_tracking, hand, &survive->last_relation, &hand_on_handle_pose,
+	                           out_value);
 }
 
 static void
@@ -608,11 +560,7 @@ struct Axis axes[255] = {
 };
 
 static bool
-update_axis(struct survive_device *survive,
-            struct Axis *axis,
-            const SurviveSimpleButtonEvent *e,
-            int i,
-            uint64_t now)
+update_axis(struct survive_device *survive, struct Axis *axis, const SurviveSimpleButtonEvent *e, int i, uint64_t now)
 {
 	if (axis->input == 0) {
 		return false;
@@ -642,19 +590,15 @@ struct Button
 };
 
 struct Button buttons[255] = {
-    [SURVIVE_BUTTON_A] = {.click = VIVE_CONTROLLER_A_CLICK,
-                          .touch = VIVE_CONTROLLER_A_TOUCH},
-    [SURVIVE_BUTTON_B] = {.click = VIVE_CONTROLLER_B_CLICK,
-                          .touch = VIVE_CONTROLLER_B_TOUCH},
+    [SURVIVE_BUTTON_A] = {.click = VIVE_CONTROLLER_A_CLICK, .touch = VIVE_CONTROLLER_A_TOUCH},
+    [SURVIVE_BUTTON_B] = {.click = VIVE_CONTROLLER_B_CLICK, .touch = VIVE_CONTROLLER_B_TOUCH},
 
-    [SURVIVE_BUTTON_TRACKPAD] = {.click = VIVE_CONTROLLER_TRACKPAD_CLICK,
-                                 .touch = VIVE_CONTROLLER_TRACKPAD_TOUCH},
+    [SURVIVE_BUTTON_TRACKPAD] = {.click = VIVE_CONTROLLER_TRACKPAD_CLICK, .touch = VIVE_CONTROLLER_TRACKPAD_TOUCH},
 
     [SURVIVE_BUTTON_THUMBSTICK] = {.click = VIVE_CONTROLLER_THUMBSTICK_CLICK,
                                    .touch = VIVE_CONTROLLER_THUMBSTICK_TOUCH},
 
-    [SURVIVE_BUTTON_SYSTEM] = {.click = VIVE_CONTROLLER_SYSTEM_CLICK,
-                               .touch = VIVE_CONTROLLER_SYSTEM_TOUCH},
+    [SURVIVE_BUTTON_SYSTEM] = {.click = VIVE_CONTROLLER_SYSTEM_CLICK, .touch = VIVE_CONTROLLER_SYSTEM_TOUCH},
 
     [SURVIVE_BUTTON_MENU] = {.click = VIVE_CONTROLLER_MENU_CLICK,
                              // only on vive wand without touch
@@ -664,14 +608,11 @@ struct Button buttons[255] = {
                              // only on vive wand without touch
                              .touch = 0},
 
-    [SURVIVE_BUTTON_TRIGGER] = {.click = VIVE_CONTROLLER_TRIGGER_CLICK,
-                                .touch = VIVE_CONTROLLER_TRIGGER_TOUCH},
+    [SURVIVE_BUTTON_TRIGGER] = {.click = VIVE_CONTROLLER_TRIGGER_CLICK, .touch = VIVE_CONTROLLER_TRIGGER_TOUCH},
 };
 
 static bool
-update_button(struct survive_device *survive,
-              const struct SurviveSimpleButtonEvent *e,
-              uint64_t now)
+update_button(struct survive_device *survive, const struct SurviveSimpleButtonEvent *e, uint64_t now)
 {
 	if (e->event_type == SURVIVE_INPUT_EVENT_NONE) {
 		return true;
@@ -718,9 +659,7 @@ _calculate_squeeze_value(struct survive_device *survive)
 }
 
 static void
-_process_button_event(struct survive_device *survive,
-                      const struct SurviveSimpleButtonEvent *e,
-                      int64_t now)
+_process_button_event(struct survive_device *survive, const struct SurviveSimpleButtonEvent *e, int64_t now)
 {
 	if (e->event_type == SURVIVE_INPUT_EVENT_AXIS_CHANGED) {
 		for (int i = 0; i < e->axis_count; i++) {
@@ -731,29 +670,23 @@ _process_button_event(struct survive_device *survive,
 			if (update_axis(survive, axis, e, i, now)) {
 
 
-			} else if (e->axis_ids[i] ==
-			           SURVIVE_AXIS_TRIGGER_FINGER_PROXIMITY) {
+			} else if (e->axis_ids[i] == SURVIVE_AXIS_TRIGGER_FINGER_PROXIMITY) {
 				survive->ctrl.curl[XRT_FINGER_INDEX] = val;
 				survive->ctrl.curl_ts[XRT_FINGER_INDEX] = now;
-			} else if (e->axis_ids[i] ==
-			           SURVIVE_AXIS_MIDDLE_FINGER_PROXIMITY) {
+			} else if (e->axis_ids[i] == SURVIVE_AXIS_MIDDLE_FINGER_PROXIMITY) {
 				survive->ctrl.curl[XRT_FINGER_MIDDLE] = val;
 				survive->ctrl.curl_ts[XRT_FINGER_MIDDLE] = now;
-			} else if (e->axis_ids[i] ==
-			           SURVIVE_AXIS_RING_FINGER_PROXIMITY) {
+			} else if (e->axis_ids[i] == SURVIVE_AXIS_RING_FINGER_PROXIMITY) {
 				survive->ctrl.curl[XRT_FINGER_RING] = val;
 				survive->ctrl.curl_ts[XRT_FINGER_RING] = now;
-			} else if (e->axis_ids[i] ==
-			           SURVIVE_AXIS_PINKY_FINGER_PROXIMITY) {
+			} else if (e->axis_ids[i] == SURVIVE_AXIS_PINKY_FINGER_PROXIMITY) {
 				survive->ctrl.curl[XRT_FINGER_LITTLE] = val;
 				survive->ctrl.curl_ts[XRT_FINGER_LITTLE] = now;
 			} else {
-				SURVIVE_DEBUG(survive, "axis id: %d val %f",
-				              e->axis_ids[i], e->axis_val[i]);
+				SURVIVE_DEBUG(survive, "axis id: %d val %f", e->axis_ids[i], e->axis_val[i]);
 			}
 		}
-		struct xrt_input *squeeze_value_in =
-		    &survive->base.inputs[VIVE_CONTROLLER_SQUEEZE_VALUE];
+		struct xrt_input *squeeze_value_in = &survive->base.inputs[VIVE_CONTROLLER_SQUEEZE_VALUE];
 		float prev_squeeze_value = squeeze_value_in->value.vec1.x;
 		float squeeze_value = _calculate_squeeze_value(survive);
 		if (prev_squeeze_value != squeeze_value) {
@@ -766,9 +699,7 @@ _process_button_event(struct survive_device *survive,
 }
 
 static void
-_process_hmd_button_event(struct survive_device *survive,
-                          const struct SurviveSimpleButtonEvent *e,
-                          int64_t now)
+_process_hmd_button_event(struct survive_device *survive, const struct SurviveSimpleButtonEvent *e, int64_t now)
 {
 	if (e->event_type == SURVIVE_INPUT_EVENT_AXIS_CHANGED) {
 		for (int i = 0; i < e->axis_count; i++) {
@@ -782,8 +713,7 @@ _process_hmd_button_event(struct survive_device *survive,
 				survive->hmd.ipd = ipd;
 
 				// SURVIVE_DEBUG(survive, "ipd: %f meter", ipd);
-			} else if (e->axis_ids[i] ==
-			           SURVIVE_AXIS_FACE_PROXIMITY) {
+			} else if (e->axis_ids[i] == SURVIVE_AXIS_FACE_PROXIMITY) {
 				// Valve Index:
 				// >0.003 not wearing hmd
 				//  0.03-0.035 wearing hmd
@@ -797,10 +727,8 @@ _process_hmd_button_event(struct survive_device *survive,
 				}
 
 				float curr = survive->hmd.proximity;
-				bool engagement = (curr <= threshold &&
-				                   proximity > threshold) ||
-				                  (curr >= threshold &&
-				                   proximity < threshold);
+				bool engagement = (curr <= threshold && proximity > threshold) ||
+				                  (curr >= threshold && proximity < threshold);
 
 				if (engagement) {
 					//! @todo engagement changed
@@ -810,16 +738,14 @@ _process_hmd_button_event(struct survive_device *survive,
 
 				survive->hmd.proximity = proximity;
 			} else {
-				SURVIVE_DEBUG(survive, "axis id: %d val %f",
-				              e->axis_ids[i], e->axis_val[i]);
+				SURVIVE_DEBUG(survive, "axis id: %d val %f", e->axis_ids[i], e->axis_val[i]);
 			}
 		}
 	}
 }
 
 static struct survive_device *
-get_device_by_object(struct survive_system *sys,
-                     const SurviveSimpleObject *object)
+get_device_by_object(struct survive_system *sys, const SurviveSimpleObject *object)
 {
 	if (sys->hmd->survive_obj == object) {
 		return sys->hmd;
@@ -838,25 +764,20 @@ get_device_by_object(struct survive_system *sys,
 }
 
 static void
-_process_event(struct survive_device *survive,
-               struct SurviveSimpleEvent *event,
-               int64_t now)
+_process_event(struct survive_device *survive, struct SurviveSimpleEvent *event, int64_t now)
 {
 	switch (event->event_type) {
 	case SurviveSimpleEventType_ButtonEvent: {
-		const struct SurviveSimpleButtonEvent *e =
-		    survive_simple_get_button_event(event);
+		const struct SurviveSimpleButtonEvent *e = survive_simple_get_button_event(event);
 
 		struct survive_device *event_device = survive;
 
 		if (e->object != survive->survive_obj) {
-			event_device =
-			    get_device_by_object(survive->sys, e->object);
+			event_device = get_device_by_object(survive->sys, e->object);
 		}
 
 		if (event_device == NULL) {
-			SURVIVE_ERROR(survive,
-			              "Event for unknown object not handled");
+			SURVIVE_ERROR(survive, "Event for unknown object not handled");
 			return;
 		}
 
@@ -886,8 +807,7 @@ survive_device_update_inputs(struct xrt_device *xdev)
 	 devices, not just this survive device. */
 
 	struct SurviveSimpleEvent event = {0};
-	while (survive_simple_next_event(survive->sys->ctx, &event) !=
-	       SurviveSimpleEventType_None) {
+	while (survive_simple_next_event(survive->sys->ctx, &event) != SurviveSimpleEventType_None) {
 		_process_event(survive, &event, now);
 	}
 }
@@ -914,8 +834,7 @@ wait_for_device_config(const struct SurviveSimpleObject *sso)
 void
 print_vec3(const char *title, struct xrt_vec3 *vec)
 {
-	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y,
-	        (double)vec->z);
+	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y, (double)vec->z);
 }
 
 static long long
@@ -929,9 +848,7 @@ _json_to_int(const cJSON *item)
 }
 
 static bool
-_json_get_matrix_3x3(const cJSON *json,
-                     const char *name,
-                     struct xrt_matrix_3x3 *result)
+_json_get_matrix_3x3(const cJSON *json, const char *name, struct xrt_matrix_3x3 *result)
 {
 	const cJSON *vec3_arr = cJSON_GetObjectItemCaseSensitive(json, name);
 
@@ -976,10 +893,7 @@ _json_get_int(const cJSON *json, const char *name)
 }
 
 static void
-_get_color_coeffs(struct u_vive_values *values,
-                  const cJSON *coeffs,
-                  uint8_t eye,
-                  uint8_t channel)
+_get_color_coeffs(struct u_vive_values *values, const cJSON *coeffs, uint8_t eye, uint8_t channel)
 {
 	// this is 4 on index, all values populated
 	// assert(coeffs->length == 8);
@@ -997,20 +911,15 @@ _get_color_coeffs(struct u_vive_values *values,
 }
 
 static void
-_get_color_coeffs_lookup(struct u_vive_values *values,
-                         const cJSON *eye_json,
-                         const char *name,
-                         uint8_t eye,
-                         uint8_t channel)
+_get_color_coeffs_lookup(
+    struct u_vive_values *values, const cJSON *eye_json, const char *name, uint8_t eye, uint8_t channel)
 {
-	const cJSON *distortion =
-	    cJSON_GetObjectItemCaseSensitive(eye_json, name);
+	const cJSON *distortion = cJSON_GetObjectItemCaseSensitive(eye_json, name);
 	if (distortion == NULL) {
 		return;
 	}
 
-	const cJSON *coeffs =
-	    cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
+	const cJSON *coeffs = cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
 	if (coeffs == NULL) {
 		return;
 	}
@@ -1019,9 +928,7 @@ _get_color_coeffs_lookup(struct u_vive_values *values,
 }
 
 static void
-get_distortion_properties(struct survive_device *d,
-                          const cJSON *eye_transform_json,
-                          uint8_t eye)
+get_distortion_properties(struct survive_device *d, const cJSON *eye_transform_json, uint8_t eye)
 {
 	const cJSON *eye_json = cJSON_GetArrayItem(eye_transform_json, eye);
 	if (eye_json == NULL) {
@@ -1039,8 +946,7 @@ get_distortion_properties(struct survive_device *d,
 	d->distortion[eye].undistort_r2_cutoff = _json_get_float(eye_json, "undistort_r2_cutoff");
 	// clang-format on
 
-	const cJSON *distortion =
-	    cJSON_GetObjectItemCaseSensitive(eye_json, "distortion");
+	const cJSON *distortion = cJSON_GetObjectItemCaseSensitive(eye_json, "distortion");
 	if (distortion != NULL) {
 		// TODO: store center per color
 		// clang-format off
@@ -1049,42 +955,31 @@ get_distortion_properties(struct survive_device *d,
 		// clang-format on
 
 		// green
-		const cJSON *coeffs =
-		    cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
+		const cJSON *coeffs = cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
 		if (coeffs != NULL) {
 			_get_color_coeffs(&d->distortion[eye], coeffs, eye, 1);
 		}
 	}
 
-	_get_color_coeffs_lookup(&d->distortion[eye], eye_json,
-	                         "distortion_red", eye, 0);
-	_get_color_coeffs_lookup(&d->distortion[eye], eye_json,
-	                         "distortion_blue", eye, 2);
+	_get_color_coeffs_lookup(&d->distortion[eye], eye_json, "distortion_red", eye, 0);
+	_get_color_coeffs_lookup(&d->distortion[eye], eye_json, "distortion_blue", eye, 2);
 }
 
 static bool
-compute_distortion(struct xrt_device *xdev,
-                   int view,
-                   float u,
-                   float v,
-                   struct xrt_uv_triplet *result)
+compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct survive_device *d = (struct survive_device *)xdev;
 	return u_compute_distortion_vive(&d->distortion[view], u, v, result);
 }
 
 static bool
-_create_hmd_device(struct survive_system *sys,
-                   enum VIVE_VARIANT variant,
-                   const SurviveSimpleObject *sso)
+_create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant, const SurviveSimpleObject *sso)
 {
-	enum u_device_alloc_flags flags =
-	    (enum u_device_alloc_flags)U_DEVICE_ALLOC_HMD;
+	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)U_DEVICE_ALLOC_HMD;
 	int inputs = 1;
 	int outputs = 0;
 
-	struct survive_device *survive =
-	    U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
+	struct survive_device *survive = U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
 	sys->hmd = survive;
 	survive->sys = sys;
 	survive->survive_obj = sso;
@@ -1123,12 +1018,10 @@ _create_hmd_device(struct survive_system *sys,
 	}
 
 
-	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0,
-	                       eye_to_screen_distance);
+	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0, eye_to_screen_distance);
 
 	for (int view = 0; view < 2; view++) {
-		survive->distortion[view].aspect_x_over_y =
-		    0.89999997615814209f;
+		survive->distortion[view].aspect_x_over_y = 0.89999997615814209f;
 		survive->distortion[view].grow_for_undistort = 0.5f;
 		survive->distortion[view].undistort_r2_cutoff = 1.0f;
 	}
@@ -1142,38 +1035,30 @@ _create_hmd_device(struct survive_system *sys,
 
 	uint16_t w_pixels = 1080;
 	uint16_t h_pixels = 1200;
-	const cJSON *device_json =
-	    cJSON_GetObjectItemCaseSensitive(json, "device");
+	const cJSON *device_json = cJSON_GetObjectItemCaseSensitive(json, "device");
 	if (device_json) {
 		if (survive->variant != VIVE_VARIANT_VALVE_INDEX) {
 			survive->distortion[0].aspect_x_over_y =
-			    _json_get_float(device_json,
-			                    "physical_aspect_x_over_y");
-			survive->distortion[1].aspect_x_over_y =
-			    survive->distortion[0].aspect_x_over_y;
+			    _json_get_float(device_json, "physical_aspect_x_over_y");
+			survive->distortion[1].aspect_x_over_y = survive->distortion[0].aspect_x_over_y;
 
 			//! @todo: fov calculation needs to be fixed, only works
 			//! with hardcoded value
 			// lens_horizontal_separation = _json_get_double(json,
 			// "lens_separation");
 		}
-		h_pixels = (uint16_t)_json_get_int(
-		    device_json, "eye_target_height_in_pixels");
-		w_pixels = (uint16_t)_json_get_int(
-		    device_json, "eye_target_width_in_pixels");
+		h_pixels = (uint16_t)_json_get_int(device_json, "eye_target_height_in_pixels");
+		w_pixels = (uint16_t)_json_get_int(device_json, "eye_target_width_in_pixels");
 	}
 
-	const cJSON *eye_transform_json =
-	    cJSON_GetObjectItemCaseSensitive(json, "tracking_to_eye_transform");
+	const cJSON *eye_transform_json = cJSON_GetObjectItemCaseSensitive(json, "tracking_to_eye_transform");
 	if (eye_transform_json) {
 		for (uint8_t eye = 0; eye < 2; eye++) {
-			get_distortion_properties(survive, eye_transform_json,
-			                          eye);
+			get_distortion_properties(survive, eye_transform_json, eye);
 		}
 	}
 
-	SURVIVE_INFO(survive, "Survive eye resolution %dx%d", w_pixels,
-	             h_pixels);
+	SURVIVE_INFO(survive, "Survive eye resolution %dx%d", w_pixels, h_pixels);
 
 	cJSON_Delete(json);
 
@@ -1182,11 +1067,9 @@ _create_hmd_device(struct survive_system *sys,
 	survive->base.hmd->screens[0].h_pixels = (int)h_pixels;
 
 	if (survive->variant == VIVE_VARIANT_VALVE_INDEX)
-		survive->base.hmd->screens[0].nominal_frame_interval_ns =
-		    (uint64_t)time_s_to_ns(1.0f / 144.0f);
+		survive->base.hmd->screens[0].nominal_frame_interval_ns = (uint64_t)time_s_to_ns(1.0f / 144.0f);
 	else
-		survive->base.hmd->screens[0].nominal_frame_interval_ns =
-		    (uint64_t)time_s_to_ns(1.0f / 90.0f);
+		survive->base.hmd->screens[0].nominal_frame_interval_ns = (uint64_t)time_s_to_ns(1.0f / 90.0f);
 
 	struct xrt_vec2 lens_center[2];
 
@@ -1212,13 +1095,9 @@ _create_hmd_device(struct survive_system *sys,
 	survive->base.hmd->views[1].viewport.x_pixels = w_pixels;
 
 	for (uint8_t eye = 0; eye < 2; eye++) {
-		if (!math_compute_fovs(w_meters, (double)lens_center[eye].x,
-		                       fov, h_meters,
-		                       (double)lens_center[eye].y, 0,
-		                       &survive->base.hmd->views[eye].fov)) {
-			SURVIVE_ERROR(
-			    survive,
-			    "Failed to compute the partial fields of view.");
+		if (!math_compute_fovs(w_meters, (double)lens_center[eye].x, fov, h_meters, (double)lens_center[eye].y,
+		                       0, &survive->base.hmd->views[eye].fov)) {
+			SURVIVE_ERROR(survive, "Failed to compute the partial fields of view.");
 			free(survive);
 			return NULL;
 		}
@@ -1285,30 +1164,25 @@ static struct xrt_binding_profile binding_profiles_vive[1] = {
     },
 };
 
-#define SET_WAND_INPUT(NAME, NAME2)                                            \
-	do {                                                                   \
-		(survive->base.inputs[VIVE_CONTROLLER_##NAME].name =           \
-		     XRT_INPUT_VIVE_##NAME2);                                  \
+#define SET_WAND_INPUT(NAME, NAME2)                                                                                    \
+	do {                                                                                                           \
+		(survive->base.inputs[VIVE_CONTROLLER_##NAME].name = XRT_INPUT_VIVE_##NAME2);                          \
 	} while (0)
 
-#define SET_INDEX_INPUT(NAME, NAME2)                                           \
-	do {                                                                   \
-		(survive->base.inputs[VIVE_CONTROLLER_##NAME].name =           \
-		     XRT_INPUT_INDEX_##NAME2);                                 \
+#define SET_INDEX_INPUT(NAME, NAME2)                                                                                   \
+	do {                                                                                                           \
+		(survive->base.inputs[VIVE_CONTROLLER_##NAME].name = XRT_INPUT_INDEX_##NAME2);                         \
 	} while (0)
 
 static bool
-_create_controller_device(struct survive_system *sys,
-                          const SurviveSimpleObject *sso,
-                          enum VIVE_VARIANT variant)
+_create_controller_device(struct survive_system *sys, const SurviveSimpleObject *sso, enum VIVE_VARIANT variant)
 {
 
 	enum u_device_alloc_flags flags = 0;
 
 	int inputs = VIVE_CONTROLLER_MAX_INDEX;
 	int outputs = 1;
-	struct survive_device *survive =
-	    U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
+	struct survive_device *survive = U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
 
 	int idx = -1;
 	if (variant == VIVE_VARIANT_HTC_VIVE_CONTROLLER) {
@@ -1324,16 +1198,14 @@ _create_controller_device(struct survive_system *sys,
 		if (sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL) {
 			idx = SURVIVE_LEFT_CONTROLLER;
 		} else {
-			SURVIVE_ERROR(survive,
-			              "Only creating 1 left controller!");
+			SURVIVE_ERROR(survive, "Only creating 1 left controller!");
 			return false;
 		}
 	} else if (variant == VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
 		if (sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
 			idx = SURVIVE_RIGHT_CONTROLLER;
 		} else {
-			SURVIVE_ERROR(survive,
-			              "Only creating 1 right controller!");
+			SURVIVE_ERROR(survive, "Only creating 1 right controller!");
 			return false;
 		}
 	}
@@ -1355,8 +1227,7 @@ _create_controller_device(struct survive_system *sys,
 	if (variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER ||
 	    variant == VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
 		survive->base.name = XRT_DEVICE_INDEX_CONTROLLER;
-		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN,
-		         "Survive Valve Index Controller %d", idx);
+		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Valve Index Controller %d", idx);
 
 		SET_INDEX_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
 		SET_INDEX_INPUT(A_CLICK, A_CLICK);
@@ -1381,43 +1252,32 @@ _create_controller_device(struct survive_system *sys,
 		SET_INDEX_INPUT(GRIP_POSE, GRIP_POSE);
 
 		if (variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER) {
-			survive->base.device_type =
-			    XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
-			survive->base.inputs[VIVE_CONTROLLER_HAND_TRACKING]
-			    .name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
-		} else if (variant ==
-		           VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
-			survive->base.device_type =
-			    XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
-			survive->base.inputs[VIVE_CONTROLLER_HAND_TRACKING]
-			    .name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
+			survive->base.device_type = XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
+			survive->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
+		} else if (variant == VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
+			survive->base.device_type = XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
+			survive->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name =
+			    XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
 		} else {
-			survive->base.device_type =
-			    XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
+			survive->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 		}
 
-		survive->base.get_hand_tracking =
-		    survive_controller_get_hand_tracking;
+		survive->base.get_hand_tracking = survive_controller_get_hand_tracking;
 
-		enum xrt_hand hand = idx == SURVIVE_LEFT_CONTROLLER
-		                         ? XRT_HAND_LEFT
-		                         : XRT_HAND_RIGHT;
-		u_hand_joints_init_default_set(
-		    &survive->ctrl.hand_tracking, hand,
-		    XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
+		enum xrt_hand hand = idx == SURVIVE_LEFT_CONTROLLER ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
+		u_hand_joints_init_default_set(&survive->ctrl.hand_tracking, hand, XRT_HAND_TRACKING_MODEL_FINGERL_CURL,
+		                               1.0);
 
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_INDEX_HAPTIC;
 
 		survive->base.binding_profiles = binding_profiles_index;
-		survive->base.num_binding_profiles =
-		    ARRAY_SIZE(binding_profiles_index);
+		survive->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_index);
 
 		survive->base.hand_tracking_supported = true;
 
 	} else if (survive->variant == VIVE_VARIANT_HTC_VIVE_CONTROLLER) {
 		survive->base.name = XRT_DEVICE_VIVE_WAND;
-		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN,
-		         "Survive Vive Wand Controller %d", idx);
+		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Vive Wand Controller %d", idx);
 
 		SET_WAND_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
 		SET_WAND_INPUT(SQUEEZE_CLICK, SQUEEZE_CLICK);
@@ -1434,8 +1294,7 @@ _create_controller_device(struct survive_system *sys,
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_VIVE_HAPTIC;
 
 		survive->base.binding_profiles = binding_profiles_vive;
-		survive->base.num_binding_profiles =
-		    ARRAY_SIZE(binding_profiles_vive);
+		survive->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_vive);
 
 		survive->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 	}
@@ -1457,14 +1316,11 @@ _product_to_variant(uint16_t product_id)
 	case VIVE_PID: return VIVE_VARIANT_VIVE;
 	case VIVE_PRO_MAINBOARD_PID: return VIVE_VARIANT_PRO;
 	case VIVE_PRO_LHR_PID: return VIVE_VARIANT_VALVE_INDEX;
-	default:
-		U_LOG_W("No product ids matched %.4x", product_id);
-		return VIVE_UNKNOWN;
+	default: U_LOG_W("No product ids matched %.4x", product_id); return VIVE_UNKNOWN;
 	}
 }
 
-#define JSON_STRING(a, b, c)                                                   \
-	u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
+#define JSON_STRING(a, b, c) u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
 
 static enum VIVE_VARIANT
 get_variant_from_json(struct survive_system *ss, cJSON *json)
@@ -1526,8 +1382,7 @@ survive_found(struct xrt_prober *xp,
 	    //"--use-imu", "0",
 	    //"--use-kalman", "0"
 	};
-	actx = survive_simple_init(
-	    sizeof(survive_args) / sizeof(survive_args[0]), survive_args);
+	actx = survive_simple_init(sizeof(survive_args) / sizeof(survive_args[0]), survive_args);
 #else
 	actx = survive_simple_init(0, 0);
 #endif
@@ -1545,8 +1400,7 @@ survive_found(struct xrt_prober *xp,
 
 	ss->ctx = actx;
 	ss->base.type = XRT_TRACKING_TYPE_LIGHTHOUSE;
-	snprintf(ss->base.name, XRT_TRACKING_NAME_LEN, "%s",
-	         "Libsurvive Tracking");
+	snprintf(ss->base.name, XRT_TRACKING_NAME_LEN, "%s", "Libsurvive Tracking");
 	ss->base.offset.position.x = 0.0f;
 	ss->base.offset.position.y = 0.0f;
 	ss->base.offset.position.z = 0.0f;
@@ -1557,38 +1411,32 @@ survive_found(struct xrt_prober *xp,
 	/* iterate over all devices, if SurviveSimpleObject_OBJECT parse config
 	 * and if controller, add it with variant from config.
 	 */
-	for (const SurviveSimpleObject *it =
-	         survive_simple_get_first_object(ss->ctx);
-	     it != 0; it = survive_simple_get_next_object(ss->ctx, it)) {
+	for (const SurviveSimpleObject *it = survive_simple_get_first_object(ss->ctx); it != 0;
+	     it = survive_simple_get_next_object(ss->ctx, it)) {
 
 		if (!wait_for_device_config(it)) {
-			U_LOG_IFL_E(ss->ll,
-			            "Failed to get device config from survive");
+			U_LOG_IFL_E(ss->ll, "Failed to get device config from survive");
 			continue;
 		}
 
 		U_LOG_IFL_D(ss->ll, "Got device config from survive");
 
-		enum SurviveSimpleObject_type type =
-		    survive_simple_object_get_type(it);
+		enum SurviveSimpleObject_type type = survive_simple_object_get_type(it);
 
 		if (type == SurviveSimpleObject_HMD) {
-			enum VIVE_VARIANT variant =
-			    _product_to_variant(dev->product_id);
+			enum VIVE_VARIANT variant = _product_to_variant(dev->product_id);
 			U_LOG_I("survive HMD: Assuming variant %d", variant);
 			_create_hmd_device(ss, variant, it);
 		} else if (type == SurviveSimpleObject_OBJECT) {
 			char *json_string = survive_get_json_config(it);
 			cJSON *json = cJSON_Parse(json_string);
 			if (!cJSON_IsObject(json)) {
-				U_LOG_IFL_E(ss->ll,
-				            "Could not parse JSON data.");
+				U_LOG_IFL_E(ss->ll, "Could not parse JSON data.");
 				cJSON_Delete(json);
 				continue;
 			}
 
-			enum VIVE_VARIANT variant =
-			    get_variant_from_json(ss, json);
+			enum VIVE_VARIANT variant = get_variant_from_json(ss, json);
 
 			switch (variant) {
 			case VIVE_VARIANT_HTC_VIVE_CONTROLLER:
@@ -1613,8 +1461,7 @@ survive_found(struct xrt_prober *xp,
 
 	if (ss->ll <= U_LOGGING_DEBUG) {
 		if (ss->hmd) {
-			u_device_dump_config(&ss->hmd->base, __func__,
-			                     "libsurvive");
+			u_device_dump_config(&ss->hmd->base, __func__, "libsurvive");
 		}
 	}
 
@@ -1623,12 +1470,10 @@ survive_found(struct xrt_prober *xp,
 		out_xdevs[out_idx++] = &ss->hmd->base;
 	}
 	if (&ss->controllers[SURVIVE_LEFT_CONTROLLER]) {
-		out_xdevs[out_idx++] =
-		    &ss->controllers[SURVIVE_LEFT_CONTROLLER]->base;
+		out_xdevs[out_idx++] = &ss->controllers[SURVIVE_LEFT_CONTROLLER]->base;
 	}
 	if (&ss->controllers[SURVIVE_LEFT_CONTROLLER]) {
-		out_xdevs[out_idx++] =
-		    &ss->controllers[SURVIVE_RIGHT_CONTROLLER]->base;
+		out_xdevs[out_idx++] = &ss->controllers[SURVIVE_RIGHT_CONTROLLER]->base;
 	}
 
 	survive_already_initialized = true;

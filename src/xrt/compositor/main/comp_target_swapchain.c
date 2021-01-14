@@ -51,8 +51,7 @@ static void
 comp_target_swapchain_destroy_image_views(struct comp_target_swapchain *cts);
 
 static void
-comp_target_swapchain_destroy_old(struct comp_target_swapchain *cts,
-                                  VkSwapchainKHR old);
+comp_target_swapchain_destroy_old(struct comp_target_swapchain *cts, VkSwapchainKHR old);
 
 static VkExtent2D
 comp_target_swapchain_select_extent(struct comp_target_swapchain *cts,
@@ -61,14 +60,10 @@ comp_target_swapchain_select_extent(struct comp_target_swapchain *cts,
                                     uint32_t height);
 
 static bool
-_find_surface_format(struct comp_target_swapchain *cts,
-                     VkSurfaceKHR surface,
-                     VkSurfaceFormatKHR *format);
+_find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkSurfaceFormatKHR *format);
 
 static bool
-_check_surface_present_mode(struct comp_target_swapchain *cts,
-                            VkSurfaceKHR surface,
-                            VkPresentModeKHR present_mode);
+_check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkPresentModeKHR present_mode);
 
 
 /*
@@ -109,8 +104,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 
 
 	// Sanity check.
-	ret = vk->vkGetPhysicalDeviceSurfaceSupportKHR(
-	    vk->physical_device, 0, cts->surface.handle, &supported);
+	ret = vk->vkGetPhysicalDeviceSurfaceSupportKHR(vk->physical_device, 0, cts->surface.handle, &supported);
 	if (!supported) {
 		COMP_ERROR(ct->c,
 		           "vkGetPhysicalDeviceSurfaceSupportKHR: surface not "
@@ -119,16 +113,14 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	}
 
 	// More sanity checks.
-	if (!_check_surface_present_mode(cts, cts->surface.handle,
-	                                 cts->present_mode)) {
+	if (!_check_surface_present_mode(cts, cts->surface.handle, cts->present_mode)) {
 		// Free old.
 		comp_target_swapchain_destroy_old(cts, old_swapchain_handle);
 		return;
 	}
 
 	// Find the correct format.
-	if (!_find_surface_format(cts, cts->surface.handle,
-	                          &cts->surface.format)) {
+	if (!_find_surface_format(cts, cts->surface.handle, &cts->surface.format)) {
 		// Free old.
 		comp_target_swapchain_destroy_old(cts, old_swapchain_handle);
 		return;
@@ -136,12 +128,9 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 
 	// Get the caps first.
 	VkSurfaceCapabilitiesKHR surface_caps;
-	ret = vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-	    vk->physical_device, cts->surface.handle, &surface_caps);
+	ret = vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->physical_device, cts->surface.handle, &surface_caps);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c,
-		           "vkGetPhysicalDeviceSurfaceCapabilitiesKHR: %s",
-		           vk_result_string(ret));
+		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR: %s", vk_result_string(ret));
 
 		// Free old.
 		comp_target_swapchain_destroy_old(cts, old_swapchain_handle);
@@ -149,13 +138,10 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	}
 
 	// Get the extents of the swapchain.
-	VkExtent2D extent = comp_target_swapchain_select_extent(
-	    cts, surface_caps, width, height);
+	VkExtent2D extent = comp_target_swapchain_select_extent(cts, surface_caps, width, height);
 
-	if (surface_caps.currentTransform &
-	        VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
-	    surface_caps.currentTransform &
-	        VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+	if (surface_caps.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+	    surface_caps.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
 		COMP_DEBUG(ct->c,
 		           "Swapping width and height,"
 		           "since we are going to pre rotate");
@@ -188,15 +174,13 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	    .oldSwapchain = old_swapchain_handle,
 	};
 
-	ret = vk->vkCreateSwapchainKHR(vk->device, &swapchain_info, NULL,
-	                               &cts->swapchain.handle);
+	ret = vk->vkCreateSwapchainKHR(vk->device, &swapchain_info, NULL, &cts->swapchain.handle);
 
 	// Always destroy the old.
 	comp_target_swapchain_destroy_old(cts, old_swapchain_handle);
 
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "vkCreateSwapchainKHR: %s",
-		           vk_result_string(ret));
+		COMP_ERROR(ct->c, "vkCreateSwapchainKHR: %s", vk_result_string(ret));
 		return;
 	}
 
@@ -229,21 +213,18 @@ comp_target_swapchain_select_extent(struct comp_target_swapchain *cts,
 		return extent;
 	}
 
-	if (caps.currentExtent.width != width ||
-	    caps.currentExtent.height != height) {
+	if (caps.currentExtent.width != width || caps.currentExtent.height != height) {
 		COMP_DEBUG(cts->base.c,
 		           "Using swap chain extent dimensions %dx%d instead "
 		           "of requested %dx%d.",
-		           caps.currentExtent.width, caps.currentExtent.height,
-		           width, height);
+		           caps.currentExtent.width, caps.currentExtent.height, width, height);
 	}
 
 	return caps.currentExtent;
 }
 
 static void
-comp_target_swapchain_destroy_old(struct comp_target_swapchain *cts,
-                                  VkSwapchainKHR old)
+comp_target_swapchain_destroy_old(struct comp_target_swapchain *cts, VkSwapchainKHR old)
 {
 	struct vk_bundle *vk = get_vk(cts);
 
@@ -253,9 +234,7 @@ comp_target_swapchain_destroy_old(struct comp_target_swapchain *cts,
 }
 
 VkResult
-comp_target_swapchain_acquire_next_image(struct comp_target *ct,
-                                         VkSemaphore semaphore,
-                                         uint32_t *out_index)
+comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 	struct vk_bundle *vk = get_vk(cts);
@@ -271,10 +250,7 @@ comp_target_swapchain_acquire_next_image(struct comp_target *ct,
 }
 
 VkResult
-comp_target_swapchain_present(struct comp_target *ct,
-                              VkQueue queue,
-                              uint32_t index,
-                              VkSemaphore semaphore)
+comp_target_swapchain_present(struct comp_target *ct, VkQueue queue, uint32_t index, VkSemaphore semaphore)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 	struct vk_bundle *vk = get_vk(cts);
@@ -292,32 +268,25 @@ comp_target_swapchain_present(struct comp_target *ct,
 }
 
 static bool
-_find_surface_format(struct comp_target_swapchain *cts,
-                     VkSurfaceKHR surface,
-                     VkSurfaceFormatKHR *format)
+_find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkSurfaceFormatKHR *format)
 {
 	struct vk_bundle *vk = get_vk(cts);
 	uint32_t num_formats;
 	VkSurfaceFormatKHR *formats = NULL;
 	VkResult ret;
 
-	ret = vk->vkGetPhysicalDeviceSurfaceFormatsKHR(
-	    vk->physical_device, surface, &num_formats, NULL);
+	ret = vk->vkGetPhysicalDeviceSurfaceFormatsKHR(vk->physical_device, surface, &num_formats, NULL);
 
 	if (num_formats != 0) {
 		formats = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, num_formats);
-		vk->vkGetPhysicalDeviceSurfaceFormatsKHR(
-		    vk->physical_device, surface, &num_formats, formats);
+		vk->vkGetPhysicalDeviceSurfaceFormatsKHR(vk->physical_device, surface, &num_formats, formats);
 	} else {
-		COMP_ERROR(cts->base.c,
-		           "Could not enumerate surface formats. '%s'",
-		           vk_result_string(ret));
+		COMP_ERROR(cts->base.c, "Could not enumerate surface formats. '%s'", vk_result_string(ret));
 		return false;
 	}
 
 	VkSurfaceFormatKHR *formats_for_colorspace = NULL;
-	formats_for_colorspace =
-	    U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, num_formats);
+	formats_for_colorspace = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, num_formats);
 
 	uint32_t num_formats_cs = 0;
 	uint32_t num_pref_formats = ARRAY_SIZE(preferred_color_formats);
@@ -337,8 +306,7 @@ _find_surface_format(struct comp_target_swapchain *cts,
 		// if we have one that is on our preferred formats list, use it
 
 		for (uint32_t i = 0; i < num_formats_cs; i++) {
-			if (formats_for_colorspace[i].format ==
-			    cts->preferred.color_format) {
+			if (formats_for_colorspace[i].format == cts->preferred.color_format) {
 				// perfect match.
 				*format = formats_for_colorspace[i];
 				goto cleanup;
@@ -350,8 +318,7 @@ _find_surface_format(struct comp_target_swapchain *cts,
 		// correct colorspace.
 		for (uint32_t i = 0; i < num_formats_cs; i++) {
 			for (uint32_t j = 0; j < num_pref_formats; j++) {
-				if (formats_for_colorspace[i].format ==
-				    preferred_color_formats[j]) {
+				if (formats_for_colorspace[i].format == preferred_color_formats[j]) {
 					*format = formats_for_colorspace[i];
 					goto cleanup;
 				}
@@ -372,13 +339,11 @@ _find_surface_format(struct comp_target_swapchain *cts,
 		// return a preferred format at least
 		for (uint32_t i = 0; i < num_formats; i++) {
 			for (uint32_t j = 0; j < num_pref_formats; j++) {
-				if (formats[i].format ==
-				    preferred_color_formats[j]) {
+				if (formats[i].format == preferred_color_formats[j]) {
 					*format = formats_for_colorspace[i];
-					COMP_ERROR(
-					    cts->base.c,
-					    "Returning known-wrong color "
-					    "space! Color shift may occur.");
+					COMP_ERROR(cts->base.c,
+					           "Returning known-wrong color "
+					           "space! Color shift may occur.");
 					goto cleanup;
 				}
 			}
@@ -408,28 +373,21 @@ error:
 }
 
 static bool
-_check_surface_present_mode(struct comp_target_swapchain *cts,
-                            VkSurfaceKHR surface,
-                            VkPresentModeKHR present_mode)
+_check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkPresentModeKHR present_mode)
 {
 	struct vk_bundle *vk = get_vk(cts);
 	VkResult ret;
 
 	uint32_t num_present_modes;
 	VkPresentModeKHR *present_modes;
-	ret = vk->vkGetPhysicalDeviceSurfacePresentModesKHR(
-	    vk->physical_device, surface, &num_present_modes, NULL);
+	ret = vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &num_present_modes, NULL);
 
 	if (num_present_modes != 0) {
-		present_modes =
-		    U_TYPED_ARRAY_CALLOC(VkPresentModeKHR, num_present_modes);
-		vk->vkGetPhysicalDeviceSurfacePresentModesKHR(
-		    vk->physical_device, surface, &num_present_modes,
-		    present_modes);
+		present_modes = U_TYPED_ARRAY_CALLOC(VkPresentModeKHR, num_present_modes);
+		vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &num_present_modes,
+		                                              present_modes);
 	} else {
-		COMP_ERROR(cts->base.c,
-		           "Could not enumerate present modes. '%s'",
-		           vk_result_string(ret));
+		COMP_ERROR(cts->base.c, "Could not enumerate present modes. '%s'", vk_result_string(ret));
 		return false;
 	}
 
@@ -459,8 +417,7 @@ comp_target_swapchain_destroy_image_views(struct comp_target_swapchain *cts)
 			continue;
 		}
 
-		vk->vkDestroyImageView(vk->device, cts->base.images[i].view,
-		                       NULL);
+		vk->vkDestroyImageView(vk->device, cts->base.images[i].view, NULL);
 		cts->base.images[i].view = VK_NULL_HANDLE;
 	}
 
@@ -479,8 +436,7 @@ comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts)
 	    &cts->base.num_images,   // pSwapchainImageCount
 	    NULL);                   // pSwapchainImages
 	assert(cts->base.num_images > 0);
-	COMP_DEBUG(cts->base.c, "Creating %d image views.",
-	           cts->base.num_images);
+	COMP_DEBUG(cts->base.c, "Creating %d image views.", cts->base.num_images);
 
 	VkImage *images = U_TYPED_ARRAY_CALLOC(VkImage, cts->base.num_images);
 	vk->vkGetSwapchainImagesKHR( //
@@ -491,8 +447,7 @@ comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts)
 
 	comp_target_swapchain_destroy_image_views(cts);
 
-	cts->base.images = U_TYPED_ARRAY_CALLOC(struct comp_target_image,
-	                                        cts->base.num_images);
+	cts->base.images = U_TYPED_ARRAY_CALLOC(struct comp_target_image, cts->base.num_images);
 
 	VkImageSubresourceRange subresource_range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -504,8 +459,7 @@ comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts)
 
 	for (uint32_t i = 0; i < cts->base.num_images; i++) {
 		cts->base.images[i].handle = images[i];
-		vk_create_view(vk, cts->base.images[i].handle,
-		               cts->surface.format.format, subresource_range,
+		vk_create_view(vk, cts->base.images[i].handle, cts->surface.format.format, subresource_range,
 		               &cts->base.images[i].view);
 	}
 

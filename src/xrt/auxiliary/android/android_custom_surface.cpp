@@ -47,13 +47,11 @@ android_custom_surface::~android_custom_surface()
 		}
 	} catch (std::exception const &e) {
 		// Must catch and ignore any exceptions in the destructor!
-		U_LOG_E("Failure while marking MonadoView as discarded: %s",
-		        e.what());
+		U_LOG_E("Failure while marking MonadoView as discarded: %s", e.what());
 	}
 }
 
-constexpr auto FULLY_QUALIFIED_CLASSNAME =
-    "org.freedesktop.monado.auxiliary.MonadoView";
+constexpr auto FULLY_QUALIFIED_CLASSNAME = "org.freedesktop.monado.auxiliary.MonadoView";
 
 struct android_custom_surface *
 android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
@@ -62,18 +60,16 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 	try {
 		auto info = getAppInfo(XRT_ANDROID_PACKAGE, (jobject)activity);
 		if (info.isNull()) {
-			U_LOG_E(
-			    "Could not get application info for package '%s'",
-			    "org.freedesktop.monado.openxr_runtime");
+			U_LOG_E("Could not get application info for package '%s'",
+			        "org.freedesktop.monado.openxr_runtime");
 			return nullptr;
 		}
 
-		auto clazz = loadClassFromPackage(info, (jobject)activity,
-		                                  FULLY_QUALIFIED_CLASSNAME);
+		auto clazz = loadClassFromPackage(info, (jobject)activity, FULLY_QUALIFIED_CLASSNAME);
 
 		if (clazz.isNull()) {
-			U_LOG_E("Could not load class '%s' from package '%s'",
-			        FULLY_QUALIFIED_CLASSNAME, XRT_ANDROID_PACKAGE);
+			U_LOG_E("Could not load class '%s' from package '%s'", FULLY_QUALIFIED_CLASSNAME,
+			        XRT_ANDROID_PACKAGE);
 			return nullptr;
 		}
 
@@ -84,8 +80,7 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 
 		// the 0 is to avoid this being considered "temporary" and to
 		// create a global ref.
-		ret->monadoViewClass =
-		    jni::Class((jclass)clazz.object().getHandle(), 0);
+		ret->monadoViewClass = jni::Class((jclass)clazz.object().getHandle(), 0);
 
 		if (ret->monadoViewClass.isNull()) {
 			U_LOG_E("monadoViewClass was null");
@@ -94,13 +89,11 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 
 		std::string clazz_name = ret->monadoViewClass.getName();
 		if (clazz_name != FULLY_QUALIFIED_CLASSNAME) {
-			U_LOG_E("Unexpected class name: %s",
-			        clazz_name.c_str());
+			U_LOG_E("Unexpected class name: %s", clazz_name.c_str());
 			return nullptr;
 		}
 
-		ret->monadoView =
-		    MonadoView::attachToActivity(ret->activity, ret.get());
+		ret->monadoView = MonadoView::attachToActivity(ret->activity, ret.get());
 
 		return ret.release();
 	} catch (std::exception const &e) {
@@ -115,8 +108,7 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 
 
 void
-android_custom_surface_destroy(
-    struct android_custom_surface **ptr_custom_surface)
+android_custom_surface_destroy(struct android_custom_surface **ptr_custom_surface)
 {
 	if (ptr_custom_surface == NULL) {
 		return;
@@ -130,13 +122,11 @@ android_custom_surface_destroy(
 }
 
 ANativeWindow *
-android_custom_surface_wait_get_surface(
-    struct android_custom_surface *custom_surface, uint64_t timeout_ms)
+android_custom_surface_wait_get_surface(struct android_custom_surface *custom_surface, uint64_t timeout_ms)
 {
 	SurfaceHolder surfaceHolder{};
 	try {
-		surfaceHolder =
-		    custom_surface->monadoView.waitGetSurfaceHolder(timeout_ms);
+		surfaceHolder = custom_surface->monadoView.waitGetSurfaceHolder(timeout_ms);
 
 	} catch (std::exception const &e) {
 		// do nothing right now.
@@ -154,49 +144,43 @@ android_custom_surface_wait_get_surface(
 	if (surf.isNull()) {
 		return nullptr;
 	}
-	return ANativeWindow_fromSurface(jni::env(),
-	                                 surf.object().makeLocalReference());
+	return ANativeWindow_fromSurface(jni::env(), surf.object().makeLocalReference());
 }
 
 bool
-android_custom_surface_get_display_metrics(
-    struct _JavaVM *vm,
-    void *activity,
-    struct xrt_android_display_metrics *out_metrics)
+android_custom_surface_get_display_metrics(struct _JavaVM *vm,
+                                           void *activity,
+                                           struct xrt_android_display_metrics *out_metrics)
 {
 	jni::init(vm);
 	try {
 		auto info = getAppInfo(XRT_ANDROID_PACKAGE, (jobject)activity);
 		if (info.isNull()) {
-			U_LOG_E(
-			    "Could not get application info for package '%s'",
-			    "org.freedesktop.monado.openxr_runtime");
+			U_LOG_E("Could not get application info for package '%s'",
+			        "org.freedesktop.monado.openxr_runtime");
 			return false;
 		}
 
-		auto clazz = loadClassFromPackage(info, (jobject)activity,
-		                                  FULLY_QUALIFIED_CLASSNAME);
+		auto clazz = loadClassFromPackage(info, (jobject)activity, FULLY_QUALIFIED_CLASSNAME);
 
 		if (clazz.isNull()) {
-			U_LOG_E("Could not load class '%s' from package '%s'",
-			        FULLY_QUALIFIED_CLASSNAME, XRT_ANDROID_PACKAGE);
+			U_LOG_E("Could not load class '%s' from package '%s'", FULLY_QUALIFIED_CLASSNAME,
+			        XRT_ANDROID_PACKAGE);
 			return false;
 		}
 
 		// Teach the wrapper our class before we start to use it.
 		MonadoView::staticInitClass((jclass)clazz.object().getHandle());
 
-		jni::Object displayMetrics =
-		    MonadoView::getDisplayMetrics(Activity((jobject)activity));
+		jni::Object displayMetrics = MonadoView::getDisplayMetrics(Activity((jobject)activity));
 
-		*out_metrics = {
-		    .width_pixels = displayMetrics.get<int>("widthPixels"),
-		    .height_pixels = displayMetrics.get<int>("heightPixels"),
-		    .density_dpi = displayMetrics.get<int>("densityDpi"),
-		    .density = displayMetrics.get<float>("xdpi"),
-		    .scaled_density = displayMetrics.get<float>("ydpi"),
-		    .xdpi = displayMetrics.get<float>("density"),
-		    .ydpi = displayMetrics.get<float>("scaledDensity")};
+		*out_metrics = {.width_pixels = displayMetrics.get<int>("widthPixels"),
+		                .height_pixels = displayMetrics.get<int>("heightPixels"),
+		                .density_dpi = displayMetrics.get<int>("densityDpi"),
+		                .density = displayMetrics.get<float>("xdpi"),
+		                .scaled_density = displayMetrics.get<float>("ydpi"),
+		                .xdpi = displayMetrics.get<float>("density"),
+		                .ydpi = displayMetrics.get<float>("scaledDensity")};
 		return true;
 
 	} catch (std::exception const &e) {

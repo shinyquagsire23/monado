@@ -81,8 +81,8 @@ p_libuvc_probe(struct prober *p)
 		        "\t\tserial:     %s\n"
 		        "\t\tmanuf:      %s\n"
 		        "\t\tproduct:    %s",
-		        (void *)pdev, ret, vendor, product, bus, addr,
-		        desc->serialNumber, desc->manufacturer, desc->product);
+		        (void *)pdev, ret, vendor, product, bus, addr, desc->serialNumber, desc->manufacturer,
+		        desc->product);
 
 		uvc_free_device_descriptor(desc);
 

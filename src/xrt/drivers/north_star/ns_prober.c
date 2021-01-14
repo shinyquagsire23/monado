@@ -49,10 +49,7 @@ ns_prober_destroy(struct xrt_auto_prober *p)
 
 //! @public @memberof ns_prober
 static struct xrt_device *
-ns_prober_autoprobe(struct xrt_auto_prober *xap,
-                    cJSON *attached_data,
-                    bool no_hmds,
-                    struct xrt_prober *xp)
+ns_prober_autoprobe(struct xrt_auto_prober *xap, cJSON *attached_data, bool no_hmds, struct xrt_prober *xp)
 {
 	struct ns_prober *nsp = ns_prober(xap);
 

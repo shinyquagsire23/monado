@@ -63,10 +63,7 @@ android_prober_destroy(struct xrt_auto_prober *p)
 
 //! @public @memberof android_prober
 static struct xrt_device *
-android_prober_autoprobe(struct xrt_auto_prober *xap,
-                         cJSON *attached_data,
-                         bool no_hmds,
-                         struct xrt_prober *xp)
+android_prober_autoprobe(struct xrt_auto_prober *xap, cJSON *attached_data, bool no_hmds, struct xrt_prober *xp)
 {
 	struct android_device *dd = android_device_create();
 	return &dd->base;

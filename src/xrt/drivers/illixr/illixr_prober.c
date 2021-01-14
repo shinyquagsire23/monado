@@ -34,10 +34,7 @@ illixr_prober_destroy(struct xrt_auto_prober *p)
 }
 
 static struct xrt_device *
-illixr_prober_autoprobe(struct xrt_auto_prober *xap,
-                        cJSON *attached_data,
-                        bool no_hmds,
-                        struct xrt_prober *xp)
+illixr_prober_autoprobe(struct xrt_auto_prober *xap, cJSON *attached_data, bool no_hmds, struct xrt_prober *xp)
 {
 	struct illixr_prober *dp = illixr_prober(xap);
 	(void)dp;

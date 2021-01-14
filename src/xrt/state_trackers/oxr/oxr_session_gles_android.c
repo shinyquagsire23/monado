@@ -31,59 +31,47 @@
 #include <dlfcn.h>
 
 XrResult
-oxr_session_populate_gles_android(
-    struct oxr_logger *log,
-    struct oxr_system *sys,
-    XrGraphicsBindingOpenGLESAndroidKHR const *next,
-    struct oxr_session *sess)
+oxr_session_populate_gles_android(struct oxr_logger *log,
+                                  struct oxr_system *sys,
+                                  XrGraphicsBindingOpenGLESAndroidKHR const *next,
+                                  struct oxr_session *sess)
 {
 	void *so = dlopen("libEGL.so", RTLD_NOW | RTLD_LOCAL);
 	if (so == NULL) {
-		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Could not open libEGL.so");
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Could not open libEGL.so");
 	}
 
-	PFNEGLGETPROCADDRESSPROC get_proc_addr =
-	    (PFNEGLGETPROCADDRESSPROC)dlsym(so, "eglGetProcAddress");
+	PFNEGLGETPROCADDRESSPROC get_proc_addr = (PFNEGLGETPROCADDRESSPROC)dlsym(so, "eglGetProcAddress");
 	if (get_proc_addr == NULL) {
 		dlclose(so);
-		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Could not get eglGetProcAddress");
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Could not get eglGetProcAddress");
 	}
 
 	EGLint egl_client_type;
 
-	PFNEGLQUERYCONTEXTPROC eglQueryContext =
-	    (PFNEGLQUERYCONTEXTPROC)get_proc_addr("eglQueryContext");
+	PFNEGLQUERYCONTEXTPROC eglQueryContext = (PFNEGLQUERYCONTEXTPROC)get_proc_addr("eglQueryContext");
 	if (!eglQueryContext) {
 		dlclose(so);
-		return oxr_error(
-		    log, XR_ERROR_INITIALIZATION_FAILED,
-		    "Call to getProcAddress(eglQueryContext) failed");
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Call to getProcAddress(eglQueryContext) failed");
 	}
 
-	if (!eglQueryContext(next->display, next->context,
-	                     EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
-		dlclose(so);
-		return oxr_error(
-		    log, XR_ERROR_INITIALIZATION_FAILED,
-		    "Call to eglQueryContext(EGL_CONTEXT_CLIENT_TYPE) failed");
-	}
-
-	if (egl_client_type != EGL_OPENGL_API &&
-	    egl_client_type != EGL_OPENGL_ES_API) {
+	if (!eglQueryContext(next->display, next->context, EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
 		dlclose(so);
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Unsupported EGL client type");
+		                 "Call to eglQueryContext(EGL_CONTEXT_CLIENT_TYPE) failed");
+	}
+
+	if (egl_client_type != EGL_OPENGL_API && egl_client_type != EGL_OPENGL_ES_API) {
+		dlclose(so);
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Unsupported EGL client type");
 	}
 
 	struct xrt_compositor_native *xcn = sess->sys->xcn;
-	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_egl(
-	    xcn, next->display, next->config, next->context, get_proc_addr);
+	struct xrt_compositor_gl *xcgl =
+	    xrt_gfx_provider_create_gl_egl(xcn, next->display, next->config, next->context, get_proc_addr);
 
 	if (xcgl == NULL) {
-		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Failed to create an egl client compositor");
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Failed to create an egl client compositor");
 	}
 
 	sess->compositor = &xcgl->base;

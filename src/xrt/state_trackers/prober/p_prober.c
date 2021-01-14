@@ -60,9 +60,7 @@ static int
 dump(struct xrt_prober *xp);
 
 static int
-select_device(struct xrt_prober *xp,
-              struct xrt_device **xdevs,
-              size_t num_xdevs);
+select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs);
 
 static int
 open_hid_interface(struct xrt_prober *xp,
@@ -77,9 +75,7 @@ open_video_device(struct xrt_prober *xp,
                   struct xrt_fs **out_xfs);
 
 static int
-list_video_devices(struct xrt_prober *xp,
-                   xrt_prober_list_video_cb cb,
-                   void *ptr);
+list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
 static int
 get_string_descriptor(struct xrt_prober *xp,
                       struct xrt_prober_device *xpdev,
@@ -101,8 +97,7 @@ destroy(struct xrt_prober **xp);
  */
 
 int
-xrt_prober_create_with_lists(struct xrt_prober **out_xp,
-                             struct xrt_prober_entry_lists *lists)
+xrt_prober_create_with_lists(struct xrt_prober **out_xp, struct xrt_prober_entry_lists *lists)
 {
 	struct prober *p = U_TYPED_CALLOC(struct prober);
 
@@ -117,7 +112,7 @@ xrt_prober_create_with_lists(struct xrt_prober **out_xp,
 	return 0;
 }
 
-#define ENUM_TO_STR(r)                                                         \
+#define ENUM_TO_STR(r)                                                                                                 \
 	case r: return #r
 
 const char *
@@ -170,20 +165,17 @@ p_dev_get_usb_dev(struct prober *p,
 	for (size_t i = 0; i < p->num_devices; i++) {
 		struct prober_device *pdev = &p->devices[i];
 
-		if (pdev->base.bus != XRT_BUS_TYPE_USB ||
-		    pdev->usb.bus != bus || pdev->usb.addr != addr) {
+		if (pdev->base.bus != XRT_BUS_TYPE_USB || pdev->usb.bus != bus || pdev->usb.addr != addr) {
 			continue;
 		}
 
-		if (pdev->base.vendor_id != vendor_id ||
-		    pdev->base.product_id != product_id) {
+		if (pdev->base.vendor_id != vendor_id || pdev->base.product_id != product_id) {
 			P_ERROR(p,
 			        "USB device with same address but different "
 			        "vendor and product found!\n"
 			        "\tvendor:  %04x %04x\n"
 			        "\tproduct: %04x %04x",
-			        pdev->base.vendor_id, vendor_id,
-			        pdev->base.product_id, product_id);
+			        pdev->base.vendor_id, vendor_id, pdev->base.product_id, product_id);
 			continue;
 		}
 
@@ -203,31 +195,25 @@ p_dev_get_usb_dev(struct prober *p,
 }
 
 int
-p_dev_get_bluetooth_dev(struct prober *p,
-                        uint64_t id,
-                        uint16_t vendor_id,
-                        uint16_t product_id,
-                        struct prober_device **out_pdev)
+p_dev_get_bluetooth_dev(
+    struct prober *p, uint64_t id, uint16_t vendor_id, uint16_t product_id, struct prober_device **out_pdev)
 {
 	struct prober_device *pdev;
 
 	for (size_t i = 0; i < p->num_devices; i++) {
 		struct prober_device *pdev = &p->devices[i];
 
-		if (pdev->base.bus != XRT_BUS_TYPE_BLUETOOTH ||
-		    pdev->bluetooth.id != id) {
+		if (pdev->base.bus != XRT_BUS_TYPE_BLUETOOTH || pdev->bluetooth.id != id) {
 			continue;
 		}
 
-		if (pdev->base.vendor_id != vendor_id ||
-		    pdev->base.product_id != product_id) {
+		if (pdev->base.vendor_id != vendor_id || pdev->base.product_id != product_id) {
 			P_ERROR(p,
 			        "Bluetooth device with same address but "
 			        "different vendor and product found!\n"
 			        "\tvendor:  %04x %04x\n"
 			        "\tproduct: %04x %04x",
-			        pdev->base.vendor_id, vendor_id,
-			        pdev->base.product_id, product_id);
+			        pdev->base.vendor_id, vendor_id, pdev->base.product_id, product_id);
 			continue;
 		}
 
@@ -256,14 +242,13 @@ p_dev_get_bluetooth_dev(struct prober *p,
 static void
 fill_out_product(struct prober *p, struct prober_device *pdev)
 {
-	const char *bus =
-	    pdev->base.bus == XRT_BUS_TYPE_BLUETOOTH ? "bluetooth" : "usb";
+	const char *bus = pdev->base.bus == XRT_BUS_TYPE_BLUETOOTH ? "bluetooth" : "usb";
 
 	char *str = NULL;
 	int ret = 0;
 	do {
-		ret = snprintf(str, ret, "Unknown %s device: %04x:%04x", bus,
-		               pdev->base.vendor_id, pdev->base.product_id);
+		ret = snprintf(str, ret, "Unknown %s device: %04x:%04x", bus, pdev->base.vendor_id,
+		               pdev->base.product_id);
 		if (ret <= 0) {
 			return;
 		}
@@ -280,8 +265,7 @@ fill_out_product(struct prober *p, struct prober_device *pdev)
 static void
 add_device(struct prober *p, struct prober_device **out_dev)
 {
-	U_ARRAY_REALLOC_OR_FREE(p->devices, struct prober_device,
-	                        (p->num_devices + 1));
+	U_ARRAY_REALLOC_OR_FREE(p->devices, struct prober_device, (p->num_devices + 1));
 
 	struct prober_device *dev = &p->devices[p->num_devices++];
 	U_ZERO(dev);
@@ -292,8 +276,7 @@ add_device(struct prober *p, struct prober_device **out_dev)
 static void
 add_usb_entry(struct prober *p, struct xrt_prober_entry *entry)
 {
-	U_ARRAY_REALLOC_OR_FREE(p->entries, struct xrt_prober_entry *,
-	                        (p->num_entries + 1));
+	U_ARRAY_REALLOC_OR_FREE(p->entries, struct xrt_prober_entry *, (p->num_entries + 1));
 	p->entries[p->num_entries++] = entry;
 }
 
@@ -302,8 +285,7 @@ collect_entries(struct prober *p)
 {
 	struct xrt_prober_entry_lists *lists = p->lists;
 	while (lists) {
-		for (size_t j = 0; lists->entries != NULL && lists->entries[j];
-		     j++) {
+		for (size_t j = 0; lists->entries != NULL && lists->entries[j]; j++) {
 			struct xrt_prober_entry *entry = lists->entries[j];
 			for (size_t k = 0; entry[k].found != NULL; k++) {
 				add_usb_entry(p, &entry[k]);
@@ -545,11 +527,8 @@ dump(struct xrt_prober *xp)
 }
 
 static void
-handle_found_device(struct prober *p,
-                    struct xrt_device **xdevs,
-                    size_t num_xdevs,
-                    bool *have_hmd,
-                    struct xrt_device *xdev)
+handle_found_device(
+    struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, bool *have_hmd, struct xrt_device *xdev)
 {
 	P_DEBUG(p, "Found '%s' %p", xdev->str, (void *)xdev);
 
@@ -579,14 +558,10 @@ handle_found_device(struct prober *p,
 }
 
 static void
-add_from_devices(struct prober *p,
-                 struct xrt_device **xdevs,
-                 size_t num_xdevs,
-                 bool *have_hmd)
+add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, bool *have_hmd)
 {
 	// Build a list of all current probed devices.
-	struct xrt_prober_device **dev_list =
-	    U_TYPED_ARRAY_CALLOC(struct xrt_prober_device *, p->num_devices);
+	struct xrt_prober_device **dev_list = U_TYPED_ARRAY_CALLOC(struct xrt_prober_device *, p->num_devices);
 	for (size_t i = 0; i < p->num_devices; i++) {
 		dev_list[i] = &p->devices[i].base;
 	}
@@ -597,34 +572,26 @@ add_from_devices(struct prober *p,
 
 		for (size_t k = 0; k < p->num_entries; k++) {
 			struct xrt_prober_entry *entry = p->entries[k];
-			if (pdev->base.vendor_id != entry->vendor_id ||
-			    pdev->base.product_id != entry->product_id) {
+			if (pdev->base.vendor_id != entry->vendor_id || pdev->base.product_id != entry->product_id) {
 				continue;
 			}
 
-			struct xrt_device
-			    *new_xdevs[XRT_MAX_DEVICES_PER_PROBE] = {NULL};
-			int num_found =
-			    entry->found(&p->base, dev_list, p->num_devices, i,
-			                 NULL, &(new_xdevs[0]));
+			struct xrt_device *new_xdevs[XRT_MAX_DEVICES_PER_PROBE] = {NULL};
+			int num_found = entry->found(&p->base, dev_list, p->num_devices, i, NULL, &(new_xdevs[0]));
 
 			if (num_found <= 0) {
 				continue;
 			}
-			for (int created_idx = 0; created_idx < num_found;
-			     ++created_idx) {
+			for (int created_idx = 0; created_idx < num_found; ++created_idx) {
 				if (new_xdevs[created_idx] == NULL) {
-					P_DEBUG(
-					    p,
-					    "Leaving device creation loop "
-					    "early: found function reported %i "
-					    "created, but only %i non-null",
-					    num_found, created_idx);
+					P_DEBUG(p,
+					        "Leaving device creation loop "
+					        "early: found function reported %i "
+					        "created, but only %i non-null",
+					        num_found, created_idx);
 					continue;
 				}
-				handle_found_device(p, xdevs, num_xdevs,
-				                    have_hmd,
-				                    new_xdevs[created_idx]);
+				handle_found_device(p, xdevs, num_xdevs, have_hmd, new_xdevs[created_idx]);
 			}
 		}
 	}
@@ -634,10 +601,7 @@ add_from_devices(struct prober *p,
 }
 
 static void
-add_from_auto_probers(struct prober *p,
-                      struct xrt_device **xdevs,
-                      size_t num_xdevs,
-                      bool *have_hmd)
+add_from_auto_probers(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, bool *have_hmd)
 {
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
 		/*
@@ -648,8 +612,7 @@ add_from_auto_probers(struct prober *p,
 		bool no_hmds = *have_hmd;
 
 		struct xrt_device *xdev =
-		    p->auto_probers[i]->lelo_dallas_autoprobe(
-		        p->auto_probers[i], NULL, no_hmds, &p->base);
+		    p->auto_probers[i]->lelo_dallas_autoprobe(p->auto_probers[i], NULL, no_hmds, &p->base);
 		if (xdev == NULL) {
 			continue;
 		}
@@ -659,10 +622,7 @@ add_from_auto_probers(struct prober *p,
 }
 
 static void
-add_from_remote(struct prober *p,
-                struct xrt_device **xdevs,
-                size_t num_xdevs,
-                bool *have_hmd)
+add_from_remote(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, bool *have_hmd)
 {
 	if (num_xdevs < 3) {
 		return;
@@ -680,9 +640,7 @@ add_from_remote(struct prober *p,
 }
 
 static int
-select_device(struct xrt_prober *xp,
-              struct xrt_device **xdevs,
-              size_t num_xdevs)
+select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs)
 {
 	struct prober *p = (struct prober *)xp;
 	enum p_active_config active;
@@ -696,9 +654,7 @@ select_device(struct xrt_prober *xp,
 		add_from_devices(p, xdevs, num_xdevs, &have_hmd);
 		add_from_auto_probers(p, xdevs, num_xdevs, &have_hmd);
 		break;
-	case P_ACTIVE_CONFIG_REMOTE:
-		add_from_remote(p, xdevs, num_xdevs, &have_hmd);
-		break;
+	case P_ACTIVE_CONFIG_REMOTE: add_from_remote(p, xdevs, num_xdevs, &have_hmd); break;
 	default: assert(false);
 	}
 
@@ -761,8 +717,7 @@ open_hid_interface(struct xrt_prober *xp,
 
 		ret = os_hid_open_hidraw(hidraw->path, out_hid_dev);
 		if (ret != 0) {
-			U_LOG_E("Failed to open device '%s' got '%i'",
-			        hidraw->path, ret);
+			U_LOG_E("Failed to open device '%s' got '%i'", hidraw->path, ret);
 			return ret;
 		}
 
@@ -785,8 +740,7 @@ open_video_device(struct xrt_prober *xp,
                   struct xrt_frame_context *xfctx,
                   struct xrt_fs **out_xfs)
 {
-	XRT_MAYBE_UNUSED struct prober_device *pdev =
-	    (struct prober_device *)xpdev;
+	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
 
 #if defined(XRT_HAVE_VF)
 	const char *path = debug_get_option_vf_path();
@@ -817,9 +771,7 @@ open_video_device(struct xrt_prober *xp,
 }
 
 static int
-list_video_devices(struct xrt_prober *xp,
-                   xrt_prober_list_video_cb cb,
-                   void *ptr)
+list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr)
 {
 	struct prober *p = (struct prober *)xp;
 
@@ -848,8 +800,7 @@ list_video_devices(struct xrt_prober *xp,
 			fill_out_product(p, pdev);
 		}
 
-		cb(xp, &pdev->base, pdev->usb.product, pdev->usb.manufacturer,
-		   pdev->usb.serial, ptr);
+		cb(xp, &pdev->base, pdev->usb.product, pdev->usb.manufacturer, pdev->usb.serial, ptr);
 	}
 
 	return 0;
@@ -863,13 +814,11 @@ get_string_descriptor(struct xrt_prober *xp,
                       int length)
 {
 	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
-	XRT_MAYBE_UNUSED struct prober_device *pdev =
-	    (struct prober_device *)xpdev;
+	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
 	XRT_MAYBE_UNUSED int ret;
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->usb.dev != NULL) {
-		ret = p_libusb_get_string_descriptor(p, pdev, which_string,
-		                                     buffer, length);
+		ret = p_libusb_get_string_descriptor(p, pdev, which_string, buffer, length);
 		if (ret >= 0) {
 			return ret;
 		}
@@ -884,8 +833,7 @@ static bool
 can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 {
 	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
-	XRT_MAYBE_UNUSED struct prober_device *pdev =
-	    (struct prober_device *)xpdev;
+	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->usb.dev != NULL) {
 		return p_libusb_can_open(p, pdev);

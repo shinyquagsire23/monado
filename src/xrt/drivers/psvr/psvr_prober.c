@@ -75,10 +75,7 @@ psvr_prober_destroy(struct xrt_auto_prober *p)
 
 //! @public @memberof psvr_prober
 static struct xrt_device *
-psvr_prober_autoprobe(struct xrt_auto_prober *xap,
-                      cJSON *attached_data,
-                      bool no_hmds,
-                      struct xrt_prober *xp)
+psvr_prober_autoprobe(struct xrt_auto_prober *xap, cJSON *attached_data, bool no_hmds, struct xrt_prober *xp)
 {
 	struct psvr_prober *ppsvr = psvr_prober(xap);
 	struct hid_device_info *info_control = NULL;
@@ -105,11 +102,9 @@ psvr_prober_autoprobe(struct xrt_auto_prober *xap,
 
 	if (info_control != NULL && info_handle != NULL) {
 		if (ppsvr->enabled) {
-			dev = psvr_device_create(info_handle, info_control, xp,
-			                         ppsvr->log_level);
+			dev = psvr_device_create(info_handle, info_control, xp, ppsvr->log_level);
 		} else {
-			PSVR_DEBUG(ppsvr,
-			           "Found a PSVR hmd but driver is disabled");
+			PSVR_DEBUG(ppsvr, "Found a PSVR hmd but driver is disabled");
 		}
 	}
 

@@ -51,10 +51,7 @@ u_hashset_destroy(struct u_hashset **hs)
 }
 
 extern "C" int
-u_hashset_find_str(struct u_hashset *hs,
-                   const char *str,
-                   size_t length,
-                   struct u_hashset_item **out_item)
+u_hashset_find_str(struct u_hashset *hs, const char *str, size_t length, struct u_hashset_item **out_item)
 {
 	std::string key = std::string(str, length);
 	auto search = hs->map.find(key);
@@ -67,9 +64,7 @@ u_hashset_find_str(struct u_hashset *hs,
 }
 
 extern "C" int
-u_hashset_find_c_str(struct u_hashset *hs,
-                     const char *c_str,
-                     struct u_hashset_item **out_item)
+u_hashset_find_c_str(struct u_hashset *hs, const char *c_str, struct u_hashset_item **out_item)
 {
 	size_t length = strlen(c_str);
 	return u_hashset_find_str(hs, c_str, length, out_item);
@@ -84,10 +79,7 @@ u_hashset_insert_item(struct u_hashset *hs, struct u_hashset_item *item)
 }
 
 extern "C" int
-u_hashset_create_and_insert_str(struct u_hashset *hs,
-                                const char *str,
-                                size_t length,
-                                struct u_hashset_item **out_item)
+u_hashset_create_and_insert_str(struct u_hashset *hs, const char *str, size_t length, struct u_hashset_item **out_item)
 {
 	struct u_hashset_item *dummy = NULL;
 	struct u_hashset_item *item = NULL;
@@ -126,9 +118,7 @@ u_hashset_create_and_insert_str(struct u_hashset *hs,
 }
 
 extern "C" int
-u_hashset_create_and_insert_str_c(struct u_hashset *hs,
-                                  const char *c_str,
-                                  struct u_hashset_item **out_item)
+u_hashset_create_and_insert_str_c(struct u_hashset *hs, const char *c_str, struct u_hashset_item **out_item)
 {
 	size_t length = strlen(c_str);
 	return u_hashset_create_and_insert_str(hs, c_str, length, out_item);
@@ -158,9 +148,7 @@ u_hashset_erase_c_str(struct u_hashset *hs, const char *c_str)
 }
 
 extern "C" void
-u_hashset_clear_and_call_for_each(struct u_hashset *hs,
-                                  u_hashset_callback cb,
-                                  void *priv)
+u_hashset_clear_and_call_for_each(struct u_hashset *hs, u_hashset_callback cb, void *priv)
 {
 	std::vector<struct u_hashset_item *> tmp;
 	tmp.reserve(hs->map.size());

@@ -55,8 +55,7 @@ extern "C" {
  *
  * @ingroup aux_util
  */
-#define U_TYPED_ARRAY_CALLOC(TYPE, COUNT)                                      \
-	((TYPE *)calloc((COUNT), sizeof(TYPE)))
+#define U_TYPED_ARRAY_CALLOC(TYPE, COUNT) ((TYPE *)calloc((COUNT), sizeof(TYPE)))
 
 /*!
  * Zeroes the correct amount of memory based on the type pointed-to by the
@@ -111,8 +110,7 @@ u_realloc_or_free(void *ptr, size_t new_size)
  *
  * @ingroup aux_util
  */
-#define U_ARRAY_REALLOC_OR_FREE(VAR, TYPE, COUNT)                              \
-	(VAR) = ((TYPE *)u_realloc_or_free((VAR), sizeof(TYPE) * (COUNT)))
+#define U_ARRAY_REALLOC_OR_FREE(VAR, TYPE, COUNT) (VAR) = ((TYPE *)u_realloc_or_free((VAR), sizeof(TYPE) * (COUNT)))
 
 #ifdef __cplusplus
 }

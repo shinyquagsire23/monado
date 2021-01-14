@@ -54,9 +54,7 @@ android_sensor_callback(int fd, int events, void *data)
 			accel.y = -event.acceleration.x;
 			accel.z = event.acceleration.z;
 
-			ANDROID_TRACE(d, "accel %ld %.2f %.2f %.2f",
-			              event.timestamp, accel.x, accel.y,
-			              accel.z);
+			ANDROID_TRACE(d, "accel %ld %.2f %.2f %.2f", event.timestamp, accel.x, accel.y, accel.z);
 			break;
 		}
 		case ASENSOR_TYPE_GYROSCOPE: {
@@ -64,8 +62,7 @@ android_sensor_callback(int fd, int events, void *data)
 			gyro.y = event.data[0];
 			gyro.z = event.data[2];
 
-			ANDROID_TRACE(d, "gyro %ld %.2f %.2f %.2f",
-			              event.timestamp, gyro.x, gyro.y, gyro.z);
+			ANDROID_TRACE(d, "gyro %ld %.2f %.2f %.2f", event.timestamp, gyro.x, gyro.y, gyro.z);
 
 			// TODO: Make filter handle accelerometer
 			struct xrt_vec3 null_accel;
@@ -73,14 +70,12 @@ android_sensor_callback(int fd, int events, void *data)
 			// Lock last and the fusion.
 			os_mutex_lock(&d->lock);
 
-			m_imu_3dof_update(&d->fusion, event.timestamp,
-			                  &null_accel, &gyro);
+			m_imu_3dof_update(&d->fusion, event.timestamp, &null_accel, &gyro);
 
 			// Now done.
 			os_mutex_unlock(&d->lock);
 		}
-		default:
-			ANDROID_TRACE(d, "Unhandled event type %d", event.type);
+		default: ANDROID_TRACE(d, "Unhandled event type %d", event.type);
 		}
 	}
 
@@ -93,34 +88,27 @@ android_run_thread(void *ptr)
 	struct android_device *d = (struct android_device *)ptr;
 
 #if __ANDROID_API__ >= 26
-	d->sensor_manager =
-	    ASensorManager_getInstanceForPackage(XRT_ANDROID_PACKAGE);
+	d->sensor_manager = ASensorManager_getInstanceForPackage(XRT_ANDROID_PACKAGE);
 #else
 	d->sensor_manager = ASensorManager_getInstance();
 #endif
 
-	d->accelerometer = ASensorManager_getDefaultSensor(
-	    d->sensor_manager, ASENSOR_TYPE_ACCELEROMETER);
-	d->gyroscope = ASensorManager_getDefaultSensor(d->sensor_manager,
-	                                               ASENSOR_TYPE_GYROSCOPE);
+	d->accelerometer = ASensorManager_getDefaultSensor(d->sensor_manager, ASENSOR_TYPE_ACCELEROMETER);
+	d->gyroscope = ASensorManager_getDefaultSensor(d->sensor_manager, ASENSOR_TYPE_GYROSCOPE);
 
 	ALooper *looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
 
-	d->event_queue = ASensorManager_createEventQueue(
-	    d->sensor_manager, looper, ALOOPER_POLL_CALLBACK,
-	    android_sensor_callback, (void *)d);
+	d->event_queue = ASensorManager_createEventQueue(d->sensor_manager, looper, ALOOPER_POLL_CALLBACK,
+	                                                 android_sensor_callback, (void *)d);
 
 	// Start sensors in case this was not done already.
 	if (d->accelerometer != NULL) {
-		ASensorEventQueue_enableSensor(d->event_queue,
-		                               d->accelerometer);
-		ASensorEventQueue_setEventRate(d->event_queue, d->accelerometer,
-		                               POLL_RATE_USEC);
+		ASensorEventQueue_enableSensor(d->event_queue, d->accelerometer);
+		ASensorEventQueue_setEventRate(d->event_queue, d->accelerometer, POLL_RATE_USEC);
 	}
 	if (d->gyroscope != NULL) {
 		ASensorEventQueue_enableSensor(d->event_queue, d->gyroscope);
-		ASensorEventQueue_setEventRate(d->event_queue, d->gyroscope,
-		                               POLL_RATE_USEC);
+		ASensorEventQueue_setEventRate(d->event_queue, d->gyroscope, POLL_RATE_USEC);
 	}
 
 	int ret = 0;
@@ -176,9 +164,8 @@ android_device_get_tracked_pose(struct xrt_device *xdev,
 	out_relation->pose.orientation = d->fusion.rot;
 
 	//! @todo assuming that orientation is actually currently tracked.
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	                                                               XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 }
 
 static void
@@ -215,25 +202,19 @@ android_device_get_view_pose(struct xrt_device *xdev,
  */
 
 static bool
-android_device_compute_distortion(struct xrt_device *xdev,
-                                  int view,
-                                  float u,
-                                  float v,
-                                  struct xrt_uv_triplet *result)
+android_device_compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct android_device *d = android_device(xdev);
-	return u_compute_distortion_cardboard(&d->cardboard.values[view], u, v,
-	                                      result);
+	return u_compute_distortion_cardboard(&d->cardboard.values[view], u, v, result);
 }
 
 
 struct android_device *
 android_device_create()
 {
-	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
-	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
-	struct android_device *d =
-	    U_DEVICE_ALLOCATE(struct android_device, flags, 1, 0);
+	enum u_device_alloc_flags flags =
+	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	struct android_device *d = U_DEVICE_ALLOCATE(struct android_device, flags, 1, 0);
 
 	d->base.name = XRT_DEVICE_GENERIC_HMD;
 	d->base.destroy = android_device_destroy;
@@ -258,9 +239,8 @@ android_device_create()
 	}
 
 	struct xrt_android_display_metrics metrics;
-	if (!android_custom_surface_get_display_metrics(
-	        android_globals_get_vm(), android_globals_get_activity(),
-	        &metrics)) {
+	if (!android_custom_surface_get_display_metrics(android_globals_get_vm(), android_globals_get_activity(),
+	                                                &metrics)) {
 		U_LOG_E("Could not get Android display metrics.");
 		/* Fallback to default values (Pixel 3) */
 		metrics.width_pixels = 2960;

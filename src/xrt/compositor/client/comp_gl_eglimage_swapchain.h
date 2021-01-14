@@ -45,11 +45,10 @@ struct client_gl_eglimage_swapchain
  * This is used on Android and on desktop when the EGL extension is used.
  */
 struct xrt_swapchain *
-client_gl_eglimage_swapchain_create(
-    struct xrt_compositor *xc,
-    const struct xrt_swapchain_create_info *info,
-    struct xrt_swapchain_native *xscn,
-    struct client_gl_swapchain **out_sc);
+client_gl_eglimage_swapchain_create(struct xrt_compositor *xc,
+                                    const struct xrt_swapchain_create_info *info,
+                                    struct xrt_swapchain_native *xscn,
+                                    struct client_gl_swapchain **out_sc);
 
 #ifdef __cplusplus
 }

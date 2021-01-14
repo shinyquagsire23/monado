@@ -109,10 +109,10 @@ compositor_disconnect(struct ipc_connection *ipc_c)
 	ipc_message_channel_close(&ipc_c->imc);
 }
 
-#define IPC_CALL_CHK(call)                                                     \
-	xrt_result_t res = (call);                                             \
-	if (res == XRT_ERROR_IPC_FAILURE) {                                    \
-		IPC_ERROR(icc->ipc_c, "IPC: %s call error!", __func__);        \
+#define IPC_CALL_CHK(call)                                                                                             \
+	xrt_result_t res = (call);                                                                                     \
+	if (res == XRT_ERROR_IPC_FAILURE) {                                                                            \
+		IPC_ERROR(icc->ipc_c, "IPC: %s call error!", __func__);                                                \
 	}
 
 static xrt_result_t
@@ -144,41 +144,34 @@ ipc_compositor_swapchain_destroy(struct xrt_swapchain *xsc)
 }
 
 static xrt_result_t
-ipc_compositor_swapchain_wait_image(struct xrt_swapchain *xsc,
-                                    uint64_t timeout,
-                                    uint32_t index)
+ipc_compositor_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index)
 {
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 	struct ipc_client_compositor *icc = ics->icc;
 
-	IPC_CALL_CHK(
-	    ipc_call_swapchain_wait_image(icc->ipc_c, ics->id, timeout, index));
+	IPC_CALL_CHK(ipc_call_swapchain_wait_image(icc->ipc_c, ics->id, timeout, index));
 
 	return res;
 }
 
 static xrt_result_t
-ipc_compositor_swapchain_acquire_image(struct xrt_swapchain *xsc,
-                                       uint32_t *out_index)
+ipc_compositor_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 {
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 	struct ipc_client_compositor *icc = ics->icc;
 
-	IPC_CALL_CHK(
-	    ipc_call_swapchain_acquire_image(icc->ipc_c, ics->id, out_index));
+	IPC_CALL_CHK(ipc_call_swapchain_acquire_image(icc->ipc_c, ics->id, out_index));
 
 	return res;
 }
 
 static xrt_result_t
-ipc_compositor_swapchain_release_image(struct xrt_swapchain *xsc,
-                                       uint32_t index)
+ipc_compositor_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 {
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 	struct ipc_client_compositor *icc = ics->icc;
 
-	IPC_CALL_CHK(
-	    ipc_call_swapchain_release_image(icc->ipc_c, ics->id, index));
+	IPC_CALL_CHK(ipc_call_swapchain_release_image(icc->ipc_c, ics->id, index));
 
 	return res;
 }
@@ -196,8 +189,7 @@ swapchain_server_create(struct ipc_client_compositor *icc,
                         const struct xrt_swapchain_create_info *info,
                         struct xrt_swapchain **out_xsc)
 {
-	xrt_graphics_buffer_handle_t remote_handles[IPC_MAX_SWAPCHAIN_HANDLES] =
-	    {0};
+	xrt_graphics_buffer_handle_t remote_handles[IPC_MAX_SWAPCHAIN_HANDLES] = {0};
 	xrt_result_t r = XRT_SUCCESS;
 	uint32_t handle;
 	uint32_t num_images;
@@ -214,8 +206,7 @@ swapchain_server_create(struct ipc_client_compositor *icc,
 		return r;
 	}
 
-	struct ipc_client_swapchain *ics =
-	    U_TYPED_CALLOC(struct ipc_client_swapchain);
+	struct ipc_client_swapchain *ics = U_TYPED_CALLOC(struct ipc_client_swapchain);
 	ics->base.base.num_images = num_images;
 	ics->base.base.wait_image = ipc_compositor_swapchain_wait_image;
 	ics->base.base.acquire_image = ipc_compositor_swapchain_acquire_image;
@@ -262,8 +253,7 @@ swapchain_server_import(struct ipc_client_compositor *icc,
 		return r;
 	}
 
-	struct ipc_client_swapchain *ics =
-	    U_TYPED_CALLOC(struct ipc_client_swapchain);
+	struct ipc_client_swapchain *ics = U_TYPED_CALLOC(struct ipc_client_swapchain);
 	ics->base.base.num_images = num_images;
 	ics->base.base.wait_image = ipc_compositor_swapchain_wait_image;
 	ics->base.base.acquire_image = ipc_compositor_swapchain_acquire_image;
@@ -339,13 +329,11 @@ ipc_compositor_swapchain_import(struct xrt_compositor *xc,
                                 struct xrt_swapchain **out_xsc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
-	return swapchain_server_import(icc, info, native_images, num_images,
-	                               out_xsc);
+	return swapchain_server_import(icc, info, native_images, num_images, out_xsc);
 }
 
 static xrt_result_t
-ipc_compositor_prepare_session(struct xrt_compositor *xc,
-                               const struct xrt_session_prepare_info *xspi)
+ipc_compositor_prepare_session(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -356,8 +344,7 @@ ipc_compositor_prepare_session(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_poll_events(struct xrt_compositor *xc,
-                           union xrt_compositor_event *out_xce)
+ipc_compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_xce)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -369,8 +356,7 @@ ipc_compositor_poll_events(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_begin_session(struct xrt_compositor *xc,
-                             enum xrt_view_type view_type)
+ipc_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -404,13 +390,12 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 	uint64_t wake_up_time_ns = 0;
 	uint64_t min_display_period_ns = 0;
 
-	IPC_CALL_CHK(ipc_call_compositor_wait_frame(
-	    icc->ipc_c,                   // Connection
-	    out_frame_id,                 // Frame id
-	    out_predicted_display_time,   // Display time
-	    &wake_up_time_ns,             // When we should wake up
-	    out_predicted_display_period, // Current period
-	    &min_display_period_ns));     // Minimum display period
+	IPC_CALL_CHK(ipc_call_compositor_wait_frame(icc->ipc_c,                   // Connection
+	                                            out_frame_id,                 // Frame id
+	                                            out_predicted_display_time,   // Display time
+	                                            &wake_up_time_ns,             // When we should wake up
+	                                            out_predicted_display_period, // Current period
+	                                            &min_display_period_ns));     // Minimum display period
 
 	uint64_t now_ns = os_monotonic_get_ns();
 
@@ -464,9 +449,7 @@ ipc_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-ipc_compositor_layer_begin(struct xrt_compositor *xc,
-                           int64_t frame_id,
-                           enum xrt_blend_mode env_blend_mode)
+ipc_compositor_layer_begin(struct xrt_compositor *xc, int64_t frame_id, enum xrt_blend_mode env_blend_mode)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -614,9 +597,7 @@ ipc_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_layer_commit(struct xrt_compositor *xc,
-                            int64_t frame_id,
-                            xrt_graphics_sync_handle_t sync_handle)
+ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -690,8 +671,7 @@ ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
                                size_t in_num_images,
                                struct xrt_image_native *out_images)
 {
-	struct ipc_client_compositor *icc =
-	    container_of(xina, struct ipc_client_compositor, loopback_xina);
+	struct ipc_client_compositor *icc = container_of(xina, struct ipc_client_compositor, loopback_xina);
 
 	int remote_fds[IPC_MAX_SWAPCHAIN_FDS] = {0};
 	xrt_result_t r = XRT_SUCCESS;
@@ -798,8 +778,7 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
                              struct xrt_device *xdev,
                              struct xrt_compositor_native **out_xcn)
 {
-	struct ipc_client_compositor *c =
-	    U_TYPED_CALLOC(struct ipc_client_compositor);
+	struct ipc_client_compositor *c = U_TYPED_CALLOC(struct ipc_client_compositor);
 
 	c->base.base.create_swapchain = ipc_compositor_swapchain_create;
 	c->base.base.import_swapchain = ipc_compositor_swapchain_import;
@@ -810,10 +789,8 @@ ipc_client_compositor_create(struct ipc_connection *ipc_c,
 	c->base.base.begin_frame = ipc_compositor_begin_frame;
 	c->base.base.discard_frame = ipc_compositor_discard_frame;
 	c->base.base.layer_begin = ipc_compositor_layer_begin;
-	c->base.base.layer_stereo_projection =
-	    ipc_compositor_layer_stereo_projection;
-	c->base.base.layer_stereo_projection_depth =
-	    ipc_compositor_layer_stereo_projection_depth;
+	c->base.base.layer_stereo_projection = ipc_compositor_layer_stereo_projection;
+	c->base.base.layer_stereo_projection_depth = ipc_compositor_layer_stereo_projection_depth;
 	c->base.base.layer_quad = ipc_compositor_layer_quad;
 	c->base.base.layer_cube = ipc_compositor_layer_cube;
 	c->base.base.layer_cylinder = ipc_compositor_layer_cylinder;

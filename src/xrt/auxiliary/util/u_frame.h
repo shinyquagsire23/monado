@@ -21,10 +21,7 @@ extern "C" {
  * freed.
  */
 void
-u_frame_create_one_off(enum xrt_format f,
-                       uint32_t width,
-                       uint32_t height,
-                       struct xrt_frame **out_frame);
+u_frame_create_one_off(enum xrt_format f, uint32_t width, uint32_t height, struct xrt_frame **out_frame);
 
 
 #ifdef __cplusplus

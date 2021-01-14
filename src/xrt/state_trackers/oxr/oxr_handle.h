@@ -65,9 +65,8 @@ oxr_handle_allocate_and_init(struct oxr_logger *log,
  *
  * @relates oxr_handle_base
  */
-#define OXR_ALLOCATE_HANDLE(LOG, OUT, DEBUG, DESTROY, PARENT)                  \
-	oxr_handle_allocate_and_init(LOG, sizeof(*OUT), DEBUG, DESTROY,        \
-	                             PARENT, (void **)&OUT)
+#define OXR_ALLOCATE_HANDLE(LOG, OUT, DEBUG, DESTROY, PARENT)                                                          \
+	oxr_handle_allocate_and_init(LOG, sizeof(*OUT), DEBUG, DESTROY, PARENT, (void **)&OUT)
 
 /*!
  * Allocate memory for a handle, returning in case of failure.
@@ -83,13 +82,12 @@ oxr_handle_allocate_and_init(struct oxr_logger *log,
  *
  * @relates oxr_handle_base
  */
-#define OXR_ALLOCATE_HANDLE_OR_RETURN(LOG, OUT, DEBUG, DESTROY, PARENT)        \
-	do {                                                                   \
-		XrResult allocResult =                                         \
-		    OXR_ALLOCATE_HANDLE(LOG, OUT, DEBUG, DESTROY, PARENT);     \
-		if (allocResult != XR_SUCCESS) {                               \
-			return allocResult;                                    \
-		}                                                              \
+#define OXR_ALLOCATE_HANDLE_OR_RETURN(LOG, OUT, DEBUG, DESTROY, PARENT)                                                \
+	do {                                                                                                           \
+		XrResult allocResult = OXR_ALLOCATE_HANDLE(LOG, OUT, DEBUG, DESTROY, PARENT);                          \
+		if (allocResult != XR_SUCCESS) {                                                                       \
+			return allocResult;                                                                            \
+		}                                                                                                      \
 	} while (0)
 
 #ifdef __cplusplus

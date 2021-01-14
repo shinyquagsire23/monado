@@ -381,21 +381,17 @@ struct xrt_swapchain
 	 * @param xsc Self pointer
 	 * @param[out] out_index Image index to use next
 	 */
-	xrt_result_t (*acquire_image)(struct xrt_swapchain *xsc,
-	                              uint32_t *out_index);
+	xrt_result_t (*acquire_image)(struct xrt_swapchain *xsc, uint32_t *out_index);
 
 	/*!
 	 * See xrWaitSwapchainImage, state tracker needs to track index.
 	 */
-	xrt_result_t (*wait_image)(struct xrt_swapchain *xsc,
-	                           uint64_t timeout,
-	                           uint32_t index);
+	xrt_result_t (*wait_image)(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index);
 
 	/*!
 	 * See xrReleaseSwapchainImage, state tracker needs to track index.
 	 */
-	xrt_result_t (*release_image)(struct xrt_swapchain *xsc,
-	                              uint32_t index);
+	xrt_result_t (*release_image)(struct xrt_swapchain *xsc, uint32_t index);
 };
 
 /*!
@@ -419,9 +415,7 @@ xrt_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
  * @public @memberof xrt_swapchain
  */
 static inline xrt_result_t
-xrt_swapchain_wait_image(struct xrt_swapchain *xsc,
-                         uint64_t timeout,
-                         uint32_t index)
+xrt_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index)
 {
 	return xsc->wait_image(xsc, timeout, index);
 }
@@ -582,41 +576,35 @@ struct xrt_compositor
 	/*!
 	 * Create a swapchain with a set of images.
 	 */
-	xrt_result_t (*create_swapchain)(
-	    struct xrt_compositor *xc,
-	    const struct xrt_swapchain_create_info *info,
-	    struct xrt_swapchain **out_xsc);
+	xrt_result_t (*create_swapchain)(struct xrt_compositor *xc,
+	                                 const struct xrt_swapchain_create_info *info,
+	                                 struct xrt_swapchain **out_xsc);
 
 	/*!
 	 * Create a swapchain from a set of native images.
 	 */
-	xrt_result_t (*import_swapchain)(
-	    struct xrt_compositor *xc,
-	    const struct xrt_swapchain_create_info *info,
-	    struct xrt_image_native *native_images,
-	    uint32_t num_images,
-	    struct xrt_swapchain **out_xsc);
+	xrt_result_t (*import_swapchain)(struct xrt_compositor *xc,
+	                                 const struct xrt_swapchain_create_info *info,
+	                                 struct xrt_image_native *native_images,
+	                                 uint32_t num_images,
+	                                 struct xrt_swapchain **out_xsc);
 
 	/*!
 	 * Poll events from this compositor.
 	 *
 	 * This function is very much WIP.
 	 */
-	xrt_result_t (*poll_events)(struct xrt_compositor *xc,
-	                            union xrt_compositor_event *out_xce);
+	xrt_result_t (*poll_events)(struct xrt_compositor *xc, union xrt_compositor_event *out_xce);
 
 	/*!
 	 * This function is implicit in the OpenXR spec but made explicit here.
 	 */
-	xrt_result_t (*prepare_session)(
-	    struct xrt_compositor *xc,
-	    const struct xrt_session_prepare_info *xspi);
+	xrt_result_t (*prepare_session)(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi);
 
 	/*!
 	 * See xrBeginSession.
 	 */
-	xrt_result_t (*begin_session)(struct xrt_compositor *xc,
-	                              enum xrt_view_type view_type);
+	xrt_result_t (*begin_session)(struct xrt_compositor *xc, enum xrt_view_type view_type);
 
 	/*!
 	 * See xrEndSession, unlike the OpenXR one the state tracker is
@@ -639,8 +627,7 @@ struct xrt_compositor
 	/*!
 	 * See xrBeginFrame.
 	 */
-	xrt_result_t (*begin_frame)(struct xrt_compositor *xc,
-	                            int64_t frame_id);
+	xrt_result_t (*begin_frame)(struct xrt_compositor *xc, int64_t frame_id);
 
 	/*!
 	 * This isn't in the OpenXR API but is explicit in the XRT interfaces.
@@ -653,8 +640,7 @@ struct xrt_compositor
 	 * xc->begin_frame(xc, frame_id)
 	 * ```
 	 */
-	xrt_result_t (*discard_frame)(struct xrt_compositor *xc,
-	                              int64_t frame_id);
+	xrt_result_t (*discard_frame)(struct xrt_compositor *xc, int64_t frame_id);
 
 	/*!
 	 * Begins layer submission, this and the other layer_* calls are
@@ -662,9 +648,7 @@ struct xrt_compositor
 	 * @p layer_commit that layers will be displayed. From the point of view
 	 * of the swapchain the image is used as soon as it's given in a call.
 	 */
-	xrt_result_t (*layer_begin)(struct xrt_compositor *xc,
-	                            int64_t frame_id,
-	                            enum xrt_blend_mode env_blend_mode);
+	xrt_result_t (*layer_begin)(struct xrt_compositor *xc, int64_t frame_id, enum xrt_blend_mode env_blend_mode);
 
 	/*!
 	 * Adds a stereo projection layer for submissions.
@@ -675,12 +659,11 @@ struct xrt_compositor
 	 * @param r_xsc       Right swapchain.
 	 * @param data        All of the pure data bits.
 	 */
-	xrt_result_t (*layer_stereo_projection)(
-	    struct xrt_compositor *xc,
-	    struct xrt_device *xdev,
-	    struct xrt_swapchain *l_xsc,
-	    struct xrt_swapchain *r_xsc,
-	    const struct xrt_layer_data *data);
+	xrt_result_t (*layer_stereo_projection)(struct xrt_compositor *xc,
+	                                        struct xrt_device *xdev,
+	                                        struct xrt_swapchain *l_xsc,
+	                                        struct xrt_swapchain *r_xsc,
+	                                        const struct xrt_layer_data *data);
 
 	/*!
 	 * Adds a stereo projection layer for submission, has depth information.
@@ -693,14 +676,13 @@ struct xrt_compositor
 	 * @param r_d_xsc     Right depth swapchain.
 	 * @param data        All of the pure data bits.
 	 */
-	xrt_result_t (*layer_stereo_projection_depth)(
-	    struct xrt_compositor *xc,
-	    struct xrt_device *xdev,
-	    struct xrt_swapchain *l_xsc,
-	    struct xrt_swapchain *r_xsc,
-	    struct xrt_swapchain *l_d_xsc,
-	    struct xrt_swapchain *r_d_xsc,
-	    const struct xrt_layer_data *data);
+	xrt_result_t (*layer_stereo_projection_depth)(struct xrt_compositor *xc,
+	                                              struct xrt_device *xdev,
+	                                              struct xrt_swapchain *l_xsc,
+	                                              struct xrt_swapchain *r_xsc,
+	                                              struct xrt_swapchain *l_d_xsc,
+	                                              struct xrt_swapchain *r_d_xsc,
+	                                              const struct xrt_layer_data *data);
 
 	/*!
 	 * Adds a quad layer for submission, the center of the quad is specified
@@ -815,8 +797,7 @@ xrt_comp_import_swapchain(struct xrt_compositor *xc,
                           uint32_t num_images,
                           struct xrt_swapchain **out_xsc)
 {
-	return xc->import_swapchain(xc, info, native_images, num_images,
-	                            out_xsc);
+	return xc->import_swapchain(xc, info, native_images, num_images, out_xsc);
 }
 
 /*!
@@ -827,8 +808,7 @@ xrt_comp_import_swapchain(struct xrt_compositor *xc,
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_poll_events(struct xrt_compositor *xc,
-                     union xrt_compositor_event *out_xce)
+xrt_comp_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_xce)
 {
 	return xc->poll_events(xc, out_xce);
 }
@@ -841,8 +821,7 @@ xrt_comp_poll_events(struct xrt_compositor *xc,
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_prepare_session(struct xrt_compositor *xc,
-                         const struct xrt_session_prepare_info *xspi)
+xrt_comp_prepare_session(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
 {
 	return xc->prepare_session(xc, xspi);
 }
@@ -886,8 +865,7 @@ xrt_comp_wait_frame(struct xrt_compositor *xc,
                     uint64_t *predicted_display_time,
                     uint64_t *predicted_display_period)
 {
-	return xc->wait_frame(xc, out_frame_id, predicted_display_time,
-	                      predicted_display_period);
+	return xc->wait_frame(xc, out_frame_id, predicted_display_time, predicted_display_period);
 }
 
 /*!
@@ -924,9 +902,7 @@ xrt_comp_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_begin(struct xrt_compositor *xc,
-                     int64_t frame_id,
-                     enum xrt_blend_mode env_blend_mode)
+xrt_comp_layer_begin(struct xrt_compositor *xc, int64_t frame_id, enum xrt_blend_mode env_blend_mode)
 {
 	return xc->layer_begin(xc, frame_id, env_blend_mode);
 }
@@ -964,8 +940,7 @@ xrt_comp_layer_stereo_projection_depth(struct xrt_compositor *xc,
                                        struct xrt_swapchain *r_d_xsc,
                                        const struct xrt_layer_data *data)
 {
-	return xc->layer_stereo_projection_depth(xc, xdev, l_xsc, r_xsc,
-	                                         l_d_xsc, r_d_xsc, data);
+	return xc->layer_stereo_projection_depth(xc, xdev, l_xsc, r_xsc, l_d_xsc, r_d_xsc, data);
 }
 
 /*!
@@ -1057,9 +1032,7 @@ xrt_comp_layer_equirect2(struct xrt_compositor *xc,
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_commit(struct xrt_compositor *xc,
-                      int64_t frame_id,
-                      xrt_graphics_sync_handle_t sync_handle)
+xrt_comp_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
 	return xc->layer_commit(xc, frame_id, sync_handle);
 }
@@ -1328,11 +1301,10 @@ struct xrt_image_native_allocator
 	 * Allocate a set of images suitable to be used to back a swapchain
 	 * with the given create info properties (@p xsci).
 	 */
-	xrt_result_t (*images_allocate)(
-	    struct xrt_image_native_allocator *xina,
-	    const struct xrt_swapchain_create_info *xsci,
-	    size_t num_images,
-	    struct xrt_image_native *out_images);
+	xrt_result_t (*images_allocate)(struct xrt_image_native_allocator *xina,
+	                                const struct xrt_swapchain_create_info *xsci,
+	                                size_t num_images,
+	                                struct xrt_image_native *out_images);
 
 	/*!
 	 * Free the given images.
@@ -1371,9 +1343,7 @@ xrt_images_allocate(struct xrt_image_native_allocator *xina,
  * @public @memberof xrt_image_native_allocate
  */
 static inline xrt_result_t
-xrt_images_free(struct xrt_image_native_allocator *xina,
-                size_t num_images,
-                struct xrt_image_native *images)
+xrt_images_free(struct xrt_image_native_allocator *xina, size_t num_images, struct xrt_image_native *images)
 {
 	return xina->images_free(xina, num_images, images);
 }

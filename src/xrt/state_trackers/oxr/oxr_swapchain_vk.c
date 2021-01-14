@@ -46,10 +46,8 @@ oxr_swapchain_vk_enumerate_images(struct oxr_logger *log,
                                   uint32_t count,
                                   XrSwapchainImageBaseHeader *images)
 {
-	struct xrt_swapchain_vk *xscvk =
-	    (struct xrt_swapchain_vk *)sc->swapchain;
-	XrSwapchainImageVulkanKHR *vk_imgs =
-	    (XrSwapchainImageVulkanKHR *)images;
+	struct xrt_swapchain_vk *xscvk = (struct xrt_swapchain_vk *)sc->swapchain;
+	XrSwapchainImageVulkanKHR *vk_imgs = (XrSwapchainImageVulkanKHR *)images;
 
 	for (uint32_t i = 0; i < count; i++) {
 		vk_imgs[i].image = xscvk->images[i];

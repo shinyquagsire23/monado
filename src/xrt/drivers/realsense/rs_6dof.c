@@ -36,9 +36,8 @@
 /*!
  * Stupid convenience macro to print out a pose, only used for debugging
  */
-#define print_pose(msg, pose)                                                  \
-	U_LOG_E(msg " %f %f %f  %f %f %f %f", pose.position.x,                 \
-	        pose.position.y, pose.position.z, pose.orientation.x,          \
+#define print_pose(msg, pose)                                                                                          \
+	U_LOG_E(msg " %f %f %f  %f %f %f %f", pose.position.x, pose.position.y, pose.position.z, pose.orientation.x,   \
 	        pose.orientation.y, pose.orientation.z, pose.orientation.w)
 
 /*!
@@ -82,8 +81,7 @@ check_error(struct rs_6dof *rs, rs2_error *e)
 		return 0;
 	}
 
-	U_LOG_E("rs_error was raised when calling %s(%s):",
-	        rs2_get_failed_function(e), rs2_get_failed_args(e));
+	U_LOG_E("rs_error was raised when calling %s(%s):", rs2_get_failed_function(e), rs2_get_failed_args(e));
 	U_LOG_E("%s", rs2_get_error_message(e));
 
 	return 1;
@@ -210,8 +208,7 @@ process_frame(struct rs_6dof *rs, rs2_frame *frame)
 	// Close enough
 	uint64_t now_real_ns = os_realtime_get_ns();
 	uint64_t now_monotonic_ns = os_monotonic_get_ns();
-	uint64_t timestamp_ns =
-	    (uint64_t)(timestamp_miliseconds * 1000.0 * 1000.0);
+	uint64_t timestamp_ns = (uint64_t)(timestamp_miliseconds * 1000.0 * 1000.0);
 
 	// How far in the past is it?
 	uint64_t diff_ns = now_real_ns - timestamp_ns;
@@ -266,8 +263,7 @@ update(struct rs_6dof *rs)
 	rs2_frame *frames;
 	rs2_error *e = NULL;
 
-	frames =
-	    rs2_pipeline_wait_for_frames(rs->pipe, RS2_DEFAULT_TIMEOUT, &e);
+	frames = rs2_pipeline_wait_for_frames(rs->pipe, RS2_DEFAULT_TIMEOUT, &e);
 	if (check_error(rs, e) != 0) {
 		return 1;
 	}
@@ -375,8 +371,7 @@ rs_6dof_destroy(struct xrt_device *xdev)
 struct xrt_device *
 rs_6dof_create(void)
 {
-	struct rs_6dof *rs = U_DEVICE_ALLOCATE(
-	    struct rs_6dof, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
+	struct rs_6dof *rs = U_DEVICE_ALLOCATE(struct rs_6dof, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
 	int ret = 0;
 
 	rs->base.update_inputs = rs_6dof_update_inputs;

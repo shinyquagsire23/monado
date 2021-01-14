@@ -26,8 +26,7 @@
  */
 
 static xrt_result_t
-validate_swapchain_state(volatile struct ipc_client_state *ics,
-                         uint32_t *out_index)
+validate_swapchain_state(volatile struct ipc_client_state *ics, uint32_t *out_index)
 {
 	// Our handle is just the index for now.
 	uint32_t index = 0;
@@ -81,8 +80,7 @@ ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *ics,
 	return XRT_SUCCESS;
 }
 xrt_result_t
-ipc_handle_session_create(volatile struct ipc_client_state *ics,
-                          const struct xrt_session_prepare_info *xspi)
+ipc_handle_session_create(volatile struct ipc_client_state *ics, const struct xrt_session_prepare_info *xspi)
 {
 	ics->client_state.session_active = false;
 	ics->client_state.session_overlay = false;
@@ -114,8 +112,7 @@ ipc_handle_session_end(volatile struct ipc_client_state *ics)
 }
 
 xrt_result_t
-ipc_handle_compositor_get_info(volatile struct ipc_client_state *ics,
-                               struct xrt_compositor_info *out_info)
+ipc_handle_compositor_get_info(volatile struct ipc_client_state *ics, struct xrt_compositor_info *out_info)
 {
 	*out_info = ics->xc->info;
 
@@ -132,8 +129,7 @@ ipc_handle_compositor_wait_frame(volatile struct ipc_client_state *ics,
 {
 	os_mutex_lock(&ics->server->global_state_lock);
 
-	u_rt_helper_predict((struct u_rt_helper *)&ics->urth, out_frame_id,
-	                    predicted_display_time, wake_up_time,
+	u_rt_helper_predict((struct u_rt_helper *)&ics->urth, out_frame_id, predicted_display_time, wake_up_time,
 	                    predicted_display_period, min_display_period);
 
 	os_mutex_unlock(&ics->server->global_state_lock);
@@ -145,8 +141,7 @@ ipc_handle_compositor_wait_frame(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_compositor_wait_woke(volatile struct ipc_client_state *ics,
-                                int64_t frame_id)
+ipc_handle_compositor_wait_woke(volatile struct ipc_client_state *ics, int64_t frame_id)
 {
 	os_mutex_lock(&ics->server->global_state_lock);
 
@@ -158,8 +153,7 @@ ipc_handle_compositor_wait_woke(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_compositor_begin_frame(volatile struct ipc_client_state *ics,
-                                  int64_t frame_id)
+ipc_handle_compositor_begin_frame(volatile struct ipc_client_state *ics, int64_t frame_id)
 {
 	os_mutex_lock(&ics->server->global_state_lock);
 
@@ -171,8 +165,7 @@ ipc_handle_compositor_begin_frame(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_compositor_discard_frame(volatile struct ipc_client_state *ics,
-                                    int64_t frame_id)
+ipc_handle_compositor_discard_frame(volatile struct ipc_client_state *ics, int64_t frame_id)
 {
 	os_mutex_lock(&ics->server->global_state_lock);
 
@@ -211,8 +204,7 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 
 	os_mutex_lock(&ics->server->global_state_lock);
 
-	*out_free_slot_id =
-	    (ics->server->current_slot_index + 1) % IPC_MAX_SLOTS;
+	*out_free_slot_id = (ics->server->current_slot_index + 1) % IPC_MAX_SLOTS;
 	ics->server->current_slot_index = *out_free_slot_id;
 
 	// Also protected by the global lock.
@@ -224,8 +216,7 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_compositor_poll_events(volatile struct ipc_client_state *ics,
-                                  union xrt_compositor_event *out_xce)
+ipc_handle_compositor_poll_events(volatile struct ipc_client_state *ics, union xrt_compositor_event *out_xce)
 {
 	uint64_t l_timestamp = UINT64_MAX;
 	volatile struct ipc_queued_event *event_to_send = NULL;
@@ -275,8 +266,7 @@ ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
 }
 
 xrt_result_t
-ipc_handle_system_set_client_info(volatile struct ipc_client_state *ics,
-                                  struct ipc_app_state *client_desc)
+ipc_handle_system_set_client_info(volatile struct ipc_client_state *ics, struct ipc_app_state *client_desc)
 {
 	ics->client_state.info = client_desc->info;
 	ics->client_state.pid = client_desc->pid;
@@ -284,8 +274,7 @@ ipc_handle_system_set_client_info(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_system_get_clients(volatile struct ipc_client_state *_ics,
-                              struct ipc_client_list *list)
+ipc_handle_system_get_clients(volatile struct ipc_client_state *_ics, struct ipc_client_list *list)
 {
 	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
 		list->ids[i] = _ics->server->threads[i].ics.server_thread_index;
@@ -294,31 +283,25 @@ ipc_handle_system_get_clients(volatile struct ipc_client_state *_ics,
 }
 
 xrt_result_t
-ipc_handle_system_set_primary_client(volatile struct ipc_client_state *ics,
-                                     uint32_t client_id)
+ipc_handle_system_set_primary_client(volatile struct ipc_client_state *ics, uint32_t client_id)
 {
 
 	ics->server->active_client_index = client_id;
-	IPC_INFO(ics->server, "system setting active client to %d\n",
-	         client_id);
+	IPC_INFO(ics->server, "system setting active client to %d\n", client_id);
 	update_server_state(ics->server);
 	return XRT_SUCCESS;
 }
 
 xrt_result_t
-ipc_handle_system_set_focused_client(volatile struct ipc_client_state *ics,
-                                     uint32_t client_id)
+ipc_handle_system_set_focused_client(volatile struct ipc_client_state *ics, uint32_t client_id)
 {
-	IPC_INFO(ics->server,
-	         "UNIMPLEMENTED: system setting focused client to %d\n",
-	         client_id);
+	IPC_INFO(ics->server, "UNIMPLEMENTED: system setting focused client to %d\n", client_id);
 
 	return XRT_SUCCESS;
 }
 
 xrt_result_t
-ipc_handle_system_toggle_io_client(volatile struct ipc_client_state *_ics,
-                                   uint32_t client_id)
+ipc_handle_system_toggle_io_client(volatile struct ipc_client_state *_ics, uint32_t client_id)
 {
 	volatile struct ipc_client_state *ics = NULL;
 
@@ -338,8 +321,7 @@ ipc_handle_system_toggle_io_client(volatile struct ipc_client_state *_ics,
 }
 
 xrt_result_t
-ipc_handle_system_toggle_io_device(volatile struct ipc_client_state *ics,
-                                   uint32_t device_id)
+ipc_handle_system_toggle_io_device(volatile struct ipc_client_state *ics, uint32_t device_id)
 {
 	if (device_id >= IPC_MAX_DEVICES) {
 		return XRT_ERROR_IPC_FAILURE;
@@ -374,8 +356,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	struct xrt_swapchain *xsc = NULL;
 	xret = xrt_comp_create_swapchain(ics->xc, info, &xsc);
 	if (xret != XRT_SUCCESS) {
-		IPC_ERROR(ics->server,
-		          "ERROR: xrt_comp_create_swapchain failed!\n");
+		IPC_ERROR(ics->server, "ERROR: xrt_comp_create_swapchain failed!\n");
 		return xret;
 	}
 
@@ -430,8 +411,7 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 
 	// create the swapchain
 	struct xrt_swapchain *xsc = NULL;
-	xret =
-	    xrt_comp_import_swapchain(ics->xc, info, xins, num_handles, &xsc);
+	xret = xrt_comp_import_swapchain(ics->xc, info, xins, num_handles, &xsc);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -448,10 +428,7 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_swapchain_wait_image(volatile struct ipc_client_state *ics,
-                                uint32_t id,
-                                uint64_t timeout,
-                                uint32_t index)
+ipc_handle_swapchain_wait_image(volatile struct ipc_client_state *ics, uint32_t id, uint64_t timeout, uint32_t index)
 {
 	//! @todo Look up the index.
 	uint32_t sc_index = id;
@@ -463,9 +440,7 @@ ipc_handle_swapchain_wait_image(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_swapchain_acquire_image(volatile struct ipc_client_state *ics,
-                                   uint32_t id,
-                                   uint32_t *out_index)
+ipc_handle_swapchain_acquire_image(volatile struct ipc_client_state *ics, uint32_t id, uint32_t *out_index)
 {
 	//! @todo Look up the index.
 	uint32_t sc_index = id;
@@ -477,9 +452,7 @@ ipc_handle_swapchain_acquire_image(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_swapchain_release_image(volatile struct ipc_client_state *ics,
-                                   uint32_t id,
-                                   uint32_t index)
+ipc_handle_swapchain_release_image(volatile struct ipc_client_state *ics, uint32_t id, uint32_t index)
 {
 	//! @todo Look up the index.
 	uint32_t sc_index = id;
@@ -503,8 +476,7 @@ ipc_handle_swapchain_destroy(volatile struct ipc_client_state *ics, uint32_t id)
 }
 
 xrt_result_t
-ipc_handle_device_update_input(volatile struct ipc_client_state *ics,
-                               uint32_t id)
+ipc_handle_device_update_input(volatile struct ipc_client_state *ics, uint32_t id)
 {
 	// To make the code a bit more readable.
 	uint32_t device_id = id;
@@ -542,9 +514,7 @@ ipc_handle_device_update_input(volatile struct ipc_client_state *ics,
 }
 
 static struct xrt_input *
-find_input(volatile struct ipc_client_state *ics,
-           uint32_t device_id,
-           enum xrt_input_name name)
+find_input(volatile struct ipc_client_state *ics, uint32_t device_id, enum xrt_input_name name)
 {
 	struct ipc_shared_memory *ism = ics->server->ism;
 	struct ipc_shared_device *isdev = &ism->isdevs[device_id];
@@ -579,8 +549,7 @@ ipc_handle_device_get_tracked_pose(volatile struct ipc_client_state *ics,
 	}
 
 	// Special case the headpose.
-	bool disabled = (!isdev->io_active || !ics->io_active) &&
-	                name != XRT_INPUT_GENERIC_HEAD_POSE;
+	bool disabled = (!isdev->io_active || !ics->io_active) && name != XRT_INPUT_GENERIC_HEAD_POSE;
 	bool active_on_client = input->active;
 
 	// We have been disabled but the client hasn't called update.

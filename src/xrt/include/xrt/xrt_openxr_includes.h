@@ -34,8 +34,7 @@ typedef void *EGLDisplay;
 typedef void *EGLContext;
 typedef void *EGLConfig;
 typedef void (*__eglMustCastToProperFunctionPointerType)(void);
-typedef __eglMustCastToProperFunctionPointerType (*PFNEGLGETPROCADDRESSPROC)(
-    const char *procname);
+typedef __eglMustCastToProperFunctionPointerType (*PFNEGLGETPROCADDRESSPROC)(const char *procname);
 #endif
 
 #ifdef XR_USE_TIMESPEC

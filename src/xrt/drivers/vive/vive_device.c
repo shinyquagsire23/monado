@@ -121,10 +121,8 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 
 	//! @todo assuming that orientation is actually currently tracked.
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
 	os_thread_helper_unlock(&d->sensors_thread);
 }
@@ -168,28 +166,23 @@ vive_mainboard_get_device_info(struct vive_device *d)
 	uint16_t type;
 	int ret;
 
-	ret = os_hid_get_feature(d->mainboard_dev, report.id,
-	                         (uint8_t *)&report, sizeof(report));
+	ret = os_hid_get_feature(d->mainboard_dev, report.id, (uint8_t *)&report, sizeof(report));
 	if (ret < 0)
 		return ret;
 
 	type = __le16_to_cpu(report.type);
-	if (type != VIVE_HEADSET_MAINBOARD_DEVICE_INFO_REPORT_TYPE ||
-	    report.len != 60) {
+	if (type != VIVE_HEADSET_MAINBOARD_DEVICE_INFO_REPORT_TYPE || report.len != 60) {
 		VIVE_WARN(d, "Unexpected device info!");
 		return -1;
 	}
 
 	edid_vid = __be16_to_cpu(report.edid_vid);
 
-	d->firmware.display_firmware_version =
-	    __le32_to_cpu(report.display_firmware_version);
+	d->firmware.display_firmware_version = __le32_to_cpu(report.display_firmware_version);
 
-	VIVE_INFO(d, "EDID Manufacturer ID: %c%c%c, Product code: 0x%04x",
-	          '@' + (edid_vid >> 10), '@' + ((edid_vid >> 5) & 0x1f),
-	          '@' + (edid_vid & 0x1f), __le16_to_cpu(report.edid_pid));
-	VIVE_INFO(d, "Display firmware version: %u",
-	          d->firmware.display_firmware_version);
+	VIVE_INFO(d, "EDID Manufacturer ID: %c%c%c, Product code: 0x%04x", '@' + (edid_vid >> 10),
+	          '@' + ((edid_vid >> 5) & 0x1f), '@' + (edid_vid & 0x1f), __le16_to_cpu(report.edid_pid));
+	VIVE_INFO(d, "Display firmware version: %u", d->firmware.display_firmware_version);
 
 	return 0;
 }
@@ -199,9 +192,7 @@ static bool
 vive_mainboard_power_on(struct vive_device *d)
 {
 	int ret;
-	ret = os_hid_set_feature(d->mainboard_dev,
-	                         (const uint8_t *)&power_on_report,
-	                         sizeof(power_on_report));
+	ret = os_hid_set_feature(d->mainboard_dev, (const uint8_t *)&power_on_report, sizeof(power_on_report));
 	VIVE_DEBUG(d, "Power on: %d", ret);
 	return true;
 }
@@ -210,24 +201,21 @@ static bool
 vive_mainboard_power_off(struct vive_device *d)
 {
 	int ret;
-	ret = os_hid_set_feature(d->mainboard_dev,
-	                         (const uint8_t *)&power_off_report,
-	                         sizeof(power_off_report));
+	ret = os_hid_set_feature(d->mainboard_dev, (const uint8_t *)&power_off_report, sizeof(power_off_report));
 	VIVE_DEBUG(d, "Power off: %d", ret);
 
 	return true;
 }
 
 static void
-vive_mainboard_decode_message(struct vive_device *d,
-                              struct vive_mainboard_status_report *report)
+vive_mainboard_decode_message(struct vive_device *d, struct vive_mainboard_status_report *report)
 {
 	uint16_t ipd;
 	uint16_t lens_separation;
 	uint16_t proximity;
 
-	if (__le16_to_cpu(report->unknown) != 0x2cd0 || report->len != 60 ||
-	    report->reserved1 || report->reserved2[0]) {
+	if (__le16_to_cpu(report->unknown) != 0x2cd0 || report->len != 60 || report->reserved1 ||
+	    report->reserved2[0]) {
 		VIVE_WARN(d, "Unexpected message content.");
 	}
 
@@ -238,8 +226,7 @@ vive_mainboard_decode_message(struct vive_device *d,
 	if (d->board.ipd != ipd) {
 		d->board.ipd = ipd;
 		d->board.lens_separation = lens_separation;
-		VIVE_TRACE(d, "IPD %4.1f mm. Lens separation %4.1f mm.",
-		           1e-2 * ipd, 1e-2 * lens_separation);
+		VIVE_TRACE(d, "IPD %4.1f mm. Lens separation %4.1f mm.", 1e-2 * ipd, 1e-2 * lens_separation);
 	}
 
 	if (d->board.proximity != proximity) {
@@ -268,8 +255,7 @@ oldest_sequence_index(uint8_t a, uint8_t b, uint8_t c)
 static inline uint32_t
 calc_dt_raw_and_handle_overflow(struct vive_device *d, uint32_t sample_time)
 {
-	uint64_t dt_raw =
-	    (uint64_t)sample_time - (uint64_t)d->imu.last_sample_time_raw;
+	uint64_t dt_raw = (uint64_t)sample_time - (uint64_t)d->imu.last_sample_time_raw;
 	d->imu.last_sample_time_raw = sample_time;
 
 	// The 32-bit tick counter has rolled over,
@@ -315,8 +301,7 @@ update_imu(struct vive_device *d, const void *buffer)
 		seq = sample->seq;
 
 		/* Skip already seen samples */
-		if (seq == last_seq || seq == (uint8_t)(last_seq - 1) ||
-		    seq == (uint8_t)(last_seq - 2)) {
+		if (seq == last_seq || seq == (uint8_t)(last_seq - 1) || seq == (uint8_t)(last_seq - 2)) {
 			continue;
 		}
 
@@ -351,11 +336,9 @@ update_imu(struct vive_device *d, const void *buffer)
 		    scale * d->imu.gyro_scale.z * gyro[2] - d->imu.gyro_bias.z,
 		};
 
-		VIVE_TRACE(d, "ACC  %f %f %f", acceleration.x, acceleration.y,
-		           acceleration.z);
+		VIVE_TRACE(d, "ACC  %f %f %f", acceleration.x, acceleration.y, acceleration.z);
 
-		VIVE_TRACE(d, "GYRO %f %f %f", angular_velocity.x,
-		           angular_velocity.y, angular_velocity.z);
+		VIVE_TRACE(d, "GYRO %f %f %f", angular_velocity.x, angular_velocity.y, angular_velocity.z);
 
 		switch (d->variant) {
 		case VIVE_VARIANT_VIVE:
@@ -400,8 +383,7 @@ update_imu(struct vive_device *d, const void *buffer)
 		d->last.gyro = angular_velocity;
 		d->imu.sequence = seq;
 
-		m_imu_3dof_update(&d->fusion, d->imu.time_ns, &acceleration,
-		                  &angular_velocity);
+		m_imu_3dof_update(&d->fusion, d->imu.time_ns, &acceleration, &angular_velocity);
 
 		d->rot_filtered = d->fusion.rot;
 	}
@@ -432,16 +414,12 @@ vive_mainboard_read_one_msg(struct vive_device *d)
 	switch (buffer[0]) {
 	case VIVE_MAINBOARD_STATUS_REPORT_ID:
 		if (ret != sizeof(struct vive_mainboard_status_report)) {
-			VIVE_ERROR(d,
-			           "Mainboard status report has invalid size.");
+			VIVE_ERROR(d, "Mainboard status report has invalid size.");
 			return false;
 		}
-		vive_mainboard_decode_message(
-		    d, (struct vive_mainboard_status_report *)buffer);
+		vive_mainboard_decode_message(d, (struct vive_mainboard_status_report *)buffer);
 		break;
-	default:
-		VIVE_ERROR(d, "Unknown mainboard message type %d", buffer[0]);
-		break;
+	default: VIVE_ERROR(d, "Unknown mainboard message type %d", buffer[0]); break;
 	}
 
 	return true;
@@ -496,14 +474,10 @@ vive_sensors_enable_watchman(struct vive_device *d, bool enable_sensors)
 }
 
 static void
-_print_v1_pulse(struct vive_device *d,
-                uint8_t sensor_id,
-                uint32_t timestamp,
-                uint16_t duration)
+_print_v1_pulse(struct vive_device *d, uint8_t sensor_id, uint32_t timestamp, uint16_t duration)
 {
-	VIVE_TRACE(d, "[sensor %02d] timestamp %8u ticks (%3.5fs) duration: %d",
-	           sensor_id, timestamp, timestamp / (float)VIVE_CLOCK_FREQ,
-	           duration);
+	VIVE_TRACE(d, "[sensor %02d] timestamp %8u ticks (%3.5fs) duration: %d", sensor_id, timestamp,
+	           timestamp / (float)VIVE_CLOCK_FREQ, duration);
 }
 
 static void
@@ -532,8 +506,7 @@ _decode_pulse_report(struct vive_device *d, const void *buffer)
 		}
 
 		if (sensor_id > 31) {
-			VIVE_ERROR(d, "Unexpected sensor id: %04x\n",
-			           sensor_id);
+			VIVE_ERROR(d, "Unexpected sensor id: %04x\n", sensor_id);
 			return;
 		}
 
@@ -541,8 +514,7 @@ _decode_pulse_report(struct vive_device *d, const void *buffer)
 
 		_print_v1_pulse(d, sensor_id, timestamp, duration);
 
-		lighthouse_watchman_handle_pulse(&d->watchman, sensor_id,
-		                                 duration, timestamp);
+		lighthouse_watchman_handle_pulse(&d->watchman, sensor_id, duration, timestamp);
 	}
 }
 
@@ -551,26 +523,19 @@ _sensors_get_report_string(uint32_t report_id)
 {
 	switch (report_id) {
 	case VIVE_IMU_REPORT_ID: return "VIVE_IMU_REPORT_ID";
-	case VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID:
-		return "VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID";
-	case VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID:
-		return "VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID";
-	case VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_REPORT_ID:
-		return "VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_REPORT_ID";
+	case VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID: return "VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID";
+	case VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID: return "VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID";
+	case VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_REPORT_ID: return "VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_REPORT_ID";
 	default: return "Unknown";
 	}
 }
 
 static bool
-_is_report_size_valid(struct vive_device *d,
-                      int size,
-                      int report_size,
-                      int report_id)
+_is_report_size_valid(struct vive_device *d, int size, int report_size, int report_id)
 {
 	if (size != report_size) {
-		VIVE_WARN(d, "Wrong size %d for report %s (%02x). Expected %d.",
-		          size, _sensors_get_report_string(report_id),
-		          report_id, report_size);
+		VIVE_WARN(d, "Wrong size %d for report %s (%02x). Expected %d.", size,
+		          _sensors_get_report_string(report_id), report_id, report_size);
 		return false;
 	}
 	return true;
@@ -581,8 +546,7 @@ vive_sensors_read_one_msg(struct vive_device *d,
                           struct os_hid_device *dev,
                           uint32_t report_id,
                           int report_size,
-                          void (*process_cb)(struct vive_device *d,
-                                             const void *buffer))
+                          void (*process_cb)(struct vive_device *d, const void *buffer))
 {
 	uint8_t buffer[64];
 
@@ -593,8 +557,7 @@ vive_sensors_read_one_msg(struct vive_device *d,
 		return true;
 	}
 	if (ret < 0) {
-		VIVE_ERROR(d, "Failed to read device %p: %i.", (void *)dev,
-		           ret);
+		VIVE_ERROR(d, "Failed to read device %p: %i.", (void *)dev, ret);
 		return false;
 	}
 
@@ -603,22 +566,17 @@ vive_sensors_read_one_msg(struct vive_device *d,
 			return false;
 		process_cb(d, buffer);
 	} else {
-		VIVE_ERROR(d, "Unexpected sensor report type %s (0x%x).",
-		           _sensors_get_report_string(buffer[0]), buffer[0]);
-		VIVE_ERROR(d, "Expected %s (0x%x).",
-		           _sensors_get_report_string(report_id), report_id);
+		VIVE_ERROR(d, "Unexpected sensor report type %s (0x%x).", _sensors_get_report_string(buffer[0]),
+		           buffer[0]);
+		VIVE_ERROR(d, "Expected %s (0x%x).", _sensors_get_report_string(report_id), report_id);
 	}
 
 	return true;
 }
 
 static void
-_print_v2_pulse(struct vive_device *d,
-                uint8_t sensor_id,
-                uint8_t flag,
-                uint32_t timestamp,
-                uint32_t data,
-                uint32_t mask)
+_print_v2_pulse(
+    struct vive_device *d, uint8_t sensor_id, uint8_t flag, uint32_t timestamp, uint32_t data, uint32_t mask)
 {
 	char data_str[32];
 
@@ -635,8 +593,7 @@ _print_v2_pulse(struct vive_device *d,
 	VIVE_TRACE(d,
 	           "[sensor %02d] flag: %03u "
 	           "timestamp %8u ticks (%3.5fs) data: %s",
-	           sensor_id, flag, timestamp,
-	           timestamp / (float)VIVE_CLOCK_FREQ, data_str);
+	           sensor_id, flag, timestamp, timestamp / (float)VIVE_CLOCK_FREQ, data_str);
 }
 
 static bool
@@ -645,8 +602,7 @@ _print_pulse_report_v2(struct vive_device *d, const void *buffer)
 	const struct vive_headset_lighthouse_v2_pulse_report *report = buffer;
 
 	for (uint32_t i = 0; i < 4; i++) {
-		const struct vive_headset_lighthouse_v2_pulse *p =
-		    &report->pulse[i];
+		const struct vive_headset_lighthouse_v2_pulse *p = &report->pulse[i];
 
 		if (p->sensor_id == 0xff)
 			continue;
@@ -664,8 +620,7 @@ _print_pulse_report_v2(struct vive_device *d, const void *buffer)
 		}
 
 		uint32_t timestamp = __le32_to_cpu(p->timestamp);
-		_print_v2_pulse(d, sensor_id, flag, timestamp, p->data,
-		                p->mask);
+		_print_v2_pulse(d, sensor_id, flag, timestamp, p->data, p->mask);
 	}
 
 	return true;
@@ -715,9 +670,8 @@ vive_sensors_read_lighthouse_msg(struct vive_device *d)
 			return false;
 		break;
 	default:
-		VIVE_ERROR(
-		    d, "Unexpected sensor report type %s (0x%x). %d bytes.",
-		    _sensors_get_report_string(buffer[0]), buffer[0], ret);
+		VIVE_ERROR(d, "Unexpected sensor report type %s (0x%x). %d bytes.",
+		           _sensors_get_report_string(buffer[0]), buffer[0], ret);
 	}
 
 	return true;
@@ -752,9 +706,7 @@ vive_sensors_run_thread(void *ptr)
 	while (os_thread_helper_is_running_locked(&d->sensors_thread)) {
 		os_thread_helper_unlock(&d->sensors_thread);
 
-		if (!vive_sensors_read_one_msg(d, d->sensors_dev,
-		                               VIVE_IMU_REPORT_ID, 52,
-		                               update_imu)) {
+		if (!vive_sensors_read_one_msg(d, d->sensors_dev, VIVE_IMU_REPORT_ID, 52, update_imu)) {
 			return NULL;
 		}
 
@@ -796,11 +748,7 @@ vive_init_defaults(struct vive_device *d)
 
 
 static bool
-compute_distortion(struct xrt_device *xdev,
-                   int view,
-                   float u,
-                   float v,
-                   struct xrt_uv_triplet *result)
+compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct vive_device *d = vive_device(xdev);
 	return u_compute_distortion_vive(&d->distortion[view], u, v, result);
@@ -812,10 +760,9 @@ vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *watchman_dev,
                    enum VIVE_VARIANT variant)
 {
-	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
-	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
-	struct vive_device *d =
-	    U_DEVICE_ALLOCATE(struct vive_device, flags, 1, 0);
+	enum u_device_alloc_flags flags =
+	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	struct vive_device *d = U_DEVICE_ALLOCATE(struct vive_device, flags, 1, 0);
 
 	d->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
 	d->base.update_inputs = vive_device_update_inputs;
@@ -837,28 +784,18 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	vive_init_defaults(d);
 
 	switch (variant) {
-	case VIVE_VARIANT_VIVE:
-		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive");
-		break;
-	case VIVE_VARIANT_PRO:
-		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro");
-		break;
-	case VIVE_VARIANT_INDEX:
-		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Valve Index");
-		break;
-	default:
-		snprintf(d->base.str, XRT_DEVICE_NAME_LEN,
-		         "Unknown Vive device");
+	case VIVE_VARIANT_VIVE: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive"); break;
+	case VIVE_VARIANT_PRO: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro"); break;
+	case VIVE_VARIANT_INDEX: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Valve Index"); break;
+	default: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Unknown Vive device");
 	}
 
 	if (d->mainboard_dev) {
 		vive_mainboard_power_on(d);
 		vive_mainboard_get_device_info(d);
 	}
-	vive_read_firmware(d->sensors_dev, &d->firmware.firmware_version,
-	                   &d->firmware.hardware_revision,
-	                   &d->firmware.hardware_version_micro,
-	                   &d->firmware.hardware_version_minor,
+	vive_read_firmware(d->sensors_dev, &d->firmware.firmware_version, &d->firmware.hardware_revision,
+	                   &d->firmware.hardware_version_micro, &d->firmware.hardware_version_minor,
 	                   &d->firmware.hardware_version_major);
 
 	/*
@@ -868,14 +805,11 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	*/
 
 	VIVE_INFO(d, "Firmware version %u", d->firmware.firmware_version);
-	VIVE_INFO(d, "Hardware revision: %d rev %d.%d.%d",
-	          d->firmware.hardware_revision,
-	          d->firmware.hardware_version_major,
-	          d->firmware.hardware_version_minor,
+	VIVE_INFO(d, "Hardware revision: %d rev %d.%d.%d", d->firmware.hardware_revision,
+	          d->firmware.hardware_version_major, d->firmware.hardware_version_minor,
 	          d->firmware.hardware_version_micro);
 
-	vive_get_imu_range_report(d->sensors_dev, &d->imu.gyro_range,
-	                          &d->imu.acc_range);
+	vive_get_imu_range_report(d->sensors_dev, &d->imu.gyro_range, &d->imu.acc_range);
 	VIVE_INFO(d, "Vive gyroscope range     %f", d->imu.gyro_range);
 	VIVE_INFO(d, "Vive accelerometer range %f", d->imu.acc_range);
 
@@ -904,15 +838,12 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
 		eye_to_screen_distance = 0.0255;
 
-		d->base.hmd->screens[0].nominal_frame_interval_ns =
-		    (uint64_t)time_s_to_ns(1.0f / 144.0f);
+		d->base.hmd->screens[0].nominal_frame_interval_ns = (uint64_t)time_s_to_ns(1.0f / 144.0f);
 	} else {
-		d->base.hmd->screens[0].nominal_frame_interval_ns =
-		    (uint64_t)time_s_to_ns(1.0f / 90.0f);
+		d->base.hmd->screens[0].nominal_frame_interval_ns = (uint64_t)time_s_to_ns(1.0f / 90.0f);
 	}
 
-	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0,
-	                       eye_to_screen_distance);
+	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0, eye_to_screen_distance);
 
 	struct xrt_vec2 lens_center[2];
 
@@ -938,12 +869,9 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.hmd->views[1].viewport.x_pixels = w_pixels;
 
 	for (uint8_t eye = 0; eye < 2; eye++) {
-		if (!math_compute_fovs(w_meters, (double)lens_center[eye].x,
-		                       fov, h_meters,
-		                       (double)lens_center[eye].y, 0,
-		                       &d->base.hmd->views[eye].fov)) {
-			VIVE_ERROR(
-			    d, "Failed to compute the partial fields of view.");
+		if (!math_compute_fovs(w_meters, (double)lens_center[eye].x, fov, h_meters, (double)lens_center[eye].y,
+		                       0, &d->base.hmd->views[eye].fov)) {
+			VIVE_ERROR(d, "Failed to compute the partial fields of view.");
 			free(d);
 			return NULL;
 		}
@@ -970,14 +898,12 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 			VIVE_ERROR(d, "Could not enable watchman receiver.");
 		} else {
 			lighthouse_watchman_init(&d->watchman, "headset");
-			VIVE_DEBUG(d,
-			           "Successfully enabled watchman receiver.");
+			VIVE_DEBUG(d, "Successfully enabled watchman receiver.");
 		}
 	}
 
 	if (d->mainboard_dev) {
-		ret = os_thread_helper_start(&d->mainboard_thread,
-		                             vive_mainboard_run_thread, d);
+		ret = os_thread_helper_start(&d->mainboard_thread, vive_mainboard_run_thread, d);
 		if (ret != 0) {
 			VIVE_ERROR(d, "Failed to start mainboard thread!");
 			vive_device_destroy((struct xrt_device *)d);
@@ -989,16 +915,14 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.position_tracking_supported = false;
 	d->base.device_type = XRT_DEVICE_TYPE_HMD;
 
-	ret = os_thread_helper_start(&d->sensors_thread,
-	                             vive_sensors_run_thread, d);
+	ret = os_thread_helper_start(&d->sensors_thread, vive_sensors_run_thread, d);
 	if (ret != 0) {
 		VIVE_ERROR(d, "Failed to start sensors thread!");
 		vive_device_destroy((struct xrt_device *)d);
 		return NULL;
 	}
 
-	ret = os_thread_helper_start(&d->watchman_thread,
-	                             vive_watchman_run_thread, d);
+	ret = os_thread_helper_start(&d->watchman_thread, vive_watchman_run_thread, d);
 	if (ret != 0) {
 		VIVE_ERROR(d, "Failed to start watchman thread!");
 		vive_device_destroy((struct xrt_device *)d);

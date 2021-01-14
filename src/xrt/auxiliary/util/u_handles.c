@@ -56,8 +56,7 @@ ref_graphics_handle(xrt_graphics_buffer_handle_t handle)
 {
 	HANDLE self = GetCurrentProcess();
 	HANDLE result = NULL;
-	if (DuplicateHandle(self, handle, self, &result, 0, FALSE,
-	                    DUPLICATE_SAME_ACCESS) != 0) {
+	if (DuplicateHandle(self, handle, self, &result, 0, FALSE, DUPLICATE_SAME_ACCESS) != 0) {
 		return result;
 	}
 	return NULL;

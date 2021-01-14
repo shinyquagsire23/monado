@@ -51,8 +51,7 @@ p_json_open_or_create_main_file(struct prober *p)
 {
 #ifdef XRT_OS_LINUX
 	char tmp[1024];
-	ssize_t ret =
-	    u_file_get_path_in_config_dir("config_v0.json", tmp, sizeof(tmp));
+	ssize_t ret = u_file_get_path_in_config_dir("config_v0.json", tmp, sizeof(tmp));
 	if (ret <= 0) {
 		U_LOG_E(
 		    "Could not load or create config file no $HOME "
@@ -167,9 +166,7 @@ is_json_ok(struct prober *p)
 }
 
 static bool
-parse_active(const char *str,
-             const char *from,
-             enum p_active_config *out_active)
+parse_active(const char *str, const char *from, enum p_active_config *out_active)
 {
 	if (strcmp(str, "none") == 0) {
 		*out_active = P_ACTIVE_CONFIG_NONE;
@@ -195,8 +192,7 @@ p_json_get_active(struct prober *p, enum p_active_config *out_active)
 	}
 
 	char tmp[256];
-	if (!is_json_ok(p) ||
-	    !get_obj_str(p->json.root, "active", tmp, sizeof(tmp))) {
+	if (!is_json_ok(p) || !get_obj_str(p->json.root, "active", tmp, sizeof(tmp))) {
 		*out_active = P_ACTIVE_CONFIG_NONE;
 		return;
 	}
@@ -262,12 +258,10 @@ p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s)
 		return false;
 	}
 
-	bad |= !get_obj_str(t, "camera_name", s->camera_name,
-	                    sizeof(s->camera_name));
+	bad |= !get_obj_str(t, "camera_name", s->camera_name, sizeof(s->camera_name));
 	bad |= !get_obj_int(t, "camera_mode", &s->camera_mode);
 	bad |= !get_obj_str(t, "camera_type", tmp, sizeof(tmp));
-	bad |= !get_obj_str(t, "calibration_path", s->calibration_path,
-	                    sizeof(s->calibration_path));
+	bad |= !get_obj_str(t, "calibration_path", s->calibration_path, sizeof(s->calibration_path));
 	if (bad) {
 		return false;
 	}

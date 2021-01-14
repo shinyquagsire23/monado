@@ -40,9 +40,7 @@ static enum u_logging_level ll;
 #define EGL_SC_WARN(...) U_LOG_IFL_W(ll, __VA_ARGS__)
 #define EGL_SC_ERROR(...) U_LOG_IFL_E(ll, __VA_ARGS__)
 
-DEBUG_GET_ONCE_LOG_OPTION(egl_swapchain_log,
-                          "EGL_SWAPCHAIN_LOG",
-                          U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(egl_swapchain_log, "EGL_SWAPCHAIN_LOG", U_LOGGING_WARN)
 
 
 /*!
@@ -63,8 +61,7 @@ client_gl_eglimage_swapchain(struct xrt_swapchain *xsc)
 
 // This is shared between "destroy" and an error cleanup
 static void
-client_gl_eglimage_swapchain_teardown_storage(
-    struct client_gl_eglimage_swapchain *sc)
+client_gl_eglimage_swapchain_teardown_storage(struct client_gl_eglimage_swapchain *sc)
 {
 	uint32_t num_images = sc->base.base.base.num_images;
 	if (num_images > 0) {
@@ -72,8 +69,7 @@ client_gl_eglimage_swapchain_teardown_storage(
 		U_ZERO_ARRAY(sc->base.base.images);
 		for (uint32_t i = 0; i < num_images; ++i) {
 			if (sc->egl_images[i] != NULL) {
-				eglDestroyImageKHR(sc->display,
-				                   &(sc->egl_images[i]));
+				eglDestroyImageKHR(sc->display, &(sc->egl_images[i]));
 			}
 		}
 		U_ZERO_ARRAY(sc->egl_images);
@@ -83,8 +79,7 @@ client_gl_eglimage_swapchain_teardown_storage(
 static void
 client_gl_eglimage_swapchain_destroy(struct xrt_swapchain *xsc)
 {
-	struct client_gl_eglimage_swapchain *sc =
-	    client_gl_eglimage_swapchain(xsc);
+	struct client_gl_eglimage_swapchain *sc = client_gl_eglimage_swapchain(xsc);
 
 	client_gl_eglimage_swapchain_teardown_storage(sc);
 	sc->base.base.base.num_images = 0;
@@ -103,31 +98,21 @@ client_gl_eglimage_swapchain_destroy(struct xrt_swapchain *xsc)
  * for the "source of truth" for this data.
  */
 
-#define XRT_FOURCC(A, B, C, D)                                                 \
-	((uint32_t)(A) | ((uint32_t)(B) << 8) | ((uint32_t)(C) << 16) |        \
-	 ((uint32_t)(D) << 24))
+#define XRT_FOURCC(A, B, C, D) ((uint32_t)(A) | ((uint32_t)(B) << 8) | ((uint32_t)(C) << 16) | ((uint32_t)(D) << 24))
 
 static inline uint32_t
 gl_format_to_drm_fourcc(uint64_t format)
 {
 	switch (format) {
 
-	case GL_RGBA8:
-		return XRT_FOURCC('R', 'A', '2', '4'); /*DRM_FORMAT_RGBA8888*/
-	case GL_SRGB8_ALPHA8:
-		return XRT_FOURCC('R', 'A', '2', '4'); /*DRM_FORMAT_RGBA8888*/
-	case GL_RGB10_A2:
-		return XRT_FOURCC('A', 'B', '3',
-		                  '0'); /*DRM_FORMAT_ABGR2101010*/
+	case GL_RGBA8: return XRT_FOURCC('R', 'A', '2', '4');        /*DRM_FORMAT_RGBA8888*/
+	case GL_SRGB8_ALPHA8: return XRT_FOURCC('R', 'A', '2', '4'); /*DRM_FORMAT_RGBA8888*/
+	case GL_RGB10_A2: return XRT_FOURCC('A', 'B', '3', '0');     /*DRM_FORMAT_ABGR2101010*/
 #if 0
 	/* couldn't find a matching code? */
 	case GL_RGBA16F:
 #endif
-	default:
-		EGL_SC_ERROR("Cannot convert GL format 0x%08" PRIx64
-		             " to DRM FOURCC format!",
-		             format);
-		return 0;
+	default: EGL_SC_ERROR("Cannot convert GL format 0x%08" PRIx64 " to DRM FOURCC format!", format); return 0;
 	}
 }
 static inline uint32_t
@@ -142,11 +127,7 @@ gl_format_to_bpp(uint64_t format)
 	/* couldn't find a matching code? */
 	case GL_RGBA16F:
 #endif
-	default:
-		EGL_SC_ERROR("Cannot convert GL format 0x%08" PRIx64
-		             " to DRM FOURCC format!",
-		             format);
-		return 0;
+	default: EGL_SC_ERROR("Cannot convert GL format 0x%08" PRIx64 " to DRM FOURCC format!", format); return 0;
 	}
 }
 #endif // defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
@@ -178,11 +159,10 @@ vk_format_to_srgb(uint64_t format)
 
 
 struct xrt_swapchain *
-client_gl_eglimage_swapchain_create(
-    struct xrt_compositor *xc,
-    const struct xrt_swapchain_create_info *info,
-    struct xrt_swapchain_native *xscn,
-    struct client_gl_swapchain **out_sc)
+client_gl_eglimage_swapchain_create(struct xrt_compositor *xc,
+                                    const struct xrt_swapchain_create_info *info,
+                                    struct xrt_swapchain_native *xscn,
+                                    struct client_gl_swapchain **out_sc)
 {
 	ll = debug_get_log_option_egl_swapchain_log();
 
@@ -205,16 +185,14 @@ client_gl_eglimage_swapchain_create(
 			// round up
 			row_pitch += 1;
 		}
-		EGL_SC_INFO("Computed row pitch is %" PRIu32 " bytes: %" PRIu32
-		            " bpp, %" PRIu32 " pixels wide",
+		EGL_SC_INFO("Computed row pitch is %" PRIu32 " bytes: %" PRIu32 " bpp, %" PRIu32 " pixels wide",
 		            row_pitch, bpp, info->width);
 	}
 #endif // defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 
 	struct xrt_swapchain *native_xsc = &xscn->base;
 
-	struct client_gl_eglimage_swapchain *sc =
-	    U_TYPED_CALLOC(struct client_gl_eglimage_swapchain);
+	struct client_gl_eglimage_swapchain *sc = U_TYPED_CALLOC(struct client_gl_eglimage_swapchain);
 	struct xrt_swapchain_gl *xscgl = &sc->base.base;
 	struct xrt_swapchain *client_xsc = &xscgl->base;
 	client_xsc->destroy = client_gl_eglimage_swapchain_destroy;
@@ -241,8 +219,7 @@ client_gl_eglimage_swapchain_create(
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 		// see
 		// https://android.googlesource.com/platform/cts/+/master/tests/tests/nativehardware/jni/AHardwareBufferGLTest.cpp
-		native_buffer =
-		    eglGetNativeClientBufferANDROID(xscn->images[i].handle);
+		native_buffer = eglGetNativeClientBufferANDROID(xscn->images[i].handle);
 
 		if (NULL == native_buffer) {
 			EGL_SC_ERROR("eglGetNativeClientBufferANDROID failed");
@@ -251,11 +228,7 @@ client_gl_eglimage_swapchain_create(
 			return NULL;
 		}
 		EGLint attrs[] = {
-		    EGL_IMAGE_PRESERVED_KHR,
-		    EGL_TRUE,
-		    EGL_NONE,
-		    EGL_NONE,
-		    EGL_NONE,
+		    EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE, EGL_NONE, EGL_NONE,
 		};
 		if (vk_format_to_srgb(info->format)) {
 			attrs[2] = EGL_GL_COLORSPACE_KHR;
@@ -282,8 +255,7 @@ client_gl_eglimage_swapchain_create(
 #else
 #error "need port"
 #endif
-		sc->egl_images[i] = eglCreateImageKHR(
-		    sc->display, EGL_NO_CONTEXT, source, native_buffer, attrs);
+		sc->egl_images[i] = eglCreateImageKHR(sc->display, EGL_NO_CONTEXT, source, native_buffer, attrs);
 		if (EGL_NO_IMAGE_KHR == sc->egl_images[i]) {
 			EGL_SC_ERROR("eglCreateImageKHR failed");
 			client_gl_eglimage_swapchain_teardown_storage(sc);
@@ -297,14 +269,10 @@ client_gl_eglimage_swapchain_create(
 		 * Also, glEGLImageTargetTexStorageEXT was added in Android
 		 * platform 28, so fairly recently.
 		 */
-		if (GLAD_GL_EXT_EGL_image_storage &&
-		    glEGLImageTargetTexStorageEXT) {
-			glEGLImageTargetTexStorageEXT(tex_target,
-			                              sc->egl_images[i], NULL);
-		} else if (GLAD_GL_OES_EGL_image_external ||
-		           GLAD_GL_OES_EGL_image_external_essl3) {
-			glEGLImageTargetTexture2DOES(tex_target,
-			                             sc->egl_images[i]);
+		if (GLAD_GL_EXT_EGL_image_storage && glEGLImageTargetTexStorageEXT) {
+			glEGLImageTargetTexStorageEXT(tex_target, sc->egl_images[i], NULL);
+		} else if (GLAD_GL_OES_EGL_image_external || GLAD_GL_OES_EGL_image_external_essl3) {
+			glEGLImageTargetTexture2DOES(tex_target, sc->egl_images[i]);
 		}
 	}
 

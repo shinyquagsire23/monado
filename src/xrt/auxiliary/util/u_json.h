@@ -99,9 +99,7 @@ u_json_get_quat(const cJSON *json, struct xrt_quat *out_quat);
  * @return the number of elements set.
  */
 size_t
-u_json_get_float_array(const cJSON *json_array,
-                       float *out_array,
-                       size_t max_size);
+u_json_get_float_array(const cJSON *json_array, float *out_array, size_t max_size);
 
 /*!
  * @brief Parse up to max_size doubles from a JSON array.
@@ -109,9 +107,7 @@ u_json_get_float_array(const cJSON *json_array,
  * @return the number of elements set.
  */
 size_t
-u_json_get_double_array(const cJSON *json_array,
-                        double *out_array,
-                        size_t max_size);
+u_json_get_double_array(const cJSON *json_array, double *out_array, size_t max_size);
 
 /*!
  * @brief Parse a matrix_3x3 from a JSON object.

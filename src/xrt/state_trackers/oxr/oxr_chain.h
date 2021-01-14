@@ -49,7 +49,7 @@ oxr_find_input_in_chain(const void *ptr, XrStructureType desired)
  * Note: There is no protection here to ensure that STRUCTURE_TYPE_ENUM (an
  * XrStructureType value) and TYPE (a type name) actually match!
  */
-#define OXR_GET_INPUT_FROM_CHAIN(PTR, STRUCTURE_TYPE_ENUM, TYPE)               \
+#define OXR_GET_INPUT_FROM_CHAIN(PTR, STRUCTURE_TYPE_ENUM, TYPE)                                                       \
 	((TYPE const *)oxr_find_input_in_chain(PTR, STRUCTURE_TYPE_ENUM))
 
 /*!
@@ -82,7 +82,7 @@ oxr_find_output_in_chain(void *ptr, XrStructureType desired)
  * Note: There is no protection here to ensure that STRUCTURE_TYPE_ENUM (an
  * XrStructureType value) and TYPE (a type name) actually match!
  */
-#define OXR_GET_OUTPUT_FROM_CHAIN(PTR, STRUCTURE_TYPE_ENUM, TYPE)              \
+#define OXR_GET_OUTPUT_FROM_CHAIN(PTR, STRUCTURE_TYPE_ENUM, TYPE)                                                      \
 	((TYPE *)oxr_find_output_in_chain(PTR, STRUCTURE_TYPE_ENUM))
 
 /*!

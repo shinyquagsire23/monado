@@ -56,11 +56,10 @@ struct client_gl_swapchain
  * - Must populate `destroy`
  * - Does not need to save/restore texture binding
  */
-typedef struct xrt_swapchain *(*client_gl_swapchain_create_func)(
-    struct xrt_compositor *xc,
-    const struct xrt_swapchain_create_info *info,
-    struct xrt_swapchain_native *xscn,
-    struct client_gl_swapchain **out_sc);
+typedef struct xrt_swapchain *(*client_gl_swapchain_create_func)(struct xrt_compositor *xc,
+                                                                 const struct xrt_swapchain_create_info *info,
+                                                                 struct xrt_swapchain_native *xscn,
+                                                                 struct client_gl_swapchain **out_sc);
 
 /*!
  * The type of a fence insertion function.
@@ -69,8 +68,7 @@ typedef struct xrt_swapchain *(*client_gl_swapchain_create_func)(
  *
  * The returned graphics sync handle is given to xrt_compositor::layer_commit.
  */
-typedef xrt_result_t (*client_gl_insert_fence_func)(
-    struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle);
+typedef xrt_result_t (*client_gl_insert_fence_func)(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle);
 
 /*!
  * @class client_gl_compositor

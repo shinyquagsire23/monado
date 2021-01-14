@@ -153,8 +153,7 @@ renderer_submit_queue(struct comp_renderer *r)
 	    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 	};
 
-	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->current_buffer],
-	                          VK_TRUE, UINT64_MAX);
+	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->current_buffer], VK_TRUE, UINT64_MAX);
 	if (ret != VK_SUCCESS)
 		COMP_ERROR(r->c, "vkWaitForFences: %s", vk_result_string(ret));
 
@@ -173,17 +172,14 @@ renderer_submit_queue(struct comp_renderer *r)
 	    .pSignalSemaphores = &r->semaphores.render_complete,
 	};
 
-	ret = vk_locked_submit(vk, r->queue, 1, &comp_submit_info,
-	                       r->fences[r->current_buffer]);
+	ret = vk_locked_submit(vk, r->queue, 1, &comp_submit_info, r->fences[r->current_buffer]);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
 	}
 }
 
 static void
-renderer_build_rendering(struct comp_renderer *r,
-                         struct comp_rendering *rr,
-                         uint32_t index)
+renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uint32_t index)
 {
 	struct comp_compositor *c = r->c;
 
@@ -194,10 +190,8 @@ renderer_build_rendering(struct comp_renderer *r,
 	data.height = r->c->target->height;
 
 	bool pre_rotate = false;
-	if (r->c->target->surface_transform &
-	        VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
-	    r->c->target->surface_transform &
-	        VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+	if (r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+	    r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
 		COMP_DEBUG(c,
 		           "Swapping width and height,"
 		           "since we are pre rotating");
@@ -205,10 +199,8 @@ renderer_build_rendering(struct comp_renderer *r,
 	}
 
 
-	float w = pre_rotate ? r->c->xdev->hmd->screens[0].h_pixels
-	                     : r->c->xdev->hmd->screens[0].w_pixels;
-	float h = pre_rotate ? r->c->xdev->hmd->screens[0].w_pixels
-	                     : r->c->xdev->hmd->screens[0].h_pixels;
+	float w = pre_rotate ? r->c->xdev->hmd->screens[0].h_pixels : r->c->xdev->hmd->screens[0].w_pixels;
+	float h = pre_rotate ? r->c->xdev->hmd->screens[0].w_pixels : r->c->xdev->hmd->screens[0].h_pixels;
 
 	float scale_x = (float)r->c->target->width / w;
 	float scale_y = (float)r->c->target->height / h;
@@ -249,8 +241,7 @@ renderer_build_rendering(struct comp_renderer *r,
 	};
 
 	if (pre_rotate) {
-		math_matrix_2x2_multiply(&l_v->rot, &rotation_90_cw,
-		                         &l_data.rot);
+		math_matrix_2x2_multiply(&l_v->rot, &rotation_90_cw, &l_data.rot);
 	}
 
 	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
@@ -279,8 +270,7 @@ renderer_build_rendering(struct comp_renderer *r,
 	};
 
 	if (pre_rotate) {
-		math_matrix_2x2_multiply(&r_v->rot, &rotation_90_cw,
-		                         &r_data.rot);
+		math_matrix_2x2_multiply(&r_v->rot, &rotation_90_cw, &r_data.rot);
 	}
 
 	/*
@@ -352,15 +342,12 @@ renderer_create_fences(struct comp_renderer *r)
 	struct vk_bundle *vk = &r->c->vk;
 
 	for (uint32_t i = 0; i < r->num_buffers; i++) {
-		VkResult ret = vk->vkCreateFence(
-		    vk->device,
-		    &(VkFenceCreateInfo){
-		        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		        .flags = VK_FENCE_CREATE_SIGNALED_BIT},
-		    NULL, &r->fences[i]);
+		VkResult ret = vk->vkCreateFence(vk->device,
+		                                 &(VkFenceCreateInfo){.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		                                                      .flags = VK_FENCE_CREATE_SIGNALED_BIT},
+		                                 NULL, &r->fences[i]);
 		if (ret != VK_SUCCESS) {
-			COMP_ERROR(r->c, "vkCreateFence: %s",
-			           vk_result_string(ret));
+			COMP_ERROR(r->c, "vkCreateFence: %s", vk_result_string(ret));
 		}
 	}
 }
@@ -370,8 +357,7 @@ renderer_get_view_projection(struct comp_renderer *r)
 {
 	struct xrt_space_relation relation;
 
-	xrt_device_get_tracked_pose(r->c->xdev, XRT_INPUT_GENERIC_HEAD_POSE,
-	                            r->c->last_frame_time_ns, &relation);
+	xrt_device_get_tracked_pose(r->c->xdev, XRT_INPUT_GENERIC_HEAD_POSE, r->c->last_frame_time_ns, &relation);
 
 	struct xrt_vec3 eye_relation = {
 	    0.063000f, /* TODO: get actual ipd_meters */
@@ -390,8 +376,7 @@ renderer_get_view_projection(struct comp_renderer *r)
 		comp_layer_renderer_set_fov(r->lr, &fov, i);
 
 		struct xrt_pose eye_pose;
-		xrt_device_get_view_pose(r->c->xdev, &eye_relation, i,
-		                         &eye_pose);
+		xrt_device_get_view_pose(r->c->xdev, &eye_relation, i, &eye_pose);
 
 		struct xrt_space_relation result = {0};
 		struct xrt_space_graph xsg = {0};
@@ -409,8 +394,7 @@ renderer_init(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->vk;
 
-	vk->vkGetDeviceQueue(vk->device, r->c->vk.queue_family_index, 0,
-	                     &r->queue);
+	vk->vkGetDeviceQueue(vk->device, r->c->vk.queue_family_index, 0, &r->queue);
 	renderer_init_semaphores(r);
 	assert(r->c->target->num_images > 0);
 
@@ -419,10 +403,8 @@ renderer_init(struct comp_renderer *r)
 	renderer_create_fences(r);
 
 	VkExtent2D extent;
-	if (r->c->target->surface_transform &
-	        VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
-	    r->c->target->surface_transform &
-	        VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+	if (r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+	    r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
 		// Swapping width and height, since we are pre rotating
 		extent = (VkExtent2D){
 		    .width = r->c->xdev->hmd->screens[0].h_pixels,
@@ -435,17 +417,14 @@ renderer_init(struct comp_renderer *r)
 		};
 	}
 
-	r->lr = comp_layer_renderer_create(vk, &r->c->shaders, extent,
-	                                   VK_FORMAT_B8G8R8A8_SRGB);
+	r->lr = comp_layer_renderer_create(vk, &r->c->shaders, extent, VK_FORMAT_B8G8R8A8_SRGB);
 
 	renderer_allocate_renderings(r);
 	renderer_build_renderings(r);
 }
 
 VkImageView
-get_image_view(struct comp_swapchain_image *image,
-               enum xrt_layer_composition_flags flags,
-               uint32_t array_index)
+get_image_view(struct comp_swapchain_image *image, enum xrt_layer_composition_flags flags, uint32_t array_index)
 {
 	if (flags & XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT) {
 		return image->views.alpha[array_index];
@@ -464,9 +443,8 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(
-	    l, image->sampler,
-	    get_image_view(image, data->flags, data->quad.sub.array_index));
+	comp_layer_update_descriptors(l, image->sampler,
+	                              get_image_view(image, data->flags, data->quad.sub.array_index));
 
 	struct xrt_vec3 s = {data->quad.size.x, data->quad.size.y, 1.0f};
 	struct xrt_matrix_4x4 model_matrix;
@@ -479,8 +457,7 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 	l->type = XRT_LAYER_QUAD;
 	l->visibility = data->quad.visibility;
 	l->flags = data->flags;
-	l->view_space =
-	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+	l->view_space = (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
 
 	for (uint32_t i = 0; i < 2; i++) {
 		l->transformation[i].offset = data->quad.sub.rect.offset;
@@ -502,25 +479,21 @@ comp_renderer_set_cylinder_layer(struct comp_renderer *r,
 	l->type = XRT_LAYER_CYLINDER;
 	l->visibility = data->cylinder.visibility;
 	l->flags = data->flags;
-	l->view_space =
-	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+	l->view_space = (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
 
 	// skip "infinite cylinder"
-	if (data->cylinder.radius == 0.f ||
-	    data->cylinder.aspect_ratio == INFINITY) {
+	if (data->cylinder.radius == 0.f || data->cylinder.aspect_ratio == INFINITY) {
 		/* skipping the descriptor set update means the renderer must
 		 * entirely skip rendering of invisible layer */
 		l->visibility = XRT_LAYER_EYE_VISIBILITY_NONE;
 		return;
 	}
 
-	comp_layer_update_descriptors(
-	    r->lr->layers[layer], image->sampler,
-	    get_image_view(image, data->flags, data->cylinder.sub.array_index));
+	comp_layer_update_descriptors(r->lr->layers[layer], image->sampler,
+	                              get_image_view(image, data->flags, data->cylinder.sub.array_index));
 
 
-	float height = (data->cylinder.radius * data->cylinder.central_angle) /
-	               data->cylinder.aspect_ratio;
+	float height = (data->cylinder.radius * data->cylinder.central_angle) / data->cylinder.aspect_ratio;
 
 	// scale unit cylinder to diameter
 	float diameter = data->cylinder.radius * 2;
@@ -537,8 +510,7 @@ comp_renderer_set_cylinder_layer(struct comp_renderer *r,
 		l->transformation[i].extent = data->cylinder.sub.rect.extent;
 	}
 
-	comp_layer_update_cylinder_vertex_buffer(l,
-	                                         data->cylinder.central_angle);
+	comp_layer_update_cylinder_vertex_buffer(l, data->cylinder.central_angle);
 }
 
 void
@@ -556,17 +528,15 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_stereo_descriptors(
-	    l, left_image->sampler, right_image->sampler,
-	    get_image_view(left_image, data->flags, left_array_index),
-	    get_image_view(right_image, data->flags, right_array_index));
+	comp_layer_update_stereo_descriptors(l, left_image->sampler, right_image->sampler,
+	                                     get_image_view(left_image, data->flags, left_array_index),
+	                                     get_image_view(right_image, data->flags, right_array_index));
 
 	comp_layer_set_flip_y(l, data->flip_y);
 
 	l->type = XRT_LAYER_STEREO_PROJECTION;
 	l->flags = data->flags;
-	l->view_space =
-	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+	l->view_space = (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
 
 	l->transformation[0].offset = data->stereo.l.sub.rect.offset;
 	l->transformation[0].extent = data->stereo.l.sub.rect.extent;
@@ -592,15 +562,12 @@ comp_renderer_set_equirect1_layer(struct comp_renderer *r,
 	l->type = XRT_LAYER_EQUIRECT1;
 	l->visibility = data->equirect1.visibility;
 	l->flags = data->flags;
-	l->view_space =
-	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+	l->view_space = (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(
-	    l, image->repeat_sampler,
-	    get_image_view(image, data->flags,
-	                   data->equirect1.sub.array_index));
+	comp_layer_update_descriptors(l, image->repeat_sampler,
+	                              get_image_view(image, data->flags, data->equirect1.sub.array_index));
 
 	comp_layer_update_equirect1_descriptor(l, &data->equirect1);
 
@@ -628,15 +595,12 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
 	l->type = XRT_LAYER_EQUIRECT2;
 	l->visibility = data->equirect2.visibility;
 	l->flags = data->flags;
-	l->view_space =
-	    (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+	l->view_space = (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(
-	    l, image->repeat_sampler,
-	    get_image_view(image, data->flags,
-	                   data->equirect2.sub.array_index));
+	comp_layer_update_descriptors(l, image->repeat_sampler,
+	                              get_image_view(image, data->flags, data->equirect2.sub.array_index));
 
 	comp_layer_update_equirect2_descriptor(l, &data->equirect2);
 
@@ -709,18 +673,14 @@ renderer_init_semaphores(struct comp_renderer *r)
 	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
 	};
 
-	ret = vk->vkCreateSemaphore(vk->device, &info, NULL,
-	                            &r->semaphores.present_complete);
+	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &r->semaphores.present_complete);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreateSemaphore: %s",
-		           vk_result_string(ret));
+		COMP_ERROR(r->c, "vkCreateSemaphore: %s", vk_result_string(ret));
 	}
 
-	ret = vk->vkCreateSemaphore(vk->device, &info, NULL,
-	                            &r->semaphores.render_complete);
+	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &r->semaphores.render_complete);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreateSemaphore: %s",
-		           vk_result_string(ret));
+		COMP_ERROR(r->c, "vkCreateSemaphore: %s", vk_result_string(ret));
 	}
 }
 
@@ -760,24 +720,19 @@ renderer_acquire_swapchain_image(struct comp_renderer *r)
 {
 	VkResult ret;
 
-	ret = comp_target_acquire(r->c->target, r->semaphores.present_complete,
-	                          &r->current_buffer);
+	ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &r->current_buffer);
 
 	if ((ret == VK_ERROR_OUT_OF_DATE_KHR) || (ret == VK_SUBOPTIMAL_KHR)) {
 		COMP_DEBUG(r->c, "Received %s.", vk_result_string(ret));
 		renderer_resize(r);
 
 		/* Acquire image again to silence validation error */
-		ret = comp_target_acquire(r->c->target,
-		                          r->semaphores.present_complete,
-		                          &r->current_buffer);
+		ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &r->current_buffer);
 		if (ret != VK_SUCCESS) {
-			COMP_ERROR(r->c, "vk_swapchain_acquire_next_image: %s",
-			           vk_result_string(ret));
+			COMP_ERROR(r->c, "vk_swapchain_acquire_next_image: %s", vk_result_string(ret));
 		}
 	} else if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vk_swapchain_acquire_next_image: %s",
-		           vk_result_string(ret));
+		COMP_ERROR(r->c, "vk_swapchain_acquire_next_image: %s", vk_result_string(ret));
 	}
 }
 
@@ -786,15 +741,13 @@ renderer_present_swapchain_image(struct comp_renderer *r)
 {
 	VkResult ret;
 
-	ret = comp_target_present(r->c->target, r->queue, r->current_buffer,
-	                          r->semaphores.render_complete);
+	ret = comp_target_present(r->c->target, r->queue, r->current_buffer, r->semaphores.render_complete);
 	if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
 		renderer_resize(r);
 		return;
 	}
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vk_swapchain_present: %s",
-		           vk_result_string(ret));
+		COMP_ERROR(r->c, "vk_swapchain_present: %s", vk_result_string(ret));
 	}
 }
 
@@ -818,13 +771,11 @@ renderer_destroy(struct comp_renderer *r)
 
 	// Semaphores
 	if (r->semaphores.present_complete != VK_NULL_HANDLE) {
-		vk->vkDestroySemaphore(vk->device,
-		                       r->semaphores.present_complete, NULL);
+		vk->vkDestroySemaphore(vk->device, r->semaphores.present_complete, NULL);
 		r->semaphores.present_complete = VK_NULL_HANDLE;
 	}
 	if (r->semaphores.render_complete != VK_NULL_HANDLE) {
-		vk->vkDestroySemaphore(vk->device,
-		                       r->semaphores.render_complete, NULL);
+		vk->vkDestroySemaphore(vk->device, r->semaphores.render_complete, NULL);
 		r->semaphores.render_complete = VK_NULL_HANDLE;
 	}
 

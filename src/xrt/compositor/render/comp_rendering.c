@@ -20,30 +20,28 @@
  *
  */
 
-#define C(c)                                                                   \
-	do {                                                                   \
-		VkResult ret = c;                                              \
-		if (ret != VK_SUCCESS) {                                       \
-			return false;                                          \
-		}                                                              \
+#define C(c)                                                                                                           \
+	do {                                                                                                           \
+		VkResult ret = c;                                                                                      \
+		if (ret != VK_SUCCESS) {                                                                               \
+			return false;                                                                                  \
+		}                                                                                                      \
 	} while (false)
 
-#define D(TYPE, thing)                                                         \
-	if (thing != VK_NULL_HANDLE) {                                         \
-		vk->vkDestroy##TYPE(vk->device, thing, NULL);                  \
-		thing = VK_NULL_HANDLE;                                        \
+#define D(TYPE, thing)                                                                                                 \
+	if (thing != VK_NULL_HANDLE) {                                                                                 \
+		vk->vkDestroy##TYPE(vk->device, thing, NULL);                                                          \
+		thing = VK_NULL_HANDLE;                                                                                \
 	}
 
-#define DD(pool, thing)                                                        \
-	if (thing != VK_NULL_HANDLE) {                                         \
-		free_descriptor_set(vk, pool, thing);                          \
-		thing = VK_NULL_HANDLE;                                        \
+#define DD(pool, thing)                                                                                                \
+	if (thing != VK_NULL_HANDLE) {                                                                                 \
+		free_descriptor_set(vk, pool, thing);                                                                  \
+		thing = VK_NULL_HANDLE;                                                                                \
 	}
 
 static VkResult
-create_external_render_pass(struct vk_bundle *vk,
-                            VkFormat format,
-                            VkRenderPass *out_render_pass)
+create_external_render_pass(struct vk_bundle *vk, VkFormat format, VkRenderPass *out_render_pass)
 {
 	VkResult ret;
 
@@ -86,8 +84,7 @@ create_external_render_pass(struct vk_bundle *vk,
 	        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 	        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 	        .srcAccessMask = 0,
-	        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-	                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+	        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 	    },
 	};
 
@@ -107,8 +104,7 @@ create_external_render_pass(struct vk_bundle *vk,
 	                             NULL,              //
 	                             &render_pass);     //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateRenderPass failed: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateRenderPass failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -137,8 +133,7 @@ create_descriptor_set(struct vk_bundle *vk,
 	                                   &alloc_info,      //
 	                                   &descriptor_set); //
 	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkAllocateDescriptorSets failed: %s",
-		         vk_result_string(ret));
+		VK_DEBUG(vk, "vkAllocateDescriptorSets failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -148,9 +143,7 @@ create_descriptor_set(struct vk_bundle *vk,
 }
 
 static void
-free_descriptor_set(struct vk_bundle *vk,
-                    VkDescriptorPool descriptor_pool,
-                    VkDescriptorSet descriptor_set)
+free_descriptor_set(struct vk_bundle *vk, VkDescriptorPool descriptor_pool, VkDescriptorSet descriptor_set)
 {
 	VkResult ret;
 
@@ -160,8 +153,7 @@ free_descriptor_set(struct vk_bundle *vk,
 	                               1,                // descriptorSetCount
 	                               &descriptor_set); // pDescriptorSets
 	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkFreeDescriptorSets failed: %s",
-		         vk_result_string(ret));
+		VK_DEBUG(vk, "vkFreeDescriptorSets failed: %s", vk_result_string(ret));
 	}
 }
 
@@ -193,8 +185,7 @@ create_framebuffer(struct vk_bundle *vk,
 	                              NULL,               //
 	                              &framebuffer);      //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateFramebuffer failed: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateFramebuffer failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -226,8 +217,7 @@ create_command_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd)
 	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateFramebuffer failed: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateFramebuffer failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -247,8 +237,7 @@ begin_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer)
 
 	ret = vk->vkBeginCommandBuffer(command_buffer, &command_buffer_info);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkBeginCommandBuffer failed: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkBeginCommandBuffer failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -288,8 +277,7 @@ begin_render_pass(struct vk_bundle *vk,
 	    .pClearValues = clear_color,
 	};
 
-	vk->vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info,
-	                         VK_SUBPASS_CONTENTS_INLINE);
+	vk->vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 
@@ -323,8 +311,7 @@ create_mesh_pipeline(struct vk_bundle *vk,
 	}
 
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state = {
-	    .sType =
-	        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+	    .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 	    .topology = topology,
 	    .primitiveRestartEnable = VK_FALSE,
 	};
@@ -461,8 +448,7 @@ create_mesh_pipeline(struct vk_bundle *vk,
 	                                    NULL,           //
 	                                    &pipeline);     //
 	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkCreateGraphicsPipelines failed: %s",
-		         vk_result_string(ret));
+		VK_DEBUG(vk, "vkCreateGraphicsPipelines failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -472,15 +458,12 @@ create_mesh_pipeline(struct vk_bundle *vk,
 }
 
 static bool
-init_mesh_ubo_buffers(struct vk_bundle *vk,
-                      struct comp_buffer *l_ubo,
-                      struct comp_buffer *r_ubo)
+init_mesh_ubo_buffers(struct vk_bundle *vk, struct comp_buffer *l_ubo, struct comp_buffer *r_ubo)
 {
 	// Using the same flags for all ubos.
 	VkBufferUsageFlags ubo_usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	VkMemoryPropertyFlags memory_property_flags =
-	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-	    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
 	// Distortion ubo size.
 	VkDeviceSize ubo_size = sizeof(struct comp_mesh_ubo_data);
@@ -544,12 +527,11 @@ update_mesh_discriptor_set(struct vk_bundle *vk,
 	    },
 	};
 
-	vk->vkUpdateDescriptorSets(
-	    vk->device,                        //
-	    ARRAY_SIZE(write_descriptor_sets), // descriptorWriteCount
-	    write_descriptor_sets,             // pDescriptorWrites
-	    0,                                 // descriptorCopyCount
-	    NULL);                             // pDescriptorCopies
+	vk->vkUpdateDescriptorSets(vk->device,                        //
+	                           ARRAY_SIZE(write_descriptor_sets), // descriptorWriteCount
+	                           write_descriptor_sets,             // pDescriptorWrites
+	                           0,                                 // descriptorCopyCount
+	                           NULL);                             // pDescriptorCopies
 }
 
 
@@ -560,9 +542,7 @@ update_mesh_discriptor_set(struct vk_bundle *vk,
  */
 
 bool
-comp_rendering_init(struct comp_compositor *c,
-                    struct comp_resources *r,
-                    struct comp_rendering *rr)
+comp_rendering_init(struct comp_compositor *c, struct comp_resources *r, struct comp_rendering *rr)
 {
 	struct vk_bundle *vk = &c->vk;
 	rr->c = c;
@@ -580,17 +560,15 @@ comp_rendering_init(struct comp_compositor *c,
 	 * Mesh per view
 	 */
 
-	C(create_descriptor_set(
-	    vk,                                  // vk_bundle
-	    r->mesh_descriptor_pool,             // descriptor_pool
-	    r->mesh.descriptor_set_layout,       // descriptor_set_layout
-	    &rr->views[0].mesh.descriptor_set)); // descriptor_set
+	C(create_descriptor_set(vk,                                  // vk_bundle
+	                        r->mesh_descriptor_pool,             // descriptor_pool
+	                        r->mesh.descriptor_set_layout,       // descriptor_set_layout
+	                        &rr->views[0].mesh.descriptor_set)); // descriptor_set
 
-	C(create_descriptor_set(
-	    vk,                                  // vk_bundle
-	    r->mesh_descriptor_pool,             // descriptor_pool
-	    r->mesh.descriptor_set_layout,       // descriptor_set_layout
-	    &rr->views[1].mesh.descriptor_set)); // descriptor_set
+	C(create_descriptor_set(vk,                                  // vk_bundle
+	                        r->mesh_descriptor_pool,             // descriptor_pool
+	                        r->mesh.descriptor_set_layout,       // descriptor_set_layout
+	                        &rr->views[1].mesh.descriptor_set)); // descriptor_set
 
 	if (!init_mesh_ubo_buffers(vk,                     //
 	                           &rr->views[0].mesh.ubo, //
@@ -627,9 +605,7 @@ comp_rendering_close(struct comp_rendering *rr)
  */
 
 bool
-comp_draw_begin_target_single(struct comp_rendering *rr,
-                              VkImageView target,
-                              struct comp_target_data *data)
+comp_draw_begin_target_single(struct comp_rendering *rr, VkImageView target, struct comp_target_data *data)
 {
 	struct vk_bundle *vk = &rr->c->vk;
 	struct comp_resources *r = rr->r;
@@ -644,25 +620,23 @@ comp_draw_begin_target_single(struct comp_rendering *rr,
 	    data->format,              // target_format
 	    &rr->render_pass));        // out_render_pass
 
-	C(create_mesh_pipeline(
-	    vk,                        // vk_bundle
-	    rr->render_pass,           // render_pass
-	    r->mesh.pipeline_layout,   // pipeline_layout
-	    r->pipeline_cache,         // pipeline_cache
-	    r->mesh.src_binding,       // src_binding
-	    r->mesh.total_num_indices, // mesh_total_num_indices
-	    r->mesh.stride,            // mesh_stride
-	    rr->c->shaders.mesh_vert,  // mesh_vert
-	    rr->c->shaders.mesh_frag,  // mesh_frag
-	    &rr->mesh.pipeline));      // out_mesh_pipeline
+	C(create_mesh_pipeline(vk,                        // vk_bundle
+	                       rr->render_pass,           // render_pass
+	                       r->mesh.pipeline_layout,   // pipeline_layout
+	                       r->pipeline_cache,         // pipeline_cache
+	                       r->mesh.src_binding,       // src_binding
+	                       r->mesh.total_num_indices, // mesh_total_num_indices
+	                       r->mesh.stride,            // mesh_stride
+	                       rr->c->shaders.mesh_vert,  // mesh_vert
+	                       rr->c->shaders.mesh_frag,  // mesh_frag
+	                       &rr->mesh.pipeline));      // out_mesh_pipeline
 
-	C(create_framebuffer(
-	    vk,                            // vk_bundle,
-	    target,                        // image_view,
-	    rr->render_pass,               // render_pass,
-	    data->width,                   // width,
-	    data->height,                  // height,
-	    &rr->targets[0].framebuffer)); // out_external_framebuffer
+	C(create_framebuffer(vk,                            // vk_bundle,
+	                     target,                        // image_view,
+	                     rr->render_pass,               // render_pass,
+	                     data->width,                   // width,
+	                     data->height,                  // height,
+	                     &rr->targets[0].framebuffer)); // out_external_framebuffer
 
 	C(begin_command_buffer(vk, rr->cmd));
 
@@ -692,8 +666,7 @@ comp_draw_end_target(struct comp_rendering *rr)
 	// End the command buffer.
 	ret = vk->vkEndCommandBuffer(rr->cmd);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkEndCommandBuffer failed: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkEndCommandBuffer failed: %s", vk_result_string(ret));
 		return;
 	}
 }
@@ -778,8 +751,7 @@ comp_draw_distortion(struct comp_rendering *rr,
 	 * Descriptors and pipeline.
 	 */
 
-	comp_buffer_write(vk, &v->mesh.ubo, data,
-	                  sizeof(struct comp_mesh_ubo_data));
+	comp_buffer_write(vk, &v->mesh.ubo, data, sizeof(struct comp_mesh_ubo_data));
 
 	update_mesh_discriptor_set(  //
 	    vk,                      // vk_bundle

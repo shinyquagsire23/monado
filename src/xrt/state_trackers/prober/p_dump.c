@@ -35,23 +35,20 @@ print_ports(char *tmp, size_t size, uint8_t *ports, int num)
 		return 1;
 	}
 	case 4: {
-		snprintf(tmp, size, "%i.%i.%i.%i", ports[0], ports[1], ports[2],
-		         ports[3]);
+		snprintf(tmp, size, "%i.%i.%i.%i", ports[0], ports[1], ports[2], ports[3]);
 		return 1;
 	}
 	case 5: {
-		snprintf(tmp, size, "%i.%i.%i.%i.%i", ports[0], ports[1],
-		         ports[2], ports[3], ports[4]);
+		snprintf(tmp, size, "%i.%i.%i.%i.%i", ports[0], ports[1], ports[2], ports[3], ports[4]);
 		return 1;
 	}
 	case 6: {
-		snprintf(tmp, size, "%i.%i.%i.%i.%i.%i", ports[0], ports[1],
-		         ports[2], ports[3], ports[4], ports[5]);
+		snprintf(tmp, size, "%i.%i.%i.%i.%i.%i", ports[0], ports[1], ports[2], ports[3], ports[4], ports[5]);
 		return 1;
 	}
 	case 7: {
-		snprintf(tmp, size, "%i.%i.%i.%i.%i.%i.%i", ports[0], ports[1],
-		         ports[2], ports[3], ports[4], ports[5], ports[6]);
+		snprintf(tmp, size, "%i.%i.%i.%i.%i.%i.%i", ports[0], ports[1], ports[2], ports[3], ports[4], ports[5],
+		         ports[6]);
 		return 1;
 	}
 	default: return 0;
@@ -70,19 +67,16 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 {
 	char tmp[1024];
 
-	if (pdev->usb.bus != 0 && pdev->usb.addr == 0 &&
-	    pdev->base.vendor_id != 0 && pdev->base.product_id == 0) {
+	if (pdev->usb.bus != 0 && pdev->usb.addr == 0 && pdev->base.vendor_id != 0 && pdev->base.product_id == 0) {
 		return;
 	}
 
-	U_LOG_I("\t% 3i: 0x%04x:0x%04x", id, pdev->base.vendor_id,
-	        pdev->base.product_id);
+	U_LOG_I("\t% 3i: 0x%04x:0x%04x", id, pdev->base.vendor_id, pdev->base.product_id);
 	U_LOG_I("\t\tptr:              %p", (void *)pdev);
 	U_LOG_I("\t\tusb_dev_class:    %02x", pdev->base.usb_dev_class);
 
 
-	if (pdev->usb.serial != NULL || pdev->usb.product != NULL ||
-	    pdev->usb.manufacturer != NULL) {
+	if (pdev->usb.serial != NULL || pdev->usb.product != NULL || pdev->usb.manufacturer != NULL) {
 		U_LOG_I("\t\tusb.product:      %s", pdev->usb.product);
 		U_LOG_I("\t\tusb.manufacturer: %s", pdev->usb.manufacturer);
 		U_LOG_I("\t\tusb.serial:       %s", pdev->usb.serial);
@@ -94,8 +88,7 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 	}
 
 	if (pdev->bluetooth.id != 0) {
-		U_LOG_I("\t\tbluetooth.id:     %012" PRIx64 "",
-		        pdev->bluetooth.id);
+		U_LOG_I("\t\tbluetooth.id:     %012" PRIx64 "", pdev->bluetooth.id);
 	}
 
 	int num = pdev->usb.num_ports;
@@ -124,13 +117,11 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 		}
 		if (desc->manufacturer != NULL) {
 
-			U_LOG_I("\t\tmanufacturer:     '%s'",
-			        desc->manufacturer);
+			U_LOG_I("\t\tmanufacturer:     '%s'", desc->manufacturer);
 		}
 		if (desc->serialNumber != NULL) {
 
-			U_LOG_I("\t\tserial:           '%s'",
-			        desc->serialNumber);
+			U_LOG_I("\t\tserial:           '%s'", desc->serialNumber);
 		}
 
 		uvc_free_device_descriptor(desc);

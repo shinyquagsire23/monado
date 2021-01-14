@@ -79,8 +79,7 @@ comp_window_android_destroy(struct comp_target *ct)
 }
 
 static void
-comp_window_android_update_window_title(struct comp_target *ct,
-                                        const char *title)
+comp_window_android_update_window_title(struct comp_target *ct, const char *title)
 {
 	(void)ct;
 }
@@ -88,18 +87,16 @@ comp_window_android_update_window_title(struct comp_target *ct,
 static struct ANativeWindow *
 _create_android_window(struct comp_window_android *cwa)
 {
-	cwa->custom_surface = android_custom_surface_async_start(
-	    android_globals_get_vm(), android_globals_get_activity());
+	cwa->custom_surface =
+	    android_custom_surface_async_start(android_globals_get_vm(), android_globals_get_activity());
 	if (cwa->custom_surface == NULL) {
-		COMP_ERROR(
-		    cwa->base.base.c,
-		    "comp_window_android_create_surface: could not "
-		    "start asynchronous attachment of our custom surface");
+		COMP_ERROR(cwa->base.base.c,
+		           "comp_window_android_create_surface: could not "
+		           "start asynchronous attachment of our custom surface");
 		return NULL;
 	}
 
-	return android_custom_surface_wait_get_surface(cwa->custom_surface,
-	                                               2000);
+	return android_custom_surface_wait_get_surface(cwa->custom_surface, 2000);
 }
 
 static VkResult
@@ -122,8 +119,7 @@ comp_window_android_create_surface(struct comp_window_android *cwa,
 	    NULL,                            //
 	    vk_surface);                     //
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(cwa->base.base.c, "vkCreateAndroidSurfaceKHR: %s",
-		           vk_result_string(ret));
+		COMP_ERROR(cwa->base.base.c, "vkCreateAndroidSurfaceKHR: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -131,9 +127,7 @@ comp_window_android_create_surface(struct comp_window_android *cwa,
 }
 
 static bool
-comp_window_android_init_swapchain(struct comp_target *ct,
-                                   uint32_t width,
-                                   uint32_t height)
+comp_window_android_init_swapchain(struct comp_target *ct, uint32_t width, uint32_t height)
 {
 	struct comp_window_android *cwa = (struct comp_window_android *)ct;
 	VkResult ret;
@@ -153,11 +147,9 @@ comp_window_android_init_swapchain(struct comp_target *ct,
 		return false;
 	}
 
-	ret = comp_window_android_create_surface(cwa, window,
-	                                         &cwa->base.surface.handle);
+	ret = comp_window_android_create_surface(cwa, window, &cwa->base.surface.handle);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "Failed to create surface '%s'!",
-		           vk_result_string(ret));
+		COMP_ERROR(ct->c, "Failed to create surface '%s'!", vk_result_string(ret));
 		return false;
 	}
 
@@ -173,8 +165,7 @@ comp_window_android_flush(struct comp_target *ct)
 struct comp_target *
 comp_window_android_create(struct comp_compositor *c)
 {
-	struct comp_window_android *w =
-	    U_TYPED_CALLOC(struct comp_window_android);
+	struct comp_window_android *w = U_TYPED_CALLOC(struct comp_window_android);
 
 	comp_target_swapchain_init_set_fnptrs(&w->base);
 

@@ -114,10 +114,9 @@ dummy_hmd_get_tracked_pose(struct xrt_device *xdev,
 	math_quat_normalize(&dh->pose.orientation);
 
 	out_relation->pose = dh->pose;
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	                                                               XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	                                                               XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 }
 
 static void
@@ -150,8 +149,8 @@ dummy_hmd_get_view_pose(struct xrt_device *xdev,
 struct xrt_device *
 dummy_hmd_create(void)
 {
-	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
-	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	enum u_device_alloc_flags flags =
+	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 	struct dummy_hmd *dh = U_DEVICE_ALLOCATE(struct dummy_hmd, flags, 1, 0);
 	dh->base.update_inputs = dummy_hmd_update_inputs;
 	dh->base.get_tracked_pose = dummy_hmd_get_tracked_pose;

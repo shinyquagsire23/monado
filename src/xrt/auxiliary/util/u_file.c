@@ -60,16 +60,13 @@ u_file_get_config_dir(char *out_path, size_t out_path_size)
 		return snprintf(out_path, out_path_size, "%s/monado", xgd_home);
 	}
 	if (home != NULL) {
-		return snprintf(out_path, out_path_size, "%s/.config/monado",
-		                home);
+		return snprintf(out_path, out_path_size, "%s/.config/monado", home);
 	}
 	return -1;
 }
 
 ssize_t
-u_file_get_path_in_config_dir(const char *filename,
-                              char *out_path,
-                              size_t out_path_size)
+u_file_get_path_in_config_dir(const char *filename, char *out_path, size_t out_path_size)
 {
 	char tmp[PATH_MAX];
 	ssize_t i = u_file_get_config_dir(tmp, sizeof(tmp));

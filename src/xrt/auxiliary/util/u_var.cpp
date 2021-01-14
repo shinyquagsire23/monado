@@ -147,10 +147,7 @@ u_var_remove_root(void *root)
 }
 
 extern "C" void
-u_var_visit(u_var_root_cb enter_cb,
-            u_var_root_cb exit_cb,
-            u_var_elm_cb elem_cb,
-            void *priv)
+u_var_visit(u_var_root_cb enter_cb, u_var_root_cb exit_cb, u_var_elm_cb elem_cb, void *priv)
 {
 	if (!get_on()) {
 		return;
@@ -174,14 +171,13 @@ u_var_visit(u_var_root_cb enter_cb,
 	}
 }
 
-#define ADD_FUNC(SUFFIX, TYPE, ENUM)                                           \
-	extern "C" void u_var_add_##SUFFIX(void *obj, TYPE *ptr,               \
-	                                   const char *c_name)                 \
-	{                                                                      \
-		if (!get_on()) {                                               \
-			return;                                                \
-		}                                                              \
-		add_var(obj, (void *)ptr, U_VAR_KIND_##ENUM, c_name);          \
+#define ADD_FUNC(SUFFIX, TYPE, ENUM)                                                                                   \
+	extern "C" void u_var_add_##SUFFIX(void *obj, TYPE *ptr, const char *c_name)                                   \
+	{                                                                                                              \
+		if (!get_on()) {                                                                                       \
+			return;                                                                                        \
+		}                                                                                                      \
+		add_var(obj, (void *)ptr, U_VAR_KIND_##ENUM, c_name);                                                  \
 	}
 
 U_VAR_ADD_FUNCS()

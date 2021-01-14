@@ -19,23 +19,22 @@
 #include <stdlib.h>
 
 
-#define HANDLE_LIFECYCLE_LOG(log, ...)                                         \
-	if (log->inst != NULL && log->inst->lifecycle_verbose) {               \
-		oxr_log(log, " Handle Lifecycle: " __VA_ARGS__);               \
+#define HANDLE_LIFECYCLE_LOG(log, ...)                                                                                 \
+	if (log->inst != NULL && log->inst->lifecycle_verbose) {                                                       \
+		oxr_log(log, " Handle Lifecycle: " __VA_ARGS__);                                                       \
 	}
 
 // Variation of HANDLE_LIFECYCLE_LOG() to wrap a handle free() which might
 // potentially free the instance (in which logger info is stored).
-#define HANDLE_LIFECYCLE_LOG_SCOPED_BEGIN(log)                                 \
-	{                                                                      \
-		const bool _log_lifecycle_verbose =                            \
-		    log->inst != NULL && log->inst->lifecycle_verbose;
-#define HANDLE_LIFECYCLE_LOG_SCOPED_END                                        \
-	}                                                                      \
+#define HANDLE_LIFECYCLE_LOG_SCOPED_BEGIN(log)                                                                         \
+	{                                                                                                              \
+		const bool _log_lifecycle_verbose = log->inst != NULL && log->inst->lifecycle_verbose;
+#define HANDLE_LIFECYCLE_LOG_SCOPED_END                                                                                \
+	}                                                                                                              \
 	(void)0
-#define HANDLE_LIFECYCLE_LOG_SCOPED(log, ...)                                  \
-	if (_log_lifecycle_verbose) {                                          \
-		oxr_log(log, " Handle Lifecycle: " __VA_ARGS__);               \
+#define HANDLE_LIFECYCLE_LOG_SCOPED(log, ...)                                                                          \
+	if (_log_lifecycle_verbose) {                                                                                  \
+		oxr_log(log, " Handle Lifecycle: " __VA_ARGS__);                                                       \
 	}
 
 
@@ -63,20 +62,16 @@ oxr_handle_init(struct oxr_logger *log,
 	assert(destroy != NULL);
 	assert(debug != 0);
 
-	HANDLE_LIFECYCLE_LOG(
-	    log, "[init %p] Initializing handle, parent handle = %p",
-	    (void *)hb, (void *)parent);
+	HANDLE_LIFECYCLE_LOG(log, "[init %p] Initializing handle, parent handle = %p", (void *)hb, (void *)parent);
 
 
 	hb->state = OXR_HANDLE_STATE_UNINITIALIZED;
 
 	if (parent != NULL) {
 		if (parent->state != OXR_HANDLE_STATE_LIVE) {
-			return oxr_error(
-			    log, XR_ERROR_RUNTIME_FAILURE,
-			    "Handle %p given parent %p in invalid state: %s",
-			    (void *)parent, (void *)hb,
-			    oxr_handle_state_to_string(parent->state));
+			return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+			                 "Handle %p given parent %p in invalid state: %s", (void *)parent, (void *)hb,
+			                 oxr_handle_state_to_string(parent->state));
 		}
 
 		bool placed = false;
@@ -117,8 +112,7 @@ oxr_handle_allocate_and_init(struct oxr_logger *log,
 	 * This allocation call, taking a size, not a type, is why this
 	 * function isn't recommended for direct use.
 	 */
-	struct oxr_handle_base *hb =
-	    U_CALLOC_WITH_CAST(struct oxr_handle_base, size);
+	struct oxr_handle_base *hb = U_CALLOC_WITH_CAST(struct oxr_handle_base, size);
 	XrResult result = oxr_handle_init(log, hb, debug, destroy, parent);
 	if (result != XR_SUCCESS) {
 		free(hb);
@@ -136,9 +130,7 @@ oxr_handle_allocate_and_init(struct oxr_logger *log,
  * recursion.
  */
 static XrResult
-oxr_handle_do_destroy(struct oxr_logger *log,
-                      struct oxr_handle_base *hb,
-                      int level)
+oxr_handle_do_destroy(struct oxr_logger *log, struct oxr_handle_base *hb, int level)
 {
 
 	HANDLE_LIFECYCLE_LOG(log,
@@ -153,11 +145,10 @@ oxr_handle_do_destroy(struct oxr_logger *log,
 
 		for (int i = 0; i < XRT_MAX_HANDLE_CHILDREN; ++i) {
 			if (parent->children[i] == hb) {
-				HANDLE_LIFECYCLE_LOG(
-				    log,
-				    "[%d: destroying %p] Removing handle from "
-				    "child slot %d in parent %p",
-				    level, (void *)hb, i, (void *)hb->parent);
+				HANDLE_LIFECYCLE_LOG(log,
+				                     "[%d: destroying %p] Removing handle from "
+				                     "child slot %d in parent %p",
+				                     level, (void *)hb, i, (void *)hb->parent);
 
 				parent->children[i] = NULL;
 				found = true;
@@ -165,9 +156,7 @@ oxr_handle_do_destroy(struct oxr_logger *log,
 			}
 		}
 		if (!found) {
-			return oxr_error(
-			    log, XR_ERROR_RUNTIME_FAILURE,
-			    "Parent handle does not refer to this handle");
+			return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Parent handle does not refer to this handle");
 		}
 
 		/* clear parent pointer */
@@ -179,8 +168,7 @@ oxr_handle_do_destroy(struct oxr_logger *log,
 		struct oxr_handle_base *child = hb->children[i];
 
 		if (child != NULL) {
-			XrResult result =
-			    oxr_handle_do_destroy(log, child, level + 1);
+			XrResult result = oxr_handle_do_destroy(log, child, level + 1);
 			if (result != XR_SUCCESS) {
 				return result;
 			}
@@ -191,16 +179,14 @@ oxr_handle_do_destroy(struct oxr_logger *log,
 	HANDLE_LIFECYCLE_LOG_SCOPED_BEGIN(log)
 	{
 		/* Destroy self */
-		HANDLE_LIFECYCLE_LOG_SCOPED(
-		    log, "[%d: destroying %p] Calling handle object destructor",
-		    level, (void *)hb);
+		HANDLE_LIFECYCLE_LOG_SCOPED(log, "[%d: destroying %p] Calling handle object destructor", level,
+		                            (void *)hb);
 		hb->state = OXR_HANDLE_STATE_DESTROYED;
 		XrResult result = hb->destroy(log, hb);
 		if (result != XR_SUCCESS) {
 			return result;
 		}
-		HANDLE_LIFECYCLE_LOG_SCOPED(log, "r%d: destroying %p] Done",
-		                            level, (void *)hb);
+		HANDLE_LIFECYCLE_LOG_SCOPED(log, "r%d: destroying %p] Done", level, (void *)hb);
 	}
 	HANDLE_LIFECYCLE_LOG_SCOPED_END;
 
@@ -216,15 +202,11 @@ oxr_handle_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	/* Might destroy instance, which log needs, so use secured variant */
 	HANDLE_LIFECYCLE_LOG_SCOPED_BEGIN(log)
 	{
-		HANDLE_LIFECYCLE_LOG_SCOPED(
-		    log, "[~: destroying %p] oxr_handle_destroy starting",
-		    (void *)hb);
+		HANDLE_LIFECYCLE_LOG_SCOPED(log, "[~: destroying %p] oxr_handle_destroy starting", (void *)hb);
 
 		XrResult result = oxr_handle_do_destroy(log, hb, 0);
 
-		HANDLE_LIFECYCLE_LOG_SCOPED(
-		    log, "[~: destroying %p] oxr_handle_destroy finished",
-		    (void *)hb);
+		HANDLE_LIFECYCLE_LOG_SCOPED(log, "[~: destroying %p] oxr_handle_destroy finished", (void *)hb);
 
 		return result;
 	}

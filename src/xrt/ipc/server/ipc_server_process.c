@@ -223,8 +223,7 @@ init_shm(struct ipc_server *s)
 		// servers memory.
 		assert(i < IPC_SHARED_MAX_DEVICES);
 
-		struct ipc_shared_tracking_origin *itrack =
-		    &ism->itracks[count++];
+		struct ipc_shared_tracking_origin *itrack = &ism->itracks[count++];
 		memcpy(itrack->name, xtrack->name, sizeof(itrack->name));
 		itrack->type = xtrack->type;
 		itrack->offset = xtrack->offset;
@@ -250,24 +249,18 @@ init_shm(struct ipc_server *s)
 		isdev->name = xdev->name;
 		memcpy(isdev->str, xdev->str, sizeof(isdev->str));
 
-		isdev->orientation_tracking_supported =
-		    xdev->orientation_tracking_supported;
-		isdev->position_tracking_supported =
-		    xdev->position_tracking_supported;
+		isdev->orientation_tracking_supported = xdev->orientation_tracking_supported;
+		isdev->position_tracking_supported = xdev->position_tracking_supported;
 		isdev->device_type = xdev->device_type;
 		isdev->hand_tracking_supported = xdev->hand_tracking_supported;
 
 		// Is this a HMD?
 		if (xdev->hmd != NULL) {
-			ism->hmd.views[0].display.w_pixels =
-			    xdev->hmd->views[0].display.w_pixels;
-			ism->hmd.views[0].display.h_pixels =
-			    xdev->hmd->views[0].display.h_pixels;
+			ism->hmd.views[0].display.w_pixels = xdev->hmd->views[0].display.w_pixels;
+			ism->hmd.views[0].display.h_pixels = xdev->hmd->views[0].display.h_pixels;
 			ism->hmd.views[0].fov = xdev->hmd->views[0].fov;
-			ism->hmd.views[1].display.w_pixels =
-			    xdev->hmd->views[1].display.w_pixels;
-			ism->hmd.views[1].display.h_pixels =
-			    xdev->hmd->views[1].display.h_pixels;
+			ism->hmd.views[1].display.w_pixels = xdev->hmd->views[1].display.w_pixels;
+			ism->hmd.views[1].display.h_pixels = xdev->hmd->views[1].display.h_pixels;
 			ism->hmd.views[1].fov = xdev->hmd->views[1].fov;
 		}
 
@@ -290,15 +283,13 @@ init_shm(struct ipc_server *s)
 		// Bindings
 		size_t binding_start = binding_index;
 		for (size_t k = 0; k < xdev->num_binding_profiles; k++) {
-			handle_binding(ism, &xdev->binding_profiles[k],
-			               &ism->binding_profiles[binding_index++],
+			handle_binding(ism, &xdev->binding_profiles[k], &ism->binding_profiles[binding_index++],
 			               &input_pair_index, &output_pair_index);
 		}
 
 		// Setup the 'offsets' and number of bindings.
 		if (binding_start != binding_index) {
-			isdev->num_binding_profiles =
-			    binding_index - binding_start;
+			isdev->num_binding_profiles = binding_index - binding_start;
 			isdev->first_binding_profile_index = binding_start;
 		}
 
@@ -555,8 +546,7 @@ init_all(struct ipc_server *s)
 		return -1;
 	}
 
-	ret = xrt_instance_create_native_compositor(s->xinst, s->idevs[0].xdev,
-	                                            &s->xcn);
+	ret = xrt_instance_create_native_compositor(s->xinst, s->idevs[0].xdev, &s->xcn);
 	if (ret < 0) {
 		teardown_all(s);
 		return ret;
@@ -668,8 +658,7 @@ find_event_slot(volatile struct ipc_client_state *ics)
 }
 
 static void
-transition_overlay_visibility(volatile struct ipc_client_state *ics,
-                              bool visible)
+transition_overlay_visibility(volatile struct ipc_client_state *ics, bool visible)
 {
 	uint32_t event_slot = find_event_slot(ics);
 	uint64_t timestamp = os_monotonic_get_ns();
@@ -755,8 +744,7 @@ _update_projection_layer_depth(struct xrt_compositor *xc,
 	struct xrt_swapchain *l_d_xcs = ics->xscs[l_d_xsci];
 	struct xrt_swapchain *r_d_xcs = ics->xscs[r_d_xsci];
 
-	if (l_xcs == NULL || r_xcs == NULL || l_d_xcs == NULL ||
-	    r_d_xcs == NULL) {
+	if (l_xcs == NULL || r_xcs == NULL || l_d_xcs == NULL || r_d_xcs == NULL) {
 		U_LOG_E("Invalid swap chain for projection layer.");
 		return false;
 	}
@@ -769,8 +757,7 @@ _update_projection_layer_depth(struct xrt_compositor *xc,
 	// Cast away volatile.
 	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
 
-	xrt_comp_layer_stereo_projection_depth(xc, xdev, l_xcs, r_xcs, l_d_xcs,
-	                                       r_d_xcs, data);
+	xrt_comp_layer_stereo_projection_depth(xc, xdev, l_xcs, r_xcs, l_d_xcs, r_d_xcs, data);
 
 	return true;
 }
@@ -947,8 +934,7 @@ _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 	}
 
 	// sort the stack array
-	qsort(z_data, IPC_MAX_CLIENTS, sizeof(struct _z_sort_data),
-	      _overlay_sort_func);
+	qsort(z_data, IPC_MAX_CLIENTS, sizeof(struct _z_sort_data), _overlay_sort_func);
 
 	// render the layer stack
 	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
@@ -957,23 +943,19 @@ _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 			continue;
 		}
 
-		volatile struct ipc_client_state *ics =
-		    &s->threads[zd->index].ics;
+		volatile struct ipc_client_state *ics = &s->threads[zd->index].ics;
 
 		for (uint32_t j = 0; j < ics->render_state.num_layers; j++) {
-			volatile struct ipc_layer_entry *layer =
-			    &ics->render_state.layers[j];
+			volatile struct ipc_layer_entry *layer = &ics->render_state.layers[j];
 
 			switch (layer->data.type) {
 			case XRT_LAYER_STEREO_PROJECTION:
-				if (!_update_projection_layer(xc, ics, layer,
-				                              i)) {
+				if (!_update_projection_layer(xc, ics, layer, i)) {
 					return false;
 				}
 				break;
 			case XRT_LAYER_STEREO_PROJECTION_DEPTH:
-				if (!_update_projection_layer_depth(xc, ics,
-				                                    layer, i)) {
+				if (!_update_projection_layer_depth(xc, ics, layer, i)) {
 					return false;
 				}
 				break;
@@ -988,27 +970,21 @@ _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 				}
 				break;
 			case XRT_LAYER_CYLINDER:
-				if (!_update_cylinder_layer(xc, ics, layer,
-				                            i)) {
+				if (!_update_cylinder_layer(xc, ics, layer, i)) {
 					return false;
 				}
 				break;
 			case XRT_LAYER_EQUIRECT1:
-				if (!_update_equirect1_layer(xc, ics, layer,
-				                             i)) {
+				if (!_update_equirect1_layer(xc, ics, layer, i)) {
 					return false;
 				}
 				break;
 			case XRT_LAYER_EQUIRECT2:
-				if (!_update_equirect2_layer(xc, ics, layer,
-				                             i)) {
+				if (!_update_equirect2_layer(xc, ics, layer, i)) {
 					return false;
 				}
 				break;
-			default:
-				U_LOG_E("Unhandled layer type '%i'!",
-				        layer->data.type);
-				break;
+			default: U_LOG_E("Unhandled layer type '%i'!", layer->data.type); break;
 			}
 		}
 	}
@@ -1031,8 +1007,7 @@ main_loop(struct ipc_server *s)
 		uint64_t predicted_display_time;
 		uint64_t predicted_display_period;
 
-		xrt_comp_wait_frame(xc, &frame_id, &predicted_display_time,
-		                    &predicted_display_period);
+		xrt_comp_wait_frame(xc, &frame_id, &predicted_display_time, &predicted_display_period);
 
 		uint64_t now = os_monotonic_get_ns();
 		uint64_t diff = predicted_display_time - now;
@@ -1041,10 +1016,8 @@ main_loop(struct ipc_server *s)
 
 		// Broadcast the new timing information to the helpers.
 		for (size_t i = 0; i < ARRAY_SIZE(s->threads); i++) {
-			u_rt_helper_new_sample(
-			    (struct u_rt_helper *)&s->threads[i].ics.urth,
-			    predicted_display_time, diff,
-			    predicted_display_period);
+			u_rt_helper_new_sample((struct u_rt_helper *)&s->threads[i].ics.urth, predicted_display_time,
+			                       diff, predicted_display_period);
 		}
 
 		os_mutex_unlock(&s->global_state_lock);
@@ -1055,8 +1028,7 @@ main_loop(struct ipc_server *s)
 
 		_update_layers(s, xc);
 
-		xrt_comp_layer_commit(xc, frame_id,
-		                      XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+		xrt_comp_layer_commit(xc, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 
 #ifndef XRT_OS_ANDROID
 		// Check polling last, so we know we have valid timing data.
@@ -1069,9 +1041,7 @@ main_loop(struct ipc_server *s)
 
 
 static void
-handle_overlay_client_events(volatile struct ipc_client_state *ics,
-                             int active_id,
-                             int prev_active_id)
+handle_overlay_client_events(volatile struct ipc_client_state *ics, int active_id, int prev_active_id)
 {
 	// this is an overlay session.
 	if (ics->client_state.session_overlay) {
@@ -1095,9 +1065,7 @@ handle_overlay_client_events(volatile struct ipc_client_state *ics,
 }
 
 static void
-handle_focused_client_events(volatile struct ipc_client_state *ics,
-                             int active_id,
-                             int prev_active_id)
+handle_focused_client_events(volatile struct ipc_client_state *ics, int active_id, int prev_active_id)
 {
 
 	// if our prev active id is -1 and our cur active id is -1, we
@@ -1176,11 +1144,9 @@ update_server_state(struct ipc_server *s)
 
 	if (s->active_client_index >= 0) {
 
-		volatile struct ipc_client_state *ics =
-		    &s->threads[s->active_client_index].ics;
+		volatile struct ipc_client_state *ics = &s->threads[s->active_client_index].ics;
 
-		if (ics->client_state.session_active &&
-		    s->active_client_index == s->last_active_client_index) {
+		if (ics->client_state.session_active && s->active_client_index == s->last_active_client_index) {
 			os_mutex_unlock(&s->global_state_lock);
 			return;
 		}
@@ -1201,8 +1167,7 @@ update_server_state(struct ipc_server *s)
 	// do we have a fallback application?
 	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
 		volatile struct ipc_client_state *ics = &s->threads[i].ics;
-		if (ics->client_state.session_overlay == false &&
-		    ics->server_thread_index >= 0 &&
+		if (ics->client_state.session_overlay == false && ics->server_thread_index >= 0 &&
 		    ics->client_state.session_active) {
 			fallback_active_application = i;
 			set_idle = false;
@@ -1212,10 +1177,8 @@ update_server_state(struct ipc_server *s)
 	// if our currently-set active primary application is not
 	// actually active/displayable, use the fallback application
 	// instead.
-	volatile struct ipc_client_state *ics =
-	    &s->threads[s->active_client_index].ics;
-	if (!(ics->client_state.session_overlay == false &&
-	      s->active_client_index >= 0 &&
+	volatile struct ipc_client_state *ics = &s->threads[s->active_client_index].ics;
+	if (!(ics->client_state.session_overlay == false && s->active_client_index >= 0 &&
 	      ics->client_state.session_active)) {
 		s->active_client_index = fallback_active_application;
 	}
@@ -1232,13 +1195,9 @@ update_server_state(struct ipc_server *s)
 		volatile struct ipc_client_state *ics = &s->threads[i].ics;
 		if (ics->server_thread_index >= 0) {
 
-			handle_focused_client_events(
-			    ics, s->active_client_index,
-			    s->last_active_client_index);
+			handle_focused_client_events(ics, s->active_client_index, s->last_active_client_index);
 
-			handle_overlay_client_events(
-			    ics, s->active_client_index,
-			    s->last_active_client_index);
+			handle_overlay_client_events(ics, s->active_client_index, s->last_active_client_index);
 		}
 	}
 

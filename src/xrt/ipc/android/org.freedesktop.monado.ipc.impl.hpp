@@ -34,33 +34,27 @@ namespace org::freedesktop::monado::ipc {
 	Client::construct(void *nativePointer)
 	{
 		return Client(Meta::data().clazz().newInstance(
-		    Meta::data().init,
-		    static_cast<long long>(
-		        reinterpret_cast<intptr_t>(nativePointer))));
+		    Meta::data().init, static_cast<long long>(reinterpret_cast<intptr_t>(nativePointer))));
 	}
 
 	inline void
 	Client::markAsDiscardedByNative()
 	{
 		assert(!isNull());
-		return object().call<void>(
-		    Meta::data().markAsDiscardedByNative);
+		return object().call<void>(Meta::data().markAsDiscardedByNative);
 	}
 
 	inline int32_t
-	Client::blockingConnect(android::content::Context const &context,
-	                        std::string const &packageName)
+	Client::blockingConnect(android::content::Context const &context, std::string const &packageName)
 	{
 		assert(!isNull());
-		return object().call<int32_t>(Meta::data().blockingConnect,
-		                              context.object(), packageName);
+		return object().call<int32_t>(Meta::data().blockingConnect, context.object(), packageName);
 	}
 	inline void
 	IMonado::passAppSurface(android::view::Surface const &surface)
 	{
 		assert(!isNull());
-		return object().call<void>(Meta::data().passAppSurface,
-		                           surface.object());
+		return object().call<void>(Meta::data().passAppSurface, surface.object());
 	}
 } // namespace org::freedesktop::monado::ipc
 } // namespace wrap

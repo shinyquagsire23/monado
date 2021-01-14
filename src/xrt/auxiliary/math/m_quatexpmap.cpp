@@ -100,8 +100,7 @@ cscTaylorExpansion(Scalar theta)
 	       // 7 theta^4 / 360
 	       (Scalar(7) * theta * theta * theta * theta) / Scalar(360) +
 	       // 31 theta^6/15120
-	       (Scalar(31) * theta * theta * theta * theta * theta * theta) /
-	           Scalar(15120);
+	       (Scalar(31) * theta * theta * theta * theta * theta * theta) / Scalar(15120);
 }
 
 /// fully-templated free function for quaternion log map.
@@ -125,8 +124,7 @@ quat_ln(Eigen::Quaternion<Scalar> const &quat)
 	// When the angle approaches zero, we compute the coefficient
 	// differently, since it gets a bit like sinc in that we want it
 	// continuous but 0 is undefined.
-	Scalar phiOverSin = vecnorm < 1e-4 ? cscTaylorExpansion<Scalar>(phi)
-	                                   : (phi / std::sin(phi));
+	Scalar phiOverSin = vecnorm < 1e-4 ? cscTaylorExpansion<Scalar>(phi) : (phi / std::sin(phi));
 	return quat.vec() * phiOverSin;
 }
 
@@ -145,8 +143,7 @@ math_quat_integrate_velocity(const struct xrt_quat *quat,
 
 
 	Eigen::Quaternionf q = map_quat(*quat);
-	Eigen::Quaternionf incremental_rotation =
-	    quat_exp(map_vec3(*ang_vel) * dt * 0.5f).normalized();
+	Eigen::Quaternionf incremental_rotation = quat_exp(map_vec3(*ang_vel) * dt * 0.5f).normalized();
 	map_quat(*result) = q * incremental_rotation;
 }
 
@@ -162,7 +159,6 @@ math_quat_finite_difference(const struct xrt_quat *quat0,
 	assert(dt != 0);
 
 
-	Eigen::Quaternionf inc_quat =
-	    map_quat(*quat1) * map_quat(*quat0).conjugate();
+	Eigen::Quaternionf inc_quat = map_quat(*quat1) * map_quat(*quat0).conjugate();
 	map_vec3(*out_ang_vel) = 2.f * quat_ln(inc_quat);
 }

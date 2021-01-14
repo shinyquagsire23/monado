@@ -51,8 +51,7 @@ struct View
 	cv::Mat frame_undist_rectified;
 
 	void
-	populate_from_calib(t_camera_calibration &calib,
-	                    const RemapPair &rectification)
+	populate_from_calib(t_camera_calibration &calib, const RemapPair &rectification)
 	{
 		CameraCalibrationWrapper wrap(calib);
 		intrinsics = wrap.intrinsics_mat;
@@ -148,12 +147,11 @@ do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 
 	// Debug is wanted, draw the keypoints.
 	if (rgb.cols > 0) {
-		cv::drawKeypoints(
-		    view.frame_undist_rectified,                // image
-		    view.keypoints,                             // keypoints
-		    rgb,                                        // outImage
-		    cv::Scalar(255, 0, 0),                      // color
-		    cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS); // flags
+		cv::drawKeypoints(view.frame_undist_rectified,                // image
+		                  view.keypoints,                             // keypoints
+		                  rgb,                                        // outImage
+		                  cv::Scalar(255, 0, 0),                      // color
+		                  cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS); // flags
 	}
 }
 
@@ -204,9 +202,7 @@ make_lowest_score_finder(FunctionType scoreFunctor)
 
 //! Convert our 2d point + disparities into 3d points.
 static cv::Point3f
-world_point_from_blobs(cv::Point2f left,
-                       cv::Point2f right,
-                       const cv::Matx44d &disparity_to_depth)
+world_point_from_blobs(cv::Point2f left, cv::Point2f right, const cv::Matx44d &disparity_to_depth)
 {
 	float disp = right.x - left.x;
 	cv::Vec4d xydw(left.x, left.y, disp, 1.0f);
@@ -215,9 +211,7 @@ world_point_from_blobs(cv::Point2f left,
 
 	// Divide by scale to get 3D vector from homogeneous coordinate.  we
 	// also invert x here
-	cv::Point3f world_point(-h_world[0] / h_world[3],
-	                        h_world[1] / h_world[3],
-	                        h_world[2] / h_world[3]);
+	cv::Point3f world_point(-h_world[0] / h_world[3], h_world[1] / h_world[3], h_world[2] / h_world[3]);
 
 	return world_point;
 }
@@ -259,38 +253,32 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	do_view(t, t.view[0], l_grey, t.debug.rgb[0]);
 	do_view(t, t.view[1], r_grey, t.debug.rgb[1]);
 
-	cv::Point3f last_point(t.tracked_object_position.x,
-	                       t.tracked_object_position.y,
-	                       t.tracked_object_position.z);
-	auto nearest_world =
-	    make_lowest_score_finder<cv::Point3f>([&](cv::Point3f world_point) {
-		    //! @todo don't really need the square root to be done here.
-		    return cv::norm(world_point - last_point);
-	    });
+	cv::Point3f last_point(t.tracked_object_position.x, t.tracked_object_position.y, t.tracked_object_position.z);
+	auto nearest_world = make_lowest_score_finder<cv::Point3f>([&](cv::Point3f world_point) {
+		//! @todo don't really need the square root to be done here.
+		return cv::norm(world_point - last_point);
+	});
 	// do some basic matching to come up with likely disparity-pairs.
 
-	const cv::Matx44d disparity_to_depth =
-	    static_cast<cv::Matx44d>(t.disparity_to_depth);
+	const cv::Matx44d disparity_to_depth = static_cast<cv::Matx44d>(t.disparity_to_depth);
 
 	for (const cv::KeyPoint &l_keypoint : t.view[0].keypoints) {
 		cv::Point2f l_blob = l_keypoint.pt;
 
-		auto nearest_blob = make_lowest_score_finder<cv::Point2f>(
-		    [&](cv::Point2f r_blob) { return l_blob.x - r_blob.x; });
+		auto nearest_blob =
+		    make_lowest_score_finder<cv::Point2f>([&](cv::Point2f r_blob) { return l_blob.x - r_blob.x; });
 
 		for (const cv::KeyPoint &r_keypoint : t.view[1].keypoints) {
 			cv::Point2f r_blob = r_keypoint.pt;
 			// find closest point on same-ish scanline
-			if ((l_blob.y < r_blob.y + 3) &&
-			    (l_blob.y > r_blob.y - 3)) {
+			if ((l_blob.y < r_blob.y + 3) && (l_blob.y > r_blob.y - 3)) {
 				nearest_blob.handle_candidate(r_blob);
 			}
 		}
 		//! @todo do we need to avoid claiming the same counterpart
 		//! several times?
 		if (nearest_blob.got_one) {
-			cv::Point3f pt = world_point_from_blobs(
-			    l_blob, nearest_blob.best, disparity_to_depth);
+			cv::Point3f pt = world_point_from_blobs(l_blob, nearest_blob.best, disparity_to_depth);
 			nearest_world.handle_candidate(pt);
 		}
 	}
@@ -298,8 +286,7 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	if (nearest_world.got_one) {
 		cv::Point3f world_point = nearest_world.best;
 		// update internal state
-		memcpy(&t.tracked_object_position, &world_point.x,
-		       sizeof(t.tracked_object_position));
+		memcpy(&t.tracked_object_position, &world_point.x, sizeof(t.tracked_object_position));
 	} else {
 		t.filter->clear_position_tracked_flag();
 	}
@@ -325,10 +312,9 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 		// some research.
 		xrt_vec3 variance{1.e-4f, 1.e-4f, 4.e-4f};
 #endif
-		t.filter->process_3d_vision_data(
-		    0, &t.tracked_object_position, NULL, NULL,
-		    //! @todo tune cutoff for residual arbitrarily "too large"
-		    15);
+		t.filter->process_3d_vision_data(0, &t.tracked_object_position, NULL, NULL,
+		                                 //! @todo tune cutoff for residual arbitrarily "too large"
+		                                 15);
 	} else {
 		t.filter->clear_position_tracked_flag();
 	}
@@ -377,10 +363,7 @@ run(TrackerPSMV &t)
  * @brief Retrieves a pose from the filter.
  */
 static void
-get_pose(TrackerPSMV &t,
-         enum xrt_input_name name,
-         timepoint_ns when_ns,
-         struct xrt_space_relation *out_relation)
+get_pose(TrackerPSMV &t, enum xrt_input_name name, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
 {
 	os_thread_helper_lock(&t.oth);
 
@@ -397,9 +380,8 @@ get_pose(TrackerPSMV &t,
 		out_relation->pose.orientation.z = 0.0f;
 		out_relation->pose.orientation.w = 1.0f;
 
-		out_relation->relation_flags = (enum xrt_space_relation_flags)(
-		    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+		out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_POSITION_VALID_BIT |
+		                                                               XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
 
 		os_thread_helper_unlock(&t.oth);
 		return;
@@ -411,9 +393,7 @@ get_pose(TrackerPSMV &t,
 }
 
 static void
-imu_data(TrackerPSMV &t,
-         timepoint_ns timestamp_ns,
-         struct xrt_tracking_sample *sample)
+imu_data(TrackerPSMV &t, timepoint_ns timestamp_ns, struct xrt_tracking_sample *sample)
 {
 	os_thread_helper_lock(&t.oth);
 
@@ -459,9 +439,7 @@ break_apart(TrackerPSMV &t)
  */
 
 extern "C" void
-t_psmv_push_imu(struct xrt_tracked_psmv *xtmv,
-                timepoint_ns timestamp_ns,
-                struct xrt_tracking_sample *sample)
+t_psmv_push_imu(struct xrt_tracked_psmv *xtmv, timepoint_ns timestamp_ns, struct xrt_tracking_sample *sample)
 {
 	auto &t = *container_of(xtmv, TrackerPSMV, base);
 	imu_data(t, timestamp_ns, sample);

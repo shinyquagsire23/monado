@@ -20,10 +20,10 @@
  *
  * @note Keep this synchronized with OXR_ACTION_GET_FILLER!
  */
-#define OXR_FOR_EACH_VALID_SUBACTION_PATH(_)                                   \
-	_(left)                                                                \
-	_(right)                                                               \
-	_(head)                                                                \
+#define OXR_FOR_EACH_VALID_SUBACTION_PATH(_)                                                                           \
+	_(left)                                                                                                        \
+	_(right)                                                                                                       \
+	_(head)                                                                                                        \
 	_(gamepad)
 
 
@@ -35,8 +35,8 @@
  *
  * @note Keep this synchronized with OXR_ACTION_GET_FILLER!
  */
-#define OXR_FOR_EACH_SUBACTION_PATH(_)                                         \
-	OXR_FOR_EACH_VALID_SUBACTION_PATH(_)                                   \
+#define OXR_FOR_EACH_SUBACTION_PATH(_)                                                                                 \
+	OXR_FOR_EACH_VALID_SUBACTION_PATH(_)                                                                           \
 	_(user)
 
 /*!
@@ -52,10 +52,10 @@
  * Most of the time you can just use OXR_FOR_EACH_VALID_SUBACTION_PATH() or
  * OXR_FOR_EACH_SUBACTION_PATH()
  */
-#define OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(_)                          \
-	_(left, LEFT, "/user/hand/left")                                       \
-	_(right, RIGHT, "/user/hand/right")                                    \
-	_(head, HEAD, "/user/head")                                            \
+#define OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(_)                                                                  \
+	_(left, LEFT, "/user/hand/left")                                                                               \
+	_(right, RIGHT, "/user/hand/right")                                                                            \
+	_(head, HEAD, "/user/head")                                                                                    \
 	_(gamepad, GAMEPAD, "/user/gamepad")
 
 /*!
@@ -68,6 +68,6 @@
  * Most of the time you can just use OXR_FOR_EACH_VALID_SUBACTION_PATH() or
  * OXR_FOR_EACH_SUBACTION_PATH()
  */
-#define OXR_FOR_EACH_SUBACTION_PATH_DETAILED(_)                                \
-	OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(_)                          \
+#define OXR_FOR_EACH_SUBACTION_PATH_DETAILED(_)                                                                        \
+	OXR_FOR_EACH_VALID_SUBACTION_PATH_DETAILED(_)                                                                  \
 	_(user, USER, "/user")

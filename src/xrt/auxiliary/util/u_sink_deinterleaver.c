@@ -41,11 +41,7 @@ L8_interleaved_to_L8(const uint8_t *input, uint8_t *l8a, uint8_t *l8b)
 }
 
 static void
-from_L8_interleaved_to_L8(struct xrt_frame *frame,
-                          uint32_t w,
-                          uint32_t h,
-                          size_t stride,
-                          const uint8_t *data)
+from_L8_interleaved_to_L8(struct xrt_frame *frame, uint32_t w, uint32_t h, size_t stride, const uint8_t *data)
 {
 	uint32_t half_w = w / 2;
 
@@ -117,8 +113,7 @@ break_apart(struct xrt_frame_node *node)
 static void
 destroy(struct xrt_frame_node *node)
 {
-	struct u_sink_deinterleaver *de =
-	    container_of(node, struct u_sink_deinterleaver, node);
+	struct u_sink_deinterleaver *de = container_of(node, struct u_sink_deinterleaver, node);
 
 	free(de);
 }
@@ -135,8 +130,7 @@ u_sink_deinterleaver_create(struct xrt_frame_context *xfctx,
                             struct xrt_frame_sink *downstream,
                             struct xrt_frame_sink **out_xfs)
 {
-	struct u_sink_deinterleaver *de =
-	    U_TYPED_CALLOC(struct u_sink_deinterleaver);
+	struct u_sink_deinterleaver *de = U_TYPED_CALLOC(struct u_sink_deinterleaver);
 
 	de->base.push_frame = deinterleaves_frame;
 	de->node.break_apart = break_apart;

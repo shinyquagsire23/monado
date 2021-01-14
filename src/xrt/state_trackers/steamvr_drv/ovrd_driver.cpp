@@ -36,13 +36,9 @@ extern "C" {
 //! When set, all controllers pretend to be Index controllers. Provides best
 //! compatibility with legacy games due to steamvr's legacy binding for Index
 //! controllers, but input mapping may be incomplete or not ideal.
-DEBUG_GET_ONCE_BOOL_OPTION(emulate_index_controller,
-                           "STEAMVR_EMULATE_INDEX_CONTROLLER",
-                           true)
+DEBUG_GET_ONCE_BOOL_OPTION(emulate_index_controller, "STEAMVR_EMULATE_INDEX_CONTROLLER", true)
 
-DEBUG_GET_ONCE_NUM_OPTION(scale_percentage,
-                          "XRT_COMPOSITOR_SCALE_PERCENTAGE",
-                          140)
+DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "XRT_COMPOSITOR_SCALE_PERCENTAGE", 140)
 
 //#define DUMP_POSE
 //#define DUMP_POSE_CONTROLLERS
@@ -88,36 +84,31 @@ copy_quat(struct xrt_quat *from, vr::HmdQuaternion_t *to)
 static void
 apply_pose(struct xrt_space_relation *rel, vr::DriverPose_t *m_pose)
 {
-	if ((rel->relation_flags &
-	     XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) != 0) {
+	if ((rel->relation_flags & XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) != 0) {
 		copy_quat(&rel->pose.orientation, &m_pose->qRotation);
 	} else {
 		m_pose->result = vr::TrackingResult_Running_OutOfRange;
 		m_pose->poseIsValid = false;
 	}
 
-	if ((rel->relation_flags & XRT_SPACE_RELATION_POSITION_TRACKED_BIT) !=
-	    0) {
+	if ((rel->relation_flags & XRT_SPACE_RELATION_POSITION_TRACKED_BIT) != 0) {
 		copy_vec3(&rel->pose.position, m_pose->vecPosition);
 	} else {
 	}
 
-	if ((rel->relation_flags &
-	     XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) != 0) {
+	if ((rel->relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) != 0) {
 		// linear velocity in world space
 		copy_vec3(&rel->linear_velocity, m_pose->vecVelocity);
 	}
 
-	if ((rel->relation_flags &
-	     XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0) {
+	if ((rel->relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0) {
 		// angular velocity reported by monado in world space,
 		// expected by steamvr to be in "controller space"
 		struct xrt_quat orientation_inv;
 		math_quat_invert(&rel->pose.orientation, &orientation_inv);
 
 		struct xrt_vec3 vel;
-		math_quat_rotate_derivative(&orientation_inv,
-		                            &rel->angular_velocity, &vel);
+		math_quat_rotate_derivative(&orientation_inv, &rel->angular_velocity, &vel);
 
 		copy_vec3(&vel, m_pose->vecAngularVelocity);
 	}
@@ -126,17 +117,14 @@ apply_pose(struct xrt_space_relation *rel, vr::DriverPose_t *m_pose)
 class CDeviceDriver_Monado_Controller : public vr::ITrackedDeviceServerDriver
 {
 public:
-	CDeviceDriver_Monado_Controller(struct xrt_instance *xinst,
-	                                struct xrt_device *xdev,
-	                                enum xrt_hand hand)
+	CDeviceDriver_Monado_Controller(struct xrt_instance *xinst, struct xrt_device *xdev, enum xrt_hand hand)
 	    : m_xdev(xdev), m_hand(hand)
 	{
 		ovrd_log("Creating Controller %s\n", xdev->str);
 
 		m_handed_controller = true;
 
-		m_emulate_index_controller =
-		    debug_get_bool_option_emulate_index_controller();
+		m_emulate_index_controller = debug_get_bool_option_emulate_index_controller();
 
 		if (m_emulate_index_controller) {
 			ovrd_log("Emulating Index Controller\n");
@@ -168,13 +156,9 @@ public:
 				    "right";
 			}
 			break;
-		case XRT_DEVICE_VIVE_WAND:
-			m_render_model = "vr_controller_vive_1_5";
-			break;
+		case XRT_DEVICE_VIVE_WAND: m_render_model = "vr_controller_vive_1_5"; break;
 		case XRT_DEVICE_VIVE_TRACKER_GEN1:
-		case XRT_DEVICE_VIVE_TRACKER_GEN2:
-			m_render_model = "{htc}vr_tracker_vive_1_0";
-			break;
+		case XRT_DEVICE_VIVE_TRACKER_GEN2: m_render_model = "{htc}vr_tracker_vive_1_0"; break;
 		case XRT_DEVICE_PSMV:
 		case XRT_DEVICE_HYDRA:
 		case XRT_DEVICE_DAYDREAM:
@@ -192,47 +176,33 @@ public:
 	           enum xrt_input_name monado_input_name,
 	           struct MonadoInputComponent *component)
 	{
-		m_controls[m_control_count].monado_input_type =
-		    monado_input_type;
-		m_controls[m_control_count].steamvr_control_path =
-		    steamvr_control_path;
-		m_controls[m_control_count].monado_input_name =
-		    monado_input_name;
+		m_controls[m_control_count].monado_input_type = monado_input_type;
+		m_controls[m_control_count].steamvr_control_path = steamvr_control_path;
+		m_controls[m_control_count].monado_input_name = monado_input_name;
 		if (component != NULL) {
 			m_controls[m_control_count].component = *component;
 		} else {
-			m_controls[m_control_count].component.has_component =
-			    false;
+			m_controls[m_control_count].component.has_component = false;
 		}
 
 		if (monado_input_type == XRT_INPUT_TYPE_BOOLEAN) {
-			vr::VRDriverInput()->CreateBooleanComponent(
-			    m_ulPropertyContainer, steamvr_control_path,
-			    &m_controls[m_control_count].control_handle);
+			vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, steamvr_control_path,
+			                                            &m_controls[m_control_count].control_handle);
 
-		} else if (monado_input_type ==
-		           XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE) {
+		} else if (monado_input_type == XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE) {
 			vr::VRDriverInput()->CreateScalarComponent(
-			    m_ulPropertyContainer, steamvr_control_path,
-			    &m_controls[m_control_count].control_handle,
-			    vr::VRScalarType_Absolute,
-			    vr::VRScalarUnits_NormalizedTwoSided);
+			    m_ulPropertyContainer, steamvr_control_path, &m_controls[m_control_count].control_handle,
+			    vr::VRScalarType_Absolute, vr::VRScalarUnits_NormalizedTwoSided);
 
-		} else if (monado_input_type ==
-		           XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE) {
+		} else if (monado_input_type == XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE) {
 			vr::VRDriverInput()->CreateScalarComponent(
-			    m_ulPropertyContainer, steamvr_control_path,
-			    &m_controls[m_control_count].control_handle,
-			    vr::VRScalarType_Absolute,
-			    vr::VRScalarUnits_NormalizedOneSided);
+			    m_ulPropertyContainer, steamvr_control_path, &m_controls[m_control_count].control_handle,
+			    vr::VRScalarType_Absolute, vr::VRScalarUnits_NormalizedOneSided);
 
-		} else if (monado_input_type ==
-		           XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE) {
+		} else if (monado_input_type == XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE) {
 			vr::VRDriverInput()->CreateScalarComponent(
-			    m_ulPropertyContainer, steamvr_control_path,
-			    &m_controls[m_control_count].control_handle,
-			    vr::VRScalarType_Absolute,
-			    vr::VRScalarUnits_NormalizedTwoSided);
+			    m_ulPropertyContainer, steamvr_control_path, &m_controls[m_control_count].control_handle,
+			    vr::VRScalarType_Absolute, vr::VRScalarUnits_NormalizedTwoSided);
 		}
 
 		ovrd_log("Added input %s\n", steamvr_control_path);
@@ -244,150 +214,107 @@ public:
 	{
 		switch (this->m_xdev->name) {
 		case XRT_DEVICE_INDEX_CONTROLLER: {
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE,
-			           "/input/trigger/value",
+			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trigger/value",
 			           XRT_INPUT_INDEX_TRIGGER_VALUE, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/trigger/click",
-			           XRT_INPUT_INDEX_TRIGGER_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/trigger/touch",
-			           XRT_INPUT_INDEX_TRIGGER_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/click", XRT_INPUT_INDEX_TRIGGER_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/touch", XRT_INPUT_INDEX_TRIGGER_TOUCH, NULL);
 
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/system/click",
-			           XRT_INPUT_INDEX_SYSTEM_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/system/touch",
-			           XRT_INPUT_INDEX_SYSTEM_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/click", XRT_INPUT_INDEX_SYSTEM_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/touch", XRT_INPUT_INDEX_SYSTEM_TOUCH, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click",
-			           XRT_INPUT_INDEX_A_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/touch",
-			           XRT_INPUT_INDEX_A_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click", XRT_INPUT_INDEX_A_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/touch", XRT_INPUT_INDEX_A_TOUCH, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click",
-			           XRT_INPUT_INDEX_B_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/touch",
-			           XRT_INPUT_INDEX_B_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click", XRT_INPUT_INDEX_B_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/touch", XRT_INPUT_INDEX_B_TOUCH, NULL);
 
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE,
-			           "/input/grip/force",
-			           XRT_INPUT_INDEX_SQUEEZE_FORCE, NULL);
+			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/grip/force", XRT_INPUT_INDEX_SQUEEZE_FORCE,
+			           NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE,
-			           "/input/grip/value",
-			           XRT_INPUT_INDEX_SQUEEZE_VALUE, NULL);
+			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/grip/value", XRT_INPUT_INDEX_SQUEEZE_VALUE,
+			           NULL);
 
 			struct MonadoInputComponent x = {true, true, false};
 			struct MonadoInputComponent y = {true, false, true};
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/thumbstick/click",
-			           XRT_INPUT_INDEX_THUMBSTICK_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/thumbstick/click", XRT_INPUT_INDEX_THUMBSTICK_CLICK,
+			           NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/thumbstick/touch",
-			           XRT_INPUT_INDEX_THUMBSTICK_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/thumbstick/touch", XRT_INPUT_INDEX_THUMBSTICK_TOUCH,
+			           NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE,
-			           "/input/thumbstick/x",
+			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/thumbstick/x",
 			           XRT_INPUT_INDEX_THUMBSTICK, &x);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE,
-			           "/input/thumbstick/y",
+			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/thumbstick/y",
 			           XRT_INPUT_INDEX_THUMBSTICK, &y);
 
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE,
-			           "/input/trackpad/force",
+			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trackpad/force",
 			           XRT_INPUT_INDEX_TRACKPAD_FORCE, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/trackpad/touch",
-			           XRT_INPUT_INDEX_TRACKPAD_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trackpad/touch", XRT_INPUT_INDEX_TRACKPAD_TOUCH,
+			           NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE,
-			           "/input/trackpad/x",
-			           XRT_INPUT_INDEX_TRACKPAD, &x);
+			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/x", XRT_INPUT_INDEX_TRACKPAD,
+			           &x);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE,
-			           "/input/trackpad/y",
-			           XRT_INPUT_INDEX_TRACKPAD, &y);
+			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/y", XRT_INPUT_INDEX_TRACKPAD,
+			           &y);
 
-			vr::VRDriverInput()->CreateHapticComponent(
-			    m_ulPropertyContainer, "/output/haptic",
-			    &m_hapticHandle);
+			vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic",
+			                                           &m_hapticHandle);
 		}
 
 		break;
 		case XRT_DEVICE_VIVE_WAND: {
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE,
-			           "/input/trigger/value",
+			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trigger/value",
 			           XRT_INPUT_VIVE_TRIGGER_VALUE, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/trigger/click",
-			           XRT_INPUT_VIVE_TRIGGER_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/click", XRT_INPUT_VIVE_TRIGGER_CLICK, NULL);
 
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/system/click",
-			           XRT_INPUT_VIVE_SYSTEM_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/click", XRT_INPUT_VIVE_SYSTEM_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click",
-			           XRT_INPUT_VIVE_TRACKPAD_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click", XRT_INPUT_VIVE_TRACKPAD_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click",
-			           XRT_INPUT_VIVE_MENU_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click", XRT_INPUT_VIVE_MENU_CLICK, NULL);
 
 			struct MonadoInputComponent x = {true, true, false};
 			struct MonadoInputComponent y = {true, false, true};
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/trackpad/touch",
-			           XRT_INPUT_VIVE_TRACKPAD_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trackpad/touch", XRT_INPUT_VIVE_TRACKPAD_TOUCH,
+			           NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE,
-			           "/input/trackpad/x", XRT_INPUT_VIVE_TRACKPAD,
+			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/x", XRT_INPUT_VIVE_TRACKPAD,
 			           &x);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE,
-			           "/input/trackpad/y", XRT_INPUT_VIVE_TRACKPAD,
+			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/y", XRT_INPUT_VIVE_TRACKPAD,
 			           &y);
 
-			vr::VRDriverInput()->CreateHapticComponent(
-			    m_ulPropertyContainer, "/output/haptic",
-			    &m_hapticHandle);
+			vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic",
+			                                           &m_hapticHandle);
 		} break;
 		case XRT_DEVICE_VIVE_TRACKER_GEN1:
 		case XRT_DEVICE_VIVE_TRACKER_GEN2: break;
 		case XRT_DEVICE_PSMV: {
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE,
-			           "/input/trigger/value",
+			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trigger/value",
 			           XRT_INPUT_PSMV_TRIGGER_VALUE, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/trigger/click",
-			           XRT_INPUT_PSMV_MOVE_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/click", XRT_INPUT_PSMV_MOVE_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/system/click",
-			           XRT_INPUT_PSMV_PS_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/click", XRT_INPUT_PSMV_PS_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click",
-			           XRT_INPUT_PSMV_CROSS_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click", XRT_INPUT_PSMV_CROSS_CLICK, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click",
-			           XRT_INPUT_PSMV_SQUARE_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click", XRT_INPUT_PSMV_SQUARE_CLICK, NULL);
 
-			vr::VRDriverInput()->CreateHapticComponent(
-			    m_ulPropertyContainer, "/output/haptic",
-			    &m_hapticHandle);
+			vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic",
+			                                           &m_hapticHandle);
 		}
 
 		break;
@@ -403,83 +330,59 @@ public:
 	{
 		switch (this->m_xdev->name) {
 		case XRT_DEVICE_INDEX_CONTROLLER: {
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE,
-			           "/input/trigger/value",
+			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trigger/value",
 			           XRT_INPUT_INDEX_TRIGGER_VALUE, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/trigger/click",
-			           XRT_INPUT_INDEX_TRIGGER_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/trigger/touch",
-			           XRT_INPUT_INDEX_TRIGGER_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/click", XRT_INPUT_INDEX_TRIGGER_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trigger/touch", XRT_INPUT_INDEX_TRIGGER_TOUCH, NULL);
 
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/system/click",
-			           XRT_INPUT_INDEX_SYSTEM_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/system/touch",
-			           XRT_INPUT_INDEX_SYSTEM_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/click", XRT_INPUT_INDEX_SYSTEM_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/system/touch", XRT_INPUT_INDEX_SYSTEM_TOUCH, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click",
-			           XRT_INPUT_INDEX_A_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/touch",
-			           XRT_INPUT_INDEX_A_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/click", XRT_INPUT_INDEX_A_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/a/touch", XRT_INPUT_INDEX_A_TOUCH, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click",
-			           XRT_INPUT_INDEX_B_CLICK, NULL);
-			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/touch",
-			           XRT_INPUT_INDEX_B_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/click", XRT_INPUT_INDEX_B_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/b/touch", XRT_INPUT_INDEX_B_TOUCH, NULL);
 
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE,
-			           "/input/grip/force",
-			           XRT_INPUT_INDEX_SQUEEZE_FORCE, NULL);
+			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/grip/force", XRT_INPUT_INDEX_SQUEEZE_FORCE,
+			           NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE,
-			           "/input/grip/value",
-			           XRT_INPUT_INDEX_SQUEEZE_VALUE, NULL);
+			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/grip/value", XRT_INPUT_INDEX_SQUEEZE_VALUE,
+			           NULL);
 
 			struct MonadoInputComponent x = {true, true, false};
 			struct MonadoInputComponent y = {true, false, true};
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/thumbstick/click",
-			           XRT_INPUT_INDEX_THUMBSTICK_CLICK, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/thumbstick/click", XRT_INPUT_INDEX_THUMBSTICK_CLICK,
+			           NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/thumbstick/touch",
-			           XRT_INPUT_INDEX_THUMBSTICK_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/thumbstick/touch", XRT_INPUT_INDEX_THUMBSTICK_TOUCH,
+			           NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE,
-			           "/input/thumbstick/x",
+			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/thumbstick/x",
 			           XRT_INPUT_INDEX_THUMBSTICK, &x);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE,
-			           "/input/thumbstick/y",
+			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/thumbstick/y",
 			           XRT_INPUT_INDEX_THUMBSTICK, &y);
 
 
-			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE,
-			           "/input/trackpad/force",
+			AddControl(XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE, "/input/trackpad/force",
 			           XRT_INPUT_INDEX_TRACKPAD_FORCE, NULL);
 
-			AddControl(XRT_INPUT_TYPE_BOOLEAN,
-			           "/input/trackpad/touch",
-			           XRT_INPUT_INDEX_TRACKPAD_TOUCH, NULL);
+			AddControl(XRT_INPUT_TYPE_BOOLEAN, "/input/trackpad/touch", XRT_INPUT_INDEX_TRACKPAD_TOUCH,
+			           NULL);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE,
-			           "/input/trackpad/x",
-			           XRT_INPUT_INDEX_TRACKPAD, &x);
+			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/x", XRT_INPUT_INDEX_TRACKPAD,
+			           &x);
 
-			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE,
-			           "/input/trackpad/y",
-			           XRT_INPUT_INDEX_TRACKPAD, &y);
+			AddControl(XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE, "/input/trackpad/y", XRT_INPUT_INDEX_TRACKPAD,
+			           &y);
 
-			vr::VRDriverInput()->CreateHapticComponent(
-			    m_ulPropertyContainer, "/output/haptic",
-			    &m_hapticHandle);
+			vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic",
+			                                           &m_hapticHandle);
 		}
 
 		break;
@@ -497,24 +400,19 @@ public:
 	void
 	PoseUpdateThreadFunction()
 	{
-		ovrd_log("Starting controller pose update thread for %s\n",
-		         m_xdev->str);
+		ovrd_log("Starting controller pose update thread for %s\n", m_xdev->str);
 
 		while (m_poseUpdating) {
 			//! @todo figure out the best pose update rate
-			std::this_thread::sleep_for(
-			    std::chrono::milliseconds(1));
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 			if (m_unObjectId != vr::k_unTrackedDeviceIndexInvalid) {
-				vr::VRServerDriverHost()
-				    ->TrackedDevicePoseUpdated(
-				        m_unObjectId, GetPose(),
-				        sizeof(vr::DriverPose_t));
+				vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, GetPose(),
+				                                                   sizeof(vr::DriverPose_t));
 			}
 		}
 
-		ovrd_log("Stopping controller pose update thread for %s\n",
-		         m_xdev->str);
+		ovrd_log("Stopping controller pose update thread for %s\n", m_xdev->str);
 	}
 
 	vr::EVRInitError
@@ -586,13 +484,9 @@ public:
 
 		ovrd_log("Controller %d activated\n", m_unObjectId);
 
-		m_poseUpdateThread = new std::thread(
-		    &CDeviceDriver_Monado_Controller::PoseUpdateThreadFunction,
-		    this);
+		m_poseUpdateThread = new std::thread(&CDeviceDriver_Monado_Controller::PoseUpdateThreadFunction, this);
 		if (!m_poseUpdateThread) {
-			ovrd_log(
-			    "Unable to create pose updated thread for %s\n",
-			    m_xdev->str);
+			ovrd_log("Unable to create pose updated thread for %s\n", m_xdev->str);
 			return vr::VRInitError_Driver_Failed;
 		}
 
@@ -625,9 +519,7 @@ public:
 
 	/** debug request from a client */
 	void
-	DebugRequest(const char *pchRequest,
-	             char *pchResponseBuffer,
-	             uint32_t unResponseBufferSize)
+	DebugRequest(const char *pchRequest, char *pchResponseBuffer, uint32_t unResponseBufferSize)
 	{
 		if (unResponseBufferSize >= 1)
 			pchResponseBuffer[0] = 0;
@@ -673,11 +565,9 @@ public:
 		apply_pose(&rel, &m_pose);
 
 #ifdef DUMP_POSE_CONTROLLERS
-		ovrd_log("get controller %d pose %f %f %f %f, %f %f %f\n",
-		         m_unObjectId, m_pose.qRotation.x, m_pose.qRotation.y,
-		         m_pose.qRotation.z, m_pose.qRotation.w,
-		         m_pose.vecPosition[0], m_pose.vecPosition[1],
-		         m_pose.vecPosition[2]);
+		ovrd_log("get controller %d pose %f %f %f %f, %f %f %f\n", m_unObjectId, m_pose.qRotation.x,
+		         m_pose.qRotation.y, m_pose.qRotation.z, m_pose.qRotation.w, m_pose.vecPosition[0],
+		         m_pose.vecPosition[1], m_pose.vecPosition[2]);
 #endif
 
 		vr::HmdQuaternion_t identityquat{1, 0, 0, 0};
@@ -701,8 +591,7 @@ public:
 			// ovrd_log("Update %d: %s\n", i,
 			// m_controls[i].steamvr_control_path);
 
-			enum xrt_input_name input_name =
-			    m_controls[i].monado_input_name;
+			enum xrt_input_name input_name = m_controls[i].monado_input_name;
 
 			struct xrt_input *input = NULL;
 			for (uint32_t ii = 0; ii < m_xdev->num_inputs; ii++) {
@@ -713,44 +602,34 @@ public:
 			}
 
 			if (input == NULL) {
-				ovrd_log("Input for %s not found!\n",
-				         m_controls[i].steamvr_control_path);
+				ovrd_log("Input for %s not found!\n", m_controls[i].steamvr_control_path);
 				continue;
 			}
 
-			vr::VRInputComponentHandle_t handle =
-			    m_controls[i].control_handle;
+			vr::VRInputComponentHandle_t handle = m_controls[i].control_handle;
 
-			if (m_controls[i].monado_input_type ==
-			    XRT_INPUT_TYPE_BOOLEAN) {
+			if (m_controls[i].monado_input_type == XRT_INPUT_TYPE_BOOLEAN) {
 				bool state = input->value.boolean;
-				vr::VRDriverInput()->UpdateBooleanComponent(
-				    handle, state, 0);
+				vr::VRDriverInput()->UpdateBooleanComponent(handle, state, 0);
 				// ovrd_log("Update %s: %d\n",
 				// m_controls[i].steamvr_control_path, state);
 				// U_LOG_D("Update %s: %d",
 				//       m_controls[i].steamvr_control_path,
 				//       state);
 			}
-			if (m_controls[i].monado_input_type ==
-			        XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE ||
-			    m_controls[i].monado_input_type ==
-			        XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE) {
+			if (m_controls[i].monado_input_type == XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE ||
+			    m_controls[i].monado_input_type == XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE) {
 
 				float value;
-				if (m_controls[i].component.has_component &&
-				    m_controls[i].component.x) {
+				if (m_controls[i].component.has_component && m_controls[i].component.x) {
 					value = input->value.vec2.x;
-				} else if (m_controls[i]
-				               .component.has_component &&
-				           m_controls[i].component.y) {
+				} else if (m_controls[i].component.has_component && m_controls[i].component.y) {
 					value = input->value.vec2.y;
 				} else {
 					value = input->value.vec1.x;
 				}
 
-				vr::VRDriverInput()->UpdateScalarComponent(
-				    handle, value, 0);
+				vr::VRDriverInput()->UpdateScalarComponent(handle, value, 0);
 				// ovrd_log("Update %s: %f\n",
 				// m_controls[i].steamvr_control_path,
 				// state->x);
@@ -771,8 +650,7 @@ public:
 	}
 
 	bool
-	TriggerHapticPulse(uint32_t unAxisId,
-	                   uint16_t usPulseDurationMicroseconds)
+	TriggerHapticPulse(uint32_t unAxisId, uint16_t usPulseDurationMicroseconds)
 	{
 		// deprecated API
 		return false;
@@ -820,22 +698,17 @@ private:
  *
  */
 
-class CDeviceDriver_Monado : public vr::ITrackedDeviceServerDriver,
-                             public vr::IVRDisplayComponent
+class CDeviceDriver_Monado : public vr::ITrackedDeviceServerDriver, public vr::IVRDisplayComponent
 {
 public:
-	CDeviceDriver_Monado(struct xrt_instance *xinst,
-	                     struct xrt_device *xdev)
-	    : m_xdev(xdev)
+	CDeviceDriver_Monado(struct xrt_instance *xinst, struct xrt_device *xdev) : m_xdev(xdev)
 	{
 		//! @todo latency
 		m_flSecondsFromVsyncToPhotons = 0.011;
 
-		float ns =
-		    (float)m_xdev->hmd->screens->nominal_frame_interval_ns;
+		float ns = (float)m_xdev->hmd->screens->nominal_frame_interval_ns;
 		m_flDisplayFrequency = 1. / ns * 1000. * 1000. * 1000.;
-		ovrd_log("display frequency from device: %f\n",
-		         m_flDisplayFrequency);
+		ovrd_log("display frequency from device: %f\n", m_flDisplayFrequency);
 
 		// steamvr can really misbehave when freq is inf or so
 		if (m_flDisplayFrequency < 0 || m_flDisplayFrequency > 1000) {
@@ -848,18 +721,15 @@ public:
 		struct xrt_vec3 ipd_vec = {ipd_meters, 0, 0};
 
 		for (int view = 0; view < 2; view++) {
-			xdev->get_view_pose(xdev, &ipd_vec, view,
-			                    &m_view_pose[view]);
+			xdev->get_view_pose(xdev, &ipd_vec, view, &m_view_pose[view]);
 		}
 
 		//! @todo more versatile IPD calculation
-		float actual_ipd =
-		    -m_view_pose[0].position.x + m_view_pose[1].position.x;
+		float actual_ipd = -m_view_pose[0].position.x + m_view_pose[1].position.x;
 
 		m_flIPD = actual_ipd;
 
-		ovrd_log("Seconds from Vsync to Photons: %f\n",
-		         m_flSecondsFromVsyncToPhotons);
+		ovrd_log("Seconds from Vsync to Photons: %f\n", m_flSecondsFromVsyncToPhotons);
 		ovrd_log("Display Frequency: %f\n", m_flDisplayFrequency);
 		ovrd_log("IPD: %f\n", m_flIPD);
 	};
@@ -908,8 +778,7 @@ private:
 };
 
 static void
-create_translation_rotation_matrix(struct xrt_pose *pose,
-                                   struct vr::HmdMatrix34_t *res)
+create_translation_rotation_matrix(struct xrt_pose *pose, struct vr::HmdMatrix34_t *res)
 {
 	struct xrt_vec3 t = pose->position;
 	struct xrt_quat r = pose->orientation;
@@ -935,8 +804,8 @@ CDeviceDriver_Monado::PoseUpdateThreadFunction()
 	while (m_poseUpdating) {
 		//! @todo figure out the best pose update rate
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		vr::VRServerDriverHost()->TrackedDevicePoseUpdated(
-		    m_trackedDeviceIndex, GetPose(), sizeof(vr::DriverPose_t));
+		vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_trackedDeviceIndex, GetPose(),
+		                                                   sizeof(vr::DriverPose_t));
 	}
 	ovrd_log("Stopping HMD pose update thread\n");
 }
@@ -972,15 +841,12 @@ CDeviceDriver_Monado::Activate(vr::TrackedDeviceIndex_t unObjectId)
 	create_translation_rotation_matrix(&m_view_pose[0], &left);
 	vr::HmdMatrix34_t right;
 	create_translation_rotation_matrix(&m_view_pose[1], &right);
-	vr::VRServerDriverHost()->TrackedDeviceDisplayTransformUpdated(
-	    m_trackedDeviceIndex, left, right);
+	vr::VRServerDriverHost()->TrackedDeviceDisplayTransformUpdated(m_trackedDeviceIndex, left, right);
 
 
-	m_poseUpdateThread = new std::thread(
-	    &CDeviceDriver_Monado::PoseUpdateThreadFunction, this);
+	m_poseUpdateThread = new std::thread(&CDeviceDriver_Monado::PoseUpdateThreadFunction, this);
 	if (!m_poseUpdateThread) {
-		ovrd_log("Unable to create pose updated thread for %s\n",
-		         m_xdev->str);
+		ovrd_log("Unable to create pose updated thread for %s\n", m_xdev->str);
 		return vr::VRInitError_Driver_Failed;
 	}
 
@@ -1014,9 +880,7 @@ CDeviceDriver_Monado::GetComponent(const char *pchComponentNameAndVersion)
 }
 
 void
-CDeviceDriver_Monado::DebugRequest(const char *pchRequest,
-                                   char *pchResponseBuffer,
-                                   uint32_t unResponseBufferSize)
+CDeviceDriver_Monado::DebugRequest(const char *pchRequest, char *pchResponseBuffer, uint32_t unResponseBufferSize)
 {
 	//! @todo
 }
@@ -1038,8 +902,7 @@ CDeviceDriver_Monado::GetPose()
 
 	timepoint_ns now_ns = os_monotonic_get_ns();
 	struct xrt_space_relation rel;
-	xrt_device_get_tracked_pose(m_xdev, XRT_INPUT_GENERIC_HEAD_POSE, now_ns,
-	                            &rel);
+	xrt_device_get_tracked_pose(m_xdev, XRT_INPUT_GENERIC_HEAD_POSE, now_ns, &rel);
 
 	struct xrt_pose *offset = &m_xdev->tracking_origin->offset;
 
@@ -1057,17 +920,15 @@ CDeviceDriver_Monado::GetPose()
 	t.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
 	t.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
 
-	t.poseIsValid =
-	    rel.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT;
+	t.poseIsValid = rel.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT;
 	t.result = vr::TrackingResult_Running_OK;
 	t.deviceIsConnected = true;
 
 	apply_pose(&rel, &t);
 
 #ifdef DUMP_POSE
-	ovrd_log("get hmd pose %f %f %f %f, %f %f %f\n", t.qRotation.x,
-	         t.qRotation.y, t.qRotation.z, t.qRotation.w, t.vecPosition[0],
-	         t.vecPosition[1], t.vecPosition[2]);
+	ovrd_log("get hmd pose %f %f %f %f, %f %f %f\n", t.qRotation.x, t.qRotation.y, t.qRotation.z, t.qRotation.w,
+	         t.vecPosition[0], t.vecPosition[1], t.vecPosition[2]);
 #endif
 
 	//! @todo
@@ -1083,10 +944,7 @@ CDeviceDriver_Monado::GetPose()
 }
 
 void
-CDeviceDriver_Monado::GetWindowBounds(int32_t *pnX,
-                                      int32_t *pnY,
-                                      uint32_t *pnWidth,
-                                      uint32_t *pnHeight)
+CDeviceDriver_Monado::GetWindowBounds(int32_t *pnX, int32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight)
 {
 	// offset in extended mode, e.g. to the right of a 1920x1080 monitor
 	*pnX = 1920;
@@ -1112,8 +970,7 @@ CDeviceDriver_Monado::IsDisplayRealDisplay()
 }
 
 void
-CDeviceDriver_Monado::GetRecommendedRenderTargetSize(uint32_t *pnWidth,
-                                                     uint32_t *pnHeight)
+CDeviceDriver_Monado::GetRecommendedRenderTargetSize(uint32_t *pnWidth, uint32_t *pnHeight)
 {
 	int scale = debug_get_num_option_scale_percentage();
 	float fscale = (float)scale / 100.f;
@@ -1123,16 +980,12 @@ CDeviceDriver_Monado::GetRecommendedRenderTargetSize(uint32_t *pnWidth,
 	*pnWidth = m_xdev->hmd->screens[0].w_pixels * fscale;
 	*pnHeight = m_xdev->hmd->screens[0].h_pixels * fscale;
 
-	ovrd_log("Render Target Size: %dx%d (%fx)\n", *pnWidth, *pnHeight,
-	         fscale);
+	ovrd_log("Render Target Size: %dx%d (%fx)\n", *pnWidth, *pnHeight, fscale);
 }
 
 void
-CDeviceDriver_Monado::GetEyeOutputViewport(vr::EVREye eEye,
-                                           uint32_t *pnX,
-                                           uint32_t *pnY,
-                                           uint32_t *pnWidth,
-                                           uint32_t *pnHeight)
+CDeviceDriver_Monado::GetEyeOutputViewport(
+    vr::EVREye eEye, uint32_t *pnX, uint32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight)
 {
 	*pnWidth = m_xdev->hmd->views[eEye].viewport.w_pixels;
 	*pnHeight = m_xdev->hmd->views[eEye].viewport.h_pixels;
@@ -1140,23 +993,17 @@ CDeviceDriver_Monado::GetEyeOutputViewport(vr::EVREye eEye,
 	*pnX = m_xdev->hmd->views[eEye].viewport.x_pixels;
 	*pnY = m_xdev->hmd->views[eEye].viewport.y_pixels;
 
-	ovrd_log("Output Viewport for eye %d: %dx%d offset %dx%d\n", eEye,
-	         *pnWidth, *pnHeight, *pnX, *pnY);
+	ovrd_log("Output Viewport for eye %d: %dx%d offset %dx%d\n", eEye, *pnWidth, *pnHeight, *pnX, *pnY);
 }
 
 void
-CDeviceDriver_Monado::GetProjectionRaw(vr::EVREye eEye,
-                                       float *pfLeft,
-                                       float *pfRight,
-                                       float *pfTop,
-                                       float *pfBottom)
+CDeviceDriver_Monado::GetProjectionRaw(vr::EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom)
 {
 	*pfLeft = tanf(m_xdev->hmd->views[eEye].fov.angle_left);
 	*pfRight = tanf(m_xdev->hmd->views[eEye].fov.angle_right);
 	*pfTop = tanf(-m_xdev->hmd->views[eEye].fov.angle_up);
 	*pfBottom = tanf(-m_xdev->hmd->views[eEye].fov.angle_down);
-	ovrd_log("Projection Raw: L%f R%f T%f B%f\n", *pfLeft, *pfRight, *pfTop,
-	         *pfBottom);
+	ovrd_log("Projection Raw: L%f R%f T%f B%f\n", *pfLeft, *pfRight, *pfTop, *pfBottom);
 }
 
 vr::DistortionCoordinates_t
@@ -1179,8 +1026,7 @@ CDeviceDriver_Monado::ComputeDistortion(vr::EVREye eEye, float fU, float fV)
 	struct xrt_uv_triplet d;
 
 	if (!m_xdev->compute_distortion(m_xdev, eEye, U, V, &d)) {
-		ovrd_log("Failed to compute distortion for view %d at %f,%f!\n",
-		         eEye, U, V);
+		ovrd_log("Failed to compute distortion for view %d at %f,%f!\n", eEye, U, V);
 
 		vr::DistortionCoordinates_t coordinates;
 		coordinates.rfBlue[0] = U;
@@ -1280,8 +1126,7 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 	ovrd_log("Selected HMD %s\n", m_xhmd->str);
 	m_MonadoDeviceDriver = new CDeviceDriver_Monado(m_xinst, m_xhmd);
 	//! @todo provide a serial number
-	vr::VRServerDriverHost()->TrackedDeviceAdded(
-	    m_xhmd->str, vr::TrackedDeviceClass_HMD, m_MonadoDeviceDriver);
+	vr::VRServerDriverHost()->TrackedDeviceAdded(m_xhmd->str, vr::TrackedDeviceClass_HMD, m_MonadoDeviceDriver);
 
 	struct xrt_device *left_xdev = NULL;
 	if (left != XRT_DEVICE_ROLE_UNASSIGNED) {
@@ -1300,18 +1145,14 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 	u_device_setup_tracking_origins(m_xhmd, left_xdev, right_xdev, &offset);
 
 	if (left != XRT_DEVICE_ROLE_UNASSIGNED) {
-		m_left = new CDeviceDriver_Monado_Controller(m_xinst, left_xdev,
-		                                             XRT_HAND_LEFT);
-		vr::VRServerDriverHost()->TrackedDeviceAdded(
-		    m_left->GetSerialNumber().c_str(),
-		    vr::TrackedDeviceClass_Controller, m_left);
+		m_left = new CDeviceDriver_Monado_Controller(m_xinst, left_xdev, XRT_HAND_LEFT);
+		vr::VRServerDriverHost()->TrackedDeviceAdded(m_left->GetSerialNumber().c_str(),
+		                                             vr::TrackedDeviceClass_Controller, m_left);
 	}
 	if (right != XRT_DEVICE_ROLE_UNASSIGNED) {
-		m_right = new CDeviceDriver_Monado_Controller(
-		    m_xinst, right_xdev, XRT_HAND_RIGHT);
-		vr::VRServerDriverHost()->TrackedDeviceAdded(
-		    m_right->GetSerialNumber().c_str(),
-		    vr::TrackedDeviceClass_Controller, m_right);
+		m_right = new CDeviceDriver_Monado_Controller(m_xinst, right_xdev, XRT_HAND_RIGHT);
+		vr::VRServerDriverHost()->TrackedDeviceAdded(m_right->GetSerialNumber().c_str(),
+		                                             vr::TrackedDeviceClass_Controller, m_right);
 	}
 
 	return vr::VRInitError_None;
@@ -1353,12 +1194,10 @@ CServerDriver_Monado::HandleHapticEvent(vr::VREvent_t *event)
 	ovrd_log("Haptic vibration %fs %fHz %famp\n", duration, freq, amp);
 
 	struct xrt_device *xdev = NULL;
-	if (m_left && m_left->m_ulPropertyContainer ==
-	                  event->data.hapticVibration.containerHandle) {
+	if (m_left && m_left->m_ulPropertyContainer == event->data.hapticVibration.containerHandle) {
 		xdev = m_left->m_xdev;
 		ovrd_log("Haptic vibration left\n");
-	} else if (m_right && m_right->m_ulPropertyContainer ==
-	                          event->data.hapticVibration.containerHandle) {
+	} else if (m_right && m_right->m_ulPropertyContainer == event->data.hapticVibration.containerHandle) {
 		xdev = m_right->m_xdev;
 		ovrd_log("Haptic vibration right\n");
 	} else {
@@ -1376,15 +1215,9 @@ CServerDriver_Monado::HandleHapticEvent(vr::VREvent_t *event)
 	if (xdev != NULL) {
 		enum xrt_output_name name;
 		switch (xdev->name) {
-		case XRT_DEVICE_INDEX_CONTROLLER:
-			name = XRT_OUTPUT_NAME_INDEX_HAPTIC;
-			break;
-		case XRT_DEVICE_VIVE_WAND:
-			name = XRT_OUTPUT_NAME_VIVE_HAPTIC;
-			break;
-		case XRT_DEVICE_PSMV:
-			name = XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION;
-			break;
+		case XRT_DEVICE_INDEX_CONTROLLER: name = XRT_OUTPUT_NAME_INDEX_HAPTIC; break;
+		case XRT_DEVICE_VIVE_WAND: name = XRT_OUTPUT_NAME_VIVE_HAPTIC; break;
+		case XRT_DEVICE_PSMV: name = XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION; break;
 		default:
 			//! @todo
 			name = XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION;
@@ -1407,34 +1240,21 @@ CServerDriver_Monado::RunFrame()
 
 	// https://github.com/ValveSoftware/openvr/issues/719#issuecomment-358038640
 	struct vr::VREvent_t event;
-	while (vr::VRServerDriverHost()->PollNextEvent(
-	    &event, sizeof(struct vr::VREvent_t))) {
+	while (vr::VRServerDriverHost()->PollNextEvent(&event, sizeof(struct vr::VREvent_t))) {
 		switch (event.eventType) {
-		case vr::VREvent_Input_HapticVibration:
-			HandleHapticEvent(&event);
-			break;
+		case vr::VREvent_Input_HapticVibration: HandleHapticEvent(&event); break;
 		case vr::VREvent_PropertyChanged:
 			// ovrd_log("Property changed\n");
 			break;
 		case vr::VREvent_TrackedDeviceActivated:
-			ovrd_log("Device activated %d\n",
-			         event.trackedDeviceIndex);
+			ovrd_log("Device activated %d\n", event.trackedDeviceIndex);
 			break;
 		case vr::VREvent_TrackedDeviceUserInteractionStarted:
-			ovrd_log("Device interaction started %d\n",
-			         event.trackedDeviceIndex);
+			ovrd_log("Device interaction started %d\n", event.trackedDeviceIndex);
 			break;
-		case vr::VREvent_IpdChanged:
-			ovrd_log("ipd changed to %fm\n",
-			         event.data.ipd.ipdMeters);
-			break;
-		case vr::VREvent_ActionBindingReloaded:
-			ovrd_log("action binding reloaded\n");
-			break;
-		case vr::VREvent_StatusUpdate:
-			ovrd_log("EVRState: %d\n",
-			         event.data.status.statusState);
-			break;
+		case vr::VREvent_IpdChanged: ovrd_log("ipd changed to %fm\n", event.data.ipd.ipdMeters); break;
+		case vr::VREvent_ActionBindingReloaded: ovrd_log("action binding reloaded\n"); break;
+		case vr::VREvent_StatusUpdate: ovrd_log("EVRState: %d\n", event.data.status.statusState); break;
 
 		case vr::VREvent_TrackedDeviceRoleChanged:
 			// device roles are for legacy input

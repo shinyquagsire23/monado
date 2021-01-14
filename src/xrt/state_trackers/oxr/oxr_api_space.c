@@ -26,23 +26,18 @@
 
 
 XrResult
-oxr_xrCreateActionSpace(XrSession session,
-                        const XrActionSpaceCreateInfo *createInfo,
-                        XrSpace *space)
+oxr_xrCreateActionSpace(XrSession session, const XrActionSpaceCreateInfo *createInfo, XrSpace *space)
 {
 	struct oxr_session *sess;
 	struct oxr_action *act;
 	struct oxr_logger log;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrCreateActionSpace");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
-	                                 XR_TYPE_ACTION_SPACE_CREATE_INFO);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrCreateActionSpace");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo, XR_TYPE_ACTION_SPACE_CREATE_INFO);
 	OXR_VERIFY_POSE(&log, createInfo->poseInActionSpace);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, createInfo->action, act);
 
 	struct oxr_space *spc;
-	XrResult ret =
-	    oxr_space_action_create(&log, sess, act->act_key, createInfo, &spc);
+	XrResult ret = oxr_space_action_create(&log, sess, act->act_key, createInfo, &spc);
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
@@ -66,23 +61,18 @@ oxr_xrEnumerateReferenceSpaces(XrSession session,
 {
 	struct oxr_session *sess;
 	struct oxr_logger log;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrEnumerateReferenceSpaces");
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEnumerateReferenceSpaces");
 
-	OXR_TWO_CALL_HELPER(&log, spaceCapacityInput, spaceCountOutput, spaces,
-	                    ARRAY_SIZE(session_spaces), session_spaces,
-	                    oxr_session_success_result(sess));
+	OXR_TWO_CALL_HELPER(&log, spaceCapacityInput, spaceCountOutput, spaces, ARRAY_SIZE(session_spaces),
+	                    session_spaces, oxr_session_success_result(sess));
 }
 
 XrResult
-oxr_xrGetReferenceSpaceBoundsRect(XrSession session,
-                                  XrReferenceSpaceType referenceSpaceType,
-                                  XrExtent2Df *bounds)
+oxr_xrGetReferenceSpaceBoundsRect(XrSession session, XrReferenceSpaceType referenceSpaceType, XrExtent2Df *bounds)
 {
 	struct oxr_session *sess;
 	struct oxr_logger log;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrGetReferenceSpaceBoundsRect");
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetReferenceSpaceBoundsRect");
 	OXR_VERIFY_ARG_NOT_NULL(&log, bounds);
 
 
@@ -105,18 +95,14 @@ oxr_xrGetReferenceSpaceBoundsRect(XrSession session,
 }
 
 XrResult
-oxr_xrCreateReferenceSpace(XrSession session,
-                           const XrReferenceSpaceCreateInfo *createInfo,
-                           XrSpace *out_space)
+oxr_xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo *createInfo, XrSpace *out_space)
 {
 	XrResult ret;
 	struct oxr_session *sess;
 	struct oxr_space *spc = NULL;
 	struct oxr_logger log;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrCreateReferenceSpace");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
-	                                 XR_TYPE_REFERENCE_SPACE_CREATE_INFO);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrCreateReferenceSpace");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo, XR_TYPE_REFERENCE_SPACE_CREATE_INFO);
 	OXR_VERIFY_POSE(&log, createInfo->poseInReferenceSpace);
 
 	ret = oxr_space_reference_create(&log, sess, createInfo, &spc);
@@ -130,26 +116,19 @@ oxr_xrCreateReferenceSpace(XrSession session,
 }
 
 XrResult
-oxr_xrLocateSpace(XrSpace space,
-                  XrSpace baseSpace,
-                  XrTime time,
-                  XrSpaceLocation *location)
+oxr_xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation *location)
 {
 	struct oxr_space *spc;
 	struct oxr_space *baseSpc;
 	struct oxr_logger log;
 	OXR_VERIFY_SPACE_AND_INIT_LOG(&log, space, spc, "xrLocateSpace");
 	OXR_VERIFY_SPACE_NOT_NULL(&log, baseSpace, baseSpc);
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, location,
-	                                 XR_TYPE_SPACE_LOCATION);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, location, XR_TYPE_SPACE_LOCATION);
 
-	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(
-	    &log, ((XrSpaceVelocity *)location->next), XR_TYPE_SPACE_VELOCITY);
+	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, ((XrSpaceVelocity *)location->next), XR_TYPE_SPACE_VELOCITY);
 
 	if (time <= (XrTime)0) {
-		return oxr_error(&log, XR_ERROR_TIME_INVALID,
-		                 "(time == %" PRIi64 ") is not a valid time.",
-		                 time);
+		return oxr_error(&log, XR_ERROR_TIME_INVALID, "(time == %" PRIi64 ") is not a valid time.", time);
 	}
 
 	return oxr_space_locate(&log, spc, baseSpc, time, location);

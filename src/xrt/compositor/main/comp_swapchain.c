@@ -51,9 +51,7 @@ swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 }
 
 static xrt_result_t
-swapchain_wait_image(struct xrt_swapchain *xsc,
-                     uint64_t timeout,
-                     uint32_t index)
+swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index)
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
@@ -84,10 +82,10 @@ swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
  *
  */
 
-#define D(TYPE, thing)                                                         \
-	if (thing != VK_NULL_HANDLE) {                                         \
-		vk->vkDestroy##TYPE(vk->device, thing, NULL);                  \
-		thing = VK_NULL_HANDLE;                                        \
+#define D(TYPE, thing)                                                                                                 \
+	if (thing != VK_NULL_HANDLE) {                                                                                 \
+		vk->vkDestroy##TYPE(vk->device, thing, NULL);                                                          \
+		thing = VK_NULL_HANDLE;                                                                                \
 	}
 
 static struct comp_swapchain *
@@ -119,8 +117,7 @@ static bool
 is_depth_stencil_format(VkFormat format)
 {
 
-	return format == VK_FORMAT_D16_UNORM_S8_UINT ||
-	       format == VK_FORMAT_D24_UNORM_S8_UINT ||
+	return format == VK_FORMAT_D16_UNORM_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT ||
 	       format == VK_FORMAT_D32_SFLOAT_S8_UINT;
 }
 
@@ -153,8 +150,7 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 			aspect |= VK_IMAGE_ASPECT_DEPTH_BIT;
 		}
 		if (is_depth_stencil_format(info->format)) {
-			aspect |= VK_IMAGE_ASPECT_DEPTH_BIT |
-			          VK_IMAGE_ASPECT_STENCIL_BIT;
+			aspect |= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 		}
 		if (is_stencil_only_format(info->format)) {
 			aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -172,17 +168,13 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 #endif
 
 	for (uint32_t i = 0; i < num_images; i++) {
-		sc->images[i].views.alpha =
-		    U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
-		sc->images[i].views.no_alpha =
-		    U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
+		sc->images[i].views.alpha = U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
+		sc->images[i].views.no_alpha = U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
 		sc->images[i].array_size = info->array_size;
 
-		vk_create_sampler(&c->vk, VK_SAMPLER_ADDRESS_MODE_REPEAT,
-		                  &sc->images[i].repeat_sampler);
+		vk_create_sampler(&c->vk, VK_SAMPLER_ADDRESS_MODE_REPEAT, &sc->images[i].repeat_sampler);
 
-		vk_create_sampler(&c->vk, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		                  &sc->images[i].sampler);
+		vk_create_sampler(&c->vk, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, &sc->images[i].sampler);
 
 
 		for (uint32_t layer = 0; layer < info->array_size; ++layer) {
@@ -194,14 +186,10 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 			    .layerCount = 1,
 			};
 
-			vk_create_view(&c->vk, sc->vkic.images[i].handle,
-			               (VkFormat)info->format,
-			               subresource_range,
+			vk_create_view(&c->vk, sc->vkic.images[i].handle, (VkFormat)info->format, subresource_range,
 			               &sc->images[i].views.alpha[layer]);
-			vk_create_view_swizzle(
-			    &c->vk, sc->vkic.images[i].handle, format,
-			    subresource_range, components,
-			    &sc->images[i].views.no_alpha[layer]);
+			vk_create_view_swizzle(&c->vk, sc->vkic.images[i].handle, format, subresource_range, components,
+			                       &sc->images[i].views.no_alpha[layer]);
 		}
 	}
 
@@ -228,20 +216,16 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 	};
 
 	for (uint32_t i = 0; i < num_images; i++) {
-		vk_set_image_layout(
-		    &c->vk, cmd_buffer, sc->vkic.images[i].handle, 0,
-		    VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-		    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		    subresource_range);
+		vk_set_image_layout(&c->vk, cmd_buffer, sc->vkic.images[i].handle, 0, VK_ACCESS_SHADER_READ_BIT,
+		                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		                    subresource_range);
 	}
 
 	vk_submit_cmd_buffer(&c->vk, cmd_buffer);
 }
 
 static void
-clean_image_views(struct vk_bundle *vk,
-                  size_t array_size,
-                  VkImageView **views_ptr)
+clean_image_views(struct vk_bundle *vk, size_t array_size, VkImageView **views_ptr)
 {
 	VkImageView *views = *views_ptr;
 	if (views == NULL) {
@@ -349,12 +333,10 @@ comp_swapchain_import(struct xrt_compositor *xc,
 
 	struct comp_swapchain *sc = alloc_and_set_funcs(c, num_images);
 
-	COMP_DEBUG(c, "CREATE FROM NATIVE %p %dx%d", (void *)sc, info->width,
-	           info->height);
+	COMP_DEBUG(c, "CREATE FROM NATIVE %p %dx%d", (void *)sc, info->width, info->height);
 
 	// Use the image helper to get the images.
-	ret = vk_ic_from_natives(&c->vk, info, native_images, num_images,
-	                         &sc->vkic);
+	ret = vk_ic_from_natives(&c->vk, info, native_images, num_images, &sc->vkic);
 	if (ret != VK_SUCCESS) {
 		return XRT_ERROR_VULKAN;
 	}

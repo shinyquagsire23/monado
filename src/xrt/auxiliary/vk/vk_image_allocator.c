@@ -31,9 +31,7 @@
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 
 static VkResult
-get_device_memory_handle(struct vk_bundle *vk,
-                         VkDeviceMemory device_memory,
-                         xrt_graphics_buffer_handle_t *out_handle)
+get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt_graphics_buffer_handle_t *out_handle)
 {
 	// vkGetMemoryFdKHR parameter
 	VkMemoryGetFdInfoKHR fd_info = {
@@ -58,21 +56,17 @@ get_device_memory_handle(struct vk_bundle *vk,
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 
 static VkResult
-get_device_memory_handle(struct vk_bundle *vk,
-                         VkDeviceMemory device_memory,
-                         xrt_graphics_buffer_handle_t *out_handle)
+get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt_graphics_buffer_handle_t *out_handle)
 {
 	// vkGetMemoryAndroidHardwareBufferANDROID parameter
 	VkMemoryGetAndroidHardwareBufferInfoANDROID ahb_info = {
-	    .sType =
-	        VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+	    .sType = VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
 	    .pNext = NULL,
 	    .memory = device_memory,
 	};
 
 	AHardwareBuffer *buf = NULL;
-	VkResult ret = vk->vkGetMemoryAndroidHardwareBufferANDROID(
-	    vk->device, &ahb_info, &buf);
+	VkResult ret = vk->vkGetMemoryAndroidHardwareBufferANDROID(vk->device, &ahb_info, &buf);
 	if (ret != VK_SUCCESS) {
 		return ret;
 	}
@@ -85,9 +79,7 @@ get_device_memory_handle(struct vk_bundle *vk,
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
 
 static VkResult
-get_device_memory_handle(struct vk_bundle *vk,
-                         VkDeviceMemory device_memory,
-                         xrt_graphics_buffer_handle_t *out_handle)
+get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt_graphics_buffer_handle_t *out_handle)
 {
 	// vkGetMemoryWin32HandleKHR parameter
 	VkMemoryGetWin32HandleInfoKHR win32_info = {
@@ -98,8 +90,7 @@ get_device_memory_handle(struct vk_bundle *vk,
 	};
 
 	HANDLE handle = NULL;
-	VkResult ret =
-	    vk->vkGetMemoryWin32HandleKHR(vk->device, &win32_info, &handle);
+	VkResult ret = vk->vkGetMemoryWin32HandleKHR(vk->device, &win32_info, &handle);
 	if (ret != VK_SUCCESS) {
 		return ret;
 	}
@@ -113,12 +104,9 @@ get_device_memory_handle(struct vk_bundle *vk,
 #endif
 
 static VkResult
-create_image(struct vk_bundle *vk,
-             const struct xrt_swapchain_create_info *info,
-             struct vk_image *out_image)
+create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info, struct vk_image *out_image)
 {
-	VkImageUsageFlags image_usage =
-	    vk_swapchain_usage_flags(vk, (VkFormat)info->format, info->bits);
+	VkImageUsageFlags image_usage = vk_swapchain_usage_flags(vk, (VkFormat)info->format, info->bits);
 	if (image_usage == 0) {
 		U_LOG_E("create_image: Unsupported swapchain usage flags");
 		return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -143,22 +131,18 @@ create_image(struct vk_bundle *vk,
 	}
 
 	VkAndroidHardwareBufferFormatPropertiesANDROID a_buffer_format_props = {
-	    .sType =
-	        VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID,
+	    .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID,
 	    .format = (VkFormat)info->format,
 	};
 
 	VkAndroidHardwareBufferPropertiesANDROID a_buffer_props = {
-	    .sType =
-	        VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
+	    .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
 	    .pNext = &a_buffer_format_props,
 	};
 
-	ret = vk->vkGetAndroidHardwareBufferPropertiesANDROID(
-	    vk->device, a_buffer, &a_buffer_props);
+	ret = vk->vkGetAndroidHardwareBufferPropertiesANDROID(vk->device, a_buffer, &a_buffer_props);
 	if (ret != VK_SUCCESS) {
-		U_LOG_E("vkGetAndroidHardwareBufferPropertiesANDROID: %s",
-		        vk_result_string(ret));
+		U_LOG_E("vkGetAndroidHardwareBufferPropertiesANDROID: %s", vk_result_string(ret));
 		return ret;
 	}
 #endif
@@ -167,13 +151,12 @@ create_image(struct vk_bundle *vk,
 	 * Create the image.
 	 */
 
-	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info =
-	{.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
+	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
+		.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-	 .handleTypes =
-	     VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+		.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
 #else
-	 .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+		.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
 #endif
 	};
 
@@ -192,23 +175,23 @@ create_image(struct vk_bundle *vk,
 	}
 #endif
 
-	VkImageCreateInfo create_info =
-	{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+	VkImageCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-	 .pNext = &format_android,
+		.pNext = &format_android,
 #else
-	 .pNext = &external_memory_image_create_info,
+		.pNext = &external_memory_image_create_info,
 #endif
-	 .imageType = VK_IMAGE_TYPE_2D,
-	 .format = format,
-	 .extent = {.width = info->width, .height = info->height, .depth = 1},
-	 .mipLevels = info->mip_count,
-	 .arrayLayers = info->array_size,
-	 .samples = VK_SAMPLE_COUNT_1_BIT,
-	 .tiling = VK_IMAGE_TILING_OPTIMAL,
-	 .usage = image_usage,
-	 .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-	 .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+		.imageType = VK_IMAGE_TYPE_2D,
+		.format = format,
+		.extent = {.width = info->width, .height = info->height, .depth = 1},
+		.mipLevels = info->mip_count,
+		.arrayLayers = info->array_size,
+		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.tiling = VK_IMAGE_TILING_OPTIMAL,
+		.usage = image_usage,
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 
 	ret = vk->vkCreateImage(vk->device, &create_info, NULL, &image);
@@ -240,8 +223,7 @@ create_image(struct vk_bundle *vk,
 	VkExportMemoryAllocateInfo export_alloc_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
 	    .pNext = &dedicated_memory_info,
-	    .handleTypes =
-	        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
 	};
 
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
@@ -256,8 +238,7 @@ create_image(struct vk_bundle *vk,
 #error "need port"
 #endif
 
-	ret = vk_alloc_and_bind_image_memory(
-	    vk, image, SIZE_MAX, &export_alloc_info, &device_memory, &size);
+	ret = vk_alloc_and_bind_image_memory(vk, image, SIZE_MAX, &export_alloc_info, &device_memory, &size);
 	if (ret != VK_SUCCESS) {
 		U_LOG_E("vkAllocateMemory: %s", vk_result_string(ret));
 		vk->vkDestroyImage(vk->device, image, NULL);
@@ -352,11 +333,9 @@ vk_ic_from_natives(struct vk_bundle *vk,
 	size_t i = 0;
 	for (; i < num_images; i++) {
 		// Ensure that all handles are consumed or none are.
-		xrt_graphics_buffer_handle_t buf =
-		    u_graphics_buffer_ref(native_images[i].handle);
+		xrt_graphics_buffer_handle_t buf = u_graphics_buffer_ref(native_images[i].handle);
 
-		ret = vk_create_image_from_native(vk, xscci, &native_images[i],
-		                                  &out_vkic->images[i].handle,
+		ret = vk_create_image_from_native(vk, xscci, &native_images[i], &out_vkic->images[i].handle,
 		                                  &out_vkic->images[i].memory);
 		if (ret != VK_SUCCESS) {
 			u_graphics_buffer_unref(&buf);
@@ -410,8 +389,7 @@ vk_ic_get_handles(struct vk_bundle *vk,
 
 	size_t i = 0;
 	for (; i < vkic->num_images && i < max_handles; i++) {
-		ret = get_device_memory_handle(vk, vkic->images[i].memory,
-		                               &out_handles[i]);
+		ret = get_device_memory_handle(vk, vkic->images[i].memory, &out_handles[i]);
 		if (ret != VK_SUCCESS) {
 			break;
 		}

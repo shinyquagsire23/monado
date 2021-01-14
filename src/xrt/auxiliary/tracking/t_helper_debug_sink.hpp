@@ -82,8 +82,7 @@ public:
 		}
 
 		// Create a new frame and also dereferences the old frame.
-		u_frame_create_one_off(XRT_FORMAT_R8G8B8, width, height,
-		                       &frame);
+		u_frame_create_one_off(XRT_FORMAT_R8G8B8, width, height, &frame);
 
 		// Copy needed info.
 		frame->source_sequence = xf->source_sequence;

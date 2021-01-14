@@ -90,19 +90,13 @@ comp_buffer_unmap(struct vk_bundle *vk, struct comp_buffer *buffer);
  * Maps the buffer, and copies the given data to the buffer.
  */
 VkResult
-comp_buffer_map_and_write(struct vk_bundle *vk,
-                          struct comp_buffer *buffer,
-                          void *data,
-                          VkDeviceSize size);
+comp_buffer_map_and_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, VkDeviceSize size);
 
 /*!
  * Writes the given data to the buffer, will map it temporarily if not mapped.
  */
 VkResult
-comp_buffer_write(struct vk_bundle *vk,
-                  struct comp_buffer *buffer,
-                  void *data,
-                  VkDeviceSize size);
+comp_buffer_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, VkDeviceSize size);
 
 
 /*
@@ -253,9 +247,7 @@ struct comp_rendering
  * Init struct and create resources needed for rendering.
  */
 bool
-comp_rendering_init(struct comp_compositor *c,
-                    struct comp_resources *r,
-                    struct comp_rendering *rr);
+comp_rendering_init(struct comp_compositor *c, struct comp_resources *r, struct comp_rendering *rr);
 
 /*!
  * Frees all resources held by the rendering, does not free the struct itself.
@@ -294,9 +286,7 @@ struct comp_mesh_ubo_data
  * to comp_draw_begin_view.
  */
 bool
-comp_draw_begin_target_single(struct comp_rendering *rr,
-                              VkImageView target,
-                              struct comp_target_data *data);
+comp_draw_begin_target_single(struct comp_rendering *rr, VkImageView target, struct comp_target_data *data);
 
 void
 comp_draw_end_target(struct comp_rendering *rr);
@@ -326,18 +316,12 @@ comp_draw_projection_layer(struct comp_rendering *rr,
                            struct xrt_layer_data *data);
 
 void
-comp_draw_quad_layer(struct comp_rendering *rr,
-                     uint32_t layer,
-                     VkSampler sampler,
-                     VkImageView image_view,
-                     struct xrt_layer_data *data);
+comp_draw_quad_layer(
+    struct comp_rendering *rr, uint32_t layer, VkSampler sampler, VkImageView image_view, struct xrt_layer_data *data);
 
 void
-comp_draw_cylinder_layer(struct comp_rendering *rr,
-                         uint32_t layer,
-                         VkSampler sampler,
-                         VkImageView image_view,
-                         struct xrt_layer_data *data);
+comp_draw_cylinder_layer(
+    struct comp_rendering *rr, uint32_t layer, VkSampler sampler, VkImageView image_view, struct xrt_layer_data *data);
 
 void
 comp_draw_distortion(struct comp_rendering *rr,

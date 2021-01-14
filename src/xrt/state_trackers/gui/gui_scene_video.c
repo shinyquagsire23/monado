@@ -59,14 +59,12 @@ on_video_device(struct xrt_prober *xp,
 	}
 
 	char buf[256] = {0};
-	snprintf(buf, sizeof(buf), "%04x:%04x '%s' '%s'\n", pdev->vendor_id,
-	         pdev->product_id, product, serial);
+	snprintf(buf, sizeof(buf), "%04x:%04x '%s' '%s'\n", pdev->vendor_id, pdev->product_id, product, serial);
 	if (!igButton(buf, button_dims)) {
 		return;
 	}
 
-	snprintf(vs->settings->camera_name, sizeof(vs->settings->camera_name),
-	         "%s", product);
+	snprintf(vs->settings->camera_name, sizeof(vs->settings->camera_name), "%s", product);
 
 	vs->xfctx = U_TYPED_CALLOC(struct xrt_frame_context);
 	xrt_prober_open_video_device(xp, pdev, vs->xfctx, &vs->xfs);
@@ -78,8 +76,7 @@ render_mode(struct xrt_fs_mode *mode)
 {
 	char tmp[512];
 
-	snprintf(tmp, 512, "%ux%u: %s", mode->width, mode->height,
-	         u_format_str(mode->format));
+	snprintf(tmp, 512, "%ux%u: %s", mode->width, mode->height, u_format_str(mode->format));
 
 	return igButton(tmp, button_dims);
 }

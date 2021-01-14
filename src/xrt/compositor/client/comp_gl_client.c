@@ -48,8 +48,7 @@ client_gl_swapchain(struct xrt_swapchain *xsc)
  */
 
 static xrt_result_t
-client_gl_swapchain_acquire_image(struct xrt_swapchain *xsc,
-                                  uint32_t *out_index)
+client_gl_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 {
 	struct client_gl_swapchain *sc = client_gl_swapchain(xsc);
 
@@ -58,9 +57,7 @@ client_gl_swapchain_acquire_image(struct xrt_swapchain *xsc,
 }
 
 static xrt_result_t
-client_gl_swapchain_wait_image(struct xrt_swapchain *xsc,
-                               uint64_t timeout,
-                               uint32_t index)
+client_gl_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index)
 {
 	struct client_gl_swapchain *sc = client_gl_swapchain(xsc);
 
@@ -85,8 +82,7 @@ client_gl_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
  */
 
 static xrt_result_t
-client_gl_compositor_prepare_session(
-    struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
+client_gl_compositor_prepare_session(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
@@ -96,8 +92,7 @@ client_gl_compositor_prepare_session(
 
 
 static xrt_result_t
-client_gl_compositor_begin_session(struct xrt_compositor *xc,
-                                   enum xrt_view_type type)
+client_gl_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
@@ -123,9 +118,7 @@ client_gl_compositor_wait_frame(struct xrt_compositor *xc,
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
 	// Pipe down call into native compositor.
-	return xrt_comp_wait_frame(&c->xcn->base, out_frame_id,
-	                           predicted_display_time,
-	                           predicted_display_period);
+	return xrt_comp_wait_frame(&c->xcn->base, out_frame_id, predicted_display_time, predicted_display_period);
 }
 
 static xrt_result_t
@@ -147,9 +140,7 @@ client_gl_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-client_gl_compositor_layer_begin(struct xrt_compositor *xc,
-                                 int64_t frame_id,
-                                 enum xrt_blend_mode env_blend_mode)
+client_gl_compositor_layer_begin(struct xrt_compositor *xc, int64_t frame_id, enum xrt_blend_mode env_blend_mode)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
@@ -174,19 +165,17 @@ client_gl_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	struct xrt_layer_data d = *data;
 	d.flip_y = !d.flip_y;
 
-	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn,
-	                                        r_xscn, &d);
+	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn, r_xscn, &d);
 }
 
 static xrt_result_t
-client_gl_compositor_layer_stereo_projection_depth(
-    struct xrt_compositor *xc,
-    struct xrt_device *xdev,
-    struct xrt_swapchain *l_xsc,
-    struct xrt_swapchain *r_xsc,
-    struct xrt_swapchain *l_d_xsc,
-    struct xrt_swapchain *r_d_xsc,
-    const struct xrt_layer_data *data)
+client_gl_compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
+                                                   struct xrt_device *xdev,
+                                                   struct xrt_swapchain *l_xsc,
+                                                   struct xrt_swapchain *r_xsc,
+                                                   struct xrt_swapchain *l_d_xsc,
+                                                   struct xrt_swapchain *r_d_xsc,
+                                                   const struct xrt_layer_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	struct xrt_swapchain *l_xscn, *r_xscn, *l_d_xscn, *r_d_xscn;
@@ -201,8 +190,7 @@ client_gl_compositor_layer_stereo_projection_depth(
 	struct xrt_layer_data d = *data;
 	d.flip_y = !d.flip_y;
 
-	return xrt_comp_layer_stereo_projection_depth(
-	    &c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, &d);
+	return xrt_comp_layer_stereo_projection_depth(&c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, &d);
 }
 
 static xrt_result_t
@@ -301,9 +289,7 @@ client_gl_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_gl_compositor_layer_commit(struct xrt_compositor *xc,
-                                  int64_t frame_id,
-                                  xrt_graphics_sync_handle_t sync_handle)
+client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
@@ -360,11 +346,7 @@ vk_format_to_gl(int64_t format)
 	case 126 /*VK_FORMAT_D32_SFLOAT*/: return GL_DEPTH_COMPONENT32F;
 	case 129 /*VK_FORMAT_D24_UNORM_S8_UINT*/: return GL_DEPTH24_STENCIL8;
 	case 130 /*VK_FORMAT_D32_SFLOAT_S8_UINT*/: return GL_DEPTH32F_STENCIL8;
-	default:
-		U_LOG_W("Cannot convert VK format 0x%016" PRIx64
-		        " to GL format!\n",
-		        format);
-		return 0;
+	default: U_LOG_W("Cannot convert VK format 0x%016" PRIx64 " to GL format!\n", format); return 0;
 	}
 }
 
@@ -407,8 +389,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	GLint prev_texture = 0;
 	GLuint binding_enum = 0;
 	GLuint tex_target = 0;
-	ogl_texture_target_for_swapchain_info(&xinfo, &tex_target,
-	                                      &binding_enum);
+	ogl_texture_target_for_swapchain_info(&xinfo, &tex_target, &binding_enum);
 
 	glGetIntegerv(binding_enum, &prev_texture);
 
@@ -445,8 +426,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_gl_compositor_poll_events(struct xrt_compositor *xc,
-                                 union xrt_compositor_event *out_xce)
+client_gl_compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_xce)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
@@ -474,10 +454,8 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.begin_frame = client_gl_compositor_begin_frame;
 	c->base.base.discard_frame = client_gl_compositor_discard_frame;
 	c->base.base.layer_begin = client_gl_compositor_layer_begin;
-	c->base.base.layer_stereo_projection =
-	    client_gl_compositor_layer_stereo_projection;
-	c->base.base.layer_stereo_projection_depth =
-	    client_gl_compositor_layer_stereo_projection_depth;
+	c->base.base.layer_stereo_projection = client_gl_compositor_layer_stereo_projection;
+	c->base.base.layer_stereo_projection_depth = client_gl_compositor_layer_stereo_projection_depth;
 	c->base.base.layer_quad = client_gl_compositor_layer_quad;
 	c->base.base.layer_cube = client_gl_compositor_layer_cube;
 	c->base.base.layer_cylinder = client_gl_compositor_layer_cylinder;

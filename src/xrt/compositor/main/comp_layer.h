@@ -77,9 +77,7 @@ struct comp_render_layer
 };
 
 struct comp_render_layer *
-comp_layer_create(struct vk_bundle *vk,
-                  VkDescriptorSetLayout *layout,
-                  VkDescriptorSetLayout *layout_equirect);
+comp_layer_create(struct vk_bundle *vk, VkDescriptorSetLayout *layout, VkDescriptorSetLayout *layout_equirect);
 
 void
 comp_layer_draw(struct comp_render_layer *self,
@@ -92,16 +90,13 @@ comp_layer_draw(struct comp_render_layer *self,
                 const struct xrt_matrix_4x4 *vp_eye);
 
 void
-comp_layer_set_model_matrix(struct comp_render_layer *self,
-                            const struct xrt_matrix_4x4 *m);
+comp_layer_set_model_matrix(struct comp_render_layer *self, const struct xrt_matrix_4x4 *m);
 
 void
 comp_layer_destroy(struct comp_render_layer *self);
 
 void
-comp_layer_update_descriptors(struct comp_render_layer *self,
-                              VkSampler sampler,
-                              VkImageView image_view);
+comp_layer_update_descriptors(struct comp_render_layer *self, VkSampler sampler, VkImageView image_view);
 
 void
 comp_layer_update_stereo_descriptors(struct comp_render_layer *self,
@@ -117,16 +112,13 @@ struct vk_buffer *
 comp_layer_get_cylinder_vertex_buffer(struct comp_render_layer *self);
 
 bool
-comp_layer_update_cylinder_vertex_buffer(struct comp_render_layer *self,
-                                         float central_angle);
+comp_layer_update_cylinder_vertex_buffer(struct comp_render_layer *self, float central_angle);
 
 #ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 void
-comp_layer_update_equirect1_descriptor(struct comp_render_layer *self,
-                                       struct xrt_layer_equirect1_data *data);
+comp_layer_update_equirect1_descriptor(struct comp_render_layer *self, struct xrt_layer_equirect1_data *data);
 #endif
 #ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 void
-comp_layer_update_equirect2_descriptor(struct comp_render_layer *self,
-                                       struct xrt_layer_equirect2_data *data);
+comp_layer_update_equirect2_descriptor(struct comp_render_layer *self, struct xrt_layer_equirect2_data *data);
 #endif

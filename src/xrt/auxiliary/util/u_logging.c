@@ -51,12 +51,7 @@ u_log_convert_priority(enum u_logging_level level)
 	return ANDROID_LOG_INFO;
 }
 void
-u_log(const char *file,
-      int line,
-      const char *func,
-      enum u_logging_level level,
-      const char *format,
-      ...)
+u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
 {
 	_log_level_init();
 	// print_prefix(func, level);
@@ -90,46 +85,27 @@ u_log_xdev(const char *file,
 #include <debugapi.h>
 
 static int
-print_prefix(int remainingBuf,
-             char *buf,
-             const char *func,
-             enum u_logging_level level)
+print_prefix(int remainingBuf, char *buf, const char *func, enum u_logging_level level)
 {
 	int printed = 0;
 	switch (level) {
-	case U_LOGGING_TRACE:
-		printed = sprintf_s(buf, remainingBuf, "TRACE ");
-		break;
-	case U_LOGGING_DEBUG:
-		printed = sprintf_s(buf, remainingBuf, "DEBUG ");
-		break;
-	case U_LOGGING_INFO:
-		printed = sprintf_s(buf, remainingBuf, " INFO ");
-		break;
-	case U_LOGGING_WARN:
-		printed = sprintf_s(buf, remainingBuf, " WARN ");
-		break;
-	case U_LOGGING_ERROR:
-		printed = sprintf_s(buf, remainingBuf, "ERROR ");
-		break;
+	case U_LOGGING_TRACE: printed = sprintf_s(buf, remainingBuf, "TRACE "); break;
+	case U_LOGGING_DEBUG: printed = sprintf_s(buf, remainingBuf, "DEBUG "); break;
+	case U_LOGGING_INFO: printed = sprintf_s(buf, remainingBuf, " INFO "); break;
+	case U_LOGGING_WARN: printed = sprintf_s(buf, remainingBuf, " WARN "); break;
+	case U_LOGGING_ERROR: printed = sprintf_s(buf, remainingBuf, "ERROR "); break;
 	case U_LOGGING_RAW: break;
 	default: break;
 	}
 
 	if (level != U_LOGGING_RAW && func != NULL) {
-		printed = sprintf_s(buf + printed, remainingBuf - printed,
-		                    "[%s] ", func);
+		printed = sprintf_s(buf + printed, remainingBuf - printed, "[%s] ", func);
 	}
 	return printed;
 }
 
 void
-u_log(const char *file,
-      int line,
-      const char *func,
-      enum u_logging_level level,
-      const char *format,
-      ...)
+u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
 {
 	_log_level_init();
 
@@ -140,8 +116,7 @@ u_log(const char *file,
 
 	va_list args;
 	va_start(args, format);
-	printed +=
-	    vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
+	printed += vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
 	va_end(args);
 	*(buf + printed) = '\n';
 	OutputDebugStringA(buf);
@@ -194,21 +169,11 @@ static void
 print_prefix_color(const char *func, enum u_logging_level level)
 {
 	switch (level) {
-	case U_LOGGING_TRACE:
-		fprintf(stderr, COLOR_TRACE "TRACE " COLOR_RESET);
-		break;
-	case U_LOGGING_DEBUG:
-		fprintf(stderr, COLOR_DEBUG "DEBUG " COLOR_RESET);
-		break;
-	case U_LOGGING_INFO:
-		fprintf(stderr, COLOR_INFO " INFO " COLOR_RESET);
-		break;
-	case U_LOGGING_WARN:
-		fprintf(stderr, COLOR_WARN " WARN " COLOR_RESET);
-		break;
-	case U_LOGGING_ERROR:
-		fprintf(stderr, COLOR_ERROR "ERROR " COLOR_RESET);
-		break;
+	case U_LOGGING_TRACE: fprintf(stderr, COLOR_TRACE "TRACE " COLOR_RESET); break;
+	case U_LOGGING_DEBUG: fprintf(stderr, COLOR_DEBUG "DEBUG " COLOR_RESET); break;
+	case U_LOGGING_INFO: fprintf(stderr, COLOR_INFO " INFO " COLOR_RESET); break;
+	case U_LOGGING_WARN: fprintf(stderr, COLOR_WARN " WARN " COLOR_RESET); break;
+	case U_LOGGING_ERROR: fprintf(stderr, COLOR_ERROR "ERROR " COLOR_RESET); break;
 	case U_LOGGING_RAW: break;
 	default: break;
 	}
@@ -255,12 +220,7 @@ print_prefix(const char *func, enum u_logging_level level)
  */
 
 void
-u_log(const char *file,
-      int line,
-      const char *func,
-      enum u_logging_level level,
-      const char *format,
-      ...)
+u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
 {
 	_log_level_init();
 

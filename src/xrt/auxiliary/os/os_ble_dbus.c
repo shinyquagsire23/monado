@@ -76,8 +76,7 @@ add_single_byte_array(DBusMessage *msg, uint8_t value)
 
 	// attach it to our dbus message
 	dbus_message_iter_init_append(msg, &iter);
-	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-	                                 container_signature, &array);
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, container_signature, &array);
 	dbus_message_iter_append_basic(&array, DBUS_TYPE_BYTE, &value);
 	dbus_message_iter_close_container(&iter, &array);
 }
@@ -91,8 +90,7 @@ add_empty_dict_sv(DBusMessage *msg)
 
 	// attach it to our dbus message
 	dbus_message_iter_init_append(msg, &iter);
-	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-	                                 container_signature, &options);
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, container_signature, &options);
 	dbus_message_iter_close_container(&iter, &options);
 }
 
@@ -169,8 +167,7 @@ dump_one_element(DBusMessageIter *element, int level)
 	case DBUS_TYPE_BOOLEAN: {
 		int val;
 		dbus_message_iter_get_basic(element, &val);
-		U_LOG_D("%*sBOOLEAN: %s", level, "",
-		        val == 0 ? "false" : "true");
+		U_LOG_D("%*sBOOLEAN: %s", level, "", val == 0 ? "false" : "true");
 		return 0;
 	}
 	case DBUS_TYPE_BYTE: {
@@ -289,9 +286,7 @@ starts_with_and_has_slash(const char *str, const char *beginning)
 }
 
 static int
-dict_get_string_and_varient_child(DBusMessageIter *dict,
-                                  const char **out_str,
-                                  DBusMessageIter *out_child)
+dict_get_string_and_varient_child(DBusMessageIter *dict, const char **out_str, DBusMessageIter *out_child)
 {
 	DBusMessageIter child;
 	int type = dbus_message_iter_get_arg_type(dict);
@@ -325,9 +320,7 @@ dict_get_string_and_varient_child(DBusMessageIter *dict,
 }
 
 static int
-dict_get_string_and_array_elm(const DBusMessageIter *in_dict,
-                              const char **out_str,
-                              DBusMessageIter *out_array_elm)
+dict_get_string_and_array_elm(const DBusMessageIter *in_dict, const char **out_str, DBusMessageIter *out_array_elm)
 {
 	DBusMessageIter dict = *in_dict;
 	DBusMessageIter child;
@@ -361,9 +354,8 @@ dict_get_string_and_array_elm(const DBusMessageIter *in_dict,
 	return 0;
 }
 
-#define for_each(i, first)                                                     \
-	for (DBusMessageIter i = first;                                        \
-	     dbus_message_iter_get_arg_type(&i) != DBUS_TYPE_INVALID;          \
+#define for_each(i, first)                                                                                             \
+	for (DBusMessageIter i = first; dbus_message_iter_get_arg_type(&i) != DBUS_TYPE_INVALID;                       \
 	     dbus_message_iter_next(&i))
 
 /*!
@@ -371,9 +363,7 @@ dict_get_string_and_array_elm(const DBusMessageIter *in_dict,
  * outputs the first element of the array on success.
  */
 static int
-array_get_first_elem_of_type(const DBusMessageIter *in_parent,
-                             int of_type,
-                             DBusMessageIter *out_elm)
+array_get_first_elem_of_type(const DBusMessageIter *in_parent, int of_type, DBusMessageIter *out_elm)
 {
 	DBusMessageIter parent = *in_parent;
 	int type = dbus_message_iter_get_arg_type(&parent);
@@ -387,8 +377,7 @@ array_get_first_elem_of_type(const DBusMessageIter *in_parent,
 
 	type = dbus_message_iter_get_arg_type(&elm);
 	if (type != of_type) {
-		U_LOG_E("Expected elem type of '%c' got '%c'!\n", of_type,
-		        type);
+		U_LOG_E("Expected elem type of '%c' got '%c'!\n", of_type, type);
 		return -1;
 	}
 
@@ -404,9 +393,7 @@ array_get_first_elem_of_type(const DBusMessageIter *in_parent,
  * the value of the dict pair.
  */
 static int
-array_find_variant_value(const DBusMessageIter *first_elm,
-                         const char *key,
-                         DBusMessageIter *out_value)
+array_find_variant_value(const DBusMessageIter *first_elm, const char *key, DBusMessageIter *out_value)
 {
 	const char *str;
 
@@ -472,11 +459,10 @@ dbus_has_name(DBusConnection *conn, const char *name)
 	DBusMessage *msg;
 	DBusError err;
 
-	msg = dbus_message_new_method_call(
-	    "org.freedesktop.DBus",  // target for the method call
-	    "/org/freedesktop/DBus", // object to call on
-	    "org.freedesktop.DBus",  // interface to call on
-	    "ListNames");            // method name
+	msg = dbus_message_new_method_call("org.freedesktop.DBus",  // target for the method call
+	                                   "/org/freedesktop/DBus", // object to call on
+	                                   "org.freedesktop.DBus",  // interface to call on
+	                                   "ListNames");            // method name
 	if (send_message(conn, &err, &msg) != 0) {
 		return -1;
 	}
@@ -498,8 +484,7 @@ dbus_has_name(DBusConnection *conn, const char *name)
 	}
 
 	DBusMessageIter first_elm;
-	int ret =
-	    array_get_first_elem_of_type(&args, DBUS_TYPE_STRING, &first_elm);
+	int ret = array_get_first_elem_of_type(&args, DBUS_TYPE_STRING, &first_elm);
 	if (ret < 0) {
 		// free reply
 		dbus_message_unref(msg);
@@ -534,9 +519,7 @@ dbus_has_name(DBusConnection *conn, const char *name)
  * and one of it's `UUIDs` matches the given @p uuid.
  */
 static int
-device_has_uuid(const DBusMessageIter *dict,
-                const char *uuid,
-                const char **out_path_str)
+device_has_uuid(const DBusMessageIter *dict, const char *uuid, const char **out_path_str)
 {
 	DBusMessageIter iface_elm, first_elm;
 	const char *iface_str;
@@ -631,9 +614,7 @@ gatt_iface_get_uuid(const DBusMessageIter *iface_elm, const char **out_str)
  * uuid and has the notify flag set.
  */
 static int
-gatt_char_has_uuid_and_notify(const DBusMessageIter *dict,
-                              const char *uuid,
-                              const char **out_path_str)
+gatt_char_has_uuid_and_notify(const DBusMessageIter *dict, const char *uuid, const char **out_path_str)
 {
 	DBusMessageIter first_elm, iface_elm;
 	const char *iface_str;
@@ -729,11 +710,10 @@ ble_get_managed_objects(struct ble_conn_helper *bch, DBusMessage **out_msg)
 	DBusMessage *msg;
 	int type;
 
-	msg = dbus_message_new_method_call(
-	    "org.bluez",                          // target for the method call
-	    "/",                                  // object to call on
-	    "org.freedesktop.DBus.ObjectManager", // interface to call on
-	    "GetManagedObjects");                 // method name
+	msg = dbus_message_new_method_call("org.bluez",                          // target for the method call
+	                                   "/",                                  // object to call on
+	                                   "org.freedesktop.DBus.ObjectManager", // interface to call on
+	                                   "GetManagedObjects");                 // method name
 	if (msg == NULL) {
 		E(bch, "Could not create new message!");
 		return -1;
@@ -777,11 +757,10 @@ ble_connect(struct ble_conn_helper *bch, const char *dbus_address)
 
 	I(bch, "Connecting '%s'", dbus_address);
 
-	msg = dbus_message_new_method_call(
-	    "org.bluez",         // target for the method call
-	    dbus_address,        // object to call on
-	    "org.bluez.Device1", // interface to call on
-	    "Connect");          // method name
+	msg = dbus_message_new_method_call("org.bluez",         // target for the method call
+	                                   dbus_address,        // object to call on
+	                                   "org.bluez.Device1", // interface to call on
+	                                   "Connect");          // method name
 	if (msg == NULL) {
 		E(bch, "Message NULL after construction\n");
 		return -1;
@@ -813,8 +792,7 @@ ble_connect(struct ble_conn_helper *bch, const char *dbus_address)
 }
 
 static int
-ble_connect_all_devices_with_service_uuid(struct ble_conn_helper *bch,
-                                          const char *service_uuid)
+ble_connect_all_devices_with_service_uuid(struct ble_conn_helper *bch, const char *service_uuid)
 {
 	DBusMessageIter args, first_elm;
 	DBusMessage *msg = NULL;
@@ -825,8 +803,7 @@ ble_connect_all_devices_with_service_uuid(struct ble_conn_helper *bch,
 	}
 
 	dbus_message_iter_init(msg, &args);
-	ret = array_get_first_elem_of_type(&args, DBUS_TYPE_DICT_ENTRY,
-	                                   &first_elm);
+	ret = array_get_first_elem_of_type(&args, DBUS_TYPE_DICT_ENTRY, &first_elm);
 	if (ret < 0) {
 		// free reply
 		dbus_message_unref(msg);
@@ -851,20 +828,17 @@ ble_connect_all_devices_with_service_uuid(struct ble_conn_helper *bch,
 }
 
 static int
-ble_write_value(struct ble_conn_helper *bch,
-                const char *dbus_address,
-                uint8_t value)
+ble_write_value(struct ble_conn_helper *bch, const char *dbus_address, uint8_t value)
 {
 	DBusMessage *msg = NULL;
 	DBusMessageIter args;
 	char *response = NULL;
 	int ret, type;
 
-	msg = dbus_message_new_method_call(
-	    "org.bluez",                     // target for the method call
-	    dbus_address,                    // object to call on
-	    "org.bluez.GattCharacteristic1", // interface to call on
-	    "WriteValue");                   // method name
+	msg = dbus_message_new_method_call("org.bluez",                     // target for the method call
+	                                   dbus_address,                    // object to call on
+	                                   "org.bluez.GattCharacteristic1", // interface to call on
+	                                   "WriteValue");                   // method name
 	if (msg == NULL) {
 		E(bch, "Message NULL after construction\n");
 		return -1;
@@ -900,11 +874,8 @@ ble_write_value(struct ble_conn_helper *bch,
 }
 
 static ssize_t
-get_path_to_notify_char(struct ble_conn_helper *bch,
-                        const char *dev_uuid,
-                        const char *char_uuid,
-                        char *output,
-                        size_t output_len)
+get_path_to_notify_char(
+    struct ble_conn_helper *bch, const char *dev_uuid, const char *char_uuid, char *output, size_t output_len)
 {
 	DBusMessageIter args, first_elm;
 	DBusMessage *msg;
@@ -915,8 +886,7 @@ get_path_to_notify_char(struct ble_conn_helper *bch,
 	}
 
 	dbus_message_iter_init(msg, &args);
-	ret = array_get_first_elem_of_type(&args, DBUS_TYPE_DICT_ENTRY,
-	                                   &first_elm);
+	ret = array_get_first_elem_of_type(&args, DBUS_TYPE_DICT_ENTRY, &first_elm);
 	if (ret < 0) {
 		// free reply
 		dbus_message_unref(msg);
@@ -934,18 +904,15 @@ get_path_to_notify_char(struct ble_conn_helper *bch,
 
 		for_each(c, first_elm)
 		{
-			ret = gatt_char_has_uuid_and_notify(&c, char_uuid,
-			                                    &char_path_str);
+			ret = gatt_char_has_uuid_and_notify(&c, char_uuid, &char_path_str);
 			if (ret <= 0) {
 				continue;
 			}
-			if (!starts_with_and_has_slash(char_path_str,
-			                               dev_path_str)) {
+			if (!starts_with_and_has_slash(char_path_str, dev_path_str)) {
 				continue;
 			}
 
-			ssize_t written =
-			    snprintf(output, output_len, "%s", char_path_str);
+			ssize_t written = snprintf(output, output_len, "%s", char_path_str);
 
 			// free reply
 			dbus_message_unref(msg);
@@ -961,9 +928,7 @@ get_path_to_notify_char(struct ble_conn_helper *bch,
 }
 
 static int
-init_ble_notify(const char *dev_uuid,
-                const char *char_uuid,
-                struct ble_notify *bledev)
+init_ble_notify(const char *dev_uuid, const char *char_uuid, struct ble_notify *bledev)
 {
 	DBusMessage *msg;
 	int ret;
@@ -975,8 +940,7 @@ init_ble_notify(const char *dev_uuid,
 
 	char dbus_address[256]; // should be long enough
 	XRT_MAYBE_UNUSED ssize_t written =
-	    get_path_to_notify_char(&bledev->bch, dev_uuid, char_uuid,
-	                            dbus_address, sizeof(dbus_address));
+	    get_path_to_notify_char(&bledev->bch, dev_uuid, char_uuid, dbus_address, sizeof(dbus_address));
 	if (written == 0) {
 		return -1;
 	}
@@ -984,11 +948,10 @@ init_ble_notify(const char *dev_uuid,
 		return -1;
 	}
 
-	msg = dbus_message_new_method_call(
-	    "org.bluez",                     // target for the method call
-	    dbus_address,                    // object to call on
-	    "org.bluez.GattCharacteristic1", // interface to call on
-	    "AcquireNotify");                // method name
+	msg = dbus_message_new_method_call("org.bluez",                     // target for the method call
+	                                   dbus_address,                    // object to call on
+	                                   "org.bluez.GattCharacteristic1", // interface to call on
+	                                   "AcquireNotify");                // method name
 	if (msg == NULL) {
 		E(&bledev->bch, "Message Null after construction\n");
 		return -1;
@@ -1012,8 +975,7 @@ init_ble_notify(const char *dev_uuid,
 		}
 		if (type == DBUS_TYPE_STRING) {
 			dbus_message_iter_get_basic(&args, &response);
-			E(&bledev->bch, "DBus call returned message: %s\n",
-			  response);
+			E(&bledev->bch, "DBus call returned message: %s\n", response);
 		} else if (type == DBUS_TYPE_UNIX_FD) {
 			dbus_message_iter_get_basic(&args, &bledev->fd);
 		}
@@ -1039,10 +1001,7 @@ init_ble_notify(const char *dev_uuid,
  */
 
 static int
-os_ble_notify_read(struct os_ble_device *bdev,
-                   uint8_t *data,
-                   size_t length,
-                   int milliseconds)
+os_ble_notify_read(struct os_ble_device *bdev, uint8_t *data, size_t length, int milliseconds)
 {
 	struct ble_notify *dev = (struct ble_notify *)bdev;
 	struct pollfd fds;
@@ -1097,9 +1056,7 @@ os_ble_notify_destroy(struct os_ble_device *bdev)
  */
 
 int
-os_ble_notify_open(const char *dev_uuid,
-                   const char *char_uuid,
-                   struct os_ble_device **out_ble)
+os_ble_notify_open(const char *dev_uuid, const char *char_uuid, struct os_ble_device **out_ble)
 {
 	struct ble_notify *bledev = U_TYPED_CALLOC(struct ble_notify);
 	bledev->base.read = os_ble_notify_read;
@@ -1118,9 +1075,7 @@ os_ble_notify_open(const char *dev_uuid,
 }
 
 int
-os_ble_broadcast_write_value(const char *service_uuid,
-                             const char *char_uuid,
-                             uint8_t value)
+os_ble_broadcast_write_value(const char *service_uuid, const char *char_uuid, uint8_t value)
 {
 	struct ble_conn_helper bch = {0};
 	DBusMessageIter args, first_elm;
@@ -1160,8 +1115,7 @@ os_ble_broadcast_write_value(const char *service_uuid,
 	}
 
 	dbus_message_iter_init(msg, &args);
-	ret = array_get_first_elem_of_type(&args, DBUS_TYPE_DICT_ENTRY,
-	                                   &first_elm);
+	ret = array_get_first_elem_of_type(&args, DBUS_TYPE_DICT_ENTRY, &first_elm);
 	if (ret < 0) {
 		// free reply
 		dbus_message_unref(msg);
@@ -1180,13 +1134,11 @@ os_ble_broadcast_write_value(const char *service_uuid,
 
 		for_each(c, first_elm)
 		{
-			ret = gatt_char_has_uuid_and_notify(&c, char_uuid,
-			                                    &char_path_str);
+			ret = gatt_char_has_uuid_and_notify(&c, char_uuid, &char_path_str);
 			if (ret <= 0) {
 				continue;
 			}
-			if (!starts_with_and_has_slash(char_path_str,
-			                               dev_path_str)) {
+			if (!starts_with_and_has_slash(char_path_str, dev_path_str)) {
 				continue;
 			}
 

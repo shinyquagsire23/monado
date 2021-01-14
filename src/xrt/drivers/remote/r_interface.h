@@ -99,17 +99,13 @@ r_create_devices(uint16_t port,
  * @ingroup drv_remote
  */
 int
-r_remote_connection_init(struct r_remote_connection *rc,
-                         const char *addr,
-                         uint16_t port);
+r_remote_connection_init(struct r_remote_connection *rc, const char *addr, uint16_t port);
 
 int
-r_remote_connection_read_one(struct r_remote_connection *rc,
-                             struct r_remote_data *data);
+r_remote_connection_read_one(struct r_remote_connection *rc, struct r_remote_data *data);
 
 int
-r_remote_connection_write_one(struct r_remote_connection *rc,
-                              const struct r_remote_data *data);
+r_remote_connection_write_one(struct r_remote_connection *rc, const struct r_remote_data *data);
 
 
 #ifdef __cplusplus

@@ -190,9 +190,7 @@ struct xrt_prober
 	 * xrt_instance_select() method which usually calls xrt_prober_probe()
 	 * and xrt_prober_select().
 	 */
-	int (*select)(struct xrt_prober *xp,
-	              struct xrt_device **xdevs,
-	              size_t num_xdevs);
+	int (*select)(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs);
 	int (*open_hid_interface)(struct xrt_prober *xp,
 	                          struct xrt_prober_device *xpdev,
 	                          int interface,
@@ -201,16 +199,13 @@ struct xrt_prober
 	                         struct xrt_prober_device *xpdev,
 	                         struct xrt_frame_context *xfctx,
 	                         struct xrt_fs **out_xfs);
-	int (*list_video_devices)(struct xrt_prober *xp,
-	                          xrt_prober_list_video_cb cb,
-	                          void *ptr);
+	int (*list_video_devices)(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
 	int (*get_string_descriptor)(struct xrt_prober *xp,
 	                             struct xrt_prober_device *xpdev,
 	                             enum xrt_prober_string which_string,
 	                             unsigned char *buffer,
 	                             int length);
-	bool (*can_open)(struct xrt_prober *xp,
-	                 struct xrt_prober_device *xpdev);
+	bool (*can_open)(struct xrt_prober *xp, struct xrt_prober_device *xpdev);
 	/*!
 	 * Destroy the prober and set the pointer to null.
 	 *
@@ -249,9 +244,7 @@ xrt_prober_dump(struct xrt_prober *xp)
  * @public @memberof xrt_prober
  */
 static inline int
-xrt_prober_select(struct xrt_prober *xp,
-                  struct xrt_device **xdevs,
-                  size_t num_xdevs)
+xrt_prober_select(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs)
 {
 	return xp->select(xp, xdevs, num_xdevs);
 }
@@ -282,8 +275,7 @@ xrt_prober_get_string_descriptor(struct xrt_prober *xp,
                                  unsigned char *buffer,
                                  int length)
 {
-	return xp->get_string_descriptor(xp, xpdev, which_string, buffer,
-	                                 length);
+	return xp->get_string_descriptor(xp, xpdev, which_string, buffer, length);
 }
 
 /*!
@@ -318,9 +310,7 @@ xrt_prober_open_video_device(struct xrt_prober *xp,
  * @public @memberof xrt_prober
  */
 static inline int
-xrt_prober_list_video_devices(struct xrt_prober *xp,
-                              xrt_prober_list_video_cb cb,
-                              void *ptr)
+xrt_prober_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr)
 {
 	return xp->list_video_devices(xp, cb, ptr);
 }
@@ -354,8 +344,7 @@ xrt_prober_destroy(struct xrt_prober **xp_ptr)
  * @public @memberof xrt_prober
  */
 int
-xrt_prober_create_with_lists(struct xrt_prober **out_xp,
-                             struct xrt_prober_entry_lists *list);
+xrt_prober_create_with_lists(struct xrt_prober **out_xp, struct xrt_prober_entry_lists *list);
 
 /*!
  * @public @memberof xrt_prober

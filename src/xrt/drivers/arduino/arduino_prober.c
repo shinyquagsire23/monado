@@ -67,10 +67,7 @@ arduino_prober_destroy(struct xrt_auto_prober *p)
 
 //! @public @memberof arduino_prober
 static struct xrt_device *
-arduino_prober_autoprobe(struct xrt_auto_prober *xap,
-                         cJSON *attached_data,
-                         bool no_hmds,
-                         struct xrt_prober *xp)
+arduino_prober_autoprobe(struct xrt_auto_prober *xap, cJSON *attached_data, bool no_hmds, struct xrt_prober *xp)
 {
 	struct arduino_prober *ap = arduino_prober(xap);
 	if (!ap->enabled) {

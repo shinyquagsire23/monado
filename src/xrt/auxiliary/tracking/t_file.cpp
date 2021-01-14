@@ -45,47 +45,40 @@ calibration_get_undistort_map(t_camera_calibration &calib,
 
 	//! @todo Scale Our intrinsics if the frame size we request
 	//              calibration for does not match what was saved
-	cv::Size image_size(calib.image_size_pixels.w,
-	                    calib.image_size_pixels.h);
+	cv::Size image_size(calib.image_size_pixels.w, calib.image_size_pixels.h);
 
 	if (calib.use_fisheye) {
-		cv::fisheye::initUndistortRectifyMap(
-		    wrap.intrinsics_mat,         // cameraMatrix
-		    wrap.distortion_fisheye_mat, // distCoeffs
-		    rectify_transform_optional,  // R
-		    new_camera_matrix_optional,  // newCameraMatrix
-		    image_size,                  // size
-		    CV_32FC1,                    // m1type
-		    ret.remap_x,                 // map1
-		    ret.remap_y);                // map2
+		cv::fisheye::initUndistortRectifyMap(wrap.intrinsics_mat,         // cameraMatrix
+		                                     wrap.distortion_fisheye_mat, // distCoeffs
+		                                     rectify_transform_optional,  // R
+		                                     new_camera_matrix_optional,  // newCameraMatrix
+		                                     image_size,                  // size
+		                                     CV_32FC1,                    // m1type
+		                                     ret.remap_x,                 // map1
+		                                     ret.remap_y);                // map2
 	} else {
-		cv::initUndistortRectifyMap(
-		    wrap.intrinsics_mat,        // cameraMatrix
-		    wrap.distortion_mat,        // distCoeffs
-		    rectify_transform_optional, // R
-		    new_camera_matrix_optional, // newCameraMatrix
-		    image_size,                 // size
-		    CV_32FC1,                   // m1type
-		    ret.remap_x,                // map1
-		    ret.remap_y);               // map2
+		cv::initUndistortRectifyMap(wrap.intrinsics_mat,        // cameraMatrix
+		                            wrap.distortion_mat,        // distCoeffs
+		                            rectify_transform_optional, // R
+		                            new_camera_matrix_optional, // newCameraMatrix
+		                            image_size,                 // size
+		                            CV_32FC1,                   // m1type
+		                            ret.remap_x,                // map1
+		                            ret.remap_y);               // map2
 	}
 
 	return ret;
 }
 
-StereoRectificationMaps::StereoRectificationMaps(
-    t_stereo_camera_calibration *data)
+StereoRectificationMaps::StereoRectificationMaps(t_stereo_camera_calibration *data)
 {
 	assert(data != NULL);
-	assert(data->view[0].image_size_pixels.w ==
-	       data->view[1].image_size_pixels.w);
-	assert(data->view[0].image_size_pixels.h ==
-	       data->view[1].image_size_pixels.h);
+	assert(data->view[0].image_size_pixels.w == data->view[1].image_size_pixels.w);
+	assert(data->view[0].image_size_pixels.h == data->view[1].image_size_pixels.h);
 
 	assert(data->view[0].use_fisheye == data->view[1].use_fisheye);
 
-	cv::Size image_size(data->view[0].image_size_pixels.w,
-	                    data->view[0].image_size_pixels.h);
+	cv::Size image_size(data->view[0].image_size_pixels.w, data->view[0].image_size_pixels.h);
 	StereoCameraCalibrationWrapper wrapped(data);
 
 	/*
@@ -124,24 +117,23 @@ StereoRectificationMaps::StereoRectificationMaps(
 		// The function performs the default scaling.
 		float alpha = -1.0f;
 
-		cv::stereoRectify(
-		    wrapped.view[0].intrinsics_mat, // cameraMatrix1
-		    cv::noArray(),                  // distCoeffs1
-		    wrapped.view[1].intrinsics_mat, // cameraMatrix2
-		    cv::noArray(),                  // distCoeffs2
-		    image_size,                     // imageSize
-		    wrapped.camera_rotation_mat,    // R
-		    wrapped.camera_translation_mat, // T
-		    view[0].rotation_mat,           // R1
-		    view[1].rotation_mat,           // R2
-		    view[0].projection_mat,         // P1
-		    view[1].projection_mat,         // P2
-		    disparity_to_depth_mat,         // Q
-		    flags,                          // flags
-		    alpha,                          // alpha
-		    cv::Size(),                     // newImageSize
-		    NULL,                           // validPixROI1
-		    NULL);                          // validPixROI2
+		cv::stereoRectify(wrapped.view[0].intrinsics_mat, // cameraMatrix1
+		                  cv::noArray(),                  // distCoeffs1
+		                  wrapped.view[1].intrinsics_mat, // cameraMatrix2
+		                  cv::noArray(),                  // distCoeffs2
+		                  image_size,                     // imageSize
+		                  wrapped.camera_rotation_mat,    // R
+		                  wrapped.camera_translation_mat, // T
+		                  view[0].rotation_mat,           // R1
+		                  view[1].rotation_mat,           // R2
+		                  view[0].projection_mat,         // P1
+		                  view[1].projection_mat,         // P2
+		                  disparity_to_depth_mat,         // Q
+		                  flags,                          // flags
+		                  alpha,                          // alpha
+		                  cv::Size(),                     // newImageSize
+		                  NULL,                           // validPixROI1
+		                  NULL);                          // validPixROI2
 #endif
 	} else {
 		// Have the same principal point on both.
@@ -149,32 +141,29 @@ StereoRectificationMaps::StereoRectificationMaps(
 		// Get all of the pixels from the camera.
 		float alpha = 1.0f;
 
-		cv::stereoRectify(
-		    wrapped.view[0].intrinsics_mat, // cameraMatrix1
-		    /* cv::noArray(), */            // distCoeffs1
-		    wrapped.view[0].distortion_mat, // distCoeffs1
-		    wrapped.view[1].intrinsics_mat, // cameraMatrix2
-		    /* cv::noArray(), */            // distCoeffs2
-		    wrapped.view[1].distortion_mat, // distCoeffs2
-		    image_size,                     // imageSize
-		    wrapped.camera_rotation_mat,    // R
-		    wrapped.camera_translation_mat, // T
-		    view[0].rotation_mat,           // R1
-		    view[1].rotation_mat,           // R2
-		    view[0].projection_mat,         // P1
-		    view[1].projection_mat,         // P2
-		    disparity_to_depth_mat,         // Q
-		    flags,                          // flags
-		    alpha,                          // alpha
-		    cv::Size(),                     // newImageSize
-		    NULL,                           // validPixROI1
-		    NULL);                          // validPixROI2
+		cv::stereoRectify(wrapped.view[0].intrinsics_mat, // cameraMatrix1
+		                  /* cv::noArray(), */            // distCoeffs1
+		                  wrapped.view[0].distortion_mat, // distCoeffs1
+		                  wrapped.view[1].intrinsics_mat, // cameraMatrix2
+		                  /* cv::noArray(), */            // distCoeffs2
+		                  wrapped.view[1].distortion_mat, // distCoeffs2
+		                  image_size,                     // imageSize
+		                  wrapped.camera_rotation_mat,    // R
+		                  wrapped.camera_translation_mat, // T
+		                  view[0].rotation_mat,           // R1
+		                  view[1].rotation_mat,           // R2
+		                  view[0].projection_mat,         // P1
+		                  view[1].projection_mat,         // P2
+		                  disparity_to_depth_mat,         // Q
+		                  flags,                          // flags
+		                  alpha,                          // alpha
+		                  cv::Size(),                     // newImageSize
+		                  NULL,                           // validPixROI1
+		                  NULL);                          // validPixROI2
 	}
 
-	view[0].rectify = calibration_get_undistort_map(
-	    data->view[0], view[0].rotation_mat, view[0].projection_mat);
-	view[1].rectify = calibration_get_undistort_map(
-	    data->view[1], view[1].rotation_mat, view[1].projection_mat);
+	view[0].rectify = calibration_get_undistort_map(data->view[0], view[0].rotation_mat, view[0].projection_mat);
+	view[1].rectify = calibration_get_undistort_map(data->view[1], view[1].rotation_mat, view[1].projection_mat);
 }
 
 /*
@@ -184,8 +173,7 @@ StereoRectificationMaps::StereoRectificationMaps(
  */
 
 extern "C" bool
-t_stereo_camera_calibration_load_v1(
-    FILE *calib_file, struct t_stereo_camera_calibration **out_data)
+t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_calibration **out_data)
 {
 	t_stereo_camera_calibration *data_ptr = NULL;
 	t_stereo_camera_calibration_alloc(&data_ptr);
@@ -265,8 +253,7 @@ t_stereo_camera_calibration_load_v1(
  */
 
 extern "C" bool
-t_stereo_camera_calibration_save_v1(FILE *calib_file,
-                                    struct t_stereo_camera_calibration *data)
+t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_calibration *data)
 {
 	StereoCameraCalibrationWrapper wrapped(data);
 	// Dummy matrix
@@ -324,8 +311,7 @@ write_cv_mat(FILE *f, cv::Mat *m)
 	header[1] = static_cast<uint32_t>(m->rows);
 	header[2] = static_cast<uint32_t>(m->cols);
 	fwrite(static_cast<void *>(header), sizeof(uint32_t), 3, f);
-	fwrite(static_cast<void *>(m->data), header[0], header[1] * header[2],
-	       f);
+	fwrite(static_cast<void *>(m->data), header[0], header[1] * header[2], f);
 	return true;
 }
 
@@ -338,8 +324,7 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 	cv::Mat temp;
 	read = fread(static_cast<void *>(header), sizeof(uint32_t), 3, f);
 	if (read != 3) {
-		U_LOG_E("Failed to read mat header: '%i' '%s'", (int)read,
-		        name);
+		U_LOG_E("Failed to read mat header: '%i' '%s'", (int)read, name);
 		return false;
 	}
 
@@ -349,14 +334,11 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 
 	//! @todo We may have written things other than CV_32F and CV_64F.
 	if (header[0] == 4) {
-		temp.create(static_cast<int>(header[1]),
-		            static_cast<int>(header[2]), CV_32F);
+		temp.create(static_cast<int>(header[1]), static_cast<int>(header[2]), CV_32F);
 	} else {
-		temp.create(static_cast<int>(header[1]),
-		            static_cast<int>(header[2]), CV_64F);
+		temp.create(static_cast<int>(header[1]), static_cast<int>(header[2]), CV_64F);
 	}
-	read = fread(static_cast<void *>(temp.data), header[0],
-	             header[1] * header[2], f);
+	read = fread(static_cast<void *>(temp.data), header[0], header[1] * header[2], f);
 	if (read != (header[1] * header[2])) {
 		U_LOG_E("Failed to read mat body: '%i' '%s'", (int)read, name);
 		return false;
@@ -365,13 +347,11 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 		m->create(header[1], header[2], temp.type());
 	}
 	if (temp.type() != m->type()) {
-		U_LOG_E("Mat body type does not match: %i vs %i for '%s'",
-		        (int)temp.type(), (int)m->type(), name);
+		U_LOG_E("Mat body type does not match: %i vs %i for '%s'", (int)temp.type(), (int)m->type(), name);
 		return false;
 	}
 	if (temp.total() != m->total()) {
-		U_LOG_E("Mat total size does not match: %i vs %i for '%s'",
-		        (int)temp.total(), (int)m->total(), name);
+		U_LOG_E("Mat total size does not match: %i vs %i for '%s'", (int)temp.total(), (int)m->total(), name);
 		return false;
 	}
 	if (temp.size() == m->size()) {
@@ -379,8 +359,7 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 		temp.copyTo(*m);
 		return true;
 	}
-	if (temp.size().width == m->size().height &&
-	    temp.size().height == m->size().width) {
+	if (temp.size().width == m->size().height && temp.size().height == m->size().width) {
 		U_LOG_W("Mat transposing on load: '%s'", name);
 		// needs transpose
 		cv::transpose(temp, *m);

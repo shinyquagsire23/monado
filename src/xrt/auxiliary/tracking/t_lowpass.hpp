@@ -30,10 +30,9 @@ namespace implementation {
 	{
 		// For fixed point, you'd need more bits of data storage. See
 		// https://www.embeddedrelated.com/showarticle/779.php
-		static_assert(
-		    std::is_floating_point<Scalar>::value,
-		    "Filter is designed only for floating-point values. If "
-		    "you want fixed-point, you must reimplement it.");
+		static_assert(std::is_floating_point<Scalar>::value,
+		              "Filter is designed only for floating-point values. If "
+		              "you want fixed-point, you must reimplement it.");
 		// EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 		/*!
@@ -73,9 +72,7 @@ namespace implementation {
 		 * state. For the first call, this is always assumed to be 1.
 		 */
 		void
-		addSample(Value const &sample,
-		          timepoint_ns timestamp_ns,
-		          Scalar weight = 1)
+		addSample(Value const &sample, timepoint_ns timestamp_ns, Scalar weight = 1)
 		{
 			if (!initialized) {
 				initialized = true;
@@ -84,8 +81,7 @@ namespace implementation {
 				return;
 			}
 			// get dt in seconds
-			Scalar dt =
-			    time_ns_to_s(timestamp_ns - filter_timestamp_ns);
+			Scalar dt = time_ns_to_s(timestamp_ns - filter_timestamp_ns);
 			//! @todo limit max dt?
 			Scalar weighted = dt * weight;
 			Scalar alpha = weighted / (time_constant + weighted);
@@ -121,9 +117,7 @@ public:
 	 * lower in frequency will be passed through the filter, while signal
 	 * changes much higher in frequency will be blocked.
 	 */
-	explicit LowPassIIRFilter(Scalar cutoff_hz) noexcept
-	    : impl_(cutoff_hz, 0)
-	{}
+	explicit LowPassIIRFilter(Scalar cutoff_hz) noexcept : impl_(cutoff_hz, 0) {}
 
 
 	/*!

@@ -20,8 +20,7 @@ typedef void *EGLDisplay;
 typedef void *EGLConfig;
 typedef void *EGLContext;
 typedef void (*__eglMustCastToProperFunctionPointerType)(void);
-typedef __eglMustCastToProperFunctionPointerType (*PFNEGLGETPROCADDRESSPROC)(
-    const char *proc);
+typedef __eglMustCastToProperFunctionPointerType (*PFNEGLGETPROCADDRESSPROC)(const char *proc);
 struct time_state;
 
 /*!

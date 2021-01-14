@@ -70,24 +70,18 @@ const struct xrt_matrix_2x2 u_device_rotation_180 = {{
 
 #define PRINT_INT(name, val) U_LOG_RAW("\t%s = %u", name, val)
 
-#define PRINT_MM(name, val)                                                    \
-	U_LOG_RAW("\t%s = %f (%i.%02imm)", name, val, (int32_t)(val * 1000.f), \
-	          abs((int32_t)(val * 100000.f)) % 100)
+#define PRINT_MM(name, val)                                                                                            \
+	U_LOG_RAW("\t%s = %f (%i.%02imm)", name, val, (int32_t)(val * 1000.f), abs((int32_t)(val * 100000.f)) % 100)
 
-#define PRINT_ANGLE(name, val)                                                 \
-	U_LOG_RAW("\t%s = %f (%i°)", name, val, (int32_t)(val * (180 / M_PI)))
+#define PRINT_ANGLE(name, val) U_LOG_RAW("\t%s = %f (%i°)", name, val, (int32_t)(val * (180 / M_PI)))
 
-#define PRINT_MAT2X2(name, rot)                                                \
-	U_LOG_RAW("\t%s = {%f, %f} {%f, %f}", name, rot.v[0], rot.v[1],        \
-	          rot.v[2], rot.v[3])
+#define PRINT_MAT2X2(name, rot) U_LOG_RAW("\t%s = {%f, %f} {%f, %f}", name, rot.v[0], rot.v[1], rot.v[2], rot.v[3])
 
 /*!
  * Dump the device config to stderr.
  */
 void
-u_device_dump_config(struct xrt_device *xdev,
-                     const char *prefix,
-                     const char *prod)
+u_device_dump_config(struct xrt_device *xdev, const char *prefix, const char *prod)
 {
 	// clang-format off
 	U_LOG_RAW("%s - device_setup", prefix);
@@ -137,8 +131,7 @@ u_device_dump_config(struct xrt_device *xdev,
  */
 
 bool
-u_device_setup_split_side_by_side(struct xrt_device *xdev,
-                                  const struct u_device_simple_info *info)
+u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device_simple_info *info)
 {
 	uint32_t w_pixels = info->display.w_pixels / 2;
 	uint32_t h_pixels = info->display.h_pixels;
@@ -188,34 +181,25 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev,
 
 	{
 		/* right eye */
-		if (!math_compute_fovs(w_meters, lens_center_x_meters[1],
-		                       info->views[1].fov, h_meters,
-		                       lens_center_y_meters[1], 0,
-		                       &xdev->hmd->views[1].fov)) {
+		if (!math_compute_fovs(w_meters, lens_center_x_meters[1], info->views[1].fov, h_meters,
+		                       lens_center_y_meters[1], 0, &xdev->hmd->views[1].fov)) {
 			return false;
 		}
 	}
 	{
 		/* left eye - just mirroring right eye now */
-		xdev->hmd->views[0].fov.angle_up =
-		    xdev->hmd->views[1].fov.angle_up;
-		xdev->hmd->views[0].fov.angle_down =
-		    xdev->hmd->views[1].fov.angle_down;
+		xdev->hmd->views[0].fov.angle_up = xdev->hmd->views[1].fov.angle_up;
+		xdev->hmd->views[0].fov.angle_down = xdev->hmd->views[1].fov.angle_down;
 
-		xdev->hmd->views[0].fov.angle_left =
-		    -xdev->hmd->views[1].fov.angle_right;
-		xdev->hmd->views[0].fov.angle_right =
-		    -xdev->hmd->views[1].fov.angle_left;
+		xdev->hmd->views[0].fov.angle_left = -xdev->hmd->views[1].fov.angle_right;
+		xdev->hmd->views[0].fov.angle_right = -xdev->hmd->views[1].fov.angle_left;
 	}
 
 	return true;
 }
 
 void *
-u_device_allocate(enum u_device_alloc_flags flags,
-                  size_t size,
-                  size_t num_inputs,
-                  size_t num_outputs)
+u_device_allocate(enum u_device_alloc_flags flags, size_t size, size_t num_inputs, size_t num_outputs)
 {
 	bool alloc_hmd = (flags & U_DEVICE_ALLOC_HMD) != 0;
 	bool alloc_tracking = (flags & U_DEVICE_ALLOC_TRACKING_NONE) != 0;
@@ -262,12 +246,10 @@ u_device_allocate(enum u_device_alloc_flags flags,
 	}
 
 	if (alloc_tracking) {
-		xdev->tracking_origin =
-		    (struct xrt_tracking_origin *)(ptr + offset_tracking);
+		xdev->tracking_origin = (struct xrt_tracking_origin *)(ptr + offset_tracking);
 		xdev->tracking_origin->type = XRT_TRACKING_TYPE_NONE;
 		xdev->tracking_origin->offset.orientation.w = 1.0f;
-		snprintf(xdev->tracking_origin->name, XRT_TRACKING_NAME_LEN,
-		         "%s", "No tracking");
+		snprintf(xdev->tracking_origin->name, XRT_TRACKING_NAME_LEN, "%s", "No tracking");
 	}
 
 	return xdev;
@@ -295,8 +277,7 @@ u_device_free(struct xrt_device *xdev)
 static void
 try_move_assignment(struct xrt_device **xdevs, int *hand, int *other_hand)
 {
-	if (*hand != XRT_DEVICE_ROLE_UNASSIGNED &&
-	    xdevs[*hand]->device_type == XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER &&
+	if (*hand != XRT_DEVICE_ROLE_UNASSIGNED && xdevs[*hand]->device_type == XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER &&
 	    *other_hand == XRT_DEVICE_ROLE_UNASSIGNED) {
 
 		*other_hand = *hand;
@@ -305,11 +286,7 @@ try_move_assignment(struct xrt_device **xdevs, int *hand, int *other_hand)
 }
 
 void
-u_device_assign_xdev_roles(struct xrt_device **xdevs,
-                           size_t num_xdevs,
-                           int *head,
-                           int *left,
-                           int *right)
+u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t num_xdevs, int *head, int *left, int *right)
 {
 	*head = XRT_DEVICE_ROLE_UNASSIGNED;
 	*left = XRT_DEVICE_ROLE_UNASSIGNED;
@@ -389,38 +366,29 @@ u_device_setup_tracking_origins(struct xrt_device *head,
 		head->tracking_origin->offset.position.z = 0.0f;
 	}
 
-	if (left != NULL &&
-	    left->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
+	if (left != NULL && left->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
 		left->tracking_origin->offset.position.x = -0.2f;
 		left->tracking_origin->offset.position.y = 1.3f;
 		left->tracking_origin->offset.position.z = -0.5f;
 	}
 
-	if (right != NULL &&
-	    right->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
+	if (right != NULL && right->tracking_origin->type == XRT_TRACKING_TYPE_NONE) {
 		right->tracking_origin->offset.position.x = 0.2f;
 		right->tracking_origin->offset.position.y = 1.3f;
 		right->tracking_origin->offset.position.z = -0.5f;
 	}
 
-	struct xrt_tracking_origin *head_origin =
-	    head ? head->tracking_origin : NULL;
-	struct xrt_tracking_origin *left_origin =
-	    left ? left->tracking_origin : NULL;
-	struct xrt_tracking_origin *right_origin =
-	    right ? right->tracking_origin : NULL;
+	struct xrt_tracking_origin *head_origin = head ? head->tracking_origin : NULL;
+	struct xrt_tracking_origin *left_origin = left ? left->tracking_origin : NULL;
+	struct xrt_tracking_origin *right_origin = right ? right->tracking_origin : NULL;
 
 	if (head_origin) {
-		apply_offset(&head_origin->offset.position,
-		             global_tracking_origin_offset);
+		apply_offset(&head_origin->offset.position, global_tracking_origin_offset);
 	}
 	if (left_origin && left_origin != head_origin) {
-		apply_offset(&left->tracking_origin->offset.position,
-		             global_tracking_origin_offset);
+		apply_offset(&left->tracking_origin->offset.position, global_tracking_origin_offset);
 	}
-	if (right_origin && right_origin != head_origin &&
-	    right_origin != left_origin) {
-		apply_offset(&right->tracking_origin->offset.position,
-		             global_tracking_origin_offset);
+	if (right_origin && right_origin != head_origin && right_origin != left_origin) {
+		apply_offset(&right->tracking_origin->offset.position, global_tracking_origin_offset);
 	}
 }

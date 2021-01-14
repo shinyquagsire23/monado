@@ -46,10 +46,9 @@
 DEBUG_GET_ONCE_NUM_OPTION(ipd, "OXR_DEBUG_IPD_MM", 63)
 DEBUG_GET_ONCE_BOOL_OPTION(frame_timing_spew, "OXR_FRAME_TIMING_SPEW", false)
 
-#define CALL_CHK(call)                                                         \
-	if ((call) == XRT_ERROR_IPC_FAILURE) {                                 \
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST,                  \
-		                 "Error in function call over IPC");           \
+#define CALL_CHK(call)                                                                                                 \
+	if ((call) == XRT_ERROR_IPC_FAILURE) {                                                                         \
+		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Error in function call over IPC");                      \
 	}
 
 static bool
@@ -76,13 +75,11 @@ to_string(XrSessionState state)
 	case XR_SESSION_STATE_UNKNOWN: return "XR_SESSION_STATE_UNKNOWN";
 	case XR_SESSION_STATE_IDLE: return "XR_SESSION_STATE_IDLE";
 	case XR_SESSION_STATE_READY: return "XR_SESSION_STATE_READY";
-	case XR_SESSION_STATE_SYNCHRONIZED:
-		return "XR_SESSION_STATE_SYNCHRONIZED";
+	case XR_SESSION_STATE_SYNCHRONIZED: return "XR_SESSION_STATE_SYNCHRONIZED";
 	case XR_SESSION_STATE_VISIBLE: return "XR_SESSION_STATE_VISIBLE";
 	case XR_SESSION_STATE_FOCUSED: return "XR_SESSION_STATE_FOCUSED";
 	case XR_SESSION_STATE_STOPPING: return "XR_SESSION_STATE_STOPPING";
-	case XR_SESSION_STATE_LOSS_PENDING:
-		return "XR_SESSION_STATE_LOSS_PENDING";
+	case XR_SESSION_STATE_LOSS_PENDING: return "XR_SESSION_STATE_LOSS_PENDING";
 	case XR_SESSION_STATE_EXITING: return "XR_SESSION_STATE_EXITING";
 	case XR_SESSION_STATE_MAX_ENUM: return "XR_SESSION_STATE_MAX_ENUM";
 	default: return "";
@@ -90,9 +87,7 @@ to_string(XrSessionState state)
 }
 
 static void
-oxr_session_change_state(struct oxr_logger *log,
-                         struct oxr_session *sess,
-                         XrSessionState state)
+oxr_session_change_state(struct oxr_logger *log, struct oxr_session *sess, XrSessionState state)
 {
 	oxr_event_push_XrEventDataSessionStateChanged(log, sess, state, 0);
 	sess->state = state;
@@ -107,8 +102,7 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 {
 	struct xrt_compositor *xc = sess->compositor;
 	if (formatCountOutput == NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "(formatCountOutput == NULL) can not be null");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "(formatCountOutput == NULL) can not be null");
 	}
 	if (xc == NULL) {
 		if (formatCountOutput != NULL) {
@@ -117,39 +111,31 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 		return oxr_session_success_result(sess);
 	}
 
-	OXR_TWO_CALL_HELPER(log, formatCapacityInput, formatCountOutput,
-	                    formats, xc->info.num_formats, xc->info.formats,
-	                    oxr_session_success_result(sess));
+	OXR_TWO_CALL_HELPER(log, formatCapacityInput, formatCountOutput, formats, xc->info.num_formats,
+	                    xc->info.formats, oxr_session_success_result(sess));
 }
 
 XrResult
-oxr_session_begin(struct oxr_logger *log,
-                  struct oxr_session *sess,
-                  const XrSessionBeginInfo *beginInfo)
+oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSessionBeginInfo *beginInfo)
 {
 	if (is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_RUNNING,
-		                 "Session is already running");
+		return oxr_error(log, XR_ERROR_SESSION_RUNNING, "Session is already running");
 	}
 
 	struct xrt_compositor *xc = sess->compositor;
 	if (xc != NULL) {
-		XrViewConfigurationType view_type =
-		    beginInfo->primaryViewConfigurationType;
+		XrViewConfigurationType view_type = beginInfo->primaryViewConfigurationType;
 
 		if (view_type != sess->sys->view_config_type) {
 			/*! @todo we only support a single view config type per
 			 * system right now */
-			return oxr_error(
-			    log, XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED,
-			    "(beginInfo->primaryViewConfigurationType == "
-			    "0x%08x) view configuration type not supported",
-			    view_type);
+			return oxr_error(log, XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED,
+			                 "(beginInfo->primaryViewConfigurationType == "
+			                 "0x%08x) view configuration type not supported",
+			                 view_type);
 		}
 
-		CALL_CHK(xrt_comp_begin_session(
-		    xc, (enum xrt_view_type)
-		            beginInfo->primaryViewConfigurationType));
+		CALL_CHK(xrt_comp_begin_session(xc, (enum xrt_view_type)beginInfo->primaryViewConfigurationType));
 	}
 
 	sess->has_begun = true;
@@ -163,12 +149,10 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 	struct xrt_compositor *xc = sess->compositor;
 
 	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
-		                 "Session is not running");
+		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
 	}
 	if (sess->state != XR_SESSION_STATE_STOPPING) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_STOPPING,
-		                 "Session is not stopping");
+		return oxr_error(log, XR_ERROR_SESSION_NOT_STOPPING, "Session is not stopping");
 	}
 
 	if (xc != NULL) {
@@ -201,20 +185,17 @@ XrResult
 oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
 {
 	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
-		                 "Session is not running");
+		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
 	}
 
 	if (sess->state == XR_SESSION_STATE_FOCUSED) {
 		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
 	}
 	if (sess->state == XR_SESSION_STATE_VISIBLE) {
-		oxr_session_change_state(log, sess,
-		                         XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
 	}
 	if (!sess->has_ended_once) {
-		oxr_session_change_state(log, sess,
-		                         XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
 		// Fake the synchronization.
 		sess->has_ended_once = true;
 	}
@@ -249,20 +230,17 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 			sess->compositor_focused = xce.state.focused;
 			break;
 		case XRT_COMPOSITOR_EVENT_OVERLAY_CHANGE:
-			oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(
-			    log, sess, xce.overlay.visible);
+			oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(log, sess, xce.overlay.visible);
 			break;
 		default: U_LOG_W("unhandled event type! %d", xce.type); break;
 		}
 	}
 
-	if (sess->state == XR_SESSION_STATE_SYNCHRONIZED &&
-	    sess->compositor_visible) {
+	if (sess->state == XR_SESSION_STATE_SYNCHRONIZED && sess->compositor_visible) {
 		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
 	}
 
-	if (sess->state == XR_SESSION_STATE_VISIBLE &&
-	    sess->compositor_focused) {
+	if (sess->state == XR_SESSION_STATE_VISIBLE && sess->compositor_focused) {
 		oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED);
 	}
 }
@@ -287,39 +265,32 @@ oxr_session_get_view_relation_at(struct oxr_logger *log,
 
 	// Applies the offset in the function.
 	struct xrt_space_graph xsg = {0};
-	oxr_xdev_get_space_graph(log, sess->sys->inst, xdev,
-	                         XRT_INPUT_GENERIC_HEAD_POSE, at_time, &xsg);
+	oxr_xdev_get_space_graph(log, sess->sys->inst, xdev, XRT_INPUT_GENERIC_HEAD_POSE, at_time, &xsg);
 	m_space_graph_resolve(&xsg, out_relation);
 
 	return oxr_session_success_result(sess);
 }
 
 void
-print_view_fov(struct oxr_session *sess,
-               uint32_t index,
-               const struct xrt_fov *fov)
+print_view_fov(struct oxr_session *sess, uint32_t index, const struct xrt_fov *fov)
 {
 	if (!sess->sys->inst->debug_views) {
 		return;
 	}
 
-	U_LOG_D("views[%i].fov = {%f, %f, %f, %f}", index, fov->angle_left,
-	        fov->angle_right, fov->angle_up, fov->angle_down);
+	U_LOG_D("views[%i].fov = {%f, %f, %f, %f}", index, fov->angle_left, fov->angle_right, fov->angle_up,
+	        fov->angle_down);
 }
 
 void
-print_view_pose(struct oxr_session *sess,
-                uint32_t index,
-                const struct xrt_pose *pose)
+print_view_pose(struct oxr_session *sess, uint32_t index, const struct xrt_pose *pose)
 {
 	if (!sess->sys->inst->debug_views) {
 		return;
 	}
 
-	U_LOG_D("views[%i].pose = {{%f, %f, %f, %f}, {%f, %f, %f}}", index,
-	        pose->orientation.x, pose->orientation.y, pose->orientation.z,
-	        pose->orientation.w, pose->position.x, pose->position.y,
-	        pose->position.z);
+	U_LOG_D("views[%i].pose = {{%f, %f, %f, %f}, {%f, %f, %f}}", index, pose->orientation.x, pose->orientation.y,
+	        pose->orientation.z, pose->orientation.w, pose->position.x, pose->position.y, pose->position.z);
 }
 
 static inline XrViewStateFlags
@@ -351,8 +322,7 @@ oxr_session_views(struct oxr_logger *log,
                   XrView *views)
 {
 	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
-	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_space *, viewLocateInfo->space);
+	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, viewLocateInfo->space);
 	uint32_t num_views = 2;
 
 	// Does this apply for all calls?
@@ -369,21 +339,18 @@ oxr_session_views(struct oxr_logger *log,
 		return oxr_session_success_result(sess);
 	}
 	if (viewCapacityInput < num_views) {
-		return oxr_error(log, XR_ERROR_SIZE_INSUFFICIENT,
-		                 "(viewCapacityInput == %u) need %u",
+		return oxr_error(log, XR_ERROR_SIZE_INSUFFICIENT, "(viewCapacityInput == %u) need %u",
 		                 viewCapacityInput, num_views);
 	}
 	// End two call handling.
 
 	if (sess->sys->inst->debug_views) {
-		U_LOG_D("viewLocateInfo->displayTime %" PRIu64,
-		        viewLocateInfo->displayTime);
+		U_LOG_D("viewLocateInfo->displayTime %" PRIu64, viewLocateInfo->displayTime);
 	}
 
 	// Get the viewLocateInfo->space to view space relation.
 	struct xrt_space_relation pure_relation;
-	oxr_space_ref_relation(log, sess, XR_REFERENCE_SPACE_TYPE_VIEW,
-	                       baseSpc->type, viewLocateInfo->displayTime,
+	oxr_space_ref_relation(log, sess, XR_REFERENCE_SPACE_TYPE_VIEW, baseSpc->type, viewLocateInfo->displayTime,
 	                       &pure_relation);
 
 	// @todo the fov information that we get from xdev->hmd->views[i].fov is
@@ -427,29 +394,24 @@ oxr_session_views(struct oxr_logger *log,
 		views[i].fov = safe_copy_fov.oxr;
 
 		struct xrt_pose *pose = (struct xrt_pose *)&views[i].pose;
-		if ((result.relation_flags &
-		     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0 &&
+		if ((result.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0 &&
 		    !math_quat_ensure_normalized(&pose->orientation)) {
 			struct xrt_quat *q = &pose->orientation;
 			struct xrt_quat norm = *q;
 			math_quat_normalize(&norm);
-			return oxr_error(
-			    log, XR_ERROR_RUNTIME_FAILURE,
-			    "Quaternion %a %a %a %a (normalized %a %a %a %a) "
-			    "in xrLocateViews was invalid",
-			    q->x, q->y, q->z, q->w, norm.x, norm.y, norm.z,
-			    norm.w);
+			return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+			                 "Quaternion %a %a %a %a (normalized %a %a %a %a) "
+			                 "in xrLocateViews was invalid",
+			                 q->x, q->y, q->z, q->w, norm.x, norm.y, norm.z, norm.w);
 		}
 
 		print_view_fov(sess, i, (struct xrt_fov *)&views[i].fov);
 		print_view_pose(sess, i, (struct xrt_pose *)&views[i].pose);
 
 		if (i == 0) {
-			viewState->viewStateFlags =
-			    xrt_to_view_state_flags(result.relation_flags);
+			viewState->viewStateFlags = xrt_to_view_state_flags(result.relation_flags);
 		} else {
-			viewState->viewStateFlags &=
-			    xrt_to_view_state_flags(result.relation_flags);
+			viewState->viewStateFlags &= xrt_to_view_state_flags(result.relation_flags);
 		}
 	}
 
@@ -467,26 +429,21 @@ static double
 ts_ms(struct oxr_session *sess)
 {
 	timepoint_ns now = time_state_get_now(sess->sys->inst->timekeeping);
-	int64_t monotonic =
-	    time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, now);
+	int64_t monotonic = time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, now);
 	return ns_to_ms(monotonic);
 }
 
 XrResult
-oxr_session_frame_wait(struct oxr_logger *log,
-                       struct oxr_session *sess,
-                       XrFrameState *frameState)
+oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrameState *frameState)
 {
 	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
-		                 "Session is not running");
+		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
 	}
 
 
 	//! @todo this should be carefully synchronized, because there may be
 	//! more than one session per instance.
-	XRT_MAYBE_UNUSED timepoint_ns now =
-	    time_state_get_now_and_update(sess->sys->inst->timekeeping);
+	XRT_MAYBE_UNUSED timepoint_ns now = time_state_get_now_and_update(sess->sys->inst->timekeeping);
 
 	struct xrt_compositor *xc = sess->compositor;
 	if (xc == NULL) {
@@ -507,33 +464,26 @@ oxr_session_frame_wait(struct oxr_logger *log,
 	os_semaphore_wait(&sess->sem, 0);
 
 	if (sess->frame_timing_spew) {
-		oxr_log(log,
-		        "Finished waiting for previous frame begin at %8.3fms",
-		        ts_ms(sess));
+		oxr_log(log, "Finished waiting for previous frame begin at %8.3fms", ts_ms(sess));
 	}
 
 	uint64_t predicted_display_time;
 	uint64_t predicted_display_period;
-	CALL_CHK(xrt_comp_wait_frame(xc, &sess->frame_id.waited,
-	                             &predicted_display_time,
-	                             &predicted_display_period));
+	CALL_CHK(xrt_comp_wait_frame(xc, &sess->frame_id.waited, &predicted_display_time, &predicted_display_period));
 
 	if ((int64_t)predicted_display_time <= 0) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Got a negative display time '%" PRIi64 "'",
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got a negative display time '%" PRIi64 "'",
 		                 (int64_t)predicted_display_time);
 	}
 
 	frameState->shouldRender = should_render(sess->state);
 	frameState->predictedDisplayPeriod = predicted_display_period;
-	frameState->predictedDisplayTime = time_state_monotonic_to_ts_ns(
-	    sess->sys->inst->timekeeping, predicted_display_time);
+	frameState->predictedDisplayTime =
+	    time_state_monotonic_to_ts_ns(sess->sys->inst->timekeeping, predicted_display_time);
 
 	if (frameState->predictedDisplayTime <= 0) {
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "Time_state_monotonic_to_ts_ns returned '%" PRIi64 "'",
-		    frameState->predictedDisplayTime);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Time_state_monotonic_to_ts_ns returned '%" PRIi64 "'",
+		                 frameState->predictedDisplayTime);
 	}
 
 	if (sess->frame_timing_spew) {
@@ -541,8 +491,7 @@ oxr_session_frame_wait(struct oxr_logger *log,
 		        "Waiting finished at %8.3fms. Predicted display time "
 		        "%8.3fms, "
 		        "period %8.3fms",
-		        ts_ms(sess), ns_to_ms(predicted_display_time),
-		        ns_to_ms(predicted_display_period));
+		        ts_ms(sess), ns_to_ms(predicted_display_time), ns_to_ms(predicted_display_period));
 	}
 
 	return oxr_session_success_result(sess);
@@ -552,8 +501,7 @@ XrResult
 oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 {
 	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
-		                 "Session is not running");
+		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
 	}
 
 	struct xrt_compositor *xc = sess->compositor;
@@ -564,23 +512,20 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 
 	XrResult ret;
 	if (active_wait_frames == 0) {
-		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID,
-		                 "xrBeginFrame without xrWaitFrame");
+		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "xrBeginFrame without xrWaitFrame");
 	}
 
 	if (sess->frame_started) {
 		// max 2 xrWaitFrame can be in flight so a second xrBeginFrame
 		// is only valid if we have a second xrWaitFrame in flight
 		if (active_wait_frames != 2) {
-			return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID,
-			                 "xrBeginFrame without xrWaitFrame");
+			return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "xrBeginFrame without xrWaitFrame");
 		}
 
 
 		ret = XR_FRAME_DISCARDED;
 		if (xc != NULL) {
-			CALL_CHK(
-			    xrt_comp_discard_frame(xc, sess->frame_id.begun));
+			CALL_CHK(xrt_comp_discard_frame(xc, sess->frame_id.begun));
 			sess->frame_id.begun = -1;
 
 			os_mutex_lock(&sess->active_wait_frames_lock);
@@ -619,11 +564,10 @@ static XrResult
 verify_space(struct oxr_logger *log, uint32_t layer_index, XrSpace space)
 {
 	if (space == XR_NULL_HANDLE) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "(frameEndInfo->layers[%u]->space == "
-		    "XR_NULL_HANDLE) XrSpace must not be XR_NULL_HANDLE",
-		    layer_index);
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->space == "
+		                 "XR_NULL_HANDLE) XrSpace must not be XR_NULL_HANDLE",
+		                 layer_index);
 	}
 
 	return XR_SUCCESS;
@@ -662,8 +606,7 @@ verify_quad_layer(struct xrt_compositor *xc,
                   struct xrt_device *head,
                   uint64_t timestamp)
 {
-	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_swapchain *, quad->subImage.swapchain);
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, quad->subImage.swapchain);
 
 	if (sc == NULL) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
@@ -694,13 +637,11 @@ verify_quad_layer(struct xrt_compositor *xc,
 	}
 
 	if (sc->num_array_layers <= quad->subImage.imageArrayIndex) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "(frameEndInfo->layers[%u]->subImage.imageArrayIndex == "
-		    "%u) Invalid swapchain array "
-		    "index for quad layer (%u).",
-		    layer_index, quad->subImage.imageArrayIndex,
-		    sc->num_array_layers);
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.imageArrayIndex == "
+		                 "%u) Invalid swapchain array "
+		                 "index for quad layer (%u).",
+		                 layer_index, quad->subImage.imageArrayIndex, sc->num_array_layers);
 	}
 
 	if (!sc->released.yes) {
@@ -711,32 +652,26 @@ verify_quad_layer(struct xrt_compositor *xc,
 	}
 
 	if (sc->released.index >= (int)sc->swapchain->num_images) {
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
-		    "image index out of bounds",
-		    layer_index);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
+		                 "image index out of bounds",
+		                 layer_index);
 	}
 
 	if (is_rect_neg(&quad->subImage.imageRect)) {
-		return oxr_error(
-		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		    "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
-		    "{%i, %i}) has negative component(s)",
-		    layer_index, quad->subImage.imageRect.offset.x,
-		    quad->subImage.imageRect.offset.y);
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
+		                 "{%i, %i}) has negative component(s)",
+		                 layer_index, quad->subImage.imageRect.offset.x, quad->subImage.imageRect.offset.y);
 	}
 
 	if (is_rect_out_of_bounds(&quad->subImage.imageRect, sc)) {
-		return oxr_error(
-		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		    "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
-		    "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
-		    layer_index, quad->subImage.imageRect.offset.x,
-		    quad->subImage.imageRect.offset.y,
-		    quad->subImage.imageRect.extent.width,
-		    quad->subImage.imageRect.extent.height, sc->width,
-		    sc->height);
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
+		                 "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
+		                 layer_index, quad->subImage.imageRect.offset.x, quad->subImage.imageRect.offset.y,
+		                 quad->subImage.imageRect.extent.width, quad->subImage.imageRect.extent.height,
+		                 sc->width, sc->height);
 	}
 
 	return XR_SUCCESS;
@@ -757,8 +692,7 @@ verify_depth_layer(struct xrt_compositor *xc,
 		                 layer_index, i);
 	}
 
-	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_swapchain *, depth->subImage.swapchain);
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, depth->subImage.swapchain);
 
 	if (!sc->released.yes) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
@@ -769,23 +703,20 @@ verify_depth_layer(struct xrt_compositor *xc,
 	}
 
 	if (sc->released.index >= (int)sc->swapchain->num_images) {
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "(frameEndInfo->layers[%u]->views[%i]->next<"
-		    "XrCompositionLayerDepthInfoKHR>.subImage."
-		    "swapchain) internal image index out of bounds",
-		    layer_index, i);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
+		                 "XrCompositionLayerDepthInfoKHR>.subImage."
+		                 "swapchain) internal image index out of bounds",
+		                 layer_index, i);
 	}
 
 	if (sc->num_array_layers <= depth->subImage.imageArrayIndex) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "(frameEndInfo->layers[%u]->views[%i]->next<"
-		    "XrCompositionLayerDepthInfoKHR>.subImage."
-		    "imageArrayIndex == %u) Invalid swapchain array "
-		    "index for projection layer (%u).",
-		    layer_index, i, depth->subImage.imageArrayIndex,
-		    sc->num_array_layers);
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
+		                 "XrCompositionLayerDepthInfoKHR>.subImage."
+		                 "imageArrayIndex == %u) Invalid swapchain array "
+		                 "index for projection layer (%u).",
+		                 layer_index, i, depth->subImage.imageArrayIndex, sc->num_array_layers);
 	}
 
 	if (is_rect_neg(&depth->subImage.imageRect)) {
@@ -794,23 +725,19 @@ verify_depth_layer(struct xrt_compositor *xc,
 		                 "XrCompositionLayerDepthInfoKHR>.subImage."
 		                 "imageRect.offset == {%i, "
 		                 "%i}) has negative component(s)",
-		                 layer_index, i,
-		                 depth->subImage.imageRect.offset.x,
+		                 layer_index, i, depth->subImage.imageRect.offset.x,
 		                 depth->subImage.imageRect.offset.y);
 	}
 
 	if (is_rect_out_of_bounds(&depth->subImage.imageRect, sc)) {
-		return oxr_error(
-		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		    "(frameEndInfo->layers[%u]->views[%i]->next<"
-		    "XrCompositionLayerDepthInfoKHR>.subImage."
-		    "imageRect == {{%i, %i}, {%u, %u}}) imageRect out "
-		    "of image bounds (%u, %u)",
-		    layer_index, i, depth->subImage.imageRect.offset.x,
-		    depth->subImage.imageRect.offset.y,
-		    depth->subImage.imageRect.extent.width,
-		    depth->subImage.imageRect.extent.height, sc->width,
-		    sc->height);
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
+		                 "XrCompositionLayerDepthInfoKHR>.subImage."
+		                 "imageRect == {{%i, %i}, {%u, %u}}) imageRect out "
+		                 "of image bounds (%u, %u)",
+		                 layer_index, i, depth->subImage.imageRect.offset.x, depth->subImage.imageRect.offset.y,
+		                 depth->subImage.imageRect.extent.width, depth->subImage.imageRect.extent.height,
+		                 sc->width, sc->height);
 	}
 
 	if (depth->minDepth < 0.0f || depth->minDepth > 1.0f) {
@@ -834,8 +761,7 @@ verify_depth_layer(struct xrt_compositor *xc,
 		                 "(frameEndInfo->layers[%u]->views[%i]->next<"
 		                 "XrCompositionLayerDepthInfoKHR>.minDepth) %f "
 		                 "must be <= maxDepth %f ",
-		                 layer_index, i, depth->minDepth,
-		                 depth->maxDepth);
+		                 layer_index, i, depth->minDepth, depth->maxDepth);
 	}
 
 	if (depth->nearZ == depth->farZ) {
@@ -864,11 +790,10 @@ verify_projection_layer(struct xrt_compositor *xc,
 	}
 
 	if (proj->viewCount != 2) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "(frameEndInfo->layers[%u]->viewCount == %u) must be 2 for "
-		    "projection layers and the current view configuration",
-		    layer_index, proj->viewCount);
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->viewCount == %u) must be 2 for "
+		                 "projection layers and the current view configuration",
+		                 layer_index, proj->viewCount);
 	}
 
 	// number of depth layers must be 0 or proj->viewCount
@@ -879,61 +804,51 @@ verify_projection_layer(struct xrt_compositor *xc,
 		const XrCompositionLayerProjectionView *view = &proj->views[i];
 
 		//! @todo More validation?
-		if (!math_quat_validate(
-		        (struct xrt_quat *)&view->pose.orientation)) {
+		if (!math_quat_validate((struct xrt_quat *)&view->pose.orientation)) {
 			const XrQuaternionf *q = &view->pose.orientation;
-			return oxr_error(
-			    log, XR_ERROR_POSE_INVALID,
-			    "(frameEndInfo->layers[%u]->views[%i]->pose."
-			    "orientation == {%f %f %f %f}) is not a valid quat",
-			    layer_index, i, q->x, q->y, q->z, q->w);
+			return oxr_error(log, XR_ERROR_POSE_INVALID,
+			                 "(frameEndInfo->layers[%u]->views[%i]->pose."
+			                 "orientation == {%f %f %f %f}) is not a valid quat",
+			                 layer_index, i, q->x, q->y, q->z, q->w);
 		}
 
-		if (!math_vec3_validate(
-		        (struct xrt_vec3 *)&view->pose.position)) {
+		if (!math_vec3_validate((struct xrt_vec3 *)&view->pose.position)) {
 			const XrVector3f *p = &view->pose.position;
-			return oxr_error(
-			    log, XR_ERROR_POSE_INVALID,
-			    "(frameEndInfo->layers[%u]->views[%i]->pose."
-			    "position == {%f %f %f}) is not valid",
-			    layer_index, i, p->x, p->y, p->z);
+			return oxr_error(log, XR_ERROR_POSE_INVALID,
+			                 "(frameEndInfo->layers[%u]->views[%i]->pose."
+			                 "position == {%f %f %f}) is not valid",
+			                 layer_index, i, p->x, p->y, p->z);
 		}
 
 		if (view->subImage.swapchain == XR_NULL_HANDLE) {
-			return oxr_error(
-			    log, XR_ERROR_HANDLE_INVALID,
-			    "(frameEndInfo->layers[%u]->views[%i]->subImage."
-			    "swapchain is XR_NULL_HANDLE",
-			    layer_index, i);
+			return oxr_error(log, XR_ERROR_HANDLE_INVALID,
+			                 "(frameEndInfo->layers[%u]->views[%i]->subImage."
+			                 "swapchain is XR_NULL_HANDLE",
+			                 layer_index, i);
 		}
 
-		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-		    struct oxr_swapchain *, view->subImage.swapchain);
+		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, view->subImage.swapchain);
 
 		if (!sc->released.yes) {
-			return oxr_error(
-			    log, XR_ERROR_LAYER_INVALID,
-			    "(frameEndInfo->layers[%u]->views[%i].subImage."
-			    "swapchain) swapchain has not been released",
-			    layer_index, i);
+			return oxr_error(log, XR_ERROR_LAYER_INVALID,
+			                 "(frameEndInfo->layers[%u]->views[%i].subImage."
+			                 "swapchain) swapchain has not been released",
+			                 layer_index, i);
 		}
 
 		if (sc->released.index >= (int)sc->swapchain->num_images) {
-			return oxr_error(
-			    log, XR_ERROR_RUNTIME_FAILURE,
-			    "(frameEndInfo->layers[%u]->views[%i].subImage."
-			    "swapchain) internal image index out of bounds",
-			    layer_index, i);
+			return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+			                 "(frameEndInfo->layers[%u]->views[%i].subImage."
+			                 "swapchain) internal image index out of bounds",
+			                 layer_index, i);
 		}
 
 		if (sc->num_array_layers <= view->subImage.imageArrayIndex) {
-			return oxr_error(
-			    log, XR_ERROR_VALIDATION_FAILURE,
-			    "(frameEndInfo->layers[%u]->views[%i]->subImage."
-			    "imageArrayIndex == %u) Invalid swapchain array "
-			    "index for projection layer (%u).",
-			    layer_index, i, view->subImage.imageArrayIndex,
-			    sc->num_array_layers);
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+			                 "(frameEndInfo->layers[%u]->views[%i]->subImage."
+			                 "imageArrayIndex == %u) Invalid swapchain array "
+			                 "index for projection layer (%u).",
+			                 layer_index, i, view->subImage.imageArrayIndex, sc->num_array_layers);
 		}
 
 		if (is_rect_neg(&view->subImage.imageRect)) {
@@ -941,33 +856,26 @@ verify_projection_layer(struct xrt_compositor *xc,
 			                 "(frameEndInfo->layers[%u]->views[%i]-"
 			                 ">subImage.imageRect.offset == {%i, "
 			                 "%i}) has negative component(s)",
-			                 layer_index, i,
-			                 view->subImage.imageRect.offset.x,
+			                 layer_index, i, view->subImage.imageRect.offset.x,
 			                 view->subImage.imageRect.offset.y);
 		}
 
 		if (is_rect_out_of_bounds(&view->subImage.imageRect, sc)) {
-			return oxr_error(
-			    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-			    "(frameEndInfo->layers[%u]->views[%i]->subImage."
-			    "imageRect == {{%i, %i}, {%u, %u}}) imageRect out "
-			    "of image bounds (%u, %u)",
-			    layer_index, i, view->subImage.imageRect.offset.x,
-			    view->subImage.imageRect.offset.y,
-			    view->subImage.imageRect.extent.width,
-			    view->subImage.imageRect.extent.height, sc->width,
-			    sc->height);
+			return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+			                 "(frameEndInfo->layers[%u]->views[%i]->subImage."
+			                 "imageRect == {{%i, %i}, {%u, %u}}) imageRect out "
+			                 "of image bounds (%u, %u)",
+			                 layer_index, i, view->subImage.imageRect.offset.x,
+			                 view->subImage.imageRect.offset.y, view->subImage.imageRect.extent.width,
+			                 view->subImage.imageRect.extent.height, sc->width, sc->height);
 		}
 
 #ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
-		const XrCompositionLayerDepthInfoKHR *depth_info =
-		    OXR_GET_INPUT_FROM_CHAIN(
-		        view, XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
-		        XrCompositionLayerDepthInfoKHR);
+		const XrCompositionLayerDepthInfoKHR *depth_info = OXR_GET_INPUT_FROM_CHAIN(
+		    view, XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR, XrCompositionLayerDepthInfoKHR);
 
 		if (depth_info) {
-			ret = verify_depth_layer(xc, log, layer_index, i,
-			                         depth_info);
+			ret = verify_depth_layer(xc, log, layer_index, i, depth_info);
 			if (ret != XR_SUCCESS) {
 				return ret;
 			}
@@ -978,11 +886,10 @@ verify_projection_layer(struct xrt_compositor *xc,
 
 #ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
 	if (num_depth_layers > 0 && num_depth_layers != proj->viewCount) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "(frameEndInfo->layers[%u] projection layer must have %u "
-		    "depth layers or none, but has: %u)",
-		    layer_index, proj->viewCount, num_depth_layers);
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u] projection layer must have %u "
+		                 "depth layers or none, but has: %u)",
+		                 layer_index, proj->viewCount, num_depth_layers);
 	}
 #endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
 
@@ -1003,8 +910,7 @@ verify_cube_layer(struct xrt_compositor *xc,
 	                 "XrCompositionLayerCubeKHR not supported",
 	                 layer_index);
 #else
-	struct oxr_swapchain *sc =
-	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, cube->swapchain);
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, cube->swapchain);
 
 	if (sc == NULL) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
@@ -1027,11 +933,10 @@ verify_cube_layer(struct xrt_compositor *xc,
 	}
 
 	if (sc->num_array_layers <= cube->imageArrayIndex) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "(frameEndInfo->layers[%u]->imageArrayIndex == %u) Invalid "
-		    "swapchain array index for cube layer (%u).",
-		    layer_index, cube->imageArrayIndex, sc->num_array_layers);
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->imageArrayIndex == %u) Invalid "
+		                 "swapchain array index for cube layer (%u).",
+		                 layer_index, cube->imageArrayIndex, sc->num_array_layers);
 	}
 
 	if (!sc->released.yes) {
@@ -1042,11 +947,10 @@ verify_cube_layer(struct xrt_compositor *xc,
 	}
 
 	if (sc->released.index >= (int)sc->swapchain->num_images) {
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
-		    "image index out of bounds",
-		    layer_index);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
+		                 "image index out of bounds",
+		                 layer_index);
 	}
 
 	return XR_SUCCESS;
@@ -1067,8 +971,7 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 	                 "XrCompositionLayerCylinderKHR not supported",
 	                 layer_index);
 #else
-	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_swapchain *, cylinder->subImage.swapchain);
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, cylinder->subImage.swapchain);
 
 	if (sc == NULL) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
@@ -1082,8 +985,7 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 		return ret;
 	}
 
-	if (!math_quat_validate(
-	        (struct xrt_quat *)&cylinder->pose.orientation)) {
+	if (!math_quat_validate((struct xrt_quat *)&cylinder->pose.orientation)) {
 		const XrQuaternionf *q = &cylinder->pose.orientation;
 		return oxr_error(log, XR_ERROR_POSE_INVALID,
 		                 "(frameEndInfo->layers[%u]->pose.orientation "
@@ -1104,9 +1006,7 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 		                 "(frameEndInfo->layers[%u]->subImage."
 		                 "imageArrayIndex == %u) Invalid swapchain "
 		                 "array index for cylinder layer (%u).",
-		                 layer_index,
-		                 cylinder->subImage.imageArrayIndex,
-		                 sc->num_array_layers);
+		                 layer_index, cylinder->subImage.imageArrayIndex, sc->num_array_layers);
 	}
 
 	if (!sc->released.yes) {
@@ -1117,32 +1017,27 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 	}
 
 	if (sc->released.index >= (int)sc->swapchain->num_images) {
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
-		    "image index out of bounds",
-		    layer_index);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
+		                 "image index out of bounds",
+		                 layer_index);
 	}
 
 	if (is_rect_neg(&cylinder->subImage.imageRect)) {
-		return oxr_error(
-		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		    "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
-		    "{%i, %i}) has negative component(s)",
-		    layer_index, cylinder->subImage.imageRect.offset.x,
-		    cylinder->subImage.imageRect.offset.y);
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
+		                 "{%i, %i}) has negative component(s)",
+		                 layer_index, cylinder->subImage.imageRect.offset.x,
+		                 cylinder->subImage.imageRect.offset.y);
 	}
 
 	if (is_rect_out_of_bounds(&cylinder->subImage.imageRect, sc)) {
-		return oxr_error(
-		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		    "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
-		    "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
-		    layer_index, cylinder->subImage.imageRect.offset.x,
-		    cylinder->subImage.imageRect.offset.y,
-		    cylinder->subImage.imageRect.extent.width,
-		    cylinder->subImage.imageRect.extent.height, sc->width,
-		    sc->height);
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
+		                 "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
+		                 layer_index, cylinder->subImage.imageRect.offset.x,
+		                 cylinder->subImage.imageRect.offset.y, cylinder->subImage.imageRect.extent.width,
+		                 cylinder->subImage.imageRect.extent.height, sc->width, sc->height);
 	}
 
 	if (cylinder->radius < 0.f) {
@@ -1152,8 +1047,7 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 		                 layer_index, cylinder->radius);
 	}
 
-	if (cylinder->centralAngle < 0.f ||
-	    cylinder->centralAngle > (M_PI * 2)) {
+	if (cylinder->centralAngle < 0.f || cylinder->centralAngle > (M_PI * 2)) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(frameEndInfo->layers[%u]->centralAngle == "
 		                 "%f) centralAngle out of bounds",
@@ -1185,8 +1079,7 @@ verify_equirect1_layer(struct xrt_compositor *xc,
 	                 "XrCompositionLayerEquirectKHR not supported",
 	                 layer_index);
 #else
-	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_swapchain *, equirect->subImage.swapchain);
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, equirect->subImage.swapchain);
 
 	if (sc == NULL) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
@@ -1200,8 +1093,7 @@ verify_equirect1_layer(struct xrt_compositor *xc,
 		return ret;
 	}
 
-	if (!math_quat_validate(
-	        (struct xrt_quat *)&equirect->pose.orientation)) {
+	if (!math_quat_validate((struct xrt_quat *)&equirect->pose.orientation)) {
 		const XrQuaternionf *q = &equirect->pose.orientation;
 		return oxr_error(log, XR_ERROR_POSE_INVALID,
 		                 "(frameEndInfo->layers[%u]->pose.orientation "
@@ -1222,9 +1114,7 @@ verify_equirect1_layer(struct xrt_compositor *xc,
 		                 "(frameEndInfo->layers[%u]->subImage."
 		                 "imageArrayIndex == %u) Invalid swapchain "
 		                 "array index for equirect layer (%u).",
-		                 layer_index,
-		                 equirect->subImage.imageArrayIndex,
-		                 sc->num_array_layers);
+		                 layer_index, equirect->subImage.imageArrayIndex, sc->num_array_layers);
 	}
 
 	if (!sc->released.yes) {
@@ -1235,32 +1125,27 @@ verify_equirect1_layer(struct xrt_compositor *xc,
 	}
 
 	if (sc->released.index >= (int)sc->swapchain->num_images) {
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
-		    "image index out of bounds",
-		    layer_index);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
+		                 "image index out of bounds",
+		                 layer_index);
 	}
 
 	if (is_rect_neg(&equirect->subImage.imageRect)) {
-		return oxr_error(
-		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		    "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
-		    "{%i, %i}) has negative component(s)",
-		    layer_index, equirect->subImage.imageRect.offset.x,
-		    equirect->subImage.imageRect.offset.y);
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
+		                 "{%i, %i}) has negative component(s)",
+		                 layer_index, equirect->subImage.imageRect.offset.x,
+		                 equirect->subImage.imageRect.offset.y);
 	}
 
 	if (is_rect_out_of_bounds(&equirect->subImage.imageRect, sc)) {
-		return oxr_error(
-		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		    "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
-		    "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
-		    layer_index, equirect->subImage.imageRect.offset.x,
-		    equirect->subImage.imageRect.offset.y,
-		    equirect->subImage.imageRect.extent.width,
-		    equirect->subImage.imageRect.extent.height, sc->width,
-		    sc->height);
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
+		                 "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
+		                 layer_index, equirect->subImage.imageRect.offset.x,
+		                 equirect->subImage.imageRect.offset.y, equirect->subImage.imageRect.extent.width,
+		                 equirect->subImage.imageRect.extent.height, sc->width, sc->height);
 	}
 
 	if (equirect->radius < .0f) {
@@ -1288,8 +1173,7 @@ verify_equirect2_layer(struct xrt_compositor *xc,
 	                 "XrCompositionLayerEquirect2KHR not supported",
 	                 layer_index);
 #else
-	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_swapchain *, equirect->subImage.swapchain);
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, equirect->subImage.swapchain);
 
 	if (sc == NULL) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
@@ -1303,8 +1187,7 @@ verify_equirect2_layer(struct xrt_compositor *xc,
 		return ret;
 	}
 
-	if (!math_quat_validate(
-	        (struct xrt_quat *)&equirect->pose.orientation)) {
+	if (!math_quat_validate((struct xrt_quat *)&equirect->pose.orientation)) {
 		const XrQuaternionf *q = &equirect->pose.orientation;
 		return oxr_error(log, XR_ERROR_POSE_INVALID,
 		                 "(frameEndInfo->layers[%u]->pose.orientation "
@@ -1325,9 +1208,7 @@ verify_equirect2_layer(struct xrt_compositor *xc,
 		                 "(frameEndInfo->layers[%u]->subImage."
 		                 "imageArrayIndex == %u) Invalid swapchain "
 		                 "array index for equirect layer (%u).",
-		                 layer_index,
-		                 equirect->subImage.imageArrayIndex,
-		                 sc->num_array_layers);
+		                 layer_index, equirect->subImage.imageArrayIndex, sc->num_array_layers);
 	}
 
 	if (!sc->released.yes) {
@@ -1338,40 +1219,34 @@ verify_equirect2_layer(struct xrt_compositor *xc,
 	}
 
 	if (sc->released.index >= (int)sc->swapchain->num_images) {
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
-		    "image index out of bounds",
-		    layer_index);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) internal "
+		                 "image index out of bounds",
+		                 layer_index);
 	}
 
 	if (is_rect_neg(&equirect->subImage.imageRect)) {
-		return oxr_error(
-		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		    "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
-		    "{%i, %i}) has negative component(s)",
-		    layer_index, equirect->subImage.imageRect.offset.x,
-		    equirect->subImage.imageRect.offset.y);
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage.imageRect.offset == "
+		                 "{%i, %i}) has negative component(s)",
+		                 layer_index, equirect->subImage.imageRect.offset.x,
+		                 equirect->subImage.imageRect.offset.y);
 	}
 
 	if (is_rect_out_of_bounds(&equirect->subImage.imageRect, sc)) {
-		return oxr_error(
-		    log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
-		    "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
-		    "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
-		    layer_index, equirect->subImage.imageRect.offset.x,
-		    equirect->subImage.imageRect.offset.y,
-		    equirect->subImage.imageRect.extent.width,
-		    equirect->subImage.imageRect.extent.height, sc->width,
-		    sc->height);
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
+		                 "(frameEndInfo->layers[%u]->subImage.imageRect == {{%i, "
+		                 "%i}, {%u, %u}}) imageRect out of image bounds (%u, %u)",
+		                 layer_index, equirect->subImage.imageRect.offset.x,
+		                 equirect->subImage.imageRect.offset.y, equirect->subImage.imageRect.extent.width,
+		                 equirect->subImage.imageRect.extent.height, sc->width, sc->height);
 	}
 
 	if (equirect->centralHorizontalAngle < .0f) {
-		return oxr_error(
-		    log, XR_ERROR_VALIDATION_FAILURE,
-		    "(frameEndInfo->layers[%u]->centralHorizontalAngle == %f) "
-		    "centralHorizontalAngle out of bounds",
-		    layer_index, equirect->centralHorizontalAngle);
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->centralHorizontalAngle == %f) "
+		                 "centralHorizontalAngle out of bounds",
+		                 layer_index, equirect->centralHorizontalAngle);
 	}
 
 	/*
@@ -1447,8 +1322,7 @@ handle_space(struct oxr_logger *log,
 			if (!initial_head_relation_valid(sess)) {
 				return false;
 			}
-			math_pose_transform(&sess->initial_head_relation.pose,
-			                    &pose, &pose);
+			math_pose_transform(&sess->initial_head_relation.pose, &pose, &pose);
 		}
 
 	} else {
@@ -1456,8 +1330,7 @@ handle_space(struct oxr_logger *log,
 
 		struct oxr_action_input *input = NULL;
 
-		oxr_action_get_pose_input(log, sess, spc->act_key,
-		                          &spc->sub_paths, &input);
+		oxr_action_get_pose_input(log, sess, spc->act_key, &spc->sub_paths, &input);
 
 		// If the input isn't active.
 		if (input == NULL) {
@@ -1468,8 +1341,7 @@ handle_space(struct oxr_logger *log,
 
 		struct xrt_space_relation out_relation;
 
-		oxr_xdev_get_space_relation(log, sess->sys->inst, input->xdev,
-		                            input->input->name, timestamp,
+		oxr_xdev_get_space_relation(log, sess->sys->inst, input->xdev, input->input->name, timestamp,
 		                            &out_relation);
 
 		struct xrt_pose device_pose = out_relation.pose;
@@ -1498,19 +1370,15 @@ submit_quad_layer(struct oxr_session *sess,
                   struct xrt_pose *inv_offset,
                   uint64_t timestamp)
 {
-	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_swapchain *, quad->subImage.swapchain);
-	struct oxr_space *spc =
-	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, quad->space);
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, quad->subImage.swapchain);
+	struct oxr_space *spc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, quad->space);
 
-	enum xrt_layer_composition_flags flags =
-	    convert_layer_flags(quad->layerFlags);
+	enum xrt_layer_composition_flags flags = convert_layer_flags(quad->layerFlags);
 
 	struct xrt_pose *pose_ptr = (struct xrt_pose *)&quad->pose;
 
 	struct xrt_pose pose;
-	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp,
-	                  &pose)) {
+	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp, &pose)) {
 		return XR_SUCCESS;
 	}
 
@@ -1548,20 +1416,17 @@ submit_projection_layer(struct xrt_compositor *xc,
                         struct xrt_pose *inv_offset,
                         uint64_t timestamp)
 {
-	struct oxr_space *spc =
-	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, proj->space);
+	struct oxr_space *spc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, proj->space);
 	struct oxr_swapchain *d_scs[2] = {NULL, NULL};
 	struct oxr_swapchain *scs[2];
 	struct xrt_pose *pose_ptr[2];
 	struct xrt_pose pose[2];
 
-	enum xrt_layer_composition_flags flags =
-	    convert_layer_flags(proj->layerFlags);
+	enum xrt_layer_composition_flags flags = convert_layer_flags(proj->layerFlags);
 
 	uint32_t num_chains = ARRAY_SIZE(scs);
 	for (uint32_t i = 0; i < num_chains; i++) {
-		scs[i] = XRT_CAST_OXR_HANDLE_TO_PTR(
-		    struct oxr_swapchain *, proj->views[i].subImage.swapchain);
+		scs[i] = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, proj->views[i].subImage.swapchain);
 		pose_ptr[i] = (struct xrt_pose *)&proj->views[i].pose;
 		pose[i] = *pose_ptr[i];
 	}
@@ -1583,11 +1448,9 @@ submit_projection_layer(struct xrt_compositor *xc,
 		math_pose_transform(inv_offset, &pose[1], &pose[1]);
 	}
 
-	struct xrt_rect *l_rect =
-	    (struct xrt_rect *)&proj->views[0].subImage.imageRect;
+	struct xrt_rect *l_rect = (struct xrt_rect *)&proj->views[0].subImage.imageRect;
 	struct xrt_fov *l_fov = (struct xrt_fov *)&proj->views[0].fov;
-	struct xrt_rect *r_rect =
-	    (struct xrt_rect *)&proj->views[1].subImage.imageRect;
+	struct xrt_rect *r_rect = (struct xrt_rect *)&proj->views[1].subImage.imageRect;
 	struct xrt_fov *r_fov = (struct xrt_fov *)&proj->views[1].fov;
 
 	struct xrt_layer_data data;
@@ -1613,22 +1476,18 @@ submit_projection_layer(struct xrt_compositor *xc,
 
 #ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
 	const XrCompositionLayerDepthInfoKHR *d_l = OXR_GET_INPUT_FROM_CHAIN(
-	    &proj->views[0], XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
-	    XrCompositionLayerDepthInfoKHR);
+	    &proj->views[0], XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR, XrCompositionLayerDepthInfoKHR);
 	if (d_l) {
 		data.stereo_depth.l_d.far_z = d_l->farZ;
 		data.stereo_depth.l_d.near_z = d_l->nearZ;
 		data.stereo_depth.l_d.max_depth = d_l->maxDepth;
 		data.stereo_depth.l_d.min_depth = d_l->minDepth;
 
-		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-		    struct oxr_swapchain *, d_l->subImage.swapchain);
+		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, d_l->subImage.swapchain);
 
-		struct xrt_rect *d_l_rect =
-		    (struct xrt_rect *)&d_l->subImage.imageRect;
+		struct xrt_rect *d_l_rect = (struct xrt_rect *)&d_l->subImage.imageRect;
 		data.stereo_depth.l_d.sub.image_index = sc->released.index;
-		data.stereo_depth.l_d.sub.array_index =
-		    d_l->subImage.imageArrayIndex;
+		data.stereo_depth.l_d.sub.array_index = d_l->subImage.imageArrayIndex;
 		data.stereo_depth.l_d.sub.rect = *d_l_rect;
 
 		// Need to pass this in.
@@ -1636,8 +1495,7 @@ submit_projection_layer(struct xrt_compositor *xc,
 	}
 
 	const XrCompositionLayerDepthInfoKHR *d_r = OXR_GET_INPUT_FROM_CHAIN(
-	    &proj->views[1], XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR,
-	    XrCompositionLayerDepthInfoKHR);
+	    &proj->views[1], XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR, XrCompositionLayerDepthInfoKHR);
 
 	if (d_r) {
 		data.stereo_depth.r_d.far_z = d_r->farZ;
@@ -1645,14 +1503,11 @@ submit_projection_layer(struct xrt_compositor *xc,
 		data.stereo_depth.r_d.max_depth = d_r->maxDepth;
 		data.stereo_depth.r_d.min_depth = d_r->minDepth;
 
-		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-		    struct oxr_swapchain *, d_r->subImage.swapchain);
+		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, d_r->subImage.swapchain);
 
-		struct xrt_rect *d_l_rect =
-		    (struct xrt_rect *)&d_r->subImage.imageRect;
+		struct xrt_rect *d_l_rect = (struct xrt_rect *)&d_r->subImage.imageRect;
 		data.stereo_depth.r_d.sub.image_index = sc->released.index;
-		data.stereo_depth.r_d.sub.array_index =
-		    d_r->subImage.imageArrayIndex;
+		data.stereo_depth.r_d.sub.array_index = d_r->subImage.imageArrayIndex;
 		data.stereo_depth.r_d.sub.rect = *d_l_rect;
 
 		// Need to pass this in.
@@ -1663,22 +1518,20 @@ submit_projection_layer(struct xrt_compositor *xc,
 	if (d_scs[0] != NULL && d_scs[1] != NULL) {
 #ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
 		data.type = XRT_LAYER_STEREO_PROJECTION_DEPTH;
-		CALL_CHK(xrt_comp_layer_stereo_projection_depth(
-		    xc, head,
-		    scs[0]->swapchain,   // Left
-		    scs[1]->swapchain,   // Right
-		    d_scs[0]->swapchain, // Left
-		    d_scs[1]->swapchain, // Right
-		    &data));
+		CALL_CHK(xrt_comp_layer_stereo_projection_depth(xc, head,
+		                                                scs[0]->swapchain,   // Left
+		                                                scs[1]->swapchain,   // Right
+		                                                d_scs[0]->swapchain, // Left
+		                                                d_scs[1]->swapchain, // Right
+		                                                &data));
 #else
 		assert(false && "Should not get here");
 #endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
 	} else {
-		CALL_CHK(
-		    xrt_comp_layer_stereo_projection(xc, head,
-		                                     scs[0]->swapchain, // Left
-		                                     scs[1]->swapchain, // Right
-		                                     &data));
+		CALL_CHK(xrt_comp_layer_stereo_projection(xc, head,
+		                                          scs[0]->swapchain, // Left
+		                                          scs[1]->swapchain, // Right
+		                                          &data));
 	}
 
 	return XR_SUCCESS;
@@ -1705,21 +1558,16 @@ submit_cylinder_layer(struct oxr_session *sess,
                       struct xrt_pose *inv_offset,
                       uint64_t timestamp)
 {
-	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_swapchain *, cylinder->subImage.swapchain);
-	struct oxr_space *spc =
-	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, cylinder->space);
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, cylinder->subImage.swapchain);
+	struct oxr_space *spc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, cylinder->space);
 
-	enum xrt_layer_composition_flags flags =
-	    convert_layer_flags(cylinder->layerFlags);
-	enum xrt_layer_eye_visibility visibility =
-	    convert_eye_visibility(cylinder->eyeVisibility);
+	enum xrt_layer_composition_flags flags = convert_layer_flags(cylinder->layerFlags);
+	enum xrt_layer_eye_visibility visibility = convert_eye_visibility(cylinder->eyeVisibility);
 
 	struct xrt_pose *pose_ptr = (struct xrt_pose *)&cylinder->pose;
 
 	struct xrt_pose pose;
-	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp,
-	                  &pose)) {
+	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp, &pose)) {
 		return XR_SUCCESS;
 	}
 
@@ -1734,8 +1582,7 @@ submit_cylinder_layer(struct oxr_session *sess,
 	data.timestamp = timestamp;
 	data.flags = flags;
 
-	struct xrt_rect *rect =
-	    (struct xrt_rect *)&cylinder->subImage.imageRect;
+	struct xrt_rect *rect = (struct xrt_rect *)&cylinder->subImage.imageRect;
 
 	data.cylinder.visibility = visibility;
 	data.cylinder.sub.image_index = sc->released.index;
@@ -1760,19 +1607,15 @@ submit_equirect1_layer(struct oxr_session *sess,
                        struct xrt_pose *inv_offset,
                        uint64_t timestamp)
 {
-	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_swapchain *, equirect->subImage.swapchain);
-	struct oxr_space *spc =
-	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, equirect->space);
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, equirect->subImage.swapchain);
+	struct oxr_space *spc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, equirect->space);
 
-	enum xrt_layer_composition_flags flags =
-	    convert_layer_flags(equirect->layerFlags);
+	enum xrt_layer_composition_flags flags = convert_layer_flags(equirect->layerFlags);
 
 	struct xrt_pose *pose_ptr = (struct xrt_pose *)&equirect->pose;
 
 	struct xrt_pose pose;
-	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp,
-	                  &pose)) {
+	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp, &pose)) {
 		return XR_SUCCESS;
 	}
 
@@ -1787,11 +1630,9 @@ submit_equirect1_layer(struct oxr_session *sess,
 	data.timestamp = timestamp;
 	data.flags = flags;
 
-	struct xrt_rect *rect =
-	    (struct xrt_rect *)&equirect->subImage.imageRect;
+	struct xrt_rect *rect = (struct xrt_rect *)&equirect->subImage.imageRect;
 
-	data.equirect1.visibility =
-	    convert_eye_visibility(equirect->eyeVisibility);
+	data.equirect1.visibility = convert_eye_visibility(equirect->eyeVisibility);
 	data.equirect1.sub.image_index = sc->released.index;
 	data.equirect1.sub.array_index = equirect->subImage.imageArrayIndex;
 	data.equirect1.sub.rect = *rect;
@@ -1814,8 +1655,7 @@ static void
 do_synchronize_state_change(struct oxr_logger *log, struct oxr_session *sess)
 {
 	if (!sess->has_ended_once && sess->state < XR_SESSION_STATE_VISIBLE) {
-		oxr_session_change_state(log, sess,
-		                         XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
 		sess->has_ended_once = true;
 	}
 }
@@ -1829,19 +1669,15 @@ submit_equirect2_layer(struct oxr_session *sess,
                        struct xrt_pose *inv_offset,
                        uint64_t timestamp)
 {
-	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_swapchain *, equirect->subImage.swapchain);
-	struct oxr_space *spc =
-	    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, equirect->space);
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, equirect->subImage.swapchain);
+	struct oxr_space *spc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, equirect->space);
 
-	enum xrt_layer_composition_flags flags =
-	    convert_layer_flags(equirect->layerFlags);
+	enum xrt_layer_composition_flags flags = convert_layer_flags(equirect->layerFlags);
 
 	struct xrt_pose *pose_ptr = (struct xrt_pose *)&equirect->pose;
 
 	struct xrt_pose pose;
-	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp,
-	                  &pose)) {
+	if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp, &pose)) {
 		return XR_SUCCESS;
 	}
 
@@ -1856,19 +1692,16 @@ submit_equirect2_layer(struct oxr_session *sess,
 	data.timestamp = timestamp;
 	data.flags = flags;
 
-	struct xrt_rect *rect =
-	    (struct xrt_rect *)&equirect->subImage.imageRect;
+	struct xrt_rect *rect = (struct xrt_rect *)&equirect->subImage.imageRect;
 
-	data.equirect2.visibility =
-	    convert_eye_visibility(equirect->eyeVisibility);
+	data.equirect2.visibility = convert_eye_visibility(equirect->eyeVisibility);
 	data.equirect2.sub.image_index = sc->released.index;
 	data.equirect2.sub.array_index = equirect->subImage.imageArrayIndex;
 	data.equirect2.sub.rect = *rect;
 	data.equirect2.pose = pose;
 
 	data.equirect2.radius = equirect->radius;
-	data.equirect2.central_horizontal_angle =
-	    equirect->centralHorizontalAngle;
+	data.equirect2.central_horizontal_angle = equirect->centralHorizontalAngle;
 	data.equirect2.upper_vertical_angle = equirect->upperVerticalAngle;
 	data.equirect2.lower_vertical_angle = equirect->lowerVerticalAngle;
 
@@ -1878,36 +1711,29 @@ submit_equirect2_layer(struct oxr_session *sess,
 }
 
 XrResult
-oxr_session_frame_end(struct oxr_logger *log,
-                      struct oxr_session *sess,
-                      const XrFrameEndInfo *frameEndInfo)
+oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const XrFrameEndInfo *frameEndInfo)
 {
 	/*
 	 * Session state and call order.
 	 */
 
 	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING,
-		                 "Session is not running");
+		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
 	}
 	if (!sess->frame_started) {
-		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID,
-		                 "Frame not begun with xrBeginFrame");
+		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "Frame not begun with xrBeginFrame");
 	}
 
 	if (frameEndInfo->displayTime <= 0) {
-		return oxr_error(
-		    log, XR_ERROR_TIME_INVALID,
-		    "(frameEndInfo->displayTime == %" PRIi64
-		    ") zero or a negative value is not a valid XrTime",
-		    frameEndInfo->displayTime);
+		return oxr_error(log, XR_ERROR_TIME_INVALID,
+		                 "(frameEndInfo->displayTime == %" PRIi64
+		                 ") zero or a negative value is not a valid XrTime",
+		                 frameEndInfo->displayTime);
 	}
 
-	int64_t timestamp = time_state_ts_to_monotonic_ns(
-	    sess->sys->inst->timekeeping, frameEndInfo->displayTime);
+	int64_t timestamp = time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, frameEndInfo->displayTime);
 	if (sess->frame_timing_spew) {
-		oxr_log(log, "End frame at %8.3fms with display time %8.3fms",
-		        ts_ms(sess), ns_to_ms(timestamp));
+		oxr_log(log, "End frame at %8.3fms with display time %8.3fms", ts_ms(sess), ns_to_ms(timestamp));
 	}
 
 	struct xrt_compositor *xc = sess->compositor;
@@ -1934,8 +1760,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 * even with 0 layers.
 	 */
 
-	enum xrt_blend_mode blend_mode =
-	    oxr_blend_mode_to_xrt(frameEndInfo->environmentBlendMode);
+	enum xrt_blend_mode blend_mode = oxr_blend_mode_to_xrt(frameEndInfo->environmentBlendMode);
 
 	if (blend_mode == 0) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
@@ -1947,8 +1772,7 @@ oxr_session_frame_end(struct oxr_logger *log,
 	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 	if ((blend_mode & xdev->hmd->blend_mode) == 0) {
 		//! @todo Make integer print to string.
-		return oxr_error(log,
-		                 XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED,
+		return oxr_error(log, XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED,
 		                 "(frameEndInfo->environmentBlendMode == %u) "
 		                 "is not supported",
 		                 frameEndInfo->environmentBlendMode);
@@ -1978,13 +1802,11 @@ oxr_session_frame_end(struct oxr_logger *log,
 	 */
 
 	if (frameEndInfo->layers == NULL) {
-		return oxr_error(log, XR_ERROR_LAYER_INVALID,
-		                 "(frameEndInfo->layers == NULL)");
+		return oxr_error(log, XR_ERROR_LAYER_INVALID, "(frameEndInfo->layers == NULL)");
 	}
 
 	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
-		const XrCompositionLayerBaseHeader *layer =
-		    frameEndInfo->layers[i];
+		const XrCompositionLayerBaseHeader *layer = frameEndInfo->layers[i];
 		if (layer == NULL) {
 			return oxr_error(log, XR_ERROR_LAYER_INVALID,
 			                 "(frameEndInfo->layers[%u] == NULL) "
@@ -1996,34 +1818,28 @@ oxr_session_frame_end(struct oxr_logger *log,
 
 		switch (layer->type) {
 		case XR_TYPE_COMPOSITION_LAYER_PROJECTION:
-			res = verify_projection_layer(
-			    xc, log, i, (XrCompositionLayerProjection *)layer,
-			    xdev, frameEndInfo->displayTime);
+			res = verify_projection_layer(xc, log, i, (XrCompositionLayerProjection *)layer, xdev,
+			                              frameEndInfo->displayTime);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_QUAD:
-			res = verify_quad_layer(
-			    xc, log, i, (XrCompositionLayerQuad *)layer, xdev,
-			    frameEndInfo->displayTime);
+			res = verify_quad_layer(xc, log, i, (XrCompositionLayerQuad *)layer, xdev,
+			                        frameEndInfo->displayTime);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_CUBE_KHR:
-			res = verify_cube_layer(
-			    xc, log, i, (XrCompositionLayerCubeKHR *)layer,
-			    xdev, frameEndInfo->displayTime);
+			res = verify_cube_layer(xc, log, i, (XrCompositionLayerCubeKHR *)layer, xdev,
+			                        frameEndInfo->displayTime);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_CYLINDER_KHR:
-			res = verify_cylinder_layer(
-			    xc, log, i, (XrCompositionLayerCylinderKHR *)layer,
-			    xdev, frameEndInfo->displayTime);
+			res = verify_cylinder_layer(xc, log, i, (XrCompositionLayerCylinderKHR *)layer, xdev,
+			                            frameEndInfo->displayTime);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_EQUIRECT_KHR:
-			res = verify_equirect1_layer(
-			    xc, log, i, (XrCompositionLayerEquirectKHR *)layer,
-			    xdev, frameEndInfo->displayTime);
+			res = verify_equirect1_layer(xc, log, i, (XrCompositionLayerEquirectKHR *)layer, xdev,
+			                             frameEndInfo->displayTime);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_EQUIRECT2_KHR:
-			res = verify_equirect2_layer(
-			    xc, log, i, (XrCompositionLayerEquirect2KHR *)layer,
-			    xdev, frameEndInfo->displayTime);
+			res = verify_equirect2_layer(xc, log, i, (XrCompositionLayerEquirect2KHR *)layer, xdev,
+			                             frameEndInfo->displayTime);
 			break;
 		default:
 			return oxr_error(log, XR_ERROR_LAYER_INVALID,
@@ -2051,53 +1867,41 @@ oxr_session_frame_end(struct oxr_logger *log,
 	CALL_CHK(xrt_comp_layer_begin(xc, sess->frame_id.begun, blend_mode));
 
 	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
-		const XrCompositionLayerBaseHeader *layer =
-		    frameEndInfo->layers[i];
+		const XrCompositionLayerBaseHeader *layer = frameEndInfo->layers[i];
 		assert(layer != NULL);
 
-		int64_t timestamp = time_state_ts_to_monotonic_ns(
-		    sess->sys->inst->timekeeping, frameEndInfo->displayTime);
+		int64_t timestamp =
+		    time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, frameEndInfo->displayTime);
 
 		switch (layer->type) {
 		case XR_TYPE_COMPOSITION_LAYER_PROJECTION:
-			submit_projection_layer(
-			    xc, log, (XrCompositionLayerProjection *)layer,
-			    xdev, &inv_offset, timestamp);
+			submit_projection_layer(xc, log, (XrCompositionLayerProjection *)layer, xdev, &inv_offset,
+			                        timestamp);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_QUAD:
-			submit_quad_layer(sess, xc, log,
-			                  (XrCompositionLayerQuad *)layer, xdev,
-			                  &inv_offset, timestamp);
+			submit_quad_layer(sess, xc, log, (XrCompositionLayerQuad *)layer, xdev, &inv_offset, timestamp);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_CUBE_KHR:
-			submit_cube_layer(sess, xc, log,
-			                  (XrCompositionLayerCubeKHR *)layer,
-			                  xdev, &inv_offset, timestamp);
+			submit_cube_layer(sess, xc, log, (XrCompositionLayerCubeKHR *)layer, xdev, &inv_offset,
+			                  timestamp);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_CYLINDER_KHR:
-			submit_cylinder_layer(
-			    sess, xc, log,
-			    (XrCompositionLayerCylinderKHR *)layer, xdev,
-			    &inv_offset, timestamp);
+			submit_cylinder_layer(sess, xc, log, (XrCompositionLayerCylinderKHR *)layer, xdev, &inv_offset,
+			                      timestamp);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_EQUIRECT_KHR:
-			submit_equirect1_layer(
-			    sess, xc, log,
-			    (XrCompositionLayerEquirectKHR *)layer, xdev,
-			    &inv_offset, timestamp);
+			submit_equirect1_layer(sess, xc, log, (XrCompositionLayerEquirectKHR *)layer, xdev, &inv_offset,
+			                       timestamp);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_EQUIRECT2_KHR:
-			submit_equirect2_layer(
-			    sess, xc, log,
-			    (XrCompositionLayerEquirect2KHR *)layer, xdev,
-			    &inv_offset, timestamp);
+			submit_equirect2_layer(sess, xc, log, (XrCompositionLayerEquirect2KHR *)layer, xdev,
+			                       &inv_offset, timestamp);
 			break;
 		default: assert(false && "invalid layer type");
 		}
 	}
 
-	CALL_CHK(xrt_comp_layer_commit(xc, sess->frame_id.begun,
-	                               XRT_GRAPHICS_SYNC_HANDLE_INVALID));
+	CALL_CHK(xrt_comp_layer_commit(xc, sess->frame_id.begun, XRT_GRAPHICS_SYNC_HANDLE_INVALID));
 	sess->frame_id.begun = -1;
 
 	sess->frame_started = false;
@@ -2117,18 +1921,15 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	XrResult ret = oxr_event_remove_session_events(log, sess);
 
 	for (size_t i = 0; i < sess->num_action_set_attachments; ++i) {
-		oxr_action_set_attachment_teardown(
-		    &sess->act_set_attachments[i]);
+		oxr_action_set_attachment_teardown(&sess->act_set_attachments[i]);
 	}
 	free(sess->act_set_attachments);
 	sess->act_set_attachments = NULL;
 	sess->num_action_set_attachments = 0;
 
 	// If we tore everything down correctly, these are empty now.
-	assert(sess->act_sets_attachments_by_key == NULL ||
-	       u_hashmap_int_empty(sess->act_sets_attachments_by_key));
-	assert(sess->act_attachments_by_key == NULL ||
-	       u_hashmap_int_empty(sess->act_attachments_by_key));
+	assert(sess->act_sets_attachments_by_key == NULL || u_hashmap_int_empty(sess->act_sets_attachments_by_key));
+	assert(sess->act_attachments_by_key == NULL || u_hashmap_int_empty(sess->act_attachments_by_key));
 
 	u_hashmap_int_destroy(&sess->act_sets_attachments_by_key);
 	u_hashmap_int_destroy(&sess->act_attachments_by_key);
@@ -2143,12 +1944,11 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	return ret;
 }
 
-#define OXR_SESSION_ALLOCATE(LOG, SYS, OUT)                                    \
-	do {                                                                   \
-		OXR_ALLOCATE_HANDLE_OR_RETURN(LOG, OUT, OXR_XR_DEBUG_SESSION,  \
-		                              oxr_session_destroy,             \
-		                              &(SYS)->inst->handle);           \
-		(OUT)->sys = (SYS);                                            \
+#define OXR_SESSION_ALLOCATE(LOG, SYS, OUT)                                                                            \
+	do {                                                                                                           \
+		OXR_ALLOCATE_HANDLE_OR_RETURN(LOG, OUT, OXR_XR_DEBUG_SESSION, oxr_session_destroy,                     \
+		                              &(SYS)->inst->handle);                                                   \
+		(OUT)->sys = (SYS);                                                                                    \
 	} while (0)
 
 /* Just the allocation and populate part, so we can use early-returns to
@@ -2160,54 +1960,44 @@ oxr_session_create_impl(struct oxr_logger *log,
                         struct oxr_session **out_session)
 {
 #if defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
-	XrGraphicsBindingOpenGLXlibKHR const *opengl_xlib =
-	    OXR_GET_INPUT_FROM_CHAIN(createInfo,
-	                             XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
-	                             XrGraphicsBindingOpenGLXlibKHR);
+	XrGraphicsBindingOpenGLXlibKHR const *opengl_xlib = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR, XrGraphicsBindingOpenGLXlibKHR);
 	if (opengl_xlib != NULL) {
 		if (!sys->gotten_requirements) {
-			return oxr_error(
-			    log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
-			    "Has not called "
-			    "xrGetOpenGL[ES]GraphicsRequirementsKHR");
+			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
+			                 "Has not called "
+			                 "xrGetOpenGL[ES]GraphicsRequirementsKHR");
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
-		return oxr_session_populate_gl_xlib(log, sys, opengl_xlib,
-		                                    *out_session);
+		return oxr_session_populate_gl_xlib(log, sys, opengl_xlib, *out_session);
 	}
 #endif
 
 
 #if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
-	XrGraphicsBindingOpenGLESAndroidKHR const *opengles_android =
-	    OXR_GET_INPUT_FROM_CHAIN(
-	        createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR,
-	        XrGraphicsBindingOpenGLESAndroidKHR);
+	XrGraphicsBindingOpenGLESAndroidKHR const *opengles_android = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR, XrGraphicsBindingOpenGLESAndroidKHR);
 	if (opengles_android != NULL) {
 		if (!sys->gotten_requirements) {
-			return oxr_error(
-			    log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
-			    "Has not called "
-			    "xrGetOpenGLESGraphicsRequirementsKHR");
+			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
+			                 "Has not called "
+			                 "xrGetOpenGLESGraphicsRequirementsKHR");
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
-		return oxr_session_populate_gles_android(
-		    log, sys, opengles_android, *out_session);
+		return oxr_session_populate_gles_android(log, sys, opengles_android, *out_session);
 	}
 #endif
 
 #ifdef XR_USE_GRAPHICS_API_VULKAN
-	XrGraphicsBindingVulkanKHR const *vulkan = OXR_GET_INPUT_FROM_CHAIN(
-	    createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR,
-	    XrGraphicsBindingVulkanKHR);
+	XrGraphicsBindingVulkanKHR const *vulkan =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR, XrGraphicsBindingVulkanKHR);
 	if (vulkan != NULL) {
 		if (!sys->gotten_requirements) {
-			return oxr_error(
-			    log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
-			    "Has not called "
-			    "xrGetVulkanGraphicsRequirementsKHR");
+			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
+			                 "Has not called "
+			                 "xrGetVulkanGraphicsRequirementsKHR");
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
@@ -2216,15 +2006,13 @@ oxr_session_create_impl(struct oxr_logger *log,
 #endif
 
 #ifdef XR_USE_PLATFORM_EGL
-	XrGraphicsBindingEGLMNDX const *egl = OXR_GET_INPUT_FROM_CHAIN(
-	    createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MNDX,
-	    XrGraphicsBindingEGLMNDX);
+	XrGraphicsBindingEGLMNDX const *egl =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MNDX, XrGraphicsBindingEGLMNDX);
 	if (egl != NULL) {
 		if (!sys->gotten_requirements) {
-			return oxr_error(
-			    log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
-			    "Has not called "
-			    "xrGetOpenGL[ES]GraphicsRequirementsKHR");
+			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
+			                 "Has not called "
+			                 "xrGetOpenGL[ES]GraphicsRequirementsKHR");
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
@@ -2264,8 +2052,7 @@ oxr_session_create(struct oxr_logger *log,
 	if (ret != XR_SUCCESS) {
 		if (sess != NULL) {
 			/* clean up allocation first */
-			XrResult cleanup_result =
-			    oxr_handle_destroy(log, &sess->handle);
+			XrResult cleanup_result = oxr_handle_destroy(log, &sess->handle);
 			assert(cleanup_result == XR_SUCCESS);
 			(void)cleanup_result;
 		}
@@ -2281,10 +2068,8 @@ oxr_session_create(struct oxr_logger *log,
 	struct xrt_compositor *xc = sess->compositor;
 	if (xc != NULL) {
 		struct xrt_session_prepare_info xspi = {0};
-		const XrSessionCreateInfoOverlayEXTX *overlay_info =
-		    OXR_GET_INPUT_FROM_CHAIN(
-		        createInfo, XR_TYPE_SESSION_CREATE_INFO_OVERLAY_EXTX,
-		        XrSessionCreateInfoOverlayEXTX);
+		const XrSessionCreateInfoOverlayEXTX *overlay_info = OXR_GET_INPUT_FROM_CHAIN(
+		    createInfo, XR_TYPE_SESSION_CREATE_INFO_OVERLAY_EXTX, XrSessionCreateInfoOverlayEXTX);
 		if (overlay_info) {
 			xspi.is_overlay = true;
 			xspi.flags = overlay_info->createFlags;
@@ -2326,37 +2111,29 @@ oxr_session_hand_joints(struct oxr_logger *log,
                         const XrHandJointsLocateInfoEXT *locateInfo,
                         XrHandJointLocationsEXT *locations)
 {
-	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(
-	    struct oxr_space *, locateInfo->baseSpace);
+	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, locateInfo->baseSpace);
 
 	struct oxr_session *sess = hand_tracker->sess;
 
-	XrHandJointVelocitiesEXT *vel = OXR_GET_OUTPUT_FROM_CHAIN(
-	    locations, XR_TYPE_HAND_JOINT_VELOCITIES_EXT,
-	    XrHandJointVelocitiesEXT);
+	XrHandJointVelocitiesEXT *vel =
+	    OXR_GET_OUTPUT_FROM_CHAIN(locations, XR_TYPE_HAND_JOINT_VELOCITIES_EXT, XrHandJointVelocitiesEXT);
 
 	struct xrt_device *xdev = hand_tracker->xdev;
 	enum xrt_input_name name = hand_tracker->input_name;
 
-	struct xrt_pose *tracking_origin_offset =
-	    &xdev->tracking_origin->offset;
+	struct xrt_pose *tracking_origin_offset = &xdev->tracking_origin->offset;
 
 	XrTime at_time = locateInfo->time;
 	struct xrt_hand_joint_set value;
 
-	oxr_xdev_get_hand_tracking_at(log, sess->sys->inst, xdev, name, at_time,
-	                              &value);
+	oxr_xdev_get_hand_tracking_at(log, sess->sys->inst, xdev, name, at_time, &value);
 
 	for (uint32_t i = 0; i < locations->jointCount; i++) {
 		locations->jointLocations[i].locationFlags =
-		    xrt_to_xr_space_location_flags(
-		        value.values.hand_joint_set_default[i]
-		            .relation.relation_flags);
-		locations->jointLocations[i].radius =
-		    value.values.hand_joint_set_default[i].radius;
+		    xrt_to_xr_space_location_flags(value.values.hand_joint_set_default[i].relation.relation_flags);
+		locations->jointLocations[i].radius = value.values.hand_joint_set_default[i].radius;
 
-		struct xrt_space_relation r =
-		    value.values.hand_joint_set_default[i].relation;
+		struct xrt_space_relation r = value.values.hand_joint_set_default[i].relation;
 
 		struct xrt_space_relation result;
 		struct xrt_space_graph graph = {0};
@@ -2366,43 +2143,35 @@ oxr_session_hand_joints(struct oxr_logger *log,
 		if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
 
 			m_space_graph_add_relation(&graph, &value.hand_pose);
-			m_space_graph_add_pose_if_not_identity(
-			    &graph, tracking_origin_offset);
+			m_space_graph_add_pose_if_not_identity(&graph, tracking_origin_offset);
 
 		} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
 
 			// for local space, first do stage space and transform
 			// result to local @todo: improve local space
 			m_space_graph_add_relation(&graph, &value.hand_pose);
-			m_space_graph_add_pose_if_not_identity(
-			    &graph, tracking_origin_offset);
+			m_space_graph_add_pose_if_not_identity(&graph, tracking_origin_offset);
 
 		} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
 			/*! @todo: testing, relating to view space unsupported
 			 * in other parts of monado */
 
-			struct xrt_device *head_xdev =
-			    GET_XDEV_BY_ROLE(sess->sys, head);
+			struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 
 			struct xrt_space_relation view_relation;
-			oxr_session_get_view_relation_at(log, sess, at_time,
-			                                 &view_relation);
+			oxr_session_get_view_relation_at(log, sess, at_time, &view_relation);
 
 			m_space_graph_add_relation(&graph, &value.hand_pose);
-			m_space_graph_add_pose_if_not_identity(
-			    &graph, tracking_origin_offset);
+			m_space_graph_add_pose_if_not_identity(&graph, tracking_origin_offset);
 
-			m_space_graph_add_inverted_relation(&graph,
-			                                    &view_relation);
-			m_space_graph_add_inverted_pose_if_not_identity(
-			    &graph, &head_xdev->tracking_origin->offset);
+			m_space_graph_add_inverted_relation(&graph, &view_relation);
+			m_space_graph_add_inverted_pose_if_not_identity(&graph, &head_xdev->tracking_origin->offset);
 
 		} else if (!baseSpc->is_reference) {
 			// action space
 
 			struct oxr_action_input *input = NULL;
-			oxr_action_get_pose_input(log, sess, baseSpc->act_key,
-			                          &baseSpc->sub_paths, &input);
+			oxr_action_get_pose_input(log, sess, baseSpc->act_key, &baseSpc->sub_paths, &input);
 
 			// If the input isn't active.
 			if (input == NULL) {
@@ -2412,23 +2181,18 @@ oxr_session_hand_joints(struct oxr_logger *log,
 
 			struct xrt_space_relation act_space_relation;
 
-			oxr_xdev_get_space_relation(
-			    log, sess->sys->inst, input->xdev,
-			    input->input->name, at_time, &act_space_relation);
+			oxr_xdev_get_space_relation(log, sess->sys->inst, input->xdev, input->input->name, at_time,
+			                            &act_space_relation);
 
 
 			m_space_graph_add_relation(&graph, &value.hand_pose);
-			m_space_graph_add_pose_if_not_identity(
-			    &graph, tracking_origin_offset);
+			m_space_graph_add_pose_if_not_identity(&graph, tracking_origin_offset);
 
-			m_space_graph_add_inverted_relation(
-			    &graph, &act_space_relation);
-			m_space_graph_add_inverted_pose_if_not_identity(
-			    &graph, &input->xdev->tracking_origin->offset);
+			m_space_graph_add_inverted_relation(&graph, &act_space_relation);
+			m_space_graph_add_inverted_pose_if_not_identity(&graph, &input->xdev->tracking_origin->offset);
 		}
 
-		m_space_graph_add_inverted_pose_if_not_identity(&graph,
-		                                                &baseSpc->pose);
+		m_space_graph_add_inverted_pose_if_not_identity(&graph, &baseSpc->pose);
 		m_space_graph_resolve(&graph, &result);
 
 		if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
@@ -2438,22 +2202,17 @@ oxr_session_hand_joints(struct oxr_logger *log,
 			}
 		}
 
-		xrt_to_xr_pose(&result.pose,
-		               &locations->jointLocations[i].pose);
+		xrt_to_xr_pose(&result.pose, &locations->jointLocations[i].pose);
 
 		if (vel) {
 			XrHandJointVelocityEXT *v = &vel->jointVelocities[i];
 
 			v->velocityFlags = 0;
-			if ((result.relation_flags &
-			     XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT)) {
-				v->velocityFlags |=
-				    XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+			if ((result.relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT)) {
+				v->velocityFlags |= XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
 			}
-			if ((result.relation_flags &
-			     XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT)) {
-				v->velocityFlags |=
-				    XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
+			if ((result.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT)) {
+				v->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
 			}
 
 			v->linearVelocity.x = result.linear_velocity.x;

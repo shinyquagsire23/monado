@@ -105,8 +105,7 @@ math_vec3_accum(const struct xrt_vec3 *additional, struct xrt_vec3 *inAndOut);
  * @ingroup aux_math
  */
 void
-math_vec3_subtract(const struct xrt_vec3 *subtrahend,
-                   struct xrt_vec3 *inAndOut);
+math_vec3_subtract(const struct xrt_vec3 *subtrahend, struct xrt_vec3 *inAndOut);
 
 /*!
  * Multiply a vector in-place.
@@ -126,9 +125,7 @@ math_vec3_scalar_mul(float scalar, struct xrt_vec3 *inAndOut);
  * @ingroup aux_math
  */
 void
-math_vec3_cross(const struct xrt_vec3 *l,
-                const struct xrt_vec3 *r,
-                struct xrt_vec3 *result);
+math_vec3_cross(const struct xrt_vec3 *l, const struct xrt_vec3 *r, struct xrt_vec3 *result);
 
 
 /*!
@@ -154,9 +151,7 @@ math_vec3_normalize(struct xrt_vec3 *in);
  * @ingroup aux_math
  */
 void
-math_quat_from_angle_vector(float angle_rads,
-                            const struct xrt_vec3 *vector,
-                            struct xrt_quat *result);
+math_quat_from_angle_vector(float angle_rads, const struct xrt_vec3 *vector, struct xrt_quat *result);
 
 /*!
  * Create a rotation from a 3x3 rotation matrix.
@@ -166,8 +161,7 @@ math_quat_from_angle_vector(float angle_rads,
  * @ingroup aux_math
  */
 void
-math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat,
-                          struct xrt_quat *result);
+math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat, struct xrt_quat *result);
 
 /*!
  * Create a rotation from two vectors plus x and z, by creating a rotation
@@ -178,9 +172,7 @@ math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat,
  * @ingroup aux_math
  */
 void
-math_quat_from_plus_x_z(const struct xrt_vec3 *plus_x,
-                        const struct xrt_vec3 *plus_z,
-                        struct xrt_quat *result);
+math_quat_from_plus_x_z(const struct xrt_vec3 *plus_x, const struct xrt_vec3 *plus_z, struct xrt_quat *result);
 
 /*!
  * Check if this quat can be used in transformation operations.
@@ -229,9 +221,7 @@ math_quat_ensure_normalized(struct xrt_quat *inout);
  * @ingroup aux_math
  */
 void
-math_quat_rotate_vec3(const struct xrt_quat *left,
-                      const struct xrt_vec3 *right,
-                      struct xrt_vec3 *result);
+math_quat_rotate_vec3(const struct xrt_quat *left, const struct xrt_vec3 *right, struct xrt_vec3 *result);
 
 /*!
  * Rotate a quaternion (compose rotations).
@@ -240,9 +230,7 @@ math_quat_rotate_vec3(const struct xrt_quat *left,
  * @ingroup aux_math
  */
 void
-math_quat_rotate(const struct xrt_quat *left,
-                 const struct xrt_quat *right,
-                 struct xrt_quat *result);
+math_quat_rotate(const struct xrt_quat *left, const struct xrt_quat *right, struct xrt_quat *result);
 
 
 /*!
@@ -289,9 +277,7 @@ math_quat_finite_difference(const struct xrt_quat *quat0,
  * @ingroup aux_math
  */
 void
-math_quat_rotate_derivative(const struct xrt_quat *rot,
-                            const struct xrt_vec3 *deriv,
-                            struct xrt_vec3 *result);
+math_quat_rotate_derivative(const struct xrt_quat *rot, const struct xrt_vec3 *deriv, struct xrt_vec3 *result);
 
 
 /*
@@ -343,8 +329,7 @@ math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
  * @ingroup aux_math
  */
 void
-math_matrix_4x4_view_from_pose(const struct xrt_pose *pose,
-                               struct xrt_matrix_4x4 *result);
+math_matrix_4x4_view_from_pose(const struct xrt_pose *pose, struct xrt_matrix_4x4 *result);
 
 /*!
  * Compute quad layer model matrix from xrt_pose and xrt_vec2 size.
@@ -353,9 +338,7 @@ math_matrix_4x4_view_from_pose(const struct xrt_pose *pose,
  * @ingroup aux_math
  */
 void
-math_matrix_4x4_model(const struct xrt_pose *pose,
-                      const struct xrt_vec3 *size,
-                      struct xrt_matrix_4x4 *result);
+math_matrix_4x4_model(const struct xrt_pose *pose, const struct xrt_vec3 *size, struct xrt_matrix_4x4 *result);
 
 /*!
  * Compute inverse view projection matrix,
@@ -404,9 +387,7 @@ math_pose_invert(const struct xrt_pose *pose, struct xrt_pose *outPose);
  * @ingroup aux_math
  */
 void
-math_pose_transform(const struct xrt_pose *transform,
-                    const struct xrt_pose *pose,
-                    struct xrt_pose *outPose);
+math_pose_transform(const struct xrt_pose *transform, const struct xrt_pose *pose, struct xrt_pose *outPose);
 
 /*!
  * Apply a rigid-body transformation to a point.
@@ -418,9 +399,7 @@ math_pose_transform(const struct xrt_pose *transform,
  * @ingroup aux_math
  */
 void
-math_pose_transform_point(const struct xrt_pose *transform,
-                          const struct xrt_vec3 *point,
-                          struct xrt_vec3 *out_point);
+math_pose_transform_point(const struct xrt_pose *transform, const struct xrt_vec3 *point, struct xrt_vec3 *out_point);
 
 
 /*

@@ -64,9 +64,7 @@ from_item(struct u_hashset_item *item)
  */
 
 static XrResult
-oxr_ensure_array_length(struct oxr_logger *log,
-                        struct oxr_instance *inst,
-                        XrPath *out_id)
+oxr_ensure_array_length(struct oxr_logger *log, struct oxr_instance *inst, XrPath *out_id)
 {
 	size_t num = inst->path_num + 1;
 
@@ -89,11 +87,8 @@ oxr_ensure_array_length(struct oxr_logger *log,
 }
 
 static XrResult
-oxr_allocate_path(struct oxr_logger *log,
-                  struct oxr_instance *inst,
-                  const char *str,
-                  size_t length,
-                  struct oxr_path **out_path)
+oxr_allocate_path(
+    struct oxr_logger *log, struct oxr_instance *inst, const char *str, size_t length, struct oxr_path **out_path)
 {
 	struct u_hashset_item *item = NULL;
 	struct oxr_path *path = NULL;
@@ -108,8 +103,7 @@ oxr_allocate_path(struct oxr_logger *log,
 	// Now allocate and setup the path.
 	path = U_CALLOC_WITH_CAST(struct oxr_path, size);
 	if (path == NULL) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Failed to allocate path");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to allocate path");
 	}
 	path->debug = OXR_XR_DEBUG_PATH;
 
@@ -129,8 +123,7 @@ oxr_allocate_path(struct oxr_logger *log,
 	ret = u_hashset_insert_item(inst->path_store, item);
 	if (ret) {
 		free(path);
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Failed to insert item");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to insert item");
 	}
 
 	oxr_ensure_array_length(log, inst, &path->id);
@@ -142,9 +135,7 @@ oxr_allocate_path(struct oxr_logger *log,
 }
 
 struct oxr_path *
-get_path_or_null(struct oxr_logger *log,
-                 struct oxr_instance *inst,
-                 XrPath xr_path)
+get_path_or_null(struct oxr_logger *log, struct oxr_instance *inst, XrPath xr_path)
 {
 	if (xr_path >= inst->path_array_length) {
 		return NULL;
@@ -161,17 +152,13 @@ get_path_or_null(struct oxr_logger *log,
  */
 
 bool
-oxr_path_is_valid(struct oxr_logger *log,
-                  struct oxr_instance *inst,
-                  XrPath xr_path)
+oxr_path_is_valid(struct oxr_logger *log, struct oxr_instance *inst, XrPath xr_path)
 {
 	return get_path_or_null(log, inst, xr_path) != NULL;
 }
 
 void *
-oxr_path_get_attached(struct oxr_logger *log,
-                      struct oxr_instance *inst,
-                      XrPath xr_path)
+oxr_path_get_attached(struct oxr_logger *log, struct oxr_instance *inst, XrPath xr_path)
 {
 	struct oxr_path *path = get_path_or_null(log, inst, xr_path);
 	if (path == NULL) {
@@ -182,11 +169,8 @@ oxr_path_get_attached(struct oxr_logger *log,
 }
 
 XrResult
-oxr_path_get_or_create(struct oxr_logger *log,
-                       struct oxr_instance *inst,
-                       const char *str,
-                       size_t length,
-                       XrPath *out_path)
+oxr_path_get_or_create(
+    struct oxr_logger *log, struct oxr_instance *inst, const char *str, size_t length, XrPath *out_path)
 {
 	struct u_hashset_item *item;
 	struct oxr_path *path = NULL;
@@ -212,11 +196,7 @@ oxr_path_get_or_create(struct oxr_logger *log,
 }
 
 XrResult
-oxr_path_only_get(struct oxr_logger *log,
-                  struct oxr_instance *inst,
-                  const char *str,
-                  size_t length,
-                  XrPath *out_path)
+oxr_path_only_get(struct oxr_logger *log, struct oxr_instance *inst, const char *str, size_t length, XrPath *out_path)
 {
 	struct u_hashset_item *item;
 	int h_ret;
@@ -233,11 +213,8 @@ oxr_path_only_get(struct oxr_logger *log,
 }
 
 XrResult
-oxr_path_get_string(struct oxr_logger *log,
-                    struct oxr_instance *inst,
-                    XrPath xr_path,
-                    const char **out_str,
-                    size_t *out_length)
+oxr_path_get_string(
+    struct oxr_logger *log, struct oxr_instance *inst, XrPath xr_path, const char **out_str, size_t *out_length)
 {
 	struct oxr_path *path = get_path_or_null(log, inst, xr_path);
 	if (path == NULL) {
@@ -263,8 +240,7 @@ oxr_path_init(struct oxr_logger *log, struct oxr_instance *inst)
 {
 	int h_ret = u_hashset_create(&inst->path_store);
 	if (h_ret != 0) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Failed to create hashset");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to create hashset");
 	}
 
 	size_t new_size = 64;
@@ -290,7 +266,6 @@ oxr_path_destroy(struct oxr_logger *log, struct oxr_instance *inst)
 		return;
 	}
 
-	u_hashset_clear_and_call_for_each(inst->path_store, destroy_callback,
-	                                  inst);
+	u_hashset_clear_and_call_for_each(inst->path_store, destroy_callback, inst);
 	u_hashset_destroy(&inst->path_store);
 }

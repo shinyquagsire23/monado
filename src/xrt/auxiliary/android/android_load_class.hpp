@@ -21,8 +21,6 @@ ApplicationInfo
 getAppInfo(std::string const &packageName, jobject application_context);
 
 wrap::java::lang::Class
-loadClassFromPackage(ApplicationInfo applicationInfo,
-                     jobject application_context,
-                     const char *clazz_name);
+loadClassFromPackage(ApplicationInfo applicationInfo, jobject application_context, const char *clazz_name);
 
 #endif // XRT_OS_ANDROID

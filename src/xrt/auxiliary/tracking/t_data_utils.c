@@ -16,8 +16,7 @@
 void
 t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **out_c)
 {
-	struct t_stereo_camera_calibration *c =
-	    U_TYPED_CALLOC(struct t_stereo_camera_calibration);
+	struct t_stereo_camera_calibration *c = U_TYPED_CALLOC(struct t_stereo_camera_calibration);
 	t_stereo_camera_calibration_reference(out_c, c);
 }
 

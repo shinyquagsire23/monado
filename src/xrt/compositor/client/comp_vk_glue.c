@@ -16,21 +16,16 @@
 
 // Note: Most of the time, the instance extensions required do **not** vary by
 // platform!
-const char *xrt_gfx_vk_instance_extensions =
-    VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME
-    " " VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME
-    " " VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME
+const char *xrt_gfx_vk_instance_extensions = VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME
+    " " VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME " " VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME
     " " VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME;
 
 // The device extensions do vary by platform, but in a very regular way.
 // This should match the list in comp_compositor, except it shouldn't include
 // VK_KHR_SWAPCHAIN_EXTENSION_NAME
-const char *xrt_gfx_vk_device_extensions =
-    VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME
-    " " VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME
-    " " VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME
-    " " VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME
-    " " VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME
+const char *xrt_gfx_vk_device_extensions = VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME
+    " " VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME " " VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME
+    " " VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME " " VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME
 
 // Platform version of "external_memory"
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
@@ -47,12 +42,10 @@ const char *xrt_gfx_vk_device_extensions =
 
 // Platform version of "external_fence" and "external_semaphore"
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
-    " " VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME
-    " " VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME;
+    " " VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME " " VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME;
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
-    " " VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME
-    " " VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME;
+    " " VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME " " VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME;
 
 #else
 #error "Need port!"
@@ -80,8 +73,7 @@ xrt_gfx_vk_provider_create(struct xrt_compositor_native *xcn,
                            uint32_t queue_index)
 {
 	struct client_vk_compositor *vcc = client_vk_compositor_create(
-	    xcn, instance, get_instance_proc_addr, physical_device, device,
-	    queue_family_index, queue_index);
+	    xcn, instance, get_instance_proc_addr, physical_device, device, queue_family_index, queue_index);
 
 	return &vcc->base;
 }

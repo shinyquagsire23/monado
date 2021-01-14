@@ -76,8 +76,7 @@ save_calibration(struct calibration_scene *cs)
 
 	saved_header(cs);
 	igSetNextItemWidth(115);
-	igInputText(".calibration", cs->filename, sizeof(cs->filename), 0, NULL,
-	            NULL);
+	igInputText(".calibration", cs->filename, sizeof(cs->filename), 0, NULL, NULL);
 	igSameLine(0.0f, 4.0f);
 
 	static ImVec2 button_dims = {0, 0};
@@ -96,8 +95,7 @@ save_calibration(struct calibration_scene *cs)
 	char tmp[sizeof(cs->filename) + 16];
 	snprintf(tmp, sizeof(tmp), "%s.calibration", cs->filename);
 
-	u_file_get_path_in_config_dir(tmp, cs->settings->calibration_path,
-	                              sizeof(cs->settings->calibration_path));
+	u_file_get_path_in_config_dir(tmp, cs->settings->calibration_path, sizeof(cs->settings->calibration_path));
 
 	/*
 	 *
@@ -111,28 +109,18 @@ save_calibration(struct calibration_scene *cs)
 	cJSON_AddStringToObject(t, "camera_name", cs->settings->camera_name);
 	cJSON_AddNumberToObject(t, "camera_mode", cs->settings->camera_mode);
 	switch (cs->settings->camera_type) {
-	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_MONO:
-		cJSON_AddStringToObject(t, "camera_type", "regular_mono");
-		break;
-	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_SBS:
-		cJSON_AddStringToObject(t, "camera_type", "regular_sbs");
-		break;
-	case XRT_SETTINGS_CAMERA_TYPE_PS4:
-		cJSON_AddStringToObject(t, "camera_type", "ps4");
-		break;
-	case XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION:
-		cJSON_AddStringToObject(t, "camera_type", "leap_motion");
-		break;
+	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_MONO: cJSON_AddStringToObject(t, "camera_type", "regular_mono"); break;
+	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_SBS: cJSON_AddStringToObject(t, "camera_type", "regular_sbs"); break;
+	case XRT_SETTINGS_CAMERA_TYPE_PS4: cJSON_AddStringToObject(t, "camera_type", "ps4"); break;
+	case XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION: cJSON_AddStringToObject(t, "camera_type", "leap_motion"); break;
 	}
-	cJSON_AddStringToObject(t, "calibration_path",
-	                        cs->settings->calibration_path);
+	cJSON_AddStringToObject(t, "calibration_path", cs->settings->calibration_path);
 
 	char *str = cJSON_Print(root);
 	U_LOG_D("%s", str);
 	cJSON_Delete(root);
 
-	FILE *config_file =
-	    u_file_open_file_in_config_dir("config_v0.json", "w");
+	FILE *config_file = u_file_open_file_in_config_dir("config_v0.json", "w");
 	fprintf(config_file, "%s\n", str);
 	fflush(config_file);
 	fclose(config_file);
@@ -197,8 +185,7 @@ render_progress(struct calibration_scene *cs)
 	static const ImVec2 progress_dims = {150, 0};
 	if (cs->status.cooldown > 0) {
 		// This progress bar intentionally counts down to 0.
-		float cooldown = (float)(cs->status.cooldown) /
-		                 (float)cs->params.num_cooldown_frames;
+		float cooldown = (float)(cs->status.cooldown) / (float)cs->params.num_cooldown_frames;
 		igText("Move to a new position");
 		igProgressBar(cooldown, progress_dims, "Move to new position");
 	} else if (!cs->status.found) {
@@ -210,22 +197,17 @@ render_progress(struct calibration_scene *cs)
 	} else {
 		// This progress bar counts up from zero before
 		// capturing.
-		int waits_complete =
-		    cs->params.num_wait_for - cs->status.waits_remaining;
-		float hold_completion =
-		    (float)waits_complete / (float)cs->params.num_wait_for;
+		int waits_complete = cs->params.num_wait_for - cs->status.waits_remaining;
+		float hold_completion = (float)waits_complete / (float)cs->params.num_wait_for;
 		if (cs->status.waits_remaining == 0) {
 			igText("Capturing and processing!");
 		} else {
-			igText("Hold still! (%i/%i)", waits_complete,
-			       cs->params.num_wait_for);
+			igText("Hold still! (%i/%i)", waits_complete, cs->params.num_wait_for);
 		}
 		igProgressBar(hold_completion, progress_dims, "Hold still!");
 	}
-	float capture_completion = ((float)cs->status.num_collected) /
-	                           (float)cs->params.num_collect_total;
-	igText("Overall progress: %i of %i frames captured",
-	       cs->status.num_collected, cs->params.num_collect_total);
+	float capture_completion = ((float)cs->status.num_collected) / (float)cs->params.num_collect_total;
+	igText("Overall progress: %i of %i frames captured", cs->status.num_collected, cs->params.num_collect_total);
 	igProgressBar(capture_completion, progress_dims, NULL);
 
 #else
@@ -349,8 +331,7 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	struct xrt_frame_sink *raw = NULL;
 	struct xrt_frame_sink *cali = NULL;
 
-	p->texs[p->num_texs++] =
-	    gui_ogl_sink_create("Calibration", cs->xfctx, &rgb);
+	p->texs[p->num_texs++] = gui_ogl_sink_create("Calibration", cs->xfctx, &rgb);
 	u_sink_create_to_r8g8b8_or_l8(cs->xfctx, rgb, &rgb);
 	u_sink_queue_create(cs->xfctx, rgb, &rgb);
 
@@ -358,8 +339,7 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	u_sink_create_to_r8g8b8_or_l8(cs->xfctx, raw, &raw);
 	u_sink_queue_create(cs->xfctx, raw, &raw);
 
-	t_calibration_stereo_create(cs->xfctx, &cs->params, &cs->status, rgb,
-	                            &cali);
+	t_calibration_stereo_create(cs->xfctx, &cs->params, &cs->status, rgb, &cali);
 	u_sink_split_create(cs->xfctx, raw, cali, &cali);
 	u_sink_deinterleaver_create(cs->xfctx, cali, &cali);
 	u_sink_queue_create(cs->xfctx, cali, &cali);
@@ -369,13 +349,11 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	U_ZERO(&qp);
 	qp.stereo_sbs = cs->params.stereo_sbs;
 	qp.ps4_cam = cs->settings->camera_type == XRT_SETTINGS_CAMERA_TYPE_PS4;
-	qp.leap_motion =
-	    cs->settings->camera_type == XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION;
+	qp.leap_motion = cs->settings->camera_type == XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION;
 	u_sink_quirk_create(cs->xfctx, cali, &qp, &cali);
 
 	// Now that we have setup a node graph, start it.
-	xrt_fs_stream_start(cs->xfs, cali, XRT_FS_CAPTURE_TYPE_CALIBRATION,
-	                    cs->settings->camera_mode);
+	xrt_fs_stream_start(cs->xfs, cali, XRT_FS_CAPTURE_TYPE_CALIBRATION, cs->settings->camera_mode);
 #else
 	gui_scene_delete_me(p, &cs->base);
 #endif
@@ -444,8 +422,7 @@ gui_scene_calibrate(struct gui_program *p,
 	if (strcmp(xfs->name, "Leap Motion Controller") == 0) {
 		cs->params.use_fisheye = true;
 		cs->params.stereo_sbs = true;
-		cs->settings->camera_type =
-		    XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION;
+		cs->settings->camera_type = XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION;
 		snprintf(cs->filename, sizeof(cs->filename), "LeapMotion");
 	}
 
@@ -463,8 +440,7 @@ gui_scene_calibrate(struct gui_program *p,
 	if (valve || elp) {
 		cs->params.use_fisheye = true;
 		cs->params.stereo_sbs = true;
-		cs->settings->camera_type =
-		    XRT_SETTINGS_CAMERA_TYPE_REGULAR_SBS;
+		cs->settings->camera_type = XRT_SETTINGS_CAMERA_TYPE_REGULAR_SBS;
 	}
 #endif
 	gui_scene_push_front(p, &cs->base);

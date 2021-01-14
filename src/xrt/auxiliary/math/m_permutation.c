@@ -77,9 +77,7 @@ step(struct m_permutator *mp)
  */
 
 bool
-m_permutator_step(struct m_permutator *mp,
-                  uint32_t *out_elements,
-                  uint32_t num_elements)
+m_permutator_step(struct m_permutator *mp, uint32_t *out_elements, uint32_t num_elements)
 {
 	if (mp->indices == NULL || mp->n != num_elements) {
 		setup(mp, num_elements);

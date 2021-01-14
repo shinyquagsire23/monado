@@ -26,9 +26,7 @@ DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "OXR_VIEWPORT_SCALE_PERCENTAGE", 100
 // clang-format on
 
 static bool
-oxr_system_matches(struct oxr_logger *log,
-                   struct oxr_system *sys,
-                   XrFormFactor form_factor)
+oxr_system_matches(struct oxr_logger *log, struct oxr_system *sys, XrFormFactor form_factor)
 {
 	return form_factor == sys->form_factor;
 }
@@ -41,10 +39,8 @@ oxr_system_select(struct oxr_logger *log,
                   struct oxr_system **out_selected)
 {
 	if (num_systems == 0) {
-		return oxr_error(
-		    log, XR_ERROR_FORM_FACTOR_UNSUPPORTED,
-		    "(getInfo->formFactor) no system available (given: %i)",
-		    form_factor);
+		return oxr_error(log, XR_ERROR_FORM_FACTOR_UNSUPPORTED,
+		                 "(getInfo->formFactor) no system available (given: %i)", form_factor);
 	}
 
 	struct oxr_system *selected = NULL;
@@ -68,22 +64,16 @@ oxr_system_select(struct oxr_logger *log,
 }
 
 XrResult
-oxr_system_verify_id(struct oxr_logger *log,
-                     const struct oxr_instance *inst,
-                     XrSystemId systemId)
+oxr_system_verify_id(struct oxr_logger *log, const struct oxr_instance *inst, XrSystemId systemId)
 {
 	if (systemId != 1) {
-		return oxr_error(log, XR_ERROR_SYSTEM_INVALID,
-		                 "Invalid system %" PRIu64, systemId);
+		return oxr_error(log, XR_ERROR_SYSTEM_INVALID, "Invalid system %" PRIu64, systemId);
 	}
 	return XR_SUCCESS;
 }
 
 XrResult
-oxr_system_get_by_id(struct oxr_logger *log,
-                     struct oxr_instance *inst,
-                     XrSystemId systemId,
-                     struct oxr_system **system)
+oxr_system_get_by_id(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId systemId, struct oxr_system **system)
 {
 	XrResult result = oxr_system_verify_id(log, inst, systemId);
 	if (result != XR_SUCCESS) {
@@ -97,10 +87,7 @@ oxr_system_get_by_id(struct oxr_logger *log,
 }
 
 XrResult
-oxr_system_fill_in(struct oxr_logger *log,
-                   struct oxr_instance *inst,
-                   XrSystemId systemId,
-                   struct oxr_system *sys)
+oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId systemId, struct oxr_system *sys)
 {
 	//! @todo handle other subaction paths?
 
@@ -183,8 +170,7 @@ oxr_system_fill_in(struct oxr_logger *log,
 }
 
 bool
-oxr_system_get_hand_tracking_support(struct oxr_logger *log,
-                                     struct oxr_instance *inst)
+oxr_system_get_hand_tracking_support(struct oxr_logger *log, struct oxr_instance *inst)
 {
 	struct oxr_system *sys = &inst->system;
 	struct xrt_device *left = GET_XDEV_BY_ROLE(sys, left);
@@ -196,9 +182,7 @@ oxr_system_get_hand_tracking_support(struct oxr_logger *log,
 }
 
 XrResult
-oxr_system_get_properties(struct oxr_logger *log,
-                          struct oxr_system *sys,
-                          XrSystemProperties *properties)
+oxr_system_get_properties(struct oxr_logger *log, struct oxr_system *sys, XrSystemProperties *properties)
 {
 	properties->vendorId = 42;
 	properties->systemId = sys->systemId;
@@ -206,8 +190,7 @@ oxr_system_get_properties(struct oxr_logger *log,
 	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sys, head);
 
 	// The magical 247 number, is to silence warnings.
-	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE,
-	         "Monado: %.*s", 247, xdev->str);
+	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE, "Monado: %.*s", 247, xdev->str);
 
 	// Get from compositor.
 	struct xrt_compositor_info *info = &sys->xcn->base.info;
@@ -215,24 +198,17 @@ oxr_system_get_properties(struct oxr_logger *log,
 	properties->graphicsProperties.maxLayerCount = info->max_layers;
 	properties->graphicsProperties.maxSwapchainImageWidth = 1024 * 16;
 	properties->graphicsProperties.maxSwapchainImageHeight = 1024 * 16;
-	properties->trackingProperties.orientationTracking =
-	    xdev->orientation_tracking_supported;
-	properties->trackingProperties.positionTracking =
-	    xdev->position_tracking_supported;
+	properties->trackingProperties.orientationTracking = xdev->orientation_tracking_supported;
+	properties->trackingProperties.positionTracking = xdev->position_tracking_supported;
 
-	XrSystemHandTrackingPropertiesEXT *hand_tracking_props =
-	    OXR_GET_OUTPUT_FROM_CHAIN(
-	        properties, XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT,
-	        XrSystemHandTrackingPropertiesEXT);
+	XrSystemHandTrackingPropertiesEXT *hand_tracking_props = OXR_GET_OUTPUT_FROM_CHAIN(
+	    properties, XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT, XrSystemHandTrackingPropertiesEXT);
 
 	if (hand_tracking_props) {
 		if (!sys->inst->extensions.EXT_hand_tracking) {
-			return oxr_error(
-			    log, XR_ERROR_VALIDATION_FAILURE,
-			    "XR_EXT_hand_tracking is not enabled.");
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "XR_EXT_hand_tracking is not enabled.");
 		}
-		hand_tracking_props->supportsHandTracking =
-		    oxr_system_get_hand_tracking_support(log, sys->inst);
+		hand_tracking_props->supportsHandTracking = oxr_system_get_hand_tracking_support(log, sys->inst);
 	}
 
 	return XR_SUCCESS;
@@ -245,10 +221,8 @@ oxr_system_enumerate_view_confs(struct oxr_logger *log,
                                 uint32_t *viewConfigurationTypeCountOutput,
                                 XrViewConfigurationType *viewConfigurationTypes)
 {
-	OXR_TWO_CALL_HELPER(log, viewConfigurationTypeCapacityInput,
-	                    viewConfigurationTypeCountOutput,
-	                    viewConfigurationTypes, 1, &sys->view_config_type,
-	                    XR_SUCCESS);
+	OXR_TWO_CALL_HELPER(log, viewConfigurationTypeCapacityInput, viewConfigurationTypeCountOutput,
+	                    viewConfigurationTypes, 1, &sys->view_config_type, XR_SUCCESS);
 }
 
 XrResult
@@ -260,23 +234,18 @@ oxr_system_enumerate_blend_modes(struct oxr_logger *log,
                                  XrEnvironmentBlendMode *environmentBlendModes)
 {
 	//! @todo Take into account viewConfigurationType
-	OXR_TWO_CALL_HELPER(log, environmentBlendModeCapacityInput,
-	                    environmentBlendModeCountOutput,
-	                    environmentBlendModes, sys->num_blend_modes,
-	                    sys->blend_modes, XR_SUCCESS);
+	OXR_TWO_CALL_HELPER(log, environmentBlendModeCapacityInput, environmentBlendModeCountOutput,
+	                    environmentBlendModes, sys->num_blend_modes, sys->blend_modes, XR_SUCCESS);
 }
 
 XrResult
-oxr_system_get_view_conf_properties(
-    struct oxr_logger *log,
-    struct oxr_system *sys,
-    XrViewConfigurationType viewConfigurationType,
-    XrViewConfigurationProperties *configurationProperties)
+oxr_system_get_view_conf_properties(struct oxr_logger *log,
+                                    struct oxr_system *sys,
+                                    XrViewConfigurationType viewConfigurationType,
+                                    XrViewConfigurationProperties *configurationProperties)
 {
 	if (viewConfigurationType != sys->view_config_type) {
-		return oxr_error(log,
-		                 XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED,
-		                 "Invalid view configuration type");
+		return oxr_error(log, XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED, "Invalid view configuration type");
 	}
 
 	// clang-format off
@@ -288,8 +257,7 @@ oxr_system_get_view_conf_properties(
 }
 
 static void
-view_configuration_view_fill_in(XrViewConfigurationView *target_view,
-                                XrViewConfigurationView *source_view)
+view_configuration_view_fill_in(XrViewConfigurationView *target_view, XrViewConfigurationView *source_view)
 {
 	// clang-format off
 	target_view->recommendedImageRectWidth       = source_view->recommendedImageRectWidth;
@@ -302,21 +270,17 @@ view_configuration_view_fill_in(XrViewConfigurationView *target_view,
 }
 
 XrResult
-oxr_system_enumerate_view_conf_views(
-    struct oxr_logger *log,
-    struct oxr_system *sys,
-    XrViewConfigurationType viewConfigurationType,
-    uint32_t viewCapacityInput,
-    uint32_t *viewCountOutput,
-    XrViewConfigurationView *views)
+oxr_system_enumerate_view_conf_views(struct oxr_logger *log,
+                                     struct oxr_system *sys,
+                                     XrViewConfigurationType viewConfigurationType,
+                                     uint32_t viewCapacityInput,
+                                     uint32_t *viewCountOutput,
+                                     XrViewConfigurationView *views)
 {
 	if (viewConfigurationType != sys->view_config_type) {
-		return oxr_error(log,
-		                 XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED,
-		                 "Invalid view configuration type");
+		return oxr_error(log, XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED, "Invalid view configuration type");
 	}
 
-	OXR_TWO_CALL_FILL_IN_HELPER(log, viewCapacityInput, viewCountOutput,
-	                            views, 2, view_configuration_view_fill_in,
+	OXR_TWO_CALL_FILL_IN_HELPER(log, viewCapacityInput, viewCountOutput, views, 2, view_configuration_view_fill_in,
 	                            sys->views, XR_SUCCESS);
 }

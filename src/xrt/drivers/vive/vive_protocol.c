@@ -68,8 +68,7 @@ vive_read_config(struct os_hid_device *hid_dev)
 	    .id = VIVE_CONFIG_START_REPORT_ID,
 	};
 
-	int ret = os_hid_get_feature_timeout(hid_dev, &start_report,
-	                                     sizeof(start_report), 100);
+	int ret = os_hid_get_feature_timeout(hid_dev, &start_report, sizeof(start_report), 100);
 	if (ret < 0) {
 		U_LOG_E("Could not get config start report.");
 		return NULL;
@@ -83,8 +82,7 @@ vive_read_config(struct os_hid_device *hid_dev)
 
 	uint32_t count = 0;
 	do {
-		ret = os_hid_get_feature_timeout(hid_dev, &report,
-		                                 sizeof(report), 100);
+		ret = os_hid_get_feature_timeout(hid_dev, &report, sizeof(report), 100);
 		if (ret < 0) {
 			U_LOG_E("Read error after %d bytes: %d", count, ret);
 			free(config_z);
@@ -145,12 +143,9 @@ vive_read_config(struct os_hid_device *hid_dev)
 }
 
 int
-vive_get_imu_range_report(struct os_hid_device *hid_dev,
-                          double *gyro_range,
-                          double *acc_range)
+vive_get_imu_range_report(struct os_hid_device *hid_dev, double *gyro_range, double *acc_range)
 {
-	struct vive_imu_range_modes_report report = {
-	    .id = VIVE_IMU_RANGE_MODES_REPORT_ID};
+	struct vive_imu_range_modes_report report = {.id = VIVE_IMU_RANGE_MODES_REPORT_ID};
 
 	int ret;
 
@@ -164,16 +159,14 @@ vive_get_imu_range_report(struct os_hid_device *hid_dev,
 		U_LOG_W(
 		    "Invalid gyroscope and accelerometer data."
 		    "Trying to fetch again.");
-		ret = os_hid_get_feature(hid_dev, report.id, (uint8_t *)&report,
-		                         sizeof(report));
+		ret = os_hid_get_feature(hid_dev, report.id, (uint8_t *)&report, sizeof(report));
 		if (ret < 0) {
 			U_LOG_E("Could not get feature report %d.", report.id);
 			return ret;
 		}
 
 		if (!report.gyro_range || !report.accel_range) {
-			U_LOG_E("Unexpected range mode report: %02x %02x %02x",
-			        report.id, report.gyro_range,
+			U_LOG_E("Unexpected range mode report: %02x %02x %02x", report.id, report.gyro_range,
 			        report.accel_range);
 			for (int i = 0; i < 61; i++)
 				printf(" %02x", report.unknown[i]);
@@ -214,8 +207,7 @@ vive_read_firmware(struct os_hid_device *hid_dev,
 	};
 
 	int ret;
-	ret = os_hid_get_feature(hid_dev, report.id, (uint8_t *)&report,
-	                         sizeof(report));
+	ret = os_hid_get_feature(hid_dev, report.id, (uint8_t *)&report, sizeof(report));
 	if (ret < 0)
 		return ret;
 

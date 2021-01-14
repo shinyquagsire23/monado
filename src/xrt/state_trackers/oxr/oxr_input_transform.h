@@ -191,8 +191,7 @@ oxr_input_transform_process(const struct oxr_input_transform *transforms,
  * @public @memberof oxr_input_transform
  */
 bool
-oxr_input_transform_init_root(struct oxr_input_transform *transform,
-                              const enum xrt_input_type input_type);
+oxr_input_transform_init_root(struct oxr_input_transform *transform, const enum xrt_input_type input_type);
 
 /*!
  * Allocate a transform to get the X component of a Vec2.
@@ -208,8 +207,7 @@ oxr_input_transform_init_root(struct oxr_input_transform *transform,
  * @public @memberof oxr_input_transform
  */
 bool
-oxr_input_transform_init_vec2_get_x(struct oxr_input_transform *transform,
-                                    const struct oxr_input_transform *parent);
+oxr_input_transform_init_vec2_get_x(struct oxr_input_transform *transform, const struct oxr_input_transform *parent);
 
 /*!
  * Allocate a transform to get the Y component of a Vec2.
@@ -225,8 +223,7 @@ oxr_input_transform_init_vec2_get_x(struct oxr_input_transform *transform,
  * @public @memberof oxr_input_transform
  */
 bool
-oxr_input_transform_init_vec2_get_y(struct oxr_input_transform *transform,
-                                    const struct oxr_input_transform *parent);
+oxr_input_transform_init_vec2_get_y(struct oxr_input_transform *transform, const struct oxr_input_transform *parent);
 
 /*!
  * Allocate a transform to threshold a float to a bool.

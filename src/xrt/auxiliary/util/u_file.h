@@ -23,9 +23,7 @@ ssize_t
 u_file_get_config_dir(char *out_path, size_t out_path_size);
 
 ssize_t
-u_file_get_path_in_config_dir(const char *suffix,
-                              char *out_path,
-                              size_t out_path_size);
+u_file_get_path_in_config_dir(const char *suffix, char *out_path, size_t out_path_size);
 
 FILE *
 u_file_open_file_in_config_dir(const char *filename, const char *mode);

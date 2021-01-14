@@ -34,41 +34,33 @@ oxr_xrSyncActions(XrSession session, const XrActionsSyncInfo *syncInfo)
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrSyncActions");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, syncInfo,
-	                                 XR_TYPE_ACTIONS_SYNC_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, syncInfo, XR_TYPE_ACTIONS_SYNC_INFO);
 
 	if (syncInfo->countActiveActionSets == 0) {
-		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
-		                 "(syncInfo->countActiveActionSets == 0)");
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE, "(syncInfo->countActiveActionSets == 0)");
 	}
 
 	for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
 		struct oxr_action_set *act_set = NULL;
-		OXR_VERIFY_ACTIONSET_NOT_NULL(
-		    &log, syncInfo->activeActionSets[i].actionSet, act_set);
+		OXR_VERIFY_ACTIONSET_NOT_NULL(&log, syncInfo->activeActionSets[i].actionSet, act_set);
 
-		XrResult res = oxr_verify_subaction_path_sync(
-		    &log, sess->sys->inst,
-		    syncInfo->activeActionSets[i].subactionPath, i);
+		XrResult res = oxr_verify_subaction_path_sync(&log, sess->sys->inst,
+		                                              syncInfo->activeActionSets[i].subactionPath, i);
 		if (res != XR_SUCCESS) {
 			return res;
 		}
 	}
 
-	return oxr_action_sync_data(&log, sess, syncInfo->countActiveActionSets,
-	                            syncInfo->activeActionSets);
+	return oxr_action_sync_data(&log, sess, syncInfo->countActiveActionSets, syncInfo->activeActionSets);
 }
 
 XrResult
-oxr_xrAttachSessionActionSets(XrSession session,
-                              const XrSessionActionSetsAttachInfo *bindInfo)
+oxr_xrAttachSessionActionSets(XrSession session, const XrSessionActionSetsAttachInfo *bindInfo)
 {
 	struct oxr_session *sess;
 	struct oxr_logger log;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrAttachSessionActionSets");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
-	    &log, bindInfo, XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrAttachSessionActionSets");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, bindInfo, XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO);
 
 	if (sess->act_set_attachments != NULL) {
 		return oxr_error(&log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
@@ -84,25 +76,20 @@ oxr_xrAttachSessionActionSets(XrSession session,
 
 	for (uint32_t i = 0; i < bindInfo->countActionSets; i++) {
 		struct oxr_action_set *act_set = NULL;
-		OXR_VERIFY_ACTIONSET_NOT_NULL(&log, bindInfo->actionSets[i],
-		                              act_set);
+		OXR_VERIFY_ACTIONSET_NOT_NULL(&log, bindInfo->actionSets[i], act_set);
 	}
 
 	return oxr_session_attach_action_sets(&log, sess, bindInfo);
 }
 
 XrResult
-oxr_xrSuggestInteractionProfileBindings(
-    XrInstance instance,
-    const XrInteractionProfileSuggestedBinding *suggestedBindings)
+oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
+                                        const XrInteractionProfileSuggestedBinding *suggestedBindings)
 {
 	struct oxr_instance *inst;
 	struct oxr_logger log;
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrSuggestInteractionProfileBindings");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
-	    &log, suggestedBindings,
-	    XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING);
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrSuggestInteractionProfileBindings");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, suggestedBindings, XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING);
 
 	if (suggestedBindings->countSuggestedBindings == 0) {
 		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
@@ -116,11 +103,7 @@ oxr_xrSuggestInteractionProfileBindings(
 
 	XrResult ret = oxr_path_get_string(&log, inst, ip, &str, &length);
 	if (ret != XR_SUCCESS) {
-		oxr_error(
-		    &log, ret,
-		    "(suggestedBindings->countSuggestedBindings == 0x%08" PRIx64
-		    ") invalid path",
-		    ip);
+		oxr_error(&log, ret, "(suggestedBindings->countSuggestedBindings == 0x%08" PRIx64 ") invalid path", ip);
 	}
 
 	// Used in the loop that verifies the suggested bindings paths.
@@ -147,65 +130,55 @@ oxr_xrSuggestInteractionProfileBindings(
 	} else if (ip == inst->path_cache.mndx_ball_on_a_stick_controller) {
 		func = oxr_verify_mndx_ball_on_a_stick_controller_subpath;
 	} else {
-		return oxr_error(
-		    &log, XR_ERROR_PATH_UNSUPPORTED,
-		    "(suggestedBindings->interactionProfile == \"%s\") is not "
-		    "a supported interaction profile",
-		    str);
+		return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
+		                 "(suggestedBindings->interactionProfile == \"%s\") is not "
+		                 "a supported interaction profile",
+		                 str);
 	}
 
 
 	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
-		const XrActionSuggestedBinding *s =
-		    &suggestedBindings->suggestedBindings[i];
+		const XrActionSuggestedBinding *s = &suggestedBindings->suggestedBindings[i];
 
 		struct oxr_action *act;
 		OXR_VERIFY_ACTION_NOT_NULL(&log, s->action, act);
 
 		if (act->act_set->data->ever_attached) {
-			return oxr_error(
-			    &log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
-			    "(suggestedBindings->suggestedBindings[%zu]->"
-			    "action) action '%s/%s' has already been attached",
-			    i, act->act_set->data->name, act->data->name);
+			return oxr_error(&log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
+			                 "(suggestedBindings->suggestedBindings[%zu]->"
+			                 "action) action '%s/%s' has already been attached",
+			                 i, act->act_set->data->name, act->data->name);
 		}
 
-		ret =
-		    oxr_path_get_string(&log, inst, s->binding, &str, &length);
+		ret = oxr_path_get_string(&log, inst, s->binding, &str, &length);
 		if (ret != XR_SUCCESS) {
-			return oxr_error(
-			    &log, XR_ERROR_PATH_INVALID,
-			    "(suggestedBindings->suggestedBindings[%zu]->"
-			    "binding == %" PRIu64 ") is not a valid path",
-			    i, s->binding);
+			return oxr_error(&log, XR_ERROR_PATH_INVALID,
+			                 "(suggestedBindings->suggestedBindings[%zu]->"
+			                 "binding == %" PRIu64 ") is not a valid path",
+			                 i, s->binding);
 		}
 
 		if (!func(str, length)) {
-			return oxr_error(
-			    &log, XR_ERROR_PATH_UNSUPPORTED,
-			    "(suggestedBindings->suggestedBindings[%zu]->"
-			    "binding == \"%s\") is not a valid path",
-			    i, str);
+			return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
+			                 "(suggestedBindings->suggestedBindings[%zu]->"
+			                 "binding == \"%s\") is not a valid path",
+			                 i, str);
 		}
 	}
 
-	return oxr_action_suggest_interaction_profile_bindings(
-	    &log, inst, suggestedBindings);
+	return oxr_action_suggest_interaction_profile_bindings(&log, inst, suggestedBindings);
 }
 
 XrResult
-oxr_xrGetCurrentInteractionProfile(
-    XrSession session,
-    XrPath topLevelUserPath,
-    XrInteractionProfileState *interactionProfile)
+oxr_xrGetCurrentInteractionProfile(XrSession session,
+                                   XrPath topLevelUserPath,
+                                   XrInteractionProfileState *interactionProfile)
 {
 	struct oxr_instance *inst = NULL;
 	struct oxr_session *sess = NULL;
 	struct oxr_logger log;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrGetCurrentInteractionProfile");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, interactionProfile,
-	                                 XR_TYPE_INTERACTION_PROFILE_STATE);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetCurrentInteractionProfile");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, interactionProfile, XR_TYPE_INTERACTION_PROFILE_STATE);
 
 	// Short hand.
 	inst = sess->sys->inst;
@@ -217,16 +190,14 @@ oxr_xrGetCurrentInteractionProfile(
 	}
 
 	if (!oxr_path_is_valid(&log, inst, topLevelUserPath)) {
-		return oxr_error(
-		    &log, XR_ERROR_PATH_INVALID,
-		    "(topLevelUserPath == %zu) Is not a valid path",
-		    topLevelUserPath);
+		return oxr_error(&log, XR_ERROR_PATH_INVALID, "(topLevelUserPath == %zu) Is not a valid path",
+		                 topLevelUserPath);
 	}
 
 	bool fail = true;
-#define COMPUTE_FAIL(X)                                                        \
-	if (topLevelUserPath == inst->path_cache.X) {                          \
-		fail = false;                                                  \
+#define COMPUTE_FAIL(X)                                                                                                \
+	if (topLevelUserPath == inst->path_cache.X) {                                                                  \
+		fail = false;                                                                                          \
 	}
 
 	OXR_FOR_EACH_SUBACTION_PATH(COMPUTE_FAIL)
@@ -243,33 +214,28 @@ oxr_xrGetCurrentInteractionProfile(
 	}
 
 	/* XXX: How do we return XR_SESSION_LOSS_PENDING here? */
-	return oxr_action_get_current_interaction_profile(
-	    &log, sess, topLevelUserPath, interactionProfile);
+	return oxr_action_get_current_interaction_profile(&log, sess, topLevelUserPath, interactionProfile);
 }
 
 XrResult
-oxr_xrGetInputSourceLocalizedName(
-    XrSession session,
-    const XrInputSourceLocalizedNameGetInfo *getInfo,
-    uint32_t bufferCapacityInput,
-    uint32_t *bufferCountOutput,
-    char *buffer)
+oxr_xrGetInputSourceLocalizedName(XrSession session,
+                                  const XrInputSourceLocalizedNameGetInfo *getInfo,
+                                  uint32_t bufferCapacityInput,
+                                  uint32_t *bufferCountOutput,
+                                  char *buffer)
 {
 	struct oxr_instance *inst = NULL;
 	struct oxr_session *sess;
 	struct oxr_logger log;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrGetInputSourceLocalizedName");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
-	    &log, getInfo, XR_TYPE_INPUT_SOURCE_LOCALIZED_NAME_GET_INFO);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetInputSourceLocalizedName");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo, XR_TYPE_INPUT_SOURCE_LOCALIZED_NAME_GET_INFO);
 
 	// Short hand.
 	inst = sess->sys->inst;
 
 	if (sess->act_set_attachments == NULL) {
-		return oxr_error(
-		    &log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
-		    "ActionSet(s) have not been attached to this session");
+		return oxr_error(&log, XR_ERROR_ACTIONSET_NOT_ATTACHED,
+		                 "ActionSet(s) have not been attached to this session");
 	}
 
 	if (getInfo->sourcePath == XR_NULL_PATH) {
@@ -279,33 +245,25 @@ oxr_xrGetInputSourceLocalizedName(
 	}
 
 	if (!oxr_path_is_valid(&log, inst, getInfo->sourcePath)) {
-		return oxr_error(
-		    &log, XR_ERROR_PATH_INVALID,
-		    "(getInfo->sourcePath == %zu) Is not a valid path",
-		    getInfo->sourcePath);
+		return oxr_error(&log, XR_ERROR_PATH_INVALID, "(getInfo->sourcePath == %zu) Is not a valid path",
+		                 getInfo->sourcePath);
 	}
 
-	const XrInputSourceLocalizedNameFlags all =
-	    XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT |
-	    XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT |
-	    XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT;
+	const XrInputSourceLocalizedNameFlags all = XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT |
+	                                            XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT |
+	                                            XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT;
 
 	if ((getInfo->whichComponents & ~all) != 0) {
-		return oxr_error(
-		    &log, XR_ERROR_VALIDATION_FAILURE,
-		    "(getInfo->whichComponents == %08zx) contains invalid bits",
-		    getInfo->whichComponents);
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(getInfo->whichComponents == %08zx) contains invalid bits", getInfo->whichComponents);
 	}
 
 	if (getInfo->whichComponents == 0) {
-		return oxr_error(
-		    &log, XR_ERROR_VALIDATION_FAILURE,
-		    "(getInfo->whichComponents == 0) can not be zero");
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE, "(getInfo->whichComponents == 0) can not be zero");
 	}
 
-	return oxr_action_get_input_source_localized_name(
-	    &log, sess, getInfo, bufferCapacityInput, bufferCountOutput,
-	    buffer);
+	return oxr_action_get_input_source_localized_name(&log, sess, getInfo, bufferCapacityInput, bufferCountOutput,
+	                                                  buffer);
 }
 
 
@@ -316,9 +274,7 @@ oxr_xrGetInputSourceLocalizedName(
  */
 
 XrResult
-oxr_xrCreateActionSet(XrInstance instance,
-                      const XrActionSetCreateInfo *createInfo,
-                      XrActionSet *actionSet)
+oxr_xrCreateActionSet(XrInstance instance, const XrActionSetCreateInfo *createInfo, XrActionSet *actionSet)
 {
 	struct oxr_action_set *act_set = NULL;
 	struct oxr_instance *inst = NULL;
@@ -326,13 +282,10 @@ oxr_xrCreateActionSet(XrInstance instance,
 	struct oxr_logger log;
 	int h_ret;
 	XrResult ret;
-	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst,
-	                                 "xrCreateActionSet");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
-	                                 XR_TYPE_ACTION_SET_CREATE_INFO);
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrCreateActionSet");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo, XR_TYPE_ACTION_SET_CREATE_INFO);
 	OXR_VERIFY_ARG_NOT_NULL(&log, actionSet);
-	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(
-	    &log, createInfo->actionSetName);
+	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(&log, createInfo->actionSetName);
 	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionSetName);
 
 
@@ -340,17 +293,13 @@ oxr_xrCreateActionSet(XrInstance instance,
 	 * Dup checks.
 	 */
 
-	h_ret = u_hashset_find_c_str(inst->action_sets.name_store,
-	                             createInfo->actionSetName, &d);
+	h_ret = u_hashset_find_c_str(inst->action_sets.name_store, createInfo->actionSetName, &d);
 	if (h_ret >= 0) {
-		return oxr_error(
-		    &log, XR_ERROR_NAME_DUPLICATED,
-		    "(createInfo->actionSetName == '%s') is duplicated",
-		    createInfo->actionSetName);
+		return oxr_error(&log, XR_ERROR_NAME_DUPLICATED, "(createInfo->actionSetName == '%s') is duplicated",
+		                 createInfo->actionSetName);
 	}
 
-	h_ret = u_hashset_find_c_str(inst->action_sets.loc_store,
-	                             createInfo->localizedActionSetName, &d);
+	h_ret = u_hashset_find_c_str(inst->action_sets.loc_store, createInfo->localizedActionSetName, &d);
 	if (h_ret >= 0) {
 		return oxr_error(&log, XR_ERROR_LOCALIZED_NAME_DUPLICATED,
 		                 "(createInfo->localizedActionSetName == '%s') "
@@ -378,8 +327,7 @@ oxr_xrDestroyActionSet(XrActionSet actionSet)
 {
 	struct oxr_action_set *act_set;
 	struct oxr_logger log;
-	OXR_VERIFY_ACTIONSET_AND_INIT_LOG(&log, actionSet, act_set,
-	                                  "xrDestroyActionSet");
+	OXR_VERIFY_ACTIONSET_AND_INIT_LOG(&log, actionSet, act_set, "xrDestroyActionSet");
 
 	return oxr_handle_destroy(&log, &act_set->handle);
 }
@@ -392,9 +340,7 @@ oxr_xrDestroyActionSet(XrActionSet actionSet)
  */
 
 XrResult
-oxr_xrCreateAction(XrActionSet actionSet,
-                   const XrActionCreateInfo *createInfo,
-                   XrAction *action)
+oxr_xrCreateAction(XrActionSet actionSet, const XrActionCreateInfo *createInfo, XrAction *action)
 {
 	struct oxr_action_set *act_set;
 	struct u_hashset_item *d = NULL;
@@ -403,26 +349,21 @@ oxr_xrCreateAction(XrActionSet actionSet,
 	XrResult ret;
 	int h_ret;
 
-	OXR_VERIFY_ACTIONSET_AND_INIT_LOG(&log, actionSet, act_set,
-	                                  "xrCreateAction");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo,
-	                                 XR_TYPE_ACTION_CREATE_INFO);
-	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(&log,
-	                                              createInfo->actionName);
+	OXR_VERIFY_ACTIONSET_AND_INIT_LOG(&log, actionSet, act_set, "xrCreateAction");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo, XR_TYPE_ACTION_CREATE_INFO);
+	OXR_VERIFY_ARG_SINGLE_LEVEL_FIXED_LENGTH_PATH(&log, createInfo->actionName);
 	OXR_VERIFY_ARG_LOCALIZED_NAME(&log, createInfo->localizedActionName);
 	OXR_VERIFY_ARG_NOT_NULL(&log, action);
 
 	if (act_set->data->ever_attached) {
-		return oxr_error(
-		    &log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
-		    "(actionSet) has been attached and is now immutable");
+		return oxr_error(&log, XR_ERROR_ACTIONSETS_ALREADY_ATTACHED,
+		                 "(actionSet) has been attached and is now immutable");
 	}
 
 	struct oxr_instance *inst = act_set->inst;
 
-	ret = oxr_verify_subaction_paths_create(
-	    &log, inst, createInfo->countSubactionPaths,
-	    createInfo->subactionPaths, "createInfo->subactionPaths");
+	ret = oxr_verify_subaction_paths_create(&log, inst, createInfo->countSubactionPaths, createInfo->subactionPaths,
+	                                        "createInfo->subactionPaths");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
@@ -432,17 +373,13 @@ oxr_xrCreateAction(XrActionSet actionSet,
 	 * Dup checks.
 	 */
 
-	h_ret = u_hashset_find_c_str(act_set->data->actions.name_store,
-	                             createInfo->actionName, &d);
+	h_ret = u_hashset_find_c_str(act_set->data->actions.name_store, createInfo->actionName, &d);
 	if (h_ret >= 0) {
-		return oxr_error(
-		    &log, XR_ERROR_NAME_DUPLICATED,
-		    "(createInfo->actionName == '%s') is duplicated",
-		    createInfo->actionName);
+		return oxr_error(&log, XR_ERROR_NAME_DUPLICATED, "(createInfo->actionName == '%s') is duplicated",
+		                 createInfo->actionName);
 	}
 
-	h_ret = u_hashset_find_c_str(act_set->data->actions.loc_store,
-	                             createInfo->localizedActionName, &d);
+	h_ret = u_hashset_find_c_str(act_set->data->actions.loc_store, createInfo->localizedActionName, &d);
 	if (h_ret >= 0) {
 		return oxr_error(&log, XR_ERROR_LOCALIZED_NAME_DUPLICATED,
 		                 "(createInfo->localizedActionName == '%s') "
@@ -476,132 +413,102 @@ oxr_xrDestroyAction(XrAction action)
 }
 
 XrResult
-oxr_xrGetActionStateBoolean(XrSession session,
-                            const XrActionStateGetInfo *getInfo,
-                            XrActionStateBoolean *data)
+oxr_xrGetActionStateBoolean(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStateBoolean *data)
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_sub_paths sub_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrGetActionStateBoolean");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data,
-	                                 XR_TYPE_ACTION_STATE_BOOLEAN);
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo,
-	                                 XR_TYPE_ACTION_STATE_GET_INFO);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetActionStateBoolean");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data, XR_TYPE_ACTION_STATE_BOOLEAN);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo, XR_TYPE_ACTION_STATE_GET_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, getInfo->action, act);
 
 	if (act->data->action_type != XR_ACTION_TYPE_BOOLEAN_INPUT) {
-		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 "Not created with boolean type");
+		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with boolean type");
 	}
 
-	ret = oxr_verify_subaction_path_get(
-	    &log, act->act_set->inst, getInfo->subactionPath,
-	    &act->data->sub_paths, &sub_paths, "getInfo->subactionPath");
+	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath, &act->data->sub_paths,
+	                                    &sub_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 
-	return oxr_action_get_boolean(&log, sess, act->act_key, sub_paths,
-	                              data);
+	return oxr_action_get_boolean(&log, sess, act->act_key, sub_paths, data);
 }
 
 XrResult
-oxr_xrGetActionStateFloat(XrSession session,
-                          const XrActionStateGetInfo *getInfo,
-                          XrActionStateFloat *data)
+oxr_xrGetActionStateFloat(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStateFloat *data)
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_sub_paths sub_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrGetActionStateFloat");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data,
-	                                 XR_TYPE_ACTION_STATE_FLOAT);
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo,
-	                                 XR_TYPE_ACTION_STATE_GET_INFO);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetActionStateFloat");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data, XR_TYPE_ACTION_STATE_FLOAT);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo, XR_TYPE_ACTION_STATE_GET_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, getInfo->action, act);
 
 	if (act->data->action_type != XR_ACTION_TYPE_FLOAT_INPUT) {
-		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 "Not created with float type");
+		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with float type");
 	}
 
-	ret = oxr_verify_subaction_path_get(
-	    &log, act->act_set->inst, getInfo->subactionPath,
-	    &act->data->sub_paths, &sub_paths, "getInfo->subactionPath");
+	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath, &act->data->sub_paths,
+	                                    &sub_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 
-	return oxr_action_get_vector1f(&log, sess, act->act_key, sub_paths,
-	                               data);
+	return oxr_action_get_vector1f(&log, sess, act->act_key, sub_paths, data);
 }
 
 XrResult
-oxr_xrGetActionStateVector2f(XrSession session,
-                             const XrActionStateGetInfo *getInfo,
-                             XrActionStateVector2f *data)
+oxr_xrGetActionStateVector2f(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStateVector2f *data)
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_sub_paths sub_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrGetActionStateVector2f");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data,
-	                                 XR_TYPE_ACTION_STATE_VECTOR2F);
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo,
-	                                 XR_TYPE_ACTION_STATE_GET_INFO);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetActionStateVector2f");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data, XR_TYPE_ACTION_STATE_VECTOR2F);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo, XR_TYPE_ACTION_STATE_GET_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, getInfo->action, act);
 
 	if (act->data->action_type != XR_ACTION_TYPE_VECTOR2F_INPUT) {
-		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 "Not created with float[2] type");
+		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with float[2] type");
 	}
 
-	ret = oxr_verify_subaction_path_get(
-	    &log, act->act_set->inst, getInfo->subactionPath,
-	    &act->data->sub_paths, &sub_paths, "getInfo->subactionPath");
+	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath, &act->data->sub_paths,
+	                                    &sub_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 
-	return oxr_action_get_vector2f(&log, sess, act->act_key, sub_paths,
-	                               data);
+	return oxr_action_get_vector2f(&log, sess, act->act_key, sub_paths, data);
 }
 
 XrResult
-oxr_xrGetActionStatePose(XrSession session,
-                         const XrActionStateGetInfo *getInfo,
-                         XrActionStatePose *data)
+oxr_xrGetActionStatePose(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStatePose *data)
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_sub_paths sub_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrGetActionStatePose");
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetActionStatePose");
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, data, XR_TYPE_ACTION_STATE_POSE);
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo,
-	                                 XR_TYPE_ACTION_STATE_GET_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, getInfo, XR_TYPE_ACTION_STATE_GET_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, getInfo->action, act);
 
 	if (act->data->action_type != XR_ACTION_TYPE_POSE_INPUT) {
-		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 "Not created with pose type");
+		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with pose type");
 	}
 
-	ret = oxr_verify_subaction_path_get(
-	    &log, act->act_set->inst, getInfo->subactionPath,
-	    &act->data->sub_paths, &sub_paths, "getInfo->subactionPath");
+	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, getInfo->subactionPath, &act->data->sub_paths,
+	                                    &sub_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
@@ -610,21 +517,17 @@ oxr_xrGetActionStatePose(XrSession session,
 }
 
 XrResult
-oxr_xrEnumerateBoundSourcesForAction(
-    XrSession session,
-    const XrBoundSourcesForActionEnumerateInfo *enumerateInfo,
-    uint32_t sourceCapacityInput,
-    uint32_t *sourceCountOutput,
-    XrPath *sources)
+oxr_xrEnumerateBoundSourcesForAction(XrSession session,
+                                     const XrBoundSourcesForActionEnumerateInfo *enumerateInfo,
+                                     uint32_t sourceCapacityInput,
+                                     uint32_t *sourceCountOutput,
+                                     XrPath *sources)
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_logger log;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrEnumerateBoundSourcesForAction");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(
-	    &log, enumerateInfo,
-	    XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEnumerateBoundSourcesForAction");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, enumerateInfo, XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, enumerateInfo->action, act);
 
 	if (sess->act_set_attachments == NULL) {
@@ -633,9 +536,8 @@ oxr_xrEnumerateBoundSourcesForAction(
 		                 "been called on this session.");
 	}
 
-	return oxr_action_enumerate_bound_sources(&log, sess, act->act_key,
-	                                          sourceCapacityInput,
-	                                          sourceCountOutput, sources);
+	return oxr_action_enumerate_bound_sources(&log, sess, act->act_key, sourceCapacityInput, sourceCountOutput,
+	                                          sources);
 }
 
 
@@ -655,57 +557,45 @@ oxr_xrApplyHapticFeedback(XrSession session,
 	struct oxr_sub_paths sub_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrApplyHapticFeedback");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, hapticActionInfo,
-	                                 XR_TYPE_HAPTIC_ACTION_INFO);
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, hapticEvent,
-	                                 XR_TYPE_HAPTIC_VIBRATION);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrApplyHapticFeedback");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, hapticActionInfo, XR_TYPE_HAPTIC_ACTION_INFO);
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, hapticEvent, XR_TYPE_HAPTIC_VIBRATION);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, hapticActionInfo->action, act);
 
-	ret = oxr_verify_subaction_path_get(
-	    &log, act->act_set->inst, hapticActionInfo->subactionPath,
-	    &act->data->sub_paths, &sub_paths, "getInfo->subactionPath");
+	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, hapticActionInfo->subactionPath,
+	                                    &act->data->sub_paths, &sub_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 
 	if (act->data->action_type != XR_ACTION_TYPE_VIBRATION_OUTPUT) {
-		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 "Not created with output vibration type");
+		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with output vibration type");
 	}
 
-	return oxr_action_apply_haptic_feedback(&log, sess, act->act_key,
-	                                        sub_paths, hapticEvent);
+	return oxr_action_apply_haptic_feedback(&log, sess, act->act_key, sub_paths, hapticEvent);
 }
 
 XrResult
-oxr_xrStopHapticFeedback(XrSession session,
-                         const XrHapticActionInfo *hapticActionInfo)
+oxr_xrStopHapticFeedback(XrSession session, const XrHapticActionInfo *hapticActionInfo)
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_sub_paths sub_paths = {0};
 	struct oxr_logger log;
 	XrResult ret;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess,
-	                                "xrStopHapticFeedback");
-	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, hapticActionInfo,
-	                                 XR_TYPE_HAPTIC_ACTION_INFO);
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrStopHapticFeedback");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, hapticActionInfo, XR_TYPE_HAPTIC_ACTION_INFO);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, hapticActionInfo->action, act);
 
-	ret = oxr_verify_subaction_path_get(
-	    &log, act->act_set->inst, hapticActionInfo->subactionPath,
-	    &act->data->sub_paths, &sub_paths, "getInfo->subactionPath");
+	ret = oxr_verify_subaction_path_get(&log, act->act_set->inst, hapticActionInfo->subactionPath,
+	                                    &act->data->sub_paths, &sub_paths, "getInfo->subactionPath");
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 
 	if (act->data->action_type != XR_ACTION_TYPE_VIBRATION_OUTPUT) {
-		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH,
-		                 "Not created with output vibration type");
+		return oxr_error(&log, XR_ERROR_ACTION_TYPE_MISMATCH, "Not created with output vibration type");
 	}
 
-	return oxr_action_stop_haptic_feedback(&log, sess, act->act_key,
-	                                       sub_paths);
+	return oxr_action_stop_haptic_feedback(&log, sess, act->act_key, sub_paths);
 }

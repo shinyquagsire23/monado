@@ -54,12 +54,7 @@ public:
  */
 
 static void
-process_pixel(bool f1,
-              bool f1_diff,
-              uint8_t *hsv_cap,
-              uint8_t *hsv_opt,
-              uint8_t *hsv_diff,
-              const uint8_t *rgb)
+process_pixel(bool f1, bool f1_diff, uint8_t *hsv_cap, uint8_t *hsv_opt, uint8_t *hsv_diff, const uint8_t *rgb)
 {
 	if (f1) {
 		hsv_cap[0] = rgb[2];
@@ -113,10 +108,8 @@ process_frame(DebugHSVViewer &d, struct xrt_frame *xf)
 	for (uint32_t yp = 0; yp < SIZE; yp++) {
 		for (int chan = 0; chan < NUM_CHAN; chan++) {
 			auto hsv_cap = bgr.ptr<uint8_t>(yp + SIZE * chan);
-			auto hsv_opt =
-			    bgr.ptr<uint8_t>(yp + SIZE * chan) + 256 * 3;
-			auto hsv_diff =
-			    bgr.ptr<uint8_t>(yp + SIZE * chan) + 512 * 3;
+			auto hsv_opt = bgr.ptr<uint8_t>(yp + SIZE * chan) + 256 * 3;
+			auto hsv_diff = bgr.ptr<uint8_t>(yp + SIZE * chan) + 512 * 3;
 			int mask = 1 << chan;
 
 			for (uint32_t xp = 0; xp < SIZE; xp++) {
@@ -126,14 +119,12 @@ process_frame(DebugHSVViewer &d, struct xrt_frame *xf)
 
 				uint8_t *rgb = d.yuv_to_rgb_table.v[y][u][v];
 				uint8_t large = d.hsv_large.v[y][u][v];
-				uint8_t opt =
-				    t_hsv_filter_sample(&d.hsv_opt, y, u, v);
+				uint8_t opt = t_hsv_filter_sample(&d.hsv_opt, y, u, v);
 
 				large = (large & mask) != 0;
 				opt = (opt & mask) != 0;
 
-				process_pixel(large, opt, hsv_cap, hsv_opt,
-				              hsv_diff, rgb);
+				process_pixel(large, opt, hsv_cap, hsv_opt, hsv_diff, rgb);
 
 				hsv_cap += 3;
 				hsv_opt += 3;

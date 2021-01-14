@@ -83,10 +83,8 @@ sdl2_window_init(struct sdl2_program *p)
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-	                    SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,
-	                    SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 
 	int window_flags = 0;
 	window_flags |= SDL_WINDOW_SHOWN;
@@ -162,8 +160,7 @@ sdl2_loop(struct sdl2_program *p)
 				p->base.stopped = true;
 			}
 
-			if (event.type == SDL_WINDOWEVENT &&
-			    event.window.event == SDL_WINDOWEVENT_CLOSE &&
+			if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE &&
 			    event.window.windowID == SDL_GetWindowID(p->win)) {
 				p->base.stopped = true;
 			}
@@ -188,8 +185,7 @@ sdl2_loop(struct sdl2_program *p)
 		igRender();
 
 		// Clear the background.
-		glViewport(0, 0, (int)io->DisplaySize.x,
-		           (int)io->DisplaySize.y);
+		glViewport(0, 0, (int)io->DisplaySize.x, (int)io->DisplaySize.y);
 		glClearColor(gui.clear.r, gui.clear.g, gui.clear.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 

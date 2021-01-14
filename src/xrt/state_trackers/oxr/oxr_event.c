@@ -89,28 +89,22 @@ push(struct oxr_instance *inst, struct oxr_event *event)
 	}
 }
 
-#define ALLOC(log, inst, event, extra)                                         \
-	do {                                                                   \
-		XrResult ret =                                                 \
-		    oxr_event_alloc(log, inst, sizeof(**extra), event);        \
-		if (ret != XR_SUCCESS) {                                       \
-			return ret;                                            \
-		}                                                              \
-		*((void **)extra) = oxr_event_extra(*event);                   \
+#define ALLOC(log, inst, event, extra)                                                                                 \
+	do {                                                                                                           \
+		XrResult ret = oxr_event_alloc(log, inst, sizeof(**extra), event);                                     \
+		if (ret != XR_SUCCESS) {                                                                               \
+			return ret;                                                                                    \
+		}                                                                                                      \
+		*((void **)extra) = oxr_event_extra(*event);                                                           \
 	} while (false)
 
 static XrResult
-oxr_event_alloc(struct oxr_logger *log,
-                struct oxr_instance *inst,
-                size_t size,
-                struct oxr_event **out_event)
+oxr_event_alloc(struct oxr_logger *log, struct oxr_instance *inst, size_t size, struct oxr_event **out_event)
 {
-	struct oxr_event *event = U_CALLOC_WITH_CAST(
-	    struct oxr_event, sizeof(struct oxr_event) + size);
+	struct oxr_event *event = U_CALLOC_WITH_CAST(struct oxr_event, sizeof(struct oxr_event) + size);
 
 	if (event == NULL) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Out of memory");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Out of memory");
 	}
 
 	event->next = NULL;
@@ -129,13 +123,11 @@ is_session_link_to_event(struct oxr_event *event, XrSession session)
 
 	switch (*type) {
 	case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED: {
-		XrEventDataSessionStateChanged *changed =
-		    (XrEventDataSessionStateChanged *)type;
+		XrEventDataSessionStateChanged *changed = (XrEventDataSessionStateChanged *)type;
 		return changed->session == session;
 	}
 	case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
-		XrEventDataInteractionProfileChanged *changed =
-		    (XrEventDataInteractionProfileChanged *)type;
+		XrEventDataInteractionProfileChanged *changed = (XrEventDataInteractionProfileChanged *)type;
 		return changed->session == session;
 	}
 	default: return false;
@@ -165,9 +157,7 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 	changed->state = state;
 	changed->time = time;
 
-	event->result = state == XR_SESSION_STATE_LOSS_PENDING
-	                    ? XR_SESSION_LOSS_PENDING
-	                    : XR_SUCCESS;
+	event->result = state == XR_SESSION_STATE_LOSS_PENDING ? XR_SESSION_LOSS_PENDING : XR_SUCCESS;
 
 	lock(inst);
 	push(inst, event);
@@ -178,8 +168,7 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 
 
 XrResult
-oxr_event_push_XrEventDataInteractionProfileChanged(struct oxr_logger *log,
-                                                    struct oxr_session *sess)
+oxr_event_push_XrEventDataInteractionProfileChanged(struct oxr_logger *log, struct oxr_session *sess)
 {
 	struct oxr_instance *inst = sess->sys->inst;
 	XrEventDataSessionStateChanged *changed;
@@ -198,8 +187,9 @@ oxr_event_push_XrEventDataInteractionProfileChanged(struct oxr_logger *log,
 }
 
 XrResult
-oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(
-    struct oxr_logger *log, struct oxr_session *sess, bool visible)
+oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(struct oxr_logger *log,
+                                                           struct oxr_session *sess,
+                                                           bool visible)
 {
 	struct oxr_instance *inst = sess->sys->inst;
 	XrEventDataMainSessionVisibilityChangedEXTX *changed;
@@ -218,8 +208,7 @@ oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(
 }
 
 XrResult
-oxr_event_remove_session_events(struct oxr_logger *log,
-                                struct oxr_session *sess)
+oxr_event_remove_session_events(struct oxr_logger *log, struct oxr_session *sess)
 {
 	struct oxr_instance *inst = sess->sys->inst;
 	XrSession session = oxr_session_to_openxr(sess);
@@ -251,9 +240,7 @@ oxr_event_remove_session_events(struct oxr_logger *log,
 }
 
 XrResult
-oxr_poll_event(struct oxr_logger *log,
-               struct oxr_instance *inst,
-               XrEventDataBuffer *eventData)
+oxr_poll_event(struct oxr_logger *log, struct oxr_instance *inst, XrEventDataBuffer *eventData)
 {
 	struct oxr_session *sess = inst->sessions;
 	while (sess) {

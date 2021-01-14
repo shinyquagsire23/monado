@@ -258,9 +258,7 @@ os_thread_helper_init(struct os_thread_helper *oth)
  * Start the internal thread.
  */
 static inline int
-os_thread_helper_start(struct os_thread_helper *oth,
-                       os_run_func func,
-                       void *ptr)
+os_thread_helper_start(struct os_thread_helper *oth, os_run_func func, void *ptr)
 {
 	pthread_mutex_lock(&oth->mutex);
 

@@ -143,9 +143,7 @@ _handle_ootx_frame(struct lighthouse_base *base)
 	int i;
 
 	if (len != 33) {
-		LH_WARN(
-		    "Lighthouse Base %X: unexpected OOTX payload length: %d",
-		    base->serial, len);
+		LH_WARN("Lighthouse Base %X: unexpected OOTX payload length: %d", base->serial, len);
 		return;
 	}
 
@@ -153,17 +151,14 @@ _handle_ootx_frame(struct lighthouse_base *base)
 
 	crc = crc32(crc, base->ootx + 2, 33);
 	if (ootx_crc != crc) {
-		LH_ERROR("Lighthouse Base %X: CRC error: %08x != %08x",
-		         base->serial, crc, ootx_crc);
+		LH_ERROR("Lighthouse Base %X: CRC error: %08x != %08x", base->serial, crc, ootx_crc);
 		return;
 	}
 
 	version = __le16_to_cpu(report->version);
 	ootx_version = version & 0x3f;
 	if (ootx_version != 6) {
-		LH_ERROR(
-		    "Lighthouse Base %X: unexpected OOTX frame version: %d",
-		    base->serial, ootx_version);
+		LH_ERROR("Lighthouse Base %X: unexpected OOTX frame version: %d", base->serial, ootx_version);
 		return;
 	}
 
@@ -191,8 +186,7 @@ _handle_ootx_frame(struct lighthouse_base *base)
 		LH_INFO(
 		    "Lighthouse Base %X: firmware version: %d, model id: %d, "
 		    "channel: %c",
-		    base->serial, base->firmware_version, base->model_id,
-		    base->channel);
+		    base->serial, base->firmware_version, base->model_id, base->channel);
 
 		for (i = 0; i < 2; i++) {
 			struct lighthouse_rotor_calibration *rotor;
@@ -202,8 +196,7 @@ _handle_ootx_frame(struct lighthouse_base *base)
 			LH_INFO(
 			    "Lighthouse Base %X: rotor %d: [ %12.9f %12.9f "
 			    "%12.9f %12.9f %12.9f ]",
-			    base->serial, i, rotor->tilt, rotor->phase,
-			    rotor->curve, rotor->gibphase, rotor->gibmag);
+			    base->serial, i, rotor->tilt, rotor->phase, rotor->curve, rotor->gibphase, rotor->gibmag);
 		}
 	}
 
@@ -211,17 +204,15 @@ _handle_ootx_frame(struct lighthouse_base *base)
 	gravity.y = report->gravity[1];
 	gravity.z = report->gravity[2];
 	math_vec3_normalize(&gravity);
-	if (gravity.x != base->gravity.x || gravity.y != base->gravity.y ||
-	    gravity.z != base->gravity.z) {
+	if (gravity.x != base->gravity.x || gravity.y != base->gravity.y || gravity.z != base->gravity.z) {
 		base->gravity = gravity;
-		LH_INFO("Lighthouse Base %X: gravity: [ %9.6f %9.6f %9.6f ]",
-		        base->serial, gravity.x, gravity.y, gravity.z);
+		LH_INFO("Lighthouse Base %X: gravity: [ %9.6f %9.6f %9.6f ]", base->serial, gravity.x, gravity.y,
+		        gravity.z);
 	}
 
 	if (base->reset_count != report->reset_count) {
 		base->reset_count = report->reset_count;
-		LH_INFO("Lighthouse Base %X: reset count: %d", base->serial,
-		        base->reset_count);
+		LH_INFO("Lighthouse Base %X: reset count: %d", base->serial, base->reset_count);
 	}
 }
 
@@ -235,27 +226,23 @@ lighthouse_base_reset(struct lighthouse_base *base)
 }
 
 static void
-_handle_ootx_data_word(struct lighthouse_watchman *watchman,
-                       struct lighthouse_base *base)
+_handle_ootx_data_word(struct lighthouse_watchman *watchman, struct lighthouse_base *base)
 {
 	uint16_t len = (__le16)*base->ootx;
 
 	/* After 4 OOTX words we have received the base station serial number */
 	if (base->data_word == 4) {
-		struct lighthouse_ootx_report *report =
-		    (void *)(base->ootx + 2);
+		struct lighthouse_ootx_report *report = (void *)(base->ootx + 2);
 		uint16_t ootx_version = __le16_to_cpu(report->version) & 0x3f;
 		uint32_t serial = __le32_to_cpu(report->serial);
 
 		if (len != 33) {
-			LH_WARN("%s: unexpected OOTX frame length %d",
-			        watchman->name, len);
+			LH_WARN("%s: unexpected OOTX frame length %d", watchman->name, len);
 			return;
 		}
 
 		if (ootx_version == 6 && serial != base->serial) {
-			LH_DEBUG("%s: spotted Lighthouse Base %X",
-			         watchman->name, serial);
+			LH_DEBUG("%s: spotted Lighthouse Base %X", watchman->name, serial);
 		}
 	}
 	if (len == 33 && base->data_word == 20) { /* (len + 3)/4 * 2 + 2 */
@@ -264,9 +251,7 @@ _handle_ootx_data_word(struct lighthouse_watchman *watchman,
 }
 
 static void
-lighthouse_base_handle_ootx_data_bit(struct lighthouse_watchman *watchman,
-                                     struct lighthouse_base *base,
-                                     bool data)
+lighthouse_base_handle_ootx_data_bit(struct lighthouse_watchman *watchman, struct lighthouse_base *base, bool data)
 {
 	if (base->data_word >= (int)sizeof(base->ootx) / 2) {
 		base->data_word = -1;
@@ -278,8 +263,7 @@ lighthouse_base_handle_ootx_data_bit(struct lighthouse_watchman *watchman,
 				base->data_word++;
 				_handle_ootx_data_word(watchman, base);
 			} else {
-				LH_WARN("%s: Missed a sync bit, restarting",
-				        watchman->name);
+				LH_WARN("%s: Missed a sync bit, restarting", watchman->name);
 				/* Missing sync bit, restart */
 				base->data_word = -1;
 			}
@@ -289,8 +273,7 @@ lighthouse_base_handle_ootx_data_bit(struct lighthouse_watchman *watchman,
 			 * transmitted MSB-first.
 			 */
 			if (data) {
-				int idx =
-				    2 * base->data_word + (base->data_bit >> 3);
+				int idx = 2 * base->data_word + (base->data_bit >> 3);
 
 				base->ootx[idx] |= 0x80 >> (base->data_bit % 8);
 			}
@@ -352,8 +335,7 @@ lighthouse_base_handle_frame(struct lighthouse_watchman *watchman,
 #define ROTOR_BIT 1
 
 static void
-_handle_sync_pulse(struct lighthouse_watchman *watchman,
-                   struct lighthouse_pulse *sync)
+_handle_sync_pulse(struct lighthouse_watchman *watchman, struct lighthouse_pulse *sync)
 {
 	struct lighthouse_base *base;
 	unsigned char channel;
@@ -364,8 +346,7 @@ _handle_sync_pulse(struct lighthouse_watchman *watchman,
 		return;
 
 	if (sync->duration < 2750 || sync->duration > 6750) {
-		LH_WARN("%s: Unknown pulse length: %d", watchman->name,
-		        sync->duration);
+		LH_WARN("%s: Unknown pulse length: %d", watchman->name, sync->duration);
 		return;
 	}
 	code = (sync->duration - 2750) / 500;
@@ -395,8 +376,7 @@ _handle_sync_pulse(struct lighthouse_watchman *watchman,
 				LH_WARN(
 				    "%s: Irregular sync pulse: %08x -> %08x "
 				    "(%+d)",
-				    watchman->name, watchman->last_timestamp,
-				    sync->timestamp, dt);
+				    watchman->name, watchman->last_timestamp, sync->timestamp, dt);
 			lighthouse_base_reset(&watchman->base[0]);
 			lighthouse_base_reset(&watchman->base[1]);
 		}
@@ -425,10 +405,7 @@ _handle_sync_pulse(struct lighthouse_watchman *watchman,
 }
 
 static void
-_handle_sweep_pulse(struct lighthouse_watchman *watchman,
-                    uint8_t id,
-                    uint32_t timestamp,
-                    uint16_t duration)
+_handle_sweep_pulse(struct lighthouse_watchman *watchman, uint8_t id, uint32_t timestamp, uint16_t duration)
 {
 	struct lighthouse_base *base = watchman->active_base;
 	struct lighthouse_frame *frame;
@@ -458,9 +435,7 @@ _handle_sweep_pulse(struct lighthouse_watchman *watchman,
 	}
 
 	if (frame->sweep_ids & (1 << id)) {
-		LH_WARN(
-		    "%s: sensor %u hit twice per frame, assuming reflection",
-		    watchman->name, id);
+		LH_WARN("%s: sensor %u hit twice per frame, assuming reflection", watchman->name, id);
 		return;
 	}
 
@@ -470,15 +445,11 @@ _handle_sweep_pulse(struct lighthouse_watchman *watchman,
 }
 
 static void
-accumulate_sync_pulse(struct lighthouse_watchman *watchman,
-                      uint8_t id,
-                      uint32_t timestamp,
-                      uint16_t duration)
+accumulate_sync_pulse(struct lighthouse_watchman *watchman, uint8_t id, uint32_t timestamp, uint16_t duration)
 {
 	int32_t dt = timestamp - watchman->last_sync.timestamp;
 
-	if (dt > watchman->last_sync.duration ||
-	    watchman->last_sync.duration == 0) {
+	if (dt > watchman->last_sync.duration || watchman->last_sync.duration == 0) {
 		watchman->seen_by = 1 << id;
 		watchman->last_sync.timestamp = timestamp;
 		watchman->last_sync.duration = duration;
@@ -486,8 +457,7 @@ accumulate_sync_pulse(struct lighthouse_watchman *watchman,
 	} else {
 		watchman->seen_by |= 1 << id;
 		if (timestamp < watchman->last_sync.timestamp) {
-			watchman->last_sync.duration +=
-			    watchman->last_sync.timestamp - timestamp;
+			watchman->last_sync.duration += watchman->last_sync.timestamp - timestamp;
 			watchman->last_sync.timestamp = timestamp;
 		}
 		if (duration > watchman->last_sync.duration)
@@ -512,10 +482,8 @@ lighthouse_watchman_handle_pulse(struct lighthouse_watchman *watchman,
 			watchman->seen_by = 0;
 		}
 
-		if (pulse_in_this_sync_window(dt, duration) ||
-		    pulse_in_next_sync_window(dt, duration)) {
-			accumulate_sync_pulse(watchman, id, timestamp,
-			                      duration);
+		if (pulse_in_this_sync_window(dt, duration) || pulse_in_next_sync_window(dt, duration)) {
+			accumulate_sync_pulse(watchman, id, timestamp, duration);
 		} else if (pulse_in_sweep_window(dt, duration)) {
 			_handle_sweep_pulse(watchman, id, timestamp, duration);
 		} else {
@@ -526,11 +494,9 @@ lighthouse_watchman_handle_pulse(struct lighthouse_watchman *watchman,
 			 */
 			if (dt > 407500) {
 				watchman->sync_lock = false;
-				LH_WARN("%s: late pulse, lost sync",
-				        watchman->name);
+				LH_WARN("%s: late pulse, lost sync", watchman->name);
 			} else {
-				LH_WARN("%s: spurious pulse: %08x (%02x %d %u)",
-				        watchman->name, timestamp, id, dt,
+				LH_WARN("%s: spurious pulse: %08x (%02x %d %u)", watchman->name, timestamp, id, dt,
 				        duration);
 			}
 			watchman->seen_by = 0;
@@ -556,8 +522,7 @@ lighthouse_watchman_handle_pulse(struct lighthouse_watchman *watchman,
 				watchman->sync_lock = true;
 			}
 
-			accumulate_sync_pulse(watchman, id, timestamp,
-			                      duration);
+			accumulate_sync_pulse(watchman, id, timestamp, duration);
 		} else {
 			/* Assume this is a sweep, ignore it until we lock */
 		}

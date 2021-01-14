@@ -157,16 +157,14 @@ gravity_correction(struct m_imu_3dof *f,
 		correction_radians = fmaxf(min_radians, correction_radians);
 		correction_radians = fminf(max_radians, correction_radians);
 		// Do not exceed the remaining error to correct for
-		correction_radians =
-		    -fminf(correction_radians, f->grav.error_angle);
+		correction_radians = -fminf(correction_radians, f->grav.error_angle);
 
 		// Update how much is left.
 		f->grav.error_angle += correction_radians;
 
 		// Perform the correction.
 		struct xrt_quat corr_quat, old_orient;
-		math_quat_from_angle_vector(correction_radians,
-		                            &f->grav.error_axis, &corr_quat);
+		math_quat_from_angle_vector(correction_radians, &f->grav.error_axis, &corr_quat);
 		old_orient = f->rot;
 		math_quat_rotate(&corr_quat, &old_orient, &f->rot);
 	}
@@ -215,8 +213,7 @@ m_imu_3dof_update(struct m_imu_3dof *f,
 		float rot_angle = gyro_length * dt;
 
 		struct xrt_quat delta_orient;
-		math_quat_from_angle_vector(rot_angle, &rot_axis,
-		                            &delta_orient);
+		math_quat_from_angle_vector(rot_angle, &rot_axis, &delta_orient);
 
 		math_quat_rotate(&f->rot, &delta_orient, &f->rot);
 #endif

@@ -70,8 +70,7 @@ static inline float
 fromFixedPoint(IntegerType v)
 {
 	constexpr size_t SIGN_BIT = std::is_signed<IntegerType>::value ? 1 : 0;
-	static_assert(INT_BITS + FRAC_BITS + SIGN_BIT ==
-	                  BITS_PER_BYTE * sizeof(IntegerType),
+	static_assert(INT_BITS + FRAC_BITS + SIGN_BIT == BITS_PER_BYTE * sizeof(IntegerType),
 	              "INT_BITS and FRAC_BITS, plus 1 for a sign bit "
 	              "if applicable, must sum to the input "
 	              "integer width, but do not.");
@@ -82,8 +81,7 @@ static inline uint16_t
 hdk_get_le_uint16(uint8_t *&bufPtr)
 {
 	assert(bufPtr != nullptr);
-	uint16_t ret = static_cast<uint16_t>(*bufPtr) |
-	               (static_cast<uint16_t>(*(bufPtr + 1)) << BITS_PER_BYTE);
+	uint16_t ret = static_cast<uint16_t>(*bufPtr) | (static_cast<uint16_t>(*(bufPtr + 1)) << BITS_PER_BYTE);
 	bufPtr += 2;
 	return ret;
 }
@@ -163,8 +161,7 @@ hdk_device_update(struct hdk_device *hd)
 	static constexpr int INT_BITS = 1;
 	static constexpr int FRAC_BITS = 14;
 	quat.x = fromFixedPoint<INT_BITS, FRAC_BITS>(hdk_get_le_int16(buf));
-	quat.z =
-	    fromFixedPoint<INT_BITS, FRAC_BITS>(hdk_get_le_int16(buf)) * -1;
+	quat.z = fromFixedPoint<INT_BITS, FRAC_BITS>(hdk_get_le_int16(buf)) * -1;
 	quat.y = fromFixedPoint<INT_BITS, FRAC_BITS>(hdk_get_le_int16(buf));
 	quat.w = fromFixedPoint<INT_BITS, FRAC_BITS>(hdk_get_le_int16(buf));
 
@@ -245,16 +242,14 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 	out_relation->angular_velocity.y = hd->ang_vel_quat.y;
 	out_relation->angular_velocity.z = hd->ang_vel_quat.z;
 
-	out_relation->relation_flags = xrt_space_relation_flags(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	out_relation->relation_flags = xrt_space_relation_flags(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	                                                        XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT |
+	                                                        XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
 	os_thread_helper_unlock(&hd->imu_thread);
 
-	HDK_TRACE(hd, "GET_TRACKED_POSE (%f, %f, %f, %f) ANG_VEL (%f, %f, %f)",
-	          hd->quat.x, hd->quat.y, hd->quat.z, hd->quat.w,
-	          hd->ang_vel_quat.x, hd->ang_vel_quat.y, hd->ang_vel_quat.z);
+	HDK_TRACE(hd, "GET_TRACKED_POSE (%f, %f, %f, %f) ANG_VEL (%f, %f, %f)", hd->quat.x, hd->quat.y, hd->quat.z,
+	          hd->quat.w, hd->ang_vel_quat.x, hd->ang_vel_quat.y, hd->ang_vel_quat.z);
 }
 
 static void
@@ -305,25 +300,20 @@ hdk_device_run_thread(void *ptr)
 
 #define HDK_DEBUG_INT(hd, name, val) HDK_DEBUG(hd, "\t%s = %u", name, val)
 
-#define HDK_DEBUG_MM(hd, name, val)                                            \
-	HDK_DEBUG(hd, "\t%s = %i.%02imm", name, (int32_t)(val * 1000.f),       \
-	          abs((int32_t)(val * 100000.f)) % 100)
+#define HDK_DEBUG_MM(hd, name, val)                                                                                    \
+	HDK_DEBUG(hd, "\t%s = %i.%02imm", name, (int32_t)(val * 1000.f), abs((int32_t)(val * 100000.f)) % 100)
 
-#define HDK_DEBUG_ANGLE(hd, name, val)                                         \
-	HDK_DEBUG(hd, "\t%s = %f (%i)", name, val,                             \
-	          (int32_t)(val * (180 / M_PI)))
+#define HDK_DEBUG_ANGLE(hd, name, val) HDK_DEBUG(hd, "\t%s = %f (%i)", name, val, (int32_t)(val * (180 / M_PI)))
 
-#define HDK_DEBUG_MAT2X2(hd, name, rot)                                        \
-	HDK_DEBUG(hd, "\t%s = {%f, %f} {%f, %f}", name, rot.v[0], rot.v[1],    \
-	          rot.v[2], rot.v[3])
+#define HDK_DEBUG_MAT2X2(hd, name, rot)                                                                                \
+	HDK_DEBUG(hd, "\t%s = {%f, %f} {%f, %f}", name, rot.v[0], rot.v[1], rot.v[2], rot.v[3])
 
 struct hdk_device *
 hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 {
-	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
-	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
-	struct hdk_device *hd =
-	    U_DEVICE_ALLOCATE(struct hdk_device, flags, 1, 0);
+	enum u_device_alloc_flags flags =
+	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	struct hdk_device *hd = U_DEVICE_ALLOCATE(struct hdk_device, flags, 1, 0);
 
 	hd->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
 	hd->base.update_inputs = hdk_device_update_inputs;
@@ -377,29 +367,23 @@ hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 	constexpr double DEGREES_TO_RADIANS = M_PI / 180.0;
 	{
 		/* right eye */
-		math_compute_fovs(1.0, hCOP, hFOV * DEGREES_TO_RADIANS, 1, vCOP,
-		                  vFOV * DEGREES_TO_RADIANS,
+		math_compute_fovs(1.0, hCOP, hFOV * DEGREES_TO_RADIANS, 1, vCOP, vFOV * DEGREES_TO_RADIANS,
 		                  &hd->base.hmd->views[1].fov);
 	}
 	{
 		/* left eye - just mirroring right eye now */
-		hd->base.hmd->views[0].fov.angle_up =
-		    hd->base.hmd->views[1].fov.angle_up;
-		hd->base.hmd->views[0].fov.angle_down =
-		    hd->base.hmd->views[1].fov.angle_down;
+		hd->base.hmd->views[0].fov.angle_up = hd->base.hmd->views[1].fov.angle_up;
+		hd->base.hmd->views[0].fov.angle_down = hd->base.hmd->views[1].fov.angle_down;
 
-		hd->base.hmd->views[0].fov.angle_left =
-		    -hd->base.hmd->views[1].fov.angle_right;
-		hd->base.hmd->views[0].fov.angle_right =
-		    -hd->base.hmd->views[1].fov.angle_left;
+		hd->base.hmd->views[0].fov.angle_left = -hd->base.hmd->views[1].fov.angle_right;
+		hd->base.hmd->views[0].fov.angle_right = -hd->base.hmd->views[1].fov.angle_left;
 	}
 
 	switch (variant) {
 	case HDK_UNKNOWN: assert(!"unknown device"); break;
 
 	case HDK_VARIANT_2: {
-		hd->base.hmd->screens[0].nominal_frame_interval_ns =
-		    time_s_to_ns(1.0f / 90.0f);
+		hd->base.hmd->screens[0].nominal_frame_interval_ns = time_s_to_ns(1.0f / 90.0f);
 		constexpr int panel_w = 1080;
 		constexpr int panel_h = 1200;
 		// Padding needed horizontally per side.
@@ -455,8 +439,7 @@ hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 		// fallthrough intentional
 	case HDK_VARIANT_1_2: {
 		// 1080x1920 screen, with the top at the left.
-		hd->base.hmd->screens[0].nominal_frame_interval_ns =
-		    time_s_to_ns(1.0f / 60.0f);
+		hd->base.hmd->screens[0].nominal_frame_interval_ns = time_s_to_ns(1.0f / 60.0f);
 
 		constexpr int panel_w = 1080;
 		constexpr int panel_h = 1920;
@@ -503,8 +486,7 @@ hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 	// }
 
 	if (hd->dev) {
-		int ret = os_thread_helper_start(&hd->imu_thread,
-		                                 hdk_device_run_thread, hd);
+		int ret = os_thread_helper_start(&hd->imu_thread, hdk_device_run_thread, hd);
 		if (ret != 0) {
 			HDK_ERROR(hd, "Failed to start mainboard thread!");
 			hdk_device_destroy((struct xrt_device *)hd);

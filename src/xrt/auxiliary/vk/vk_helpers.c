@@ -26,7 +26,7 @@
  *
  */
 
-#define ENUM_TO_STR(r)                                                         \
+#define ENUM_TO_STR(r)                                                                                                 \
 	case r: return #r
 
 const char *
@@ -154,8 +154,7 @@ bool
 vk_has_error(VkResult res, const char *fun, const char *file, int line)
 {
 	if (res != VK_SUCCESS) {
-		U_LOG_E("%s failed with %s in %s:%d", fun,
-		        vk_result_string(res), file, line);
+		U_LOG_E("%s failed with %s in %s:%d", fun, vk_result_string(res), file, line);
 		return true;
 	}
 	return false;
@@ -168,15 +167,11 @@ vk_has_error(VkResult res, const char *fun, const char *file, int line)
  */
 
 bool
-vk_get_memory_type(struct vk_bundle *vk,
-                   uint32_t type_bits,
-                   VkMemoryPropertyFlags memory_props,
-                   uint32_t *out_type_id)
+vk_get_memory_type(struct vk_bundle *vk, uint32_t type_bits, VkMemoryPropertyFlags memory_props, uint32_t *out_type_id)
 {
 
 	for (uint32_t i = 0; i < vk->device_memory_props.memoryTypeCount; i++) {
-		uint32_t propertyFlags =
-		    vk->device_memory_props.memoryTypes[i].propertyFlags;
+		uint32_t propertyFlags = vk->device_memory_props.memoryTypes[i].propertyFlags;
 		if ((type_bits & 1) == 1) {
 			if ((propertyFlags & memory_props) == memory_props) {
 				*out_type_id = i;
@@ -200,15 +195,13 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
                                VkDeviceSize *out_size)
 {
 	VkMemoryRequirements memory_requirements;
-	vk->vkGetImageMemoryRequirements(vk->device, image,
-	                                 &memory_requirements);
+	vk->vkGetImageMemoryRequirements(vk->device, image, &memory_requirements);
 
 	if (max_size > 0 && memory_requirements.size > max_size) {
 		VK_ERROR(vk,
 		         "client_vk_swapchain - Got too little memory "
 		         "%u vs %u\n",
-		         (uint32_t)memory_requirements.size,
-		         (uint32_t)max_size);
+		         (uint32_t)memory_requirements.size, (uint32_t)max_size);
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
 	}
 	if (out_size != NULL) {
@@ -216,8 +209,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	}
 
 	uint32_t memory_type_index = UINT32_MAX;
-	if (!vk_get_memory_type(vk, memory_requirements.memoryTypeBits,
-	                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+	if (!vk_get_memory_type(vk, memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 	                        &memory_type_index)) {
 		VK_ERROR(vk, "vk_get_memory_type failed!");
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
@@ -231,8 +223,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	};
 
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
-	VkResult ret =
-	    vk->vkAllocateMemory(vk->device, &alloc_info, NULL, &device_memory);
+	VkResult ret = vk->vkAllocateMemory(vk->device, &alloc_info, NULL, &device_memory);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkAllocateMemory: %s", vk_result_string(ret));
 		return ret;
@@ -288,8 +279,7 @@ vk_create_image_simple(struct vk_bundle *vk,
 		return ret;
 	}
 
-	ret = vk_alloc_and_bind_image_memory(vk, image, SIZE_MAX, NULL, out_mem,
-	                                     NULL);
+	ret = vk_alloc_and_bind_image_memory(vk, image, SIZE_MAX, NULL, out_mem, NULL);
 	if (ret != VK_SUCCESS) {
 		// Clean up image
 		vk->vkDestroyImage(vk->device, image, NULL);
@@ -307,8 +297,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
                             VkImage *out_image,
                             VkDeviceMemory *out_mem)
 {
-	VkImageUsageFlags image_usage =
-	    vk_swapchain_usage_flags(vk, (VkFormat)info->format, info->bits);
+	VkImageUsageFlags image_usage = vk_swapchain_usage_flags(vk, (VkFormat)info->format, info->bits);
 	if (image_usage == 0) {
 		U_LOG_E(
 		    "vk_create_image_from_native: Unsupported swapchain usage "
@@ -327,8 +316,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
-	    .handleTypes =
-	        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
 	};
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
 	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
@@ -344,9 +332,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .pNext = &external_memory_image_create_info,
 	    .imageType = VK_IMAGE_TYPE_2D,
 	    .format = (VkFormat)info->format,
-	    .extent = {.width = info->width,
-	               .height = info->height,
-	               .depth = 1},
+	    .extent = {.width = info->width, .height = info->height, .depth = 1},
 	    .mipLevels = info->mip_count,
 	    .arrayLayers = info->array_size,
 	    .samples = VK_SAMPLE_COUNT_1_BIT,
@@ -370,8 +356,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	};
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 	VkImportAndroidHardwareBufferInfoANDROID import_memory_info = {
-	    .sType =
-	        VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+	    .sType = VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
 	    .pNext = NULL,
 	    .buffer = image_native->handle,
 	};
@@ -391,9 +376,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .image = image,
 	    .buffer = VK_NULL_HANDLE,
 	};
-	ret = vk_alloc_and_bind_image_memory(vk, image, image_native->size,
-	                                     &dedicated_memory_info, out_mem,
-	                                     NULL);
+	ret = vk_alloc_and_bind_image_memory(vk, image, image_native->size, &dedicated_memory_info, out_mem, NULL);
 
 	// We have consumed this fd now, make sure it's not freed again.
 	image_native->handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
@@ -408,17 +391,14 @@ vk_create_image_from_native(struct vk_bundle *vk,
 }
 
 VkResult
-vk_create_semaphore_from_native(struct vk_bundle *vk,
-                                xrt_graphics_sync_handle_t native,
-                                VkSemaphore *out_sem)
+vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem)
 {
 	VkResult ret;
 
 	VkSemaphoreCreateInfo semaphore_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
 	};
-	ret = vk->vkCreateSemaphore(vk->device, &semaphore_create_info, NULL,
-	                            out_sem);
+	ret = vk->vkCreateSemaphore(vk->device, &semaphore_create_info, NULL, out_sem);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkCreateSemaphore: %s", vk_result_string(ret));
 		// Nothing to cleanup
@@ -433,8 +413,7 @@ vk_create_semaphore_from_native(struct vk_bundle *vk,
 	};
 	ret = vk->vkImportSemaphoreFdKHR(vk->device, &import_semaphore_fd_info);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkImportSemaphoreFdKHR: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkImportSemaphoreFdKHR: %s", vk_result_string(ret));
 		vk->vkDestroySemaphore(vk->device, *out_sem, NULL);
 		return ret;
 	}
@@ -445,11 +424,9 @@ vk_create_semaphore_from_native(struct vk_bundle *vk,
 	    .handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT,
 	    .handle = native,
 	};
-	ret = vk->vkImportSemaphoreWin32HandleKHR(
-	    vk->device, &import_semaphore_handle_info);
+	ret = vk->vkImportSemaphoreWin32HandleKHR(vk->device, &import_semaphore_handle_info);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkImportSemaphoreWin32HandleKHR: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkImportSemaphoreWin32HandleKHR: %s", vk_result_string(ret));
 		vk->vkDestroySemaphore(vk->device, *out_sem, NULL);
 		return ret;
 	}
@@ -460,9 +437,7 @@ vk_create_semaphore_from_native(struct vk_bundle *vk,
 }
 
 VkResult
-vk_create_sampler(struct vk_bundle *vk,
-                  VkSamplerAddressMode clamp_mode,
-                  VkSampler *out_sampler)
+vk_create_sampler(struct vk_bundle *vk, VkSamplerAddressMode clamp_mode, VkSampler *out_sampler)
 {
 	VkSampler sampler;
 	VkResult ret;
@@ -504,8 +479,7 @@ vk_create_view(struct vk_bundle *vk,
 	    .a = VK_COMPONENT_SWIZZLE_A,
 	};
 
-	return vk_create_view_swizzle(vk, image, format, subresource_range,
-	                              components, out_view);
+	return vk_create_view_swizzle(vk, image, format, subresource_range, components, out_view);
 }
 
 VkResult
@@ -562,14 +536,12 @@ vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
 
 	os_mutex_lock(&vk->cmd_pool_mutex);
 
-	ret = vk->vkAllocateCommandBuffers(vk->device, &cmd_buffer_info,
-	                                   &cmd_buffer);
+	ret = vk->vkAllocateCommandBuffers(vk->device, &cmd_buffer_info, &cmd_buffer);
 
 	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkAllocateCommandBuffers: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkAllocateCommandBuffers: %s", vk_result_string(ret));
 		// Nothing to cleanup
 		return ret;
 	}
@@ -622,9 +594,8 @@ vk_set_image_layout(struct vk_bundle *vk,
 	};
 
 	os_mutex_lock(&vk->cmd_pool_mutex);
-	vk->vkCmdPipelineBarrier(cmd_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-	                         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL,
-	                         0, NULL, 1, &barrier);
+	vk->vkCmdPipelineBarrier(cmd_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0,
+	                         0, NULL, 0, NULL, 1, &barrier);
 	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	return VK_SUCCESS;
@@ -696,8 +667,7 @@ vk_init_cmd_pool(struct vk_bundle *vk)
 	};
 
 	VkResult ret;
-	ret = vk->vkCreateCommandPool(vk->device, &cmd_pool_info, NULL,
-	                              &vk->cmd_pool);
+	ret = vk->vkCreateCommandPool(vk->device, &cmd_pool_info, NULL, &vk->cmd_pool);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkCreateCommandPool: %s", vk_result_string(ret));
 	}
@@ -713,11 +683,9 @@ vk_init_cmd_pool(struct vk_bundle *vk)
 
 #define GET_PROC(vk, name) (PFN_##name) vk->vkGetInstanceProcAddr(NULL, #name);
 
-#define GET_INS_PROC(vk, name)                                                 \
-	(PFN_##name) vk->vkGetInstanceProcAddr(vk->instance, #name);
+#define GET_INS_PROC(vk, name) (PFN_##name) vk->vkGetInstanceProcAddr(vk->instance, #name);
 
-#define GET_DEV_PROC(vk, name)                                                 \
-	(PFN_##name) vk->vkGetDeviceProcAddr(vk->device, #name);
+#define GET_DEV_PROC(vk, name) (PFN_##name) vk->vkGetDeviceProcAddr(vk->device, #name);
 
 VkResult
 vk_get_loader_functions(struct vk_bundle *vk, PFN_vkGetInstanceProcAddr g)
@@ -883,10 +851,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 
 
 static void
-vk_print_device_info_debug(struct vk_bundle *vk,
-                           VkPhysicalDeviceProperties *pdp,
-                           uint32_t gpu_index,
-                           const char *title)
+vk_print_device_info_debug(struct vk_bundle *vk, VkPhysicalDeviceProperties *pdp, uint32_t gpu_index, const char *title)
 {
 	VK_DEBUG(vk,
 	         "%s"
@@ -895,12 +860,9 @@ vk_print_device_info_debug(struct vk_bundle *vk,
 	         "\tproduct: 0x%04x\n"
 	         "\tapiVersion: %u.%u.%u\n"
 	         "\tdriverVersion: %u.%u.%u",
-	         title, pdp->deviceName, pdp->vendorID, pdp->deviceID,
-	         VK_VERSION_MAJOR(pdp->apiVersion),
-	         VK_VERSION_MINOR(pdp->apiVersion),
-	         VK_VERSION_PATCH(pdp->apiVersion),
-	         VK_VERSION_MAJOR(pdp->driverVersion),
-	         VK_VERSION_MINOR(pdp->driverVersion),
+	         title, pdp->deviceName, pdp->vendorID, pdp->deviceID, VK_VERSION_MAJOR(pdp->apiVersion),
+	         VK_VERSION_MINOR(pdp->apiVersion), VK_VERSION_PATCH(pdp->apiVersion),
+	         VK_VERSION_MAJOR(pdp->driverVersion), VK_VERSION_MINOR(pdp->driverVersion),
 	         VK_VERSION_PATCH(pdp->driverVersion));
 }
 
@@ -917,11 +879,9 @@ vk_select_physical_device(struct vk_bundle *vk, int forced_index)
 	uint32_t gpu_count = ARRAY_SIZE(physical_devices);
 	VkResult ret;
 
-	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count,
-	                                     physical_devices);
+	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, physical_devices);
 	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkEnumeratePhysicalDevices: %s",
-		         vk_result_string(ret));
+		VK_DEBUG(vk, "vkEnumeratePhysicalDevices: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -945,23 +905,20 @@ vk_select_physical_device(struct vk_bundle *vk, int forced_index)
 			return VK_ERROR_DEVICE_LOST;
 		}
 		gpu_index = forced_index;
-		VK_DEBUG(vk, "Forced use of Vulkan device index %d.",
-		         gpu_index);
+		VK_DEBUG(vk, "Forced use of Vulkan device index %d.", gpu_index);
 	} else {
 		VK_DEBUG(vk, "Available GPUs");
 		// as a first-step to 'intelligent' selection, prefer a
 		// 'discrete' gpu if it is present
 		for (uint32_t i = 0; i < gpu_count; i++) {
 			VkPhysicalDeviceProperties pdp;
-			vk->vkGetPhysicalDeviceProperties(physical_devices[i],
-			                                  &pdp);
+			vk->vkGetPhysicalDeviceProperties(physical_devices[i], &pdp);
 
 			char title[20];
 			snprintf(title, 20, "GPU index %d\n", i);
 			vk_print_device_info_debug(vk, &pdp, i, title);
 
-			if (pdp.deviceType ==
-			    VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+			if (pdp.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
 				gpu_index = i;
 			}
 		}
@@ -978,8 +935,7 @@ vk_select_physical_device(struct vk_bundle *vk, int forced_index)
 	vk_print_device_info_debug(vk, &pdp, gpu_index, title);
 
 	// Fill out the device memory props as well.
-	vk->vkGetPhysicalDeviceMemoryProperties(vk->physical_device,
-	                                        &vk->device_memory_props);
+	vk->vkGetPhysicalDeviceMemoryProperties(vk->physical_device, &vk->device_memory_props);
 
 	return VK_SUCCESS;
 }
@@ -990,14 +946,11 @@ vk_find_graphics_queue(struct vk_bundle *vk, uint32_t *out_graphics_queue)
 	/* Find the first graphics queue */
 	uint32_t num_queues = 0;
 	uint32_t i = 0;
-	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device,
-	                                             &num_queues, NULL);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &num_queues, NULL);
 
-	VkQueueFamilyProperties *queue_family_props =
-	    U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, num_queues);
+	VkQueueFamilyProperties *queue_family_props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, num_queues);
 
-	vk->vkGetPhysicalDeviceQueueFamilyProperties(
-	    vk->physical_device, &num_queues, queue_family_props);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &num_queues, queue_family_props);
 
 	if (num_queues == 0) {
 		VK_DEBUG(vk, "Failed to get queue properties");
@@ -1027,17 +980,12 @@ err_free:
 }
 
 static bool
-vk_check_extension(struct vk_bundle *vk,
-                   VkExtensionProperties *props,
-                   uint32_t num_props,
-                   const char *ext)
+vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t num_props, const char *ext)
 {
 	for (uint32_t i = 0; i < num_props; i++) {
 		if (strcmp(props[i].extensionName, ext) == 0) {
 
-			if (strcmp(ext,
-			           VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) ==
-			    0) {
+			if (strcmp(ext, VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) == 0) {
 				vk->has_GOOGLE_display_timing = true;
 			}
 
@@ -1054,16 +1002,13 @@ vk_get_device_ext_props(struct vk_bundle *vk,
                         VkExtensionProperties **props,
                         uint32_t *num_props)
 {
-	VkResult res = vk->vkEnumerateDeviceExtensionProperties(
-	    physical_device, NULL, num_props, NULL);
+	VkResult res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, num_props, NULL);
 	vk_check_error("vkEnumerateDeviceExtensionProperties", res, false);
 
 	*props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, *num_props);
 
-	res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL,
-	                                               num_props, *props);
-	vk_check_error_with_free("vkEnumerateDeviceExtensionProperties", res,
-	                         false, props);
+	res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, num_props, *props);
+	vk_check_error_with_free("vkEnumerateDeviceExtensionProperties", res, false, props);
 
 	return true;
 }
@@ -1084,11 +1029,9 @@ vk_build_device_extensions(struct vk_bundle *vk,
 		return false;
 	}
 
-	int max_exts =
-	    num_required_device_extensions + num_optional_device_extensions;
+	int max_exts = num_required_device_extensions + num_optional_device_extensions;
 
-	const char **device_extensions =
-	    U_TYPED_ARRAY_CALLOC(const char *, max_exts);
+	const char **device_extensions = U_TYPED_ARRAY_CALLOC(const char *, max_exts);
 
 	for (uint32_t i = 0; i < num_required_device_extensions; i++) {
 		const char *ext = required_device_extensions[i];
@@ -1139,11 +1082,9 @@ vk_create_device(struct vk_bundle *vk,
 
 	const char **device_extensions;
 	size_t num_device_extensions;
-	if (!vk_build_device_extensions(
-	        vk, vk->physical_device, required_device_extensions,
-	        num_required_device_extensions, optional_device_extensions,
-	        num_optional_device_extensions, &device_extensions,
-	        &num_device_extensions)) {
+	if (!vk_build_device_extensions(vk, vk->physical_device, required_device_extensions,
+	                                num_required_device_extensions, optional_device_extensions,
+	                                num_optional_device_extensions, &device_extensions, &num_device_extensions)) {
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 
@@ -1170,8 +1111,7 @@ vk_create_device(struct vk_bundle *vk,
 	    .pEnabledFeatures = enabled_features,
 	};
 
-	ret = vk->vkCreateDevice(vk->physical_device, &device_create_info, NULL,
-	                         &vk->device);
+	ret = vk->vkCreateDevice(vk->physical_device, &device_create_info, NULL, &vk->device);
 
 	free(device_extensions);
 
@@ -1227,8 +1167,7 @@ vk_init_from_given(struct vk_bundle *vk,
 
 	// Fill out the device memory props here, as we are
 	// passed a vulkan context and do not call selectPhysicalDevice()
-	vk->vkGetPhysicalDeviceMemoryProperties(vk->physical_device,
-	                                        &vk->device_memory_props);
+	vk->vkGetPhysicalDeviceMemoryProperties(vk->physical_device, &vk->device_memory_props);
 
 	// Fill in all device functions.
 	ret = vk_get_device_functions(vk);
@@ -1256,20 +1195,13 @@ vk_get_access_flags(VkImageLayout layout)
 {
 	switch (layout) {
 	case VK_IMAGE_LAYOUT_UNDEFINED: return 0;
-	case VK_IMAGE_LAYOUT_GENERAL:
-		return VK_ACCESS_TRANSFER_WRITE_BIT |
-		       VK_ACCESS_TRANSFER_READ_BIT;
+	case VK_IMAGE_LAYOUT_GENERAL: return VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT;
 	case VK_IMAGE_LAYOUT_PREINITIALIZED: return VK_ACCESS_HOST_WRITE_BIT;
-	case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-		return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-		return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-	case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-		return VK_ACCESS_TRANSFER_READ_BIT;
-	case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-		return VK_ACCESS_TRANSFER_WRITE_BIT;
-	case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-		return VK_ACCESS_SHADER_READ_BIT;
+	case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: return VK_ACCESS_TRANSFER_READ_BIT;
+	case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: return VK_ACCESS_TRANSFER_WRITE_BIT;
+	case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL: return VK_ACCESS_SHADER_READ_BIT;
 	default: U_LOG_E("Unhandled access mask case for layout %d.", layout);
 	}
 	return 0;
@@ -1316,69 +1248,56 @@ check_feature(VkFormat format,
 		U_LOG_E(
 		    "vk_swapchain_usage_flags: %s requested but %s not "
 		    "supported for format %s (%08x) (%08x)",
-		    xrt_swapchain_usage_string(usage),
-		    vk_format_feature_string(flag),
-		    vk_color_format_string(format), format_features, flag);
+		    xrt_swapchain_usage_string(usage), vk_format_feature_string(flag), vk_color_format_string(format),
+		    format_features, flag);
 		return false;
 	}
 	return true;
 }
 
 VkImageUsageFlags
-vk_swapchain_usage_flags(struct vk_bundle *vk,
-                         VkFormat format,
-                         enum xrt_swapchain_usage_bits bits)
+vk_swapchain_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits)
 {
 	VkFormatProperties prop;
-	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format,
-	                                        &prop);
+	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);
 
 	VkImageUsageFlags image_usage = 0;
 
 	if ((bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
-		if (!check_feature(
-		        format, XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL,
-		        prop.optimalTilingFeatures,
-		        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
+		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL, prop.optimalTilingFeatures,
+		                   VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
 			return 0;
 		}
-		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-		               VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 	}
 
-	if ((prop.optimalTilingFeatures &
-	     VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) != 0) {
-		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-		               VK_IMAGE_USAGE_SAMPLED_BIT;
+	if ((prop.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) != 0) {
+		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	}
 
 	if ((bits & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
-		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_COLOR,
-		                   prop.optimalTilingFeatures,
+		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_COLOR, prop.optimalTilingFeatures,
 		                   VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) {
 			return 0;
 		}
 		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	}
 	if ((bits & XRT_SWAPCHAIN_USAGE_TRANSFER_SRC) != 0) {
-		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_TRANSFER_SRC,
-		                   prop.optimalTilingFeatures,
+		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_TRANSFER_SRC, prop.optimalTilingFeatures,
 		                   VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)) {
 			return 0;
 		}
 		image_usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	}
 	if ((bits & XRT_SWAPCHAIN_USAGE_TRANSFER_DST) != 0) {
-		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_TRANSFER_DST,
-		                   prop.optimalTilingFeatures,
+		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_TRANSFER_DST, prop.optimalTilingFeatures,
 		                   VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) {
 			return 0;
 		}
 		image_usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	}
 	if ((bits & XRT_SWAPCHAIN_USAGE_SAMPLED) != 0) {
-		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_SAMPLED,
-		                   prop.optimalTilingFeatures,
+		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_SAMPLED, prop.optimalTilingFeatures,
 		                   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)) {
 			return 0;
 		}
@@ -1405,8 +1324,7 @@ vk_init_descriptor_pool(struct vk_bundle *vk,
 	    .pPoolSizes = pool_sizes,
 	};
 
-	VkResult res = vk->vkCreateDescriptorPool(vk->device, &info, NULL,
-	                                          out_descriptor_pool);
+	VkResult res = vk->vkCreateDescriptorPool(vk->device, &info, NULL, out_descriptor_pool);
 	vk_check_error("vkCreateDescriptorPool", res, false);
 
 	return true;
@@ -1426,8 +1344,7 @@ vk_allocate_descriptor_sets(struct vk_bundle *vk,
 	    .pSetLayouts = set_layout,
 	};
 
-	VkResult res =
-	    vk->vkAllocateDescriptorSets(vk->device, &alloc_info, sets);
+	VkResult res = vk->vkAllocateDescriptorSets(vk->device, &alloc_info, sets);
 	vk_check_error("vkAllocateDescriptorSets", res, false);
 
 	return true;
@@ -1447,22 +1364,17 @@ vk_buffer_init(struct vk_bundle *vk,
 	    .usage = usage,
 	};
 
-	VkResult res =
-	    vk->vkCreateBuffer(vk->device, &buffer_info, NULL, out_buffer);
+	VkResult res = vk->vkCreateBuffer(vk->device, &buffer_info, NULL, out_buffer);
 	vk_check_error("vkCreateBuffer", res, false);
 
 	VkMemoryRequirements requirements;
-	vk->vkGetBufferMemoryRequirements(vk->device, *out_buffer,
-	                                  &requirements);
+	vk->vkGetBufferMemoryRequirements(vk->device, *out_buffer, &requirements);
 
-	VkMemoryAllocateInfo alloc_info = {
-	    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-	    .allocationSize = requirements.size};
+	VkMemoryAllocateInfo alloc_info = {.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+	                                   .allocationSize = requirements.size};
 
-	if (!vk_get_memory_type(vk, requirements.memoryTypeBits, properties,
-	                        &alloc_info.memoryTypeIndex)) {
-		VK_ERROR(vk,
-		         "Failed to find matching memoryTypeIndex for buffer");
+	if (!vk_get_memory_type(vk, requirements.memoryTypeBits, properties, &alloc_info.memoryTypeIndex)) {
+		VK_ERROR(vk, "Failed to find matching memoryTypeIndex for buffer");
 		return false;
 	}
 
@@ -1483,14 +1395,10 @@ vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk)
 }
 
 bool
-vk_update_buffer(struct vk_bundle *vk,
-                 float *buffer,
-                 size_t buffer_size,
-                 VkDeviceMemory memory)
+vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDeviceMemory memory)
 {
 	void *tmp;
-	VkResult res =
-	    vk->vkMapMemory(vk->device, memory, 0, VK_WHOLE_SIZE, 0, &tmp);
+	VkResult res = vk->vkMapMemory(vk->device, memory, 0, VK_WHOLE_SIZE, 0, &tmp);
 	vk_check_error("vkMapMemory", res, false);
 
 	memcpy(tmp, buffer, buffer_size);
@@ -1510,11 +1418,7 @@ vk_update_buffer(struct vk_bundle *vk,
 }
 
 VkResult
-vk_locked_submit(struct vk_bundle *vk,
-                 VkQueue queue,
-                 uint32_t count,
-                 const VkSubmitInfo *infos,
-                 VkFence fence)
+vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence)
 {
 	VkResult ret;
 	os_mutex_lock(&vk->queue_mutex);

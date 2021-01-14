@@ -58,12 +58,10 @@ m_pose_is_identity(struct xrt_pose *pose)
  */
 
 static inline void
-m_space_relation_from_pose(const struct xrt_pose *pose,
-                           struct xrt_space_relation *out_relation)
+m_space_relation_from_pose(const struct xrt_pose *pose, struct xrt_space_relation *out_relation)
 {
-	enum xrt_space_relation_flags flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT);
+	enum xrt_space_relation_flags flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	                                                                      XRT_SPACE_RELATION_POSITION_VALID_BIT);
 	struct xrt_space_relation relation = {
 	    flags,
 	    *pose,
@@ -86,8 +84,7 @@ m_space_relation_ident(struct xrt_space_relation *out_relation)
 }
 
 void
-m_space_relation_invert(struct xrt_space_relation *relation,
-                        struct xrt_space_relation *out_relation);
+m_space_relation_invert(struct xrt_space_relation *relation, struct xrt_space_relation *out_relation);
 
 /*
  *
@@ -112,8 +109,7 @@ m_space_graph_reserve(struct xrt_space_graph *xsg)
  * Flattens a space graph into a single relation.
  */
 static inline void
-m_space_graph_add_relation(struct xrt_space_graph *xsg,
-                           const struct xrt_space_relation *relation)
+m_space_graph_add_relation(struct xrt_space_graph *xsg, const struct xrt_space_relation *relation)
 {
 	if (xsg->num_steps >= XRT_SPACE_GRAPHS_MAX) {
 		return;
@@ -123,8 +119,7 @@ m_space_graph_add_relation(struct xrt_space_graph *xsg,
 }
 
 static inline void
-m_space_graph_add_inverted_relation(struct xrt_space_graph *xsg,
-                                    const struct xrt_space_relation *relation)
+m_space_graph_add_inverted_relation(struct xrt_space_graph *xsg, const struct xrt_space_relation *relation)
 {
 	struct xrt_space_relation r = *relation;
 
@@ -142,8 +137,7 @@ m_space_graph_add_pose(struct xrt_space_graph *xsg, const struct xrt_pose *pose)
 }
 
 static inline void
-m_space_graph_add_pose_if_not_identity(struct xrt_space_graph *xsg,
-                                       const struct xrt_pose *pose)
+m_space_graph_add_pose_if_not_identity(struct xrt_space_graph *xsg, const struct xrt_pose *pose)
 {
 	struct xrt_pose p = *pose;
 
@@ -155,8 +149,7 @@ m_space_graph_add_pose_if_not_identity(struct xrt_space_graph *xsg,
 }
 
 static inline void
-m_space_graph_add_inverted_pose_if_not_identity(struct xrt_space_graph *xsg,
-                                                const struct xrt_pose *pose)
+m_space_graph_add_inverted_pose_if_not_identity(struct xrt_space_graph *xsg, const struct xrt_pose *pose)
 {
 	struct xrt_pose p = *pose;
 
@@ -173,8 +166,7 @@ m_space_graph_add_inverted_pose_if_not_identity(struct xrt_space_graph *xsg,
  * Flattens a space graph into a single relation.
  */
 void
-m_space_graph_resolve(const struct xrt_space_graph *xsg,
-                      struct xrt_space_relation *out_relation);
+m_space_graph_resolve(const struct xrt_space_graph *xsg, struct xrt_space_relation *out_relation);
 
 /*!
  * @}

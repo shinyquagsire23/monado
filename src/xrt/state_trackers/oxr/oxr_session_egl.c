@@ -44,36 +44,27 @@ oxr_session_populate_egl(struct oxr_logger *log,
 {
 	EGLint egl_client_type = -1;
 
-	PFNEGLQUERYCONTEXTPROC eglQueryContext =
-	    (PFNEGLQUERYCONTEXTPROC)next->getProcAddress("eglQueryContext");
+	PFNEGLQUERYCONTEXTPROC eglQueryContext = (PFNEGLQUERYCONTEXTPROC)next->getProcAddress("eglQueryContext");
 	if (!eglQueryContext) {
-		return oxr_error(
-		    log, XR_ERROR_INITIALIZATION_FAILED,
-		    "Call to getProcAddress(eglQueryContext) failed");
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Call to getProcAddress(eglQueryContext) failed");
 	}
 
-	if (!eglQueryContext(next->display, next->context,
-	                     EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
-		return oxr_error(
-		    log, XR_ERROR_INITIALIZATION_FAILED,
-		    "Call to eglQueryContext(EGL_CONTEXT_CLIENT_TYPE) failed");
-	}
-
-	if (egl_client_type != EGL_OPENGL_API &&
-	    egl_client_type != EGL_OPENGL_ES_API) {
+	if (!eglQueryContext(next->display, next->context, EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Unsupported EGL client type: '%i'",
+		                 "Call to eglQueryContext(EGL_CONTEXT_CLIENT_TYPE) failed");
+	}
+
+	if (egl_client_type != EGL_OPENGL_API && egl_client_type != EGL_OPENGL_ES_API) {
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Unsupported EGL client type: '%i'",
 		                 egl_client_type);
 	}
 
 	struct xrt_compositor_native *xcn = sess->sys->xcn;
 	struct xrt_compositor_gl *xcgl =
-	    xrt_gfx_provider_create_gl_egl(xcn, next->display, next->config,
-	                                   next->context, next->getProcAddress);
+	    xrt_gfx_provider_create_gl_egl(xcn, next->display, next->config, next->context, next->getProcAddress);
 
 	if (xcgl == NULL) {
-		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-		                 "Failed to create an egl client compositor");
+		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Failed to create an egl client compositor");
 	}
 
 	sess->compositor = &xcgl->base;

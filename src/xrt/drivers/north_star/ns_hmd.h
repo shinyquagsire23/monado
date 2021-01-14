@@ -151,9 +151,7 @@ ns_hmd(struct xrt_device *xdev)
  * @ingroup drv_ns
  */
 void
-ns_display_uv_to_render_uv(struct ns_uv in,
-                           struct ns_uv *out,
-                           struct ns_v1_eye *eye);
+ns_display_uv_to_render_uv(struct ns_uv in, struct ns_uv *out, struct ns_v1_eye *eye);
 
 struct ns_optical_system *
 ns_create_optical_system(struct ns_v1_eye *eye);

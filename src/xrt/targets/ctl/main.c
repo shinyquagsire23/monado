@@ -231,8 +231,7 @@ do_connect(struct ipc_connection *ipc_c)
 
 	struct ipc_app_state cs;
 	cs.pid = getpid();
-	snprintf(cs.info.application_name, sizeof(cs.info.application_name),
-	         "%s", "monado-ctl");
+	snprintf(cs.info.application_name, sizeof(cs.info.application_name), "%s", "monado-ctl");
 
 	xrt_result_t xret = ipc_call_system_set_client_info(ipc_c, &cs);
 	if (xret != XRT_SUCCESS) {

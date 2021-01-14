@@ -133,11 +133,7 @@ u_format_block_size(enum xrt_format f)
 }
 
 void
-u_format_size_for_dimensions(enum xrt_format f,
-                             uint32_t width,
-                             uint32_t height,
-                             size_t *out_stride,
-                             size_t *out_size)
+u_format_size_for_dimensions(enum xrt_format f, uint32_t width, uint32_t height, size_t *out_stride, size_t *out_size)
 {
 	uint32_t sw = u_format_block_width(f);
 	uint32_t sh = u_format_block_height(f);

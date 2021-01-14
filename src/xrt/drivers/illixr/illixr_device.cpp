@@ -68,29 +68,29 @@ illixr_hmd(struct xrt_device *xdev)
 DEBUG_GET_ONCE_BOOL_OPTION(illixr_spew, "ILLIXR_PRINT_SPEW", false)
 DEBUG_GET_ONCE_BOOL_OPTION(illixr_debug, "ILLIXR_PRINT_DEBUG", false)
 
-#define DH_SPEW(dh, ...)                                                       \
-	do {                                                                   \
-		if (dh->print_spew) {                                          \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
+#define DH_SPEW(dh, ...)                                                                                               \
+	do {                                                                                                           \
+		if (dh->print_spew) {                                                                                  \
+			fprintf(stderr, "%s - ", __func__);                                                            \
+			fprintf(stderr, __VA_ARGS__);                                                                  \
+			fprintf(stderr, "\n");                                                                         \
+		}                                                                                                      \
 	} while (false)
 
-#define DH_DEBUG(dh, ...)                                                      \
-	do {                                                                   \
-		if (dh->print_debug) {                                         \
-			fprintf(stderr, "%s - ", __func__);                    \
-			fprintf(stderr, __VA_ARGS__);                          \
-			fprintf(stderr, "\n");                                 \
-		}                                                              \
+#define DH_DEBUG(dh, ...)                                                                                              \
+	do {                                                                                                           \
+		if (dh->print_debug) {                                                                                 \
+			fprintf(stderr, "%s - ", __func__);                                                            \
+			fprintf(stderr, __VA_ARGS__);                                                                  \
+			fprintf(stderr, "\n");                                                                         \
+		}                                                                                                      \
 	} while (false)
 
-#define DH_ERROR(dh, ...)                                                      \
-	do {                                                                   \
-		fprintf(stderr, "%s - ", __func__);                            \
-		fprintf(stderr, __VA_ARGS__);                                  \
-		fprintf(stderr, "\n");                                         \
+#define DH_ERROR(dh, ...)                                                                                              \
+	do {                                                                                                           \
+		fprintf(stderr, "%s - ", __func__);                                                                    \
+		fprintf(stderr, __VA_ARGS__);                                                                          \
+		fprintf(stderr, "\n");                                                                                 \
 	} while (false)
 
 static void
@@ -126,10 +126,8 @@ illixr_hmd_get_tracked_pose(struct xrt_device *xdev,
 
 	out_relation->pose = illixr_read_pose();
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
 }
 
 static void
@@ -158,13 +156,10 @@ split(const std::string &s, char delimiter)
 static int
 illixr_rt_launch(struct illixr_hmd *dh, const char *path, const char *comp)
 {
-	dh->runtime_lib = new ILLIXR::dynamic_lib{
-	    ILLIXR::dynamic_lib::create(std::string{path})};
-	dh->runtime =
-	    dh->runtime_lib->get<ILLIXR::runtime *(*)()>("runtime_factory")();
+	dh->runtime_lib = new ILLIXR::dynamic_lib{ILLIXR::dynamic_lib::create(std::string{path})};
+	dh->runtime = dh->runtime_lib->get<ILLIXR::runtime *(*)()>("runtime_factory")();
 	dh->runtime->load_so(split(std::string{comp}, ':'));
-	dh->runtime->load_plugin_factory(
-	    (ILLIXR::plugin_factory)illixr_monado_create_plugin);
+	dh->runtime->load_plugin_factory((ILLIXR::plugin_factory)illixr_monado_create_plugin);
 
 	return 0;
 }
@@ -173,8 +168,8 @@ extern "C" struct xrt_device *
 illixr_hmd_create(const char *path_in, const char *comp_in)
 {
 	struct illixr_hmd *dh;
-	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(
-	    U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	enum u_device_alloc_flags flags =
+	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 	dh = U_DEVICE_ALLOCATE(struct illixr_hmd, flags, 1, 0);
 	dh->base.update_inputs = illixr_hmd_update_inputs;
 	dh->base.get_tracked_pose = illixr_hmd_get_tracked_pose;

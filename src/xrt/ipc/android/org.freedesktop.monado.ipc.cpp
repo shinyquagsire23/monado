@@ -13,19 +13,14 @@
 namespace wrap {
 namespace org::freedesktop::monado::ipc {
 	Client::Meta::Meta(jni::jclass clazz)
-	    : MetaBase(Client::getTypeName(), clazz),
-	      monado(classRef(), "monado"), failed(classRef(), "failed"),
+	    : MetaBase(Client::getTypeName(), clazz), monado(classRef(), "monado"), failed(classRef(), "failed"),
 	      init(classRef().getMethod("<init>", "(J)V")),
-	      markAsDiscardedByNative(
-	          classRef().getMethod("markAsDiscardedByNative", "()V")),
-	      blockingConnect(classRef().getMethod(
-	          "blockingConnect",
-	          "(Landroid/content/Context;Ljava/lang/String;)I"))
+	      markAsDiscardedByNative(classRef().getMethod("markAsDiscardedByNative", "()V")),
+	      blockingConnect(classRef().getMethod("blockingConnect", "(Landroid/content/Context;Ljava/lang/String;)I"))
 	{}
 	IMonado::Meta::Meta(jni::jclass clazz)
 	    : MetaBase(IMonado::getTypeName(), clazz),
-	      passAppSurface(classRef().getMethod("passAppSurface",
-	                                          "(Landroid/view/Surface;)V"))
+	      passAppSurface(classRef().getMethod("passAppSurface", "(Landroid/view/Surface;)V"))
 	{}
 } // namespace org::freedesktop::monado::ipc
 } // namespace wrap

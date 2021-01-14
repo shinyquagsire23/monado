@@ -94,8 +94,7 @@ generate_lookup_YUV_to_RGBX()
 	for (y = 0; y < 256; y++) {
 		for (u = 0; u < 256; u++) {
 			for (v = 0; v < 256; v++) {
-				lookup_YUV_to_RGBX[y][u][v] =
-				    YUV444_to_RGBX8888(y, u, v);
+				lookup_YUV_to_RGBX[y][u][v] = YUV444_to_RGBX8888(y, u, v);
 			}
 		}
 	}
@@ -191,11 +190,7 @@ YUV444_to_R8G8B8(const uint8_t *input, uint8_t *dst)
 }
 
 static void
-from_YUYV422_to_R8G8B8(struct xrt_frame *dst_frame,
-                       uint32_t w,
-                       uint32_t h,
-                       size_t stride,
-                       const uint8_t *data)
+from_YUYV422_to_R8G8B8(struct xrt_frame *dst_frame, uint32_t w, uint32_t h, size_t stride, const uint8_t *data)
 {
 	for (uint32_t y = 0; y < h; y++) {
 		for (uint32_t x = 0; x < w; x += 2) {
@@ -210,11 +205,7 @@ from_YUYV422_to_R8G8B8(struct xrt_frame *dst_frame,
 }
 
 static void
-from_UYVY422_to_R8G8B8(struct xrt_frame *dst_frame,
-                       uint32_t w,
-                       uint32_t h,
-                       size_t stride,
-                       const uint8_t *data)
+from_UYVY422_to_R8G8B8(struct xrt_frame *dst_frame, uint32_t w, uint32_t h, size_t stride, const uint8_t *data)
 {
 	for (uint32_t y = 0; y < h; y++) {
 		for (uint32_t x = 0; x < w; x += 2) {
@@ -230,11 +221,7 @@ from_UYVY422_to_R8G8B8(struct xrt_frame *dst_frame,
 
 
 static void
-from_YUV888_to_R8G8B8(struct xrt_frame *dst_frame,
-                      uint32_t w,
-                      uint32_t h,
-                      size_t stride,
-                      const uint8_t *data)
+from_YUV888_to_R8G8B8(struct xrt_frame *dst_frame, uint32_t w, uint32_t h, size_t stride, const uint8_t *data)
 {
 	for (uint32_t y = 0; y < h; y++) {
 		for (uint32_t x = 0; x < w; x++) {
@@ -273,9 +260,7 @@ check_header(size_t size, const uint8_t *data)
 }
 
 static bool
-from_MJPEG_to_R8G8B8(struct xrt_frame *dst_frame,
-                     size_t size,
-                     const uint8_t *data)
+from_MJPEG_to_R8G8B8(struct xrt_frame *dst_frame, size_t size, const uint8_t *data)
 {
 	if (!check_header(size, data)) {
 		return false;
@@ -315,9 +300,7 @@ from_MJPEG_to_R8G8B8(struct xrt_frame *dst_frame,
 }
 
 static bool
-from_MJPEG_to_YUV888(struct xrt_frame *dst_frame,
-                     size_t size,
-                     const uint8_t *data)
+from_MJPEG_to_YUV888(struct xrt_frame *dst_frame, size_t size, const uint8_t *data)
 {
 	if (!check_header(size, data)) {
 		return false;
@@ -371,9 +354,7 @@ from_MJPEG_to_YUV888(struct xrt_frame *dst_frame,
  * @todo Allocate from a pool of frames.
  */
 static bool
-create_frame_with_format(struct xrt_frame *xf,
-                         enum xrt_format format,
-                         struct xrt_frame **out_frame)
+create_frame_with_format(struct xrt_frame *xf, enum xrt_format format, struct xrt_frame **out_frame)
 {
 	struct xrt_frame *frame = NULL;
 	u_frame_create_one_off(format, xf->width, xf->height, &frame);
@@ -403,37 +384,28 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 
 	switch (xf->format) {
 	case XRT_FORMAT_L8:
-	case XRT_FORMAT_R8G8B8:
-		s->downstream->push_frame(s->downstream, xf);
-		return;
+	case XRT_FORMAT_R8G8B8: s->downstream->push_frame(s->downstream, xf); return;
 	case XRT_FORMAT_YUYV422:
-		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
-		                              &converted)) {
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8, &converted)) {
 			return;
 		}
-		from_YUYV422_to_R8G8B8(converted, xf->width, xf->height,
-		                       xf->stride, xf->data);
+		from_YUYV422_to_R8G8B8(converted, xf->width, xf->height, xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_UYVY422:
-		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
-		                              &converted)) {
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8, &converted)) {
 			return;
 		}
-		from_UYVY422_to_R8G8B8(converted, xf->width, xf->height,
-		                       xf->stride, xf->data);
+		from_UYVY422_to_R8G8B8(converted, xf->width, xf->height, xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_YUV888:
-		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
-		                              &converted)) {
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8, &converted)) {
 			return;
 		}
-		from_YUV888_to_R8G8B8(converted, xf->width, xf->height,
-		                      xf->stride, xf->data);
+		from_YUV888_to_R8G8B8(converted, xf->width, xf->height, xf->stride, xf->data);
 		break;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
-		                              &converted)) {
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8, &converted)) {
 			return;
 		}
 		if (!from_MJPEG_to_R8G8B8(converted, xf->size, xf->data)) {
@@ -441,10 +413,7 @@ receive_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		}
 		break;
 #endif
-	default:
-		U_LOG_E("Can not convert from '%s' to R8G8B8 or L8!",
-		        u_format_str(xf->format));
-		return;
+	default: U_LOG_E("Can not convert from '%s' to R8G8B8 or L8!", u_format_str(xf->format)); return;
 	}
 
 	s->downstream->push_frame(s->downstream, converted);
@@ -461,37 +430,28 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 	struct xrt_frame *converted = NULL;
 
 	switch (xf->format) {
-	case XRT_FORMAT_R8G8B8:
-		s->downstream->push_frame(s->downstream, xf);
-		return;
+	case XRT_FORMAT_R8G8B8: s->downstream->push_frame(s->downstream, xf); return;
 	case XRT_FORMAT_YUYV422:
-		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
-		                              &converted)) {
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8, &converted)) {
 			return;
 		}
-		from_YUYV422_to_R8G8B8(converted, xf->width, xf->height,
-		                       xf->stride, xf->data);
+		from_YUYV422_to_R8G8B8(converted, xf->width, xf->height, xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_UYVY422:
-		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
-		                              &converted)) {
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8, &converted)) {
 			return;
 		}
-		from_UYVY422_to_R8G8B8(converted, xf->width, xf->height,
-		                       xf->stride, xf->data);
+		from_UYVY422_to_R8G8B8(converted, xf->width, xf->height, xf->stride, xf->data);
 		break;
 	case XRT_FORMAT_YUV888:
-		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
-		                              &converted)) {
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8, &converted)) {
 			return;
 		}
-		from_YUV888_to_R8G8B8(converted, xf->width, xf->height,
-		                      xf->stride, xf->data);
+		from_YUV888_to_R8G8B8(converted, xf->width, xf->height, xf->stride, xf->data);
 		break;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8,
-		                              &converted)) {
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8, &converted)) {
 			return;
 		}
 		if (!from_MJPEG_to_R8G8B8(converted, xf->size, xf->data)) {
@@ -499,10 +459,7 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		}
 		break;
 #endif
-	default:
-		U_LOG_E("Can not convert from '%s' to R8G8B8!",
-		        u_format_str(xf->format));
-		return;
+	default: U_LOG_E("Can not convert from '%s' to R8G8B8!", u_format_str(xf->format)); return;
 	}
 
 	s->downstream->push_frame(s->downstream, converted);
@@ -512,8 +469,7 @@ receive_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 }
 
 static void
-receive_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs,
-                                  struct xrt_frame *xf)
+receive_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 {
 	struct u_sink_converter *s = (struct u_sink_converter *)xs;
 
@@ -523,13 +479,10 @@ receive_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs,
 	case XRT_FORMAT_L8:
 	case XRT_FORMAT_YUYV422:
 	case XRT_FORMAT_UYVY422:
-	case XRT_FORMAT_YUV888:
-		s->downstream->push_frame(s->downstream, xf);
-		return;
+	case XRT_FORMAT_YUV888: s->downstream->push_frame(s->downstream, xf); return;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		if (!create_frame_with_format(xf, XRT_FORMAT_YUV888,
-		                              &converted)) {
+		if (!create_frame_with_format(xf, XRT_FORMAT_YUV888, &converted)) {
 			return;
 		}
 		if (!from_MJPEG_to_YUV888(converted, xf->size, xf->data)) {
@@ -560,13 +513,10 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 
 	switch (xf->format) {
 	case XRT_FORMAT_YUYV422:
-	case XRT_FORMAT_YUV888:
-		s->downstream->push_frame(s->downstream, xf);
-		return;
+	case XRT_FORMAT_YUV888: s->downstream->push_frame(s->downstream, xf); return;
 #ifdef XRT_HAVE_JPEG
 	case XRT_FORMAT_MJPEG:
-		if (!create_frame_with_format(xf, XRT_FORMAT_YUV888,
-		                              &converted)) {
+		if (!create_frame_with_format(xf, XRT_FORMAT_YUV888, &converted)) {
 			return;
 		}
 		if (!from_MJPEG_to_YUV888(converted, xf->size, xf->data)) {
@@ -574,10 +524,7 @@ receive_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		}
 		break;
 #endif
-	default:
-		U_LOG_E("Can not convert from '%s' to either YUV or YUYV!",
-		        u_format_str(xf->format));
-		return;
+	default: U_LOG_E("Can not convert from '%s' to either YUV or YUYV!", u_format_str(xf->format)); return;
 	}
 
 	s->downstream->push_frame(s->downstream, converted);
@@ -593,8 +540,7 @@ break_apart(struct xrt_frame_node *node)
 static void
 destroy(struct xrt_frame_node *node)
 {
-	struct u_sink_converter *s =
-	    container_of(node, struct u_sink_converter, node);
+	struct u_sink_converter *s = container_of(node, struct u_sink_converter, node);
 
 	free(s);
 }

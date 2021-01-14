@@ -52,8 +52,7 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
 		if (sc->base.images[i] != VK_NULL_HANDLE) {
-			c->vk.vkDestroyImage(c->vk.device, sc->base.images[i],
-			                     NULL);
+			c->vk.vkDestroyImage(c->vk.device, sc->base.images[i], NULL);
 			sc->base.images[i] = VK_NULL_HANDLE;
 		}
 
@@ -70,15 +69,13 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 }
 
 static xrt_result_t
-client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc,
-                                  uint32_t *out_index)
+client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 {
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 	struct vk_bundle *vk = &sc->c->vk;
 
 	// Pipe down call into native swapchain.
-	xrt_result_t xret =
-	    xrt_swapchain_acquire_image(&sc->xscn->base, out_index);
+	xrt_result_t xret = xrt_swapchain_acquire_image(&sc->xscn->base, out_index);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -90,8 +87,7 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc,
 	    .pCommandBuffers = &sc->acquire[*out_index],
 	};
 
-	VkResult ret =
-	    vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
+	VkResult ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Could not submit to queue: %d", ret);
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
@@ -100,9 +96,7 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc,
 }
 
 static xrt_result_t
-client_vk_swapchain_wait_image(struct xrt_swapchain *xsc,
-                               uint64_t timeout,
-                               uint32_t index)
+client_vk_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index)
 {
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 
@@ -123,8 +117,7 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	    .pCommandBuffers = &sc->release[index],
 	};
 
-	VkResult ret =
-	    vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
+	VkResult ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Could not submit to queue: %d", ret);
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
@@ -142,8 +135,7 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
  */
 
 static xrt_result_t
-client_vk_compositor_poll_events(struct xrt_compositor *xc,
-                                 union xrt_compositor_event *out_xce)
+client_vk_compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_xce)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
@@ -171,8 +163,7 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
-client_vk_compositor_prepare_session(
-    struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
+client_vk_compositor_prepare_session(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
@@ -181,8 +172,7 @@ client_vk_compositor_prepare_session(
 }
 
 static xrt_result_t
-client_vk_compositor_begin_session(struct xrt_compositor *xc,
-                                   enum xrt_view_type type)
+client_vk_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
@@ -208,9 +198,7 @@ client_vk_compositor_wait_frame(struct xrt_compositor *xc,
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
 	// Pipe down call into native compositor.
-	return xrt_comp_wait_frame(&c->xcn->base, out_frame_id,
-	                           predicted_display_time,
-	                           predicted_display_period);
+	return xrt_comp_wait_frame(&c->xcn->base, out_frame_id, predicted_display_time, predicted_display_period);
 }
 
 static xrt_result_t
@@ -232,9 +220,7 @@ client_vk_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-client_vk_compositor_layer_begin(struct xrt_compositor *xc,
-                                 int64_t frame_id,
-                                 enum xrt_blend_mode env_blend_mode)
+client_vk_compositor_layer_begin(struct xrt_compositor *xc, int64_t frame_id, enum xrt_blend_mode env_blend_mode)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
@@ -256,20 +242,18 @@ client_vk_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	l_xscn = &client_vk_swapchain(l_xsc)->xscn->base;
 	r_xscn = &client_vk_swapchain(r_xsc)->xscn->base;
 
-	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn,
-	                                        r_xscn, data);
+	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn, r_xscn, data);
 }
 
 
 static xrt_result_t
-client_vk_compositor_layer_stereo_projection_depth(
-    struct xrt_compositor *xc,
-    struct xrt_device *xdev,
-    struct xrt_swapchain *l_xsc,
-    struct xrt_swapchain *r_xsc,
-    struct xrt_swapchain *l_d_xsc,
-    struct xrt_swapchain *r_d_xsc,
-    const struct xrt_layer_data *data)
+client_vk_compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
+                                                   struct xrt_device *xdev,
+                                                   struct xrt_swapchain *l_xsc,
+                                                   struct xrt_swapchain *r_xsc,
+                                                   struct xrt_swapchain *l_d_xsc,
+                                                   struct xrt_swapchain *r_d_xsc,
+                                                   const struct xrt_layer_data *data)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct xrt_swapchain *l_xscn, *r_xscn, *l_d_xscn, *r_d_xscn;
@@ -281,8 +265,7 @@ client_vk_compositor_layer_stereo_projection_depth(
 	l_d_xscn = &client_vk_swapchain(l_d_xsc)->xscn->base;
 	r_d_xscn = &client_vk_swapchain(r_d_xsc)->xscn->base;
 
-	return xrt_comp_layer_stereo_projection_depth(
-	    &c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, data);
+	return xrt_comp_layer_stereo_projection_depth(&c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, data);
 }
 
 static xrt_result_t
@@ -366,17 +349,14 @@ client_vk_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_vk_compositor_layer_commit(struct xrt_compositor *xc,
-                                  int64_t frame_id,
-                                  xrt_graphics_sync_handle_t sync_handle)
+client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
 	//! @todo We should be creating the handle ourselves in the future.
 	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
 
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id,
-	                             XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+	return xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 }
 
 static xrt_result_t
@@ -412,8 +392,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
 
-	struct client_vk_swapchain *sc =
-	    U_TYPED_CALLOC(struct client_vk_swapchain);
+	struct client_vk_swapchain *sc = U_TYPED_CALLOC(struct client_vk_swapchain);
 	sc->base.base.destroy = client_vk_swapchain_destroy;
 	sc->base.base.acquire_image = client_vk_swapchain_acquire_image;
 	sc->base.base.wait_image = client_vk_swapchain_wait_image;
@@ -424,9 +403,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	sc->xscn = xscn;
 
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
-		ret = vk_create_image_from_native(
-		    &c->vk, info, &xscn->images[i], &sc->base.images[i],
-		    &sc->mems[i]);
+		ret = vk_create_image_from_native(&c->vk, info, &xscn->images[i], &sc->base.images[i], &sc->mems[i]);
 
 
 		if (ret != VK_SUCCESS) {
@@ -438,11 +415,8 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		 * not be a bug in the validation layer. That may or may not be
 		 * fixed in the future version of the validation layer.
 		 */
-		vk_set_image_layout(&c->vk, cmd_buffer, sc->base.images[i], 0,
-		                    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-		                    VK_IMAGE_LAYOUT_UNDEFINED,
-		                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-		                    subresource_range);
+		vk_set_image_layout(&c->vk, cmd_buffer, sc->base.images[i], 0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, subresource_range);
 	}
 
 	ret = vk_submit_cmd_buffer(&c->vk, cmd_buffer);
@@ -511,25 +485,19 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		};
 
 		//! @todo less conservative pipeline stage masks based on usage
-		c->vk.vkCmdPipelineBarrier(sc->acquire[i],
-		                           VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		                           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-		                           0, 0, NULL, 0, NULL, 1, &acquire);
-		c->vk.vkCmdPipelineBarrier(sc->release[i],
-		                           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-		                           VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-		                           0, 0, NULL, 0, NULL, 1, &release);
+		c->vk.vkCmdPipelineBarrier(sc->acquire[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		                           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 1, &acquire);
+		c->vk.vkCmdPipelineBarrier(sc->release[i], VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		                           VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &release);
 
 		ret = c->vk.vkEndCommandBuffer(sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
-			VK_ERROR((&c->vk), "vkEndCommandBuffer: %s",
-			         vk_result_string(ret));
+			VK_ERROR((&c->vk), "vkEndCommandBuffer: %s", vk_result_string(ret));
 			return XRT_ERROR_VULKAN;
 		}
 		ret = c->vk.vkEndCommandBuffer(sc->release[i]);
 		if (ret != VK_SUCCESS) {
-			VK_ERROR((&c->vk), "vkEndCommandBuffer: %s",
-			         vk_result_string(ret));
+			VK_ERROR((&c->vk), "vkEndCommandBuffer: %s", vk_result_string(ret));
 			return XRT_ERROR_VULKAN;
 		}
 	}
@@ -549,8 +517,7 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
                             uint32_t queueIndex)
 {
 	VkResult ret;
-	struct client_vk_compositor *c =
-	    U_TYPED_CALLOC(struct client_vk_compositor);
+	struct client_vk_compositor *c = U_TYPED_CALLOC(struct client_vk_compositor);
 
 	c->base.base.create_swapchain = client_vk_swapchain_create;
 	c->base.base.prepare_session = client_vk_compositor_prepare_session;
@@ -560,10 +527,8 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	c->base.base.begin_frame = client_vk_compositor_begin_frame;
 	c->base.base.discard_frame = client_vk_compositor_discard_frame;
 	c->base.base.layer_begin = client_vk_compositor_layer_begin;
-	c->base.base.layer_stereo_projection =
-	    client_vk_compositor_layer_stereo_projection;
-	c->base.base.layer_stereo_projection_depth =
-	    client_vk_compositor_layer_stereo_projection_depth;
+	c->base.base.layer_stereo_projection = client_vk_compositor_layer_stereo_projection;
+	c->base.base.layer_stereo_projection_depth = client_vk_compositor_layer_stereo_projection_depth;
 	c->base.base.layer_quad = client_vk_compositor_layer_quad;
 	c->base.base.layer_cube = client_vk_compositor_layer_cube;
 	c->base.base.layer_cylinder = client_vk_compositor_layer_cylinder;
@@ -580,13 +545,10 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	}
 
 	c->base.base.info.num_formats = xcn->base.info.num_formats;
-	memcpy(c->base.base.info.compositor_vk_deviceUUID,
-	       xcn->base.info.compositor_vk_deviceUUID, XRT_GPU_UUID_SIZE);
-	memcpy(c->base.base.info.client_vk_deviceUUID,
-	       xcn->base.info.client_vk_deviceUUID, XRT_GPU_UUID_SIZE);
+	memcpy(c->base.base.info.compositor_vk_deviceUUID, xcn->base.info.compositor_vk_deviceUUID, XRT_GPU_UUID_SIZE);
+	memcpy(c->base.base.info.client_vk_deviceUUID, xcn->base.info.client_vk_deviceUUID, XRT_GPU_UUID_SIZE);
 
-	ret = vk_init_from_given(&c->vk, getProc, instance, physicalDevice,
-	                         device, queueFamilyIndex, queueIndex);
+	ret = vk_init_from_given(&c->vk, getProc, instance, physicalDevice, device, queueFamilyIndex, queueIndex);
 	if (ret != VK_SUCCESS) {
 		goto err_free;
 	}

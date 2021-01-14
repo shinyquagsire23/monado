@@ -24,8 +24,7 @@ xrt_gfx_provider_create_gl_xlib(struct xrt_compositor_native *xcn,
                                 GLXContext glxContext)
 {
 	struct client_gl_xlib_compositor *xcc =
-	    client_gl_xlib_compositor_create(
-	        xcn, xDisplay, visualid, glxFBConfig, glxDrawable, glxContext);
+	    client_gl_xlib_compositor_create(xcn, xDisplay, visualid, glxFBConfig, glxDrawable, glxContext);
 
 	return &xcc->base.base;
 }

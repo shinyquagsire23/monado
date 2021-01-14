@@ -114,9 +114,7 @@ vf_fs(struct xrt_fs *xfs)
  */
 
 static bool
-vf_fs_enumerate_modes(struct xrt_fs *xfs,
-                      struct xrt_fs_mode **out_modes,
-                      uint32_t *out_count)
+vf_fs_enumerate_modes(struct xrt_fs *xfs, struct xrt_fs_mode **out_modes, uint32_t *out_count)
 {
 	struct vf_fs *vid = vf_fs(xfs);
 
@@ -137,8 +135,7 @@ vf_fs_enumerate_modes(struct xrt_fs *xfs,
 }
 
 static bool
-vf_fs_configure_capture(struct xrt_fs *xfs,
-                        struct xrt_fs_capture_parameters *cp)
+vf_fs_configure_capture(struct xrt_fs *xfs, struct xrt_fs_capture_parameters *cp)
 {
 	// struct vf_fs *vid = vf_fs(xfs);
 	//! @todo
@@ -239,8 +236,7 @@ vf_fs_frame(struct vf_fs *vid, GstSample *sample)
 
 		struct xrt_frame *xf = NULL;
 
-		u_frame_create_one_off(vid->format, vid->width, vid->height,
-		                       &xf);
+		u_frame_create_one_off(vid->format, vid->width, vid->height, &xf);
 
 		//! @todo Sequence number and timestamp.
 		xf->width = vid->width;
@@ -307,8 +303,7 @@ print_gst_error(GstMessage *message)
 	gchar *dbg_info = NULL;
 
 	gst_message_parse_error(message, &err, &dbg_info);
-	U_LOG_E("ERROR from element %s: %s\n", GST_OBJECT_NAME(message->src),
-	        err->message);
+	U_LOG_E("ERROR from element %s: %s\n", GST_OBJECT_NAME(message->src), err->message);
 	U_LOG_E("Debugging info: %s\n", (dbg_info) ? dbg_info : "none");
 	g_error_free(err);
 	g_free(dbg_info);
@@ -408,17 +403,14 @@ vf_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	}
 
 	vid->testsink = gst_bin_get_by_name(GST_BIN(vid->source), "testsink");
-	g_object_set(G_OBJECT(vid->testsink), "emit-signals", TRUE, "sync",
-	             TRUE, NULL);
-	g_signal_connect(vid->testsink, "new-sample",
-	                 G_CALLBACK(on_new_sample_from_sink), vid);
+	g_object_set(G_OBJECT(vid->testsink), "emit-signals", TRUE, "sync", TRUE, NULL);
+	g_signal_connect(vid->testsink, "new-sample", G_CALLBACK(on_new_sample_from_sink), vid);
 
 	bus = gst_element_get_bus(vid->source);
 	gst_bus_add_watch(bus, (GstBusFunc)on_source_message, vid);
 	gst_object_unref(bus);
 
-	int ret =
-	    os_thread_helper_start(&vid->play_thread, run_play_thread, vid);
+	int ret = os_thread_helper_start(&vid->play_thread, run_play_thread, vid);
 	if (!ret) {
 		VF_ERROR(vid, "Failed to start thread");
 	}

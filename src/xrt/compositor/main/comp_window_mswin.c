@@ -99,8 +99,7 @@ comp_window_mswin_fullscreen(struct comp_window_mswin *w)
 }
 
 static VkResult
-comp_window_mswin_create_surface(struct comp_window_mswin *w,
-                                 VkSurfaceKHR *vk_surface)
+comp_window_mswin_create_surface(struct comp_window_mswin *w, VkSurfaceKHR *vk_surface)
 {
 	struct vk_bundle *vk = get_vk(w);
 	VkResult ret;
@@ -110,11 +109,9 @@ comp_window_mswin_create_surface(struct comp_window_mswin *w,
 	    .hwnd = w->window,
 	};
 
-	ret = vk->vkCreateWin32SurfaceKHR(vk->instance, &surface_info, NULL,
-	                                  vk_surface);
+	ret = vk->vkCreateWin32SurfaceKHR(vk->instance, &surface_info, NULL, vk_surface);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.base.c, "vkCreateWin32SurfaceKHR: %s",
-		           vk_result_string(ret));
+		COMP_ERROR(w->base.base.c, "vkCreateWin32SurfaceKHR: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -122,9 +119,7 @@ comp_window_mswin_create_surface(struct comp_window_mswin *w,
 }
 
 static bool
-comp_window_mswin_init_swapchain(struct comp_target *ct,
-                                 uint32_t width,
-                                 uint32_t height)
+comp_window_mswin_init_swapchain(struct comp_target *ct, uint32_t width, uint32_t height)
 {
 	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ct;
 	VkResult ret;
@@ -173,18 +168,14 @@ comp_window_mswin_init(struct comp_target *ct)
 #endif
 	RegisterClassExW(&wcex);
 
-	cwm->window =
-	    CreateWindowW(szWindowClass, L"Monado (Windowed)",
-	                  WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, CW_USEDEFAULT,
-	                  0, NULL, NULL, cwm->instance, NULL);
+	cwm->window = CreateWindowW(szWindowClass, L"Monado (Windowed)", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0,
+	                            CW_USEDEFAULT, 0, NULL, NULL, cwm->instance, NULL);
 
 	return true;
 }
 
 static void
-comp_window_mswin_configure(struct comp_window_mswin *w,
-                            int32_t width,
-                            int32_t height)
+comp_window_mswin_configure(struct comp_window_mswin *w, int32_t width, int32_t height)
 {
 	if (w->base.base.c->settings.fullscreen && !w->fullscreen_requested) {
 		COMP_DEBUG(w->base.base.c, "Setting full screen");

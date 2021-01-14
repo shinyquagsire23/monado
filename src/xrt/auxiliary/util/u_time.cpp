@@ -76,9 +76,7 @@ time_state_get_now_and_update(struct time_state *state)
 }
 
 extern "C" void
-time_state_to_timespec(struct time_state const *state,
-                       timepoint_ns timestamp,
-                       struct timespec *out)
+time_state_to_timespec(struct time_state const *state, timepoint_ns timestamp, struct timespec *out)
 {
 	assert(state != NULL);
 	assert(out != NULL);
@@ -90,8 +88,7 @@ time_state_to_timespec(struct time_state const *state,
 }
 
 extern "C" timepoint_ns
-time_state_from_timespec(struct time_state const *state,
-                         const struct timespec *timespecTime)
+time_state_from_timespec(struct time_state const *state, const struct timespec *timespecTime)
 {
 	assert(state != NULL);
 	assert(timespecTime != NULL);
@@ -104,8 +101,7 @@ time_state_from_timespec(struct time_state const *state,
 }
 
 extern "C" timepoint_ns
-time_state_monotonic_to_ts_ns(struct time_state const *state,
-                              uint64_t monotonic_ns)
+time_state_monotonic_to_ts_ns(struct time_state const *state, uint64_t monotonic_ns)
 {
 	assert(state != NULL);
 
@@ -113,8 +109,7 @@ time_state_monotonic_to_ts_ns(struct time_state const *state,
 }
 
 extern "C" uint64_t
-time_state_ts_to_monotonic_ns(struct time_state const *state,
-                              timepoint_ns timestamp)
+time_state_ts_to_monotonic_ns(struct time_state const *state, timepoint_ns timestamp)
 {
 	assert(state != NULL);
 

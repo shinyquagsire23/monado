@@ -29,8 +29,7 @@ getAppInfo(std::string const &packageName, jobject application_context)
 			U_LOG_E("getAppInfo: application_context was null");
 			return {};
 		}
-		auto packageManager =
-		    PackageManager{context.getPackageManager()};
+		auto packageManager = PackageManager{context.getPackageManager()};
 		if (packageManager.isNull()) {
 			U_LOG_E(
 			    "getAppInfo: "
@@ -39,8 +38,7 @@ getAppInfo(std::string const &packageName, jobject application_context)
 			return {};
 		}
 		auto packageInfo = packageManager.getPackageInfo(
-		    packageName, PackageManager::GET_META_DATA |
-		                     PackageManager::GET_SHARED_LIBRARY_FILES);
+		    packageName, PackageManager::GET_META_DATA | PackageManager::GET_SHARED_LIBRARY_FILES);
 
 		if (packageInfo.isNull()) {
 			U_LOG_E(
@@ -57,24 +55,19 @@ getAppInfo(std::string const &packageName, jobject application_context)
 }
 
 wrap::java::lang::Class
-loadClassFromPackage(ApplicationInfo applicationInfo,
-                     jobject application_context,
-                     const char *clazz_name)
+loadClassFromPackage(ApplicationInfo applicationInfo, jobject application_context, const char *clazz_name)
 {
 	auto context = Context{application_context}.getApplicationContext();
 	auto pkgContext = context.createPackageContext(
-	    applicationInfo.getPackageName(),
-	    Context::CONTEXT_IGNORE_SECURITY | Context::CONTEXT_INCLUDE_CODE);
+	    applicationInfo.getPackageName(), Context::CONTEXT_IGNORE_SECURITY | Context::CONTEXT_INCLUDE_CODE);
 
 	// Not using ClassLoader.loadClass because it expects a /-delimited
 	// class name, while we have a .-delimited class name.
 	// This does work
-	wrap::java::lang::ClassLoader pkgClassLoader =
-	    pkgContext.getClassLoader();
+	wrap::java::lang::ClassLoader pkgClassLoader = pkgContext.getClassLoader();
 
 	try {
-		auto loadedClass =
-		    pkgClassLoader.loadClass(std::string(clazz_name));
+		auto loadedClass = pkgClassLoader.loadClass(std::string(clazz_name));
 		if (loadedClass.isNull()) {
 			U_LOG_E("Could not load class for name %s", clazz_name);
 			return wrap::java::lang::Class();
@@ -82,8 +75,7 @@ loadClassFromPackage(ApplicationInfo applicationInfo,
 
 		return loadedClass;
 	} catch (std::exception const &e) {
-		U_LOG_E("Could load class '%s' forName: %s", clazz_name,
-		        e.what());
+		U_LOG_E("Could load class '%s' forName: %s", clazz_name, e.what());
 		return wrap::java::lang::Class();
 	}
 }
@@ -98,15 +90,12 @@ android_load_class_from_package(struct _JavaVM *vm,
 	Context context((jobject)application_context);
 	auto info = getAppInfo(pkgname, (jobject)application_context);
 	if (info.isNull()) {
-		U_LOG_E("Could not get application info for package '%s'",
-		        pkgname);
+		U_LOG_E("Could not get application info for package '%s'", pkgname);
 		return nullptr;
 	}
-	auto clazz =
-	    loadClassFromPackage(info, (jobject)application_context, classname);
+	auto clazz = loadClassFromPackage(info, (jobject)application_context, classname);
 	if (clazz.isNull()) {
-		U_LOG_E("Could not load class '%s' from package '%s'",
-		        classname, pkgname);
+		U_LOG_E("Could not load class '%s' from package '%s'", classname, pkgname);
 		return nullptr;
 	}
 	return clazz.object().getHandle();

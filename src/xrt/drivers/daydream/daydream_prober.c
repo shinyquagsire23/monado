@@ -67,10 +67,7 @@ daydream_prober_destroy(struct xrt_auto_prober *p)
 
 //! @public @memberof daydream_prober
 static struct xrt_device *
-daydream_prober_autoprobe(struct xrt_auto_prober *xap,
-                          cJSON *attached_data,
-                          bool no_hmds,
-                          struct xrt_prober *xp)
+daydream_prober_autoprobe(struct xrt_auto_prober *xap, cJSON *attached_data, bool no_hmds, struct xrt_prober *xp)
 {
 	struct daydream_prober *pdaydream = daydream_prober(xap);
 	if (!pdaydream->enabled) {
@@ -101,8 +98,7 @@ daydream_prober_autoprobe(struct xrt_auto_prober *xap,
 struct xrt_auto_prober *
 daydream_create_auto_prober()
 {
-	struct daydream_prober *pdaydream =
-	    U_TYPED_CALLOC(struct daydream_prober);
+	struct daydream_prober *pdaydream = U_TYPED_CALLOC(struct daydream_prober);
 	pdaydream->base.name = "DayDream";
 	pdaydream->base.destroy = daydream_prober_destroy;
 	pdaydream->base.lelo_dallas_autoprobe = daydream_prober_autoprobe;

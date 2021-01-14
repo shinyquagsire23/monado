@@ -48,21 +48,21 @@
 #define V4L2_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
 #define V4L2_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
 
-#define V_CONTROL_GET(VID, CONTROL)                                            \
-	do {                                                                   \
-		int _value = 0;                                                \
-		if (v4l2_control_get(VID, V4L2_CID_##CONTROL, &_value) != 0) { \
-			V4L2_ERROR(VID, "failed to get V4L2_CID_" #CONTROL);   \
-		} else {                                                       \
-			V4L2_DEBUG(VID, "V4L2_CID_" #CONTROL " = %i", _value); \
-		}                                                              \
+#define V_CONTROL_GET(VID, CONTROL)                                                                                    \
+	do {                                                                                                           \
+		int _value = 0;                                                                                        \
+		if (v4l2_control_get(VID, V4L2_CID_##CONTROL, &_value) != 0) {                                         \
+			V4L2_ERROR(VID, "failed to get V4L2_CID_" #CONTROL);                                           \
+		} else {                                                                                               \
+			V4L2_DEBUG(VID, "V4L2_CID_" #CONTROL " = %i", _value);                                         \
+		}                                                                                                      \
 	} while (false);
 
-#define V_CONTROL_SET(VID, CONTROL, VALUE)                                     \
-	do {                                                                   \
-		if (v4l2_control_set(VID, V4L2_CID_##CONTROL, VALUE) != 0) {   \
-			V4L2_ERROR(VID, "failed to set V4L2_CID_" #CONTROL);   \
-		}                                                              \
+#define V_CONTROL_SET(VID, CONTROL, VALUE)                                                                             \
+	do {                                                                                                           \
+		if (v4l2_control_set(VID, V4L2_CID_##CONTROL, VALUE) != 0) {                                           \
+			V4L2_ERROR(VID, "failed to set V4L2_CID_" #CONTROL);                                           \
+		}                                                                                                      \
 	} while (false);
 
 DEBUG_GET_ONCE_LOG_OPTION(v4l2_log, "V4L2_LOG", U_LOGGING_WARN)
@@ -250,11 +250,7 @@ v4l2_control_set(struct v4l2_fs *vid, uint32_t id, int value)
 }
 
 static void
-v4l2_add_control_state(struct v4l2_fs *vid,
-                       int control,
-                       struct v4l2_state_want want[2],
-                       int force,
-                       const char *name)
+v4l2_add_control_state(struct v4l2_fs *vid, int control, struct v4l2_state_want want[2], int force, const char *name)
 {
 	struct v4l2_control_state *state = &vid->states[vid->num_states++];
 
@@ -327,15 +323,12 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 	/*
 	 * Find quirks
 	 */
-	vid->quirks.ps4_cam =
-	    strcmp(card, "USB Camera-OV580: USB Camera-OV") == 0;
+	vid->quirks.ps4_cam = strcmp(card, "USB Camera-OV580: USB Camera-OV") == 0;
 
-#define ADD(CONTROL, WANT1, WANT2, WANT3, WANT4, NAME)                         \
-	do {                                                                   \
-		struct v4l2_state_want want[2] = {{WANT1, WANT2},              \
-		                                  {WANT3, WANT4}};             \
-		v4l2_add_control_state(vid, V4L2_CID_##CONTROL, want, 2,       \
-		                       NAME);                                  \
+#define ADD(CONTROL, WANT1, WANT2, WANT3, WANT4, NAME)                                                                 \
+	do {                                                                                                           \
+		struct v4l2_state_want want[2] = {{WANT1, WANT2}, {WANT3, WANT4}};                                     \
+		v4l2_add_control_state(vid, V4L2_CID_##CONTROL, want, 2, NAME);                                        \
 	} while (false)
 
 	if (vid->quirks.ps4_cam) {
@@ -405,12 +398,9 @@ v4l2_try_mmap(struct v4l2_fs *vid, struct v4l2_requestbuffers *v_bufrequest)
 }
 
 static int
-v4l2_setup_mmap_buffer(struct v4l2_fs *vid,
-                       struct v4l2_frame *vf,
-                       struct v4l2_buffer *v_buf)
+v4l2_setup_mmap_buffer(struct v4l2_fs *vid, struct v4l2_frame *vf, struct v4l2_buffer *v_buf)
 {
-	void *ptr = mmap(0, v_buf->length, PROT_READ, MAP_SHARED, vid->fd,
-	                 v_buf->m.offset);
+	void *ptr = mmap(0, v_buf->length, PROT_READ, MAP_SHARED, vid->fd, v_buf->m.offset);
 	if (ptr == MAP_FAILED) {
 		V4L2_ERROR(vid, "error: Call to mmap failed!");
 		return -1;
@@ -422,9 +412,7 @@ v4l2_setup_mmap_buffer(struct v4l2_fs *vid,
 }
 
 static int
-v4l2_setup_userptr_buffer(struct v4l2_fs *vid,
-                          struct v4l2_frame *vf,
-                          struct v4l2_buffer *v_buf)
+v4l2_setup_userptr_buffer(struct v4l2_fs *vid, struct v4l2_frame *vf, struct v4l2_buffer *v_buf)
 {
 	// align this to a memory page, v4l2 likes it that way
 	long sz = sysconf(_SC_PAGESIZE);
@@ -453,8 +441,7 @@ static struct v4l2_source_descriptor *
 v4l2_add_descriptor(struct v4l2_fs *vid)
 {
 	uint32_t index = vid->num_descriptors++;
-	U_ARRAY_REALLOC_OR_FREE(vid->descriptors, struct v4l2_source_descriptor,
-	                        vid->num_descriptors);
+	U_ARRAY_REALLOC_OR_FREE(vid->descriptors, struct v4l2_source_descriptor, vid->num_descriptors);
 
 	struct v4l2_source_descriptor *desc = &vid->descriptors[index];
 	U_ZERO(desc);
@@ -468,26 +455,19 @@ v4l2_list_modes_interval(struct v4l2_fs *vid,
                          const struct v4l2_frmsizeenum *size,
                          const struct v4l2_frmivalenum *interval)
 {
-	if (interval->discrete.denominator % interval->discrete.numerator ==
-	    0) {
-		int fps = interval->discrete.denominator /
-		          interval->discrete.numerator;
+	if (interval->discrete.denominator % interval->discrete.numerator == 0) {
+		int fps = interval->discrete.denominator / interval->discrete.numerator;
 
-		V4L2_DEBUG(vid, "#%i %dx%d@%i", vid->num_descriptors,
-		           interval->width, interval->height, fps);
+		V4L2_DEBUG(vid, "#%i %dx%d@%i", vid->num_descriptors, interval->width, interval->height, fps);
 	} else {
-		double fps = (double)interval->discrete.denominator /
-		             (double)interval->discrete.numerator;
+		double fps = (double)interval->discrete.denominator / (double)interval->discrete.numerator;
 
-		V4L2_DEBUG(vid, "#%i %dx%d@%f", vid->num_descriptors,
-		           interval->width, interval->height, fps);
+		V4L2_DEBUG(vid, "#%i %dx%d@%f", vid->num_descriptors, interval->width, interval->height, fps);
 	}
 }
 
 static void
-v4l2_list_modes_size(struct v4l2_fs *vid,
-                     const struct v4l2_fmtdesc *fmt,
-                     const struct v4l2_frmsizeenum *size)
+v4l2_list_modes_size(struct v4l2_fs *vid, const struct v4l2_fmtdesc *fmt, const struct v4l2_frmsizeenum *size)
 {
 	if (size->type != V4L2_FRMSIZE_TYPE_DISCRETE) {
 		V4L2_DEBUG(vid, "warning: Skipping non discrete frame size.");
@@ -527,13 +507,11 @@ v4l2_list_modes_size(struct v4l2_fs *vid,
 	desc->stream.width = interval.width;
 	desc->stream.height = interval.height;
 	desc->stream.format = interval.pixel_format;
-	snprintf(desc->format_name, sizeof(desc->format_name), "%s",
-	         fmt->description);
+	snprintf(desc->format_name, sizeof(desc->format_name), "%s", fmt->description);
 
 	if (u_format_is_blocks(format)) {
-		u_format_size_for_dimensions(
-		    format, interval.width, interval.height,
-		    &desc->stream.stride, &desc->stream.size);
+		u_format_size_for_dimensions(format, interval.width, interval.height, &desc->stream.stride,
+		                             &desc->stream.size);
 	}
 
 	// Fill out the out sink variables.
@@ -546,17 +524,13 @@ v4l2_list_modes_size(struct v4l2_fs *vid,
 static void
 v4l2_list_modes_fmt(struct v4l2_fs *vid, const struct v4l2_fmtdesc *fmt)
 {
-	V4L2_DEBUG(vid, "format: %s %08x %d", fmt->description,
-	           fmt->pixelformat, fmt->type);
+	V4L2_DEBUG(vid, "format: %s %08x %d", fmt->description, fmt->pixelformat, fmt->type);
 
 	switch (fmt->pixelformat) {
 	case V4L2_PIX_FMT_YUYV: break;
 	case V4L2_PIX_FMT_UYVY: break;
 	case V4L2_PIX_FMT_MJPEG: break;
-	default:
-		V4L2_ERROR(vid, "error: Unknown pixelformat '%s' '%08x'",
-		           fmt->description, fmt->pixelformat);
-		return;
+	default: V4L2_ERROR(vid, "error: Unknown pixelformat '%s' '%08x'", fmt->description, fmt->pixelformat); return;
 	}
 
 	struct v4l2_frmsizeenum size = {0};
@@ -637,17 +611,14 @@ v4l2_update_controls(struct v4l2_fs *vid)
  */
 
 static bool
-v4l2_fs_enumerate_modes(struct xrt_fs *xfs,
-                        struct xrt_fs_mode **out_modes,
-                        uint32_t *out_count)
+v4l2_fs_enumerate_modes(struct xrt_fs *xfs, struct xrt_fs_mode **out_modes, uint32_t *out_count)
 {
 	struct v4l2_fs *vid = v4l2_fs(xfs);
 	if (vid->num_descriptors == 0) {
 		return false;
 	}
 
-	struct xrt_fs_mode *modes =
-	    U_TYPED_ARRAY_CALLOC(struct xrt_fs_mode, vid->num_descriptors);
+	struct xrt_fs_mode *modes = U_TYPED_ARRAY_CALLOC(struct xrt_fs_mode, vid->num_descriptors);
 	if (modes == NULL) {
 		return false;
 	}
@@ -663,8 +634,7 @@ v4l2_fs_enumerate_modes(struct xrt_fs *xfs,
 }
 
 static bool
-v4l2_fs_configure_capture(struct xrt_fs *xfs,
-                          struct xrt_fs_capture_parameters *cp)
+v4l2_fs_configure_capture(struct xrt_fs *xfs, struct xrt_fs_capture_parameters *cp)
 {
 	// struct v4l2_fs *vid = v4l2_fs(xfs);
 	//! @todo
@@ -680,8 +650,7 @@ v4l2_fs_stream_start(struct xrt_fs *xfs,
 	struct v4l2_fs *vid = v4l2_fs(xfs);
 
 	if (descriptor_index >= vid->num_descriptors) {
-		V4L2_ERROR(vid, "error Invalid descriptor_index (%i >= %i)",
-		           descriptor_index, vid->num_descriptors);
+		V4L2_ERROR(vid, "error Invalid descriptor_index (%i >= %i)", descriptor_index, vid->num_descriptors);
 		return false;
 	}
 	vid->selected = descriptor_index;
@@ -689,8 +658,7 @@ v4l2_fs_stream_start(struct xrt_fs *xfs,
 	vid->sink = xs;
 	vid->is_running = true;
 	vid->capture_type = capture_type;
-	if (pthread_create(&vid->stream_thread, NULL, v4l2_fs_stream_run,
-	                   xfs)) {
+	if (pthread_create(&vid->stream_thread, NULL, v4l2_fs_stream_run, xfs)) {
 		vid->is_running = false;
 		V4L2_ERROR(vid, "error: Could not create thread");
 		return false;
@@ -860,10 +828,8 @@ v4l2_fs_stream_run(void *ptr)
 	v_bufrequest.count = NUM_V4L2_BUFFERS;
 	v_bufrequest.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-	if (v4l2_try_userptr(vid, &v_bufrequest) != 0 &&
-	    v4l2_try_mmap(vid, &v_bufrequest) != 0) {
-		V4L2_ERROR(vid,
-		           "error: Driver does not support mmap or userptr.");
+	if (v4l2_try_userptr(vid, &v_bufrequest) != 0 && v4l2_try_mmap(vid, &v_bufrequest) != 0) {
+		V4L2_ERROR(vid, "error: Driver does not support mmap or userptr.");
 		return NULL;
 	}
 
@@ -884,12 +850,10 @@ v4l2_fs_stream_run(void *ptr)
 			return NULL;
 		}
 
-		if (vid->capture.userptr &&
-		    v4l2_setup_userptr_buffer(vid, vf, v_buf) != 0) {
+		if (vid->capture.userptr && v4l2_setup_userptr_buffer(vid, vf, v_buf) != 0) {
 			return NULL;
 		}
-		if (vid->capture.mmap &&
-		    v4l2_setup_mmap_buffer(vid, vf, v_buf) != 0) {
+		if (vid->capture.mmap && v4l2_setup_mmap_buffer(vid, vf, v_buf) != 0) {
 			return NULL;
 		}
 
@@ -927,8 +891,7 @@ v4l2_fs_stream_run(void *ptr)
 
 		v4l2_update_controls(vid);
 
-		V4L2_TRACE(vid, "Got frame #%u, index %i", v_buf.sequence,
-		           v_buf.index);
+		V4L2_TRACE(vid, "Got frame #%u, index %i", v_buf.sequence, v_buf.index);
 
 		struct v4l2_frame *vf = &vid->frames[v_buf.index];
 		struct xrt_frame *xf = NULL;
@@ -975,8 +938,7 @@ static void
 dump_integer(struct v4l2_fs *vid, struct v4l2_queryctrl *queryctrl)
 {
 	U_LOG_D("  Type: Integer");
-	U_LOG_D("    min: %i, max: %i, step: %i.", queryctrl->minimum,
-	        queryctrl->maximum, queryctrl->step);
+	U_LOG_D("    min: %i, max: %i, step: %i.", queryctrl->minimum, queryctrl->maximum, queryctrl->step);
 }
 
 static void
@@ -1001,7 +963,7 @@ dump_contron_name(uint32_t id)
 {
 	const char *str = "ERROR";
 	switch (id) {
-#define CASE(CONTROL)                                                          \
+#define CASE(CONTROL)                                                                                                  \
 	case V4L2_CID_##CONTROL: str = "V4L2_CID_" #CONTROL; break
 		CASE(BRIGHTNESS);
 		CASE(CONTRAST);
@@ -1087,11 +1049,11 @@ dump_controls(struct v4l2_fs *vid)
 		dump_contron_name(queryctrl.id);
 		fprintf(stderr, " '%s'", queryctrl.name);
 
-#define V_CHECK(FLAG)                                                          \
-	do {                                                                   \
-		if (queryctrl.flags & V4L2_CTRL_FLAG_##FLAG) {                 \
-			fprintf(stderr, ", " #FLAG);                           \
-		}                                                              \
+#define V_CHECK(FLAG)                                                                                                  \
+	do {                                                                                                           \
+		if (queryctrl.flags & V4L2_CTRL_FLAG_##FLAG) {                                                         \
+			fprintf(stderr, ", " #FLAG);                                                                   \
+		}                                                                                                      \
 	} while (false)
 
 		V_CHECK(DISABLED);
@@ -1111,17 +1073,10 @@ dump_controls(struct v4l2_fs *vid)
 
 		switch (queryctrl.type) {
 		case V4L2_CTRL_TYPE_BOOLEAN: U_LOG_D("  Type: Boolean"); break;
-		case V4L2_CTRL_TYPE_INTEGER:
-			dump_integer(vid, &queryctrl);
-			break;
-		case V4L2_CTRL_TYPE_INTEGER64:
-			U_LOG_D("  Type: Integer64");
-			break;
+		case V4L2_CTRL_TYPE_INTEGER: dump_integer(vid, &queryctrl); break;
+		case V4L2_CTRL_TYPE_INTEGER64: U_LOG_D("  Type: Integer64"); break;
 		case V4L2_CTRL_TYPE_BUTTON: U_LOG_D("  Type: Buttons"); break;
-		case V4L2_CTRL_TYPE_MENU:
-			dump_menu(vid, queryctrl.id, queryctrl.minimum,
-			          queryctrl.maximum);
-			break;
+		case V4L2_CTRL_TYPE_MENU: dump_menu(vid, queryctrl.id, queryctrl.minimum, queryctrl.maximum); break;
 		case V4L2_CTRL_TYPE_STRING: U_LOG_D("  Type: String"); break;
 		default: U_LOG_D(" Type: Unknown"); break;
 		}

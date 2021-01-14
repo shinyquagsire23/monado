@@ -48,8 +48,7 @@ extern "C" {
  *
  * @ingroup oxr
  */
-#define XRT_CAST_PTR_TO_OXR_HANDLE(HANDLE_TYPE, PTR)                           \
-	((HANDLE_TYPE)(uint64_t)(uintptr_t)(PTR))
+#define XRT_CAST_PTR_TO_OXR_HANDLE(HANDLE_TYPE, PTR) ((HANDLE_TYPE)(uint64_t)(uintptr_t)(PTR))
 
 /*!
  * @brief Cast an OpenXR handle to a pointer in such a way as to avoid warnings.
@@ -60,8 +59,7 @@ extern "C" {
  *
  * @ingroup oxr
  */
-#define XRT_CAST_OXR_HANDLE_TO_PTR(PTR_TYPE, HANDLE)                           \
-	((PTR_TYPE)(uintptr_t)(uint64_t)(HANDLE))
+#define XRT_CAST_OXR_HANDLE_TO_PTR(PTR_TYPE, HANDLE) ((PTR_TYPE)(uintptr_t)(uint64_t)(HANDLE))
 
 /*!
  * @defgroup oxr_main OpenXR main code
@@ -128,8 +126,7 @@ struct time_state;
  *
  * @relates oxr_handle_base
  */
-typedef XrResult (*oxr_handle_destroyer)(struct oxr_logger *log,
-                                         struct oxr_handle_base *hb);
+typedef XrResult (*oxr_handle_destroyer)(struct oxr_logger *log, struct oxr_handle_base *hb);
 
 /*!
  * State of a handle base, to reduce likelihood of going "boom" on
@@ -216,9 +213,7 @@ oxr_instance_to_openxr(struct oxr_instance *inst)
  * @public @static @memberof oxr_instance
  */
 XrResult
-oxr_instance_create(struct oxr_logger *log,
-                    const XrInstanceCreateInfo *createInfo,
-                    struct oxr_instance **out_inst);
+oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createInfo, struct oxr_instance **out_inst);
 
 /*!
  * @public @memberof oxr_instance
@@ -271,17 +266,13 @@ oxr_path_init(struct oxr_logger *log, struct oxr_instance *inst);
  * @public @memberof oxr_instance
  */
 bool
-oxr_path_is_valid(struct oxr_logger *log,
-                  struct oxr_instance *inst,
-                  XrPath path);
+oxr_path_is_valid(struct oxr_logger *log, struct oxr_instance *inst, XrPath path);
 
 /*!
  * @public @memberof oxr_instance
  */
 void *
-oxr_path_get_attached(struct oxr_logger *log,
-                      struct oxr_instance *inst,
-                      XrPath path);
+oxr_path_get_attached(struct oxr_logger *log, struct oxr_instance *inst, XrPath path);
 
 /*!
  * Get the path for the given string if it exists, or create it if it does not.
@@ -289,11 +280,8 @@ oxr_path_get_attached(struct oxr_logger *log,
  * @public @memberof oxr_instance
  */
 XrResult
-oxr_path_get_or_create(struct oxr_logger *log,
-                       struct oxr_instance *inst,
-                       const char *str,
-                       size_t length,
-                       XrPath *out_path);
+oxr_path_get_or_create(
+    struct oxr_logger *log, struct oxr_instance *inst, const char *str, size_t length, XrPath *out_path);
 
 /*!
  * Only get the path for the given string if it exists.
@@ -301,11 +289,7 @@ oxr_path_get_or_create(struct oxr_logger *log,
  * @public @memberof oxr_instance
  */
 XrResult
-oxr_path_only_get(struct oxr_logger *log,
-                  struct oxr_instance *inst,
-                  const char *str,
-                  size_t length,
-                  XrPath *out_path);
+oxr_path_only_get(struct oxr_logger *log, struct oxr_instance *inst, const char *str, size_t length, XrPath *out_path);
 
 /*!
  * Get a pointer and length of the internal string.
@@ -318,11 +302,8 @@ oxr_path_only_get(struct oxr_logger *log,
  * @public @memberof oxr_instance
  */
 XrResult
-oxr_path_get_string(struct oxr_logger *log,
-                    struct oxr_instance *inst,
-                    XrPath path,
-                    const char **out_str,
-                    size_t *out_length);
+oxr_path_get_string(
+    struct oxr_logger *log, struct oxr_instance *inst, XrPath path, const char **out_str, size_t *out_length);
 
 /*!
  * Destroy the path system and all paths that the instance has created.
@@ -571,32 +552,29 @@ oxr_binding_find_bindings_from_key(struct oxr_logger *log,
  * @public @memberof oxr_instance
  */
 XrResult
-oxr_action_suggest_interaction_profile_bindings(
-    struct oxr_logger *log,
-    struct oxr_instance *inst,
-    const XrInteractionProfileSuggestedBinding *suggestedBindings);
+oxr_action_suggest_interaction_profile_bindings(struct oxr_logger *log,
+                                                struct oxr_instance *inst,
+                                                const XrInteractionProfileSuggestedBinding *suggestedBindings);
 
 /*!
  * @public @memberof oxr_instance
  */
 XrResult
-oxr_action_get_current_interaction_profile(
-    struct oxr_logger *log,
-    struct oxr_session *sess,
-    XrPath topLevelUserPath,
-    XrInteractionProfileState *interactionProfile);
+oxr_action_get_current_interaction_profile(struct oxr_logger *log,
+                                           struct oxr_session *sess,
+                                           XrPath topLevelUserPath,
+                                           XrInteractionProfileState *interactionProfile);
 
 /*!
  * @public @memberof oxr_session
  */
 XrResult
-oxr_action_get_input_source_localized_name(
-    struct oxr_logger *log,
-    struct oxr_session *sess,
-    const XrInputSourceLocalizedNameGetInfo *getInfo,
-    uint32_t bufferCapacityInput,
-    uint32_t *bufferCountOutput,
-    char *buffer);
+oxr_action_get_input_source_localized_name(struct oxr_logger *log,
+                                           struct oxr_session *sess,
+                                           const XrInputSourceLocalizedNameGetInfo *getInfo,
+                                           uint32_t bufferCapacityInput,
+                                           uint32_t *bufferCountOutput,
+                                           char *buffer);
 
 /*!
  * @}
@@ -634,9 +612,7 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
                               int64_t *formats);
 
 XrResult
-oxr_session_begin(struct oxr_logger *log,
-                  struct oxr_session *sess,
-                  const XrSessionBeginInfo *beginInfo);
+oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSessionBeginInfo *beginInfo);
 
 XrResult
 oxr_session_end(struct oxr_logger *log, struct oxr_session *sess);
@@ -667,17 +643,13 @@ oxr_session_views(struct oxr_logger *log,
                   XrView *views);
 
 XrResult
-oxr_session_frame_wait(struct oxr_logger *log,
-                       struct oxr_session *sess,
-                       XrFrameState *frameState);
+oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrameState *frameState);
 
 XrResult
 oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess);
 
 XrResult
-oxr_session_frame_end(struct oxr_logger *log,
-                      struct oxr_session *sess,
-                      const XrFrameEndInfo *frameEndInfo);
+oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const XrFrameEndInfo *frameEndInfo);
 
 XrResult
 oxr_session_hand_joints(struct oxr_logger *log,
@@ -714,11 +686,8 @@ oxr_space_reference_create(struct oxr_logger *log,
                            struct oxr_space **out_space);
 
 XrResult
-oxr_space_locate(struct oxr_logger *log,
-                 struct oxr_space *spc,
-                 struct oxr_space *baseSpc,
-                 XrTime time,
-                 XrSpaceLocation *location);
+oxr_space_locate(
+    struct oxr_logger *log, struct oxr_space *spc, struct oxr_space *baseSpc, XrTime time, XrSpaceLocation *location);
 
 XrResult
 oxr_space_ref_relation(struct oxr_logger *log,
@@ -780,8 +749,7 @@ oxr_create_messenger(struct oxr_logger *,
                      const XrDebugUtilsMessengerCreateInfoEXT *,
                      struct oxr_debug_messenger **out_mssngr);
 XrResult
-oxr_destroy_messenger(struct oxr_logger *log,
-                      struct oxr_debug_messenger *mssngr);
+oxr_destroy_messenger(struct oxr_logger *log, struct oxr_debug_messenger *mssngr);
 
 
 /*
@@ -798,15 +766,10 @@ oxr_system_select(struct oxr_logger *log,
                   struct oxr_system **out_selected);
 
 XrResult
-oxr_system_fill_in(struct oxr_logger *log,
-                   struct oxr_instance *inst,
-                   XrSystemId systemId,
-                   struct oxr_system *sys);
+oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId systemId, struct oxr_system *sys);
 
 XrResult
-oxr_system_verify_id(struct oxr_logger *log,
-                     const struct oxr_instance *inst,
-                     XrSystemId systemId);
+oxr_system_verify_id(struct oxr_logger *log, const struct oxr_instance *inst, XrSystemId systemId);
 
 XrResult
 oxr_system_get_by_id(struct oxr_logger *log,
@@ -815,17 +778,14 @@ oxr_system_get_by_id(struct oxr_logger *log,
                      struct oxr_system **system);
 
 XrResult
-oxr_system_get_properties(struct oxr_logger *log,
-                          struct oxr_system *sys,
-                          XrSystemProperties *properties);
+oxr_system_get_properties(struct oxr_logger *log, struct oxr_system *sys, XrSystemProperties *properties);
 
 XrResult
-oxr_system_enumerate_view_confs(
-    struct oxr_logger *log,
-    struct oxr_system *sys,
-    uint32_t viewConfigurationTypeCapacityInput,
-    uint32_t *viewConfigurationTypeCountOutput,
-    XrViewConfigurationType *viewConfigurationTypes);
+oxr_system_enumerate_view_confs(struct oxr_logger *log,
+                                struct oxr_system *sys,
+                                uint32_t viewConfigurationTypeCapacityInput,
+                                uint32_t *viewConfigurationTypeCountOutput,
+                                XrViewConfigurationType *viewConfigurationTypes);
 
 XrResult
 oxr_system_enumerate_blend_modes(struct oxr_logger *log,
@@ -836,24 +796,21 @@ oxr_system_enumerate_blend_modes(struct oxr_logger *log,
                                  XrEnvironmentBlendMode *environmentBlendModes);
 
 XrResult
-oxr_system_get_view_conf_properties(
-    struct oxr_logger *log,
-    struct oxr_system *sys,
-    XrViewConfigurationType viewConfigurationType,
-    XrViewConfigurationProperties *configurationProperties);
+oxr_system_get_view_conf_properties(struct oxr_logger *log,
+                                    struct oxr_system *sys,
+                                    XrViewConfigurationType viewConfigurationType,
+                                    XrViewConfigurationProperties *configurationProperties);
 
 XrResult
-oxr_system_enumerate_view_conf_views(
-    struct oxr_logger *log,
-    struct oxr_system *sys,
-    XrViewConfigurationType viewConfigurationType,
-    uint32_t viewCapacityInput,
-    uint32_t *viewCountOutput,
-    XrViewConfigurationView *views);
+oxr_system_enumerate_view_conf_views(struct oxr_logger *log,
+                                     struct oxr_system *sys,
+                                     XrViewConfigurationType viewConfigurationType,
+                                     uint32_t viewCapacityInput,
+                                     uint32_t *viewCountOutput,
+                                     XrViewConfigurationView *views);
 
 bool
-oxr_system_get_hand_tracking_support(struct oxr_logger *log,
-                                     struct oxr_instance *inst);
+oxr_system_get_hand_tracking_support(struct oxr_logger *log, struct oxr_instance *inst);
 
 /*
  *
@@ -862,9 +819,7 @@ oxr_system_get_hand_tracking_support(struct oxr_logger *log,
  */
 
 XrResult
-oxr_poll_event(struct oxr_logger *log,
-               struct oxr_instance *inst,
-               XrEventDataBuffer *eventData);
+oxr_poll_event(struct oxr_logger *log, struct oxr_instance *inst, XrEventDataBuffer *eventData);
 
 XrResult
 oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
@@ -873,19 +828,18 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
                                               XrTime time);
 
 XrResult
-oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(
-    struct oxr_logger *log, struct oxr_session *sess, bool visible);
+oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(struct oxr_logger *log,
+                                                           struct oxr_session *sess,
+                                                           bool visible);
 
 XrResult
-oxr_event_push_XrEventDataInteractionProfileChanged(struct oxr_logger *log,
-                                                    struct oxr_session *sess);
+oxr_event_push_XrEventDataInteractionProfileChanged(struct oxr_logger *log, struct oxr_session *sess);
 
 /*!
  * This clears all pending events refers to the given session.
  */
 XrResult
-oxr_event_remove_session_events(struct oxr_logger *log,
-                                struct oxr_session *sess);
+oxr_event_remove_session_events(struct oxr_logger *log, struct oxr_session *sess);
 
 
 /*
@@ -904,17 +858,13 @@ oxr_xdev_update(struct xrt_device *xdev);
  * Return true if it finds an input of that name on this device.
  */
 bool
-oxr_xdev_find_input(struct xrt_device *xdev,
-                    enum xrt_input_name name,
-                    struct xrt_input **out_input);
+oxr_xdev_find_input(struct xrt_device *xdev, enum xrt_input_name name, struct xrt_input **out_input);
 
 /*!
  * Return true if it finds an output of that name on this device.
  */
 bool
-oxr_xdev_find_output(struct xrt_device *xdev,
-                     enum xrt_output_name name,
-                     struct xrt_output **out_output);
+oxr_xdev_find_output(struct xrt_device *xdev, enum xrt_output_name name, struct xrt_output **out_output);
 
 void
 oxr_xdev_get_space_graph(struct oxr_logger *log,
@@ -962,8 +912,7 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
 
 #endif // XR_USE_GRAPHICS_API_OPENGL
 
-#if defined(XR_USE_GRAPHICS_API_OPENGL) ||                                     \
-    defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+#if defined(XR_USE_GRAPHICS_API_OPENGL) || defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 XrResult
 oxr_swapchain_gl_create(struct oxr_logger *,
                         struct oxr_session *sess,
@@ -975,11 +924,10 @@ oxr_swapchain_gl_create(struct oxr_logger *,
 #if defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 #if defined(XR_USE_PLATFORM_ANDROID)
 XrResult
-oxr_session_populate_gles_android(
-    struct oxr_logger *log,
-    struct oxr_system *sys,
-    XrGraphicsBindingOpenGLESAndroidKHR const *next,
-    struct oxr_session *sess);
+oxr_session_populate_gles_android(struct oxr_logger *log,
+                                  struct oxr_system *sys,
+                                  XrGraphicsBindingOpenGLESAndroidKHR const *next,
+                                  struct oxr_session *sess);
 #endif // XR_USE_PLATFORM_ANDROID
 #endif // XR_USE_GRAPHICS_API_OPENGL_ES
 
@@ -1149,10 +1097,7 @@ struct oxr_system
 	VkPhysicalDevice vulkan_enable2_physical_device;
 };
 
-#define GET_XDEV_BY_ROLE(SYS, ROLE)                                            \
-	SYS->role.ROLE == XRT_DEVICE_ROLE_UNASSIGNED                           \
-	    ? NULL                                                             \
-	    : SYS->xdevs[SYS->role.ROLE]
+#define GET_XDEV_BY_ROLE(SYS, ROLE) SYS->role.ROLE == XRT_DEVICE_ROLE_UNASSIGNED ? NULL : SYS->xdevs[SYS->role.ROLE]
 
 #define MAKE_EXT_STATUS(mixed_case, all_caps) bool mixed_case;
 /*!
@@ -1522,8 +1467,7 @@ struct oxr_action_set_attachment
  * @public @memberof oxr_action_set_attachment
  */
 void
-oxr_action_set_attachment_teardown(
-    struct oxr_action_set_attachment *act_set_attached);
+oxr_action_set_attachment_teardown(struct oxr_action_set_attachment *act_set_attached);
 
 
 /*!
@@ -1754,13 +1698,9 @@ struct oxr_swapchain
 	                          const XrSwapchainImageAcquireInfo *,
 	                          uint32_t *);
 
-	XrResult (*wait_image)(struct oxr_logger *,
-	                       struct oxr_swapchain *,
-	                       const XrSwapchainImageWaitInfo *);
+	XrResult (*wait_image)(struct oxr_logger *, struct oxr_swapchain *, const XrSwapchainImageWaitInfo *);
 
-	XrResult (*release_image)(struct oxr_logger *,
-	                          struct oxr_swapchain *,
-	                          const XrSwapchainImageReleaseInfo *);
+	XrResult (*release_image)(struct oxr_logger *, struct oxr_swapchain *, const XrSwapchainImageReleaseInfo *);
 };
 
 struct oxr_refcounted

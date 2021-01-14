@@ -79,8 +79,7 @@ ipc_connect(struct ipc_connection *ipc_c)
 {
 	ipc_c->ll = debug_get_log_option_ipc_log();
 
-	ipc_c->ica = ipc_client_android_create(android_globals_get_vm(),
-	                                       android_globals_get_activity());
+	ipc_c->ica = ipc_client_android_create(android_globals_get_vm(), android_globals_get_activity());
 
 	if (ipc_c->ica == NULL) {
 		IPC_ERROR(ipc_c, "Client create error!");
@@ -145,9 +144,7 @@ ipc_connect(struct ipc_connection *ipc_c)
  */
 
 static int
-ipc_client_instance_select(struct xrt_instance *xinst,
-                           struct xrt_device **xdevs,
-                           size_t num_xdevs)
+ipc_client_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t num_xdevs)
 {
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
 
@@ -164,10 +161,9 @@ ipc_client_instance_select(struct xrt_instance *xinst,
 }
 
 static int
-ipc_client_instance_create_native_compositor(
-    struct xrt_instance *xinst,
-    struct xrt_device *xdev,
-    struct xrt_compositor_native **out_xcn)
+ipc_client_instance_create_native_compositor(struct xrt_instance *xinst,
+                                             struct xrt_device *xdev,
+                                             struct xrt_compositor_native **out_xcn)
 {
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
 	struct xrt_compositor_native *xcn = NULL;
@@ -190,8 +186,7 @@ ipc_client_instance_create_native_compositor(
 }
 
 static int
-ipc_client_instance_get_prober(struct xrt_instance *xinst,
-                               struct xrt_prober **out_xp)
+ipc_client_instance_get_prober(struct xrt_instance *xinst, struct xrt_prober **out_xp)
 {
 	*out_xp = NULL;
 
@@ -235,14 +230,11 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
  * @public @memberof ipc_instance
  */
 int
-ipc_instance_create(struct xrt_instance_info *i_info,
-                    struct xrt_instance **out_xinst)
+ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_xinst)
 {
-	struct ipc_client_instance *ii =
-	    U_TYPED_CALLOC(struct ipc_client_instance);
+	struct ipc_client_instance *ii = U_TYPED_CALLOC(struct ipc_client_instance);
 	ii->base.select = ipc_client_instance_select;
-	ii->base.create_native_compositor =
-	    ipc_client_instance_create_native_compositor;
+	ii->base.create_native_compositor = ipc_client_instance_create_native_compositor;
 	ii->base.get_prober = ipc_client_instance_get_prober;
 	ii->base.destroy = ipc_client_instance_destroy;
 
@@ -251,25 +243,23 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 	ii->ipc_c.ism_handle = XRT_SHMEM_HANDLE_INVALID;
 
 	if (!ipc_connect(&ii->ipc_c)) {
-		IPC_ERROR(
-		    (&ii->ipc_c),
-		    "Failed to connect to monado service process\n\n"
-		    "###\n"
-		    "#\n"
-		    "# Please make sure that the service process is running\n"
-		    "#\n"
-		    "# It is called \"monado-service\"\n"
-		    "# For builds it's located "
-		    "\"build-dir/src/xrt/targets/service/monado-service\"\n"
-		    "#\n"
-		    "###\n");
+		IPC_ERROR((&ii->ipc_c),
+		          "Failed to connect to monado service process\n\n"
+		          "###\n"
+		          "#\n"
+		          "# Please make sure that the service process is running\n"
+		          "#\n"
+		          "# It is called \"monado-service\"\n"
+		          "# For builds it's located "
+		          "\"build-dir/src/xrt/targets/service/monado-service\"\n"
+		          "#\n"
+		          "###\n");
 		free(ii);
 		return -1;
 	}
 
 	// get our xdev shm from the server and mmap it
-	xrt_result_t r =
-	    ipc_call_instance_get_shm_fd(&ii->ipc_c, &ii->ipc_c.ism_handle, 1);
+	xrt_result_t r = ipc_call_instance_get_shm_fd(&ii->ipc_c, &ii->ipc_c.ism_handle, 1);
 	if (r != XRT_SUCCESS) {
 		IPC_ERROR((&ii->ipc_c), "Failed to retrieve shm fd");
 		free(ii);
@@ -291,8 +281,7 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 	const int access = PROT_READ | PROT_WRITE;
 	const size_t size = sizeof(struct ipc_shared_memory);
 
-	ii->ipc_c.ism =
-	    mmap(NULL, size, access, flags, ii->ipc_c.ism_handle, 0);
+	ii->ipc_c.ism = mmap(NULL, size, access, flags, ii->ipc_c.ism_handle, 0);
 	if (ii->ipc_c.ism == NULL) {
 		IPC_ERROR((&ii->ipc_c), "Failed to mmap shm ");
 		free(ii);
@@ -308,8 +297,7 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 	for (uint32_t i = 0; i < ism->num_itracks; i++) {
 		xtrack = U_TYPED_CALLOC(struct xrt_tracking_origin);
 
-		memcpy(xtrack->name, ism->itracks[i].name,
-		       sizeof(xtrack->name));
+		memcpy(xtrack->name, ism->itracks[i].name, sizeof(xtrack->name));
 
 		xtrack->type = ism->itracks[i].type;
 		xtrack->offset = ism->itracks[i].offset;
@@ -329,11 +317,9 @@ ipc_instance_create(struct xrt_instance_info *i_info,
 		xtrack = ii->xtracks[isdev->tracking_origin_index];
 
 		if (isdev->name == XRT_DEVICE_GENERIC_HMD) {
-			ii->xdevs[count++] =
-			    ipc_client_hmd_create(&ii->ipc_c, xtrack, i);
+			ii->xdevs[count++] = ipc_client_hmd_create(&ii->ipc_c, xtrack, i);
 		} else {
-			ii->xdevs[count++] =
-			    ipc_client_device_create(&ii->ipc_c, xtrack, i);
+			ii->xdevs[count++] = ipc_client_device_create(&ii->ipc_c, xtrack, i);
 		}
 	}
 

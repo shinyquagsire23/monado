@@ -53,8 +53,7 @@ struct debug_scene
  */
 
 static void
-conv_rgb_f32_to_u8(struct xrt_colour_rgb_f32 *from,
-                   struct xrt_colour_rgb_u8 *to)
+conv_rgb_f32_to_u8(struct xrt_colour_rgb_f32 *from, struct xrt_colour_rgb_u8 *to)
 {
 	to->r = (uint8_t)(from->r * 255.0f);
 	to->g = (uint8_t)(from->g * 255.0f);
@@ -62,8 +61,7 @@ conv_rgb_f32_to_u8(struct xrt_colour_rgb_f32 *from,
 }
 
 static void
-conv_rgb_u8_to_f32(struct xrt_colour_rgb_u8 *from,
-                   struct xrt_colour_rgb_f32 *to)
+conv_rgb_u8_to_f32(struct xrt_colour_rgb_u8 *from, struct xrt_colour_rgb_f32 *to)
 {
 	to->r = from->r / 255.0f;
 	to->g = from->g / 255.0f;
@@ -108,16 +106,15 @@ struct plot_state
 	uint64_t now;
 };
 
-#define PLOT_HELPER(elm)                                                       \
-	ImPlotPoint plot_##elm(void *ptr, int index)                           \
-	{                                                                      \
-		struct plot_state *state = (struct plot_state *)ptr;           \
-		struct xrt_vec3 value;                                         \
-		uint64_t timestamp;                                            \
-		m_ff_vec3_f32_get(state->ff, index, &value, &timestamp);       \
-		ImPlotPoint point = {time_ns_to_s(state->now - timestamp),     \
-		                     value.elm};                               \
-		return point;                                                  \
+#define PLOT_HELPER(elm)                                                                                               \
+	ImPlotPoint plot_##elm(void *ptr, int index)                                                                   \
+	{                                                                                                              \
+		struct plot_state *state = (struct plot_state *)ptr;                                                   \
+		struct xrt_vec3 value;                                                                                 \
+		uint64_t timestamp;                                                                                    \
+		m_ff_vec3_f32_get(state->ff, index, &value, &timestamp);                                               \
+		ImPlotPoint point = {time_ns_to_s(state->now - timestamp), value.elm};                                 \
+		return point;                                                                                          \
 	}
 
 PLOT_HELPER(x)
@@ -159,8 +156,7 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 	ImPlotAxisFlags y3_flags = 0;
 
 	ImVec2 size = {1024, 256};
-	bool shown = ImPlot_BeginPlot(name, "time", "value", size, flags,
-	                              x_flags, y_flags, y2_flags, y3_flags);
+	bool shown = ImPlot_BeginPlot(name, "time", "value", size, flags, x_flags, y_flags, y2_flags, y3_flags);
 	if (!shown) {
 		return;
 	}
@@ -240,9 +236,8 @@ on_elem(struct u_var_info *info, void *priv)
 	const float drag_speed = 0.2f;
 	const float power = 1.0f;
 	const ImVec2 dummy = {0, 0};
-	ImGuiColorEditFlags flags = ImGuiColorEditFlags_NoInputs |
-	                            ImGuiColorEditFlags_NoLabel |
-	                            ImGuiColorEditFlags_PickerHueWheel;
+	ImGuiColorEditFlags flags =
+	    ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_PickerHueWheel;
 	(void)dummy;
 	ImGuiInputTextFlags i_flags = ImGuiInputTextFlags_None;
 	ImGuiInputTextFlags ro_i_flags = ImGuiInputTextFlags_ReadOnly;
@@ -263,17 +258,10 @@ on_elem(struct u_var_info *info, void *priv)
 		conv_rgb_f32_to_u8(&tmp, (struct xrt_colour_rgb_u8 *)ptr);
 		break;
 	}
-	case U_VAR_KIND_U8:
-		igDragScalar(name, ImGuiDataType_U8, ptr, drag_speed, NULL,
-		             NULL, NULL, power);
-		break;
-	case U_VAR_KIND_I32:
-		igInputInt(name, (int *)ptr, 1, 10, i_flags);
-		break;
+	case U_VAR_KIND_U8: igDragScalar(name, ImGuiDataType_U8, ptr, drag_speed, NULL, NULL, NULL, power); break;
+	case U_VAR_KIND_I32: igInputInt(name, (int *)ptr, 1, 10, i_flags); break;
 	case U_VAR_KIND_VEC3_I32: igInputInt3(name, (int *)ptr, i_flags); break;
-	case U_VAR_KIND_F32:
-		igInputFloat(name, (float *)ptr, 1, 10, "%+f", i_flags);
-		break;
+	case U_VAR_KIND_F32: igInputFloat(name, (float *)ptr, 1, 10, "%+f", i_flags); break;
 	case U_VAR_KIND_F32_ARR: {
 		struct u_var_f32_arr *f32_arr = ptr;
 		int index = *f32_arr->index_ptr;
@@ -286,8 +274,7 @@ on_elem(struct u_var_info *info, void *priv)
 		float stats_min = FLT_MAX;
 		float stats_max = FLT_MAX;
 
-		igPlotLinesFnFloatPtr(name, get_float_arr_val, arr, length,
-		                      index, NULL, stats_min, stats_max,
+		igPlotLinesFnFloatPtr(name, get_float_arr_val, arr, length, index, NULL, stats_min, stats_max,
 		                      graph_size);
 		break;
 	}
@@ -312,17 +299,12 @@ on_elem(struct u_var_info *info, void *priv)
 				stats_max = arr[f];
 		}
 
-		igPlotTimings(name, get_float_arr_val, arr, length, index, NULL,
-		              0, stats_max, graph_size,
-		              frametime_arr->reference_timing,
-		              frametime_arr->center_reference_timing,
-		              frametime_arr->range, frametime_arr->unit,
-		              frametime_arr->dynamic_rescale);
+		igPlotTimings(name, get_float_arr_val, arr, length, index, NULL, 0, stats_max, graph_size,
+		              frametime_arr->reference_timing, frametime_arr->center_reference_timing,
+		              frametime_arr->range, frametime_arr->unit, frametime_arr->dynamic_rescale);
 		break;
 	}
-	case U_VAR_KIND_VEC3_F32:
-		igInputFloat3(name, (float *)ptr, "%+f", i_flags);
-		break;
+	case U_VAR_KIND_VEC3_F32: igInputFloat3(name, (float *)ptr, "%+f", i_flags); break;
 	case U_VAR_KIND_POSE: {
 		struct xrt_pose *pose = (struct xrt_pose *)ptr;
 		char text[512];
@@ -332,44 +314,17 @@ on_elem(struct u_var_info *info, void *priv)
 		handle_draggable_quat(text, &pose->orientation);
 		break;
 	}
-	case U_VAR_KIND_LOG_LEVEL:
-		igComboStr(name, (int *)ptr,
-		           "Trace\0Debug\0Info\0Warn\0Error\0\0", 5);
-		break;
+	case U_VAR_KIND_LOG_LEVEL: igComboStr(name, (int *)ptr, "Trace\0Debug\0Info\0Warn\0Error\0\0", 5); break;
 	case U_VAR_KIND_RO_TEXT: igText("%s: '%s'", name, (char *)ptr); break;
-	case U_VAR_KIND_RO_I32:
-		igInputScalar(name, ImGuiDataType_S32, ptr, NULL, NULL, NULL,
-		              ro_i_flags);
-		break;
-	case U_VAR_KIND_RO_U32:
-		igInputScalar(name, ImGuiDataType_U32, ptr, NULL, NULL, NULL,
-		              ro_i_flags);
-		break;
-	case U_VAR_KIND_RO_F32:
-		igInputScalar(name, ImGuiDataType_Float, ptr, NULL, NULL, "%+f",
-		              ro_i_flags);
-		break;
-	case U_VAR_KIND_RO_I64:
-		igInputScalar(name, ImGuiDataType_S64, ptr, NULL, NULL, NULL,
-		              ro_i_flags);
-		break;
-	case U_VAR_KIND_RO_U64:
-		igInputScalar(name, ImGuiDataType_S64, ptr, NULL, NULL, NULL,
-		              ro_i_flags);
-		break;
-	case U_VAR_KIND_RO_F64:
-		igInputScalar(name, ImGuiDataType_Double, ptr, NULL, NULL,
-		              "%+f", ro_i_flags);
-		break;
-	case U_VAR_KIND_RO_VEC3_I32:
-		igInputInt3(name, (int *)ptr, ro_i_flags);
-		break;
-	case U_VAR_KIND_RO_VEC3_F32:
-		igInputFloat3(name, (float *)ptr, "%+f", ro_i_flags);
-		break;
-	case U_VAR_KIND_RO_QUAT_F32:
-		igInputFloat4(name, (float *)ptr, "%+f", ro_i_flags);
-		break;
+	case U_VAR_KIND_RO_I32: igInputScalar(name, ImGuiDataType_S32, ptr, NULL, NULL, NULL, ro_i_flags); break;
+	case U_VAR_KIND_RO_U32: igInputScalar(name, ImGuiDataType_U32, ptr, NULL, NULL, NULL, ro_i_flags); break;
+	case U_VAR_KIND_RO_F32: igInputScalar(name, ImGuiDataType_Float, ptr, NULL, NULL, "%+f", ro_i_flags); break;
+	case U_VAR_KIND_RO_I64: igInputScalar(name, ImGuiDataType_S64, ptr, NULL, NULL, NULL, ro_i_flags); break;
+	case U_VAR_KIND_RO_U64: igInputScalar(name, ImGuiDataType_S64, ptr, NULL, NULL, NULL, ro_i_flags); break;
+	case U_VAR_KIND_RO_F64: igInputScalar(name, ImGuiDataType_Double, ptr, NULL, NULL, "%+f", ro_i_flags); break;
+	case U_VAR_KIND_RO_VEC3_I32: igInputInt3(name, (int *)ptr, ro_i_flags); break;
+	case U_VAR_KIND_RO_VEC3_F32: igInputFloat3(name, (float *)ptr, "%+f", ro_i_flags); break;
+	case U_VAR_KIND_RO_QUAT_F32: igInputFloat4(name, (float *)ptr, "%+f", ro_i_flags); break;
 	case U_VAR_KIND_RO_FF_VEC3_F32: on_ff_vec3_var(info, state->p); break;
 	case U_VAR_KIND_GUI_HEADER: {
 		state->hidden = !igCollapsingHeaderBoolPtr(name, NULL, 0);

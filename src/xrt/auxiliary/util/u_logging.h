@@ -34,37 +34,33 @@ struct xrt_device;
 /*!
  * For places where you really just want printf, prints a new-line.
  */
-#define U_LOG_RAW(...)                                                         \
-	do {                                                                   \
-		u_log(__FILE__, __LINE__, __func__, U_LOGGING_RAW,             \
-		      __VA_ARGS__);                                            \
+#define U_LOG_RAW(...)                                                                                                 \
+	do {                                                                                                           \
+		u_log(__FILE__, __LINE__, __func__, U_LOGGING_RAW, __VA_ARGS__);                                       \
 	} while (false)
 
-#define U_LOG(level, ...)                                                      \
-	do {                                                                   \
-		u_log(__FILE__, __LINE__, __func__, level, __VA_ARGS__);       \
+#define U_LOG(level, ...)                                                                                              \
+	do {                                                                                                           \
+		u_log(__FILE__, __LINE__, __func__, level, __VA_ARGS__);                                               \
 	} while (false)
 
-#define U_LOG_IFL(level, cond_level, ...)                                      \
-	do {                                                                   \
-		if (cond_level <= level) {                                     \
-			u_log(__FILE__, __LINE__, __func__, level,             \
-			      __VA_ARGS__);                                    \
-		}                                                              \
+#define U_LOG_IFL(level, cond_level, ...)                                                                              \
+	do {                                                                                                           \
+		if (cond_level <= level) {                                                                             \
+			u_log(__FILE__, __LINE__, __func__, level, __VA_ARGS__);                                       \
+		}                                                                                                      \
 	} while (false)
 
-#define U_LOG_XDEV(level, xdev, ...)                                           \
-	do {                                                                   \
-		u_log_xdev(__FILE__, __LINE__, __func__, level, xdev,          \
-		           __VA_ARGS__);                                       \
+#define U_LOG_XDEV(level, xdev, ...)                                                                                   \
+	do {                                                                                                           \
+		u_log_xdev(__FILE__, __LINE__, __func__, level, xdev, __VA_ARGS__);                                    \
 	} while (false)
 
-#define U_LOG_XDEV_IFL(level, cond_level, xdev, ...)                           \
-	do {                                                                   \
-		if (cond_level <= level) {                                     \
-			u_log_xdev(__FILE__, __LINE__, __func__, level, xdev,  \
-			           __VA_ARGS__);                               \
-		}                                                              \
+#define U_LOG_XDEV_IFL(level, cond_level, xdev, ...)                                                                   \
+	do {                                                                                                           \
+		if (cond_level <= level) {                                                                             \
+			u_log_xdev(__FILE__, __LINE__, __func__, level, xdev, __VA_ARGS__);                            \
+		}                                                                                                      \
 	} while (false)
 
 // clang-format off
@@ -106,12 +102,8 @@ enum u_logging_level
 extern enum u_logging_level global_log_level;
 
 void
-u_log(const char *file,
-      int line,
-      const char *func,
-      enum u_logging_level level,
-      const char *format,
-      ...) XRT_PRINTF_FORMAT(5, 6);
+u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
+    XRT_PRINTF_FORMAT(5, 6);
 
 void
 u_log_xdev(const char *file,

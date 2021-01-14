@@ -101,10 +101,9 @@ struct u_cardboard_distortion
  * @ingroup aux_distortion
  */
 void
-u_distortion_cardboard_calculate(
-    const struct u_cardboard_distortion_arguments *args,
-    struct xrt_hmd_parts *parts,
-    struct u_cardboard_distortion *out_dist);
+u_distortion_cardboard_calculate(const struct u_cardboard_distortion_arguments *args,
+                                 struct xrt_hmd_parts *parts,
+                                 struct u_cardboard_distortion *out_dist);
 
 
 #ifdef __cplusplus

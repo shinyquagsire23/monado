@@ -106,5 +106,4 @@ lighthouse_watchman_handle_pulse(struct lighthouse_watchman *watchman,
                                  uint16_t duration,
                                  uint32_t timestamp);
 void
-lighthouse_watchman_init(struct lighthouse_watchman *watchman,
-                         const char *name);
+lighthouse_watchman_init(struct lighthouse_watchman *watchman, const char *name);

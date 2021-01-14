@@ -75,13 +75,10 @@ static struct comp_window_direct_randr_display *
 comp_window_direct_randr_current_display(struct comp_window_direct_randr *w);
 
 static bool
-comp_window_direct_randr_init_swapchain(struct comp_target *ct,
-                                        uint32_t width,
-                                        uint32_t height);
+comp_window_direct_randr_init_swapchain(struct comp_target *ct, uint32_t width, uint32_t height);
 
 static VkDisplayKHR
-comp_window_direct_randr_get_output(struct comp_window_direct_randr *w,
-                                    RROutput output);
+comp_window_direct_randr_get_output(struct comp_window_direct_randr *w, RROutput output);
 
 static void
 comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w);
@@ -114,8 +111,7 @@ _update_window_title(struct comp_target *ct, const char *title)
 struct comp_target *
 comp_window_direct_randr_create(struct comp_compositor *c)
 {
-	struct comp_window_direct_randr *w =
-	    U_TYPED_CALLOC(struct comp_window_direct_randr);
+	struct comp_window_direct_randr *w = U_TYPED_CALLOC(struct comp_window_direct_randr);
 
 	comp_target_swapchain_init_set_fnptrs(&w->base);
 
@@ -133,16 +129,14 @@ comp_window_direct_randr_create(struct comp_compositor *c)
 static void
 comp_window_direct_randr_destroy(struct comp_target *ct)
 {
-	struct comp_window_direct_randr *w_direct =
-	    (struct comp_window_direct_randr *)ct;
+	struct comp_window_direct_randr *w_direct = (struct comp_window_direct_randr *)ct;
 
 	comp_target_swapchain_cleanup(&w_direct->base);
 
 	struct vk_bundle *vk = get_vk(w_direct);
 
 	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
-		struct comp_window_direct_randr_display *d =
-		    &w_direct->displays[i];
+		struct comp_window_direct_randr_display *d = &w_direct->displays[i];
 
 		if (d->display == VK_NULL_HANDLE) {
 			continue;
@@ -168,21 +162,17 @@ static void
 comp_window_direct_randr_list_screens(struct comp_window_direct_randr *w)
 {
 	for (int i = 0; i < w->num_displays; i++) {
-		const struct comp_window_direct_randr_display *d =
-		    &w->displays[i];
-		COMP_DEBUG(
-		    w->base.base.c, "%d: %s %dx%d@%.2f", i, d->name,
-		    d->primary_mode.width, d->primary_mode.height,
-		    (double)d->primary_mode.dot_clock /
-		        (d->primary_mode.htotal * d->primary_mode.vtotal));
+		const struct comp_window_direct_randr_display *d = &w->displays[i];
+		COMP_DEBUG(w->base.base.c, "%d: %s %dx%d@%.2f", i, d->name, d->primary_mode.width,
+		           d->primary_mode.height,
+		           (double)d->primary_mode.dot_clock / (d->primary_mode.htotal * d->primary_mode.vtotal));
 	}
 }
 
 static bool
 comp_window_direct_randr_init(struct comp_target *ct)
 {
-	struct comp_window_direct_randr *w_direct =
-	    (struct comp_window_direct_randr *)ct;
+	struct comp_window_direct_randr *w_direct = (struct comp_window_direct_randr *)ct;
 
 	// Sanity check.
 	if (ct->c->vk.instance != VK_NULL_HANDLE) {
@@ -197,8 +187,7 @@ comp_window_direct_randr_init(struct comp_target *ct)
 
 	xcb_connection_t *connection = XGetXCBConnection(w_direct->dpy);
 
-	xcb_screen_iterator_t iter =
-	    xcb_setup_roots_iterator(xcb_get_setup(connection));
+	xcb_screen_iterator_t iter = xcb_setup_roots_iterator(xcb_get_setup(connection));
 
 	w_direct->screen = iter.data;
 
@@ -216,20 +205,17 @@ comp_window_direct_randr_init(struct comp_target *ct)
 		           ct->c->settings.display, w_direct->num_displays);
 
 		ct->c->settings.display = 0;
-		struct comp_window_direct_randr_display *d =
-		    comp_window_direct_randr_current_display(w_direct);
+		struct comp_window_direct_randr_display *d = comp_window_direct_randr_current_display(w_direct);
 		COMP_DEBUG(ct->c, "Selecting '%s' instead.", d->name);
 	}
 
 	if (ct->c->settings.display < 0) {
 		ct->c->settings.display = 0;
-		struct comp_window_direct_randr_display *d =
-		    comp_window_direct_randr_current_display(w_direct);
+		struct comp_window_direct_randr_display *d = comp_window_direct_randr_current_display(w_direct);
 		COMP_DEBUG(ct->c, "Selecting '%s' first display.", d->name);
 	}
 
-	struct comp_window_direct_randr_display *d =
-	    comp_window_direct_randr_current_display(w_direct);
+	struct comp_window_direct_randr_display *d = comp_window_direct_randr_current_display(w_direct);
 	ct->c->settings.preferred.width = d->primary_mode.width;
 	ct->c->settings.preferred.height = d->primary_mode.height;
 
@@ -250,48 +236,38 @@ comp_window_direct_randr_current_display(struct comp_window_direct_randr *w)
 }
 
 static bool
-comp_window_direct_randr_init_swapchain(struct comp_target *ct,
-                                        uint32_t width,
-                                        uint32_t height)
+comp_window_direct_randr_init_swapchain(struct comp_target *ct, uint32_t width, uint32_t height)
 {
-	struct comp_window_direct_randr *w_direct =
-	    (struct comp_window_direct_randr *)ct;
+	struct comp_window_direct_randr *w_direct = (struct comp_window_direct_randr *)ct;
 
-	struct comp_window_direct_randr_display *d =
-	    comp_window_direct_randr_current_display(w_direct);
+	struct comp_window_direct_randr_display *d = comp_window_direct_randr_current_display(w_direct);
 
 	if (!d) {
 		COMP_ERROR(ct->c, "RandR could not find any HMDs.");
 		return false;
 	}
 
-	COMP_DEBUG(ct->c, "Will use display: %s %dx%d@%.2f", d->name,
-	           d->primary_mode.width, d->primary_mode.height,
-	           (double)d->primary_mode.dot_clock /
-	               (d->primary_mode.htotal * d->primary_mode.vtotal));
+	COMP_DEBUG(ct->c, "Will use display: %s %dx%d@%.2f", d->name, d->primary_mode.width, d->primary_mode.height,
+	           (double)d->primary_mode.dot_clock / (d->primary_mode.htotal * d->primary_mode.vtotal));
 
 	d->display = comp_window_direct_randr_get_output(w_direct, d->output);
 	if (d->display == VK_NULL_HANDLE) {
 		return false;
 	}
 
-	return comp_window_direct_init_swapchain(&w_direct->base, w_direct->dpy,
-	                                         d->display, width, height);
+	return comp_window_direct_init_swapchain(&w_direct->base, w_direct->dpy, d->display, width, height);
 }
 
 static VkDisplayKHR
-comp_window_direct_randr_get_output(struct comp_window_direct_randr *w,
-                                    RROutput output)
+comp_window_direct_randr_get_output(struct comp_window_direct_randr *w, RROutput output)
 {
 	struct vk_bundle *vk = get_vk(w);
 	VkResult ret;
 
 	VkDisplayKHR display;
-	ret = vk->vkGetRandROutputDisplayEXT(vk->physical_device, w->dpy,
-	                                     output, &display);
+	ret = vk->vkGetRandROutputDisplayEXT(vk->physical_device, w->dpy, output, &display);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(w->base.base.c, "vkGetRandROutputDisplayEXT: %s",
-		           vk_result_string(ret));
+		COMP_ERROR(w->base.base.c, "vkGetRandROutputDisplayEXT: %s", vk_result_string(ret));
 		return VK_NULL_HANDLE;
 	}
 
@@ -312,8 +288,7 @@ append_randr_display(struct comp_window_direct_randr *w,
                      xcb_randr_get_screen_resources_reply_t *resources_reply,
                      xcb_randr_output_t xcb_output)
 {
-	xcb_randr_mode_t *output_modes =
-	    xcb_randr_get_output_info_modes(output_reply);
+	xcb_randr_mode_t *output_modes = xcb_randr_get_output_info_modes(output_reply);
 
 	uint8_t *name = xcb_randr_get_output_info_name(output_reply);
 	int name_len = xcb_randr_get_output_info_name_length(output_reply);
@@ -327,8 +302,7 @@ append_randr_display(struct comp_window_direct_randr *w,
 		           name);
 	}
 
-	xcb_randr_mode_info_t *mode_infos =
-	    xcb_randr_get_screen_resources_modes(resources_reply);
+	xcb_randr_mode_info_t *mode_infos = xcb_randr_get_screen_resources_modes(resources_reply);
 
 	int n = xcb_randr_get_screen_resources_modes_length(resources_reply);
 
@@ -338,8 +312,7 @@ append_randr_display(struct comp_window_direct_randr *w,
 			mode_info = &mode_infos[i];
 
 	if (mode_info == NULL)
-		COMP_ERROR(w->base.base.c, "No mode with id %d found??",
-		           output_modes[0]);
+		COMP_ERROR(w->base.base.c, "No mode with id %d found??", output_modes[0]);
 
 
 	struct comp_window_direct_randr_display d = {
@@ -354,13 +327,10 @@ append_randr_display(struct comp_window_direct_randr *w,
 
 	w->num_displays += 1;
 
-	U_ARRAY_REALLOC_OR_FREE(w->displays,
-	                        struct comp_window_direct_randr_display,
-	                        w->num_displays);
+	U_ARRAY_REALLOC_OR_FREE(w->displays, struct comp_window_direct_randr_display, w->num_displays);
 
 	if (w->displays == NULL)
-		COMP_ERROR(w->base.base.c,
-		           "Unable to reallocate randr_displays");
+		COMP_ERROR(w->base.base.c, "Unable to reallocate randr_displays");
 
 	w->displays[w->num_displays - 1] = d;
 }
@@ -372,8 +342,7 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 
 	xcb_connection_t *connection = XGetXCBConnection(w->dpy);
 	xcb_randr_query_version_cookie_t version_cookie =
-	    xcb_randr_query_version(connection, XCB_RANDR_MAJOR_VERSION,
-	                            XCB_RANDR_MINOR_VERSION);
+	    xcb_randr_query_version(connection, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION);
 	xcb_randr_query_version_reply_t *version_reply =
 	    xcb_randr_query_version_reply(connection, version_cookie, NULL);
 
@@ -382,25 +351,21 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 		return;
 	}
 
-	COMP_DEBUG(ct->c, "RandR version %d.%d", version_reply->major_version,
-	           version_reply->minor_version);
+	COMP_DEBUG(ct->c, "RandR version %d.%d", version_reply->major_version, version_reply->minor_version);
 
-	if (version_reply->major_version < 1 ||
-	    version_reply->minor_version < 6) {
+	if (version_reply->major_version < 1 || version_reply->minor_version < 6) {
 		COMP_DEBUG(ct->c, "RandR version below 1.6.");
 	}
 
 	free(version_reply);
 
 	xcb_generic_error_t *error = NULL;
-	xcb_intern_atom_cookie_t non_desktop_cookie = xcb_intern_atom(
-	    connection, 1, strlen("non-desktop"), "non-desktop");
-	xcb_intern_atom_reply_t *non_desktop_reply =
-	    xcb_intern_atom_reply(connection, non_desktop_cookie, &error);
+	xcb_intern_atom_cookie_t non_desktop_cookie =
+	    xcb_intern_atom(connection, 1, strlen("non-desktop"), "non-desktop");
+	xcb_intern_atom_reply_t *non_desktop_reply = xcb_intern_atom_reply(connection, non_desktop_cookie, &error);
 
 	if (error != NULL) {
-		COMP_ERROR(ct->c, "xcb_intern_atom_reply returned error %d",
-		           error->error_code);
+		COMP_ERROR(ct->c, "xcb_intern_atom_reply returned error %d", error->error_code);
 		return;
 	}
 
@@ -417,24 +382,19 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 	xcb_randr_get_screen_resources_cookie_t resources_cookie =
 	    xcb_randr_get_screen_resources(connection, w->screen->root);
 	xcb_randr_get_screen_resources_reply_t *resources_reply =
-	    xcb_randr_get_screen_resources_reply(connection, resources_cookie,
-	                                         NULL);
-	xcb_randr_output_t *xcb_outputs =
-	    xcb_randr_get_screen_resources_outputs(resources_reply);
+	    xcb_randr_get_screen_resources_reply(connection, resources_cookie, NULL);
+	xcb_randr_output_t *xcb_outputs = xcb_randr_get_screen_resources_outputs(resources_reply);
 
-	int count =
-	    xcb_randr_get_screen_resources_outputs_length(resources_reply);
+	int count = xcb_randr_get_screen_resources_outputs_length(resources_reply);
 	if (count < 1) {
 		COMP_ERROR(ct->c, "failed to retrieve randr outputs");
 	}
 
 	for (int i = 0; i < count; i++) {
 		xcb_randr_get_output_info_cookie_t output_cookie =
-		    xcb_randr_get_output_info(connection, xcb_outputs[i],
-		                              XCB_CURRENT_TIME);
+		    xcb_randr_get_output_info(connection, xcb_outputs[i], XCB_CURRENT_TIME);
 		xcb_randr_get_output_info_reply_t *output_reply =
-		    xcb_randr_get_output_info_reply(connection, output_cookie,
-		                                    NULL);
+		    xcb_randr_get_output_info_reply(connection, output_cookie, NULL);
 
 		// Only outputs with an available mode should be used
 		// (it is possible to see 'ghost' outputs with non-desktop=1).
@@ -445,12 +405,10 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 
 		// Find the first output that has the non-desktop property set.
 		xcb_randr_get_output_property_cookie_t prop_cookie;
-		prop_cookie = xcb_randr_get_output_property(
-		    connection, xcb_outputs[i], non_desktop_reply->atom,
-		    XCB_ATOM_NONE, 0, 4, 0, 0);
+		prop_cookie = xcb_randr_get_output_property(connection, xcb_outputs[i], non_desktop_reply->atom,
+		                                            XCB_ATOM_NONE, 0, 4, 0, 0);
 		xcb_randr_get_output_property_reply_t *prop_reply = NULL;
-		prop_reply = xcb_randr_get_output_property_reply(
-		    connection, prop_cookie, &error);
+		prop_reply = xcb_randr_get_output_property_reply(connection, prop_cookie, &error);
 		if (error != NULL) {
 			COMP_ERROR(ct->c,
 			           "xcb_randr_get_output_property_reply "
@@ -466,18 +424,15 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 			continue;
 		}
 
-		if (prop_reply->type != XCB_ATOM_INTEGER ||
-		    prop_reply->num_items != 1 || prop_reply->format != 32) {
+		if (prop_reply->type != XCB_ATOM_INTEGER || prop_reply->num_items != 1 || prop_reply->format != 32) {
 			COMP_ERROR(ct->c, "Invalid non-desktop reply");
 			free(prop_reply);
 			continue;
 		}
 
-		uint8_t non_desktop =
-		    *xcb_randr_get_output_property_data(prop_reply);
+		uint8_t non_desktop = *xcb_randr_get_output_property_data(prop_reply);
 		if (non_desktop == 1)
-			append_randr_display(w, output_reply, resources_reply,
-			                     xcb_outputs[i]);
+			append_randr_display(w, output_reply, resources_reply, xcb_outputs[i]);
 
 		free(prop_reply);
 		free(output_reply);

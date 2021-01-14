@@ -74,8 +74,7 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity);
  * @public @memberof android_custom_surface
  */
 void
-android_custom_surface_destroy(
-    struct android_custom_surface **ptr_custom_surface);
+android_custom_surface_destroy(struct android_custom_surface **ptr_custom_surface);
 
 /*!
  * Get the ANativeWindow pointer corresponding to the added Surface, if
@@ -86,14 +85,12 @@ android_custom_surface_destroy(
  * @public @memberof android_custom_surface
  */
 ANativeWindow *
-android_custom_surface_wait_get_surface(
-    struct android_custom_surface *custom_surface, uint64_t timeout_ms);
+android_custom_surface_wait_get_surface(struct android_custom_surface *custom_surface, uint64_t timeout_ms);
 
 bool
-android_custom_surface_get_display_metrics(
-    struct _JavaVM *vm,
-    void *activity,
-    struct xrt_android_display_metrics *out_metrics);
+android_custom_surface_get_display_metrics(struct _JavaVM *vm,
+                                           void *activity,
+                                           struct xrt_android_display_metrics *out_metrics);
 
 #ifdef __cplusplus
 }

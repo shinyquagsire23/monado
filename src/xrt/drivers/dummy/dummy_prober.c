@@ -43,10 +43,7 @@ dummy_prober_destroy(struct xrt_auto_prober *p)
 
 //! @public @memberof dummy_prober
 static struct xrt_device *
-dummy_prober_autoprobe(struct xrt_auto_prober *xap,
-                       cJSON *attached_data,
-                       bool no_hmds,
-                       struct xrt_prober *xp)
+dummy_prober_autoprobe(struct xrt_auto_prober *xap, cJSON *attached_data, bool no_hmds, struct xrt_prober *xp)
 {
 	struct dummy_prober *dp = dummy_prober(xap);
 	(void)dp;

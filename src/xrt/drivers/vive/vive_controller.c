@@ -95,8 +95,7 @@ static inline struct vive_controller_device *
 vive_controller_device(struct xrt_device *xdev)
 {
 	assert(xdev);
-	struct vive_controller_device *ret =
-	    (struct vive_controller_device *)xdev;
+	struct vive_controller_device *ret = (struct vive_controller_device *)xdev;
 	return ret;
 }
 
@@ -136,12 +135,9 @@ vive_controller_device_update_wand_inputs(struct xrt_device *xdev)
 	/* d->state.buttons is bitmask of currently pressed buttons.
 	 * (index n) nth bit in the bitmask -> input "name"
 	 */
-	const int button_index_map[] = {VIVE_CONTROLLER_INDEX_TRIGGER_CLICK,
-	                                VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH,
-	                                VIVE_CONTROLLER_INDEX_TRACKPAD_CLICK,
-	                                VIVE_CONTROLLER_INDEX_SYSTEM_CLICK,
-	                                VIVE_CONTROLLER_INDEX_SQUEEZE_CLICK,
-	                                VIVE_CONTROLLER_INDEX_MENU_CLICK};
+	const int button_index_map[] = {VIVE_CONTROLLER_INDEX_TRIGGER_CLICK,  VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH,
+	                                VIVE_CONTROLLER_INDEX_TRACKPAD_CLICK, VIVE_CONTROLLER_INDEX_SYSTEM_CLICK,
+	                                VIVE_CONTROLLER_INDEX_SQUEEZE_CLICK,  VIVE_CONTROLLER_INDEX_MENU_CLICK};
 
 	int button_count = ARRAY_SIZE(button_index_map);
 	for (int i = 0; i < button_count; i++) {
@@ -150,30 +146,25 @@ vive_controller_device_update_wand_inputs(struct xrt_device *xdev)
 		bool last_pressed = (d->state.last_buttons >> i) & 1;
 
 		if (pressed != last_pressed) {
-			struct xrt_input *input =
-			    &d->base.inputs[button_index_map[i]];
+			struct xrt_input *input = &d->base.inputs[button_index_map[i]];
 
 			input->timestamp = now;
 			input->value.boolean = pressed;
 
-			VIVE_DEBUG(d, "button %d %s\n", i,
-			           pressed ? "pressed" : "released");
+			VIVE_DEBUG(d, "button %d %s\n", i, pressed ? "pressed" : "released");
 		}
 	}
 	d->state.last_buttons = d->state.buttons;
 
 
-	struct xrt_input *trackpad_input =
-	    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD];
+	struct xrt_input *trackpad_input = &d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD];
 	trackpad_input->timestamp = now;
 	trackpad_input->value.vec2.x = d->state.trackpad.x;
 	trackpad_input->value.vec2.y = d->state.trackpad.y;
-	VIVE_TRACE(d, "Trackpad: %f, %f", d->state.trackpad.x,
-	           d->state.trackpad.y);
+	VIVE_TRACE(d, "Trackpad: %f, %f", d->state.trackpad.x, d->state.trackpad.y);
 
 
-	struct xrt_input *trigger_input =
-	    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRIGGER_VALUE];
+	struct xrt_input *trigger_input = &d->base.inputs[VIVE_CONTROLLER_INDEX_TRIGGER_VALUE];
 	trigger_input->timestamp = now;
 	trigger_input->value.vec1.x = d->state.trigger;
 	VIVE_TRACE(d, "Trigger: %f", d->state.trigger);
@@ -197,20 +188,16 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	printf("\n");
 	*/
 
-	bool was_trackpad_touched =
-	    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH].value.boolean;
+	bool was_trackpad_touched = d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH].value.boolean;
 
 	uint64_t now = os_monotonic_get_ns();
 
 	/* d->state.buttons is bitmask of currently pressed buttons.
 	 * (index n) nth bit in the bitmask -> input "name"
 	 */
-	const int button_index_map[] = {VIVE_CONTROLLER_INDEX_TRIGGER_CLICK,
-	                                VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH,
-	                                VIVE_CONTROLLER_INDEX_THUMBSTICK_CLICK,
-	                                VIVE_CONTROLLER_INDEX_SYSTEM_CLICK,
-	                                VIVE_CONTROLLER_INDEX_A_CLICK,
-	                                VIVE_CONTROLLER_INDEX_B_CLICK};
+	const int button_index_map[] = {VIVE_CONTROLLER_INDEX_TRIGGER_CLICK,    VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH,
+	                                VIVE_CONTROLLER_INDEX_THUMBSTICK_CLICK, VIVE_CONTROLLER_INDEX_SYSTEM_CLICK,
+	                                VIVE_CONTROLLER_INDEX_A_CLICK,          VIVE_CONTROLLER_INDEX_B_CLICK};
 
 	int button_count = ARRAY_SIZE(button_index_map);
 	for (int i = 0; i < button_count; i++) {
@@ -219,20 +206,17 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 		bool last_pressed = (d->state.last_buttons >> i) & 1;
 
 		if (pressed != last_pressed) {
-			struct xrt_input *input =
-			    &d->base.inputs[button_index_map[i]];
+			struct xrt_input *input = &d->base.inputs[button_index_map[i]];
 
 			input->timestamp = now;
 			input->value.boolean = pressed;
 
-			VIVE_DEBUG(d, "button %d %s\n", i,
-			           pressed ? "pressed" : "released");
+			VIVE_DEBUG(d, "button %d %s\n", i, pressed ? "pressed" : "released");
 		}
 	}
 	d->state.last_buttons = d->state.buttons;
 
-	bool is_trackpad_touched =
-	    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH].value.boolean;
+	bool is_trackpad_touched = d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH].value.boolean;
 
 	/* trackpad and thumbstick position are the same usb events.
 	 * report trackpad position when trackpad has been touched last, and
@@ -249,15 +233,11 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	thumb_input->value.vec2.x = d->state.trackpad.x;
 	thumb_input->value.vec2.y = d->state.trackpad.y;
 
-	const char *component = is_trackpad_touched || was_trackpad_touched
-	                            ? "Trackpad"
-	                            : "Thumbstick";
-	VIVE_TRACE(d, "%s: %f, %f", component, d->state.trackpad.x,
-	           d->state.trackpad.y);
+	const char *component = is_trackpad_touched || was_trackpad_touched ? "Trackpad" : "Thumbstick";
+	VIVE_TRACE(d, "%s: %f, %f", component, d->state.trackpad.x, d->state.trackpad.y);
 
 
-	struct xrt_input *trigger_input =
-	    &d->base.inputs[VIVE_CONTROLLER_INDEX_TRIGGER_VALUE];
+	struct xrt_input *trigger_input = &d->base.inputs[VIVE_CONTROLLER_INDEX_TRIGGER_VALUE];
 
 	trigger_input->timestamp = now;
 	trigger_input->value.vec1.x = d->state.trigger;
@@ -268,14 +248,13 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 	/* d->state.touch is bitmask of currently touched buttons.
 	 * (index n) nth bit in the bitmask -> input "name"
 	 */
-	const int touched_button_index_map[] = {
-	    0,
-	    0,
-	    0,
-	    VIVE_CONTROLLER_INDEX_SYSTEM_TOUCH,
-	    VIVE_CONTROLLER_INDEX_A_TOUCH,
-	    VIVE_CONTROLLER_INDEX_B_TOUCH,
-	    VIVE_CONTROLLER_INDEX_THUMBSTICK_TOUCH};
+	const int touched_button_index_map[] = {0,
+	                                        0,
+	                                        0,
+	                                        VIVE_CONTROLLER_INDEX_SYSTEM_TOUCH,
+	                                        VIVE_CONTROLLER_INDEX_A_TOUCH,
+	                                        VIVE_CONTROLLER_INDEX_B_TOUCH,
+	                                        VIVE_CONTROLLER_INDEX_THUMBSTICK_TOUCH};
 	int touch_button_count = ARRAY_SIZE(touched_button_index_map);
 	uint8_t touch_buttons = d->state.touch;
 	for (int i = 0; i < touch_button_count; i++) {
@@ -284,32 +263,26 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 		bool last_touched = (d->state.last_touch >> i) & 1;
 
 		if (touched != last_touched) {
-			struct xrt_input *input =
-			    &d->base.inputs[touched_button_index_map[i]];
+			struct xrt_input *input = &d->base.inputs[touched_button_index_map[i]];
 
 			input->timestamp = now;
 			input->value.boolean = touched;
 
-			VIVE_DEBUG(d, "button %d %s\n", i,
-			           touched ? "touched" : "untouched");
+			VIVE_DEBUG(d, "button %d %s\n", i, touched ? "touched" : "untouched");
 		}
 	}
 	d->state.last_touch = d->state.touch;
 
-	d->base.inputs[VIVE_CONTROLLER_INDEX_SQUEEZE_FORCE].value.vec1.x =
-	    (float)d->state.squeeze_force / UINT8_MAX;
+	d->base.inputs[VIVE_CONTROLLER_INDEX_SQUEEZE_FORCE].value.vec1.x = (float)d->state.squeeze_force / UINT8_MAX;
 	d->base.inputs[VIVE_CONTROLLER_INDEX_SQUEEZE_FORCE].timestamp = now;
 	if (d->state.squeeze_force > 0) {
-		VIVE_DEBUG(d, "Squeeze force: %f\n",
-		           (float)d->state.squeeze_force / UINT8_MAX);
+		VIVE_DEBUG(d, "Squeeze force: %f\n", (float)d->state.squeeze_force / UINT8_MAX);
 	}
 
-	d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_FORCE].value.vec1.x =
-	    (float)d->state.trackpad_force / UINT8_MAX;
+	d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_FORCE].value.vec1.x = (float)d->state.trackpad_force / UINT8_MAX;
 	d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_FORCE].timestamp = now;
 	if (d->state.trackpad_force > 0) {
-		VIVE_DEBUG(d, "Trackpad force: %f\n",
-		           (float)d->state.trackpad_force / UINT8_MAX);
+		VIVE_DEBUG(d, "Trackpad force: %f\n", (float)d->state.trackpad_force / UINT8_MAX);
 	}
 
 	os_thread_helper_unlock(&d->controller_thread);
@@ -330,36 +303,29 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 {
 	struct vive_controller_device *d = vive_controller_device(xdev);
 
-	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT &&
-	    name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
+	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT && name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
 		VIVE_ERROR(d, "unknown input name for hand tracker");
 		return;
 	}
 
-	enum xrt_hand hand = d->variant == CONTROLLER_INDEX_LEFT
-	                         ? XRT_HAND_LEFT
-	                         : XRT_HAND_RIGHT;
+	enum xrt_hand hand = d->variant == CONTROLLER_INDEX_LEFT ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
 
 	float thumb_curl = 0.0f;
 	//! @todo place thumb preciely on the button that is touched/pressed
 	if (d->base.inputs[VIVE_CONTROLLER_INDEX_A_TOUCH].value.boolean ||
 	    d->base.inputs[VIVE_CONTROLLER_INDEX_B_TOUCH].value.boolean ||
-	    d->base.inputs[VIVE_CONTROLLER_INDEX_THUMBSTICK_TOUCH]
-	        .value.boolean ||
-	    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH]
-	        .value.boolean) {
+	    d->base.inputs[VIVE_CONTROLLER_INDEX_THUMBSTICK_TOUCH].value.boolean ||
+	    d->base.inputs[VIVE_CONTROLLER_INDEX_TRACKPAD_TOUCH].value.boolean) {
 		thumb_curl = 1.0;
 	}
 
-	struct u_hand_tracking_curl_values values = {
-	    .little = (float)d->state.pinky_finger_handle / UINT8_MAX,
-	    .ring = (float)d->state.ring_finger_handle / UINT8_MAX,
-	    .middle = (float)d->state.middle_finger_handle / UINT8_MAX,
-	    .index = (float)d->state.index_finger_trigger / UINT8_MAX,
-	    .thumb = thumb_curl};
+	struct u_hand_tracking_curl_values values = {.little = (float)d->state.pinky_finger_handle / UINT8_MAX,
+	                                             .ring = (float)d->state.ring_finger_handle / UINT8_MAX,
+	                                             .middle = (float)d->state.middle_finger_handle / UINT8_MAX,
+	                                             .index = (float)d->state.index_finger_trigger / UINT8_MAX,
+	                                             .thumb = thumb_curl};
 
-	u_hand_joints_update_curl(&d->hand_tracking, hand, at_timestamp_ns,
-	                          &values);
+	u_hand_joints_update_curl(&d->hand_tracking, hand, at_timestamp_ns, &values);
 
 
 	/* Because IMU is at the very -z end of the controller, the rotation
@@ -371,22 +337,17 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	float pivot_offset_z = 0.15;
 
 	struct xrt_space_relation controller_relation = {
-	    .pose = {.orientation = d->rot_filtered,
-	             .position = {0, 0, pivot_offset_z}}};
-	controller_relation.relation_flags =
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT;
+	    .pose = {.orientation = d->rot_filtered, .position = {0, 0, pivot_offset_z}}};
+	controller_relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	                                     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	                                     XRT_SPACE_RELATION_POSITION_VALID_BIT;
 
 	struct xrt_vec3 static_offset = {0, 0, 0};
 
 	struct xrt_pose hand_on_handle_pose;
-	u_hand_joints_offset_valve_index_controller(hand, &static_offset,
-	                                            &hand_on_handle_pose);
+	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
 
-	u_hand_joints_set_out_data(&d->hand_tracking, hand,
-	                           &controller_relation, &hand_on_handle_pose,
-	                           out_value);
+	u_hand_joints_set_out_data(&d->hand_tracking, hand, &controller_relation, &hand_on_handle_pose, out_value);
 }
 
 static void
@@ -398,9 +359,7 @@ vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
 	struct vive_controller_device *d = vive_controller_device(xdev);
 
 	// U_LOG_D("input name %d %d", name, XRT_INPUT_VIVE_GRIP_POSE);
-	if (name != XRT_INPUT_VIVE_AIM_POSE &&
-	    name != XRT_INPUT_VIVE_GRIP_POSE &&
-	    name != XRT_INPUT_INDEX_AIM_POSE &&
+	if (name != XRT_INPUT_VIVE_AIM_POSE && name != XRT_INPUT_VIVE_GRIP_POSE && name != XRT_INPUT_INDEX_AIM_POSE &&
 	    name != XRT_INPUT_INDEX_GRIP_POSE) {
 		VIVE_ERROR(d, "unknown input name");
 		return;
@@ -421,41 +380,34 @@ vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
 
 	//! @todo assuming that orientation is actually currently tracked.
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
 	os_thread_helper_unlock(&d->controller_thread);
 
 	struct xrt_vec3 pos = out_relation->pose.position;
 	struct xrt_quat quat = out_relation->pose.orientation;
-	VIVE_TRACE(d, "GET_TRACKED_POSE (%f, %f, %f) (%f, %f, %f, %f) ", pos.x,
-	           pos.y, pos.z, quat.x, quat.y, quat.z, quat.w);
+	VIVE_TRACE(d, "GET_TRACKED_POSE (%f, %f, %f) (%f, %f, %f, %f) ", pos.x, pos.y, pos.z, quat.x, quat.y, quat.z,
+	           quat.w);
 }
 
 static int
-vive_controller_haptic_pulse(struct vive_controller_device *d,
-                             union xrt_output_value *value)
+vive_controller_haptic_pulse(struct vive_controller_device *d, union xrt_output_value *value)
 {
 	float duration_seconds;
 	if (value->vibration.duration == XRT_MIN_HAPTIC_DURATION) {
-		VIVE_TRACE(d, "Haptic pulse duration: using %f minimum",
-		           MIN_HAPTIC_DURATION);
+		VIVE_TRACE(d, "Haptic pulse duration: using %f minimum", MIN_HAPTIC_DURATION);
 		duration_seconds = MIN_HAPTIC_DURATION;
 	} else {
 		duration_seconds = time_ns_to_s(value->vibration.duration);
 	}
 
-	VIVE_TRACE(d, "Haptic pulse amp %f, %fHz, %fs",
-	           value->vibration.amplitude, value->vibration.frequency,
+	VIVE_TRACE(d, "Haptic pulse amp %f, %fHz, %fs", value->vibration.amplitude, value->vibration.frequency,
 	           duration_seconds);
 	float frequency = value->vibration.frequency;
 
 	if (frequency == XRT_FREQUENCY_UNSPECIFIED) {
-		VIVE_TRACE(
-		    d, "Haptic pulse frequency unspecified, setting to %fHz",
-		    DEFAULT_HAPTIC_FREQ);
+		VIVE_TRACE(d, "Haptic pulse frequency unspecified, setting to %fHz", DEFAULT_HAPTIC_FREQ);
 		frequency = DEFAULT_HAPTIC_FREQ;
 	}
 
@@ -471,8 +423,7 @@ vive_controller_haptic_pulse(struct vive_controller_device *d,
 	 */
 
 	float high_plus_low = 1000.f * 1000.f / frequency;
-	uint16_t pulse_low =
-	    (uint16_t)(value->vibration.amplitude * high_plus_low / 2.);
+	uint16_t pulse_low = (uint16_t)(value->vibration.amplitude * high_plus_low / 2.);
 
 	/* Vive Controller doesn't vibrate with value == 0.
 	 * Not sure if this actually happens, but let's fix it anyway. */
@@ -493,19 +444,15 @@ vive_controller_haptic_pulse(struct vive_controller_device *d,
 	    .repeat_count = __cpu_to_le16(repeat_count),
 	};
 
-	return os_hid_set_feature(d->controller_hid, (uint8_t *)&report,
-	                          sizeof(report));
+	return os_hid_set_feature(d->controller_hid, (uint8_t *)&report, sizeof(report));
 }
 
 static void
-vive_controller_device_set_output(struct xrt_device *xdev,
-                                  enum xrt_output_name name,
-                                  union xrt_output_value *value)
+vive_controller_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
 {
 	struct vive_controller_device *d = vive_controller_device(xdev);
 
-	if (name != XRT_OUTPUT_NAME_VIVE_HAPTIC &&
-	    name != XRT_OUTPUT_NAME_INDEX_HAPTIC) {
+	if (name != XRT_OUTPUT_NAME_VIVE_HAPTIC && name != XRT_OUTPUT_NAME_INDEX_HAPTIC) {
 		VIVE_ERROR(d, "Unknown output\n");
 		return;
 	}
@@ -519,11 +466,9 @@ vive_controller_device_set_output(struct xrt_device *xdev,
 }
 
 static void
-controller_handle_battery(struct vive_controller_device *d,
-                          struct vive_controller_battery_sample *sample)
+controller_handle_battery(struct vive_controller_device *d, struct vive_controller_battery_sample *sample)
 {
-	uint8_t charge_percent =
-	    sample->battery & VIVE_CONTROLLER_BATTERY_CHARGE_MASK;
+	uint8_t charge_percent = sample->battery & VIVE_CONTROLLER_BATTERY_CHARGE_MASK;
 	bool charging = sample->battery & VIVE_CONTROLLER_BATTERY_CHARGING;
 	VIVE_DEBUG(d, "Charging %d, percent %d\n", charging, charge_percent);
 	d->state.charging = charging;
@@ -531,39 +476,33 @@ controller_handle_battery(struct vive_controller_device *d,
 }
 
 static void
-controller_handle_buttons(struct vive_controller_device *d,
-                          struct vive_controller_button_sample *sample)
+controller_handle_buttons(struct vive_controller_device *d, struct vive_controller_button_sample *sample)
 {
 	d->state.buttons = sample->buttons;
 }
 
 static void
-controller_handle_touch_position(struct vive_controller_device *d,
-                                 struct vive_controller_touch_sample *sample)
+controller_handle_touch_position(struct vive_controller_device *d, struct vive_controller_touch_sample *sample)
 {
 	int16_t x = __le16_to_cpu(sample->touch[0]);
 	int16_t y = __le16_to_cpu(sample->touch[1]);
 	d->state.trackpad.x = (float)x / INT16_MAX;
 	d->state.trackpad.y = (float)y / INT16_MAX;
 	if (d->state.trackpad.x != 0 || d->state.trackpad.y != 0)
-		VIVE_TRACE(d, "Trackpad %f,%f\n", d->state.trackpad.x,
-		           d->state.trackpad.y);
+		VIVE_TRACE(d, "Trackpad %f,%f\n", d->state.trackpad.x, d->state.trackpad.y);
 }
 
 static void
-controller_handle_analog_trigger(struct vive_controller_device *d,
-                                 struct vive_controller_trigger_sample *sample)
+controller_handle_analog_trigger(struct vive_controller_device *d, struct vive_controller_trigger_sample *sample)
 {
 	d->state.trigger = (float)sample->trigger / UINT8_MAX;
 	VIVE_TRACE(d, "Trigger %f\n", d->state.trigger);
 }
 
 static inline uint32_t
-calc_dt_raw_and_handle_overflow(struct vive_controller_device *d,
-                                uint32_t sample_time)
+calc_dt_raw_and_handle_overflow(struct vive_controller_device *d, uint32_t sample_time)
 {
-	uint64_t dt_raw =
-	    (uint64_t)sample_time - (uint64_t)d->imu.last_sample_time_raw;
+	uint64_t dt_raw = (uint64_t)sample_time - (uint64_t)d->imu.last_sample_time_raw;
 	d->imu.last_sample_time_raw = sample_time;
 
 	// The 32-bit tick counter has rolled over,
@@ -585,8 +524,7 @@ cald_dt_ns(uint32_t dt_raw)
 }
 
 static void
-vive_controller_handle_imu_sample(struct vive_controller_device *d,
-                                  struct watchman_imu_sample *sample)
+vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watchman_imu_sample *sample)
 {
 	/* ouvrt: "Time in 48 MHz ticks, but we are missing the low byte" */
 	uint32_t time_raw = d->last_ticks | (sample->timestamp_hi << 8);
@@ -619,45 +557,31 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d,
 	    scale * d->imu.gyro_scale.z * gyro[2] - d->imu.gyro_bias.z,
 	};
 
-	VIVE_TRACE(d, "ACC  %f %f %f", acceleration.x, acceleration.y,
-	           acceleration.z);
-	VIVE_TRACE(d, "GYRO %f %f %f", angular_velocity.x, angular_velocity.y,
-	           angular_velocity.z);
+	VIVE_TRACE(d, "ACC  %f %f %f", acceleration.x, acceleration.y, acceleration.z);
+	VIVE_TRACE(d, "GYRO %f %f %f", angular_velocity.x, angular_velocity.y, angular_velocity.z);
 	/*
 	 */
 
 	if (d->variant == CONTROLLER_VIVE_WAND) {
-		struct xrt_vec3 fixed_acceleration = {.x = -acceleration.x,
-		                                      .y = -acceleration.z,
-		                                      .z = -acceleration.y};
+		struct xrt_vec3 fixed_acceleration = {.x = -acceleration.x, .y = -acceleration.z, .z = -acceleration.y};
 		acceleration = fixed_acceleration;
 
 		struct xrt_vec3 fixed_angular_velocity = {
-		    .x = -angular_velocity.x,
-		    .y = -angular_velocity.z,
-		    .z = -angular_velocity.y};
+		    .x = -angular_velocity.x, .y = -angular_velocity.z, .z = -angular_velocity.y};
 		angular_velocity = fixed_angular_velocity;
 	} else if (d->variant == CONTROLLER_INDEX_RIGHT) {
-		struct xrt_vec3 fixed_acceleration = {.x = acceleration.z,
-		                                      .y = -acceleration.y,
-		                                      .z = acceleration.x};
+		struct xrt_vec3 fixed_acceleration = {.x = acceleration.z, .y = -acceleration.y, .z = acceleration.x};
 		acceleration = fixed_acceleration;
 
 		struct xrt_vec3 fixed_angular_velocity = {
-		    .x = angular_velocity.z,
-		    .y = -angular_velocity.y,
-		    .z = angular_velocity.x};
+		    .x = angular_velocity.z, .y = -angular_velocity.y, .z = angular_velocity.x};
 		angular_velocity = fixed_angular_velocity;
 	} else if (d->variant == CONTROLLER_INDEX_LEFT) {
-		struct xrt_vec3 fixed_acceleration = {.x = -acceleration.z,
-		                                      .y = acceleration.x,
-		                                      .z = -acceleration.y};
+		struct xrt_vec3 fixed_acceleration = {.x = -acceleration.z, .y = acceleration.x, .z = -acceleration.y};
 		acceleration = fixed_acceleration;
 
 		struct xrt_vec3 fixed_angular_velocity = {
-		    .x = -angular_velocity.z,
-		    .y = angular_velocity.x,
-		    .z = -angular_velocity.y};
+		    .x = -angular_velocity.z, .y = angular_velocity.x, .z = -angular_velocity.y};
 		angular_velocity = fixed_angular_velocity;
 	}
 
@@ -665,8 +589,7 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d,
 	d->last.acc = acceleration;
 	d->last.gyro = angular_velocity;
 
-	m_imu_3dof_update(&d->fusion, d->imu.time_ns, &acceleration,
-	                  &angular_velocity);
+	m_imu_3dof_update(&d->fusion, d->imu.time_ns, &acceleration, &angular_velocity);
 
 	d->rot_filtered = d->fusion.rot;
 
@@ -675,8 +598,7 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d,
 }
 
 static void
-controller_handle_touch_force(struct vive_controller_device *d,
-                              struct watchman_touch_force *sample)
+controller_handle_touch_force(struct vive_controller_device *d, struct watchman_touch_force *sample)
 {
 	d->state.touch = sample->touch;
 
@@ -690,9 +612,7 @@ controller_handle_touch_force(struct vive_controller_device *d,
 }
 
 static void
-vive_controller_handle_lighthousev1(struct vive_controller_device *d,
-                                    uint8_t *buf,
-                                    uint8_t len)
+vive_controller_handle_lighthousev1(struct vive_controller_device *d, uint8_t *buf, uint8_t len)
 {
 	VIVE_TRACE(d, "Got lighthouse message with len %d.\n", len);
 }
@@ -702,8 +622,7 @@ vive_controller_handle_lighthousev1(struct vive_controller_device *d,
  * Then hands off to vive_controller_handle_lighthousev1().
  */
 static void
-vive_controller_decode_watchmanv1(struct vive_controller_device *d,
-                                  struct vive_controller_message *message)
+vive_controller_decode_watchmanv1(struct vive_controller_device *d, struct vive_controller_message *message)
 {
 	uint8_t *buf = message->payload;
 	uint8_t *end = message->payload + message->len - 1;
@@ -755,35 +674,29 @@ vive_controller_decode_watchmanv1(struct vive_controller_device *d,
 		VIVE_TRACE(d,
 		           "battery %d trigger %d trackpad %d "
 		           "buttons %d imu %d",
-		           has_battery, has_trigger, has_trackpad, has_buttons,
-		           has_imu);
+		           has_battery, has_trigger, has_trackpad, has_buttons, has_imu);
 
 		buf++;
 
 		if (has_battery) {
-			controller_handle_battery(
-			    d, (struct vive_controller_battery_sample *)buf);
+			controller_handle_battery(d, (struct vive_controller_battery_sample *)buf);
 			buf += sizeof(struct vive_controller_battery_sample);
 		}
 
 		if (has_buttons) {
-			controller_handle_buttons(
-			    d, (struct vive_controller_button_sample *)buf);
+			controller_handle_buttons(d, (struct vive_controller_button_sample *)buf);
 			buf += sizeof(struct vive_controller_button_sample);
 		}
 		if (has_trigger) {
-			controller_handle_analog_trigger(
-			    d, (struct vive_controller_trigger_sample *)buf);
+			controller_handle_analog_trigger(d, (struct vive_controller_trigger_sample *)buf);
 			buf += sizeof(struct vive_controller_trigger_sample);
 		}
 		if (has_trackpad) {
-			controller_handle_touch_position(
-			    d, (struct vive_controller_touch_sample *)buf);
+			controller_handle_touch_position(d, (struct vive_controller_touch_sample *)buf);
 			buf += 4;
 		}
 		if (has_imu) {
-			vive_controller_handle_imu_sample(
-			    d, (struct watchman_imu_sample *)buf);
+			vive_controller_handle_imu_sample(d, (struct watchman_imu_sample *)buf);
 			buf += sizeof(struct watchman_imu_sample);
 		}
 	}
@@ -802,8 +715,7 @@ vive_controller_decode_watchmanv1(struct vive_controller_device *d,
  * Then hands off to vive_controller_handle_lighthousev1().
  */
 static void
-vive_controller_decode_watchmanv2(struct vive_controller_device *d,
-                                  struct vive_controller_message *message)
+vive_controller_decode_watchmanv2(struct vive_controller_device *d, struct vive_controller_message *message)
 {
 	uint8_t *buf = message->payload;
 	uint8_t *end = message->payload + message->len - 1;
@@ -834,8 +746,7 @@ vive_controller_decode_watchmanv2(struct vive_controller_device *d,
 	 */
 	if (*buf == 0xe1 && buf < end) {
 		buf++;
-		controller_handle_battery(
-		    d, (struct vive_controller_battery_sample *)buf);
+		controller_handle_battery(d, (struct vive_controller_battery_sample *)buf);
 		buf += sizeof(struct vive_controller_battery_sample);
 
 #ifdef WATCHMAN2_PRINT_HID
@@ -852,8 +763,7 @@ vive_controller_decode_watchmanv2(struct vive_controller_device *d,
 	 */
 	if (*buf == 0xf0 && buf < end) {
 		buf++;
-		controller_handle_touch_force(
-		    d, (struct watchman_touch_force *)buf);
+		controller_handle_touch_force(d, (struct watchman_touch_force *)buf);
 		size_t s = sizeof(struct watchman_touch_force);
 		buf += s;
 
@@ -871,8 +781,7 @@ vive_controller_decode_watchmanv2(struct vive_controller_device *d,
 	// TODO: it's possible we misparse non-im udata as imu data
 	if (*buf == 0xe8 && buf < end) {
 		buf++;
-		vive_controller_handle_imu_sample(
-		    d, (struct watchman_imu_sample *)buf);
+		vive_controller_handle_imu_sample(d, (struct watchman_imu_sample *)buf);
 		size_t s = sizeof(struct watchman_imu_sample);
 		buf += s;
 
@@ -911,58 +820,47 @@ vive_controller_decode_watchmanv2(struct vive_controller_device *d,
 #endif
 
 		if (has_buttons) {
-			controller_handle_buttons(
-			    d, (struct vive_controller_button_sample *)buf);
+			controller_handle_buttons(d, (struct vive_controller_button_sample *)buf);
 			buf += sizeof(struct vive_controller_button_sample);
 #ifdef WATCHMAN2_PRINT_HID
 			printf("  buttons");
 #endif
 		}
 		if (has_trigger) {
-			controller_handle_analog_trigger(
-			    d, (struct vive_controller_trigger_sample *)buf);
+			controller_handle_analog_trigger(d, (struct vive_controller_trigger_sample *)buf);
 			buf += sizeof(struct vive_controller_trigger_sample);
 #ifdef WATCHMAN2_PRINT_HID
 			printf("  trigger");
 #endif
 		}
 		if (has_trackpad) {
-			controller_handle_touch_position(
-			    d, (struct vive_controller_touch_sample *)buf);
+			controller_handle_touch_position(d, (struct vive_controller_touch_sample *)buf);
 			buf += sizeof(struct vive_controller_touch_sample);
 #ifdef WATCHMAN2_PRINT_HID
-			for (unsigned long i = 0;
-			     i < sizeof(struct vive_controller_touch_sample);
-			     i++)
+			for (unsigned long i = 0; i < sizeof(struct vive_controller_touch_sample); i++)
 				printf(" trackpad");
 #endif
 		}
 		if (has_touch_force) {
 			uint8_t type_flag = *buf;
 			if (type_flag == TYPE_FLAG_TOUCH_FORCE) {
-				controller_handle_touch_force(
-				    d, (struct watchman_touch_force *)buf);
+				controller_handle_touch_force(d, (struct watchman_touch_force *)buf);
 				size_t s = sizeof(struct watchman_touch_force);
 				buf += s;
 #ifdef WATCHMAN2_PRINT_HID
-				for (unsigned long i = 0;
-				     i < sizeof(struct watchman_touch_force);
-				     i++)
+				for (unsigned long i = 0; i < sizeof(struct watchman_touch_force); i++)
 					printf("  t&force");
 #endif
 			}
 		}
 		// if something still follows, usually imu
 		// sometimes it's 5 unknown bytes'
-		if (buf < end &&
-		    end - buf >= (long)sizeof(struct watchman_imu_sample)) {
-			vive_controller_handle_imu_sample(
-			    d, (struct watchman_imu_sample *)buf);
+		if (buf < end && end - buf >= (long)sizeof(struct watchman_imu_sample)) {
+			vive_controller_handle_imu_sample(d, (struct watchman_imu_sample *)buf);
 			size_t s = sizeof(struct watchman_imu_sample);
 			buf += s;
 #ifdef WATCHMAN2_PRINT_HID
-			for (unsigned long i = 0;
-			     i < sizeof(struct watchman_imu_sample); i++)
+			for (unsigned long i = 0; i < sizeof(struct watchman_imu_sample); i++)
 				printf("      imu");
 #endif
 		}
@@ -974,8 +872,7 @@ vive_controller_decode_watchmanv2(struct vive_controller_device *d,
 #endif
 
 	if (buf < end) {
-		VIVE_TRACE(d, "%ld bytes unparsed data in message\n",
-		           message->len - (buf - message->payload) - 1);
+		VIVE_TRACE(d, "%ld bytes unparsed data in message\n", message->len - (buf - message->payload) - 1);
 	}
 	if (buf > end)
 		VIVE_ERROR(d, "overshoot: %ld\n", buf - end);
@@ -986,21 +883,15 @@ vive_controller_decode_watchmanv2(struct vive_controller_device *d,
  * Decodes multiplexed Wireless Receiver messages.
  */
 static void
-vive_controller_decode_message(struct vive_controller_device *d,
-                               struct vive_controller_message *message)
+vive_controller_decode_message(struct vive_controller_device *d, struct vive_controller_message *message)
 {
-	d->last_ticks =
-	    (message->timestamp_hi << 24) | (message->timestamp_lo << 16);
+	d->last_ticks = (message->timestamp_hi << 24) | (message->timestamp_lo << 16);
 
 	//! @todo: Check if Vive controller on watchman2 is correctly handled
 	//! with watchman2 codepath
 	switch (d->watchman_gen) {
-	case WATCHMAN_GEN1:
-		vive_controller_decode_watchmanv1(d, message);
-		break;
-	case WATCHMAN_GEN2:
-		vive_controller_decode_watchmanv2(d, message);
-		break;
+	case WATCHMAN_GEN1: vive_controller_decode_watchmanv1(d, message); break;
+	case WATCHMAN_GEN2: vive_controller_decode_watchmanv2(d, message); break;
 	default: VIVE_ERROR(d, "Can't decode unknown watchman gen");
 	}
 }
@@ -1025,19 +916,14 @@ vive_controller_device_update(struct vive_controller_device *d)
 
 	switch (buf[0]) {
 	case VIVE_CONTROLLER_REPORT1_ID:
-		vive_controller_decode_message(
-		    d, &((struct vive_controller_report1 *)buf)->message);
+		vive_controller_decode_message(d, &((struct vive_controller_report1 *)buf)->message);
 		break;
 
 	case VIVE_CONTROLLER_REPORT2_ID:
-		vive_controller_decode_message(
-		    d, &((struct vive_controller_report2 *)buf)->message[0]);
-		vive_controller_decode_message(
-		    d, &((struct vive_controller_report2 *)buf)->message[1]);
+		vive_controller_decode_message(d, &((struct vive_controller_report2 *)buf)->message[0]);
+		vive_controller_decode_message(d, &((struct vive_controller_report2 *)buf)->message[1]);
 		break;
-	case VIVE_CONTROLLER_DISCONNECT_REPORT_ID:
-		VIVE_DEBUG(d, "Controller disconnected.");
-		break;
+	case VIVE_CONTROLLER_DISCONNECT_REPORT_ID: VIVE_DEBUG(d, "Controller disconnected."); break;
 	default: VIVE_ERROR(d, "Unknown controller message type: %u", buf[0]);
 	}
 
@@ -1117,27 +1003,23 @@ static struct xrt_binding_profile binding_profiles_vive[1] = {
     },
 };
 
-#define SET_WAND_INPUT(NAME, NAME2)                                            \
-	do {                                                                   \
-		(d->base.inputs[VIVE_CONTROLLER_INDEX_##NAME].name =           \
-		     XRT_INPUT_VIVE_##NAME2);                                  \
+#define SET_WAND_INPUT(NAME, NAME2)                                                                                    \
+	do {                                                                                                           \
+		(d->base.inputs[VIVE_CONTROLLER_INDEX_##NAME].name = XRT_INPUT_VIVE_##NAME2);                          \
 	} while (0)
 
-#define SET_INDEX_INPUT(NAME, NAME2)                                           \
-	do {                                                                   \
-		(d->base.inputs[VIVE_CONTROLLER_INDEX_##NAME].name =           \
-		     XRT_INPUT_INDEX_##NAME2);                                 \
+#define SET_INDEX_INPUT(NAME, NAME2)                                                                                   \
+	do {                                                                                                           \
+		(d->base.inputs[VIVE_CONTROLLER_INDEX_##NAME].name = XRT_INPUT_INDEX_##NAME2);                         \
 	} while (0)
 
 struct vive_controller_device *
-vive_controller_create(struct os_hid_device *controller_hid,
-                       enum watchman_gen watchman_gen,
-                       int controller_num)
+vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen watchman_gen, int controller_num)
 {
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
-	struct vive_controller_device *d = U_DEVICE_ALLOCATE(
-	    struct vive_controller_device, flags, VIVE_CONTROLLER_MAX_INDEX, 1);
+	struct vive_controller_device *d =
+	    U_DEVICE_ALLOCATE(struct vive_controller_device, flags, VIVE_CONTROLLER_MAX_INDEX, 1);
 
 	d->ll = debug_get_log_option_vive_log();
 	d->watchman_gen = WATCHMAN_GEN_UNKNOWN;
@@ -1171,23 +1053,19 @@ vive_controller_create(struct os_hid_device *controller_hid,
 	d->base.get_tracked_pose = vive_controller_device_get_tracked_pose;
 	d->base.set_output = vive_controller_device_set_output;
 
-	snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "%s %i", "Vive Controller",
-	         (int)(controller_num));
+	snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "%s %i", "Vive Controller", (int)(controller_num));
 
 	d->index = controller_num;
 
 	//! @todo: reading range report fails for powered off controller
-	if (vive_get_imu_range_report(d->controller_hid, &d->imu.gyro_range,
-	                              &d->imu.acc_range) != 0) {
+	if (vive_get_imu_range_report(d->controller_hid, &d->imu.gyro_range, &d->imu.acc_range) != 0) {
 		VIVE_ERROR(d, "Could not get watchman IMU range packet!");
 		free(d);
 		return 0;
 	}
 
-	VIVE_DEBUG(d, "Vive controller gyroscope range     %f",
-	           d->imu.gyro_range);
-	VIVE_DEBUG(d, "Vive controller accelerometer range %f",
-	           d->imu.acc_range);
+	VIVE_DEBUG(d, "Vive controller gyroscope range     %f", d->imu.gyro_range);
+	VIVE_DEBUG(d, "Vive controller accelerometer range %f", d->imu.acc_range);
 
 	// successful config parsing determines d->variant
 	char *config = vive_read_config(d->controller_hid);
@@ -1217,16 +1095,13 @@ vive_controller_create(struct os_hid_device *controller_hid,
 
 		d->base.outputs[0].name = XRT_OUTPUT_NAME_VIVE_HAPTIC;
 
-		d->base.update_inputs =
-		    vive_controller_device_update_wand_inputs;
+		d->base.update_inputs = vive_controller_device_update_wand_inputs;
 
 		d->base.binding_profiles = binding_profiles_vive;
-		d->base.num_binding_profiles =
-		    ARRAY_SIZE(binding_profiles_vive);
+		d->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_vive);
 
 		d->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
-	} else if (d->variant == CONTROLLER_INDEX_LEFT ||
-	           d->variant == CONTROLLER_INDEX_RIGHT) {
+	} else if (d->variant == CONTROLLER_INDEX_LEFT || d->variant == CONTROLLER_INDEX_RIGHT) {
 		d->base.name = XRT_DEVICE_INDEX_CONTROLLER;
 
 		SET_INDEX_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
@@ -1253,33 +1128,23 @@ vive_controller_create(struct os_hid_device *controller_hid,
 
 		d->base.outputs[0].name = XRT_OUTPUT_NAME_INDEX_HAPTIC;
 
-		d->base.update_inputs =
-		    vive_controller_device_update_index_inputs;
+		d->base.update_inputs = vive_controller_device_update_index_inputs;
 
 		d->base.get_hand_tracking = vive_controller_get_hand_tracking;
 
-		enum xrt_hand hand = d->variant == CONTROLLER_INDEX_LEFT
-		                         ? XRT_HAND_LEFT
-		                         : XRT_HAND_RIGHT;
+		enum xrt_hand hand = d->variant == CONTROLLER_INDEX_LEFT ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
 
-		u_hand_joints_init_default_set(
-		    &d->hand_tracking, hand,
-		    XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
+		u_hand_joints_init_default_set(&d->hand_tracking, hand, XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
 
 		d->base.binding_profiles = binding_profiles_index;
-		d->base.num_binding_profiles =
-		    ARRAY_SIZE(binding_profiles_index);
+		d->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_index);
 
 		if (d->variant == CONTROLLER_INDEX_LEFT) {
-			d->base.device_type =
-			    XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
-			d->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name =
-			    XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
+			d->base.device_type = XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
+			d->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
 		} else if (d->variant == CONTROLLER_INDEX_RIGHT) {
-			d->base.device_type =
-			    XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
-			d->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name =
-			    XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
+			d->base.device_type = XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
+			d->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
 		}
 	} else if (d->variant == CONTROLLER_TRACKER_GEN1) {
 		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN1;
@@ -1296,8 +1161,7 @@ vive_controller_create(struct os_hid_device *controller_hid,
 	}
 
 	if (d->controller_hid) {
-		int ret = os_thread_helper_start(&d->controller_thread,
-		                                 vive_controller_run_thread, d);
+		int ret = os_thread_helper_start(&d->controller_thread, vive_controller_run_thread, d);
 		if (ret != 0) {
 			VIVE_ERROR(d, "Failed to start mainboard thread!");
 			vive_controller_device_destroy((struct xrt_device *)d);
@@ -1308,8 +1172,7 @@ vive_controller_create(struct os_hid_device *controller_hid,
 	VIVE_DEBUG(d, "Opened vive controller!\n");
 	d->base.orientation_tracking_supported = true;
 	d->base.position_tracking_supported = false;
-	d->base.hand_tracking_supported = d->variant == CONTROLLER_INDEX_LEFT ||
-	                                  d->variant == CONTROLLER_INDEX_RIGHT;
+	d->base.hand_tracking_supported = d->variant == CONTROLLER_INDEX_LEFT || d->variant == CONTROLLER_INDEX_RIGHT;
 
 	return d;
 }

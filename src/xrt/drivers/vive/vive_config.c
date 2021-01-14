@@ -25,14 +25,10 @@
 #define JSON_DOUBLE(a, b, c) u_json_get_double(u_json_get(a, b), c)
 #define JSON_VEC3(a, b, c) u_json_get_vec3_array(u_json_get(a, b), c)
 #define JSON_MATRIX_3X3(a, b, c) u_json_get_matrix_3x3(u_json_get(a, b), c)
-#define JSON_STRING(a, b, c)                                                   \
-	u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
+#define JSON_STRING(a, b, c) u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
 
 static void
-_get_color_coeffs(struct u_vive_values *values,
-                  const cJSON *coeffs,
-                  uint8_t eye,
-                  uint8_t channel)
+_get_color_coeffs(struct u_vive_values *values, const cJSON *coeffs, uint8_t eye, uint8_t channel)
 {
 	// this is 4 on index, all values populated
 	// assert(coeffs->length == 8);
@@ -50,20 +46,15 @@ _get_color_coeffs(struct u_vive_values *values,
 }
 
 static void
-_get_color_coeffs_lookup(struct u_vive_values *values,
-                         const cJSON *eye_json,
-                         const char *name,
-                         uint8_t eye,
-                         uint8_t channel)
+_get_color_coeffs_lookup(
+    struct u_vive_values *values, const cJSON *eye_json, const char *name, uint8_t eye, uint8_t channel)
 {
-	const cJSON *distortion =
-	    cJSON_GetObjectItemCaseSensitive(eye_json, name);
+	const cJSON *distortion = cJSON_GetObjectItemCaseSensitive(eye_json, name);
 	if (distortion == NULL) {
 		return;
 	}
 
-	const cJSON *coeffs =
-	    cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
+	const cJSON *coeffs = cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
 	if (coeffs == NULL) {
 		return;
 	}
@@ -83,9 +74,7 @@ _get_pose_from_pos_x_z(const cJSON *obj, struct xrt_pose *pose)
 }
 
 static void
-_get_distortion_properties(struct vive_device *d,
-                           const cJSON *eye_transform_json,
-                           uint8_t eye)
+_get_distortion_properties(struct vive_device *d, const cJSON *eye_transform_json, uint8_t eye)
 {
 	const cJSON *eye_json = cJSON_GetArrayItem(eye_transform_json, eye);
 	if (eye_json == NULL) {
@@ -103,8 +92,7 @@ _get_distortion_properties(struct vive_device *d,
 	JSON_FLOAT(eye_json, "undistort_r2_cutoff", &d->distortion[eye].undistort_r2_cutoff);
 	// clang-format on
 
-	const cJSON *distortion =
-	    cJSON_GetObjectItemCaseSensitive(eye_json, "distortion");
+	const cJSON *distortion = cJSON_GetObjectItemCaseSensitive(eye_json, "distortion");
 	if (distortion != NULL) {
 		// TODO: store center per color
 		// clang-format off
@@ -113,34 +101,27 @@ _get_distortion_properties(struct vive_device *d,
 		// clang-format on
 
 		// green
-		const cJSON *coeffs =
-		    cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
+		const cJSON *coeffs = cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
 		if (coeffs != NULL) {
 			_get_color_coeffs(&d->distortion[eye], coeffs, eye, 1);
 		}
 	}
 
-	_get_color_coeffs_lookup(&d->distortion[eye], eye_json,
-	                         "distortion_red", eye, 0);
-	_get_color_coeffs_lookup(&d->distortion[eye], eye_json,
-	                         "distortion_blue", eye, 2);
+	_get_color_coeffs_lookup(&d->distortion[eye], eye_json, "distortion_red", eye, 0);
+	_get_color_coeffs_lookup(&d->distortion[eye], eye_json, "distortion_blue", eye, 2);
 }
 
 static void
 _get_lighthouse(struct vive_device *d, const cJSON *json)
 {
-	const cJSON *lh =
-	    cJSON_GetObjectItemCaseSensitive(json, "lighthouse_config");
+	const cJSON *lh = cJSON_GetObjectItemCaseSensitive(json, "lighthouse_config");
 	if (lh == NULL) {
 		return;
 	}
 
-	const cJSON *json_map =
-	    cJSON_GetObjectItemCaseSensitive(lh, "channelMap");
-	const cJSON *json_normals =
-	    cJSON_GetObjectItemCaseSensitive(lh, "modelNormals");
-	const cJSON *json_points =
-	    cJSON_GetObjectItemCaseSensitive(lh, "modelPoints");
+	const cJSON *json_map = cJSON_GetObjectItemCaseSensitive(lh, "channelMap");
+	const cJSON *json_normals = cJSON_GetObjectItemCaseSensitive(lh, "modelNormals");
+	const cJSON *json_points = cJSON_GetObjectItemCaseSensitive(lh, "modelPoints");
 
 	if (json_map == NULL || json_normals == NULL || json_points == NULL) {
 		return;
@@ -150,8 +131,7 @@ _get_lighthouse(struct vive_device *d, const cJSON *json)
 	size_t normals_size = cJSON_GetArraySize(json_normals);
 	size_t points_size = cJSON_GetArraySize(json_points);
 
-	if (map_size != normals_size || normals_size != points_size ||
-	    map_size <= 0) {
+	if (map_size != normals_size || normals_size != points_size || map_size <= 0) {
 		return;
 	}
 
@@ -200,18 +180,15 @@ _get_lighthouse(struct vive_device *d, const cJSON *json)
 		struct xrt_vec3 point = d->lh.sensors[i].pos;
 		struct xrt_vec3 normal = d->lh.sensors[i].normal;
 
-		math_quat_rotate_vec3(&trackref_to_imu.orientation, &normal,
-		                      &d->lh.sensors[i].normal);
-		math_pose_transform_point(&trackref_to_imu, &point,
-		                          &d->lh.sensors[i].pos);
+		math_quat_rotate_vec3(&trackref_to_imu.orientation, &normal, &d->lh.sensors[i].normal);
+		math_pose_transform_point(&trackref_to_imu, &point, &d->lh.sensors[i].pos);
 	}
 }
 
 static void
 _print_vec3(const char *title, struct xrt_vec3 *vec)
 {
-	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y,
-	        (double)vec->z);
+	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y, (double)vec->z);
 }
 
 bool
@@ -233,20 +210,17 @@ vive_config_parse(struct vive_device *d, char *json_string)
 		JSON_VEC3(json, "gyro_scale", &d->imu.gyro_scale);
 		break;
 	case VIVE_VARIANT_PRO: {
-		const cJSON *imu =
-		    cJSON_GetObjectItemCaseSensitive(json, "imu");
+		const cJSON *imu = cJSON_GetObjectItemCaseSensitive(json, "imu");
 		JSON_VEC3(imu, "acc_bias", &d->imu.acc_bias);
 		JSON_VEC3(imu, "acc_scale", &d->imu.acc_scale);
 		JSON_VEC3(imu, "gyro_bias", &d->imu.gyro_bias);
 		JSON_VEC3(imu, "gyro_scale", &d->imu.gyro_scale);
 	} break;
 	case VIVE_VARIANT_INDEX: {
-		const cJSON *head =
-		    cJSON_GetObjectItemCaseSensitive(json, "head");
+		const cJSON *head = cJSON_GetObjectItemCaseSensitive(json, "head");
 		_get_pose_from_pos_x_z(head, &d->display.trackref);
 
-		const cJSON *imu =
-		    cJSON_GetObjectItemCaseSensitive(json, "imu");
+		const cJSON *imu = cJSON_GetObjectItemCaseSensitive(json, "imu");
 		_get_pose_from_pos_x_z(imu, &d->imu.trackref);
 
 		JSON_VEC3(imu, "acc_bias", &d->imu.acc_bias);
@@ -259,8 +233,7 @@ vive_config_parse(struct vive_device *d, char *json_string)
 		struct xrt_pose imu_to_head;
 
 		math_pose_invert(&d->display.trackref, &trackref_to_head);
-		math_pose_transform(&trackref_to_head, &d->imu.trackref,
-		                    &imu_to_head);
+		math_pose_transform(&trackref_to_head, &d->imu.trackref, &imu_to_head);
 
 		d->display.imuref = imu_to_head;
 	} break;
@@ -270,37 +243,27 @@ vive_config_parse(struct vive_device *d, char *json_string)
 	JSON_STRING(json, "model_number", d->firmware.model_number);
 
 	if (d->variant != VIVE_VARIANT_INDEX) {
-		JSON_STRING(json, "mb_serial_number",
-		            d->firmware.mb_serial_number);
+		JSON_STRING(json, "mb_serial_number", d->firmware.mb_serial_number);
 	}
 	if (d->variant == VIVE_VARIANT_VIVE) {
-		JSON_DOUBLE(json, "lens_separation",
-		            &d->display.lens_separation);
+		JSON_DOUBLE(json, "lens_separation", &d->display.lens_separation);
 	}
 
-	JSON_STRING(json, "device_serial_number",
-	            d->firmware.device_serial_number);
+	JSON_STRING(json, "device_serial_number", d->firmware.device_serial_number);
 
-	const cJSON *device_json =
-	    cJSON_GetObjectItemCaseSensitive(json, "device");
+	const cJSON *device_json = cJSON_GetObjectItemCaseSensitive(json, "device");
 	if (device_json) {
 		if (d->variant != VIVE_VARIANT_INDEX) {
-			JSON_DOUBLE(device_json, "persistence",
-			            &d->display.persistence);
-			JSON_FLOAT(device_json, "physical_aspect_x_over_y",
-			           &d->distortion[0].aspect_x_over_y);
+			JSON_DOUBLE(device_json, "persistence", &d->display.persistence);
+			JSON_FLOAT(device_json, "physical_aspect_x_over_y", &d->distortion[0].aspect_x_over_y);
 
-			d->distortion[1].aspect_x_over_y =
-			    d->distortion[0].aspect_x_over_y;
+			d->distortion[1].aspect_x_over_y = d->distortion[0].aspect_x_over_y;
 		}
-		JSON_INT(device_json, "eye_target_height_in_pixels",
-		         &d->display.eye_target_height_in_pixels);
-		JSON_INT(device_json, "eye_target_width_in_pixels",
-		         &d->display.eye_target_width_in_pixels);
+		JSON_INT(device_json, "eye_target_height_in_pixels", &d->display.eye_target_height_in_pixels);
+		JSON_INT(device_json, "eye_target_width_in_pixels", &d->display.eye_target_width_in_pixels);
 	}
 
-	const cJSON *eye_transform_json =
-	    cJSON_GetObjectItemCaseSensitive(json, "tracking_to_eye_transform");
+	const cJSON *eye_transform_json = cJSON_GetObjectItemCaseSensitive(json, "tracking_to_eye_transform");
 	if (eye_transform_json) {
 		for (uint8_t eye = 0; eye < 2; eye++) {
 			_get_distortion_properties(d, eye_transform_json, eye);
@@ -339,8 +302,7 @@ vive_config_parse(struct vive_device *d, char *json_string)
 }
 
 bool
-vive_config_parse_controller(struct vive_controller_device *d,
-                             char *json_string)
+vive_config_parse_controller(struct vive_controller_device *d, char *json_string)
 {
 	VIVE_DEBUG(d, "JSON config:\n%s", json_string);
 
@@ -369,8 +331,7 @@ vive_config_parse_controller(struct vive_controller_device *d,
 	} else if (strcmp(d->firmware.model_number, "Vive Tracker PVT") == 0) {
 		d->variant = CONTROLLER_TRACKER_GEN1;
 		VIVE_DEBUG(d, "Found Gen 1 tracker.");
-	} else if (strcmp(d->firmware.model_number, "VIVE Tracker Pro MV") ==
-	           0) {
+	} else if (strcmp(d->firmware.model_number, "VIVE Tracker Pro MV") == 0) {
 		d->variant = CONTROLLER_TRACKER_GEN2;
 		VIVE_DEBUG(d, "Found Gen 2 tracker.");
 	} else {
@@ -384,8 +345,7 @@ vive_config_parse_controller(struct vive_controller_device *d,
 		JSON_VEC3(json, "acc_scale", &d->imu.acc_scale);
 		JSON_VEC3(json, "gyro_bias", &d->imu.gyro_bias);
 		JSON_VEC3(json, "gyro_scale", &d->imu.gyro_scale);
-		JSON_STRING(json, "mb_serial_number",
-		            d->firmware.mb_serial_number);
+		JSON_STRING(json, "mb_serial_number", d->firmware.mb_serial_number);
 	} break;
 	case CONTROLLER_INDEX_LEFT:
 	case CONTROLLER_INDEX_RIGHT:
@@ -403,8 +363,7 @@ vive_config_parse_controller(struct vive_controller_device *d,
 	default: VIVE_ERROR(d, "Unknown Vive watchman variant."); return false;
 	}
 
-	JSON_STRING(json, "device_serial_number",
-	            d->firmware.device_serial_number);
+	JSON_STRING(json, "device_serial_number", d->firmware.device_serial_number);
 
 	cJSON_Delete(json);
 

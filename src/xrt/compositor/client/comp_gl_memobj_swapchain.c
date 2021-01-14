@@ -79,8 +79,7 @@ client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
 	ogl_texture_target_for_swapchain_info(info, &tex_target, &binding_enum);
 	struct xrt_swapchain *native_xsc = &xscn->base;
 
-	struct client_gl_memobj_swapchain *sc =
-	    U_TYPED_CALLOC(struct client_gl_memobj_swapchain);
+	struct client_gl_memobj_swapchain *sc = U_TYPED_CALLOC(struct client_gl_memobj_swapchain);
 	struct xrt_swapchain_gl *xscgl = &sc->base.base;
 	struct xrt_swapchain *client_xsc = &xscgl->base;
 	client_xsc->destroy = client_gl_memobj_swapchain_destroy;
@@ -97,25 +96,19 @@ client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
 	glCreateMemoryObjectsEXT(native_xsc->num_images, &sc->memory[0]);
 	for (uint32_t i = 0; i < native_xsc->num_images; i++) {
 		GLint dedicated = GL_TRUE;
-		glMemoryObjectParameterivEXT(
-		    sc->memory[i], GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
-		glImportMemoryFdEXT(sc->memory[i], xscn->images[i].size,
-		                    GL_HANDLE_TYPE_OPAQUE_FD_EXT,
+		glMemoryObjectParameterivEXT(sc->memory[i], GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
+		glImportMemoryFdEXT(sc->memory[i], xscn->images[i].size, GL_HANDLE_TYPE_OPAQUE_FD_EXT,
 		                    xscn->images[i].handle);
 
 		// We have consumed this now, make sure it's not freed again.
 		xscn->images[i].handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
 
 		if (info->array_size == 1) {
-			glTextureStorageMem2DEXT(
-			    xscgl->images[i], info->mip_count,
-			    (GLuint)info->format, info->width, info->height,
-			    sc->memory[i], 0);
+			glTextureStorageMem2DEXT(xscgl->images[i], info->mip_count, (GLuint)info->format, info->width,
+			                         info->height, sc->memory[i], 0);
 		} else {
-			glTextureStorageMem3DEXT(
-			    xscgl->images[i], info->mip_count,
-			    (GLuint)info->format, info->width, info->height,
-			    info->array_size, sc->memory[i], 0);
+			glTextureStorageMem3DEXT(xscgl->images[i], info->mip_count, (GLuint)info->format, info->width,
+			                         info->height, info->array_size, sc->memory[i], 0);
 		}
 	}
 

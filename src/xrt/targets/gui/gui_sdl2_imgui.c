@@ -84,8 +84,7 @@ gui_sdl2_imgui_loop(struct sdl2_program *p)
 				p->base.stopped = true;
 			}
 
-			if (event.type == SDL_WINDOWEVENT &&
-			    event.window.event == SDL_WINDOWEVENT_CLOSE &&
+			if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE &&
 			    event.window.windowID == SDL_GetWindowID(p->win)) {
 				p->base.stopped = true;
 			}
@@ -110,8 +109,7 @@ gui_sdl2_imgui_loop(struct sdl2_program *p)
 		igRender();
 
 		// Clear the background.
-		glViewport(0, 0, (int)io->DisplaySize.x,
-		           (int)io->DisplaySize.y);
+		glViewport(0, 0, (int)io->DisplaySize.x, (int)io->DisplaySize.y);
 		glClearColor(gui.clear.r, gui.clear.g, gui.clear.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 

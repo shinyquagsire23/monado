@@ -20,10 +20,9 @@ extern "C" {
  * save/restore for creation/use of an OpenGL texture from the given info.
  */
 void
-ogl_texture_target_for_swapchain_info(
-    const struct xrt_swapchain_create_info *info,
-    uint32_t *out_tex_target,
-    uint32_t *out_tex_param_name);
+ogl_texture_target_for_swapchain_info(const struct xrt_swapchain_create_info *info,
+                                      uint32_t *out_tex_target,
+                                      uint32_t *out_tex_param_name);
 
 #ifdef __cplusplus
 }

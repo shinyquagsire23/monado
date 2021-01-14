@@ -33,9 +33,7 @@ struct m_permutator
  * been zero initialised.
  */
 bool
-m_permutator_step(struct m_permutator *mp,
-                  uint32_t *out_elements,
-                  uint32_t num_elements);
+m_permutator_step(struct m_permutator *mp, uint32_t *out_elements, uint32_t num_elements);
 
 void
 m_permutator_reset(struct m_permutator *mp);

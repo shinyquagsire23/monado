@@ -58,8 +58,7 @@ struct u_device_simple_info
  * @ingroup aux_util
  */
 bool
-u_device_setup_split_side_by_side(struct xrt_device *xdev,
-                                  const struct u_device_simple_info *info);
+u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device_simple_info *info);
 
 /*!
  * Dump the device config to stderr.
@@ -67,13 +66,10 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev,
  * @ingroup aux_util
  */
 void
-u_device_dump_config(struct xrt_device *xdev,
-                     const char *prefix,
-                     const char *prod);
+u_device_dump_config(struct xrt_device *xdev, const char *prefix, const char *prod);
 
-#define U_DEVICE_ALLOCATE(type, flags, num_inputs, num_outputs)                \
-	((type *)u_device_allocate(flags, sizeof(type), num_inputs,            \
-	                           num_outputs))
+#define U_DEVICE_ALLOCATE(type, flags, num_inputs, num_outputs)                                                        \
+	((type *)u_device_allocate(flags, sizeof(type), num_inputs, num_outputs))
 
 
 /*!
@@ -85,10 +81,7 @@ u_device_dump_config(struct xrt_device *xdev,
  * @ingroup aux_util
  */
 void *
-u_device_allocate(enum u_device_alloc_flags flags,
-                  size_t size,
-                  size_t num_inputs,
-                  size_t num_outputs);
+u_device_allocate(enum u_device_alloc_flags flags, size_t size, size_t num_inputs, size_t num_outputs);
 
 /*!
  * Helper function to free a device and any data hanging of it.
@@ -107,11 +100,7 @@ u_device_free(struct xrt_device *xdev);
  * @ingroup aux_util
  */
 void
-u_device_assign_xdev_roles(struct xrt_device **xdevs,
-                           size_t num_xdevs,
-                           int *head,
-                           int *left,
-                           int *right);
+u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t num_xdevs, int *head, int *left, int *right);
 
 /*!
  * Helper function to assign head, left hand and right hand roles.

@@ -32,9 +32,7 @@ public:
 	RenderUVToDisplayUV(const Vector2 &inputUV);
 
 	Vector2
-	SolveDisplayUVToRenderUV(const Vector2 &inputUV,
-	                         Vector2 const &initialGuess,
-	                         int iterations);
+	SolveDisplayUVToRenderUV(const Vector2 &inputUV, Vector2 const &initialGuess, int iterations);
 
 	Vector2
 	DisplayUVToRenderUVPreviousSeed(Vector2 inputUV);
@@ -66,29 +64,23 @@ public:
 	void
 	UpdateClipToWorld(Matrix4x4 eyeRotationMatrix)
 	{
-		Matrix4x4 eyeToWorld =
-		    Matrix4x4::Translate(eyePosition) * eyeRotationMatrix;
+		Matrix4x4 eyeToWorld = Matrix4x4::Translate(eyePosition) * eyeRotationMatrix;
 		eyeToWorld.m02 *= -1;
 		eyeToWorld.m12 *= -1;
 		eyeToWorld.m22 *= -1;
-		clipToWorld =
-		    eyeToWorld * cameraProjection.ComposeProjection().Inverse();
+		clipToWorld = eyeToWorld * cameraProjection.ComposeProjection().Inverse();
 	}
 
 	Vector3 eyePosition;
 
 	inline void
-	ViewportPointToRayDirection(Vector2 UV,
-	                            Vector3 cameraPosition,
-	                            Matrix4x4 clipToWorld,
-	                            Vector3 &out)
+	ViewportPointToRayDirection(Vector2 UV, Vector3 cameraPosition, Matrix4x4 clipToWorld, Vector3 &out)
 	{
 		Vector3 tmp;
 		tmp.x = UV.x - 0.5f;
 		tmp.y = UV.y - 0.5f;
 		tmp.z = 0.f;
-		Vector3 dir =
-		    clipToWorld.MultiplyPoint(tmp * 2.f) - cameraPosition;
+		Vector3 dir = clipToWorld.MultiplyPoint(tmp * 2.f) - cameraPosition;
 
 		float mag = dir.Magnitude();
 		out = dir / mag;
@@ -122,19 +114,13 @@ Project(Vector3 v1, Vector3 v2)
 }
 
 inline float
-intersectLineSphere(Vector3 Origin,
-                    Vector3 Direction,
-                    Vector3 spherePos,
-                    float SphereRadiusSqrd,
-                    bool frontSide = true)
+intersectLineSphere(Vector3 Origin, Vector3 Direction, Vector3 spherePos, float SphereRadiusSqrd, bool frontSide = true)
 {
 	Vector3 L = spherePos - Origin;
 	Vector3 offsetFromSphereCenterToRay = Project(L, Direction) - L;
 	return (offsetFromSphereCenterToRay.sqrMagnitude() <= SphereRadiusSqrd)
-	           ? Vector3::Dot(L, Direction) -
-	                 (sqrt(SphereRadiusSqrd -
-	                       offsetFromSphereCenterToRay.sqrMagnitude()) *
-	                  (frontSide ? 1.f : -1.f))
+	           ? Vector3::Dot(L, Direction) - (sqrt(SphereRadiusSqrd - offsetFromSphereCenterToRay.sqrMagnitude()) *
+	                                           (frontSide ? 1.f : -1.f))
 	           : -1.f;
 }
 

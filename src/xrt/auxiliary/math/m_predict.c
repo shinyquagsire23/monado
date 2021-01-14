@@ -25,10 +25,8 @@ do_orientation(const struct xrt_space_relation *rel,
 	}
 
 	struct xrt_vec3 accum = {0};
-	bool valid_orientation =
-	    (flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
-	bool valid_angular_velocity =
-	    (flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0;
+	bool valid_orientation = (flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
+	bool valid_angular_velocity = (flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0;
 
 	if (valid_angular_velocity) {
 		// angular velocity needs to be in body space for prediction
@@ -37,9 +35,7 @@ do_orientation(const struct xrt_space_relation *rel,
 		struct xrt_quat orientation_inv;
 		math_quat_invert(&rel->pose.orientation, &orientation_inv);
 
-		math_quat_rotate_derivative(&orientation_inv,
-		                            &rel->angular_velocity,
-		                            &ang_vel_body_space);
+		math_quat_rotate_derivative(&orientation_inv, &rel->angular_velocity, &ang_vel_body_space);
 
 		accum.x += ang_vel_body_space.x;
 		accum.y += ang_vel_body_space.y;
@@ -56,11 +52,10 @@ do_orientation(const struct xrt_space_relation *rel,
 #endif
 
 	if (valid_orientation) {
-		math_quat_integrate_velocity(
-		    &rel->pose.orientation,      // Old orientation
-		    &accum,                      // Angular velocity
-		    delta_s,                     // Delta in seconds
-		    &out_rel->pose.orientation); // Result
+		math_quat_integrate_velocity(&rel->pose.orientation,      // Old orientation
+		                             &accum,                      // Angular velocity
+		                             delta_s,                     // Delta in seconds
+		                             &out_rel->pose.orientation); // Result
 	}
 
 	// We use everything we integrated in as the new angular_velocity.
@@ -68,8 +63,7 @@ do_orientation(const struct xrt_space_relation *rel,
 		// angular velocity is returned in base space.
 		// use the predicted orientation for this calculation.
 		struct xrt_vec3 predicted_ang_vel_base_space;
-		math_quat_rotate_derivative(&out_rel->pose.orientation, &accum,
-		                            &predicted_ang_vel_base_space);
+		math_quat_rotate_derivative(&out_rel->pose.orientation, &accum, &predicted_ang_vel_base_space);
 
 		out_rel->angular_velocity = predicted_ang_vel_base_space;
 	}
@@ -88,10 +82,8 @@ do_position(const struct xrt_space_relation *rel,
 	}
 
 	struct xrt_vec3 accum = {0};
-	bool valid_position =
-	    (flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0;
-	bool valid_linear_velocity =
-	    (flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) != 0;
+	bool valid_position = (flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0;
+	bool valid_linear_velocity = (flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) != 0;
 
 	if (valid_linear_velocity) {
 		accum.x += rel->linear_velocity.x;
@@ -100,8 +92,7 @@ do_position(const struct xrt_space_relation *rel,
 	}
 
 	if (valid_position) {
-		out_rel->pose.position = m_vec3_add(
-		    rel->pose.position, m_vec3_mul_scalar(accum, delta_s));
+		out_rel->pose.position = m_vec3_add(rel->pose.position, m_vec3_mul_scalar(accum, delta_s));
 	}
 
 	// We use the new linear velocity with the acceleration integrated.
@@ -111,9 +102,7 @@ do_position(const struct xrt_space_relation *rel,
 }
 
 void
-m_predict_relation(const struct xrt_space_relation *rel,
-                   double delta_s,
-                   struct xrt_space_relation *out_rel)
+m_predict_relation(const struct xrt_space_relation *rel, double delta_s, struct xrt_space_relation *out_rel)
 {
 	enum xrt_space_relation_flags flags = rel->relation_flags;
 

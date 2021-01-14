@@ -53,9 +53,7 @@ const ImVec2 zero_dims = {0, 0};
 
 #ifdef XRT_BUILD_DRIVER_REMOTE
 static void
-handle_draggable_vec3_f32(const char *name,
-                          struct xrt_vec3 *v,
-                          const struct xrt_vec3 *reset)
+handle_draggable_vec3_f32(const char *name, struct xrt_vec3 *v, const struct xrt_vec3 *reset)
 {
 	float min = -256.0f;
 	float max = 256.0f;
@@ -72,9 +70,7 @@ handle_draggable_vec3_f32(const char *name,
 }
 
 static void
-handle_draggable_quat(const char *name,
-                      struct xrt_quat *q,
-                      const struct xrt_quat *reset)
+handle_draggable_quat(const char *name, struct xrt_quat *q, const struct xrt_quat *reset)
 {
 	float min = -1.0f;
 	float max = 1.0f;
@@ -103,8 +99,7 @@ static bool
 handle_downable_button(const char *name)
 {
 	igButton(name, zero_dims);
-	return igIsItemHovered(ImGuiHoveredFlags_RectOnly) &&
-	       igIsMouseDown(ImGuiMouseButton_Left);
+	return igIsItemHovered(ImGuiHoveredFlags_RectOnly) && igIsMouseDown(ImGuiMouseButton_Left);
 }
 
 static void
@@ -197,55 +192,47 @@ render_cheat_menu(struct gui_remote *gr, struct gui_program *p)
 		    "d->left.angular_velocity.x = %ff;\n"
 		    "d->left.angular_velocity.y = %ff;\n"
 		    "d->left.angular_velocity.z = %ff;\n",
-		    d->left.pose.position.x, d->left.pose.position.y,
-		    d->left.pose.position.z, d->left.pose.orientation.x,
-		    d->left.pose.orientation.y, d->left.pose.orientation.z,
-		    d->left.pose.orientation.w, d->left.linear_velocity.x,
-		    d->left.linear_velocity.y, d->left.linear_velocity.z,
-		    d->left.angular_velocity.x, d->left.angular_velocity.y,
+		    d->left.pose.position.x, d->left.pose.position.y, d->left.pose.position.z,
+		    d->left.pose.orientation.x, d->left.pose.orientation.y, d->left.pose.orientation.z,
+		    d->left.pose.orientation.w, d->left.linear_velocity.x, d->left.linear_velocity.y,
+		    d->left.linear_velocity.z, d->left.angular_velocity.x, d->left.angular_velocity.y,
 		    d->left.angular_velocity.z);
 	}
 }
 
-#define POSE(prefix)                                                           \
-	do {                                                                   \
-		handle_draggable_vec3_f32(#prefix ".pose.position",            \
-		                          &d->prefix.pose.position,            \
-		                          &r->prefix.pose.position);           \
-		handle_draggable_quat(#prefix ".pose.orientation",             \
-		                      &d->prefix.pose.orientation,             \
-		                      &r->prefix.pose.orientation);            \
+#define POSE(prefix)                                                                                                   \
+	do {                                                                                                           \
+		handle_draggable_vec3_f32(#prefix ".pose.position", &d->prefix.pose.position,                          \
+		                          &r->prefix.pose.position);                                                   \
+		handle_draggable_quat(#prefix ".pose.orientation", &d->prefix.pose.orientation,                        \
+		                      &r->prefix.pose.orientation);                                                    \
 	} while (false)
 
-#define LIN_ANG(prefix)                                                        \
-	do {                                                                   \
-		handle_draggable_vec3_f32(#prefix ".linear_velocity",          \
-		                          &d->prefix.linear_velocity,          \
-		                          &r->prefix.linear_velocity);         \
-		handle_draggable_vec3_f32(#prefix ".angular_velocity",         \
-		                          &d->prefix.angular_velocity,         \
-		                          &r->prefix.angular_velocity);        \
+#define LIN_ANG(prefix)                                                                                                \
+	do {                                                                                                           \
+		handle_draggable_vec3_f32(#prefix ".linear_velocity", &d->prefix.linear_velocity,                      \
+		                          &r->prefix.linear_velocity);                                                 \
+		handle_draggable_vec3_f32(#prefix ".angular_velocity", &d->prefix.angular_velocity,                    \
+		                          &r->prefix.angular_velocity);                                                \
 	} while (false)
 
-#define BUTTONS(prefix)                                                        \
-	do {                                                                   \
-		d->prefix.select = handle_downable_button("Select");           \
-		igSameLine(0, 3);                                              \
-		d->prefix.menu = handle_downable_button("Menu");               \
-		igSameLine(0, 3);                                              \
-		igCheckbox("Active", &d->prefix.active);                       \
+#define BUTTONS(prefix)                                                                                                \
+	do {                                                                                                           \
+		d->prefix.select = handle_downable_button("Select");                                                   \
+		igSameLine(0, 3);                                                                                      \
+		d->prefix.menu = handle_downable_button("Menu");                                                       \
+		igSameLine(0, 3);                                                                                      \
+		igCheckbox("Active", &d->prefix.active);                                                               \
 	} while (false)
 
-#define CURL(prefix, name, index)                                              \
-	igDragFloat(#prefix "." #name, &d->prefix.hand_curl[index], 0.01, 0.0, \
-	            1.0, "%f", 0);
-#define HAND(prefix)                                                           \
-	do {                                                                   \
-		CURL(prefix, little, 0);                                       \
-		CURL(prefix, ring, 1);                                         \
-		CURL(prefix, middle, 2);                                       \
-		CURL(prefix, index, 3);                                        \
-		CURL(prefix, thumb, 4);                                        \
+#define CURL(prefix, name, index) igDragFloat(#prefix "." #name, &d->prefix.hand_curl[index], 0.01, 0.0, 1.0, "%f", 0);
+#define HAND(prefix)                                                                                                   \
+	do {                                                                                                           \
+		CURL(prefix, little, 0);                                                                               \
+		CURL(prefix, ring, 1);                                                                                 \
+		CURL(prefix, middle, 2);                                                                               \
+		CURL(prefix, index, 3);                                                                                \
+		CURL(prefix, thumb, 4);                                                                                \
 	} while (false)
 
 static void

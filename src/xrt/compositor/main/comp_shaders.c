@@ -40,10 +40,7 @@
  */
 
 static VkResult
-shader_load(struct vk_bundle *vk,
-            const uint32_t *code,
-            size_t size,
-            VkShaderModule *out_module)
+shader_load(struct vk_bundle *vk, const uint32_t *code, size_t size, VkShaderModule *out_module)
 
 {
 	VkResult ret;
@@ -60,8 +57,7 @@ shader_load(struct vk_bundle *vk,
 	                               NULL,       //
 	                               &module);   //
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateShaderModule failed: %s",
-		         vk_result_string(ret));
+		VK_ERROR(vk, "vkCreateShaderModule failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
@@ -70,13 +66,13 @@ shader_load(struct vk_bundle *vk,
 	return VK_SUCCESS;
 }
 
-#define C(c)                                                                   \
-	do {                                                                   \
-		VkResult ret = c;                                              \
-		if (ret != VK_SUCCESS) {                                       \
-			comp_shaders_close(vk, s);                             \
-			return false;                                          \
-		}                                                              \
+#define C(c)                                                                                                           \
+	do {                                                                                                           \
+		VkResult ret = c;                                                                                      \
+		if (ret != VK_SUCCESS) {                                                                               \
+			comp_shaders_close(vk, s);                                                                     \
+			return false;                                                                                  \
+		}                                                                                                      \
 	} while (false)
 
 bool
@@ -123,10 +119,10 @@ comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s)
 	return true;
 }
 
-#define D(shader)                                                              \
-	if (s->shader != VK_NULL_HANDLE) {                                     \
-		vk->vkDestroyShaderModule(vk->device, s->shader, NULL);        \
-		s->shader = VK_NULL_HANDLE;                                    \
+#define D(shader)                                                                                                      \
+	if (s->shader != VK_NULL_HANDLE) {                                                                             \
+		vk->vkDestroyShaderModule(vk->device, s->shader, NULL);                                                \
+		s->shader = VK_NULL_HANDLE;                                                                            \
 	}
 
 void

@@ -32,9 +32,8 @@ oxr_vk_get_instance_exts(struct oxr_logger *log,
 {
 	size_t length = strlen(xrt_gfx_vk_instance_extensions) + 1;
 
-	OXR_TWO_CALL_HELPER(log, namesCapacityInput, namesCountOutput,
-	                    namesString, length, xrt_gfx_vk_instance_extensions,
-	                    XR_SUCCESS);
+	OXR_TWO_CALL_HELPER(log, namesCapacityInput, namesCountOutput, namesString, length,
+	                    xrt_gfx_vk_instance_extensions, XR_SUCCESS);
 }
 
 XrResult
@@ -46,9 +45,8 @@ oxr_vk_get_device_exts(struct oxr_logger *log,
 {
 	size_t length = strlen(xrt_gfx_vk_device_extensions) + 1;
 
-	OXR_TWO_CALL_HELPER(log, namesCapacityInput, namesCountOutput,
-	                    namesString, length, xrt_gfx_vk_device_extensions,
-	                    XR_SUCCESS);
+	OXR_TWO_CALL_HELPER(log, namesCapacityInput, namesCountOutput, namesString, length,
+	                    xrt_gfx_vk_device_extensions, XR_SUCCESS);
 }
 
 XrResult
@@ -59,10 +57,8 @@ oxr_vk_get_requirements(struct oxr_logger *log,
 	struct xrt_api_requirements ver;
 
 	xrt_gfx_vk_get_versions(&ver);
-	graphicsRequirements->minApiVersionSupported =
-	    XR_MAKE_VERSION(ver.min_major, ver.min_minor, ver.min_patch);
-	graphicsRequirements->maxApiVersionSupported =
-	    XR_MAKE_VERSION(ver.max_major, ver.max_minor, ver.max_patch);
+	graphicsRequirements->minApiVersionSupported = XR_MAKE_VERSION(ver.min_major, ver.min_minor, ver.min_patch);
+	graphicsRequirements->maxApiVersionSupported = XR_MAKE_VERSION(ver.max_major, ver.max_minor, ver.max_patch);
 
 	sys->gotten_requirements = true;
 
@@ -83,10 +79,8 @@ static const char *required_vk_instance_extensions[] = {
 // This should match the list in comp_compositor, except it shouldn't include
 // VK_KHR_SWAPCHAIN_EXTENSION_NAME
 static const char *required_vk_device_extensions[] = {
-    VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
+    VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,      VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,           VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
     VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
 
 // Platform version of "external_memory"
@@ -104,8 +98,7 @@ static const char *required_vk_device_extensions[] = {
 
 // Platform version of "external_fence" and "external_semaphore"
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
-    VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,     VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME,
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
     VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
@@ -140,8 +133,7 @@ find_to_add(char const *const *enabled,
 }
 
 static bool
-extend_instance_extensions(struct oxr_logger *log,
-                           VkInstanceCreateInfo *create_info)
+extend_instance_extensions(struct oxr_logger *log, VkInstanceCreateInfo *create_info)
 {
 	uint32_t num_required = ARRAY_SIZE(required_vk_instance_extensions);
 
@@ -151,8 +143,7 @@ extend_instance_extensions(struct oxr_logger *log,
 	uint32_t num_enabled = create_info->enabledExtensionCount;
 	char const *const *enabled = create_info->ppEnabledExtensionNames;
 
-	find_to_add(enabled, num_enabled, required_vk_instance_extensions,
-	            num_required, to_add, &num_to_add);
+	find_to_add(enabled, num_enabled, required_vk_instance_extensions, num_required, to_add, &num_to_add);
 
 	enum u_logging_level ll = debug_get_log_option_compositor_log();
 
@@ -187,8 +178,7 @@ extend_instance_extensions(struct oxr_logger *log,
 }
 
 static bool
-extend_device_extensions(struct oxr_logger *log,
-                         VkDeviceCreateInfo *create_info)
+extend_device_extensions(struct oxr_logger *log, VkDeviceCreateInfo *create_info)
 {
 	uint32_t num_required = ARRAY_SIZE(required_vk_device_extensions);
 
@@ -198,8 +188,7 @@ extend_device_extensions(struct oxr_logger *log,
 	uint32_t num_enabled = create_info->enabledExtensionCount;
 	char const *const *enabled = create_info->ppEnabledExtensionNames;
 
-	find_to_add(enabled, num_enabled, required_vk_device_extensions,
-	            num_required, to_add, &num_to_add);
+	find_to_add(enabled, num_enabled, required_vk_device_extensions, num_required, to_add, &num_to_add);
 
 	enum u_logging_level ll = debug_get_log_option_compositor_log();
 
@@ -241,25 +230,21 @@ oxr_vk_create_vulkan_instance(struct oxr_logger *log,
                               VkResult *vulkanResult)
 {
 
-	PFN_vkGetInstanceProcAddr GetInstanceProcAddr =
-	    createInfo->pfnGetInstanceProcAddr;
+	PFN_vkGetInstanceProcAddr GetInstanceProcAddr = createInfo->pfnGetInstanceProcAddr;
 
-	PFN_vkCreateInstance CreateInstance =
-	    (PFN_vkCreateInstance)GetInstanceProcAddr(NULL, "vkCreateInstance");
+	PFN_vkCreateInstance CreateInstance = (PFN_vkCreateInstance)GetInstanceProcAddr(NULL, "vkCreateInstance");
 	if (!CreateInstance) {
 		//! @todo: clarify in spec
 		*vulkanResult = VK_ERROR_INITIALIZATION_FAILED;
 		return XR_SUCCESS;
 	}
 
-	const VkAllocationCallbacks *vulkanAllocator =
-	    createInfo->vulkanAllocator;
+	const VkAllocationCallbacks *vulkanAllocator = createInfo->vulkanAllocator;
 
 	VkInstanceCreateInfo modified_info = *createInfo->vulkanCreateInfo;
 	bool free_list = extend_instance_extensions(log, &modified_info);
 
-	*vulkanResult =
-	    CreateInstance(&modified_info, vulkanAllocator, vulkanInstance);
+	*vulkanResult = CreateInstance(&modified_info, vulkanAllocator, vulkanInstance);
 
 	if (free_list) {
 		free((void *)modified_info.ppEnabledExtensionNames);
@@ -277,27 +262,23 @@ oxr_vk_create_vulkan_device(struct oxr_logger *log,
                             VkDevice *vulkanDevice,
                             VkResult *vulkanResult)
 {
-	PFN_vkGetInstanceProcAddr GetInstanceProcAddr =
-	    createInfo->pfnGetInstanceProcAddr;
+	PFN_vkGetInstanceProcAddr GetInstanceProcAddr = createInfo->pfnGetInstanceProcAddr;
 
 	PFN_vkCreateDevice CreateDevice =
-	    (PFN_vkCreateDevice)GetInstanceProcAddr(
-	        sys->vulkan_enable2_instance, "vkCreateDevice");
+	    (PFN_vkCreateDevice)GetInstanceProcAddr(sys->vulkan_enable2_instance, "vkCreateDevice");
 	if (!CreateDevice) {
 		//! @todo: clarify in spec
 		*vulkanResult = VK_ERROR_INITIALIZATION_FAILED;
 		return XR_SUCCESS;
 	}
 
-	const VkAllocationCallbacks *vulkanAllocator =
-	    createInfo->vulkanAllocator;
+	const VkAllocationCallbacks *vulkanAllocator = createInfo->vulkanAllocator;
 	VkPhysicalDevice physical_device = createInfo->vulkanPhysicalDevice;
 
 	VkDeviceCreateInfo modified_info = *createInfo->vulkanCreateInfo;
 	bool free_list = extend_device_extensions(log, &modified_info);
 
-	*vulkanResult = CreateDevice(physical_device, &modified_info,
-	                             vulkanAllocator, vulkanDevice);
+	*vulkanResult = CreateDevice(physical_device, &modified_info, vulkanAllocator, vulkanDevice);
 
 	if (free_list) {
 		free((void *)modified_info.ppEnabledExtensionNames);
@@ -322,63 +303,53 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 
 	vk_ret = vkEnumeratePhysicalDevices(vkInstance, &count, NULL);
 	if (vk_ret != VK_SUCCESS) {
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "Call to vkEnumeratePhysicalDevices returned %u", vk_ret);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to vkEnumeratePhysicalDevices returned %u",
+		                 vk_ret);
 	}
 	if (count == 0) {
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "Call to vkEnumeratePhysicalDevices returned zero "
-		    "VkPhysicalDevices");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Call to vkEnumeratePhysicalDevices returned zero "
+		                 "VkPhysicalDevices");
 	}
 
 	VkPhysicalDevice *phys = U_TYPED_ARRAY_CALLOC(VkPhysicalDevice, count);
 	vk_ret = vkEnumeratePhysicalDevices(vkInstance, &count, phys);
 	if (vk_ret != VK_SUCCESS) {
 		free(phys);
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "Call to vkEnumeratePhysicalDevices returned %u", vk_ret);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to vkEnumeratePhysicalDevices returned %u",
+		                 vk_ret);
 	}
 	if (count == 0) {
 		free(phys);
-		return oxr_error(
-		    log, XR_ERROR_RUNTIME_FAILURE,
-		    "Call to vkEnumeratePhysicalDevices returned zero "
-		    "VkPhysicalDevices");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Call to vkEnumeratePhysicalDevices returned zero "
+		                 "VkPhysicalDevices");
 	}
 
 	char suggested_uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
 	for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
-		sprintf(suggested_uuid_str + i * 3, "%02x ",
-		        sys->xcn->base.info.client_vk_deviceUUID[i]);
+		sprintf(suggested_uuid_str + i * 3, "%02x ", sys->xcn->base.info.client_vk_deviceUUID[i]);
 	}
 
 	enum u_logging_level ll = debug_get_log_option_compositor_log();
 	int gpu_index = -1;
 	for (uint32_t i = 0; i < count; i++) {
-		VkPhysicalDeviceIDProperties pdidp = {
-		    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
+		VkPhysicalDeviceIDProperties pdidp = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
 
-		VkPhysicalDeviceProperties2 pdp2 = {
-		    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-		    .pNext = &pdidp};
+		VkPhysicalDeviceProperties2 pdp2 = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+		                                    .pNext = &pdidp};
 
 		vkGetPhysicalDeviceProperties2(phys[i], &pdp2);
 
 		char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
 		if (ll <= U_LOGGING_DEBUG) {
 			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
-				sprintf(uuid_str + i * 3, "%02x ",
-				        pdidp.deviceUUID[i]);
+				sprintf(uuid_str + i * 3, "%02x ", pdidp.deviceUUID[i]);
 			}
 			oxr_log(log, "GPU %d: uuid %s", i, uuid_str);
 		}
 
-		if (memcmp(pdidp.deviceUUID,
-		           sys->xcn->base.info.client_vk_deviceUUID,
-		           XRT_GPU_UUID_SIZE) == 0) {
+		if (memcmp(pdidp.deviceUUID, sys->xcn->base.info.client_vk_deviceUUID, XRT_GPU_UUID_SIZE) == 0) {
 			gpu_index = i;
 			if (ll <= U_LOGGING_DEBUG) {
 				oxr_log(log,
@@ -391,9 +362,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 	}
 
 	if (gpu_index == -1) {
-		oxr_warn(
-		    log,
-		    "Did not find runtime suggested GPU, fall back to GPU 0");
+		oxr_warn(log, "Did not find runtime suggested GPU, fall back to GPU 0");
 		gpu_index = 0;
 	}
 

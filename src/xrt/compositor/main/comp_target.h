@@ -70,9 +70,7 @@ struct comp_target
 	 * Do any initialization that requires Vulkan to be loaded, you need to
 	 * call @ref create_images after calling this function.
 	 */
-	bool (*init_post_vulkan)(struct comp_target *ct,
-	                         uint32_t preferred_width,
-	                         uint32_t preferred_height);
+	bool (*init_post_vulkan)(struct comp_target *ct, uint32_t preferred_width, uint32_t preferred_height);
 
 	/*!
 	 * Create or recreate the image(s) of the target, for swapchain based
@@ -88,17 +86,12 @@ struct comp_target
 	/*!
 	 * Acquire the next image for rendering.
 	 */
-	VkResult (*acquire)(struct comp_target *ct,
-	                    VkSemaphore semaphore,
-	                    uint32_t *out_index);
+	VkResult (*acquire)(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index);
 
 	/*!
 	 * Present the image at index to the screen.
 	 */
-	VkResult (*present)(struct comp_target *ct,
-	                    VkQueue queue,
-	                    uint32_t index,
-	                    VkSemaphore semaphore);
+	VkResult (*present)(struct comp_target *ct, VkQueue queue, uint32_t index, VkSemaphore semaphore);
 
 	/*!
 	 * Flush any WSI state before rendering.
@@ -135,9 +128,7 @@ comp_target_init_pre_vulkan(struct comp_target *ct)
  * @ingroup comp_main
  */
 static inline bool
-comp_target_init_post_vulkan(struct comp_target *ct,
-                             uint32_t preferred_width,
-                             uint32_t preferred_height)
+comp_target_init_post_vulkan(struct comp_target *ct, uint32_t preferred_width, uint32_t preferred_height)
 {
 	return ct->init_post_vulkan(ct, preferred_width, preferred_height);
 }
@@ -156,8 +147,7 @@ comp_target_create_images(struct comp_target *ct,
                           VkColorSpaceKHR preferred_color_space,
                           VkPresentModeKHR present_mode)
 {
-	ct->create_images(ct, preferred_width, preferred_height,
-	                  preferred_color_format, preferred_color_space,
+	ct->create_images(ct, preferred_width, preferred_height, preferred_color_format, preferred_color_space,
 	                  present_mode);
 }
 
@@ -168,9 +158,7 @@ comp_target_create_images(struct comp_target *ct,
  * @ingroup comp_main
  */
 static inline VkResult
-comp_target_acquire(struct comp_target *ct,
-                    VkSemaphore semaphore,
-                    uint32_t *out_index)
+comp_target_acquire(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index)
 {
 	return ct->acquire(ct, semaphore, out_index);
 }
@@ -182,10 +170,7 @@ comp_target_acquire(struct comp_target *ct,
  * @ingroup comp_main
  */
 static inline VkResult
-comp_target_present(struct comp_target *ct,
-                    VkQueue queue,
-                    uint32_t index,
-                    VkSemaphore semaphore)
+comp_target_present(struct comp_target *ct, VkQueue queue, uint32_t index, VkSemaphore semaphore)
 
 {
 	return ct->present(ct, queue, index, semaphore);
