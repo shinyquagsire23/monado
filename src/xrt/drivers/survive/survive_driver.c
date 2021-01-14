@@ -41,6 +41,9 @@
 
 #include "math/m_predict.h"
 
+// typically HMD config is available at around 2 seconds after init
+#define WAIT_TIMEOUT 5.0
+
 // public documentation
 //! @todo move to vive_protocol
 #define INDEX_MIN_IPD 0.058
@@ -607,7 +610,7 @@ struct Axis axes[255] = {
 static bool
 update_axis(struct survive_device *survive,
             struct Axis *axis,
-            const struct SurviveSimpleButtonEvent *e,
+            const SurviveSimpleButtonEvent *e,
             int i,
             uint64_t now)
 {
@@ -890,17 +893,21 @@ survive_device_update_inputs(struct xrt_device *xdev)
 }
 
 static bool
-wait_for_hmd_config(SurviveSimpleContext *ctx)
+wait_for_device_config(const struct SurviveSimpleObject *sso)
 {
-	for (const SurviveSimpleObject *it =
-	         survive_simple_get_first_object(ctx);
-	     it != 0; it = survive_simple_get_next_object(ctx, it)) {
-
-		enum SurviveSimpleObject_type type =
-		    survive_simple_object_get_type(it);
-		if (type == SurviveSimpleObject_HMD && survive_config_ready(it))
-			return true;
+	// if not backed by a survive object, we will never get a config
+	if (!survive_has_obj(sso)) {
+		return false;
 	}
+
+	double start = time_ns_to_s(os_monotonic_get_ns());
+	do {
+		if (survive_config_ready(sso)) {
+			return true;
+		}
+		os_nanosleep(1000 * 1000 * 100);
+	} while (time_ns_to_s(os_monotonic_get_ns()) - start < WAIT_TIMEOUT);
+
 	return false;
 }
 
@@ -1067,7 +1074,9 @@ compute_distortion(struct xrt_device *xdev,
 }
 
 static bool
-_create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
+_create_hmd_device(struct survive_system *sys,
+                   enum VIVE_VARIANT variant,
+                   const SurviveSimpleObject *sso)
 {
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)U_DEVICE_ALLOC_HMD;
@@ -1078,7 +1087,7 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 	    U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
 	sys->hmd = survive;
 	survive->sys = sys;
-	survive->survive_obj = NULL;
+	survive->survive_obj = sso;
 	survive->variant = variant;
 
 	survive->base.name = XRT_DEVICE_GENERIC_HMD;
@@ -1089,34 +1098,6 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant)
 	survive->base.get_view_pose = survive_device_get_view_pose;
 	survive->base.tracking_origin = &sys->base;
 
-	survive_simple_start_thread(sys->ctx);
-
-	//! @todo support hotplugging for hmd and controllers, don't block
-	//! monado until hmd available'
-	while (!wait_for_hmd_config(sys->ctx)) {
-		SURVIVE_INFO(survive, "Waiting for survive HMD config parsing");
-		os_nanosleep(1000 * 1000 * 100);
-	}
-	SURVIVE_INFO(survive, "survive got HMD config");
-
-	while (!survive->survive_obj) {
-		SURVIVE_INFO(survive, "Waiting for survive HMD to be found...");
-		for (const SurviveSimpleObject *it =
-		         survive_simple_get_first_object(sys->ctx);
-		     it != 0;
-		     it = survive_simple_get_next_object(sys->ctx, it)) {
-			const char *codename = survive_simple_object_name(it);
-
-			enum SurviveSimpleObject_type type =
-			    survive_simple_object_get_type(it);
-			if (type == SurviveSimpleObject_HMD &&
-			    sys->hmd->survive_obj == NULL) {
-				SURVIVE_INFO(survive, "Found HMD: %s",
-				             codename);
-				survive->survive_obj = it;
-			}
-		}
-	}
 	SURVIVE_INFO(survive, "survive HMD present");
 
 	survive->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
@@ -1513,8 +1494,10 @@ get_variant_from_json(struct survive_system *ss, cJSON *json)
 	} else if (strcmp(model_number, "VIVE Tracker Pro MV") == 0) {
 		variant = VIVE_VARIANT_TRACKER_v2;
 		U_LOG_D("Found Gen 2 tracker.");
+	} else if (strcmp(model_number, "Utah MP") == 0) {
+		U_LOG_W("Found Utah MP (Index HMD), not a controller!");
 	} else {
-		U_LOG_E("Failed to parse controller variant");
+		U_LOG_E("Failed to parse controller variant: %s", model_number);
 	}
 
 	return variant;
@@ -1557,8 +1540,8 @@ survive_found(struct xrt_prober *xp,
 	struct survive_system *ss = U_TYPED_CALLOC(struct survive_system);
 
 	struct xrt_prober_device *dev = devices[index];
-	enum VIVE_VARIANT variant = _product_to_variant(dev->product_id);
-	U_LOG_I("survive: Assuming variant %d", variant);
+
+	survive_simple_start_thread(actx);
 
 	ss->ctx = actx;
 	ss->base.type = XRT_TRACKING_TYPE_LIGHTHOUSE;
@@ -1571,8 +1554,6 @@ survive_found(struct xrt_prober *xp,
 
 	ss->ll = debug_get_log_option_survive_log();
 
-	_create_hmd_device(ss, variant);
-
 	/* iterate over all devices, if SurviveSimpleObject_OBJECT parse config
 	 * and if controller, add it with variant from config.
 	 */
@@ -1580,14 +1561,29 @@ survive_found(struct xrt_prober *xp,
 	         survive_simple_get_first_object(ss->ctx);
 	     it != 0; it = survive_simple_get_next_object(ss->ctx, it)) {
 
+		if (!wait_for_device_config(it)) {
+			U_LOG_IFL_E(ss->ll,
+			            "Failed to get device config from survive");
+			continue;
+		}
+
+		U_LOG_IFL_D(ss->ll, "Got device config from survive");
+
 		enum SurviveSimpleObject_type type =
 		    survive_simple_object_get_type(it);
-		if (type == SurviveSimpleObject_OBJECT) {
+
+		if (type == SurviveSimpleObject_HMD) {
+			enum VIVE_VARIANT variant =
+			    _product_to_variant(dev->product_id);
+			U_LOG_I("survive HMD: Assuming variant %d", variant);
+			_create_hmd_device(ss, variant, it);
+		} else if (type == SurviveSimpleObject_OBJECT) {
 			char *json_string = survive_get_json_config(it);
 			cJSON *json = cJSON_Parse(json_string);
 			if (!cJSON_IsObject(json)) {
 				U_LOG_IFL_E(ss->ll,
 				            "Could not parse JSON data.");
+				cJSON_Delete(json);
 				continue;
 			}
 
@@ -1603,10 +1599,12 @@ survive_found(struct xrt_prober *xp,
 				break;
 			default:
 				U_LOG_IFL_D(ss->ll, "Skip non controller obj.");
+				U_LOG_IFL_T(ss->ll, "json: %s", json_string);
 				break;
 			}
-
 			cJSON_Delete(json);
+		} else {
+			U_LOG_IFL_D(ss->ll, "Skip non OBJECT obj.");
 		}
 	}
 
@@ -1614,11 +1612,16 @@ survive_found(struct xrt_prober *xp,
 	//        (void *)ss->controllers[0], (void *)ss->controllers[1]);
 
 	if (ss->ll <= U_LOGGING_DEBUG) {
-		u_device_dump_config(&ss->hmd->base, __func__, "libsurvive");
+		if (ss->hmd) {
+			u_device_dump_config(&ss->hmd->base, __func__,
+			                     "libsurvive");
+		}
 	}
 
 	int out_idx = 0;
-	out_xdevs[out_idx++] = &ss->hmd->base;
+	if (ss->hmd) {
+		out_xdevs[out_idx++] = &ss->hmd->base;
+	}
 	if (&ss->controllers[SURVIVE_LEFT_CONTROLLER]) {
 		out_xdevs[out_idx++] =
 		    &ss->controllers[SURVIVE_LEFT_CONTROLLER]->base;

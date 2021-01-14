@@ -22,10 +22,17 @@
 #pragma GCC diagnostic pop
 
 bool
+survive_has_obj(const SurviveSimpleObject *sso)
+{
+	SurviveObject *so = survive_simple_get_survive_object(sso);
+	return so != NULL;
+}
+
+bool
 survive_config_ready(const SurviveSimpleObject *sso)
 {
 	SurviveObject *so = survive_simple_get_survive_object(sso);
-	return so->conf != 0;
+	return so && so->conf != 0;
 }
 
 char *

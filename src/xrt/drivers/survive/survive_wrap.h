@@ -12,6 +12,9 @@
 #include "survive_api.h"
 
 bool
+survive_has_obj(const SurviveSimpleObject *sso);
+
+bool
 survive_config_ready(const SurviveSimpleObject *sso);
 
 char *
