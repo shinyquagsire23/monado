@@ -131,6 +131,9 @@ endif
 
 build_xcb_xrandr_direct = build_xcb and build_xlib and xcb_randr.found() and x11_xcb.found()
 
+# requires only vulkan
+build_vk_khr_display = true
+
 build_wayland = false
 if get_option('wayland').enabled() or get_option('wayland').auto()
         build_wayland = wayland.found() and wayland_protos.found() and wayland_scanner.found()

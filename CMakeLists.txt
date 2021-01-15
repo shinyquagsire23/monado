@@ -250,7 +250,9 @@ endif()
 if(WIN32)
 	set(VK_USE_PLATFORM_WIN32_KHR TRUE)
 endif()
-
+if (XRT_HAVE_VULKAN AND NOT ANDROID)
+	set(VK_USE_PLATFORM_DISPLAY_KHR TRUE)
+endif()
 
 if(NOT MSVC)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")

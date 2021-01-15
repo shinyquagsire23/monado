@@ -694,6 +694,13 @@ static const char *instance_extensions_direct_mode[] = {
 };
 #endif
 
+#ifdef VK_USE_PLATFORM_DISPLAY_KHR
+static const char *instance_extensions_vk_display[] = {
+    COMP_INSTANCE_EXTENSIONS_COMMON,
+    VK_KHR_DISPLAY_EXTENSION_NAME,
+};
+#endif
+
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 static const char *instance_extensions_android[] = {COMP_INSTANCE_EXTENSIONS_COMMON,
                                                     VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
@@ -784,6 +791,12 @@ select_instances_extensions(struct comp_compositor *c, const char ***out_exts, u
 	case WINDOW_MSWIN:
 		*out_exts = instance_extensions_windows;
 		*out_num = ARRAY_SIZE(instance_extensions_windows);
+		break;
+#endif
+#ifdef VK_USE_PLATFORM_DISPLAY_KHR
+	case WINDOW_VK_DISPLAY:
+		*out_exts = instance_extensions_vk_display;
+		*out_num = ARRAY_SIZE(instance_extensions_vk_display);
 		break;
 #endif
 	default: return VK_ERROR_INITIALIZATION_FAILED;
@@ -1106,8 +1119,8 @@ compositor_try_window(struct comp_compositor *c, struct comp_target *ct)
 static bool
 compositor_init_window_pre_vulkan(struct comp_compositor *c)
 {
-	// Nothing to do for nvidia.
-	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA) {
+	// Nothing to do for nvidia and vk_display.
+	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA || c->settings.window_type == WINDOW_VK_DISPLAY) {
 		return true;
 	}
 
@@ -1197,16 +1210,25 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 static bool
 compositor_init_window_post_vulkan(struct comp_compositor *c)
 {
-	if (c->settings.window_type != WINDOW_DIRECT_NVIDIA) {
-		return true;
+	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA) {
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
+		return compositor_try_window(c, comp_window_direct_nvidia_create(c));
+#else
+		assert(false && "NVIDIA direct mode depends on the xlib/xrandr direct mode.");
+		return false;
+#endif
 	}
 
-#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-	return compositor_try_window(c, comp_window_direct_nvidia_create(c));
+	if (c->settings.window_type == WINDOW_VK_DISPLAY) {
+#ifdef VK_USE_PLATFORM_DISPLAY_KHR
+		return compositor_try_window(c, comp_window_vk_display_create(c));
 #else
-	assert(false && "NVIDIA direct mode depends on the xlib/xrandr direct mode.");
-	return false;
+		assert(false && "VkDisplayKHR direct mode depends on VK_USE_PLATFORM_DISPLAY_KHR.");
+		return false;
 #endif
+	}
+
+	return true;
 }
 
 static bool

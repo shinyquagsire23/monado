@@ -48,6 +48,7 @@ enum window_type
 	WINDOW_DIRECT_NVIDIA,
 	WINDOW_ANDROID,
 	WINDOW_MSWIN,
+	WINDOW_VK_DISPLAY,
 };
 
 
@@ -69,6 +70,9 @@ struct comp_settings
 
 	//! display string forced by user or NULL
 	const char *nvidia_display;
+
+	//! vk display number to use when forcing vk_display
+	int vk_display;
 
 	struct
 	{

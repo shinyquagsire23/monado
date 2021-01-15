@@ -68,6 +68,14 @@ struct comp_target *
 comp_window_direct_nvidia_create(struct comp_compositor *c);
 #endif
 
+/*!
+ * Create a direct surface to an HMD on VkDisplay.
+ *
+ * @ingroup comp_main
+ * @public @memberof comp_window_direct_vk_display
+ */
+struct comp_target *
+comp_window_vk_display_create(struct comp_compositor *c);
 
 #ifdef XRT_OS_ANDROID
 

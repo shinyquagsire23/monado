@@ -119,7 +119,11 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 			main/comp_window_mswin.c
 			)
 	endif()
-
+	if (VK_USE_PLATFORM_DISPLAY_KHR)
+		list(APPEND MAIN_SOURCE_FILES
+			main/comp_window_vk_display.c
+			)
+	endif()
 
 	# generate wayland protocols
 	if(XRT_HAVE_WAYLAND)

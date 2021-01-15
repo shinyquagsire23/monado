@@ -16,6 +16,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(print_modes, "XRT_COMPOSITOR_PRINT_MODES", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_randr, "XRT_COMPOSITOR_FORCE_RANDR", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_nvidia, "XRT_COMPOSITOR_FORCE_NVIDIA", false)
 DEBUG_GET_ONCE_OPTION(nvidia_display, "XRT_COMPOSITOR_FORCE_NVIDIA_DISPLAY", NULL)
+DEBUG_GET_ONCE_NUM_OPTION(vk_display, "XRT_COMPOSITOR_FORCE_VK_DISPLAY", -1)
 DEBUG_GET_ONCE_BOOL_OPTION(force_xcb, "XRT_COMPOSITOR_FORCE_XCB", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_wayland, "XRT_COMPOSITOR_FORCE_WAYLAND", false)
 DEBUG_GET_ONCE_BOOL_OPTION(wireframe, "XRT_COMPOSITOR_WIREFRAME", false)
@@ -60,6 +61,10 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	}
 
 	s->nvidia_display = debug_get_option_nvidia_display();
+	s->vk_display = debug_get_num_option_vk_display();
+	if (s->vk_display >= 0) {
+		s->window_type = WINDOW_VK_DISPLAY;
+	}
 
 	if (debug_get_bool_option_force_randr()) {
 		s->window_type = WINDOW_DIRECT_RANDR;

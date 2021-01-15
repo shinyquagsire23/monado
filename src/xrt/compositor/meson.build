@@ -36,6 +36,10 @@ compositor_srcs = [
 
 compile_args = []
 
+if build_vk_khr_display
+	compositor_srcs += ['main/comp_window_vk_display.c']
+endif
+
 if build_xcb
 	compositor_srcs += ['main/comp_window_xcb.c']
 	compositor_deps += [xcb]

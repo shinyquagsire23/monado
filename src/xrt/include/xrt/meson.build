@@ -151,6 +151,9 @@ endif
 if build_xcb_xrandr_direct
 	vulkan_conf.set('VK_USE_PLATFORM_XLIB_XRANDR_EXT', true)
 endif
+if build_vk_khr_display
+	vulkan_conf.set('VK_USE_PLATFORM_DISPLAY_KHR', true)
+endif
 
 xrt_config_vulkan_h = configure_file(
 	output: 'xrt_config_vulkan.h',
