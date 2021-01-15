@@ -129,7 +129,8 @@ public:
 		return ret;
 	}
 
-	inline Vector3 operator*(const float &d) const
+	inline Vector3 // Until clang-format-11 is on the CI.
+	operator*(const float &d) const
 	{
 		Vector3 ret;
 		ret.x = (x * d);
@@ -322,7 +323,8 @@ public:
 		return ret;
 	}
 
-	inline Vector2 operator*(float d) const
+	inline Vector2 // Until clang-format-11 is on the CI.
+	operator*(float d) const
 	{
 		Vector2 ret;
 		ret.x = (x * d);
@@ -487,7 +489,8 @@ public:
 		                 v.z * v.z * k + c, 0.f, 0.f, 0.f, 0.f, 1.f);
 	}
 
-	inline Matrix4x4 operator*(const Matrix4x4 &_in)
+	inline Matrix4x4 // Until clang-format-11 is on the CI.
+	operator*(const Matrix4x4 &_in)
 	{
 		Matrix4x4 ret;
 		ret.m00 = (m00 * _in.m00) + (m01 * _in.m10) + (m02 * _in.m20) + (m03 * _in.m30);
@@ -895,7 +898,8 @@ public:
 		return euler;
 	}
 
-	inline Vector3 operator*(Vector3 const &vec) const
+	inline Vector3 // Until clang-format-11 is on the CI.
+	operator*(Vector3 const &vec) const
 	{
 		float num = x * 2.f;
 		float num2 = y * 2.f;
@@ -957,7 +961,8 @@ public:
 		                 1.0f - 2.0f * qx * qx - 2.0f * qy * qy, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
-	inline Quaternion operator*(const Quaternion &q) const
+	inline Quaternion // Until clang-format-11 is on the CI.
+	operator*(const Quaternion &q) const
 	{
 		return Quaternion(y * q.z - z * q.y + x * q.w + w * q.x, z * q.x - x * q.z + y * q.w + w * q.y,
 		                  x * q.y - y * q.x + z * q.w + w * q.z, w * q.w - x * q.x - y * q.y - z * q.z);
@@ -1218,12 +1223,14 @@ public:
 		return Matrix4x4::Translate(position) * rotation.ToMatrix4x4();
 	}
 
-	inline Pose operator*(Pose const &rhs) const
+	inline Pose // Until clang-format-11 is on the CI.
+	operator*(Pose const &rhs) const
 	{
 		return Pose(position + (rotation * rhs.position), rotation * rhs.rotation);
 	}
 
-	inline Pose operator*(Vector3 const &rhs) const
+	inline Pose // Until clang-format-11 is on the CI.
+	operator*(Vector3 const &rhs) const
 	{
 		return Pose(position + rotation * rhs, rotation);
 	}
