@@ -96,8 +96,8 @@ _get_distortion_properties(struct vive_device *d, const cJSON *eye_transform_jso
 	if (distortion != NULL) {
 		// TODO: store center per color
 		// clang-format off
-		JSON_FLOAT(eye_json, "center_x", &d->distortion[eye].center[0]);
-		JSON_FLOAT(eye_json, "center_y", &d->distortion[eye].center[1]);
+		JSON_FLOAT(distortion, "center_x", &d->distortion[eye].center[0]);
+		JSON_FLOAT(distortion, "center_y", &d->distortion[eye].center[1]);
 		// clang-format on
 
 		// green
