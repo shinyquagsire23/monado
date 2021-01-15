@@ -8,7 +8,7 @@
 set -e
 
 if [ ! "${CLANGFORMAT}" ]; then
-        for fn in clang-format-9 clang-format-8 clang-format-7 clang-format-6.0 clang-format; do
+        for fn in clang-format-11 clang-format-10 clang-format-9 clang-format-8 clang-format-7 clang-format-6.0 clang-format; do
                 if command -v $fn > /dev/null; then
                         CLANGFORMAT=$fn
                         break
