@@ -139,9 +139,9 @@ u_compute_distortion_vive(struct u_vive_values *values, float u, float v, struct
 
 
 	struct xrt_vec3 d_inv = {
-	    (r2 * val.coefficients[2][0] + val.coefficients[1][0]) * r2 + val.coefficients[0][0] * r2 + 1.0,
-	    (r2 * val.coefficients[2][1] + val.coefficients[1][1]) * r2 + val.coefficients[0][1] * r2 + 1.0,
-	    (r2 * val.coefficients[2][2] + val.coefficients[1][2]) * r2 + val.coefficients[0][2] * r2 + 1.0};
+	    ((r2 * val.coefficients[2][0] + val.coefficients[1][0]) * r2 + val.coefficients[0][0]) * r2 + 1.0,
+	    ((r2 * val.coefficients[2][1] + val.coefficients[1][1]) * r2 + val.coefficients[0][1]) * r2 + 1.0,
+	    ((r2 * val.coefficients[2][2] + val.coefficients[1][2]) * r2 + val.coefficients[0][2]) * r2 + 1.0};
 
 	struct xrt_vec3 d = {1.0 / d_inv.x, 1.0 / d_inv.y, 1.0 / d_inv.z};
 
