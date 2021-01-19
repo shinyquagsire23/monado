@@ -30,7 +30,6 @@ def generate_h(file, p):
 #pragma once
 
 
-// clang-format off
 
 struct ipc_connection;
 ''')
@@ -88,7 +87,6 @@ ipc_cmd_to_str(ipc_command_t id)
                 f.write("\t" + arg.get_struct_field() + ";\n")
             f.write("};\n")
 
-    f.write("\n// clang-format on\n")
     f.close()
 
 
@@ -101,7 +99,6 @@ def generate_client_c(file, p):
 #include "ipc_protocol_generated.h"
 
 
-// clang-format off
 \n''')
 
     # Loop over all of the calls.
@@ -203,7 +200,6 @@ def generate_client_c(file, p):
             f.write("\t*out_" + arg.name + " = _reply." + arg.name + ";\n")
         f.write("\n\t" + cleanup)
         f.write("\n\treturn _reply.result;\n}\n")
-    f.write("\n// clang-format off\n")
     f.close()
 
 
@@ -222,14 +218,12 @@ def generate_client_h(file, p):
 #include "client/ipc_client.h"
 
 
-// clang-format off
 
 ''')
 
     for call in p.calls:
         call.write_call_decl(f)
         f.write(";\n")
-    f.write("\n// clang-format on\n")
     f.close()
 
 
@@ -246,7 +240,6 @@ def generate_server_c(file, p):
 #include "server/ipc_server.h"
 
 
-// clang-format off
 
 #define MAX_HANDLES 16
 ''')
@@ -364,7 +357,6 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
 \t}
 }
 
-// clang-format on
 ''')
     f.close()
 
@@ -385,7 +377,6 @@ def generate_server_header(file, p):
 #include "server/ipc_server.h"
 
 
-// clang-format off
 ''')
     # This decl is constant, but we must write it here
     # because it depends on a generated enum.
@@ -403,7 +394,6 @@ def generate_server_header(file, p):
     for call in p.calls:
         call.write_handler_decl(f)
         f.write(";\n")
-    f.write("\n// clang-format on\n")
     f.close()
 
 
