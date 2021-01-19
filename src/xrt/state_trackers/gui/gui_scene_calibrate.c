@@ -254,8 +254,8 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 #ifdef XRT_HAVE_OPENCV
 	igBegin("Params", NULL, 0);
 
-	// clang-format off
-	igComboStr("Type", (int*)&cs->settings->camera_type, "Regular Mono\0Regular Stereo (Side-by-Side)\0PS4\0Leap Motion Controller\0\0", -1);
+	igComboStr("Type", (int *)&cs->settings->camera_type,
+	           "Regular Mono\0Regular Stereo (Side-by-Side)\0PS4\0Leap Motion Controller\0\0", -1);
 
 	switch (cs->settings->camera_type) {
 	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_MONO:
@@ -293,7 +293,7 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igInputInt("Collect in groups of #", &cs->params.num_collect_restart, 1, 5, 0);
 
 	igSeparator();
-	igComboStr("Board type", (int*)&cs->params.pattern, "Checkers\0Circles\0Asymetric Circles\0\0", 3);
+	igComboStr("Board type", (int *)&cs->params.pattern, "Checkers\0Circles\0Asymetric Circles\0\0", 3);
 	switch (cs->params.pattern) {
 	case T_BOARD_CHECKERS:
 		igInputInt("Checkerboard Rows", &cs->params.checkers.rows, 1, 5, 0);
@@ -310,11 +310,11 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	case T_BOARD_ASYMMETRIC_CIRCLES:
 		igInputInt("Circle Rows", &cs->params.asymmetric_circles.rows, 1, 5, 0);
 		igInputInt("Circle Columns", &cs->params.asymmetric_circles.cols, 1, 5, 0);
-		igInputFloat("Diagonal spacing (m)", &cs->params.asymmetric_circles.diagonal_distance_meters, 0.0005, 0.001, NULL, 0);
+		igInputFloat("Diagonal spacing (m)", &cs->params.asymmetric_circles.diagonal_distance_meters, 0.0005,
+		             0.001, NULL, 0);
 		break;
 	default: assert(false);
 	}
-	// clang-format on
 
 	static ImVec2 button_dims = {0, 0};
 	igSeparator();
