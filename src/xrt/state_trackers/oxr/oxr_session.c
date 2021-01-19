@@ -550,14 +550,12 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 static enum xrt_blend_mode
 oxr_blend_mode_to_xrt(XrEnvironmentBlendMode blend_mode)
 {
-	// clang-format off
 	switch (blend_mode) {
 	case XR_ENVIRONMENT_BLEND_MODE_OPAQUE: return XRT_BLEND_MODE_OPAQUE;
 	case XR_ENVIRONMENT_BLEND_MODE_ADDITIVE: return XRT_BLEND_MODE_ADDITIVE;
 	case XR_ENVIRONMENT_BLEND_MODE_ALPHA_BLEND: return XRT_BLEND_MODE_ALPHA_BLEND;
 	default: return (enum xrt_blend_mode)0;
 	}
-	// clang-format on
 }
 
 static XrResult
@@ -1264,7 +1262,6 @@ convert_layer_flags(XrSwapchainUsageFlags xr_flags)
 {
 	enum xrt_layer_composition_flags flags = 0;
 
-	// clang-format off
 	if ((xr_flags & XR_COMPOSITION_LAYER_CORRECT_CHROMATIC_ABERRATION_BIT) != 0) {
 		flags |= XRT_LAYER_COMPOSITION_CORRECT_CHROMATIC_ABERRATION_BIT;
 	}
@@ -1274,7 +1271,6 @@ convert_layer_flags(XrSwapchainUsageFlags xr_flags)
 	if ((xr_flags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT) != 0) {
 		flags |= XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT;
 	}
-	// clang-format on
 
 	return flags;
 }

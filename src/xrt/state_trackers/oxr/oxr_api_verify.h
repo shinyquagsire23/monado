@@ -65,6 +65,7 @@ extern "C" {
 	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_action_set, ACTIONSET, name, new_thing->inst)
 #define OXR_VERIFY_HAND_TRACKER_AND_INIT_LOG(log, thing, new_thing, name) \
 	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_hand_tracker, HTRACKER, name, new_thing->sess->sys->inst)
+// clang-format on
 
 #define OXR_VERIFY_INSTANCE_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_instance, INSTANCE);
 #define OXR_VERIFY_MESSENGER_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_messenger, MESSENGER);
@@ -73,7 +74,6 @@ extern "C" {
 #define OXR_VERIFY_ACTION_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_action, ACTION);
 #define OXR_VERIFY_SWAPCHAIN_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_swapchain, SWAPCHAIN);
 #define OXR_VERIFY_ACTIONSET_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_action_set, ACTIONSET);
-// clang-format on
 
 /*!
  * Checks if a required extension is enabled.

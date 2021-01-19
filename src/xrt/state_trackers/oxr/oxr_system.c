@@ -21,9 +21,9 @@
 #include "oxr_two_call.h"
 #include "oxr_chain.h"
 
-// clang-format off
+
 DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "OXR_VIEWPORT_SCALE_PERCENTAGE", 100)
-// clang-format on
+
 
 static bool
 oxr_system_matches(struct oxr_logger *log, struct oxr_system *sys, XrFormFactor form_factor)
@@ -114,7 +114,6 @@ oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId
 
 	struct xrt_compositor_info *info = &sys->xcn->base.info;
 
-	// clang-format off
 	uint32_t w0 = (uint32_t)(info->views[0].recommended.width_pixels * scale);
 	uint32_t h0 = (uint32_t)(info->views[0].recommended.height_pixels * scale);
 	uint32_t w1 = (uint32_t)(info->views[1].recommended.width_pixels * scale);
@@ -134,6 +133,7 @@ oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId
 
 #undef imin
 
+	// clang-format off
 	sys->views[0].recommendedImageRectWidth       = w0;
 	sys->views[0].maxImageRectWidth               = w0_2;
 	sys->views[0].recommendedImageRectHeight      = h0;
@@ -248,10 +248,8 @@ oxr_system_get_view_conf_properties(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED, "Invalid view configuration type");
 	}
 
-	// clang-format off
 	configurationProperties->viewConfigurationType = sys->view_config_type;
 	configurationProperties->fovMutable = XR_FALSE;
-	// clang-format on
 
 	return XR_SUCCESS;
 }

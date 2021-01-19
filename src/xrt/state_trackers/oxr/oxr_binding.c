@@ -286,35 +286,25 @@ oxr_find_profile_for_device(struct oxr_logger *log,
 	//! @todo A lot more clever selecting the profile here.
 	switch (name) {
 	case XRT_DEVICE_HYDRA:
-		// clang-format off
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		// clang-format on
 		return;
 	case XRT_DEVICE_PSMV:
-		// clang-format off
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
 		interaction_profile_find(log, inst, inst->path_cache.mndx_ball_on_a_stick_controller, out_p);
-		// clang-format on
 		return;
 	case XRT_DEVICE_DAYDREAM:
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
 		return;
 	case XRT_DEVICE_SIMPLE_CONTROLLER:
-		// clang-format off
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		// clang-format on
 		return;
 	case XRT_DEVICE_INDEX_CONTROLLER:
-		// clang-format off
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
 		interaction_profile_find(log, inst, inst->path_cache.valve_index_controller, out_p);
-		// clang-format on
 		return;
 	case XRT_DEVICE_VIVE_WAND:
-		// clang-format off
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
 		interaction_profile_find(log, inst, inst->path_cache.htc_vive_controller, out_p);
-		// clang-format on
 		return;
 	default: return;
 	}
