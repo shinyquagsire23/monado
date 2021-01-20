@@ -158,13 +158,13 @@ math_quat_from_plus_x_z(const struct xrt_vec3 *plus_x, const struct xrt_vec3 *pl
 	math_quat_from_matrix_3x3(&m, result);
 }
 
-extern "C" bool
-math_quat_validate(const struct xrt_quat *quat)
+static bool
+quat_validate(const float precision, const struct xrt_quat *quat)
 {
 	assert(quat != NULL);
 	auto rot = copy(*quat);
 
-	const float FLOAT_EPSILON = Eigen::NumTraits<float>::epsilon();
+
 	/*
 	 * This was originally squaredNorm, but that could result in a norm
 	 * value that was further from 1.0f then FLOAT_EPSILON (two).
@@ -176,7 +176,7 @@ math_quat_validate(const struct xrt_quat *quat)
 	 * change the elements of the quat.
 	 */
 	auto norm = rot.norm();
-	if (norm > 1.0f + FLOAT_EPSILON || norm < 1.0f - FLOAT_EPSILON) {
+	if (norm > 1.0f + precision || norm < 1.0f - precision) {
 		return false;
 	}
 
@@ -188,6 +188,19 @@ math_quat_validate(const struct xrt_quat *quat)
 	}
 
 	return true;
+}
+
+extern "C" bool
+math_quat_validate(const struct xrt_quat *quat)
+{
+	const float FLOAT_EPSILON = Eigen::NumTraits<float>::epsilon();
+	return quat_validate(FLOAT_EPSILON, quat);
+}
+
+extern "C" bool
+math_quat_validate_within_1_percent(const struct xrt_quat *quat)
+{
+	return quat_validate(0.01, quat);
 }
 
 extern "C" void

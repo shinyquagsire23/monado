@@ -184,6 +184,15 @@ bool
 math_quat_validate(const struct xrt_quat *quat);
 
 /*!
+ * Check if this quat is within 1% of unit length.
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+bool
+math_quat_validate_within_1_percent(const struct xrt_quat *quat);
+
+/*!
  * Invert a quaternion.
  *
  * @relates xrt_quat
