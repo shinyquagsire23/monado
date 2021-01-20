@@ -554,7 +554,12 @@ init_all(struct ipc_server *s)
 		return ret;
 	}
 
-	ret = xrt_syscomp_create_native_compositor(s->xsysc, &s->xcn);
+	struct xrt_session_info xsi = {
+	    .is_overlay = false,
+	    .flags = 0,
+	    .z_order = 0,
+	};
+	ret = xrt_syscomp_create_native_compositor(s->xsysc, &xsi, &s->xcn);
 	if (ret < 0) {
 		teardown_all(s);
 		return ret;

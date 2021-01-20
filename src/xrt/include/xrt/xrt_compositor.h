@@ -513,9 +513,9 @@ struct xrt_swapchain_create_info
 };
 
 /*!
- * Session prepare information, mostly overlay extension data.
+ * Session information, mostly overlay extension data.
  */
-struct xrt_session_prepare_info
+struct xrt_session_info
 {
 	bool is_overlay;
 	uint64_t flags;
@@ -573,11 +573,6 @@ struct xrt_compositor
 	 * This function is very much WIP.
 	 */
 	xrt_result_t (*poll_events)(struct xrt_compositor *xc, union xrt_compositor_event *out_xce);
-
-	/*!
-	 * This function is implicit in the OpenXR spec but made explicit here.
-	 */
-	xrt_result_t (*prepare_session)(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi);
 
 	/*!
 	 * See xrBeginSession.
@@ -789,19 +784,6 @@ static inline xrt_result_t
 xrt_comp_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_xce)
 {
 	return xc->poll_events(xc, out_xce);
-}
-
-/*!
- * @copydoc xrt_compositor::prepare_session
- *
- * Helper for calling through the function pointer.
- *
- * @public @memberof xrt_compositor
- */
-static inline xrt_result_t
-xrt_comp_prepare_session(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
-{
-	return xc->prepare_session(xc, xspi);
 }
 
 /*!
@@ -1325,6 +1307,7 @@ struct xrt_system_compositor
 	 * if this is the case.
 	 */
 	xrt_result_t (*create_native_compositor)(struct xrt_system_compositor *xsc,
+	                                         const struct xrt_session_info *xsi,
 	                                         struct xrt_compositor_native **out_xcn);
 
 	/*!
@@ -1343,9 +1326,11 @@ struct xrt_system_compositor
  * @public @memberof xrt_system_compositor
  */
 static inline xrt_result_t
-xrt_syscomp_create_native_compositor(struct xrt_system_compositor *xsc, struct xrt_compositor_native **out_xcn)
+xrt_syscomp_create_native_compositor(struct xrt_system_compositor *xsc,
+                                     const struct xrt_session_info *xsi,
+                                     struct xrt_compositor_native **out_xcn)
 {
-	return xsc->create_native_compositor(xsc, out_xcn);
+	return xsc->create_native_compositor(xsc, xsi, out_xcn);
 }
 
 /*!

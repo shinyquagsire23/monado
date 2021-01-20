@@ -96,17 +96,6 @@ ts_ms()
  */
 
 static xrt_result_t
-compositor_prepare_session(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
-{
-	struct comp_compositor *c = comp_compositor(xc);
-	COMP_DEBUG(c, "PREPARE_SESSION");
-
-	c->state = COMP_STATE_PREPARED;
-
-	return XRT_SUCCESS;
-}
-
-static xrt_result_t
 compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -578,7 +567,9 @@ compositor_destroy(struct xrt_compositor *xc)
  */
 
 static xrt_result_t
-system_compositor_create_native_compositor(struct xrt_system_compositor *xsc, struct xrt_compositor_native **out_xcn)
+system_compositor_create_native_compositor(struct xrt_system_compositor *xsc,
+                                           const struct xrt_session_info *xsi,
+                                           struct xrt_compositor_native **out_xcn)
 {
 	struct comp_compositor *c = container_of(xsc, struct comp_compositor, system);
 
@@ -589,6 +580,7 @@ system_compositor_create_native_compositor(struct xrt_system_compositor *xsc, st
 	}
 
 	c->compositor_created = true;
+	c->state = COMP_STATE_PREPARED;
 	*out_xcn = &c->base;
 
 	return XRT_SUCCESS;
@@ -1348,7 +1340,6 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	c->base.base.create_swapchain = comp_swapchain_create;
 	c->base.base.import_swapchain = comp_swapchain_import;
-	c->base.base.prepare_session = compositor_prepare_session;
 	c->base.base.begin_session = compositor_begin_session;
 	c->base.base.end_session = compositor_end_session;
 	c->base.base.wait_frame = compositor_wait_frame;

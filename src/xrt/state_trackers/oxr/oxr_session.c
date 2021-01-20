@@ -1942,9 +1942,9 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 }
 
 
-#define OXR_ALLOCATE_NATIVE_COMPOSITOR(LOG, SESS)                                                                      \
+#define OXR_ALLOCATE_NATIVE_COMPOSITOR(LOG, XSI, SESS)                                                                 \
 	do {                                                                                                           \
-		xrt_result_t xret = xrt_syscomp_create_native_compositor((SESS)->sys->xsysc, &(SESS)->xcn);            \
+		xrt_result_t xret = xrt_syscomp_create_native_compositor((SESS)->sys->xsysc, (XSI), &(SESS)->xcn);     \
 		if (xret == XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED) {                                                 \
 			return oxr_error((LOG), XR_ERROR_LIMIT_REACHED, "Per instance multi-session not supported.");  \
 		} else if (xret != XRT_SUCCESS) {                                                                      \
@@ -1967,6 +1967,7 @@ static XrResult
 oxr_session_create_impl(struct oxr_logger *log,
                         struct oxr_system *sys,
                         const XrSessionCreateInfo *createInfo,
+                        const struct xrt_session_info *xsi,
                         struct oxr_session **out_session)
 {
 #if defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
@@ -1980,7 +1981,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
-		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_gl_xlib(log, sys, opengl_xlib, *out_session);
 	}
 #endif
@@ -1997,7 +1998,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
-		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_gles_android(log, sys, opengles_android, *out_session);
 	}
 #endif
@@ -2013,7 +2014,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
-		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_vk(log, sys, vulkan, *out_session);
 	}
 #endif
@@ -2029,7 +2030,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 		}
 
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
-		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_egl(log, sys, egl, *out_session);
 	}
 #endif
@@ -2061,8 +2062,17 @@ oxr_session_create(struct oxr_logger *log,
 {
 	struct oxr_session *sess = NULL;
 
+	struct xrt_session_info xsi = {0};
+	const XrSessionCreateInfoOverlayEXTX *overlay_info = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_SESSION_CREATE_INFO_OVERLAY_EXTX, XrSessionCreateInfoOverlayEXTX);
+	if (overlay_info) {
+		xsi.is_overlay = true;
+		xsi.flags = overlay_info->createFlags;
+		xsi.z_order = overlay_info->sessionLayersPlacement;
+	}
+
 	/* Try allocating and populating. */
-	XrResult ret = oxr_session_create_impl(log, sys, createInfo, &sess);
+	XrResult ret = oxr_session_create_impl(log, sys, createInfo, &xsi, &sess);
 	if (ret != XR_SUCCESS) {
 		if (sess != NULL) {
 			/* clean up allocation first */
@@ -2078,19 +2088,6 @@ oxr_session_create(struct oxr_logger *log,
 
 	sess->active_wait_frames = 0;
 	os_mutex_init(&sess->active_wait_frames_lock);
-
-	struct xrt_compositor *xc = sess->compositor;
-	if (xc != NULL) {
-		struct xrt_session_prepare_info xspi = {0};
-		const XrSessionCreateInfoOverlayEXTX *overlay_info = OXR_GET_INPUT_FROM_CHAIN(
-		    createInfo, XR_TYPE_SESSION_CREATE_INFO_OVERLAY_EXTX, XrSessionCreateInfoOverlayEXTX);
-		if (overlay_info) {
-			xspi.is_overlay = true;
-			xspi.flags = overlay_info->createFlags;
-			xspi.z_order = overlay_info->sessionLayersPlacement;
-		}
-		xrt_comp_prepare_session(xc, &xspi);
-	}
 
 	sess->ipd_meters = debug_get_num_option_ipd() / 1000.0f;
 	sess->frame_timing_spew = debug_get_bool_option_frame_timing_spew();

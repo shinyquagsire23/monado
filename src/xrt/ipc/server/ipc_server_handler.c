@@ -90,15 +90,15 @@ ipc_handle_system_compositor_get_info(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_session_create(volatile struct ipc_client_state *ics, const struct xrt_session_prepare_info *xspi)
+ipc_handle_session_create(volatile struct ipc_client_state *ics, const struct xrt_session_info *xsi)
 {
 	ics->client_state.session_active = false;
 	ics->client_state.session_overlay = false;
 	ics->client_state.session_visible = false;
 
-	if (xspi->is_overlay) {
+	if (xsi->is_overlay) {
 		ics->client_state.session_overlay = true;
-		ics->client_state.z_order = xspi->z_order;
+		ics->client_state.z_order = xsi->z_order;
 	}
 
 	update_server_state(ics->server);

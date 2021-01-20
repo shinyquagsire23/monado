@@ -163,15 +163,6 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
-client_vk_compositor_prepare_session(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
-{
-	struct client_vk_compositor *c = client_vk_compositor(xc);
-
-	// Pipe down call into native compositor.
-	return xrt_comp_prepare_session(&c->xcn->base, xspi);
-}
-
-static xrt_result_t
 client_vk_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
@@ -520,7 +511,6 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	struct client_vk_compositor *c = U_TYPED_CALLOC(struct client_vk_compositor);
 
 	c->base.base.create_swapchain = client_vk_swapchain_create;
-	c->base.base.prepare_session = client_vk_compositor_prepare_session;
 	c->base.base.begin_session = client_vk_compositor_begin_session;
 	c->base.base.end_session = client_vk_compositor_end_session;
 	c->base.base.wait_frame = client_vk_compositor_wait_frame;

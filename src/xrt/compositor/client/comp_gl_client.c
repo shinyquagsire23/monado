@@ -82,16 +82,6 @@ client_gl_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
  */
 
 static xrt_result_t
-client_gl_compositor_prepare_session(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
-{
-	struct client_gl_compositor *c = client_gl_compositor(xc);
-
-	// Pipe down call into native compositor.
-	return xrt_comp_prepare_session(&c->xcn->base, xspi);
-}
-
-
-static xrt_result_t
 client_gl_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
@@ -447,7 +437,6 @@ client_gl_compositor_init(struct client_gl_compositor *c,
                           client_gl_insert_fence_func insert_fence)
 {
 	c->base.base.create_swapchain = client_gl_swapchain_create;
-	c->base.base.prepare_session = client_gl_compositor_prepare_session;
 	c->base.base.begin_session = client_gl_compositor_begin_session;
 	c->base.base.end_session = client_gl_compositor_end_session;
 	c->base.base.wait_frame = client_gl_compositor_wait_frame;

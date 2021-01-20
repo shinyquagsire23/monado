@@ -347,17 +347,6 @@ ipc_compositor_swapchain_import(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_prepare_session(struct xrt_compositor *xc, const struct xrt_session_prepare_info *xspi)
-{
-	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
-
-	IPC_TRACE(icc->ipc_c, "IPC: compositor create session");
-
-	IPC_CALL_CHK(ipc_call_session_create(icc->ipc_c, xspi));
-	return res;
-}
-
-static xrt_result_t
 ipc_compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_xce)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
@@ -783,7 +772,9 @@ ipc_compositor_images_destroy(struct xrt_image_native_allocator *xina)
  */
 
 xrt_result_t
-ipc_syscomp_create_native_compositor(struct xrt_system_compositor *xsc, struct xrt_compositor_native **out_xcn)
+ipc_syscomp_create_native_compositor(struct xrt_system_compositor *xsc,
+                                     const struct xrt_session_info *xsi,
+                                     struct xrt_compositor_native **out_xcn)
 {
 	struct ipc_client_compositor *icc = container_of(xsc, struct ipc_client_compositor, system);
 
@@ -793,6 +784,8 @@ ipc_syscomp_create_native_compositor(struct xrt_system_compositor *xsc, struct x
 
 	icc->compositor_created = true;
 	*out_xcn = &icc->base;
+
+	IPC_CALL_CHK(ipc_call_session_create(icc->ipc_c, xsi));
 
 	return XRT_SUCCESS;
 }
@@ -828,7 +821,6 @@ ipc_client_create_system_compositor(struct ipc_connection *ipc_c,
 
 	c->base.base.create_swapchain = ipc_compositor_swapchain_create;
 	c->base.base.import_swapchain = ipc_compositor_swapchain_import;
-	c->base.base.prepare_session = ipc_compositor_prepare_session;
 	c->base.base.begin_session = ipc_compositor_begin_session;
 	c->base.base.end_session = ipc_compositor_end_session;
 	c->base.base.wait_frame = ipc_compositor_wait_frame;
