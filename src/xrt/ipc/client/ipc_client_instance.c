@@ -253,7 +253,7 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 		          "# For builds it's located "
 		          "\"build-dir/src/xrt/targets/service/monado-service\"\n"
 		          "#\n"
-		          "###\n");
+		          "###");
 		free(ii);
 		return -1;
 	}
@@ -261,7 +261,7 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 	// get our xdev shm from the server and mmap it
 	xrt_result_t r = ipc_call_instance_get_shm_fd(&ii->ipc_c, &ii->ipc_c.ism_handle, 1);
 	if (r != XRT_SUCCESS) {
-		IPC_ERROR((&ii->ipc_c), "Failed to retrieve shm fd");
+		IPC_ERROR((&ii->ipc_c), "Failed to retrieve shm fd!");
 		free(ii);
 		return -1;
 	}
@@ -272,7 +272,7 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 
 	r = ipc_call_system_set_client_info(&ii->ipc_c, &desc);
 	if (r != XRT_SUCCESS) {
-		IPC_ERROR((&ii->ipc_c), "Failed to set instance info");
+		IPC_ERROR((&ii->ipc_c), "Failed to set instance info!");
 		free(ii);
 		return -1;
 	}
@@ -283,7 +283,7 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 
 	ii->ipc_c.ism = mmap(NULL, size, access, flags, ii->ipc_c.ism_handle, 0);
 	if (ii->ipc_c.ism == NULL) {
-		IPC_ERROR((&ii->ipc_c), "Failed to mmap shm ");
+		IPC_ERROR((&ii->ipc_c), "Failed to mmap shm!");
 		free(ii);
 		return -1;
 	}

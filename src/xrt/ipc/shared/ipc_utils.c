@@ -65,9 +65,7 @@ ipc_send(struct ipc_message_channel *imc, const void *data, size_t size)
 	ssize_t ret = sendmsg(imc->socket_fd, &msg, MSG_NOSIGNAL);
 	if (ret < 0) {
 		int code = errno;
-		IPC_ERROR(imc,
-		          "ERROR: Sending plain message on socket %d failed with "
-		          "error: '%i' '%s'",
+		IPC_ERROR(imc, "ERROR: Sending plain message on socket %d failed with error: '%i' '%s'!",
 		          (int)imc->socket_fd, code, strerror(code));
 		return XRT_ERROR_IPC_FAILURE;
 	}
@@ -96,15 +94,13 @@ ipc_receive(struct ipc_message_channel *imc, void *out_data, size_t size)
 
 	if (len < 0) {
 		int code = errno;
-		IPC_ERROR(imc,
-		          "ERROR: Receiving plain message on socket %d failed with "
-		          "error: '%i' '%s'",
+		IPC_ERROR(imc, "ERROR: Receiving plain message on socket '%d' failed with error: '%i' '%s'!",
 		          (int)imc->socket_fd, code, strerror(code));
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	if ((size_t)len != size) {
-		IPC_ERROR(imc, "recvmsg failed with error: wrong size %i, expected %i", (int)len, (int)size);
+		IPC_ERROR(imc, "recvmsg failed with error: wrong size '%i', expected '%i'!", (int)len, (int)size);
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
@@ -141,12 +137,12 @@ ipc_receive_fds(struct ipc_message_channel *imc, void *out_data, size_t size, in
 
 	ssize_t len = recvmsg(imc->socket_fd, &msg, MSG_NOSIGNAL);
 	if (len < 0) {
-		IPC_ERROR(imc, "recvmsg failed with error: %s", strerror(errno));
+		IPC_ERROR(imc, "recvmsg failed with error: '%s'!", strerror(errno));
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	if (len == 0) {
-		IPC_ERROR(imc, "recvmsg failed with error: no data");
+		IPC_ERROR(imc, "recvmsg failed with error: no data!");
 		return XRT_ERROR_IPC_FAILURE;
 	}
 	// Did the other side actually send file descriptors.
@@ -193,10 +189,8 @@ ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, con
 
 	ssize_t ret = sendmsg(imc->socket_fd, &msg, MSG_NOSIGNAL);
 	if (ret < 0) {
-		IPC_ERROR(imc,
-		          "ERROR: sending %d FDs on socket %d failed with error: "
-		          "'%i' '%s'",
-		          (int)num_handles, imc->socket_fd, errno, strerror(errno));
+		IPC_ERROR(imc, "ERROR: sending %d FDs on socket %d failed with error: '%i' '%s'!", (int)num_handles,
+		          imc->socket_fd, errno, strerror(errno));
 		for (uint32_t i = 0; i < num_handles; i++) {
 			IPC_ERROR(imc, "\tfd #%i: %i", i, handles[i]);
 		}

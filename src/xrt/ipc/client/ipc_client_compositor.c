@@ -118,7 +118,7 @@ compositor_disconnect(struct ipc_connection *ipc_c)
 #define IPC_CALL_CHK(call)                                                                                             \
 	xrt_result_t res = (call);                                                                                     \
 	if (res == XRT_ERROR_IPC_FAILURE) {                                                                            \
-		IPC_ERROR(icc->ipc_c, "IPC: %s call error!", __func__);                                                \
+		IPC_ERROR(icc->ipc_c, "Call error '%s'!", __func__);                                                   \
 	}
 
 static xrt_result_t
@@ -351,7 +351,7 @@ ipc_compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor_event
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	IPC_TRACE(icc->ipc_c, "IPC: polling for events");
+	IPC_TRACE(icc->ipc_c, "Polling for events.");
 
 	IPC_CALL_CHK(ipc_call_compositor_poll_events(icc->ipc_c, out_xce));
 
@@ -363,7 +363,7 @@ ipc_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	IPC_TRACE(icc->ipc_c, "IPC: compositor begin session");
+	IPC_TRACE(icc->ipc_c, "Compositor begin session.");
 
 	IPC_CALL_CHK(ipc_call_session_begin(icc->ipc_c));
 
@@ -375,7 +375,7 @@ ipc_compositor_end_session(struct xrt_compositor *xc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	IPC_TRACE(icc->ipc_c, "IPC: compositor end session");
+	IPC_TRACE(icc->ipc_c, "Compositor end session.");
 
 	IPC_CALL_CHK(ipc_call_session_end(icc->ipc_c));
 
@@ -799,7 +799,7 @@ ipc_syscomp_destroy(struct xrt_system_compositor *xsc)
 	xrt_images_destroy(&icc->xina);
 
 	//! @todo Implement
-	IPC_TRACE(icc->ipc_c, "IPC:  NOT IMPLEMENTED compositor destroy");
+	IPC_TRACE(icc->ipc_c, "NOT IMPLEMENTED compositor destroy.");
 
 	free(icc);
 }

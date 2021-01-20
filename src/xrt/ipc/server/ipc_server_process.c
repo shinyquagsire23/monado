@@ -409,7 +409,7 @@ init_listen_socket(struct ipc_server *s)
 	}
 	// All ok!
 	s->listen_socket = fd;
-	U_LOG_D("Listening socket is fd %d", s->listen_socket);
+	U_LOG_D("Listening socket is fd '%d'.", s->listen_socket);
 
 	return fd;
 }
@@ -433,7 +433,7 @@ init_epoll(struct ipc_server *s)
 		ev.data.fd = 0; // stdin
 		ret = epoll_ctl(s->epoll_fd, EPOLL_CTL_ADD, 0, &ev);
 		if (ret < 0) {
-			U_LOG_E("epoll_ctl(stdin) failed '%i'", ret);
+			U_LOG_E("Error epoll_ctl(stdin) failed '%i'!", ret);
 			return ret;
 		}
 	}
@@ -442,7 +442,7 @@ init_epoll(struct ipc_server *s)
 	ev.data.fd = s->listen_socket;
 	ret = epoll_ctl(s->epoll_fd, EPOLL_CTL_ADD, s->listen_socket, &ev);
 	if (ret < 0) {
-		U_LOG_E("epoll_ctl(listen_socket) failed '%i'", ret);
+		U_LOG_E("Error epoll_ctl(listen_socket) failed '%i'!", ret);
 		return ret;
 	}
 
@@ -611,7 +611,7 @@ handle_listen(struct ipc_server *vs)
 {
 	int ret = accept(vs->listen_socket, NULL, NULL);
 	if (ret < 0) {
-		U_LOG_E("accept '%i'", ret);
+		U_LOG_E("Error accept failed: '%i'!", ret);
 		vs->running = false;
 	}
 	start_client_listener_thread(vs, ret);
@@ -630,7 +630,7 @@ check_epoll(struct ipc_server *vs)
 	// No sleeping, returns immediately.
 	int ret = epoll_wait(epoll_fd, events, NUM_POLL_EVENTS, NO_SLEEP);
 	if (ret < 0) {
-		U_LOG_E("epoll_wait failed with '%i'.", ret);
+		U_LOG_E("Error epoll_wait failed: '%i'.", ret);
 		vs->running = false;
 		return;
 	}
@@ -714,12 +714,12 @@ _update_projection_layer(struct xrt_compositor *xc,
 	struct xrt_swapchain *rxcs = ics->xscs[rxsci];
 
 	if (lxcs == NULL || rxcs == NULL) {
-		U_LOG_E("Invalid swap chain for projection layer.");
+		U_LOG_E("Invalid swap chain for projection layer!");
 		return false;
 	}
 
 	if (xdev == NULL) {
-		U_LOG_E("Invalid xdev for projection layer.");
+		U_LOG_E("Invalid xdev for projection layer!");
 		return false;
 	}
 
@@ -755,12 +755,12 @@ _update_projection_layer_depth(struct xrt_compositor *xc,
 	struct xrt_swapchain *r_d_xcs = ics->xscs[r_d_xsci];
 
 	if (l_xcs == NULL || r_xcs == NULL || l_d_xcs == NULL || r_d_xcs == NULL) {
-		U_LOG_E("Invalid swap chain for projection layer.");
+		U_LOG_E("Invalid swap chain for projection layer!");
 		return false;
 	}
 
 	if (xdev == NULL) {
-		U_LOG_E("Invalid xdev for projection layer.");
+		U_LOG_E("Invalid xdev for projection layer!");
 		return false;
 	}
 
@@ -789,12 +789,12 @@ do_single(struct xrt_compositor *xc,
 	struct xrt_swapchain *xcs = ics->xscs[sci];
 
 	if (xcs == NULL) {
-		U_LOG_E("Invalid swapchain for %u layer, %s.", i, name);
+		U_LOG_E("Invalid swapchain for '%u' layer, '%s'!", i, name);
 		return false;
 	}
 
 	if (xdev == NULL) {
-		U_LOG_E("Invalid xdev for %u layer, %s.", i, name);
+		U_LOG_E("Invalid xdev for '%u' layer, '%s'!", i, name);
 		return false;
 	}
 
@@ -1253,7 +1253,7 @@ ipc_server_main(int argc, char **argv)
 	teardown_all(s);
 	free(s);
 
-	U_LOG_E("Server exiting! '%i'", ret);
+	U_LOG_E("Server exiting: '%i'!", ret);
 
 	return ret;
 }
@@ -1263,7 +1263,7 @@ int
 ipc_server_main_android(int fd)
 {
 	struct ipc_server *s = U_TYPED_CALLOC(struct ipc_server);
-	U_LOG_D("Created IPC server on fd %d", fd);
+	U_LOG_D("Created IPC server on fd '%d'!", fd);
 
 	int ret = init_all(s);
 	if (ret < 0) {
@@ -1278,7 +1278,7 @@ ipc_server_main_android(int fd)
 	teardown_all(s);
 	free(s);
 
-	U_LOG_E("Server exiting! '%i'", ret);
+	U_LOG_E("Server exiting '%i'!", ret);
 
 	return ret;
 }

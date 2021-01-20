@@ -50,7 +50,7 @@ setup_epoll(volatile struct ipc_client_state *ics)
 	ev.data.fd = listen_socket;
 	ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_socket, &ev);
 	if (ret < 0) {
-		IPC_ERROR(ics->server, "epoll_ctl(listen_socket) failed '%i'\n", ret);
+		IPC_ERROR(ics->server, "Error epoll_ctl(listen_socket) failed '%i'.", ret);
 		return ret;
 	}
 
@@ -67,7 +67,7 @@ setup_epoll(volatile struct ipc_client_state *ics)
 static void
 client_loop(volatile struct ipc_client_state *ics)
 {
-	IPC_INFO(ics->server, "Client connected\n");
+	IPC_INFO(ics->server, "Client connected");
 
 	// Make sure it's ready for the client.
 	u_rt_helper_client_clear((struct u_rt_helper *)&ics->urth);
@@ -87,7 +87,7 @@ client_loop(volatile struct ipc_client_state *ics)
 		// We use epoll here to be able to timeout.
 		int ret = epoll_wait(epoll_fd, &event, 1, half_a_second_ms);
 		if (ret < 0) {
-			IPC_ERROR(ics->server, "Failed epoll_wait '%i', disconnecting client.\n", ret);
+			IPC_ERROR(ics->server, "Failed epoll_wait '%i', disconnecting client.", ret);
 			break;
 		}
 
@@ -98,7 +98,7 @@ client_loop(volatile struct ipc_client_state *ics)
 
 		// Detect clients disconnecting gracefully.
 		if (ret > 0 && (event.events & EPOLLHUP) != 0) {
-			IPC_INFO(ics->server, "Client disconnected\n");
+			IPC_INFO(ics->server, "Client disconnected.");
 			break;
 		}
 
@@ -106,7 +106,7 @@ client_loop(volatile struct ipc_client_state *ics)
 		//! @todo replace this call
 		ssize_t len = recv(ics->imc.socket_fd, &buf, IPC_BUF_SIZE, 0);
 		if (len < 4) {
-			IPC_ERROR(ics->server, "Invalid packet received, disconnecting client.\n");
+			IPC_ERROR(ics->server, "Invalid packet received, disconnecting client.");
 			break;
 		}
 
@@ -114,7 +114,7 @@ client_loop(volatile struct ipc_client_state *ics)
 		ipc_command_t *ipc_command = (uint32_t *)buf;
 		xrt_result_t result = ipc_dispatch(ics, ipc_command);
 		if (result != XRT_SUCCESS) {
-			IPC_ERROR(ics->server, "During packet handling, disconnecting client.\n");
+			IPC_ERROR(ics->server, "During packet handling, disconnecting client.");
 			break;
 		}
 	}
@@ -164,7 +164,7 @@ client_loop(volatile struct ipc_client_state *ics)
 	for (uint32_t j = 0; j < IPC_MAX_CLIENT_SWAPCHAINS; j++) {
 		xrt_swapchain_destroy((struct xrt_swapchain **)&ics->xscs[j]);
 		ics->swapchain_data[j].active = false;
-		IPC_TRACE(ics->server, "IPC: Destroyed swapchain %d\n", j);
+		IPC_TRACE(ics->server, "Destroyed swapchain %d.", j);
 	}
 
 	os_mutex_unlock(&ics->server->global_state_lock);

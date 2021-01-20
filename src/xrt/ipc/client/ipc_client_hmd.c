@@ -114,7 +114,7 @@ ipc_client_hmd_get_view_pose(struct xrt_device *xdev,
 
 	xrt_result_t r = ipc_call_device_get_view_pose(ich->ipc_c, ich->device_id, eye_relation, view_index, out_pose);
 	if (r != XRT_SUCCESS) {
-		IPC_ERROR(ich->ipc_c, "IPC: Error calling view pose!");
+		IPC_ERROR(ich->ipc_c, "Error calling view pose!");
 	}
 }
 

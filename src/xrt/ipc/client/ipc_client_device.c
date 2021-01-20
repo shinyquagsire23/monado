@@ -114,7 +114,7 @@ ipc_client_device_get_hand_tracking(struct xrt_device *xdev,
 	xrt_result_t r =
 	    ipc_call_device_get_hand_tracking(icd->ipc_c, icd->device_id, name, at_timestamp_ns, out_value);
 	if (r != XRT_SUCCESS) {
-		IPC_ERROR(icd->ipc_c, "IPC: Error sending input update!");
+		IPC_ERROR(icd->ipc_c, "Error sending input update!");
 	}
 }
 
@@ -134,7 +134,7 @@ ipc_client_device_set_output(struct xrt_device *xdev, enum xrt_output_name name,
 
 	xrt_result_t r = ipc_call_device_set_output(icd->ipc_c, icd->device_id, name, value);
 	if (r != XRT_SUCCESS) {
-		IPC_ERROR(icd->ipc_c, "IPC: Error sending set output!");
+		IPC_ERROR(icd->ipc_c, "Error sending set output!");
 	}
 }
 
