@@ -618,7 +618,7 @@ verify_quad_layer(struct xrt_compositor *xc,
 		return ret;
 	}
 
-	if (!math_quat_validate((struct xrt_quat *)&quad->pose.orientation)) {
+	if (!math_quat_validate_within_1_percent((struct xrt_quat *)&quad->pose.orientation)) {
 		XrQuaternionf *q = &quad->pose.orientation;
 		return oxr_error(log, XR_ERROR_POSE_INVALID,
 		                 "(frameEndInfo->layers[%u]->pose.orientation "
@@ -802,7 +802,7 @@ verify_projection_layer(struct xrt_compositor *xc,
 		const XrCompositionLayerProjectionView *view = &proj->views[i];
 
 		//! @todo More validation?
-		if (!math_quat_validate((struct xrt_quat *)&view->pose.orientation)) {
+		if (!math_quat_validate_within_1_percent((struct xrt_quat *)&view->pose.orientation)) {
 			const XrQuaternionf *q = &view->pose.orientation;
 			return oxr_error(log, XR_ERROR_POSE_INVALID,
 			                 "(frameEndInfo->layers[%u]->views[%i]->pose."
@@ -922,7 +922,7 @@ verify_cube_layer(struct xrt_compositor *xc,
 		return ret;
 	}
 
-	if (!math_quat_validate((struct xrt_quat *)&cube->orientation)) {
+	if (!math_quat_validate_within_1_percent((struct xrt_quat *)&cube->orientation)) {
 		const XrQuaternionf *q = &cube->orientation;
 		return oxr_error(log, XR_ERROR_POSE_INVALID,
 		                 "(frameEndInfo->layers[%u]->pose.orientation "
@@ -983,7 +983,7 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 		return ret;
 	}
 
-	if (!math_quat_validate((struct xrt_quat *)&cylinder->pose.orientation)) {
+	if (!math_quat_validate_within_1_percent((struct xrt_quat *)&cylinder->pose.orientation)) {
 		const XrQuaternionf *q = &cylinder->pose.orientation;
 		return oxr_error(log, XR_ERROR_POSE_INVALID,
 		                 "(frameEndInfo->layers[%u]->pose.orientation "
@@ -1091,7 +1091,7 @@ verify_equirect1_layer(struct xrt_compositor *xc,
 		return ret;
 	}
 
-	if (!math_quat_validate((struct xrt_quat *)&equirect->pose.orientation)) {
+	if (!math_quat_validate_within_1_percent((struct xrt_quat *)&equirect->pose.orientation)) {
 		const XrQuaternionf *q = &equirect->pose.orientation;
 		return oxr_error(log, XR_ERROR_POSE_INVALID,
 		                 "(frameEndInfo->layers[%u]->pose.orientation "
@@ -1185,7 +1185,7 @@ verify_equirect2_layer(struct xrt_compositor *xc,
 		return ret;
 	}
 
-	if (!math_quat_validate((struct xrt_quat *)&equirect->pose.orientation)) {
+	if (!math_quat_validate_within_1_percent((struct xrt_quat *)&equirect->pose.orientation)) {
 		const XrQuaternionf *q = &equirect->pose.orientation;
 		return oxr_error(log, XR_ERROR_POSE_INVALID,
 		                 "(frameEndInfo->layers[%u]->pose.orientation "
@@ -1303,6 +1303,11 @@ handle_space(struct oxr_logger *log,
              struct xrt_pose *out_pose)
 {
 	struct xrt_pose pose = *pose_ptr;
+
+	// The pose might be valid for OpenXR, but not good enough for math.
+	if (!math_quat_validate(&pose.orientation)) {
+		math_quat_normalize(&pose.orientation);
+	}
 
 	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
 		// The space might have a pose, transform that in as well.
@@ -1425,6 +1430,11 @@ submit_projection_layer(struct xrt_compositor *xc,
 		scs[i] = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, proj->views[i].subImage.swapchain);
 		pose_ptr[i] = (struct xrt_pose *)&proj->views[i].pose;
 		pose[i] = *pose_ptr[i];
+
+		// The pose might be valid for OpenXR, but not good enough for math.
+		if (!math_quat_validate(&pose[i].orientation)) {
+			math_quat_normalize(&pose[i].orientation);
+		}
 	}
 
 	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
