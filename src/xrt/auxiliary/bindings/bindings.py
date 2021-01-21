@@ -35,6 +35,7 @@ class Feature:
         return feature_list
 
     def __init__(self, subaction_path, sub_path_itm, feature_str):
+        # note: self.sub_path_name starts with a slash
         self.sub_path_name = sub_path_itm[0]
         self.sub_path_obj = sub_path_itm[1]
         self.subaction_path = subaction_path
@@ -46,7 +47,7 @@ class Feature:
     def to_monado_paths(self):
         paths = []
 
-        basepath = self.subaction_path + "/" + self.sub_path_name
+        basepath = self.subaction_path + self.sub_path_name
 
         if self.feature_str == "position":
             paths.append(basepath + "/" + "x")
