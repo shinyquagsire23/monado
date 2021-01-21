@@ -139,6 +139,9 @@ set(UTIL_SOURCE_FILES
 	util/u_sink_split.c
 	util/u_time.cpp
 	util/u_time.h
+	util/u_timing.h
+	util/u_timing_fake.c
+	util/u_timing_frame.c
 	util/u_timing_render.c
 	util/u_timing_render.h
 	util/u_trace_marker.c
