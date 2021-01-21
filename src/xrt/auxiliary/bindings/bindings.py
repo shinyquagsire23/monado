@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2020, Collabora, Ltd.
+# Copyright 2020-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 """Generate code from a JSON file describing interaction profiles and
 bindings."""

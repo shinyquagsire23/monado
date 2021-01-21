@@ -1,4 +1,4 @@
-# Copyright 2019-2020, Collabora, Ltd.
+# Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ###
