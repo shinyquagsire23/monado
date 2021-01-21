@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -27,10 +27,19 @@ enum u_rt_state
 
 struct u_rt_frame
 {
-	uint64_t predicted;
-	uint64_t wait_woke;
-	uint64_t begin;
-	uint64_t end_frame;
+	//! When we predicted this frame to be shown.
+	uint64_t predicted_display_time_ns;
+	//! When the client should have delivered the frame.
+	uint64_t predicted_delivery_time_ns;
+
+	struct
+	{
+		uint64_t predicted_ns;
+		uint64_t wait_woke_ns;
+		uint64_t begin_ns;
+		uint64_t delivered_ns;
+	} when; //!< When something happened.
+
 	int64_t frame_id;
 	enum u_rt_state state;
 };

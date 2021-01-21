@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,7 +7,9 @@
  * @ingroup aux_util
  */
 
+#include "util/u_time.h"
 #include "util/u_misc.h"
+#include "util/u_debug.h"
 #include "util/u_logging.h"
 #include "util/u_render_timing.h"
 
@@ -22,13 +24,16 @@
  *
  */
 
-#if 0
-#define DEBUG_PRINT_FRAME_ID() U_LOG_RAW("%" PRIi64 " %s", frame_id, __func__)
-#else
-#define DEBUG_PRINT_FRAME_ID()                                                                                         \
-	do {                                                                                                           \
-	} while (false)
-#endif
+DEBUG_GET_ONCE_LOG_OPTION(ll, "U_RENDER_TIMING_LOG", U_LOGGING_WARN)
+
+#define RT_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_ll(), __VA_ARGS__)
+#define RT_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_ll(), __VA_ARGS__)
+#define RT_LOG_I(...) U_LOG_IFL_I(debug_get_log_option_ll(), __VA_ARGS__)
+#define RT_LOG_W(...) U_LOG_IFL_W(debug_get_log_option_ll(), __VA_ARGS__)
+#define RT_LOG_E(...) U_LOG_IFL_E(debug_get_log_option_ll(), __VA_ARGS__)
+
+#define DEBUG_PRINT_FRAME_ID() RT_LOG_T("%" PRIi64, frame_id)
+#define GET_INDEX_FROM_ID(URTH, ID) ((uint64_t)(ID) % ARRAY_SIZE((URTH)->frames))
 
 static uint64_t
 min_period(const struct u_rt_helper *urth)
@@ -112,13 +117,20 @@ u_rt_helper_predict(struct u_rt_helper *urth,
 	*predicted_display_period = min_period(urth);
 	*min_display_period = min_period(urth);
 
-	size_t index = (uint64_t)frame_id % ARRAY_SIZE(urth->frames);
+	size_t index = GET_INDEX_FROM_ID(urth, frame_id);
 	assert(urth->frames[index].frame_id == -1);
 	assert(urth->frames[index].state == U_RT_READY);
 
-	urth->frames[index].predicted = os_monotonic_get_ns();
+	/*
+	 * When the client should deliver the frame to us, take into account the
+	 * extra time needed by the main loop, plus a bit of extra time.
+	 */
+	uint64_t delivery_time_ns = predict_ns - urth->last_input.extra_ns - U_TIME_HALF_MS_IN_NS;
+
+	urth->frames[index].when.predicted_ns = os_monotonic_get_ns();
 	urth->frames[index].state = U_RT_PREDICTED;
 	urth->frames[index].frame_id = frame_id;
+	urth->frames[index].predicted_delivery_time_ns = delivery_time_ns;
 }
 
 void
@@ -126,11 +138,11 @@ u_rt_helper_mark_wait_woke(struct u_rt_helper *urth, int64_t frame_id)
 {
 	DEBUG_PRINT_FRAME_ID();
 
-	size_t index = (uint64_t)frame_id % ARRAY_SIZE(urth->frames);
+	size_t index = GET_INDEX_FROM_ID(urth, frame_id);
 	assert(urth->frames[index].frame_id == frame_id);
 	assert(urth->frames[index].state == U_RT_PREDICTED);
 
-	urth->frames[index].wait_woke = os_monotonic_get_ns();
+	urth->frames[index].when.wait_woke_ns = os_monotonic_get_ns();
 	urth->frames[index].state = U_RT_WAIT_LEFT;
 }
 
@@ -139,11 +151,11 @@ u_rt_helper_mark_begin(struct u_rt_helper *urth, int64_t frame_id)
 {
 	DEBUG_PRINT_FRAME_ID();
 
-	size_t index = (uint64_t)frame_id % ARRAY_SIZE(urth->frames);
+	size_t index = GET_INDEX_FROM_ID(urth, frame_id);
 	assert(urth->frames[index].frame_id == frame_id);
 	assert(urth->frames[index].state == U_RT_WAIT_LEFT);
 
-	urth->frames[index].begin = os_monotonic_get_ns();
+	urth->frames[index].when.begin_ns = os_monotonic_get_ns();
 	urth->frames[index].state = U_RT_BEGUN;
 }
 
@@ -152,11 +164,11 @@ u_rt_helper_mark_discarded(struct u_rt_helper *urth, int64_t frame_id)
 {
 	DEBUG_PRINT_FRAME_ID();
 
-	size_t index = (uint64_t)frame_id % ARRAY_SIZE(urth->frames);
+	size_t index = GET_INDEX_FROM_ID(urth, frame_id);
 	assert(urth->frames[index].frame_id == frame_id);
 	assert(urth->frames[index].state == U_RT_WAIT_LEFT || urth->frames[index].state == U_RT_BEGUN);
 
-	urth->frames[index].end_frame = os_monotonic_get_ns();
+	urth->frames[index].when.delivered_ns = os_monotonic_get_ns();
 	urth->frames[index].state = U_RT_READY;
 	urth->frames[index].frame_id = -1;
 }
@@ -166,23 +178,25 @@ u_rt_helper_mark_delivered(struct u_rt_helper *urth, int64_t frame_id)
 {
 	DEBUG_PRINT_FRAME_ID();
 
-	size_t index = (uint64_t)frame_id % ARRAY_SIZE(urth->frames);
+	size_t index = GET_INDEX_FROM_ID(urth, frame_id);
 	assert(urth->frames[index].frame_id == frame_id);
 	assert(urth->frames[index].state == U_RT_BEGUN);
 
 	uint64_t now_ns = os_monotonic_get_ns();
 
-	urth->frames[index].end_frame = now_ns;
+	urth->frames[index].when.delivered_ns = now_ns;
 	urth->frames[index].state = U_RT_READY;
 	urth->frames[index].frame_id = -1;
 
-#if 0
-	uint64_t then_ns = urth->frames[index].wait_woke;
-	uint64_t diff_ns = now_ns - then_ns;
-	uint64_t ms100 = diff_ns / (1000 * 10);
+	int64_t diff_ns = urth->frames[index].predicted_delivery_time_ns - now_ns;
+	bool late = false;
+	if (diff_ns < 0) {
+		diff_ns = -diff_ns;
+		late = true;
+	}
 
-	U_LOG_RAW("Diff %i.%02ims", (int)ms100 / 100, (int)ms100 % 100);
-#endif
+	int64_t ms100 = diff_ns / (1000 * 10);
+	RT_LOG_D("Delivered frame %i.%02ims %s.", (int)ms100 / 100, (int)ms100 % 100, late ? "late" : "early");
 }
 
 void
