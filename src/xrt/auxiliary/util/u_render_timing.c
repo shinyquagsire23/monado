@@ -31,16 +31,28 @@
 #endif
 
 static uint64_t
+min_period(const struct u_rt_helper *urth)
+{
+	return urth->last_input.predicted_display_period_ns;
+}
+
+static uint64_t
+last_displayed(const struct u_rt_helper *urth)
+{
+	return urth->last_input.predicted_display_time_ns;
+}
+
+static uint64_t
 get_last_input_plus_period_at_least_greater_then(struct u_rt_helper *urth, uint64_t then_ns)
 {
-	uint64_t val = urth->last_input;
+	uint64_t val = last_displayed(urth);
 
-	if (urth->period == 0) {
+	if (min_period(urth) == 0) {
 		return then_ns;
 	}
 
 	while (val <= then_ns) {
-		val += urth->period;
+		val += min_period(urth);
 		assert(val != 0);
 	}
 
@@ -87,18 +99,18 @@ u_rt_helper_predict(struct u_rt_helper *urth,
 	uint64_t at_least_ns = os_monotonic_get_ns();
 
 	// Don't return a time before the last returned type.
-	if (at_least_ns < urth->last_returned) {
-		at_least_ns = urth->last_returned;
+	if (at_least_ns < urth->last_returned_ns) {
+		at_least_ns = urth->last_returned_ns;
 	}
 
 	uint64_t predict_ns = get_last_input_plus_period_at_least_greater_then(urth, at_least_ns);
 
-	urth->last_returned = predict_ns;
+	urth->last_returned_ns = predict_ns;
 
-	*wake_up_time = predict_ns - urth->period;
+	*wake_up_time = predict_ns - min_period(urth);
 	*predicted_display_time = predict_ns;
-	*predicted_display_period = urth->period;
-	*min_display_period = urth->period;
+	*predicted_display_period = min_period(urth);
+	*min_display_period = min_period(urth);
 
 	size_t index = (uint64_t)frame_id % ARRAY_SIZE(urth->frames);
 	assert(urth->frames[index].frame_id == -1);
@@ -174,13 +186,12 @@ u_rt_helper_mark_delivered(struct u_rt_helper *urth, int64_t frame_id)
 }
 
 void
-u_rt_helper_new_sample(struct u_rt_helper *urth, uint64_t predict, uint64_t extra, uint64_t min_period)
+u_rt_helper_new_sample(struct u_rt_helper *urth,
+                       uint64_t predicted_display_time_ns,
+                       uint64_t predicted_display_period_ns,
+                       uint64_t extra_ns)
 {
-	urth->last_input = predict;
-	urth->extra = extra;
-	urth->period = min_period;
-
-	if (urth->last_returned == 0) {
-		return;
-	}
+	urth->last_input.predicted_display_time_ns = predicted_display_time_ns;
+	urth->last_input.predicted_display_period_ns = predicted_display_period_ns;
+	urth->last_input.extra_ns = extra_ns;
 }

@@ -1014,20 +1014,24 @@ main_loop(struct ipc_server *s)
 
 	while (s->running) {
 		int64_t frame_id;
-		uint64_t predicted_display_time;
-		uint64_t predicted_display_period;
+		uint64_t predicted_display_time_ns;
+		uint64_t predicted_display_period_ns;
 
-		xrt_comp_wait_frame(xc, &frame_id, &predicted_display_time, &predicted_display_period);
+		xrt_comp_wait_frame(xc, &frame_id, &predicted_display_time_ns, &predicted_display_period_ns);
 
-		uint64_t now = os_monotonic_get_ns();
-		uint64_t diff = predicted_display_time - now;
+		uint64_t now_ns = os_monotonic_get_ns();
+		uint64_t diff_ns = predicted_display_time_ns - now_ns;
 
 		os_mutex_lock(&s->global_state_lock);
 
 		// Broadcast the new timing information to the helpers.
 		for (size_t i = 0; i < ARRAY_SIZE(s->threads); i++) {
-			u_rt_helper_new_sample((struct u_rt_helper *)&s->threads[i].ics.urth, predicted_display_time,
-			                       diff, predicted_display_period);
+			struct u_rt_helper *urth = (struct u_rt_helper *)&s->threads[i].ics.urth;
+			u_rt_helper_new_sample(          //
+			    urth,                        //
+			    predicted_display_time_ns,   //
+			    predicted_display_period_ns, //
+			    diff_ns);                    //
 		}
 
 		os_mutex_unlock(&s->global_state_lock);
