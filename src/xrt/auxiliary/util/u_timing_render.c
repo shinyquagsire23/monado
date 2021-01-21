@@ -11,7 +11,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_logging.h"
-#include "util/u_render_timing.h"
+#include "util/u_timing_render.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -24,7 +24,7 @@
  *
  */
 
-DEBUG_GET_ONCE_LOG_OPTION(ll, "U_RENDER_TIMING_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(ll, "U_TIMING_RENDER_LOG", U_LOGGING_WARN)
 
 #define RT_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_ll(), __VA_ARGS__)
 #define RT_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_ll(), __VA_ARGS__)
