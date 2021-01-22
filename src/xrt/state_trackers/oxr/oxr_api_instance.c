@@ -100,9 +100,9 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo, XrInstance *out_ins
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo, XR_TYPE_INSTANCE_CREATE_INFO);
 	const uint32_t major = XR_VERSION_MAJOR(XR_CURRENT_API_VERSION);
 	const uint32_t minor = XR_VERSION_MINOR(XR_CURRENT_API_VERSION);
-#if 0
 	const uint32_t patch = XR_VERSION_PATCH(XR_CURRENT_API_VERSION);
-#endif
+	(void)patch; // Not used for now.
+
 
 	if (createInfo->applicationInfo.apiVersion < XR_MAKE_VERSION(major, minor, 0)) {
 		return oxr_error(&log, XR_ERROR_API_VERSION_UNSUPPORTED,

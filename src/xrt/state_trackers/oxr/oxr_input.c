@@ -1065,6 +1065,7 @@ oxr_action_cache_update(struct oxr_logger *log,
 			break;
 		}
 #if 0
+		// Untested, we have no VEC3 input.
 		case XRT_INPUT_TYPE_VEC3_MINUS_ONE_TO_ONE: {
 			changed = (combined.value.vec3.x != last.vec3.x) ||
 			          (combined.value.vec3.y != last.vec3.y) ||
