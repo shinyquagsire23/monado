@@ -359,6 +359,7 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
 	OXR_VERIFY_HAND_TRACKER_AND_INIT_LOG(&log, handTracker, hand_tracker, "xrLocateHandJointsEXT");
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, locateInfo, XR_TYPE_HAND_JOINTS_LOCATE_INFO_EXT);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, locations, XR_TYPE_HAND_JOINT_LOCATIONS_EXT);
+	OXR_VERIFY_ARG_NOT_NULL(&log, locations->jointLocations);
 	OXR_VERIFY_SPACE_NOT_NULL(&log, locateInfo->baseSpace, spc);
 
 
