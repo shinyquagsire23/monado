@@ -895,16 +895,15 @@ _json_get_int(const cJSON *json, const char *name)
 static void
 _get_color_coeffs(struct u_vive_values *values, const cJSON *coeffs, uint8_t eye, uint8_t channel)
 {
-	// this is 4 on index, all values populated
-	// assert(coeffs->length == 8);
-	// only 3 coeffs contain values
+	// For Vive this is 8 with only 3 populated.
+	// For Index this is 4 with all values populated.
 	const cJSON *item = NULL;
 	size_t i = 0;
 	cJSON_ArrayForEach(item, coeffs)
 	{
 		values->coefficients[channel][i] = (float)item->valuedouble;
 		++i;
-		if (i == 3) {
+		if (i == 4) {
 			break;
 		}
 	}

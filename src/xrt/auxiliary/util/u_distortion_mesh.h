@@ -75,8 +75,8 @@ struct u_vive_values
 	//! r/g/b
 	struct xrt_vec2 center[3];
 
-	//! r/g/b, a/b/c
-	float coefficients[3][3];
+	//! r/g/b, a/b/c/d
+	float coefficients[3][4];
 };
 
 /*!

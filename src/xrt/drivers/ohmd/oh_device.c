@@ -634,32 +634,38 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 		ohd->distortion.vive[0].coefficients[0][0] = -0.188236068524731f;
 		ohd->distortion.vive[0].coefficients[0][1] = -0.221086205321053f;
 		ohd->distortion.vive[0].coefficients[0][2] = -0.2537849057915209f;
+		ohd->distortion.vive[0].coefficients[0][3] = 0.0f;
 
 		// blue
 		ohd->distortion.vive[0].coefficients[1][0] = -0.07316590815739493f;
 		ohd->distortion.vive[0].coefficients[1][1] = -0.02332400789561968f;
 		ohd->distortion.vive[0].coefficients[1][2] = 0.02469959434698275f;
+		ohd->distortion.vive[0].coefficients[1][3] = 0.0f;
 
 		// red
 		ohd->distortion.vive[0].coefficients[2][0] = -0.02223805567703767f;
 		ohd->distortion.vive[0].coefficients[2][1] = -0.04931309279533211f;
 		ohd->distortion.vive[0].coefficients[2][2] = -0.07862881939243466f;
+		ohd->distortion.vive[0].coefficients[2][3] = 0.0f;
 
 		// right
 		// green
 		ohd->distortion.vive[1].coefficients[0][0] = -0.1906209981894497f;
 		ohd->distortion.vive[1].coefficients[0][1] = -0.2248896677207884f;
 		ohd->distortion.vive[1].coefficients[0][2] = -0.2721364516782803f;
+		ohd->distortion.vive[1].coefficients[0][3] = 0.0f;
 
 		// blue
 		ohd->distortion.vive[1].coefficients[1][0] = -0.07346071902951497f;
 		ohd->distortion.vive[1].coefficients[1][1] = -0.02189527566250131f;
 		ohd->distortion.vive[1].coefficients[1][2] = 0.0581378652359256f;
+		ohd->distortion.vive[1].coefficients[1][3] = 0.0f;
 
 		// red
 		ohd->distortion.vive[1].coefficients[2][0] = -0.01755850332081247f;
 		ohd->distortion.vive[1].coefficients[2][1] = -0.04517245633373419f;
 		ohd->distortion.vive[1].coefficients[2][2] = -0.0928909347763f;
+		ohd->distortion.vive[1].coefficients[2][3] = 0.0f;
 		// clang-format on
 
 		ohd->base.compute_distortion = compute_distortion_vive;
