@@ -199,7 +199,25 @@ cmake_dependent_option(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" 
 
 # You can set this from a superproject to add a driver
 # All drivers must be listed in here to be included in the generated header!
-list(APPEND AVAILABLE_DRIVERS "ANDROID" ARDUINO DUMMY HDK HYDRA NS OHMD PSMV PSVR RS V4L2 VIVE DAYDREAM REMOTE SURVIVE HANDTRACKING ILLIXR)
+list(APPEND AVAILABLE_DRIVERS
+	"ANDROID"
+	"ARDUINO"
+	"DAYDREAM"
+	"DUMMY"
+	"HANDTRACKING"
+	"HDK"
+	"HYDRA"
+	"ILLIXR"
+	"NS"
+	"OHMD"
+	"PSMV"
+	"PSVR"
+	"RS"
+	"REMOTE"
+	"SURVIVE"
+	"V4L2"
+	"VIVE"
+	)
 
 
 # Package name needs to be known by the native code itself.
@@ -319,12 +337,12 @@ message(STATUS "#    DRIVER_ANDROID:      ${XRT_BUILD_DRIVER_ANDROID}")
 message(STATUS "#    DRIVER_ARDUINO:      ${XRT_BUILD_DRIVER_ARDUINO}")
 message(STATUS "#    DRIVER_DAYDREAM:     ${XRT_BUILD_DRIVER_DAYDREAM}")
 message(STATUS "#    DRIVER_DUMMY:        ${XRT_BUILD_DRIVER_DUMMY}")
+message(STATUS "#    DRIVER_HANDTRACKING: ${XRT_BUILD_DRIVER_HANDTRACKING}")
 message(STATUS "#    DRIVER_HDK:          ${XRT_BUILD_DRIVER_HDK}")
 message(STATUS "#    DRIVER_HYDRA:        ${XRT_BUILD_DRIVER_HYDRA}")
 message(STATUS "#    DRIVER_ILLIXR:       ${XRT_BUILD_DRIVER_ILLIXR}")
 message(STATUS "#    DRIVER_NS:           ${XRT_BUILD_DRIVER_NS}")
 message(STATUS "#    DRIVER_OHMD:         ${XRT_BUILD_DRIVER_OHMD}")
-message(STATUS "#    DRIVER_HANDTRACKING: ${XRT_BUILD_DRIVER_HANDTRACKING}")
 message(STATUS "#    DRIVER_PSMV:         ${XRT_BUILD_DRIVER_PSMV}")
 message(STATUS "#    DRIVER_PSVR:         ${XRT_BUILD_DRIVER_PSVR}")
 message(STATUS "#    DRIVER_RS:           ${XRT_BUILD_DRIVER_RS}")
