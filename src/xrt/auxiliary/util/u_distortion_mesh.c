@@ -143,7 +143,7 @@ u_compute_distortion_vive(struct u_vive_values *values, float u, float v, struct
 
 		float r2 = m_vec2_dot(texCoord, texCoord);
 		float d_inv =
-		    ((r2 * val.coefficients[2][i] + val.coefficients[1][i]) * r2 + val.coefficients[0][i]) * r2 + 1.0;
+		    ((r2 * val.coefficients[i][2] + val.coefficients[i][1]) * r2 + val.coefficients[i][0]) * r2 + 1.0;
 		float d = 1.0 / d_inv;
 
 		struct xrt_vec2 offset = {0.5, 0.5};

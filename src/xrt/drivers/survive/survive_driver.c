@@ -902,7 +902,7 @@ _get_color_coeffs(struct u_vive_values *values, const cJSON *coeffs, uint8_t eye
 	size_t i = 0;
 	cJSON_ArrayForEach(item, coeffs)
 	{
-		values->coefficients[i][channel] = (float)item->valuedouble;
+		values->coefficients[channel][i] = (float)item->valuedouble;
 		++i;
 		if (i == 3) {
 			break;

@@ -628,6 +628,7 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 		ohd->distortion.vive[1].center[2].x = -0.08933516629552526f;
 		ohd->distortion.vive[1].center[2].y = -0.006014565287238661f;
 
+		//! @todo These values are most likely wrong, needs to be transposed and correct channel.
 		// left
 		// green
 		ohd->distortion.vive[0].coefficients[0][0] = -0.188236068524731f;
