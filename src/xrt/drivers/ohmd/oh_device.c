@@ -615,10 +615,18 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 		}
 		ohd->distortion.vive[0].undistort_r2_cutoff = 1.11622154712677f;
 		ohd->distortion.vive[1].undistort_r2_cutoff = 1.101870775222778f;
-		ohd->distortion.vive[0].center[0] = 0.08946027017045266f;
-		ohd->distortion.vive[0].center[1] = -0.009002181016260827f;
-		ohd->distortion.vive[1].center[0] = -0.08933516629552526f;
-		ohd->distortion.vive[1].center[1] = -0.006014565287238661f;
+		ohd->distortion.vive[0].center[0].x = 0.08946027017045266f;
+		ohd->distortion.vive[0].center[0].y = -0.009002181016260827f;
+		ohd->distortion.vive[0].center[1].x = 0.08946027017045266f;
+		ohd->distortion.vive[0].center[1].y = -0.009002181016260827f;
+		ohd->distortion.vive[0].center[2].x = 0.08946027017045266f;
+		ohd->distortion.vive[0].center[2].y = -0.009002181016260827f;
+		ohd->distortion.vive[1].center[0].x = -0.08933516629552526f;
+		ohd->distortion.vive[1].center[0].y = -0.006014565287238661f;
+		ohd->distortion.vive[1].center[1].x = -0.08933516629552526f;
+		ohd->distortion.vive[1].center[1].y = -0.006014565287238661f;
+		ohd->distortion.vive[1].center[2].x = -0.08933516629552526f;
+		ohd->distortion.vive[1].center[2].y = -0.006014565287238661f;
 
 		// left
 		// green

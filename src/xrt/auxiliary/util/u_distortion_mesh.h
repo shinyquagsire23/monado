@@ -70,13 +70,12 @@ struct u_vive_values
 	float aspect_x_over_y;
 	float grow_for_undistort;
 
-	//! Left/right
 	float undistort_r2_cutoff;
 
-	//! Left/right, x/y
-	float center[2];
+	//! r/g/b
+	struct xrt_vec2 center[3];
 
-	//! left/right, r/g/b, a/b/c
+	//! r/g/b, a/b/c
 	float coefficients[3][3];
 };
 

@@ -911,23 +911,6 @@ _get_color_coeffs(struct u_vive_values *values, const cJSON *coeffs, uint8_t eye
 }
 
 static void
-_get_color_coeffs_lookup(
-    struct u_vive_values *values, const cJSON *eye_json, const char *name, uint8_t eye, uint8_t channel)
-{
-	const cJSON *distortion = cJSON_GetObjectItemCaseSensitive(eye_json, name);
-	if (distortion == NULL) {
-		return;
-	}
-
-	const cJSON *coeffs = cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
-	if (coeffs == NULL) {
-		return;
-	}
-
-	_get_color_coeffs(values, coeffs, eye, channel);
-}
-
-static void
 get_distortion_properties(struct survive_device *d, const cJSON *eye_transform_json, uint8_t eye)
 {
 	const cJSON *eye_json = cJSON_GetArrayItem(eye_transform_json, eye);
@@ -946,23 +929,26 @@ get_distortion_properties(struct survive_device *d, const cJSON *eye_transform_j
 	d->distortion[eye].undistort_r2_cutoff = _json_get_float(eye_json, "undistort_r2_cutoff");
 	// clang-format on
 
-	const cJSON *distortion = cJSON_GetObjectItemCaseSensitive(eye_json, "distortion");
-	if (distortion != NULL) {
-		// TODO: store center per color
-		// clang-format off
-		d->distortion[eye].center[0] = _json_get_float(distortion, "center_x");
-		d->distortion[eye].center[1] = _json_get_float(distortion, "center_y");
-		// clang-format on
+	const char *names[3] = {
+	    "distortion_red",
+	    "distortion",
+	    "distortion_blue",
+	};
 
-		// green
+	for (int i = 0; i < 3; i++) {
+		const cJSON *distortion = cJSON_GetObjectItemCaseSensitive(eye_json, names[i]);
+		if (distortion == NULL) {
+			continue;
+		}
+
+		d->distortion[eye].center[i].x = _json_get_float(distortion, "center_x");
+		d->distortion[eye].center[i].y = _json_get_float(distortion, "center_y");
+
 		const cJSON *coeffs = cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
 		if (coeffs != NULL) {
-			_get_color_coeffs(&d->distortion[eye], coeffs, eye, 1);
+			_get_color_coeffs(&d->distortion[eye], coeffs, eye, i);
 		}
 	}
-
-	_get_color_coeffs_lookup(&d->distortion[eye], eye_json, "distortion_red", eye, 0);
-	_get_color_coeffs_lookup(&d->distortion[eye], eye_json, "distortion_blue", eye, 2);
 }
 
 static bool
