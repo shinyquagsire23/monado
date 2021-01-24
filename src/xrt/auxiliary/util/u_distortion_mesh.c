@@ -124,29 +124,50 @@ run_func(struct xrt_device *xdev, func_calc calc, int num_views, struct xrt_hmd_
 bool
 u_compute_distortion_vive(struct u_vive_values *values, float u, float v, struct xrt_uv_triplet *result)
 {
-	// Reading the whole struct like this gives the compiler more opportunity to optimize, yes really.
+	// Reading the whole struct like this gives the compiler more opportunity to optimize.
 	const struct u_vive_values val = *values;
 
-	struct xrt_vec2 factor = {0.5 / (1.0 + val.grow_for_undistort),
-	                          val.aspect_x_over_y * 0.5 / (1.0 + val.grow_for_undistort)};
+	const float common_factor_value = 0.5 / (1.0 + val.grow_for_undistort);
+	const struct xrt_vec2 factor = {
+	    common_factor_value,
+	    common_factor_value * val.aspect_x_over_y,
+	};
 
 	// Results r/g/b.
 	struct xrt_vec2 tc[3];
 
 	// Dear compiler, please vectorize.
 	for (int i = 0; i < 3; i++) {
-		struct xrt_vec2 texCoord = {2.0 * u - 1.0, 2.0 * v - 1.0};
+		struct xrt_vec2 texCoord = {
+		    2.0 * u - 1.0,
+		    2.0 * v - 1.0,
+		};
 
 		texCoord.y /= val.aspect_x_over_y;
 		texCoord.x -= val.center[i].x;
 		texCoord.y -= val.center[i].y;
 
 		float r2 = m_vec2_dot(texCoord, texCoord);
-		float d_inv =
-		    ((r2 * val.coefficients[i][2] + val.coefficients[i][1]) * r2 + val.coefficients[i][0]) * r2 + 1.0;
+		float k1 = val.coefficients[i][0];
+		float k2 = val.coefficients[i][1];
+		float k3 = val.coefficients[i][2];
+		float k4 = val.coefficients[i][3];
 
-		// The scaled part of DISTORT_DPOLY3_SCALED, seems to improve chromatic abberation.
-		float d = (1.0 / d_inv) + val.coefficients[i][3];
+		/*
+		 *                     1.0
+		 * d = -------------------------------------- + k4
+		 *      1.0 + r^2 * k1 + r^4 * k2 + r^6 * k3
+		 *
+		 * The variable k4 is the scaled part of DISTORT_DPOLY3_SCALED.
+		 *
+		 * Optimization to reduce the number of multiplications.
+		 *    1.0 + r^2 * k1 + r^4 * k2 + r^6 * k3
+		 *    1.0 + r^2 * ((k1 + r^2 * k2) + r^2 * k3)
+		 */
+
+		float top = 1.0;
+		float bottom = 1.0 + r2 * (k1 + r2 * (k2 + r2 * k3));
+		float d = (top / bottom) + k4;
 
 		struct xrt_vec2 offset = {0.5, 0.5};
 
@@ -160,6 +181,7 @@ u_compute_distortion_vive(struct u_vive_values *values, float u, float v, struct
 
 	return true;
 }
+
 
 #define mul m_vec2_mul
 #define mul_scalar m_vec2_mul_scalar
