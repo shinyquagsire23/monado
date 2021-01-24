@@ -181,6 +181,7 @@ if (XRT_BUILD_DRIVER_VIVE OR XRT_BUILD_DRIVER_SURVIVE)
 	target_include_directories(vive_config PRIVATE ${ZLIB_INCLUDE_DIRS})
 endif()
 
+set(VIVE_CONFIG_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/vive")
 if(XRT_BUILD_DRIVER_VIVE)
 	set(VIVE_SOURCE_FILES
 		vive/vive_device.h
@@ -198,7 +199,7 @@ if(XRT_BUILD_DRIVER_VIVE)
 	add_library(drv_vive STATIC ${VIVE_SOURCE_FILES})
 	target_link_libraries(drv_vive PRIVATE xrt-interfaces aux_os aux_util aux_math xrt-external-cjson vive_config)
 	target_link_libraries(drv_vive PRIVATE ${ZLIB_LIBRARIES})
-	target_include_directories(drv_vive PRIVATE ${ZLIB_INCLUDE_DIRS})
+	target_include_directories(drv_vive PRIVATE ${ZLIB_INCLUDE_DIRS} ${VIVE_CONFIG_INCLUDE})
 	list(APPEND ENABLED_HEADSET_DRIVERS vive)
 endif()
 
@@ -233,6 +234,7 @@ if (XRT_BUILD_DRIVER_SURVIVE)
 		)
 
 	add_library(drv_survive STATIC ${SURVIVE_SOURCE_FILES})
+	target_include_directories(drv_survive PRIVATE ${VIVE_CONFIG_INCLUDE})
 	target_link_libraries(drv_survive PRIVATE xrt-interfaces aux_os aux_util aux_math vive_config PkgConfig::SURVIVE)
 	list(APPEND ENABLED_HEADSET_DRIVERS survive)
 endif()
