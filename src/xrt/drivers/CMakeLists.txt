@@ -160,8 +160,8 @@ if(XRT_BUILD_DRIVER_REMOTE)
 	list(APPEND ENABLED_HEADSET_DRIVERS remote)
 endif()
 
-if(XRT_BUILD_DRIVER_VIVE)
-	set(VIVE_SOURCE_FILES
+if (XRT_BUILD_DRIVER_VIVE OR XRT_BUILD_DRIVER_SURVIVE)
+	set(VIVE_CONFIG_SOURCE_FILES
 		vive/vive_device.h
 		vive/vive_device.c
 		vive/vive_prober.h
@@ -175,9 +175,28 @@ if(XRT_BUILD_DRIVER_VIVE)
 		vive/vive_lighthouse.h
 		vive/vive_lighthouse.c
 		)
+	add_library(vive_config STATIC ${VIVE_CONFIG_SOURCE_FILES})
+	target_link_libraries(vive_config PRIVATE xrt-interfaces aux_util aux_math xrt-external-cjson)
+	target_link_libraries(vive_config PRIVATE ${ZLIB_LIBRARIES})
+	target_include_directories(vive_config PRIVATE ${ZLIB_INCLUDE_DIRS})
+endif()
+
+if(XRT_BUILD_DRIVER_VIVE)
+	set(VIVE_SOURCE_FILES
+		vive/vive_device.h
+		vive/vive_device.c
+		vive/vive_prober.h
+		vive/vive_prober.c
+		vive/vive_protocol.c
+		vive/vive_protocol.h
+		vive/vive_controller.h
+		vive/vive_controller.c
+		vive/vive_lighthouse.h
+		vive/vive_lighthouse.c
+		)
 
 	add_library(drv_vive STATIC ${VIVE_SOURCE_FILES})
-	target_link_libraries(drv_vive PRIVATE xrt-interfaces aux_os aux_util aux_math xrt-external-cjson)
+	target_link_libraries(drv_vive PRIVATE xrt-interfaces aux_os aux_util aux_math xrt-external-cjson vive_config)
 	target_link_libraries(drv_vive PRIVATE ${ZLIB_LIBRARIES})
 	target_include_directories(drv_vive PRIVATE ${ZLIB_INCLUDE_DIRS})
 	list(APPEND ENABLED_HEADSET_DRIVERS vive)
@@ -214,7 +233,7 @@ if (XRT_BUILD_DRIVER_SURVIVE)
 		)
 
 	add_library(drv_survive STATIC ${SURVIVE_SOURCE_FILES})
-	target_link_libraries(drv_survive PRIVATE xrt-interfaces aux_os aux_util aux_math PkgConfig::SURVIVE)
+	target_link_libraries(drv_survive PRIVATE xrt-interfaces aux_os aux_util aux_math vive_config PkgConfig::SURVIVE)
 	list(APPEND ENABLED_HEADSET_DRIVERS survive)
 endif()
 
