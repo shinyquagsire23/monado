@@ -154,6 +154,20 @@ lib_drv_v4l2 = static_library(
 	build_by_default: 'v4l2' in drivers,
 )
 
+lib_vive_config = static_library(
+	'vive_config',
+	files(
+		'vive/vive_config.c',
+		'vive/vive_config.h',
+	),
+	include_directories: [
+		xrt_include,
+		cjson_include,
+	],
+	dependencies: [aux, zlib],
+	build_by_default: 'vive' in drivers or 'survive' in drivers,
+)
+
 lib_drv_vive = static_library(
 	'drv_vive',
 	files(
@@ -165,8 +179,6 @@ lib_drv_vive = static_library(
 		'vive/vive_prober.c',
 		'vive/vive_controller.c',
 		'vive/vive_controller.h',
-		'vive/vive_config.c',
-		'vive/vive_config.h',
 		'vive/vive_lighthouse.c',
 		'vive/vive_lighthouse.h',
 	),
@@ -176,6 +188,7 @@ lib_drv_vive = static_library(
 	],
 	dependencies: [aux, zlib],
 	build_by_default: 'vive' in drivers,
+	link_with: lib_vive_config
 )
 
 lib_drv_survive = static_library(
@@ -184,7 +197,7 @@ lib_drv_survive = static_library(
 		'survive/survive_driver.c',
 		'survive/survive_interface.h',
 		'survive/survive_wrap.c',
-		'survive/survive_wrap.h'
+		'survive/survive_wrap.h',
 	),
 	include_directories: [
 		xrt_include,
@@ -192,6 +205,7 @@ lib_drv_survive = static_library(
 	],
 	dependencies: [aux, zlib, survive],
 	build_by_default: 'survive' in drivers,
+	link_with: lib_vive_config
 )
 
 lib_drv_daydream = static_library(
