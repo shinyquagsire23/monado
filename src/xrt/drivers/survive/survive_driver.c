@@ -41,16 +41,10 @@
 
 #include "math/m_predict.h"
 
+#include "vive_config.h"
+
 // typically HMD config is available at around 2 seconds after init
 #define WAIT_TIMEOUT 5.0
-
-// public documentation
-//! @todo move to vive_protocol
-#define INDEX_MIN_IPD 0.058
-#define INDEX_MAX_IPD 0.07
-
-#define DEFAULT_HAPTIC_FREQ 150.0f
-#define MIN_HAPTIC_DURATION 0.05f
 
 #define SURVIVE_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->sys->ll, __VA_ARGS__)
 #define SURVIVE_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->sys->ll, __VA_ARGS__)
@@ -105,19 +99,6 @@ typedef enum
 
 static bool survive_already_initialized = false;
 
-enum VIVE_VARIANT
-{
-	VIVE_UNKNOWN = 0,
-	VIVE_VARIANT_VIVE,
-	VIVE_VARIANT_PRO,
-	VIVE_VARIANT_VALVE_INDEX,
-	VIVE_VARIANT_HTC_VIVE_CONTROLLER,
-	VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER,
-	VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER,
-	VIVE_VARIANT_TRACKER_V1,
-	VIVE_VARIANT_TRACKER_v2
-};
-
 /*!
  * @implements xrt_device
  */
@@ -131,14 +112,15 @@ struct survive_device
 
 	int num;
 
-	enum VIVE_VARIANT variant;
 
 	union {
 		struct
 		{
 			float proximity; // [0,1]
 			float ipd;
-			struct xrt_quat rot[2];
+
+			enum VIVE_VARIANT variant;
+			struct vive_config config;
 		} hmd;
 
 		struct
@@ -146,9 +128,11 @@ struct survive_device
 			float curl[XRT_FINGER_COUNT];
 			uint64_t curl_ts[XRT_FINGER_COUNT];
 			struct u_hand_tracking hand_tracking;
+
+			enum VIVE_CONTROLLER_VARIANT variant;
+			struct vive_controller_config config;
 		} ctrl;
 	};
-	struct u_vive_values distortion[2];
 };
 
 //! @todo support more devices (trackers, ...)
@@ -447,7 +431,7 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 	}
 
 
-	bool left = survive->variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER;
+	bool left = survive->ctrl.variant == CONTROLLER_INDEX_LEFT;
 	enum xrt_hand hand = left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
 
 	float thumb_curl = 0.0f;
@@ -489,7 +473,7 @@ survive_device_get_view_pose(struct xrt_device *xdev,
 	bool adjust = view_index == 0;
 
 	struct survive_device *survive = (struct survive_device *)xdev;
-	pose.orientation = survive->hmd.rot[view_index];
+	pose.orientation = survive->hmd.config.display.rot[view_index];
 	pose.position.x = eye_relation->x / 2.0f;
 	pose.position.y = eye_relation->y / 2.0f;
 	pose.position.z = eye_relation->z / 2.0f;
@@ -831,130 +815,11 @@ wait_for_device_config(const struct SurviveSimpleObject *sso)
 	return false;
 }
 
-void
-print_vec3(const char *title, struct xrt_vec3 *vec)
-{
-	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y, (double)vec->z);
-}
-
-static long long
-_json_to_int(const cJSON *item)
-{
-	if (item != NULL) {
-		return item->valueint;
-	} else {
-		return 0;
-	}
-}
-
-static bool
-_json_get_matrix_3x3(const cJSON *json, const char *name, struct xrt_matrix_3x3 *result)
-{
-	const cJSON *vec3_arr = cJSON_GetObjectItemCaseSensitive(json, name);
-
-	// Some sanity checking.
-	if (vec3_arr == NULL || cJSON_GetArraySize(vec3_arr) != 3) {
-		return false;
-	}
-
-	size_t total = 0;
-	const cJSON *vec = NULL;
-	cJSON_ArrayForEach(vec, vec3_arr)
-	{
-		assert(cJSON_GetArraySize(vec) == 3);
-		const cJSON *elem = NULL;
-		cJSON_ArrayForEach(elem, vec)
-		{
-			// Just in case.
-			if (total >= 9) {
-				break;
-			}
-
-			assert(cJSON_IsNumber(elem));
-			result->v[total++] = (float)elem->valuedouble;
-		}
-	}
-
-	return true;
-}
-
-static float
-_json_get_float(const cJSON *json, const char *name)
-{
-	const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
-	return (float)item->valuedouble;
-}
-
-static long long
-_json_get_int(const cJSON *json, const char *name)
-{
-	const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
-	return _json_to_int(item);
-}
-
-static void
-_get_color_coeffs(struct u_vive_values *values, const cJSON *coeffs, uint8_t eye, uint8_t channel)
-{
-	// For Vive this is 8 with only 3 populated.
-	// For Index this is 4 with all values populated.
-	const cJSON *item = NULL;
-	size_t i = 0;
-	cJSON_ArrayForEach(item, coeffs)
-	{
-		values->coefficients[channel][i] = (float)item->valuedouble;
-		++i;
-		if (i == 4) {
-			break;
-		}
-	}
-}
-
-static void
-get_distortion_properties(struct survive_device *d, const cJSON *eye_transform_json, uint8_t eye)
-{
-	const cJSON *eye_json = cJSON_GetArrayItem(eye_transform_json, eye);
-	if (eye_json == NULL) {
-		return;
-	}
-
-	struct xrt_matrix_3x3 rot = {0};
-	if (_json_get_matrix_3x3(eye_json, "eye_to_head", &rot)) {
-		math_quat_from_matrix_3x3(&rot, &d->hmd.rot[eye]);
-	}
-
-	// TODO: store grow_for_undistort per eye
-	// clang-format off
-	d->distortion[eye].grow_for_undistort = _json_get_float(eye_json, "grow_for_undistort");
-	d->distortion[eye].undistort_r2_cutoff = _json_get_float(eye_json, "undistort_r2_cutoff");
-	// clang-format on
-
-	const char *names[3] = {
-	    "distortion_red",
-	    "distortion",
-	    "distortion_blue",
-	};
-
-	for (int i = 0; i < 3; i++) {
-		const cJSON *distortion = cJSON_GetObjectItemCaseSensitive(eye_json, names[i]);
-		if (distortion == NULL) {
-			continue;
-		}
-
-		d->distortion[eye].center[i].x = _json_get_float(distortion, "center_x");
-		d->distortion[eye].center[i].y = _json_get_float(distortion, "center_y");
-
-		const cJSON *coeffs = cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
-		if (coeffs != NULL) {
-			_get_color_coeffs(&d->distortion[eye], coeffs, eye, i);
-		}
-	}
-}
-
 static bool
 compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct survive_device *d = (struct survive_device *)xdev;
-	return u_compute_distortion_vive(&d->distortion[view], u, v, result);
+	return u_compute_distortion_vive(&d->hmd.config.distortion[view], u, v, result);
 }
 
 static bool
@@ -965,10 +830,11 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant, const 
 	int outputs = 0;
 
 	struct survive_device *survive = U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
+
 	sys->hmd = survive;
 	survive->sys = sys;
 	survive->survive_obj = sso;
-	survive->variant = variant;
+	survive->hmd.variant = variant;
 
 	survive->base.name = XRT_DEVICE_GENERIC_HMD;
 	snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive HMD");
@@ -983,78 +849,39 @@ _create_hmd_device(struct survive_system *sys, enum VIVE_VARIANT variant, const 
 	survive->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
 
 	char *json_string = survive_get_json_config(survive->survive_obj);
-	cJSON *json = cJSON_Parse(json_string);
-	if (!cJSON_IsObject(json)) {
-		SURVIVE_ERROR(survive, "Could not parse JSON data.");
-		return false;
-	}
 
+	survive->hmd.config.ll = survive->sys->ll;
+	// usb connected HMD variant is known because of USB id, config parsing relies on it.
+	survive->hmd.config.variant = survive->hmd.variant;
+	vive_config_parse(&survive->hmd.config, json_string);
 
 	// TODO: Replace hard coded values from OpenHMD with config
 	double w_meters = 0.122822 / 2.0;
 	double h_meters = 0.068234;
 	double lens_horizontal_separation = 0.057863;
 	double eye_to_screen_distance = 0.023226876441867737;
-	if (survive->variant == VIVE_VARIANT_VALVE_INDEX) {
-		lens_horizontal_separation = 0.06;
-		h_meters = 0.07;
-		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
-		eye_to_screen_distance = 0.0255;
-	}
 
+	uint32_t w_pixels = survive->hmd.config.display.eye_target_width_in_pixels;
+	uint32_t h_pixels = survive->hmd.config.display.eye_target_height_in_pixels;
 
-	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0, eye_to_screen_distance);
-
-	for (int view = 0; view < 2; view++) {
-		survive->distortion[view].aspect_x_over_y = 0.89999997615814209f;
-		survive->distortion[view].grow_for_undistort = 0.5f;
-		survive->distortion[view].undistort_r2_cutoff = 1.0f;
-	}
-
-	survive->hmd.rot[0].w = 1.0f;
-	survive->hmd.rot[1].w = 1.0f;
-
-	//! @todo: use IPD for FOV
-	survive->hmd.ipd = 0.063;
-	survive->hmd.proximity = 0;
-
-	uint16_t w_pixels = 1080;
-	uint16_t h_pixels = 1200;
-	const cJSON *device_json = cJSON_GetObjectItemCaseSensitive(json, "device");
-	if (device_json) {
-		if (survive->variant != VIVE_VARIANT_VALVE_INDEX) {
-			survive->distortion[0].aspect_x_over_y =
-			    _json_get_float(device_json, "physical_aspect_x_over_y");
-			survive->distortion[1].aspect_x_over_y = survive->distortion[0].aspect_x_over_y;
-
-			//! @todo: fov calculation needs to be fixed, only works
-			//! with hardcoded value
-			// lens_horizontal_separation = _json_get_double(json,
-			// "lens_separation");
-		}
-		h_pixels = (uint16_t)_json_get_int(device_json, "eye_target_height_in_pixels");
-		w_pixels = (uint16_t)_json_get_int(device_json, "eye_target_width_in_pixels");
-	}
-
-	const cJSON *eye_transform_json = cJSON_GetObjectItemCaseSensitive(json, "tracking_to_eye_transform");
-	if (eye_transform_json) {
-		for (uint8_t eye = 0; eye < 2; eye++) {
-			get_distortion_properties(survive, eye_transform_json, eye);
-		}
-	}
-
-	SURVIVE_INFO(survive, "Survive eye resolution %dx%d", w_pixels, h_pixels);
-
-	cJSON_Delete(json);
+	SURVIVE_DEBUG(survive, "display: %dx%d", w_pixels, h_pixels);
 
 	// Main display.
 	survive->base.hmd->screens[0].w_pixels = (int)w_pixels * 2;
 	survive->base.hmd->screens[0].h_pixels = (int)h_pixels;
 
-	if (survive->variant == VIVE_VARIANT_VALVE_INDEX)
+	if (survive->hmd.variant == VIVE_VARIANT_INDEX) {
+		lens_horizontal_separation = 0.06;
+		h_meters = 0.07;
+		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
+		eye_to_screen_distance = 0.0255;
+
 		survive->base.hmd->screens[0].nominal_frame_interval_ns = (uint64_t)time_s_to_ns(1.0f / 144.0f);
-	else
+	} else {
 		survive->base.hmd->screens[0].nominal_frame_interval_ns = (uint64_t)time_s_to_ns(1.0f / 90.0f);
+	}
+
+	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0, eye_to_screen_distance);
 
 	struct xrt_vec2 lens_center[2];
 
@@ -1160,43 +987,54 @@ static struct xrt_binding_profile binding_profiles_vive[1] = {
 	} while (0)
 
 static bool
-_create_controller_device(struct survive_system *sys, const SurviveSimpleObject *sso, enum VIVE_VARIANT variant)
+_create_controller_device(struct survive_system *sys,
+                          const SurviveSimpleObject *sso,
+                          struct vive_controller_config *config)
 {
+
+	enum VIVE_CONTROLLER_VARIANT variant = config->variant;
+
+	int idx = -1;
+	if (variant == CONTROLLER_VIVE_WAND) {
+		if (sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL) {
+			idx = SURVIVE_LEFT_CONTROLLER;
+		} else if (sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
+			idx = SURVIVE_RIGHT_CONTROLLER;
+		} else {
+			U_LOG_IFL_E(sys->ll, "Only creating 2 controllers!");
+			return false;
+		}
+	} else if (variant == CONTROLLER_INDEX_LEFT) {
+		if (sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL) {
+			idx = SURVIVE_LEFT_CONTROLLER;
+		} else {
+			U_LOG_IFL_E(sys->ll, "Only creating 1 left controller!");
+			return false;
+		}
+	} else if (variant == CONTROLLER_INDEX_RIGHT) {
+		if (sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
+			idx = SURVIVE_RIGHT_CONTROLLER;
+		} else {
+			U_LOG_IFL_E(sys->ll, "Only creating 1 right controller!");
+			return false;
+		}
+	}
+
+	if (idx == -1) {
+		U_LOG_IFL_E(sys->ll, "Skipping survive device we couldn't assign: %s!", config->firmware.model_number);
+		return false;
+	}
 
 	enum u_device_alloc_flags flags = 0;
 
 	int inputs = VIVE_CONTROLLER_MAX_INDEX;
 	int outputs = 1;
 	struct survive_device *survive = U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
+	survive->ctrl.config = *config;
 
-	int idx = -1;
-	if (variant == VIVE_VARIANT_HTC_VIVE_CONTROLLER) {
-		if (sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL) {
-			idx = SURVIVE_LEFT_CONTROLLER;
-		} else if (sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
-			idx = SURVIVE_RIGHT_CONTROLLER;
-		} else {
-			SURVIVE_ERROR(survive, "Only creating 2 controllers!");
-			return false;
-		}
-	} else if (variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER) {
-		if (sys->controllers[SURVIVE_LEFT_CONTROLLER] == NULL) {
-			idx = SURVIVE_LEFT_CONTROLLER;
-		} else {
-			SURVIVE_ERROR(survive, "Only creating 1 left controller!");
-			return false;
-		}
-	} else if (variant == VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
-		if (sys->controllers[SURVIVE_RIGHT_CONTROLLER] == NULL) {
-			idx = SURVIVE_RIGHT_CONTROLLER;
-		} else {
-			SURVIVE_ERROR(survive, "Only creating 1 right controller!");
-			return false;
-		}
-	}
 	sys->controllers[idx] = survive;
 	survive->sys = sys;
-	survive->variant = variant;
+	survive->ctrl.variant = variant;
 	survive->survive_obj = sso;
 
 	survive->num = idx;
@@ -1209,8 +1047,7 @@ _create_controller_device(struct survive_system *sys, const SurviveSimpleObject 
 
 	//! @todo: May use Vive Wands + Index HMDs or Index Controllers + Vive
 	//! HMD
-	if (variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER ||
-	    variant == VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
+	if (variant == CONTROLLER_INDEX_LEFT || variant == CONTROLLER_INDEX_RIGHT) {
 		survive->base.name = XRT_DEVICE_INDEX_CONTROLLER;
 		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Valve Index Controller %d", idx);
 
@@ -1236,10 +1073,10 @@ _create_controller_device(struct survive_system *sys, const SurviveSimpleObject 
 		SET_INDEX_INPUT(AIM_POSE, AIM_POSE);
 		SET_INDEX_INPUT(GRIP_POSE, GRIP_POSE);
 
-		if (variant == VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER) {
+		if (variant == CONTROLLER_INDEX_LEFT) {
 			survive->base.device_type = XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
 			survive->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
-		} else if (variant == VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER) {
+		} else if (variant == CONTROLLER_INDEX_RIGHT) {
 			survive->base.device_type = XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
 			survive->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name =
 			    XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
@@ -1260,7 +1097,7 @@ _create_controller_device(struct survive_system *sys, const SurviveSimpleObject 
 
 		survive->base.hand_tracking_supported = true;
 
-	} else if (survive->variant == VIVE_VARIANT_HTC_VIVE_CONTROLLER) {
+	} else if (survive->ctrl.variant == CONTROLLER_VIVE_WAND) {
 		survive->base.name = XRT_DEVICE_VIVE_WAND;
 		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Vive Wand Controller %d", idx);
 
@@ -1300,48 +1137,9 @@ _product_to_variant(uint16_t product_id)
 	switch (product_id) {
 	case VIVE_PID: return VIVE_VARIANT_VIVE;
 	case VIVE_PRO_MAINBOARD_PID: return VIVE_VARIANT_PRO;
-	case VIVE_PRO_LHR_PID: return VIVE_VARIANT_VALVE_INDEX;
+	case VIVE_PRO_LHR_PID: return VIVE_VARIANT_INDEX;
 	default: U_LOG_W("No product ids matched %.4x", product_id); return VIVE_UNKNOWN;
 	}
-}
-
-#define JSON_STRING(a, b, c) u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
-
-static enum VIVE_VARIANT
-get_variant_from_json(struct survive_system *ss, cJSON *json)
-{
-	char model_number[32];
-
-	if (u_json_get(json, "model_number")) {
-		JSON_STRING(json, "model_number", model_number);
-	} else {
-		JSON_STRING(json, "model_name", model_number);
-	}
-
-	enum VIVE_VARIANT variant = VIVE_UNKNOWN;
-
-	if (strcmp(model_number, "Vive. Controller MV") == 0) {
-		variant = VIVE_VARIANT_HTC_VIVE_CONTROLLER;
-		U_LOG_D("Found Vive Wand controller");
-	} else if (strcmp(model_number, "Knuckles Right") == 0) {
-		variant = VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER;
-		U_LOG_D("Found Knuckles Right controller");
-	} else if (strcmp(model_number, "Knuckles Left") == 0) {
-		variant = VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER;
-		U_LOG_D("Found Knuckles Left controller");
-	} else if (strcmp(model_number, "Vive Tracker PVT") == 0) {
-		variant = VIVE_VARIANT_TRACKER_V1;
-		U_LOG_D("Found Gen 1 tracker.");
-	} else if (strcmp(model_number, "VIVE Tracker Pro MV") == 0) {
-		variant = VIVE_VARIANT_TRACKER_v2;
-		U_LOG_D("Found Gen 2 tracker.");
-	} else if (strcmp(model_number, "Utah MP") == 0) {
-		U_LOG_W("Found Utah MP (Index HMD), not a controller!");
-	} else {
-		U_LOG_E("Failed to parse controller variant: %s", model_number);
-	}
-
-	return variant;
 }
 
 int
@@ -1414,28 +1212,22 @@ survive_found(struct xrt_prober *xp,
 			_create_hmd_device(ss, variant, it);
 		} else if (type == SurviveSimpleObject_OBJECT) {
 			char *json_string = survive_get_json_config(it);
-			cJSON *json = cJSON_Parse(json_string);
-			if (!cJSON_IsObject(json)) {
-				U_LOG_IFL_E(ss->ll, "Could not parse JSON data.");
-				cJSON_Delete(json);
-				continue;
-			}
 
-			enum VIVE_VARIANT variant = get_variant_from_json(ss, json);
+			struct vive_controller_config config = {.ll = ss->ll};
+			vive_config_parse_controller(&config, json_string);
 
-			switch (variant) {
-			case VIVE_VARIANT_HTC_VIVE_CONTROLLER:
-			case VIVE_VARIANT_VALVE_INDEX_LEFT_CONTROLLER:
-			case VIVE_VARIANT_VALVE_INDEX_RIGHT_CONTROLLER:
+			switch (config.variant) {
+			case CONTROLLER_VIVE_WAND:
+			case CONTROLLER_INDEX_LEFT:
+			case CONTROLLER_INDEX_RIGHT:
 				U_LOG_IFL_D(ss->ll, "Adding controller.");
-				_create_controller_device(ss, it, variant);
+				_create_controller_device(ss, it, &config);
 				break;
 			default:
 				U_LOG_IFL_D(ss->ll, "Skip non controller obj.");
 				U_LOG_IFL_T(ss->ll, "json: %s", json_string);
 				break;
 			}
-			cJSON_Delete(json);
 		} else {
 			U_LOG_IFL_D(ss->ll, "Skip non OBJECT obj.");
 		}

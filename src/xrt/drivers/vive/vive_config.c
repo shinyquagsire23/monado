@@ -176,9 +176,38 @@ _print_vec3(const char *title, struct xrt_vec3 *vec)
 	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y, (double)vec->z);
 }
 
+static void
+vive_init_defaults(struct vive_config *d)
+{
+	d->display.eye_target_width_in_pixels = 1080;
+	d->display.eye_target_height_in_pixels = 1200;
+
+	d->display.rot[0].w = 1.0f;
+	d->display.rot[1].w = 1.0f;
+
+	d->imu.gyro_range = 8.726646f;
+	d->imu.acc_range = 39.226600f;
+
+	d->imu.acc_scale.x = 1.0f;
+	d->imu.acc_scale.y = 1.0f;
+	d->imu.acc_scale.z = 1.0f;
+
+	d->imu.gyro_scale.x = 1.0f;
+	d->imu.gyro_scale.y = 1.0f;
+	d->imu.gyro_scale.z = 1.0f;
+
+	for (int view = 0; view < 2; view++) {
+		d->distortion[view].aspect_x_over_y = 0.89999997615814209f;
+		d->distortion[view].grow_for_undistort = 0.5f;
+		d->distortion[view].undistort_r2_cutoff = 1.0f;
+	}
+}
+
 bool
 vive_config_parse(struct vive_config *d, char *json_string)
 {
+	vive_init_defaults(d);
+
 	VIVE_DEBUG(d, "JSON config:\n%s", json_string);
 
 	cJSON *json = cJSON_Parse(json_string);

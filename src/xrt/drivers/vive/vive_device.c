@@ -716,36 +716,6 @@ vive_sensors_run_thread(void *ptr)
 	return NULL;
 }
 
-void
-vive_init_defaults(struct vive_device *d)
-{
-	d->config.display.eye_target_width_in_pixels = 1080;
-	d->config.display.eye_target_height_in_pixels = 1200;
-
-	d->config.display.rot[0].w = 1.0f;
-	d->config.display.rot[1].w = 1.0f;
-
-	d->config.imu.gyro_range = 8.726646f;
-	d->config.imu.acc_range = 39.226600f;
-
-	d->config.imu.acc_scale.x = 1.0f;
-	d->config.imu.acc_scale.y = 1.0f;
-	d->config.imu.acc_scale.z = 1.0f;
-
-	d->config.imu.gyro_scale.x = 1.0f;
-	d->config.imu.gyro_scale.y = 1.0f;
-	d->config.imu.gyro_scale.z = 1.0f;
-
-	d->rot_filtered.w = 1.0f;
-
-	for (int view = 0; view < 2; view++) {
-		d->config.distortion[view].aspect_x_over_y = 0.89999997615814209f;
-		d->config.distortion[view].grow_for_undistort = 0.5f;
-		d->config.distortion[view].undistort_r2_cutoff = 1.0f;
-	}
-}
-
-
 static bool
 compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
@@ -779,8 +749,6 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
 	d->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 	d->base.compute_distortion = compute_distortion;
-
-	vive_init_defaults(d);
 
 	switch (variant) {
 	case VIVE_VARIANT_VIVE: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive"); break;

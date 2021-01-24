@@ -15,6 +15,14 @@
 #include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
 
+// public documentation
+#define INDEX_MIN_IPD 0.058
+#define INDEX_MAX_IPD 0.07
+
+// arbitrary default values
+#define DEFAULT_HAPTIC_FREQ 150.0f
+#define MIN_HAPTIC_DURATION 0.05f
+
 enum VIVE_VARIANT
 {
 	VIVE_UNKNOWN = 0,
