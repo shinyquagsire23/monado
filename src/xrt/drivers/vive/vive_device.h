@@ -16,41 +16,11 @@
 #include "util/u_distortion_mesh.h"
 
 #include "vive_lighthouse.h"
+#include "vive_config.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/*!
- * A lighthouse consisting of sensors.
- *
- * All sensors are placed in IMU space.
- */
-struct lh_model
-{
-	struct lh_sensor *sensors;
-	size_t num_sensors;
-};
-
-/*!
- * A single lighthouse senosor point and normal, in IMU space.
- */
-struct lh_sensor
-{
-	struct xrt_vec3 pos;
-	uint32_t _pad0;
-	struct xrt_vec3 normal;
-	uint32_t _pad1;
-};
-
-enum VIVE_VARIANT
-{
-	VIVE_UNKNOWN = 0,
-	VIVE_VARIANT_VIVE,
-	VIVE_VARIANT_PRO,
-	VIVE_VARIANT_INDEX
-};
 
 /*!
  * @implements xrt_device
@@ -70,22 +40,11 @@ struct vive_device
 	struct os_thread_helper watchman_thread;
 	struct os_thread_helper mainboard_thread;
 
-	struct lh_model lh;
-
 	struct
 	{
 		uint64_t time_ns;
 		uint8_t sequence;
 		uint32_t last_sample_time_raw;
-		double acc_range;
-		double gyro_range;
-		struct xrt_vec3 acc_bias;
-		struct xrt_vec3 acc_scale;
-		struct xrt_vec3 gyro_bias;
-		struct xrt_vec3 gyro_scale;
-
-		//! IMU position in tracking space.
-		struct xrt_pose trackref;
 	} imu;
 
 	struct m_imu_3dof fusion;
@@ -98,39 +57,11 @@ struct vive_device
 
 	struct
 	{
-		double lens_separation;
-		double persistence;
-		int eye_target_height_in_pixels;
-		int eye_target_width_in_pixels;
-
-		struct xrt_quat rot[2];
-
-		//! Head position in tracking space.
-		struct xrt_pose trackref;
-		//! Head position in IMU space.
-		struct xrt_pose imuref;
-	} display;
-
-	struct
-	{
 		uint16_t ipd;
 		uint16_t lens_separation;
 		uint16_t proximity;
 		uint8_t button;
 	} board;
-
-	struct
-	{
-		uint32_t display_firmware_version;
-		uint32_t firmware_version;
-		uint8_t hardware_revision;
-		uint8_t hardware_version_micro;
-		uint8_t hardware_version_minor;
-		uint8_t hardware_version_major;
-		char mb_serial_number[32];
-		char model_number[32];
-		char device_serial_number[32];
-	} firmware;
 
 	struct xrt_quat rot_filtered;
 
@@ -143,7 +74,7 @@ struct vive_device
 		bool last;
 	} gui;
 
-	struct u_vive_values distortion[2];
+	struct vive_config config;
 };
 
 struct vive_device *

@@ -56,7 +56,7 @@ _get_pose_from_pos_x_z(const cJSON *obj, struct xrt_pose *pose)
 }
 
 static void
-_get_distortion_properties(struct vive_device *d, const cJSON *eye_transform_json, uint8_t eye)
+_get_distortion_properties(struct vive_config *d, const cJSON *eye_transform_json, uint8_t eye)
 {
 	const cJSON *eye_json = cJSON_GetArrayItem(eye_transform_json, eye);
 	if (eye_json == NULL) {
@@ -97,7 +97,7 @@ _get_distortion_properties(struct vive_device *d, const cJSON *eye_transform_jso
 }
 
 static void
-_get_lighthouse(struct vive_device *d, const cJSON *json)
+_get_lighthouse(struct vive_config *d, const cJSON *json)
 {
 	const cJSON *lh = cJSON_GetObjectItemCaseSensitive(json, "lighthouse_config");
 	if (lh == NULL) {
@@ -177,7 +177,7 @@ _print_vec3(const char *title, struct xrt_vec3 *vec)
 }
 
 bool
-vive_config_parse(struct vive_device *d, char *json_string)
+vive_config_parse(struct vive_config *d, char *json_string)
 {
 	VIVE_DEBUG(d, "JSON config:\n%s", json_string);
 

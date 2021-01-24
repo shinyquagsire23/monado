@@ -26,7 +26,6 @@
 #include "vive.h"
 #include "vive_device.h"
 #include "vive_protocol.h"
-#include "vive_config.h"
 
 
 #define VIVE_CLOCK_FREQ 48e6 // 48 MHz
@@ -71,10 +70,10 @@ vive_device_destroy(struct xrt_device *xdev)
 		d->watchman_dev = NULL;
 	}
 
-	if (d->lh.sensors != NULL) {
-		free(d->lh.sensors);
-		d->lh.sensors = NULL;
-		d->lh.num_sensors = 0;
+	if (d->config.lh.sensors != NULL) {
+		free(d->config.lh.sensors);
+		d->config.lh.sensors = NULL;
+		d->config.lh.num_sensors = 0;
 	}
 
 	// Remove the variable tracking.
@@ -137,7 +136,7 @@ vive_device_get_view_pose(struct xrt_device *xdev,
 	struct xrt_pose pose = {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}};
 	bool adjust = view_index == 0;
 
-	pose.orientation = d->display.rot[view_index];
+	pose.orientation = d->config.display.rot[view_index];
 	pose.position.x = eye_relation->x / 2.0f;
 	pose.position.y = eye_relation->y / 2.0f;
 	pose.position.z = eye_relation->z / 2.0f;
@@ -178,11 +177,11 @@ vive_mainboard_get_device_info(struct vive_device *d)
 
 	edid_vid = __be16_to_cpu(report.edid_vid);
 
-	d->firmware.display_firmware_version = __le32_to_cpu(report.display_firmware_version);
+	d->config.firmware.display_firmware_version = __le32_to_cpu(report.display_firmware_version);
 
 	VIVE_INFO(d, "EDID Manufacturer ID: %c%c%c, Product code: 0x%04x", '@' + (edid_vid >> 10),
 	          '@' + ((edid_vid >> 5) & 0x1f), '@' + (edid_vid & 0x1f), __le16_to_cpu(report.edid_pid));
-	VIVE_INFO(d, "Display firmware version: %u", d->firmware.display_firmware_version);
+	VIVE_INFO(d, "Display firmware version: %u", d->config.firmware.display_firmware_version);
 
 	return 0;
 }
@@ -316,11 +315,11 @@ update_imu(struct vive_device *d, const void *buffer)
 		    (int16_t)__le16_to_cpu(sample->acc[2]),
 		};
 
-		scale = (float)d->imu.acc_range / 32768.0f;
+		scale = (float)d->config.imu.acc_range / 32768.0f;
 		struct xrt_vec3 acceleration = {
-		    scale * d->imu.acc_scale.x * acc[0] - d->imu.acc_bias.x,
-		    scale * d->imu.acc_scale.y * acc[1] - d->imu.acc_bias.y,
-		    scale * d->imu.acc_scale.z * acc[2] - d->imu.acc_bias.z,
+		    scale * d->config.imu.acc_scale.x * acc[0] - d->config.imu.acc_bias.x,
+		    scale * d->config.imu.acc_scale.y * acc[1] - d->config.imu.acc_bias.y,
+		    scale * d->config.imu.acc_scale.z * acc[2] - d->config.imu.acc_bias.z,
 		};
 
 		int16_t gyro[3] = {
@@ -329,11 +328,11 @@ update_imu(struct vive_device *d, const void *buffer)
 		    (int16_t)__le16_to_cpu(sample->gyro[2]),
 		};
 
-		scale = (float)d->imu.gyro_range / 32768.0f;
+		scale = (float)d->config.imu.gyro_range / 32768.0f;
 		struct xrt_vec3 angular_velocity = {
-		    scale * d->imu.gyro_scale.x * gyro[0] - d->imu.gyro_bias.x,
-		    scale * d->imu.gyro_scale.y * gyro[1] - d->imu.gyro_bias.y,
-		    scale * d->imu.gyro_scale.z * gyro[2] - d->imu.gyro_bias.z,
+		    scale * d->config.imu.gyro_scale.x * gyro[0] - d->config.imu.gyro_bias.x,
+		    scale * d->config.imu.gyro_scale.y * gyro[1] - d->config.imu.gyro_bias.y,
+		    scale * d->config.imu.gyro_scale.z * gyro[2] - d->config.imu.gyro_bias.z,
 		};
 
 		VIVE_TRACE(d, "ACC  %f %f %f", acceleration.x, acceleration.y, acceleration.z);
@@ -720,29 +719,29 @@ vive_sensors_run_thread(void *ptr)
 void
 vive_init_defaults(struct vive_device *d)
 {
-	d->display.eye_target_width_in_pixels = 1080;
-	d->display.eye_target_height_in_pixels = 1200;
+	d->config.display.eye_target_width_in_pixels = 1080;
+	d->config.display.eye_target_height_in_pixels = 1200;
 
-	d->display.rot[0].w = 1.0f;
-	d->display.rot[1].w = 1.0f;
+	d->config.display.rot[0].w = 1.0f;
+	d->config.display.rot[1].w = 1.0f;
 
-	d->imu.gyro_range = 8.726646f;
-	d->imu.acc_range = 39.226600f;
+	d->config.imu.gyro_range = 8.726646f;
+	d->config.imu.acc_range = 39.226600f;
 
-	d->imu.acc_scale.x = 1.0f;
-	d->imu.acc_scale.y = 1.0f;
-	d->imu.acc_scale.z = 1.0f;
+	d->config.imu.acc_scale.x = 1.0f;
+	d->config.imu.acc_scale.y = 1.0f;
+	d->config.imu.acc_scale.z = 1.0f;
 
-	d->imu.gyro_scale.x = 1.0f;
-	d->imu.gyro_scale.y = 1.0f;
-	d->imu.gyro_scale.z = 1.0f;
+	d->config.imu.gyro_scale.x = 1.0f;
+	d->config.imu.gyro_scale.y = 1.0f;
+	d->config.imu.gyro_scale.z = 1.0f;
 
 	d->rot_filtered.w = 1.0f;
 
 	for (int view = 0; view < 2; view++) {
-		d->distortion[view].aspect_x_over_y = 0.89999997615814209f;
-		d->distortion[view].grow_for_undistort = 0.5f;
-		d->distortion[view].undistort_r2_cutoff = 1.0f;
+		d->config.distortion[view].aspect_x_over_y = 0.89999997615814209f;
+		d->config.distortion[view].grow_for_undistort = 0.5f;
+		d->config.distortion[view].undistort_r2_cutoff = 1.0f;
 	}
 }
 
@@ -751,7 +750,7 @@ static bool
 compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct vive_device *d = vive_device(xdev);
-	return u_compute_distortion_vive(&d->distortion[view], u, v, result);
+	return u_compute_distortion_vive(&d->config.distortion[view], u, v, result);
 }
 
 struct vive_device *
@@ -794,9 +793,9 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		vive_mainboard_power_on(d);
 		vive_mainboard_get_device_info(d);
 	}
-	vive_read_firmware(d->sensors_dev, &d->firmware.firmware_version, &d->firmware.hardware_revision,
-	                   &d->firmware.hardware_version_micro, &d->firmware.hardware_version_minor,
-	                   &d->firmware.hardware_version_major);
+	vive_read_firmware(d->sensors_dev, &d->config.firmware.firmware_version, &d->config.firmware.hardware_revision,
+	                   &d->config.firmware.hardware_version_micro, &d->config.firmware.hardware_version_minor,
+	                   &d->config.firmware.hardware_version_major);
 
 	/*
 	VIVE_INFO(d, "Firmware version %u %s@%s FPGA %u.%u",
@@ -804,18 +803,22 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	          report.fpga_version_major, report.fpga_version_minor);
 	*/
 
-	VIVE_INFO(d, "Firmware version %u", d->firmware.firmware_version);
-	VIVE_INFO(d, "Hardware revision: %d rev %d.%d.%d", d->firmware.hardware_revision,
-	          d->firmware.hardware_version_major, d->firmware.hardware_version_minor,
-	          d->firmware.hardware_version_micro);
+	VIVE_INFO(d, "Firmware version %u", d->config.firmware.firmware_version);
+	VIVE_INFO(d, "Hardware revision: %d rev %d.%d.%d", d->config.firmware.hardware_revision,
+	          d->config.firmware.hardware_version_major, d->config.firmware.hardware_version_minor,
+	          d->config.firmware.hardware_version_micro);
 
-	vive_get_imu_range_report(d->sensors_dev, &d->imu.gyro_range, &d->imu.acc_range);
-	VIVE_INFO(d, "Vive gyroscope range     %f", d->imu.gyro_range);
-	VIVE_INFO(d, "Vive accelerometer range %f", d->imu.acc_range);
+	vive_get_imu_range_report(d->sensors_dev, &d->config.imu.gyro_range, &d->config.imu.acc_range);
+	VIVE_INFO(d, "Vive gyroscope range     %f", d->config.imu.gyro_range);
+	VIVE_INFO(d, "Vive accelerometer range %f", d->config.imu.acc_range);
 
 	char *config = vive_read_config(d->sensors_dev);
+
+	d->config.ll = d->ll;
+	// usb connected HMD variant is known because of USB id, config parsing relies on it.
+	d->config.variant = d->variant;
 	if (config != NULL) {
-		vive_config_parse(d, config);
+		vive_config_parse(&d->config, config);
 		free(config);
 	}
 
@@ -825,8 +828,8 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	double lens_horizontal_separation = 0.057863;
 	double eye_to_screen_distance = 0.023226876441867737;
 
-	uint32_t w_pixels = d->display.eye_target_width_in_pixels;
-	uint32_t h_pixels = d->display.eye_target_height_in_pixels;
+	uint32_t w_pixels = d->config.display.eye_target_width_in_pixels;
+	uint32_t h_pixels = d->config.display.eye_target_height_in_pixels;
 
 	// Main display.
 	d->base.hmd->screens[0].w_pixels = (int)w_pixels * 2;
@@ -882,10 +885,10 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 
 	u_var_add_root(d, "Vive Device", true);
 	u_var_add_gui_header(d, &d->gui.calibration, "Calibration");
-	u_var_add_vec3_f32(d, &d->imu.acc_scale, "acc_scale");
-	u_var_add_vec3_f32(d, &d->imu.acc_bias, "acc_bias");
-	u_var_add_vec3_f32(d, &d->imu.gyro_scale, "gyro_scale");
-	u_var_add_vec3_f32(d, &d->imu.gyro_bias, "gyro_bias");
+	u_var_add_vec3_f32(d, &d->config.imu.acc_scale, "acc_scale");
+	u_var_add_vec3_f32(d, &d->config.imu.acc_bias, "acc_bias");
+	u_var_add_vec3_f32(d, &d->config.imu.gyro_scale, "gyro_scale");
+	u_var_add_vec3_f32(d, &d->config.imu.gyro_bias, "gyro_bias");
 	u_var_add_gui_header(d, &d->gui.last, "Last data");
 	u_var_add_vec3_f32(d, &d->last.acc, "acc");
 	u_var_add_vec3_f32(d, &d->last.gyro, "gyro");
