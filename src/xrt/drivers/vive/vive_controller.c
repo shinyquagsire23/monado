@@ -543,18 +543,18 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watch
 	    __le16_to_cpu(sample->gyro[2]),
 	};
 
-	float scale = (float)d->imu.acc_range / 32768.0f;
+	float scale = (float)d->config.imu.acc_range / 32768.0f;
 	struct xrt_vec3 acceleration = {
-	    scale * d->imu.acc_scale.x * acc[0] - d->imu.acc_bias.x,
-	    scale * d->imu.acc_scale.y * acc[1] - d->imu.acc_bias.y,
-	    scale * d->imu.acc_scale.z * acc[2] - d->imu.acc_bias.z,
+	    scale * d->config.imu.acc_scale.x * acc[0] - d->config.imu.acc_bias.x,
+	    scale * d->config.imu.acc_scale.y * acc[1] - d->config.imu.acc_bias.y,
+	    scale * d->config.imu.acc_scale.z * acc[2] - d->config.imu.acc_bias.z,
 	};
 
-	scale = (float)d->imu.gyro_range / 32768.0f;
+	scale = (float)d->config.imu.gyro_range / 32768.0f;
 	struct xrt_vec3 angular_velocity = {
-	    scale * d->imu.gyro_scale.x * gyro[0] - d->imu.gyro_bias.x,
-	    scale * d->imu.gyro_scale.y * gyro[1] - d->imu.gyro_bias.y,
-	    scale * d->imu.gyro_scale.z * gyro[2] - d->imu.gyro_bias.z,
+	    scale * d->config.imu.gyro_scale.x * gyro[0] - d->config.imu.gyro_bias.x,
+	    scale * d->config.imu.gyro_scale.y * gyro[1] - d->config.imu.gyro_bias.y,
+	    scale * d->config.imu.gyro_scale.z * gyro[2] - d->config.imu.gyro_bias.z,
 	};
 
 	VIVE_TRACE(d, "ACC  %f %f %f", acceleration.x, acceleration.y, acceleration.z);
@@ -1030,22 +1030,22 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
 	/* default values, will be queried from device */
-	d->imu.gyro_range = 8.726646f;
-	d->imu.acc_range = 39.226600f;
+	d->config.imu.gyro_range = 8.726646f;
+	d->config.imu.acc_range = 39.226600f;
 
-	d->imu.acc_scale.x = 1.0f;
-	d->imu.acc_scale.y = 1.0f;
-	d->imu.acc_scale.z = 1.0f;
-	d->imu.gyro_scale.x = 1.0f;
-	d->imu.gyro_scale.y = 1.0f;
-	d->imu.gyro_scale.z = 1.0f;
+	d->config.imu.acc_scale.x = 1.0f;
+	d->config.imu.acc_scale.y = 1.0f;
+	d->config.imu.acc_scale.z = 1.0f;
+	d->config.imu.gyro_scale.x = 1.0f;
+	d->config.imu.gyro_scale.y = 1.0f;
+	d->config.imu.gyro_scale.z = 1.0f;
 
-	d->imu.acc_bias.x = 0.0f;
-	d->imu.acc_bias.y = 0.0f;
-	d->imu.acc_bias.z = 0.0f;
-	d->imu.gyro_bias.x = 0.0f;
-	d->imu.gyro_bias.y = 0.0f;
-	d->imu.gyro_bias.z = 0.0f;
+	d->config.imu.acc_bias.x = 0.0f;
+	d->config.imu.acc_bias.y = 0.0f;
+	d->config.imu.acc_bias.z = 0.0f;
+	d->config.imu.gyro_bias.x = 0.0f;
+	d->config.imu.gyro_bias.y = 0.0f;
+	d->config.imu.gyro_bias.z = 0.0f;
 
 	d->controller_hid = controller_hid;
 
@@ -1058,25 +1058,32 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	d->index = controller_num;
 
 	//! @todo: reading range report fails for powered off controller
-	if (vive_get_imu_range_report(d->controller_hid, &d->imu.gyro_range, &d->imu.acc_range) != 0) {
+	if (vive_get_imu_range_report(d->controller_hid, &d->config.imu.gyro_range, &d->config.imu.acc_range) != 0) {
 		VIVE_ERROR(d, "Could not get watchman IMU range packet!");
 		free(d);
 		return 0;
 	}
 
-	VIVE_DEBUG(d, "Vive controller gyroscope range     %f", d->imu.gyro_range);
-	VIVE_DEBUG(d, "Vive controller accelerometer range %f", d->imu.acc_range);
+	VIVE_DEBUG(d, "Vive controller gyroscope range     %f", d->config.imu.gyro_range);
+	VIVE_DEBUG(d, "Vive controller accelerometer range %f", d->config.imu.acc_range);
 
 	// successful config parsing determines d->variant
 	char *config = vive_read_config(d->controller_hid);
+
+	d->config.ll = d->ll;
+
 	if (config != NULL) {
-		vive_config_parse_controller(d, config);
+		vive_config_parse_controller(&d->config, config);
 		free(config);
 	} else {
 		VIVE_ERROR(d, "Could not get Vive controller config\n");
 		free(d);
 		return 0;
 	}
+
+	// watchman rf connected device variant is read from config json
+	//! @todo usb connected controllers
+	d->variant = d->config.variant;
 
 	if (d->variant == CONTROLLER_VIVE_WAND) {
 		d->base.name = XRT_DEVICE_VIVE_WAND;

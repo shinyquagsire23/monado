@@ -287,7 +287,7 @@ vive_config_parse(struct vive_config *d, char *json_string)
 }
 
 bool
-vive_config_parse_controller(struct vive_controller_device *d, char *json_string)
+vive_config_parse_controller(struct vive_controller_config *d, char *json_string)
 {
 	VIVE_DEBUG(d, "JSON config:\n%s", json_string);
 

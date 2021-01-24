@@ -23,6 +23,16 @@ enum VIVE_VARIANT
 	VIVE_VARIANT_INDEX
 };
 
+enum VIVE_CONTROLLER_VARIANT
+{
+	CONTROLLER_VIVE_WAND,
+	CONTROLLER_INDEX_LEFT,
+	CONTROLLER_INDEX_RIGHT,
+	CONTROLLER_TRACKER_GEN1,
+	CONTROLLER_TRACKER_GEN2,
+	CONTROLLER_UNKNOWN
+};
+
 /*!
  * A single lighthouse senosor point and normal, in IMU space.
  */
@@ -98,6 +108,38 @@ struct vive_config
 	struct lh_model lh;
 };
 
+struct vive_controller_config
+{
+	enum u_logging_level ll;
+
+	enum VIVE_CONTROLLER_VARIANT variant;
+
+	struct
+	{
+		uint32_t firmware_version;
+		uint8_t hardware_revision;
+		uint8_t hardware_version_micro;
+		uint8_t hardware_version_minor;
+		uint8_t hardware_version_major;
+		char mb_serial_number[32];
+		char model_number[32];
+		char device_serial_number[32];
+	} firmware;
+
+	struct
+	{
+		double acc_range;
+		double gyro_range;
+		struct xrt_vec3 acc_bias;
+		struct xrt_vec3 acc_scale;
+		struct xrt_vec3 gyro_bias;
+		struct xrt_vec3 gyro_scale;
+
+		//! IMU position in tracking space.
+		struct xrt_pose trackref;
+	} imu;
+};
+
 bool
 vive_config_parse(struct vive_config *d, char *json_string);
 
@@ -105,4 +147,4 @@ vive_config_parse(struct vive_config *d, char *json_string);
 struct vive_controller_device;
 
 bool
-vive_config_parse_controller(struct vive_controller_device *d, char *json_string);
+vive_config_parse_controller(struct vive_controller_config *d, char *json_string);
