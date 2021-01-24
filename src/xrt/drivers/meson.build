@@ -154,6 +154,7 @@ lib_drv_v4l2 = static_library(
 	build_by_default: 'v4l2' in drivers,
 )
 
+vive_config_include = include_directories('vive')
 lib_vive_config = static_library(
 	'vive_config',
 	files(
@@ -185,6 +186,7 @@ lib_drv_vive = static_library(
 	include_directories: [
 		xrt_include,
 		cjson_include,
+		vive_config_include,
 	],
 	dependencies: [aux, zlib],
 	build_by_default: 'vive' in drivers,
@@ -202,6 +204,7 @@ lib_drv_survive = static_library(
 	include_directories: [
 		xrt_include,
 		cjson_include,
+		vive_config_include,
 	],
 	dependencies: [aux, zlib, survive],
 	build_by_default: 'survive' in drivers,
