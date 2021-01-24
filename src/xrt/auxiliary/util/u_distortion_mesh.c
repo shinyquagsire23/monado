@@ -146,9 +146,7 @@ u_compute_distortion_vive(struct u_vive_values *values, float u, float v, struct
 		    ((r2 * val.coefficients[i][2] + val.coefficients[i][1]) * r2 + val.coefficients[i][0]) * r2 + 1.0;
 
 		// The scaled part of DISTORT_DPOLY3_SCALED, seems to improve chromatic abberation.
-		d_inv -= val.coefficients[i][3];
-
-		float d = 1.0 / d_inv;
+		float d = (1.0 / d_inv) + val.coefficients[i][3];
 
 		struct xrt_vec2 offset = {0.5, 0.5};
 
