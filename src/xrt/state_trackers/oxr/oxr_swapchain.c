@@ -211,6 +211,9 @@ oxr_create_swapchain(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_FEATURE_UNSUPPORTED,
 		                 "Specified swapchain creation flag is valid, "
 		                 "but not supported");
+	} else if (xret == XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED) {
+		return oxr_error(log, XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED,
+		                 "Specified swapchain format is not supported");
 	}
 	if (xret != XRT_SUCCESS) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to create swapchain");

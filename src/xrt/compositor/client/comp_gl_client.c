@@ -354,14 +354,14 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 			U_LOG_E(
 			    "Only one array layer is supported with OpenGL ES "
 			    "2");
-			return XRT_ERROR_OPENGL;
+			return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
 		}
 	}
 
 	int64_t vk_format = gl_format_to_vk(info->format);
 	if (vk_format == 0) {
 		U_LOG_E("Invalid format!");
-		return XRT_ERROR_VULKAN;
+		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
 	}
 
 	struct xrt_swapchain_create_info xinfo = *info;
