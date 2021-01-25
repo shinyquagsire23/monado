@@ -253,6 +253,12 @@ struct comp_compositor
  */
 
 /*!
+ * Check if the compositor can create swapchains with this format.
+ */
+bool
+comp_is_format_supported(struct comp_compositor *c, VkFormat format);
+
+/*!
  * Convenience function to convert a xrt_swapchain to a comp_swapchain.
  *
  * @private @memberof comp_swapchain

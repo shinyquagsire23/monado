@@ -285,6 +285,10 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	uint32_t num_images = 3;
 	VkResult ret;
 
+	if (!comp_is_format_supported(c, info->format)) {
+		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
+	}
+
 	if ((info->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT) != 0) {
 		// This compositor doesn't support creating protected content
 		// swapchains.
@@ -301,6 +305,13 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 	// Use the image helper to allocate the images.
 	ret = vk_ic_allocate(&c->vk, info, num_images, &sc->vkic);
+	if (ret == VK_ERROR_FEATURE_NOT_PRESENT) {
+		free(sc);
+		return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
+	} else if (ret == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+		free(sc);
+		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
+	}
 	if (ret != VK_SUCCESS) {
 		free(sc);
 		return XRT_ERROR_VULKAN;

@@ -1315,8 +1315,8 @@ compositor_init_renderer(struct comp_compositor *c)
 	return c->r != NULL;
 }
 
-static bool
-is_format_supported(struct comp_compositor *c, VkFormat format)
+bool
+comp_is_format_supported(struct comp_compositor *c, VkFormat format)
 {
 	VkFormatProperties prop;
 	c->vk.vkGetPhysicalDeviceFormatProperties(c->vk.physical_device, format, &prop);
@@ -1328,7 +1328,7 @@ is_format_supported(struct comp_compositor *c, VkFormat format)
 
 #define ADD_IF_SUPPORTED(format)                                                                                       \
 	do {                                                                                                           \
-		if (is_format_supported(c, format)) {                                                                  \
+		if (comp_is_format_supported(c, format)) {                                                             \
 			info->formats[formats++] = format;                                                             \
 		}                                                                                                      \
 	} while (false)
