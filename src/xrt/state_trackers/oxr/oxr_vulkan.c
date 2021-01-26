@@ -250,8 +250,6 @@ oxr_vk_create_vulkan_instance(struct oxr_logger *log,
 		free((void *)modified_info.ppEnabledExtensionNames);
 	}
 
-	sys->vulkan_enable2_instance = *vulkanInstance;
-
 	return XR_SUCCESS;
 }
 
@@ -370,6 +368,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 
 	// vulkan_enable2 needs the physical device in xrCreateVulkanDeviceKHR
 	if (inst->extensions.KHR_vulkan_enable2) {
+		sys->vulkan_enable2_instance = vkInstance;
 		sys->vulkan_enable2_physical_device = *vkPhysicalDevice;
 	}
 

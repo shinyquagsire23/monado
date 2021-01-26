@@ -369,7 +369,7 @@ oxr_xrCreateVulkanDeviceKHR(XrInstance instance,
 	// VK_NULL_HANDLE is 0
 	OXR_VERIFY_ARG_NOT_NULL(&log, createInfo->vulkanPhysicalDevice);
 
-	//! @todo require xrCreateVulkanInstanceKHR to be called in the spec
+	OXR_VERIFY_ARG_NOT_NULL(&log, sys->vulkan_enable2_physical_device);
 	OXR_VERIFY_ARG_NOT_NULL(&log, sys->vulkan_enable2_instance);
 
 	if (sys->vulkan_enable2_physical_device != createInfo->vulkanPhysicalDevice) {
