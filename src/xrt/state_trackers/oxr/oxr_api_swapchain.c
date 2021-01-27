@@ -76,6 +76,19 @@ oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo
 		                 "(createInfo->usageFlags == 0x08%" PRIx64 ") contains invalid flags",
 		                 createInfo->usageFlags);
 	}
+	bool format_supported = false;
+	struct xrt_compositor *c = sess->compositor;
+	for (uint32_t i = 0; i < c->info.num_formats; i++) {
+		if (c->info.formats[i] == createInfo->format) {
+			format_supported = true;
+			break;
+		}
+	}
+
+	if (!format_supported) {
+		return oxr_error(&log, XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED,
+		                 "(createInfo->format == 0x08%" PRIx64 ") is not supported", createInfo->format);
+	}
 
 	ret = sess->create_swapchain(&log, sess, createInfo, &sc);
 	if (ret != XR_SUCCESS) {
