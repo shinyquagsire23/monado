@@ -1416,9 +1416,9 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	uint32_t formats = 0;
 
 	// color formats
-	ADD_IF_SUPPORTED(VK_FORMAT_R8G8B8A8_SRGB);            // OGL VK
 	ADD_IF_SUPPORTED(VK_FORMAT_A2B10G10R10_UNORM_PACK32); // OGL VK
 	ADD_IF_SUPPORTED(VK_FORMAT_R16G16B16A16_SFLOAT);      // OGL VK
+	ADD_IF_SUPPORTED(VK_FORMAT_R8G8B8A8_SRGB);            // OGL VK
 	ADD_IF_SUPPORTED(VK_FORMAT_B8G8R8A8_SRGB);            // VK
 	ADD_IF_SUPPORTED(VK_FORMAT_R8G8B8A8_UNORM);           // OGL VK
 	ADD_IF_SUPPORTED(VK_FORMAT_B8G8R8A8_UNORM);           // VK
