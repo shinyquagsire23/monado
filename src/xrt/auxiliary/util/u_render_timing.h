@@ -103,7 +103,7 @@ void
 u_rt_helper_mark_begin(struct u_rt_helper *urth, int64_t frame_id);
 
 /*!
- * When a frame has been discared.
+ * When a frame has been discarded.
  */
 void
 u_rt_helper_mark_discarded(struct u_rt_helper *urth, int64_t frame_id);
