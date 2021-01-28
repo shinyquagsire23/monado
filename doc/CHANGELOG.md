@@ -5,6 +5,131 @@ SPDX-License-Identifier: CC0-1.0
 SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
 ```
 
+## Monado 21.0.0 (2021-01-28)
+
+- Major changes
+  - Adds a initial SteamVR driver state tracker and target that produces a SteamVR
+    plugin that enables any Monado hardware driver to be used in SteamVR. This is
+    the initial upstreaming of this code and has some limitations, like only having
+    working input when emulating a Index controller.
+    ([!583](https://gitlab.freedesktop.org/monado/monado/merge_requests/583))
+- XRT Interface
+  - Add `xrt_binding_profile` struct, related pair structs and fields on
+    `xrt_device` to allow to move the static rebinding of inputs and outputs into
+    device drivers. This makes it easier to get a overview in the driver itself
+    which bindings it can bind to.
+    ([!587](https://gitlab.freedesktop.org/monado/monado/merge_requests/587))
+  - xrt: Generate bindings for Monado and SteamVR from json.
+    ([!638](https://gitlab.freedesktop.org/monado/monado/merge_requests/638))
+  - xrt: Introduce `xrt_system_compositor`, it is basically a analogous to
+    `XrSystemID` but instead of being a fully fledged xrt_system this is only the
+    compositor part of it. Also fold the `prepare_session` function into the create
+    native compositor function to simplify the interface.
+    ([!652](https://gitlab.freedesktop.org/monado/monado/merge_requests/652))
+  - Expose more information on the frameservers, like product, manufacturer and
+    serial.
+    ([!665](https://gitlab.freedesktop.org/monado/monado/merge_requests/665))
+  - Add `XRT_FORMAT_BAYER_GR8` format.
+    ([!665](https://gitlab.freedesktop.org/monado/monado/merge_requests/665))
+- State Trackers
+  - st/oxr: Add OXR_FRAME_TIMING_SPEW for basic frame timing debug output.
+    ([!591](https://gitlab.freedesktop.org/monado/monado/merge_requests/591))
+  - OpenXR: Make sure to restore old EGL display/context/drawables when creating a
+    client EGL compositor.
+    ([!602](https://gitlab.freedesktop.org/monado/monado/merge_requests/602))
+  - GUI: Expand with support for controlling the remote driver hand tracking.
+    ([!604](https://gitlab.freedesktop.org/monado/monado/merge_requests/604))
+  - st/oxr: Implement XR_KHR_vulkan_enable2
+    ([!633](https://gitlab.freedesktop.org/monado/monado/merge_requests/633))
+  - st/oxr: Add OXR_TRACKING_ORIGIN_OFFSET_{X,Y,Z} env variables as a quick way to
+    tweak 6dof tracking origins.
+    ([!634](https://gitlab.freedesktop.org/monado/monado/merge_requests/634))
+  - OpenXR: Be more relaxed with Quat validation, spec says within 1% of unit
+    length, normalize if not within float epsilon.
+    ([!659](https://gitlab.freedesktop.org/monado/monado/merge_requests/659))
+- Drivers
+  - North Star: Fix memory leak in math code.
+    ([!564](https://gitlab.freedesktop.org/monado/monado/merge_requests/564))
+  - psvr: Rename some variables for better readability.
+    ([!597](https://gitlab.freedesktop.org/monado/monado/merge_requests/597))
+  - openhmd: Fix viewport calculation of rotated displays.
+    ([!600](https://gitlab.freedesktop.org/monado/monado/merge_requests/600))
+  - remote: Add support for simulated hand tracking, this is based on the curl
+    model
+    that is used by the Valve Index Controller.
+    ([!604](https://gitlab.freedesktop.org/monado/monado/merge_requests/604))
+  - android: Acquire device display metrics from system.
+    ([!611](https://gitlab.freedesktop.org/monado/monado/merge_requests/611))
+  - openhmd: Rotate DK2 display correctly.
+    ([!628](https://gitlab.freedesktop.org/monado/monado/merge_requests/628))
+  - d/psmv: The motor on zcmv1 does not rumble at amplitudes < 0.25. Linear rescale
+    amplitude into [0.25, 1] range.
+    ([!636](https://gitlab.freedesktop.org/monado/monado/merge_requests/636))
+  - v4l2: Expose more information through new fields in XRT interface.
+    ([!665](https://gitlab.freedesktop.org/monado/monado/merge_requests/665))
+  - v4l2: Allocate more buffers when streaming data.
+    ([!665](https://gitlab.freedesktop.org/monado/monado/merge_requests/665))
+- IPC
+  - ipc: Port IPC to u_logging.
+    ([!601](https://gitlab.freedesktop.org/monado/monado/merge_requests/601))
+  - ipc: Make OXR_DEBUG_GUI work with monado-service.
+    ([!622](https://gitlab.freedesktop.org/monado/monado/merge_requests/622))
+- Compositor
+  - comp: Add basic frame timing information to XRT_COMPOSITOR_LOG=trace.
+    ([!591](https://gitlab.freedesktop.org/monado/monado/merge_requests/591))
+  - main: Refactor how the compositor interacts with targets, the goal is to enable
+    the compositor to render to destinations that isn't backed by a `VkSwapchain`.
+    Introduce `comp_target` and remove `comp_window`, also refactor `vk_swapchain`
+    to be a sub-class of `comp_target` named `comp_target_swapchain`, the window
+    backends now sub class `comp_target_swapchain`.
+    ([!599](https://gitlab.freedesktop.org/monado/monado/merge_requests/599))
+  - Implement support for XR_KHR_composition_layer_equirect (equirect1).
+    ([!620](https://gitlab.freedesktop.org/monado/monado/merge_requests/620),
+    [!624](https://gitlab.freedesktop.org/monado/monado/merge_requests/624))
+  - comp: Improve thread safety. Resolve issues in mutlithreading CTS.
+    ([!645](https://gitlab.freedesktop.org/monado/monado/merge_requests/645))
+  - main: Lower priority on sRGB format. This works around a bug in the OpenXR CTS
+    and mirrors better what at least on other OpenXR runtime does.
+    ([!671](https://gitlab.freedesktop.org/monado/monado/merge_requests/671))
+- Helper Libraries
+  - os/time: Make timespec argument const.
+    ([!597](https://gitlab.freedesktop.org/monado/monado/merge_requests/597))
+  - os/time: Add a Linux specific way to get the realtime clock (for RealSense).
+    ([!597](https://gitlab.freedesktop.org/monado/monado/merge_requests/597))
+  - math: Make sure that we do not drop and positions in poses when the other pose
+    has a non-valid position.
+    ([!603](https://gitlab.freedesktop.org/monado/monado/merge_requests/603))
+  - aux/vk: `vk_create_device` now takes in a list of Vulkan device extensions.
+    ([!605](https://gitlab.freedesktop.org/monado/monado/merge_requests/605))
+  - Port everything to u_logging.
+    ([!627](https://gitlab.freedesktop.org/monado/monado/merge_requests/627))
+  - u/hand_tracking: Tweak finger curl model making it easier to grip ingame
+    objects.
+    ([!635](https://gitlab.freedesktop.org/monado/monado/merge_requests/635))
+  - math: Add math_quat_validate_within_1_percent function.
+    ([!659](https://gitlab.freedesktop.org/monado/monado/merge_requests/659))
+  - u/sink: Add Bayer format converter.
+    ([!665](https://gitlab.freedesktop.org/monado/monado/merge_requests/665))
+  - u/distortion: Improve both Vive and Index distortion by fixing polynomial math.
+    ([!666](https://gitlab.freedesktop.org/monado/monado/merge_requests/666))
+  - u/distortion: Improve Index distortion and tidy code. While this touches the
+    Vive distortion code all Vive headsets seems to have the center set to the same
+    for each channel so doesn't help them. And Vive doesn't have the extra
+    coefficient that the Index does so no help there either.
+    ([!667](https://gitlab.freedesktop.org/monado/monado/merge_requests/667))
+- Misc. Features
+  - Work toward a Win32 port.
+    ([!551](https://gitlab.freedesktop.org/monado/monado/merge_requests/551),
+    [!605](https://gitlab.freedesktop.org/monado/monado/merge_requests/605),
+    [!607](https://gitlab.freedesktop.org/monado/monado/merge_requests/607))
+  - Additional improvements to the Android port.
+    ([!592](https://gitlab.freedesktop.org/monado/monado/merge_requests/592),
+    [!595](https://gitlab.freedesktop.org/monado/monado/merge_requests/595),
+    [#105](https://gitlab.freedesktop.org/monado/monado/issues/105))
+- Misc. Fixes
+  - steamvr: Support HMDs with rotated displays
+    ([!600](https://gitlab.freedesktop.org/monado/monado/merge_requests/600))
+
 ## Monado 0.4.1 (2020-11-04)
 
 - State Trackers
