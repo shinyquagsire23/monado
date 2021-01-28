@@ -81,9 +81,12 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
             WindowManager windowManager = activity.getWindowManager();
-            windowManager.addView(this, new WindowManager.LayoutParams(WindowManager.LayoutParams.FLAG_FULLSCREEN));
+            WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+            lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN |
+                       WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                       WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+            windowManager.addView(this, lp);
 
-            requestFocus();
             SurfaceHolder surfaceHolder = getHolder();
             surfaceHolder.addCallback(this);
             Log.i(TAG, "Registered callbacks!");
