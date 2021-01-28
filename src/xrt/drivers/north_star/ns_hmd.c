@@ -379,11 +379,8 @@ ns_config_load(struct ns_hmd *ns)
 			                                                        // that value seems to unexpectedly
 			                                                        // change during init process.
 			NS_INFO(ns,
-			        "Just so you know, you can add tunable FoV "
-			        "parameters to your v2 json file. There's an "
-			        "example in "
-			        "src/xrt/drivers/north_star/"
-			        "v2_example_config.json.\n");
+			        "Just so you know, you can add tunable FoV parameters to your v2 json file. There are "
+			        "examples in src/xrt/drivers/north_star/exampleconfigs.\n");
 			said_first_thing = true;
 			ns->eye_configs_v2[0].fov.angle_left = -0.8;
 			ns->eye_configs_v2[0].fov.angle_right = 0.8;
@@ -426,20 +423,14 @@ ns_config_load(struct ns_hmd *ns)
 		if (offset == NULL) {
 			if (said_first_thing) {
 				NS_INFO(ns,
-				        "Also, you should put an offset parameter "
-				        "into the json file to transform your head "
-				        "pose from the realsense to your nose "
-				        "bridge. There are some examples in "
-				        "src/xrt/drivers/north_star/"
-				        "example_configs/ .\n");
+				        "Also, you should put an offset parameter into the json file to transform your "
+				        "head pose from the realsense to your nose bridge. There are some examples in "
+				        "src/xrt/drivers/north_star/exampleconfigs/");
 			} else {
 				NS_INFO(ns,
-				        "You should put an offset parameter into "
-				        "the json file to transform your head pose "
-				        "from the realsense to your nose bridge. "
-				        "There are some examples in "
-				        "src/xrt/drivers/north_star/"
-				        "example_configs/ .\n");
+				        "You should put an offset parameter into the json file to transform your head "
+				        "pose from the realsense to your nose bridge. There are some examples in "
+				        "src/xrt/drivers/north_star/exampleconfigs/.");
 			}
 		} else {
 			struct cJSON *translation_meters =
@@ -477,8 +468,7 @@ ns_config_load(struct ns_hmd *ns)
 	} else {
 		NS_ERROR(ns,
 		         "Bad config file. There are examples of v1 and v2 files in "
-		         "src/xrt/drivers/north_star - if those don't work, "
-		         "something's really wrong.");
+		         "src/xrt/drivers/north_star/exampleconfigs - if those don't work, something's really wrong.");
 	}
 
 	cJSON_Delete(config_json);
