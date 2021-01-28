@@ -4,7 +4,7 @@
 project(
 	'xrt',
 	['c', 'cpp'],
-	version: '0.4.1',
+	version: '21.0.0',
 	license: 'BSL-1.0',
 	meson_version: '>=0.49.0',
 	default_options: [
