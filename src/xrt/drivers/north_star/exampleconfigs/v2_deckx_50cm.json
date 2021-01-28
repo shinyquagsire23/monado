@@ -1,27 +1,27 @@
 {
-	"baseline": 64.0,
-	"left_fov_radians_left":  -0.8,
-  "left_fov_radians_right":  0.8,
-  "left_fov_radians_up":     0.8,
-  "left_fov_radians_down":  -0.8,
+  "baseline": 64,
+  "left_fov_radians_left": -0.8,
+  "left_fov_radians_right": 0.8,
+  "left_fov_radians_up": 0.8,
+  "left_fov_radians_down": -0.8,
   "right_fov_radians_left": -0.8,
   "right_fov_radians_right": 0.8,
-  "right_fov_radians_up":    0.8,
+  "right_fov_radians_up": 0.8,
   "right_fov_radians_down": -0.8,
   "t265_to_nose_bridge": {
     "translation_meters": {
       "x": 0,
       "y": -0.04824,
-			"z": 0.08609
+      "z": 0.08609
     },
     "rotation_quaternion": {
       "x": -0.105,
       "y": 0,
       "z": 0,
-			"w": 0.995
+      "w": 0.995
     }
-	},
-	"left_uv_to_rect_x": [
+  },
+  "left_uv_to_rect_x": [
     -0.7801988839098829,
     1.5908068712799723,
     -0.9827824328911254,
