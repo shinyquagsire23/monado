@@ -61,7 +61,6 @@ struct vf_fs
 
 	struct os_thread_helper play_thread;
 
-	const char *path;
 	GMainLoop *loop;
 	GstElement *source;
 	GstElement *testsink;
@@ -280,7 +279,7 @@ on_new_sample_from_sink(GstElement *elt, struct vf_fs *vid)
 		gst_structure_get_int(structure, "width", &width);
 		gst_structure_get_int(structure, "height", &height);
 
-		VF_DEBUG(vid, "video size is %dx%d\n", width, height);
+		VF_DEBUG(vid, "video size is %dx%d", width, height);
 		vid->got_sample = true;
 		vid->width = width;
 		vid->height = height;
@@ -303,8 +302,8 @@ print_gst_error(GstMessage *message)
 	gchar *dbg_info = NULL;
 
 	gst_message_parse_error(message, &err, &dbg_info);
-	U_LOG_E("ERROR from element %s: %s\n", GST_OBJECT_NAME(message->src), err->message);
-	U_LOG_E("Debugging info: %s\n", (dbg_info) ? dbg_info : "none");
+	U_LOG_E("ERROR from element %s: %s", GST_OBJECT_NAME(message->src), err->message);
+	U_LOG_E("Debugging info: %s", (dbg_info) ? dbg_info : "none");
 	g_error_free(err);
 	g_free(dbg_info);
 }
@@ -315,11 +314,11 @@ on_source_message(GstBus *bus, GstMessage *message, struct vf_fs *vid)
 	/* nil */
 	switch (GST_MESSAGE_TYPE(message)) {
 	case GST_MESSAGE_EOS:
-		VF_DEBUG(vid, "Finished playback\n");
+		VF_DEBUG(vid, "Finished playback.");
 		g_main_loop_quit(vid->loop);
 		break;
 	case GST_MESSAGE_ERROR:
-		VF_ERROR(vid, "Received error\n");
+		VF_ERROR(vid, "Received error.");
 		print_gst_error(message);
 		g_main_loop_quit(vid->loop);
 		break;
@@ -333,9 +332,9 @@ run_play_thread(void *ptr)
 {
 	struct vf_fs *vid = (struct vf_fs *)ptr;
 
-	VF_DEBUG(vid, "Let's run!\n");
+	VF_DEBUG(vid, "Let's run!");
 	g_main_loop_run(vid->loop);
-	VF_DEBUG(vid, "Going out\n");
+	VF_DEBUG(vid, "Going out!");
 
 	gst_object_unref(vid->testsink);
 	gst_element_set_state(vid->source, GST_STATE_NULL);
@@ -347,56 +346,35 @@ run_play_thread(void *ptr)
 	return NULL;
 }
 
-struct xrt_fs *
-vf_fs_create(struct xrt_frame_context *xfctx, const char *path)
+static struct xrt_fs *
+alloc_and_init_common(struct xrt_frame_context *xfctx,      //
+                      enum xrt_format format,               //
+                      enum xrt_stereo_format stereo_format, //
+                      gchar *pipeline_string)               //
 {
-	if (path == NULL) {
-		U_LOG_E("No path given");
-		return NULL;
-	}
-
-
 	struct vf_fs *vid = U_TYPED_CALLOC(struct vf_fs);
-	vid->path = path;
 	vid->got_sample = false;
+	vid->format = format;
+	vid->stereo_format = stereo_format;
 
-	gchar *loop = "false";
-
-	gchar *string = NULL;
 	GstBus *bus = NULL;
 
-
-	gst_init(0, NULL);
-
-	if (!g_file_test(path, G_FILE_TEST_EXISTS)) {
-		VF_ERROR(vid, "File %s does not exist\n", path);
+	int ret = os_thread_helper_init(&vid->play_thread);
+	if (ret < 0) {
+		VF_ERROR(vid, "Failed to init thread");
+		g_free(pipeline_string);
+		free(vid);
 		return NULL;
 	}
 
 	vid->loop = g_main_loop_new(NULL, FALSE);
+	VF_DEBUG(vid, "Pipeline: %s", pipeline_string);
 
-#if 0
-	const gchar *caps = "video/x-raw,format=RGB";
-	vid->format = XRT_FORMAT_R8G8B8;
-	vid->stereo_format = XRT_STEREO_FORMAT_SBS;
-#endif
-
-#if 1
-	const gchar *caps = "video/x-raw,format=YUY2";
-	vid->format = XRT_FORMAT_YUYV422;
-	vid->stereo_format = XRT_STEREO_FORMAT_SBS;
-#endif
-
-	string = g_strdup_printf(
-	    "multifilesrc location=\"%s\" loop=%s ! decodebin ! videoconvert ! "
-	    "appsink caps=\"%s\" name=testsink",
-	    path, loop, caps);
-	VF_DEBUG(vid, "Pipeline: %s\n", string);
-	vid->source = gst_parse_launch(string, NULL);
-	g_free(string);
+	vid->source = gst_parse_launch(pipeline_string, NULL);
+	g_free(pipeline_string);
 
 	if (vid->source == NULL) {
-		VF_ERROR(vid, "Bad source\n");
+		VF_ERROR(vid, "Bad source");
 		g_main_loop_unref(vid->loop);
 		free(vid);
 		return NULL;
@@ -410,16 +388,21 @@ vf_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	gst_bus_add_watch(bus, (GstBusFunc)on_source_message, vid);
 	gst_object_unref(bus);
 
-	int ret = os_thread_helper_start(&vid->play_thread, run_play_thread, vid);
-	if (!ret) {
-		VF_ERROR(vid, "Failed to start thread");
+	ret = os_thread_helper_start(&vid->play_thread, run_play_thread, vid);
+	if (ret != 0) {
+		VF_ERROR(vid, "Failed to start thread '%i'", ret);
+		g_main_loop_unref(vid->loop);
+		free(vid);
+		return NULL;
 	}
 
-	// we need one sample to determine frame size
+	// We need one sample to determine frame size.
+	VF_DEBUG(vid, "Waiting for frame");
 	gst_element_set_state(vid->source, GST_STATE_PLAYING);
 	while (!vid->got_sample) {
 		os_nanosleep(100 * 1000 * 1000);
 	}
+	VF_DEBUG(vid, "Got first sample");
 	gst_element_set_state(vid->source, GST_STATE_PAUSED);
 
 	vid->base.enumerate_modes = vf_fs_enumerate_modes;
@@ -442,4 +425,62 @@ vf_fs_create(struct xrt_frame_context *xfctx, const char *path)
 	// clang-format on
 
 	return &(vid->base);
+}
+
+struct xrt_fs *
+vf_fs_videotestsource(struct xrt_frame_context *xfctx, uint32_t width, uint32_t height)
+{
+	gst_init(0, NULL);
+
+	enum xrt_format format = XRT_FORMAT_R8G8B8;
+	enum xrt_stereo_format stereo_format = XRT_STEREO_FORMAT_NONE;
+
+	gchar *pipeline_string = g_strdup_printf(
+	    "videotestsrc name=source ! "
+	    "videoconvert ! "
+	    "videoscale ! "
+	    "video/x-raw,format=RGB,width=%u,height=%u ! "
+	    "appsink name=testsink",
+	    width, height);
+
+	return alloc_and_init_common(xfctx, format, stereo_format, pipeline_string);
+}
+
+struct xrt_fs *
+vf_fs_open_file(struct xrt_frame_context *xfctx, const char *path)
+{
+	if (path == NULL) {
+		U_LOG_E("No path given");
+		return NULL;
+	}
+
+	gst_init(0, NULL);
+
+	if (!g_file_test(path, G_FILE_TEST_EXISTS)) {
+		U_LOG_E("File %s does not exist", path);
+		return NULL;
+	}
+
+#if 0
+	const gchar *caps = "video/x-raw,format=RGB";
+	enum xrt_format format = XRT_FORMAT_R8G8B8;
+	enum xrt_stereo_format stereo_format = XRT_STEREO_FORMAT_NONE;
+#endif
+
+#if 1
+	const gchar *caps = "video/x-raw,format=YUY2";
+	enum xrt_format format = XRT_FORMAT_YUYV422;
+	enum xrt_stereo_format stereo_format = XRT_STEREO_FORMAT_SBS;
+#endif
+
+	gchar *loop = "false";
+
+	gchar *pipeline_string = g_strdup_printf(
+	    "multifilesrc location=\"%s\" loop=%s ! "
+	    "decodebin ! "
+	    "videoconvert ! "
+	    "appsink caps=\"%s\" name=testsink",
+	    path, loop, caps);
+
+	return alloc_and_init_common(xfctx, format, stereo_format, pipeline_string);
 }

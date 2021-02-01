@@ -128,7 +128,6 @@ cmake_dependent_option(XRT_HAVE_OPENGL "Enable OpenGL Graphics API support" ON "
 cmake_dependent_option(XRT_HAVE_OPENGLES "Enable OpenGL-ES Graphics API support" ON "OpenGLES_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_EGL "Enable OpenGL on EGL Graphics API support" ON "EGL_FOUND; XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES" OFF)
 cmake_dependent_option(XRT_HAVE_DBUS "Enable dbus support (for BLE support)" ON "DBUS_FOUND" OFF)
-cmake_dependent_option(XRT_HAVE_VF "Enable gstreamer support (for video file support)" ON "GST_FOUND" OFF)
 cmake_dependent_option(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" ON "XRT_HAVE_VULKAN; XRT_HAVE_WAYLAND OR XRT_HAVE_XCB OR ANDROID OR WIN32" OFF)
 cmake_dependent_option(XRT_FEATURE_OPENXR "Build OpenXR runtime target" ON "XRT_FEATURE_COMPOSITOR_MAIN" OFF)
 cmake_dependent_option(XRT_FEATURE_SERVICE "Enable separate service module for OpenXR runtime" ON "NOT WIN32" OFF)
@@ -172,6 +171,7 @@ cmake_dependent_option(XRT_HAVE_LIBUVC "Enable libuvc video driver" ON "LIBUVC_F
 cmake_dependent_option(XRT_HAVE_FFMPEG "Enable ffmpeg testing video driver" ON "FFMPEG_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_SDL2 "Enable use of SDL2" ON "SDL2_FOUND AND XRT_HAVE_OPENGL" OFF)
 cmake_dependent_option(XRT_HAVE_SYSTEM_CJSON "Enable cJSON from system, instead of bundled source" ON "CJSON_FOUND" OFF)
+cmake_dependent_option(XRT_HAVE_GST "Enable gstreamer" ON "GST_FOUND" OFF)
 
 
 cmake_dependent_option(XRT_BUILD_DRIVER_PSVR "Enable PSVR HMD driver" ON "HIDAPI_FOUND" OFF)
@@ -191,6 +191,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_HDK "Enable HDK driver" ON "XRT_HAVE_INT
 cmake_dependent_option(XRT_BUILD_DRIVER_PSMV "Enable Playstation Move driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_HYDRA "Enable Hydra driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_NS "Enable North Star driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
+cmake_dependent_option(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" ON "XRT_HAVE_GST" OFF)
 
 # This one defaults to off, even if we find the deps.
 cmake_dependent_option(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" ON "SURVIVE_FOUND" OFF)
@@ -216,6 +217,7 @@ list(APPEND AVAILABLE_DRIVERS
 	"REMOTE"
 	"SURVIVE"
 	"V4L2"
+	"VF"
 	"VIVE"
 	)
 
@@ -348,5 +350,6 @@ message(STATUS "#    DRIVER_PSVR:         ${XRT_BUILD_DRIVER_PSVR}")
 message(STATUS "#    DRIVER_RS:           ${XRT_BUILD_DRIVER_RS}")
 message(STATUS "#    DRIVER_REMOTE:       ${XRT_BUILD_DRIVER_REMOTE}")
 message(STATUS "#    DRIVER_SURVIVE:      ${XRT_BUILD_DRIVER_SURVIVE}")
+message(STATUS "#    DRIVER_VF:           ${XRT_BUILD_DRIVER_VF}")
 message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
 message(STATUS "#####----- Config -----#####")

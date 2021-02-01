@@ -192,7 +192,7 @@ if(XRT_HAVE_V4L2)
 	list(APPEND ENABLED_DRIVERS v4l2)
 endif()
 
-if(XRT_HAVE_VF)
+if(XRT_BUILD_DRIVER_VF)
 	set(VF_SOURCE_FILES
 		vf/vf_driver.c
 		)

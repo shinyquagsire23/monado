@@ -1,4 +1,4 @@
-// Copyright 2029, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -10,6 +10,7 @@
 #pragma once
 
 #include "xrt/xrt_frameserver.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,14 +24,22 @@ extern "C" {
  */
 
 /*!
- * Create a vf frameserver
+ * Create a vf frameserver by opening a video file.
  *
  * @ingroup drv_vf
  */
 struct xrt_fs *
-vf_fs_create(struct xrt_frame_context *xfctx, const char *path);
+vf_fs_open_file(struct xrt_frame_context *xfctx, const char *path);
+
+/*!
+ * Create a vf frameserver that uses the videotestsource.
+ *
+ * @ingroup drv_vf
+ */
+struct xrt_fs *
+vf_fs_videotestsource(struct xrt_frame_context *xfctx, uint32_t width, uint32_t height);
+
 
 #ifdef __cplusplus
 }
-
 #endif

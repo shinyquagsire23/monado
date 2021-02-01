@@ -72,7 +72,7 @@ if(XRT_HAVE_V4L2)
 	target_link_libraries(target_lists PRIVATE drv_v4l2)
 endif()
 
-if(XRT_HAVE_VF)
+if(XRT_BUILD_DRIVER_VF)
 	target_link_libraries(target_lists PRIVATE drv_vf)
 endif()
 

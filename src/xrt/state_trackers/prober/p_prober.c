@@ -20,7 +20,7 @@
 #include "v4l2/v4l2_interface.h"
 #endif
 
-#ifdef XRT_HAVE_VF
+#ifdef XRT_BUILD_DRIVER_VF
 #include "vf/vf_interface.h"
 #endif
 
@@ -742,10 +742,10 @@ open_video_device(struct xrt_prober *xp,
 {
 	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
 
-#if defined(XRT_HAVE_VF)
+#if defined(XRT_BUILD_DRIVER_VF)
 	const char *path = debug_get_option_vf_path();
 	if (path != NULL) {
-		struct xrt_fs *xfs = vf_fs_create(xfctx, path);
+		struct xrt_fs *xfs = vf_fs_open_file(xfctx, path);
 		if (xfs) {
 			*out_xfs = xfs;
 			return 0;
