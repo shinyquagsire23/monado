@@ -234,6 +234,17 @@ if(XRT_HAVE_OPENCV)
 	target_link_libraries(aux_tracking PUBLIC ${OpenCV_LIBRARIES})
 endif()
 
+if (XRT_BUILD_DRIVER_VIVE OR XRT_BUILD_DRIVER_SURVIVE)
+	set(VIVE_CONFIG_SOURCE_FILES
+		vive/vive_config.h
+		vive/vive_config.c
+		)
+	add_library(aux_vive STATIC ${VIVE_CONFIG_SOURCE_FILES})
+	target_link_libraries(aux_vive PRIVATE xrt-interfaces aux_util aux_math xrt-external-cjson)
+	target_link_libraries(aux_vive PRIVATE ${ZLIB_LIBRARIES})
+	target_include_directories(aux_vive PRIVATE ${ZLIB_INCLUDE_DIRS})
+endif()
+
 if(XRT_HAVE_VULKAN)
 	# Vulkan library.
 	add_library(aux_vk STATIC ${VK_SOURCE_FILES})

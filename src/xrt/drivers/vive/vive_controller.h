@@ -17,10 +17,9 @@
 #include "os/os_threading.h"
 #include "math/m_imu_3dof.h"
 #include "util/u_logging.h"
-
 #include "util/u_hand_tracking.h"
+#include "vive/vive_config.h"
 
-#include "vive_config.h"
 
 #ifdef __cplusplus
 extern "C" {

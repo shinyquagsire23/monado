@@ -41,7 +41,7 @@
 
 #include "math/m_predict.h"
 
-#include "vive_config.h"
+#include "vive/vive_config.h"
 
 // typically HMD config is available at around 2 seconds after init
 #define WAIT_TIMEOUT 5.0

@@ -217,6 +217,24 @@ aux_tracking = declare_dependency(
 	link_with: lib_aux_tracking,
 )
 
+lib_aux_vive = static_library(
+	'aux_vive',
+	files(
+		'vive/vive_config.c',
+		'vive/vive_config.h',
+	),
+	include_directories: [
+		xrt_include,
+		cjson_include,
+	],
+	dependencies: [zlib],
+)
+
+aux_vive = declare_dependency(
+	include_directories: aux_include,
+	link_with: lib_aux_vive,
+)
+
 lib_aux_vk = static_library(
 	'aux_vk',
 	files(
@@ -237,6 +255,6 @@ aux_vk = declare_dependency(
 )
 
 
-all_aux = [aux_util, aux_os, aux_math, aux_tracking, aux_generated_bindings]
+all_aux = [aux_util, aux_os, aux_math, aux_tracking, aux_generated_bindings, aux_vive]
 
 aux = declare_dependency(dependencies: all_aux)

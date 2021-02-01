@@ -14,9 +14,9 @@
 #include "os/os_threading.h"
 #include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
+#include "vive/vive_config.h"
 
 #include "vive_lighthouse.h"
-#include "vive_config.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -11,14 +11,18 @@
 
 #include "vive_config.h"
 
+#include "util/u_misc.h"
 #include "util/u_json.h"
 #include "util/u_distortion_mesh.h"
 
 #include "math/m_api.h"
 
-#include "vive.h"
-#include "vive_device.h"
-#include "vive_controller.h"
+
+#define VIVE_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
+#define VIVE_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
+#define VIVE_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
+#define VIVE_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
+#define VIVE_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
 
 #define JSON_INT(a, b, c) u_json_get_int(u_json_get(a, b), c)
 #define JSON_FLOAT(a, b, c) u_json_get_float(u_json_get(a, b), c)
