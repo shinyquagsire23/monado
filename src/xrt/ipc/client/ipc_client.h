@@ -74,7 +74,7 @@ struct ipc_connection
  * @param xina Optional native image allocator for client-side allocation. Takes
  * ownership if one is supplied.
  * @param xdev Taken in but not used currently @todo remove this param?
- * @param[out] out_xcn Pointer to receive the created xrt_system_compositor.
+ * @param[out] out_xcs Pointer to receive the created xrt_system_compositor.
  */
 int
 ipc_client_create_system_compositor(struct ipc_connection *ipc_c,
