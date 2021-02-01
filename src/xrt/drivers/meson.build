@@ -144,6 +144,11 @@ lib_drv_vf = static_library(
 	build_by_default: 'vf' in drivers,
 )
 
+drv_vf = declare_dependency(
+	include_directories: drv_include,
+	link_with: lib_drv_vf,
+)
+
 lib_drv_v4l2 = static_library(
 	'drv_v4l2',
 	files(
