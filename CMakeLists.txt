@@ -49,7 +49,7 @@ if(NOT CMAKE_VERSION VERSION_LESS 3.12)
 	find_package(Python3 REQUIRED Interpreter)
 	set(PYTHON_EXECUTABLE Python3::Interpreter)
 else()
-	find_package(PythonInterp REQUIRED VERSION 3)
+	find_program(PYTHON_EXECUTABLE python3)
 	if(PYTHON_EXECUTABLE MATCHES "WindowsApps")
 		# If you hit this error, you will have to install Python 3 or try harder to tell CMake where it is.
 		message(FATAL_ERROR "Found WindowsApps alias for Python. Make sure Python3 is installed, then choose 'Manage App Execution Aliases' in Start and disable the aliases for Python.")
