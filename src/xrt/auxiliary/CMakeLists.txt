@@ -69,6 +69,14 @@ if(XRT_HAVE_DBUS)
 		)
 endif()
 
+set(GSTREAMER_SOURCE_FILES
+	gstreamer/gst_internal.h
+	gstreamer/gst_sink.h
+	gstreamer/gst_sink.c
+	gstreamer/gst_pipeline.h
+	gstreamer/gst_pipeline.c
+	)
+
 set(TRACKING_SOURCE_FILES
 	tracking/t_data_utils.c
 	tracking/t_imu_fusion.hpp
@@ -219,6 +227,23 @@ else()
 endif()
 if(ANDROID)
 	target_link_libraries(aux_util PUBLIC ${ANDROID_LOG_LIBRARY})
+endif()
+
+# GStreamer library.
+if(XRT_HAVE_GST)
+	add_library(aux_gstreamer STATIC ${GSTREAMER_SOURCE_FILES})
+	target_link_libraries(aux_gstreamer PUBLIC
+		aux-includes
+		)
+	target_link_libraries(aux_gstreamer PRIVATE
+		xrt-interfaces
+		aux_math
+		aux_os
+		${GST_LIBRARIES}
+		)
+	target_include_directories(aux_gstreamer PRIVATE
+		${GST_INCLUDE_DIRS}
+		)
 endif()
 
 # Tracking library.
