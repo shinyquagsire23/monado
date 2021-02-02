@@ -585,7 +585,7 @@ init_all(struct ipc_server *s)
 	}
 #endif
 
-	// Init all of the render riming helpers.
+	// Init all of the render timing helpers.
 	for (size_t i = 0; i < ARRAY_SIZE(s->threads); i++) {
 		u_rt_helper_init((struct u_rt_helper *)&s->threads[i].ics.urth);
 	}
