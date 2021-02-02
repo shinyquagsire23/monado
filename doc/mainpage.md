@@ -17,6 +17,7 @@ release.
 * @ref md_targets
 * @ref vulkan-extensions
 * @ref writing-driver (**not complete**)
+* @ref ipc-design
 
 ## Source layout
 
