@@ -170,18 +170,32 @@ bool
 vk_get_memory_type(struct vk_bundle *vk, uint32_t type_bits, VkMemoryPropertyFlags memory_props, uint32_t *out_type_id)
 {
 
+	uint32_t i_supported = type_bits;
 	for (uint32_t i = 0; i < vk->device_memory_props.memoryTypeCount; i++) {
 		uint32_t propertyFlags = vk->device_memory_props.memoryTypes[i].propertyFlags;
-		if ((type_bits & 1) == 1) {
+		if ((i_supported & 1) == 1) {
 			if ((propertyFlags & memory_props) == memory_props) {
 				*out_type_id = i;
 				return true;
 			}
 		}
-		type_bits >>= 1;
+		i_supported >>= 1;
 	}
 
 	VK_DEBUG(vk, "Could not find memory type!");
+
+	VK_TRACE(vk, "Requested flags: %d (type bits %d with %d memory types)", memory_props, type_bits,
+	         vk->device_memory_props.memoryTypeCount);
+
+	i_supported = type_bits;
+	VK_TRACE(vk, "Supported flags:");
+	for (uint32_t i = 0; i < vk->device_memory_props.memoryTypeCount; i++) {
+		uint32_t propertyFlags = vk->device_memory_props.memoryTypes[i].propertyFlags;
+		if ((i_supported & 1) == 1) {
+			VK_TRACE(vk, "    %d", propertyFlags);
+		}
+		i_supported >>= 1;
+	}
 
 	return false;
 }
