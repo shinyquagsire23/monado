@@ -63,6 +63,19 @@ struct xrt_frame_sink
 };
 
 /*!
+ * @copydoc xrt_frame_sink::push_frame
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_frame_sink
+ */
+static inline void
+xrt_sink_push_frame(struct xrt_frame_sink *sink, struct xrt_frame *frame)
+{
+	sink->push_frame(sink, frame);
+}
+
+/*!
  * @interface xrt_frame_node
  *
  * A interface object used for destroying a frame graph.
