@@ -52,8 +52,7 @@ static bool
 _init_ubos(struct comp_render_layer *self)
 {
 	VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-	                                   VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	for (uint32_t i = 0; i < 2; i++) {
 		math_matrix_4x4_identity(&self->transformation[i].mvp);
@@ -77,8 +76,7 @@ static bool
 _init_equirect1_ubo(struct comp_render_layer *self)
 {
 	VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-	                                   VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	if (!vk_buffer_init(self->vk, sizeof(struct layer_transformation), usage, properties,
 	                    &self->equirect1_ubo.handle, &self->equirect1_ubo.memory))
@@ -98,8 +96,7 @@ static bool
 _init_equirect2_ubo(struct comp_render_layer *self)
 {
 	VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-	                                   VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	if (!vk_buffer_init(self->vk, sizeof(struct layer_transformation), usage, properties,
 	                    &self->equirect2_ubo.handle, &self->equirect2_ubo.memory))
