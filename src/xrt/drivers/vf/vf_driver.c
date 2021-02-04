@@ -437,6 +437,7 @@ vf_fs_videotestsource(struct xrt_frame_context *xfctx, uint32_t width, uint32_t 
 
 	gchar *pipeline_string = g_strdup_printf(
 	    "videotestsrc name=source ! "
+	    "clockoverlay ! "
 	    "videoconvert ! "
 	    "videoscale ! "
 	    "video/x-raw,format=RGB,width=%u,height=%u ! "
