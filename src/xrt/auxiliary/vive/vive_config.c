@@ -220,6 +220,28 @@ vive_config_parse(struct vive_config *d, char *json_string)
 		return false;
 	}
 
+	if (u_json_get(json, "model_number")) {
+		JSON_STRING(json, "model_number", d->firmware.model_number);
+	} else {
+		JSON_STRING(json, "model_name", d->firmware.model_number);
+	}
+
+	VIVE_DEBUG(d, "Parsing model number: %s", d->firmware.model_number);
+
+	if (strcmp(d->firmware.model_number, "Utah MP") == 0) {
+		d->variant = VIVE_VARIANT_INDEX;
+		VIVE_DEBUG(d, "Found Valve Index HMD");
+	} else if (strcmp(d->firmware.model_number, "Vive MV") == 0 ||
+	           strcmp(d->firmware.model_number, "Vive. MV") == 0) {
+		d->variant = VIVE_VARIANT_VIVE;
+		VIVE_DEBUG(d, "Found HTC Vive HMD");
+	} else if (strcmp(d->firmware.model_number, "Vive_Pro MV") == 0) {
+		d->variant = VIVE_VARIANT_PRO;
+		VIVE_DEBUG(d, "Found HTC Vive Pro HMD");
+	} else {
+		VIVE_ERROR(d, "Failed to parse Vive HMD variant");
+	}
+
 	switch (d->variant) {
 	case VIVE_VARIANT_VIVE:
 		JSON_VEC3(json, "acc_bias", &d->imu.acc_bias);
@@ -257,8 +279,6 @@ vive_config_parse(struct vive_config *d, char *json_string)
 	} break;
 	default: VIVE_ERROR(d, "Unknown Vive variant."); return false;
 	}
-
-	JSON_STRING(json, "model_number", d->firmware.model_number);
 
 	if (d->variant != VIVE_VARIANT_INDEX) {
 		JSON_STRING(json, "mb_serial_number", d->firmware.mb_serial_number);
@@ -337,16 +357,23 @@ vive_config_parse_controller(struct vive_controller_config *d, char *json_string
 		JSON_STRING(json, "model_name", d->firmware.model_number);
 	}
 
-	if (strcmp(d->firmware.model_number, "Vive. Controller MV") == 0) {
+	VIVE_DEBUG(d, "Parsing model number: %s", d->firmware.model_number);
+
+	if (strcmp(d->firmware.model_number, "Vive. Controller MV") == 0 ||
+	    strcmp(d->firmware.model_number, "Vive Controller MV") == 0) {
 		d->variant = CONTROLLER_VIVE_WAND;
 		VIVE_DEBUG(d, "Found Vive Wand controller");
-	} else if (strcmp(d->firmware.model_number, "Knuckles Right") == 0) {
+	} else if (strcmp(d->firmware.model_number, "Knuckles Right") == 0 ||
+	           strcmp(d->firmware.model_number, "Knuckles EV3.0 Right") == 0) {
 		d->variant = CONTROLLER_INDEX_RIGHT;
 		VIVE_DEBUG(d, "Found Knuckles Right controller");
-	} else if (strcmp(d->firmware.model_number, "Knuckles Left") == 0) {
+	} else if (strcmp(d->firmware.model_number, "Knuckles Left") == 0 ||
+	           strcmp(d->firmware.model_number, "Knuckles EV3.0 Left") == 0) {
 		d->variant = CONTROLLER_INDEX_LEFT;
 		VIVE_DEBUG(d, "Found Knuckles Left controller");
-	} else if (strcmp(d->firmware.model_number, "Vive Tracker PVT") == 0) {
+	} else if (strcmp(d->firmware.model_number, "Vive Tracker PVT") == 0 ||
+	           strcmp(d->firmware.model_number, "Vive. Tracker MV") == 0 ||
+	           strcmp(d->firmware.model_number, "Vive Tracker MV") == 0) {
 		d->variant = CONTROLLER_TRACKER_GEN1;
 		VIVE_DEBUG(d, "Found Gen 1 tracker.");
 	} else if (strcmp(d->firmware.model_number, "VIVE Tracker Pro MV") == 0) {
