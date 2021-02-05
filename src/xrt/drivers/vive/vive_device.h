@@ -34,8 +34,6 @@ struct vive_device
 
 	struct lighthouse_watchman watchman;
 
-	enum VIVE_VARIANT variant;
-
 	struct os_thread_helper sensors_thread;
 	struct os_thread_helper watchman_thread;
 	struct os_thread_helper mainboard_thread;

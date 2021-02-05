@@ -339,7 +339,7 @@ update_imu(struct vive_device *d, const void *buffer)
 
 		VIVE_TRACE(d, "GYRO %f %f %f", angular_velocity.x, angular_velocity.y, angular_velocity.z);
 
-		switch (d->variant) {
+		switch (d->config.variant) {
 		case VIVE_VARIANT_VIVE:
 			// flip all except x axis
 			acceleration.x = +acceleration.x;
@@ -744,18 +744,10 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->sensors_dev = sensors_dev;
 	d->ll = debug_get_log_option_vive_log();
 	d->watchman_dev = watchman_dev;
-	d->variant = variant;
 
 	d->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
 	d->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 	d->base.compute_distortion = compute_distortion;
-
-	switch (variant) {
-	case VIVE_VARIANT_VIVE: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive"); break;
-	case VIVE_VARIANT_PRO: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro"); break;
-	case VIVE_VARIANT_INDEX: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Valve Index"); break;
-	default: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Unknown Vive device");
-	}
 
 	if (d->mainboard_dev) {
 		vive_mainboard_power_on(d);
@@ -784,7 +776,6 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 
 	d->config.ll = d->ll;
 	// usb connected HMD variant is known because of USB id, config parsing relies on it.
-	d->config.variant = d->variant;
 	if (config != NULL) {
 		vive_config_parse(&d->config, config);
 		free(config);
@@ -803,7 +794,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.hmd->screens[0].w_pixels = (int)w_pixels * 2;
 	d->base.hmd->screens[0].h_pixels = (int)h_pixels;
 
-	if (d->variant == VIVE_VARIANT_INDEX) {
+	if (d->config.variant == VIVE_VARIANT_INDEX) {
 		lens_horizontal_separation = 0.06;
 		h_meters = 0.07;
 		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
