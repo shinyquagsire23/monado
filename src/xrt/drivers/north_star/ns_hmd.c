@@ -86,15 +86,15 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
 
-
-	// If the tracking device is created use it.
-	if (ns->tracker != NULL) {
-		xrt_device_get_tracked_pose(ns->tracker, name, at_timestamp_ns, out_relation);
+	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
+		NS_ERROR(ns, "unknown input name");
 		return;
 	}
 
-	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
-		NS_ERROR(ns, "unknown input name");
+	// If the tracking device is created use it.
+	if (ns->tracker != NULL) {
+		enum xrt_input_name tracker_name = XRT_INPUT_GENERIC_TRACKER_POSE;
+		xrt_device_get_tracked_pose(ns->tracker, tracker_name, at_timestamp_ns, out_relation);
 		return;
 	}
 

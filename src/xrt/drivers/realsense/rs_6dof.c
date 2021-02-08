@@ -324,7 +324,7 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 {
 	struct rs_6dof *rs = rs_6dof(xdev);
 
-	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
+	if (name != XRT_INPUT_GENERIC_TRACKER_POSE) {
 		U_LOG_E("unknown input name");
 		return;
 	}
@@ -386,8 +386,7 @@ rs_6dof_create(void)
 	// Print name.
 	snprintf(rs->base.str, XRT_DEVICE_NAME_LEN, "Intel RealSense 6-DOF");
 
-	// Setup input, this is a lie.
-	rs->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
+	rs->base.inputs[0].name = XRT_INPUT_GENERIC_TRACKER_POSE;
 
 	// Thread and other state.
 	ret = os_thread_helper_init(&rs->oth);
