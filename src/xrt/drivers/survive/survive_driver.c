@@ -48,6 +48,7 @@
 // index in sys->controllers[] array
 #define SURVIVE_LEFT_CONTROLLER_INDEX 0
 #define SURVIVE_RIGHT_CONTROLLER_INDEX 1
+#define SURVIVE_NON_CONTROLLER_START 2
 
 //! excl HMD we support 16 devices (controllers, trackers, ...)
 #define MAX_TRACKED_DEVICE_COUNT 16
@@ -95,7 +96,15 @@ enum input_index
 
 	VIVE_CONTROLLER_HAND_TRACKING,
 
+	VIVE_TRACKER_POSE,
+
 	VIVE_CONTROLLER_MAX_INDEX,
+};
+
+enum DeviceType
+{
+	DEVICE_TYPE_HMD,
+	DEVICE_TYPE_CONTROLLER
 };
 
 /*!
@@ -109,6 +118,8 @@ struct survive_device
 
 	struct xrt_space_relation last_relation;
 	timepoint_ns last_relation_ts;
+
+	enum DeviceType device_type;
 
 	union {
 		struct
@@ -157,22 +168,14 @@ survive_device_destroy(struct xrt_device *xdev)
 		}
 	}
 
-	//! @todo: For now tear libsurvive down without expliclity destroying trackers
 	bool all_null = true;
-	if (survive->sys->controllers[CONTROLLER_INDEX_LEFT] != NULL) {
-		all_null = false;
-	}
-	if (survive->sys->controllers[CONTROLLER_INDEX_RIGHT] != NULL) {
-		all_null = false;
+	for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
+		if (survive->sys->controllers[i] != 0) {
+			all_null = false;
+		}
 	}
 
 	if (survive->sys->hmd == NULL && all_null) {
-
-		//! @todo we don't explicitly destroy trackers yet
-		for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
-			survive->sys->controllers[i] = 0;
-		}
-
 		U_LOG_D("Tearing down libsurvive context");
 		survive_simple_close(survive->sys->ctx);
 
@@ -277,6 +280,20 @@ _predict_pose(struct survive_device *survive, uint64_t at_timestamp_ns, struct x
 	m_predict_relation(&survive->last_relation, prediction_s, out_relation);
 }
 
+static bool
+verify_device_name(struct survive_device *survive, enum xrt_input_name name)
+{
+
+	switch (survive->device_type) {
+	case DEVICE_TYPE_HMD: return name == XRT_INPUT_GENERIC_HEAD_POSE;
+	case DEVICE_TYPE_CONTROLLER:
+		return name == XRT_INPUT_INDEX_AIM_POSE || name == XRT_INPUT_INDEX_GRIP_POSE ||
+		       name == XRT_INPUT_VIVE_AIM_POSE || name == XRT_INPUT_VIVE_GRIP_POSE ||
+		       name == XRT_INPUT_GENERIC_TRACKER_POSE;
+	};
+	return false;
+}
+
 static void
 survive_device_get_tracked_pose(struct xrt_device *xdev,
                                 enum xrt_input_name name,
@@ -284,11 +301,7 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
                                 struct xrt_space_relation *out_relation)
 {
 	struct survive_device *survive = (struct survive_device *)xdev;
-	if ((survive == survive->sys->hmd && name != XRT_INPUT_GENERIC_HEAD_POSE) ||
-	    ((survive == survive->sys->controllers[0] || survive == survive->sys->controllers[1]) &&
-	     (name != XRT_INPUT_INDEX_AIM_POSE && name != XRT_INPUT_INDEX_GRIP_POSE) &&
-	     (name != XRT_INPUT_VIVE_AIM_POSE && name != XRT_INPUT_VIVE_GRIP_POSE))) {
-
+	if (!verify_device_name(survive, name)) {
 		SURVIVE_ERROR(survive, "unknown input name");
 		return;
 	}
@@ -695,6 +708,7 @@ _process_pose_event(struct survive_device *survive, const struct SurviveSimplePo
 {
 	pose_to_relation(&e->pose, &e->velocity, &survive->last_relation);
 	survive->last_relation_ts = survive_timecode_to_monotonic(e->time);
+	SURVIVE_TRACE(survive, "Process pose event for %s", survive->base.str);
 }
 
 static void
@@ -791,6 +805,7 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 	sys->hmd = survive;
 	survive->sys = sys;
 	survive->survive_obj = sso;
+	survive->device_type = DEVICE_TYPE_HMD;
 
 	survive->base.name = XRT_DEVICE_GENERIC_HMD;
 	snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive HMD");
@@ -969,6 +984,13 @@ _create_controller_device(struct survive_system *sys,
 			U_LOG_IFL_E(sys->ll, "Only creating 1 right controller!");
 			return false;
 		}
+	} else if (variant == CONTROLLER_TRACKER_GEN1 || variant == CONTROLLER_TRACKER_GEN2) {
+		for (int i = SURVIVE_NON_CONTROLLER_START; i < MAX_TRACKED_DEVICE_COUNT; i++) {
+			if (sys->controllers[i] == NULL) {
+				idx = i;
+				break;
+			}
+		}
 	}
 
 	if (idx == -1) {
@@ -986,6 +1008,7 @@ _create_controller_device(struct survive_system *sys,
 	sys->controllers[idx] = survive;
 	survive->sys = sys;
 	survive->survive_obj = sso;
+	survive->device_type = DEVICE_TYPE_CONTROLLER;
 
 	survive->base.tracking_origin = &sys->base;
 
@@ -1068,6 +1091,18 @@ _create_controller_device(struct survive_system *sys,
 		survive->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_vive);
 
 		survive->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
+	} else if (survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN1 ||
+	           survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN2) {
+		if (survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN1) {
+			survive->base.name = XRT_DEVICE_VIVE_TRACKER_GEN1;
+		} else if (survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN2) {
+			survive->base.name = XRT_DEVICE_VIVE_TRACKER_GEN2;
+		}
+		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Vive Tracker %d", idx);
+
+		survive->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
+
+		survive->base.inputs[VIVE_TRACKER_POSE].name = XRT_INPUT_GENERIC_TRACKER_POSE;
 	}
 
 	survive->base.orientation_tracking_supported = true;
@@ -1105,11 +1140,13 @@ add_device(struct survive_system *ss, const struct SurviveSimpleConfigEvent *e)
 		case CONTROLLER_VIVE_WAND:
 		case CONTROLLER_INDEX_LEFT:
 		case CONTROLLER_INDEX_RIGHT:
-			U_LOG_IFL_D(ss->ll, "Adding controller.");
+		case CONTROLLER_TRACKER_GEN1:
+		case CONTROLLER_TRACKER_GEN2:
+			U_LOG_IFL_D(ss->ll, "Adding controller: %s.", config.firmware.model_number);
 			_create_controller_device(ss, sso, &config);
 			break;
 		default:
-			U_LOG_IFL_D(ss->ll, "Skip non controller obj.");
+			U_LOG_IFL_D(ss->ll, "Skip non controller obj %s.", config.firmware.model_number);
 			U_LOG_IFL_T(ss->ll, "json: %s", conf_str);
 			break;
 		}
@@ -1209,11 +1246,11 @@ survive_found(struct xrt_prober *xp,
 	if (ss->hmd) {
 		out_xdevs[out_idx++] = &ss->hmd->base;
 	}
-	if (&ss->controllers[SURVIVE_LEFT_CONTROLLER_INDEX]) {
-		out_xdevs[out_idx++] = &ss->controllers[SURVIVE_LEFT_CONTROLLER_INDEX]->base;
-	}
-	if (&ss->controllers[SURVIVE_LEFT_CONTROLLER_INDEX]) {
-		out_xdevs[out_idx++] = &ss->controllers[SURVIVE_RIGHT_CONTROLLER_INDEX]->base;
+
+	for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
+		if (ss->controllers[i] != NULL) {
+			out_xdevs[out_idx++] = &ss->controllers[i]->base;
+		}
 	}
 
 	survive_already_initialized = true;
