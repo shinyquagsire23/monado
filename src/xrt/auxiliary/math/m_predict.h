@@ -19,7 +19,7 @@
  * Assumes that angular velocity is relative to the space the relation is in,
  * not relative to relation::pose.
  *
- * @aux_math
+ * @ingroup aux_math
  */
 void
 m_predict_relation(const struct xrt_space_relation *rel, double delta_s, struct xrt_space_relation *out_rel);
