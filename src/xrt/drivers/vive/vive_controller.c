@@ -308,7 +308,7 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 		return;
 	}
 
-	enum xrt_hand hand = d->variant == CONTROLLER_INDEX_LEFT ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
+	enum xrt_hand hand = d->config.variant == CONTROLLER_INDEX_LEFT ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
 
 	float thumb_curl = 0.0f;
 	//! @todo place thumb preciely on the button that is touched/pressed
@@ -562,21 +562,21 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watch
 	/*
 	 */
 
-	if (d->variant == CONTROLLER_VIVE_WAND) {
+	if (d->config.variant == CONTROLLER_VIVE_WAND) {
 		struct xrt_vec3 fixed_acceleration = {.x = -acceleration.x, .y = -acceleration.z, .z = -acceleration.y};
 		acceleration = fixed_acceleration;
 
 		struct xrt_vec3 fixed_angular_velocity = {
 		    .x = -angular_velocity.x, .y = -angular_velocity.z, .z = -angular_velocity.y};
 		angular_velocity = fixed_angular_velocity;
-	} else if (d->variant == CONTROLLER_INDEX_RIGHT) {
+	} else if (d->config.variant == CONTROLLER_INDEX_RIGHT) {
 		struct xrt_vec3 fixed_acceleration = {.x = acceleration.z, .y = -acceleration.y, .z = acceleration.x};
 		acceleration = fixed_acceleration;
 
 		struct xrt_vec3 fixed_angular_velocity = {
 		    .x = angular_velocity.z, .y = -angular_velocity.y, .z = angular_velocity.x};
 		angular_velocity = fixed_angular_velocity;
-	} else if (d->variant == CONTROLLER_INDEX_LEFT) {
+	} else if (d->config.variant == CONTROLLER_INDEX_LEFT) {
 		struct xrt_vec3 fixed_acceleration = {.x = -acceleration.z, .y = acceleration.x, .z = -acceleration.y};
 		acceleration = fixed_acceleration;
 
@@ -1023,7 +1023,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 
 	d->ll = debug_get_log_option_vive_log();
 	d->watchman_gen = WATCHMAN_GEN_UNKNOWN;
-	d->variant = CONTROLLER_UNKNOWN;
+	d->config.variant = CONTROLLER_UNKNOWN;
 
 	d->watchman_gen = watchman_gen;
 
@@ -1067,7 +1067,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	VIVE_DEBUG(d, "Vive controller gyroscope range     %f", d->config.imu.gyro_range);
 	VIVE_DEBUG(d, "Vive controller accelerometer range %f", d->config.imu.acc_range);
 
-	// successful config parsing determines d->variant
+	// successful config parsing determines d->config.variant
 	char *config = vive_read_config(d->controller_hid);
 
 	d->config.ll = d->ll;
@@ -1081,11 +1081,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 		return 0;
 	}
 
-	// watchman rf connected device variant is read from config json
-	//! @todo usb connected controllers
-	d->variant = d->config.variant;
-
-	if (d->variant == CONTROLLER_VIVE_WAND) {
+	if (d->config.variant == CONTROLLER_VIVE_WAND) {
 		d->base.name = XRT_DEVICE_VIVE_WAND;
 
 		SET_WAND_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
@@ -1108,7 +1104,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 		d->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_vive);
 
 		d->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
-	} else if (d->variant == CONTROLLER_INDEX_LEFT || d->variant == CONTROLLER_INDEX_RIGHT) {
+	} else if (d->config.variant == CONTROLLER_INDEX_LEFT || d->config.variant == CONTROLLER_INDEX_RIGHT) {
 		d->base.name = XRT_DEVICE_INDEX_CONTROLLER;
 
 		SET_INDEX_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
@@ -1139,25 +1135,25 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 
 		d->base.get_hand_tracking = vive_controller_get_hand_tracking;
 
-		enum xrt_hand hand = d->variant == CONTROLLER_INDEX_LEFT ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
+		enum xrt_hand hand = d->config.variant == CONTROLLER_INDEX_LEFT ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
 
 		u_hand_joints_init_default_set(&d->hand_tracking, hand, XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
 
 		d->base.binding_profiles = binding_profiles_index;
 		d->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_index);
 
-		if (d->variant == CONTROLLER_INDEX_LEFT) {
+		if (d->config.variant == CONTROLLER_INDEX_LEFT) {
 			d->base.device_type = XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
 			d->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
-		} else if (d->variant == CONTROLLER_INDEX_RIGHT) {
+		} else if (d->config.variant == CONTROLLER_INDEX_RIGHT) {
 			d->base.device_type = XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
 			d->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
 		}
-	} else if (d->variant == CONTROLLER_TRACKER_GEN1) {
+	} else if (d->config.variant == CONTROLLER_TRACKER_GEN1) {
 		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN1;
 		d->base.update_inputs = _update_tracker_inputs;
 		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
-	} else if (d->variant == CONTROLLER_TRACKER_GEN2) {
+	} else if (d->config.variant == CONTROLLER_TRACKER_GEN2) {
 		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN2;
 		d->base.update_inputs = _update_tracker_inputs;
 		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
@@ -1179,7 +1175,8 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	VIVE_DEBUG(d, "Opened vive controller!\n");
 	d->base.orientation_tracking_supported = true;
 	d->base.position_tracking_supported = false;
-	d->base.hand_tracking_supported = d->variant == CONTROLLER_INDEX_LEFT || d->variant == CONTROLLER_INDEX_RIGHT;
+	d->base.hand_tracking_supported =
+	    d->config.variant == CONTROLLER_INDEX_LEFT || d->config.variant == CONTROLLER_INDEX_RIGHT;
 
 	return d;
 }

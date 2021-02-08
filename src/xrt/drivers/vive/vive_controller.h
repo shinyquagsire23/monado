@@ -96,7 +96,6 @@ struct vive_controller_device
 	} state;
 
 	enum watchman_gen watchman_gen;
-	enum VIVE_CONTROLLER_VARIANT variant;
 
 	struct u_hand_tracking hand_tracking;
 
