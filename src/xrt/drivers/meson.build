@@ -187,8 +187,6 @@ lib_drv_survive = static_library(
 	files(
 		'survive/survive_driver.c',
 		'survive/survive_interface.h',
-		'survive/survive_wrap.c',
-		'survive/survive_wrap.h',
 	),
 	include_directories: [
 		xrt_include,

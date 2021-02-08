@@ -208,8 +208,6 @@ if (XRT_BUILD_DRIVER_SURVIVE)
 	set(SURVIVE_SOURCE_FILES
 		survive/survive_driver.c
 		survive/survive_interface.h
-		survive/survive_wrap.c
-		survive/survive_wrap.h
 		)
 
 	add_library(drv_survive STATIC ${SURVIVE_SOURCE_FILES})
