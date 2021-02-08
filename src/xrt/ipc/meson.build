@@ -64,6 +64,7 @@ lib_ipc_server = static_library(
 		'server/ipc_server_handler.c',
 		'server/ipc_server_per_client_thread.c',
 		'server/ipc_server_process.c',
+		'server/ipc_server_mainloop_linux.c',
 	],
 	include_directories: [
 		xrt_include,

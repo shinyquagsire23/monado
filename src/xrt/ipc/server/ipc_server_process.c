@@ -1,10 +1,11 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Server process functions.
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup ipc_server
  */
 
@@ -31,16 +32,11 @@
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <sys/epoll.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-
-#ifdef XRT_HAVE_SYSTEMD
-#include <systemd/sd-daemon.h>
-#endif
 
 /* ---- HACK ---- */
 extern int
@@ -93,6 +89,24 @@ teardown_idev(struct ipc_device *idev)
  *
  */
 
+#ifdef XRT_OS_ANDROID
+
+// Stub
+void
+ipc_server_mainloop_deinit(struct ipc_server_mainloop *ml)
+{}
+// Stub
+int
+ipc_server_mainloop_init(struct ipc_server_mainloop *ml)
+{
+	return 0;
+}
+// Stub
+void
+ipc_server_mainloop_poll(struct ipc_server *vs, struct ipc_server_mainloop *ml)
+{}
+
+#endif
 static void
 teardown_all(struct ipc_server *s)
 {
@@ -108,17 +122,7 @@ teardown_all(struct ipc_server *s)
 
 	xrt_instance_destroy(&s->xinst);
 
-	if (s->listen_socket > 0) {
-		// Close socket on exit
-		close(s->listen_socket);
-		s->listen_socket = -1;
-		if (!s->launched_by_socket && s->socket_filename) {
-			// Unlink it too, but only if we bound it.
-			unlink(s->socket_filename);
-			free(s->socket_filename);
-			s->socket_filename = NULL;
-		}
-	}
+	ipc_server_mainloop_deinit(&s->ml);
 
 	os_mutex_destroy(&s->global_state_lock);
 }
@@ -328,131 +332,21 @@ init_shm(struct ipc_server *s)
 	return 0;
 }
 
-static int
-get_systemd_socket(struct ipc_server *s, int *out_fd)
+void
+ipc_server_handle_failure(struct ipc_server *vs)
 {
-#ifdef XRT_HAVE_SYSTEMD
-	// We may have been launched with socket activation
-	int num_fds = sd_listen_fds(0);
-	if (num_fds > 1) {
-		U_LOG_E("Too many file descriptors passed by systemd.");
-		return -1;
-	}
-	if (num_fds == 1) {
-		*out_fd = SD_LISTEN_FDS_START + 0;
-		s->launched_by_socket = true;
-		U_LOG_D("Got existing socket from systemd.");
-	}
-#endif
-	return 0;
+	// Right now handled just the same as a graceful shutdown.
+	vs->running = false;
 }
 
-static int
-create_listen_socket(struct ipc_server *s, int *out_fd)
+void
+ipc_server_handle_shutdown_signal(struct ipc_server *vs)
 {
-	// no fd provided
-	struct sockaddr_un addr;
-	int fd, ret;
-
-	fd = socket(PF_UNIX, SOCK_STREAM, 0);
-	if (fd < 0) {
-		U_LOG_E("Message Socket Create Error!");
-		return fd;
-	}
-
-	memset(&addr, 0, sizeof(addr));
-
-	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, IPC_MSG_SOCK_FILE);
-
-	ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
-	if (ret < 0) {
-		U_LOG_E(
-		    "Could not bind socket to path %s: is the "
-		    "service running already?",
-		    IPC_MSG_SOCK_FILE);
-#ifdef XRT_HAVE_SYSTEMD
-		U_LOG_E(
-		    "Or, is the systemd unit monado.socket or "
-		    "monado-dev.socket active?");
-#endif
-		close(fd);
-		return ret;
-	}
-	// Save for later
-	s->socket_filename = strdup(IPC_MSG_SOCK_FILE);
-
-	ret = listen(fd, IPC_MAX_CLIENTS);
-	if (ret < 0) {
-		close(fd);
-		return ret;
-	}
-	U_LOG_D("Created listening socket.");
-	*out_fd = fd;
-	return 0;
+	vs->running = false;
 }
 
-static int
-init_listen_socket(struct ipc_server *s)
-{
-	int fd = -1, ret;
-	s->listen_socket = -1;
-
-	ret = get_systemd_socket(s, &fd);
-	if (ret < 0) {
-		return ret;
-	}
-
-	if (fd == -1) {
-		ret = create_listen_socket(s, &fd);
-		if (ret < 0) {
-			return ret;
-		}
-	}
-	// All ok!
-	s->listen_socket = fd;
-	U_LOG_D("Listening socket is fd '%d'.", s->listen_socket);
-
-	return fd;
-}
-
-static int
-init_epoll(struct ipc_server *s)
-{
-	int ret = epoll_create1(EPOLL_CLOEXEC);
-	if (ret < 0) {
-		return ret;
-	}
-
-	s->epoll_fd = ret;
-
-	struct epoll_event ev = {0};
-
-	if (!s->launched_by_socket) {
-		// Can't do this when launched by systemd socket activation by
-		// default
-		ev.events = EPOLLIN;
-		ev.data.fd = 0; // stdin
-		ret = epoll_ctl(s->epoll_fd, EPOLL_CTL_ADD, 0, &ev);
-		if (ret < 0) {
-			U_LOG_E("Error epoll_ctl(stdin) failed '%i'!", ret);
-			return ret;
-		}
-	}
-
-	ev.events = EPOLLIN;
-	ev.data.fd = s->listen_socket;
-	ret = epoll_ctl(s->epoll_fd, EPOLL_CTL_ADD, s->listen_socket, &ev);
-	if (ret < 0) {
-		U_LOG_E("Error epoll_ctl(listen_socket) failed '%i'!", ret);
-		return ret;
-	}
-
-	return 0;
-}
-
-static void
-start_client_listener_thread(struct ipc_server *vs, int fd)
+void
+ipc_server_start_client_listener_thread(struct ipc_server *vs, int fd)
 {
 	volatile struct ipc_client_state *ics = NULL;
 	int32_t cs_index = -1;
@@ -573,19 +467,11 @@ init_all(struct ipc_server *s)
 		return ret;
 	}
 
-#ifndef XRT_OS_ANDROID
-	ret = init_listen_socket(s);
+	ret = ipc_server_mainloop_init(&s->ml);
 	if (ret < 0) {
 		teardown_all(s);
 		return ret;
 	}
-
-	ret = init_epoll(s);
-	if (ret < 0) {
-		teardown_all(s);
-		return ret;
-	}
-#endif
 
 	// Init all of the render timing helpers.
 	for (size_t i = 0; i < ARRAY_SIZE(s->threads); i++) {
@@ -606,49 +492,6 @@ init_all(struct ipc_server *s)
 	u_var_add_bool(s, (void *)&s->running, "running");
 
 	return 0;
-}
-
-static void
-handle_listen(struct ipc_server *vs)
-{
-	int ret = accept(vs->listen_socket, NULL, NULL);
-	if (ret < 0) {
-		U_LOG_E("Error accept failed: '%i'!", ret);
-		vs->running = false;
-	}
-	start_client_listener_thread(vs, ret);
-}
-
-#define NUM_POLL_EVENTS 8
-#define NO_SLEEP 0
-
-static void
-check_epoll(struct ipc_server *vs)
-{
-	int epoll_fd = vs->epoll_fd;
-
-	struct epoll_event events[NUM_POLL_EVENTS] = {0};
-
-	// No sleeping, returns immediately.
-	int ret = epoll_wait(epoll_fd, events, NUM_POLL_EVENTS, NO_SLEEP);
-	if (ret < 0) {
-		U_LOG_E("Error epoll_wait failed: '%i'.", ret);
-		vs->running = false;
-		return;
-	}
-
-	for (int i = 0; i < ret; i++) {
-		// If we get data on stdin, stop.
-		if (events[i].data.fd == 0) {
-			vs->running = false;
-			return;
-		}
-
-		// Somebody new at the door.
-		if (events[i].data.fd == vs->listen_socket) {
-			handle_listen(vs);
-		}
-	}
 }
 
 static uint32_t
@@ -1046,10 +889,8 @@ main_loop(struct ipc_server *s)
 
 		xrt_comp_layer_commit(xc, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 
-#ifndef XRT_OS_ANDROID
 		// Check polling last, so we know we have valid timing data.
-		check_epoll(s);
-#endif
+		ipc_server_mainloop_poll(s, &s->ml);
 	}
 
 	return 0;
@@ -1222,17 +1063,16 @@ update_server_state(struct ipc_server *s)
 	os_mutex_unlock(&s->global_state_lock);
 }
 
+#ifndef XRT_OS_ANDROID
 int
 ipc_server_main(int argc, char **argv)
 {
 	struct ipc_server *s = U_TYPED_CALLOC(struct ipc_server);
 
-#ifndef XRT_OS_ANDROID
 	/* ---- HACK ---- */
 	// need to create early before any vars are added
 	oxr_sdl2_hack_create(&s->hack);
 	/* ---- HACK ---- */
-#endif
 
 	int ret = init_all(s);
 	if (ret < 0) {
@@ -1242,19 +1082,15 @@ ipc_server_main(int argc, char **argv)
 
 	init_server_state(s);
 
-#ifndef XRT_OS_ANDROID
 	/* ---- HACK ---- */
 	oxr_sdl2_hack_start(s->hack, s->xinst);
 	/* ---- HACK ---- */
-#endif
 
 	ret = main_loop(s);
 
-#ifndef XRT_OS_ANDROID
 	/* ---- HACK ---- */
 	oxr_sdl2_hack_stop(&s->hack);
 	/* ---- HACK ---- */
-#endif
 
 	teardown_all(s);
 	free(s);
@@ -1263,6 +1099,8 @@ ipc_server_main(int argc, char **argv)
 
 	return ret;
 }
+
+#endif // !XRT_OS_ANDROID
 
 #ifdef XRT_OS_ANDROID
 int
@@ -1278,7 +1116,7 @@ ipc_server_main_android(int fd)
 	}
 
 	init_server_state(s);
-	start_client_listener_thread(s, fd);
+	ipc_server_start_client_listener_thread(s, fd);
 	ret = main_loop(s);
 
 	teardown_all(s);

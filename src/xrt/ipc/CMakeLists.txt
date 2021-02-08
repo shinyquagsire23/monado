@@ -126,4 +126,8 @@ if(ANDROID)
 		aux_android
 		ipc_android
 		)
+elseif(XRT_HAVE_LINUX)
+	target_sources(ipc_server PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/server/ipc_server_mainloop_linux.c
+		)
 endif()

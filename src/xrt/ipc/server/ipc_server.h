@@ -1,10 +1,11 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Common server side code.
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup ipc_server
  */
 
@@ -148,6 +149,61 @@ struct ipc_device
 };
 
 /*!
+ * Platform-specific mainloop object for the IPC server.
+ *
+ * Contents are essentially implementation details, but are listed in full here so they may be included by value in the
+ * main ipc_server struct.
+ *
+ * @ingroup ipc_server
+ */
+struct ipc_server_mainloop
+{
+#if defined(XRT_OS_ANDROID)
+	int _unused;
+#elif defined(XRT_OS_LINUX)
+
+	//! Socket that we accept connections on.
+	int listen_socket;
+
+	//! For waiting on various events in the main thread.
+	int epoll_fd;
+
+	//! Were we launched by socket activation, instead of explicitly?
+	bool launched_by_socket;
+
+	//! The socket filename we bound to, if any.
+	char *socket_filename;
+#else
+#error "Need port"
+#endif
+};
+
+/*!
+ * De-initialize the mainloop object.
+ * @public @memberof ipc_server_mainloop
+ */
+void
+ipc_server_mainloop_deinit(struct ipc_server_mainloop *ml);
+
+/*!
+ * Initialize the mainloop object.
+ *
+ * @return <0 on error.
+ * @public @memberof ipc_server_mainloop
+ */
+int
+ipc_server_mainloop_init(struct ipc_server_mainloop *ml);
+
+/*!
+ * @brief Poll the mainloop.
+ *
+ * Any errors are signalled by calling ipc_server_handle_failure()
+ * @public @memberof ipc_server_mainloop
+ */
+void
+ipc_server_mainloop_poll(struct ipc_server *vs, struct ipc_server_mainloop *ml);
+
+/*!
  * Main IPC object for the server.
  *
  * @ingroup ipc_server
@@ -172,23 +228,13 @@ struct ipc_server
 	struct ipc_shared_memory *ism;
 	xrt_shmem_handle_t ism_handle;
 
-	//! Socket that we accept connections on.
-	int listen_socket;
-
-	//! For waiting on various events in the main thread.
-	int epoll_fd;
+	struct ipc_server_mainloop ml;
 
 	// Is the mainloop supposed to run.
 	volatile bool running;
 
 	// Should we exit when a client disconnects.
 	bool exit_on_disconnect;
-
-	//! Were we launched by socket activation, instead of explicitly?
-	bool launched_by_socket;
-
-	//! The socket filename we bound to, if any.
-	char *socket_filename;
 
 	enum u_logging_level ll;
 
@@ -201,6 +247,8 @@ struct ipc_server
 	struct os_mutex global_state_lock;
 };
 
+
+#ifndef XRT_OS_ANDROID
 /*!
  * Main entrypoint to the compositor process.
  *
@@ -208,6 +256,7 @@ struct ipc_server
  */
 int
 ipc_server_main(int argc, char **argv);
+#endif
 
 /*!
  * Android entry point to the IPC server process.
@@ -235,6 +284,35 @@ update_server_state(struct ipc_server *vs);
 void *
 ipc_server_client_thread(void *_cs);
 
+/*!
+ * @defgroup ipc_server_internals Server Internals
+ * @brief These are only called by the platform-specific mainloop polling code.
+ * @ingroup ipc_server
+ * @{
+ */
+/*!
+ * Start a thread for a client connected at the other end of the file descriptor @p fd.
+ * @memberof ipc_server
+ */
+void
+ipc_server_start_client_listener_thread(struct ipc_server *vs, int fd);
+
+/*!
+ * Perform whatever needs to be done when the mainloop polling encounters a failure.
+ * @memberof ipc_server
+ */
+void
+ipc_server_handle_failure(struct ipc_server *vs);
+
+/*!
+ * Perform whatever needs to be done when the mainloop polling identifies that the server should be shut down.
+ *
+ * Does something like setting a flag or otherwise signalling for shutdown: does not itself explicitly exit.
+ * @memberof ipc_server
+ */
+void
+ipc_server_handle_shutdown_signal(struct ipc_server *vs);
+//! @}
 
 /*
  *
