@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <application>
         <service
-            android:name=".MonadoService"
+            android:name="org.freedesktop.monado.ipc.MonadoService"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="connectedDevice|mediaPlayback">
