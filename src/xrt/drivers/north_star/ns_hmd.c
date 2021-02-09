@@ -501,6 +501,7 @@ ns_hmd_create(const char *config_path)
 
 	// Print name.
 	snprintf(ns->base.str, XRT_DEVICE_NAME_LEN, "North Star");
+	snprintf(ns->base.serial, XRT_DEVICE_NAME_LEN, "North Star");
 	// Setup input.
 	ns->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 

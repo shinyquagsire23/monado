@@ -122,7 +122,7 @@ cli_cmd_probe(int argc, const char **argv)
 			continue;
 		}
 
-		printf("\tDestroying '%s'\n", xdevs[i]->str);
+		printf("\tDestroying '%s' [%s]\n", xdevs[i]->str, xdevs[i]->serial);
 		xrt_device_destroy(&xdevs[i]);
 	}
 

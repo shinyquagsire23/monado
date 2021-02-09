@@ -148,6 +148,7 @@ r_hmd_create(struct r_hub *r)
 
 	// Print name.
 	snprintf(rh->base.str, sizeof(rh->base.str), "Remote HMD");
+	snprintf(rh->base.serial, sizeof(rh->base.serial), "Remote HMD");
 
 	// Setup info.
 	struct u_device_simple_info info;

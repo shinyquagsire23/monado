@@ -12,6 +12,7 @@
 #include "util/u_var.h"
 #include "util/u_debug.h"
 #include <string.h>
+#include <stdio.h>
 
 struct ht_device
 {
@@ -118,7 +119,8 @@ ht_device_create(struct xrt_auto_prober *xap, cJSON *attached_data, struct xrt_p
 	htd->base.get_hand_tracking = ht_device_get_hand_tracking;
 	htd->base.destroy = ht_device_destroy;
 
-	strncpy(htd->base.str, "Camera based Hand Tracker", XRT_DEVICE_NAME_LEN);
+	snprintf(htd->base.str, XRT_DEVICE_NAME_LEN, "Camera based Hand Tracker");
+	snprintf(htd->base.serial, XRT_DEVICE_NAME_LEN, "Camera based Hand Tracker");
 
 	htd->base.inputs[0].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
 	htd->base.inputs[1].name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;

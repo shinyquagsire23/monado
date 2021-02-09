@@ -1054,7 +1054,6 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	d->base.set_output = vive_controller_device_set_output;
 
 	snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "%s %i", "Vive Controller", (int)(controller_num));
-
 	d->index = controller_num;
 
 	//! @todo: reading range report fails for powered off controller
@@ -1080,6 +1079,8 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 		free(d);
 		return 0;
 	}
+
+	snprintf(d->base.serial, XRT_DEVICE_NAME_LEN, "%s", d->config.firmware.device_serial_number);
 
 	if (d->config.variant == CONTROLLER_VIVE_WAND) {
 		d->base.name = XRT_DEVICE_VIVE_WAND;

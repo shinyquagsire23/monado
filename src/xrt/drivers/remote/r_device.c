@@ -195,6 +195,7 @@ r_device_create(struct r_hub *r, bool is_left)
 
 	// Print name.
 	snprintf(rd->base.str, sizeof(rd->base.str), "Remote %s Controller", is_left ? "Left" : "Right");
+	snprintf(rd->base.serial, sizeof(rd->base.str), "Remote %s Controller", is_left ? "Left" : "Right");
 
 	// Inputs and outputs.
 	rd->base.inputs[0].name = XRT_INPUT_SIMPLE_SELECT_CLICK;

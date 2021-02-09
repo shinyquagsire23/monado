@@ -226,6 +226,9 @@ struct xrt_device
 	//! A string describing the device.
 	char str[XRT_DEVICE_NAME_LEN];
 
+	//! A unique identifier. Persistent across configurations, if possible.
+	char serial[XRT_DEVICE_NAME_LEN];
+
 	//! Null if this device does not interface with the users head.
 	struct xrt_hmd_parts *hmd;
 

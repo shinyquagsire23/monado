@@ -808,7 +808,6 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 	survive->device_type = DEVICE_TYPE_HMD;
 
 	survive->base.name = XRT_DEVICE_GENERIC_HMD;
-	snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive HMD");
 	survive->base.destroy = survive_device_destroy;
 	survive->base.update_inputs = survive_device_update_inputs;
 	survive->base.get_tracked_pose = survive_device_get_tracked_pose;
@@ -820,6 +819,9 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 	survive->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
 
 	survive->hmd.config = *config;
+
+	snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive HMD");
+	snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s", survive->hmd.config.firmware.device_serial_number);
 
 	// TODO: Replace hard coded values from OpenHMD with config
 	double w_meters = 0.122822 / 2.0;
@@ -1022,6 +1024,8 @@ _create_controller_device(struct survive_system *sys,
 	if (variant == CONTROLLER_INDEX_LEFT || variant == CONTROLLER_INDEX_RIGHT) {
 		survive->base.name = XRT_DEVICE_INDEX_CONTROLLER;
 		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Valve Index Controller %d", idx);
+		snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s",
+		         survive->ctrl.config.firmware.device_serial_number);
 
 		SET_INDEX_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
 		SET_INDEX_INPUT(A_CLICK, A_CLICK);
@@ -1072,6 +1076,8 @@ _create_controller_device(struct survive_system *sys,
 	} else if (survive->ctrl.config.variant == CONTROLLER_VIVE_WAND) {
 		survive->base.name = XRT_DEVICE_VIVE_WAND;
 		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Vive Wand Controller %d", idx);
+		snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s",
+		         survive->ctrl.config.firmware.device_serial_number);
 
 		SET_WAND_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
 		SET_WAND_INPUT(SQUEEZE_CLICK, SQUEEZE_CLICK);
@@ -1099,6 +1105,8 @@ _create_controller_device(struct survive_system *sys,
 			survive->base.name = XRT_DEVICE_VIVE_TRACKER_GEN2;
 		}
 		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Vive Tracker %d", idx);
+		snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s",
+		         survive->ctrl.config.firmware.device_serial_number);
 
 		survive->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
 

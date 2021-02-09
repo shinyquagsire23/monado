@@ -1012,6 +1012,7 @@ psvr_device_create(struct hid_device_info *sensor_hid_info,
 #endif
 
 	snprintf(psvr->base.str, XRT_DEVICE_NAME_LEN, "PS VR Headset");
+	snprintf(psvr->base.serial, XRT_DEVICE_NAME_LEN, "PS VR Headset");
 
 	ret = open_hid(psvr, sensor_hid_info, &psvr->hid_sensor);
 	if (ret != 0) {

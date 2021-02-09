@@ -186,6 +186,7 @@ illixr_hmd_create(const char *path_in, const char *comp_in)
 
 	// Print name.
 	snprintf(dh->base.str, XRT_DEVICE_NAME_LEN, "ILLIXR");
+	snprintf(dh->base.serial, XRT_DEVICE_NAME_LEN, "ILLIXR");
 
 	// Setup input.
 	dh->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;

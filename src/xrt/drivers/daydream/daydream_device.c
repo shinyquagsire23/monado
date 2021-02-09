@@ -370,6 +370,10 @@ daydream_device_create(struct os_ble_device *ble)
 	dd->base.binding_profiles = binding_profiles;
 	dd->base.num_binding_profiles = ARRAY_SIZE(binding_profiles);
 
+	static int controller_num = 0;
+	snprintf(dd->base.str, XRT_DEVICE_NAME_LEN, "Daydream");
+	snprintf(dd->base.serial, XRT_DEVICE_NAME_LEN, "Daydream %d", controller_num++);
+
 	dd->ble = ble;
 	dd->ll = debug_get_log_option_daydream_log();
 

@@ -877,6 +877,9 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.position_tracking_supported = false;
 	d->base.device_type = XRT_DEVICE_TYPE_HMD;
 
+	snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Vive HMD");
+	snprintf(d->base.serial, XRT_DEVICE_NAME_LEN, "%s", d->config.firmware.device_serial_number);
+
 	ret = os_thread_helper_start(&d->sensors_thread, vive_sensors_run_thread, d);
 	if (ret != 0) {
 		VIVE_ERROR(d, "Failed to start sensors thread!");

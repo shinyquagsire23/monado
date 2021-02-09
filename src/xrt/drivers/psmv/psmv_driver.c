@@ -1034,7 +1034,10 @@ psmv_found(struct xrt_prober *xp,
 	psmv->log_level = debug_get_log_option_psmv_log();
 	psmv->pid = devices[index]->product_id;
 	psmv->hid = hid;
+
+	static int controller_num = 0;
 	snprintf(psmv->base.str, XRT_DEVICE_NAME_LEN, "%s", "PS Move Controller");
+	snprintf(psmv->base.serial, XRT_DEVICE_NAME_LEN, "PS Move Controller %d", controller_num++);
 
 	m_imu_pre_filter_init(&psmv->calibration.prefilter, 1.f, 1.f);
 

@@ -390,6 +390,10 @@ arduino_device_create(struct os_ble_device *ble)
 	ad->base.binding_profiles = binding_profiles;
 	ad->base.num_binding_profiles = ARRAY_SIZE(binding_profiles);
 
+	static int controller_num = 0;
+	snprintf(ad->base.str, XRT_DEVICE_NAME_LEN, "Arduino");
+	snprintf(ad->base.serial, XRT_DEVICE_NAME_LEN, "Arduino %d", controller_num++);
+
 	ad->ble = ble;
 	ad->ll = debug_get_log_option_arduino_log();
 

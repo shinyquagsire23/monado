@@ -385,6 +385,7 @@ rs_6dof_create(void)
 
 	// Print name.
 	snprintf(rs->base.str, XRT_DEVICE_NAME_LEN, "Intel RealSense 6-DOF");
+	snprintf(rs->base.serial, XRT_DEVICE_NAME_LEN, "Intel RealSense 6-DOF");
 
 	rs->base.inputs[0].name = XRT_INPUT_GENERIC_TRACKER_POSE;
 

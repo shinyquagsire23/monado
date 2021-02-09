@@ -326,6 +326,7 @@ hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 	hd->ll = debug_get_log_option_hdk_log();
 
 	snprintf(hd->base.str, XRT_DEVICE_NAME_LEN, "OSVR HDK-family Device");
+	snprintf(hd->base.serial, XRT_DEVICE_NAME_LEN, "OSVR HDK-family Device");
 
 	if (variant == HDK_UNKNOWN) {
 		HDK_ERROR(hd, "Don't know which HDK variant this is.");

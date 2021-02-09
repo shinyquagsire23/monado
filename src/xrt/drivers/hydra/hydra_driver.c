@@ -625,6 +625,7 @@ hydra_found(struct xrt_prober *xp,
 		// hs->base.set_output = hydra_device_set_output;
 		hd->base.name = XRT_DEVICE_HYDRA;
 		snprintf(hd->base.str, XRT_DEVICE_NAME_LEN, "%s %i", "Razer Hydra Controller", (int)(i + 1));
+		snprintf(hd->base.serial, XRT_DEVICE_NAME_LEN, "%s %i", "Razer Hydra Controller", (int)(i + 1));
 		SET_INPUT(1_CLICK);
 		SET_INPUT(2_CLICK);
 		SET_INPUT(3_CLICK);

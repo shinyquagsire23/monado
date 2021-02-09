@@ -165,6 +165,7 @@ dummy_hmd_create(void)
 
 	// Print name.
 	snprintf(dh->base.str, XRT_DEVICE_NAME_LEN, "Dummy HMD");
+	snprintf(dh->base.serial, XRT_DEVICE_NAME_LEN, "Dummy HMD");
 
 	// Setup input.
 	dh->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
