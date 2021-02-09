@@ -66,6 +66,10 @@
 #include "illixr/illixr_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_RS
+#include "realsense/rs_interface.h"
+#endif
+
 /*!
  * Each entry should be a vendor ID (VID), product ID (PID), a "found" function,
  * and a string literal name.
@@ -152,6 +156,10 @@ xrt_auto_prober_creator target_auto_list[] = {
 
 #ifdef XRT_BUILD_DRIVER_ILLIXR
     illixr_create_auto_prober,
+#endif
+
+#ifdef XRT_BUILD_DRIVER_RS
+    rs_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_DUMMY

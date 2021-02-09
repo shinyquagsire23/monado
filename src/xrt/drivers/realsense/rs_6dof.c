@@ -398,7 +398,7 @@ rs_6dof_create(void)
 	rs->base.get_tracked_pose = rs_6dof_get_tracked_pose;
 	rs->base.get_view_pose = rs_6dof_get_view_pose;
 	rs->base.destroy = rs_6dof_destroy;
-	rs->base.name = XRT_DEVICE_GENERIC_HMD; // This is a lie.
+	rs->base.name = XRT_DEVICE_REALSENSE;
 	rs->relation.pose.orientation.w = 1.0f; // All other values set to zero.
 
 	rs->base.tracking_origin->type = XRT_TRACKING_TYPE_EXTERNAL_SLAM;

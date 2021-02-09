@@ -33,6 +33,14 @@ void
 rs_update_offset(struct xrt_pose offset, struct xrt_device *xdev);
 
 /*!
+ * Create a auto prober for rs devices.
+ *
+ * @ingroup drv_rs
+ */
+struct xrt_auto_prober *
+rs_create_auto_prober(void);
+
+/*!
  * @dir drivers/realsense
  *
  * @brief @ref drv_rs files.

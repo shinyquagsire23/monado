@@ -139,6 +139,7 @@ endif()
 if(XRT_BUILD_DRIVER_RS)
 	set(RS_SOURCE_FILES
 		realsense/rs_6dof.c
+		realsense/rs_prober.c
 		)
 
 	add_library(drv_rs STATIC ${RS_SOURCE_FILES})
