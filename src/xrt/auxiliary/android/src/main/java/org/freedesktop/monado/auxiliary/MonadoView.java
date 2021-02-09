@@ -73,9 +73,11 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
         this(activity);
         nativeCounterpart = new NativeCounterpart(nativePointer);
     }
+
     private void createSurface() {
         createSurface(false);
     }
+
     /**
      * @param focusable Indicates MonadoView should be focusable or not
      */
