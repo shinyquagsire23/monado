@@ -228,3 +228,16 @@ lib_drv_arduino = static_library(
 	dependencies: [dbus, aux],
 	build_by_default: 'arduino' in drivers,
 )
+
+lib_drv_multi = static_library(
+	'drv_multi',
+	files(
+		'multi_wrapper/multi.c',
+		'multi_wrapper/multi.h'
+	),
+	include_directories: [
+		xrt_include,
+	],
+	dependencies: [aux],
+	build_by_default: true,
+)

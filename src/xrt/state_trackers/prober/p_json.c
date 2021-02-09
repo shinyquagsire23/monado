@@ -135,6 +135,22 @@ get_obj_int(cJSON *json, const char *name, int *out_int)
 }
 
 static bool
+get_obj_float(cJSON *json, const char *name, float *out_float)
+{
+	cJSON *item = get_obj(json, name);
+	if (item == NULL) {
+		return false;
+	}
+
+	if (!u_json_get_float(item, out_float)) {
+		U_LOG_E("Failed to parse '%s'!", name);
+		return false;
+	}
+
+	return true;
+}
+
+static bool
 get_obj_str(cJSON *json, const char *name, char *array, size_t array_size)
 {
 	cJSON *item = get_obj(json, name);
@@ -229,8 +245,8 @@ p_json_get_remote_port(struct prober *p, int *out_port)
 	return true;
 }
 
-bool
-p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s)
+static cJSON *
+open_tracking_settings(struct prober *p)
 {
 	if (p->json.root == NULL) {
 		if (p->json.file_loaded) {
@@ -238,16 +254,14 @@ p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s)
 		} else {
 			U_LOG_W("No config file!");
 		}
-		return false;
+		return NULL;
 	}
 
 	cJSON *t = cJSON_GetObjectItemCaseSensitive(p->json.root, "tracking");
 	if (t == NULL) {
 		U_LOG_E("No tracking node");
-		return false;
+		return NULL;
 	}
-
-	char tmp[16];
 
 	int ver = -1;
 	bool bad = false;
@@ -255,8 +269,74 @@ p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s)
 	bad |= !get_obj_int(t, "version", &ver);
 	if (bad || ver >= 1) {
 		U_LOG_E("Missing or unknown version  tag '%i'", ver);
+		return NULL;
+	}
+
+	return t;
+}
+
+bool
+p_json_get_tracking_overrides(struct prober *p, struct xrt_tracking_override *out_overrides, size_t *out_num_overrides)
+{
+	cJSON *t = open_tracking_settings(p);
+	if (t == NULL) {
+		U_LOG_E("No tracking node");
 		return false;
 	}
+
+
+	cJSON *overrides = cJSON_GetObjectItemCaseSensitive(t, "tracking_overrides");
+
+	*out_num_overrides = 0;
+
+	cJSON *override = NULL;
+	cJSON_ArrayForEach(override, overrides)
+	{
+		bool bad = false;
+
+		struct xrt_tracking_override *o = &out_overrides[(*out_num_overrides)++];
+		bad |= !get_obj_str(override, "target_device_serial", o->target_device_serial, XRT_DEVICE_NAME_LEN);
+		bad |= !get_obj_str(override, "tracker_device_serial", o->tracker_device_serial, XRT_DEVICE_NAME_LEN);
+
+		cJSON *offset = cJSON_GetObjectItemCaseSensitive(override, "offset");
+		if (offset) {
+			cJSON *orientation = cJSON_GetObjectItemCaseSensitive(offset, "orientation");
+			bad |= !get_obj_float(orientation, "x", &o->offset.orientation.x);
+			bad |= !get_obj_float(orientation, "y", &o->offset.orientation.y);
+			bad |= !get_obj_float(orientation, "z", &o->offset.orientation.z);
+			bad |= !get_obj_float(orientation, "w", &o->offset.orientation.w);
+
+			cJSON *position = cJSON_GetObjectItemCaseSensitive(offset, "position");
+			bad |= !get_obj_float(position, "x", &o->offset.position.x);
+			bad |= !get_obj_float(position, "y", &o->offset.position.y);
+			bad |= !get_obj_float(position, "z", &o->offset.position.z);
+		} else {
+			o->offset.orientation.w = 1;
+		}
+
+		//! @todo support arbitrary tracking inputs for overrides
+		o->input_name = XRT_INPUT_GENERIC_TRACKER_POSE;
+
+		if (bad) {
+			*out_num_overrides = 0;
+			return false;
+		}
+	}
+	return true;
+}
+
+bool
+p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s)
+{
+	cJSON *t = open_tracking_settings(p);
+	if (t == NULL) {
+		U_LOG_E("No tracking node");
+		return false;
+	}
+
+	char tmp[16];
+
+	bool bad = false;
 
 	bad |= !get_obj_str(t, "camera_name", s->camera_name, sizeof(s->camera_name));
 	bad |= !get_obj_int(t, "camera_mode", &s->camera_mode);

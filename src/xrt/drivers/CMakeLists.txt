@@ -247,6 +247,14 @@ if (XRT_BUILD_DRIVER_ILLIXR)
 	list(APPEND ENABLED_HEADSET_DRIVERS illixr)
 endif()
 
+set(MUlTI_SOURCE_FILES
+	multi_wrapper/multi.c
+	multi_wrapper/multi.h
+	)
+add_library(drv_multi STATIC ${MUlTI_SOURCE_FILES})
+target_link_libraries(drv_multi PUBLIC xrt-interfaces aux_util)
+list(APPEND ENABLED_HEADSET_DRIVERS drv_multi)
+
 if(ENABLED_HEADSET_DRIVERS)
 	set(ENABLED_DRIVERS ${ENABLED_HEADSET_DRIVERS} ${ENABLED_DRIVERS})
 	list(SORT ENABLED_DRIVERS)

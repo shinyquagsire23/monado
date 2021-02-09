@@ -77,6 +77,8 @@ if 'remote' in drivers
 	driver_libs += [lib_drv_remote]
 endif
 
+driver_libs += [lib_drv_multi]
+
 subdir('common')
 subdir('openxr')
 subdir('cli')

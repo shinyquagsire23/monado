@@ -36,6 +36,16 @@ enum xrt_settings_camera_type
 #define XRT_SETTINGS_CAMERA_NAME_LENGTH 256
 #define XRT_SETTINGS_PATH_LENGTH 1024
 
+#define XRT_MAX_TRACKING_OVERRIDES 16
+
+struct xrt_tracking_override
+{
+	char target_device_serial[XRT_DEVICE_NAME_LEN];
+	char tracker_device_serial[XRT_DEVICE_NAME_LEN];
+	enum xrt_input_name input_name;
+	struct xrt_pose offset;
+};
+
 /*!
  * Holding enough information to recreate a tracking pipeline.
  */

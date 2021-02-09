@@ -206,6 +206,17 @@ bool
 p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s);
 
 /*!
+ * Extract tracking override settings from the JSON.
+ *
+ * Caller allocates an array of XRT_MAX_TRACKING_OVERRIDES tracking_override.
+ *
+ * @public @memberof prober
+ * @relatesalso xrt_settings_tracking
+ */
+bool
+p_json_get_tracking_overrides(struct prober *p, struct xrt_tracking_override *out_overrides, size_t *out_num_overrides);
+
+/*!
  * Extract remote settings from the JSON.
  *
  * @public @memberof prober
