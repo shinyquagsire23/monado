@@ -53,23 +53,27 @@ class MonadoService : Service() {
     }
 
     private fun handleStart() {
-        val pendingShutdownIntent = PendingIntent.getForegroundService(this,
-                0,
-                Intent(BuildConfig.SHUTDOWN_ACTION).setPackage(packageName),
-                0)
+        val pendingShutdownIntent = PendingIntent.getForegroundService(
+            this,
+            0,
+            Intent(BuildConfig.SHUTDOWN_ACTION).setPackage(packageName),
+            0
+        )
 
         val notification = serviceNotification.buildNotification(this, pendingShutdownIntent)
 
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(serviceNotification.getNotificationId(),
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST)
+            startForeground(
+                serviceNotification.getNotificationId(),
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST
+            )
         } else {
-            startForeground(serviceNotification.getNotificationId(),
-                    notification)
+            startForeground(
+                serviceNotification.getNotificationId(),
+                notification
+            )
         }
-
     }
 
     companion object {
