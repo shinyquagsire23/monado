@@ -73,8 +73,13 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
         this(activity);
         nativeCounterpart = new NativeCounterpart(nativePointer);
     }
-
     private void createSurface() {
+        createSurface(false);
+    }
+    /**
+     * @param focusable Indicates MonadoView should be focusable or not
+     */
+    private void createSurface(boolean focusable) {
         Log.i(TAG, "Starting to add a new surface!");
         activity.runOnUiThread(() -> {
             Log.i(TAG, "Starting runOnUiThread");
@@ -82,11 +87,20 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
 
             WindowManager windowManager = activity.getWindowManager();
             WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-            lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN |
-                       WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                       WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+            if (focusable) {
+                lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN;
+            } else {
+                 // There are 2 problems if view is focusable on all-in-one device:
+                 // 1. Navigation bar won't go away because view gets focus.
+                 // 2. Underlying activity lost focus and can not receive input.
+                lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN |
+                           WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                           WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+            }
             windowManager.addView(this, lp);
-
+            if (focusable) {
+                requestFocus();
+            }
             SurfaceHolder surfaceHolder = getHolder();
             surfaceHolder.addCallback(this);
             Log.i(TAG, "Registered callbacks!");
