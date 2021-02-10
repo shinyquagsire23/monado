@@ -667,6 +667,10 @@ u_hand_joints_set_out_data(struct u_hand_tracking *set,
 		m_space_graph_add_relation(&graph, &data->relation);
 		m_space_graph_add_pose(&graph, hand_offset);
 		m_space_graph_resolve(&graph, &l[i].relation);
+
+		// joint relations can not be "more valid" than the hand relation
+		// after space graph to make sure flags are not "upgraded"
+		l[i].relation.relation_flags &= hand_relation->relation_flags;
 	}
 
 	out_value->hand_pose = *hand_relation;
