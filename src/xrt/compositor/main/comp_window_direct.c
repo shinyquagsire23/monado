@@ -205,6 +205,8 @@ comp_window_direct_create_surface(struct comp_target_swapchain *cts,
 	return result;
 }
 
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
+
 int
 comp_window_direct_connect(struct comp_target_swapchain *cts, Display **dpy)
 {
@@ -258,3 +260,5 @@ comp_window_direct_init_swapchain(
 
 	return true;
 }
+
+#endif

@@ -109,7 +109,6 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 	endif()
 	if(XRT_HAVE_XCB AND XRT_HAVE_XLIB)
 		list(APPEND MAIN_SOURCE_FILES
-			main/comp_window_direct.c
 			main/comp_window_direct_randr.c
 			main/comp_window_direct_nvidia.c
 			)
@@ -122,6 +121,11 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 	if (VK_USE_PLATFORM_DISPLAY_KHR)
 		list(APPEND MAIN_SOURCE_FILES
 			main/comp_window_vk_display.c
+			)
+	endif()
+	if (VK_USE_PLATFORM_DISPLAY_KHR OR XRT_HAVE_XCB)
+		list(APPEND MAIN_SOURCE_FILES
+			main/comp_window_direct.c
 			)
 	endif()
 

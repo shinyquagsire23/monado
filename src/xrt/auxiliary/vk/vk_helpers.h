@@ -81,17 +81,18 @@ struct vk_bundle
 #endif
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-	PFN_vkCreateDisplayPlaneSurfaceKHR vkCreateDisplayPlaneSurfaceKHR;
-	PFN_vkGetDisplayPlaneCapabilitiesKHR vkGetDisplayPlaneCapabilitiesKHR;
-
-	// This doesn't strictly require VK_USE_PLATFORM_XLIB_XRANDR_EXT,
-	// but it's only used in the NVIDIA X direct mode path that does require it.
-	PFN_vkGetPhysicalDeviceDisplayPropertiesKHR vkGetPhysicalDeviceDisplayPropertiesKHR;
-	PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR vkGetPhysicalDeviceDisplayPlanePropertiesKHR;
-	PFN_vkGetDisplayModePropertiesKHR vkGetDisplayModePropertiesKHR;
 	PFN_vkAcquireXlibDisplayEXT vkAcquireXlibDisplayEXT;
 	PFN_vkReleaseDisplayEXT vkReleaseDisplayEXT;
 	PFN_vkGetRandROutputDisplayEXT vkGetRandROutputDisplayEXT;
+#endif
+
+#if defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT) || defined(VK_USE_PLATFORM_DISPLAY_KHR)
+	PFN_vkCreateDisplayPlaneSurfaceKHR vkCreateDisplayPlaneSurfaceKHR;
+	PFN_vkGetDisplayPlaneCapabilitiesKHR vkGetDisplayPlaneCapabilitiesKHR;
+
+	PFN_vkGetPhysicalDeviceDisplayPropertiesKHR vkGetPhysicalDeviceDisplayPropertiesKHR;
+	PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR vkGetPhysicalDeviceDisplayPlanePropertiesKHR;
+	PFN_vkGetDisplayModePropertiesKHR vkGetDisplayModePropertiesKHR;
 #endif
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR

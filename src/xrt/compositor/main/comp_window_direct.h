@@ -25,6 +25,8 @@ comp_window_direct_create_surface(struct comp_target_swapchain *cts,
                                   uint32_t width,
                                   uint32_t height);
 
+#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
+
 int
 comp_window_direct_connect(struct comp_target_swapchain *cts, Display **dpy);
 
@@ -34,6 +36,8 @@ comp_window_direct_acquire_xlib_display(struct comp_target_swapchain *cts, Displ
 bool
 comp_window_direct_init_swapchain(
     struct comp_target_swapchain *cts, Display *dpy, VkDisplayKHR display, uint32_t width, uint32_t height);
+
+#endif
 
 #ifdef __cplusplus
 }

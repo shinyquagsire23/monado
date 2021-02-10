@@ -36,20 +36,23 @@ compositor_srcs = [
 
 compile_args = []
 
-if build_vk_khr_display
-	compositor_srcs += ['main/comp_window_vk_display.c']
-endif
-
 if build_xcb
 	compositor_srcs += ['main/comp_window_xcb.c']
 	compositor_deps += [xcb]
 endif
 
+if build_vk_khr_display
+	compositor_srcs += ['main/comp_window_vk_display.c']
+endif
+
 if build_xcb_xrandr_direct
-	compositor_srcs += ['main/comp_window_direct.c',
-	                    'main/comp_window_direct_randr.c',
+	compositor_srcs += ['main/comp_window_direct_randr.c',
 	                    'main/comp_window_direct_nvidia.c']
 	compositor_deps += [xcb_randr, x11_xcb]
+endif
+
+if build_vk_khr_display or build_xcb_xrandr_direct
+	compositor_srcs += ['main/comp_window_direct.c']
 endif
 
 if build_opengl or build_opengles
