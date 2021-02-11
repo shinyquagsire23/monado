@@ -42,6 +42,8 @@ DEBUG_GET_ONCE_BOOL_OPTION(emulate_index_controller, "STEAMVR_EMULATE_INDEX_CONT
 
 DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "XRT_COMPOSITOR_SCALE_PERCENTAGE", 140)
 
+#define MODELNUM_LEN (XRT_DEVICE_NAME_LEN + 9) // "[Monado] "
+
 //#define DUMP_POSE
 //#define DUMP_POSE_CONTROLLERS
 
@@ -148,16 +150,8 @@ public:
 		m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
 		m_pose = {};
 
-		// append xrt_hand because SteamVR serial must be unique
-		std::stringstream ss;
-		ss << "[Monado] " << xdev->str << " " << hand;
-		std::string name = ss.str();
-
-		strncpy(m_sSerialNumber, name.c_str(), XRT_DEVICE_NAME_LEN);
-		strncpy(m_sModelNumber, name.c_str(), XRT_DEVICE_NAME_LEN);
-
-		strncpy(m_sSerialNumber, name.c_str(), XRT_DEVICE_NAME_LEN);
-		strncpy(m_sModelNumber, name.c_str(), XRT_DEVICE_NAME_LEN);
+		snprintf(m_sModelNumber, MODELNUM_LEN, "[Monado] %s", xdev->str);
+		strncpy(m_sSerialNumber, xdev->serial, XRT_DEVICE_NAME_LEN);
 
 		switch (this->m_xdev->name) {
 		case XRT_DEVICE_INDEX_CONTROLLER:
@@ -703,7 +697,7 @@ public:
 
 private:
 	char m_sSerialNumber[XRT_DEVICE_NAME_LEN];
-	char m_sModelNumber[XRT_DEVICE_NAME_LEN];
+	char m_sModelNumber[MODELNUM_LEN];
 
 	const char *m_controller_type = NULL;
 
