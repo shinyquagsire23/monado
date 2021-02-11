@@ -1053,9 +1053,6 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	d->base.get_tracked_pose = vive_controller_device_get_tracked_pose;
 	d->base.set_output = vive_controller_device_set_output;
 
-	snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "%s %i", "Vive Controller", (int)(controller_num));
-	d->index = controller_num;
-
 	//! @todo: reading range report fails for powered off controller
 	if (vive_get_imu_range_report(d->controller_hid, &d->config.imu.gyro_range, &d->config.imu.acc_range) != 0) {
 		VIVE_ERROR(d, "Could not get watchman IMU range packet!");
@@ -1084,6 +1081,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 
 	if (d->config.variant == CONTROLLER_VIVE_WAND) {
 		d->base.name = XRT_DEVICE_VIVE_WAND;
+		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Vive Wand Controller (vive)");
 
 		SET_WAND_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
 		SET_WAND_INPUT(SQUEEZE_CLICK, SQUEEZE_CLICK);
@@ -1146,18 +1144,22 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 		if (d->config.variant == CONTROLLER_INDEX_LEFT) {
 			d->base.device_type = XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
 			d->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
+			snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Valve Index Left Controller (vive)");
 		} else if (d->config.variant == CONTROLLER_INDEX_RIGHT) {
 			d->base.device_type = XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
 			d->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
+			snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Valve Index Right Controller (vive)");
 		}
 	} else if (d->config.variant == CONTROLLER_TRACKER_GEN1) {
 		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN1;
 		d->base.update_inputs = _update_tracker_inputs;
 		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
+		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Vive Tracker Gen1 (vive)");
 	} else if (d->config.variant == CONTROLLER_TRACKER_GEN2) {
 		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN2;
 		d->base.update_inputs = _update_tracker_inputs;
 		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
+		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Vive Tracker Gen2 (vive)");
 	} else {
 		d->base.name = XRT_DEVICE_GENERIC_HMD;
 		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
