@@ -10,16 +10,9 @@ Files: doc/changes/drivers/*
   doc/changes/xrt/*
   doc/changes/auxiliary/*
   doc/changes/compositor/*
-Copyright: 2020, Collabora, Ltd. and the Monado contributors
+Copyright: 2020-2021, Collabora, Ltd. and the Monado contributors
 License: CC0-1.0
 Comment: Prevents needing a license header per fragment between releases.
-
-Files: src/external/flexkalman/.clang-format
-       src/external/flexkalman/flexkalman/README.md
-Copyright: 2015, 2016, Sensics, Inc.
- 2019, Collabora, Ltd.
-License: Apache-2.0
-Comment: Copyright statement and license identifier missing.
 
 Files: src/external/cjson/*
 Copyright: 2009-2017, Dave Gamble and cJSON contributors
@@ -32,14 +25,6 @@ Copyright: 2020, Two Blue Cubes Ltd.
 License: BSL-1.0
 Comment: SPDX-License-Identifier missing.
 
-Files: src/external/openxr_includes/loader_interfaces.h
-Copyright: 2017, LunarG, Inc.
- 2017, Valve Corporation
- 2017-2019, The Khronos Group Inc.
-License: Apache-2.0
-Comment: SPDX-License-Identifier missing.
-
-
 Files: src/external/jnipp/*
 Copyright: 2016-2020, Mitchell Dowd
  2020, Collabora, Ltd.
@@ -51,6 +36,11 @@ Files: src/external/hungarian/*
 Copyright: 2016, mcximing
 License: BSD-2-Clause
 Comment: SPDX-License-Identifier missing.
+
+Files: src/external/openvr_includes/*
+Copyright: 2015-2020, Valve Corporation
+License: BSD-3-Clause
+Comment: License identifier missing.
 
 Files: src/external/imgui/imgui*
  src/external/imgui/imconfig.h
