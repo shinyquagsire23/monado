@@ -1018,14 +1018,10 @@ _create_controller_device(struct survive_system *sys,
 	survive->base.update_inputs = survive_device_update_inputs;
 	survive->base.get_tracked_pose = survive_device_get_tracked_pose;
 	survive->base.set_output = survive_controller_device_set_output;
+	snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s", survive->ctrl.config.firmware.device_serial_number);
 
-	//! @todo: May use Vive Wands + Index HMDs or Index Controllers + Vive
-	//! HMD
 	if (variant == CONTROLLER_INDEX_LEFT || variant == CONTROLLER_INDEX_RIGHT) {
 		survive->base.name = XRT_DEVICE_INDEX_CONTROLLER;
-		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Valve Index Controller %d", idx);
-		snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s",
-		         survive->ctrl.config.firmware.device_serial_number);
 
 		SET_INDEX_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
 		SET_INDEX_INPUT(A_CLICK, A_CLICK);
@@ -1052,12 +1048,12 @@ _create_controller_device(struct survive_system *sys,
 		if (variant == CONTROLLER_INDEX_LEFT) {
 			survive->base.device_type = XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
 			survive->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
+			snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Valve Index Left Controller (libsurvive)");
 		} else if (variant == CONTROLLER_INDEX_RIGHT) {
 			survive->base.device_type = XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
 			survive->base.inputs[VIVE_CONTROLLER_HAND_TRACKING].name =
 			    XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
-		} else {
-			survive->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
+			snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Valve Index Right Controller (libsurvive)");
 		}
 
 		survive->base.get_hand_tracking = survive_controller_get_hand_tracking;
@@ -1075,9 +1071,7 @@ _create_controller_device(struct survive_system *sys,
 
 	} else if (survive->ctrl.config.variant == CONTROLLER_VIVE_WAND) {
 		survive->base.name = XRT_DEVICE_VIVE_WAND;
-		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Vive Wand Controller %d", idx);
-		snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s",
-		         survive->ctrl.config.firmware.device_serial_number);
+		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Vive Wand Controller (libsurvive)");
 
 		SET_WAND_INPUT(SYSTEM_CLICK, SYSTEM_CLICK);
 		SET_WAND_INPUT(SQUEEZE_CLICK, SQUEEZE_CLICK);
@@ -1101,12 +1095,11 @@ _create_controller_device(struct survive_system *sys,
 	           survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN2) {
 		if (survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN1) {
 			survive->base.name = XRT_DEVICE_VIVE_TRACKER_GEN1;
+			snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Vive Tracker Gen1 (libsurvive)");
 		} else if (survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN2) {
 			survive->base.name = XRT_DEVICE_VIVE_TRACKER_GEN2;
+			snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Vive Tracker Gen2 (libsurvive)");
 		}
-		snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive Vive Tracker %d", idx);
-		snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s",
-		         survive->ctrl.config.firmware.device_serial_number);
 
 		survive->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
 
