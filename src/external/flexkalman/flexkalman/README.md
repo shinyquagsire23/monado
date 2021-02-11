@@ -1,5 +1,11 @@
 # FlexibleKalmanFilter
 
+<!--
+Copyright 2015-2016, Sensics, Inc.
+Copyright 2019-2020, Collabora, Ltd.
+SPDX-License-Identifier: Apache-2.0
+-->
+
 ## About
 
 This is a C++ template-based header library for building Kalman-style filters, using [Eigen](http://eigen.tuxfamily.org) linear algebra data types and algorithms.
