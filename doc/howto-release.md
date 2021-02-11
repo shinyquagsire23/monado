@@ -1,5 +1,10 @@
 # How to release
 
+<!--
+Copyright 2021, Collabora, Ltd. and the Monado contributors
+SPDX-License-Identifier: BSL-1.0
+-->
+
 These instructions assumes that the version you are making is `21.0.0`.
 
 ## Generate changelog
@@ -17,7 +22,6 @@ git commit -m"doc: Update CHANGELOG.md" doc/CHANGELOG.md
 git commit -m"doc: Remove old changelog fragments" doc/changes
 ```
 
-
 ## Update versions
 
 Edit the files
@@ -32,7 +36,6 @@ See previous commits for exact places.
 git commit -a -m"monado: Update version"
 ```
 
-
 ## Tag the code
 
 Do the tagging from git, do **not** do it from gitlab, also make sure to prefix
@@ -41,7 +44,6 @@ the version with `v` so that `21.0.0` becomes `v21.0.0`.
 ```sh
 git tag v21.0.0 -m"v21.0.0"
 ```
-
 
 ## Do gitlab release
 
