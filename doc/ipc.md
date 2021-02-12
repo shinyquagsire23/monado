@@ -81,6 +81,10 @@ way, the "entry point" of the Monado service on Android is the
 `org.freedesktop.monado.ipc.MonadoService` class, which exposes the
 implementation of our AIDL interface, `org.freedesktop.monado.ipc.MonadoImpl`.
 
+From there, the native-code mainloop starts when this service is started. By
+default, the JVM code will signal the mainloop to shut down a short time after
+the last client disconnects, to work best within the platform.
+
 At startup, just as on Linux, the shared memory segment is created. The
 [ashmem][] API is used to create/destroy an anonymous **shared memory** segment
 on Android, instead of standard POSIX shared memory, but is otherwise treated
@@ -129,3 +133,18 @@ We have the following design goals/constraints:
 - It is OK if only one new client is accepted per mainloop.
   - The mainloop is high rate (compositor rate) and new client connections are
     relatively infrequent.
+
+The IPC service creates a pipe as well as some state variables, a mutex, and a
+condition variable. When the JVM Service code has a new client, it calls
+`ipc_server_mainloop_add_fd()` to pass the fd in. It writes the FD number to the
+pipe, then waits on the condition variable to see either that number or the
+special "shutting down" sentinel value in the `last_accepted_fd` variable. If it
+sees the fd number, that indicates that the other side of the communication (the
+mainloop) has taken ownership of the fd and will handle closing it. If it sees
+the sentinel value, or has an error at some point, it assumes that ownership is
+retained and it should close the fd itself.
+
+The other side of the communication works as follows: epoll is used to check if
+there is new data waiting on the pipe. If so, the lock is taken, and an fd
+number is read from the pipe. A client thread is launched for that fd, then the
+`last_accepted_fd` variable is updated and the condition variable signalled.
