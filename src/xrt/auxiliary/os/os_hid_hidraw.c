@@ -90,6 +90,13 @@ os_hidraw_get_feature(struct os_hid_device *ohdev, uint8_t report_num, uint8_t *
 }
 
 static int
+os_hidraw_get_physical_address(struct os_hid_device *ohdev, uint8_t *data, size_t length)
+{
+	struct hid_hidraw *hrdev = (struct hid_hidraw *)ohdev;
+	return ioctl(hrdev->fd, HIDIOCGRAWPHYS(length), data);
+}
+
+static int
 os_hidraw_get_feature_timeout(struct os_hid_device *ohdev, void *data, size_t length, uint32_t timeout)
 {
 	struct hid_hidraw *hrdev = (struct hid_hidraw *)ohdev;
@@ -138,6 +145,7 @@ os_hid_open_hidraw(const char *path, struct os_hid_device **out_hid)
 	hrdev->base.get_feature = os_hidraw_get_feature;
 	hrdev->base.get_feature_timeout = os_hidraw_get_feature_timeout;
 	hrdev->base.set_feature = os_hidraw_set_feature;
+	hrdev->base.get_physical_address = os_hidraw_get_physical_address;
 	hrdev->base.destroy = os_hidraw_destroy;
 	hrdev->fd = open(path, O_RDWR);
 	if (hrdev->fd < 0) {

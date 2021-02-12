@@ -37,6 +37,8 @@ struct os_hid_device
 
 	int (*set_feature)(struct os_hid_device *hid_dev, const uint8_t *data, size_t size);
 
+	int (*get_physical_address)(struct os_hid_device *hid_dev, uint8_t *data, size_t size);
+
 	void (*destroy)(struct os_hid_device *hid_dev);
 };
 
@@ -102,6 +104,21 @@ static inline int
 os_hid_set_feature(struct os_hid_device *hid_dev, const uint8_t *data, size_t size)
 {
 	return hid_dev->set_feature(hid_dev, data, size);
+}
+
+/*!
+ * Get the physical address.
+ *
+ * For USB devices, the string contains the physical path to the device (the
+ * USB controller, hubs, ports, etc).  For Bluetooth *devices, the string
+ * contains the hardware (MAC) address of the device.
+ *
+ * @public @memberof os_hid_device
+ */
+static inline int
+os_hid_get_physical_address(struct os_hid_device *hid_dev, uint8_t *data, size_t size)
+{
+	return hid_dev->get_physical_address(hid_dev, data, size);
 }
 
 /*!
