@@ -263,13 +263,50 @@ vk_color_space_string(VkColorSpaceKHR code);
 #define VK_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
 #define VK_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
 
+/*!
+ * @brief Check a Vulkan VkResult, writing an error to the log and returning true if not VK_SUCCESS
+ *
+ * @param fun a string literal with the name of the Vulkan function, for logging purposes.
+ * @param res a VkResult from that function.
+ * @param file a string literal with the source code filename, such as from __FILE__
+ * @param line a source code line number, such as from __LINE__
+ *
+ * @see vk_check_error, vk_check_error_with_free which wrap this for easier usage.
+ *
+ * @ingroup aux_vk
+ */
 bool
 vk_has_error(VkResult res, const char *fun, const char *file, int line);
 
+/*!
+ * @def
+ * @brief Perform checking of a Vulkan result, returning in case it is not VK_SUCCESS.
+ *
+ * @param fun A string literal with the name of the Vulkan function, for logging purposes.
+ * @param res a VkResult from that function.
+ * @param ret value to return, if any, upon error
+ *
+ * @see vk_has_error which is wrapped by this macro
+ *
+ * @ingroup aux_vk
+ */
 #define vk_check_error(fun, res, ret)                                                                                  \
 	if (vk_has_error(res, fun, __FILE__, __LINE__))                                                                \
 	return ret
 
+/*!
+ * @def
+ * @brief Perform checking of a Vulkan result, freeing an allocation and returning in case it is not VK_SUCCESS.
+ *
+ * @param fun A string literal with the name of the Vulkan function, for logging purposes.
+ * @param res a VkResult from that function.
+ * @param ret value to return, if any, upon error
+ * @param to_free expression to pass to `free()` upon error
+ *
+ * @see vk_has_error which is wrapped by this macro
+ *
+ * @ingroup aux_vk
+ */
 #define vk_check_error_with_free(fun, res, ret, to_free)                                                               \
 	if (vk_has_error(res, fun, __FILE__, __LINE__)) {                                                              \
 		free(to_free);                                                                                         \
