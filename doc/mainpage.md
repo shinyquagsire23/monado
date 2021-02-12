@@ -16,7 +16,7 @@ also includes a section for changes that have not yet been in a tagged
 release.
 * @ref md_targets
 * @ref vulkan-extensions
-* @ref md_writing-a-new-driver (**not complete**)
+* @ref writing-driver (**not complete**)
 
 ## Source layout
 

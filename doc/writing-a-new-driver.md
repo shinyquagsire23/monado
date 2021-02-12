@@ -1,4 +1,4 @@
-# Writing a new driver
+# Writing a new driver {#writing-driver}
 
 <!--
 Copyright 2018-2020, Collabora, Ltd. and the Monado contributors
