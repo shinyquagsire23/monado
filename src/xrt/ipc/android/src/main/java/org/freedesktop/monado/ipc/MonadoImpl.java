@@ -19,6 +19,8 @@ import androidx.annotation.NonNull;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+
 /**
  * Java implementation of the IMonado IPC interface.
  * <p>
@@ -39,10 +41,38 @@ public class MonadoImpl extends IMonado.Stub {
         System.loadLibrary("monado-service");
     }
 
+    private final Thread compositorThread = new Thread(
+            this::threadEntry,
+            "CompositorThread");
+    private boolean started = false;
+
+    private void launchThreadIfNeeded() {
+        synchronized (compositorThread) {
+            if (!started) {
+                compositorThread.start();
+                nativeWaitForServerStartup();
+                started = true;
+            }
+        }
+    }
+
     @Override
     public void connect(@NotNull ParcelFileDescriptor parcelFileDescriptor) {
-        Log.i(TAG, "connect");
-        nativeAddClient(parcelFileDescriptor.detachFd());
+        /// @todo launch this thread earlier/elsewhere
+        launchThreadIfNeeded();
+        int fd = parcelFileDescriptor.getFd();
+        Log.i(TAG, "connect: given fd " + fd);
+        if (nativeAddClient(fd) != 0) {
+            Log.e(TAG, "Failed to transfer client fd ownership!");
+            try {
+                parcelFileDescriptor.close();
+            } catch (IOException e) {
+                // do nothing, probably already closed.
+            }
+        } else {
+            Log.i(TAG, "connect: fd ownership transferred");
+            parcelFileDescriptor.detachFd();
+        }
     }
 
     @Override
@@ -55,6 +85,24 @@ public class MonadoImpl extends IMonado.Stub {
         nativeAppSurface(surface);
     }
 
+    private void threadEntry() {
+        Log.i(TAG, "threadEntry");
+        nativeThreadEntry();
+        Log.i(TAG, "native thread has exited");
+    }
+
+    /**
+     * Native thread entry point.
+     */
+    @SuppressWarnings("JavaJniMissingFunction")
+    private native void nativeThreadEntry();
+
+    /**
+     * Native method that waits until the server reports that it is, in fact, started up.
+     */
+    @SuppressWarnings("JavaJniMissingFunction")
+    private native void nativeWaitForServerStartup();
+
     /**
      * Native handling of receiving a surface: should convert it to an ANativeWindow then do stuff
      * with it.
@@ -63,7 +111,7 @@ public class MonadoImpl extends IMonado.Stub {
      * See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
      *
      * @param surface The surface to pass to native code
-     * @todo figure out a good way to make the MonadoImpl pointer a client ID
+     * @todo figure out a good way to have a client ID
      */
     @SuppressWarnings("JavaJniMissingFunction")
     private native void nativeAppSurface(@NonNull Surface surface);
@@ -80,8 +128,9 @@ public class MonadoImpl extends IMonado.Stub {
      * See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
      *
      * @param fd The incoming file descriptor: ownership is transferred to native code here.
-     * @todo figure out a good way to make the MonadoImpl pointer a client ID
+     * @return 0 on success, anything else means the fd wasn't sent and ownership not transferred.
+     * @todo figure out a good way to have a client ID
      */
     @SuppressWarnings("JavaJniMissingFunction")
-    private native void nativeAddClient(int fd);
+    private native int nativeAddClient(int fd);
 }

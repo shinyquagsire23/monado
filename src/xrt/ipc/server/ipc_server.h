@@ -159,7 +159,24 @@ struct ipc_device
 struct ipc_server_mainloop
 {
 #if defined(XRT_OS_ANDROID)
-	int _unused;
+	//! For waiting on various events in the main thread.
+	int epoll_fd;
+
+	//! File descriptor for the read end of our pipe for submitting new clients
+	int pipe_read;
+
+	//! File descriptor for the write end of our pipe for submitting new clients
+	int pipe_write;
+
+	//! The last client fd we accepted, to unblock the right client.
+	int last_accepted_fd;
+
+	//! Mutex for accepting clients
+	pthread_mutex_t accept_mutex;
+
+	//! Condition variable for accepting clients
+	pthread_cond_t accept_cond;
+
 #elif defined(XRT_OS_LINUX)
 
 	//! Socket that we accept connections on.
@@ -258,14 +275,19 @@ int
 ipc_server_main(int argc, char **argv);
 #endif
 
+#ifdef XRT_OS_ANDROID
 /*!
- * Android entry point to the IPC server process.
+ * Main entrypoint to the server process.
+ *
+ * @param ps Pointer to populate with the server struct.
+ * @param startup_complete_callback Function to call upon completing startup and populating *ps, but before entering the
+ * mainloop.
+ * @param data user data to pass to your callback.
  *
  * @ingroup ipc_server
  */
-#ifdef XRT_OS_ANDROID
 int
-ipc_server_main_android(int fd);
+ipc_server_main_android(struct ipc_server **ps, void (*startup_complete_callback)(void *data), void *data);
 #endif
 
 /*!

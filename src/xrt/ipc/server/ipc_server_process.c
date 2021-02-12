@@ -88,25 +88,6 @@ teardown_idev(struct ipc_device *idev)
  * Static functions.
  *
  */
-
-#ifdef XRT_OS_ANDROID
-
-// Stub
-void
-ipc_server_mainloop_deinit(struct ipc_server_mainloop *ml)
-{}
-// Stub
-int
-ipc_server_mainloop_init(struct ipc_server_mainloop *ml)
-{
-	return 0;
-}
-// Stub
-void
-ipc_server_mainloop_poll(struct ipc_server *vs, struct ipc_server_mainloop *ml)
-{}
-
-#endif
 static void
 teardown_all(struct ipc_server *s)
 {
@@ -1110,10 +1091,10 @@ ipc_server_main(int argc, char **argv)
 
 #ifdef XRT_OS_ANDROID
 int
-ipc_server_main_android(int fd)
+ipc_server_main_android(struct ipc_server **ps, void (*startup_complete_callback)(void *data), void *data)
 {
 	struct ipc_server *s = U_TYPED_CALLOC(struct ipc_server);
-	U_LOG_D("Created IPC server on fd '%d'!", fd);
+	U_LOG_D("Created IPC server!");
 
 	int ret = init_all(s);
 	if (ret < 0) {
@@ -1122,7 +1103,10 @@ ipc_server_main_android(int fd)
 	}
 
 	init_server_state(s);
-	ipc_server_start_client_listener_thread(s, fd);
+
+	*ps = s;
+	startup_complete_callback(data);
+
 	ret = main_loop(s);
 
 	teardown_all(s);
@@ -1132,4 +1116,4 @@ ipc_server_main_android(int fd)
 
 	return ret;
 }
-#endif
+#endif // XRT_OS_ANDROID

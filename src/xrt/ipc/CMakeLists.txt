@@ -114,6 +114,9 @@ if(ANDROID)
 		PROPERTIES
 		CXX_STANDARD 17
 		CXX_STANDARD_REQUIRED ON)
+	target_sources(ipc_server PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/server/ipc_server_mainloop_android.c
+		)
 	target_link_libraries(ipc_server PUBLIC
 		${ANDROID_LIBRARY}
 		PRIVATE
