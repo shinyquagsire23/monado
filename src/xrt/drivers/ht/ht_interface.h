@@ -32,7 +32,7 @@ struct xrt_auto_prober *
 ht_create_auto_prober();
 
 /*!
- * @dir drivers/handtracking
+ * @dir drivers/ht
  *
  * @brief @ref drv_ht files.
  */
