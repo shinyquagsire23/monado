@@ -17,6 +17,7 @@ getting started information and general documentation.
 * @ref vulkan-extensions
 * @ref writing-driver (**not complete**)
 * @ref ipc-design
+* @ref frame-timing
 
 ## Source layout
 
