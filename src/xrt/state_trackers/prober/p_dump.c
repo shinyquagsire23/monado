@@ -71,34 +71,34 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 		return;
 	}
 
-	U_LOG_I("\t% 3i: 0x%04x:0x%04x", id, pdev->base.vendor_id, pdev->base.product_id);
-	U_LOG_I("\t\tptr:              %p", (void *)pdev);
-	U_LOG_I("\t\tusb_dev_class:    %02x", pdev->base.usb_dev_class);
+	U_LOG_RAW("\t% 3i: 0x%04x:0x%04x", id, pdev->base.vendor_id, pdev->base.product_id);
+	U_LOG_RAW("\t\tptr:              %p", (void *)pdev);
+	U_LOG_RAW("\t\tusb_dev_class:    %02x", pdev->base.usb_dev_class);
 
 
 	if (pdev->usb.serial != NULL || pdev->usb.product != NULL || pdev->usb.manufacturer != NULL) {
-		U_LOG_I("\t\tusb.product:      %s", pdev->usb.product);
-		U_LOG_I("\t\tusb.manufacturer: %s", pdev->usb.manufacturer);
-		U_LOG_I("\t\tusb.serial:       %s", pdev->usb.serial);
+		U_LOG_RAW("\t\tusb.product:      %s", pdev->usb.product);
+		U_LOG_RAW("\t\tusb.manufacturer: %s", pdev->usb.manufacturer);
+		U_LOG_RAW("\t\tusb.serial:       %s", pdev->usb.serial);
 	}
 
 	if (pdev->usb.bus != 0 || pdev->usb.addr != 0) {
-		U_LOG_I("\t\tusb.bus:          %i", pdev->usb.bus);
-		U_LOG_I("\t\tusb.addr:         %i", pdev->usb.addr);
+		U_LOG_RAW("\t\tusb.bus:          %i", pdev->usb.bus);
+		U_LOG_RAW("\t\tusb.addr:         %i", pdev->usb.addr);
 	}
 
 	if (pdev->bluetooth.id != 0) {
-		U_LOG_I("\t\tbluetooth.id:     %012" PRIx64 "", pdev->bluetooth.id);
+		U_LOG_RAW("\t\tbluetooth.id:     %012" PRIx64 "", pdev->bluetooth.id);
 	}
 
 	int num = pdev->usb.num_ports;
 	if (print_ports(tmp, ARRAY_SIZE(tmp), pdev->usb.ports, num)) {
-		U_LOG_I("\t\tport%s            %s", num > 1 ? "s:" : ": ", tmp);
+		U_LOG_RAW("\t\tport%s            %s", num > 1 ? "s:" : ": ", tmp);
 	}
 
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->usb.dev != NULL) {
-		U_LOG_I("\t\tlibusb:           %p", (void *)pdev->usb.dev);
+		U_LOG_RAW("\t\tlibusb:           %p", (void *)pdev->usb.dev);
 	}
 #endif
 
@@ -107,21 +107,21 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 	if (uvc_dev != NULL) {
 		struct uvc_device_descriptor *desc;
 
-		U_LOG_I("\t\tlibuvc:           %p", (void *)uvc_dev);
+		U_LOG_RAW("\t\tlibuvc:           %p", (void *)uvc_dev);
 
 		uvc_get_device_descriptor(uvc_dev, &desc);
 
 		if (desc->product != NULL) {
 
-			U_LOG_I("\t\tproduct:          '%s'", desc->product);
+			U_LOG_RAW("\t\tproduct:          '%s'", desc->product);
 		}
 		if (desc->manufacturer != NULL) {
 
-			U_LOG_I("\t\tmanufacturer:     '%s'", desc->manufacturer);
+			U_LOG_RAW("\t\tmanufacturer:     '%s'", desc->manufacturer);
 		}
 		if (desc->serialNumber != NULL) {
 
-			U_LOG_I("\t\tserial:           '%s'", desc->serialNumber);
+			U_LOG_RAW("\t\tserial:           '%s'", desc->serialNumber);
 		}
 
 		uvc_free_device_descriptor(desc);
@@ -133,9 +133,9 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 	for (size_t j = 0; j < pdev->num_v4ls; j++) {
 		struct prober_v4l *v4l = &pdev->v4ls[j];
 
-		U_LOG_I("\t\tv4l.iface:        %i", (int)v4l->usb_iface);
-		U_LOG_I("\t\tv4l.index:        %i", (int)v4l->v4l_index);
-		U_LOG_I("\t\tv4l.path:         '%s'", v4l->path);
+		U_LOG_RAW("\t\tv4l.iface:        %i", (int)v4l->usb_iface);
+		U_LOG_RAW("\t\tv4l.index:        %i", (int)v4l->v4l_index);
+		U_LOG_RAW("\t\tv4l.path:         '%s'", v4l->path);
 	}
 #endif
 
@@ -143,8 +143,8 @@ p_dump_device(struct prober *p, struct prober_device *pdev, int id)
 	for (size_t j = 0; j < pdev->num_hidraws; j++) {
 		struct prober_hidraw *hidraw = &pdev->hidraws[j];
 
-		U_LOG_I("\t\thidraw.iface:     %i", (int)hidraw->interface);
-		U_LOG_I("\t\thidraw.path:      '%s'", hidraw->path);
+		U_LOG_RAW("\t\thidraw.iface:     %i", (int)hidraw->interface);
+		U_LOG_RAW("\t\thidraw.path:      '%s'", hidraw->path);
 	}
 #endif
 }
