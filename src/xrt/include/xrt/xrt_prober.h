@@ -212,11 +212,24 @@ struct xrt_prober
 
 	int (*list_video_devices)(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
 
+	/*!
+	 * Returns a string property on the device of the given type
+	 * @p which_string in @p out_buffer.
+	 *
+	 * @param[in] xp             Prober.
+	 * @param[in] xpdev          Device to get string property from.
+	 * @param[in] which_string   Which string property to query.
+	 * @param[in,out] out_buffer Target buffer.
+	 * @param[in] max_length     Max length of the target buffer.
+	 *
+	 * @return The length of the string, or negative on error.
+	 *
+	 */
 	int (*get_string_descriptor)(struct xrt_prober *xp,
 	                             struct xrt_prober_device *xpdev,
 	                             enum xrt_prober_string which_string,
-	                             unsigned char *buffer,
-	                             int length);
+	                             unsigned char *out_buffer,
+	                             size_t max_length);
 
 	bool (*can_open)(struct xrt_prober *xp, struct xrt_prober_device *xpdev);
 
@@ -286,10 +299,10 @@ static inline int
 xrt_prober_get_string_descriptor(struct xrt_prober *xp,
                                  struct xrt_prober_device *xpdev,
                                  enum xrt_prober_string which_string,
-                                 unsigned char *buffer,
-                                 int length)
+                                 unsigned char *out_buffer,
+                                 size_t max_length)
 {
-	return xp->get_string_descriptor(xp, xpdev, which_string, buffer, length);
+	return xp->get_string_descriptor(xp, xpdev, which_string, out_buffer, max_length);
 }
 
 /*!

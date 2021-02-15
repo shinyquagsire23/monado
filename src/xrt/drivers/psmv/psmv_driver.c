@@ -1040,7 +1040,7 @@ psmv_found(struct xrt_prober *xp,
 	                                                      (unsigned char *)psmv->base.serial, XRT_DEVICE_NAME_LEN);
 
 	static int controller_num = 0;
-	if (str_serial_ret == 0) {
+	if (str_serial_ret <= 0) {
 		snprintf(psmv->base.serial, XRT_DEVICE_NAME_LEN, "PS Move Controller %d", controller_num++);
 		PSMV_ERROR(psmv, "Could not get bluetooth serial, fallback: %s", psmv->base.serial);
 	}

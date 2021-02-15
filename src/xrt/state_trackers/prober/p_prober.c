@@ -81,7 +81,7 @@ get_string_descriptor(struct xrt_prober *xp,
                       struct xrt_prober_device *xpdev,
                       enum xrt_prober_string which_string,
                       unsigned char *buffer,
-                      int length);
+                      size_t length);
 
 static bool
 can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev);
@@ -145,8 +145,9 @@ xrt_prober_match_string(struct xrt_prober *xp,
 {
 	unsigned char s[256] = {0};
 	int len = xrt_prober_get_string_descriptor(xp, dev, type, s, sizeof(s));
-	if (len == 0)
+	if (len <= 0) {
 		return false;
+	}
 
 	return 0 == strncmp(to_match, (const char *)s, sizeof(s));
 }
@@ -812,14 +813,14 @@ get_string_descriptor(struct xrt_prober *xp,
                       struct xrt_prober_device *xpdev,
                       enum xrt_prober_string which_string,
                       unsigned char *buffer,
-                      int length)
+                      size_t max_length)
 {
 	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
 	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
 	XRT_MAYBE_UNUSED int ret;
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->base.bus == XRT_BUS_TYPE_USB && pdev->usb.dev != NULL) {
-		ret = p_libusb_get_string_descriptor(p, pdev, which_string, buffer, length);
+		ret = p_libusb_get_string_descriptor(p, pdev, which_string, buffer, max_length);
 		if (ret >= 0) {
 			return ret;
 		}
@@ -831,8 +832,8 @@ get_string_descriptor(struct xrt_prober *xp,
 			uint64_t v;
 		} u;
 		u.v = pdev->bluetooth.id;
-		return snprintf((char *)buffer, length, "%02X:%02X:%02X:%02X:%02X:%02X", u.arr[5], u.arr[4], u.arr[3],
-		                u.arr[2], u.arr[1], u.arr[0]);
+		return snprintf((char *)buffer, max_length, "%02X:%02X:%02X:%02X:%02X:%02X", u.arr[5], u.arr[4],
+		                u.arr[3], u.arr[2], u.arr[1], u.arr[0]);
 	}
 
 	//! @todo add more backends
