@@ -14,7 +14,7 @@ lib_st_ovrd = static_library(
 		st_include, # Sigh debian meson requires this.
 		xrt_include,
 	],
-	dependencies: aux_util,
+	dependencies: [aux_util, aux_generated_bindings],
 	c_args: compile_args,
 	cpp_args: compile_args,
 )

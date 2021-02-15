@@ -35,5 +35,6 @@ lib_aux_generated_bindings = static_library(
 
 aux_generated_bindings = declare_dependency(
 	include_directories: aux_include,
+	sources: [generated_bindings_h],
 	link_with: lib_aux_generated_bindings,
 )
