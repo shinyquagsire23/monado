@@ -818,13 +818,23 @@ get_string_descriptor(struct xrt_prober *xp,
 	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
 	XRT_MAYBE_UNUSED int ret;
 #ifdef XRT_HAVE_LIBUSB
-	if (pdev->usb.dev != NULL) {
+	if (pdev->base.bus == XRT_BUS_TYPE_USB && pdev->usb.dev != NULL) {
 		ret = p_libusb_get_string_descriptor(p, pdev, which_string, buffer, length);
 		if (ret >= 0) {
 			return ret;
 		}
 	}
 #endif
+	if (pdev->base.bus == XRT_BUS_TYPE_BLUETOOTH && which_string == XRT_PROBER_STRING_SERIAL_NUMBER) {
+		union {
+			uint8_t arr[8];
+			uint64_t v;
+		} u;
+		u.v = pdev->bluetooth.id;
+		return snprintf((char *)buffer, length, "%02X:%02X:%02X:%02X:%02X:%02X", u.arr[5], u.arr[4], u.arr[3],
+		                u.arr[2], u.arr[1], u.arr[0]);
+	}
+
 	//! @todo add more backends
 	//! @todo make this unicode (utf-16)? utf-8 would be better...
 	return 0;
