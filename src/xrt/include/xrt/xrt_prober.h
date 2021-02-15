@@ -361,7 +361,8 @@ xrt_prober_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb
 /*!
  * @copydoc xrt_prober::destroy
  *
- * Helper function for @ref xrt_prober::destroy.
+ * Helper for calling through the function pointer: does a null check and sets
+ * xp_ptr to null if freed.
  *
  * @public @memberof xrt_prober
  */
@@ -374,6 +375,7 @@ xrt_prober_destroy(struct xrt_prober **xp_ptr)
 	}
 
 	xp->destroy(xp_ptr);
+	*xp_ptr = NULL;
 }
 
 /*!
