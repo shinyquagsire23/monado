@@ -163,7 +163,15 @@ struct xrt_prober
 	 * xrt_prober_probe()
 	 */
 	int (*probe)(struct xrt_prober *xp);
+
+	/*!
+	 * Dump a listing of all devices found on the system to platform
+	 * dependent output (stdout).
+	 *
+	 * @note Code consuming this interface should use xrt_prober_dump()
+	 */
 	int (*dump)(struct xrt_prober *xp);
+
 	/*!
 	 * Iterate through drivers (by ID and auto-probers) checking to see if
 	 * they can handle any connected devices from the last xrt_prober::probe
@@ -191,21 +199,27 @@ struct xrt_prober
 	 * and xrt_prober_select().
 	 */
 	int (*select)(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs);
+
 	int (*open_hid_interface)(struct xrt_prober *xp,
 	                          struct xrt_prober_device *xpdev,
 	                          int interface,
 	                          struct os_hid_device **out_hid_dev);
+
 	int (*open_video_device)(struct xrt_prober *xp,
 	                         struct xrt_prober_device *xpdev,
 	                         struct xrt_frame_context *xfctx,
 	                         struct xrt_fs **out_xfs);
+
 	int (*list_video_devices)(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
+
 	int (*get_string_descriptor)(struct xrt_prober *xp,
 	                             struct xrt_prober_device *xpdev,
 	                             enum xrt_prober_string which_string,
 	                             unsigned char *buffer,
 	                             int length);
+
 	bool (*can_open)(struct xrt_prober *xp, struct xrt_prober_device *xpdev);
+
 	/*!
 	 * Destroy the prober and set the pointer to null.
 	 *
