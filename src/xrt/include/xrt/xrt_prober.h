@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -244,6 +244,8 @@ struct xrt_prober
 };
 
 /*!
+ * @copydoc xrt_prober::probe
+ *
  * Helper function for @ref xrt_prober::probe.
  *
  * @public @memberof xrt_prober
@@ -255,6 +257,8 @@ xrt_prober_probe(struct xrt_prober *xp)
 }
 
 /*!
+ * @copydoc xrt_prober::dump
+ *
  * Helper function for @ref xrt_prober::dump.
  *
  * @public @memberof xrt_prober
@@ -266,6 +270,8 @@ xrt_prober_dump(struct xrt_prober *xp)
 }
 
 /*!
+ * @copydoc xrt_prober::select
+ *
  * Helper function for @ref xrt_prober::select.
  *
  * @public @memberof xrt_prober
@@ -277,6 +283,8 @@ xrt_prober_select(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_x
 }
 
 /*!
+ * @copydoc xrt_prober::open_hid_interface
+ *
  * Helper function for @ref xrt_prober::open_hid_interface.
  *
  * @public @memberof xrt_prober
@@ -291,6 +299,8 @@ xrt_prober_open_hid_interface(struct xrt_prober *xp,
 }
 
 /*!
+ * @copydoc xrt_prober::get_string_descriptor
+ *
  * Helper function for @ref xrt_prober::get_string_descriptor.
  *
  * @public @memberof xrt_prober
@@ -306,6 +316,8 @@ xrt_prober_get_string_descriptor(struct xrt_prober *xp,
 }
 
 /*!
+ * @copydoc xrt_prober::can_open
+ *
  * Helper function for @ref xrt_prober::can_open.
  *
  * @public @memberof xrt_prober
@@ -318,6 +330,8 @@ xrt_prober_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 
 
 /*!
+ * @copydoc xrt_prober::xrt_prober_open_video_device
+ *
  * Helper function for @ref xrt_prober::xrt_prober_open_video_device.
  *
  * @public @memberof xrt_prober
@@ -332,6 +346,8 @@ xrt_prober_open_video_device(struct xrt_prober *xp,
 }
 
 /*!
+ * @copydoc xrt_prober::list_video_devices
+ *
  * Helper function for @ref xrt_prober::list_video_devices.
  *
  * @public @memberof xrt_prober
@@ -343,6 +359,8 @@ xrt_prober_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb
 }
 
 /*!
+ * @copydoc xrt_prober::destroy
+ *
  * Helper function for @ref xrt_prober::destroy.
  *
  * @public @memberof xrt_prober
