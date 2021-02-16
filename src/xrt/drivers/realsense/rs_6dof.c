@@ -130,6 +130,24 @@ create_6dof(struct rs_6dof *rs)
 		return 1;
 	}
 
+	rs2_device_list *device_list = rs2_query_devices(rs->ctx, &e);
+	if (check_error(rs, e) != 0) {
+		close_6dof(rs);
+		return 1;
+	}
+
+	int dev_count = rs2_get_device_count(device_list, &e);
+	if (check_error(rs, e) != 0) {
+		close_6dof(rs);
+		return 1;
+	}
+
+	U_LOG_D("There are %d connected RealSense devices.", dev_count);
+	if (0 == dev_count) {
+		close_6dof(rs);
+		return 1;
+	}
+
 	rs->pipe = rs2_create_pipeline(rs->ctx, &e);
 	if (check_error(rs, e) != 0) {
 		close_6dof(rs);
