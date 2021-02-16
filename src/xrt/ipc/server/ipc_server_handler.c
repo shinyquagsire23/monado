@@ -280,6 +280,14 @@ ipc_handle_system_set_client_info(volatile struct ipc_client_state *ics, struct 
 {
 	ics->client_state.info = client_desc->info;
 	ics->client_state.pid = client_desc->pid;
+
+	IPC_INFO(ics->server,
+	         "Client info\n"
+	         "\tapplication_name: '%s'\n"
+	         "\tpid: %i",
+	         client_desc->info.application_name, //
+	         client_desc->pid);                  //
+
 	return XRT_SUCCESS;
 }
 
