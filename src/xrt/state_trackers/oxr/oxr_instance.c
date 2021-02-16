@@ -330,6 +330,17 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 	oxr_sdl2_hack_start(inst->hack, inst->xinst);
 	/* ---- HACK ---- */
 
+	oxr_log(log,
+	        "Instance created\n"
+	        "\tapplicationName: %s\n"
+	        "\tapplicationVersion: %i\n"
+	        "\tengineName: %s\n"
+	        "\tengineVersion: %i\n",
+	        createInfo->applicationInfo.applicationName,    //
+	        createInfo->applicationInfo.applicationVersion, //
+	        createInfo->applicationInfo.engineName,         //
+	        createInfo->applicationInfo.engineVersion);     //
+
 	*out_instance = inst;
 
 	return XR_SUCCESS;
