@@ -1186,6 +1186,20 @@ struct oxr_instance
 		XrPath mndx_ball_on_a_stick_controller;
 	} path_cache;
 
+	struct
+	{
+		struct
+		{
+			struct
+			{
+				uint32_t major;
+				uint32_t minor;
+				uint32_t patch;
+				const char *name; //< Engine name, not freed.
+			} engine;
+		} detected;
+	} appinfo;
+
 	//! Debug messengers
 	struct oxr_debug_messenger *messengers[XRT_MAX_HANDLE_CHILDREN];
 

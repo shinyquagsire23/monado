@@ -121,6 +121,36 @@ min_size_t(size_t a, size_t b)
 	return a < b ? a : b;
 }
 
+static bool
+starts_with(const char *with, const char *string)
+{
+	for (uint32_t i = 0; with[i] != 0; i++) {
+		if (string[i] != with[i]) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static void
+detect_engine(struct oxr_logger *log, struct oxr_instance *inst, const XrInstanceCreateInfo *createInfo)
+{
+	if (starts_with("UnrealEngine4", createInfo->applicationInfo.engineName)) {
+		inst->appinfo.detected.engine.name = "UnrealEngine";
+		inst->appinfo.detected.engine.major = 4;
+		inst->appinfo.detected.engine.minor = (createInfo->applicationInfo.engineVersion >> 16) & 0xffff;
+		inst->appinfo.detected.engine.patch = createInfo->applicationInfo.engineVersion & 0xffff;
+	}
+
+	if (starts_with("UnrealEngine5", createInfo->applicationInfo.engineName)) {
+		inst->appinfo.detected.engine.name = "UnrealEngine";
+		inst->appinfo.detected.engine.major = 5;
+		inst->appinfo.detected.engine.minor = (createInfo->applicationInfo.engineVersion >> 16) & 0xffff;
+		inst->appinfo.detected.engine.patch = createInfo->applicationInfo.engineVersion & 0xffff;
+	}
+}
+
 XrResult
 oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createInfo, struct oxr_instance **out_instance)
 {
@@ -321,8 +351,10 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 
 	inst->timekeeping = time_state_create();
 
-
 	//! @todo check if this (and other creates) failed?
+
+	// Detect game engine.
+	detect_engine(log, inst, createInfo);
 
 	u_var_add_root((void *)inst, "XrInstance", true);
 
@@ -332,14 +364,20 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 
 	oxr_log(log,
 	        "Instance created\n"
-	        "\tapplicationName: %s\n"
-	        "\tapplicationVersion: %i\n"
-	        "\tengineName: %s\n"
-	        "\tengineVersion: %i\n",
+	        "\tcreateInfo->applicationInfo.applicationName: %s\n"
+	        "\tcreateInfo->applicationInfo.applicationVersion: %i\n"
+	        "\tcreateInfo->applicationInfo.engineName: %s\n"
+	        "\tcreateInfo->applicationInfo.engineVersion: %i\n"
+	        "\tappinfo.detected.engine.name: %s\n"
+	        "\tappinfo.detected.engine.version: %i.%i.%i\n",
 	        createInfo->applicationInfo.applicationName,    //
 	        createInfo->applicationInfo.applicationVersion, //
 	        createInfo->applicationInfo.engineName,         //
-	        createInfo->applicationInfo.engineVersion);     //
+	        createInfo->applicationInfo.engineVersion,      //
+	        inst->appinfo.detected.engine.name,             //
+	        inst->appinfo.detected.engine.major,            //
+	        inst->appinfo.detected.engine.minor,            //
+	        inst->appinfo.detected.engine.patch);           //
 
 	*out_instance = inst;
 
