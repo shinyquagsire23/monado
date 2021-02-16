@@ -1200,6 +1200,12 @@ struct oxr_instance
 		} detected;
 	} appinfo;
 
+	struct
+	{
+		//! Unreal has a bug in the VulkanRHI backend.
+		bool disable_vulkan_format_depth_stencil;
+	} quirks;
+
 	//! Debug messengers
 	struct oxr_debug_messenger *messengers[XRT_MAX_HANDLE_CHILDREN];
 

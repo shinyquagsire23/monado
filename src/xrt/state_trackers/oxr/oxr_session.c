@@ -100,6 +100,7 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
                               uint32_t *formatCountOutput,
                               int64_t *formats)
 {
+	struct oxr_instance *inst = sess->sys->inst;
 	struct xrt_compositor *xc = sess->compositor;
 	if (formatCountOutput == NULL) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "(formatCountOutput == NULL) can not be null");
@@ -111,8 +112,21 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 		return oxr_session_success_result(sess);
 	}
 
-	OXR_TWO_CALL_HELPER(log, formatCapacityInput, formatCountOutput, formats, xc->info.num_formats,
-	                    xc->info.formats, oxr_session_success_result(sess));
+	uint32_t filtered_count = 0;
+	int64_t filtered_formats[XRT_MAX_SWAPCHAIN_FORMATS];
+	for (uint32_t i = 0; i < xc->info.num_formats; i++) {
+		int64_t format = xc->info.formats[i];
+
+		if (inst->quirks.disable_vulkan_format_depth_stencil &&
+		    format == 130 /* VK_FORMAT_D32_SFLOAT_S8_UINT */) {
+			continue;
+		}
+
+		filtered_formats[filtered_count++] = format;
+	}
+
+	OXR_TWO_CALL_HELPER(log, formatCapacityInput, formatCountOutput, formats, filtered_count, filtered_formats,
+	                    oxr_session_success_result(sess));
 }
 
 XrResult

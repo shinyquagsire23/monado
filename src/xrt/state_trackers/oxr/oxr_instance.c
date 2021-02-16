@@ -151,6 +151,17 @@ detect_engine(struct oxr_logger *log, struct oxr_instance *inst, const XrInstanc
 	}
 }
 
+static void
+apply_quirks(struct oxr_logger *log, struct oxr_instance *inst)
+{
+	if (starts_with("UnrealEngine", inst->appinfo.detected.engine.name) && //
+	    inst->appinfo.detected.engine.major == 4 &&                        //
+	    inst->appinfo.detected.engine.minor <= 27 &&                       //
+	    inst->appinfo.detected.engine.patch <= 0) {
+		inst->quirks.disable_vulkan_format_depth_stencil = true;
+	}
+}
+
 XrResult
 oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createInfo, struct oxr_instance **out_instance)
 {
@@ -356,6 +367,9 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 	// Detect game engine.
 	detect_engine(log, inst, createInfo);
 
+	// Apply any quirks
+	apply_quirks(log, inst);
+
 	u_var_add_root((void *)inst, "XrInstance", true);
 
 	/* ---- HACK ---- */
@@ -369,15 +383,17 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 	        "\tcreateInfo->applicationInfo.engineName: %s\n"
 	        "\tcreateInfo->applicationInfo.engineVersion: %i\n"
 	        "\tappinfo.detected.engine.name: %s\n"
-	        "\tappinfo.detected.engine.version: %i.%i.%i\n",
-	        createInfo->applicationInfo.applicationName,    //
-	        createInfo->applicationInfo.applicationVersion, //
-	        createInfo->applicationInfo.engineName,         //
-	        createInfo->applicationInfo.engineVersion,      //
-	        inst->appinfo.detected.engine.name,             //
-	        inst->appinfo.detected.engine.major,            //
-	        inst->appinfo.detected.engine.minor,            //
-	        inst->appinfo.detected.engine.patch);           //
+	        "\tappinfo.detected.engine.version: %i.%i.%i\n"
+	        "\tquirks.disable_vulkan_format_depth_stencil: %s",
+	        createInfo->applicationInfo.applicationName,                          //
+	        createInfo->applicationInfo.applicationVersion,                       //
+	        createInfo->applicationInfo.engineName,                               //
+	        createInfo->applicationInfo.engineVersion,                            //
+	        inst->appinfo.detected.engine.name,                                   //
+	        inst->appinfo.detected.engine.major,                                  //
+	        inst->appinfo.detected.engine.minor,                                  //
+	        inst->appinfo.detected.engine.patch,                                  //
+	        inst->quirks.disable_vulkan_format_depth_stencil ? "true" : "false"); //
 
 	*out_instance = inst;
 
