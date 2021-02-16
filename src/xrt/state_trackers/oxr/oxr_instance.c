@@ -124,6 +124,12 @@ min_size_t(size_t a, size_t b)
 static bool
 starts_with(const char *with, const char *string)
 {
+	assert(with != NULL);
+
+	if (string == NULL) {
+		return false;
+	}
+
 	for (uint32_t i = 0; with[i] != 0; i++) {
 		if (string[i] != with[i]) {
 			return false;
