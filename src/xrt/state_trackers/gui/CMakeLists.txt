@@ -15,6 +15,7 @@ set(GUI_SOURCE_FILES
 	gui_scene_main_menu.c
 	gui_scene_remote.c
 	gui_scene_video.c
+	gui_scene_tracking_overrides.c
 	../../../external/imgui/imgui/cimgui.cpp
 	../../../external/imgui/imgui/cimgui.h
 	../../../external/imgui/imgui/cimplot.cpp

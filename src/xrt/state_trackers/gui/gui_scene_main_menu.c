@@ -34,6 +34,12 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		gui_scene_select_video_calibrate(p);
 	}
 
+	if (igButton("Tracking Overrides", button_dims)) {
+		gui_scene_delete_me(p, scene);
+
+		gui_scene_tracking_overrides(p);
+	}
+
 	if (igButton("Debug Test", button_dims)) {
 		gui_scene_delete_me(p, scene);
 

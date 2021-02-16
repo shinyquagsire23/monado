@@ -198,6 +198,14 @@ void
 gui_scene_select_video_calibrate(struct gui_program *p);
 
 /*!
+ * Shows a UI that lets you set up tracking overrides.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_tracking_overrides(struct gui_program *p);
+
+/*!
  * Regular debug UI.
  *
  * @ingroup gui
