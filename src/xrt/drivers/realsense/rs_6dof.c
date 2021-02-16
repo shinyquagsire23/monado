@@ -372,6 +372,8 @@ struct xrt_device *
 rs_6dof_create(void)
 {
 	struct rs_6dof *rs = U_DEVICE_ALLOCATE(struct rs_6dof, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
+	rs->offset =
+	    (struct xrt_pose){.orientation = {.x = 0, .y = 0, .z = 0, .w = 1}, .position = {.x = 0, .y = 0, .z = 0}};
 	int ret = 0;
 
 	rs->base.update_inputs = rs_6dof_update_inputs;
