@@ -22,6 +22,7 @@
 #include "xrt/xrt_prober.h"
 
 #include "math/m_api.h"
+#include "math/m_predict.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
 #include "util/u_json.h"
@@ -351,6 +352,25 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 }
 
 static void
+predict_pose(struct vive_controller_device *d, uint64_t at_timestamp_ns, struct xrt_space_relation *out_relation)
+{
+	timepoint_ns prediction_ns = at_timestamp_ns - d->imu.ts_received_ns;
+	double prediction_s = time_ns_to_s(prediction_ns);
+
+	timepoint_ns monotonic_now_ns = os_monotonic_get_ns();
+	timepoint_ns remaining_ns = at_timestamp_ns - monotonic_now_ns;
+	VIVE_TRACE(d, "dev %s At %ldns: Pose requested for +%ldns (%ldns), predicting %ldns", d->base.str,
+	           monotonic_now_ns, remaining_ns, at_timestamp_ns, prediction_ns);
+
+	//! @todo integrate position here
+	struct xrt_space_relation relation = {0};
+	relation.pose.orientation = d->rot_filtered;
+	relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
+
+	m_predict_relation(&relation, prediction_s, out_relation);
+}
+
+static void
 vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
                                         enum xrt_input_name name,
                                         uint64_t at_timestamp_ns,
@@ -376,12 +396,7 @@ vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	out_relation->pose.orientation = d->rot_filtered;
-
-	//! @todo assuming that orientation is actually currently tracked.
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	predict_pose(d, at_timestamp_ns, out_relation);
 
 	os_thread_helper_unlock(&d->controller_thread);
 
@@ -530,6 +545,8 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watch
 	uint32_t time_raw = d->last_ticks | (sample->timestamp_hi << 8);
 	uint32_t dt_raw = calc_dt_raw_and_handle_overflow(d, time_raw);
 	uint64_t dt_ns = cald_dt_ns(dt_raw);
+
+	d->imu.ts_received_ns = os_monotonic_get_ns();
 
 	int16_t acc[3] = {
 	    __le16_to_cpu(sample->acc[0]),
