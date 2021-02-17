@@ -104,4 +104,29 @@ u_file_open_file_in_config_dir(const char *filename, const char *mode)
 	return fopen(file_str, mode);
 }
 
+char *
+u_file_read_content(FILE *file)
+{
+	// Go to the end of the file.
+	fseek(file, 0L, SEEK_END);
+	size_t file_size = ftell(file);
+
+	// Return back to the start of the file.
+	fseek(file, 0L, SEEK_SET);
+
+	char *buffer = (char *)calloc(file_size + 1, sizeof(char));
+	if (buffer == NULL) {
+		return NULL;
+	}
+
+	// Do the actual reading.
+	size_t ret = fread(buffer, sizeof(char), file_size, file);
+	if (ret != file_size) {
+		free(buffer);
+		return NULL;
+	}
+
+	return buffer;
+}
+
 #endif
