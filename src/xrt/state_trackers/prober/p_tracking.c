@@ -20,6 +20,7 @@
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_sink.h"
+#include "util/u_config_json.h"
 #include "p_prober.h"
 
 #include <stdio.h>
@@ -134,7 +135,7 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	// We have no tried the settings.
 	fact->tried_settings = true;
 
-	if (!p_json_get_tracking_settings(fact->p, &fact->settings)) {
+	if (!u_config_json_get_tracking_settings(&fact->p->json, &fact->settings)) {
 		U_LOG_E(
 		    "Could not setup PSVR and/or PSMV tracking, "
 		    "see above.");

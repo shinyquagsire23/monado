@@ -11,7 +11,7 @@
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
-#include "util/u_json.h"
+#include "util/u_config_json.h"
 #include "util/u_debug.h"
 #include "os/os_hid.h"
 #include "p_prober.h"
@@ -403,12 +403,15 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 	p->lists = lists;
 	p->ll = debug_get_log_option_prober_log();
 
+	p->json.file_loaded = false;
+	p->json.root = NULL;
+
 	u_var_add_root((void *)p, "Prober", true);
 	u_var_add_ro_u32(p, &p->ll, "Log Level");
 
 	int ret;
 
-	p_json_open_or_create_main_file(p);
+	u_config_json_open_or_create_main_file(&p->json);
 
 	ret = collect_entries(p);
 	if (ret != 0) {
@@ -762,7 +765,7 @@ add_from_remote(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, b
 
 #ifdef XRT_BUILD_DRIVER_REMOTE
 	int port = 4242;
-	if (!p_json_get_remote_port(p, &port)) {
+	if (!u_config_json_get_remote_port(&p->json, &port)) {
 		port = 4242;
 	}
 
@@ -820,18 +823,18 @@ static int
 select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs)
 {
 	struct prober *p = (struct prober *)xp;
-	enum p_active_config active;
+	enum u_config_json_active_config active;
 	bool have_hmd = false;
 
-	p_json_get_active(p, &active);
+	u_config_json_get_active(&p->json, &active);
 
 	switch (active) {
-	case P_ACTIVE_CONFIG_NONE:
-	case P_ACTIVE_CONFIG_TRACKING:
+	case U_ACTIVE_CONFIG_NONE:
+	case U_ACTIVE_CONFIG_TRACKING:
 		add_from_devices(p, xdevs, num_xdevs, &have_hmd);
 		add_from_auto_probers(p, xdevs, num_xdevs, &have_hmd);
 		break;
-	case P_ACTIVE_CONFIG_REMOTE: add_from_remote(p, xdevs, num_xdevs, &have_hmd); break;
+	case U_ACTIVE_CONFIG_REMOTE: add_from_remote(p, xdevs, num_xdevs, &have_hmd); break;
 	default: assert(false);
 	}
 
@@ -856,7 +859,7 @@ select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs
 
 	struct xrt_tracking_override overrides[XRT_MAX_TRACKING_OVERRIDES];
 	size_t num_overrides = 0;
-	if (p_json_get_tracking_overrides(p, overrides, &num_overrides)) {
+	if (u_config_json_get_tracking_overrides(&p->json, overrides, &num_overrides)) {
 		for (size_t i = 0; i < num_overrides; i++) {
 			struct xrt_tracking_override *o = &overrides[i];
 			apply_tracking_override(p, xdevs, num_xdevs, o);

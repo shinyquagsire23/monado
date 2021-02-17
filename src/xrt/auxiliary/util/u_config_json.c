@@ -7,11 +7,15 @@
  * @ingroup st_prober
  */
 
+#include <xrt/xrt_device.h>
+#include "xrt/xrt_settings.h"
+#include "xrt/xrt_config.h"
+
 #include "util/u_file.h"
 #include "util/u_json.h"
 #include "util/u_debug.h"
 
-#include "p_prober.h"
+#include "u_config_json.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,13 +24,15 @@
 
 DEBUG_GET_ONCE_OPTION(active_config, "P_OVERRIDE_ACTIVE_CONFIG", NULL)
 
+#define CONFIG_FILE_NAME "config_v0.json"
+
 
 void
-p_json_open_or_create_main_file(struct prober *p)
+u_config_json_open_or_create_main_file(struct u_config_json *json)
 {
 #ifdef XRT_OS_LINUX
 	char tmp[1024];
-	ssize_t ret = u_file_get_path_in_config_dir("config_v0.json", tmp, sizeof(tmp));
+	ssize_t ret = u_file_get_path_in_config_dir(CONFIG_FILE_NAME, tmp, sizeof(tmp));
 	if (ret <= 0) {
 		U_LOG_E(
 		    "Could not load or create config file no $HOME "
@@ -34,12 +40,12 @@ p_json_open_or_create_main_file(struct prober *p)
 		return;
 	}
 
-	FILE *file = u_file_open_file_in_config_dir("config_v0.json", "r");
+	FILE *file = u_file_open_file_in_config_dir(CONFIG_FILE_NAME, "r");
 	if (file == NULL) {
 		return;
 	}
 
-	p->json.file_loaded = true;
+	json->file_loaded = true;
 
 	char *str = u_file_read_content(file);
 	fclose(file);
@@ -54,8 +60,8 @@ p_json_open_or_create_main_file(struct prober *p)
 		return;
 	}
 
-	p->json.root = cJSON_Parse(str);
-	if (p->json.root == NULL) {
+	json->root = cJSON_Parse(str);
+	if (json->root == NULL) {
 		U_LOG_E("Failed to parse JSON in '%s':\n%s\n#######", tmp, str);
 		U_LOG_E("'%s'", cJSON_GetErrorPtr());
 	}
@@ -142,10 +148,10 @@ get_obj_str(cJSON *json, const char *name, char *array, size_t array_size)
 }
 
 static bool
-is_json_ok(struct prober *p)
+is_json_ok(struct u_config_json *json)
 {
-	if (p->json.root == NULL) {
-		if (p->json.file_loaded) {
+	if (json->root == NULL) {
+		if (json->file_loaded) {
 			U_LOG_E("JSON not parsed!");
 		} else {
 			U_LOG_W("No config file!");
@@ -157,17 +163,17 @@ is_json_ok(struct prober *p)
 }
 
 static bool
-parse_active(const char *str, const char *from, enum p_active_config *out_active)
+parse_active(const char *str, const char *from, enum u_config_json_active_config *out_active)
 {
 	if (strcmp(str, "none") == 0) {
-		*out_active = P_ACTIVE_CONFIG_NONE;
+		*out_active = U_ACTIVE_CONFIG_NONE;
 	} else if (strcmp(str, "tracking") == 0) {
-		*out_active = P_ACTIVE_CONFIG_TRACKING;
+		*out_active = U_ACTIVE_CONFIG_TRACKING;
 	} else if (strcmp(str, "remote") == 0) {
-		*out_active = P_ACTIVE_CONFIG_REMOTE;
+		*out_active = U_ACTIVE_CONFIG_REMOTE;
 	} else {
 		U_LOG_E("Unknown active config '%s' from %s.", str, from);
-		*out_active = P_ACTIVE_CONFIG_NONE;
+		*out_active = U_ACTIVE_CONFIG_NONE;
 		return false;
 	}
 
@@ -175,7 +181,7 @@ parse_active(const char *str, const char *from, enum p_active_config *out_active
 }
 
 void
-p_json_get_active(struct prober *p, enum p_active_config *out_active)
+u_config_json_get_active(struct u_config_json *json, enum u_config_json_active_config *out_active)
 {
 	const char *str = debug_get_option_active_config();
 	if (str != NULL && parse_active(str, "environment", out_active)) {
@@ -183,8 +189,8 @@ p_json_get_active(struct prober *p, enum p_active_config *out_active)
 	}
 
 	char tmp[256];
-	if (!is_json_ok(p) || !get_obj_str(p->json.root, "active", tmp, sizeof(tmp))) {
-		*out_active = P_ACTIVE_CONFIG_NONE;
+	if (!is_json_ok(json) || !get_obj_str(json->root, "active", tmp, sizeof(tmp))) {
+		*out_active = U_ACTIVE_CONFIG_NONE;
 		return;
 	}
 
@@ -192,9 +198,9 @@ p_json_get_active(struct prober *p, enum p_active_config *out_active)
 }
 
 bool
-p_json_get_remote_port(struct prober *p, int *out_port)
+u_config_json_get_remote_port(struct u_config_json *json, int *out_port)
 {
-	cJSON *t = cJSON_GetObjectItemCaseSensitive(p->json.root, "remote");
+	cJSON *t = cJSON_GetObjectItemCaseSensitive(json->root, "remote");
 	if (t == NULL) {
 		U_LOG_E("No remote node");
 		return false;
@@ -221,10 +227,10 @@ p_json_get_remote_port(struct prober *p, int *out_port)
 }
 
 static cJSON *
-open_tracking_settings(struct prober *p)
+open_tracking_settings(struct u_config_json *json)
 {
-	if (p->json.root == NULL) {
-		if (p->json.file_loaded) {
+	if (json->root == NULL) {
+		if (json->file_loaded) {
 			U_LOG_E("JSON not parsed!");
 		} else {
 			U_LOG_W("No config file!");
@@ -232,7 +238,7 @@ open_tracking_settings(struct prober *p)
 		return NULL;
 	}
 
-	cJSON *t = cJSON_GetObjectItemCaseSensitive(p->json.root, "tracking");
+	cJSON *t = cJSON_GetObjectItemCaseSensitive(json->root, "tracking");
 	if (t == NULL) {
 		U_LOG_E("No tracking node");
 		return NULL;
@@ -251,9 +257,11 @@ open_tracking_settings(struct prober *p)
 }
 
 bool
-p_json_get_tracking_overrides(struct prober *p, struct xrt_tracking_override *out_overrides, size_t *out_num_overrides)
+u_config_json_get_tracking_overrides(struct u_config_json *json,
+                                     struct xrt_tracking_override *out_overrides,
+                                     size_t *out_num_overrides)
 {
-	cJSON *t = open_tracking_settings(p);
+	cJSON *t = open_tracking_settings(json);
 	if (t == NULL) {
 		U_LOG_E("No tracking node");
 		return false;
@@ -301,9 +309,9 @@ p_json_get_tracking_overrides(struct prober *p, struct xrt_tracking_override *ou
 }
 
 bool
-p_json_get_tracking_settings(struct prober *p, struct xrt_settings_tracking *s)
+u_config_json_get_tracking_settings(struct u_config_json *json, struct xrt_settings_tracking *s)
 {
-	cJSON *t = open_tracking_settings(p);
+	cJSON *t = open_tracking_settings(json);
 	if (t == NULL) {
 		U_LOG_E("No tracking node");
 		return false;

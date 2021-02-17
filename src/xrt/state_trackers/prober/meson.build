@@ -4,7 +4,6 @@
 prober_sources = [
 	'p_documentation.h',
 	'p_dump.c',
-	'p_json.c',
 	'p_prober.c',
 	'p_prober.h',
 	'p_tracking.c',

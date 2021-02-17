@@ -12,6 +12,9 @@
 
 #include "xrt/xrt_compiler.h"
 
+// XRT_DEVICE_NAME_LEN
+#include "xrt/xrt_device.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
