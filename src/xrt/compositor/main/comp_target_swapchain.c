@@ -68,7 +68,7 @@ _check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surf
 
 /*
  *
- * Functions!
+ * Vulkan functions.
  *
  */
 
@@ -78,7 +78,7 @@ get_vk(struct comp_target_swapchain *cts)
 	return &cts->base.c->vk;
 }
 
-void
+static void
 comp_target_swapchain_create_images(struct comp_target *ct,
                                     uint32_t width,
                                     uint32_t height,
@@ -233,7 +233,7 @@ comp_target_swapchain_destroy_old(struct comp_target_swapchain *cts, VkSwapchain
 	}
 }
 
-VkResult
+static VkResult
 comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
@@ -249,7 +249,7 @@ comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore sem
 	    out_index);                   // pImageIndex
 }
 
-VkResult
+static VkResult
 comp_target_swapchain_present(struct comp_target *ct, VkQueue queue, uint32_t index, VkSemaphore semaphore)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
@@ -465,6 +465,13 @@ comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts)
 
 	free(images);
 }
+
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
 
 void
 comp_target_swapchain_cleanup(struct comp_target_swapchain *cts)

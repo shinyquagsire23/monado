@@ -73,19 +73,6 @@ void
 comp_target_swapchain_init_set_fnptrs(struct comp_target_swapchain *cts);
 
 /*!
- * See comp_target::create_images.
- *
- * @ingroup comp_main
- */
-void
-comp_target_swapchain_create_images(struct comp_target *ct,
-                                    uint32_t width,
-                                    uint32_t height,
-                                    VkFormat color_format,
-                                    VkColorSpaceKHR color_space,
-                                    VkPresentModeKHR present_mode);
-
-/*!
  * Free all managed resources on the given @ref comp_target_swapchain,
  * does not free the struct itself.
  *
