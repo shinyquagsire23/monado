@@ -19,6 +19,7 @@
 #include "util/u_time.h"
 
 #include "math/m_api.h"
+#include "math/m_predict.h"
 
 #include "os/os_hid.h"
 #include "os/os_time.h"
@@ -90,6 +91,25 @@ vive_device_update_inputs(struct xrt_device *xdev)
 }
 
 static void
+predict_pose(struct vive_device *d, uint64_t at_timestamp_ns, struct xrt_space_relation *out_relation)
+{
+	timepoint_ns prediction_ns = at_timestamp_ns - d->imu.ts_received_ns;
+	double prediction_s = time_ns_to_s(prediction_ns);
+
+	timepoint_ns monotonic_now_ns = os_monotonic_get_ns();
+	timepoint_ns remaining_ns = at_timestamp_ns - monotonic_now_ns;
+	VIVE_TRACE(d, "dev %s At %ldns: Pose requested for +%ldns (%ldns), predicting %ldns", d->base.str,
+	           monotonic_now_ns, remaining_ns, at_timestamp_ns, prediction_ns);
+
+	//! @todo integrate position here
+	struct xrt_space_relation relation = {0};
+	relation.pose.orientation = d->rot_filtered;
+	relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
+
+	m_predict_relation(&relation, prediction_s, out_relation);
+}
+
+static void
 vive_device_get_tracked_pose(struct xrt_device *xdev,
                              enum xrt_input_name name,
                              uint64_t at_timestamp_ns,
@@ -116,12 +136,7 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	out_relation->pose.orientation = d->rot_filtered;
-
-	//! @todo assuming that orientation is actually currently tracked.
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	predict_pose(d, at_timestamp_ns, out_relation);
 
 	os_thread_helper_unlock(&d->sensors_thread);
 }
@@ -281,6 +296,7 @@ update_imu(struct vive_device *d, const void *buffer)
 	const struct vive_imu_report *report = buffer;
 	const struct vive_imu_sample *sample = report->sample;
 	uint8_t last_seq = d->imu.sequence;
+	d->imu.ts_received_ns = os_monotonic_get_ns();
 	int i, j;
 
 	/*

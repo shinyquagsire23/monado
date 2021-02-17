@@ -43,6 +43,7 @@ struct vive_device
 		uint64_t time_ns;
 		uint8_t sequence;
 		uint32_t last_sample_time_raw;
+		timepoint_ns ts_received_ns;
 	} imu;
 
 	struct m_imu_3dof fusion;
