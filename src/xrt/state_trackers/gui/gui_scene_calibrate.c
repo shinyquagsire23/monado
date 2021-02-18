@@ -13,6 +13,7 @@
 #include "util/u_sink.h"
 #include "util/u_file.h"
 #include "util/u_json.h"
+#include "util/u_config_json.h"
 
 #ifdef XRT_HAVE_OPENCV
 #include "tracking/t_tracking.h"
@@ -102,31 +103,10 @@ save_calibration(struct calibration_scene *cs)
 	 * Camera config file.
 	 *
 	 */
-
-	cJSON *root = cJSON_CreateObject();
-	cJSON *t = cJSON_AddObjectToObject(root, "tracking");
-	cJSON_AddNumberToObject(t, "version", 0);
-	cJSON_AddStringToObject(t, "camera_name", cs->settings->camera_name);
-	cJSON_AddNumberToObject(t, "camera_mode", cs->settings->camera_mode);
-	switch (cs->settings->camera_type) {
-	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_MONO: cJSON_AddStringToObject(t, "camera_type", "regular_mono"); break;
-	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_SBS: cJSON_AddStringToObject(t, "camera_type", "regular_sbs"); break;
-	case XRT_SETTINGS_CAMERA_TYPE_PS4: cJSON_AddStringToObject(t, "camera_type", "ps4"); break;
-	case XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION: cJSON_AddStringToObject(t, "camera_type", "leap_motion"); break;
-	}
-	cJSON_AddStringToObject(t, "calibration_path", cs->settings->calibration_path);
-
-	char *str = cJSON_Print(root);
-	U_LOG_D("%s", str);
-	cJSON_Delete(root);
-
-	FILE *config_file = u_file_open_file_in_config_dir("config_v0.json", "w");
-	fprintf(config_file, "%s\n", str);
-	fflush(config_file);
-	fclose(config_file);
-	config_file = NULL;
-	free(str);
-
+	struct u_config_json json;
+	u_config_json_open_or_create_main_file(&json);
+	u_config_json_save_calibration(&json, cs->settings);
+	u_config_json_close(&json);
 
 	/*
 	 *

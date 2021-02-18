@@ -34,6 +34,9 @@ struct u_config_json
 	cJSON *root;
 };
 
+void
+u_config_json_close(struct u_config_json *json);
+
 /*!
  * Load the JSON config file.
  *
@@ -42,6 +45,13 @@ struct u_config_json
 void
 u_config_json_open_or_create_main_file(struct u_config_json *json);
 
+/*!
+ * Writes back calibration settings to the main config file.
+ *
+ * @ingroup aux_util
+ */
+void
+u_config_json_save_calibration(struct u_config_json *json, struct xrt_settings_tracking *settings);
 /*!
  * Read from the JSON loaded json config file and returns the active config,
  * can be overridden by `P_OVERRIDE_ACTIVE_CONFIG` envirmental variable.

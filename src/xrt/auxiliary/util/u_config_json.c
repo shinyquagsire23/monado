@@ -26,6 +26,15 @@ DEBUG_GET_ONCE_OPTION(active_config, "P_OVERRIDE_ACTIVE_CONFIG", NULL)
 
 #define CONFIG_FILE_NAME "config_v0.json"
 
+void
+u_config_json_close(struct u_config_json *json)
+{
+	if (json->root != NULL) {
+		cJSON_Delete(json->root);
+		json->root = NULL;
+	}
+	json->file_loaded = false;
+}
 
 void
 u_config_json_open_or_create_main_file(struct u_config_json *json)
@@ -343,4 +352,51 @@ u_config_json_get_tracking_settings(struct u_config_json *json, struct xrt_setti
 	}
 
 	return true;
+}
+
+static void
+u_config_write(struct u_config_json *json)
+{
+	char *str = cJSON_Print(json->root);
+	U_LOG_D("%s", str);
+
+	FILE *config_file = u_file_open_file_in_config_dir(CONFIG_FILE_NAME, "w");
+	fprintf(config_file, "%s\n", str);
+	fflush(config_file);
+	fclose(config_file);
+	config_file = NULL;
+	free(str);
+}
+
+void
+u_config_json_save_calibration(struct u_config_json *json, struct xrt_settings_tracking *settings)
+{
+	cJSON *root = json->root;
+
+	cJSON *t = cJSON_GetObjectItem(root, "tracking");
+	if (!t) {
+		t = cJSON_AddObjectToObject(root, "tracking");
+	}
+
+	cJSON_DeleteItemFromObject(t, "version");
+	cJSON_AddNumberToObject(t, "version", 0);
+
+	cJSON_DeleteItemFromObject(t, "camera_name");
+	cJSON_AddStringToObject(t, "camera_name", settings->camera_name);
+
+	cJSON_DeleteItemFromObject(t, "camera_mode");
+	cJSON_AddNumberToObject(t, "camera_mode", settings->camera_mode);
+
+	cJSON_DeleteItemFromObject(t, "camera_type");
+	switch (settings->camera_type) {
+	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_MONO: cJSON_AddStringToObject(t, "camera_type", "regular_mono"); break;
+	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_SBS: cJSON_AddStringToObject(t, "camera_type", "regular_sbs"); break;
+	case XRT_SETTINGS_CAMERA_TYPE_PS4: cJSON_AddStringToObject(t, "camera_type", "ps4"); break;
+	case XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION: cJSON_AddStringToObject(t, "camera_type", "leap_motion"); break;
+	}
+
+	cJSON_DeleteItemFromObject(t, "calibration_path");
+	cJSON_AddStringToObject(t, "calibration_path", settings->calibration_path);
+
+	u_config_write(json);
 }

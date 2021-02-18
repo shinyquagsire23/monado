@@ -558,10 +558,7 @@ teardown(struct prober *p)
 	p_libusb_teardown(p);
 #endif
 
-	if (p->json.root != NULL) {
-		cJSON_Delete(p->json.root);
-		p->json.root = NULL;
-	}
+	u_config_json_close(&p->json);
 
 	free(p->disabled_drivers);
 }
