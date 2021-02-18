@@ -251,6 +251,8 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 	igSeparator();
 
 	if (igButton("Save", button_dims)) {
+		u_config_json_save_overrides(&ts->config, ts->overrides, ts->num_overrides);
+		u_config_json_close(&ts->config);
 		gui_scene_delete_me(p, scene);
 	}
 

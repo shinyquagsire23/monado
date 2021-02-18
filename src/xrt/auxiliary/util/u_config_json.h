@@ -52,6 +52,15 @@ u_config_json_open_or_create_main_file(struct u_config_json *json);
  */
 void
 u_config_json_save_calibration(struct u_config_json *json, struct xrt_settings_tracking *settings);
+
+/*!
+ * Writes back tracking override settings to the main config file.
+ *
+ * @ingroup aux_util
+ */
+void
+u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_override *overrides, size_t num_overrides);
+
 /*!
  * Read from the JSON loaded json config file and returns the active config,
  * can be overridden by `P_OVERRIDE_ACTIVE_CONFIG` envirmental variable.

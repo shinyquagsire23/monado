@@ -400,3 +400,50 @@ u_config_json_save_calibration(struct u_config_json *json, struct xrt_settings_t
 
 	u_config_write(json);
 }
+
+static cJSON *
+make_pose(struct xrt_pose *pose)
+{
+	cJSON *json = cJSON_CreateObject();
+
+	cJSON *o = cJSON_CreateObject();
+	cJSON_AddNumberToObject(o, "x", pose->orientation.x);
+	cJSON_AddNumberToObject(o, "y", pose->orientation.y);
+	cJSON_AddNumberToObject(o, "z", pose->orientation.z);
+	cJSON_AddNumberToObject(o, "w", pose->orientation.w);
+	cJSON_AddItemToObject(json, "orientation", o);
+
+	cJSON *p = cJSON_CreateObject();
+	cJSON_AddNumberToObject(p, "x", pose->position.x);
+	cJSON_AddNumberToObject(p, "y", pose->position.y);
+	cJSON_AddNumberToObject(p, "z", pose->position.z);
+	cJSON_AddItemToObject(json, "position", p);
+
+	return json;
+}
+
+void
+u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_override *overrides, size_t num_overrides)
+{
+	cJSON *root = json->root;
+
+	cJSON *t = cJSON_GetObjectItem(root, "tracking");
+	if (!t) {
+		t = cJSON_AddObjectToObject(root, "tracking");
+	}
+
+	cJSON_DeleteItemFromObject(t, "tracking_overrides");
+	cJSON *o = cJSON_AddArrayToObject(t, "tracking_overrides");
+
+	for (size_t i = 0; i < num_overrides; i++) {
+		cJSON *entry = cJSON_CreateObject();
+
+		cJSON_AddStringToObject(entry, "target_device_serial", overrides[i].target_device_serial);
+		cJSON_AddStringToObject(entry, "tracker_device_serial", overrides[i].tracker_device_serial);
+		cJSON_AddItemToObject(entry, "offset", make_pose(&overrides[i].offset));
+
+		cJSON_AddItemToArray(o, entry);
+	}
+
+	u_config_write(json);
+}
