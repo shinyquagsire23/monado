@@ -1,0 +1,23 @@
+{
+	"active":	"tracking",
+	"tracking":	{
+		"tracking_overrides":	[{
+				"target_device_serial":	"North Star",
+				"tracker_device_serial":	"Intel RealSense 6-DOF",
+				"offset":	{
+					"orientation":	{
+						"x":	0,
+						"y":	-0.068300001323223114,
+						"z":	0.074400000274181366,
+						"w":	0.99468898773193359
+					},
+					"position":	{
+						"x":	0,
+						"y":	-0.068300001323223114,
+						"z":	0.074400000274181366
+					}
+				}
+			}],
+		"version":	0
+	}
+}
