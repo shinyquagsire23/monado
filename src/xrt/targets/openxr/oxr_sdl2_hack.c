@@ -64,7 +64,8 @@ struct sdl2_program
 
 struct gui_imgui
 {
-	bool show_demo_window;
+	bool show_imgui_demo;
+	bool show_implot_demo;
 	struct xrt_colour_rgb_f32 clear;
 };
 
@@ -140,6 +141,10 @@ sdl2_loop(struct sdl2_program *p)
 	// Setup Dear ImGui style
 	igStyleColorsDark(NULL);
 
+	// Setup the plot context.
+	ImPlotContext *plot_ctx = ImPlot_CreateContext();
+	ImPlot_SetCurrentContext(plot_ctx);
+
 	// Main loop
 	struct gui_imgui gui = {0};
 	gui.clear.r = 0.45f;
@@ -147,7 +152,8 @@ sdl2_loop(struct sdl2_program *p)
 	gui.clear.b = 0.60f;
 	u_var_add_root(&gui, "GUI Control", false);
 	u_var_add_rgb_f32(&gui, &gui.clear, "Clear Colour");
-	u_var_add_bool(&gui, &gui.show_demo_window, "Demo Window");
+	u_var_add_bool(&gui, &gui.show_imgui_demo, "Imgui Demo Window");
+	u_var_add_bool(&gui, &gui.show_implot_demo, "Implot Demo Window");
 	u_var_add_bool(&gui, &p->base.stopped, "Exit");
 
 	while (!p->base.stopped) {
@@ -177,8 +183,13 @@ sdl2_loop(struct sdl2_program *p)
 		gui_scene_manager_render(&p->base);
 
 		// Handle this here.
-		if (gui.show_demo_window) {
-			igShowDemoWindow(&gui.show_demo_window);
+		if (gui.show_imgui_demo) {
+			igShowDemoWindow(&gui.show_imgui_demo);
+		}
+
+		// Handle this here.
+		if (gui.show_implot_demo) {
+			ImPlot_ShowDemoWindow(&gui.show_implot_demo);
 		}
 
 		// Build the DrawData (EndFrame).
@@ -198,6 +209,7 @@ sdl2_loop(struct sdl2_program *p)
 
 	// Cleanup
 	u_var_remove_root(&gui);
+	ImPlot_DestroyContext(plot_ctx);
 	igImGui_ImplOpenGL3_Shutdown();
 	igImGui_ImplSDL2_Shutdown();
 	igDestroyContext(NULL);

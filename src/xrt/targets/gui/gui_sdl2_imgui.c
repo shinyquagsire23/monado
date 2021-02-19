@@ -32,7 +32,8 @@
  */
 struct gui_imgui
 {
-	bool show_demo_window;
+	bool show_imgui_demo;
+	bool show_implot_demo;
 	struct xrt_colour_rgb_f32 clear;
 };
 
@@ -48,7 +49,6 @@ gui_sdl2_imgui_loop(struct sdl2_program *p)
 {
 	// Need to call this before any other Imgui call.
 	igCreateContext(NULL);
-
 
 	// Local state
 	ImGuiIO *io = igGetIO();
@@ -71,7 +71,8 @@ gui_sdl2_imgui_loop(struct sdl2_program *p)
 	gui.clear.b = 0.60f;
 	u_var_add_root(&gui, "GUI Control", false);
 	u_var_add_rgb_f32(&gui, &gui.clear, "Clear Colour");
-	u_var_add_bool(&gui, &gui.show_demo_window, "Demo Window");
+	u_var_add_bool(&gui, &gui.show_imgui_demo, "Imgui Demo Window");
+	u_var_add_bool(&gui, &gui.show_implot_demo, "Implot Demo Window");
 	u_var_add_bool(&gui, &p->base.stopped, "Exit");
 
 	while (!p->base.stopped) {
@@ -101,8 +102,13 @@ gui_sdl2_imgui_loop(struct sdl2_program *p)
 		gui_scene_manager_render(&p->base);
 
 		// Handle this here.
-		if (gui.show_demo_window) {
-			igShowDemoWindow(&gui.show_demo_window);
+		if (gui.show_imgui_demo) {
+			igShowDemoWindow(&gui.show_imgui_demo);
+		}
+
+		// Handle this here.
+		if (gui.show_implot_demo) {
+			ImPlot_ShowDemoWindow(&gui.show_implot_demo);
 		}
 
 		// Build the DrawData (EndFrame).
