@@ -1174,9 +1174,8 @@ CIMGUI_API void ImPlot_SetImGuiContext(ImGuiContext* ctx)
 {
     return ImPlot::SetImGuiContext(ctx);
 }
-/*
+
 CIMGUI_API void ImPlot_ShowDemoWindow(bool* p_open)
 {
     return ImPlot::ShowDemoWindow(p_open);
 }
-*/

@@ -30,6 +30,7 @@ set(GUI_SOURCE_FILES
 	../../../external/imgui/imgui/imgui_widgets.cpp
 	../../../external/imgui/imgui/implot.cpp
 	../../../external/imgui/imgui/implot.h
+	../../../external/imgui/imgui/implot_demo.cpp
 	../../../external/imgui/imgui/implot_internal.h
 	../../../external/imgui/imgui/implot_items.cpp
 	../../../external/imgui/imgui/imstb_rectpack.h
