@@ -264,6 +264,8 @@ init_shm(struct ipc_server *s)
 			ism->hmd.views[1].display.w_pixels = xdev->hmd->views[1].display.w_pixels;
 			ism->hmd.views[1].display.h_pixels = xdev->hmd->views[1].display.h_pixels;
 			ism->hmd.views[1].fov = xdev->hmd->views[1].fov;
+
+			ism->hmd.blend_mode = xdev->hmd->blend_mode;
 		}
 
 		// Setup the tracking origin.

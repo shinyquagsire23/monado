@@ -170,15 +170,13 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 	}
 #endif
 
-	// clang-foramt off
-	ich->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
+	ich->base.hmd->blend_mode = ipc_c->ism->hmd.blend_mode;
 	ich->base.hmd->views[0].display.w_pixels = ipc_c->ism->hmd.views[0].display.w_pixels;
 	ich->base.hmd->views[0].display.h_pixels = ipc_c->ism->hmd.views[0].display.h_pixels;
 	ich->base.hmd->views[0].fov = ipc_c->ism->hmd.views[0].fov;
 	ich->base.hmd->views[1].display.w_pixels = ipc_c->ism->hmd.views[1].display.w_pixels;
 	ich->base.hmd->views[1].display.h_pixels = ipc_c->ism->hmd.views[1].display.h_pixels;
 	ich->base.hmd->views[1].fov = ipc_c->ism->hmd.views[1].fov;
-	// clang-foramt on
 
 	// Distortion information, fills in xdev->compute_distortion().
 	u_distortion_mesh_set_none(&ich->base);
