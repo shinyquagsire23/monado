@@ -847,7 +847,26 @@ _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 	return true;
 }
 
+static void
+broadcast_timings(struct ipc_server *s,
+                  uint64_t predicted_display_time_ns,
+                  uint64_t predicted_display_period_ns,
+                  uint64_t diff_ns)
+{
+	os_mutex_lock(&s->global_state_lock);
 
+	// Broadcast the new timing information to the helpers.
+	for (size_t i = 0; i < ARRAY_SIZE(s->threads); i++) {
+		struct u_rt_helper *urth = (struct u_rt_helper *)&s->threads[i].ics.urth;
+		u_rt_helper_new_sample(          //
+		    urth,                        //
+		    predicted_display_time_ns,   //
+		    predicted_display_period_ns, //
+		    diff_ns);                    //
+	}
+
+	os_mutex_unlock(&s->global_state_lock);
+}
 
 static int
 main_loop(struct ipc_server *s)
@@ -867,20 +886,7 @@ main_loop(struct ipc_server *s)
 		uint64_t now_ns = os_monotonic_get_ns();
 		uint64_t diff_ns = predicted_display_time_ns - now_ns;
 
-		os_mutex_lock(&s->global_state_lock);
-
-		// Broadcast the new timing information to the helpers.
-		for (size_t i = 0; i < ARRAY_SIZE(s->threads); i++) {
-			struct u_rt_helper *urth = (struct u_rt_helper *)&s->threads[i].ics.urth;
-			u_rt_helper_new_sample(          //
-			    urth,                        //
-			    predicted_display_time_ns,   //
-			    predicted_display_period_ns, //
-			    diff_ns);                    //
-		}
-
-		os_mutex_unlock(&s->global_state_lock);
-
+		broadcast_timings(s, predicted_display_time_ns, predicted_display_period_ns, diff_ns);
 
 		xrt_comp_begin_frame(xc, frame_id);
 		xrt_comp_layer_begin(xc, frame_id, 0);
