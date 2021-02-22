@@ -144,6 +144,14 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 }
 
 static void
+renderer_wait_gpu_idle(struct comp_renderer *r)
+{
+	os_mutex_lock(&r->c->vk.queue_mutex);
+	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
+	os_mutex_unlock(&r->c->vk.queue_mutex);
+}
+
+static void
 renderer_submit_queue(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->vk;
@@ -630,9 +638,7 @@ comp_renderer_draw(struct comp_renderer *r)
 	 *
 	 * This is done after a swap so isn't time critical.
 	 */
-	os_mutex_lock(&r->c->vk.queue_mutex);
-	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
-	os_mutex_unlock(&r->c->vk.queue_mutex);
+	renderer_wait_gpu_idle(r);
 }
 
 static void
