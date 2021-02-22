@@ -15,6 +15,7 @@
 #include "math/m_space.h"
 
 #include "util/u_misc.h"
+#include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
 
 #include "main/comp_layer_renderer.h"
@@ -148,6 +149,8 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 static void
 renderer_wait_gpu_idle(struct comp_renderer *r)
 {
+	COMP_TRACE_MARKER();
+
 	os_mutex_lock(&r->c->vk.queue_mutex);
 	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
 	os_mutex_unlock(&r->c->vk.queue_mutex);
@@ -156,6 +159,8 @@ renderer_wait_gpu_idle(struct comp_renderer *r)
 static void
 renderer_submit_queue(struct comp_renderer *r)
 {
+	COMP_TRACE_MARKER();
+
 	struct vk_bundle *vk = &r->c->vk;
 	VkResult ret;
 
@@ -365,6 +370,8 @@ renderer_create_fences(struct comp_renderer *r)
 static void
 renderer_get_view_projection(struct comp_renderer *r)
 {
+	COMP_TRACE_MARKER();
+
 	struct xrt_space_relation relation;
 
 	xrt_device_get_tracked_pose(r->c->xdev, XRT_INPUT_GENERIC_HEAD_POSE, r->c->last_next_display_time, &relation);
@@ -624,6 +631,8 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
 void
 comp_renderer_draw(struct comp_renderer *r)
 {
+	COMP_TRACE_MARKER();
+
 	struct comp_target *ct = r->c->target;
 	struct comp_compositor *c = r->c;
 
@@ -751,6 +760,8 @@ renderer_resize(struct comp_renderer *r)
 static void
 renderer_acquire_swapchain_image(struct comp_renderer *r)
 {
+	COMP_TRACE_MARKER();
+
 	VkResult ret;
 
 	ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &r->current_buffer);
@@ -772,6 +783,8 @@ renderer_acquire_swapchain_image(struct comp_renderer *r)
 static void
 renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_present_time_ns, uint64_t present_slop_ns)
 {
+	COMP_TRACE_MARKER();
+
 	VkResult ret;
 
 	ret = comp_target_present(r->c->target, r->queue, r->current_buffer, r->semaphores.render_complete,
@@ -821,11 +834,15 @@ renderer_destroy(struct comp_renderer *r)
 void
 comp_renderer_allocate_layers(struct comp_renderer *self, uint32_t num_layers)
 {
+	COMP_TRACE_MARKER();
+
 	comp_layer_renderer_allocate_layers(self->lr, num_layers);
 }
 
 void
 comp_renderer_destroy_layers(struct comp_renderer *self)
 {
+	COMP_TRACE_MARKER();
+
 	comp_layer_renderer_destroy_layers(self->lr);
 }

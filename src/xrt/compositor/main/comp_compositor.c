@@ -49,6 +49,7 @@
 #include "util/u_misc.h"
 #include "util/u_time.h"
 #include "util/u_debug.h"
+#include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
 
 #include "main/comp_compositor.h"
@@ -117,6 +118,8 @@ compositor_wait_frame(struct xrt_compositor *xc,
                       uint64_t *out_predicted_display_time_ns,
                       uint64_t *out_predicted_display_period_ns)
 {
+	COMP_TRACE_MARKER();
+
 	struct comp_compositor *c = comp_compositor(xc);
 
 	// A little bit easier to read.
@@ -340,6 +343,8 @@ compositor_layer_equirect2(struct xrt_compositor *xc,
 static xrt_result_t
 compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
+	COMP_TRACE_MARKER();
+
 	struct comp_compositor *c = comp_compositor(xc);
 
 	COMP_SPEW(c, "LAYER_COMMIT at %8.3fms", ts_ms());
@@ -444,6 +449,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 
 	// Now is a good point to garbage collect.
 	comp_compositor_garbage_collect(c);
+
 	return XRT_SUCCESS;
 }
 

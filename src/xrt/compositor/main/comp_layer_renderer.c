@@ -573,6 +573,8 @@ _render_pass_begin(struct vk_bundle *vk,
 static void
 _render_stereo(struct comp_layer_renderer *self, struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 {
+	COMP_TRACE_MARKER();
+
 	VkViewport viewport = {
 	    0.0f, 0.0f, self->extent.width, self->extent.height, 0.0f, 1.0f,
 	};
@@ -596,6 +598,8 @@ _render_stereo(struct comp_layer_renderer *self, struct vk_bundle *vk, VkCommand
 void
 comp_layer_renderer_draw(struct comp_layer_renderer *self)
 {
+	COMP_TRACE_MARKER();
+
 	struct vk_bundle *vk = self->vk;
 
 	VkCommandBuffer cmd_buffer;

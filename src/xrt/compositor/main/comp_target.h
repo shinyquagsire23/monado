@@ -14,6 +14,8 @@
 
 #include "vk/vk_helpers.h"
 
+#include "util/u_trace_marker.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -181,6 +183,8 @@ struct comp_target
 static inline bool
 comp_target_init_pre_vulkan(struct comp_target *ct)
 {
+	COMP_TRACE_MARKER();
+
 	return ct->init_pre_vulkan(ct);
 }
 
@@ -193,6 +197,8 @@ comp_target_init_pre_vulkan(struct comp_target *ct)
 static inline bool
 comp_target_init_post_vulkan(struct comp_target *ct, uint32_t preferred_width, uint32_t preferred_height)
 {
+	COMP_TRACE_MARKER();
+
 	return ct->init_post_vulkan(ct, preferred_width, preferred_height);
 }
 
@@ -210,6 +216,8 @@ comp_target_create_images(struct comp_target *ct,
                           VkColorSpaceKHR preferred_color_space,
                           VkPresentModeKHR present_mode)
 {
+	COMP_TRACE_MARKER();
+
 	ct->create_images(ct, preferred_width, preferred_height, preferred_color_format, preferred_color_space,
 	                  present_mode);
 }
@@ -223,6 +231,8 @@ comp_target_create_images(struct comp_target *ct,
 static inline VkResult
 comp_target_acquire(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index)
 {
+	COMP_TRACE_MARKER();
+
 	return ct->acquire(ct, semaphore, out_index);
 }
 
@@ -241,6 +251,8 @@ comp_target_present(struct comp_target *ct,
                     uint64_t present_slop_ns)
 
 {
+	COMP_TRACE_MARKER();
+
 	return ct->present(          //
 	    ct,                      //
 	    queue,                   //
@@ -259,6 +271,8 @@ comp_target_present(struct comp_target *ct,
 static inline void
 comp_target_flush(struct comp_target *ct)
 {
+	COMP_TRACE_MARKER();
+
 	ct->flush(ct);
 }
 
@@ -276,6 +290,8 @@ comp_target_calc_frame_timings(struct comp_target *ct,
                                uint64_t *out_present_slop_ns,
                                uint64_t *out_predicted_display_time_ns)
 {
+	COMP_TRACE_MARKER();
+
 	ct->calc_frame_timings(             //
 	    ct,                             //
 	    out_frame_id,                   //
@@ -295,6 +311,8 @@ comp_target_calc_frame_timings(struct comp_target *ct,
 static inline void
 comp_target_mark_wake_up(struct comp_target *ct, int64_t frame_id, uint64_t when_woke_ns)
 {
+	COMP_TRACE_MARKER();
+
 	ct->mark_timing_point(ct, COMP_TARGET_TIMING_POINT_WAKE_UP, frame_id, when_woke_ns);
 }
 
@@ -308,6 +326,8 @@ comp_target_mark_wake_up(struct comp_target *ct, int64_t frame_id, uint64_t when
 static inline void
 comp_target_mark_begin(struct comp_target *ct, int64_t frame_id, uint64_t when_began_ns)
 {
+	COMP_TRACE_MARKER();
+
 	ct->mark_timing_point(ct, COMP_TARGET_TIMING_POINT_BEGIN, frame_id, when_began_ns);
 }
 
@@ -321,6 +341,8 @@ comp_target_mark_begin(struct comp_target *ct, int64_t frame_id, uint64_t when_b
 static inline void
 comp_target_mark_submit(struct comp_target *ct, int64_t frame_id, uint64_t when_submitted_ns)
 {
+	COMP_TRACE_MARKER();
+
 	ct->mark_timing_point(ct, COMP_TARGET_TIMING_POINT_SUBMIT, frame_id, when_submitted_ns);
 }
 
@@ -333,6 +355,8 @@ comp_target_mark_submit(struct comp_target *ct, int64_t frame_id, uint64_t when_
 static inline VkResult
 comp_target_update_timings(struct comp_target *ct)
 {
+	COMP_TRACE_MARKER();
+
 	return ct->update_timings(ct);
 }
 
@@ -345,6 +369,8 @@ comp_target_update_timings(struct comp_target *ct)
 static inline void
 comp_target_set_title(struct comp_target *ct, const char *title)
 {
+	COMP_TRACE_MARKER();
+
 	ct->set_title(ct, title);
 }
 
