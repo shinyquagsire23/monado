@@ -15,7 +15,9 @@
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_gfx_gl.h"
 #include "xrt/xrt_gfx_gles.h"
+
 #include "util/u_debug.h"
+#include "util/u_trace_marker.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -41,6 +43,8 @@
 XrResult
 oxr_xrGetSystem(XrInstance instance, const XrSystemGetInfo *getInfo, XrSystemId *systemId)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetSystem");
@@ -64,6 +68,8 @@ oxr_xrGetSystem(XrInstance instance, const XrSystemGetInfo *getInfo, XrSystemId 
 XrResult
 oxr_xrGetSystemProperties(XrInstance instance, XrSystemId systemId, XrSystemProperties *properties)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetSystemProperties");
@@ -80,6 +86,8 @@ oxr_xrEnumerateViewConfigurations(XrInstance instance,
                                   uint32_t *viewConfigurationTypeCountOutput,
                                   XrViewConfigurationType *viewConfigurationTypes)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrEnumerateViewConfigurations");
@@ -97,6 +105,8 @@ oxr_xrEnumerateEnvironmentBlendModes(XrInstance instance,
                                      uint32_t *environmentBlendModeCountOutput,
                                      XrEnvironmentBlendMode *environmentBlendModes)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrEnumerateEnvironmentBlendModes");
@@ -120,6 +130,8 @@ oxr_xrGetViewConfigurationProperties(XrInstance instance,
                                      XrViewConfigurationType viewConfigurationType,
                                      XrViewConfigurationProperties *configurationProperties)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetViewConfigurationProperties");
@@ -137,6 +149,8 @@ oxr_xrEnumerateViewConfigurationViews(XrInstance instance,
                                       uint32_t *viewCountOutput,
                                       XrViewConfigurationView *views)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrEnumerateViewConfigurationViews");
@@ -160,6 +174,8 @@ oxr_xrGetOpenGLESGraphicsRequirementsKHR(XrInstance instance,
                                          XrSystemId systemId,
                                          XrGraphicsRequirementsOpenGLESKHR *graphicsRequirements)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetOpenGLESGraphicsRequirementsKHR");
@@ -194,6 +210,8 @@ oxr_xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance,
                                        XrSystemId systemId,
                                        XrGraphicsRequirementsOpenGLKHR *graphicsRequirements)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetOpenGLGraphicsRequirementsKHR");
@@ -230,6 +248,8 @@ oxr_xrGetVulkanInstanceExtensionsKHR(XrInstance instance,
                                      uint32_t *namesCountOutput,
                                      char *namesString)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetVulkanInstanceExtensionsKHR");
@@ -245,6 +265,8 @@ oxr_xrGetVulkanDeviceExtensionsKHR(XrInstance instance,
                                    uint32_t *namesCountOutput,
                                    char *namesString)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetVulkanDeviceExtensionsKHR");
@@ -263,6 +285,8 @@ oxr_xrGetVulkanGraphicsDeviceKHR(XrInstance instance,
                                  VkInstance vkInstance,
                                  VkPhysicalDevice *vkPhysicalDevice)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetVulkanGraphicsDeviceKHR");
@@ -294,6 +318,8 @@ oxr_xrGetVulkanGraphicsRequirementsKHR(XrInstance instance,
                                        XrSystemId systemId,
                                        XrGraphicsRequirementsVulkanKHR *graphicsRequirements)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetVulkanGraphicsRequirementsKHR");

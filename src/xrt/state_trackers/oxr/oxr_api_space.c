@@ -9,8 +9,10 @@
 
 #include "xrt/xrt_compiler.h"
 
-#include "math/m_api.h"
 #include "util/u_debug.h"
+#include "util/u_trace_marker.h"
+
+#include "math/m_api.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -28,6 +30,8 @@
 XrResult
 oxr_xrCreateActionSpace(XrSession session, const XrActionSpaceCreateInfo *createInfo, XrSpace *space)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess;
 	struct oxr_action *act;
 	struct oxr_logger log;
@@ -59,6 +63,8 @@ oxr_xrEnumerateReferenceSpaces(XrSession session,
                                uint32_t *spaceCountOutput,
                                XrReferenceSpaceType *spaces)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEnumerateReferenceSpaces");
@@ -70,6 +76,8 @@ oxr_xrEnumerateReferenceSpaces(XrSession session,
 XrResult
 oxr_xrGetReferenceSpaceBoundsRect(XrSession session, XrReferenceSpaceType referenceSpaceType, XrExtent2Df *bounds)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetReferenceSpaceBoundsRect");
@@ -97,6 +105,8 @@ oxr_xrGetReferenceSpaceBoundsRect(XrSession session, XrReferenceSpaceType refere
 XrResult
 oxr_xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo *createInfo, XrSpace *out_space)
 {
+	OXR_TRACE_MARKER();
+
 	XrResult ret;
 	struct oxr_session *sess;
 	struct oxr_space *spc = NULL;
@@ -118,6 +128,8 @@ oxr_xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo *
 XrResult
 oxr_xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation *location)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_space *spc;
 	struct oxr_space *baseSpc;
 	struct oxr_logger log;
@@ -137,6 +149,8 @@ oxr_xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation
 XrResult
 oxr_xrDestroySpace(XrSpace space)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_space *spc;
 	struct oxr_logger log;
 	OXR_VERIFY_SPACE_AND_INIT_LOG(&log, space, spc, "xrDestroySpace");

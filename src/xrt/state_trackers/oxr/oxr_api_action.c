@@ -12,6 +12,7 @@
 #include "oxr_handle.h"
 
 #include "util/u_debug.h"
+#include "util/u_trace_marker.h"
 
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
@@ -31,6 +32,8 @@
 XrResult
 oxr_xrSyncActions(XrSession session, const XrActionsSyncInfo *syncInfo)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrSyncActions");
@@ -57,6 +60,8 @@ oxr_xrSyncActions(XrSession session, const XrActionsSyncInfo *syncInfo)
 XrResult
 oxr_xrAttachSessionActionSets(XrSession session, const XrSessionActionSetsAttachInfo *bindInfo)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrAttachSessionActionSets");
@@ -86,6 +91,8 @@ XrResult
 oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
                                         const XrInteractionProfileSuggestedBinding *suggestedBindings)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrSuggestInteractionProfileBindings");
@@ -174,6 +181,8 @@ oxr_xrGetCurrentInteractionProfile(XrSession session,
                                    XrPath topLevelUserPath,
                                    XrInteractionProfileState *interactionProfile)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst = NULL;
 	struct oxr_session *sess = NULL;
 	struct oxr_logger log;
@@ -224,6 +233,8 @@ oxr_xrGetInputSourceLocalizedName(XrSession session,
                                   uint32_t *bufferCountOutput,
                                   char *buffer)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst = NULL;
 	struct oxr_session *sess;
 	struct oxr_logger log;
@@ -276,6 +287,8 @@ oxr_xrGetInputSourceLocalizedName(XrSession session,
 XrResult
 oxr_xrCreateActionSet(XrInstance instance, const XrActionSetCreateInfo *createInfo, XrActionSet *actionSet)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_action_set *act_set = NULL;
 	struct oxr_instance *inst = NULL;
 	struct u_hashset_item *d = NULL;
@@ -325,6 +338,8 @@ oxr_xrCreateActionSet(XrInstance instance, const XrActionSetCreateInfo *createIn
 XrResult
 oxr_xrDestroyActionSet(XrActionSet actionSet)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_action_set *act_set;
 	struct oxr_logger log;
 	OXR_VERIFY_ACTIONSET_AND_INIT_LOG(&log, actionSet, act_set, "xrDestroyActionSet");
@@ -342,6 +357,8 @@ oxr_xrDestroyActionSet(XrActionSet actionSet)
 XrResult
 oxr_xrCreateAction(XrActionSet actionSet, const XrActionCreateInfo *createInfo, XrAction *action)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_action_set *act_set;
 	struct u_hashset_item *d = NULL;
 	struct oxr_action *act = NULL;
@@ -405,6 +422,8 @@ oxr_xrCreateAction(XrActionSet actionSet, const XrActionCreateInfo *createInfo, 
 XrResult
 oxr_xrDestroyAction(XrAction action)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_action *act;
 	struct oxr_logger log;
 	OXR_VERIFY_ACTION_AND_INIT_LOG(&log, action, act, "xrDestroyAction");
@@ -415,6 +434,8 @@ oxr_xrDestroyAction(XrAction action)
 XrResult
 oxr_xrGetActionStateBoolean(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStateBoolean *data)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_subaction_paths subaction_paths = {0};
@@ -441,6 +462,8 @@ oxr_xrGetActionStateBoolean(XrSession session, const XrActionStateGetInfo *getIn
 XrResult
 oxr_xrGetActionStateFloat(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStateFloat *data)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_subaction_paths subaction_paths = {0};
@@ -467,6 +490,8 @@ oxr_xrGetActionStateFloat(XrSession session, const XrActionStateGetInfo *getInfo
 XrResult
 oxr_xrGetActionStateVector2f(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStateVector2f *data)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_subaction_paths subaction_paths = {0};
@@ -493,6 +518,8 @@ oxr_xrGetActionStateVector2f(XrSession session, const XrActionStateGetInfo *getI
 XrResult
 oxr_xrGetActionStatePose(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStatePose *data)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_subaction_paths subaction_paths = {0};
@@ -523,6 +550,8 @@ oxr_xrEnumerateBoundSourcesForAction(XrSession session,
                                      uint32_t *sourceCountOutput,
                                      XrPath *sources)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_logger log;
@@ -552,6 +581,8 @@ oxr_xrApplyHapticFeedback(XrSession session,
                           const XrHapticActionInfo *hapticActionInfo,
                           const XrHapticBaseHeader *hapticEvent)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_subaction_paths subaction_paths = {0};
@@ -578,6 +609,8 @@ oxr_xrApplyHapticFeedback(XrSession session,
 XrResult
 oxr_xrStopHapticFeedback(XrSession session, const XrHapticActionInfo *hapticActionInfo)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_session *sess = NULL;
 	struct oxr_action *act = NULL;
 	struct oxr_subaction_paths subaction_paths = {0};

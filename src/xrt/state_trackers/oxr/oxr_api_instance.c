@@ -10,6 +10,7 @@
 #include "xrt/xrt_compiler.h"
 
 #include "util/u_debug.h"
+#include "util/u_trace_marker.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -39,6 +40,8 @@ oxr_xrEnumerateInstanceExtensionProperties(const char *layerName,
                                            uint32_t *propertyCountOutput,
                                            XrExtensionProperties *properties)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_logger log;
 	oxr_log_init(&log, "xrEnumerateInstanceExtensionProperties");
 
@@ -94,6 +97,8 @@ oxr_check_android_extensions(struct oxr_logger *log, const XrInstanceCreateInfo 
 XrResult
 oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo, XrInstance *out_instance)
 {
+	OXR_TRACE_MARKER();
+
 	XrResult ret;
 	struct oxr_logger log;
 	oxr_log_init(&log, "xrCreateInstance");
@@ -160,6 +165,8 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo, XrInstance *out_ins
 XrResult
 oxr_xrDestroyInstance(XrInstance instance)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrDestroyInstance");
@@ -170,6 +177,8 @@ oxr_xrDestroyInstance(XrInstance instance)
 XrResult
 oxr_xrGetInstanceProperties(XrInstance instance, XrInstanceProperties *instanceProperties)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetInstanceProperties");
@@ -180,6 +189,8 @@ oxr_xrGetInstanceProperties(XrInstance instance, XrInstanceProperties *instanceP
 XrResult
 oxr_xrPollEvent(XrInstance instance, XrEventDataBuffer *eventData)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrPollEvent");
@@ -191,6 +202,8 @@ oxr_xrPollEvent(XrInstance instance, XrEventDataBuffer *eventData)
 XrResult
 oxr_xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RESULT_STRING_SIZE])
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrResultToString");
@@ -211,6 +224,8 @@ oxr_xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RES
 XrResult
 oxr_xrStructureTypeToString(XrInstance instance, XrStructureType value, char buffer[XR_MAX_STRUCTURE_NAME_SIZE])
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrStructureTypeToString");
@@ -229,6 +244,8 @@ oxr_xrStructureTypeToString(XrInstance instance, XrStructureType value, char buf
 XrResult
 oxr_xrStringToPath(XrInstance instance, const char *pathString, XrPath *out_path)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	XrResult ret;
@@ -254,6 +271,8 @@ XrResult
 oxr_xrPathToString(
     XrInstance instance, XrPath path, uint32_t bufferCapacityInput, uint32_t *bufferCountOutput, char *buffer)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	const char *str;
@@ -283,6 +302,8 @@ oxr_xrPathToString(
 XrResult
 oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance, const struct timespec *timespecTime, XrTime *time)
 {
+	OXR_TRACE_MARKER();
+
 	//! @todo do we need to check and see if this extension was
 	//! enabled first?
 	struct oxr_instance *inst;
@@ -297,6 +318,8 @@ oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance, const struct timespec *t
 XrResult
 oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance, XrTime time, struct timespec *timespecTime)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrConvertTimeToTimespecTimeKHR");
