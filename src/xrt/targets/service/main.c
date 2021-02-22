@@ -8,8 +8,13 @@
  * @ingroup ipc
  */
 
+#include "util/u_trace_marker.h"
 
 #include "target_lists.h"
+
+
+// Insert the on load constructor to init trace marker.
+U_TRACE_TARGET_INIT()
 
 int
 ipc_server_main(int argc, char *argv[]);
