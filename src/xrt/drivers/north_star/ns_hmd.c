@@ -64,13 +64,7 @@ ns_hmd_destroy(struct xrt_device *xdev)
 
 static void
 ns_hmd_update_inputs(struct xrt_device *xdev)
-{
-	struct ns_hmd *ns = ns_hmd(xdev);
-
-	if (ns->tracker != NULL) {
-		xrt_device_update_inputs(ns->tracker);
-	}
-}
+{}
 
 /*
  *
@@ -88,13 +82,6 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
 
 	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
 		NS_ERROR(ns, "unknown input name");
-		return;
-	}
-
-	// If the tracking device is created use it.
-	if (ns->tracker != NULL) {
-		enum xrt_input_name tracker_name = XRT_INPUT_GENERIC_TRACKER_POSE;
-		xrt_device_get_tracked_pose(ns->tracker, tracker_name, at_timestamp_ns, out_relation);
 		return;
 	}
 
@@ -560,23 +547,10 @@ ns_hmd_create(const char *config_path)
 		ns->base.compute_distortion = ns_mesh_calc;
 	}
 
-	// If built, try to load the realsense tracker.
-#ifdef XRT_BUILD_DRIVER_RS
-	ns->tracker = rs_6dof_create();
-	if (ns->tracker == NULL) {
-		NS_ERROR(ns, "Couldn't create realsense device!");
-	} else {
-		rs_update_offset(t265_to_nose_bridge, ns->tracker);
-	}
-#endif
 	// Setup variable tracker.
 	u_var_add_root(ns, "North Star", true);
 	u_var_add_pose(ns, &ns->pose, "pose");
 	ns->base.orientation_tracking_supported = true;
-	ns->base.position_tracking_supported = ns->tracker != NULL;
-	if (ns->tracker) {
-		ns->base.tracking_origin->type = ns->tracker->tracking_origin->type;
-	}
 	ns->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	return &ns->base;

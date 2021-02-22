@@ -121,8 +121,6 @@ struct ns_hmd
 
 	struct ns_leap leap_config; // will be NULL if is_v2
 
-	struct xrt_device *tracker;
-
 	enum u_logging_level ll;
 	bool is_v2; // True if V2, false if V1. If we ever get a v3 this should
 	            // be an enum or something
