@@ -30,8 +30,8 @@ cli_print_help(int argc, const char **argv)
 	P("  test       - List found devices, for prober testing.\n");
 	P("  probe      - Just probe and then exit.\n");
 	P("  lighthouse - Control the power of lighthouses [on|off].\n");
-	P("  calibrate  - Calibrate a camera and save config (not implemented "
-	  "yet).\n");
+	P("  calibrate  - Calibrate a camera and save config (not implemented yet).\n");
+	P("  trace      - Tracing functionality.\n");
 
 	return 1;
 }
@@ -57,5 +57,10 @@ main(int argc, const char **argv)
 	if (strcmp(argv[1], "lighthouse") == 0) {
 		return cli_cmd_lighthouse(argc, argv);
 	}
+#ifndef XRT_OS_WINDOWS
+	if (strcmp(argv[1], "trace") == 0) {
+		return cli_cmd_trace(argc, argv);
+	}
+#endif // !XRT_OS_WINDOWS
 	return cli_print_help(argc, argv);
 }

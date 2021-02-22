@@ -14,6 +14,13 @@ set(SOURCE_FILES
 	)
 
 if(NOT WIN32)
+	# Lots of linux assumptions in this file.
+	list(APPEND SOURCE_FILES
+		cli_cmd_trace.c
+		)
+endif()
+
+if(NOT WIN32)
 	# No getline on Windows, so until we have a portable impl
 	list(APPEND SOURCE_FILES
 		cli_cmd_calibrate.c
