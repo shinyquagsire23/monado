@@ -19,6 +19,7 @@
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "util/u_trace_marker.h"
 
 #include "shared/ipc_shmem.h"
 #include "server/ipc_server.h"
@@ -746,6 +747,8 @@ _overlay_sort_func(const void *a, const void *b)
 static bool
 _update_layers(struct ipc_server *s, struct xrt_compositor *xc)
 {
+	IPC_TRACE_MARKER();
+
 	struct _z_sort_data z_data[IPC_MAX_CLIENTS];
 
 	// initialise, and fill in overlay app data
@@ -834,6 +837,8 @@ broadcast_timings(struct ipc_server *s,
                   uint64_t predicted_display_period_ns,
                   uint64_t diff_ns)
 {
+	IPC_TRACE_MARKER();
+
 	os_mutex_lock(&s->global_state_lock);
 
 	// Broadcast the new timing information to the helpers.

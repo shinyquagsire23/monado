@@ -10,6 +10,7 @@
 #include "xrt/xrt_gfx_native.h"
 
 #include "util/u_misc.h"
+#include "util/u_trace_marker.h"
 
 #include "server/ipc_server.h"
 #include "ipc_server_generated.h"
@@ -137,6 +138,8 @@ ipc_handle_compositor_wait_frame(volatile struct ipc_client_state *ics,
                                  uint64_t *predicted_display_period,
                                  uint64_t *min_display_period)
 {
+	IPC_TRACE_MARKER();
+
 	os_mutex_lock(&ics->server->global_state_lock);
 
 	u_rt_helper_predict((struct u_rt_helper *)&ics->urth, out_frame_id, predicted_display_time, wake_up_time,

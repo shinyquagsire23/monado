@@ -19,6 +19,7 @@
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "util/u_trace_marker.h"
 
 #include "shared/ipc_shmem.h"
 #include "server/ipc_server.h"
@@ -197,6 +198,8 @@ handle_listen(struct ipc_server *vs, struct ipc_server_mainloop *ml)
 void
 ipc_server_mainloop_poll(struct ipc_server *vs, struct ipc_server_mainloop *ml)
 {
+	IPC_TRACE_MARKER();
+
 	int epoll_fd = ml->epoll_fd;
 
 	struct epoll_event events[NUM_POLL_EVENTS] = {0};
@@ -226,6 +229,8 @@ ipc_server_mainloop_poll(struct ipc_server *vs, struct ipc_server_mainloop *ml)
 int
 ipc_server_mainloop_init(struct ipc_server_mainloop *ml)
 {
+	IPC_TRACE_MARKER();
+
 	int ret = init_listen_socket(ml);
 	if (ret < 0) {
 		ipc_server_mainloop_deinit(ml);
@@ -243,6 +248,8 @@ ipc_server_mainloop_init(struct ipc_server_mainloop *ml)
 void
 ipc_server_mainloop_deinit(struct ipc_server_mainloop *ml)
 {
+	IPC_TRACE_MARKER();
+
 	if (ml == NULL) {
 		return;
 	}

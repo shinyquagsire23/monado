@@ -13,6 +13,7 @@
 #include "xrt/xrt_defines.h"
 
 #include "util/u_misc.h"
+#include "util/u_trace_marker.h"
 
 #include "os/os_time.h"
 
@@ -373,6 +374,8 @@ ipc_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_
 static xrt_result_t
 ipc_compositor_end_session(struct xrt_compositor *xc)
 {
+	IPC_TRACE_MARKER();
+
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	IPC_TRACE(icc->ipc_c, "Compositor end session.");
@@ -388,6 +391,7 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
                           uint64_t *out_predicted_display_time,
                           uint64_t *out_predicted_display_period)
 {
+	IPC_TRACE_MARKER();
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	uint64_t wake_up_time_ns = 0;
