@@ -250,21 +250,16 @@ public class Client implements ServiceConnection {
             return;
         }
 
-        Thread thread = new Thread(() -> {
-            try {
-                while(true) {
-                    monado.connect(theirs);
-                }
-            } catch (RemoteException e) {
-                e.printStackTrace();
-                Log.e(TAG, "could not call IMonado.connect: " + e.toString());
-                handleFailure();
-            }
-        });
-        thread.start();
-
+        try {
+            monado.connect(theirs);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            Log.e(TAG, "could not connect to service: " + e.toString());
+            handleFailure();
+            return;
+        }
         synchronized (connectSync) {
-            Log.e(TAG, String.format("Notifing connectSync with fd %d", ours.getFd()));
+            Log.e(TAG, String.format("Notifying connectSync with fd %d", ours.getFd()));
             fd = ours;
             connectSync.notify();
         }
