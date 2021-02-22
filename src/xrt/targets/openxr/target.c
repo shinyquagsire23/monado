@@ -8,6 +8,12 @@
 
 #include "xrt/xrt_config_build.h"
 
+#include "util/u_trace_marker.h"
+
+// Insert the on load constructor to init trace marker.
+U_TRACE_TARGET_INIT()
+
+
 #ifdef XRT_FEATURE_SERVICE
 
 #include "xrt/xrt_instance.h"
@@ -19,6 +25,8 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 int
 xrt_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_xinst)
 {
+	XRT_TRACE_MARKER();
+
 	return ipc_instance_create(i_info, out_xinst);
 }
 
