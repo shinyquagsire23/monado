@@ -116,6 +116,7 @@ endif()
 option(BUILD_TESTING "Enable building of the test suite?" ON)
 
 option(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" ON)
+option(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" OFF)
 
 cmake_dependent_option(CMAKE_INTERPROCEDURAL_OPTIMIZATION "Enable inter-procedural (link-time) optimization" OFF "HAS_IPO" OFF)
 cmake_dependent_option(XRT_HAVE_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND AND WAYLAND_SCANNER_FOUND AND WAYLAND_PROTOCOLS_FOUND" OFF)
@@ -335,6 +336,7 @@ message(STATUS "#    FEATURE_OPENXR_LAYER_EQUIRECT2:       ${XRT_FEATURE_OPENXR_
 message(STATUS "#    FEATURE_OPENXR_LAYER_EQUIRECT1:       ${XRT_FEATURE_OPENXR_LAYER_EQUIRECT1}")
 message(STATUS "#    FEATURE_STEAMVR_PLUGIN:               ${XRT_FEATURE_STEAMVR_PLUGIN}")
 message(STATUS "#    FEATURE_COLOR_LOG:                    ${XRT_FEATURE_COLOR_LOG}")
+message(STATUS "#    FEATURE_TRACING:                      ${XRT_FEATURE_TRACING}")
 message(STATUS "#")
 message(STATUS "#    DRIVER_ANDROID:      ${XRT_BUILD_DRIVER_ANDROID}")
 message(STATUS "#    DRIVER_ARDUINO:      ${XRT_BUILD_DRIVER_ARDUINO}")
