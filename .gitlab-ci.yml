@@ -4,29 +4,39 @@
 variables:
   FDO_UPSTREAM_REPO: monado/monado
 
-.templates_sha: &templates_sha 322bf2b8f29b6491caeb13861201e96969ddc169
+.templates_sha: &templates_sha db8eb22cd1abb036560faaebd36a38565a3ebda2
 
 .package_only_branch: &package_only_branch master
 
 # Variables listing packages for Debian-based distros
 .monado.variables.debian-based-packages:
   variables:
-    CORE_REQUIRED_PACKAGES: "build-essential git wget unzip cmake meson ninja-build libeigen3-dev curl patch python3 pkg-config libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev  libudev-dev"
-    FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev libdbus-1-dev"
-    PACKAGING_PACKAGES: "devscripts debhelper osc osc-plugins-dput dput-ng gettext-base markdown"
+    # Packages required for build and some other basic jobs
+    CORE_REQUIRED_PACKAGES: "build-essential git wget unzip cmake meson ninja-build libeigen3-dev curl patch python3 pkg-config libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libudev-dev"
+
+    # These are optional packages, that we're building against to ensure we build as much code as possible
+    FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev libdbus-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsystemd-dev"
+
+    # Only used for building packages
+    PACKAGING_PACKAGES: "devscripts debhelper dput-ng gettext-base markdown"
+
+    # Used for ancillary "not compilation" jobs/features, like docs, changelogs, formatting, etc.
     TOOLS_REQUIRED_PACKAGES: "clang-format-7 codespell doxygen graphviz python3-pip python3-click"
+
+    # The NDK builder uses only these packages
+    NDK_PACKAGES: "git wget unzip cmake meson ninja-build libeigen3-dev python3 pkg-config ca-certificates glslang-tools"
 
 # Variables for build and usage of Debian 10 (Buster) image
 .monado.variables.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2020-07-10.0"
+    FDO_DISTRIBUTION_TAG: "2021-02-23.0"
 
 # Variables for build and usage of Ubuntu 20.04 LTS (Focal) image
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2020-07-10.0"
+    FDO_DISTRIBUTION_TAG: "2021-02-23.0"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.variables.debian:buster-ndk:
@@ -117,7 +127,7 @@ ndk:container_prep:
   variables:
     # Repo suffix is set in .monado.variables.debian:buster-ndk
     # a list of packages to install
-    FDO_DISTRIBUTION_PACKAGES: "git wget unzip cmake meson ninja-build libeigen3-dev python3 pkg-config ca-certificates glslang-tools"
+    FDO_DISTRIBUTION_PACKAGES: "${NDK_PACKAGES}"
 
 # Style check job
 format-and-spellcheck:
@@ -273,7 +283,7 @@ debian:cmake:32bit:
     # Prep the source tree
     - git clean -dfx
     - git merge origin/${PACKAGE_BRANCH} --no-commit
-    - FULLNAME="Monado CI <ryan.pavlik@collabora.com>" debian/extra/prepare-commit-package.sh ${CI_COMMIT_SHA} 1~${BACKPORT_SUFFIX}~ci$(date --utc "+%Y%m%d")
+    - DEBFULLNAME="Monado CI" DEBEMAIL="ryan.pavlik@collabora.com" debian/extra/prepare-commit-package.sh ${CI_COMMIT_SHA} 1~${BACKPORT_SUFFIX}~ci$(date --utc "+%Y%m%d")
     # Build the package
     - debuild -uc -us
     # Use dput-ng to move the package-related files into some artifacts.
