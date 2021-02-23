@@ -117,6 +117,8 @@ set(UTIL_SOURCE_FILES
 	util/u_frame.c
 	util/u_frame.h
 	util/u_git_tag.h
+	util/u_hand_tracking.c
+	util/u_hand_tracking.h
 	util/u_handles.c
 	util/u_handles.h
 	util/u_hashmap.cpp
@@ -141,8 +143,6 @@ set(UTIL_SOURCE_FILES
 	util/u_timing_render.h
 	util/u_var.cpp
 	util/u_var.h
-	util/u_hand_tracking.c
-	util/u_hand_tracking.h
 	)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/util/u_git_tag.c.in" "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c" @ONLY)
