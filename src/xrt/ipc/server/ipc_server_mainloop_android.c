@@ -87,10 +87,22 @@ handle_listen(struct ipc_server *vs, struct ipc_server_mainloop *ml)
 {
 	int newfd = 0;
 	if (read(ml->pipe_read, &newfd, sizeof(newfd)) == sizeof(newfd)) {
-		ipc_server_start_client_listener_thread(vs, newfd);
 
-		// Release the thread that gave us this fd.
 		pthread_mutex_lock(&ml->accept_mutex);
+		// Don't overwrite some client's notification: wait till this goes back to 0.
+		while (ml->last_accepted_fd != 0) {
+			int ret = pthread_cond_wait(&ml->accept_cond, &ml->accept_mutex);
+			if (ret < 0) {
+				U_LOG_E("pthread_cond_wait failed with '%i', rejecting client fd '%i' and failing.",
+				        ret, newfd);
+				close(newfd);
+				pthread_mutex_unlock(&ml->accept_mutex);
+				ipc_server_handle_failure(vs);
+				return;
+			}
+		}
+		// When we get here, everybody we've tried to notify has received their notification.
+		// Release the thread that gave us this fd.
 		ml->last_accepted_fd = newfd;
 		pthread_cond_broadcast(&ml->accept_cond);
 		pthread_mutex_unlock(&ml->accept_mutex);
