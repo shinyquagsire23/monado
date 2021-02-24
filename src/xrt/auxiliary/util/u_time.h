@@ -53,15 +53,15 @@ typedef int64_t timepoint_ns;
 typedef int64_t time_duration_ns;
 
 /*!
- * Convert nanoseconds duration to float seconds.
+ * Convert nanoseconds duration to double seconds.
  *
  * @see timepoint_ns
  * @ingroup aux_util
  */
-static inline float
+static inline double
 time_ns_to_s(time_duration_ns ns)
 {
-	return (float)(ns) / (float)U_1_000_000_000;
+	return (double)(ns) / (double)U_1_000_000_000;
 }
 
 /*!
