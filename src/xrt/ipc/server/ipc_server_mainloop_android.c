@@ -86,31 +86,19 @@ static void
 handle_listen(struct ipc_server *vs, struct ipc_server_mainloop *ml)
 {
 	int newfd = 0;
+	pthread_mutex_lock(&ml->accept_mutex);
 	if (read(ml->pipe_read, &newfd, sizeof(newfd)) == sizeof(newfd)) {
-
-		pthread_mutex_lock(&ml->accept_mutex);
-		// Don't overwrite some client's notification: wait till this goes back to 0.
-		while (ml->last_accepted_fd != 0) {
-			int ret = pthread_cond_wait(&ml->accept_cond, &ml->accept_mutex);
-			if (ret < 0) {
-				U_LOG_E("pthread_cond_wait failed with '%i', rejecting client fd '%i' and failing.",
-				        ret, newfd);
-				close(newfd);
-				pthread_mutex_unlock(&ml->accept_mutex);
-				ipc_server_handle_failure(vs);
-				return;
-			}
-		}
-		// When we get here, everybody we've tried to notify has received their notification.
+		// client_push_mutex should prevent dropping acknowledgements
+		assert(ml->last_accepted_fd == 0);
 		// Release the thread that gave us this fd.
 		ml->last_accepted_fd = newfd;
 		pthread_cond_broadcast(&ml->accept_cond);
-		pthread_mutex_unlock(&ml->accept_mutex);
 	} else {
 		U_LOG_E("error on pipe read");
 		ipc_server_handle_failure(vs);
 		return;
 	}
+	pthread_mutex_unlock(&ml->accept_mutex);
 }
 
 #define NUM_POLL_EVENTS 8
@@ -190,6 +178,10 @@ ipc_server_mainloop_deinit(struct ipc_server_mainloop *ml)
 int
 ipc_server_mainloop_add_fd(struct ipc_server *vs, struct ipc_server_mainloop *ml, int newfd)
 {
+	// Take the client push lock here, serializing clients attempting to connect.
+	// This one won't be unlocked when waiting on the condition variable, ensuring we keep other clients out.
+	pthread_mutex_lock(&ml->client_push_mutex);
+
 	// Take the lock here, so we don't accidentally miss our fd being accepted.
 	pthread_mutex_lock(&ml->accept_mutex);
 
@@ -197,8 +189,7 @@ ipc_server_mainloop_add_fd(struct ipc_server *vs, struct ipc_server_mainloop *ml
 	int ret = write(ml->pipe_write, &newfd, sizeof(newfd));
 	if (ret < 0) {
 		U_LOG_E("write to pipe failed with '%i'.", ret);
-		pthread_mutex_unlock(&ml->accept_mutex);
-		return ret;
+		goto exit;
 	}
 
 	// Normal looping on the condition variable's condition.
@@ -206,12 +197,20 @@ ipc_server_mainloop_add_fd(struct ipc_server *vs, struct ipc_server_mainloop *ml
 		ret = pthread_cond_wait(&ml->accept_cond, &ml->accept_mutex);
 		if (ret < 0) {
 			U_LOG_E("pthread_cond_wait failed with '%i'.", ret);
-			pthread_mutex_unlock(&ml->accept_mutex);
-			return ret;
+			goto exit;
 		}
 	}
-	// OK, we have now been accepted. Zero out the last accepted fd to avoid confusing any other thread.
-	ml->last_accepted_fd = 0;
+	if (ml->last_accepted_fd == SHUTTING_DOWN) {
+		// we actually didn't hand off our client, we should error out.
+		U_LOG_W("server was shutting down.");
+		ret = -1;
+	} else {
+		// OK, we have now been accepted. Zero out the last accepted fd.
+		ml->last_accepted_fd = 0;
+		ret = 0;
+	}
+exit:
 	pthread_mutex_unlock(&ml->accept_mutex);
-	return 0;
+	pthread_mutex_unlock(&ml->client_push_mutex);
+	return ret;
 }

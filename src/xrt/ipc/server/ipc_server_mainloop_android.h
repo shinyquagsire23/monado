@@ -17,6 +17,9 @@ extern "C" {
 
 /*!
  * Pass an fd for a new client to the mainloop.
+ *
+ * @see ipc_design
+ * @public @memberof ipc_server_mainloop
  */
 int
 ipc_server_mainloop_add_fd(struct ipc_server *vs, struct ipc_server_mainloop *ml, int newfd);

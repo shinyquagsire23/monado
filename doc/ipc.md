@@ -134,17 +134,35 @@ We have the following design goals/constraints:
   - The mainloop is high rate (compositor rate) and new client connections are
     relatively infrequent.
 
-The IPC service creates a pipe as well as some state variables, a mutex, and a
-condition variable. When the JVM Service code has a new client, it calls
-`ipc_server_mainloop_add_fd()` to pass the fd in. It writes the FD number to the
-pipe, then waits on the condition variable to see either that number or the
-special "shutting down" sentinel value in the `last_accepted_fd` variable. If it
-sees the fd number, that indicates that the other side of the communication (the
-mainloop) has taken ownership of the fd and will handle closing it. If it sees
-the sentinel value, or has an error at some point, it assumes that ownership is
-retained and it should close the fd itself.
+The IPC service creates a pipe as well as some state variables, two mutexes, and a
+condition variable.
+
+When the JVM Service code has a new client, it calls
+`ipc_server_mainloop_add_fd()` to pass the FD in. It takes two mutexes, in
+order: `ipc_server_mainloop::client_push_mutex` and
+`ipc_server_mainloop::accept_mutex`. The purpose of
+`ipc_server_mainloop::client_push_mutex` is to allow only one client into the
+client-acceptance handshake at a time, so that no acknowledgement of client
+accept is lost. Once those two mutexes are locked,
+`ipc_server_mainloop_add_fd()` writes the FD number to the pipe. Then, it waits
+on the condition variable (releasing `accept_mutex`) to see either that FD
+number or the special "shutting down" sentinel value in the `last_accepted_fd`
+variable. If it sees the FD number, that indicates that the other side of the
+communication (the mainloop) has taken ownership of the FD and will handle
+closing it. If it sees the sentinel value, or has an error at some point, it
+assumes that ownership is retained and it should close the FD itself.
 
 The other side of the communication works as follows: epoll is used to check if
-there is new data waiting on the pipe. If so, the lock is taken, and an fd
-number is read from the pipe. A client thread is launched for that fd, then the
-`last_accepted_fd` variable is updated and the condition variable signalled.
+there is new data waiting on the pipe. If so, the
+`ipc_server_mainloop::accept_mutex` lock is taken, and an FD number is read from
+the pipe. A client thread is launched for that FD, then the `last_accepted_fd`
+variable is updated and the `ipc_server_mainloop::accept_cond` condition
+variable signalled.
+
+The initial plan required that the server also wait on
+`ipc_server_mainloop::accept_cond` for the `last_accepted_fd` to be reset back
+to `0` by the acknowledged client, thus preventing losing acknowledgements.
+However, it is undesirable for the clients to be able to block the
+compositor/server, so this wait was considered not acceptable. Instead, the
+`ipc_server_mainloop::client_push_mutex` is used so that at most one
+un-acknowledged client may have written to the pipe at any given time.

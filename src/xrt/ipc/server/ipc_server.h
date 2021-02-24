@@ -154,30 +154,81 @@ struct ipc_device
  * Contents are essentially implementation details, but are listed in full here so they may be included by value in the
  * main ipc_server struct.
  *
+ * @see ipc_design
+ *
  * @ingroup ipc_server
  */
 struct ipc_server_mainloop
 {
-#if defined(XRT_OS_ANDROID)
+#if defined(XRT_OS_ANDROID) || defined(XRT_DOXYGEN)
+	/*!
+	 * @name Android Mainloop Members
+	 * @{
+	 */
 	//! For waiting on various events in the main thread.
 	int epoll_fd;
 
 	//! File descriptor for the read end of our pipe for submitting new clients
 	int pipe_read;
 
-	//! File descriptor for the write end of our pipe for submitting new clients
+	/*!
+	 * File descriptor for the write end of our pipe for submitting new clients
+	 *
+	 * Must hold client_push_mutex while writing.
+	 */
 	int pipe_write;
 
-	//! The last client fd we accepted, to unblock the right client.
+	/*!
+	 * Mutex for being able to register oneself as a new client.
+	 *
+	 * Locked only by threads in `ipc_server_mainloop_add_fd()`.
+	 *
+	 * This must be locked first, and kept locked the entire time a client is attempting to register and wait for
+	 * confirmation. It ensures no acknowledgements of acceptance are lost and moves the overhead of ensuring this
+	 * to the client thread.
+	 */
+	pthread_mutex_t client_push_mutex;
+
+
+	/*!
+	 * The last client fd we accepted, to acknowledge client acceptance.
+	 *
+	 * Also used as a sentinel during shutdown.
+	 *
+	 * Must hold accept_mutex while writing.
+	 */
 	int last_accepted_fd;
 
-	//! Mutex for accepting clients
-	pthread_mutex_t accept_mutex;
-
-	//! Condition variable for accepting clients
+	/*!
+	 * Condition variable for accepting clients.
+	 *
+	 * Signalled when @ref last_accepted_fd is updated.
+	 *
+	 * Associated with @ref accept_mutex
+	 */
 	pthread_cond_t accept_cond;
 
-#elif defined(XRT_OS_LINUX)
+	/*!
+	 * Mutex for accepting clients.
+	 *
+	 * Locked by both clients and server: that is, by threads in `ipc_server_mainloop_add_fd()` and in the
+	 * server/compositor thread in an implementation function called from `ipc_server_mainloop_poll()`.
+	 *
+	 * Exists to operate in conjunction with @ref accept_cond - it exists to make sure that the client can be woken
+	 * when the server accepts it.
+	 */
+	pthread_mutex_t accept_mutex;
+
+
+	/*! @} */
+#define XRT_IPC_GOT_IMPL
+#endif
+
+#if (defined(XRT_OS_LINUX) && !defined(XRT_OS_ANDROID)) || defined(XRT_DOXYGEN)
+	/*!
+	 * @name Desktop Linux Mainloop Members
+	 * @{
+	 */
 
 	//! Socket that we accept connections on.
 	int listen_socket;
@@ -190,7 +241,13 @@ struct ipc_server_mainloop
 
 	//! The socket filename we bound to, if any.
 	char *socket_filename;
-#else
+
+	/*! @} */
+
+#define XRT_IPC_GOT_IMPL
+#endif
+
+#ifndef XRT_IPC_GOT_IMPL
 #error "Need port"
 #endif
 };
