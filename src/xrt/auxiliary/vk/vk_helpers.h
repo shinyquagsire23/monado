@@ -217,6 +217,8 @@ struct vk_bundle
 	PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
 	PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;
 #endif
+
+	PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
 	// clang-format on
 };
 

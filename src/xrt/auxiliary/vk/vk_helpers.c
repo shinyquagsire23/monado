@@ -858,6 +858,9 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkImportSemaphoreFdKHR        = GET_DEV_PROC(vk, vkImportSemaphoreFdKHR);
 	vk->vkGetSemaphoreFdKHR           = GET_DEV_PROC(vk, vkGetSemaphoreFdKHR);
 #endif
+
+	vk->vkGetPastPresentationTimingGOOGLE = GET_DEV_PROC(vk, vkGetPastPresentationTimingGOOGLE);
+
 	// clang-format on
 
 	return VK_SUCCESS;
