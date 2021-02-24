@@ -63,8 +63,9 @@ init_epoll(struct ipc_server_mainloop *ml)
 		return ret;
 	}
 
-	pthread_mutex_init(&ml->accept_mutex, NULL);
+	pthread_mutex_init(&ml->client_push_mutex, NULL);
 	pthread_cond_init(&ml->accept_cond, NULL);
+	pthread_mutex_init(&ml->accept_mutex, NULL);
 	ml->epoll_fd = ret;
 
 	struct epoll_event ev = {0};
