@@ -7,8 +7,6 @@
  * @ingroup ipc_android
  */
 
-#include "target_lists.h"
-
 #include "jnipp.h"
 #include "jni.h"
 
