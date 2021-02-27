@@ -1,4 +1,4 @@
-# Copyright 2019-2020, Collabora, Ltd.
+# Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 gui_sources = [
@@ -10,6 +10,7 @@ gui_sources = [
 	'gui_scene_calibrate.c',
 	'gui_scene_debug.c',
 	'gui_scene_main_menu.c',
+	'gui_scene_record.c',
 	'gui_scene_remote.c',
 	'gui_scene_video.c',
 	'gui_scene_tracking_overrides.c',
@@ -40,6 +41,10 @@ gui_sources = [
 ]
 
 gui_deps = [aux, xrt_config_have]
+
+if 'vf' in drivers
+	gui_deps += [drv_vf]
+endif
 
 lib_st_gui = static_library(
 	'st_gui',

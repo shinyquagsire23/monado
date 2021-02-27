@@ -214,6 +214,14 @@ void
 gui_scene_debug(struct gui_program *p);
 
 /*!
+ * Create a recording view scene.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_record(struct gui_program *p, const char *camera);
+
+/*!
  * Remote control debugging UI.
  *
  * @ingroup gui
