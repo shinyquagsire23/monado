@@ -68,7 +68,7 @@
 DEBUG_GET_ONCE_LOG_OPTION(v4l2_log, "V4L2_LOG", U_LOGGING_WARN)
 DEBUG_GET_ONCE_NUM_OPTION(v4l2_exposure_absolute, "V4L2_EXPOSURE_ABSOLUTE", 10)
 
-#define NUM_V4L2_BUFFERS 5
+#define NUM_V4L2_BUFFERS 32
 
 
 /*
@@ -141,6 +141,7 @@ struct v4l2_fs
 	} quirks;
 
 	struct v4l2_frame frames[NUM_V4L2_BUFFERS];
+	uint32_t used_frames;
 
 	struct
 	{
@@ -206,6 +207,8 @@ v4l2_free_frame(struct xrt_frame *xf)
 {
 	struct v4l2_frame *vf = (struct v4l2_frame *)xf;
 	struct v4l2_fs *vid = (struct v4l2_fs *)xf->owner;
+
+	vid->used_frames--;
 
 	if (!vid->is_running) {
 		return;
@@ -891,6 +894,10 @@ v4l2_fs_stream_run(void *ptr)
 	v_buf.memory = v_bufrequest.memory;
 
 	while (vid->is_running) {
+		if (vid->used_frames == NUM_V4L2_BUFFERS) {
+			V4L2_ERROR(vid, "No frames left");
+		}
+
 		if (ioctl(vid->fd, VIDIOC_DQBUF, &v_buf) < 0) {
 			V4L2_ERROR(vid, "error: Dequeue failed!");
 			vid->is_running = false;
@@ -924,6 +931,8 @@ v4l2_fs_stream_run(void *ptr)
 		}
 
 		vid->sink->push_frame(vid->sink, xf);
+
+		vid->used_frames++;
 
 		// The frame is requeued as soon as the refcount reaches zero,
 		// this can be done safely from another thread.
