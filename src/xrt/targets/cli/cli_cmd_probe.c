@@ -11,6 +11,7 @@
 
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_prober.h"
 #include "cli_common.h"
 
 #include "xrt/xrt_config_drivers.h"
@@ -34,70 +35,6 @@ cli_cmd_probe(int argc, const char **argv)
 	struct xrt_instance *xi = NULL;
 	int ret = 0;
 
-	printf(" :: Built in drivers:");
-
-#ifdef XRT_BUILD_DRIVER_PSVR
-	printf(" PSVR,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_RS
-	printf(" RealSense,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_VIVE
-	printf(" Vive,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_OHMD
-	printf(" OpenHMD,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_HANDTRACKING
-	printf(" Hand Tracking,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_DAYDREAM
-	printf(" Daydream,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_ARDUINO
-	printf(" Arduino,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_DUMMY
-	printf(" Dummy,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_REMOTE
-	printf(" Remote Debugging,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_HDK
-	printf(" OSVR HDK 1.x/2.x,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_PSMV
-	printf(" PS Move,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_HYDRA
-	printf(" Razer Hydra,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_NS
-	printf(" Project Northstar,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_SURVIVE
-	printf(" libsurvive,");
-#endif
-
-#ifdef XRT_BUILD_DRIVER_ILLIXR
-	printf(" ILLIXR,");
-#endif
-
-	printf("\n");
-
 	// Initialize the prober.
 	printf(" :: Creating instance!\n");
 
@@ -112,6 +49,63 @@ cli_cmd_probe(int argc, const char **argv)
 	ret = xrt_instance_select(xi, xdevs, NUM_XDEVS);
 	if (ret != 0) {
 		return do_exit(&xi, ret);
+	}
+
+	struct xrt_prober *xp = NULL;
+	xrt_instance_get_prober(xi, &xp);
+
+	size_t num_entries;
+	struct xrt_prober_entry **entries;
+	struct xrt_auto_prober **auto_probers;
+	ret = xrt_prober_get_entries(xp, &num_entries, &entries, &auto_probers);
+	if (ret != 0) {
+		do_exit(&xi, ret);
+	}
+
+	printf(" :: Regular built in drivers\n");
+	for (size_t i = 0; i < num_entries; i++) {
+		if (entries[i] == NULL) {
+			continue;
+		}
+
+		// devices with the same driver name are usually grouped, don't print duplicates
+		if (i > 0 && strcmp(entries[i - 1]->driver_name, entries[i]->driver_name) == 0) {
+			continue;
+		}
+
+		printf("\t%s\n", entries[i]->driver_name);
+	}
+
+	for (size_t i = 0; i < MAX_AUTO_PROBERS; i++) {
+		if (auto_probers[i] == NULL) {
+			continue;
+		}
+
+		printf("\t%s\n", auto_probers[i]->name);
+	}
+
+	printf(" :: Additional built in drivers\n");
+// special cased drivers that are not probed through prober entries/autoprobers
+#ifdef XRT_BUILD_DRIVER_REMOTE
+	printf("\tRemote Debugging\n");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_V4L2
+	printf("\tv4l2\n");
+#endif
+
+#ifdef XRT_BUILD_DRIVER_VF
+	printf("\tvf\n");
+#endif
+
+	printf(" :: Destroying probed devices\n");
+	for (size_t i = 0; i < NUM_XDEVS; i++) {
+		if (xdevs[i] == NULL) {
+			continue;
+		}
+
+		printf("\tDestroying '%s' [%s]\n", xdevs[i]->str, xdevs[i]->serial);
+		xrt_device_destroy(&xdevs[i]);
 	}
 
 	// End of program
