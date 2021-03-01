@@ -820,7 +820,12 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 
 	survive->hmd.config = *config;
 
-	snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Survive HMD");
+	switch (survive->hmd.config.variant) {
+	case VIVE_VARIANT_VIVE: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive (libsurvive)"); break;
+	case VIVE_VARIANT_PRO: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro (libsurvive)"); break;
+	case VIVE_VARIANT_INDEX: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Valve Index (libsurvive)"); break;
+	case VIVE_UNKNOWN: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Unknown HMD (libsurvive)"); break;
+	}
 	snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s", survive->hmd.config.firmware.device_serial_number);
 
 	// TODO: Replace hard coded values from OpenHMD with config
