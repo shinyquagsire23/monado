@@ -1,4 +1,4 @@
-# How to release
+# How to make a release {#how-to-release}
 
 <!--
 Copyright 2021, Collabora, Ltd. and the Monado contributors

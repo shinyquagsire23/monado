@@ -1,4 +1,4 @@
-# Changelog for Monado
+# Changelog for Monado {#CHANGELOG}
 
 ```txt
 SPDX-License-Identifier: CC0-1.0

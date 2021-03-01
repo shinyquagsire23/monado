@@ -52,7 +52,7 @@ struct xrt_instance_info
  * Each "target" will provide its own (private) implementation of this
  * interface, which is exposed by implementing xrt_instance_create().
  *
- * Additional information can be found in @ref md_targets
+ * Additional information can be found in @ref understanding-targets.
  *
  * @sa ipc_instance_create
  */

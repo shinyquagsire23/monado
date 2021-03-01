@@ -1,4 +1,4 @@
-# Understanding and Writing Targets
+# Understanding and Writing Targets {#understanding-targets}
 
 <!--
 Copyright 2018-2020, Collabora, Ltd. and the Monado contributors
