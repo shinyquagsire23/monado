@@ -73,6 +73,7 @@ struct xrt_auto_prober *
 ns_create_auto_prober()
 {
 	struct ns_prober *nsp = U_TYPED_CALLOC(struct ns_prober);
+	nsp->base.name = "northstar";
 	nsp->base.destroy = ns_prober_destroy;
 	nsp->base.lelo_dallas_autoprobe = ns_prober_autoprobe;
 	nsp->config_path = debug_get_option_ns_config_path();
