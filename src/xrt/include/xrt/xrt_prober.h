@@ -42,6 +42,8 @@ struct os_hid_device;
  */
 #define XRT_MAX_DEVICES_PER_PROBE 16
 
+#define MAX_AUTO_PROBERS 8
+
 /*!
  * Entry for a single device.
  *
@@ -219,6 +221,11 @@ struct xrt_prober
 
 	int (*list_video_devices)(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
 
+	int (*get_entries)(struct xrt_prober *xp,
+	                   size_t *out_num_entries,
+	                   struct xrt_prober_entry ***out_entries,
+	                   struct xrt_auto_prober ***out_auto_probers);
+
 	/*!
 	 * Returns a string property on the device of the given type
 	 * @p which_string in @p out_buffer.
@@ -363,6 +370,22 @@ static inline int
 xrt_prober_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr)
 {
 	return xp->list_video_devices(xp, cb, ptr);
+}
+
+/*!
+ * @copydoc xrt_prober::get_entries
+ *
+ * Helper function for @ref xrt_prober::get_entries.
+ *
+ * @public @memberof xrt_prober
+ */
+static inline int
+xrt_prober_get_entries(struct xrt_prober *xp,
+                       size_t *out_num_entries,
+                       struct xrt_prober_entry ***out_entries,
+                       struct xrt_auto_prober ***out_auto_probers)
+{
+	return xp->get_entries(xp, out_num_entries, out_entries, out_auto_probers);
 }
 
 /*!

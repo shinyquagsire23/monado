@@ -76,6 +76,13 @@ open_video_device(struct xrt_prober *xp,
 
 static int
 list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
+
+static int
+get_entries(struct xrt_prober *xp,
+            size_t *out_num_entries,
+            struct xrt_prober_entry ***out_entries,
+            struct xrt_auto_prober ***out_auto_probers);
+
 static int
 get_string_descriptor(struct xrt_prober *xp,
                       struct xrt_prober_device *xpdev,
@@ -308,6 +315,7 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 	p->base.open_hid_interface = open_hid_interface;
 	p->base.open_video_device = open_video_device;
 	p->base.list_video_devices = list_video_devices;
+	p->base.get_entries = get_entries;
 	p->base.get_string_descriptor = get_string_descriptor;
 	p->base.can_open = can_open;
 	p->base.destroy = destroy;
@@ -816,6 +824,19 @@ list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr
 		cb(xp, &pdev->base, pdev->usb.product, pdev->usb.manufacturer, pdev->usb.serial, ptr);
 	}
 
+	return 0;
+}
+
+static int
+get_entries(struct xrt_prober *xp,
+            size_t *out_num_entries,
+            struct xrt_prober_entry ***out_entries,
+            struct xrt_auto_prober ***out_auto_probers)
+{
+	struct prober *p = (struct prober *)xp;
+	*out_num_entries = p->num_entries;
+	*out_entries = p->entries;
+	*out_auto_probers = p->auto_probers;
 	return 0;
 }
 
