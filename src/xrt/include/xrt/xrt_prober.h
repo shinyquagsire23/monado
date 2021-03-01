@@ -207,6 +207,10 @@ struct xrt_prober
 	                          int interface,
 	                          struct os_hid_device **out_hid_dev);
 
+	/*!
+	 * Opens the selected video device and returns a @ref xrt_fs, does not
+	 * start it.
+	 */
 	int (*open_video_device)(struct xrt_prober *xp,
 	                         struct xrt_prober_device *xpdev,
 	                         struct xrt_frame_context *xfctx,
@@ -332,7 +336,7 @@ xrt_prober_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 
 
 /*!
- * @copydoc xrt_prober::xrt_prober_open_video_device
+ * @copydoc xrt_prober::open_video_device
  *
  * Helper function for @ref xrt_prober::xrt_prober_open_video_device.
  *
