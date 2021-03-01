@@ -207,7 +207,9 @@ endif()
 if (XRT_BUILD_DRIVER_SURVIVE)
 	set(SURVIVE_SOURCE_FILES
 		survive/survive_driver.c
+		survive/survive_driver.h
 		survive/survive_interface.h
+		survive/survive_prober.c
 		)
 
 	add_library(drv_survive STATIC ${SURVIVE_SOURCE_FILES})

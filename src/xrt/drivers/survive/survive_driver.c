@@ -40,6 +40,7 @@
 #include "math/m_predict.h"
 
 #include "vive/vive_config.h"
+#include "survive_driver.h"
 
 // reading usb config takes libsurvive about 50ms per device
 // to be safe, we wait 500 ms after the last device has been initialized
@@ -1188,12 +1189,11 @@ add_connected_devices(struct survive_system *ss)
 }
 
 int
-survive_found(struct xrt_prober *xp,
-              struct xrt_prober_device **devices,
-              size_t num_devices,
-              size_t index,
-              cJSON *attached_data,
-              struct xrt_device **out_xdevs)
+survive_device_autoprobe(struct xrt_auto_prober *xap,
+                         cJSON *attached_data,
+                         bool no_hmds,
+                         struct xrt_prober *xp,
+                         struct xrt_device **out_xdevs)
 {
 	if (survive_already_initialized) {
 		U_LOG_I(
@@ -1249,11 +1249,18 @@ survive_found(struct xrt_prober *xp,
 	}
 
 	int out_idx = 0;
-	if (ss->hmd) {
+	if (ss->hmd && !no_hmds) {
 		out_xdevs[out_idx++] = &ss->hmd->base;
 	}
 
 	for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
+
+		if (out_idx == XRT_MAX_DEVICES_PER_PROBE - 1) {
+			U_LOG_IFL_W(ss->ll, "Probed max of %d devices, ignoring further devices",
+			            XRT_MAX_DEVICES_PER_PROBE);
+			return out_idx;
+		}
+
 		if (ss->controllers[i] != NULL) {
 			out_xdevs[out_idx++] = &ss->controllers[i]->base;
 		}

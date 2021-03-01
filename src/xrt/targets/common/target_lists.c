@@ -97,12 +97,6 @@ struct xrt_prober_entry target_entry_list[] = {
     {HDK_VID, HDK_PID, hdk_found, "OSVR HDK", "osvr"},
 #endif // XRT_BUILD_DRIVER_HDK
 
-#ifdef XRT_BUILD_DRIVER_SURVIVE
-    {HTC_VID, VIVE_PID, survive_found, "HTC Vive"},
-    {HTC_VID, VIVE_PRO_MAINBOARD_PID, survive_found, "HTC Vive Pro"},
-    {VALVE_VID, VIVE_PRO_LHR_PID, survive_found, "Valve Index"},
-#endif
-
 #ifdef XRT_BUILD_DRIVER_VIVE
     {HTC_VID, VIVE_PID, vive_found, "HTC Vive", "vive"},
     {HTC_VID, VIVE_PRO_MAINBOARD_PID, vive_found, "HTC Vive Pro", "vive"},
@@ -132,6 +126,10 @@ xrt_auto_prober_creator target_auto_list[] = {
 #ifdef XRT_BUILD_DRIVER_DAYDREAM
     // Before OpenHMD
     daydream_create_auto_prober,
+#endif
+
+#ifdef XRT_BUILD_DRIVER_SURVIVE
+    survive_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_OHMD
