@@ -60,6 +60,7 @@ struct xrt_prober_entry
 	             struct xrt_device **out_xdevs);
 
 	const char *name;
+	const char *driver_name;
 };
 
 /*!

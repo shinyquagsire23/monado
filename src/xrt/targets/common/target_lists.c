@@ -85,16 +85,16 @@
  */
 struct xrt_prober_entry target_entry_list[] = {
 #ifdef XRT_BUILD_DRIVER_PSMV
-    {PSMV_VID, PSMV_PID_ZCM1, psmv_found, "PS Move Controller (ZCM1)"},
-    {PSMV_VID, PSMV_PID_ZCM2, psmv_found, "PS Move Controller (ZCM2)"},
+    {PSMV_VID, PSMV_PID_ZCM1, psmv_found, "PS Move Controller (ZCM1)", "psmv"},
+    {PSMV_VID, PSMV_PID_ZCM2, psmv_found, "PS Move Controller (ZCM2)", "psmv"},
 #endif // XRT_BUILD_DRIVER_PSMV
 
 #ifdef XRT_BUILD_DRIVER_HYDRA
-    {HYDRA_VID, HYDRA_PID, hydra_found, "Razer Hydra"},
+    {HYDRA_VID, HYDRA_PID, hydra_found, "Razer Hydra", "hydra"},
 #endif // XRT_BUILD_DRIVER_HYDRA
 
 #ifdef XRT_BUILD_DRIVER_HDK
-    {HDK_VID, HDK_PID, hdk_found, "OSVR HDK"},
+    {HDK_VID, HDK_PID, hdk_found, "OSVR HDK", "osvr"},
 #endif // XRT_BUILD_DRIVER_HDK
 
 #ifdef XRT_BUILD_DRIVER_SURVIVE
@@ -104,14 +104,14 @@ struct xrt_prober_entry target_entry_list[] = {
 #endif
 
 #ifdef XRT_BUILD_DRIVER_VIVE
-    {HTC_VID, VIVE_PID, vive_found, "HTC Vive"},
-    {HTC_VID, VIVE_PRO_MAINBOARD_PID, vive_found, "HTC Vive Pro"},
-    {VALVE_VID, VIVE_PRO_LHR_PID, vive_found, "Valve Index"},
-    {VALVE_VID, VIVE_WATCHMAN_DONGLE, vive_controller_found, "HTC Vive Watchman Wireless Device"},
-    {VALVE_VID, VIVE_WATCHMAN_DONGLE_GEN2, vive_controller_found, "Valve Watchman Wireless Device"},
+    {HTC_VID, VIVE_PID, vive_found, "HTC Vive", "vive"},
+    {HTC_VID, VIVE_PRO_MAINBOARD_PID, vive_found, "HTC Vive Pro", "vive"},
+    {VALVE_VID, VIVE_PRO_LHR_PID, vive_found, "Valve Index", "vive"},
+    {VALVE_VID, VIVE_WATCHMAN_DONGLE, vive_controller_found, "HTC Vive Watchman Wireless Device", "vive"},
+    {VALVE_VID, VIVE_WATCHMAN_DONGLE_GEN2, vive_controller_found, "Valve Watchman Wireless Device", "vive"},
 #endif
 
-    {0x0000, 0x0000, NULL, NULL}, // Terminate
+    {0x0000, 0x0000, NULL, NULL, NULL}, // Terminate
 };
 
 struct xrt_prober_entry *target_entry_lists[] = {
