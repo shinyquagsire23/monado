@@ -211,11 +211,11 @@ if survive.found() and ('auto' in drivers and 'survive' not in drivers)
 endif
 
 if not get_option('dbus').disabled() and dbus.found()
-	if 'daydream' not in drivers
+	if 'auto' in drivers and 'daydream' not in drivers
 		drivers += ['daydream']
 	endif
 
-	if 'arduino' not in drivers
+	if 'auto' in drivers and 'arduino' not in drivers
 		drivers += ['arduino']
 	endif
 endif
