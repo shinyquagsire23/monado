@@ -623,10 +623,9 @@ add_from_auto_probers(struct prober *p, struct xrt_device **xdevs, size_t num_xd
 		for (int created_idx = 0; created_idx < num_found; ++created_idx) {
 			if (new_xdevs[created_idx] == NULL) {
 				P_DEBUG(p,
-				        "Leaving device creation loop "
-				        "early: autoprobe function reported %i "
+				        "Leaving device creation loop early: %s autoprobe function reported %i "
 				        "created, but only %i non-null",
-				        num_found, created_idx);
+				        p->auto_probers[i]->name, num_found, created_idx);
 				continue;
 			}
 			handle_found_device(p, xdevs, num_xdevs, have_hmd, new_xdevs[created_idx]);
