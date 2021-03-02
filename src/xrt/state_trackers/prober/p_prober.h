@@ -165,6 +165,10 @@ struct prober
 	size_t num_entries;
 	struct xrt_prober_entry **entries;
 
+	// must not be accessed after freeing json
+	size_t num_disabled_drivers;
+	char **disabled_drivers;
+
 	enum u_logging_level ll;
 };
 

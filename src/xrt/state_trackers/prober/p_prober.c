@@ -306,6 +306,27 @@ collect_entries(struct prober *p)
 	return 0;
 }
 
+static void
+parse_disabled_drivers(struct prober *p)
+{
+	p->num_disabled_drivers = 0;
+	cJSON *disabled_drivers = cJSON_GetObjectItemCaseSensitive(p->json.root, "disabled");
+	if (!disabled_drivers) {
+		return;
+	}
+
+	cJSON *disabled_driver = NULL;
+	cJSON_ArrayForEach(disabled_driver, disabled_drivers)
+	{
+		if (!cJSON_IsString(disabled_driver)) {
+			continue;
+		}
+
+		U_ARRAY_REALLOC_OR_FREE(p->disabled_drivers, char *, p->num_disabled_drivers++);
+		p->disabled_drivers[p->num_disabled_drivers - 1] = disabled_driver->valuestring;
+	}
+}
+
 static int
 initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 {
@@ -360,6 +381,8 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 	for (int i = 0; i < MAX_AUTO_PROBERS && lists->auto_probers[i]; i++) {
 		p->auto_probers[i] = lists->auto_probers[i]();
 	}
+
+	parse_disabled_drivers(p);
 
 	return 0;
 }
@@ -475,6 +498,8 @@ teardown(struct prober *p)
 		cJSON_Delete(p->json.root);
 		p->json.root = NULL;
 	}
+
+	free(p->disabled_drivers);
 }
 
 
@@ -585,6 +610,19 @@ add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, 
 				continue;
 			}
 
+			bool skip = false;
+			for (size_t disabled = 0; disabled < p->num_disabled_drivers; disabled++) {
+				if (strcmp(entry->driver_name, p->disabled_drivers[disabled]) == 0) {
+					P_INFO(p, "Skipping disabled driver %s", entry->driver_name);
+					skip = true;
+					break;
+					;
+				}
+			}
+			if (skip) {
+				continue;
+			}
+
 			struct xrt_device *new_xdevs[XRT_MAX_DEVICES_PER_PROBE] = {NULL};
 			int num_found = entry->found(&p->base, dev_list, p->num_devices, i, NULL, &(new_xdevs[0]));
 
@@ -613,6 +651,19 @@ static void
 add_from_auto_probers(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, bool *have_hmd)
 {
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
+
+		bool skip = false;
+		for (size_t disabled = 0; disabled < p->num_disabled_drivers; disabled++) {
+			if (strcmp(p->auto_probers[i]->name, p->disabled_drivers[disabled]) == 0) {
+				P_INFO(p, "Skipping disabled driver %s", p->auto_probers[i]->name);
+				skip = true;
+				break;
+			}
+		}
+		if (skip) {
+			continue;
+		}
+
 		/*
 		 * If we have found a HMD, tell the auto probers not to open
 		 * any more HMDs. This is mostly to stop OpenHMD and Monado
