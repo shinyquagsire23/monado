@@ -114,6 +114,10 @@ psvr_prober_autoprobe(struct xrt_auto_prober *xap,
 
 	hid_free_enumeration(devs);
 
+	if (!dev) {
+		return 0;
+	}
+
 	out_xdevs[0] = dev;
 	return 1;
 }
