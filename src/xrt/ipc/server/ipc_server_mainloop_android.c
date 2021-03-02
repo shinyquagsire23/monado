@@ -92,6 +92,7 @@ handle_listen(struct ipc_server *vs, struct ipc_server_mainloop *ml)
 		assert(ml->last_accepted_fd == 0);
 		// Release the thread that gave us this fd.
 		ml->last_accepted_fd = newfd;
+		ipc_server_start_client_listener_thread(vs, newfd);
 		pthread_cond_broadcast(&ml->accept_cond);
 	} else {
 		U_LOG_E("error on pipe read");
