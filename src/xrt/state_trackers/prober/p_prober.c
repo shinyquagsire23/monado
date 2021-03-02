@@ -306,6 +306,65 @@ collect_entries(struct prober *p)
 	return 0;
 }
 
+
+#define num_driver_conflicts 1
+char *driver_conflicts[num_driver_conflicts][2] = {{"survive", "vive"}};
+
+static void
+disable_drivers_from_conflicts(struct prober *p)
+{
+	for (size_t i = 0; i < num_driver_conflicts; i++) {
+		bool have_first = false;
+		bool have_second = false;
+
+		char *first = driver_conflicts[i][0];
+		char *second = driver_conflicts[i][1];
+
+		// disable second driver if we have first driver
+		for (size_t entry = 0; entry < p->num_entries; entry++) {
+			if (strcmp(p->entries[entry]->driver_name, first) == 0) {
+				have_first = true;
+			}
+			if (strcmp(p->entries[entry]->driver_name, second) == 0) {
+				have_second = true;
+			}
+		}
+
+		for (size_t ap = 0; ap < MAX_AUTO_PROBERS; ap++) {
+			if (p->auto_probers[ap] == NULL) {
+				continue;
+			}
+			if (strcmp(p->auto_probers[ap]->name, first) == 0) {
+				have_first = true;
+			}
+			if (strcmp(p->auto_probers[ap]->name, second) == 0) {
+				have_second = true;
+			}
+		}
+
+		if (have_first && have_second) {
+
+			// except don't disable second driver, if first driver is already disabled'
+			bool first_already_disabled = false;
+			;
+			for (size_t disabled = 0; disabled < p->num_disabled_drivers; disabled++) {
+				if (strcmp(p->disabled_drivers[disabled], first) == 0) {
+					first_already_disabled = true;
+					break;
+				}
+			}
+			if (first_already_disabled) {
+				P_INFO(p, "Not disabling %s because %s is disabled", second, first);
+				continue;
+			}
+
+			P_INFO(p, "Disabling %s because we have %s", second, first);
+			U_ARRAY_REALLOC_OR_FREE(p->disabled_drivers, char *, p->num_disabled_drivers++);
+			p->disabled_drivers[p->num_disabled_drivers - 1] = second;
+		}
+	}
+}
+
 static void
 parse_disabled_drivers(struct prober *p)
 {
@@ -383,6 +442,7 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 	}
 
 	parse_disabled_drivers(p);
+	disable_drivers_from_conflicts(p);
 
 	return 0;
 }
