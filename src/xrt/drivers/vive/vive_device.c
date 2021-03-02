@@ -893,7 +893,12 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.position_tracking_supported = false;
 	d->base.device_type = XRT_DEVICE_TYPE_HMD;
 
-	snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Vive HMD");
+	switch (d->config.variant) {
+	case VIVE_VARIANT_VIVE: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive (vive)"); break;
+	case VIVE_VARIANT_PRO: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro (vive)"); break;
+	case VIVE_VARIANT_INDEX: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Valve Index (vive)"); break;
+	case VIVE_UNKNOWN: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Unknown HMD (vive)"); break;
+	}
 	snprintf(d->base.serial, XRT_DEVICE_NAME_LEN, "%s", d->config.firmware.device_serial_number);
 
 	ret = os_thread_helper_start(&d->sensors_thread, vive_sensors_run_thread, d);
