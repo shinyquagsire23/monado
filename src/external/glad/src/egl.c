@@ -38,6 +38,7 @@ int GLAD_EGL_KHR_fence_sync = 0;
 int GLAD_EGL_KHR_gl_colorspace = 0;
 int GLAD_EGL_KHR_image = 0;
 int GLAD_EGL_KHR_image_base = 0;
+int GLAD_EGL_KHR_no_config_context = 0;
 int GLAD_EGL_KHR_platform_android = 0;
 int GLAD_EGL_KHR_reusable_sync = 0;
 int GLAD_EGL_KHR_wait_sync = 0;
@@ -230,6 +231,7 @@ static int glad_egl_find_extensions_egl(EGLDisplay display) {
     GLAD_EGL_KHR_gl_colorspace = glad_egl_has_extension(extensions, "EGL_KHR_gl_colorspace");
     GLAD_EGL_KHR_image = glad_egl_has_extension(extensions, "EGL_KHR_image");
     GLAD_EGL_KHR_image_base = glad_egl_has_extension(extensions, "EGL_KHR_image_base");
+    GLAD_EGL_KHR_no_config_context = glad_egl_has_extension(extensions, "EGL_KHR_no_config_context");
     GLAD_EGL_KHR_platform_android = glad_egl_has_extension(extensions, "EGL_KHR_platform_android");
     GLAD_EGL_KHR_reusable_sync = glad_egl_has_extension(extensions, "EGL_KHR_reusable_sync");
     GLAD_EGL_KHR_wait_sync = glad_egl_has_extension(extensions, "EGL_KHR_wait_sync");

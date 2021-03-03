@@ -35,6 +35,7 @@ EGL_KHR_wait_sync,\
 EGL_KHR_image,\
 EGL_KHR_image_base,\
 EGL_KHR_platform_android,\
+EGL_KHR_no_config_context,\
 EGL_EXT_image_gl_colorspace,\
 EGL_EXT_image_dma_buf_import,\
 EGL_EXT_image_dma_buf_import_modifiers,\
