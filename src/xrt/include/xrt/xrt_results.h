@@ -48,9 +48,13 @@ typedef enum xrt_result
 	 * Multiple not supported on this layer level (IPC, compositor).
 	 */
 	XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED = -11,
-
 	/*!
 	 * The requested format is not supported by Monado.
 	 */
 	XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED = -12,
+	/*!
+	 * The given config was EGL_NO_CONFIG_KHR and EGL_KHR_no_config_context
+	 * is not supported by the display.
+	 */
+	XRT_ERROR_EGL_CONFIG_MISSING = -12,
 } xrt_result_t;
