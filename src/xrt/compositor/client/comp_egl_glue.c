@@ -216,12 +216,13 @@ client_egl_compositor_destroy(struct xrt_compositor *xc)
 	free(ceglc);
 }
 
-struct xrt_compositor_gl *
+xrt_result_t
 xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
                                EGLDisplay display,
                                EGLConfig config,
                                EGLContext context,
-                               PFNEGLGETPROCADDRESSPROC get_gl_procaddr)
+                               PFNEGLGETPROCADDRESSPROC get_gl_procaddr,
+                               struct xrt_compositor_gl **out_xcgl)
 {
 	ll = debug_get_log_option_egl_log();
 
@@ -236,13 +237,13 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	if (!eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
 		EGL_ERROR("Failed to make EGL context current");
 		// No need to restore on failure.
-		return NULL;
+		return XRT_ERROR_OPENGL;
 	}
 
 	EGLint egl_client_type;
 	if (!eglQueryContext(display, context, EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
 		old_restore(&old);
-		return NULL;
+		return XRT_ERROR_OPENGL;
 	}
 
 	switch (egl_client_type) {
@@ -253,7 +254,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 #else
 		EGL_ERROR("OpenGL support not including in this runtime build");
 		old_restore(&old);
-		return NULL;
+		return XRT_ERROR_OPENGL;
 #endif
 
 	case EGL_OPENGL_ES_API:
@@ -263,9 +264,9 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 #else
 		EGL_ERROR("OpenGL|ES support not including in this runtime build");
 		old_restore(&old);
-		return NULL;
+		return XRT_ERROR_OPENGL;
 #endif
-	default: EGL_ERROR("Unsupported EGL client type"); return NULL;
+	default: EGL_ERROR("Unsupported EGL client type"); return XRT_ERROR_OPENGL;
 	}
 
 	struct client_egl_compositor *ceglc = U_TYPED_CALLOC(struct client_egl_compositor);
@@ -307,7 +308,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		    "EGL_EXT_image_dma_buf_import or "
 		    "GL_EXT_memory_object_fd");
 		old_restore(&old);
-		return NULL;
+		return XRT_ERROR_OPENGL;
 	}
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 	EGL_INFO("Using EGL_Image swapchain implementation with AHardwareBuffer");
@@ -318,10 +319,11 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		free(ceglc);
 		U_LOG_E("Failed to initialize compositor");
 		old_restore(&old);
-		return NULL;
+		return XRT_ERROR_OPENGL;
 	}
 
 	ceglc->base.base.base.destroy = client_egl_compositor_destroy;
 	old_restore(&old);
-	return &ceglc->base.base;
+	*out_xcgl = &ceglc->base.base;
+	return XRT_SUCCESS;
 }

@@ -1,4 +1,4 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -68,14 +68,16 @@ oxr_session_populate_gles_android(struct oxr_logger *log,
 
 
 	struct xrt_compositor_native *xcn = sess->xcn;
-	struct xrt_compositor_gl *xcgl = xrt_gfx_provider_create_gl_egl( //
-	    xcn,                                                         //
-	    next->display,                                               //
-	    next->config,                                                //
-	    next->context,                                               //
-	    get_proc_addr);                                              //
+	struct xrt_compositor_gl *xcgl = NULL;
+	xrt_result_t xret = xrt_gfx_provider_create_gl_egl( //
+	    xcn,                                            //
+	    next->display,                                  //
+	    next->config,                                   //
+	    next->context,                                  //
+	    get_proc_addr,                                  //
+	    &xcgl);                                         //
 
-	if (xcgl == NULL) {
+	if (xret != XR_SUCCESS || xcgl == NULL) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Failed to create an egl client compositor");
 	}
 

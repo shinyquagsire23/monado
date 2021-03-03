@@ -29,12 +29,13 @@ struct time_state;
  * @ingroup xrt_iface
  * @public @memberof xrt_compositor_native
  */
-struct xrt_compositor_gl *
+xrt_result_t
 xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
                                EGLDisplay display,
                                EGLConfig config,
                                EGLContext context,
-                               PFNEGLGETPROCADDRESSPROC getProcAddress);
+                               PFNEGLGETPROCADDRESSPROC getProcAddress,
+                               struct xrt_compositor_gl **out_xcgl);
 
 #ifdef __cplusplus
 }
