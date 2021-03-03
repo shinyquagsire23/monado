@@ -228,6 +228,11 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 	gladLoadEGL(display, get_gl_procaddr);
 
+	if (config == EGL_NO_CONFIG_KHR && !EGL_KHR_no_config_context) {
+		EGL_ERROR("config == EGL_NO_CONFIG_KHR && !EGL_KHR_no_config_context");
+		return XRT_ERROR_EGL_CONFIG_MISSING;
+	}
+
 	// On Android this extension is 'hidden'.
 	ensure_native_fence_is_loaded(display, get_gl_procaddr);
 
