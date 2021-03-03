@@ -564,9 +564,7 @@ oxr_verify_XrGraphicsBindingEGLMNDX(struct oxr_logger *log, const XrGraphicsBind
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "XrGraphicsBindingEGLMNDX::display cannot be NULL");
 	}
 
-	if (next->config == NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "XrGraphicsBindingEGLMNDX::config cannot be NULL");
-	}
+	// The next->config field can be NULL if EGL_KHR_no_config_context is supported by the display.
 
 	if (next->context == NULL) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "XrGraphicsBindingEGLMNDX::context cannot be NULL");
