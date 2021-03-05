@@ -5,6 +5,7 @@
  * @brief  Base implementations for math library.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @author Moses Turner <mosesturner@protonmail.com>
  * @ingroup aux_math
  */
 
@@ -314,6 +315,23 @@ math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left, const struct x
 	map_vec3(*result) = m * copy(right);
 }
 
+extern "C" void
+math_matrix_3x3_multiply(const struct xrt_matrix_3x3 *left,
+												 const struct xrt_matrix_3x3 *right,
+												 struct xrt_matrix_3x3 *result)
+{
+	result->v[0] = left->v[0] * right->v[0] + left->v[1] * right->v[3] + left->v[2] * right->v[6];
+	result->v[1] = left->v[0] * right->v[1] + left->v[1] * right->v[4] + left->v[2] * right->v[7];
+	result->v[2] = left->v[0] * right->v[2] + left->v[1] * right->v[5] + left->v[2] * right->v[8];
+
+	result->v[3] = left->v[3] * right->v[0] + left->v[4] * right->v[3] + left->v[5] * right->v[6];
+	result->v[4] = left->v[3] * right->v[1] + left->v[4] * right->v[4] + left->v[5] * right->v[7];
+	result->v[5] = left->v[3] * right->v[2] + left->v[4] * right->v[5] + left->v[5] * right->v[8];
+
+	result->v[6] = left->v[6] * right->v[0] + left->v[7] * right->v[3] + left->v[8] * right->v[6];
+	result->v[7] = left->v[6] * right->v[1] + left->v[7] * right->v[4] + left->v[8] * right->v[7];
+	result->v[8] = left->v[6] * right->v[2] + left->v[7] * right->v[5] + left->v[8] * right->v[8];
+}
 
 void
 math_matrix_4x4_identity(struct xrt_matrix_4x4 *result)

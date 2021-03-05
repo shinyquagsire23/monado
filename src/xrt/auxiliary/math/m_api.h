@@ -4,6 +4,7 @@
  * @file
  * @brief  C interface to math library.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <mosesturner@protonmail.com>
  *
  * @see xrt_vec3
  * @see xrt_quat
@@ -310,6 +311,17 @@ void
 math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
                                const struct xrt_vec3 *right,
                                struct xrt_vec3 *result);
+
+/*!
+ * Multiply Matrix3x3.
+ *
+ * @relates xrt_matrix_3x3
+ * @ingroup aux_math
+ */
+void
+math_matrix_3x3_multiply(const struct xrt_matrix_3x3 *left,
+                         const struct xrt_matrix_3x3 *right,
+                         struct xrt_matrix_3x3 *result);
 
 /*!
  * Initialize Matrix4x4 with identity.
