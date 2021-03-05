@@ -317,8 +317,8 @@ math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left, const struct x
 
 extern "C" void
 math_matrix_3x3_multiply(const struct xrt_matrix_3x3 *left,
-												 const struct xrt_matrix_3x3 *right,
-												 struct xrt_matrix_3x3 *result)
+                         const struct xrt_matrix_3x3 *right,
+                         struct xrt_matrix_3x3 *result)
 {
 	result->v[0] = left->v[0] * right->v[0] + left->v[1] * right->v[3] + left->v[2] * right->v[6];
 	result->v[1] = left->v[0] * right->v[1] + left->v[1] * right->v[4] + left->v[2] * right->v[7];
@@ -417,6 +417,18 @@ math_pose_invert(const struct xrt_pose *pose, struct xrt_pose *outPose)
 
 	position(*outPose) = newPosition;
 	orientation(*outPose) = newOrientation;
+}
+
+extern "C" void
+math_pose_identity(struct xrt_pose *pose)
+{
+	pose->position.x = 0.0;
+	pose->position.y = 0.0;
+	pose->position.z = 0.0;
+	pose->orientation.x = 0.0;
+	pose->orientation.y = 0.0;
+	pose->orientation.z = 0.0;
+	pose->orientation.w = 1.0;
 }
 
 /*!

@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -378,6 +378,16 @@ math_matrix_4x4_inverse_view_projection(const struct xrt_matrix_4x4 *view,
  * Pose functions.
  *
  */
+
+
+/*!
+ * Somewhat laboriously make an xrt_pose identity.
+ *
+ * @relates xrt_pose
+ * @ingroup aux_math
+ */
+void
+math_pose_identity(struct xrt_pose *pose);
 
 /*!
  * Check if this pose can be used in transformation operations.
