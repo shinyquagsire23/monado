@@ -360,8 +360,9 @@ disable_drivers_from_conflicts(struct prober *p)
 			}
 
 			P_INFO(p, "Disabling %s because we have %s", second, first);
-			U_ARRAY_REALLOC_OR_FREE(p->disabled_drivers, char *, p->num_disabled_drivers++);
-			p->disabled_drivers[p->num_disabled_drivers - 1] = second;
+			size_t index = p->num_disabled_drivers++;
+			U_ARRAY_REALLOC_OR_FREE(p->disabled_drivers, char *, p->num_disabled_drivers);
+			p->disabled_drivers[index] = second;
 		}
 	}
 }
@@ -369,7 +370,6 @@ disable_drivers_from_conflicts(struct prober *p)
 static void
 parse_disabled_drivers(struct prober *p)
 {
-	p->num_disabled_drivers = 0;
 	cJSON *disabled_drivers = cJSON_GetObjectItemCaseSensitive(p->json.root, "disabled");
 	if (!disabled_drivers) {
 		return;
@@ -382,8 +382,9 @@ parse_disabled_drivers(struct prober *p)
 			continue;
 		}
 
-		U_ARRAY_REALLOC_OR_FREE(p->disabled_drivers, char *, p->num_disabled_drivers++);
-		p->disabled_drivers[p->num_disabled_drivers - 1] = disabled_driver->valuestring;
+		size_t index = p->num_disabled_drivers++;
+		U_ARRAY_REALLOC_OR_FREE(p->disabled_drivers, char *, p->num_disabled_drivers);
+		p->disabled_drivers[index] = disabled_driver->valuestring;
 	}
 }
 
@@ -445,6 +446,8 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 		p->auto_probers[i] = lists->auto_probers[i]();
 	}
 
+
+	p->num_disabled_drivers = 0;
 	parse_disabled_drivers(p);
 	disable_drivers_from_conflicts(p);
 
