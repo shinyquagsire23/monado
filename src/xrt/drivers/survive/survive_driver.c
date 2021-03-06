@@ -25,6 +25,8 @@
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
 
+#include "os/os_threading.h"
+
 #include "../auxiliary/os/os_time.h"
 
 #include "xrt/xrt_prober.h"
@@ -120,6 +122,11 @@ struct survive_device
 	struct xrt_space_relation last_relation;
 	timepoint_ns last_relation_ts;
 
+	//! Number of inputs.
+	size_t num_last_inputs;
+	//! Array of input structs.
+	struct xrt_input *last_inputs;
+
 	enum DeviceType device_type;
 
 	union {
@@ -152,11 +159,18 @@ struct survive_system
 	struct survive_device *hmd;
 	struct survive_device *controllers[MAX_TRACKED_DEVICE_COUNT];
 	enum u_logging_level ll;
+
+	struct os_thread_helper event_thread;
+	struct os_mutex lock;
 };
 
 static void
 survive_device_destroy(struct xrt_device *xdev)
 {
+	if (!xdev) {
+		return;
+	}
+
 	U_LOG_D("destroying survive device");
 	struct survive_device *survive = (struct survive_device *)xdev;
 
@@ -178,11 +192,19 @@ survive_device_destroy(struct xrt_device *xdev)
 
 	if (survive->sys->hmd == NULL && all_null) {
 		U_LOG_D("Tearing down libsurvive context");
-		survive_simple_close(survive->sys->ctx);
+		os_thread_helper_stop(&survive->sys->event_thread);
+		os_thread_helper_destroy(&survive->sys->event_thread);
 
+		// Now that the thread is not running we can destroy the lock.
+		os_mutex_destroy(&survive->sys->lock);
+
+		U_LOG_D("Stopped libsurvive event thread");
+
+		survive_simple_close(survive->sys->ctx);
 		free(survive->sys);
 	}
 
+	free(survive->last_inputs);
 	free(survive);
 }
 
@@ -312,7 +334,9 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
+	os_mutex_lock(&survive->sys->lock);
 	_predict_pose(survive, at_timestamp_ns, out_relation);
+	os_mutex_unlock(&survive->sys->lock);
 
 	struct xrt_pose *p = &out_relation->pose;
 	SURVIVE_TRACE(survive, "GET_POSITION (%f %f %f) GET_ORIENTATION (%f, %f, %f, %f)", p->position.x, p->position.y,
@@ -388,10 +412,10 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 
 	float thumb_curl = 0.0f;
 	//! @todo place thumb preciely on the button that is touched/pressed
-	if (survive->base.inputs[VIVE_CONTROLLER_A_TOUCH].value.boolean ||
-	    survive->base.inputs[VIVE_CONTROLLER_B_TOUCH].value.boolean ||
-	    survive->base.inputs[VIVE_CONTROLLER_THUMBSTICK_TOUCH].value.boolean ||
-	    survive->base.inputs[VIVE_CONTROLLER_TRACKPAD_TOUCH].value.boolean) {
+	if (survive->last_inputs[VIVE_CONTROLLER_A_TOUCH].value.boolean ||
+	    survive->last_inputs[VIVE_CONTROLLER_B_TOUCH].value.boolean ||
+	    survive->last_inputs[VIVE_CONTROLLER_THUMBSTICK_TOUCH].value.boolean ||
+	    survive->last_inputs[VIVE_CONTROLLER_TRACKPAD_TOUCH].value.boolean) {
 		thumb_curl = 1.0;
 	}
 
@@ -502,7 +526,7 @@ update_axis(struct survive_device *survive, struct Axis *axis, const SurviveSimp
 		return false;
 	}
 
-	struct xrt_input *in = &survive->base.inputs[axis->input];
+	struct xrt_input *in = &survive->last_inputs[axis->input];
 
 	float fval = e->axis_val[i];
 
@@ -560,22 +584,22 @@ update_button(struct survive_device *survive, const struct SurviveSimpleButtonEv
 
 	if (e_type == SURVIVE_INPUT_EVENT_BUTTON_UP) {
 		enum input_index index = buttons[btn_id].click;
-		struct xrt_input *input = &survive->base.inputs[index];
+		struct xrt_input *input = &survive->last_inputs[index];
 		input->value.boolean = false;
 		input->timestamp = ts;
 	} else if (e_type == SURVIVE_INPUT_EVENT_BUTTON_DOWN) {
 		enum input_index index = buttons[btn_id].click;
-		struct xrt_input *input = &survive->base.inputs[index];
+		struct xrt_input *input = &survive->last_inputs[index];
 		input->value.boolean = true;
 		input->timestamp = ts;
 	} else if (e_type == SURVIVE_INPUT_EVENT_TOUCH_UP) {
 		enum input_index index = buttons[btn_id].touch;
-		struct xrt_input *input = &survive->base.inputs[index];
+		struct xrt_input *input = &survive->last_inputs[index];
 		input->value.boolean = false;
 		input->timestamp = ts;
 	} else if (e_type == SURVIVE_INPUT_EVENT_TOUCH_DOWN) {
 		enum input_index index = buttons[btn_id].touch;
-		struct xrt_input *input = &survive->base.inputs[index];
+		struct xrt_input *input = &survive->last_inputs[index];
 		input->value.boolean = true;
 		input->timestamp = ts;
 	}
@@ -624,7 +648,7 @@ _process_button_event(struct survive_device *survive, const struct SurviveSimple
 				SURVIVE_DEBUG(survive, "axis id: %d val %f", e->axis_ids[i], e->axis_val[i]);
 			}
 		}
-		struct xrt_input *squeeze_value_in = &survive->base.inputs[VIVE_CONTROLLER_SQUEEZE_VALUE];
+		struct xrt_input *squeeze_value_in = &survive->last_inputs[VIVE_CONTROLLER_SQUEEZE_VALUE];
 		float prev_squeeze_value = squeeze_value_in->value.vec1.x;
 		float squeeze_value = _calculate_squeeze_value(survive);
 		if (prev_squeeze_value != squeeze_value) {
@@ -685,7 +709,7 @@ _process_hmd_button_event(struct survive_device *survive, const struct SurviveSi
 static struct survive_device *
 get_device_by_object(struct survive_system *sys, const SurviveSimpleObject *object)
 {
-	if (sys->hmd->survive_obj == object) {
+	if (sys->hmd != NULL && sys->hmd->survive_obj == object) {
 		return sys->hmd;
 	}
 
@@ -713,26 +737,20 @@ _process_pose_event(struct survive_device *survive, const struct SurviveSimplePo
 }
 
 static void
-_process_event(struct survive_system *ss, struct survive_device *survive, struct SurviveSimpleEvent *event)
+_process_event(struct survive_system *ss, struct SurviveSimpleEvent *event)
 {
 	switch (event->event_type) {
 	case SurviveSimpleEventType_ButtonEvent: {
 		const struct SurviveSimpleButtonEvent *e = survive_simple_get_button_event(event);
 
-		struct survive_device *event_device = NULL;
-		if (e->object == survive->survive_obj) {
-			event_device = survive;
-		} else {
-			event_device = get_device_by_object(survive->sys, e->object);
-		}
-
+		struct survive_device *event_device = get_device_by_object(ss, e->object);
 		if (event_device == NULL) {
-			SURVIVE_ERROR(survive, "Event for unknown object not handled");
+			U_LOG_IFL_E(ss->ll, "Event for unknown object not handled");
 			return;
 		}
 
 		// hmd & controller axes have overlapping enum indices
-		if (event_device == survive->sys->hmd) {
+		if (event_device == ss->hmd) {
 			_process_hmd_button_event(event_device, e);
 		} else {
 			_process_button_event(event_device, e);
@@ -748,15 +766,9 @@ _process_event(struct survive_system *ss, struct survive_device *survive, struct
 	case SurviveSimpleEventType_PoseUpdateEvent: {
 		const struct SurviveSimplePoseUpdatedEvent *e = survive_simple_get_pose_updated_event(event);
 
-		struct survive_device *event_device = NULL;
-		if (e->object == survive->survive_obj) {
-			event_device = survive;
-		} else {
-			event_device = get_device_by_object(survive->sys, e->object);
-		}
-
+		struct survive_device *event_device = get_device_by_object(ss, e->object);
 		if (event_device == NULL) {
-			SURVIVE_ERROR(survive, "Pose Event for unknown object not handled");
+			U_LOG_IFL_E(ss->ll, "Event for unknown object not handled");
 			return;
 		}
 
@@ -764,27 +776,26 @@ _process_event(struct survive_system *ss, struct survive_device *survive, struct
 		break;
 	}
 	case SurviveSimpleEventType_DeviceAdded: {
-		SURVIVE_WARN(survive, "Device added event, but hotplugging not implemented yet");
+		U_LOG_IFL_W(ss->ll, "Device added event, but hotplugging not implemented yet");
 		break;
 	}
 	case SurviveSimpleEventType_None: break;
-	default: SURVIVE_ERROR(survive, "Unknown event %d", event->event_type);
+	default: U_LOG_IFL_E(ss->ll, "Unknown event %d", event->event_type);
 	}
 }
-
 
 static void
 survive_device_update_inputs(struct xrt_device *xdev)
 {
 	struct survive_device *survive = (struct survive_device *)xdev;
 
-	/* one event queue for all devices. _process_events() updates all
-	 devices, not just this survive device. */
+	os_mutex_lock(&survive->sys->lock);
 
-	struct SurviveSimpleEvent event = {0};
-	while (survive_simple_next_event(survive->sys->ctx, &event) != SurviveSimpleEventType_None) {
-		_process_event(NULL, survive, &event);
+	for (size_t i = 0; i < survive->base.num_inputs; i++) {
+		survive->base.inputs[i] = survive->last_inputs[i];
 	}
+
+	os_mutex_unlock(&survive->sys->lock);
 }
 
 static bool
@@ -898,6 +909,12 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 	survive->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	survive->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
+
+	survive->last_inputs = U_TYPED_ARRAY_CALLOC(struct xrt_input, survive->base.num_inputs);
+	survive->num_last_inputs = survive->base.num_inputs;
+	for (size_t i = 0; i < survive->base.num_inputs; i++) {
+		survive->last_inputs[i] = survive->base.inputs[i];
+	}
 
 	return true;
 }
@@ -1115,6 +1132,12 @@ _create_controller_device(struct survive_system *sys,
 	survive->base.orientation_tracking_supported = true;
 	survive->base.position_tracking_supported = true;
 
+	survive->last_inputs = U_TYPED_ARRAY_CALLOC(struct xrt_input, survive->base.num_inputs);
+	survive->num_last_inputs = survive->base.num_inputs;
+	for (size_t i = 0; i < survive->base.num_inputs; i++) {
+		survive->last_inputs[i] = survive->base.inputs[i];
+	}
+
 	SURVIVE_DEBUG(survive, "Created Controller %d", idx);
 
 	return true;
@@ -1171,12 +1194,12 @@ add_connected_devices(struct survive_system *ss)
 		struct SurviveSimpleEvent event = {0};
 		while (survive_simple_next_event(ss->ctx, &event) != SurviveSimpleEventType_None) {
 			if (event.event_type == SurviveSimpleEventType_ConfigEvent) {
-				_process_event(ss, NULL, &event);
+				_process_event(ss, &event);
 
 				// libsurvive processes sequentially, restart timeout
 				start = os_monotonic_get_ns();
 			} else {
-				U_LOG_IFL_D(ss->ll, "Skipping event\n");
+				U_LOG_IFL_T(ss->ll, "Skipping event\n");
 			}
 		}
 
@@ -1186,6 +1209,32 @@ add_connected_devices(struct survive_system *ss)
 		os_nanosleep(1000);
 	}
 	return true;
+}
+
+static void *
+run_event_thread(void *ptr)
+{
+	struct survive_system *ss = (struct survive_system *)ptr;
+
+	os_thread_helper_lock(&ss->event_thread);
+	while (os_thread_helper_is_running_locked(&ss->event_thread)) {
+		os_thread_helper_unlock(&ss->event_thread);
+
+		// one event queue for all devices. _process_events() updates all devices
+		struct SurviveSimpleEvent event = {0};
+		survive_simple_wait_for_event(ss->ctx, &event);
+
+		os_mutex_lock(&ss->lock);
+		_process_event(ss, &event);
+		os_mutex_unlock(&ss->lock);
+
+		// Just keep swimming.
+		os_thread_helper_lock(&ss->event_thread);
+	}
+
+	os_thread_helper_unlock(&ss->event_thread);
+
+	return NULL;
 }
 
 int
@@ -1267,5 +1316,27 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 	}
 
 	survive_already_initialized = true;
+
+	// Mutex before thread.
+	int ret = os_mutex_init(&ss->lock);
+	if (ret != 0) {
+		U_LOG_IFL_E(ss->ll, "Failed to init mutex!");
+		survive_device_destroy((struct xrt_device *)ss->hmd);
+		for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
+			survive_device_destroy((struct xrt_device *)ss->controllers[i]);
+		}
+		return 0;
+	}
+
+	ret = os_thread_helper_start(&ss->event_thread, run_event_thread, ss);
+	if (ret != 0) {
+		U_LOG_IFL_E(ss->ll, "Failed to start event thread!");
+		survive_device_destroy((struct xrt_device *)ss->hmd);
+		for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
+			survive_device_destroy((struct xrt_device *)ss->controllers[i]);
+		}
+		return 0;
+	}
+
 	return out_idx;
 }
