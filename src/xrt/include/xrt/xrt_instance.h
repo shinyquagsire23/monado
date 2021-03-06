@@ -25,7 +25,7 @@ struct xrt_system_compositor;
 
 
 /*!
- * @ingroup xrt_iface
+ * @addtogroup xrt_iface
  * @{
  */
 

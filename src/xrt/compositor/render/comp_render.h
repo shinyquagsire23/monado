@@ -25,7 +25,7 @@ struct comp_compositor;
 struct comp_swapchain_image;
 
 /*!
- * @ingroup comp_main
+ * @addtogroup comp_main
  * @{
  */
 

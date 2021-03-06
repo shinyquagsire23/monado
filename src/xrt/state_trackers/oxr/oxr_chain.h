@@ -15,7 +15,7 @@ extern "C" {
 #endif
 
 /*!
- * @ingroup oxr_api
+ * @addtogroup oxr_api
  * @{
  */
 

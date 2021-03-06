@@ -21,7 +21,7 @@ extern "C" {
 
 
 /*!
- * @ingroup aux_math
+ * @addtogroup aux_math
  * @{
  */
 

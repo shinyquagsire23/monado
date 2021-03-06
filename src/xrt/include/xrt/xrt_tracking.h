@@ -32,7 +32,7 @@ struct xrt_tracked_hand;
 typedef int64_t timepoint_ns;
 
 /*!
- * @ingroup xrt_iface
+ * @addtogroup xrt_iface
  * @{
  */
 

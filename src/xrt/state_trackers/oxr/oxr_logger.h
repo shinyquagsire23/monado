@@ -41,7 +41,7 @@ struct oxr_logger
 
 
 /*!
- * @ingroup oxr_main
+ * @addtogroup oxr_main
  * @{
  */
 

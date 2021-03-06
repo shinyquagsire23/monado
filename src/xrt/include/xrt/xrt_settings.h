@@ -21,7 +21,7 @@ extern "C" {
 
 
 /*!
- * @ingroup xrt_iface
+ * @addtogroup xrt_iface
  * @{
  */
 

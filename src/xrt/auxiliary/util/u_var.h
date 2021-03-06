@@ -24,7 +24,7 @@ struct m_ff_f64;
 struct m_ff_vec3_f32;
 
 /*!
- * @ingroup aux_util
+ * @addtogroup aux_util
  * @{
  */
 

@@ -36,7 +36,7 @@ extern "C" {
 
 
 /*!
- * @ingroup aux_os
+ * @addtogroup aux_os
  * @{
  */
 

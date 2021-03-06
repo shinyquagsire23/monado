@@ -37,7 +37,7 @@
 
 
 /*!
- * @ingroup drv_psmv
+ * @addtogroup drv_psmv
  * @{
  */
 

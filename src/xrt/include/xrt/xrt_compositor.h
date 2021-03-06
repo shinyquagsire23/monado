@@ -37,7 +37,7 @@ typedef uint64_t VkDeviceMemory;
 
 
 /*!
- * @ingroup xrt_iface
+ * @addtogroup xrt_iface
  * @{
  */
 

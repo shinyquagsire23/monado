@@ -58,7 +58,7 @@ extern "C" {
  */
 
 /*!
- * @ingroup aux_tracking
+ * @addtogroup aux_tracking
  * @{
  */
 

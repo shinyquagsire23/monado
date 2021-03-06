@@ -19,7 +19,7 @@ extern "C" {
 
 
 /*!
- * @ingroup aux_vk
+ * @addtogroup aux_vk
  * @{
  */
 

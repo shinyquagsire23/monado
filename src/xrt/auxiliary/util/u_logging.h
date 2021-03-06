@@ -27,7 +27,7 @@ struct xrt_device;
  */
 
 /*!
- * @ingroup aux_log
+ * @addtogroup aux_log
  * @{
  */
 

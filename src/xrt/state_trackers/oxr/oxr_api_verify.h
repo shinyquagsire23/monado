@@ -44,7 +44,7 @@ extern "C" {
 
 
 /*!
- * @ingroup oxr_api
+ * @addtogroup oxr_api
  * @{
  */
 
