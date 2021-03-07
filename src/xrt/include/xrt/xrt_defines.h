@@ -1,9 +1,10 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Common defines and enums for XRT.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <mosesturner@protonmail.com>
  * @ingroup xrt_iface
  */
 
@@ -754,6 +755,7 @@ struct xrt_hand_joint_set
 
 	// in driver global space, without tracking_origin offset
 	struct xrt_space_relation hand_pose;
+	bool is_active;
 };
 
 /*!

@@ -1,9 +1,10 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Holds session related functions.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <mosesturner@protonmail.com>
  * @ingroup oxr_main
  */
 
@@ -2260,7 +2261,14 @@ oxr_session_hand_joints(struct oxr_logger *log,
 		}
 	}
 
-	locations->isActive = true;
+	if (value.is_active) {
+		locations->isActive = true;
+	} else {
+		locations->isActive = false;
+		for (uint32_t i = 0; i < locations->jointCount; i++) {
+			locations->jointLocations[i].locationFlags = XRT_SPACE_RELATION_BITMASK_NONE;
+		}
+	}
 
 	return XR_SUCCESS;
 }
