@@ -49,6 +49,7 @@ struct vive_controller_device
 
 	struct os_hid_device *controller_hid;
 	struct os_thread_helper controller_thread;
+	struct os_mutex lock;
 
 	struct
 	{

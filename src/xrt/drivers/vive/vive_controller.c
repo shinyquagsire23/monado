@@ -107,6 +107,9 @@ vive_controller_device_destroy(struct xrt_device *xdev)
 
 	os_thread_helper_destroy(&d->controller_thread);
 
+	// Now that the thread is not running we can destroy the lock.
+	os_mutex_destroy(&d->lock);
+
 	m_imu_3dof_close(&d->fusion);
 
 	if (d->controller_hid)
@@ -120,7 +123,8 @@ vive_controller_device_update_wand_inputs(struct xrt_device *xdev)
 {
 	struct vive_controller_device *d = vive_controller_device(xdev);
 
-	os_thread_helper_lock(&d->controller_thread);
+	os_mutex_lock(&d->lock);
+
 	uint8_t buttons = d->state.buttons;
 
 	/*
@@ -170,7 +174,7 @@ vive_controller_device_update_wand_inputs(struct xrt_device *xdev)
 	trigger_input->value.vec1.x = d->state.trigger;
 	VIVE_TRACE(d, "Trigger: %f", d->state.trigger);
 
-	os_thread_helper_unlock(&d->controller_thread);
+	os_mutex_unlock(&d->lock);
 }
 
 static void
@@ -178,7 +182,7 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 {
 	struct vive_controller_device *d = vive_controller_device(xdev);
 
-	os_thread_helper_lock(&d->controller_thread);
+	os_mutex_lock(&d->lock);
 	uint8_t buttons = d->state.buttons;
 
 	/*
@@ -286,7 +290,7 @@ vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 		VIVE_DEBUG(d, "Trackpad force: %f\n", (float)d->state.trackpad_force / UINT8_MAX);
 	}
 
-	os_thread_helper_unlock(&d->controller_thread);
+	os_mutex_unlock(&d->lock);
 }
 
 
@@ -388,17 +392,9 @@ vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
 	// Clear out the relation.
 	U_ZERO(out_relation);
 
-	os_thread_helper_lock(&d->controller_thread);
-
-	// Don't do anything if we have stopped.
-	if (!os_thread_helper_is_running_locked(&d->controller_thread)) {
-		os_thread_helper_unlock(&d->controller_thread);
-		return;
-	}
-
+	os_mutex_lock(&d->lock);
 	predict_pose(d, at_timestamp_ns, out_relation);
-
-	os_thread_helper_unlock(&d->controller_thread);
+	os_mutex_unlock(&d->lock);
 
 	struct xrt_vec3 pos = out_relation->pose.position;
 	struct xrt_quat quat = out_relation->pose.orientation;
@@ -477,7 +473,9 @@ vive_controller_device_set_output(struct xrt_device *xdev, enum xrt_output_name 
 		return;
 	}
 
+	os_mutex_lock(&d->lock);
 	vive_controller_haptic_pulse(d, value);
+	os_mutex_unlock(&d->lock);
 }
 
 static void
@@ -933,12 +931,16 @@ vive_controller_device_update(struct vive_controller_device *d)
 
 	switch (buf[0]) {
 	case VIVE_CONTROLLER_REPORT1_ID:
+		os_mutex_lock(&d->lock);
 		vive_controller_decode_message(d, &((struct vive_controller_report1 *)buf)->message);
+		os_mutex_unlock(&d->lock);
 		break;
 
 	case VIVE_CONTROLLER_REPORT2_ID:
+		os_mutex_lock(&d->lock);
 		vive_controller_decode_message(d, &((struct vive_controller_report2 *)buf)->message[0]);
 		vive_controller_decode_message(d, &((struct vive_controller_report2 *)buf)->message[1]);
+		os_mutex_unlock(&d->lock);
 		break;
 	case VIVE_CONTROLLER_DISCONNECT_REPORT_ID: VIVE_DEBUG(d, "Controller disconnected."); break;
 	default: VIVE_ERROR(d, "Unknown controller message type: %u", buf[0]);
@@ -1184,7 +1186,15 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	}
 
 	if (d->controller_hid) {
-		int ret = os_thread_helper_start(&d->controller_thread, vive_controller_run_thread, d);
+		// Mutex before thread.
+		int ret = os_mutex_init(&d->lock);
+		if (ret != 0) {
+			VIVE_ERROR(d, "Failed to init mutex!");
+			vive_controller_device_destroy(&d->base);
+			return 0;
+		}
+
+		ret = os_thread_helper_start(&d->controller_thread, vive_controller_run_thread, d);
 		if (ret != 0) {
 			VIVE_ERROR(d, "Failed to start mainboard thread!");
 			vive_controller_device_destroy((struct xrt_device *)d);
