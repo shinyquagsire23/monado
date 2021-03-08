@@ -35,6 +35,7 @@ struct hdk_device
 	enum HDK_VARIANT variant;
 
 	struct os_thread_helper imu_thread;
+	struct os_mutex lock;
 
 	enum u_logging_level ll;
 	bool disconnect_notified;
