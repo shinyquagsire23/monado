@@ -38,6 +38,9 @@ struct vive_device
 	struct os_thread_helper watchman_thread;
 	struct os_thread_helper mainboard_thread;
 
+	//! Lock for last and fusion.
+	struct os_mutex lock;
+
 	struct
 	{
 		uint64_t time_ns;

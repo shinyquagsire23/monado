@@ -54,6 +54,9 @@ vive_device_destroy(struct xrt_device *xdev)
 	os_thread_helper_destroy(&d->watchman_thread);
 	os_thread_helper_destroy(&d->mainboard_thread);
 
+	// Now that the thread is not running we can destroy the lock.
+	os_mutex_destroy(&d->lock);
+
 	m_imu_3dof_close(&d->fusion);
 
 	if (d->mainboard_dev != NULL) {
@@ -128,17 +131,9 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 	//! @todo Use this properly.
 	(void)at_timestamp_ns;
 
-	os_thread_helper_lock(&d->sensors_thread);
-
-	// Don't do anything if we have stopped.
-	if (!os_thread_helper_is_running_locked(&d->sensors_thread)) {
-		os_thread_helper_unlock(&d->sensors_thread);
-		return;
-	}
-
+	os_mutex_lock(&d->lock);
 	predict_pose(d, at_timestamp_ns, out_relation);
-
-	os_thread_helper_unlock(&d->sensors_thread);
+	os_mutex_unlock(&d->lock);
 }
 
 static void
@@ -579,7 +574,11 @@ vive_sensors_read_one_msg(struct vive_device *d,
 	if (buffer[0] == report_id) {
 		if (!_is_report_size_valid(d, ret, report_size, report_id))
 			return false;
+
+		os_mutex_lock(&d->lock);
 		process_cb(d, buffer);
+		os_mutex_unlock(&d->lock);
+
 	} else {
 		VIVE_ERROR(d, "Unexpected sensor report type %s (0x%x).", _sensors_get_report_string(buffer[0]),
 		           buffer[0]);
@@ -900,6 +899,14 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	case VIVE_UNKNOWN: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Unknown HMD (vive)"); break;
 	}
 	snprintf(d->base.serial, XRT_DEVICE_NAME_LEN, "%s", d->config.firmware.device_serial_number);
+
+	// Mutex before thread.
+	ret = os_mutex_init(&d->lock);
+	if (ret != 0) {
+		VIVE_ERROR(d, "Failed to init mutex!");
+		vive_device_destroy(&d->base);
+		return NULL;
+	}
 
 	ret = os_thread_helper_start(&d->sensors_thread, vive_sensors_run_thread, d);
 	if (ret != 0) {
