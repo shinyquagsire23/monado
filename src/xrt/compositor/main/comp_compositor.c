@@ -443,8 +443,6 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 	c->last_frame_time_ns = os_monotonic_get_ns();
 	c->app_profiling.last_end = c->last_frame_time_ns;
 
-	//! @todo do a time-weighted average or something.
-	c->expected_app_duration_ns = c->app_profiling.last_end - c->app_profiling.last_begin;
 
 	COMP_SPEW(c, "LAYER_COMMIT finished drawing at %8.3fms", ns_to_ms(c->last_frame_time_ns));
 
@@ -1313,9 +1311,6 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	comp_settings_init(&c->settings, xdev);
 
 	c->last_frame_time_ns = os_monotonic_get_ns();
-	c->frame_overhead_ns = 2000000;
-	//! @todo set this to an estimate that's better than 6ms
-	c->expected_app_duration_ns = 6000000;
 
 
 	// Need to select window backend before creating Vulkan, then
