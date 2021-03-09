@@ -405,6 +405,49 @@ vk_create_image_from_native(struct vk_bundle *vk,
 }
 
 VkResult
+vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkFence *out_fence)
+{
+	VkFence fence = VK_NULL_HANDLE;
+	VkResult ret;
+
+	VkFenceCreateInfo create_info = {
+	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+	    .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+	};
+
+	ret = vk->vkCreateFence(vk->device, &create_info, NULL, &fence);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkCreateFence: %s", vk_result_string(ret));
+		return ret;
+	}
+
+#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
+	// This is what is used on Linux Mesa when importing fences from OpenGL.
+	VkExternalFenceHandleTypeFlagBits handleType = VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT;
+
+	VkImportFenceFdInfoKHR import_info = {
+	    .sType = VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR,
+	    .fence = fence,
+	    .handleType = handleType,
+	    .fd = native,
+	};
+
+	ret = vk->vkImportFenceFdKHR(vk->device, &import_info);
+	if (ret != VK_SUCCESS) {
+		vk->vkDestroyFence(vk->device, fence, NULL);
+		VK_ERROR(vk, "vkImportFenceFdKHR: %s", vk_result_string(ret));
+		return ret;
+	}
+#else
+#error "Need port to import fence sync handles"
+#endif
+
+	*out_fence = fence;
+
+	return VK_SUCCESS;
+}
+
+VkResult
 vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem)
 {
 	VkResult ret;
@@ -857,6 +900,9 @@ vk_get_device_functions(struct vk_bundle *vk)
 #else
 	vk->vkImportSemaphoreFdKHR        = GET_DEV_PROC(vk, vkImportSemaphoreFdKHR);
 	vk->vkGetSemaphoreFdKHR           = GET_DEV_PROC(vk, vkGetSemaphoreFdKHR);
+
+	vk->vkImportFenceFdKHR            = GET_DEV_PROC(vk, vkImportFenceFdKHR);
+	vk->vkGetFenceFdKHR               = GET_DEV_PROC(vk, vkGetFenceFdKHR);
 #endif
 
 	vk->vkGetPastPresentationTimingGOOGLE = GET_DEV_PROC(vk, vkGetPastPresentationTimingGOOGLE);

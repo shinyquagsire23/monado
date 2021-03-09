@@ -216,6 +216,9 @@ struct vk_bundle
 #else
 	PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
 	PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;
+
+	PFN_vkImportFenceFdKHR vkImportFenceFdKHR;
+	PFN_vkGetFenceFdKHR vkGetFenceFdKHR;
 #endif
 
 	PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
@@ -435,6 +438,12 @@ vk_create_image_from_native(struct vk_bundle *vk,
                             struct xrt_image_native *image_native,
                             VkImage *out_image,
                             VkDeviceMemory *out_mem);
+
+/*!
+ * @ingroup aux_vk
+ */
+VkResult
+vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkFence *out_fence);
 
 /*!
  * @ingroup aux_vk
