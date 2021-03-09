@@ -144,6 +144,7 @@ compositor_wait_frame(struct xrt_compositor *xc,
 	c->frame.waited.id = frame_id;
 	c->frame.waited.desired_present_time_ns = desired_present_time_ns;
 	c->frame.waited.present_slop_ns = present_slop_ns;
+	c->frame.waited.predicted_display_time_ns = predicted_display_time_ns;
 
 	uint64_t now_ns = os_monotonic_get_ns();
 	if (now_ns < wake_up_time_ns) {

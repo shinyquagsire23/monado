@@ -374,7 +374,11 @@ renderer_get_view_projection(struct comp_renderer *r)
 
 	struct xrt_space_relation relation;
 
-	xrt_device_get_tracked_pose(r->c->xdev, XRT_INPUT_GENERIC_HEAD_POSE, r->c->last_next_display_time, &relation);
+	xrt_device_get_tracked_pose(                         //
+	    r->c->xdev,                                      //
+	    XRT_INPUT_GENERIC_HEAD_POSE,                     //
+	    r->c->frame.rendering.predicted_display_time_ns, //
+	    &relation);                                      //
 
 	struct xrt_vec3 eye_relation = {
 	    0.063000f, /* TODO: get actual ipd_meters */

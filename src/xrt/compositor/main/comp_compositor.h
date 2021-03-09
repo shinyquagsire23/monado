@@ -158,6 +158,7 @@ struct comp_shaders
 struct comp_frame
 {
 	int64_t id;
+	uint64_t predicted_display_time_ns;
 	uint64_t desired_present_time_ns;
 	uint64_t present_slop_ns;
 };
