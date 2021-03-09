@@ -41,12 +41,19 @@ enum xrt_settings_camera_type
 
 #define XRT_MAX_TRACKING_OVERRIDES 16
 
+enum xrt_tracking_override_type
+{
+	XRT_TRACKING_OVERRIDE_DIRECT = 0,
+	XRT_TRACKING_OVERRIDE_ATTACHED,
+};
+
 struct xrt_tracking_override
 {
 	char target_device_serial[XRT_DEVICE_NAME_LEN];
 	char tracker_device_serial[XRT_DEVICE_NAME_LEN];
 	enum xrt_input_name input_name;
 	struct xrt_pose offset;
+	enum xrt_tracking_override_type override_type;
 };
 
 /*!

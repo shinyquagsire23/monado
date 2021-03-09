@@ -284,6 +284,14 @@ u_config_json_get_tracking_overrides(struct u_config_json *json,
 		bad |= !get_obj_str(override, "target_device_serial", o->target_device_serial, XRT_DEVICE_NAME_LEN);
 		bad |= !get_obj_str(override, "tracker_device_serial", o->tracker_device_serial, XRT_DEVICE_NAME_LEN);
 
+		char override_type[256];
+		bad |= !get_obj_str(override, "type", override_type, 256);
+		if (strncmp(override_type, "direct", 256) == 0) {
+			o->override_type = XRT_TRACKING_OVERRIDE_DIRECT;
+		} else if (strncmp(override_type, "attached", 256) == 0) {
+			o->override_type = XRT_TRACKING_OVERRIDE_ATTACHED;
+		}
+
 		cJSON *offset = cJSON_GetObjectItemCaseSensitive(override, "offset");
 		if (offset) {
 			cJSON *orientation = cJSON_GetObjectItemCaseSensitive(offset, "orientation");
@@ -445,6 +453,14 @@ u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_ove
 
 		cJSON_AddStringToObject(entry, "target_device_serial", overrides[i].target_device_serial);
 		cJSON_AddStringToObject(entry, "tracker_device_serial", overrides[i].tracker_device_serial);
+
+		char override_type[256];
+		switch (overrides[i].override_type) {
+		case XRT_TRACKING_OVERRIDE_DIRECT: strncpy(override_type, "direct", 256); break;
+		case XRT_TRACKING_OVERRIDE_ATTACHED: strncpy(override_type, "attached", 256); break;
+		}
+		cJSON_AddStringToObject(entry, "type", override_type);
+
 		cJSON_AddItemToObject(entry, "offset", make_pose(&overrides[i].offset));
 
 		cJSON_AddItemToArray(o, entry);

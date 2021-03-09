@@ -30,6 +30,7 @@ struct gui_tracking_overrides
 	bool add_one;
 	int add_target;
 	int add_tracker;
+	enum xrt_tracking_override_type override_type;
 
 	struct u_config_json config;
 
@@ -37,6 +38,11 @@ struct gui_tracking_overrides
 
 	size_t num_overrides;
 	struct xrt_tracking_override overrides[XRT_MAX_TRACKING_OVERRIDES];
+};
+
+static char *override_type_str[2] = {
+    [XRT_TRACKING_OVERRIDE_DIRECT] = "direct",
+    [XRT_TRACKING_OVERRIDE_ATTACHED] = "attached",
 };
 
 static ImVec2 button_dims = {256 + 64, 0};
@@ -165,6 +171,15 @@ add_one(struct gui_program *p, struct gui_tracking_overrides *ts)
 	}
 	igEnd();
 
+	igBegin("Tracking Override Type", NULL, 0);
+	for (int i = 0; i < 2; i++) {
+		bool selected = (int)ts->override_type == i;
+		if (igCheckbox(override_type_str[i], &selected)) {
+			ts->override_type = (enum xrt_tracking_override_type)i;
+		}
+	}
+	igEnd();
+
 	if (ts->add_target >= 0 && ts->add_tracker >= 0 && ts->add_target != ts->add_tracker) {
 		struct xrt_tracking_override *o = &ts->overrides[ts->num_overrides];
 		o->input_name = XRT_INPUT_GENERIC_TRACKER_POSE;
@@ -178,6 +193,8 @@ add_one(struct gui_program *p, struct gui_tracking_overrides *ts)
 		ts->add_tracker = -1;
 
 		ts->add_one = false;
+
+		ts->override_type = 0;
 	}
 }
 
@@ -185,6 +202,11 @@ static void
 scene_render(struct gui_scene *scene, struct gui_program *p)
 {
 	struct gui_tracking_overrides *ts = (struct gui_tracking_overrides *)scene;
+
+	// don't edit and add at the same time
+	if (ts->add_one) {
+		ts->editing_override = -1;
+	}
 
 	if (ts->editing_override >= 0) {
 		struct xrt_tracking_override *o = &ts->overrides[ts->editing_override];
@@ -199,6 +221,13 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		}
 		handle_draggable_vec3_f32("Position", &o->offset.position, &ts->reset_offset.position);
 		handle_draggable_quat("Orientation", &o->offset.orientation, &ts->reset_offset.orientation);
+
+		for (int i = 0; i < 2; i++) {
+			bool selected = (int)o->override_type == i;
+			if (igCheckbox(override_type_str[i], &selected)) {
+				o->override_type = (enum xrt_tracking_override_type)i;
+			}
+		}
 		igEnd();
 	}
 
@@ -221,6 +250,10 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		snprintf(buf, sizeof(buf), "%s <- %s", ts->overrides[i].target_device_serial,
 		         ts->overrides[i].tracker_device_serial);
 		if (igCheckbox(buf, &checked)) {
+
+			// abort adding override when clicking to edit one
+			ts->add_one = false;
+
 			ts->editing_override = i;
 			ts->reset_offset = ts->overrides[i].offset;
 		}

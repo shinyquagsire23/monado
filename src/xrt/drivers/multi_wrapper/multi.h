@@ -11,6 +11,7 @@
 
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_settings.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,7 +42,8 @@ extern "C" {
  * @ingroup drv_multi
  */
 struct xrt_device *
-multi_create_tracking_override(struct xrt_device *tracking_override_target,
+multi_create_tracking_override(enum xrt_tracking_override_type override_type,
+                               struct xrt_device *tracking_override_target,
                                struct xrt_device *tracking_override_tracker,
                                enum xrt_input_name tracking_override_input_name,
                                struct xrt_pose *offset);

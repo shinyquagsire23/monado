@@ -8,6 +8,7 @@
  */
 
 #include "xrt/xrt_config_drivers.h"
+#include "xrt/xrt_settings.h"
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
@@ -806,8 +807,8 @@ apply_tracking_override(struct prober *p, struct xrt_device **xdevs, size_t num_
 
 
 	if (target_xdev != NULL && tracker_xdev != NULL) {
-		struct xrt_device *multi =
-		    multi_create_tracking_override(target_xdev, tracker_xdev, o->input_name, &o->offset);
+		struct xrt_device *multi = multi_create_tracking_override(o->override_type, target_xdev, tracker_xdev,
+		                                                          o->input_name, &o->offset);
 
 		if (multi) {
 			// drops the target device from the list, but keeps the tracker

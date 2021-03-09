@@ -34,8 +34,48 @@ struct multi_device
 		enum xrt_input_name input_name;
 		struct xrt_pose offset_inv;
 	} tracking_override;
+
+	enum xrt_tracking_override_type override_type;
 };
 
+static void
+direct_override(struct multi_device *d,
+                struct xrt_space_relation *tracker_relation,
+                struct xrt_space_relation *out_relation)
+{
+	struct xrt_space_graph xsg = {0};
+	m_space_graph_add_pose_if_not_identity(&xsg, &d->tracking_override.offset_inv);
+	m_space_graph_add_relation(&xsg, tracker_relation);
+	m_space_graph_resolve(&xsg, out_relation);
+}
+
+static void
+attached_override(struct multi_device *d,
+                  struct xrt_space_relation *target_relation,
+                  struct xrt_pose *target_offset,
+                  struct xrt_space_relation *tracker_relation,
+                  struct xrt_pose *tracker_offset,
+                  struct xrt_space_relation *in_target_space,
+                  struct xrt_space_relation *out_relation)
+{
+	/* Example:
+	 * - target: hand tracking xrt_device
+	 * - tracker: positional tracker that the target is physically attached to
+	 * - in_target_space: a tracked hand, relative to target's tracking origin
+	 */
+
+	// XXX TODO tracking origin offsets
+	// m_space_graph_add_inverted_pose_if_not_identity(&xsg, tracker_offset);
+	// m_space_graph_add_inverted_relation(&xsg, tracker_relation);
+
+	struct xrt_space_graph xsg = {0};
+	m_space_graph_add_relation(&xsg, target_relation);
+	m_space_graph_add_pose_if_not_identity(&xsg, &d->tracking_override.offset_inv);
+	m_space_graph_add_relation(&xsg, tracker_relation);
+	m_space_graph_add_pose_if_not_identity(&xsg, tracker_offset);
+	m_space_graph_add_relation(&xsg, in_target_space);
+	m_space_graph_resolve(&xsg, out_relation);
+}
 
 static void
 get_tracked_pose(struct xrt_device *xdev,
@@ -45,14 +85,35 @@ get_tracked_pose(struct xrt_device *xdev,
 {
 	struct multi_device *d = (struct multi_device *)xdev;
 	struct xrt_device *tracker = d->tracking_override.tracker;
-	enum xrt_input_name input_name = d->tracking_override.input_name;
+	enum xrt_input_name tracker_input_name = d->tracking_override.input_name;
 
-	tracker->get_tracked_pose(tracker, input_name, at_timestamp_ns, out_relation);
+	struct xrt_space_relation tracker_relation;
 
-	struct xrt_space_graph xsg = {0};
-	m_space_graph_add_pose_if_not_identity(&xsg, &d->tracking_override.offset_inv);
-	m_space_graph_add_relation(&xsg, out_relation);
-	m_space_graph_resolve(&xsg, out_relation);
+	xrt_device_get_tracked_pose(tracker, tracker_input_name, at_timestamp_ns, &tracker_relation);
+
+	switch (d->override_type) {
+	case XRT_TRACKING_OVERRIDE_DIRECT: {
+		direct_override(d, &tracker_relation, out_relation);
+	} break;
+	case XRT_TRACKING_OVERRIDE_ATTACHED: {
+		struct xrt_device *target = d->tracking_override.target;
+
+		struct xrt_space_relation target_relation;
+		xrt_device_get_tracked_pose(target, name, at_timestamp_ns, &target_relation);
+
+
+		// just use the origin of the tracker space as reference frame
+		struct xrt_space_relation in_target_space;
+		m_space_relation_ident(&in_target_space);
+		in_target_space.relation_flags = tracker_relation.relation_flags;
+
+		struct xrt_pose *target_offset = &d->tracking_override.target->tracking_origin->offset;
+		struct xrt_pose *tracker_offset = &d->tracking_override.tracker->tracking_origin->offset;
+
+		attached_override(d, &target_relation, target_offset, &tracker_relation, tracker_offset,
+		                  &in_target_space, out_relation);
+	} break;
+	}
 }
 
 static void
@@ -113,7 +174,8 @@ update_inputs(struct xrt_device *xdev)
 
 
 struct xrt_device *
-multi_create_tracking_override(struct xrt_device *tracking_override_target,
+multi_create_tracking_override(enum xrt_tracking_override_type override_type,
+                               struct xrt_device *tracking_override_target,
                                struct xrt_device *tracking_override_tracker,
                                enum xrt_input_name tracking_override_input_name,
                                struct xrt_pose *offset)
@@ -125,6 +187,7 @@ multi_create_tracking_override(struct xrt_device *tracking_override_target,
 	}
 
 	d->ll = debug_get_log_option_multi_log();
+	d->override_type = override_type;
 
 	// mimic the tracking override target
 	d->base = *tracking_override_target;
