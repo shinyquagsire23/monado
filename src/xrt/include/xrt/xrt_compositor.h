@@ -476,6 +476,69 @@ xrt_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	return xsc->release_image(xsc, index);
 }
 
+
+/*
+ *
+ * Fence.
+ *
+ */
+
+/*!
+ * Compositor fence used for syncornization.
+ */
+struct xrt_compositor_fence
+{
+	/*!
+	 * Destroys the fence.
+	 */
+	xrt_result_t (*wait)(struct xrt_compositor_fence *xcf, uint64_t timeout);
+
+	/*!
+	 * Destroys the fence.
+	 */
+	void (*destroy)(struct xrt_compositor_fence *xcf);
+};
+
+/*!
+ * @copydoc xrt_compositor_fence::wait
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor_fence
+ */
+static inline xrt_result_t
+xrt_compositor_fence_wait(struct xrt_compositor_fence *xcf, uint64_t timeout)
+{
+	return xcf->wait(xcf, timeout);
+}
+
+/*!
+ * @copydoc xrt_compositor_fence::destroy
+ *
+ * Helper for calling through the function pointer: does a null check and sets
+ * xcf_ptr to null if freed.
+ *
+ * @public @memberof xrt_compositor_fence
+ */
+static inline void
+xrt_compositor_fence_destroy(struct xrt_compositor_fence **xcf_ptr)
+{
+	struct xrt_compositor_fence *xcf = *xcf_ptr;
+	if (xcf == NULL) {
+		return;
+	}
+
+	xcf->destroy(xcf);
+	*xcf_ptr = NULL;
+}
+
+
+/*
+ *
+ * Events.
+ *
+ */
+
 /*!
  * Event type for compositor events, none means no event was returned.
  */
@@ -513,6 +576,13 @@ union xrt_compositor_event {
 	struct xrt_compositor_event_state_change state;
 	struct xrt_compositor_event_state_change overlay;
 };
+
+
+/*
+ *
+ * Compositor.
+ *
+ */
 
 /*!
  * Swapchain creation info.
@@ -592,6 +662,13 @@ struct xrt_compositor
 	                                 struct xrt_image_native *native_images,
 	                                 uint32_t num_images,
 	                                 struct xrt_swapchain **out_xsc);
+
+	/*!
+	 * Create a compositor fence from a native sync handle.
+	 */
+	xrt_result_t (*import_fence)(struct xrt_compositor *xc,
+	                             xrt_graphics_sync_handle_t handle,
+	                             struct xrt_compositor_fence **out_xcf);
 
 	/*!
 	 * Poll events from this compositor.
@@ -797,6 +874,21 @@ xrt_comp_import_swapchain(struct xrt_compositor *xc,
                           struct xrt_swapchain **out_xsc)
 {
 	return xc->import_swapchain(xc, info, native_images, num_images, out_xsc);
+}
+
+/*!
+ * @copydoc xrt_compositor::import_fence
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_import_fence(struct xrt_compositor *xc,
+                      xrt_graphics_sync_handle_t handle,
+                      struct xrt_compositor_fence **out_xcf)
+{
+	return xc->import_fence(xc, handle, out_xcf);
 }
 
 /*!
