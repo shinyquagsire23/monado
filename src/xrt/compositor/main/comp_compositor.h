@@ -327,6 +327,14 @@ void
 comp_swapchain_really_destroy(struct comp_swapchain *sc);
 
 /*!
+ * For importing fences, defined in comp_sync.c .
+ */
+xrt_result_t
+comp_compositor_import_fence(struct xrt_compositor *xc,
+                             xrt_graphics_sync_handle_t handle,
+                             struct xrt_compositor_fence **out_xcf);
+
+/*!
  * Loads all of the shaders that the compositor uses.
  */
 bool

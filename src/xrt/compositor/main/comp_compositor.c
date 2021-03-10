@@ -1295,6 +1295,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	c->base.base.create_swapchain = comp_swapchain_create;
 	c->base.base.import_swapchain = comp_swapchain_import;
+	c->base.base.import_fence = comp_compositor_import_fence;
 	c->base.base.begin_session = compositor_begin_session;
 	c->base.base.end_session = compositor_end_session;
 	c->base.base.wait_frame = compositor_wait_frame;

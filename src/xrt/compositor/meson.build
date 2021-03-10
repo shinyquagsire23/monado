@@ -22,6 +22,7 @@ compositor_srcs = [
 	'main/comp_settings.h',
 	'main/comp_shaders.c',
 	'main/comp_swapchain.c',
+	'main/comp_sync.c',
 	'main/comp_target.h',
 	'main/comp_target_swapchain.c',
 	'main/comp_target_swapchain.h',
