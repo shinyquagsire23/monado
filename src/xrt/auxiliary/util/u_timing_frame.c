@@ -627,15 +627,33 @@ trace_frame(FILE *file, struct frame *f)
 	}
 
 	if (!is_within_half_ms(f->actual_present_time_ns, f->desired_present_time_ns)) {
-		trace_begin_id(file, TID_ERROR, "slippage", f->frame_id, "slippage", f->desired_present_time_ns);
-		trace_end(file, TID_ERROR, f->actual_present_time_ns);
+		if (f->actual_present_time_ns > f->desired_present_time_ns) {
+			trace_begin_id(file, TID_ERROR, "slippage", f->frame_id, "slippage",
+			               f->desired_present_time_ns);
+			trace_end(file, TID_ERROR, f->actual_present_time_ns);
+		} else {
+			trace_begin_id(file, TID_ERROR, "run-ahead", f->frame_id, "run-ahead",
+			               f->actual_present_time_ns);
+			trace_end(file, TID_ERROR, f->desired_present_time_ns);
+		}
 	}
 
-	trace_begin_id(file, TID_GPU, "gpu", f->frame_id, "gpu", f->when_submitted_ns);
-	trace_end(file, TID_GPU, f->actual_present_time_ns - f->present_margin_ns);
+	uint64_t gpu_end_ns = f->actual_present_time_ns - f->present_margin_ns;
+	if (gpu_end_ns > f->when_submitted_ns) {
+		trace_begin_id(file, TID_GPU, "gpu", f->frame_id, "gpu", f->when_submitted_ns);
+		trace_end(file, TID_GPU, gpu_end_ns);
+	} else {
+		trace_begin_id(file, TID_GPU, "gpu-time-travel", f->frame_id, "gpu-time-travel", gpu_end_ns);
+		trace_end(file, TID_GPU, f->when_submitted_ns);
+	}
 
-	trace_begin_id(file, TID_INFO, "info", f->frame_id, "info", f->actual_present_time_ns);
-	trace_end(file, TID_INFO, f->when_infoed_ns);
+	if (f->when_infoed_ns >= f->actual_present_time_ns) {
+		trace_begin_id(file, TID_INFO, "info", f->frame_id, "info", f->actual_present_time_ns);
+		trace_end(file, TID_INFO, f->when_infoed_ns);
+	} else {
+		trace_begin_id(file, TID_INFO, "info before", f->frame_id, "info", f->when_infoed_ns);
+		trace_end(file, TID_INFO, f->actual_present_time_ns);
+	}
 
 	trace_event_id(file, "vsync", f->frame_id, f->earliest_present_time_ns);
 	if (f->actual_present_time_ns != f->earliest_present_time_ns) {
