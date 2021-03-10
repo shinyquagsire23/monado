@@ -207,9 +207,12 @@ static struct frame *
 do_clean_slate_frame(struct display_timing *dt)
 {
 	struct frame *f = create_frame(dt, STATE_PREDICTED);
+	uint64_t now_ns = os_monotonic_get_ns();
 
 	// Wild shot in the dark.
 	uint64_t the_time_ns = os_monotonic_get_ns() + dt->frame_period_ns * 10;
+	f->when_predict_ns = now_ns;
+	f->desired_present_time_ns = the_time_ns;
 	f->predicted_display_time_ns = calc_display_time_from_present_time(dt, the_time_ns);
 
 	return f;
