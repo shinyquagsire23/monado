@@ -128,7 +128,11 @@ comp_window_xcb_create(struct comp_compositor *c)
 {
 	struct comp_window_xcb *w = U_TYPED_CALLOC(struct comp_window_xcb);
 
-	comp_target_swapchain_init_set_fnptrs(&w->base);
+	/*
+	 * The display timing code has been tested on XCB,
+	 * and is know to be broken when using VK_PRESENT_MODE_IMMEDIATE_KHR.
+	 */
+	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING);
 
 	w->base.base.name = "xcb";
 	w->base.base.destroy = comp_window_xcb_destroy;

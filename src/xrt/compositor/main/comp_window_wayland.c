@@ -102,7 +102,8 @@ comp_window_wayland_create(struct comp_compositor *c)
 {
 	struct comp_window_wayland *w = U_TYPED_CALLOC(struct comp_window_wayland);
 
-	comp_target_swapchain_init_set_fnptrs(&w->base);
+	// The display timing code hasn't been tested on Wayland and may be broken.
+	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING);
 
 	w->base.base.name = "wayland";
 	w->base.base.destroy = comp_window_wayland_destroy;

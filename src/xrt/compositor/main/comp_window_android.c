@@ -167,7 +167,8 @@ comp_window_android_create(struct comp_compositor *c)
 {
 	struct comp_window_android *w = U_TYPED_CALLOC(struct comp_window_android);
 
-	comp_target_swapchain_init_set_fnptrs(&w->base);
+	// The display timing code hasn't been tested on Android and may be broken.
+	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING);
 
 	w->base.base.name = "Android";
 	w->base.base.destroy = comp_window_android_destroy;

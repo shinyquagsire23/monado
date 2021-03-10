@@ -95,16 +95,13 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	VkBool32 supported;
 	VkResult ret;
 
-#ifndef XRT_OS_ANDROID
-	if (cts->uft == NULL && vk->has_GOOGLE_display_timing) {
+	// Some platforms really don't like the display_timing code.
+	bool use_display_timing_if_available = cts->timing_usage == COMP_TARGET_USE_DISPLAY_IF_AVAILABLE;
+	if (cts->uft == NULL && use_display_timing_if_available && vk->has_GOOGLE_display_timing) {
 		u_frame_timing_display_timing_create(ct->c->settings.nominal_frame_interval_ns, &cts->uft);
 	} else if (cts->uft == NULL) {
 		u_frame_timing_fake_create(ct->c->settings.nominal_frame_interval_ns, &cts->uft);
 	}
-#else
-	COMP_INFO(ct->c, "Always using the fake timing code on Android.");
-	u_frame_timing_fake_create(ct->c->settings.nominal_frame_interval_ns, &cts->uft);
-#endif
 
 	// Free old image views.
 	comp_target_swapchain_destroy_image_views(cts);
@@ -645,8 +642,10 @@ comp_target_swapchain_cleanup(struct comp_target_swapchain *cts)
 }
 
 void
-comp_target_swapchain_init_set_fnptrs(struct comp_target_swapchain *cts)
+comp_target_swapchain_init_and_set_fnptrs(struct comp_target_swapchain *cts,
+                                          enum comp_target_display_timing_usage timing_usage)
 {
+	cts->timing_usage = timing_usage;
 	cts->base.create_images = comp_target_swapchain_create_images;
 	cts->base.acquire = comp_target_swapchain_acquire_next_image;
 	cts->base.present = comp_target_swapchain_present;

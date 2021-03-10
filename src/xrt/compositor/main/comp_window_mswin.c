@@ -189,7 +189,8 @@ comp_window_mswin_create(struct comp_compositor *c)
 {
 	struct comp_window_mswin *w = U_TYPED_CALLOC(struct comp_window_mswin);
 
-	comp_target_swapchain_init_set_fnptrs(&w->base);
+	// The display timing code hasn't been tested on Windows and may be broken.
+	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING);
 
 	w->base.base.name = "MS Windows";
 	w->base.base.destroy = comp_window_mswin_destroy;

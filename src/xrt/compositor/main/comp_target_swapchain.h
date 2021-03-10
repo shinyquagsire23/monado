@@ -41,6 +41,9 @@ struct comp_target_swapchain
 	//! Frame timing tracker.
 	struct u_frame_timing *uft;
 
+	//! If we should use display timing.
+	enum comp_target_display_timing_usage timing_usage;
+
 	//! Also works as a frame index.
 	int64_t current_frame_id;
 
@@ -78,7 +81,8 @@ struct comp_target_swapchain
  * @ingroup comp_main
  */
 void
-comp_target_swapchain_init_set_fnptrs(struct comp_target_swapchain *cts);
+comp_target_swapchain_init_and_set_fnptrs(struct comp_target_swapchain *cts,
+                                          enum comp_target_display_timing_usage timing_usage);
 
 /*!
  * Free all managed resources on the given @ref comp_target_swapchain,

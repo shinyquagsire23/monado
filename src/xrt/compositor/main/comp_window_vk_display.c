@@ -84,7 +84,8 @@ comp_window_vk_display_create(struct comp_compositor *c)
 {
 	struct comp_window_vk_display *w = U_TYPED_CALLOC(struct comp_window_vk_display);
 
-	comp_target_swapchain_init_set_fnptrs(&w->base);
+	// The display timing code hasn't been tested on vk display and may be broken.
+	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING);
 
 	w->base.base.name = "VkDisplayKHR";
 	w->base.base.destroy = comp_window_vk_display_destroy;

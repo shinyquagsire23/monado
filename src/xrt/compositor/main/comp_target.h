@@ -33,6 +33,15 @@ enum comp_target_timing_point
 };
 
 /*!
+ * If the target should use the display timing information.
+ */
+enum comp_target_display_timing_usage
+{
+	COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING = 0,
+	COMP_TARGET_USE_DISPLAY_IF_AVAILABLE = 1,
+};
+
+/*!
  * Image and view pair for @ref comp_target.
  *
  * @ingroup comp_main
@@ -218,8 +227,13 @@ comp_target_create_images(struct comp_target *ct,
 {
 	COMP_TRACE_MARKER();
 
-	ct->create_images(ct, preferred_width, preferred_height, preferred_color_format, preferred_color_space,
-	                  present_mode);
+	ct->create_images(          //
+	    ct,                     //
+	    preferred_width,        //
+	    preferred_height,       //
+	    preferred_color_format, //
+	    preferred_color_space,  //
+	    present_mode);          //
 }
 
 /*!

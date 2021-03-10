@@ -113,7 +113,8 @@ comp_window_direct_randr_create(struct comp_compositor *c)
 {
 	struct comp_window_direct_randr *w = U_TYPED_CALLOC(struct comp_window_direct_randr);
 
-	comp_target_swapchain_init_set_fnptrs(&w->base);
+	// Display timing is tested and know working.
+	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_USE_DISPLAY_IF_AVAILABLE);
 
 	w->base.base.name = "direct";
 	w->base.base.destroy = comp_window_direct_randr_destroy;
