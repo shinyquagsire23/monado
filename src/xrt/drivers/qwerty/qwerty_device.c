@@ -22,13 +22,23 @@
 
 #define QWERTY_HMD_INITIAL_MOVEMENT_SPEED 0.002f // in meters per frame
 #define QWERTY_HMD_INITIAL_LOOK_SPEED 0.02f      // in radians per frame
+#define QWERTY_CONTROLLER_INITIAL_MOVEMENT_SPEED 0.005f
+#define QWERTY_CONTROLLER_INITIAL_LOOK_SPEED 0.05f
 #define MOVEMENT_SPEED_STEP 1.25f // Multiplier for how fast will mov speed increase/decrease
 #define SPRINT_STEPS 5            // Amount of MOVEMENT_SPEED_STEPs to increase when sprinting
 
 // clang-format off
-// Value copied from u_device_setup_tracking_origins.
+// Values copied from u_device_setup_tracking_origins.
 #define QWERTY_HMD_INITIAL_POS (struct xrt_vec3){0, 1.6f, 0}
+#define QWERTY_CONTROLLER_INITIAL_POS(is_left) (struct xrt_vec3){(is_left) ? -0.2f : 0.2f, -0.3f, -0.5f}
 // clang-format on
+
+// Indices for fake controller input components
+#define QWERTY_SELECT 0
+#define QWERTY_MENU 1
+#define QWERTY_GRIP 2
+#define QWERTY_AIM 3
+#define QWERTY_VIBRATION 0
 
 // xrt_device functions
 
@@ -47,6 +57,12 @@ qwerty_update_inputs(struct xrt_device *xd)
 }
 
 static void
+qwerty_set_output(struct xrt_device *xd, enum xrt_output_name name, union xrt_output_value *value)
+{
+	return;
+}
+
+static void
 qwerty_get_tracked_pose(struct xrt_device *xd,
                         enum xrt_input_name name,
                         uint64_t at_timestamp_ns,
@@ -54,7 +70,7 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 {
 	struct qwerty_device *qd = qwerty_device(xd);
 
-	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
+	if (name != XRT_INPUT_GENERIC_HEAD_POSE && name != XRT_INPUT_SIMPLE_GRIP_POSE) {
 		printf("Unexpected input name = 0x%04X\n", name >> 8); // @todo: use u_logging.h
 		return;
 	}
@@ -119,14 +135,15 @@ qwerty_destroy(struct xrt_device *xd)
 	u_device_free(xd);
 }
 
-struct qwerty_device *
+struct qwerty_hmd *
 qwerty_hmd_create(void)
 {
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE;
 	size_t num_inputs = 1, num_outputs = 0;
-	struct qwerty_device *qd = U_DEVICE_ALLOCATE(struct qwerty_device, flags, num_inputs, num_outputs);
-	assert(qd);
+	struct qwerty_hmd *qh = U_DEVICE_ALLOCATE(struct qwerty_hmd, flags, num_inputs, num_outputs);
+	assert(qh);
 
+	struct qwerty_device *qd = &qh->base;
 	qd->pose.orientation.w = 1.f;
 	qd->pose.position = QWERTY_HMD_INITIAL_POS;
 	qd->movement_speed = QWERTY_HMD_INITIAL_MOVEMENT_SPEED;
@@ -168,7 +185,46 @@ qwerty_hmd_create(void)
 	xd->destroy = qwerty_destroy;
 	u_distortion_mesh_set_none(xd); // Fill in xd->compute_distortion()
 
-	return qd;
+	return qh;
+}
+
+struct qwerty_controller *
+qwerty_controller_create(bool is_left, struct qwerty_hmd *qhmd)
+{
+	struct qwerty_controller *qc = U_DEVICE_ALLOCATE(struct qwerty_controller, U_DEVICE_ALLOC_TRACKING_NONE, 4, 1);
+	assert(qc);
+
+	struct qwerty_device *qd = &qc->base;
+	qd->pose.orientation.w = 1.f;
+	qd->pose.position = QWERTY_CONTROLLER_INITIAL_POS(is_left);
+	qd->movement_speed = QWERTY_CONTROLLER_INITIAL_MOVEMENT_SPEED;
+	qd->look_speed = QWERTY_CONTROLLER_INITIAL_LOOK_SPEED;
+
+	struct xrt_device *xd = &qd->base;
+
+	xd->name = XRT_DEVICE_SIMPLE_CONTROLLER;
+	xd->device_type = is_left ? XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER : XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
+
+	char *controller_name = is_left ? QWERTY_LEFT_STR : QWERTY_RIGHT_STR;
+	snprintf(xd->str, XRT_DEVICE_NAME_LEN, "%s", controller_name);
+	snprintf(xd->serial, XRT_DEVICE_NAME_LEN, "%s", controller_name);
+
+	xd->tracking_origin->type = XRT_TRACKING_TYPE_OTHER;
+	char *tracker_name = is_left ? QWERTY_LEFT_TRACKER_STR : QWERTY_RIGHT_TRACKER_STR;
+	snprintf(xd->tracking_origin->name, XRT_TRACKING_NAME_LEN, "%s", tracker_name);
+
+	xd->inputs[QWERTY_SELECT].name = XRT_INPUT_SIMPLE_SELECT_CLICK;
+	xd->inputs[QWERTY_MENU].name = XRT_INPUT_SIMPLE_MENU_CLICK;
+	xd->inputs[QWERTY_GRIP].name = XRT_INPUT_SIMPLE_GRIP_POSE;
+	xd->inputs[QWERTY_AIM].name = XRT_INPUT_SIMPLE_AIM_POSE; // @todo: aim input not implemented
+	xd->outputs[QWERTY_VIBRATION].name = XRT_OUTPUT_NAME_SIMPLE_VIBRATION;
+
+	xd->update_inputs = qwerty_update_inputs;
+	xd->get_tracked_pose = qwerty_get_tracked_pose;
+	xd->set_output = qwerty_set_output;
+	xd->destroy = qwerty_destroy;
+
+	return qc;
 }
 
 // Device methods

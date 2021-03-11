@@ -47,13 +47,21 @@ qwerty_prober_autoprobe(struct xrt_auto_prober *xap,
 
 	bool hmd_wanted = !no_hmds; // Hopefully easier to reason about
 
-	struct qwerty_device *qhmd = qwerty_hmd_create();
+	struct qwerty_hmd *qhmd = hmd_wanted ? qwerty_hmd_create() : NULL;
+	struct qwerty_controller *qleft = qwerty_controller_create(true, qhmd);
+	struct qwerty_controller *qright = qwerty_controller_create(false, qhmd);
+
+	struct xrt_device *xd_hmd = &qhmd->base.base;
+	struct xrt_device *xd_left = &qleft->base.base;
+	struct xrt_device *xd_right = &qright->base.base;
 
 	if (hmd_wanted) {
-		out_xdevs[0] = &qhmd->base;
+		out_xdevs[0] = xd_hmd;
 	}
+	out_xdevs[1 - !hmd_wanted] = xd_left;
+	out_xdevs[2 - !hmd_wanted] = xd_right;
 
-	int num_qwerty_devices = hmd_wanted;
+	int num_qwerty_devices = hmd_wanted + 2;
 	return num_qwerty_devices;
 }
 

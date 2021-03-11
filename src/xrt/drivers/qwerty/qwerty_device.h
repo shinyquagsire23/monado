@@ -12,6 +12,10 @@
 
 #define QWERTY_HMD_STR "Qwerty HMD"
 #define QWERTY_HMD_TRACKER_STR QWERTY_HMD_STR " Tracker"
+#define QWERTY_LEFT_STR "Qwerty Left Controller"
+#define QWERTY_LEFT_TRACKER_STR QWERTY_LEFT_STR " Tracker"
+#define QWERTY_RIGHT_STR "Qwerty Right Controller"
+#define QWERTY_RIGHT_TRACKER_STR QWERTY_RIGHT_STR " Tracker"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,6 +52,18 @@ struct qwerty_device
 	float pitch_delta; //!< Similar to `yaw_delta`
 };
 
+//! @implements qwerty_device
+struct qwerty_hmd
+{
+	struct qwerty_device base;
+};
+
+//! @implements qwerty_device
+struct qwerty_controller
+{
+	struct qwerty_device base;
+};
+
 /*!
  * @name Qwerty Device
  * @memberof qwerty_device
@@ -59,10 +75,6 @@ struct qwerty_device
 //! Cast to qwerty_device. Ensures returning a valid device or crashing.
 struct qwerty_device *
 qwerty_device(struct xrt_device *xd);
-
-//! Create qwerty_hmd. Crash on failure.
-struct qwerty_device *
-qwerty_hmd_create(void);
 
 // clang-format off
 void qwerty_press_left(struct qwerty_device *qd);
@@ -102,6 +114,38 @@ qwerty_add_look_delta(struct qwerty_device *qd, float yaw, float pitch);
 //! Change movement speed in exponential steps (usually integers, but any float allowed)
 void
 qwerty_change_movement_speed(struct qwerty_device *qd, float steps);
+
+/*!
+ * @}
+ */
+
+/*!
+ * @name Qwerty HMD
+ * @memberof qwerty_hmd
+ * qwerty_hmd public methods
+ * @{
+ */
+//! @public @memberof qwerty_hmd <!-- Trick for doxygen -->
+
+//! Create qwerty_hmd. Crash on failure.
+struct qwerty_hmd *
+qwerty_hmd_create(void);
+
+/*!
+ * @}
+ */
+
+/*!
+ * @name Qwerty Controller
+ * @memberof qwerty_controller
+ * qwerty_controller public methods
+ * @{
+ */
+//! @public @memberof qwerty_controller <!-- Trick for doxygen -->
+
+//! Create qwerty_controller. Crash on failure.
+struct qwerty_controller *
+qwerty_controller_create(bool is_left, struct qwerty_hmd *qhmd);
 
 /*!
  * @}
