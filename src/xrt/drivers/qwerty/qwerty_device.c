@@ -10,7 +10,6 @@
 #include "qwerty_device.h"
 
 #include "util/u_device.h"
-
 #include "util/u_distortion_mesh.h"
 
 #include "math/m_api.h"
@@ -23,6 +22,8 @@
 
 #define QWERTY_HMD_INITIAL_MOVEMENT_SPEED 0.002f // in meters per frame
 #define QWERTY_HMD_INITIAL_LOOK_SPEED 0.02f      // in radians per frame
+#define MOVEMENT_SPEED_STEP 1.25f // Multiplier for how fast will mov speed increase/decrease
+#define SPRINT_STEPS 5            // Amount of MOVEMENT_SPEED_STEPs to increase when sprinting
 
 // clang-format off
 // Value copied from u_device_setup_tracking_origins.
@@ -60,13 +61,15 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 
 	// Position
 
+	float sprint_boost = qd->sprint_pressed ? powf(MOVEMENT_SPEED_STEP, SPRINT_STEPS) : 1;
+	float mov_speed = qd->movement_speed * sprint_boost;
 	struct xrt_vec3 pos_delta = {
-	    qd->movement_speed * (qd->right_pressed - qd->left_pressed),
+	    mov_speed * (qd->right_pressed - qd->left_pressed),
 	    0, // Up/down movement will be relative to base space
-	    qd->movement_speed * (qd->backward_pressed - qd->forward_pressed),
+	    mov_speed * (qd->backward_pressed - qd->forward_pressed),
 	};
 	math_quat_rotate_vec3(&qd->pose.orientation, &pos_delta, &pos_delta);
-	pos_delta.y += qd->movement_speed * (qd->up_pressed - qd->down_pressed);
+	pos_delta.y += mov_speed * (qd->up_pressed - qd->down_pressed);
 	math_vec3_accum(&pos_delta, &qd->pose.position);
 
 	// Orientation
@@ -74,6 +77,12 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 	// View rotation caused by keys
 	float y_look_speed = qd->look_speed * (qd->look_left_pressed - qd->look_right_pressed);
 	float x_look_speed = qd->look_speed * (qd->look_up_pressed - qd->look_down_pressed);
+
+	// View rotation caused by mouse
+	y_look_speed += qd->yaw_delta;
+	x_look_speed += qd->pitch_delta;
+	qd->yaw_delta = 0;
+	qd->pitch_delta = 0;
 
 	struct xrt_quat x_rotation, y_rotation;
 	struct xrt_vec3 x_axis = {1, 0, 0}, y_axis = {0, 1, 0};
@@ -187,3 +196,27 @@ void qwerty_release_look_up(struct qwerty_device *qd) { qd->look_up_pressed = fa
 void qwerty_press_look_down(struct qwerty_device *qd) { qd->look_down_pressed = true; }
 void qwerty_release_look_down(struct qwerty_device *qd) { qd->look_down_pressed = false; }
 // clang-format on
+
+void
+qwerty_press_sprint(struct qwerty_device *qd)
+{
+	qd->sprint_pressed = true;
+}
+void
+qwerty_release_sprint(struct qwerty_device *qd)
+{
+	qd->sprint_pressed = false;
+}
+
+void
+qwerty_add_look_delta(struct qwerty_device *qd, float yaw, float pitch)
+{
+	qd->yaw_delta += yaw * qd->look_speed;
+	qd->pitch_delta += pitch * qd->look_speed;
+}
+
+void
+qwerty_change_movement_speed(struct qwerty_device *qd, float steps)
+{
+	qd->movement_speed *= powf(MOVEMENT_SPEED_STEP, steps);
+}

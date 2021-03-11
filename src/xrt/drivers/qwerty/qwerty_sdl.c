@@ -14,6 +14,9 @@
 #include "xrt/xrt_device.h"
 #include <SDL2/SDL.h>
 
+// Amount of look_speed units a mouse delta of 1px in screen space will rotate the device
+#define SENSITIVITY 0.1f
+
 static void
 find_qwerty_devices(struct xrt_device **xdevs,
                     size_t num_xdevs,
@@ -78,5 +81,24 @@ qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event even
 	if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_DOWN) qwerty_press_look_down(qdev);
 	if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_DOWN) qwerty_release_look_down(qdev);
 
+	// Movement speed
+	if (event.type == SDL_MOUSEWHEEL) qwerty_change_movement_speed(qdev, event.wheel.y);
+	if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_KP_PLUS) qwerty_change_movement_speed(qdev, 1);
+	if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_KP_MINUS) qwerty_change_movement_speed(qdev, -1);
+
+	// Sprinting
+	if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_LSHIFT) qwerty_press_sprint(qdev);
+	if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_LSHIFT) qwerty_release_sprint(qdev);
+
+	// Mouse rotation
+	if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_RIGHT) {
+		SDL_SetRelativeMouseMode(false);
+	}
+	if (event.type == SDL_MOUSEMOTION && event.motion.state & SDL_BUTTON_RMASK) {
+		SDL_SetRelativeMouseMode(true);
+		float yaw = -event.motion.xrel * SENSITIVITY;
+		float pitch = -event.motion.yrel * SENSITIVITY;
+		qwerty_add_look_delta(qdev, yaw, pitch);
+	}
 	// clang-format on
 }

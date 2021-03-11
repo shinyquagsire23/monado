@@ -42,6 +42,10 @@ struct qwerty_device
 	bool look_right_pressed;
 	bool look_up_pressed;
 	bool look_down_pressed;
+
+	bool sprint_pressed; //!< Movement speed boost
+	float yaw_delta;   //!< How much extra yaw to add for the next pose. Then reset to 0.
+	float pitch_delta; //!< Similar to `yaw_delta`
 };
 
 /*!
@@ -83,6 +87,21 @@ void qwerty_release_look_up(struct qwerty_device *qd);
 void qwerty_press_look_down(struct qwerty_device *qd);
 void qwerty_release_look_down(struct qwerty_device *qd);
 // clang-format on
+
+//! Momentarily increase `movement_speed` until `qwerty_release_sprint()`
+void
+qwerty_press_sprint(struct qwerty_device *qd);
+
+void
+qwerty_release_sprint(struct qwerty_device *qd);
+
+//! Add yaw and pitch movement for the next frame
+void
+qwerty_add_look_delta(struct qwerty_device *qd, float yaw, float pitch);
+
+//! Change movement speed in exponential steps (usually integers, but any float allowed)
+void
+qwerty_change_movement_speed(struct qwerty_device *qd, float steps);
 
 /*!
  * @}
