@@ -64,6 +64,29 @@ default_qwerty_device(struct xrt_device **xdevs, size_t num_xdevs, struct qwerty
 	return default_qdev;
 }
 
+// Determines the default qwerty controller based on which devices are in use
+static struct qwerty_controller *
+default_qwerty_controller(struct xrt_device **xdevs, size_t num_xdevs, struct qwerty_system *qsys)
+{
+	int head, left, right;
+	head = left = right = XRT_DEVICE_ROLE_UNASSIGNED;
+	u_device_assign_xdev_roles(xdevs, num_xdevs, &head, &left, &right);
+
+	struct xrt_device *xd_left = &qsys->lctrl->base.base;
+	struct xrt_device *xd_right = &qsys->rctrl->base.base;
+
+	struct qwerty_controller *default_qctrl = NULL;
+	if (xdevs[right] == xd_right) {
+		default_qctrl = qwerty_controller(xd_right);
+	} else if (xdevs[left] == xd_left) {
+		default_qctrl = qwerty_controller(xd_left);
+	} else { // Even here, xd_right is allocated and so we can modify it
+		default_qctrl = qwerty_controller(xd_right);
+	}
+
+	return default_qctrl;
+}
+
 void
 qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event event)
 {
@@ -74,12 +97,15 @@ qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event even
 
 	// Default focused device: the one focused when CTRL and ALT are not pressed
 	static struct qwerty_device *default_qdev;
+	// Default focused controller: the one used for qwerty_controller specific methods
+	static struct qwerty_controller *default_qctrl;
 
 	// We can cache the devices as they don't get destroyed during runtime
 	static bool cached = false;
 	if (!cached) {
 		qsys = find_qwerty_system(xdevs, num_xdevs);
 		default_qdev = default_qwerty_device(xdevs, num_xdevs, qsys);
+		default_qctrl = default_qwerty_controller(xdevs, num_xdevs, qsys);
 		cached = true;
 	}
 
@@ -122,9 +148,6 @@ qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event even
 	if (ctrl_pressed) qdev = qd_left;
 	else if (alt_pressed) qdev = qd_right;
 	else qdev = default_qdev;
-
-	// Default focused controller
-	struct qwerty_controller *default_qctrl = qright; // @todo: set this based on user devices
 
 	// Determine focused controller for qwerty_controller specific methods
 	struct qwerty_controller *qctrl = qdev != qd_hmd ? qwerty_controller(&qdev->base) : default_qctrl;
