@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+typedef union SDL_Event SDL_Event;
+
 /*!
  * @defgroup drv_qwerty Qwerty driver
  * @ingroup drv
@@ -24,6 +26,13 @@ extern "C" {
 //! Create an auto prober for qwerty devices.
 struct xrt_auto_prober *
 qwerty_create_auto_prober(void);
+
+/*!
+ * Process an SDL_Event (like a key press) and dispatches a suitable action
+ * to the appropriate qwerty_device.
+ */
+void
+qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event event);
 
 /*!
  * @}

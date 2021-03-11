@@ -7,6 +7,12 @@
  * @ingroup drv_qwerty
  */
 
-typedef int _silence_compiler_about_empty_translation_unit;
+#include "xrt/xrt_device.h"
+#include <SDL2/SDL.h>
 
-// @todo
+void
+qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event event)
+{
+	if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_w)
+		printf("W pressed and xdevs[0] = %s\n", xdevs[0]->str);
+}

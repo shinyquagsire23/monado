@@ -27,7 +27,7 @@ oxr_sdl2_hack_create(void **out_hack)
 }
 
 void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst)
+oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_device **xdevs)
 {}
 
 void
@@ -40,6 +40,8 @@ oxr_sdl2_hack_stop(void **hack)
 
 #include "gui/gui_common.h"
 #include "gui/gui_imgui.h"
+
+#include "qwerty_interface.h"
 
 #include <SDL2/SDL.h>
 
@@ -145,6 +147,9 @@ sdl2_loop(struct sdl2_program *p)
 	ImPlotContext *plot_ctx = ImPlot_CreateContext();
 	ImPlot_SetCurrentContext(plot_ctx);
 
+	// Setup qwerty driver usage
+	bool qwerty_enabled = true; // @todo: get from an env var
+
 	// Main loop
 	struct gui_imgui gui = {0};
 	gui.clear.r = 0.45f;
@@ -161,6 +166,11 @@ sdl2_loop(struct sdl2_program *p)
 
 		while (SDL_PollEvent(&event)) {
 			igImGui_ImplSDL2_ProcessEvent(&event);
+
+			// Caution here, qwerty driver is being accessed by the main thread as well
+			if (qwerty_enabled) {
+				qwerty_process_event(p->base.xdevs, NUM_XDEVS, event);
+			}
 
 			if (event.type == SDL_QUIT) {
 				p->base.stopped = true;
@@ -274,7 +284,7 @@ oxr_sdl2_hack_create(void **out_hack)
 }
 
 void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst)
+oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_device **xdevs)
 {
 	struct sdl2_program *p = (struct sdl2_program *)hack;
 	if (p == NULL) {
@@ -282,6 +292,10 @@ oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst)
 	}
 
 	xrt_instance_get_prober(xinst, &p->base.xp);
+
+	for (size_t i = 0; i < NUM_XDEVS; i++) {
+		p->base.xdevs[i] = xdevs[i];
+	}
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
 		U_LOG_E("Failed to init SDL2!");
