@@ -11,6 +11,7 @@
 
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
+#include "util/u_var.h"
 
 #include "math/m_api.h"
 #include "math/m_mathinclude.h"
@@ -164,6 +165,8 @@ qwerty_get_view_pose(struct xrt_device *xd,
 static void
 qwerty_destroy(struct xrt_device *xd)
 {
+	// Note: do not destroy a single device of a qwerty system or its var tracking
+	// ui will make a null reference
 	struct qwerty_device *qd = qwerty_device(xd);
 	qwerty_system_remove(qd->sys, qd);
 	u_device_free(xd);
@@ -263,6 +266,52 @@ qwerty_controller_create(bool is_left, struct qwerty_hmd *qhmd)
 
 // System methods
 
+static void
+qwerty_setup_var_tracking(struct qwerty_system *qs)
+{
+	struct qwerty_device *qd_hmd = qs->hmd ? &qs->hmd->base : NULL;
+	struct qwerty_device *qd_left = &qs->lctrl->base;
+	struct qwerty_device *qd_right = &qs->rctrl->base;
+
+	u_var_add_root(qs, "Qwerty System", true);
+	u_var_add_bool(qs, &qs->process_keys, "process_keys");
+
+	u_var_add_ro_text(qs, "", "Focused Device");
+	if (qd_hmd) {
+		u_var_add_bool(qs, &qs->hmd_focused, "HMD Focused");
+	}
+	u_var_add_bool(qs, &qs->lctrl_focused, "Left Controller Focused");
+	u_var_add_bool(qs, &qs->rctrl_focused, "Right Controller Focused");
+
+	if (qd_hmd) {
+		u_var_add_gui_header(qs, NULL, qd_hmd->base.str);
+		u_var_add_pose(qs, &qd_hmd->pose, "hmd.pose");
+		u_var_add_f32(qs, &qd_hmd->movement_speed, "hmd.movement_speed");
+		u_var_add_f32(qs, &qd_hmd->look_speed, "hmd.look_speed");
+	}
+
+	u_var_add_gui_header(qs, NULL, qd_left->base.str);
+	u_var_add_pose(qs, &qd_left->pose, "left.pose");
+	u_var_add_f32(qs, &qd_left->movement_speed, "left.movement_speed");
+	u_var_add_f32(qs, &qd_left->look_speed, "left.look_speed");
+
+	u_var_add_gui_header(qs, NULL, qd_right->base.str);
+	u_var_add_pose(qs, &qd_right->pose, "right.pose");
+	u_var_add_f32(qs, &qd_right->movement_speed, "right.movement_speed");
+	u_var_add_f32(qs, &qd_right->look_speed, "right.look_speed");
+
+	u_var_add_gui_header(qs, NULL, "Help");
+	u_var_add_ro_text(qs, "FD: focused device. FC: focused controller.", "Notation");
+	u_var_add_ro_text(qs, "HMD is FD by default. Right is FC by default", "Defaults");
+	u_var_add_ro_text(qs, "Hold left/right FD", "LCTRL/LALT");
+	u_var_add_ro_text(qs, "Move FD", "WASDQE");
+	u_var_add_ro_text(qs, "Rotate FD", "Arrow keys");
+	u_var_add_ro_text(qs, "Rotate FD", "Hold right click");
+	u_var_add_ro_text(qs, "Hold for movement speed", "LSHIFT");
+	u_var_add_ro_text(qs, "Modify FD movement speed", "Mouse wheel");
+	u_var_add_ro_text(qs, "Modify FD movement speed", "Numpad +/-");
+}
+
 struct qwerty_system *
 qwerty_system_create(struct qwerty_hmd *qhmd,
                      struct qwerty_controller *qleft,
@@ -282,6 +331,8 @@ qwerty_system_create(struct qwerty_hmd *qhmd,
 	}
 	qleft->base.sys = qs;
 	qright->base.sys = qs;
+
+	qwerty_setup_var_tracking(qs);
 
 	return qs;
 }
@@ -310,6 +361,7 @@ qwerty_system_destroy(struct qwerty_system *qs)
 {
 	bool all_devices_clean = !qs->hmd && !qs->lctrl && !qs->rctrl;
 	assert(all_devices_clean && "Tried to destroy a qwerty_system without destroying its devices before.");
+	u_var_remove_root(qs);
 	free(qs);
 }
 
