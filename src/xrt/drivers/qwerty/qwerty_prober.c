@@ -51,6 +51,8 @@ qwerty_prober_autoprobe(struct xrt_auto_prober *xap,
 	struct qwerty_controller *qleft = qwerty_controller_create(true, qhmd);
 	struct qwerty_controller *qright = qwerty_controller_create(false, qhmd);
 
+	qwerty_system_create(qhmd, qleft, qright);
+
 	struct xrt_device *xd_hmd = &qhmd->base.base;
 	struct xrt_device *xd_left = &qleft->base.base;
 	struct xrt_device *xd_right = &qright->base.base;

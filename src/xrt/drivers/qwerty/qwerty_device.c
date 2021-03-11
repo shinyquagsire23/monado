@@ -40,13 +40,27 @@
 #define QWERTY_AIM 3
 #define QWERTY_VIBRATION 0
 
+static void
+qwerty_system_remove(struct qwerty_system *qs, struct qwerty_device *qd);
+
+static void
+qwerty_system_destroy(struct qwerty_system *qs);
+
+// Compare any two pointers without verbose casts
+static inline bool
+eq(void *a, void *b)
+{
+	return a == b;
+}
+
 // xrt_device functions
 
 struct qwerty_device *
 qwerty_device(struct xrt_device *xd)
 {
 	struct qwerty_device *qd = (struct qwerty_device *)xd;
-	assert(qd);
+	bool is_qwerty_device = eq(qd, qd->sys->hmd) || eq(qd, qd->sys->lctrl) || eq(qd, qd->sys->rctrl);
+	assert(is_qwerty_device);
 	return qd;
 }
 
@@ -54,7 +68,8 @@ struct qwerty_hmd *
 qwerty_hmd(struct xrt_device *xd)
 {
 	struct qwerty_hmd *qh = (struct qwerty_hmd *)xd;
-	assert(qh);
+	bool is_qwerty_hmd = eq(qh, qh->base.sys->hmd);
+	assert(is_qwerty_hmd);
 	return qh;
 }
 
@@ -62,7 +77,8 @@ struct qwerty_controller *
 qwerty_controller(struct xrt_device *xd)
 {
 	struct qwerty_controller *qc = (struct qwerty_controller *)xd;
-	assert(qc);
+	bool is_qwerty_controller = eq(qc, qc->base.sys->lctrl) || eq(qc, qc->base.sys->rctrl);
+	assert(is_qwerty_controller);
 	return qc;
 }
 
@@ -148,6 +164,8 @@ qwerty_get_view_pose(struct xrt_device *xd,
 static void
 qwerty_destroy(struct xrt_device *xd)
 {
+	struct qwerty_device *qd = qwerty_device(xd);
+	qwerty_system_remove(qd->sys, qd);
 	u_device_free(xd);
 }
 
@@ -241,6 +259,58 @@ qwerty_controller_create(bool is_left, struct qwerty_hmd *qhmd)
 	xd->destroy = qwerty_destroy;
 
 	return qc;
+}
+
+// System methods
+
+struct qwerty_system *
+qwerty_system_create(struct qwerty_hmd *qhmd,
+                     struct qwerty_controller *qleft,
+                     struct qwerty_controller *qright)
+{
+	assert(qleft && "Cannot create a qwerty system when Left controller is NULL");
+	assert(qright && "Cannot create a qwerty system when Right controller is NULL");
+
+	struct qwerty_system *qs = U_TYPED_CALLOC(struct qwerty_system);
+	qs->hmd = qhmd;
+	qs->lctrl = qleft;
+	qs->rctrl = qright;
+	qs->process_keys = true;
+
+	if (qhmd) {
+		qhmd->base.sys = qs;
+	}
+	qleft->base.sys = qs;
+	qright->base.sys = qs;
+
+	return qs;
+}
+
+static void
+qwerty_system_remove(struct qwerty_system *qs, struct qwerty_device *qd)
+{
+	if (eq(qd, qs->hmd)) {
+		qs->hmd = NULL;
+	} else if (eq(qd, qs->lctrl)) {
+		qs->lctrl = NULL;
+	} else if (eq(qd, qs->rctrl)) {
+		qs->rctrl = NULL;
+	} else {
+		assert(false && "Trying to remove a device that is not in the qwerty system");
+	}
+
+	bool all_devices_clean = !qs->hmd && !qs->lctrl && !qs->rctrl;
+	if (all_devices_clean) {
+		qwerty_system_destroy(qs);
+	}
+}
+
+static void
+qwerty_system_destroy(struct qwerty_system *qs)
+{
+	bool all_devices_clean = !qs->hmd && !qs->lctrl && !qs->rctrl;
+	assert(all_devices_clean && "Tried to destroy a qwerty_system without destroying its devices before.");
+	free(qs);
 }
 
 // Device methods

@@ -26,12 +26,22 @@ extern "C" {
  * @{
  */
 
+//! Container of qwerty devices and driver properties.
+struct qwerty_system
+{
+	struct qwerty_hmd *hmd;          //!< Can be NULL
+	struct qwerty_controller *lctrl; //!< Cannot be NULL
+	struct qwerty_controller *rctrl; //!< Cannot be NULL
+	bool process_keys;  //!< If false disable keyboard and mouse input
+};
+
 //! Fake device that modifies its tracked pose through its methods.
 //! @implements xrt_device
 struct qwerty_device
 {
 	struct xrt_device base;
-	struct xrt_pose pose; //!< Internal pose state
+	struct xrt_pose pose;      //!< Internal pose state
+	struct qwerty_system *sys; //!< Reference to the system this device is in.
 
 	float movement_speed; //!< In meters per frame
 	bool left_pressed;
@@ -48,8 +58,8 @@ struct qwerty_device
 	bool look_down_pressed;
 
 	bool sprint_pressed; //!< Movement speed boost
-	float yaw_delta;   //!< How much extra yaw to add for the next pose. Then reset to 0.
-	float pitch_delta; //!< Similar to `yaw_delta`
+	float yaw_delta;     //!< How much extra yaw to add for the next pose. Then reset to 0.
+	float pitch_delta;   //!< Similar to `yaw_delta`
 };
 
 //! @implements qwerty_device
@@ -63,6 +73,23 @@ struct qwerty_controller
 {
 	struct qwerty_device base;
 };
+
+/*!
+ * @name Qwerty System
+ * @memberof qwerty_system
+ * qwerty_system public methods
+ * @{
+ */
+//! @public @memberof qwerty_system <!-- Trick for doxygen -->
+
+struct qwerty_system *
+qwerty_system_create(struct qwerty_hmd *qhmd,
+                     struct qwerty_controller *qleft,
+                     struct qwerty_controller *qright);
+
+/*!
+ * @}
+ */
 
 /*!
  * @name Qwerty Device
