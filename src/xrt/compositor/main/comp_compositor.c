@@ -55,6 +55,8 @@
 
 #include "main/comp_compositor.h"
 
+#include "multi/comp_multi_interface.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <assert.h>
@@ -541,48 +543,9 @@ static void
 compositor_destroy(struct xrt_compositor *xc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
-
-	COMP_DEBUG(c, "COMP_DESTROY");
-
-	assert(c->compositor_created);
-
-	c->compositor_created = false;
-}
-
-
-/*
- *
- * System compositor functions.
- *
- */
-
-static xrt_result_t
-system_compositor_create_native_compositor(struct xrt_system_compositor *xsc,
-                                           const struct xrt_session_info *xsi,
-                                           struct xrt_compositor_native **out_xcn)
-{
-	struct comp_compositor *c = container_of(xsc, struct comp_compositor, system);
-
-	COMP_DEBUG(c, "SYSCOMP_CREATE_NATIVE_COMPOSITOR");
-
-	if (c->compositor_created) {
-		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
-	}
-
-	c->compositor_created = true;
-	c->state = COMP_STATE_PREPARED;
-	*out_xcn = &c->base;
-
-	return XRT_SUCCESS;
-}
-
-static void
-system_compositor_destroy(struct xrt_system_compositor *xsc)
-{
-	struct comp_compositor *c = container_of(xsc, struct comp_compositor, system);
 	struct vk_bundle *vk = &c->vk;
 
-	COMP_DEBUG(c, "SYSCOMP_DESTROY");
+	COMP_DEBUG(c, "COMP_DESTROY");
 
 	// Make sure we don't have anything to destroy.
 	comp_compositor_garbage_collect(c);
@@ -1352,8 +1315,6 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	c->base.base.destroy = compositor_destroy;
 	c->frame.waited.id = -1;
 	c->frame.rendering.id = -1;
-	c->system.create_native_compositor = system_compositor_create_native_compositor;
-	c->system.destroy = system_compositor_destroy;
 	c->xdev = xdev;
 
 	u_threading_stack_init(&c->threading.destroy_swapchains);
@@ -1381,7 +1342,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	    !compositor_init_swapchain(c) ||
 	    !compositor_init_renderer(c)) {
 		COMP_DEBUG(c, "Failed to init compositor %p", (void *)c);
-		c->system.destroy(&c->system);
+		c->base.base.destroy(&c->base.base);
 
 		return XRT_ERROR_VULKAN;
 	}
@@ -1427,7 +1388,8 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	assert(formats <= XRT_MAX_SWAPCHAIN_FORMATS);
 	info->num_formats = formats;
 
-	struct xrt_system_compositor_info *sys_info = &c->system.info;
+	struct xrt_system_compositor_info sys_info_storage;
+	struct xrt_system_compositor_info *sys_info = &sys_info_storage;
 
 	// Required by OpenXR spec.
 	sys_info->max_layers = 16;
@@ -1495,9 +1457,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	c->state = COMP_STATE_READY;
 
-	*out_xsysc = &c->system;
-
-	return XRT_SUCCESS;
+	return comp_multi_create_system_compositor(&c->base, sys_info, out_xsysc);
 }
 
 void
