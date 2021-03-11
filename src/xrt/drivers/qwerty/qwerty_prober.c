@@ -7,6 +7,7 @@
  * @ingroup drv_qwerty
  */
 
+#include "qwerty_device.h"
 #include "util/u_misc.h"
 #include "xrt/xrt_prober.h"
 
@@ -35,8 +36,16 @@ qwerty_prober_autoprobe(struct xrt_auto_prober *xap,
                         struct xrt_prober *xp,
                         struct xrt_device **out_xdevs)
 {
-	// @todo
-	return 0;
+	bool hmd_wanted = !no_hmds; // Hopefully easier to reason about
+
+	struct qwerty_device *qhmd = qwerty_hmd_create();
+
+	if (hmd_wanted) {
+		out_xdevs[0] = &qhmd->base;
+	}
+
+	int num_qwerty_devices = hmd_wanted;
+	return num_qwerty_devices;
 }
 
 struct xrt_auto_prober *

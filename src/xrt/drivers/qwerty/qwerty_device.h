@@ -8,6 +8,11 @@
  */
 #pragma once
 
+#include "xrt/xrt_device.h"
+
+#define QWERTY_HMD_STR "Qwerty HMD"
+#define QWERTY_HMD_TRACKER_STR QWERTY_HMD_STR " Tracker"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,7 +22,19 @@ extern "C" {
  * @{
  */
 
-// @todo
+//! @implements xrt_device
+struct qwerty_device
+{
+	struct xrt_device base;
+};
+
+//! Cast to qwerty_device. Ensures returning a valid device or crashing.
+struct qwerty_device *
+qwerty_device(struct xrt_device *xd);
+
+//! Create qwerty_hmd. Crash on failure.
+struct qwerty_device *
+qwerty_hmd_create(void);
 
 /*!
  * @}
