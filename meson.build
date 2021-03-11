@@ -221,6 +221,10 @@ if not get_option('dbus').disabled() and dbus.found()
 	endif
 endif
 
+if sdl2.found() and ('auto' in drivers and 'qwerty' not in drivers)
+	drivers += ['qwerty']
+endif
+
 if drivers.length() == 0 or drivers == ['auto']
 	error('You must enable at least one driver.')
 endif

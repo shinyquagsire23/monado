@@ -198,6 +198,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_VF "Build video frame driver (for video 
 cmake_dependent_option(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" ON "SURVIVE_FOUND" OFF)
 
 cmake_dependent_option(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" ON "ANDROID" OFF)
+cmake_dependent_option(XRT_BUILD_DRIVER_QWERTY "Enable Qwerty driver" ON "XRT_HAVE_SDL2" OFF)
 
 # You can set this from a superproject to add a driver
 # All drivers must be listed in here to be included in the generated header!
@@ -220,6 +221,7 @@ list(APPEND AVAILABLE_DRIVERS
 	"V4L2"
 	"VF"
 	"VIVE"
+	"QWERTY"
 	)
 
 
@@ -356,6 +358,7 @@ message(STATUS "#    DRIVER_REMOTE:       ${XRT_BUILD_DRIVER_REMOTE}")
 message(STATUS "#    DRIVER_SURVIVE:      ${XRT_BUILD_DRIVER_SURVIVE}")
 message(STATUS "#    DRIVER_VF:           ${XRT_BUILD_DRIVER_VF}")
 message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
+message(STATUS "#    DRIVER_QWERTY:       ${XRT_BUILD_DRIVER_QWERTY}")
 message(STATUS "#####----- Config -----#####")
 
 if(XRT_FEATURE_SERVICE AND NOT XRT_FEATURE_OPENXR)

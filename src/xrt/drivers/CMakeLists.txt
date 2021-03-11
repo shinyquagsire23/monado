@@ -43,6 +43,23 @@ if(XRT_BUILD_DRIVER_DUMMY)
 	list(APPEND ENABLED_HEADSET_DRIVERS dummy)
 endif()
 
+if(XRT_BUILD_DRIVER_QWERTY)
+	set(QWERTY_SOURCE_FILES
+		qwerty/qwerty_device.c
+		qwerty/qwerty_device.h
+		qwerty/qwerty_interface.h
+		qwerty/qwerty_prober.c
+		qwerty/qwerty_sdl.c
+		)
+
+	add_library(drv_qwerty STATIC ${QWERTY_SOURCE_FILES})
+	target_link_libraries(drv_qwerty PRIVATE xrt-interfaces aux_util ${SDL2_LIBRARIES})
+	list(APPEND ENABLED_DRIVERS qwerty)
+
+	add_library(drv_qwerty_includes INTERFACE)
+	target_include_directories(drv_qwerty_includes INTERFACE qwerty)
+endif()
+
 if(XRT_BUILD_DRIVER_HDK)
 	set(HDK_SOURCE_FILES
 		hdk/hdk_device.cpp

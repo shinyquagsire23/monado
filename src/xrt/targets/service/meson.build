@@ -24,6 +24,7 @@ if sdl2.found()
 	hack_libs += lib_st_gui
 	hack_incs += [
 		st_include,
+		drv_qwerty_include,
 	]
 endif
 

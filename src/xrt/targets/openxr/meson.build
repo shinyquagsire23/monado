@@ -31,9 +31,10 @@ if sdl2.found()
 		'../../../external/imgui/imgui/imgui_impl_sdl.cpp',
 		'../../../external/imgui/imgui/imgui_impl_sdl.h',
 	]
-	hack_libs += lib_st_gui
+	hack_libs += [lib_st_gui, lib_drv_qwerty]
 	hack_incs += [
 		st_include,
+		drv_qwerty_include,
 	]
 endif
 

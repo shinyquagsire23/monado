@@ -70,6 +70,10 @@
 #include "realsense/rs_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_QWERTY
+#include "qwerty/qwerty_interface.h"
+#endif
+
 /*!
  * Each entry should be a vendor ID (VID), product ID (PID), a "found" function,
  * and a string literal name.
@@ -162,10 +166,15 @@ xrt_auto_prober_creator target_auto_list[] = {
     rs_create_auto_prober,
 #endif
 
+#ifdef XRT_BUILD_DRIVER_QWERTY
+    qwerty_create_auto_prober,
+#endif
+
 #ifdef XRT_BUILD_DRIVER_DUMMY
     // Dummy headset driver last.
     dummy_create_auto_prober,
 #endif
+
     NULL, // Terminate
 };
 
