@@ -73,10 +73,14 @@ struct qwerty_hmd
 	struct qwerty_device base;
 };
 
+//! Supports input actions
 //! @implements qwerty_device
 struct qwerty_controller
 {
 	struct qwerty_device base;
+
+	bool select_clicked;
+	bool menu_clicked;
 };
 
 /*!
@@ -191,6 +195,14 @@ qwerty_controller_create(bool is_left, struct qwerty_hmd *qhmd);
 //! Cast to qwerty_controller. Ensures returning a valid controller or crashing.
 struct qwerty_controller *
 qwerty_controller(struct xrt_device *xd);
+
+//! Simulate input/select/click
+void
+qwerty_select_click(struct qwerty_controller *qc);
+
+//! Simulate input/menu/click
+void
+qwerty_menu_click(struct qwerty_controller *qc);
 
 /*!
  * @}

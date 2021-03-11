@@ -123,6 +123,12 @@ qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event even
 	else if (alt_pressed) qdev = qd_right;
 	else qdev = default_qdev;
 
+	// Default focused controller
+	struct qwerty_controller *default_qctrl = qright; // @todo: set this based on user devices
+
+	// Determine focused controller for qwerty_controller specific methods
+	struct qwerty_controller *qctrl = qdev != qd_hmd ? qwerty_controller(&qdev->base) : default_qctrl;
+
 	// Update gui tracked variables
 	qsys->hmd_focused = qdev == qd_hmd;
 	qsys->lctrl_focused = qdev == qd_left;
@@ -171,5 +177,10 @@ qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event even
 		float pitch = -event.motion.yrel * SENSITIVITY;
 		qwerty_add_look_delta(qdev, yaw, pitch);
 	}
+
+	// Select and menu clicks only for controllers.
+	if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) qwerty_select_click(qctrl);
+	if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_MIDDLE) qwerty_menu_click(qctrl);
+
 	// clang-format on
 }

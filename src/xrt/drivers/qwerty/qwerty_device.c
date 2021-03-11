@@ -93,7 +93,24 @@ qwerty_controller(struct xrt_device *xd)
 static void
 qwerty_update_inputs(struct xrt_device *xd)
 {
-	return;
+	if (xd->name != XRT_DEVICE_SIMPLE_CONTROLLER) {
+		return;
+	}
+
+	struct qwerty_controller *qc = qwerty_controller(xd);
+	struct qwerty_device *qd = &qc->base;
+
+	xd->inputs[QWERTY_SELECT].value.boolean = qc->select_clicked;
+	if (qc->select_clicked) {
+		QWERTY_INFO(qd, "[%s] Select click", xd->str);
+		qc->select_clicked = false;
+	}
+
+	xd->inputs[QWERTY_MENU].value.boolean = qc->menu_clicked;
+	if (qc->menu_clicked) {
+		QWERTY_INFO(qd, "[%s] Menu click", xd->str);
+		qc->menu_clicked = false;
+	}
 }
 
 static void
@@ -237,6 +254,8 @@ qwerty_controller_create(bool is_left, struct qwerty_hmd *qhmd)
 {
 	struct qwerty_controller *qc = U_DEVICE_ALLOCATE(struct qwerty_controller, U_DEVICE_ALLOC_TRACKING_NONE, 4, 1);
 	assert(qc);
+	qc->select_clicked = false;
+	qc->menu_clicked = false;
 
 	struct qwerty_device *qd = &qc->base;
 	qd->pose.orientation.w = 1.f;
@@ -318,6 +337,8 @@ qwerty_setup_var_tracking(struct qwerty_system *qs)
 	u_var_add_ro_text(qs, "Hold for movement speed", "LSHIFT");
 	u_var_add_ro_text(qs, "Modify FD movement speed", "Mouse wheel");
 	u_var_add_ro_text(qs, "Modify FD movement speed", "Numpad +/-");
+	u_var_add_ro_text(qs, "FC Select click", "Left Click");
+	u_var_add_ro_text(qs, "FC Menu click", "Middle Click");
 }
 
 struct qwerty_system *
@@ -442,3 +463,10 @@ qwerty_release_all(struct qwerty_device *qd)
 	qd->yaw_delta = 0;
 	qd->pitch_delta = 0;
 }
+
+// Controller methods
+
+// clang-format off
+void qwerty_select_click(struct qwerty_controller *qc) { qc->select_clicked = true; }
+void qwerty_menu_click(struct qwerty_controller *qc) { qc->menu_clicked = true; }
+// clang-format on
