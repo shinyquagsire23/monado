@@ -360,6 +360,7 @@ qwerty_setup_var_tracking(struct qwerty_system *qs)
 	u_var_add_ro_text(qs, "Hold for movement speed", "LSHIFT");
 	u_var_add_ro_text(qs, "Modify FD movement speed", "Mouse wheel");
 	u_var_add_ro_text(qs, "Modify FD movement speed", "Numpad +/-");
+	u_var_add_ro_text(qs, "Reset both or FC pose", "R");
 	u_var_add_ro_text(qs, "Toggle both or FC parenting to HMD", "F");
 	u_var_add_ro_text(qs, "FC Select click", "Left Click");
 	u_var_add_ro_text(qs, "FC Menu click", "Middle Click");
@@ -519,4 +520,22 @@ qwerty_follow_hmd(struct qwerty_controller *qc, bool follow)
 
 	qd->pose = rel.pose;
 	qc->follow_hmd = follow;
+}
+
+void
+qwerty_reset_controller_pose(struct qwerty_controller *qc)
+{
+	struct qwerty_device *qd = &qc->base;
+
+	bool no_qhmd = !qd->sys->hmd;
+	if (no_qhmd) {
+		return;
+	}
+
+	struct xrt_quat quat_identity = {0, 0, 0, 1};
+	bool is_left = qc == qd->sys->lctrl;
+
+	qwerty_follow_hmd(qc, true);
+	struct xrt_pose pose = {quat_identity, QWERTY_CONTROLLER_INITIAL_POS(is_left)};
+	qd->pose = pose;
 }

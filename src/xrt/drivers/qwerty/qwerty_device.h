@@ -215,6 +215,10 @@ qwerty_menu_click(struct qwerty_controller *qc);
 void
 qwerty_follow_hmd(struct qwerty_controller *qc, bool follow);
 
+//! Reset controller to initial pose and makes it follow the HMD
+void
+qwerty_reset_controller_pose(struct qwerty_controller *qc);
+
 /*!
  * @}
  */

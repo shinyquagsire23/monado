@@ -217,4 +217,14 @@ qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event even
 			qwerty_follow_hmd(qright, both_not_following);
 		}
 	}
+
+	// Reset controller poses
+	if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_r && event.key.repeat == 0) {
+		if (qdev != qd_hmd) {
+			qwerty_reset_controller_pose(qctrl);
+		} else { // If no controller is focused, reset both
+			qwerty_reset_controller_pose(qleft);
+			qwerty_reset_controller_pose(qright);
+		}
+	}
 }
