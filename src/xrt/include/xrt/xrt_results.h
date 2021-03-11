@@ -57,4 +57,8 @@ typedef enum xrt_result
 	 * is not supported by the display.
 	 */
 	XRT_ERROR_EGL_CONFIG_MISSING = -12,
+	/*!
+	 * Failed to initialize threading components.
+	 */
+	XRT_ERROR_THREADING_INIT_FAILURE = -14,
 } xrt_result_t;
