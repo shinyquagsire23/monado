@@ -9,7 +9,11 @@
 
 #include "qwerty_device.h"
 #include "util/u_misc.h"
+#include "util/u_debug.h"
 #include "xrt/xrt_prober.h"
+
+// Driver disabled by default for being experimental
+DEBUG_GET_ONCE_BOOL_OPTION(qwerty_enable, "QWERTY_ENABLE", false)
 
 struct qwerty_prober
 {
@@ -36,6 +40,11 @@ qwerty_prober_autoprobe(struct xrt_auto_prober *xap,
                         struct xrt_prober *xp,
                         struct xrt_device **out_xdevs)
 {
+	bool qwerty_enabled = debug_get_bool_option_qwerty_enable();
+	if (!qwerty_enabled) {
+		return 0;
+	}
+
 	bool hmd_wanted = !no_hmds; // Hopefully easier to reason about
 
 	struct qwerty_device *qhmd = qwerty_hmd_create();

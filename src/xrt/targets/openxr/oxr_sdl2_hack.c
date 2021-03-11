@@ -46,6 +46,7 @@ oxr_sdl2_hack_stop(void **hack)
 #include <SDL2/SDL.h>
 
 DEBUG_GET_ONCE_BOOL_OPTION(gui, "OXR_DEBUG_GUI", false)
+DEBUG_GET_ONCE_BOOL_OPTION(qwerty_enable, "QWERTY_ENABLE", false)
 
 
 /*!
@@ -148,7 +149,7 @@ sdl2_loop(struct sdl2_program *p)
 	ImPlot_SetCurrentContext(plot_ctx);
 
 	// Setup qwerty driver usage
-	bool qwerty_enabled = true; // @todo: get from an env var
+	bool qwerty_enabled = debug_get_bool_option_qwerty_enable();
 
 	// Main loop
 	struct gui_imgui gui = {0};
