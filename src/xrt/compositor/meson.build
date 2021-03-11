@@ -1,4 +1,4 @@
-# Copyright 2019-2020, Collabora, Ltd.
+# Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 subdir('shaders')
@@ -28,6 +28,10 @@ compositor_srcs = [
 	'main/comp_window.h',
 	'main/comp_layer_renderer.c',
 	'main/comp_layer.c',
+	'multi/comp_multi_compositor.c',
+	'multi/comp_multi_interface.h',
+	'multi/comp_multi_private.h',
+	'multi/comp_multi_system.c',
 	'render/comp_buffer.c',
 	'render/comp_render.h',
 	'render/comp_rendering.c',

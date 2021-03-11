@@ -1,4 +1,4 @@
-# Copyright 2019-2020, Collabora, Ltd.
+# Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 spirv_shaders(SHADER_HEADERS
@@ -37,6 +37,14 @@ set(MAIN_SOURCE_FILES
 	render/comp_rendering.c
 	render/comp_resources.c
 	)
+
+set(MULTI_SOURCE_FILES
+	multi/comp_multi_compositor.c
+	multi/comp_multi_interface.h
+	multi/comp_multi_private.h
+	multi/comp_multi_system.c
+	)
+
 
 ###
 # Client library
@@ -96,6 +104,8 @@ endif()
 if(XRT_HAVE_OPENGL AND XRT_HAVE_XLIB)
 	target_link_libraries(comp_client PRIVATE OpenGL::GLX)
 endif()
+
+
 ##
 # Main library
 #
@@ -191,4 +201,18 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 	endif()
 
 	add_subdirectory(shaders)
+endif()
+
+
+###
+# Multi client compositor library
+#
+
+add_library(comp_multi STATIC ${MULTI_SOURCE_FILES})
+target_link_libraries(comp_multi PUBLIC xrt-interfaces PRIVATE aux_util aux_os)
+target_include_directories(comp_multi PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+
+if(XRT_FEATURE_COMPOSITOR_MAIN)
+	target_link_libraries(comp_main PRIVATE comp_multi)
 endif()
