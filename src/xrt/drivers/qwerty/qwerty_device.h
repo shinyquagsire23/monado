@@ -8,6 +8,7 @@
  */
 #pragma once
 
+#include "util/u_logging.h"
 #include "xrt/xrt_device.h"
 
 #define QWERTY_HMD_STR "Qwerty HMD"
@@ -32,6 +33,7 @@ struct qwerty_system
 	struct qwerty_hmd *hmd;          //!< Can be NULL
 	struct qwerty_controller *lctrl; //!< Cannot be NULL
 	struct qwerty_controller *rctrl; //!< Cannot be NULL
+	enum u_logging_level ll;
 	bool process_keys;  //!< If false disable keyboard and mouse input
 	bool hmd_focused;   //!< For gui var tracking only, true if hmd is the focused device
 	bool lctrl_focused; //!< Same as `hmd_focused` but for the left controller
@@ -88,7 +90,8 @@ struct qwerty_controller
 struct qwerty_system *
 qwerty_system_create(struct qwerty_hmd *qhmd,
                      struct qwerty_controller *qleft,
-                     struct qwerty_controller *qright);
+                     struct qwerty_controller *qright,
+                     enum u_logging_level log_level);
 
 /*!
  * @}

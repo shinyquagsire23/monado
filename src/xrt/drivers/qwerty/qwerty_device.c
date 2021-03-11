@@ -12,6 +12,7 @@
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
 #include "util/u_var.h"
+#include "util/u_logging.h"
 
 #include "math/m_api.h"
 #include "math/m_mathinclude.h"
@@ -40,6 +41,12 @@
 #define QWERTY_GRIP 2
 #define QWERTY_AIM 3
 #define QWERTY_VIBRATION 0
+
+#define QWERTY_TRACE(qd, ...) U_LOG_XDEV_IFL_T(&qd->base, qd->sys->ll, __VA_ARGS__)
+#define QWERTY_DEBUG(qd, ...) U_LOG_XDEV_IFL_D(&qd->base, qd->sys->ll, __VA_ARGS__)
+#define QWERTY_INFO(qd, ...) U_LOG_XDEV_IFL_I(&qd->base, qd->sys->ll, __VA_ARGS__)
+#define QWERTY_WARN(qd, ...) U_LOG_XDEV_IFL_W(&qd->base, qd->sys->ll, __VA_ARGS__)
+#define QWERTY_ERROR(qd, ...) U_LOG_XDEV_IFL_E(&qd->base, qd->sys->ll, __VA_ARGS__)
 
 static void
 qwerty_system_remove(struct qwerty_system *qs, struct qwerty_device *qd);
@@ -104,7 +111,7 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 	struct qwerty_device *qd = qwerty_device(xd);
 
 	if (name != XRT_INPUT_GENERIC_HEAD_POSE && name != XRT_INPUT_SIMPLE_GRIP_POSE) {
-		printf("Unexpected input name = 0x%04X\n", name >> 8); // @todo: use u_logging.h
+		QWERTY_ERROR(qd, "Unexpected input name = 0x%04X", name >> 8);
 		return;
 	}
 
@@ -205,7 +212,7 @@ qwerty_hmd_create(void)
 	info.views[1].fov = 85.0f * (M_PI / 180.0f);
 
 	if (!u_device_setup_split_side_by_side(xd, &info)) {
-		printf("Failed to setup HMD properties\n"); // @todo: Use u_logging.h
+		QWERTY_ERROR(qd, "Failed to setup HMD properties");
 		qwerty_destroy(xd);
 		assert(false);
 		return NULL;
@@ -274,6 +281,7 @@ qwerty_setup_var_tracking(struct qwerty_system *qs)
 	struct qwerty_device *qd_right = &qs->rctrl->base;
 
 	u_var_add_root(qs, "Qwerty System", true);
+	u_var_add_log_level(qs, &qs->ll, "log_level");
 	u_var_add_bool(qs, &qs->process_keys, "process_keys");
 
 	u_var_add_ro_text(qs, "", "Focused Device");
@@ -315,7 +323,8 @@ qwerty_setup_var_tracking(struct qwerty_system *qs)
 struct qwerty_system *
 qwerty_system_create(struct qwerty_hmd *qhmd,
                      struct qwerty_controller *qleft,
-                     struct qwerty_controller *qright)
+                     struct qwerty_controller *qright,
+                     enum u_logging_level log_level)
 {
 	assert(qleft && "Cannot create a qwerty system when Left controller is NULL");
 	assert(qright && "Cannot create a qwerty system when Right controller is NULL");
@@ -324,6 +333,7 @@ qwerty_system_create(struct qwerty_hmd *qhmd,
 	qs->hmd = qhmd;
 	qs->lctrl = qleft;
 	qs->rctrl = qright;
+	qs->ll = log_level;
 	qs->process_keys = true;
 
 	if (qhmd) {
