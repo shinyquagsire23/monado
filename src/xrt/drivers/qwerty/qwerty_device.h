@@ -115,6 +115,10 @@ qwerty_add_look_delta(struct qwerty_device *qd, float yaw, float pitch);
 void
 qwerty_change_movement_speed(struct qwerty_device *qd, float steps);
 
+//! Release all movement input
+void
+qwerty_release_all(struct qwerty_device *qd);
+
 /*!
  * @}
  */
@@ -131,6 +135,10 @@ qwerty_change_movement_speed(struct qwerty_device *qd, float steps);
 struct qwerty_hmd *
 qwerty_hmd_create(void);
 
+//! Cast to qwerty_hmd. Ensures returning a valid HMD or crashing.
+struct qwerty_hmd *
+qwerty_hmd(struct xrt_device *xd);
+
 /*!
  * @}
  */
@@ -146,6 +154,10 @@ qwerty_hmd_create(void);
 //! Create qwerty_controller. Crash on failure.
 struct qwerty_controller *
 qwerty_controller_create(bool is_left, struct qwerty_hmd *qhmd);
+
+//! Cast to qwerty_controller. Ensures returning a valid controller or crashing.
+struct qwerty_controller *
+qwerty_controller(struct xrt_device *xd);
 
 /*!
  * @}

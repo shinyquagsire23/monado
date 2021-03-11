@@ -30,6 +30,11 @@ qwerty_create_auto_prober(void);
 /*!
  * Process an SDL_Event (like a key press) and dispatches a suitable action
  * to the appropriate qwerty_device.
+ *
+ * @note A qwerty_controller might not be in use (for example if you have
+ * physical controllers connected), though its memory will be modified by these
+ * events regardless. A qwerty_hmd not in use will not be modified as it never
+ * gets created.
  */
 void
 qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event event);

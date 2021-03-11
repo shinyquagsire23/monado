@@ -50,6 +50,22 @@ qwerty_device(struct xrt_device *xd)
 	return qd;
 }
 
+struct qwerty_hmd *
+qwerty_hmd(struct xrt_device *xd)
+{
+	struct qwerty_hmd *qh = (struct qwerty_hmd *)xd;
+	assert(qh);
+	return qh;
+}
+
+struct qwerty_controller *
+qwerty_controller(struct xrt_device *xd)
+{
+	struct qwerty_controller *qc = (struct qwerty_controller *)xd;
+	assert(qc);
+	return qc;
+}
+
 static void
 qwerty_update_inputs(struct xrt_device *xd)
 {
@@ -275,4 +291,22 @@ void
 qwerty_change_movement_speed(struct qwerty_device *qd, float steps)
 {
 	qd->movement_speed *= powf(MOVEMENT_SPEED_STEP, steps);
+}
+
+void
+qwerty_release_all(struct qwerty_device *qd)
+{
+	qd->left_pressed = false;
+	qd->right_pressed = false;
+	qd->forward_pressed = false;
+	qd->backward_pressed = false;
+	qd->up_pressed = false;
+	qd->down_pressed = false;
+	qd->look_left_pressed = false;
+	qd->look_right_pressed = false;
+	qd->look_up_pressed = false;
+	qd->look_down_pressed = false;
+	qd->sprint_pressed = false;
+	qd->yaw_delta = 0;
+	qd->pitch_delta = 0;
 }
