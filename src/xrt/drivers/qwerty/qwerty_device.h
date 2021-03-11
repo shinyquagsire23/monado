@@ -22,11 +22,35 @@ extern "C" {
  * @{
  */
 
+//! Fake device that modifies its tracked pose through its methods.
 //! @implements xrt_device
 struct qwerty_device
 {
 	struct xrt_device base;
+	struct xrt_pose pose; //!< Internal pose state
+
+	float movement_speed; //!< In meters per frame
+	bool left_pressed;
+	bool right_pressed;
+	bool forward_pressed;
+	bool backward_pressed;
+	bool up_pressed;
+	bool down_pressed;
+
+	float look_speed; //!< In radians per frame
+	bool look_left_pressed;
+	bool look_right_pressed;
+	bool look_up_pressed;
+	bool look_down_pressed;
 };
+
+/*!
+ * @name Qwerty Device
+ * @memberof qwerty_device
+ * qwerty_device public methods
+ * @{
+ */
+//! @public @memberof qwerty_device <!-- Trick for doxygen -->
 
 //! Cast to qwerty_device. Ensures returning a valid device or crashing.
 struct qwerty_device *
@@ -35,6 +59,34 @@ qwerty_device(struct xrt_device *xd);
 //! Create qwerty_hmd. Crash on failure.
 struct qwerty_device *
 qwerty_hmd_create(void);
+
+// clang-format off
+void qwerty_press_left(struct qwerty_device *qd);
+void qwerty_release_left(struct qwerty_device *qd);
+void qwerty_press_right(struct qwerty_device *qd);
+void qwerty_release_right(struct qwerty_device *qd);
+void qwerty_press_forward(struct qwerty_device *qd);
+void qwerty_release_forward(struct qwerty_device *qd);
+void qwerty_press_backward(struct qwerty_device *qd);
+void qwerty_release_backward(struct qwerty_device *qd);
+void qwerty_press_up(struct qwerty_device *qd);
+void qwerty_release_up(struct qwerty_device *qd);
+void qwerty_press_down(struct qwerty_device *qd);
+void qwerty_release_down(struct qwerty_device *qd);
+
+void qwerty_press_look_left(struct qwerty_device *qd);
+void qwerty_release_look_left(struct qwerty_device *qd);
+void qwerty_press_look_right(struct qwerty_device *qd);
+void qwerty_release_look_right(struct qwerty_device *qd);
+void qwerty_press_look_up(struct qwerty_device *qd);
+void qwerty_release_look_up(struct qwerty_device *qd);
+void qwerty_press_look_down(struct qwerty_device *qd);
+void qwerty_release_look_down(struct qwerty_device *qd);
+// clang-format on
+
+/*!
+ * @}
+ */
 
 /*!
  * @}
