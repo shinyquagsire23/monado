@@ -206,4 +206,15 @@ qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event even
 	if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_MIDDLE) qwerty_menu_click(qctrl);
 
 	// clang-format on
+
+	// Controllers follow/unfollow HMD
+	if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_f && event.key.repeat == 0) {
+		if (qdev != qd_hmd) {
+			qwerty_follow_hmd(qctrl, !qctrl->follow_hmd);
+		} else { // If no controller is focused, set both to the same state
+			bool both_not_following = !qleft->follow_hmd && !qright->follow_hmd;
+			qwerty_follow_hmd(qleft, both_not_following);
+			qwerty_follow_hmd(qright, both_not_following);
+		}
+	}
 }

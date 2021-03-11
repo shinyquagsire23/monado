@@ -15,6 +15,7 @@
 #include "util/u_logging.h"
 
 #include "math/m_api.h"
+#include "math/m_space.h"
 #include "math/m_mathinclude.h"
 
 #include "xrt/xrt_device.h"
@@ -30,7 +31,7 @@
 #define SPRINT_STEPS 5            // Amount of MOVEMENT_SPEED_STEPs to increase when sprinting
 
 // clang-format off
-// Values copied from u_device_setup_tracking_origins.
+// Values copied from u_device_setup_tracking_origins. CONTROLLER relative to HMD.
 #define QWERTY_HMD_INITIAL_POS (struct xrt_vec3){0, 1.6f, 0}
 #define QWERTY_CONTROLLER_INITIAL_POS(is_left) (struct xrt_vec3){(is_left) ? -0.2f : 0.2f, -0.3f, -0.5f}
 // clang-format on
@@ -174,7 +175,19 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 	math_quat_rotate(&y_rotation, &qd->pose.orientation, &qd->pose.orientation); // base-space yaw
 	math_quat_normalize(&qd->pose.orientation);
 
-	out_relation->pose = qd->pose;
+	// HMD Parenting
+
+	bool qd_is_ctrl = name == XRT_INPUT_SIMPLE_GRIP_POSE;
+	struct qwerty_controller *qc = qd_is_ctrl ? qwerty_controller(&qd->base) : NULL;
+	if (qd_is_ctrl && qc->follow_hmd) {
+		struct xrt_space_graph space_graph = {0};
+		struct qwerty_device *qd_hmd = &qd->sys->hmd->base;
+		m_space_graph_add_pose(&space_graph, &qd->pose);     // controller pose
+		m_space_graph_add_pose(&space_graph, &qd_hmd->pose); // base space is hmd space
+		m_space_graph_resolve(&space_graph, out_relation);
+	} else {
+		out_relation->pose = qd->pose;
+	}
 	out_relation->relation_flags =
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
 	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
@@ -265,6 +278,7 @@ qwerty_controller_create(bool is_left, struct qwerty_hmd *qhmd)
 	assert(qc);
 	qc->select_clicked = false;
 	qc->menu_clicked = false;
+	qc->follow_hmd = qhmd != NULL;
 
 	struct qwerty_device *qd = &qc->base;
 	qd->pose.orientation.w = 1.f;
@@ -346,6 +360,7 @@ qwerty_setup_var_tracking(struct qwerty_system *qs)
 	u_var_add_ro_text(qs, "Hold for movement speed", "LSHIFT");
 	u_var_add_ro_text(qs, "Modify FD movement speed", "Mouse wheel");
 	u_var_add_ro_text(qs, "Modify FD movement speed", "Numpad +/-");
+	u_var_add_ro_text(qs, "Toggle both or FC parenting to HMD", "F");
 	u_var_add_ro_text(qs, "FC Select click", "Left Click");
 	u_var_add_ro_text(qs, "FC Menu click", "Middle Click");
 }
@@ -479,3 +494,29 @@ qwerty_release_all(struct qwerty_device *qd)
 void qwerty_select_click(struct qwerty_controller *qc) { qc->select_clicked = true; }
 void qwerty_menu_click(struct qwerty_controller *qc) { qc->menu_clicked = true; }
 // clang-format on
+
+void
+qwerty_follow_hmd(struct qwerty_controller *qc, bool follow)
+{
+	struct qwerty_device *qd = &qc->base;
+	bool no_qhmd = !qd->sys->hmd;
+	bool unchanged = qc->follow_hmd == follow;
+	if (no_qhmd || unchanged) {
+		return;
+	}
+
+	struct qwerty_device *qd_hmd = &qd->sys->hmd->base;
+	struct xrt_space_graph graph = {0};
+	struct xrt_space_relation rel = {0};
+
+	m_space_graph_add_pose(&graph, &qd->pose);
+	if (follow) { // From global to hmd
+		m_space_graph_add_inverted_pose_if_not_identity(&graph, &qd_hmd->pose);
+	} else { // From hmd to global
+		m_space_graph_add_pose(&graph, &qd_hmd->pose);
+	}
+	m_space_graph_resolve(&graph, &rel);
+
+	qd->pose = rel.pose;
+	qc->follow_hmd = follow;
+}

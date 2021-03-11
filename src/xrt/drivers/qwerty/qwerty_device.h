@@ -73,7 +73,7 @@ struct qwerty_hmd
 	struct qwerty_device base;
 };
 
-//! Supports input actions
+//! Supports input actions and can be attached to the HMD pose.
 //! @implements qwerty_device
 struct qwerty_controller
 {
@@ -81,6 +81,13 @@ struct qwerty_controller
 
 	bool select_clicked;
 	bool menu_clicked;
+
+	/*!
+	 * Only used when a qwerty_hmd exists in the system.
+	 * Do not modify directly; use qwerty_follow_hmd().
+	 * If true, `pose` is relative to the qwerty_hmd.
+	 */
+	bool follow_hmd; // @todo: Make this work with non-qwerty HMDs.
 };
 
 /*!
@@ -203,6 +210,10 @@ qwerty_select_click(struct qwerty_controller *qc);
 //! Simulate input/menu/click
 void
 qwerty_menu_click(struct qwerty_controller *qc);
+
+//! Attach/detach the pose of `qc` to its HMD. Only works when a qwerty_hmd is present.
+void
+qwerty_follow_hmd(struct qwerty_controller *qc, bool follow);
 
 /*!
  * @}
