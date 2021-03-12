@@ -138,6 +138,36 @@ get_hand_tracking(struct xrt_device *xdev,
 	struct multi_device *d = (struct multi_device *)xdev;
 	struct xrt_device *target = d->tracking_override.target;
 	xrt_device_get_hand_tracking(target, name, at_timestamp_ns, out_value);
+
+	struct xrt_device *tracker = d->tracking_override.tracker;
+	struct xrt_space_relation tracker_relation;
+	xrt_device_get_tracked_pose(tracker, XRT_INPUT_GENERIC_TRACKER_POSE, at_timestamp_ns, &tracker_relation);
+
+
+	switch (d->override_type) {
+	case XRT_TRACKING_OVERRIDE_DIRECT: {
+		// XXX: Codepath not tested. Probably doesn't do what you want.
+		direct_override(d, &out_value->hand_pose, &out_value->hand_pose);
+
+	} break;
+	case XRT_TRACKING_OVERRIDE_ATTACHED: {
+
+		// struct xrt_space_relation target_relation;
+		// xrt_device_get_tracked_pose(target, name, at_timestamp_ns, &target_relation);
+
+
+		// just use the origin of the tracker space as reference frame
+		struct xrt_space_relation in_target_space;
+		m_space_relation_ident(&in_target_space);
+		in_target_space.relation_flags = tracker_relation.relation_flags;
+
+		struct xrt_pose *target_offset = &d->tracking_override.target->tracking_origin->offset;
+		struct xrt_pose *tracker_offset = &d->tracking_override.tracker->tracking_origin->offset;
+
+		attached_override(d, &out_value->hand_pose, target_offset, &tracker_relation, tracker_offset,
+		                  &in_target_space, &out_value->hand_pose);
+	} break;
+	}
 }
 
 static void
