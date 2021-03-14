@@ -19,6 +19,7 @@
 #include "math/m_mathinclude.h"
 
 #include <stdio.h>
+#include <assert.h>
 
 #define DUR_1S_IN_NS (1000 * 1000 * 1000)
 #define DUR_300MS_IN_NS (300 * 1000 * 1000)
@@ -182,6 +183,9 @@ m_imu_3dof_update(struct m_imu_3dof *f,
 		f->last.timestamp_ns = timestamp_ns;
 		return;
 	}
+
+	// This code assumes all timestamps makes some forward progress.
+	assert(timestamp_ns >= f->last.timestamp_ns);
 
 	f->last.gyro = *gyro;
 	f->last.accel = *accel;
