@@ -1,5 +1,5 @@
 // Copyright 2016, Joey Ferwerda.
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -296,10 +296,7 @@ read_sample_and_apply_calibration(struct psvr_device *psvr,
 }
 
 static void
-update_fusion(struct psvr_device *psvr,
-              struct psvr_parsed_sample *sample,
-              uint32_t tick_delta,
-              timepoint_ns timestamp_ns)
+update_fusion(struct psvr_device *psvr, struct psvr_parsed_sample *sample, uint64_t timestamp_ns)
 {
 	struct xrt_vec3 mag = {0.0f, 0.0f, 0.0f};
 	(void)mag;
@@ -313,14 +310,7 @@ update_fusion(struct psvr_device *psvr,
 
 		xrt_tracked_psvr_push_imu(psvr->tracker, timestamp_ns, &sample);
 	} else {
-#if 1
-		timepoint_ns now = os_monotonic_get_ns();
-		m_imu_3dof_update(&psvr->fusion, now, &psvr->read.accel, &psvr->read.gyro);
-#else
-		float delta_secs = tick_delta / PSVR_TICKS_PER_SECOND;
-
-		math_quat_integrate_velocity(&psvr->fusion.rot, &psvr->read.gyro, delta_secs, &psvr->fusion.rot);
-#endif
+		m_imu_3dof_update(&psvr->fusion, timestamp_ns, &psvr->read.accel, &psvr->read.gyro);
 	}
 }
 
@@ -338,10 +328,27 @@ calc_delta_and_handle_rollover(uint32_t next, uint32_t last)
 	return tick_delta;
 }
 
+static timepoint_ns
+ensure_forward_progress_timestamps(struct psvr_device *psvr, timepoint_ns timestamp_ns)
+{
+	timepoint_ns t = timestamp_ns;
+
+	/*
+	 * This make sure the timestamp is after the last we sent to the fusion,
+	 * but it effectively drops the sample.
+	 */
+	if (psvr->last_sensor_time > t) {
+		t = psvr->last_sensor_time + 1;
+	}
+
+	psvr->last_sensor_time = t;
+	return t;
+}
+
 static void
 handle_tracker_sensor_msg(struct psvr_device *psvr, unsigned char *buffer, int size)
 {
-	timepoint_ns now = os_monotonic_get_ns();
+	timepoint_ns now_ns = os_monotonic_get_ns();
 	uint32_t last_sample_tick = psvr->last.samples[1].tick;
 
 	if (!psvr_parse_sensor_packet(&psvr->last, buffer, size)) {
@@ -368,16 +375,26 @@ handle_tracker_sensor_msg(struct psvr_device *psvr, unsigned char *buffer, int s
 			tick_delta = 500;
 		}
 	}
+
 	// New delta between the two samples.
 	uint32_t tick_delta2 = calc_delta_and_handle_rollover(s->samples[1].tick, s->samples[0].tick);
 
 	time_duration_ns inter_sample_duration_ns = tick_delta2 * PSVR_NS_PER_TICK;
+
+	// Move it back in time.
+	timepoint_ns timestamp_ns = (uint64_t)now_ns - (uint64_t)inter_sample_duration_ns;
+
+	// Make sure timestamps are always after a previous timestamp.
+	timestamp_ns = ensure_forward_progress_timestamps(psvr, timestamp_ns);
+
 	// Update the fusion with first sample.
-	update_fusion(psvr, &s->samples[0], tick_delta, now - inter_sample_duration_ns);
+	update_fusion(psvr, &s->samples[0], timestamp_ns);
+
+	// Make sure timestamps are always after a previous timestamp.
+	timestamp_ns = ensure_forward_progress_timestamps(psvr, now_ns);
 
 	// Update the fusion with second sample.
-	update_fusion(psvr, &s->samples[1], tick_delta2, now);
-	psvr->last_sensor_time = now;
+	update_fusion(psvr, &s->samples[1], timestamp_ns);
 }
 
 static void
