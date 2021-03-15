@@ -584,6 +584,11 @@ union xrt_compositor_event {
  *
  */
 
+enum xrt_compositor_frame_point
+{
+	XRT_COMPOSITOR_FRAME_POINT_WOKE, //!< The client woke up after waiting.
+};
+
 /*!
  * Swapchain creation info.
  */
@@ -688,6 +693,38 @@ struct xrt_compositor
 	 * discard_frame.
 	 */
 	xrt_result_t (*end_session)(struct xrt_compositor *xc);
+
+	/*!
+	 * This function and @ref mark_woke function calls are a alternative to
+	 * @ref wait_frame.
+	 *
+	 * The only requirement on the compositor for the @p frame_id
+	 * is that it is a positive number.
+	 *
+	 * @param[out] xc                              The compositor
+	 * @param[out] out_frame_id                    Frame id
+	 * @param[out] out_predicted_gpu_time_ns       When we expect the client to finish the GPU work.
+	 * @param[out] out_predicted_display_time_ns   When the pixels turns into photons.
+	 * @param[out] out_predicted_display_period_ns The period for the frames.
+	 */
+	xrt_result_t (*predict_frame)(struct xrt_compositor *xc,
+	                              int64_t *out_frame_id,
+	                              uint64_t *out_wake_time_ns,
+	                              uint64_t *out_predicted_gpu_time_ns,
+	                              uint64_t *out_predicted_display_time_ns,
+	                              uint64_t *out_predicted_display_period_ns);
+
+	/*!
+	 * This function and @ref mark_woke function calls are a alternative to
+	 * @ref wait_frame.
+	 *
+	 * The client calls this function to mark that it woke up from waiting
+	 * on a frame.
+	 */
+	xrt_result_t (*mark_frame)(struct xrt_compositor *xc,
+	                           int64_t frame_id,
+	                           enum xrt_compositor_frame_point point,
+	                           uint64_t when_ns);
 
 	/*!
 	 * See xrWaitFrame.
@@ -928,6 +965,46 @@ static inline xrt_result_t
 xrt_comp_end_session(struct xrt_compositor *xc)
 {
 	return xc->end_session(xc);
+}
+
+/*!
+ * @copydoc xrt_compositor::predict_frame
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_predict_frame(struct xrt_compositor *xc,
+                       int64_t *out_frame_id,
+                       uint64_t *out_wake_time_ns,
+                       uint64_t *out_predicted_gpu_time_ns,
+                       uint64_t *out_predicted_display_time_ns,
+                       uint64_t *out_predicted_display_period_ns)
+{
+	return xc->predict_frame(             //
+	    xc,                               //
+	    out_frame_id,                     //
+	    out_wake_time_ns,                 //
+	    out_predicted_gpu_time_ns,        //
+	    out_predicted_display_time_ns,    //
+	    out_predicted_display_period_ns); //
+}
+
+/*!
+ * @copydoc xrt_compositor::mark_frame
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_mark_frame(struct xrt_compositor *xc,
+                    int64_t frame_id,
+                    enum xrt_compositor_frame_point point,
+                    uint64_t when_ns)
+{
+	return xc->mark_frame(xc, frame_id, point, when_ns);
 }
 
 /*!
