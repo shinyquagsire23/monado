@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 # Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -22,7 +22,10 @@ if [ ! "${CLANGFORMAT}" ]; then
 fi
 
 (
+        ${CLANGFORMAT} --version
+
         cd $(dirname $0)/..
+
         find \
                 src/xrt/auxiliary \
                 src/xrt/compositor \
