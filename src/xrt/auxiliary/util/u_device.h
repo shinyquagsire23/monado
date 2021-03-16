@@ -103,7 +103,7 @@ void
 u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t num_xdevs, int *head, int *left, int *right);
 
 /*!
- * Helper function to assign head, left hand and right hand roles.
+ * Helper function for setting up tracking origins. Applies 3dof offsets for devices with XRT_TRACKING_TYPE_NONE.
  *
  * @ingroup aux_util
  */
