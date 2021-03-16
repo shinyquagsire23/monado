@@ -71,6 +71,7 @@ local.properties
 .cxx
 .settings
 .project
+.classpath
 
 gradlew
 gradlew.bat
