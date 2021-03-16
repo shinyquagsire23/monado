@@ -114,14 +114,18 @@ compositor_end_session(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
-compositor_wait_frame(struct xrt_compositor *xc,
-                      int64_t *out_frame_id,
-                      uint64_t *out_predicted_display_time_ns,
-                      uint64_t *out_predicted_display_period_ns)
+compositor_predict_frame(struct xrt_compositor *xc,
+                         int64_t *out_frame_id,
+                         uint64_t *out_wake_time_ns,
+                         uint64_t *out_predicted_gpu_time_ns,
+                         uint64_t *out_predicted_display_time_ns,
+                         uint64_t *out_predicted_display_period_ns)
 {
 	COMP_TRACE_MARKER();
 
 	struct comp_compositor *c = comp_compositor(xc);
+
+	COMP_DEBUG(c, "PREDICT_FRAME");
 
 	// A little bit easier to read.
 	uint64_t interval_ns = (int64_t)c->settings.nominal_frame_interval_ns;
@@ -135,17 +139,69 @@ compositor_wait_frame(struct xrt_compositor *xc,
 	uint64_t present_slop_ns = 0;
 	uint64_t desired_present_time_ns = 0;
 	uint64_t predicted_display_time_ns = 0;
-	comp_target_calc_frame_timings(c->target,                   //
-	                               &frame_id,                   //
-	                               &wake_up_time_ns,            //
-	                               &desired_present_time_ns,    //
-	                               &present_slop_ns,            //
-	                               &predicted_display_time_ns); //
+	comp_target_calc_frame_timings(  //
+	    c->target,                   //
+	    &frame_id,                   //
+	    &wake_up_time_ns,            //
+	    &desired_present_time_ns,    //
+	    &present_slop_ns,            //
+	    &predicted_display_time_ns); //
 
 	c->frame.waited.id = frame_id;
 	c->frame.waited.desired_present_time_ns = desired_present_time_ns;
 	c->frame.waited.present_slop_ns = present_slop_ns;
 	c->frame.waited.predicted_display_time_ns = predicted_display_time_ns;
+
+	*out_frame_id = frame_id;
+	*out_wake_time_ns = wake_up_time_ns;
+	*out_predicted_gpu_time_ns = desired_present_time_ns; // Not quite right but close enough.
+	*out_predicted_display_time_ns = predicted_display_time_ns;
+	*out_predicted_display_period_ns = interval_ns;
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+compositor_mark_frame(struct xrt_compositor *xc,
+                      int64_t frame_id,
+                      enum xrt_compositor_frame_point point,
+                      uint64_t when_ns)
+{
+	COMP_TRACE_MARKER();
+
+	struct comp_compositor *c = comp_compositor(xc);
+
+	COMP_DEBUG(c, "MARK_FRAME %i", point);
+
+	switch (point) {
+	case XRT_COMPOSITOR_FRAME_POINT_WOKE:
+		comp_target_mark_wake_up(c->target, frame_id, when_ns);
+		return XRT_SUCCESS;
+	default: assert(false);
+	}
+}
+
+static xrt_result_t
+compositor_wait_frame(struct xrt_compositor *xc,
+                      int64_t *out_frame_id,
+                      uint64_t *out_predicted_display_time_ns,
+                      uint64_t *out_predicted_display_period_ns)
+{
+	COMP_TRACE_MARKER();
+
+	struct comp_compositor *c = comp_compositor(xc);
+
+	int64_t frame_id = -1;
+	uint64_t wake_up_time_ns = 0;
+	uint64_t predicted_gpu_time_ns = 0;
+
+	xrt_comp_predict_frame(               //
+	    xc,                               //
+	    &frame_id,                        //
+	    &wake_up_time_ns,                 //
+	    &predicted_gpu_time_ns,           //
+	    out_predicted_display_time_ns,    //
+	    out_predicted_display_period_ns); //
 
 	uint64_t now_ns = os_monotonic_get_ns();
 	if (now_ns < wake_up_time_ns) {
@@ -154,13 +210,8 @@ compositor_wait_frame(struct xrt_compositor *xc,
 	}
 
 	now_ns = os_monotonic_get_ns();
-	comp_target_mark_wake_up(c->target, frame_id, now_ns);
 
-	comp_target_update_timings(c->target);
-
-	*out_frame_id = frame_id;
-	*out_predicted_display_time_ns = predicted_display_time_ns;
-	*out_predicted_display_period_ns = interval_ns;
+	xrt_comp_mark_frame(xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, now_ns);
 
 	return XRT_SUCCESS;
 }
@@ -1283,6 +1334,8 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	c->base.base.import_fence = comp_compositor_import_fence;
 	c->base.base.begin_session = compositor_begin_session;
 	c->base.base.end_session = compositor_end_session;
+	c->base.base.predict_frame = compositor_predict_frame;
+	c->base.base.mark_frame = compositor_mark_frame;
 	c->base.base.wait_frame = compositor_wait_frame;
 	c->base.base.begin_frame = compositor_begin_frame;
 	c->base.base.discard_frame = compositor_discard_frame;
