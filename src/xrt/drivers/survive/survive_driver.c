@@ -437,6 +437,8 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 
 	u_hand_joints_set_out_data(&survive->ctrl.hand_tracking, hand, &survive->last_relation, &hand_on_handle_pose,
 	                           out_value);
+	out_value->is_active = true; // Apparently libsurvive doesn't report controller tracked/untracked state, so just
+	                             // lie and say that the hand is being tracked
 }
 
 static void
