@@ -1503,6 +1503,39 @@ struct xrt_system_compositor_info
 	uint8_t client_vk_deviceUUID[XRT_GPU_UUID_SIZE];
 };
 
+struct xrt_system_compositor;
+
+/*!
+ * Special functions to control multi session/clients.
+ */
+struct xrt_multi_compositor_control
+{
+	/*!
+	 * Sets the state of the compositor, generating any events to the client
+	 * if the state is actually changed. Input focus is enforced/handled by
+	 * a different component but is still signaled by the compositor.
+	 */
+	xrt_result_t (*set_state)(struct xrt_system_compositor *xsc,
+	                          struct xrt_compositor *xc,
+	                          bool visible,
+	                          bool focused);
+
+	/*!
+	 * Set the rendering Z order for rendering, visible has higher priority
+	 * then z_order but is still saved until visible again. This a signed
+	 * 64 bit integer compared to a unsigned 32 bit integer in OpenXR, so
+	 * that non-overlay clients can be handled like overlay ones.
+	 */
+	xrt_result_t (*set_z_order)(struct xrt_system_compositor *xsc, struct xrt_compositor *xc, int64_t z_order);
+
+	/*!
+	 * Tell this client/session if the main application is visible or not.
+	 */
+	xrt_result_t (*set_main_app_visibility)(struct xrt_system_compositor *xsc,
+	                                        struct xrt_compositor *xc,
+	                                        bool visible);
+};
+
 /*!
  * The system compositor is a long lived object, it has the same life time as a
  * XrSystemID.
@@ -1511,6 +1544,11 @@ struct xrt_system_compositor
 {
 	//! Info regarding the system.
 	struct xrt_system_compositor_info info;
+
+	/*!
+	 * Does this system compositor support multi client controls.
+	 */
+	struct xrt_multi_compositor_control *xmcc;
 
 	/*!
 	 * Create a new native compositor.
@@ -1533,6 +1571,58 @@ struct xrt_system_compositor
 	 */
 	void (*destroy)(struct xrt_system_compositor *xsc);
 };
+
+/*!
+ * @copydoc xrt_multi_compositor_control::set_state
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_system_compositor
+ */
+static inline xrt_result_t
+xrt_syscomp_set_state(struct xrt_system_compositor *xsc, struct xrt_compositor *xc, bool visible, bool focused)
+{
+	if (xsc->xmcc == NULL) {
+		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
+	}
+
+	return xsc->xmcc->set_state(xsc, xc, visible, focused);
+}
+
+/*!
+ * @copydoc xrt_multi_compositor_control::set_z_order
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_system_compositor
+ */
+static inline xrt_result_t
+xrt_syscomp_set_z_order(struct xrt_system_compositor *xsc, struct xrt_compositor *xc, int64_t z_order)
+{
+	if (xsc->xmcc == NULL) {
+		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
+	}
+
+	return xsc->xmcc->set_z_order(xsc, xc, z_order);
+}
+
+
+/*!
+ * @copydoc xrt_multi_compositor_control::set_main_app_visibility
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_system_compositor
+ */
+static inline xrt_result_t
+xrt_syscomp_set_main_app_visibility(struct xrt_system_compositor *xsc, struct xrt_compositor *xc, bool visible)
+{
+	if (xsc->xmcc == NULL) {
+		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
+	}
+
+	return xsc->xmcc->set_main_app_visibility(xsc, xc, visible);
+}
 
 /*!
  * @copydoc xrt_system_compositor::create_native_compositor
