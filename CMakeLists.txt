@@ -357,3 +357,7 @@ message(STATUS "#    DRIVER_SURVIVE:      ${XRT_BUILD_DRIVER_SURVIVE}")
 message(STATUS "#    DRIVER_VF:           ${XRT_BUILD_DRIVER_VF}")
 message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
 message(STATUS "#####----- Config -----#####")
+
+if(XRT_FEATURE_SERVICE AND NOT XRT_FEATURE_OPENXR)
+	message(FATAL_ERROR "XRT_FEATURE_SERVICE requires XRT_FEATURE_OPENXR to be enabled")
+endif()
