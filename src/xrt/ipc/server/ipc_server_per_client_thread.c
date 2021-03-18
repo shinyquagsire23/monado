@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -162,7 +162,8 @@ client_loop(volatile struct ipc_client_state *ics)
 
 	// Destroy all swapchains now.
 	for (uint32_t j = 0; j < IPC_MAX_CLIENT_SWAPCHAINS; j++) {
-		xrt_swapchain_destroy((struct xrt_swapchain **)&ics->xscs[j]);
+		// Drop our reference, does NULL checking. Cast away volatile.
+		xrt_swapchain_reference((struct xrt_swapchain **)&ics->xscs[j], NULL);
 		ics->swapchain_data[j].active = false;
 		IPC_TRACE(ics->server, "Destroyed swapchain %d.", j);
 	}

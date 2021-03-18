@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -62,8 +62,8 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 		}
 	}
 
-	// Destroy the native swapchain as well.
-	xrt_swapchain_destroy((struct xrt_swapchain **)&sc->xscn);
+	// Drop our reference, does NULL checking.
+	xrt_swapchain_native_reference(&sc->xscn, NULL);
 
 	free(sc);
 }
@@ -360,7 +360,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	VkResult ret;
 	xrt_result_t xret;
 
-	struct xrt_swapchain_native *xscn = NULL;
+	struct xrt_swapchain_native *xscn = NULL; // Has to be NULL.
 	xret = xrt_comp_native_create_swapchain(c->xcn, info, &xscn);
 
 	if (xret != XRT_SUCCESS) {

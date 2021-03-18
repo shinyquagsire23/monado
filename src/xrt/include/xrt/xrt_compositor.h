@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -363,6 +363,11 @@ struct xrt_layer_data
 struct xrt_swapchain
 {
 	/*!
+	 * Reference helper.
+	 */
+	struct xrt_reference reference;
+
+	/*!
 	 * Number of images.
 	 *
 	 * The images themselves are on the subclasses.
@@ -398,6 +403,39 @@ struct xrt_swapchain
 	 */
 	xrt_result_t (*release_image)(struct xrt_swapchain *xsc, uint32_t index);
 };
+
+/*!
+ * Update the reference counts on swapchain(s).
+ *
+ * @param     dst Pointer to a object reference, if the object reference is
+ *                non-null will decrement it's counter. The reference that
+ *                @p dst points to will be set to @p src.
+ * @param[in] src Object to be have it's refcount increased @p dst is set to
+ *                this.
+ * @ingroup xrt_iface
+ * @relates xrt_swapchain
+ */
+static inline void
+xrt_swapchain_reference(struct xrt_swapchain **dst, struct xrt_swapchain *src)
+{
+	struct xrt_swapchain *old_dst = *dst;
+
+	if (old_dst == src) {
+		return;
+	}
+
+	if (src) {
+		xrt_reference_inc(&src->reference);
+	}
+
+	*dst = src;
+
+	if (old_dst) {
+		if (xrt_reference_dec(&old_dst->reference)) {
+			old_dst->destroy(old_dst);
+		}
+	}
+}
 
 /*!
  * @copydoc xrt_swapchain::acquire_image
@@ -436,26 +474,6 @@ static inline xrt_result_t
 xrt_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 {
 	return xsc->release_image(xsc, index);
-}
-
-/*!
- * @copydoc xrt_swapchain::destroy
- *
- * Helper for calling through the function pointer: does a null check and sets
- * xsc_ptr to null if freed.
- *
- * @public @memberof xrt_swapchain
- */
-static inline void
-xrt_swapchain_destroy(struct xrt_swapchain **xsc_ptr)
-{
-	struct xrt_swapchain *xsc = *xsc_ptr;
-	if (xsc == NULL) {
-		return;
-	}
-
-	xsc->destroy(xsc);
-	*xsc_ptr = NULL;
 }
 
 /*!
@@ -553,6 +571,10 @@ struct xrt_compositor
 
 	/*!
 	 * Create a swapchain with a set of images.
+	 *
+	 * The pointer pointed to by @p out_xsc has to either be NULL or a valid
+	 * @ref xrt_swapchain pointer. If there is a valid @ref xrt_swapchain
+	 * pointed by the pointed pointer it will have it reference decremented.
 	 */
 	xrt_result_t (*create_swapchain)(struct xrt_compositor *xc,
 	                                 const struct xrt_swapchain_create_info *info,
@@ -560,6 +582,10 @@ struct xrt_compositor
 
 	/*!
 	 * Create a swapchain from a set of native images.
+	 *
+	 * The pointer pointed to by @p out_xsc has to either be NULL or a valid
+	 * @ref xrt_swapchain pointer. If there is a valid @ref xrt_swapchain
+	 * pointed by the pointed pointer it will have it reference decremented.
 	 */
 	xrt_result_t (*import_swapchain)(struct xrt_compositor *xc,
 	                                 const struct xrt_swapchain_create_info *info,
@@ -1185,6 +1211,17 @@ struct xrt_swapchain_native
 };
 
 /*!
+ * @copydoc xrt_swapchain_reference
+ *
+ * @relates xrt_swapchain_native
+ */
+static inline void
+xrt_swapchain_native_reference(struct xrt_swapchain_native **dst, struct xrt_swapchain_native *src)
+{
+	xrt_swapchain_reference((struct xrt_swapchain **)dst, (struct xrt_swapchain *)src);
+}
+
+/*!
  * @interface xrt_compositor_native
  *
  * Main compositor server interface.
@@ -1207,6 +1244,10 @@ struct xrt_compositor_native
  * Helper for calling through the base's function pointer then performing the
  * known-safe downcast.
  *
+ * The pointer pointed to by @p out_xsc has to either be NULL or a valid
+ * @ref xrt_swapchain pointer. If there is a valid @ref xrt_swapchain
+ * pointed by the pointed pointer it will have it reference decremented.
+ *
  * @public @memberof xrt_compositor_native
  */
 static inline xrt_result_t
@@ -1214,11 +1255,17 @@ xrt_comp_native_create_swapchain(struct xrt_compositor_native *xcn,
                                  const struct xrt_swapchain_create_info *info,
                                  struct xrt_swapchain_native **out_xscn)
 {
-	struct xrt_swapchain *xsc = NULL;
+	struct xrt_swapchain *xsc = NULL; // Has to be NULL.
+
 	xrt_result_t ret = xrt_comp_create_swapchain(&xcn->base, info, &xsc);
 	if (ret == XRT_SUCCESS) {
+		// Need to dereference any swapchain already there first.
+		xrt_swapchain_native_reference(out_xscn, NULL);
+
+		// Already referenced.
 		*out_xscn = (struct xrt_swapchain_native *)xsc;
 	}
+
 	return ret;
 }
 

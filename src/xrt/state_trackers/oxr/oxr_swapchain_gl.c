@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -35,10 +35,8 @@ oxr_swapchain_gl_destroy(struct oxr_logger *log, struct oxr_swapchain *sc)
 		sc->release_image(log, sc, NULL);
 	}
 
-	if (sc->swapchain != NULL) {
-		sc->swapchain->destroy(sc->swapchain);
-		sc->swapchain = NULL;
-	}
+	// Drop our reference, does NULL checking.
+	xrt_swapchain_reference(&sc->swapchain, NULL);
 
 	return XR_SUCCESS;
 }

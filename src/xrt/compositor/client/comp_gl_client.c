@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -366,7 +366,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 
 	struct xrt_swapchain_create_info xinfo = *info;
 	xinfo.format = vk_format;
-	struct xrt_swapchain_native *xscn = NULL;
+	struct xrt_swapchain_native *xscn = NULL; // Has to be NULL.
 	xret = xrt_comp_native_create_swapchain(c->xcn, &xinfo, &xscn);
 
 
@@ -387,7 +387,8 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 
 	struct client_gl_swapchain *sc = NULL;
 	if (NULL == c->create_swapchain(xc, info, xscn, &sc)) {
-		xrt_swapchain_destroy(&xsc);
+		// Drop our reference, does NULL checking.
+		xrt_swapchain_reference(&xsc, NULL);
 		return XRT_ERROR_OPENGL;
 	}
 

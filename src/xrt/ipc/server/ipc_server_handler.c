@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -374,7 +374,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	}
 
 	// Create the swapchain
-	struct xrt_swapchain *xsc = NULL;
+	struct xrt_swapchain *xsc = NULL; // Has to be NULL.
 	xret = xrt_comp_create_swapchain(ics->xc, info, &xsc);
 	if (xret != XRT_SUCCESS) {
 		IPC_ERROR(ics->server, "Error xrt_comp_create_swapchain failed!");
@@ -490,7 +490,8 @@ ipc_handle_swapchain_destroy(volatile struct ipc_client_state *ics, uint32_t id)
 	//! @todo Implement destroy swapchain.
 	ics->num_swapchains--;
 
-	xrt_swapchain_destroy((struct xrt_swapchain **)&ics->xscs[id]);
+	// Drop our reference, does NULL checking. Cast away volatile.
+	xrt_swapchain_reference((struct xrt_swapchain **)&ics->xscs[id], NULL);
 	ics->swapchain_data[id].active = false;
 
 	return XRT_SUCCESS;

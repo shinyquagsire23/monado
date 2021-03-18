@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -84,8 +84,8 @@ client_gl_eglimage_swapchain_destroy(struct xrt_swapchain *xsc)
 	client_gl_eglimage_swapchain_teardown_storage(sc);
 	sc->base.base.base.num_images = 0;
 
-	// Destroy the native swapchain as well.
-	xrt_swapchain_destroy((struct xrt_swapchain **)&sc->base.xscn);
+	// Drop our reference, does NULL checking.
+	xrt_swapchain_native_reference(&sc->base.xscn, NULL);
 
 	free(sc);
 }

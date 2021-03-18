@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -329,7 +329,8 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 	do_post_create_vulkan_setup(c, info, sc);
 
-	*out_xsc = &sc->base.base;
+	// Correctly setup refcounts.
+	xrt_swapchain_reference(out_xsc, &sc->base.base);
 
 	return XRT_SUCCESS;
 }
@@ -356,7 +357,8 @@ comp_swapchain_import(struct xrt_compositor *xc,
 
 	do_post_create_vulkan_setup(c, info, sc);
 
-	*out_xsc = &sc->base.base;
+	// Correctly setup refcounts.
+	xrt_swapchain_reference(out_xsc, &sc->base.base);
 
 	return XRT_SUCCESS;
 }
