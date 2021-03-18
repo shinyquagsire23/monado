@@ -151,6 +151,7 @@ struct ipc_layer_entry
  */
 struct ipc_layer_slot
 {
+	uint64_t display_time_ns;
 	enum xrt_blend_mode env_blend_mode;
 	uint32_t num_layers;
 	struct ipc_layer_entry layers[IPC_MAX_LAYERS];

@@ -61,14 +61,10 @@ struct ipc_client_compositor
 
 	struct
 	{
-		uint64_t display_time_ns;
-
 		//! Id that we are currently using for submitting layers.
 		uint32_t slot_id;
 
 		uint32_t num_layers;
-
-		enum xrt_blend_mode env_blend_mode;
 	} layers;
 
 	//! Has the native compositor been created, only supports one for now.
@@ -397,14 +393,12 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	uint64_t wake_up_time_ns = 0;
-	uint64_t min_display_period_ns = 0;
 
-	IPC_CALL_CHK(ipc_call_compositor_wait_frame(icc->ipc_c,                   // Connection
-	                                            out_frame_id,                 // Frame id
-	                                            out_predicted_display_time,   // Display time
-	                                            &wake_up_time_ns,             // When we should wake up
-	                                            out_predicted_display_period, // Current period
-	                                            &min_display_period_ns));     // Minimum display period
+	IPC_CALL_CHK(ipc_call_compositor_predict_frame(icc->ipc_c,                     // Connection
+	                                               out_frame_id,                   // Frame id
+	                                               &wake_up_time_ns,               // When we should wake up
+	                                               out_predicted_display_time,     // Display time
+	                                               out_predicted_display_period)); // Current period
 
 	uint64_t now_ns = os_monotonic_get_ns();
 
@@ -465,8 +459,11 @@ ipc_compositor_layer_begin(struct xrt_compositor *xc,
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
-	icc->layers.display_time_ns = display_time_ns;
-	icc->layers.env_blend_mode = env_blend_mode;
+	struct ipc_shared_memory *ism = icc->ipc_c->ism;
+	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
+
+	slot->display_time_ns = display_time_ns;
+	slot->env_blend_mode = env_blend_mode;
 
 	return XRT_SUCCESS;
 }
@@ -666,6 +663,34 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 	icc->compositor_created = false;
 }
 
+static void
+ipc_compositor_init(struct ipc_client_compositor *icc, struct xrt_compositor_native **out_xcn)
+{
+	icc->base.base.create_swapchain = ipc_compositor_swapchain_create;
+	icc->base.base.import_swapchain = ipc_compositor_swapchain_import;
+	icc->base.base.begin_session = ipc_compositor_begin_session;
+	icc->base.base.end_session = ipc_compositor_end_session;
+	icc->base.base.wait_frame = ipc_compositor_wait_frame;
+	icc->base.base.begin_frame = ipc_compositor_begin_frame;
+	icc->base.base.discard_frame = ipc_compositor_discard_frame;
+	icc->base.base.layer_begin = ipc_compositor_layer_begin;
+	icc->base.base.layer_stereo_projection = ipc_compositor_layer_stereo_projection;
+	icc->base.base.layer_stereo_projection_depth = ipc_compositor_layer_stereo_projection_depth;
+	icc->base.base.layer_quad = ipc_compositor_layer_quad;
+	icc->base.base.layer_cube = ipc_compositor_layer_cube;
+	icc->base.base.layer_cylinder = ipc_compositor_layer_cylinder;
+	icc->base.base.layer_equirect1 = ipc_compositor_layer_equirect1;
+	icc->base.base.layer_equirect2 = ipc_compositor_layer_equirect2;
+	icc->base.base.layer_commit = ipc_compositor_layer_commit;
+	icc->base.base.destroy = ipc_compositor_destroy;
+	icc->base.base.poll_events = ipc_compositor_poll_events;
+
+	// Fetch info from the compositor, among it the format format list.
+	get_info(&(icc->base.base), &icc->base.base.info);
+
+	*out_xcn = &icc->base;
+}
+
 
 /*
  *
@@ -792,10 +817,13 @@ ipc_syscomp_create_native_compositor(struct xrt_system_compositor *xsc,
 		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
 	}
 
-	icc->compositor_created = true;
-	*out_xcn = &icc->base;
-
+	// Needs to be done before init.
 	IPC_CALL_CHK(ipc_call_session_create(icc->ipc_c, xsi));
+
+	// Needs to be done after session create call.
+	ipc_compositor_init(icc, out_xcn);
+
+	icc->compositor_created = true;
 
 	return XRT_SUCCESS;
 }
@@ -829,24 +857,6 @@ ipc_client_create_system_compositor(struct ipc_connection *ipc_c,
 {
 	struct ipc_client_compositor *c = U_TYPED_CALLOC(struct ipc_client_compositor);
 
-	c->base.base.create_swapchain = ipc_compositor_swapchain_create;
-	c->base.base.import_swapchain = ipc_compositor_swapchain_import;
-	c->base.base.begin_session = ipc_compositor_begin_session;
-	c->base.base.end_session = ipc_compositor_end_session;
-	c->base.base.wait_frame = ipc_compositor_wait_frame;
-	c->base.base.begin_frame = ipc_compositor_begin_frame;
-	c->base.base.discard_frame = ipc_compositor_discard_frame;
-	c->base.base.layer_begin = ipc_compositor_layer_begin;
-	c->base.base.layer_stereo_projection = ipc_compositor_layer_stereo_projection;
-	c->base.base.layer_stereo_projection_depth = ipc_compositor_layer_stereo_projection_depth;
-	c->base.base.layer_quad = ipc_compositor_layer_quad;
-	c->base.base.layer_cube = ipc_compositor_layer_cube;
-	c->base.base.layer_cylinder = ipc_compositor_layer_cylinder;
-	c->base.base.layer_equirect1 = ipc_compositor_layer_equirect1;
-	c->base.base.layer_equirect2 = ipc_compositor_layer_equirect2;
-	c->base.base.layer_commit = ipc_compositor_layer_commit;
-	c->base.base.destroy = ipc_compositor_destroy;
-	c->base.base.poll_events = ipc_compositor_poll_events;
 	c->system.create_native_compositor = ipc_syscomp_create_native_compositor;
 	c->system.destroy = ipc_syscomp_destroy;
 	c->ipc_c = ipc_c;
@@ -862,9 +872,6 @@ ipc_client_create_system_compositor(struct ipc_connection *ipc_c,
 		c->xina = &c->loopback_xina;
 	}
 #endif
-
-	// Fetch info from the compositor, among it the format format list.
-	get_info(&(c->base.base), &c->base.base.info);
 
 	// Fetch info from the system compositor.
 	get_system_info(c, &c->system.info);

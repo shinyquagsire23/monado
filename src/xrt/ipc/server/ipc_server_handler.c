@@ -10,6 +10,7 @@
 #include "xrt/xrt_gfx_native.h"
 
 #include "util/u_misc.h"
+#include "util/u_handles.h"
 #include "util/u_trace_marker.h"
 
 #include "server/ipc_server.h"
@@ -93,33 +94,39 @@ ipc_handle_system_compositor_get_info(volatile struct ipc_client_state *ics,
 xrt_result_t
 ipc_handle_session_create(volatile struct ipc_client_state *ics, const struct xrt_session_info *xsi)
 {
-	ics->client_state.session_active = false;
-	ics->client_state.session_overlay = false;
-	ics->client_state.session_visible = false;
+	struct xrt_compositor_native *xcn = NULL;
 
-	if (xsi->is_overlay) {
-		ics->client_state.session_overlay = true;
-		ics->client_state.z_order = xsi->z_order;
+	xrt_result_t xret = xrt_syscomp_create_native_compositor(ics->server->xsysc, xsi, &xcn);
+	if (xret != XRT_SUCCESS) {
+		return xret;
 	}
 
-	update_server_state(ics->server);
+	ics->client_state.session_overlay = xsi->is_overlay;
+	ics->client_state.z_order = xsi->z_order;
+
+	ics->xc = &xcn->base;
+
+	xrt_syscomp_set_state(ics->server->xsysc, ics->xc, ics->client_state.session_visible,
+	                      ics->client_state.session_focused);
+	xrt_syscomp_set_z_order(ics->server->xsysc, ics->xc, ics->client_state.z_order);
+
 	return XRT_SUCCESS;
 }
 
 xrt_result_t
 ipc_handle_session_begin(volatile struct ipc_client_state *ics)
 {
-	// ics->client_state.session_active = true;
-	// update_server_state(ics->server);
-	return XRT_SUCCESS;
+	IPC_TRACE_MARKER();
+
+	return xrt_comp_begin_session(ics->xc, 0);
 }
 
 xrt_result_t
 ipc_handle_session_end(volatile struct ipc_client_state *ics)
 {
-	ics->client_state.session_active = false;
-	update_server_state(ics->server);
-	return XRT_SUCCESS;
+	IPC_TRACE_MARKER();
+
+	return xrt_comp_end_session(ics->xc);
 }
 
 xrt_result_t
@@ -131,62 +138,310 @@ ipc_handle_compositor_get_info(volatile struct ipc_client_state *ics, struct xrt
 }
 
 xrt_result_t
-ipc_handle_compositor_wait_frame(volatile struct ipc_client_state *ics,
-                                 int64_t *out_frame_id,
-                                 uint64_t *predicted_display_time,
-                                 uint64_t *wake_up_time,
-                                 uint64_t *predicted_display_period,
-                                 uint64_t *min_display_period)
+ipc_handle_compositor_predict_frame(volatile struct ipc_client_state *ics,
+                                    int64_t *out_frame_id,
+                                    uint64_t *out_wake_up_time_ns,
+                                    uint64_t *out_predicted_display_time_ns,
+                                    uint64_t *out_predicted_display_period_ns)
 {
 	IPC_TRACE_MARKER();
 
-	os_mutex_lock(&ics->server->global_state_lock);
+	/*
+	 * We use this to signal that the session has started, this is needed
+	 * to make this client/session active/visible/focused.
+	 */
+	ipc_server_activate_session(ics);
 
-	u_rt_helper_predict((struct u_rt_helper *)&ics->urth, out_frame_id, predicted_display_time, wake_up_time,
-	                    predicted_display_period, min_display_period);
-
-	os_mutex_unlock(&ics->server->global_state_lock);
-
-	ics->client_state.session_active = true;
-	update_server_state(ics->server);
-
-	return XRT_SUCCESS;
+	uint64_t gpu_time_ns = 0;
+	return xrt_comp_predict_frame(        //
+	    ics->xc,                          //
+	    out_frame_id,                     //
+	    out_wake_up_time_ns,              //
+	    &gpu_time_ns,                     //
+	    out_predicted_display_time_ns,    //
+	    out_predicted_display_period_ns); //
 }
 
 xrt_result_t
 ipc_handle_compositor_wait_woke(volatile struct ipc_client_state *ics, int64_t frame_id)
 {
-	os_mutex_lock(&ics->server->global_state_lock);
+	IPC_TRACE_MARKER();
 
-	u_rt_helper_mark_wait_woke((struct u_rt_helper *)&ics->urth, frame_id);
-
-	os_mutex_unlock(&ics->server->global_state_lock);
-
-	return XRT_SUCCESS;
+	return xrt_comp_mark_frame(ics->xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, os_monotonic_get_ns());
 }
 
 xrt_result_t
 ipc_handle_compositor_begin_frame(volatile struct ipc_client_state *ics, int64_t frame_id)
 {
-	os_mutex_lock(&ics->server->global_state_lock);
+	IPC_TRACE_MARKER();
 
-	u_rt_helper_mark_begin((struct u_rt_helper *)&ics->urth, frame_id);
-
-	os_mutex_unlock(&ics->server->global_state_lock);
-
-	return XRT_SUCCESS;
+	return xrt_comp_begin_frame(ics->xc, frame_id);
 }
 
 xrt_result_t
 ipc_handle_compositor_discard_frame(volatile struct ipc_client_state *ics, int64_t frame_id)
 {
-	os_mutex_lock(&ics->server->global_state_lock);
+	IPC_TRACE_MARKER();
 
-	u_rt_helper_mark_discarded((struct u_rt_helper *)&ics->urth, frame_id);
+	return xrt_comp_discard_frame(ics->xc, frame_id);
+}
 
-	os_mutex_unlock(&ics->server->global_state_lock);
+static bool
+_update_projection_layer(struct xrt_compositor *xc,
+                         volatile struct ipc_client_state *ics,
+                         volatile struct ipc_layer_entry *layer,
+                         uint32_t i)
+{
+	// xdev
+	uint32_t device_id = layer->xdev_id;
+	// left
+	uint32_t lxsci = layer->swapchain_ids[0];
+	// right
+	uint32_t rxsci = layer->swapchain_ids[1];
 
-	return XRT_SUCCESS;
+	struct xrt_device *xdev = get_xdev(ics, device_id);
+	struct xrt_swapchain *lxcs = ics->xscs[lxsci];
+	struct xrt_swapchain *rxcs = ics->xscs[rxsci];
+
+	if (lxcs == NULL || rxcs == NULL) {
+		U_LOG_E("Invalid swap chain for projection layer!");
+		return false;
+	}
+
+	if (xdev == NULL) {
+		U_LOG_E("Invalid xdev for projection layer!");
+		return false;
+	}
+
+	// Cast away volatile.
+	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
+
+	xrt_comp_layer_stereo_projection(xc, xdev, lxcs, rxcs, data);
+
+	return true;
+}
+
+static bool
+_update_projection_layer_depth(struct xrt_compositor *xc,
+                               volatile struct ipc_client_state *ics,
+                               volatile struct ipc_layer_entry *layer,
+                               uint32_t i)
+{
+	// xdev
+	uint32_t xdevi = layer->xdev_id;
+	// left
+	uint32_t l_xsci = layer->swapchain_ids[0];
+	// right
+	uint32_t r_xsci = layer->swapchain_ids[1];
+	// left
+	uint32_t l_d_xsci = layer->swapchain_ids[2];
+	// right
+	uint32_t r_d_xsci = layer->swapchain_ids[3];
+
+	struct xrt_device *xdev = get_xdev(ics, xdevi);
+	struct xrt_swapchain *l_xcs = ics->xscs[l_xsci];
+	struct xrt_swapchain *r_xcs = ics->xscs[r_xsci];
+	struct xrt_swapchain *l_d_xcs = ics->xscs[l_d_xsci];
+	struct xrt_swapchain *r_d_xcs = ics->xscs[r_d_xsci];
+
+	if (l_xcs == NULL || r_xcs == NULL || l_d_xcs == NULL || r_d_xcs == NULL) {
+		U_LOG_E("Invalid swap chain for projection layer #%u!", i);
+		return false;
+	}
+
+	if (xdev == NULL) {
+		U_LOG_E("Invalid xdev for projection layer #%u!", i);
+		return false;
+	}
+
+	// Cast away volatile.
+	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
+
+	xrt_comp_layer_stereo_projection_depth(xc, xdev, l_xcs, r_xcs, l_d_xcs, r_d_xcs, data);
+
+	return true;
+}
+
+static bool
+do_single(struct xrt_compositor *xc,
+          volatile struct ipc_client_state *ics,
+          volatile struct ipc_layer_entry *layer,
+          uint32_t i,
+          const char *name,
+          struct xrt_device **out_xdev,
+          struct xrt_swapchain **out_xcs,
+          struct xrt_layer_data **out_data)
+{
+	uint32_t device_id = layer->xdev_id;
+	uint32_t sci = layer->swapchain_ids[0];
+
+	struct xrt_device *xdev = get_xdev(ics, device_id);
+	struct xrt_swapchain *xcs = ics->xscs[sci];
+
+	if (xcs == NULL) {
+		U_LOG_E("Invalid swapchain for layer #%u, '%s'!", i, name);
+		return false;
+	}
+
+	if (xdev == NULL) {
+		U_LOG_E("Invalid xdev for layer #%u, '%s'!", i, name);
+		return false;
+	}
+
+	// Cast away volatile.
+	struct xrt_layer_data *data = (struct xrt_layer_data *)&layer->data;
+
+	*out_xdev = xdev;
+	*out_xcs = xcs;
+	*out_data = data;
+
+	return true;
+}
+
+static bool
+_update_quad_layer(struct xrt_compositor *xc,
+                   volatile struct ipc_client_state *ics,
+                   volatile struct ipc_layer_entry *layer,
+                   uint32_t i)
+{
+	struct xrt_device *xdev;
+	struct xrt_swapchain *xcs;
+	struct xrt_layer_data *data;
+
+	if (!do_single(xc, ics, layer, i, "quad", &xdev, &xcs, &data)) {
+		return false;
+	}
+
+	xrt_comp_layer_quad(xc, xdev, xcs, data);
+
+	return true;
+}
+
+static bool
+_update_cube_layer(struct xrt_compositor *xc,
+                   volatile struct ipc_client_state *ics,
+                   volatile struct ipc_layer_entry *layer,
+                   uint32_t i)
+{
+	struct xrt_device *xdev;
+	struct xrt_swapchain *xcs;
+	struct xrt_layer_data *data;
+
+	if (!do_single(xc, ics, layer, i, "cube", &xdev, &xcs, &data)) {
+		return false;
+	}
+
+	xrt_comp_layer_cube(xc, xdev, xcs, data);
+
+	return true;
+}
+
+static bool
+_update_cylinder_layer(struct xrt_compositor *xc,
+                       volatile struct ipc_client_state *ics,
+                       volatile struct ipc_layer_entry *layer,
+                       uint32_t i)
+{
+	struct xrt_device *xdev;
+	struct xrt_swapchain *xcs;
+	struct xrt_layer_data *data;
+
+	if (!do_single(xc, ics, layer, i, "cylinder", &xdev, &xcs, &data)) {
+		return false;
+	}
+
+	xrt_comp_layer_cylinder(xc, xdev, xcs, data);
+
+	return true;
+}
+
+static bool
+_update_equirect1_layer(struct xrt_compositor *xc,
+                        volatile struct ipc_client_state *ics,
+                        volatile struct ipc_layer_entry *layer,
+                        uint32_t i)
+{
+	struct xrt_device *xdev;
+	struct xrt_swapchain *xcs;
+	struct xrt_layer_data *data;
+
+	if (!do_single(xc, ics, layer, i, "equirect1", &xdev, &xcs, &data)) {
+		return false;
+	}
+
+	xrt_comp_layer_equirect1(xc, xdev, xcs, data);
+
+	return true;
+}
+
+static bool
+_update_equirect2_layer(struct xrt_compositor *xc,
+                        volatile struct ipc_client_state *ics,
+                        volatile struct ipc_layer_entry *layer,
+                        uint32_t i)
+{
+	struct xrt_device *xdev;
+	struct xrt_swapchain *xcs;
+	struct xrt_layer_data *data;
+
+	if (!do_single(xc, ics, layer, i, "equirect2", &xdev, &xcs, &data)) {
+		return false;
+	}
+
+	xrt_comp_layer_equirect2(xc, xdev, xcs, data);
+
+	return true;
+}
+
+static bool
+_update_layers(volatile struct ipc_client_state *ics, struct xrt_compositor *xc, struct ipc_layer_slot *slot)
+{
+	IPC_TRACE_MARKER();
+
+	for (uint32_t i = 0; i < slot->num_layers; i++) {
+		volatile struct ipc_layer_entry *layer = &slot->layers[i];
+
+		switch (layer->data.type) {
+		case XRT_LAYER_STEREO_PROJECTION:
+			if (!_update_projection_layer(xc, ics, layer, i)) {
+				return false;
+			}
+			break;
+		case XRT_LAYER_STEREO_PROJECTION_DEPTH:
+			if (!_update_projection_layer_depth(xc, ics, layer, i)) {
+				return false;
+			}
+			break;
+		case XRT_LAYER_QUAD:
+			if (!_update_quad_layer(xc, ics, layer, i)) {
+				return false;
+			}
+			break;
+		case XRT_LAYER_CUBE:
+			if (!_update_cube_layer(xc, ics, layer, i)) {
+				return false;
+			}
+			break;
+		case XRT_LAYER_CYLINDER:
+			if (!_update_cylinder_layer(xc, ics, layer, i)) {
+				return false;
+			}
+			break;
+		case XRT_LAYER_EQUIRECT1:
+			if (!_update_equirect1_layer(xc, ics, layer, i)) {
+				return false;
+			}
+			break;
+		case XRT_LAYER_EQUIRECT2:
+			if (!_update_equirect2_layer(xc, ics, layer, i)) {
+				return false;
+			}
+			break;
+		default: U_LOG_E("Unhandled layer type '%i'!", layer->data.type); break;
+		}
+	}
+
+	return true;
 }
 
 xrt_result_t
@@ -197,33 +452,49 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
                                  const xrt_graphics_sync_handle_t *handles,
                                  const uint32_t num_handles)
 {
+	IPC_TRACE_MARKER();
+
 	struct ipc_shared_memory *ism = ics->server->ism;
 	struct ipc_layer_slot *slot = &ism->slots[slot_id];
+	xrt_graphics_sync_handle_t sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 
-	for (uint32_t i = 0; i < num_handles; i++) {
-		if (!xrt_graphics_sync_handle_is_valid(handles[i])) {
-			continue;
-		}
-#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
-		close(handles[i]);
-#else
-#error "Need port to transport these graphics buffers"
-#endif
+	// If we have one or more save the first handle.
+	if (num_handles >= 1) {
+		sync_handle = handles[0];
 	}
 
-	// Copy current slot data to our state.
-	ics->render_state = *slot;
-	ics->rendering_state = true;
+	// Free all sync handles after the first one.
+	for (uint32_t i = 1; i < num_handles; i++) {
+		// Checks for valid handle.
+		xrt_graphics_sync_handle_t tmp = handles[i];
+		u_graphics_sync_unref(&tmp);
+	}
 
-	os_mutex_lock(&ics->server->global_state_lock);
+	// Copy current slot data.
+	struct ipc_layer_slot copy = *slot;
+
+
+	/*
+	 * Transfer data to underlying compositor.
+	 */
+
+	xrt_comp_layer_begin(ics->xc, frame_id, copy.display_time_ns, copy.env_blend_mode);
+
+	_update_layers(ics, ics->xc, &copy);
+
+	xrt_comp_layer_commit(ics->xc, frame_id, sync_handle);
+
+
+	/*
+	 * Manage shared state.
+	 */
+
+	os_mutex_lock(&ics->server->global_state.lock);
 
 	*out_free_slot_id = (ics->server->current_slot_index + 1) % IPC_MAX_SLOTS;
 	ics->server->current_slot_index = *out_free_slot_id;
 
-	// Also protected by the global lock.
-	u_rt_helper_mark_delivered((struct u_rt_helper *)&ics->urth, frame_id);
-
-	os_mutex_unlock(&ics->server->global_state_lock);
+	os_mutex_unlock(&ics->server->global_state.lock);
 
 	return XRT_SUCCESS;
 }
@@ -231,25 +502,9 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 xrt_result_t
 ipc_handle_compositor_poll_events(volatile struct ipc_client_state *ics, union xrt_compositor_event *out_xce)
 {
-	uint64_t l_timestamp = UINT64_MAX;
-	volatile struct ipc_queued_event *event_to_send = NULL;
-	for (uint32_t i = 0; i < IPC_EVENT_QUEUE_SIZE; i++) {
-		volatile struct ipc_queued_event *e = &ics->queued_events[i];
-		if (e->pending == true && e->timestamp < l_timestamp) {
-			event_to_send = e;
-		}
-	}
+	IPC_TRACE_MARKER();
 
-	// We always return an event in response to this call -
-	// We signal no events with a special event type.
-	out_xce->type = XRT_COMPOSITOR_EVENT_NONE;
-
-	if (event_to_send) {
-		*out_xce = event_to_send->event;
-		event_to_send->pending = false;
-	}
-
-	return XRT_SUCCESS;
+	return xrt_comp_poll_events(ics->xc, out_xce);
 }
 
 xrt_result_t
@@ -271,7 +526,7 @@ ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
 
 	//@todo: track this data in the ipc_client_state struct
 	out_client_desc->primary_application = false;
-	if (ics->server->active_client_index == (int)id) {
+	if (ics->server->global_state.active_client_index == (int)id) {
 		out_client_desc->primary_application = true;
 	}
 
@@ -306,10 +561,10 @@ ipc_handle_system_get_clients(volatile struct ipc_client_state *_ics, struct ipc
 xrt_result_t
 ipc_handle_system_set_primary_client(volatile struct ipc_client_state *ics, uint32_t client_id)
 {
-
-	ics->server->active_client_index = client_id;
 	IPC_INFO(ics->server, "System setting active client to %d.", client_id);
-	update_server_state(ics->server);
+
+	ipc_server_set_active_client(ics->server, client_id);
+
 	return XRT_SUCCESS;
 }
 
@@ -365,6 +620,8 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
                             xrt_graphics_buffer_handle_t *out_handles,
                             uint32_t *out_num_handles)
 {
+	IPC_TRACE_MARKER();
+
 	xrt_result_t xret = XRT_SUCCESS;
 	uint32_t index = 0;
 
@@ -416,6 +673,8 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
                             const xrt_graphics_buffer_handle_t *handles,
                             uint32_t num_handles)
 {
+	IPC_TRACE_MARKER();
+
 	xrt_result_t xret = XRT_SUCCESS;
 	uint32_t index = 0;
 
@@ -558,7 +817,6 @@ ipc_handle_device_get_tracked_pose(volatile struct ipc_client_state *ics,
                                    uint64_t at_timestamp,
                                    struct xrt_space_relation *out_relation)
 {
-
 	// To make the code a bit more readable.
 	uint32_t device_id = id;
 	struct ipc_device *isdev = &ics->server->idevs[device_id];

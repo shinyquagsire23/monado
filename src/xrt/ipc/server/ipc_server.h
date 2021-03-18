@@ -69,14 +69,6 @@ struct ipc_swapchain_data
 	bool active;
 };
 
-
-struct ipc_queued_event
-{
-	bool pending;
-	uint64_t timestamp;
-	union xrt_compositor_event event;
-};
-
 /*!
  * Holds the state for a single client.
  *
@@ -105,17 +97,7 @@ struct ipc_client_state
 	//! Socket fd used for client comms
 	struct ipc_message_channel imc;
 
-	//! State for rendering.
-	struct ipc_layer_slot render_state;
-
-	//! Whether we are currently rendering @ref render_state
-	bool rendering_state;
-
-	//! The frame timing state.
-	struct u_rt_helper urth;
-
 	struct ipc_app_state client_state;
-	struct ipc_queued_event queued_events[IPC_EVENT_QUEUE_SIZE];
 
 	int server_thread_index;
 };
@@ -294,8 +276,6 @@ struct ipc_server
 
 	//! System compositor.
 	struct xrt_system_compositor *xsysc;
-	//! Native compositor.
-	struct xrt_compositor_native *xcn;
 
 	struct ipc_device idevs[IPC_SERVER_NUM_XDEVS];
 	struct xrt_tracking_origin *xtracks[IPC_SERVER_NUM_XDEVS];
@@ -317,9 +297,13 @@ struct ipc_server
 
 	volatile uint32_t current_slot_index;
 
-	int active_client_index;
-	int last_active_client_index;
-	struct os_mutex global_state_lock;
+	struct
+	{
+		int active_client_index;
+		int last_active_client_index;
+
+		struct os_mutex lock;
+	} global_state;
 };
 
 
@@ -349,12 +333,36 @@ ipc_server_main_android(struct ipc_server **ps, void (*startup_complete_callback
 #endif
 
 /*!
- * Called by client threads to manage global state
+ * Set the new active client.
  *
  * @ingroup ipc_server
  */
 void
-update_server_state(struct ipc_server *vs);
+ipc_server_set_active_client(struct ipc_server *s, int active_client_index);
+
+/*!
+ * Called by client threads to set a session to active.
+ *
+ * @ingroup ipc_server
+ */
+void
+ipc_server_activate_session(volatile struct ipc_client_state *ics);
+
+/*!
+ * Called by client threads to set a session to deactivate.
+ *
+ * @ingroup ipc_server
+ */
+void
+ipc_server_deactivate_session(volatile struct ipc_client_state *ics);
+
+/*!
+ * Called by client threads to recalculate active client.
+ *
+ * @ingroup ipc_server
+ */
+void
+ipc_server_update_state(struct ipc_server *s);
 
 /*!
  * Thread function for the client side dispatching.
