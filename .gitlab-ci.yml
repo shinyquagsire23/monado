@@ -36,6 +36,12 @@ variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
     FDO_DISTRIBUTION_TAG: "2021-02-23.0"
 
+# Variables for build and usage of Ubuntu 20.10 (Groovy) image
+.monado.variables.ubuntu:groovy:
+  variables:
+    FDO_DISTRIBUTION_VERSION: "20.10"
+    FDO_DISTRIBUTION_TAG: "2021-03-19.0"
+
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.variables.debian:buster-ndk:
   variables:
@@ -104,6 +110,18 @@ arch:container_prep:
 
 # Ubuntu Focal (x64)
 ubuntu:container_prep:
+  stage: container_prep
+  extends:
+    - .monado.variables.ubuntu:focal
+    - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
+    - .fdo.container-build@ubuntu # from ci-templates
+  variables:
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
+
+# Ubuntu Groovy (x64)
+ubuntu:groovy:container_prep:
   stage: container_prep
   extends:
     - .monado.variables.ubuntu:focal
@@ -351,6 +369,16 @@ ubuntu:focal:package:
     PACKAGE_BRANCH: ubuntu/focal
     DISTRO: focal
 
+ubuntu:groovy:package:
+  extends:
+    - .monado.variables.ubuntu:groovy
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .monado.base-job.debuild
+
+  variables:
+    BACKPORT_SUFFIX: ubuntu20.04
+    PACKAGE_BRANCH: ubuntu/focal
+    DISTRO: focal
 reprepro:package:
   stage: reprepro
   extends:
@@ -360,6 +388,7 @@ reprepro:package:
   dependencies:
     - debian:buster:package
     - ubuntu:focal:package
+    - ubuntu:groovy:package
   before_script:
     # Convince gnupg to work properly in CI
     - mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
