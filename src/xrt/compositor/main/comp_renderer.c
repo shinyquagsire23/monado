@@ -157,6 +157,20 @@ renderer_wait_gpu_idle(struct comp_renderer *r)
 }
 
 static void
+renderer_wait_for_last_fence(struct comp_renderer *r)
+{
+	COMP_TRACE_MARKER();
+
+	struct vk_bundle *vk = &r->c->vk;
+	VkResult ret;
+
+	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->current_buffer], VK_TRUE, UINT64_MAX);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(r->c, "vkWaitForFences: %s", vk_result_string(ret));
+	}
+}
+
+static void
 renderer_submit_queue(struct comp_renderer *r)
 {
 	COMP_TRACE_MARKER();
@@ -663,11 +677,19 @@ comp_renderer_draw(struct comp_renderer *r)
 	comp_target_update_timings(ct);
 
 	renderer_submit_queue(r);
+
+
 	renderer_present_swapchain_image(r, c->frame.rendering.desired_present_time_ns,
 	                                 c->frame.rendering.present_slop_ns);
 
 	// Clear the frame.
 	c->frame.rendering.id = -1;
+
+	/*
+	 * Wait for the last fence to complete so we know that the GPU is done,
+	 * if there is a big GPU bubble this lets us detect that.
+	 */
+	renderer_wait_for_last_fence(r);
 
 	/*
 	 * This fixes a lot of validation issues as it makes sure that the
