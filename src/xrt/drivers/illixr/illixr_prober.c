@@ -62,6 +62,7 @@ struct xrt_auto_prober *
 illixr_create_auto_prober()
 {
 	struct illixr_prober *dp = U_TYPED_CALLOC(struct illixr_prober);
+	dp->base.name = "IlliXR";
 	dp->base.destroy = illixr_prober_destroy;
 	dp->base.lelo_dallas_autoprobe = illixr_prober_autoprobe;
 
