@@ -40,7 +40,7 @@ variables:
 .monado.variables.ubuntu:groovy:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.10"
-    FDO_DISTRIBUTION_TAG: "2021-03-19.0"
+    FDO_DISTRIBUTION_TAG: "2021-03-22.0"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.variables.debian:buster-ndk:
@@ -109,7 +109,7 @@ arch:container_prep:
     FDO_DISTRIBUTION_PACKAGES: "git gcc clang cmake meson ninja pkgconfig python3 diffutils patch doxygen graphviz eigen hidapi libxrandr mesa glslang vulkan-headers vulkan-icd-loader check glfw-x11 libusb opencv gtk3 ffmpeg v4l-utils qt5-base"
 
 # Ubuntu Focal (x64)
-ubuntu:container_prep:
+ubuntu:focal:container_prep:
   stage: container_prep
   extends:
     - .monado.variables.ubuntu:focal
@@ -124,13 +124,13 @@ ubuntu:container_prep:
 ubuntu:groovy:container_prep:
   stage: container_prep
   extends:
-    - .monado.variables.ubuntu:focal
+    - .monado.variables.ubuntu:groovy
     - .monado.variables.container-prep-base
     - .monado.variables.debian-based-packages
     - .fdo.container-build@ubuntu # from ci-templates
   variables:
     # a list of packages to install - assembled from .monado.variables.debian-based-packages
-    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES}"
 
 # Debian Buster + the Android NDK in /opt/android-ndk
 # The NDK itself gets installed by .gitlab-ci/ndk:container_prep.sh
