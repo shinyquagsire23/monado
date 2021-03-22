@@ -16,7 +16,7 @@ variables:
     FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev libdbus-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsystemd-dev"
 
     # Only used for building packages
-    PACKAGING_PACKAGES: "devscripts debhelper dput-ng gettext-base markdown"
+    PACKAGING_PACKAGES: "devscripts debhelper dput-ng gettext-base markdown doxygen graphviz"
 
     # Used for ancillary "not compilation" jobs/features, like docs, changelogs, formatting, etc.
     TOOLS_REQUIRED_PACKAGES: "clang-format-7 codespell doxygen graphviz python3-pip python3-click"
@@ -28,19 +28,19 @@ variables:
 .monado.variables.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2021-02-23.0"
+    FDO_DISTRIBUTION_TAG: "2021-03-22.1"
 
 # Variables for build and usage of Ubuntu 20.04 LTS (Focal) image
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2021-02-23.0"
+    FDO_DISTRIBUTION_TAG: "2021-03-22.1"
 
 # Variables for build and usage of Ubuntu 20.10 (Groovy) image
 .monado.variables.ubuntu:groovy:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.10"
-    FDO_DISTRIBUTION_TAG: "2021-03-22.0"
+    FDO_DISTRIBUTION_TAG: "2021-03-22.1"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.variables.debian:buster-ndk:
