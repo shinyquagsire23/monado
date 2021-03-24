@@ -355,6 +355,12 @@ u_config_json_get_tracking_settings(struct u_config_json *json, struct xrt_setti
 }
 
 static void
+u_config_json_make_default_root(struct u_config_json *json)
+{
+	json->root = cJSON_CreateObject();
+}
+
+static void
 u_config_write(struct u_config_json *json)
 {
 	char *str = cJSON_Print(json->root);
@@ -371,6 +377,9 @@ u_config_write(struct u_config_json *json)
 void
 u_config_json_save_calibration(struct u_config_json *json, struct xrt_settings_tracking *settings)
 {
+	if (!json->root) {
+		u_config_json_make_default_root(json);
+	}
 	cJSON *root = json->root;
 
 	cJSON *t = cJSON_GetObjectItem(root, "tracking");
@@ -425,6 +434,9 @@ make_pose(struct xrt_pose *pose)
 void
 u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_override *overrides, size_t num_overrides)
 {
+	if (!json->root) {
+		u_config_json_make_default_root(json);
+	}
 	cJSON *root = json->root;
 
 	cJSON *t = cJSON_GetObjectItem(root, "tracking");
