@@ -163,7 +163,7 @@ is_json_ok(struct u_config_json *json)
 		if (json->file_loaded) {
 			U_LOG_E("JSON not parsed!");
 		} else {
-			U_LOG_W("No config file!");
+			U_LOG_I("No config file was loaded!");
 		}
 		return false;
 	}
