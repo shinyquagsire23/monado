@@ -267,7 +267,6 @@ u_config_json_get_tracking_overrides(struct u_config_json *json,
 {
 	cJSON *t = open_tracking_settings(json);
 	if (t == NULL) {
-		U_LOG_E("No tracking node");
 		return false;
 	}
 
@@ -317,7 +316,6 @@ u_config_json_get_tracking_settings(struct u_config_json *json, struct xrt_setti
 {
 	cJSON *t = open_tracking_settings(json);
 	if (t == NULL) {
-		U_LOG_E("No tracking node");
 		return false;
 	}
 
