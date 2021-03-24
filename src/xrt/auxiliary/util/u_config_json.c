@@ -238,12 +238,7 @@ u_config_json_get_remote_port(struct u_config_json *json, int *out_port)
 static cJSON *
 open_tracking_settings(struct u_config_json *json)
 {
-	if (json->root == NULL) {
-		if (json->file_loaded) {
-			U_LOG_E("JSON not parsed!");
-		} else {
-			U_LOG_W("No config file!");
-		}
+	if (!is_json_ok(json)) {
 		return NULL;
 	}
 
