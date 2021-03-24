@@ -87,7 +87,7 @@ get_obj(cJSON *json, const char *name)
 {
 	cJSON *item = cJSON_GetObjectItemCaseSensitive(json, name);
 	if (item == NULL) {
-		U_LOG_E("Failed to find node '%s'!", name);
+		U_LOG_I("JSON does not contain node '%s'!", name);
 	}
 	return item;
 }
