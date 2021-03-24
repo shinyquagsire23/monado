@@ -244,7 +244,7 @@ open_tracking_settings(struct u_config_json *json)
 
 	cJSON *t = cJSON_GetObjectItemCaseSensitive(json->root, "tracking");
 	if (t == NULL) {
-		U_LOG_E("No tracking node");
+		U_LOG_I("Config file does not contain tracking config");
 		return NULL;
 	}
 
@@ -253,7 +253,7 @@ open_tracking_settings(struct u_config_json *json)
 
 	bad |= !get_obj_int(t, "version", &ver);
 	if (bad || ver >= 1) {
-		U_LOG_E("Missing or unknown version  tag '%i'", ver);
+		U_LOG_E("Missing or unknown version tag '%i' in tracking config", ver);
 		return NULL;
 	}
 
