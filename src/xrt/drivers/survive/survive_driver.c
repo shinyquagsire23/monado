@@ -745,7 +745,7 @@ _process_event(struct survive_system *ss, struct SurviveSimpleEvent *event)
 
 		struct survive_device *event_device = get_device_by_object(ss, e->object);
 		if (event_device == NULL) {
-			U_LOG_IFL_E(ss->ll, "Event for unknown object not handled");
+			U_LOG_IFL_I(ss->ll, "Event for unknown object not handled");
 			return;
 		}
 
