@@ -70,7 +70,8 @@ vive_read_config(struct os_hid_device *hid_dev)
 
 	int ret = os_hid_get_feature_timeout(hid_dev, &start_report, sizeof(start_report), 100);
 	if (ret < 0) {
-		U_LOG_E("Could not get config start report.");
+		// e.g. watchman receiver has no connected device (controller powered off)
+		U_LOG_I("Could not get config start report for device, connected device may be powered off (%d).", ret);
 		return NULL;
 	}
 
