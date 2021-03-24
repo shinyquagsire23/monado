@@ -136,9 +136,7 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	fact->tried_settings = true;
 
 	if (!u_config_json_get_tracking_settings(&fact->p->json, &fact->settings)) {
-		U_LOG_E(
-		    "Could not setup PSVR and/or PSMV tracking, "
-		    "see above.");
+		U_LOG_I("PSVR and/or PSMV tracking is not set up, see above.");
 		return;
 	}
 
