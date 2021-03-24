@@ -797,11 +797,11 @@ apply_tracking_override(struct prober *p, struct xrt_device **xdevs, size_t num_
 	}
 
 	if (target_xdev == NULL) {
-		P_ERROR(p, "Tracking override target xdev %s not found", o->target_device_serial);
+		P_WARN(p, "Tracking override target xdev %s not found", o->target_device_serial);
 	}
 
 	if (tracker_xdev == NULL) {
-		P_ERROR(p, "Tracking override tracker xdev %s not found", o->tracker_device_serial);
+		P_WARN(p, "Tracking override tracker xdev %s not found", o->tracker_device_serial);
 	}
 
 
