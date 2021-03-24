@@ -1087,7 +1087,7 @@ ipc_server_main(int argc, char **argv)
 	teardown_all(s);
 	free(s);
 
-	U_LOG_E("Server exiting: '%i'!", ret);
+	U_LOG_I("Server exiting: '%i'!", ret);
 
 	return ret;
 }
@@ -1117,7 +1117,7 @@ ipc_server_main_android(struct ipc_server **ps, void (*startup_complete_callback
 	teardown_all(s);
 	free(s);
 
-	U_LOG_E("Server exiting '%i'!", ret);
+	U_LOG_I("Server exiting '%i'!", ret);
 
 	return ret;
 }
