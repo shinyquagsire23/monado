@@ -128,7 +128,7 @@ ht_device_create(struct xrt_auto_prober *xap, cJSON *attached_data, struct xrt_p
 	htd->base.name = XRT_DEVICE_HAND_TRACKER;
 
 	if (xp->tracking->create_tracked_hand(xp->tracking, &htd->base, &htd->tracker) < 0) {
-		HT_ERROR(htd, "Failed to create hand tracker module");
+		HT_DEBUG(htd, "Failed to create hand tracker module");
 		return NULL;
 	}
 
