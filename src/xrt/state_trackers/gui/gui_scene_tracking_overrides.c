@@ -217,9 +217,8 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 
 		bool checked = ts->editing_override == (int)i;
 
-		const int len = XRT_DEVICE_NAME_LEN * 2 + 10;
-		char buf[len];
-		snprintf(buf, len, "%s <- %s", ts->overrides[i].target_device_serial,
+		char buf[XRT_DEVICE_NAME_LEN * 2 + 10];
+		snprintf(buf, sizeof(buf), "%s <- %s", ts->overrides[i].target_device_serial,
 		         ts->overrides[i].tracker_device_serial);
 		if (igCheckbox(buf, &checked)) {
 			ts->editing_override = i;
