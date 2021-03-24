@@ -1072,9 +1072,8 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	d->base.get_tracked_pose = vive_controller_device_get_tracked_pose;
 	d->base.set_output = vive_controller_device_set_output;
 
-	//! @todo: reading range report fails for powered off controller
 	if (vive_get_imu_range_report(d->controller_hid, &d->config.imu.gyro_range, &d->config.imu.acc_range) != 0) {
-		VIVE_ERROR(d, "Could not get watchman IMU range packet!");
+		// reading range report fails for powered off controller
 		free(d);
 		return 0;
 	}
