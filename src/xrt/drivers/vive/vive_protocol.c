@@ -152,7 +152,7 @@ vive_get_imu_range_report(struct os_hid_device *hid_dev, double *gyro_range, dou
 
 	ret = os_hid_get_feature_timeout(hid_dev, &report, sizeof(report), 100);
 	if (ret < 0) {
-		U_LOG_E("Could not get range report!");
+		U_LOG_I("Could not get range report, connected device may be powered off (%d)!", ret);
 		return ret;
 	}
 
