@@ -48,7 +48,7 @@ if libuvc.found()
 	have_conf.set('XRT_HAVE_LIBUVC', true)
 endif
 
-if opencv.found()
+if opencv.found() and build_tracking
 	have_conf.set('XRT_HAVE_OPENCV', true)
 endif
 

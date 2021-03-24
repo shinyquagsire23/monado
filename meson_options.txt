@@ -35,7 +35,7 @@ option('gui',
 option('tracking',
 	type: 'feature',
 	value: 'auto',
-	description: 'Enable tracking support')
+	description: 'Enable camera tracking support (disabling this will disable OpenCV support)')
 
 option('install-active-runtime',
 	type: 'boolean',
