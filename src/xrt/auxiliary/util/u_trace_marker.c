@@ -10,13 +10,14 @@
 
 // This needs to be first.
 #define _GNU_SOURCE
-#include <unistd.h>
-#include <sys/types.h>
 
 #include "xrt/xrt_compiler.h"
-
+#include "xrt/xrt_config_os.h"
 #include "u_trace_marker.h"
 
+#ifdef XRT_OS_LINUX
+#include <unistd.h>
+#include <sys/types.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -92,3 +93,23 @@ u_trace_data(int fd, enum u_trace_data_type type, void *data, size_t size)
 		len = write(fd, tmp, len);
 	}
 }
+
+#else
+
+// Stubs on non-linux for now.
+void
+u_tracer_maker_init(void)
+{}
+
+void
+u_trace_enter(int fd, const char *func)
+{}
+
+void
+u_trace_leave(int fd, const char *func)
+{}
+
+void
+u_trace_data(int fd, enum u_trace_data_type type, void *data, size_t size)
+{}
+#endif
