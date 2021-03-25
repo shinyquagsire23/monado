@@ -408,7 +408,7 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 	p->json.root = NULL;
 
 	u_var_add_root((void *)p, "Prober", true);
-	u_var_add_ro_u32(p, &p->ll, "Log Level");
+	u_var_add_ro_u32(p, (uint32_t *)&p->ll, "Log Level");
 
 	int ret;
 
