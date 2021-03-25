@@ -356,6 +356,14 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 		close(sync_handle);
 		sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 	}
+
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	// Need to consume this handle.
+	if (xrt_graphics_sync_handle_is_valid(sync_handle)) {
+		CloseHandle(sync_handle);
+		sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+	}
+
 #else
 #error "Not yet implemented for this platform"
 #endif
