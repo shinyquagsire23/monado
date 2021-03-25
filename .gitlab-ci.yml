@@ -317,7 +317,7 @@ ndk:arm64-v8a:
 .monado.packaging.conditions:
   rules:
     # Only the default branch of the "upstream" repo.
-    - if: '$CI_PROJECT_PATH == $FDO_UPSTREAM_REPO && $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH'
+    - if: "$CI_PROJECT_PATH == $FDO_UPSTREAM_REPO && $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH"
       when: on_success
     # Otherwise, don't build packages.
     - when: never
