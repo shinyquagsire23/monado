@@ -589,7 +589,7 @@ comp_target_swapchain_update_timings(struct comp_target *ct)
 		return VK_SUCCESS;
 	}
 
-	VkPastPresentationTimingGOOGLE timings[count];
+	VkPastPresentationTimingGOOGLE *timings = U_TYPED_ARRAY_CALLOC(VkPastPresentationTimingGOOGLE, count);
 	c->vk.vkGetPastPresentationTimingGOOGLE( //
 	    vk->device,                          //
 	    cts->swapchain.handle,               //
@@ -604,7 +604,7 @@ comp_target_swapchain_update_timings(struct comp_target *ct)
 		                    timings[i].earliestPresentTime, //
 		                    timings[i].presentMargin);      //
 	}
-
+	free(timings);
 	return VK_SUCCESS;
 }
 
