@@ -160,13 +160,17 @@ struct ipc_device
  */
 struct ipc_server_mainloop
 {
+
+#if defined(XRT_OS_ANDROID) || defined(XRT_OS_LINUX) || defined(XRT_DOXYGEN)
+	//! For waiting on various events in the main thread.
+	int epoll_fd;
+#endif
+
 #if defined(XRT_OS_ANDROID) || defined(XRT_DOXYGEN)
 	/*!
 	 * @name Android Mainloop Members
 	 * @{
 	 */
-	//! For waiting on various events in the main thread.
-	int epoll_fd;
 
 	//! File descriptor for the read end of our pipe for submitting new clients
 	int pipe_read;
@@ -232,9 +236,6 @@ struct ipc_server_mainloop
 
 	//! Socket that we accept connections on.
 	int listen_socket;
-
-	//! For waiting on various events in the main thread.
-	int epoll_fd;
 
 	//! Were we launched by socket activation, instead of explicitly?
 	bool launched_by_socket;
