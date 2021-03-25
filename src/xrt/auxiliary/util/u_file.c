@@ -104,6 +104,8 @@ u_file_open_file_in_config_dir(const char *filename, const char *mode)
 	return fopen(file_str, mode);
 }
 
+#endif
+
 char *
 u_file_read_content(FILE *file)
 {
@@ -128,5 +130,3 @@ u_file_read_content(FILE *file)
 
 	return buffer;
 }
-
-#endif
