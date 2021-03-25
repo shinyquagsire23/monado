@@ -255,7 +255,7 @@ endif()
 if(XRT_HAVE_VULKAN)
 	# Vulkan library.
 	add_library(aux_vk STATIC ${VK_SOURCE_FILES})
-	target_link_libraries(aux_vk PUBLIC aux-includes)
+	target_link_libraries(aux_vk PUBLIC aux_os)
 	target_link_libraries(aux_vk PUBLIC Vulkan::Vulkan)
 	target_include_directories(aux_vk PUBLIC ${Vulkan_INCLUDE_DIR})
 	if(ANDROID)
