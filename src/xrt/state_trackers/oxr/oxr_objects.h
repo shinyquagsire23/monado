@@ -369,7 +369,7 @@ oxr_action_to_openxr(struct oxr_action *act)
  * @return false if an invalid subaction path is provided.
  *
  * @public @memberof oxr_instance
- * @relatesalso oxr_sub_paths
+ * @see oxr_sub_paths
  */
 bool
 oxr_classify_sub_action_paths(struct oxr_logger *log,
@@ -410,7 +410,7 @@ oxr_action_create(struct oxr_logger *log,
 
 /*!
  * @public @memberof oxr_session
- * @relatesalso oxr_action_set
+ * @see oxr_action_set
  */
 XrResult
 oxr_session_attach_action_sets(struct oxr_logger *log,
