@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 /*!
  * @file
- * @brief  Combination of multiple @xrt_device.
+ * @brief  Combination of multiple @ref xrt_device.
  * @author Christoph Haag <christoph.haag@collabora.com>
  * @ingroup drv_multi
  */
