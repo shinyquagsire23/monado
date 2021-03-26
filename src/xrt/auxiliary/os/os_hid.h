@@ -136,8 +136,8 @@ os_hid_destroy(struct os_hid_device *hid_dev)
 /*!
  * Open the given path as a hidraw device.
  *
- * @public @memberof hid_hidraw
- * @relatesalso os_hid_device
+ * @see hid_hidraw
+ * @public @memberof os_hid_device
  */
 int
 os_hid_open_hidraw(const char *path, struct os_hid_device **out_hid);

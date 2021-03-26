@@ -296,7 +296,7 @@ t_hsv_filter_sample(struct t_hsv_filter_optimized_table *t, uint32_t y, uint32_t
  * Construct an HSV filter sink.
  * @public @memberof t_hsv_filter
  *
- * @relates xrt_frame_context
+ * @see xrt_frame_context
  */
 int
 t_hsv_filter_create(struct xrt_frame_context *xfctx,
@@ -500,7 +500,7 @@ t_calibration_params_default(struct t_calibration_params *p)
  * @param gui Frame sink
  * @param out_sink Output: created frame sink.
  *
- * @relates xrt_frame_context
+ * @see xrt_frame_context
  */
 int
 t_calibration_stereo_create(struct xrt_frame_context *xfctx,
@@ -517,7 +517,7 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
  */
 
 /*!
- * @relates xrt_frame_context
+ * @see xrt_frame_context
  */
 int
 t_convert_yuv_or_yuyv_create(struct xrt_frame_sink *next, struct xrt_frame_sink **out_sink);
@@ -525,7 +525,7 @@ t_convert_yuv_or_yuyv_create(struct xrt_frame_sink *next, struct xrt_frame_sink 
 
 
 /*!
- * @relates xrt_frame_context
+ * @see xrt_frame_context
  */
 int
 t_debug_hsv_picker_create(struct xrt_frame_context *xfctx,
@@ -533,7 +533,7 @@ t_debug_hsv_picker_create(struct xrt_frame_context *xfctx,
                           struct xrt_frame_sink **out_sink);
 
 /*!
- * @relates xrt_frame_context
+ * @see xrt_frame_context
  */
 int
 t_debug_hsv_viewer_create(struct xrt_frame_context *xfctx,
@@ -541,7 +541,7 @@ t_debug_hsv_viewer_create(struct xrt_frame_context *xfctx,
                           struct xrt_frame_sink **out_sink);
 
 /*!
- * @relates xrt_frame_context
+ * @see xrt_frame_context
  */
 int
 t_debug_hsv_filter_create(struct xrt_frame_context *xfctx,

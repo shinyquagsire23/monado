@@ -147,7 +147,7 @@ math_vec3_normalize(struct xrt_vec3 *in);
  * Create a rotation from a angle in radians and a vector.
  *
  * @relates xrt_quat
- * @relates xrt_vec3
+ * @see xrt_vec3
  * @ingroup aux_math
  */
 void
@@ -157,7 +157,7 @@ math_quat_from_angle_vector(float angle_rads, const struct xrt_vec3 *vector, str
  * Create a rotation from a 3x3 rotation matrix.
  *
  * @relates xrt_quat
- * @relates xrt_matrix_3x3
+ * @see xrt_matrix_3x3
  * @ingroup aux_math
  */
 void
@@ -168,7 +168,7 @@ math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat, struct xrt_quat *res
  * matrix by crossing z and x to get the y axis.
  *
  * @relates xrt_quat
- * @relates xrt_vec3
+ * @see xrt_vec3
  * @ingroup aux_math
  */
 void
@@ -226,7 +226,7 @@ math_quat_ensure_normalized(struct xrt_quat *inout);
  * Rotate a vector.
  *
  * @relates xrt_quat
- * @relatesalso xrt_vec3
+ * @see xrt_vec3
  * @ingroup aux_math
  */
 void
@@ -250,7 +250,7 @@ math_quat_rotate(const struct xrt_quat *left, const struct xrt_quat *right, stru
  * vector should be in radians per unit of time.
  *
  * @relates xrt_quat
- * @relatesalso xrt_vec3
+ * @see xrt_vec3
  * @ingroup aux_math
  */
 void
@@ -269,7 +269,7 @@ math_quat_integrate_velocity(const struct xrt_quat *quat,
  * radians per unit of time.
  *
  * @relates xrt_quat
- * @relatesalso xrt_vec3
+ * @see xrt_vec3
  * @ingroup aux_math
  */
 void
@@ -282,7 +282,7 @@ math_quat_finite_difference(const struct xrt_quat *quat0,
  * Used to rotate a derivative like a angular velocity.
  *
  * @relates xrt_quat
- * @relatesalso xrt_vec3
+ * @see xrt_vec3
  * @ingroup aux_math
  */
 void
@@ -404,7 +404,7 @@ math_pose_transform(const struct xrt_pose *transform, const struct xrt_pose *pos
  * The input point and output may be the same pointer.
  *
  * @relates xrt_pose
- * @relates xrt_vec3
+ * @see xrt_vec3
  * @ingroup aux_math
  */
 void
