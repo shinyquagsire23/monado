@@ -137,7 +137,7 @@ ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, con
  * must be greater than 0 and must match the value provided at the other end.
  *
  * @public @memberof ipc_message_channel
- * @relatesalso xrt_shmem_handle_t
+ * @see xrt_shmem_handle_t
  */
 xrt_result_t
 ipc_receive_handles_shmem(struct ipc_message_channel *imc,
@@ -161,7 +161,7 @@ ipc_receive_handles_shmem(struct ipc_message_channel *imc,
  * time, because the receiver must have the same value in its receive call.
  *
  * @public @memberof ipc_message_channel
- * @relatesalso xrt_shmem_handle_t
+ * @see xrt_shmem_handle_t
  */
 xrt_result_t
 ipc_send_handles_shmem(struct ipc_message_channel *imc,
@@ -195,7 +195,7 @@ ipc_send_handles_shmem(struct ipc_message_channel *imc,
  * must be greater than 0 and must match the value provided at the other end.
  *
  * @public @memberof ipc_message_channel
- * @relatesalso xrt_graphics_buffer_handle_t
+ * @see xrt_graphics_buffer_handle_t
  */
 xrt_result_t
 ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
@@ -220,7 +220,7 @@ ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
  * time, because the receiver must have the same value in its receive call.
  *
  * @public @memberof ipc_message_channel
- * @relatesalso xrt_graphics_buffer_handle_t
+ * @see xrt_graphics_buffer_handle_t
  */
 xrt_result_t
 ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
@@ -254,7 +254,7 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
  * must be greater than 0 and must match the value provided at the other end.
  *
  * @public @memberof ipc_message_channel
- * @relatesalso xrt_graphics_sync_handle_t
+ * @see xrt_graphics_sync_handle_t
  */
 xrt_result_t
 ipc_receive_handles_graphics_sync(struct ipc_message_channel *imc,
@@ -277,7 +277,7 @@ ipc_receive_handles_graphics_sync(struct ipc_message_channel *imc,
  * because the receiver must have the same value in its receive call.
  *
  * @public @memberof ipc_message_channel
- * @relatesalso xrt_graphics_sync_handle_t
+ * @see xrt_graphics_sync_handle_t
  */
 xrt_result_t
 ipc_send_handles_graphics_sync(struct ipc_message_channel *imc,
