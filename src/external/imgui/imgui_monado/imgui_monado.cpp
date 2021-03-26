@@ -15,6 +15,8 @@
 #endif
 #include "../imgui/imgui_internal.h"
 
+#include <stdint.h>
+
 #include "cimgui_monado.h"
 
 using namespace ImGui;
@@ -41,20 +43,23 @@ static void _draw_line(ImGuiWindow *window, int values_count, float scale_min,
   ImGui::RenderText(text_pos, text);
   ImGui::PopStyleColor(1);
 }
+
 static void _draw_grid(ImGuiWindow *window, int values_count, float scale_min,
                        float scale_max, float reference_timing, const char *unit,
                        const ImRect inner_bb, ImVec2 frame_size) {
 
-  ImVec4 target_color = ImVec4(1.0f, 1.0f, 0.0f, .75f);
+  const ImVec4 target_color{1.0f, 1.0f, 0.0f, .75f};
   _draw_line(window, values_count, scale_min, scale_max, reference_timing, unit,
              inner_bb, frame_size, GetColorU32(target_color));
 
-  ImVec4 passive_color = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
+  const ImVec4 passive_color{0.35f, 0.35f, 0.35f, 1.00f};
 
   // always draw ~5 lines
-  float step = (scale_max - scale_min) / 5.;
-  for (float i = scale_min; i < scale_max + step; i += step) {
-    _draw_line(window, values_count, scale_min, scale_max, i, unit, inner_bb,
+  const uint8_t max_lines = 5;
+  float step = (scale_max - scale_min) / (float)max_lines;
+  for (uint8_t i = 0; i < max_lines; ++i) {
+    float val = scale_min + step * (float)i;
+    _draw_line(window, values_count, scale_min, scale_max, val, unit, inner_bb,
                frame_size, GetColorU32(passive_color));
   }
 }
@@ -103,14 +108,16 @@ static void PlotTimings(const char *label,
   float scale_max = reference_timing + range;
 
   if (dynamic_rescale) {
-    if (v_max > scale_max)
+    if (v_max > scale_max) {
       scale_max = v_max;
-    scale_max = ((int)(scale_max / 10 + 1)) * 10;
+    }
+    scale_max = (floorf(scale_max / 10 + 1)) * 10;
 
     if (center_reference_timing) {
-      if (v_min < scale_min)
+      if (v_min < scale_min) {
         scale_min = v_min;
-      scale_min = ((int)(scale_min / 10)) * 10;
+      }
+      scale_min = (floorf(scale_min / 10)) * 10;
 
       // make sure reference timing stays centered
       float lower_range = reference_timing - scale_min;
