@@ -84,7 +84,7 @@ struct client_vk_compositor
  * Takes owenership of provided xcn.
  *
  * @public @memberof client_vk_compositor
- * @relatesalso xrt_compositor_native
+ * @see xrt_compositor_native
  */
 struct client_vk_compositor *
 client_vk_compositor_create(struct xrt_compositor_native *xcn,

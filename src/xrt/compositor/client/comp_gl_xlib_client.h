@@ -34,7 +34,7 @@ struct client_gl_xlib_compositor
  * Create a new client_gl_xlib_compositor.
  *
  * @public @memberof client_gl_xlib_compositor
- * @relatesalso xrt_compositor_native
+ * @see xrt_compositor_native
  */
 struct client_gl_xlib_compositor *
 client_gl_xlib_compositor_create(struct xrt_compositor_native *xcn,

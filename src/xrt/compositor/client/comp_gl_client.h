@@ -125,7 +125,7 @@ client_gl_compositor(struct xrt_compositor *xc)
  * won't be called for you.
  *
  * @public @memberof client_gl_compositor
- * @relatesalso xrt_compositor_native
+ * @see xrt_compositor_native
  */
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
