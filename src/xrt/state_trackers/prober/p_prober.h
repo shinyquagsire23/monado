@@ -202,7 +202,7 @@ p_dev_get_bluetooth_dev(
  * Init the tracking factory.
  *
  * @private @memberof prober
- * @relatesalso xrt_tracking_factory
+ * @see xrt_tracking_factory
  */
 int
 p_tracking_init(struct prober *p);
@@ -211,7 +211,7 @@ p_tracking_init(struct prober *p);
  * Teardown the tracking factory.
  *
  * @private @memberof prober
- * @relatesalso xrt_tracking_factory
+ * @see xrt_tracking_factory
  */
 void
 p_tracking_teardown(struct prober *p);
