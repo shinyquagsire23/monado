@@ -17,3 +17,9 @@ target_link_libraries(tests_input_transform PRIVATE
 	xrt-external-openxr
 	aux_util)
 add_test(NAME input_transform COMMAND tests_input_transform --success)
+
+# Generic callbacks
+add_executable(tests_generic_callbacks tests_generic_callbacks.cpp)
+target_link_libraries(tests_generic_callbacks PRIVATE tests_main)
+target_link_libraries(tests_generic_callbacks PRIVATE aux_util)
+add_test(NAME tests_generic_callbacks COMMAND tests_generic_callbacks --success)

@@ -36,6 +36,7 @@ lib_aux_util = static_library(
 		'util/u_format.h',
 		'util/u_frame.c',
 		'util/u_frame.h',
+		'util/u_generic_callbacks.hpp',
 		'util/u_git_tag.h',
 		'util/u_hand_tracking.c',
 		'util/u_hand_tracking.h',
