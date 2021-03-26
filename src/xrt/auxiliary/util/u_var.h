@@ -89,13 +89,14 @@ enum u_var_kind
 	U_VAR_KIND_GUI_HEADER,
 };
 
+#define U_VAR_NAME_STRING_SIZE 256
 /*!
  * Struct that keeps all of the information about the variable, some of the UI
  * state is kept on it.
  */
 struct u_var_info
 {
-	char name[256];
+	char name[U_VAR_NAME_STRING_SIZE];
 	void *ptr;
 
 	enum u_var_kind kind;

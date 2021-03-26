@@ -198,7 +198,7 @@ t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_cal
 
 struct t_convert_table
 {
-	uint8_t v[256][256][256][3];
+	uint8_t v[256][256][256][3]; // nolint(readability-magic-numbers)
 };
 
 void

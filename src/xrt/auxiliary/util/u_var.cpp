@@ -52,7 +52,7 @@ public:
 	getNumber(const std::string &name)
 	{
 		auto s = counters.find(name);
-		int count = (s != counters.end() ? s->second : 0) + 1;
+		int count = int(s != counters.end() ? s->second : 0) + 1;
 		counters[name] = count;
 
 		return count;
@@ -89,7 +89,7 @@ add_var(void *root, void *ptr, u_var_kind kind, const char *c_name)
 	}
 
 	Var var;
-	snprintf(var.info.name, 256, "%s", c_name);
+	snprintf(var.info.name, U_VAR_NAME_STRING_SIZE, "%s", c_name);
 	var.info.kind = kind;
 	var.info.ptr = ptr;
 

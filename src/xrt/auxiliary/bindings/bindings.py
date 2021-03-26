@@ -240,13 +240,14 @@ def generate_bindings_h(file, p):
                 "_subpath(const char *str, size_t length);\n")
 
     f.write(f'''
+#define PATHS_PER_BINDING_TEMPLATE 8
 
 struct binding_template
 {{
 \tconst char *subaction_path;
 \tconst char *steamvr_path;
 \tconst char *localized_name;
-\tconst char *paths[8];
+\tconst char *paths[PATHS_PER_BINDING_TEMPLATE];
 \tenum xrt_input_name input;
 \tenum xrt_output_name output;
 }};
@@ -263,7 +264,7 @@ struct profile_template
 }};
 
 #define NUM_PROFILE_TEMPLATES {len(p.profiles)}
-extern struct profile_template profile_templates[{len(p.profiles)}];
+extern struct profile_template profile_templates[NUM_PROFILE_TEMPLATES];
 ''')
 
     f.write("\n// clang-format on\n")
