@@ -130,11 +130,9 @@ xrt_atomic_s32_cmpxchg(xrt_atomic_s32_t *p, int32_t old_, int32_t new_)
 }
 
 #ifdef _MSC_VER
-#ifdef XRT_64_BIT
-typedef int64_t ssize_t;
-#else
-typedef int32_t ssize_t;
-#endif
+typedef intptr_t ssize_t;
+#define _SSIZE_T_
+#define _SSIZE_T_DEFINED
 #endif
 
 /*!
