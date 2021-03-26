@@ -293,8 +293,10 @@ vk_has_error(VkResult res, const char *fun, const char *file, int line);
  * @ingroup aux_vk
  */
 #define vk_check_error(fun, res, ret)                                                                                  \
-	if (vk_has_error(res, fun, __FILE__, __LINE__))                                                                \
-	return ret
+	do {                                                                                                           \
+		if (vk_has_error(res, fun, __FILE__, __LINE__))                                                        \
+			return ret;                                                                                    \
+	} while (0)
 
 /*!
  * @def
@@ -310,10 +312,12 @@ vk_has_error(VkResult res, const char *fun, const char *file, int line);
  * @ingroup aux_vk
  */
 #define vk_check_error_with_free(fun, res, ret, to_free)                                                               \
-	if (vk_has_error(res, fun, __FILE__, __LINE__)) {                                                              \
-		free(to_free);                                                                                         \
-		return ret;                                                                                            \
-	}
+	do {                                                                                                           \
+		if (vk_has_error(res, fun, __FILE__, __LINE__)) {                                                      \
+			free(to_free);                                                                                 \
+			return ret;                                                                                    \
+		}                                                                                                      \
+	} while (0)
 
 /*!
  * @ingroup aux_vk
