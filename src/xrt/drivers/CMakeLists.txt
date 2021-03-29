@@ -101,6 +101,15 @@ if(XRT_BUILD_DRIVER_NS)
 	list(APPEND ENABLED_HEADSET_DRIVERS ns)
 endif()
 
+if(XRT_BUILD_DRIVER_ULV2)
+	set(ULV2_SOURCE_FILES
+		ultraleap_v2/ulv2_driver.cpp
+		ultraleap_v2/ulv2_interface.h
+		)
+	add_library(drv_ulv2 STATIC ${ULV2_SOURCE_FILES})
+	target_link_libraries(drv_ulv2 PRIVATE xrt-interfaces aux_util aux_math Leap)
+endif()
+
 if(XRT_BUILD_DRIVER_OHMD)
 	set(OHMD_SOURCE_FILES
 		ohmd/oh_device.c

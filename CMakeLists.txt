@@ -43,6 +43,19 @@ find_package(cJSON)
 find_package(Systemd)
 find_package(OpenGLES COMPONENTS V3)
 
+#find_package(Leap)
+
+find_library(Leap
+	NAMES libLeap.so
+	PATHS /usr/local/lib
+	)
+if (Leap)
+ include_directories(include /usr/local/include/)
+ message(STATUS "Found libLeap: ${Leap}")
+else()
+ message(STATUS "Could NOT find libLeap: (missing: /usr/local/lib/libLeap.so)")
+endif()
+
 # Android SDK doesn't look for 3.8 and 3.9, which is what new distros ship with.
 set(Python_ADDITIONAL_VERSIONS 3.8 3.9)
 if(NOT CMAKE_VERSION VERSION_LESS 3.12)
@@ -185,6 +198,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_ARDUINO "Enable Arduino input device wit
 cmake_dependent_option(XRT_BUILD_DRIVER_ILLIXR "Enable ILLIXR driver" ON "ILLIXR_PATH" OFF)
 
 option(XRT_BUILD_DRIVER_DUMMY "Enable dummy driver" ON)
+cmake_dependent_option(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" ON "Leap" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_REMOTE "Enable remote debugging driver" ON "XRT_HAVE_LINUX OR ANDROID" OFF)
 
 # These all use the Monado internal hid wrapper.
@@ -219,6 +233,7 @@ list(APPEND AVAILABLE_DRIVERS
 	"REMOTE"
 	"SURVIVE"
 	"V4L2"
+	"ULV2"
 	"VF"
 	"VIVE"
 	"QWERTY"
@@ -350,6 +365,7 @@ message(STATUS "#    DRIVER_HDK:          ${XRT_BUILD_DRIVER_HDK}")
 message(STATUS "#    DRIVER_HYDRA:        ${XRT_BUILD_DRIVER_HYDRA}")
 message(STATUS "#    DRIVER_ILLIXR:       ${XRT_BUILD_DRIVER_ILLIXR}")
 message(STATUS "#    DRIVER_NS:           ${XRT_BUILD_DRIVER_NS}")
+message(STATUS "#    DRIVER_ULV2:         ${XRT_BUILD_DRIVER_ULV2}")
 message(STATUS "#    DRIVER_OHMD:         ${XRT_BUILD_DRIVER_OHMD}")
 message(STATUS "#    DRIVER_PSMV:         ${XRT_BUILD_DRIVER_PSMV}")
 message(STATUS "#    DRIVER_PSVR:         ${XRT_BUILD_DRIVER_PSVR}")

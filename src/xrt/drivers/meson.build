@@ -58,6 +58,17 @@ lib_drv_ns = static_library(
 	build_by_default: 'ns' in drivers,
 )
 
+lib_drv_ulv2 = static_library(
+       'drv_ulv2',
+       files(
+               'ultraleap_v2/ulv2_driver.cpp',
+               'ultraleap_v2/ulv2_interface.h',
+       ),
+       include_directories: [xrt_include, inc_leap],
+       dependencies: [aux, leap],
+       build_by_default: 'ulv2' in drivers,
+)
+
 lib_drv_ht = static_library(
 	'drv_ht',
 	files(

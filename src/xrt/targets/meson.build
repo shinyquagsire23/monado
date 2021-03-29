@@ -81,6 +81,10 @@ if 'remote' in drivers
 	driver_libs += [lib_drv_remote]
 endif
 
+if 'ulv2' in drivers
+	driver_libs += [lib_drv_ulv2]
+endif
+
 driver_libs += [lib_drv_multi]
 
 subdir('common')

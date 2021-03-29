@@ -1,23 +1,44 @@
 {
-	"active":	"tracking",
-	"tracking":	{
-		"tracking_overrides":	[{
-				"target_device_serial":	"North Star",
-				"tracker_device_serial":	"Intel RealSense 6-DOF",
-				"offset":	{
-					"orientation":	{
-						"x":	0,
-						"y":	-0.068300001323223114,
-						"z":	0.074400000274181366,
-						"w":	0.99468898773193359
+	"active": "tracking",
+	"tracking": {
+		"tracking_overrides": [
+			{
+				"target_device_serial": "North Star",
+				"tracker_device_serial": "Intel RealSense 6-DOF",
+				"type": "direct",
+				"offset": {
+					"orientation": {
+						"x": -0.102931,
+						"y": 0,
+						"z": 0,
+						"w": 0.994689
 					},
-					"position":	{
-						"x":	0,
-						"y":	-0.068300001323223114,
-						"z":	0.074400000274181366
+					"position": {
+						"x": 0,
+						"y": 0.0683,
+						"z": -0.0744
 					}
 				}
-			}],
-		"version":	0
+			},
+			{
+				"target_device_serial": "Leap Motion v2 driver",
+				"tracker_device_serial": "Intel RealSense 6-DOF",
+				"type": "attached",
+				"offset": {
+					"orientation": {
+						"x": 0,
+						"y": 0,
+						"z": 0,
+						"w": 1
+					},
+					"position": {
+						"x": 0,
+						"y": 0.005,
+						"z": 0
+					}
+				}
+			}
+		],
+		"version": 0
 	}
 }

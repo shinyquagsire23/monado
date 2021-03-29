@@ -78,6 +78,9 @@ gst_video= dependency('gstreamer-video-1.0', required: false)
 
 gst_found = gst.found() and gst_app.found() and gst_video.found()
 
+leap = cc.find_library('Leap', dirs : ['/usr/local/lib'], required: false)
+inc_leap = include_directories('/usr/local/include')
+
 opencv = dependency('opencv4', required: false)
 if not opencv.found()
 	opencv = dependency('opencv', required: get_option('tracking'))
@@ -205,6 +208,12 @@ if gst_found and ('auto' in drivers or 'vf' in drivers)
 	if 'vf' not in drivers
 		drivers += ['vf']
 	endif
+endif
+
+if leap.found() and ('auto' in drivers or 'ulv2' in drivers)
+       if 'ulv2' not in drivers
+               drivers += ['ulv2']
+       endif
 endif
 
 if survive.found() and ('auto' in drivers and 'survive' not in drivers)
