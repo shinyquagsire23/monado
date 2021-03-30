@@ -331,7 +331,7 @@ bool
 comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s);
 
 /*!
- * Loads all of the shaders that the compositor uses.
+ * Unload and cleanup shaders.
  */
 void
 comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s);
