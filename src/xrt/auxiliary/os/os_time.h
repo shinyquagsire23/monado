@@ -126,28 +126,6 @@ os_timeval_to_ns(struct timeval *val)
 }
 #endif // XRT_HAVE_TIMEVAL
 
-#ifdef XRT_OS_WINDOWS
-#define CLOCK_MONOTONIC 0
-#define CLOCK_REALTIME 1
-
-static int
-clock_gettime(int clk_id, struct timespec *spec)
-{
-	__int64 wintime;
-
-	//! @todo We should be using QueryPerformanceCounter
-	GetSystemTimeAsFileTime((FILETIME *)&wintime);
-	// 1jan1601 to 1jan1970
-	wintime -= 116444736000000000i64;
-	// seconds
-	spec->tv_sec = wintime / 10000000i64;
-	// nano-seconds
-	spec->tv_nsec = wintime % 10000000i64 * 100;
-
-	return 0;
-}
-
-#endif // XRT_OS_WINDOWS
 /*!
  * @brief Return a monotonic clock in nanoseconds.
  * @ingroup aux_os_time
@@ -155,7 +133,7 @@ clock_gettime(int clk_id, struct timespec *spec)
 static inline uint64_t
 os_monotonic_get_ns(void)
 {
-#if defined(XRT_OS_LINUX) || defined(XRT_OS_WINDOWS)
+#if defined(XRT_OS_LINUX)
 	struct timespec ts;
 	int ret = clock_gettime(CLOCK_MONOTONIC, &ts);
 	if (ret != 0) {
@@ -163,6 +141,19 @@ os_monotonic_get_ns(void)
 	}
 
 	return os_timespec_to_ns(&ts);
+#elif defined(XRT_OS_WINDOWS)
+	static int64_t ns_per_qpc_tick = 0;
+	if (ns_per_qpc_tick == 0) {
+		// Fixed at startup, so we can cache this.
+		LARGE_INTEGER freq;
+		QueryPerformanceFrequency(&freq);
+		ns_per_qpc_tick = U_1_000_000_000 / freq.QuadPart;
+	}
+	LARGE_INTEGER qpc;
+	QueryPerformanceCounter(&qpc);
+	return qpc.QuadPart * ns_per_qpc_tick;
+#else
+#error "need port"
 #endif
 }
 
