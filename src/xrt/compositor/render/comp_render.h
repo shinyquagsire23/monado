@@ -69,7 +69,7 @@ comp_buffer_init(struct vk_bundle *vk,
                  VkDeviceSize size);
 
 /*!
- * Frees all resources that this buffer has, doesn't not free the buffer itself.
+ * Frees all resources that this buffer has, but does not free the buffer itself.
  */
 void
 comp_buffer_close(struct vk_bundle *vk, struct comp_buffer *buffer);
