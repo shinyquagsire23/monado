@@ -332,6 +332,23 @@ VkResult
 vk_get_instance_functions(struct vk_bundle *vk);
 
 /*!
+ * @brief Initialize mutexes in the @ref vk_bundle.
+ *
+ * Not required for all uses, but a precondition for some.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_init_mutex(struct vk_bundle *vk);
+
+/*!
+ * @brief De-initialize mutexes in the @ref vk_bundle.
+ * @ingroup aux_vk
+ */
+VkResult
+vk_deinit_mutex(struct vk_bundle *vk);
+
+/*!
  * @ingroup aux_vk
  */
 VkResult
@@ -464,12 +481,14 @@ vk_create_view_swizzle(struct vk_bundle *vk,
                        VkImageView *out_view);
 
 /*!
+ * @pre Requires successful call to vk_init_mutex
  * @ingroup aux_vk
  */
 VkResult
 vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
 
 /*!
+ * @pre Requires successful call to vk_init_mutex
  * @ingroup aux_vk
  */
 VkResult
@@ -483,6 +502,7 @@ vk_set_image_layout(struct vk_bundle *vk,
                     VkImageSubresourceRange subresource_range);
 
 /*!
+ * @pre Requires successful call to vk_init_mutex
  * @ingroup aux_vk
  */
 VkResult
@@ -531,6 +551,10 @@ vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk);
 bool
 vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDeviceMemory memory);
 
+/*!
+ * @pre Requires successful call to vk_init_mutex
+ * @ingroup aux_vk
+ */
 VkResult
 vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence);
 

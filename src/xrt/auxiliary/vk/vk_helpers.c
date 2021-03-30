@@ -1153,6 +1153,26 @@ err_destroy:
 }
 
 VkResult
+vk_init_mutex(struct vk_bundle *vk)
+{
+	if (os_mutex_init(&vk->cmd_pool_mutex) < 0) {
+		return VK_ERROR_INITIALIZATION_FAILED;
+	}
+	if (os_mutex_init(&vk->queue_mutex) < 0) {
+		return VK_ERROR_INITIALIZATION_FAILED;
+	}
+	return VK_SUCCESS;
+}
+
+VkResult
+vk_deinit_mutex(struct vk_bundle *vk)
+{
+	os_mutex_destroy(&vk->cmd_pool_mutex);
+	os_mutex_destroy(&vk->queue_mutex);
+	return VK_SUCCESS;
+}
+
+VkResult
 vk_init_from_given(struct vk_bundle *vk,
                    PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr,
                    VkInstance instance,
