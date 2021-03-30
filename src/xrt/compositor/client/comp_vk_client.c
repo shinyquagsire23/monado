@@ -158,6 +158,7 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 		c->vk.vkDestroyCommandPool(c->vk.device, c->vk.cmd_pool, NULL);
 		c->vk.cmd_pool = VK_NULL_HANDLE;
 	}
+	vk_deinit_mutex(&c->vk);
 
 	free(c);
 }
@@ -541,6 +542,10 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 		goto err_free;
 	}
 
+	ret = vk_init_mutex(&c->vk);
+	if (ret != VK_SUCCESS) {
+		goto err_free;
+	}
 	return c;
 
 err_free:
