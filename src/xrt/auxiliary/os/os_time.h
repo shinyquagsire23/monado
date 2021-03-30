@@ -183,7 +183,10 @@ os_ns_to_timespec(uint64_t ns, struct timespec *spec)
 #endif // XRT_HAVE_TIMESPEC
 
 
-#ifdef XRT_HAVE_TIMEVAL
+#if defined(XRT_HAVE_TIMEVAL) && defined(XRT_OS_LINUX)
+
+#define OS_NS_PER_USEC (1000)
+
 /*!
  * @brief Convert a timeval struct to nanoseconds.
  * @ingroup aux_os_time_extra
@@ -193,7 +196,6 @@ os_timeval_to_ns(struct timeval *val)
 {
 	uint64_t ns = 0;
 	ns += (uint64_t)val->tv_sec * U_1_000_000_000;
-#define OS_NS_PER_USEC (1000)
 	ns += (uint64_t)val->tv_usec * OS_NS_PER_USEC;
 	return ns;
 }
