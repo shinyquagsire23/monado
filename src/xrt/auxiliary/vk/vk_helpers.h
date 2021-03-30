@@ -281,7 +281,7 @@ bool
 vk_has_error(VkResult res, const char *fun, const char *file, int line);
 
 /*!
- * @def
+ * @def vk_check_error
  * @brief Perform checking of a Vulkan result, returning in case it is not VK_SUCCESS.
  *
  * @param fun A string literal with the name of the Vulkan function, for logging purposes.
@@ -299,7 +299,7 @@ vk_has_error(VkResult res, const char *fun, const char *file, int line);
 	} while (0)
 
 /*!
- * @def
+ * @def vk_check_error_with_free
  * @brief Perform checking of a Vulkan result, freeing an allocation and returning in case it is not VK_SUCCESS.
  *
  * @param fun A string literal with the name of the Vulkan function, for logging purposes.
