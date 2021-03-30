@@ -181,6 +181,33 @@ os_semaphore_release(struct os_semaphore *os)
 }
 
 /*!
+ * Set @p ts to the current time, plus the timeout_ns value.
+ *
+ * Intended for use by the threading code only: the timestamps are not interchangeable with other sources of time.
+ */
+static inline int
+os_semaphore_get_realtime_clock(struct timespec *ts, uint64_t timeout_ns)
+{
+#if defined(XRT_OS_WINDOWS)
+	struct timespec relative;
+	os_ns_to_timespec(timeout_ns, &relative);
+	pthread_win32_getabstime_np(ts, &relative);
+	return 0;
+#else
+	struct timespec now;
+	if (clock_gettime(CLOCK_REALTIME, &now) < 0) {
+		assert(false);
+		return -1;
+	}
+	uint64_t now_ns = os_timespec_to_ns(ts);
+	uint64_t when_ns = timeout_ns + now_ns;
+
+	os_ns_to_timespec(when_ns, ts);
+	return 0;
+#endif
+}
+
+/*!
  * Wait, if @p timeout_ns is zero then waits forever.
  */
 static inline void
@@ -191,16 +218,10 @@ os_semaphore_wait(struct os_semaphore *os, uint64_t timeout_ns)
 		return;
 	}
 
-	struct timespec ts;
-	if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+	struct timespec abs_timeout;
+	if (os_semaphore_get_realtime_clock(&abs_timeout, timeout_ns) == -1) {
 		assert(false);
 	}
-
-	uint64_t now_ns = os_timespec_to_ns(&ts);
-	uint64_t when_ns = timeout_ns + now_ns;
-
-	struct timespec abs_timeout = {0, 0};
-	os_ns_to_timespec(when_ns, &abs_timeout);
 
 	sem_timedwait(&os->sem, &abs_timeout);
 }
