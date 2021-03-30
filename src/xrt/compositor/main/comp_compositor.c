@@ -199,18 +199,18 @@ compositor_add_frame_timing(struct comp_compositor *c)
 		for (int i = 0; i < NUM_FRAME_TIMINGS; i++) {
 			uint64_t frametime_ns =
 			    c->compositor_frame_times.times_ns[i + 1] - c->compositor_frame_times.times_ns[i];
-			float frametime_s = frametime_ns * 1. / 1000. * 1. / 1000. * 1. / 1000.;
+			float frametime_s = frametime_ns * 1.f / 1000.f * 1.f / 1000.f * 1.f / 1000.f;
 			total_s += frametime_s;
 		}
 		float avg_frametime_s = total_s / ((float)NUM_FRAME_TIMINGS);
-		c->compositor_frame_times.fps = 1. / avg_frametime_s;
+		c->compositor_frame_times.fps = 1.f / avg_frametime_s;
 	}
 
 	c->compositor_frame_times.times_ns[c->compositor_frame_times.index] = os_monotonic_get_ns();
 
 	uint64_t diff = c->compositor_frame_times.times_ns[c->compositor_frame_times.index] -
 	                c->compositor_frame_times.times_ns[last_index];
-	c->compositor_frame_times.timings_ms[c->compositor_frame_times.index] = (float)diff * 1. / 1000. * 1. / 1000.;
+	c->compositor_frame_times.timings_ms[c->compositor_frame_times.index] = (float)diff * 1.f / 1000.f * 1.f / 1000.f;
 }
 
 static xrt_result_t
@@ -1430,7 +1430,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	struct u_var_timing *ft = U_TYPED_CALLOC(struct u_var_timing);
 
-	float target_frame_time_ms = c->settings.nominal_frame_interval_ns * 1. / 1000. * 1. / 1000.;
+	float target_frame_time_ms = c->settings.nominal_frame_interval_ns * 1.f / 1000.f * 1.f / 1000.f;
 
 	uint64_t now = os_monotonic_get_ns();
 	for (int i = 0; i < NUM_FRAME_TIMES; i++) {
