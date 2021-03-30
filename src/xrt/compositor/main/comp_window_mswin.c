@@ -126,7 +126,7 @@ comp_window_mswin_init_swapchain(struct comp_target *ct, uint32_t width, uint32_
 
 	ret = comp_window_mswin_create_surface(cwm, &cwm->base.surface.handle);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "Failed to create surface!");
+		COMP_ERROR(ct->c, "Failed to create surface '%s'!", vk_result_string(ret));
 		return false;
 	}
 
