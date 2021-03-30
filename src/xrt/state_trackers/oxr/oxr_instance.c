@@ -160,12 +160,15 @@ detect_engine(struct oxr_logger *log, struct oxr_instance *inst, const XrInstanc
 static void
 apply_quirks(struct oxr_logger *log, struct oxr_instance *inst)
 {
+#if 0
+	// This is no longer needed.
 	if (starts_with("UnrealEngine", inst->appinfo.detected.engine.name) && //
 	    inst->appinfo.detected.engine.major == 4 &&                        //
 	    inst->appinfo.detected.engine.minor <= 27 &&                       //
 	    inst->appinfo.detected.engine.patch <= 0) {
 		inst->quirks.disable_vulkan_format_depth_stencil = true;
 	}
+#endif
 }
 
 XrResult
