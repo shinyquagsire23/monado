@@ -19,17 +19,10 @@
 
 DEBUG_GET_ONCE_LOG_OPTION(global_log, "XRT_LOG", U_LOGGING_WARN)
 
-enum u_logging_level global_log_level;
-
-static bool _is_log_level_initialized;
-
-void
-_log_level_init()
+enum u_logging_level
+u_log_get_global_level(void)
 {
-	if (!_is_log_level_initialized) {
-		global_log_level = debug_get_log_option_global_log();
-		_is_log_level_initialized = true;
-	}
+	return debug_get_log_option_global_log();
 }
 
 #if defined(XRT_OS_ANDROID)
@@ -50,10 +43,10 @@ u_log_convert_priority(enum u_logging_level level)
 	}
 	return ANDROID_LOG_INFO;
 }
+
 void
 u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
 {
-	_log_level_init();
 	// print_prefix(func, level);
 	android_LogPriority prio = u_log_convert_priority(level);
 	va_list args;
@@ -71,7 +64,6 @@ u_log_xdev(const char *file,
            const char *format,
            ...)
 {
-	_log_level_init();
 	android_LogPriority prio = u_log_convert_priority(level);
 	va_list args;
 	va_start(args, format);
@@ -107,7 +99,6 @@ print_prefix(int remainingBuf, char *buf, const char *func, enum u_logging_level
 void
 u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
 {
-	_log_level_init();
 
 	char buf[16384] = {0};
 
@@ -131,7 +122,6 @@ u_log_xdev(const char *file,
            const char *format,
            ...)
 {
-	_log_level_init();
 
 	char buf[16384] = {0};
 
@@ -222,8 +212,6 @@ print_prefix(const char *func, enum u_logging_level level)
 void
 u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
 {
-	_log_level_init();
-
 	print_prefix(func, level);
 
 	va_list args;
@@ -243,8 +231,6 @@ u_log_xdev(const char *file,
            const char *format,
            ...)
 {
-	_log_level_init();
-
 	print_prefix(func, level);
 
 	va_list args;

@@ -64,11 +64,11 @@ struct xrt_device;
 	} while (false)
 
 // clang-format off
-#define U_LOG_T(...) U_LOG_IFL_T(global_log_level, __VA_ARGS__)
-#define U_LOG_D(...) U_LOG_IFL_D(global_log_level, __VA_ARGS__)
-#define U_LOG_I(...) U_LOG_IFL_I(global_log_level, __VA_ARGS__)
-#define U_LOG_W(...) U_LOG_IFL_W(global_log_level, __VA_ARGS__)
-#define U_LOG_E(...) U_LOG_IFL_E(global_log_level, __VA_ARGS__)
+#define U_LOG_T(...) U_LOG_IFL_T(u_log_get_global_level(), __VA_ARGS__)
+#define U_LOG_D(...) U_LOG_IFL_D(u_log_get_global_level(), __VA_ARGS__)
+#define U_LOG_I(...) U_LOG_IFL_I(u_log_get_global_level(), __VA_ARGS__)
+#define U_LOG_W(...) U_LOG_IFL_W(u_log_get_global_level(), __VA_ARGS__)
+#define U_LOG_E(...) U_LOG_IFL_E(u_log_get_global_level(), __VA_ARGS__)
 
 #define U_LOG_IFL_T(cond_level, ...) U_LOG_IFL(U_LOGGING_TRACE, cond_level, __VA_ARGS__)
 #define U_LOG_IFL_D(cond_level, ...) U_LOG_IFL(U_LOGGING_DEBUG, cond_level, __VA_ARGS__)
@@ -99,12 +99,24 @@ enum u_logging_level
 	U_LOGGING_RAW, //!< Special level for raw printing, prints a new-line.
 };
 
-extern enum u_logging_level global_log_level;
+/*!
+ * Returns the global logging level, subsystems own logging level take precedence.
+ */
+enum u_logging_level
+u_log_get_global_level(void);
 
+/*!
+ * This function always logs, level is used for printing or passed to native
+ * logging functions.
+ */
 void
 u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
     XRT_PRINTF_FORMAT(5, 6);
 
+/*!
+ * This function always logs, level is used for printing or passed to native
+ * logging functions.
+ */
 void
 u_log_xdev(const char *file,
            int line,
