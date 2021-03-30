@@ -21,6 +21,17 @@
 #include <math.h>
 #endif
 
+
+// Might be missing on Windows.
+#ifndef M_PI
+#define M_PI (3.14159265358979323846)
+#endif
+
+// Might be missing on Windows.
+#ifndef M_PIl
+#define M_PIl (3.14159265358979323846264338327950288)
+#endif
+
 #ifndef M_1_PI
 #define M_1_PI (1. / M_PI)
 #endif
