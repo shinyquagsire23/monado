@@ -199,6 +199,8 @@ struct comp_compositor
 	//! State for generating the correct set of events.
 	enum comp_state state;
 
+	struct os_precise_sleeper sleeper;
+
 	//! Triple buffered layer stacks.
 	struct comp_layer_slot slots[3];
 

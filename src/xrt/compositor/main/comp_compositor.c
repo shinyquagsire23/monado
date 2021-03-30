@@ -148,7 +148,8 @@ compositor_wait_frame(struct xrt_compositor *xc,
 
 	uint64_t now_ns = os_monotonic_get_ns();
 	if (now_ns < wake_up_time_ns) {
-		os_nanosleep(wake_up_time_ns - now_ns);
+		uint32_t delay = (uint32_t)(wake_up_time_ns - now_ns);
+		os_precise_sleeper_nanosleep(&c->sleeper, delay);
 	}
 
 	now_ns = os_monotonic_get_ns();
@@ -579,6 +580,8 @@ system_compositor_destroy(struct xrt_system_compositor *xsc)
 	if (c->compositor_frame_times.debug_var) {
 		free(c->compositor_frame_times.debug_var);
 	}
+
+	os_precise_sleeper_deinit(&c->sleeper);
 
 	u_threading_stack_fini(&c->threading.destroy_swapchains);
 
@@ -1196,6 +1199,8 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 static bool
 compositor_init_window_post_vulkan(struct comp_compositor *c)
 {
+	os_precise_sleeper_init(&c->sleeper);
+
 	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA) {
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 		return compositor_try_window(c, comp_window_direct_nvidia_create(c));
