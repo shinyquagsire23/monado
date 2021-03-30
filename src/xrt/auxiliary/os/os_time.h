@@ -81,6 +81,9 @@ os_nanosleep(long nsec)
 #ifdef XRT_HAVE_TIMESPEC
 /*!
  * @brief Convert a timespec struct to nanoseconds.
+ *
+ * Note that this just does the value combining, no adjustment for epochs is performed.
+ *
  * @ingroup aux_os_time_extra
  */
 static inline uint64_t
@@ -94,6 +97,8 @@ os_timespec_to_ns(const struct timespec *spec)
 
 /*!
  * @brief Convert an nanosecond integer to a timespec struct.
+ *
+ * Note that this just does the value splitting, no adjustment for epochs is performed.
  * @ingroup aux_os_time_extra
  */
 static inline void
