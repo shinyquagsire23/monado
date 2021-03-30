@@ -125,20 +125,20 @@ struct xrt_hmd_parts
 			//! Data.
 			float *vertices;
 			//! Number of vertices.
-			size_t num_vertices;
+			uint32_t num_vertices;
 			//! Stride of vertices
-			size_t stride;
+			uint32_t stride;
 			//! 1 or 3 for (chromatic aberration).
-			size_t num_uv_channels;
+			uint32_t num_uv_channels;
 
 			//! Indices, for triangle strip.
 			int *indices;
 			//! Number of indices for the triangle strip.
-			size_t num_indices[2];
+			uint32_t num_indices[2];
 			//! Offsets for the indices.
-			size_t offset_indices[2];
+			uint32_t offset_indices[2];
 			//! Total number of indices.
-			size_t total_num_indices;
+			uint32_t total_num_indices;
 		} mesh;
 	} distortion;
 };
