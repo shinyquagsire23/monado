@@ -40,7 +40,7 @@
  *
  */
 
-DEBUG_GET_ONCE_LOG_OPTION(prober_log, "PROBER_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(prober_log, "PROBER_LOG", U_LOGGING_INFO)
 
 static void
 add_device(struct prober *p, struct prober_device **out_dev);
