@@ -21,6 +21,7 @@
 #include "util/u_var.h"
 #include "util/u_logging.h"
 
+#include "math/m_mathinclude.h"
 #include "math/m_api.h"
 #include "math/m_permutation.h"
 
