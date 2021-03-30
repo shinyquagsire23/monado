@@ -81,7 +81,77 @@ os_nanosleep(int32_t nsec)
 #endif
 }
 
-#ifdef XRT_HAVE_TIMESPEC
+/*!
+ * @brief A structure for storing state as needed for more precise sleeping, mostly for compositor use.
+ * @ingroup aux_os_time
+ */
+struct os_precise_sleeper
+{
+#if defined(XRT_OS_WINDOWS)
+	HANDLE timer;
+#else
+	int unused_;
+#endif
+};
+
+/*!
+ * @brief Initialize members of @ref os_precise_sleeper.
+ * @public @memberof os_precise_sleeper
+ */
+static inline void
+os_precise_sleeper_init(struct os_precise_sleeper *ops)
+{
+#if defined(XRT_OS_WINDOWS)
+	ops->timer = CreateWaitableTimer(NULL, TRUE, NULL);
+#endif
+}
+
+/*!
+ * @brief De-initialize members of @ref os_precise_sleeper, and free resources, without actually freeing the given
+ * pointer.
+ * @public @memberof os_precise_sleeper
+ */
+static inline void
+os_precise_sleeper_deinit(struct os_precise_sleeper *ops)
+{
+#if defined(XRT_OS_WINDOWS)
+	if (ops->timer) {
+		CloseHandle(ops->timer);
+		ops->timer = NULL;
+	}
+#endif
+}
+
+/*!
+ * @brief Sleep the given number of nanoseconds, trying harder to be precise.
+ *
+ * On some platforms, there is no way to improve sleep precision easily with some OS-specific state, so we just forward
+ * to os_nanosleep().
+ *
+ * Note that on all platforms, the system scheduler has the final say.
+ *
+ * @public @memberof os_precise_sleeper
+ */
+static inline void
+os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec)
+{
+#if defined(XRT_OS_WINDOWS)
+	if (ops->timer) {
+		LARGE_INTEGER timeperiod;
+		timeperiod.QuadPart = -nsec;
+		if (SetWaitableTimer(ops->timer, &timeperiod, 0, NULL, NULL, FALSE)) {
+			// OK we could set up the timer, now let's wait.
+			WaitForSingleObject(ops->timer, INFINITE);
+			return;
+		}
+	}
+#endif
+	// If we fall through from an implementation, or there's no implementation needed for a platform, we just
+	// delegate to the regular os_nanosleep.
+	os_nanosleep(nsec);
+}
+
+#if defined(XRT_HAVE_TIMESPEC)
 /*!
  * @brief Convert a timespec struct to nanoseconds.
  *
