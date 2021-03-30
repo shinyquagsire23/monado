@@ -210,7 +210,8 @@ compositor_add_frame_timing(struct comp_compositor *c)
 
 	uint64_t diff = c->compositor_frame_times.times_ns[c->compositor_frame_times.index] -
 	                c->compositor_frame_times.times_ns[last_index];
-	c->compositor_frame_times.timings_ms[c->compositor_frame_times.index] = (float)diff * 1.f / 1000.f * 1.f / 1000.f;
+	c->compositor_frame_times.timings_ms[c->compositor_frame_times.index] =
+	    (float)diff * 1.f / 1000.f * 1.f / 1000.f;
 }
 
 static xrt_result_t
