@@ -569,8 +569,7 @@ system_compositor_destroy(struct xrt_system_compositor *xsc)
 		vk->device = VK_NULL_HANDLE;
 	}
 
-	os_mutex_destroy(&vk->queue_mutex);
-	os_mutex_destroy(&vk->cmd_pool_mutex);
+	vk_deinit_mutex(vk);
 
 	if (vk->instance != VK_NULL_HANDLE) {
 		vk->vkDestroyInstance(vk->instance, NULL);
@@ -881,17 +880,15 @@ compositor_init_vulkan(struct comp_compositor *c)
 	                       ARRAY_SIZE(required_device_extensions), optional_device_extensions,
 	                       ARRAY_SIZE(optional_device_extensions));
 
-	if (os_mutex_init(&c->vk.queue_mutex) != 0) {
-		return false;
-	}
-
-	if (os_mutex_init(&c->vk.cmd_pool_mutex) != 0) {
-		return false;
-	}
-
 	if (ret != VK_SUCCESS) {
 		return false;
 	}
+
+	ret = vk_init_mutex(&c->vk);
+	if (ret != VK_SUCCESS) {
+		return false;
+	}
+
 	c->settings.selected_gpu_index = c->vk.physical_device_index;
 
 	// store physical device UUID for compositor in settings
