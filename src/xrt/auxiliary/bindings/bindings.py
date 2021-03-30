@@ -215,6 +215,42 @@ def generate_bindings_c(file, p):
 
     f.write('}; // /array of profile_template\n\n')
 
+    inputs = set()
+    for profile in p.profiles:
+        feature: Feature
+        for idx, feature in enumerate(profile.features):
+            sp_obj = feature.sub_path_obj
+            if feature_str not in sp_obj["monado_bindings"]:
+                continue
+            monado_binding = sp_obj["monado_bindings"][feature_str]
+            inputs.add(monado_binding)
+
+    # special cased bindings that are never directly used in the input profiles
+    inputs.add("XRT_INPUT_GENERIC_HEAD_POSE")
+    inputs.add("XRT_INPUT_GENERIC_HEAD_DETECT")
+    inputs.add("XRT_INPUT_GENERIC_HAND_TRACKING_LEFT")
+    inputs.add("XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT")
+    inputs.add("XRT_INPUT_GENERIC_TRACKER_POSE")
+
+    f.write('const char *\n')
+    f.write('xrt_input_name_string(enum xrt_input_name input)\n')
+    f.write('{\n')
+    f.write('\tswitch(input)\n')
+    f.write('\t{\n')
+    for input in inputs:
+        f.write(f'\tcase {input}: return "{input}";\n')
+    f.write(f'\tdefault: return "UNKNOWN";\n')
+    f.write('\t}\n')
+    f.write('}\n')
+
+    f.write('enum xrt_input_name\n')
+    f.write('xrt_input_name_enum(const char *input)\n')
+    f.write('{\n')
+    for input in inputs:
+        f.write(f'\tif(strcmp("{input}", input) == 0) return {input};\n')
+    f.write(f'\treturn XRT_INPUT_GENERIC_TRACKER_POSE;\n')
+    f.write('}\n')
+
     f.write("\n// clang-format on\n")
 
     f.close()
@@ -265,7 +301,14 @@ struct profile_template
 
 #define NUM_PROFILE_TEMPLATES {len(p.profiles)}
 extern struct profile_template profile_templates[NUM_PROFILE_TEMPLATES];
+
 ''')
+
+    f.write('const char *\n')
+    f.write('xrt_input_name_string(enum xrt_input_name input);\n\n')
+
+    f.write('enum xrt_input_name\n')
+    f.write('xrt_input_name_enum(const char *input);\n\n')
 
     f.write("\n// clang-format on\n")
     f.close()
