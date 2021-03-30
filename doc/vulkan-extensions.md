@@ -43,6 +43,8 @@ minimize frustration.
 | [`VK_KHR_external_semaphore`][] (8) (+platform: 7) | yes (soon)                                                                                                                   |||||||
 | [`VK_KHR_swapchain`][]                             |        | yes                                                                                                                  ||||||
 
+[`VK_EXT_debug_report`][] is also used.
+
 ## Notes
 
 Kept out of the table above to limit its width.
@@ -85,6 +87,7 @@ Kept out of the table above to limit its width.
 [`VK_KHR_display`]: https://khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_KHR_display.html
 [`VK_KHR_xcb_surface`]: https://khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_KHR_xcb_surface.html
 [`VK_KHR_wayland_surface`]: https://khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_KHR_wayland_surface.html
+[`VK_EXT_debug_report`]: https://khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_EXT_debug_report.html
 [`VK_EXT_direct_mode_display`]: https://khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_EXT_direct_mode_display.html
 [`VK_EXT_acquire_xlib_display`]: https://khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_EXT_acquire_xlib_display.html
 [`VK_KHR_android_surface`]: https://khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_KHR_android_surface.html
