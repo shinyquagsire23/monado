@@ -1034,11 +1034,11 @@ static bool
 vk_build_device_extensions(struct vk_bundle *vk,
                            VkPhysicalDevice physical_device,
                            const char *const *required_device_extensions,
-                           size_t num_required_device_extensions,
+                           uint32_t num_required_device_extensions,
                            const char *const *optional_device_extensions,
-                           size_t num_optional_device_extensions,
+                           uint32_t num_optional_device_extensions,
                            const char ***out_device_extensions,
-                           size_t *out_num_device_extensions)
+                           uint32_t *out_num_device_extensions)
 {
 	VkExtensionProperties *props;
 	uint32_t num_props;
@@ -1046,7 +1046,7 @@ vk_build_device_extensions(struct vk_bundle *vk,
 		return false;
 	}
 
-	int max_exts = num_required_device_extensions + num_optional_device_extensions;
+	uint32_t max_exts = num_required_device_extensions + num_optional_device_extensions;
 
 	const char **device_extensions = U_TYPED_ARRAY_CALLOC(const char *, max_exts);
 
@@ -1098,7 +1098,7 @@ vk_create_device(struct vk_bundle *vk,
 	}
 
 	const char **device_extensions;
-	size_t num_device_extensions;
+	uint32_t num_device_extensions;
 	if (!vk_build_device_extensions(vk, vk->physical_device, required_device_extensions,
 	                                num_required_device_extensions, optional_device_extensions,
 	                                num_optional_device_extensions, &device_extensions, &num_device_extensions)) {
@@ -1219,6 +1219,7 @@ vk_init_from_given(struct vk_bundle *vk,
 	if (ret != VK_SUCCESS) {
 		goto err_memset;
 	}
+
 
 	return VK_SUCCESS;
 
