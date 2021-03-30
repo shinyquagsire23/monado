@@ -60,13 +60,16 @@ extern "C" {
  * interoperation with platform APIs.
  */
 
-
 /*!
  * @brief Sleep the given number of nanoseconds.
+ *
+ * Note that on some platforms, this may be somewhat less accurate than you might want.
+ * On all platforms, the system scheduler has the final say.
+ *
  * @ingroup aux_os_time
  */
 static inline void
-os_nanosleep(long nsec)
+os_nanosleep(int32_t nsec)
 {
 #if defined(XRT_OS_LINUX)
 	struct timespec spec;
