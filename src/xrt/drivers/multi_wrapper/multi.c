@@ -141,7 +141,7 @@ get_hand_tracking(struct xrt_device *xdev,
 
 	struct xrt_device *tracker = d->tracking_override.tracker;
 	struct xrt_space_relation tracker_relation;
-	xrt_device_get_tracked_pose(tracker, XRT_INPUT_GENERIC_TRACKER_POSE, at_timestamp_ns, &tracker_relation);
+	xrt_device_get_tracked_pose(tracker, d->tracking_override.input_name, at_timestamp_ns, &tracker_relation);
 
 
 	switch (d->override_type) {
