@@ -21,6 +21,8 @@
 #include "gui_common.h"
 #include "gui_imgui.h"
 
+#include "bindings/b_generated_bindings.h"
+
 struct gui_tracking_overrides
 {
 	struct gui_scene base;
@@ -30,7 +32,6 @@ struct gui_tracking_overrides
 	bool add_one;
 	int add_target;
 	int add_tracker;
-	enum xrt_tracking_override_type override_type;
 
 	struct u_config_json config;
 
@@ -171,21 +172,21 @@ add_one(struct gui_program *p, struct gui_tracking_overrides *ts)
 	}
 	igEnd();
 
-	igBegin("Tracking Override Type", NULL, 0);
-	for (int i = 0; i < 2; i++) {
-		bool selected = (int)ts->override_type == i;
-		if (igCheckbox(override_type_str[i], &selected)) {
-			ts->override_type = (enum xrt_tracking_override_type)i;
-		}
-	}
-	igEnd();
-
 	if (ts->add_target >= 0 && ts->add_tracker >= 0 && ts->add_target != ts->add_tracker) {
 		struct xrt_tracking_override *o = &ts->overrides[ts->num_overrides];
-		o->input_name = XRT_INPUT_GENERIC_TRACKER_POSE;
 		strncpy(o->target_device_serial, p->xdevs[ts->add_target]->serial, XRT_DEVICE_NAME_LEN);
 		strncpy(o->tracker_device_serial, p->xdevs[ts->add_tracker]->serial, XRT_DEVICE_NAME_LEN);
 		o->offset = identity;
+
+		// set input_name to the first pose in the inputs
+		for (uint32_t i = 0; i < p->xdevs[ts->add_tracker]->num_inputs; i++) {
+			enum xrt_input_name input_name = p->xdevs[ts->add_tracker]->inputs[i].name;
+			if (XRT_GET_INPUT_TYPE(input_name) != XRT_INPUT_TYPE_POSE) {
+				continue;
+			}
+			o->input_name = input_name;
+			break;
+		}
 
 		ts->num_overrides += 1;
 
@@ -194,7 +195,8 @@ add_one(struct gui_program *p, struct gui_tracking_overrides *ts)
 
 		ts->add_one = false;
 
-		ts->override_type = 0;
+		// immediately open for editing
+		ts->editing_override = ts->num_overrides - 1;
 	}
 }
 
@@ -212,7 +214,7 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		struct xrt_tracking_override *o = &ts->overrides[ts->editing_override];
 
 		igBegin("Tracker Device Offset", NULL, 0);
-		int target = 0, tracker = 0;
+		int target = -1, tracker = -1;
 		if (get_indices(p, ts, o, &target, &tracker)) {
 			igText("Editing %s [%s] <- %s [%s]", p->xdevs[target]->str, o->target_device_serial,
 			       p->xdevs[tracker]->str, o->tracker_device_serial);
@@ -222,13 +224,30 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		handle_draggable_vec3_f32("Position", &o->offset.position, &ts->reset_offset.position);
 		handle_draggable_quat("Orientation", &o->offset.orientation, &ts->reset_offset.orientation);
 
+		igText("Tracking Override Type");
 		for (int i = 0; i < 2; i++) {
 			bool selected = (int)o->override_type == i;
 			if (igCheckbox(override_type_str[i], &selected)) {
 				o->override_type = (enum xrt_tracking_override_type)i;
 			}
 		}
-		igEnd();
+
+		if (tracker >= 0) {
+			igText("Tracker Input Pose Name");
+			for (uint32_t i = 0; i < p->xdevs[tracker]->num_inputs; i++) {
+				enum xrt_input_name input_name = p->xdevs[tracker]->inputs[i].name;
+				if (XRT_GET_INPUT_TYPE(input_name) != XRT_INPUT_TYPE_POSE) {
+					continue;
+				}
+
+				const char *name_str = xrt_input_name_string(input_name);
+				bool selected = o->input_name == input_name;
+				if (igCheckbox(name_str, &selected)) {
+					o->input_name = input_name;
+				}
+			}
+			igEnd();
+		}
 	}
 
 	if (ts->add_one) {
