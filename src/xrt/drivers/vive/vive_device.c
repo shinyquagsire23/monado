@@ -389,8 +389,6 @@ update_imu(struct vive_device *d, const void *buffer)
 		}
 
 		d->imu.time_ns += dt_ns;
-		d->last.acc = acceleration;
-		d->last.gyro = angular_velocity;
 		d->imu.sequence = seq;
 
 		m_imu_3dof_update(&d->fusion, d->imu.time_ns, &acceleration, &angular_velocity);
@@ -858,14 +856,13 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
 	u_var_add_root(d, "Vive Device", true);
+	u_var_add_gui_header(d, &d->gui.fusion, "3DoF Fusion");
+	m_imu_3dof_add_vars(&d->fusion, d, "");
 	u_var_add_gui_header(d, &d->gui.calibration, "Calibration");
 	u_var_add_vec3_f32(d, &d->config.imu.acc_scale, "acc_scale");
 	u_var_add_vec3_f32(d, &d->config.imu.acc_bias, "acc_bias");
 	u_var_add_vec3_f32(d, &d->config.imu.gyro_scale, "gyro_scale");
 	u_var_add_vec3_f32(d, &d->config.imu.gyro_bias, "gyro_bias");
-	u_var_add_gui_header(d, &d->gui.last, "Last data");
-	u_var_add_vec3_f32(d, &d->last.acc, "acc");
-	u_var_add_vec3_f32(d, &d->last.gyro, "gyro");
 
 	int ret;
 

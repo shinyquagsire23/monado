@@ -53,12 +53,6 @@ struct vive_device
 
 	struct
 	{
-		struct xrt_vec3 acc;
-		struct xrt_vec3 gyro;
-	} last;
-
-	struct
-	{
 		uint16_t ipd;
 		uint16_t lens_separation;
 		uint16_t proximity;
@@ -73,7 +67,7 @@ struct vive_device
 	struct
 	{
 		bool calibration;
-		bool last;
+		bool fusion;
 	} gui;
 
 	struct vive_config config;
