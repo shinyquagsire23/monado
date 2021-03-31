@@ -22,6 +22,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "bindings/b_generated_bindings.h"
+
 DEBUG_GET_ONCE_OPTION(active_config, "P_OVERRIDE_ACTIVE_CONFIG", NULL)
 
 #define CONFIG_FILE_NAME "config_v0.json"
@@ -462,6 +464,9 @@ u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_ove
 		cJSON_AddStringToObject(entry, "type", override_type);
 
 		cJSON_AddItemToObject(entry, "offset", make_pose(&overrides[i].offset));
+
+		const char *input_name_string = xrt_input_name_string(overrides[i].input_name);
+		cJSON_AddStringToObject(entry, "xrt_input_name", input_name_string);
 
 		cJSON_AddItemToArray(o, entry);
 	}
