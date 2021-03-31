@@ -310,8 +310,9 @@ u_config_json_get_tracking_overrides(struct u_config_json *json,
 			o->offset.orientation.w = 1;
 		}
 
-		//! @todo support arbitrary tracking inputs for overrides
-		o->input_name = XRT_INPUT_GENERIC_TRACKER_POSE;
+		char input_name[512];
+		get_obj_str(override, "xrt_input_name", input_name, 512);
+		o->input_name = xrt_input_name_enum(input_name);
 
 		if (bad) {
 			*out_num_overrides = 0;
