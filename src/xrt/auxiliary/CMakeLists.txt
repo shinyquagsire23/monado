@@ -1,6 +1,8 @@
 # Copyright 2019-2020, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+add_subdirectory(bindings)
+
 set(ANDROID_SOURCE_FILES
 	android/android_ahardwarebuffer_allocator.c
 	android/android_ahardwarebuffer_allocator.h
@@ -213,7 +215,7 @@ target_include_directories(aux_math SYSTEM
 
 # Util library.
 add_library(aux_util STATIC ${UTIL_SOURCE_FILES})
-target_link_libraries(aux_util PUBLIC aux-includes xrt-pthreads)
+target_link_libraries(aux_util PUBLIC aux-includes xrt-pthreads aux_generated_bindings)
 # for u_device
 target_link_libraries(aux_util PUBLIC aux_math)
 if(XRT_HAVE_JPEG)
@@ -309,4 +311,3 @@ if(ANDROID)
 	target_link_libraries(aux_vk PUBLIC aux_android)
 endif()
 
-add_subdirectory(bindings)
