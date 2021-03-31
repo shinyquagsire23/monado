@@ -18,7 +18,8 @@
 						"y": 0.0683,
 						"z": -0.0744
 					}
-				}
+				},
+				"xrt_input_name":	"XRT_INPUT_GENERIC_TRACKER_POSE"
 			},
 			{
 				"target_device_serial": "Leap Motion v2 driver",
@@ -36,7 +37,8 @@
 						"y": 0.005,
 						"z": 0
 					}
-				}
+				},
+				"xrt_input_name":	"XRT_INPUT_GENERIC_TRACKER_POSE"
 			}
 		],
 		"version": 0
