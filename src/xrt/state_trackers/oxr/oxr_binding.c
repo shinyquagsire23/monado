@@ -323,7 +323,37 @@ oxr_find_profile_for_device(struct oxr_logger *log,
 		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
 		interaction_profile_find(log, inst, inst->path_cache.htc_vive_controller, out_p);
 		return;
-	default: return;
+	case XRT_DEVICE_TOUCH_CONTROLLER:
+		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
+		interaction_profile_find(log, inst, inst->path_cache.oculus_touch_controller, out_p);
+		return;
+	case XRT_DEVICE_WMR_CONTROLLER:
+		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
+		interaction_profile_find(log, inst, inst->path_cache.microsoft_motion_controller, out_p);
+		return;
+	case XRT_DEVICE_GO_CONTROLLER:
+		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
+		interaction_profile_find(log, inst, inst->path_cache.oculus_go_controller, out_p);
+		return;
+	case XRT_DEVICE_VIVE_PRO:
+		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
+		interaction_profile_find(log, inst, inst->path_cache.htc_vive_pro, out_p);
+		return;
+	case XRT_DEVICE_XBOX_CONTROLLER:
+		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
+		interaction_profile_find(log, inst, inst->path_cache.microsoft_xbox_controller, out_p);
+		return;
+	case XRT_DEVICE_HAND_INTERACTION:
+		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
+		interaction_profile_find(log, inst, inst->path_cache.msft_hand_interaction, out_p);
+		return;
+
+	// no interaction
+	case XRT_DEVICE_GENERIC_HMD:
+	case XRT_DEVICE_REALSENSE:
+	case XRT_DEVICE_HAND_TRACKER:
+	case XRT_DEVICE_VIVE_TRACKER_GEN1:
+	case XRT_DEVICE_VIVE_TRACKER_GEN2: return;
 	}
 }
 
