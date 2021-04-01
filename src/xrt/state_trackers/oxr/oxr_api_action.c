@@ -136,6 +136,8 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 		func = oxr_verify_valve_index_controller_subpath;
 	} else if (ip == inst->path_cache.mndx_ball_on_a_stick_controller) {
 		func = oxr_verify_mndx_ball_on_a_stick_controller_subpath;
+	} else if (ip == inst->path_cache.msft_hand_interaction) {
+		func = oxr_verify_microsoft_hand_interaction_subpath;
 	} else {
 		return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
 		                 "(suggestedBindings->interactionProfile == \"%s\") is not "

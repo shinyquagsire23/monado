@@ -234,6 +234,8 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 	cache_path(log, inst, "/interaction_profiles/oculus/touch_controller", &inst->path_cache.oculus_touch_controller);
 	cache_path(log, inst, "/interaction_profiles/valve/index_controller", &inst->path_cache.valve_index_controller);
 	cache_path(log, inst, "/interaction_profiles/mndx/ball_on_a_stick_controller", &inst->path_cache.mndx_ball_on_a_stick_controller);
+	cache_path(log, inst, "/interaction_profiles/microsoft/hand_interaction", &inst->path_cache.msft_hand_interaction);
+
 	// clang-format on
 
 	// fill in our application info - @todo - replicate all createInfo
