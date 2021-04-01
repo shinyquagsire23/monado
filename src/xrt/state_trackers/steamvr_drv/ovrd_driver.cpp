@@ -166,6 +166,14 @@ public:
 				    "right";
 			}
 			break;
+		case XRT_DEVICE_TOUCH_CONTROLLER:
+			if (hand == XRT_HAND_LEFT) {
+				m_render_model = "oculus_cv1_controller_left";
+			}
+			if (hand == XRT_HAND_RIGHT) {
+				m_render_model = "oculus_cv1_controller_right";
+			}
+			break;
 		case XRT_DEVICE_VIVE_WAND: m_render_model = "vr_controller_vive_1_5"; break;
 		case XRT_DEVICE_VIVE_TRACKER_GEN1:
 		case XRT_DEVICE_VIVE_TRACKER_GEN2: m_render_model = "{htc}vr_tracker_vive_1_0"; break;
@@ -566,6 +574,8 @@ public:
 			grip_name = XRT_INPUT_DAYDREAM_POSE;
 		} else if (m_xdev->name == XRT_DEVICE_HYDRA) {
 			grip_name = XRT_INPUT_HYDRA_POSE;
+		} else if (m_xdev->name == XRT_DEVICE_TOUCH_CONTROLLER) {
+			grip_name = XRT_INPUT_TOUCH_GRIP_POSE;
 		} else {
 			ovrd_log("Unhandled device name %u\n", m_xdev->name);
 			grip_name = XRT_INPUT_GENERIC_HEAD_POSE; // ???
