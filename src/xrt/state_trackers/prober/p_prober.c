@@ -811,6 +811,8 @@ apply_tracking_override(struct prober *p, struct xrt_device **xdevs, size_t num_
 		                                                          o->input_name, &o->offset);
 
 		if (multi) {
+			P_INFO(p, "Applying Tracking override %s <- %s", o->target_device_serial,
+			       o->tracker_device_serial);
 			// drops the target device from the list, but keeps the tracker
 			// a tracker could be attached to multiple targets with different names
 			xdevs[target_idx] = multi;
