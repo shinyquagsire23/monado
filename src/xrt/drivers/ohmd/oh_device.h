@@ -16,8 +16,8 @@
 extern "C" {
 #endif
 
-struct xrt_device *
-oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod);
+int
+oh_device_create(ohmd_context *ctx, bool no_hmds, struct xrt_device **out_xdevs);
 
 #define OHMD_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
 #define OHMD_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)

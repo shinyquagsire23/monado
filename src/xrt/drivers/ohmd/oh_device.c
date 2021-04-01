@@ -10,6 +10,7 @@
 
 #include "math/m_mathinclude.h"
 #include "xrt/xrt_config_os.h"
+#include "xrt/xrt_prober.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,9 +41,62 @@
 // directly retrieved?
 DEBUG_GET_ONCE_BOOL_OPTION(ohmd_finite_diff, "OHMD_ALLOW_FINITE_DIFF", true)
 DEBUG_GET_ONCE_LOG_OPTION(ohmd_log, "OHMD_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_BOOL_OPTION(ohmd_external, "OHMD_EXTERNAL_DRIVER", false)
 
 // Define this if you have the appropriately hacked-up OpenHMD version.
 #undef OHMD_HAVE_ANG_VEL
+
+enum input_indices
+{
+	// khronos simple inputs for generic controllers
+	SIMPLE_SELECT_CLICK = 0,
+	SIMPLE_MENU_CLICK,
+	SIMPLE_GRIP_POSE,
+	SIMPLE_AIM_POSE,
+
+	// longest list of aliased enums has to start last for INPUT_INDICES_LAST to get the biggest value
+	OCULUS_TOUCH_X_CLICK = 0,
+	OCULUS_TOUCH_X_TOUCH,
+	OCULUS_TOUCH_Y_CLICK,
+	OCULUS_TOUCH_Y_TOUCH,
+	OCULUS_TOUCH_MENU_CLICK,
+	OCULUS_TOUCH_A_CLICK,
+	OCULUS_TOUCH_A_TOUCH,
+	OCULUS_TOUCH_B_CLICK,
+	OCULUS_TOUCH_B_TOUCH,
+	OCULUS_TOUCH_SYSTEM_CLICK,
+	OCULUS_TOUCH_SQUEEZE_VALUE,
+	OCULUS_TOUCH_TRIGGER_TOUCH,
+	OCULUS_TOUCH_TRIGGER_VALUE,
+	OCULUS_TOUCH_THUMBSTICK_CLICK,
+	OCULUS_TOUCH_THUMBSTICK_TOUCH,
+	OCULUS_TOUCH_THUMBSTICK,
+	OCULUS_TOUCH_THUMBREST_TOUCH,
+	OCULUS_TOUCH_GRIP_POSE,
+	OCULUS_TOUCH_AIM_POSE,
+
+	INPUT_INDICES_LAST
+};
+#define SET_TOUCH_INPUT(NAME) (ohd->base.inputs[OCULUS_TOUCH_##NAME].name = XRT_INPUT_TOUCH_##NAME)
+
+// all OpenHMD controls are floats, even "digital" controls.
+// this means a trigger can be fed by a discrete button or by a pullable [0,1] analog trigger.
+// in case of not so good calibrated triggers we may not reach 1.0
+#define PRESS_FLOAT_THRESHOLD 0.95
+#define FLOAT_TO_DIGITAL_THRESHOLD 0.5
+
+// one mapping for each of enum ohmd_control_hint
+#define CONTROL_MAPPING_SIZE 16
+
+// generic controllers are mapped to the khronos simple profile
+// touch controllers input mappings are special cased
+enum openhmd_device_type
+{
+	OPENHMD_GENERIC_HMD,
+	OPENHMD_GENERIC_CONTROLLER,
+	OPENHMD_OCULUS_RIFT_HMD,
+	OPENHMD_OCULUS_RIFT_CONTROLLER,
+};
 
 struct openhmd_values
 {
@@ -51,6 +105,18 @@ struct openhmd_values
 	struct xrt_vec2 lens_center;
 	struct xrt_vec2 viewport_scale;
 	float warp_scale;
+};
+
+struct oh_device;
+struct oh_system
+{
+	struct xrt_tracking_origin base;
+	struct oh_device *devices[XRT_MAX_DEVICES_PER_PROBE];
+
+	//! index into oh_system::devices
+	int hmd_idx;
+	int left_idx;
+	int right_idx;
 };
 
 /*!
@@ -75,6 +141,27 @@ struct oh_device
 		struct u_vive_values vive[2];
 		struct openhmd_values openhmd[2];
 	} distortion;
+
+	struct oh_system *sys;
+
+
+	enum openhmd_device_type ohmd_device_type;
+
+	// what function controls serve.
+	int controls_fn[64];
+
+	// whether controls are digital or analog.
+	// unused because the OpenXR interaction profile forces the type.
+	int controls_types[64];
+
+	//! maps OpenHMD control hint enum to the corresponding index into base.inputs
+	enum input_indices controls_mapping[CONTROL_MAPPING_SIZE];
+
+	// For touch controller we map an analog trigger to a float interaction profile input.
+	// For simple controller we map a potentially analog trigger to a bool input.
+	bool make_trigger_digital;
+
+	float last_control_state[256];
 };
 
 static inline struct oh_device *
@@ -88,21 +175,154 @@ oh_device_destroy(struct xrt_device *xdev)
 {
 	struct oh_device *ohd = oh_device(xdev);
 
-	// Remove the variable tracking.
-	u_var_remove_root(ohd);
-
 	if (ohd->dev != NULL) {
 		ohmd_close_device(ohd->dev);
 		ohd->dev = NULL;
 	}
 
+	bool all_null = true;
+	for (int i = 0; i < XRT_MAX_DEVICES_PER_PROBE; i++) {
+		if (ohd->sys->devices[i] == ohd) {
+			ohd->sys->devices[i] = NULL;
+		}
+
+		if (ohd->sys->devices[i] != NULL) {
+			all_null = false;
+		}
+	}
+
+	if (all_null) {
+		// Remove the variable tracking.
+		u_var_remove_root(ohd->sys);
+
+		free(ohd->sys);
+	}
+
 	u_device_free(&ohd->base);
+}
+
+#define CASE_VEC1(OHMD_CONTROL)                                                                                        \
+	case OHMD_CONTROL:                                                                                             \
+		if (ohd->controls_mapping[OHMD_CONTROL] == 0) {                                                        \
+			break;                                                                                         \
+		}                                                                                                      \
+		if (control_state[i] != ohd->last_control_state[i]) {                                                  \
+			ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].value.vec1.x = control_state[i];         \
+			ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].timestamp = ts;                          \
+		}                                                                                                      \
+		break;
+
+#define CASE_VEC1_OR_DIGITAL(OHMD_CONTROL, MAKE_DIGITAL)                                                               \
+	case OHMD_CONTROL:                                                                                             \
+		if (ohd->controls_mapping[OHMD_CONTROL] == 0) {                                                        \
+			break;                                                                                         \
+		}                                                                                                      \
+		if (MAKE_DIGITAL) {                                                                                    \
+			if ((control_state[i] > FLOAT_TO_DIGITAL_THRESHOLD) !=                                         \
+			    (ohd->last_control_state[i] > FLOAT_TO_DIGITAL_THRESHOLD)) {                               \
+				ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].value.vec1.x =                   \
+				    control_state[i] > FLOAT_TO_DIGITAL_THRESHOLD;                                     \
+				ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].timestamp = ts;                  \
+			}                                                                                              \
+		} else {                                                                                               \
+			if (control_state[i] != ohd->last_control_state[i]) {                                          \
+				ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].value.vec1.x = control_state[i]; \
+				ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].timestamp = ts;                  \
+			}                                                                                              \
+		}                                                                                                      \
+		break;
+
+#define CASE_DIGITAL(OHMD_CONTROL, THRESHOLD)                                                                          \
+	case OHMD_CONTROL:                                                                                             \
+		if (ohd->controls_mapping[OHMD_CONTROL] == 0) {                                                        \
+			break;                                                                                         \
+		}                                                                                                      \
+		if (control_state[i] != ohd->last_control_state[i]) {                                                  \
+			ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].value.boolean =                          \
+			    control_state[i] > THRESHOLD;                                                              \
+			ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].timestamp = ts;                          \
+		}                                                                                                      \
+		break;
+
+#define CASE_VEC2_X(OHMD_CONTROL)                                                                                      \
+	case OHMD_CONTROL:                                                                                             \
+		if (ohd->controls_mapping[OHMD_CONTROL] == 0) {                                                        \
+			break;                                                                                         \
+		}                                                                                                      \
+		if (control_state[i] != ohd->last_control_state[i]) {                                                  \
+			ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].value.vec2.x = control_state[i];         \
+			ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].timestamp = ts;                          \
+		}                                                                                                      \
+		break;
+
+#define CASE_VEC2_Y(OHMD_CONTROL)                                                                                      \
+	case OHMD_CONTROL:                                                                                             \
+		if (ohd->controls_mapping[OHMD_CONTROL] == 0) {                                                        \
+			break;                                                                                         \
+		}                                                                                                      \
+		if (control_state[i] != ohd->last_control_state[i]) {                                                  \
+			ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].value.vec2.y = control_state[i];         \
+			ohd->base.inputs[ohd->controls_mapping[OHMD_CONTROL]].timestamp = ts;                          \
+		}                                                                                                      \
+		break;
+
+static void
+update_ohmd_controller(struct oh_device *ohd, int control_count, float *control_state)
+{
+	timepoint_ns ts = os_monotonic_get_ns();
+	for (int i = 0; i < control_count; i++) {
+		switch (ohd->controls_fn[i]) {
+			// CASE macro does nothing, if ohd->controls_mapping[OHMD_CONTROL] has not been assigned
+			CASE_VEC1_OR_DIGITAL(OHMD_TRIGGER, ohd->make_trigger_digital);
+			CASE_DIGITAL(OHMD_TRIGGER_CLICK, PRESS_FLOAT_THRESHOLD);
+			CASE_VEC1(OHMD_SQUEEZE);
+			CASE_DIGITAL(OHMD_MENU, PRESS_FLOAT_THRESHOLD);
+			CASE_DIGITAL(OHMD_HOME, PRESS_FLOAT_THRESHOLD);
+			CASE_VEC2_X(OHMD_ANALOG_X);
+			CASE_VEC2_Y(OHMD_ANALOG_Y);
+			CASE_DIGITAL(OHMD_ANALOG_PRESS, PRESS_FLOAT_THRESHOLD);
+			CASE_DIGITAL(OHMD_BUTTON_A, PRESS_FLOAT_THRESHOLD);
+			CASE_DIGITAL(OHMD_BUTTON_B, PRESS_FLOAT_THRESHOLD);
+			CASE_DIGITAL(OHMD_BUTTON_X, PRESS_FLOAT_THRESHOLD);
+			CASE_DIGITAL(OHMD_BUTTON_Y, PRESS_FLOAT_THRESHOLD);
+			CASE_DIGITAL(OHMD_VOLUME_PLUS, PRESS_FLOAT_THRESHOLD);
+			CASE_DIGITAL(OHMD_VOLUME_MINUS, PRESS_FLOAT_THRESHOLD);
+			CASE_DIGITAL(OHMD_MIC_MUTE, PRESS_FLOAT_THRESHOLD);
+		}
+	}
 }
 
 static void
 oh_device_update_inputs(struct xrt_device *xdev)
 {
-	// Empty
+	struct oh_device *ohd = oh_device(xdev);
+
+	int control_count;
+	float control_state[256];
+
+	ohmd_device_geti(ohd->dev, OHMD_CONTROL_COUNT, &control_count);
+	if (control_count > 64)
+		control_count = 64;
+
+	ohmd_device_getf(ohd->dev, OHMD_CONTROLS_STATE, control_state);
+
+	if (ohd->ohmd_device_type == OPENHMD_OCULUS_RIFT_CONTROLLER ||
+	    ohd->ohmd_device_type == OPENHMD_GENERIC_CONTROLLER) {
+		update_ohmd_controller(ohd, control_count, control_state);
+	}
+
+	for (int i = 0; i < 256; i++) {
+		ohd->last_control_state[i] = control_state[i];
+	}
+}
+
+static void
+oh_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
+{
+	struct oh_device *ohd = oh_device(xdev);
+	(void)ohd;
+
+	//! @todo OpenHMD haptic API not finished
 }
 
 static void
@@ -115,7 +335,13 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 	struct xrt_quat quat = {0.f, 0.f, 0.f, 1.f};
 	struct xrt_vec3 pos = {0.f, 0.f, 0.f};
 
-	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
+	// support generic head pose for all hmds,
+	// support rift poses for rift controllers, and simple poses for generic controller
+	if (name != XRT_INPUT_GENERIC_HEAD_POSE &&
+	    (ohd->ohmd_device_type == OPENHMD_OCULUS_RIFT_CONTROLLER &&
+	     (name != XRT_INPUT_TOUCH_AIM_POSE && name != XRT_INPUT_TOUCH_GRIP_POSE)) &&
+	    ohd->ohmd_device_type == OPENHMD_GENERIC_CONTROLLER &&
+	    (name != XRT_INPUT_SIMPLE_AIM_POSE && name != XRT_INPUT_SIMPLE_GRIP_POSE)) {
 		OHMD_ERROR(ohd, "unknown input name");
 		return;
 	}
@@ -160,7 +386,7 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 		 * USB data and use that instead.
 		 */
 		*out_relation = ohd->last_relation;
-		OHMD_TRACE(ohd, "GET_TRACKED_POSE - no new data");
+		OHMD_TRACE(ohd, "GET_TRACKED_POSE (%s) - no new data", ohd->base.str);
 		return;
 	}
 
@@ -192,10 +418,11 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 		out_relation->relation_flags = (enum xrt_space_relation_flags)(
 		    out_relation->relation_flags | XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
 
-		OHMD_TRACE(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f) (%f, %f, %f)", quat.x, quat.y, quat.z, quat.w,
-		           ang_vel.x, ang_vel.y, ang_vel.z);
+		OHMD_TRACE(ohd, "GET_TRACKED_POSE (%s) (%f, %f, %f, %f) (%f, %f, %f)", ohd->base.str, quat.x, quat.y,
+		           quat.z, quat.w, ang_vel.x, ang_vel.y, ang_vel.z);
 	} else {
-		OHMD_TRACE(ohd, "GET_TRACKED_POSE (%f, %f, %f, %f)", quat.x, quat.y, quat.z, quat.w);
+		OHMD_TRACE(ohd, "GET_TRACKED_POSE (%s) (%f, %f, %f, %f)", ohd->base.str, quat.x, quat.y, quat.z,
+		           quat.w);
 	}
 
 	// Update state within driver
@@ -284,21 +511,21 @@ struct device_info
 };
 
 static struct device_info
-get_info(struct oh_device *ohd, const char *prod)
+get_info(ohmd_device *dev, const char *prod)
 {
 	struct device_info info = {0};
 
 	// clang-format off
-	ohmd_device_getf(ohd->dev, OHMD_SCREEN_HORIZONTAL_SIZE, &info.display.w_meters);
-	ohmd_device_getf(ohd->dev, OHMD_SCREEN_VERTICAL_SIZE, &info.display.h_meters);
-	ohmd_device_getf(ohd->dev, OHMD_LENS_HORIZONTAL_SEPARATION, &info.lens_horizontal_separation);
-	ohmd_device_getf(ohd->dev, OHMD_LENS_VERTICAL_POSITION, &info.lens_vertical_position);
-	ohmd_device_getf(ohd->dev, OHMD_LEFT_EYE_FOV, &info.views[0].fov);
-	ohmd_device_getf(ohd->dev, OHMD_RIGHT_EYE_FOV, &info.views[1].fov);
-	ohmd_device_geti(ohd->dev, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &info.display.w_pixels);
-	ohmd_device_geti(ohd->dev, OHMD_SCREEN_VERTICAL_RESOLUTION, &info.display.h_pixels);
-	ohmd_device_getf(ohd->dev, OHMD_UNIVERSAL_DISTORTION_K, &info.pano_distortion_k[0]);
-	ohmd_device_getf(ohd->dev, OHMD_UNIVERSAL_ABERRATION_K, &info.pano_aberration_k[0]);
+	ohmd_device_getf(dev, OHMD_SCREEN_HORIZONTAL_SIZE, &info.display.w_meters);
+	ohmd_device_getf(dev, OHMD_SCREEN_VERTICAL_SIZE, &info.display.h_meters);
+	ohmd_device_getf(dev, OHMD_LENS_HORIZONTAL_SEPARATION, &info.lens_horizontal_separation);
+	ohmd_device_getf(dev, OHMD_LENS_VERTICAL_POSITION, &info.lens_vertical_position);
+	ohmd_device_getf(dev, OHMD_LEFT_EYE_FOV, &info.views[0].fov);
+	ohmd_device_getf(dev, OHMD_RIGHT_EYE_FOV, &info.views[1].fov);
+	ohmd_device_geti(dev, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &info.display.w_pixels);
+	ohmd_device_geti(dev, OHMD_SCREEN_VERTICAL_RESOLUTION, &info.display.h_pixels);
+	ohmd_device_getf(dev, OHMD_UNIVERSAL_DISTORTION_K, &info.pano_distortion_k[0]);
+	ohmd_device_getf(dev, OHMD_UNIVERSAL_ABERRATION_K, &info.pano_aberration_k[0]);
 
 	// Default to 90FPS
 	info.display.nominal_frame_interval_ns =
@@ -415,10 +642,10 @@ get_info(struct oh_device *ohd, const char *prod)
 	if (info.quirks.rotate_screen_right_after) {
 		// OpenHMD describes the logical orintation not the physical.
 		// clang-format off
-		ohmd_device_getf(ohd->dev, OHMD_SCREEN_HORIZONTAL_SIZE, &info.display.h_meters);
-		ohmd_device_getf(ohd->dev, OHMD_SCREEN_VERTICAL_SIZE, &info.display.w_meters);
-		ohmd_device_geti(ohd->dev, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &info.display.h_pixels);
-		ohmd_device_geti(ohd->dev, OHMD_SCREEN_VERTICAL_RESOLUTION, &info.display.w_pixels);
+		ohmd_device_getf(dev, OHMD_SCREEN_HORIZONTAL_SIZE, &info.display.h_meters);
+		ohmd_device_getf(dev, OHMD_SCREEN_VERTICAL_SIZE, &info.display.w_meters);
+		ohmd_device_geti(dev, OHMD_SCREEN_HORIZONTAL_RESOLUTION, &info.display.h_pixels);
+		ohmd_device_geti(dev, OHMD_SCREEN_VERTICAL_RESOLUTION, &info.display.w_pixels);
 		// clang-format on
 	}
 
@@ -493,11 +720,19 @@ swap(int *a, int *b)
 	*b = temp;
 }
 
-struct xrt_device *
-oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
+static struct oh_device *
+create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 {
-	enum u_device_alloc_flags flags =
-	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	const char *prod = ohmd_list_gets(ctx, device_idx, OHMD_PRODUCT);
+	ohmd_device *dev = ohmd_list_open_device(ctx, device_idx);
+	if (dev == NULL) {
+		return NULL;
+	}
+
+
+	const struct device_info info = get_info(dev, prod);
+
+	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_HMD;
 	struct oh_device *ohd = U_DEVICE_ALLOCATE(struct oh_device, flags, 1, 0);
 	ohd->base.update_inputs = oh_device_update_inputs;
 	ohd->base.get_tracked_pose = oh_device_get_tracked_pose;
@@ -509,11 +744,14 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 	ohd->dev = dev;
 	ohd->ll = debug_get_log_option_ohmd_log();
 	ohd->enable_finite_difference = debug_get_bool_option_ohmd_finite_diff();
+	if (strcmp(prod, "Rift (CV1)") == 0 || strcmp(prod, "Rift S") == 0) {
+		ohd->ohmd_device_type = OPENHMD_OCULUS_RIFT_HMD;
+	} else {
+		ohd->ohmd_device_type = OPENHMD_GENERIC_HMD;
+	}
 
 	snprintf(ohd->base.str, XRT_DEVICE_NAME_LEN, "%s (OpenHMD)", prod);
 	snprintf(ohd->base.serial, XRT_DEVICE_NAME_LEN, "%s (OpenHMD)", prod);
-
-	const struct device_info info = get_info(ohd, prod);
 
 	{
 		/* right eye */
@@ -563,20 +801,20 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 	ohd->base.hmd->views[1].rot = u_device_rotation_ident;
 
 	OHMD_DEBUG(ohd,
-	         "Display/viewport/offset before rotation %dx%d/%dx%d/%dx%d, "
-	         "%dx%d/%dx%d/%dx%d",
-	         ohd->base.hmd->views[0].display.w_pixels,
-	         ohd->base.hmd->views[0].display.h_pixels,
-	         ohd->base.hmd->views[0].viewport.w_pixels,
-	         ohd->base.hmd->views[0].viewport.h_pixels,
-	         ohd->base.hmd->views[0].viewport.x_pixels,
-	         ohd->base.hmd->views[0].viewport.y_pixels,
-	         ohd->base.hmd->views[1].display.w_pixels,
-	         ohd->base.hmd->views[1].display.h_pixels,
-	         ohd->base.hmd->views[1].viewport.w_pixels,
-	         ohd->base.hmd->views[1].viewport.h_pixels,
-	         ohd->base.hmd->views[0].viewport.x_pixels,
-	         ohd->base.hmd->views[0].viewport.y_pixels);
+			   "Display/viewport/offset before rotation %dx%d/%dx%d/%dx%d, "
+			   "%dx%d/%dx%d/%dx%d",
+			ohd->base.hmd->views[0].display.w_pixels,
+			ohd->base.hmd->views[0].display.h_pixels,
+			ohd->base.hmd->views[0].viewport.w_pixels,
+			ohd->base.hmd->views[0].viewport.h_pixels,
+			ohd->base.hmd->views[0].viewport.x_pixels,
+			ohd->base.hmd->views[0].viewport.y_pixels,
+			ohd->base.hmd->views[1].display.w_pixels,
+			ohd->base.hmd->views[1].display.h_pixels,
+			ohd->base.hmd->views[1].viewport.w_pixels,
+			ohd->base.hmd->views[1].viewport.h_pixels,
+			ohd->base.hmd->views[0].viewport.x_pixels,
+			ohd->base.hmd->views[0].viewport.y_pixels);
 
 	for (int view = 0; view < 2; view++) {
 		ohd->distortion.openhmd[view].hmd_warp_param[0] = info.pano_distortion_k[0];
@@ -780,8 +1018,276 @@ oh_device_create(ohmd_context *ctx, ohmd_device *dev, const char *prod)
 		u_device_dump_config(&ohd->base, __func__, prod);
 	}
 
-	u_var_add_root(ohd, "OpenHMD Wrapper", true);
-	u_var_add_ro_text(ohd, ohd->base.str, "Card");
+	ohd->base.orientation_tracking_supported = (device_flags & OHMD_DEVICE_FLAGS_ROTATIONAL_TRACKING) != 0;
+	ohd->base.position_tracking_supported = (device_flags & OHMD_DEVICE_FLAGS_POSITIONAL_TRACKING) != 0;
+	ohd->base.device_type = XRT_DEVICE_TYPE_HMD;
 
-	return &ohd->base;
+
+	if (info.quirks.delay_after_initialization) {
+		unsigned int time_to_sleep = 1;
+		do {
+			//! @todo convert to os_nanosleep
+			time_to_sleep = sleep(time_to_sleep);
+		} while (time_to_sleep);
+	}
+
+	if (ohd->ll <= U_LOGGING_DEBUG) {
+		u_device_dump_config(&ohd->base, __func__, prod);
+	}
+
+	return ohd;
+}
+
+static struct oh_device *
+create_controller(ohmd_context *ctx, int device_idx, int device_flags, enum xrt_device_type device_type)
+{
+	const char *prod = ohmd_list_gets(ctx, device_idx, OHMD_PRODUCT);
+	ohmd_device *dev = ohmd_list_open_device(ctx, device_idx);
+	if (dev == NULL) {
+		return 0;
+	}
+
+	bool oculus_touch = false;
+
+	int num_inputs = 1;
+	int num_outputs = 0;
+
+	if (strcmp(prod, "Rift (CV1): Right Controller") == 0 || strcmp(prod, "Rift (CV1): Left Controller") == 0 ||
+	    strcmp(prod, "Rift S: Right Controller") == 0 || strcmp(prod, "Rift S: Left Controller") == 0) {
+		oculus_touch = true;
+
+		num_inputs = INPUT_INDICES_LAST;
+		num_outputs = 1;
+	}
+
+	enum u_device_alloc_flags flags = 0;
+	struct oh_device *ohd = U_DEVICE_ALLOCATE(struct oh_device, flags, num_inputs, num_outputs);
+	ohd->base.update_inputs = oh_device_update_inputs;
+	ohd->base.set_output = oh_device_set_output;
+	ohd->base.get_tracked_pose = oh_device_get_tracked_pose;
+	ohd->base.get_view_pose = oh_device_get_view_pose;
+	ohd->base.destroy = oh_device_destroy;
+	if (oculus_touch) {
+		ohd->ohmd_device_type = OPENHMD_OCULUS_RIFT_CONTROLLER;
+		ohd->base.name = XRT_DEVICE_TOUCH_CONTROLLER;
+	} else {
+		ohd->ohmd_device_type = OPENHMD_GENERIC_CONTROLLER;
+		ohd->base.name = XRT_DEVICE_GENERIC_HMD; //! @todo generic tracker
+	}
+	ohd->ctx = ctx;
+	ohd->dev = dev;
+	ohd->ll = debug_get_log_option_ohmd_log();
+	ohd->enable_finite_difference = debug_get_bool_option_ohmd_finite_diff();
+
+	for (int i = 0; i < CONTROL_MAPPING_SIZE; i++) {
+		ohd->controls_mapping[i] = 0;
+	}
+
+	if (oculus_touch) {
+		SET_TOUCH_INPUT(X_CLICK);
+		SET_TOUCH_INPUT(X_TOUCH);
+		SET_TOUCH_INPUT(Y_CLICK);
+		SET_TOUCH_INPUT(Y_TOUCH);
+		SET_TOUCH_INPUT(MENU_CLICK);
+		SET_TOUCH_INPUT(A_CLICK);
+		SET_TOUCH_INPUT(A_TOUCH);
+		SET_TOUCH_INPUT(B_CLICK);
+		SET_TOUCH_INPUT(B_TOUCH);
+		SET_TOUCH_INPUT(SYSTEM_CLICK);
+		SET_TOUCH_INPUT(SQUEEZE_VALUE);
+		SET_TOUCH_INPUT(TRIGGER_TOUCH);
+		SET_TOUCH_INPUT(TRIGGER_VALUE);
+		SET_TOUCH_INPUT(THUMBSTICK_CLICK);
+		SET_TOUCH_INPUT(THUMBSTICK_TOUCH);
+		SET_TOUCH_INPUT(THUMBSTICK);
+		SET_TOUCH_INPUT(THUMBREST_TOUCH);
+		SET_TOUCH_INPUT(GRIP_POSE);
+		SET_TOUCH_INPUT(AIM_POSE);
+
+		ohd->make_trigger_digital = false;
+
+		ohd->base.outputs[0].name = XRT_OUTPUT_NAME_TOUCH_HAPTIC;
+
+		ohd->controls_mapping[OHMD_TRIGGER] = OCULUS_TOUCH_TRIGGER_VALUE;
+		ohd->controls_mapping[OHMD_SQUEEZE] = OCULUS_TOUCH_SQUEEZE_VALUE;
+		ohd->controls_mapping[OHMD_MENU] = OCULUS_TOUCH_MENU_CLICK;
+		ohd->controls_mapping[OHMD_HOME] = OCULUS_TOUCH_SYSTEM_CLICK;
+		ohd->controls_mapping[OHMD_ANALOG_X] = OCULUS_TOUCH_THUMBSTICK;
+		ohd->controls_mapping[OHMD_ANALOG_Y] = OCULUS_TOUCH_THUMBSTICK;
+		ohd->controls_mapping[OHMD_ANALOG_PRESS] = OCULUS_TOUCH_THUMBSTICK_CLICK;
+		ohd->controls_mapping[OHMD_BUTTON_A] = OCULUS_TOUCH_A_CLICK;
+		ohd->controls_mapping[OHMD_BUTTON_B] = OCULUS_TOUCH_B_CLICK;
+		ohd->controls_mapping[OHMD_BUTTON_X] = OCULUS_TOUCH_X_CLICK;
+		ohd->controls_mapping[OHMD_BUTTON_Y] = OCULUS_TOUCH_Y_CLICK;
+	} else {
+		ohd->base.inputs[SIMPLE_SELECT_CLICK].name = XRT_INPUT_SIMPLE_SELECT_CLICK;
+		ohd->base.inputs[SIMPLE_MENU_CLICK].name = XRT_INPUT_SIMPLE_MENU_CLICK;
+		ohd->base.inputs[SIMPLE_GRIP_POSE].name = XRT_INPUT_SIMPLE_GRIP_POSE;
+		ohd->base.inputs[SIMPLE_AIM_POSE].name = XRT_INPUT_SIMPLE_AIM_POSE;
+
+		// XRT_INPUT_SIMPLE_SELECT_CLICK is digital input.
+		// in case the hardware is an analog trigger, change the input after a half pulled trigger.
+		ohd->make_trigger_digital = true;
+
+		ohd->base.outputs[0].name = XRT_OUTPUT_NAME_SIMPLE_VIBRATION;
+
+		ohd->controls_mapping[OHMD_TRIGGER] = SIMPLE_SELECT_CLICK;
+		ohd->controls_mapping[OHMD_MENU] = SIMPLE_MENU_CLICK;
+	}
+
+	snprintf(ohd->base.str, XRT_DEVICE_NAME_LEN, "%s (OpenHMD)", prod);
+	snprintf(ohd->base.serial, XRT_DEVICE_NAME_LEN, "%s (OpenHMD)", prod);
+
+	ohd->base.orientation_tracking_supported = (device_flags & OHMD_DEVICE_FLAGS_ROTATIONAL_TRACKING) != 0;
+	ohd->base.position_tracking_supported = (device_flags & OHMD_DEVICE_FLAGS_POSITIONAL_TRACKING) != 0;
+	ohd->base.device_type = device_type;
+
+	ohmd_device_geti(ohd->dev, OHMD_CONTROLS_HINTS, ohd->controls_fn);
+	ohmd_device_geti(ohd->dev, OHMD_CONTROLS_TYPES, ohd->controls_types);
+
+	OHMD_DEBUG(ohd, "Created %s controller",
+	           device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER ? "left" : "right");
+
+	return ohd;
+}
+
+int
+oh_device_create(ohmd_context *ctx, bool no_hmds, struct xrt_device **out_xdevs)
+{
+	int hmd_idx = -1;
+	int hmd_flags = 0;
+	int left_idx = -1;
+	int left_flags = 0;
+	int right_idx = -1;
+	int right_flags = 0;
+
+	if (no_hmds) {
+		return 0;
+	}
+
+	/* Probe for devices */
+	int num_devices = ohmd_ctx_probe(ctx);
+
+	/* Then loop */
+	for (int i = 0; i < num_devices; i++) {
+		int device_class = 0, device_flags = 0;
+		const char *prod = NULL;
+
+		ohmd_list_geti(ctx, i, OHMD_DEVICE_CLASS, &device_class);
+		ohmd_list_geti(ctx, i, OHMD_DEVICE_FLAGS, &device_flags);
+
+		if (device_class == OHMD_DEVICE_CLASS_CONTROLLER) {
+			if ((device_flags & OHMD_DEVICE_FLAGS_LEFT_CONTROLLER) != 0) {
+				if (left_idx != -1) {
+					continue;
+				}
+				U_LOG_D("Selecting left controller idx %i", i);
+				left_idx = i;
+				left_flags = device_flags;
+			}
+			if ((device_flags & OHMD_DEVICE_FLAGS_RIGHT_CONTROLLER) != 0) {
+				if (right_idx != -1) {
+					continue;
+				}
+				U_LOG_D("Selecting right controller idx %i", i);
+				right_idx = i;
+				right_flags = device_flags;
+			}
+
+			continue;
+		}
+
+		if (device_class == OHMD_DEVICE_CLASS_HMD) {
+			if (hmd_idx != -1) {
+				continue;
+			}
+			U_LOG_D("Selecting hmd idx %i", i);
+			hmd_idx = i;
+			hmd_flags = device_flags;
+		}
+
+		if (device_flags & OHMD_DEVICE_FLAGS_NULL_DEVICE) {
+			U_LOG_D("Rejecting device idx %i, is a NULL device.", i);
+			continue;
+		}
+
+		prod = ohmd_list_gets(ctx, i, OHMD_PRODUCT);
+		if (strcmp(prod, "External Device") == 0 && !debug_get_bool_option_ohmd_external()) {
+			U_LOG_D("Rejecting device idx %i, is a External device.", i);
+			continue;
+		}
+
+		if (hmd_idx != -1 && left_idx != -1 && right_idx != -1) {
+			break;
+		}
+	}
+
+
+	// All OpenHMD devices share the same tracking origin.
+	// Default everything to 3dof (NONE), but 6dof when the HMD supports position tracking.
+	//! @todo: support mix of 3dof and 6dof OpenHMD devices
+	struct oh_system *sys = U_TYPED_CALLOC(struct oh_system);
+	sys->base.type = XRT_TRACKING_TYPE_NONE;
+	sys->base.offset.orientation.w = 1.0f;
+	sys->hmd_idx = -1;
+	sys->left_idx = -1;
+	sys->right_idx = -1;
+
+	u_var_add_root(sys, "OpenHMD Wrapper", false);
+
+	int created = 0;
+	if (!no_hmds && hmd_idx != -1) {
+		struct oh_device *hmd = create_hmd(ctx, hmd_idx, hmd_flags);
+		if (hmd) {
+			hmd->sys = sys;
+			hmd->base.tracking_origin = &sys->base;
+
+			sys->hmd_idx = created;
+			sys->devices[sys->hmd_idx] = hmd;
+
+			if (hmd->base.position_tracking_supported) {
+				sys->base.type = XRT_TRACKING_TYPE_OTHER;
+			}
+
+			out_xdevs[created++] = &hmd->base;
+		}
+	}
+
+	if (left_idx != -1) {
+		struct oh_device *left =
+		    create_controller(ctx, left_idx, left_flags, XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER);
+		if (left) {
+			left->sys = sys;
+			left->base.tracking_origin = &sys->base;
+
+			sys->left_idx = created;
+			sys->devices[sys->left_idx] = left;
+
+			out_xdevs[created++] = &left->base;
+		}
+	}
+
+	if (right_idx != -1) {
+		struct oh_device *right =
+		    create_controller(ctx, right_idx, right_flags, XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER);
+		if (right) {
+			right->sys = sys;
+			right->base.tracking_origin = &sys->base;
+
+			sys->right_idx = created;
+			sys->devices[sys->right_idx] = right;
+
+			out_xdevs[created++] = &right->base;
+		}
+	}
+
+	for (int i = 0; i < XRT_MAX_DEVICES_PER_PROBE; i++) {
+		if (sys->devices[i] != NULL) {
+			u_var_add_ro_text(sys, sys->devices[i]->base.str, "OpenHMD Device");
+		}
+	}
+
+	//! @todo initialize more devices like generic trackers (nolo)
+
+	return created;
 }
