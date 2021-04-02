@@ -11,6 +11,8 @@
 
 #include "xrt/xrt_compiler.h"
 #include "os/os_time.h"
+#include "util/u_timing.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,6 +61,16 @@ struct u_rt_helper
 
 	struct
 	{
+		//! App time between wait returning and begin being called.
+		uint64_t cpu_time_ns;
+		//! Time between begin and frame rendering completeing.
+		uint64_t draw_time_ns;
+		//! Exrta time between end of draw time and when the compositor wakes up.
+		uint64_t margin_ns;
+	} app; //!< App statistics.
+
+	struct
+	{
 		//! The last display time that the thing driving this helper got.
 		uint64_t predicted_display_time_ns;
 		//! The last display period the hardware is running at.
@@ -83,33 +95,32 @@ void
 u_rt_helper_client_clear(struct u_rt_helper *urth);
 
 /*!
- * Predict when the client's next rendered frame will be presented, also when
- * the client should be woken up from sleeping, its display period and the
- * minimum display period that the client might have.
+ * Predict when the client's next: rendered frame will be display; when the
+ * client should be woken up from sleeping; and its display period.
  *
  * This is called from `xrWaitFrame`, but it does not do any waiting, the caller
  * should wait till `out_wake_up_time`.
+ *
+ * @param      urth                         Render timing helper.
+ * @param[out] out_frame_id                 Frame ID of this predicted frame.
+ * @param[out] out_wake_up_time             When the client should be woken up.
+ * @param[out] out_predicted_display_time   Predicted display time.
+ * @param[out] out_predicted_display_period Predicted display period.
  */
 void
 u_rt_helper_predict(struct u_rt_helper *urth,
                     int64_t *out_frame_id,
-                    uint64_t *out_predicted_display_time,
                     uint64_t *out_wake_up_time,
-                    uint64_t *out_predicted_display_period,
-                    uint64_t *out_min_display_period);
+                    uint64_t *out_predicted_display_time,
+                    uint64_t *out_predicted_display_period);
 
 /*!
- * Log when the client woke up after sleeping for the time returned in
- * @ref u_rt_helper_predict. This happens inside of `xrWaitFrame`.
+ * Mark a point on the frame's lifetime.
+ *
+ * @see @ref frame-timing.
  */
 void
-u_rt_helper_mark_wait_woke(struct u_rt_helper *urth, int64_t frame_id);
-
-/*!
- * The client has started rendering work, see `xrBeginFrame`.
- */
-void
-u_rt_helper_mark_begin(struct u_rt_helper *urth, int64_t frame_id);
+u_rt_helper_mark(struct u_rt_helper *urth, int64_t frame_id, enum u_timing_point point, uint64_t when_ns);
 
 /*!
  * When a frame has been discarded.

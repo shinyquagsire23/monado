@@ -285,6 +285,40 @@ broadcast_timings(struct multi_system_compositor *msc,
 	os_mutex_unlock(&msc->list_and_timing_lock);
 }
 
+static void
+wait_frame(struct xrt_compositor *xc,
+           int64_t *out_frame_id,
+           uint64_t *out_wake_time_ns,
+           uint64_t *out_predicted_gpu_time_ns,
+           uint64_t *out_predicted_display_time_ns,
+           uint64_t *out_predicted_display_period_ns)
+{
+	COMP_TRACE_MARKER();
+
+	int64_t frame_id = -1;
+	uint64_t wake_up_time_ns = 0;
+
+	xrt_comp_predict_frame(               //
+	    xc,                               //
+	    &frame_id,                        //
+	    &wake_up_time_ns,                 //
+	    out_predicted_gpu_time_ns,        //
+	    out_predicted_display_time_ns,    //
+	    out_predicted_display_period_ns); //
+
+	uint64_t now_ns = os_monotonic_get_ns();
+	if (now_ns < wake_up_time_ns) {
+		os_nanosleep(wake_up_time_ns - now_ns);
+	}
+
+	now_ns = os_monotonic_get_ns();
+
+	xrt_comp_mark_frame(xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, now_ns);
+
+	*out_frame_id = frame_id;
+	*out_wake_time_ns = wake_up_time_ns;
+}
+
 static int
 multi_main_loop(struct multi_system_compositor *msc)
 {
@@ -302,10 +336,18 @@ multi_main_loop(struct multi_system_compositor *msc)
 		os_thread_helper_unlock(&msc->oth);
 
 		int64_t frame_id;
-		uint64_t predicted_display_time_ns;
-		uint64_t predicted_display_period_ns;
+		uint64_t wake_time_ns = 0;
+		uint64_t predicted_gpu_time_ns = 0;
+		uint64_t predicted_display_time_ns = 0;
+		uint64_t predicted_display_period_ns = 0;
 
-		xrt_comp_wait_frame(xc, &frame_id, &predicted_display_time_ns, &predicted_display_period_ns);
+		wait_frame(                        //
+		    xc,                            //
+		    &frame_id,                     //
+		    &wake_time_ns,                 //
+		    &predicted_gpu_time_ns,        //
+		    &predicted_display_time_ns,    //
+		    &predicted_display_period_ns); //
 
 		uint64_t now_ns = os_monotonic_get_ns();
 		uint64_t diff_ns = predicted_display_time_ns - now_ns;

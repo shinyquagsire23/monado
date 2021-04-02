@@ -197,15 +197,12 @@ multi_compositor_predict_frame(struct xrt_compositor *xc,
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
 
-	uint64_t min_display_period = 0;
-
-	u_rt_helper_predict(                 //
-	    &mc->urth,                       //
-	    out_frame_id,                    //
-	    out_predicted_display_time_ns,   //
-	    out_wake_time_ns,                //
-	    out_predicted_display_period_ns, //
-	    &min_display_period);            //
+	u_rt_helper_predict(                  //
+	    &mc->urth,                        //
+	    out_frame_id,                     //
+	    out_wake_time_ns,                 //
+	    out_predicted_display_time_ns,    //
+	    out_predicted_display_period_ns); //
 
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
@@ -225,7 +222,8 @@ multi_compositor_mark_frame(struct xrt_compositor *xc,
 	switch (point) {
 	case XRT_COMPOSITOR_FRAME_POINT_WOKE:
 		os_mutex_lock(&mc->msc->list_and_timing_lock);
-		u_rt_helper_mark_wait_woke(&mc->urth, frame_id);
+		uint64_t now_ns = os_monotonic_get_ns();
+		u_rt_helper_mark(&mc->urth, frame_id, U_TIMING_POINT_WAKE_UP, now_ns);
 		os_mutex_unlock(&mc->msc->list_and_timing_lock);
 		break;
 	default: assert(false);
@@ -256,7 +254,8 @@ multi_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 	struct multi_compositor *mc = multi_compositor(xc);
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
-	u_rt_helper_mark_begin(&mc->urth, frame_id);
+	uint64_t now_ns = os_monotonic_get_ns();
+	u_rt_helper_mark(&mc->urth, frame_id, U_TIMING_POINT_BEGIN, now_ns);
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	return XRT_SUCCESS;

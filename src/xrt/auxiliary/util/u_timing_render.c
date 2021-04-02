@@ -42,25 +42,57 @@ min_period(const struct u_rt_helper *urth)
 }
 
 static uint64_t
-last_displayed(const struct u_rt_helper *urth)
+last_sample_displayed(const struct u_rt_helper *urth)
 {
 	return urth->last_input.predicted_display_time_ns;
 }
 
 static uint64_t
-get_last_input_plus_period_at_least_greater_then(struct u_rt_helper *urth, uint64_t then_ns)
+last_return_predicted_display(const struct u_rt_helper *urth)
 {
-	uint64_t val = last_displayed(urth);
+	return urth->last_returned_ns;
+}
 
-	if (min_period(urth) == 0) {
-		return then_ns;
+static uint64_t
+total_app_time_ns(const struct u_rt_helper *urth)
+{
+	return urth->app.cpu_time_ns + urth->app.draw_time_ns;
+}
+
+static uint64_t
+total_app_and_compositor_time_ns(const struct u_rt_helper *urth)
+{
+	return total_app_time_ns(urth) + urth->app.margin_ns + urth->last_input.extra_ns;
+}
+
+static uint64_t
+predict_display_time(struct u_rt_helper *urth)
+{
+	// Now
+	uint64_t now_ns = os_monotonic_get_ns();
+
+	// Error checking.
+	uint64_t period_ns = min_period(urth);
+	if (period_ns == 0) {
+		assert(false && "Have not yet received and samples from timing driver.");
+		return now_ns;
 	}
 
-	while (val <= then_ns) {
-		val += min_period(urth);
-		assert(val != 0);
+	// Total app and compositor time to produce a frame
+	uint64_t app_and_compositor_time_ns = total_app_and_compositor_time_ns(urth);
+
+	// Start from the last time that the driver displayed something.
+	uint64_t val = last_sample_displayed(urth);
+
+	// Return a time after the last returned display time.
+	while (val < last_return_predicted_display(urth)) {
+		val += period_ns;
 	}
 
+	// Have to have enough time to perform app work.
+	while ((val - app_and_compositor_time_ns) <= now_ns) {
+		val += period_ns;
+	}
 
 	return val;
 }
@@ -79,6 +111,10 @@ u_rt_helper_client_clear(struct u_rt_helper *urth)
 		urth->frames[i].state = U_RT_READY;
 		urth->frames[i].frame_id = -1;
 	}
+
+	urth->app.cpu_time_ns = U_TIME_1MS_IN_NS * 2;
+	urth->app.draw_time_ns = U_TIME_1MS_IN_NS * 2;
+	urth->app.margin_ns = U_TIME_1MS_IN_NS / 2;
 }
 
 void
@@ -91,31 +127,22 @@ u_rt_helper_init(struct u_rt_helper *urth)
 void
 u_rt_helper_predict(struct u_rt_helper *urth,
                     int64_t *out_frame_id,
-                    uint64_t *predicted_display_time,
-                    uint64_t *wake_up_time,
-                    uint64_t *predicted_display_period,
-                    uint64_t *min_display_period)
+                    uint64_t *out_wake_up_time,
+                    uint64_t *out_predicted_display_time,
+                    uint64_t *out_predicted_display_period)
 {
 	int64_t frame_id = ++urth->frame_counter;
 	*out_frame_id = frame_id;
 
 	DEBUG_PRINT_FRAME_ID();
 
-	uint64_t at_least_ns = os_monotonic_get_ns();
-
-	// Don't return a time before the last returned type.
-	if (at_least_ns < urth->last_returned_ns) {
-		at_least_ns = urth->last_returned_ns;
-	}
-
-	uint64_t predict_ns = get_last_input_plus_period_at_least_greater_then(urth, at_least_ns);
+	uint64_t predict_ns = predict_display_time(urth);
 
 	urth->last_returned_ns = predict_ns;
 
-	*wake_up_time = predict_ns - min_period(urth);
-	*predicted_display_time = predict_ns;
-	*predicted_display_period = min_period(urth);
-	*min_display_period = min_period(urth);
+	*out_wake_up_time = predict_ns - total_app_and_compositor_time_ns(urth);
+	*out_predicted_display_time = predict_ns;
+	*out_predicted_display_period = min_period(urth);
 
 	size_t index = GET_INDEX_FROM_ID(urth, frame_id);
 	assert(urth->frames[index].frame_id == -1);
@@ -134,29 +161,29 @@ u_rt_helper_predict(struct u_rt_helper *urth,
 }
 
 void
-u_rt_helper_mark_wait_woke(struct u_rt_helper *urth, int64_t frame_id)
+u_rt_helper_mark(struct u_rt_helper *urth, int64_t frame_id, enum u_timing_point point, uint64_t when_ns)
 {
 	DEBUG_PRINT_FRAME_ID();
 
 	size_t index = GET_INDEX_FROM_ID(urth, frame_id);
 	assert(urth->frames[index].frame_id == frame_id);
-	assert(urth->frames[index].state == U_RT_PREDICTED);
 
-	urth->frames[index].when.wait_woke_ns = os_monotonic_get_ns();
-	urth->frames[index].state = U_RT_WAIT_LEFT;
-}
+	switch (point) {
+	case U_TIMING_POINT_WAKE_UP:
+		assert(urth->frames[index].state == U_RT_PREDICTED);
 
-void
-u_rt_helper_mark_begin(struct u_rt_helper *urth, int64_t frame_id)
-{
-	DEBUG_PRINT_FRAME_ID();
+		urth->frames[index].when.wait_woke_ns = when_ns;
+		urth->frames[index].state = U_RT_WAIT_LEFT;
+		break;
+	case U_TIMING_POINT_BEGIN:
+		assert(urth->frames[index].state == U_RT_WAIT_LEFT);
 
-	size_t index = GET_INDEX_FROM_ID(urth, frame_id);
-	assert(urth->frames[index].frame_id == frame_id);
-	assert(urth->frames[index].state == U_RT_WAIT_LEFT);
-
-	urth->frames[index].when.begin_ns = os_monotonic_get_ns();
-	urth->frames[index].state = U_RT_BEGUN;
+		urth->frames[index].when.begin_ns = os_monotonic_get_ns();
+		urth->frames[index].state = U_RT_BEGUN;
+		break;
+	case U_TIMING_POINT_SUBMIT:
+	default: assert(false);
+	}
 }
 
 void
