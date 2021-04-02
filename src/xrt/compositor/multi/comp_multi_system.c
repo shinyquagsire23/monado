@@ -271,8 +271,8 @@ broadcast_timings(struct multi_system_compositor *msc,
 			continue;
 		}
 
-		u_rt_helper_new_sample(          //
-		    &mc->urth,                   //
+		u_rt_info(                       //
+		    mc->urt,                     //
 		    predicted_display_time_ns,   //
 		    predicted_display_period_ns, //
 		    diff_ns);                    //

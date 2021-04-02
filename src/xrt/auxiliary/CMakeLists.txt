@@ -152,7 +152,6 @@ set(UTIL_SOURCE_FILES
 	util/u_timing_fake.c
 	util/u_timing_frame.c
 	util/u_timing_render.c
-	util/u_timing_render.h
 	util/u_trace_marker.c
 	util/u_trace_marker.h
 	util/u_var.cpp

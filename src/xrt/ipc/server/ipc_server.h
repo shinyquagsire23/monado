@@ -14,7 +14,6 @@
 #include "xrt/xrt_compiler.h"
 
 #include "util/u_logging.h"
-#include "util/u_timing_render.h"
 
 #include "os/os_threading.h"
 
