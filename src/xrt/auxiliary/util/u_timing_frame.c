@@ -57,6 +57,8 @@ struct frame
 	uint64_t when_began_ns;
 	uint64_t when_submitted_ns;
 	uint64_t when_infoed_ns;
+	uint64_t current_app_time_ns;
+	uint64_t expected_done_time_ns; //!< When we expect the compositor to be done with it's frame.
 	uint64_t desired_present_time_ns;
 	uint64_t predicted_display_time_ns;
 	uint64_t present_margin_ns;
@@ -88,6 +90,11 @@ struct display_timing
 	uint64_t app_time_ns;
 
 	/*!
+	 * The amount of time that the application needs to render frame.
+	 */
+	uint64_t padding_time_ns;
+
+	/*!
 	 * Used to generate frame IDs.
 	 */
 	int64_t next_frame_id;
@@ -111,7 +118,7 @@ struct display_timing
 	/*!
 	 * The target amount of GPU margin we want.
 	 */
-	uint64_t adjust_min_margin_ns;
+	uint64_t min_margin_ns;
 
 	/*!
 	 * Frame store.
@@ -143,6 +150,12 @@ get_procent_of_time(uint64_t time_ns, uint32_t fraction_procent)
 {
 	double fraction = (double)fraction_procent / 100.0;
 	return time_s_to_ns(time_ns_to_s(time_ns) * fraction);
+}
+
+static uint64_t
+calc_total_app_time(struct display_timing *dt)
+{
+	return dt->app_time_ns + dt->min_margin_ns;
 }
 
 static uint64_t
@@ -213,7 +226,6 @@ do_clean_slate_frame(struct display_timing *dt)
 	uint64_t the_time_ns = os_monotonic_get_ns() + dt->frame_period_ns * 10;
 	f->when_predict_ns = now_ns;
 	f->desired_present_time_ns = the_time_ns;
-	f->predicted_display_time_ns = calc_display_time_from_present_time(dt, the_time_ns);
 
 	return f;
 }
@@ -222,7 +234,7 @@ static struct frame *
 walk_forward_through_frames(struct display_timing *dt, uint64_t last_present_time_ns)
 {
 	uint64_t now_ns = os_monotonic_get_ns();
-	uint64_t from_time_ns = now_ns + dt->app_time_ns;
+	uint64_t from_time_ns = now_ns + calc_total_app_time(dt);
 	uint64_t desired_present_time_ns = last_present_time_ns + dt->frame_period_ns;
 
 	while (desired_present_time_ns <= from_time_ns) {
@@ -242,7 +254,6 @@ walk_forward_through_frames(struct display_timing *dt, uint64_t last_present_tim
 	struct frame *f = create_frame(dt, STATE_PREDICTED);
 	f->when_predict_ns = now_ns;
 	f->desired_present_time_ns = desired_present_time_ns;
-	f->predicted_display_time_ns = calc_display_time_from_present_time(dt, desired_present_time_ns);
 
 	return f;
 }
@@ -291,7 +302,9 @@ predict_next_frame(struct display_timing *dt)
 		f = walk_forward_through_frames(dt, last_predicted->predicted_display_time_ns);
 	}
 
-	f->wake_up_time_ns = f->desired_present_time_ns - dt->app_time_ns;
+	f->predicted_display_time_ns = calc_display_time_from_present_time(dt, f->desired_present_time_ns);
+	f->wake_up_time_ns = f->desired_present_time_ns - calc_total_app_time(dt);
+	f->current_app_time_ns = dt->app_time_ns;
 
 	return f;
 }
@@ -315,18 +328,18 @@ adjust_app_time(struct display_timing *dt, struct frame *f)
 		return;
 	}
 
-	// We want the GPU work to stop at adjust_min_margin_ns.
+	// We want the GPU work to stop at min_margin_ns.
 	if (is_within_of_each_other(      //
 	        f->present_margin_ns,     //
-	        dt->adjust_min_margin_ns, //
+	        dt->min_margin_ns, //
 	        dt->adjust_non_miss_ns)) {
 		// Nothing to do, the GPU ended it's work +-adjust_non_miss_ns
-		// of adjust_min_margin_ns before the present started.
+		// of min_margin_ns before the present started.
 		return;
 	}
 
 	// We didn't miss the frame but we were outside the range adjust the app time.
-	if (f->present_margin_ns > dt->adjust_min_margin_ns) {
+	if (f->present_margin_ns > dt->min_margin_ns) {
 		// Approach the present time.
 		dt->app_time_ns -= dt->adjust_non_miss_ns;
 	} else {
@@ -479,20 +492,21 @@ u_frame_timing_display_timing_create(uint64_t estimated_frame_period_ns, struct 
 	// Just a wild guess.
 	dt->present_offset_ns = U_TIME_1MS_IN_NS * 4;
 
-	// Start at 40% of the frame time, will be adjusted.
-	dt->app_time_ns = get_procent_of_time(estimated_frame_period_ns, 40);
-	// Max app time at 80%, write a better compositor.
-	dt->app_time_max_ns = get_procent_of_time(estimated_frame_period_ns, 80);
-	// When missing back off at 10% increments
-	dt->adjust_missed_ns = get_procent_of_time(estimated_frame_period_ns, 10);
-	// When not missing frames but adjusting app time do it at 2% increments
+	// Start at this of frame time.
+	dt->app_time_ns = get_procent_of_time(estimated_frame_period_ns, 10);
+	// Max app time, write a better compositor.
+	dt->app_time_max_ns = get_procent_of_time(estimated_frame_period_ns, 30);
+	// When missing, back off in these increments
+	dt->adjust_missed_ns = get_procent_of_time(estimated_frame_period_ns, 4);
+	// When not missing frames but adjusting app time at these increments
 	dt->adjust_non_miss_ns = get_procent_of_time(estimated_frame_period_ns, 2);
-	// Min margin at 8%
-	dt->adjust_min_margin_ns = get_procent_of_time(estimated_frame_period_ns, 8);
+	// Extra margin that is added to app time.
+	dt->min_margin_ns = get_procent_of_time(estimated_frame_period_ns, 8);
 
 	*out_uft = &dt->base;
 
-	FT_LOG_I("Created display timing");
+	double estimated_frame_period_ms = ns_to_ms(estimated_frame_period_ns);
+	FT_LOG_I("Created display timing (%.2fms)", estimated_frame_period_ms);
 
 	return XRT_SUCCESS;
 }
@@ -509,6 +523,7 @@ u_frame_timing_display_timing_create(uint64_t estimated_frame_period_ns, struct 
 #define TID_INFO 45
 #define TID_FRAME 46
 #define TID_ERROR 47
+#define TID_APP 48
 
 XRT_MAYBE_UNUSED static void
 trace_event(FILE *file, const char *name, uint64_t when_ns)
@@ -659,6 +674,9 @@ trace_frame(FILE *file, struct frame *f)
 	if (f->actual_present_time_ns != f->earliest_present_time_ns) {
 		trace_event_id(file, "flip", f->frame_id, f->actual_present_time_ns);
 	}
+
+	trace_begin_id(file, TID_APP, "app", f->frame_id, "app", f->wake_up_time_ns);
+	trace_end(file, TID_APP, f->wake_up_time_ns + f->current_app_time_ns);
 }
 
 void
@@ -730,5 +748,17 @@ u_timing_frame_write_json_metadata(FILE *file)
 	        "\t\t\t}\n"
 	        "\t\t}",
 	        TID_ERROR);
+	fprintf(file,
+	        ",\n"
+	        "\t\t{\n"
+	        "\t\t\t\"ph\": \"M\",\n"
+	        "\t\t\t\"name\": \"thread_name\",\n"
+	        "\t\t\t\"pid\": 42,\n"
+	        "\t\t\t\"tid\": %u,\n"
+	        "\t\t\t\"args\": {\n"
+	        "\t\t\t\t\"name\": \"6 App time\"\n"
+	        "\t\t\t}\n"
+	        "\t\t}",
+	        TID_APP);
 	fflush(file);
 }
