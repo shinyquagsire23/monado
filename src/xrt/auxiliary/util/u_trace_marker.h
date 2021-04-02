@@ -54,10 +54,10 @@ extern int u_trace_comp_fd;
  */
 
 void
-u_timing_frame_write_json(FILE *file, void *data);
+u_ft_write_json(FILE *file, void *data);
 
 void
-u_timing_frame_write_json_metadata(FILE *file);
+u_ft_write_json_metadata(FILE *file);
 
 
 /*

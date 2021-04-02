@@ -119,14 +119,14 @@ struct u_frame_timing
  * @ingroup aux_timing
  */
 static inline void
-u_frame_timing_predict(struct u_frame_timing *uft,
-                       int64_t *out_frame_id,
-                       uint64_t *out_wake_up_time_ns,
-                       uint64_t *out_desired_present_time_ns,
-                       uint64_t *out_present_slop_ns,
-                       uint64_t *out_predicted_display_time_ns,
-                       uint64_t *out_predicted_display_period_ns,
-                       uint64_t *out_min_display_period_ns)
+u_ft_predict(struct u_frame_timing *uft,
+             int64_t *out_frame_id,
+             uint64_t *out_wake_up_time_ns,
+             uint64_t *out_desired_present_time_ns,
+             uint64_t *out_present_slop_ns,
+             uint64_t *out_predicted_display_time_ns,
+             uint64_t *out_predicted_display_period_ns,
+             uint64_t *out_min_display_period_ns)
 {
 	uft->predict(uft,                             //
 	             out_frame_id,                    //
@@ -147,7 +147,7 @@ u_frame_timing_predict(struct u_frame_timing *uft,
  * @ingroup aux_timing
  */
 static inline void
-u_frame_timing_mark_point(struct u_frame_timing *uft, enum u_timing_point point, int64_t frame_id, uint64_t when_ns)
+u_ft_mark_point(struct u_frame_timing *uft, enum u_timing_point point, int64_t frame_id, uint64_t when_ns)
 {
 	uft->mark_point(uft, point, frame_id, when_ns);
 }
@@ -161,12 +161,12 @@ u_frame_timing_mark_point(struct u_frame_timing *uft, enum u_timing_point point,
  * @ingroup aux_timing
  */
 static inline void
-u_frame_timing_info(struct u_frame_timing *uft,
-                    int64_t frame_id,
-                    uint64_t desired_present_time_ns,
-                    uint64_t actual_present_time_ns,
-                    uint64_t earliest_present_time_ns,
-                    uint64_t present_margin_ns)
+u_ft_info(struct u_frame_timing *uft,
+          int64_t frame_id,
+          uint64_t desired_present_time_ns,
+          uint64_t actual_present_time_ns,
+          uint64_t earliest_present_time_ns,
+          uint64_t present_margin_ns)
 {
 	uft->info(uft, frame_id, desired_present_time_ns, actual_present_time_ns, earliest_present_time_ns,
 	          present_margin_ns);
@@ -182,7 +182,7 @@ u_frame_timing_info(struct u_frame_timing *uft,
  * @ingroup aux_timing
  */
 static inline void
-u_frame_timing_destroy(struct u_frame_timing **uft_ptr)
+u_ft_destroy(struct u_frame_timing **uft_ptr)
 {
 	struct u_frame_timing *uft = *uft_ptr;
 	if (uft == NULL) {
@@ -206,7 +206,7 @@ u_frame_timing_destroy(struct u_frame_timing **uft_ptr)
  * @ingroup aux_timing
  */
 xrt_result_t
-u_frame_timing_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft);
+u_ft_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft);
 
 /*!
  * When you can not get display timing information use this.
@@ -214,7 +214,7 @@ u_frame_timing_display_timing_create(uint64_t estimated_frame_period_ns, struct 
  * @ingroup aux_timing
  */
 xrt_result_t
-u_frame_timing_fake_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft);
+u_ft_fake_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft);
 
 
 #ifdef __cplusplus

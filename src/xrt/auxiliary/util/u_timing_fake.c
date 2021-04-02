@@ -166,7 +166,7 @@ ft_destroy(struct u_frame_timing *uft)
  */
 
 xrt_result_t
-u_frame_timing_fake_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft)
+u_ft_fake_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft)
 {
 	struct fake_timing *ft = U_TYPED_CALLOC(struct fake_timing);
 	ft->base.predict = ft_predict;

@@ -140,7 +140,7 @@ handle_data(const char *rest_of_line, size_t len)
 	}
 
 	switch (type) {
-	case U_TRACE_DATA_TYPE_TIMING_FRAME: u_timing_frame_write_json(t.file, (void *)data); break;
+	case U_TRACE_DATA_TYPE_TIMING_FRAME: u_ft_write_json(t.file, (void *)data); break;
 	default: fprintf(stderr, "%.*s\n", (int)len, rest_of_line); break;
 	}
 }
@@ -268,7 +268,7 @@ trace_pipe(int argc, const char **argv)
 
 	json_w_header();
 
-	u_timing_frame_write_json_metadata(t.file);
+	u_ft_write_json_metadata(t.file);
 
 	P(" :: Looping\n");
 

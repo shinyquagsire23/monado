@@ -329,9 +329,9 @@ adjust_app_time(struct display_timing *dt, struct frame *f)
 	}
 
 	// We want the GPU work to stop at min_margin_ns.
-	if (is_within_of_each_other(      //
-	        f->present_margin_ns,     //
-	        dt->min_margin_ns, //
+	if (is_within_of_each_other(  //
+	        f->present_margin_ns, //
+	        dt->min_margin_ns,    //
 	        dt->adjust_non_miss_ns)) {
 		// Nothing to do, the GPU ended it's work +-adjust_non_miss_ns
 		// of min_margin_ns before the present started.
@@ -480,7 +480,7 @@ dt_destroy(struct u_frame_timing *uft)
 }
 
 xrt_result_t
-u_frame_timing_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft)
+u_ft_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft)
 {
 	struct display_timing *dt = U_TYPED_CALLOC(struct display_timing);
 	dt->base.predict = dt_predict;
@@ -680,13 +680,13 @@ trace_frame(FILE *file, struct frame *f)
 }
 
 void
-u_timing_frame_write_json(FILE *file, void *data)
+u_ft_write_json(FILE *file, void *data)
 {
 	trace_frame(file, (struct frame *)data);
 }
 
 void
-u_timing_frame_write_json_metadata(FILE *file)
+u_ft_write_json_metadata(FILE *file)
 {
 	fprintf(file,
 	        ",\n"
