@@ -35,9 +35,11 @@ struct comp_window_mswin
 
 
 	bool fullscreen_requested;
+	bool should_exit;
 };
 
 static WCHAR szWindowClass[] = L"Monado";
+static WCHAR szWindowData[] = L"MonadoWindow";
 
 /*
  *
@@ -45,23 +47,30 @@ static WCHAR szWindowClass[] = L"Monado";
  *
  */
 
+static void
+draw_window(HWND hWnd, struct comp_window_mswin *cwm)
+{
+	ValidateRect(hWnd, NULL);
+}
+
 static LRESULT CALLBACK
 WndProc(HWND hWnd, unsigned int message, WPARAM wParam, LPARAM lParam)
 {
+	struct comp_window_mswin *cwm = GetPropW(hWnd, szWindowData);
+	if (!cwm) {
+		// This is before we've set up our window, or for some other helper window...
+		// We might want to handle messages differently in here.
+		return DefWindowProcW(hWnd, message, wParam, lParam);
+	}
 	switch (message) {
-	case WM_PAINT: {
-		// paint the main window
-		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hWnd, &ps);
-		// TODO: Add any drawing code that uses hdc here...
-		EndPaint(hWnd, &ps);
-	} break;
+	case WM_PAINT: draw_window(hWnd, cwm); return 0;
+	case WM_CLOSE: cwm->should_exit = true; return 0;
 	case WM_DESTROY:
 		// Post a quit message and return.
-		//! @todo set quit flag
+		cwm->should_exit = true;
 		PostQuitMessage(0);
-		break;
-	default: return DefWindowProc(hWnd, message, wParam, lParam);
+		return 0;
+	default: return DefWindowProcW(hWnd, message, wParam, lParam);
 	}
 	return 0;
 }
@@ -140,6 +149,12 @@ static void
 comp_window_mswin_flush(struct comp_target *ct)
 {
 	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ct;
+	// force handling messages.
+	MSG msg;
+	while (PeekMessageW(&msg, cwm->window, 0, 0, PM_REMOVE)) {
+		TranslateMessage(&msg);
+		DispatchMessageW(&msg);
+	}
 }
 
 
@@ -171,6 +186,9 @@ comp_window_mswin_init(struct comp_target *ct)
 	cwm->window = CreateWindowW(szWindowClass, L"Monado (Windowed)", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0,
 	                            CW_USEDEFAULT, 0, NULL, NULL, cwm->instance, NULL);
 
+	SetPropW(cwm->window, szWindowData, cwm);
+	ShowWindow(cwm->window, SW_SHOWDEFAULT);
+	UpdateWindow(cwm->window);
 	return true;
 }
 
