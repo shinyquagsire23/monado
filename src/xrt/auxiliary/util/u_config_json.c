@@ -378,7 +378,7 @@ u_config_write(struct u_config_json *json)
 void
 u_config_json_save_calibration(struct u_config_json *json, struct xrt_settings_tracking *settings)
 {
-	if (!json->root) {
+	if (!json->file_loaded) {
 		u_config_json_make_default_root(json);
 	}
 	cJSON *root = json->root;
@@ -435,7 +435,7 @@ make_pose(struct xrt_pose *pose)
 void
 u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_override *overrides, size_t num_overrides)
 {
-	if (!json->root) {
+	if (!json->file_loaded) {
 		u_config_json_make_default_root(json);
 	}
 	cJSON *root = json->root;
