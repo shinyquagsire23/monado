@@ -8,6 +8,7 @@
 
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_config_have.h"
+#include "xrt/xrt_config_drivers.h"
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
@@ -41,12 +42,16 @@ oxr_sdl2_hack_stop(void **hack)
 #include "gui/gui_common.h"
 #include "gui/gui_imgui.h"
 
+#ifdef XRT_BUILD_DRIVER_QWERTY
 #include "qwerty_interface.h"
+#endif
 
 #include <SDL2/SDL.h>
 
 DEBUG_GET_ONCE_BOOL_OPTION(gui, "OXR_DEBUG_GUI", false)
+#ifdef XRT_BUILD_DRIVER_QWERTY
 DEBUG_GET_ONCE_BOOL_OPTION(qwerty_enable, "QWERTY_ENABLE", false)
+#endif
 
 
 /*!
@@ -148,8 +153,11 @@ sdl2_loop(struct sdl2_program *p)
 	ImPlotContext *plot_ctx = ImPlot_CreateContext();
 	ImPlot_SetCurrentContext(plot_ctx);
 
+
+#ifdef XRT_BUILD_DRIVER_QWERTY
 	// Setup qwerty driver usage
 	bool qwerty_enabled = debug_get_bool_option_qwerty_enable();
+#endif
 
 	// Main loop
 	struct gui_imgui gui = {0};
@@ -168,10 +176,12 @@ sdl2_loop(struct sdl2_program *p)
 		while (SDL_PollEvent(&event)) {
 			igImGui_ImplSDL2_ProcessEvent(&event);
 
+#ifdef XRT_BUILD_DRIVER_QWERTY
 			// Caution here, qwerty driver is being accessed by the main thread as well
 			if (qwerty_enabled) {
 				qwerty_process_event(p->base.xdevs, NUM_XDEVS, event);
 			}
+#endif
 
 			if (event.type == SDL_QUIT) {
 				p->base.stopped = true;
