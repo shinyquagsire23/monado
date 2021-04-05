@@ -211,7 +211,20 @@ overlay_sort_func(const void *a, const void *b)
 }
 
 static void
-transfer_layers_locked(struct multi_system_compositor *msc)
+log_frame_time_diff(uint64_t frame_time_ns, uint64_t display_time_ns)
+{
+	int64_t diff_ns = (int64_t)frame_time_ns - (int64_t)display_time_ns;
+	bool late = false;
+	if (diff_ns < 0) {
+		diff_ns = -diff_ns;
+		late = true;
+	}
+
+	U_LOG_W("Frame %s by %.2fms!", late ? "late" : "early", time_ns_to_ms_f(diff_ns));
+}
+
+static void
+transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_time_ns)
 {
 	COMP_TRACE_MARKER();
 
@@ -226,6 +239,9 @@ transfer_layers_locked(struct multi_system_compositor *msc)
 		}
 
 		array[count++] = msc->clients[k];
+
+		// Even if it's not shown, make sure that frames are delivered.
+		multi_compositor_deliver_any_frames(msc->clients[k], display_time_ns);
 	}
 
 	// Sort the stack array
@@ -236,6 +252,16 @@ transfer_layers_locked(struct multi_system_compositor *msc)
 
 		if (mc == NULL) {
 			continue;
+		}
+
+		// None of the data in this slot is valid, don't check access it.
+		if (!mc->delivered.active) {
+			continue;
+		}
+
+		uint64_t frame_time_ns = mc->delivered.display_time_ns;
+		if (!time_is_within_half_ms(frame_time_ns, display_time_ns)) {
+			log_frame_time_diff(frame_time_ns, display_time_ns);
 		}
 
 		for (size_t i = 0; i < mc->delivered.num_layers; i++) {
@@ -354,17 +380,15 @@ multi_main_loop(struct multi_system_compositor *msc)
 
 		broadcast_timings(msc, predicted_display_time_ns, predicted_display_period_ns, diff_ns);
 
-		// Make sure that the clients doesn't go away.
-		os_mutex_lock(&msc->list_and_timing_lock);
-
 		xrt_comp_begin_frame(xc, frame_id);
 		xrt_comp_layer_begin(xc, frame_id, 0, 0);
 
-		transfer_layers_locked(msc);
+		// Make sure that the clients doesn't go away while we transfer layers.
+		os_mutex_lock(&msc->list_and_timing_lock);
+		transfer_layers_locked(msc, predicted_display_time_ns);
+		os_mutex_unlock(&msc->list_and_timing_lock);
 
 		xrt_comp_layer_commit(xc, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
-
-		os_mutex_unlock(&msc->list_and_timing_lock);
 
 		// Re-lock the thread for check in while statement.
 		os_thread_helper_lock(&msc->oth);

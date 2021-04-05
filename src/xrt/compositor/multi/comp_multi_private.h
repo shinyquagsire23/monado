@@ -72,6 +72,7 @@ struct multi_layer_slot
 	enum xrt_blend_mode env_blend_mode;
 	uint32_t num_layers;
 	struct multi_layer_entry layers[MULTI_MAX_LAYERS];
+	bool active;
 };
 
 /*!
@@ -122,10 +123,22 @@ struct multi_compositor
 		int64_t z_order;
 	} state;
 
-	//! Currently being transferred or waited on.
+	//! Lock for all of the slots.
+	struct os_mutex slot_lock;
+
+	/*!
+	 * Currently being transferred or waited on.
+	 * Not protected by the slot lock as it is only touched by the client thread.
+	 */
 	struct multi_layer_slot progress;
 
-	//! Fully ready to be used.
+	//! Scheduled frames for a future timepoint.
+	struct multi_layer_slot scheduled;
+
+	/*!
+	 * Fully ready to be used.
+	 * Not protected by the slot lock as it is only touched by the main render loop thread.
+	 */
 	struct multi_layer_slot delivered;
 
 	struct u_render_timing *urt;
@@ -154,6 +167,15 @@ multi_compositor_create(struct multi_system_compositor *msc,
  */
 void
 multi_compositor_push_event(struct multi_compositor *mc, const union xrt_compositor_event *xce);
+
+/*!
+ * Deliver any scheduled frames at that is to be display at or after the given @p display_time_ns. Called by the render
+ * thread and copies data from multi_compositor::scheduled to multi_compositor::delivered while holding the slot_lock.
+ *
+ * @ingroup comp_multi
+ */
+void
+multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t display_time_ns);
 
 
 /*

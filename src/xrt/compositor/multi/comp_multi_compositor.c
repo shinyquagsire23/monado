@@ -286,6 +286,7 @@ multi_compositor_layer_begin(struct xrt_compositor *xc,
 	assert(mc->progress.num_layers == 0);
 	U_ZERO(&mc->progress);
 
+	mc->progress.active = true;
 	mc->progress.display_time_ns = display_time_ns;
 	mc->progress.env_blend_mode = env_blend_mode;
 
@@ -447,12 +448,23 @@ multi_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_g
 		xrt_compositor_fence_destroy(&xcf);
 	}
 
+	os_mutex_lock(&mc->slot_lock);
+
+	// Block here if the scheduled slot is not clear.
+	while (mc->scheduled.active) {
+		os_mutex_unlock(&mc->slot_lock);
+
+		os_nanosleep(U_TIME_1MS_IN_NS);
+
+		os_mutex_lock(&mc->slot_lock);
+	}
+
+	slot_move_and_clear(&mc->scheduled, &mc->progress);
+
+	os_mutex_unlock(&mc->slot_lock);
+
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
-
-	slot_move_and_clear(&mc->delivered, &mc->progress);
-
 	u_rt_mark_delivered(mc->urt, frame_id);
-
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	return XRT_SUCCESS;
@@ -492,12 +504,30 @@ multi_compositor_destroy(struct xrt_compositor *xc)
 
 	// We are now off the rendering list, clear slots for any swapchains.
 	slot_clear(&mc->progress);
+	slot_clear(&mc->scheduled);
 	slot_clear(&mc->delivered);
 
 	// Does null checking.
 	u_rt_destroy(&mc->urt);
 
 	free(mc);
+}
+
+void
+multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t display_time_ns)
+{
+	os_mutex_lock(&mc->slot_lock);
+
+	if (!mc->scheduled.active) {
+		os_mutex_unlock(&mc->slot_lock);
+		return;
+	}
+
+	if (time_is_greater_then_or_within_half_ms(display_time_ns, mc->scheduled.display_time_ns)) {
+		slot_move_and_clear(&mc->delivered, &mc->scheduled);
+	}
+
+	os_mutex_unlock(&mc->slot_lock);
 }
 
 xrt_result_t
