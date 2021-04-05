@@ -11,6 +11,8 @@ from pathlib import Path
 # Keep sorted.
 EXTENSIONS = (
     ['XR_KHR_android_create_instance', 'XR_USE_PLATFORM_ANDROID'],
+    ['XR_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
+    ['XR_KHR_loader_init_android', 'OXR_HAVE_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
     ['XR_KHR_convert_timespec_time', 'XR_USE_TIMESPEC'],
     ['XR_KHR_opengl_enable', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_KHR_opengl_es_enable', 'XR_USE_GRAPHICS_API_OPENGL_ES'],
