@@ -276,6 +276,10 @@ handle_null(struct oxr_logger *log, const char *name, PFN_xrVoidFunction *out_fu
 	ENTRY(xrEnumerateInstanceExtensionProperties);
 	ENTRY(xrEnumerateApiLayerProperties);
 
+#ifdef OXR_HAVE_KHR_loader_init
+	ENTRY(xrInitializeLoaderKHR);
+#endif // OXR_HAVE_KHR_loader_init
+
 	/*
 	 * This is fine to log, since there should not be other
 	 * null-instance calls.

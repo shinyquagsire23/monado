@@ -50,6 +50,12 @@ oxr_xrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
  *
  */
 
+#ifdef OXR_HAVE_KHR_loader_init
+//! OpenXR API function @ep{xrInitializeLoaderKHR}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrInitializeLoaderKHR(const XrLoaderInitInfoBaseHeaderKHR *loaderInitInfo);
+#endif // OXR_HAVE_KHR_loader_init
+
 //! OpenXR API function @ep{xrEnumerateInstanceExtensionProperties}
 XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateInstanceExtensionProperties(const char *layerName,

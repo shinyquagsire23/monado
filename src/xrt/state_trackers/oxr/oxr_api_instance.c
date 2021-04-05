@@ -21,6 +21,11 @@
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
 
+
+#ifdef XRT_OS_ANDROID
+#include "android/android_globals.h"
+#endif
+
 #include "openxr/openxr.h"
 #include "openxr/openxr_reflection.h"
 
@@ -48,6 +53,42 @@ oxr_xrEnumerateInstanceExtensionProperties(const char *layerName,
 	OXR_TWO_CALL_HELPER(&log, propertyCapacityInput, propertyCountOutput, properties,
 	                    ARRAY_SIZE(extension_properties), extension_properties, XR_SUCCESS);
 }
+
+#ifdef OXR_HAVE_KHR_loader_init
+XrResult
+oxr_xrInitializeLoaderKHR(const XrLoaderInitInfoBaseHeaderKHR *loaderInitInfo)
+{
+	struct oxr_logger log;
+	oxr_log_init(&log, "oxr_xrInitializeLoaderKHR");
+
+
+	oxr_log(&log, "Loader forwarded call to xrInitializeLoaderKHR.");
+#ifdef XRT_OS_ANDROID
+	const XrLoaderInitInfoAndroidKHR *initInfoAndroid =
+	    OXR_GET_INPUT_FROM_CHAIN(loaderInitInfo, XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR, XrLoaderInitInfoAndroidKHR);
+	if (initInfoAndroid == NULL) {
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(loaderInitInfo) "
+		                 "Did not find XrLoaderInitInfoAndroidKHR");
+	}
+	if (initInfoAndroid->applicationVM == NULL) {
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(initInfoAndroid->applicationVM) "
+		                 "applicationVM must be populated");
+	}
+	if (initInfoAndroid->applicationContext == NULL) {
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(initInfoAndroid->applicationContext) "
+		                 "applicationContext must be populated");
+	}
+	//! @todo check that applicationContext is in fact an Activity.
+	android_globals_store_vm_and_context(initInfoAndroid->applicationVM, initInfoAndroid->applicationContext);
+
+#endif // XRT_OS_ANDROID
+	return XR_SUCCESS;
+}
+#endif // OXR_HAVE_KHR_loader_init
+
 
 #ifdef XRT_OS_ANDROID
 static XrResult
