@@ -1752,9 +1752,10 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 		                 frameEndInfo->displayTime);
 	}
 
-	int64_t timestamp = time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, frameEndInfo->displayTime);
+	int64_t display_time_ns =
+	    time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, frameEndInfo->displayTime);
 	if (sess->frame_timing_spew) {
-		oxr_log(log, "End frame at %8.3fms with display time %8.3fms", ts_ms(sess), ns_to_ms(timestamp));
+		oxr_log(log, "End frame at %8.3fms with display time %8.3fms", ts_ms(sess), ns_to_ms(display_time_ns));
 	}
 
 	struct xrt_compositor *xc = sess->compositor;
@@ -1885,7 +1886,7 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 	struct xrt_pose inv_offset = {0};
 	math_pose_invert(&xdev->tracking_origin->offset, &inv_offset);
 
-	CALL_CHK(xrt_comp_layer_begin(xc, sess->frame_id.begun, blend_mode));
+	CALL_CHK(xrt_comp_layer_begin(xc, sess->frame_id.begun, display_time_ns, blend_mode));
 
 	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
 		const XrCompositionLayerBaseHeader *layer = frameEndInfo->layers[i];

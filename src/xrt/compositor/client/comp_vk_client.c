@@ -212,11 +212,14 @@ client_vk_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-client_vk_compositor_layer_begin(struct xrt_compositor *xc, int64_t frame_id, enum xrt_blend_mode env_blend_mode)
+client_vk_compositor_layer_begin(struct xrt_compositor *xc,
+                                 int64_t frame_id,
+                                 uint64_t display_time_ns,
+                                 enum xrt_blend_mode env_blend_mode)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	return xrt_comp_layer_begin(&c->xcn->base, frame_id, env_blend_mode);
+	return xrt_comp_layer_begin(&c->xcn->base, frame_id, display_time_ns, env_blend_mode);
 }
 
 static xrt_result_t

@@ -875,7 +875,7 @@ main_loop(struct ipc_server *s)
 		broadcast_timings(s, predicted_display_time_ns, predicted_display_period_ns, diff_ns);
 
 		xrt_comp_begin_frame(xc, frame_id);
-		xrt_comp_layer_begin(xc, frame_id, 0);
+		xrt_comp_layer_begin(xc, frame_id, 0, 0);
 
 		_update_layers(s, xc);
 

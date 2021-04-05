@@ -61,6 +61,8 @@ struct ipc_client_compositor
 
 	struct
 	{
+		uint64_t display_time_ns;
+
 		//! Id that we are currently using for submitting layers.
 		uint32_t slot_id;
 
@@ -456,10 +458,14 @@ ipc_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-ipc_compositor_layer_begin(struct xrt_compositor *xc, int64_t frame_id, enum xrt_blend_mode env_blend_mode)
+ipc_compositor_layer_begin(struct xrt_compositor *xc,
+                           int64_t frame_id,
+                           uint64_t display_time_ns,
+                           enum xrt_blend_mode env_blend_mode)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
+	icc->layers.display_time_ns = display_time_ns;
 	icc->layers.env_blend_mode = env_blend_mode;
 
 	return XRT_SUCCESS;

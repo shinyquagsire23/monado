@@ -215,7 +215,10 @@ compositor_add_frame_timing(struct comp_compositor *c)
 }
 
 static xrt_result_t
-compositor_layer_begin(struct xrt_compositor *xc, int64_t frame_id, enum xrt_blend_mode env_blend_mode)
+compositor_layer_begin(struct xrt_compositor *xc,
+                       int64_t frame_id,
+                       uint64_t display_time_ns,
+                       enum xrt_blend_mode env_blend_mode)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 

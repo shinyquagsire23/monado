@@ -761,7 +761,10 @@ struct xrt_compositor
 	 * @p layer_commit that layers will be displayed. From the point of view
 	 * of the swapchain the image is used as soon as it's given in a call.
 	 */
-	xrt_result_t (*layer_begin)(struct xrt_compositor *xc, int64_t frame_id, enum xrt_blend_mode env_blend_mode);
+	xrt_result_t (*layer_begin)(struct xrt_compositor *xc,
+	                            int64_t frame_id,
+	                            uint64_t display_time_ns,
+	                            enum xrt_blend_mode env_blend_mode);
 
 	/*!
 	 * Adds a stereo projection layer for submissions.
@@ -1057,9 +1060,12 @@ xrt_comp_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_begin(struct xrt_compositor *xc, int64_t frame_id, enum xrt_blend_mode env_blend_mode)
+xrt_comp_layer_begin(struct xrt_compositor *xc,
+                     int64_t frame_id,
+                     uint64_t display_time_ns,
+                     enum xrt_blend_mode env_blend_mode)
 {
-	return xc->layer_begin(xc, frame_id, env_blend_mode);
+	return xc->layer_begin(xc, frame_id, display_time_ns, env_blend_mode);
 }
 
 /*!
