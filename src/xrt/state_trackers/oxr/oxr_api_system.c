@@ -301,6 +301,8 @@ oxr_xrGetVulkanGraphicsDevice2KHR(XrInstance instance,
                                   const XrVulkanGraphicsDeviceGetInfoKHR *getInfo,
                                   VkPhysicalDevice *vkPhysicalDevice)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetVulkanGraphicsDeviceKHR");
@@ -334,6 +336,8 @@ oxr_xrGetVulkanGraphicsRequirements2KHR(XrInstance instance,
                                         XrSystemId systemId,
                                         XrGraphicsRequirementsVulkan2KHR *graphicsRequirements)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetVulkanGraphicsRequirementsKHR");
@@ -351,6 +355,8 @@ oxr_xrCreateVulkanInstanceKHR(XrInstance instance,
                               VkInstance *vulkanInstance,
                               VkResult *vulkanResult)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrCreateVulkanInstanceKHR");
@@ -380,6 +386,8 @@ oxr_xrCreateVulkanDeviceKHR(XrInstance instance,
                             VkDevice *vulkanDevice,
                             VkResult *vulkanResult)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 

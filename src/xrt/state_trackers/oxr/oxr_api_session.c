@@ -334,6 +334,8 @@ oxr_xrCreateHandTrackerEXT(XrSession session,
                            const XrHandTrackerCreateInfoEXT *createInfo,
                            XrHandTrackerEXT *handTracker)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_hand_tracker *hand_tracker = NULL;
 	struct oxr_session *sess = NULL;
 	struct oxr_logger log;
@@ -366,6 +368,8 @@ oxr_xrCreateHandTrackerEXT(XrSession session,
 XrResult
 oxr_xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_hand_tracker *hand_tracker;
 	struct oxr_logger log;
 	OXR_VERIFY_HAND_TRACKER_AND_INIT_LOG(&log, handTracker, hand_tracker, "xrDestroyHandTrackerEXT");
@@ -378,6 +382,8 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
                           const XrHandJointsLocateInfoEXT *locateInfo,
                           XrHandJointLocationsEXT *locations)
 {
+	OXR_TRACE_MARKER();
+
 	struct oxr_hand_tracker *hand_tracker;
 	struct oxr_space *spc;
 	struct oxr_logger log;
