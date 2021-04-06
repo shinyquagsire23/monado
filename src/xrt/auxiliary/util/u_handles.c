@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -10,6 +10,12 @@
  */
 
 #include "u_handles.h"
+
+/*
+ *
+ * Graphics Buffer Handles
+ *
+ */
 
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 #include <android/hardware_buffer.h>
@@ -88,4 +94,72 @@ u_graphics_buffer_unref(xrt_graphics_buffer_handle_t *handle_ptr)
 	}
 	release_graphics_handle(handle);
 	*handle_ptr = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;
+}
+
+/*
+ *
+ * Graphics Sync Handles
+ *
+ */
+
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+#include <unistd.h>
+
+static inline void
+release_sync_handle(xrt_graphics_sync_handle_t handle)
+{
+	close(handle);
+}
+
+static inline xrt_graphics_sync_handle_t
+ref_sync_handle(xrt_graphics_sync_handle_t handle)
+{
+	return dup(handle);
+}
+
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+
+static inline void
+release_sync_handle(xrt_graphics_sync_handle_t handle)
+{
+	CloseHandle(handle);
+}
+
+static inline xrt_graphics_sync_handle_t
+ref_sync_handle(xrt_graphics_sync_handle_t handle)
+{
+	HANDLE self = GetCurrentProcess();
+	HANDLE result = NULL;
+	if (DuplicateHandle(self, handle, self, &result, 0, FALSE, DUPLICATE_SAME_ACCESS) != 0) {
+		return result;
+	}
+	return NULL;
+}
+
+#else
+#error "need port"
+#endif
+
+xrt_graphics_sync_handle_t
+u_graphics_sync_ref(xrt_graphics_sync_handle_t handle)
+{
+	if (xrt_graphics_sync_handle_is_valid(handle)) {
+		return ref_sync_handle(handle);
+	}
+
+	return XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+}
+
+void
+u_graphics_sync_unref(xrt_graphics_sync_handle_t *handle_ptr)
+{
+	if (handle_ptr == NULL) {
+		return;
+	}
+	xrt_graphics_sync_handle_t handle = *handle_ptr;
+	if (!xrt_graphics_sync_handle_is_valid(handle)) {
+		return;
+	}
+	release_sync_handle(handle);
+	*handle_ptr = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 }
