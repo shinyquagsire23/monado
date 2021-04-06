@@ -100,8 +100,14 @@ public class Client implements ServiceConnection {
         }
         intent = null;
 
-        //! @todo do we close this first?
-        fd = null;
+        if (fd != null) {
+            try {
+                fd.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            fd = null;
+        }
     }
 
     /**

@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/un.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -89,6 +90,13 @@ ipc_connect(struct ipc_connection *ipc_c)
 	int socket = ipc_client_android_blocking_connect(ipc_c->ica);
 	if (socket < 0) {
 		IPC_ERROR(ipc_c, "Service Connect error!");
+		return false;
+	}
+	// The ownership belongs to the Java object. Dup because the fd will be
+	// closed when client destroy.
+	socket = dup(socket);
+	if (socket < 0) {
+		IPC_ERROR(ipc_c, "Failed to dup fd with error %d!", errno);
 		return false;
 	}
 
