@@ -64,9 +64,8 @@ oxr_check_android_extensions(struct oxr_logger *log, const XrInstanceCreateInfo 
 	if (!foundAndroidExtension) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 "(createInfo->enabledExtensionNames) "
-		                 "Mandatory platform-specific "
-		                 "extension"
-		                 " " XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME " not specified");
+		                 "Mandatory platform-specific extension " XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME
+		                 " not specified");
 	}
 
 	{
