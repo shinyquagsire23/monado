@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -49,6 +49,7 @@
 #include "util/u_misc.h"
 #include "util/u_time.h"
 #include "util/u_debug.h"
+#include "util/u_handles.h"
 #include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
 
@@ -355,23 +356,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 
 	COMP_SPEW(c, "LAYER_COMMIT at %8.3fms", ts_ms());
 
-#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
-	// Need to consume this handle.
-	if (xrt_graphics_sync_handle_is_valid(sync_handle)) {
-		close(sync_handle);
-		sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
-	}
-
-#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
-	// Need to consume this handle.
-	if (xrt_graphics_sync_handle_is_valid(sync_handle)) {
-		CloseHandle(sync_handle);
-		sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
-	}
-
-#else
-#error "Not yet implemented for this platform"
-#endif
+	u_graphics_sync_unref(&sync_handle);
 
 
 	// Always zero for now.
