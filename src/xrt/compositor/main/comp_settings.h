@@ -86,7 +86,7 @@ struct comp_settings
 		bool wireframe;
 	} debug;
 
-	//! Procentage to scale the viewport by.
+	//! Percentage to scale the viewport by.
 	double viewport_scale;
 
 	//! Not used with direct mode.
