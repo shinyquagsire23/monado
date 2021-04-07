@@ -38,6 +38,10 @@ struct u_rt_frame
 {
 	//! When we predicted this frame to be shown.
 	uint64_t predicted_display_time_ns;
+
+	//! The selected display period.
+	uint64_t predicted_display_period_ns;
+
 	//! When the client should have delivered the frame.
 	uint64_t predicted_delivery_time_ns;
 
@@ -231,10 +235,14 @@ rt_predict(struct u_render_timing *urt,
 
 	uint64_t period_ns = calc_period(rt);
 	uint64_t predict_ns = predict_display_time(rt, period_ns);
+	// When should the client wake up.
+	uint64_t wake_up_time_ns = predict_ns - total_app_and_compositor_time_ns(rt);
+	// When the client should deliver the frame to us.
+	uint64_t delivery_time_ns = predict_ns - total_compositor_time_ns(rt);
 
 	rt->last_returned_ns = predict_ns;
 
-	*out_wake_up_time = predict_ns - total_app_and_compositor_time_ns(rt);
+	*out_wake_up_time = wake_up_time_ns;
 	*out_predicted_display_time = predict_ns;
 	*out_predicted_display_period = period_ns;
 
@@ -242,13 +250,11 @@ rt_predict(struct u_render_timing *urt,
 	assert(rt->frames[index].frame_id == -1);
 	assert(rt->frames[index].state == U_RT_READY);
 
-	// When the client should deliver the frame to us.
-	uint64_t delivery_time_ns = predict_ns - total_compositor_time_ns(rt);
-
-	rt->frames[index].when.predicted_ns = os_monotonic_get_ns();
 	rt->frames[index].state = U_RT_PREDICTED;
 	rt->frames[index].frame_id = frame_id;
 	rt->frames[index].predicted_delivery_time_ns = delivery_time_ns;
+	rt->frames[index].predicted_display_period_ns = period_ns;
+	rt->frames[index].when.predicted_ns = os_monotonic_get_ns();
 }
 
 static void
@@ -303,16 +309,17 @@ rt_mark_delivered(struct u_render_timing *urt, int64_t frame_id)
 	DEBUG_PRINT_FRAME_ID();
 
 	size_t index = GET_INDEX_FROM_ID(rt, frame_id);
-	assert(rt->frames[index].frame_id == frame_id);
-	assert(rt->frames[index].state == U_RT_BEGUN);
+	struct u_rt_frame *f = &rt->frames[index];
+	assert(f->frame_id == frame_id);
+	assert(f->state == U_RT_BEGUN);
 
 	uint64_t now_ns = os_monotonic_get_ns();
 
-	rt->frames[index].when.delivered_ns = now_ns;
-	rt->frames[index].state = U_RT_READY;
-	rt->frames[index].frame_id = -1;
+	f->when.delivered_ns = now_ns;
+	f->state = U_RT_READY;
+	f->frame_id = -1;
 
-	int64_t diff_ns = rt->frames[index].predicted_delivery_time_ns - now_ns;
+	int64_t diff_ns = f->predicted_delivery_time_ns - now_ns;
 	bool late = false;
 	if (diff_ns < 0) {
 		diff_ns = -diff_ns;
@@ -321,15 +328,18 @@ rt_mark_delivered(struct u_render_timing *urt, int64_t frame_id)
 
 #define NS_TO_MS_F(ns) (time_ns_to_s(ns) * 1000.0)
 
-	uint64_t diff_cpu_ns = rt->frames[index].when.begin_ns - rt->frames[index].when.wait_woke_ns;
-	uint64_t diff_draw_ns = rt->frames[index].when.delivered_ns - rt->frames[index].when.begin_ns;
+	uint64_t diff_cpu_ns = f->when.begin_ns - f->when.wait_woke_ns;
+	uint64_t diff_draw_ns = f->when.delivered_ns - f->when.begin_ns;
 
-	RT_LOG_D("Delivered frame %.2fms %s.\n\tcpu  o: %.2f, n: %.2f\n\tdraw o: %.2f, n: %.2f", //
-	         time_ns_to_ms_f(diff_ns), late ? "late" : "early",                              //
-	         time_ns_to_ms_f(rt->app.cpu_time_ns),                                           //
-	         time_ns_to_ms_f(diff_cpu_ns),                                                   //
-	         time_ns_to_ms_f(rt->app.draw_time_ns),                                          //
-	         time_ns_to_ms_f(diff_draw_ns));
+	RT_LOG_D(
+	    "Delivered frame %.2fms %s."                                           //
+	    "\n\tperiod: %.2f"                                                     //
+	    "\n\tcpu  o: %.2f, n: %.2f"                                            //
+	    "\n\tdraw o: %.2f, n: %.2f",                                           //
+	    time_ns_to_ms_f(diff_ns), late ? "late" : "early",                     //
+	    time_ns_to_ms_f(f->predicted_display_period_ns),                       //
+	    time_ns_to_ms_f(rt->app.cpu_time_ns), time_ns_to_ms_f(diff_cpu_ns),    //
+	    time_ns_to_ms_f(rt->app.draw_time_ns), time_ns_to_ms_f(diff_draw_ns)); //
 
 	do_iir_filter(&rt->app.cpu_time_ns, IIR_ALPHA_LT, IIR_ALPHA_GT, diff_cpu_ns);
 	do_iir_filter(&rt->app.draw_time_ns, IIR_ALPHA_LT, IIR_ALPHA_GT, diff_draw_ns);
