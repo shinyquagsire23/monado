@@ -49,6 +49,36 @@ extern int u_trace_comp_fd;
 
 /*
  *
+ * JSON dumper helper files.
+ *
+ */
+
+void
+u_trace_maker_write_json_metadata( //
+    FILE *file,                    //
+    uint32_t pid,                  //
+    uint32_t tid,                  //
+    const char *name);             //
+
+void
+u_trace_maker_write_json_begin( //
+    FILE *file,                 //
+    uint32_t pid,               //
+    uint32_t tid,               //
+    const char *name,           //
+    const char *cat,            //
+    uint64_t when_ns);          //
+
+void
+u_trace_maker_write_json_end( //
+    FILE *file,               //
+    uint32_t pid,             //
+    uint32_t tid,             //
+    uint64_t when_ns);        //
+
+
+/*
+ *
  * Functions implemented by other modules.
  *
  */
