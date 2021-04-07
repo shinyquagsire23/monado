@@ -110,8 +110,8 @@ DEBUG_GET_ONCE_LOG_OPTION(ll, "U_TIMING_RENDER_LOG", U_LOGGING_WARN)
 #define DEBUG_PRINT_FRAME_ID() RT_LOG_T("%" PRIi64, frame_id)
 #define GET_INDEX_FROM_ID(RT, ID) ((uint64_t)(ID) % ARRAY_SIZE((RT)->frames))
 
-#define IIR_ALPHA_LT 0.5
-#define IIR_ALPHA_GT 0.99
+#define IIR_ALPHA_LT 0.8
+#define IIR_ALPHA_GT 0.8
 
 static void
 do_iir_filter(uint64_t *target, double alpha_lt, double alpha_gt, uint64_t sample)
