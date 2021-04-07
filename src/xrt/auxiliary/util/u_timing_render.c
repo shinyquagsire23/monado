@@ -160,17 +160,34 @@ total_app_and_compositor_time_ns(const struct render_timing *rt)
 }
 
 static uint64_t
-predict_display_time(const struct render_timing *rt)
+calc_period(const struct render_timing *rt)
+{
+	// Error checking.
+	uint64_t base_period_ns = min_period(rt);
+	if (base_period_ns == 0) {
+		assert(false && "Have not yet received and samples from timing driver.");
+		base_period_ns = U_TIME_1MS_IN_NS * 16; // Sure
+	}
+
+	// Calculate the using both values separately.
+	uint64_t period_ns = base_period_ns;
+	while (rt->app.cpu_time_ns > period_ns) {
+		period_ns += base_period_ns;
+	}
+
+	while (rt->app.draw_time_ns > period_ns) {
+		period_ns += base_period_ns;
+	}
+
+	return period_ns;
+}
+
+static uint64_t
+predict_display_time(const struct render_timing *rt, uint64_t period_ns)
 {
 	// Now
 	uint64_t now_ns = os_monotonic_get_ns();
 
-	// Error checking.
-	uint64_t period_ns = min_period(rt);
-	if (period_ns == 0) {
-		assert(false && "Have not yet received and samples from timing driver.");
-		return now_ns;
-	}
 
 	// Total app and compositor time to produce a frame
 	uint64_t app_and_compositor_time_ns = total_app_and_compositor_time_ns(rt);
@@ -179,7 +196,7 @@ predict_display_time(const struct render_timing *rt)
 	uint64_t val = last_sample_displayed(rt);
 
 	// Return a time after the last returned display time.
-	while (val < last_return_predicted_display(rt)) {
+	while (val <= last_return_predicted_display(rt)) {
 		val += period_ns;
 	}
 
@@ -212,13 +229,14 @@ rt_predict(struct u_render_timing *urt,
 
 	DEBUG_PRINT_FRAME_ID();
 
-	uint64_t predict_ns = predict_display_time(rt);
+	uint64_t period_ns = calc_period(rt);
+	uint64_t predict_ns = predict_display_time(rt, period_ns);
 
 	rt->last_returned_ns = predict_ns;
 
 	*out_wake_up_time = predict_ns - total_app_and_compositor_time_ns(rt);
 	*out_predicted_display_time = predict_ns;
-	*out_predicted_display_period = min_period(rt);
+	*out_predicted_display_period = period_ns;
 
 	size_t index = GET_INDEX_FROM_ID(rt, frame_id);
 	assert(rt->frames[index].frame_id == -1);
