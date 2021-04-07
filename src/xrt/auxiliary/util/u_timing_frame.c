@@ -518,6 +518,7 @@ u_ft_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_ti
  *
  */
 
+#define PID_NR 42
 #define TID_NORMAL 43
 #define TID_GPU 44
 #define TID_INFO 45
@@ -539,12 +540,12 @@ trace_event(FILE *file, const char *name, uint64_t when_ns)
 	        "\t\t\t\"ph\": \"i\",\n"
 	        "\t\t\t\"name\": \"%s\",\n"
 	        "\t\t\t\"ts\": %" PRIu64 ".%03" PRIu64 ",\n"
-	        "\t\t\t\"pid\": 42,\n"
-	        "\t\t\t\"tid\": 43,\n"
+	        "\t\t\t\"pid\": %u,\n"
+	        "\t\t\t\"tid\": %u,\n"
 	        "\t\t\t\"s\": \"g\",\n"
 	        "\t\t\t\"args\": {}\n"
 	        "\t\t}",
-	        name, when_ns / 1000, when_ns % 1000);
+	        name, when_ns / 1000, when_ns % 1000, PID_NR, TID_NORMAL);
 	// clang-format off
 }
 
@@ -562,38 +563,15 @@ trace_event_id(FILE *file, const char *name, int64_t frame_id, uint64_t when_ns)
 	        "\t\t\t\"ph\": \"i\",\n"
 	        "\t\t\t\"name\": \"%s\",\n"
 	        "\t\t\t\"ts\": %" PRIu64 ".%03" PRIu64 ",\n"
-	        "\t\t\t\"pid\": 42,\n"
-	        "\t\t\t\"tid\": 43,\n"
+	        "\t\t\t\"pid\": %u,\n"
+	        "\t\t\t\"tid\": %u,\n"
 	        "\t\t\t\"s\": \"g\",\n"
 	        "\t\t\t\"args\": {"
 	        "\t\t\t\t\"id\": %" PRIi64 "\n"
 	        "\t\t\t}\n"
 	        "\t\t}",
-	        name, when_ns / 1000, when_ns % 1000, frame_id);
+	        name, when_ns / 1000, when_ns % 1000, PID_NR, TID_NORMAL, frame_id);
 	// clang-format off
-}
-
-static void
-trace_begin(FILE *file, uint32_t tid, const char *name, const char *cat, uint64_t when_ns)
-{
-	if (file == NULL) {
-		return;
-	}
-
-	// clang-format off
-	fprintf(file,
-	        ",\n"
-	        "\t\t{\n"
-	        "\t\t\t\"ph\": \"B\",\n"
-	        "\t\t\t\"name\": \"%s\",\n"
-	        "\t\t\t\"cat\": \"%s\",\n"
-	        "\t\t\t\"ts\": %" PRIu64 ".%03" PRIu64 ",\n"
-	        "\t\t\t\"pid\": 42,\n"
-	        "\t\t\t\"tid\": %u,\n"
-	        "\t\t\t\"args\": {}\n"
-	        "\t\t}",
-	        name, cat, when_ns / 1000, when_ns % 1000, tid);
-	// clang-format on
 }
 
 static void
@@ -606,28 +584,13 @@ trace_begin_id(FILE *file, uint32_t tid, const char *name, int64_t frame_id, con
 	char temp[256];
 	snprintf(temp, sizeof(temp), "%s %" PRIi64, name, frame_id);
 
-	trace_begin(file, tid, temp, cat, when_ns);
+	u_trace_maker_write_json_begin(file, PID_NR, tid, temp, cat, when_ns);
 }
 
 static void
 trace_end(FILE *file, uint32_t tid, uint64_t when_ns)
 {
-	if (file == NULL) {
-		return;
-	}
-
-	// clang-format off
-	fprintf(file,
-	        ",\n"
-	        "\t\t{\n"
-	        "\t\t\t\"ph\": \"E\",\n"
-	        "\t\t\t\"ts\": %" PRIu64 ".%03" PRIu64 ",\n"
-	        "\t\t\t\"pid\": 42,\n"
-	        "\t\t\t\"tid\": %u,\n"
-	        "\t\t\t\"args\": {}\n"
-	        "\t\t}",
-	        when_ns / 1000, when_ns % 1000, tid);
-	// clang-format on
+	u_trace_maker_write_json_end(file, PID_NR, tid, when_ns);
 }
 
 static void
@@ -688,77 +651,11 @@ u_ft_write_json(FILE *file, void *data)
 void
 u_ft_write_json_metadata(FILE *file)
 {
-	fprintf(file,
-	        ",\n"
-	        "\t\t{\n"
-	        "\t\t\t\"ph\": \"M\",\n"
-	        "\t\t\t\"name\": \"thread_name\",\n"
-	        "\t\t\t\"pid\": 42,\n"
-	        "\t\t\t\"tid\": %u,\n"
-	        "\t\t\t\"args\": {\n"
-	        "\t\t\t\t\"name\": \"1 RendererThread\"\n"
-	        "\t\t\t}\n"
-	        "\t\t}",
-	        TID_NORMAL);
-	fprintf(file,
-	        ",\n"
-	        "\t\t{\n"
-	        "\t\t\t\"ph\": \"M\",\n"
-	        "\t\t\t\"name\": \"thread_name\",\n"
-	        "\t\t\t\"pid\": 42,\n"
-	        "\t\t\t\"tid\": %u,\n"
-	        "\t\t\t\"args\": {\n"
-	        "\t\t\t\t\"name\": \"2 GPU\"\n"
-	        "\t\t\t}\n"
-	        "\t\t}",
-	        TID_GPU);
-	fprintf(file,
-	        ",\n"
-	        "\t\t{\n"
-	        "\t\t\t\"ph\": \"M\",\n"
-	        "\t\t\t\"name\": \"thread_name\",\n"
-	        "\t\t\t\"pid\": 42,\n"
-	        "\t\t\t\"tid\": %u,\n"
-	        "\t\t\t\"args\": {\n"
-	        "\t\t\t\t\"name\": \"3 Info\"\n"
-	        "\t\t\t}\n"
-	        "\t\t}",
-	        TID_INFO);
-	fprintf(file,
-	        ",\n"
-	        "\t\t{\n"
-	        "\t\t\t\"ph\": \"M\",\n"
-	        "\t\t\t\"name\": \"thread_name\",\n"
-	        "\t\t\t\"pid\": 42,\n"
-	        "\t\t\t\"tid\": %u,\n"
-	        "\t\t\t\"args\": {\n"
-	        "\t\t\t\t\"name\": \"4 FrameTiming\"\n"
-	        "\t\t\t}\n"
-	        "\t\t}",
-	        TID_FRAME);
-	fprintf(file,
-	        ",\n"
-	        "\t\t{\n"
-	        "\t\t\t\"ph\": \"M\",\n"
-	        "\t\t\t\"name\": \"thread_name\",\n"
-	        "\t\t\t\"pid\": 42,\n"
-	        "\t\t\t\"tid\": %u,\n"
-	        "\t\t\t\"args\": {\n"
-	        "\t\t\t\t\"name\": \"5 Slips\"\n"
-	        "\t\t\t}\n"
-	        "\t\t}",
-	        TID_ERROR);
-	fprintf(file,
-	        ",\n"
-	        "\t\t{\n"
-	        "\t\t\t\"ph\": \"M\",\n"
-	        "\t\t\t\"name\": \"thread_name\",\n"
-	        "\t\t\t\"pid\": 42,\n"
-	        "\t\t\t\"tid\": %u,\n"
-	        "\t\t\t\"args\": {\n"
-	        "\t\t\t\t\"name\": \"6 App time\"\n"
-	        "\t\t\t}\n"
-	        "\t\t}",
-	        TID_APP);
+	u_trace_maker_write_json_metadata(file, PID_NR, TID_NORMAL, "1 RendererThread");
+	u_trace_maker_write_json_metadata(file, PID_NR, TID_GPU, "2 GPU");
+	u_trace_maker_write_json_metadata(file, PID_NR, TID_INFO, "3 Info");
+	u_trace_maker_write_json_metadata(file, PID_NR, TID_FRAME, "4 FrameTiming");
+	u_trace_maker_write_json_metadata(file, PID_NR, TID_ERROR, "5 Slips");
+	u_trace_maker_write_json_metadata(file, PID_NR, TID_APP, "6 App time");
 	fflush(file);
 }
