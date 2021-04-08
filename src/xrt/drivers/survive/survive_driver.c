@@ -46,7 +46,7 @@
 
 // reading usb config takes libsurvive about 50ms per device
 // to be safe, we wait 500 ms after the last device has been initialized
-#define WAIT_TIMEOUT 0.5f
+#define WAIT_TIMEOUT .75f
 
 // index in sys->controllers[] array
 #define SURVIVE_LEFT_CONTROLLER_INDEX 0
