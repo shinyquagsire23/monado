@@ -2155,6 +2155,11 @@ oxr_session_hand_joints(struct oxr_logger *log,
 	XrHandJointVelocitiesEXT *vel =
 	    OXR_GET_OUTPUT_FROM_CHAIN(locations, XR_TYPE_HAND_JOINT_VELOCITIES_EXT, XrHandJointVelocitiesEXT);
 
+	if (hand_tracker->xdev == NULL) {
+		locations->isActive = false;
+		return XR_SUCCESS;
+	}
+
 	struct xrt_device *xdev = hand_tracker->xdev;
 	enum xrt_input_name name = hand_tracker->input_name;
 
