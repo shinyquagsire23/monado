@@ -210,7 +210,7 @@ struct u_render_timing
 	 * This is called from `xrWaitFrame`, but it does not do any waiting, the caller
 	 * should wait till `out_wake_up_time`.
 	 *
-	 * @param      urth                         Render timing helper.
+	 * @param      urt                          Render timing helper.
 	 * @param[out] out_frame_id                 Frame ID of this predicted frame.
 	 * @param[out] out_wake_up_time             When the client should be woken up.
 	 * @param[out] out_predicted_display_time   Predicted display time.
@@ -251,7 +251,7 @@ struct u_render_timing
 	 * to be able to predict one or more frames into the future anyways. But
 	 * preferably as soon as the main loop wakes up from wait frame.
 	 *
-	 * @param urth                        Self pointer
+	 * @param urt                         Self pointer
 	 * @param predicted_display_time_ns   Predicted display time for this sample.
 	 * @param predicted_display_period_ns Predicted display period for this sample.
 	 * @param extra_ns                    Time between display and when this sample
@@ -270,7 +270,7 @@ struct u_render_timing
 };
 
 /*!
- * @copydoc u_frame_timing::predict
+ * @copydoc u_render_timing::predict
  *
  * Helper for calling through the function pointer.
  *
@@ -288,7 +288,7 @@ u_rt_predict(struct u_render_timing *urt,
 }
 
 /*!
- * @copydoc u_frame_timing::mark_point
+ * @copydoc u_render_timing::mark_point
  *
  * Helper for calling through the function pointer.
  *
@@ -302,7 +302,7 @@ u_rt_mark_point(struct u_render_timing *urt, int64_t frame_id, enum u_timing_poi
 }
 
 /*!
- * @copydoc u_frame_timing::mark_discarded
+ * @copydoc u_render_timing::mark_discarded
  *
  * Helper for calling through the function pointer.
  *
@@ -316,7 +316,7 @@ u_rt_mark_discarded(struct u_render_timing *urt, int64_t frame_id)
 }
 
 /*!
- * @copydoc u_frame_timing::mark_delivered
+ * @copydoc u_render_timing::mark_delivered
  *
  * Helper for calling through the function pointer.
  *
@@ -330,7 +330,7 @@ u_rt_mark_delivered(struct u_render_timing *urt, int64_t frame_id)
 }
 
 /*!
- * @copydoc u_frame_timing::info
+ * @copydoc u_render_timing::info
  *
  * Helper for calling through the function pointer.
  *
