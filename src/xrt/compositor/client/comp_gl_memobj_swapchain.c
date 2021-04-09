@@ -60,6 +60,7 @@ client_gl_memobj_swapchain_destroy(struct xrt_swapchain *xsc)
 
 	free(sc);
 }
+
 struct xrt_swapchain *
 client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
                                   const struct xrt_swapchain_create_info *info,

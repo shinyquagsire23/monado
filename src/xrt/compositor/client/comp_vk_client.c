@@ -92,6 +92,7 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index
 		VK_ERROR(vk, "Could not submit to queue: %d", ret);
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
 	}
+
 	return XRT_SUCCESS;
 }
 
@@ -392,8 +393,8 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.acquire_image = client_vk_swapchain_acquire_image;
 	sc->base.base.wait_image = client_vk_swapchain_wait_image;
 	sc->base.base.release_image = client_vk_swapchain_release_image;
-	// Fetch the number of images from the native swapchain.
-	sc->base.base.num_images = xsc->num_images;
+	sc->base.base.reference.count = 1;
+	sc->base.base.num_images = xsc->num_images; // Fetch the number of images from the native swapchain.
 	sc->c = c;
 	sc->xscn = xscn;
 

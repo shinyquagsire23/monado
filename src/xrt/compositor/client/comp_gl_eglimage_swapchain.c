@@ -193,14 +193,13 @@ client_gl_eglimage_swapchain_create(struct xrt_compositor *xc,
 	struct xrt_swapchain *native_xsc = &xscn->base;
 
 	struct client_gl_eglimage_swapchain *sc = U_TYPED_CALLOC(struct client_gl_eglimage_swapchain);
-	struct xrt_swapchain_gl *xscgl = &sc->base.base;
-	struct xrt_swapchain *client_xsc = &xscgl->base;
-	client_xsc->destroy = client_gl_eglimage_swapchain_destroy;
-	// Fetch the number of images from the native swapchain.
-	client_xsc->num_images = native_xsc->num_images;
+	sc->base.base.base.destroy = client_gl_eglimage_swapchain_destroy;
+	sc->base.base.base.reference.count = 1;
+	sc->base.base.base.num_images = native_xsc->num_images; // Fetch the number of images from the native swapchain.
 	sc->base.xscn = xscn;
-
 	sc->display = eglGetCurrentDisplay();
+
+	struct xrt_swapchain_gl *xscgl = &sc->base.base;
 
 	glGenTextures(native_xsc->num_images, xscgl->images);
 
