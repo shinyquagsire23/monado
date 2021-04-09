@@ -39,6 +39,7 @@ target_link_libraries(st_prober PUBLIC
 	xrt-interfaces
 	)
 target_link_libraries(st_prober PRIVATE
+	drv_multi
 	aux_util
 	aux_os
 	aux_tracking
