@@ -225,6 +225,7 @@ swapchain_server_create(struct ipc_client_compositor *icc,
 	ics->base.base.acquire_image = ipc_compositor_swapchain_acquire_image;
 	ics->base.base.release_image = ipc_compositor_swapchain_release_image;
 	ics->base.base.destroy = ipc_compositor_swapchain_destroy;
+	ics->base.base.reference.count = 1;
 	ics->icc = icc;
 	ics->id = handle;
 
@@ -272,6 +273,7 @@ swapchain_server_import(struct ipc_client_compositor *icc,
 	ics->base.base.acquire_image = ipc_compositor_swapchain_acquire_image;
 	ics->base.base.release_image = ipc_compositor_swapchain_release_image;
 	ics->base.base.destroy = ipc_compositor_swapchain_destroy;
+	ics->base.base.reference.count = 1;
 	ics->icc = icc;
 	ics->id = id;
 
