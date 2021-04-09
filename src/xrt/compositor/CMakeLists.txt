@@ -211,7 +211,7 @@ endif()
 
 add_library(comp_multi STATIC ${MULTI_SOURCE_FILES})
 target_link_libraries(comp_multi PUBLIC xrt-interfaces PRIVATE aux_util aux_os)
-target_include_directories(comp_multi PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(comp_multi PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
 if(XRT_FEATURE_COMPOSITOR_MAIN)
