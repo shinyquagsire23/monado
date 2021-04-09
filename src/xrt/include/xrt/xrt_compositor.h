@@ -695,7 +695,7 @@ struct xrt_compositor
 	xrt_result_t (*end_session)(struct xrt_compositor *xc);
 
 	/*!
-	 * This function and @ref mark_woke function calls are a alternative to
+	 * This function and @ref mark_frame function calls are a alternative to
 	 * @ref wait_frame.
 	 *
 	 * The only requirement on the compositor for the @p frame_id
@@ -715,7 +715,7 @@ struct xrt_compositor
 	                              uint64_t *out_predicted_display_period_ns);
 
 	/*!
-	 * This function and @ref mark_woke function calls are a alternative to
+	 * This function and @ref predict_frame function calls are a alternative to
 	 * @ref wait_frame.
 	 *
 	 * The client calls this function to mark that it woke up from waiting
