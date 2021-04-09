@@ -746,7 +746,6 @@ ipc_handle_swapchain_release_image(volatile struct ipc_client_state *ics, uint32
 xrt_result_t
 ipc_handle_swapchain_destroy(volatile struct ipc_client_state *ics, uint32_t id)
 {
-	//! @todo Implement destroy swapchain.
 	ics->num_swapchains--;
 
 	// Drop our reference, does NULL checking. Cast away volatile.
