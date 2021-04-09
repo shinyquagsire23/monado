@@ -24,6 +24,7 @@ extern "C" {
 enum u_trace_data_type
 {
 	U_TRACE_DATA_TYPE_TIMING_FRAME,
+	U_TRACE_DATA_TYPE_TIMING_RENDER,
 };
 
 void
@@ -88,6 +89,12 @@ u_ft_write_json(FILE *file, void *data);
 
 void
 u_ft_write_json_metadata(FILE *file);
+
+void
+u_rt_write_json(FILE *file, void *data);
+
+void
+u_rt_write_json_metadata(FILE *file);
 
 
 /*

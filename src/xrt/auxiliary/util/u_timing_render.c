@@ -12,8 +12,9 @@
 #include "util/u_time.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
-#include "util/u_logging.h"
 #include "util/u_timing.h"
+#include "util/u_logging.h"
+#include "util/u_trace_marker.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -315,9 +316,13 @@ rt_mark_delivered(struct u_render_timing *urt, int64_t frame_id)
 
 	uint64_t now_ns = os_monotonic_get_ns();
 
+	// Update all data.
 	f->when.delivered_ns = now_ns;
-	f->state = U_RT_READY;
-	f->frame_id = -1;
+
+
+	/*
+	 * Process data.
+	 */
 
 	int64_t diff_ns = f->predicted_delivery_time_ns - now_ns;
 	bool late = false;
@@ -343,6 +348,13 @@ rt_mark_delivered(struct u_render_timing *urt, int64_t frame_id)
 
 	do_iir_filter(&rt->app.cpu_time_ns, IIR_ALPHA_LT, IIR_ALPHA_GT, diff_cpu_ns);
 	do_iir_filter(&rt->app.draw_time_ns, IIR_ALPHA_LT, IIR_ALPHA_GT, diff_draw_ns);
+
+	// Trace the data.
+	COMP_TRACE_DATA(U_TRACE_DATA_TYPE_TIMING_RENDER, *f);
+
+	// Reset the frame.
+	f->state = U_RT_READY;
+	f->frame_id = -1;
 }
 
 static void
@@ -393,4 +405,56 @@ u_rt_create(struct u_render_timing **out_urt)
 	*out_urt = &rt->base;
 
 	return XRT_SUCCESS;
+}
+
+
+/*
+ *
+ * Tracing data.
+ *
+ */
+
+#define PID_NR 43
+#define TID_ESTIMATED_CPU 20
+#define TID_ESTIMATED_DRAW 21
+#define TID_ACTUAL_CPU 22
+#define TID_ACTUAL_DRAW 23
+
+static void
+trace_begin_id(FILE *file, uint32_t tid, const char *name, int64_t frame_id, const char *cat, uint64_t when_ns)
+{
+	char temp[256];
+	snprintf(temp, sizeof(temp), "%s %" PRIi64, name, frame_id);
+
+	u_trace_maker_write_json_begin(file, PID_NR, tid, temp, cat, when_ns);
+}
+
+static void
+trace_end(FILE *file, uint32_t tid, uint64_t when_ns)
+{
+	u_trace_maker_write_json_end(file, PID_NR, tid, when_ns);
+}
+
+void
+u_rt_write_json_metadata(FILE *file)
+{
+	u_trace_maker_write_json_metadata(file, PID_NR, TID_ESTIMATED_CPU, "1 CPU estimated");
+	u_trace_maker_write_json_metadata(file, PID_NR, TID_ESTIMATED_DRAW, "2 Draw estimated");
+	u_trace_maker_write_json_metadata(file, PID_NR, TID_ACTUAL_CPU, "1 CPU actual");
+	u_trace_maker_write_json_metadata(file, PID_NR, TID_ACTUAL_DRAW, "2 Draw actual");
+}
+
+void
+u_rt_write_json(FILE *file, void *data)
+{
+	struct u_rt_frame *f = (struct u_rt_frame *)data;
+
+	trace_begin_id(file, TID_ACTUAL_CPU, "sleep", f->frame_id, "sleep", f->when.predicted_ns);
+	trace_end(file, TID_ACTUAL_CPU, f->when.wait_woke_ns);
+
+	trace_begin_id(file, TID_ACTUAL_CPU, "cpu", f->frame_id, "cpu", f->when.wait_woke_ns);
+	trace_end(file, TID_ACTUAL_CPU, f->when.begin_ns);
+
+	trace_begin_id(file, TID_ACTUAL_DRAW, "draw", f->frame_id, "draw", f->when.begin_ns);
+	trace_end(file, TID_ACTUAL_DRAW, f->when.delivered_ns);
 }
