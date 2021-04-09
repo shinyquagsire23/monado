@@ -6,7 +6,7 @@ set(ANDROID_SOURCE_FILES
 	android/android_ahardwarebuffer_allocator.h
 	android/android_custom_surface.cpp
 	android/android_custom_surface.h
-	android/android_globals.c
+	android/android_globals.cpp
 	android/android_globals.h
 	android/android_load_class.cpp
 	android/android_load_class.hpp

@@ -34,6 +34,13 @@ android_globals_store_vm_and_activity(struct _JavaVM *vm, void *activity);
 void
 android_globals_store_vm_and_context(struct _JavaVM *vm, void *context);
 
+
+/*!
+ * Is the provided jobject an instance of android.app.Activity?
+ */
+bool
+android_globals_is_instance_of_activity(struct _JavaVM *vm, void *obj);
+
 /*!
  * Retrieve the Java VM pointer previously stored, if any.
  */
