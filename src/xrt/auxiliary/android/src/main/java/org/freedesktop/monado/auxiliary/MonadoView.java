@@ -10,6 +10,7 @@
 package org.freedesktop.monado.auxiliary;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -41,32 +42,40 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             // we want sticky immersive
             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
-    /// The activity we've connected to.
-    private final Activity activity;
-
+    private final Context context;
     /// Guards currentSurfaceHolder
     private final Object currentSurfaceHolderSync = new Object();
+    /// The activity we've connected to.
+    @Nullable
+    private final
+    Activity activity;
     private final Method viewSetSysUiVis;
-    private NativeCounterpart nativeCounterpart;
-
     public int width = -1;
     public int height = -1;
     public int format = -1;
-
+    private NativeCounterpart nativeCounterpart;
     /// Guarded by currentSurfaceHolderSync
     private SurfaceHolder currentSurfaceHolder = null;
 
+    public MonadoView(Context context) {
+        super(context);
+        this.context = context;
+        Activity activity;
+        if (context instanceof Activity) {
+            activity = (Activity) context;
+        } else {
+            activity = null;
+        }
+        this.activity = activity;
+        viewSetSysUiVis = getSystemUiVisMethod();
+    }
+
     public MonadoView(Activity activity) {
         super(activity);
+        this.context = activity;
         this.activity = activity;
-        Method method;
-        try {
-            method = activity.getWindow().getDecorView().getClass().getMethod("setSystemUiVisibility", int.class);
-        } catch (NoSuchMethodException e) {
-            // ok
-            method = null;
-        }
-        viewSetSysUiVis = method;
+
+        viewSetSysUiVis = getSystemUiVisMethod();
     }
 
     private MonadoView(Activity activity, long nativePointer) {
@@ -74,39 +83,15 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
         nativeCounterpart = new NativeCounterpart(nativePointer);
     }
 
-    private void createSurface() {
-        createSurface(false);
-    }
-
-    /**
-     * @param focusable Indicates MonadoView should be focusable or not
-     */
-    private void createSurface(boolean focusable) {
-        Log.i(TAG, "Starting to add a new surface!");
-        activity.runOnUiThread(() -> {
-            Log.i(TAG, "Starting runOnUiThread");
-            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-            WindowManager windowManager = activity.getWindowManager();
-            WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-            if (focusable) {
-                lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN;
-            } else {
-                 // There are 2 problems if view is focusable on all-in-one device:
-                 // 1. Navigation bar won't go away because view gets focus.
-                 // 2. Underlying activity lost focus and can not receive input.
-                lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN |
-                           WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                           WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
-            }
-            windowManager.addView(this, lp);
-            if (focusable) {
-                requestFocus();
-            }
-            SurfaceHolder surfaceHolder = getHolder();
-            surfaceHolder.addCallback(this);
-            Log.i(TAG, "Registered callbacks!");
-        });
+    private static Method getSystemUiVisMethod() {
+        Method method;
+        try {
+            method = android.view.View.class.getMethod("setSystemUiVisibility", int.class);
+        } catch (NoSuchMethodException e) {
+            // ok
+            method = null;
+        }
+        return method;
     }
 
     /**
@@ -120,7 +105,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     @SuppressWarnings("deprecation")
     public static MonadoView attachToActivity(@NonNull final Activity activity, long nativePointer) {
         final MonadoView view = new MonadoView(activity, nativePointer);
-        view.createSurface();
+        view.createSurfaceInActivity();
         return view;
     }
 
@@ -128,8 +113,51 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     @Keep
     public static MonadoView attachToActivity(@NonNull final Activity activity) {
         final MonadoView view = new MonadoView(activity);
-        view.createSurface();
+        view.createSurfaceInActivity();
         return view;
+    }
+
+    @NonNull
+    @Keep
+    public static DisplayMetrics getDisplayMetrics(Activity activity) {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        activity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        return displayMetrics;
+    }
+
+    private void createSurfaceInActivity() {
+        createSurfaceInActivity(false);
+    }
+
+    /**
+     * @param focusable Indicates MonadoView should be focusable or not
+     */
+    private void createSurfaceInActivity(boolean focusable) {
+        Log.i(TAG, "Starting to add a new surface!");
+        activity.runOnUiThread(() -> {
+            Log.i(TAG, "Starting runOnUiThread");
+            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+            WindowManager windowManager = activity.getWindowManager();
+            WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+            if (focusable) {
+                lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN;
+            } else {
+                // There are 2 problems if view is focusable on all-in-one device:
+                // 1. Navigation bar won't go away because view gets focus.
+                // 2. Underlying activity lost focus and can not receive input.
+                lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN |
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+            }
+            windowManager.addView(this, lp);
+            if (focusable) {
+                requestFocus();
+            }
+            SurfaceHolder surfaceHolder = getHolder();
+            surfaceHolder.addCallback(this);
+            Log.i(TAG, "Registered callbacks!");
+        });
     }
 
     /**
@@ -200,13 +228,15 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
         return true;
     }
 
-
     /**
      * Add a listener so that if our system UI display state doesn't include all we want, we re-apply.
      */
     @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
     @SuppressWarnings("deprecation")
     private void setSystemUiVisChangeListener() {
+        if (activity == null) {
+            return;
+        }
         activity.getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(visibility -> {
             // If not fullscreen, fix it.
             if (0 == (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN)) {
@@ -266,14 +296,6 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     public void surfaceRedrawNeeded(@NonNull SurfaceHolder surfaceHolder) {
 //        currentSurfaceHolder = surfaceHolder;
         Log.i(TAG, "surfaceRedrawNeeded");
-    }
-
-    @NonNull
-    @Keep
-    public static DisplayMetrics getDisplayMetrics(Activity activity) {
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        activity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        return displayMetrics;
     }
 
 }
