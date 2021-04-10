@@ -25,6 +25,7 @@
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
+#include "util/u_verify.h"
 
 #include "math/m_api.h"
 #include "math/m_mathinclude.h"
@@ -1775,7 +1776,6 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 		return oxr_session_success_result(sess);
 	}
 
-
 	/*
 	 * Blend mode.
 	 * XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED must always be reported,
@@ -1783,16 +1783,16 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 	 */
 
 	enum xrt_blend_mode blend_mode = oxr_blend_mode_to_xrt(frameEndInfo->environmentBlendMode);
+	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 
-	if (blend_mode == 0) {
+	if (!u_verify_blend_mode_valid(blend_mode)) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(frameEndInfo->environmentBlendMode == "
 		                 "0x%08x) unknown environment blend mode",
 		                 frameEndInfo->environmentBlendMode);
 	}
 
-	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
-	if ((blend_mode & xdev->hmd->blend_mode) == 0) {
+	if (!u_verify_blend_mode_supported(xdev, blend_mode)) {
 		//! @todo Make integer print to string.
 		return oxr_error(log, XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED,
 		                 "(frameEndInfo->environmentBlendMode == %u) "
