@@ -158,6 +158,7 @@ set(UTIL_SOURCE_FILES
 	util/u_var.h
 	util/u_config_json.c
 	util/u_config_json.h
+	util/u_verify.h
 	)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/util/u_git_tag.c.in" "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c" @ONLY)

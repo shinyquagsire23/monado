@@ -149,7 +149,10 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device
 	};
 
 	// Common
-	xdev->hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
+	size_t idx = 0;
+	xdev->hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
+	xdev->hmd->num_blend_modes = idx;
+
 	if (xdev->hmd->distortion.models == 0) {
 		xdev->hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
 		xdev->hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;

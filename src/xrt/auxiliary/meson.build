@@ -64,6 +64,7 @@ lib_aux_util = static_library(
 		'util/u_var.h',
 		'util/u_config_json.c',
 		'util/u_config_json.h',
+		'util/u_verify.h',
 	) + [
 		u_git_tag_c,
 	],
