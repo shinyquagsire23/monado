@@ -20,6 +20,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_trace_marker.h"
+#include "util/u_verify.h"
 
 #include "shared/ipc_shmem.h"
 #include "server/ipc_server.h"
@@ -252,7 +253,12 @@ init_shm(struct ipc_server *s)
 			ism->hmd.views[1].display.h_pixels = xdev->hmd->views[1].display.h_pixels;
 			ism->hmd.views[1].fov = xdev->hmd->views[1].fov;
 
-			ism->hmd.blend_mode = xdev->hmd->blend_mode;
+			for (size_t i = 0; i < xdev->hmd->num_blend_modes; i++) {
+				// Not super necessary, we also do this assert in oxr_system.c
+				assert(u_verify_blend_mode_valid(xdev->hmd->blend_modes[i]));
+				ism->hmd.blend_modes[i] = xdev->hmd->blend_modes[i];
+			}
+			ism->hmd.num_blend_modes = xdev->hmd->num_blend_modes;
 		}
 
 		// Setup the tracking origin.

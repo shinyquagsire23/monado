@@ -225,7 +225,8 @@ struct ipc_shared_memory
 			 */
 			struct xrt_fov fov;
 		} views[2];
-		enum xrt_blend_mode blend_mode;
+		enum xrt_blend_mode blend_modes[XRT_MAX_DEVICE_BLEND_MODES];
+		size_t num_blend_modes;
 	} hmd;
 
 	struct xrt_input inputs[IPC_SHARED_MAX_INPUTS];

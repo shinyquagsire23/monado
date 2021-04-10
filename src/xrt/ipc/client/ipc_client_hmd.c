@@ -169,8 +169,11 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 		return NULL;
 	}
 #endif
+	for (int i = 0; i < XRT_MAX_DEVICE_BLEND_MODES; i++) {
+		ich->base.hmd->blend_modes[i] = ipc_c->ism->hmd.blend_modes[i];
+	}
+	ich->base.hmd->num_blend_modes = ipc_c->ism->hmd.num_blend_modes;
 
-	ich->base.hmd->blend_mode = ipc_c->ism->hmd.blend_mode;
 	ich->base.hmd->views[0].display.w_pixels = ipc_c->ism->hmd.views[0].display.w_pixels;
 	ich->base.hmd->views[0].display.h_pixels = ipc_c->ism->hmd.views[0].display.h_pixels;
 	ich->base.hmd->views[0].fov = ipc_c->ism->hmd.views[0].fov;
