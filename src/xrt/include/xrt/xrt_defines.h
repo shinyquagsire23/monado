@@ -33,18 +33,19 @@ struct xrt_reference
 };
 
 /*!
- * Which blend mode does the device support, used as both a bitfield and value.
+ * Blend mode that the device supports, exact mirror of XrEnvironmentBlendMode
  *
  * @ingroup xrt_iface
  */
 enum xrt_blend_mode
 {
-	// clang-format off
-	XRT_BLEND_MODE_OPAQUE      = 1 << 0,
-	XRT_BLEND_MODE_ADDITIVE    = 1 << 1,
-	XRT_BLEND_MODE_ALPHA_BLEND = 1 << 2,
-	// clang-format on
+	XRT_BLEND_MODE_OPAQUE = 1,
+	XRT_BLEND_MODE_ADDITIVE = 2,
+	XRT_BLEND_MODE_ALPHA_BLEND = 3,
+	XRT_BLEND_MODE_MAX_ENUM,
 };
+
+#define XRT_MAX_DEVICE_BLEND_MODES 3
 
 /*!
  * Which distortion model does the device expose,

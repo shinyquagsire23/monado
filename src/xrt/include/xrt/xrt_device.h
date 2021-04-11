@@ -4,6 +4,7 @@
  * @file
  * @brief  Header defining an xrt HMD device.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <mosesturner@protonmail.com>
  * @ingroup xrt_iface
  */
 
@@ -106,9 +107,10 @@ struct xrt_hmd_parts
 	struct xrt_view views[2];
 
 	/*!
-	 * Supported blend modes, a bitfield.
+	 * Array of supported blend modes.
 	 */
-	enum xrt_blend_mode blend_mode;
+	enum xrt_blend_mode blend_modes[XRT_MAX_DEVICE_BLEND_MODES];
+	size_t num_blend_modes;
 
 	/*!
 	 * Distortion information.
