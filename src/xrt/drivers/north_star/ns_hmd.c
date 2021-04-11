@@ -553,6 +553,20 @@ ns_hmd_create(const char *config_path)
 	ns->base.orientation_tracking_supported = true;
 	ns->base.device_type = XRT_DEVICE_TYPE_HMD;
 
+	size_t idx = 0;
+	// Preferred; most North Stars are see-through.
+	ns->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_ADDITIVE;
+
+	// XRT_BLEND_MODE_OPAQUE is not preferred and kind of a lie, but we use North Star for VR sometimes despite its
+	// see-through display. And there's nothing stopping you from covering up the outside of the reflector, turning
+	// it into an opaque headset. As most VR apps I've encountered require BLEND_MODE_OPAQUE to be an option, we
+	// need to support it.
+	ns->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
+
+	// Not supporting ALPHA_BLEND for now, because I know nothing about it and want to avoid unintended
+	// consequences. As soon as you have a specific reason to support it, go ahead and support it.
+	ns->base.hmd->num_blend_modes = idx;
+
 	return &ns->base;
 
 cleanup:

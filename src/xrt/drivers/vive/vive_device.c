@@ -746,7 +746,10 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 	struct vive_device *d = U_DEVICE_ALLOCATE(struct vive_device, flags, 1, 0);
 
-	d->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
+	size_t idx = 0;
+	d->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
+	d->base.hmd->num_blend_modes = idx;
+
 	d->base.update_inputs = vive_device_update_inputs;
 	d->base.get_tracked_pose = vive_device_get_tracked_pose;
 	d->base.get_view_pose = vive_device_get_view_pose;

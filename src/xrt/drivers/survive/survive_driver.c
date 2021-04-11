@@ -830,7 +830,9 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 
 	SURVIVE_INFO(survive, "survive HMD present");
 
-	survive->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
+	size_t idx = 0;
+	survive->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
+	survive->base.hmd->num_blend_modes = idx;
 
 	survive->hmd.config = *config;
 

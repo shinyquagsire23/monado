@@ -321,7 +321,10 @@ hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 	struct hdk_device *hd = U_DEVICE_ALLOCATE(struct hdk_device, flags, 1, 0);
 
-	hd->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
+	size_t idx = 0;
+	hd->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
+	hd->base.hmd->num_blend_modes = idx;
+
 	hd->base.update_inputs = hdk_device_update_inputs;
 	hd->base.get_tracked_pose = hdk_device_get_tracked_pose;
 	hd->base.get_view_pose = hdk_device_get_view_pose;

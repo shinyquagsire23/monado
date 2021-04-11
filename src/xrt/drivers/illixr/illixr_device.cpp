@@ -177,7 +177,11 @@ illixr_hmd_create(const char *path_in, const char *comp_in)
 	dh->base.destroy = illixr_hmd_destroy;
 	dh->base.name = XRT_DEVICE_GENERIC_HMD;
 	dh->base.device_type = XRT_DEVICE_TYPE_HMD;
-	dh->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
+
+	size_t idx = 0;
+	dh->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
+	dh->base.hmd->num_blend_modes = idx;
+
 	dh->pose.orientation.w = 1.0f; // All other values set to zero.
 	dh->print_spew = debug_get_bool_option_illixr_spew();
 	dh->print_debug = debug_get_bool_option_illixr_debug();

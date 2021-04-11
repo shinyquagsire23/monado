@@ -839,11 +839,13 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 	ohd->base.compute_distortion = compute_distortion_openhmd;
 
 	// Which blend modes does the device support.
-	ohd->base.hmd->blend_mode = XRT_BLEND_MODE_OPAQUE;
+
+	size_t bm_idx = 0;
 	if (info.quirks.video_see_through) {
-		ohd->base.hmd->blend_mode =
-		    (enum xrt_blend_mode)(ohd->base.hmd->blend_mode | XRT_BLEND_MODE_ALPHA_BLEND);
+		ohd->base.hmd->blend_modes[bm_idx++] = XRT_BLEND_MODE_ALPHA_BLEND;
 	}
+	ohd->base.hmd->blend_modes[bm_idx++] = XRT_BLEND_MODE_OPAQUE;
+	ohd->base.hmd->num_blend_modes = bm_idx;
 
 	if (info.quirks.video_distortion_vive) {
 		// clang-format off
