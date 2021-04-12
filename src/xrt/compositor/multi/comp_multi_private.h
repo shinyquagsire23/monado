@@ -101,6 +101,9 @@ struct multi_compositor
 	//! Owning system compositor.
 	struct multi_system_compositor *msc;
 
+	//! Only matters for Windows and in process.
+	struct os_precise_sleeper sleeper;
+
 	struct
 	{
 		struct os_mutex mutex;

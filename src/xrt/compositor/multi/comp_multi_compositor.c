@@ -235,13 +235,36 @@ multi_compositor_mark_frame(struct xrt_compositor *xc,
 static xrt_result_t
 multi_compositor_wait_frame(struct xrt_compositor *xc,
                             int64_t *out_frame_id,
-                            uint64_t *predicted_display_time,
-                            uint64_t *predicted_display_period)
+                            uint64_t *out_predicted_display_time_ns,
+                            uint64_t *out_predicted_display_period_ns)
 {
 	COMP_TRACE_MARKER();
 
 	struct multi_compositor *mc = multi_compositor(xc);
-	(void)mc;
+
+	int64_t frame_id = -1;
+	uint64_t wake_up_time_ns = 0;
+	uint64_t predicted_gpu_time_ns = 0;
+
+	xrt_comp_predict_frame(               //
+	    xc,                               //
+	    &frame_id,                        //
+	    &wake_up_time_ns,                 //
+	    &predicted_gpu_time_ns,           //
+	    out_predicted_display_time_ns,    //
+	    out_predicted_display_period_ns); //
+
+	uint64_t now_ns = os_monotonic_get_ns();
+	if (now_ns < wake_up_time_ns) {
+		uint32_t delay = (uint32_t)(wake_up_time_ns - now_ns);
+		os_precise_sleeper_nanosleep(&mc->sleeper, delay);
+	}
+
+	now_ns = os_monotonic_get_ns();
+
+	xrt_comp_mark_frame(xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, now_ns);
+
+	*out_frame_id = frame_id;
 
 	return XRT_SUCCESS;
 }
@@ -532,6 +555,8 @@ multi_compositor_destroy(struct xrt_compositor *xc)
 	// Does null checking.
 	u_rt_destroy(&mc->urt);
 
+	os_precise_sleeper_deinit(&mc->sleeper);
+
 	free(mc);
 }
 
@@ -587,6 +612,9 @@ multi_compositor_create(struct multi_system_compositor *msc,
 
 	// Passthrough our formats from the native compositor to the client.
 	mc->base.base.info = msc->xcn->base.info;
+
+	// Using in wait frame.
+	os_precise_sleeper_init(&mc->sleeper);
 
 	// This is safe to do without a lock since we are not on the list yet.
 	u_rt_create(&mc->urt);
