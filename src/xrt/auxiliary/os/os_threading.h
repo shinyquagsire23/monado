@@ -98,7 +98,7 @@ os_mutex_destroy(struct os_mutex *om)
  */
 
 /*!
- * A wrapper around a native mutex.
+ * A wrapper around a native thread.
  */
 struct os_thread
 {
