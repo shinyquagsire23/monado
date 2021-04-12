@@ -136,6 +136,14 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
         return displayMetrics;
     }
 
+    @Keep
+    public long getNativePointer() {
+        if (nativeCounterpart == null) {
+            return 0;
+        }
+        return nativeCounterpart.getNativePointer();
+    }
+
     private void createSurfaceInActivity() {
         createSurfaceInActivity(false);
     }
