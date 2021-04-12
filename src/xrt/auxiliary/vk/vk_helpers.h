@@ -49,6 +49,7 @@ struct vk_bundle
 	struct os_mutex queue_mutex;
 
 	bool has_GOOGLE_display_timing;
+	bool has_EXT_global_priority;
 
 	VkDebugReportCallbackEXT debug_report_cb;
 
@@ -363,6 +364,7 @@ vk_init_cmd_pool(struct vk_bundle *vk);
 VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
+                 VkQueueGlobalPriorityEXT global_priorty,
                  const char *const *required_device_extensions,
                  size_t num_required_device_extensions,
                  const char *const *optional_device_extensions,

@@ -1051,6 +1051,9 @@ vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t 
 			if (strcmp(ext, VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) == 0) {
 				vk->has_GOOGLE_display_timing = true;
 			}
+			if (strcmp(ext, VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME) == 0) {
+				vk->has_EXT_global_priority = true;
+			}
 
 			return true;
 		}
@@ -1131,6 +1134,7 @@ vk_build_device_extensions(struct vk_bundle *vk,
 VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
+                 VkQueueGlobalPriorityEXT global_priorty,
                  const char *const *required_device_extensions,
                  size_t num_required_device_extensions,
                  const char *const *optional_device_extensions,
@@ -1165,8 +1169,14 @@ vk_create_device(struct vk_bundle *vk,
 		return ret;
 	}
 
+	VkDeviceQueueGlobalPriorityCreateInfoEXT priority_info = {
+	    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT,
+	    .globalPriority = global_priorty,
+	};
+
 	VkDeviceCreateInfo device_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+	    .pNext = vk->has_EXT_global_priority ? &priority_info : NULL,
 	    .queueCreateInfoCount = 1,
 	    .pQueueCreateInfos = &queue_create_info,
 	    .enabledExtensionCount = num_device_extensions,
