@@ -431,6 +431,13 @@ wait_for_scheduled_free(struct multi_compositor *mc)
 
 	// Block here if the scheduled slot is not clear.
 	while (mc->scheduled.active) {
+
+		// Replace the scheduled frame if it's in the past.
+		uint64_t now_ns = os_monotonic_get_ns();
+		if (mc->scheduled.display_time_ns < now_ns) {
+			break;
+		}
+
 		os_mutex_unlock(&mc->slot_lock);
 
 		os_nanosleep(U_TIME_1MS_IN_NS);
