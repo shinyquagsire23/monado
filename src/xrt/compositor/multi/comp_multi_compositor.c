@@ -414,6 +414,35 @@ multi_compositor_layer_equirect2(struct xrt_compositor *xc,
 	return XRT_SUCCESS;
 }
 
+static void
+wait_fence(struct xrt_compositor_fence **xcf_ptr)
+{
+	COMP_TRACE_MARKER();
+	xrt_compositor_fence_wait(*xcf_ptr, UINT64_MAX);
+	xrt_compositor_fence_destroy(xcf_ptr);
+}
+
+static void
+wait_for_scheduled_free(struct multi_compositor *mc)
+{
+	COMP_TRACE_MARKER();
+
+	os_mutex_lock(&mc->slot_lock);
+
+	// Block here if the scheduled slot is not clear.
+	while (mc->scheduled.active) {
+		os_mutex_unlock(&mc->slot_lock);
+
+		os_nanosleep(U_TIME_1MS_IN_NS);
+
+		os_mutex_lock(&mc->slot_lock);
+	}
+
+	slot_move_and_clear(&mc->scheduled, &mc->progress);
+
+	os_mutex_unlock(&mc->slot_lock);
+}
+
 static xrt_result_t
 multi_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
@@ -444,24 +473,10 @@ multi_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_g
 	} while (false); // Goto without the labels.
 
 	if (xcf != NULL) {
-		xrt_compositor_fence_wait(xcf, UINT64_MAX);
-		xrt_compositor_fence_destroy(&xcf);
+		wait_fence(&xcf);
 	}
 
-	os_mutex_lock(&mc->slot_lock);
-
-	// Block here if the scheduled slot is not clear.
-	while (mc->scheduled.active) {
-		os_mutex_unlock(&mc->slot_lock);
-
-		os_nanosleep(U_TIME_1MS_IN_NS);
-
-		os_mutex_lock(&mc->slot_lock);
-	}
-
-	slot_move_and_clear(&mc->scheduled, &mc->progress);
-
-	os_mutex_unlock(&mc->slot_lock);
+	wait_for_scheduled_free(mc);
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
 	u_rt_mark_delivered(mc->urt, frame_id);
