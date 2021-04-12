@@ -1,14 +1,14 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
 // Author: Pete Black <pete.black@collabora.com>
+// Author: Jakob Bornecrantz <jakob@collabora.com>
 
 #version 450
 
 layout (binding = 1, std140) uniform ubo
 {
-	vec4 rot;
-	bool flip_y;
+	vec4 vertex_rot;
 } ubo_vp;
 
 layout (location = 0)  in vec4 in_pos_ruv;
@@ -26,20 +26,14 @@ out gl_PerVertex
 void main()
 {
 	mat2x2 rot = {
-		ubo_vp.rot.xy,
-		ubo_vp.rot.zw,
+		ubo_vp.vertex_rot.xy,
+		ubo_vp.vertex_rot.zw,
 	};
 
 	vec2 pos = rot * in_pos_ruv.xy;
 	out_ruv = in_pos_ruv.zw;
 	out_guv = in_guv_buv.xy;
 	out_buv = in_guv_buv.zw;
-
-	if (ubo_vp.flip_y) {
-		out_ruv.y = 1.0 - out_ruv.y;
-		out_guv.y = 1.0 - out_guv.y;
-		out_buv.y = 1.0 - out_buv.y;
-	}
 
 	gl_Position = vec4(pos, 0.0f, 1.0f);
 }

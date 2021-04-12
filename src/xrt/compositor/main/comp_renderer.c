@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -265,12 +265,11 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 
 
 	struct comp_mesh_ubo_data l_data = {
-	    .rot = l_v->rot,
-	    .flip_y = false,
+	    .vertex_rot = l_v->rot,
 	};
 
 	if (pre_rotate) {
-		math_matrix_2x2_multiply(&l_v->rot, &rotation_90_cw, &l_data.rot);
+		math_matrix_2x2_multiply(&l_v->rot, &rotation_90_cw, &l_data.vertex_rot);
 	}
 
 	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
@@ -294,12 +293,11 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	}
 
 	struct comp_mesh_ubo_data r_data = {
-	    .rot = r_v->rot,
-	    .flip_y = false,
+	    .vertex_rot = r_v->rot,
 	};
 
 	if (pre_rotate) {
-		math_matrix_2x2_multiply(&r_v->rot, &rotation_90_cw, &r_data.rot);
+		math_matrix_2x2_multiply(&r_v->rot, &rotation_90_cw, &r_data.vertex_rot);
 	}
 
 	/*

@@ -276,8 +276,7 @@ struct comp_viewport_data
  */
 struct comp_mesh_ubo_data
 {
-	struct xrt_matrix_2x2 rot;
-	int flip_y;
+	struct xrt_matrix_2x2 vertex_rot;
 };
 
 /*!
