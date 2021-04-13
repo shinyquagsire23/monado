@@ -262,7 +262,7 @@ rt_mark_point(struct u_render_timing *urt, int64_t frame_id, enum u_timing_point
 {
 	struct render_timing *rt = render_timing(urt);
 
-	DEBUG_PRINT_FRAME_ID();
+	RT_LOG_T("%" PRIi64 " (%u)", frame_id, point);
 
 	size_t index = GET_INDEX_FROM_ID(rt, frame_id);
 	assert(rt->frames[index].frame_id == frame_id);
