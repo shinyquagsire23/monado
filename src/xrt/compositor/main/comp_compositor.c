@@ -215,6 +215,8 @@ compositor_wait_frame(struct xrt_compositor *xc,
 
 	xrt_comp_mark_frame(xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, now_ns);
 
+	*out_frame_id = frame_id;
+
 	return XRT_SUCCESS;
 }
 
