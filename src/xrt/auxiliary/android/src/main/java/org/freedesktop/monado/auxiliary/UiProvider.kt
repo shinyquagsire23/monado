@@ -9,8 +9,6 @@
 package org.freedesktop.monado.auxiliary
 
 import android.app.PendingIntent
-import android.content.Context
-import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 
 /**

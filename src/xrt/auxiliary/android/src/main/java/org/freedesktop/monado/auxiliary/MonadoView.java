@@ -19,6 +19,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 
+import androidx.annotation.GuardedBy;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,6 +32,7 @@ import java.util.Calendar;
 @Keep
 public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, SurfaceHolder.Callback2 {
     private static final String TAG = "MonadoView";
+
     @SuppressWarnings("deprecation")
     private static final int sysUiVisFlags = 0
             // Give us a stable view of content insets
@@ -42,19 +44,27 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             // we want sticky immersive
             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+
+    @NonNull
     private final Context context;
-    /// Guards currentSurfaceHolder
-    private final Object currentSurfaceHolderSync = new Object();
+
     /// The activity we've connected to.
     @Nullable
-    private final
-    Activity activity;
+    private final Activity activity;
+
+    @Nullable
     private final Method viewSetSysUiVis;
+
+    private final Object currentSurfaceHolderSync = new Object();
+
     public int width = -1;
     public int height = -1;
     public int format = -1;
+
     private NativeCounterpart nativeCounterpart;
-    /// Guarded by currentSurfaceHolderSync
+
+    @GuardedBy("currentSurfaceHolderSync")
+    @Nullable
     private SurfaceHolder currentSurfaceHolder = null;
 
     public MonadoView(Context context) {
@@ -97,7 +107,8 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     /**
      * Construct and start attaching a MonadoView to a client application.
      *
-     * @param activity The activity to attach to.
+     * @param activity      The activity to attach to.
+     * @param nativePointer The native android_custom_surface pointer, cast to a long.
      * @return The MonadoView instance created and asynchronously attached.
      */
     @NonNull
