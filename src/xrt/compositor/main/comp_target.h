@@ -106,8 +106,17 @@ struct comp_target
 	bool (*init_post_vulkan)(struct comp_target *ct, uint32_t preferred_width, uint32_t preferred_height);
 
 	/*!
+	 * Is this target ready for image creation?
+	 *
+	 * Call before calling @ref create_images
+	 */
+	bool (*check_ready)(struct comp_target *ct);
+
+	/*!
 	 * Create or recreate the image(s) of the target, for swapchain based
 	 * targets this will (re)create the swapchain.
+	 *
+	 * @pre @ref check_ready returns true
 	 */
 	void (*create_images)(struct comp_target *ct,
 	                      uint32_t preferred_width,
@@ -216,6 +225,20 @@ comp_target_init_post_vulkan(struct comp_target *ct, uint32_t preferred_width, u
 	COMP_TRACE_MARKER();
 
 	return ct->init_post_vulkan(ct, preferred_width, preferred_height);
+}
+
+/*!
+ * @copydoc comp_target::check_ready
+ *
+ * @public @memberof comp_target
+ * @ingroup comp_main
+ */
+static inline bool
+comp_target_check_ready(struct comp_target *ct)
+{
+	COMP_TRACE_MARKER();
+
+	return ct->check_ready(ct);
 }
 
 /*!

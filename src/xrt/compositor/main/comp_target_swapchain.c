@@ -300,6 +300,13 @@ comp_target_swapchain_present(struct comp_target *ct,
 }
 
 static bool
+comp_target_swapchain_check_ready(struct comp_target *ct)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	return cts->surface.handle != VK_NULL_HANDLE;
+}
+
+static bool
 _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkSurfaceFormatKHR *format)
 {
 	struct vk_bundle *vk = get_vk(cts);
@@ -646,6 +653,7 @@ comp_target_swapchain_init_and_set_fnptrs(struct comp_target_swapchain *cts,
                                           enum comp_target_display_timing_usage timing_usage)
 {
 	cts->timing_usage = timing_usage;
+	cts->base.check_ready = comp_target_swapchain_check_ready;
 	cts->base.create_images = comp_target_swapchain_create_images;
 	cts->base.acquire = comp_target_swapchain_acquire_next_image;
 	cts->base.present = comp_target_swapchain_present;

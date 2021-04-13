@@ -83,6 +83,7 @@ struct comp_target_swapchain
  * Initializes these function pointers, all other methods of @ref comp_target are the responsibility of the caller (the
  * "subclass"):
  *
+ * - comp_target::check_ready
  * - comp_target::create_images
  * - comp_target::acquire
  * - comp_target::present
