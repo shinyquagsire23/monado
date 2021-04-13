@@ -27,7 +27,10 @@ extern "C" {
  * @{
  */
 
-//! Container of qwerty devices and driver properties.
+/*!
+ * @brief Container of qwerty devices and driver properties.
+ * @see qwerty_hmd, qwerty_controller
+ */
 struct qwerty_system
 {
 	struct qwerty_hmd *hmd;          //!< Can be NULL
@@ -40,8 +43,10 @@ struct qwerty_system
 	bool rctrl_focused; //!< Same as `hmd_focused` but for the right controller
 };
 
-//! Fake device that modifies its tracked pose through its methods.
-//! @implements xrt_device
+/*!
+ * Fake device that modifies its tracked pose through its methods.
+ * @implements xrt_device
+ */
 struct qwerty_device
 {
 	struct xrt_device base;
@@ -67,14 +72,20 @@ struct qwerty_device
 	float pitch_delta;   //!< Similar to `yaw_delta`
 };
 
-//! @implements qwerty_device
+/*!
+ * @implements qwerty_device
+ * @see qwerty_system
+ */
 struct qwerty_hmd
 {
 	struct qwerty_device base;
 };
 
-//! Supports input actions and can be attached to the HMD pose.
-//! @implements qwerty_device
+/*!
+ * Supports input actions and can be attached to the HMD pose.
+ * @implements qwerty_device
+ * @see qwerty_system
+ */
 struct qwerty_controller
 {
 	struct qwerty_device base;
@@ -91,137 +102,185 @@ struct qwerty_controller
 };
 
 /*!
- * @name Qwerty System
- * @memberof qwerty_system
- * qwerty_system public methods
- * @{
+ * @public @memberof qwerty_system
  */
-//! @public @memberof qwerty_system <!-- Trick for doxygen -->
-
 struct qwerty_system *
 qwerty_system_create(struct qwerty_hmd *qhmd,
                      struct qwerty_controller *qleft,
                      struct qwerty_controller *qright,
                      enum u_logging_level log_level);
 
-/*!
- * @}
+/*
+ *
+ * qwerty_device methods
+ *
  */
 
 /*!
- * @name Qwerty Device
- * @memberof qwerty_device
- * qwerty_device public methods
- * @{
+ * @brief Cast to qwerty_device. Ensures returning a valid device or crashing.
+ * @public @memberof qwerty_device
  */
-//! @public @memberof qwerty_device <!-- Trick for doxygen -->
-
-//! Cast to qwerty_device. Ensures returning a valid device or crashing.
 struct qwerty_device *
 qwerty_device(struct xrt_device *xd);
 
-// clang-format off
-void qwerty_press_left(struct qwerty_device *qd);
-void qwerty_release_left(struct qwerty_device *qd);
-void qwerty_press_right(struct qwerty_device *qd);
-void qwerty_release_right(struct qwerty_device *qd);
-void qwerty_press_forward(struct qwerty_device *qd);
-void qwerty_release_forward(struct qwerty_device *qd);
-void qwerty_press_backward(struct qwerty_device *qd);
-void qwerty_release_backward(struct qwerty_device *qd);
-void qwerty_press_up(struct qwerty_device *qd);
-void qwerty_release_up(struct qwerty_device *qd);
-void qwerty_press_down(struct qwerty_device *qd);
-void qwerty_release_down(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_press_left(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_release_left(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_press_right(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_release_right(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_press_forward(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_release_forward(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_press_backward(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_release_backward(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_press_up(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_release_up(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_press_down(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_release_down(struct qwerty_device *qd);
 
-void qwerty_press_look_left(struct qwerty_device *qd);
-void qwerty_release_look_left(struct qwerty_device *qd);
-void qwerty_press_look_right(struct qwerty_device *qd);
-void qwerty_release_look_right(struct qwerty_device *qd);
-void qwerty_press_look_up(struct qwerty_device *qd);
-void qwerty_release_look_up(struct qwerty_device *qd);
-void qwerty_press_look_down(struct qwerty_device *qd);
-void qwerty_release_look_down(struct qwerty_device *qd);
-// clang-format on
+//! @public @memberof qwerty_device
+void
+qwerty_press_look_left(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_release_look_left(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_press_look_right(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_release_look_right(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_press_look_up(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_release_look_up(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_press_look_down(struct qwerty_device *qd);
+//! @public @memberof qwerty_device
+void
+qwerty_release_look_down(struct qwerty_device *qd);
 
-//! Momentarily increase `movement_speed` until `qwerty_release_sprint()`
+/*!
+ * Momentarily increase `movement_speed` until `qwerty_release_sprint()`
+ * @public @memberof qwerty_device
+ */
 void
 qwerty_press_sprint(struct qwerty_device *qd);
 
+/*!
+ * Stop doing what @ref qwerty_press_sprint started.
+ * @public @memberof qwerty_device
+ */
 void
 qwerty_release_sprint(struct qwerty_device *qd);
 
-//! Add yaw and pitch movement for the next frame
+/*!
+ * Add yaw and pitch movement for the next frame
+ * @public @memberof qwerty_device
+ */
 void
 qwerty_add_look_delta(struct qwerty_device *qd, float yaw, float pitch);
 
-//! Change movement speed in exponential steps (usually integers, but any float allowed)
+/*!
+ * Change movement speed in exponential steps (usually integers, but any float allowed)
+ * @public @memberof qwerty_device
+ */
 void
 qwerty_change_movement_speed(struct qwerty_device *qd, float steps);
 
-//! Release all movement input
+/*!
+ * Release all movement input
+ * @public @memberof qwerty_device
+ */
 void
 qwerty_release_all(struct qwerty_device *qd);
 
 /*!
- * @}
+ * Create qwerty_hmd. Crash on failure.
+ * @public @memberof qwerty_hmd
  */
-
-/*!
- * @name Qwerty HMD
- * @memberof qwerty_hmd
- * qwerty_hmd public methods
- * @{
- */
-//! @public @memberof qwerty_hmd <!-- Trick for doxygen -->
-
-//! Create qwerty_hmd. Crash on failure.
 struct qwerty_hmd *
 qwerty_hmd_create(void);
 
-//! Cast to qwerty_hmd. Ensures returning a valid HMD or crashing.
+/*!
+ * Cast to qwerty_hmd. Ensures returning a valid HMD or crashing.
+ * @public @memberof qwerty_hmd
+ */
 struct qwerty_hmd *
 qwerty_hmd(struct xrt_device *xd);
 
-/*!
- * @}
+/*
+ *
+ * qwerty_controller methods
+ *
  */
-
 /*!
- * @name Qwerty Controller
- * @memberof qwerty_controller
- * qwerty_controller public methods
- * @{
+ * Create qwerty_controller. Crash on failure.
+ * @public @memberof qwerty_controller
  */
-//! @public @memberof qwerty_controller <!-- Trick for doxygen -->
-
-//! Create qwerty_controller. Crash on failure.
 struct qwerty_controller *
 qwerty_controller_create(bool is_left, struct qwerty_hmd *qhmd);
 
-//! Cast to qwerty_controller. Ensures returning a valid controller or crashing.
+/*!
+ * Cast to qwerty_controller. Ensures returning a valid controller or crashing.
+ * @public @memberof qwerty_controller
+ */
 struct qwerty_controller *
 qwerty_controller(struct xrt_device *xd);
 
-//! Simulate input/select/click
+/*!
+ * Simulate input/select/click
+ * @public @memberof qwerty_controller
+ */
 void
 qwerty_select_click(struct qwerty_controller *qc);
 
-//! Simulate input/menu/click
+/*!
+ * Simulate input/menu/click
+ * @public @memberof qwerty_controller
+ */
 void
 qwerty_menu_click(struct qwerty_controller *qc);
 
-//! Attach/detach the pose of `qc` to its HMD. Only works when a qwerty_hmd is present.
+/*!
+ * Attach/detach the pose of `qc` to its HMD. Only works when a qwerty_hmd is present.
+ * @public @memberof qwerty_controller
+ */
 void
 qwerty_follow_hmd(struct qwerty_controller *qc, bool follow);
 
-//! Reset controller to initial pose and makes it follow the HMD
+/*!
+ * Reset controller to initial pose and makes it follow the HMD
+ * @public @memberof qwerty_controller
+ */
 void
 qwerty_reset_controller_pose(struct qwerty_controller *qc);
 
-/*!
- * @}
- */
 
 /*!
  * @}
