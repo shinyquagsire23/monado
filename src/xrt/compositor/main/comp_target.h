@@ -123,6 +123,8 @@ struct comp_target
 
 	/*!
 	 * Present the image at index to the screen.
+	 *
+	 * @pre @ref acquire succeeded for the same @p semaphore and @p index you are passing
 	 */
 	VkResult (*present)(struct comp_target *ct,
 	                    VkQueue queue,
