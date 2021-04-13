@@ -76,7 +76,23 @@ struct comp_target_swapchain
  */
 
 /*!
- * Pre Vulkan initialisation, sets function pointers.
+ * @brief Pre Vulkan initialisation, sets function pointers.
+ *
+ * Call from the creation function for your "subclass", after allocating.
+ *
+ * Initializes these function pointers, all other methods of @ref comp_target are the responsibility of the caller (the
+ * "subclass"):
+ *
+ * - comp_target::create_images
+ * - comp_target::acquire
+ * - comp_target::present
+ * - comp_target::calc_frame_timings
+ * - comp_target::mark_timing_point
+ * - comp_target::update_timings
+ *
+ * Also sets comp_target_swapchain::timing_usage to the provided value.
+ *
+ * @protected @memberof comp_target_swapchain
  *
  * @ingroup comp_main
  */
@@ -87,6 +103,8 @@ comp_target_swapchain_init_and_set_fnptrs(struct comp_target_swapchain *cts,
 /*!
  * Free all managed resources on the given @ref comp_target_swapchain,
  * does not free the struct itself.
+ *
+ * @protected @memberof comp_target_swapchain
  *
  * @ingroup comp_main
  */
