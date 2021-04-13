@@ -1977,6 +1977,10 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 			return oxr_error((LOG), XR_ERROR_RUNTIME_FAILURE, "Failed to create native compositor! '%i'",  \
 			                 xret);                                                                        \
 		}                                                                                                      \
+		if ((SESS)->sys->xsysc->xmcc != NULL) {                                                                \
+			xrt_syscomp_set_state((SESS)->sys->xsysc, &(SESS)->xcn->base, true, true);                     \
+			xrt_syscomp_set_z_order((SESS)->sys->xsysc, &(SESS)->xcn->base, 0);                            \
+		}                                                                                                      \
 	} while (false)
 
 #define OXR_SESSION_ALLOCATE(LOG, SYS, OUT)                                                                            \
