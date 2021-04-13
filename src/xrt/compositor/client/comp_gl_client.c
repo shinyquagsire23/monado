@@ -296,8 +296,7 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 		xret = c->insert_fence(xc, &sync_handle);
 	} else {
 		/*!
-		 * @hack: The swapchain images should have been externally
-		 * synchronized.
+		 * @todo The swapchain images should have been externally synchronized.
 		 */
 		glFlush();
 	}
