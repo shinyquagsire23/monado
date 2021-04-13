@@ -251,10 +251,13 @@ comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore sem
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 	struct vk_bundle *vk = get_vk(cts);
 
-
+	if (!comp_target_swapchain_has_images(ct)) {
+		//! @todo what error to return here?
+		return VK_ERROR_INITIALIZATION_FAILED;
+	}
 	return vk->vkAcquireNextImageKHR( //
 	    vk->device,                   // device
-	    cts->swapchain.handle,        // timeout
+	    cts->swapchain.handle,        // swapchain
 	    UINT64_MAX,                   // timeout
 	    semaphore,                    // semaphore
 	    VK_NULL_HANDLE,               // fence
@@ -304,6 +307,13 @@ comp_target_swapchain_check_ready(struct comp_target *ct)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 	return cts->surface.handle != VK_NULL_HANDLE;
+}
+
+static bool
+comp_target_swapchain_has_images(struct comp_target *ct)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	return cts->surface.handle != VK_NULL_HANDLE && cts->swapchain.handle != VK_NULL_HANDLE;
 }
 
 static bool
@@ -655,6 +665,7 @@ comp_target_swapchain_init_and_set_fnptrs(struct comp_target_swapchain *cts,
 	cts->timing_usage = timing_usage;
 	cts->base.check_ready = comp_target_swapchain_check_ready;
 	cts->base.create_images = comp_target_swapchain_create_images;
+	cts->base.has_images = comp_target_swapchain_has_images;
 	cts->base.acquire = comp_target_swapchain_acquire_next_image;
 	cts->base.present = comp_target_swapchain_present;
 	cts->base.calc_frame_timings = comp_target_swapchain_calc_frame_timings;

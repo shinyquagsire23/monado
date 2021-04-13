@@ -85,6 +85,7 @@ struct comp_target_swapchain
  *
  * - comp_target::check_ready
  * - comp_target::create_images
+ * - comp_target::has_images
  * - comp_target::acquire
  * - comp_target::present
  * - comp_target::calc_frame_timings

@@ -126,7 +126,17 @@ struct comp_target
 	                      VkPresentModeKHR present_mode);
 
 	/*!
+	 * Has this target successfully had images created?
+	 *
+	 * Call before calling @ref acquire - if false but @ref check_ready is true, you'll need to call @ref
+	 * create_images
+	 */
+	bool (*has_images)(struct comp_target *ct);
+
+	/*!
 	 * Acquire the next image for rendering.
+	 *
+	 * @pre @ref has_images returns true
 	 */
 	VkResult (*acquire)(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index);
 
@@ -264,6 +274,20 @@ comp_target_create_images(struct comp_target *ct,
 	    preferred_color_format, //
 	    preferred_color_space,  //
 	    present_mode);          //
+}
+
+/*!
+ * @copydoc comp_target::has_images
+ *
+ * @public @memberof comp_target
+ * @ingroup comp_main
+ */
+static inline bool
+comp_target_has_images(struct comp_target *ct)
+{
+	COMP_TRACE_MARKER();
+
+	return ct->has_images(ct);
 }
 
 /*!
