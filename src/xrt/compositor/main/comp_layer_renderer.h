@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,16 +7,15 @@
  * @ingroup comp_main
  */
 
+#pragma once
+
+#include "comp_layer.h"
+
 /*!
  * Holds associated vulkan objects and state to render quads.
  *
  * @ingroup comp_main
  */
-
-#pragma once
-
-#include "comp_layer.h"
-
 struct comp_layer_renderer
 {
 	struct vk_bundle *vk;
@@ -63,26 +62,72 @@ struct comp_layer_renderer
 	uint32_t texture_binding;
 };
 
+/*!
+ * Create a layer renderer.
+ *
+ * @public @memberof comp_layer_renderer
+ */
 struct comp_layer_renderer *
 comp_layer_renderer_create(struct vk_bundle *vk, struct comp_shaders *s, VkExtent2D extent, VkFormat format);
 
 void
 comp_layer_renderer_destroy(struct comp_layer_renderer *self);
 
+/*!
+ * Perform draw calls for the layers.
+ *
+ * @param self Self pointer.
+ *
+ * @public @memberof comp_layer_renderer
+ */
 void
 comp_layer_renderer_draw(struct comp_layer_renderer *self);
 
+/*!
+ * Update the internal members derived from the field of view.
+ *
+ * @param self Self pointer.
+ * @param fov Field of view data
+ * @param eye Eye index: 0 or 1
+ *
+ * @public @memberof comp_layer_renderer
+ */
 void
 comp_layer_renderer_set_fov(struct comp_layer_renderer *self, const struct xrt_fov *fov, uint32_t eye);
 
+/*!
+ * Update the internal members derived from the eye and world poses.
+ *
+ * @param self Self pointer.
+ * @param eye_pose Pose of eye in view
+ * @param world_pose Pose of eye in world
+ * @param eye Eye index: 0 or 1
+ *
+ * @public @memberof comp_layer_renderer
+ */
 void
 comp_layer_renderer_set_pose(struct comp_layer_renderer *self,
                              const struct xrt_pose *eye_pose,
                              const struct xrt_pose *world_pose,
                              uint32_t eye);
 
+/*!
+ * Allocate the array comp_layer_renderer::layers with the given number of elements.
+ *
+ * @param self Self pointer.
+ * @param num_layers The number of layers to support
+ *
+ * @public @memberof comp_layer_renderer
+ */
 void
 comp_layer_renderer_allocate_layers(struct comp_layer_renderer *self, uint32_t num_layers);
 
+/*!
+ * De-initialize and free comp_layer_renderer::layers array.
+ *
+ * @param self Self pointer.
+ *
+ * @public @memberof comp_layer_renderer
+ */
 void
 comp_layer_renderer_destroy_layers(struct comp_layer_renderer *self);
