@@ -70,8 +70,13 @@ struct comp_layer_renderer
 struct comp_layer_renderer *
 comp_layer_renderer_create(struct vk_bundle *vk, struct comp_shaders *s, VkExtent2D extent, VkFormat format);
 
+/*!
+ * Destroy the layer renderer and set the pointer to NULL.
+ *
+ * @public @memberof comp_layer_renderer
+ */
 void
-comp_layer_renderer_destroy(struct comp_layer_renderer *self);
+comp_layer_renderer_destroy(struct comp_layer_renderer **ptr_clr);
 
 /*!
  * Perform draw calls for the layers.

@@ -850,9 +850,7 @@ renderer_destroy(struct comp_renderer *r)
 		r->semaphores.render_complete = VK_NULL_HANDLE;
 	}
 
-	comp_layer_renderer_destroy(r->lr);
-
-	free(r->lr);
+	comp_layer_renderer_destroy(&(r->lr));
 }
 
 void

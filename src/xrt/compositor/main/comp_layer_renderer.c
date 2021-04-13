@@ -638,8 +638,15 @@ _destroy_framebuffer(struct comp_layer_renderer *self, uint32_t i)
 }
 
 void
-comp_layer_renderer_destroy(struct comp_layer_renderer *self)
+comp_layer_renderer_destroy(struct comp_layer_renderer **ptr_clr)
 {
+	if (ptr_clr == NULL) {
+		return;
+	}
+	struct comp_layer_renderer *self = *ptr_clr;
+	if (self == NULL) {
+		return;
+	}
 	struct vk_bundle *vk = self->vk;
 
 	if (vk->device == VK_NULL_HANDLE)
@@ -670,6 +677,8 @@ comp_layer_renderer_destroy(struct comp_layer_renderer *self)
 	vk_buffer_destroy(&self->vertex_buffer, vk);
 
 	vk->vkDestroyPipelineCache(vk->device, self->pipeline_cache, NULL);
+	free(self);
+	*ptr_clr = NULL;
 }
 
 void
