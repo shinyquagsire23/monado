@@ -53,9 +53,14 @@ struct comp_target_image
 };
 
 /*!
+ * @brief A compositor target: where the compositor renders to.
+ *
  * A target is essentially a swapchain, but it is such a overloaded term so
- * we are differencating swapchains that the compositor provides to clients and
+ * we are differentiating swapchains that the compositor provides to clients and
  * swapchains that the compositor renders by naming the latter to target.
+ *
+ * For design purposes, when amending this interface, remember that targets may not necessarily be backed by a
+ * swapchain in all cases, for instance with remote rendering.
  *
  * @ingroup comp_main
  */
