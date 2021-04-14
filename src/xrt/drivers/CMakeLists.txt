@@ -53,7 +53,14 @@ if(XRT_BUILD_DRIVER_QWERTY)
 		)
 
 	add_library(drv_qwerty STATIC ${QWERTY_SOURCE_FILES})
-	target_link_libraries(drv_qwerty PRIVATE xrt-interfaces aux_util ${SDL2_LIBRARIES})
+	target_link_libraries(drv_qwerty PRIVATE
+		xrt-interfaces
+		aux_util
+		${SDL2_LIBRARIES}
+		)
+	target_include_directories(drv_qwerty PRIVATE
+		${SDL2_INCLUDE_DIRS}
+		)
 	list(APPEND ENABLED_DRIVERS qwerty)
 
 	add_library(drv_qwerty_includes INTERFACE)
