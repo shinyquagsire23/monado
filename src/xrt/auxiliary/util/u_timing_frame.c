@@ -116,9 +116,9 @@ struct display_timing
 	uint64_t adjust_non_miss_ns;
 
 	/*!
-	 * The target amount of GPU margin we want.
+	 * Exrta time between end of draw time and when the present happens.
 	 */
-	uint64_t min_margin_ns;
+	uint64_t margin_ns;
 
 	/*!
 	 * Frame store.
@@ -155,7 +155,7 @@ get_percent_of_time(uint64_t time_ns, uint32_t fraction_percent)
 static uint64_t
 calc_total_app_time(struct display_timing *dt)
 {
-	return dt->app_time_ns + dt->min_margin_ns;
+	return dt->app_time_ns + dt->margin_ns;
 }
 
 static uint64_t
@@ -328,18 +328,18 @@ adjust_app_time(struct display_timing *dt, struct frame *f)
 		return;
 	}
 
-	// We want the GPU work to stop at min_margin_ns.
+	// We want the GPU work to stop at margin_ns.
 	if (is_within_of_each_other(  //
 	        f->present_margin_ns, //
-	        dt->min_margin_ns,    //
+	        dt->margin_ns,        //
 	        dt->adjust_non_miss_ns)) {
 		// Nothing to do, the GPU ended it's work +-adjust_non_miss_ns
-		// of min_margin_ns before the present started.
+		// of margin_ns before the present started.
 		return;
 	}
 
 	// We didn't miss the frame but we were outside the range adjust the app time.
-	if (f->present_margin_ns > dt->min_margin_ns) {
+	if (f->present_margin_ns > dt->margin_ns) {
 		// Approach the present time.
 		dt->app_time_ns -= dt->adjust_non_miss_ns;
 	} else {
@@ -611,7 +611,7 @@ u_ft_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_ti
 	// When not missing frames but adjusting app time at these increments
 	dt->adjust_non_miss_ns = get_percent_of_time(estimated_frame_period_ns, 2);
 	// Extra margin that is added to app time.
-	dt->min_margin_ns = get_percent_of_time(estimated_frame_period_ns, 8);
+	dt->margin_ns = get_percent_of_time(estimated_frame_period_ns, 8);
 
 	*out_uft = &dt->base;
 
