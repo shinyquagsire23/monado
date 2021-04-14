@@ -1865,9 +1865,8 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 			break;
 		default:
 			return oxr_error(log, XR_ERROR_LAYER_INVALID,
-			                 "(frameEndInfo->layers[%u]->type) "
-			                 "layer type not supported",
-			                 i);
+			                 "(frameEndInfo->layers[%u]->type) layer type not supported (%u)", i,
+			                 layer->type);
 		}
 
 		if (res != XR_SUCCESS) {
