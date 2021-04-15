@@ -390,10 +390,22 @@ comp_draw_cylinder_layer(
     struct comp_rendering *rr, uint32_t layer, VkSampler sampler, VkImageView image_view, struct xrt_layer_data *data);
 
 void
-comp_draw_distortion(struct comp_rendering *rr,
-                     VkSampler sampler,
-                     VkImageView image_view,
-                     struct comp_mesh_ubo_data *data);
+comp_draw_distortion(struct comp_rendering *rr);
+
+
+/*
+ *
+ * Update functions.
+ *
+ */
+
+void
+comp_draw_update_distortion(struct comp_rendering *rr,
+                            uint32_t view,
+                            VkSampler sampler,
+                            VkImageView image_view,
+                            struct comp_mesh_ubo_data *data);
+
 
 
 /*

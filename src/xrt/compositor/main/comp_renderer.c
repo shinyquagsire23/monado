@@ -218,12 +218,25 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	struct xrt_view *l_v = &r->c->xdev->hmd->views[0];
 	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
 
-	struct comp_mesh_ubo_data l_data = {
-	    .vertex_rot = l_v->rot,
-	};
 
-	struct comp_mesh_ubo_data r_data = {
-	    .vertex_rot = r_v->rot,
+	/*
+	 * Init
+	 */
+
+	comp_rendering_init(c, &c->nr, rr);
+
+
+	/*
+	 * Update
+	 */
+
+	struct comp_mesh_ubo_data distortion_data[2] = {
+	    {
+	        .vertex_rot = l_v->rot,
+	    },
+	    {
+	        .vertex_rot = r_v->rot,
+	    },
 	};
 
 	const struct xrt_matrix_2x2 rotation_90_cw = {{
@@ -235,15 +248,30 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	}};
 
 	if (pre_rotate) {
-		math_matrix_2x2_multiply(&l_v->rot, &rotation_90_cw, &l_data.vertex_rot);
-		math_matrix_2x2_multiply(&r_v->rot, &rotation_90_cw, &r_data.vertex_rot);
+		math_matrix_2x2_multiply(&distortion_data[0].vertex_rot,  //
+		                         &rotation_90_cw,                 //
+		                         &distortion_data[0].vertex_rot); //
+		math_matrix_2x2_multiply(&distortion_data[1].vertex_rot,  //
+		                         &rotation_90_cw,                 //
+		                         &distortion_data[1].vertex_rot); //
 	}
 
-	/*
-	 * Init
-	 */
+	comp_draw_update_distortion(rr,                             //
+	                            0,                              // view_index
+	                            r->lr->framebuffers[0].sampler, //
+	                            r->lr->framebuffers[0].view,    //
+	                            &distortion_data[0]);           //
 
-	comp_rendering_init(c, &c->nr, rr);
+	comp_draw_update_distortion(rr,                             //
+	                            1,                              // view_index
+	                            r->lr->framebuffers[1].sampler, //
+	                            r->lr->framebuffers[1].view,    //
+	                            &distortion_data[1]);           //
+
+
+	/*
+	 * Target
+	 */
 
 	comp_draw_begin_target_single(        //
 	    rr,                               //
@@ -260,10 +288,7 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	                     0,                 // view_index
 	                     &l_viewport_data); // viewport_data
 
-	comp_draw_distortion(rr,                             //
-	                     r->lr->framebuffers[0].sampler, //
-	                     r->lr->framebuffers[0].view,    //
-	                     &l_data);                       //
+	comp_draw_distortion(rr);
 
 	comp_draw_end_view(rr);
 
@@ -277,10 +302,7 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	                     1,                 // view_index
 	                     &r_viewport_data); // viewport_data
 
-	comp_draw_distortion(rr,                             //
-	                     r->lr->framebuffers[1].sampler, //
-	                     r->lr->framebuffers[1].view,    //
-	                     &r_data);                       //
+	comp_draw_distortion(rr);
 
 	comp_draw_end_view(rr);
 

@@ -736,10 +736,7 @@ comp_draw_end_view(struct comp_rendering *rr)
 }
 
 void
-comp_draw_distortion(struct comp_rendering *rr,
-                     VkSampler sampler,
-                     VkImageView image_view,
-                     struct comp_mesh_ubo_data *data)
+comp_draw_distortion(struct comp_rendering *rr)
 {
 	struct vk_bundle *vk = &rr->c->vk;
 	struct comp_resources *r = rr->r;
@@ -750,18 +747,6 @@ comp_draw_distortion(struct comp_rendering *rr,
 	/*
 	 * Descriptors and pipeline.
 	 */
-
-	comp_buffer_write(vk, &v->mesh.ubo, data, sizeof(struct comp_mesh_ubo_data));
-
-	update_mesh_discriptor_set(  //
-	    vk,                      // vk_bundle
-	    r->mesh.src_binding,     // src_binding
-	    sampler,                 // sampler
-	    image_view,              // image_view
-	    r->mesh.ubo_binding,     // ubo_binding
-	    v->mesh.ubo.buffer,      // buffer
-	    VK_WHOLE_SIZE,           // size
-	    v->mesh.descriptor_set); // descriptor_set
 
 	VkDescriptorSet descriptor_sets[1] = {v->mesh.descriptor_set};
 	vk->vkCmdBindDescriptorSets(         //
@@ -822,4 +807,28 @@ comp_draw_distortion(struct comp_rendering *rr,
 		    0,                    // firstVertex
 		    0);                   // firstInstance
 	}
+}
+
+void
+comp_draw_update_distortion(struct comp_rendering *rr,
+                            uint32_t view_index,
+                            VkSampler sampler,
+                            VkImageView image_view,
+                            struct comp_mesh_ubo_data *data)
+{
+	struct vk_bundle *vk = &rr->c->vk;
+	struct comp_resources *r = rr->r;
+	struct comp_rendering_view *v = &rr->views[view_index];
+
+	comp_buffer_write(vk, &v->mesh.ubo, data, sizeof(struct comp_mesh_ubo_data));
+
+	update_mesh_discriptor_set(  //
+	    vk,                      // vk_bundle
+	    r->mesh.src_binding,     // src_binding
+	    sampler,                 // sampler
+	    image_view,              // image_view
+	    r->mesh.ubo_binding,     // ubo_binding
+	    v->mesh.ubo.buffer,      // buffer
+	    VK_WHOLE_SIZE,           // size
+	    v->mesh.descriptor_set); // descriptor_set
 }
