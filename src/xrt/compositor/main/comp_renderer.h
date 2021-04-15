@@ -38,11 +38,13 @@ comp_renderer_create(struct comp_compositor *c);
 /*!
  * Clean up and free the renderer.
  *
+ * Does null checking and sets to null after freeing.
+ *
  * @public @memberof comp_renderer
  * @ingroup comp_main
  */
 void
-comp_renderer_destroy(struct comp_renderer *r);
+comp_renderer_destroy(struct comp_renderer **ptr_r);
 
 /*!
  * Render frame.

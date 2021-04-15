@@ -120,10 +120,18 @@ comp_renderer_create(struct comp_compositor *c)
 }
 
 void
-comp_renderer_destroy(struct comp_renderer *r)
+comp_renderer_destroy(struct comp_renderer **ptr_r)
 {
+	if (ptr_r == NULL) {
+		return;
+	}
+	struct comp_renderer *r = *ptr_r;
+	if (r == NULL) {
+		return;
+	}
 	renderer_destroy(r);
 	free(r);
+	*ptr_r = NULL;
 }
 
 /*

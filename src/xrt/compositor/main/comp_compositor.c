@@ -552,10 +552,7 @@ compositor_destroy(struct xrt_compositor *xc)
 	// Make sure we don't have anything to destroy.
 	comp_compositor_garbage_collect(c);
 
-	if (c->r) {
-		comp_renderer_destroy(c->r);
-		c->r = NULL;
-	}
+	comp_renderer_destroy(&c->r);
 
 	comp_resources_close(c, &c->nr);
 
