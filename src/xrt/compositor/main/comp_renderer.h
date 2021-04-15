@@ -36,15 +36,6 @@ struct comp_renderer *
 comp_renderer_create(struct comp_compositor *c);
 
 /*!
- * Reset renderer as input has changed.
- *
- * @public @memberof comp_renderer
- * @ingroup comp_main
- */
-void
-comp_renderer_reset(struct comp_renderer *r);
-
-/*!
  * Clean up and free the renderer.
  *
  * @public @memberof comp_renderer
