@@ -1062,21 +1062,26 @@ vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t 
 	return false;
 }
 
-static bool
+static VkResult
 vk_get_device_ext_props(struct vk_bundle *vk,
                         VkPhysicalDevice physical_device,
-                        VkExtensionProperties **props,
-                        uint32_t *num_props)
+                        VkExtensionProperties **out_props,
+                        uint32_t *out_num_props)
 {
-	VkResult res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, num_props, NULL);
+	uint32_t num_props = 0;
+	VkResult res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &num_props, NULL);
 	vk_check_error("vkEnumerateDeviceExtensionProperties", res, false);
 
-	*props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, *num_props);
+	VkExtensionProperties *props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, num_props);
 
-	res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, num_props, *props);
+	res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &num_props, props);
 	vk_check_error_with_free("vkEnumerateDeviceExtensionProperties", res, false, props);
 
-	return true;
+	// Check above returns on failure.
+	*out_props = props;
+	*out_num_props = num_props;
+
+	return VK_SUCCESS;
 }
 
 static bool
@@ -1089,9 +1094,9 @@ vk_build_device_extensions(struct vk_bundle *vk,
                            const char ***out_device_extensions,
                            uint32_t *out_num_device_extensions)
 {
-	VkExtensionProperties *props;
-	uint32_t num_props;
-	if (!vk_get_device_ext_props(vk, physical_device, &props, &num_props)) {
+	VkExtensionProperties *props = NULL;
+	uint32_t num_props = 0;
+	if (vk_get_device_ext_props(vk, physical_device, &props, &num_props) != VK_SUCCESS) {
 		return false;
 	}
 
