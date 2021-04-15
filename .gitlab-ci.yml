@@ -13,7 +13,7 @@ variables:
     CORE_REQUIRED_PACKAGES: "build-essential git wget unzip cmake meson ninja-build libeigen3-dev curl patch python3 pkg-config libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libudev-dev"
 
     # These are optional packages, that we're building against to ensure we build as much code as possible
-    FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev libdbus-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsystemd-dev"
+    FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev libdbus-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsystemd-dev libbsd-dev"
 
     # Only used for building packages
     PACKAGING_PACKAGES: "devscripts debhelper dput-ng gettext-base markdown doxygen graphviz"
@@ -28,19 +28,19 @@ variables:
 .monado.variables.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2021-03-23.0"
+    FDO_DISTRIBUTION_TAG: "2021-04-15.0"
 
 # Variables for build and usage of Ubuntu 20.04 LTS (Focal) image
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2021-03-23.0"
+    FDO_DISTRIBUTION_TAG: "2021-04-15.0"
 
 # Variables for build and usage of Ubuntu 20.10 (Groovy) image
 .monado.variables.ubuntu:groovy:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.10"
-    FDO_DISTRIBUTION_TAG: "2021-03-23.0"
+    FDO_DISTRIBUTION_TAG: "2021-04-15.0"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.variables.debian:buster-ndk:
