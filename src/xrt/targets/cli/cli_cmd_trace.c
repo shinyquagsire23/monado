@@ -130,7 +130,7 @@ handle_data(const char *rest_of_line, size_t len)
 
 
 	for (int i = 0; i < data_length; i++) {
-		int tmp = 0;
+		unsigned int tmp = 0;
 		scan = sscanf(rest_of_line + (i * 2), "%2x", &tmp);
 		if (scan < 1) {
 			return;
@@ -238,7 +238,8 @@ signal_handler(int signum, siginfo_t *info, void *ptr)
 	t.running = false;
 
 	// Since we are doing a clean shutdown ^C be on it's own line.
-	write(STDERR_FILENO, "\n", 1);
+	ssize_t ret = write(STDERR_FILENO, "\n", 1);
+	(void)ret; // We are just trying to make the CLI look better.
 }
 
 void
