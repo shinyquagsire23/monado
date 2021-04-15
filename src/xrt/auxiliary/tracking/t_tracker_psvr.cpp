@@ -1881,8 +1881,6 @@ imu_data(TrackerPSVR &t, timepoint_ns timestamp_ns, struct xrt_tracking_sample *
 		return;
 	}
 	if (t.last_imu != 0) {
-		time_duration_ns delta_ns = timestamp_ns - t.last_imu;
-		float dt = time_ns_to_s(delta_ns);
 		// Update 3DOF fusion
 		m_imu_3dof_update(&t.fusion.imu_3dof, timestamp_ns, &sample->accel_m_s2, &sample->gyro_rad_secs);
 	}
