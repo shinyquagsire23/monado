@@ -127,7 +127,7 @@ compositor_predict_frame(struct xrt_compositor *xc,
 
 	struct comp_compositor *c = comp_compositor(xc);
 
-	COMP_DEBUG(c, "PREDICT_FRAME");
+	COMP_SPEW(c, "PREDICT_FRAME");
 
 	// A little bit easier to read.
 	uint64_t interval_ns = (int64_t)c->settings.nominal_frame_interval_ns;
@@ -173,7 +173,7 @@ compositor_mark_frame(struct xrt_compositor *xc,
 
 	struct comp_compositor *c = comp_compositor(xc);
 
-	COMP_DEBUG(c, "MARK_FRAME %i", point);
+	COMP_SPEW(c, "MARK_FRAME %i", point);
 
 	switch (point) {
 	case XRT_COMPOSITOR_FRAME_POINT_WOKE:
