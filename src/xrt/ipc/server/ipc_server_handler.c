@@ -125,6 +125,10 @@ ipc_handle_session_begin(volatile struct ipc_client_state *ics)
 {
 	IPC_TRACE_MARKER();
 
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
 	return xrt_comp_begin_session(ics->xc, 0);
 }
 
@@ -133,6 +137,10 @@ ipc_handle_session_end(volatile struct ipc_client_state *ics)
 {
 	IPC_TRACE_MARKER();
 
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
 	return xrt_comp_end_session(ics->xc);
 }
 
@@ -140,6 +148,10 @@ xrt_result_t
 ipc_handle_compositor_get_info(volatile struct ipc_client_state *ics, struct xrt_compositor_info *out_info)
 {
 	IPC_TRACE_MARKER();
+
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
 
 	*out_info = ics->xc->info;
 
@@ -154,6 +166,10 @@ ipc_handle_compositor_predict_frame(volatile struct ipc_client_state *ics,
                                     uint64_t *out_predicted_display_period_ns)
 {
 	IPC_TRACE_MARKER();
+
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
 
 	/*
 	 * We use this to signal that the session has started, this is needed
@@ -176,6 +192,10 @@ ipc_handle_compositor_wait_woke(volatile struct ipc_client_state *ics, int64_t f
 {
 	IPC_TRACE_MARKER();
 
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
 	return xrt_comp_mark_frame(ics->xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, os_monotonic_get_ns());
 }
 
@@ -184,6 +204,10 @@ ipc_handle_compositor_begin_frame(volatile struct ipc_client_state *ics, int64_t
 {
 	IPC_TRACE_MARKER();
 
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
 	return xrt_comp_begin_frame(ics->xc, frame_id);
 }
 
@@ -191,6 +215,10 @@ xrt_result_t
 ipc_handle_compositor_discard_frame(volatile struct ipc_client_state *ics, int64_t frame_id)
 {
 	IPC_TRACE_MARKER();
+
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
 
 	return xrt_comp_discard_frame(ics->xc, frame_id);
 }
@@ -463,6 +491,10 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 {
 	IPC_TRACE_MARKER();
 
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
 	struct ipc_shared_memory *ism = ics->server->ism;
 	struct ipc_layer_slot *slot = &ism->slots[slot_id];
 	xrt_graphics_sync_handle_t sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
@@ -512,6 +544,10 @@ xrt_result_t
 ipc_handle_compositor_poll_events(volatile struct ipc_client_state *ics, union xrt_compositor_event *out_xce)
 {
 	IPC_TRACE_MARKER();
+
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
 
 	return xrt_comp_poll_events(ics->xc, out_xce);
 }
@@ -719,6 +755,10 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 xrt_result_t
 ipc_handle_swapchain_wait_image(volatile struct ipc_client_state *ics, uint32_t id, uint64_t timeout, uint32_t index)
 {
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
 	//! @todo Look up the index.
 	uint32_t sc_index = id;
 	struct xrt_swapchain *xsc = ics->xscs[sc_index];
@@ -731,6 +771,10 @@ ipc_handle_swapchain_wait_image(volatile struct ipc_client_state *ics, uint32_t 
 xrt_result_t
 ipc_handle_swapchain_acquire_image(volatile struct ipc_client_state *ics, uint32_t id, uint32_t *out_index)
 {
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
 	//! @todo Look up the index.
 	uint32_t sc_index = id;
 	struct xrt_swapchain *xsc = ics->xscs[sc_index];
@@ -743,6 +787,10 @@ ipc_handle_swapchain_acquire_image(volatile struct ipc_client_state *ics, uint32
 xrt_result_t
 ipc_handle_swapchain_release_image(volatile struct ipc_client_state *ics, uint32_t id, uint32_t index)
 {
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
 	//! @todo Look up the index.
 	uint32_t sc_index = id;
 	struct xrt_swapchain *xsc = ics->xscs[sc_index];
@@ -755,6 +803,10 @@ ipc_handle_swapchain_release_image(volatile struct ipc_client_state *ics, uint32
 xrt_result_t
 ipc_handle_swapchain_destroy(volatile struct ipc_client_state *ics, uint32_t id)
 {
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
 	ics->num_swapchains--;
 
 	// Drop our reference, does NULL checking. Cast away volatile.
