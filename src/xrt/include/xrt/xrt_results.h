@@ -56,7 +56,7 @@ typedef enum xrt_result
 	 * The given config was EGL_NO_CONFIG_KHR and EGL_KHR_no_config_context
 	 * is not supported by the display.
 	 */
-	XRT_ERROR_EGL_CONFIG_MISSING = -12,
+	XRT_ERROR_EGL_CONFIG_MISSING = -13,
 	/*!
 	 * Failed to initialize threading components.
 	 */
