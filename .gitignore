@@ -76,3 +76,8 @@ local.properties
 gradlew
 gradlew.bat
 gradle-wrapper.jar
+
+#ignore Sourcetrail things
+*.srctrlbm
+*.srctrldb
+*.srctrlprj
