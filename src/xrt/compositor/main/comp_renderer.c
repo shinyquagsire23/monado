@@ -5,6 +5,7 @@
  * @brief  Compositor rendering code.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup comp_main
  */
 
@@ -91,74 +92,6 @@ struct comp_renderer
 
 /*
  *
- * Pre declare functions.
- *
- */
-
-//! Create renderer and initialize non-image-dependent members
-static void
-renderer_create(struct comp_renderer *r, struct comp_compositor *c);
-
-static void
-renderer_submit_queue(struct comp_renderer *r);
-
-static void
-renderer_create_renderings_and_fences(struct comp_renderer *r);
-
-static void
-renderer_close_renderings_and_fences(struct comp_renderer *r);
-
-static void
-renderer_init_semaphores(struct comp_renderer *r);
-
-static void
-renderer_resize(struct comp_renderer *r);
-
-static void
-renderer_acquire_swapchain_image(struct comp_renderer *r);
-
-static void
-renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_present_time_ns, uint64_t present_slop_ns);
-
-static void
-renderer_destroy(struct comp_renderer *r);
-
-
-
-/*
- *
- * Interface functions.
- *
- */
-
-struct comp_renderer *
-comp_renderer_create(struct comp_compositor *c)
-{
-	struct comp_renderer *r = U_TYPED_CALLOC(struct comp_renderer);
-
-	renderer_create(r, c);
-
-	return r;
-}
-
-void
-comp_renderer_destroy(struct comp_renderer **ptr_r)
-{
-	if (ptr_r == NULL) {
-		return;
-	}
-	struct comp_renderer *r = *ptr_r;
-	if (r == NULL) {
-		return;
-	}
-	renderer_destroy(r);
-	free(r);
-	*ptr_r = NULL;
-}
-
-
-/*
- *
  * Functions.
  *
  */
@@ -173,170 +106,24 @@ renderer_wait_gpu_idle(struct comp_renderer *r)
 	os_mutex_unlock(&r->c->vk.queue_mutex);
 }
 
-//! @pre comp_target_check_ready(r->c->target)
 static void
-renderer_create_layer_renderer(struct comp_renderer *r)
+renderer_init_semaphores(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
-
-	assert(comp_target_check_ready(r->c->target));
-
-	uint32_t num_layers = 0;
-	if (r->lr != NULL) {
-		// if we already had one, re-populate it after recreation.
-		num_layers = r->lr->num_layers;
-		comp_layer_renderer_destroy(&r->lr);
-	}
-
-	VkExtent2D extent;
-	if (r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
-	    r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
-		// Swapping width and height, since we are pre rotating
-		extent = (VkExtent2D){
-		    .width = r->c->xdev->hmd->screens[0].h_pixels,
-		    .height = r->c->xdev->hmd->screens[0].w_pixels,
-		};
-	} else {
-		extent = (VkExtent2D){
-		    .width = r->c->xdev->hmd->screens[0].w_pixels,
-		    .height = r->c->xdev->hmd->screens[0].h_pixels,
-		};
-	}
-
-	r->lr = comp_layer_renderer_create(vk, &r->c->shaders, extent, VK_FORMAT_B8G8R8A8_SRGB);
-	if (num_layers != 0) {
-		comp_layer_renderer_allocate_layers(r->lr, num_layers);
-	}
-}
-
-/*!
- * @brief Ensure that target images and renderings are created, if possible.
- *
- * @param r Self pointer
- * @param force_recreate If true, will tear down and re-create images and renderings, e.g. for a resize
- *
- * @returns true if images and renderings are ready and created.
- *
- * @private @memberof comp_renderer
- * @ingroup comp_main
- */
-static bool
-renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recreate)
-{
-	struct comp_compositor *c = r->c;
-	struct comp_target *target = c->target;
-
-	if (!comp_target_check_ready(target)) {
-		// Not ready, so can't render anything.
-		return false;
-	}
-
-	// We will create images if we don't have any images or if we were told to recreate them.
-	bool create = force_recreate || !comp_target_has_images(target) || (r->num_buffers == 0);
-	if (!create) {
-		return true;
-	}
-
-	COMP_DEBUG(c, "Creating iamges and renderings (force_recreate: %s).", force_recreate ? "true" : "false");
-
-	/*
-	 * This makes sure that any pending command buffer has completed
-	 * and all resources referred by it can now be manipulated. This
-	 * make sure that validation doesn't complain. This is done
-	 * during resize so isn't time critical.
-	 */
-	renderer_wait_gpu_idle(r);
-
-	// Make we sure we destroy all dependent things before creating new images.
-	renderer_close_renderings_and_fences(r);
-
-	comp_target_create_images(      //
-	    r->c->target,               //
-	    r->c->target->width,        //
-	    r->c->target->height,       //
-	    r->settings->color_format,  //
-	    r->settings->color_space,   //
-	    r->settings->present_mode); //
-
-	r->num_buffers = r->c->target->num_images;
-
-	renderer_create_layer_renderer(r);
-	renderer_create_renderings_and_fences(r);
-
-	assert(r->num_buffers != 0);
-
-	return true;
-}
-
-static void
-renderer_create(struct comp_renderer *r, struct comp_compositor *c)
-{
-	r->c = c;
-	r->settings = &c->settings;
-
-	r->current_buffer = 0;
-	r->queue = VK_NULL_HANDLE;
-	r->semaphores.present_complete = VK_NULL_HANDLE;
-	r->semaphores.render_complete = VK_NULL_HANDLE;
-	r->rrs = NULL;
-
-	struct vk_bundle *vk = &r->c->vk;
-
-	vk->vkGetDeviceQueue(vk->device, r->c->vk.queue_family_index, 0, &r->queue);
-	renderer_init_semaphores(r);
-
-	// Try to early-allocate these, in case we can.
-	renderer_ensure_images_and_renderings(r, false);
-}
-
-static void
-renderer_wait_for_last_fence(struct comp_renderer *r)
-{
-	COMP_TRACE_MARKER();
-
 	struct vk_bundle *vk = &r->c->vk;
 	VkResult ret;
 
-	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->current_buffer], VK_TRUE, UINT64_MAX);
+	VkSemaphoreCreateInfo info = {
+	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+	};
+
+	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &r->semaphores.present_complete);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkWaitForFences: %s", vk_result_string(ret));
+		COMP_ERROR(r->c, "vkCreateSemaphore: %s", vk_result_string(ret));
 	}
-}
 
-static void
-renderer_submit_queue(struct comp_renderer *r)
-{
-	COMP_TRACE_MARKER();
-
-	struct vk_bundle *vk = &r->c->vk;
-	VkResult ret;
-
-	VkPipelineStageFlags stage_flags[1] = {
-	    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-	};
-
-	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->current_buffer], VK_TRUE, UINT64_MAX);
-	if (ret != VK_SUCCESS)
-		COMP_ERROR(r->c, "vkWaitForFences: %s", vk_result_string(ret));
-
-	ret = vk->vkResetFences(vk->device, 1, &r->fences[r->current_buffer]);
-	if (ret != VK_SUCCESS)
-		COMP_ERROR(r->c, "vkResetFences: %s", vk_result_string(ret));
-
-	VkSubmitInfo comp_submit_info = {
-	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-	    .waitSemaphoreCount = 1,
-	    .pWaitSemaphores = &r->semaphores.present_complete,
-	    .pWaitDstStageMask = stage_flags,
-	    .commandBufferCount = 1,
-	    .pCommandBuffers = &r->rrs[r->current_buffer].cmd,
-	    .signalSemaphoreCount = 1,
-	    .pSignalSemaphores = &r->semaphores.render_complete,
-	};
-
-	ret = vk_locked_submit(vk, r->queue, 1, &comp_submit_info, r->fences[r->current_buffer]);
+	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &r->semaphores.render_complete);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
+		COMP_ERROR(r->c, "vkCreateSemaphore: %s", vk_result_string(ret));
 	}
 }
 
@@ -487,14 +274,30 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	comp_draw_end_target(rr);
 }
 
-
-//! @pre comp_target_has_images(r->c->target)
+/*!
+ * @pre comp_target_has_images(r->c->target)
+ * Update r->num_buffers before calling.
+ */
 static void
-renderer_create_fences(struct comp_renderer *r)
+renderer_create_renderings_and_fences(struct comp_renderer *r)
 {
-	r->fences = U_TYPED_ARRAY_CALLOC(VkFence, r->num_buffers);
+	assert(r->rrs == NULL);
+	assert(r->fences == NULL);
+	if (r->num_buffers == 0) {
+		COMP_ERROR(r->c, "Requested 0 command buffers.");
+		return;
+	}
+
+	COMP_DEBUG(r->c, "Allocating %d Command Buffers.", r->num_buffers);
 
 	struct vk_bundle *vk = &r->c->vk;
+
+	r->rrs = U_TYPED_ARRAY_CALLOC(struct comp_rendering, r->num_buffers);
+	r->fences = U_TYPED_ARRAY_CALLOC(VkFence, r->num_buffers);
+
+	for (uint32_t i = 0; i < r->num_buffers; ++i) {
+		renderer_build_rendering(r, &r->rrs[i], i);
+	}
 
 	for (uint32_t i = 0; i < r->num_buffers; i++) {
 		VkResult ret = vk->vkCreateFence(vk->device,
@@ -504,6 +307,202 @@ renderer_create_fences(struct comp_renderer *r)
 		if (ret != VK_SUCCESS) {
 			COMP_ERROR(r->c, "vkCreateFence: %s", vk_result_string(ret));
 		}
+	}
+}
+
+static void
+renderer_close_renderings_and_fences(struct comp_renderer *r)
+{
+	struct vk_bundle *vk = &r->c->vk;
+	// Renderings
+	if (r->num_buffers > 0 && r->rrs != NULL) {
+		for (uint32_t i = 0; i < r->num_buffers; i++) {
+			comp_rendering_close(&r->rrs[i]);
+		}
+
+		free(r->rrs);
+		r->rrs = NULL;
+	}
+
+	// Fences
+	if (r->num_buffers > 0 && r->fences != NULL) {
+		for (uint32_t i = 0; i < r->num_buffers; i++) {
+			vk->vkDestroyFence(vk->device, r->fences[i], NULL);
+			r->fences[i] = VK_NULL_HANDLE;
+		}
+		free(r->fences);
+		r->fences = NULL;
+	}
+
+	r->num_buffers = 0;
+	r->current_buffer = 0;
+}
+
+//! @pre comp_target_check_ready(r->c->target)
+static void
+renderer_create_layer_renderer(struct comp_renderer *r)
+{
+	struct vk_bundle *vk = &r->c->vk;
+
+	assert(comp_target_check_ready(r->c->target));
+
+	uint32_t num_layers = 0;
+	if (r->lr != NULL) {
+		// if we already had one, re-populate it after recreation.
+		num_layers = r->lr->num_layers;
+		comp_layer_renderer_destroy(&r->lr);
+	}
+
+	VkExtent2D extent;
+	if (r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+	    r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+		// Swapping width and height, since we are pre rotating
+		extent = (VkExtent2D){
+		    .width = r->c->xdev->hmd->screens[0].h_pixels,
+		    .height = r->c->xdev->hmd->screens[0].w_pixels,
+		};
+	} else {
+		extent = (VkExtent2D){
+		    .width = r->c->xdev->hmd->screens[0].w_pixels,
+		    .height = r->c->xdev->hmd->screens[0].h_pixels,
+		};
+	}
+
+	r->lr = comp_layer_renderer_create(vk, &r->c->shaders, extent, VK_FORMAT_B8G8R8A8_SRGB);
+	if (num_layers != 0) {
+		comp_layer_renderer_allocate_layers(r->lr, num_layers);
+	}
+}
+
+/*!
+ * @brief Ensure that target images and renderings are created, if possible.
+ *
+ * @param r Self pointer
+ * @param force_recreate If true, will tear down and re-create images and renderings, e.g. for a resize
+ *
+ * @returns true if images and renderings are ready and created.
+ *
+ * @private @memberof comp_renderer
+ * @ingroup comp_main
+ */
+static bool
+renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recreate)
+{
+	struct comp_compositor *c = r->c;
+	struct comp_target *target = c->target;
+
+	if (!comp_target_check_ready(target)) {
+		// Not ready, so can't render anything.
+		return false;
+	}
+
+	// We will create images if we don't have any images or if we were told to recreate them.
+	bool create = force_recreate || !comp_target_has_images(target) || (r->num_buffers == 0);
+	if (!create) {
+		return true;
+	}
+
+	COMP_DEBUG(c, "Creating iamges and renderings (force_recreate: %s).", force_recreate ? "true" : "false");
+
+	/*
+	 * This makes sure that any pending command buffer has completed
+	 * and all resources referred by it can now be manipulated. This
+	 * make sure that validation doesn't complain. This is done
+	 * during resize so isn't time critical.
+	 */
+	renderer_wait_gpu_idle(r);
+
+	// Make we sure we destroy all dependent things before creating new images.
+	renderer_close_renderings_and_fences(r);
+
+	comp_target_create_images(      //
+	    r->c->target,               //
+	    r->c->target->width,        //
+	    r->c->target->height,       //
+	    r->settings->color_format,  //
+	    r->settings->color_space,   //
+	    r->settings->present_mode); //
+
+	r->num_buffers = r->c->target->num_images;
+
+	renderer_create_layer_renderer(r);
+	renderer_create_renderings_and_fences(r);
+
+	assert(r->num_buffers != 0);
+
+	return true;
+}
+
+//! Create renderer and initialize non-image-dependent members
+static void
+renderer_create(struct comp_renderer *r, struct comp_compositor *c)
+{
+	r->c = c;
+	r->settings = &c->settings;
+
+	r->current_buffer = 0;
+	r->queue = VK_NULL_HANDLE;
+	r->semaphores.present_complete = VK_NULL_HANDLE;
+	r->semaphores.render_complete = VK_NULL_HANDLE;
+	r->rrs = NULL;
+
+	struct vk_bundle *vk = &r->c->vk;
+
+	vk->vkGetDeviceQueue(vk->device, r->c->vk.queue_family_index, 0, &r->queue);
+	renderer_init_semaphores(r);
+
+	// Try to early-allocate these, in case we can.
+	renderer_ensure_images_and_renderings(r, false);
+}
+
+static void
+renderer_wait_for_last_fence(struct comp_renderer *r)
+{
+	COMP_TRACE_MARKER();
+
+	struct vk_bundle *vk = &r->c->vk;
+	VkResult ret;
+
+	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->current_buffer], VK_TRUE, UINT64_MAX);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(r->c, "vkWaitForFences: %s", vk_result_string(ret));
+	}
+}
+
+static void
+renderer_submit_queue(struct comp_renderer *r)
+{
+	COMP_TRACE_MARKER();
+
+	struct vk_bundle *vk = &r->c->vk;
+	VkResult ret;
+
+	VkPipelineStageFlags stage_flags[1] = {
+	    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+	};
+
+	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->current_buffer], VK_TRUE, UINT64_MAX);
+	if (ret != VK_SUCCESS)
+		COMP_ERROR(r->c, "vkWaitForFences: %s", vk_result_string(ret));
+
+	ret = vk->vkResetFences(vk->device, 1, &r->fences[r->current_buffer]);
+	if (ret != VK_SUCCESS)
+		COMP_ERROR(r->c, "vkResetFences: %s", vk_result_string(ret));
+
+	VkSubmitInfo comp_submit_info = {
+	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+	    .waitSemaphoreCount = 1,
+	    .pWaitSemaphores = &r->semaphores.present_complete,
+	    .pWaitDstStageMask = stage_flags,
+	    .commandBufferCount = 1,
+	    .pCommandBuffers = &r->rrs[r->current_buffer].cmd,
+	    .signalSemaphoreCount = 1,
+	    .pSignalSemaphores = &r->semaphores.render_complete,
+	};
+
+	ret = vk_locked_submit(vk, r->queue, 1, &comp_submit_info, r->fences[r->current_buffer]);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
 	}
 }
 
@@ -550,14 +549,109 @@ renderer_get_view_projection(struct comp_renderer *r)
 	}
 }
 
-VkImageView
+static void
+renderer_acquire_swapchain_image(struct comp_renderer *r)
+{
+	COMP_TRACE_MARKER();
+
+	VkResult ret;
+
+	if (!renderer_ensure_images_and_renderings(r, false)) {
+		// Not ready yet.
+		return;
+	}
+	ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &r->current_buffer);
+
+	if ((ret == VK_ERROR_OUT_OF_DATE_KHR) || (ret == VK_SUBOPTIMAL_KHR)) {
+		COMP_DEBUG(r->c, "Received %s.", vk_result_string(ret));
+
+		if (!renderer_ensure_images_and_renderings(r, true)) {
+			// Failed on force recreate.
+			COMP_ERROR(r->c,
+			           "renderer_acquire_swapchain_image: comp_target_acquire was out of date, force "
+			           "re-create image and renderings failed. Probably the target disappeared.");
+			return;
+		}
+		/* Acquire image again to silence validation error */
+		ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &r->current_buffer);
+		if (ret != VK_SUCCESS) {
+			COMP_ERROR(r->c, "comp_target_acquire: %s", vk_result_string(ret));
+		}
+	} else if (ret != VK_SUCCESS) {
+		COMP_ERROR(r->c, "comp_target_acquire: %s", vk_result_string(ret));
+	}
+}
+
+static void
+renderer_resize(struct comp_renderer *r)
+{
+	if (!comp_target_check_ready(r->c->target)) {
+		// Can't create images right now.
+		// Just close any existing renderings.
+		renderer_close_renderings_and_fences(r);
+		return;
+	}
+
+	renderer_ensure_images_and_renderings(r, true); // Force recreate.
+
+	return;
+}
+
+static void
+renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_present_time_ns, uint64_t present_slop_ns)
+{
+	COMP_TRACE_MARKER();
+
+	VkResult ret;
+
+	ret = comp_target_present(r->c->target, r->queue, r->current_buffer, r->semaphores.render_complete,
+	                          desired_present_time_ns, present_slop_ns);
+	if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
+		renderer_resize(r);
+		return;
+	}
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(r->c, "vk_swapchain_present: %s", vk_result_string(ret));
+	}
+}
+
+static void
+renderer_destroy(struct comp_renderer *r)
+{
+	struct vk_bundle *vk = &r->c->vk;
+
+	// Command buffers
+	renderer_close_renderings_and_fences(r);
+
+	// Semaphores
+	if (r->semaphores.present_complete != VK_NULL_HANDLE) {
+		vk->vkDestroySemaphore(vk->device, r->semaphores.present_complete, NULL);
+		r->semaphores.present_complete = VK_NULL_HANDLE;
+	}
+	if (r->semaphores.render_complete != VK_NULL_HANDLE) {
+		vk->vkDestroySemaphore(vk->device, r->semaphores.render_complete, NULL);
+		r->semaphores.render_complete = VK_NULL_HANDLE;
+	}
+
+	comp_layer_renderer_destroy(&(r->lr));
+}
+
+static VkImageView
 get_image_view(struct comp_swapchain_image *image, enum xrt_layer_composition_flags flags, uint32_t array_index)
 {
 	if (flags & XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT) {
 		return image->views.alpha[array_index];
 	}
+
 	return image->views.no_alpha[array_index];
 }
+
+
+/*
+ *
+ * Interface functions.
+ *
+ */
 
 void
 comp_renderer_set_quad_layer(struct comp_renderer *r,
@@ -704,6 +798,7 @@ comp_renderer_set_equirect1_layer(struct comp_renderer *r,
 	}
 }
 #endif
+
 #ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 void
 comp_renderer_set_equirect2_layer(struct comp_renderer *r,
@@ -804,165 +899,6 @@ comp_renderer_draw(struct comp_renderer *r)
 	comp_target_update_timings(ct);
 }
 
-//! Update r->num_buffers before calling.
-static void
-renderer_create_renderings_and_fences(struct comp_renderer *r)
-{
-	assert(r->rrs == NULL);
-	assert(r->fences == NULL);
-	if (r->num_buffers == 0) {
-		COMP_ERROR(r->c, "Requested 0 command buffers.");
-		return;
-	}
-
-	COMP_DEBUG(r->c, "Allocating %d Command Buffers.", r->num_buffers);
-
-	r->rrs = U_TYPED_ARRAY_CALLOC(struct comp_rendering, r->num_buffers);
-
-	for (uint32_t i = 0; i < r->num_buffers; ++i) {
-		renderer_build_rendering(r, &r->rrs[i], i);
-	}
-
-	//! @todo inline this here or above in the other loop? or just put in renderings?
-	renderer_create_fences(r);
-}
-
-static void
-renderer_close_renderings_and_fences(struct comp_renderer *r)
-{
-	struct vk_bundle *vk = &r->c->vk;
-	// Renderings
-	if (r->num_buffers > 0 && r->rrs != NULL) {
-		for (uint32_t i = 0; i < r->num_buffers; i++) {
-			comp_rendering_close(&r->rrs[i]);
-		}
-
-		free(r->rrs);
-		r->rrs = NULL;
-	}
-
-	// Fences
-	if (r->num_buffers > 0 && r->fences != NULL) {
-		for (uint32_t i = 0; i < r->num_buffers; i++) {
-			vk->vkDestroyFence(vk->device, r->fences[i], NULL);
-			r->fences[i] = VK_NULL_HANDLE;
-		}
-		free(r->fences);
-		r->fences = NULL;
-	}
-
-	r->num_buffers = 0;
-	r->current_buffer = 0;
-}
-
-static void
-renderer_init_semaphores(struct comp_renderer *r)
-{
-	struct vk_bundle *vk = &r->c->vk;
-	VkResult ret;
-
-	VkSemaphoreCreateInfo info = {
-	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-	};
-
-	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &r->semaphores.present_complete);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreateSemaphore: %s", vk_result_string(ret));
-	}
-
-	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &r->semaphores.render_complete);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreateSemaphore: %s", vk_result_string(ret));
-	}
-}
-
-static void
-renderer_resize(struct comp_renderer *r)
-{
-	if (!comp_target_check_ready(r->c->target)) {
-		// Can't create images right now.
-		// Just close any existing renderings.
-		renderer_close_renderings_and_fences(r);
-		return;
-	}
-
-	renderer_ensure_images_and_renderings(r, true); // Force recreate.
-
-	return;
-}
-
-static void
-renderer_acquire_swapchain_image(struct comp_renderer *r)
-{
-	COMP_TRACE_MARKER();
-
-	VkResult ret;
-
-	if (!renderer_ensure_images_and_renderings(r, false)) {
-		// Not ready yet.
-		return;
-	}
-	ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &r->current_buffer);
-
-	if ((ret == VK_ERROR_OUT_OF_DATE_KHR) || (ret == VK_SUBOPTIMAL_KHR)) {
-		COMP_DEBUG(r->c, "Received %s.", vk_result_string(ret));
-
-		if (!renderer_ensure_images_and_renderings(r, true)) {
-			// Failed on force recreate.
-			COMP_ERROR(r->c,
-			           "renderer_acquire_swapchain_image: comp_target_acquire was out of date, force "
-			           "re-create image and renderings failed. Probably the target disappeared.");
-			return;
-		}
-		/* Acquire image again to silence validation error */
-		ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &r->current_buffer);
-		if (ret != VK_SUCCESS) {
-			COMP_ERROR(r->c, "comp_target_acquire: %s", vk_result_string(ret));
-		}
-	} else if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "comp_target_acquire: %s", vk_result_string(ret));
-	}
-}
-
-static void
-renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_present_time_ns, uint64_t present_slop_ns)
-{
-	COMP_TRACE_MARKER();
-
-	VkResult ret;
-
-	ret = comp_target_present(r->c->target, r->queue, r->current_buffer, r->semaphores.render_complete,
-	                          desired_present_time_ns, present_slop_ns);
-	if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
-		renderer_resize(r);
-		return;
-	}
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vk_swapchain_present: %s", vk_result_string(ret));
-	}
-}
-
-static void
-renderer_destroy(struct comp_renderer *r)
-{
-	struct vk_bundle *vk = &r->c->vk;
-
-	// Command buffers
-	renderer_close_renderings_and_fences(r);
-
-	// Semaphores
-	if (r->semaphores.present_complete != VK_NULL_HANDLE) {
-		vk->vkDestroySemaphore(vk->device, r->semaphores.present_complete, NULL);
-		r->semaphores.present_complete = VK_NULL_HANDLE;
-	}
-	if (r->semaphores.render_complete != VK_NULL_HANDLE) {
-		vk->vkDestroySemaphore(vk->device, r->semaphores.render_complete, NULL);
-		r->semaphores.render_complete = VK_NULL_HANDLE;
-	}
-
-	comp_layer_renderer_destroy(&(r->lr));
-}
-
 void
 comp_renderer_allocate_layers(struct comp_renderer *self, uint32_t num_layers)
 {
@@ -977,4 +913,31 @@ comp_renderer_destroy_layers(struct comp_renderer *self)
 	COMP_TRACE_MARKER();
 
 	comp_layer_renderer_destroy_layers(self->lr);
+}
+
+struct comp_renderer *
+comp_renderer_create(struct comp_compositor *c)
+{
+	struct comp_renderer *r = U_TYPED_CALLOC(struct comp_renderer);
+
+	renderer_create(r, c);
+
+	return r;
+}
+
+void
+comp_renderer_destroy(struct comp_renderer **ptr_r)
+{
+	if (ptr_r == NULL) {
+		return;
+	}
+
+	struct comp_renderer *r = *ptr_r;
+	if (r == NULL) {
+		return;
+	}
+
+	renderer_destroy(r);
+	free(r);
+	*ptr_r = NULL;
 }
