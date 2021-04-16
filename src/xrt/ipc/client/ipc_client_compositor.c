@@ -116,8 +116,8 @@ compositor_disconnect(struct ipc_connection *ipc_c)
 
 #define IPC_CALL_CHK(call)                                                                                             \
 	xrt_result_t res = (call);                                                                                     \
-	if (res == XRT_ERROR_IPC_FAILURE) {                                                                            \
-		IPC_ERROR(icc->ipc_c, "Call error '%s'!", __func__);                                                   \
+	if (res != XRT_SUCCESS) {                                                                                      \
+		IPC_ERROR(icc->ipc_c, "Call error '%i'!", res);                                                        \
 	}
 
 static xrt_result_t
