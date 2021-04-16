@@ -75,10 +75,13 @@ ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *ics,
                                xrt_shmem_handle_t *out_handles,
                                uint32_t *out_num_handles)
 {
+	IPC_TRACE_MARKER();
+
 	assert(max_num_handles >= 1);
 
 	out_handles[0] = ics->server->ism_handle;
 	*out_num_handles = 1;
+
 	return XRT_SUCCESS;
 }
 
@@ -86,6 +89,8 @@ xrt_result_t
 ipc_handle_system_compositor_get_info(volatile struct ipc_client_state *ics,
                                       struct xrt_system_compositor_info *out_info)
 {
+	IPC_TRACE_MARKER();
+
 	*out_info = ics->server->xsysc->info;
 
 	return XRT_SUCCESS;
@@ -94,6 +99,8 @@ ipc_handle_system_compositor_get_info(volatile struct ipc_client_state *ics,
 xrt_result_t
 ipc_handle_session_create(volatile struct ipc_client_state *ics, const struct xrt_session_info *xsi)
 {
+	IPC_TRACE_MARKER();
+
 	struct xrt_compositor_native *xcn = NULL;
 
 	xrt_result_t xret = xrt_syscomp_create_native_compositor(ics->server->xsysc, xsi, &xcn);
@@ -132,6 +139,8 @@ ipc_handle_session_end(volatile struct ipc_client_state *ics)
 xrt_result_t
 ipc_handle_compositor_get_info(volatile struct ipc_client_state *ics, struct xrt_compositor_info *out_info)
 {
+	IPC_TRACE_MARKER();
+
 	*out_info = ics->xc->info;
 
 	return XRT_SUCCESS;
