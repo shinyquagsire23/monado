@@ -1131,7 +1131,9 @@ create_controller(ohmd_context *ctx, int device_idx, int device_flags, enum xrt_
 		// in case the hardware is an analog trigger, change the input after a half pulled trigger.
 		ohd->make_trigger_digital = true;
 
-		ohd->base.outputs[0].name = XRT_OUTPUT_NAME_SIMPLE_VIBRATION;
+		if (num_outputs > 0) {
+			ohd->base.outputs[0].name = XRT_OUTPUT_NAME_SIMPLE_VIBRATION;
+		}
 
 		ohd->controls_mapping[OHMD_TRIGGER] = SIMPLE_SELECT_CLICK;
 		ohd->controls_mapping[OHMD_MENU] = SIMPLE_MENU_CLICK;
