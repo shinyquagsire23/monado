@@ -1263,25 +1263,14 @@ compositor_init_window_post_vulkan(struct comp_compositor *c)
 static bool
 compositor_init_swapchain(struct comp_compositor *c)
 {
-	if (!comp_target_init_post_vulkan(c->target,                   //
-	                                  c->settings.preferred.width, //
-	                                  c->settings.preferred.height)) {
-		COMP_ERROR(c, "Window init_swapchain failed!");
-		goto err_destroy;
+	if (comp_target_init_post_vulkan(c->target,                   //
+	                                 c->settings.preferred.width, //
+	                                 c->settings.preferred.height)) {
+		return true;
 	}
 
-	comp_target_create_images(        //
-	    c->target,                    //
-	    c->settings.preferred.width,  //
-	    c->settings.preferred.height, //
-	    c->settings.color_format,     //
-	    c->settings.color_space,      //
-	    c->settings.present_mode);    //
+	COMP_ERROR(c, "Window init_swapchain failed!");
 
-	return true;
-
-	// Error path.
-err_destroy:
 	comp_target_destroy(&c->target);
 
 	return false;
