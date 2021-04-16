@@ -61,4 +61,9 @@ typedef enum xrt_result
 	 * Failed to initialize threading components.
 	 */
 	XRT_ERROR_THREADING_INIT_FAILURE = -14,
+	/*!
+	 * The client has not created a session on this IPC connection,
+	 * which is needed for the given command.
+	 */
+	XRT_ERROR_IPC_SESSION_NOT_CREATED = -15,
 } xrt_result_t;
