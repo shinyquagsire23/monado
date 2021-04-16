@@ -822,6 +822,10 @@ ipc_syscomp_create_native_compositor(struct xrt_system_compositor *xsc,
 	// Needs to be done before init.
 	IPC_CALL_CHK(ipc_call_session_create(icc->ipc_c, xsi));
 
+	if (res != XRT_SUCCESS) {
+		return res;
+	}
+
 	// Needs to be done after session create call.
 	ipc_compositor_init(icc, out_xcn);
 
