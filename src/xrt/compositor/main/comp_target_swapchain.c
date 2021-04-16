@@ -245,6 +245,13 @@ comp_target_swapchain_destroy_old(struct comp_target_swapchain *cts, VkSwapchain
 	}
 }
 
+static bool
+comp_target_swapchain_has_images(struct comp_target *ct)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	return cts->surface.handle != VK_NULL_HANDLE && cts->swapchain.handle != VK_NULL_HANDLE;
+}
+
 static VkResult
 comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index)
 {
@@ -255,6 +262,7 @@ comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore sem
 		//! @todo what error to return here?
 		return VK_ERROR_INITIALIZATION_FAILED;
 	}
+
 	return vk->vkAcquireNextImageKHR( //
 	    vk->device,                   // device
 	    cts->swapchain.handle,        // swapchain
@@ -307,13 +315,6 @@ comp_target_swapchain_check_ready(struct comp_target *ct)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 	return cts->surface.handle != VK_NULL_HANDLE;
-}
-
-static bool
-comp_target_swapchain_has_images(struct comp_target *ct)
-{
-	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
-	return cts->surface.handle != VK_NULL_HANDLE && cts->swapchain.handle != VK_NULL_HANDLE;
 }
 
 static bool
