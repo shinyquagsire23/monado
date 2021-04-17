@@ -18,6 +18,7 @@
 #include "os/os_threading.h"
 #include "math/m_imu_3dof.h"
 #include "util/u_logging.h"
+#include "util/u_distortion_mesh.h"
 
 #include "wmr_protocol.h"
 #include "wmr_config.h"
@@ -39,6 +40,18 @@ enum rvb_g1_status_bits
 	REVERB_G1_STATUS_BIT_UNKNOWN_BIT_6 = (1 << 6),
 	REVERB_G1_STATUS_BIT_UNKNOWN_BIT_7 = (1 << 7),
 	// clang-format on
+};
+
+struct wmr_hmd_distortion_params
+{
+	/* Inverse affine transform to move from (undistorted) pixels
+	 * to image plane / normalised image coordinates
+	 */
+	struct xrt_matrix_3x3 inv_affine_xform;
+
+	/* tan(angle) FoV min/max for X and Y in the input texture */
+	struct xrt_vec2 tex_x_range;
+	struct xrt_vec2 tex_y_range;
 };
 
 /*!
@@ -69,6 +82,9 @@ struct wmr_hmd
 
 	//! Latest raw IPD value from the device.
 	uint16_t raw_ipd;
+
+	/* Distortion related parameters */
+	struct wmr_hmd_distortion_params distortion_params[2];
 
 	struct hololens_sensors_packet packet;
 
