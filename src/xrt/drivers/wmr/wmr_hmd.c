@@ -508,6 +508,13 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 	wh->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 
 	// TODO: Read config file from HMD, provide guestimate values for now.
+	if (!wmr_config_parse(&wh->config)) {
+		WMR_ERROR(wh, "Failed to load headset configuration!");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return NULL;
+	}
+
 	struct u_device_simple_info info;
 	info.display.w_pixels = 4320;
 	info.display.h_pixels = 2160;

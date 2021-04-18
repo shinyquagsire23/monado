@@ -309,6 +309,8 @@ list(APPEND ENABLED_HEADSET_DRIVERS drv_multi)
 if(XRT_BUILD_DRIVER_WMR)
 	set(WMR_SOURCE_FILES
 		wmr/wmr_common.h
+		wmr/wmr_config.c
+		wmr/wmr_config.h
 		wmr/wmr_hmd.c
 		wmr/wmr_hmd.h
 		wmr/wmr_interface.h

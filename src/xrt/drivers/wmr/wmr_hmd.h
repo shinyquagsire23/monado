@@ -20,7 +20,7 @@
 #include "util/u_logging.h"
 
 #include "wmr_protocol.h"
-
+#include "wmr_config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +47,9 @@ enum rvb_g1_status_bits
 struct wmr_hmd
 {
 	struct xrt_device base;
+
+	// Config block read from the firmware JSON
+	struct wmr_hmd_config config;
 
 	//! Packet reading thread.
 	struct os_thread_helper oth;
