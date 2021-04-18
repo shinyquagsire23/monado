@@ -63,7 +63,10 @@ struct comp_renderer
 	//! @{
 
 	//! Index of the current buffer/image
-	uint32_t current_buffer;
+	int32_t acquired_buffer;
+
+	//! Which buffer was last submitted and has a fence pending.
+	int32_t fenced_buffer;
 
 	/*!
 	 * Array of "renderings" equal in size to the number of comp_target images.
@@ -335,7 +338,8 @@ renderer_close_renderings_and_fences(struct comp_renderer *r)
 	}
 
 	r->num_buffers = 0;
-	r->current_buffer = 0;
+	r->acquired_buffer = -1;
+	r->fenced_buffer = -1;
 }
 
 //! @pre comp_target_check_ready(r->c->target)
@@ -440,7 +444,8 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 	r->c = c;
 	r->settings = &c->settings;
 
-	r->current_buffer = 0;
+	r->acquired_buffer = -1;
+	r->fenced_buffer = -1;
 	r->queue = VK_NULL_HANDLE;
 	r->semaphores.present_complete = VK_NULL_HANDLE;
 	r->semaphores.render_complete = VK_NULL_HANDLE;
@@ -460,13 +465,19 @@ renderer_wait_for_last_fence(struct comp_renderer *r)
 {
 	COMP_TRACE_MARKER();
 
+	if (r->fenced_buffer < 0) {
+		return;
+	}
+
 	struct vk_bundle *vk = &r->c->vk;
 	VkResult ret;
 
-	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->current_buffer], VK_TRUE, UINT64_MAX);
+	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->fenced_buffer], VK_TRUE, UINT64_MAX);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vkWaitForFences: %s", vk_result_string(ret));
 	}
+
+	r->fenced_buffer = -1;
 }
 
 static void
@@ -481,13 +492,15 @@ renderer_submit_queue(struct comp_renderer *r)
 	    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 	};
 
-	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->current_buffer], VK_TRUE, UINT64_MAX);
-	if (ret != VK_SUCCESS)
-		COMP_ERROR(r->c, "vkWaitForFences: %s", vk_result_string(ret));
+	// Wait for the last fence, if any.
+	renderer_wait_for_last_fence(r);
+	assert(r->fenced_buffer < 0);
 
-	ret = vk->vkResetFences(vk->device, 1, &r->fences[r->current_buffer]);
-	if (ret != VK_SUCCESS)
+	assert(r->acquired_buffer >= 0);
+	ret = vk->vkResetFences(vk->device, 1, &r->fences[r->acquired_buffer]);
+	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vkResetFences: %s", vk_result_string(ret));
+	}
 
 	VkSubmitInfo comp_submit_info = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -495,15 +508,18 @@ renderer_submit_queue(struct comp_renderer *r)
 	    .pWaitSemaphores = &r->semaphores.present_complete,
 	    .pWaitDstStageMask = stage_flags,
 	    .commandBufferCount = 1,
-	    .pCommandBuffers = &r->rrs[r->current_buffer].cmd,
+	    .pCommandBuffers = &r->rrs[r->acquired_buffer].cmd,
 	    .signalSemaphoreCount = 1,
 	    .pSignalSemaphores = &r->semaphores.render_complete,
 	};
 
-	ret = vk_locked_submit(vk, r->queue, 1, &comp_submit_info, r->fences[r->current_buffer]);
+	ret = vk_locked_submit(vk, r->queue, 1, &comp_submit_info, r->fences[r->acquired_buffer]);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
 	}
+
+	// This buffer now have a pending fence.
+	r->fenced_buffer = r->acquired_buffer;
 }
 
 static void
@@ -554,13 +570,16 @@ renderer_acquire_swapchain_image(struct comp_renderer *r)
 {
 	COMP_TRACE_MARKER();
 
+	uint32_t buffer_index = 0;
 	VkResult ret;
+
+	assert(r->acquired_buffer < 0);
 
 	if (!renderer_ensure_images_and_renderings(r, false)) {
 		// Not ready yet.
 		return;
 	}
-	ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &r->current_buffer);
+	ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &buffer_index);
 
 	if ((ret == VK_ERROR_OUT_OF_DATE_KHR) || (ret == VK_SUBOPTIMAL_KHR)) {
 		COMP_DEBUG(r->c, "Received %s.", vk_result_string(ret));
@@ -573,13 +592,15 @@ renderer_acquire_swapchain_image(struct comp_renderer *r)
 			return;
 		}
 		/* Acquire image again to silence validation error */
-		ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &r->current_buffer);
+		ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &buffer_index);
 		if (ret != VK_SUCCESS) {
 			COMP_ERROR(r->c, "comp_target_acquire: %s", vk_result_string(ret));
 		}
 	} else if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "comp_target_acquire: %s", vk_result_string(ret));
 	}
+
+	r->acquired_buffer = buffer_index;
 }
 
 static void
@@ -604,8 +625,15 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 
 	VkResult ret;
 
-	ret = comp_target_present(r->c->target, r->queue, r->current_buffer, r->semaphores.render_complete,
-	                          desired_present_time_ns, present_slop_ns);
+	ret = comp_target_present(         //
+	    r->c->target,                  //
+	    r->queue,                      //
+	    r->acquired_buffer,            //
+	    r->semaphores.render_complete, //
+	    desired_present_time_ns,       //
+	    present_slop_ns);              //
+	r->acquired_buffer = -1;
+
 	if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
 		renderer_resize(r);
 		return;
@@ -861,8 +889,10 @@ comp_renderer_draw(struct comp_renderer *r)
 
 	comp_target_update_timings(ct);
 
-	// Ensures that renderings are created.
-	renderer_acquire_swapchain_image(r);
+	if (r->acquired_buffer < 0) {
+		// Ensures that renderings are created.
+		renderer_acquire_swapchain_image(r);
+	}
 
 	comp_target_update_timings(ct);
 
@@ -882,12 +912,6 @@ comp_renderer_draw(struct comp_renderer *r)
 	c->frame.rendering.id = -1;
 
 	/*
-	 * Wait for the last fence to complete so we know that the GPU is done,
-	 * if there is a big GPU bubble this lets us detect that.
-	 */
-	renderer_wait_for_last_fence(r);
-
-	/*
 	 * This fixes a lot of validation issues as it makes sure that the
 	 * command buffer has completed and all resources referred by it can
 	 * now be manipulated.
@@ -895,6 +919,13 @@ comp_renderer_draw(struct comp_renderer *r)
 	 * This is done after a swap so isn't time critical.
 	 */
 	renderer_wait_gpu_idle(r);
+
+	/*
+	 * For direct mode this makes us wait until the last frame has been
+	 * actually shown to the user, this avoids us missing that we have
+	 * missed a frame and miss-predicting the next frame.
+	 */
+	renderer_acquire_swapchain_image(r);
 
 	comp_target_update_timings(ct);
 }
