@@ -163,6 +163,7 @@ format-and-spellcheck:
 .monado.base-job.build-cmake:
   stage: build
   script:
+    - rm -rf build
     - mkdir build
     - pushd build
     - cmake -GNinja .. $CMAKE_ARGS
@@ -175,6 +176,7 @@ format-and-spellcheck:
 .monado.base-job.build-meson:
   stage: build
   script:
+    - rm -rf build
     - mkdir build
     - pushd build
     - meson .. $MESON_ARGS
