@@ -314,7 +314,7 @@ _init_graphics_pipeline(struct comp_layer_renderer *self,
 	                    VK_DYNAMIC_STATE_SCISSOR,
 	                },
 	        },
-	    .subpass = VK_NULL_HANDLE,
+	    .subpass = 0,
 	};
 
 	VkResult res;
