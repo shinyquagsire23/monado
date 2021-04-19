@@ -11,7 +11,7 @@ u_git_tag_c = vcs_tag(
 	replace_string: '@GIT_DESC@',
 )
 
-aux_util_deps = [ xrt_config_have ]
+aux_util_deps = [ xrt_config_have, aux_generated_bindings ]
 if libbsd.found() and not get_option('libbsd').disabled()
 	aux_util_deps += libbsd
 endif
