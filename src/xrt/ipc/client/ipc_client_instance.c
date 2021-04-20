@@ -141,7 +141,7 @@ ipc_connect(struct ipc_connection *ipc_c)
 
 	ret = connect(socket, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret < 0) {
-		IPC_ERROR(ipc_c, "Socket Connect error!");
+		IPC_ERROR(ipc_c, "Failed to connec to socket %s: %s!", sock_file, strerror(errno));
 		close(socket);
 		return false;
 	}
