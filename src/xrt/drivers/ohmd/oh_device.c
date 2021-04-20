@@ -1051,7 +1051,8 @@ create_controller(ohmd_context *ctx, int device_idx, int device_flags, enum xrt_
 
 	bool oculus_touch = false;
 
-	int num_inputs = 1;
+	// khronos simple controller has 4 inputs
+	int num_inputs = 4;
 	int num_outputs = 0;
 
 	if (strcmp(prod, "Rift (CV1): Right Controller") == 0 || strcmp(prod, "Rift (CV1): Left Controller") == 0 ||
