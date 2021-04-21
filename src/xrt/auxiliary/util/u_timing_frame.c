@@ -611,7 +611,7 @@ u_ft_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_ti
 	// When not missing frames but adjusting app time at these increments
 	dt->adjust_non_miss_ns = get_percent_of_time(estimated_frame_period_ns, 2);
 	// Extra margin that is added to app time.
-	dt->margin_ns = get_percent_of_time(estimated_frame_period_ns, 8);
+	dt->margin_ns = U_TIME_1MS_IN_NS;
 
 	*out_uft = &dt->base;
 

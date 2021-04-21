@@ -413,7 +413,7 @@ u_rt_create(struct u_render_timing **out_urt)
 	rt->base.destroy = rt_destroy;
 	rt->app.cpu_time_ns = U_TIME_1MS_IN_NS * 2;
 	rt->app.draw_time_ns = U_TIME_1MS_IN_NS * 2;
-	rt->app.margin_ns = U_TIME_1MS_IN_NS / 2;
+	rt->app.margin_ns = U_TIME_1MS_IN_NS * 2;
 
 	for (size_t i = 0; i < ARRAY_SIZE(rt->frames); i++) {
 		rt->frames[i].state = U_RT_READY;
