@@ -1,6 +1,11 @@
 # IPC Design {#ipc-design}
 
-- Last updated: 8-February-2021
+<!--
+Copyright 2021, Collabora, Ltd. and the Monado contributors
+SPDX-License-Identifier: BSL-1.0
+-->
+
+- Last updated: 24-February-2021
 
 When the service starts, an `xrt_instance` is created and selected, a native
 system compositor is initialized, a shared memory segment for device data is
