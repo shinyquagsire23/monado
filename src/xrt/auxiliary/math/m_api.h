@@ -324,6 +324,15 @@ math_matrix_3x3_multiply(const struct xrt_matrix_3x3 *left,
                          struct xrt_matrix_3x3 *result);
 
 /*!
+ * Invert Matrix3x3
+ *
+ * @relates xrt_matrix_3x3
+ * @ingroup aux_math
+ */
+void
+math_matrix_3x3_inverse(const struct xrt_matrix_3x3 *in, struct xrt_matrix_3x3 *result);
+
+/*!
  * Initialize Matrix4x4 with identity.
  *
  * @relates xrt_matrix_4x4

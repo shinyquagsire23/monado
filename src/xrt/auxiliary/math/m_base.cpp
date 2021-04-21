@@ -52,6 +52,18 @@ copy(const struct xrt_vec3 *v)
 	return copy(*v);
 }
 
+static inline Eigen::Matrix3f
+copy(const struct xrt_matrix_3x3 *m)
+{
+	Eigen::Matrix3f res;
+	// clang-format off
+	res << m->v[0], m->v[3], m->v[6],
+	       m->v[1], m->v[4], m->v[7],
+	       m->v[2], m->v[5], m->v[8];
+	// clang-format on
+	return res;
+}
+
 static inline Eigen::Matrix4f
 copy(const struct xrt_matrix_4x4 *m)
 {
@@ -332,6 +344,13 @@ math_matrix_3x3_multiply(const struct xrt_matrix_3x3 *left,
 	result->v[6] = left->v[6] * right->v[0] + left->v[7] * right->v[3] + left->v[8] * right->v[6];
 	result->v[7] = left->v[6] * right->v[1] + left->v[7] * right->v[4] + left->v[8] * right->v[7];
 	result->v[8] = left->v[6] * right->v[2] + left->v[7] * right->v[5] + left->v[8] * right->v[8];
+}
+
+extern "C" void
+math_matrix_3x3_inverse(const struct xrt_matrix_3x3 *in, struct xrt_matrix_3x3 *result)
+{
+	Eigen::Matrix3f m = copy(in);
+	map_matrix_3x3(*result) = m.inverse();
 }
 
 void
