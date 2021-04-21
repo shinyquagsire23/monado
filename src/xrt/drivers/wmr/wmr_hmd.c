@@ -490,16 +490,6 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 	// Switch on IMU on the HMD.
 	hololens_sensors_enable_imu(wh);
 
-
-	// Hand over hololens sensor device to reading thread.
-	ret = os_thread_helper_start(&wh->oth, wmr_run_thread, wh);
-	if (ret != 0) {
-		WMR_ERROR(wh, "Failed to start thread!");
-		wmr_hmd_destroy(&wh->base);
-		wh = NULL;
-		return NULL;
-	}
-
 	// Setup input.
 	wh->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 
@@ -532,6 +522,15 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 
 	// Distortion information, fills in xdev->compute_distortion().
 	u_distortion_mesh_set_none(&wh->base);
+
+	// Hand over hololens sensor device to reading thread.
+	ret = os_thread_helper_start(&wh->oth, wmr_run_thread, wh);
+	if (ret != 0) {
+		WMR_ERROR(wh, "Failed to start thread!");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return NULL;
+	}
 
 	return &wh->base;
 }
