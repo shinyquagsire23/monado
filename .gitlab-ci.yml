@@ -159,6 +159,15 @@ format-and-spellcheck:
     expire_in: 1 week
     when: on_failure
 
+# Verify REUSE compliance
+reuse:
+  stage: build
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: [""]
+  script:
+    - reuse lint
+
 # "Base" job for a CMake build
 .monado.base-job.build-cmake:
   stage: build
@@ -381,6 +390,7 @@ ubuntu:groovy:package:
     BACKPORT_SUFFIX: ubuntu20.04
     PACKAGE_BRANCH: ubuntu/focal
     DISTRO: focal
+
 reprepro:package:
   stage: reprepro
   extends:
