@@ -80,7 +80,7 @@ hololens_sensors_decode_packet(struct wmr_hmd *wh,
                                const unsigned char *buffer,
                                int size)
 {
-	WMR_TRACE(wh, "");
+	WMR_TRACE(wh, " ");
 
 	if (size != 497 && size != 381) {
 		WMR_ERROR(wh, "invalid hololens sensor packet size (expected 381 or 497 but got %d)", size);
@@ -122,7 +122,7 @@ hololens_sensors_decode_packet(struct wmr_hmd *wh,
 static bool
 hololens_sensors_read_packets(struct wmr_hmd *wh)
 {
-	WMR_TRACE(wh, "");
+	WMR_TRACE(wh, " ");
 
 	unsigned char buffer[WMR_FEATURE_BUFFER_SIZE];
 
