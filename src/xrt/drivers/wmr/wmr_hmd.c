@@ -147,10 +147,13 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 			vec3_from_hololens_gyro(wh->packet.gyro, i, &wh->raw_gyro);
 			vec3_from_hololens_accel(wh->packet.accel, i, &wh->raw_accel);
 
-			os_mutex_lock(&wh->fusion_mutex);
-			m_imu_3dof_update(&wh->fusion, wh->packet.gyro_timestamp[i] * WMR_MS_HOLOLENS_NS_PER_TICK,
-			                  &wh->raw_accel, &wh->raw_gyro);
-			os_mutex_unlock(&wh->fusion_mutex);
+			os_mutex_lock(&wh->fusion.mutex);
+			m_imu_3dof_update(                                              //
+			    &wh->fusion.i3dof,                                          //
+			    wh->packet.gyro_timestamp[i] * WMR_MS_HOLOLENS_NS_PER_TICK, //
+			    &wh->raw_accel,                                             //
+			    &wh->raw_gyro);                                             //
+			os_mutex_unlock(&wh->fusion.mutex);
 		}
 		break;
 	case WMR_MS_HOLOLENS_MSG_UNKNOWN_05:
@@ -370,9 +373,9 @@ wmr_hmd_get_tracked_pose(struct xrt_device *xdev,
 	// Clear relation.
 	U_ZERO(out_relation);
 
-	os_mutex_lock(&wh->fusion_mutex);
-	out_relation->pose.orientation = wh->fusion.rot;
-	os_mutex_unlock(&wh->fusion_mutex);
+	os_mutex_lock(&wh->fusion.mutex);
+	out_relation->pose.orientation = wh->fusion.i3dof.rot;
+	os_mutex_unlock(&wh->fusion.mutex);
 
 	out_relation->relation_flags = (enum xrt_space_relation_flags)( //
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |                  //
@@ -426,9 +429,9 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 	}
 
 	// Destroy the fusion.
-	m_imu_3dof_close(&wh->fusion);
+	m_imu_3dof_close(&wh->fusion.i3dof);
 
-	os_mutex_destroy(&wh->fusion_mutex);
+	os_mutex_destroy(&wh->fusion.mutex);
 
 	free(wh);
 }
@@ -463,7 +466,7 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 	snprintf(wh->base.str, XRT_DEVICE_NAME_LEN, "HP Reverb VR Headset");
 
 	// Mutex before thread.
-	ret = os_mutex_init(&wh->fusion_mutex);
+	ret = os_mutex_init(&wh->fusion.mutex);
 	if (ret != 0) {
 		WMR_ERROR(wh, "Failed to init mutex!");
 		wmr_hmd_destroy(&wh->base);
@@ -511,12 +514,12 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 		return NULL;
 	}
 
-	m_imu_3dof_init(&wh->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
+	m_imu_3dof_init(&wh->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
 	// Setup variable tracker.
 	u_var_add_root(wh, "WMR HMD", true);
 	u_var_add_gui_header(wh, &wh->gui.fusion, "3DoF Fusion");
-	m_imu_3dof_add_vars(&wh->fusion, wh, "");
+	m_imu_3dof_add_vars(&wh->fusion.i3dof, wh, "");
 	u_var_add_gui_header(wh, &wh->gui.misc, "Misc");
 	u_var_add_log_level(wh, &wh->log_level, "log_level");
 

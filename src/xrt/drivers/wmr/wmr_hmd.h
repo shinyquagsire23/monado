@@ -72,9 +72,14 @@ struct wmr_hmd
 	struct xrt_vec3 raw_accel;
 	struct xrt_vec3 raw_gyro;
 
-	struct os_mutex fusion_mutex;
-	//! Protected by @ref fusion_mutex.
-	struct m_imu_3dof fusion;
+	struct
+	{
+		//! Protects all members of the `fusion` substruct.
+		struct os_mutex mutex;
+
+		//! Main fusion calculator.
+		struct m_imu_3dof i3dof;
+	} fusion;
 
 	struct
 	{
