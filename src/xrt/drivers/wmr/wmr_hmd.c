@@ -147,23 +147,26 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 
 		hololens_sensors_decode_packet(wh, &wh->packet, buffer, size);
 
+		struct xrt_vec3 raw_gyro[4];
+		struct xrt_vec3 raw_accel[4];
+
 		for (int i = 0; i < 4; i++) {
-			struct xrt_vec3 raw_gyro;
-			struct xrt_vec3 raw_accel;
+			vec3_from_hololens_gyro(wh->packet.gyro, i, &raw_gyro[i]);
+			vec3_from_hololens_accel(wh->packet.accel, i, &raw_accel[i]);
+		}
 
-			vec3_from_hololens_gyro(wh->packet.gyro, i, &raw_gyro);
-			vec3_from_hololens_accel(wh->packet.accel, i, &raw_accel);
-
-			os_mutex_lock(&wh->fusion.mutex);
-			wh->fusion.last_imu_timestamp_ns = now_ns;
-			wh->fusion.last_angular_velocity = raw_gyro;
+		os_mutex_lock(&wh->fusion.mutex);
+		for (int i = 0; i < 4; i++) {
 			m_imu_3dof_update(                                              //
 			    &wh->fusion.i3dof,                                          //
 			    wh->packet.gyro_timestamp[i] * WMR_MS_HOLOLENS_NS_PER_TICK, //
-			    &raw_accel,                                                 //
-			    &raw_gyro);                                                 //
-			os_mutex_unlock(&wh->fusion.mutex);
+			    &raw_accel[i],                                              //
+			    &raw_gyro[i]);                                              //
 		}
+		wh->fusion.last_imu_timestamp_ns = now_ns;
+		wh->fusion.last_angular_velocity = raw_gyro[3];
+		os_mutex_unlock(&wh->fusion.mutex);
+
 		break;
 	}
 	case WMR_MS_HOLOLENS_MSG_UNKNOWN_05:
