@@ -69,9 +69,6 @@ struct wmr_hmd
 
 	struct hololens_sensors_packet packet;
 
-	struct xrt_vec3 raw_accel;
-	struct xrt_vec3 raw_gyro;
-
 	struct
 	{
 		//! Protects all members of the `fusion` substruct.

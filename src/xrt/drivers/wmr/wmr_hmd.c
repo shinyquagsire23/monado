@@ -148,17 +148,20 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 		hololens_sensors_decode_packet(wh, &wh->packet, buffer, size);
 
 		for (int i = 0; i < 4; i++) {
-			vec3_from_hololens_gyro(wh->packet.gyro, i, &wh->raw_gyro);
-			vec3_from_hololens_accel(wh->packet.accel, i, &wh->raw_accel);
+			struct xrt_vec3 raw_gyro;
+			struct xrt_vec3 raw_accel;
+
+			vec3_from_hololens_gyro(wh->packet.gyro, i, &raw_gyro);
+			vec3_from_hololens_accel(wh->packet.accel, i, &raw_accel);
 
 			os_mutex_lock(&wh->fusion.mutex);
 			wh->fusion.last_imu_timestamp_ns = now_ns;
-			wh->fusion.last_angular_velocity = wh->raw_gyro;
+			wh->fusion.last_angular_velocity = raw_gyro;
 			m_imu_3dof_update(                                              //
 			    &wh->fusion.i3dof,                                          //
 			    wh->packet.gyro_timestamp[i] * WMR_MS_HOLOLENS_NS_PER_TICK, //
-			    &wh->raw_accel,                                             //
-			    &wh->raw_gyro);                                             //
+			    &raw_accel,                                                 //
+			    &raw_gyro);                                                 //
 			os_mutex_unlock(&wh->fusion.mutex);
 		}
 		break;
