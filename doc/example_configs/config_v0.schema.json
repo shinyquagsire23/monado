@@ -1,0 +1,228 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "title": "Monado configuration file schema v0",
+    "type": "object",
+    "properties": {
+        "$schema": {
+            "type": "string",
+            "title": "JSON Schema directive",
+            "default": "https://monado.pages.freedesktop.org/monado/config_v0.schema.json"
+        },
+        "active": {
+            "type": "string",
+            "title": "Name of the active config object",
+            "description": "Must match a key in the top-level object. Only config data in that object will be used.",
+            "$comment": "have omitted 'none' because it primarily exists for environment overrides: just leave out this key in the json for 'none'",
+            "enum": [
+                "tracking",
+                "remote"
+            ]
+        },
+        "tracking": {
+            "$ref": "#/definitions/tracking"
+        },
+        "remote": {
+            "$ref": "#/definitions/remote"
+        }
+    },
+    "definitions": {
+        "remote": {
+            "title": "Remote device configuration",
+            "required": [
+                "version"
+            ],
+            "properties": {
+                "port": {
+                    "type": "integer"
+                },
+                "version": {
+                    "type": "integer",
+                    "title": "Remote config file schema version",
+                    "enum": [
+                        0
+                    ]
+                }
+            }
+        },
+        "tracking": {
+            "title": "Tracking configuration",
+            "required": [
+                "version"
+            ],
+            "properties": {
+                "version": {
+                    "type": "integer",
+                    "title": "Tracking config file schema version",
+                    "enum": [
+                        0
+                    ]
+                },
+                "tracking_overrides": {
+                    "$ref": "#/definitions/tracking_overrides"
+                },
+                "camera_name": {
+                    "type": "string"
+                },
+                "camera_mode": {
+                    "type": "integer"
+                },
+                "camera_type": {
+                    "type": "string",
+                    "enum": [
+                        "regular_mono",
+                        "regular_sbs",
+                        "ps4",
+                        "leap_motion"
+                    ]
+                },
+                "calibration_path": {
+                    "type": "string"
+                },
+            }
+        },
+        "tracking_overrides": {
+            "title": "Tracking overrides",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/tracking_override"
+            }
+        },
+        "tracking_override": {
+            "type": "object",
+            "title": "Tracking override object",
+            "required": [
+                "target_device_serial",
+                "tracker_device_serial",
+                "type"
+            ],
+            "properties": {
+                "target_device_serial": {
+                    "title": "Target Device Serial",
+                    "$ref": "#/definitions/device_serial"
+                },
+                "tracker_device_serial": {
+                    "title": "Tracker Device Serial",
+                    "$ref": "#/definitions/device_serial"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "direct",
+                        "attached"
+                    ]
+                },
+                "offset": {
+                    "type": "object",
+                    "title": "Tracking offset",
+                    "default": {
+                        "orientation": {
+                            "x": 0,
+                            "y": 0,
+                            "z": 0,
+                            "w": 1
+                        },
+                        "position": {
+                            "x": 0,
+                            "y": 0,
+                            "z": 0
+                        }
+                    },
+                    "required": [
+                        "orientation",
+                        "position"
+                    ],
+                    "properties": {
+                        "orientation": {
+                            "$ref": "#/definitions/quaternion"
+                        },
+                        "position": {
+                            "title": "Position offset",
+                            "$ref": "#/definitions/vector3"
+                        }
+                    }
+                },
+                "xrt_input_name": {
+                    "type": "string",
+                    "enum": [
+                        "XRT_INPUT_HYDRA_POSE",
+                        "XRT_INPUT_TOUCH_AIM_POSE",
+                        "XRT_INPUT_SIMPLE_AIM_POSE",
+                        "XRT_INPUT_GENERIC_HEAD_DETECT",
+                        "XRT_INPUT_SIMPLE_GRIP_POSE",
+                        "XRT_INPUT_INDEX_GRIP_POSE",
+                        "XRT_INPUT_VIVE_GRIP_POSE",
+                        "XRT_INPUT_PSMV_AIM_POSE",
+                        "XRT_INPUT_WMR_AIM_POSE",
+                        "XRT_INPUT_WMR_GRIP_POSE",
+                        "XRT_INPUT_PSMV_BODY_CENTER_POSE",
+                        "XRT_INPUT_HAND_AIM_POSE",
+                        "XRT_INPUT_INDEX_AIM_POSE",
+                        "XRT_INPUT_DAYDREAM_POSE",
+                        "XRT_INPUT_GENERIC_HEAD_POSE",
+                        "XRT_INPUT_PSMV_BALL_CENTER_POSE",
+                        "XRT_INPUT_GO_GRIP_POSE",
+                        "XRT_INPUT_TOUCH_GRIP_POSE",
+                        "XRT_INPUT_HAND_GRIP_POSE",
+                        "XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT",
+                        "XRT_INPUT_GENERIC_HAND_TRACKING_LEFT",
+                        "XRT_INPUT_GENERIC_TRACKER_POSE",
+                        "XRT_INPUT_PSMV_GRIP_POSE",
+                        "XRT_INPUT_GO_AIM_POSE",
+                        "XRT_INPUT_VIVE_AIM_POSE"
+                    ],
+                    "default": "XRT_INPUT_GENERIC_TRACKER_POSE"
+                }
+            }
+        },
+        "device_serial": {
+            "type": "string",
+            "title": "Device serial",
+            "description": "The unique string assigned to a particular instance of a device by the driver."
+        },
+        "quaternion": {
+            "type": "object",
+            "title": "Quaternion",
+            "description": "Should be normalized (length == 1) to represent rotation",
+            "properties": {
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                },
+                "w": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "x",
+                "y",
+                "z",
+                "w"
+            ]
+        },
+        "vec3": {
+            "type": "object",
+            "title": "Vector3",
+            "properties": {
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "x",
+                "y",
+                "z"
+            ]
+        }
+    }
+}
