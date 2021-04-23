@@ -97,6 +97,9 @@ get_obj(cJSON *json, const char *name)
 XRT_MAYBE_UNUSED static bool
 get_obj_bool(cJSON *json, const char *name, bool *out_bool)
 {
+	if (json == NULL) {
+		return false;
+	}
 	cJSON *item = get_obj(json, name);
 	if (item == NULL) {
 		return false;
@@ -113,6 +116,9 @@ get_obj_bool(cJSON *json, const char *name, bool *out_bool)
 static bool
 get_obj_int(cJSON *json, const char *name, int *out_int)
 {
+	if (json == NULL) {
+		return false;
+	}
 	cJSON *item = get_obj(json, name);
 	if (item == NULL) {
 		return false;
@@ -129,6 +135,9 @@ get_obj_int(cJSON *json, const char *name, int *out_int)
 static bool
 get_obj_float(cJSON *json, const char *name, float *out_float)
 {
+	if (json == NULL) {
+		return false;
+	}
 	cJSON *item = get_obj(json, name);
 	if (item == NULL) {
 		return false;
@@ -145,6 +154,9 @@ get_obj_float(cJSON *json, const char *name, float *out_float)
 static bool
 get_obj_str(cJSON *json, const char *name, char *array, size_t array_size)
 {
+	if (json == NULL) {
+		return false;
+	}
 	cJSON *item = get_obj(json, name);
 	if (item == NULL) {
 		return false;
@@ -318,7 +330,7 @@ u_config_json_get_tracking_overrides(struct u_config_json *json,
 			o->offset.orientation.w = 1;
 		}
 
-		char input_name[512];
+		char input_name[512] = {'\0'};
 		get_obj_str(override, "xrt_input_name", input_name, 512);
 		o->input_name = xrt_input_name_enum(input_name);
 
