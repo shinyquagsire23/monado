@@ -29,7 +29,7 @@ you want.
 
 Instead you probably want to configure Monado to make your Leap Motion
 Controller-tracked hands follow around your HMD. There's an example of how to do
-this with North Star in `doc/example_configs/config_v0.json.northstar_lonestar`.
+this with North Star in `doc/example_configs/config_v0.northstar_lonestar.json`.
 If you're using a North Star headset, that should work but unless you're using
 the Lone Star NS variant you'll need to edit the offsets. If you're using some
 other HMD you'll have to edit the `tracker_device_serial` to be your HMD serial,

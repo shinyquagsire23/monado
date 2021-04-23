@@ -1,4 +1,5 @@
 {
+	"$schema": "https://monado.pages.freedesktop.org/monado/config_v0.schema.json",
 	"active": "tracking",
 	"tracking": {
 		"tracking_overrides": [
@@ -19,7 +20,7 @@
 						"z": -0.0744
 					}
 				},
-				"xrt_input_name":	"XRT_INPUT_GENERIC_TRACKER_POSE"
+				"xrt_input_name": "XRT_INPUT_GENERIC_TRACKER_POSE"
 			},
 			{
 				"target_device_serial": "Leap Motion v2 driver",
@@ -38,7 +39,7 @@
 						"z": 0
 					}
 				},
-				"xrt_input_name":	"XRT_INPUT_GENERIC_TRACKER_POSE"
+				"xrt_input_name": "XRT_INPUT_GENERIC_TRACKER_POSE"
 			}
 		],
 		"version": 0
