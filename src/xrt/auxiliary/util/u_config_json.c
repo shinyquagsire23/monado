@@ -173,6 +173,14 @@ is_json_ok(struct u_config_json *json)
 	return true;
 }
 
+static void
+u_config_json_assign_schema(struct u_config_json *json)
+{
+	cJSON_DeleteItemFromObject(json->root, "$schema");
+	cJSON_AddStringToObject(json->root, "$schema",
+	                        "https://monado.pages.freedesktop.org/monado/config_v0.schema.json");
+}
+
 static bool
 parse_active(const char *str, const char *from, enum u_config_json_active_config *out_active)
 {
@@ -384,6 +392,8 @@ u_config_json_save_calibration(struct u_config_json *json, struct xrt_settings_t
 	if (!json->file_loaded) {
 		u_config_json_make_default_root(json);
 	}
+	u_config_json_assign_schema(json);
+
 	cJSON *root = json->root;
 
 	cJSON *t = cJSON_GetObjectItem(root, "tracking");
@@ -441,6 +451,7 @@ u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_ove
 	if (!json->file_loaded) {
 		u_config_json_make_default_root(json);
 	}
+	u_config_json_assign_schema(json);
 	cJSON *root = json->root;
 
 	cJSON *t = cJSON_GetObjectItem(root, "tracking");
