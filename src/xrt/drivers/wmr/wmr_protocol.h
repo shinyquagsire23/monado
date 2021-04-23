@@ -41,14 +41,16 @@ extern "C" {
 #define WMR_CONTROL_MSG_IPD_VALUE 0x01
 #define WMR_CONTROL_MSG_UNKNOWN_05 0x05
 
+
 static const unsigned char hololens_sensors_imu_on[64] = {0x02, 0x07};
+
 
 struct hololens_sensors_packet
 {
 	uint8_t id;
 	uint16_t temperature[4];
 	uint64_t gyro_timestamp[4];
-	int16_t gyro[3][32];
+	int16_t gyro[3][4 * 8];
 	uint64_t accel_timestamp[4];
 	int32_t accel[3][4];
 	uint64_t video_timestamp[4];
