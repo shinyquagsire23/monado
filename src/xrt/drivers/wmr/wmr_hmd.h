@@ -79,6 +79,12 @@ struct wmr_hmd
 
 		//! Main fusion calculator.
 		struct m_imu_3dof i3dof;
+
+		//! The last angular velocity from the IMU, for prediction.
+		struct xrt_vec3 last_angular_velocity;
+
+		//! When did we get the last IMU sample, in CPU time.
+		uint64_t last_imu_timestamp_ns;
 	} fusion;
 
 	struct

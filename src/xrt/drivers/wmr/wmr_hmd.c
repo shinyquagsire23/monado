@@ -20,6 +20,7 @@
 #include "math/m_mathinclude.h"
 #include "math/m_api.h"
 #include "math/m_vec2.h"
+#include "math/m_predict.h"
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
@@ -140,7 +141,10 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 	}
 
 	switch (buffer[0]) {
-	case WMR_MS_HOLOLENS_MSG_SENSORS:
+	case WMR_MS_HOLOLENS_MSG_SENSORS: {
+		// Get the timing as close to reading the packet as possible.
+		uint64_t now_ns = os_monotonic_get_ns();
+
 		hololens_sensors_decode_packet(wh, &wh->packet, buffer, size);
 
 		for (int i = 0; i < 4; i++) {
@@ -148,6 +152,8 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 			vec3_from_hololens_accel(wh->packet.accel, i, &wh->raw_accel);
 
 			os_mutex_lock(&wh->fusion.mutex);
+			wh->fusion.last_imu_timestamp_ns = now_ns;
+			wh->fusion.last_angular_velocity = wh->raw_gyro;
 			m_imu_3dof_update(                                              //
 			    &wh->fusion.i3dof,                                          //
 			    wh->packet.gyro_timestamp[i] * WMR_MS_HOLOLENS_NS_PER_TICK, //
@@ -156,6 +162,7 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 			os_mutex_unlock(&wh->fusion.mutex);
 		}
 		break;
+	}
 	case WMR_MS_HOLOLENS_MSG_UNKNOWN_05:
 	case WMR_MS_HOLOLENS_MSG_UNKNOWN_06:
 	case WMR_MS_HOLOLENS_MSG_UNKNOWN_0E: //
@@ -370,16 +377,31 @@ wmr_hmd_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	// Clear relation.
-	U_ZERO(out_relation);
+	// Variables needed for prediction.
+	uint64_t last_imu_timestamp_ns = 0;
+	struct xrt_space_relation relation = {0};
+	relation.relation_flags = (enum xrt_space_relation_flags)( //
+	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT |        //
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |             //
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
+	// Get data while holding the lock.
 	os_mutex_lock(&wh->fusion.mutex);
-	out_relation->pose.orientation = wh->fusion.i3dof.rot;
+	relation.pose.orientation = wh->fusion.i3dof.rot;
+	relation.angular_velocity = wh->fusion.last_angular_velocity;
+	last_imu_timestamp_ns = wh->fusion.last_imu_timestamp_ns;
 	os_mutex_unlock(&wh->fusion.mutex);
 
-	out_relation->relation_flags = (enum xrt_space_relation_flags)( //
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |                  //
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	// No prediction needed.
+	if (at_timestamp_ns < last_imu_timestamp_ns) {
+		*out_relation = relation;
+		return;
+	}
+
+	uint64_t prediction_ns = at_timestamp_ns - last_imu_timestamp_ns;
+	double prediction_s = time_ns_to_s(prediction_ns);
+
+	m_predict_relation(&relation, prediction_s, out_relation);
 }
 
 static void
