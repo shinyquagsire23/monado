@@ -214,6 +214,8 @@ comp_target_swapchain_select_extent(struct comp_target_swapchain *cts,
 	// If width (and height) equals the special value 0xFFFFFFFF,
 	// the size of the surface will be set by the swapchain
 	if (caps.currentExtent.width == (uint32_t)-1) {
+		assert(preferred_width > 0 && preferred_height > 0);
+
 		VkExtent2D extent = {
 		    .width = preferred_width,
 		    .height = preferred_height,
