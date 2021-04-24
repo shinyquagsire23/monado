@@ -118,9 +118,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	// Sanity check.
 	ret = vk->vkGetPhysicalDeviceSurfaceSupportKHR(vk->physical_device, 0, cts->surface.handle, &supported);
 	if (!supported) {
-		COMP_ERROR(ct->c,
-		           "vkGetPhysicalDeviceSurfaceSupportKHR: surface not "
-		           "supported! '%s'",
+		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: surface not supported! '%s'",
 		           vk_result_string(ret));
 	}
 
@@ -154,9 +152,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 
 	if (surface_caps.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
 	    surface_caps.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
-		COMP_DEBUG(ct->c,
-		           "Swapping width and height,"
-		           "since we are going to pre rotate");
+		COMP_DEBUG(ct->c, "Swapping width and height, since we are going to pre rotate");
 		uint32_t w2 = extent.width;
 		uint32_t h2 = extent.height;
 		extent.width = h2;
