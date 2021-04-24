@@ -1139,7 +1139,7 @@ vk_build_device_extensions(struct vk_bundle *vk,
 VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
-                 VkQueueGlobalPriorityEXT global_priorty,
+                 VkQueueGlobalPriorityEXT global_priority,
                  const char *const *required_device_extensions,
                  size_t num_required_device_extensions,
                  const char *const *optional_device_extensions,
@@ -1162,9 +1162,15 @@ vk_create_device(struct vk_bundle *vk,
 
 	VkPhysicalDeviceFeatures *enabled_features = NULL;
 
+	VkDeviceQueueGlobalPriorityCreateInfoEXT priority_info = {
+	    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT,
+	    .globalPriority = global_priority,
+	};
+
 	float queue_priority = 0.0f;
 	VkDeviceQueueCreateInfo queue_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+	    .pNext = vk->has_EXT_global_priority ? &priority_info : NULL,
 	    .queueCount = 1,
 	    .pQueuePriorities = &queue_priority,
 	};
@@ -1174,14 +1180,8 @@ vk_create_device(struct vk_bundle *vk,
 		return ret;
 	}
 
-	VkDeviceQueueGlobalPriorityCreateInfoEXT priority_info = {
-	    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT,
-	    .globalPriority = global_priorty,
-	};
-
 	VkDeviceCreateInfo device_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-	    .pNext = vk->has_EXT_global_priority ? &priority_info : NULL,
 	    .queueCreateInfoCount = 1,
 	    .pQueueCreateInfos = &queue_create_info,
 	    .enabledExtensionCount = num_device_extensions,
