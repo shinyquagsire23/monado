@@ -833,7 +833,7 @@ create_instance(struct comp_compositor *c)
 
 	ret = c->vk.vkCreateInstance(&instance_info, NULL, &c->vk.instance);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vkCreateInstance: %s\n", vk_result_string(ret));
+		COMP_ERROR(c, "vkCreateInstance: %s", vk_result_string(ret));
 		COMP_ERROR(c, "Failed to create Vulkan instance");
 		return ret;
 	}
