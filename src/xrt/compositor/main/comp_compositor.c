@@ -662,10 +662,15 @@ find_get_instance_proc_addr(struct comp_compositor *c)
 // If any of these lists are updated, please also update the appropriate column
 // in `vulkan-extensions.md`
 
-#define COMP_INSTANCE_EXTENSIONS_COMMON                                                                                \
-	VK_EXT_DEBUG_REPORT_EXTENSION_NAME, VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME,                         \
-	    VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME, VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME, \
-	    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, VK_KHR_SURFACE_EXTENSION_NAME
+// clang-format off
+#define COMP_INSTANCE_EXTENSIONS_COMMON                         \
+	VK_EXT_DEBUG_REPORT_EXTENSION_NAME,                     \
+	VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME,      \
+	VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,     \
+	VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,  \
+	VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, \
+	VK_KHR_SURFACE_EXTENSION_NAME
+// clang-format on
 
 static const char *instance_extensions_none[] = {COMP_INSTANCE_EXTENSIONS_COMMON};
 
