@@ -196,7 +196,7 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 
 static void
 qwerty_get_view_pose(struct xrt_device *xd,
-                     struct xrt_vec3 *eye_relation,
+                     const struct xrt_vec3 *eye_relation,
                      uint32_t view_index,
                      struct xrt_pose *out_pose)
 {

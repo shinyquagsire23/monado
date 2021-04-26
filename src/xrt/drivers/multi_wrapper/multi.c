@@ -179,7 +179,10 @@ set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_
 }
 
 static void
-get_view_pose(struct xrt_device *xdev, struct xrt_vec3 *eye_relation, uint32_t view_index, struct xrt_pose *out_pose)
+get_view_pose(struct xrt_device *xdev,
+              const struct xrt_vec3 *eye_relation,
+              uint32_t view_index,
+              struct xrt_pose *out_pose)
 {
 	struct multi_device *d = (struct multi_device *)xdev;
 	struct xrt_device *target = d->tracking_override.target;

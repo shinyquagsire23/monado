@@ -366,7 +366,7 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 }
 static void
 rs_6dof_get_view_pose(struct xrt_device *xdev,
-                      struct xrt_vec3 *eye_relation,
+                      const struct xrt_vec3 *eye_relation,
                       uint32_t view_index,
                       struct xrt_pose *out_pose)
 {

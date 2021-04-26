@@ -93,7 +93,7 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
 
 static void
 ns_hmd_get_view_pose(struct xrt_device *xdev,
-                     struct xrt_vec3 *eye_relation,
+                     const struct xrt_vec3 *eye_relation,
                      uint32_t view_index,
                      struct xrt_pose *out_pose)
 {
@@ -201,7 +201,7 @@ ns_fov_calculate(struct xrt_fov *fov, struct xrt_quat projection)
 
 static void
 ns_v2_hmd_get_view_pose(struct xrt_device *xdev,
-                        struct xrt_vec3 *eye_relation,
+                        const struct xrt_vec3 *eye_relation,
                         uint32_t view_index,
                         struct xrt_pose *out_pose)
 {

@@ -341,7 +341,7 @@ struct xrt_device
 	 *                         orientation unless you have canted screens.
 	 */
 	void (*get_view_pose)(struct xrt_device *xdev,
-	                      struct xrt_vec3 *eye_relation,
+	                      const struct xrt_vec3 *eye_relation,
 	                      uint32_t view_index,
 	                      struct xrt_pose *out_pose);
 
@@ -410,7 +410,7 @@ xrt_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union 
  */
 static inline void
 xrt_device_get_view_pose(struct xrt_device *xdev,
-                         struct xrt_vec3 *eye_relation,
+                         const struct xrt_vec3 *eye_relation,
                          uint32_t view_index,
                          struct xrt_pose *out_pose)
 {
