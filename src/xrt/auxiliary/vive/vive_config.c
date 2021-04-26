@@ -162,7 +162,7 @@ _get_lighthouse(struct vive_config *d, const cJSON *json)
 
 
 	// Transform the sensors into IMU space.
-	struct xrt_pose trackref_to_imu = {0};
+	struct xrt_pose trackref_to_imu = XRT_POSE_IDENTITY;
 	math_pose_invert(&d->imu.trackref, &trackref_to_imu);
 
 	for (i = 0; i < d->lh.num_sensors; i++) {
