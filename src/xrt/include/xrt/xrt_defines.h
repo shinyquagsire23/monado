@@ -112,6 +112,17 @@ struct xrt_quat
 };
 
 /*!
+ * Identity value for @ref xrt_quat
+ *
+ * @ingroup xrt_iface math
+ * @relates xrt_quat
+ */
+#define XRT_QUAT_IDENTITY                                                                                              \
+	{                                                                                                              \
+		0.f, 0.f, 0.f, 1.f                                                                                     \
+	}
+
+/*!
  * A 1 element vector with single floats.
  *
  * @ingroup xrt_iface math
@@ -153,6 +164,17 @@ struct xrt_vec3
 	float y;
 	float z;
 };
+
+/*!
+ * All-zero value for @ref xrt_vec3
+ *
+ * @ingroup xrt_iface math
+ * @relates xrt_vec3
+ */
+#define XRT_VEC3_ZERO                                                                                                  \
+	{                                                                                                              \
+		0.f, 0.f, 0.f                                                                                          \
+	}
 
 /*!
  * A 3 element vector with 32 bit integers.
@@ -271,6 +293,16 @@ struct xrt_pose
 	struct xrt_quat orientation;
 	struct xrt_vec3 position;
 };
+/*!
+ * Identity value for @ref xrt_pose
+ *
+ * @ingroup xrt_iface math
+ * @relates xrt_pose
+ */
+#define XRT_POSE_IDENTITY                                                                                              \
+	{                                                                                                              \
+		XRT_QUAT_IDENTITY, XRT_VEC3_ZERO                                                                       \
+	}
 
 /*!
  * Describes a projection matrix fov.
@@ -373,6 +405,20 @@ struct xrt_space_relation
 	struct xrt_vec3 linear_velocity;
 	struct xrt_vec3 angular_velocity;
 };
+
+/*!
+ * A zero/identity value for @ref xrt_space_relation
+ *
+ * @note Despite this initializing all members (to zero or identity), this sets the xrt_space_relation::relation_flags
+ * to XRT_SPACE_RELATION_BITMASK_NONE - so this is safe to assign before an error return, etc.
+ *
+ * @ingroup xrt_iface math
+ * @relates xrt_space_relation
+ */
+#define XRT_SPACE_RELATION_ZERO                                                                                        \
+	{                                                                                                              \
+		XRT_SPACE_RELATION_BITMASK_NONE, XRT_POSE_IDENTITY, XRT_VEC3_ZERO, XRT_VEC3_ZERO                       \
+	}
 
 /*!
  * The maximum number of steps that can be in a space graph chain.
