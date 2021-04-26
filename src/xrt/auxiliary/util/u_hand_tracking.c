@@ -288,8 +288,8 @@ scale_model_param(struct u_joint_curl_model *param, float scale)
 }
 
 void
-u_hand_joint_compute_next_by_curl(struct u_hand_tracking *set,
-                                  struct u_joint_space_relation *prev,
+u_hand_joint_compute_next_by_curl(const struct u_hand_tracking *set,
+                                  const struct u_joint_space_relation *prev,
                                   enum xrt_hand hand,
                                   uint64_t at_timestamp_ns,
                                   struct u_joint_space_relation *out_joint,
@@ -649,8 +649,8 @@ get_joint_data(struct u_hand_tracking *set, enum xrt_hand_joint joint_id)
 void
 u_hand_joints_set_out_data(struct u_hand_tracking *set,
                            enum xrt_hand hand,
-                           struct xrt_space_relation *hand_relation,
-                           struct xrt_pose *hand_offset,
+                           const struct xrt_space_relation *hand_relation,
+                           const struct xrt_pose *hand_offset,
                            struct xrt_hand_joint_set *out_value)
 {
 
@@ -676,7 +676,9 @@ u_hand_joints_set_out_data(struct u_hand_tracking *set,
 }
 
 void
-u_hand_joints_offset_valve_index_controller(enum xrt_hand hand, struct xrt_vec3 *static_offset, struct xrt_pose *offset)
+u_hand_joints_offset_valve_index_controller(enum xrt_hand hand,
+                                            const struct xrt_vec3 *static_offset,
+                                            struct xrt_pose *offset)
 {
 	/* Controller space origin is at the very tip of the controller,
 	 * handle pointing forward at -z.
