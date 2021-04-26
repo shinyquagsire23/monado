@@ -199,7 +199,7 @@ qwerty_get_view_pose(struct xrt_device *xd,
                      uint32_t view_index,
                      struct xrt_pose *out_pose)
 {
-	struct xrt_pose pose = {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}};
+	struct xrt_pose pose = XRT_POSE_IDENTITY;
 	bool is_left = view_index == 0;
 	float adjust = is_left ? -0.5f : 0.5f;
 	struct xrt_vec3 eye_offset = *eye_relation;
@@ -532,10 +532,9 @@ qwerty_reset_controller_pose(struct qwerty_controller *qc)
 		return;
 	}
 
-	struct xrt_quat quat_identity = {0, 0, 0, 1};
 	bool is_left = qc == qd->sys->lctrl;
 
 	qwerty_follow_hmd(qc, true);
-	struct xrt_pose pose = {quat_identity, QWERTY_CONTROLLER_INITIAL_POS(is_left)};
+	struct xrt_pose pose = {XRT_QUAT_IDENTITY, QWERTY_CONTROLLER_INITIAL_POS(is_left)};
 	qd->pose = pose;
 }
