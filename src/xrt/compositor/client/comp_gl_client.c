@@ -349,7 +349,7 @@ vk_format_to_gl(int64_t format)
 	case 126 /*VK_FORMAT_D32_SFLOAT*/: return GL_DEPTH_COMPONENT32F;
 	case 129 /*VK_FORMAT_D24_UNORM_S8_UINT*/: return GL_DEPTH24_STENCIL8;
 	case 130 /*VK_FORMAT_D32_SFLOAT_S8_UINT*/: return GL_DEPTH32F_STENCIL8;
-	default: U_LOG_W("Cannot convert VK format 0x%016" PRIx64 " to GL format!\n", format); return 0;
+	default: U_LOG_W("Cannot convert VK format %" PRIu64 " to GL format!\n", format); return 0;
 	}
 }
 
