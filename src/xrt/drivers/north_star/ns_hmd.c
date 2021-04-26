@@ -35,7 +35,7 @@
 
 DEBUG_GET_ONCE_LOG_OPTION(ns_log, "NS_LOG", U_LOGGING_INFO)
 
-struct xrt_pose t265_to_nose_bridge = {.orientation = {0, 0, 0, 1}, .position = {0, 0, 0}};
+struct xrt_pose t265_to_nose_bridge = XRT_POSE_IDENTITY;
 
 /*
  *
