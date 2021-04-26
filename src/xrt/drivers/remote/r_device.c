@@ -138,10 +138,7 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
 	u_hand_joints_update_curl(&rd->hand_tracking, hand, at_timestamp_ns, &values);
 
-	struct xrt_pose hand_on_handle_pose = {
-	    {0, 0, 0, 1},
-	    {0, 0, 0},
-	};
+	struct xrt_pose hand_on_handle_pose = XRT_POSE_IDENTITY;
 
 	struct xrt_space_relation relation;
 	xrt_device_get_tracked_pose(xdev, XRT_INPUT_SIMPLE_GRIP_POSE, at_timestamp_ns, &relation);
