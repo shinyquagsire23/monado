@@ -65,8 +65,8 @@ m_space_relation_from_pose(const struct xrt_pose *pose, struct xrt_space_relatio
 	struct xrt_space_relation relation = {
 	    flags,
 	    *pose,
-	    {0, 0, 0},
-	    {0, 0, 0},
+	    XRT_VEC3_ZERO,
+	    XRT_VEC3_ZERO,
 	};
 
 	*out_relation = relation;
@@ -75,10 +75,7 @@ m_space_relation_from_pose(const struct xrt_pose *pose, struct xrt_space_relatio
 static inline void
 m_space_relation_ident(struct xrt_space_relation *out_relation)
 {
-	struct xrt_pose identity = {
-	    {0, 0, 0, 1},
-	    {0, 0, 0},
-	};
+	struct xrt_pose identity = XRT_POSE_IDENTITY;
 
 	m_space_relation_from_pose(&identity, out_relation);
 }
