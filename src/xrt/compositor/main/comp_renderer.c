@@ -541,10 +541,7 @@ renderer_get_view_projection(struct comp_renderer *r)
 	    0.0f,
 	};
 
-	struct xrt_pose base_space_pose = {
-	    .position = (struct xrt_vec3){0, 0, 0},
-	    .orientation = (struct xrt_quat){0, 0, 0, 1},
-	};
+	struct xrt_pose base_space_pose = XRT_POSE_IDENTITY;
 
 	for (uint32_t i = 0; i < 2; i++) {
 		struct xrt_fov fov = r->c->xdev->hmd->views[i].fov;
