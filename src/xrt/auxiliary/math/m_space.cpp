@@ -126,18 +126,13 @@ make_valid_pose(flags flags, const struct xrt_pose *in_pose, struct xrt_pose *ou
 	if (flags.has_orientation) {
 		out_pose->orientation = in_pose->orientation;
 	} else {
-		out_pose->orientation.x = 0.0f;
-		out_pose->orientation.y = 0.0f;
-		out_pose->orientation.z = 0.0f;
-		out_pose->orientation.w = 1.0f;
+		out_pose->orientation = XRT_QUAT_IDENTITY;
 	}
 
 	if (flags.has_position) {
 		out_pose->position = in_pose->position;
 	} else {
-		out_pose->position.x = 0.0f;
-		out_pose->position.y = 0.0f;
-		out_pose->position.z = 0.0f;
+		out_pose->position = XRT_VEC3_ZERO;
 	}
 }
 
@@ -150,9 +145,9 @@ apply_relation(const struct xrt_space_relation *a,
 	flags bf = get_flags(b);
 
 	flags nf = {};
-	struct xrt_pose pose = {};
-	struct xrt_vec3 linear_velocity = {};
-	struct xrt_vec3 angular_velocity = {};
+	struct xrt_pose pose = XRT_POSE_IDENTITY;
+	struct xrt_vec3 linear_velocity = XRT_VEC3_ZERO;
+	struct xrt_vec3 angular_velocity = XRT_VEC3_ZERO;
 
 
 	/*
@@ -161,7 +156,7 @@ apply_relation(const struct xrt_space_relation *a,
 
 	if (af.has_linear_velocity) {
 		nf.has_linear_velocity = true;
-		struct xrt_vec3 tmp = {};
+		struct xrt_vec3 tmp = XRT_VEC3_ZERO;
 		math_quat_rotate_vec3(&b->pose.orientation, // Base rotation
 		                      &a->linear_velocity,  // In base space
 		                      &tmp);                // Output
@@ -180,7 +175,7 @@ apply_relation(const struct xrt_space_relation *a,
 
 	if (af.has_angular_velocity) {
 		nf.has_angular_velocity = true;
-		struct xrt_vec3 tmp = {};
+		struct xrt_vec3 tmp = XRT_VEC3_ZERO;
 
 		math_quat_rotate_derivative(&b->pose.orientation, // Base rotation
 		                            &a->angular_velocity, // In base space
@@ -194,10 +189,10 @@ apply_relation(const struct xrt_space_relation *a,
 		nf.has_linear_velocity = true;
 		angular_velocity += b->angular_velocity;
 
-		struct xrt_vec3 rotated_position = {};
-		struct xrt_vec3 position = {};
-		struct xrt_quat orientation = {};
-		struct xrt_vec3 tangental_velocity = {};
+		struct xrt_vec3 rotated_position = XRT_VEC3_ZERO;
+		struct xrt_vec3 position = XRT_VEC3_ZERO;
+		struct xrt_quat orientation = XRT_QUAT_IDENTITY;
+		struct xrt_vec3 tangental_velocity = XRT_VEC3_ZERO;
 
 		position = a->pose.position;       // In the base space
 		orientation = b->pose.orientation; // Base space
@@ -218,8 +213,8 @@ apply_relation(const struct xrt_space_relation *a,
 	 * Apply the pose part.
 	 */
 
-	struct xrt_pose body_pose = {};
-	struct xrt_pose base_pose = {};
+	struct xrt_pose body_pose = XRT_POSE_IDENTITY;
+	struct xrt_pose base_pose = XRT_POSE_IDENTITY;
 
 	// Only valid poses handled in graph. Flags are determined later.
 	make_valid_pose(af, &a->pose, &body_pose);
@@ -284,7 +279,7 @@ void
 m_space_graph_resolve(const struct xrt_space_graph *xsg, struct xrt_space_relation *out_relation)
 {
 	if (xsg->num_steps == 0 || has_step_with_no_pose(xsg)) {
-		U_ZERO(out_relation);
+		*out_relation = XRT_SPACE_RELATION_ZERO;
 		return;
 	}
 
