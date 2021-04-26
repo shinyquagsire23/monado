@@ -1,9 +1,10 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Misc helpers for device drivers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_util
  */
 
@@ -394,4 +395,28 @@ u_device_setup_tracking_origins(struct xrt_device *head,
 	if (right_origin && right_origin != head_origin && right_origin != left_origin) {
 		apply_offset(&right->tracking_origin->offset.position, global_tracking_origin_offset);
 	}
+}
+
+void
+u_device_get_view_pose(const struct xrt_vec3 *eye_relation, uint32_t view_index, struct xrt_pose *out_pose)
+{
+	struct xrt_pose pose = XRT_POSE_IDENTITY;
+	bool adjust = view_index == 0;
+
+	pose.position.x = eye_relation->x / 2.0f;
+	pose.position.y = eye_relation->y / 2.0f;
+	pose.position.z = eye_relation->z / 2.0f;
+
+	// Adjust for left/right while also making sure there aren't any -0.f.
+	if (pose.position.x > 0.0f && adjust) {
+		pose.position.x = -pose.position.x;
+	}
+	if (pose.position.y > 0.0f && adjust) {
+		pose.position.y = -pose.position.y;
+	}
+	if (pose.position.z > 0.0f && adjust) {
+		pose.position.z = -pose.position.z;
+	}
+
+	*out_pose = pose;
 }

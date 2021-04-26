@@ -1,9 +1,10 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Misc helpers for device drivers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_util
  */
 
@@ -112,6 +113,22 @@ u_device_setup_tracking_origins(struct xrt_device *head,
                                 struct xrt_device *left,
                                 struct xrt_device *right,
                                 struct xrt_vec3 *global_tracking_origin_offset);
+
+/*!
+ * Helper function for `get_view_pose` in an HMD driver.
+ *
+ * Takes in a translation from the left to right eye, and returns a center to left or right eye transform that assumes
+ * the eye relation is symmetrical around the tracked point ("center eye"). Knowing IPD is a subset of this: If you know
+ * IPD better than the overall Monado system, copy @p eye_relation and put your known IPD in @p real_eye_relation->x
+ *
+ * If you have rotation, apply it after calling this function.
+ *
+ * @param eye_relation 3D translation from left eye to right eye.
+ * @param view_index 0 for left, 1 for right.
+ * @param out_pose The output pose to populate. Will receive translation, with an identity rotation.
+ */
+void
+u_device_get_view_pose(const struct xrt_vec3 *eye_relation, uint32_t view_index, struct xrt_pose *out_pose);
 
 #ifdef __cplusplus
 }
