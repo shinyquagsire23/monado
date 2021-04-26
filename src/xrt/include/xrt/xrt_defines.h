@@ -175,6 +175,36 @@ struct xrt_vec3
 	{                                                                                                              \
 		0.f, 0.f, 0.f                                                                                          \
 	}
+/*!
+ * Value for @ref xrt_vec3 with 1 in the @p x coordinate.
+ *
+ * @ingroup xrt_iface math
+ * @relates xrt_vec3
+ */
+#define XRT_VEC3_UNIT_X                                                                                                \
+	{                                                                                                              \
+		1.f, 0.f, 0.f                                                                                          \
+	}
+/*!
+ * Value for @ref xrt_vec3 with 1 in the @p y coordinate.
+ *
+ * @ingroup xrt_iface math
+ * @relates xrt_vec3
+ */
+#define XRT_VEC3_UNIT_Y                                                                                                \
+	{                                                                                                              \
+		0.f, 1.f, 0.f                                                                                          \
+	}
+/*!
+ * Value for @ref xrt_vec3 with 1 in the @p z coordinate.
+ *
+ * @ingroup xrt_iface math
+ * @relates xrt_vec3
+ */
+#define XRT_VEC3_UNIT_Z                                                                                                \
+	{                                                                                                              \
+		0.f, 0.f, 1.f                                                                                          \
+	}
 
 /*!
  * A 3 element vector with 32 bit integers.
