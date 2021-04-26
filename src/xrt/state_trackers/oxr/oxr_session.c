@@ -366,8 +366,13 @@ oxr_session_views(struct oxr_logger *log,
 
 	// Get the viewLocateInfo->space to view space relation.
 	struct xrt_space_relation pure_relation;
-	oxr_space_ref_relation(log, sess, XR_REFERENCE_SPACE_TYPE_VIEW, baseSpc->type, viewLocateInfo->displayTime,
-	                       &pure_relation);
+	oxr_space_ref_relation(           //
+	    log,                          //
+	    sess,                         //
+	    XR_REFERENCE_SPACE_TYPE_VIEW, //
+	    baseSpc->type,                //
+	    viewLocateInfo->displayTime,  //
+	    &pure_relation);              //
 
 	// @todo the fov information that we get from xdev->hmd->views[i].fov is
 	//       not properly filled out in oh_device.c, fix before wasting time
@@ -375,17 +380,18 @@ oxr_session_views(struct oxr_logger *log,
 
 	viewState->viewStateFlags = 0;
 
+	//! @todo Do not hardcode IPD.
+	const struct xrt_vec3 eye_relation = {
+	    sess->ipd_meters,
+	    0.0f,
+	    0.0f,
+	};
+
 	for (uint32_t i = 0; i < num_views; i++) {
-		//! @todo Do not hardcode IPD.
-		struct xrt_vec3 eye_relation = {
-		    sess->ipd_meters,
-		    0.0f,
-		    0.0f,
-		};
-		struct xrt_pose view_pose;
+		struct xrt_pose view_pose = XRT_POSE_IDENTITY;
 
 		// Get the per view pose from the device.
-		xdev->get_view_pose(xdev, &eye_relation, i, &view_pose);
+		xrt_device_get_view_pose(xdev, &eye_relation, i, &view_pose);
 
 		// Do the magical space relation dance here.
 		struct xrt_space_relation result = {0};
