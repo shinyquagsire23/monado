@@ -303,9 +303,6 @@ u_hand_joint_compute_next_by_curl(struct u_hand_tracking *set,
 	scale_model_param(&prev_defaults, set->scale);
 	scale_model_param(&defaults, set->scale);
 
-	struct xrt_vec3 x_axis = {1, 0, 0};
-	struct xrt_vec3 y_axis = {0, 1, 0};
-
 	// prev joint pose is transformed to next joint pose by adding the bone
 	// vector to the joint, and adding rotation based on finger curl
 	struct xrt_pose pose = prev->relation.pose;
@@ -325,6 +322,7 @@ u_hand_joint_compute_next_by_curl(struct u_hand_tracking *set,
 
 	//! @todo more axis rotations & make sure order is right
 	//! @todo handle velocities
+	const struct xrt_vec3 y_axis = XRT_VEC3_UNIT_Y;
 	struct xrt_pose offset_pose = XRT_POSE_IDENTITY;
 	if (hand == XRT_HAND_LEFT) {
 		quat_from_angle_vector_clockwise(defaults.axis_angle_offset[1], &y_axis, &offset_pose.orientation);
@@ -366,6 +364,7 @@ u_hand_joint_compute_next_by_curl(struct u_hand_tracking *set,
 
 	float curl_angle = curl_value * full_curl_angle;
 
+	const struct xrt_vec3 x_axis = XRT_VEC3_UNIT_X;
 	struct xrt_quat curl_rotation;
 	math_quat_from_angle_vector(-curl_angle, &x_axis, &curl_rotation);
 	math_quat_rotate(&pose.orientation, &curl_rotation, &pose.orientation);
