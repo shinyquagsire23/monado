@@ -78,6 +78,8 @@
  *
  */
 
+#define CVK_ERROR(C, FUNC, MSG, RET) COMP_ERROR(C, FUNC ": %s\t\n" MSG, vk_result_string(RET));
+
 static double
 ns_to_ms(int64_t ns)
 {
@@ -820,7 +822,7 @@ create_instance(struct comp_compositor *c)
 
 	ret = select_instances_extensions(c, &instance_extensions, &num_extensions);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "Failed to select instance extensions: %s", vk_result_string(ret));
+		CVK_ERROR(c, "select_instances_extensions", "Failed to select instance extensions.", ret);
 		return ret;
 	}
 
@@ -833,14 +835,13 @@ create_instance(struct comp_compositor *c)
 
 	ret = c->vk.vkCreateInstance(&instance_info, NULL, &c->vk.instance);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vkCreateInstance: %s", vk_result_string(ret));
-		COMP_ERROR(c, "Failed to create Vulkan instance");
+		CVK_ERROR(c, "vkCreateInstance", "Failed to create Vulkan instance", ret);
 		return ret;
 	}
 
 	ret = vk_get_instance_functions(&c->vk);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "Failed to get Vulkan instance functions: %s", vk_result_string(ret));
+		CVK_ERROR(c, "vk_get_instance_functions", "Failed to get Vulkan instance functions.", ret);
 		return ret;
 	}
 
@@ -860,7 +861,7 @@ get_device_uuid(struct vk_bundle *vk, struct comp_compositor *c, int gpu_index, 
 
 	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, phys);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "Failed to enumerate physical devices!");
+		CVK_ERROR(c, "vkEnumeratePhysicalDevices", "Failed to enumerate physical devices.", ret);
 		return false;
 	}
 	vk->vkGetPhysicalDeviceProperties2(phys[gpu_index], &pdp2);
@@ -872,18 +873,19 @@ get_device_uuid(struct vk_bundle *vk, struct comp_compositor *c, int gpu_index, 
 static bool
 compositor_init_vulkan(struct comp_compositor *c)
 {
-
 	VkResult ret;
 
 	c->vk.ll = c->settings.log_level;
 
 	ret = find_get_instance_proc_addr(c);
 	if (ret != VK_SUCCESS) {
+		CVK_ERROR(c, "find_get_instance_proc_addr", "Failed to get VkInstance get process address.", ret);
 		return false;
 	}
 
 	ret = create_instance(c);
 	if (ret != VK_SUCCESS) {
+		// Error already reported.
 		return false;
 	}
 
@@ -922,11 +924,13 @@ compositor_init_vulkan(struct comp_compositor *c)
 		}
 
 		// Some other error!
+		CVK_ERROR(c, "vk_create_device", "Failed to create Vulkan device.", ret);
 		return false;
 	}
 
 	ret = vk_init_mutex(&c->vk);
 	if (ret != VK_SUCCESS) {
+		CVK_ERROR(c, "vk_init_mutex", "Failed to init mutex.", ret);
 		return false;
 	}
 
@@ -964,7 +968,12 @@ compositor_init_vulkan(struct comp_compositor *c)
 	}
 
 	ret = vk_init_cmd_pool(&c->vk);
-	return ret == VK_SUCCESS;
+	if (ret != VK_SUCCESS) {
+		CVK_ERROR(c, "vk_init_cmd_pool", "Failed to init command pool.", ret);
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -1002,6 +1011,8 @@ _match_wl_entry(const char *wl_entry, VkDisplayPropertiesKHR *disp)
 static bool
 _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 {
+	VkResult ret;
+
 	VkPhysicalDeviceProperties physical_device_properties;
 	vk->vkGetPhysicalDeviceProperties(vk->physical_device, &physical_device_properties);
 
@@ -1011,8 +1022,9 @@ _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 	// get a list of attached displays
 	uint32_t display_count;
 
-	if (vk->vkGetPhysicalDeviceDisplayPropertiesKHR(vk->physical_device, &display_count, NULL) != VK_SUCCESS) {
-		COMP_ERROR(c, "Failed to get vulkan display count");
+	ret = vk->vkGetPhysicalDeviceDisplayPropertiesKHR(vk->physical_device, &display_count, NULL);
+	if (ret != VK_SUCCESS) {
+		CVK_ERROR(c, "vkGetPhysicalDeviceDisplayPropertiesKHR", "Failed to get vulkan display count", ret);
 		return false;
 	}
 
@@ -1020,7 +1032,7 @@ _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 
 	if (display_props && vk->vkGetPhysicalDeviceDisplayPropertiesKHR(vk->physical_device, &display_count,
 	                                                                 display_props) != VK_SUCCESS) {
-		COMP_ERROR(c, "Failed to get display properties");
+		CVK_ERROR(c, "vkGetPhysicalDeviceDisplayPropertiesKHR", "Failed to get display properties", ret);
 		free(display_props);
 		return false;
 	}
@@ -1078,6 +1090,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	struct vk_bundle temp_vk = {0};
 	ret = vk_get_loader_functions(&temp_vk, vkGetInstanceProcAddr);
 	if (ret != VK_SUCCESS) {
+		CVK_ERROR(c, "vk_get_loader_functions", "Failed to get loader functions.", ret);
 		return false;
 	}
 
@@ -1092,13 +1105,13 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 
 	ret = temp_vk.vkCreateInstance(&instance_create_info, NULL, &(temp_vk.instance));
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "Failed to create VkInstance: %s", vk_result_string(ret));
+		CVK_ERROR(c, "vkCreateInstance", "Failed to create VkInstance.", ret);
 		return false;
 	}
 
 	ret = vk_get_instance_functions(&temp_vk);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "Failed to get Vulkan instance functions: %s", vk_result_string(ret));
+		CVK_ERROR(c, "vk_get_instance_functions", "Failed to get Vulkan instance functions.", ret);
 		return false;
 	}
 
@@ -1113,7 +1126,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	    ARRAY_SIZE(optional_device_extensions)); //
 
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "Failed to create VkDevice: %s", vk_result_string(ret));
+		CVK_ERROR(c, "vk_create_device", "Failed to create VkDevice.", ret);
 		return false;
 	}
 
@@ -1173,9 +1186,7 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 #ifdef VK_USE_PLATFORM_XCB_KHR
 		if (compositor_try_window(c, comp_window_xcb_create(c))) {
 			c->settings.window_type = WINDOW_XCB;
-			COMP_DEBUG(c,
-			           "Using VK_PRESENT_MODE_IMMEDIATE_KHR for "
-			           "xcb window")
+			COMP_DEBUG(c, "Using VK_PRESENT_MODE_IMMEDIATE_KHR for xcb window")
 			c->settings.present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 			return true;
 		}
@@ -1370,7 +1381,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	    !compositor_init_shaders(c) ||
 	    !compositor_init_swapchain(c) ||
 	    !compositor_init_renderer(c)) {
-		COMP_DEBUG(c, "Failed to init compositor %p", (void *)c);
+		COMP_ERROR(c, "Failed to init compositor %p", (void *)c);
 		c->base.base.destroy(&c->base.base);
 
 		return XRT_ERROR_VULKAN;
