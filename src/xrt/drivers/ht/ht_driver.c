@@ -78,8 +78,7 @@ ht_device_get_hand_tracking(struct xrt_device *xdev,
 	                                 &htd->hand_relation[index]);
 	htd->u_tracking[index].timestamp_ns = at_timestamp_ns;
 
-	struct xrt_pose identity = {.orientation = {.x = 0, .y = 0, .z = 0, .w = 1},
-	                            .position = {.x = 0, .y = 0, .z = 0}};
+	struct xrt_pose identity = XRT_POSE_IDENTITY;
 
 	u_hand_joints_set_out_data(&htd->u_tracking[index], hand, &htd->hand_relation[index], &identity, out_value);
 }
