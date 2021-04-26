@@ -228,7 +228,7 @@ vive_mainboard_decode_message(struct vive_device *d, struct vive_mainboard_statu
 	if (d->board.button != report->button) {
 		d->board.button = report->button;
 		VIVE_TRACE(d, "Button %d.", report->button);
-		d->rot_filtered = (struct xrt_quat){0, 0, 0, 1};
+		d->rot_filtered = (struct xrt_quat)XRT_QUAT_IDENTITY;
 	}
 }
 
