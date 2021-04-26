@@ -332,8 +332,8 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
                            struct xrt_space_relation *out_relation)
 {
 	struct oh_device *ohd = oh_device(xdev);
-	struct xrt_quat quat = {0.f, 0.f, 0.f, 1.f};
-	struct xrt_vec3 pos = {0.f, 0.f, 0.f};
+	struct xrt_quat quat = XRT_QUAT_IDENTITY;
+	struct xrt_vec3 pos = XRT_VEC3_ZERO;
 
 	// support generic head pose for all hmds,
 	// support rift poses for rift controllers, and simple poses for generic controller
