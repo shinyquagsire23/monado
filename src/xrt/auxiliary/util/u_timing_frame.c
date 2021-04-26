@@ -317,7 +317,7 @@ adjust_app_time(struct display_timing *dt, struct frame *f)
 	if (f->actual_present_time_ns > f->desired_present_time_ns &&
 	    !is_within_half_ms(f->actual_present_time_ns, f->desired_present_time_ns)) {
 		double missed_ms = ns_to_ms(f->actual_present_time_ns - f->desired_present_time_ns);
-		FT_LOG_D("Missed by %.2f!", missed_ms);
+		FT_LOG_W("Frame %" PRIu64 " missed by %.2f!", f->frame_id, missed_ms);
 
 		app_time_ns += dt->adjust_missed_ns;
 		if (app_time_ns > dt->app_time_max_ns) {
