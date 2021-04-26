@@ -22,7 +22,7 @@
 #include "oxr_handle.h"
 
 
-const struct xrt_pose origin = {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}};
+const struct xrt_pose origin = XRT_POSE_IDENTITY;
 
 static XrResult
 check_reference_space_type(struct oxr_logger *log, XrReferenceSpaceType type)
