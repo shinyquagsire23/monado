@@ -78,7 +78,7 @@ oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo
 
 	if ((createInfo->usageFlags & ~flags) != 0) {
 		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
-		                 "(createInfo->usageFlags == 0x08%" PRIx64 ") contains invalid flags",
+		                 "(createInfo->usageFlags == 0x%04" PRIx64 ") contains invalid flags",
 		                 createInfo->usageFlags);
 	}
 	bool format_supported = false;
@@ -92,7 +92,7 @@ oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo
 
 	if (!format_supported) {
 		return oxr_error(&log, XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED,
-		                 "(createInfo->format == 0x08%" PRIx64 ") is not supported", createInfo->format);
+		                 "(createInfo->format == 0x%04" PRIx64 ") is not supported", createInfo->format);
 	}
 
 	ret = sess->create_swapchain(&log, sess, createInfo, &sc);
