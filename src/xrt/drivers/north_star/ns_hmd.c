@@ -205,29 +205,11 @@ ns_v2_hmd_get_view_pose(struct xrt_device *xdev,
                         uint32_t view_index,
                         struct xrt_pose *out_pose)
 {
-	// Copied from dummy driver
-
 	struct ns_hmd *ns = ns_hmd(xdev);
+	struct xrt_vec3 real_eye_relation = *eye_relation;
+	real_eye_relation.x = ns->ipd;
 
-	struct xrt_pose pose = {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}};
-	bool adjust = view_index == 0;
-
-	pose.position.x = ns->ipd / 2.0f;
-	pose.position.y = eye_relation->y / 2.0f;
-	pose.position.z = eye_relation->z / 2.0f;
-
-	// Adjust for left/right while also making sure there aren't any -0.f.
-	if (pose.position.x > 0.0f && adjust) {
-		pose.position.x = -pose.position.x;
-	}
-	if (pose.position.y > 0.0f && adjust) {
-		pose.position.y = -pose.position.y;
-	}
-	if (pose.position.z > 0.0f && adjust) {
-		pose.position.z = -pose.position.z;
-	}
-
-	*out_pose = pose;
+	u_device_get_view_pose(&real_eye_relation, view_index, out_pose);
 }
 
 static float
