@@ -168,7 +168,8 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 	qd->pitch_delta = 0;
 
 	struct xrt_quat x_rotation, y_rotation;
-	struct xrt_vec3 x_axis = {1, 0, 0}, y_axis = {0, 1, 0};
+	const struct xrt_vec3 x_axis = XRT_VEC3_UNIT_X;
+	const struct xrt_vec3 y_axis = XRT_VEC3_UNIT_Y;
 	math_quat_from_angle_vector(x_look_speed, &x_axis, &x_rotation);
 	math_quat_from_angle_vector(y_look_speed, &y_axis, &y_rotation);
 	math_quat_rotate(&qd->pose.orientation, &x_rotation, &qd->pose.orientation); // local-space pitch
