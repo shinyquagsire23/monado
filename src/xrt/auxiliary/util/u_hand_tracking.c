@@ -689,9 +689,9 @@ u_hand_joints_offset_valve_index_controller(enum xrt_hand hand, struct xrt_vec3 
 	 *
 	 * Now the hand points "through the strap" like at normal use.
 	 */
-	struct xrt_vec3 x = {1, 0, 0};
-	struct xrt_vec3 y = {0, 1, 0};
-	struct xrt_vec3 z = {0, 0, -1};
+	const struct xrt_vec3 x = XRT_VEC3_UNIT_X;
+	const struct xrt_vec3 y = XRT_VEC3_UNIT_Y;
+	const struct xrt_vec3 negative_z = {0, 0, -1};
 
 	float hand_on_handle_x_rotation = DEG_TO_RAD(-72);
 	float hand_on_handle_y_rotation = 0;
@@ -706,8 +706,8 @@ u_hand_joints_offset_valve_index_controller(enum xrt_hand hand, struct xrt_vec3 
 	struct xrt_quat hand_rotation_y = XRT_QUAT_IDENTITY;
 	math_quat_from_angle_vector(hand_on_handle_y_rotation, &y, &hand_rotation_y);
 
-	math_quat_from_angle_vector(hand_on_handle_z_rotation, &z, &hand_rotation_z);
 	struct xrt_quat hand_rotation_z = XRT_QUAT_IDENTITY;
+	math_quat_from_angle_vector(hand_on_handle_z_rotation, &negative_z, &hand_rotation_z);
 
 	struct xrt_quat hand_rotation_x = XRT_QUAT_IDENTITY;
 	math_quat_from_angle_vector(hand_on_handle_x_rotation, &x, &hand_rotation_x);
