@@ -58,6 +58,13 @@ struct m_imu_3dof
 		struct xrt_vec3 error_axis;
 		float error_angle;
 	} grav;
+
+	// gyro bias correction
+	struct
+	{
+		struct xrt_vec3 value;
+		bool manually_fire;
+	} gyro_bias;
 };
 
 void

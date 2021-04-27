@@ -69,6 +69,11 @@ m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix)
 	u_var_add_ro_vec3_f32(root, &f->grav.error_axis, tmp);
 	snprintf(tmp, sizeof(tmp), "%sgrav.error_angle", prefix);
 	u_var_add_ro_f32(root, &f->grav.error_angle, tmp);
+
+	snprintf(tmp, sizeof(tmp), "%sgyro_bias.value", prefix);
+	u_var_add_ro_vec3_f32(root, &f->gyro_bias.value, tmp);
+	snprintf(tmp, sizeof(tmp), "%sgyro_bias.manually_fire", prefix);
+	u_var_add_bool(root, &f->gyro_bias.manually_fire, tmp);
 }
 
 static void
@@ -171,6 +176,26 @@ gravity_correction(struct m_imu_3dof *f,
 	}
 }
 
+static void
+gyro_biasing(struct m_imu_3dof *f, uint64_t timestamp_ns)
+{
+	if (!f->gyro_bias.manually_fire) {
+		return;
+	}
+
+	f->gyro_bias.manually_fire = false;
+
+	uint64_t dur_ns = DUR_300MS_IN_NS;
+
+	struct xrt_vec3 gyro_mean = XRT_VEC3_ZERO;
+	m_ff_vec3_f32_filter(f->gyro_ff,            // Filter
+	                     timestamp_ns - dur_ns, // Start time
+	                     timestamp_ns,          // End time
+	                     &gyro_mean);           // Results
+
+	f->gyro_bias.value = gyro_mean;
+}
+
 void
 m_imu_3dof_update(struct m_imu_3dof *f,
                   uint64_t timestamp_ns,
@@ -202,19 +227,20 @@ m_imu_3dof_update(struct m_imu_3dof *f,
 	m_ff_vec3_f32_push(f->word_accel_ff, &world_accel, timestamp_ns);
 	m_ff_vec3_f32_push(f->gyro_ff, gyro, timestamp_ns);
 
-	float gyro_length = m_vec3_len(*gyro);
+	struct xrt_vec3 gyro_biased = m_vec3_sub(*gyro, f->gyro_bias.value);
+	float gyro_biased_length = m_vec3_len(gyro_biased);
 
-	if (gyro_length > 0.0001f) {
+	if (gyro_biased_length > 0.0001f) {
 #if 0
 		math_quat_integrate_velocity(&f->rot, gyro, dt, &f->rot);
 #else
 		struct xrt_vec3 rot_axis = {
-		    gyro->x / gyro_length,
-		    gyro->y / gyro_length,
-		    gyro->z / gyro_length,
+		    gyro_biased.x / gyro_biased_length,
+		    gyro_biased.y / gyro_biased_length,
+		    gyro_biased.z / gyro_biased_length,
 		};
 
-		float rot_angle = gyro_length * dt;
+		float rot_angle = gyro_biased_length * dt;
 
 		struct xrt_quat delta_orient;
 		math_quat_from_angle_vector(rot_angle, &rot_axis, &delta_orient);
@@ -224,7 +250,10 @@ m_imu_3dof_update(struct m_imu_3dof *f,
 	}
 
 	// Gravity correction.
-	gravity_correction(f, timestamp_ns, accel, gyro, dt, gyro_length);
+	gravity_correction(f, timestamp_ns, accel, &gyro_biased, dt, gyro_biased_length);
+
+	// Gyro bias calculations.
+	gyro_biasing(f, timestamp_ns);
 
 	/*
 	 * Mitigate drift due to floating point
