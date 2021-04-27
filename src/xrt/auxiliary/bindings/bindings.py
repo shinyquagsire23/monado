@@ -60,7 +60,7 @@ class Feature:
         return paths
 
     def is_input(self):
-        # only haptics is output so far, everythine else is input
+        # only haptics is output so far, everything else is input
         return self.feature_str != "haptic"
 
     def is_output(self):
@@ -68,7 +68,7 @@ class Feature:
 
 
 class Profile:
-    """An interctive bindings profile."""
+    """An interactive bindings profile."""
     def __init__(self, name, data):
         """Construct an profile."""
         self.name = name
