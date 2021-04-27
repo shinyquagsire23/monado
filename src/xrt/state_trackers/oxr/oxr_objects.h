@@ -634,13 +634,13 @@ oxr_session_get_view_relation_at(struct oxr_logger *,
                                  struct xrt_space_relation *out_relation);
 
 XrResult
-oxr_session_views(struct oxr_logger *log,
-                  struct oxr_session *sess,
-                  const XrViewLocateInfo *viewLocateInfo,
-                  XrViewState *viewState,
-                  uint32_t viewCapacityInput,
-                  uint32_t *viewCountOutput,
-                  XrView *views);
+oxr_session_locate_views(struct oxr_logger *log,
+                         struct oxr_session *sess,
+                         const XrViewLocateInfo *viewLocateInfo,
+                         XrViewState *viewState,
+                         uint32_t viewCapacityInput,
+                         uint32_t *viewCountOutput,
+                         XrView *views);
 
 XrResult
 oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrameState *frameState);

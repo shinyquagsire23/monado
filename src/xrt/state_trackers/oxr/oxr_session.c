@@ -329,13 +329,13 @@ xrt_to_view_state_flags(enum xrt_space_relation_flags flags)
 }
 
 XrResult
-oxr_session_views(struct oxr_logger *log,
-                  struct oxr_session *sess,
-                  const XrViewLocateInfo *viewLocateInfo,
-                  XrViewState *viewState,
-                  uint32_t viewCapacityInput,
-                  uint32_t *viewCountOutput,
-                  XrView *views)
+oxr_session_locate_views(struct oxr_logger *log,
+                         struct oxr_session *sess,
+                         const XrViewLocateInfo *viewLocateInfo,
+                         XrViewState *viewState,
+                         uint32_t viewCapacityInput,
+                         uint32_t *viewCountOutput,
+                         XrView *views)
 {
 	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, viewLocateInfo->space);

@@ -184,7 +184,14 @@ oxr_xrLocateViews(XrSession session,
 		OXR_VERIFY_ARG_NOT_NULL(&log, views);
 	}
 
-	return oxr_session_views(&log, sess, viewLocateInfo, viewState, viewCapacityInput, viewCountOutput, views);
+	return oxr_session_locate_views( //
+	    &log,                        //
+	    sess,                        //
+	    viewLocateInfo,              //
+	    viewState,                   //
+	    viewCapacityInput,           //
+	    viewCountOutput,             //
+	    views);                      //
 }
 
 
