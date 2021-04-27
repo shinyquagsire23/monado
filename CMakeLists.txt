@@ -26,6 +26,19 @@ if(NOT ${CMAKE_VERSION} VERSION_LESS 3.9)
 	check_ipo_supported(RESULT HAS_IPO)
 endif()
 
+# Android SDK doesn't look for 3.8 and 3.9, which is what new distros ship with.
+set(Python_ADDITIONAL_VERSIONS 3.8 3.9)
+if(NOT CMAKE_VERSION VERSION_LESS 3.12)
+	find_package(Python3 REQUIRED Interpreter)
+	set(PYTHON_EXECUTABLE Python3::Interpreter)
+else()
+	find_program(PYTHON_EXECUTABLE python3)
+	if(PYTHON_EXECUTABLE MATCHES "WindowsApps")
+		# If you hit this error, you will have to install Python 3 or try harder to tell CMake where it is.
+		message(FATAL_ERROR "Found WindowsApps alias for Python. Make sure Python3 is installed, then choose 'Manage App Execution Aliases' in Start and disable the aliases for Python.")
+	endif()
+endif()
+
 # Redundant mention of version is required because module defaults to looking for 2.91-compatible,
 # which the config file for a 3.x says it's not compatible with.
 find_package(Eigen3 3 REQUIRED)
@@ -56,18 +69,6 @@ else()
  message(STATUS "Could NOT find libLeap: (missing: /usr/local/lib/libLeap.so)")
 endif()
 
-# Android SDK doesn't look for 3.8 and 3.9, which is what new distros ship with.
-set(Python_ADDITIONAL_VERSIONS 3.8 3.9)
-if(NOT CMAKE_VERSION VERSION_LESS 3.12)
-	find_package(Python3 REQUIRED Interpreter)
-	set(PYTHON_EXECUTABLE Python3::Interpreter)
-else()
-	find_program(PYTHON_EXECUTABLE python3)
-	if(PYTHON_EXECUTABLE MATCHES "WindowsApps")
-		# If you hit this error, you will have to install Python 3 or try harder to tell CMake where it is.
-		message(FATAL_ERROR "Found WindowsApps alias for Python. Make sure Python3 is installed, then choose 'Manage App Execution Aliases' in Start and disable the aliases for Python.")
-	endif()
-endif()
 
 add_library(xrt-pthreads INTERFACE)
 if(WIN32)
