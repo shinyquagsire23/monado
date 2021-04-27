@@ -142,7 +142,12 @@ vive_device_get_view_pose(struct xrt_device *xdev,
                           uint32_t view_index,
                           struct xrt_pose *out_pose)
 {
+	// Only supports two views.
+	assert(view_index < 2);
+
 	u_device_get_view_pose(eye_relation, view_index, out_pose);
+
+	// This is for the Index' canted displays, on the Vive [Pro] they are identity.
 	struct vive_device *d = vive_device(xdev);
 	out_pose->orientation = d->config.display.rot[view_index];
 }
