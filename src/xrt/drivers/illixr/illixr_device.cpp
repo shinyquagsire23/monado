@@ -136,9 +136,8 @@ illixr_hmd_get_view_pose(struct xrt_device *xdev,
                          uint32_t view_index,
                          struct xrt_pose *out_pose)
 {
-	struct xrt_pose pose = illixr_read_pose();
-
-	*out_pose = pose;
+	(void)xdev;
+	u_device_get_view_pose(eye_relation, view_index, out_pose);
 }
 
 std::vector<std::string>
