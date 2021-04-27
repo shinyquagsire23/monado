@@ -66,4 +66,8 @@ typedef enum xrt_result
 	 * which is needed for the given command.
 	 */
 	XRT_ERROR_IPC_SESSION_NOT_CREATED = -15,
+	/*!
+	 * The client has already created a session on this IPC connection.
+	 */
+	XRT_ERROR_IPC_SESSION_ALREADY_CREATED = -16,
 } xrt_result_t;
