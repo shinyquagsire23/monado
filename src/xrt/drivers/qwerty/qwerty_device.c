@@ -195,18 +195,13 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 }
 
 static void
-qwerty_get_view_pose(struct xrt_device *xd,
+qwerty_get_view_pose(struct xrt_device *xdev,
                      const struct xrt_vec3 *eye_relation,
                      uint32_t view_index,
                      struct xrt_pose *out_pose)
 {
-	struct xrt_pose pose = XRT_POSE_IDENTITY;
-	bool is_left = view_index == 0;
-	float adjust = is_left ? -0.5f : 0.5f;
-	struct xrt_vec3 eye_offset = *eye_relation;
-	math_vec3_scalar_mul(adjust, &eye_offset);
-	math_vec3_accum(&eye_offset, &pose.position);
-	*out_pose = pose;
+	(void)xdev;
+	u_device_get_view_pose(eye_relation, view_index, out_pose);
 }
 
 static void
