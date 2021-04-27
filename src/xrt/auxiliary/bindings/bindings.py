@@ -4,8 +4,8 @@
 """Generate code from a JSON file describing interaction profiles and
 bindings."""
 
-import json
 import argparse
+import json
 
 
 def handle_subpath(pathgroup_cls, feature_list, subaction_path, sub_path_itm):
@@ -31,7 +31,8 @@ class Feature:
         feature_list = []
         for subaction_path in subaction_paths:
             for sub_path_itm in paths.items():
-                handle_subpath(feature_cls, feature_list, subaction_path, sub_path_itm)
+                handle_subpath(feature_cls, feature_list,
+                               subaction_path, sub_path_itm)
         return feature_list
 
     def __init__(self, subaction_path, sub_path_itm, feature_str):
@@ -41,10 +42,10 @@ class Feature:
         self.subaction_path = subaction_path
         self.feature_str = feature_str
 
-    """A group of paths that derive from the same input.
-    For example .../thumbstick, .../thumbstick/x, .../thumbstick/y
-    """
     def to_monado_paths(self):
+        """A group of paths that derive from the same input.
+        For example .../thumbstick, .../thumbstick/x, .../thumbstick/y
+        """
         paths = []
 
         basepath = self.subaction_path + self.sub_path_name
@@ -69,6 +70,7 @@ class Feature:
 
 class Profile:
     """An interactive bindings profile."""
+
     def __init__(self, name, data):
         """Construct an profile."""
         self.name = name
@@ -152,7 +154,8 @@ def generate_bindings_c(file, p):
             f.write("{\n\t\t\treturn false;\n\t\t}\n")
         f.write("\tdefault:\n\t\treturn false;\n\t}\n}\n")
 
-    f.write(f'\n\nstruct profile_template profile_templates[{len(p.profiles)}] = {{ // array of profile_template\n')
+    f.write(
+        f'\n\nstruct profile_template profile_templates[{len(p.profiles)}] = {{ // array of profile_template\n')
     for profile in p.profiles:
         hw_name = str(profile.name.split("/")[-1])
         vendor_name = str(profile.name.split("/")[-2])
@@ -167,7 +170,8 @@ def generate_bindings_c(file, p):
         f.write(f'\t\t.steamvr_input_profile_path = "{fname}",\n')
         f.write(f'\t\t.steamvr_controller_type = "{controller_type}",\n')
         f.write(f'\t\t.num_bindings = {num_bindings},\n')
-        f.write(f'\t\t.bindings = (struct binding_template[]){{ // array of binding_template\n')
+        f.write(
+            f'\t\t.bindings = (struct binding_template[]){{ // array of binding_template\n')
 
         feature: Feature
         for idx, feature in enumerate(profile.features):
@@ -180,7 +184,8 @@ def generate_bindings_c(file, p):
             f.write(f'\t\t\t{{ // binding_template {idx}\n')
             f.write(f'\t\t\t\t.subaction_path = "{feature.subaction_path}",\n')
             f.write(f'\t\t\t\t.steamvr_path = "{steamvr_path}",\n')
-            f.write(f'\t\t\t\t.localized_name = "{sp_obj["localized_name"]}",\n')
+            f.write(
+                f'\t\t\t\t.localized_name = "{sp_obj["localized_name"]}",\n')
 
             f.write('\t\t\t\t.paths = { // array of paths\n')
             for path in feature.to_monado_paths():
