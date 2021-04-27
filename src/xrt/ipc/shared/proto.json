@@ -66,6 +66,8 @@
 
 	"session_end": {},
 
+	"session_destroy": {},
+
 	"compositor_get_info": {
 		"out": [
 			{"name": "info", "type": "struct xrt_compositor_info"}

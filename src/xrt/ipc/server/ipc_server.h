@@ -375,6 +375,13 @@ void *
 ipc_server_client_thread(void *_cs);
 
 /*!
+ * This destroyes the native compositor for this client and any extra objects
+ * created from it, like all of the swapchains.
+ */
+void
+ipc_server_client_destroy_compositor(volatile struct ipc_client_state *ics);
+
+/*!
  * @defgroup ipc_server_internals Server Internals
  * @brief These are only called by the platform-specific mainloop polling code.
  * @ingroup ipc_server

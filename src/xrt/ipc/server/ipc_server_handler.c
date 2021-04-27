@@ -103,6 +103,10 @@ ipc_handle_session_create(volatile struct ipc_client_state *ics, const struct xr
 
 	struct xrt_compositor_native *xcn = NULL;
 
+	if (ics->xc != NULL) {
+		return XRT_ERROR_IPC_SESSION_ALREADY_CREATED;
+	}
+
 	xrt_result_t xret = xrt_syscomp_create_native_compositor(ics->server->xsysc, xsi, &xcn);
 	if (xret != XRT_SUCCESS) {
 		return xret;
@@ -142,6 +146,20 @@ ipc_handle_session_end(volatile struct ipc_client_state *ics)
 	}
 
 	return xrt_comp_end_session(ics->xc);
+}
+
+xrt_result_t
+ipc_handle_session_destroy(volatile struct ipc_client_state *ics)
+{
+	IPC_TRACE_MARKER();
+
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
+	ipc_server_client_destroy_compositor(ics);
+
+	return XRT_SUCCESS;
 }
 
 xrt_result_t

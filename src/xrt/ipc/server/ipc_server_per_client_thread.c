@@ -124,11 +124,36 @@ client_loop(volatile struct ipc_client_state *ics)
 
 	ipc_message_channel_close((struct ipc_message_channel *)&ics->imc);
 
-	ics->num_swapchains = 0;
-
 	ics->server->threads[ics->server_thread_index].state = IPC_THREAD_STOPPING;
 	ics->server_thread_index = -1;
 	memset((void *)&ics->client_state, 0, sizeof(struct ipc_app_state));
+
+	os_mutex_unlock(&ics->server->global_state.lock);
+
+	ipc_server_client_destroy_compositor(ics);
+
+	// Should we stop the server when a client disconnects?
+	if (ics->server->exit_on_disconnect) {
+		ics->server->running = false;
+	}
+
+	ipc_server_deactivate_session(ics);
+}
+
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
+void
+ipc_server_client_destroy_compositor(volatile struct ipc_client_state *ics)
+{
+	// Multiple threads might be looking at these fields.
+	os_mutex_lock(&ics->server->global_state.lock);
+
+	ics->num_swapchains = 0;
 
 	// Destroy all swapchains now.
 	for (uint32_t j = 0; j < IPC_MAX_CLIENT_SWAPCHAINS; j++) {
@@ -142,21 +167,7 @@ client_loop(volatile struct ipc_client_state *ics)
 
 	// Cast away volatile.
 	xrt_comp_destroy((struct xrt_compositor **)&ics->xc);
-
-	// Should we stop the server when a client disconnects?
-	if (ics->server->exit_on_disconnect) {
-		ics->server->running = false;
-	}
-
-	ipc_server_deactivate_session(ics);
 }
-
-
-/*
- *
- * Entry point.
- *
- */
 
 void *
 ipc_server_client_thread(void *_ics)
