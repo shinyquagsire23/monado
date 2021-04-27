@@ -22,7 +22,7 @@
 void
 vec3_from_hololens_accel(int32_t sample[3][4], int i, struct xrt_vec3 *out_vec)
 {
-	out_vec->x = (float)sample[0][i] * 0.001f * -1.0f;
+	out_vec->x = (float)sample[0][i] * 0.001f * 1.0f;
 	out_vec->y = (float)sample[1][i] * 0.001f * -1.0f;
 	out_vec->z = (float)sample[2][i] * 0.001f * -1.0f;
 }
