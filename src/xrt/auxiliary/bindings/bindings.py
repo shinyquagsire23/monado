@@ -83,7 +83,7 @@ class Profile:
         for feature in self.features:
             for path in feature.to_monado_paths():
                 length = len(path)
-                if (length in self.by_length):
+                if length in self.by_length:
                     self.by_length[length].append(path)
                 else:
                     self.by_length[length] = [path]
