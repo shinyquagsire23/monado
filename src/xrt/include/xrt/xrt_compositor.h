@@ -703,6 +703,7 @@ struct xrt_compositor
 	 *
 	 * @param[out] xc                              The compositor
 	 * @param[out] out_frame_id                    Frame id
+	 * @param[out] out_wake_time_ns                When we want the client to be awoken to begin rendering.
 	 * @param[out] out_predicted_gpu_time_ns       When we expect the client to finish the GPU work.
 	 * @param[out] out_predicted_display_time_ns   When the pixels turns into photons.
 	 * @param[out] out_predicted_display_period_ns The period for the frames.
