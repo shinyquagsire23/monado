@@ -447,8 +447,13 @@ survive_device_get_view_pose(struct xrt_device *xdev,
                              uint32_t view_index,
                              struct xrt_pose *out_pose)
 {
-	struct survive_device *survive = (struct survive_device *)xdev;
+	// Only supports two views.
+	assert(view_index < 2);
+
 	u_device_get_view_pose(eye_relation, view_index, out_pose);
+
+	// This is for the Index' canted displays, on the Vive [Pro] they are identity.
+	struct survive_device *survive = (struct survive_device *)xdev;
 	out_pose->orientation = survive->hmd.config.display.rot[view_index];
 }
 
