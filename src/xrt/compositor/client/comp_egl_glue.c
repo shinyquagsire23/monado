@@ -279,8 +279,8 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 	client_gl_swapchain_create_func sc_create = NULL;
 
-	EGL_INFO("Extension availability:");
-#define DUMP_EXTENSION_STATUS(EXT) EGL_INFO("  - " #EXT ": %s", GLAD_##EXT ? "true" : "false")
+	EGL_DEBUG("Extension availability:");
+#define DUMP_EXTENSION_STATUS(EXT) EGL_DEBUG("  - " #EXT ": %s", GLAD_##EXT ? "true" : "false")
 
 	DUMP_EXTENSION_STATUS(GL_EXT_memory_object);
 	DUMP_EXTENSION_STATUS(GL_EXT_memory_object_fd);
@@ -299,30 +299,29 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 	if (GLAD_GL_EXT_memory_object && GLAD_GL_EXT_memory_object_fd) {
-		EGL_INFO("Using GL memory object swapchain implementation");
+		EGL_DEBUG("Using GL memory object swapchain implementation");
 		sc_create = client_gl_memobj_swapchain_create;
 	}
 	if (sc_create == NULL && GLAD_EGL_EXT_image_dma_buf_import) {
-		EGL_INFO("Using EGL_Image swapchain implementation");
+		EGL_DEBUG("Using EGL_Image swapchain implementation");
 		sc_create = client_gl_eglimage_swapchain_create;
 	}
 	if (sc_create == NULL) {
 		free(ceglc);
 		EGL_ERROR(
-		    "Could not find a required extension: need either "
-		    "EGL_EXT_image_dma_buf_import or "
+		    "Could not find a required extension: need either EGL_EXT_image_dma_buf_import or "
 		    "GL_EXT_memory_object_fd");
 		old_restore(&old);
 		return XRT_ERROR_OPENGL;
 	}
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-	EGL_INFO("Using EGL_Image swapchain implementation with AHardwareBuffer");
+	EGL_DEBUG("Using EGL_Image swapchain implementation with AHardwareBuffer");
 	sc_create = client_gl_eglimage_swapchain_create;
 #endif
 
 	if (!client_gl_compositor_init(&ceglc->base, xcn, sc_create, insert_fence)) {
 		free(ceglc);
-		U_LOG_E("Failed to initialize compositor");
+		EGL_ERROR("Failed to initialize compositor");
 		old_restore(&old);
 		return XRT_ERROR_OPENGL;
 	}
