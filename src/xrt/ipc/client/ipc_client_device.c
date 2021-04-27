@@ -125,6 +125,7 @@ ipc_client_device_get_view_pose(struct xrt_device *xdev,
                                 struct xrt_pose *out_pose)
 {
 	// Empty
+	assert(false);
 }
 
 static void
