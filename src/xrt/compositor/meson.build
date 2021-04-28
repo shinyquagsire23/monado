@@ -101,7 +101,7 @@ endif
 
 if build_egl
 	compositor_srcs += [
-		'client/comp_egl_glue.c',
+		'client/comp_egl_client.c',
 	]
 	compositor_deps += [egl]
 endif

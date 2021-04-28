@@ -87,7 +87,7 @@ if(XRT_HAVE_OPENGL AND XRT_HAVE_XLIB)
 endif()
 if(XRT_HAVE_EGL)
 	list(APPEND CLIENT_SOURCE_FILES
-		client/comp_egl_glue.c
+		client/comp_egl_client.c
 		)
 endif()
 
