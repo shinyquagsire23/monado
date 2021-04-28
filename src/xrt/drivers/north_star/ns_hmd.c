@@ -477,7 +477,7 @@ ns_hmd_create(const char *config_path)
 	// Setup info.
 	struct u_device_simple_info info;
 	info.display.w_pixels = 2880;
-	info.display.h_pixels = 1440;
+	info.display.h_pixels = 1600;
 	info.display.w_meters = 0.13f;
 	info.display.h_meters = 0.07f;
 	info.lens_horizontal_separation_meters = 0.13f / 2.0f;
