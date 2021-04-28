@@ -32,6 +32,13 @@
 #error "This file shouldn't be compiled without EGL"
 #endif
 
+
+/*
+ *
+ * Logging.
+ *
+ */
+
 static enum u_logging_level ll;
 
 #define EGL_TRACE(...) U_LOG_IFL_T(ll, __VA_ARGS__)
@@ -43,6 +50,12 @@ static enum u_logging_level ll;
 DEBUG_GET_ONCE_LOG_OPTION(egl_log, "EGL_LOG", U_LOGGING_INFO)
 
 
+/*
+ *
+ * Declarations.
+ *
+ */
+
 #ifdef XRT_OS_ANDROID
 typedef const char *EGLAPIENTRY (*PFNEGLQUERYSTRINGIMPLEMENTATIONANDROIDPROC)(EGLDisplay dpy, EGLint name);
 #endif
@@ -50,6 +63,64 @@ typedef const char *EGLAPIENTRY (*PFNEGLQUERYSTRINGIMPLEMENTATIONANDROIDPROC)(EG
 // Not forward declared by mesa
 typedef EGLBoolean
     EGLAPIENTRY (*PFNEGLMAKECURRENTPROC)(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx);
+
+
+/*
+ *
+ * Old helper.
+ *
+ */
+
+struct old_helper
+{
+	EGLDisplay dpy;
+	EGLContext ctx;
+	EGLSurface read, draw;
+};
+
+static inline struct old_helper
+old_save(void)
+{
+	struct old_helper old = {
+	    .dpy = eglGetCurrentDisplay(),
+	    .ctx = EGL_NO_CONTEXT,
+	    .read = EGL_NO_SURFACE,
+	    .draw = EGL_NO_SURFACE,
+	};
+
+	// Do we have a valid display?
+	if (old.dpy != EGL_NO_DISPLAY) {
+		old.ctx = eglGetCurrentContext();
+		old.read = eglGetCurrentSurface(EGL_READ);
+		old.draw = eglGetCurrentSurface(EGL_DRAW);
+	}
+
+	return old;
+}
+
+static inline void
+old_restore(struct old_helper *old, EGLDisplay current_dpy)
+{
+	if (old->dpy == EGL_NO_DISPLAY) {
+		// There were no display, just unbind the context.
+		if (eglMakeCurrent(current_dpy, EGL_NO_CONTEXT, EGL_NO_SURFACE, EGL_NO_SURFACE)) {
+			return;
+		}
+	} else {
+		if (eglMakeCurrent(old->dpy, old->draw, old->read, old->ctx)) {
+			return;
+		}
+	}
+
+	EGL_ERROR("Failed to make old EGL context current! (%p, %p, %p, %p)", old->dpy, old->draw, old->read, old->ctx);
+}
+
+
+/*
+ *
+ * EGL compositor subclass.
+ *
+ */
 
 /*!
  * EGL based compositor.
@@ -124,57 +195,6 @@ ensure_native_fence_is_loaded(EGLDisplay dpy, PFNEGLGETPROCADDRESSPROC get_gl_pr
 	glad_eglDupNativeFenceFDANDROID =
 	    (PFNEGLDUPNATIVEFENCEFDANDROIDPROC)get_gl_procaddr("eglDupNativeFenceFDANDROID");
 #endif
-}
-
-
-/*
- *
- * Old helper.
- *
- */
-
-struct old_helper
-{
-	EGLDisplay dpy;
-	EGLContext ctx;
-	EGLSurface read, draw;
-};
-
-static inline struct old_helper
-old_save(void)
-{
-	struct old_helper old = {
-	    .dpy = eglGetCurrentDisplay(),
-	    .ctx = EGL_NO_CONTEXT,
-	    .read = EGL_NO_SURFACE,
-	    .draw = EGL_NO_SURFACE,
-	};
-
-	// Do we have a valid display?
-	if (old.dpy != EGL_NO_DISPLAY) {
-		old.ctx = eglGetCurrentContext();
-		old.read = eglGetCurrentSurface(EGL_READ);
-		old.draw = eglGetCurrentSurface(EGL_DRAW);
-	}
-
-	return old;
-}
-
-static inline void
-old_restore(struct old_helper *old, EGLDisplay current_dpy)
-{
-	if (old->dpy == EGL_NO_DISPLAY) {
-		// There were no display, just unbind the context.
-		if (eglMakeCurrent(current_dpy, EGL_NO_CONTEXT, EGL_NO_SURFACE, EGL_NO_SURFACE)) {
-			return;
-		}
-	} else {
-		if (eglMakeCurrent(old->dpy, old->draw, old->read, old->ctx)) {
-			return;
-		}
-	}
-
-	EGL_ERROR("Failed to make old EGL context current! (%p, %p, %p, %p)", old->dpy, old->draw, old->read, old->ctx);
 }
 
 
