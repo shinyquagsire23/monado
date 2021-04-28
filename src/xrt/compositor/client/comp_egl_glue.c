@@ -201,6 +201,7 @@ insert_fence(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle)
 	}
 
 	*out_handle = fence_fd;
+
 #else
 	(void)cglc;
 #endif
@@ -296,16 +297,20 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	DUMP_EXTENSION_STATUS(EGL_KHR_reusable_sync);
 	DUMP_EXTENSION_STATUS(EGL_KHR_wait_sync);
 
+#undef DUMP_EXTENSION_STATUS
 
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+
 	if (GLAD_GL_EXT_memory_object && GLAD_GL_EXT_memory_object_fd) {
 		EGL_DEBUG("Using GL memory object swapchain implementation");
 		sc_create = client_gl_memobj_swapchain_create;
 	}
+
 	if (sc_create == NULL && GLAD_EGL_EXT_image_dma_buf_import) {
 		EGL_DEBUG("Using EGL_Image swapchain implementation");
 		sc_create = client_gl_eglimage_swapchain_create;
 	}
+
 	if (sc_create == NULL) {
 		free(ceglc);
 		EGL_ERROR(
@@ -314,9 +319,12 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		old_restore(&old);
 		return XRT_ERROR_OPENGL;
 	}
+
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+
 	EGL_DEBUG("Using EGL_Image swapchain implementation with AHardwareBuffer");
 	sc_create = client_gl_eglimage_swapchain_create;
+
 #endif
 
 	if (!client_gl_compositor_init(&ceglc->base, xcn, sc_create, insert_fence)) {
@@ -329,5 +337,6 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	ceglc->base.base.base.destroy = client_egl_compositor_destroy;
 	old_restore(&old);
 	*out_xcgl = &ceglc->base.base;
+
 	return XRT_SUCCESS;
 }
