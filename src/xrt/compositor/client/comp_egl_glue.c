@@ -145,19 +145,33 @@ old_save(void)
 {
 	struct old_helper old = {
 	    .dpy = eglGetCurrentDisplay(),
-	    .ctx = eglGetCurrentContext(),
-	    .read = eglGetCurrentSurface(EGL_READ),
-	    .draw = eglGetCurrentSurface(EGL_DRAW),
+	    .ctx = EGL_NO_CONTEXT,
+	    .read = EGL_NO_SURFACE,
+	    .draw = EGL_NO_SURFACE,
 	};
+
+	// Do we have a valid display?
+	if (old.dpy != EGL_NO_DISPLAY) {
+		old.ctx = eglGetCurrentContext();
+		old.read = eglGetCurrentSurface(EGL_READ);
+		old.draw = eglGetCurrentSurface(EGL_DRAW);
+	}
 
 	return old;
 }
 
 static inline void
-old_restore(struct old_helper *old)
+old_restore(struct old_helper *old, EGLDisplay current_dpy)
 {
-	if (eglMakeCurrent(old->dpy, old->draw, old->read, old->ctx)) {
-		return;
+	if (old->dpy == EGL_NO_DISPLAY) {
+		// There were no display, just unbind the context.
+		if (eglMakeCurrent(current_dpy, EGL_NO_CONTEXT, EGL_NO_SURFACE, EGL_NO_SURFACE)) {
+			return;
+		}
+	} else {
+		if (eglMakeCurrent(old->dpy, old->draw, old->read, old->ctx)) {
+			return;
+		}
 	}
 
 	EGL_ERROR("Failed to make old EGL context current! (%p, %p, %p, %p)", old->dpy, old->draw, old->read, old->ctx);
@@ -248,7 +262,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 	EGLint egl_client_type;
 	if (!eglQueryContext(display, context, EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
-		old_restore(&old);
+		old_restore(&old, display);
 		return XRT_ERROR_OPENGL;
 	}
 
@@ -259,7 +273,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		break;
 #else
 		EGL_ERROR("OpenGL support not including in this runtime build");
-		old_restore(&old);
+		old_restore(&old, display);
 		return XRT_ERROR_OPENGL;
 #endif
 
@@ -269,7 +283,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		break;
 #else
 		EGL_ERROR("OpenGL|ES support not including in this runtime build");
-		old_restore(&old);
+		old_restore(&old, display);
 		return XRT_ERROR_OPENGL;
 #endif
 	default: EGL_ERROR("Unsupported EGL client type"); return XRT_ERROR_OPENGL;
@@ -316,7 +330,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		EGL_ERROR(
 		    "Could not find a required extension: need either EGL_EXT_image_dma_buf_import or "
 		    "GL_EXT_memory_object_fd");
-		old_restore(&old);
+		old_restore(&old, display);
 		return XRT_ERROR_OPENGL;
 	}
 
@@ -330,12 +344,12 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	if (!client_gl_compositor_init(&ceglc->base, xcn, sc_create, insert_fence)) {
 		free(ceglc);
 		EGL_ERROR("Failed to initialize compositor");
-		old_restore(&old);
+		old_restore(&old, display);
 		return XRT_ERROR_OPENGL;
 	}
 
 	ceglc->base.base.base.destroy = client_egl_compositor_destroy;
-	old_restore(&old);
+	old_restore(&old, display);
 	*out_xcgl = &ceglc->base.base;
 
 	return XRT_SUCCESS;
