@@ -99,8 +99,10 @@ oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId
 	sys->form_factor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
 	sys->view_config_type = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
 
+#ifdef XR_USE_GRAPHICS_API_VULKAN
 	sys->vulkan_enable2_instance = VK_NULL_HANDLE;
 	sys->vulkan_enable2_physical_device = VK_NULL_HANDLE;
+#endif
 
 	// Headless.
 	if (sys->xsysc == NULL) {

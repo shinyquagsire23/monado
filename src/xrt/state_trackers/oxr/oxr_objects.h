@@ -1092,9 +1092,11 @@ struct oxr_system
 	uint32_t num_blend_modes;
 	XrEnvironmentBlendMode blend_modes[3];
 
+#ifdef XR_USE_GRAPHICS_API_VULKAN
 	//! The instance/device we create when vulkan_enable2 is used
 	VkInstance vulkan_enable2_instance;
 	VkPhysicalDevice vulkan_enable2_physical_device;
+#endif
 };
 
 #define GET_XDEV_BY_ROLE(SYS, ROLE) SYS->role.ROLE == XRT_DEVICE_ROLE_UNASSIGNED ? NULL : SYS->xdevs[SYS->role.ROLE]

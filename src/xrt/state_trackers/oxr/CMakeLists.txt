@@ -87,7 +87,6 @@ target_link_libraries(st_oxr PRIVATE
 	aux-includes
 	PUBLIC
 	aux_os
-	Vulkan::Vulkan
 	)
 if(XRT_HAVE_VULKAN)
 	target_link_libraries(st_oxr PRIVATE Vulkan::Vulkan)
