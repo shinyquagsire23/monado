@@ -662,8 +662,6 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 
 	assert(icc->compositor_created);
 
-	IPC_ERROR(icc->ipc_c, "Called");
-
 	IPC_CALL_CHK(ipc_call_session_destroy(icc->ipc_c));
 
 	icc->compositor_created = false;
