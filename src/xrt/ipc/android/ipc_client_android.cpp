@@ -19,6 +19,8 @@
 
 using wrap::android::app::Activity;
 using wrap::org::freedesktop::monado::ipc::Client;
+using xrt::auxiliary::android::getAppInfo;
+using xrt::auxiliary::android::loadClassFromPackage;
 
 struct ipc_client_android
 {

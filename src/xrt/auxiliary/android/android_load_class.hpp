@@ -15,6 +15,9 @@
 
 #ifdef XRT_OS_ANDROID
 
+//! C++-only functionality in the Android auxiliary library
+namespace xrt::auxiliary::android {
+
 using wrap::android::content::pm::ApplicationInfo;
 
 ApplicationInfo
@@ -22,5 +25,7 @@ getAppInfo(std::string const &packageName, jobject application_context);
 
 wrap::java::lang::Class
 loadClassFromPackage(ApplicationInfo applicationInfo, jobject application_context, const char *clazz_name);
+
+} // namespace xrt::auxiliary::android
 
 #endif // XRT_OS_ANDROID

@@ -24,6 +24,8 @@
 using wrap::android::app::Activity;
 using wrap::android::view::SurfaceHolder;
 using wrap::org::freedesktop::monado::auxiliary::MonadoView;
+using xrt::auxiliary::android::getAppInfo;
+using xrt::auxiliary::android::loadClassFromPackage;
 
 
 struct android_custom_surface
