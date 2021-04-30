@@ -1,7 +1,7 @@
 # Monado
 
 <!--
-Copyright 2018-2020, Collabora, Ltd. and the Monado contributors
+Copyright 2018-2021, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
@@ -13,6 +13,7 @@ getting started information and general documentation.
 
 * @ref CHANGELOG - If this is the web version of the docs, the changelog also
   includes a section for changes that have not yet been in a tagged release.
+* @ref conventions
 * @ref understanding-targets
 * @ref vulkan-extensions
 * @ref writing-driver (**not complete**)
