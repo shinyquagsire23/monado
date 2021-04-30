@@ -61,7 +61,7 @@ struct wmr_hmd
 	 * init it is owned by the reading thread, there is no mutex protecting
 	 * this field as it's only used by the reading thread in @p oth.
 	 */
-	struct os_hid_device *hid_hololens_senors_dev;
+	struct os_hid_device *hid_hololens_sensors_dev;
 	struct os_hid_device *hid_control_dev;
 
 	//! Latest raw IPD value from the device.

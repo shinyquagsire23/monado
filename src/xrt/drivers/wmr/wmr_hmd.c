@@ -128,7 +128,7 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 	unsigned char buffer[WMR_FEATURE_BUFFER_SIZE];
 
 	// Block for 100ms
-	int size = os_hid_read(wh->hid_hololens_senors_dev, buffer, sizeof(buffer), 100);
+	int size = os_hid_read(wh->hid_hololens_sensors_dev, buffer, sizeof(buffer), 100);
 
 	if (size < 0) {
 		WMR_ERROR(wh, "Error reading from device");
@@ -282,7 +282,7 @@ wmr_run_thread(void *ptr)
 static void
 hololens_sensors_enable_imu(struct wmr_hmd *wh)
 {
-	int size = os_hid_write(wh->hid_hololens_senors_dev, hololens_sensors_imu_on, sizeof(hololens_sensors_imu_on));
+	int size = os_hid_write(wh->hid_hololens_sensors_dev, hololens_sensors_imu_on, sizeof(hololens_sensors_imu_on));
 	if (size <= 0) {
 		WMR_ERROR(wh, "Error writing to device");
 		return;
@@ -428,9 +428,9 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 	// Destroy the thread object.
 	os_thread_helper_destroy(&wh->oth);
 
-	if (wh->hid_hololens_senors_dev != NULL) {
-		os_hid_destroy(wh->hid_hololens_senors_dev);
-		wh->hid_hololens_senors_dev = NULL;
+	if (wh->hid_hololens_sensors_dev != NULL) {
+		os_hid_destroy(wh->hid_hololens_sensors_dev);
+		wh->hid_hololens_sensors_dev = NULL;
 	}
 
 	if (wh->hid_control_dev != NULL) {
@@ -471,7 +471,7 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 	wh->base.orientation_tracking_supported = true;
 	wh->base.position_tracking_supported = false;
 	wh->base.hand_tracking_supported = false;
-	wh->hid_hololens_senors_dev = hid_holo;
+	wh->hid_hololens_sensors_dev = hid_holo;
 	wh->hid_control_dev = hid_ctrl;
 
 	snprintf(wh->base.str, XRT_DEVICE_NAME_LEN, "HP Reverb VR Headset");
