@@ -30,6 +30,8 @@
 
 namespace xrt::auxiliary::tracking {
 
+using namespace xrt::auxiliary::math;
+
 //! Anonymous namespace to hide implementation names
 namespace {
 

@@ -17,6 +17,7 @@
 
 #include <assert.h>
 
+using namespace xrt::auxiliary::math;
 
 /*
  *

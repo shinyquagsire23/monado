@@ -17,6 +17,7 @@
 #include <memory>
 
 using xrt::auxiliary::tracking::SimpleIMUFusion;
+using namespace xrt::auxiliary::math;
 
 struct imu_fusion
 {

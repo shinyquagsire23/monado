@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -18,6 +18,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+namespace xrt::auxiliary::math {
 
 /*!
  * @brief Wrap an internal quaternion struct in an Eigen type, const overload.
@@ -124,3 +125,5 @@ position(struct xrt_pose &pose)
 {
 	return map_vec3(pose.position);
 }
+
+} // namespace xrt::auxiliary::math

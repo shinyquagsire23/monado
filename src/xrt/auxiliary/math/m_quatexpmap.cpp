@@ -130,6 +130,8 @@ quat_ln(Eigen::Quaternion<Scalar> const &quat)
 
 } // namespace
 
+using namespace xrt::auxiliary::math;
+
 extern "C" void
 math_quat_integrate_velocity(const struct xrt_quat *quat,
                              const struct xrt_vec3 *ang_vel,
