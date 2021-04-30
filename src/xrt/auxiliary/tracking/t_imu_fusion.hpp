@@ -33,7 +33,11 @@ DEBUG_GET_ONCE_LOG_OPTION(simple_imu_log, "SIMPLE_IMU_LOG", U_LOGGING_WARN)
 #define SIMPLE_IMU_WARN(...) U_LOG_IFL_W(ll, __VA_ARGS__)
 #define SIMPLE_IMU_ERROR(...) U_LOG_IFL_E(ll, __VA_ARGS__)
 
-namespace xrt_fusion {
+namespace xrt::auxiliary::tracking {
+
+/*!
+ * @brief A simple IMU fusion class.
+ */
 class SimpleIMUFusion
 {
 public:
@@ -304,4 +308,4 @@ SimpleIMUFusion::handleAccel(Eigen::Vector3d const &accel, timepoint_ns timestam
 	return true;
 }
 
-} // namespace xrt_fusion
+} // namespace xrt::auxiliary::tracking

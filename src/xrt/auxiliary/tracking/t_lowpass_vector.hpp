@@ -18,7 +18,7 @@
 #include <Eigen/Core>
 
 
-namespace xrt_fusion {
+namespace xrt::auxiliary::tracking {
 
 /*!
  * A very simple low-pass filter, using a "one-pole infinite impulse response"
@@ -95,7 +95,7 @@ public:
 	}
 
 private:
-	implementation::LowPassIIR<Vector, Scalar> impl_;
+	detail::LowPassIIR<Vector, Scalar> impl_;
 };
 
-} // namespace xrt_fusion
+} // namespace xrt::auxiliary::tracking

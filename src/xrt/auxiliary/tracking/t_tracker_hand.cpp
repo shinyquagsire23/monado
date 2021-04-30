@@ -19,11 +19,15 @@
 #include "t_tracking.h"
 #include "tracking/t_calibration_opencv.hpp"
 
+using namespace xrt::auxiliary::tracking;
+
+//! Namespace for hand tracker implementation
+namespace xrt::auxiliary::tracking::hand {
 
 /*!
  * Single camera.
  *
- * @see TrackerPSMV
+ * @see TrackerHand
  */
 struct View
 {
@@ -236,6 +240,11 @@ run(TrackerHand &t)
 
 	os_thread_helper_unlock(&t.oth);
 }
+
+} // namespace xrt::auxiliary::tracking::hand
+
+using xrt::auxiliary::tracking::hand::TrackerHand;
+
 extern "C" void *
 t_ht_run(void *ptr)
 {

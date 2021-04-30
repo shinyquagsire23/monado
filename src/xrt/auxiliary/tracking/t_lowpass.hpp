@@ -20,8 +20,9 @@
 #include <type_traits>
 
 
-namespace xrt_fusion {
-namespace implementation {
+namespace xrt::auxiliary::tracking {
+
+namespace detail {
 	/*!
 	 * The shared implementation (between vector and scalar versions) of an
 	 * IIR low-pass filter.
@@ -99,7 +100,7 @@ namespace implementation {
 		bool initialized{false};
 		timepoint_ns filter_timestamp_ns{0};
 	};
-} // namespace implementation
+} // namespace detail
 
 /*!
  * A very simple low-pass filter, using a "one-pole infinite impulse response"
@@ -172,7 +173,7 @@ public:
 	}
 
 private:
-	implementation::LowPassIIR<Scalar, Scalar> impl_;
+	detail::LowPassIIR<Scalar, Scalar> impl_;
 };
 
-} // namespace xrt_fusion
+} // namespace xrt::auxiliary::tracking

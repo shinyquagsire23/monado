@@ -13,6 +13,7 @@
 #include "util/u_misc.h"
 #include "util/u_logging.h"
 
+
 /*
  *
  * Pre-declar functions.
@@ -31,7 +32,7 @@ write_cv_mat(FILE *f, cv::Mat *m);
  * Refine and create functions.
  *
  */
-
+namespace xrt::auxiliary::tracking {
 RemapPair
 calibration_get_undistort_map(t_camera_calibration &calib,
                               cv::InputArray rectify_transform_optional,
@@ -165,6 +166,7 @@ StereoRectificationMaps::StereoRectificationMaps(t_stereo_camera_calibration *da
 	view[0].rectify = calibration_get_undistort_map(data->view[0], view[0].rotation_mat, view[0].projection_mat);
 	view[1].rectify = calibration_get_undistort_map(data->view[1], view[1].rotation_mat, view[1].projection_mat);
 }
+} // namespace xrt::auxiliary::tracking
 
 /*
  *
@@ -175,6 +177,7 @@ StereoRectificationMaps::StereoRectificationMaps(t_stereo_camera_calibration *da
 extern "C" bool
 t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_calibration **out_data)
 {
+	using xrt::auxiliary::tracking::StereoCameraCalibrationWrapper;
 	t_stereo_camera_calibration *data_ptr = NULL;
 	t_stereo_camera_calibration_alloc(&data_ptr);
 	StereoCameraCalibrationWrapper wrapped(data_ptr);
@@ -255,6 +258,7 @@ t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_cal
 extern "C" bool
 t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_calibration *data)
 {
+	using xrt::auxiliary::tracking::StereoCameraCalibrationWrapper;
 	StereoCameraCalibrationWrapper wrapped(data);
 	// Dummy matrix
 	cv::Mat dummy;

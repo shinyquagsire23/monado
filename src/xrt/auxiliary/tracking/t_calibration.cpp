@@ -27,7 +27,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(hsv_filter, "T_DEBUG_HSV_FILTER", false)
 DEBUG_GET_ONCE_BOOL_OPTION(hsv_picker, "T_DEBUG_HSV_PICKER", false)
 DEBUG_GET_ONCE_BOOL_OPTION(hsv_viewer, "T_DEBUG_HSV_VIEWER", false)
 
-
+namespace xrt::auxiliary::tracking {
 /*
  *
  * Structs
@@ -1416,3 +1416,5 @@ NormalizedCoordsCache::getNormalizedVector(cv::Point2f origCoords) const
 	auto z = -std::sqrt(1.f - pt.dot(pt));
 	return {pt[0], pt[1], z};
 }
+
+} // namespace xrt::auxiliary::tracking

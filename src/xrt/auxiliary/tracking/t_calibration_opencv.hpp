@@ -20,6 +20,7 @@
 #include <opencv2/opencv.hpp>
 #include <sys/stat.h>
 
+namespace xrt::auxiliary::tracking {
 
 /*!
  * @brief Essential calibration data wrapped for C++.
@@ -290,3 +291,5 @@ private:
 	cv::Mat_<float> cacheX_;
 	cv::Mat_<float> cacheY_;
 };
+
+} // namespace xrt::auxiliary::tracking

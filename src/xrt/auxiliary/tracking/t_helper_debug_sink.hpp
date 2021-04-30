@@ -16,6 +16,7 @@
 #include <opencv2/opencv.hpp>
 #include "util/u_frame.h"
 
+namespace xrt::auxiliary::tracking {
 
 struct HelperDebugSink
 {
@@ -124,3 +125,5 @@ public:
 		xrt_frame_reference(&frame, NULL);
 	}
 };
+
+} // namespace xrt::auxiliary::tracking

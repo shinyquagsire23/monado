@@ -109,6 +109,11 @@ DEBUG_GET_ONCE_LOG_OPTION(psvr_log, "PSVR_TRACKING_LOG", U_LOGGING_WARN)
 //#define PSVR_DUMP_FOR_OFFLINE_ANALYSIS
 //#define PSVR_DUMP_IMU_FOR_OFFLINE_ANALYSIS
 
+using namespace xrt::auxiliary::tracking;
+
+//! Namespace for PSVR tracking implementation
+namespace xrt::auxiliary::tracking::psvr {
+
 typedef enum blob_type
 {
 	BLOB_TYPE_UNKNOWN,
@@ -1945,6 +1950,9 @@ break_apart(TrackerPSVR &t)
 	os_thread_helper_stop(&t.oth);
 }
 
+} // namespace xrt::auxiliary::tracking::psvr
+
+using xrt::auxiliary::tracking::psvr::TrackerPSVR;
 
 /*
  *
@@ -2041,6 +2049,8 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 
 	PSVR_INFO("%s", __func__);
 	int ret;
+
+	using xrt::auxiliary::tracking::psvr::init_filter;
 
 	for (uint32_t i = 0; i < PSVR_NUM_LEDS; i++) {
 		init_filter(t.track_filters[i], PSVR_BLOB_PROCESS_NOISE, PSVR_BLOB_MEASUREMENT_NOISE, 1.0f);

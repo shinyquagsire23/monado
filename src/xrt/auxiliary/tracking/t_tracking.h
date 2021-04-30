@@ -548,6 +548,19 @@ t_debug_hsv_filter_create(struct xrt_frame_context *xfctx,
                           struct xrt_frame_sink *passthrough,
                           struct xrt_frame_sink **out_sink);
 
+
+#ifdef __cplusplus
+
+namespace xrt::auxiliary {
+	/*!
+	 * @brief Namespace used by C++ interfaces in the auxiliary tracking library code.
+	 */
+	namespace tracking {
+
+	} // namespace tracking
+} // namespace xrt::auxiliary
+#endif
+
 /*!
  * @}
  */

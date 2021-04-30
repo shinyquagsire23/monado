@@ -30,6 +30,10 @@
 #include <assert.h>
 #include <pthread.h>
 
+using namespace xrt::auxiliary::tracking;
+
+//! Namespace for PS Move tracking implementation
+namespace xrt::auxiliary::tracking::psmv {
 
 /*!
  * Single camera.
@@ -106,7 +110,7 @@ struct TrackerPSMV
 
 	cv::Ptr<cv::SimpleBlobDetector> sbd;
 
-	std::unique_ptr<xrt_fusion::PSMVFusionInterface> filter;
+	std::unique_ptr<PSMVFusionInterface> filter;
 
 	xrt_vec3 tracked_object_position;
 };
@@ -431,6 +435,9 @@ break_apart(TrackerPSMV &t)
 	os_thread_helper_stop(&t.oth);
 }
 
+} // namespace xrt::auxiliary::tracking::psmv
+
+using xrt::auxiliary::tracking::psmv::TrackerPSMV;
 
 /*
  *
@@ -534,7 +541,7 @@ t_psmv_create(struct xrt_frame_context *xfctx,
 	t.fusion.rot.y = 0.0f;
 	t.fusion.rot.z = 0.0f;
 	t.fusion.rot.w = 1.0f;
-	t.filter = xrt_fusion::PSMVFusionInterface::create();
+	t.filter = PSMVFusionInterface::create();
 
 	ret = os_thread_helper_init(&t.oth);
 	if (ret != 0) {

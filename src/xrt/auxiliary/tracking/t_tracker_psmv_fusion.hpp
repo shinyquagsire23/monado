@@ -23,7 +23,8 @@
 #include <memory>
 
 
-namespace xrt_fusion {
+namespace xrt::auxiliary::tracking {
+
 class PSMVFusionInterface
 {
 public:
@@ -52,4 +53,4 @@ public:
 	virtual void
 	get_prediction(timepoint_ns when_ns, struct xrt_space_relation *out_relation) = 0;
 };
-} // namespace xrt_fusion
+} // namespace xrt::auxiliary::tracking
