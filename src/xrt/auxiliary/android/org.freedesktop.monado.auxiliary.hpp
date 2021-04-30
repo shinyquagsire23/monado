@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -27,6 +27,7 @@ namespace org::freedesktop::monado::auxiliary {
 
 } // namespace wrap
 
+
 namespace wrap {
 namespace org::freedesktop::monado::auxiliary {
 	/*!
@@ -42,32 +43,60 @@ namespace org::freedesktop::monado::auxiliary {
 			return "org/freedesktop/monado/auxiliary/MonadoView";
 		}
 
+		static constexpr const char *
+		getFullyQualifiedTypeName() noexcept
+		{
+			return "org.freedesktop.monado.auxiliary.MonadoView";
+		}
+
 		/*!
 		 * Wrapper for the attachToActivity static method
 		 *
 		 * Java prototype:
-		 * `public static org.freedesktop.monado.auxiliary.MonadoView
-		 * attachToActivity(android.app.Activity, long);`
+		 * `public static org.freedesktop.monado.auxiliary.MonadoView attachToActivity(android.app.Activity,
+		 * long);`
 		 *
-		 * JNI signature:
-		 * (Landroid/app/Activity;J)Lorg/freedesktop/monado/auxiliary/MonadoView;
+		 * JNI signature: (Landroid/app/Activity;J)Lorg/freedesktop/monado/auxiliary/MonadoView;
 		 *
 		 */
 		static MonadoView
 		attachToActivity(android::app::Activity const &activity, void *nativePointer);
 
 		/*!
-		 * Wrapper for the waitGetSurfaceHolder method
+		 * Wrapper for the attachToActivity static method
 		 *
 		 * Java prototype:
-		 * `public android.view.SurfaceHolder
-		 * waitGetSurfaceHolder(int);`
+		 * `public static org.freedesktop.monado.auxiliary.MonadoView attachToActivity(android.app.Activity);`
 		 *
-		 * JNI signature: (I)Landroid/view/SurfaceHolder;
+		 * JNI signature: (Landroid/app/Activity;)Lorg/freedesktop/monado/auxiliary/MonadoView;
 		 *
 		 */
-		android::view::SurfaceHolder
-		waitGetSurfaceHolder(int32_t wait_ms);
+		static MonadoView
+		attachToActivity(android::app::Activity const &activity);
+
+		/*!
+		 * Wrapper for the getDisplayMetrics static method
+		 *
+		 * Java prototype:
+		 * `public static android.util.DisplayMetrics getDisplayMetrics(android.app.Activity);`
+		 *
+		 * JNI signature: (Landroid/app/Activity;)Landroid/util/DisplayMetrics;
+		 *
+		 */
+		static jni::Object
+		getDisplayMetrics(android::app::Activity const &activity);
+
+		/*!
+		 * Wrapper for the getNativePointer method
+		 *
+		 * Java prototype:
+		 * `public long getNativePointer();`
+		 *
+		 * JNI signature: ()J
+		 *
+		 */
+		void *
+		getNativePointer();
 
 		/*!
 		 * Wrapper for the markAsDiscardedByNative method
@@ -81,9 +110,17 @@ namespace org::freedesktop::monado::auxiliary {
 		void
 		markAsDiscardedByNative();
 
-
-		static jni::Object
-		getDisplayMetrics(android::app::Activity const &activity);
+		/*!
+		 * Wrapper for the waitGetSurfaceHolder method
+		 *
+		 * Java prototype:
+		 * `public android.view.SurfaceHolder waitGetSurfaceHolder(int);`
+		 *
+		 * JNI signature: (I)Landroid/view/SurfaceHolder;
+		 *
+		 */
+		android::view::SurfaceHolder
+		waitGetSurfaceHolder(int32_t wait_ms);
 
 		/*!
 		 * Initialize the static metadata of this wrapper with a known
@@ -101,9 +138,11 @@ namespace org::freedesktop::monado::auxiliary {
 		struct Meta : public MetaBase
 		{
 			jni::method_t attachToActivity;
-			jni::method_t waitGetSurfaceHolder;
-			jni::method_t markAsDiscardedByNative;
+			jni::method_t attachToActivity1;
 			jni::method_t getDisplayMetrics;
+			jni::method_t getNativePointer;
+			jni::method_t markAsDiscardedByNative;
+			jni::method_t waitGetSurfaceHolder;
 
 			/*!
 			 * Singleton accessor
@@ -116,9 +155,10 @@ namespace org::freedesktop::monado::auxiliary {
 			}
 
 		private:
-			Meta(jni::jclass clazz);
+			explicit Meta(jni::jclass clazz);
 		};
 	};
+
 } // namespace org::freedesktop::monado::auxiliary
 } // namespace wrap
 #include "org.freedesktop.monado.auxiliary.impl.hpp"

@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -13,6 +13,7 @@
 #include "wrap/android.app.h"
 #include "wrap/android.view.h"
 
+
 namespace wrap {
 namespace org::freedesktop::monado::auxiliary {
 	inline MonadoView
@@ -20,15 +21,28 @@ namespace org::freedesktop::monado::auxiliary {
 	{
 		return MonadoView(Meta::data().clazz().call<jni::Object>(
 		    Meta::data().attachToActivity, activity.object(),
-		    static_cast<long long>(reinterpret_cast<intptr_t>(nativePointer))));
+		    static_cast<long long>(reinterpret_cast<uintptr_t>(nativePointer))));
 	}
 
-	inline android::view::SurfaceHolder
-	MonadoView::waitGetSurfaceHolder(int32_t wait_ms)
+	inline MonadoView
+	MonadoView::attachToActivity(android::app::Activity const &activity)
+	{
+		return MonadoView(
+		    Meta::data().clazz().call<jni::Object>(Meta::data().attachToActivity1, activity.object()));
+	}
+
+	inline jni::Object
+	MonadoView::getDisplayMetrics(android::app::Activity const &activity)
+	{
+		return Meta::data().clazz().call<jni::Object>(Meta::data().getDisplayMetrics, activity.object());
+	}
+
+	inline void *
+	MonadoView::getNativePointer()
 	{
 		assert(!isNull());
-		return android::view::SurfaceHolder(
-		    object().call<jni::Object>(Meta::data().waitGetSurfaceHolder, wait_ms));
+		return reinterpret_cast<void *>(
+		    static_cast<intptr_t>(object().call<long long>(Meta::data().getNativePointer)));
 	}
 
 	inline void
@@ -38,10 +52,12 @@ namespace org::freedesktop::monado::auxiliary {
 		return object().call<void>(Meta::data().markAsDiscardedByNative);
 	}
 
-	inline jni::Object
-	MonadoView::getDisplayMetrics(android::app::Activity const &activity)
+	inline android::view::SurfaceHolder
+	MonadoView::waitGetSurfaceHolder(int32_t wait_ms)
 	{
-		return Meta::data().clazz().call<jni::Object>(Meta::data().getDisplayMetrics, activity.object());
+		assert(!isNull());
+		return android::view::SurfaceHolder(
+		    object().call<jni::Object>(Meta::data().waitGetSurfaceHolder, wait_ms));
 	}
 
 } // namespace org::freedesktop::monado::auxiliary

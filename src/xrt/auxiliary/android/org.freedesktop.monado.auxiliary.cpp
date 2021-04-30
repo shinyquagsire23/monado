@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -14,13 +14,15 @@ namespace wrap {
 namespace org::freedesktop::monado::auxiliary {
 	MonadoView::Meta::Meta(jni::jclass clazz)
 	    : MetaBase(MonadoView::getTypeName(), clazz),
-	      attachToActivity(classRef().getStaticMethod("attachToActivity",
-	                                                  "(Landroid/app/Activity;J)Lorg/freedesktop/"
-	                                                  "monado/auxiliary/MonadoView;")),
-	      waitGetSurfaceHolder(classRef().getMethod("waitGetSurfaceHolder", "(I)Landroid/view/SurfaceHolder;")),
-	      markAsDiscardedByNative(classRef().getMethod("markAsDiscardedByNative", "()V")),
+	      attachToActivity(classRef().getStaticMethod(
+	          "attachToActivity", "(Landroid/app/Activity;J)Lorg/freedesktop/monado/auxiliary/MonadoView;")),
+	      attachToActivity1(classRef().getStaticMethod(
+	          "attachToActivity", "(Landroid/app/Activity;)Lorg/freedesktop/monado/auxiliary/MonadoView;")),
 	      getDisplayMetrics(classRef().getStaticMethod("getDisplayMetrics",
-	                                                   "(Landroid/app/Activity;)Landroid/util/DisplayMetrics;"))
+	                                                   "(Landroid/app/Activity;)Landroid/util/DisplayMetrics;")),
+	      getNativePointer(classRef().getMethod("getNativePointer", "()J")),
+	      markAsDiscardedByNative(classRef().getMethod("markAsDiscardedByNative", "()V")),
+	      waitGetSurfaceHolder(classRef().getMethod("waitGetSurfaceHolder", "(I)Landroid/view/SurfaceHolder;"))
 	{}
 } // namespace org::freedesktop::monado::auxiliary
 } // namespace wrap
