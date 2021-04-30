@@ -12,7 +12,6 @@
 #include "util/u_logging.h"
 
 #include "wrap/android.content.h"
-#include "wrap/dalvik.system.h"
 
 #include "jni.h"
 
