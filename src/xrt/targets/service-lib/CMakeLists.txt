@@ -15,8 +15,3 @@ target_link_libraries(monado-service PRIVATE
 	target_instance
 	xrt-external-jni-wrap
 	)
-
-set_target_properties(monado-service
-	PROPERTIES
-	CXX_STANDARD 17
-	CXX_STANDARD_REQUIRED ON)

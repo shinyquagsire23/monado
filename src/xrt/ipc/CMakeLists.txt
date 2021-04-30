@@ -110,10 +110,6 @@ if(ANDROID)
 		xrt-external-jnipp
 		aux_android
 		)
-	set_target_properties(ipc_android
-		PROPERTIES
-		CXX_STANDARD 17
-		CXX_STANDARD_REQUIRED ON)
 	target_sources(ipc_server PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/server/ipc_server_mainloop_android.c
 		)

@@ -40,10 +40,6 @@ if(ANDROID)
 		${WRAP_SOURCES})
 	target_include_directories(xrt-external-jni-wrap PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/android-jni-wrap)
 	target_link_libraries(xrt-external-jni-wrap PUBLIC xrt-external-jnipp)
-	set_target_properties(xrt-external-jni-wrap
-		PROPERTIES
-		CXX_STANDARD 17
-		CXX_STANDARD_REQUIRED ON)
 endif()
 
 # OpenXR

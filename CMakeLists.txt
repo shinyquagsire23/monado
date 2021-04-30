@@ -1,4 +1,4 @@
-# Copyright 2018-2020, Collabora, Ltd.
+# Copyright 2018-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 cmake_minimum_required(VERSION 3.10.2)
@@ -11,6 +11,10 @@ endif()
 
 option(XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH "Use the absolute path to the runtime in the installed manifest, rather than a bare filename." ON)
 option(XRT_OPENXR_INSTALL_ACTIVE_RUNTIME "Make Monado the default OpenXR runtime on install" ON)
+
+# We use C++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ###
 # Dependencies

@@ -276,7 +276,6 @@ if (XRT_BUILD_DRIVER_ILLIXR)
 	add_library(drv_illixr STATIC ${ILLIXR_SOURCE_FILES})
 	target_link_libraries(drv_illixr PUBLIC ${CMAKE_DL_LIBS} xrt-interfaces aux_util aux_os)
 	target_include_directories(drv_illixr PUBLIC ${ILLIXR_PATH})
-	target_compile_options(drv_illixr PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
 	list(APPEND ENABLED_HEADSET_DRIVERS illixr)
 endif()
 

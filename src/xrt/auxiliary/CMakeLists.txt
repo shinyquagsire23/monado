@@ -304,10 +304,6 @@ if(ANDROID)
 		PUBLIC aux_util
 		PRIVATE ${ANDROID_LIBRARY} ${ANDROID_LOG_LIBRARY} xrt-external-jni-wrap xrt-external-jnipp
 		)
-	set_target_properties(aux_android
-		PROPERTIES
-		CXX_STANDARD 17
-		CXX_STANDARD_REQUIRED ON)
 	target_link_libraries(aux_vk PUBLIC aux_android)
 endif()
 
