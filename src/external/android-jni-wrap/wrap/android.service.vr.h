@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -52,7 +52,7 @@ class VrListenerService : public app::Service {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -60,6 +60,7 @@ class VrListenerService : public app::Service {
         Meta();
     };
 };
+
 } // namespace android::service::vr
 } // namespace wrap
 #include "android.service.vr.impl.h"

@@ -1,6 +1,7 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
+// Inline implementations: do not include on its own!
 
 #pragma once
 
@@ -8,27 +9,21 @@
 
 namespace wrap {
 namespace java::lang {
-inline Class Class::forName(std::string &stringParam) {
-    return Class(Meta::data().clazz().call<jni::Object>(Meta::data().forName,
-                                                        stringParam));
+inline Class Class::forName(std::string const &name) {
+    return Class(
+        Meta::data().clazz().call<jni::Object>(Meta::data().forName, name));
 }
 
 inline Class Class::forName(std::string const &name, bool initialize,
-                            jni::Object classLoader) {
+                            ClassLoader const &classLoader) {
     return Class(Meta::data().clazz().call<jni::Object>(
-        Meta::data().forName1, name, initialize, classLoader));
+        Meta::data().forName1, name, initialize, classLoader.object()));
 }
 
 inline Class Class::forName(jstring name, bool initialize,
                             jni::Object classLoader) {
     return Class{Meta::data().clazz().call<jni::Object>(
         Meta::data().forName, name, initialize, classLoader)};
-}
-
-inline Class Class::forName(jni::Object const &module,
-                            std::string const &name) {
-    return Class(Meta::data().clazz().call<jni::Object>(Meta::data().forName2,
-                                                        module, name));
 }
 
 inline std::string Class::getCanonicalName() {
@@ -55,5 +50,6 @@ inline std::string System::mapLibraryName(std::string const &name) {
     return Meta::data().clazz().call<std::string>(Meta::data().mapLibraryName,
                                                   name);
 }
+
 } // namespace java::lang
 } // namespace wrap

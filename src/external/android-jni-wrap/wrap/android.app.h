@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -34,7 +34,7 @@ class Service : public content::Context {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -42,6 +42,7 @@ class Service : public content::Context {
         Meta();
     };
 };
+
 /*!
  * Wrapper for android.app.Activity objects.
  */
@@ -87,7 +88,7 @@ class Activity : public content::Context {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -95,6 +96,7 @@ class Activity : public content::Context {
         Meta();
     };
 };
+
 } // namespace android::app
 } // namespace wrap
 #include "android.app.impl.h"

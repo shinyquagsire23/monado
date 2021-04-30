@@ -1,6 +1,7 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
+// Inline implementations: do not include on its own!
 
 #pragma once
 
@@ -15,5 +16,6 @@ inline jni::Object List::get(int32_t index) const {
     assert(!isNull());
     return object().call<jni::Object>(Meta::data().get, index);
 }
+
 } // namespace java::util
 } // namespace wrap

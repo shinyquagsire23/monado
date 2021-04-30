@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -13,9 +13,6 @@ Class::Meta::Meta()
       forName1(classRef().getStaticMethod(
           "forName",
           "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;")),
-      forName2(classRef().getStaticMethod(
-          "forName",
-          "(Ljava/lang/Module;Ljava/lang/String;)Ljava/lang/Class;")),
       getCanonicalName(
           classRef().getMethod("getCanonicalName", "()Ljava/lang/String;")) {}
 ClassLoader::Meta::Meta()

@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -36,7 +36,7 @@ class Class : public ObjectWrapperBase {
      * JNI signature: (Ljava/lang/String;)Ljava/lang/Class;
      *
      */
-    static Class forName(std::string &stringParam);
+    static Class forName(std::string const &name);
 
     /*!
      * Wrapper for the forName static method
@@ -50,23 +50,11 @@ class Class : public ObjectWrapperBase {
      *
      */
     static Class forName(std::string const &name, bool initialize,
-                         jni::Object classLoader);
+                         ClassLoader const &classLoader);
 
     //! @overload
     static Class forName(jstring name, bool initialize,
                          jni::Object classLoader);
-    /*!
-     * Wrapper for the forName static method
-     *
-     * Java prototype:
-     * `public static java.lang.Class<?> forName(java.lang.Module,
-     * java.lang.String);`
-     *
-     * JNI signature: (Ljava/lang/Module;Ljava/lang/String;)Ljava/lang/Class;
-     *
-     */
-    static Class forName(jni::Object const &module, std::string const &name);
-
     /*!
      * Wrapper for the getCanonicalName method
      *
@@ -84,14 +72,13 @@ class Class : public ObjectWrapperBase {
     struct Meta : public MetaBase {
         jni::method_t forName;
         jni::method_t forName1;
-        jni::method_t forName2;
         jni::method_t getCanonicalName;
 
         /*!
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -99,6 +86,7 @@ class Class : public ObjectWrapperBase {
         Meta();
     };
 };
+
 /*!
  * Wrapper for java.lang.ClassLoader objects.
  */
@@ -143,7 +131,7 @@ class ClassLoader : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -151,6 +139,7 @@ class ClassLoader : public ObjectWrapperBase {
         Meta();
     };
 };
+
 /*!
  * Wrapper for java.lang.System objects.
  */
@@ -182,7 +171,7 @@ class System : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -190,6 +179,7 @@ class System : public ObjectWrapperBase {
         Meta();
     };
 };
+
 } // namespace java::lang
 } // namespace wrap
 #include "java.lang.impl.h"

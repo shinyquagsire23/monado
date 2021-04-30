@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -40,7 +40,7 @@ class Settings : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -48,6 +48,7 @@ class Settings : public ObjectWrapperBase {
         Meta();
     };
 };
+
 } // namespace android::provider
 } // namespace wrap
 #include "android.provider.impl.h"

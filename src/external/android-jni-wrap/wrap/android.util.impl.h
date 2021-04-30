@@ -1,6 +1,7 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
+// Inline implementations: do not include on its own!
 
 #pragma once
 
@@ -15,5 +16,6 @@ inline int32_t DisplayMetrics::getWidthPixels() const {
     assert(!isNull());
     return get(Meta::data().widthPixels, object());
 }
+
 } // namespace android::util
 } // namespace wrap

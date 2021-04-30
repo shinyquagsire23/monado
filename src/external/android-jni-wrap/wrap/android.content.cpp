@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -12,6 +12,8 @@ Context::Meta::Meta(bool deferDrop)
       WINDOW_SERVICE(classRef(), "WINDOW_SERVICE"),
       getPackageManager(classRef().getMethod(
           "getPackageManager", "()Landroid/content/pm/PackageManager;")),
+      getContentResolver(classRef().getMethod(
+          "getContentResolver", "()Landroid/content/ContentResolver;")),
       getApplicationContext(classRef().getMethod(
           "getApplicationContext", "()Landroid/content/Context;")),
       getClassLoader(
@@ -39,7 +41,6 @@ ComponentName::Meta::Meta()
 Intent::Meta::Meta()
     : MetaBase(Intent::getTypeName()),
       FLAG_ACTIVITY_NEW_TASK(classRef(), "FLAG_ACTIVITY_NEW_TASK"),
-      init(classRef().getMethod("<init>", "()V")),
       init1(classRef().getMethod("<init>", "(Landroid/content/Intent;)V")),
       init2(classRef().getMethod("<init>", "(Ljava/lang/String;)V")),
       init3(classRef().getMethod("<init>",
@@ -51,5 +52,21 @@ Intent::Meta::Meta()
                                  "content/Context;Ljava/lang/Class;)V")),
       setFlags(
           classRef().getMethod("setFlags", "(I)Landroid/content/Intent;")) {}
+ContentResolver::Meta::Meta()
+    : MetaBaseDroppable(ContentResolver::getTypeName()),
+      query(classRef().getMethod(
+          "query",
+          "(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/"
+          "String;Ljava/lang/String;)Landroid/database/Cursor;")),
+      query1(classRef().getMethod(
+          "query", "(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/"
+                   "String;[Ljava/lang/String;Ljava/lang/String;Landroid/os/"
+                   "CancellationSignal;)Landroid/database/Cursor;")),
+      query2(classRef().getMethod(
+          "query",
+          "(Landroid/net/Uri;[Ljava/lang/String;Landroid/os/Bundle;Landroid/os/"
+          "CancellationSignal;)Landroid/database/Cursor;")) {
+    MetaBaseDroppable::dropClassRef();
+}
 } // namespace android::content
 } // namespace wrap

@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -66,7 +66,7 @@ class Display : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -74,6 +74,7 @@ class Display : public ObjectWrapperBase {
         Meta();
     };
 };
+
 /*!
  * Wrapper for android.view.Surface objects.
  */
@@ -105,7 +106,7 @@ class Surface : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -113,6 +114,7 @@ class Surface : public ObjectWrapperBase {
         Meta();
     };
 };
+
 /*!
  * Wrapper for android.view.SurfaceHolder objects.
  */
@@ -144,7 +146,7 @@ class SurfaceHolder : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -152,6 +154,7 @@ class SurfaceHolder : public ObjectWrapperBase {
         Meta();
     };
 };
+
 } // namespace android::view
 } // namespace wrap
 #include "android.view.impl.h"

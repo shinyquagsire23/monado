@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -86,7 +86,7 @@ class PackageItemInfo : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -94,6 +94,7 @@ class PackageItemInfo : public ObjectWrapperBase {
         Meta();
     };
 };
+
 /*!
  * Wrapper for android.content.pm.ComponentInfo objects.
  */
@@ -113,7 +114,7 @@ class ComponentInfo : public PackageItemInfo {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -121,6 +122,7 @@ class ComponentInfo : public PackageItemInfo {
         Meta();
     };
 };
+
 /*!
  * Wrapper for android.content.pm.ServiceInfo objects.
  */
@@ -140,7 +142,7 @@ class ServiceInfo : public PackageItemInfo {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -148,6 +150,7 @@ class ServiceInfo : public PackageItemInfo {
         Meta();
     };
 };
+
 /*!
  * Wrapper for android.content.pm.ApplicationInfo objects.
  */
@@ -191,7 +194,7 @@ class ApplicationInfo : public PackageItemInfo {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -199,6 +202,7 @@ class ApplicationInfo : public PackageItemInfo {
         Meta();
     };
 };
+
 /*!
  * Wrapper for android.content.pm.PackageInfo objects.
  */
@@ -242,7 +246,7 @@ class PackageInfo : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -250,6 +254,7 @@ class PackageInfo : public ObjectWrapperBase {
         Meta();
     };
 };
+
 /*!
  * Wrapper for android.content.pm.ResolveInfo objects.
  */
@@ -281,7 +286,7 @@ class ResolveInfo : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -289,6 +294,7 @@ class ResolveInfo : public ObjectWrapperBase {
         Meta();
     };
 };
+
 /*!
  * Wrapper for android.content.pm.PackageManager objects.
  */
@@ -311,24 +317,6 @@ class PackageManager : public ObjectWrapperBase {
      *
      */
     PackageInfo getPackageInfo(std::string const &name, int32_t flags);
-
-#if 0
-    // Ambiguous overload until we wrap VersionedPackage
-    /*!
-     * Wrapper for the getPackageInfo method
-     *
-     * Java prototype:
-     * `public abstract android.content.pm.PackageInfo
-     * getPackageInfo(android.content.pm.VersionedPackage, int) throws
-     * android.content.pm.PackageManager$NameNotFoundException;`
-     *
-     * JNI signature:
-     * (Landroid/content/pm/VersionedPackage;I)Landroid/content/pm/PackageInfo;
-     *
-     */
-    PackageInfo getPackageInfo(jni::Object &versionedPackage, int32_t flags);
-
-#endif
 
     /*!
      * Wrapper for the getApplicationInfo method
@@ -354,7 +342,7 @@ class PackageManager : public ObjectWrapperBase {
      * JNI signature: (Landroid/content/Intent;I)Ljava/util/List;
      *
      */
-    java::util::List queryIntentServices(Intent &intent, int32_t intParam);
+    java::util::List queryIntentServices(Intent const &intent, int32_t flags);
 
     enum {
         GET_META_DATA = 128,
@@ -366,7 +354,6 @@ class PackageManager : public ObjectWrapperBase {
      */
     struct Meta : public MetaBaseDroppable {
         jni::method_t getPackageInfo;
-        jni::method_t getPackageInfo1;
         jni::method_t getApplicationInfo;
         jni::method_t queryIntentServices;
 
@@ -374,7 +361,7 @@ class PackageManager : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -382,6 +369,7 @@ class PackageManager : public ObjectWrapperBase {
         Meta();
     };
 };
+
 } // namespace android::content::pm
 } // namespace wrap
 #include "android.content.pm.impl.h"

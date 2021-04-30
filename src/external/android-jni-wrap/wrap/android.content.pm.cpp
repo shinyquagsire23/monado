@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -40,9 +40,6 @@ PackageManager::Meta::Meta()
       getPackageInfo(classRef().getMethod(
           "getPackageInfo",
           "(Ljava/lang/String;I)Landroid/content/pm/PackageInfo;")),
-      getPackageInfo1(classRef().getMethod(
-          "getPackageInfo", "(Landroid/content/pm/VersionedPackage;I)Landroid/"
-                            "content/pm/PackageInfo;")),
       getApplicationInfo(classRef().getMethod(
           "getApplicationInfo",
           "(Ljava/lang/String;I)Landroid/content/pm/ApplicationInfo;")),

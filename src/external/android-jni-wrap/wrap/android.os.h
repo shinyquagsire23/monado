@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -71,7 +71,7 @@ class BaseBundle : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -79,6 +79,7 @@ class BaseBundle : public ObjectWrapperBase {
         Meta();
     };
 };
+
 /*!
  * Wrapper for android.os.Bundle objects.
  */
@@ -98,7 +99,7 @@ class Bundle : public BaseBundle {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -186,7 +187,7 @@ class ParcelFileDescriptor : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -194,6 +195,7 @@ class ParcelFileDescriptor : public ObjectWrapperBase {
         Meta();
     };
 };
+
 } // namespace android::os
 } // namespace wrap
 #include "android.os.impl.h"

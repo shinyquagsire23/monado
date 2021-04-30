@@ -1,10 +1,12 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
+// Inline implementations: do not include on its own!
 
 #pragma once
 
 #include "android.content.pm.h"
+#include "android.database.h"
 #include "android.os.h"
 #include "java.lang.h"
 #include <string>
@@ -12,8 +14,6 @@
 namespace wrap {
 namespace android::content {
 inline std::string Context::DISPLAY_SERVICE() {
-    // Defer dropping the class ref to avoid having to do two class lookups
-    // by name for this static field. Instead, drop it before we return.
     auto &data = Meta::data(true);
     auto ret = get(data.DISPLAY_SERVICE, data.clazz());
     data.dropClassRef();
@@ -21,8 +21,6 @@ inline std::string Context::DISPLAY_SERVICE() {
 }
 
 inline std::string Context::WINDOW_SERVICE() {
-    // Defer dropping the class ref to avoid having to do two class lookups
-    // by name for this static field. Instead, drop it before we return.
     auto &data = Meta::data(true);
     auto ret = get(data.WINDOW_SERVICE, data.clazz());
     data.dropClassRef();
@@ -33,6 +31,12 @@ inline pm::PackageManager Context::getPackageManager() {
     assert(!isNull());
     return pm::PackageManager(
         object().call<jni::Object>(Meta::data().getPackageManager));
+}
+
+inline ContentResolver Context::getContentResolver() const {
+    assert(!isNull());
+    return ContentResolver(
+        object().call<jni::Object>(Meta::data().getContentResolver));
 }
 
 inline Context Context::getApplicationContext() {
@@ -65,40 +69,35 @@ inline Context Context::createPackageContext(std::string const &packageName,
     return Context(object().call<jni::Object>(Meta::data().createPackageContext,
                                               packageName, flags));
 }
+
 inline ComponentName ComponentName::construct(std::string const &pkg,
-                                              std::string const &cls) {
+                                              std::string const &className) {
     return ComponentName(
-        Meta::data().clazz().newInstance(Meta::data().init, pkg, cls));
+        Meta::data().clazz().newInstance(Meta::data().init, pkg, className));
 }
 
-inline ComponentName ComponentName::construct(Context const &pkg,
-                                              std::string const &cls) {
-    return ComponentName(Meta::data().clazz().newInstance(Meta::data().init1,
-                                                          pkg.object(), cls));
+inline ComponentName ComponentName::construct(Context const &context,
+                                              std::string const &className) {
+    return ComponentName(Meta::data().clazz().newInstance(
+        Meta::data().init1, context.object(), className));
 }
 
-inline ComponentName ComponentName::construct(Context const &pkg,
+inline ComponentName ComponentName::construct(Context const &context,
                                               java::lang::Class const &cls) {
     return ComponentName(Meta::data().clazz().newInstance(
-        Meta::data().init2, pkg.object(), cls.object()));
+        Meta::data().init2, context.object(), cls.object()));
 }
 
 inline ComponentName ComponentName::construct(jni::Object const &parcel) {
     return ComponentName(
         Meta::data().clazz().newInstance(Meta::data().init3, parcel));
 }
+
 inline int32_t Intent::FLAG_ACTIVITY_NEW_TASK() {
     return get(Meta::data().FLAG_ACTIVITY_NEW_TASK, Meta::data().clazz());
 }
 
-#if 0
-// disabled because of zero-length array warning in jnipp
-inline Intent Intent::construct() {
-    return Intent(Meta::data().clazz().newInstance(Meta::data().init));
-}
-#endif
-
-inline Intent Intent::construct(Intent &intent) {
+inline Intent Intent::construct(Intent const &intent) {
     return Intent(
         Meta::data().clazz().newInstance(Meta::data().init1, intent.object()));
 }
@@ -131,5 +130,35 @@ inline Intent Intent::setFlags(int32_t flags) {
     assert(!isNull());
     return Intent(object().call<jni::Object>(Meta::data().setFlags, flags));
 }
+
+inline database::Cursor ContentResolver::query(
+    jni::Object const &uri, jni::Array<std::string> const &projection,
+    std::string const &selection, jni::Array<std::string> const &selectionArgs,
+    std::string const &sortOrder) {
+    assert(!isNull());
+    return database::Cursor(
+        object().call<jni::Object>(Meta::data().query, uri, projection,
+                                   selection, selectionArgs, sortOrder));
+}
+
+inline database::Cursor ContentResolver::query(
+    jni::Object const &uri, jni::Array<std::string> const &projection,
+    std::string const &selection, jni::Array<std::string> const &selectionArgs,
+    std::string const &sortOrder, jni::Object const &cancellationSignal) {
+    assert(!isNull());
+    return database::Cursor(object().call<jni::Object>(
+        Meta::data().query1, uri, projection, selection, selectionArgs,
+        sortOrder, cancellationSignal));
+}
+
+inline database::Cursor ContentResolver::query(
+    jni::Object const &uri, jni::Array<std::string> const &projection,
+    os::Bundle const &queryArgs, jni::Object const &cancellationSignal) {
+    assert(!isNull());
+    return database::Cursor(
+        object().call<jni::Object>(Meta::data().query2, uri, projection,
+                                   queryArgs.object(), cancellationSignal));
+}
+
 } // namespace android::content
 } // namespace wrap

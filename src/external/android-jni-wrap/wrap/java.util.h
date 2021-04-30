@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -51,7 +51,7 @@ class List : public ObjectWrapperBase {
          * Singleton accessor
          */
         static Meta &data() {
-            static Meta instance;
+            static Meta instance{};
             return instance;
         }
 
@@ -59,6 +59,7 @@ class List : public ObjectWrapperBase {
         Meta();
     };
 };
+
 } // namespace java::util
 } // namespace wrap
 #include "java.util.impl.h"
