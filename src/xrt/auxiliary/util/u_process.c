@@ -35,7 +35,7 @@ struct u_process
 #endif
 };
 
-static inline int
+XRT_MAYBE_UNUSED static inline int
 get_pidfile_path(char *buf)
 {
 	int size = u_file_get_path_in_runtime_dir(PID_FILE_NAME, buf, PATH_MAX);
