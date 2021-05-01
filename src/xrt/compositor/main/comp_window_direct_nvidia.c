@@ -163,9 +163,10 @@ static bool
 comp_window_direct_nvidia_init(struct comp_target *ct)
 {
 	struct comp_window_direct_nvidia *w_direct = (struct comp_window_direct_nvidia *)ct;
+	struct vk_bundle *vk = &ct->c->vk;
 
 	// Sanity check.
-	if (ct->c->vk.instance == VK_NULL_HANDLE) {
+	if (vk->instance == VK_NULL_HANDLE) {
 		COMP_ERROR(ct->c, "Vulkan not initialized before NVIDIA init!");
 		return false;
 	}

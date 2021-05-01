@@ -586,8 +586,7 @@ static VkResult
 comp_target_swapchain_update_timings(struct comp_target *ct)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
-	struct comp_compositor *c = ct->c;
-	struct vk_bundle *vk = &c->vk;
+	struct vk_bundle *vk = get_vk(cts);
 
 	if (!vk->has_GOOGLE_display_timing) {
 		return VK_SUCCESS;
@@ -598,21 +597,21 @@ comp_target_swapchain_update_timings(struct comp_target *ct)
 	}
 
 	uint32_t count = 0;
-	c->vk.vkGetPastPresentationTimingGOOGLE( //
-	    vk->device,                          //
-	    cts->swapchain.handle,               //
-	    &count,                              //
-	    NULL);                               //
+	vk->vkGetPastPresentationTimingGOOGLE( //
+	    vk->device,                        //
+	    cts->swapchain.handle,             //
+	    &count,                            //
+	    NULL);                             //
 	if (count <= 0) {
 		return VK_SUCCESS;
 	}
 
 	VkPastPresentationTimingGOOGLE *timings = U_TYPED_ARRAY_CALLOC(VkPastPresentationTimingGOOGLE, count);
-	c->vk.vkGetPastPresentationTimingGOOGLE( //
-	    vk->device,                          //
-	    cts->swapchain.handle,               //
-	    &count,                              //
-	    timings);                            //
+	vk->vkGetPastPresentationTimingGOOGLE( //
+	    vk->device,                        //
+	    cts->swapchain.handle,             //
+	    &count,                            //
+	    timings);                          //
 
 	for (uint32_t i = 0; i < count; i++) {
 		u_ft_info(cts->uft,                       //

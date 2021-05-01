@@ -132,6 +132,7 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
                             const struct xrt_swapchain_create_info *info,
                             struct comp_swapchain *sc)
 {
+	struct vk_bundle *vk = &c->vk;
 	uint32_t num_images = sc->vkic.num_images;
 	VkCommandBuffer cmd_buffer;
 
@@ -172,9 +173,9 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 		sc->images[i].views.no_alpha = U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
 		sc->images[i].array_size = info->array_size;
 
-		vk_create_sampler(&c->vk, VK_SAMPLER_ADDRESS_MODE_REPEAT, &sc->images[i].repeat_sampler);
+		vk_create_sampler(vk, VK_SAMPLER_ADDRESS_MODE_REPEAT, &sc->images[i].repeat_sampler);
 
-		vk_create_sampler(&c->vk, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, &sc->images[i].sampler);
+		vk_create_sampler(vk, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, &sc->images[i].sampler);
 
 
 		for (uint32_t layer = 0; layer < info->array_size; ++layer) {
@@ -186,9 +187,9 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 			    .layerCount = 1,
 			};
 
-			vk_create_view(&c->vk, sc->vkic.images[i].handle, (VkFormat)info->format, subresource_range,
+			vk_create_view(vk, sc->vkic.images[i].handle, (VkFormat)info->format, subresource_range,
 			               &sc->images[i].views.alpha[layer]);
-			vk_create_view_swizzle(&c->vk, sc->vkic.images[i].handle, format, subresource_range, components,
+			vk_create_view_swizzle(vk, sc->vkic.images[i].handle, format, subresource_range, components,
 			                       &sc->images[i].views.no_alpha[layer]);
 		}
 	}
@@ -205,7 +206,7 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 	 *
 	 */
 
-	vk_init_cmd_buffer(&c->vk, &cmd_buffer);
+	vk_init_cmd_buffer(vk, &cmd_buffer);
 
 	VkImageSubresourceRange subresource_range = {
 	    .aspectMask = aspect,
@@ -216,12 +217,12 @@ do_post_create_vulkan_setup(struct comp_compositor *c,
 	};
 
 	for (uint32_t i = 0; i < num_images; i++) {
-		vk_set_image_layout(&c->vk, cmd_buffer, sc->vkic.images[i].handle, 0, VK_ACCESS_SHADER_READ_BIT,
+		vk_set_image_layout(vk, cmd_buffer, sc->vkic.images[i].handle, 0, VK_ACCESS_SHADER_READ_BIT,
 		                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		                    subresource_range);
 	}
 
-	vk_submit_cmd_buffer(&c->vk, cmd_buffer);
+	vk_submit_cmd_buffer(vk, cmd_buffer);
 }
 
 static void
@@ -282,6 +283,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
                       struct xrt_swapchain **out_xsc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
+	struct vk_bundle *vk = &c->vk;
 	uint32_t num_images = 3;
 	VkResult ret;
 
@@ -306,7 +308,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	           vk_color_format_string(info->format));
 
 	// Use the image helper to allocate the images.
-	ret = vk_ic_allocate(&c->vk, info, num_images, &sc->vkic);
+	ret = vk_ic_allocate(vk, info, num_images, &sc->vkic);
 	if (ret == VK_ERROR_FEATURE_NOT_PRESENT) {
 		free(sc);
 		return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
@@ -321,7 +323,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 	xrt_graphics_buffer_handle_t handles[ARRAY_SIZE(sc->vkic.images)];
 
-	vk_ic_get_handles(&c->vk, &sc->vkic, ARRAY_SIZE(handles), handles);
+	vk_ic_get_handles(vk, &sc->vkic, ARRAY_SIZE(handles), handles);
 	for (uint32_t i = 0; i < sc->vkic.num_images; i++) {
 		sc->base.images[i].handle = handles[i];
 		sc->base.images[i].size = sc->vkic.images[i].size;
@@ -343,6 +345,7 @@ comp_swapchain_import(struct xrt_compositor *xc,
                       struct xrt_swapchain **out_xsc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
+	struct vk_bundle *vk = &c->vk;
 	VkResult ret;
 
 	struct comp_swapchain *sc = alloc_and_set_funcs(c, num_images);
@@ -350,7 +353,7 @@ comp_swapchain_import(struct xrt_compositor *xc,
 	COMP_DEBUG(c, "CREATE FROM NATIVE %p %dx%d", (void *)sc, info->width, info->height);
 
 	// Use the image helper to get the images.
-	ret = vk_ic_from_natives(&c->vk, info, native_images, num_images, &sc->vkic);
+	ret = vk_ic_from_natives(vk, info, native_images, num_images, &sc->vkic);
 	if (ret != VK_SUCCESS) {
 		return XRT_ERROR_VULKAN;
 	}

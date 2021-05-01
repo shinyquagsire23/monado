@@ -103,10 +103,11 @@ static void
 renderer_wait_gpu_idle(struct comp_renderer *r)
 {
 	COMP_TRACE_MARKER();
+	struct vk_bundle *vk = &r->c->vk;
 
-	os_mutex_lock(&r->c->vk.queue_mutex);
-	r->c->vk.vkDeviceWaitIdle(r->c->vk.device);
-	os_mutex_unlock(&r->c->vk.queue_mutex);
+	os_mutex_lock(&vk->queue_mutex);
+	vk->vkDeviceWaitIdle(vk->device);
+	os_mutex_unlock(&vk->queue_mutex);
 }
 
 static void
@@ -453,7 +454,7 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 
 	struct vk_bundle *vk = &r->c->vk;
 
-	vk->vkGetDeviceQueue(vk->device, r->c->vk.queue_family_index, 0, &r->queue);
+	vk->vkGetDeviceQueue(vk->device, vk->queue_family_index, 0, &r->queue);
 	renderer_init_semaphores(r);
 
 	// Try to early-allocate these, in case we can.

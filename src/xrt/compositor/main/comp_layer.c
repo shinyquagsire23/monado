@@ -51,18 +51,25 @@ _update_mvp_matrix(struct comp_render_layer *self, uint32_t eye, const struct xr
 static bool
 _init_ubos(struct comp_render_layer *self)
 {
+	struct vk_bundle *vk = self->vk;
+
 	VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	for (uint32_t i = 0; i < 2; i++) {
 		math_matrix_4x4_identity(&self->transformation[i].mvp);
 
-		if (!vk_buffer_init(self->vk, sizeof(struct layer_transformation), usage, properties,
-		                    &self->transformation_ubos[i].handle, &self->transformation_ubos[i].memory))
+		if (!vk_buffer_init(vk,                                   //
+		                    sizeof(struct layer_transformation),  //
+		                    usage,                                //
+		                    properties,                           //
+		                    &self->transformation_ubos[i].handle, //
+		                    &self->transformation_ubos[i].memory)) {
 			return false;
+		}
 
-		VkResult res = self->vk->vkMapMemory(self->vk->device, self->transformation_ubos[i].memory, 0,
-		                                     VK_WHOLE_SIZE, 0, &self->transformation_ubos[i].data);
+		VkResult res = vk->vkMapMemory(vk->device, self->transformation_ubos[i].memory, 0, VK_WHOLE_SIZE, 0,
+		                               &self->transformation_ubos[i].data);
 		vk_check_error("vkMapMemory", res, false);
 
 		memcpy(self->transformation_ubos[i].data, &self->transformation[i],
@@ -75,15 +82,22 @@ _init_ubos(struct comp_render_layer *self)
 static bool
 _init_equirect1_ubo(struct comp_render_layer *self)
 {
+	struct vk_bundle *vk = self->vk;
+
 	VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-	if (!vk_buffer_init(self->vk, sizeof(struct layer_transformation), usage, properties,
-	                    &self->equirect1_ubo.handle, &self->equirect1_ubo.memory))
+	if (!vk_buffer_init(vk,                                  //
+	                    sizeof(struct layer_transformation), //
+	                    usage,                               //
+	                    properties,                          //
+	                    &self->equirect1_ubo.handle,         //
+	                    &self->equirect1_ubo.memory)) {
 		return false;
+	}
 
-	VkResult res = self->vk->vkMapMemory(self->vk->device, self->equirect1_ubo.memory, 0, VK_WHOLE_SIZE, 0,
-	                                     &self->equirect1_ubo.data);
+	VkResult res =
+	    vk->vkMapMemory(vk->device, self->equirect1_ubo.memory, 0, VK_WHOLE_SIZE, 0, &self->equirect1_ubo.data);
 	vk_check_error("vkMapMemory", res, false);
 
 	memcpy(self->equirect1_ubo.data, &self->equirect1_data, sizeof(struct layer_equirect1_data));
@@ -95,15 +109,22 @@ _init_equirect1_ubo(struct comp_render_layer *self)
 static bool
 _init_equirect2_ubo(struct comp_render_layer *self)
 {
+	struct vk_bundle *vk = self->vk;
+
 	VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-	if (!vk_buffer_init(self->vk, sizeof(struct layer_transformation), usage, properties,
-	                    &self->equirect2_ubo.handle, &self->equirect2_ubo.memory))
+	if (!vk_buffer_init(vk,                                  //
+	                    sizeof(struct layer_transformation), //
+	                    usage,                               //
+	                    properties,                          //
+	                    &self->equirect2_ubo.handle,         //
+	                    &self->equirect2_ubo.memory)) {
 		return false;
+	}
 
-	VkResult res = self->vk->vkMapMemory(self->vk->device, self->equirect2_ubo.memory, 0, VK_WHOLE_SIZE, 0,
-	                                     &self->equirect2_ubo.data);
+	VkResult res =
+	    vk->vkMapMemory(vk->device, self->equirect2_ubo.memory, 0, VK_WHOLE_SIZE, 0, &self->equirect2_ubo.data);
 	vk_check_error("vkMapMemory", res, false);
 
 	memcpy(self->equirect2_ubo.data, &self->equirect2_data, sizeof(struct layer_equirect2_data));
@@ -159,6 +180,8 @@ _update_descriptor(struct comp_render_layer *self,
 static void
 _update_descriptor_equirect(struct comp_render_layer *self, VkDescriptorSet set, VkBuffer buffer)
 {
+	struct vk_bundle *vk = self->vk;
+
 	VkWriteDescriptorSet *sets = (VkWriteDescriptorSet[]){
 	    {
 	        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -176,16 +199,19 @@ _update_descriptor_equirect(struct comp_render_layer *self, VkDescriptorSet set,
 	    },
 	};
 
-	self->vk->vkUpdateDescriptorSets(self->vk->device, 1, sets, 0, NULL);
+	vk->vkUpdateDescriptorSets(vk->device, 1, sets, 0, NULL);
 }
 #endif
 
 void
 comp_layer_update_descriptors(struct comp_render_layer *self, VkSampler sampler, VkImageView image_view)
 {
-	for (uint32_t eye = 0; eye < 2; eye++)
-		_update_descriptor(self, self->vk, self->descriptor_sets[eye], self->transformation_ubos[eye].handle,
-		                   sampler, image_view);
+	struct vk_bundle *vk = self->vk;
+
+	for (uint32_t eye = 0; eye < 2; eye++) {
+		_update_descriptor(self, vk, self->descriptor_sets[eye], self->transformation_ubos[eye].handle, sampler,
+		                   image_view);
+	}
 }
 
 #ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
@@ -225,10 +251,12 @@ comp_layer_update_stereo_descriptors(struct comp_render_layer *self,
                                      VkImageView left_image_view,
                                      VkImageView right_image_view)
 {
-	_update_descriptor(self, self->vk, self->descriptor_sets[0], self->transformation_ubos[0].handle, left_sampler,
+	struct vk_bundle *vk = self->vk;
+
+	_update_descriptor(self, vk, self->descriptor_sets[0], self->transformation_ubos[0].handle, left_sampler,
 	                   left_image_view);
 
-	_update_descriptor(self, self->vk, self->descriptor_sets[1], self->transformation_ubos[1].handle, right_sampler,
+	_update_descriptor(self, vk, self->descriptor_sets[1], self->transformation_ubos[1].handle, right_sampler,
 	                   right_image_view);
 }
 
@@ -268,17 +296,15 @@ _init(struct comp_render_layer *self,
 	    },
 	};
 
-	if (!vk_init_descriptor_pool(self->vk, pool_sizes, ARRAY_SIZE(pool_sizes), 3, &self->descriptor_pool))
+	if (!vk_init_descriptor_pool(vk, pool_sizes, ARRAY_SIZE(pool_sizes), 3, &self->descriptor_pool))
 		return false;
 
 	for (uint32_t eye = 0; eye < 2; eye++)
-		if (!vk_allocate_descriptor_sets(self->vk, self->descriptor_pool, 1, layout,
-		                                 &self->descriptor_sets[eye]))
+		if (!vk_allocate_descriptor_sets(vk, self->descriptor_pool, 1, layout, &self->descriptor_sets[eye]))
 			return false;
 
 #if defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT1) || defined(XRT_FEATURE_OPENXR_LAYER_EQUIRECT2)
-	if (!vk_allocate_descriptor_sets(self->vk, self->descriptor_pool, 1, layout_equirect,
-	                                 &self->descriptor_equirect))
+	if (!vk_allocate_descriptor_sets(vk, self->descriptor_pool, 1, layout_equirect, &self->descriptor_equirect))
 		return false;
 #endif
 	return true;
@@ -294,6 +320,8 @@ comp_layer_draw(struct comp_render_layer *self,
                 const struct xrt_matrix_4x4 *vp_world,
                 const struct xrt_matrix_4x4 *vp_eye)
 {
+	struct vk_bundle *vk = self->vk;
+
 	if (eye == 0 && (self->visibility & XRT_LAYER_EYE_VISIBILITY_LEFT_BIT) == 0) {
 		return;
 	}
@@ -302,7 +330,7 @@ comp_layer_draw(struct comp_render_layer *self,
 		return;
 	}
 
-	self->vk->vkCmdBindPipeline(cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	vk->vkCmdBindPipeline(cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 	// Is this layer viewspace or not.
 	const struct xrt_matrix_4x4 *vp = self->view_space ? vp_eye : vp_world;
@@ -326,18 +354,18 @@ comp_layer_draw(struct comp_render_layer *self,
 		    self->descriptor_equirect,
 		};
 
-		self->vk->vkCmdBindDescriptorSets(cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 2,
-		                                  sets, 0, NULL);
+		vk->vkCmdBindDescriptorSets(cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 2, sets, 0,
+		                            NULL);
 
 	} else {
-		self->vk->vkCmdBindDescriptorSets(cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
-		                                  &self->descriptor_sets[eye], 0, NULL);
+		vk->vkCmdBindDescriptorSets(cmd_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
+		                            &self->descriptor_sets[eye], 0, NULL);
 	}
 
 	VkDeviceSize offsets[1] = {0};
-	self->vk->vkCmdBindVertexBuffers(cmd_buffer, 0, 1, &vertex_buffer->handle, &offsets[0]);
+	vk->vkCmdBindVertexBuffers(cmd_buffer, 0, 1, &vertex_buffer->handle, &offsets[0]);
 
-	self->vk->vkCmdDraw(cmd_buffer, vertex_buffer->size, 1, 0, 0);
+	vk->vkCmdDraw(cmd_buffer, vertex_buffer->size, 1, 0, 0);
 }
 
 // clang-format off
@@ -444,11 +472,17 @@ _init_cylinder_vertex_buffer(struct comp_render_layer *self)
 	VkBufferUsageFlags usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-	if (!vk_buffer_init(vk, sizeof(float) * ARRAY_SIZE(cylinder_vertices), usage, properties,
-	                    &self->cylinder.vertex_buffer.handle, &self->cylinder.vertex_buffer.memory))
+	if (!vk_buffer_init(vk,                                            //
+	                    sizeof(float) * ARRAY_SIZE(cylinder_vertices), //
+	                    usage,                                         //
+	                    properties,                                    //
+	                    &self->cylinder.vertex_buffer.handle,          //
+	                    &self->cylinder.vertex_buffer.memory)) {
 		return false;
+	}
 
 	self->cylinder.vertex_buffer.size = CYLINDER_VERTICES;
+
 	return true;
 }
 
@@ -465,8 +499,9 @@ comp_layer_create(struct vk_bundle *vk, VkDescriptorSetLayout *layout, VkDescrip
 
 	_init(q, vk, layout, layout_equirect);
 
-	if (!_init_cylinder_vertex_buffer(q))
+	if (!_init_cylinder_vertex_buffer(q)) {
 		return NULL;
+	}
 
 	return q;
 }
@@ -474,18 +509,21 @@ comp_layer_create(struct vk_bundle *vk, VkDescriptorSetLayout *layout, VkDescrip
 void
 comp_layer_destroy(struct comp_render_layer *self)
 {
-	for (uint32_t eye = 0; eye < 2; eye++)
-		vk_buffer_destroy(&self->transformation_ubos[eye], self->vk);
+	struct vk_bundle *vk = self->vk;
+
+	for (uint32_t eye = 0; eye < 2; eye++) {
+		vk_buffer_destroy(&self->transformation_ubos[eye], vk);
+	}
 
 #ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
-	vk_buffer_destroy(&self->equirect1_ubo, self->vk);
+	vk_buffer_destroy(&self->equirect1_ubo, vk);
 #endif
 #ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
-	vk_buffer_destroy(&self->equirect2_ubo, self->vk);
+	vk_buffer_destroy(&self->equirect2_ubo, vk);
 #endif
-	self->vk->vkDestroyDescriptorPool(self->vk->device, self->descriptor_pool, NULL);
+	vk->vkDestroyDescriptorPool(vk->device, self->descriptor_pool, NULL);
 
-	vk_buffer_destroy(&self->cylinder.vertex_buffer, self->vk);
+	vk_buffer_destroy(&self->cylinder.vertex_buffer, vk);
 
 	free(self);
 }

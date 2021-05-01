@@ -152,9 +152,10 @@ static bool
 comp_window_vk_display_init(struct comp_target *ct)
 {
 	struct comp_window_vk_display *w_direct = (struct comp_window_vk_display *)ct;
+	struct vk_bundle *vk = &ct->c->vk;
 
 	// Sanity check.
-	if (ct->c->vk.instance == VK_NULL_HANDLE) {
+	if (vk->instance == VK_NULL_HANDLE) {
 		COMP_ERROR(ct->c, "Vulkan not initialized before vk display init!");
 		return false;
 	}

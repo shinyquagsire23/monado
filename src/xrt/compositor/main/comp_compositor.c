@@ -559,7 +559,7 @@ compositor_destroy(struct xrt_compositor *xc)
 	comp_resources_close(c, &c->nr);
 
 	// As long as vk_bundle is valid it's safe to call this function.
-	comp_shaders_close(&c->vk, &c->shaders);
+	comp_shaders_close(vk, &c->shaders);
 
 	// Does NULL checking.
 	comp_target_destroy(&c->target);
@@ -645,20 +645,9 @@ compositor_check_and_prepare_xdev(struct comp_compositor *c, struct xrt_device *
  *
  */
 
-#define GET_DEV_PROC(c, name) (PFN_##name) c->vk.vkGetDeviceProcAddr(c->vk.device, #name);
-#define GET_INS_PROC(c, name) (PFN_##name) c->vk.vkGetInstanceProcAddr(c->vk.instance, #name);
-#define GET_DEV_PROC(c, name) (PFN_##name) c->vk.vkGetDeviceProcAddr(c->vk.device, #name);
-
 // NOLINTNEXTLINE // don't remove the forward decl.
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
 vkGetInstanceProcAddr(VkInstance instance, const char *pName);
-
-static VkResult
-find_get_instance_proc_addr(struct comp_compositor *c)
-{
-	//! @todo Do any library loading here.
-	return vk_get_loader_functions(&c->vk, vkGetInstanceProcAddr);
-}
 
 
 // If any of these lists are updated, please also update the appropriate column
@@ -809,6 +798,7 @@ select_instances_extensions(struct comp_compositor *c, const char ***out_exts, u
 static VkResult
 create_instance(struct comp_compositor *c)
 {
+	struct vk_bundle *vk = &c->vk;
 	const char **instance_extensions;
 	uint32_t num_extensions;
 	VkResult ret;
@@ -833,13 +823,13 @@ create_instance(struct comp_compositor *c)
 	    .ppEnabledExtensionNames = instance_extensions,
 	};
 
-	ret = c->vk.vkCreateInstance(&instance_info, NULL, &c->vk.instance);
+	ret = vk->vkCreateInstance(&instance_info, NULL, &vk->instance);
 	if (ret != VK_SUCCESS) {
 		CVK_ERROR(c, "vkCreateInstance", "Failed to create Vulkan instance", ret);
 		return ret;
 	}
 
-	ret = vk_get_instance_functions(&c->vk);
+	ret = vk_get_instance_functions(vk);
 	if (ret != VK_SUCCESS) {
 		CVK_ERROR(c, "vk_get_instance_functions", "Failed to get Vulkan instance functions.", ret);
 		return ret;
@@ -873,13 +863,15 @@ get_device_uuid(struct vk_bundle *vk, struct comp_compositor *c, int gpu_index, 
 static bool
 compositor_init_vulkan(struct comp_compositor *c)
 {
+	struct vk_bundle *vk = &c->vk;
 	VkResult ret;
 
-	c->vk.ll = c->settings.log_level;
+	vk->ll = c->settings.log_level;
 
-	ret = find_get_instance_proc_addr(c);
+	//! @todo Do any library loading here.
+	ret = vk_get_loader_functions(vk, vkGetInstanceProcAddr);
 	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "find_get_instance_proc_addr", "Failed to get VkInstance get process address.", ret);
+		CVK_ERROR(c, "vk_get_loader_functions", "Failed to get VkInstance get process address.", ret);
 		return false;
 	}
 
@@ -904,7 +896,7 @@ compositor_init_vulkan(struct comp_compositor *c)
 	// No other way then to try to see if realtime is available.
 	for (size_t i = 0; i < ARRAY_SIZE(prios); i++) {
 		ret = vk_create_device(                      //
-		    &c->vk,                                  //
+		    vk,                                      //
 		    c->settings.selected_gpu_index,          //
 		    prios[i],                                // global_priority
 		    required_device_extensions,              //
@@ -928,17 +920,17 @@ compositor_init_vulkan(struct comp_compositor *c)
 		return false;
 	}
 
-	ret = vk_init_mutex(&c->vk);
+	ret = vk_init_mutex(vk);
 	if (ret != VK_SUCCESS) {
 		CVK_ERROR(c, "vk_init_mutex", "Failed to init mutex.", ret);
 		return false;
 	}
 
-	c->settings.selected_gpu_index = c->vk.physical_device_index;
+	c->settings.selected_gpu_index = vk->physical_device_index;
 
 	// store physical device UUID for compositor in settings
 	if (c->settings.selected_gpu_index >= 0) {
-		if (get_device_uuid(&c->vk, c, c->settings.selected_gpu_index, c->settings.selected_gpu_deviceUUID)) {
+		if (get_device_uuid(vk, c, c->settings.selected_gpu_index, c->settings.selected_gpu_deviceUUID)) {
 			char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
 			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
 				sprintf(uuid_str + i * 3, "%02x ", c->settings.selected_gpu_deviceUUID[i]);
@@ -956,7 +948,7 @@ compositor_init_vulkan(struct comp_compositor *c)
 
 	// store physical device UUID suggested to clients in settings
 	if (c->settings.client_gpu_index >= 0) {
-		if (get_device_uuid(&c->vk, c, c->settings.client_gpu_index, c->settings.client_gpu_deviceUUID)) {
+		if (get_device_uuid(vk, c, c->settings.client_gpu_index, c->settings.client_gpu_deviceUUID)) {
 			char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
 			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
 				sprintf(uuid_str + i * 3, "%02x ", c->settings.client_gpu_deviceUUID[i]);
@@ -967,7 +959,7 @@ compositor_init_vulkan(struct comp_compositor *c)
 		}
 	}
 
-	ret = vk_init_cmd_pool(&c->vk);
+	ret = vk_init_cmd_pool(vk);
 	if (ret != VK_SUCCESS) {
 		CVK_ERROR(c, "vk_init_cmd_pool", "Failed to init command pool.", ret);
 		return false;
@@ -1295,7 +1287,9 @@ compositor_init_swapchain(struct comp_compositor *c)
 static bool
 compositor_init_shaders(struct comp_compositor *c)
 {
-	return comp_shaders_load(&c->vk, &c->shaders);
+	struct vk_bundle *vk = &c->vk;
+
+	return comp_shaders_load(vk, &c->shaders);
 }
 
 static bool
@@ -1312,8 +1306,10 @@ compositor_init_renderer(struct comp_compositor *c)
 bool
 comp_is_format_supported(struct comp_compositor *c, VkFormat format)
 {
+	struct vk_bundle *vk = &c->vk;
 	VkFormatProperties prop;
-	c->vk.vkGetPhysicalDeviceFormatProperties(c->vk.physical_device, format, &prop);
+
+	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);
 
 	// This is a fairly crude way of checking support,
 	// but works well enough.
