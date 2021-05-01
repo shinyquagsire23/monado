@@ -1079,8 +1079,10 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	}
 	COMP_DEBUG(c, "Checking for NVIDIA vulkan driver.");
 
-	struct vk_bundle temp_vk = {0};
-	ret = vk_get_loader_functions(&temp_vk, vkGetInstanceProcAddr);
+	struct vk_bundle temp_vk_storage = {0};
+	struct vk_bundle *temp_vk = &temp_vk_storage;
+
+	ret = vk_get_loader_functions(temp_vk, vkGetInstanceProcAddr);
 	if (ret != VK_SUCCESS) {
 		CVK_ERROR(c, "vk_get_loader_functions", "Failed to get loader functions.", ret);
 		return false;
@@ -1095,13 +1097,13 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	    .ppEnabledExtensionNames = extension_names,
 	};
 
-	ret = temp_vk.vkCreateInstance(&instance_create_info, NULL, &(temp_vk.instance));
+	ret = temp_vk->vkCreateInstance(&instance_create_info, NULL, &(temp_vk->instance));
 	if (ret != VK_SUCCESS) {
 		CVK_ERROR(c, "vkCreateInstance", "Failed to create VkInstance.", ret);
 		return false;
 	}
 
-	ret = vk_get_instance_functions(&temp_vk);
+	ret = vk_get_instance_functions(temp_vk);
 	if (ret != VK_SUCCESS) {
 		CVK_ERROR(c, "vk_get_instance_functions", "Failed to get Vulkan instance functions.", ret);
 		return false;
@@ -1109,7 +1111,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 
 	// follow same device selection logic as subsequent calls
 	ret = vk_create_device(                      //
-	    &temp_vk,                                //
+	    temp_vk,                                 //
 	    c->settings.selected_gpu_index,          //
 	    VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT,     // global_priority
 	    required_device_extensions,              //
@@ -1122,13 +1124,13 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 		return false;
 	}
 
-	if (_test_for_nvidia(c, &temp_vk)) {
+	if (_test_for_nvidia(c, temp_vk)) {
 		c->settings.window_type = WINDOW_DIRECT_NVIDIA;
 		COMP_DEBUG(c, "Selecting direct NVIDIA window type!");
 	}
 
-	temp_vk.vkDestroyDevice(temp_vk.device, NULL);
-	temp_vk.vkDestroyInstance(temp_vk.instance, NULL);
+	temp_vk->vkDestroyDevice(temp_vk->device, NULL);
+	temp_vk->vkDestroyInstance(temp_vk->instance, NULL);
 
 #endif // VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	return true;
