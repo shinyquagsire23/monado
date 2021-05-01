@@ -1,4 +1,4 @@
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 cli = executable(
@@ -8,7 +8,6 @@ cli = executable(
 		'cli_cmd_lighthouse.c',
 		'cli_cmd_probe.c',
 		'cli_cmd_test.c',
-		'cli_cmd_trace.c',
 		'cli_common.h',
 		'cli_main.c',
 	),

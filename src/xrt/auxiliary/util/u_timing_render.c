@@ -350,7 +350,23 @@ rt_mark_delivered(struct u_render_timing *urt, int64_t frame_id)
 	do_iir_filter(&rt->app.draw_time_ns, IIR_ALPHA_LT, IIR_ALPHA_GT, diff_draw_ns);
 
 	// Trace the data.
-	COMP_TRACE_DATA(U_TRACE_DATA_TYPE_TIMING_RENDER, *f);
+#define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(f->frame_id))
+#define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
+
+	if (U_TRACE_CATEGORY_IS_ENABLED(timing)) {
+		TE_BEG(ft_cpu, f->when.predicted_ns, "sleep");
+		TE_END(ft_cpu, f->when.wait_woke_ns);
+
+		uint64_t cpu_start_ns = f->when.wait_woke_ns + 1;
+		TE_BEG(ft_cpu, cpu_start_ns, "cpu");
+		TE_END(ft_cpu, f->when.begin_ns);
+
+		TE_BEG(ft_draw, f->when.begin_ns, "draw");
+		TE_END(ft_draw, f->when.delivered_ns);
+	}
+
+#undef TE_BEG
+#undef TE_END
 
 	// Reset the frame.
 	f->state = U_RT_READY;
@@ -405,56 +421,4 @@ u_rt_create(struct u_render_timing **out_urt)
 	*out_urt = &rt->base;
 
 	return XRT_SUCCESS;
-}
-
-
-/*
- *
- * Tracing data.
- *
- */
-
-#define PID_NR 43
-#define TID_ESTIMATED_CPU 20
-#define TID_ESTIMATED_DRAW 21
-#define TID_ACTUAL_CPU 22
-#define TID_ACTUAL_DRAW 23
-
-static void
-trace_begin_id(FILE *file, uint32_t tid, const char *name, int64_t frame_id, const char *cat, uint64_t when_ns)
-{
-	char temp[256];
-	snprintf(temp, sizeof(temp), "%s %" PRIi64, name, frame_id);
-
-	u_trace_maker_write_json_begin(file, PID_NR, tid, temp, cat, when_ns);
-}
-
-static void
-trace_end(FILE *file, uint32_t tid, uint64_t when_ns)
-{
-	u_trace_maker_write_json_end(file, PID_NR, tid, when_ns);
-}
-
-void
-u_rt_write_json_metadata(FILE *file)
-{
-	u_trace_maker_write_json_metadata(file, PID_NR, TID_ESTIMATED_CPU, "1 CPU estimated");
-	u_trace_maker_write_json_metadata(file, PID_NR, TID_ESTIMATED_DRAW, "2 Draw estimated");
-	u_trace_maker_write_json_metadata(file, PID_NR, TID_ACTUAL_CPU, "1 CPU actual");
-	u_trace_maker_write_json_metadata(file, PID_NR, TID_ACTUAL_DRAW, "2 Draw actual");
-}
-
-void
-u_rt_write_json(FILE *file, void *data)
-{
-	struct u_rt_frame *f = (struct u_rt_frame *)data;
-
-	trace_begin_id(file, TID_ACTUAL_CPU, "sleep", f->frame_id, "sleep", f->when.predicted_ns);
-	trace_end(file, TID_ACTUAL_CPU, f->when.wait_woke_ns);
-
-	trace_begin_id(file, TID_ACTUAL_CPU, "cpu", f->frame_id, "cpu", f->when.wait_woke_ns);
-	trace_end(file, TID_ACTUAL_CPU, f->when.begin_ns);
-
-	trace_begin_id(file, TID_ACTUAL_DRAW, "draw", f->frame_id, "draw", f->when.begin_ns);
-	trace_end(file, TID_ACTUAL_DRAW, f->when.delivered_ns);
 }

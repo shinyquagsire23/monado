@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Trace marking debugging code.
+ * @brief  Tracing support code, see @ref tracing.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_util
  */
@@ -11,6 +11,7 @@
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_config_os.h"
+#include "xrt/xrt_config_have.h"
 #include "xrt/xrt_config_build.h"
 
 #include <stdio.h>
@@ -20,81 +21,30 @@
 extern "C" {
 #endif
 
-
-enum u_trace_data_type
+/*!
+ * Should the extra tracks be enabled, see @ref tracing.
+ *
+ * @ingroup aux_util
+ */
+enum u_trace_which
 {
-	U_TRACE_DATA_TYPE_TIMING_FRAME,
-	U_TRACE_DATA_TYPE_TIMING_RENDER,
+	U_TRACE_WHICH_SERVICE,
+	U_TRACE_WHICH_OPENXR,
 };
 
-void
-u_tracer_maker_init(void);
-void
-u_trace_enter(int fd, const char *func);
-void
-u_trace_leave(int fd, const char *func);
-void
-u_trace_data(int fd, enum u_trace_data_type type, void *data, size_t size);
-
-extern int u_trace_xrt_fd;
-extern int u_trace_ipc_fd;
-extern int u_trace_oxr_fd;
-extern int u_trace_comp_fd;
-
-#define XRT_TRACE_MARKER() U_TRACE_MARKER(u_trace_xrt_fd)
-#define IPC_TRACE_MARKER() U_TRACE_MARKER(u_trace_ipc_fd)
-#define OXR_TRACE_MARKER() U_TRACE_MARKER(u_trace_oxr_fd)
-#define COMP_TRACE_MARKER() U_TRACE_MARKER(u_trace_comp_fd)
-#define COMP_TRACE_DATA(type, data) U_TRACE_DATA(u_trace_comp_fd, type, data)
-
-
-/*
+/*!
+ * Internal init function, use @ref U_TRACE_TARGET_INIT, see @ref tracing.
  *
- * JSON dumper helper files.
- *
+ * @ingroup aux_util
  */
-
 void
-u_trace_maker_write_json_metadata( //
-    FILE *file,                    //
-    uint32_t pid,                  //
-    uint32_t tid,                  //
-    const char *name);             //
+u_tracer_maker_init(enum u_trace_which which);
 
-void
-u_trace_maker_write_json_begin( //
-    FILE *file,                 //
-    uint32_t pid,               //
-    uint32_t tid,               //
-    const char *name,           //
-    const char *cat,            //
-    uint64_t when_ns);          //
-
-void
-u_trace_maker_write_json_end( //
-    FILE *file,               //
-    uint32_t pid,             //
-    uint32_t tid,             //
-    uint64_t when_ns);        //
-
-
-/*
- *
- * Functions implemented by other modules.
- *
- */
-
-void
-u_ft_write_json(FILE *file, void *data);
-
-void
-u_ft_write_json_metadata(FILE *file);
-
-void
-u_rt_write_json(FILE *file, void *data);
-
-void
-u_rt_write_json_metadata(FILE *file);
+#define VK_TRACE_IDENT(IDENT) U_TRACE_EVENT(vk, #IDENT)
+#define XRT_TRACE_MARKER() U_TRACE_EVENT(xrt, __func__)
+#define IPC_TRACE_MARKER() U_TRACE_EVENT(ipc, __func__)
+#define OXR_TRACE_MARKER() U_TRACE_EVENT(oxr, __func__)
+#define COMP_TRACE_MARKER() U_TRACE_EVENT(comp, __func__)
 
 
 /*
@@ -109,34 +59,50 @@ u_rt_write_json_metadata(FILE *file);
 #error "Tracing only supported on Linux"
 #endif
 
-struct u_trace_scoped_struct
-{
-	const char *name;
-	int data;
-};
+#ifndef XRT_HAVE_PERCETTO
+#error "Need to have Percetto/Perfetto"
+#endif
 
-static inline void
-u_trace_scope_cleanup(struct u_trace_scoped_struct *data)
-{
-	u_trace_leave(data->data, data->name);
-}
-
-#define U_TRACE_MARKER(fd)                                                                                             \
-	struct u_trace_scoped_struct __attribute__((cleanup(u_trace_scope_cleanup)))                                   \
-	    u_trace_marker_func_data = {__func__, fd};                                                                 \
-	u_trace_enter(u_trace_marker_func_data.data, u_trace_marker_func_data.name)
+#include <percetto.h>
 
 
+#define U_TRACE_CATEGORIES(C, G)                                                                                       \
+	C(vk, "vk")         /* Vulkan calls */                                                                         \
+	C(xrt, "xrt")       /* Misc XRT calls */                                                                       \
+	C(oxr, "st/oxr")    /* OpenXR State Tracker calls */                                                           \
+	C(comp, "comp")     /* Compositor calls  */                                                                    \
+	C(ipc, "ipc")       /* IPC calls */                                                                            \
+	C(timing, "timing") /* Timing calls */
 
+PERCETTO_CATEGORY_DECLARE(U_TRACE_CATEGORIES)
+
+PERCETTO_TRACK_DECLARE(rt_cpu);
+PERCETTO_TRACK_DECLARE(rt_allotted);
+PERCETTO_TRACK_DECLARE(rt_gpu);
+PERCETTO_TRACK_DECLARE(rt_margin);
+PERCETTO_TRACK_DECLARE(rt_error);
+PERCETTO_TRACK_DECLARE(rt_info);
+PERCETTO_TRACK_DECLARE(rt_present);
+PERCETTO_TRACK_DECLARE(ft_cpu);
+PERCETTO_TRACK_DECLARE(ft_draw);
+
+#define U_TRACE_EVENT(CATEGORY, NAME) TRACE_EVENT(CATEGORY, NAME)
+#define U_TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                      \
+	TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)
+#define U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(CATEGORY, TRACK, TIME, NAME, ...)                                            \
+	TRACE_EVENT_BEGIN_ON_TRACK_DATA(CATEGORY, TRACK, TIME, NAME, __VA_ARGS__)
+#define U_TRACE_EVENT_END_ON_TRACK(CATEGORY, TRACK, TIME) TRACE_EVENT_END_ON_TRACK(CATEGORY, TRACK, TIME)
+#define U_TRACE_CATEGORY_IS_ENABLED(CATEGORY) PERCETTO_CATEGORY_IS_ENABLED(CATEGORY)
+#define U_TRACE_INSTANT_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                          \
+	TRACE_ANY_WITH_ARGS(PERCETTO_EVENT_INSTANT, CATEGORY, &g_percetto_track_##TRACK, TIME, NAME, 0)
 #define U_TRACE_DATA(fd, type, data) u_trace_data(fd, type, (void *)&(data), sizeof(data))
 
-
-#define U_TRACE_TARGET_INIT()                                                                                          \
+#define U_TRACE_TARGET_INIT(WHICH)                                                                                     \
 	void __attribute__((constructor(101))) u_trace_maker_constructor(void);                                        \
                                                                                                                        \
 	void u_trace_maker_constructor(void)                                                                           \
 	{                                                                                                              \
-		u_tracer_maker_init();                                                                                 \
+		u_tracer_maker_init(WHICH);                                                                            \
 	}
 
 
@@ -149,15 +115,34 @@ u_trace_scope_cleanup(struct u_trace_scoped_struct *data)
  *
  */
 
-#define U_TRACE_MARKER(fd)                                                                                             \
+#define U_TRACE_EVENT(CATEGORY, NAME)                                                                                  \
 	do {                                                                                                           \
 	} while (false)
 
-#define U_TRACE_DATA(fd, type, data)                                                                                   \
+#define U_TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                      \
 	do {                                                                                                           \
 	} while (false)
 
-#define U_TRACE_TARGET_INIT()
+#define U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(CATEGORY, TRACK, TIME, NAME, ...)                                            \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_EVENT_END_ON_TRACK(CATEGORY, TRACK, TIME)                                                              \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_INSTANT_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                          \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_CATEGORY_IS_ENABLED(_) (false)
+
+/*!
+ * Add to target c file to enable tracing, see @ref tracing.
+ *
+ * @ingroup aux_util
+ */
+#define U_TRACE_TARGET_INIT(WHICH)
 
 #endif // XRT_FEATURE_TRACING
 

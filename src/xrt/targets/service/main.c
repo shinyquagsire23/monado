@@ -14,7 +14,7 @@
 
 
 // Insert the on load constructor to init trace marker.
-U_TRACE_TARGET_INIT()
+U_TRACE_TARGET_INIT(U_TRACE_WHICH_SERVICE)
 
 int
 ipc_server_main(int argc, char *argv[]);

@@ -468,7 +468,117 @@ dt_info(struct u_frame_timing *uft,
 	    f->present_margin_ns,                        //
 	    present_margin_ms);                          //
 
-	COMP_TRACE_DATA(U_TRACE_DATA_TYPE_TIMING_FRAME, *f);
+
+	if (!U_TRACE_CATEGORY_IS_ENABLED(timing)) {
+		return;
+	}
+
+#define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(f->frame_id))
+#define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
+
+
+	/*
+	 *
+	 * CPU
+	 *
+	 */
+
+	TE_BEG(rt_cpu, f->when_predict_ns, "sleep");
+	TE_END(rt_cpu, f->wake_up_time_ns);
+
+	uint64_t oversleep_start_ns = f->wake_up_time_ns + 1;
+	if (f->when_woke_ns > oversleep_start_ns) {
+		TE_BEG(rt_cpu, oversleep_start_ns, "oversleep");
+		TE_END(rt_cpu, f->when_woke_ns);
+	}
+
+
+	/*
+	 *
+	 * GPU
+	 *
+	 */
+
+	uint64_t gpu_end_ns = f->actual_present_time_ns - f->present_margin_ns;
+	if (gpu_end_ns > f->when_submitted_ns) {
+		TE_BEG(rt_gpu, f->when_submitted_ns, "gpu");
+		TE_END(rt_gpu, gpu_end_ns);
+	} else {
+		TE_BEG(rt_gpu, gpu_end_ns, "gpu-time-travel");
+		TE_END(rt_gpu, f->when_submitted_ns);
+	}
+
+
+	/*
+	 *
+	 * Margin
+	 *
+	 */
+
+	if (gpu_end_ns < f->desired_present_time_ns) {
+		TE_BEG(rt_margin, gpu_end_ns, "margin");
+		TE_END(rt_margin, f->desired_present_time_ns);
+	}
+
+
+	/*
+	 *
+	 * ERROR
+	 *
+	 */
+
+	if (!is_within_half_ms(f->actual_present_time_ns, f->desired_present_time_ns)) {
+		if (f->actual_present_time_ns > f->desired_present_time_ns) {
+			TE_BEG(rt_error, f->desired_present_time_ns, "slippage");
+			TE_END(rt_error, f->actual_present_time_ns);
+		} else {
+			TE_BEG(rt_error, f->actual_present_time_ns, "run-ahead");
+			TE_END(rt_error, f->desired_present_time_ns);
+		}
+	}
+
+
+	/*
+	 *
+	 * Info
+	 *
+	 */
+
+	if (f->when_infoed_ns >= f->actual_present_time_ns) {
+		TE_BEG(rt_info, f->actual_present_time_ns, "info");
+		TE_END(rt_info, f->when_infoed_ns);
+	} else {
+		TE_BEG(rt_info, f->when_infoed_ns, "info_before");
+		TE_END(rt_info, f->actual_present_time_ns);
+	}
+
+
+	/*
+	 *
+	 * Present
+	 *
+	 */
+
+	if (f->actual_present_time_ns != f->earliest_present_time_ns) {
+		U_TRACE_INSTANT_ON_TRACK(timing, rt_present, f->earliest_present_time_ns, "earliest");
+	}
+	if (!is_within_half_ms(f->desired_present_time_ns, f->earliest_present_time_ns)) {
+		U_TRACE_INSTANT_ON_TRACK(timing, rt_present, f->desired_present_time_ns, "predicted");
+	}
+	U_TRACE_INSTANT_ON_TRACK(timing, rt_present, f->actual_present_time_ns, "vsync");
+
+
+	/*
+	 *
+	 * Compositor time
+	 *
+	 */
+
+	TE_BEG(rt_allotted, f->wake_up_time_ns, "allotted");
+	TE_END(rt_allotted, f->wake_up_time_ns + f->current_app_time_ns);
+
+#undef TE_BEG
+#undef TE_END
 }
 
 static void
@@ -509,153 +619,4 @@ u_ft_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_ti
 	FT_LOG_I("Created display timing (%.2fms)", estimated_frame_period_ms);
 
 	return XRT_SUCCESS;
-}
-
-
-/*
- *
- * Tracing functions.
- *
- */
-
-#define PID_NR 42
-#define TID_NORMAL 43
-#define TID_GPU 44
-#define TID_INFO 45
-#define TID_FRAME 46
-#define TID_ERROR 47
-#define TID_APP 48
-
-XRT_MAYBE_UNUSED static void
-trace_event(FILE *file, const char *name, uint64_t when_ns)
-{
-	if (file == NULL) {
-		return;
-	}
-
-	// clang-format off
-	fprintf(file,
-	        ",\n"
-	        "\t\t{\n"
-	        "\t\t\t\"ph\": \"i\",\n"
-	        "\t\t\t\"name\": \"%s\",\n"
-	        "\t\t\t\"ts\": %" PRIu64 ".%03" PRIu64 ",\n"
-	        "\t\t\t\"pid\": %u,\n"
-	        "\t\t\t\"tid\": %u,\n"
-	        "\t\t\t\"s\": \"g\",\n"
-	        "\t\t\t\"args\": {}\n"
-	        "\t\t}",
-	        name, when_ns / 1000, when_ns % 1000, PID_NR, TID_NORMAL);
-	// clang-format off
-}
-
-static void
-trace_event_id(FILE *file, const char *name, int64_t frame_id, uint64_t when_ns)
-{
-	if (file == NULL) {
-		return;
-	}
-
-	// clang-format off
-	fprintf(file,
-	        ",\n"
-	        "\t\t{\n"
-	        "\t\t\t\"ph\": \"i\",\n"
-	        "\t\t\t\"name\": \"%s\",\n"
-	        "\t\t\t\"ts\": %" PRIu64 ".%03" PRIu64 ",\n"
-	        "\t\t\t\"pid\": %u,\n"
-	        "\t\t\t\"tid\": %u,\n"
-	        "\t\t\t\"s\": \"g\",\n"
-	        "\t\t\t\"args\": {"
-	        "\t\t\t\t\"id\": %" PRIi64 "\n"
-	        "\t\t\t}\n"
-	        "\t\t}",
-	        name, when_ns / 1000, when_ns % 1000, PID_NR, TID_NORMAL, frame_id);
-	// clang-format off
-}
-
-static void
-trace_begin_id(FILE *file, uint32_t tid, const char *name, int64_t frame_id, const char *cat, uint64_t when_ns)
-{
-	if (file == NULL) {
-		return;
-	}
-
-	char temp[256];
-	snprintf(temp, sizeof(temp), "%s %" PRIi64, name, frame_id);
-
-	u_trace_maker_write_json_begin(file, PID_NR, tid, temp, cat, when_ns);
-}
-
-static void
-trace_end(FILE *file, uint32_t tid, uint64_t when_ns)
-{
-	u_trace_maker_write_json_end(file, PID_NR, tid, when_ns);
-}
-
-static void
-trace_frame(FILE *file, struct frame *f)
-{
-	trace_begin_id(file, TID_NORMAL, "sleep", f->frame_id, "sleep", f->when_predict_ns);
-	trace_end(file, TID_NORMAL, f->wake_up_time_ns);
-
-	if (f->when_woke_ns > f->wake_up_time_ns) {
-		trace_begin_id(file, TID_NORMAL, "oversleep", f->frame_id, "sleep", f->wake_up_time_ns);
-		trace_end(file, TID_NORMAL, f->when_woke_ns);
-	}
-
-	if (!is_within_half_ms(f->actual_present_time_ns, f->desired_present_time_ns)) {
-		if (f->actual_present_time_ns > f->desired_present_time_ns) {
-			trace_begin_id(file, TID_ERROR, "slippage", f->frame_id, "slippage",
-			               f->desired_present_time_ns);
-			trace_end(file, TID_ERROR, f->actual_present_time_ns);
-		} else {
-			trace_begin_id(file, TID_ERROR, "run-ahead", f->frame_id, "run-ahead",
-			               f->actual_present_time_ns);
-			trace_end(file, TID_ERROR, f->desired_present_time_ns);
-		}
-	}
-
-	uint64_t gpu_end_ns = f->actual_present_time_ns - f->present_margin_ns;
-	if (gpu_end_ns > f->when_submitted_ns) {
-		trace_begin_id(file, TID_GPU, "gpu", f->frame_id, "gpu", f->when_submitted_ns);
-		trace_end(file, TID_GPU, gpu_end_ns);
-	} else {
-		trace_begin_id(file, TID_GPU, "gpu-time-travel", f->frame_id, "gpu-time-travel", gpu_end_ns);
-		trace_end(file, TID_GPU, f->when_submitted_ns);
-	}
-
-	if (f->when_infoed_ns >= f->actual_present_time_ns) {
-		trace_begin_id(file, TID_INFO, "info", f->frame_id, "info", f->actual_present_time_ns);
-		trace_end(file, TID_INFO, f->when_infoed_ns);
-	} else {
-		trace_begin_id(file, TID_INFO, "info before", f->frame_id, "info", f->when_infoed_ns);
-		trace_end(file, TID_INFO, f->actual_present_time_ns);
-	}
-
-	trace_event_id(file, "vsync", f->frame_id, f->earliest_present_time_ns);
-	if (f->actual_present_time_ns != f->earliest_present_time_ns) {
-		trace_event_id(file, "flip", f->frame_id, f->actual_present_time_ns);
-	}
-
-	trace_begin_id(file, TID_APP, "app", f->frame_id, "app", f->wake_up_time_ns);
-	trace_end(file, TID_APP, f->wake_up_time_ns + f->current_app_time_ns);
-}
-
-void
-u_ft_write_json(FILE *file, void *data)
-{
-	trace_frame(file, (struct frame *)data);
-}
-
-void
-u_ft_write_json_metadata(FILE *file)
-{
-	u_trace_maker_write_json_metadata(file, PID_NR, TID_NORMAL, "1 RendererThread");
-	u_trace_maker_write_json_metadata(file, PID_NR, TID_GPU, "2 GPU");
-	u_trace_maker_write_json_metadata(file, PID_NR, TID_INFO, "3 Info");
-	u_trace_maker_write_json_metadata(file, PID_NR, TID_FRAME, "4 FrameTiming");
-	u_trace_maker_write_json_metadata(file, PID_NR, TID_ERROR, "5 Slips");
-	u_trace_maker_write_json_metadata(file, PID_NR, TID_APP, "6 App time");
-	fflush(file);
 }

@@ -19,6 +19,7 @@ getting started information and general documentation.
 * @ref writing-driver (**not complete**)
 * @ref ipc-design
 * @ref frame-timing
+* @ref tracing
 
 ## Source layout
 

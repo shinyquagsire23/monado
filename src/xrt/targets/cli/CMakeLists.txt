@@ -1,4 +1,4 @@
-# Copyright 2019-2020, Collabora, Ltd.
+# Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ######
@@ -12,13 +12,6 @@ set(SOURCE_FILES
 	cli_common.h
 	cli_main.c
 	)
-
-if(NOT WIN32)
-	# Lots of linux assumptions in this file.
-	list(APPEND SOURCE_FILES
-		cli_cmd_trace.c
-		)
-endif()
 
 if(NOT WIN32)
 	# No getline on Windows, so until we have a portable impl
