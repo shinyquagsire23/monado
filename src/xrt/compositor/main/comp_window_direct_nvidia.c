@@ -176,13 +176,10 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 		return false;
 	}
 
-	struct vk_bundle comp_vk = ct->c->vk;
-
 	// find our display using nvidia whitelist, enumerate its modes, and
 	// pick the best one get a list of attached displays
 	uint32_t display_count;
-	if (comp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(comp_vk.physical_device, &display_count, NULL) !=
-	    VK_SUCCESS) {
+	if (vk->vkGetPhysicalDeviceDisplayPropertiesKHR(vk->physical_device, &display_count, NULL) != VK_SUCCESS) {
 		COMP_ERROR(ct->c, "Failed to get vulkan display count");
 		return false;
 	}
@@ -194,8 +191,8 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 
 	struct VkDisplayPropertiesKHR *display_props = U_TYPED_ARRAY_CALLOC(VkDisplayPropertiesKHR, display_count);
 
-	if (display_props && comp_vk.vkGetPhysicalDeviceDisplayPropertiesKHR(comp_vk.physical_device, &display_count,
-	                                                                     display_props) != VK_SUCCESS) {
+	if (display_props && vk->vkGetPhysicalDeviceDisplayPropertiesKHR(vk->physical_device, &display_count,
+	                                                                 display_props) != VK_SUCCESS) {
 		COMP_ERROR(ct->c, "Failed to get display properties");
 		free(display_props);
 		return false;
