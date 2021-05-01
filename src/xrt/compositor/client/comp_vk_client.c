@@ -49,15 +49,16 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 {
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 	struct client_vk_compositor *c = sc->c;
+	struct vk_bundle *vk = &c->vk;
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
 		if (sc->base.images[i] != VK_NULL_HANDLE) {
-			c->vk.vkDestroyImage(c->vk.device, sc->base.images[i], NULL);
+			vk->vkDestroyImage(vk->device, sc->base.images[i], NULL);
 			sc->base.images[i] = VK_NULL_HANDLE;
 		}
 
 		if (sc->mems[i] != VK_NULL_HANDLE) {
-			c->vk.vkFreeMemory(c->vk.device, sc->mems[i], NULL);
+			vk->vkFreeMemory(vk->device, sc->mems[i], NULL);
 			sc->mems[i] = VK_NULL_HANDLE;
 		}
 	}
@@ -148,18 +149,19 @@ static void
 client_vk_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
+	struct vk_bundle *vk = &c->vk;
 
-	if (c->vk.cmd_pool != VK_NULL_HANDLE) {
+	if (vk->cmd_pool != VK_NULL_HANDLE) {
 		// Make sure that any of the command buffers from this command
 		// pool are n used here, this pleases the validation layer.
-		os_mutex_lock(&c->vk.queue_mutex);
-		c->vk.vkDeviceWaitIdle(c->vk.device);
-		os_mutex_unlock(&c->vk.queue_mutex);
+		os_mutex_lock(&vk->queue_mutex);
+		vk->vkDeviceWaitIdle(vk->device);
+		os_mutex_unlock(&vk->queue_mutex);
 
-		c->vk.vkDestroyCommandPool(c->vk.device, c->vk.cmd_pool, NULL);
-		c->vk.cmd_pool = VK_NULL_HANDLE;
+		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
+		vk->cmd_pool = VK_NULL_HANDLE;
 	}
-	vk_deinit_mutex(&c->vk);
+	vk_deinit_mutex(vk);
 
 	free(c);
 }
@@ -361,6 +363,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
                            struct xrt_swapchain **out_xsc)
 {
 	struct client_vk_compositor *c = client_vk_compositor(xc);
+	struct vk_bundle *vk = &c->vk;
 	VkCommandBuffer cmd_buffer;
 	VkResult ret;
 	xrt_result_t xret;
@@ -375,7 +378,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 	struct xrt_swapchain *xsc = &xscn->base;
 
-	ret = vk_init_cmd_buffer(&c->vk, &cmd_buffer);
+	ret = vk_init_cmd_buffer(vk, &cmd_buffer);
 	if (ret != VK_SUCCESS) {
 		return XRT_ERROR_VULKAN;
 	}
@@ -399,7 +402,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	sc->xscn = xscn;
 
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
-		ret = vk_create_image_from_native(&c->vk, info, &xscn->images[i], &sc->base.images[i], &sc->mems[i]);
+		ret = vk_create_image_from_native(vk, info, &xscn->images[i], &sc->base.images[i], &sc->mems[i]);
 
 
 		if (ret != VK_SUCCESS) {
@@ -411,11 +414,11 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		 * not be a bug in the validation layer. That may or may not be
 		 * fixed in the future version of the validation layer.
 		 */
-		vk_set_image_layout(&c->vk, cmd_buffer, sc->base.images[i], 0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		vk_set_image_layout(vk, cmd_buffer, sc->base.images[i], 0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 		                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, subresource_range);
 	}
 
-	ret = vk_submit_cmd_buffer(&c->vk, cmd_buffer);
+	ret = vk_submit_cmd_buffer(vk, cmd_buffer);
 	if (ret != VK_SUCCESS) {
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
 	}
@@ -423,11 +426,11 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	// Prerecord command buffers for swapchain image ownership/layout
 	// transitions
 	for (uint32_t i = 0; i < xsc->num_images; i++) {
-		ret = vk_init_cmd_buffer(&c->vk, &sc->acquire[i]);
+		ret = vk_init_cmd_buffer(vk, &sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
 			return XRT_ERROR_VULKAN;
 		}
-		ret = vk_init_cmd_buffer(&c->vk, &sc->release[i]);
+		ret = vk_init_cmd_buffer(vk, &sc->release[i]);
 		if (ret != VK_SUCCESS) {
 			return XRT_ERROR_VULKAN;
 		}
@@ -474,26 +477,26 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		    .dstAccessMask = 0,
 		    .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		    .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		    .srcQueueFamilyIndex = c->vk.queue_family_index,
+		    .srcQueueFamilyIndex = vk->queue_family_index,
 		    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL,
 		    .image = sc->base.images[i],
 		    .subresourceRange = subresource_range,
 		};
 
 		//! @todo less conservative pipeline stage masks based on usage
-		c->vk.vkCmdPipelineBarrier(sc->acquire[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		                           VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 1, &acquire);
-		c->vk.vkCmdPipelineBarrier(sc->release[i], VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-		                           VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &release);
+		vk->vkCmdPipelineBarrier(sc->acquire[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		                         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 1, &acquire);
+		vk->vkCmdPipelineBarrier(sc->release[i], VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &release);
 
-		ret = c->vk.vkEndCommandBuffer(sc->acquire[i]);
+		ret = vk->vkEndCommandBuffer(sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
-			VK_ERROR((&c->vk), "vkEndCommandBuffer: %s", vk_result_string(ret));
+			VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
 			return XRT_ERROR_VULKAN;
 		}
-		ret = c->vk.vkEndCommandBuffer(sc->release[i]);
+		ret = vk->vkEndCommandBuffer(sc->release[i]);
 		if (ret != VK_SUCCESS) {
-			VK_ERROR((&c->vk), "vkEndCommandBuffer: %s", vk_result_string(ret));
+			VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
 			return XRT_ERROR_VULKAN;
 		}
 	}
