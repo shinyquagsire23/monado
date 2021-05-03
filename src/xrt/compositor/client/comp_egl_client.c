@@ -123,7 +123,10 @@ old_restore(struct old_helper *old, EGLDisplay current_dpy)
  */
 
 /*!
- * EGL based compositor.
+ * EGL based compositor, carries the extra needed EGL information needed by the
+ * client side code and can handle both GL Desktop or GLES contexts.
+ *
+ * @ingroup comp_client
  */
 struct client_egl_compositor
 {
