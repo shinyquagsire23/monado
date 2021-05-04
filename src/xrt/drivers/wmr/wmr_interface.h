@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 /*!
- * @defgroup drv_wmr
+ * @defgroup drv_wmr Windows Mixed Reality driver
  * @ingroup drv
  *
  * @brief Windows Mixed Reality driver.
