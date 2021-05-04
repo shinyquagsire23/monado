@@ -34,6 +34,7 @@ compositor_srcs = [
 	'multi/comp_multi_private.h',
 	'multi/comp_multi_system.c',
 	'render/comp_buffer.c',
+	'render/comp_compute.c',
 	'render/comp_render.h',
 	'render/comp_rendering.c',
 	'render/comp_resources.c',

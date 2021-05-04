@@ -1,0 +1,86 @@
+// Copyright 2021, Collabora Ltd.
+// Author: Jakob Bornecrantz <jakob@collabora.com>
+// SPDX-License-Identifier: BSL-1.0
+
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#include "srgb.inc.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform sampler2D source[2];
+layout(set = 0, binding = 1) uniform sampler2D distortion[6];
+layout(set = 0, binding = 2) uniform writeonly restrict image2D target;
+layout(set = 0, binding = 3, std140) uniform restrict Config
+{
+	ivec4 views[2];
+	vec4 pre_transform[2];
+	vec4 post_transform[2];
+	mat4 transform[2];
+} ubo;
+
+
+vec2 position_to_uv(ivec2 extent, uint ix, uint iy)
+{
+	float x = float(ix) / float(extent.x);
+	float y = float(iy) / float(extent.y);
+
+	vec2 dist_uv = vec2(x, y);
+
+#define DIM (128.0)
+#define STRETCH ((DIM - 1.0) / DIM)
+#define OFFSET (1.0 / (DIM * 2.0))
+
+	dist_uv = (dist_uv * STRETCH) + OFFSET;
+
+	return dist_uv;
+}
+
+vec2 transform_uv(vec2 uv, uint iz)
+{
+	vec2 values = uv;
+
+	// To deal with OpenGL flip and sub image view.
+	values.xy = values.xy * ubo.post_transform[iz].zw + ubo.post_transform[iz].xy;
+
+	// Ready to be used.
+	return values.xy;
+}
+
+void main()
+{
+	uint ix = gl_GlobalInvocationID.x;
+	uint iy = gl_GlobalInvocationID.y;
+	uint iz = gl_GlobalInvocationID.z;
+
+	ivec2 offset = ivec2(ubo.views[iz].xy);
+	ivec2 extent = ivec2(ubo.views[iz].zw);
+
+	if (ix >= extent.x || iy >= extent.y) {
+		return;
+	}
+
+	vec2 dist_uv = position_to_uv(extent, ix, iy);
+
+	vec2 r_uv = texture(distortion[iz + 0], dist_uv).xy;
+	vec2 g_uv = texture(distortion[iz + 2], dist_uv).xy;
+	vec2 b_uv = texture(distortion[iz + 4], dist_uv).xy;
+
+	// Do any transformation needed.
+	r_uv = transform_uv(r_uv, iz);
+	g_uv = transform_uv(g_uv, iz);
+	b_uv = transform_uv(b_uv, iz);
+
+	// Sample the source with distorted and chromatic abberation corrected samples.
+	vec4 colour = vec4(
+		texture(source[iz], r_uv).r,
+		texture(source[iz], g_uv).g,
+		texture(source[iz], b_uv).b,
+		1);
+
+	// Do colour correction here since there are no automatic conversion in hardware available.
+	colour = vec4(from_linear_to_srgb(colour.rgb), 1);
+
+	imageStore(target, ivec2(offset.x + ix, offset.y + iy), colour);
+}

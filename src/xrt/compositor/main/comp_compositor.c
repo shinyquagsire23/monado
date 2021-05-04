@@ -405,18 +405,9 @@ compositor_layer_equirect2(struct xrt_compositor *xc,
 	return do_single(xc, xdev, xsc, data);
 }
 
-static xrt_result_t
-compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+static void
+do_graphics_layers(struct comp_compositor *c)
 {
-	COMP_TRACE_MARKER();
-
-	struct comp_compositor *c = comp_compositor(xc);
-
-	COMP_SPEW(c, "LAYER_COMMIT at %8.3fms", ts_ms());
-
-	u_graphics_sync_unref(&sync_handle);
-
-
 	// Always zero for now.
 	uint32_t slot_id = 0;
 	uint32_t num_layers = c->slots[slot_id].num_layers;
@@ -489,6 +480,22 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 			// Should never end up here.
 			assert(false);
 		}
+	}
+}
+
+static xrt_result_t
+compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+{
+	COMP_TRACE_MARKER();
+
+	struct comp_compositor *c = comp_compositor(xc);
+
+	COMP_SPEW(c, "LAYER_COMMIT at %8.3fms", ts_ms());
+
+	u_graphics_sync_unref(&sync_handle);
+
+	if (!c->settings.use_compute) {
+		do_graphics_layers(c);
 	}
 
 	comp_renderer_draw(c->r);
@@ -742,6 +749,9 @@ static const char *required_device_extensions[] = {
 static const char *optional_device_extensions[] = {
     VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME,
     VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME,
+#ifdef VK_EXT_robustness2
+    VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
+#endif
 };
 
 
@@ -894,22 +904,30 @@ compositor_init_vulkan(struct comp_compositor *c)
 	    VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT,   // Default fallback.
 	};
 
+	bool use_compute = c->settings.use_compute;
+
+	struct vk_device_features device_features = {
+	    .shader_storage_image_write_without_format = true,
+	    .null_descriptor = use_compute,
+	};
+
 	// No other way then to try to see if realtime is available.
 	for (size_t i = 0; i < ARRAY_SIZE(prios); i++) {
 		ret = vk_create_device(                     //
 		    vk,                                     //
 		    c->settings.selected_gpu_index,         //
-		    false,                                  // compute_only
+		    use_compute,                            // compute_only
 		    prios[i],                               // global_priority
 		    required_device_extensions,             //
 		    ARRAY_SIZE(required_device_extensions), //
 		    optional_device_extensions,             //
 		    ARRAY_SIZE(optional_device_extensions), //
-		    NULL);                                  // optional_device_features
+		    &device_features);                      // optional_device_features
 
 		// All ok!
 		if (ret == VK_SUCCESS) {
-			COMP_INFO(c, "Created device/queue with %s priority.", prio_strs[i]);
+			COMP_INFO(c, "Created device and %s queue with %s priority.",
+			          use_compute ? "compute" : "graphics", prio_strs[i]);
 			break;
 		}
 
@@ -1112,11 +1130,13 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 		return false;
 	}
 
+	bool use_compute = c->settings.use_compute;
+
 	// follow same device selection logic as subsequent calls
 	ret = vk_create_device(                     //
 	    temp_vk,                                //
 	    c->settings.selected_gpu_index,         //
-	    false,                                  // compute_only
+	    use_compute,                            // compute_only
 	    VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT,    // global_priority
 	    required_device_extensions,             //
 	    ARRAY_SIZE(required_device_extensions), //

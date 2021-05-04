@@ -308,12 +308,16 @@ renderer_create_renderings_and_fences(struct comp_renderer *r)
 
 	struct vk_bundle *vk = &r->c->vk;
 
-	r->rrs = U_TYPED_ARRAY_CALLOC(struct comp_rendering, r->num_buffers);
-	r->fences = U_TYPED_ARRAY_CALLOC(VkFence, r->num_buffers);
+	bool use_compute = r->settings->use_compute;
+	if (!use_compute) {
+		r->rrs = U_TYPED_ARRAY_CALLOC(struct comp_rendering, r->num_buffers);
 
-	for (uint32_t i = 0; i < r->num_buffers; ++i) {
-		renderer_build_rendering(r, &r->rrs[i], i);
+		for (uint32_t i = 0; i < r->num_buffers; ++i) {
+			renderer_build_rendering(r, &r->rrs[i], i);
+		}
 	}
+
+	r->fences = U_TYPED_ARRAY_CALLOC(VkFence, r->num_buffers);
 
 	for (uint32_t i = 0; i < r->num_buffers; i++) {
 		VkFenceCreateInfo fence_info = {
@@ -438,14 +442,21 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 	// Make we sure we destroy all dependent things before creating new images.
 	renderer_close_renderings_and_fences(r);
 
-	comp_target_create_images(               //
-	    r->c->target,                        //
-	    r->c->settings.preferred.width,      //
-	    r->c->settings.preferred.height,     //
-	    r->settings->color_format,           //
-	    r->settings->color_space,            //
-	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, //
-	    r->settings->present_mode);          //
+	VkImageUsageFlags image_usage = 0;
+	if (r->settings->use_compute) {
+		image_usage = VK_IMAGE_USAGE_STORAGE_BIT;
+	} else {
+		image_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	}
+
+	comp_target_create_images(           //
+	    r->c->target,                    //
+	    r->c->settings.preferred.width,  //
+	    r->c->settings.preferred.height, //
+	    r->settings->color_format,       //
+	    r->settings->color_space,        //
+	    image_usage,                     //
+	    r->settings->present_mode);      //
 
 	r->num_buffers = r->c->target->num_images;
 
@@ -501,7 +512,7 @@ renderer_wait_for_last_fence(struct comp_renderer *r)
 }
 
 static void
-renderer_submit_queue(struct comp_renderer *r)
+renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd)
 {
 	COMP_TRACE_MARKER();
 
@@ -528,7 +539,7 @@ renderer_submit_queue(struct comp_renderer *r)
 	    .pWaitSemaphores = &r->semaphores.present_complete,
 	    .pWaitDstStageMask = stage_flags,
 	    .commandBufferCount = 1,
-	    .pCommandBuffers = &r->rrs[r->acquired_buffer].cmd,
+	    .pCommandBuffers = &cmd,
 	    .signalSemaphoreCount = 1,
 	    .pSignalSemaphores = &r->semaphores.render_complete,
 	};
@@ -690,6 +701,128 @@ get_image_view(const struct comp_swapchain_image *image, enum xrt_layer_composit
 	}
 
 	return image->views.no_alpha[array_index];
+}
+
+static void
+dispatch_graphics(struct comp_renderer *r)
+{
+	COMP_TRACE_MARKER();
+
+	struct comp_compositor *c = r->c;
+	struct comp_target *ct = c->target;
+
+	comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+
+	renderer_get_view_projection(r);
+	comp_layer_renderer_draw(r->lr);
+
+	comp_target_update_timings(ct);
+
+	renderer_submit_queue(r, r->rrs[r->acquired_buffer].cmd);
+}
+
+
+/*
+ *
+ * Compute
+ *
+ */
+
+static void
+do_projection_layers(struct comp_renderer *r,
+                     struct comp_rendering_compute *crc,
+                     const struct comp_layer *layer,
+                     const struct xrt_layer_projection_view_data *lvd,
+                     const struct xrt_layer_projection_view_data *rvd)
+{
+	const struct xrt_layer_data *data = &layer->data;
+	uint32_t left_array_index = lvd->sub.array_index;
+	uint32_t right_array_index = rvd->sub.array_index;
+	const struct comp_swapchain_image *left = &layer->scs[0]->images[lvd->sub.image_index];
+	const struct comp_swapchain_image *right = &layer->scs[1]->images[rvd->sub.image_index];
+
+	struct comp_viewport_data views[2];
+	calc_viewport_data(r, &views[0], &views[1]);
+
+	VkImage target_image = r->c->target->images[r->acquired_buffer].handle;
+	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
+
+	VkSampler src_samplers[2] = {
+	    left->sampler,
+	    right->sampler,
+	};
+
+	VkImageView src_image_views[2] = {
+	    get_image_view(left, data->flags, left_array_index),
+	    get_image_view(right, data->flags, right_array_index),
+	};
+
+	struct xrt_normalized_rect src_norm_rects[2] = {lvd->sub.norm_rect, rvd->sub.norm_rect};
+	if (data->flip_y) {
+		src_norm_rects[0].h = -src_norm_rects[0].h;
+		src_norm_rects[0].y = 1 + src_norm_rects[0].y;
+		src_norm_rects[1].h = -src_norm_rects[1].h;
+		src_norm_rects[1].y = 1 + src_norm_rects[1].y;
+	}
+
+	comp_rendering_compute_projection( //
+	    crc,                           //
+	    src_samplers,                  //
+	    src_image_views,               //
+	    src_norm_rects,                //
+	    target_image,                  //
+	    target_image_view,             //
+	    views);                        //
+}
+
+static void
+dispatch_compute(struct comp_renderer *r, struct comp_rendering_compute *crc)
+{
+	COMP_TRACE_MARKER();
+
+	struct comp_compositor *c = r->c;
+	struct comp_target *ct = c->target;
+
+	comp_rendering_compute_init(c, &c->nr, crc);
+	comp_rendering_compute_begin(crc);
+
+	struct comp_viewport_data views[2];
+	calc_viewport_data(r, &views[0], &views[1]);
+
+	VkImage target_image = r->c->target->images[r->acquired_buffer].handle;
+	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
+
+	uint32_t slot_id = 0;
+	uint32_t num_layers = c->slots[slot_id].num_layers;
+	if (num_layers > 0 && c->slots[slot_id].layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
+		int i = 0;
+		const struct comp_layer *layer = &c->slots[slot_id].layers[i];
+		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
+		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
+		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
+
+		do_projection_layers(r, crc, layer, lvd, rvd);
+	} else if (num_layers > 0 && c->slots[slot_id].layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+		int i = 0;
+		const struct comp_layer *layer = &c->slots[slot_id].layers[i];
+		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
+		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
+		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
+
+		do_projection_layers(r, crc, layer, lvd, rvd);
+	} else {
+		comp_rendering_compute_clear( //
+		    crc,                      //
+		    target_image,             //
+		    target_image_view,        //
+		    views);                   //
+	}
+
+	comp_rendering_compute_end(crc);
+
+	comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+
+	renderer_submit_queue(r, crc->cmd);
 }
 
 
@@ -914,14 +1047,13 @@ comp_renderer_draw(struct comp_renderer *r)
 
 	comp_target_update_timings(ct);
 
-	comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
-
-	renderer_get_view_projection(r);
-	comp_layer_renderer_draw(r->lr);
-
-	comp_target_update_timings(ct);
-
-	renderer_submit_queue(r);
+	bool use_compute = r->settings->use_compute;
+	struct comp_rendering_compute crc = {0};
+	if (use_compute) {
+		dispatch_compute(r, &crc);
+	} else {
+		dispatch_graphics(r);
+	}
 
 	renderer_present_swapchain_image(r, c->frame.rendering.desired_present_time_ns,
 	                                 c->frame.rendering.present_slop_ns);
@@ -937,6 +1069,10 @@ comp_renderer_draw(struct comp_renderer *r)
 	 * This is done after a swap so isn't time critical.
 	 */
 	renderer_wait_gpu_idle(r);
+
+	if (use_compute) {
+		comp_rendering_compute_close(&crc);
+	}
 
 	/*
 	 * For direct mode this makes us wait until the last frame has been

@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: BSL-1.0
 
 spirv_shaders(SHADER_HEADERS
+	shaders/clear.comp
+	shaders/distortion.comp
 	shaders/mesh.frag
 	shaders/mesh.vert
 	shaders/layer.frag
@@ -34,6 +36,7 @@ set(MAIN_SOURCE_FILES
 	main/comp_layer_renderer.h
 	main/comp_layer_renderer.c
 	render/comp_buffer.c
+	render/comp_compute.c
 	render/comp_render.h
 	render/comp_rendering.c
 	render/comp_resources.c

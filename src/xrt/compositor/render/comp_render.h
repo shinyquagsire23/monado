@@ -31,6 +31,19 @@ struct comp_swapchain_image;
 
 /*
  *
+ * Defines
+ *
+ */
+
+//! How large in pixels the distortion image is.
+#define COMP_DISTORTION_IMAGE_DIMENSIONS (128)
+
+//! How many distortion images we have, one for each channel (3 rgb) and per view, total 6.
+#define COMP_DISTORTION_NUM_IMAGES (6)
+
+
+/*
+ *
  * Buffer
  *
  */
@@ -148,6 +161,54 @@ struct comp_resources
 		uint32_t offset_indices[2];
 		uint32_t total_num_indices;
 	} mesh;
+
+	struct
+	{
+		//! Descriptor pool for compute work.
+		VkDescriptorPool descriptor_pool;
+
+		//! The source projection view binding point.
+		uint32_t src_binding;
+
+		//! Image storing the distortion.
+		uint32_t distortion_binding;
+
+		//! Writing the image out too.
+		uint32_t target_binding;
+
+		//! Uniform data binding.
+		uint32_t ubo_binding;
+
+		//! Dummy sampler for null images.
+		VkSampler default_sampler;
+
+		//! Descriptor set layout for compute distortion.
+		VkDescriptorSetLayout descriptor_set_layout;
+
+		//! Pipeline layout used for compute distortion.
+		VkPipelineLayout pipeline_layout;
+
+		//! Doesn't depend on target so is static.
+		VkPipeline clear_pipeline;
+
+		//! Doesn't depend on target so is static.
+		VkPipeline distortion_pipeline;
+
+		//! Target info.
+		struct comp_buffer ubo;
+	} compute;
+
+	struct
+	{
+		//! Backing memory to distortion images.
+		VkDeviceMemory device_memories[COMP_DISTORTION_NUM_IMAGES];
+
+		//! Distortion images.
+		VkImage images[COMP_DISTORTION_NUM_IMAGES];
+
+		//! The views into the distortion images.
+		VkImageView image_views[COMP_DISTORTION_NUM_IMAGES];
+	} distortion;
 };
 
 /*!
@@ -327,6 +388,117 @@ comp_draw_distortion(struct comp_rendering *rr,
                      VkSampler sampler,
                      VkImageView image_view,
                      struct comp_mesh_ubo_data *data);
+
+
+/*
+ *
+ * Compute distortion.
+ *
+ */
+
+/*!
+ * A compute rendering is used to create command buffers needed to do one frame
+ * of compositor rendering using compute shaders, it holds onto resources used
+ * by the command buffer.
+ */
+struct comp_rendering_compute
+{
+	struct comp_compositor *c;
+	struct comp_resources *r;
+
+	//! Command buffer where all commands are recorded.
+	VkCommandBuffer cmd;
+
+	//! Clear descriptor set.
+	VkDescriptorSet clear_descriptor_set;
+
+#if 0
+	struct
+	{
+		//! The data for this target.
+		struct comp_target_data data;
+
+		//! Image view we are targeting, not owned by the rendering.
+		VkImageView image_view;
+	} targets[2];
+
+	//! Number of different targets, number of views are always two.
+	uint32_t num_targets;
+#endif
+
+	struct
+	{
+		int temp;
+	} view;
+
+	//! The current view we are "rendering" to.
+	uint32_t current_view;
+};
+
+struct comp_rendering_compute_data
+{
+	struct
+	{
+		VkImageView source;
+
+		VkImageView distortion;
+
+		struct
+		{
+			uint32_t x;
+			uint32_t y;
+			uint32_t width;
+			uint32_t height;
+		} dst;
+	} views[2];
+
+	VkImageView target;
+};
+
+/*!
+ * UBO data that is sent to the compute distortion shaders.
+ */
+struct comp_ubo_compute_data
+{
+	struct comp_viewport_data views[2];
+	struct xrt_normalized_rect pre_transforms[2];
+	struct xrt_normalized_rect post_transforms[2];
+	struct xrt_matrix_4x4 transforms[2];
+};
+
+/*!
+ * Init struct and create resources needed for compute rendering.
+ */
+bool
+comp_rendering_compute_init(struct comp_compositor *c, struct comp_resources *r, struct comp_rendering_compute *crc);
+
+/*!
+ * Frees all resources held by the compute rendering, does not free the struct itself.
+ */
+void
+comp_rendering_compute_close(struct comp_rendering_compute *crc);
+
+bool
+comp_rendering_compute_begin(struct comp_rendering_compute *crc);
+
+void
+comp_rendering_compute_projection(struct comp_rendering_compute *crc,            //
+                                  VkSampler src_samplers[2],                     //
+                                  VkImageView src_image_views[2],                //
+                                  const struct xrt_normalized_rect src_rects[2], //
+                                  VkImage target_image,                          //
+                                  VkImageView target_image_view,                 //
+                                  const struct comp_viewport_data views[2]);     //
+
+void
+comp_rendering_compute_clear(struct comp_rendering_compute *crc,        //
+                             VkImage target_image,                      //
+                             VkImageView target_image_view,             //
+                             const struct comp_viewport_data views[2]); //
+
+bool
+comp_rendering_compute_end(struct comp_rendering_compute *crc);
+
 
 /*!
  * @}

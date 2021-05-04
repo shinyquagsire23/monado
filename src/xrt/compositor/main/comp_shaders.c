@@ -20,6 +20,8 @@
 #pragma GCC diagnostic ignored "-Wnewline-eof"
 
 
+#include "shaders/clear.comp.h"
+#include "shaders/distortion.comp.h"
 #include "shaders/layer.frag.h"
 #include "shaders/layer.vert.h"
 #include "shaders/equirect1.frag.h"
@@ -78,6 +80,16 @@ shader_load(struct vk_bundle *vk, const uint32_t *code, size_t size, VkShaderMod
 bool
 comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s)
 {
+	C(shader_load(vk,                         // vk_bundle
+	              shaders_clear_comp,         // data
+	              sizeof(shaders_clear_comp), // size
+	              &s->clear_comp));           // out
+
+	C(shader_load(vk,                              // vk_bundle
+	              shaders_distortion_comp,         // data
+	              sizeof(shaders_distortion_comp), // size
+	              &s->distortion_comp));           // out
+
 	C(shader_load(vk,                        // vk_bundle
 	              shaders_mesh_vert,         // data
 	              sizeof(shaders_mesh_vert), // size
@@ -128,6 +140,8 @@ comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s)
 void
 comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s)
 {
+	D(clear_comp);
+	D(distortion_comp);
 	D(mesh_vert);
 	D(mesh_frag);
 	D(equirect1_vert);

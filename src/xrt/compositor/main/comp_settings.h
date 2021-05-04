@@ -61,6 +61,8 @@ struct comp_settings
 {
 	int display;
 
+	bool use_compute;
+
 	VkFormat color_format;
 	VkColorSpaceKHR color_space;
 	VkPresentModeKHR present_mode;

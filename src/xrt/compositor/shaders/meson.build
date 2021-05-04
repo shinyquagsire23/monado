@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: BSL-1.0
 
 shader_srcs = [
+	'clear.comp',
+	'distortion.comp',
 	'mesh.frag',
 	'mesh.vert',
 	'layer.vert',
