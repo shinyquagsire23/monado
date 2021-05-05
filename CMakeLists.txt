@@ -63,6 +63,7 @@ find_package(Systemd)
 find_package(OpenGLES COMPONENTS V3)
 find_package(LeapV2)
 find_package(ONNXRuntime)
+find_package(Percetto)
 
 #https://github.com/arsenm/sanitizers-cmake
 find_package(Sanitizers)
@@ -115,7 +116,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	)
 
 	pkg_check_modules(SURVIVE IMPORTED_TARGET survive)
-	pkg_check_modules(PERCETTO percetto)
 else()
 	find_package(OpenGL)
 endif()
