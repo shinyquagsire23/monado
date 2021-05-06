@@ -369,7 +369,10 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 	// vulkan_enable2 needs the physical device in xrCreateVulkanDeviceKHR
 	if (inst->extensions.KHR_vulkan_enable2) {
 		sys->vulkan_enable2_instance = vkInstance;
-		sys->vulkan_enable2_physical_device = *vkPhysicalDevice;
+	}
+	sys->suggested_vulkan_physical_device = *vkPhysicalDevice;
+	if (ll <= U_LOGGING_DEBUG) {
+		oxr_log(log, "Suggesting vulkan physical device %p", (void *)*vkPhysicalDevice);
 	}
 
 	free(phys);

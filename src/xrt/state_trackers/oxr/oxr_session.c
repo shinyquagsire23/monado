@@ -2048,6 +2048,21 @@ oxr_session_create_impl(struct oxr_logger *log,
 			                 "xrGetVulkanGraphicsRequirementsKHR");
 		}
 
+		if (sys->suggested_vulkan_physical_device == VK_NULL_HANDLE) {
+			char *fn = sys->inst->extensions.KHR_vulkan_enable ? "xrGetVulkanGraphicsDeviceKHR"
+			                                                   : "xrGetVulkanGraphicsDevice2KHR";
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Has not called %s", fn);
+		}
+
+		if (sys->suggested_vulkan_physical_device != vulkan->physicalDevice) {
+			char *fn = sys->inst->extensions.KHR_vulkan_enable ? "xrGetVulkanGraphicsDeviceKHR"
+			                                                   : "xrGetVulkanGraphicsDevice2KHR";
+			return oxr_error(
+			    log, XR_ERROR_VALIDATION_FAILURE,
+			    "XrGraphicsBindingVulkanKHR::physicalDevice %p must match device %p specified by %s",
+			    (void *)vulkan->physicalDevice, (void *)sys->suggested_vulkan_physical_device, fn);
+		}
+
 		OXR_SESSION_ALLOCATE(log, sys, *out_session);
 		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_vk(log, sys, vulkan, *out_session);

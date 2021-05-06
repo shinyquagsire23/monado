@@ -403,10 +403,10 @@ oxr_xrCreateVulkanDeviceKHR(XrInstance instance,
 	// VK_NULL_HANDLE is 0
 	OXR_VERIFY_ARG_NOT_NULL(&log, createInfo->vulkanPhysicalDevice);
 
-	OXR_VERIFY_ARG_NOT_NULL(&log, sys->vulkan_enable2_physical_device);
+	OXR_VERIFY_ARG_NOT_NULL(&log, sys->suggested_vulkan_physical_device);
 	OXR_VERIFY_ARG_NOT_NULL(&log, sys->vulkan_enable2_instance);
 
-	if (sys->vulkan_enable2_physical_device != createInfo->vulkanPhysicalDevice) {
+	if (sys->suggested_vulkan_physical_device != createInfo->vulkanPhysicalDevice) {
 		return oxr_error(&log, XR_ERROR_HANDLE_INVALID,
 		                 "createInfo->vulkanPhysicalDevice must be the device "
 		                 "returned by xrGetVulkanGraphicsDeviceKHR");

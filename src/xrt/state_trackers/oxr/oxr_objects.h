@@ -1095,7 +1095,9 @@ struct oxr_system
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 	//! The instance/device we create when vulkan_enable2 is used
 	VkInstance vulkan_enable2_instance;
-	VkPhysicalDevice vulkan_enable2_physical_device;
+	//! The device returned with the last xrGetVulkanGraphicsDeviceKHR or xrGetVulkanGraphicsDevice2KHR call.
+	//! XR_NULL_HANDLE if neither has been called.
+	VkPhysicalDevice suggested_vulkan_physical_device;
 #endif
 };
 

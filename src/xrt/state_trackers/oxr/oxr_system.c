@@ -101,7 +101,7 @@ oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId
 
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 	sys->vulkan_enable2_instance = VK_NULL_HANDLE;
-	sys->vulkan_enable2_physical_device = VK_NULL_HANDLE;
+	sys->suggested_vulkan_physical_device = VK_NULL_HANDLE;
 #endif
 
 	// Headless.
