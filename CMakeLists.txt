@@ -64,6 +64,9 @@ find_package(OpenGLES MODULE COMPONENTS V3)
 find_package(LeapV2 MODULE)
 find_package(ONNXRuntime MODULE)
 find_package(Percetto MODULE)
+if(NOT ANDROID)
+	find_package(PkgConfig MODULE)
+endif()
 
 #https://github.com/arsenm/sanitizers-cmake
 find_package(Sanitizers MODULE)
@@ -78,7 +81,7 @@ else()
 	target_link_libraries(xrt-pthreads INTERFACE Threads::Threads)
 endif()
 
-if(NOT ANDROID)
+if(PKGCONFIG_FOUND AND NOT ANDROID)
 	# @TODO Turn into a find_package LIBUVC file.
 	pkg_check_modules(LIBUVC libuvc)
 
@@ -91,7 +94,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	set(XRT_HAVE_LINUX YES)
 	# Compositor backend
 	find_package(X11)
-	find_package(PkgConfig)
 
 	find_package(udev REQUIRED)
 	set(XRT_HAVE_V4L2 TRUE)
