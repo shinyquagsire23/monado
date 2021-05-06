@@ -14,11 +14,11 @@
 #  FindPackageHandleStandardArgs (known included with CMake >=2.6.2)
 #
 # Original Author:
-# 2009-2010 Ryan Pavlik <rpavlik@iastate.edu> <abiryan@ryand.net>
-# http://academic.cleardefinition.com
-# Iowa State University HCI Graduate Program/VRAC
+# 2009-2010, 2021 Ryan Pavlik <ryanpavlik@gmail.com> <abiryan@ryand.net>
 #
 # Copyright Iowa State University 2009-2010.
+# Copyright Collabora, Ltd 2021.
+#
 # SPDX-License-Identifier: BSL-1.0
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
@@ -47,9 +47,11 @@ if(WIN32)
 	endif()
 else()
 	set(_lib_suffixes)
-	find_package(PkgConfig QUIET)
-	if(PKG_CONFIG_FOUND)
-		pkg_check_modules(PC_LIBUSB1 libusb-1.0)
+	if(NOT ANDROID)
+		find_package(PkgConfig QUIET)
+		if(PKG_CONFIG_FOUND)
+			pkg_check_modules(PC_LIBUSB1 QUIET libusb-1.0)
+		endif()
 	endif()
 endif()
 

@@ -15,7 +15,7 @@
 #
 #=============================================================================
 # Copyright (c) 2015 Jari Vetoniemi
-# Copyright (c) 2020 Collabora, Ltd.
+# Copyright (c) 2020-2021 Collabora, Ltd.
 #
 # Distributed under the OSI-approved BSD License (the "License");
 #
@@ -31,8 +31,13 @@ set_package_properties(
     URL "http://freedesktop.org/wiki/Software/systemd/"
     DESCRIPTION "System and Service Manager")
 
-find_package(PkgConfig)
-pkg_check_modules(PC_SYSTEMD QUIET libsystemd)
+if(NOT ANDROID)
+    find_package(PkgConfig QUIET)
+    if(PKG_CONFIG_FOUND)
+        pkg_check_modules(PC_SYSTEMD QUIET libsystemd)
+    endif()
+endif()
+
 find_library(
     SYSTEMD_LIBRARY
     NAMES systemd
