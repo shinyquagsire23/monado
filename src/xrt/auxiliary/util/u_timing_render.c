@@ -350,6 +350,7 @@ rt_mark_delivered(struct u_render_timing *urt, int64_t frame_id)
 	do_iir_filter(&rt->app.draw_time_ns, IIR_ALPHA_LT, IIR_ALPHA_GT, diff_draw_ns);
 
 	// Trace the data.
+#ifdef XRT_FEATURE_TRACING
 #define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(f->frame_id))
 #define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
 
@@ -367,6 +368,7 @@ rt_mark_delivered(struct u_render_timing *urt, int64_t frame_id)
 
 #undef TE_BEG
 #undef TE_END
+#endif
 
 	// Reset the frame.
 	f->state = U_RT_READY;
