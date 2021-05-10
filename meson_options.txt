@@ -93,6 +93,12 @@ option('service',
 	description: 'Enable separate service module for OpenXR runtime'
 )
 
+option('tracing',
+	type: 'boolean',
+	value: false,
+	description: 'Enable Perfetto/Percetto tracing'
+)
+
 option('layer_depth',
 	type: 'boolean',
 	value: true,

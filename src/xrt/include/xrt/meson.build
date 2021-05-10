@@ -124,6 +124,10 @@ if get_option('service')
 	build_conf.set('XRT_FEATURE_SERVICE', true)
 endif
 
+if get_option('tracing')
+	build_conf.set('XRT_FEATURE_TRACING', true)
+endif
+
 if get_option('color_log')
 	build_conf.set('XRT_FEATURE_COLOR_LOG', true)
 endif
