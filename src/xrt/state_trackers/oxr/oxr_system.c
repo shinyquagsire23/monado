@@ -194,9 +194,14 @@ oxr_system_get_properties(struct oxr_logger *log, struct oxr_system *sys, XrSyst
 	snprintf(properties->systemName, XR_MAX_SYSTEM_NAME_SIZE, "Monado: %.*s", 247, xdev->str);
 
 	// Get from compositor.
-	struct xrt_system_compositor_info *info = &sys->xsysc->info;
+	struct xrt_system_compositor_info *info = sys->xsysc ? &sys->xsysc->info : NULL;
 
-	properties->graphicsProperties.maxLayerCount = info->max_layers;
+	if (info) {
+		properties->graphicsProperties.maxLayerCount = info->max_layers;
+	} else {
+		// probably using the headless extension, but the extension does not modify the 16 layer minimum.
+		properties->graphicsProperties.maxLayerCount = 16;
+	}
 	properties->graphicsProperties.maxSwapchainImageWidth = 1024 * 16;
 	properties->graphicsProperties.maxSwapchainImageHeight = 1024 * 16;
 	properties->trackingProperties.orientationTracking = xdev->orientation_tracking_supported;
