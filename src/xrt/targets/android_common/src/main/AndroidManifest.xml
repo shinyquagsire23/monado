@@ -6,6 +6,9 @@
         SPDX-License-Identifier: BSL-1.0
     -->
 
+    <!-- For display over other apps. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <!-- We may try to use OpenGL|ES 3.0 -->
     <uses-feature
         android:glEsVersion="0x00030002"

@@ -20,12 +20,16 @@ import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.Surface;
 import android.view.SurfaceHolder;
+import android.view.WindowManager;
 
 import androidx.annotation.Keep;
+import androidx.annotation.Nullable;
 
 import org.freedesktop.monado.auxiliary.MonadoView;
 import org.freedesktop.monado.auxiliary.NativeCounterpart;
+import org.freedesktop.monado.auxiliary.SystemUiController;
 
 import java.io.IOException;
 
@@ -38,9 +42,9 @@ import java.io.IOException;
 public class Client implements ServiceConnection {
     private static final String TAG = "monado-ipc-client";
     /**
-     * Used to block native until we have our side of the socket pair.
+     * Used to block until binder is ready.
      */
-    private final Object connectSync = new Object();
+    private final Object binderSync = new Object();
     /**
      * Keep track of the ipc_client_android instance over on the native side.
      */
@@ -76,8 +80,10 @@ public class Client implements ServiceConnection {
      * Intent for connecting to service
      */
     private Intent intent = null;
-
-    private SurfaceHolder surfaceHolder;
+    /**
+     * Controll system ui visibility
+     */
+    private SystemUiController systemUiController = null;
 
     /**
      * Constructor
@@ -124,6 +130,8 @@ public class Client implements ServiceConnection {
      * <p>
      * The IPC client code on Android should load this class (from the right package), instantiate
      * this class (retaining a reference to it!), and call this method.
+     * <p>
+     * This method must not be called from the main (UI) thread.
      *
      * @param context_    Context to use to make the connection. (We get the application context
      *                    from it.)
@@ -140,26 +148,75 @@ public class Client implements ServiceConnection {
     public int blockingConnect(Context context_, String packageName) {
         Log.i(TAG, "blockingConnect");
 
-        Activity activity = (Activity) context_;
-
-        MonadoView monadoView = MonadoView.attachToActivity(activity);
-        surfaceHolder = monadoView.waitGetSurfaceHolder(2000);
-
-        synchronized (connectSync) {
+        synchronized (binderSync) {
             if (!bind(context_, packageName)) {
                 Log.e(TAG, "Bind failed immediately");
                 // Bind failed immediately
                 return -1;
             }
             try {
-                while (fd == null) {
-                    connectSync.wait();
-                }
+                binderSync.wait();
             } catch (InterruptedException e) {
                 Log.e(TAG, "Interrupted: " + e.toString());
                 return -1;
             }
         }
+
+        if (monado == null) {
+            Log.e(TAG, "Invalid binder object");
+            return -1;
+        }
+
+        boolean surfaceCreated = false;
+        Activity activity = (Activity) context_;
+
+        try {
+            // Determine whether runtime or client should create surface
+            if (monado.canDrawOverOtherApps()) {
+                WindowManager wm = (WindowManager) context_.getSystemService(Context.WINDOW_SERVICE);
+                surfaceCreated = monado.createSurface(wm.getDefaultDisplay().getDisplayId(), false);
+            } else {
+                Surface surface = attachViewAndGetSurface(activity);
+                surfaceCreated = (surface != null);
+                if (surfaceCreated) {
+                    monado.passAppSurface(surface);
+                }
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
+        if (!surfaceCreated) {
+            Log.e(TAG, "Failed to create surface");
+            handleFailure();
+            return -1;
+        }
+
+        systemUiController = new SystemUiController(activity);
+        systemUiController.hide();
+
+        // Create socket pair
+        ParcelFileDescriptor theirs;
+        ParcelFileDescriptor ours;
+        try {
+            ParcelFileDescriptor[] fds = ParcelFileDescriptor.createSocketPair();
+            ours = fds[0];
+            theirs = fds[1];
+            monado.connect(theirs);
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e(TAG, "could not create socket pair: " + e.toString());
+            handleFailure();
+            return -1;
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            Log.e(TAG, "could not connect to service: " + e.toString());
+            handleFailure();
+            return -1;
+        }
+
+        fd = ours;
+        Log.i(TAG, "Socket fd " + fd.getFd());
         return fd.getFd();
     }
 
@@ -221,12 +278,20 @@ public class Client implements ServiceConnection {
         shutdown();
     }
 
+    @Nullable
+    private Surface attachViewAndGetSurface(Activity activity) {
+        MonadoView monadoView = MonadoView.attachToActivity(activity);
+        SurfaceHolder holder = monadoView.waitGetSurfaceHolder(2000);
+        Surface surface = null;
+        if (holder != null) {
+            surface = holder.getSurface();
+        }
+
+        return surface;
+    }
+
     /**
      * Handle the asynchronous connection of the binder IPC.
-     * <p>
-     * This sets up the class member `monado`, as well as the member `fd`. It calls
-     * `IMonado.connect()` automatically. The client still needs to call `IMonado.passAppSurface()`
-     * on `monado`.
      *
      * @param name    should match the intent above, but not used.
      * @param service the associated service, which we cast in this function.
@@ -234,40 +299,10 @@ public class Client implements ServiceConnection {
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
         Log.i(TAG, "onServiceConnected");
-        monado = IMonado.Stub.asInterface(service);
 
-        try {
-            monado.passAppSurface(surfaceHolder.getSurface());
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            Log.e(TAG, "Could not pass app surface: " + e.toString());
-        }
-
-        ParcelFileDescriptor theirs;
-        ParcelFileDescriptor ours;
-        try {
-            ParcelFileDescriptor[] fds = ParcelFileDescriptor.createSocketPair();
-            ours = fds[0];
-            theirs = fds[1];
-        } catch (IOException e) {
-            e.printStackTrace();
-            Log.e(TAG, "could not create socket pair: " + e.toString());
-            handleFailure();
-            return;
-        }
-
-        try {
-            monado.connect(theirs);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-            Log.e(TAG, "could not connect to service: " + e.toString());
-            handleFailure();
-            return;
-        }
-        synchronized (connectSync) {
-            Log.e(TAG, String.format("Notifying connectSync with fd %d", ours.getFd()));
-            fd = ours;
-            connectSync.notify();
+        synchronized (binderSync) {
+            monado = IMonado.Stub.asInterface(service);
+            binderSync.notify();
         }
     }
 

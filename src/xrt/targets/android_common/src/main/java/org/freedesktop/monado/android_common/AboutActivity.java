@@ -10,6 +10,7 @@ package org.freedesktop.monado.android_common;
 
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -62,7 +63,8 @@ public class AboutActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.textName)).setText(nameAndLogoProvider.getLocalizedRuntimeName());
         ((ImageView) findViewById(R.id.imageView)).setImageDrawable(nameAndLogoProvider.getLogoDrawable());
 
-        if (!isInProcessBuild()) {
+        boolean isInProcess = isInProcessBuild();
+        if (!isInProcess) {
             ShutdownProcess.Companion.setupRuntimeShutdownButton(this);
         }
 
@@ -77,6 +79,11 @@ public class AboutActivity extends AppCompatActivity {
         VrModeStatus statusFrag = VrModeStatus.newInstance(status);
         fragmentTransaction.add(R.id.statusFrame, statusFrag, null);
 
+        if (!isInProcess) {
+            findViewById(R.id.drawOverOtherAppsFrame).setVisibility(View.VISIBLE);
+            DisplayOverOtherAppsStatusFragment drawOverFragment = new DisplayOverOtherAppsStatusFragment();
+            fragmentTransaction.add(R.id.drawOverOtherAppsFrame, drawOverFragment, null);
+        }
 
         if (noticeFragmentProvider != null) {
             Fragment noticeFragment = noticeFragmentProvider.makeNoticeFragment();

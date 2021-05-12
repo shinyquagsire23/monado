@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+    Copyright 2021, Qualcomm Innovation Center, Inc.
+    SPDX-License-Identifier: BSL-1.0
+-->
+<resources>
+    <!-- Strings for the display over other app status fragment -->
+    <string name="msg_display_over_other_apps">Display over other apps is &lt;b>%1$s&lt;/b> for this runtime.</string>
+    <string name="launch_display_over_other_apps_settings">Open Display over other apps Settings</string>
+    <string name="enabled">enabled</string>
+    <string name="disabled">disabled</string>
+    <string name="msg_display_over_other_apps_changed">Display over other apps settings have been changed, restart is required.</string>
+</resources>

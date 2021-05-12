@@ -26,10 +26,26 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class MonadoService : Service() {
-    private val binder = MonadoImpl()
+    private val binder: MonadoImpl by lazy {
+        MonadoImpl(surfaceManager)
+    }
 
     @Inject
     lateinit var serviceNotification: IServiceNotification
+
+    private lateinit var surfaceManager: SurfaceManager
+
+    override fun onCreate() {
+        super.onCreate()
+
+        surfaceManager = SurfaceManager(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        surfaceManager.destroySurface()
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")

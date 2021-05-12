@@ -13,6 +13,7 @@ package org.freedesktop.monado.ipc;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.Surface;
+import android.view.SurfaceHolder;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
@@ -45,6 +46,27 @@ public class MonadoImpl extends IMonado.Stub {
             this::threadEntry,
             "CompositorThread");
     private boolean started = false;
+
+    private SurfaceManager surfaceManager;
+
+    public MonadoImpl(@NonNull SurfaceManager surfaceManager) {
+        this.surfaceManager = surfaceManager;
+        this.surfaceManager.setCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                Log.i(TAG, "surfaceCreated");
+                nativeAppSurface(holder.getSurface());
+            }
+
+            @Override
+            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
+            }
+
+            @Override
+            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+            }
+        });
+    }
 
     private void launchThreadIfNeeded() {
         synchronized (compositorThread) {
@@ -83,6 +105,18 @@ public class MonadoImpl extends IMonado.Stub {
             return;
         }
         nativeAppSurface(surface);
+    }
+
+    @Override
+    public boolean createSurface(int displayId, boolean focusable) {
+        Log.i(TAG, "createSurface");
+        return surfaceManager.createSurfaceOnDisplay(displayId, focusable);
+    }
+
+    @Override
+    public boolean canDrawOverOtherApps() {
+        Log.i(TAG, "canDrawOverOtherApps");
+        return surfaceManager.canDrawOverlays();
     }
 
     private void threadEntry() {

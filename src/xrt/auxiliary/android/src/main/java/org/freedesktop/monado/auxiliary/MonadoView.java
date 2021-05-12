@@ -33,28 +33,12 @@ import java.util.Calendar;
 public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, SurfaceHolder.Callback2 {
     private static final String TAG = "MonadoView";
 
-    @SuppressWarnings("deprecation")
-    private static final int sysUiVisFlags = 0
-            // Give us a stable view of content insets
-            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            // Be able to do fullscreen and hide navigation
-            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            | View.SYSTEM_UI_FLAG_FULLSCREEN
-            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-            // we want sticky immersive
-            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
-
     @NonNull
     private final Context context;
 
     /// The activity we've connected to.
     @Nullable
     private final Activity activity;
-
-    @Nullable
-    private final Method viewSetSysUiVis;
-
     private final Object currentSurfaceHolderSync = new Object();
 
     public int width = -1;
@@ -77,31 +61,17 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             activity = null;
         }
         this.activity = activity;
-        viewSetSysUiVis = getSystemUiVisMethod();
     }
 
     public MonadoView(Activity activity) {
         super(activity);
         this.context = activity;
         this.activity = activity;
-
-        viewSetSysUiVis = getSystemUiVisMethod();
     }
 
     private MonadoView(Activity activity, long nativePointer) {
         this(activity);
         nativeCounterpart = new NativeCounterpart(nativePointer);
-    }
-
-    private static Method getSystemUiVisMethod() {
-        Method method;
-        try {
-            method = android.view.View.class.getMethod("setSystemUiVisibility", int.class);
-        } catch (NoSuchMethodException e) {
-            // ok
-            method = null;
-        }
-        return method;
     }
 
     /**
@@ -228,43 +198,6 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             nativeCounterpart.markAsDiscardedByNative(TAG);
     }
 
-    private boolean makeFullscreen() {
-        if (activity == null) {
-            return false;
-        }
-        if (viewSetSysUiVis == null) {
-            return false;
-        }
-        View decorView = activity.getWindow().getDecorView();
-        //! @todo implement with WindowInsetsController to ward off the stink of deprecation
-        try {
-            viewSetSysUiVis.invoke(decorView, sysUiVisFlags);
-        } catch (IllegalAccessException e) {
-            return false;
-        } catch (InvocationTargetException e) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Add a listener so that if our system UI display state doesn't include all we want, we re-apply.
-     */
-    @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
-    @SuppressWarnings("deprecation")
-    private void setSystemUiVisChangeListener() {
-        if (activity == null) {
-            return;
-        }
-        activity.getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(visibility -> {
-            // If not fullscreen, fix it.
-            if (0 == (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN)) {
-                makeFullscreen();
-            }
-        });
-
-    }
-
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder surfaceHolder) {
         synchronized (currentSurfaceHolderSync) {
@@ -272,11 +205,6 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             currentSurfaceHolderSync.notifyAll();
         }
         Log.i(TAG, "surfaceCreated: Got a surface holder!");
-
-        if (makeFullscreen()) {
-            // If we could make it full screen, make it really stick.
-            setSystemUiVisChangeListener();
-        }
     }
 
     @Override
