@@ -489,6 +489,11 @@ public:
 
 			struct profile_template *p = get_profile_template(m_xdev->name);
 
+			if (p == NULL) {
+				ovrd_log("Monado device has unknown profile: %d\n", m_xdev->name);
+				return vr::VRInitError_Unknown;
+			}
+
 			m_input_profile = std::string("{monado}/input/") + std::string(p->steamvr_input_profile_path);
 			m_controller_type = p->steamvr_controller_type;
 		}
