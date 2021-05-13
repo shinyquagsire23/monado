@@ -4,6 +4,7 @@
 /*!
  * @file
  * @brief  RealSense helper driver for 6DOF tracking.
+ * @author Moses Turner <mosesturner@protonmail.com>
  * @author Nova King <technobaboo@gmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup drv_rs
@@ -21,6 +22,9 @@
 #include "util/u_time.h"
 #include "util/u_device.h"
 #include "util/u_logging.h"
+
+#include "util/u_json.h"
+#include "util/u_config_json.h"
 
 #include <librealsense2/rs.h>
 #include <librealsense2/h/rs_pipeline.h>
@@ -50,10 +54,13 @@ struct rs_6dof
 	uint64_t relation_timestamp_ns;
 	struct xrt_space_relation relation;
 
-	// arbitrary offset to apply to the pose the t265 gives us
-	struct xrt_pose offset;
-
 	struct os_thread_helper oth;
+
+	bool enable_mapping;
+	bool enable_pose_jumping;
+	bool enable_relocalization;
+	bool enable_pose_prediction;
+	bool enable_pose_filtering; // Forward compatibility for when that 1-euro filter is working
 
 	rs2_context *ctx;
 	rs2_pipeline *pipe;
@@ -115,6 +122,15 @@ close_6dof(struct rs_6dof *rs)
 	}
 }
 
+#define CHECK_RS2()                                                                                                    \
+	do {                                                                                                           \
+		if (check_error(rs, e) != 0) {                                                                         \
+			close_6dof(rs);                                                                                \
+			return 1;                                                                                      \
+		}                                                                                                      \
+	} while (0)
+
+
 /*!
  * Create all RealSense resources needed for 6DOF tracking.
  */
@@ -125,22 +141,13 @@ create_6dof(struct rs_6dof *rs)
 	rs2_error *e = NULL;
 
 	rs->ctx = rs2_create_context(RS2_API_VERSION, &e);
-	if (check_error(rs, e) != 0) {
-		close_6dof(rs);
-		return 1;
-	}
+	CHECK_RS2();
 
 	rs2_device_list *device_list = rs2_query_devices(rs->ctx, &e);
-	if (check_error(rs, e) != 0) {
-		close_6dof(rs);
-		return 1;
-	}
+	CHECK_RS2();
 
 	int dev_count = rs2_get_device_count(device_list, &e);
-	if (check_error(rs, e) != 0) {
-		close_6dof(rs);
-		return 1;
-	}
+	CHECK_RS2();
 
 	U_LOG_D("There are %d connected RealSense devices.", dev_count);
 	if (0 == dev_count) {
@@ -149,16 +156,10 @@ create_6dof(struct rs_6dof *rs)
 	}
 
 	rs->pipe = rs2_create_pipeline(rs->ctx, &e);
-	if (check_error(rs, e) != 0) {
-		close_6dof(rs);
-		return 1;
-	}
+	CHECK_RS2();
 
 	rs->config = rs2_create_config(&e);
-	if (check_error(rs, e) != 0) {
-		close_6dof(rs);
-		return 1;
-	}
+	CHECK_RS2();
 
 	rs2_config_enable_stream(rs->config,      //
 	                         RS2_STREAM_POSE, // Type
@@ -168,28 +169,41 @@ create_6dof(struct rs_6dof *rs)
 	                         RS2_FORMAT_6DOF, // Format
 	                         200,             // FPS
 	                         &e);
-	if (check_error(rs, e) != 0) {
-		close_6dof(rs);
-		return 1;
+	CHECK_RS2();
+
+	rs2_pipeline_profile *prof = rs2_config_resolve(rs->config, rs->pipe, &e);
+	CHECK_RS2();
+
+	rs2_device *cameras = rs2_pipeline_profile_get_device(prof, &e);
+	CHECK_RS2();
+
+	rs2_sensor_list *sensors = rs2_query_sensors(cameras, &e);
+	CHECK_RS2();
+
+	rs2_sensor *sensor = rs2_create_sensor(sensors, 0, &e);
+	CHECK_RS2();
+
+	rs2_set_option((rs2_options *)sensor, RS2_OPTION_ENABLE_MAPPING, rs->enable_mapping ? 1.0f : 0.0f, &e);
+	CHECK_RS2();
+
+	if (rs->enable_mapping) {
+		// Neither of these options mean anything if mapping is off; in fact it errors out
+		// if we mess with these
+		// with mapping off
+		rs2_set_option((rs2_options *)sensor, RS2_OPTION_ENABLE_RELOCALIZATION,
+		               rs->enable_relocalization ? 1.0f : 0.0f, &e);
+		CHECK_RS2();
+
+		rs2_set_option((rs2_options *)sensor, RS2_OPTION_ENABLE_POSE_JUMPING,
+		               rs->enable_pose_jumping ? 1.0f : 0.0f, &e);
+		CHECK_RS2();
 	}
 
 	rs->profile = rs2_pipeline_start_with_config(rs->pipe, rs->config, &e);
-	if (check_error(rs, e) != 0) {
-		close_6dof(rs);
-		return 1;
-	}
+	CHECK_RS2();
 
 	return 0;
 }
-
-
-void
-rs_update_offset(struct xrt_pose offset, struct xrt_device *xdev)
-{
-	struct rs_6dof *rs = rs_6dof(xdev);
-	memcpy(&rs->offset, &offset, sizeof(struct xrt_pose));
-}
-
 
 /*!
  * Process a frame as 6DOF data, does not assume ownership of the frame.
@@ -354,15 +368,13 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 
 	int64_t diff_prediction_ns = 0;
 	diff_prediction_ns = at_timestamp_ns - relation_timestamp_ns;
-	struct xrt_space_relation relation;
 
 	double delta_s = time_ns_to_s(diff_prediction_ns);
-	m_predict_relation(&relation_not_predicted, delta_s, &relation);
-
-	struct xrt_space_graph xsg = {0};
-	m_space_graph_add_pose(&xsg, &rs->offset);
-	m_space_graph_add_relation(&xsg, &relation);
-	m_space_graph_resolve(&xsg, out_relation);
+	if (rs->enable_pose_prediction) {
+		m_predict_relation(&relation_not_predicted, delta_s, out_relation);
+	} else {
+		*out_relation = relation_not_predicted;
+	}
 }
 static void
 rs_6dof_get_view_pose(struct xrt_device *xdev,
@@ -390,9 +402,45 @@ struct xrt_device *
 rs_6dof_create(void)
 {
 	struct rs_6dof *rs = U_DEVICE_ALLOCATE(struct rs_6dof, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
-	rs->offset =
-	    (struct xrt_pose){.orientation = {.x = 0, .y = 0, .z = 0, .w = 1}, .position = {.x = 0, .y = 0, .z = 0}};
-	int ret = 0;
+
+	rs->enable_mapping = true;
+	rs->enable_pose_jumping = true;
+	rs->enable_relocalization = true;
+	rs->enable_pose_prediction = true;
+	rs->enable_pose_filtering = true;
+
+	struct u_config_json config_json;
+	u_config_json_open_or_create_main_file(&config_json);
+	cJSON *realsense_config_json = cJSON_GetObjectItemCaseSensitive(config_json.root, "config_realsense");
+	if (realsense_config_json != NULL) {
+		cJSON *mapping = cJSON_GetObjectItemCaseSensitive(realsense_config_json, "enable_mapping");
+		cJSON *pose_jumping = cJSON_GetObjectItemCaseSensitive(realsense_config_json, "enable_pose_jumping");
+		cJSON *relocalization =
+		    cJSON_GetObjectItemCaseSensitive(realsense_config_json, "enable_relocalization");
+		cJSON *pose_prediction =
+		    cJSON_GetObjectItemCaseSensitive(realsense_config_json, "enable_pose_prediction");
+		cJSON *pose_filtering =
+		    cJSON_GetObjectItemCaseSensitive(realsense_config_json, "enable_pose_filtering");
+
+		// if json key isn't in the json, default to true. if it is in there, use json value
+		if (mapping != NULL) {
+			rs->enable_mapping = cJSON_IsTrue(mapping);
+		}
+		if (pose_jumping != NULL) {
+			rs->enable_pose_jumping = cJSON_IsTrue(pose_jumping);
+		}
+		if (relocalization != NULL) {
+			rs->enable_relocalization = cJSON_IsTrue(relocalization);
+		}
+		if (pose_prediction != NULL) {
+			rs->enable_pose_prediction = cJSON_IsTrue(pose_prediction);
+		}
+		if (pose_filtering != NULL) {
+			rs->enable_pose_filtering = cJSON_IsTrue(pose_filtering);
+		}
+	}
+	U_LOG_D("Realsense opts are %i %i %i %i %i\n", rs->enable_mapping, rs->enable_pose_jumping,
+	        rs->enable_relocalization, rs->enable_pose_prediction, rs->enable_pose_filtering);
 
 	rs->base.update_inputs = rs_6dof_update_inputs;
 	rs->base.get_tracked_pose = rs_6dof_get_tracked_pose;
@@ -408,6 +456,10 @@ rs_6dof_create(void)
 	snprintf(rs->base.serial, XRT_DEVICE_NAME_LEN, "Intel RealSense 6-DOF");
 
 	rs->base.inputs[0].name = XRT_INPUT_GENERIC_TRACKER_POSE;
+
+	int ret = 0;
+
+
 
 	// Thread and other state.
 	ret = os_thread_helper_init(&rs->oth);

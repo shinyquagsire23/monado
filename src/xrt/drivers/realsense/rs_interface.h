@@ -29,9 +29,6 @@ extern "C" {
 struct xrt_device *
 rs_6dof_create(void);
 
-void
-rs_update_offset(struct xrt_pose offset, struct xrt_device *xdev);
-
 /*!
  * Create a auto prober for rs devices.
  *

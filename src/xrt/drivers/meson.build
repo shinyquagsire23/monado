@@ -127,7 +127,7 @@ lib_drv_rs = static_library(
 		'realsense/rs_interface.h',
 		'realsense/rs_prober.c',
 	),
-	include_directories: xrt_include,
+	include_directories: [xrt_include,cjson_include],
 	dependencies: [aux, rs],
 	build_by_default: 'rs' in drivers,
 )
