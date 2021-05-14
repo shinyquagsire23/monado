@@ -1,20 +1,23 @@
 # Tracing with Perfetto {#tracing-perfetto}
 
 <!--
-Copyright 2021-2022, Collabora, Ltd. and the Monado contributors
+Copyright 2021-2023, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
 ## Requirements
 
-Monado uses the [Perfetto][]/[Percetto][] framework for tracining support, you
+Monado uses the [Perfetto][]/[Percetto][] framework for tracing support. You
 need to first build and install [Percetto][] in a place where CMake can find it.
-Build [Perfetto][] (you will have gotten the source at least  as part of build
+Build [Perfetto][] (you will have gotten the source at least as part of build
 [Percetto][]). It is a good idea to familiarise yourself with Perfetto before
-proceeding. You then need to build Monado with CMake and give make sure
+proceeding. You then need to build Monado with CMake and make sure
 `XRT_FEATURE_TRACING` is enabled.
 
-* Build and install [Percetto][].
+* Build and install [Percetto][] - **note** Depending on the version of Percetto
+  you are using you might need to have a release version of Perfetto available
+  or use the one that is included in percetto. A release version of Perfetto is
+  needed due to the `sdk/` directory and amalgamated files is only made there.
 * Build and get [Perfetto][] running.
 * Build Monado with CMake and with `XRT_FEATURE_TRACING` being `ON`.
 
@@ -24,7 +27,7 @@ Save the following file to `data_events.cfg`, next to your perfetto folder.
 Please refer to [Perfetto][] documentation about the format and options of this
 config file, but the most important bits is the `tracker_event` section.
 
-```c
+```none
 flush_period_ms: 30000
 
 incremental_state_config {

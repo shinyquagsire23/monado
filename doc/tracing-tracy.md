@@ -1,7 +1,7 @@
 # Tracing with Tracy {#tracing-tracy}
 
 <!--
-Copyright 2022, Collabora, Ltd. and the Monado contributors
+Copyright 2022-2023, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
@@ -21,7 +21,7 @@ is also required, but the order doesn't matter.
 
 Start the [Tracy][] profiler, either try to connect directly to the host you
 want to run Monado on, or wait for it to show up in the first initial UI. Then
-run Monado like you normally would, for example like below.
+run Monado like you normally would, for example as follows.
 
 ```bash
 monado-serivce
@@ -30,8 +30,8 @@ monado-serivce
 ## Notes
 
 Unlike @ref tracing-perfetto Tracy supports Windows, it also supports live
-viewing of the data stream. But Tracy can only trace on application at a time
-where as Perfetto can do multiple processes at the same time and whole system
-tracing giving a higher level overview of the whole system.
+viewing of the data stream. But Tracy can only trace one application at a time,
+whereas Perfetto can do multiple processes at the same time and whole system
+tracing, giving a higher level overview of the whole system.
 
 [Tracy]: https://github.com/wolfpld/tracy
