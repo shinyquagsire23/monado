@@ -114,6 +114,8 @@ ahardwarebuffer_images_allocate(struct xrt_image_native_allocator *xina,
 	desc.width = xsci->width;
 	desc.format = ahb_format;
 	desc.layers = xsci->array_size;
+	// Monado always samples layers
+	desc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
 	if (xsci->face_count == 6) {
 		desc.usage |= AHARDWAREBUFFER_USAGE_GPU_CUBE_MAP;
 		desc.layers *= 6;
@@ -121,15 +123,6 @@ ahardwarebuffer_images_allocate(struct xrt_image_native_allocator *xina,
 	if (0 != (xsci->bits & (XRT_SWAPCHAIN_USAGE_COLOR | XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL))) {
 		desc.usage |= AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER;
 	}
-
-	// The compositor always needs to sample the buffer, add the flag.
-	desc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
-
-	// Here if the above changes.
-	if (0 != (xsci->bits & XRT_SWAPCHAIN_USAGE_SAMPLED)) {
-		desc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
-	}
-
 	if (0 != (xsci->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT)) {
 		desc.usage |= AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
 	}
