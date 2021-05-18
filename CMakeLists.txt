@@ -145,7 +145,7 @@ endforeach()
 option(BUILD_TESTING "Enable building of the test suite?" ON)
 
 option(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" ON)
-option(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" OFF)
+cmake_dependent_option(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" OFF "XRT_HAVE_PERCETTO" OFF)
 
 cmake_dependent_option(CMAKE_INTERPROCEDURAL_OPTIMIZATION "Enable inter-procedural (link-time) optimization" OFF "HAS_IPO" OFF)
 cmake_dependent_option(XRT_HAVE_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND AND WAYLAND_SCANNER_FOUND AND WAYLAND_PROTOCOLS_FOUND AND LIBDRM_FOUND" OFF)
