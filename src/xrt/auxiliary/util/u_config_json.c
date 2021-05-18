@@ -41,6 +41,7 @@ u_config_json_close(struct u_config_json *json)
 void
 u_config_json_open_or_create_main_file(struct u_config_json *json)
 {
+	json->file_loaded = false;
 #if defined(XRT_OS_LINUX) && !defined(XRT_OS_ANDROID)
 	char tmp[1024];
 	ssize_t ret = u_file_get_path_in_config_dir(CONFIG_FILE_NAME, tmp, sizeof(tmp));
