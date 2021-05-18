@@ -3,7 +3,7 @@
 
 buildscript {
     ext {
-        kotlinVersion = '1.4.32'
+        kotlinVersion = '1.5.0'
 
         // Skip 8.8.6 - see https://github.com/mikepenz/AboutLibraries/issues/648
         latestAboutLibsRelease = '8.8.5'
@@ -24,6 +24,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.2.1'
+        //noinspection DifferentKotlinGradleVersion
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "com.mikepenz.aboutlibraries.plugin:aboutlibraries-plugin:${latestAboutLibsRelease}"
         classpath 'com.quittle:svg-2-android-vector:0.0.5'
