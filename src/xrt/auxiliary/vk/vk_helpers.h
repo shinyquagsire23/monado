@@ -117,6 +117,8 @@ struct vk_bundle
 
 	PFN_vkGetPhysicalDeviceFormatProperties vkGetPhysicalDeviceFormatProperties;
 
+	PFN_vkGetPhysicalDeviceImageFormatProperties2 vkGetPhysicalDeviceImageFormatProperties2;
+
 
 	// Device functions.
 	PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;

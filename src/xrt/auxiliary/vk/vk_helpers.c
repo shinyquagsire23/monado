@@ -341,6 +341,44 @@ vk_create_image_from_native(struct vk_bundle *vk,
 #error "need port"
 #endif
 
+	VkPhysicalDeviceExternalImageFormatInfo external_image_format_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
+	    .handleType = external_memory_image_create_info.handleTypes,
+	};
+
+	VkPhysicalDeviceImageFormatInfo2 format_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+	    .pNext = &external_image_format_info,
+	    .format = (VkFormat)info->format,
+	    .type = VK_IMAGE_TYPE_2D,
+	    .tiling = VK_IMAGE_TILING_OPTIMAL,
+	    .usage = image_usage,
+	};
+
+	VkExternalImageFormatProperties external_format_properties = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
+	};
+
+	VkImageFormatProperties2 format_properties = {
+	    .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+	    .pNext = &external_format_properties,
+	};
+
+	ret = vk->vkGetPhysicalDeviceImageFormatProperties2(vk->physical_device, &format_info, &format_properties);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkGetPhysicalDeviceImageFormatProperties2: %s", vk_result_string(ret));
+		// Nothing to cleanup
+		return ret;
+	}
+
+	VkExternalMemoryFeatureFlags features =
+	    external_format_properties.externalMemoryProperties.externalMemoryFeatures;
+
+	if ((features & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0) {
+		VK_ERROR(vk, "External memory handle is not importable (has features: %d)", features);
+		return VK_ERROR_INITIALIZATION_FAILED;
+	}
+
 	VkImageCreateInfo vk_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .pNext = &external_memory_image_create_info,
@@ -778,6 +816,7 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkGetPhysicalDeviceSurfaceSupportKHR      = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceSupportKHR);
 	vk->vkGetPhysicalDeviceFormatProperties       = GET_INS_PROC(vk, vkGetPhysicalDeviceFormatProperties);
 	vk->vkEnumerateDeviceExtensionProperties      = GET_INS_PROC(vk, vkEnumerateDeviceExtensionProperties);
+	vk->vkGetPhysicalDeviceImageFormatProperties2 = GET_INS_PROC(vk, vkGetPhysicalDeviceImageFormatProperties2);
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 	vk->vkCreateXcbSurfaceKHR = GET_INS_PROC(vk, vkCreateXcbSurfaceKHR);
