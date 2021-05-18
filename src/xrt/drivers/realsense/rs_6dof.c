@@ -409,39 +409,42 @@ rs_6dof_create(void)
 	rs->enable_pose_prediction = true;
 	rs->enable_pose_filtering = true;
 
-	struct u_config_json config_json;
-	u_config_json_open_or_create_main_file(&config_json);
-	cJSON *realsense_config_json = cJSON_GetObjectItemCaseSensitive(config_json.root, "config_realsense");
-	if (realsense_config_json != NULL) {
-		cJSON *mapping = cJSON_GetObjectItemCaseSensitive(realsense_config_json, "enable_mapping");
-		cJSON *pose_jumping = cJSON_GetObjectItemCaseSensitive(realsense_config_json, "enable_pose_jumping");
-		cJSON *relocalization =
-		    cJSON_GetObjectItemCaseSensitive(realsense_config_json, "enable_relocalization");
-		cJSON *pose_prediction =
-		    cJSON_GetObjectItemCaseSensitive(realsense_config_json, "enable_pose_prediction");
-		cJSON *pose_filtering =
-		    cJSON_GetObjectItemCaseSensitive(realsense_config_json, "enable_pose_filtering");
+	struct u_config_json config_json = {0};
 
-		// if json key isn't in the json, default to true. if it is in there, use json value
-		if (mapping != NULL) {
-			rs->enable_mapping = cJSON_IsTrue(mapping);
+	u_config_json_open_or_create_main_file(&config_json);
+	if (config_json.file_loaded) {
+		const cJSON *realsense_config_json = u_json_get(config_json.root, "config_realsense");
+		if (realsense_config_json != NULL) {
+			const cJSON *mapping = u_json_get(realsense_config_json, "enable_mapping");
+			const cJSON *pose_jumping = u_json_get(realsense_config_json, "enable_pose_jumping");
+			const cJSON *relocalization = u_json_get(realsense_config_json, "enable_relocalization");
+			const cJSON *pose_prediction = u_json_get(realsense_config_json, "enable_pose_prediction");
+			const cJSON *pose_filtering = u_json_get(realsense_config_json, "enable_pose_filtering");
+
+			// if json key isn't in the json, default to true. if it is in there, use json value
+			if (mapping != NULL) {
+				rs->enable_mapping = cJSON_IsTrue(mapping);
+			}
+			if (pose_jumping != NULL) {
+				rs->enable_pose_jumping = cJSON_IsTrue(pose_jumping);
+			}
+			if (relocalization != NULL) {
+				rs->enable_relocalization = cJSON_IsTrue(relocalization);
+			}
+			if (pose_prediction != NULL) {
+				rs->enable_pose_prediction = cJSON_IsTrue(pose_prediction);
+			}
+			if (pose_filtering != NULL) {
+				rs->enable_pose_filtering = cJSON_IsTrue(pose_filtering);
+			}
 		}
-		if (pose_jumping != NULL) {
-			rs->enable_pose_jumping = cJSON_IsTrue(pose_jumping);
-		}
-		if (relocalization != NULL) {
-			rs->enable_relocalization = cJSON_IsTrue(relocalization);
-		}
-		if (pose_prediction != NULL) {
-			rs->enable_pose_prediction = cJSON_IsTrue(pose_prediction);
-		}
-		if (pose_filtering != NULL) {
-			rs->enable_pose_filtering = cJSON_IsTrue(pose_filtering);
-		}
+		U_LOG_D("Used config file");
+	} else {
+		U_LOG_D("Did not use config file");
 	}
+
 	U_LOG_D("Realsense opts are %i %i %i %i %i\n", rs->enable_mapping, rs->enable_pose_jumping,
 	        rs->enable_relocalization, rs->enable_pose_prediction, rs->enable_pose_filtering);
-
 	rs->base.update_inputs = rs_6dof_update_inputs;
 	rs->base.get_tracked_pose = rs_6dof_get_tracked_pose;
 	rs->base.get_view_pose = rs_6dof_get_view_pose;
