@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -212,9 +212,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	vk->vkGetImageMemoryRequirements(vk->device, image, &memory_requirements);
 
 	if (max_size > 0 && memory_requirements.size > max_size) {
-		VK_ERROR(vk,
-		         "client_vk_swapchain - Got too little memory "
-		         "%u vs %u\n",
+		VK_ERROR(vk, "client_vk_swapchain - Got too little memory %u vs %u\n",
 		         (uint32_t)memory_requirements.size, (uint32_t)max_size);
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
 	}
@@ -313,9 +311,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 {
 	VkImageUsageFlags image_usage = vk_swapchain_usage_flags(vk, (VkFormat)info->format, info->bits);
 	if (image_usage == 0) {
-		U_LOG_E(
-		    "vk_create_image_from_native: Unsupported swapchain usage "
-		    "flags");
+		U_LOG_E("vk_create_image_from_native: Unsupported swapchain usage flags");
 		return VK_ERROR_FEATURE_NOT_PRESENT;
 	}
 
@@ -1000,10 +996,8 @@ vk_select_physical_device(struct vk_bundle *vk, int forced_index)
 	uint32_t gpu_index = 0;
 	if (forced_index > -1) {
 		if ((uint32_t)forced_index + 1 > gpu_count) {
-			VK_ERROR(vk,
-			         "Attempted to force GPU index %d, but only %d "
-			         "GPUs are available",
-			         forced_index, gpu_count);
+			VK_ERROR(vk, "Attempted to force GPU index %d, but only %d GPUs are available", forced_index,
+			         gpu_count);
 			return VK_ERROR_DEVICE_LOST;
 		}
 		gpu_index = forced_index;
@@ -1146,10 +1140,7 @@ vk_build_device_extensions(struct vk_bundle *vk,
 	for (uint32_t i = 0; i < num_required_device_extensions; i++) {
 		const char *ext = required_device_extensions[i];
 		if (!vk_check_extension(vk, props, num_props, ext)) {
-			U_LOG_E(
-			    "VkPhysicalDevice does not support required "
-			    "extension %s",
-			    ext);
+			U_LOG_E("VkPhysicalDevice does not support required extension %s", ext);
 			free(props);
 			return false;
 		}
@@ -1383,11 +1374,9 @@ check_feature(VkFormat format,
               VkFormatFeatureFlags flag)
 {
 	if ((format_features & flag) == 0) {
-		U_LOG_E(
-		    "vk_swapchain_usage_flags: %s requested but %s not "
-		    "supported for format %s (%08x) (%08x)",
-		    xrt_swapchain_usage_string(usage), vk_format_feature_string(flag), vk_color_format_string(format),
-		    format_features, flag);
+		U_LOG_E("vk_swapchain_usage_flags: %s requested but %s not supported for format %s (%08x) (%08x)",
+		        xrt_swapchain_usage_string(usage), vk_format_feature_string(flag),
+		        vk_color_format_string(format), format_features, flag);
 		return false;
 	}
 	return true;
@@ -1508,8 +1497,10 @@ vk_buffer_init(struct vk_bundle *vk,
 	VkMemoryRequirements requirements;
 	vk->vkGetBufferMemoryRequirements(vk->device, *out_buffer, &requirements);
 
-	VkMemoryAllocateInfo alloc_info = {.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-	                                   .allocationSize = requirements.size};
+	VkMemoryAllocateInfo alloc_info = {
+	    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+	    .allocationSize = requirements.size,
+	};
 
 	if (!vk_get_memory_type(vk, requirements.memoryTypeBits, properties, &alloc_info.memoryTypeIndex)) {
 		VK_ERROR(vk, "Failed to find matching memoryTypeIndex for buffer");
