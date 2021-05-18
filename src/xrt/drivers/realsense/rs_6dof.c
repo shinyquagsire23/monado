@@ -342,6 +342,54 @@ rs_run_thread(void *ptr)
 	return NULL;
 }
 
+static bool
+load_config(struct rs_6dof *rs)
+{
+	struct u_config_json config_json = {0};
+
+	u_config_json_open_or_create_main_file(&config_json);
+	if (!config_json.file_loaded) {
+		return false;
+	}
+
+	const cJSON *realsense_config_json = u_json_get(config_json.root, "config_realsense");
+	if (realsense_config_json == NULL) {
+		return false;
+	}
+
+	const cJSON *mapping = u_json_get(realsense_config_json, "enable_mapping");
+	const cJSON *pose_jumping = u_json_get(realsense_config_json, "enable_pose_jumping");
+	const cJSON *relocalization = u_json_get(realsense_config_json, "enable_relocalization");
+	const cJSON *pose_prediction = u_json_get(realsense_config_json, "enable_pose_prediction");
+	const cJSON *pose_filtering = u_json_get(realsense_config_json, "enable_pose_filtering");
+
+	// if json key isn't in the json, default to true. if it is in there, use json value
+	if (mapping != NULL) {
+		rs->enable_mapping = cJSON_IsTrue(mapping);
+	}
+	if (pose_jumping != NULL) {
+		rs->enable_pose_jumping = cJSON_IsTrue(pose_jumping);
+	}
+	if (relocalization != NULL) {
+		rs->enable_relocalization = cJSON_IsTrue(relocalization);
+	}
+	if (pose_prediction != NULL) {
+		rs->enable_pose_prediction = cJSON_IsTrue(pose_prediction);
+	}
+	if (pose_filtering != NULL) {
+		rs->enable_pose_filtering = cJSON_IsTrue(pose_filtering);
+	}
+
+	return true;
+}
+
+
+/*
+ *
+ * Device functions.
+ *
+ */
+
 static void
 rs_6dof_update_inputs(struct xrt_device *xdev)
 {
@@ -398,6 +446,13 @@ rs_6dof_destroy(struct xrt_device *xdev)
 	free(rs);
 }
 
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
 struct xrt_device *
 rs_6dof_create(void)
 {
@@ -409,35 +464,7 @@ rs_6dof_create(void)
 	rs->enable_pose_prediction = true;
 	rs->enable_pose_filtering = true;
 
-	struct u_config_json config_json = {0};
-
-	u_config_json_open_or_create_main_file(&config_json);
-	if (config_json.file_loaded) {
-		const cJSON *realsense_config_json = u_json_get(config_json.root, "config_realsense");
-		if (realsense_config_json != NULL) {
-			const cJSON *mapping = u_json_get(realsense_config_json, "enable_mapping");
-			const cJSON *pose_jumping = u_json_get(realsense_config_json, "enable_pose_jumping");
-			const cJSON *relocalization = u_json_get(realsense_config_json, "enable_relocalization");
-			const cJSON *pose_prediction = u_json_get(realsense_config_json, "enable_pose_prediction");
-			const cJSON *pose_filtering = u_json_get(realsense_config_json, "enable_pose_filtering");
-
-			// if json key isn't in the json, default to true. if it is in there, use json value
-			if (mapping != NULL) {
-				rs->enable_mapping = cJSON_IsTrue(mapping);
-			}
-			if (pose_jumping != NULL) {
-				rs->enable_pose_jumping = cJSON_IsTrue(pose_jumping);
-			}
-			if (relocalization != NULL) {
-				rs->enable_relocalization = cJSON_IsTrue(relocalization);
-			}
-			if (pose_prediction != NULL) {
-				rs->enable_pose_prediction = cJSON_IsTrue(pose_prediction);
-			}
-			if (pose_filtering != NULL) {
-				rs->enable_pose_filtering = cJSON_IsTrue(pose_filtering);
-			}
-		}
+	if (load_config(rs)) {
 		U_LOG_D("Used config file");
 	} else {
 		U_LOG_D("Did not use config file");
