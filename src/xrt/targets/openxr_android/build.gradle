@@ -35,7 +35,7 @@ project.ext.renameLicense = { String name ->
     return result
 }
 
-project.ext.filterLicense = {String line ->
+project.ext.filterLicense = { String line ->
     if (line.trim().isEmpty()) {
         return '<br /><br />'
     } else {
