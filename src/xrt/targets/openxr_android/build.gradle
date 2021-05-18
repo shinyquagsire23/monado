@@ -69,7 +69,7 @@ task copyDownloadedLicenses(type: Copy) {
 }
 android {
     compileSdkVersion project.sharedTargetSdk
-    buildToolsVersion '30.0.2'
+    buildToolsVersion '30.0.3'
 
     ndkVersion "${ndk_version}"
 
