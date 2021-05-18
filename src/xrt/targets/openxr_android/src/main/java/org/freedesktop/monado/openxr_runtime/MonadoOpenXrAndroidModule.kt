@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,7 +11,7 @@ package org.freedesktop.monado.openxr_runtime
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
-import dagger.hilt.android.components.ApplicationComponent
+import dagger.hilt.components.SingletonComponent
 import org.freedesktop.monado.android_common.NoticeFragmentProvider
 import org.freedesktop.monado.android_common.ServiceNotificationImpl
 import org.freedesktop.monado.auxiliary.IServiceNotification
@@ -25,7 +25,7 @@ import org.freedesktop.monado.auxiliary.UiProvider
  * base/interface to use for each thing it must inject.
  */
 @Module
-@InstallIn(ApplicationComponent::class)
+@InstallIn(SingletonComponent::class)
 abstract class MonadoOpenXrAndroidModule {
     @Binds
     abstract fun bindUiProvider(uiProvider: MonadoOpenXrUiProvider): UiProvider

@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 
 buildscript {
@@ -14,7 +14,7 @@ buildscript {
         androidxLifecycleVersion = "2.2.0"
         androidxConstraintLayoutVersion = '2.0.4'
 
-        hiltVersion = "2.29.1-alpha"
+        hiltVersion = '2.35.1'
 
         // Saw some breakage when updating to 1.2?
         materialVersion = "1.1.0"
