@@ -15,10 +15,10 @@ import javax.inject.Inject
 
 class AboutLibrariesNoticeFragmentProvider @Inject constructor() : NoticeFragmentProvider {
     override fun makeNoticeFragment(): Fragment = LibsBuilder()
-            .withFields(R.string::class.java.fields) // We do this ourselves bigger
-            .withAboutIconShown(false) // Let the fragment show our version
-            .withAboutVersionShown(true) // Not sure why you'd do this without license info
-            .withLicenseShown(true)
-            .supportFragment()
+        .withFields(R.string::class.java.fields)
+        .withAboutIconShown(false) // We do this ourselves bigger
+        .withAboutVersionShown(true) // Let the fragment show our version
+        .withLicenseShown(true) // Not sure why you'd do this without license info
+        .supportFragment()
 
 }
