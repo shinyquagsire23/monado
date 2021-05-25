@@ -97,6 +97,8 @@ if(XRT_HAVE_OPENCV)
 		tracking/t_debug_hsv_picker.cpp
 		tracking/t_debug_hsv_viewer.cpp
 		tracking/t_file.cpp
+		tracking/t_frame_cv_mat_wrapper.cpp
+		tracking/t_frame_cv_mat_wrapper.hpp
 		tracking/t_fusion.hpp
 		tracking/t_helper_debug_sink.hpp
 		tracking/t_hsv_filter.c
