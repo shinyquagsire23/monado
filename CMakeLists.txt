@@ -67,10 +67,10 @@ find_library(Leap
 	PATHS /usr/local/lib
 	)
 if (Leap)
- include_directories(include /usr/local/include/)
- message(STATUS "Found libLeap: ${Leap}")
+	include_directories(include /usr/local/include/)
+	message(STATUS "Found libLeap: ${Leap}")
 else()
- message(STATUS "Could NOT find libLeap: (missing: /usr/local/lib/libLeap.so)")
+	message(STATUS "Could NOT find libLeap: (missing: /usr/local/lib/libLeap.so)")
 endif()
 
 
@@ -327,8 +327,8 @@ add_subdirectory(src)
 add_subdirectory(doc)
 
 if(BUILD_TESTING)
-    include(CTest)
-    add_subdirectory(tests)
+	include(CTest)
+	add_subdirectory(tests)
 endif()
 
 message(STATUS "#####----- Config -----#####")
@@ -344,7 +344,6 @@ message(STATUS "#    OPENGL:          ${XRT_HAVE_OPENGL}")
 message(STATUS "#    OPENGLES:        ${XRT_HAVE_OPENGLES}")
 message(STATUS "#    EGL:             ${XRT_HAVE_EGL}")
 message(STATUS "#    DBUS:            ${XRT_HAVE_DBUS}")
-message(STATUS "#    VF:              ${XRT_HAVE_VF}")
 message(STATUS "#    LIBBSD:          ${XRT_HAVE_LIBBSD}")
 message(STATUS "#    SYSTEMD:         ${XRT_HAVE_SYSTEMD}")
 message(STATUS "#    LIBUSB:          ${XRT_HAVE_LIBUSB}")
