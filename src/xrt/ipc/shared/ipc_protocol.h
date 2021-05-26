@@ -37,6 +37,8 @@
 #define IPC_SHARED_MAX_OUTPUTS 128
 #define IPC_SHARED_MAX_BINDINGS 64
 
+// example: v21.0.0-560-g586d33b5
+#define IPC_VERSION_NAME_LEN 64
 
 /*
  *
@@ -174,6 +176,11 @@ struct ipc_layer_slot
  */
 struct ipc_shared_memory
 {
+	/*!
+	 * The git revision of the service, used by clients to detect version mismatches.
+	 */
+	char u_git_tag[IPC_VERSION_NAME_LEN];
+
 	/*!
 	 * Number of elements in @ref itracks that are populated/valid.
 	 */

@@ -16,6 +16,7 @@
 #include "util/u_misc.h"
 #include "util/u_var.h"
 #include "util/u_debug.h"
+#include "util/u_git_tag.h"
 
 #include "shared/ipc_protocol.h"
 #include "client/ipc_client.h"
@@ -301,6 +302,13 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 	ii->ipc_c.ism = mmap(NULL, size, access, flags, ii->ipc_c.ism_handle, 0);
 	if (ii->ipc_c.ism == NULL) {
 		IPC_ERROR((&ii->ipc_c), "Failed to mmap shm!");
+		free(ii);
+		return -1;
+	}
+
+	if (strncmp(u_git_tag, ii->ipc_c.ism->u_git_tag, IPC_VERSION_NAME_LEN) != 0) {
+		IPC_ERROR((&ii->ipc_c), "Monado client library version %s does not match service version %s", u_git_tag,
+		          ii->ipc_c.ism->u_git_tag);
 		free(ii);
 		return -1;
 	}

@@ -23,6 +23,8 @@
 #include "util/u_verify.h"
 #include "util/u_process.h"
 
+#include "util/u_git_tag.h"
+
 #include "shared/ipc_shmem.h"
 #include "server/ipc_server.h"
 
@@ -319,6 +321,8 @@ init_shm(struct ipc_server *s)
 
 	// Finally tell the client how many devices we have.
 	s->ism->num_isdevs = count;
+
+	snprintf(s->ism->u_git_tag, IPC_VERSION_NAME_LEN, "%s", u_git_tag);
 
 	return 0;
 }
