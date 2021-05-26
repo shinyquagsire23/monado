@@ -45,6 +45,7 @@
 #endif // XRT_OS_ANDROID
 
 DEBUG_GET_ONCE_LOG_OPTION(ipc_log, "IPC_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_BOOL_OPTION(ipc_ignore_version, "IPC_IGNORE_VERSION", false)
 
 /*
  *
@@ -309,8 +310,11 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 	if (strncmp(u_git_tag, ii->ipc_c.ism->u_git_tag, IPC_VERSION_NAME_LEN) != 0) {
 		IPC_ERROR((&ii->ipc_c), "Monado client library version %s does not match service version %s", u_git_tag,
 		          ii->ipc_c.ism->u_git_tag);
-		free(ii);
-		return -1;
+		if (!debug_get_bool_option_ipc_ignore_version()) {
+			IPC_ERROR((&ii->ipc_c), "Set IPC_IGNORE_VERSION=1 to ignore this version conflict");
+			free(ii);
+			return -1;
+		}
 	}
 
 	uint32_t count = 0;
