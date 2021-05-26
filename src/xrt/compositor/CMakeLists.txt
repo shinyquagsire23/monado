@@ -88,6 +88,7 @@ endif()
 if(XRT_HAVE_EGL)
 	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_egl_client.c
+		client/comp_egl_client.h
 		)
 endif()
 

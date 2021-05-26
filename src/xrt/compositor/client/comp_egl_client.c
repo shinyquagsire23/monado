@@ -22,6 +22,7 @@
 #include "ogl/ogl_api.h"
 
 #include "client/comp_gl_client.h"
+#include "client/comp_egl_client.h"
 #include "client/comp_gl_memobj_swapchain.h"
 #include "client/comp_gl_eglimage_swapchain.h"
 
@@ -118,39 +119,9 @@ old_restore(struct old_helper *old, EGLDisplay current_dpy)
 
 /*
  *
- * EGL compositor subclass.
- *
- */
-
-/*!
- * EGL based compositor, carries the extra needed EGL information needed by the
- * client side code and can handle both GL Desktop or GLES contexts.
- *
- * @ingroup comp_client
- */
-struct client_egl_compositor
-{
-	struct client_gl_compositor base;
-
-	EGLDisplay dpy;
-};
-
-
-/*
- *
  * Helper functions.
  *
  */
-
-/*!
- * Down-cast helper.
- * @protected @memberof client_egl_compositor
- */
-static inline struct client_egl_compositor *
-client_egl_compositor(struct xrt_compositor *xc)
-{
-	return (struct client_egl_compositor *)xc;
-}
 
 XRT_MAYBE_UNUSED static bool
 has_extension(const char *extensions, const char *ext)
