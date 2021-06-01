@@ -896,6 +896,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCmdBindIndexBuffer          = GET_DEV_PROC(vk, vkCmdBindIndexBuffer);
 	vk->vkCmdDraw                     = GET_DEV_PROC(vk, vkCmdDraw);
 	vk->vkCmdDrawIndexed              = GET_DEV_PROC(vk, vkCmdDrawIndexed);
+	vk->vkCmdDispatch                 = GET_DEV_PROC(vk, vkCmdDispatch);
 	vk->vkEndCommandBuffer            = GET_DEV_PROC(vk, vkEndCommandBuffer);
 	vk->vkFreeCommandBuffers          = GET_DEV_PROC(vk, vkFreeCommandBuffers);
 	vk->vkCreateRenderPass            = GET_DEV_PROC(vk, vkCreateRenderPass);
@@ -904,10 +905,12 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkDestroyFramebuffer          = GET_DEV_PROC(vk, vkDestroyFramebuffer);
 	vk->vkCreatePipelineCache         = GET_DEV_PROC(vk, vkCreatePipelineCache);
 	vk->vkDestroyPipelineCache        = GET_DEV_PROC(vk, vkDestroyPipelineCache);
+	vk->vkResetDescriptorPool         = GET_DEV_PROC(vk, vkResetDescriptorPool);
 	vk->vkCreateDescriptorPool        = GET_DEV_PROC(vk, vkCreateDescriptorPool);
 	vk->vkDestroyDescriptorPool       = GET_DEV_PROC(vk, vkDestroyDescriptorPool);
 	vk->vkAllocateDescriptorSets      = GET_DEV_PROC(vk, vkAllocateDescriptorSets);
 	vk->vkFreeDescriptorSets          = GET_DEV_PROC(vk, vkFreeDescriptorSets);
+	vk->vkCreateComputePipelines      = GET_DEV_PROC(vk, vkCreateComputePipelines);
 	vk->vkCreateGraphicsPipelines     = GET_DEV_PROC(vk, vkCreateGraphicsPipelines);
 	vk->vkDestroyPipeline             = GET_DEV_PROC(vk, vkDestroyPipeline);
 	vk->vkCreatePipelineLayout        = GET_DEV_PROC(vk, vkCreatePipelineLayout);

@@ -175,6 +175,7 @@ struct vk_bundle
 	PFN_vkCmdBindIndexBuffer vkCmdBindIndexBuffer;
 	PFN_vkCmdDraw vkCmdDraw;
 	PFN_vkCmdDrawIndexed vkCmdDrawIndexed;
+	PFN_vkCmdDispatch vkCmdDispatch;
 	PFN_vkEndCommandBuffer vkEndCommandBuffer;
 	PFN_vkFreeCommandBuffers vkFreeCommandBuffers;
 
@@ -184,10 +185,12 @@ struct vk_bundle
 	PFN_vkDestroyFramebuffer vkDestroyFramebuffer;
 	PFN_vkCreatePipelineCache vkCreatePipelineCache;
 	PFN_vkDestroyPipelineCache vkDestroyPipelineCache;
+	PFN_vkResetDescriptorPool vkResetDescriptorPool;
 	PFN_vkCreateDescriptorPool vkCreateDescriptorPool;
 	PFN_vkDestroyDescriptorPool vkDestroyDescriptorPool;
 	PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets;
 	PFN_vkFreeDescriptorSets vkFreeDescriptorSets;
+	PFN_vkCreateComputePipelines vkCreateComputePipelines;
 	PFN_vkCreateGraphicsPipelines vkCreateGraphicsPipelines;
 	PFN_vkDestroyPipeline vkDestroyPipeline;
 	PFN_vkCreatePipelineLayout vkCreatePipelineLayout;
