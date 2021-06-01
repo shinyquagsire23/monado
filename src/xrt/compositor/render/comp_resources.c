@@ -85,28 +85,41 @@ static VkResult
 create_descriptor_pool(struct vk_bundle *vk,
                        uint32_t num_uniform_per_desc,
                        uint32_t num_sampler_per_desc,
+                       uint32_t num_storage_per_desc,
                        uint32_t num_descs,
                        VkDescriptorPool *out_descriptor_pool)
 {
 	VkResult ret;
 
 
-	VkDescriptorPoolSize pool_sizes[2] = {
-	    {
-	        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-	        .descriptorCount = num_uniform_per_desc * num_descs,
-	    },
-	    {
-	        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-	        .descriptorCount = num_sampler_per_desc * num_descs,
-	    },
-	};
+	uint32_t count = 0;
+	VkDescriptorPoolSize pool_sizes[3] = {0};
+
+	if (num_uniform_per_desc > 0) {
+		pool_sizes[count].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		pool_sizes[count].descriptorCount = num_uniform_per_desc * num_descs;
+		count++;
+	}
+
+	if (num_sampler_per_desc > 0) {
+		pool_sizes[count].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		pool_sizes[count].descriptorCount = num_sampler_per_desc * num_descs;
+		count++;
+	}
+
+	if (num_storage_per_desc > 0) {
+		pool_sizes[count].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		pool_sizes[count].descriptorCount = num_storage_per_desc * num_descs;
+		count++;
+	}
+
+	assert(count > 0 && count <= ARRAY_SIZE(pool_sizes));
 
 	VkDescriptorPoolCreateInfo descriptor_pool_info = {
 	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 	    .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 	    .maxSets = num_descs,
-	    .poolSizeCount = ARRAY_SIZE(pool_sizes),
+	    .poolSizeCount = count,
 	    .pPoolSizes = pool_sizes,
 	};
 
@@ -277,6 +290,7 @@ comp_resources_init(struct comp_compositor *c, struct comp_resources *r)
 	C(create_descriptor_pool(vk,                         // vk_bundle
 	                         1,                          // num_uniform_per_desc
 	                         1,                          // num_sampler_per_desc
+	                         0,                          // num_storage_per_desc
 	                         16 * 2,                     // num_descs
 	                         &r->mesh_descriptor_pool)); // out_descriptor_pool
 
