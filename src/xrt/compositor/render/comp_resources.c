@@ -87,6 +87,7 @@ create_descriptor_pool(struct vk_bundle *vk,
                        uint32_t num_sampler_per_desc,
                        uint32_t num_storage_per_desc,
                        uint32_t num_descs,
+                       bool freeable,
                        VkDescriptorPool *out_descriptor_pool)
 {
 	VkResult ret;
@@ -115,9 +116,15 @@ create_descriptor_pool(struct vk_bundle *vk,
 
 	assert(count > 0 && count <= ARRAY_SIZE(pool_sizes));
 
+	VkDescriptorPoolCreateFlags flags = 0;
+
+	if (freeable) {
+		flags |= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+	}
+
 	VkDescriptorPoolCreateInfo descriptor_pool_info = {
 	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-	    .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+	    .flags = flags,
 	    .maxSets = num_descs,
 	    .poolSizeCount = count,
 	    .pPoolSizes = pool_sizes,
@@ -292,6 +299,7 @@ comp_resources_init(struct comp_compositor *c, struct comp_resources *r)
 	                         1,                          // num_sampler_per_desc
 	                         0,                          // num_storage_per_desc
 	                         16 * 2,                     // num_descs
+	                         true,                       // freeable
 	                         &r->mesh_descriptor_pool)); // out_descriptor_pool
 
 	C(create_mesh_descriptor_set_layout(vk,                               // vk_bundle
