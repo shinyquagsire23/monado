@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -35,10 +35,11 @@
  * interested in should support one these.
  */
 static VkFormat preferred_color_formats[] = {
-    VK_FORMAT_R8G8B8A8_SRGB,
-    VK_FORMAT_R8G8B8A8_UNORM,
-    VK_FORMAT_B8G8R8A8_UNORM,
-    VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+    VK_FORMAT_B8G8R8A8_SRGB,         //
+    VK_FORMAT_R8G8B8A8_SRGB,         //
+    VK_FORMAT_B8G8R8A8_UNORM,        //
+    VK_FORMAT_R8G8B8A8_UNORM,        //
+    VK_FORMAT_A8B8G8R8_UNORM_PACK32, // Just in case.
 };
 
 
