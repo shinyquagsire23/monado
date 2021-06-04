@@ -336,6 +336,12 @@ _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, Vk
 		return false;
 	}
 
+	// Dump formats
+	for (uint32_t i = 0; i < num_formats; i++) {
+		COMP_SPEW(cts->base.c, "VkSurfaceFormatKHR: %i [%s, %s]", i, vk_color_format_string(formats[i].format),
+		          vk_color_space_string(formats[i].colorSpace));
+	}
+
 	VkSurfaceFormatKHR *formats_for_colorspace = NULL;
 	formats_for_colorspace = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, num_formats);
 
@@ -344,6 +350,7 @@ _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, Vk
 
 	// Gather formats that match our color space, we will select
 	// from these in preference to others.
+
 
 	for (uint32_t i = 0; i < num_formats; i++) {
 		if (formats[i].colorSpace == cts->preferred.color_space) {
@@ -393,8 +400,7 @@ _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, Vk
 				if (formats[i].format == preferred_color_formats[j]) {
 					*format = formats_for_colorspace[i];
 					COMP_ERROR(cts->base.c,
-					           "Returning known-wrong color "
-					           "space! Color shift may occur.");
+					           "Returning known-wrong color space! Color shift may occur.");
 					goto cleanup;
 				}
 			}
@@ -404,8 +410,7 @@ _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, Vk
 		// list of preferred formats, but its something.
 		*format = formats[0];
 		COMP_ERROR(cts->base.c,
-		           "Returning fallback format! cue up some Kenny "
-		           "Loggins, cos we're in the DANGER ZONE!");
+		           "Returning fallback format! cue up some Kenny Loggins, cos we're in the DANGER ZONE!");
 		goto cleanup;
 	}
 
@@ -415,6 +420,16 @@ _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, Vk
 cleanup:
 	free(formats_for_colorspace);
 	free(formats);
+
+	COMP_DEBUG(cts->base.c,
+	           "VkSurfaceFormatKHR"
+	           "\n\tpicked: [format = %s, colorSpace = %s]"
+	           "\n\tpreferred: [format = %s, colorSpace = %s]",
+	           vk_color_format_string(format->format),              //
+	           vk_color_space_string(format->colorSpace),           //
+	           vk_color_format_string(cts->preferred.color_format), //
+	           vk_color_space_string(cts->preferred.color_space));  //
+
 	return true;
 
 error:
@@ -510,8 +525,12 @@ comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts)
 
 	for (uint32_t i = 0; i < cts->base.num_images; i++) {
 		cts->base.images[i].handle = images[i];
-		vk_create_view(vk, cts->base.images[i].handle, cts->surface.format.format, subresource_range,
-		               &cts->base.images[i].view);
+		vk_create_view(                 //
+		    vk,                         // vk_bundle
+		    cts->base.images[i].handle, // image
+		    cts->surface.format.format, // format
+		    subresource_range,          // subresource_range
+		    &cts->base.images[i].view); // out_view
 	}
 
 	free(images);
