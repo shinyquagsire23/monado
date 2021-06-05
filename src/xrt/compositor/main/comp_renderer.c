@@ -420,13 +420,14 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 	// Make we sure we destroy all dependent things before creating new images.
 	renderer_close_renderings_and_fences(r);
 
-	comp_target_create_images(           //
-	    r->c->target,                    //
-	    r->c->settings.preferred.width,  //
-	    r->c->settings.preferred.height, //
-	    r->settings->color_format,       //
-	    r->settings->color_space,        //
-	    r->settings->present_mode);      //
+	comp_target_create_images(               //
+	    r->c->target,                        //
+	    r->c->settings.preferred.width,      //
+	    r->c->settings.preferred.height,     //
+	    r->settings->color_format,           //
+	    r->settings->color_space,            //
+	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, //
+	    r->settings->present_mode);          //
 
 	r->num_buffers = r->c->target->num_images;
 

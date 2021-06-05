@@ -89,6 +89,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
                                     uint32_t preferred_height,
                                     VkFormat color_format,
                                     VkColorSpaceKHR color_space,
+                                    VkImageUsageFlags image_usage,
                                     VkPresentModeKHR present_mode)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
@@ -173,7 +174,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	            .height = extent.height,
 	        },
 	    .imageArrayLayers = 1,
-	    .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+	    .imageUsage = image_usage,
 	    .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	    .queueFamilyIndexCount = 0,
 	    .preTransform = surface_caps.currentTransform,

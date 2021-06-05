@@ -123,6 +123,7 @@ struct comp_target
 	                      uint32_t preferred_height,
 	                      VkFormat preferred_color_format,
 	                      VkColorSpaceKHR preferred_color_space,
+	                      VkImageUsageFlags image_usage,
 	                      VkPresentModeKHR present_mode);
 
 	/*!
@@ -263,6 +264,7 @@ comp_target_create_images(struct comp_target *ct,
                           uint32_t preferred_height,
                           VkFormat preferred_color_format,
                           VkColorSpaceKHR preferred_color_space,
+                          VkImageUsageFlags image_usage,
                           VkPresentModeKHR present_mode)
 {
 	COMP_TRACE_MARKER();
@@ -273,6 +275,7 @@ comp_target_create_images(struct comp_target *ct,
 	    preferred_height,       //
 	    preferred_color_format, //
 	    preferred_color_space,  //
+	    image_usage,            //
 	    present_mode);          //
 }
 
