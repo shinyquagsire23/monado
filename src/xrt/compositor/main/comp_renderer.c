@@ -304,10 +304,16 @@ renderer_create_renderings_and_fences(struct comp_renderer *r)
 	}
 
 	for (uint32_t i = 0; i < r->num_buffers; i++) {
-		VkResult ret = vk->vkCreateFence(vk->device,
-		                                 &(VkFenceCreateInfo){.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		                                                      .flags = VK_FENCE_CREATE_SIGNALED_BIT},
-		                                 NULL, &r->fences[i]);
+		VkFenceCreateInfo fence_info = {
+		    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		    .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+		};
+
+		VkResult ret = vk->vkCreateFence( //
+		    vk->device,                   //
+		    &fence_info,                  //
+		    NULL,                         //
+		    &r->fences[i]);               //
 		if (ret != VK_SUCCESS) {
 			COMP_ERROR(r->c, "vkCreateFence: %s", vk_result_string(ret));
 		}
