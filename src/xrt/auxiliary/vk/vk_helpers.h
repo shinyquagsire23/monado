@@ -371,6 +371,7 @@ vk_init_cmd_pool(struct vk_bundle *vk);
 VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
+                 bool only_compute,
                  VkQueueGlobalPriorityEXT global_priorty,
                  const char *const *required_device_extensions,
                  size_t num_required_device_extensions,

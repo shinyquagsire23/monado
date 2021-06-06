@@ -898,6 +898,7 @@ compositor_init_vulkan(struct comp_compositor *c)
 		ret = vk_create_device(                      //
 		    vk,                                      //
 		    c->settings.selected_gpu_index,          //
+		    false,                                   // compute_only
 		    prios[i],                                // global_priority
 		    required_device_extensions,              //
 		    ARRAY_SIZE(required_device_extensions),  //
@@ -1113,6 +1114,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	ret = vk_create_device(                      //
 	    temp_vk,                                 //
 	    c->settings.selected_gpu_index,          //
+	    false,                                   // compute_only
 	    VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT,     // global_priority
 	    required_device_extensions,              //
 	    ARRAY_SIZE(required_device_extensions),  //

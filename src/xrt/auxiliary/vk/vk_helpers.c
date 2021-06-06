@@ -1080,6 +1080,50 @@ err_free:
 	return VK_ERROR_INITIALIZATION_FAILED;
 }
 
+static VkResult
+vk_find_compute_only_queue(struct vk_bundle *vk, uint32_t *out_compute_queue)
+{
+	/* Find the first graphics queue */
+	uint32_t num_queues = 0;
+	uint32_t i = 0;
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &num_queues, NULL);
+
+	VkQueueFamilyProperties *queue_family_props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, num_queues);
+
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &num_queues, queue_family_props);
+
+	if (num_queues == 0) {
+		VK_DEBUG(vk, "Failed to get queue properties");
+		goto err_free;
+	}
+
+	for (i = 0; i < num_queues; i++) {
+		if (queue_family_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			continue;
+		}
+
+		if (queue_family_props[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
+			break;
+		}
+	}
+
+	if (i >= num_queues) {
+		VK_DEBUG(vk, "No compute only queue found");
+		goto err_free;
+	}
+
+	*out_compute_queue = i;
+
+	free(queue_family_props);
+
+	return VK_SUCCESS;
+
+err_free:
+	free(queue_family_props);
+
+	return VK_ERROR_INITIALIZATION_FAILED;
+}
+
 static bool
 vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t num_props, const char *ext)
 {
@@ -1174,6 +1218,7 @@ vk_build_device_extensions(struct vk_bundle *vk,
 VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
+                 bool only_compute,
                  VkQueueGlobalPriorityEXT global_priority,
                  const char *const *required_device_extensions,
                  size_t num_required_device_extensions,
@@ -1202,18 +1247,24 @@ vk_create_device(struct vk_bundle *vk,
 	    .globalPriority = global_priority,
 	};
 
+	if (only_compute) {
+		ret = vk_find_compute_only_queue(vk, &vk->queue_family_index);
+	} else {
+		ret = vk_find_graphics_queue(vk, &vk->queue_family_index);
+	}
+
+	if (ret != VK_SUCCESS) {
+		return ret;
+	}
+
 	float queue_priority = 0.0f;
 	VkDeviceQueueCreateInfo queue_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
 	    .pNext = vk->has_EXT_global_priority ? &priority_info : NULL,
 	    .queueCount = 1,
+	    .queueFamilyIndex = vk->queue_family_index,
 	    .pQueuePriorities = &queue_priority,
 	};
-
-	ret = vk_find_graphics_queue(vk, &queue_create_info.queueFamilyIndex);
-	if (ret != VK_SUCCESS) {
-		return ret;
-	}
 
 	VkDeviceCreateInfo device_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
