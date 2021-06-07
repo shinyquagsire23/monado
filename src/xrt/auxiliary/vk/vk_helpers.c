@@ -835,6 +835,14 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkGetPhysicalDeviceFormatProperties       = GET_INS_PROC(vk, vkGetPhysicalDeviceFormatProperties);
 	vk->vkEnumerateDeviceExtensionProperties      = GET_INS_PROC(vk, vkEnumerateDeviceExtensionProperties);
 	vk->vkGetPhysicalDeviceImageFormatProperties2 = GET_INS_PROC(vk, vkGetPhysicalDeviceImageFormatProperties2);
+#ifdef VK_USE_PLATFORM_DISPLAY_KHR
+	vk->vkCreateDisplayPlaneSurfaceKHR            = GET_INS_PROC(vk, vkCreateDisplayPlaneSurfaceKHR);
+	vk->vkGetDisplayPlaneCapabilitiesKHR             = GET_INS_PROC(vk, vkGetDisplayPlaneCapabilitiesKHR);
+	vk->vkGetPhysicalDeviceDisplayPropertiesKHR      = GET_INS_PROC(vk, vkGetPhysicalDeviceDisplayPropertiesKHR);
+	vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR = GET_INS_PROC(vk, vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
+	vk->vkGetDisplayModePropertiesKHR                = GET_INS_PROC(vk, vkGetDisplayModePropertiesKHR);
+	vk->vkReleaseDisplayEXT                          = GET_INS_PROC(vk, vkReleaseDisplayEXT);
+#endif
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 	vk->vkCreateXcbSurfaceKHR = GET_INS_PROC(vk, vkCreateXcbSurfaceKHR);
@@ -842,17 +850,16 @@ vk_get_instance_functions(struct vk_bundle *vk)
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
 	vk->vkCreateWaylandSurfaceKHR = GET_INS_PROC(vk, vkCreateWaylandSurfaceKHR);
+
+#ifdef VK_EXT_acquire_drm_display
+	vk->vkAcquireDrmDisplayEXT                    = GET_INS_PROC(vk, vkAcquireDrmDisplayEXT);
+	vk->vkGetDrmDisplayEXT                        = GET_INS_PROC(vk, vkGetDrmDisplayEXT);
+#endif
 #endif
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-	vk->vkCreateDisplayPlaneSurfaceKHR               = GET_INS_PROC(vk, vkCreateDisplayPlaneSurfaceKHR);
-	vk->vkGetDisplayPlaneCapabilitiesKHR             = GET_INS_PROC(vk, vkGetDisplayPlaneCapabilitiesKHR);
-	vk->vkGetPhysicalDeviceDisplayPropertiesKHR      = GET_INS_PROC(vk, vkGetPhysicalDeviceDisplayPropertiesKHR);
-	vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR = GET_INS_PROC(vk, vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
-	vk->vkGetDisplayModePropertiesKHR                = GET_INS_PROC(vk, vkGetDisplayModePropertiesKHR);
-	vk->vkAcquireXlibDisplayEXT                      = GET_INS_PROC(vk, vkAcquireXlibDisplayEXT);
-	vk->vkReleaseDisplayEXT                          = GET_INS_PROC(vk, vkReleaseDisplayEXT);
 	vk->vkGetRandROutputDisplayEXT                   = GET_INS_PROC(vk, vkGetRandROutputDisplayEXT);
+	vk->vkAcquireXlibDisplayEXT                      = GET_INS_PROC(vk, vkAcquireXlibDisplayEXT);
 #endif
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR

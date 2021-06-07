@@ -75,6 +75,9 @@ struct vk_bundle
 	PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices;
 	PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
 	PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties;
+#ifdef VK_USE_PLATFORM_DISPLAY_KHR
+	PFN_vkCreateDisplayPlaneSurfaceKHR vkCreateDisplayPlaneSurfaceKHR;
+#endif
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 	PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
@@ -82,21 +85,15 @@ struct vk_bundle
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
 	PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
+#ifdef VK_EXT_acquire_drm_display
+	PFN_vkAcquireDrmDisplayEXT vkAcquireDrmDisplayEXT;
+	PFN_vkGetDrmDisplayEXT vkGetDrmDisplayEXT;
+#endif
 #endif
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	PFN_vkAcquireXlibDisplayEXT vkAcquireXlibDisplayEXT;
-	PFN_vkReleaseDisplayEXT vkReleaseDisplayEXT;
 	PFN_vkGetRandROutputDisplayEXT vkGetRandROutputDisplayEXT;
-#endif
-
-#if defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT) || defined(VK_USE_PLATFORM_DISPLAY_KHR)
-	PFN_vkCreateDisplayPlaneSurfaceKHR vkCreateDisplayPlaneSurfaceKHR;
-	PFN_vkGetDisplayPlaneCapabilitiesKHR vkGetDisplayPlaneCapabilitiesKHR;
-
-	PFN_vkGetPhysicalDeviceDisplayPropertiesKHR vkGetPhysicalDeviceDisplayPropertiesKHR;
-	PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR vkGetPhysicalDeviceDisplayPlanePropertiesKHR;
-	PFN_vkGetDisplayModePropertiesKHR vkGetDisplayModePropertiesKHR;
 #endif
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
@@ -123,6 +120,13 @@ struct vk_bundle
 
 	PFN_vkGetPhysicalDeviceImageFormatProperties2 vkGetPhysicalDeviceImageFormatProperties2;
 
+#ifdef VK_USE_PLATFORM_DISPLAY_KHR
+	PFN_vkGetDisplayModePropertiesKHR vkGetDisplayModePropertiesKHR;
+	PFN_vkGetPhysicalDeviceDisplayPropertiesKHR vkGetPhysicalDeviceDisplayPropertiesKHR;
+	PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR vkGetPhysicalDeviceDisplayPlanePropertiesKHR;
+	PFN_vkGetDisplayPlaneCapabilitiesKHR vkGetDisplayPlaneCapabilitiesKHR;
+	PFN_vkReleaseDisplayEXT vkReleaseDisplayEXT;
+#endif
 
 	// Device functions.
 	PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;
