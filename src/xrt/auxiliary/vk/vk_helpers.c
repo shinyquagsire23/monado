@@ -897,6 +897,8 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCmdDraw                     = GET_DEV_PROC(vk, vkCmdDraw);
 	vk->vkCmdDrawIndexed              = GET_DEV_PROC(vk, vkCmdDrawIndexed);
 	vk->vkCmdDispatch                 = GET_DEV_PROC(vk, vkCmdDispatch);
+	vk->vkCmdCopyBufferToImage        = GET_DEV_PROC(vk, vkCmdCopyBufferToImage);
+	vk->vkCmdCopyImageToBuffer        = GET_DEV_PROC(vk, vkCmdCopyImageToBuffer);
 	vk->vkEndCommandBuffer            = GET_DEV_PROC(vk, vkEndCommandBuffer);
 	vk->vkFreeCommandBuffers          = GET_DEV_PROC(vk, vkFreeCommandBuffers);
 	vk->vkCreateRenderPass            = GET_DEV_PROC(vk, vkCreateRenderPass);

@@ -176,6 +176,8 @@ struct vk_bundle
 	PFN_vkCmdDraw vkCmdDraw;
 	PFN_vkCmdDrawIndexed vkCmdDrawIndexed;
 	PFN_vkCmdDispatch vkCmdDispatch;
+	PFN_vkCmdCopyBufferToImage vkCmdCopyBufferToImage;
+	PFN_vkCmdCopyImageToBuffer vkCmdCopyImageToBuffer;
 	PFN_vkEndCommandBuffer vkEndCommandBuffer;
 	PFN_vkFreeCommandBuffers vkFreeCommandBuffers;
 
