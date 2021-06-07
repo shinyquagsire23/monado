@@ -131,6 +131,64 @@ renderer_init_semaphores(struct comp_renderer *r)
 	}
 }
 
+static void
+calc_viewport_data(struct comp_renderer *r,
+                   struct comp_viewport_data *out_l_viewport_data,
+                   struct comp_viewport_data *out_r_viewport_data)
+{
+	struct comp_compositor *c = r->c;
+
+	bool pre_rotate = false;
+	if (r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+	    r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+		COMP_SPEW(c, "Swapping width and height, since we are pre rotating");
+		pre_rotate = true;
+	}
+
+	float w = pre_rotate ? r->c->xdev->hmd->screens[0].h_pixels : r->c->xdev->hmd->screens[0].w_pixels;
+	float h = pre_rotate ? r->c->xdev->hmd->screens[0].w_pixels : r->c->xdev->hmd->screens[0].h_pixels;
+
+	float scale_x = (float)r->c->target->width / w;
+	float scale_y = (float)r->c->target->height / h;
+
+	struct xrt_view *l_v = &r->c->xdev->hmd->views[0];
+	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
+
+	struct comp_viewport_data l_viewport_data;
+	struct comp_viewport_data r_viewport_data;
+
+	if (pre_rotate) {
+		l_viewport_data = (struct comp_viewport_data){
+		    .x = (uint32_t)(l_v->viewport.y_pixels * scale_x),
+		    .y = (uint32_t)(l_v->viewport.x_pixels * scale_y),
+		    .w = (uint32_t)(l_v->viewport.h_pixels * scale_x),
+		    .h = (uint32_t)(l_v->viewport.w_pixels * scale_y),
+		};
+		r_viewport_data = (struct comp_viewport_data){
+		    .x = (uint32_t)(r_v->viewport.y_pixels * scale_x),
+		    .y = (uint32_t)(r_v->viewport.x_pixels * scale_y),
+		    .w = (uint32_t)(r_v->viewport.h_pixels * scale_x),
+		    .h = (uint32_t)(r_v->viewport.w_pixels * scale_y),
+		};
+	} else {
+		l_viewport_data = (struct comp_viewport_data){
+		    .x = (uint32_t)(l_v->viewport.x_pixels * scale_x),
+		    .y = (uint32_t)(l_v->viewport.y_pixels * scale_y),
+		    .w = (uint32_t)(l_v->viewport.w_pixels * scale_x),
+		    .h = (uint32_t)(l_v->viewport.h_pixels * scale_y),
+		};
+		r_viewport_data = (struct comp_viewport_data){
+		    .x = (uint32_t)(r_v->viewport.x_pixels * scale_x),
+		    .y = (uint32_t)(r_v->viewport.y_pixels * scale_y),
+		    .w = (uint32_t)(r_v->viewport.w_pixels * scale_x),
+		    .h = (uint32_t)(r_v->viewport.h_pixels * scale_y),
+		};
+	}
+
+	*out_l_viewport_data = l_viewport_data;
+	*out_r_viewport_data = r_viewport_data;
+}
+
 //! @pre comp_target_has_images(r->c->target)
 static void
 renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uint32_t index)
@@ -146,39 +204,25 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	bool pre_rotate = false;
 	if (r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
 	    r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
-		COMP_DEBUG(c,
-		           "Swapping width and height,"
-		           "since we are pre rotating");
+		COMP_DEBUG(c, "Swapping width and height, since we are pre rotating");
 		pre_rotate = true;
 	}
 
+	struct comp_viewport_data l_viewport_data;
+	struct comp_viewport_data r_viewport_data;
 
-	float w = pre_rotate ? r->c->xdev->hmd->screens[0].h_pixels : r->c->xdev->hmd->screens[0].w_pixels;
-	float h = pre_rotate ? r->c->xdev->hmd->screens[0].w_pixels : r->c->xdev->hmd->screens[0].h_pixels;
-
-	float scale_x = (float)r->c->target->width / w;
-	float scale_y = (float)r->c->target->height / h;
+	calc_viewport_data(r, &l_viewport_data, &r_viewport_data);
 
 	struct xrt_view *l_v = &r->c->xdev->hmd->views[0];
+	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
 
+	struct comp_mesh_ubo_data l_data = {
+	    .vertex_rot = l_v->rot,
+	};
 
-	struct comp_viewport_data l_viewport_data;
-
-	if (pre_rotate) {
-		l_viewport_data = (struct comp_viewport_data){
-		    .x = (uint32_t)(l_v->viewport.y_pixels * scale_x),
-		    .y = (uint32_t)(l_v->viewport.x_pixels * scale_y),
-		    .w = (uint32_t)(l_v->viewport.h_pixels * scale_x),
-		    .h = (uint32_t)(l_v->viewport.w_pixels * scale_y),
-		};
-	} else {
-		l_viewport_data = (struct comp_viewport_data){
-		    .x = (uint32_t)(l_v->viewport.x_pixels * scale_x),
-		    .y = (uint32_t)(l_v->viewport.y_pixels * scale_y),
-		    .w = (uint32_t)(l_v->viewport.w_pixels * scale_x),
-		    .h = (uint32_t)(l_v->viewport.h_pixels * scale_y),
-		};
-	}
+	struct comp_mesh_ubo_data r_data = {
+	    .vertex_rot = r_v->rot,
+	};
 
 	const struct xrt_matrix_2x2 rotation_90_cw = {{
 	    .vecs =
@@ -188,40 +232,8 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	        },
 	}};
 
-
-	struct comp_mesh_ubo_data l_data = {
-	    .vertex_rot = l_v->rot,
-	};
-
 	if (pre_rotate) {
 		math_matrix_2x2_multiply(&l_v->rot, &rotation_90_cw, &l_data.vertex_rot);
-	}
-
-	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
-
-	struct comp_viewport_data r_viewport_data;
-
-	if (pre_rotate) {
-		r_viewport_data = (struct comp_viewport_data){
-		    .x = (uint32_t)(r_v->viewport.y_pixels * scale_x),
-		    .y = (uint32_t)(r_v->viewport.x_pixels * scale_y),
-		    .w = (uint32_t)(r_v->viewport.h_pixels * scale_x),
-		    .h = (uint32_t)(r_v->viewport.w_pixels * scale_y),
-		};
-	} else {
-		r_viewport_data = (struct comp_viewport_data){
-		    .x = (uint32_t)(r_v->viewport.x_pixels * scale_x),
-		    .y = (uint32_t)(r_v->viewport.y_pixels * scale_y),
-		    .w = (uint32_t)(r_v->viewport.w_pixels * scale_x),
-		    .h = (uint32_t)(r_v->viewport.h_pixels * scale_y),
-		};
-	}
-
-	struct comp_mesh_ubo_data r_data = {
-	    .vertex_rot = r_v->rot,
-	};
-
-	if (pre_rotate) {
 		math_matrix_2x2_multiply(&r_v->rot, &rotation_90_cw, &r_data.vertex_rot);
 	}
 
