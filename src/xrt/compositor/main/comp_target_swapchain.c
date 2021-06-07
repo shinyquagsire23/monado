@@ -118,10 +118,15 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 
 
 	// Sanity check.
-	ret = vk->vkGetPhysicalDeviceSurfaceSupportKHR(vk->physical_device, 0, cts->surface.handle, &supported);
-	if (!supported) {
-		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: surface not supported! '%s'",
-		           vk_result_string(ret));
+	ret = vk->vkGetPhysicalDeviceSurfaceSupportKHR( //
+	    vk->physical_device,                        // physicalDevice
+	    vk->queue_family_index,                     // queueFamilyIndex
+	    cts->surface.handle,                        // surface
+	    &supported);                                // pSupported
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: %s", vk_result_string(ret));
+	} else if (!supported) {
+		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: Surface not supported!");
 	}
 
 	// More sanity checks.
