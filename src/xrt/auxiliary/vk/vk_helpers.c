@@ -1142,6 +1142,7 @@ fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uin
 	// Reset before filling out.
 	vk->has_GOOGLE_display_timing = false;
 	vk->has_EXT_global_priority = false;
+	vk->has_VK_EXT_robustness2 = false;
 
 	for (uint32_t i = 0; i < num_device_extensions; i++) {
 		const char *ext = device_extensions[i];
@@ -1152,6 +1153,11 @@ fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uin
 		if (strcmp(ext, VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME) == 0) {
 			vk->has_EXT_global_priority = true;
 		}
+#ifdef VK_EXT_robustness2
+		if (strcmp(ext, VK_EXT_ROBUSTNESS_2_EXTENSION_NAME) == 0) {
+			vk->has_VK_EXT_robustness2 = true;
+		}
+#endif
 	}
 }
 
@@ -1254,12 +1260,10 @@ vk_create_device(struct vk_bundle *vk,
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 
-	VkPhysicalDeviceFeatures *enabled_features = NULL;
 
-	VkDeviceQueueGlobalPriorityCreateInfoEXT priority_info = {
-	    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT,
-	    .globalPriority = global_priority,
-	};
+	/*
+	 * Queue
+	 */
 
 	if (only_compute) {
 		ret = vk_find_compute_only_queue(vk, &vk->queue_family_index);
@@ -1271,14 +1275,39 @@ vk_create_device(struct vk_bundle *vk,
 		return ret;
 	}
 
+	VkDeviceQueueGlobalPriorityCreateInfoEXT priority_info = {
+	    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT,
+	    .pNext = NULL,
+	    .globalPriority = global_priority,
+	};
+
 	float queue_priority = 0.0f;
 	VkDeviceQueueCreateInfo queue_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-	    .pNext = vk->has_EXT_global_priority ? &priority_info : NULL,
+	    .pNext = NULL,
 	    .queueCount = 1,
 	    .queueFamilyIndex = vk->queue_family_index,
 	    .pQueuePriorities = &queue_priority,
 	};
+
+	if (vk->has_EXT_global_priority) {
+		priority_info.pNext = queue_create_info.pNext;
+		queue_create_info.pNext = (void *)&priority_info;
+	}
+
+
+	/*
+	 * Device
+	 */
+
+#ifdef VK_EXT_robustness2
+	VkPhysicalDeviceRobustness2FeaturesEXT robust_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT,
+	    .pNext = NULL,
+	};
+#endif
+
+	VkPhysicalDeviceFeatures enabled_features = {0};
 
 	VkDeviceCreateInfo device_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -1286,8 +1315,16 @@ vk_create_device(struct vk_bundle *vk,
 	    .pQueueCreateInfos = &queue_create_info,
 	    .enabledExtensionCount = num_device_extensions,
 	    .ppEnabledExtensionNames = device_extensions,
-	    .pEnabledFeatures = enabled_features,
+	    .pEnabledFeatures = &enabled_features,
 	};
+
+#ifdef VK_EXT_robustness2
+	if (vk->has_VK_EXT_robustness2) {
+		// This struct is a in/out struct, while device_create_info has a const pNext.
+		robust_info.pNext = (void *)device_create_info.pNext;
+		device_create_info.pNext = (void *)&robust_info;
+	}
+#endif
 
 	ret = vk->vkCreateDevice(vk->physical_device, &device_create_info, NULL, &vk->device);
 
