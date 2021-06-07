@@ -1129,19 +1129,30 @@ vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t 
 {
 	for (uint32_t i = 0; i < num_props; i++) {
 		if (strcmp(props[i].extensionName, ext) == 0) {
-
-			if (strcmp(ext, VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) == 0) {
-				vk->has_GOOGLE_display_timing = true;
-			}
-			if (strcmp(ext, VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME) == 0) {
-				vk->has_EXT_global_priority = true;
-			}
-
 			return true;
 		}
 	}
 
 	return false;
+}
+
+static void
+fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uint32_t num_device_extensions)
+{
+	// Reset before filling out.
+	vk->has_GOOGLE_display_timing = false;
+	vk->has_EXT_global_priority = false;
+
+	for (uint32_t i = 0; i < num_device_extensions; i++) {
+		const char *ext = device_extensions[i];
+
+		if (strcmp(ext, VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) == 0) {
+			vk->has_GOOGLE_display_timing = true;
+		}
+		if (strcmp(ext, VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME) == 0) {
+			vk->has_EXT_global_priority = true;
+		}
+	}
 }
 
 static VkResult
@@ -1206,6 +1217,9 @@ vk_build_device_extensions(struct vk_bundle *vk,
 			continue;
 		}
 	}
+
+	// Fill this out here.
+	fill_in_has_extensions(vk, device_extensions, num_device_extensions);
 
 	free(props);
 
