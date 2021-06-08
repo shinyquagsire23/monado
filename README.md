@@ -68,6 +68,10 @@ best with the following vcpkg packages installed:
 
 * pthreads eigen3 libusb hidapi zlib doxygen
 
+If you have a recent [vcpkg](https://vcpkg.io) installed and use the appropriate
+CMake toolchain file, the vcpkg manifest in the Monado repository will instruct
+vcpkg to locally install the dependencies automatically.
+
 Tested distributions that are fully compatible,
 on Intel (Vulkan only) and AMD graphics (Vulkan and OpenGL):
 
