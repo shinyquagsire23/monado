@@ -89,10 +89,10 @@ target_link_libraries(st_oxr PRIVATE
 	aux_os
 	)
 if(XRT_HAVE_VULKAN)
-	target_link_libraries(st_oxr PRIVATE Vulkan::Vulkan)
+	target_link_libraries(st_oxr PUBLIC Vulkan::Vulkan)
 endif()
 if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
-	target_link_libraries(st_oxr PRIVATE aux_ogl)
+	target_link_libraries(st_oxr PUBLIC aux_ogl)
 endif()
 if(ANDROID)
 	target_link_libraries(st_oxr PRIVATE aux_android)
