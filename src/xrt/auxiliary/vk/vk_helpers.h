@@ -223,6 +223,7 @@ struct vk_bundle
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 	PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR;
+	PFN_vkImportFenceWin32HandleKHR vkImportFenceWin32HandleKHR;
 #else
 	PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
 	PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;

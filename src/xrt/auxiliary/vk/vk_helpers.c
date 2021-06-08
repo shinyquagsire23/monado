@@ -472,6 +472,25 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
 		VK_ERROR(vk, "vkImportFenceFdKHR: %s", vk_result_string(ret));
 		return ret;
 	}
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	//! @todo make sure this is the right one
+	VkExternalFenceHandleTypeFlagBits handleType = VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+	VkImportFenceWin32HandleInfoKHR import_info = {
+	    .sType = VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR,
+	    .pNext = NULL,
+	    .fence = fence,
+	    .flags = 0, /** @todo do we want the temporary flag? */
+	    .handleType = handleType,
+	    .handle = native,
+	    .name = NULL, /* not importing by name */
+	};
+
+	ret = vk->vkImportFenceWin32HandleKHR(vk->device, &import_info);
+	if (ret != VK_SUCCESS) {
+		vk->vkDestroyFence(vk->device, fence, NULL);
+		VK_ERROR(vk, "vkImportFenceFdKHR: %s", vk_result_string(ret));
+		return ret;
+	}
 #else
 #error "Need port to import fence sync handles"
 #endif
@@ -938,6 +957,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 	vk->vkImportSemaphoreWin32HandleKHR = GET_DEV_PROC(vk, vkImportSemaphoreWin32HandleKHR);
+	vk->vkImportFenceWin32HandleKHR     = GET_DEV_PROC(vk, vkImportFenceWin32HandleKHR);
 #else
 	vk->vkImportSemaphoreFdKHR        = GET_DEV_PROC(vk, vkImportSemaphoreFdKHR);
 	vk->vkGetSemaphoreFdKHR           = GET_DEV_PROC(vk, vkGetSemaphoreFdKHR);
