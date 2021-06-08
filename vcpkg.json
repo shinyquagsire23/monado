@@ -1,0 +1,11 @@
+{
+    "name": "monado",
+    "version-string": "21.0",
+    "dependencies": [
+        "eigen3",
+        "pthreads",
+        "libusb",
+        "hidapi",
+        "zlib"
+    ]
+}
