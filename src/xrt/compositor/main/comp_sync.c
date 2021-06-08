@@ -18,7 +18,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef XRT_OS_WINDOWS
 #include <unistd.h>
+#endif
 
 
 
