@@ -110,6 +110,7 @@ struct vk_bundle
 	PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
 	PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties;
 	PFN_vkGetPhysicalDeviceProperties2 vkGetPhysicalDeviceProperties2;
+	PFN_vkGetPhysicalDeviceFeatures2 vkGetPhysicalDeviceFeatures2;
 
 	PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
 	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR;
@@ -367,6 +368,17 @@ VkResult
 vk_init_cmd_pool(struct vk_bundle *vk);
 
 /*!
+ * Used to enable device features as a argument @ref vk_create_device.
+ *
+ * @ingroup aux_vk
+ */
+struct vk_device_features
+{
+	bool shader_storage_image_write_without_format;
+	bool null_descriptor;
+};
+
+/*!
  * @ingroup aux_vk
  */
 VkResult
@@ -377,7 +389,8 @@ vk_create_device(struct vk_bundle *vk,
                  const char *const *required_device_extensions,
                  size_t num_required_device_extensions,
                  const char *const *optional_device_extensions,
-                 size_t num_optional_device_extension);
+                 size_t num_optional_device_extension,
+                 const struct vk_device_features *optional_device_features);
 
 /*!
  * Initialize a bundle with objects given to us by client code,

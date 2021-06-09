@@ -801,6 +801,7 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkEnumeratePhysicalDevices                = GET_INS_PROC(vk, vkEnumeratePhysicalDevices);
 	vk->vkGetPhysicalDeviceProperties             = GET_INS_PROC(vk, vkGetPhysicalDeviceProperties);
 	vk->vkGetPhysicalDeviceProperties2            = GET_INS_PROC(vk, vkGetPhysicalDeviceProperties2);
+	vk->vkGetPhysicalDeviceFeatures2              = GET_INS_PROC(vk, vkGetPhysicalDeviceFeatures2);
 	vk->vkGetPhysicalDeviceMemoryProperties       = GET_INS_PROC(vk, vkGetPhysicalDeviceMemoryProperties);
 	vk->vkGetPhysicalDeviceQueueFamilyProperties  = GET_INS_PROC(vk, vkGetPhysicalDeviceQueueFamilyProperties);
 	vk->vkCreateDebugReportCallbackEXT            = GET_INS_PROC(vk, vkCreateDebugReportCallbackEXT);
@@ -1235,6 +1236,67 @@ vk_build_device_extensions(struct vk_bundle *vk,
 	return true;
 }
 
+static void
+filter_device_features(struct vk_bundle *vk,
+                       VkPhysicalDevice physical_device,
+                       const struct vk_device_features *optional_device_features,
+                       struct vk_device_features *device_features)
+{
+	// If no features are requested, then noop.
+	if (optional_device_features == NULL) {
+		return;
+	}
+
+	/*
+	 * The structs
+	 */
+
+#ifdef VK_EXT_robustness2
+	VkPhysicalDeviceRobustness2FeaturesEXT robust_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT,
+	    .pNext = NULL,
+	};
+#endif
+
+	VkPhysicalDeviceFeatures2 physical_device_features = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+	    .pNext = NULL,
+	};
+
+#ifdef VK_EXT_robustness2
+	if (vk->has_VK_EXT_robustness2) {
+		physical_device_features.pNext = physical_device_features.pNext;
+		physical_device_features.pNext = (void *)&robust_info;
+	}
+#endif
+
+	vk->vkGetPhysicalDeviceFeatures2( //
+	    physical_device,              // physicalDevice
+	    &physical_device_features);   // pFeatures
+
+
+	/*
+	 * Collect and transfer.
+	 */
+
+#define CHECK(feature, DEV_FEATURE) device_features->feature = optional_device_features->feature && (DEV_FEATURE)
+
+#ifdef VK_EXT_robustness2
+	CHECK(null_descriptor, robust_info.nullDescriptor);
+#endif
+	CHECK(shader_storage_image_write_without_format,
+	      physical_device_features.features.shaderStorageImageWriteWithoutFormat);
+
+#undef CHECK
+
+
+	VK_DEBUG(vk,
+	         "Features:"
+	         "\n\tnull_descriptor: %i"
+	         "\n\tshader_storage_image_write_without_format: %i",
+	         device_features->null_descriptor, device_features->shader_storage_image_write_without_format);
+}
+
 VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
@@ -1243,7 +1305,8 @@ vk_create_device(struct vk_bundle *vk,
                  const char *const *required_device_extensions,
                  size_t num_required_device_extensions,
                  const char *const *optional_device_extensions,
-                 size_t num_optional_device_extensions)
+                 size_t num_optional_device_extensions,
+                 const struct vk_device_features *optional_device_features)
 {
 	VkResult ret;
 
@@ -1259,6 +1322,14 @@ vk_create_device(struct vk_bundle *vk,
 	                                num_optional_device_extensions, &device_extensions, &num_device_extensions)) {
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
+
+
+	/*
+	 * Features
+	 */
+
+	struct vk_device_features device_features = {0};
+	filter_device_features(vk, vk->physical_device, optional_device_features, &device_features);
 
 
 	/*
@@ -1304,10 +1375,13 @@ vk_create_device(struct vk_bundle *vk,
 	VkPhysicalDeviceRobustness2FeaturesEXT robust_info = {
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT,
 	    .pNext = NULL,
+	    .nullDescriptor = device_features.null_descriptor,
 	};
 #endif
 
-	VkPhysicalDeviceFeatures enabled_features = {0};
+	VkPhysicalDeviceFeatures enabled_features = {
+	    .shaderStorageImageWriteWithoutFormat = device_features.shader_storage_image_write_without_format,
+	};
 
 	VkDeviceCreateInfo device_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,

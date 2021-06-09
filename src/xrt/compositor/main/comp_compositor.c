@@ -895,15 +895,16 @@ compositor_init_vulkan(struct comp_compositor *c)
 
 	// No other way then to try to see if realtime is available.
 	for (size_t i = 0; i < ARRAY_SIZE(prios); i++) {
-		ret = vk_create_device(                      //
-		    vk,                                      //
-		    c->settings.selected_gpu_index,          //
-		    false,                                   // compute_only
-		    prios[i],                                // global_priority
-		    required_device_extensions,              //
-		    ARRAY_SIZE(required_device_extensions),  //
-		    optional_device_extensions,              //
-		    ARRAY_SIZE(optional_device_extensions)); //
+		ret = vk_create_device(                     //
+		    vk,                                     //
+		    c->settings.selected_gpu_index,         //
+		    false,                                  // compute_only
+		    prios[i],                               // global_priority
+		    required_device_extensions,             //
+		    ARRAY_SIZE(required_device_extensions), //
+		    optional_device_extensions,             //
+		    ARRAY_SIZE(optional_device_extensions), //
+		    NULL);                                  // optional_device_features
 
 		// All ok!
 		if (ret == VK_SUCCESS) {
@@ -1111,15 +1112,16 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	}
 
 	// follow same device selection logic as subsequent calls
-	ret = vk_create_device(                      //
-	    temp_vk,                                 //
-	    c->settings.selected_gpu_index,          //
-	    false,                                   // compute_only
-	    VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT,     // global_priority
-	    required_device_extensions,              //
-	    ARRAY_SIZE(required_device_extensions),  //
-	    optional_device_extensions,              //
-	    ARRAY_SIZE(optional_device_extensions)); //
+	ret = vk_create_device(                     //
+	    temp_vk,                                //
+	    c->settings.selected_gpu_index,         //
+	    false,                                  // compute_only
+	    VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT,    // global_priority
+	    required_device_extensions,             //
+	    ARRAY_SIZE(required_device_extensions), //
+	    optional_device_extensions,             //
+	    ARRAY_SIZE(optional_device_extensions), //
+	    NULL);                                  // optional_device_features
 
 	if (ret != VK_SUCCESS) {
 		CVK_ERROR(c, "vk_create_device", "Failed to create VkDevice.", ret);
