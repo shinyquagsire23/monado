@@ -51,11 +51,15 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		gui_scene_debug(p);
 	}
 
+	if (igButton("Record (DepthAI)", button_dims)) {
+		gui_scene_delete_me(p, scene);
+		gui_scene_record(p, "depthai");
+	}
+
 	if (igButton("Record (Index)", button_dims)) {
 		gui_scene_delete_me(p, scene);
 		gui_scene_record(p, "index");
 	}
-
 
 	if (igButton("Record (Leap Motion)", button_dims)) {
 		gui_scene_delete_me(p, scene);

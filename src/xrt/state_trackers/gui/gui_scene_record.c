@@ -35,6 +35,10 @@
 #include "vf/vf_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_DEPTHAI
+#include "depthai/depthai_interface.h"
+#endif
+
 #include "gui_common.h"
 #include "gui_imgui.h"
 
@@ -65,8 +69,12 @@ struct record_window
 
 	struct
 	{
+		// Use DepthAI camera.
+		bool depthai;
+
 		// Use leap_motion.
 		bool leap_motion;
+
 		// Use index.
 		bool index;
 	} use;
@@ -372,9 +380,13 @@ window_create(struct gui_program *p, const char *camera)
 	rw->sink.push_frame = window_frame;
 	rw->use.index = camera == NULL ? false : strcmp(camera, "index") == 0;
 	rw->use.leap_motion = camera == NULL ? false : strcmp(camera, "leap_motion") == 0;
+	rw->use.depthai = camera == NULL ? false : strcmp(camera, "depthai") == 0;
 
-	if (!rw->use.index && !rw->use.leap_motion) {
-		U_LOG_W("Can't recongnize camera name '%s', options are 'index' & 'leap_motion'", camera);
+	if (!rw->use.index && !rw->use.leap_motion && !rw->use.depthai) {
+		U_LOG_W(
+		    "Can't recongnize camera name '%s', options are 'depthai', index' & 'leap_motion'."
+		    "\n\tFalling back to 'index'.",
+		    camera);
 		rw->use.index = true;
 	}
 
@@ -397,6 +409,56 @@ window_create(struct gui_program *p, const char *camera)
 
 	return rw;
 }
+
+
+/*
+ *
+ * DepthAI functions
+ *
+ */
+
+#ifdef XRT_BUILD_DRIVER_DEPTHAI
+static void
+create_depthai(struct record_window *rw)
+{
+	// Should we be using a DepthAI camera?
+	if (!rw->use.depthai) {
+		return;
+	}
+
+	rw->camera.xfs = depthai_fs_single_rgb(&rw->camera.xfctx);
+
+	// Just after the camera create a quirk stream.
+	struct u_sink_quirk_params qp;
+	U_ZERO(&qp);
+	qp.stereo_sbs = false;
+	qp.ps4_cam = false;
+	qp.leap_motion = false;
+
+	struct xrt_frame_sink *tmp = &rw->sink;
+	u_sink_quirk_create(&rw->camera.xfctx, tmp, &qp, &tmp);
+
+	struct xrt_fs_mode *modes = NULL;
+	uint32_t mode_count = 0;
+	xrt_fs_enumerate_modes(rw->camera.xfs, &modes, &mode_count);
+	assert(mode_count > 0);
+
+	// Just use the first one.
+	uint32_t mode_index = 0;
+
+	rw->camera.mode = modes[mode_index];
+	free(modes);
+	modes = NULL;
+
+	// Now that we have setup a node graph, start it.
+	xrt_fs_stream_start(rw->camera.xfs, tmp, 0, XRT_FS_CAPTURE_TYPE_TRACKING);
+
+	// If it's a large mode, scale to 50%
+	if (rw->camera.mode.width > 640) {
+		rw->texture.scale = 2;
+	}
+}
+#endif /* XRT_BUILD_DRIVER_DEPTHAI */
 
 
 /*
@@ -571,6 +633,12 @@ gui_scene_record(struct gui_program *p, const char *camera)
 	rs->base.destroy = scene_destroy;
 
 	rs->window = window_create(p, camera);
+
+#ifdef XRT_BUILD_DRIVER_DEPTHAI
+	if (!window_has_source(rs->window)) {
+		create_depthai(rs->window);
+	}
+#endif
 
 	if (!window_has_source(rs->window)) {
 		xrt_prober_list_video_devices(p->xp, on_video_device, rs->window);

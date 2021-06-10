@@ -46,6 +46,10 @@ if 'vf' in drivers
 	gui_deps += [drv_vf]
 endif
 
+if 'depthai' in drivers
+	gui_deps += [drv_depthai]
+endif
+
 lib_st_gui = static_library(
 	'st_gui',
 	files(gui_sources),

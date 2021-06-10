@@ -67,6 +67,12 @@ if(XRT_HAVE_GST)
 		)
 endif()
 
+if(XRT_BUILD_DRIVER_DEPTHAI)
+    target_link_libraries(st_gui PRIVATE
+        drv_depthai
+        )
+endif()
+
 if(XRT_BUILD_DRIVER_REMOTE)
 	target_link_libraries(st_gui PRIVATE
 		drv_remote
