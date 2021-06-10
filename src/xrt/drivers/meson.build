@@ -3,6 +3,21 @@
 
 drv_include = include_directories('.')
 
+lib_drv_depthai = static_library(
+	'drv_depthai',
+	files(
+		'depthai/depthai_driver.cpp',
+	),
+	include_directories: [xrt_include],
+	dependencies: [aux, opencv, depthai],
+	build_by_default: 'depthai' in drivers,
+)
+
+drv_depthai = declare_dependency(
+	include_directories: drv_include,
+	link_with: lib_drv_depthai
+)
+
 lib_drv_dummy = static_library(
 	'drv_dummy',
 	files(

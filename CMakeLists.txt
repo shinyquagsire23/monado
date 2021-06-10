@@ -54,6 +54,7 @@ find_package(OpenCV COMPONENTS core calib3d highgui imgproc imgcodecs features2d
 find_package(Libusb1)
 find_package(JPEG)
 find_package(realsense2 CONFIG)
+find_package(depthai CONFIG)
 find_package(SDL2 CONFIG)
 find_package(ZLIB)
 find_package(cJSON)
@@ -215,6 +216,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_PSMV "Enable Playstation Move driver" ON
 cmake_dependent_option(XRT_BUILD_DRIVER_HYDRA "Enable Hydra driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_NS "Enable North Star driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" ON "XRT_HAVE_GST" OFF)
+cmake_dependent_option(XRT_BUILD_DRIVER_DEPTHAI "DepthAI" ON "depthai_FOUND" OFF)
 
 # This one defaults to off, even if we find the deps.
 cmake_dependent_option(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" ON "SURVIVE_FOUND" OFF)
@@ -243,6 +245,7 @@ list(APPEND AVAILABLE_DRIVERS
 	"V4L2"
 	"ULV2"
 	"VF"
+	"DEPTHAI"
 	"VIVE"
 	"QWERTY"
 	"WMR"
@@ -384,6 +387,7 @@ message(STATUS "#    DRIVER_RS:           ${XRT_BUILD_DRIVER_RS}")
 message(STATUS "#    DRIVER_REMOTE:       ${XRT_BUILD_DRIVER_REMOTE}")
 message(STATUS "#    DRIVER_SURVIVE:      ${XRT_BUILD_DRIVER_SURVIVE}")
 message(STATUS "#    DRIVER_VF:           ${XRT_BUILD_DRIVER_VF}")
+message(STATUS "#    DRIVER_DEPTHAI:      ${XRT_BUILD_DRIVER_DEPTHAI}")
 message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
 message(STATUS "#    DRIVER_QWERTY:       ${XRT_BUILD_DRIVER_QWERTY}")
 message(STATUS "#    DRIVER_WMR:          ${XRT_BUILD_DRIVER_WMR}")

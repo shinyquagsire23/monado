@@ -31,6 +31,25 @@ if(XRT_BUILD_DRIVER_DAYDREAM)
 	list(APPEND ENABLED_DRIVERS daydream)
 endif()
 
+if(XRT_BUILD_DRIVER_DEPTHAI)
+	set(DEPTHAI_SOURCE_FILES
+		depthai/depthai_driver.cpp
+		depthai/depthai_interface.h
+		)
+
+	add_library(drv_depthai STATIC ${DEPTHAI_SOURCE_FILES})
+	target_link_libraries(drv_depthai PRIVATE
+		xrt-interfaces
+		aux_os
+		${OpenCV_LIBRARIES}
+		depthai::opencv
+		depthai::core
+		XLink
+		)
+	target_include_directories(drv_depthai PRIVATE ${OpenCV_INCLUDE_DIRS})
+	list(APPEND ENABLED_DRIVERS depthai)
+endif()
+
 if(XRT_BUILD_DRIVER_DUMMY)
 	set(DUMMY_SOURCE_FILES
 		dummy/dummy_hmd.c

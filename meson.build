@@ -77,6 +77,7 @@ libbsd   = dependency('libbsd', required: get_option('libbsd'))
 gst      = dependency('gstreamer-1.0', required: false)
 gst_app  = dependency('gstreamer-app-1.0', required: false)
 gst_video= dependency('gstreamer-video-1.0', required: false)
+depthai  = dependency('depthai', method: 'cmake', modules : ['depthai::core', 'depthai::opencv', 'XLink'], required: false)
 
 gst_found = gst.found() and gst_app.found() and gst_video.found()
 
@@ -209,6 +210,12 @@ endif
 if gst_found and ('auto' in drivers or 'vf' in drivers)
 	if 'vf' not in drivers
 		drivers += ['vf']
+	endif
+endif
+
+if depthai.found() and ('auto' in drivers or 'depthai' in drivers)
+	if 'depthai' not in drivers
+		drivers += ['depthai']
 	endif
 endif
 
