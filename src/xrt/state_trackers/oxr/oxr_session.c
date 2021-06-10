@@ -1432,7 +1432,8 @@ submit_quad_layer(struct oxr_session *sess,
 }
 
 static XrResult
-submit_projection_layer(struct xrt_compositor *xc,
+submit_projection_layer(struct oxr_session *sess,
+                        struct xrt_compositor *xc,
                         struct oxr_logger *log,
                         XrCompositionLayerProjection *proj,
                         struct xrt_device *head,
@@ -1442,7 +1443,7 @@ submit_projection_layer(struct xrt_compositor *xc,
 	struct oxr_space *spc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, proj->space);
 	struct oxr_swapchain *d_scs[2] = {NULL, NULL};
 	struct oxr_swapchain *scs[2];
-	struct xrt_pose *pose_ptr[2];
+	struct xrt_pose *pose_ptr;
 	struct xrt_pose pose[2];
 
 	enum xrt_layer_composition_flags flags = convert_layer_flags(proj->layerFlags);
@@ -1450,30 +1451,15 @@ submit_projection_layer(struct xrt_compositor *xc,
 	uint32_t num_chains = ARRAY_SIZE(scs);
 	for (uint32_t i = 0; i < num_chains; i++) {
 		scs[i] = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, proj->views[i].subImage.swapchain);
-		pose_ptr[i] = (struct xrt_pose *)&proj->views[i].pose;
-		pose[i] = *pose_ptr[i];
+		pose_ptr = (struct xrt_pose *)&proj->views[i].pose;
 
-		// The pose might be valid for OpenXR, but not good enough for math.
-		if (!math_quat_validate(&pose[i].orientation)) {
-			math_quat_normalize(&pose[i].orientation);
+		if (!handle_space(log, sess, spc, pose_ptr, inv_offset, timestamp, &pose[i])) {
+			return XR_SUCCESS;
 		}
 	}
 
 	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
 		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
-		// The space might have a pose, transform that in as well.
-		math_pose_transform(&spc->pose, &pose[0], &pose[0]);
-		math_pose_transform(&spc->pose, &pose[1], &pose[1]);
-	} else {
-		//! @todo Handle action spaces.
-
-		// The space might have a pose, transform that in as well.
-		math_pose_transform(&spc->pose, &pose[0], &pose[0]);
-		math_pose_transform(&spc->pose, &pose[1], &pose[1]);
-
-		// Remove the tracking system origin offset.
-		math_pose_transform(inv_offset, &pose[0], &pose[0]);
-		math_pose_transform(inv_offset, &pose[1], &pose[1]);
 	}
 
 	struct xrt_rect *l_rect = (struct xrt_rect *)&proj->views[0].subImage.imageRect;
@@ -1902,7 +1888,7 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 
 		switch (layer->type) {
 		case XR_TYPE_COMPOSITION_LAYER_PROJECTION:
-			submit_projection_layer(xc, log, (XrCompositionLayerProjection *)layer, xdev, &inv_offset,
+			submit_projection_layer(sess, xc, log, (XrCompositionLayerProjection *)layer, xdev, &inv_offset,
 			                        timestamp);
 			break;
 		case XR_TYPE_COMPOSITION_LAYER_QUAD:
