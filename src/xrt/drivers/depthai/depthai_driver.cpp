@@ -52,7 +52,7 @@ DEBUG_GET_ONCE_LOG_OPTION(depthai_log, "DEPTHAI_LOG", U_LOGGING_WARN)
  *
  */
 
-class depthairameWrapper
+class DepthAIFrameWrapper
 {
 public:
 	struct xrt_frame frame = {};
@@ -63,7 +63,7 @@ public:
 extern "C" void
 depthai_frame_wrapper_destroy(struct xrt_frame *xf)
 {
-	depthairameWrapper *dfw = (depthairameWrapper *)xf;
+	DepthAIFrameWrapper *dfw = (DepthAIFrameWrapper *)xf;
 	delete dfw;
 }
 
@@ -73,6 +73,14 @@ depthai_frame_wrapper_destroy(struct xrt_frame *xf)
  * DepthAI frameserver.
  *
  */
+
+enum depthai_camera_type
+{
+	RGB_IMX_378,
+	RGB_OV_9782,
+	MONO_OV_9282_L,
+	MONO_OV_9282_R,
+};
 
 struct depthai_fs
 {
@@ -136,7 +144,7 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 	uint64_t timestamp_ns = nano.count();
 
 	// Create a wrapper that will keep the frame alive as long as the frame was alive.
-	depthairameWrapper *dfw = new depthairameWrapper();
+	DepthAIFrameWrapper *dfw = new DepthAIFrameWrapper();
 	dfw->depthai_frame = imgFrame;
 
 	// Fill in all of the data.
@@ -342,16 +350,20 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 	depthai->ll = debug_get_log_option_depthai_log();
 	depthai->device = d;
 
-	if (true) {
+	enum depthai_camera_type camera_type = RGB_OV_9782;
+
+	switch (camera_type) {
+	case (RGB_OV_9782):
 		depthai->width = 1280;
 		depthai->height = 800;
 		depthai->format = XRT_FORMAT_R8G8B8;
 		depthai->color_sensor_resoultion = dai::ColorCameraProperties::SensorResolution::THE_800_P;
 		depthai->image_orientation = dai::CameraImageOrientation::ROTATE_180_DEG;
-		depthai->fps = 60; // 120?
+		depthai->fps = 60; // Currently only supports 60.
 		depthai->interleaved = true;
 		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
-	} else if (false) {
+		break;
+	case (RGB_IMX_378):
 		depthai->width = 1920;
 		depthai->height = 1080;
 		depthai->format = XRT_FORMAT_R8G8B8;
@@ -360,22 +372,26 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 		depthai->fps = 118; // Actual max.
 		depthai->interleaved = true;
 		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
-	} else if (false) {
-		depthai->width = 1280;
-		depthai->height = 800;
-		depthai->format = XRT_FORMAT_L8;
-		depthai->camera_board_socket = dai::CameraBoardSocket::RIGHT;
-		depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
-		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
-		depthai->fps = 60; // 120?
-	} else {
+		break;
+	case (MONO_OV_9282_L):
 		depthai->width = 1280;
 		depthai->height = 800;
 		depthai->format = XRT_FORMAT_L8;
 		depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
 		depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
 		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
-		depthai->fps = 60; // 120?
+		depthai->fps = 60; // Currently only supports 60.
+		break;
+	case (MONO_OV_9282_R):
+		depthai->width = 1280;
+		depthai->height = 800;
+		depthai->format = XRT_FORMAT_L8;
+		depthai->camera_board_socket = dai::CameraBoardSocket::RIGHT;
+		depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
+		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+		depthai->fps = 60; // Currently only supports 60.
+		break;
+	default: assert(false);
 	}
 
 	// Some debug printing.
