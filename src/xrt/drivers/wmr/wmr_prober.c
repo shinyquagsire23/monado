@@ -52,6 +52,18 @@ check_and_get_interface_hp(struct xrt_prober_device *device, int *out_interface)
 }
 
 static bool
+check_and_get_interface_lenovo(struct xrt_prober_device *device, int *out_interface)
+{
+	if (device->product_id != EXPLORER_PID) {
+		return false;
+	}
+
+	*out_interface = 0;
+
+	return true;
+}
+
+static bool
 find_control_device(struct xrt_prober *xp,
                     struct xrt_prober_device **devices,
                     size_t num_devices,
@@ -71,6 +83,7 @@ find_control_device(struct xrt_prober *xp,
 
 		switch (devices[i]->vendor_id) {
 		case HP_VID: match = check_and_get_interface_hp(devices[i], &interface); break;
+		case LENOVO_VID: match = check_and_get_interface_lenovo(devices[i], &interface); break;
 		default: break;
 		}
 
@@ -145,7 +158,7 @@ wmr_found(struct xrt_prober *xp,
 	struct os_hid_device *hid_ctrl = NULL;
 	result = xrt_prober_open_hid_interface(xp, dev_ctrl, interface_ctrl, &hid_ctrl);
 	if (result != 0) {
-		U_LOG_IFL_E(ll, "Failed to open HoloLens Sensors HID interface");
+		U_LOG_IFL_E(ll, "Failed to open HoloLens Control HID interface");
 		return -1;
 	}
 

@@ -34,6 +34,9 @@ extern "C" {
 #define REVERB_G1_PID 0x0c6a
 #define REVERB_G2_PID 0x0580
 
+#define LENOVO_VID 0x17ef
+#define EXPLORER_PID 0xb801
+
 /*!
  * @}
  */
