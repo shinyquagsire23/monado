@@ -8,6 +8,7 @@
  * @author Nova King <technobaboo@gmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Moses Turner <mosesturner@protonmail.com>
+ * @author Nico Zobernig <nico.zobernig@gmail.com>
  * @ingroup drv_ns
  */
 
@@ -328,14 +329,12 @@ ns_3d_mesh_calc(struct xrt_device *xdev, int view, float u, float v, struct xrt_
 
 static void
 ns_3d_fov_calculate(struct xrt_fov *fov, struct xrt_quat projection)
-{ // All of these are wrong - gets "hidden" by the simple_fov making it look
-  // okay. Needs to be fixed.
-
-	fov->angle_up = projection.x;    // atanf(fabsf(projection.x) /
-	                                 // near_plane);
-	fov->angle_down = projection.y;  // atanf(fabsf(projection.y) / near_plane);
-	fov->angle_left = projection.z;  // atanf(fabsf(projection.z) / near_plane);
-	fov->angle_right = projection.w; // atanf(fabsf(projection.w) / near_plane);
+{
+	// Million thanks to Nico Zobernig for figuring this out
+	fov->angle_left = atanf(projection.x);
+	fov->angle_right = atanf(projection.y);
+	fov->angle_up = atanf(projection.z);
+	fov->angle_down = atanf(projection.w);
 }
 
 /*
