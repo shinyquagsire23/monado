@@ -89,6 +89,12 @@ struct depthai_fs
 
 	dai::Device *device;
 	dai::DataOutputQueue *queue;
+
+	dai::ColorCameraProperties::SensorResolution sensor_resoultion;
+	dai::CameraImageOrientation image_orientation;
+	dai::ColorCameraProperties::ColorOrder color_order;
+	uint32_t fps;
+	bool interleaved;
 };
 
 
@@ -329,9 +335,25 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 	depthai->node.break_apart = depthai_fs_node_break_apart;
 	depthai->node.destroy = depthai_fs_node_destroy;
 	depthai->ll = debug_get_log_option_depthai_log();
-	depthai->width = 1280;
-	depthai->height = 800; // Constant for now
 	depthai->device = d;
+
+	if (true) {
+		depthai->width = 1280;
+		depthai->height = 800;
+		depthai->sensor_resoultion = dai::ColorCameraProperties::SensorResolution::THE_800_P;
+		depthai->image_orientation = dai::CameraImageOrientation::ROTATE_180_DEG;
+		depthai->fps = 60; // 120?
+		depthai->interleaved = true;
+		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
+	} else {
+		depthai->width = 1920;
+		depthai->height = 1080;
+		depthai->sensor_resoultion = dai::ColorCameraProperties::SensorResolution::THE_1080_P;
+		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+		depthai->fps = 118;
+		depthai->interleaved = true;
+		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
+	}
 
 	// Some debug printing.
 	depthai_print_connected_cameras(depthai);
@@ -345,11 +367,11 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 	auto xlinkOut = p.create<dai::node::XLinkOut>();
 	xlinkOut->setStreamName("preview");
 	colorCam->setPreviewSize(depthai->width, depthai->height);
-	colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_800_P);
-	colorCam->setInterleaved(true);
-	colorCam->setImageOrientation(dai::CameraImageOrientation::ROTATE_180_DEG);
-	colorCam->setFps(60);
-	colorCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::RGB);
+	colorCam->setResolution(depthai->sensor_resoultion);
+	colorCam->setImageOrientation(depthai->image_orientation);
+	colorCam->setInterleaved(depthai->interleaved);
+	colorCam->setFps(depthai->fps);
+	colorCam->setColorOrder(depthai->color_order);
 
 	// Link plugins CAM -> XLINK
 	colorCam->preview.link(xlinkOut->input);
