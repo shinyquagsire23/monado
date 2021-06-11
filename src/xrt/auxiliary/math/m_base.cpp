@@ -299,6 +299,18 @@ math_quat_rotate_derivative(const struct xrt_quat *quat, const struct xrt_vec3 *
 	*result = ret;
 }
 
+extern "C" void
+math_quat_slerp(const struct xrt_quat *left, const struct xrt_quat *right, float t, struct xrt_quat *result)
+{
+	assert(left != NULL);
+	assert(right != NULL);
+	assert(result != NULL);
+
+	auto l = copy(left);
+	auto r = copy(right);
+
+	map_quat(*result) = l.slerp(t, r);
+}
 
 /*
  *

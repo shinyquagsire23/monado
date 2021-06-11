@@ -290,6 +290,15 @@ void
 math_quat_rotate_derivative(const struct xrt_quat *rot, const struct xrt_vec3 *deriv, struct xrt_vec3 *result);
 
 
+/*!
+ * Slerp (spherical linear interpolation) between two quaternions
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+void
+math_quat_slerp(const struct xrt_quat *left, const struct xrt_quat *right, float t, struct xrt_quat *result);
+
 /*
  *
  * Matrix functions
