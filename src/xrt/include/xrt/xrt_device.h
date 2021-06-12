@@ -418,6 +418,17 @@ xrt_device_get_view_pose(struct xrt_device *xdev,
 }
 
 /*!
+ * Helper function for @ref xrt_device::compute_distortion.
+ *
+ * @public @memberof xrt_device
+ */
+static inline void
+xrt_device_compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+{
+	xdev->compute_distortion(xdev, view, u, v, result);
+}
+
+/*!
  * Helper function for @ref xrt_device::destroy.
  *
  * @public @memberof xrt_device
