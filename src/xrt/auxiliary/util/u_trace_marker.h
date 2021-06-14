@@ -16,6 +16,10 @@
 
 #include <stdio.h>
 
+#ifdef XRT_FEATURE_TRACING
+#include <percetto.h>
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,7 +67,6 @@ u_tracer_maker_init(enum u_trace_which which);
 #error "Need to have Percetto/Perfetto"
 #endif
 
-#include <percetto.h>
 
 
 #define U_TRACE_CATEGORIES(C, G)                                                                                       \
