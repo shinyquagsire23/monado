@@ -652,7 +652,7 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 	    present_slop_ns);              //
 	r->acquired_buffer = -1;
 
-	if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
+	if (ret == VK_ERROR_OUT_OF_DATE_KHR || ret == VK_SUBOPTIMAL_KHR) {
 		renderer_resize(r);
 		return;
 	}
