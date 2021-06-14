@@ -608,6 +608,7 @@ renderer_acquire_swapchain_image(struct comp_renderer *r)
 			           "re-create image and renderings failed. Probably the target disappeared.");
 			return;
 		}
+
 		/* Acquire image again to silence validation error */
 		ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &buffer_index);
 		if (ret != VK_SUCCESS) {
