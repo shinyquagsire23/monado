@@ -6,16 +6,23 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
+#include "xrt/xrt_gfx_native.h"
+#include "util/u_trace_marker.h"
+
 #include "target_instance_parts.h"
 
-#include "xrt/xrt_gfx_native.h"
+
+/*
+ *
+ * Internal functions.
+ *
+ */
 
 static int
 t_instance_create_system_compositor(struct xrt_instance *xinst,
                                     struct xrt_device *xdev,
                                     struct xrt_system_compositor **out_xsysc)
 {
-
 	struct xrt_system_compositor *xsysc = NULL;
 	xrt_result_t ret = xrt_gfx_provider_create_system(xdev, &xsysc);
 	if (ret < 0 || xsysc == NULL) {
@@ -27,6 +34,7 @@ t_instance_create_system_compositor(struct xrt_instance *xinst,
 	return 0;
 }
 
+
 /*
  *
  * Exported function(s).
@@ -37,6 +45,8 @@ int
 xrt_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_xinst)
 {
 	struct xrt_prober *xp = NULL;
+
+	u_trace_marker_init();
 
 	int ret = xrt_prober_create_with_lists(&xp, &target_lists);
 	if (ret < 0) {

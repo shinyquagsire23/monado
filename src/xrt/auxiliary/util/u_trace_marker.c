@@ -15,9 +15,10 @@
 
 #include "util/u_trace_marker.h"
 
-#ifdef XRT_FEATURE_TRACING
-
 #include <inttypes.h>
+
+
+#ifdef XRT_FEATURE_TRACING
 
 PERCETTO_CATEGORY_DEFINE(U_TRACE_CATEGORIES)
 
@@ -31,13 +32,14 @@ PERCETTO_TRACK_DEFINE(rt_present, PERCETTO_TRACK_EVENTS);
 PERCETTO_TRACK_DEFINE(ft_cpu, PERCETTO_TRACK_EVENTS);
 PERCETTO_TRACK_DEFINE(ft_draw, PERCETTO_TRACK_EVENTS);
 
+
+static enum u_trace_which static_which;
+static bool static_inited = false;
+
 void
-u_tracer_maker_init(enum u_trace_which which)
+u_trace_marker_setup(enum u_trace_which which)
 {
-	int ret = PERCETTO_INIT(PERCETTO_CLOCK_MONOTONIC);
-	if (ret != 0) {
-		return;
-	}
+	static_which = which;
 
 	I_PERCETTO_TRACK_PTR(rt_cpu)->name = "RT 1 Sleep";
 	I_PERCETTO_TRACK_PTR(rt_allotted)->name = "RT 2 Allotted time";
@@ -49,8 +51,22 @@ u_tracer_maker_init(enum u_trace_which which)
 
 	I_PERCETTO_TRACK_PTR(ft_cpu)->name = "FT 1 App";
 	I_PERCETTO_TRACK_PTR(ft_draw)->name = "FT 2 Draw";
+}
 
-	if (which == U_TRACE_WHICH_SERVICE) {
+void
+u_trace_marker_init(void)
+{
+	if (static_inited) {
+		return;
+	}
+	static_inited = true;
+
+	int ret = PERCETTO_INIT(PERCETTO_CLOCK_MONOTONIC);
+	if (ret != 0) {
+		return;
+	}
+
+	if (static_which == U_TRACE_WHICH_SERVICE) {
 		PERCETTO_REGISTER_TRACK(rt_cpu);
 		PERCETTO_REGISTER_TRACK(rt_allotted);
 		PERCETTO_REGISTER_TRACK(rt_gpu);
@@ -62,27 +78,22 @@ u_tracer_maker_init(enum u_trace_which which)
 		PERCETTO_REGISTER_TRACK(ft_cpu);
 		PERCETTO_REGISTER_TRACK(ft_draw);
 	}
-
-
-	/*
-	 *
-	 * Hack to get consistent names.
-	 * https://github.com/olvaffe/percetto/issues/15
-	 *
-	 */
-
-	os_nanosleep(1000 * 1000);
-
-	// But also shows when the app was started.
-	XRT_TRACE_MARKER();
 }
 
 #else /* XRT_FEATURE_TRACING */
 
 void
-u_tracer_maker_init(enum u_trace_which which)
+u_trace_marker_setup(enum u_trace_which which)
 {
 	(void)which;
+
+	// Noop
+}
+
+void
+u_trace_marker_init(void)
+{
+	// Noop
 }
 
 #endif /* XRT_FEATURE_TRACING */

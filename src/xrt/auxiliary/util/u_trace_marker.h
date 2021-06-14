@@ -37,12 +37,20 @@ enum u_trace_which
 };
 
 /*!
- * Internal init function, use @ref U_TRACE_TARGET_INIT, see @ref tracing.
+ * Internal setup function, use @ref U_TRACE_TARGET_SETUP, see @ref tracing.
  *
  * @ingroup aux_util
  */
 void
-u_tracer_maker_init(enum u_trace_which which);
+u_trace_marker_setup(enum u_trace_which which);
+
+/*!
+ * Must be called from a non-static/global constructor context.
+ *
+ * @ingroup aux_util
+ */
+void
+u_trace_marker_init(void);
 
 #define VK_TRACE_IDENT(IDENT) U_TRACE_EVENT(vk, #IDENT)
 #define XRT_TRACE_MARKER() U_TRACE_EVENT(xrt, __func__)
@@ -100,12 +108,12 @@ PERCETTO_TRACK_DECLARE(ft_draw);
 	TRACE_ANY_WITH_ARGS(PERCETTO_EVENT_INSTANT, CATEGORY, &g_percetto_track_##TRACK, TIME, NAME, 0)
 #define U_TRACE_DATA(fd, type, data) u_trace_data(fd, type, (void *)&(data), sizeof(data))
 
-#define U_TRACE_TARGET_INIT(WHICH)                                                                                     \
-	void __attribute__((constructor(101))) u_trace_maker_constructor(void);                                        \
+#define U_TRACE_TARGET_SETUP(WHICH)                                                                                    \
+	void __attribute__((constructor(101))) u_trace_marker_constructor(void);                                       \
                                                                                                                        \
-	void u_trace_maker_constructor(void)                                                                           \
+	void u_trace_marker_constructor(void)                                                                          \
 	{                                                                                                              \
-		u_tracer_maker_init(WHICH);                                                                            \
+		u_trace_marker_setup(WHICH);                                                                           \
 	}
 
 
@@ -145,7 +153,7 @@ PERCETTO_TRACK_DECLARE(ft_draw);
  *
  * @ingroup aux_util
  */
-#define U_TRACE_TARGET_INIT(WHICH)
+#define U_TRACE_TARGET_SETUP(WHICH)
 
 #endif // XRT_FEATURE_TRACING
 

@@ -13,8 +13,8 @@
 
 #ifdef XRT_FEATURE_SERVICE
 
-// Insert the on load constructor to init trace marker.
-U_TRACE_TARGET_INIT(U_TRACE_WHICH_OPENXR)
+// Insert the on load constructor to setup trace marker.
+U_TRACE_TARGET_SETUP(U_TRACE_WHICH_OPENXR)
 
 #include "xrt/xrt_instance.h"
 
@@ -25,6 +25,8 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 int
 xrt_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_xinst)
 {
+	u_trace_marker_init();
+
 	XRT_TRACE_MARKER();
 
 	return ipc_instance_create(i_info, out_xinst);
@@ -32,8 +34,8 @@ xrt_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 
 #else
 
-// Insert the on load constructor to init trace marker.
-U_TRACE_TARGET_INIT(U_TRACE_WHICH_SERVICE)
+// Insert the on load constructor to setup trace marker.
+U_TRACE_TARGET_SETUP(U_TRACE_WHICH_SERVICE)
 
 /*
  * For non-service runtime, xrt_instance_create defined in target_instance
