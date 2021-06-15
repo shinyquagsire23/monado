@@ -435,6 +435,22 @@ math_pose_transform_point(const struct xrt_pose *transform, const struct xrt_vec
 
 /*
  *
+ * Inline functions.
+ *
+ */
+
+/*!
+ * Map a number from one range to another range.
+ * Exactly the same as Arduino's map().
+ */
+static inline double
+math_map_ranges(double value, double from_low, double from_high, double to_low, double to_high)
+{
+	return (value - from_low) * (to_high - to_low) / (from_high - from_low) + to_low;
+}
+
+/*
+ *
  * Optics functions.
  *
  */
