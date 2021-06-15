@@ -8,7 +8,6 @@
 using namespace std;
 
 // min set of functions needed
-const float LP_PI = 3.14159265f; // float error, will be 3.141592741f.
 const float kEpsilon = 0.00001f;
 
 
@@ -857,7 +856,7 @@ public:
 
 		float sinp = +2.0f * (q.w * q.y - q.z * q.x);
 		if (fabs(sinp) >= 1.f) {
-			pitch = copysignf(LP_PI / 2.f, sinp);
+			pitch = copysignf(M_PI / 2.f, sinp);
 		} else {
 			pitch = asinf(sinp);
 		}
@@ -871,7 +870,7 @@ public:
 	ToEulerAngles(const Quaternion &in)
 	{
 		Vector3 euler;
-		const static float PI_OVER_2 = LP_PI * 0.5f;
+		const static float PI_OVER_2 = M_PI * 0.5f;
 		const static float EPSILON = 1e-10f;
 		float sqw, sqx, sqy, sqz;
 
@@ -892,7 +891,7 @@ public:
 
 			// If facing down, reverse yaw
 			if (euler.y < 0.f) {
-				euler.z = LP_PI - euler.z;
+				euler.z = M_PI - euler.z;
 			}
 		}
 		return euler;
@@ -1178,66 +1177,4 @@ public:
 	float y;
 	float z;
 	float w;
-};
-
-// A position and rotation. You can multiply two poses; this acts like
-// Matrix4x4 multiplication, but Poses always have unit scale.
-class Pose
-{
-public:
-	Vector3 position;
-	Quaternion rotation;
-
-	explicit Pose(Vector3 const &pos)
-	{
-		position = pos;
-		rotation = Quaternion::Identity();
-	}
-	explicit Pose(Quaternion const &rot)
-	{
-		position = Vector3::Zero();
-		rotation = rot;
-	}
-	Pose(Vector3 const &pos, Quaternion const &rot)
-	{
-		position = pos;
-		rotation = rot;
-	}
-
-	inline static Pose
-	Identity()
-	{
-		return Pose(Vector3::Zero(), Quaternion::Identity());
-	}
-
-	inline Pose
-	Inverse() const
-	{
-		Quaternion invQ = rotation.Inverse();
-		return Pose(invQ * -position, invQ);
-	}
-
-	inline Matrix4x4
-	Matrix() const
-	{
-		return Matrix4x4::Translate(position) * rotation.ToMatrix4x4();
-	}
-
-	inline Pose // Until clang-format-11 is on the CI.
-	operator*(Pose const &rhs) const
-	{
-		return Pose(position + (rotation * rhs.position), rotation * rhs.rotation);
-	}
-
-	inline Pose // Until clang-format-11 is on the CI.
-	operator*(Vector3 const &rhs) const
-	{
-		return Pose(position + rotation * rhs, rotation);
-	}
-
-	inline static Pose
-	FromMatrix(Matrix4x4 m)
-	{
-		return Pose(Vector3(m.m03, m.m13, m.m23), Quaternion::FromMatrix(m));
-	}
 };
