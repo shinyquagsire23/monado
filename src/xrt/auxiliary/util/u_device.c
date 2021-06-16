@@ -5,6 +5,7 @@
  * @brief  Misc helpers for device drivers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup aux_util
  */
 
@@ -130,6 +131,35 @@ u_device_dump_config(struct xrt_device *xdev, const char *prefix, const char *pr
  * Helper setup functions.
  *
  */
+
+bool
+u_extents_2d_split_side_by_side(struct xrt_device *xdev, const struct u_extents_2d *extents)
+{
+	uint32_t eye_w_pixels = extents->w_pixels / 2;
+	uint32_t eye_h_pixels = extents->h_pixels;
+
+	xdev->hmd->screens[0].w_pixels = extents->w_pixels;
+	xdev->hmd->screens[0].h_pixels = extents->h_pixels;
+
+	// Left
+	xdev->hmd->views[0].display.w_pixels = eye_w_pixels;
+	xdev->hmd->views[0].display.h_pixels = eye_h_pixels;
+	xdev->hmd->views[0].viewport.x_pixels = 0;
+	xdev->hmd->views[0].viewport.y_pixels = 0;
+	xdev->hmd->views[0].viewport.w_pixels = eye_w_pixels;
+	xdev->hmd->views[0].viewport.h_pixels = eye_h_pixels;
+	xdev->hmd->views[0].rot = u_device_rotation_ident;
+
+	// Right
+	xdev->hmd->views[1].display.w_pixels = eye_w_pixels;
+	xdev->hmd->views[1].display.h_pixels = eye_h_pixels;
+	xdev->hmd->views[1].viewport.x_pixels = eye_w_pixels;
+	xdev->hmd->views[1].viewport.y_pixels = 0;
+	xdev->hmd->views[1].viewport.w_pixels = eye_w_pixels;
+	xdev->hmd->views[1].viewport.h_pixels = eye_h_pixels;
+	xdev->hmd->views[1].rot = u_device_rotation_ident;
+	return true;
+}
 
 bool
 u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device_simple_info *info)

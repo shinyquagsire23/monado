@@ -5,6 +5,7 @@
  * @brief  Misc helpers for device drivers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup aux_util
  */
 
@@ -33,6 +34,22 @@ enum u_device_alloc_flags
 	// clang-format on
 };
 
+/*!
+ *
+ * Info to describe 2D extents of a device's screen
+ *
+ */
+struct u_extents_2d
+{
+	uint32_t w_pixels; // Width of entire screen in pixels
+	uint32_t h_pixels; // Height of entire screen
+};
+
+/*!
+ *
+ * Info to describe a very simple headset with diffractive lens optics.
+ *
+ */
 struct u_device_simple_info
 {
 	struct
@@ -60,6 +77,17 @@ struct u_device_simple_info
  */
 bool
 u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device_simple_info *info);
+
+/*!
+ * Just setup the device's display's 2D extents.
+ * Good for headsets without traditional VR optics.
+ *
+ * @return true on success.
+ * @ingroup aux_util
+ */
+bool
+u_extents_2d_split_side_by_side(struct xrt_device *xdev, const struct u_extents_2d *extents);
+
 
 /*!
  * Dump the device config to stderr.
