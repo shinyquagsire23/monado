@@ -353,6 +353,8 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
 
 	u_hand_joints_set_out_data(&d->hand_tracking, hand, &controller_relation, &hand_on_handle_pose, out_value);
+
+	out_value->is_active = true;
 }
 
 static void
