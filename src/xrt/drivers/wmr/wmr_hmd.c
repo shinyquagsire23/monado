@@ -363,6 +363,125 @@ wmr_hmd_deactivate(struct wmr_hmd *wh)
 	HID_SEND(hid, cmd, "screen_off");
 }
 
+
+/*
+ *
+ * Config functions.
+ *
+ */
+
+static int
+wmr_config_command_sync(struct wmr_hmd *wh, unsigned char type, unsigned char *buf, int len)
+{
+	struct os_hid_device *hid = wh->hid_hololens_sensors_dev;
+
+	unsigned char cmd[64] = {0x02, type};
+	os_hid_write(hid, cmd, sizeof(cmd));
+
+	do {
+		int size = os_hid_read(hid, buf, len, -1);
+		if (size == -1) {
+			return -1;
+		}
+		if (buf[0] == WMR_MS_HOLOLENS_MSG_CONTROL) {
+			return size;
+		}
+	} while (buf[0] == WMR_MS_HOLOLENS_MSG_SENSORS || //
+	         buf[0] == WMR_MS_HOLOLENS_MSG_DEBUG ||   //
+	         buf[0] == WMR_MS_HOLOLENS_MSG_UNKNOWN_17);
+
+	return -1;
+}
+
+static int
+wmr_read_config_part(struct wmr_hmd *wh, unsigned char type, unsigned char *data, int len)
+{
+
+	unsigned char buf[33];
+	int offset = 0;
+	int size;
+
+	size = wmr_config_command_sync(wh, 0x0b, buf, sizeof(buf));
+	if (size != 33 || buf[0] != 0x02) {
+		WMR_ERROR(wh, "Failed to issue command 0b: %02x %02x %02x", buf[0], buf[1], buf[2]);
+		return -1;
+	}
+
+	size = wmr_config_command_sync(wh, type, buf, sizeof(buf));
+	if (size != 33 || buf[0] != 0x02) {
+		WMR_ERROR(wh, "Failed to issue command %02x: %02x %02x %02x", type, buf[0], buf[1], buf[2]);
+		return -1;
+	}
+
+	while (true) {
+		size = wmr_config_command_sync(wh, 0x08, buf, sizeof(buf));
+		if (size != 33 || (buf[1] != 0x01 && buf[1] != 0x02)) {
+			WMR_ERROR(wh, "Failed to issue command 08: %02x %02x %02x", buf[0], buf[1], buf[2]);
+			return -1;
+		}
+
+		if (buf[1] != 0x01) {
+			break;
+		}
+
+		if (buf[2] > len || offset + buf[2] > len) {
+			WMR_ERROR(wh, "Getting more information then requested");
+			return -1;
+		}
+
+		memcpy(data + offset, buf + 3, buf[2]);
+		offset += buf[2];
+	}
+
+	return offset;
+}
+
+XRT_MAYBE_UNUSED static int
+wmr_read_config_raw(struct wmr_hmd *wh, uint8_t **out_data, size_t *out_size)
+{
+	unsigned char meta[84];
+	uint8_t *data;
+	int size, data_size;
+
+	size = wmr_read_config_part(wh, 0x06, meta, sizeof(meta));
+	WMR_DEBUG(wh, "(0x06, meta) => %d", size);
+
+	if (size < 0) {
+		return -1;
+	}
+
+	/*
+	 * No idea what the other 64 bytes of metadata are, but the first two
+	 * seem to be little endian size of the data store.
+	 */
+	data_size = meta[0] | (meta[1] << 8);
+	data = calloc(1, data_size);
+	if (!data) {
+		return -1;
+	}
+
+	size = wmr_read_config_part(wh, 0x04, data, data_size);
+	WMR_DEBUG(wh, "(0x04, data) => %d", size);
+	if (size < 0) {
+		free(data);
+		return -1;
+	}
+
+	WMR_DEBUG(wh, "Read %d-byte config data", data_size);
+
+	*out_data = data;
+	*out_size = size;
+
+	return 0;
+}
+
+
+/*
+ *
+ * Device members.
+ *
+ */
+
 static void
 wmr_hmd_update_inputs(struct xrt_device *xdev)
 {
