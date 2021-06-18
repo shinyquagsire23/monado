@@ -525,8 +525,8 @@ handle_overlay_client_events(volatile struct ipc_client_state *ics, int active_i
 		return;
 	}
 
-	// Does this client have a compositor yet?
-	if (ics->xc) {
+	// Does this client have a compositor yet, if not return?
+	if (ics->xc == NULL) {
 		return;
 	}
 
