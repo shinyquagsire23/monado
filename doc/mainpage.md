@@ -14,7 +14,8 @@ getting started information and general documentation.
 * @ref CHANGELOG - If this is the web version of the docs, the changelog also
   includes a section for changes that have not yet been in a tagged release.
 * @ref conventions
-* @ref understanding-targets
+* @ref understanding-targets - How all the pieces (`xrt_instance`, IPC, OpenXR)
+  fit together.
 * @ref vulkan-extensions
 * @ref writing-driver (**not complete**)
 * @ref ipc-design

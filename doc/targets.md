@@ -1,14 +1,21 @@
-# Understanding and Writing Targets {#understanding-targets}
+# Understanding and Writing Targets: Connecting the Pieces {#understanding-targets}
 
 <!--
 Copyright 2018-2020, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
-Monado is designed to be a collection of related but independent modules. The
-final build product that brings all the desired components together, potentially
-with additional code, is called the "target". There are several targets included
-in the Monado source tree (in `src/xrt/targets/`) including:
+Monado is designed to be a collection of related but independent modules. In a
+sense, the Monado project is almost more of a "runtime construction kit" than a
+single monolithic runtime. This makes it easy for adaptation and modification,
+as well as extension, but it also means that any call in an OpenXR application
+goes through quite a few modules before e.g. talking with the driver or the
+compositor.
+
+The final build product that brings all the desired
+components together, potentially with additional code, is called the "target".
+There are several targets included in the Monado source tree (in
+`src/xrt/targets/`) including:
 
 - `cli` - builds `monado-cli` executable
 - `openxr` - builds `libopenxr-monado.so` OpenXR runtime shared object
@@ -20,7 +27,8 @@ There is also a directory `common` which builds two static libraries. Because
 the "target" is responsible for pulling in all the desired drivers, etc. it can
 lead to some repetition if multiple targets want the same driver collection. For
 this reason, the "all drivers" code shared between many targets is located here,
-though you could consider it a part of the individual targets.
+though you could consider it a part of the individual targets. See this section
+for details on how the targets find the drivers to probe: @ref writing-driver
 
 ## Requirements of a Target
 
@@ -30,7 +38,8 @@ cases, the entry point might be provided by one of the modules being combined to
 form the target. For instance, an OpenXR runtime must expose
 `xrNegotiateLoaderRuntimeInterface`: this function is provided by the OpenXR
 state tracker `st_oxr`, so the OpenXR runtime target just has to link the state
-tracker in and ensure it is present in the final build product.
+tracker in and ensure that symbol is present and visible in the final build
+product.
 
 Then, the target must provide access to the collection of devices desired.
 Target device access is provided by implementing the `xrt_instance` interface in
