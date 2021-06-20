@@ -141,6 +141,16 @@ convert_eye_visibility(XrSwapchainUsageFlags xr_visibility)
 	return visibility;
 }
 
+static void
+fill_in_sub_image(const struct oxr_swapchain *sc, const XrSwapchainSubImage *oxr_sub, struct xrt_sub_image *xsub)
+{
+	const struct xrt_rect *rect = (const struct xrt_rect *)&oxr_sub->imageRect;
+
+	xsub->image_index = sc->released.index;
+	xsub->array_index = oxr_sub->imageArrayIndex;
+	xsub->rect = *rect;
+}
+
 
 /*
  *
@@ -876,14 +886,11 @@ submit_quad_layer(struct oxr_session *sess,
 	data.flags = flags;
 
 	struct xrt_vec2 *size = (struct xrt_vec2 *)&quad->size;
-	struct xrt_rect *rect = (struct xrt_rect *)&quad->subImage.imageRect;
 
 	data.quad.visibility = convert_eye_visibility(quad->eyeVisibility);
-	data.quad.sub.image_index = sc->released.index;
-	data.quad.sub.array_index = quad->subImage.imageArrayIndex;
-	data.quad.sub.rect = *rect;
 	data.quad.pose = pose;
 	data.quad.size = *size;
+	fill_in_sub_image(sc, &quad->subImage, &data.quad.sub);
 
 	CALL_CHK(xrt_comp_layer_quad(xc, head, sc->swapchain, &data));
 
@@ -921,9 +928,7 @@ submit_projection_layer(struct oxr_session *sess,
 		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
 	}
 
-	struct xrt_rect *l_rect = (struct xrt_rect *)&proj->views[0].subImage.imageRect;
 	struct xrt_fov *l_fov = (struct xrt_fov *)&proj->views[0].fov;
-	struct xrt_rect *r_rect = (struct xrt_rect *)&proj->views[1].subImage.imageRect;
 	struct xrt_fov *r_fov = (struct xrt_fov *)&proj->views[1].fov;
 
 	struct xrt_layer_data data;
@@ -932,19 +937,12 @@ submit_projection_layer(struct oxr_session *sess,
 	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
 	data.timestamp = timestamp;
 	data.flags = flags;
-
-	data.stereo.l.sub.image_index = scs[0]->released.index;
-	data.stereo.l.sub.array_index = proj->views[0].subImage.imageArrayIndex;
-	data.stereo.l.sub.rect = *l_rect;
 	data.stereo.l.fov = *l_fov;
 	data.stereo.l.pose = pose[0];
-
-	data.stereo.r.sub.image_index = scs[1]->released.index;
-	data.stereo.r.sub.array_index = proj->views[1].subImage.imageArrayIndex;
-	data.stereo.r.sub.rect = *r_rect;
 	data.stereo.r.fov = *r_fov;
 	data.stereo.r.pose = pose[1];
-
+	fill_in_sub_image(scs[0], &proj->views[0].subImage, &data.stereo.l.sub);
+	fill_in_sub_image(scs[1], &proj->views[1].subImage, &data.stereo.r.sub);
 
 
 #ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
@@ -958,10 +956,7 @@ submit_projection_layer(struct oxr_session *sess,
 
 		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, d_l->subImage.swapchain);
 
-		struct xrt_rect *d_l_rect = (struct xrt_rect *)&d_l->subImage.imageRect;
-		data.stereo_depth.l_d.sub.image_index = sc->released.index;
-		data.stereo_depth.l_d.sub.array_index = d_l->subImage.imageArrayIndex;
-		data.stereo_depth.l_d.sub.rect = *d_l_rect;
+		fill_in_sub_image(sc, &d_l->subImage, &data.stereo_depth.l_d.sub);
 
 		// Need to pass this in.
 		d_scs[0] = sc;
@@ -978,10 +973,7 @@ submit_projection_layer(struct oxr_session *sess,
 
 		struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, d_r->subImage.swapchain);
 
-		struct xrt_rect *d_l_rect = (struct xrt_rect *)&d_r->subImage.imageRect;
-		data.stereo_depth.r_d.sub.image_index = sc->released.index;
-		data.stereo_depth.r_d.sub.array_index = d_r->subImage.imageArrayIndex;
-		data.stereo_depth.r_d.sub.rect = *d_l_rect;
+		fill_in_sub_image(sc, &d_r->subImage, &data.stereo_depth.r_d.sub);
 
 		// Need to pass this in.
 		d_scs[1] = sc;
@@ -1055,16 +1047,12 @@ submit_cylinder_layer(struct oxr_session *sess,
 	data.timestamp = timestamp;
 	data.flags = flags;
 
-	struct xrt_rect *rect = (struct xrt_rect *)&cylinder->subImage.imageRect;
-
 	data.cylinder.visibility = visibility;
-	data.cylinder.sub.image_index = sc->released.index;
-	data.cylinder.sub.array_index = cylinder->subImage.imageArrayIndex;
-	data.cylinder.sub.rect = *rect;
 	data.cylinder.pose = pose;
 	data.cylinder.radius = cylinder->radius;
 	data.cylinder.central_angle = cylinder->centralAngle;
 	data.cylinder.aspect_ratio = cylinder->aspectRatio;
+	fill_in_sub_image(sc, &cylinder->subImage, &data.cylinder.sub);
 
 	CALL_CHK(xrt_comp_layer_cylinder(xc, head, sc->swapchain, &data));
 
@@ -1102,16 +1090,11 @@ submit_equirect1_layer(struct oxr_session *sess,
 	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
 	data.timestamp = timestamp;
 	data.flags = flags;
-
-	struct xrt_rect *rect = (struct xrt_rect *)&equirect->subImage.imageRect;
-
 	data.equirect1.visibility = convert_eye_visibility(equirect->eyeVisibility);
-	data.equirect1.sub.image_index = sc->released.index;
-	data.equirect1.sub.array_index = equirect->subImage.imageArrayIndex;
-	data.equirect1.sub.rect = *rect;
 	data.equirect1.pose = pose;
-
 	data.equirect1.radius = equirect->radius;
+	fill_in_sub_image(sc, &equirect->subImage, &data.equirect1.sub);
+
 
 	struct xrt_vec2 *scale = (struct xrt_vec2 *)&equirect->scale;
 	struct xrt_vec2 *bias = (struct xrt_vec2 *)&equirect->bias;
@@ -1164,19 +1147,13 @@ submit_equirect2_layer(struct oxr_session *sess,
 	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
 	data.timestamp = timestamp;
 	data.flags = flags;
-
-	struct xrt_rect *rect = (struct xrt_rect *)&equirect->subImage.imageRect;
-
 	data.equirect2.visibility = convert_eye_visibility(equirect->eyeVisibility);
-	data.equirect2.sub.image_index = sc->released.index;
-	data.equirect2.sub.array_index = equirect->subImage.imageArrayIndex;
-	data.equirect2.sub.rect = *rect;
 	data.equirect2.pose = pose;
-
 	data.equirect2.radius = equirect->radius;
 	data.equirect2.central_horizontal_angle = equirect->centralHorizontalAngle;
 	data.equirect2.upper_vertical_angle = equirect->upperVerticalAngle;
 	data.equirect2.lower_vertical_angle = equirect->lowerVerticalAngle;
+	fill_in_sub_image(sc, &equirect->subImage, &data.equirect2.sub);
 
 	CALL_CHK(xrt_comp_layer_equirect2(xc, head, sc->swapchain, &data));
 
