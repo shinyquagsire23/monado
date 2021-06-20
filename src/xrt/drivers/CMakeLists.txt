@@ -320,7 +320,7 @@ if(XRT_BUILD_DRIVER_WMR)
 		)
 
 	add_library(drv_wmr STATIC ${WMR_SOURCE_FILES})
-	target_link_libraries(drv_wmr PRIVATE xrt-interfaces aux_util)
+	target_link_libraries(drv_wmr PRIVATE xrt-interfaces aux_util aux_math xrt-external-cjson)
 	list(APPEND ENABLED_HEADSET_DRIVERS wmr)
 endif()
 

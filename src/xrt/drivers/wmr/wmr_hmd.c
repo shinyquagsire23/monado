@@ -31,6 +31,7 @@
 
 #include "wmr_hmd.h"
 #include "wmr_common.h"
+#include "wmr_config_key.h"
 #include "wmr_protocol.h"
 
 #include <stdio.h>
@@ -151,8 +152,12 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 		struct xrt_vec3 raw_accel[4];
 
 		for (int i = 0; i < 4; i++) {
-			vec3_from_hololens_gyro(wh->packet.gyro, i, &raw_gyro[i]);
-			vec3_from_hololens_accel(wh->packet.accel, i, &raw_accel[i]);
+			struct xrt_vec3 sample;
+			vec3_from_hololens_gyro(wh->packet.gyro, i, &sample);
+			math_quat_rotate_vec3(&wh->gyro_to_centerline.orientation, &sample, &raw_gyro[i]);
+
+			vec3_from_hololens_accel(wh->packet.accel, i, &sample);
+			math_quat_rotate_vec3(&wh->accel_to_centerline.orientation, &sample, &raw_accel[i]);
 		}
 
 		os_mutex_lock(&wh->fusion.mutex);
@@ -455,10 +460,11 @@ wmr_read_config_raw(struct wmr_hmd *wh, uint8_t **out_data, size_t *out_size)
 	 * seem to be little endian size of the data store.
 	 */
 	data_size = meta[0] | (meta[1] << 8);
-	data = calloc(1, data_size);
+	data = calloc(1, data_size + 1);
 	if (!data) {
 		return -1;
 	}
+	data[data_size] = '\0';
 
 	size = wmr_read_config_part(wh, 0x04, data, data_size);
 	WMR_DEBUG(wh, "(0x04, data) => %d", size);
@@ -475,6 +481,51 @@ wmr_read_config_raw(struct wmr_hmd *wh, uint8_t **out_data, size_t *out_size)
 	return 0;
 }
 
+static int
+wmr_read_config(struct wmr_hmd *wh)
+{
+	unsigned char *data = NULL, *config_json_block;
+	size_t data_size;
+	int ret;
+
+	// Read config
+	ret = wmr_read_config_raw(wh, &data, &data_size);
+	if (ret < 0)
+		return ret;
+
+	/* De-obfuscate the JSON config */
+	/* FIXME: The header contains little-endian values that need swapping for big-endian */
+	struct wmr_config_header *hdr = (struct wmr_config_header *)data;
+
+	WMR_INFO(wh, "Manufacturer: %.*s", (int)sizeof(hdr->manufacturer), hdr->manufacturer);
+	WMR_INFO(wh, "Device: %.*s", (int)sizeof(hdr->device), hdr->device);
+	WMR_INFO(wh, "Serial: %.*s", (int)sizeof(hdr->serial), hdr->serial);
+	WMR_INFO(wh, "UID: %.*s", (int)sizeof(hdr->uid), hdr->uid);
+	WMR_INFO(wh, "Name: %.*s", (int)sizeof(hdr->name), hdr->name);
+	WMR_INFO(wh, "Revision: %.*s", (int)sizeof(hdr->revision), hdr->revision);
+	WMR_INFO(wh, "Revision Date: %.*s", (int)sizeof(hdr->revision_date), hdr->revision_date);
+
+	snprintf(wh->base.str, XRT_DEVICE_NAME_LEN, "%.*s", (int)sizeof(hdr->name), hdr->name);
+
+	if (hdr->json_start >= data_size || (data_size - hdr->json_start) < hdr->json_size) {
+		WMR_ERROR(wh, "Invalid WMR config block - incorrect sizes");
+		free(data);
+		return -1;
+	}
+
+	config_json_block = data + hdr->json_start + sizeof(uint16_t);
+	for (unsigned int i = 0; i < hdr->json_size - sizeof(uint16_t); i++) {
+		config_json_block[i] ^= wmr_config_key[i % sizeof(wmr_config_key)];
+	}
+
+	if (!wmr_config_parse(&wh->config, (char *)config_json_block, wh->log_level)) {
+		free(data);
+		return -1;
+	}
+
+	free(data);
+	return 0;
+}
 
 /*
  *
@@ -645,8 +696,6 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 	wh->hid_hololens_sensors_dev = hid_holo;
 	wh->hid_control_dev = hid_ctrl;
 
-	snprintf(wh->base.str, XRT_DEVICE_NAME_LEN, "HP Reverb VR Headset");
-
 	// Mutex before thread.
 	ret = os_mutex_init(&wh->fusion.mutex);
 	if (ret != 0) {
@@ -665,33 +714,50 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 		return NULL;
 	}
 
-	if (wmr_hmd_activate(wh) != 0) {
-		WMR_ERROR(wh, "Activation of HMD failed");
-		wmr_hmd_destroy(&wh->base);
-		wh = NULL;
-		return NULL;
-	}
-
-	// Switch on IMU on the HMD.
-	hololens_sensors_enable_imu(wh);
-
 	// Setup input.
 	wh->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 
-	// TODO: Read config file from HMD, provide guestimate values for now.
-	if (!wmr_config_parse(&wh->config)) {
+	// Read config file from HMD
+	if (wmr_read_config(wh) < 0) {
 		WMR_ERROR(wh, "Failed to load headset configuration!");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
 		return NULL;
 	}
 
+	// Compute centerline in the HMD's calibration coordinate space as the average of the two display poses
+	math_quat_slerp(&wh->config.eye_params[0].pose.orientation, &wh->config.eye_params[1].pose.orientation, 0.5f,
+	                &wh->centerline.orientation);
+	wh->centerline.position.x =
+	    (wh->config.eye_params[0].pose.position.x + wh->config.eye_params[1].pose.position.x) * 0.5f;
+	wh->centerline.position.y =
+	    (wh->config.eye_params[0].pose.position.y + wh->config.eye_params[1].pose.position.y) * 0.5f;
+	wh->centerline.position.z =
+	    (wh->config.eye_params[0].pose.position.z + wh->config.eye_params[1].pose.position.z) * 0.5f;
+
+	// Compute display and sensor offsets relative to the centerline
+	for (int dIdx = 0; dIdx < 2; ++dIdx) {
+		math_pose_invert(&wh->config.eye_params[dIdx].pose, &wh->display_to_centerline[dIdx]);
+		math_pose_transform(&wh->centerline, &wh->display_to_centerline[dIdx],
+		                    &wh->display_to_centerline[dIdx]);
+	}
+	math_pose_invert(&wh->config.accel_pose, &wh->accel_to_centerline);
+	math_pose_transform(&wh->centerline, &wh->accel_to_centerline, &wh->accel_to_centerline);
+	math_pose_invert(&wh->config.gyro_pose, &wh->gyro_to_centerline);
+	math_pose_transform(&wh->centerline, &wh->gyro_to_centerline, &wh->gyro_to_centerline);
+	math_pose_invert(&wh->config.mag_pose, &wh->mag_to_centerline);
+	math_pose_transform(&wh->centerline, &wh->mag_to_centerline, &wh->mag_to_centerline);
+
 	struct u_device_simple_info info;
-	info.display.w_pixels = 4320;
-	info.display.h_pixels = 2160;
+	info.display.w_pixels = wh->config.eye_params[0].display_size.x;
+	info.display.h_pixels = wh->config.eye_params[0].display_size.y;
+
+	info.lens_horizontal_separation_meters =
+	    fabs(wh->display_to_centerline[1].position.x - wh->display_to_centerline[0].position.x);
+
+	// TODO placeholder values below here
 	info.display.w_meters = 0.13f;
 	info.display.h_meters = 0.07f;
-	info.lens_horizontal_separation_meters = 0.13f / 2.0f;
 	info.lens_vertical_position_meters = 0.07f / 2.0f;
 	info.views[0].fov = 85.0f * (M_PI / 180.0f);
 	info.views[1].fov = 85.0f * (M_PI / 180.0f);
@@ -726,6 +792,18 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 	wh->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 	wh->base.compute_distortion = compute_distortion_wmr;
 	u_distortion_mesh_fill_in_compute(&wh->base);
+
+	/* We're set up. Activate the HMD and turn on the IMU */
+	if (wmr_hmd_activate(wh) != 0) {
+		WMR_ERROR(wh, "Activation of HMD failed");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return NULL;
+	}
+
+	// Switch on IMU on the HMD.
+	hololens_sensors_enable_imu(wh);
+
 
 	// Hand over hololens sensor device to reading thread.
 	ret = os_thread_helper_start(&wh->oth, wmr_run_thread, wh);

@@ -296,7 +296,10 @@ lib_drv_wmr = static_library(
 		'wmr/wmr_protocol.c',
 		'wmr/wmr_protocol.h',
 	),
-	include_directories: xrt_include,
+	include_directories: [
+		xrt_include,
+		cjson_include,
+	],
 	dependencies: [aux],
 	build_by_default: 'wmr' in drivers,
 )

@@ -56,6 +56,20 @@ struct hololens_sensors_packet
 	uint64_t video_timestamp[4];
 };
 
+struct wmr_config_header
+{
+	uint32_t json_start;
+	uint32_t json_size;
+	char manufacturer[0x40];
+	char device[0x40];
+	char serial[0x40];
+	char uid[0x26];
+	char unk[0xd5];
+	char name[0x40];
+	char revision[0x20];
+	char revision_date[0x20];
+};
+
 /*!
  * @}
  */

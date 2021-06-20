@@ -11,7 +11,13 @@
 #pragma once
 
 #include "math/m_vec2.h"
+#include "util/u_logging.h"
 
+enum wmr_distortion_model
+{
+	WMR_DISTORTION_MODEL_UNKNOWN = 0,
+	WMR_DISTORTION_MODEL_POLYNOMIAL_3K
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +25,8 @@ extern "C" {
 
 struct wmr_distortion_3K
 {
+	enum wmr_distortion_model model;
+
 	/* X/Y center of the distortion (pixels) */
 	struct xrt_vec2 eye_center;
 	/* k1,k2,k3 params for radial distortion as
@@ -31,6 +39,8 @@ struct wmr_distortion_eye_config
 {
 	/* 3x3 camera matrix that moves from normalised camera coords (X/Z & Y/Z) to undistorted pixels */
 	struct xrt_matrix_3x3 affine_xform;
+	/* Eye pose in world space */
+	struct xrt_pose pose;
 	/* Radius of the (undistorted) visible area from the center (pixels) (I think) */
 	double visible_radius;
 
@@ -47,11 +57,14 @@ struct wmr_hmd_config
 {
 	/* Left and Right eye mapping and distortion params */
 	struct wmr_distortion_eye_config eye_params[2];
+
+	struct xrt_pose accel_pose;
+	struct xrt_pose gyro_pose;
+	struct xrt_pose mag_pose;
 };
 
-/* FIXME:	Pass JSON config when we have that: */
 bool
-wmr_config_parse(struct wmr_hmd_config *c);
+wmr_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging_level ll);
 
 #ifdef __cplusplus
 }

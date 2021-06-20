@@ -86,6 +86,13 @@ struct wmr_hmd
 	/* Distortion related parameters */
 	struct wmr_hmd_distortion_params distortion_params[2];
 
+	// Config-derived poses
+	struct xrt_pose centerline;
+	struct xrt_pose display_to_centerline[2];
+	struct xrt_pose accel_to_centerline;
+	struct xrt_pose gyro_to_centerline;
+	struct xrt_pose mag_to_centerline;
+
 	struct hololens_sensors_packet packet;
 
 	struct
