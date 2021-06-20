@@ -141,6 +141,8 @@ struct xrt_sub_image
 	uint32_t array_index;
 	//! The rectangle in the image to use
 	struct xrt_rect rect;
+	//! Normalized sub image coordinates and size.
+	struct xrt_normalized_rect norm_rect;
 };
 
 /*!

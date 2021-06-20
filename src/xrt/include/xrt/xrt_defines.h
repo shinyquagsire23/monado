@@ -312,6 +312,16 @@ struct xrt_rect
 };
 
 /*!
+ * Normalized image rectangle, coordinates and size in 0 .. 1 range.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_normalized_rect
+{
+	float x, y, w, h;
+};
+
+/*!
  * A pose composed of a position and orientation.
  *
  * @see xrt_qaut
