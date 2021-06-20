@@ -39,7 +39,7 @@ set(OXR_SOURCE_FILES
 
 if(XRT_HAVE_VULKAN)
 	list(APPEND OXR_SOURCE_FILES
-		oxr_session_vk.c
+		oxr_session_gfx_vk.c
 		oxr_swapchain_vk.c
 		oxr_vulkan.c
 		)
@@ -54,7 +54,7 @@ endif()
 
 if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	list(APPEND OXR_SOURCE_FILES
-		oxr_session_gl.c
+		oxr_session_gfx_gl.c
 		oxr_swapchain_gl.c
 		)
 endif()
@@ -65,14 +65,16 @@ endif()
 
 if(XRT_HAVE_EGL)
 	add_definitions(-DXR_USE_PLATFORM_EGL)
-	list(APPEND OXR_SOURCE_FILES oxr_session_egl.c)
+	list(APPEND OXR_SOURCE_FILES
+		oxr_session_gfx_egl.c
+		)
 endif()
 
 
 if(ANDROID)
 	add_definitions(-DXR_USE_PLATFORM_ANDROID)
 	list(APPEND OXR_SOURCE_FILES
-		oxr_session_gles_android.c
+		oxr_session_gfx_gles_android.c
 		)
 endif()
 
