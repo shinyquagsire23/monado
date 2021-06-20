@@ -611,6 +611,12 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
                               uint32_t *formatCountOutput,
                               int64_t *formats);
 
+/*!
+ * Change the state of the session, queues a event.
+ */
+void
+oxr_session_change_state(struct oxr_logger *log, struct oxr_session *sess, XrSessionState state);
+
 XrResult
 oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSessionBeginInfo *beginInfo);
 

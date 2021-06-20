@@ -48,6 +48,7 @@ lib_st_oxr = static_library(
 		'oxr_objects.h',
 		'oxr_path.c',
 		'oxr_session.c',
+		'oxr_session_frame_end.c',
 		'oxr_session_gfx_gl.c',
 		'oxr_session_gfx_egl.c',
 		'oxr_session_gfx_vk.c',

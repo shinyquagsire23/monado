@@ -29,6 +29,7 @@ set(OXR_SOURCE_FILES
 	oxr_objects.h
 	oxr_path.c
 	oxr_session.c
+	oxr_session_frame_end.c
 	oxr_space.c
 	oxr_swapchain.c
 	oxr_system.c
