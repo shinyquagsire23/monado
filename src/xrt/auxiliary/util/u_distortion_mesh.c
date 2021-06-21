@@ -1,9 +1,10 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Code to generate disortion meshes.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup aux_distortion
  */
 
@@ -14,6 +15,7 @@
 #include "util/u_distortion_mesh.h"
 
 #include "math/m_vec2.h"
+#include "math/m_api.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -266,6 +268,125 @@ u_compute_distortion_cardboard(struct u_cardboard_distortion_values *values,
 	return true;
 }
 
+/*
+ *
+ * North Star "2D Polynomial" distortion
+ * Sometimes known as "v2", filename is often NorthStarCalibration.json
+ *
+ */
+
+static float
+u_ns_polyval2d(float X, float Y, float C[16])
+{
+	float X2 = X * X;
+	float X3 = X2 * X;
+	float Y2 = Y * Y;
+	float Y3 = Y2 * Y;
+	return (((C[0]) + (C[1] * Y) + (C[2] * Y2) + (C[3] * Y3)) +
+	        ((C[4] * X) + (C[5] * X * Y) + (C[6] * X * Y2) + (C[7] * X * Y3)) +
+	        ((C[8] * X2) + (C[9] * X2 * Y) + (C[10] * X2 * Y2) + (C[11] * X2 * Y3)) +
+	        ((C[12] * X3) + (C[13] * X3 * Y) + (C[14] * X3 * Y2) + (C[15] * X3 * Y3)));
+}
+
+
+bool
+u_compute_distortion_ns_p2d(struct u_ns_p2d_values *values, int view, float u, float v, struct xrt_uv_triplet *result)
+{
+	// I think that OpenCV and Monado have different definitions of v coordinates, but not sure. if not,
+	// unexplainable
+	v = 1.0 - v;
+
+	float x_ray = u_ns_polyval2d(u, v, view ? values->x_coefficients_left : values->x_coefficients_right);
+	float y_ray = u_ns_polyval2d(u, v, view ? values->y_coefficients_left : values->y_coefficients_right);
+
+	struct xrt_fov fov = values->fov[view];
+
+	float left_ray_bound = tan(fov.angle_left);
+	float right_ray_bound = tan(fov.angle_right);
+	float up_ray_bound = tan(fov.angle_up);
+	float down_ray_bound = tan(fov.angle_down);
+
+	float u_eye = math_map_ranges(x_ray, left_ray_bound, right_ray_bound, 0, 1);
+
+	float v_eye = math_map_ranges(y_ray, down_ray_bound, up_ray_bound, 0, 1);
+
+	// boilerplate, put the UV coordinates in all the RGB slots
+	result->r.x = u_eye;
+	result->r.y = v_eye;
+	result->g.x = u_eye;
+	result->g.y = v_eye;
+	result->b.x = u_eye;
+	result->b.y = v_eye;
+
+	return true;
+}
+
+
+/*
+ *
+ * Moses's "variable-IPD 2D" distortion
+ * If Moses goes away or stops using North Star for some reason, please remove this - as of june 2021 nobody else is
+ * using it.
+ *
+ */
+
+bool
+u_compute_distortion_ns_vipd(struct u_ns_vipd_values *values, int view, float u, float v, struct xrt_uv_triplet *result)
+{
+	int u_index_int = floorf(u * 64);
+	int v_index_int = floorf(v * 64);
+	float u_index_frac = (u * 64) - u_index_int;
+	float v_index_frac = (v * 64) - v_index_int;
+
+	float x_ray;
+	float y_ray;
+
+	if (u_index_frac > 0.0001) {
+		// Probably this codepath if grid size is not 65x65
+		// {top,bottom}-{left,right} notation might be inaccurate. The code *works* right now but don't take its
+		// word when reading
+		struct xrt_vec2 topleft = values->grid_for_use.grid[view][v_index_int][u_index_int];
+		struct xrt_vec2 topright = values->grid_for_use.grid[view][v_index_int][u_index_int + 1];
+		struct xrt_vec2 bottomleft = values->grid_for_use.grid[view][v_index_int + 1][u_index_int];
+		struct xrt_vec2 bottomright = values->grid_for_use.grid[view][v_index_int + 1][u_index_int + 1];
+		struct xrt_vec2 leftcorrect = {math_map_ranges(v_index_frac, 0, 1, topleft.x, bottomleft.x),
+		                               math_map_ranges(v_index_frac, 0, 1, topleft.y, bottomleft.y)};
+		struct xrt_vec2 rightcorrect = {math_map_ranges(v_index_frac, 0, 1, topright.x, bottomright.x),
+		                                math_map_ranges(v_index_frac, 0, 1, topright.y, bottomright.y)};
+		y_ray = math_map_ranges(u_index_frac, 0, 1, leftcorrect.x, rightcorrect.x);
+		x_ray = math_map_ranges(u_index_frac, 0, 1, leftcorrect.y, rightcorrect.y);
+	} else {
+		// probably this path if grid size is 65x65 like normal
+		x_ray = values->grid_for_use.grid[view][v_index_int][u_index_int].y;
+		y_ray = values->grid_for_use.grid[view][v_index_int][u_index_int].x;
+	}
+
+	struct xrt_fov fov = values->fov[view];
+
+	float left_ray_bound = tan(fov.angle_left);
+	float right_ray_bound = tan(fov.angle_right);
+	float up_ray_bound = tan(fov.angle_up);
+	float down_ray_bound = tan(fov.angle_down);
+	// printf("%f %f", fov.angle_down, fov.angle_up);
+
+	float u_eye = math_map_ranges(x_ray, left_ray_bound, right_ray_bound, 0, 1);
+
+	float v_eye = math_map_ranges(y_ray, down_ray_bound, up_ray_bound, 0, 1);
+
+	// boilerplate, put the UV coordinates in all the RGB slots
+	result->r.x = u_eye;
+	result->r.y = v_eye;
+	result->g.x = u_eye;
+	result->g.y = v_eye;
+	result->b.x = u_eye;
+	result->b.y = v_eye;
+	// printf("%f %f\n", values->grid_for_use.grid[view][v_index_int][u_index_int].y,
+	// values->grid_for_use.grid[view][v_index_int][u_index_int].x);
+
+	return true;
+}
+
+
 bool
 u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result)
 {
@@ -277,6 +398,7 @@ u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result)
 	result->b.y = v;
 	return true;
 }
+
 
 
 /*

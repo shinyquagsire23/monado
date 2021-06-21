@@ -4,6 +4,7 @@
  * @file
  * @brief  Code to generate disortion meshes.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup aux_distortion
  */
 
@@ -105,6 +106,60 @@ u_compute_distortion_cardboard(struct u_cardboard_distortion_values *values,
                                float u,
                                float v,
                                struct xrt_uv_triplet *result);
+
+
+/*
+ *
+ * North Star 2D/Polynomial distortion.
+ *
+ */
+
+struct u_ns_p2d_values
+{
+	float x_coefficients_left[16];
+	float x_coefficients_right[16];
+	float y_coefficients_left[16];
+	float y_coefficients_right[16];
+	struct xrt_fov fov[2]; // left, right
+	float ipd;
+};
+
+/*!
+ * Distortion correction implementation for North Star 2D/Polynomial.
+ *
+ * @ingroup aux_distortion
+ */
+bool
+u_compute_distortion_ns_p2d(struct u_ns_p2d_values *values, int view, float u, float v, struct xrt_uv_triplet *result);
+
+/*
+ *
+ * North Star 2D/"VIPD" distortion.
+ *
+ */
+struct u_ns_vipd_grid
+{
+	struct xrt_vec2 grid[2][65][65];
+};
+
+struct u_ns_vipd_values
+{
+	int number_of_ipds;
+	float *ipds;
+	struct u_ns_vipd_grid *grids;
+	struct u_ns_vipd_grid grid_for_use;
+	struct xrt_fov fov[2]; // left, right
+	float ipd;
+};
+
+/*!
+ * Distortion correction implementation for North Star 2D/"VIPD".
+ *
+ * @ingroup aux_distortion
+ */
+bool
+u_compute_distortion_ns_vipd(
+    struct u_ns_vipd_values *values, int view, float u, float v, struct xrt_uv_triplet *result);
 
 
 /*
