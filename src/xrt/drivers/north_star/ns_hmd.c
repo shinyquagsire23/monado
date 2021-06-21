@@ -496,14 +496,12 @@ ns_config_load(struct ns_hmd *ns, const char *config_path)
 		goto parse_error;
 	}
 
-	char *json = malloc(file_size + 1);
+	char *json = calloc(file_size + 1, 1);
 	json_allocated = true;
 
-	size_t i = 0;
-	while (!feof(config_file)) {
-		json[i++] = fgetc(config_file);
-	}
-	json[i] = '\0';
+	fread(json, 1, file_size, config_file);
+	fclose(config_file);
+	json[file_size] = '\0';
 
 	ns->config_json = cJSON_Parse(json);
 	if (ns->config_json == NULL) {
@@ -518,6 +516,7 @@ ns_config_load(struct ns_hmd *ns, const char *config_path)
 	// this function is not supposed to return true if ns->config_json is NULL
 	assert(ns->config_json != NULL);
 	free(json);
+
 	return true;
 
 parse_error:
