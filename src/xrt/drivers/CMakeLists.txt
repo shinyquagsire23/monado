@@ -113,9 +113,9 @@ endif()
 
 if(XRT_BUILD_DRIVER_NS)
 	set(NS_SOURCE_FILES
-		north_star/distortion/utility_northstar.h
-		north_star/distortion/deformation_northstar.h
-		north_star/distortion/deformation_northstar.cpp
+		north_star/distortion_3d/utility_northstar.h
+		north_star/distortion_3d/deformation_northstar.h
+		north_star/distortion_3d/deformation_northstar.cpp
 		north_star/ns_hmd.h
 		north_star/ns_hmd.c
 		north_star/ns_interface.h

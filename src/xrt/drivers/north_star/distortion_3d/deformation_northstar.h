@@ -17,7 +17,7 @@ public:
 	OpticalSystem(const OpticalSystem &_in);
 
 	void
-	LoadOpticalData(struct ns_v1_eye *eye);
+	LoadOpticalData(struct ns_3d_eye *eye);
 
 	Vector3
 	GetEyePosition()

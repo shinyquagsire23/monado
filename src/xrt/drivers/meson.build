@@ -57,9 +57,9 @@ lib_drv_hydra = static_library(
 lib_drv_ns = static_library(
 	'drv_ns',
 	files(
-		'north_star/distortion/utility_northstar.h',
-		'north_star/distortion/deformation_northstar.h',
-		'north_star/distortion/deformation_northstar.cpp',
+		'north_star/distortion_3d/utility_northstar.h',
+		'north_star/distortion_3d/deformation_northstar.h',
+		'north_star/distortion_3d/deformation_northstar.cpp',
 		'north_star/ns_hmd.h',
 		'north_star/ns_hmd.c',
 		'north_star/ns_interface.h',

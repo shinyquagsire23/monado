@@ -1,9 +1,12 @@
 // Copyright 2019, Collabora, Ltd.
+// Copyright 2020, Nova King.
+// Copyright 2021, Moses Turner.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Interface between North Star distortion and HMD code.
  * @author Nova King <technobaboo@gmail.com>
+ * @author Moses Turner <mosesturner@protonmail.com>
  * @ingroup drv_ns
  */
 
@@ -15,6 +18,10 @@
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
 #include "util/u_logging.h"
+#include "os/os_threading.h"
+#include "util/u_distortion_mesh.h"
+
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,7 +41,8 @@ extern "C" {
 
 /*
  *
- * Structs
+ * 3D distortion structs
+ * Sometimes known as "v1", config file name is often "Calibration.json"
  *
  */
 
@@ -43,18 +51,7 @@ extern "C" {
  *
  * @ingroup drv_ns
  */
-struct ns_optical_system;
-
-/*!
- * Simple UV struct.
- *
- * @ingroup drv_ns
- */
-struct ns_uv
-{
-	float u;
-	float v;
-};
+struct ns_3d_optical_system;
 
 /*!
  * Configuration information about the LMC or Rigel sensor according to the
@@ -62,10 +59,10 @@ struct ns_uv
  *
  * @ingroup drv_ns
  */
-struct ns_leap
+struct ns_3d_leap
 {
-	const char *name;
-	const char *serial;
+	char name[64];
+	char serial[64];
 	struct xrt_pose pose;
 };
 
@@ -74,7 +71,7 @@ struct ns_leap
  *
  * @ingroup drv_ns
  */
-struct ns_v1_eye
+struct ns_3d_eye
 {
 	float ellipse_minor_axis;
 	float ellipse_major_axis;
@@ -92,12 +89,10 @@ struct ns_v1_eye
 	struct ns_optical_system *optical_system;
 };
 
-struct ns_v2_eye
+struct ns_3d_data
 {
-	float x_coefficients[16];
-	float y_coefficients[16];
-	struct xrt_pose eye_pose;
-	struct xrt_fov fov;
+	struct ns_3d_eye eyes[2];
+	struct ns_3d_leap leap;
 };
 
 /*!
@@ -109,21 +104,19 @@ struct ns_v2_eye
 
 struct ns_hmd
 {
-
 	struct xrt_device base;
-	struct xrt_pose pose;
-
+	struct xrt_space_relation no_tracker_relation;
 	const char *config_path;
+	struct cJSON *config_json;
+	struct xrt_pose head_pose_to_eye[2]; // left, right
 
-	struct ns_v1_eye eye_configs_v1[2]; // will be NULL if is_v2.
-	struct ns_v2_eye eye_configs_v2[2]; // will be NULL if !is_v2
-	float ipd;
-
-	struct ns_leap leap_config; // will be NULL if is_v2
+	union {
+		struct ns_3d_data dist_3d;
+		struct u_ns_p2d_values dist_p2d;
+		struct u_ns_vipd_values dist_vipd;
+	};
 
 	enum u_logging_level ll;
-	bool is_v2; // True if V2, false if V1. If we ever get a v3 this should
-	            // be an enum or something
 };
 
 /*
@@ -148,11 +141,12 @@ ns_hmd(struct xrt_device *xdev)
  *
  * @ingroup drv_ns
  */
+
 void
-ns_display_uv_to_render_uv(struct ns_uv in, struct ns_uv *out, struct ns_v1_eye *eye);
+ns_3d_display_uv_to_render_uv(struct xrt_vec2 in, struct xrt_vec2 *out, struct ns_3d_eye *eye);
 
 struct ns_optical_system *
-ns_create_optical_system(struct ns_v1_eye *eye);
+ns_3d_create_optical_system(struct ns_3d_eye *eye);
 
 
 #ifdef __cplusplus

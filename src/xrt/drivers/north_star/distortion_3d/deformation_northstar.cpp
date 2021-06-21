@@ -20,7 +20,7 @@ OpticalSystem::OpticalSystem(const OpticalSystem &_in)
 }
 
 void
-OpticalSystem::LoadOpticalData(struct ns_v1_eye *eye)
+OpticalSystem::LoadOpticalData(struct ns_3d_eye *eye)
 {
 
 	ellipseMinorAxis = eye->ellipse_minor_axis;
@@ -257,9 +257,8 @@ OpticalSystem::DisplayUVToRenderUVPreviousSeed(Vector2 inputUV)
 	return curDisplayUV;
 }
 
-
 extern "C" struct ns_optical_system *
-ns_create_optical_system(struct ns_v1_eye *eye)
+ns_3d_create_optical_system(struct ns_3d_eye *eye)
 {
 	OpticalSystem *opticalSystem = new OpticalSystem();
 	opticalSystem->LoadOpticalData(eye);
@@ -269,11 +268,11 @@ ns_create_optical_system(struct ns_v1_eye *eye)
 }
 
 extern "C" void
-ns_display_uv_to_render_uv(struct ns_uv in, struct ns_uv *out, struct ns_v1_eye *eye)
+ns_3d_display_uv_to_render_uv(struct xrt_vec2 in, struct xrt_vec2 *out, struct ns_3d_eye *eye)
 {
 	OpticalSystem *opticalSystem = (OpticalSystem *)eye->optical_system;
-	Vector2 inUV = Vector2(in.u, 1.f - in.v);
+	Vector2 inUV = Vector2(in.x, 1.f - in.y);
 	Vector2 outUV = opticalSystem->DisplayUVToRenderUVPreviousSeed(inUV);
-	out->u = outUV.x;
-	out->v = outUV.y;
+	out->x = outUV.x;
+	out->y = outUV.y;
 }
