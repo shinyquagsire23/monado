@@ -77,7 +77,10 @@ gradlew
 gradlew.bat
 gradle-wrapper.jar
 
-#ignore Sourcetrail things
+# Ignore Sourcetrail things
 *.srctrlbm
 *.srctrldb
 *.srctrlprj
+
+# Ignore clangd things
+.cache/
