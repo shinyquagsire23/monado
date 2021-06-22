@@ -9,6 +9,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_format.h"
+#include "util/u_logging.h"
 
 #include "xrt/xrt_prober.h"
 #include "xrt/xrt_settings.h"
@@ -67,7 +68,15 @@ on_video_device(struct xrt_prober *xp,
 	snprintf(vs->settings->camera_name, sizeof(vs->settings->camera_name), "%s", product);
 
 	vs->xfctx = U_TYPED_CALLOC(struct xrt_frame_context);
+
 	xrt_prober_open_video_device(xp, pdev, vs->xfctx, &vs->xfs);
+	if (vs->xfs == NULL) {
+		U_LOG_E("Failed to open camera!");
+		free(vs->xfctx);
+		vs->xfctx = NULL;
+		return;
+	}
+
 	xrt_fs_enumerate_modes(vs->xfs, &vs->modes, &vs->num_modes);
 }
 
