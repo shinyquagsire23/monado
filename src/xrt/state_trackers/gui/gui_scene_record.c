@@ -451,7 +451,7 @@ create_depthai(struct record_window *rw)
 	modes = NULL;
 
 	// Now that we have setup a node graph, start it.
-	xrt_fs_stream_start(rw->camera.xfs, tmp, 0, XRT_FS_CAPTURE_TYPE_TRACKING);
+	xrt_fs_stream_start(rw->camera.xfs, tmp, XRT_FS_CAPTURE_TYPE_CALIBRATION, mode_index);
 
 	// If it's a large mode, scale to 50%
 	if (rw->camera.mode.width > 640) {
@@ -485,8 +485,8 @@ create_videotestsrc(struct record_window *rw)
 	struct xrt_frame_sink *tmp = NULL;
 	u_sink_quirk_create(&rw->camera.xfctx, &rw->sink, &qp, &tmp);
 
-	// Now that we have setup a node graph, start it.
-	xrt_fs_stream_start(rw->camera.xfs, tmp, 0, XRT_FS_CAPTURE_TYPE_TRACKING);
+	// Now that we have setup a node graph, start it (mode index is hardcoded to 0).
+	xrt_fs_stream_start(rw->camera.xfs, tmp, XRT_FS_CAPTURE_TYPE_CALIBRATION, 0);
 
 	rw->camera.mode.width = width;
 	rw->camera.mode.height = height;
@@ -586,7 +586,7 @@ on_video_device(struct xrt_prober *xp,
 	}
 
 	// Now that we have setup a node graph, start it.
-	xrt_fs_stream_start(rw->camera.xfs, tmp, mode_index, XRT_FS_CAPTURE_TYPE_TRACKING);
+	xrt_fs_stream_start(rw->camera.xfs, tmp, XRT_FS_CAPTURE_TYPE_CALIBRATION, mode_index);
 }
 
 
