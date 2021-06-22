@@ -60,19 +60,7 @@ find_package(ZLIB)
 find_package(cJSON)
 find_package(Systemd)
 find_package(OpenGLES COMPONENTS V3)
-
-#find_package(Leap)
-
-find_library(Leap
-	NAMES libLeap.so
-	PATHS /usr/local/lib
-	)
-if (Leap)
-	include_directories(include /usr/local/include/)
-	message(STATUS "Found libLeap: ${Leap}")
-else()
-	message(STATUS "Could NOT find libLeap: (missing: /usr/local/lib/libLeap.so)")
-endif()
+find_package(LeapV2)
 
 
 add_library(xrt-pthreads INTERFACE)
@@ -206,7 +194,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_DAYDREAM "Enable the Google Daydream Vie
 cmake_dependent_option(XRT_BUILD_DRIVER_ARDUINO "Enable Arduino input device with BLE via via D-Bus" ON "XRT_HAVE_DBUS" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_ILLIXR "Enable ILLIXR driver" ON "ILLIXR_PATH" OFF)
 option(XRT_BUILD_DRIVER_DUMMY "Enable dummy driver" ON)
-cmake_dependent_option(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" ON "Leap" OFF)
+cmake_dependent_option(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" ON "LeapV2_FOUND" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_REMOTE "Enable remote debugging driver" ON "XRT_HAVE_LINUX OR ANDROID" OFF)
 option(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" ON)
 

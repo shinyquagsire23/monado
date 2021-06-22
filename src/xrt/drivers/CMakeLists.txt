@@ -133,7 +133,7 @@ if(XRT_BUILD_DRIVER_ULV2)
 		ultraleap_v2/ulv2_interface.h
 		)
 	add_library(drv_ulv2 STATIC ${ULV2_SOURCE_FILES})
-	target_link_libraries(drv_ulv2 PRIVATE xrt-interfaces aux_util aux_math Leap)
+	target_link_libraries(drv_ulv2 PRIVATE xrt-interfaces aux_util aux_math LeapV2::LeapV2)
 endif()
 
 if(XRT_BUILD_DRIVER_OHMD)
