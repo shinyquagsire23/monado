@@ -77,6 +77,9 @@ struct record_window
 
 		// Use index.
 		bool index;
+
+		// Use ELP.
+		bool elp;
 	} use;
 
 	struct
@@ -202,9 +205,17 @@ create_pipeline(struct record_window *rw)
 	uint32_t height = rw->camera.mode.height;
 	enum xrt_format format = rw->camera.mode.format;
 
-	struct gstreamer_sink *gs = NULL;
+	bool do_convert = false;
+	if (format == XRT_FORMAT_MJPEG) {
+		format = XRT_FORMAT_R8G8B8;
+		do_convert = true;
+	}
 
+	struct gstreamer_sink *gs = NULL;
 	gstreamer_sink_create_with_pipeline(gp, width, height, format, source_name, &gs, &tmp);
+	if (do_convert) {
+		u_sink_create_to_r8g8b8_or_l8(&rw->gst.xfctx, tmp, &tmp);
+	}
 	u_sink_queue_create(&rw->gst.xfctx, tmp, &tmp);
 
 	os_mutex_lock(&rw->gst.mutex);
@@ -381,10 +392,11 @@ window_create(struct gui_program *p, const char *camera)
 	rw->use.index = camera == NULL ? false : strcmp(camera, "index") == 0;
 	rw->use.leap_motion = camera == NULL ? false : strcmp(camera, "leap_motion") == 0;
 	rw->use.depthai = camera == NULL ? false : strcmp(camera, "depthai") == 0;
+	rw->use.elp = camera == NULL ? false : strcmp(camera, "elp") == 0;
 
-	if (!rw->use.index && !rw->use.leap_motion && !rw->use.depthai) {
+	if (!rw->use.index && !rw->use.leap_motion && !rw->use.depthai && !rw->use.elp) {
 		U_LOG_W(
-		    "Can't recongnize camera name '%s', options are 'depthai', index' & 'leap_motion'."
+		    "Can't recongnize camera name '%s', options are 'elp', depthai', index' & 'leap_motion'."
 		    "\n\tFalling back to 'index'.",
 		    camera);
 		rw->use.index = true;
@@ -506,6 +518,13 @@ create_videotestsrc(struct record_window *rw)
  *
  */
 
+
+static bool
+is_camera_elp(const char *product, const char *manufacturer)
+{
+	return strcmp(product, "3D USB Camera") == 0 && strcmp(manufacturer, "3D USB Camera") == 0;
+}
+
 static bool
 is_camera_index(const char *product, const char *manufacturer)
 {
@@ -532,6 +551,12 @@ on_video_device(struct xrt_prober *xp,
 		return;
 	}
 
+
+	// Hardcoded for the Index.
+	if (rw->use.elp && !is_camera_elp(product, manufacturer)) {
+		return;
+	}
+
 	// Hardcoded for the Index.
 	if (rw->use.index && !is_camera_index(product, manufacturer)) {
 		return;
@@ -553,6 +578,9 @@ on_video_device(struct xrt_prober *xp,
 		u_sink_deinterleaver_create(&rw->camera.xfctx, tmp, &tmp);
 	}
 
+	// Just use the first one.
+	uint32_t mode_index = 0;
+
 	// Just after the camera create a quirk stream.
 	struct u_sink_quirk_params qp;
 	U_ZERO(&qp);
@@ -560,15 +588,18 @@ on_video_device(struct xrt_prober *xp,
 	qp.ps4_cam = false;
 	qp.leap_motion = rw->use.leap_motion;
 
+	// Tweaks for the ELP camera.
+	if (rw->use.elp) {
+		qp.stereo_sbs = true;
+		mode_index = 2;
+	}
+
 	u_sink_quirk_create(&rw->camera.xfctx, tmp, &qp, &tmp);
 
 	struct xrt_fs_mode *modes = NULL;
 	uint32_t mode_count = 0;
 	xrt_fs_enumerate_modes(rw->camera.xfs, &modes, &mode_count);
 	assert(mode_count > 0);
-
-	// Just use the first one.
-	uint32_t mode_index = 0;
 
 	rw->camera.mode = modes[mode_index];
 	free(modes);
