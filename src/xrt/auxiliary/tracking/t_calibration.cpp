@@ -519,7 +519,7 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	cv::Size image_size(cols, rows);
 	cv::Size new_image_size(cols, rows);
 
-	StereoCameraCalibrationWrapper wrapped = {};
+	StereoCameraCalibrationWrapper wrapped = {5}; // We only use five distortion parameters.
 	wrapped.view[0].image_size_pixels.w = image_size.width;
 	wrapped.view[0].image_size_pixels.h = image_size.height;
 	wrapped.view[1].image_size_pixels = wrapped.view[0].image_size_pixels;

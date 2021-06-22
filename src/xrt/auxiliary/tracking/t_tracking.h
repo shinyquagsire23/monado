@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -45,7 +45,7 @@ struct xrt_tracked_hand;
  */
 
 //! Maximum size of rectilinear distortion coefficient array
-#define XRT_DISTORTION_MAX_DIM (5)
+#define XRT_DISTORTION_MAX_DIM (14)
 
 /*!
  * @brief Essential calibration data for a single camera, or single lens/sensor
@@ -59,8 +59,10 @@ struct t_camera_calibration
 	//! Camera intrinsics matrix
 	double intrinsics[3][3];
 
-	//! Rectilinear distortion coefficients: k1, k2, p1, p2[, k3[, k4, k5,
-	//! k6[, s1, s2, s3, s4]]
+	//! Number of distortion parameters (non-fisheye).
+	size_t distortion_num;
+
+	//! Rectilinear distortion coefficients: k1, k2, p1, p2[, k3[, k4, k5, k6[, s1, s2, s3, s4[, Tx, Ty]]]]
 	double distortion[XRT_DISTORTION_MAX_DIM];
 
 	//! Fisheye camera distortion coefficients
@@ -95,10 +97,12 @@ struct t_stereo_camera_calibration
 /*!
  * Allocates a new stereo calibration data, unreferences the old @p calib.
  *
+ * Also initializes view[s]::distortion_num, only 5 and 14 is accepted.
+ *
  * @public @memberof t_stereo_camera_calibration
  */
 void
-t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **calib);
+t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **calib, uint32_t distortion_num);
 
 /*!
  * Only to be called by @p t_stereo_camera_calibration_reference.

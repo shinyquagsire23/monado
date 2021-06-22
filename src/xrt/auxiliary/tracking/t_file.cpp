@@ -179,7 +179,7 @@ t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_cal
 {
 	using xrt::auxiliary::tracking::StereoCameraCalibrationWrapper;
 	t_stereo_camera_calibration *data_ptr = NULL;
-	t_stereo_camera_calibration_alloc(&data_ptr);
+	t_stereo_camera_calibration_alloc(&data_ptr, 5); // Hardcoded to 5 distortion parameters.
 	StereoCameraCalibrationWrapper wrapped(data_ptr);
 
 	// Dummy matrix
