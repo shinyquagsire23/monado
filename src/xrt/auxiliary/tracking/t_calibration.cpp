@@ -1085,6 +1085,21 @@ process_frame_uyvy(class Calibration &c, struct xrt_frame *xf)
 }
 
 XRT_NO_INLINE static void
+process_frame_rgb(class Calibration &c, struct xrt_frame *xf)
+{
+
+	int w = (int)xf->width;
+	int h = (int)xf->height;
+
+	cv::Mat rgb_data(h, w, CV_8UC3, xf->data, xf->stride);
+	ensure_buffers_are_allocated(c, rgb_data.rows, rgb_data.cols);
+	c.gui.frame->source_sequence = xf->source_sequence;
+
+	cv::cvtColor(rgb_data, c.gray, cv::COLOR_RGB2GRAY);
+	rgb_data.copyTo(c.gui.rgb);
+}
+
+XRT_NO_INLINE static void
 process_load_image(class Calibration &c, struct xrt_frame *xf)
 {
 	char buf[512];
@@ -1162,6 +1177,7 @@ t_calibration_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 	case XRT_FORMAT_YUYV422: process_frame_yuyv(c, xf); break;
 	case XRT_FORMAT_UYVY422: process_frame_uyvy(c, xf); break;
 	case XRT_FORMAT_L8: process_frame_l8(c, xf); break;
+	case XRT_FORMAT_R8G8B8: process_frame_rgb(c, xf); break;
 	default:
 		P("ERROR: Bad format '%s'", u_format_str(xf->format));
 		make_gui_str(c);
@@ -1266,8 +1282,8 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 		ret = t_debug_hsv_viewer_create(xfctx, *out_sink, out_sink);
 	}
 
-	// Ensure we only get yuv, yuyv, uyvy or l8 frames.
-	u_sink_create_to_yuv_yuyv_uyvy_or_l8(xfctx, *out_sink, out_sink);
+	// Ensure we only get rgb, yuv, yuyv, uyvy or l8 frames.
+	u_sink_create_to_rgb_yuv_yuyv_uyvy_or_l8(xfctx, *out_sink, out_sink);
 
 
 	// Build the board model.
