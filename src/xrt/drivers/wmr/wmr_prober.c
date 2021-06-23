@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <wchar.h>
 
-
 /*
  *
  * Defines & structs.
@@ -40,24 +39,31 @@ DEBUG_GET_ONCE_LOG_OPTION(wmr_log, "WMR_LOG", U_LOGGING_INFO)
  */
 
 static bool
-check_and_get_interface_hp(struct xrt_prober_device *device, int *out_interface)
+check_and_get_interface_hp(struct xrt_prober_device *device, enum wmr_headset_type *out_hmd_type, int *out_interface)
 {
 	if (device->product_id != REVERB_G1_PID && device->product_id != REVERB_G2_PID) {
 		return false;
 	}
 
+	if (device->product_id == REVERB_G1_PID)
+		*out_hmd_type = WMR_HEADSET_REVERB_G1;
+	else
+		*out_hmd_type = WMR_HEADSET_REVERB_G2;
 	*out_interface = 0;
 
 	return true;
 }
 
 static bool
-check_and_get_interface_lenovo(struct xrt_prober_device *device, int *out_interface)
+check_and_get_interface_lenovo(struct xrt_prober_device *device,
+                               enum wmr_headset_type *out_hmd_type,
+                               int *out_interface)
 {
 	if (device->product_id != EXPLORER_PID) {
 		return false;
 	}
 
+	*out_hmd_type = WMR_HEADSET_LENOVO_EXPLORER;
 	*out_interface = 0;
 
 	return true;
@@ -68,6 +74,7 @@ find_control_device(struct xrt_prober *xp,
                     struct xrt_prober_device **devices,
                     size_t num_devices,
                     enum u_logging_level ll,
+                    enum wmr_headset_type *out_hmd_type,
                     struct xrt_prober_device **out_device,
                     int *out_interface)
 {
@@ -82,8 +89,8 @@ find_control_device(struct xrt_prober *xp,
 		}
 
 		switch (devices[i]->vendor_id) {
-		case HP_VID: match = check_and_get_interface_hp(devices[i], &interface); break;
-		case LENOVO_VID: match = check_and_get_interface_lenovo(devices[i], &interface); break;
+		case HP_VID: match = check_and_get_interface_hp(devices[i], out_hmd_type, &interface); break;
+		case LENOVO_VID: match = check_and_get_interface_lenovo(devices[i], out_hmd_type, &interface); break;
 		default: break;
 		}
 
@@ -129,6 +136,7 @@ wmr_found(struct xrt_prober *xp,
 
 	struct xrt_prober_device *dev_holo = devices[index];
 	struct xrt_prober_device *dev_ctrl = NULL;
+	enum wmr_headset_type hmd_type = WMR_HEADSET_GENERIC;
 	int interface_holo = 2;
 	int interface_ctrl = 0;
 
@@ -141,7 +149,7 @@ wmr_found(struct xrt_prober *xp,
 		return -1;
 	}
 
-	if (!find_control_device(xp, devices, num_devices, ll, &dev_ctrl, &interface_ctrl)) {
+	if (!find_control_device(xp, devices, num_devices, ll, &hmd_type, &dev_ctrl, &interface_ctrl)) {
 		U_LOG_IFL_E(ll,
 		            "Did not find companion control device."
 		            "\n\tCurrently only Reverb G1 and G2 is supported");
@@ -162,7 +170,7 @@ wmr_found(struct xrt_prober *xp,
 		return -1;
 	}
 
-	struct xrt_device *p = wmr_hmd_create(hid_holo, hid_ctrl, ll);
+	struct xrt_device *p = wmr_hmd_create(hmd_type, hid_holo, hid_ctrl, ll);
 	if (!p) {
 		U_LOG_IFL_E(ll, "Failed to create Windows Mixed Reality device");
 		return -1;

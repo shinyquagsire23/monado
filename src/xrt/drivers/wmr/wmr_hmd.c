@@ -42,6 +42,21 @@
 #include <unistd.h> // for sleep()
 #endif
 
+static int
+wmr_hmd_activate_reverb(struct wmr_hmd *wh);
+static void
+wmr_hmd_deactivate_reverb(struct wmr_hmd *wh);
+
+const struct wmr_headset_descriptor headset_map[] = {
+    {WMR_HEADSET_GENERIC, NULL, "Unknown WMR HMD", NULL, NULL}, /* Catch-all for unknown headsets */
+    {WMR_HEADSET_REVERB_G1, "HP Reverb VR Headset VR1000-2xxx", "HP Reverb", wmr_hmd_activate_reverb,
+     wmr_hmd_deactivate_reverb},
+    {WMR_HEADSET_REVERB_G2, "HP Reverb Virtual Reality Headset G2", "HP Reverb G2", wmr_hmd_activate_reverb,
+     wmr_hmd_deactivate_reverb},
+    {WMR_HEADSET_SAMSUNG_800ZAA, "Samsung Windows Mixed Reality 800ZAA", "Samsung Odyssey", NULL, NULL},
+    {WMR_HEADSET_LENOVO_EXPLORER, "Lenovo VR-2511N", "Lenovo Explorer", NULL, NULL},
+};
+const int headset_map_n = sizeof(headset_map) / sizeof(headset_map[0]);
 
 /*
  *
@@ -311,7 +326,7 @@ hololens_sensors_enable_imu(struct wmr_hmd *wh)
 	} while (false);
 
 static int
-wmr_hmd_activate(struct wmr_hmd *wh)
+wmr_hmd_activate_reverb(struct wmr_hmd *wh)
 {
 	struct os_hid_device *hid = wh->hid_control_dev;
 
@@ -359,7 +374,7 @@ wmr_hmd_activate(struct wmr_hmd *wh)
 }
 
 static void
-wmr_hmd_deactivate(struct wmr_hmd *wh)
+wmr_hmd_deactivate_reverb(struct wmr_hmd *wh)
 {
 	struct os_hid_device *hid = wh->hid_control_dev;
 
@@ -497,6 +512,9 @@ wmr_read_config(struct wmr_hmd *wh)
 	/* FIXME: The header contains little-endian values that need swapping for big-endian */
 	struct wmr_config_header *hdr = (struct wmr_config_header *)data;
 
+	/* Take a copy of the header */
+	memcpy(&wh->config_hdr, hdr, sizeof(struct wmr_config_header));
+
 	WMR_INFO(wh, "Manufacturer: %.*s", (int)sizeof(hdr->manufacturer), hdr->manufacturer);
 	WMR_INFO(wh, "Device: %.*s", (int)sizeof(hdr->device), hdr->device);
 	WMR_INFO(wh, "Serial: %.*s", (int)sizeof(hdr->serial), hdr->serial);
@@ -604,7 +622,10 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 	}
 
 	if (wh->hid_control_dev != NULL) {
-		wmr_hmd_deactivate(wh);
+		/* Do any deinit if we have a deinit function */
+		if (wh->hmd_desc && wh->hmd_desc->deinit_func) {
+			wh->hmd_desc->deinit_func(wh);
+		}
 		os_hid_destroy(wh->hid_control_dev);
 		wh->hid_control_dev = NULL;
 	}
@@ -669,11 +690,14 @@ compute_distortion_wmr(struct xrt_device *xdev, int view, float u, float v, stru
 }
 
 struct xrt_device *
-wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, enum u_logging_level ll)
+wmr_hmd_create(enum wmr_headset_type hmd_type,
+               struct os_hid_device *hid_holo,
+               struct os_hid_device *hid_ctrl,
+               enum u_logging_level ll)
 {
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
-	int ret = 0;
+	int ret = 0, i;
 	int eye;
 
 	struct wmr_hmd *wh = U_DEVICE_ALLOCATE(struct wmr_hmd, flags, 1, 0);
@@ -724,6 +748,29 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 		wh = NULL;
 		return NULL;
 	}
+
+	/* Now that we have the config loaded, iterate the map of known headsets and see if we have
+	 * an entry for this specific headset (otherwise the generic entry will be used)
+	 */
+	for (i = 0; i < headset_map_n; i++) {
+		const struct wmr_headset_descriptor *cur = &headset_map[i];
+
+		if (hmd_type == cur->hmd_type) {
+			wh->hmd_desc = cur;
+			if (hmd_type != WMR_HEADSET_GENERIC)
+				break; /* Stop checking if we have a specific match, or keep going for the GENERIC
+				          catch-all type */
+		}
+
+		if (cur->dev_id_str && strncmp(wh->config_hdr.name, cur->dev_id_str, 64) == 0) {
+			hmd_type = cur->hmd_type;
+			wh->hmd_desc = cur;
+			break;
+		}
+	}
+	assert(wh->hmd_desc != NULL); /* We must have matched something, or the map is set up wrong */
+
+	WMR_INFO(wh, "Found WMR headset type: %s", wh->hmd_desc->debug_name);
 
 	// Compute centerline in the HMD's calibration coordinate space as the average of the two display poses
 	math_quat_slerp(&wh->config.eye_params[0].pose.orientation, &wh->config.eye_params[1].pose.orientation, 0.5f,
@@ -794,7 +841,7 @@ wmr_hmd_create(struct os_hid_device *hid_holo, struct os_hid_device *hid_ctrl, e
 	u_distortion_mesh_fill_in_compute(&wh->base);
 
 	/* We're set up. Activate the HMD and turn on the IMU */
-	if (wmr_hmd_activate(wh) != 0) {
+	if (wh->hmd_desc->init_func && wh->hmd_desc->init_func(wh) != 0) {
 		WMR_ERROR(wh, "Activation of HMD failed");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
