@@ -351,6 +351,8 @@ t_slam_start(struct xrt_tracked_slam *xts);
 enum t_board_pattern
 {
 	T_BOARD_CHECKERS,
+	//! Sector based checker board, using `cv::findChessboardCornersSB`.
+	T_BOARD_SB_CHECKERS,
 	T_BOARD_CIRCLES,
 	T_BOARD_ASYMMETRIC_CIRCLES,
 };
@@ -389,6 +391,16 @@ struct t_calibration_params
 		bool subpixel_enable;
 		int subpixel_size;
 	} checkers;
+
+	struct
+	{
+		int cols;
+		int rows;
+		float size_meters;
+
+		bool marker;
+		bool normalize_image;
+	} sb_checkers;
 
 	struct
 	{
@@ -445,6 +457,13 @@ t_calibration_params_default(struct t_calibration_params *p)
 	p->checkers.size_meters = 0.025f;
 	p->checkers.subpixel_enable = true;
 	p->checkers.subpixel_size = 5;
+
+	// Sector based checker board.
+	p->sb_checkers.cols = 14;
+	p->sb_checkers.rows = 9;
+	p->sb_checkers.size_meters = 0.01206f;
+	p->sb_checkers.marker = false;
+	p->sb_checkers.normalize_image = false;
 
 	// Symmetrical circles.
 	p->circles.cols = 9;

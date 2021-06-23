@@ -14,6 +14,7 @@
 #include "util/u_debug.h"
 #include "util/u_frame.h"
 #include "util/u_format.h"
+#include "util/u_logging.h"
 
 #include "tracking/t_tracking.h"
 #include "tracking/t_calibration_opencv.hpp"
@@ -21,6 +22,13 @@
 #include <opencv2/opencv.hpp>
 #include <sys/stat.h>
 #include <utility>
+
+#if CV_MAJOR_VERSION >= 4
+#define SB_CHEESBOARD_CORNERS_SUPPORTED
+#if CV_MINOR_VERSION >= 3 || CV_MAJOR_VERSION > 4
+#define SB_CHEESBOARD_CORNERS_MARKER_SUPPORTED
+#endif
+#endif
 
 
 DEBUG_GET_ONCE_BOOL_OPTION(hsv_filter, "T_DEBUG_HSV_FILTER", false)
@@ -99,6 +107,8 @@ public:
 		cv::Size dims = {8, 6};
 		enum t_board_pattern pattern = T_BOARD_CHECKERS;
 		float spacing_meters = 0.05;
+		bool marker;          //!< Center board marker for sb_checkers.
+		bool normalize_image; //!< For SB checkers.
 	} board;
 
 	struct
@@ -325,6 +335,45 @@ do_view_chess(class Calibration &c, struct ViewState &view, cv::Mat &gray, cv::M
 	return found;
 }
 
+#ifdef SB_CHEESBOARD_CORNERS_SUPPORTED
+static bool
+do_view_sb_checkers(class Calibration &c, struct ViewState &view, cv::Mat &gray, cv::Mat &rgb)
+{
+	/*
+	 * Fisheye requires measurement and model to be double, other functions
+	 * requires them to be floats (like cornerSubPix). So we give in
+	 * current_f32 here and convert below.
+	 */
+
+	int flags = 0;
+	if (c.board.normalize_image) {
+		flags += cv::CALIB_CB_NORMALIZE_IMAGE;
+	}
+
+#ifdef SB_CHEESBOARD_CORNERS_MARKER_SUPPORTED
+	if (c.board.marker) {
+		// Only available in OpenCV 4.3 and above.
+		flags += cv::CALIB_CB_MARKER;
+	}
+#endif
+
+	bool found = cv::findChessboardCornersSB(gray,             // Image
+	                                         c.board.dims,     // patternSize
+	                                         view.current_f32, // corners
+	                                         flags);           // flags
+
+	// Do the conversion here.
+	view.current_f64.clear(); // Doesn't effect capacity.
+	for (const cv::Point2f &p : view.current_f32) {
+		view.current_f64.emplace_back(double(p.x), double(p.y));
+	}
+
+	do_view_coverage(c, view, gray, rgb, found);
+
+	return found;
+}
+#endif
+
 static bool
 do_view_circles(class Calibration &c, struct ViewState &view, cv::Mat &gray, cv::Mat &rgb)
 {
@@ -364,6 +413,11 @@ do_view(class Calibration &c, struct ViewState &view, cv::Mat &gray, cv::Mat &rg
 	case T_BOARD_CHECKERS: //
 		found = do_view_chess(c, view, gray, rgb);
 		break;
+#ifdef SB_CHEESBOARD_CORNERS_SUPPORTED
+	case T_BOARD_SB_CHECKERS: //
+		found = do_view_sb_checkers(c, view, gray, rgb);
+		break;
+#endif
 	case T_BOARD_CIRCLES: //
 		found = do_view_circles(c, view, gray, rgb);
 		break;
@@ -405,6 +459,7 @@ build_board_position(class Calibration &c)
 
 	switch (c.board.pattern) {
 	case T_BOARD_CHECKERS:
+	case T_BOARD_SB_CHECKERS:
 	case T_BOARD_CIRCLES:
 		// Nothing to do.
 		break;
@@ -416,6 +471,7 @@ build_board_position(class Calibration &c)
 
 	switch (c.board.pattern) {
 	case T_BOARD_CHECKERS:
+	case T_BOARD_SB_CHECKERS:
 	case T_BOARD_CIRCLES:
 		c.board.model_f32.reserve(rows_num * cols_num);
 		c.board.model_f64.reserve(rows_num * cols_num);
@@ -1217,6 +1273,19 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
                             struct xrt_frame_sink *gui,
                             struct xrt_frame_sink **out_sink)
 {
+#ifndef SB_CHEESBOARD_CORNERS_SUPPORTED
+	if (params->pattern == T_BOARD_SB_CHECKERS) {
+		U_LOG_E("OpenCV %u.%u doesn't support SB chessboard!", CV_MAJOR_VERSION, CV_MINOR_VERSION);
+		return -1;
+	}
+#endif
+#ifndef SB_CHEESBOARD_CORNERS_MARKER_SUPPORTED
+	if (params->pattern == T_BOARD_SB_CHECKERS && params->sb_checkers.marker) {
+		U_LOG_W("OpenCV %u.%u doesn't support SB chessboard marker option!", CV_MAJOR_VERSION,
+		        CV_MINOR_VERSION);
+	}
+#endif
+
 	auto &c = *(new Calibration());
 
 	// Basic setup.
@@ -1237,6 +1306,15 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 		c.board.spacing_meters = params->checkers.size_meters;
 		c.subpixel_enable = params->checkers.subpixel_enable;
 		c.subpixel_size = params->checkers.subpixel_size;
+		break;
+	case T_BOARD_SB_CHECKERS:
+		c.board.dims = {
+		    params->sb_checkers.cols,
+		    params->sb_checkers.rows,
+		};
+		c.board.spacing_meters = params->sb_checkers.size_meters;
+		c.board.marker = params->sb_checkers.marker;
+		c.board.normalize_image = params->sb_checkers.normalize_image;
 		break;
 	case T_BOARD_CIRCLES:
 		c.board.dims = {
@@ -1307,6 +1385,8 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 		push_model(c);
 	}
 #endif
+
+
 	return ret;
 }
 

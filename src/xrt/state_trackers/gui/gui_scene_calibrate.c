@@ -273,7 +273,7 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igInputInt("Collect in groups of #", &cs->params.num_collect_restart, 1, 5, 0);
 
 	igSeparator();
-	igComboStr("Board type", (int *)&cs->params.pattern, "Checkers\0Circles\0Asymetric Circles\0\0", 3);
+	igComboStr("Board type", (int *)&cs->params.pattern, "Checkers\0Corners SB\0Circles\0Asymetric Circles\0\0", 3);
 	switch (cs->params.pattern) {
 	case T_BOARD_CHECKERS:
 		igInputInt("Checkerboard Rows", &cs->params.checkers.rows, 1, 5, 0);
@@ -281,6 +281,13 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 		igInputFloat("Checker Size (m)", &cs->params.checkers.size_meters, 0.0005, 0.001, NULL, 0);
 		igCheckbox("Subpixel", &cs->params.checkers.subpixel_enable);
 		igInputInt("Subpixel Search Size", &cs->params.checkers.subpixel_size, 1, 5, 0);
+		break;
+	case T_BOARD_SB_CHECKERS:
+		igInputInt("Internal Corner Rows", &cs->params.sb_checkers.rows, 1, 5, 0);
+		igInputInt("Internal Corner Columns", &cs->params.sb_checkers.cols, 1, 5, 0);
+		igInputFloat("Corner Spacing (m)", &cs->params.sb_checkers.size_meters, 0.0005, 0.001, NULL, 0);
+		igCheckbox("Marker", &cs->params.sb_checkers.marker);
+		igCheckbox("Normalize image", &cs->params.sb_checkers.normalize_image);
 		break;
 	case T_BOARD_CIRCLES:
 		igInputInt("Circle Rows", &cs->params.circles.rows, 1, 5, 0);
