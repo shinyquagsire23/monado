@@ -7,16 +7,21 @@
  * @ingroup gui
  */
 
+#include "xrt/xrt_prober.h"
+#include "xrt/xrt_settings.h"
+#include "xrt/xrt_frameserver.h"
+#include "xrt/xrt_config_drivers.h"
+
 #include "util/u_misc.h"
 #include "util/u_format.h"
 #include "util/u_logging.h"
 
-#include "xrt/xrt_prober.h"
-#include "xrt/xrt_settings.h"
-#include "xrt/xrt_frameserver.h"
-
 #include "gui_common.h"
 #include "gui_imgui.h"
+
+#ifdef XRT_BUILD_DRIVER_DEPTHAI
+#include "depthai/depthai_interface.h"
+#endif
 
 
 /*!
@@ -44,6 +49,24 @@ static ImVec2 button_dims = {256 + 64, 0};
  * Internal functions.
  *
  */
+
+#ifdef XRT_BUILD_DRIVER_DEPTHAI
+static void
+create_depthai(struct video_select *vs)
+{
+	vs->xfctx = U_TYPED_CALLOC(struct xrt_frame_context);
+
+	vs->xfs = depthai_fs_single_rgb(vs->xfctx);
+	if (vs->xfs == NULL) {
+		U_LOG_E("Failed to open DepthAI camera!");
+		free(vs->xfctx);
+		vs->xfctx = NULL;
+		return;
+	}
+
+	xrt_fs_enumerate_modes(vs->xfs, &vs->modes, &vs->num_modes);
+}
+#endif /* XRT_BUILD_DRIVER_DEPTHAI */
 
 static void
 on_video_device(struct xrt_prober *xp,
@@ -100,6 +123,13 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 	// If we have not found any modes keep showing the devices.
 	if (vs->xfs == NULL) {
 		xrt_prober_list_video_devices(p->xp, on_video_device, vs);
+
+#ifdef XRT_BUILD_DRIVER_DEPTHAI
+		igSeparator();
+		if (igButton("DepthAI", button_dims)) {
+			create_depthai(vs);
+		}
+#endif
 	} else if (vs->num_modes == 0) {
 		// No modes on it :(
 		igText("No modes found on '%s'!", vs->xfs->name);
