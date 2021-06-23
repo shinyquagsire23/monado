@@ -600,6 +600,42 @@ convert_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 }
 
 static void
+convert_frame_rgb_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
+{
+	SINK_TRACE_MARKER();
+
+	struct u_sink_converter *s = (struct u_sink_converter *)xs;
+
+	struct xrt_frame *converted = NULL;
+
+	switch (xf->format) {
+	case XRT_FORMAT_R8G8B8:
+	case XRT_FORMAT_L8:
+	case XRT_FORMAT_YUYV422:
+	case XRT_FORMAT_UYVY422:
+	case XRT_FORMAT_YUV888: s->downstream->push_frame(s->downstream, xf); return;
+#ifdef XRT_HAVE_JPEG
+	case XRT_FORMAT_MJPEG:
+		if (!create_frame_with_format(xf, XRT_FORMAT_YUV888, &converted)) {
+			return;
+		}
+		if (!from_MJPEG_to_YUV888(converted, xf->size, xf->data)) {
+			return;
+		}
+		break;
+#endif
+	default:
+		U_LOG_E("Can not convert from '%s' to either R8G8B8, YUV, YUYV, UYVY or L8!", u_format_str(xf->format));
+		return;
+	}
+
+	s->downstream->push_frame(s->downstream, converted);
+
+	// Refcount in case it's being held downstream.
+	xrt_frame_reference(&converted, NULL);
+}
+
+static void
 convert_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 {
 	SINK_TRACE_MARKER();
@@ -772,6 +808,21 @@ u_sink_create_to_r8g8b8_bayer_or_l8(struct xrt_frame_context *xfctx,
 	*out_xfs = &s->base;
 }
 
+void
+u_sink_create_to_rgb_yuv_yuyv_uyvy_or_l8(struct xrt_frame_context *xfctx,
+                                         struct xrt_frame_sink *downstream,
+                                         struct xrt_frame_sink **out_xfs)
+{
+	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
+	s->base.push_frame = convert_frame_rgb_yuv_yuyv_uyvy_or_l8;
+	s->node.break_apart = break_apart;
+	s->node.destroy = destroy;
+	s->downstream = downstream;
+
+	xrt_frame_context_add(xfctx, &s->node);
+
+	*out_xfs = &s->base;
+}
 
 void
 u_sink_create_to_yuv_yuyv_uyvy_or_l8(struct xrt_frame_context *xfctx,
