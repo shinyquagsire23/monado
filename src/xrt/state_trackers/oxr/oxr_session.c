@@ -2028,6 +2028,12 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingVulkanKHR const *vulkan =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR, XrGraphicsBindingVulkanKHR);
 	if (vulkan != NULL) {
+		OXR_VERIFY_ARG_NOT_ZERO(log, vulkan->instance);
+		OXR_VERIFY_ARG_NOT_ZERO(log, vulkan->physicalDevice);
+		if (vulkan->device == VK_NULL_HANDLE) {
+			return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID, "VkDevice must not be VK_NULL_HANDLE");
+		}
+
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			                 "Has not called "
