@@ -689,6 +689,89 @@ compute_distortion_wmr(struct xrt_device *xdev, int view, float u, float v, stru
 	return true;
 }
 
+/*
+ * Compute the visible area bounds by calculating the X/Y limits of a
+ * crosshair through the distortion center, and back-project to the render FoV,
+ */
+static void
+compute_distortion_bounds(struct wmr_hmd *wh,
+                          int view,
+                          float *out_angle_left,
+                          float *out_angle_right,
+                          float *out_angle_down,
+                          float *out_angle_up)
+{
+	assert(view == 0 || view == 1);
+
+	float tanangle_left = 0.0, tanangle_right = 0.0, tanangle_up = 0.0, tanangle_down = 0.0;
+
+	const struct wmr_distortion_eye_config *ec = wh->config.eye_params + view;
+	struct wmr_hmd_distortion_params *distortion_params = wh->distortion_params + view;
+
+	for (int i = 0; i < 3; i++) {
+		const struct wmr_distortion_3K *distortion3K = ec->distortion3K + i;
+
+		/* The X coords start at 0 for the left eye, and display_size.x / 2.0 for the right */
+		const struct xrt_vec2 pix_coords[4] = {
+		    /* -eye_center_x, 0 */
+		    {(1.0 * view) * (ec->display_size.x / 2.0) - distortion3K->eye_center.x, 0.0},
+		    /* 0, -eye_center_y */
+		    {0.0, -distortion3K->eye_center.y},
+		    /* width-eye_center_x, 0 */
+		    {(1.0 + 1.0 * view) * (ec->display_size.x / 2.0) - distortion3K->eye_center.x, 0.0},
+		    /* 0, height-eye_center_y */
+		    {0.0, ec->display_size.y - distortion3K->eye_center.y},
+		};
+
+		for (int c = 0; c < 4; c++) {
+			const struct xrt_vec2 pix_coord = pix_coords[c];
+
+			float k1 = distortion3K->k[0];
+			float k2 = distortion3K->k[1];
+			float k3 = distortion3K->k[2];
+
+			float r2 = m_vec2_dot(pix_coord, pix_coord);
+
+			/* distort the pixel */
+			float d = 1.0 + r2 * (k1 + r2 * (k2 + r2 * k3));
+
+			/* Map the distorted pixel coordinate back to normalised view plane coords using the inverse
+			 * affine xform */
+			struct xrt_vec3 p = {(pix_coord.x * d + distortion3K->eye_center.x),
+			                     (pix_coord.y * d + distortion3K->eye_center.y), 1.0};
+			struct xrt_vec3 vp;
+
+			math_matrix_3x3_transform_vec3(&distortion_params->inv_affine_xform, &p, &vp);
+			vp.x /= vp.z;
+			vp.y /= vp.z;
+
+			if (pix_coord.x < 0.0) {
+				if (vp.x < tanangle_left)
+					tanangle_left = vp.x;
+			} else {
+				if (vp.x > tanangle_right)
+					tanangle_right = vp.x;
+			}
+
+			if (pix_coord.y < 0.0) {
+				if (vp.y < tanangle_up)
+					tanangle_up = vp.y;
+			} else {
+				if (vp.y > tanangle_down)
+					tanangle_down = vp.y;
+			}
+
+			WMR_DEBUG(wh, "channel %d delta coord %f, %f d pixel %f %f, %f -> %f, %f", i, pix_coord.x,
+			          pix_coord.y, d, p.x, p.y, vp.x, vp.y);
+		}
+	}
+
+	*out_angle_left = atan(tanangle_left);
+	*out_angle_right = atan(tanangle_right);
+	*out_angle_down = -atan(tanangle_down);
+	*out_angle_up = -atan(tanangle_up);
+}
+
 struct xrt_device *
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
@@ -772,6 +855,15 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 
 	WMR_INFO(wh, "Found WMR headset type: %s", wh->hmd_desc->debug_name);
 
+	m_imu_3dof_init(&wh->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
+
+	// Setup variable tracker.
+	u_var_add_root(wh, "WMR HMD", true);
+	u_var_add_gui_header(wh, &wh->gui.fusion, "3DoF Fusion");
+	m_imu_3dof_add_vars(&wh->fusion.i3dof, wh, "");
+	u_var_add_gui_header(wh, &wh->gui.misc, "Misc");
+	u_var_add_log_level(wh, &wh->log_level, "log_level");
+
 	// Compute centerline in the HMD's calibration coordinate space as the average of the two display poses
 	math_quat_slerp(&wh->config.eye_params[0].pose.orientation, &wh->config.eye_params[1].pose.orientation, 0.5f,
 	                &wh->centerline.orientation);
@@ -802,7 +894,8 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	info.lens_horizontal_separation_meters =
 	    fabs(wh->display_to_centerline[1].position.x - wh->display_to_centerline[0].position.x);
 
-	// TODO placeholder values below here
+	/* We set up a dummy side-by-side config, then adjust the actual FoV bounds
+	 * in compute_distortion_bounds() below */
 	info.display.w_meters = 0.13f;
 	info.display.h_meters = 0.07f;
 	info.lens_vertical_position_meters = 0.07f / 2.0f;
@@ -816,23 +909,27 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		return NULL;
 	}
 
-	m_imu_3dof_init(&wh->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
-
-	// Setup variable tracker.
-	u_var_add_root(wh, "WMR HMD", true);
-	u_var_add_gui_header(wh, &wh->gui.fusion, "3DoF Fusion");
-	m_imu_3dof_add_vars(&wh->fusion.i3dof, wh, "");
-	u_var_add_gui_header(wh, &wh->gui.misc, "Misc");
-	u_var_add_log_level(wh, &wh->log_level, "log_level");
-
 	// Distortion information, fills in xdev->compute_distortion().
 	for (eye = 0; eye < 2; eye++) {
 		math_matrix_3x3_inverse(&wh->config.eye_params[eye].affine_xform,
 		                        &wh->distortion_params[eye].inv_affine_xform);
+
+		compute_distortion_bounds(
+		    wh, eye, &wh->base.hmd->views[eye].fov.angle_left, &wh->base.hmd->views[eye].fov.angle_right,
+		    &wh->base.hmd->views[eye].fov.angle_down, &wh->base.hmd->views[eye].fov.angle_up);
+
+		WMR_INFO(wh, "FoV eye %d angles left %f right %f down %f up %f", eye,
+		         wh->base.hmd->views[eye].fov.angle_left, wh->base.hmd->views[eye].fov.angle_right,
+		         wh->base.hmd->views[eye].fov.angle_down, wh->base.hmd->views[eye].fov.angle_up);
+
 		wh->distortion_params[eye].tex_x_range.x = tan(wh->base.hmd->views[eye].fov.angle_left);
 		wh->distortion_params[eye].tex_x_range.y = tan(wh->base.hmd->views[eye].fov.angle_right);
 		wh->distortion_params[eye].tex_y_range.x = tan(wh->base.hmd->views[eye].fov.angle_down);
 		wh->distortion_params[eye].tex_y_range.y = tan(wh->base.hmd->views[eye].fov.angle_up);
+
+		WMR_INFO(wh, "Render texture range %f, %f to %f, %f", wh->distortion_params[eye].tex_x_range.x,
+		         wh->distortion_params[eye].tex_y_range.x, wh->distortion_params[eye].tex_x_range.y,
+		         wh->distortion_params[eye].tex_y_range.y);
 	}
 
 	wh->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
