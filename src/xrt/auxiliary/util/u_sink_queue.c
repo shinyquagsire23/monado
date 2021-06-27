@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -15,16 +15,24 @@
 
 
 /*!
- * An @ref xrt_frame_sink queue.
+ * An @ref xrt_frame_sink queue, any frames received will be pushed to the
+ * downstream consumer on the queue thread. Will drop frames should multiple
+ * frames be queued up.
+ *
  * @implements xrt_frame_sink
  * @implements xrt_frame_node
  */
 struct u_sink_queue
 {
+	//! Base sink.
 	struct xrt_frame_sink base;
+	//! For tracking on the frame context.
 	struct xrt_frame_node node;
 
+	//! The consumer of the frames that are queued.
 	struct xrt_frame_sink *consumer;
+
+	//! The current queued frame.
 	struct xrt_frame *frame;
 
 	pthread_t thread;
@@ -37,6 +45,7 @@ struct u_sink_queue
 		uint64_t last;
 	} seq;
 
+	//! Should we keep running.
 	bool running;
 };
 
@@ -55,7 +64,7 @@ sque_run(void *ptr)
 			pthread_cond_wait(&q->cond, &q->mutex);
 		}
 
-		// Where we woken up to turn of.
+		// Where we woken up to turn off.
 		if (!q->running) {
 			break;
 		}
@@ -68,21 +77,28 @@ sque_run(void *ptr)
 		// We have a new frame, send it out.
 		q->seq.last = q->seq.current;
 
-		// Take a reference on the current frame, this keeps it alive
-		// if it is replaced during the consumer processing it, but
-		// we no longer need to hold onto the frame on the queue we
-		// just move the pointer.
+		/*
+		 * We need to take a reference on the current frame, this is to
+		 * keep it alive during the call to the consumer should it be
+		 * replaced. But we no longer need to hold onto the frame on the
+		 * queue so we just move the pointer.
+		 */
 		frame = q->frame;
 		q->frame = NULL;
 
-		// Unlock the mutex when we do the work.
+		/*
+		 * Unlock the mutex when we do the work, so a new frame can be
+		 * queued.
+		 */
 		pthread_mutex_unlock(&q->mutex);
 
 		// Send to the consumer that does the work.
 		q->consumer->push_frame(q->consumer, frame);
 
-		// Drop our reference we don't need it anymore,
-		// or it's held on the queue.
+		/*
+		 * Drop our reference we don't need it anymore, or it's held by
+		 * the consumer.
+		 */
 		xrt_frame_reference(&frame, NULL);
 
 		// Have to lock it again.
