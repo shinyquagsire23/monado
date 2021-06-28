@@ -188,9 +188,9 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
 	if (sess->exiting) {
 		oxr_session_change_state(log, sess, XR_SESSION_STATE_EXITING);
+	} else {
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
 	}
-
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
 
 	sess->has_begun = false;
 
