@@ -63,3 +63,13 @@ Then run the following commands before launching Monado.
 
 [Perfetto]: https://perfetto.dev
 [Percetto]: https://github.com/olvaffe/percetto
+
+## Gotchas
+
+Here's where we write down silly things we ran into while using Perfetto/Percetto.
+
+### "Value doesn't exist" in web viewer
+
+This is probably because you don't have read permissions on your tracefile, probably because you ran traced/tracebox as root. Don't do that, instead do `sudo chown -R $USER /sys/kernel/tracing` and run traced/tracebox as your normal user.
+
+(If you really have to run it as root, then before you open the tracefile do `sudo chown $USER <tracefile>`).
