@@ -130,7 +130,7 @@ toggle_io(struct ipc_connection *ipc_c, int client_id)
 
 	r = ipc_call_system_toggle_io_device(ipc_c, client_id);
 	if (r != XRT_SUCCESS) {
-		PE("Failed to set focused client to %d.\n", client_id);
+		PE("Failed to toggle io for client %d.\n", client_id);
 		return 1;
 	}
 
