@@ -171,7 +171,10 @@ main(int argc, char *argv[])
 			if (optopt == 's') {
 				PE("Option -s requires an id to set.\n");
 			} else if (isprint(optopt)) {
-				PE("Option `-%c' unknown.\n", optopt);
+				PE("Option `-%c' unknown. Usage:\n", optopt);
+				PE("    -f <id>: Set focused client\n");
+				PE("    -p <id>: Set primary client\n");
+				PE("    -i <id>: Toggle whether client receives input\n");
 			} else {
 				PE("Option `\\x%x' unknown.\n", optopt);
 			}
