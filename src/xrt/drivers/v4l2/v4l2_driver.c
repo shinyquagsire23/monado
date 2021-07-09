@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -15,6 +15,7 @@
 #include "util/u_debug.h"
 #include "util/u_format.h"
 #include "util/u_logging.h"
+#include "util/u_trace_marker.h"
 
 #include "v4l2_interface.h"
 
@@ -168,7 +169,7 @@ struct v4l2_fs
  * Streaming thread entrypoint
  */
 static void *
-v4l2_fs_stream_run(void *ptr);
+v4l2_fs_mainloop(void *ptr);
 
 /*!
  * Cast to derived type.
@@ -661,7 +662,7 @@ v4l2_fs_stream_start(struct xrt_fs *xfs,
 	vid->sink = xs;
 	vid->is_running = true;
 	vid->capture_type = capture_type;
-	if (pthread_create(&vid->stream_thread, NULL, v4l2_fs_stream_run, xfs)) {
+	if (pthread_create(&vid->stream_thread, NULL, v4l2_fs_mainloop, xfs)) {
 		vid->is_running = false;
 		V4L2_ERROR(vid, "error: Could not create thread");
 		return false;
@@ -799,8 +800,10 @@ v4l2_fs_create(struct xrt_frame_context *xfctx,
 }
 
 void *
-v4l2_fs_stream_run(void *ptr)
+v4l2_fs_mainloop(void *ptr)
 {
+	SINK_TRACE_MARKER();
+
 	struct xrt_fs *xfs = (struct xrt_fs *)ptr;
 	struct v4l2_fs *vid = v4l2_fs(xfs);
 
@@ -905,6 +908,8 @@ v4l2_fs_stream_run(void *ptr)
 		}
 
 		v4l2_update_controls(vid);
+
+		SINK_TRACE_IDENT(v4l2_fs_frame);
 
 		V4L2_TRACE(vid, "Got frame #%u, index %i", v_buf.sequence, v_buf.index);
 

@@ -241,7 +241,11 @@ if(XRT_HAVE_V4L2)
 		)
 
 	add_library(drv_v4l2 STATIC ${V4L2_SOURCE_FILES})
-	target_link_libraries(drv_v4l2 PRIVATE xrt-interfaces aux_os)
+	target_link_libraries(drv_v4l2 PRIVATE
+		xrt-interfaces
+		aux_os
+		aux_util
+		)
 	list(APPEND ENABLED_DRIVERS v4l2)
 endif()
 
