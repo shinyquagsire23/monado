@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,6 +9,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_sink.h"
+#include "util/u_trace_marker.h"
 
 
 /*!
@@ -28,6 +29,8 @@ struct u_sink_split
 static void
 split_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 {
+	SINK_TRACE_MARKER();
+
 	struct u_sink_split *s = (struct u_sink_split *)xfs;
 
 	s->left->push_frame(s->left, xf);
@@ -35,11 +38,13 @@ split_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 }
 
 static void
-break_apart(struct xrt_frame_node *node)
-{}
+split_break_apart(struct xrt_frame_node *node)
+{
+	// Noop
+}
 
 static void
-destroy(struct xrt_frame_node *node)
+split_destroy(struct xrt_frame_node *node)
 {
 	struct u_sink_split *s = container_of(node, struct u_sink_split, node);
 
@@ -62,8 +67,8 @@ u_sink_split_create(struct xrt_frame_context *xfctx,
 	struct u_sink_split *s = U_TYPED_CALLOC(struct u_sink_split);
 
 	s->base.push_frame = split_frame;
-	s->node.break_apart = break_apart;
-	s->node.destroy = destroy;
+	s->node.break_apart = split_break_apart;
+	s->node.destroy = split_destroy;
 	s->left = left;
 	s->right = right;
 

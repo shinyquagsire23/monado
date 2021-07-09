@@ -9,6 +9,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_sink.h"
+#include "util/u_trace_marker.h"
 
 #include <stdio.h>
 #include <pthread.h>
@@ -50,8 +51,10 @@ struct u_sink_queue
 };
 
 static void *
-sque_run(void *ptr)
+queue_mainloop(void *ptr)
 {
+	SINK_TRACE_MARKER();
+
 	struct u_sink_queue *q = (struct u_sink_queue *)ptr;
 	struct xrt_frame *frame = NULL;
 
@@ -73,6 +76,8 @@ sque_run(void *ptr)
 		if (q->seq.last >= q->seq.current || q->frame == NULL) {
 			continue;
 		}
+
+		SINK_TRACE_IDENT(queue_frame);
 
 		// We have a new frame, send it out.
 		q->seq.last = q->seq.current;
@@ -111,8 +116,10 @@ sque_run(void *ptr)
 }
 
 static void
-sque_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
+queue_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 {
+	SINK_TRACE_MARKER();
+
 	struct u_sink_queue *q = (struct u_sink_queue *)xfs;
 
 	pthread_mutex_lock(&q->mutex);
@@ -130,7 +137,7 @@ sque_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 }
 
 static void
-break_apart(struct xrt_frame_node *node)
+queue_break_apart(struct xrt_frame_node *node)
 {
 	struct u_sink_queue *q = container_of(node, struct u_sink_queue, node);
 	void *retval = NULL;
@@ -155,7 +162,7 @@ break_apart(struct xrt_frame_node *node)
 }
 
 static void
-destroy(struct xrt_frame_node *node)
+queue_destroy(struct xrt_frame_node *node)
 {
 	struct u_sink_queue *q = container_of(node, struct u_sink_queue, node);
 
@@ -178,9 +185,9 @@ u_sink_queue_create(struct xrt_frame_context *xfctx, struct xrt_frame_sink *down
 	struct u_sink_queue *q = U_TYPED_CALLOC(struct u_sink_queue);
 	int ret = 0;
 
-	q->base.push_frame = sque_frame;
-	q->node.break_apart = break_apart;
-	q->node.destroy = destroy;
+	q->base.push_frame = queue_frame;
+	q->node.break_apart = queue_break_apart;
+	q->node.destroy = queue_destroy;
 	q->consumer = downstream;
 	q->running = true;
 
@@ -197,7 +204,7 @@ u_sink_queue_create(struct xrt_frame_context *xfctx, struct xrt_frame_sink *down
 		return false;
 	}
 
-	ret = pthread_create(&q->thread, NULL, sque_run, q);
+	ret = pthread_create(&q->thread, NULL, queue_mainloop, q);
 	if (ret != 0) {
 		pthread_cond_destroy(&q->cond);
 		pthread_mutex_destroy(&q->mutex);

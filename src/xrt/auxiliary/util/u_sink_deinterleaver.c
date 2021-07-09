@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,6 +11,7 @@
 #include "util/u_misc.h"
 #include "util/u_sink.h"
 #include "util/u_frame.h"
+#include "util/u_trace_marker.h"
 
 
 /*!
@@ -43,6 +44,8 @@ L8_interleaved_to_L8(const uint8_t *input, uint8_t *l8a, uint8_t *l8b)
 static void
 from_L8_interleaved_to_L8(struct xrt_frame *frame, uint32_t w, uint32_t h, size_t stride, const uint8_t *data)
 {
+	SINK_TRACE_MARKER();
+
 	uint32_t half_w = w / 2;
 
 	for (uint32_t y = 0; y < h; y++) {
@@ -66,8 +69,10 @@ from_L8_interleaved_to_L8(struct xrt_frame *frame, uint32_t w, uint32_t h, size_
  */
 
 static void
-deinterleaves_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
+deinterleave_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 {
+	SINK_TRACE_MARKER();
+
 	struct u_sink_deinterleaver *de = (struct u_sink_deinterleaver *)xfs;
 
 	if (xf->stereo_format != XRT_STEREO_FORMAT_INTERLEAVED) {
@@ -107,11 +112,13 @@ deinterleaves_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 }
 
 static void
-break_apart(struct xrt_frame_node *node)
-{}
+deinterleave_break_apart(struct xrt_frame_node *node)
+{
+	// Noop
+}
 
 static void
-destroy(struct xrt_frame_node *node)
+deinterleave_destroy(struct xrt_frame_node *node)
 {
 	struct u_sink_deinterleaver *de = container_of(node, struct u_sink_deinterleaver, node);
 
@@ -132,9 +139,9 @@ u_sink_deinterleaver_create(struct xrt_frame_context *xfctx,
 {
 	struct u_sink_deinterleaver *de = U_TYPED_CALLOC(struct u_sink_deinterleaver);
 
-	de->base.push_frame = deinterleaves_frame;
-	de->node.break_apart = break_apart;
-	de->node.destroy = destroy;
+	de->base.push_frame = deinterleave_frame;
+	de->node.break_apart = deinterleave_break_apart;
+	de->node.destroy = deinterleave_destroy;
 	de->downstream = downstream;
 
 	*out_xfs = &de->base;
