@@ -12,6 +12,7 @@
 #include "util/u_debug.h"
 #include "util/u_frame.h"
 #include "util/u_format.h"
+#include "util/u_trace_marker.h"
 
 #include "tracking/t_tracking.h"
 
@@ -169,8 +170,10 @@ process_sample(struct t_hsv_filter *f,
 }
 
 XRT_NO_INLINE static void
-process_frame_yuv(struct t_hsv_filter *f, struct xrt_frame *xf)
+hsv_process_frame_yuv(struct t_hsv_filter *f, struct xrt_frame *xf)
 {
+	SINK_TRACE_MARKER();
+
 	struct xrt_frame *f0 = f->frame0;
 	struct xrt_frame *f1 = f->frame1;
 	struct xrt_frame *f2 = f->frame2;
@@ -199,8 +202,10 @@ process_frame_yuv(struct t_hsv_filter *f, struct xrt_frame *xf)
 }
 
 XRT_NO_INLINE static void
-process_frame_yuyv(struct t_hsv_filter *f, struct xrt_frame *xf)
+hsv_process_frame_yuyv(struct t_hsv_filter *f, struct xrt_frame *xf)
 {
+	SINK_TRACE_MARKER();
+
 	struct xrt_frame *f0 = f->frame0;
 	struct xrt_frame *f1 = f->frame1;
 	struct xrt_frame *f2 = f->frame2;
@@ -277,19 +282,21 @@ push_buf(struct t_hsv_filter *f, struct xrt_frame *xf, struct xrt_frame_sink *xs
 }
 
 static void
-push_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
+hsv_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 {
+	SINK_TRACE_MARKER();
+
 	struct t_hsv_filter *f = (struct t_hsv_filter *)xsink;
 
 
 	switch (xf->format) {
 	case XRT_FORMAT_YUV888:
 		ensure_buf_allocated(f, xf);
-		process_frame_yuv(f, xf);
+		hsv_process_frame_yuv(f, xf);
 		break;
 	case XRT_FORMAT_YUYV422:
 		ensure_buf_allocated(f, xf);
-		process_frame_yuyv(f, xf);
+		hsv_process_frame_yuyv(f, xf);
 		break;
 	default: U_LOG_E("Bad format '%s'", u_format_str(xf->format)); return;
 	}
@@ -311,11 +318,13 @@ push_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 }
 
 static void
-break_apart(struct xrt_frame_node *node)
-{}
+hsv_break_apart(struct xrt_frame_node *node)
+{
+	// Noop
+}
 
 static void
-destroy(struct xrt_frame_node *node)
+hsv_destroy(struct xrt_frame_node *node)
 {
 	struct t_hsv_filter *f = container_of(node, struct t_hsv_filter, node);
 	u_var_remove_root(f);
@@ -329,9 +338,9 @@ t_hsv_filter_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink **out_sink)
 {
 	struct t_hsv_filter *f = U_TYPED_CALLOC(struct t_hsv_filter);
-	f->base.push_frame = push_frame;
-	f->node.break_apart = break_apart;
-	f->node.destroy = destroy;
+	f->base.push_frame = hsv_frame;
+	f->node.break_apart = hsv_break_apart;
+	f->node.destroy = hsv_destroy;
 	f->params = *params;
 	f->sinks[0] = sinks[0];
 	f->sinks[1] = sinks[1];

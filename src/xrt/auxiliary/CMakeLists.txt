@@ -264,7 +264,7 @@ endif()
 
 # Tracking library.
 add_library(aux_tracking STATIC ${TRACKING_SOURCE_FILES})
-target_link_libraries(aux_tracking PUBLIC aux-includes PRIVATE aux_math)
+target_link_libraries(aux_tracking PUBLIC aux-includes PRIVATE aux_math aux_util)
 
 # Tracking files have extra includes.
 target_include_directories(aux_tracking SYSTEM
