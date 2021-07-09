@@ -17,6 +17,7 @@
 #include "util/u_frame.h"
 #include "util/u_format.h"
 #include "util/u_logging.h"
+#include "util/u_trace_marker.h"
 
 #include "depthai_interface.h"
 
@@ -138,6 +139,9 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 		return; // Nothing to do.
 	}
 
+	// Trace-marker here for timing after we have gotten a frame.
+	SINK_TRACE_IDENT(depthai_frame);
+
 	// Get the timestamp.
 	auto duration = imgFrame->getTimestamp().time_since_epoch();
 	auto nano = std::chrono::duration_cast<std::chrono::duration<int64_t, std::nano>>(duration);
@@ -170,6 +174,8 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 static void *
 depthai_mainloop(void *ptr)
 {
+	SINK_TRACE_MARKER();
+
 	struct depthai_fs *depthai = (struct depthai_fs *)ptr;
 	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop called");
 
