@@ -9,7 +9,9 @@
 
 #include "util/u_var.h"
 #include "gui_sdl2.h"
+#include "util/u_trace_marker.h"
 
+U_TRACE_TARGET_SETUP(U_TRACE_WHICH_SERVICE)
 
 int
 main(int argc, char **argv)
@@ -19,6 +21,8 @@ main(int argc, char **argv)
 
 	// Need to do this as early as possible.
 	u_var_force_on();
+
+	u_trace_marker_init();
 
 	ret = gui_sdl2_init(&p);
 	if (ret != 0) {
