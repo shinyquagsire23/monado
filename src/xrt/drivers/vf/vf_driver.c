@@ -91,10 +91,24 @@ struct vf_fs
 	enum u_logging_level ll;
 };
 
+/*!
+ * Frame wrapping a GstSample/GstBuffer.
+ *
+ * @implements xrt_frame
+ */
+struct vf_frame
+{
+	struct xrt_frame base;
+
+	GstSample *sample;
+
+	GstVideoFrame frame;
+};
+
 
 /*
  *
- * Misc helper functions
+ * Cast helpers.
  *
  */
 
@@ -107,49 +121,99 @@ vf_fs(struct xrt_fs *xfs)
 	return (struct vf_fs *)xfs;
 }
 
+/*!
+ * Cast to derived type.
+ */
+static inline struct vf_frame *
+vf_frame(struct xrt_frame *xf)
+{
+	return (struct vf_frame *)xf;
+}
+
+
+/*
+ *
+ * Frame methods.
+ *
+ */
+
+static void
+vf_frame_destroy(struct xrt_frame *xf)
+{
+	struct vf_frame *vff = vf_frame(xf);
+
+	gst_video_frame_unmap(&vff->frame);
+
+	if (vff->sample != NULL) {
+		gst_sample_unref(vff->sample);
+		vff->sample = NULL;
+	}
+
+	free(vff);
+}
+
+
+/*
+ *
+ * Misc helper functions
+ *
+ */
+
+
 static void
 vf_fs_frame(struct vf_fs *vid, GstSample *sample)
 {
-	GstBuffer *buffer;
-	buffer = gst_sample_get_buffer(sample);
-	GstCaps *caps = gst_sample_get_caps(sample);
+	// Noop.
+	if (!vid->sink) {
+		return;
+	}
 
-	static int seq = 0;
-
-	GstVideoFrame frame;
 	GstVideoInfo info;
+	GstBuffer *buffer;
+	GstCaps *caps;
+	buffer = gst_sample_get_buffer(sample);
+	caps = gst_sample_get_caps(sample);
+
 	gst_video_info_init(&info);
 	gst_video_info_from_caps(&info, caps);
-	if (gst_video_frame_map(&frame, &info, buffer, GST_MAP_READ)) {
 
-		int plane = 0;
+	static int seq = 0;
+	struct vf_frame *vff = U_TYPED_CALLOC(struct vf_frame);
 
-		struct xrt_frame *xf = NULL;
-
-		u_frame_create_one_off(vid->format, vid->width, vid->height, &xf);
-
-		//! @todo Sequence number and timestamp.
-		xf->width = vid->width;
-		xf->height = vid->height;
-		xf->format = vid->format;
-		xf->stereo_format = vid->stereo_format;
-
-		xf->data = frame.data[plane];
-		xf->stride = info.stride[plane];
-		xf->size = info.size;
-		xf->source_id = vid->base.source_id;
-		xf->source_sequence = seq;
-		xf->timestamp = os_monotonic_get_ns();
-		if (vid->sink) {
-			vid->sink->push_frame(vid->sink, xf);
-			// The frame is requeued as soon as the refcount reaches
-			// zero, this can be done safely from another thread.
-			// xrt_frame_reference(&xf, NULL);
-		}
-		gst_video_frame_unmap(&frame);
-	} else {
+	if (!gst_video_frame_map(&vff->frame, &info, buffer, GST_MAP_READ)) {
 		VF_ERROR(vid, "Failed to map frame %d", seq);
+		// Yes, we should do this here because we don't want the destroy function to to run.
+		free(vff);
+		return;
 	}
+
+	// We now want to hold onto the sample for as long as the frame lives.
+	gst_sample_ref(sample);
+	vff->sample = sample;
+
+	// Hardcoded first plane.
+	int plane = 0;
+
+	struct xrt_frame *xf = &vff->base;
+	xf->reference.count = 1;
+	xf->destroy = vf_frame_destroy;
+	xf->width = vid->width;
+	xf->height = vid->height;
+	xf->format = vid->format;
+	xf->stride = info.stride[plane];
+	xf->data = vff->frame.data[plane];
+	xf->stereo_format = vid->stereo_format;
+	xf->size = info.size;
+	xf->source_id = vid->base.source_id;
+
+	//! @todo Proper sequence number and timestamp.
+	xf->source_sequence = seq;
+	xf->timestamp = os_monotonic_get_ns();
+
+	xrt_sink_push_frame(vid->sink, &vff->base);
+
+	xrt_frame_reference(&xf, NULL);
+	vff = NULL;
 
 	seq++;
 }
@@ -179,8 +243,10 @@ on_new_sample_from_sink(GstElement *elt, struct vf_fs *vid)
 		return GST_FLOW_OK;
 	}
 
+	// Takes ownership of the sample.
 	vf_fs_frame(vid, sample);
 
+	// Done with sample now.
 	gst_sample_unref(sample);
 
 	return GST_FLOW_OK;
