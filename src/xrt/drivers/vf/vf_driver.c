@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -19,15 +19,16 @@
 #include "util/u_frame.h"
 #include "util/u_logging.h"
 
+#include "vf_interface.h"
 
 #include <stdio.h>
 #include <assert.h>
 
-#include "vf_interface.h"
-
+#include <glib.h>
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
-#include <glib.h>
+#include <gst/video/video-frame.h>
+
 
 /*
  *
@@ -90,6 +91,13 @@ struct vf_fs
 	enum u_logging_level ll;
 };
 
+
+/*
+ *
+ * Misc helper functions
+ *
+ */
+
 /*!
  * Cast to derived type.
  */
@@ -99,124 +107,7 @@ vf_fs(struct xrt_fs *xfs)
 	return (struct vf_fs *)xfs;
 }
 
-/*
- *
- * Misc helper functions
- *
- */
-
-
-/*
- *
- * Exported functions.
- *
- */
-
-static bool
-vf_fs_enumerate_modes(struct xrt_fs *xfs, struct xrt_fs_mode **out_modes, uint32_t *out_count)
-{
-	struct vf_fs *vid = vf_fs(xfs);
-
-	struct xrt_fs_mode *modes = U_TYPED_ARRAY_CALLOC(struct xrt_fs_mode, 1);
-	if (modes == NULL) {
-		return false;
-	}
-
-	modes[0].width = vid->width;
-	modes[0].height = vid->height;
-	modes[0].format = vid->format;
-	modes[0].stereo_format = vid->stereo_format;
-
-	*out_modes = modes;
-	*out_count = 1;
-
-	return true;
-}
-
-static bool
-vf_fs_configure_capture(struct xrt_fs *xfs, struct xrt_fs_capture_parameters *cp)
-{
-	// struct vf_fs *vid = vf_fs(xfs);
-	//! @todo
-	return false;
-}
-
-static bool
-vf_fs_stream_start(struct xrt_fs *xfs,
-                   struct xrt_frame_sink *xs,
-                   enum xrt_fs_capture_type capture_type,
-                   uint32_t descriptor_index)
-{
-	struct vf_fs *vid = vf_fs(xfs);
-
-	vid->sink = xs;
-	vid->is_running = true;
-	vid->capture_type = capture_type;
-	vid->selected = descriptor_index;
-
-	gst_element_set_state(vid->source, GST_STATE_PLAYING);
-
-	VF_TRACE(vid, "info: Started!");
-
-	// we're off to the races!
-	return true;
-}
-
-static bool
-vf_fs_stream_stop(struct xrt_fs *xfs)
-{
-	struct vf_fs *vid = vf_fs(xfs);
-
-	if (!vid->is_running) {
-		return true;
-	}
-
-	vid->is_running = false;
-	gst_element_set_state(vid->source, GST_STATE_PAUSED);
-
-	return true;
-}
-
-static bool
-vf_fs_is_running(struct xrt_fs *xfs)
-{
-	struct vf_fs *vid = vf_fs(xfs);
-
-	GstState current = GST_STATE_NULL;
-	GstState pending;
-	gst_element_get_state(vid->source, &current, &pending, 0);
-
-	return current == GST_STATE_PLAYING;
-}
-
 static void
-vf_fs_destroy(struct vf_fs *vid)
-{
-	g_main_loop_quit(vid->loop);
-
-	os_thread_helper_stop(&vid->play_thread);
-	os_thread_helper_destroy(&vid->play_thread);
-
-	free(vid);
-}
-
-static void
-vf_fs_node_break_apart(struct xrt_frame_node *node)
-{
-	struct vf_fs *vid = container_of(node, struct vf_fs, node);
-	vf_fs_stream_stop(&vid->base);
-}
-
-static void
-vf_fs_node_destroy(struct xrt_frame_node *node)
-{
-	struct vf_fs *vid = container_of(node, struct vf_fs, node);
-	vf_fs_destroy(vid);
-}
-
-#include <gst/video/video-frame.h>
-
-void
 vf_fs_frame(struct vf_fs *vid, GstSample *sample)
 {
 	GstBuffer *buffer;
@@ -345,6 +236,129 @@ run_play_thread(void *ptr)
 
 	return NULL;
 }
+
+
+/*
+ *
+ * Frame server methods.
+ *
+ */
+
+static bool
+vf_fs_enumerate_modes(struct xrt_fs *xfs, struct xrt_fs_mode **out_modes, uint32_t *out_count)
+{
+	struct vf_fs *vid = vf_fs(xfs);
+
+	struct xrt_fs_mode *modes = U_TYPED_ARRAY_CALLOC(struct xrt_fs_mode, 1);
+	if (modes == NULL) {
+		return false;
+	}
+
+	modes[0].width = vid->width;
+	modes[0].height = vid->height;
+	modes[0].format = vid->format;
+	modes[0].stereo_format = vid->stereo_format;
+
+	*out_modes = modes;
+	*out_count = 1;
+
+	return true;
+}
+
+static bool
+vf_fs_configure_capture(struct xrt_fs *xfs, struct xrt_fs_capture_parameters *cp)
+{
+	// struct vf_fs *vid = vf_fs(xfs);
+	//! @todo
+	return false;
+}
+
+static bool
+vf_fs_stream_start(struct xrt_fs *xfs,
+                   struct xrt_frame_sink *xs,
+                   enum xrt_fs_capture_type capture_type,
+                   uint32_t descriptor_index)
+{
+	struct vf_fs *vid = vf_fs(xfs);
+
+	vid->sink = xs;
+	vid->is_running = true;
+	vid->capture_type = capture_type;
+	vid->selected = descriptor_index;
+
+	gst_element_set_state(vid->source, GST_STATE_PLAYING);
+
+	VF_TRACE(vid, "info: Started!");
+
+	// we're off to the races!
+	return true;
+}
+
+static bool
+vf_fs_stream_stop(struct xrt_fs *xfs)
+{
+	struct vf_fs *vid = vf_fs(xfs);
+
+	if (!vid->is_running) {
+		return true;
+	}
+
+	vid->is_running = false;
+	gst_element_set_state(vid->source, GST_STATE_PAUSED);
+
+	return true;
+}
+
+static bool
+vf_fs_is_running(struct xrt_fs *xfs)
+{
+	struct vf_fs *vid = vf_fs(xfs);
+
+	GstState current = GST_STATE_NULL;
+	GstState pending;
+	gst_element_get_state(vid->source, &current, &pending, 0);
+
+	return current == GST_STATE_PLAYING;
+}
+
+static void
+vf_fs_destroy(struct vf_fs *vid)
+{
+	g_main_loop_quit(vid->loop);
+
+	os_thread_helper_stop(&vid->play_thread);
+	os_thread_helper_destroy(&vid->play_thread);
+
+	free(vid);
+}
+
+
+/*
+ *
+ * Node methods.
+ *
+ */
+
+static void
+vf_fs_node_break_apart(struct xrt_frame_node *node)
+{
+	struct vf_fs *vid = container_of(node, struct vf_fs, node);
+	vf_fs_stream_stop(&vid->base);
+}
+
+static void
+vf_fs_node_destroy(struct xrt_frame_node *node)
+{
+	struct vf_fs *vid = container_of(node, struct vf_fs, node);
+	vf_fs_destroy(vid);
+}
+
+
+/*
+ *
+ * Exported create functions and helper.
+ *
+ */
 
 static struct xrt_fs *
 alloc_and_init_common(struct xrt_frame_context *xfctx,      //
