@@ -18,6 +18,7 @@
 #include "util/u_format.h"
 #include "util/u_frame.h"
 #include "util/u_logging.h"
+#include "util/u_trace_marker.h"
 
 #include "vf_interface.h"
 
@@ -140,6 +141,8 @@ vf_frame(struct xrt_frame *xf)
 static void
 vf_frame_destroy(struct xrt_frame *xf)
 {
+	SINK_TRACE_MARKER();
+
 	struct vf_frame *vff = vf_frame(xf);
 
 	gst_video_frame_unmap(&vff->frame);
@@ -163,6 +166,8 @@ vf_frame_destroy(struct xrt_frame *xf)
 static void
 vf_fs_frame(struct vf_fs *vid, GstSample *sample)
 {
+	SINK_TRACE_MARKER();
+
 	// Noop.
 	if (!vid->sink) {
 		return;
@@ -285,8 +290,10 @@ on_source_message(GstBus *bus, GstMessage *message, struct vf_fs *vid)
 }
 
 static void *
-run_play_thread(void *ptr)
+vf_fs_mainloop(void *ptr)
 {
+	SINK_TRACE_MARKER();
+
 	struct vf_fs *vid = (struct vf_fs *)ptr;
 
 	VF_DEBUG(vid, "Let's run!");
@@ -468,7 +475,7 @@ alloc_and_init_common(struct xrt_frame_context *xfctx,      //
 	gst_bus_add_watch(bus, (GstBusFunc)on_source_message, vid);
 	gst_object_unref(bus);
 
-	ret = os_thread_helper_start(&vid->play_thread, run_play_thread, vid);
+	ret = os_thread_helper_start(&vid->play_thread, vf_fs_mainloop, vid);
 	if (ret != 0) {
 		VF_ERROR(vid, "Failed to start thread '%i'", ret);
 		g_main_loop_unref(vid->loop);

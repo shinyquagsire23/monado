@@ -255,7 +255,7 @@ if(XRT_BUILD_DRIVER_VF)
 		)
 
 	add_library(drv_vf STATIC ${VF_SOURCE_FILES})
-	target_link_libraries(drv_vf PRIVATE xrt-interfaces aux_os ${GST_LIBRARIES})
+	target_link_libraries(drv_vf PRIVATE xrt-interfaces aux_os aux_util ${GST_LIBRARIES})
 	target_include_directories(drv_vf PRIVATE ${GST_INCLUDE_DIRS})
 	MESSAGE("GST include ${GST_INCLUDE_DIRS}")
 	list(APPEND ENABLED_DRIVERS vf)
