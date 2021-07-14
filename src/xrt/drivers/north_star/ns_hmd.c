@@ -175,9 +175,9 @@ ns_vipd_parse(struct ns_hmd *ns)
 
 	float baseline = try_get_ipd(ns, config_json);
 
-	struct u_ns_vipd_grid *high_grid;
-	struct u_ns_vipd_grid *low_grid;
-	float interp;
+	struct u_ns_vipd_grid *high_grid = {0};
+	struct u_ns_vipd_grid *low_grid = {0};
+	float interp = 0;
 	for (int i = 1; i < temp_data->number_of_ipds; i++) {
 		NS_DEBUG(ns, "looking at %f lower and %f upper\n", temp_data->ipds[i - 1], temp_data->ipds[i]);
 		if ((baseline >= temp_data->ipds[i - 1]) && (baseline <= temp_data->ipds[i])) {
