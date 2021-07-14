@@ -70,6 +70,9 @@ qwerty_device(struct xrt_device *xd)
 	struct qwerty_device *qd = (struct qwerty_device *)xd;
 	bool is_qwerty_device = eq(qd, qd->sys->hmd) || eq(qd, qd->sys->lctrl) || eq(qd, qd->sys->rctrl);
 	assert(is_qwerty_device);
+	if (!is_qwerty_device) {
+		return NULL;
+	}
 	return qd;
 }
 
@@ -79,6 +82,9 @@ qwerty_hmd(struct xrt_device *xd)
 	struct qwerty_hmd *qh = (struct qwerty_hmd *)xd;
 	bool is_qwerty_hmd = eq(qh, qh->base.sys->hmd);
 	assert(is_qwerty_hmd);
+	if (!is_qwerty_hmd) {
+		return NULL;
+	}
 	return qh;
 }
 
@@ -88,6 +94,9 @@ qwerty_controller(struct xrt_device *xd)
 	struct qwerty_controller *qc = (struct qwerty_controller *)xd;
 	bool is_qwerty_controller = eq(qc, qc->base.sys->lctrl) || eq(qc, qc->base.sys->rctrl);
 	assert(is_qwerty_controller);
+	if (!is_qwerty_controller) {
+		return NULL;
+	}
 	return qc;
 }
 
@@ -413,6 +422,9 @@ qwerty_system_destroy(struct qwerty_system *qs)
 {
 	bool all_devices_clean = !qs->hmd && !qs->lctrl && !qs->rctrl;
 	assert(all_devices_clean && "Tried to destroy a qwerty_system without destroying its devices before.");
+	if (!all_devices_clean) {
+		return;
+	}
 	u_var_remove_root(qs);
 	free(qs);
 }
