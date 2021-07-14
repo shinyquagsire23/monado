@@ -296,12 +296,13 @@ leap_input_loop(void *ptr_to_xdev)
 					continue; // in case there are more than one left hand
 				leftbeendone = true;
 				hi = 0;
-			}
-			if (!hand.isLeft()) {
+			} else if (hand.isRight()) {
 				if (rightbeendone)
 					continue; // in case there are more than one right hand
 				rightbeendone = true;
 				hi = 1;
+			} else {
+				continue;
 			}
 
 			ulv2_process_hand(hand, &ulv2d->joints_write_in[hi], hi);
