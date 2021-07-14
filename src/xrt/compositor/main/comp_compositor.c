@@ -183,6 +183,7 @@ compositor_mark_frame(struct xrt_compositor *xc,
 		return XRT_SUCCESS;
 	default: assert(false);
 	}
+	return XRT_ERROR_VULKAN;
 }
 
 static xrt_result_t
