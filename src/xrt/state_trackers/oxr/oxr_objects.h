@@ -118,6 +118,7 @@ struct oxr_hand_tracker;
 
 #define XRT_MAX_HANDLE_CHILDREN 256
 #define OXR_MAX_SWAPCHAIN_IMAGES 8
+#define OXR_MAX_BINDINGS_PER_ACTION 16
 
 struct time_state;
 
@@ -545,7 +546,7 @@ void
 oxr_binding_find_bindings_from_key(struct oxr_logger *log,
                                    struct oxr_interaction_profile *profile,
                                    uint32_t key,
-                                   struct oxr_binding *bindings[32],
+                                   struct oxr_binding *bindings[OXR_MAX_BINDINGS_PER_ACTION],
                                    size_t *num_bindings);
 
 /*!
@@ -1562,8 +1563,6 @@ struct oxr_action_output
 	XrPath bound_path;
 };
 
-
-#define OXR_MAX_BINDINGS_PER_ACTION 16
 
 /*!
  * The set of inputs/outputs for a single sub-action path for an action.
