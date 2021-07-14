@@ -130,6 +130,8 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 
 
 	struct xrt_vec3 value = {0};
+	float value_arr[3] = {value.x, value.y, value.z};
+
 	uint64_t timestamp;
 
 	m_ff_vec3_f32_get(ff, 0, &value, &timestamp);
@@ -137,7 +139,7 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 	snprintf(tmp, sizeof(tmp), "%s.toggle", name);
 	igToggleButton(tmp, &info->gui.graphed);
 	igSameLine(0, 0);
-	igInputFloat3(name, &value.x, "%+f", ImGuiInputTextFlags_ReadOnly);
+	igInputFloat3(name, value_arr, "%+f", ImGuiInputTextFlags_ReadOnly);
 
 	if (!info->gui.graphed) {
 		return;
