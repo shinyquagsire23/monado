@@ -42,6 +42,8 @@
  */
 
 DEBUG_GET_ONCE_LOG_OPTION(prober_log, "PROBER_LOG", U_LOGGING_INFO)
+DEBUG_GET_ONCE_BOOL_OPTION(qwerty_enable, "QWERTY_ENABLE", false)
+DEBUG_GET_ONCE_BOOL_OPTION(qwerty_combine, "QWERTY_COMBINE", false)
 
 static void
 add_device(struct prober *p, struct prober_device **out_dev);
@@ -315,6 +317,18 @@ char *driver_conflicts[num_driver_conflicts][2] = {{"survive", "vive"}};
 static void
 disable_drivers_from_conflicts(struct prober *p)
 {
+	if (debug_get_bool_option_qwerty_enable() && !debug_get_bool_option_qwerty_combine()) {
+		for (size_t entry = 0; entry < p->num_entries; entry++) {
+			if (strcmp(p->entries[entry]->driver_name, "Qwerty") != 0) {
+				P_INFO(p, "Disabling %s because we have %s", p->entries[entry]->driver_name, "Qwerty");
+				size_t index = p->num_disabled_drivers++;
+				U_ARRAY_REALLOC_OR_FREE(p->disabled_drivers, char *, p->num_disabled_drivers);
+				p->disabled_drivers[index] = (char *)p->entries[entry]->driver_name;
+			}
+		}
+		return;
+	}
+
 	for (size_t i = 0; i < num_driver_conflicts; i++) {
 		bool have_first = false;
 		bool have_second = false;
