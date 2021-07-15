@@ -1427,6 +1427,9 @@ vk_create_device(struct vk_bundle *vk,
 
 	if (ret != VK_SUCCESS) {
 		VK_DEBUG(vk, "vkCreateDevice: %s (%d)", vk_result_string(ret), ret);
+		if (ret == VK_ERROR_NOT_PERMITTED_EXT) {
+			VK_DEBUG(vk, "Is CAP_SYS_NICE set? Try: sudo setcap cap_sys_nice+ep monado-service");
+		}
 		return ret;
 	}
 
