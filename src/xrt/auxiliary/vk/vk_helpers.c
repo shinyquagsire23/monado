@@ -1425,7 +1425,7 @@ vk_create_device(struct vk_bundle *vk,
 	free(device_extensions);
 
 	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkCreateDevice: %s", vk_result_string(ret));
+		VK_DEBUG(vk, "vkCreateDevice: %s (%d)", vk_result_string(ret), ret);
 		return ret;
 	}
 
