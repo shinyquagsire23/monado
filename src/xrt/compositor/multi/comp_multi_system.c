@@ -516,6 +516,12 @@ comp_multi_create_system_compositor(struct xrt_compositor_native *xcn,
 	msc->base.info = *xsci;
 	msc->xcn = xcn;
 
+	//! @todo Make the clients not go from IDLE to READY before we have completed a first frame.
+	// Make sure there is at least some sort of valid frame data here.
+	msc->last_timings.predicted_display_time_ns = os_monotonic_get_ns();   // As good as any time.
+	msc->last_timings.predicted_display_period_ns = U_TIME_1MS_IN_NS * 16; // Just a wild guess.
+	msc->last_timings.diff_ns = U_TIME_1MS_IN_NS * 5;                      // Make sure it's not zero at least.
+
 	int ret = os_thread_helper_init(&msc->oth);
 	if (ret < 0) {
 		return XRT_ERROR_THREADING_INIT_FAILURE;
