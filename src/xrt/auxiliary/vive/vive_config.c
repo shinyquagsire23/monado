@@ -232,6 +232,7 @@ vive_config_parse(struct vive_config *d, char *json_string)
 		d->variant = VIVE_VARIANT_INDEX;
 		VIVE_DEBUG(d, "Found Valve Index HMD");
 	} else if (strcmp(d->firmware.model_number, "Vive MV") == 0 ||
+	           strcmp(d->firmware.model_number, "Vive MV.") == 0 ||
 	           strcmp(d->firmware.model_number, "Vive. MV") == 0) {
 		d->variant = VIVE_VARIANT_VIVE;
 		VIVE_DEBUG(d, "Found HTC Vive HMD");
