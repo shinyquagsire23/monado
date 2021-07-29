@@ -97,6 +97,30 @@ map_matrix_4x4(struct xrt_matrix_4x4 &m)
 	return Eigen::Map<Eigen::Matrix4f>(m.v);
 }
 
+/*!
+ * @brief Wrap an internal 4x4 matrix f64 struct in an Eigen type, const overload.
+ *
+ * Permits zero-overhead manipulation of `const xrt_matrix_4x4_f64&` by Eigen routines as if it were a
+ * `const Eigen::Matrix4d&`.
+ */
+static inline Eigen::Map<const Eigen::Matrix4d>
+map_matrix_4x4_f64(const struct xrt_matrix_4x4_f64 &m)
+{
+	return Eigen::Map<const Eigen::Matrix4d>(m.v);
+}
+
+/*!
+ * @brief Wrap an internal 4x4 matrix struct in an Eigen type, non-const overload.
+ *
+ * Permits zero-overhead manipulation of `xrt_matrix_4x4_f64&` by Eigen routines as if it were a `Eigen::Matrix4d&`.
+ */
+static inline Eigen::Map<Eigen::Matrix4d>
+map_matrix_4x4_f64(struct xrt_matrix_4x4_f64 &m)
+{
+	return Eigen::Map<Eigen::Matrix4d>(m.v);
+}
+
+
 /*
  *
  * Pose deconstruction helpers.

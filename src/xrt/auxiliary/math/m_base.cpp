@@ -40,6 +40,21 @@ copy(const struct xrt_quat *q)
 	return copy(*q);
 }
 
+XRT_MAYBE_UNUSED static inline Eigen::Quaterniond
+copyd(const struct xrt_quat &q)
+{
+	// Eigen constructor order is different from XRT, OpenHMD and OpenXR!
+	//  Eigen: `float w, x, y, z`.
+	// OpenXR: `float x, y, z, w`.
+	return Eigen::Quaterniond(q.w, q.x, q.y, q.z);
+}
+
+XRT_MAYBE_UNUSED static inline Eigen::Quaterniond
+copyd(const struct xrt_quat *q)
+{
+	return copyd(*q);
+}
+
 static inline Eigen::Vector3f
 copy(const struct xrt_vec3 &v)
 {
@@ -50,6 +65,18 @@ static inline Eigen::Vector3f
 copy(const struct xrt_vec3 *v)
 {
 	return copy(*v);
+}
+
+XRT_MAYBE_UNUSED static inline Eigen::Vector3d
+copyd(const struct xrt_vec3 &v)
+{
+	return Eigen::Vector3d(v.x, v.y, v.z);
+}
+
+XRT_MAYBE_UNUSED static inline Eigen::Vector3d
+copyd(const struct xrt_vec3 *v)
+{
+	return copyd(*v);
 }
 
 static inline Eigen::Matrix3f
@@ -76,6 +103,7 @@ copy(const struct xrt_matrix_4x4 *m)
 	// clang-format on
 	return res;
 }
+
 
 /*
  *
@@ -416,6 +444,70 @@ math_matrix_4x4_inverse_view_projection(const struct xrt_matrix_4x4 *view,
 	Eigen::Matrix4f vp = copy(projection) * v3;
 	map_matrix_4x4(*result) = vp.inverse();
 }
+
+
+/*
+ *
+ * Exported Matrix 4x4 functions.
+ *
+ */
+
+extern "C" void
+m_mat4_f64_identity(struct xrt_matrix_4x4_f64 *result)
+{
+	map_matrix_4x4_f64(*result) = Eigen::Matrix4d::Identity();
+}
+
+extern "C" void
+m_mat4_f64_invert(const struct xrt_matrix_4x4_f64 *matrix, struct xrt_matrix_4x4_f64 *result)
+{
+	Eigen::Matrix4d m = map_matrix_4x4_f64(*matrix);
+	map_matrix_4x4_f64(*result) = m.inverse();
+}
+
+extern "C" void
+m_mat4_f64_multiply(const struct xrt_matrix_4x4_f64 *left,
+                    const struct xrt_matrix_4x4_f64 *right,
+                    struct xrt_matrix_4x4_f64 *result)
+{
+	Eigen::Matrix4d l = map_matrix_4x4_f64(*left);
+	Eigen::Matrix4d r = map_matrix_4x4_f64(*right);
+
+	map_matrix_4x4_f64(*result) = l * r;
+}
+
+extern "C" void
+m_mat4_f64_orientation(const struct xrt_quat *quat, struct xrt_matrix_4x4_f64 *result)
+{
+	map_matrix_4x4_f64(*result) = Eigen::Affine3d(copyd(*quat)).matrix();
+}
+
+extern "C" void
+m_mat4_f64_model(const struct xrt_pose *pose, const struct xrt_vec3 *size, struct xrt_matrix_4x4_f64 *result)
+{
+	Eigen::Vector3d position = copyd(pose->position);
+	Eigen::Quaterniond orientation = copyd(pose->orientation);
+
+	auto scale = Eigen::Scaling(copyd(size));
+
+	Eigen::Translation3d translation(position);
+	Eigen::Affine3d transformation = translation * orientation * scale;
+
+	map_matrix_4x4_f64(*result) = transformation.matrix();
+}
+
+extern "C" void
+m_mat4_f64_view(const struct xrt_pose *pose, struct xrt_matrix_4x4_f64 *result)
+{
+	Eigen::Vector3d position = copyd(pose->position);
+	Eigen::Quaterniond orientation = copyd(pose->orientation);
+
+	Eigen::Translation3d translation(position);
+	Eigen::Affine3d transformation = translation * orientation;
+
+	map_matrix_4x4_f64(*result) = transformation.matrix().inverse();
+}
+
 
 /*
  *
