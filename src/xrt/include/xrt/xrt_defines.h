@@ -403,6 +403,16 @@ struct xrt_matrix_4x4
 };
 
 /*!
+ * A tightly packed 4x4 matrix of double.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_matrix_4x4_f64
+{
+	double v[16];
+};
+
+/*!
  * A range of API versions supported.
  *
  * @ingroup xrt_iface math
