@@ -450,7 +450,7 @@
 					"localized_name": "Right Haptic",
 					"features": ["haptic"],
 					"monado_bindings": {
-						"haptic": "XRT_OUTPUT_NAME_XBOX_HAPTIC_RIGHTT"
+						"haptic": "XRT_OUTPUT_NAME_XBOX_HAPTIC_RIGHT"
 					}
 				},
 				"/output/haptic_left_trigger": {
