@@ -43,9 +43,23 @@ m_vec2_add(struct xrt_vec2 l, struct xrt_vec2 r)
 }
 
 static inline struct xrt_vec2
+m_vec2_add_scalar(struct xrt_vec2 l, float r)
+{
+	struct xrt_vec2 ret = {l.x + r, l.y + r};
+	return ret;
+}
+
+static inline struct xrt_vec2
 m_vec2_sub(struct xrt_vec2 l, struct xrt_vec2 r)
 {
 	struct xrt_vec2 ret = {l.x - r.x, l.y - r.y};
+	return ret;
+}
+
+static inline struct xrt_vec2
+m_vec2_sub_scalar(struct xrt_vec2 l, float r)
+{
+	struct xrt_vec2 ret = {l.x - r, l.y - r};
 	return ret;
 }
 
