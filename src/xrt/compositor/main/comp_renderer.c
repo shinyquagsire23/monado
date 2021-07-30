@@ -683,7 +683,7 @@ renderer_destroy(struct comp_renderer *r)
 }
 
 static VkImageView
-get_image_view(struct comp_swapchain_image *image, enum xrt_layer_composition_flags flags, uint32_t array_index)
+get_image_view(const struct comp_swapchain_image *image, enum xrt_layer_composition_flags flags, uint32_t array_index)
 {
 	if (flags & XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT) {
 		return image->views.alpha[array_index];
