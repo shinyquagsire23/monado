@@ -1333,6 +1333,9 @@ struct oxr_session
 	 */
 	bool frame_timing_spew;
 
+	//! Extra sleep in wait frame.
+	uint32_t frame_timing_wait_sleep_ms;
+
 	/*!
 	 * To pipe swapchain creation to right code.
 	 */

@@ -46,6 +46,7 @@
 
 
 DEBUG_GET_ONCE_NUM_OPTION(ipd, "OXR_DEBUG_IPD_MM", 63)
+DEBUG_GET_ONCE_NUM_OPTION(wait_frame_sleep, "OXR_DEBUG_WAIT_FRAME_EXTRA_SLEEP_MS", 0)
 DEBUG_GET_ONCE_BOOL_OPTION(frame_timing_spew, "OXR_FRAME_TIMING_SPEW", false)
 
 #define CALL_CHK(call)                                                                                                 \
@@ -516,6 +517,10 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 		        ts_ms(sess), ns_to_ms(predicted_display_time), ns_to_ms(predicted_display_period));
 	}
 
+	if (sess->frame_timing_wait_sleep_ms > 0) {
+		os_nanosleep(U_TIME_1MS_IN_NS * sess->frame_timing_wait_sleep_ms);
+	}
+
 	return oxr_session_success_result(sess);
 }
 
@@ -776,6 +781,7 @@ oxr_session_create(struct oxr_logger *log,
 
 	sess->ipd_meters = debug_get_num_option_ipd() / 1000.0f;
 	sess->frame_timing_spew = debug_get_bool_option_frame_timing_spew();
+	sess->frame_timing_wait_sleep_ms = debug_get_num_option_wait_frame_sleep();
 
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
