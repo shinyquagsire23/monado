@@ -31,6 +31,13 @@
  *
  */
 
+enum dummy_movement
+{
+	DUMMY_WOBBLE,
+	DUMMY_ROTATE,
+};
+
+
 /*!
  * A example HMD device.
  *
@@ -47,6 +54,7 @@ struct dummy_hmd
 	float diameter_m;
 
 	enum u_logging_level log_level;
+	enum dummy_movement movement;
 };
 
 
@@ -63,6 +71,7 @@ dummy_hmd(struct xrt_device *xdev)
 }
 
 DEBUG_GET_ONCE_LOG_OPTION(dummy_log, "DUMMY_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_BOOL_OPTION(dummy_rotate, "DUMMY_ROTATE", false)
 
 #define DH_TRACE(p, ...) U_LOG_XDEV_IFL_T(&dh->base, dh->log_level, __VA_ARGS__)
 #define DH_DEBUG(p, ...) U_LOG_XDEV_IFL_D(&dh->base, dh->log_level, __VA_ARGS__)
@@ -98,20 +107,35 @@ dummy_hmd_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	double time_s = time_ns_to_s(at_timestamp_ns - dh->created_ns);
-	double d = dh->diameter_m;
-	double d2 = d * 2;
-	double t = 2.0;
-	double t2 = t * 2;
-	double t3 = t * 3;
-	double t4 = t * 4;
-	dh->pose.position.x = dh->center.x + sin((time_s / t2) * M_PI) * d2 - d;
-	dh->pose.position.y = dh->center.y + sin((time_s / t) * M_PI) * d;
-	dh->pose.orientation.x = sin((time_s / t3) * M_PI) / 64.0;
-	dh->pose.orientation.y = sin((time_s / t4) * M_PI) / 16.0;
-	dh->pose.orientation.z = sin((time_s / t4) * M_PI) / 64.0;
-	dh->pose.orientation.w = 1;
-	math_quat_normalize(&dh->pose.orientation);
+	const double time_s = time_ns_to_s(at_timestamp_ns - dh->created_ns);
+	const double d = dh->diameter_m;
+	const double d2 = d * 2;
+	const double t = 2.0;
+	const double t2 = t * 2;
+	const double t3 = t * 3;
+	const double t4 = t * 4;
+	const struct xrt_vec3 up = {0, 1, 0};
+
+	switch (dh->movement) {
+	default:
+	case DUMMY_WOBBLE:
+		// Wobble time.
+		dh->pose.position.x = dh->center.x + sin((time_s / t2) * M_PI) * d2 - d;
+		dh->pose.position.y = dh->center.y + sin((time_s / t) * M_PI) * d;
+		dh->pose.orientation.x = sin((time_s / t3) * M_PI) / 64.0;
+		dh->pose.orientation.y = sin((time_s / t4) * M_PI) / 16.0;
+		dh->pose.orientation.z = sin((time_s / t4) * M_PI) / 64.0;
+		dh->pose.orientation.w = 1;
+		math_quat_normalize(&dh->pose.orientation);
+		break;
+	case DUMMY_ROTATE:
+		// Reset position.
+		dh->pose.position = dh->center;
+
+		// Rotate around the up vector.
+		math_quat_from_angle_vector(time_s / 4, &up, &dh->pose.orientation);
+		break;
+	}
 
 	out_relation->pose = dh->pose;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
@@ -168,6 +192,12 @@ dummy_hmd_create(void)
 		DH_ERROR(dh, "Failed to setup basic device info");
 		dummy_hmd_destroy(&dh->base);
 		return NULL;
+	}
+
+	// Select the type of movement.
+	dh->movement = DUMMY_WOBBLE;
+	if (debug_get_bool_option_dummy_rotate()) {
+		dh->movement = DUMMY_ROTATE;
 	}
 
 	// Setup variable tracker.
