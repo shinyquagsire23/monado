@@ -194,12 +194,18 @@ struct comp_resources
 		//! Doesn't depend on target so is static.
 		VkPipeline distortion_pipeline;
 
+		//! Doesn't depend on target so is static.
+		VkPipeline distortion_timewarp_pipeline;
+
 		//! Target info.
 		struct comp_buffer ubo;
 	} compute;
 
 	struct
 	{
+		//! Transform to go from UV to tangle angles.
+		struct xrt_normalized_rect uv_to_tanangle[2];
+
 		//! Backing memory to distortion images.
 		VkDeviceMemory device_memories[COMP_DISTORTION_NUM_IMAGES];
 
@@ -480,6 +486,18 @@ comp_rendering_compute_close(struct comp_rendering_compute *crc);
 
 bool
 comp_rendering_compute_begin(struct comp_rendering_compute *crc);
+
+void
+comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
+                                           VkSampler src_samplers[2],
+                                           VkImageView src_image_views[2],
+                                           const struct xrt_normalized_rect src_rects[2],
+                                           const struct xrt_pose src_poses[2],
+                                           const struct xrt_fov src_fovs[2],
+                                           const struct xrt_pose new_poses[2],
+                                           VkImage target_image,
+                                           VkImageView target_image_view,
+                                           const struct comp_viewport_data views[2]);
 
 void
 comp_rendering_compute_projection(struct comp_rendering_compute *crc,            //

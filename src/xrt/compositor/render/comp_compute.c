@@ -8,6 +8,8 @@
  */
 
 #include "math/m_api.h"
+#include "math/m_matrix_4x4_f64.h"
+
 #include "main/comp_compositor.h"
 #include "render/comp_render.h"
 
@@ -66,6 +68,109 @@ calc_dispatch_dims(const struct comp_viewport_data views[2], uint32_t *out_w, ui
 
 	*out_w = w;
 	*out_h = h;
+}
+
+/*!
+ * Create a simplified projection matrix for timewarp.
+ */
+static void
+calc_projection(const struct xrt_fov *fov, struct xrt_matrix_4x4_f64 *result)
+{
+	const double tan_left = tan(fov->angle_left);
+	const double tan_right = tan(fov->angle_right);
+
+	const double tan_down = tan(fov->angle_down);
+	const double tan_up = tan(fov->angle_up);
+
+	const double tan_width = tan_right - tan_left;
+	const double tan_height = tan_up - tan_down;
+
+	const double near = 0.5;
+	const double far = 1.5;
+
+	const double a11 = 2 / tan_width;
+	const double a22 = 2 / tan_height;
+
+	const double a31 = (tan_right + tan_left) / tan_width;
+	const double a32 = (tan_up + tan_down) / tan_height;
+
+	const float a33 = -far / (far - near);
+	const float a43 = -(far * near) / (far - near);
+
+
+#if 1
+	// We skip a33 & a43 because we don't have depth.
+	(void)a33;
+	(void)a43;
+
+	// clang-format off
+	*result = (struct xrt_matrix_4x4_f64){
+		{
+			      a11,         0,  0,  0,
+			        0,       a22,  0,  0,
+			      a31,       a32, -1,  0,
+			        0,         0,  0,  1,
+		}
+	};
+	// clang-format on
+#else
+	// clang-format off
+	*result = (struct xrt_matrix_4x4_f64) {
+		.v = {
+			a11, 0, 0, 0,
+			0, a22, 0, 0,
+			a31, a32, a33, -1,
+			0, 0, a43, 0,
+		}
+	};
+	// clang-format on
+#endif
+}
+
+static void
+calc_time_warp_matrix(struct comp_rendering_compute *crc,
+                      const struct xrt_pose *src_pose,
+                      const struct xrt_fov *src_fov,
+                      const struct xrt_pose *new_pose,
+                      struct xrt_matrix_4x4 *matrix)
+{
+	// Src projection matrix.
+	struct xrt_matrix_4x4_f64 src_proj;
+	calc_projection(src_fov, &src_proj);
+
+	// Src rotation matrix.
+	struct xrt_matrix_4x4_f64 src_rot_inv;
+	struct xrt_quat src_q = src_pose->orientation;
+	src_q.x = -src_q.x;                           // I don't know why we need to do this.
+	src_q.z = -src_q.z;                           // I don't know why we need to do this.
+	m_mat4_f64_orientation(&src_q, &src_rot_inv); // This is a model matrix, a inverted view matrix.
+
+	// New rotation matrix.
+	struct xrt_matrix_4x4_f64 new_rot, new_rot_inv;
+	struct xrt_quat new_q = new_pose->orientation;
+	new_q.x = -new_q.x;                           // I don't know why we need to do this.
+	new_q.z = -new_q.z;                           // I don't know why we need to do this.
+	m_mat4_f64_orientation(&new_q, &new_rot_inv); // This is a model matrix, a inverted view matrix.
+	m_mat4_f64_invert(&new_rot_inv, &new_rot);    // Invert to make it a view matrix.
+
+	// Combine both rotation matricies to get difference.
+	struct xrt_matrix_4x4_f64 delta_rot, delta_rot_inv;
+	m_mat4_f64_multiply(&new_rot, &src_rot_inv, &delta_rot);
+	m_mat4_f64_invert(&delta_rot, &delta_rot_inv);
+
+	// Combine the source projection matrix and
+	struct xrt_matrix_4x4_f64 result;
+	m_mat4_f64_multiply(&src_proj, &delta_rot_inv, &result);
+
+	// Reset if timewarp is off.
+	if (crc->c->debug.atw_off) {
+		result = src_proj;
+	}
+
+	// Convert from f64 to f32.
+	for (int i = 0; i < 16; i++) {
+		matrix->v[i] = result.v[i];
+	}
 }
 
 
@@ -415,6 +520,147 @@ comp_rendering_compute_close(struct comp_rendering_compute *crc)
 
 	crc->c = NULL;
 	crc->r = NULL;
+}
+
+void
+comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
+                                           VkSampler src_samplers[2],
+                                           VkImageView src_image_views[2],
+                                           const struct xrt_normalized_rect src_norm_rects[2],
+                                           const struct xrt_pose src_poses[2],
+                                           const struct xrt_fov src_fovs[2],
+                                           const struct xrt_pose new_poses[2],
+                                           VkImage target_image,
+                                           VkImageView target_image_view,
+                                           const struct comp_viewport_data views[2])
+{
+	assert(crc->c != NULL);
+	assert(crc->r != NULL);
+
+	struct vk_bundle *vk = &crc->c->vk;
+	struct comp_resources *r = crc->r;
+
+
+	/*
+	 * UBO
+	 */
+
+	struct xrt_matrix_4x4 time_warp_matrix[2];
+	calc_time_warp_matrix(     //
+	    crc,                   //
+	    &src_poses[0],         //
+	    &src_fovs[0],          //
+	    &new_poses[0],         //
+	    &time_warp_matrix[0]); //
+	calc_time_warp_matrix(     //
+	    crc,                   //
+	    &src_poses[1],         //
+	    &src_fovs[1],          //
+	    &new_poses[1],         //
+	    &time_warp_matrix[1]); //
+
+	struct comp_ubo_compute_data *data = (struct comp_ubo_compute_data *)r->compute.ubo.mapped;
+	data->views[0] = views[0];
+	data->views[1] = views[1];
+	data->pre_transforms[0] = r->distortion.uv_to_tanangle[0];
+	data->pre_transforms[1] = r->distortion.uv_to_tanangle[1];
+	data->transforms[0] = time_warp_matrix[0];
+	data->transforms[1] = time_warp_matrix[1];
+	data->post_transforms[0] = src_norm_rects[0];
+	data->post_transforms[1] = src_norm_rects[1];
+
+
+	/*
+	 * Source, target and distortion images.
+	 */
+
+	VkImageSubresourceRange subresource_range = {
+	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .baseMipLevel = 0,
+	    .levelCount = VK_REMAINING_MIP_LEVELS,
+	    .baseArrayLayer = 0,
+	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+	};
+
+	vk_set_image_layout(            //
+	    vk,                         //
+	    crc->cmd,                   //
+	    target_image,               //
+	    0,                          //
+	    VK_ACCESS_SHADER_WRITE_BIT, //
+	    VK_IMAGE_LAYOUT_UNDEFINED,  //
+	    VK_IMAGE_LAYOUT_GENERAL,    //
+	    subresource_range);         //
+
+	VkSampler sampler = r->compute.default_sampler;
+	VkSampler distortion_samplers[6] = {
+	    sampler, sampler, sampler, sampler, sampler, sampler,
+	};
+
+	update_compute_discriptor_set(     //
+	    vk,                            //
+	    r->compute.src_binding,        //
+	    src_samplers,                  //
+	    src_image_views,               //
+	    r->compute.distortion_binding, //
+	    distortion_samplers,           //
+	    r->distortion.image_views,     //
+	    r->compute.target_binding,     //
+	    target_image_view,             //
+	    r->compute.ubo_binding,        //
+	    r->compute.ubo.buffer,         //
+	    VK_WHOLE_SIZE,                 //
+	    crc->clear_descriptor_set);    //
+
+	vk->vkCmdBindPipeline(                        //
+	    crc->cmd,                                 // commandBuffer
+	    VK_PIPELINE_BIND_POINT_COMPUTE,           // pipelineBindPoint
+	    r->compute.distortion_timewarp_pipeline); // pipeline
+
+	vk->vkCmdBindDescriptorSets(        //
+	    crc->cmd,                       // commandBuffer
+	    VK_PIPELINE_BIND_POINT_COMPUTE, // pipelineBindPoint
+	    r->compute.pipeline_layout,     // layout
+	    0,                              // firstSet
+	    1,                              // descriptorSetCount
+	    &crc->clear_descriptor_set,     // pDescriptorSets
+	    0,                              // dynamicOffsetCount
+	    NULL);                          // pDynamicOffsets
+
+
+	uint32_t w = 0, h = 0;
+	calc_dispatch_dims(views, &w, &h);
+	assert(w != 0 && h != 0);
+
+	vk->vkCmdDispatch( //
+	    crc->cmd,      // commandBuffer
+	    w,             // groupCountX
+	    h,             // groupCountY
+	    2);            // groupCountZ
+
+	VkImageMemoryBarrier memoryBarrier = {
+	    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+	    .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+	    .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+	    .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+	    .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+	    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+	    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+	    .image = target_image,
+	    .subresourceRange = subresource_range,
+	};
+
+	vk->vkCmdPipelineBarrier(                 //
+	    crc->cmd,                             //
+	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, //
+	    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,    //
+	    0,                                    //
+	    0,                                    //
+	    NULL,                                 //
+	    0,                                    //
+	    NULL,                                 //
+	    1,                                    //
+	    &memoryBarrier);                      //
 }
 
 void

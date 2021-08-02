@@ -21,6 +21,8 @@
 
 #include "main/comp_layer_renderer.h"
 #include "math/m_api.h"
+#include "math/m_vec3.h"
+#include "math/m_matrix_4x4_f64.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -729,6 +731,43 @@ dispatch_graphics(struct comp_renderer *r)
  */
 
 static void
+get_view_poses(struct comp_renderer *r, struct xrt_pose out_results[2])
+{
+	COMP_TRACE_MARKER();
+
+	struct xrt_space_relation relation;
+
+	xrt_device_get_tracked_pose(                         //
+	    r->c->xdev,                                      //
+	    XRT_INPUT_GENERIC_HEAD_POSE,                     //
+	    r->c->frame.rendering.predicted_display_time_ns, //
+	    &relation);                                      //
+
+	struct xrt_vec3 eye_relation = {
+	    0.063000f, /* TODO: get actual ipd_meters */
+	    0.0f,
+	    0.0f,
+	};
+
+	for (uint32_t i = 0; i < 2; i++) {
+		struct xrt_fov fov = r->c->xdev->hmd->views[i].fov;
+
+		comp_layer_renderer_set_fov(r->lr, &fov, i);
+
+		struct xrt_pose eye_pose = XRT_POSE_IDENTITY;
+		xrt_device_get_view_pose(r->c->xdev, &eye_relation, i, &eye_pose);
+
+		struct xrt_space_relation result = {0};
+		struct xrt_space_graph xsg = {0};
+		m_space_graph_add_pose_if_not_identity(&xsg, &eye_pose);
+		m_space_graph_add_relation(&xsg, &relation);
+		m_space_graph_resolve(&xsg, &result);
+
+		out_results[i] = result.pose;
+	}
+}
+
+static void
 do_projection_layers(struct comp_renderer *r,
                      struct comp_rendering_compute *crc,
                      const struct comp_layer *layer,
@@ -746,6 +785,9 @@ do_projection_layers(struct comp_renderer *r,
 
 	VkImage target_image = r->c->target->images[r->acquired_buffer].handle;
 	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
+
+	struct xrt_pose new_view_poses[2];
+	get_view_poses(r, new_view_poses);
 
 	VkSampler src_samplers[2] = {
 	    left->sampler,
@@ -765,14 +807,38 @@ do_projection_layers(struct comp_renderer *r,
 		src_norm_rects[1].y = 1 + src_norm_rects[1].y;
 	}
 
-	comp_rendering_compute_projection( //
-	    crc,                           //
-	    src_samplers,                  //
-	    src_image_views,               //
-	    src_norm_rects,                //
-	    target_image,                  //
-	    target_image_view,             //
-	    views);                        //
+	struct xrt_pose src_poses[2] = {
+	    lvd->pose,
+	    rvd->pose,
+	};
+
+	struct xrt_fov src_fovs[2] = {
+	    lvd->fov,
+	    rvd->fov,
+	};
+
+	if (crc->c->debug.atw_off) {
+		comp_rendering_compute_projection( //
+		    crc,                           //
+		    src_samplers,                  //
+		    src_image_views,               //
+		    src_norm_rects,                //
+		    target_image,                  //
+		    target_image_view,             //
+		    views);                        //
+	} else {
+		comp_rendering_compute_projection_timewarp( //
+		    crc,                                    //
+		    src_samplers,                           //
+		    src_image_views,                        //
+		    src_norm_rects,                         //
+		    src_poses,                              //
+		    src_fovs,                               //
+		    new_view_poses,                         //
+		    target_image,                           //
+		    target_image_view,                      //
+		    views);                                 //
+	}
 }
 
 static void

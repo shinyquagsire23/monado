@@ -1509,6 +1509,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	u_var_add_root(c, "Compositor", true);
 	u_var_add_ro_f32(c, &c->compositor_frame_times.fps, "FPS (Compositor)");
+	u_var_add_bool(c, &c->debug.atw_off, "Debug: ATW OFF");
 
 	struct u_var_timing *ft = U_TYPED_CALLOC(struct u_var_timing);
 

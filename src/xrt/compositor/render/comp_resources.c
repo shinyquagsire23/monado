@@ -11,6 +11,7 @@
 
 #include "main/comp_compositor.h"
 #include "render/comp_render.h"
+#include "math/m_vec2.h"
 
 #include <stdio.h>
 
@@ -514,6 +515,38 @@ struct texture
 	struct xrt_vec2 pixels[COMP_DISTORTION_IMAGE_DIMENSIONS][COMP_DISTORTION_IMAGE_DIMENSIONS];
 };
 
+struct tan_angles_transforms
+{
+	struct xrt_vec2 offset;
+	struct xrt_vec2 scale;
+};
+
+static void
+calc_uv_to_tanangle(struct xrt_device *xdev, uint32_t view, struct xrt_normalized_rect *out_rect)
+{
+	const struct xrt_fov fov = xdev->hmd->views[view].fov;
+	const double tan_left = tan(fov.angle_left);
+	const double tan_right = tan(fov.angle_right);
+
+	const double tan_down = tan(fov.angle_down);
+	const double tan_up = tan(fov.angle_up);
+
+	const double tan_width = tan_right - tan_left;
+	const double tan_height = tan_up - tan_down;
+
+	const double tan_offset_x = (tan_right + tan_left) - tan_width / 2;
+	const double tan_offset_y = (tan_up + tan_down) - tan_height / 2;
+
+	struct xrt_normalized_rect transform = {
+	    .x = tan_offset_x,
+	    .y = tan_offset_y,
+	    .w = tan_width,
+	    .h = tan_height,
+	};
+
+	*out_rect = transform;
+}
+
 static XRT_MAYBE_UNUSED VkResult
 create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
                                               struct xrt_device *xdev,
@@ -683,6 +716,14 @@ comp_resources_init(struct comp_compositor *c, struct comp_resources *r)
 	    r->compute.pipeline_layout,        // pipeline_layout
 	    &r->compute.distortion_pipeline)); // out_compute_pipeline
 
+	C(create_compute_pipeline(                      //
+	    vk,                                         // vk_bundle
+	    r->pipeline_cache,                          // pipeline_cache
+	    c->shaders.distortion_timewarp_comp,        // shader
+	    r->compute.pipeline_layout,                 // pipeline_layout
+	    &r->compute.distortion_timewarp_pipeline)); // out_compute_pipeline
+
+
 	VkBufferUsageFlags ubo_usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	VkMemoryPropertyFlags memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
 	                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
@@ -701,6 +742,9 @@ comp_resources_init(struct comp_compositor *c, struct comp_resources *r)
 
 
 	struct comp_buffer buffers[COMP_DISTORTION_NUM_IMAGES];
+
+	calc_uv_to_tanangle(c->xdev, 0, &r->distortion.uv_to_tanangle[0]);
+	calc_uv_to_tanangle(c->xdev, 1, &r->distortion.uv_to_tanangle[1]);
 
 	create_and_file_in_distortion_buffer_for_view(vk, c->xdev, &buffers[0], &buffers[2], &buffers[4], 0);
 	create_and_file_in_distortion_buffer_for_view(vk, c->xdev, &buffers[1], &buffers[3], &buffers[5], 1);
@@ -754,6 +798,7 @@ comp_resources_close(struct comp_compositor *c, struct comp_resources *r)
 	D(DescriptorSetLayout, r->compute.descriptor_set_layout);
 	D(Pipeline, r->compute.clear_pipeline);
 	D(Pipeline, r->compute.distortion_pipeline);
+	D(Pipeline, r->compute.distortion_timewarp_pipeline);
 	D(PipelineLayout, r->compute.pipeline_layout);
 	D(Sampler, r->compute.default_sampler);
 	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.image_views); i++) {

@@ -4,6 +4,7 @@
 spirv_shaders(SHADER_HEADERS
 	shaders/clear.comp
 	shaders/distortion.comp
+	shaders/distortion_timewarp.comp
 	shaders/mesh.frag
 	shaders/mesh.vert
 	shaders/layer.frag

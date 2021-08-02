@@ -141,6 +141,7 @@ struct comp_shaders
 {
 	VkShaderModule clear_comp;
 	VkShaderModule distortion_comp;
+	VkShaderModule distortion_timewarp_comp;
 
 	VkShaderModule mesh_vert;
 	VkShaderModule mesh_frag;
@@ -244,6 +245,12 @@ struct comp_compositor
 		struct u_threading_stack destroy_swapchains;
 	} threading;
 
+
+	struct
+	{
+		//! Temporarily disable ATW
+		bool atw_off;
+	} debug;
 
 	struct comp_resources nr;
 };
