@@ -1370,6 +1370,8 @@ struct xrt_image_native
 	 * into Vulkan.
 	 */
 	size_t size;
+
+	bool use_dedicated_allocation;
 };
 
 /*!

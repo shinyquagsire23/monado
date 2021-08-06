@@ -893,6 +893,8 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkFlushMappedMemoryRanges     = GET_DEV_PROC(vk, vkFlushMappedMemoryRanges);
 	vk->vkCreateImage                 = GET_DEV_PROC(vk, vkCreateImage);
 	vk->vkGetImageMemoryRequirements  = GET_DEV_PROC(vk, vkGetImageMemoryRequirements);
+	// because we use Vulkan API Version 1.0.x, we can only get the KHR version of this function
+	vk->vkGetImageMemoryRequirements2 = GET_DEV_PROC(vk, vkGetImageMemoryRequirements2KHR);
 	vk->vkBindImageMemory             = GET_DEV_PROC(vk, vkBindImageMemory);
 	vk->vkDestroyImage                = GET_DEV_PROC(vk, vkDestroyImage);
 	vk->vkCreateImageView             = GET_DEV_PROC(vk, vkCreateImageView);

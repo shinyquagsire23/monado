@@ -327,6 +327,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 	for (uint32_t i = 0; i < sc->vkic.num_images; i++) {
 		sc->base.images[i].handle = handles[i];
 		sc->base.images[i].size = sc->vkic.images[i].size;
+		sc->base.images[i].use_dedicated_allocation = sc->vkic.images[i].use_dedicated_allocation;
 	}
 
 	do_post_create_vulkan_setup(c, info, sc);

@@ -150,6 +150,7 @@ struct vk_bundle
 
 	PFN_vkCreateImage vkCreateImage;
 	PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements;
+	PFN_vkGetImageMemoryRequirements2 vkGetImageMemoryRequirements2;
 	PFN_vkBindImageMemory vkBindImageMemory;
 	PFN_vkDestroyImage vkDestroyImage;
 	PFN_vkCreateImageView vkCreateImageView;

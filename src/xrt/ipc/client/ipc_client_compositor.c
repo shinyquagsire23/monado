@@ -207,12 +207,14 @@ swapchain_server_create(struct ipc_client_compositor *icc,
 	uint32_t handle;
 	uint32_t num_images;
 	uint64_t size;
+	bool use_dedicated_allocation;
 
 	r = ipc_call_swapchain_create(icc->ipc_c,                 // connection
 	                              info,                       // in
 	                              &handle,                    // out
 	                              &num_images,                // out
 	                              &size,                      // out
+	                              &use_dedicated_allocation,  // out
 	                              remote_handles,             // handles
 	                              IPC_MAX_SWAPCHAIN_HANDLES); // handles
 	if (r != XRT_SUCCESS) {
@@ -232,6 +234,7 @@ swapchain_server_create(struct ipc_client_compositor *icc,
 	for (uint32_t i = 0; i < num_images; i++) {
 		ics->base.images[i].handle = remote_handles[i];
 		ics->base.images[i].size = size;
+		ics->base.images[i].use_dedicated_allocation = use_dedicated_allocation;
 	}
 
 	*out_xsc = &ics->base.base;
