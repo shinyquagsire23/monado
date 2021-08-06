@@ -1232,6 +1232,7 @@ vk_build_device_extensions(struct vk_bundle *vk,
 			free(props);
 			return false;
 		}
+		U_LOG_T("Using required device ext %s", ext);
 		device_extensions[i] = ext;
 	}
 
@@ -1239,9 +1240,10 @@ vk_build_device_extensions(struct vk_bundle *vk,
 	for (uint32_t i = 0; i < num_optional_device_extensions; i++) {
 		const char *ext = optional_device_extensions[i];
 		if (vk_check_extension(vk, props, num_props, ext)) {
-			U_LOG_D("Using optional ext %s", ext);
+			U_LOG_D("Using optional device ext %s", ext);
 			device_extensions[num_device_extensions++] = ext;
 		} else {
+			U_LOG_T("NOT using optional device ext %s", ext);
 			continue;
 		}
 	}
