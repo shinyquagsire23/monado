@@ -90,12 +90,11 @@ client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
 	struct xrt_swapchain_gl *xscgl = &sc->base.base;
 
 	glGenTextures(native_xsc->num_images, xscgl->images);
-	for (uint32_t i = 0; i < native_xsc->num_images; i++) {
-		glBindTexture(tex_target, xscgl->images[i]);
-	}
 
 	glCreateMemoryObjectsEXT(native_xsc->num_images, &sc->memory[0]);
 	for (uint32_t i = 0; i < native_xsc->num_images; i++) {
+		glBindTexture(tex_target, xscgl->images[i]);
+
 		GLint dedicated = xscn->images[i].use_dedicated_allocation ? GL_TRUE : GL_FALSE;
 		glMemoryObjectParameterivEXT(sc->memory[i], GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
 		glImportMemoryFdEXT(sc->memory[i], xscn->images[i].size, GL_HANDLE_TYPE_OPAQUE_FD_EXT,
