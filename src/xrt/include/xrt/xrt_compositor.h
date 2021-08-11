@@ -1362,6 +1362,7 @@ struct xrt_image_native
 	 * Native buffer handle.
 	 */
 	xrt_graphics_buffer_handle_t handle;
+
 	/*!
 	 * @brief Buffer size in memory.
 	 *
@@ -1371,6 +1372,9 @@ struct xrt_image_native
 	 */
 	size_t size;
 
+	/*!
+	 * Is the image created with a deicated allocation or not.
+	 */
 	bool use_dedicated_allocation;
 };
 
