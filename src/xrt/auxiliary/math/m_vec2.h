@@ -76,6 +76,12 @@ m_vec2_len(struct xrt_vec2 l)
 	return sqrtf(m_vec2_len_sqrd(l));
 }
 
+static inline void
+m_vec2_normalize(struct xrt_vec2 *inout)
+{
+	*inout = m_vec2_div_scalar(*inout, m_vec2_len(*inout));
+}
+
 static inline float
 m_vec2_dot(struct xrt_vec2 l, struct xrt_vec2 r)
 {

@@ -467,6 +467,12 @@ math_map_ranges(double value, double from_low, double from_high, double to_low, 
 	return (value - from_low) * (to_high - to_low) / (from_high - from_low) + to_low;
 }
 
+static inline double
+math_lerp(double from, double to, double amount)
+{
+	return (from * (1.0 - amount)) + (to * (amount));
+}
+
 /*
  *
  * Optics functions.

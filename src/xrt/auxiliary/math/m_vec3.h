@@ -113,6 +113,27 @@ m_vec3_angle(struct xrt_vec3 l, struct xrt_vec3 r)
 	return acosf(dot / lengths);
 }
 
+static inline struct xrt_vec3
+m_vec3_project(struct xrt_vec3 project_this, struct xrt_vec3 onto_this)
+{
+
+	float amnt = (m_vec3_dot(project_this, onto_this) / m_vec3_len_sqrd(onto_this));
+
+	return m_vec3_mul_scalar(onto_this, amnt);
+}
+
+static inline struct xrt_vec3
+m_vec3_orthonormalize(struct xrt_vec3 leave_this_alone, struct xrt_vec3 change_this_one)
+{
+	return m_vec3_normalize(m_vec3_sub(change_this_one, m_vec3_project(change_this_one, leave_this_alone)));
+}
+
+static inline struct xrt_vec3
+m_vec3_lerp(struct xrt_vec3 from, struct xrt_vec3 to, float amount)
+{
+	// Recommend amount being in [0,1]
+	return m_vec3_add(m_vec3_mul_scalar(from, 1.0f - amount), m_vec3_mul_scalar(to, amount));
+}
 
 #ifdef __cplusplus
 }
