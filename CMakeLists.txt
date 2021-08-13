@@ -20,6 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Dependencies
 ###
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/sanitizers")
 include(CMakeDependentOption)
 include(SPIR-V)
 include(GNUInstallDirs)
@@ -62,6 +63,8 @@ find_package(Systemd)
 find_package(OpenGLES COMPONENTS V3)
 find_package(LeapV2)
 
+#https://github.com/arsenm/sanitizers-cmake
+find_package(Sanitizers)
 
 add_library(xrt-pthreads INTERFACE)
 if(WIN32)
