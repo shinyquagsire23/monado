@@ -166,6 +166,18 @@ struct xrt_vec3
 };
 
 /*!
+ * A 3 element vector with single doubles.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_vec3_f64
+{
+	float x;
+	float y;
+	float z;
+};
+
+/*!
  * All-zero value for @ref xrt_vec3
  *
  * @ingroup xrt_iface math
