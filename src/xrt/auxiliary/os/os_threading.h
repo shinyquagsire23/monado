@@ -72,6 +72,12 @@ os_mutex_lock(struct os_mutex *om)
 	pthread_mutex_lock(&om->mutex);
 }
 
+static inline int
+os_mutex_trylock(struct os_mutex *om)
+{
+	return pthread_mutex_trylock(&om->mutex);
+}
+
 /*!
  * Unlock.
  */
