@@ -6,6 +6,7 @@ add_executable(monado-service
 	main.c
 	../openxr/oxr_sdl2_hack.c
 	)
+add_sanitizers(monado-service)
 
 target_link_libraries(monado-service PRIVATE
 	aux_util
