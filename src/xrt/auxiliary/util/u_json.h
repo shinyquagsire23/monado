@@ -70,7 +70,7 @@ bool
 u_json_get_double(const cJSON *json, double *out_double);
 
 /*!
- * @brief Parse a vec3 from a JSON object.
+ * @brief Parse an xrt_vec3 from a JSON object.
  *
  * @return true if successful, false if not.
  */
@@ -78,12 +78,20 @@ bool
 u_json_get_vec3(const cJSON *json, struct xrt_vec3 *out_vec3);
 
 /*!
- * @brief Parse a vec3 from a JSON array.
+ * @brief Parse an xrt_vec3 from a JSON array.
  *
  * @return true if successful, false if not.
  */
 bool
 u_json_get_vec3_array(const cJSON *json, struct xrt_vec3 *out_vec3);
+
+/*!
+ * @brief Parse an xrt_vec3_f64 from a JSON array.
+ *
+ * @return true if successful, false if not.
+ */
+bool
+u_json_get_vec3_f64_array(const cJSON *json, struct xrt_vec3_f64 *out_vec3);
 
 /*!
  * @brief Parse a quaternion from a JSON object.
