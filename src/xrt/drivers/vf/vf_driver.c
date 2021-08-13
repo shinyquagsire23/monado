@@ -12,6 +12,7 @@
 #include "os/os_time.h"
 #include "os/os_threading.h"
 
+#include "util/u_trace_marker.h"
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
@@ -226,6 +227,7 @@ vf_fs_frame(struct vf_fs *vid, GstSample *sample)
 static GstFlowReturn
 on_new_sample_from_sink(GstElement *elt, struct vf_fs *vid)
 {
+	SINK_TRACE_MARKER();
 	GstSample *sample;
 	sample = gst_app_sink_pull_sample(GST_APP_SINK(elt));
 
