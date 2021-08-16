@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#define MS_TO_NS(ms) (ms * 1000L * 1000L)
+
 /*!
  * Down-cast helper.
  *
@@ -81,6 +83,14 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index
 		return xret;
 	}
 
+	VkResult ret;
+
+	ret = vk->vkWaitForFences(vk->device, 1, &sc->acquire_release_fence[*out_index], true, MS_TO_NS(500));
+	vk_check_error("vkWaitForFences", ret, XRT_ERROR_VULKAN);
+
+	ret = vk->vkResetFences(vk->device, 1, &sc->acquire_release_fence[*out_index]);
+	vk_check_error("vkResetFences", ret, XRT_ERROR_VULKAN);
+
 	// Acquire ownership and complete layout transition
 	VkSubmitInfo submitInfo = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -88,7 +98,7 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index
 	    .pCommandBuffers = &sc->acquire[*out_index],
 	};
 
-	VkResult ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
+	ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, sc->acquire_release_fence[*out_index]);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Could not submit to queue: %d", ret);
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
@@ -112,6 +122,14 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 	struct vk_bundle *vk = &sc->c->vk;
 
+	VkResult ret;
+
+	ret = vk->vkWaitForFences(vk->device, 1, &sc->acquire_release_fence[index], true, MS_TO_NS(500));
+	vk_check_error("vkWaitForFences", ret, XRT_ERROR_VULKAN);
+
+	vk->vkResetFences(vk->device, 1, &sc->acquire_release_fence[index]);
+	vk_check_error("vkResetFences", ret, XRT_ERROR_VULKAN);
+
 	// Release ownership and begin layout transition
 	VkSubmitInfo submitInfo = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -119,7 +137,7 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	    .pCommandBuffers = &sc->release[index],
 	};
 
-	VkResult ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
+	ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, sc->acquire_release_fence[index]);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Could not submit to queue: %d", ret);
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
@@ -499,6 +517,12 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 			VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
 			return XRT_ERROR_VULKAN;
 		}
+
+		VkFenceCreateInfo fence_create_info = {
+		    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		    .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+		};
+		vk->vkCreateFence(vk->device, &fence_create_info, NULL, &sc->acquire_release_fence[i]);
 	}
 
 	*out_xsc = &sc->base.base;

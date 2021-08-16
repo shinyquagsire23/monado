@@ -50,6 +50,7 @@ struct client_vk_swapchain
 	// Prerecorded swapchain image ownership/layout transition barriers
 	VkCommandBuffer acquire[XRT_MAX_SWAPCHAIN_IMAGES];
 	VkCommandBuffer release[XRT_MAX_SWAPCHAIN_IMAGES];
+	VkFence acquire_release_fence[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
 /*!
