@@ -138,7 +138,7 @@ os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec)
 #if defined(XRT_OS_WINDOWS)
 	if (ops->timer) {
 		LARGE_INTEGER timeperiod;
-		timeperiod.QuadPart = -nsec;
+		timeperiod.QuadPart = -(nsec / 100);
 		if (SetWaitableTimer(ops->timer, &timeperiod, 0, NULL, NULL, FALSE)) {
 			// OK we could set up the timer, now let's wait.
 			WaitForSingleObject(ops->timer, INFINITE);
