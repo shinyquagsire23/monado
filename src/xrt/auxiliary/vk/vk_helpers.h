@@ -213,6 +213,7 @@ struct vk_bundle
 
 	PFN_vkCreateFence vkCreateFence;
 	PFN_vkWaitForFences vkWaitForFences;
+	PFN_vkGetFenceStatus vkGetFenceStatus;
 	PFN_vkDestroyFence vkDestroyFence;
 	PFN_vkResetFences vkResetFences;
 
