@@ -23,6 +23,8 @@ set(MATH_SOURCE_FILES
 	math/m_eigen_interop.hpp
 	math/m_filter_fifo.c
 	math/m_filter_fifo.h
+	math/m_filter_one_euro.c
+	math/m_filter_one_euro.h
 	math/m_hash.cpp
 	math/m_imu_3dof.c
 	math/m_imu_3dof.h
