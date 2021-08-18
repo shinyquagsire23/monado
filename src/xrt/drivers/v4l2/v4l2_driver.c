@@ -911,7 +911,8 @@ v4l2_fs_mainloop(void *ptr)
 
 		SINK_TRACE_IDENT(v4l2_fs_frame);
 
-		V4L2_TRACE(vid, "Got frame #%u, index %i", v_buf.sequence, v_buf.index);
+		V4L2_TRACE(vid, "Got frame #%u, index %i. Used frames are %i", v_buf.sequence, v_buf.index,
+		           vid->used_frames);
 
 		struct v4l2_frame *vf = &vid->frames[v_buf.index];
 		struct xrt_frame *xf = NULL;
