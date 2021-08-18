@@ -15,6 +15,8 @@ gui_sources = [
 	'gui_scene_video.c',
 	'gui_scene_tracking_overrides.c',
 	'gui_stb.c',
+	'gui_window_record.c',
+	'gui_window_record.h',
 	'../../../external/imgui/imgui/cimgui.cpp',
 	'../../../external/imgui/imgui/cimgui.h',
 	'../../../external/imgui/imgui/cimplot.cpp',
