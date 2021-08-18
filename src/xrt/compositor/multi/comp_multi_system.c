@@ -491,6 +491,8 @@ system_compositor_destroy(struct xrt_system_compositor *xsc)
 
 	xrt_comp_native_destroy(&msc->xcn);
 
+	os_mutex_destroy(&msc->list_and_timing_lock);
+
 	free(msc);
 }
 
@@ -515,6 +517,8 @@ comp_multi_create_system_compositor(struct xrt_compositor_native *xcn,
 	msc->base.xmcc = &msc->xmcc;
 	msc->base.info = *xsci;
 	msc->xcn = xcn;
+
+	os_mutex_init(&msc->list_and_timing_lock);
 
 	//! @todo Make the clients not go from IDLE to READY before we have completed a first frame.
 	// Make sure there is at least some sort of valid frame data here.

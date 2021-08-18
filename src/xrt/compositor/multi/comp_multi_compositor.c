@@ -557,6 +557,9 @@ multi_compositor_destroy(struct xrt_compositor *xc)
 
 	os_precise_sleeper_deinit(&mc->sleeper);
 
+	os_mutex_destroy(&mc->slot_lock);
+	os_mutex_destroy(&mc->event.mutex);
+
 	free(mc);
 }
 
@@ -609,6 +612,9 @@ multi_compositor_create(struct multi_system_compositor *msc,
 	mc->base.base.poll_events = multi_compositor_poll_events;
 	mc->msc = msc;
 	mc->xsi = *xsi;
+
+	os_mutex_init(&mc->event.mutex);
+	os_mutex_init(&mc->slot_lock);
 
 	// Passthrough our formats from the native compositor to the client.
 	mc->base.base.info = msc->xcn->base.info;
