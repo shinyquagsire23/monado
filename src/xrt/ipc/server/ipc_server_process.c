@@ -751,6 +751,7 @@ ipc_server_main(int argc, char **argv)
 
 	int ret = init_all(s);
 	if (ret < 0) {
+		free(s->hack);
 		free(s);
 		return ret;
 	}
