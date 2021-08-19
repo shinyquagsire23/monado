@@ -149,6 +149,8 @@ create_6dof(struct rs_6dof *rs)
 	int dev_count = rs2_get_device_count(device_list, &e);
 	CHECK_RS2();
 
+	rs2_delete_device_list(device_list);
+
 	U_LOG_D("There are %d connected RealSense devices.", dev_count);
 	if (0 == dev_count) {
 		close_6dof(rs);
