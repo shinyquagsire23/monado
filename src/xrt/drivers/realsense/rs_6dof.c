@@ -380,6 +380,8 @@ load_config(struct rs_6dof *rs)
 		rs->enable_pose_filtering = cJSON_IsTrue(pose_filtering);
 	}
 
+	cJSON_Delete(config_json.root);
+
 	return true;
 }
 
