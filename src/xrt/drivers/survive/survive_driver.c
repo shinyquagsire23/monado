@@ -205,7 +205,7 @@ survive_device_destroy(struct xrt_device *xdev)
 	}
 
 	free(survive->last_inputs);
-	free(survive);
+	u_device_free(&survive->base);
 }
 
 // libsurvive timecode may not be exactly comparable with monotonic ns.
