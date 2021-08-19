@@ -128,6 +128,7 @@ ht_device_create(struct xrt_auto_prober *xap, cJSON *attached_data, struct xrt_p
 
 	if (xp->tracking->create_tracked_hand(xp->tracking, &htd->base, &htd->tracker) < 0) {
 		HT_DEBUG(htd, "Failed to create hand tracker module");
+		ht_device_destroy(&htd->base);
 		return NULL;
 	}
 
