@@ -25,6 +25,10 @@
 #include "vf/vf_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_EUROC
+#include "euroc/euroc_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_REMOTE
 #include "remote/r_interface.h"
 #endif
@@ -939,6 +943,7 @@ open_hid_interface(struct xrt_prober *xp,
 }
 
 DEBUG_GET_ONCE_OPTION(vf_path, "VF_PATH", NULL)
+DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
 
 static int
 open_video_device(struct xrt_prober *xp,
@@ -947,6 +952,15 @@ open_video_device(struct xrt_prober *xp,
                   struct xrt_fs **out_xfs)
 {
 	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
+
+#if defined(XRT_BUILD_DRIVER_EUROC)
+	// TODO: If both VF_PATH and EUROC_PATH are set, VF will be ignored on calibration
+	const char *euroc_path = debug_get_option_euroc_path();
+	if (euroc_path != NULL) {
+		*out_xfs = euroc_player_create(xfctx, euroc_path); // Euroc will exit if it can't be created
+		return 0;
+	}
+#endif
 
 #if defined(XRT_BUILD_DRIVER_VF)
 	const char *path = debug_get_option_vf_path();
@@ -985,6 +999,11 @@ list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr
 	const char *path = debug_get_option_vf_path();
 	if (path != NULL) {
 		cb(xp, NULL, "Video File", "Collabora", path, ptr);
+	}
+
+	path = debug_get_option_euroc_path();
+	if (path != NULL) {
+		cb(xp, NULL, "Euroc Dataset", "Collabora", path, ptr);
 	}
 
 	// Loop over all devices and find video devices.

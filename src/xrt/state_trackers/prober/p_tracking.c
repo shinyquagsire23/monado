@@ -26,6 +26,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef XRT_BUILD_DRIVER_EUROC
+#include "util/u_debug.h"
+DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
+#endif
 
 /*
  *
@@ -352,6 +356,13 @@ p_tracking_init(struct prober *p)
 
 	// Finally set us as the tracking factory.
 	p->base.tracking = &fact->base;
+
+#ifdef XRT_BUILD_DRIVER_EUROC
+	if (debug_get_option_euroc_path() != NULL) {
+		xrt_prober_open_video_device(&fact->p->base, NULL, &fact->xfctx, &fact->xfs);
+		xrt_fs_stream_start(fact->xfs, NULL, XRT_FS_CAPTURE_TYPE_TRACKING, 0);
+	}
+#endif
 
 	return 0;
 }
