@@ -796,13 +796,19 @@ compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct x
 }
 
 static bool
-_create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject *sso, struct vive_config *config)
+_create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject *sso, char *conf_str)
 {
+
 	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)U_DEVICE_ALLOC_HMD;
 	int inputs = 1;
 	int outputs = 0;
 
 	struct survive_device *survive = U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
+
+	if (!vive_config_parse(&survive->hmd.config, conf_str, sys->ll)) {
+		free(survive);
+		return false;
+	}
 
 	sys->hmd = survive;
 	survive->sys = sys;
@@ -821,8 +827,6 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 	size_t idx = 0;
 	survive->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
 	survive->base.hmd->num_blend_modes = idx;
-
-	survive->hmd.config = *config;
 
 	switch (survive->hmd.config.variant) {
 	case VIVE_VARIANT_VIVE: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive (libsurvive)"); break;
@@ -1150,13 +1154,11 @@ add_device(struct survive_system *ss, const struct SurviveSimpleConfigEvent *e)
 
 	if (type == SurviveSimpleObject_HMD) {
 
-		struct vive_config config = {.ll = ss->ll};
-		vive_config_parse(&config, conf_str);
-		_create_hmd_device(ss, sso, &config);
+		_create_hmd_device(ss, sso, conf_str);
 
 	} else if (type == SurviveSimpleObject_OBJECT) {
-		struct vive_controller_config config = {.ll = ss->ll};
-		vive_config_parse_controller(&config, conf_str);
+		struct vive_controller_config config = {0};
+		vive_config_parse_controller(&config, conf_str, ss->ll);
 
 		switch (config.variant) {
 		case CONTROLLER_VIVE_WAND:

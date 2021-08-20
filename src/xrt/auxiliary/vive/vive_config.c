@@ -208,8 +208,9 @@ vive_init_defaults(struct vive_config *d)
 }
 
 bool
-vive_config_parse(struct vive_config *d, char *json_string)
+vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level ll)
 {
+	d->ll = ll;
 	vive_init_defaults(d);
 
 	VIVE_DEBUG(d, "JSON config:\n%s", json_string);
@@ -355,8 +356,9 @@ vive_config_teardown(struct vive_config *config)
 }
 
 bool
-vive_config_parse_controller(struct vive_controller_config *d, char *json_string)
+vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level ll)
 {
+	d->ll = ll;
 	VIVE_DEBUG(d, "JSON config:\n%s", json_string);
 
 	cJSON *json = cJSON_Parse(json_string);

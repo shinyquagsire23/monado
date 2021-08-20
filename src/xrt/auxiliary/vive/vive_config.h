@@ -149,7 +149,7 @@ struct vive_controller_config
 };
 
 bool
-vive_config_parse(struct vive_config *d, char *json_string);
+vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level ll);
 
 /*!
  * Free any allocated resources on this config.
@@ -160,4 +160,4 @@ vive_config_teardown(struct vive_config *d);
 struct vive_controller_device;
 
 bool
-vive_config_parse_controller(struct vive_controller_config *d, char *json_string);
+vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level ll);

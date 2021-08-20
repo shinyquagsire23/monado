@@ -777,7 +777,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->config.ll = d->ll;
 	// usb connected HMD variant is known because of USB id, config parsing relies on it.
 	if (config != NULL) {
-		vive_config_parse(&d->config, config);
+		vive_config_parse(&d->config, config, d->ll);
 		free(config);
 	}
 

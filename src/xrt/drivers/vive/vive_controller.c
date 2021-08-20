@@ -1,5 +1,5 @@
-// Copyright 2020, Collabora, Ltd.
 // Copyright 2016 Philipp Zabel
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -1086,10 +1086,8 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	// successful config parsing determines d->config.variant
 	char *config = vive_read_config(d->controller_hid);
 
-	d->config.ll = d->ll;
-
 	if (config != NULL) {
-		vive_config_parse_controller(&d->config, config);
+		vive_config_parse_controller(&d->config, config, d->ll);
 		free(config);
 	} else {
 		VIVE_ERROR(d, "Could not get Vive controller config\n");
