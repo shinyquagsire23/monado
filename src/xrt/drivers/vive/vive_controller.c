@@ -1076,7 +1076,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 
 	if (vive_get_imu_range_report(d->controller_hid, &d->config.imu.gyro_range, &d->config.imu.acc_range) != 0) {
 		// reading range report fails for powered off controller
-		free(d);
+		vive_controller_device_destroy(&d->base);
 		return 0;
 	}
 
@@ -1091,7 +1091,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 		free(config);
 	} else {
 		VIVE_ERROR(d, "Could not get Vive controller config\n");
-		free(d);
+		vive_controller_device_destroy(&d->base);
 		return 0;
 	}
 
