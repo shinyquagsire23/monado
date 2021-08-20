@@ -83,7 +83,9 @@ on_video_device(struct xrt_prober *xp,
 	}
 
 	char buf[256] = {0};
-	snprintf(buf, sizeof(buf), "%04x:%04x '%s' '%s'\n", pdev->vendor_id, pdev->product_id, product, serial);
+	uint16_t vendor_id = pdev ? pdev->vendor_id : -1;
+	uint16_t product_id = pdev ? pdev->product_id : -1;
+	snprintf(buf, sizeof(buf), "%04x:%04x '%s' '%s'\n", vendor_id, product_id, product, serial);
 	if (!igButton(buf, button_dims)) {
 		return;
 	}
