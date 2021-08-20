@@ -1077,7 +1077,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	if (vive_get_imu_range_report(d->controller_hid, &d->config.imu.gyro_range, &d->config.imu.acc_range) != 0) {
 		// reading range report fails for powered off controller
 		vive_controller_device_destroy(&d->base);
-		return 0;
+		return NULL;
 	}
 
 	VIVE_DEBUG(d, "Vive controller gyroscope range     %f", d->config.imu.gyro_range);
@@ -1092,7 +1092,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	} else {
 		VIVE_ERROR(d, "Could not get Vive controller config\n");
 		vive_controller_device_destroy(&d->base);
-		return 0;
+		return NULL;
 	}
 
 	snprintf(d->base.serial, XRT_DEVICE_NAME_LEN, "%s", d->config.firmware.device_serial_number);
@@ -1190,14 +1190,14 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 		if (ret != 0) {
 			VIVE_ERROR(d, "Failed to init mutex!");
 			vive_controller_device_destroy(&d->base);
-			return 0;
+			return NULL;
 		}
 
 		ret = os_thread_helper_start(&d->controller_thread, vive_controller_run_thread, d);
 		if (ret != 0) {
 			VIVE_ERROR(d, "Failed to start mainboard thread!");
-			vive_controller_device_destroy((struct xrt_device *)d);
-			return 0;
+			vive_controller_device_destroy(&d->base);
+			return NULL;
 		}
 	}
 
