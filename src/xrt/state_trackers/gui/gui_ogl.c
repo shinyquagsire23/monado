@@ -170,6 +170,8 @@ gui_ogl_sink_create(const char *name, struct xrt_frame_context *xfctx, struct xr
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+	xrt_frame_context_add(xfctx, &s->node);
+
 	*out_sink = &s->sink;
 
 	return &s->tex;
