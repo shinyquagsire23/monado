@@ -134,6 +134,24 @@ struct xrt_imu_sample
 };
 
 /*!
+ * @interface xrt_imu_sink
+ *
+ * An object that is sent IMU samples.
+ *
+ * Similar to @ref xrt_frame_sink but the interface implementation must manage
+ * its own resources, not through a context graph.
+ *
+ * @todo Make @ref xrt_tracked_psmv and @ref xrt_tracked_psvr implement this
+ */
+struct xrt_imu_sink
+{
+	/*!
+	 * Push an IMU sample into the sink
+	 */
+	void (*push_imu)(struct xrt_imu_sink *, struct xrt_imu_sample *sample);
+};
+
+/*!
  * @interface xrt_tracked_psmv
  *
  * A single tracked PS Move controller, camera and ball are not synced.
@@ -243,6 +261,13 @@ struct xrt_tracked_hand
  * Helper functions.
  *
  */
+
+//! @public @memberof xrt_imu_sink
+static inline void
+xrt_sink_push_imu(struct xrt_imu_sink *sink, struct xrt_imu_sample *sample)
+{
+	sink->push_imu(sink, sample);
+}
 
 //! @public @memberof xrt_tracked_psmv
 static inline void
