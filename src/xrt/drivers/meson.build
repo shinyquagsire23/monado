@@ -303,3 +303,14 @@ lib_drv_wmr = static_library(
 	dependencies: [aux],
 	build_by_default: 'wmr' in drivers,
 )
+
+lib_drv_euroc = static_library(
+	'drv_euroc',
+	files(
+		'euroc/euroc_driver.cpp',
+		'euroc/euroc_interface.h',
+	),
+	include_directories: [xrt_include],
+	dependencies: [aux, opencv],
+	build_by_default: 'euroc' in drivers,
+)

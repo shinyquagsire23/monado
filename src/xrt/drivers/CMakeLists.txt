@@ -327,6 +327,18 @@ if(XRT_BUILD_DRIVER_WMR)
 	list(APPEND ENABLED_HEADSET_DRIVERS wmr)
 endif()
 
+if(XRT_BUILD_DRIVER_EUROC)
+	set(EUROC_SOURCE_FILES
+		euroc/euroc_driver.cpp
+		euroc/euroc_interface.h
+		)
+
+	add_library(drv_euroc STATIC ${EUROC_SOURCE_FILES})
+	target_link_libraries(drv_euroc PRIVATE xrt-interfaces aux_os aux_util aux_tracking ${OpenCV_LIBRARIES})
+	target_include_directories(drv_euroc PRIVATE ${OpenCV_INCLUDE_DIRS})
+	list(APPEND ENABLED_DRIVERS euroc)
+endif()
+
 if(ENABLED_HEADSET_DRIVERS)
 	set(ENABLED_DRIVERS ${ENABLED_HEADSET_DRIVERS} ${ENABLED_DRIVERS})
 	list(SORT ENABLED_DRIVERS)

@@ -89,6 +89,10 @@ if 'ulv2' in drivers
 	driver_libs += [lib_drv_ulv2]
 endif
 
+if 'euroc' in drivers
+	driver_libs += [lib_drv_euroc]
+endif
+
 driver_libs += [lib_drv_multi]
 
 subdir('common')

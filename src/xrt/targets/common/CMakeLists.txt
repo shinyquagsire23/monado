@@ -106,6 +106,9 @@ if(XRT_BUILD_DRIVER_WMR)
 	target_link_libraries(target_lists PRIVATE drv_wmr)
 endif()
 
+if(XRT_BUILD_DRIVER_EUROC)
+	target_link_libraries(target_lists PRIVATE drv_euroc)
+endif()
 
 ####
 # Instance

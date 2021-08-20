@@ -243,6 +243,10 @@ if sdl2.found() and ('auto' in drivers and 'qwerty' not in drivers)
 	drivers += ['qwerty']
 endif
 
+if opencv.found() and ('auto' in drivers and 'euroc' not in drivers)
+	drivers += ['euroc']
+endif
+
 if drivers.length() == 0 or drivers == ['auto']
 	error('You must enable at least one driver.')
 endif

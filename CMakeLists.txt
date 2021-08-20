@@ -214,6 +214,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" ON "S
 
 cmake_dependent_option(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" ON "ANDROID" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_QWERTY "Enable Qwerty driver" ON "XRT_HAVE_SDL2" OFF)
+cmake_dependent_option(XRT_BUILD_DRIVER_EUROC "Enable EuRoC dataset driver for SLAM evaluation" ON "XRT_HAVE_OPENCV" OFF)
 
 # You can set this from a superproject to add a driver
 # All drivers must be listed in here to be included in the generated header!
@@ -240,6 +241,7 @@ list(APPEND AVAILABLE_DRIVERS
 	"VIVE"
 	"QWERTY"
 	"WMR"
+	"EUROC"
 	)
 
 
@@ -393,6 +395,7 @@ message(STATUS "#    DRIVER_DEPTHAI:      ${XRT_BUILD_DRIVER_DEPTHAI}")
 message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
 message(STATUS "#    DRIVER_QWERTY:       ${XRT_BUILD_DRIVER_QWERTY}")
 message(STATUS "#    DRIVER_WMR:          ${XRT_BUILD_DRIVER_WMR}")
+message(STATUS "#    DRIVER_EUROC:          ${XRT_BUILD_DRIVER_EUROC}")
 message(STATUS "#####----- Config -----#####")
 
 if(XRT_FEATURE_SERVICE AND NOT XRT_FEATURE_OPENXR)
