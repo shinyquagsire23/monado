@@ -26,10 +26,6 @@
 #include "ohmd/oh_interface.h"
 #endif
 
-#ifdef XRT_BUILD_DRIVER_HANDTRACKING
-#include "ht/ht_interface.h"
-#endif
-
 #ifdef XRT_BUILD_DRIVER_NS
 #include "north_star/ns_interface.h"
 #endif
@@ -161,10 +157,6 @@ xrt_auto_prober_creator target_auto_list[] = {
 #ifdef XRT_BUILD_DRIVER_OHMD
     // OpenHMD almost as the end as we want to override it with native drivers.
     oh_create_auto_prober,
-#endif
-
-#ifdef XRT_BUILD_DRIVER_HANDTRACKING
-    ht_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_NS
