@@ -130,11 +130,11 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 
 
 	struct xrt_vec3 value = {0};
-	float value_arr[3] = {value.x, value.y, value.z};
 
 	uint64_t timestamp;
 
 	m_ff_vec3_f32_get(ff, 0, &value, &timestamp);
+	float value_arr[3] = {value.x, value.y, value.z};
 
 	snprintf(tmp, sizeof(tmp), "%s.toggle", name);
 	igToggleButton(tmp, &info->gui.graphed);
@@ -208,6 +208,29 @@ on_sink_var(const char *name, void *ptr, struct gui_program *p)
 }
 
 static void
+on_button_var(const char *name, void *ptr)
+{
+	struct u_var_button *btn = (struct u_var_button *)ptr;
+	ImVec2 dims = {btn->width, btn->height};
+	const char *label = strlen(btn->label) == 0 ? name : btn->label;
+	bool disabled = btn->disabled;
+
+	if (disabled) {
+		igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.6f);
+		igPushItemFlag(ImGuiItemFlags_Disabled, true);
+	}
+
+	if (igButton(label, dims)) {
+		btn->cb(btn->ptr);
+	}
+
+	if (disabled) {
+		igPopItemFlag();
+		igPopStyleVar(1);
+	}
+}
+
+static void
 on_root_enter(const char *name, void *priv)
 {
 	struct draw_state *state = (struct draw_state *)priv;
@@ -261,6 +284,7 @@ on_elem(struct u_var_info *info, void *priv)
 		break;
 	}
 	case U_VAR_KIND_U8: igDragScalar(name, ImGuiDataType_U8, ptr, drag_speed, NULL, NULL, NULL, power); break;
+	case U_VAR_KIND_U64: igDragScalar(name, ImGuiDataType_U64, ptr, drag_speed, NULL, NULL, NULL, power); break;
 	case U_VAR_KIND_I32: igInputInt(name, (int *)ptr, 1, 10, i_flags); break;
 	case U_VAR_KIND_VEC3_I32: igInputInt3(name, (int *)ptr, i_flags); break;
 	case U_VAR_KIND_F32: igInputFloat(name, (float *)ptr, 1, 10, "%+f", i_flags); break;
@@ -333,6 +357,7 @@ on_elem(struct u_var_info *info, void *priv)
 		break;
 	}
 	case U_VAR_KIND_SINK: on_sink_var(name, ptr, state->p); break;
+	case U_VAR_KIND_BUTTON: on_button_var(name, ptr); break;
 	default: igLabelText(name, "Unknown tag '%i'", kind); break;
 	}
 }
