@@ -79,8 +79,7 @@ vive_device_destroy(struct xrt_device *xdev)
 	// Remove the variable tracking.
 	u_var_remove_root(d);
 
-
-	free(d);
+	u_device_free(&d->base);
 }
 
 static void
