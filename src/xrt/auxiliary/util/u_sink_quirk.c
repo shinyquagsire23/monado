@@ -109,5 +109,7 @@ u_sink_quirk_create(struct xrt_frame_context *xfctx,
 	q->ps4_cam = params->ps4_cam;
 	q->leap_motion = params->leap_motion;
 
+	xrt_frame_context_add(xfctx, &q->node);
+
 	*out_xfs = &q->base;
 }
