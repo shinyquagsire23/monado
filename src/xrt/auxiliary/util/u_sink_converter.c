@@ -480,6 +480,8 @@ convert_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 			return;
 		}
 		if (!from_MJPEG_to_R8G8B8(converted, xf->size, xf->data)) {
+			// Make sure to free frame when we fail to decode.
+			xrt_frame_reference(&converted, NULL);
 			return;
 		}
 		break;
@@ -530,6 +532,8 @@ convert_frame_r8g8b8_bayer_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf
 			return;
 		}
 		if (!from_MJPEG_to_R8G8B8(converted, xf->size, xf->data)) {
+			// Make sure to free frame when we fail to decode.
+			xrt_frame_reference(&converted, NULL);
 			return;
 		}
 		break;
@@ -586,6 +590,8 @@ convert_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 			return;
 		}
 		if (!from_MJPEG_to_R8G8B8(converted, xf->size, xf->data)) {
+			// Make sure to free frame when we fail to decode.
+			xrt_frame_reference(&converted, NULL);
 			return;
 		}
 		break;
