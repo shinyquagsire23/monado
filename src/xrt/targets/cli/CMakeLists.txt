@@ -23,6 +23,7 @@ endif()
 add_executable(cli
 	${SOURCE_FILES}
 	)
+add_sanitizers(cli)
 
 set_target_properties(cli PROPERTIES
 	OUTPUT_NAME monado-cli
