@@ -61,6 +61,9 @@ break_apart(struct xrt_frame_node *node)
 	pthread_mutex_lock(&s->mutex);
 	s->running = false;
 	pthread_mutex_unlock(&s->mutex);
+
+	// Release any frame waiting for upload.
+	xrt_frame_reference(&s->frame, NULL);
 }
 
 static void
