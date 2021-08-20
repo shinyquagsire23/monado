@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -217,6 +217,7 @@ vive_config_parse(struct vive_config *d, char *json_string)
 	cJSON *json = cJSON_Parse(json_string);
 	if (!cJSON_IsObject(json)) {
 		VIVE_ERROR(d, "Could not parse JSON data.");
+		vive_config_teardown(d);
 		return false;
 	}
 
@@ -278,7 +279,10 @@ vive_config_parse(struct vive_config *d, char *json_string)
 
 		d->display.imuref = imu_to_head;
 	} break;
-	default: VIVE_ERROR(d, "Unknown Vive variant."); return false;
+	default:
+		VIVE_ERROR(d, "Unknown Vive variant.");
+		vive_config_teardown(d);
+		return false;
 	}
 
 	if (d->variant != VIVE_VARIANT_INDEX) {
@@ -338,6 +342,16 @@ vive_config_parse(struct vive_config *d, char *json_string)
 	// clang-format on
 
 	return true;
+}
+
+void
+vive_config_teardown(struct vive_config *config)
+{
+	if (config->lh.sensors != NULL) {
+		free(config->lh.sensors);
+		config->lh.sensors = NULL;
+		config->lh.num_sensors = 0;
+	}
 }
 
 bool

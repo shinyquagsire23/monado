@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: Apache-2.0
 /*!
  * @file
@@ -174,9 +174,10 @@ survive_device_destroy(struct xrt_device *xdev)
 	U_LOG_D("destroying survive device");
 	struct survive_device *survive = (struct survive_device *)xdev;
 
-	if (survive == survive->sys->hmd)
+	if (survive == survive->sys->hmd) {
+		vive_config_teardown(&survive->hmd.config);
 		survive->sys->hmd = NULL;
-
+	}
 	for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
 		if (survive == survive->sys->controllers[i]) {
 			survive->sys->controllers[i] = NULL;

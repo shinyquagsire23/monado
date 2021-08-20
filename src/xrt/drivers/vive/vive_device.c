@@ -1,5 +1,5 @@
 // Copyright 2016-2019, Philipp Zabel
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -74,14 +74,11 @@ vive_device_destroy(struct xrt_device *xdev)
 		d->watchman_dev = NULL;
 	}
 
-	if (d->config.lh.sensors != NULL) {
-		free(d->config.lh.sensors);
-		d->config.lh.sensors = NULL;
-		d->config.lh.num_sensors = 0;
-	}
+	vive_config_teardown(&d->config);
 
 	// Remove the variable tracking.
 	u_var_remove_root(d);
+
 
 	free(d);
 }

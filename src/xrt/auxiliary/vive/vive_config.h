@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -151,6 +151,11 @@ struct vive_controller_config
 bool
 vive_config_parse(struct vive_config *d, char *json_string);
 
+/*!
+ * Free any allocated resources on this config.
+ */
+void
+vive_config_teardown(struct vive_config *d);
 
 struct vive_controller_device;
 
