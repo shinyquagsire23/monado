@@ -115,11 +115,22 @@ struct xrt_tracking_factory
 
 /*!
  * IMU Sample.
+ * @todo Replace with @ref xrt_imu_sample
  */
 struct xrt_tracking_sample
 {
 	struct xrt_vec3 accel_m_s2;
 	struct xrt_vec3 gyro_rad_secs;
+};
+
+/*!
+ * IMU Sample.
+ * @todo Make @ref xrt_tracked_psmv and @ref xrt_tracked_psvr use this
+ */
+struct xrt_imu_sample
+{
+	timepoint_ns timestamp;
+	double ax, ay, az, wx, wy, wz;
 };
 
 /*!
