@@ -44,15 +44,19 @@ public:
 	~FrameMat();
 
 	/*!
-	 * Wraps the given @ref cv::Mat assuming it's a 24bit RGB format matrix, the pointer pointed to by @ref xf_ptr
-	 * will have it's reference updated.
+	 * Wraps the given @ref cv::Mat assuming it's a 24bit RGB format matrix.
+	 * In all but the most strange cases you probably want the pointer
+	 * pointed to by @ref xf_ptr to be nullptr, if not nullptr it will have
+	 * it's reference decremented so make sure it's a valid pointer.
 	 */
 	static void
 	wrapR8G8B8(cv::Mat mat, xrt_frame **xf_ptr, const Params /*&&?*/ params = {});
 
 	/*!
-	 * Wraps the given @ref cv::Mat assuming it's a 8bit format matrix, the pointer pointed to by @ref xf_ptr will
-	 * have it's reference updated.
+	 * Wraps the given @ref cv::Mat assuming it's a 8bit format matrix.
+	 * In all but the most strange cases you probably want the pointer
+	 * pointed to by @ref xf_ptr to be nullptr, if not nullptr it will have
+	 * it's reference decremented so make sure it's a valid pointer.
 	 */
 	static void
 	wrapL8(cv::Mat mat, xrt_frame **xf_ptr, const Params /*&&?*/ params = {});
