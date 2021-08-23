@@ -72,5 +72,7 @@ u_sink_split_create(struct xrt_frame_context *xfctx,
 	s->left = left;
 	s->right = right;
 
+	xrt_frame_context_add(xfctx, &s->node);
+
 	*out_xfs = &s->base;
 }
