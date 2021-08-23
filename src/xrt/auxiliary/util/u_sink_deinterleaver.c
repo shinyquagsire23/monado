@@ -144,5 +144,7 @@ u_sink_deinterleaver_create(struct xrt_frame_context *xfctx,
 	de->node.destroy = deinterleave_destroy;
 	de->downstream = downstream;
 
+	xrt_frame_context_add(xfctx, &de->node);
+
 	*out_xfs = &de->base;
 }
