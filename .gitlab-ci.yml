@@ -52,7 +52,7 @@ variables:
 # Variables for build and usage of Arch Linux image
 .monado.variables.arch:rolling:
   variables:
-    FDO_DISTRIBUTION_TAG: "2020-05-12.0"
+    FDO_DISTRIBUTION_TAG: "2021-09-14.0"
 
 include:
   - project: "freedesktop/ci-templates"
