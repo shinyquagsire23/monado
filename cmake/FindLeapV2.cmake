@@ -42,7 +42,7 @@ find_library(
     LeapV2_LIBRARY
     NAMES Leap
     PATHS ${LeapV2_ROOT_DIR}
-    PATH_SUFFIXES lib)
+    PATH_SUFFIXES lib lib/x64)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LeapV2 REQUIRED_VARS LeapV2_INCLUDE_DIR
                                                        LeapV2_LIBRARY)
