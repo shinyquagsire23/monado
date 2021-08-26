@@ -717,11 +717,9 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	assert(xsc->num_images <= max_num_handles);
 
 	// Paranoia.
-	size_t size = xscn->images[0].size;
-	bool use_dedicated_allocation = xscn->images[0].use_dedicated_allocation;
 	for (size_t i = 1; i < xsc->num_images; i++) {
-		assert(size == xscn->images[0].size);
-		assert(use_dedicated_allocation == xscn->images[0].use_dedicated_allocation);
+		assert(xscn->images[0].size == xscn->images[i].size);
+		assert(xscn->images[0].use_dedicated_allocation == xscn->images[i].use_dedicated_allocation);
 	}
 
 	// Assuming all images allocated in the same swapchain have the same allocation requirements.
