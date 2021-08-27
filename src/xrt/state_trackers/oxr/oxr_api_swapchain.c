@@ -72,8 +72,10 @@ oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo
 	flags |= XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT;
 	flags |= XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
 	flags |= XR_SWAPCHAIN_USAGE_MUTABLE_FORMAT_BIT;
-	if (inst->extensions.MND_swapchain_usage_input_attachment_bit) {
-		flags |= XR_SWAPCHAIN_USAGE_INPUT_ATTACHMENT_BIT_MND;
+	if (inst->extensions.MND_swapchain_usage_input_attachment_bit ||
+	    inst->extensions.KHR_swapchain_usage_input_attachment_bit) {
+		// aliased to XR_SWAPCHAIN_USAGE_INPUT_ATTACHMENT_BIT_MND
+		flags |= XR_SWAPCHAIN_USAGE_INPUT_ATTACHMENT_BIT_KHR;
 	}
 
 	if ((createInfo->usageFlags & ~flags) != 0) {
