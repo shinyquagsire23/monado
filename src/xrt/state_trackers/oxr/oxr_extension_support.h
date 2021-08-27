@@ -201,6 +201,18 @@
 
 
 /*
+ * XR_KHR_swapchain_usage_input_attachment_bit
+ */
+#if defined(XR_KHR_swapchain_usage_input_attachment_bit)
+#define OXR_HAVE_KHR_swapchain_usage_input_attachment_bit
+#define OXR_EXTENSION_SUPPORT_KHR_swapchain_usage_input_attachment_bit(_)                                              \
+	_(KHR_swapchain_usage_input_attachment_bit, KHR_SWAPCHAIN_USAGE_INPUT_ATTACHMENT_BIT)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_swapchain_usage_input_attachment_bit(_)
+#endif
+
+
+/*
  * XR_EXTX_overlay
  */
 #if defined(XR_EXTX_overlay)
@@ -284,6 +296,7 @@
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_) \
     OXR_EXTENSION_SUPPORT_MND_swapchain_usage_input_attachment_bit(_) \
+    OXR_EXTENSION_SUPPORT_KHR_swapchain_usage_input_attachment_bit(_) \
     OXR_EXTENSION_SUPPORT_EXTX_overlay(_) \
     OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_) \
     OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_) \
