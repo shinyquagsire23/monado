@@ -10,12 +10,16 @@
 #include "ipc_client_android.h"
 
 #include "org.freedesktop.monado.ipc.hpp"
-#include "wrap/android.app.h"
-
 
 #include "xrt/xrt_config_android.h"
-#include "android/android_load_class.hpp"
 #include "util/u_logging.h"
+
+#include "android/android_load_class.hpp"
+#include "android/android_looper.h"
+
+#include "wrap/android.app.h"
+
+#include <android/api-level.h>
 
 using wrap::android::app::Activity;
 using wrap::org::freedesktop::monado::ipc::Client;
@@ -83,6 +87,11 @@ ipc_client_android_create(struct _JavaVM *vm, void *activity)
 int
 ipc_client_android_blocking_connect(struct ipc_client_android *ica)
 {
+	// Before android Q, onServiceConnected always returns on main thread, which might cause deadlock.
+	if (android_get_device_api_level() < __ANDROID_API_Q__) {
+		android_looper_poll_until_activity_resumed();
+	}
+
 	try {
 		int fd = ica->client.blockingConnect(ica->activity, XRT_ANDROID_PACKAGE);
 		return fd;

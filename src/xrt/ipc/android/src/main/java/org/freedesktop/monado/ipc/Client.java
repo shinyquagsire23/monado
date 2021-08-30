@@ -16,6 +16,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
@@ -32,6 +33,7 @@ import org.freedesktop.monado.auxiliary.NativeCounterpart;
 import org.freedesktop.monado.auxiliary.SystemUiController;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
 
 /**
  * Provides the client-side code to initiate connection to Monado IPC service.
@@ -257,17 +259,28 @@ public class Client implements ServiceConnection {
             Log.e(TAG, "startForegroundService: Service " + intent.toString() + " does not exist!");
             return false;
         }
-        if (!context.bindService(intent,
-                this,
-                Context.BIND_AUTO_CREATE
-                        | Context.BIND_IMPORTANT
-                        | Context.BIND_INCLUDE_CAPABILITIES
-                        | Context.BIND_ABOVE_CLIENT)) {
-            Log.e(TAG, "bindService: Service " + intent.toString() + " could not be found to bind!");
+
+        if (!bindService(context, intent)) {
+            Log.e(TAG,
+                    "bindService: Service " + intent.toString() + " could not be found to bind!");
             return false;
         }
+
         // does not bind right away! This takes some time.
         return true;
+    }
+
+    private boolean bindService(Context context, Intent intent) {
+        boolean result;
+        int flags = Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT | Context.BIND_ABOVE_CLIENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            result = context.bindService(intent, flags | Context.BIND_INCLUDE_CAPABILITIES,
+                    Executors.newSingleThreadExecutor(), this);
+        } else {
+            result = context.bindService(intent, this, flags);
+        }
+
+        return result;
     }
 
     /**

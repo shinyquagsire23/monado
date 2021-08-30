@@ -12,6 +12,8 @@ set(ANDROID_SOURCE_FILES
 	android/android_globals.h
 	android/android_load_class.cpp
 	android/android_load_class.hpp
+	android/android_looper.c
+	android/android_looper.h
 	android/org.freedesktop.monado.auxiliary.cpp
 	android/org.freedesktop.monado.auxiliary.hpp
 	android/org.freedesktop.monado.auxiliary.impl.hpp
@@ -320,10 +322,13 @@ endif()
 
 
 if(ANDROID)
+	add_library(android_app_glue STATIC
+		${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
+	target_include_directories(android_app_glue PUBLIC ${ANDROID_NDK}/sources/android/native_app_glue)
 	add_library(aux_android STATIC ${ANDROID_SOURCE_FILES})
 	target_link_libraries(aux_android
 		PUBLIC aux_util
-		PRIVATE ${ANDROID_LIBRARY} ${ANDROID_LOG_LIBRARY} xrt-external-jni-wrap xrt-external-jnipp
+		PRIVATE ${ANDROID_LIBRARY} ${ANDROID_LOG_LIBRARY} xrt-external-jni-wrap xrt-external-jnipp android_app_glue
 		)
 	target_link_libraries(aux_vk PUBLIC aux_android)
 endif()
