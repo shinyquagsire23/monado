@@ -222,6 +222,11 @@ if build_tracking
 		'tracking/t_tracker_hand.cpp',
 	]
 	tracking_deps += [opencv]
+
+	if slam.found()
+		tracking_srcs += ['tracking/t_tracker_slam.cpp']
+		tracking_deps += [external_slam]
+	endif
 endif
 
 lib_aux_tracking = static_library(

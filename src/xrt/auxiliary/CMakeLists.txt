@@ -112,6 +112,10 @@ if(XRT_HAVE_OPENCV)
 		tracking/t_tracker_psvr.cpp
 		tracking/t_tracker_hand.cpp
 		)
+
+		if(XRT_HAVE_SLAM)
+			list(APPEND TRACKING_SOURCE_FILES tracking/t_tracker_slam.cpp)
+		endif()
 endif()
 
 set(UTIL_SOURCE_FILES
@@ -286,6 +290,9 @@ if(XRT_HAVE_OPENCV)
 		${OpenCV_INCLUDE_DIRS}
 		)
 	target_link_libraries(aux_tracking PUBLIC ${OpenCV_LIBRARIES})
+	if(XRT_HAVE_SLAM)
+		target_link_libraries(aux_tracking PRIVATE xrt-external-slam)
+	endif()
 endif()
 
 if (XRT_BUILD_DRIVER_VIVE OR XRT_BUILD_DRIVER_SURVIVE)
@@ -319,4 +326,3 @@ if(ANDROID)
 		)
 	target_link_libraries(aux_vk PUBLIC aux_android)
 endif()
-

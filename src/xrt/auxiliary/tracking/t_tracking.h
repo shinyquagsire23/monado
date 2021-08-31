@@ -33,9 +33,11 @@ extern "C" {
  *
  */
 
+struct xrt_slam_sinks;
 struct xrt_tracked_psmv;
 struct xrt_tracked_psvr;
 struct xrt_tracked_hand;
+struct xrt_tracked_slam;
 
 
 /*
@@ -324,6 +326,18 @@ t_hand_create(struct xrt_frame_context *xfctx,
  */
 int
 t_hand_start(struct xrt_tracked_hand *xth);
+
+/*!
+ * @public @memberof xrt_tracked_slam
+ */
+int
+t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts, struct xrt_slam_sinks **out_sink);
+
+/*!
+ * @public @memberof xrt_tracked_slam
+ */
+int
+t_slam_start(struct xrt_tracked_slam *xts);
 
 /*
  *

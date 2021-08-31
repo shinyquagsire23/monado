@@ -82,6 +82,12 @@ struct p_factory
 
 	//! Pre-created psvr trackers.
 	struct xrt_tracked_psvr *xtvr;
+
+	//! Have we handed out the slam tracker.
+	bool started_xts;
+
+	//! Pre-create SLAM tracker.
+	struct xrt_tracked_slam *xts;
 #endif
 
 	// Frameserver.
@@ -328,6 +334,34 @@ p_factory_create_tracked_hand(struct xrt_tracking_factory *xfact,
 #endif
 }
 
+static int
+p_factory_create_tracked_slam(struct xrt_tracking_factory *xfact,
+                              struct xrt_device *xdev,
+                              struct xrt_tracked_slam **out_xts)
+{
+#ifdef XRT_HAVE_SLAM
+	struct p_factory *fact = p_factory(xfact);
+
+	struct xrt_tracked_slam *xts = NULL;
+
+	if (!fact->started_xts) {
+		xts = fact->xts;
+	}
+
+	if (xts == NULL) {
+		return -1;
+	}
+
+	fact->started_xts = true;
+	t_slam_start(xts);
+	*out_xts = xts;
+
+	return 0;
+#else
+	return -1;
+#endif
+}
+
 /*
  *
  * "Exported" prober functions.
@@ -343,6 +377,7 @@ p_tracking_init(struct prober *p)
 	fact->base.create_tracked_psmv = p_factory_create_tracked_psmv;
 	fact->base.create_tracked_psvr = p_factory_create_tracked_psvr;
 	fact->base.create_tracked_hand = p_factory_create_tracked_hand;
+	fact->base.create_tracked_slam = p_factory_create_tracked_slam;
 	fact->origin.type = XRT_TRACKING_TYPE_RGB;
 	fact->origin.offset.orientation.y = 1.0f;
 	fact->origin.offset.position.z = -2.0f;
