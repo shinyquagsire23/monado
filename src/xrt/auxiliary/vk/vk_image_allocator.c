@@ -219,7 +219,9 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 	vk->vkGetImageMemoryRequirements2(vk->device, &memory_requirements_info, &memory_requirements);
 
 	VkBool32 use_dedicated_allocation = memory_dedicated_requirements.requiresDedicatedAllocation != VK_FALSE;
-	U_LOG_D("create_image: Use dedicated allocation: %d", use_dedicated_allocation);
+	U_LOG_D("create_image: Use dedicated allocation: %d (preferred: %d, required: %d)", use_dedicated_allocation,
+	        memory_dedicated_requirements.prefersDedicatedAllocation,
+	        memory_dedicated_requirements.requiresDedicatedAllocation);
 
 	/*
 	 * Create and bind the memory.
