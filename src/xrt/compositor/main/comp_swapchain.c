@@ -303,9 +303,9 @@ comp_swapchain_create(struct xrt_compositor *xc,
 
 	struct comp_swapchain *sc = alloc_and_set_funcs(c, num_images);
 
-	COMP_DEBUG(c, "CREATE %p %dx%d %s", (void *)sc, //
-	           info->width, info->height,           //
-	           vk_color_format_string(info->format));
+	COMP_DEBUG(c, "CREATE %p %dx%d %s (%ld)", (void *)sc, //
+	           info->width, info->height,                 //
+	           vk_color_format_string(info->format), info->format);
 
 	// Use the image helper to allocate the images.
 	ret = vk_ic_allocate(vk, info, num_images, &sc->vkic);
