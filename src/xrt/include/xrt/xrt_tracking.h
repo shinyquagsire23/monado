@@ -27,6 +27,7 @@ struct xrt_tracking_factory;
 struct xrt_tracked_psmv;
 struct xrt_tracked_psvr;
 struct xrt_tracked_hand;
+struct xrt_tracked_slam;
 
 //! @todo This is from u_time, duplicated to avoid layer violation.
 typedef int64_t timepoint_ns;
@@ -111,6 +112,13 @@ struct xrt_tracking_factory
 	int (*create_tracked_hand)(struct xrt_tracking_factory *,
 	                           struct xrt_device *xdev,
 	                           struct xrt_tracked_hand **out_hand);
+
+	/*!
+	 * Create a SLAM tracker.
+	 */
+	int (*create_tracked_slam)(struct xrt_tracking_factory *,
+	                           struct xrt_device *xdev,
+	                           struct xrt_tracked_slam **out_slam);
 };
 
 /*!
@@ -267,6 +275,24 @@ struct xrt_tracked_hand
 	void (*destroy)(struct xrt_tracked_hand *);
 };
 
+/*!
+ * @interface xrt_tracked_slam
+ *
+ * An adapter that wraps an external SLAM tracker to provide SLAM tracking.
+ * Devices that want to be tracked through SLAM should create and manage an
+ * instance of this type.
+ */
+struct xrt_tracked_slam
+{
+	/*!
+	 * Called by the owning @ref xrt_device to get the last estimated pose
+	 * of the SLAM tracker.
+	 */
+	void (*get_tracked_pose)(struct xrt_tracked_slam *,
+	                         timepoint_ns when_ns,
+	                         struct xrt_space_relation *out_relation);
+};
+
 /*
  *
  * Helper functions.
@@ -349,6 +375,15 @@ xrt_tracked_hand_get_joints(struct xrt_tracked_hand *h,
                             struct xrt_space_relation *out_relation)
 {
 	h->get_tracked_joints(h, name, when_ns, out_joints, out_relation);
+}
+
+//! @public @memberof xrt_tracked_slam
+static inline void
+xrt_tracked_slam_get_tracked_pose(struct xrt_tracked_slam *slam,
+                                  timepoint_ns when_ns,
+                                  struct xrt_space_relation *out_relation)
+{
+	slam->get_tracked_pose(slam, when_ns, out_relation);
 }
 
 /*!
