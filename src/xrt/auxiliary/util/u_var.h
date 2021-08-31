@@ -92,6 +92,7 @@ enum u_var_kind
 	U_VAR_KIND_U64,
 	U_VAR_KIND_I32,
 	U_VAR_KIND_F32,
+	U_VAR_KIND_F64,
 	U_VAR_KIND_F32_ARR,
 	U_VAR_KIND_TIMING,
 	U_VAR_KIND_VEC3_I32,
@@ -196,6 +197,7 @@ u_var_force_on(void);
 	ADD_FUNC(u64, uint64_t, U64)                                                                                   \
 	ADD_FUNC(i32, int32_t, I32)                                                                                    \
 	ADD_FUNC(f32, float, F32)                                                                                      \
+	ADD_FUNC(f64, double, F64)                                                                                     \
 	ADD_FUNC(f32_arr, struct u_var_f32_arr, F32_ARR)                                                               \
 	ADD_FUNC(f32_timing, struct u_var_timing, TIMING)                                                              \
 	ADD_FUNC(vec3_i32, struct xrt_vec3_i32, VEC3_I32)                                                              \

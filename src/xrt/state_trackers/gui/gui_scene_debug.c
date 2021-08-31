@@ -288,6 +288,7 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_I32: igInputInt(name, (int *)ptr, 1, 10, i_flags); break;
 	case U_VAR_KIND_VEC3_I32: igInputInt3(name, (int *)ptr, i_flags); break;
 	case U_VAR_KIND_F32: igInputFloat(name, (float *)ptr, 1, 10, "%+f", i_flags); break;
+	case U_VAR_KIND_F64: igInputDouble(name, (double *)ptr, 0.1, 1, "%+f", i_flags); break;
 	case U_VAR_KIND_F32_ARR: {
 		struct u_var_f32_arr *f32_arr = ptr;
 		int index = *f32_arr->index_ptr;
