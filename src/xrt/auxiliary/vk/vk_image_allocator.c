@@ -218,7 +218,20 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 	};
 	vk->vkGetImageMemoryRequirements2(vk->device, &memory_requirements_info, &memory_requirements);
 
-	VkBool32 use_dedicated_allocation = memory_dedicated_requirements.requiresDedicatedAllocation != VK_FALSE;
+	/* on tegra we must not use dedicated allocation when it is only preferred to avoid black textures and driver
+	 * errors when blitting from opengl interop textures.
+	 *
+	 * on desktop nvidia and everywhere else we must use dedicated allocation when it is preferred to avoid fences
+	 * timing out and driver errors "Graphics Exception on GPC 0: 3D-C MEMLAYOUT Violation."
+	 */
+	VkBool32 use_dedicated_allocation;
+	if (vk->is_tegra) {
+		use_dedicated_allocation = memory_dedicated_requirements.requiresDedicatedAllocation != VK_FALSE;
+	} else {
+		use_dedicated_allocation = (memory_dedicated_requirements.requiresDedicatedAllocation != VK_FALSE) ||
+		                           (memory_dedicated_requirements.prefersDedicatedAllocation != VK_FALSE);
+	}
+
 	U_LOG_D("create_image: Use dedicated allocation: %d (preferred: %d, required: %d)", use_dedicated_allocation,
 	        memory_dedicated_requirements.prefersDedicatedAllocation,
 	        memory_dedicated_requirements.requiresDedicatedAllocation);
