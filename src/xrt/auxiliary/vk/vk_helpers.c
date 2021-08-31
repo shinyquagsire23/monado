@@ -1061,6 +1061,12 @@ vk_select_physical_device(struct vk_bundle *vk, int forced_index)
 	snprintf(title, 20, "Selected GPU: %d\n", gpu_index);
 	vk_print_device_info_debug(vk, &pdp, gpu_index, title);
 
+	char *tegra_substr = strstr(pdp.deviceName, "Tegra");
+	if (tegra_substr) {
+		vk->is_tegra = true;
+		VK_DEBUG(vk, "Detected Tegra, using Tegra specific workarounds!");
+	}
+
 	// Fill out the device memory props as well.
 	vk->vkGetPhysicalDeviceMemoryProperties(vk->physical_device, &vk->device_memory_props);
 

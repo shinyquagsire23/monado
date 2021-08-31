@@ -52,6 +52,8 @@ struct vk_bundle
 	bool has_EXT_global_priority;
 	bool has_VK_EXT_robustness2;
 
+	bool is_tegra;
+
 	VkDebugReportCallbackEXT debug_report_cb;
 
 	VkPhysicalDeviceMemoryProperties device_memory_props;
