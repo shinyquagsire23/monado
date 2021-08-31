@@ -347,7 +347,7 @@ if(XRT_BUILD_DRIVER_EUROC)
 		)
 
 	add_library(drv_euroc STATIC ${EUROC_SOURCE_FILES})
-	target_link_libraries(drv_euroc PRIVATE xrt-interfaces aux_os aux_util aux_tracking ${OpenCV_LIBRARIES})
+	target_link_libraries(drv_euroc PRIVATE xrt-interfaces aux_util aux_tracking ${OpenCV_LIBRARIES})
 	target_include_directories(drv_euroc PRIVATE ${OpenCV_INCLUDE_DIRS})
 	list(APPEND ENABLED_DRIVERS euroc)
 endif()
