@@ -208,14 +208,25 @@ make_lowest_score_finder(FunctionType scoreFunctor)
 static cv::Point3f
 world_point_from_blobs(cv::Point2f left, cv::Point2f right, const cv::Matx44d &disparity_to_depth)
 {
-	float disp = right.x - left.x;
+	float disp = left.x - right.x;
 	cv::Vec4d xydw(left.x, left.y, disp, 1.0f);
+
 	// Transform
 	cv::Vec4d h_world = disparity_to_depth * xydw;
 
-	// Divide by scale to get 3D vector from homogeneous coordinate.  we
-	// also invert x here
-	cv::Point3f world_point(-h_world[0] / h_world[3], h_world[1] / h_world[3], h_world[2] / h_world[3]);
+	// Divide by scale to get 3D vector from homogeneous coordinate.
+	cv::Point3f world_point(      //
+	    h_world[0] / h_world[3],  //
+	    h_world[1] / h_world[3],  //
+	    h_world[2] / h_world[3]); //
+
+	/*
+	 * OpenCV camera space is right handed, -Y up, +Z forwards but
+	 * Monados camera space is right handed, +Y up, -Z forwards so we need
+	 * to invert y and z.
+	 */
+	world_point.y = -world_point.y;
+	world_point.z = -world_point.z;
 
 	return world_point;
 }
