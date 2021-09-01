@@ -43,6 +43,7 @@ vec2 transform_uv(vec2 uv, uint iz)
 
 	// From uv to tan angle (tanget space).
 	values.xy = values.xy * ubo.pre_transform[iz].zw + ubo.pre_transform[iz].xy;
+	values.y = -values.y; // Flip to OpenXR coordinate system.
 
 	// Timewarp.
 	values = ubo.transform[iz] * values;
@@ -50,6 +51,7 @@ vec2 transform_uv(vec2 uv, uint iz)
 
 	// From [-1, 1] to [0, 1]
 	values.xy = values.xy * 0.5 + 0.5;
+	values.y = 1 - values.y; // Flip to UV coordinate system.
 
 	// To deal with OpenGL flip and sub image view.
 	values.xy = values.xy * ubo.post_transform[iz].zw + ubo.post_transform[iz].xy;

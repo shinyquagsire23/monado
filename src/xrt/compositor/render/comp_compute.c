@@ -141,15 +141,11 @@ calc_time_warp_matrix(struct comp_rendering_compute *crc,
 	// Src rotation matrix.
 	struct xrt_matrix_4x4_f64 src_rot_inv;
 	struct xrt_quat src_q = src_pose->orientation;
-	src_q.x = -src_q.x;                           // I don't know why we need to do this.
-	src_q.z = -src_q.z;                           // I don't know why we need to do this.
 	m_mat4_f64_orientation(&src_q, &src_rot_inv); // This is a model matrix, a inverted view matrix.
 
 	// New rotation matrix.
 	struct xrt_matrix_4x4_f64 new_rot, new_rot_inv;
 	struct xrt_quat new_q = new_pose->orientation;
-	new_q.x = -new_q.x;                           // I don't know why we need to do this.
-	new_q.z = -new_q.z;                           // I don't know why we need to do this.
 	m_mat4_f64_orientation(&new_q, &new_rot_inv); // This is a model matrix, a inverted view matrix.
 	m_mat4_f64_invert(&new_rot_inv, &new_rot);    // Invert to make it a view matrix.
 
