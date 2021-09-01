@@ -496,6 +496,16 @@ _decode_pulse_report(struct vive_device *d, const void *buffer)
 			continue;
 		}
 
+		if (sensor_id == 0xfd) {
+			/* TODO: handle camera sync timestamp */
+			continue;
+		}
+
+		if (sensor_id == 0xfb) {
+			/* TODO: Only turns on when the camera is running but not every frame. */
+			continue;
+		}
+
 		if (sensor_id > 31) {
 			VIVE_ERROR(d, "Unexpected sensor id: %04x\n", sensor_id);
 			return;
