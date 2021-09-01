@@ -507,7 +507,7 @@ _decode_pulse_report(struct vive_device *d, const void *buffer)
 		}
 
 		if (sensor_id > 31) {
-			VIVE_ERROR(d, "Unexpected sensor id: %04x\n", sensor_id);
+			VIVE_ERROR(d, "Unexpected sensor id: %04x", sensor_id);
 			return;
 		}
 
