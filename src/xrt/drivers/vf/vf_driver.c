@@ -557,6 +557,13 @@ vf_fs_open_file(struct xrt_frame_context *xfctx, const char *path)
 	enum xrt_stereo_format stereo_format = XRT_STEREO_FORMAT_NONE;
 #endif
 
+#if 0
+	// For hand tracking
+	const gchar *caps = "video/x-raw,format=RGB";
+	enum xrt_format format = XRT_FORMAT_R8G8B8;
+	enum xrt_stereo_format stereo_format = XRT_STEREO_FORMAT_SBS;
+#endif
+
 #if 1
 	const gchar *caps = "video/x-raw,format=YUY2";
 	enum xrt_format format = XRT_FORMAT_YUYV422;
