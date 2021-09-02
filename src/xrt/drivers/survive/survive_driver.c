@@ -24,6 +24,7 @@
 #include "util/u_time.h"
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
+#include "util/u_config_json.h"
 
 #include "os/os_threading.h"
 
@@ -46,7 +47,7 @@
 
 // reading usb config takes libsurvive about 50ms per device
 // to be safe, we wait 500 ms after the last device has been initialized
-#define WAIT_TIMEOUT .75f
+#define DEFAULT_WAIT_TIMEOUT .75f
 
 // index in sys->controllers[] array
 #define SURVIVE_LEFT_CONTROLLER_INDEX 0
@@ -159,6 +160,8 @@ struct survive_system
 	struct survive_device *hmd;
 	struct survive_device *controllers[MAX_TRACKED_DEVICE_COUNT];
 	enum u_logging_level ll;
+
+	float wait_timeout;
 
 	struct os_thread_helper event_thread;
 	struct os_mutex lock;
@@ -1197,7 +1200,7 @@ add_connected_devices(struct survive_system *ss)
 			}
 		}
 
-		if (time_ns_to_s(os_monotonic_get_ns() - start) > WAIT_TIMEOUT) {
+		if (time_ns_to_s(os_monotonic_get_ns() - start) > ss->wait_timeout) {
 			break;
 		}
 		os_nanosleep(1000);
@@ -1229,6 +1232,38 @@ run_event_thread(void *ptr)
 	os_thread_helper_unlock(&ss->event_thread);
 
 	return NULL;
+}
+
+
+static void
+survive_get_user_config(struct survive_system *ss)
+{
+	// Set defaults
+	ss->wait_timeout = DEFAULT_WAIT_TIMEOUT;
+
+	// Open and parse file
+	struct u_config_json wrap = {0};
+	u_config_json_open_or_create_main_file(&wrap);
+	if (!wrap.file_loaded) {
+		return;
+	}
+
+	// Find the dict we care about in the file. It might not be there; if so return early.
+	cJSON *config_json = cJSON_GetObjectItemCaseSensitive(wrap.root, "config_survive");
+	if (config_json == NULL) {
+		return;
+	}
+
+	// Get wait timeout key. No need to null-check - read u_json_get_float.
+	cJSON *wait_timeout = cJSON_GetObjectItemCaseSensitive(config_json, "wait_timeout");
+	u_json_get_float(wait_timeout, &ss->wait_timeout);
+
+	// Log
+	U_LOG_D("Wait timeout is %f seconds!", ss->wait_timeout);
+
+	// Clean up after ourselves
+	cJSON_Delete(wrap.root);
+	return;
 }
 
 int
@@ -1276,6 +1311,8 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 	ss->base.offset.orientation.w = 1.0f;
 
 	ss->ll = debug_get_log_option_survive_log();
+
+	survive_get_user_config(ss);
 
 	while (!add_connected_devices(ss)) {
 		U_LOG_IFL_E(ss->ll, "Failed to get device config from survive");
