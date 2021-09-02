@@ -11,8 +11,6 @@
 
 #ifdef XRT_OS_ANDROID
 
-#include <cstdbool>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
