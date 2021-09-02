@@ -4,6 +4,7 @@
  * @file
  * @brief  vive json header
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup drv_vive
  */
 
@@ -14,6 +15,7 @@
 #include "xrt/xrt_defines.h"
 #include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
+#include "tracking/t_tracking.h"
 
 // public documentation
 #define INDEX_MIN_IPD 0.058
@@ -39,6 +41,36 @@ enum VIVE_CONTROLLER_VARIANT
 	CONTROLLER_TRACKER_GEN1,
 	CONTROLLER_TRACKER_GEN2,
 	CONTROLLER_UNKNOWN
+};
+
+/*!
+ * A calibrated camera on an Index.
+ */
+struct index_camera
+{
+	// Note! All the values in this struct are directly pasted in from the JSON values.
+	// As such, in my opinion, plus_x, plus_z and position are all "wrong" - all the code I've had to write that
+	// uses this struct flips the signs of plus_x, plus_z, and the signs of the X- and Z-components of position.
+	// I have no idea why those sign flips were necessary - I suppose Valve/HTC just made some weird decisions when
+	// making the config file schemas. I figure it would be very confusing to try to "fix" these values as I'm
+	// parsing them, so if you're writing code downstream of this, beware and expect the values in here to be
+	// exactly the same as those in the compressed JSON. -Moses
+	struct
+	{
+		struct xrt_vec3 plus_x;
+		struct xrt_vec3 plus_z;
+		struct xrt_vec3 position; // looks like from head pose
+	} extrinsics;
+	struct
+	{
+		double distortion[4]; // Kannala-Brandt
+		double center_x;
+		double center_y;
+
+		double focal_x;
+		double focal_y;
+		struct xrt_size image_size_pixels;
+	} intrinsics;
 };
 
 /*!
@@ -113,6 +145,12 @@ struct vive_config
 
 	struct u_vive_values distortion[2];
 
+	struct
+	{
+		struct index_camera view[2];
+		bool valid;
+	} cameras;
+
 	struct lh_model lh;
 };
 
@@ -161,3 +199,8 @@ struct vive_controller_device;
 
 bool
 vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level ll);
+
+bool
+vive_get_stereo_camera_calibration(struct vive_config *d,
+                                   struct t_stereo_camera_calibration **out_calibration,
+                                   struct xrt_pose *head_in_left_camera);

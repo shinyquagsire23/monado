@@ -247,7 +247,7 @@ lib_aux_vive = static_library(
 		xrt_include,
 		cjson_include,
 	],
-	dependencies: [zlib],
+	dependencies: [zlib, aux_tracking],
 )
 
 aux_vive = declare_dependency(
