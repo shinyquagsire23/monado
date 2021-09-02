@@ -221,6 +221,10 @@ if(XRT_BUILD_DRIVER_VIVE)
 	target_link_libraries(drv_vive PRIVATE ${ZLIB_LIBRARIES})
 	target_include_directories(drv_vive PRIVATE ${ZLIB_INCLUDE_DIRS})
 	list(APPEND ENABLED_HEADSET_DRIVERS vive)
+
+	if (XRT_BUILD_DRIVER_HANDTRACKING)
+		target_link_libraries(drv_vive PRIVATE drv_ht)
+	endif()
 endif()
 
 if(XRT_HAVE_V4L2)
