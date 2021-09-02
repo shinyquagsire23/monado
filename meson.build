@@ -78,6 +78,7 @@ gst      = dependency('gstreamer-1.0', required: false)
 gst_app  = dependency('gstreamer-app-1.0', required: false)
 gst_video= dependency('gstreamer-video-1.0', required: false)
 depthai  = dependency('depthai', method: 'cmake', modules : ['depthai::core', 'depthai::opencv', 'XLink'], required: false)
+onnxruntime = dependency('libonnxruntime', required: false)
 
 gst_found = gst.found() and gst_app.found() and gst_video.found()
 
@@ -177,7 +178,7 @@ if openhmd.found() and ('auto' in drivers or 'ohmd' in drivers)
 	endif
 endif
 
-if has_v4l2_header and ('auto' in drivers or 'handtracking' in drivers)
+if opencv.found() and onnxruntime.found() and has_v4l2_header and ('auto' in drivers or 'handtracking' in drivers)
 	if 'handtracking' not in drivers
 		drivers += ['handtracking']
 	endif
