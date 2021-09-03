@@ -290,33 +290,47 @@ htRunAlgorithm(struct ht_device *htd)
 
 	htd->current_frame_timestamp = htd->frame_for_process->timestamp;
 
-
 	int64_t start, end;
 	start = os_monotonic_get_ns();
 
 
+	/*
+	 * Setup views.
+	 */
 
-	cv::Mat full_frame(960, 960 * 2, CV_8UC3, htd->frame_for_process->data, htd->frame_for_process->stride);
-	htd->views[0].run_model_on_this =
-	    full_frame(cv::Rect(0, 0, htd->camera.one_view_size_px.w, htd->camera.one_view_size_px.h));
-	htd->views[1].run_model_on_this = full_frame(cv::Rect(
-	    htd->camera.one_view_size_px.w, 0, htd->camera.one_view_size_px.w, htd->camera.one_view_size_px.h));
+	const int full_width = htd->frame_for_process->width;
+	const int full_height = htd->frame_for_process->height;
+	const int view_width = htd->camera.one_view_size_px.w;
+	const int view_height = htd->camera.one_view_size_px.h;
+
+	assert(full_width == view_width * 2);
+	assert(full_height == view_height);
+
+	const cv::Size full_size = cv::Size(full_width, full_height);
+	const cv::Size view_size = cv::Size(view_width, view_height);
+	const cv::Point view_offsets[2] = {cv::Point(0, 0), cv::Point(view_width, 0)};
+
+	cv::Mat full_frame(full_size, CV_8UC3, htd->frame_for_process->data, htd->frame_for_process->stride);
+	htd->views[0].run_model_on_this = full_frame(cv::Rect(view_offsets[0], view_size));
+	htd->views[1].run_model_on_this = full_frame(cv::Rect(view_offsets[1], view_size));
 
 	// Check this every frame. We really, really, really don't want it to ever suddenly be null.
 	htd->debug_scribble = htd->debug_sink != nullptr;
 
-	cv::Mat debug_output;
+	cv::Mat debug_output = {};
 	xrt_frame *debug_frame = nullptr; // only use if htd->debug_scribble
-
 
 	if (htd->debug_scribble) {
 		u_frame_clone(htd->frame_for_process, &debug_frame);
-		debug_output = cv::Mat(960, 960 * 2, CV_8UC3, debug_frame->data, debug_frame->stride);
-		htd->views[0].debug_out_to_this =
-		    debug_output(cv::Rect(0, 0, htd->camera.one_view_size_px.w, htd->camera.one_view_size_px.h));
-		htd->views[1].debug_out_to_this = debug_output(cv::Rect(
-		    htd->camera.one_view_size_px.w, 0, htd->camera.one_view_size_px.w, htd->camera.one_view_size_px.h));
+		debug_output = cv::Mat(full_size, CV_8UC3, debug_frame->data, debug_frame->stride);
+		htd->views[0].debug_out_to_this = debug_output(cv::Rect(view_offsets[0], view_size));
+		htd->views[1].debug_out_to_this = debug_output(cv::Rect(view_offsets[1], view_size));
 	}
+
+
+	/*
+	 * Do the hand tracking!
+	 */
 
 	std::future<std::vector<Hand2D>> future_left =
 	    std::async(std::launch::async, htImageToKeypoints, &htd->views[0]);
@@ -324,6 +338,7 @@ htRunAlgorithm(struct ht_device *htd)
 	    std::async(std::launch::async, htImageToKeypoints, &htd->views[1]);
 	std::vector<Hand2D> hands_in_left_view = future_left.get();
 	std::vector<Hand2D> hands_in_right_view = future_right.get();
+
 	end = os_monotonic_get_ns();
 
 
