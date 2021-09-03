@@ -277,6 +277,10 @@ if (XRT_BUILD_DRIVER_SURVIVE)
 	add_library(drv_survive STATIC ${SURVIVE_SOURCE_FILES})
 	target_link_libraries(drv_survive PRIVATE xrt-interfaces aux_os aux_util aux_math aux_vive PkgConfig::SURVIVE)
 	list(APPEND ENABLED_HEADSET_DRIVERS survive)
+
+	if (XRT_BUILD_DRIVER_HANDTRACKING)
+		target_link_libraries(drv_survive PRIVATE drv_ht)
+	endif()
 endif()
 
 if(XRT_BUILD_DRIVER_ANDROID)

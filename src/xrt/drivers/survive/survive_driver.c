@@ -5,6 +5,7 @@
  * @brief  Adapter to Libsurvive.
  * @author Christoph Haag <christoph.haag@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup drv_survive
  */
 
@@ -17,6 +18,7 @@
 #include <inttypes.h>
 
 #include "math/m_api.h"
+#include "tracking/t_tracking.h"
 #include "xrt/xrt_device.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
@@ -28,7 +30,7 @@
 
 #include "os/os_threading.h"
 
-#include "../auxiliary/os/os_time.h"
+#include "os/os_time.h"
 
 #include "xrt/xrt_prober.h"
 #include "survive_interface.h"
@@ -43,6 +45,11 @@
 #include "math/m_predict.h"
 
 #include "vive/vive_config.h"
+
+#include "../ht/ht_interface.h"
+#include "../multi_wrapper/multi.h"
+#include "xrt/xrt_config_drivers.h"
+
 #include "survive_driver.h"
 
 // reading usb config takes libsurvive about 50ms per device
@@ -1333,6 +1340,8 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 		out_xdevs[out_idx++] = &ss->hmd->base;
 	}
 
+	bool found_controllers = false;
+
 	for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
 
 		if (out_idx == XRT_MAX_DEVICES_PER_PROBE - 1) {
@@ -1343,8 +1352,31 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 
 		if (ss->controllers[i] != NULL) {
 			out_xdevs[out_idx++] = &ss->controllers[i]->base;
+			found_controllers = true;
 		}
 	}
+
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+	// We want to hit this codepath when we find a HMD but no controllers.
+	if ((ss->hmd != NULL) && !found_controllers) {
+		struct t_stereo_camera_calibration *cal = NULL;
+
+		struct xrt_pose head_in_left_cam;
+		vive_get_stereo_camera_calibration(&ss->hmd->hmd.config, &cal, &head_in_left_cam);
+
+		struct xrt_device *ht = ht_device_create(xp, cal);
+		if (ht != NULL) { // Returns NULL if there's a problem and the hand tracker can't start. By no means a
+			          // fatal error.
+			struct xrt_device *wrap =
+			    multi_create_tracking_override(XRT_TRACKING_OVERRIDE_ATTACHED, ht, &ss->hmd->base,
+			                                   XRT_INPUT_GENERIC_HEAD_POSE, &head_in_left_cam);
+			out_xdevs[out_idx++] = wrap;
+		}
+		// Don't need it anymore. And it's not even created unless we hit this codepath, which is somewhat hard.
+		t_stereo_camera_calibration_reference(&cal, NULL);
+	}
+#endif
+
 
 	survive_already_initialized = true;
 
@@ -1368,6 +1400,5 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 		}
 		return 0;
 	}
-
 	return out_idx;
 }
