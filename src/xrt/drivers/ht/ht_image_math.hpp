@@ -8,15 +8,18 @@
  */
 
 #pragma once
-#include "ht_driver.hpp"
+
+#include "xrt/xrt_defines.h"
 #include "math/m_api.h"
 #include "math/m_vec2.h"
 #include "math/m_vec3.h"
-#include "xrt/xrt_defines.h"
-#include <opencv2/calib3d.hpp>
 
-#include <opencv2/core/types.hpp>
+#include "ht_driver.hpp"
+
+#include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/core/types.hpp>
+
 
 static cv::Scalar
 hsv2rgb(float fH, float fS, float fV)

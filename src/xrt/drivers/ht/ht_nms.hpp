@@ -9,11 +9,15 @@
  */
 
 #pragma once
+
+#include "xrt/xrt_defines.h"
+#include "ht_driver.hpp"
+
 #include <math.h>
 #include <stdio.h>
+
 #include <vector>
-#include <xrt/xrt_defines.h>
-#include "ht_driver.hpp"
+
 
 struct Box
 {

@@ -9,35 +9,31 @@
 
 #pragma once
 
-
-#include "math/m_api.h"
-#include "math/m_vec3.h"
-
-#include "math/m_filter_one_euro.h"
+#include "os/os_threading.h"
 
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_prober.h"
 #include "xrt/xrt_frame.h"
 #include "xrt/xrt_frameserver.h"
 
+#include "math/m_api.h"
+#include "math/m_vec3.h"
+#include "math/m_filter_one_euro.h"
+
 #include "util/u_var.h"
-#include "util/u_debug.h"
+#include "util/u_json.h"
 #include "util/u_sink.h"
+#include "util/u_debug.h"
 #include "util/u_device.h"
 
-#include "os/os_threading.h"
+#include "templates/DiscardLastBuffer.hpp"
 
-#include <future>
 #include <opencv2/opencv.hpp>
 
 #include "core/session/onnxruntime_c_api.h"
 
-#include "templates/DiscardLastBuffer.hpp"
-
-#include "util/u_json.h"
-
+#include <future>
 #include <vector>
-
 
 
 DEBUG_GET_ONCE_LOG_OPTION(ht_log, "HT_LOG", U_LOGGING_WARN)

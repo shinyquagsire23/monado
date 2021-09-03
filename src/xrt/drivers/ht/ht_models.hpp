@@ -13,44 +13,43 @@
 
 #pragma once
 
+#include "os/os_time.h"
+#include "os/os_threading.h"
+
 #include "math/m_api.h"
 #include "math/m_vec2.h"
 #include "math/m_vec3.h"
-#include "opencv2/calib3d.hpp"
-#include "opencv2/highgui.hpp"
-#include "os/os_threading.h"
-#include "os/os_time.h"
+
 #include "util/u_json.h"
-
-
-#include "../depthai/depthai_interface.h"
-#include "../vf/vf_interface.h"
-
-#include <cjson/cJSON.h>
-
-#include "ht_driver.hpp"
-#include "ht_nms.hpp"
-#include "util/u_logging.h"
 #include "util/u_time.h"
+#include "util/u_logging.h"
 #include "util/u_trace_marker.h"
+
+#include "ht_nms.hpp"
+#include "ht_driver.hpp"
 #include "ht_image_math.hpp"
 
 #include <core/session/onnxruntime_c_api.h>
-#include <cstdlib>
-#include <opencv2/core/types.hpp>
-#include <opencv2/imgproc.hpp>
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
 
-#include <exception>
-#include <fstream>
-#include <iostream>
+#include <opencv2/core/types.hpp>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/imgproc.hpp>
+
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <cmath>
+#include <cstdlib>
+
+#include <vector>
 #include <limits>
 #include <numeric>
-#include <cmath>
 #include <sstream>
-#include <vector>
+#include <fstream>
+#include <iostream>
+#include <exception>
+
 
 #define ORT_CHECK(g_ort, expr)                                                                                         \
 	do {                                                                                                           \

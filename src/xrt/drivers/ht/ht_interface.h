@@ -10,14 +10,15 @@
 
 #pragma once
 
-#include "math/m_api.h"
-#include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
-#include "vive/vive_config.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_stereo_camera_calibration;
+
 
 /*!
  * @defgroup drv_ht Camera based hand tracking

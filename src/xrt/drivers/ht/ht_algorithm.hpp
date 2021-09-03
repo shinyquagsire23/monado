@@ -9,14 +9,15 @@
 
 #pragma once
 
-#include "ht_driver.hpp"
-
 #include "util/u_frame.h"
 
-#include "ht_image_math.hpp"
+#include "templates/NaivePermutationSort.hpp"
+
+#include "ht_driver.hpp"
 #include "ht_models.hpp"
 #include "ht_hand_math.hpp"
-#include "templates/NaivePermutationSort.hpp"
+#include "ht_image_math.hpp"
+
 #include <opencv2/imgproc.hpp>
 
 

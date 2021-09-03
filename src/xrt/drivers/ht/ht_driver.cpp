@@ -8,65 +8,56 @@
  * @ingroup drv_ht
  */
 
-#include "ht_driver.hpp"
+#include "xrt/xrt_defines.h"
+#include "xrt/xrt_frameserver.h"
+
+#include "os/os_time.h"
+#include "os/os_threading.h"
+
 #include "math/m_api.h"
+#include "math/m_eigen_interop.hpp"
+
 #include "util/u_device.h"
 #include "util/u_frame.h"
 #include "util/u_sink.h"
 #include "util/u_format.h"
-#include "tracking/t_frame_cv_mat_wrapper.hpp"
-#include <cjson/cJSON.h>
-#include <opencv2/core/mat.hpp>
-#include <unistd.h>
-
-#include "templates/NaivePermutationSort.hpp"
-
-#include "opencv2/calib3d.hpp"
-#include "opencv2/highgui.hpp"
-#include "os/os_threading.h"
-#include "os/os_time.h"
+#include "util/u_logging.h"
+#include "util/u_time.h"
+#include "util/u_trace_marker.h"
 #include "util/u_time.h"
 #include "util/u_json.h"
 #include "util/u_config_json.h"
 
-#include "math/m_eigen_interop.hpp"
-
-
-
-// #include <asm-generic/errno-base.h>
-
-#include "vive/vive_config.h"
-
+#include "tracking/t_frame_cv_mat_wrapper.hpp"
 #include "tracking/t_calibration_opencv.hpp"
 
-#include "util/u_logging.h"
-#include "util/u_time.h"
-#include "util/u_trace_marker.h"
-#include "xrt/xrt_defines.h"
+#include "templates/NaivePermutationSort.hpp"
 
+#include "ht_driver.hpp"
 #include "ht_algorithm.hpp"
-#include "xrt/xrt_frameserver.h"
 
-// #include <opencv2/imgproc.hpp>
-#include <string.h>
-#include <stdio.h>
+#include <cjson/cJSON.h>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/calib3d.hpp>
+
 #include <math.h>
-
 #include <float.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 
-
-
-#include <exception>
-#include <fstream>
-#include <iostream>
-#include <limits>
-#include <numeric>
 #include <cmath>
-#include <sstream>
-#include <algorithm>
 
+#include <limits>
 #include <thread>
 #include <future>
+#include <fstream>
+#include <numeric>
+#include <sstream>
+#include <iostream>
+#include <exception>
+#include <algorithm>
+
 
 /*!
  * Setup helper functions.
