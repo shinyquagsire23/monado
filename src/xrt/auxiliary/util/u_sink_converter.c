@@ -47,6 +47,30 @@ struct u_sink_converter
 
 /*
  *
+ * L8 functions.
+ *
+ */
+
+static void
+from_L8_to_R8G8B8(struct xrt_frame *dst_frame, uint32_t w, uint32_t h, size_t stride, const uint8_t *data)
+{
+	SINK_TRACE_MARKER();
+
+	for (uint32_t y = 0; y < h; y++) {
+		for (uint32_t x = 0; x < w; x += 1) {
+			const uint8_t *src = data;
+			uint8_t *dst = dst_frame->data;
+
+			src = src + (y * stride) + x;
+			dst = dst + (y * dst_frame->stride) + (x * 3);
+			dst[2] = dst[1] = dst[0] = src[0];
+		}
+	}
+}
+
+
+/*
+ *
  * YUV functions.
  *
  */
@@ -558,6 +582,12 @@ convert_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 
 	switch (xf->format) {
 	case XRT_FORMAT_R8G8B8: s->downstream->push_frame(s->downstream, xf); return;
+	case XRT_FORMAT_L8:
+		if (!create_frame_with_format(xf, XRT_FORMAT_R8G8B8, &converted)) {
+			return;
+		}
+		from_L8_to_R8G8B8(converted, xf->width, xf->height, xf->stride, xf->data);
+		break;
 	case XRT_FORMAT_BAYER_GR8:;
 		uint32_t w = xf->width / 2;
 		uint32_t h = xf->height / 2;
