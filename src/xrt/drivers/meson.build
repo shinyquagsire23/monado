@@ -87,13 +87,18 @@ lib_drv_ulv2 = static_library(
 lib_drv_ht = static_library(
 	'drv_ht',
 	files(
-		'ht/ht_driver.c',
-		'ht/ht_driver.h',
+		'ht/ht_driver.cpp',
+		'ht/ht_driver.hpp',
 		'ht/ht_interface.h',
-		'ht/ht_prober.c',
+		'ht/ht_models.hpp',
+		'ht/ht_hand_math.hpp',
+		'ht/ht_image_math.hpp',
+		'ht/ht_nms.hpp',
+		'ht/templates/DiscardLastBuffer.hpp',
+		'ht/templates/NaivePermutationSort.hpp',
 	),
-	include_directories: xrt_include,
-	dependencies: [aux],
+	include_directories: [xrt_include, cjson_include],
+	dependencies: [aux, opencv, onnxruntime, eigen3],
 	build_by_default: 'handtracking' in drivers,
 )
 

@@ -1,16 +1,19 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Interface to camera based hand tracking driver code.
  * @author Christoph Haag <christoph.haag@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup drv_ht
  */
 
 #pragma once
 
 #include "math/m_api.h"
+#include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
+#include "vive/vive_config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,12 +27,12 @@ extern "C" {
  */
 
 /*!
- * Create a probe for camera based hand tracking.
+ * Create a hand tracker device.
  *
  * @ingroup drv_ht
  */
-struct xrt_auto_prober *
-ht_create_auto_prober();
+struct xrt_device *
+ht_device_create(struct xrt_prober *xp, struct t_stereo_camera_calibration *calib);
 
 /*!
  * @dir drivers/ht

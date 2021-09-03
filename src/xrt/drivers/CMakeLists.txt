@@ -5,7 +5,6 @@
 set(ENABLED_HEADSET_DRIVERS)
 set(ENABLED_DRIVERS)
 
-
 if(XRT_BUILD_DRIVER_ARDUINO)
 	set(ARDUINO_SOURCE_FILES
 		arduino/arduino_device.c
@@ -149,18 +148,7 @@ if(XRT_BUILD_DRIVER_OHMD)
 	list(APPEND ENABLED_HEADSET_DRIVERS openhmd)
 endif()
 
-if(XRT_BUILD_DRIVER_HANDTRACKING)
-	set(HT_SOURCE_FILES
-		ht/ht_driver.c
-		ht/ht_driver.h
-		ht/ht_interface.h
-		ht/ht_prober.c
-		)
 
-	add_library(drv_ht STATIC ${HT_SOURCE_FILES})
-	target_link_libraries(drv_ht PRIVATE xrt-interfaces aux_util aux_math)
-	list(APPEND ENABLED_DRIVERS ht)
-endif()
 
 if(XRT_BUILD_DRIVER_PSMV)
 	set(PSMOVE_SOURCE_FILES
@@ -258,6 +246,24 @@ if(XRT_BUILD_DRIVER_VF)
 	target_link_libraries(drv_vf PRIVATE xrt-interfaces aux_os aux_util ${GST_LIBRARIES})
 	target_include_directories(drv_vf PRIVATE ${GST_INCLUDE_DIRS})
 	list(APPEND ENABLED_DRIVERS vf)
+endif()
+
+if(XRT_BUILD_DRIVER_HANDTRACKING)
+	set(HT_SOURCE_FILES
+		ht/ht_driver.cpp
+		ht/ht_driver.hpp
+		ht/ht_interface.h
+		ht/ht_models.hpp
+		ht/ht_hand_math.hpp
+		ht/ht_image_math.hpp
+		ht/ht_nms.hpp
+		ht/templates/DiscardLastBuffer.hpp
+		ht/templates/NaivePermutationSort.hpp
+		)
+	add_library(drv_ht STATIC ${HT_SOURCE_FILES})
+	target_link_libraries(drv_ht PRIVATE xrt-interfaces aux_os aux_util aux_math ONNXRuntime::ONNXRuntime ${OpenCV_LIBRARIES})
+	target_include_directories(drv_ht PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
+	list(APPEND ENABLED_DRIVERS ht)
 endif()
 
 if (XRT_BUILD_DRIVER_SURVIVE)
