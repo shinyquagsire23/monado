@@ -52,9 +52,8 @@
 
 #include "survive_driver.h"
 
-// reading usb config takes libsurvive about 50ms per device
-// to be safe, we wait 500 ms after the last device has been initialized
-#define DEFAULT_WAIT_TIMEOUT .75f
+// If we haven't gotten a config for devices this long after startup, just start without those devices
+#define DEFAULT_WAIT_TIMEOUT 3.5f
 
 // index in sys->controllers[] array
 #define SURVIVE_LEFT_CONTROLLER_INDEX 0
@@ -760,6 +759,9 @@ _process_event(struct survive_system *ss, struct SurviveSimpleEvent *event)
 	}
 	case SurviveSimpleEventType_ConfigEvent: {
 		const struct SurviveSimpleConfigEvent *e = survive_simple_get_config_event(event);
+		enum SurviveSimpleObject_type t = survive_simple_object_get_type(e->object);
+		const char *name = survive_simple_object_name(e->object);
+		U_LOG_IFL_D(ss->ll, "Processing config for object name %s: type %d", name, t);
 		add_device(ss, e);
 		break;
 	}
@@ -1192,26 +1194,57 @@ add_device(struct survive_system *ss, const struct SurviveSimpleConfigEvent *e)
 static bool
 add_connected_devices(struct survive_system *ss)
 {
+	/** @todo We don't know how many device added events we will get.
+	 * After 25ms Index HMD + Controllers are added here. So 250ms should be a safe value.
+	 * Device added just means libsurvive knows the usb devices, the config will then be loaded asynchronously.
+	 */
+	os_nanosleep(250 * 1000 * 1000);
+
+	size_t objs = survive_simple_get_object_count(ss->ctx);
+	U_LOG_IFL_D(ss->ll, "Object count: %zu", objs);
+
 	timepoint_ns start = os_monotonic_get_ns();
 
-	while (true) {
+	// First count how many non-lighthouse objects libsurvive knows.
+	// Then poll events until we have gotten configs for this many, or until timeout.
+	int configs_to_wait_for = 0;
+	int configs_gotten = 0;
+
+	for (const SurviveSimpleObject *sso = survive_simple_get_first_object(ss->ctx); sso;
+	     sso = survive_simple_get_next_object(ss->ctx, sso)) {
+		enum SurviveSimpleObject_type t = survive_simple_object_get_type(sso);
+		const char *name = survive_simple_object_name(sso);
+		U_LOG_IFL_D(ss->ll, "Object name %s: type %d", name, t);
+
+		// we only want to wait for configs of HMDs and controllers / trackers.
+		// Note: HMDs will be of type SurviveSimpleObject_OBJECT until the config is loaded.
+		if (t == SurviveSimpleObject_HMD || t == SurviveSimpleObject_OBJECT) {
+			configs_to_wait_for++;
+		}
+	}
+
+	U_LOG_IFL_D(ss->ll, "Waiting for %d configs", configs_to_wait_for);
+	while (configs_gotten < configs_to_wait_for) {
 		struct SurviveSimpleEvent event = {0};
 		while (survive_simple_next_event(ss->ctx, &event) != SurviveSimpleEventType_None) {
 			if (event.event_type == SurviveSimpleEventType_ConfigEvent) {
 				_process_event(ss, &event);
-
-				// libsurvive processes sequentially, restart timeout
-				start = os_monotonic_get_ns();
+				configs_gotten++;
+				U_LOG_IFL_D(ss->ll, "Got config from device: %d/%d", configs_gotten,
+				            configs_to_wait_for);
 			} else {
-				U_LOG_IFL_T(ss->ll, "Skipping event\n");
+				U_LOG_IFL_T(ss->ll, "Skipping event type %d", event.event_type);
 			}
 		}
 
 		if (time_ns_to_s(os_monotonic_get_ns() - start) > ss->wait_timeout) {
+			U_LOG_IFL_D(ss->ll, "Timed out after getting configs for %d/%d devices", configs_gotten,
+			            configs_to_wait_for);
 			break;
 		}
-		os_nanosleep(1000);
+		os_nanosleep(500 * 1000);
 	}
+	U_LOG_IFL_D(ss->ll, "Waiting for configs took %f ms", time_ns_to_ms_f(os_monotonic_get_ns() - start));
 	return true;
 }
 
