@@ -54,6 +54,13 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 	struct vk_bundle *vk = &c->vk;
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
+
+		VkResult ret = vk->vkWaitForFences(vk->device, 1, &sc->acquire_release_fence[i], true, MS_TO_NS(500));
+		if (vk_has_error(ret, "vkWaitForFences", __FILE__, __LINE__)) {
+			// don't really care, we are going to destroy anyway, just make sure it's not used anymore
+			vk->vkDeviceWaitIdle(vk->device);
+		}
+
 		if (sc->base.images[i] != VK_NULL_HANDLE) {
 			vk->vkDestroyImage(vk->device, sc->base.images[i], NULL);
 			sc->base.images[i] = VK_NULL_HANDLE;
