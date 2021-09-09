@@ -342,7 +342,9 @@ endif()
 
 if(XRT_BUILD_DRIVER_EUROC)
 	set(EUROC_SOURCE_FILES
-		euroc/euroc_driver.cpp
+		euroc/euroc_player.cpp
+		euroc/euroc_driver.h
+		euroc/euroc_device.c
 		euroc/euroc_interface.h
 		)
 

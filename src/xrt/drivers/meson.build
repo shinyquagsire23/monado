@@ -311,7 +311,9 @@ lib_drv_wmr = static_library(
 lib_drv_euroc = static_library(
 	'drv_euroc',
 	files(
-		'euroc/euroc_driver.cpp',
+		'euroc/euroc_player.cpp',
+		'euroc/euroc_driver.h',
+		'euroc/euroc_device.c',
 		'euroc/euroc_interface.h',
 	),
 	include_directories: [xrt_include],

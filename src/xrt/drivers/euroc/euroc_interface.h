@@ -35,6 +35,14 @@ struct xrt_fs *
 euroc_player_create(struct xrt_frame_context *xfctx, const char *path);
 
 /*!
+ * Create a auto prober for the fake euroc device.
+ *
+ * @ingroup drv_euroc
+ */
+struct xrt_auto_prober *
+euroc_create_auto_prober(void);
+
+/*!
  * @dir drivers/euroc
  *
  * @brief @ref drv_euroc files.

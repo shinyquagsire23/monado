@@ -79,6 +79,10 @@
 #include "wmr/wmr_common.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_EUROC
+#include "euroc/euroc_interface.h"
+#endif
+
 
 /*!
  * Each entry should be a vendor ID (VID), product ID (PID), a "found" function,
@@ -174,6 +178,10 @@ xrt_auto_prober_creator target_auto_list[] = {
 
 #ifdef XRT_BUILD_DRIVER_RS
     rs_create_auto_prober,
+#endif
+
+#ifdef XRT_BUILD_DRIVER_EUROC
+    euroc_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_QWERTY

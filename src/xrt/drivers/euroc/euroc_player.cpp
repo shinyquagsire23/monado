@@ -11,39 +11,18 @@
 #include "xrt/xrt_frameserver.h"
 #include "os/os_threading.h"
 #include "util/u_debug.h"
-#include "util/u_logging.h"
 #include "util/u_misc.h"
 #include "util/u_var.h"
 #include "tracking/t_frame_cv_mat_wrapper.hpp"
 #include "math/m_filter_fifo.h"
 
-#include "euroc_interface.h"
+#include "euroc_driver.h"
 
-#include <assert.h>
 #include <stdio.h>
 #include <fstream>
 
 #define EUROC_PLAYER_STR "Euroc Player"
 #define CLAMP(X, A, B) (MIN(MAX((X), (A)), (B)))
-
-#define EUROC_TRACE(ep, ...) U_LOG_IFL_T(ep->ll, __VA_ARGS__)
-#define EUROC_DEBUG(ep, ...) U_LOG_IFL_D(ep->ll, __VA_ARGS__)
-#define EUROC_INFO(ep, ...) U_LOG_IFL_I(ep->ll, __VA_ARGS__)
-#define EUROC_WARN(ep, ...) U_LOG_IFL_W(ep->ll, __VA_ARGS__)
-#define EUROC_ERROR(ep, ...) U_LOG_IFL_E(ep->ll, __VA_ARGS__)
-#define EUROC_ASSERT(predicate, ...)                                                                                   \
-	do {                                                                                                           \
-		bool p = predicate;                                                                                    \
-		if (!p) {                                                                                              \
-			U_LOG(U_LOGGING_ERROR, __VA_ARGS__);                                                           \
-			assert(false && "EUROC_ASSERT failed: " #predicate);                                           \
-			exit(EXIT_FAILURE);                                                                            \
-		}                                                                                                      \
-	} while (false);
-#define EUROC_ASSERT_(predicate) EUROC_ASSERT(predicate, "Assertion failed " #predicate)
-
-DEBUG_GET_ONCE_LOG_OPTION(euroc_log, "EUROC_LOG", U_LOGGING_WARN)
-DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
 
 
 typedef std::pair<timepoint_ns, std::string> img_sample;
