@@ -85,9 +85,9 @@ gst_found = gst.found() and gst_app.found() and gst_video.found()
 leap = cc.find_library('Leap', dirs : ['/usr/local/lib'], required: false)
 inc_leap = include_directories('/usr/local/include')
 
-opencv = dependency('opencv4', required: false)
+opencv = dependency('opencv', required: get_option('tracking'))
 if not opencv.found()
-	opencv = dependency('opencv', required: get_option('tracking'))
+	opencv = dependency('opencv4', required: get_option('tracking'))
 endif
 
 if get_option('tracking').enabled() or get_option('tracking').auto()
