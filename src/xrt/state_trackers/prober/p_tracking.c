@@ -394,8 +394,20 @@ p_tracking_init(struct prober *p)
 
 #ifdef XRT_BUILD_DRIVER_EUROC
 	if (debug_get_option_euroc_path() != NULL) {
+		struct xrt_slam_sinks *sinks = NULL;
+
+		// fact->xfs *will* be an euroc frame server after open, because of prober open_video_device
 		xrt_prober_open_video_device(&fact->p->base, NULL, &fact->xfctx, &fact->xfs);
-		xrt_fs_stream_start(fact->xfs, NULL, XRT_FS_CAPTURE_TYPE_TRACKING, 0);
+
+#ifdef XRT_HAVE_SLAM
+		t_slam_create(&fact->xfctx, &fact->xts, &sinks);
+#else
+		U_LOG_W("SLAM tracking support is disabled, the Euroc driver will not be tracked");
+		struct xrt_slam_sinks empty_sinks = {0};
+		sinks = &empty_sinks;
+#endif
+
+		xrt_fs_slam_stream_start(fact->xfs, sinks);
 	}
 #endif
 
