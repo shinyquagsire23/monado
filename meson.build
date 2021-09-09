@@ -90,6 +90,15 @@ if not opencv.found()
 	opencv = dependency('opencv4', required: get_option('tracking'))
 endif
 
+# Find an external SLAM implementation
+external_slam_systems = ['kimera_vio']
+foreach slam_system : external_slam_systems
+	slam = dependency(slam_system, required: false)
+	if slam.found()
+		break
+	endif
+endforeach
+
 if get_option('tracking').enabled() or get_option('tracking').auto()
 	build_tracking = opencv.found()
 endif

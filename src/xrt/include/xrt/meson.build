@@ -104,6 +104,13 @@ if libbsd.found() and not get_option('libbsd').disabled()
 	have_conf.set('XRT_HAVE_LIBBSD', true)
 endif
 
+if slam.found()
+	have_conf.set('XRT_HAVE_SLAM', true)
+	if slam.name() == 'kimera_vio'
+		have_conf.set('XRT_HAVE_KIMERA_SLAM', true)
+	endif
+endif
+
 xrt_config_have_h = configure_file(
 	output: 'xrt_config_have.h',
 	configuration: have_conf,

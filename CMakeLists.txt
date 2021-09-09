@@ -126,6 +126,19 @@ if(ANDROID)
 	find_library(ANDROID_LOG_LIBRARY log)
 endif()
 
+# Find a external SLAM implementation
+set(EXTERNAL_SLAM_SYSTEMS kimera_vio)
+foreach(slam_system IN LISTS EXTERNAL_SLAM_SYSTEMS)
+	find_package(${slam_system} CONFIG)
+	if(${slam_system}_FOUND)
+		set(SLAM ON)
+		set(SLAM_NAME ${slam_system})
+		set(SLAM_LIBRARIES ${${slam_system}_LIBRARIES})
+		set(SLAM_INCLUDE_DIRS ${${slam_system}_INCLUDE_DIRS})
+		break()
+	endif()
+endforeach()
+
 # This one is named differently because that's what CTest uses
 option(BUILD_TESTING "Enable building of the test suite?" ON)
 
@@ -191,7 +204,8 @@ cmake_dependent_option(XRT_HAVE_SYSTEM_CJSON "Enable cJSON from system, instead 
 cmake_dependent_option(XRT_HAVE_GST "Enable gstreamer" ON "GST_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_PERCETTO "Enable percetto support" ON "PERCETTO_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_ONNXRUNTIME "Enable ONNX runtime support" ON "ONNXRUNTIME_FOUND" OFF)
-
+cmake_dependent_option(XRT_HAVE_SLAM "Enable SLAM tracking support" ON "SLAM" OFF)
+cmake_dependent_option(XRT_HAVE_KIMERA_SLAM "Enable Kimera support" ON "kimera_vio_FOUND" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_PSVR "Enable PSVR HMD driver" ON "HIDAPI_FOUND" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_RS "Enable RealSense device driver" ON "realsense2_FOUND" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" ON "ZLIB_FOUND AND XRT_HAVE_LINUX" OFF)
@@ -367,6 +381,8 @@ message(STATUS "#    SDL2:            ${XRT_HAVE_SDL2}")
 message(STATUS "#    PERCETTO:        ${XRT_HAVE_PERCETTO}")
 message(STATUS "#    ONNXRUNTIME:     ${XRT_HAVE_ONNXRUNTIME}")
 message(STATUS "#    SYSTEM_CJSON:    ${XRT_HAVE_SYSTEM_CJSON}")
+message(STATUS "#    KIMERA:          ${XRT_HAVE_KIMERA_SLAM}")
+message(STATUS "#    SLAM:            ${XRT_HAVE_SLAM}")
 message(STATUS "#")
 message(STATUS "#    FEATURE_COMPOSITOR_MAIN:              ${XRT_FEATURE_COMPOSITOR_MAIN}")
 message(STATUS "#    FEATURE_SERVICE:                      ${XRT_FEATURE_SERVICE}")

@@ -10,3 +10,11 @@ imgui_include = include_directories('imgui')
 openxr_include = include_directories('openxr_includes')
 catch2_include = include_directories('Catch2')
 stb_include = include_directories('stb')
+slam_tracker_include = include_directories('slam_tracker')
+
+if slam.found()
+	external_slam = declare_dependency(
+		include_directories: [slam_tracker_include],
+		dependencies: [slam],
+	)
+endif
