@@ -1,4 +1,4 @@
-// Copyright 2021, Collabora, Ltd.
+// Copyright 2021-2023, Collabora, Ltd.
 // Copyright 2021, Jan Schmidt
 // SPDX-License-Identifier: BSL-1.0
 /*!
@@ -32,8 +32,10 @@
 extern "C" {
 #endif
 
-/**
+/*!
  * @brief Base data type for One Euro filter instances.
+ *
+ * @ingroup aux_math
  */
 struct m_filter_one_euro_base
 {
@@ -53,76 +55,194 @@ struct m_filter_one_euro_base
 	uint64_t prev_ts;
 };
 
+/*!
+ * @brief One Euro filter for a single float measurement.
+ *
+ * @ingroup aux_math
+ */
 struct m_filter_euro_f32
 {
 	/** Base/common data */
 	struct m_filter_one_euro_base base;
 
-	/** The previous sample */
+	/** The most recent measurement, after filtering. */
 	double prev_y;
 
-	/** The previous sample derivative */
+	/** The most recent sample derivative, after filtering. */
 	double prev_dy;
 };
 
+/*!
+ * @brief One Euro filter for a 2D float measurement.
+ *
+ * @ingroup aux_math
+ */
 struct m_filter_euro_vec2
 {
 	/** Base/common data */
 	struct m_filter_one_euro_base base;
 
-	/** The previous sample */
+	/** The most recent measurement, after filtering. */
 	struct xrt_vec2 prev_y;
 
-	/** The previous sample derivative */
+	/** The most recent sample derivative, after filtering. */
 	struct xrt_vec2 prev_dy;
 };
 
+/*!
+ * @brief One Euro filter for a 3D float measurement.
+ *
+ * @ingroup aux_math
+ */
 struct m_filter_euro_vec3
 {
 	/** Base/common data */
 	struct m_filter_one_euro_base base;
 
-	/** The previous sample */
+	/** The most recent measurement, after filtering. */
 	struct xrt_vec3 prev_y;
 
-	/** The previous sample derivative */
+	/** The most recent sample derivative, after filtering. */
 	struct xrt_vec3 prev_dy;
 };
 
+
+/*!
+ * @brief One Euro filter for a unit quaternion (used as 3D rotation).
+ *
+ * @ingroup aux_math
+ */
 struct m_filter_euro_quat
 {
 	/** Base/common data */
 	struct m_filter_one_euro_base base;
 
-	/** The previous sample */
+	/** The most recent measurement, after filtering. */
 	struct xrt_quat prev_y;
 
-	/** The previous sample derivative */
+	/** The most recent sample derivative, after filtering. */
 	struct xrt_quat prev_dy;
 };
 
+/**
+ * @brief Initialize a 1D filter
+ *
+ * @param f self pointer
+ * @param fc_min Minimum frequency cutoff for filter
+ * @param fc_min_d Minimum frequency cutoff for derivative filter
+ * @param beta Beta value for "responsiveness" of filter
+ *
+ * @public @memberof m_filter_euro_f32
+ */
 void
 m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double fc_min_d, double beta);
+
+/**
+ * @brief Filter a measurement and commit changes to filter state
+ *
+ * @param[in,out] f self pointer
+ * @param ts measurement timestamp
+ * @param in_y raw measurement
+ * @param[out] out_y filtered measurement
+ *
+ * @public @memberof m_filter_euro_f32
+ */
 void
 m_filter_euro_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, float *out_y);
 
+/**
+ * @brief Initialize a 2D filter
+ *
+ * @param f self pointer
+ * @param fc_min Minimum frequency cutoff for filter
+ * @param beta Beta value for "responsiveness" of filter
+ * @param fc_min_d Minimum frequency cutoff for derivative filter
+ *
+ * @public @memberof m_filter_euro_vec2
+ */
 void
 m_filter_euro_vec2_init(struct m_filter_euro_vec2 *f, double fc_min, double fc_min_d, double beta);
+
+/**
+ * @brief Filter a measurement and commit changes to filter state
+ *
+ * @param[in,out] f self pointer
+ * @param ts measurement timestamp
+ * @param in_y raw measurement
+ * @param[out] out_y filtered measurement
+ *
+ * @public @memberof m_filter_euro_vec2
+ */
 void
 m_filter_euro_vec2_run(struct m_filter_euro_vec2 *f, uint64_t ts, const struct xrt_vec2 *in_y, struct xrt_vec2 *out_y);
+
+/**
+ * @brief Filter a measurement **without** committing changes to filter state
+ *
+ * Similar to @ref m_filter_euro_vec2_run but @p f is not modified.
+ *
+ * @param[in] f self pointer
+ * @param ts measurement timestamp
+ * @param in_y raw measurement
+ * @param[out] out_y filtered measurement
+ *
+ * @public @memberof m_filter_euro_vec2
+ */
 void
 m_filter_euro_vec2_run_no_commit(struct m_filter_euro_vec2 *f,
                                  uint64_t ts,
                                  const struct xrt_vec2 *in_y,
                                  struct xrt_vec2 *out_y);
 
+/**
+ * @brief Initialize a 3D filter
+ *
+ * @param f self pointer
+ * @param fc_min Minimum frequency cutoff for filter
+ * @param fc_min_d Minimum frequency cutoff for derivative filter
+ * @param beta Beta value for "responsiveness" of filter
+ *
+ * @public @memberof m_filter_euro_vec3
+ */
 void
 m_filter_euro_vec3_init(struct m_filter_euro_vec3 *f, double fc_min, double fc_min_d, double beta);
+
+/**
+ * @brief Filter a measurement and commit changes to filter state
+ *
+ * @param[in,out] f self pointer
+ * @param ts measurement timestamp
+ * @param in_y raw measurement
+ * @param[out] out_y filtered measurement
+ *
+ * @public @memberof m_filter_euro_vec3
+ */
 void
 m_filter_euro_vec3_run(struct m_filter_euro_vec3 *f, uint64_t ts, const struct xrt_vec3 *in_y, struct xrt_vec3 *out_y);
 
+/**
+ * @brief Initialize a unit quaternion (3D rotation) filter
+ *
+ * @param f self pointer
+ * @param fc_min Minimum frequency cutoff for filter
+ * @param fc_min_d Minimum frequency cutoff for derivative filter
+ * @param beta Beta value for "responsiveness" of filter
+ *
+ * @public @memberof m_filter_euro_quat
+ */
 void
 m_filter_euro_quat_init(struct m_filter_euro_quat *f, double fc_min, double fc_min_d, double beta);
+
+/**
+ * @brief Filter a measurement and commit changes to filter state
+ *
+ * @param[in,out] f self pointer
+ * @param ts measurement timestamp
+ * @param in_y raw measurement
+ * @param[out] out_y filtered measurement
+ *
+ * @public @memberof m_filter_euro_quat
+ */
 void
 m_filter_euro_quat_run(struct m_filter_euro_quat *f, uint64_t ts, const struct xrt_quat *in_y, struct xrt_quat *out_y);
 
