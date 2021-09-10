@@ -3,21 +3,24 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Camera based hand tracking driver code.
+ * @brief  The "One Euro Filter" for filtering interaction data.
  * @author Moses Turner <moses@collabora.com>
  * @author Jan Schmidt <jan@centricular.com>
- * @ingroup drv_ht
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @ingroup aux_math
+ *
+ * Based in part on https://github.com/thaytan/OpenHMD/blob/rift-kalman-filter/src/exponential-filter.c
  */
-
-// https://github.com/thaytan/OpenHMD/blob/rift-kalman-filter/src/exponential-filter.c
 
 
 #include "m_filter_one_euro.h"
+
+#include "math/m_mathinclude.h"
+
 #include "math/m_vec2.h"
 #include "math/m_vec3.h"
 #include "util/u_time.h"
-#include "math/m_mathinclude.h"
-#include "stdio.h"
+#include "util/u_misc.h"
 
 static double
 calc_smoothing_alpha(double Fc, double dt)
@@ -34,8 +37,24 @@ exp_smooth(double alpha, float y, float prev_y)
 	return alpha * y + (1.0 - alpha) * prev_y;
 }
 
-void
-m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double beta, double fc_min_d)
+static struct xrt_vec2
+exp_smooth_vec2(double alpha, struct xrt_vec2 y, struct xrt_vec2 prev_y)
+{
+	struct xrt_vec2 scaled_prev = m_vec2_mul_scalar(prev_y, 1.0 - alpha);
+	struct xrt_vec2 scaled_new = m_vec2_mul_scalar(y, alpha);
+	return m_vec2_add(scaled_prev, scaled_new);
+}
+
+static struct xrt_vec3
+exp_smooth_vec3(double alpha, struct xrt_vec3 y, struct xrt_vec3 prev_y)
+{
+	struct xrt_vec3 scaled_prev = m_vec3_mul_scalar(prev_y, 1.0 - alpha);
+	struct xrt_vec3 scaled_new = m_vec3_mul_scalar(y, alpha);
+	return m_vec3_add(scaled_prev, scaled_new);
+}
+
+static void
+filter_one_euro_init(struct m_filter_one_euro_base *f, double fc_min, double beta, double fc_min_d)
 {
 	f->fc_min = fc_min;
 	f->beta = beta;
@@ -44,37 +63,88 @@ m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double beta, 
 	f->have_prev_y = false;
 }
 
-void
-m_filter_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, float *out_y)
+/// Is this the first sample? If so, please set up the common things.
+static bool
+filter_one_euro_handle_first_sample(struct m_filter_one_euro_base *f, uint64_t ts, bool commit)
 {
-	double dy, dt, alpha_d;
 
 	if (!f->have_prev_y) {
 		/* First sample - no filtering yet */
-		f->prev_dy = 0;
+		if (commit) {
+			f->prev_ts = ts;
+			f->have_prev_y = true;
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+ * @brief Computes and outputs dt, updates the timestamp in the main structure if @p
+ * commit is true, and computes and returns alpha_d
+ *
+ * @param[in,out] f filter base structure
+ * @param[out] outDt pointer where we should put dt (time since last sample) after computing it.
+ * @param ts data timestamp
+ * @param commit true to commit changes to the filter state
+ * @return alpha_d for filtering derivative
+ */
+static double
+filter_one_euro_compute_alpha_d(struct m_filter_one_euro_base *f, double *outDt, uint64_t ts, bool commit)
+{
+	double dt = (double)(ts - f->prev_ts) / U_TIME_1S_IN_NS;
+	if (commit) {
 		f->prev_ts = ts;
+	}
+	*outDt = dt;
+	return calc_smoothing_alpha(f->fc_min_d, dt);
+}
+
+/**
+ * @brief Computes and returns alpha
+ *
+ * @param[in] f filter base structure
+ * @param dt Time change in seconds
+ * @param smoothed_derivative_magnitude the magnitude of the smoothed derivative
+ * @return alpha for filtering derivative
+ */
+static double
+filter_one_euro_compute_alpha(const struct m_filter_one_euro_base *f, double dt, double smoothed_derivative_magnitude)
+{
+	double fc_cutoff = f->fc_min + f->beta * smoothed_derivative_magnitude;
+	return calc_smoothing_alpha(fc_cutoff, dt);
+}
+
+
+void
+m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double beta, double fc_min_d)
+{
+	filter_one_euro_init(&f->base, fc_min, beta, fc_min_d);
+}
+
+void
+m_filter_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, float *out_y)
+{
+
+	if (filter_one_euro_handle_first_sample(&f->base, ts, true)) {
+		/* First sample - no filtering yet */
+		f->prev_dy = 0;
 		f->prev_y = *in_y;
-		f->have_prev_y = true;
 
 		*out_y = *in_y;
 		return;
 	}
 
-	dt = (double)(ts - f->prev_ts) / U_TIME_1S_IN_NS;
-	f->prev_ts = ts;
+	double dt = 0;
+	double alpha_d = filter_one_euro_compute_alpha_d(&f->base, &dt, ts, true);
 
-	dy = *in_y - f->prev_y;
-
-	alpha_d = calc_smoothing_alpha(f->fc_min_d, dt);
+	double dy = *in_y - f->prev_y;
 
 	/* Smooth the dy values and use them to calculate the frequency cutoff for the main filter */
-	double abs_dy, alpha, fc_cutoff;
-
 	f->prev_dy = exp_smooth(alpha_d, dy, f->prev_dy);
-	abs_dy = fabs(f->prev_dy);
 
-	fc_cutoff = f->fc_min + f->beta * abs_dy;
-	alpha = calc_smoothing_alpha(fc_cutoff, dt);
+	double dy_mag = fabs(f->prev_dy);
+	double alpha = filter_one_euro_compute_alpha(&f->base, dt, dy_mag);
 
 	*out_y = f->prev_y = exp_smooth(alpha, *in_y, f->prev_y);
 }
@@ -82,56 +152,33 @@ m_filter_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, fl
 void
 m_filter_euro_vec2_init(struct m_filter_euro_vec2 *f, double fc_min, double fc_min_d, double beta)
 {
-	f->fc_min = fc_min;
-	f->beta = beta;
-	f->fc_min_d = fc_min_d;
-
-	f->have_prev_y = false;
+	filter_one_euro_init(&f->base, fc_min, beta, fc_min_d);
 }
 
 void
 m_filter_euro_vec2_run(struct m_filter_euro_vec2 *f, uint64_t ts, const struct xrt_vec2 *in_y, struct xrt_vec2 *out_y)
 {
-	double dt, alpha_d;
 
-	if (!f->have_prev_y) {
+	if (filter_one_euro_handle_first_sample(&f->base, ts, true)) {
 		/* First sample - no filtering yet */
-		f->prev_dy.x = 0.0f;
-		f->prev_dy.y = 0.0f;
-		f->prev_ts = ts;
+		U_ZERO(&f->prev_dy);
 		f->prev_y = *in_y;
-		f->have_prev_y = true;
-
 		*out_y = *in_y;
 		return;
 	}
 
-	dt = (double)(ts - f->prev_ts) / U_TIME_1S_IN_NS;
-	f->prev_ts = ts;
+	double dt = 0;
+	double alpha_d = filter_one_euro_compute_alpha_d(&f->base, &dt, ts, true);
 
 	struct xrt_vec2 dy = m_vec2_sub((*in_y), f->prev_y);
+	f->prev_dy = exp_smooth_vec2(alpha_d, dy, f->prev_dy);
 
-	alpha_d = calc_smoothing_alpha(f->fc_min_d, dt);
+	double dy_mag = m_vec2_len(f->prev_dy);
+	double alpha = filter_one_euro_compute_alpha(&f->base, dt, dy_mag);
 
 	/* Smooth the dy values and use them to calculate the frequency cutoff for the main filter */
-	float *in_y_arr = (float *)in_y;
-	float *out_y_arr = (float *)out_y;
-
-	float *dy_arr = (float *)(&dy);
-
-	float *prev_y_arr = (float *)(&f->prev_y);
-	float *prev_dy_arr = (float *)(&f->prev_dy);
-
-	for (int i = 0; i < 2; i++) {
-		double abs_dy, alpha, fc_cutoff;
-
-		prev_dy_arr[i] = exp_smooth(alpha_d, dy_arr[i], prev_dy_arr[i]);
-		abs_dy = fabs(dy_arr[i]);
-
-		fc_cutoff = f->fc_min + f->beta * abs_dy;
-		alpha = calc_smoothing_alpha(fc_cutoff, dt);
-		out_y_arr[i] = prev_y_arr[i] = exp_smooth(alpha, in_y_arr[i], prev_y_arr[i]);
-	}
+	f->prev_y = exp_smooth_vec2(alpha, *in_y, f->prev_y);
+	*out_y = f->prev_y;
 }
 
 void
@@ -140,94 +187,55 @@ m_filter_euro_vec2_run_no_commit(struct m_filter_euro_vec2 *f,
                                  const struct xrt_vec2 *in_y,
                                  struct xrt_vec2 *out_y)
 {
-	double dt, alpha_d;
 
-	if (!f->have_prev_y) {
+	if (filter_one_euro_handle_first_sample(&f->base, ts, false)) {
 		// First sample - no filtering yet - and we're not committing anything to the filter so just return
 		*out_y = *in_y;
 		return;
 	}
 
-	dt = (double)(ts - f->prev_ts) / U_TIME_1S_IN_NS;
+	double dt = 0;
+	double alpha_d = filter_one_euro_compute_alpha_d(&f->base, &dt, ts, false);
 
 	struct xrt_vec2 dy = m_vec2_sub((*in_y), f->prev_y);
+	struct xrt_vec2 prev_dy = exp_smooth_vec2(alpha_d, dy, f->prev_dy);
 
-	alpha_d = calc_smoothing_alpha(f->fc_min_d, dt);
+	double dy_mag = m_vec2_len(prev_dy);
 
 	/* Smooth the dy values and use them to calculate the frequency cutoff for the main filter */
-	float *in_y_arr = (float *)in_y;
-	float *out_y_arr = (float *)out_y;
-
-	float *dy_arr = (float *)(&dy);
-
-	float *prev_y_arr = (float *)(&f->prev_y);
-	float *prev_dy_arr = (float *)(&f->prev_dy);
-
-	for (int i = 0; i < 2; i++) {
-		double abs_dy, alpha, fc_cutoff;
-
-		prev_dy_arr[i] = exp_smooth(alpha_d, dy_arr[i], prev_dy_arr[i]);
-		abs_dy = fabs(dy_arr[i]);
-
-		fc_cutoff = f->fc_min + f->beta * abs_dy;
-		alpha = calc_smoothing_alpha(fc_cutoff, dt);
-		out_y_arr[i] = prev_y_arr[i] = exp_smooth(alpha, in_y_arr[i], prev_y_arr[i]);
-	}
+	double alpha = filter_one_euro_compute_alpha(&f->base, dt, dy_mag);
+	*out_y = exp_smooth_vec2(alpha, *in_y, f->prev_y);
 }
 
 
 void
 m_filter_euro_vec3_init(struct m_filter_euro_vec3 *f, double fc_min, double beta, double fc_min_d)
 {
-	f->fc_min = fc_min;
-	f->beta = beta;
-	f->fc_min_d = fc_min_d;
-
-	f->have_prev_y = false;
+	filter_one_euro_init(&f->base, fc_min, beta, fc_min_d);
 }
 
 void
 m_filter_euro_vec3_run(struct m_filter_euro_vec3 *f, uint64_t ts, const struct xrt_vec3 *in_y, struct xrt_vec3 *out_y)
 {
-	double dt, alpha_d;
-
-	if (!f->have_prev_y) {
+	if (filter_one_euro_handle_first_sample(&f->base, ts, true)) {
 		/* First sample - no filtering yet */
-		f->prev_dy.x = 0;
-		f->prev_dy.x = 0;
-		f->prev_dy.x = 0;
-		f->prev_ts = ts;
+		U_ZERO(&f->prev_dy);
 		f->prev_y = *in_y;
-		f->have_prev_y = true;
 
 		*out_y = *in_y;
 		return;
 	}
 
-	dt = (double)(ts - f->prev_ts) / U_TIME_1S_IN_NS;
-	f->prev_ts = ts;
+	double dt = 0;
+	double alpha_d = filter_one_euro_compute_alpha_d(&f->base, &dt, ts, true);
 
 	struct xrt_vec3 dy = m_vec3_sub((*in_y), f->prev_y);
+	f->prev_dy = exp_smooth_vec3(alpha_d, dy, f->prev_dy);
 
-	alpha_d = calc_smoothing_alpha(f->fc_min_d, dt);
+	double dy_mag = m_vec3_len(f->prev_dy);
+	double alpha = filter_one_euro_compute_alpha(&f->base, dt, dy_mag);
 
 	/* Smooth the dy values and use them to calculate the frequency cutoff for the main filter */
-	float *in_y_arr = (float *)in_y;
-	float *out_y_arr = (float *)out_y;
-
-	float *dy_arr = (float *)(&dy);
-
-	float *prev_y_arr = (float *)(&f->prev_y);
-	float *prev_dy_arr = (float *)(&f->prev_dy);
-
-	for (int i = 0; i < 3; i++) {
-		double abs_dy, alpha, fc_cutoff;
-
-		prev_dy_arr[i] = exp_smooth(alpha_d, dy_arr[i], prev_dy_arr[i]);
-		abs_dy = fabs(dy_arr[i]);
-
-		fc_cutoff = f->fc_min + f->beta * abs_dy;
-		alpha = calc_smoothing_alpha(fc_cutoff, dt);
-		out_y_arr[i] = prev_y_arr[i] = exp_smooth(alpha, in_y_arr[i], prev_y_arr[i]);
-	}
+	f->prev_y = exp_smooth_vec3(alpha, *in_y, f->prev_y);
+	*out_y = f->prev_y;
 }

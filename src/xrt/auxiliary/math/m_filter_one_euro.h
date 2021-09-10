@@ -3,10 +3,19 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Camera based hand tracking driver code.
+ * @brief  Header for a "One Euro Filter" implementation.
  * @author Moses Turner <moses@collabora.com>
  * @author Jan Schmidt <jan@centricular.com>
- * @ingroup drv_ht
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @ingroup aux_math
+ *
+ * See the original publication:
+ *
+ * Casiez, G., Roussel, N., and Vogel, D. 2012. 1 € filter: a simple speed-based low-pass filter for noisy input in
+ * interactive systems. In: Proceedings of the SIGCHI Conference on Human Factors in Computing Systems. Association for
+ * Computing Machinery, New York, NY, USA, 2527–2530.
+ *
+ * Available at: https://hal.inria.fr/hal-00670496/document
  */
 
 #pragma once
@@ -23,51 +32,60 @@
 extern "C" {
 #endif
 
-struct m_filter_euro_f32
+/**
+ * @brief Base data type for One Euro filter instances.
+ */
+struct m_filter_one_euro_base
 {
-	/* Minimum frequency cutoff for filter and derivative respectively - default = 25.0 and 10.0 */
-	float fc_min, fc_min_d;
-	/* Beta value for "responsiveness" of filter - default = 0.01 */
+	/** Minimum frequency cutoff for filter, default = 25.0 */
+	float fc_min;
+
+	/** Minimum frequency cutoff for derivative filter, default = 10.0 */
+	float fc_min_d;
+
+	/** Beta value for "responsiveness" of filter - default = 0.01 */
 	float beta;
 
-	/* true if we have already processed a history sample */
+	/** true if we have already processed a history sample */
 	bool have_prev_y;
 
-	/* Timestamp of previous sample (nanoseconds) and the sample */
+	/** Timestamp of previous sample (nanoseconds) */
 	uint64_t prev_ts;
+};
+
+struct m_filter_euro_f32
+{
+	/** Base/common data */
+	struct m_filter_one_euro_base base;
+
+	/** The previous sample */
 	double prev_y;
+
+	/** The previous sample derivative */
 	double prev_dy;
 };
 
 struct m_filter_euro_vec2
 {
-	/* Minimum frequency cutoff for filter and derivative respectively - default = 25.0 and 10.0 */
-	float fc_min, fc_min_d;
-	/* Beta value for "responsiveness" of filter - default = 0.01 */
-	float beta;
+	/** Base/common data */
+	struct m_filter_one_euro_base base;
 
-	/* true if we have already processed a history sample */
-	bool have_prev_y;
-
-	/* Timestamp of previous sample (nanoseconds) and the sample */
-	uint64_t prev_ts;
+	/** The previous sample */
 	struct xrt_vec2 prev_y;
+
+	/** The previous sample derivative */
 	struct xrt_vec2 prev_dy;
 };
 
 struct m_filter_euro_vec3
 {
-	/* Minimum frequency cutoff for filter and derivative respectively - default = 25.0 and 10.0 */
-	float fc_min, fc_min_d;
-	/* Beta value for "responsiveness" of filter - default = 0.01 */
-	float beta;
+	/** Base/common data */
+	struct m_filter_one_euro_base base;
 
-	/* true if we have already processed a history sample */
-	bool have_prev_y;
-
-	/* Timestamp of previous sample (nanoseconds) and the sample */
-	uint64_t prev_ts;
+	/** The previous sample */
 	struct xrt_vec3 prev_y;
+
+	/** The previous sample derivative */
 	struct xrt_vec3 prev_dy;
 };
 
