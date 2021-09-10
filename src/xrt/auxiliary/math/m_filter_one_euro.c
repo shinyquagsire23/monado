@@ -64,6 +64,8 @@ exp_smooth_quat(double alpha, struct xrt_quat y, struct xrt_quat prev_y)
 static void
 filter_one_euro_init(struct m_filter_one_euro_base *f, double fc_min, double fc_min_d, double beta)
 {
+	U_ZERO(f);
+
 	f->fc_min = fc_min;
 	f->beta = beta;
 	f->fc_min_d = fc_min_d;
