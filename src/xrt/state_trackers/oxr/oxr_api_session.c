@@ -279,6 +279,8 @@ oxr_xrThermalGetTemperatureTrendEXT(XrSession session,
  *
  */
 
+#ifdef XR_EXT_hand_tracking
+
 static XrResult
 oxr_hand_tracker_destroy_cb(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
@@ -438,4 +440,4 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
 	return oxr_session_hand_joints(&log, hand_tracker, locateInfo, locations);
 }
 
-
+#endif
