@@ -30,7 +30,8 @@ EXTENSIONS = (
     ['XR_EXTX_overlay'],
     ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_MNDX_ball_on_a_stick_controller'],
-    ['XR_EXT_hand_tracking']
+    ['XR_EXT_hand_tracking'],
+    ['XR_FB_display_refresh_rate'],
 )
 
 ROOT = Path(__file__).resolve().parent.parent
