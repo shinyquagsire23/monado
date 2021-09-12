@@ -1276,6 +1276,10 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	float target_frame_time_ms = ns_to_ms(c->settings.nominal_frame_interval_ns);
 
+	//! @todo: Query all supported refresh rates of the current mode
+	sys_info->num_refresh_rates = 1;
+	sys_info->refresh_rates[0] = 1. / time_ns_to_s(c->settings.nominal_frame_interval_ns);
+
 	uint64_t now = os_monotonic_get_ns();
 	for (int i = 0; i < NUM_FRAME_TIMES; i++) {
 		c->compositor_frame_times.times_ns[i] = now + i;

@@ -515,6 +515,21 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
                           const XrHandJointsLocateInfoEXT *locateInfo,
                           XrHandJointLocationsEXT *locations);
 
+//! OpenXR API function @ep{xrEnumerateDisplayRefreshRatesFB}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrEnumerateDisplayRefreshRatesFB(XrSession session,
+                                     uint32_t displayRefreshRateCapacityInput,
+                                     uint32_t *displayRefreshRateCountOutput,
+                                     float *displayRefreshRates);
+
+//! OpenXR API function @ep{xrGetDisplayRefreshRateFB}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrGetDisplayRefreshRateFB(XrSession session, float *displayRefreshRate);
+
+//! OpenXR API function @ep{xrRequestDisplayRefreshRateFB}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate);
+
 /*!
  * @}
  */

@@ -226,6 +226,12 @@ handle_non_null(struct oxr_instance *inst, struct oxr_logger *log, const char *n
 	ENTRY_IF_EXT(xrLocateHandJointsEXT, EXT_hand_tracking);
 #endif
 
+#ifdef OXR_HAVE_FB_display_refresh_rate
+	ENTRY_IF_EXT(xrEnumerateDisplayRefreshRatesFB, FB_display_refresh_rate);
+	ENTRY_IF_EXT(xrGetDisplayRefreshRateFB, FB_display_refresh_rate);
+	ENTRY_IF_EXT(xrRequestDisplayRefreshRateFB, FB_display_refresh_rate);
+#endif
+
 #if 0
 #ifdef OXR_HAVE_EXT_debug_utils
 	ENTRY_IF_EXT(xrSetDebugUtilsObjectNameEXT, EXT_debug_utils);

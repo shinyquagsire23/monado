@@ -441,3 +441,66 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
 }
 
 #endif
+
+/*
+ *
+ * XR_FB_display_refresh_rate
+ *
+ */
+
+#ifdef XR_FB_display_refresh_rate
+
+XrResult
+oxr_xrEnumerateDisplayRefreshRatesFB(XrSession session,
+                                     uint32_t displayRefreshRateCapacityInput,
+                                     uint32_t *displayRefreshRateCountOutput,
+                                     float *displayRefreshRates)
+{
+	struct oxr_session *sess = NULL;
+	struct oxr_logger log;
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEnumerateDisplayRefreshRatesFB");
+
+	// headless
+	if (!sess->sys->xsysc) {
+		*displayRefreshRateCountOutput = 0;
+		return XR_SUCCESS;
+	}
+
+	OXR_TWO_CALL_HELPER(&log, displayRefreshRateCapacityInput, displayRefreshRateCountOutput, displayRefreshRates,
+	                    sess->sys->xsysc->info.num_refresh_rates, sess->sys->xsysc->info.refresh_rates, XR_SUCCESS);
+}
+
+XrResult
+oxr_xrGetDisplayRefreshRateFB(XrSession session, float *displayRefreshRate)
+{
+	struct oxr_session *sess = NULL;
+	struct oxr_logger log;
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEnumerateDisplayRefreshRatesFB");
+
+	// headless
+	if (!sess->sys->xsysc) {
+		*displayRefreshRate = 0.0f;
+		return XR_SUCCESS;
+	}
+
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetDisplayRefreshRateFB");
+	if (sess->sys->xsysc->info.num_refresh_rates < 1) {
+		return XR_ERROR_RUNTIME_FAILURE;
+	}
+
+	*displayRefreshRate = sess->sys->xsysc->info.refresh_rates[0];
+	return XR_SUCCESS;
+}
+
+XrResult
+oxr_xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate)
+{
+	struct oxr_session *sess = NULL;
+	struct oxr_logger log;
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrRequestDisplayRefreshRateFB");
+
+	//! @todo support for changing refresh rates
+	return XR_SUCCESS;
+}
+
+#endif
