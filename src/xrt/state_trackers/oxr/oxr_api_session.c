@@ -271,6 +271,8 @@ oxr_xrThermalGetTemperatureTrendEXT(XrSession session,
 	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, "Not implemented");
 }
 
+#endif
+
 /*
  *
  * XR_EXT_hand_tracking
@@ -436,4 +438,4 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
 	return oxr_session_hand_joints(&log, hand_tracker, locateInfo, locations);
 }
 
-#endif
+
