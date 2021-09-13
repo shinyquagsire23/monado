@@ -1492,7 +1492,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	struct u_var_timing *ft = U_TYPED_CALLOC(struct u_var_timing);
 
-	float target_frame_time_ms = c->settings.nominal_frame_interval_ns * 1.f / 1000.f * 1.f / 1000.f;
+	float target_frame_time_ms = ns_to_ms(c->settings.nominal_frame_interval_ns);
 
 	uint64_t now = os_monotonic_get_ns();
 	for (int i = 0; i < NUM_FRAME_TIMES; i++) {
