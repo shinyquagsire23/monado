@@ -21,6 +21,7 @@ getting started information and general documentation.
 * @ref ipc-design
 * @ref frame-timing
 * @ref tracing
+* @ref implementing-extension
 
 ## Source layout
 
