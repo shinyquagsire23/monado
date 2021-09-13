@@ -220,9 +220,11 @@ handle_non_null(struct oxr_instance *inst, struct oxr_logger *log, const char *n
 	ENTRY_IF_EXT(xrThermalGetTemperatureTrendEXT, EXT_thermal_query);
 #endif // OXR_HAVE_EXT_thermal_query
 
+#ifdef OXR_HAVE_EXT_hand_tracking
 	ENTRY_IF_EXT(xrCreateHandTrackerEXT, EXT_hand_tracking);
 	ENTRY_IF_EXT(xrDestroyHandTrackerEXT, EXT_hand_tracking);
 	ENTRY_IF_EXT(xrLocateHandJointsEXT, EXT_hand_tracking);
+#endif
 
 #if 0
 #ifdef OXR_HAVE_EXT_debug_utils
