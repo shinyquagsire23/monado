@@ -17,6 +17,7 @@
 extern "C" {
 #endif
 
+struct xrt_slam_sinks;
 
 /*!
  * Controlling the camera capture parameters
@@ -101,6 +102,18 @@ struct xrt_fs
 	                     uint32_t descriptor_index);
 
 	/*!
+	 * Setup SLAM sinks for all the sensors a SLAM implementation may supports and
+	 * start the frame server stream. Use @ref xrt_fs::stream_start instead if
+	 * you only need the image stream.
+	 *
+	 * @note Having this method extends the scope of the frameserver to something
+	 * more akin to a generic data source instead of just serving frames.
+	 *
+	 * @todo Fix this incongruence. Maybe rename the interface to xrt_data_source.
+	 */
+	bool (*slam_stream_start)(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks);
+
+	/*!
 	 * Stop the capture stream.
 	 */
 	bool (*stream_stop)(struct xrt_fs *xfs);
@@ -158,6 +171,19 @@ xrt_fs_stream_start(struct xrt_fs *xfs,
                     uint32_t descriptor_index)
 {
 	return xfs->stream_start(xfs, xs, capture_type, descriptor_index);
+}
+
+/*!
+ * @copydoc xrt_fs::slam_stream_start
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_fs
+ */
+static inline bool
+xrt_fs_slam_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
+{
+	return xfs->slam_stream_start(xfs, sinks);
 }
 
 /*!
