@@ -102,6 +102,12 @@ m_vec2_dot(struct xrt_vec2 l, struct xrt_vec2 r)
 	return l.x * r.x + l.y * r.y;
 }
 
+static inline struct xrt_vec2
+m_vec2_lerp(struct xrt_vec2 from, struct xrt_vec2 to, float amount)
+{
+	// Recommend amount being in [0,1]
+	return m_vec2_add(m_vec2_mul_scalar(from, 1.0f - amount), m_vec2_mul_scalar(to, amount));
+}
 
 #ifdef __cplusplus
 }
