@@ -17,6 +17,7 @@
 #include "ht_driver.hpp"
 
 #include <opencv2/calib3d.hpp>
+#include <opencv2/core/matx.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/types.hpp>
 
@@ -104,23 +105,59 @@ raycoord(struct ht_view *htv, struct xrt_vec3 model_out)
  */
 
 static cv::Matx23f
-blackbar(cv::Mat &in, cv::Mat &out, xrt_vec2_i32 out_size)
+blackbar(cv::Mat &in, cv::Mat &out, xrt_size out_size)
 {
-	float aspect_ratio_input = in.cols / in.rows;
-	float aspect_ratio_output = out_size.x / out_size.y;
+#if 1
+	// Easy to think about, always right, but pretty slow:
+	// Get a matrix from the original to the scaled down / blackbar'd image, then get one that goes back.
+	// Then just warpAffine() it.
+	// More expensive on the computer, but cheap in programmer time - I'm somewhat allergic to thinking in pixel
+	// coordinates. We can come back and optimize later.
 
+	// Do the black bars need to be on top and bottom, or on left and right?
+	float scale_down_w = (float)out_size.w / (float)in.cols; // 128/1280 = 0.1
+	float scale_down_h = (float)out_size.h / (float)in.rows; // 128/800 =  0.16
+
+	float scale_down = fmin(scale_down_w, scale_down_h); // 0.1
+
+	float width_inside = (float)in.cols * scale_down;
+	float height_inside = (float)in.rows * scale_down;
+
+	float translate_x = (out_size.w - width_inside) / 2;  // should be 0 for 1280x800
+	float translate_y = (out_size.h - height_inside) / 2; // should be (1280-800)/2 = 240
+
+	cv::Matx23f go;
+	// clang-format off
+	go(0,0) = scale_down;  go(0,1) = 0.0f;                  go(0,2) = translate_x;
+	go(1,0) = 0.0f;                  go(1,1) = scale_down;  go(1,2) = translate_y;
+	// clang-format on
+
+	cv::warpAffine(in, out, go, cv::Size(out_size.w, out_size.h));
+
+	cv::Matx23f ret;
+
+	// clang-format off
+	ret(0,0) = 1.0f/scale_down;  ret(0,1) = 0.0f;             ret(0,2) = -translate_x/scale_down;
+	ret(1,0) = 0.0f;             ret(1,1) = 1.0f/scale_down;  ret(1,2) = -translate_y/scale_down;
+	// clang-format on
+
+	return ret;
+#else
+	// Fast, always wrong if the input isn't square. You'd end up using something like this, plus some
+	// copyMakeBorder if you want to optimize.
 	if (aspect_ratio_input == aspect_ratio_output) {
-		cv::resize(in, out, {out_size.x, out_size.y});
+		cv::resize(in, out, {out_size.w, out_size.h});
 		cv::Matx23f ret;
-		float scale_from_out_to_in = (float)in.cols / (float)out_size.x;
+		float scale_from_out_to_in = (float)in.cols / (float)out_size.w;
 		// clang-format off
-    ret(0,0) = scale_from_out_to_in;  ret(0,1) = 0.0f;                  ret(0,2) = 0.0f;
-    ret(1,0) = 0.0f;                  ret(1,1) = scale_from_out_to_in;  ret(1,2) = 0.0f;
+		ret(0,0) = scale_from_out_to_in;  ret(0,1) = 0.0f;                  ret(0,2) = 0.0f;
+		ret(1,0) = 0.0f;                  ret(1,1) = scale_from_out_to_in;  ret(1,2) = 0.0f;
 		// clang-format on
 		return ret;
 	}
 	assert(!"Uh oh! Unimplemented!");
 	return {};
+#endif
 }
 
 /*!
