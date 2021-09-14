@@ -12,6 +12,11 @@
 #include "xrt/xrt_defines.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /*!
  * Using the given @p xrt_space_relation predicts a new @p xrt_space_relation
  * @p delta_s into the future.
@@ -23,3 +28,8 @@
  */
 void
 m_predict_relation(const struct xrt_space_relation *rel, double delta_s, struct xrt_space_relation *out_rel);
+
+
+#ifdef __cplusplus
+}
+#endif
