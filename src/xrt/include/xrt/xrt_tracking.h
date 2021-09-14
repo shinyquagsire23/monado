@@ -152,6 +152,17 @@ struct xrt_imu_sink
 };
 
 /*!
+ * Container of pointers to sinks that could be used for a SLAM system. Sinks
+ * are considered disabled if they are null.
+ */
+struct xrt_slam_sinks
+{
+	struct xrt_frame_sink *left;
+	struct xrt_frame_sink *right;
+	struct xrt_imu_sink *imu;
+};
+
+/*!
  * @interface xrt_tracked_psmv
  *
  * A single tracked PS Move controller, camera and ball are not synced.
