@@ -46,6 +46,15 @@ comp_window_xcb_create(struct comp_compositor *c);
  */
 struct comp_target *
 comp_window_wayland_create(struct comp_compositor *c);
+
+/*!
+ * Create a direct surface to a HMD via Wayland.
+ *
+ * @ingroup comp
+ */
+struct comp_target *
+comp_window_direct_wayland_create(struct comp_compositor *c);
+
 #endif
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT

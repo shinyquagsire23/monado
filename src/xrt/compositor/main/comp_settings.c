@@ -14,6 +14,7 @@
 DEBUG_GET_ONCE_LOG_OPTION(log, "XRT_COMPOSITOR_LOG", U_LOGGING_INFO)
 DEBUG_GET_ONCE_BOOL_OPTION(print_modes, "XRT_COMPOSITOR_PRINT_MODES", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_randr, "XRT_COMPOSITOR_FORCE_RANDR", false)
+DEBUG_GET_ONCE_BOOL_OPTION(force_wayland_direct, "XRT_COMPOSITOR_FORCE_WAYLAND_DIRECT", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_nvidia, "XRT_COMPOSITOR_FORCE_NVIDIA", false)
 DEBUG_GET_ONCE_OPTION(nvidia_display, "XRT_COMPOSITOR_FORCE_NVIDIA_DISPLAY", NULL)
 DEBUG_GET_ONCE_NUM_OPTION(vk_display, "XRT_COMPOSITOR_FORCE_VK_DISPLAY", -1)
@@ -77,6 +78,11 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	if (debug_get_bool_option_force_randr()) {
 		s->window_type = WINDOW_DIRECT_RANDR;
 	}
+
+	if (debug_get_bool_option_force_wayland_direct()) {
+		s->window_type = WINDOW_DIRECT_WAYLAND;
+	}
+
 
 	if (debug_get_bool_option_force_xcb()) {
 		s->window_type = WINDOW_XCB;

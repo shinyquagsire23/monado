@@ -668,7 +668,7 @@ vkGetInstanceProcAddr(VkInstance instance, const char *pName);
 	VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,     \
 	VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,  \
 	VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, \
-	VK_KHR_SURFACE_EXTENSION_NAME
+	VK_KHR_SURFACE_EXTENSION_NAME                           \
 // clang-format on
 
 static const char *instance_extensions_none[] = {COMP_INSTANCE_EXTENSIONS_COMMON};
@@ -678,8 +678,18 @@ static const char *instance_extensions_xcb[] = {COMP_INSTANCE_EXTENSIONS_COMMON,
 #endif
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
-static const char *instance_extensions_wayland[] = {COMP_INSTANCE_EXTENSIONS_COMMON,
-                                                    VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME};
+static const char *instance_extensions_wayland[] = {
+    COMP_INSTANCE_EXTENSIONS_COMMON,
+    VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
+};
+
+static const char *instance_extensions_direct_wayland[] = {
+    COMP_INSTANCE_EXTENSIONS_COMMON,
+    VK_KHR_DISPLAY_EXTENSION_NAME,
+    VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
+    VK_EXT_DIRECT_MODE_DISPLAY_EXTENSION_NAME,
+    VK_EXT_ACQUIRE_DRM_DISPLAY_EXTENSION_NAME,
+};
 #endif
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
@@ -764,6 +774,11 @@ select_instances_extensions(struct comp_compositor *c, const char ***out_exts, u
 		*out_num = ARRAY_SIZE(instance_extensions_none);
 		break;
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
+	case WINDOW_DIRECT_WAYLAND:
+		*out_exts = instance_extensions_direct_wayland;
+		*out_num = ARRAY_SIZE(instance_extensions_direct_wayland);
+		break;
+
 	case WINDOW_WAYLAND:
 		*out_exts = instance_extensions_wayland;
 		*out_num = ARRAY_SIZE(instance_extensions_wayland);
@@ -1191,6 +1206,10 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 	switch (c->settings.window_type) {
 	case WINDOW_AUTO:
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
+		if (compositor_try_window(c, comp_window_direct_wayland_create(c))) {
+			c->settings.window_type = WINDOW_DIRECT_WAYLAND;
+			return true;
+		}
 		if (compositor_try_window(c, comp_window_wayland_create(c))) {
 			c->settings.window_type = WINDOW_WAYLAND;
 			return true;
@@ -1238,6 +1257,13 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 		compositor_try_window(c, comp_window_wayland_create(c));
 #else
 		COMP_ERROR(c, "Wayland support not compiled in!");
+#endif
+		break;
+	case WINDOW_DIRECT_WAYLAND:
+#ifdef VK_USE_PLATFORM_WAYLAND_KHR
+		compositor_try_window(c, comp_window_direct_wayland_create(c));
+#else
+		COMP_ERROR(c, "Wayland direct support not compiled in!");
 #endif
 		break;
 	case WINDOW_DIRECT_RANDR:

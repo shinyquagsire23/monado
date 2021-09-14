@@ -69,7 +69,7 @@ if has_v4l2_header and 'v4l2' in drivers
 endif
 
 if true
-	have_conf.set('XRT_HAVE_VULKAN', true)	
+	have_conf.set('XRT_HAVE_VULKAN', true)
 endif
 
 if dbus.found() and not get_option('dbus').disabled()

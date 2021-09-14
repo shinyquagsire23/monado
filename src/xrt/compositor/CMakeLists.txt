@@ -150,27 +150,55 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 		pkg_get_variable(WL_PROTOS_PKG_DIR wayland-protocols pkgdatadir)
 		pkg_get_variable(WL_SCANNER wayland-scanner wayland_scanner)
 
-		set(WL_PROTOS_DIR "${CMAKE_CURRENT_BINARY_DIR}/wayland-protocols/")
+		set(WL_PROTOS_DIR "${CMAKE_CURRENT_BINARY_DIR}/wayland-protocols")
 		file(MAKE_DIRECTORY "${WL_PROTOS_DIR}")
 
-		set(WL_PROTOS_XML "${WL_PROTOS_PKG_DIR}/stable/xdg-shell/xdg-shell.xml")
-		set(WL_PROTOS_C "${WL_PROTOS_DIR}/xdg-shell.c")
-		set(WL_PROTOS_H "${WL_PROTOS_DIR}/xdg-shell-client-protocol.h")
+		set(WL_PROTOS_XML
+			${WL_PROTOS_PKG_DIR}/stable/xdg-shell/xdg-shell.xml
+			)
 
-		add_custom_command(
-			COMMAND
-			${WL_SCANNER} private-code "${WL_PROTOS_XML}" "${WL_PROTOS_C}"
-			OUTPUT "${WL_PROTOS_C}" VERBATIM)
-
-		add_custom_command(
-			COMMAND
-			${WL_SCANNER} client-header "${WL_PROTOS_XML}" "${WL_PROTOS_H}"
-			OUTPUT "${WL_PROTOS_H}" VERBATIM)
-
-		set(WL_PROTOS_SRC ${WL_PROTOS_C} ${WL_PROTOS_H})
 		list(APPEND MAIN_SOURCE_FILES
 			main/comp_window_wayland.c
 			)
+
+		if (XRT_HAVE_WAYLAND_DIRECT)
+			list(APPEND WL_PROTOS_XML
+				${WL_PROTOS_PKG_DIR}/staging/drm-lease/drm-lease-v1.xml
+			)
+
+			list(APPEND MAIN_SOURCE_FILES
+				main/comp_window_direct_wayland.c
+				)
+
+			pkg_check_modules(LIBDRM IMPORTED_TARGET libdrm)
+			set(WAYLAND_DEPS
+				${WAYLAND_LIBRARIES}
+				PkgConfig::LIBDRM
+				)
+		endif()
+
+		foreach(WL_PROTO_XML ${WL_PROTOS_XML})
+			get_filename_component(WL_PROTO ${WL_PROTO_XML} NAME_WLE)
+
+			set(WL_PROTO_C "${WL_PROTOS_DIR}/${WL_PROTO}.c")
+			set(WL_PROTO_H "${WL_PROTOS_DIR}/${WL_PROTO}-client-protocol.h")
+
+			add_custom_command(
+				COMMAND
+				${WL_SCANNER} private-code "${WL_PROTO_XML}" "${WL_PROTO_C}"
+				OUTPUT "${WL_PROTO_C}" VERBATIM)
+
+			add_custom_command(
+				COMMAND
+				${WL_SCANNER} client-header "${WL_PROTO_XML}" "${WL_PROTO_H}"
+				OUTPUT "${WL_PROTO_H}" VERBATIM)
+
+			list(APPEND MAIN_SOURCE_FILES
+				${WL_PROTO_C}
+				${WL_PROTO_H}
+				)
+		endforeach()
+
 	endif()
 	if(ANDROID)
 		list(APPEND MAIN_SOURCE_FILES
@@ -178,7 +206,7 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 			)
 	endif()
 
-	add_library(comp_main STATIC ${SHADER_HEADERS} ${MAIN_SOURCE_FILES} ${WL_PROTOS_SRC})
+	add_library(comp_main STATIC ${SHADER_HEADERS} ${MAIN_SOURCE_FILES})
 	target_link_libraries(comp_main PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk)
 	target_include_directories(comp_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 	target_include_directories(comp_main SYSTEM PRIVATE
@@ -188,7 +216,9 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 
 	if(XRT_HAVE_WAYLAND)
 		target_include_directories(comp_main SYSTEM PRIVATE ${WL_PROTOS_DIR})
-		target_link_libraries(comp_main PRIVATE ${WAYLAND_LIBRARIES})
+		target_link_libraries(comp_main PRIVATE
+			${WAYLAND_DEPS}
+		)
 	endif()
 	if(XRT_HAVE_XCB)
 		target_include_directories(comp_main SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})

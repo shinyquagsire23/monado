@@ -114,20 +114,27 @@ if build_wayland
 	wl_protocol_dir = wayland_protos.get_pkgconfig_variable('pkgdatadir')
 
 	protocols = [
-		[wl_protocol_dir, 'stable/xdg-shell/xdg-shell.xml'],
+		wl_protocol_dir / 'stable/xdg-shell/xdg-shell.xml',
 	]
 
-	foreach p : protocols
-		xml = join_paths(p)
+	if build_wayland_direct
+		protocols += wl_protocol_dir / 'staging/drm-lease/drm-lease-v1.xml'
+		compositor_srcs += 'main/comp_window_direct_wayland.c'
+		compositor_deps += drm
+	endif
+
+	compositor_srcs += 'main/comp_window_wayland.c'
+
+	foreach path : protocols
 		wl_protos_src += custom_target(
-			xml.underscorify() + '_c',
-			input: xml,
+			path.underscorify() + '_c',
+			input: path,
 			output: '@BASENAME@-protocol.c',
 			command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
 		)
 		wl_protos_headers += custom_target(
-			xml.underscorify() + '_client_h',
-			input: xml,
+			path.underscorify() + '_client_h',
+			input: path,
 			output: '@BASENAME@-client-protocol.h',
 			command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
 		)
@@ -144,8 +151,8 @@ if build_wayland
 		sources: wl_protos_headers,
 	)
 
-	compositor_srcs += ['main/comp_window_wayland.c']
 	compositor_deps += [wayland, wl_protos]
+
 endif
 
 lib_comp = static_library(

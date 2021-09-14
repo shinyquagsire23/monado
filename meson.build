@@ -103,6 +103,7 @@ xcb_randr = dependency('xcb-randr', required: get_option('xcb'))
 wayland         = dependency('wayland-client', required: get_option('wayland'))
 wayland_protos  = dependency('wayland-protocols', required: get_option('wayland'))
 wayland_scanner = dependency('wayland-scanner', required: get_option('wayland'))
+drm             = dependency('libdrm', required: get_option('wayland'))
 
 if wayland_scanner.found()
 	wayland_scanner = find_program(
@@ -143,8 +144,10 @@ build_xcb_xrandr_direct = build_xcb and build_xlib and xcb_randr.found() and x11
 build_vk_khr_display = true
 
 build_wayland = false
+build_wayland_direct = false
 if get_option('wayland').enabled() or get_option('wayland').auto()
         build_wayland = wayland.found() and wayland_protos.found() and wayland_scanner.found()
+        build_wayland_direct = build_wayland and drm.found() and wayland_protos.version().version_compare('>=1.22')
 endif
 
 # For now required on Linux
@@ -336,6 +339,12 @@ if build_wayland
 	message('     wayland: yes')
 else
 	message('     wayland: no')
+endif
+
+if build_wayland_direct
+	message('wayland_direct: yes')
+else
+	message('wayland_direct: no')
 endif
 
 if not get_option('systemd').disabled() and systemd.found()
