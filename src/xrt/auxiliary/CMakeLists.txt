@@ -153,6 +153,7 @@ set(UTIL_SOURCE_FILES
 	util/u_sink_queue.c
 	util/u_sink_quirk.c
 	util/u_sink_split.c
+	util/u_template_historybuf.hpp
 	util/u_time.cpp
 	util/u_time.h
 	util/u_timing.h

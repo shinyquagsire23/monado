@@ -261,7 +261,6 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 		ht/ht_hand_math.hpp
 		ht/ht_image_math.hpp
 		ht/ht_nms.hpp
-		ht/templates/DiscardLastBuffer.hpp
 		ht/templates/NaivePermutationSort.hpp
 		)
 	add_library(drv_ht STATIC ${HT_SOURCE_FILES})

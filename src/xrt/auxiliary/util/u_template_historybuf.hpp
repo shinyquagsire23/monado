@@ -2,16 +2,14 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Camera based hand tracking ringbuffer implementation.
+ * @brief Ringbuffer implementation for keeping track of the past state of things
  * @author Moses Turner <moses@collabora.com>
  * @ingroup drv_ht
  */
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <algorithm>
 #include <assert.h>
 
 
@@ -19,23 +17,28 @@
 // OR
 //|  -4   |   -3   |  -2 | -1 | Top | -7 | -6 | -5 |
 
+namespace xrt::auxiliary::util {
 
-
-template <typename T, int maxSize> struct DiscardLastBuffer
+template <typename T, int maxSize> struct HistoryBuffer
 {
 	T internalBuffer[maxSize];
 	int topIdx = 0;
+	int length = 0;
 
 	/* Put something at the top, overwrite whatever was at the back*/
 	void
 	push(const T inElement);
 
 	T *operator[](int inIndex);
+
+	// Lazy convenience.
+	T *
+	last();
 };
 
 template <typename T, int maxSize>
 void
-DiscardLastBuffer<T, maxSize>::push(const T inElement)
+HistoryBuffer<T, maxSize>::push(const T inElement)
 {
 	topIdx++;
 	if (topIdx == maxSize) {
@@ -43,10 +46,16 @@ DiscardLastBuffer<T, maxSize>::push(const T inElement)
 	}
 
 	memcpy(&internalBuffer[topIdx], &inElement, sizeof(T));
+	length++;
+	length = std::min(length, maxSize);
+	// U_LOG_E("new length is %zu", length);
 }
 
-template <typename T, int maxSize> T *DiscardLastBuffer<T, maxSize>::operator[](int inIndex)
+template <typename T, int maxSize> T *HistoryBuffer<T, maxSize>::operator[](int inIndex)
 {
+	if (length == 0) {
+		return NULL;
+	}
 	assert(inIndex <= maxSize);
 	assert(inIndex >= 0);
 
@@ -62,3 +71,4 @@ template <typename T, int maxSize> T *DiscardLastBuffer<T, maxSize>::operator[](
 
 	return &internalBuffer[index];
 }
+} // namespace xrt::auxiliary::util

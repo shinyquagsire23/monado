@@ -26,7 +26,7 @@
 #include "util/u_debug.h"
 #include "util/u_device.h"
 
-#include "templates/DiscardLastBuffer.hpp"
+#include "util/u_template_historybuf.hpp"
 
 #include <opencv2/opencv.hpp>
 
@@ -44,8 +44,7 @@ DEBUG_GET_ONCE_LOG_OPTION(ht_log, "HT_LOG", U_LOGGING_WARN)
 #define HT_WARN(htd, ...) U_LOG_XDEV_IFL_W(&htd->base, htd->ll, __VA_ARGS__)
 #define HT_ERROR(htd, ...) U_LOG_XDEV_IFL_E(&htd->base, htd->ll, __VA_ARGS__)
 
-// #define ht_
-
+using namespace xrt::auxiliary::util;
 
 // To make clang-tidy happy
 #define opencv_distortion_param_num 4
@@ -148,7 +147,7 @@ struct HandHistory3D
 	// Index 0 is current frame, index 1 is last frame, index 2 is second to last frame.
 	// No particular reason to keep the last 5 frames. we only really only use the current and last one.
 	float handedness;
-	DiscardLastBuffer<Hand3D, 5> last_hands;
+	HistoryBuffer<Hand3D, 5> last_hands;
 	// Euro filter for 21kps.
 	m_filter_euro_vec3 filters[21];
 };
@@ -158,8 +157,8 @@ struct HandHistory2DBBox
 	m_filter_euro_vec2 m_filter_wrist;
 	m_filter_euro_vec2 m_filter_middle;
 
-	DiscardLastBuffer<xrt_vec2, 50> wrist_unfiltered;
-	DiscardLastBuffer<xrt_vec2, 50> middle_unfiltered;
+	HistoryBuffer<xrt_vec2, 50> wrist_unfiltered;
+	HistoryBuffer<xrt_vec2, 50> middle_unfiltered;
 };
 
 
