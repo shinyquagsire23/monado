@@ -41,6 +41,7 @@
 
 #include "util/u_hand_tracking.h"
 #include "util/u_logging.h"
+#include "math/m_relation_history.h"
 
 #include "math/m_predict.h"
 
@@ -126,8 +127,7 @@ struct survive_device
 	struct survive_system *sys;
 	const SurviveSimpleObject *survive_obj;
 
-	struct xrt_space_relation last_relation;
-	timepoint_ns last_relation_ts;
+	struct m_relation_history *relation_hist;
 
 	//! Number of inputs.
 	size_t num_last_inputs;
@@ -213,6 +213,7 @@ survive_device_destroy(struct xrt_device *xdev)
 		survive_simple_close(survive->sys->ctx);
 		free(survive->sys);
 	}
+	m_relation_history_destroy(&survive->relation_hist);
 
 	free(survive->last_inputs);
 	u_device_free(&survive->base);
@@ -299,20 +300,6 @@ pose_to_relation(const SurvivePose *pose, const SurviveVelocity *vel, struct xrt
 	}
 }
 
-static void
-_predict_pose(struct survive_device *survive, uint64_t at_timestamp_ns, struct xrt_space_relation *out_relation)
-{
-	timepoint_ns prediction_ns = at_timestamp_ns - survive->last_relation_ts;
-	double prediction_s = time_ns_to_s(prediction_ns);
-
-	timepoint_ns monotonic_now_ns = os_monotonic_get_ns();
-	timepoint_ns remaining_ns = at_timestamp_ns - monotonic_now_ns;
-	SURVIVE_TRACE(survive, "dev %s At %ldns: Pose requested for +%ldns (%ldns), predicting %ldns",
-	              survive->base.str, monotonic_now_ns, remaining_ns, at_timestamp_ns, prediction_ns);
-
-	m_predict_relation(&survive->last_relation, prediction_s, out_relation);
-}
-
 static bool
 verify_device_name(struct survive_device *survive, enum xrt_input_name name)
 {
@@ -344,9 +331,7 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	os_mutex_lock(&survive->sys->lock);
-	_predict_pose(survive, at_timestamp_ns, out_relation);
-	os_mutex_unlock(&survive->sys->lock);
+	m_relation_history_get(survive->relation_hist, out_relation, at_timestamp_ns);
 
 	struct xrt_pose *p = &out_relation->pose;
 	SURVIVE_TRACE(survive, "GET_POSITION (%f %f %f) GET_ORIENTATION (%f, %f, %f, %f)", p->position.x, p->position.y,
@@ -445,10 +430,15 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 	struct xrt_pose hand_on_handle_pose;
 	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
 
-	u_hand_joints_set_out_data(&survive->ctrl.hand_tracking, hand, &survive->last_relation, &hand_on_handle_pose,
-	                           out_value);
-	out_value->is_active = true; // Apparently libsurvive doesn't report controller tracked/untracked state, so just
-	                             // lie and say that the hand is being tracked
+	struct xrt_space_relation hand_relation;
+
+	m_relation_history_get(survive->relation_hist, &hand_relation, at_timestamp_ns);
+
+	u_hand_joints_set_out_data(&survive->ctrl.hand_tracking, hand, &hand_relation, &hand_on_handle_pose, out_value);
+
+	// This is a lie - apparently libsurvive doesn't report controller tracked/untracked state, so just say that the
+	// hand is being tracked
+	out_value->is_active = true;
 }
 
 static void
@@ -730,8 +720,12 @@ add_device(struct survive_system *ss, const struct SurviveSimpleConfigEvent *e);
 static void
 _process_pose_event(struct survive_device *survive, const struct SurviveSimplePoseUpdatedEvent *e)
 {
-	pose_to_relation(&e->pose, &e->velocity, &survive->last_relation);
-	survive->last_relation_ts = survive_timecode_to_monotonic(e->time);
+	struct xrt_space_relation rel;
+	timepoint_ns ts;
+	pose_to_relation(&e->pose, &e->velocity, &rel);
+	ts = survive_timecode_to_monotonic(e->time);
+	m_relation_history_push(survive->relation_hist, &rel, ts);
+
 	SURVIVE_TRACE(survive, "Process pose event for %s", survive->base.str);
 }
 
@@ -835,6 +829,8 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 	survive->base.tracking_origin = &sys->base;
 
 	SURVIVE_INFO(survive, "survive HMD present");
+	m_relation_history_create(&survive->relation_hist);
+
 
 	size_t idx = 0;
 	survive->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
@@ -1037,6 +1033,7 @@ _create_controller_device(struct survive_system *sys,
 	int outputs = 1;
 	struct survive_device *survive = U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
 	survive->ctrl.config = *config;
+	m_relation_history_create(&survive->relation_hist);
 
 	sys->controllers[idx] = survive;
 	survive->sys = sys;
