@@ -9,7 +9,9 @@
 
 #pragma once
 
+#include "os/os_threading.h"
 #include "xrt/xrt_frame.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,6 +118,66 @@ u_sink_split_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink *left,
                     struct xrt_frame_sink *right,
                     struct xrt_frame_sink **out_xfs);
+
+
+/*
+ *
+ * Debugging sink,
+ *
+ */
+
+/*!
+ * Allows more safely to debug sink inputs and outputs.
+ */
+struct u_sink_debug
+{
+	//! Is initialised/destroyed when added or root is removed.
+	struct os_mutex mutex;
+
+	// Protected by mutex, mutex must be held when frame is being pushed.
+	struct xrt_frame_sink *sink;
+};
+
+static inline void
+u_sink_debug_init(struct u_sink_debug *usd)
+{
+	os_mutex_init(&usd->mutex);
+}
+
+static inline bool
+u_sink_debug_is_active(struct u_sink_debug *usd)
+{
+	os_mutex_lock(&usd->mutex);
+	bool active = usd->sink != NULL;
+	os_mutex_unlock(&usd->mutex);
+
+	return active;
+}
+
+static inline void
+u_sink_debug_push_frame(struct u_sink_debug *usd, struct xrt_frame *xf)
+{
+	os_mutex_lock(&usd->mutex);
+	if (usd->sink != NULL) {
+		xrt_sink_push_frame(usd->sink, xf);
+	}
+	os_mutex_unlock(&usd->mutex);
+}
+
+static inline void
+u_sink_debug_set_sink(struct u_sink_debug *usd, struct xrt_frame_sink *xfs)
+{
+	os_mutex_lock(&usd->mutex);
+	usd->sink = xfs;
+	os_mutex_unlock(&usd->mutex);
+}
+
+static inline void
+u_sink_debug_destroy(struct u_sink_debug *usd)
+{
+	os_mutex_destroy(&usd->mutex);
+}
+
 
 #ifdef __cplusplus
 }
