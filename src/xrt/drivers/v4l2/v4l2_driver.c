@@ -11,6 +11,7 @@
 #include "os/os_time.h"
 
 #include "util/u_var.h"
+#include "util/u_sink.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_format.h"
@@ -123,6 +124,8 @@ struct v4l2_fs
 	struct xrt_fs base;
 
 	struct xrt_frame_node node;
+
+	struct u_sink_debug usd;
 
 	int fd;
 
@@ -705,6 +708,7 @@ v4l2_fs_destroy(struct v4l2_fs *vid)
 
 	// Stop the variable tracking.
 	u_var_remove_root(vid);
+	u_sink_debug_destroy(&vid->usd);
 
 	if (vid->descriptors != NULL) {
 		free(vid->descriptors);
@@ -785,14 +789,14 @@ v4l2_fs_create(struct xrt_frame_context *xfctx,
 	xrt_frame_context_add(xfctx, &vid->node);
 
 	// Start the variable tracking after we know what device we have.
-	// clang-format off
+	u_sink_debug_init(&vid->usd);
 	u_var_add_root(vid, "V4L2 Frameserver", true);
 	u_var_add_ro_text(vid, vid->base.name, "Card");
 	u_var_add_ro_u32(vid, &vid->ll, "Log Level");
 	for (size_t i = 0; i < vid->num_states; i++) {
 		u_var_add_i32(vid, &vid->states[i].want[0].value, vid->states[i].name);
 	}
-	// clang-format on
+	u_var_add_sink_debug(vid, &vid->usd, "Output");
 
 	v4l2_list_modes(vid);
 
@@ -937,6 +941,9 @@ v4l2_fs_mainloop(void *ptr)
 		}
 
 		vid->sink->push_frame(vid->sink, xf);
+
+		// Checks if active.
+		u_sink_debug_push_frame(&vid->usd, xf);
 
 		vid->used_frames++;
 
