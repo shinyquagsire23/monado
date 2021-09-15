@@ -166,6 +166,7 @@ draw_gst(struct gui_record_window *rw)
 	os_mutex_unlock(&rw->gst.mutex);
 
 	igComboStr("Pipeline", (int *)&rw->gst.pipeline, "SW Fast\0SW Medium\0SW Slow\0SW Veryslow\0VAAPI H264\0\0", 5);
+	igComboStr("Bitrate", (int *)&rw->gst.bitrate, "4096bps\0002048bps\0001024bps\0\0", 3);
 
 	igInputText("Filename", rw->gst.filename, sizeof(rw->gst.filename), 0, NULL, NULL);
 
