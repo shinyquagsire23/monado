@@ -55,7 +55,6 @@ vive_device_destroy(struct xrt_device *xdev)
 	os_thread_helper_destroy(&d->mainboard_thread);
 
 	// Now that the thread is not running we can destroy the lock.
-	os_mutex_destroy(&d->lock);
 
 	m_imu_3dof_close(&d->fusion);
 
@@ -76,6 +75,8 @@ vive_device_destroy(struct xrt_device *xdev)
 
 	vive_config_teardown(&d->config);
 
+	m_relation_history_destroy(&d->relation_hist);
+
 	// Remove the variable tracking.
 	u_var_remove_root(d);
 
@@ -87,25 +88,6 @@ vive_device_update_inputs(struct xrt_device *xdev)
 {
 	struct vive_device *d = vive_device(xdev);
 	VIVE_TRACE(d, "ENTER!");
-}
-
-static void
-predict_pose(struct vive_device *d, uint64_t at_timestamp_ns, struct xrt_space_relation *out_relation)
-{
-	timepoint_ns prediction_ns = at_timestamp_ns - d->imu.ts_received_ns;
-	double prediction_s = time_ns_to_s(prediction_ns);
-
-	timepoint_ns monotonic_now_ns = os_monotonic_get_ns();
-	timepoint_ns remaining_ns = at_timestamp_ns - monotonic_now_ns;
-	VIVE_TRACE(d, "dev %s At %ldns: Pose requested for +%ldns (%ldns), predicting %ldns", d->base.str,
-	           monotonic_now_ns, remaining_ns, at_timestamp_ns, prediction_ns);
-
-	//! @todo integrate position here
-	struct xrt_space_relation relation = {0};
-	relation.pose.orientation = d->rot_filtered;
-	relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
-
-	m_predict_relation(&relation, prediction_s, out_relation);
 }
 
 static void
@@ -127,9 +109,7 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 	//! @todo Use this properly.
 	(void)at_timestamp_ns;
 
-	os_mutex_lock(&d->lock);
-	predict_pose(d, at_timestamp_ns, out_relation);
-	os_mutex_unlock(&d->lock);
+	m_relation_history_get(d->relation_hist, out_relation, at_timestamp_ns);
 }
 
 static void
@@ -377,6 +357,20 @@ update_imu(struct vive_device *d, const void *buffer)
 		m_imu_3dof_update(&d->fusion, d->imu.time_ns, &acceleration, &angular_velocity);
 
 		d->rot_filtered = d->fusion.rot;
+
+		struct xrt_space_relation rel = {0};
+		rel.relation_flags =
+		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
+		rel.pose.orientation = d->rot_filtered;
+
+		// Use d->imu.ts_received_ns instead of d->imu.time_ns.
+		// d->imu.time_ns is offset by an arbitrary value (I think so we get more floating-point precision in
+		// the 3dof fusion) - so it's not what we want in the global "time-space".
+
+		// In contrast, d->imu.ts_received_ns is just "when we got the IMU timestamp" in the normal
+		// os_monotonic_get_ns() "time-space". Which is what we want. So we use it.
+
+		m_relation_history_push(d->relation_hist, &rel, d->imu.ts_received_ns);
 	}
 }
 
@@ -566,9 +560,7 @@ vive_sensors_read_one_msg(struct vive_device *d,
 		if (!_is_report_size_valid(d, ret, report_size, report_id))
 			return false;
 
-		os_mutex_lock(&d->lock);
 		process_cb(d, buffer);
-		os_mutex_unlock(&d->lock);
 
 	} else {
 		VIVE_ERROR(d, "Unexpected sensor report type %s (0x%x).", _sensors_get_report_string(buffer[0]),
@@ -739,6 +731,8 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 	struct vive_device *d = U_DEVICE_ALLOCATE(struct vive_device, flags, 1, 0);
 
+	m_relation_history_create(&d->relation_hist);
+
 	size_t idx = 0;
 	d->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
 	d->base.hmd->num_blend_modes = idx;
@@ -892,14 +886,6 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	case VIVE_UNKNOWN: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Unknown HMD (vive)"); break;
 	}
 	snprintf(d->base.serial, XRT_DEVICE_NAME_LEN, "%s", d->config.firmware.device_serial_number);
-
-	// Mutex before thread.
-	ret = os_mutex_init(&d->lock);
-	if (ret != 0) {
-		VIVE_ERROR(d, "Failed to init mutex!");
-		vive_device_destroy(&d->base);
-		return NULL;
-	}
 
 	ret = os_thread_helper_start(&d->sensors_thread, vive_sensors_run_thread, d);
 	if (ret != 0) {

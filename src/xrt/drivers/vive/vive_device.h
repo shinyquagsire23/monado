@@ -14,6 +14,8 @@
 #include "os/os_threading.h"
 #include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
+#include "math/m_relation_history.h"
+
 #include "vive/vive_config.h"
 
 #include "vive_lighthouse.h"
@@ -38,9 +40,6 @@ struct vive_device
 	struct os_thread_helper watchman_thread;
 	struct os_thread_helper mainboard_thread;
 
-	//! Lock for last and fusion.
-	struct os_mutex lock;
-
 	struct
 	{
 		uint64_t time_ns;
@@ -60,6 +59,7 @@ struct vive_device
 	} board;
 
 	struct xrt_quat rot_filtered;
+	struct m_relation_history *relation_hist;
 
 	enum u_logging_level ll;
 	bool disconnect_notified;
