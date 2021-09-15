@@ -10,6 +10,7 @@
 #include "m_api.h"
 #include "m_vec3.h"
 #include "m_predict.h"
+#include "util/u_trace_marker.h"
 
 
 static void
@@ -104,6 +105,7 @@ do_position(const struct xrt_space_relation *rel,
 void
 m_predict_relation(const struct xrt_space_relation *rel, double delta_s, struct xrt_space_relation *out_rel)
 {
+	XRT_TRACE_MARKER();
 	enum xrt_space_relation_flags flags = rel->relation_flags;
 
 	do_orientation(rel, flags, delta_s, out_rel);
