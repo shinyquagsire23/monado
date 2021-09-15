@@ -26,6 +26,8 @@
 #include "util/u_json.h"
 #include "util/u_config_json.h"
 
+#include "math/m_relation_history.h"
+
 #include <librealsense2/rs.h>
 #include <librealsense2/h/rs_pipeline.h>
 #include <librealsense2/h/rs_option.h>
@@ -51,8 +53,7 @@ struct rs_6dof
 {
 	struct xrt_device base;
 
-	uint64_t relation_timestamp_ns;
-	struct xrt_space_relation relation;
+	struct m_relation_history *relation_hist;
 
 	struct os_thread_helper oth;
 
@@ -234,7 +235,7 @@ process_frame(struct rs_6dof *rs, rs2_frame *frame)
 	}
 #endif
 
-	double timestamp_miliseconds = rs2_get_frame_timestamp(frame, &e);
+	double timestamp_milliseconds = rs2_get_frame_timestamp(frame, &e);
 	if (check_error(rs, e) != 0) {
 		return;
 	}
@@ -242,7 +243,7 @@ process_frame(struct rs_6dof *rs, rs2_frame *frame)
 	// Close enough
 	uint64_t now_real_ns = os_realtime_get_ns();
 	uint64_t now_monotonic_ns = os_monotonic_get_ns();
-	uint64_t timestamp_ns = (uint64_t)(timestamp_miliseconds * 1000.0 * 1000.0);
+	uint64_t timestamp_ns = (uint64_t)(timestamp_milliseconds * 1000.0 * 1000.0);
 
 	// How far in the past is it?
 	uint64_t diff_ns = now_real_ns - timestamp_ns;
@@ -254,31 +255,27 @@ process_frame(struct rs_6dof *rs, rs2_frame *frame)
 	 * Transfer the data to the struct.
 	 */
 
-	// Re-use the thread lock for the data.
-	os_thread_helper_lock(&rs->oth);
-
-	// clang-format off
-	// Timestamp
-	rs->relation_timestamp_ns = timestamp_ns;
+	struct xrt_space_relation relation;
 
 	// Rotation/angular
-	rs->relation.pose.orientation.x = camera_pose.rotation.x;
-	rs->relation.pose.orientation.y = camera_pose.rotation.y;
-	rs->relation.pose.orientation.z = camera_pose.rotation.z;
-	rs->relation.pose.orientation.w = camera_pose.rotation.w;
-	rs->relation.angular_velocity.x = camera_pose.angular_velocity.x;
-	rs->relation.angular_velocity.y = camera_pose.angular_velocity.y;
-	rs->relation.angular_velocity.z = camera_pose.angular_velocity.z;
+	relation.pose.orientation.x = camera_pose.rotation.x;
+	relation.pose.orientation.y = camera_pose.rotation.y;
+	relation.pose.orientation.z = camera_pose.rotation.z;
+	relation.pose.orientation.w = camera_pose.rotation.w;
+	relation.angular_velocity.x = camera_pose.angular_velocity.x;
+	relation.angular_velocity.y = camera_pose.angular_velocity.y;
+	relation.angular_velocity.z = camera_pose.angular_velocity.z;
 
 	// Position/linear
-	rs->relation.pose.position.x = camera_pose.translation.x;
-	rs->relation.pose.position.y = camera_pose.translation.y;
-	rs->relation.pose.position.z = camera_pose.translation.z;
-	rs->relation.linear_velocity.x = camera_pose.velocity.x;
-	rs->relation.linear_velocity.y = camera_pose.velocity.y;
-	rs->relation.linear_velocity.z = camera_pose.velocity.z;
+	relation.pose.position.x = camera_pose.translation.x;
+	relation.pose.position.y = camera_pose.translation.y;
+	relation.pose.position.z = camera_pose.translation.z;
+	relation.linear_velocity.x = camera_pose.velocity.x;
+	relation.linear_velocity.y = camera_pose.velocity.y;
+	relation.linear_velocity.z = camera_pose.velocity.z;
 
-	rs->relation.relation_flags =
+	// clang-format off
+	relation.relation_flags =
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 	    XRT_SPACE_RELATION_POSITION_VALID_BIT |
 	    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT |
@@ -287,8 +284,7 @@ process_frame(struct rs_6dof *rs, rs2_frame *frame)
 	    XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
 	// clang-format on
 
-	// Re-use the thread lock for the data.
-	os_thread_helper_unlock(&rs->oth);
+	m_relation_history_push(rs->relation_hist, &relation, timestamp_ns);
 }
 
 static int
@@ -413,21 +409,9 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	os_thread_helper_lock(&rs->oth);
-	struct xrt_space_relation relation_not_predicted = rs->relation;
-	uint64_t relation_timestamp_ns = rs->relation_timestamp_ns;
-	os_thread_helper_unlock(&rs->oth);
-
-	int64_t diff_prediction_ns = 0;
-	diff_prediction_ns = at_timestamp_ns - relation_timestamp_ns;
-
-	double delta_s = time_ns_to_s(diff_prediction_ns);
-	if (rs->enable_pose_prediction) {
-		m_predict_relation(&relation_not_predicted, delta_s, out_relation);
-	} else {
-		*out_relation = relation_not_predicted;
-	}
+	m_relation_history_get(rs->relation_hist, out_relation, at_timestamp_ns);
 }
+
 static void
 rs_6dof_get_view_pose(struct xrt_device *xdev,
                       const struct xrt_vec3 *eye_relation,
@@ -462,6 +446,8 @@ rs_6dof_create(void)
 {
 	struct rs_6dof *rs = U_DEVICE_ALLOCATE(struct rs_6dof, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
 
+	m_relation_history_create(&rs->relation_hist);
+
 	rs->enable_mapping = true;
 	rs->enable_pose_jumping = true;
 	rs->enable_relocalization = true;
@@ -481,8 +467,6 @@ rs_6dof_create(void)
 	rs->base.get_view_pose = rs_6dof_get_view_pose;
 	rs->base.destroy = rs_6dof_destroy;
 	rs->base.name = XRT_DEVICE_REALSENSE;
-	rs->relation.pose.orientation.w = 1.0f; // All other values set to zero.
-
 	rs->base.tracking_origin->type = XRT_TRACKING_TYPE_EXTERNAL_SLAM;
 
 	// Print name.
