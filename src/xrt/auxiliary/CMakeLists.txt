@@ -36,6 +36,8 @@ set(MATH_SOURCE_FILES
 	math/m_predict.c
 	math/m_predict.h
 	math/m_quatexpmap.cpp
+	math/m_relation_history.h
+	math/m_relation_history.cpp
 	math/m_space.cpp
 	math/m_space.h
 	math/m_vec2.h
