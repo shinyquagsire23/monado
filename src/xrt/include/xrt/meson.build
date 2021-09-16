@@ -104,7 +104,7 @@ if libbsd.found() and not get_option('libbsd').disabled()
 	have_conf.set('XRT_HAVE_LIBBSD', true)
 endif
 
-if slam.found()
+if slam.found() and build_tracking
 	have_conf.set('XRT_HAVE_SLAM', true)
 	if slam.name() == 'kimera_vio'
 		have_conf.set('XRT_HAVE_KIMERA_SLAM', true)
