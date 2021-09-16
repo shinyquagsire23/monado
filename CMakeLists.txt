@@ -204,7 +204,7 @@ cmake_dependent_option(XRT_HAVE_SYSTEM_CJSON "Enable cJSON from system, instead 
 cmake_dependent_option(XRT_HAVE_GST "Enable gstreamer" ON "GST_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_PERCETTO "Enable percetto support" ON "PERCETTO_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_ONNXRUNTIME "Enable ONNX runtime support" ON "ONNXRUNTIME_FOUND" OFF)
-cmake_dependent_option(XRT_HAVE_SLAM "Enable SLAM tracking support" ON "SLAM" OFF)
+cmake_dependent_option(XRT_HAVE_SLAM "Enable SLAM tracking support" ON "SLAM;XRT_HAVE_OPENCV" OFF)
 cmake_dependent_option(XRT_HAVE_KIMERA_SLAM "Enable Kimera support" ON "kimera_vio_FOUND" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_PSVR "Enable PSVR HMD driver" ON "HIDAPI_FOUND" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_RS "Enable RealSense device driver" ON "realsense2_FOUND" OFF)
