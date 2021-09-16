@@ -217,7 +217,7 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 	if(XRT_HAVE_WAYLAND)
 		target_include_directories(comp_main SYSTEM PRIVATE ${WL_PROTOS_DIR})
 		target_link_libraries(comp_main PRIVATE
-			${WAYLAND_DEPS}
+			${WAYLAND_DEPS} ${WAYLAND_LIBRARIES}
 		)
 	endif()
 	if(XRT_HAVE_XCB)
