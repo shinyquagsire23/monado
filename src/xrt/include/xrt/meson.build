@@ -111,6 +111,14 @@ if slam.found() and build_tracking
 	endif
 endif
 
+if build_wayland
+	have_conf.set('XRT_HAVE_WAYLAND', true)
+endif
+
+if build_wayland_direct
+	have_conf.set('XRT_HAVE_WAYLAND_DIRECT', true)
+endif
+
 xrt_config_have_h = configure_file(
 	output: 'xrt_config_have.h',
 	configuration: have_conf,
