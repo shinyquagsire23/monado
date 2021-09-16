@@ -53,7 +53,7 @@ using cv::UMatUsageFlags;
 #define USING_OPENCV_3_3_1 (CV_VERSION_MAJOR == 3 && CV_VERSION_MINOR == 3 && CV_VERSION_REVISION == 1)
 
 #if defined(XRT_HAVE_KIMERA_SLAM) && !USING_OPENCV_3_3_1
-#error "Kimera-VIO uses OpenCV 3.3.1, use that to prevent conflicts"
+#warning "Kimera-VIO uses OpenCV 3.3.1, use that to prevent conflicts"
 #endif
 
 // TODO: These defs should make OpenCV 4 work but it wasn't tested against a
