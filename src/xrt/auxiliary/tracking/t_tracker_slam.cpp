@@ -313,8 +313,14 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 
 	t.base.get_tracked_pose = t_slam_get_tracked_pose;
 
-	std::string config_file = debug_get_option_slam_config();
-	t.slam = new slam_tracker{config_file};
+	const char *config_file = debug_get_option_slam_config();
+	if (!config_file) {
+		SLAM_ERROR("SLAM tracker requires a config file set with the SLAM_CONFIG environment variable");
+		return 0;
+	}
+
+	std::string config_file_string = std::string(config_file);
+	t.slam = new slam_tracker{config_file_string};
 
 	t.left_sink.push_frame = t_slam_frame_sink_push_left;
 	t.right_sink.push_frame = t_slam_frame_sink_push_right;
