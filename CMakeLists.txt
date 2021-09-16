@@ -147,7 +147,7 @@ option(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" OFF)
 
 cmake_dependent_option(CMAKE_INTERPROCEDURAL_OPTIMIZATION "Enable inter-procedural (link-time) optimization" OFF "HAS_IPO" OFF)
 cmake_dependent_option(XRT_HAVE_WAYLAND "Enable Wayland support" ON "WAYLAND_FOUND AND WAYLAND_SCANNER_FOUND AND WAYLAND_PROTOCOLS_FOUND AND LIBDRM_FOUND" OFF)
-cmake_dependent_option(XRT_HAVE_WAYLAND_DIRECT "Enable Wayland direct support" ON "XRT_HAVE_WAYLAND AND LIBDRM_FOUND AND WAYLAND_PROTOCOLS_VERSION VERSION_GREATER_EQUAL 1,22" OFF)
+cmake_dependent_option(XRT_HAVE_WAYLAND_DIRECT "Enable Wayland direct support" ON "XRT_HAVE_WAYLAND AND LIBDRM_FOUND AND WAYLAND_PROTOCOLS_VERSION VERSION_GREATER_EQUAL 1.22" OFF)
 cmake_dependent_option(XRT_HAVE_XLIB "Enable xlib support" ON "X11_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_XRANDR "Enable xlib-xrandr support" ON "XRANDR_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_XCB "Enable xcb support" ON "XCB_FOUND" OFF)
