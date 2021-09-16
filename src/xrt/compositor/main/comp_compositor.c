@@ -688,7 +688,9 @@ static const char *instance_extensions_direct_wayland[] = {
     VK_KHR_DISPLAY_EXTENSION_NAME,
     VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
     VK_EXT_DIRECT_MODE_DISPLAY_EXTENSION_NAME,
+#ifdef VK_EXT_acquire_drm_display
     VK_EXT_ACQUIRE_DRM_DISPLAY_EXTENSION_NAME,
+#endif
 };
 #endif
 
