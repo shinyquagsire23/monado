@@ -42,6 +42,7 @@
  */
 
 #include "xrt/xrt_gfx_native.h"
+#include "xrt/xrt_config_have.h"
 
 #include "os/os_time.h"
 
@@ -1207,11 +1208,13 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 
 	switch (c->settings.window_type) {
 	case WINDOW_AUTO:
-#ifdef VK_USE_PLATFORM_WAYLAND_KHR
+#if defined VK_USE_PLATFORM_WAYLAND_KHR && defined XRT_HAVE_WAYLAND_DIRECT
 		if (compositor_try_window(c, comp_window_direct_wayland_create(c))) {
 			c->settings.window_type = WINDOW_DIRECT_WAYLAND;
 			return true;
 		}
+#endif
+#ifdef VK_USE_PLATFORM_WAYLAND_KHR
 		if (compositor_try_window(c, comp_window_wayland_create(c))) {
 			c->settings.window_type = WINDOW_WAYLAND;
 			return true;
@@ -1262,7 +1265,7 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 #endif
 		break;
 	case WINDOW_DIRECT_WAYLAND:
-#ifdef VK_USE_PLATFORM_WAYLAND_KHR
+#if defined VK_USE_PLATFORM_WAYLAND_KHR && defined XRT_HAVE_WAYLAND_DIRECT
 		compositor_try_window(c, comp_window_direct_wayland_create(c));
 #else
 		COMP_ERROR(c, "Wayland direct support not compiled in!");
