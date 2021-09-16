@@ -30,10 +30,18 @@
 
 #include "gui_common.h"
 #include "gui_imgui.h"
+#include "gui_window_record.h"
 
 #include "imgui_monado/cimgui_monado.h"
 
 #include <float.h>
+
+struct debug_record
+{
+	void *ptr;
+
+	struct gui_record_window rw;
+};
 
 /*!
  * A GUI scene showing the variable tracking provided by @ref util/u_var.h
@@ -43,6 +51,15 @@ struct debug_scene
 {
 	struct gui_scene base;
 	struct xrt_frame_context *xfctx;
+
+	struct debug_record recs[32];
+	uint32_t num_recrs;
+};
+
+struct priv_tuple
+{
+	struct gui_program *p;
+	struct debug_scene *ds;
 };
 
 
@@ -97,6 +114,7 @@ handle_draggable_quat(const char *name, struct xrt_quat *q)
 struct draw_state
 {
 	struct gui_program *p;
+	struct debug_scene *ds;
 	bool hidden;
 };
 
@@ -204,6 +222,24 @@ on_sink_var(const char *name, void *ptr, struct gui_program *p)
 		ImVec4 white = {1, 1, 1, 1};
 		ImTextureID id = (ImTextureID)(intptr_t)tex->id;
 		igImage(id, size, uv0, uv1, white, white);
+	}
+}
+
+static void
+on_sink_debug_var(const char *name, void *ptr, struct gui_program *p, struct debug_scene *ds)
+{
+	for (size_t i = 0; i < ARRAY_SIZE(ds->recs); i++) {
+		struct debug_record *dr = &ds->recs[i];
+
+		if ((ptrdiff_t)dr->ptr != (ptrdiff_t)ptr) {
+			continue;
+		}
+
+		if (!igCollapsingHeaderBoolPtr(name, NULL, 0)) {
+			continue;
+		}
+
+		gui_window_record_render(&dr->rw, p);
 	}
 }
 
@@ -358,6 +394,7 @@ on_elem(struct u_var_info *info, void *priv)
 		break;
 	}
 	case U_VAR_KIND_SINK: on_sink_var(name, ptr, state->p); break;
+	case U_VAR_KIND_SINK_DEBUG: on_sink_debug_var(name, ptr, state->p, state->ds); break;
 	case U_VAR_KIND_BUTTON: on_button_var(name, ptr); break;
 	default: igLabelText(name, "Unknown tag '%i'", kind); break;
 	}
@@ -370,29 +407,6 @@ on_root_exit(const char *name, void *priv)
 	state->hidden = false;
 
 	igEnd();
-}
-
-static void
-scene_render(struct gui_scene *scene, struct gui_program *p)
-{
-	struct debug_scene *ds = (struct debug_scene *)scene;
-	(void)ds;
-	struct draw_state state = {p, false};
-
-	u_var_visit(on_root_enter, on_root_exit, on_elem, &state);
-}
-
-static void
-scene_destroy(struct gui_scene *scene, struct gui_program *p)
-{
-	struct debug_scene *ds = (struct debug_scene *)scene;
-
-	if (ds->xfctx != NULL) {
-		xrt_frame_context_destroy_nodes(ds->xfctx);
-		ds->xfctx = NULL;
-	}
-
-	free(ds);
 }
 
 
@@ -412,7 +426,7 @@ on_elem_sink(struct u_var_info *info, void *priv)
 	const char *name = info->name;
 	void *ptr = info->ptr;
 	enum u_var_kind kind = info->kind;
-	struct gui_program *p = (struct gui_program *)priv;
+	struct gui_program *p = ((struct priv_tuple *)priv)->p;
 
 	if (kind != U_VAR_KIND_SINK) {
 		return;
@@ -439,8 +453,80 @@ on_elem_sink(struct u_var_info *info, void *priv)
 }
 
 static void
+on_elem_sink_debug_add(struct u_var_info *info, void *priv)
+{
+	void *ptr = info->ptr;
+	enum u_var_kind kind = info->kind;
+	struct gui_program *p = ((struct priv_tuple *)priv)->p;
+
+	if (kind != U_VAR_KIND_SINK_DEBUG) {
+		return;
+	}
+
+	if (p->xp == NULL || p->xp->tracking == NULL) {
+		return;
+	}
+
+	struct u_sink_debug *usd = (struct u_sink_debug *)ptr;
+	struct debug_scene *ds = ((struct priv_tuple *)priv)->ds;
+	struct debug_record *dr = &ds->recs[ds->num_recrs++];
+
+	dr->ptr = ptr;
+
+	gui_window_record_init(&dr->rw);
+	u_sink_debug_set_sink(usd, &dr->rw.sink);
+}
+
+static void
+on_elem_sink_debug_remove(struct u_var_info *info, void *priv)
+{
+	void *ptr = info->ptr;
+	enum u_var_kind kind = info->kind;
+
+	if (kind != U_VAR_KIND_SINK_DEBUG) {
+		return;
+	}
+
+	struct u_sink_debug *usd = (struct u_sink_debug *)ptr;
+	u_sink_debug_set_sink(usd, NULL);
+}
+
+static void
 on_root_exit_sink(const char *name, void *priv)
 {}
+
+
+/*
+ *
+ * Scene functions.
+ *
+ */
+
+static void
+scene_render(struct gui_scene *scene, struct gui_program *p)
+{
+	struct debug_scene *ds = (struct debug_scene *)scene;
+	struct draw_state state = {p, ds, false};
+
+	u_var_visit(on_root_enter, on_root_exit, on_elem, &state);
+}
+
+static void
+scene_destroy(struct gui_scene *scene, struct gui_program *p)
+{
+	struct debug_scene *ds = (struct debug_scene *)scene;
+
+	// Remove the sink interceptors.
+	struct priv_tuple pt = {p, ds};
+	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink_debug_remove, &pt);
+
+	if (ds->xfctx != NULL) {
+		xrt_frame_context_destroy_nodes(ds->xfctx);
+		ds->xfctx = NULL;
+	}
+
+	free(ds);
+}
 
 
 /*
@@ -460,5 +546,7 @@ gui_scene_debug(struct gui_program *p)
 	gui_scene_push_front(p, &ds->base);
 
 	// Create the sink interceptors.
-	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink, p);
+	struct priv_tuple pt = {p, ds};
+	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink_debug_add, &pt);
+	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink, &pt);
 }
