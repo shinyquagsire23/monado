@@ -683,8 +683,10 @@ euroc_player_setup_gui(struct euroc_player *ep)
 	u_var_add_gui_header(ep, NULL, "Streams");
 	u_var_add_ro_ff_vec3_f32(ep, ep->gyro_ff, "Gyroscope");
 	u_var_add_ro_ff_vec3_f32(ep, ep->accel_ff, "Accelerometer");
+#if 0
 	u_var_add_sink(ep, &ep->in_sinks.left, "Left Camera");
 	u_var_add_sink(ep, &ep->in_sinks.right, "Right Camera");
+#endif
 }
 
 // Euroc driver creation
