@@ -22,12 +22,12 @@ extern "C" {
  */
 
 /*!
- * Create a RelaseSense 6DOF tracker device.
+ * Create a RealSense device tracked with device-SLAM (T26x).
  *
  * @ingroup drv_rs
  */
 struct xrt_device *
-rs_6dof_create(void);
+rs_ddev_create(void);
 
 /*!
  * Create a auto prober for rs devices.

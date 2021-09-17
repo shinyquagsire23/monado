@@ -5,7 +5,7 @@
 		"tracking_overrides": [
 			{
 				"target_device_serial": "North Star",
-				"tracker_device_serial": "Intel RealSense 6-DOF",
+				"tracker_device_serial": "Intel RealSense Device-SLAM",
 				"type": "direct",
 				"offset": {
 					"orientation": {
@@ -24,7 +24,7 @@
 			},
 			{
 				"target_device_serial": "Leap Motion v2 driver",
-				"tracker_device_serial": "Intel RealSense 6-DOF",
+				"tracker_device_serial": "Intel RealSense Device-SLAM",
 				"type": "attached",
 				"offset": {
 					"orientation": {

@@ -142,7 +142,7 @@ lib_drv_psvr = static_library(
 lib_drv_rs = static_library(
 	'drv_rs',
 	files(
-		'realsense/rs_6dof.c',
+		'realsense/rs_ddev.c',
 		'realsense/rs_interface.h',
 		'realsense/rs_prober.c',
 	),

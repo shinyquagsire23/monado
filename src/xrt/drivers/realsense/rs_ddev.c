@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  RealSense helper driver for 6DOF tracking.
+ * @brief  RealSense helper driver for in-device SLAM 6DOF tracking.
  * @author Moses Turner <mosesturner@protonmail.com>
  * @author Nova King <technobaboo@gmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
@@ -15,6 +15,7 @@
 #include "math/m_api.h"
 #include "math/m_space.h"
 #include "math/m_predict.h"
+#include "math/m_relation_history.h"
 
 #include "os/os_time.h"
 #include "os/os_threading.h"
@@ -25,8 +26,6 @@
 
 #include "util/u_json.h"
 #include "util/u_config_json.h"
-
-#include "math/m_relation_history.h"
 
 #include <librealsense2/rs.h>
 #include <librealsense2/h/rs_pipeline.h>
@@ -47,9 +46,11 @@
 	        pose.orientation.y, pose.orientation.z, pose.orientation.w)
 
 /*!
+ * Device-SLAM tracked RealSense device (T26X series).
+ *
  * @implements xrt_device
  */
-struct rs_6dof
+struct rs_ddev
 {
 	struct xrt_device base;
 
@@ -61,7 +62,7 @@ struct rs_6dof
 	bool enable_pose_jumping;
 	bool enable_relocalization;
 	bool enable_pose_prediction;
-	bool enable_pose_filtering; // Forward compatibility for when that 1-euro filter is working
+	bool enable_pose_filtering; //!< Forward compatibility for when that 1-euro filter is working
 
 	rs2_context *ctx;
 	rs2_pipeline *pipe;
@@ -71,19 +72,19 @@ struct rs_6dof
 
 
 /*!
- * Helper to convert a xdev to a @ref rs_6dof.
+ * Helper to convert a xdev to a @ref rs_ddev.
  */
-static inline struct rs_6dof *
-rs_6dof(struct xrt_device *xdev)
+static inline struct rs_ddev *
+rs_ddev(struct xrt_device *xdev)
 {
-	return (struct rs_6dof *)xdev;
+	return (struct rs_ddev *)xdev;
 }
 
 /*!
  * Simple helper to check and print error messages.
  */
 static int
-check_error(struct rs_6dof *rs, rs2_error *e)
+check_error(struct rs_ddev *rs, rs2_error *e)
 {
 	if (e == NULL) {
 		return 0;
@@ -99,7 +100,7 @@ check_error(struct rs_6dof *rs, rs2_error *e)
  * Frees all RealSense resources.
  */
 static void
-close_6dof(struct rs_6dof *rs)
+close_ddev(struct rs_ddev *rs)
 {
 	if (rs->config) {
 		rs2_delete_config(rs->config);
@@ -126,7 +127,7 @@ close_6dof(struct rs_6dof *rs)
 #define CHECK_RS2()                                                                                                    \
 	do {                                                                                                           \
 		if (check_error(rs, e) != 0) {                                                                         \
-			close_6dof(rs);                                                                                \
+			close_ddev(rs);                                                                                \
 			return 1;                                                                                      \
 		}                                                                                                      \
 	} while (0)
@@ -136,7 +137,7 @@ close_6dof(struct rs_6dof *rs)
  * Create all RealSense resources needed for 6DOF tracking.
  */
 static int
-create_6dof(struct rs_6dof *rs)
+create_ddev(struct rs_ddev *rs)
 {
 	assert(rs != NULL);
 	rs2_error *e = NULL;
@@ -154,7 +155,7 @@ create_6dof(struct rs_6dof *rs)
 
 	U_LOG_D("There are %d connected RealSense devices.", dev_count);
 	if (0 == dev_count) {
-		close_6dof(rs);
+		close_ddev(rs);
 		return 1;
 	}
 
@@ -183,6 +184,7 @@ create_6dof(struct rs_6dof *rs)
 	rs2_sensor_list *sensors = rs2_query_sensors(cameras, &e);
 	CHECK_RS2();
 
+	//! @todo 0 index hardcoded, check device with RS2_EXTENSION_POSE_SENSOR or similar instead
 	rs2_sensor *sensor = rs2_create_sensor(sensors, 0, &e);
 	CHECK_RS2();
 
@@ -190,9 +192,8 @@ create_6dof(struct rs_6dof *rs)
 	CHECK_RS2();
 
 	if (rs->enable_mapping) {
-		// Neither of these options mean anything if mapping is off; in fact it errors out
-		// if we mess with these
-		// with mapping off
+		// Neither of these options mean anything if mapping is off; in fact it
+		// errors out if we mess with these with mapping off
 		rs2_set_option((rs2_options *)sensor, RS2_OPTION_ENABLE_RELOCALIZATION,
 		               rs->enable_relocalization ? 1.0f : 0.0f, &e);
 		CHECK_RS2();
@@ -205,6 +206,9 @@ create_6dof(struct rs_6dof *rs)
 	rs->profile = rs2_pipeline_start_with_config(rs->pipe, rs->config, &e);
 	CHECK_RS2();
 
+	rs2_delete_sensor(sensor);
+	rs2_delete_sensor_list(sensors);
+
 	return 0;
 }
 
@@ -212,7 +216,7 @@ create_6dof(struct rs_6dof *rs)
  * Process a frame as 6DOF data, does not assume ownership of the frame.
  */
 static void
-process_frame(struct rs_6dof *rs, rs2_frame *frame)
+process_frame(struct rs_ddev *rs, rs2_frame *frame)
 {
 	rs2_error *e = NULL;
 	int ret = 0;
@@ -288,7 +292,7 @@ process_frame(struct rs_6dof *rs, rs2_frame *frame)
 }
 
 static int
-update(struct rs_6dof *rs)
+update(struct rs_ddev *rs)
 {
 	rs2_frame *frames;
 	rs2_error *e = NULL;
@@ -323,7 +327,7 @@ update(struct rs_6dof *rs)
 static void *
 rs_run_thread(void *ptr)
 {
-	struct rs_6dof *rs = (struct rs_6dof *)ptr;
+	struct rs_ddev *rs = (struct rs_ddev *)ptr;
 
 	os_thread_helper_lock(&rs->oth);
 
@@ -341,7 +345,7 @@ rs_run_thread(void *ptr)
 }
 
 static bool
-load_config(struct rs_6dof *rs)
+load_config(struct rs_ddev *rs)
 {
 	struct u_config_json config_json = {0};
 
@@ -350,7 +354,7 @@ load_config(struct rs_6dof *rs)
 		return false;
 	}
 
-	const cJSON *realsense_config_json = u_json_get(config_json.root, "config_realsense");
+	const cJSON *realsense_config_json = u_json_get(config_json.root, "config_realsense_ddev");
 	if (realsense_config_json == NULL) {
 		return false;
 	}
@@ -391,18 +395,18 @@ load_config(struct rs_6dof *rs)
  */
 
 static void
-rs_6dof_update_inputs(struct xrt_device *xdev)
+rs_ddev_update_inputs(struct xrt_device *xdev)
 {
 	// Empty
 }
 
 static void
-rs_6dof_get_tracked_pose(struct xrt_device *xdev,
+rs_ddev_get_tracked_pose(struct xrt_device *xdev,
                          enum xrt_input_name name,
                          uint64_t at_timestamp_ns,
                          struct xrt_space_relation *out_relation)
 {
-	struct rs_6dof *rs = rs_6dof(xdev);
+	struct rs_ddev *rs = rs_ddev(xdev);
 
 	if (name != XRT_INPUT_GENERIC_TRACKER_POSE) {
 		U_LOG_E("unknown input name");
@@ -413,7 +417,7 @@ rs_6dof_get_tracked_pose(struct xrt_device *xdev,
 }
 
 static void
-rs_6dof_get_view_pose(struct xrt_device *xdev,
+rs_ddev_get_view_pose(struct xrt_device *xdev,
                       const struct xrt_vec3 *eye_relation,
                       uint32_t view_index,
                       struct xrt_pose *out_pose)
@@ -422,14 +426,14 @@ rs_6dof_get_view_pose(struct xrt_device *xdev,
 }
 
 static void
-rs_6dof_destroy(struct xrt_device *xdev)
+rs_ddev_destroy(struct xrt_device *xdev)
 {
-	struct rs_6dof *rs = rs_6dof(xdev);
+	struct rs_ddev *rs = rs_ddev(xdev);
 
 	// Destroy the thread object.
 	os_thread_helper_destroy(&rs->oth);
 
-	close_6dof(rs);
+	close_ddev(rs);
 
 	free(rs);
 }
@@ -442,9 +446,9 @@ rs_6dof_destroy(struct xrt_device *xdev)
  */
 
 struct xrt_device *
-rs_6dof_create(void)
+rs_ddev_create(void)
 {
-	struct rs_6dof *rs = U_DEVICE_ALLOCATE(struct rs_6dof, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
+	struct rs_ddev *rs = U_DEVICE_ALLOCATE(struct rs_ddev, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
 
 	m_relation_history_create(&rs->relation_hist);
 
@@ -462,16 +466,16 @@ rs_6dof_create(void)
 
 	U_LOG_D("Realsense opts are %i %i %i %i %i\n", rs->enable_mapping, rs->enable_pose_jumping,
 	        rs->enable_relocalization, rs->enable_pose_prediction, rs->enable_pose_filtering);
-	rs->base.update_inputs = rs_6dof_update_inputs;
-	rs->base.get_tracked_pose = rs_6dof_get_tracked_pose;
-	rs->base.get_view_pose = rs_6dof_get_view_pose;
-	rs->base.destroy = rs_6dof_destroy;
+	rs->base.update_inputs = rs_ddev_update_inputs;
+	rs->base.get_tracked_pose = rs_ddev_get_tracked_pose;
+	rs->base.get_view_pose = rs_ddev_get_view_pose;
+	rs->base.destroy = rs_ddev_destroy;
 	rs->base.name = XRT_DEVICE_REALSENSE;
 	rs->base.tracking_origin->type = XRT_TRACKING_TYPE_EXTERNAL_SLAM;
 
 	// Print name.
-	snprintf(rs->base.str, XRT_DEVICE_NAME_LEN, "Intel RealSense 6-DOF");
-	snprintf(rs->base.serial, XRT_DEVICE_NAME_LEN, "Intel RealSense 6-DOF");
+	snprintf(rs->base.str, XRT_DEVICE_NAME_LEN, "Intel RealSense Device-SLAM");
+	snprintf(rs->base.serial, XRT_DEVICE_NAME_LEN, "Intel RealSense Device-SLAM");
 
 	rs->base.inputs[0].name = XRT_INPUT_GENERIC_TRACKER_POSE;
 
@@ -483,20 +487,20 @@ rs_6dof_create(void)
 	ret = os_thread_helper_init(&rs->oth);
 	if (ret != 0) {
 		U_LOG_E("Failed to init threading!");
-		rs_6dof_destroy(&rs->base);
+		rs_ddev_destroy(&rs->base);
 		return NULL;
 	}
 
-	ret = create_6dof(rs);
+	ret = create_ddev(rs);
 	if (ret != 0) {
-		rs_6dof_destroy(&rs->base);
+		rs_ddev_destroy(&rs->base);
 		return NULL;
 	}
 
 	ret = os_thread_helper_start(&rs->oth, rs_run_thread, rs);
 	if (ret != 0) {
 		U_LOG_E("Failed to start thread!");
-		rs_6dof_destroy(&rs->base);
+		rs_ddev_destroy(&rs->base);
 		return NULL;
 	}
 

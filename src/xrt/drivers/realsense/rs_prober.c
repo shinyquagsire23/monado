@@ -53,7 +53,7 @@ rs_prober_autoprobe(struct xrt_auto_prober *xap,
 	struct rs_prober *dp = rs_prober(xap);
 	(void)dp;
 
-	struct xrt_device *dev = rs_6dof_create();
+	struct xrt_device *dev = rs_ddev_create();
 	if (!dev) {
 		return 0;
 	}
