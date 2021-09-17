@@ -56,8 +56,8 @@ using cv::UMatUsageFlags;
 #warning "Kimera-VIO uses OpenCV 3.3.1, use that to prevent conflicts"
 #endif
 
-// TODO: These defs should make OpenCV 4 work but it wasn't tested against a
-// SLAM system that supports that version yet
+//! @todo These defs should make OpenCV 4 work but it wasn't tested against a
+//! SLAM system that supports that version yet.
 #if CV_VERSION_MAJOR < 4
 #define ACCESS_RW 0
 typedef int AccessFlag;
@@ -174,8 +174,8 @@ extern "C" void
 t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
 	auto &t = *container_of(sink, TrackerSlam, imu_sink);
-	// TODO: There are many conversions like these between xrt and
-	// slam_tracker.hpp types. Implement a casting mechanism to avoid copies.
+	//! @todo There are many conversions like these between xrt and
+	//! slam_tracker.hpp types. Implement a casting mechanism to avoid copies.
 	imu_sample sample{s->timestamp, s->ax, s->ay, s->az, s->wx, s->wy, s->wz};
 	t.slam->push_imu_sample(sample);
 	SLAM_TRACE("imu t=%ld a=[%f,%f,%f] w=[%f,%f,%f]", s->timestamp, s->ax, s->ay, s->az, s->wx, s->wy, s->wz);

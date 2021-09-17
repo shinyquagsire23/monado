@@ -28,9 +28,6 @@
 	} while (false);
 #define EUROC_ASSERT_(predicate) EUROC_ASSERT(predicate, "Assertion failed " #predicate)
 
-DEBUG_GET_ONCE_LOG_OPTION(euroc_log, "EUROC_LOG", U_LOGGING_WARN)
-DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,6 +36,9 @@ extern "C" {
  * @addtogroup drv_euroc
  * @{
  */
+
+DEBUG_GET_ONCE_LOG_OPTION(euroc_log, "EUROC_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
 
 /*!
  * @}

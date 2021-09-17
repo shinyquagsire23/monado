@@ -320,8 +320,8 @@ euroc_player_load_next_frame(struct euroc_player *ep, bool is_left, struct xrt_f
 	// Create xrt_frame, it will be freed by FrameMat destructor
 	EUROC_ASSERT(xf == NULL || xf->reference.count > 0, "Must be given a valid or NULL frame ptr");
 	EUROC_ASSERT(timestamp > 0, "Unexpected negative timestamp");
-	// TODO: Not using xrt_stereo_format because we use two sinks. It would be
-	// better to refactor everything to use stereo frames instead.
+	//! @todo Not using xrt_stereo_format because we use two sinks. It would
+	//! probably be better to refactor everything to use stereo frames instead.
 	FrameMat::Params params{XRT_STEREO_FORMAT_NONE, static_cast<uint64_t>(timestamp)};
 	auto wrap = img.channels() == 3 ? FrameMat::wrapR8G8B8 : FrameMat::wrapL8;
 	wrap(img, &xf, params);
@@ -537,7 +537,6 @@ euroc_player_stream_start(struct xrt_fs *xfs,
 		EUROC_INFO(ep, "Starting Euroc Player in calibration mode, will stream only left frames right away");
 		ep->out_sinks.left = xs;
 		euroc_player_start_btn_cb(ep);
-		ep->is_running = true;
 	} else {
 		EUROC_ASSERT(false, "Unsupported stream configuration xs=%p capture_type=%d", (void *)xs, capture_type);
 		return false;

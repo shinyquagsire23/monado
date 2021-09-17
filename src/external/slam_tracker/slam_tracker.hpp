@@ -89,8 +89,14 @@ struct slam_tracker {
   void stop();
   bool is_running();
 
+  //! Should be thread safe, more than one producer could push.
   void push_imu_sample(imu_sample sample);
+
+  //! Should be thread safe, more than one producer could push.
   void push_frame(img_sample sample);
+
+  //! Only one user will dequeue, thread safety not required.
+  //! Could be implemented with a lock-free queue.
   bool try_dequeue_pose(pose &pose);
 
  private:
