@@ -611,7 +611,7 @@ t_psmv_create(struct xrt_frame_context *xfctx,
 	// Everything is safe, now setup the variable tracking.
 	u_var_add_root(&t, "PSMV Tracker", true);
 	u_var_add_vec3_f32(&t, &t.tracked_object_position, "last.ball.pos");
-	u_var_add_sink(&t, &t.debug.sink, "Debug");
+	u_var_add_sink_debug(&t, &t.debug.usd, "Debug");
 
 	*out_sink = &t.sink;
 	*out_xtmv = &t.base;

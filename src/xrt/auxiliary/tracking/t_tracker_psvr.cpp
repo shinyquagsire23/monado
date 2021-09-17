@@ -2136,7 +2136,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 	// Everything is safe, now setup the variable tracking.
 	u_var_add_root(&t, "PSVR Tracker", true);
 	u_var_add_log_level(&t, &t.ll, "Log level");
-	u_var_add_sink(&t, &t.debug.sink, "Debug");
+	u_var_add_sink_debug(&t, &t.debug.usd, "Debug");
 
 	*out_sink = &t.sink;
 	*out_xtvr = &t.base;

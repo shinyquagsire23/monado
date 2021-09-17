@@ -406,7 +406,7 @@ t_hand_create(struct xrt_frame_context *xfctx,
 	u_var_add_root(&t, "Hand Tracker", true);
 	u_var_add_vec3_f32(&t, &t.hand_data[0].hand_relation.pose.position, "hand.tracker.pos.0");
 	u_var_add_vec3_f32(&t, &t.hand_data[1].hand_relation.pose.position, "hand.tracker.pos.1");
-	u_var_add_sink(&t, &t.debug.sink, "Debug");
+	u_var_add_sink_debug(&t, &t.debug.usd, "Debug");
 
 	*out_sink = &t.sink;
 	*out_xth = &t.base;
