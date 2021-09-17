@@ -513,7 +513,7 @@ ht_device_create(struct xrt_prober *xp, struct t_stereo_camera_calibration *cali
 
 	xrt_fs_stream_start(htd->camera.xfs, tmp, XRT_FS_CAPTURE_TYPE_TRACKING, selected_mode);
 
-#if 1
+#if 0
 	u_var_add_sink(htd, &htd->debug_sink, "Debug visualization");
 #endif
 
