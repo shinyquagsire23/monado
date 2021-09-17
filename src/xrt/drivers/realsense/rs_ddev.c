@@ -27,6 +27,8 @@
 #include "util/u_json.h"
 #include "util/u_config_json.h"
 
+#include "rs_driver.h"
+
 #include <librealsense2/rs.h>
 #include <librealsense2/h/rs_pipeline.h>
 #include <librealsense2/h/rs_option.h>
@@ -64,10 +66,7 @@ struct rs_ddev
 	bool enable_pose_prediction;
 	bool enable_pose_filtering; //!< Forward compatibility for when that 1-euro filter is working
 
-	rs2_context *ctx;
-	rs2_pipeline *pipe;
-	rs2_pipeline_profile *profile;
-	rs2_config *config;
+	struct rs_container rsc; //!< Container of realsense API related objects
 };
 
 
@@ -102,26 +101,9 @@ check_error(struct rs_ddev *rs, rs2_error *e)
 static void
 close_ddev(struct rs_ddev *rs)
 {
-	if (rs->config) {
-		rs2_delete_config(rs->config);
-		rs->config = NULL;
-	}
-
-	if (rs->profile) {
-		rs2_delete_pipeline_profile(rs->profile);
-		rs->profile = NULL;
-	}
-
-	if (rs->pipe) {
-		rs2_pipeline_stop(rs->pipe, NULL);
-		rs2_delete_pipeline(rs->pipe);
-		rs->pipe = NULL;
-	}
-
-	if (rs->ctx) {
-		rs2_delete_context(rs->ctx);
-		rs->ctx = NULL;
-	}
+	struct rs_container *rsc = &rs->rsc;
+	rs2_pipeline_stop(rsc->pipeline, NULL);
+	rs_container_cleanup(&rs->rsc);
 }
 
 #define CHECK_RS2()                                                                                                    \
@@ -137,35 +119,48 @@ close_ddev(struct rs_ddev *rs)
  * Create all RealSense resources needed for 6DOF tracking.
  */
 static int
-create_ddev(struct rs_ddev *rs)
+create_ddev(struct rs_ddev *rs, int device_idx)
 {
 	assert(rs != NULL);
 	rs2_error *e = NULL;
 
-	rs->ctx = rs2_create_context(RS2_API_VERSION, &e);
+	struct rs_container *rsc = &rs->rsc;
+
+	rsc->context = rs2_create_context(RS2_API_VERSION, &e);
 	CHECK_RS2();
 
-	rs2_device_list *device_list = rs2_query_devices(rs->ctx, &e);
+	rsc->device_list = rs2_query_devices(rsc->context, &e);
 	CHECK_RS2();
 
-	int dev_count = rs2_get_device_count(device_list, &e);
+	rsc->pipeline = rs2_create_pipeline(rsc->context, &e);
 	CHECK_RS2();
 
-	rs2_delete_device_list(device_list);
+	rsc->config = rs2_create_config(&e);
+	CHECK_RS2();
 
-	U_LOG_D("There are %d connected RealSense devices.", dev_count);
-	if (0 == dev_count) {
-		close_ddev(rs);
-		return 1;
+	// Set the pipeline to start specifically on the realsense device the prober selected
+	rsc->device_idx = device_idx;
+	rsc->device = rs2_create_device(rsc->device_list, rsc->device_idx, &e);
+	CHECK_RS2();
+
+	bool ddev_has_serial = rs2_supports_device_info(rsc->device, RS2_CAMERA_INFO_SERIAL_NUMBER, &e);
+	CHECK_RS2();
+
+	if (ddev_has_serial) {
+
+		const char *ddev_serial = rs2_get_device_info(rsc->device, RS2_CAMERA_INFO_SERIAL_NUMBER, &e);
+		CHECK_RS2();
+
+		rs2_config_enable_device(rsc->config, ddev_serial, &e);
+		CHECK_RS2();
+
+	} else {
+		U_LOG_W("Unexpected, the realsense device in use does not provide a serial number.");
 	}
 
-	rs->pipe = rs2_create_pipeline(rs->ctx, &e);
-	CHECK_RS2();
+	rs2_delete_device(rsc->device);
 
-	rs->config = rs2_create_config(&e);
-	CHECK_RS2();
-
-	rs2_config_enable_stream(rs->config,      //
+	rs2_config_enable_stream(rsc->config,     //
 	                         RS2_STREAM_POSE, // Type
 	                         0,               // Index
 	                         0,               // Width
@@ -175,13 +170,13 @@ create_ddev(struct rs_ddev *rs)
 	                         &e);
 	CHECK_RS2();
 
-	rs2_pipeline_profile *prof = rs2_config_resolve(rs->config, rs->pipe, &e);
+	rsc->profile = rs2_config_resolve(rsc->config, rsc->pipeline, &e);
 	CHECK_RS2();
 
-	rs2_device *cameras = rs2_pipeline_profile_get_device(prof, &e);
+	rsc->device = rs2_pipeline_profile_get_device(rsc->profile, &e);
 	CHECK_RS2();
 
-	rs2_sensor_list *sensors = rs2_query_sensors(cameras, &e);
+	rs2_sensor_list *sensors = rs2_query_sensors(rsc->device, &e);
 	CHECK_RS2();
 
 	//! @todo 0 index hardcoded, check device with RS2_EXTENSION_POSE_SENSOR or similar instead
@@ -203,7 +198,7 @@ create_ddev(struct rs_ddev *rs)
 		CHECK_RS2();
 	}
 
-	rs->profile = rs2_pipeline_start_with_config(rs->pipe, rs->config, &e);
+	rsc->profile = rs2_pipeline_start_with_config(rsc->pipeline, rsc->config, &e);
 	CHECK_RS2();
 
 	rs2_delete_sensor(sensor);
@@ -297,7 +292,7 @@ update(struct rs_ddev *rs)
 	rs2_frame *frames;
 	rs2_error *e = NULL;
 
-	frames = rs2_pipeline_wait_for_frames(rs->pipe, RS2_DEFAULT_TIMEOUT, &e);
+	frames = rs2_pipeline_wait_for_frames(rs->rsc.pipeline, RS2_DEFAULT_TIMEOUT, &e);
 	if (check_error(rs, e) != 0) {
 		return 1;
 	}
@@ -446,7 +441,7 @@ rs_ddev_destroy(struct xrt_device *xdev)
  */
 
 struct xrt_device *
-rs_ddev_create(void)
+rs_ddev_create(int device_idx)
 {
 	struct rs_ddev *rs = U_DEVICE_ALLOCATE(struct rs_ddev, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
 
@@ -491,7 +486,7 @@ rs_ddev_create(void)
 		return NULL;
 	}
 
-	ret = create_ddev(rs);
+	ret = create_ddev(rs, device_idx);
 	if (ret != 0) {
 		rs_ddev_destroy(&rs->base);
 		return NULL;
