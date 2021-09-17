@@ -24,8 +24,12 @@ find_qwerty_system(struct xrt_device **xdevs, size_t num_xdevs)
 		if (xdevs[i] == NULL) {
 			continue;
 		}
-		if (strcmp(xdevs[i]->str, QWERTY_HMD_STR) == 0 || strcmp(xdevs[i]->str, QWERTY_LEFT_STR) == 0 ||
-		    strcmp(xdevs[i]->str, QWERTY_RIGHT_STR) == 0) {
+		// We check against tracker name instead of device name because the tracking overrides
+		// cause the multi device to have the same names even though they are not qwerty devices.
+		const char *tracker_name = xdevs[i]->tracking_origin->name;
+		if (strcmp(tracker_name, QWERTY_HMD_TRACKER_STR) == 0 ||
+		    strcmp(tracker_name, QWERTY_LEFT_TRACKER_STR) == 0 ||
+		    strcmp(tracker_name, QWERTY_RIGHT_TRACKER_STR) == 0) {
 			xdev = xdevs[i];
 			break;
 		}

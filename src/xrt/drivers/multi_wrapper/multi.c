@@ -226,8 +226,8 @@ multi_create_tracking_override(enum xrt_tracking_override_type override_type,
 	d->base = *tracking_override_target;
 
 	// but take orientation and position tracking capabilities from tracker
-	d->base.orientation_tracking_supported = tracking_override_target->orientation_tracking_supported;
-	d->base.position_tracking_supported = tracking_override_target->position_tracking_supported;
+	d->base.orientation_tracking_supported = tracking_override_tracker->orientation_tracking_supported;
+	d->base.position_tracking_supported = tracking_override_tracker->position_tracking_supported;
 
 	// because we use the tracking data of the tracker, we use its tracking origin instead
 	d->base.tracking_origin = tracking_override_tracker->tracking_origin;
