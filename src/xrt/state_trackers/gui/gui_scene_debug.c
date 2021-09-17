@@ -190,42 +190,6 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 }
 
 static void
-on_sink_var(const char *name, void *ptr, struct gui_program *p)
-{
-	for (size_t i = 0; i < ARRAY_SIZE(p->texs); i++) {
-		struct gui_ogl_texture *tex = p->texs[i];
-
-		if (tex == NULL) {
-			continue;
-		}
-
-		if ((ptrdiff_t)tex->ptr != (ptrdiff_t)ptr) {
-			continue;
-		}
-
-		if (!igCollapsingHeaderBoolPtr(name, NULL, 0)) {
-			continue;
-		}
-
-		gui_ogl_sink_update(tex);
-
-		igText("Sequence %u", (uint32_t)tex->seq);
-		char temp[512];
-		snprintf(temp, 512, "Half (%s)", tex->name);
-		igCheckbox(temp, &tex->half);
-		int w = tex->w / (tex->half ? 2 : 1);
-		int h = tex->h / (tex->half ? 2 : 1);
-
-		ImVec2 size = {(float)w, (float)h};
-		ImVec2 uv0 = {0, 0};
-		ImVec2 uv1 = {1, 1};
-		ImVec4 white = {1, 1, 1, 1};
-		ImTextureID id = (ImTextureID)(intptr_t)tex->id;
-		igImage(id, size, uv0, uv1, white, white);
-	}
-}
-
-static void
 on_sink_debug_var(const char *name, void *ptr, struct gui_program *p, struct debug_scene *ds)
 {
 	for (size_t i = 0; i < ARRAY_SIZE(ds->recs); i++) {
@@ -393,7 +357,6 @@ on_elem(struct u_var_info *info, void *priv)
 		state->hidden = !igCollapsingHeaderBoolPtr(name, NULL, 0);
 		break;
 	}
-	case U_VAR_KIND_SINK: on_sink_var(name, ptr, state->p); break;
 	case U_VAR_KIND_SINK_DEBUG: on_sink_debug_var(name, ptr, state->p, state->ds); break;
 	case U_VAR_KIND_BUTTON: on_button_var(name, ptr); break;
 	default: igLabelText(name, "Unknown tag '%i'", kind); break;
@@ -419,38 +382,6 @@ on_root_exit(const char *name, void *priv)
 static void
 on_root_enter_sink(const char *name, void *priv)
 {}
-
-static void
-on_elem_sink(struct u_var_info *info, void *priv)
-{
-	const char *name = info->name;
-	void *ptr = info->ptr;
-	enum u_var_kind kind = info->kind;
-	struct gui_program *p = ((struct priv_tuple *)priv)->p;
-
-	if (kind != U_VAR_KIND_SINK) {
-		return;
-	}
-
-	if (p->xp == NULL || p->xp->tracking == NULL) {
-		return;
-	}
-
-	struct xrt_frame_context *xfctx = p->xp->tracking->xfctx;
-	struct xrt_frame_sink **xsink_ptr = (struct xrt_frame_sink **)ptr;
-	struct xrt_frame_sink *split = NULL;
-
-	p->texs[p->num_texs] = gui_ogl_sink_create(name, xfctx, &split);
-	p->texs[p->num_texs++]->ptr = ptr;
-
-	u_sink_create_to_r8g8b8_or_l8(xfctx, split, &split);
-
-	if (*xsink_ptr != NULL) {
-		u_sink_split_create(xfctx, split, *xsink_ptr, xsink_ptr);
-	} else {
-		*xsink_ptr = split;
-	}
-}
 
 static void
 on_elem_sink_debug_add(struct u_var_info *info, void *priv)
@@ -548,5 +479,4 @@ gui_scene_debug(struct gui_program *p)
 	// Create the sink interceptors.
 	struct priv_tuple pt = {p, ds};
 	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink_debug_add, &pt);
-	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink, &pt);
 }
