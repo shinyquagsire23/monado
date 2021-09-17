@@ -9,6 +9,7 @@
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
+#include "util/u_sink.h"
 #include "util/u_debug.h"
 #include "util/u_frame.h"
 #include "util/u_format.h"
@@ -135,14 +136,12 @@ struct t_hsv_filter
 
 
 	struct xrt_frame_sink *sinks[NUM_CHANNELS];
-	struct xrt_frame_sink *debug;
 
 	struct t_hsv_filter_params params;
 
-	struct xrt_frame *frame0;
-	struct xrt_frame *frame1;
-	struct xrt_frame *frame2;
-	struct xrt_frame *frame3;
+	struct xrt_frame *frames[NUM_CHANNELS];
+
+	struct u_sink_debug usds[NUM_CHANNELS];
 
 	struct t_hsv_filter_optimized_table table;
 };
@@ -174,10 +173,10 @@ hsv_process_frame_yuv(struct t_hsv_filter *f, struct xrt_frame *xf)
 {
 	SINK_TRACE_MARKER();
 
-	struct xrt_frame *f0 = f->frame0;
-	struct xrt_frame *f1 = f->frame1;
-	struct xrt_frame *f2 = f->frame2;
-	struct xrt_frame *f3 = f->frame3;
+	struct xrt_frame *f0 = f->frames[0];
+	struct xrt_frame *f1 = f->frames[1];
+	struct xrt_frame *f2 = f->frames[2];
+	struct xrt_frame *f3 = f->frames[3];
 
 	for (uint32_t y = 0; y < xf->height; y++) {
 		uint8_t *src = (uint8_t *)xf->data + y * xf->stride;
@@ -206,10 +205,10 @@ hsv_process_frame_yuyv(struct t_hsv_filter *f, struct xrt_frame *xf)
 {
 	SINK_TRACE_MARKER();
 
-	struct xrt_frame *f0 = f->frame0;
-	struct xrt_frame *f1 = f->frame1;
-	struct xrt_frame *f2 = f->frame2;
-	struct xrt_frame *f3 = f->frame3;
+	struct xrt_frame *f0 = f->frames[0];
+	struct xrt_frame *f1 = f->frames[1];
+	struct xrt_frame *f2 = f->frames[2];
+	struct xrt_frame *f3 = f->frames[3];
 
 	for (uint32_t y = 0; y < xf->height; y++) {
 		uint8_t *src = (uint8_t *)xf->data + y * xf->stride;
@@ -256,29 +255,29 @@ ensure_buf_allocated(struct t_hsv_filter *f, struct xrt_frame *xf)
 	uint32_t w = xf->width;
 	uint32_t h = xf->height;
 
-	u_frame_create_one_off(XRT_FORMAT_L8, w, h, &f->frame0);
-	u_frame_create_one_off(XRT_FORMAT_L8, w, h, &f->frame1);
-	u_frame_create_one_off(XRT_FORMAT_L8, w, h, &f->frame2);
-	u_frame_create_one_off(XRT_FORMAT_L8, w, h, &f->frame3);
+	for (size_t i = 0; i < NUM_CHANNELS; i++) {
+		u_frame_create_one_off(XRT_FORMAT_L8, w, h, &f->frames[i]);
+	}
 }
 
 static void
-push_buf(struct t_hsv_filter *f, struct xrt_frame *xf, struct xrt_frame_sink *xsink, struct xrt_frame **frame)
+push_buf(struct t_hsv_filter *f,
+         struct xrt_frame *orig_xf,
+         struct xrt_frame_sink *xsink,
+         struct u_sink_debug *usd,
+         struct xrt_frame *xf)
 {
-	if (xsink == NULL) {
-		xrt_frame_reference(frame, NULL);
-		return;
+	xf->timestamp = orig_xf->timestamp;
+	xf->source_id = orig_xf->source_id;
+	xf->stereo_format = orig_xf->stereo_format;
+	xf->source_sequence = orig_xf->source_sequence;
+	xf->source_timestamp = orig_xf->source_timestamp;
+
+	if (xsink != NULL) {
+		xrt_sink_push_frame(xsink, xf);
 	}
 
-	(*frame)->timestamp = xf->timestamp;
-	(*frame)->source_id = xf->source_id;
-	(*frame)->stereo_format = xf->stereo_format;
-	(*frame)->source_sequence = xf->source_sequence;
-	(*frame)->source_timestamp = xf->source_timestamp;
-
-	xsink->push_frame(xsink, *frame);
-
-	xrt_frame_reference(frame, NULL);
+	u_sink_debug_push_frame(usd, xf);
 }
 
 static void
@@ -301,20 +300,10 @@ hsv_frame(struct xrt_frame_sink *xsink, struct xrt_frame *xf)
 	default: U_LOG_E("Bad format '%s'", u_format_str(xf->format)); return;
 	}
 
-	push_buf(f, xf, f->sinks[0], &f->frame0);
-	push_buf(f, xf, f->sinks[1], &f->frame1);
-	push_buf(f, xf, f->sinks[2], &f->frame2);
-	push_buf(f, xf, f->sinks[3], &f->frame3);
-
-	// Push the debug frame last, there might be a conversion involved.
-	if (f->debug != NULL) {
-		f->debug->push_frame(f->debug, xf);
+	for (size_t i = 0; i < NUM_CHANNELS; i++) {
+		push_buf(f, xf, f->sinks[i], &f->usds[i], f->frames[i]);
+		xrt_frame_reference(&f->frames[i], NULL);
 	}
-
-	assert(f->frame0 == NULL);
-	assert(f->frame1 == NULL);
-	assert(f->frame2 == NULL);
-	assert(f->frame3 == NULL);
 }
 
 static void
@@ -328,6 +317,10 @@ hsv_destroy(struct xrt_frame_node *node)
 {
 	struct t_hsv_filter *f = container_of(node, struct t_hsv_filter, node);
 	u_var_remove_root(f);
+	for (size_t i = 0; i < ARRAY_SIZE(f->usds); i++) {
+		u_sink_debug_destroy(&f->usds[i]);
+	}
+
 	free(f);
 }
 
@@ -351,12 +344,14 @@ t_hsv_filter_create(struct xrt_frame_context *xfctx,
 
 	xrt_frame_context_add(xfctx, &f->node);
 
+	for (size_t i = 0; i < NUM_CHANNELS; i++) {
+		u_sink_debug_init(&f->usds[i]);
+	}
 	u_var_add_root(f, "HSV Filter", true);
-	u_var_add_sink(f, &f->debug, "Input");
-	u_var_add_sink(f, &f->sinks[0], "Red");
-	u_var_add_sink(f, &f->sinks[1], "Purple");
-	u_var_add_sink(f, &f->sinks[2], "Blue");
-	u_var_add_sink(f, &f->sinks[3], "White");
+	u_var_add_sink_debug(f, &f->usds[0], "Red");
+	u_var_add_sink_debug(f, &f->usds[1], "Purple");
+	u_var_add_sink_debug(f, &f->usds[2], "Blue");
+	u_var_add_sink_debug(f, &f->usds[3], "White");
 
 	*out_sink = &f->base;
 
