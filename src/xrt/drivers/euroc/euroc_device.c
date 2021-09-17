@@ -16,6 +16,7 @@
 #include "math/m_mathinclude.h"
 #include "xrt/xrt_prober.h"
 #include "xrt/xrt_tracking.h"
+#include "xrt/xrt_config_have.h"
 
 #include "euroc_driver.h"
 
@@ -104,6 +105,17 @@ euroc_device_update_inputs(struct xrt_device *xdev)
 	return;
 }
 
+//! Corrections specific for original euroc datasets and Kimera.
+//! If your datasets comes from a different camera you should probably
+//! use a different pose correction function.
+static inline struct xrt_pose
+euroc_device_correct_pose_from_kimera(struct xrt_pose pose)
+{
+	//! @todo Implement proper pose corrections for the original euroc datasets
+	//! @todo Allow to use different pose corrections depending on the device used to record
+	return pose;
+}
+
 static void
 euroc_device_get_tracked_pose(struct xrt_device *xdev,
                               enum xrt_input_name name,
@@ -119,7 +131,9 @@ euroc_device_get_tracked_pose(struct xrt_device *xdev,
 		int pose_bits = XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
 		bool pose_tracked = out_relation->relation_flags & pose_bits;
 		if (pose_tracked) {
-			ed->pose = out_relation->pose;
+#ifdef XRT_HAVE_KIMERA_SLAM
+			ed->pose = euroc_device_correct_pose_from_kimera(out_relation->pose);
+#endif
 		}
 	}
 

@@ -186,9 +186,6 @@ t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
  *
  * @todo This function should do pose prediction, currently it is not using @p
  * when_ns and just returning the latest tracked pose instead.
- *
- * @todo This function is correcting the returned pose axes and orientation but
- * it is yet unclear if that should be done in here at all.
  */
 extern "C" void
 t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
@@ -199,33 +196,8 @@ t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, stru
 	if (dequeued) {
 		SLAM_TRACE("pose p=[%f,%f,%f] r=[%f,%f,%f,%f]", p.px, p.py, p.pz, p.rx, p.ry, p.rz, p.rw);
 
-		// TODO: IMUs, Monado, and Kimera coordinate systems usually differ, so the
-		// produced pose needs to be corrected. This correction could happen in the
-		// slam_tracker implementation inside the SLAM system, but here in Monado
-		// there are tools to facilitate the process, so let's just do it here for
-		// now. Another possibility could be to do it in the device driver.
-
-#ifdef XRT_HAVE_KIMERA_SLAM
-		// TODO: These corrections are specific for a D455 camera; generalize.
-
-		// Correct swapped axes
-		xrt_pose located_pose{{-p.ry, -p.rz, p.rx, p.rw}, {-p.py, -p.pz, p.px}};
-
-		// Correct orientation
-		struct xrt_space_graph space_graph = {};
-		xrt_pose pre_correction{xrt_quat{-0.5, -0.5, -0.5, 0.5}, xrt_vec3{0, 0, 0}}; // euler(90, 90, 0)
-		constexpr float sin45 = 0.7071067811865475;
-		xrt_pose pos_correction{xrt_quat{sin45, 0, sin45, 0}, xrt_vec3{0, 0, 0}}; // euler(180, 90, 0)
-		m_space_graph_add_pose(&space_graph, &pre_correction);
-		m_space_graph_add_pose(&space_graph, &located_pose);
-		m_space_graph_add_pose(&space_graph, &pos_correction);
-		m_space_graph_resolve(&space_graph, out_relation);
-
-#else
-		// Do not correct, use the returned pose directly
+		// Note that any pose correction should happen in the device consuming the tracking
 		out_relation->pose = {{p.rx, p.ry, p.rz, p.rw}, {p.px, p.py, p.pz}};
-#endif
-
 		out_relation->relation_flags = (enum xrt_space_relation_flags)(
 		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
 		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
@@ -245,7 +217,7 @@ push_frame(const TrackerSlam &t, struct xrt_frame *frame, bool is_left)
 	SLAM_ASSERT_(frame->timestamp < INT64_MAX);
 	img_sample sample{(int64_t)frame->timestamp, img, is_left};
 	t.slam->push_frame(sample);
-	SLAM_TRACE("frame t=%lu", frame->timestamp);
+	SLAM_TRACE("%s frame t=%lu", is_left ? " left" : "right", frame->timestamp);
 }
 
 extern "C" void
@@ -288,8 +260,8 @@ extern "C" void *
 t_slam_run(void *ptr)
 {
 	auto &t = *(TrackerSlam *)ptr;
+	SLAM_DEBUG("SLAM tracker starting");
 	t.slam->start();
-	SLAM_DEBUG("SLAM tracker running");
 	return NULL;
 }
 
@@ -314,10 +286,7 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	t.base.get_tracked_pose = t_slam_get_tracked_pose;
 
 	const char *config_file = debug_get_option_slam_config();
-	if (!config_file) {
-		SLAM_ERROR("SLAM tracker requires a config file set with the SLAM_CONFIG environment variable");
-		return 0;
-	}
+	SLAM_ASSERT(config_file, "SLAM tracker requires a config file set with the SLAM_CONFIG environment variable");
 
 	std::string config_file_string = std::string(config_file);
 	t.slam = new slam_tracker{config_file_string};
