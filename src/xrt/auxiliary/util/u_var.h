@@ -99,7 +99,6 @@ enum u_var_kind
 	U_VAR_KIND_VEC3_I32,
 	U_VAR_KIND_VEC3_F32,
 	U_VAR_KIND_POSE,
-	U_VAR_KIND_SINK,
 	U_VAR_KIND_SINK_DEBUG,
 	U_VAR_KIND_LOG_LEVEL,
 	U_VAR_KIND_RO_TEXT,
@@ -205,7 +204,6 @@ u_var_force_on(void);
 	ADD_FUNC(vec3_i32, struct xrt_vec3_i32, VEC3_I32)                                                              \
 	ADD_FUNC(vec3_f32, struct xrt_vec3, VEC3_F32)                                                                  \
 	ADD_FUNC(pose, struct xrt_pose, POSE)                                                                          \
-	ADD_FUNC(sink, struct xrt_frame_sink *, SINK)                                                                  \
 	ADD_FUNC(sink_debug, struct u_sink_debug, SINK_DEBUG)                                                          \
 	ADD_FUNC(log_level, enum u_logging_level, LOG_LEVEL)                                                           \
 	ADD_FUNC(ro_text, const char, RO_TEXT)                                                                         \
