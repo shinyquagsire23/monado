@@ -289,6 +289,77 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
                                    struct t_stereo_camera_calibration **out_calibration,
                                    struct xrt_pose *head_in_left_camera)
 {
+	if (!d->cameras.valid) {
+		U_LOG_E("Camera config not loaded, can not produce camera calibration.");
+		return false;
+	}
+
+	struct index_camera *cameras = d->cameras.view;
+	struct t_stereo_camera_calibration *calib = NULL;
+
+	t_stereo_camera_calibration_alloc(&calib, 5);
+
+	for (int i = 0; i < 2; i++) {
+		calib->view[i].image_size_pixels.w = cameras[i].intrinsics.image_size_pixels.w;
+		calib->view[i].image_size_pixels.h = cameras[i].intrinsics.image_size_pixels.h;
+
+		// This better be row-major!
+		calib->view[i].intrinsics[0][0] = cameras[i].intrinsics.focal_x;
+		calib->view[i].intrinsics[0][1] = 0.0f;
+		calib->view[i].intrinsics[0][2] = cameras[i].intrinsics.center_x;
+
+		calib->view[i].intrinsics[1][0] = 0.0f;
+		calib->view[i].intrinsics[1][1] = cameras[i].intrinsics.focal_y;
+		calib->view[i].intrinsics[1][2] = cameras[i].intrinsics.center_y;
+
+		calib->view[i].intrinsics[2][0] = 0.0f;
+		calib->view[i].intrinsics[2][1] = 0.0f;
+		calib->view[i].intrinsics[2][2] = 1.0f;
+
+		calib->view[i].use_fisheye = true;
+		calib->view[i].distortion_fisheye[0] = cameras[i].intrinsics.distortion[0];
+		calib->view[i].distortion_fisheye[1] = cameras[i].intrinsics.distortion[1];
+		calib->view[i].distortion_fisheye[2] = cameras[i].intrinsics.distortion[2];
+		calib->view[i].distortion_fisheye[3] = cameras[i].intrinsics.distortion[3];
+	}
+
+	struct xrt_vec3 pos = d->cameras.opencv.position;
+	struct xrt_vec3 x = {1, 0, 0}, y = {0, 1, 0}, z = {0, 0, 1};
+	math_quat_rotate_vec3(&d->cameras.opencv.orientation, &x, &x);
+	math_quat_rotate_vec3(&d->cameras.opencv.orientation, &y, &y);
+	math_quat_rotate_vec3(&d->cameras.opencv.orientation, &z, &z);
+
+	calib->camera_translation[0] = pos.x;
+	calib->camera_translation[1] = pos.y;
+	calib->camera_translation[2] = pos.z;
+
+	calib->camera_rotation[0][0] = x.x;
+	calib->camera_rotation[0][1] = x.y;
+	calib->camera_rotation[0][2] = x.z;
+
+	calib->camera_rotation[1][0] = y.x;
+	calib->camera_rotation[1][1] = y.y;
+	calib->camera_rotation[1][2] = y.z;
+
+	calib->camera_rotation[2][0] = z.x;
+	calib->camera_rotation[2][1] = z.y;
+	calib->camera_rotation[2][2] = z.z;
+
+	math_pose_invert(&d->cameras.view[0].headref, head_in_left_camera);
+
+	// Correctly reference count.
+	t_stereo_camera_calibration_reference(out_calibration, calib);
+	t_stereo_camera_calibration_reference(&calib, NULL);
+
+	return true;
+}
+
+#if 0
+bool
+vive_get_stereo_camera_calibration(struct vive_config *d,
+                                   struct t_stereo_camera_calibration **out_calibration,
+                                   struct xrt_pose *head_in_left_camera)
+{
 	// Note! This doesn't feel exactly correct - some parts of the math seem weird, and when undistorting the
 	// images with the data produced by this function, things don't quite line up along epipolar lines. If you're
 	// really good at this kind of math and very bored, you could try to figure out what the problem is here. I for
@@ -415,8 +486,10 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
 	}
 
 	*head_in_left_camera = head_in_left_cam.pose;
+
 	return true;
 }
+#endif
 
 static void
 vive_init_defaults(struct vive_config *d)
