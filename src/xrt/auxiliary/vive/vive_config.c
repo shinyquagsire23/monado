@@ -285,9 +285,9 @@ _get_cameras(struct vive_config *d, const cJSON *cameras_json)
 }
 
 bool
-vive_get_stereo_camera_calibration(struct vive_config *d,
-                                   struct t_stereo_camera_calibration **out_calibration,
-                                   struct xrt_pose *head_in_left_camera)
+vive_get_stereo_camera_calibration_jakob(struct vive_config *d,
+                                         struct t_stereo_camera_calibration **out_calibration,
+                                         struct xrt_pose *head_in_left_camera)
 {
 	if (!d->cameras.valid) {
 		U_LOG_E("Camera config not loaded, can not produce camera calibration.");
@@ -354,11 +354,11 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
 	return true;
 }
 
-#if 0
+#if 1
 bool
-vive_get_stereo_camera_calibration(struct vive_config *d,
-                                   struct t_stereo_camera_calibration **out_calibration,
-                                   struct xrt_pose *head_in_left_camera)
+vive_get_stereo_camera_calibration_moses(struct vive_config *d,
+                                         struct t_stereo_camera_calibration **out_calibration,
+                                         struct xrt_pose *head_in_left_camera)
 {
 	// Note! This doesn't feel exactly correct - some parts of the math seem weird, and when undistorting the
 	// images with the data produced by this function, things don't quite line up along epipolar lines. If you're
@@ -490,6 +490,48 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
 	return true;
 }
 #endif
+
+bool
+vive_get_stereo_camera_calibration(struct vive_config *d,
+                                   struct t_stereo_camera_calibration **out_calibration,
+                                   struct xrt_pose *head_in_left_camera)
+{
+	struct t_stereo_camera_calibration *calib[2] = {NULL, NULL};
+	struct xrt_pose pose[2];
+	struct xrt_pose TR[2];
+
+	vive_get_stereo_camera_calibration_jakob(d, &calib[0], &pose[0]);
+	vive_get_stereo_camera_calibration_moses(d, &calib[1], &pose[1]);
+
+	for (size_t i = 0; i < 2; i++) {
+		struct xrt_matrix_3x3 mat;
+		for (size_t y = 0; y < 3; y++) {
+			for (size_t x = 0; x < 3; x++) {
+				mat.v[y * 3 + x] = calib[i]->camera_rotation[y][x];
+			}
+		}
+		math_quat_from_matrix_3x3(&mat, &TR[i].orientation);
+		TR[i].position.x = calib[i]->camera_translation[0];
+		TR[i].position.y = calib[i]->camera_translation[1];
+		TR[i].position.z = calib[i]->camera_translation[2];
+	}
+
+	printf("Jakobs:\n");
+	printf_pose(pose[0]);
+	printf_pose(TR[0]);
+
+	printf("Moses:\n");
+	printf_pose(pose[1]);
+	printf_pose(TR[1]);
+
+	t_stereo_camera_calibration_reference(out_calibration, calib[0]);
+	*head_in_left_camera = pose[0];
+
+	t_stereo_camera_calibration_reference(&calib[0], NULL);
+	t_stereo_camera_calibration_reference(&calib[1], NULL);
+
+	return true;
+}
 
 static void
 vive_init_defaults(struct vive_config *d)
