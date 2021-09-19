@@ -111,7 +111,9 @@ comp_window_direct_wayland_destroy(struct comp_target *w)
 		free(w_wayland->lease);
 	}
 
-	wl_display_disconnect(w_wayland->display);
+	if (w_wayland->display) {
+		wl_display_disconnect(w_wayland->display);
+	}
 	free(w_wayland);
 }
 
