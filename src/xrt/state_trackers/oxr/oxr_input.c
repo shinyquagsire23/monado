@@ -1563,6 +1563,11 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
 		for (uint32_t i = 0; i < act_attached->X.num_inputs; i++) {                                            \
 			add_path_to_set(temp, act_attached->X.inputs[i].bound_path, &num_paths);                       \
 		}                                                                                                      \
+	}                                                                                                              \
+	if (act_attached->X.num_outputs > 0) {                                                                         \
+		for (uint32_t i = 0; i < act_attached->X.num_outputs; i++) {                                           \
+			add_path_to_set(temp, act_attached->X.outputs[i].bound_path, &num_paths);                      \
+		}                                                                                                      \
 	}
 
 	OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_PATHS)
