@@ -189,7 +189,6 @@ _print_vec3(const char *title, struct xrt_vec3 *vec)
 	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y, (double)vec->z);
 }
 
-
 static bool
 _get_camera(struct index_camera *cam, const cJSON *cam_json)
 {
@@ -198,6 +197,7 @@ _get_camera(struct index_camera *cam, const cJSON *cam_json)
 	succeeded = succeeded && JSON_VEC3(extrinsics, "plus_x", &cam->extrinsics.plus_x);
 	succeeded = succeeded && JSON_VEC3(extrinsics, "plus_z", &cam->extrinsics.plus_z);
 	succeeded = succeeded && JSON_VEC3(extrinsics, "position", &cam->extrinsics.position);
+	_get_pose_from_pos_x_z(extrinsics, &cam->trackref);
 
 
 	const cJSON *intrinsics = u_json_get(cam_json, "intrinsics");
@@ -216,6 +216,71 @@ _get_camera(struct index_camera *cam, const cJSON *cam_json)
 	if (!succeeded) {
 		return false;
 	}
+	return true;
+}
+
+static bool
+_get_cameras(struct vive_config *d, const cJSON *cameras_json)
+{
+	const cJSON *cmr = NULL;
+
+	bool found_camera_json = false;
+	bool succeeded_parsing_json = false;
+
+	cJSON_ArrayForEach(cmr, cameras_json)
+	{
+		found_camera_json = true;
+
+		const cJSON *name_json = u_json_get(cmr, "name");
+		const char *name = name_json->valuestring;
+		bool is_left = !strcmp("left", name);
+		bool is_right = !strcmp("right", name);
+
+		if (!is_left && !is_right) {
+			continue;
+		}
+
+		if (!_get_camera(&d->cameras.view[is_right], cmr)) {
+			succeeded_parsing_json = false;
+			break;
+		}
+
+		succeeded_parsing_json = true;
+	}
+
+	if (!found_camera_json) {
+		U_LOG_W("HMD is Index, but no cameras in json file!");
+		return false;
+	} else if (!succeeded_parsing_json) {
+		U_LOG_E("Failed to parse Index camera calibration!");
+		return false;
+	}
+
+	struct xrt_pose trackref_to_head;
+	struct xrt_pose camera_to_head;
+	math_pose_invert(&d->display.trackref, &trackref_to_head);
+
+	math_pose_transform(&trackref_to_head, &d->cameras.view[0].trackref, &camera_to_head);
+	d->cameras.view[0].headref = camera_to_head;
+
+	math_pose_transform(&trackref_to_head, &d->cameras.view[1].trackref, &camera_to_head);
+	d->cameras.view[1].headref = camera_to_head;
+
+	// Calculate where in the right camera space the left camera is.
+	struct xrt_pose invert, left_in_right;
+	math_pose_invert(&d->cameras.view[1].headref, &invert);
+	math_pose_transform(&d->cameras.view[0].headref, &invert, &left_in_right);
+	d->cameras.left_in_right = left_in_right;
+
+	// To turn it into OpenCV cameras coordinate system.
+	struct xrt_pose opencv = left_in_right;
+	opencv.orientation.x = -left_in_right.orientation.x;
+	opencv.position.y = -left_in_right.position.y;
+	opencv.position.z = -left_in_right.position.z;
+	d->cameras.opencv = opencv;
+
+	d->cameras.valid = true;
+
 	return true;
 }
 
@@ -455,44 +520,8 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 
 		d->display.imuref = imu_to_head;
 
-
-		// Hey! Moses wrote this part in a pretty big hurry; you will definitely see some suspect things here.
-		// If you're bored, please fix them!
-		const cJSON *cms = u_json_get(json, "tracked_cameras");
-		const cJSON *cmr;
-
-		bool found_camera_json = false;
-		bool succeeded_parsing_json = false;
-
-		cJSON_ArrayForEach(cmr, cms)
-		{
-			found_camera_json = true;
-
-			const cJSON *name_json = u_json_get(cmr, "name");
-			const char *name = name_json->valuestring;
-			bool is_left = !strcmp("left", name);
-			bool is_right = !strcmp("right", name);
-
-			if (!is_left && !is_right) {
-				continue;
-			}
-
-			if (!_get_camera(&d->cameras.view[is_right], cmr)) {
-				succeeded_parsing_json = false;
-				break;
-			}
-			succeeded_parsing_json = true;
-		}
-
-
-		if (!found_camera_json) {
-			U_LOG_W("HMD is Index, but no cameras in json file!");
-		} else if (!succeeded_parsing_json) {
-			U_LOG_E("Failed to parse Index camera calibration!");
-		} else {
-			d->cameras.valid = true;
-		}
-
+		const cJSON *cameras_json = u_json_get(json, "tracked_cameras");
+		_get_cameras(d, cameras_json);
 	} break;
 	default:
 		VIVE_ERROR(d, "Unknown Vive variant.");

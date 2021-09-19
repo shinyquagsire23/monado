@@ -61,6 +61,13 @@ struct index_camera
 		struct xrt_vec3 plus_z;
 		struct xrt_vec3 position; // looks like from head pose
 	} extrinsics;
+
+	//! Pose in tracking space.
+	struct xrt_pose trackref;
+
+	//! Pose in head space.
+	struct xrt_pose headref;
+
 	struct
 	{
 		double distortion[4]; // Kannala-Brandt
@@ -147,7 +154,16 @@ struct vive_config
 
 	struct
 	{
+		//! The two cameras.
 		struct index_camera view[2];
+
+		//! Left view in right camera space.
+		struct xrt_pose left_in_right;
+
+		//! The same but in OpenCV camera space.
+		struct xrt_pose opencv;
+
+		//! Have we loaded the config.
 		bool valid;
 	} cameras;
 
