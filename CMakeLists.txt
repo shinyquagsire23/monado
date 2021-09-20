@@ -426,7 +426,7 @@ message(STATUS "#    DRIVER_DEPTHAI:      ${XRT_BUILD_DRIVER_DEPTHAI}")
 message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
 message(STATUS "#    DRIVER_QWERTY:       ${XRT_BUILD_DRIVER_QWERTY}")
 message(STATUS "#    DRIVER_WMR:          ${XRT_BUILD_DRIVER_WMR}")
-message(STATUS "#    DRIVER_EUROC:          ${XRT_BUILD_DRIVER_EUROC}")
+message(STATUS "#    DRIVER_EUROC:        ${XRT_BUILD_DRIVER_EUROC}")
 message(STATUS "#####----- Config -----#####")
 
 if(XRT_FEATURE_SERVICE AND NOT XRT_FEATURE_OPENXR)
