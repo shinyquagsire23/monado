@@ -657,20 +657,21 @@ compute_distortion_wmr(struct xrt_device *xdev, int view, float u, float v, stru
 
 		/* Scale the 0..1 input UV back to pixels relative to the distortion center,
 		 * accounting for the right eye starting at X = panel_width / 2.0 */
-		struct xrt_vec2 pix_coord = {(u + 1.0 * view) * (ec->display_size.x / 2.0) - distortion3K->eye_center.x,
+		struct xrt_vec2 pix_coord = {(u + 1.0f * view) * (ec->display_size.x / 2.0f) -
+		                                 distortion3K->eye_center.x,
 		                             v * ec->display_size.y - distortion3K->eye_center.y};
 
 		float r2 = m_vec2_dot(pix_coord, pix_coord);
-		float k1 = distortion3K->k[0];
-		float k2 = distortion3K->k[1];
-		float k3 = distortion3K->k[2];
+		float k1 = (float)distortion3K->k[0];
+		float k2 = (float)distortion3K->k[1];
+		float k3 = (float)distortion3K->k[2];
 
-		float d = 1.0 + r2 * (k1 + r2 * (k2 + r2 * k3));
+		float d = 1.0f + r2 * (k1 + r2 * (k2 + r2 * k3));
 
 		/* Map the distorted pixel coordinate back to normalised view plane coords using the inverse affine
 		 * xform */
 		struct xrt_vec3 p = {(pix_coord.x * d + distortion3K->eye_center.x),
-		                     (pix_coord.y * d + distortion3K->eye_center.y), 1.0};
+		                     (pix_coord.y * d + distortion3K->eye_center.y), 1.0f};
 		struct xrt_vec3 vp;
 		math_matrix_3x3_transform_vec3(&distortion_params->inv_affine_xform, &p, &vp);
 
@@ -703,7 +704,7 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 {
 	assert(view == 0 || view == 1);
 
-	float tanangle_left = 0.0, tanangle_right = 0.0, tanangle_up = 0.0, tanangle_down = 0.0;
+	float tanangle_left = 0.0f, tanangle_right = 0.0f, tanangle_up = 0.0f, tanangle_down = 0.0f;
 
 	const struct wmr_distortion_eye_config *ec = wh->config.eye_params + view;
 	struct wmr_hmd_distortion_params *distortion_params = wh->distortion_params + view;
@@ -714,13 +715,13 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 		/* The X coords start at 0 for the left eye, and display_size.x / 2.0 for the right */
 		const struct xrt_vec2 pix_coords[4] = {
 		    /* -eye_center_x, 0 */
-		    {(1.0 * view) * (ec->display_size.x / 2.0) - distortion3K->eye_center.x, 0.0},
+		    {(1.0f * view) * (ec->display_size.x / 2.0f) - distortion3K->eye_center.x, 0.0f},
 		    /* 0, -eye_center_y */
-		    {0.0, -distortion3K->eye_center.y},
+		    {0.0f, -distortion3K->eye_center.y},
 		    /* width-eye_center_x, 0 */
-		    {(1.0 + 1.0 * view) * (ec->display_size.x / 2.0) - distortion3K->eye_center.x, 0.0},
+		    {(1.0f + 1.0f * view) * (ec->display_size.x / 2.0f) - distortion3K->eye_center.x, 0.0f},
 		    /* 0, height-eye_center_y */
-		    {0.0, ec->display_size.y - distortion3K->eye_center.y},
+		    {0.0f, ec->display_size.y - distortion3K->eye_center.y},
 		};
 
 		for (int c = 0; c < 4; c++) {
@@ -733,19 +734,19 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 			float r2 = m_vec2_dot(pix_coord, pix_coord);
 
 			/* distort the pixel */
-			float d = 1.0 + r2 * (k1 + r2 * (k2 + r2 * k3));
+			float d = 1.0f + r2 * (k1 + r2 * (k2 + r2 * k3));
 
 			/* Map the distorted pixel coordinate back to normalised view plane coords using the inverse
 			 * affine xform */
 			struct xrt_vec3 p = {(pix_coord.x * d + distortion3K->eye_center.x),
-			                     (pix_coord.y * d + distortion3K->eye_center.y), 1.0};
+			                     (pix_coord.y * d + distortion3K->eye_center.y), 1.0f};
 			struct xrt_vec3 vp;
 
 			math_matrix_3x3_transform_vec3(&distortion_params->inv_affine_xform, &p, &vp);
 			vp.x /= vp.z;
 			vp.y /= vp.z;
 
-			if (pix_coord.x < 0.0) {
+			if (pix_coord.x < 0.0f) {
 				if (vp.x < tanangle_left)
 					tanangle_left = vp.x;
 			} else {
@@ -753,7 +754,7 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 					tanangle_right = vp.x;
 			}
 
-			if (pix_coord.y < 0.0) {
+			if (pix_coord.y < 0.0f) {
 				if (vp.y < tanangle_up)
 					tanangle_up = vp.y;
 			} else {
@@ -766,10 +767,10 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 		}
 	}
 
-	*out_angle_left = atan(tanangle_left);
-	*out_angle_right = atan(tanangle_right);
-	*out_angle_down = -atan(tanangle_down);
-	*out_angle_up = -atan(tanangle_up);
+	*out_angle_left = atanf(tanangle_left);
+	*out_angle_right = atanf(tanangle_right);
+	*out_angle_down = -atanf(tanangle_down);
+	*out_angle_up = -atanf(tanangle_up);
 }
 
 struct xrt_device *
@@ -888,8 +889,8 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	math_pose_transform(&wh->centerline, &wh->mag_to_centerline, &wh->mag_to_centerline);
 
 	struct u_device_simple_info info;
-	info.display.w_pixels = wh->config.eye_params[0].display_size.x;
-	info.display.h_pixels = wh->config.eye_params[0].display_size.y;
+	info.display.w_pixels = (uint32_t)wh->config.eye_params[0].display_size.x;
+	info.display.h_pixels = (uint32_t)wh->config.eye_params[0].display_size.y;
 
 	info.lens_horizontal_separation_meters =
 	    fabs(wh->display_to_centerline[1].position.x - wh->display_to_centerline[0].position.x);
@@ -899,8 +900,8 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	info.display.w_meters = 0.13f;
 	info.display.h_meters = 0.07f;
 	info.lens_vertical_position_meters = 0.07f / 2.0f;
-	info.views[0].fov = 85.0f * (M_PI / 180.0f);
-	info.views[1].fov = 85.0f * (M_PI / 180.0f);
+	info.views[0].fov = 85.0f * ((float)M_PI / 180.0f);
+	info.views[1].fov = 85.0f * ((float)M_PI / 180.0f);
 
 	if (!u_device_setup_split_side_by_side(&wh->base, &info)) {
 		WMR_ERROR(wh, "Failed to setup basic HMD device info");
@@ -922,10 +923,10 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		         wh->base.hmd->views[eye].fov.angle_left, wh->base.hmd->views[eye].fov.angle_right,
 		         wh->base.hmd->views[eye].fov.angle_down, wh->base.hmd->views[eye].fov.angle_up);
 
-		wh->distortion_params[eye].tex_x_range.x = tan(wh->base.hmd->views[eye].fov.angle_left);
-		wh->distortion_params[eye].tex_x_range.y = tan(wh->base.hmd->views[eye].fov.angle_right);
-		wh->distortion_params[eye].tex_y_range.x = tan(wh->base.hmd->views[eye].fov.angle_down);
-		wh->distortion_params[eye].tex_y_range.y = tan(wh->base.hmd->views[eye].fov.angle_up);
+		wh->distortion_params[eye].tex_x_range.x = tanf(wh->base.hmd->views[eye].fov.angle_left);
+		wh->distortion_params[eye].tex_x_range.y = tanf(wh->base.hmd->views[eye].fov.angle_right);
+		wh->distortion_params[eye].tex_y_range.x = tanf(wh->base.hmd->views[eye].fov.angle_down);
+		wh->distortion_params[eye].tex_y_range.y = tanf(wh->base.hmd->views[eye].fov.angle_up);
 
 		WMR_INFO(wh, "Render texture range %f, %f to %f, %f", wh->distortion_params[eye].tex_x_range.x,
 		         wh->distortion_params[eye].tex_y_range.x, wh->distortion_params[eye].tex_x_range.y,
