@@ -218,5 +218,5 @@ vive_config_parse_controller(struct vive_controller_config *d, char *json_string
 
 bool
 vive_get_stereo_camera_calibration(struct vive_config *d,
-                                   struct t_stereo_camera_calibration **out_calibration,
-                                   struct xrt_pose *head_in_left_camera);
+                                   struct t_stereo_camera_calibration **calibration_ptr_to_ref,
+                                   struct xrt_pose *out_head_in_left_camera);
