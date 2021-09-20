@@ -13,6 +13,7 @@
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_var.h"
+#include "util/u_sink.h"
 #include "tracking/t_frame_cv_mat_wrapper.hpp"
 #include "math/m_filter_fifo.h"
 
@@ -106,8 +107,10 @@ struct euroc_player
 	struct u_var_button start_btn;
 	struct u_var_button pause_btn;
 	char progress_text[128];
-	struct m_ff_vec3_f32 *gyro_ff;  //!< Used for displaying IMU data
-	struct m_ff_vec3_f32 *accel_ff; //!< Same as `gyro_ff`
+	struct u_sink_debug ui_left_sink;  //!< Sink to display left frames in UI
+	struct u_sink_debug ui_right_sink; //!< Sink to display right frames in UI
+	struct m_ff_vec3_f32 *gyro_ff;     //!< Used for displaying IMU data
+	struct m_ff_vec3_f32 *accel_ff;    //!< Same as `gyro_ff`
 };
 
 static void
@@ -477,6 +480,7 @@ receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 {
 	struct euroc_player *ep = container_of(sink, struct euroc_player, left_sink);
 	EUROC_TRACE(ep, "left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
+	u_sink_debug_push_frame(&ep->ui_left_sink, xf);
 	if (ep->out_sinks.left) {
 		xrt_sink_push_frame(ep->out_sinks.left, xf);
 	}
@@ -487,6 +491,7 @@ receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 {
 	struct euroc_player *ep = container_of(sink, struct euroc_player, right_sink);
 	EUROC_TRACE(ep, "right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
+	u_sink_debug_push_frame(&ep->ui_right_sink, xf);
 	if (ep->out_sinks.right) {
 		xrt_sink_push_frame(ep->out_sinks.right, xf);
 	}
@@ -589,7 +594,8 @@ euroc_player_destroy(struct xrt_frame_node *node)
 	delete ep->right_imgs;
 
 	u_var_remove_root(ep);
-
+	u_sink_debug_destroy(&ep->ui_left_sink);
+	u_sink_debug_destroy(&ep->ui_right_sink);
 	m_ff_vec3_f32_free(&ep->gyro_ff);
 	m_ff_vec3_f32_free(&ep->accel_ff);
 
@@ -651,7 +657,9 @@ euroc_player_pause_btn_cb(void *ptr)
 static void
 euroc_player_setup_gui(struct euroc_player *ep)
 {
-	// Set fifo queues for display IMU data
+	// Set sinks to display in UI
+	u_sink_debug_init(&ep->ui_left_sink);
+	u_sink_debug_init(&ep->ui_right_sink);
 	m_ff_vec3_f32_alloc(&ep->gyro_ff, 1000);
 	m_ff_vec3_f32_alloc(&ep->accel_ff, 1000);
 
@@ -683,10 +691,8 @@ euroc_player_setup_gui(struct euroc_player *ep)
 	u_var_add_gui_header(ep, NULL, "Streams");
 	u_var_add_ro_ff_vec3_f32(ep, ep->gyro_ff, "Gyroscope");
 	u_var_add_ro_ff_vec3_f32(ep, ep->accel_ff, "Accelerometer");
-#if 0
-	u_var_add_sink(ep, &ep->in_sinks.left, "Left Camera");
-	u_var_add_sink(ep, &ep->in_sinks.right, "Right Camera");
-#endif
+	u_var_add_sink_debug(ep, &ep->ui_left_sink, "Left Camera");
+	u_var_add_sink_debug(ep, &ep->ui_right_sink, "Right Camera");
 }
 
 // Euroc driver creation
