@@ -357,7 +357,7 @@ u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t num_xdevs, int *hea
 			} else if (*right == XRT_DEVICE_ROLE_UNASSIGNED) {
 				*right = (int)i;
 			} else {
-				//! @todo: do something with unassigend devices?
+				//! @todo: do something with unassigned devices?
 			}
 			break;
 		default: break;
