@@ -242,7 +242,7 @@ math_quat_validate(const struct xrt_quat *quat)
 extern "C" bool
 math_quat_validate_within_1_percent(const struct xrt_quat *quat)
 {
-	return quat_validate(0.01, quat);
+	return quat_validate(0.01f, quat);
 }
 
 extern "C" void
