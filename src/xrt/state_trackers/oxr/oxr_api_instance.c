@@ -247,9 +247,21 @@ oxr_xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RES
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrResultToString");
+#ifdef _MSC_VER
 
 #define MAKE_RESULT_CASE(VAL, _)                                                                                       \
-	case VAL: strncpy(buffer, #VAL, XR_MAX_RESULT_STRING_SIZE); break;
+	case VAL: {                                                                                                    \
+		const char str[] = #VAL;                                                                               \
+		_STATIC_ASSERT(sizeof(str) < XR_MAX_RESULT_STRING_SIZE);                                               \
+		memcpy(buffer, str, sizeof(str));                                                                      \
+		break;                                                                                                 \
+	}
+#else
+#define MAKE_RESULT_CASE(VAL, _)                                                                                       \
+	case VAL:                                                                                                      \
+		strncpy(buffer, #VAL, XR_MAX_RESULT_STRING_SIZE);                                                      \
+		break;
+#endif
 	switch (value) {
 		XR_LIST_ENUM_XrResult(MAKE_RESULT_CASE);
 	default:
