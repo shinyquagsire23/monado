@@ -19,7 +19,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <assert.h>
+#include <limits.h>
 
 
 /*
@@ -325,6 +326,7 @@ u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t num_xdevs, int *hea
 	*head = XRT_DEVICE_ROLE_UNASSIGNED;
 	*left = XRT_DEVICE_ROLE_UNASSIGNED;
 	*right = XRT_DEVICE_ROLE_UNASSIGNED;
+	assert(num_xdevs < INT_MAX);
 
 	for (size_t i = 0; i < num_xdevs; i++) {
 		if (xdevs[i] == NULL) {
@@ -334,26 +336,26 @@ u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t num_xdevs, int *hea
 		switch (xdevs[i]->device_type) {
 		case XRT_DEVICE_TYPE_HMD:
 			if (*head == XRT_DEVICE_ROLE_UNASSIGNED) {
-				*head = i;
+				*head = (int)i;
 			}
 			break;
 		case XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER:
 			try_move_assignment(xdevs, left, right);
 			if (*left == XRT_DEVICE_ROLE_UNASSIGNED) {
-				*left = i;
+				*left = (int)i;
 			}
 			break;
 		case XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER:
 			try_move_assignment(xdevs, right, left);
 			if (*right == XRT_DEVICE_ROLE_UNASSIGNED) {
-				*right = i;
+				*right = (int)i;
 			}
 			break;
 		case XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER:
 			if (*left == XRT_DEVICE_ROLE_UNASSIGNED) {
-				*left = i;
+				*left = (int)i;
 			} else if (*right == XRT_DEVICE_ROLE_UNASSIGNED) {
-				*right = i;
+				*right = (int)i;
 			} else {
 				//! @todo: do something with unassigend devices?
 			}
@@ -369,10 +371,10 @@ u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t num_xdevs, int *hea
 		}
 		if (xdevs[i]->device_type == XRT_DEVICE_TYPE_HAND_TRACKER) {
 			if (*left == XRT_DEVICE_ROLE_UNASSIGNED) {
-				*left = i;
+				*left = (int)i;
 			}
 			if (*right == XRT_DEVICE_ROLE_UNASSIGNED) {
-				*right = i;
+				*right = (int)i;
 			}
 			break;
 		}
