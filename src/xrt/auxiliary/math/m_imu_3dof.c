@@ -150,15 +150,15 @@ gravity_correction(struct m_imu_3dof *f,
 
 	if (f->grav.error_angle > min_tilt_error) {
 		// Correct 180° over 5 seconds, when moving.
-		float max_radians = M_PI * dt / 5;
+		float max_radians = (float)M_PI * (float)dt / 5;
 		// Correct 180° over 60 seconds, when stationary.
-		float min_radians = M_PI * dt / 60;
+		float min_radians = (float)M_PI * (float)dt / 60;
 
 		/*
 		 * We're treating 0.5 * gyro_length as a unitless scale factor.
 		 * Tested in a headset, 0.5 felt nice.
 		 */
-		float correction_radians = 0.5 * gyro_length * max_radians;
+		float correction_radians = 0.5f * gyro_length * max_radians;
 		// Clamp to the range [min_radians, max_radians]
 		correction_radians = fmaxf(min_radians, correction_radians);
 		correction_radians = fminf(max_radians, correction_radians);
@@ -221,7 +221,7 @@ m_imu_3dof_update(struct m_imu_3dof *f,
 	uint64_t diff = timestamp_ns - f->last.timestamp_ns;
 	double dt = (double)diff / DUR_1S_IN_NS;
 
-	f->last.delta_ms = dt * 1000.0;
+	f->last.delta_ms = dt * 1000.0f;
 	f->last.timestamp_ns = timestamp_ns;
 
 	m_ff_vec3_f32_push(f->word_accel_ff, &world_accel, timestamp_ns);
@@ -240,7 +240,7 @@ m_imu_3dof_update(struct m_imu_3dof *f,
 		    gyro_biased.z / gyro_biased_length,
 		};
 
-		float rot_angle = gyro_biased_length * dt;
+		float rot_angle = gyro_biased_length * (float)dt;
 
 		struct xrt_quat delta_orient;
 		math_quat_from_angle_vector(rot_angle, &rot_axis, &delta_orient);

@@ -131,8 +131,8 @@ math_compute_fovs(double w_total,
 		return false;
 	}
 
-	fov->angle_left = -theta_1;
-	fov->angle_right = theta_2;
+	fov->angle_left = (float)-theta_1;
+	fov->angle_right = (float)theta_2;
 
 	double phi_1 = 0;
 	double phi_2 = 0;
@@ -153,8 +153,8 @@ math_compute_fovs(double w_total,
 	}
 
 	/* phi_1 is "down" so we record this as negative. */
-	fov->angle_down = phi_1 * -1.0;
-	fov->angle_up = phi_2;
+	fov->angle_down = (float)(-phi_1);
+	fov->angle_up = (float)phi_2;
 
 	return true;
 }

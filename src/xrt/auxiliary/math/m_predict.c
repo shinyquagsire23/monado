@@ -55,7 +55,7 @@ do_orientation(const struct xrt_space_relation *rel,
 	if (valid_orientation) {
 		math_quat_integrate_velocity(&rel->pose.orientation,      // Old orientation
 		                             &accum,                      // Angular velocity
-		                             delta_s,                     // Delta in seconds
+		                             (float)delta_s,              // Delta in seconds
 		                             &out_rel->pose.orientation); // Result
 	}
 
@@ -93,7 +93,7 @@ do_position(const struct xrt_space_relation *rel,
 	}
 
 	if (valid_position) {
-		out_rel->pose.position = m_vec3_add(rel->pose.position, m_vec3_mul_scalar(accum, delta_s));
+		out_rel->pose.position = m_vec3_add(rel->pose.position, m_vec3_mul_scalar(accum, (float)delta_s));
 	}
 
 	// We use the new linear velocity with the acceleration integrated.
