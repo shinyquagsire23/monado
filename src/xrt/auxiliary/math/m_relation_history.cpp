@@ -54,8 +54,6 @@ m_relation_history_create(struct m_relation_history **rh_ptr)
 	*rh_ptr = U_TYPED_CALLOC(struct m_relation_history);
 	struct m_relation_history *rh = *rh_ptr;
 
-	rh->impl.topIdx = 0;
-	rh->impl.length = 0;
 	rh->has_first_sample = false;
 	os_mutex_init(&rh->mutex);
 #if 0
@@ -94,7 +92,7 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 	}
 
 	{
-		uint64_t oldest_in_buffer = rh->impl[rh->impl.length - 1]->timestamp;
+		uint64_t oldest_in_buffer = rh->impl[rh->impl.length() - 1]->timestamp;
 		uint64_t newest_in_buffer = rh->impl[0]->timestamp;
 
 		if (at_timestamp_ns > newest_in_buffer) {
@@ -118,7 +116,7 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 #ifdef RH_DEBUG
 			U_LOG_E("Extrapolating %f s before the tail of the buffer!", delta_s);
 #endif
-			m_predict_relation(&rh->impl[rh->impl.length - 1]->relation, delta_s, out_relation);
+			m_predict_relation(&rh->impl[rh->impl.length() - 1]->relation, delta_s, out_relation);
 			goto end;
 		}
 #ifdef RH_DEBUG
@@ -128,7 +126,7 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 		// Very slow - O(n) - but easier to read
 		int idx = 0;
 
-		for (int i = 0; i < rh->impl.length; i++) {
+		for (int i = 0; i < rh->impl.length(); i++) {
 			if (rh->impl[i]->timestamp < at_timestamp_ns) {
 				// If the entry we're looking at is before the input time
 				idx = i;
@@ -154,7 +152,7 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 			assert(step == (int)pow(2, i));
 #endif
 
-			if (idx >= rh->impl.length) {
+			if (idx >= rh->impl.length()) {
 				// We'd be looking at an uninitialized value. Go back closer to the head of the buffer.
 				idx -= step;
 				continue;

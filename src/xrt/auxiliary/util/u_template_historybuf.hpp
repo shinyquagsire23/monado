@@ -19,56 +19,55 @@
 
 namespace xrt::auxiliary::util {
 
-template <typename T, int maxSize> struct HistoryBuffer
+template <typename T, int maxSize> class HistoryBuffer
 {
+private:
 	T internalBuffer[maxSize];
-	int topIdx = 0;
-	int length = 0;
+	int mTopIdx = 0;
+	int mLength = 0;
+
+
+public:
+	// clang-format off
+	int topIdx() { return mTopIdx; }
+	int length() { return mLength; }
+	// clang-format on
 
 	/* Put something at the top, overwrite whatever was at the back*/
 	void
-	push(const T inElement);
+	push(const T inElement)
+	{
+		mTopIdx++;
+		if (mTopIdx == maxSize) {
+			mTopIdx = 0;
+		}
 
-	T *operator[](int inIndex);
+		memcpy(&internalBuffer[mTopIdx], &inElement, sizeof(T));
+		mLength++;
+		mLength = std::min(mLength, maxSize);
+	}
 
-	// Lazy convenience.
-	T *
-	last();
+	T * // Hack comment to fix clang-format
+	operator[](int inIndex)
+	{
+		if (mLength == 0) {
+			return NULL;
+		}
+		assert(inIndex <= maxSize);
+		assert(inIndex >= 0);
+
+		int index = mTopIdx - inIndex;
+		if (index < 0) {
+			index = maxSize + index;
+		}
+
+		assert(index >= 0);
+		if (index > maxSize) {
+			assert(false);
+		}
+
+		return &internalBuffer[index];
+	}
 };
 
-template <typename T, int maxSize>
-void
-HistoryBuffer<T, maxSize>::push(const T inElement)
-{
-	topIdx++;
-	if (topIdx == maxSize) {
-		topIdx = 0;
-	}
-
-	memcpy(&internalBuffer[topIdx], &inElement, sizeof(T));
-	length++;
-	length = std::min(length, maxSize);
-	// U_LOG_E("new length is %zu", length);
-}
-
-template <typename T, int maxSize> T *HistoryBuffer<T, maxSize>::operator[](int inIndex)
-{
-	if (length == 0) {
-		return NULL;
-	}
-	assert(inIndex <= maxSize);
-	assert(inIndex >= 0);
-
-	int index = topIdx - inIndex;
-	if (index < 0) {
-		index = maxSize + index;
-	}
-
-	assert(index >= 0);
-	if (index > maxSize) {
-		assert(false);
-	}
-
-	return &internalBuffer[index];
-}
 } // namespace xrt::auxiliary::util
