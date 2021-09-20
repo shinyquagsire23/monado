@@ -266,13 +266,13 @@ read_sample_and_apply_calibration(struct psvr_device *psvr,
 	    raw_gyro.z * 0.00105f,
 	};
 
-	float ax = 2.0 / (psvr->calibration.accel_pos_x.x - psvr->calibration.accel_neg_x.x);
-	float ay = 2.0 / (psvr->calibration.accel_pos_y.y - psvr->calibration.accel_neg_y.y);
-	float az = 2.0 / (psvr->calibration.accel_pos_z.z - psvr->calibration.accel_neg_z.z);
+	float ax = 2.0f / (psvr->calibration.accel_pos_x.x - psvr->calibration.accel_neg_x.x);
+	float ay = 2.0f / (psvr->calibration.accel_pos_y.y - psvr->calibration.accel_neg_y.y);
+	float az = 2.0f / (psvr->calibration.accel_pos_z.z - psvr->calibration.accel_neg_z.z);
 
-	float ox = (psvr->calibration.accel_pos_x.x + psvr->calibration.accel_neg_x.x) / 2.0;
-	float oy = (psvr->calibration.accel_pos_y.y + psvr->calibration.accel_neg_y.y) / 2.0;
-	float oz = (psvr->calibration.accel_pos_z.z + psvr->calibration.accel_neg_z.z) / 2.0;
+	float ox = (psvr->calibration.accel_pos_x.x + psvr->calibration.accel_neg_x.x) / 2.0f;
+	float oy = (psvr->calibration.accel_pos_y.y + psvr->calibration.accel_neg_y.y) / 2.0f;
+	float oz = (psvr->calibration.accel_pos_z.z + psvr->calibration.accel_neg_z.z) / 2.0f;
 
 	accel.x -= ox;
 	accel.y -= oy;
@@ -282,9 +282,9 @@ read_sample_and_apply_calibration(struct psvr_device *psvr,
 	accel.z *= az;
 
 	// Go from Gs to m/s2 and flip the Z-axis.
-	accel.x *= +MATH_GRAVITY_M_S2;
-	accel.y *= +MATH_GRAVITY_M_S2;
-	accel.z *= -MATH_GRAVITY_M_S2;
+	accel.x *= (float)+MATH_GRAVITY_M_S2;
+	accel.y *= (float)+MATH_GRAVITY_M_S2;
+	accel.z *= (float)-MATH_GRAVITY_M_S2;
 
 	// Flip the Z-axis.
 	gyro.x *= +1.0;
@@ -461,7 +461,7 @@ handle_calibration_msg(struct psvr_device *psvr, const unsigned char *buffer, si
 		return;
 	}
 
-	size_t which = buffer[1];
+	uint16_t which = buffer[1];
 	size_t dst = data_length * which;
 	for (size_t src = data_start; src < size; src++, dst++) {
 		psvr->calibration.data[dst] = buffer[src];
@@ -984,19 +984,19 @@ psvr_device_create(struct hid_device_info *sensor_hid_info,
 	{
 		struct u_panotools_values vals = {0};
 
-		vals.distortion_k[0] = 0.75;
-		vals.distortion_k[1] = -0.01;
-		vals.distortion_k[2] = 0.75;
-		vals.distortion_k[3] = 0.0;
-		vals.distortion_k[4] = 3.8;
-		vals.aberration_k[0] = 0.999;
-		vals.aberration_k[1] = 1.008;
-		vals.aberration_k[2] = 1.018;
-		vals.scale = 1.2 * (1980 / 2.0f);
+		vals.distortion_k[0] = 0.75f;
+		vals.distortion_k[1] = -0.01f;
+		vals.distortion_k[2] = 0.75f;
+		vals.distortion_k[3] = 0.0f;
+		vals.distortion_k[4] = 3.8f;
+		vals.aberration_k[0] = 0.999f;
+		vals.aberration_k[1] = 1.008f;
+		vals.aberration_k[2] = 1.018f;
+		vals.scale = 1.2f * (1980 / 2.0f);
 		vals.viewport_size.x = (1980 / 2.0f);
 		vals.viewport_size.y = (1080);
-		vals.lens_center.x = vals.viewport_size.x / 2.0;
-		vals.lens_center.y = vals.viewport_size.y / 2.0;
+		vals.lens_center.x = vals.viewport_size.x / 2.0f;
+		vals.lens_center.y = vals.viewport_size.y / 2.0f;
 
 		psvr->vals = vals;
 
