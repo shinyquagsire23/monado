@@ -77,6 +77,10 @@ rs_container_cleanup(struct rs_container *rsc)
 struct xrt_device *
 rs_ddev_create(int device_idx);
 
+//! Create RealSense device tracked with host-SLAM (one with camera and IMU streams)
+struct xrt_device *
+rs_hdev_create(struct xrt_prober *xp, int device_idx);
+
 /*!
  * @}
  */

@@ -193,7 +193,7 @@ create_tracked_rs_device(struct xrt_prober *xp)
 		if (!external_slam_supported) {
 			ERROR("No external SLAM systems built, unable to produce host SLAM tracking");
 		} else if (has_hdev) {
-			ERROR("Host-SLAM device creation not implemented") //! @todo
+			dev = rs_hdev_create(xp, hdev_idx);
 		} else {
 			ERROR("No RealSense devices that support external SLAM tracking were found");
 		}
@@ -207,7 +207,7 @@ create_tracked_rs_device(struct xrt_prober *xp)
 		if (has_ddev) {
 			dev = rs_ddev_create(ddev_idx);
 		} else if (has_hdev && external_slam_supported) {
-			ERROR("Host-SLAM device creation not implemented") //! @todo
+			dev = rs_hdev_create(xp, hdev_idx);
 		} else {
 			INFO("No RealSense devices that can be tracked were found");
 		}

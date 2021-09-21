@@ -143,6 +143,7 @@ lib_drv_rs = static_library(
 	'drv_rs',
 	files(
 		'realsense/rs_ddev.c',
+		'realsense/rs_hdev.c',
 		'realsense/rs_interface.h',
 		'realsense/rs_driver.h',
 		'realsense/rs_prober.c',

@@ -20,6 +20,8 @@ extern "C" {
  * @brief Driver for the SLAM-capable Intel Realsense devices.
  */
 
+#define RS_HOST_SLAM_TRACKER_STR "Host SLAM Tracker for RealSense"
+
 #define RS_TRACKING_DISABLED -1
 #define RS_TRACKING_UNSPECIFIED 0
 #define RS_TRACKING_DEVICE_SLAM 1

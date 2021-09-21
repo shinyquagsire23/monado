@@ -179,6 +179,7 @@ endif()
 if(XRT_BUILD_DRIVER_RS)
 	set(RS_SOURCE_FILES
 		realsense/rs_ddev.c
+		realsense/rs_hdev.c
 		realsense/rs_prober.c
 		realsense/rs_driver.h
 		realsense/rs_interface.h
