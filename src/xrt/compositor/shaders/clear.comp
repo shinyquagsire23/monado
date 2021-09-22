@@ -4,6 +4,7 @@
 
 #version 460
 
+
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(set = 0, binding = 2) uniform writeonly restrict image2D target;
@@ -14,6 +15,7 @@ layout(set = 0, binding = 3) uniform restrict Config
 	vec4 post_transform[2];
 	mat4 transform[2];
 } data;
+
 
 void main()
 {

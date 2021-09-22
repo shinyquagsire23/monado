@@ -6,6 +6,7 @@
 
 #version 450
 
+
 layout (binding = 1, std140) uniform ubo
 {
 	vec4 vertex_rot;

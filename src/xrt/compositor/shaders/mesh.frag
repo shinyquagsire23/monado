@@ -9,6 +9,7 @@
 
 #version 450
 
+
 layout (binding = 0) uniform sampler2D tex_sampler;
 
 layout (location = 0)  in vec2 in_ruv;
@@ -23,5 +24,5 @@ void main()
 	float g = texture(tex_sampler, in_guv).y;
 	float b = texture(tex_sampler, in_buv).z;
 
-        out_color = vec4(r, g, b, 1.0);
+	out_color = vec4(r, g, b, 1.0);
 }
