@@ -74,6 +74,7 @@ struct comp_renderer
 	 * Array of "renderings" equal in size to the number of comp_target images.
 	 */
 	struct comp_rendering *rrs;
+	struct comp_rendering_target_resources *rtss;
 
 	/*!
 	 * Array of fences equal in size to the number of comp_target images.
@@ -193,15 +194,29 @@ calc_viewport_data(struct comp_renderer *r,
 
 //! @pre comp_target_has_images(r->c->target)
 static void
-renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uint32_t index)
+renderer_build_rendering(struct comp_renderer *r,
+                         struct comp_rendering *rr,
+                         struct comp_rendering_target_resources *rts,
+                         uint32_t index)
 {
 	struct comp_compositor *c = r->c;
+
+	/*
+	 * Target
+	 */
 
 	struct comp_target_data data;
 	data.format = r->c->target->format;
 	data.is_external = true;
 	data.width = r->c->target->width;
 	data.height = r->c->target->height;
+
+	comp_rendering_target_resources_init(rts, c, &c->nr, r->c->target->images[index].view, &data);
+
+
+	/*
+	 * Rendering
+	 */
 
 	bool pre_rotate = false;
 	if (r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
@@ -223,7 +238,7 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	 * Init
 	 */
 
-	comp_rendering_init(c, &c->nr, rr);
+	comp_rendering_init(rr, c, &c->nr);
 
 
 	/*
@@ -273,10 +288,9 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	 * Target
 	 */
 
-	comp_draw_begin_target_single(        //
-	    rr,                               //
-	    r->c->target->images[index].view, //
-	    &data);                           //
+	comp_draw_begin_target( //
+	    rr,                 //
+	    rts);               //
 
 
 	/*
@@ -284,7 +298,6 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	 */
 
 	comp_draw_begin_view(rr,                //
-	                     0,                 // target_index
 	                     0,                 // view_index
 	                     &l_viewport_data); // viewport_data
 
@@ -298,7 +311,6 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	 */
 
 	comp_draw_begin_view(rr,                //
-	                     0,                 // target_index
 	                     1,                 // view_index
 	                     &r_viewport_data); // viewport_data
 
@@ -312,6 +324,9 @@ renderer_build_rendering(struct comp_renderer *r, struct comp_rendering *rr, uin
 	 */
 
 	comp_draw_end_target(rr);
+
+	// Make the command buffer usable.
+	comp_rendering_finalize(rr);
 }
 
 /*!
@@ -335,9 +350,10 @@ renderer_create_renderings_and_fences(struct comp_renderer *r)
 	bool use_compute = r->settings->use_compute;
 	if (!use_compute) {
 		r->rrs = U_TYPED_ARRAY_CALLOC(struct comp_rendering, r->num_buffers);
+		r->rtss = U_TYPED_ARRAY_CALLOC(struct comp_rendering_target_resources, r->num_buffers);
 
 		for (uint32_t i = 0; i < r->num_buffers; ++i) {
-			renderer_build_rendering(r, &r->rrs[i], i);
+			renderer_build_rendering(r, &r->rrs[i], &r->rtss[i], i);
 		}
 	}
 
@@ -367,11 +383,14 @@ renderer_close_renderings_and_fences(struct comp_renderer *r)
 	// Renderings
 	if (r->num_buffers > 0 && r->rrs != NULL) {
 		for (uint32_t i = 0; i < r->num_buffers; i++) {
+			comp_rendering_target_resources_close(&r->rtss[i]);
 			comp_rendering_close(&r->rrs[i]);
 		}
 
 		free(r->rrs);
+		free(r->rtss);
 		r->rrs = NULL;
+		r->rtss = NULL;
 	}
 
 	// Fences

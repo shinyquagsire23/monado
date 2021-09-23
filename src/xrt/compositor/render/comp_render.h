@@ -234,14 +234,15 @@ comp_resources_close(struct comp_compositor *c, struct comp_resources *r);
 
 /*
  *
- * Rendering
+ * Rendering target
  *
  */
 
 /*!
- * Each rendering (@ref comp_rendering) render to one or more targets, each
- * target can have one or more views (@ref comp_rendering_view), this struct
- * holds all the data that is specific to the target.
+ * Each rendering (@ref comp_rendering) render to one or more targets
+ * (@ref comp_rendering_target_resources), each target can have one or more
+ * views (@ref comp_rendering_view), this struct holds all the data that is
+ * specific to the target.
  */
 struct comp_target_data
 {
@@ -256,9 +257,69 @@ struct comp_target_data
 };
 
 /*!
- * Each rendering (@ref comp_rendering) render to one or more targets, each
- * target can have one or more views (@ref comp_rendering_view), this struct
- * holds all the data that is specific to the target.
+ * Each rendering (@ref comp_rendering) render to one or more targets
+ * (@ref comp_rendering_target_resources), each target can have one or more
+ * views (@ref comp_rendering_view), this struct holds all the vulkan resources
+ * that is specific to the target.
+ *
+ * Technically the framebuffer could be moved out of this struct and all of this
+ * state be turned into a CSO object that depends only only the format and
+ * external status of the target, but is combined to reduce the number of
+ * objects needed to render.
+ */
+struct comp_rendering_target_resources
+{
+	//! Owning compositor.
+	struct comp_compositor *c;
+
+	//! Collections of static resources.
+	struct comp_resources *r;
+
+	//! The data for this target.
+	struct comp_target_data data;
+
+	//! Render pass used for rendering, does not depend on framebuffer.
+	VkRenderPass render_pass;
+
+	struct
+	{
+		//! Pipeline layout used for mesh, does not depend on framebuffer.
+		VkPipeline pipeline;
+	} mesh;
+
+	//! Framebuffer for this target, depends on given VkImageView.
+	VkFramebuffer framebuffer;
+};
+
+
+/*!
+ * Init a target resource struct, caller has to keep target alive until closed.
+ */
+bool
+comp_rendering_target_resources_init(struct comp_rendering_target_resources *rts,
+                                     struct comp_compositor *c,
+                                     struct comp_resources *r,
+                                     VkImageView target,
+                                     struct comp_target_data *data);
+
+/*!
+ * Frees all resources held by the target, does not free the struct itself.
+ */
+void
+comp_rendering_target_resources_close(struct comp_rendering_target_resources *rts);
+
+
+/*
+ *
+ * Rendering
+ *
+ */
+
+/*!
+ * Each rendering (@ref comp_rendering) render to one or more targets
+ * (@ref comp_rendering_target_resources), each target can have one or more
+ * views (@ref comp_rendering_view), this struct holds all the vulkan resources
+ * that is specific to the view.
  */
 struct comp_rendering_view
 {
@@ -276,32 +337,17 @@ struct comp_rendering_view
  */
 struct comp_rendering
 {
+	//! Owning compositor.
 	struct comp_compositor *c;
+
+	//! Resources that we are based on.
 	struct comp_resources *r;
+
+	//! The current target we are rendering too, can change during command building.
+	struct comp_rendering_target_resources *rts;
 
 	//! Command buffer where all commands are recorded.
 	VkCommandBuffer cmd;
-
-	//! Render pass used for rendering.
-	VkRenderPass render_pass;
-
-	struct
-	{
-		//! The data for this target.
-		struct comp_target_data data;
-
-		//! Framebuffer for this target.
-		VkFramebuffer framebuffer;
-	} targets[2];
-
-	//! Number of different targets, number of views are always two.
-	uint32_t num_targets;
-
-	struct
-	{
-		//! Pipeline layout used for mesh.
-		VkPipeline pipeline;
-	} mesh;
 
 	//! Holds per view data.
 	struct comp_rendering_view views[2];
@@ -314,7 +360,13 @@ struct comp_rendering
  * Init struct and create resources needed for rendering.
  */
 bool
-comp_rendering_init(struct comp_compositor *c, struct comp_resources *r, struct comp_rendering *rr);
+comp_rendering_init(struct comp_rendering *rr, struct comp_compositor *c, struct comp_resources *r);
+
+/*!
+ * Frees any unneeded resources and ends the command buffer so it can be used.
+ */
+void
+comp_rendering_finalize(struct comp_rendering *rr);
 
 /*!
  * Frees all resources held by the rendering, does not free the struct itself.
@@ -352,26 +404,16 @@ struct comp_mesh_ubo_data
  * to comp_draw_begin_view.
  */
 bool
-comp_draw_begin_target_single(struct comp_rendering *rr, VkImageView target, struct comp_target_data *data);
+comp_draw_begin_target(struct comp_rendering *rr, struct comp_rendering_target_resources *rts);
 
 void
 comp_draw_end_target(struct comp_rendering *rr);
 
 void
-comp_draw_begin_view(struct comp_rendering *rr,
-                     uint32_t target,
-                     uint32_t view,
-                     struct comp_viewport_data *viewport_data);
+comp_draw_begin_view(struct comp_rendering *rr, uint32_t view, struct comp_viewport_data *viewport_data);
 
 void
 comp_draw_end_view(struct comp_rendering *rr);
-
-/*!
- * Does any needed teardown of state after all of the drawing commands have been
- * submitted.
- */
-void
-comp_draw_end_drawing(struct comp_resources *r);
 
 void
 comp_draw_projection_layer(struct comp_rendering *rr,
