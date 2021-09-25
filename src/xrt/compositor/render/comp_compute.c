@@ -474,7 +474,7 @@ comp_rendering_compute_init(struct comp_compositor *c, struct comp_resources *r,
 	    vk,                               //
 	    r->compute.descriptor_pool,       // descriptor_pool
 	    r->compute.descriptor_set_layout, // descriptor_set_layout
-	    &crc->clear_descriptor_set));     // descriptor_set
+	    &crc->descriptor_set));           // descriptor_set
 
 	return true;
 }
@@ -510,7 +510,7 @@ comp_rendering_compute_close(struct comp_rendering_compute *crc)
 	destroy_command_buffer(vk, crc->cmd);
 
 	// Reclaimed by vkResetDescriptorPool.
-	crc->clear_descriptor_set = VK_NULL_HANDLE;
+	crc->descriptor_set = VK_NULL_HANDLE;
 
 	vk->vkResetDescriptorPool(vk->device, crc->r->compute.descriptor_pool, 0);
 
@@ -606,7 +606,7 @@ comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
 	    r->compute.ubo_binding,        //
 	    r->compute.ubo.buffer,         //
 	    VK_WHOLE_SIZE,                 //
-	    crc->clear_descriptor_set);    //
+	    crc->descriptor_set);          //
 
 	vk->vkCmdBindPipeline(                        //
 	    crc->cmd,                                 // commandBuffer
@@ -619,7 +619,7 @@ comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
 	    r->compute.pipeline_layout,     // layout
 	    0,                              // firstSet
 	    1,                              // descriptorSetCount
-	    &crc->clear_descriptor_set,     // pDescriptorSets
+	    &crc->descriptor_set,           // pDescriptorSets
 	    0,                              // dynamicOffsetCount
 	    NULL);                          // pDynamicOffsets
 
@@ -726,7 +726,7 @@ comp_rendering_compute_projection(struct comp_rendering_compute *crc,
 	    r->compute.ubo_binding,        //
 	    r->compute.ubo.buffer,         //
 	    VK_WHOLE_SIZE,                 //
-	    crc->clear_descriptor_set);    //
+	    crc->descriptor_set);          //
 
 	vk->vkCmdBindPipeline(               //
 	    crc->cmd,                        // commandBuffer
@@ -739,7 +739,7 @@ comp_rendering_compute_projection(struct comp_rendering_compute *crc,
 	    r->compute.pipeline_layout,     // layout
 	    0,                              // firstSet
 	    1,                              // descriptorSetCount
-	    &crc->clear_descriptor_set,     // pDescriptorSets
+	    &crc->descriptor_set,           // pDescriptorSets
 	    0,                              // dynamicOffsetCount
 	    NULL);                          // pDynamicOffsets
 
@@ -849,7 +849,7 @@ comp_rendering_compute_clear(struct comp_rendering_compute *crc,       //
 	    r->compute.ubo_binding,        //
 	    r->compute.ubo.buffer,         //
 	    VK_WHOLE_SIZE,                 //
-	    crc->clear_descriptor_set);    //
+	    crc->descriptor_set);          //
 
 	vk->vkCmdBindPipeline(              //
 	    crc->cmd,                       // commandBuffer
@@ -862,7 +862,7 @@ comp_rendering_compute_clear(struct comp_rendering_compute *crc,       //
 	    r->compute.pipeline_layout,     // layout
 	    0,                              // firstSet
 	    1,                              // descriptorSetCount
-	    &crc->clear_descriptor_set,     // pDescriptorSets
+	    &crc->descriptor_set,           // pDescriptorSets
 	    0,                              // dynamicOffsetCount
 	    NULL);                          // pDynamicOffsets
 

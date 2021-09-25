@@ -469,30 +469,8 @@ struct comp_rendering_compute
 	//! Command buffer where all commands are recorded.
 	VkCommandBuffer cmd;
 
-	//! Clear descriptor set.
-	VkDescriptorSet clear_descriptor_set;
-
-#if 0
-	struct
-	{
-		//! The data for this target.
-		struct comp_target_data data;
-
-		//! Image view we are targeting, not owned by the rendering.
-		VkImageView image_view;
-	} targets[2];
-
-	//! Number of different targets, number of views are always two.
-	uint32_t num_targets;
-#endif
-
-	struct
-	{
-		int temp;
-	} view;
-
-	//! The current view we are "rendering" to.
-	uint32_t current_view;
+	//! Shared descriptor set between clear, projection and timewarp.
+	VkDescriptorSet descriptor_set;
 };
 
 struct comp_rendering_compute_data
