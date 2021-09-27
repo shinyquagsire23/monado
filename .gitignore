@@ -9,19 +9,34 @@ CMakeLists.txt.user.*
 *Makefile
 *cmake_install.cmake
 *libopenxr_monado.so
+*.a
 CMakeDoxyfile.in
 CMakeDoxygenDefaults.cmake
+CTestTestfile.cmake
+DartConfiguration.tcl
 doc/Doxyfile
 doc/html/
 doc/latex/
 openxr_monado-dev.json
 openxr_monado.json
+src/xrt/auxiliary/bindings/b_generated_bindings.*
+src/xrt/auxiliary/u_git_tag.c
 src/xrt/compositor/shaders/*.vert.h
 src/xrt/compositor/shaders/*.frag.h
+src/xrt/compositor/shaders/*.comp.h
+src/xrt/include/xrt/xrt_config_*.h
+src/xrt/ipc/*_generated.*
 src/xrt/targets/cli/monado-cli
+src/xrt/targets/ctl/monado-ctl
 src/xrt/targets/gui/monado-gui
+src/xrt/targets/service/monado-service
+src/xrt/targets/openxr/active_runtime.cmake
 src/xrt/targets/openxr/intermediate_manifest.json
+src/xrt/targets/openxr/make_manifest.cmake
 src/xrt/targets/targets_enabled_drivers.h
+steamvr-monado/
+tests/tests_generic_callbacks
+tests/tests_input_transform
 
 # Ignore Python caches
 __pycache__/
