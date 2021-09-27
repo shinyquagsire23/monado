@@ -1149,6 +1149,7 @@ _create_controller_device(struct survive_system *sys,
 }
 
 DEBUG_GET_ONCE_LOG_OPTION(survive_log, "SURVIVE_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_OPTION(survive_lh_gen, "SURVIVE_LH_GEN", "0")
 
 static void
 add_device(struct survive_system *ss, const struct SurviveSimpleConfigEvent *e)
@@ -1320,7 +1321,7 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 	SurviveSimpleContext *actx = NULL;
 #if 1
 	char *survive_args[] = {
-	    "Monado-libsurvive",
+	    "Monado-libsurvive", "--lighthouse-gen", (char *)debug_get_option_survive_lh_gen(),
 	    //"--time-window", "1500000"
 	    //"--use-imu", "0",
 	    //"--use-kalman", "0"
