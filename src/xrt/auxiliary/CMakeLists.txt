@@ -218,7 +218,7 @@ endif()
 
 # Math library.
 add_library(aux_math STATIC ${MATH_SOURCE_FILES})
-target_link_libraries(aux_math PUBLIC aux-includes)
+target_link_libraries(aux_math PUBLIC aux-includes aux_util)
 
 # Math files has extra include(s).
 target_include_directories(aux_math SYSTEM
@@ -252,6 +252,7 @@ endif()
 if(ANDROID)
 	target_link_libraries(aux_util PUBLIC ${ANDROID_LOG_LIBRARY})
 endif()
+
 
 # GStreamer library.
 if(XRT_HAVE_GST)
