@@ -16,6 +16,10 @@ if libbsd.found() and not get_option('libbsd').disabled()
 	aux_util_deps += libbsd
 endif
 
+if percetto.found()
+	aux_util_deps += percetto
+endif
+
 lib_aux_util = static_library(
 	'aux_util',
 	files(

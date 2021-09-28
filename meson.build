@@ -79,6 +79,7 @@ gst_app  = dependency('gstreamer-app-1.0', required: false)
 gst_video= dependency('gstreamer-video-1.0', required: false)
 depthai  = dependency('depthai', method: 'cmake', modules : ['depthai::core', 'depthai::opencv', 'XLink'], required: false)
 onnxruntime = dependency('libonnxruntime', required: false)
+percetto = dependency('percetto', required: false)
 
 gst_found = gst.found() and gst_app.found() and gst_video.found()
 
