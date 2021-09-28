@@ -279,14 +279,18 @@ t_slam_start(struct xrt_tracked_slam *xts)
 extern "C" int
 t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts, struct xrt_slam_sinks **out_sink)
 {
+	enum u_logging_level ll = debug_get_log_option_slam_log();
+	const char *config_file = debug_get_option_slam_config();
+	if (!config_file) {
+		U_LOG_IFL_W(ll, "SLAM tracker requires a config file set with the SLAM_CONFIG environment variable");
+		return -1;
+	}
+
 	auto &t = *(new TrackerSlam{});
-	t.ll = debug_get_log_option_slam_log();
+	t.ll = ll;
 	t.cv_wrapper = new MatFrame();
 
 	t.base.get_tracked_pose = t_slam_get_tracked_pose;
-
-	const char *config_file = debug_get_option_slam_config();
-	SLAM_ASSERT(config_file, "SLAM tracker requires a config file set with the SLAM_CONFIG environment variable");
 
 	std::string config_file_string = std::string(config_file);
 	t.slam = new slam_tracker{config_file_string};
