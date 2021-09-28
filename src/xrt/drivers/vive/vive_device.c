@@ -17,6 +17,7 @@
 #include "util/u_debug.h"
 #include "util/u_var.h"
 #include "util/u_time.h"
+#include "util/u_trace_marker.h"
 
 #include "math/m_api.h"
 #include "math/m_predict.h"
@@ -45,6 +46,8 @@ vive_device(struct xrt_device *xdev)
 static void
 vive_device_destroy(struct xrt_device *xdev)
 {
+	XRT_TRACE_MARKER();
+
 	struct vive_device *d = vive_device(xdev);
 	if (d->mainboard_dev)
 		vive_mainboard_power_off(d);
@@ -86,6 +89,8 @@ vive_device_destroy(struct xrt_device *xdev)
 static void
 vive_device_update_inputs(struct xrt_device *xdev)
 {
+	XRT_TRACE_MARKER();
+
 	struct vive_device *d = vive_device(xdev);
 	VIVE_TRACE(d, "ENTER!");
 }
@@ -96,6 +101,8 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
                              uint64_t at_timestamp_ns,
                              struct xrt_space_relation *out_relation)
 {
+	XRT_TRACE_MARKER();
+
 	struct vive_device *d = vive_device(xdev);
 
 	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
@@ -118,6 +125,8 @@ vive_device_get_view_pose(struct xrt_device *xdev,
                           uint32_t view_index,
                           struct xrt_pose *out_pose)
 {
+	XRT_TRACE_MARKER();
+
 	// Only supports two views.
 	assert(view_index < 2);
 
@@ -251,6 +260,8 @@ cald_dt_ns(uint32_t dt_raw)
 static void
 update_imu(struct vive_device *d, const void *buffer)
 {
+	XRT_TRACE_MARKER();
+
 	const struct vive_imu_report *report = buffer;
 	const struct vive_imu_sample *sample = report->sample;
 	uint8_t last_seq = d->imu.sequence;
@@ -468,6 +479,8 @@ _print_v1_pulse(struct vive_device *d, uint8_t sensor_id, uint32_t timestamp, ui
 static void
 _decode_pulse_report(struct vive_device *d, const void *buffer)
 {
+	XRT_TRACE_MARKER();
+
 	const struct vive_headset_lighthouse_pulse_report *report = buffer;
 	unsigned int i;
 
@@ -596,6 +609,8 @@ _print_v2_pulse(
 static bool
 _print_pulse_report_v2(struct vive_device *d, const void *buffer)
 {
+	XRT_TRACE_MARKER();
+
 	const struct vive_headset_lighthouse_v2_pulse_report *report = buffer;
 
 	for (uint32_t i = 0; i < 4; i++) {
@@ -717,6 +732,8 @@ vive_sensors_run_thread(void *ptr)
 static bool
 compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
+	XRT_TRACE_MARKER();
+
 	struct vive_device *d = vive_device(xdev);
 	return u_compute_distortion_vive(&d->config.distortion[view], u, v, result);
 }

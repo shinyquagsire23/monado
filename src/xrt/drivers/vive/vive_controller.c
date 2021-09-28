@@ -13,34 +13,38 @@
  * originally written by Ryan Pavlik and available under the BSL-1.0.
  */
 
-
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "xrt/xrt_prober.h"
 
-#include "math/m_api.h"
-#include "math/m_predict.h"
-#include "util/u_debug.h"
-#include "util/u_device.h"
-#include "util/u_json.h"
-#include "util/u_misc.h"
-#include "util/u_time.h"
 #include "os/os_hid.h"
 #include "os/os_threading.h"
 #include "os/os_time.h"
+
+#include "math/m_api.h"
+#include "math/m_predict.h"
+
+#include "util/u_json.h"
+#include "util/u_misc.h"
+#include "util/u_time.h"
+#include "util/u_debug.h"
+#include "util/u_device.h"
+#include "util/u_trace_marker.h"
+
 #include "vive/vive_config.h"
 
 #include "vive.h"
 #include "vive_protocol.h"
 #include "vive_controller.h"
 
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #ifdef XRT_OS_LINUX
 #include <unistd.h>
 #include <math.h>
 #endif
+
 
 /*
  *
@@ -180,6 +184,8 @@ vive_controller_device_update_wand_inputs(struct xrt_device *xdev)
 static void
 vive_controller_device_update_index_inputs(struct xrt_device *xdev)
 {
+	XRT_TRACE_MARKER();
+
 	struct vive_controller_device *d = vive_controller_device(xdev);
 
 	os_mutex_lock(&d->lock);
@@ -306,6 +312,8 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
                                   uint64_t at_timestamp_ns,
                                   struct xrt_hand_joint_set *out_value)
 {
+	XRT_TRACE_MARKER();
+
 	struct vive_controller_device *d = vive_controller_device(xdev);
 
 	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT && name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
@@ -541,6 +549,8 @@ cald_dt_ns(uint32_t dt_raw)
 static void
 vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watchman_imu_sample *sample)
 {
+	XRT_TRACE_MARKER();
+
 	/* ouvrt: "Time in 48 MHz ticks, but we are missing the low byte" */
 	uint32_t time_raw = d->last_ticks | (sample->timestamp_hi << 8);
 	uint32_t dt_raw = calc_dt_raw_and_handle_overflow(d, time_raw);
