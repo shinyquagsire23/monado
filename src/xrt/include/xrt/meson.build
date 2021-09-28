@@ -119,7 +119,7 @@ if build_wayland_direct
 	have_conf.set('XRT_HAVE_WAYLAND_DIRECT', true)
 endif
 
-if percetto.found()
+if build_tracing
 	have_conf.set('XRT_HAVE_PERCETTO', true)
 endif
 

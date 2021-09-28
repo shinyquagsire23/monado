@@ -37,6 +37,7 @@ add_project_arguments(cpp.get_supported_arguments([
 #
 
 build_tracking = false
+build_tracing = false
 
 v4l2_required = false
 hidapi_required = false
@@ -103,6 +104,12 @@ endforeach
 if get_option('tracking').enabled() or get_option('tracking').auto()
 	build_tracking = opencv.found()
 endif
+
+if get_option('tracing')
+	build_tracing = percetto.found()
+endif
+
+
 
 # TODO: make these behave well when not present
 x11       = dependency('x11', required: get_option('xlib'))
@@ -298,15 +305,21 @@ message('Configuration done!')
 message('    drivers:  ' + ', '.join(drivers))
 
 if build_docs
-	message('    docs:     yes')
+	message('          docs: yes')
 else
-	message('    docs:     no')
+	message('          docs: no')
 endif
 
 if build_tracking
-	message('    tracking: yes')
+	message('      tracking: yes')
 else
-	message('    tracking: no')
+	message('      tracking: no')
+endif
+
+if build_tracing
+	message('       tracing: yes')
+else
+	message('       tracing: no')
 endif
 
 if get_option('steamvr_plugin')
@@ -316,39 +329,39 @@ else
 endif
 
 if build_opengl
-	message('      opengl: yes')
+	message('        opengl: yes')
 else
-	message('      opengl: no')
+	message('        opengl: no')
 endif
 
 if build_opengles
-	message('    opengles: yes')
+	message('      opengles: yes')
 else
-	message('    opengles: no')
+	message('      opengles: no')
 endif
 
 if build_egl
-	message('         egl: yes')
+	message('           egl: yes')
 else
-	message('         egl: no')
+	message('           egl: no')
 endif
 
 if build_xlib
-	message('        xlib: yes')
+	message('          xlib: yes')
 else
-	message('        xlib: no')
+	message('          xlib: no')
 endif
 
 if build_xcb
-	message('         xcb: yes')
+	message('           xcb: yes')
 else
-	message('         xcb: no')
+	message('           xcb: no')
 endif
 
 if build_wayland
-	message('     wayland: yes')
+	message('       wayland: yes')
 else
-	message('     wayland: no')
+	message('       wayland: no')
 endif
 
 if build_wayland_direct
@@ -358,19 +371,19 @@ else
 endif
 
 if not get_option('systemd').disabled() and systemd.found()
-	message('     systemd: yes')
+	message('       systemd: yes')
 else
-	message('     systemd: no')
+	message('       systemd: no')
 endif
 
 if not get_option('dbus').disabled() and dbus.found()
-	message('        dbus: yes')
+	message('          dbus: yes')
 else
-	message('        dbus: no')
+	message('          dbus: no')
 endif
 
 if not get_option('libbsd').disabled() and libbsd.found()
-	message('      libbsd: yes')
+	message('        libbsd: yes')
 else
-	message('      libbsd: no')
+	message('        libbsd: no')
 endif

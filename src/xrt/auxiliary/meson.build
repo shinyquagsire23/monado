@@ -16,7 +16,7 @@ if libbsd.found() and not get_option('libbsd').disabled()
 	aux_util_deps += libbsd
 endif
 
-if percetto.found()
+if build_tracing
 	aux_util_deps += percetto
 endif
 
