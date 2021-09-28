@@ -145,6 +145,7 @@ endforeach()
 option(BUILD_TESTING "Enable building of the test suite?" ON)
 
 option(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" ON)
+cmake_dependent_option(XRT_HAVE_PERCETTO "Enable percetto support" ON "PERCETTO_FOUND" OFF)
 cmake_dependent_option(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" OFF "XRT_HAVE_PERCETTO" OFF)
 
 cmake_dependent_option(CMAKE_INTERPROCEDURAL_OPTIMIZATION "Enable inter-procedural (link-time) optimization" OFF "HAS_IPO" OFF)
@@ -204,7 +205,6 @@ cmake_dependent_option(XRT_HAVE_FFMPEG "Enable ffmpeg testing video driver" ON "
 cmake_dependent_option(XRT_HAVE_SDL2 "Enable use of SDL2" ON "SDL2_FOUND AND XRT_HAVE_OPENGL" OFF)
 cmake_dependent_option(XRT_HAVE_SYSTEM_CJSON "Enable cJSON from system, instead of bundled source" ON "CJSON_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_GST "Enable gstreamer" ON "GST_FOUND" OFF)
-cmake_dependent_option(XRT_HAVE_PERCETTO "Enable percetto support" ON "PERCETTO_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_ONNXRUNTIME "Enable ONNX runtime support" ON "ONNXRUNTIME_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_SLAM "Enable SLAM tracking support" ON "SLAM;XRT_HAVE_OPENCV" OFF)
 cmake_dependent_option(XRT_HAVE_KIMERA_SLAM "Enable Kimera support" ON "kimera_vio_FOUND" OFF)
