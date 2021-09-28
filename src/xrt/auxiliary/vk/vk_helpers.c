@@ -819,6 +819,7 @@ vk_get_loader_functions(struct vk_bundle *vk, PFN_vkGetInstanceProcAddr g)
 	// Fill in all loader functions.
 	// clang-format off
 	vk->vkCreateInstance = GET_PROC(vk, vkCreateInstance);
+	vk->vkEnumerateInstanceExtensionProperties = GET_PROC(vk, vkEnumerateInstanceExtensionProperties);
 	// clang-format on
 
 	return VK_SUCCESS;

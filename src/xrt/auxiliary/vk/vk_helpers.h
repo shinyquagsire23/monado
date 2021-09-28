@@ -79,6 +79,7 @@ struct vk_bundle
 	// Loader functions
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;
 	PFN_vkCreateInstance vkCreateInstance;
+	PFN_vkEnumerateInstanceExtensionProperties vkEnumerateInstanceExtensionProperties;
 
 	// beginning of GENERATED instance loader code - do not modify - used by scripts
 	PFN_vkDestroyInstance vkDestroyInstance;
