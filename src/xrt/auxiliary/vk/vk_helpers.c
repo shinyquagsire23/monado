@@ -392,6 +392,10 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 
+	if (0 != (info->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT)) {
+		vk_info.flags |= VK_IMAGE_CREATE_PROTECTED_BIT;
+	}
+
 	ret = vk->vkCreateImage(vk->device, &vk_info, NULL, &image);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkCreateImage: %s", vk_result_string(ret));
