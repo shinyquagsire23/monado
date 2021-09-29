@@ -416,22 +416,6 @@ void
 comp_draw_end_view(struct comp_rendering *rr);
 
 void
-comp_draw_projection_layer(struct comp_rendering *rr,
-                           uint32_t layer,
-                           VkSampler sampler,
-                           VkImageView l_image_view,
-                           VkImageView r_image_view,
-                           struct xrt_layer_data *data);
-
-void
-comp_draw_quad_layer(
-    struct comp_rendering *rr, uint32_t layer, VkSampler sampler, VkImageView image_view, struct xrt_layer_data *data);
-
-void
-comp_draw_cylinder_layer(
-    struct comp_rendering *rr, uint32_t layer, VkSampler sampler, VkImageView image_view, struct xrt_layer_data *data);
-
-void
 comp_draw_distortion(struct comp_rendering *rr);
 
 
