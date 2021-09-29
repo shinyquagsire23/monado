@@ -216,7 +216,10 @@ renderer_build_rendering_target_resources(struct comp_renderer *r,
 static void
 renderer_build_rendering(struct comp_renderer *r,
                          struct comp_rendering *rr,
-                         struct comp_rendering_target_resources *rtr)
+                         struct comp_rendering_target_resources *rtr,
+                         VkSampler src_samplers[2],
+                         VkImageView src_image_views[2],
+                         struct xrt_normalized_rect src_norm_rects[2])
 {
 	COMP_TRACE_MARKER();
 
@@ -257,9 +260,11 @@ renderer_build_rendering(struct comp_renderer *r,
 	struct comp_mesh_ubo_data distortion_data[2] = {
 	    {
 	        .vertex_rot = l_v->rot,
+	        .post_transform = src_norm_rects[0],
 	    },
 	    {
 	        .vertex_rot = r_v->rot,
+	        .post_transform = src_norm_rects[1],
 	    },
 	};
 
@@ -280,17 +285,17 @@ renderer_build_rendering(struct comp_renderer *r,
 		                         &distortion_data[1].vertex_rot); //
 	}
 
-	comp_draw_update_distortion(rr,                             //
-	                            0,                              // view_index
-	                            r->lr->framebuffers[0].sampler, //
-	                            r->lr->framebuffers[0].view,    //
-	                            &distortion_data[0]);           //
+	comp_draw_update_distortion(rr,                   //
+	                            0,                    // view_index
+	                            src_samplers[0],      //
+	                            src_image_views[0],   //
+	                            &distortion_data[0]); //
 
-	comp_draw_update_distortion(rr,                             //
-	                            1,                              // view_index
-	                            r->lr->framebuffers[1].sampler, //
-	                            r->lr->framebuffers[1].view,    //
-	                            &distortion_data[1]);           //
+	comp_draw_update_distortion(rr,                   //
+	                            1,                    // view_index
+	                            src_samplers[1],      //
+	                            src_image_views[1],   //
+	                            &distortion_data[1]); //
 
 
 	/*
@@ -751,6 +756,41 @@ get_image_view(const struct comp_swapchain_image *image, enum xrt_layer_composit
 }
 
 static void
+do_gfx_mesh_and_proj(struct comp_renderer *r,
+                     struct comp_rendering *rr,
+                     struct comp_rendering_target_resources *rts,
+                     const struct comp_layer *layer,
+                     const struct xrt_layer_projection_view_data *lvd,
+                     const struct xrt_layer_projection_view_data *rvd)
+{
+	const struct xrt_layer_data *data = &layer->data;
+	const uint32_t left_array_index = lvd->sub.array_index;
+	const uint32_t right_array_index = rvd->sub.array_index;
+	const struct comp_swapchain_image *left = &layer->scs[0]->images[lvd->sub.image_index];
+	const struct comp_swapchain_image *right = &layer->scs[1]->images[rvd->sub.image_index];
+
+	struct xrt_normalized_rect src_norm_rects[2] = {lvd->sub.norm_rect, rvd->sub.norm_rect};
+	if (data->flip_y) {
+		src_norm_rects[0].h = -src_norm_rects[0].h;
+		src_norm_rects[0].y = 1 + src_norm_rects[0].y;
+		src_norm_rects[1].h = -src_norm_rects[1].h;
+		src_norm_rects[1].y = 1 + src_norm_rects[1].y;
+	}
+
+	VkSampler src_samplers[2] = {
+	    left->sampler,
+	    right->sampler,
+	};
+
+	VkImageView src_image_views[2] = {
+	    get_image_view(left, data->flags, left_array_index),
+	    get_image_view(right, data->flags, right_array_index),
+	};
+
+	renderer_build_rendering(r, rr, rts, src_samplers, src_image_views, src_norm_rects);
+}
+
+static void
 dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 {
 	COMP_TRACE_MARKER();
@@ -758,17 +798,62 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 	struct comp_compositor *c = r->c;
 	struct comp_target *ct = c->target;
 
-	comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+	const uint32_t slot_id = 0;
+	const uint32_t num_layers = c->slots[slot_id].num_layers;
+	struct comp_rendering_target_resources *rtr = &r->rtr_array[r->acquired_buffer];
 
-	renderer_get_view_projection(r);
-	comp_layer_renderer_draw(r->lr);
+	if (num_layers == 1 && c->slots[slot_id].layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
+		int i = 0;
+		const struct comp_layer *layer = &c->slots[slot_id].layers[i];
+		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
+		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
+		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
-	comp_target_update_timings(ct);
+		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
 
-	uint32_t i = r->acquired_buffer;
-	renderer_build_rendering(r, rr, &r->rtr_array[i]);
+		renderer_submit_queue(r, rr->cmd);
 
-	renderer_submit_queue(r, rr->cmd);
+		// We mark afterwards to not include CPU time spent.
+		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+	} else if (num_layers == 1 && c->slots[slot_id].layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+		int i = 0;
+		const struct comp_layer *layer = &c->slots[slot_id].layers[i];
+		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
+		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
+		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
+
+		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
+
+		renderer_submit_queue(r, rr->cmd);
+
+		// We mark afterwards to not include CPU time spent.
+		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+	} else {
+		// We mark here to include the layer rendering in the GPU time.
+		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+
+		renderer_get_view_projection(r);
+		comp_layer_renderer_draw(r->lr);
+
+		VkSampler src_samplers[2] = {
+		    r->lr->framebuffers[0].sampler,
+		    r->lr->framebuffers[1].sampler,
+
+		};
+		VkImageView src_image_views[2] = {
+		    r->lr->framebuffers[0].view,
+		    r->lr->framebuffers[1].view,
+		};
+
+		struct xrt_normalized_rect src_norm_rects[2] = {
+		    {.x = 0, .y = 0, .w = 1, .h = 1},
+		    {.x = 0, .y = 0, .w = 1, .h = 1},
+		};
+
+		renderer_build_rendering(r, rr, rtr, src_samplers, src_image_views, src_norm_rects);
+
+		renderer_submit_queue(r, rr->cmd);
+	}
 }
 
 

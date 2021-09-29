@@ -414,6 +414,21 @@ do_graphics_layers(struct comp_compositor *c)
 	uint32_t num_layers = c->slots[slot_id].num_layers;
 
 	comp_renderer_destroy_layers(c->r);
+
+	/*
+	 * We have a fast path for single projection layer that goes directly
+	 * to the distortion shader, so no need to use the layer renderer.
+	 */
+	if (num_layers == 1) {
+		struct comp_layer *layer = &c->slots[slot_id].layers[0];
+
+		// Handled by the distortion shader.
+		if (layer->data.type == XRT_LAYER_STEREO_PROJECTION ||
+		    layer->data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+			return;
+		}
+	}
+
 	comp_renderer_allocate_layers(c->r, num_layers);
 
 	for (uint32_t i = 0; i < num_layers; i++) {

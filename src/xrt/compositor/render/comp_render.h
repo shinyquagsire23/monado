@@ -397,6 +397,8 @@ struct comp_viewport_data
 struct comp_mesh_ubo_data
 {
 	struct xrt_matrix_2x2 vertex_rot;
+
+	struct xrt_normalized_rect post_transform;
 };
 
 /*!
