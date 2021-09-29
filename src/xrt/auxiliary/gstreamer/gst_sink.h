@@ -22,6 +22,9 @@ struct gstreamer_pipeline;
 void
 gstreamer_sink_send_eos(struct gstreamer_sink *gp);
 
+uint64_t
+gstreamer_sink_get_timestamp_offset(struct gstreamer_sink *gs);
+
 void
 gstreamer_sink_create_with_pipeline(struct gstreamer_pipeline *gp,
                                     uint32_t width,
