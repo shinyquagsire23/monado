@@ -744,6 +744,8 @@ vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *watchman_dev,
                    enum VIVE_VARIANT variant)
 {
+	XRT_TRACE_MARKER();
+
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 	struct vive_device *d = U_DEVICE_ALLOCATE(struct vive_device, flags, 1, 0);

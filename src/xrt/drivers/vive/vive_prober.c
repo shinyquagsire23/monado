@@ -11,6 +11,7 @@
 
 
 #include "util/u_debug.h"
+#include "util/u_trace_marker.h"
 
 #include "vive_device.h"
 #include "vive_controller.h"
@@ -137,6 +138,8 @@ init_vive_pro(struct xrt_prober *xp,
               enum u_logging_level ll,
               struct xrt_device **out_xdev)
 {
+	XRT_TRACE_MARKER();
+
 	log_vive_device(ll, xp, dev);
 
 	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VIVE_MANUFACTURER_STRING) ||
@@ -209,6 +212,8 @@ init_valve_index(struct xrt_prober *xp,
                  enum u_logging_level ll,
                  struct xrt_device **out_xdevs)
 {
+	XRT_TRACE_MARKER();
+
 	log_vive_device(ll, xp, dev);
 
 	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VALVE_INDEX_MANUFACTURER_STRING) ||
@@ -283,6 +288,8 @@ vive_found(struct xrt_prober *xp,
            cJSON *attached_data,
            struct xrt_device **out_xdev)
 {
+	XRT_TRACE_MARKER();
+
 	struct xrt_prober_device *dev = devices[index];
 
 	enum u_logging_level ll = debug_get_log_option_vive_log();
@@ -312,6 +319,8 @@ vive_controller_found(struct xrt_prober *xp,
                       cJSON *attached_data,
                       struct xrt_device **out_xdevs)
 {
+	XRT_TRACE_MARKER();
+
 	struct xrt_prober_device *dev = devices[index];
 	int ret;
 

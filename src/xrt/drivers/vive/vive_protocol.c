@@ -10,17 +10,19 @@
  */
 
 #include "math/m_mathinclude.h"
-
-#include <stdio.h>
-#include <zlib.h>
 #include "math/m_api.h"
-
-#include "vive_protocol.h"
 
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_json.h"
 #include "util/u_logging.h"
+#include "util/u_trace_marker.h"
+
+#include "vive_protocol.h"
+
+#include <stdio.h>
+#include <zlib.h>
+
 
 const struct vive_headset_power_report power_on_report = {
     .id = VIVE_HEADSET_POWER_REPORT_ID,
@@ -64,6 +66,8 @@ const struct vive_headset_power_report power_off_report = {
 char *
 vive_read_config(struct os_hid_device *hid_dev)
 {
+	XRT_TRACE_MARKER();
+
 	struct vive_config_start_report start_report = {
 	    .id = VIVE_CONFIG_START_REPORT_ID,
 	};
