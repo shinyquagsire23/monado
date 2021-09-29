@@ -81,6 +81,14 @@ struct u_var_button
 	bool disabled;
 };
 
+struct u_var_draggable_f32
+{
+	float val;
+	float step;
+	float min;
+	float max;
+};
+
 /*!
  * What kind of variable is this tracking.
  */
@@ -93,6 +101,7 @@ enum u_var_kind
 	U_VAR_KIND_U64,
 	U_VAR_KIND_I32,
 	U_VAR_KIND_F32,
+	U_VAR_KIND_DRAGGABLE_F32,
 	U_VAR_KIND_F64,
 	U_VAR_KIND_F32_ARR,
 	U_VAR_KIND_TIMING,
@@ -219,7 +228,8 @@ u_var_force_on(void);
 	ADD_FUNC(ro_ff_f64, struct m_ff_f64, RO_FF_F64)                                                                \
 	ADD_FUNC(ro_ff_vec3_f32, struct m_ff_vec3_f32, RO_FF_VEC3_F32)                                                 \
 	ADD_FUNC(gui_header, bool, GUI_HEADER)                                                                         \
-	ADD_FUNC(button, struct u_var_button, BUTTON)
+	ADD_FUNC(button, struct u_var_button, BUTTON)                                                                  \
+	ADD_FUNC(draggable_f32, struct u_var_draggable_f32, DRAGGABLE_F32)
 
 #define ADD_FUNC(SUFFIX, TYPE, ENUM) void u_var_add_##SUFFIX(void *, TYPE *, const char *);
 

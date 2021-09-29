@@ -231,6 +231,13 @@ on_button_var(const char *name, void *ptr)
 }
 
 static void
+on_draggable_f32_var(const char *name, void *ptr)
+{
+	struct u_var_draggable_f32 *d = (struct u_var_draggable_f32 *)ptr;
+	igDragFloat(name, &d->val, d->step, d->min, d->max, "%+f", ImGuiSliderFlags_None);
+}
+
+static void
 on_root_enter(const char *name, void *priv)
 {
 	struct draw_state *state = (struct draw_state *)priv;
@@ -358,6 +365,7 @@ on_elem(struct u_var_info *info, void *priv)
 		break;
 	}
 	case U_VAR_KIND_SINK_DEBUG: on_sink_debug_var(name, ptr, state->p, state->ds); break;
+	case U_VAR_KIND_DRAGGABLE_F32: on_draggable_f32_var(name, ptr); break;
 	case U_VAR_KIND_BUTTON: on_button_var(name, ptr); break;
 	default: igLabelText(name, "Unknown tag '%i'", kind); break;
 	}
