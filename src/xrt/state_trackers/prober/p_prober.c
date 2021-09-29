@@ -41,15 +41,25 @@
 
 #include "multi_wrapper/multi.h"
 
+
 /*
  *
- * Pre-declare functions.
+ * Env variable options.
  *
  */
 
 DEBUG_GET_ONCE_LOG_OPTION(prober_log, "PROBER_LOG", U_LOGGING_INFO)
 DEBUG_GET_ONCE_BOOL_OPTION(qwerty_enable, "QWERTY_ENABLE", false)
 DEBUG_GET_ONCE_BOOL_OPTION(qwerty_combine, "QWERTY_COMBINE", false)
+DEBUG_GET_ONCE_OPTION(vf_path, "VF_PATH", NULL)
+DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
+
+
+/*
+ *
+ * Pre-declare functions.
+ *
+ */
 
 static void
 add_device(struct prober *p, struct prober_device **out_dev);
@@ -64,47 +74,47 @@ static void
 teardown(struct prober *p);
 
 static int
-probe(struct xrt_prober *xp);
+p_probe(struct xrt_prober *xp);
 
 static int
-dump(struct xrt_prober *xp);
+p_dump(struct xrt_prober *xp);
 
 static int
-select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs);
+p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs);
 
 static int
-open_hid_interface(struct xrt_prober *xp,
-                   struct xrt_prober_device *xpdev,
-                   int interface,
-                   struct os_hid_device **out_hid_dev);
+p_open_hid_interface(struct xrt_prober *xp,
+                     struct xrt_prober_device *xpdev,
+                     int interface,
+                     struct os_hid_device **out_hid_dev);
 
 static int
-open_video_device(struct xrt_prober *xp,
-                  struct xrt_prober_device *xpdev,
-                  struct xrt_frame_context *xfctx,
-                  struct xrt_fs **out_xfs);
+p_open_video_device(struct xrt_prober *xp,
+                    struct xrt_prober_device *xpdev,
+                    struct xrt_frame_context *xfctx,
+                    struct xrt_fs **out_xfs);
 
 static int
-list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
+p_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
 
 static int
-get_entries(struct xrt_prober *xp,
-            size_t *out_num_entries,
-            struct xrt_prober_entry ***out_entries,
-            struct xrt_auto_prober ***out_auto_probers);
+p_get_entries(struct xrt_prober *xp,
+              size_t *out_num_entries,
+              struct xrt_prober_entry ***out_entries,
+              struct xrt_auto_prober ***out_auto_probers);
 
 static int
-get_string_descriptor(struct xrt_prober *xp,
-                      struct xrt_prober_device *xpdev,
-                      enum xrt_prober_string which_string,
-                      unsigned char *buffer,
-                      size_t length);
+p_get_string_descriptor(struct xrt_prober *xp,
+                        struct xrt_prober_device *xpdev,
+                        enum xrt_prober_string which_string,
+                        unsigned char *buffer,
+                        size_t length);
 
 static bool
-can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev);
+p_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev);
 
 static void
-destroy(struct xrt_prober **xp);
+p_destroy(struct xrt_prober **xp);
 
 
 /*
@@ -168,7 +178,6 @@ xrt_prober_match_string(struct xrt_prober *xp,
 
 	return 0 == strncmp(to_match, (const char *)s, sizeof(s));
 }
-
 
 int
 p_dev_get_usb_dev(struct prober *p,
@@ -414,16 +423,16 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 {
 	XRT_TRACE_MARKER();
 
-	p->base.probe = probe;
-	p->base.dump = dump;
-	p->base.select = select_device;
-	p->base.open_hid_interface = open_hid_interface;
-	p->base.open_video_device = open_video_device;
-	p->base.list_video_devices = list_video_devices;
-	p->base.get_entries = get_entries;
-	p->base.get_string_descriptor = get_string_descriptor;
-	p->base.can_open = can_open;
-	p->base.destroy = destroy;
+	p->base.probe = p_probe;
+	p->base.dump = p_dump;
+	p->base.select = p_select_device;
+	p->base.open_hid_interface = p_open_hid_interface;
+	p->base.open_video_device = p_open_video_device;
+	p->base.list_video_devices = p_list_video_devices;
+	p->base.get_entries = p_get_entries;
+	p->base.get_string_descriptor = p_get_string_descriptor;
+	p->base.can_open = p_can_open;
+	p->base.destroy = p_destroy;
 	p->lists = lists;
 	p->ll = debug_get_log_option_prober_log();
 
@@ -591,68 +600,6 @@ teardown(struct prober *p)
 	u_config_json_close(&p->json);
 
 	free(p->disabled_drivers);
-}
-
-
-/*
- *
- * Member functions.
- *
- */
-
-static int
-probe(struct xrt_prober *xp)
-{
-	XRT_TRACE_MARKER();
-
-	struct prober *p = (struct prober *)xp;
-	XRT_MAYBE_UNUSED int ret = 0;
-
-	// Free old list first.
-	teardown_devices(p);
-
-#ifdef XRT_HAVE_LIBUDEV
-	ret = p_udev_probe(p);
-	if (ret != 0) {
-		P_ERROR(p, "Failed to enumerate udev devices\n");
-		return -1;
-	}
-#endif
-
-#ifdef XRT_HAVE_LIBUSB
-	ret = p_libusb_probe(p);
-	if (ret != 0) {
-		P_ERROR(p, "Failed to enumerate libusb devices\n");
-		return -1;
-	}
-#endif
-
-#ifdef XRT_HAVE_LIBUVC
-	ret = p_libuvc_probe(p);
-	if (ret != 0) {
-		P_ERROR(p, "Failed to enumerate libuvc devices\n");
-		return -1;
-	}
-#endif
-
-	return 0;
-}
-
-static int
-dump(struct xrt_prober *xp)
-{
-	XRT_TRACE_MARKER();
-
-	struct prober *p = (struct prober *)xp;
-	XRT_MAYBE_UNUSED ssize_t k = 0;
-	XRT_MAYBE_UNUSED size_t j = 0;
-
-	for (size_t i = 0; i < p->num_devices; i++) {
-		struct prober_device *pdev = &p->devices[i];
-		p_dump_device(p, pdev, (int)i);
-	}
-
-	return 0;
 }
 
 static void
@@ -852,8 +799,70 @@ apply_tracking_override(struct prober *p, struct xrt_device **xdevs, size_t num_
 	}
 }
 
+
+/*
+ *
+ * Member functions.
+ *
+ */
+
 static int
-select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs)
+p_probe(struct xrt_prober *xp)
+{
+	XRT_TRACE_MARKER();
+
+	struct prober *p = (struct prober *)xp;
+	XRT_MAYBE_UNUSED int ret = 0;
+
+	// Free old list first.
+	teardown_devices(p);
+
+#ifdef XRT_HAVE_LIBUDEV
+	ret = p_udev_probe(p);
+	if (ret != 0) {
+		P_ERROR(p, "Failed to enumerate udev devices\n");
+		return -1;
+	}
+#endif
+
+#ifdef XRT_HAVE_LIBUSB
+	ret = p_libusb_probe(p);
+	if (ret != 0) {
+		P_ERROR(p, "Failed to enumerate libusb devices\n");
+		return -1;
+	}
+#endif
+
+#ifdef XRT_HAVE_LIBUVC
+	ret = p_libuvc_probe(p);
+	if (ret != 0) {
+		P_ERROR(p, "Failed to enumerate libuvc devices\n");
+		return -1;
+	}
+#endif
+
+	return 0;
+}
+
+static int
+p_dump(struct xrt_prober *xp)
+{
+	XRT_TRACE_MARKER();
+
+	struct prober *p = (struct prober *)xp;
+	XRT_MAYBE_UNUSED ssize_t k = 0;
+	XRT_MAYBE_UNUSED size_t j = 0;
+
+	for (size_t i = 0; i < p->num_devices; i++) {
+		struct prober_device *pdev = &p->devices[i];
+		p_dump_device(p, pdev, (int)i);
+	}
+
+	return 0;
+}
+
+static int
+p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs)
 {
 	XRT_TRACE_MARKER();
 
@@ -923,10 +932,10 @@ select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs
 }
 
 static int
-open_hid_interface(struct xrt_prober *xp,
-                   struct xrt_prober_device *xpdev,
-                   int interface,
-                   struct os_hid_device **out_hid_dev)
+p_open_hid_interface(struct xrt_prober *xp,
+                     struct xrt_prober_device *xpdev,
+                     int interface,
+                     struct os_hid_device **out_hid_dev)
 {
 	XRT_TRACE_MARKER();
 
@@ -958,14 +967,11 @@ open_hid_interface(struct xrt_prober *xp,
 	return -1;
 }
 
-DEBUG_GET_ONCE_OPTION(vf_path, "VF_PATH", NULL)
-DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
-
 static int
-open_video_device(struct xrt_prober *xp,
-                  struct xrt_prober_device *xpdev,
-                  struct xrt_frame_context *xfctx,
-                  struct xrt_fs **out_xfs)
+p_open_video_device(struct xrt_prober *xp,
+                    struct xrt_prober_device *xpdev,
+                    struct xrt_frame_context *xfctx,
+                    struct xrt_fs **out_xfs)
 {
 	XRT_TRACE_MARKER();
 
@@ -1010,7 +1016,7 @@ open_video_device(struct xrt_prober *xp,
 }
 
 static int
-list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr)
+p_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr)
 {
 	struct prober *p = (struct prober *)xp;
 
@@ -1051,10 +1057,10 @@ list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr
 }
 
 static int
-get_entries(struct xrt_prober *xp,
-            size_t *out_num_entries,
-            struct xrt_prober_entry ***out_entries,
-            struct xrt_auto_prober ***out_auto_probers)
+p_get_entries(struct xrt_prober *xp,
+              size_t *out_num_entries,
+              struct xrt_prober_entry ***out_entries,
+              struct xrt_auto_prober ***out_auto_probers)
 {
 	XRT_TRACE_MARKER();
 
@@ -1067,11 +1073,11 @@ get_entries(struct xrt_prober *xp,
 }
 
 static int
-get_string_descriptor(struct xrt_prober *xp,
-                      struct xrt_prober_device *xpdev,
-                      enum xrt_prober_string which_string,
-                      unsigned char *buffer,
-                      size_t max_length)
+p_get_string_descriptor(struct xrt_prober *xp,
+                        struct xrt_prober_device *xpdev,
+                        enum xrt_prober_string which_string,
+                        unsigned char *buffer,
+                        size_t max_length)
 {
 	XRT_TRACE_MARKER();
 
@@ -1102,7 +1108,7 @@ get_string_descriptor(struct xrt_prober *xp,
 }
 
 static bool
-can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
+p_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 {
 	XRT_TRACE_MARKER();
 
@@ -1117,9 +1123,8 @@ can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 	return false;
 }
 
-
 static void
-destroy(struct xrt_prober **xp)
+p_destroy(struct xrt_prober **xp)
 {
 	XRT_TRACE_MARKER();
 
