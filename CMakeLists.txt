@@ -16,6 +16,9 @@ option(XRT_OPENXR_INSTALL_ACTIVE_RUNTIME "Make Monado the default OpenXR runtime
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# So that clangd/Intellisense/Sourcetrail know how to parse our code.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 ###
 # Dependencies
 ###
