@@ -14,6 +14,8 @@
 #include "util/u_misc.h"
 #include "util/u_config_json.h"
 #include "util/u_debug.h"
+#include "util/u_trace_marker.h"
+
 #include "os/os_hid.h"
 #include "p_prober.h"
 
@@ -410,6 +412,8 @@ parse_disabled_drivers(struct prober *p)
 static int
 initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 {
+	XRT_TRACE_MARKER();
+
 	p->base.probe = probe;
 	p->base.dump = dump;
 	p->base.select = select_device;
@@ -476,6 +480,8 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 static void
 teardown_devices(struct prober *p)
 {
+	XRT_TRACE_MARKER();
+
 	// Need to free all devices.
 	for (size_t i = 0; i < p->num_devices; i++) {
 		struct prober_device *pdev = &p->devices[i];
@@ -551,6 +557,8 @@ teardown_devices(struct prober *p)
 static void
 teardown(struct prober *p)
 {
+	XRT_TRACE_MARKER();
+
 	// First remove the variable tracking.
 	u_var_remove_root((void *)p);
 
@@ -595,6 +603,8 @@ teardown(struct prober *p)
 static int
 probe(struct xrt_prober *xp)
 {
+	XRT_TRACE_MARKER();
+
 	struct prober *p = (struct prober *)xp;
 	XRT_MAYBE_UNUSED int ret = 0;
 
@@ -631,6 +641,8 @@ probe(struct xrt_prober *xp)
 static int
 dump(struct xrt_prober *xp)
 {
+	XRT_TRACE_MARKER();
+
 	struct prober *p = (struct prober *)xp;
 	XRT_MAYBE_UNUSED ssize_t k = 0;
 	XRT_MAYBE_UNUSED size_t j = 0;
@@ -843,6 +855,8 @@ apply_tracking_override(struct prober *p, struct xrt_device **xdevs, size_t num_
 static int
 select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs)
 {
+	XRT_TRACE_MARKER();
+
 	struct prober *p = (struct prober *)xp;
 	enum u_config_json_active_config active;
 	bool have_hmd = false;
@@ -914,6 +928,8 @@ open_hid_interface(struct xrt_prober *xp,
                    int interface,
                    struct os_hid_device **out_hid_dev)
 {
+	XRT_TRACE_MARKER();
+
 	struct prober_device *pdev = (struct prober_device *)xpdev;
 	int ret;
 
@@ -951,6 +967,8 @@ open_video_device(struct xrt_prober *xp,
                   struct xrt_frame_context *xfctx,
                   struct xrt_fs **out_xfs)
 {
+	XRT_TRACE_MARKER();
+
 	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
 
 #if defined(XRT_BUILD_DRIVER_EUROC)
@@ -1038,10 +1056,13 @@ get_entries(struct xrt_prober *xp,
             struct xrt_prober_entry ***out_entries,
             struct xrt_auto_prober ***out_auto_probers)
 {
+	XRT_TRACE_MARKER();
+
 	struct prober *p = (struct prober *)xp;
 	*out_num_entries = p->num_entries;
 	*out_entries = p->entries;
 	*out_auto_probers = p->auto_probers;
+
 	return 0;
 }
 
@@ -1052,6 +1073,8 @@ get_string_descriptor(struct xrt_prober *xp,
                       unsigned char *buffer,
                       size_t max_length)
 {
+	XRT_TRACE_MARKER();
+
 	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
 	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
 	XRT_MAYBE_UNUSED int ret;
@@ -1081,6 +1104,8 @@ get_string_descriptor(struct xrt_prober *xp,
 static bool
 can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 {
+	XRT_TRACE_MARKER();
+
 	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
 	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
 #ifdef XRT_HAVE_LIBUSB
@@ -1096,6 +1121,8 @@ can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 static void
 destroy(struct xrt_prober **xp)
 {
+	XRT_TRACE_MARKER();
+
 	struct prober *p = (struct prober *)*xp;
 	if (p == NULL) {
 		return;
