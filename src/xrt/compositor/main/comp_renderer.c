@@ -71,10 +71,11 @@ struct comp_renderer
 	int32_t fenced_buffer;
 
 	/*!
-	 * Array of "renderings" equal in size to the number of comp_target images.
+	 * Array of "rendering" target resources equal in size to the number of
+	 * comp_target images. Each target resources holds all of the resources
+	 * needed to render to that target and it's views.
 	 */
-	struct comp_rendering *rrs;
-	struct comp_rendering_target_resources *rtss;
+	struct comp_rendering_target_resources *rtr_array;
 
 	/*!
 	 * Array of fences equal in size to the number of comp_target images.
@@ -194,16 +195,13 @@ calc_viewport_data(struct comp_renderer *r,
 
 //! @pre comp_target_has_images(r->c->target)
 static void
-renderer_build_rendering(struct comp_renderer *r,
-                         struct comp_rendering *rr,
-                         struct comp_rendering_target_resources *rts,
-                         uint32_t index)
+renderer_build_rendering_target_resources(struct comp_renderer *r,
+                                          struct comp_rendering_target_resources *rtr,
+                                          uint32_t index)
 {
-	struct comp_compositor *c = r->c;
+	COMP_TRACE_MARKER();
 
-	/*
-	 * Target
-	 */
+	struct comp_compositor *c = r->c;
 
 	struct comp_target_data data;
 	data.format = r->c->target->format;
@@ -211,7 +209,18 @@ renderer_build_rendering(struct comp_renderer *r,
 	data.width = r->c->target->width;
 	data.height = r->c->target->height;
 
-	comp_rendering_target_resources_init(rts, c, &c->nr, r->c->target->images[index].view, &data);
+	comp_rendering_target_resources_init(rtr, c, &c->nr, r->c->target->images[index].view, &data);
+}
+
+//! @pre comp_target_has_images(r->c->target)
+static void
+renderer_build_rendering(struct comp_renderer *r,
+                         struct comp_rendering *rr,
+                         struct comp_rendering_target_resources *rtr)
+{
+	COMP_TRACE_MARKER();
+
+	struct comp_compositor *c = r->c;
 
 
 	/*
@@ -290,7 +299,7 @@ renderer_build_rendering(struct comp_renderer *r,
 
 	comp_draw_begin_target( //
 	    rr,                 //
-	    rts);               //
+	    rtr);               //
 
 
 	/*
@@ -336,7 +345,6 @@ renderer_build_rendering(struct comp_renderer *r,
 static void
 renderer_create_renderings_and_fences(struct comp_renderer *r)
 {
-	assert(r->rrs == NULL);
 	assert(r->fences == NULL);
 	if (r->num_buffers == 0) {
 		COMP_ERROR(r->c, "Requested 0 command buffers.");
@@ -349,11 +357,10 @@ renderer_create_renderings_and_fences(struct comp_renderer *r)
 
 	bool use_compute = r->settings->use_compute;
 	if (!use_compute) {
-		r->rrs = U_TYPED_ARRAY_CALLOC(struct comp_rendering, r->num_buffers);
-		r->rtss = U_TYPED_ARRAY_CALLOC(struct comp_rendering_target_resources, r->num_buffers);
+		r->rtr_array = U_TYPED_ARRAY_CALLOC(struct comp_rendering_target_resources, r->num_buffers);
 
 		for (uint32_t i = 0; i < r->num_buffers; ++i) {
-			renderer_build_rendering(r, &r->rrs[i], &r->rtss[i], i);
+			renderer_build_rendering_target_resources(r, &r->rtr_array[i], i);
 		}
 	}
 
@@ -381,16 +388,13 @@ renderer_close_renderings_and_fences(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->vk;
 	// Renderings
-	if (r->num_buffers > 0 && r->rrs != NULL) {
+	if (r->num_buffers > 0 && r->rtr_array != NULL) {
 		for (uint32_t i = 0; i < r->num_buffers; i++) {
-			comp_rendering_target_resources_close(&r->rtss[i]);
-			comp_rendering_close(&r->rrs[i]);
+			comp_rendering_target_resources_close(&r->rtr_array[i]);
 		}
 
-		free(r->rrs);
-		free(r->rtss);
-		r->rrs = NULL;
-		r->rtss = NULL;
+		free(r->rtr_array);
+		r->rtr_array = NULL;
 	}
 
 	// Fences
@@ -523,7 +527,7 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 	r->queue = VK_NULL_HANDLE;
 	r->semaphores.present_complete = VK_NULL_HANDLE;
 	r->semaphores.render_complete = VK_NULL_HANDLE;
-	r->rrs = NULL;
+	r->rtr_array = NULL;
 
 	struct vk_bundle *vk = &r->c->vk;
 
@@ -747,7 +751,7 @@ get_image_view(const struct comp_swapchain_image *image, enum xrt_layer_composit
 }
 
 static void
-dispatch_graphics(struct comp_renderer *r)
+dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 {
 	COMP_TRACE_MARKER();
 
@@ -761,7 +765,10 @@ dispatch_graphics(struct comp_renderer *r)
 
 	comp_target_update_timings(ct);
 
-	renderer_submit_queue(r, r->rrs[r->acquired_buffer].cmd);
+	uint32_t i = r->acquired_buffer;
+	renderer_build_rendering(r, rr, &r->rtr_array[i]);
+
+	renderer_submit_queue(r, rr->cmd);
 }
 
 
@@ -1155,11 +1162,12 @@ comp_renderer_draw(struct comp_renderer *r)
 	comp_target_update_timings(ct);
 
 	bool use_compute = r->settings->use_compute;
+	struct comp_rendering rr = {0};
 	struct comp_rendering_compute crc = {0};
 	if (use_compute) {
 		dispatch_compute(r, &crc);
 	} else {
-		dispatch_graphics(r);
+		dispatch_graphics(r, &rr);
 	}
 
 	renderer_present_swapchain_image(r, c->frame.rendering.desired_present_time_ns,
@@ -1179,6 +1187,8 @@ comp_renderer_draw(struct comp_renderer *r)
 
 	if (use_compute) {
 		comp_rendering_compute_close(&crc);
+	} else {
+		comp_rendering_close(&rr);
 	}
 
 	/*

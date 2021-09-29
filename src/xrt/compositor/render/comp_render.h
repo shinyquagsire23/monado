@@ -130,9 +130,6 @@ struct comp_resources
 	//! Shared for all rendering.
 	VkPipelineCache pipeline_cache;
 
-	//! Descriptor pool for mesh rendering.
-	VkDescriptorPool mesh_descriptor_pool;
-
 
 	/*
 	 * Static
@@ -160,6 +157,12 @@ struct comp_resources
 		uint32_t stride;
 		uint32_t offset_indices[2];
 		uint32_t total_num_indices;
+
+		//! Descriptor pool for mesh shaders.
+		VkDescriptorPool descriptor_pool;
+
+		//! Info ubos, only supports two views currently.
+		struct comp_buffer ubos[2];
 	} mesh;
 
 	struct
@@ -325,8 +328,6 @@ struct comp_rendering_view
 {
 	struct
 	{
-		struct comp_buffer ubo;
-
 		VkDescriptorSet descriptor_set;
 	} mesh;
 };

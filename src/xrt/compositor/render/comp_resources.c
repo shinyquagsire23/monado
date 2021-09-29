@@ -262,6 +262,35 @@ init_mesh_vertex_buffers(struct vk_bundle *vk,
 	return true;
 }
 
+static bool
+init_mesh_ubo_buffers(struct vk_bundle *vk, struct comp_buffer *l_ubo, struct comp_buffer *r_ubo)
+{
+	// Using the same flags for all ubos.
+	VkBufferUsageFlags ubo_usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	VkMemoryPropertyFlags memory_property_flags =
+	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+
+	// Distortion ubo size.
+	VkDeviceSize ubo_size = sizeof(struct comp_mesh_ubo_data);
+
+	C(comp_buffer_init(vk,                    //
+	                   l_ubo,                 //
+	                   ubo_usage_flags,       //
+	                   memory_property_flags, //
+	                   ubo_size));            // size
+	C(comp_buffer_map(vk, l_ubo));
+
+	C(comp_buffer_init(vk,                    //
+	                   r_ubo,                 //
+	                   ubo_usage_flags,       //
+	                   memory_property_flags, //
+	                   ubo_size));            // size
+	C(comp_buffer_map(vk, r_ubo));
+
+
+	return true;
+}
+
 
 /*
  *
@@ -647,8 +676,8 @@ comp_resources_init(struct comp_compositor *c, struct comp_resources *r)
 	                         1,                          // num_sampler_per_desc
 	                         0,                          // num_storage_per_desc
 	                         16 * 2,                     // num_descs
-	                         true,                       // freeable
-	                         &r->mesh_descriptor_pool)); // out_descriptor_pool
+	                         false,                      // freeable
+	                         &r->mesh.descriptor_pool)); // out_descriptor_pool
 
 	C(create_mesh_descriptor_set_layout(vk,                               // vk_bundle
 	                                    r->mesh.src_binding,              // src_binding
@@ -667,6 +696,12 @@ comp_resources_init(struct comp_compositor *c, struct comp_resources *r)
 	                              parts->distortion.mesh.vertices,   //
 	                              r->mesh.total_num_indices,         //
 	                              parts->distortion.mesh.indices)) { //
+		return false;
+	}
+
+	if (!init_mesh_ubo_buffers(vk,               //
+	                           &r->mesh.ubos[0], //
+	                           &r->mesh.ubos[1])) {
 		return false;
 	}
 
@@ -790,9 +825,11 @@ comp_resources_close(struct comp_compositor *c, struct comp_resources *r)
 	D(DescriptorSetLayout, r->mesh.descriptor_set_layout);
 	D(PipelineLayout, r->mesh.pipeline_layout);
 	D(PipelineCache, r->pipeline_cache);
-	D(DescriptorPool, r->mesh_descriptor_pool);
+	D(DescriptorPool, r->mesh.descriptor_pool);
 	comp_buffer_close(vk, &r->mesh.vbo);
 	comp_buffer_close(vk, &r->mesh.ibo);
+	comp_buffer_close(vk, &r->mesh.ubos[0]);
+	comp_buffer_close(vk, &r->mesh.ubos[1]);
 
 	D(DescriptorPool, r->compute.descriptor_pool);
 	D(DescriptorSetLayout, r->compute.descriptor_set_layout);

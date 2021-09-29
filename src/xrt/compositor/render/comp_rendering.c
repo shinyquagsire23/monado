@@ -142,21 +142,6 @@ create_descriptor_set(struct vk_bundle *vk,
 	return VK_SUCCESS;
 }
 
-static void
-free_descriptor_set(struct vk_bundle *vk, VkDescriptorPool descriptor_pool, VkDescriptorSet descriptor_set)
-{
-	VkResult ret;
-
-
-	ret = vk->vkFreeDescriptorSets(vk->device,       //
-	                               descriptor_pool,  // descriptorPool
-	                               1,                // descriptorSetCount
-	                               &descriptor_set); // pDescriptorSets
-	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkFreeDescriptorSets failed: %s", vk_result_string(ret));
-	}
-}
-
 static VkResult
 create_framebuffer(struct vk_bundle *vk,
                    VkImageView image_view,
@@ -457,35 +442,6 @@ create_mesh_pipeline(struct vk_bundle *vk,
 	return VK_SUCCESS;
 }
 
-static bool
-init_mesh_ubo_buffers(struct vk_bundle *vk, struct comp_buffer *l_ubo, struct comp_buffer *r_ubo)
-{
-	// Using the same flags for all ubos.
-	VkBufferUsageFlags ubo_usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	VkMemoryPropertyFlags memory_property_flags =
-	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-
-	// Distortion ubo size.
-	VkDeviceSize ubo_size = sizeof(struct comp_mesh_ubo_data);
-
-	C(comp_buffer_init(vk,                    //
-	                   l_ubo,                 //
-	                   ubo_usage_flags,       //
-	                   memory_property_flags, //
-	                   ubo_size));            // size
-	C(comp_buffer_map(vk, l_ubo));
-
-	C(comp_buffer_init(vk,                    //
-	                   r_ubo,                 //
-	                   ubo_usage_flags,       //
-	                   memory_property_flags, //
-	                   ubo_size));            // size
-	C(comp_buffer_map(vk, r_ubo));
-
-
-	return true;
-}
-
 static void
 update_mesh_discriptor_set(struct vk_bundle *vk,
                            uint32_t src_binding,
@@ -620,21 +576,17 @@ comp_rendering_init(struct comp_rendering *rr, struct comp_compositor *c, struct
 	 * Mesh per view
 	 */
 
-	C(create_descriptor_set(vk,                                  // vk_bundle
-	                        r->mesh_descriptor_pool,             // descriptor_pool
-	                        r->mesh.descriptor_set_layout,       // descriptor_set_layout
-	                        &rr->views[0].mesh.descriptor_set)); // descriptor_set
+	C(create_descriptor_set(                 //
+	    vk,                                  // vk_bundle
+	    r->mesh.descriptor_pool,             // descriptor_pool
+	    r->mesh.descriptor_set_layout,       // descriptor_set_layout
+	    &rr->views[0].mesh.descriptor_set)); // descriptor_set
 
-	C(create_descriptor_set(vk,                                  // vk_bundle
-	                        r->mesh_descriptor_pool,             // descriptor_pool
-	                        r->mesh.descriptor_set_layout,       // descriptor_set_layout
-	                        &rr->views[1].mesh.descriptor_set)); // descriptor_set
-
-	if (!init_mesh_ubo_buffers(vk,                     //
-	                           &rr->views[0].mesh.ubo, //
-	                           &rr->views[1].mesh.ubo)) {
-		return false;
-	}
+	C(create_descriptor_set(                 //
+	    vk,                                  // vk_bundle
+	    r->mesh.descriptor_pool,             // descriptor_pool
+	    r->mesh.descriptor_set_layout,       // descriptor_set_layout
+	    &rr->views[1].mesh.descriptor_set)); // descriptor_set
 
 	return true;
 }
@@ -659,10 +611,14 @@ comp_rendering_close(struct comp_rendering *rr)
 	struct vk_bundle *vk = &rr->c->vk;
 	struct comp_resources *r = rr->r;
 
-	comp_buffer_close(vk, &rr->views[0].mesh.ubo);
-	comp_buffer_close(vk, &rr->views[1].mesh.ubo);
-	DD(r->mesh_descriptor_pool, rr->views[0].mesh.descriptor_set);
-	DD(r->mesh_descriptor_pool, rr->views[1].mesh.descriptor_set);
+	// Reclaimed by vkResetDescriptorPool.
+	rr->views[0].mesh.descriptor_set = VK_NULL_HANDLE;
+	rr->views[1].mesh.descriptor_set = VK_NULL_HANDLE;
+
+	vk->vkResetDescriptorPool(   //
+	    vk->device,              //
+	    r->mesh.descriptor_pool, //
+	    0);                      //
 
 	U_ZERO(rr);
 }
@@ -850,15 +806,15 @@ comp_draw_update_distortion(struct comp_rendering *rr,
 	struct comp_resources *r = rr->r;
 	struct comp_rendering_view *v = &rr->views[view_index];
 
-	comp_buffer_write(vk, &v->mesh.ubo, data, sizeof(struct comp_mesh_ubo_data));
+	comp_buffer_write(vk, &r->mesh.ubos[view_index], data, sizeof(struct comp_mesh_ubo_data));
 
-	update_mesh_discriptor_set(  //
-	    vk,                      // vk_bundle
-	    r->mesh.src_binding,     // src_binding
-	    sampler,                 // sampler
-	    image_view,              // image_view
-	    r->mesh.ubo_binding,     // ubo_binding
-	    v->mesh.ubo.buffer,      // buffer
-	    VK_WHOLE_SIZE,           // size
-	    v->mesh.descriptor_set); // descriptor_set
+	update_mesh_discriptor_set(          //
+	    vk,                              // vk_bundle
+	    r->mesh.src_binding,             // src_binding
+	    sampler,                         // sampler
+	    image_view,                      // image_view
+	    r->mesh.ubo_binding,             // ubo_binding
+	    r->mesh.ubos[view_index].buffer, // buffer
+	    VK_WHOLE_SIZE,                   // size
+	    v->mesh.descriptor_set);         // descriptor_set
 }
