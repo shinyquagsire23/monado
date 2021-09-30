@@ -107,12 +107,13 @@ void
 ipc_client_device_get_hand_tracking(struct xrt_device *xdev,
                                     enum xrt_input_name name,
                                     uint64_t at_timestamp_ns,
-                                    struct xrt_hand_joint_set *out_value)
+                                    struct xrt_hand_joint_set *out_value,
+                                    uint64_t *out_timestamp_ns)
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
 
-	xrt_result_t r =
-	    ipc_call_device_get_hand_tracking(icd->ipc_c, icd->device_id, name, at_timestamp_ns, out_value);
+	xrt_result_t r = ipc_call_device_get_hand_tracking(icd->ipc_c, icd->device_id, name, at_timestamp_ns, out_value,
+	                                                   out_timestamp_ns);
 	if (r != XRT_SUCCESS) {
 		IPC_ERROR(icd->ipc_c, "Error sending input update!");
 	}

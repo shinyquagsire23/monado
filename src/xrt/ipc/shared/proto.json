@@ -196,7 +196,8 @@
 			{"name": "at_timestamp", "type": "uint64_t"}
 		],
 		"out": [
-			{"name": "value", "type": "struct xrt_hand_joint_set"}
+			{"name": "value", "type": "struct xrt_hand_joint_set"},
+			{"name": "timestamp", "type": "uint64_t"}
 		]
 	},
 
