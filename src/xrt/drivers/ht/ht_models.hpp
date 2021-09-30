@@ -435,30 +435,30 @@ static std::vector<std::vector<float>> anchor{
 static Hand2D
 runKeypointEstimator(struct ht_view *htv, cv::Mat img)
 {
-	const size_t lix = 224;
-	const size_t liy = 224;
-	cv::Mat planes[3];
+	constexpr size_t lix = 224;
+	constexpr size_t liy = 224;
+	constexpr size_t nb_planes = 3;
+	cv::Mat planes[nb_planes];
 
+	constexpr size_t size = lix * liy * nb_planes;
 
-	uint8_t combined_planes[224 * 224 * 3];
-	planarize(img, combined_planes);
+	std::vector<uint8_t> combined_planes(size);
+	planarize(img, combined_planes.data());
 
 	// Normalize - supposedly, the keypoint estimator wants keypoints in [0,1]
-	float real_thing[lix * liy * 3] = {0};
-	for (size_t i = 0; i < lix * liy * 3; i++) {
+	std::vector<float> real_thing(size);
+	for (size_t i = 0; i < size; i++) {
 		real_thing[i] = (float)combined_planes[i] / 255.0;
 	}
 
 	const OrtApi *g_ort = htv->htd->ort_api;
 	struct ModelInfo *model = &htv->keypoint_model;
 
-
 	OrtValue *input_tensor = nullptr;
 
-
-	ORT_CHECK(g_ort, g_ort->CreateTensorWithDataAsOrtValue(model->memoryInfo, real_thing, model->input_size_bytes,
-	                                                       model->input_shape.data(), model->input_shape.size(),
-	                                                       ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &input_tensor));
+	ORT_CHECK(g_ort, g_ort->CreateTensorWithDataAsOrtValue(
+	                     model->memoryInfo, real_thing.data(), model->input_size_bytes, model->input_shape.data(),
+	                     model->input_shape.size(), ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &input_tensor));
 
 	// Cargo-culted
 	assert(input_tensor != nullptr);
@@ -510,22 +510,24 @@ runHandDetector(struct ht_view *htv, cv::Mat &raw_input)
 
 	cv::Mat img;
 
-	const int hd_size = 128;
-	const int inputTensorSize = hd_size * hd_size * 3 * sizeof(float);
+	constexpr int hd_size = 128;
+	constexpr size_t nb_planes = 3;
+	constexpr size_t size = hd_size * hd_size * nb_planes;
+	constexpr int inputTensorSize = size * sizeof(float);
 
 	cv::Matx23f back_from_blackbar = blackbar(raw_input, img, {hd_size, hd_size});
 
 	float scale_factor = back_from_blackbar(0, 0); // 960/128
 	assert(img.isContinuous());
-	float mean = 128.0f;
-	float std = 128.0f;
-	float real_thing[hd_size * hd_size * 3];
+	constexpr float mean = 128.0f;
+	constexpr float std = 128.0f;
 
+	std::vector<float> real_thing(size);
 
 	if (htv->htd->runtime_config.palm_detection_use_mediapipe) {
-		uint8_t combined_planes[hd_size * hd_size * 3] = {0};
-		planarize(img, combined_planes);
-		for (size_t i = 0; i < hd_size * hd_size * 3; i++) {
+		std::vector<uint8_t> combined_planes(size);
+		planarize(img, combined_planes.data());
+		for (size_t i = 0; i < size; i++) {
 			float val = (float)combined_planes[i];
 			real_thing[i] = (val - mean) / std;
 		}
@@ -534,7 +536,7 @@ runHandDetector(struct ht_view *htv, cv::Mat &raw_input)
 
 		assert(img.isContinuous());
 
-		for (size_t i = 0; i < hd_size * hd_size * 3; i++) {
+		for (size_t i = 0; i < size; i++) {
 			int val = img.data[i];
 
 			real_thing[i] = (val - mean) / std;
@@ -548,7 +550,7 @@ runHandDetector(struct ht_view *htv, cv::Mat &raw_input)
 	OrtValue *input_tensor = nullptr;
 
 	ORT_CHECK(g_ort, g_ort->CreateTensorWithDataAsOrtValue(
-	                     model_hd->memoryInfo, real_thing, inputTensorSize, model_hd->input_shape.data(),
+	                     model_hd->memoryInfo, real_thing.data(), inputTensorSize, model_hd->input_shape.data(),
 	                     model_hd->input_shape.size(), ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &input_tensor));
 
 	// Cargo-culted
