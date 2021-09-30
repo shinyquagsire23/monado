@@ -289,8 +289,8 @@ struct xrt_device
 
 	/*!
 	 * Get relationship of hand joints to the tracking origin space as
-	 * the base space. It is the responsibility of the device driver to do
-	 * any prediction, there are helper functions available for this.
+	 * the base space. It is the responsibility of the device driver to either do prediction or return joints from a
+	 * previous time and write that time out to out_timestamp_ns.
 	 *
 	 * The timestamps are system monotonic timestamps, such as returned by
 	 * os_monotonic_get_ns().
@@ -305,12 +305,16 @@ struct xrt_device
 	 *                            wants the pose to be from.
 	 * @param[out] out_relation The relation read from the device.
 	 *
+	 * @param[out] out_timestamp_ns
+	 *
 	 * @see xrt_input_name
 	 */
+
 	void (*get_hand_tracking)(struct xrt_device *xdev,
 	                          enum xrt_input_name name,
-	                          uint64_t at_timestamp_ns,
-	                          struct xrt_hand_joint_set *out_value);
+	                          uint64_t desired_timestamp_ns,
+	                          struct xrt_hand_joint_set *out_value,
+	                          uint64_t *out_timestamp_ns);
 	/*!
 	 * Set a output value.
 	 *
@@ -387,9 +391,10 @@ static inline void
 xrt_device_get_hand_tracking(struct xrt_device *xdev,
                              enum xrt_input_name name,
                              uint64_t requested_timestamp_ns,
-                             struct xrt_hand_joint_set *out_value)
+                             struct xrt_hand_joint_set *out_value,
+                             uint64_t *out_timestamp_ns)
 {
-	xdev->get_hand_tracking(xdev, name, requested_timestamp_ns, out_value);
+	xdev->get_hand_tracking(xdev, name, requested_timestamp_ns, out_value, out_timestamp_ns);
 }
 
 /*!
