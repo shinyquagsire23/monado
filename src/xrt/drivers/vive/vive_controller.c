@@ -309,8 +309,9 @@ _update_tracker_inputs(struct xrt_device *xdev)
 static void
 vive_controller_get_hand_tracking(struct xrt_device *xdev,
                                   enum xrt_input_name name,
-                                  uint64_t at_timestamp_ns,
-                                  struct xrt_hand_joint_set *out_value)
+                                  uint64_t requested_timestamp_ns,
+                                  struct xrt_hand_joint_set *out_value,
+                                  uint64_t *out_timestamp_ns)
 {
 	XRT_TRACE_MARKER();
 
@@ -338,7 +339,7 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	                                             .index = (float)d->state.index_finger_trigger / UINT8_MAX,
 	                                             .thumb = thumb_curl};
 
-	u_hand_joints_update_curl(&d->hand_tracking, hand, at_timestamp_ns, &values);
+	u_hand_joints_update_curl(&d->hand_tracking, hand, requested_timestamp_ns, &values);
 
 
 	/* Because IMU is at the very -z end of the controller, the rotation
@@ -361,6 +362,9 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
 
 	u_hand_joints_set_out_data(&d->hand_tracking, hand, &controller_relation, &hand_on_handle_pose, out_value);
+
+	// This is a lie: currently, no pose-prediction or history is implemented for this driver.
+	*out_timestamp_ns = requested_timestamp_ns;
 
 	out_value->is_active = true;
 }
