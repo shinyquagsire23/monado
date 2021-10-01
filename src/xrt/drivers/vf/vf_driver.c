@@ -188,7 +188,7 @@ vf_fs_frame(struct vf_fs *vid, GstSample *sample)
 
 	if (!gst_video_frame_map(&vff->frame, &info, buffer, GST_MAP_READ)) {
 		VF_ERROR(vid, "Failed to map frame %d", seq);
-		// Yes, we should do this here because we don't want the destroy function to to run.
+		// Yes, we should do this here because we don't want the destroy function to run.
 		free(vff);
 		return;
 	}
