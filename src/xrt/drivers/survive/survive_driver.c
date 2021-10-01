@@ -392,7 +392,8 @@ static void
 survive_controller_get_hand_tracking(struct xrt_device *xdev,
                                      enum xrt_input_name name,
                                      uint64_t at_timestamp_ns,
-                                     struct xrt_hand_joint_set *out_value)
+                                     struct xrt_hand_joint_set *out_value,
+                                     uint64_t *out_timestamp_ns)
 {
 	struct survive_device *survive = (struct survive_device *)xdev;
 
@@ -435,6 +436,9 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 	m_relation_history_get(survive->relation_hist, &hand_relation, at_timestamp_ns);
 
 	u_hand_joints_set_out_data(&survive->ctrl.hand_tracking, hand, &hand_relation, &hand_on_handle_pose, out_value);
+
+	// This is the truth - we pose-predicted or interpolated all the way up to `at_timestamp_ns`.
+	*out_timestamp_ns = at_timestamp_ns;
 
 	// This is a lie - apparently libsurvive doesn't report controller tracked/untracked state, so just say that the
 	// hand is being tracked
