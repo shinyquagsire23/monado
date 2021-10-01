@@ -20,7 +20,6 @@ compositor_srcs = [
 	'main/comp_renderer.h',
 	'main/comp_settings.c',
 	'main/comp_settings.h',
-	'main/comp_shaders.c',
 	'main/comp_swapchain.c',
 	'main/comp_sync.c',
 	'main/comp_target.h',
@@ -38,6 +37,7 @@ compositor_srcs = [
 	'render/comp_render.h',
 	'render/comp_rendering.c',
 	'render/comp_resources.c',
+	'render/comp_shaders.c',
 	'render/comp_util.c',
 ]
 

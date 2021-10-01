@@ -62,6 +62,47 @@ comp_calc_time_warp_matrix(const struct xrt_pose *src_pose,
 
 /*
  *
+ * Shaders.
+ *
+ */
+
+/*!
+ * Holds all shaders.
+ */
+struct comp_shaders
+{
+	VkShaderModule clear_comp;
+	VkShaderModule distortion_comp;
+	VkShaderModule distortion_timewarp_comp;
+
+	VkShaderModule mesh_vert;
+	VkShaderModule mesh_frag;
+
+	VkShaderModule equirect1_vert;
+	VkShaderModule equirect1_frag;
+
+	VkShaderModule equirect2_vert;
+	VkShaderModule equirect2_frag;
+
+	VkShaderModule layer_vert;
+	VkShaderModule layer_frag;
+};
+
+/*!
+ * Loads all of the shaders that the compositor uses.
+ */
+bool
+comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s);
+
+/*!
+ * Unload and cleanup shaders.
+ */
+void
+comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s);
+
+
+/*
+ *
  * Buffer
  *
  */
@@ -141,6 +182,14 @@ comp_buffer_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, 
  */
 struct comp_resources
 {
+	/*
+	 * Loaded resources.
+	 */
+
+	//! All shaders loaded.
+	struct comp_shaders *shaders;
+
+
 	/*
 	 * Shared pools and caches.
 	 */
@@ -244,13 +293,13 @@ struct comp_resources
  * @ingroup comp_main
  */
 bool
-comp_resources_init(struct comp_compositor *c, struct comp_resources *r);
+comp_resources_init(struct comp_resources *r, struct comp_compositor *c, struct comp_shaders *shaders);
 
 /*!
  * Free all pools and static resources, does not free the struct itself.
  */
 void
-comp_resources_close(struct comp_compositor *c, struct comp_resources *r);
+comp_resources_close(struct comp_resources *r, struct comp_compositor *c);
 
 
 /*

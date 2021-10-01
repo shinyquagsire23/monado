@@ -634,10 +634,17 @@ create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
  */
 
 bool
-comp_resources_init(struct comp_compositor *c, struct comp_resources *r)
+comp_resources_init(struct comp_resources *r, struct comp_compositor *c, struct comp_shaders *shaders)
 {
 	struct vk_bundle *vk = &c->vk;
 	struct xrt_device *xdev = c->xdev;
+
+	/*
+	 * Shaders
+	 */
+
+	r->shaders = shaders;
+
 
 	/*
 	 * Constants
@@ -740,21 +747,21 @@ comp_resources_init(struct comp_compositor *c, struct comp_resources *r)
 	C(create_compute_pipeline(        //
 	    vk,                           // vk_bundle
 	    r->pipeline_cache,            // pipeline_cache
-	    c->shaders.clear_comp,        // shader
+	    r->shaders->clear_comp,       // shader
 	    r->compute.pipeline_layout,   // pipeline_layout
 	    &r->compute.clear_pipeline)); // out_compute_pipeline
 
 	C(create_compute_pipeline(             //
 	    vk,                                // vk_bundle
 	    r->pipeline_cache,                 // pipeline_cache
-	    c->shaders.distortion_comp,        // shader
+	    r->shaders->distortion_comp,       // shader
 	    r->compute.pipeline_layout,        // pipeline_layout
 	    &r->compute.distortion_pipeline)); // out_compute_pipeline
 
 	C(create_compute_pipeline(                      //
 	    vk,                                         // vk_bundle
 	    r->pipeline_cache,                          // pipeline_cache
-	    c->shaders.distortion_timewarp_comp,        // shader
+	    r->shaders->distortion_timewarp_comp,       // shader
 	    r->compute.pipeline_layout,                 // pipeline_layout
 	    &r->compute.distortion_timewarp_pipeline)); // out_compute_pipeline
 
@@ -818,7 +825,7 @@ comp_resources_init(struct comp_compositor *c, struct comp_resources *r)
 }
 
 void
-comp_resources_close(struct comp_compositor *c, struct comp_resources *r)
+comp_resources_close(struct comp_resources *r, struct comp_compositor *c)
 {
 	struct vk_bundle *vk = &c->vk;
 

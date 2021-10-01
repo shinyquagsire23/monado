@@ -137,24 +137,6 @@ enum comp_state
 	COMP_STATE_FOCUSED = 4,
 };
 
-struct comp_shaders
-{
-	VkShaderModule clear_comp;
-	VkShaderModule distortion_comp;
-	VkShaderModule distortion_timewarp_comp;
-
-	VkShaderModule mesh_vert;
-	VkShaderModule mesh_frag;
-
-	VkShaderModule equirect1_vert;
-	VkShaderModule equirect1_frag;
-
-	VkShaderModule equirect2_vert;
-	VkShaderModule equirect2_frag;
-
-	VkShaderModule layer_vert;
-	VkShaderModule layer_frag;
-};
 
 /*!
  * Tracking frame state.
@@ -338,18 +320,6 @@ xrt_result_t
 comp_compositor_import_fence(struct xrt_compositor *xc,
                              xrt_graphics_sync_handle_t handle,
                              struct xrt_compositor_fence **out_xcf);
-
-/*!
- * Loads all of the shaders that the compositor uses.
- */
-bool
-comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s);
-
-/*!
- * Unload and cleanup shaders.
- */
-void
-comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s);
 
 /*!
  * Spew level logging.
