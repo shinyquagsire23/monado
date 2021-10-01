@@ -41,6 +41,7 @@ set(MAIN_SOURCE_FILES
 	render/comp_render.h
 	render/comp_rendering.c
 	render/comp_resources.c
+	render/comp_util.c
 	)
 
 set(MULTI_SOURCE_FILES

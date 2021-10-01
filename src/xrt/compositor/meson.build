@@ -38,6 +38,7 @@ compositor_srcs = [
 	'render/comp_render.h',
 	'render/comp_rendering.c',
 	'render/comp_resources.c',
+	'render/comp_util.c',
 ]
 
 compile_args = []

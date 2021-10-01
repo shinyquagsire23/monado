@@ -44,6 +44,24 @@ struct comp_swapchain_image;
 
 /*
  *
+ * Util functions.
+ *
+ */
+
+/*!
+ * Calculates a timewarp matrix which takes in NDC coords and gives out results
+ * in [-1, 1] space that needs a perspective divide.
+ */
+void
+comp_calc_time_warp_matrix(const struct xrt_pose *src_pose,
+                           const struct xrt_fov *src_fov,
+                           const struct xrt_pose *new_pose,
+                           struct xrt_matrix_4x4 *matrix,
+                           bool disable_atw);
+
+
+/*
+ *
  * Buffer
  *
  */
