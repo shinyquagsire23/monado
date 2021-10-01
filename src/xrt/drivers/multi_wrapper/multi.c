@@ -133,15 +133,20 @@ static void
 get_hand_tracking(struct xrt_device *xdev,
                   enum xrt_input_name name,
                   uint64_t at_timestamp_ns,
-                  struct xrt_hand_joint_set *out_value)
+                  struct xrt_hand_joint_set *out_value,
+                  uint64_t *out_timestamp_ns)
 {
 	struct multi_device *d = (struct multi_device *)xdev;
 	struct xrt_device *target = d->tracking_override.target;
-	xrt_device_get_hand_tracking(target, name, at_timestamp_ns, out_value);
+	uint64_t real_timestamp;
+	xrt_device_get_hand_tracking(target, name, at_timestamp_ns, out_value, &real_timestamp);
+	if (!out_value->is_active) {
+		return;
+	}
 
 	struct xrt_device *tracker = d->tracking_override.tracker;
 	struct xrt_space_relation tracker_relation;
-	xrt_device_get_tracked_pose(tracker, d->tracking_override.input_name, at_timestamp_ns, &tracker_relation);
+	xrt_device_get_tracked_pose(tracker, d->tracking_override.input_name, real_timestamp, &tracker_relation);
 
 
 	switch (d->override_type) {
