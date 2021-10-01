@@ -136,6 +136,16 @@ ns_hmd(struct xrt_device *xdev)
 	return (struct ns_hmd *)xdev;
 }
 
+
+/*!
+ * Create a North Star hmd.
+ *
+ * @ingroup drv_ns
+ */
+struct xrt_device *
+ns_hmd_create(const char *config_path);
+
+
 /*!
  * Convert the display UV to the render UV using the distortion mesh.
  *

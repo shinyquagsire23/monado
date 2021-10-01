@@ -18,6 +18,7 @@
 #include "util/u_debug.h"
 
 #include "ns_interface.h"
+#include "ns_hmd.h"
 
 
 DEBUG_GET_ONCE_OPTION(ns_config_path, "NS_CONFIG_PATH", NULL)

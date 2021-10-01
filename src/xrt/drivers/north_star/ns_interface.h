@@ -31,14 +31,6 @@ struct xrt_auto_prober *
 ns_create_auto_prober(void);
 
 /*!
- * Create a North Star hmd.
- *
- * @ingroup drv_ns
- */
-struct xrt_device *
-ns_hmd_create(const char *config_path);
-
-/*!
  * @dir drivers/north_star
  *
  * @brief @ref drv_ns files.
