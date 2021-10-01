@@ -501,6 +501,7 @@ runKeypointEstimator(struct ht_view *htv, cv::Mat img)
 	return dumb;
 }
 
+#undef HEAVY_SCRIBBLE
 
 
 static std::vector<Palm7KP>
@@ -524,14 +525,13 @@ runHandDetector(struct ht_view *htv, cv::Mat &raw_input)
 
 	std::vector<float> real_thing(size);
 
-	if (htv->htd->runtime_config.palm_detection_use_mediapipe) {
+	if (htv->htd->startup_config.palm_detection_use_mediapipe) {
 		std::vector<uint8_t> combined_planes(size);
 		planarize(img, combined_planes.data());
 		for (size_t i = 0; i < size; i++) {
 			float val = (float)combined_planes[i];
 			real_thing[i] = (val - mean) / std;
 		}
-		// Hope it was worth it...
 	} else {
 
 		assert(img.isContinuous());
@@ -592,7 +592,8 @@ runHandDetector(struct ht_view *htv, cv::Mat &raw_input)
 		float score0 = classificators[i];
 		float score = 1.0 / (1.0 + exp(-score0));
 
-		if (score > 0.6) {
+		// Let a lot of detections in - they'll be slowly rejected later
+		if (score > htv->htd->dynamic_config.nms_threshold.val) {
 			// Boundary box.
 			NMSPalm det;
 
@@ -635,6 +636,24 @@ runHandDetector(struct ht_view *htv, cv::Mat &raw_input)
 			detections.push_back(det);
 			count++;
 
+			if (htv->htd->debug_scribble && (htv->htd->dynamic_config.scribble_raw_detections)) {
+				xrt_vec2 center = transformVecBy2x3(xrt_vec2{cx, cy}, back_from_blackbar);
+
+				float sz = det.bbox.w * scale_factor;
+
+				cv::rectangle(
+				    htv->debug_out_to_this,
+				    {(int)(center.x - (sz / 2)), (int)(center.y - (sz / 2)), (int)sz, (int)sz},
+				    hsv2rgb(0.0f, math_map_ranges(det.confidence, 0.0f, 1.0f, 1.5f, -0.1f),
+				            math_map_ranges(det.confidence, 0.0f, 1.0f, 0.2f, 1.4f)),
+				    1);
+
+				for (int i = 0; i < 7; i++) {
+					handDot(htv->debug_out_to_this, transformVecBy2x3(kps[i], back_from_blackbar),
+					        det.confidence * 7, ((float)i) * (360.0f / 7.0f), det.confidence, 1);
+				}
+			}
+
 
 
 			int square = fmax(w, h);
@@ -647,20 +666,28 @@ runHandDetector(struct ht_view *htv, cv::Mat &raw_input)
 		goto cleanup;
 	}
 
-	nms_palms = filterBoxesWeightedAvg(detections);
+	nms_palms = filterBoxesWeightedAvg(detections, htv->htd->dynamic_config.nms_iou.val);
 
 
 
 	for (NMSPalm cooler : nms_palms) {
 
 		// Display box
+
 		struct xrt_vec2 tl = {cooler.bbox.cx - cooler.bbox.w / 2, cooler.bbox.cy - cooler.bbox.h / 2};
 		struct xrt_vec2 bob = transformVecBy2x3(tl, back_from_blackbar);
-		float sz = cooler.bbox.w / scale_factor;
+		float sz = cooler.bbox.w * scale_factor;
 
-		if (htv->htd->debug_scribble) {
-			cv::rectangle(htv->debug_out_to_this, {(int)bob.x, (int)bob.y, (int)sz, (int)sz}, {0, 0, 255},
-			              5);
+		if (htv->htd->debug_scribble && htv->htd->dynamic_config.scribble_nms_detections) {
+			cv::rectangle(htv->debug_out_to_this, {(int)bob.x, (int)bob.y, (int)sz, (int)sz},
+			              hsv2rgb(180.0f, math_map_ranges(cooler.confidence, 0.0f, 1.0f, 0.8f, -0.1f),
+			                      math_map_ranges(cooler.confidence, 0.0f, 1.0f, 0.2f, 1.4f)),
+			              2);
+			for (int i = 0; i < 7; i++) {
+				handDot(htv->debug_out_to_this,
+				        transformVecBy2x3(cooler.keypoints[i], back_from_blackbar),
+				        cooler.confidence * 14, ((float)i) * (360.0f / 7.0f), cooler.confidence, 3);
+			}
 		}
 
 
@@ -669,11 +696,8 @@ runHandDetector(struct ht_view *htv, cv::Mat &raw_input)
 		for (int i = 0; i < 7; i++) {
 			struct xrt_vec2 b = cooler.keypoints[i];
 			this_element.kps[i] = transformVecBy2x3(b, back_from_blackbar);
-			if (htv->htd->debug_scribble) {
-				handDot(htv->debug_out_to_this, this_element.kps[i], 5, ((float)i) * (360.0f / 7.0f),
-				        2);
-			}
 		}
+		this_element.confidence = cooler.confidence;
 
 		output.push_back(this_element);
 	}
@@ -689,7 +713,7 @@ cleanup:
 static void
 addSlug(struct ht_device *htd, const char *suffix, char *out)
 {
-	strcpy(out, htd->runtime_config.model_slug);
+	strcpy(out, htd->startup_config.model_slug);
 	strcat(out, suffix);
 }
 
@@ -706,7 +730,7 @@ initKeypointEstimator(struct ht_device *htd, ht_view *htv)
 	ORT_CHECK(g_ort, g_ort->SetIntraOpNumThreads(opts, 1));
 
 	char modelLocation[1024];
-	if (htd->runtime_config.keypoint_estimation_use_mediapipe) {
+	if (htd->startup_config.keypoint_estimation_use_mediapipe) {
 		addSlug(htd, "hand_landmark_MEDIAPIPE.onnx", modelLocation);
 	} else {
 		addSlug(htd, "hand_landmark_COLLABORA.onnx", modelLocation);
@@ -750,7 +774,7 @@ initHandDetector(struct ht_device *htd, ht_view *htv)
 	// Hard-coded. Even though you can use the ONNX runtime's API to dynamically figure these out, that doesn't make
 	// any sense because these don't change between runs, and if you are swapping models you have to do much more
 	// than just change the input/output names.
-	if (htd->runtime_config.palm_detection_use_mediapipe) {
+	if (htd->startup_config.palm_detection_use_mediapipe) {
 		addSlug(htd, "palm_detection_MEDIAPIPE.onnx", modelLocation);
 		model_hd->input_shape.push_back(1);
 		model_hd->input_shape.push_back(3);

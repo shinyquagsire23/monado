@@ -49,7 +49,8 @@ naive_sort_permutation_by_error(
     std::vector<size_t> &out_indices_2,
     std::vector<float> &out_errs,
 
-    float (*calc_error)(Tp_1 *one, Tp_2 *two))
+    float (*calc_error)(Tp_1 *one, Tp_2 *two),
+    float max_err = std::numeric_limits<float>::max())
 {
 	used_1 = std::vector<bool>(in_1.size()); // silly? Unsure.
 	used_2 = std::vector<bool>(in_2.size());
@@ -76,7 +77,7 @@ naive_sort_permutation_by_error(
 
 	for (size_t i = 0; i < associations.size(); i++) {
 		psort_atom_t chonk = associations[i];
-		if (used_1[chonk.idx_1] || used_2[chonk.idx_2]) {
+		if (used_1[chonk.idx_1] || used_2[chonk.idx_2] || (chonk.err > max_err)) {
 			continue;
 		}
 		used_1[chonk.idx_1] = true;

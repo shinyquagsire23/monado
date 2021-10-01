@@ -267,7 +267,7 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 		ht/templates/NaivePermutationSort.hpp
 		)
 	add_library(drv_ht STATIC ${HT_SOURCE_FILES})
-	target_link_libraries(drv_ht PRIVATE xrt-interfaces aux_os aux_util aux_math ONNXRuntime::ONNXRuntime ${OpenCV_LIBRARIES})
+	target_link_libraries(drv_ht PRIVATE xrt-interfaces aux_os aux_util aux_math aux_gstreamer ONNXRuntime::ONNXRuntime ${OpenCV_LIBRARIES})
 	target_include_directories(drv_ht PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 	list(APPEND ENABLED_DRIVERS ht)
 endif()

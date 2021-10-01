@@ -75,7 +75,7 @@ boxIOU(const Box &a, const Box &b)
 static NMSPalm
 weightedAvgBoxes(std::vector<NMSPalm> &detections)
 {
-	float weight = 0.0f;
+	float weight = 0.0f; // or, sum_confidences.
 	float cx = 0.0f;
 	float cy = 0.0f;
 	float size = 0.0f;
@@ -100,6 +100,26 @@ weightedAvgBoxes(std::vector<NMSPalm> &detections)
 		out.keypoints[i].x /= weight;
 		out.keypoints[i].y /= weight;
 	}
+
+
+	float bare_confidence = weight / detections.size();
+
+	// desmos \frac{1}{1+e^{-.5x}}-.5
+
+	float steep = 0.2;
+	float cent = 0.5;
+
+	float exp = detections.size();
+
+	float sigmoid_addendum = (1.0f / (1.0f + pow(M_E, (-steep * exp)))) - cent;
+
+	float diff_bare_to_one = 1.0f - bare_confidence;
+
+	out.confidence = bare_confidence + (sigmoid_addendum * diff_bare_to_one);
+
+	// U_LOG_E("Bare %f num %f sig %f diff %f out %f", bare_confidence, exp, sigmoid_addendum, diff_bare_to_one,
+	// out.confidence);
+
 	out.bbox.cx = cx;
 	out.bbox.cy = cy;
 	out.bbox.w = size;
@@ -108,7 +128,7 @@ weightedAvgBoxes(std::vector<NMSPalm> &detections)
 }
 
 static std::vector<NMSPalm>
-filterBoxesWeightedAvg(std::vector<NMSPalm> &detections)
+filterBoxesWeightedAvg(std::vector<NMSPalm> &detections, float min_iou = 0.1f)
 {
 	std::vector<std::vector<NMSPalm>> overlaps;
 	std::vector<NMSPalm> outs;
@@ -123,7 +143,7 @@ filterBoxesWeightedAvg(std::vector<NMSPalm> &detections)
 			// U_LOG_D("IOU is %f\n", iou);
 			// U_LOG_D("Outs box is %f %f %f %f", outs[i].bbox.cx, outs[i].bbox.cy, outs[i].bbox.w,
 			// outs[i].bbox.h)
-			if (iou > 0.1f) {
+			if (iou > min_iou) {
 				// This one intersects with the whole thing
 				overlaps[i].push_back(detection);
 				outs[i] = weightedAvgBoxes(overlaps[i]);

@@ -111,8 +111,8 @@ blackbar(cv::Mat &in, cv::Mat &out, xrt_size out_size)
 	// Easy to think about, always right, but pretty slow:
 	// Get a matrix from the original to the scaled down / blackbar'd image, then get one that goes back.
 	// Then just warpAffine() it.
-	// More expensive on the computer, but cheap in programmer time - I'm somewhat allergic to thinking in pixel
-	// coordinates. We can come back and optimize later.
+	// Easy in programmer time - never have to worry about off by one, special cases. We can come back and optimize
+	// later.
 
 	// Do the black bars need to be on top and bottom, or on left and right?
 	float scale_down_w = (float)out_size.w / (float)in.cols; // 128/1280 = 0.1
@@ -153,6 +153,8 @@ blackbar(cv::Mat &in, cv::Mat &out, xrt_size out_size)
 		ret(0,0) = scale_from_out_to_in;  ret(0,1) = 0.0f;                  ret(0,2) = 0.0f;
 		ret(1,0) = 0.0f;                  ret(1,1) = scale_from_out_to_in;  ret(1,2) = 0.0f;
 		// clang-format on
+		cv::imshow("hi", out);
+		cv::waitKey(1);
 		return ret;
 	}
 	assert(!"Uh oh! Unimplemented!");
@@ -177,13 +179,19 @@ transformVecBy2x3(T in, cv::Matx23f warp_back)
 
 //! Draw some dots. Factors out some boilerplate.
 static void
-handDot(cv::Mat &mat, xrt_vec2 place, float radius, float hue, int type)
+handDot(cv::Mat &mat, xrt_vec2 place, float radius, float hue, float intensity, int type)
 {
-	cv::circle(mat, {(int)place.x, (int)place.y}, radius, hsv2rgb(hue * 360.0f, 1.0f, 1.0f), type);
+	cv::circle(mat, {(int)place.x, (int)place.y}, radius, hsv2rgb(hue * 360.0f, intensity, intensity), type);
 }
 
-static DetectionModelOutput
-rotatedRectFromJoints(struct ht_view *htv, xrt_vec2 middle, xrt_vec2 wrist, DetectionModelOutput *out)
+static void
+centerAndRotationFromJoints(struct ht_view *htv,
+                            const xrt_vec2 *wrist,
+                            const xrt_vec2 *index,
+                            const xrt_vec2 *middle,
+                            const xrt_vec2 *little,
+                            xrt_vec2 *out_center,
+                            xrt_vec2 *out_wrist_to_middle)
 {
 	// Close to what Mediapipe does, but slightly different - just uses the middle proximal instead of "estimating"
 	// it from the pinky and index.
@@ -193,17 +201,25 @@ rotatedRectFromJoints(struct ht_view *htv, xrt_vec2 middle, xrt_vec2 wrist, Dete
 	// Feel free to look at the way MP does it, you can see it's different.
 	// https://github.com/google/mediapipe/blob/master/mediapipe/modules/holistic_landmark/calculators/hand_detections_from_pose_to_rects_calculator.cc
 
-	struct xrt_vec2 hand_center = middle; // Middle proximal, straight-up.
+	// struct xrt_vec2 hand_center = m_vec2_mul_scalar(middle, 0.5) + m_vec2_mul_scalar(index, 0.5*(2.0f/3.0f)) +
+	// m_vec2_mul_scalar(little, 0.5f*((1.0f/3.0f))); // Middle proximal, straight-up.
+	// U_LOG_E("%f %f  %f %f  %f %f  %f %f  ", wrist.x, wrist.y, index.x, index.y, middle.x, middle.y, little.x,
+	// little.y);
+	*out_center = m_vec2_lerp(*middle, m_vec2_lerp(*index, *little, 1.0f / 3.0f), 0.25f);
 
-	struct xrt_vec2 wrist_to_middle = middle - wrist;
+	*out_wrist_to_middle = *out_center - *wrist;
+}
 
-	float box_size = m_vec2_len(wrist_to_middle) * 2.0f * 1.7f;
+static DetectionModelOutput
+rotatedRectFromJoints(struct ht_view *htv, xrt_vec2 center, xrt_vec2 wrist_to_middle, DetectionModelOutput *out)
+{
+	float box_size = m_vec2_len(wrist_to_middle) * 2.0f * 1.73f;
 
 	double rot = atan2(wrist_to_middle.x, wrist_to_middle.y) * (-180.0f / M_PI);
 
 	out->rotation = rot;
 	out->size = box_size;
-	out->center = hand_center;
+	out->center = center;
 
 	cv::RotatedRect rrect =
 	    cv::RotatedRect(cv::Point2f(out->center.x, out->center.y), cv::Size2f(out->size, out->size), out->rotation);
@@ -211,10 +227,14 @@ rotatedRectFromJoints(struct ht_view *htv, xrt_vec2 middle, xrt_vec2 wrist, Dete
 
 	cv::Point2f vertices[4];
 	rrect.points(vertices);
-	if (htv->htd->debug_scribble) {
-		for (int i = 0; i < 4; i++)
-			line(htv->debug_out_to_this, vertices[i], vertices[(i + 1) % 4], cv::Scalar(i * 63, i * 63, 0),
-			     2);
+	if (htv->htd->debug_scribble && htv->htd->dynamic_config.scribble_bounding_box) {
+		for (int i = 0; i < 4; i++) {
+			cv::Scalar b = cv::Scalar(10, 30, 30);
+			if (i == 3) {
+				b = cv::Scalar(255, 255, 0);
+			}
+			cv::line(htv->debug_out_to_this, vertices[i], vertices[(i + 1) % 4], b, 2);
+		}
 	}
 	// topright is 0. bottomright is 1. bottomleft is 2. topleft is 3.
 
@@ -225,7 +245,7 @@ rotatedRectFromJoints(struct ht_view *htv, xrt_vec2 middle, xrt_vec2 wrist, Dete
 	out->warp_there = getAffineTransform(src_tri, dest_tri);
 	out->warp_back = getAffineTransform(dest_tri, src_tri);
 
-	out->wrist = wrist;
+	// out->wrist = wrist;
 
 	return *out;
 }
