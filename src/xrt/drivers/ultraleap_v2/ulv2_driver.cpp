@@ -333,12 +333,9 @@ static void
 ulv2_device_get_hand_tracking(struct xrt_device *xdev,
                               enum xrt_input_name name,
                               uint64_t at_timestamp_ns,
-                              struct xrt_hand_joint_set *out_value)
+                              struct xrt_hand_joint_set *out_value,
+                              uint64_t *out_timestamp_ns)
 {
-
-	//! @todo this function doesn't do anything with at_timestamp_ns,
-	// would be nice to add pose-prediction. Probably once leap motion sagittarius comes out for Linux
-
 	struct ulv2_device *ulv2d = ulv2_device(xdev);
 
 	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT && name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
@@ -362,6 +359,8 @@ ulv2_device_get_hand_tracking(struct xrt_device *xdev,
 	} else {
 		out_value->is_active = false;
 	}
+	// This is a lie - this driver does no pose-prediction or history. Patches welcome.
+	*out_timestamp_ns = at_timestamp_ns;
 }
 
 static void
