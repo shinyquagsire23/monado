@@ -178,7 +178,7 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 		endif()
 
 		foreach(WL_PROTO_XML ${WL_PROTOS_XML})
-			get_filename_component(WL_PROTO ${WL_PROTO_XML} NAME_WLE)
+			get_filename_component(WL_PROTO ${WL_PROTO_XML} NAME_WE)
 
 			set(WL_PROTO_C "${WL_PROTOS_DIR}/${WL_PROTO}.c")
 			set(WL_PROTO_H "${WL_PROTOS_DIR}/${WL_PROTO}-client-protocol.h")
