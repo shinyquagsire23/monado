@@ -113,8 +113,9 @@ r_device_get_tracked_pose(struct xrt_device *xdev,
 static void
 r_device_get_hand_tracking(struct xrt_device *xdev,
                            enum xrt_input_name name,
-                           uint64_t at_timestamp_ns,
-                           struct xrt_hand_joint_set *out_value)
+                           uint64_t requested_timestamp_ns,
+                           struct xrt_hand_joint_set *out_value,
+                           uint64_t *out_timestamp_ns)
 {
 	struct r_device *rd = r_device(xdev);
 	struct r_hub *r = rd->r;
@@ -136,14 +137,17 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 	};
 
 	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-	u_hand_joints_update_curl(&rd->hand_tracking, hand, at_timestamp_ns, &values);
+	u_hand_joints_update_curl(&rd->hand_tracking, hand, requested_timestamp_ns, &values);
 
 	struct xrt_pose hand_on_handle_pose = XRT_POSE_IDENTITY;
 
 	struct xrt_space_relation relation;
-	xrt_device_get_tracked_pose(xdev, XRT_INPUT_SIMPLE_GRIP_POSE, at_timestamp_ns, &relation);
+	xrt_device_get_tracked_pose(xdev, XRT_INPUT_SIMPLE_GRIP_POSE, requested_timestamp_ns, &relation);
 
 	u_hand_joints_set_out_data(&rd->hand_tracking, hand, &relation, &hand_on_handle_pose, out_value);
+
+	// This is a lie
+	*out_timestamp_ns = requested_timestamp_ns;
 }
 
 static void
