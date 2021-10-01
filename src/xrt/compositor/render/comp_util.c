@@ -74,8 +74,7 @@ void
 comp_calc_time_warp_matrix(const struct xrt_pose *src_pose,
                            const struct xrt_fov *src_fov,
                            const struct xrt_pose *new_pose,
-                           struct xrt_matrix_4x4 *matrix,
-                           bool disable_atw)
+                           struct xrt_matrix_4x4 *matrix)
 {
 	// Src projection matrix.
 	struct xrt_matrix_4x4_f64 src_proj;
@@ -100,11 +99,6 @@ comp_calc_time_warp_matrix(const struct xrt_pose *src_pose,
 	// Combine the source projection matrix and
 	struct xrt_matrix_4x4_f64 result;
 	m_mat4_f64_multiply(&src_proj, &delta_rot_inv, &result);
-
-	// Reset if timewarp is off.
-	if (disable_atw) {
-		result = src_proj;
-	}
 
 	// Convert from f64 to f32.
 	for (int i = 0; i < 16; i++) {

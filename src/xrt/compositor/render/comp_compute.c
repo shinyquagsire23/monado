@@ -443,18 +443,16 @@ comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
 	 */
 
 	struct xrt_matrix_4x4 time_warp_matrix[2];
-	comp_calc_time_warp_matrix(     //
-	    &src_poses[0],              //
-	    &src_fovs[0],               //
-	    &new_poses[0],              //
-	    &time_warp_matrix[0],       //
-	    false);                     //
-	comp_calc_time_warp_matrix(     //
-	    &src_poses[1],              //
-	    &src_fovs[1],               //
-	    &new_poses[1],              //
-	    &time_warp_matrix[1],       //
-	    false);                     //
+	comp_calc_time_warp_matrix( //
+	    &src_poses[0],          //
+	    &src_fovs[0],           //
+	    &new_poses[0],          //
+	    &time_warp_matrix[0]);  //
+	comp_calc_time_warp_matrix( //
+	    &src_poses[1],          //
+	    &src_fovs[1],           //
+	    &new_poses[1],          //
+	    &time_warp_matrix[1]);  //
 
 	struct comp_ubo_compute_data *data = (struct comp_ubo_compute_data *)r->compute.ubo.mapped;
 	data->views[0] = views[0];
