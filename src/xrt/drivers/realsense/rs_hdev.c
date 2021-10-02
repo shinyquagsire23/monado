@@ -194,7 +194,7 @@ rs_hdev_update_inputs(struct xrt_device *xdev)
 }
 
 //! Specific pose corrections for Kimera and the D455 camera
-static inline struct xrt_pose
+XRT_MAYBE_UNUSED static inline struct xrt_pose
 rs_hdev_correct_pose_from_kimera(struct xrt_pose pose)
 {
 	// Correct swapped axes
@@ -806,6 +806,7 @@ rs_hdev_fs_create(struct rs_hdev *rs, int device_idx)
 static bool
 rs_hdev_slam_track(struct rs_hdev *rs, struct xrt_prober *xp)
 {
+#ifdef XRT_HAVE_SLAM
 	struct xrt_slam_sinks *sinks = NULL;
 
 	int create_status = t_slam_create(&rs->xfctx, &rs->slam, &sinks);
@@ -822,8 +823,10 @@ rs_hdev_slam_track(struct rs_hdev *rs, struct xrt_prober *xp)
 	if (start_status != 0) {
 		return false;
 	}
-
 	return true;
+#else
+	return false;
+#endif
 }
 
 

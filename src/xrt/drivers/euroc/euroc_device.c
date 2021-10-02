@@ -108,7 +108,7 @@ euroc_device_update_inputs(struct xrt_device *xdev)
 //! Corrections specific for original euroc datasets and Kimera.
 //! If your datasets comes from a different camera you should probably
 //! use a different pose correction function.
-static inline struct xrt_pose
+XRT_MAYBE_UNUSED static inline struct xrt_pose
 euroc_device_correct_pose_from_kimera(struct xrt_pose pose)
 {
 	//! @todo Implement proper pose corrections for the original euroc datasets
