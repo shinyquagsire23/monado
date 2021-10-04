@@ -65,7 +65,7 @@ math_solve_triangle(
 
 	/* Parts of the quadratic formula solution */
 	const double b = u + 1.0;
-	const double root = sqrt(b + 4 * u * v * v);
+	const double root = sqrt(b * b + 4 * u * v * v);
 	const double two_a = 2 * v;
 
 	/* The two possible solutions. */
