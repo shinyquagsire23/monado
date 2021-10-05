@@ -225,6 +225,9 @@ def generate_bindings_c(file, p):
     for profile in p.profiles:
         feature: Feature
         for idx, feature in enumerate(profile.features):
+
+            feature_str = feature.feature_str
+
             sp_obj = feature.sub_path_obj
             if feature_str not in sp_obj["monado_bindings"]:
                 continue
