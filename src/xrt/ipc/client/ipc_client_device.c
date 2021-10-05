@@ -166,6 +166,7 @@ ipc_client_device_create(struct ipc_connection *ipc_c, struct xrt_tracking_origi
 
 	// Print name.
 	snprintf(icd->base.str, XRT_DEVICE_NAME_LEN, "%s", isdev->str);
+	snprintf(icd->base.serial, XRT_DEVICE_NAME_LEN, "%s", isdev->serial);
 
 	// Setup inputs, by pointing directly to the shared memory.
 	assert(isdev->input_count > 0);

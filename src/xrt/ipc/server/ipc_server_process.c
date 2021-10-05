@@ -272,6 +272,7 @@ init_shm(struct ipc_server *s)
 
 		isdev->name = xdev->name;
 		memcpy(isdev->str, xdev->str, sizeof(isdev->str));
+		memcpy(isdev->serial, xdev->serial, sizeof(isdev->serial));
 
 		isdev->orientation_tracking_supported = xdev->orientation_tracking_supported;
 		isdev->position_tracking_supported = xdev->position_tracking_supported;

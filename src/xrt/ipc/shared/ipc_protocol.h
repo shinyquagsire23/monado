@@ -106,6 +106,9 @@ struct ipc_shared_device
 	//! A string describing the device.
 	char str[XRT_DEVICE_NAME_LEN];
 
+	//! A unique identifier. Persistent across configurations, if possible.
+	char serial[XRT_DEVICE_NAME_LEN];
+
 	//! Number of bindings.
 	uint32_t binding_profile_count;
 	//! 'Offset' into the array of bindings where the bindings starts.

@@ -199,6 +199,7 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 
 	// Print name.
 	snprintf(ich->base.str, XRT_DEVICE_NAME_LEN, "%s", isdev->str);
+	snprintf(ich->base.serial, XRT_DEVICE_NAME_LEN, "%s", isdev->serial);
 
 	// Setup inputs, by pointing directly to the shared memory.
 	assert(isdev->input_count > 0);
