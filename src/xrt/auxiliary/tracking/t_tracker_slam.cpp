@@ -34,6 +34,14 @@
 	} while (false);
 #define SLAM_ASSERT_(predicate) SLAM_ASSERT(predicate, "Assertion failed " #predicate)
 
+// Debug assertions, not vital but useful for finding errors
+#ifdef NDEBUG
+#define SLAM_DASSERT(predicate, ...)
+#define SLAM_DASSERT_(predicate)
+#else
+#define SLAM_DASSERT(predicate, ...) SLAM_ASSERT(predicate, __VA_ARGS__)
+#define SLAM_DASSERT_(predicate) SLAM_ASSERT_(predicate)
+#endif
 
 //! SLAM tracking logging level
 DEBUG_GET_ONCE_LOG_OPTION(slam_log, "SLAM_LOG", U_LOGGING_WARN)
@@ -86,7 +94,7 @@ public:
 	Mat
 	wrap(struct xrt_frame *frame)
 	{
-		SLAM_ASSERT_(frame->format == XRT_FORMAT_L8 || frame->format == XRT_FORMAT_R8G8B8);
+		SLAM_DASSERT_(frame->format == XRT_FORMAT_L8 || frame->format == XRT_FORMAT_R8G8B8);
 		auto img_type = frame->format == XRT_FORMAT_L8 ? CV_8UC1 : CV_8UC3;
 
 		// Wrap the frame data into a cv::Mat header
@@ -95,11 +103,11 @@ public:
 		// Enable reference counting for a user-allocated cv::Mat (i.e., using existing frame->data)
 		img.u = this->allocate(img.dims, img.size.p, img.type(), img.data, img.step.p, ACCESS_RW,
 		                       cv::USAGE_DEFAULT);
-		SLAM_ASSERT_(img.u->refcount == 0);
+		SLAM_DASSERT_(img.u->refcount == 0);
 		img.addref();
 
 		// Keep a reference to the xrt_frame in the cv userdata field for when the cv::Mat reference reaches 0
-		SLAM_ASSERT_(img.u->userdata == NULL); // Should be default-constructed
+		SLAM_DASSERT_(img.u->userdata == NULL); // Should be default-constructed
 		xrt_frame_reference((struct xrt_frame **)&img.u->userdata, frame);
 
 		return img;
@@ -110,7 +118,7 @@ public:
 	allocate(
 	    int dims, const int *sizes, int type, void *data0, size_t *step, AccessFlag, UMatUsageFlags) const override
 	{
-		SLAM_ASSERT_(dims == 2 && sizes && data0 && step && step[0] != CV_AUTOSTEP);
+		SLAM_DASSERT_(dims == 2 && sizes && data0 && step && step[0] != CV_AUTOSTEP);
 		UMatData *u = new UMatData(this);
 		uchar *data = (uchar *)data0;
 		u->data = u->origdata = data;
@@ -133,8 +141,8 @@ public:
 	void
 	deallocate(UMatData *u) const override
 	{
-		SLAM_ASSERT_(u->urefcount == 0 && u->refcount == 0);
-		SLAM_ASSERT_(u->flags & UMatData::USER_ALLOCATED);
+		SLAM_DASSERT_(u->urefcount == 0 && u->refcount == 0);
+		SLAM_DASSERT_(u->flags & UMatData::USER_ALLOCATED);
 		xrt_frame_reference((struct xrt_frame **)&u->userdata, NULL);
 		delete u;
 	}
@@ -163,6 +171,11 @@ struct TrackerSlam
 	enum u_logging_level ll;     //!< Logging level for the SLAM tracker, set by SLAM_LOG var
 	struct os_thread_helper oth; //!< Thread where the external SLAM system runs
 	MatFrame *cv_wrapper;        //!< Wraps a xrt_frame in a cv::Mat to send to the SLAM system
+
+	// Used for checking that the timestamps come in order
+	mutable timepoint_ns last_imu_ts = INT64_MIN;
+	mutable timepoint_ns last_left_ts = INT64_MIN;
+	mutable timepoint_ns last_right_ts = INT64_MIN;
 };
 
 } // namespace xrt::auxiliary::tracking::slam
@@ -184,6 +197,10 @@ t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	imu_sample sample{ts, a.x, a.y, a.z, w.x, w.y, w.z};
 	t.slam->push_imu_sample(sample);
 	SLAM_TRACE("imu t=%ld a=[%f,%f,%f] w=[%f,%f,%f]", ts, a.x, a.y, a.z, w.x, w.y, w.z);
+
+	// Check monotonically increasing timestamps
+	SLAM_DASSERT(ts > t.last_imu_ts, "Sample (%ld) is older than last (%ld)", ts, t.last_imu_ts)
+	t.last_imu_ts = ts;
 }
 
 /*!
@@ -219,10 +236,15 @@ push_frame(const TrackerSlam &t, struct xrt_frame *frame, bool is_left)
 {
 	// Construct and send the image sample
 	cv::Mat img = t.cv_wrapper->wrap(frame);
-	SLAM_ASSERT_(frame->timestamp < INT64_MAX);
+	SLAM_DASSERT_(frame->timestamp < INT64_MAX);
 	img_sample sample{(int64_t)frame->timestamp, img, is_left};
 	t.slam->push_frame(sample);
 	SLAM_TRACE("%s frame t=%lu", is_left ? " left" : "right", frame->timestamp);
+
+	// Check monotonically increasing timestamps
+	timepoint_ns &last_ts = is_left ? t.last_left_ts : t.last_right_ts;
+	SLAM_DASSERT(sample.timestamp > last_ts, "Frame (%ld) is older than last (%ld)", sample.timestamp, last_ts);
+	last_ts = sample.timestamp;
 }
 
 extern "C" void
@@ -252,12 +274,12 @@ extern "C" void
 t_slam_node_destroy(struct xrt_frame_node *node)
 {
 	auto t_ptr = container_of(node, TrackerSlam, node);
+	auto &t = *t_ptr; // Needed by SLAM_DEBUG
+	SLAM_DEBUG("Destroying SLAM tracker");
 	os_thread_helper_destroy(&t_ptr->oth);
 	delete t_ptr->slam;
 	delete t_ptr->cv_wrapper;
 	delete t_ptr;
-	auto &t = *t_ptr; // Needed by SLAM_DEBUG
-	SLAM_DEBUG("SLAM tracker destroyed");
 }
 
 //! Runs the external SLAM system in a separate thread
