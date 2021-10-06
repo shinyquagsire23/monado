@@ -155,6 +155,7 @@ struct rs_hdev
 	//! It just pushes on every gyro sample and reuses the latest acc sample.
 	struct
 	{
+		struct os_mutex mutex; //!< Gyro and accel come from separate threads
 		struct xrt_vec3 accel; //!< Last received accelerometer values
 		struct xrt_vec3 gyro;  //!< Last received gyroscope values
 	} partial_imu_sample;
@@ -449,13 +450,11 @@ rs2xrt_frame(struct rs_hdev *rs, rs2_frame *rframe, struct xrt_frame **out_xfram
 
 #ifndef NDEBUG // Debug only: check that the realsense stream is behaving as expected
 	bool is_video_frame = DO(rs2_is_frame_extendable_to, rframe, RS2_EXTENSION_VIDEO_FRAME);
-	rs2_timestamp_domain ts_domain = DO(rs2_get_frame_timestamp_domain, rframe);
 	int rs_bits_per_pixel = DO(rs2_get_frame_bits_per_pixel, rframe);
 	int rs_width = DO(rs2_get_frame_width, rframe);
 	int rs_height = DO(rs2_get_frame_height, rframe);
 	int rs_stride = DO(rs2_get_frame_stride_in_bytes, rframe);
 	RS_DASSERT_(is_video_frame);
-	RS_DASSERT(ts_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME, "ts_domain=%d", ts_domain);
 	RS_DASSERT_(rs_bits_per_pixel == bytes_per_pixel * 8);
 	RS_DASSERT(rs_width == rs->video_width, "%d != %d", rs_width, rs->video_width);
 	RS_DASSERT(rs_height == rs->video_height, "%d != %d", rs_height, rs->video_height);
@@ -533,32 +532,24 @@ handle_frameset(struct rs_hdev *rs, rs2_frame *frames)
 static void
 partial_imu_sample_push(struct rs_hdev *rs, timepoint_ns ts, struct xrt_vec3 vals, bool is_gyro)
 {
-	//! @todo this function can be called from separate threads and is both
-	//! writing and reading rs->partial_imu_sample. Fix the race condition.
+	os_mutex_lock(&rs->partial_imu_sample.mutex);
 
 	if (is_gyro) {
 		rs->partial_imu_sample.gyro = vals;
 	} else {
 		rs->partial_imu_sample.accel = vals;
 	}
+	struct xrt_vec3 gyro = rs->partial_imu_sample.gyro;
+	struct xrt_vec3 accel = rs->partial_imu_sample.accel;
 
-	// Push IMU when a gyro arrives and reuse latest accelerometer data (or zero if none)
-	bool should_submit = is_gyro;
+	// Push IMU sample from fastest motion sensor arrives, reuse latest data from the other sensor (or zero)
+	bool should_submit = (rs->gyro_fps > rs->accel_fps) == is_gyro;
 	if (should_submit) {
-		struct xrt_vec3 gyro = rs->partial_imu_sample.gyro;
-		struct xrt_vec3 accel = rs->partial_imu_sample.accel;
 		struct xrt_imu_sample sample = {ts, {accel.x, accel.y, accel.z}, {gyro.x, gyro.y, gyro.z}};
-		RS_TRACE("imu t=%ld a=%f,%f,%f w=%f,%f,%f", ts, accel.x, accel.y, accel.z, gyro.x, gyro.y, gyro.z);
 		xrt_sink_push_imu(rs->in_sinks.imu, &sample);
-
-		// Push to debug UI by adjusting the timestamp to monotonic time
-		uint64_t now_realtime = os_realtime_get_ns();
-		uint64_t now_monotonic = os_monotonic_get_ns();
-		RS_DASSERT_(now_realtime < INT64_MAX && (timepoint_ns)now_realtime > ts);
-		uint64_t imu_monotonic = now_monotonic - (now_realtime - ts);
-		m_ff_vec3_f32_push(rs->gyro_ff, &gyro, imu_monotonic);
-		m_ff_vec3_f32_push(rs->accel_ff, &accel, imu_monotonic);
 	}
+
+	os_mutex_unlock(&rs->partial_imu_sample.mutex);
 }
 
 static void
@@ -568,7 +559,8 @@ handle_gyro_frame(struct rs_hdev *rs, rs2_frame *frame)
 
 #ifndef NDEBUG
 	int data_size = DO(rs2_get_frame_data_size, frame);
-	RS_DASSERT(data_size == 3 * sizeof(float), "data_size = %d != 12", data_size);
+	RS_DASSERT(data_size == 3 * sizeof(float) || data_size == 4 * sizeof(float), "Unexpected size=%d", data_size);
+	RS_DASSERT_(data_size != 4 || data[3] == 0);
 #endif
 
 	double timestamp_ms = DO(rs2_get_frame_timestamp, frame);
@@ -586,10 +578,10 @@ handle_accel_frame(struct rs_hdev *rs, rs2_frame *frame)
 
 #ifndef NDEBUG
 	int data_size = DO(rs2_get_frame_data_size, frame);
-	// For some strange reason data_size is 4 for the accelerometer sample instead
-	// of 3. Although the last element data[3] seems to always be zero.
-	RS_DASSERT(data_size == 4 * sizeof(float), "data_size = %d != 16", data_size);
-	RS_DASSERT_(data[3] == 0);
+	// For some strange reason data_size is 4 for samples that can use hardware
+	// timestamps. And that last element data[3] seems to always be zero.
+	RS_DASSERT(data_size == 3 * sizeof(float) || data_size == 4 * sizeof(float), "Unexpected size=%d", data_size);
+	RS_DASSERT_(data_size != 4 || data[3] == 0);
 #endif
 
 	double timestamp_ms = DO(rs2_get_frame_timestamp, frame);
@@ -598,6 +590,51 @@ handle_accel_frame(struct rs_hdev *rs, rs2_frame *frame)
 	RS_TRACE("accel t=%ld x=%f y=%f z=%f", timestamp_ns, accel.x, accel.y, accel.z);
 	partial_imu_sample_push(rs, timestamp_ns, accel, false);
 	rs2_release_frame(frame);
+}
+
+//! Checks that the timestamp domain of the realsense sample (the frame) is in
+//! global time or, at the very least, in another domain that we support.
+static inline void
+check_global_time(struct rs_hdev *rs, rs2_frame *frame, rs2_stream stream_type)
+{
+
+#ifndef NDEBUG // Check valid timestamp domains only on debug builds
+	rs2_timestamp_domain ts_domain = DO(rs2_get_frame_timestamp_domain, frame);
+	bool using_global_time = ts_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME;
+	bool acceptable_timestamp_domain = using_global_time;
+
+	//! @note We should be ensuring that we have the same timestamp domains in all
+	//! sensors. But the user might have a newer kernel versions that is not
+	//! supported by the RealSense DKMS package that allows GLOBAL_TIME for all
+	//! sensors. From my experience and based on other users' reports, the only
+	//! affected sensor without GLOBAL_TIME is the gyroscope, which is ~30ms off.
+	//! See https://github.com/IntelRealSense/librealsense/issues/5710
+
+	bool is_accel = stream_type == RS2_STREAM_ACCEL;
+	bool is_gyro = stream_type == RS2_STREAM_GYRO;
+	bool is_motion_sensor = is_accel || is_gyro;
+
+	if (is_motion_sensor) {
+		bool is_gyro_slower = rs->gyro_fps < rs->accel_fps;
+		bool is_slower_motion_sensor = is_gyro_slower == is_gyro;
+
+		// We allow different domains for the slower sensor because partial_imu_sample
+		// discards those timestamps
+		acceptable_timestamp_domain |= is_slower_motion_sensor;
+	}
+
+	if (!acceptable_timestamp_domain) {
+		RS_ERROR("Invalid ts_domain=%s", rs2_timestamp_domain_to_string(ts_domain));
+		RS_ERROR("One of your RealSense sensors is not using GLOBAL_TIME domain for its timestamps.");
+		RS_ERROR("This should be solved by applying the kernel patch required by the RealSense SDK.");
+		if (is_motion_sensor) {
+			const char *a = is_accel ? "accelerometer" : "gyroscope";
+			const char *b = is_accel ? "gyroscope" : "accelerometer";
+			RS_ERROR("As an alternative, set %s frequency to be greater than %s frequency.", b, a);
+		}
+		RS_DASSERT(false, "Unacceptable timestamp domain %s", rs2_timestamp_domain_to_string(ts_domain));
+	}
+#endif
 }
 
 static void
@@ -610,8 +647,10 @@ on_frame(rs2_frame *frame, void *ptr)
 	rs2_format format;
 	int index, unique_id, framerate;
 	DO(rs2_get_stream_profile_data, stream, &stream_type, &format, &index, &unique_id, &framerate);
+
 	bool is_frameset = DO(rs2_is_frame_extendable_to, frame, RS2_EXTENSION_COMPOSITE_FRAME);
 	bool is_motion_frame = DO(rs2_is_frame_extendable_to, frame, RS2_EXTENSION_MOTION_FRAME);
+	check_global_time(rs, frame, stream_type);
 
 	if (stream_type == rs->stream_type) {
 		RS_DASSERT_(is_frameset && format == rs->video_format &&
@@ -792,6 +831,9 @@ rs_hdev_fs_create(struct rs_hdev *rs, int device_idx)
 	xfn->destroy = rs_hdev_node_destroy;
 	xrt_frame_context_add(&rs->xfctx, &rs->node);
 
+	// Setup IMU synchronizer lock
+	os_mutex_init(&rs->partial_imu_sample.mutex);
+
 	return xfs;
 }
 
@@ -868,6 +910,21 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;
 	RS_TRACE("imu t=%ld a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
 
+	// Push to debug UI by adjusting the timestamp to monotonic time
+
+	struct xrt_vec3 gyro = {(float)w.x, (float)w.y, (float)w.z};
+	struct xrt_vec3 accel = {(float)a.x, (float)a.y, (float)a.z};
+	uint64_t now_realtime = os_realtime_get_ns();
+	uint64_t now_monotonic = os_monotonic_get_ns();
+	RS_DASSERT_(now_realtime < INT64_MAX);
+
+	// Assertion commented because GLOBAL_TIME makes ts be a bit in the future
+	// RS_DASSERT_(now_realtime < INT64_MAX && (timepoint_ns)now_realtime > ts);
+
+	uint64_t imu_monotonic = now_monotonic - (now_realtime - ts);
+	m_ff_vec3_f32_push(rs->gyro_ff, &gyro, imu_monotonic);
+	m_ff_vec3_f32_push(rs->accel_ff, &accel, imu_monotonic);
+
 	if (rs->out_sinks.imu) {
 		xrt_sink_push_imu(rs->out_sinks.imu, s);
 	}
@@ -891,6 +948,7 @@ static void
 rs_hdev_node_destroy(struct xrt_frame_node *node)
 {
 	struct rs_hdev *rs = container_of(node, struct rs_hdev, node);
+	os_mutex_destroy(&rs->partial_imu_sample.mutex);
 	u_var_remove_root(rs);
 	u_sink_debug_destroy(&rs->ui_left_sink);
 	u_sink_debug_destroy(&rs->ui_right_sink);
