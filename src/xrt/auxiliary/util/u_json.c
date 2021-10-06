@@ -211,13 +211,13 @@ u_json_get_vec3_f64_array(const cJSON *json, struct xrt_vec3_f64 *out_vec3)
 		return false;
 	}
 
-	float array[3] = {0, 0, 0};
+	double array[3] = {0, 0, 0};
 	const cJSON *item = NULL;
 	size_t i = 0;
 	cJSON_ArrayForEach(item, json)
 	{
 		assert(cJSON_IsNumber(item));
-		array[i] = (float)item->valuedouble;
+		array[i] = item->valuedouble;
 		++i;
 		if (i == 3) {
 			break;

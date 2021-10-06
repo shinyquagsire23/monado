@@ -172,9 +172,9 @@ struct xrt_vec3
  */
 struct xrt_vec3_f64
 {
-	float x;
-	float y;
-	float z;
+	double x;
+	double y;
+	double z;
 };
 
 /*!
