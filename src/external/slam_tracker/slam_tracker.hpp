@@ -41,9 +41,9 @@ struct pose {
  * @brief IMU Sample type to pass around between programs
  */
 struct imu_sample {
-  std::int64_t timestamp;
-  double ax, ay, az;
-  double wx, wy, wz;
+  std::int64_t timestamp; // In nanoseconds
+  double ax, ay, az; // In meters per second squared (m / s^2)
+  double wx, wy, wz; // In radians per second (rad / s)
   imu_sample() = default;
   imu_sample(std::int64_t timestamp, double ax, double ay, double az, double wx,
              double wy, double wz)
@@ -89,14 +89,18 @@ struct slam_tracker {
   void stop();
   bool is_running();
 
-  //! Should be thread safe, more than one producer could push.
+  //! There must be a single producer thread pushing samples.
+  //! Samples must have monotonically increasing timestamps.
+  //! The implementation must be non-blocking.
+  //! A separate consumer thread should process the samples.
   void push_imu_sample(imu_sample sample);
 
-  //! Should be thread safe, more than one producer could push.
+  //! Same conditions as `push_imu_sample` apply.
+  //! When using stereo frames, they must be pushed in a left-right order.
+  //! The consecutive left-right pair must have the same timestamps.
   void push_frame(img_sample sample);
 
-  //! Only one user will dequeue, thread safety not required.
-  //! Could be implemented with a lock-free queue.
+  //! There must be a single thread accessing the tracked pose.
   bool try_dequeue_pose(pose &pose);
 
  private:
