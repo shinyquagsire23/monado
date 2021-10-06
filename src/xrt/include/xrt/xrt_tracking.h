@@ -137,8 +137,9 @@ struct xrt_tracking_sample
  */
 struct xrt_imu_sample
 {
-	timepoint_ns timestamp;
-	double ax, ay, az, wx, wy, wz;
+	timepoint_ns timestamp_ns;
+	struct xrt_vec3_f64 accel_m_s2;
+	struct xrt_vec3_f64 gyro_rad_secs;
 };
 
 /*!

@@ -547,7 +547,7 @@ partial_imu_sample_push(struct rs_hdev *rs, timepoint_ns ts, struct xrt_vec3 val
 	if (should_submit) {
 		struct xrt_vec3 gyro = rs->partial_imu_sample.gyro;
 		struct xrt_vec3 accel = rs->partial_imu_sample.accel;
-		struct xrt_imu_sample sample = {ts, accel.x, accel.y, accel.z, gyro.x, gyro.y, gyro.z};
+		struct xrt_imu_sample sample = {ts, {accel.x, accel.y, accel.z}, {gyro.x, gyro.y, gyro.z}};
 		RS_TRACE("imu t=%ld a=%f,%f,%f w=%f,%f,%f", ts, accel.x, accel.y, accel.z, gyro.x, gyro.y, gyro.z);
 		xrt_sink_push_imu(rs->in_sinks.imu, &sample);
 
@@ -862,7 +862,12 @@ static void
 receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
 	struct rs_hdev *rs = container_of(sink, struct rs_hdev, imu_sink);
-	RS_TRACE("imu t=%ld a=(%f %f %f) w=(%f %f %f)", s->timestamp, s->ax, s->ay, s->az, s->wx, s->wy, s->wz);
+
+	timepoint_ns ts = s->timestamp_ns;
+	struct xrt_vec3_f64 a = s->accel_m_s2;
+	struct xrt_vec3_f64 w = s->gyro_rad_secs;
+	RS_TRACE("imu t=%ld a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
+
 	if (rs->out_sinks.imu) {
 		xrt_sink_push_imu(rs->out_sinks.imu, s);
 	}

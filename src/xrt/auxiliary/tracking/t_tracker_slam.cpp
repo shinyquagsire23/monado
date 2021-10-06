@@ -174,11 +174,16 @@ extern "C" void
 t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
 	auto &t = *container_of(sink, TrackerSlam, imu_sink);
+
+	timepoint_ns ts = s->timestamp_ns;
+	xrt_vec3_f64 a = s->accel_m_s2;
+	xrt_vec3_f64 w = s->gyro_rad_secs;
+
 	//! @todo There are many conversions like these between xrt and
 	//! slam_tracker.hpp types. Implement a casting mechanism to avoid copies.
-	imu_sample sample{s->timestamp, s->ax, s->ay, s->az, s->wx, s->wy, s->wz};
+	imu_sample sample{ts, a.x, a.y, a.z, w.x, w.y, w.z};
 	t.slam->push_imu_sample(sample);
-	SLAM_TRACE("imu t=%ld a=[%f,%f,%f] w=[%f,%f,%f]", s->timestamp, s->ax, s->ay, s->az, s->wx, s->wy, s->wz);
+	SLAM_TRACE("imu t=%ld a=[%f,%f,%f] w=[%f,%f,%f]", ts, a.x, a.y, a.z, w.x, w.y, w.z);
 }
 
 /*!

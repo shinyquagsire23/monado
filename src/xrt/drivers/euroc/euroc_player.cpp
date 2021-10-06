@@ -159,7 +159,7 @@ euroc_player_preload_imu_data(struct euroc_player *ep,
 			set_base_ts = false;
 		}
 
-		xrt_imu_sample sample{timestamp, v[3], v[4], v[5], v[0], v[1], v[2]};
+		xrt_imu_sample sample{timestamp, {v[3], v[4], v[5]}, {v[0], v[1], v[2]}};
 		samples->push_back(sample);
 	}
 	return true;
@@ -220,7 +220,7 @@ euroc_player_user_skip(struct euroc_player *ep)
 {
 	timepoint_ns skip_first_ns = ep->playback.skip_first_s * 1000 * 1000 * 1000;
 
-	while (ep->imus->at(ep->imu_seq).timestamp < skip_first_ns) {
+	while (ep->imus->at(ep->imu_seq).timestamp_ns < skip_first_ns) {
 		ep->imu_seq++;
 	}
 
@@ -343,7 +343,7 @@ euroc_player_is_imu_next(struct euroc_player *ep)
 	}
 
 	bool more_imgs = ep->img_seq < ep->left_imgs->size();
-	timepoint_ns imu_ts = more_imus ? ep->imus->at(ep->imu_seq).timestamp : INT64_MAX;
+	timepoint_ns imu_ts = more_imus ? ep->imus->at(ep->imu_seq).timestamp_ns : INT64_MAX;
 	timepoint_ns img_ts = more_imgs ? ep->left_imgs->at(ep->img_seq).first : INT64_MAX;
 	return imu_ts < img_ts;
 }
@@ -356,7 +356,7 @@ euroc_player_push_next_sample(struct euroc_player *ep)
 	// Push next IMU sample
 	if (euroc_player_is_imu_next(ep)) {
 		xrt_imu_sample sample = ep->imus->at(ep->imu_seq++);
-		sample.timestamp = euroc_player_mapped_ts(ep, sample.timestamp);
+		sample.timestamp_ns = euroc_player_mapped_ts(ep, sample.timestamp_ns);
 		xrt_sink_push_imu(ep->in_sinks.imu, &sample);
 		return;
 	}
@@ -502,15 +502,18 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
 	struct euroc_player *ep = container_of(sink, struct euroc_player, imu_sink);
 
+	timepoint_ns ts = s->timestamp_ns;
+	xrt_vec3_f64 a = s->accel_m_s2;
+	xrt_vec3_f64 w = s->gyro_rad_secs;
+
 	// UI log
-	const xrt_vec3 gyro{(float)s->wx, (float)s->wy, (float)s->wz};
-	const xrt_vec3 accel{(float)s->ax, (float)s->ay, (float)s->az};
-	m_ff_vec3_f32_push(ep->gyro_ff, &gyro, s->timestamp);
-	m_ff_vec3_f32_push(ep->accel_ff, &accel, s->timestamp);
+	const xrt_vec3 gyro{(float)w.x, (float)w.y, (float)w.z};
+	const xrt_vec3 accel{(float)a.x, (float)a.y, (float)a.z};
+	m_ff_vec3_f32_push(ep->gyro_ff, &gyro, ts);
+	m_ff_vec3_f32_push(ep->accel_ff, &accel, ts);
 
 	// Trace log
-	EUROC_TRACE(ep, "imu t=%ld ax=%f ay=%f az=%f wx=%f wy=%f wz=%f", s->timestamp, s->ax, s->ay, s->az, s->wx,
-	            s->wy, s->wz);
+	EUROC_TRACE(ep, "imu t=%ld ax=%f ay=%f az=%f wx=%f wy=%f wz=%f", ts, a.x, a.y, a.z, w.x, w.y, w.z);
 	if (ep->out_sinks.imu) {
 		xrt_sink_push_imu(ep->out_sinks.imu, s);
 	}
