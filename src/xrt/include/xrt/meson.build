@@ -106,9 +106,7 @@ endif
 
 if slam.found() and build_tracking
 	have_conf.set('XRT_HAVE_SLAM', true)
-	if slam.name() == 'kimera_vio'
-		have_conf.set('XRT_HAVE_KIMERA_SLAM', true)
-	endif
+	have_conf.set('XRT_HAVE_KIMERA_SLAM', slam.name() == 'kimera_vio')
 endif
 
 if build_wayland
