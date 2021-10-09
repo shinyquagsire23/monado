@@ -298,6 +298,91 @@ depthai_destroy(struct depthai_fs *depthai)
 	return true;
 }
 
+static void
+depthai_setup_single_pipeline(struct depthai_fs *depthai, enum depthai_camera_type camera_type)
+{
+	switch (camera_type) {
+#if 0
+	case (RGB_OV_9782):
+		depthai->width = 1280;
+		depthai->height = 800;
+		depthai->format = XRT_FORMAT_R8G8B8;
+		depthai->color_sensor_resoultion = dai::ColorCameraProperties::SensorResolution::THE_800_P;
+		depthai->image_orientation = dai::CameraImageOrientation::ROTATE_180_DEG;
+		depthai->fps = 60; // Currently only supports 60.
+		depthai->interleaved = true;
+		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
+		break;
+#endif
+	case (RGB_IMX_378):
+		depthai->width = 1920;
+		depthai->height = 1080;
+		depthai->format = XRT_FORMAT_R8G8B8;
+		depthai->color_sensor_resoultion = dai::ColorCameraProperties::SensorResolution::THE_1080_P;
+		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+		depthai->fps = 118; // Actual max.
+		depthai->interleaved = true;
+		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
+		break;
+	case (MONO_OV_9282_L):
+		depthai->width = 1280;
+		depthai->height = 800;
+		depthai->format = XRT_FORMAT_L8;
+		depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
+		depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
+		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+		depthai->fps = 60; // Currently only supports 60.
+		break;
+	case (MONO_OV_9282_R):
+		depthai->width = 1280;
+		depthai->height = 800;
+		depthai->format = XRT_FORMAT_L8;
+		depthai->camera_board_socket = dai::CameraBoardSocket::RIGHT;
+		depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
+		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+		depthai->fps = 60; // Currently only supports 60.
+		break;
+	default: assert(false);
+	}
+
+	dai::Pipeline p = {};
+
+	auto xlinkOut = p.create<dai::node::XLinkOut>();
+	xlinkOut->setStreamName("preview");
+
+	std::shared_ptr<dai::node::ColorCamera> colorCam = nullptr;
+	std::shared_ptr<dai::node::MonoCamera> monoCam = nullptr;
+
+	if (depthai->format == XRT_FORMAT_R8G8B8) {
+		colorCam = p.create<dai::node::ColorCamera>();
+		colorCam->setPreviewSize(depthai->width, depthai->height);
+		colorCam->setResolution(depthai->color_sensor_resoultion);
+		colorCam->setImageOrientation(depthai->image_orientation);
+		colorCam->setInterleaved(depthai->interleaved);
+		colorCam->setFps(depthai->fps);
+		colorCam->setColorOrder(depthai->color_order);
+
+		// Link plugins CAM -> XLINK
+		colorCam->preview.link(xlinkOut->input);
+	}
+
+	if (depthai->format == XRT_FORMAT_L8) {
+		monoCam = p.create<dai::node::MonoCamera>();
+		monoCam->setBoardSocket(depthai->camera_board_socket);
+		monoCam->setResolution(depthai->mono_sensor_resoultion);
+		monoCam->setImageOrientation(depthai->image_orientation);
+		monoCam->setFps(depthai->fps);
+
+		// Link plugins CAM -> XLINK
+		monoCam->out.link(xlinkOut->input);
+	}
+
+
+	// Start the pipeline
+	depthai->device->startPipeline(p);
+	depthai->queue = depthai->device->getOutputQueue("preview", 1, false).get(); // out of shared pointer
+}
+
 
 /*
  *
@@ -448,50 +533,6 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 
 	enum depthai_camera_type camera_type = RGB_IMX_378;
 
-	switch (camera_type) {
-#if 0
-	case (RGB_OV_9782):
-		depthai->width = 1280;
-		depthai->height = 800;
-		depthai->format = XRT_FORMAT_R8G8B8;
-		depthai->color_sensor_resoultion = dai::ColorCameraProperties::SensorResolution::THE_800_P;
-		depthai->image_orientation = dai::CameraImageOrientation::ROTATE_180_DEG;
-		depthai->fps = 60; // Currently only supports 60.
-		depthai->interleaved = true;
-		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
-		break;
-#endif
-	case (RGB_IMX_378):
-		depthai->width = 1920;
-		depthai->height = 1080;
-		depthai->format = XRT_FORMAT_R8G8B8;
-		depthai->color_sensor_resoultion = dai::ColorCameraProperties::SensorResolution::THE_1080_P;
-		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
-		depthai->fps = 118; // Actual max.
-		depthai->interleaved = true;
-		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
-		break;
-	case (MONO_OV_9282_L):
-		depthai->width = 1280;
-		depthai->height = 800;
-		depthai->format = XRT_FORMAT_L8;
-		depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
-		depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
-		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
-		depthai->fps = 60; // Currently only supports 60.
-		break;
-	case (MONO_OV_9282_R):
-		depthai->width = 1280;
-		depthai->height = 800;
-		depthai->format = XRT_FORMAT_L8;
-		depthai->camera_board_socket = dai::CameraBoardSocket::RIGHT;
-		depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
-		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
-		depthai->fps = 60; // Currently only supports 60.
-		break;
-	default: assert(false);
-	}
-
 	// Some debug printing.
 	depthai_print_connected_cameras(depthai);
 	depthai_print_calib(depthai);
@@ -499,43 +540,10 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 	// Make sure that the thread helper is initialised.
 	os_thread_helper_init(&depthai->play_thread);
 
-	dai::Pipeline p = {};
+	// Last bit is to setup the pipeline.
+	depthai_setup_single_pipeline(depthai, camera_type);
 
-	auto xlinkOut = p.create<dai::node::XLinkOut>();
-	xlinkOut->setStreamName("preview");
-
-	std::shared_ptr<dai::node::ColorCamera> colorCam = nullptr;
-	std::shared_ptr<dai::node::MonoCamera> monoCam = nullptr;
-
-	if (depthai->format == XRT_FORMAT_R8G8B8) {
-		colorCam = p.create<dai::node::ColorCamera>();
-		colorCam->setPreviewSize(depthai->width, depthai->height);
-		colorCam->setResolution(depthai->color_sensor_resoultion);
-		colorCam->setImageOrientation(depthai->image_orientation);
-		colorCam->setInterleaved(depthai->interleaved);
-		colorCam->setFps(depthai->fps);
-		colorCam->setColorOrder(depthai->color_order);
-
-		// Link plugins CAM -> XLINK
-		colorCam->preview.link(xlinkOut->input);
-	}
-
-	if (depthai->format == XRT_FORMAT_L8) {
-		monoCam = p.create<dai::node::MonoCamera>();
-		monoCam->setBoardSocket(depthai->camera_board_socket);
-		monoCam->setResolution(depthai->mono_sensor_resoultion);
-		monoCam->setImageOrientation(depthai->image_orientation);
-		monoCam->setFps(depthai->fps);
-
-		// Link plugins CAM -> XLINK
-		monoCam->out.link(xlinkOut->input);
-	}
-
-
-	// Start the pipeline
-	d->startPipeline(p);
-	depthai->queue = d->getOutputQueue("preview", 1, false).get(); // out of shared pointer
-
+	// And finally add us to the context when we are done.
 	xrt_frame_context_add(xfctx, &depthai->node);
 
 	DEPTHAI_DEBUG(depthai, "DepthAI: Created");
