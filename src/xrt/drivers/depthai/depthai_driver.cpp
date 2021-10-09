@@ -356,9 +356,10 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 	depthai->ll = debug_get_log_option_depthai_log();
 	depthai->device = d;
 
-	enum depthai_camera_type camera_type = RGB_OV_9782;
+	enum depthai_camera_type camera_type = RGB_IMX_378;
 
 	switch (camera_type) {
+#if 0
 	case (RGB_OV_9782):
 		depthai->width = 1280;
 		depthai->height = 800;
@@ -369,6 +370,7 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 		depthai->interleaved = true;
 		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
 		break;
+#endif
 	case (RGB_IMX_378):
 		depthai->width = 1920;
 		depthai->height = 1080;
