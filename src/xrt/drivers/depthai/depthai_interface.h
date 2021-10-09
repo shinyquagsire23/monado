@@ -17,6 +17,9 @@ extern "C" {
 #endif
 
 
+struct t_stereo_camera_calibration;
+
+
 /*!
  * @defgroup drv_depthai DepthAI frameserver driver
  * @ingroup drv
@@ -39,6 +42,14 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx);
  */
 struct xrt_fs *
 depthai_fs_stereo_gray(struct xrt_frame_context *xfctx);
+
+/*!
+ * Get the stereo calibration from a depthAI frameserver.
+ *
+ * @ingroup drv_depthai
+ */
+void
+depthai_fs_get_stereo_calibration(struct xrt_fs *xfs, struct t_stereo_camera_calibration **c_ptr);
 
 
 #ifdef __cplusplus

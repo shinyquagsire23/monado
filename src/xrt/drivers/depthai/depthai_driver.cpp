@@ -664,3 +664,11 @@ depthai_fs_stereo_gray(struct xrt_frame_context *xfctx)
 
 	return &depthai->base;
 }
+
+extern "C" void
+depthai_fs_get_stereo_calibration(struct xrt_fs *xfs, struct t_stereo_camera_calibration **c_ptr)
+{
+	struct depthai_fs *depthai = depthai_fs(xfs);
+
+	depthai_get_gray_cameras_calibration(depthai, c_ptr);
+}
