@@ -51,9 +51,14 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		gui_scene_debug(p);
 	}
 
-	if (igButton("Record (DepthAI)", button_dims)) {
+	if (igButton("Record (DepthAI Single)", button_dims)) {
 		gui_scene_delete_me(p, scene);
-		gui_scene_record(p, "depthai");
+		gui_scene_record(p, "depthai-single");
+	}
+
+	if (igButton("Record (DepthAI Stereo)", button_dims)) {
+		gui_scene_delete_me(p, scene);
+		gui_scene_record(p, "depthai-stereo");
 	}
 
 	if (igButton("Record (Index)", button_dims)) {
