@@ -503,12 +503,12 @@ depthai_fs_node_destroy(struct xrt_frame_node *node)
 
 /*
  *
- * 'Exported' functions.
+ * Create function, needs to be last.
  *
  */
 
-extern "C" struct xrt_fs *
-depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
+static struct depthai_fs *
+depthai_create_and_do_minimal_setup(void)
 {
 	// Try to create a device and see if that fail first.
 	dai::Device *d;
@@ -531,14 +531,32 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 	depthai->ll = debug_get_log_option_depthai_log();
 	depthai->device = d;
 
-	enum depthai_camera_type camera_type = RGB_IMX_378;
-
 	// Some debug printing.
 	depthai_print_connected_cameras(depthai);
 	depthai_print_calib(depthai);
 
 	// Make sure that the thread helper is initialised.
 	os_thread_helper_init(&depthai->play_thread);
+
+	return depthai;
+}
+
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
+extern "C" struct xrt_fs *
+depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
+{
+	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
+	if (depthai == nullptr) {
+		return nullptr;
+	}
+
+	enum depthai_camera_type camera_type = RGB_IMX_378;
 
 	// Last bit is to setup the pipeline.
 	depthai_setup_single_pipeline(depthai, camera_type);
