@@ -154,6 +154,7 @@ set(UTIL_SOURCE_FILES
 	util/u_misc.c
 	util/u_misc.h
 	util/u_sink.h
+	util/u_sink_combiner.c
 	util/u_sink_converter.c
 	util/u_sink_deinterleaver.c
 	util/u_sink_queue.c

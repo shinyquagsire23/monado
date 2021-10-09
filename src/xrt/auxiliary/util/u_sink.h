@@ -119,6 +119,15 @@ u_sink_split_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink *right,
                     struct xrt_frame_sink **out_xfs);
 
+/*!
+ * Combines stereo frames.
+ */
+bool
+u_sink_combiner_create(struct xrt_frame_context *xfctx,
+                       struct xrt_frame_sink *downstream,
+                       struct xrt_frame_sink **out_left_xfs,
+                       struct xrt_frame_sink **out_right_xfs);
+
 
 /*
  *
