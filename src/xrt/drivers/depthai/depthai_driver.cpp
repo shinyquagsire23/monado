@@ -44,7 +44,7 @@
 #define DEPTHAI_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
 #define DEPTHAI_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
 
-DEBUG_GET_ONCE_LOG_OPTION(depthai_log, "DEPTHAI_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(depthai_log, "DEPTHAI_LOG", U_LOGGING_INFO)
 
 
 /*
