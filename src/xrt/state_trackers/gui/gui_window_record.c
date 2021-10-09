@@ -222,6 +222,11 @@ window_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 	struct gui_record_window *rw = container_of(xfs, struct gui_record_window, sink);
 
 	if (rw->source.width != xf->width || rw->source.height != xf->height || rw->source.format != xf->format) {
+		if (rw->source.width != 0 || rw->source.height != 0) {
+			U_LOG_E("Changing properties! Old: %ux%u:%s(%u), new %ux%u:%s(%u)", rw->source.width,
+			        rw->source.height, u_format_str(rw->source.format), rw->source.format, xf->width,
+			        xf->height, u_format_str(xf->format), xf->format);
+		}
 		assert(rw->source.width == 0 && rw->source.height == 0);
 
 		rw->source.width = xf->width;
