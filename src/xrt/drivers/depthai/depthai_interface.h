@@ -32,6 +32,14 @@ extern "C" {
 struct xrt_fs *
 depthai_fs_single_rgb(struct xrt_frame_context *xfctx);
 
+/*!
+ * Create a DepthAI frameserver using two gray cameras.
+ *
+ * @ingroup drv_depthai
+ */
+struct xrt_fs *
+depthai_fs_stereo_gray(struct xrt_frame_context *xfctx);
+
 
 #ifdef __cplusplus
 }

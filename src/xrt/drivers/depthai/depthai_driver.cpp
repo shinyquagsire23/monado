@@ -11,6 +11,8 @@
 #include "os/os_time.h"
 #include "os/os_threading.h"
 
+#include "xrt/xrt_tracking.h"
+
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
@@ -97,7 +99,8 @@ struct depthai_fs
 	uint32_t height;
 	xrt_format format;
 
-	xrt_frame_sink *sink;
+	// Sink:, RGB, Left, Right, CamC.
+	xrt_frame_sink *sink[4];
 
 	dai::Device *device;
 	dai::DataOutputQueue *queue;
@@ -232,10 +235,23 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 	// Trace-marker here for timing after we have gotten a frame.
 	SINK_TRACE_IDENT(depthai_frame);
 
+
 	// Get the timestamp.
 	auto duration = imgFrame->getTimestamp().time_since_epoch();
+	uint32_t num = imgFrame->getInstanceNum();
 	auto nano = std::chrono::duration_cast<std::chrono::duration<int64_t, std::nano>>(duration);
 	uint64_t timestamp_ns = nano.count();
+
+	// Sanity check.
+	if (num >= ARRAY_SIZE(depthai->sink)) {
+		DEPTHAI_ERROR(depthai, "Instance number too large! (%u)", num);
+		return;
+	}
+
+	if (depthai->sink[num] == nullptr) {
+		DEPTHAI_ERROR(depthai, "No sink waiting for frame! (%u)", num);
+		return;
+	}
 
 	// Create a wrapper that will keep the frame alive as long as the frame was alive.
 	DepthAIFrameWrapper *dfw = new DepthAIFrameWrapper();
@@ -255,7 +271,7 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 	u_format_size_for_dimensions(xf->format, xf->width, xf->height, &xf->stride, &xf->size);
 
 	// Push the frame to the sink.
-	xrt_sink_push_frame(depthai->sink, xf);
+	xrt_sink_push_frame(depthai->sink[num], xf);
 
 	// If downstream wants to keep the frame they would have referenced it.
 	xrt_frame_reference(&xf, NULL);
@@ -383,6 +399,47 @@ depthai_setup_single_pipeline(struct depthai_fs *depthai, enum depthai_camera_ty
 	depthai->queue = depthai->device->getOutputQueue("preview", 1, false).get(); // out of shared pointer
 }
 
+static void
+depthai_setup_stereo_pipeline(struct depthai_fs *depthai)
+{
+	// Hardcoded to OV_9282 L/R
+	depthai->width = 1280;
+	depthai->height = 800;
+	depthai->format = XRT_FORMAT_L8;
+	depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
+	depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
+	depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+	depthai->fps = 60; // Currently only supports 60.
+
+	dai::Pipeline p = {};
+
+	const char *name = "frames";
+	std::shared_ptr<dai::node::XLinkOut> xlinkOut = p.create<dai::node::XLinkOut>();
+	xlinkOut->setStreamName(name);
+
+	dai::CameraBoardSocket sockets[2] = {
+	    dai::CameraBoardSocket::LEFT,
+	    dai::CameraBoardSocket::RIGHT,
+	};
+
+	for (int i = 0; i < 2; i++) {
+		std::shared_ptr<dai::node::MonoCamera> monoCam = nullptr;
+
+		monoCam = p.create<dai::node::MonoCamera>();
+		monoCam->setBoardSocket(sockets[i]);
+		monoCam->setResolution(depthai->mono_sensor_resoultion);
+		monoCam->setImageOrientation(depthai->image_orientation);
+		monoCam->setFps(depthai->fps);
+
+		// Link plugins CAM -> XLINK
+		monoCam->out.link(xlinkOut->input);
+	}
+
+	// Start the pipeline
+	depthai->device->startPipeline(p);
+	depthai->queue = depthai->device->getOutputQueue(name, 4, false).get(); // out of shared pointer
+}
+
 
 /*
  *
@@ -443,7 +500,26 @@ depthai_fs_stream_start(struct xrt_fs *xfs,
 	assert(descriptor_index == 0);
 	(void)capture_type; // Don't care about this one just yet.
 
-	depthai->sink = xs;
+	depthai->sink[0] = xs; // 0 == CamA-4L / RGB
+	depthai->sink[1] = xs; // 1 == CamB-2L / Left Gray
+	depthai->sink[2] = xs; // 2 == CamC-2L / Right Gray
+	depthai->sink[3] = xs; // 3 == CamD-4L
+
+	os_thread_helper_start(&depthai->play_thread, depthai_mainloop, depthai);
+
+	return true;
+}
+
+static bool
+depthai_fs_slam_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
+{
+	struct depthai_fs *depthai = depthai_fs(xfs);
+	DEPTHAI_DEBUG(depthai, "DepthAI: SLAM stream start called");
+
+	depthai->sink[0] = nullptr;      // 0 == CamA-4L / RGB
+	depthai->sink[1] = sinks->left;  // 1 == CamB-2L / Left Gray
+	depthai->sink[2] = sinks->right; // 2 == CamC-2L / Right Gray
+	depthai->sink[3] = nullptr;      // 3 == CamD-4L
 
 	os_thread_helper_start(&depthai->play_thread, depthai_mainloop, depthai);
 
@@ -524,6 +600,7 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->base.enumerate_modes = depthai_fs_enumerate_modes;
 	depthai->base.configure_capture = depthai_fs_configure_capture;
 	depthai->base.stream_start = depthai_fs_stream_start;
+	depthai->base.slam_stream_start = depthai_fs_slam_stream_start;
 	depthai->base.stream_stop = depthai_fs_stream_stop;
 	depthai->base.is_running = depthai_fs_is_running;
 	depthai->node.break_apart = depthai_fs_node_break_apart;
@@ -560,6 +637,25 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 
 	// Last bit is to setup the pipeline.
 	depthai_setup_single_pipeline(depthai, camera_type);
+
+	// And finally add us to the context when we are done.
+	xrt_frame_context_add(xfctx, &depthai->node);
+
+	DEPTHAI_DEBUG(depthai, "DepthAI: Created");
+
+	return &depthai->base;
+}
+
+extern "C" struct xrt_fs *
+depthai_fs_stereo_gray(struct xrt_frame_context *xfctx)
+{
+	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
+	if (depthai == nullptr) {
+		return nullptr;
+	}
+
+	// Last bit is to setup the pipeline.
+	depthai_setup_stereo_pipeline(depthai);
 
 	// And finally add us to the context when we are done.
 	xrt_frame_context_add(xfctx, &depthai->node);
