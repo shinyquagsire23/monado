@@ -19,6 +19,8 @@
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
 
+#include "tracking/t_tracking.h"
+
 #include "depthai_interface.h"
 
 #include "depthai/depthai.hpp"
@@ -119,6 +121,81 @@ struct depthai_fs
  */
 
 static void
+depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo_camera_calibration **c_ptr)
+{
+	/*
+	 * Read out values.
+	 */
+
+	std::vector<std::vector<float>> extrinsics = {};
+	struct
+	{
+		std::vector<std::vector<float>> intrinsics = {};
+		std::vector<float> distortion = {};
+		int width = -1, height = -1;
+	} left, right = {};
+
+
+	/*
+	 * Get data.
+	 */
+
+	dai::CalibrationHandler calibData = depthai->device->readCalibration();
+	std::tie(left.intrinsics, left.width, left.height) =
+	    calibData.getDefaultIntrinsics(dai::CameraBoardSocket::LEFT);
+	std::tie(right.intrinsics, right.width, right.height) =
+	    calibData.getDefaultIntrinsics(dai::CameraBoardSocket::RIGHT);
+	left.distortion = calibData.getDistortionCoefficients(dai::CameraBoardSocket::LEFT);
+	right.distortion = calibData.getDistortionCoefficients(dai::CameraBoardSocket::RIGHT);
+	extrinsics = calibData.getCameraExtrinsics(dai::CameraBoardSocket::LEFT, dai::CameraBoardSocket::RIGHT);
+
+
+	/*
+	 * Copy to the Monado calibration struct.
+	 */
+
+	const uint32_t num_dist = 14;
+	struct t_stereo_camera_calibration *c = NULL;
+	t_stereo_camera_calibration_alloc(&c, num_dist);
+
+	// Copy intrinsics
+	c->view[0].image_size_pixels.w = left.width;
+	c->view[0].image_size_pixels.h = left.height;
+	c->view[1].image_size_pixels.w = right.width;
+	c->view[1].image_size_pixels.h = right.height;
+	for (uint32_t row = 0; row < 3; row++) {
+		for (uint32_t col = 0; col < 3; col++) {
+			c->view[0].intrinsics[row][col] = left.intrinsics[row][col];
+			c->view[1].intrinsics[row][col] = right.intrinsics[row][col];
+		}
+	}
+
+	// Copy distortion
+	c->view[0].use_fisheye = false;
+	c->view[1].use_fisheye = false;
+	for (uint32_t i = 0; i < num_dist; i++) {
+		c->view[0].distortion[i] = left.distortion[i];
+		c->view[1].distortion[i] = right.distortion[i];
+	}
+
+	// Copy translation
+	for (uint32_t i = 0; i < 3; i++) {
+		c->camera_translation[i] = extrinsics[i][3];
+	}
+
+	// Copy rotation
+	for (uint32_t row = 0; row < 3; row++) {
+		for (uint32_t col = 0; col < 3; col++) {
+			c->camera_rotation[row][col] = extrinsics[row][col];
+		}
+	}
+
+	// To properly handle ref counting.
+	t_stereo_camera_calibration_reference(c_ptr, c);
+	t_stereo_camera_calibration_reference(&c, NULL);
+}
+
+static void
 depthai_print_connected_cameras(struct depthai_fs *depthai)
 {
 	std::ostringstream oss = {};
@@ -128,6 +205,19 @@ depthai_print_connected_cameras(struct depthai_fs *depthai)
 	std::string str = oss.str();
 
 	DEPTHAI_DEBUG(depthai, "DepthAI: Connected cameras: %s", str.c_str());
+}
+
+static void
+depthai_print_calib(struct depthai_fs *depthai)
+{
+	struct t_stereo_camera_calibration *c = NULL;
+	depthai_get_gray_cameras_calibration(depthai, &c);
+
+	if (depthai->ll <= U_LOGGING_DEBUG) {
+		t_stereo_camera_calibration_dump(c);
+	}
+
+	t_stereo_camera_calibration_reference(&c, NULL);
 }
 
 static void
@@ -404,6 +494,7 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 
 	// Some debug printing.
 	depthai_print_connected_cameras(depthai);
+	depthai_print_calib(depthai);
 
 	// Make sure that the thread helper is initialised.
 	os_thread_helper_init(&depthai->play_thread);
