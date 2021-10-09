@@ -148,6 +148,12 @@ t_stereo_camera_calibration_reference(struct t_stereo_camera_calibration **dst, 
 }
 
 /*!
+ * Small helper function that dumps the calibration data to logging.
+ */
+void
+t_stereo_camera_calibration_dump(struct t_stereo_camera_calibration *c);
+
+/*!
  * Load stereo calibration data from a given file.
  */
 bool
