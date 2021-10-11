@@ -57,12 +57,27 @@ DEBUG_GET_ONCE_LOG_OPTION(depthai_log, "DEPTHAI_LOG", U_LOGGING_INFO)
  *
  */
 
+extern "C" void
+depthai_frame_wrapper_destroy(struct xrt_frame *xf);
+
+/*!
+ * Manage dai::ImgFrame life-time.
+ */
 class DepthAIFrameWrapper
 {
 public:
 	struct xrt_frame frame = {};
 
 	std::shared_ptr<dai::ImgFrame> depthai_frame = {};
+
+
+public:
+	DepthAIFrameWrapper(std::shared_ptr<dai::ImgFrame> depthai_frame)
+	{
+		this->frame.reference.count = 1;
+		this->frame.destroy = depthai_frame_wrapper_destroy;
+		this->depthai_frame = depthai_frame;
+	}
 };
 
 extern "C" void
@@ -87,6 +102,11 @@ enum depthai_camera_type
 	MONO_OV_9282_R,
 };
 
+/*!
+ * DepthAI frameserver support the Luxonis Oak devices.
+ *
+ * @ingroup drv_depthai
+ */
 struct depthai_fs
 {
 	struct xrt_fs base;
@@ -213,13 +233,14 @@ depthai_print_connected_cameras(struct depthai_fs *depthai)
 static void
 depthai_print_calib(struct depthai_fs *depthai)
 {
-	struct t_stereo_camera_calibration *c = NULL;
-	depthai_get_gray_cameras_calibration(depthai, &c);
-
-	if (depthai->ll <= U_LOGGING_DEBUG) {
-		t_stereo_camera_calibration_dump(c);
+	if (depthai->ll > U_LOGGING_DEBUG) {
+		return;
 	}
 
+	struct t_stereo_camera_calibration *c = NULL;
+
+	depthai_get_gray_cameras_calibration(depthai, &c);
+	t_stereo_camera_calibration_dump(c);
 	t_stereo_camera_calibration_reference(&c, NULL);
 }
 
@@ -254,13 +275,10 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 	}
 
 	// Create a wrapper that will keep the frame alive as long as the frame was alive.
-	DepthAIFrameWrapper *dfw = new DepthAIFrameWrapper();
-	dfw->depthai_frame = imgFrame;
+	DepthAIFrameWrapper *dfw = new DepthAIFrameWrapper(imgFrame);
 
 	// Fill in all of the data.
 	struct xrt_frame *xf = &dfw->frame;
-	xf->reference.count = 1;
-	xf->destroy = depthai_frame_wrapper_destroy;
 	xf->width = depthai->width;
 	xf->height = depthai->height;
 	xf->format = depthai->format;
@@ -633,6 +651,7 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 		return nullptr;
 	}
 
+	// Currently hardcoded to the default Oak-D camera.
 	enum depthai_camera_type camera_type = RGB_IMX_378;
 
 	// Last bit is to setup the pipeline.
