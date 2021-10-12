@@ -338,6 +338,7 @@ depthai_destroy(struct depthai_fs *depthai)
 
 	os_thread_helper_destroy(&depthai->play_thread);
 
+	depthai->queue->close();
 	delete depthai->device;
 
 	free(depthai);
