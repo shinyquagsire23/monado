@@ -143,7 +143,7 @@ struct depthai_fs
  *
  */
 
-static void
+static bool
 depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo_camera_calibration **c_ptr)
 {
 	/*
@@ -163,14 +163,22 @@ depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo
 	 * Get data.
 	 */
 
-	dai::CalibrationHandler calibData = depthai->device->readCalibration();
-	std::tie(left.intrinsics, left.width, left.height) =
-	    calibData.getDefaultIntrinsics(dai::CameraBoardSocket::LEFT);
-	std::tie(right.intrinsics, right.width, right.height) =
-	    calibData.getDefaultIntrinsics(dai::CameraBoardSocket::RIGHT);
-	left.distortion = calibData.getDistortionCoefficients(dai::CameraBoardSocket::LEFT);
-	right.distortion = calibData.getDistortionCoefficients(dai::CameraBoardSocket::RIGHT);
-	extrinsics = calibData.getCameraExtrinsics(dai::CameraBoardSocket::LEFT, dai::CameraBoardSocket::RIGHT);
+	// Try to create a device and see if that fail first.
+	dai::CalibrationHandler calibData;
+	try {
+		calibData = depthai->device->readCalibration();
+		std::tie(left.intrinsics, left.width, left.height) =
+		    calibData.getDefaultIntrinsics(dai::CameraBoardSocket::LEFT);
+		std::tie(right.intrinsics, right.width, right.height) =
+		    calibData.getDefaultIntrinsics(dai::CameraBoardSocket::RIGHT);
+		left.distortion = calibData.getDistortionCoefficients(dai::CameraBoardSocket::LEFT);
+		right.distortion = calibData.getDistortionCoefficients(dai::CameraBoardSocket::RIGHT);
+		extrinsics = calibData.getCameraExtrinsics(dai::CameraBoardSocket::LEFT, dai::CameraBoardSocket::RIGHT);
+	} catch (std::exception &e) {
+		std::string what = e.what();
+		U_LOG_E("DepthAI error: %s", what.c_str());
+		return false;
+	}
 
 
 	/*
@@ -216,6 +224,8 @@ depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo
 	// To properly handle ref counting.
 	t_stereo_camera_calibration_reference(c_ptr, c);
 	t_stereo_camera_calibration_reference(&c, NULL);
+
+	return true;
 }
 
 static void
@@ -239,7 +249,10 @@ depthai_print_calib(struct depthai_fs *depthai)
 
 	struct t_stereo_camera_calibration *c = NULL;
 
-	depthai_get_gray_cameras_calibration(depthai, &c);
+	if (!depthai_get_gray_cameras_calibration(depthai, &c)) {
+		return;
+	}
+
 	t_stereo_camera_calibration_dump(c);
 	t_stereo_camera_calibration_reference(&c, NULL);
 }
@@ -684,10 +697,10 @@ depthai_fs_stereo_gray(struct xrt_frame_context *xfctx)
 	return &depthai->base;
 }
 
-extern "C" void
+extern "C" bool
 depthai_fs_get_stereo_calibration(struct xrt_fs *xfs, struct t_stereo_camera_calibration **c_ptr)
 {
 	struct depthai_fs *depthai = depthai_fs(xfs);
 
-	depthai_get_gray_cameras_calibration(depthai, c_ptr);
+	return depthai_get_gray_cameras_calibration(depthai, c_ptr);
 }
