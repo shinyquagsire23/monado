@@ -56,7 +56,7 @@ create_depthai(struct video_select *vs)
 {
 	vs->xfctx = U_TYPED_CALLOC(struct xrt_frame_context);
 
-	vs->xfs = depthai_fs_single_rgb(vs->xfctx);
+	vs->xfs = depthai_fs_monocular_rgb(vs->xfctx);
 	if (vs->xfs == NULL) {
 		U_LOG_E("Failed to open DepthAI camera!");
 		free(vs->xfctx);

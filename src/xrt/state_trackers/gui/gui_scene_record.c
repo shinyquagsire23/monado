@@ -51,7 +51,7 @@ struct camera_window
 	struct
 	{
 		// Use DepthAI camera, single.
-		bool depthai_single;
+		bool depthai_monocular;
 
 		// Use DepthAI camera, stereo.
 		bool depthai_stereo;
@@ -145,20 +145,20 @@ window_create(struct gui_program *p, const char *camera)
 
 	cw->use.index = camera == NULL ? false : strcmp(camera, "index") == 0;
 	cw->use.leap_motion = camera == NULL ? false : strcmp(camera, "leap_motion") == 0;
-	cw->use.depthai_single = camera == NULL ? false : strcmp(camera, "depthai") == 0;
-	cw->use.depthai_single = camera == NULL ? false : strcmp(camera, "depthai_single") == 0;
-	cw->use.depthai_single = camera == NULL ? false : strcmp(camera, "depthai-single") == 0;
+	cw->use.depthai_monocular = camera == NULL ? false : strcmp(camera, "depthai") == 0;
+	cw->use.depthai_monocular = camera == NULL ? false : strcmp(camera, "depthai_monocular") == 0;
+	cw->use.depthai_monocular = camera == NULL ? false : strcmp(camera, "depthai-monocular") == 0;
 	cw->use.depthai_stereo = camera == NULL ? false : strcmp(camera, "depthai_stereo") == 0;
 	cw->use.depthai_stereo = camera == NULL ? false : strcmp(camera, "depthai-stereo") == 0;
 	cw->use.elp = camera == NULL ? false : strcmp(camera, "elp") == 0;
 
-	if (!cw->use.index &&          //
-	    !cw->use.leap_motion &&    //
-	    !cw->use.depthai_single && //
-	    !cw->use.depthai_stereo && //
+	if (!cw->use.index &&             //
+	    !cw->use.leap_motion &&       //
+	    !cw->use.depthai_monocular && //
+	    !cw->use.depthai_stereo &&    //
 	    !cw->use.elp) {
 		U_LOG_W(
-		    "Can't recongnize camera name '%s', options are 'elp', 'depthai[-single|-stereo]', index' & "
+		    "Can't recongnize camera name '%s', options are 'elp', 'depthai-[monocular|stereo]', index' & "
 		    "'leap_motion'.\n\tFalling back to 'index'.",
 		    camera);
 		cw->use.index = true;
@@ -176,14 +176,14 @@ window_create(struct gui_program *p, const char *camera)
 
 #ifdef XRT_BUILD_DRIVER_DEPTHAI
 static void
-create_depthai_single(struct camera_window *cw)
+create_depthai_monocular(struct camera_window *cw)
 {
 	// Should we be using a DepthAI camera?
-	if (!cw->use.depthai_single) {
+	if (!cw->use.depthai_monocular) {
 		return;
 	}
 
-	cw->camera.xfs = depthai_fs_single_rgb(&cw->camera.xfctx);
+	cw->camera.xfs = depthai_fs_monocular_rgb(&cw->camera.xfctx);
 	if (cw->camera.xfs == NULL) {
 		U_LOG_W("Could not create depthai camera!");
 		return;
@@ -207,7 +207,7 @@ create_depthai_stereo(struct camera_window *cw)
 		return;
 	}
 
-	cw->camera.xfs = depthai_fs_stereo_gray(&cw->camera.xfctx);
+	cw->camera.xfs = depthai_fs_stereo_grayscale(&cw->camera.xfctx);
 	if (cw->camera.xfs == NULL) {
 		U_LOG_W("Could not create depthai camera!");
 		return;
@@ -415,7 +415,7 @@ gui_scene_record(struct gui_program *p, const char *camera)
 
 #ifdef XRT_BUILD_DRIVER_DEPTHAI
 	if (!window_has_source(rs->window)) {
-		create_depthai_single(rs->window);
+		create_depthai_monocular(rs->window);
 	}
 
 	if (!window_has_source(rs->window)) {

@@ -98,8 +98,8 @@ enum depthai_camera_type
 {
 	RGB_IMX_378,
 	RGB_OV_9782,
-	MONO_OV_9282_L,
-	MONO_OV_9282_R,
+	GRAY_OV_9282_L,
+	GRAY_OV_9282_R,
 };
 
 /*!
@@ -128,7 +128,7 @@ struct depthai_fs
 	dai::ColorCameraProperties::SensorResolution color_sensor_resoultion;
 	dai::ColorCameraProperties::ColorOrder color_order;
 
-	dai::MonoCameraProperties::SensorResolution mono_sensor_resoultion;
+	dai::MonoCameraProperties::SensorResolution grayscale_sensor_resolution;
 	dai::CameraBoardSocket camera_board_socket;
 
 	dai::CameraImageOrientation image_orientation;
@@ -347,7 +347,7 @@ depthai_destroy(struct depthai_fs *depthai)
 }
 
 static void
-depthai_setup_single_pipeline(struct depthai_fs *depthai, enum depthai_camera_type camera_type)
+depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera_type camera_type)
 {
 	switch (camera_type) {
 #if 0
@@ -372,21 +372,21 @@ depthai_setup_single_pipeline(struct depthai_fs *depthai, enum depthai_camera_ty
 		depthai->interleaved = true;
 		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
 		break;
-	case (MONO_OV_9282_L):
+	case (GRAY_OV_9282_L):
 		depthai->width = 1280;
 		depthai->height = 800;
 		depthai->format = XRT_FORMAT_L8;
 		depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
-		depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
+		depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_800_P;
 		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
 		depthai->fps = 60; // Currently only supports 60.
 		break;
-	case (MONO_OV_9282_R):
+	case (GRAY_OV_9282_R):
 		depthai->width = 1280;
 		depthai->height = 800;
 		depthai->format = XRT_FORMAT_L8;
 		depthai->camera_board_socket = dai::CameraBoardSocket::RIGHT;
-		depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
+		depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_800_P;
 		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
 		depthai->fps = 60; // Currently only supports 60.
 		break;
@@ -399,7 +399,7 @@ depthai_setup_single_pipeline(struct depthai_fs *depthai, enum depthai_camera_ty
 	xlinkOut->setStreamName("preview");
 
 	std::shared_ptr<dai::node::ColorCamera> colorCam = nullptr;
-	std::shared_ptr<dai::node::MonoCamera> monoCam = nullptr;
+	std::shared_ptr<dai::node::MonoCamera> grayCam = nullptr;
 
 	if (depthai->format == XRT_FORMAT_R8G8B8) {
 		colorCam = p.create<dai::node::ColorCamera>();
@@ -415,14 +415,14 @@ depthai_setup_single_pipeline(struct depthai_fs *depthai, enum depthai_camera_ty
 	}
 
 	if (depthai->format == XRT_FORMAT_L8) {
-		monoCam = p.create<dai::node::MonoCamera>();
-		monoCam->setBoardSocket(depthai->camera_board_socket);
-		monoCam->setResolution(depthai->mono_sensor_resoultion);
-		monoCam->setImageOrientation(depthai->image_orientation);
-		monoCam->setFps(depthai->fps);
+		grayCam = p.create<dai::node::MonoCamera>();
+		grayCam->setBoardSocket(depthai->camera_board_socket);
+		grayCam->setResolution(depthai->grayscale_sensor_resolution);
+		grayCam->setImageOrientation(depthai->image_orientation);
+		grayCam->setFps(depthai->fps);
 
 		// Link plugins CAM -> XLINK
-		monoCam->out.link(xlinkOut->input);
+		grayCam->out.link(xlinkOut->input);
 	}
 
 
@@ -439,7 +439,7 @@ depthai_setup_stereo_pipeline(struct depthai_fs *depthai)
 	depthai->height = 800;
 	depthai->format = XRT_FORMAT_L8;
 	depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
-	depthai->mono_sensor_resoultion = dai::MonoCameraProperties::SensorResolution::THE_800_P;
+	depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_800_P;
 	depthai->image_orientation = dai::CameraImageOrientation::AUTO;
 	depthai->fps = 60; // Currently only supports 60.
 
@@ -455,16 +455,16 @@ depthai_setup_stereo_pipeline(struct depthai_fs *depthai)
 	};
 
 	for (int i = 0; i < 2; i++) {
-		std::shared_ptr<dai::node::MonoCamera> monoCam = nullptr;
+		std::shared_ptr<dai::node::MonoCamera> grayCam = nullptr;
 
-		monoCam = p.create<dai::node::MonoCamera>();
-		monoCam->setBoardSocket(sockets[i]);
-		monoCam->setResolution(depthai->mono_sensor_resoultion);
-		monoCam->setImageOrientation(depthai->image_orientation);
-		monoCam->setFps(depthai->fps);
+		grayCam = p.create<dai::node::MonoCamera>();
+		grayCam->setBoardSocket(sockets[i]);
+		grayCam->setResolution(depthai->grayscale_sensor_resolution);
+		grayCam->setImageOrientation(depthai->image_orientation);
+		grayCam->setFps(depthai->fps);
 
 		// Link plugins CAM -> XLINK
-		monoCam->out.link(xlinkOut->input);
+		grayCam->out.link(xlinkOut->input);
 	}
 
 	// Start the pipeline
@@ -658,7 +658,7 @@ depthai_create_and_do_minimal_setup(void)
  */
 
 extern "C" struct xrt_fs *
-depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
+depthai_fs_monocular_rgb(struct xrt_frame_context *xfctx)
 {
 	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
 	if (depthai == nullptr) {
@@ -669,7 +669,7 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 	enum depthai_camera_type camera_type = RGB_IMX_378;
 
 	// Last bit is to setup the pipeline.
-	depthai_setup_single_pipeline(depthai, camera_type);
+	depthai_setup_monocular_pipeline(depthai, camera_type);
 
 	// And finally add us to the context when we are done.
 	xrt_frame_context_add(xfctx, &depthai->node);
@@ -680,7 +680,7 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx)
 }
 
 extern "C" struct xrt_fs *
-depthai_fs_stereo_gray(struct xrt_frame_context *xfctx)
+depthai_fs_stereo_grayscale(struct xrt_frame_context *xfctx)
 {
 	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
 	if (depthai == nullptr) {

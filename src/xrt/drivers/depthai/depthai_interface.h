@@ -33,7 +33,7 @@ struct t_stereo_camera_calibration;
  * @ingroup drv_depthai
  */
 struct xrt_fs *
-depthai_fs_single_rgb(struct xrt_frame_context *xfctx);
+depthai_fs_monocular_rgb(struct xrt_frame_context *xfctx);
 
 /*!
  * Create a DepthAI frameserver using two gray cameras.
@@ -41,7 +41,7 @@ depthai_fs_single_rgb(struct xrt_frame_context *xfctx);
  * @ingroup drv_depthai
  */
 struct xrt_fs *
-depthai_fs_stereo_gray(struct xrt_frame_context *xfctx);
+depthai_fs_stereo_grayscale(struct xrt_frame_context *xfctx);
 
 /*!
  * Get the stereo calibration from a depthAI frameserver.
