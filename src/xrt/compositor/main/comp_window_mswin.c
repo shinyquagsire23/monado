@@ -14,7 +14,9 @@
 #include "xrt/xrt_compiler.h"
 #include "main/comp_window.h"
 #include "util/u_misc.h"
+#include "os/os_threading.h"
 
+#include <processthreadsapi.h>
 
 /*
  *
@@ -30,6 +32,7 @@
 struct comp_window_mswin
 {
 	struct comp_target_swapchain base;
+	struct os_thread_helper oth;
 
 	HINSTANCE instance;
 	HWND window;
@@ -87,6 +90,8 @@ static void
 comp_window_mswin_destroy(struct comp_target *ct)
 {
 	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ct;
+	// Stop the Windows thread first.
+	os_thread_helper_stop(&cwm->oth);
 
 	comp_target_swapchain_cleanup(&cwm->base);
 
@@ -150,20 +155,17 @@ static void
 comp_window_mswin_flush(struct comp_target *ct)
 {
 	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ct;
-	// force handling messages.
-	MSG msg;
-	while (PeekMessageW(&msg, cwm->window, 0, 0, PM_REMOVE)) {
-		TranslateMessage(&msg);
-		DispatchMessageW(&msg);
-	}
 }
 
-
-static bool
-comp_window_mswin_init(struct comp_target *ct)
+static void
+comp_window_mswin_thread(struct comp_window_mswin *cwm)
 {
-	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ct;
-	cwm->instance = GetModuleHandle(NULL);
+	// OK if this fails
+	(void)SetThreadDescription(GetCurrentThread(), L"Message Handler");
+
+	struct comp_target *ct = &cwm->base.base;
+
+	RECT rc = {0, 0, (LONG)(ct->width), (LONG)ct->height};
 
 	WNDCLASSEXW wcex;
 	U_ZERO(&wcex);
@@ -175,22 +177,96 @@ comp_window_mswin_init(struct comp_target *ct)
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = cwm->instance;
 	wcex.lpszClassName = szWindowClass;
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 //! @todo icon
 #if 0
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SAMPLEGUI));
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_SAMPLEGUI);
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SAMPLEGUI));
+	wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_SAMPLEGUI);
+	wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 #endif
-	RegisterClassExW(&wcex);
+	if (!RegisterClassExW(&wcex)) {
+		COMP_ERROR(ct->c, "Failed to register window class");
+		// parent thread will be notified (by caller) that we have exited.
+		return;
+	}
 
-	cwm->window = CreateWindowW(szWindowClass, L"Monado (Windowed)", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0,
-	                            CW_USEDEFAULT, 0, NULL, NULL, cwm->instance, NULL);
+	cwm->window =
+	    CreateWindowExW(0, szWindowClass, L"Monado (Windowed)", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
+	                    rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, cwm->instance, NULL);
+	if (cwm->window == NULL) {
+		COMP_ERROR(ct->c, "Failed to create window");
+		// parent thread will be notified (by caller) that we have exited.
+		return;
+	}
 
 	SetPropW(cwm->window, szWindowData, cwm);
+	SetWindowLongPtr(cwm->window, GWLP_USERDATA, (LONG_PTR)(cwm));
 	ShowWindow(cwm->window, SW_SHOWDEFAULT);
 	UpdateWindow(cwm->window);
-	return true;
+
+	// Unblock the parent thread now that we're successfully running.
+	{
+		os_thread_helper_lock(&cwm->oth);
+		os_thread_helper_signal_locked(&cwm->oth);
+		os_thread_helper_unlock(&cwm->oth);
+	}
+	COMP_WARN(cwm->base.base.c, "Starting the Windows window message loop");
+
+	while (os_thread_helper_is_running(&cwm->oth)) {
+		// force handling messages.
+		MSG msg;
+		while (PeekMessageW(&msg, cwm->window, 0, 0, PM_REMOVE)) {
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+			/// @todo We need to bubble this up to multi-compositor
+			/// and the state tracker (as "instance lost")
+			if (msg.message == WM_QUIT) {
+				COMP_INFO(cwm->base.base.c, "Got WM_QUIT message");
+				return;
+			}
+			if (msg.message == WM_DESTROY) {
+				COMP_INFO(cwm->base.base.c, "Got WM_DESTROY message");
+				return;
+			}
+			if (cwm->should_exit) {
+				COMP_INFO(cwm->base.base.c, "Got 'should_exit' flag.");
+				return;
+			}
+		}
+	}
+}
+
+static void *
+comp_window_mswin_thread_func(void *ptr)
+{
+
+	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ptr;
+	comp_window_mswin_thread(cwm);
+	os_thread_helper_signal_stop(&cwm->oth);
+	return NULL;
+}
+
+static bool
+comp_window_mswin_init(struct comp_target *ct)
+{
+	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ct;
+	cwm->instance = GetModuleHandle(NULL);
+
+	ct->width = 1280;
+	ct->height = 720;
+
+	if (os_thread_helper_start(&cwm->oth, comp_window_mswin_thread_func, cwm) != 0) {
+		COMP_ERROR(ct->c, "Failed to start Windows window message thread");
+		return false;
+	}
+
+	// Wait for thread to start, create window, etc.
+	os_thread_helper_lock(&cwm->oth);
+	os_thread_helper_wait_locked(&cwm->oth);
+	// if it fails it will exit immediately.
+	bool ret = os_thread_helper_is_running_locked(&cwm->oth);
+	os_thread_helper_unlock(&cwm->oth);
+	return ret;
 }
 
 static void
@@ -207,6 +283,11 @@ struct comp_target *
 comp_window_mswin_create(struct comp_compositor *c)
 {
 	struct comp_window_mswin *w = U_TYPED_CALLOC(struct comp_window_mswin);
+	if (os_thread_helper_init(&w->oth) != 0) {
+		COMP_ERROR(c, "Failed to init Windows window message thread");
+		free(w);
+		return NULL;
+	}
 
 	// The display timing code hasn't been tested on Windows and may be broken.
 	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING);
