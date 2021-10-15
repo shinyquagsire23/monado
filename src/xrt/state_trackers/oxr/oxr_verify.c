@@ -470,6 +470,15 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 	}
 #endif // defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_XLIB)
 
+#if defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_WIN32)
+	XrGraphicsBindingOpenGLWin32KHR const *opengl_win32 = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR, XrGraphicsBindingOpenGLWin32KHR);
+	if (opengl_win32 != NULL) {
+		OXR_VERIFY_EXTENSION(log, inst, KHR_opengl_enable);
+		return oxr_verify_XrGraphicsBindingOpenGLWin32KHR(log, opengl_win32);
+	}
+#endif // defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_WIN32)
+
 #if defined(OXR_HAVE_KHR_vulkan_enable) || defined(OXR_HAVE_KHR_vulkan_enable2)
 	/* XR_TYPE_GRAPHICS_BINDING_VULKAN2_KHR aliased to
 	 * XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR */
@@ -566,6 +575,28 @@ oxr_verify_XrGraphicsBindingOpenGLXlibKHR(struct oxr_logger *log, const XrGraphi
 }
 
 #endif // defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
+
+#if defined(XR_USE_PLATFORM_WIN32) && defined(XR_USE_GRAPHICS_API_OPENGL)
+
+XrResult
+oxr_verify_XrGraphicsBindingOpenGLWin32KHR(struct oxr_logger *log, const XrGraphicsBindingOpenGLWin32KHR *next)
+{
+	if (next->type != XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Graphics binding has invalid type");
+	}
+
+	if (next->hDC == NULL) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "hDC is NULL");
+	}
+
+	if (next->hGLRC == NULL) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "hGLRC is NULL");
+	}
+
+	return XR_SUCCESS;
+}
+
+#endif // defined(XR_USE_PLATFORM_WIN32) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
 
 #ifdef XR_USE_GRAPHICS_API_VULKAN

@@ -722,6 +722,21 @@ oxr_session_create_impl(struct oxr_logger *log,
 	}
 #endif
 
+#if defined(XR_USE_PLATFORM_WIN32) && defined(XR_USE_GRAPHICS_API_OPENGL)
+	XrGraphicsBindingOpenGLWin32KHR const *opengl_win32 = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR, XrGraphicsBindingOpenGLWin32KHR);
+	if (opengl_win32 != NULL) {
+		if (!sys->gotten_requirements) {
+			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
+			                 "Has not called xrGetOpenGLGraphicsRequirementsKHR");
+		}
+
+		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
+		return oxr_session_populate_gl_win32(log, sys, opengl_win32, *out_session);
+	}
+#endif
+
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 	XrGraphicsBindingVulkanKHR const *vulkan =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR, XrGraphicsBindingVulkanKHR);

@@ -1097,6 +1097,13 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              struct oxr_session *sess);
 #endif // XR_USE_PLATFORM_XLIB
 
+#ifdef XR_USE_PLATFORM_WIN32
+XrResult
+oxr_session_populate_gl_win32(struct oxr_logger *log,
+                              struct oxr_system *sys,
+                              XrGraphicsBindingOpenGLWin32KHR const *next,
+                              struct oxr_session *sess);
+#endif // XR_USE_PLATFORM_WIN32
 #endif // XR_USE_GRAPHICS_API_OPENGL
 
 #if defined(XR_USE_GRAPHICS_API_OPENGL) || defined(XR_USE_GRAPHICS_API_OPENGL_ES)
