@@ -91,7 +91,7 @@ print_prefix(int remainingBuf, char *buf, const char *func, enum u_logging_level
 	}
 
 	if (level != U_LOGGING_RAW && func != NULL) {
-		printed = sprintf_s(buf + printed, remainingBuf - printed, "[%s] ", func);
+		printed += sprintf_s(buf + printed, remainingBuf - printed, "[%s] ", func);
 	}
 	return printed;
 }
