@@ -16,7 +16,7 @@ python3 -m pip install git+https://github.com/Dav1dde/glad.git@glad2
 echo "GLAD2 generation"
 
 glad --merge \
-	--api='gl:core=4.5,gles2=3.2,egl=1.4,glx=1.3' \
+	--api='gl:core=4.5,gles2=3.2,egl=1.4,glx=1.3,wgl=1.0' \
 	--extensions=\
 EGL_ANDROID_front_buffer_auto_refresh,\
 EGL_ANDROID_get_native_client_buffer,\
