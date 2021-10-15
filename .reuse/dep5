@@ -80,19 +80,30 @@ Comment: SPDX-License-Identifier missing.
 Files: src/external/glad/include/glad/egl.h
 Copyright: 2013-2020, The Khronos Group, Inc.
 License: Apache-2.0
-Comment: This is generated from the specification XML (licensed as above) by GLAD2.
+Comment: This is generated from the specification XML (licensed as above) by GLAD2:
+ https://github.com/KhronosGroup/EGL-Registry/blob/main/api/egl.xml
+ Specification copyright statement last updated 2020 though file itself updated more recently.
 
 Files: src/external/glad/include/glad/gl.h
-Copyright: 2013-2020, The Khronos Group, Inc.
+Copyright: 2013-2022, The Khronos Group, Inc.
 License: Apache-2.0
-Comment: This is generated from the specification XML (licensed as above) by GLAD2.
+Comment: This is generated from the specification XML (licensed as above) by GLAD2:
+ https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry/main/xml/gl.xml
+ Specification copyright statement last updated 2020 though file itself updated more recently.
 
 Files: src/external/glad/include/glad/glx.h
-Copyright: 2013-2020, The Khronos Group, Inc.
+Copyright: 2013-2022, The Khronos Group, Inc.
 License: Apache-2.0
-Comment: This is generated from the specification XML (licensed as above) by GLAD2.
+Comment: This is generated from the specification XML (licensed as above) by GLAD2:
+ https://github.com/KhronosGroup/OpenGL-Registry/blob/main/xml/glx.xml
+
+Files: src/external/glad/include/glad/wgl.h
+Copyright: 2013-2022, The Khronos Group, Inc.
+License: Apache-2.0
+Comment: This is generated from the specification XML (licensed as above) by GLAD2:
+ https://github.com/KhronosGroup/OpenGL-Registry/blob/main/xml/wgl.xml
 
 Files:  src/external/glad/src/*
-Copyright: 2013-2020, David Herberth
+Copyright: 2013-2022, David Herberth
 License: MIT
 Comment: SPDX-License-Identifier missing.
