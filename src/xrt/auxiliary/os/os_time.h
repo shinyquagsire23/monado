@@ -77,7 +77,7 @@ os_nanosleep(int32_t nsec)
 	spec.tv_nsec = (nsec % U_1_000_000_000);
 	nanosleep(&spec, NULL);
 #elif defined(XRT_OS_WINDOWS)
-	Sleep(nsec / 1000);
+	Sleep(nsec / U_TIME_1MS_IN_NS);
 #endif
 }
 
