@@ -99,3 +99,6 @@ gradle-wrapper.jar
 
 # Ignore clangd things
 .cache/
+
+# Ignore CI things
+container-build-report.xml

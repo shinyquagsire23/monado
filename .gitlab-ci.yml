@@ -4,7 +4,7 @@
 variables:
   FDO_UPSTREAM_REPO: monado/monado
 
-.templates_sha: &templates_sha db8eb22cd1abb036560faaebd36a38565a3ebda2
+.templates_sha: &templates_sha 14731f78c23c7b523a85a26a068ade9ac1ecd2f3
 
 # Variables listing packages for Debian-based distros
 .monado.variables.debian-based-packages:
@@ -16,10 +16,10 @@ variables:
     FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev libdbus-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsystemd-dev libbsd-dev"
 
     # Only used for building packages
-    PACKAGING_PACKAGES: "devscripts debhelper dput-ng gettext-base markdown doxygen graphviz"
+    PACKAGING_PACKAGES: "devscripts debhelper dput-ng gettext-base pandoc"
 
     # Used for ancillary "not compilation" jobs/features, like docs, changelogs, formatting, etc.
-    TOOLS_REQUIRED_PACKAGES: "clang-format-7 codespell doxygen graphviz python3-pip python3-click"
+    TOOLS_REQUIRED_PACKAGES: "codespell doxygen graphviz python3-pip python3-click"
 
     # The NDK builder uses only these packages
     NDK_PACKAGES: "git wget unzip cmake meson ninja-build libeigen3-dev python3 pkg-config ca-certificates glslang-tools"
@@ -28,19 +28,31 @@ variables:
 .monado.variables.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2021-04-15.0"
+    FDO_DISTRIBUTION_TAG: "2021-10-27.1"
+
+# Variables for build and usage of Debian 11 (Bullseye) image
+.monado.variables.debian:bullseye:
+  variables:
+    FDO_DISTRIBUTION_VERSION: bullseye
+    FDO_DISTRIBUTION_TAG: "2021-10-27.1"
 
 # Variables for build and usage of Ubuntu 20.04 LTS (Focal) image
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2021-04-15.0"
+    FDO_DISTRIBUTION_TAG: "2021-10-27.1"
 
-# Variables for build and usage of Ubuntu 20.10 (Groovy) image
-.monado.variables.ubuntu:groovy:
+# Variables for build and usage of Ubuntu 21.04 (Hirsute) image
+.monado.variables.ubuntu:hirsute:
   variables:
-    FDO_DISTRIBUTION_VERSION: "20.10"
-    FDO_DISTRIBUTION_TAG: "2021-04-15.0"
+    FDO_DISTRIBUTION_VERSION: "21.04"
+    FDO_DISTRIBUTION_TAG: "2021-10-27.1"
+
+# Variables for build and usage of Ubuntu 21.10 (Impish) image
+.monado.variables.ubuntu:impish:
+  variables:
+    FDO_DISTRIBUTION_VERSION: "21.10"
+    FDO_DISTRIBUTION_TAG: "2021-10-27.1"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.variables.debian:buster-ndk:
@@ -86,10 +98,22 @@ stages:
     FDO_DISTRIBUTION_EXEC: "bash .gitlab-ci/$(echo ${CI_JOB_NAME} | sed 's/:/_/g').sh"
 
 # Debian Buster (x64 + i386)
-debian:container_prep:
+debian:buster:container_prep:
   stage: container_prep
   extends:
     - .monado.variables.debian:buster
+    - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
+    - .fdo.container-build@debian # from ci-templates
+  variables:
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages, plus clang-format-7 and reprepro
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES} clang-format-7 reprepro"
+
+# Debian Bullseye (x64 + i386)
+debian:bullseye:container_prep:
+  stage: container_prep
+  extends:
+    - .monado.variables.debian:bullseye
     - .monado.variables.container-prep-base
     - .monado.variables.debian-based-packages
     - .fdo.container-build@debian # from ci-templates
@@ -118,13 +142,25 @@ ubuntu:focal:container_prep:
     - .fdo.container-build@ubuntu # from ci-templates
   variables:
     # a list of packages to install - assembled from .monado.variables.debian-based-packages
-    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES}"
 
-# Ubuntu Groovy (x64)
-ubuntu:groovy:container_prep:
+# Ubuntu Hirsute (x64)
+ubuntu:hirsute:container_prep:
   stage: container_prep
   extends:
-    - .monado.variables.ubuntu:groovy
+    - .monado.variables.ubuntu:hirsute
+    - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
+    - .fdo.container-build@ubuntu # from ci-templates
+  variables:
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES}"
+
+# Ubuntu Impish (x64)
+ubuntu:impish:container_prep:
+  stage: container_prep
+  extends:
+    - .monado.variables.ubuntu:impish
     - .monado.variables.container-prep-base
     - .monado.variables.debian-based-packages
     - .fdo.container-build@ubuntu # from ci-templates
@@ -370,37 +406,60 @@ debian:buster:package:
     PACKAGE_BRANCH: debian/buster-backports
     DISTRO: buster
 
+debian:bullseye:package:
+  extends:
+    - .monado.variables.debian:bullseye
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.debuild
+  variables:
+    BACKPORT_SUFFIX: bpo11
+    PACKAGE_BRANCH: debian/bullseye
+    DISTRO: bullseye
+
 ubuntu:focal:package:
   extends:
     - .monado.variables.ubuntu:focal
     - .fdo.distribution-image@ubuntu # from ci-templates
     - .monado.base-job.debuild
   variables:
-    BACKPORT_SUFFIX: ubuntu20.04
+    BACKPORT_SUFFIX: ubuntu2004
     PACKAGE_BRANCH: ubuntu/focal
     DISTRO: focal
 
-ubuntu:groovy:package:
+ubuntu:hirsute:package:
   extends:
-    - .monado.variables.ubuntu:groovy
+    - .monado.variables.ubuntu:hirsute
     - .fdo.distribution-image@ubuntu # from ci-templates
     - .monado.base-job.debuild
 
   variables:
-    BACKPORT_SUFFIX: ubuntu20.04
-    PACKAGE_BRANCH: ubuntu/focal
-    DISTRO: focal
+    BACKPORT_SUFFIX: ubuntu2104
+    PACKAGE_BRANCH: ubuntu/hirsute
+    DISTRO: hirsute
+
+ubuntu:impish:package:
+  extends:
+    - .monado.variables.ubuntu:impish
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .monado.base-job.debuild
+
+  variables:
+    BACKPORT_SUFFIX: ubuntu2110
+    PACKAGE_BRANCH: ubuntu/impish
+    DISTRO: impish
 
 reprepro:package:
   stage: reprepro
   extends:
-    - .monado.variables.debian:buster
+    - .monado.variables.debian:bullseye
     - .monado.packaging.conditions
     - .fdo.distribution-image@debian # from ci-templates
   dependencies:
     - debian:buster:package
+    - debian:bullseye:package
     - ubuntu:focal:package
-    - ubuntu:groovy:package
+    - ubuntu:hirsute:package
+    - ubuntu:impish:package
   before_script:
     # Convince gnupg to work properly in CI
     - mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
