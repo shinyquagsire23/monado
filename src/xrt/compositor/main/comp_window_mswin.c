@@ -18,6 +18,9 @@
 
 #include <processthreadsapi.h>
 
+
+#undef ALLOW_CLOSING_WINDOW
+
 /*
  *
  * Private structs.
@@ -218,6 +221,7 @@ comp_window_mswin_thread(struct comp_window_mswin *cwm)
 		while (PeekMessageW(&msg, cwm->window, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
+#ifdef ALLOW_CLOSING_WINDOW
 			/// @todo We need to bubble this up to multi-compositor
 			/// and the state tracker (as "instance lost")
 			if (msg.message == WM_QUIT) {
@@ -232,6 +236,7 @@ comp_window_mswin_thread(struct comp_window_mswin *cwm)
 				COMP_INFO(cwm->base.base.c, "Got 'should_exit' flag.");
 				return;
 			}
+#endif
 		}
 	}
 }
@@ -243,6 +248,7 @@ comp_window_mswin_thread_func(void *ptr)
 	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ptr;
 	comp_window_mswin_thread(cwm);
 	os_thread_helper_signal_stop(&cwm->oth);
+	COMP_WARN(cwm->base.base.c, "Windows window message thread now exiting.");
 	return NULL;
 }
 
@@ -279,6 +285,17 @@ comp_window_mswin_configure(struct comp_window_mswin *w, int32_t width, int32_t 
 	}
 }
 
+#ifdef ALLOW_CLOSING_WINDOW
+/// @todo This is somehow triggering crashes in the multi-compositor, which is trying to run without things it needs,
+/// even though it didn't do this when we called the parent impl instead of inlining it.
+static bool
+comp_window_mswin_configure_check_ready(struct comp_target *ct)
+{
+	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ct;
+	return os_thread_helper_is_running(&cwm->oth) && cwm->base.swapchain.handle != VK_NULL_HANDLE;
+}
+#endif
+
 struct comp_target *
 comp_window_mswin_create(struct comp_compositor *c)
 {
@@ -298,6 +315,9 @@ comp_window_mswin_create(struct comp_compositor *c)
 	w->base.base.init_pre_vulkan = comp_window_mswin_init;
 	w->base.base.init_post_vulkan = comp_window_mswin_init_swapchain;
 	w->base.base.set_title = comp_window_mswin_update_window_title;
+#ifdef ALLOW_CLOSING_WINDOW
+	w->base.base.check_ready = comp_window_mswin_configure_check_ready;
+#endif
 	w->base.base.c = c;
 
 	return &w->base.base;
