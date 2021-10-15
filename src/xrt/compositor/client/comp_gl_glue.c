@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -13,8 +13,8 @@
 void
 xrt_gfx_gl_get_versions(struct xrt_api_requirements *ver)
 {
-	ver->min_major = 4;
-	ver->min_minor = 5;
+	ver->min_major = 3;
+	ver->min_minor = 0;
 	ver->min_patch = 0;
 	ver->max_major = 4;
 	ver->max_minor = 6;
