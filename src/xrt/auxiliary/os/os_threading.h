@@ -263,6 +263,8 @@ struct os_thread_helper
 
 /*!
  * Initialize the thread helper.
+ *
+ * @public @memberof os_thread_helper
  */
 static inline int
 os_thread_helper_init(struct os_thread_helper *oth)
@@ -283,6 +285,8 @@ os_thread_helper_init(struct os_thread_helper *oth)
 
 /*!
  * Start the internal thread.
+ *
+ * @public @memberof os_thread_helper
  */
 static inline int
 os_thread_helper_start(struct os_thread_helper *oth, os_run_func func, void *ptr)
@@ -339,7 +343,9 @@ os_thread_helper_stop(struct os_thread_helper *oth)
 }
 
 /*!
- * Destroy the thread helper, externally syncronizable.
+ * Destroy the thread helper, externally synchronizable.
+ *
+ * @public @memberof os_thread_helper
  */
 static inline void
 os_thread_helper_destroy(struct os_thread_helper *oth)
@@ -354,6 +360,8 @@ os_thread_helper_destroy(struct os_thread_helper *oth)
 
 /*!
  * Lock the helper.
+ *
+ * @public @memberof os_thread_helper
  */
 static inline void
 os_thread_helper_lock(struct os_thread_helper *oth)
@@ -363,6 +371,8 @@ os_thread_helper_lock(struct os_thread_helper *oth)
 
 /*!
  * Unlock the helper.
+ *
+ * @public @memberof os_thread_helper
  */
 static inline void
 os_thread_helper_unlock(struct os_thread_helper *oth)
@@ -374,6 +384,8 @@ os_thread_helper_unlock(struct os_thread_helper *oth)
  * Is the thread running, or supposed to be running.
  *
  * Must be called with the helper locked.
+ *
+ * @public @memberof os_thread_helper
  */
 static inline bool
 os_thread_helper_is_running_locked(struct os_thread_helper *oth)
@@ -385,6 +397,8 @@ os_thread_helper_is_running_locked(struct os_thread_helper *oth)
  * Wait for a signal.
  *
  * Must be called with the helper locked.
+ *
+ * @public @memberof os_thread_helper
  */
 static inline void
 os_thread_helper_wait_locked(struct os_thread_helper *oth)
@@ -396,6 +410,8 @@ os_thread_helper_wait_locked(struct os_thread_helper *oth)
  * Signal a waiting thread to wake up.
  *
  * Must be called with the helper locked.
+ *
+ * @public @memberof os_thread_helper
  */
 static inline void
 os_thread_helper_signal_locked(struct os_thread_helper *oth)
