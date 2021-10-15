@@ -312,7 +312,36 @@ os_thread_helper_start(struct os_thread_helper *oth, os_run_func func, void *ptr
 }
 
 /*!
- * Stop the thread.
+ * @brief Signal from within the thread that we are stopping.
+ *
+ * Call with mutex unlocked - it takes and releases the lock internally.
+ *
+ * @public @memberof os_thread_helper
+ */
+static inline int
+os_thread_helper_signal_stop(struct os_thread_helper *oth)
+{
+	// The fields are protected.
+	pthread_mutex_lock(&oth->mutex);
+
+	// Report we're stopping the thread.
+	oth->running = false;
+
+	// Wake up any waiting thread.
+	pthread_cond_signal(&oth->cond);
+
+	// No longer need to protect fields.
+	pthread_mutex_unlock(&oth->mutex);
+
+	return 0;
+}
+
+/*!
+ * @brief Stop the thread and wait for it to exit.
+ *
+ * Call with mutex unlocked - it takes and releases the lock internally.
+ *
+ * @public @memberof os_thread_helper
  */
 static inline int
 os_thread_helper_stop(struct os_thread_helper *oth)
@@ -383,7 +412,26 @@ os_thread_helper_unlock(struct os_thread_helper *oth)
 /*!
  * Is the thread running, or supposed to be running.
  *
+ * Call with mutex unlocked - it takes and releases the lock internally.
+ * If you already have a lock, use os_thread_helper_is_running_locked().
+ *
+ * @public @memberof os_thread_helper
+ */
+static inline bool
+os_thread_helper_is_running(struct os_thread_helper *oth)
+{
+	os_thread_helper_lock(oth);
+	bool ret = oth->running;
+	os_thread_helper_unlock(oth);
+	return ret;
+}
+
+/*!
+ * Is the thread running, or supposed to be running.
+ *
  * Must be called with the helper locked.
+ * If you don't have the helper locked for some other reason already,
+ * you can use os_thread_helper_is_running()
  *
  * @public @memberof os_thread_helper
  */
