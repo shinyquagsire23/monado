@@ -22,3 +22,8 @@ endif()
 if(XRT_HAVE_OPENGLES)
 	target_link_libraries(aux_ogl PUBLIC EGL::EGL)
 endif()
+
+if(WIN32)
+	target_sources(aux_ogl PRIVATE wgl_api.c wgl_api.h)
+	target_link_libraries(aux_ogl PUBLIC OpenGL::GL)
+endif()
