@@ -42,6 +42,7 @@ GL_EXT_memory_object,\
 GL_EXT_memory_object_fd,\
 GL_EXT_memory_object_win32,\
 GL_EXT_sRGB,\
+GL_EXT_semaphore,\
 GL_OES_EGL_image,\
 GL_OES_EGL_image_external,\
 GL_OES_EGL_image_external_essl3,\
