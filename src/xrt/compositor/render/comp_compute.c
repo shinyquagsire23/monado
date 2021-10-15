@@ -85,8 +85,8 @@ calc_projection(const struct xrt_fov *fov, struct xrt_matrix_4x4_f64 *result)
 	const double tan_width = tan_right - tan_left;
 	const double tan_height = tan_up - tan_down;
 
-	const double near = 0.5;
-	const double far = 1.5;
+	const double near_plane = 0.5;
+	const double far_plane = 1.5;
 
 	const double a11 = 2 / tan_width;
 	const double a22 = 2 / tan_height;
@@ -94,8 +94,8 @@ calc_projection(const struct xrt_fov *fov, struct xrt_matrix_4x4_f64 *result)
 	const double a31 = (tan_right + tan_left) / tan_width;
 	const double a32 = (tan_up + tan_down) / tan_height;
 
-	const float a33 = -far / (far - near);
-	const float a43 = -(far * near) / (far - near);
+	const float a33 = -far_plane / (far_plane - near_plane);
+	const float a43 = -(far_plane * near_plane) / (far_plane - near_plane);
 
 
 #if 1
