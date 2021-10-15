@@ -54,6 +54,12 @@ if(XRT_HAVE_OPENGL_GLX AND XRT_HAVE_XLIB)
 	target_link_libraries(comp_client PRIVATE OpenGL::GLX)
 endif()
 
+if(XRT_HAVE_OPENGL AND WIN32)
+	target_sources(
+		comp_client PRIVATE client/comp_gl_win32_client.c client/comp_gl_win32_client.h
+				    client/comp_gl_win32_glue.c
+		)
+endif()
 if(XRT_HAVE_EGL)
 	target_sources(comp_client PRIVATE client/comp_egl_client.c client/comp_egl_client.h)
 endif()
