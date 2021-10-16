@@ -222,6 +222,33 @@ rs_hdev_correct_pose_from_kimera(struct xrt_pose pose)
 	return out_relation.pose;
 }
 
+//! Specific pose corrections for Basalt and the D455 camera
+XRT_MAYBE_UNUSED static inline struct xrt_pose
+rs_hdev_correct_pose_from_basalt(struct xrt_pose pose)
+{
+	// Correct swapped axes
+	struct xrt_pose swapped = {0};
+	swapped.position.x = pose.position.x;
+	swapped.position.y = -pose.position.y;
+	swapped.position.z = -pose.position.z;
+	swapped.orientation.x = pose.orientation.x;
+	swapped.orientation.y = -pose.orientation.y;
+	swapped.orientation.z = -pose.orientation.z;
+	swapped.orientation.w = pose.orientation.w;
+
+	// Correct orientation
+	//! @todo Encode this transformation into constants
+	struct xrt_space_relation out_relation;
+	struct xrt_space_graph space_graph = {0};
+	const float sin45 = 0.7071067811865475;
+	struct xrt_pose pos_correction = {{sin45, 0, 0, sin45}, {0, 0, 0}}; // euler(90, 0, 0)
+
+	m_space_graph_add_pose(&space_graph, &swapped);
+	m_space_graph_add_pose(&space_graph, &pos_correction);
+	m_space_graph_resolve(&space_graph, &out_relation);
+	return out_relation.pose;
+}
+
 static void
 rs_hdev_get_tracked_pose(struct xrt_device *xdev,
                          enum xrt_input_name name,
@@ -240,6 +267,8 @@ rs_hdev_get_tracked_pose(struct xrt_device *xdev,
 	if (pose_tracked) {
 #if defined(XRT_HAVE_KIMERA_SLAM)
 		rs->pose = rs_hdev_correct_pose_from_kimera(out_relation->pose);
+#elif defined(XRT_HAVE_BASALT_SLAM)
+		rs->pose = rs_hdev_correct_pose_from_basalt(out_relation->pose);
 #else
 		rs->pose = out_relation->pose;
 #endif

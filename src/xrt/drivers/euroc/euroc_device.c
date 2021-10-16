@@ -116,6 +116,15 @@ euroc_device_correct_pose_from_kimera(struct xrt_pose pose)
 	return pose;
 }
 
+//! Similar to `euroc_device_correct_pose_from_kimera` but for Basalt.
+XRT_MAYBE_UNUSED static inline struct xrt_pose
+euroc_device_correct_pose_from_basalt(struct xrt_pose pose)
+{
+	//! @todo Implement proper pose corrections for the original euroc datasets
+	//! @todo Allow to use different pose corrections depending on the device used to record
+	return pose;
+}
+
 static void
 euroc_device_get_tracked_pose(struct xrt_device *xdev,
                               enum xrt_input_name name,
@@ -133,6 +142,8 @@ euroc_device_get_tracked_pose(struct xrt_device *xdev,
 		if (pose_tracked) {
 #if defined(XRT_HAVE_KIMERA_SLAM)
 			ed->pose = euroc_device_correct_pose_from_kimera(out_relation->pose);
+#elif defined(XRT_HAVE_BASALT_SLAM)
+			ed->pose = euroc_device_correct_pose_from_basalt(out_relation->pose);
 #else
 			ed->pose = out_relation->pose;
 #endif
