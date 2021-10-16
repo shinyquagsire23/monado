@@ -93,7 +93,7 @@ if not opencv.found()
 endif
 
 # Find an external SLAM implementation
-external_slam_systems = ['kimera_vio']
+external_slam_systems = ['kimera_vio', 'basalt']
 foreach slam_system : external_slam_systems
 	slam = dependency(slam_system, required: false)
 	if slam.found()

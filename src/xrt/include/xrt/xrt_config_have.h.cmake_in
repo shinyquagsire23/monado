@@ -27,6 +27,7 @@
 #cmakedefine XRT_HAVE_VULKAN
 #cmakedefine XRT_HAVE_PERCETTO
 #cmakedefine XRT_HAVE_KIMERA_SLAM
+#cmakedefine XRT_HAVE_BASALT_SLAM
 #cmakedefine XRT_HAVE_SLAM
 #cmakedefine XRT_HAVE_WAYLAND
 #cmakedefine XRT_HAVE_WAYLAND_DIRECT
