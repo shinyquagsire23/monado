@@ -1,4 +1,4 @@
-# Copyright 2019-2021, Collabora, Ltd.
+# Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ###
@@ -58,6 +58,13 @@ if(XRT_HAVE_EGL)
 	target_sources(comp_client PRIVATE client/comp_egl_client.c client/comp_egl_client.h)
 endif()
 
+if(XRT_HAVE_D3D11)
+	target_sources(
+		comp_client PRIVATE client/comp_d3d11_client.cpp client/comp_d3d11_client.h
+				    client/comp_d3d11_glue.c
+		)
+	target_link_libraries(comp_client PRIVATE aux_d3d)
+endif()
 ##
 # Util library
 #
