@@ -88,7 +88,7 @@ struct client_vk_compositor
 /*!
  * Create a new client_vk_compositor.
  *
- * Takes owenership of provided xcn.
+ * Takes ownership of provided xcn.
  *
  * @public @memberof client_vk_compositor
  * @see xrt_compositor_native
