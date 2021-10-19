@@ -411,9 +411,11 @@ init_all(struct ipc_server *s)
 	// Yes we should be running.
 	s->running = true;
 	s->exit_on_disconnect = debug_get_bool_option_exit_on_disconnect();
+	s->ll = debug_get_log_option_ipc_log();
 
 	int ret = xrt_instance_create(NULL, &s->xinst);
 	if (ret < 0) {
+		IPC_ERROR(s, "Failed to create instance!");
 		teardown_all(s);
 		return ret;
 	}
@@ -421,6 +423,7 @@ init_all(struct ipc_server *s)
 	struct xrt_device *xdevs[IPC_SERVER_NUM_XDEVS] = {0};
 	ret = xrt_instance_select(s->xinst, xdevs, IPC_SERVER_NUM_XDEVS);
 	if (ret < 0) {
+		IPC_ERROR(s, "Failed to select/create devices!");
 		teardown_all(s);
 		return ret;
 	}
@@ -437,41 +440,45 @@ init_all(struct ipc_server *s)
 
 	// If we don't have a HMD shutdown.
 	if (s->idevs[0].xdev == NULL) {
+		IPC_ERROR(s, "No HMD found!");
 		teardown_all(s);
 		return -1;
 	}
 
 	ret = init_tracking_origins(s);
 	if (ret < 0) {
+		IPC_ERROR(s, "Failed to init tracking origins!");
 		teardown_all(s);
 		return -1;
 	}
 
 	ret = xrt_instance_create_system_compositor(s->xinst, s->idevs[0].xdev, &s->xsysc);
 	if (ret < 0) {
+		IPC_ERROR(s, "Could not create system compositor!");
 		teardown_all(s);
 		return ret;
 	}
 
 	ret = init_shm(s);
 	if (ret < 0) {
+		IPC_ERROR(s, "Could not init shared memory!");
 		teardown_all(s);
 		return ret;
 	}
 
 	ret = ipc_server_mainloop_init(&s->ml);
 	if (ret < 0) {
+		IPC_ERROR(s, "Failed to init ipc main loop!");
 		teardown_all(s);
 		return ret;
 	}
 
 	ret = os_mutex_init(&s->global_state.lock);
 	if (ret < 0) {
+		IPC_ERROR(s, "Global state lock mutex failed to inti!");
 		teardown_all(s);
 		return ret;
 	}
-
-	s->ll = debug_get_log_option_ipc_log();
 
 	u_var_add_root(s, "IPC Server", false);
 	u_var_add_ro_u32(s, &s->ll, "log level");
