@@ -146,4 +146,8 @@ typedef enum xrt_result
 	 * Creating a @ref xrt_device failed.
 	 */
 	XRT_ERROR_DEVICE_CREATION_FAILED = -22,
+	/*!
+	 * Some D3D11 error
+	 */
+	XRT_ERROR_D3D11 = -23,
 } xrt_result_t;
