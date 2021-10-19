@@ -106,6 +106,9 @@ endif()
 if(NOT ANDROID)
 	find_package(PkgConfig MODULE)
 endif()
+if(WIN32)
+	find_package(wil CONFIG)
+endif()
 
 #https://github.com/arsenm/sanitizers-cmake
 find_package(Sanitizers MODULE)
@@ -201,6 +204,8 @@ option_with_deps(XRT_HAVE_OPENGLES "Enable OpenGL-ES Graphics API support" DEPEN
 
 option_with_deps(XRT_HAVE_EGL "Enable OpenGL(-ES) on EGL Graphics API support" DEPENDS EGL_FOUND "XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES")
 option_with_deps(XRT_HAVE_SDL2 "Enable use of SDL2" DEPENDS SDL2_FOUND XRT_HAVE_OPENGL)
+
+option_with_deps(XRT_HAVE_WIL "Use WIL for Windows-specific functionality" DEPENDS wil_FOUND)
 
 option_with_deps(XRT_HAVE_VULKAN "Enable Vulkan Graphics API support (also needed for compositor)" DEPENDS VULKAN_FOUND)
 option_with_deps(XRT_HAVE_WAYLAND "Enable Wayland support" DEPENDS WAYLAND_FOUND WAYLAND_SCANNER_FOUND WAYLAND_PROTOCOLS_FOUND LIBDRM_FOUND)

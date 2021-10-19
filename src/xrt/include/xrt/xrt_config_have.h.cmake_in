@@ -33,3 +33,4 @@
 #cmakedefine XRT_HAVE_VULKAN
 #cmakedefine XRT_HAVE_WAYLAND
 #cmakedefine XRT_HAVE_WAYLAND_DIRECT
+#cmakedefine XRT_HAVE_WIL
