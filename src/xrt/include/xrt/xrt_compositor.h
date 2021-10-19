@@ -11,6 +11,14 @@
 
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_handles.h"
+#include "xrt/xrt_config_os.h"
+
+#if defined(XRT_OS_WINDOWS)
+#include "xrt/xrt_windows.h"
+#include "d3d11.h"
+#elif defined(XRT_DOXYGEN)
+struct ID3D11Texture2D;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -1573,6 +1581,53 @@ xrt_compositor_vk(struct xrt_compositor *xc)
 	return (struct xrt_compositor_vk *)xc;
 }
 
+#if defined(XRT_OS_WINDOWS) || defined(XRT_DOXYGEN)
+
+/*
+ *
+ * D3D11 interface.
+ *
+ */
+
+/*!
+ * Base class for a D3D11 client swapchain.
+ *
+ * @ingroup xrt_iface comp_client
+ * @extends xrt_swapchain
+ */
+struct xrt_swapchain_d3d11
+{
+	//! @public Base
+	struct xrt_swapchain base;
+
+	//! Images to be used by the caller.
+	ID3D11Texture2D *images[XRT_MAX_SWAPCHAIN_IMAGES];
+};
+
+/*!
+ * Base class for a D3D11 client compositor.
+ *
+ * @ingroup xrt_iface comp_client
+ * @extends xrt_compositor
+ */
+struct xrt_compositor_d3d11
+{
+	//! @public Base
+	struct xrt_compositor base;
+};
+
+/*!
+ * Graphics usage requirements for D3D APIs.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_d3d_requirements
+{
+	LUID adapter_luid;
+	D3D_FEATURE_LEVEL min_feature_level;
+};
+
+#endif // XRT_OS_WINDOWS
 
 /*
  *
