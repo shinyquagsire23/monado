@@ -1570,7 +1570,7 @@ struct xrt_image_native
 	size_t size;
 
 	/*!
-	 * Is the image created with a deicated allocation or not.
+	 * Is the image created with a dedicated allocation or not.
 	 */
 	bool use_dedicated_allocation;
 };
