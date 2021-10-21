@@ -58,8 +58,8 @@ def generate_first_chunk():
 
         parts.append(f"""
 /*
-* {ext_name}
-*/
+ * {ext_name}
+ */
 #if {condition}
 #define OXR_HAVE_{trimmed_name}
 #define {INVOCATION_PREFIX}_{trimmed_name}(_) \\
