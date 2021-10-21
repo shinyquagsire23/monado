@@ -591,7 +591,7 @@ _render_stereo(struct comp_layer_renderer *self,
 	COMP_TRACE_MARKER();
 
 	VkViewport viewport = {
-	    0.0f, 0.0f, self->extent.width, self->extent.height, 0.0f, 1.0f,
+	    0.0f, 0.0f, (float)self->extent.width, (float)self->extent.height, 0.0f, 1.0f,
 	};
 	vk->vkCmdSetViewport(cmd_buffer, 0, 1, &viewport);
 	VkRect2D scissor = {
