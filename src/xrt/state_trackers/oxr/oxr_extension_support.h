@@ -17,6 +17,7 @@
 #pragma once
 
 #include "xrt/xrt_config_build.h"
+#include "xrt/xrt_openxr_includes.h"
 
 // beginning of GENERATED defines - do not modify - used by scripts
 
@@ -97,6 +98,17 @@
 #define OXR_EXTENSION_SUPPORT_KHR_convert_timespec_time(_) _(KHR_convert_timespec_time, KHR_CONVERT_TIMESPEC_TIME)
 #else
 #define OXR_EXTENSION_SUPPORT_KHR_convert_timespec_time(_)
+#endif
+
+
+/*
+ * XR_KHR_D3D11_enable
+ */
+#if defined(XR_KHR_D3D11_enable) && defined(XR_USE_GRAPHICS_API_D3D11)
+#define OXR_HAVE_KHR_D3D11_enable
+#define OXR_EXTENSION_SUPPORT_KHR_D3D11_enable(_) _(KHR_D3D11_enable, KHR_D3D11_ENABLE)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_D3D11_enable(_)
 #endif
 
 
@@ -298,6 +310,7 @@
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect(_) \
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect2(_) \
     OXR_EXTENSION_SUPPORT_KHR_convert_timespec_time(_) \
+    OXR_EXTENSION_SUPPORT_KHR_D3D11_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_loader_init(_) \
     OXR_EXTENSION_SUPPORT_KHR_loader_init_android(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_enable(_) \
