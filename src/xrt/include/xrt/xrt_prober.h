@@ -257,7 +257,7 @@ struct xrt_prober
 
 	int (*open_hid_interface)(struct xrt_prober *xp,
 	                          struct xrt_prober_device *xpdev,
-	                          int interface,
+	                          int iface,
 	                          struct os_hid_device **out_hid_dev);
 
 	/*!
@@ -356,10 +356,10 @@ xrt_prober_select(struct xrt_prober *xp, struct xrt_device **xdevs, size_t xdev_
 static inline int
 xrt_prober_open_hid_interface(struct xrt_prober *xp,
                               struct xrt_prober_device *xpdev,
-                              int interface,
+                              int iface,
                               struct os_hid_device **out_hid_dev)
 {
-	return xp->open_hid_interface(xp, xpdev, interface, out_hid_dev);
+	return xp->open_hid_interface(xp, xpdev, iface, out_hid_dev);
 }
 
 /*!
