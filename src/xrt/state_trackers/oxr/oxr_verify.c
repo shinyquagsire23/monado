@@ -492,7 +492,7 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 		OXR_VERIFY_EXTENSION(log, inst, KHR_opengl_es_enable);
 		return oxr_verify_XrGraphicsBindingOpenGLESAndroidKHR(log, opengles_android);
 	}
-#endif // OXR_HAVE_KHR_vulkan_enable
+#endif // defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 
 	/*
 	 * Add any new graphics binding structs here - before the headless
