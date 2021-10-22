@@ -190,9 +190,11 @@ comp_window_direct_randr_init(struct comp_target *ct)
 
 	xcb_screen_iterator_t iter = xcb_setup_roots_iterator(xcb_get_setup(connection));
 
-	w_direct->screen = iter.data;
-
-	comp_window_direct_randr_get_outputs(w_direct);
+	while (iter.rem > 0 && w_direct->num_displays == 0) {
+		w_direct->screen = iter.data;
+		comp_window_direct_randr_get_outputs(w_direct);
+		xcb_screen_next(&iter);
+	}
 
 	if (w_direct->num_displays == 0) {
 		COMP_ERROR(ct->c, "No non-desktop output available.");
