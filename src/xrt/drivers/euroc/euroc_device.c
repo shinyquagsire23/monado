@@ -251,18 +251,17 @@ euroc_device_create(struct xrt_prober *xp)
 		xd->get_view_pose = euroc_get_view_pose;
 	}
 
-	int ret = xp->tracking->create_tracked_slam(xp->tracking, xd, &ed->slam);
-	if (ret < 0) {
-		EUROC_WARN(ed,
-		           "Unable to create the SLAM tracker so the Euroc device won't be tracked.\n\t"
-		           "Did you provide the appropriate SLAM dependency when compiling?");
-		// However, we can continue, maybe the user just wants to play with the euroc utilities
-	}
-
 	u_var_add_root(ed, dev_name, false);
 	u_var_add_pose(ed, &ed->pose, "pose");
 	u_var_add_pose(ed, &ed->offset, "offset");
 	u_var_add_pose(ed, &ed->tracking_origin.offset, "tracking offset");
+
+	bool tracked = xp->tracking->create_tracked_slam(xp->tracking, xd, &ed->slam) >= 0;
+	if (!tracked) {
+		EUROC_WARN(ed, "Unable to setup the SLAM tracker");
+		euroc_device_destroy(xd);
+		return NULL;
+	}
 
 	return xd;
 }

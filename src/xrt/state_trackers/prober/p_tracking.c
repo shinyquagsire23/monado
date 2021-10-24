@@ -234,6 +234,47 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	// Start the stream now.
 	xrt_fs_stream_start(fact->xfs, xsink, XRT_FS_CAPTURE_TYPE_TRACKING, fact->settings.camera_mode);
 }
+
+//! @todo Similar to p_factory_ensure_frameserver but for SLAM sources.
+//! Therefore we can only have one SLAM tracker at a time, with exactly one SLAM
+//! tracked device. It would be good to solve these artificial restrictions.
+static bool
+p_factory_ensure_slam_frameserver(struct p_factory *fact)
+{
+	// Factory frameserver is already in use
+	if (fact->xfs != NULL) {
+		return false;
+	}
+
+	// SLAM tracker with EuRoC frameserver
+
+#ifdef XRT_BUILD_DRIVER_EUROC
+	if (debug_get_option_euroc_path() != NULL) {
+		struct xrt_slam_sinks empty_sinks = {0};
+		struct xrt_slam_sinks *sinks = &empty_sinks;
+
+		xrt_prober_open_video_device(&fact->p->base, NULL, &fact->xfctx, &fact->xfs);
+		assert(fact->xfs->source_id == 0xECD0FEED && "xfs is not Euroc, unsynced open_video_device?");
+
+#ifdef XRT_HAVE_SLAM
+		int ret = t_slam_create(&fact->xfctx, &fact->xts, &sinks);
+		if (ret != 0) {
+			U_LOG_W("Unable to initialize SLAM tracking, the Euroc driver will not be tracked");
+		}
+#else
+		U_LOG_W("SLAM tracking support is disabled, the Euroc driver will not be tracked");
+#endif
+
+		xrt_fs_slam_stream_start(fact->xfs, sinks);
+
+		return true;
+	}
+#endif
+
+	// No SLAM sources were started
+	return false;
+}
+
 #endif
 
 
@@ -344,15 +385,7 @@ p_factory_create_tracked_slam(struct xrt_tracking_factory *xfact,
 
 	struct xrt_tracked_slam *xts = NULL;
 
-#ifdef XRT_BUILD_DRIVER_EUROC
-	if (debug_get_option_euroc_path() != NULL) {
-		// The euroc slam tracker was already created on p_tracking_init because the
-		// euroc player is not a device so it needs to be started from somewhere
-		goto end;
-	}
-#endif
-
-end:
+	p_factory_ensure_slam_frameserver(fact);
 
 	if (!fact->started_xts) {
 		xts = fact->xts;
@@ -371,6 +404,7 @@ end:
 	return -1;
 #endif
 }
+
 
 /*
  *
@@ -401,27 +435,6 @@ p_tracking_init(struct prober *p)
 
 	// Finally set us as the tracking factory.
 	p->base.tracking = &fact->base;
-
-#ifdef XRT_BUILD_DRIVER_EUROC
-	if (debug_get_option_euroc_path() != NULL) {
-		struct xrt_slam_sinks empty_sinks = {0};
-		struct xrt_slam_sinks *sinks = &empty_sinks;
-
-		// fact->xfs *will* be an euroc frame server after open, because of prober open_video_device
-		xrt_prober_open_video_device(&fact->p->base, NULL, &fact->xfctx, &fact->xfs);
-
-#ifdef XRT_HAVE_SLAM
-		int ret = t_slam_create(&fact->xfctx, &fact->xts, &sinks);
-		if (ret != 0) {
-			U_LOG_W("Unable to initialize SLAM tracking, the Euroc driver will not be tracked");
-		}
-#else
-		U_LOG_W("SLAM tracking support is disabled, the Euroc driver will not be tracked");
-#endif
-
-		xrt_fs_slam_stream_start(fact->xfs, sinks);
-	}
-#endif
 
 	return 0;
 }
