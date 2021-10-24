@@ -31,6 +31,11 @@
 DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
 #endif
 
+#ifdef XRT_BUILD_DRIVER_RS
+#include "util/u_debug.h"
+DEBUG_GET_ONCE_NUM_OPTION(rs_source_index, "RS_SOURCE_INDEX", -1)
+#endif
+
 /*
  *
  * Structs and defines.
@@ -241,6 +246,11 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 static bool
 p_factory_ensure_slam_frameserver(struct p_factory *fact)
 {
+	//! @todo The check for (XRT_HAVE_SLAM && XRT_BUILD_DRIVER_* &&
+	//! debug_flag_is_correct) is getting duplicated in: p_open_video_device,
+	//! p_list_video_devices, and p_factory_ensure_slam_frameserver (here) with
+	//! small differences. Incorrectly modifying one will mess the others.
+
 	// Factory frameserver is already in use
 	if (fact->xfs != NULL) {
 		return false;
@@ -263,6 +273,31 @@ p_factory_ensure_slam_frameserver(struct p_factory *fact)
 		}
 #else
 		U_LOG_W("SLAM tracking support is disabled, the Euroc driver will not be tracked");
+#endif
+
+		xrt_fs_slam_stream_start(fact->xfs, sinks);
+
+		return true;
+	}
+#endif
+
+	// SLAM tracker with RealSense frameserver
+
+#ifdef XRT_BUILD_DRIVER_RS
+	if (debug_get_num_option_rs_source_index() != -1) {
+		struct xrt_slam_sinks empty_sinks = {0};
+		struct xrt_slam_sinks *sinks = &empty_sinks;
+
+		xrt_prober_open_video_device(&fact->p->base, NULL, &fact->xfctx, &fact->xfs);
+		assert(fact->xfs->source_id == 0x2EA15E115E && "xfs is not RealSense, unsynced open_video_device?");
+
+#ifdef XRT_HAVE_SLAM
+		int ret = t_slam_create(&fact->xfctx, &fact->xts, &sinks);
+		if (ret != 0) {
+			U_LOG_W("Unable to initialize SLAM tracking, the RealSense driver will not be tracked");
+		}
+#else
+		U_LOG_W("SLAM tracking support is disabled, the RealSense driver will not be tracked by host SLAM");
 #endif
 
 		xrt_fs_slam_stream_start(fact->xfs, sinks);

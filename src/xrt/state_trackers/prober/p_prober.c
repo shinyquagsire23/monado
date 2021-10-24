@@ -31,6 +31,10 @@
 #include "euroc/euroc_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_RS
+#include "realsense/rs_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_REMOTE
 #include "remote/r_interface.h"
 #endif
@@ -53,6 +57,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(qwerty_enable, "QWERTY_ENABLE", false)
 DEBUG_GET_ONCE_BOOL_OPTION(qwerty_combine, "QWERTY_COMBINE", false)
 DEBUG_GET_ONCE_OPTION(vf_path, "VF_PATH", NULL)
 DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
+DEBUG_GET_ONCE_NUM_OPTION(rs_source_index, "RS_SOURCE_INDEX", -1)
 
 
 /*
@@ -996,6 +1001,14 @@ p_open_video_device(struct xrt_prober *xp,
 	}
 #endif
 
+#if defined(XRT_BUILD_DRIVER_RS)
+	int rs_source_index = debug_get_num_option_rs_source_index();
+	if (rs_source_index != -1) {
+		*out_xfs = rs_source_create(xfctx, rs_source_index);
+		return 0;
+	}
+#endif
+
 #if defined(XRT_HAVE_V4L2)
 	if (pdev->num_v4ls == 0) {
 		return -1;
@@ -1022,11 +1035,14 @@ p_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *p
 	// Video sources from drivers (at most one will be listed)
 	const char *vf_path = debug_get_option_vf_path();
 	const char *euroc_path = debug_get_option_euroc_path();
+	int rs_source_index = debug_get_num_option_rs_source_index();
 
 	if (vf_path != NULL) {
 		cb(xp, NULL, "Video File", "Collabora", vf_path, ptr);
 	} else if (euroc_path != NULL) {
 		cb(xp, NULL, "Euroc Dataset", "Collabora", euroc_path, ptr);
+	} else if (rs_source_index != -1) {
+		cb(xp, NULL, "RealSense Source", "Collabora", "", ptr);
 	}
 
 	// Video sources from video devices
