@@ -51,13 +51,15 @@
 #define DEFAULT_STREAM1_INDEX 1
 #define DEFAULT_STREAM2_INDEX 2
 
-#define DEVICE_STRING "Intel RealSense Host-SLAM"
+#define RS_DEVICE_STR "Intel RealSense Host-SLAM"
+#define RS_SOURCE_STR "RealSense Source"
+#define RS_HOST_SLAM_TRACKER_STR "Host SLAM Tracker for RealSense"
 
-#define RS_TRACE(...) U_LOG_XDEV_IFL_T(&rs->xdev, rs->ll, __VA_ARGS__)
-#define RS_DEBUG(...) U_LOG_XDEV_IFL_D(&rs->xdev, rs->ll, __VA_ARGS__)
-#define RS_INFO(...) U_LOG_XDEV_IFL_I(&rs->xdev, rs->ll, __VA_ARGS__)
-#define RS_WARN(...) U_LOG_XDEV_IFL_W(&rs->xdev, rs->ll, __VA_ARGS__)
-#define RS_ERROR(...) U_LOG_XDEV_IFL_E(&rs->xdev, rs->ll, __VA_ARGS__)
+#define RS_TRACE(r, ...) U_LOG_IFL_T(r->ll, __VA_ARGS__)
+#define RS_DEBUG(r, ...) U_LOG_IFL_D(r->ll, __VA_ARGS__)
+#define RS_INFO(r, ...) U_LOG_IFL_I(r->ll, __VA_ARGS__)
+#define RS_WARN(r, ...) U_LOG_IFL_W(r->ll, __VA_ARGS__)
+#define RS_ERROR(r, ...) U_LOG_IFL_E(r->ll, __VA_ARGS__)
 #define RS_ASSERT(predicate, ...)                                                                                      \
 	do {                                                                                                           \
 		bool p = predicate;                                                                                    \
@@ -99,26 +101,34 @@ receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *);
 static void
 receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *);
 static void
-rs_hdev_node_break_apart(struct xrt_frame_node *);
+rs_source_node_break_apart(struct xrt_frame_node *);
 static void
-rs_hdev_node_destroy(struct xrt_frame_node *);
+rs_source_node_destroy(struct xrt_frame_node *);
 
 /*!
  * Host-SLAM tracked RealSense device (any RealSense device with camera and IMU streams).
  *
  * @implements xrt_device
- * @implements xrt_fs
- * @implements xrt_frame_node
  */
 struct rs_hdev
 {
 	struct xrt_device xdev;
-	struct xrt_frame_context xfctx;
-	struct xrt_frame_node node;
-	struct xrt_fs xfs;
 	struct xrt_tracked_slam *slam;
 	struct xrt_pose pose;    //!< Device pose
 	struct xrt_pose offset;  //!< Additional offset to apply to `pose`
+	enum u_logging_level ll; //!< Log level
+};
+
+/*!
+ * RealSense source of camera and IMU data.
+ *
+ * @implements xrt_fs
+ * @implements xrt_frame_node
+ */
+struct rs_source
+{
+	struct xrt_fs xfs;
+	struct xrt_frame_node node;
 	enum u_logging_level ll; //!< Log level
 
 	// Sinks
@@ -163,14 +173,14 @@ struct rs_hdev
 
 //! @todo Unify check_error() and DO() usage thorough the driver.
 static bool
-check_error(struct rs_hdev *rs, rs2_error *e, const char *file, int line)
+check_error(struct rs_source *rs, rs2_error *e, const char *file, int line)
 {
 	if (e == NULL) {
 		return false; // No errors
 	}
 
-	RS_ERROR("rs_error was raised when calling %s(%s):", rs2_get_failed_function(e), rs2_get_failed_args(e));
-	RS_ERROR("%s:%d: %s", file, line, rs2_get_error_message(e));
+	RS_ERROR(rs, "rs_error was raised when calling %s(%s):", rs2_get_failed_function(e), rs2_get_failed_args(e));
+	RS_ERROR(rs, "%s:%d: %s", file, line, rs2_get_error_message(e));
 	exit(EXIT_FAILURE);
 }
 
@@ -184,8 +194,8 @@ check_error(struct rs_hdev *rs, rs2_error *e, const char *file, int line)
 static inline struct rs_hdev *
 rs_hdev_from_xdev(struct xrt_device *xdev)
 {
-	struct rs_hdev *rs = container_of(xdev, struct rs_hdev, xdev);
-	return rs;
+	struct rs_hdev *rh = container_of(xdev, struct rs_hdev, xdev);
+	return rh;
 }
 
 static void
@@ -255,28 +265,28 @@ rs_hdev_get_tracked_pose(struct xrt_device *xdev,
                          uint64_t at_timestamp_ns,
                          struct xrt_space_relation *out_relation)
 {
-	struct rs_hdev *rs = rs_hdev_from_xdev(xdev);
-	RS_ASSERT_(rs->slam != NULL);
+	struct rs_hdev *rh = rs_hdev_from_xdev(xdev);
+	RS_ASSERT_(rh->slam != NULL);
 	RS_ASSERT_(at_timestamp_ns < INT64_MAX);
 
-	xrt_tracked_slam_get_tracked_pose(rs->slam, at_timestamp_ns, out_relation);
+	xrt_tracked_slam_get_tracked_pose(rh->slam, at_timestamp_ns, out_relation);
 
 	int pose_bits = XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
 	bool pose_tracked = out_relation->relation_flags & pose_bits;
 
 	if (pose_tracked) {
 #if defined(XRT_HAVE_KIMERA_SLAM)
-		rs->pose = rs_hdev_correct_pose_from_kimera(out_relation->pose);
+		rh->pose = rs_hdev_correct_pose_from_kimera(out_relation->pose);
 #elif defined(XRT_HAVE_BASALT_SLAM)
-		rs->pose = rs_hdev_correct_pose_from_basalt(out_relation->pose);
+		rh->pose = rs_hdev_correct_pose_from_basalt(out_relation->pose);
 #else
-		rs->pose = out_relation->pose;
+		rh->pose = out_relation->pose;
 #endif
 	}
 
 	struct xrt_space_graph space_graph = {0};
-	m_space_graph_add_pose(&space_graph, &rs->pose);
-	m_space_graph_add_pose(&space_graph, &rs->offset);
+	m_space_graph_add_pose(&space_graph, &rh->pose);
+	m_space_graph_add_pose(&space_graph, &rh->offset);
 	m_space_graph_resolve(&space_graph, out_relation);
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
@@ -286,11 +296,10 @@ rs_hdev_get_tracked_pose(struct xrt_device *xdev,
 static void
 rs_hdev_destroy(struct xrt_device *xdev)
 {
-	struct rs_hdev *rs = rs_hdev_from_xdev(xdev);
-	RS_INFO("Destroying rs_hdev");
-	xrt_frame_context_destroy_nodes(&rs->xfctx);
-	RS_ASSERT(!rs->is_running, "Trying to destroy device while it is still streaming");
-	u_device_free(&rs->xdev);
+	struct rs_hdev *rh = rs_hdev_from_xdev(xdev);
+	RS_INFO(rh, "Destroying rs_hdev");
+	u_var_remove_root(rh);
+	u_device_free(&rh->xdev);
 }
 
 
@@ -305,25 +314,25 @@ rs_hdev_destroy(struct xrt_device *xdev)
 //! Helper function for loading an int field from a json container and printing useful
 //! messages along it. *out is expected to come preloaded with a default value.
 static void
-json_int(struct rs_hdev *rs, const cJSON *json, const char *field, int *out)
+json_int(struct rs_source *rs, const cJSON *json, const char *field, int *out)
 {
 	if (!u_json_get_int(u_json_get(json, field), out)) {
 		// This is a warning because we want the user to set these config fields
-		RS_WARN("Using default %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, *out);
+		RS_WARN(rs, "Using default %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, *out);
 	} else {
-		RS_DEBUG("Using %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, *out);
+		RS_DEBUG(rs, "Using %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, *out);
 	}
 }
 
 //! Similar to @ref json_int but for bools.
 static void
-json_bool(struct rs_hdev *rs, const cJSON *json, const char *field, bool *out)
+json_bool(struct rs_source *rs, const cJSON *json, const char *field, bool *out)
 {
 	if (!u_json_get_bool(u_json_get(json, field), out)) {
 		// This is a warning because we want the user to set these config fields
-		RS_WARN("Using default %s.%s=%s", JSON_CONFIG_FIELD_NAME, field, *out ? "true" : "false");
+		RS_WARN(rs, "Using default %s.%s=%s", JSON_CONFIG_FIELD_NAME, field, *out ? "true" : "false");
 	} else {
-		RS_DEBUG("Using %s.%s=%s", JSON_CONFIG_FIELD_NAME, field, *out ? "true" : "false");
+		RS_DEBUG(rs, "Using %s.%s=%s", JSON_CONFIG_FIELD_NAME, field, *out ? "true" : "false");
 	}
 }
 
@@ -331,12 +340,12 @@ json_bool(struct rs_hdev *rs, const cJSON *json, const char *field, bool *out)
 //! equivalent xrt_format if any.
 static void
 json_rs2_format(
-    struct rs_hdev *rs, const cJSON *json, const char *field, rs2_format *out_rformat, enum xrt_format *out_xformat)
+    struct rs_source *rs, const cJSON *json, const char *field, rs2_format *out_rformat, enum xrt_format *out_xformat)
 {
 	int format_int = (int)*out_rformat;
 	bool valid_field = u_json_get_int(u_json_get(json, field), &format_int);
 	if (!valid_field) {
-		RS_WARN("Using default %s.%s=%d (%d)", JSON_CONFIG_FIELD_NAME, field, *out_rformat, *out_xformat);
+		RS_WARN(rs, "Using default %s.%s=%d (%d)", JSON_CONFIG_FIELD_NAME, field, *out_rformat, *out_xformat);
 		return;
 	}
 
@@ -347,9 +356,9 @@ json_rs2_format(
 	} else if (rformat == RS2_FORMAT_RGB8 || rformat == RS2_FORMAT_BGR8) {
 		xformat = XRT_FORMAT_R8G8B8;
 	} else {
-		RS_ERROR("Invalid %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, format_int);
-		RS_ERROR("Valid values: %d, %d, %d", RS2_FORMAT_Y8, RS2_FORMAT_RGB8, RS2_FORMAT_BGR8);
-		RS_ERROR("Using default %s.%s=%d (%d)", JSON_CONFIG_FIELD_NAME, field, *out_rformat, *out_xformat);
+		RS_ERROR(rs, "Invalid %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, format_int);
+		RS_ERROR(rs, "Valid values: %d, %d, %d", RS2_FORMAT_Y8, RS2_FORMAT_RGB8, RS2_FORMAT_BGR8);
+		RS_ERROR(rs, "Using default %s.%s=%d (%d)", JSON_CONFIG_FIELD_NAME, field, *out_rformat, *out_xformat);
 
 		// Reaching this doesn't mean that a matching xrt_format doesn't exist, just
 		// that I didn't need it. Feel free to add it.
@@ -359,34 +368,34 @@ json_rs2_format(
 
 	*out_rformat = rformat;
 	*out_xformat = xformat;
-	RS_DEBUG("Using %s.%s=%d (xrt_format=%d)", JSON_CONFIG_FIELD_NAME, field, *out_rformat, *out_xformat);
+	RS_DEBUG(rs, "Using %s.%s=%d (xrt_format=%d)", JSON_CONFIG_FIELD_NAME, field, *out_rformat, *out_xformat);
 }
 
 //! Similar to @ref json_int but for a rs2_stream type.
 static void
-json_rs2_stream(struct rs_hdev *rs, const cJSON *json, const char *field, rs2_stream *out_stream)
+json_rs2_stream(struct rs_source *rs, const cJSON *json, const char *field, rs2_stream *out_stream)
 {
 	int stream_int = (int)*out_stream;
 	bool valid_field = u_json_get_int(u_json_get(json, field), &stream_int);
 	if (!valid_field) {
-		RS_WARN("Using default %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, *out_stream);
+		RS_WARN(rs, "Using default %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, *out_stream);
 		return;
 	}
 
 	rs2_stream rstream = (rs2_stream)stream_int;
 	if (rstream != RS2_STREAM_COLOR && rstream != RS2_STREAM_INFRARED && rstream != RS2_STREAM_FISHEYE) {
-		RS_ERROR("Invalid %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, stream_int);
-		RS_ERROR("Valid values: %d, %d, %d", RS2_STREAM_COLOR, RS2_STREAM_INFRARED, RS2_STREAM_FISHEYE);
-		RS_ERROR("Using default %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, *out_stream);
+		RS_ERROR(rs, "Invalid %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, stream_int);
+		RS_ERROR(rs, "Valid values: %d, %d, %d", RS2_STREAM_COLOR, RS2_STREAM_INFRARED, RS2_STREAM_FISHEYE);
+		RS_ERROR(rs, "Using default %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, *out_stream);
 		return;
 	}
 
 	*out_stream = rstream;
-	RS_DEBUG("Using %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, *out_stream);
+	RS_DEBUG(rs, "Using %s.%s=%d", JSON_CONFIG_FIELD_NAME, field, *out_stream);
 }
 
 static void
-rs_hdev_load_stream_options_from_json(struct rs_hdev *rs)
+rs_source_load_stream_options_from_json(struct rs_source *rs)
 {
 	// Set default values
 	rs->stereo = DEFAULT_STEREO;
@@ -404,14 +413,14 @@ rs_hdev_load_stream_options_from_json(struct rs_hdev *rs)
 	struct u_config_json config = {0};
 	u_config_json_open_or_create_main_file(&config);
 	if (!config.file_loaded) {
-		RS_WARN("Unable to load config file, will use default stream values");
+		RS_WARN(rs, "Unable to load config file, will use default stream values");
 		cJSON_Delete(config.root);
 		return;
 	}
 
 	const cJSON *hdev_config = u_json_get(config.root, JSON_CONFIG_FIELD_NAME);
 	if (hdev_config == NULL) {
-		RS_WARN("Field '%s' was not present in the json file, will use default values", JSON_CONFIG_FIELD_NAME);
+		RS_WARN(rs, "Field '%s' not present in json file, will use defaults", JSON_CONFIG_FIELD_NAME);
 	}
 
 	json_bool(rs, hdev_config, "stereo", &rs->stereo);
@@ -437,7 +446,7 @@ rs_hdev_load_stream_options_from_json(struct rs_hdev *rs)
 
 //! Disable any laser emitters because they confuse SLAM feature detection
 static void
-disable_all_laser_emitters(struct rs_hdev *rs)
+disable_all_laser_emitters(struct rs_source *rs)
 {
 	struct rs_container *rsc = &rs->rsc;
 	rs2_sensor_list *sensors = DO(rs2_query_sensors, rsc->device);
@@ -462,7 +471,7 @@ disable_all_laser_emitters(struct rs_hdev *rs)
  */
 
 static void
-rs_hdev_frame_destroy(struct xrt_frame *xf)
+rs_source_frame_destroy(struct xrt_frame *xf)
 {
 	rs2_frame *rframe = (rs2_frame *)xf->owner;
 	rs2_release_frame(rframe);
@@ -470,7 +479,7 @@ rs_hdev_frame_destroy(struct xrt_frame *xf)
 }
 
 static void
-rs2xrt_frame(struct rs_hdev *rs, rs2_frame *rframe, struct xrt_frame **out_xframe)
+rs2xrt_frame(struct rs_source *rs, rs2_frame *rframe, struct xrt_frame **out_xframe)
 {
 	RS_ASSERT_(*out_xframe == NULL);
 
@@ -495,7 +504,7 @@ rs2xrt_frame(struct rs_hdev *rs, rs2_frame *rframe, struct xrt_frame **out_xfram
 
 	struct xrt_frame *xf = U_TYPED_CALLOC(struct xrt_frame);
 	xf->reference.count = 1;
-	xf->destroy = rs_hdev_frame_destroy;
+	xf->destroy = rs_source_frame_destroy;
 	xf->owner = rframe;
 	xf->width = rs->video_width;
 	xf->height = rs->video_height;
@@ -516,7 +525,7 @@ rs2xrt_frame(struct rs_hdev *rs, rs2_frame *rframe, struct xrt_frame **out_xfram
 }
 
 static void
-handle_frameset(struct rs_hdev *rs, rs2_frame *frames)
+handle_frameset(struct rs_source *rs, rs2_frame *frames)
 {
 
 	// Check number of frames on debug builds
@@ -544,7 +553,7 @@ handle_frameset(struct rs_hdev *rs, rs2_frame *frames)
 			xrt_sink_push_frame(rs->in_sinks.right, xf_right);
 		} else {
 			// This usually happens only once at start and never again
-			RS_WARN("Realsense device sent left and right frames with different timestamps %ld != %ld",
+			RS_WARN(rs, "Realsense device sent left and right frames with different timestamps %ld != %ld",
 			        xf_left->timestamp, xf_right->timestamp);
 		}
 
@@ -562,7 +571,7 @@ handle_frameset(struct rs_hdev *rs, rs2_frame *frames)
 //! Decides when to submit the full IMU sample out of separate
 //! gyroscope/accelerometer samples.
 static void
-partial_imu_sample_push(struct rs_hdev *rs, timepoint_ns ts, struct xrt_vec3 vals, bool is_gyro)
+partial_imu_sample_push(struct rs_source *rs, timepoint_ns ts, struct xrt_vec3 vals, bool is_gyro)
 {
 	os_mutex_lock(&rs->partial_imu_sample.mutex);
 
@@ -585,7 +594,7 @@ partial_imu_sample_push(struct rs_hdev *rs, timepoint_ns ts, struct xrt_vec3 val
 }
 
 static void
-handle_gyro_frame(struct rs_hdev *rs, rs2_frame *frame)
+handle_gyro_frame(struct rs_source *rs, rs2_frame *frame)
 {
 	const float *data = DO(rs2_get_frame_data, frame);
 
@@ -598,13 +607,13 @@ handle_gyro_frame(struct rs_hdev *rs, rs2_frame *frame)
 	double timestamp_ms = DO(rs2_get_frame_timestamp, frame);
 	timepoint_ns timestamp_ns = timestamp_ms * 1000 * 1000;
 	struct xrt_vec3 gyro = {data[0], data[1], data[2]};
-	RS_TRACE("gyro t=%ld x=%f y=%f z=%f", timestamp_ns, gyro.x, gyro.y, gyro.z);
+	RS_TRACE(rs, "gyro t=%ld x=%f y=%f z=%f", timestamp_ns, gyro.x, gyro.y, gyro.z);
 	partial_imu_sample_push(rs, timestamp_ns, gyro, true);
 	rs2_release_frame(frame);
 }
 
 static void
-handle_accel_frame(struct rs_hdev *rs, rs2_frame *frame)
+handle_accel_frame(struct rs_source *rs, rs2_frame *frame)
 {
 	const float *data = DO(rs2_get_frame_data, frame);
 
@@ -619,7 +628,7 @@ handle_accel_frame(struct rs_hdev *rs, rs2_frame *frame)
 	double timestamp_ms = DO(rs2_get_frame_timestamp, frame);
 	timepoint_ns timestamp_ns = timestamp_ms * 1000 * 1000;
 	struct xrt_vec3 accel = {data[0], data[1], data[2]};
-	RS_TRACE("accel t=%ld x=%f y=%f z=%f", timestamp_ns, accel.x, accel.y, accel.z);
+	RS_TRACE(rs, "accel t=%ld x=%f y=%f z=%f", timestamp_ns, accel.x, accel.y, accel.z);
 	partial_imu_sample_push(rs, timestamp_ns, accel, false);
 	rs2_release_frame(frame);
 }
@@ -627,7 +636,7 @@ handle_accel_frame(struct rs_hdev *rs, rs2_frame *frame)
 //! Checks that the timestamp domain of the realsense sample (the frame) is in
 //! global time or, at the very least, in another domain that we support.
 static inline void
-check_global_time(struct rs_hdev *rs, rs2_frame *frame, rs2_stream stream_type)
+check_global_time(struct rs_source *rs, rs2_frame *frame, rs2_stream stream_type)
 {
 
 #ifndef NDEBUG // Check valid timestamp domains only on debug builds
@@ -656,13 +665,13 @@ check_global_time(struct rs_hdev *rs, rs2_frame *frame, rs2_stream stream_type)
 	}
 
 	if (!acceptable_timestamp_domain) {
-		RS_ERROR("Invalid ts_domain=%s", rs2_timestamp_domain_to_string(ts_domain));
-		RS_ERROR("One of your RealSense sensors is not using GLOBAL_TIME domain for its timestamps.");
-		RS_ERROR("This should be solved by applying the kernel patch required by the RealSense SDK.");
+		RS_ERROR(rs, "Invalid ts_domain=%s", rs2_timestamp_domain_to_string(ts_domain));
+		RS_ERROR(rs, "One of your RealSense sensors is not using GLOBAL_TIME domain for its timestamps.");
+		RS_ERROR(rs, "This should be solved by applying the kernel patch required by the RealSense SDK.");
 		if (is_motion_sensor) {
 			const char *a = is_accel ? "accelerometer" : "gyroscope";
 			const char *b = is_accel ? "gyroscope" : "accelerometer";
-			RS_ERROR("As an alternative, set %s frequency to be greater than %s frequency.", b, a);
+			RS_ERROR(rs, "As an alternative, set %s frequency to be greater than %s frequency.", b, a);
 		}
 		RS_DASSERT(false, "Unacceptable timestamp domain %s", rs2_timestamp_domain_to_string(ts_domain));
 	}
@@ -672,7 +681,7 @@ check_global_time(struct rs_hdev *rs, rs2_frame *frame, rs2_stream stream_type)
 static void
 on_frame(rs2_frame *frame, void *ptr)
 {
-	struct rs_hdev *rs = (struct rs_hdev *)ptr;
+	struct rs_source *rs = (struct rs_source *)ptr;
 
 	const rs2_stream_profile *stream = DO(rs2_get_frame_stream_profile, frame);
 	rs2_stream stream_type;
@@ -706,15 +715,37 @@ on_frame(rs2_frame *frame, void *ptr)
  *
  */
 
-static inline struct rs_hdev *
-rs_hdev_from_xfs(struct xrt_fs *xfs)
+static inline struct rs_source *
+rs_source_from_xfs(struct xrt_fs *xfs)
 {
-	struct rs_hdev *rs = container_of(xfs, struct rs_hdev, xfs);
+	struct rs_source *rs = container_of(xfs, struct rs_source, xfs);
 	return rs;
 }
 
 static bool
-rs_hdev_enumerate_modes(struct xrt_fs *xfs, struct xrt_fs_mode **out_modes, uint32_t *out_count)
+rs_source_enumerate_modes(struct xrt_fs *xfs, struct xrt_fs_mode **out_modes, uint32_t *out_count)
+{
+	struct rs_source *rs = container_of(xfs, struct rs_source, xfs);
+	struct xrt_fs_mode *modes = U_TYPED_ARRAY_CALLOC(struct xrt_fs_mode, 1);
+	RS_ASSERT(modes != NULL, "Unable to calloc rs_source playback modes");
+
+	//! @todo only exposing the one stream configuration the user provided through
+	//! the json configuration but we could show all possible stream setups.
+	modes[0] = (struct xrt_fs_mode){.width = rs->video_width,
+	                                .height = rs->video_height,
+	                                .format = rs->xrt_video_format,
+	                                //! @todo The stereo_format being NONE is incorrect but one that supports
+	                                //! frames in different memory regions does not exist yet.
+	                                .stereo_format = XRT_STEREO_FORMAT_NONE};
+
+	*out_modes = modes;
+	*out_count = 1;
+
+	return true;
+}
+
+static bool
+rs_source_configure_capture(struct xrt_fs *xfs, struct xrt_fs_capture_parameters *cp)
 {
 	//! @todo implement
 	RS_ASSERT(false, "Not Implemented");
@@ -722,17 +753,9 @@ rs_hdev_enumerate_modes(struct xrt_fs *xfs, struct xrt_fs_mode **out_modes, uint
 }
 
 static bool
-rs_hdev_configure_capture(struct xrt_fs *xfs, struct xrt_fs_capture_parameters *cp)
+rs_source_stream_stop(struct xrt_fs *xfs)
 {
-	//! @todo implement
-	RS_ASSERT(false, "Not Implemented");
-	return false;
-}
-
-static bool
-rs_hdev_stream_stop(struct xrt_fs *xfs)
-{
-	struct rs_hdev *rs = rs_hdev_from_xfs(xfs);
+	struct rs_source *rs = rs_source_from_xfs(xfs);
 	if (rs->is_running) {
 		DO(rs2_pipeline_stop, rs->rsc.pipeline);
 		rs->is_running = false;
@@ -741,24 +764,24 @@ rs_hdev_stream_stop(struct xrt_fs *xfs)
 }
 
 static bool
-rs_hdev_is_running(struct xrt_fs *xfs)
+rs_source_is_running(struct xrt_fs *xfs)
 {
-	struct rs_hdev *rs = rs_hdev_from_xfs(xfs);
+	struct rs_source *rs = rs_source_from_xfs(xfs);
 	return rs->is_running;
 }
 
 static bool
-rs_hdev_stream_start(struct xrt_fs *xfs,
-                     struct xrt_frame_sink *xs,
-                     enum xrt_fs_capture_type capture_type,
-                     uint32_t descriptor_index)
+rs_source_stream_start(struct xrt_fs *xfs,
+                       struct xrt_frame_sink *xs,
+                       enum xrt_fs_capture_type capture_type,
+                       uint32_t descriptor_index)
 {
-	struct rs_hdev *rs = rs_hdev_from_xfs(xfs);
+	struct rs_source *rs = rs_source_from_xfs(xfs);
 	if (xs == NULL && capture_type == XRT_FS_CAPTURE_TYPE_TRACKING) {
 		RS_ASSERT(rs->out_sinks.left != NULL, "No left sink provided");
-		RS_INFO("Starting RealSense stream in tracking mode");
+		RS_INFO(rs, "Starting RealSense stream in tracking mode");
 	} else if (xs != NULL && capture_type == XRT_FS_CAPTURE_TYPE_CALIBRATION) {
-		RS_INFO("Starting RealSense stream in calibration mode, will stream only left frames");
+		RS_INFO(rs, "Starting RealSense stream in calibration mode, will stream only left frames");
 		rs->out_sinks.left = xs;
 	} else {
 		RS_ASSERT(false, "Unsupported stream configuration xs=%p capture_type=%d", (void *)xs, capture_type);
@@ -775,132 +798,11 @@ rs_hdev_stream_start(struct xrt_fs *xfs,
 }
 
 static bool
-rs_hdev_slam_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
+rs_source_slam_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
 {
-	struct rs_hdev *rs = rs_hdev_from_xfs(xfs);
+	struct rs_source *rs = rs_source_from_xfs(xfs);
 	rs->out_sinks = *sinks;
-	return rs_hdev_stream_start(xfs, NULL, XRT_FS_CAPTURE_TYPE_TRACKING, 0);
-}
-
-//! Create and open the frame server for IMU/camera streaming.
-static struct xrt_fs *
-rs_hdev_fs_create(struct rs_hdev *rs, int device_idx)
-{
-	// Setup xrt_fs
-	struct xrt_fs *xfs = &rs->xfs;
-	xfs->enumerate_modes = rs_hdev_enumerate_modes;
-	xfs->configure_capture = rs_hdev_configure_capture;
-	xfs->stream_start = rs_hdev_stream_start;
-	xfs->slam_stream_start = rs_hdev_slam_stream_start;
-	xfs->stream_stop = rs_hdev_stream_stop;
-	xfs->is_running = rs_hdev_is_running;
-	snprintf(xfs->name, sizeof(xfs->name), DEVICE_STRING " X");
-	snprintf(xfs->product, sizeof(xfs->product), DEVICE_STRING " P");
-	snprintf(xfs->manufacturer, sizeof(xfs->manufacturer), DEVICE_STRING " M");
-	snprintf(xfs->serial, sizeof(xfs->serial), DEVICE_STRING " S");
-	xfs->source_id = 0x2EA15E115E;
-
-	// Setup realsense pipeline
-	struct rs_container *rsc = &rs->rsc;
-	rsc->error_status = NULL;
-	rsc->context = DO(rs2_create_context, RS2_API_VERSION);
-	rsc->device_list = DO(rs2_query_devices, rsc->context);
-	rsc->device_count = DO(rs2_get_device_count, rsc->device_list);
-	rsc->device_idx = device_idx;
-	rsc->device = DO(rs2_create_device, rsc->device_list, rsc->device_idx);
-	rsc->pipeline = DO(rs2_create_pipeline, rsc->context);
-	rsc->config = DO_(rs2_create_config);
-
-	// Set the pipeline to start specifically on the realsense device the prober selected
-	bool hdev_has_serial = DO(rs2_supports_device_info, rsc->device, RS2_CAMERA_INFO_SERIAL_NUMBER);
-	if (hdev_has_serial) {
-		const char *hdev_serial = DO(rs2_get_device_info, rsc->device, RS2_CAMERA_INFO_SERIAL_NUMBER);
-		DO(rs2_config_enable_device, rsc->config, hdev_serial);
-	} else {
-		RS_WARN("Unexpected, the realsense device in use does not provide a serial number.");
-	}
-
-	rs_hdev_load_stream_options_from_json(rs);
-
-	rs2_stream stream_type = rs->stream_type;
-	int width = rs->video_width;
-	int height = rs->video_height;
-	int fps = rs->video_fps;
-	rs2_format format = rs->video_format;
-	DO(rs2_config_enable_stream, rsc->config, RS2_STREAM_GYRO, 0, 0, 0, RS2_FORMAT_MOTION_XYZ32F, rs->gyro_fps);
-	DO(rs2_config_enable_stream, rsc->config, RS2_STREAM_ACCEL, 0, 0, 0, RS2_FORMAT_MOTION_XYZ32F, rs->accel_fps);
-	DO(rs2_config_enable_stream, rsc->config, stream_type, rs->stream1_index, width, height, format, fps);
-	if (rs->stereo) {
-		DO(rs2_config_enable_stream, rsc->config, stream_type, rs->stream2_index, width, height, format, fps);
-	}
-
-	// Setup sinks
-	rs->left_sink.push_frame = receive_left_frame;
-	rs->right_sink.push_frame = receive_right_frame;
-	rs->imu_sink.push_imu = receive_imu_sample;
-	rs->in_sinks.left = &rs->left_sink;
-	rs->in_sinks.right = &rs->right_sink;
-	rs->in_sinks.imu = &rs->imu_sink;
-
-	// Setup UI
-	u_sink_debug_init(&rs->ui_left_sink);
-	u_sink_debug_init(&rs->ui_right_sink);
-	m_ff_vec3_f32_alloc(&rs->gyro_ff, 1000);
-	m_ff_vec3_f32_alloc(&rs->accel_ff, 1000);
-	u_var_add_root(rs, "RealSense Device", false);
-	u_var_add_ro_text(rs, "Host SLAM", "Tracked by");
-	u_var_add_log_level(rs, &rs->ll, "Log Level");
-	u_var_add_pose(rs, &rs->pose, "SLAM Pose");
-	u_var_add_pose(rs, &rs->offset, "Offset Pose");
-	u_var_add_ro_ff_vec3_f32(rs, rs->gyro_ff, "Gyroscope");
-	u_var_add_ro_ff_vec3_f32(rs, rs->accel_ff, "Accelerometer");
-	u_var_add_sink_debug(rs, &rs->ui_left_sink, "Left Camera");
-	u_var_add_sink_debug(rs, &rs->ui_right_sink, "Right Camera");
-
-	// Setup node
-	struct xrt_frame_node *xfn = &rs->node;
-	xfn->break_apart = rs_hdev_node_break_apart;
-	xfn->destroy = rs_hdev_node_destroy;
-	xrt_frame_context_add(&rs->xfctx, &rs->node);
-
-	// Setup IMU synchronizer lock
-	os_mutex_init(&rs->partial_imu_sample.mutex);
-
-	return xfs;
-}
-
-
-/*
- *
- * SLAM tracker functionality
- *
- */
-
-//! @todo The slam tracker should be started from the tracking factory, not from here
-static bool
-rs_hdev_slam_track(struct rs_hdev *rs, struct xrt_prober *xp)
-{
-#ifdef XRT_HAVE_SLAM
-	struct xrt_slam_sinks *sinks = NULL;
-
-	int create_status = t_slam_create(&rs->xfctx, &rs->slam, &sinks);
-	if (create_status != 0) {
-		return false;
-	}
-
-	bool stream_started = xrt_fs_slam_stream_start(&rs->xfs, sinks);
-	if (!stream_started) {
-		return false;
-	}
-
-	int start_status = t_slam_start(rs->slam);
-	if (start_status != 0) {
-		return false;
-	}
-	return true;
-#else
-	return false;
-#endif
+	return rs_source_stream_start(xfs, NULL, XRT_FS_CAPTURE_TYPE_TRACKING, 0);
 }
 
 
@@ -913,8 +815,8 @@ rs_hdev_slam_track(struct rs_hdev *rs, struct xrt_prober *xp)
 static void
 receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 {
-	struct rs_hdev *rs = container_of(sink, struct rs_hdev, left_sink);
-	RS_TRACE("left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
+	struct rs_source *rs = container_of(sink, struct rs_source, left_sink);
+	RS_TRACE(rs, "left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&rs->ui_left_sink, xf);
 	if (rs->out_sinks.left) {
 		xrt_sink_push_frame(rs->out_sinks.left, xf);
@@ -924,8 +826,8 @@ receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 static void
 receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 {
-	struct rs_hdev *rs = container_of(sink, struct rs_hdev, right_sink);
-	RS_TRACE("right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
+	struct rs_source *rs = container_of(sink, struct rs_source, right_sink);
+	RS_TRACE(rs, "right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&rs->ui_right_sink, xf);
 	if (rs->out_sinks.right) {
 		xrt_sink_push_frame(rs->out_sinks.right, xf);
@@ -935,12 +837,12 @@ receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 static void
 receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
-	struct rs_hdev *rs = container_of(sink, struct rs_hdev, imu_sink);
+	struct rs_source *rs = container_of(sink, struct rs_source, imu_sink);
 
 	timepoint_ns ts = s->timestamp_ns;
 	struct xrt_vec3_f64 a = s->accel_m_s2;
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;
-	RS_TRACE("imu t=%ld a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
+	RS_TRACE(rs, "imu t=%ld a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
 
 	// Push to debug UI by adjusting the timestamp to monotonic time
 
@@ -970,26 +872,25 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
  */
 
 static void
-rs_hdev_node_break_apart(struct xrt_frame_node *node)
+rs_source_node_break_apart(struct xrt_frame_node *node)
 {
-	struct rs_hdev *rs = container_of(node, struct rs_hdev, node);
-	rs_hdev_stream_stop(&rs->xfs);
+	struct rs_source *rs = container_of(node, struct rs_source, node);
+	rs_source_stream_stop(&rs->xfs);
 }
 
 static void
-rs_hdev_node_destroy(struct xrt_frame_node *node)
+rs_source_node_destroy(struct xrt_frame_node *node)
 {
-	struct rs_hdev *rs = container_of(node, struct rs_hdev, node);
+	struct rs_source *rs = container_of(node, struct rs_source, node);
+	RS_INFO(rs, "Destroying RealSense source");
 	os_mutex_destroy(&rs->partial_imu_sample.mutex);
 	u_var_remove_root(rs);
 	u_sink_debug_destroy(&rs->ui_left_sink);
 	u_sink_debug_destroy(&rs->ui_right_sink);
 	m_ff_vec3_f32_free(&rs->gyro_ff);
 	m_ff_vec3_f32_free(&rs->accel_ff);
-
 	rs_container_cleanup(&rs->rsc);
-
-	RS_INFO("Frame node destroyed");
+	free(rs);
 }
 
 
@@ -1002,17 +903,17 @@ rs_hdev_node_destroy(struct xrt_frame_node *node)
 struct xrt_device *
 rs_hdev_create(struct xrt_prober *xp, int device_idx)
 {
-	struct rs_hdev *rs = U_DEVICE_ALLOCATE(struct rs_hdev, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
-	rs->ll = debug_get_log_option_rs_log();
-	rs->pose = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
-	rs->offset = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
+	struct rs_hdev *rh = U_DEVICE_ALLOCATE(struct rs_hdev, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
+	rh->ll = debug_get_log_option_rs_log();
+	rh->pose = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
+	rh->offset = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
 
-	struct xrt_device *xd = &rs->xdev;
+	struct xrt_device *xd = &rh->xdev;
 	xd->name = XRT_DEVICE_REALSENSE;
 	xd->device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
 
-	snprintf(xd->str, XRT_DEVICE_NAME_LEN, "%s", DEVICE_STRING);
-	snprintf(xd->serial, XRT_DEVICE_NAME_LEN, "%s", DEVICE_STRING);
+	snprintf(xd->str, XRT_DEVICE_NAME_LEN, "%s", RS_DEVICE_STR);
+	snprintf(xd->serial, XRT_DEVICE_NAME_LEN, "%s", RS_DEVICE_STR);
 
 	snprintf(xd->tracking_origin->name, XRT_TRACKING_NAME_LEN, "%s", RS_HOST_SLAM_TRACKER_STR);
 	xd->tracking_origin->type = XRT_TRACKING_TYPE_EXTERNAL_SLAM;
@@ -1026,16 +927,110 @@ rs_hdev_create(struct xrt_prober *xp, int device_idx)
 	xd->get_tracked_pose = rs_hdev_get_tracked_pose;
 	xd->destroy = rs_hdev_destroy;
 
-	rs_hdev_fs_create(rs, device_idx);
+	// Setup UI
+	u_var_add_root(rh, "RealSense Device", false);
+	u_var_add_ro_text(rh, "Host SLAM", "Tracked by");
+	u_var_add_log_level(rh, &rh->ll, "Log Level");
+	u_var_add_pose(rh, &rh->pose, "SLAM Pose");
+	u_var_add_pose(rh, &rh->offset, "Offset Pose");
 
-	bool tracked = rs_hdev_slam_track(rs, xp);
+	bool tracked = xp->tracking->create_tracked_slam(xp->tracking, xd, &rh->slam) >= 0;
 	if (!tracked) {
-		RS_WARN("Unable to setup the SLAM tracker");
+		RS_WARN(rh, "Unable to setup the SLAM tracker");
 		rs_hdev_destroy(xd);
 		return NULL;
 	}
 
-	RS_DEBUG("Host-SLAM RealSense device created");
+	RS_DEBUG(rh, "Host-SLAM RealSense device created");
 
 	return xd;
+}
+
+//! Create and open the frame server for IMU/camera streaming.
+struct xrt_fs *
+rs_source_create(struct xrt_frame_context *xfctx, int device_idx)
+{
+	struct rs_source *rs = U_TYPED_CALLOC(struct rs_source);
+	rs->ll = debug_get_log_option_rs_log();
+
+	// Setup xrt_fs
+	struct xrt_fs *xfs = &rs->xfs;
+	xfs->enumerate_modes = rs_source_enumerate_modes;
+	xfs->configure_capture = rs_source_configure_capture;
+	xfs->stream_start = rs_source_stream_start;
+	xfs->slam_stream_start = rs_source_slam_stream_start;
+	xfs->stream_stop = rs_source_stream_stop;
+	xfs->is_running = rs_source_is_running;
+	snprintf(xfs->name, sizeof(xfs->name), RS_SOURCE_STR);
+	snprintf(xfs->product, sizeof(xfs->product), RS_SOURCE_STR " Product");
+	snprintf(xfs->manufacturer, sizeof(xfs->manufacturer), RS_SOURCE_STR " Manufacturer");
+	snprintf(xfs->serial, sizeof(xfs->serial), RS_SOURCE_STR " Serial");
+	xfs->source_id = 0x2EA15E115E;
+
+	// Setup realsense pipeline data
+	struct rs_container *rsc = &rs->rsc;
+	rsc->error_status = NULL;
+	rsc->context = DO(rs2_create_context, RS2_API_VERSION);
+	rsc->device_list = DO(rs2_query_devices, rsc->context);
+	rsc->device_count = DO(rs2_get_device_count, rsc->device_list);
+	rsc->device_idx = device_idx;
+	rsc->device = DO(rs2_create_device, rsc->device_list, rsc->device_idx);
+	rsc->pipeline = DO(rs2_create_pipeline, rsc->context);
+	rsc->config = DO_(rs2_create_config);
+
+	// Set the pipeline to start specifically on the realsense device the prober selected
+	bool hdev_has_serial = DO(rs2_supports_device_info, rsc->device, RS2_CAMERA_INFO_SERIAL_NUMBER);
+	if (hdev_has_serial) {
+		const char *hdev_serial = DO(rs2_get_device_info, rsc->device, RS2_CAMERA_INFO_SERIAL_NUMBER);
+		DO(rs2_config_enable_device, rsc->config, hdev_serial);
+	} else {
+		RS_WARN(rs, "Unexpected, the realsense device in use does not provide a serial number.");
+	}
+
+	// Load RealSense pipeline options from json
+	rs_source_load_stream_options_from_json(rs);
+
+	// Enable RealSense pipeline streams
+	rs2_stream stream_type = rs->stream_type;
+	int width = rs->video_width;
+	int height = rs->video_height;
+	int fps = rs->video_fps;
+	rs2_format format = rs->video_format;
+	DO(rs2_config_enable_stream, rsc->config, RS2_STREAM_GYRO, 0, 0, 0, RS2_FORMAT_MOTION_XYZ32F, rs->gyro_fps);
+	DO(rs2_config_enable_stream, rsc->config, RS2_STREAM_ACCEL, 0, 0, 0, RS2_FORMAT_MOTION_XYZ32F, rs->accel_fps);
+	DO(rs2_config_enable_stream, rsc->config, stream_type, rs->stream1_index, width, height, format, fps);
+	if (rs->stereo) {
+		DO(rs2_config_enable_stream, rsc->config, stream_type, rs->stream2_index, width, height, format, fps);
+	}
+
+	// Setup sinks
+	rs->left_sink.push_frame = receive_left_frame;
+	rs->right_sink.push_frame = receive_right_frame;
+	rs->imu_sink.push_imu = receive_imu_sample;
+	rs->in_sinks.left = &rs->left_sink;
+	rs->in_sinks.right = &rs->right_sink;
+	rs->in_sinks.imu = &rs->imu_sink;
+
+	// Setup UI
+	u_sink_debug_init(&rs->ui_left_sink);
+	u_sink_debug_init(&rs->ui_right_sink);
+	m_ff_vec3_f32_alloc(&rs->gyro_ff, 1000);
+	m_ff_vec3_f32_alloc(&rs->accel_ff, 1000);
+	u_var_add_root(rs, "RealSense Source", false);
+	u_var_add_log_level(rs, &rs->ll, "Log Level");
+	u_var_add_ro_ff_vec3_f32(rs, rs->gyro_ff, "Gyroscope");
+	u_var_add_ro_ff_vec3_f32(rs, rs->accel_ff, "Accelerometer");
+	u_var_add_sink_debug(rs, &rs->ui_left_sink, "Left Camera");
+	u_var_add_sink_debug(rs, &rs->ui_right_sink, "Right Camera");
+
+	// Setup node
+	struct xrt_frame_node *xfn = &rs->node;
+	xfn->break_apart = rs_source_node_break_apart;
+	xfn->destroy = rs_source_node_destroy;
+	xrt_frame_context_add(xfctx, &rs->node);
+
+	// Setup IMU synchronizer lock
+	os_mutex_init(&rs->partial_imu_sample.mutex);
+
+	return xfs;
 }
