@@ -11,6 +11,11 @@
 #include "util/u_logging.h"
 #include "xrt/xrt_device.h"
 
+/*!
+ * @addtogroup drv_qwerty
+ * @{
+ */
+
 #define QWERTY_HMD_STR "Qwerty HMD"
 #define QWERTY_HMD_TRACKER_STR QWERTY_HMD_STR " Tracker"
 #define QWERTY_LEFT_STR "Qwerty Left Controller"
@@ -21,11 +26,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*!
- * @addtogroup drv_qwerty
- * @{
- */
 
 /*!
  * @brief Container of qwerty devices and driver properties.

@@ -77,7 +77,7 @@
                 },
                 "calibration_path": {
                     "type": "string"
-                },
+                }
             }
         },
         "tracking_overrides": {

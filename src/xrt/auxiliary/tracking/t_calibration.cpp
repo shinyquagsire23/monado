@@ -635,7 +635,6 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	c.state.view[1].map2 = maps.view[1].rectify.remap_y;
 	c.state.view[1].maps_valid = true;
 
-	// clang-format off
 	std::cout << "#####\n";
 	std::cout << "calibration rp_error: " << rp_error << "\n";
 	to_stdout("camera_rotation", wrapped.camera_rotation_mat);
@@ -663,7 +662,6 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	to_stdout("view[1].intrinsics", wrapped.view[1].intrinsics_mat);
 	to_stdout("view[1].projection", maps.view[1].projection_mat);
 	to_stdout("view[1].rotation", maps.view[1].rotation_mat);
-	// clang-format on
 
 	// Validate that nothing has been re-allocated.
 	assert(wrapped.isDataStorageValid());

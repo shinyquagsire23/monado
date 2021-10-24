@@ -12,6 +12,11 @@
 #include "euroc_interface.h"
 #include <assert.h>
 
+/*!
+ * @addtogroup drv_euroc
+ * @{
+ */
+
 #define EUROC_TRACE(e, ...) U_LOG_IFL_T(e->ll, __VA_ARGS__)
 #define EUROC_DEBUG(e, ...) U_LOG_IFL_D(e->ll, __VA_ARGS__)
 #define EUROC_INFO(e, ...) U_LOG_IFL_I(e->ll, __VA_ARGS__)
@@ -31,11 +36,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*!
- * @addtogroup drv_euroc
- * @{
- */
 
 DEBUG_GET_ONCE_LOG_OPTION(euroc_log, "EUROC_LOG", U_LOGGING_WARN)
 DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)

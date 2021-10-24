@@ -15,14 +15,14 @@
 #include <librealsense2/rs.h>
 #include <librealsense2/h/rs_pipeline.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*!
  * @addtogroup drv_rs
  * @{
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //! Container to store and manage useful objects from the RealSense API
 struct rs_container
