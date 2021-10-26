@@ -66,6 +66,8 @@ ipc_cmd_to_str(ipc_command_t id)
     f.write("\n\tdefault: return \"IPC_UNKNOWN\";")
     f.write("\n\t}\n}\n")
 
+    f.write("#pragma pack (push, 1)")
+
     for call in p.calls:
         # Should we emit a msg struct.
         if call.needs_msg_struct:
@@ -86,6 +88,8 @@ ipc_cmd_to_str(ipc_command_t id)
             for arg in call.out_args:
                 f.write("\t" + arg.get_struct_field() + ";\n")
             f.write("};\n")
+
+    f.write("#pragma pack (pop)")
 
     f.close()
 
