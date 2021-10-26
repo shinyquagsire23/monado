@@ -168,6 +168,8 @@ math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat, struct xrt_quat *res
  * Create a rotation from two vectors plus x and z, by creating a rotation
  * matrix by crossing z and x to get the y axis.
  *
+ * Input vectors should be normalized.
+ *
  * @relates xrt_quat
  * @see xrt_vec3
  * @ingroup aux_math
