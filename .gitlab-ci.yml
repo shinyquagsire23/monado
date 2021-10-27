@@ -52,7 +52,7 @@ variables:
 .monado.variables.ubuntu:impish:
   variables:
     FDO_DISTRIBUTION_VERSION: "21.10"
-    FDO_DISTRIBUTION_TAG: "2021-10-27.1"
+    FDO_DISTRIBUTION_TAG: "2021-10-28.0"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.variables.debian:buster-ndk:
@@ -165,8 +165,8 @@ ubuntu:impish:container_prep:
     - .monado.variables.debian-based-packages
     - .fdo.container-build@ubuntu # from ci-templates
   variables:
-    # a list of packages to install - assembled from .monado.variables.debian-based-packages
-    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES}"
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages, plus reprepro
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} reprepro"
 
 # Debian Buster + the Android NDK in /opt/android-ndk
 # The NDK itself gets installed by .gitlab-ci/ndk:container_prep.sh
@@ -451,9 +451,9 @@ ubuntu:impish:package:
 reprepro:package:
   stage: reprepro
   extends:
-    - .monado.variables.debian:bullseye
+    - .monado.variables.ubuntu:impish
     - .monado.packaging.conditions
-    - .fdo.distribution-image@debian # from ci-templates
+    - .fdo.distribution-image@ubuntu # from ci-templates
   dependencies:
     - debian:buster:package
     - debian:bullseye:package
