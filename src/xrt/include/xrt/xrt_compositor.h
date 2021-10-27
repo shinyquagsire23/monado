@@ -734,6 +734,10 @@ struct xrt_compositor
 	 *
 	 * The only requirement on the compositor for the @p frame_id
 	 * is that it is a positive number.
+	 *
+	 * If the caller can do its own blocking, use the pair of functions
+	 * xrt_compositor::predict_frame and xrt_compositor::mark_frame instead
+	 * of this single blocking function.
 	 */
 	xrt_result_t (*wait_frame)(struct xrt_compositor *xc,
 	                           int64_t *out_frame_id,
@@ -746,23 +750,31 @@ struct xrt_compositor
 	xrt_result_t (*begin_frame)(struct xrt_compositor *xc, int64_t frame_id);
 
 	/*!
+	 * @brief Explicitly discard a frame.
+	 *
 	 * This isn't in the OpenXR API but is explicit in the XRT interfaces.
 	 *
-	 * Two calls to xrBeginFrame will cause the state tracker to call.
+	 * Two calls to xrBeginFrame without intervening xrEndFrame will cause
+	 * the state tracker to call:
 	 *
 	 * ```c
-	 * xc->begin_frame(xc, frame_id)
-	 * xc->discard_frame(xc, frame_id)
-	 * xc->begin_frame(xc, frame_id)
+	 * // first xrBeginFrame
+	 * xrt_comp_begin_frame(xc, frame_id);
+	 * // second xrBeginFrame
+	 * xrt_comp_discard_frame(xc, frame_id);
+	 * xrt_comp_begin_frame(xc, frame_id);
 	 * ```
 	 */
 	xrt_result_t (*discard_frame)(struct xrt_compositor *xc, int64_t frame_id);
 
 	/*!
-	 * Begins layer submission, this and the other layer_* calls are
-	 * equivalent to xrEndFrame, except over multiple calls. It's only after
-	 * @p layer_commit that layers will be displayed. From the point of view
-	 * of the swapchain the image is used as soon as it's given in a call.
+	 * @brief Begins layer submission.
+	 *
+	 * This and the other `layer_*` calls are equivalent to xrEndFrame,
+	 * except split over multiple calls. It's only after
+	 * xrt_compositor::layer_commit that layers will be displayed.
+	 * From the point of view of the swapchain, the image is used as
+	 * soon as it's given in a call.
 	 */
 	xrt_result_t (*layer_begin)(struct xrt_compositor *xc,
 	                            int64_t frame_id,
@@ -770,13 +782,19 @@ struct xrt_compositor
 	                            enum xrt_blend_mode env_blend_mode);
 
 	/*!
-	 * Adds a stereo projection layer for submissions.
+	 * @brief Adds a stereo projection layer for submissions.
+	 *
+	 * Note that e.g. the same swapchain object may be passed as both
+	 * @p l_xsc and @p r_xsc - the parameters in @p data identify
+	 * the subrect and array texture index to use for each of the views.
 	 *
 	 * @param xc          Self pointer
 	 * @param xdev        The device the layer is relative to.
-	 * @param l_xsc       Left swapchain.
-	 * @param r_xsc       Right swapchain.
-	 * @param data        All of the pure data bits.
+	 * @param l_xsc       Swapchain object containing left eye RGB data.
+	 * @param r_xsc       Swapchain object containing right eye RGB data.
+	 * @param data        All of the pure data bits (not pointers/handles),
+	 *                    including what parts of the supplied swapchain
+	 *                    objects to use for each view.
 	 */
 	xrt_result_t (*layer_stereo_projection)(struct xrt_compositor *xc,
 	                                        struct xrt_device *xdev,
@@ -785,15 +803,23 @@ struct xrt_compositor
 	                                        const struct xrt_layer_data *data);
 
 	/*!
-	 * Adds a stereo projection layer for submission, has depth information.
+	 * @brief Adds a stereo projection layer for submission, has depth information.
+	 *
+	 * Note that e.g. the same swapchain object may be passed as both
+	 * @p l_xsc and @p r_xsc - the parameters in @p data identify
+	 * the subrect and array texture index to use for each of the views.
+	 * This flexibility is required by the OpenXR API and is passed through
+	 * to the compositor to preserve the maximum information
 	 *
 	 * @param xc          Self pointer
 	 * @param xdev        The device the layer is relative to.
-	 * @param l_xsc       Left swapchain.
-	 * @param r_xsc       Right swapchain.
-	 * @param l_d_xsc     Left depth swapchain.
-	 * @param r_d_xsc     Right depth swapchain.
-	 * @param data        All of the pure data bits.
+	 * @param l_xsc       Swapchain object containing left eye RGB data.
+	 * @param r_xsc       Swapchain object containing right eye RGB data.
+	 * @param l_d_xsc     Swapchain object containing left eye depth data.
+	 * @param r_d_xsc     Swapchain object containing right eye depth data.
+	 * @param data        All of the pure data bits (not pointers/handles),
+	 *                    including what parts of the supplied swapchain
+	 *                    objects to use for each view.
 	 */
 	xrt_result_t (*layer_stereo_projection_depth)(struct xrt_compositor *xc,
 	                                              struct xrt_device *xdev,
@@ -810,7 +836,9 @@ struct xrt_compositor
 	 * @param xc          Self pointer
 	 * @param xdev        The device the layer is relative to.
 	 * @param xsc         Swapchain.
-	 * @param data        All of the pure data bits.
+	 * @param data        All of the pure data bits (not pointers/handles),
+	 *                    including what part of the supplied swapchain
+	 *                    object to use.
 	 */
 	xrt_result_t (*layer_quad)(struct xrt_compositor *xc,
 	                           struct xrt_device *xdev,
@@ -823,7 +851,9 @@ struct xrt_compositor
 	 * @param xc          Self pointer
 	 * @param xdev        The device the layer is relative to.
 	 * @param xsc         Swapchain.
-	 * @param data        All of the pure data bits.
+	 * @param data        All of the pure data bits (not pointers/handles),
+	 *                    including what part of the supplied swapchain
+	 *                    object to use.
 	 */
 	xrt_result_t (*layer_cube)(struct xrt_compositor *xc,
 	                           struct xrt_device *xdev,
@@ -836,7 +866,9 @@ struct xrt_compositor
 	 * @param xc          Self pointer
 	 * @param xdev        The device the layer is relative to.
 	 * @param xsc         Swapchain.
-	 * @param data        All of the pure data bits.
+	 * @param data        All of the pure data bits (not pointers/handles),
+	 *                    including what part of the supplied swapchain
+	 *                    object to use.
 	 */
 	xrt_result_t (*layer_cylinder)(struct xrt_compositor *xc,
 	                               struct xrt_device *xdev,
@@ -849,7 +881,9 @@ struct xrt_compositor
 	 * @param xc          Self pointer
 	 * @param xdev        The device the layer is relative to.
 	 * @param xsc         Swapchain.
-	 * @param data        All of the pure data bits.
+	 * @param data        All of the pure data bits (not pointers/handles),
+	 *                    including what part of the supplied swapchain
+	 *                    object to use.
 	 */
 	xrt_result_t (*layer_equirect1)(struct xrt_compositor *xc,
 	                                struct xrt_device *xdev,
@@ -863,7 +897,9 @@ struct xrt_compositor
 	 * @param xc          Self pointer
 	 * @param xdev        The device the layer is relative to.
 	 * @param xsc         Swapchain.
-	 * @param data        All of the pure data bits.
+	 * @param data        All of the pure data bits (not pointers/handles),
+	 *                    including what part of the supplied swapchain
+	 *                    object to use.
 	 */
 	xrt_result_t (*layer_equirect2)(struct xrt_compositor *xc,
 	                                struct xrt_device *xdev,
@@ -871,8 +907,9 @@ struct xrt_compositor
 	                                const struct xrt_layer_data *data);
 
 	/*!
-	 * Commits all of the submitted layers, it's from this on that the
-	 * compositor will use the layers.
+	 * @brief Commits all of the submitted layers.
+	 *
+	 * Only after this call will the compositor actually use the layers.
 	 */
 	xrt_result_t (*layer_commit)(struct xrt_compositor *xc,
 	                             int64_t frame_id,
@@ -882,7 +919,10 @@ struct xrt_compositor
 	 * Teardown the compositor.
 	 *
 	 * The state tracker must have made sure that no frames or sessions are
-	 * currently pending. See discard_frame, end_frame, end_session.
+	 * currently pending.
+	 *
+	 * @see xrt_compositor::discard_frame or xrt_compositor::end_frame for a pending frame
+	 * @see xrt_compositor::end_session for an open session.
 	 */
 	void (*destroy)(struct xrt_compositor *xc);
 };
