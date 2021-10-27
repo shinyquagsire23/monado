@@ -42,11 +42,6 @@ public class MonadoImpl extends IMonado.Stub {
         System.loadLibrary("monado-service");
     }
 
-    private final Thread compositorThread = new Thread(
-            this::threadEntry,
-            "CompositorThread");
-    private boolean started = false;
-
     private SurfaceManager surfaceManager;
 
     public MonadoImpl(@NonNull SurfaceManager surfaceManager) {
@@ -55,7 +50,7 @@ public class MonadoImpl extends IMonado.Stub {
             @Override
             public void surfaceCreated(@NonNull SurfaceHolder holder) {
                 Log.i(TAG, "surfaceCreated");
-                nativeAppSurface(holder.getSurface());
+                passAppSurface(holder.getSurface());
             }
 
             @Override
@@ -68,20 +63,8 @@ public class MonadoImpl extends IMonado.Stub {
         });
     }
 
-    private void launchThreadIfNeeded() {
-        synchronized (compositorThread) {
-            if (!started) {
-                compositorThread.start();
-                nativeWaitForServerStartup();
-                started = true;
-            }
-        }
-    }
-
     @Override
     public void connect(@NotNull ParcelFileDescriptor parcelFileDescriptor) {
-        /// @todo launch this thread earlier/elsewhere
-        launchThreadIfNeeded();
         int fd = parcelFileDescriptor.getFd();
         Log.i(TAG, "connect: given fd " + fd);
         if (nativeAddClient(fd) != 0) {
@@ -105,6 +88,12 @@ public class MonadoImpl extends IMonado.Stub {
             return;
         }
         nativeAppSurface(surface);
+        startServerIfNeeded();
+    }
+
+    private void startServerIfNeeded() {
+        nativeStartServer();
+        nativeWaitForServerStartup();
     }
 
     @Override
@@ -119,17 +108,16 @@ public class MonadoImpl extends IMonado.Stub {
         return surfaceManager.canDrawOverlays();
     }
 
-    private void threadEntry() {
-        Log.i(TAG, "threadEntry");
-        nativeThreadEntry();
-        Log.i(TAG, "native thread has exited");
+    public void shutdown() {
+        Log.i(TAG, "shutdown");
+        nativeShutdownServer();
     }
 
     /**
-     * Native thread entry point.
+     * Native method that starts server.
      */
     @SuppressWarnings("JavaJniMissingFunction")
-    private native void nativeThreadEntry();
+    private native void nativeStartServer();
 
     /**
      * Native method that waits until the server reports that it is, in fact, started up.
@@ -167,4 +155,12 @@ public class MonadoImpl extends IMonado.Stub {
      */
     @SuppressWarnings("JavaJniMissingFunction")
     private native int nativeAddClient(int fd);
+
+    /**
+     * Native method that handles shutdown server.
+     *
+     * @return 0 on success; -1 means that server didn't start.
+     */
+    @SuppressWarnings("JavaJniMissingFunction")
+    private native int nativeShutdownServer();
 }

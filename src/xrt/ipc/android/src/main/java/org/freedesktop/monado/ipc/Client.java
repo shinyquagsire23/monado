@@ -79,10 +79,6 @@ public class Client implements ServiceConnection {
      */
     private Context runtimePackageContext = null;
     /**
-     * Intent for connecting to service
-     */
-    private Intent intent = null;
-    /**
      * Controll system ui visibility
      */
     private SystemUiController systemUiController = null;
@@ -103,10 +99,6 @@ public class Client implements ServiceConnection {
         if (context != null) {
             context.unbindService(this);
         }
-        if (intent != null) {
-            context.stopService(intent);
-        }
-        intent = null;
 
         if (fd != null) {
             try {
@@ -254,11 +246,6 @@ public class Client implements ServiceConnection {
 
         Intent intent = new Intent(BuildConfig.SERVICE_ACTION)
                 .setPackage(packageName);
-
-        if (context.startForegroundService(intent) == null) {
-            Log.e(TAG, "startForegroundService: Service " + intent.toString() + " does not exist!");
-            return false;
-        }
 
         if (!bindService(context, intent)) {
             Log.e(TAG,

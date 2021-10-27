@@ -8,7 +8,6 @@
  */
 package org.freedesktop.monado.ipc
 
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -25,10 +24,10 @@ import javax.inject.Inject
  * This is needed so that the APK can expose the binder service implemented in MonadoImpl.
  */
 @AndroidEntryPoint
-class MonadoService : Service() {
-    private val binder: MonadoImpl by lazy {
-        MonadoImpl(surfaceManager)
-    }
+class MonadoService : Service(), Watchdog.ShutdownListener {
+    private lateinit var binder: MonadoImpl
+
+    private val watchdog = Watchdog(BuildConfig.WATCHDOG_TIMEOUT_MILLISECONDS, this)
 
     @Inject
     lateinit var serviceNotification: IServiceNotification
@@ -39,44 +38,36 @@ class MonadoService : Service() {
         super.onCreate()
 
         surfaceManager = SurfaceManager(this)
+        binder = MonadoImpl(surfaceManager)
+        watchdog.startMonitor()
+
+        // start the service so it could be foregrounded
+        startService(Intent(this, javaClass))
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d(TAG, "onDestroy")
 
+        binder.shutdown();
+        watchdog.stopMonitor()
         surfaceManager.destroySurface()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
-        // if this isn't a restart
-        if (intent != null) {
-            when (intent.action) {
-                BuildConfig.SERVICE_ACTION -> handleStart()
-                BuildConfig.SHUTDOWN_ACTION -> handleShutdown()
-            }
-        }
+        handleStart()
         return START_STICKY
     }
 
-    private fun handleShutdown() {
-        stopForeground(true)
-        stopSelf()
-    }
-
     override fun onBind(intent: Intent): IBinder? {
+        Log.d(TAG, "onBind");
+        watchdog.onClientConnected()
         return binder
     }
 
     private fun handleStart() {
-        val pendingShutdownIntent = PendingIntent.getForegroundService(
-            this,
-            0,
-            Intent(BuildConfig.SHUTDOWN_ACTION).setPackage(packageName),
-            0
-        )
-
-        val notification = serviceNotification.buildNotification(this, pendingShutdownIntent)
+        val notification = serviceNotification.buildNotification(this)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
@@ -90,6 +81,27 @@ class MonadoService : Service() {
                 notification
             )
         }
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        Log.d(TAG, "onUnbind");
+        watchdog.onClientDisconnected()
+        return true;
+    }
+
+    override fun onRebind(intent: Intent?) {
+        Log.d(TAG, "onRebind");
+        watchdog.onClientConnected()
+    }
+
+    override fun onPrepareShutdown() {
+        Log.d(TAG, "onPrepareShutdown")
+    }
+
+    override fun onShutdown() {
+        Log.d(TAG, "onShutdown")
+        stopForeground(true)
+        stopSelf()
     }
 
     companion object {

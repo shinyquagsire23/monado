@@ -20,45 +20,33 @@
 #include <android/native_window_jni.h>
 
 #include "android/android_globals.h"
+
+#include <memory>
 #include <thread>
 
 using wrap::android::view::Surface;
 namespace {
-struct Singleton
+struct IpcServerHelper
 {
 public:
-	static Singleton &
-	instance()
-	{
-		static Singleton singleton{};
-		return singleton;
-	}
-
+	IpcServerHelper() {}
 
 	void
 	waitForStartupComplete()
 	{
-
 		std::unique_lock<std::mutex> lock{running_mutex};
 		running_cond.wait(lock, [&]() { return this->startup_complete; });
 	}
 
-	//! static trampoline for the startup complete callback
-	static void
-	signalStartupComplete()
-	{
-		instance().signalStartupCompleteNonstatic();
-	}
-
-private:
 	void
-	signalStartupCompleteNonstatic()
+	signalStartupComplete()
 	{
 		std::unique_lock<std::mutex> lock{running_mutex};
 		startup_complete = true;
 		running_cond.notify_all();
 	}
-	Singleton() {}
+
+private:
 	//! Mutex for starting thread
 	std::mutex running_mutex;
 
@@ -69,27 +57,44 @@ private:
 } // namespace
 
 static struct ipc_server *server = NULL;
+static IpcServerHelper *helper = nullptr;
+static std::unique_ptr<std::thread> server_thread{};
+static std::mutex server_thread_mutex;
 
 static void
 signalStartupCompleteTrampoline(void *data)
 {
-	static_cast<Singleton *>(data)->signalStartupComplete();
+	static_cast<IpcServerHelper *>(data)->signalStartupComplete();
 }
 
 extern "C" void
-Java_org_freedesktop_monado_ipc_MonadoImpl_nativeThreadEntry(JNIEnv *env, jobject thiz)
+Java_org_freedesktop_monado_ipc_MonadoImpl_nativeStartServer(JNIEnv *env, jobject thiz)
 {
 	jni::init(env);
 	jni::Object monadoImpl(thiz);
 	U_LOG_D("service: Called nativeThreadEntry");
-	auto &singleton = Singleton::instance();
-	ipc_server_main_android(&server, signalStartupCompleteTrampoline, &singleton);
+
+	{
+		// Start IPC server
+		std::unique_lock lock(server_thread_mutex);
+		if (!server && !server_thread) {
+			helper = new IpcServerHelper();
+			server_thread = std::make_unique<std::thread>(
+			    []() { ipc_server_main_android(&server, signalStartupCompleteTrampoline, helper); });
+			helper->waitForStartupComplete();
+		}
+	}
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_org_freedesktop_monado_ipc_MonadoImpl_nativeWaitForServerStartup(JNIEnv *env, jobject thiz)
 {
-	Singleton::instance().waitForStartupComplete();
+	if (server == nullptr) {
+		// Should not happen.
+		U_LOG_E("service: nativeWaitForServerStartup called before service started up!");
+		return;
+	}
+	helper->waitForStartupComplete();
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -117,4 +122,29 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeAppSurface(JNIEnv *env, jobject
 	ANativeWindow *nativeWindow = ANativeWindow_fromSurface(env, surface);
 	android_globals_store_window((struct _ANativeWindow *)nativeWindow);
 	U_LOG_D("Stored ANativeWindow: %p", (void *)nativeWindow);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_org_freedesktop_monado_ipc_MonadoImpl_nativeShutdownServer(JNIEnv *env, jobject thiz)
+{
+	jni::init(env);
+	jni::Object monadoImpl(thiz);
+	if (server == nullptr || !server_thread) {
+		// Should not happen.
+		U_LOG_E("service: nativeShutdownServer called before service started up!");
+		return -1;
+	}
+
+	{
+		// Wait until IPC server stop
+		std::unique_lock lock(server_thread_mutex);
+		ipc_server_handle_shutdown_signal(server);
+		server_thread->join();
+		server_thread.reset(nullptr);
+		delete helper;
+		helper = nullptr;
+		server = NULL;
+	}
+
+	return 0;
 }
