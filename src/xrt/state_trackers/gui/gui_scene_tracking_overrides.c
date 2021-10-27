@@ -246,8 +246,8 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 					o->input_name = input_name;
 				}
 			}
-			igEnd();
 		}
+		igEnd();
 	}
 
 	if (ts->gui_add_override_active) {
