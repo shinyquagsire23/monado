@@ -27,9 +27,9 @@ struct gui_tracking_overrides
 {
 	struct gui_scene base;
 
-	int editing_override;
+	int gui_edit_override_index;
 
-	bool add_one;
+	bool gui_add_override_active;
 	int add_target;
 	int add_tracker;
 
@@ -138,7 +138,7 @@ static struct xrt_pose identity = {.position = {.x = 0, .y = 0, .z = 0},
                                    .orientation = {.x = 0, .y = 0, .z = 0, .w = 1}};
 
 static void
-add_one(struct gui_program *p, struct gui_tracking_overrides *ts)
+gui_add_override(struct gui_program *p, struct gui_tracking_overrides *ts)
 {
 	igBegin("Target Device", NULL, 0);
 	for (int i = 0; i < 8; i++) {
@@ -193,10 +193,10 @@ add_one(struct gui_program *p, struct gui_tracking_overrides *ts)
 		ts->add_target = -1;
 		ts->add_tracker = -1;
 
-		ts->add_one = false;
+		ts->gui_add_override_active = false;
 
 		// immediately open for editing
-		ts->editing_override = ts->num_overrides - 1;
+		ts->gui_edit_override_index = ts->num_overrides - 1;
 	}
 }
 
@@ -206,12 +206,12 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 	struct gui_tracking_overrides *ts = (struct gui_tracking_overrides *)scene;
 
 	// don't edit and add at the same time
-	if (ts->add_one) {
-		ts->editing_override = -1;
+	if (ts->gui_add_override_active) {
+		ts->gui_edit_override_index = -1;
 	}
 
-	if (ts->editing_override >= 0) {
-		struct xrt_tracking_override *o = &ts->overrides[ts->editing_override];
+	if (ts->gui_edit_override_index >= 0) {
+		struct xrt_tracking_override *o = &ts->overrides[ts->gui_edit_override_index];
 
 		igBegin("Tracker Device Offset", NULL, 0);
 		int target = -1, tracker = -1;
@@ -250,8 +250,8 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		}
 	}
 
-	if (ts->add_one) {
-		add_one(p, ts);
+	if (ts->gui_add_override_active) {
+		gui_add_override(p, ts);
 	}
 
 	igBegin("Tracking Overrides", NULL, 0);
@@ -263,7 +263,7 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 
 		igSeparator();
 
-		bool checked = ts->editing_override == (int)i;
+		bool checked = ts->gui_edit_override_index == (int)i;
 
 		char buf[XRT_DEVICE_NAME_LEN * 2 + 10];
 		snprintf(buf, sizeof(buf), "%s <- %s", ts->overrides[i].target_device_serial,
@@ -271,9 +271,9 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		if (igCheckbox(buf, &checked)) {
 
 			// abort adding override when clicking to edit one
-			ts->add_one = false;
+			ts->gui_add_override_active = false;
 
-			ts->editing_override = i;
+			ts->gui_edit_override_index = i;
 			ts->reset_offset = ts->overrides[i].offset;
 		}
 		if (igButton("Delete this override", button_dims)) {
@@ -281,8 +281,8 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 				ts->overrides[j] = ts->overrides[j + 1];
 			}
 			ts->num_overrides--;
-			if (ts->editing_override >= (int)i) {
-				ts->editing_override -= 1;
+			if (ts->gui_edit_override_index >= (int)i) {
+				ts->gui_edit_override_index -= 1;
 			}
 		}
 
@@ -295,7 +295,7 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 
 	if (igButton("Add one", button_dims)) {
 		if (ts->num_overrides < XRT_MAX_TRACKING_OVERRIDES) {
-			ts->add_one = true;
+			ts->gui_add_override_active = true;
 		}
 	}
 
@@ -330,8 +330,8 @@ create(struct gui_program *p)
 	ts->base.render = scene_render;
 	ts->base.destroy = scene_destroy;
 
-	ts->editing_override = -1;
-	ts->add_one = false;
+	ts->gui_edit_override_index = -1;
+	ts->gui_add_override_active = false;
 	ts->add_target = -1;
 	ts->add_tracker = -1;
 
