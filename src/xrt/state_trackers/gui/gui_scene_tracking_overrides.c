@@ -276,7 +276,7 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 			ts->editing_override = i;
 			ts->reset_offset = ts->overrides[i].offset;
 		}
-		if (igButton("Delete this one", button_dims)) {
+		if (igButton("Delete this override", button_dims)) {
 			for (size_t j = i; j < ts->num_overrides - 1; j++) {
 				ts->overrides[j] = ts->overrides[j + 1];
 			}
