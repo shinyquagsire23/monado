@@ -131,6 +131,7 @@ struct xrt_prober_device
 {
 	uint16_t vendor_id;
 	uint16_t product_id;
+	char product_name[XRT_DEVICE_PRODUCT_NAME_LEN];
 
 	enum xrt_bus_type bus;
 

@@ -279,8 +279,13 @@ fill_out_product(struct prober *p, struct prober_device *pdev)
 	char *str = NULL;
 	int ret = 0;
 	do {
-		ret = snprintf(str, ret, "Unknown %s device: %04x:%04x", bus, pdev->base.vendor_id,
-		               pdev->base.product_id);
+		if (strlen(pdev->base.product_name)) {
+
+			ret = snprintf(str, ret, "%s device: %s", bus, pdev->base.product_name);
+		} else {
+			ret = snprintf(str, ret, "Unknown %s device: %04x:%04x", bus, pdev->base.vendor_id,
+			               pdev->base.product_id);
+		}
 		if (ret <= 0) {
 			return;
 		}
@@ -1107,19 +1112,27 @@ p_get_string_descriptor(struct xrt_prober *xp,
 		}
 	}
 #endif
-	if (pdev->base.bus == XRT_BUS_TYPE_BLUETOOTH && which_string == XRT_PROBER_STRING_SERIAL_NUMBER) {
-		union {
-			uint8_t arr[8];
-			uint64_t v;
-		} u;
-		u.v = pdev->bluetooth.id;
-		return snprintf((char *)buffer, max_length, "%02X:%02X:%02X:%02X:%02X:%02X", u.arr[5], u.arr[4],
-		                u.arr[3], u.arr[2], u.arr[1], u.arr[0]);
+	if (pdev && pdev->base.bus == XRT_BUS_TYPE_BLUETOOTH) {
+		switch (which_string) {
+		case XRT_PROBER_STRING_SERIAL_NUMBER: {
+			union {
+				uint8_t arr[8];
+				uint64_t v;
+			} u;
+			u.v = pdev->bluetooth.id;
+			ret = snprintf((char *)buffer, max_length, "%02X:%02X:%02X:%02X:%02X:%02X", u.arr[5], u.arr[4],
+			               u.arr[3], u.arr[2], u.arr[1], u.arr[0]);
+		}; break;
+		case XRT_PROBER_STRING_PRODUCT:
+			ret = snprintf((char *)buffer, max_length, "%s", pdev->base.product_name);
+			break;
+		default: ret = 0; break;
+		}
 	}
 
 	//! @todo add more backends
 	//! @todo make this unicode (utf-16)? utf-8 would be better...
-	return 0;
+	return ret;
 }
 
 static bool

@@ -55,7 +55,7 @@ static void
 p_udev_enumerate_hidraw(struct prober *p, struct udev *udev);
 
 static void
-p_udev_add_hidraw(struct prober_device *pdev, uint32_t interface, const char *path);
+p_udev_add_hidraw(struct prober_device *pdev, uint32_t interface, const char *path, const char *product_name);
 
 static int
 p_udev_get_interface_number(struct udev_device *raw_dev, uint16_t *interface_number);
@@ -65,6 +65,7 @@ p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
                             uint32_t *out_bus_type,
                             uint16_t *out_vendor_id,
                             uint16_t *out_product_id,
+                            char (*out_product_name)[XRT_DEVICE_PRODUCT_NAME_LEN],
                             uint64_t *out_bluetooth_serial);
 
 static int
@@ -388,6 +389,7 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 		uint16_t usb_addr = 0;
 		uint32_t bus_type = 0;
 		uint64_t bluetooth_id = 0;
+		char product_name[XRT_DEVICE_PRODUCT_NAME_LEN] = {0};
 		const char *sysfs_path;
 		const char *dev_path;
 		int ret;
@@ -400,7 +402,8 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 		dev_path = udev_device_get_devnode(raw_dev);
 
 		// Bus type, vendor_id and product_id.
-		ret = p_udev_get_and_parse_uevent(raw_dev, &bus_type, &vendor_id, &product_id, &bluetooth_id);
+		ret = p_udev_get_and_parse_uevent(raw_dev, &bus_type, &vendor_id, &product_id, &product_name,
+		                                  &bluetooth_id);
 		if (ret != 0) {
 			P_ERROR(p, "Failed to get uevent info from device");
 			goto next;
@@ -451,12 +454,13 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 		        "\t\tbus_type:     %i\n"
 		        "\t\tvendor_id:    %04x\n"
 		        "\t\tproduct_id:   %04x\n"
+		        "\t\tproduct_name: '%s'\n"
 		        "\t\tinterface:    %i\n"
 		        "\t\tusb_bus:      %i\n"
 		        "\t\tusb_addr:     %i\n"
 		        "\t\tbluetooth_id: %012" PRIx64,
-		        (void *)pdev, ret, sysfs_path, dev_path, bus_type, vendor_id, product_id, interface, usb_bus,
-		        usb_addr, bluetooth_id);
+		        (void *)pdev, ret, sysfs_path, dev_path, bus_type, vendor_id, product_id, product_name,
+		        interface, usb_bus, usb_addr, bluetooth_id);
 
 		if (ret != 0) {
 			P_ERROR(p, "p_dev_get_usb_device failed!");
@@ -464,7 +468,7 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 		}
 
 		// Add this interface to the usb device.
-		p_udev_add_hidraw(pdev, interface, dev_path);
+		p_udev_add_hidraw(pdev, interface, dev_path, product_name);
 
 	next:
 		udev_device_unref(raw_dev);
@@ -474,7 +478,7 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 }
 
 static void
-p_udev_add_hidraw(struct prober_device *pdev, uint32_t interface, const char *path)
+p_udev_add_hidraw(struct prober_device *pdev, uint32_t interface, const char *path, const char *product_name)
 {
 	U_ARRAY_REALLOC_OR_FREE(pdev->hidraws, struct prober_hidraw, (pdev->num_hidraws + 1));
 
@@ -483,6 +487,7 @@ p_udev_add_hidraw(struct prober_device *pdev, uint32_t interface, const char *pa
 
 	hidraw->interface = interface;
 	hidraw->path = strdup(path);
+	strncpy(pdev->base.product_name, product_name, 64);
 }
 
 static int
@@ -538,12 +543,14 @@ p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
                             uint32_t *out_bus_type,
                             uint16_t *out_vendor_id,
                             uint16_t *out_product_id,
+                            char (*out_product_name)[XRT_DEVICE_PRODUCT_NAME_LEN],
                             uint64_t *out_bluetooth_serial)
 {
 	struct udev_device *hid_dev;
 	char *serial_utf8 = NULL;
 	uint64_t bluetooth_serial = 0;
 	uint16_t vendor_id = 0, product_id = 0;
+	char product_name[sizeof(*out_product_name)];
 	uint32_t bus_type;
 	const char *uevent;
 	char *saveptr;
@@ -576,7 +583,10 @@ p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
 				ok = true;
 			}
 		} else if (strncmp(line, "HID_NAME=", 9) == 0) {
-			// U_LOG_D("\t\tprocuct_name: '%s'", line + 9);
+			product_name[0] = '\0';
+			strncat(product_name, line + 9, sizeof(product_name));
+
+			// U_LOG_D("\t\tprocuct_name: '%s'", *out_product_name);
 		} else if (strncmp(line, "HID_UNIQ=", 9) == 0) {
 			serial_utf8 = &line[9];
 			// U_LOG_D("\t\tserial: '%s'", line + 9);
@@ -604,6 +614,7 @@ p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
 		*out_bus_type = bus_type;
 		*out_vendor_id = vendor_id;
 		*out_product_id = product_id;
+		strncpy(*out_product_name, product_name, sizeof(*out_product_name));
 		*out_bluetooth_serial = bluetooth_serial;
 		return 0;
 	}
