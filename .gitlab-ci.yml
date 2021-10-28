@@ -28,13 +28,13 @@ variables:
 .monado.variables.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2021-10-27.1"
+    FDO_DISTRIBUTION_TAG: "2021-10-28.0"
 
 # Variables for build and usage of Debian 11 (Bullseye) image
 .monado.variables.debian:bullseye:
   variables:
     FDO_DISTRIBUTION_VERSION: bullseye
-    FDO_DISTRIBUTION_TAG: "2021-10-27.1"
+    FDO_DISTRIBUTION_TAG: "2021-10-28.0"
 
 # Variables for build and usage of Ubuntu 20.04 LTS (Focal) image
 .monado.variables.ubuntu:focal:
@@ -106,8 +106,8 @@ debian:buster:container_prep:
     - .monado.variables.debian-based-packages
     - .fdo.container-build@debian # from ci-templates
   variables:
-    # a list of packages to install - assembled from .monado.variables.debian-based-packages, plus clang-format-7 and reprepro
-    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES} clang-format-7 reprepro"
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages, plus clang-format-7
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES} clang-format-7"
 
 # Debian Bullseye (x64 + i386)
 debian:bullseye:container_prep:
@@ -118,8 +118,8 @@ debian:bullseye:container_prep:
     - .monado.variables.debian-based-packages
     - .fdo.container-build@debian # from ci-templates
   variables:
-    # a list of packages to install - assembled from .monado.variables.debian-based-packages, plus reprepro
-    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES} reprepro"
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES}"
 
 # Arch Linux (x64)
 arch:container_prep:
