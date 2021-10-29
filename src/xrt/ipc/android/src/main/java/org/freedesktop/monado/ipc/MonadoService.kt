@@ -27,7 +27,7 @@ import javax.inject.Inject
 class MonadoService : Service(), Watchdog.ShutdownListener {
     private lateinit var binder: MonadoImpl
 
-    private val watchdog = Watchdog(BuildConfig.WATCHDOG_TIMEOUT_MILLISECONDS, this)
+    private lateinit var watchdog: Watchdog
 
     @Inject
     lateinit var serviceNotification: IServiceNotification
@@ -39,6 +39,12 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
 
         surfaceManager = SurfaceManager(this)
         binder = MonadoImpl(surfaceManager)
+        watchdog = Watchdog(
+            // If the surface comes from client, just stop the service when client disconnected
+            // because the surface belongs to the client.
+            if (surfaceManager.canDrawOverlays()) BuildConfig.WATCHDOG_TIMEOUT_MILLISECONDS else 0,
+            this
+        )
         watchdog.startMonitor()
 
         // start the service so it could be foregrounded
