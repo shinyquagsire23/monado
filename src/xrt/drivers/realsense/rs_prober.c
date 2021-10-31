@@ -78,6 +78,8 @@ rs_prober_destroy(struct xrt_auto_prober *p)
 /*!
  * @brief Explores a realsense device to see what SLAM capabilities it supports
  *
+ * @param device_list List in which the device resides.
+ * @param dev_idx Index of the device in @p device_list.
  * @param[out] out_hslam Whether it supports host-SLAM tracking (Has camera-imu streams)
  * @param[out] out_dslam Whether it supports device-SLAM tracking (T26x)
  */

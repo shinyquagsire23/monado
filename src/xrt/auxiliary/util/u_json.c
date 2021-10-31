@@ -80,7 +80,7 @@ u_json_get_bool(const cJSON *json, bool *out_bool)
 		return false;
 	}
 
-	*out_bool = json->valueint;
+	*out_bool = cJSON_IsTrue(json);
 
 	return true;
 }

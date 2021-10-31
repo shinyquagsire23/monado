@@ -243,7 +243,7 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 //! @todo Similar to p_factory_ensure_frameserver but for SLAM sources.
 //! Therefore we can only have one SLAM tracker at a time, with exactly one SLAM
 //! tracked device. It would be good to solve these artificial restrictions.
-static bool
+XRT_MAYBE_UNUSED static bool
 p_factory_ensure_slam_frameserver(struct p_factory *fact)
 {
 	//! @todo The check for (XRT_HAVE_SLAM && XRT_BUILD_DRIVER_* &&

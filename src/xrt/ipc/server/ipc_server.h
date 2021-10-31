@@ -375,7 +375,7 @@ void *
 ipc_server_client_thread(void *_cs);
 
 /*!
- * This destroyes the native compositor for this client and any extra objects
+ * This destroys the native compositor for this client and any extra objects
  * created from it, like all of the swapchains.
  */
 void

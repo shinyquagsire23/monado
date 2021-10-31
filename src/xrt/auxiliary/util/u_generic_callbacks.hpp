@@ -7,6 +7,8 @@
  * @ingroup aux_util
  */
 
+#pragma once
+
 #include <vector>
 #include <algorithm>
 
