@@ -104,6 +104,10 @@ find_control_device(struct xrt_prober *xp,
 		dev = devices[i];
 	}
 
+	if (dev == NULL) {
+		return false;
+	}
+
 	unsigned char m_str[256] = {0};
 	unsigned char p_str[256] = {0};
 	xrt_prober_get_string_descriptor(xp, dev, XRT_PROBER_STRING_MANUFACTURER, m_str, sizeof(m_str));
