@@ -171,6 +171,7 @@ add_library(
 	util/u_hashset.h
 	util/u_json.c
 	util/u_json.h
+	util/u_json.hpp
 	util/u_logging.c
 	util/u_logging.h
 	util/u_misc.c

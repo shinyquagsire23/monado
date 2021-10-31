@@ -22,3 +22,9 @@ add_executable(tests_generic_callbacks tests_generic_callbacks.cpp)
 target_link_libraries(tests_generic_callbacks PRIVATE tests_main)
 target_link_libraries(tests_generic_callbacks PRIVATE aux_util)
 add_test(NAME tests_generic_callbacks COMMAND tests_generic_callbacks --success)
+
+# cJSON Wrapper
+add_executable(tests_json tests_json.cpp)
+target_link_libraries(tests_json PRIVATE tests_main)
+target_link_libraries(tests_json PRIVATE aux_util)
+add_test(NAME tests_json COMMAND tests_json --success)
