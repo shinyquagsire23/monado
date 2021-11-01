@@ -89,7 +89,7 @@ ipc_cmd_to_str(ipc_command_t id)
                 f.write("\t" + arg.get_struct_field() + ";\n")
             f.write("};\n")
 
-    f.write("#pragma pack (pop)")
+    f.write("#pragma pack (pop)\n")
 
     f.close()
 
