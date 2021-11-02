@@ -839,7 +839,7 @@ do_projection_layers(struct comp_renderer *r,
 	    rvd->fov,
 	};
 
-	if (crc->c->debug.atw_off) {
+	if (r->c->debug.atw_off) {
 		comp_rendering_compute_projection( //
 		    crc,                           //
 		    src_samplers,                  //
