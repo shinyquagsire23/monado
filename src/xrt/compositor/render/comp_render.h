@@ -21,9 +21,6 @@ extern "C" {
 #endif
 
 
-struct comp_compositor;
-struct comp_swapchain_image;
-
 /*!
  * @addtogroup comp_main
  * @{
@@ -181,6 +178,9 @@ comp_buffer_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, 
  */
 struct comp_resources
 {
+	//! Vulkan resources.
+	struct vk_bundle *vk;
+
 	/*
 	 * Loaded resources.
 	 */
@@ -292,13 +292,16 @@ struct comp_resources
  * @ingroup comp_main
  */
 bool
-comp_resources_init(struct comp_resources *r, struct comp_compositor *c, struct comp_shaders *shaders);
+comp_resources_init(struct comp_resources *r,
+                    struct comp_shaders *shaders,
+                    struct vk_bundle *vk,
+                    struct xrt_device *xdev);
 
 /*!
  * Free all pools and static resources, does not free the struct itself.
  */
 void
-comp_resources_close(struct comp_resources *r, struct comp_compositor *c);
+comp_resources_close(struct comp_resources *r);
 
 
 /*
@@ -338,9 +341,6 @@ struct comp_target_data
  */
 struct comp_rendering_target_resources
 {
-	//! Owning compositor.
-	struct comp_compositor *c;
-
 	//! Collections of static resources.
 	struct comp_resources *r;
 
@@ -366,7 +366,6 @@ struct comp_rendering_target_resources
  */
 bool
 comp_rendering_target_resources_init(struct comp_rendering_target_resources *rts,
-                                     struct comp_compositor *c,
                                      struct comp_resources *r,
                                      VkImageView target,
                                      struct comp_target_data *data);
@@ -404,9 +403,6 @@ struct comp_rendering_view
  */
 struct comp_rendering
 {
-	//! Owning compositor.
-	struct comp_compositor *c;
-
 	//! Resources that we are based on.
 	struct comp_resources *r;
 
@@ -427,7 +423,7 @@ struct comp_rendering
  * Init struct and create resources needed for rendering.
  */
 bool
-comp_rendering_init(struct comp_rendering *rr, struct comp_compositor *c, struct comp_resources *r);
+comp_rendering_init(struct comp_rendering *rr, struct comp_resources *r);
 
 /*!
  * Frees any unneeded resources and ends the command buffer so it can be used.
@@ -516,7 +512,7 @@ comp_draw_update_distortion(struct comp_rendering *rr,
  */
 struct comp_rendering_compute
 {
-	struct comp_compositor *c;
+	//! Shared resources.
 	struct comp_resources *r;
 
 	//! Command buffer where all commands are recorded.
@@ -561,7 +557,7 @@ struct comp_ubo_compute_data
  * Init struct and create resources needed for compute rendering.
  */
 bool
-comp_rendering_compute_init(struct comp_rendering_compute *crc, struct comp_compositor *c, struct comp_resources *r);
+comp_rendering_compute_init(struct comp_rendering_compute *crc, struct comp_resources *r);
 
 /*!
  * Frees all resources held by the compute rendering, does not free the struct itself.

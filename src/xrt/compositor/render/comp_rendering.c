@@ -8,7 +8,6 @@
  * @ingroup comp_main
  */
 
-#include "main/comp_compositor.h"
 #include "render/comp_render.h"
 
 #include <stdio.h>
@@ -46,7 +45,7 @@
 static inline struct vk_bundle *
 vk_from_rts(struct comp_rendering_target_resources *rts)
 {
-	return &rts->c->vk;
+	return rts->r->vk;
 }
 
 /*!
@@ -55,7 +54,7 @@ vk_from_rts(struct comp_rendering_target_resources *rts)
 static inline struct vk_bundle *
 vk_from_rr(struct comp_rendering *rr)
 {
-	return &rr->c->vk;
+	return rr->r->vk;
 }
 
 static VkResult
@@ -517,13 +516,11 @@ update_mesh_discriptor_set(struct vk_bundle *vk,
 
 bool
 comp_rendering_target_resources_init(struct comp_rendering_target_resources *rts,
-                                     struct comp_compositor *c,
                                      struct comp_resources *r,
                                      VkImageView target,
                                      struct comp_target_data *data)
 {
-	struct vk_bundle *vk = &c->vk;
-	rts->c = c;
+	struct vk_bundle *vk = r->vk;
 	rts->r = r;
 
 	assert(data->is_external);
@@ -542,8 +539,8 @@ comp_rendering_target_resources_init(struct comp_rendering_target_resources *rts
 	                       r->mesh.src_binding,       // src_binding
 	                       r->mesh.total_num_indices, // mesh_total_num_indices
 	                       r->mesh.stride,            // mesh_stride
-	                       rts->c->shaders.mesh_vert, // mesh_vert
-	                       rts->c->shaders.mesh_frag, // mesh_frag
+	                       r->shaders->mesh_vert,     // mesh_vert
+	                       r->shaders->mesh_frag,     // mesh_frag
 	                       &rts->mesh.pipeline));     // out_mesh_pipeline
 
 	C(create_framebuffer(vk,                  // vk_bundle,
@@ -574,10 +571,9 @@ comp_rendering_target_resources_close(struct comp_rendering_target_resources *rt
  */
 
 bool
-comp_rendering_init(struct comp_rendering *rr, struct comp_compositor *c, struct comp_resources *r)
+comp_rendering_init(struct comp_rendering *rr, struct comp_resources *r)
 {
-	struct vk_bundle *vk = &c->vk;
-	rr->c = c;
+	struct vk_bundle *vk = r->vk;
 	rr->r = r;
 
 

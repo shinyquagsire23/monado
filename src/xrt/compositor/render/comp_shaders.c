@@ -8,7 +8,7 @@
  * @ingroup comp_main
  */
 
-#include "main/comp_compositor.h"
+#include "render/comp_render.h"
 
 #include <stdio.h>
 #include <stdlib.h>

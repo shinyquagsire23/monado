@@ -10,7 +10,6 @@
 #include "math/m_api.h"
 #include "math/m_matrix_4x4_f64.h"
 
-#include "main/comp_compositor.h"
 #include "render/comp_render.h"
 
 #include <stdio.h>
@@ -55,7 +54,7 @@
 static inline struct vk_bundle *
 vk_from_crc(struct comp_rendering_compute *crc)
 {
-	return &crc->c->vk;
+	return crc->r->vk;
 }
 
 /*
@@ -369,13 +368,11 @@ update_compute_discriptor_set_target(struct vk_bundle *vk,
  */
 
 bool
-comp_rendering_compute_init(struct comp_rendering_compute *crc, struct comp_compositor *c, struct comp_resources *r)
+comp_rendering_compute_init(struct comp_rendering_compute *crc, struct comp_resources *r)
 {
-	assert(crc->c == NULL);
 	assert(crc->r == NULL);
 
-	struct vk_bundle *vk = &c->vk;
-	crc->c = c;
+	struct vk_bundle *vk = r->vk;
 	crc->r = r;
 
 	C(create_command_buffer(vk, &crc->cmd));
@@ -412,7 +409,6 @@ comp_rendering_compute_end(struct comp_rendering_compute *crc)
 void
 comp_rendering_compute_close(struct comp_rendering_compute *crc)
 {
-	assert(crc->c != NULL);
 	assert(crc->r != NULL);
 
 	struct vk_bundle *vk = vk_from_crc(crc);
@@ -424,7 +420,6 @@ comp_rendering_compute_close(struct comp_rendering_compute *crc)
 
 	vk->vkResetDescriptorPool(vk->device, crc->r->compute.descriptor_pool, 0);
 
-	crc->c = NULL;
 	crc->r = NULL;
 }
 
@@ -440,7 +435,6 @@ comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
                                            VkImageView target_image_view,
                                            const struct comp_viewport_data views[2])
 {
-	assert(crc->c != NULL);
 	assert(crc->r != NULL);
 
 	struct vk_bundle *vk = vk_from_crc(crc);
@@ -576,7 +570,6 @@ comp_rendering_compute_projection(struct comp_rendering_compute *crc,
                                   VkImageView target_image_view,
                                   const struct comp_viewport_data views[2])
 {
-	assert(crc->c != NULL);
 	assert(crc->r != NULL);
 
 	struct vk_bundle *vk = vk_from_crc(crc);
@@ -693,7 +686,6 @@ comp_rendering_compute_clear(struct comp_rendering_compute *crc,       //
                              VkImageView target_image_view,            //
                              const struct comp_viewport_data views[2]) //
 {
-	assert(crc->c != NULL);
 	assert(crc->r != NULL);
 
 	struct vk_bundle *vk = vk_from_crc(crc);

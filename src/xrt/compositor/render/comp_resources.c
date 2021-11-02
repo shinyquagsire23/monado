@@ -8,10 +8,9 @@
  * @ingroup comp_main
  */
 
-
-#include "main/comp_compositor.h"
-#include "render/comp_render.h"
+#include "xrt/xrt_device.h"
 #include "math/m_vec2.h"
+#include "render/comp_render.h"
 
 #include <stdio.h>
 
@@ -634,15 +633,16 @@ create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
  */
 
 bool
-comp_resources_init(struct comp_resources *r, struct comp_compositor *c, struct comp_shaders *shaders)
+comp_resources_init(struct comp_resources *r,
+                    struct comp_shaders *shaders,
+                    struct vk_bundle *vk,
+                    struct xrt_device *xdev)
 {
-	struct vk_bundle *vk = &c->vk;
-	struct xrt_device *xdev = c->xdev;
-
 	/*
-	 * Shaders
+	 * Main pointers.
 	 */
 
+	r->vk = vk;
 	r->shaders = shaders;
 
 
@@ -785,11 +785,11 @@ comp_resources_init(struct comp_resources *r, struct comp_compositor *c, struct 
 
 	struct comp_buffer buffers[COMP_DISTORTION_NUM_IMAGES];
 
-	calc_uv_to_tanangle(c->xdev, 0, &r->distortion.uv_to_tanangle[0]);
-	calc_uv_to_tanangle(c->xdev, 1, &r->distortion.uv_to_tanangle[1]);
+	calc_uv_to_tanangle(xdev, 0, &r->distortion.uv_to_tanangle[0]);
+	calc_uv_to_tanangle(xdev, 1, &r->distortion.uv_to_tanangle[1]);
 
-	create_and_file_in_distortion_buffer_for_view(vk, c->xdev, &buffers[0], &buffers[2], &buffers[4], 0);
-	create_and_file_in_distortion_buffer_for_view(vk, c->xdev, &buffers[1], &buffers[3], &buffers[5], 1);
+	create_and_file_in_distortion_buffer_for_view(vk, xdev, &buffers[0], &buffers[2], &buffers[4], 0);
+	create_and_file_in_distortion_buffer_for_view(vk, xdev, &buffers[1], &buffers[3], &buffers[5], 1);
 
 	VkCommandBuffer upload_buffer = VK_NULL_HANDLE;
 	C(vk_init_cmd_buffer(vk, &upload_buffer));
@@ -825,9 +825,11 @@ comp_resources_init(struct comp_resources *r, struct comp_compositor *c, struct 
 }
 
 void
-comp_resources_close(struct comp_resources *r, struct comp_compositor *c)
+comp_resources_close(struct comp_resources *r)
 {
-	struct vk_bundle *vk = &c->vk;
+	assert(r->vk != NULL);
+
+	struct vk_bundle *vk = r->vk;
 
 	D(DescriptorSetLayout, r->mesh.descriptor_set_layout);
 	D(PipelineLayout, r->mesh.pipeline_layout);

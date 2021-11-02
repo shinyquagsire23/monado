@@ -209,7 +209,7 @@ renderer_build_rendering_target_resources(struct comp_renderer *r,
 	data.width = r->c->target->width;
 	data.height = r->c->target->height;
 
-	comp_rendering_target_resources_init(rtr, c, &c->nr, r->c->target->images[index].view, &data);
+	comp_rendering_target_resources_init(rtr, &c->nr, r->c->target->images[index].view, &data);
 }
 
 //! @pre comp_target_has_images(r->c->target)
@@ -250,7 +250,7 @@ renderer_build_rendering(struct comp_renderer *r,
 	 * Init
 	 */
 
-	comp_rendering_init(rr, c, &c->nr);
+	comp_rendering_init(rr, &c->nr);
 
 
 	/*
@@ -982,7 +982,7 @@ dispatch_compute(struct comp_renderer *r, struct comp_rendering_compute *crc)
 	struct comp_compositor *c = r->c;
 	struct comp_target *ct = c->target;
 
-	comp_rendering_compute_init(crc, c, &c->nr);
+	comp_rendering_compute_init(crc, &c->nr);
 	comp_rendering_compute_begin(crc);
 
 	struct comp_viewport_data views[2];
