@@ -91,13 +91,13 @@ struct comp_shaders
  * Loads all of the shaders that the compositor uses.
  */
 bool
-comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s);
+comp_shaders_load(struct comp_shaders *s, struct vk_bundle *vk);
 
 /*!
  * Unload and cleanup shaders.
  */
 void
-comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s);
+comp_shaders_close(struct comp_shaders *s, struct vk_bundle *vk);
 
 
 /*
@@ -561,7 +561,7 @@ struct comp_ubo_compute_data
  * Init struct and create resources needed for compute rendering.
  */
 bool
-comp_rendering_compute_init(struct comp_compositor *c, struct comp_resources *r, struct comp_rendering_compute *crc);
+comp_rendering_compute_init(struct comp_rendering_compute *crc, struct comp_compositor *c, struct comp_resources *r);
 
 /*!
  * Frees all resources held by the compute rendering, does not free the struct itself.

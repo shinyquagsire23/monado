@@ -360,7 +360,7 @@ update_compute_discriptor_set_target(struct vk_bundle *vk,
  */
 
 bool
-comp_rendering_compute_init(struct comp_compositor *c, struct comp_resources *r, struct comp_rendering_compute *crc)
+comp_rendering_compute_init(struct comp_rendering_compute *crc, struct comp_compositor *c, struct comp_resources *r)
 {
 	assert(crc->c == NULL);
 	assert(crc->r == NULL);

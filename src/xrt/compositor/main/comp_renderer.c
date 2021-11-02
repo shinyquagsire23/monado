@@ -982,7 +982,7 @@ dispatch_compute(struct comp_renderer *r, struct comp_rendering_compute *crc)
 	struct comp_compositor *c = r->c;
 	struct comp_target *ct = c->target;
 
-	comp_rendering_compute_init(c, &c->nr, crc);
+	comp_rendering_compute_init(crc, c, &c->nr);
 	comp_rendering_compute_begin(crc);
 
 	struct comp_viewport_data views[2];

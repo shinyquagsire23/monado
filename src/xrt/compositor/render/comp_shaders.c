@@ -73,13 +73,13 @@ shader_load(struct vk_bundle *vk, const uint32_t *code, size_t size, VkShaderMod
 	do {                                                                                                           \
 		VkResult ret = c;                                                                                      \
 		if (ret != VK_SUCCESS) {                                                                               \
-			comp_shaders_close(vk, s);                                                                     \
+			comp_shaders_close(s, vk);                                                                     \
 			return false;                                                                                  \
 		}                                                                                                      \
 	} while (false)
 
 bool
-comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s)
+comp_shaders_load(struct comp_shaders *s, struct vk_bundle *vk)
 {
 	C(shader_load(vk,                         // vk_bundle
 	              shaders_clear_comp,         // data
@@ -144,7 +144,7 @@ comp_shaders_load(struct vk_bundle *vk, struct comp_shaders *s)
 	}
 
 void
-comp_shaders_close(struct vk_bundle *vk, struct comp_shaders *s)
+comp_shaders_close(struct comp_shaders *s, struct vk_bundle *vk)
 {
 	D(clear_comp);
 	D(distortion_comp);
