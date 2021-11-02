@@ -40,6 +40,24 @@
 		thing = VK_NULL_HANDLE;                                                                                \
 	}
 
+/*!
+ * Get the @ref vk_bundle from @ref comp_rendering_target_resources.
+ */
+static inline struct vk_bundle *
+vk_from_rts(struct comp_rendering_target_resources *rts)
+{
+	return &rts->c->vk;
+}
+
+/*!
+ * Get the @ref vk_bundle from @ref comp_rendering.
+ */
+static inline struct vk_bundle *
+vk_from_rr(struct comp_rendering *rr)
+{
+	return &rr->c->vk;
+}
+
 static VkResult
 create_external_render_pass(struct vk_bundle *vk, VkFormat format, VkRenderPass *out_render_pass)
 {
@@ -541,7 +559,7 @@ comp_rendering_target_resources_init(struct comp_rendering_target_resources *rts
 void
 comp_rendering_target_resources_close(struct comp_rendering_target_resources *rts)
 {
-	struct vk_bundle *vk = &rts->c->vk;
+	struct vk_bundle *vk = vk_from_rts(rts);
 
 	D(RenderPass, rts->render_pass);
 	D(Pipeline, rts->mesh.pipeline);
@@ -594,7 +612,7 @@ comp_rendering_init(struct comp_rendering *rr, struct comp_compositor *c, struct
 void
 comp_rendering_finalize(struct comp_rendering *rr)
 {
-	struct vk_bundle *vk = &rr->c->vk;
+	struct vk_bundle *vk = vk_from_rr(rr);
 	VkResult ret;
 
 	// End the command buffer.
@@ -608,7 +626,7 @@ comp_rendering_finalize(struct comp_rendering *rr)
 void
 comp_rendering_close(struct comp_rendering *rr)
 {
-	struct vk_bundle *vk = &rr->c->vk;
+	struct vk_bundle *vk = vk_from_rr(rr);
 	struct comp_resources *r = rr->r;
 
 	// Reclaimed by vkResetDescriptorPool.
@@ -633,7 +651,7 @@ comp_rendering_close(struct comp_rendering *rr)
 bool
 comp_draw_begin_target(struct comp_rendering *rr, struct comp_rendering_target_resources *rts)
 {
-	struct vk_bundle *vk = &rr->c->vk;
+	struct vk_bundle *vk = vk_from_rr(rr);
 
 	assert(rr->rts == NULL);
 	rr->rts = rts;
@@ -652,7 +670,7 @@ comp_draw_begin_target(struct comp_rendering *rr, struct comp_rendering_target_r
 void
 comp_draw_end_target(struct comp_rendering *rr)
 {
-	struct vk_bundle *vk = &rr->c->vk;
+	struct vk_bundle *vk = vk_from_rr(rr);
 
 	assert(rr->rts != NULL);
 	rr->rts = NULL;
@@ -664,7 +682,7 @@ comp_draw_end_target(struct comp_rendering *rr)
 void
 comp_draw_begin_view(struct comp_rendering *rr, uint32_t view, struct comp_viewport_data *viewport_data)
 {
-	struct vk_bundle *vk = &rr->c->vk;
+	struct vk_bundle *vk = vk_from_rr(rr);
 
 	// We currently only support two views.
 	assert(view == 0 || view == 1);
@@ -724,7 +742,7 @@ comp_draw_end_view(struct comp_rendering *rr)
 void
 comp_draw_distortion(struct comp_rendering *rr)
 {
-	struct vk_bundle *vk = &rr->c->vk;
+	struct vk_bundle *vk = vk_from_rr(rr);
 	struct comp_resources *r = rr->r;
 
 	uint32_t view = rr->current_view;
@@ -802,7 +820,7 @@ comp_draw_update_distortion(struct comp_rendering *rr,
                             VkImageView image_view,
                             struct comp_mesh_ubo_data *data)
 {
-	struct vk_bundle *vk = &rr->c->vk;
+	struct vk_bundle *vk = vk_from_rr(rr);
 	struct comp_resources *r = rr->r;
 	struct comp_rendering_view *v = &rr->views[view_index];
 

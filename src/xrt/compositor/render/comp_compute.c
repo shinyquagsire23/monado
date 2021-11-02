@@ -49,6 +49,15 @@
  *
  */
 
+/*!
+ * Get the @ref vk_bundle from @ref comp_rendering_compute.
+ */
+static inline struct vk_bundle *
+vk_from_crc(struct comp_rendering_compute *crc)
+{
+	return &crc->c->vk;
+}
+
 /*
  * For dispatching compute to the view, calculate the number of groups.
  */
@@ -383,7 +392,7 @@ comp_rendering_compute_init(struct comp_rendering_compute *crc, struct comp_comp
 bool
 comp_rendering_compute_begin(struct comp_rendering_compute *crc)
 {
-	struct vk_bundle *vk = &crc->c->vk;
+	struct vk_bundle *vk = vk_from_crc(crc);
 
 	C(begin_command_buffer(vk, crc->cmd));
 
@@ -393,7 +402,7 @@ comp_rendering_compute_begin(struct comp_rendering_compute *crc)
 bool
 comp_rendering_compute_end(struct comp_rendering_compute *crc)
 {
-	struct vk_bundle *vk = &crc->c->vk;
+	struct vk_bundle *vk = vk_from_crc(crc);
 
 	C(end_command_buffer(vk, crc->cmd));
 
@@ -406,7 +415,7 @@ comp_rendering_compute_close(struct comp_rendering_compute *crc)
 	assert(crc->c != NULL);
 	assert(crc->r != NULL);
 
-	struct vk_bundle *vk = &crc->c->vk;
+	struct vk_bundle *vk = vk_from_crc(crc);
 
 	destroy_command_buffer(vk, crc->cmd);
 
@@ -434,7 +443,7 @@ comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
 	assert(crc->c != NULL);
 	assert(crc->r != NULL);
 
-	struct vk_bundle *vk = &crc->c->vk;
+	struct vk_bundle *vk = vk_from_crc(crc);
 	struct comp_resources *r = crc->r;
 
 
@@ -570,7 +579,7 @@ comp_rendering_compute_projection(struct comp_rendering_compute *crc,
 	assert(crc->c != NULL);
 	assert(crc->r != NULL);
 
-	struct vk_bundle *vk = &crc->c->vk;
+	struct vk_bundle *vk = vk_from_crc(crc);
 	struct comp_resources *r = crc->r;
 
 
@@ -687,7 +696,7 @@ comp_rendering_compute_clear(struct comp_rendering_compute *crc,       //
 	assert(crc->c != NULL);
 	assert(crc->r != NULL);
 
-	struct vk_bundle *vk = &crc->c->vk;
+	struct vk_bundle *vk = vk_from_crc(crc);
 	struct comp_resources *r = crc->r;
 
 
