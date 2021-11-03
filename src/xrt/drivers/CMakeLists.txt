@@ -172,9 +172,6 @@ endif()
 
 set(VIVE_CONFIG_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/vive")
 if(XRT_BUILD_DRIVER_VIVE)
-	set(VIVE_SOURCE_FILES
-		)
-
 	add_library(drv_vive STATIC
 		vive/vive_device.h
 		vive/vive_device.c
