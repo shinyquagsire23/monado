@@ -58,7 +58,7 @@ struct frame
 	uint64_t when_submitted_ns;
 	uint64_t when_infoed_ns;
 	uint64_t current_app_time_ns;
-	uint64_t expected_done_time_ns; //!< When we expect the compositor to be done with it's frame.
+	uint64_t expected_done_time_ns; //!< When we expect the compositor to be done with its frame.
 	uint64_t desired_present_time_ns;
 	uint64_t predicted_display_time_ns;
 	uint64_t present_margin_ns;
@@ -333,7 +333,7 @@ adjust_app_time(struct display_timing *dt, struct frame *f)
 	        f->present_margin_ns, //
 	        dt->margin_ns,        //
 	        dt->adjust_non_miss_ns)) {
-		// Nothing to do, the GPU ended it's work +-adjust_non_miss_ns
+		// Nothing to do, the GPU ended its work +-adjust_non_miss_ns
 		// of margin_ns before the present started.
 		return;
 	}
