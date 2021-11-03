@@ -95,6 +95,8 @@ if(PKGCONFIG_FOUND AND NOT ANDROID)
 endif()
 
 
+find_package(OpenGL)
+set(OPENGL_WITHOUT_GLX_FOUND ${OPENGL_FOUND})
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	set(XRT_HAVE_LINUX YES)
 	# Compositor backend
@@ -124,7 +126,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
 	pkg_check_modules(SURVIVE IMPORTED_TARGET survive)
 else()
-	find_package(OpenGL)
 endif()
 
 find_library(RT_LIBRARY rt)
@@ -163,9 +164,11 @@ cmake_dependent_option(XRT_HAVE_XRANDR "Enable xlib-xrandr support" ON "XRANDR_F
 cmake_dependent_option(XRT_HAVE_XCB "Enable xcb support" ON "XCB_FOUND" OFF)
 
 cmake_dependent_option(XRT_HAVE_VULKAN "Enable Vulkan Graphics API support (also needed for compositor)" ON "VULKAN_FOUND" OFF)
-cmake_dependent_option(XRT_HAVE_OPENGL "Enable OpenGL Graphics API support" ON "OPENGL_FOUND" OFF)
+cmake_dependent_option(XRT_HAVE_OPENGL "Enable OpenGL Graphics API support" ON "OPENGL_WITHOUT_GLX_FOUND" OFF)
+cmake_dependent_option(XRT_HAVE_OPENGL_GLX "Enable OpenGL Graphics API support on X11 (GLX)" ON "XRT_HAVE_OPENGL; OpenGL_GLX_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_OPENGLES "Enable OpenGL-ES Graphics API support" ON "OpenGLES_FOUND" OFF)
-cmake_dependent_option(XRT_HAVE_EGL "Enable OpenGL on EGL Graphics API support" ON "EGL_FOUND; XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES" OFF)
+cmake_dependent_option(XRT_HAVE_EGL "Enable OpenGL(-ES) on EGL Graphics API support" ON "EGL_FOUND; XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES" OFF)
+
 cmake_dependent_option(XRT_HAVE_DBUS "Enable dbus support (for BLE support)" ON "DBUS_FOUND" OFF)
 cmake_dependent_option(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" ON "XRT_HAVE_VULKAN; XRT_HAVE_WAYLAND OR XRT_HAVE_XCB OR ANDROID OR WIN32" OFF)
 cmake_dependent_option(XRT_HAVE_LIBBSD "Enable libbsd support" ON "LIBBSD_FOUND" OFF)
@@ -378,6 +381,7 @@ message(STATUS "#    XRANDR:          ${XRT_HAVE_XRANDR}")
 message(STATUS "#    XCB:             ${XRT_HAVE_XCB}")
 message(STATUS "#    VULKAN:          ${XRT_HAVE_VULKAN}")
 message(STATUS "#    OPENGL:          ${XRT_HAVE_OPENGL}")
+message(STATUS "#    OPENGL_GLX:      ${XRT_HAVE_OPENGL_GLX}")
 message(STATUS "#    OPENGLES:        ${XRT_HAVE_OPENGLES}")
 message(STATUS "#    EGL:             ${XRT_HAVE_EGL}")
 message(STATUS "#    DBUS:            ${XRT_HAVE_DBUS}")

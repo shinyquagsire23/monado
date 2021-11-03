@@ -83,7 +83,7 @@ if(XRT_HAVE_OPENGLES)
 		client/comp_gl_eglimage_swapchain.h
 		)
 endif()
-if(XRT_HAVE_OPENGL AND XRT_HAVE_XLIB)
+if(XRT_HAVE_OPENGL_GLX AND XRT_HAVE_XLIB)
 	list(APPEND CLIENT_SOURCE_FILES
 		client/comp_gl_xlib_client.c
 		client/comp_gl_xlib_client.h
