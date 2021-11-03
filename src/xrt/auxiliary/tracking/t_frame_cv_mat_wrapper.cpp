@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Simple @ref xrt_frame wrapper around a @ref cv::Mat.
+ * @brief  Simple @ref xrt_frame wrapper around a cv::Mat.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_tracking
  */

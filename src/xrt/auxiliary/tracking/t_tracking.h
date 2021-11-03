@@ -99,7 +99,8 @@ struct t_stereo_camera_calibration
 /*!
  * Allocates a new stereo calibration data, unreferences the old @p calib.
  *
- * Also initializes view[s]::distortion_num, only 5 and 14 is accepted.
+ * Also initializes t_camera_calibration::distortion_num in t_stereo_camera_calibration::view, only 5 and 14 is
+ * accepted.
  *
  * @public @memberof t_stereo_camera_calibration
  */

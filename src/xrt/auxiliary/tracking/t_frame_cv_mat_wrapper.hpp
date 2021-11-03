@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Simple @ref xrt_frame wrapper around a @ref cv::Mat.
+ * @brief  Simple @ref xrt_frame wrapper around a cv::Mat.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_tracking
  */
@@ -33,7 +33,7 @@ public:
 	// Exposed to the C api.
 	struct xrt_frame frame = {};
 
-	// The @ref cv::Mat that holds the data.
+	// The cv::Mat that holds the data.
 	cv::Mat matrix = cv::Mat();
 
 
@@ -44,22 +44,22 @@ public:
 	~FrameMat();
 
 	/*!
-	 * Wraps the given @ref cv::Mat assuming it's a 24bit RGB format matrix.
+	 * Wraps the given cv::Mat assuming it's a 24bit RGB format matrix.
 	 * In all but the most strange cases you probably want the pointer
-	 * pointed to by @ref xf_ptr to be nullptr, if not nullptr it will have
-	 * it's reference decremented so make sure it's a valid pointer.
+	 * pointed to by @p xf_ptr to be `nullptr`, if not `nullptr` it will have
+	 * its reference count decremented so make sure it's a valid pointer.
 	 */
 	static void
-	wrapR8G8B8(cv::Mat mat, xrt_frame **xf_ptr, const Params /*&&?*/ params = {});
+	wrapR8G8B8(cv::Mat mat, xrt_frame **xf_ptr, const Params params = {});
 
 	/*!
-	 * Wraps the given @ref cv::Mat assuming it's a 8bit format matrix.
+	 * Wraps the given cv::Mat assuming it's a 8bit format matrix.
 	 * In all but the most strange cases you probably want the pointer
-	 * pointed to by @ref xf_ptr to be nullptr, if not nullptr it will have
-	 * it's reference decremented so make sure it's a valid pointer.
+	 * pointed to by @p xf_ptr to be `nullptr`, if not `nullptr` it will have
+	 * its reference count decremented so make sure it's a valid pointer.
 	 */
 	static void
-	wrapL8(cv::Mat mat, xrt_frame **xf_ptr, const Params /*&&?*/ params = {});
+	wrapL8(cv::Mat mat, xrt_frame **xf_ptr, const Params params = {});
 
 
 private:
