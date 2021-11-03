@@ -37,6 +37,8 @@ compositor_srcs = [
 	'render/comp_resources.c',
 	'render/comp_shaders.c',
 	'render/comp_util.c',
+	'util/comp_base.h',
+	'util/comp_base.c',
 	'util/comp_swapchain.h',
 	'util/comp_swapchain.c',
 	'util/comp_sync.h',

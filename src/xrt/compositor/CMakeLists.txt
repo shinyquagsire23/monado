@@ -18,6 +18,8 @@ spirv_shaders(SHADER_HEADERS
 set(CLIENT_SOURCE_FILES)
 
 set(UTIL_SOURCE_FILES
+	util/comp_base.h
+	util/comp_base.c
 	util/comp_swapchain.h
 	util/comp_swapchain.c
 	util/comp_sync.h
