@@ -507,6 +507,20 @@ update_mesh_discriptor_set(struct vk_bundle *vk,
 	                           NULL);                             // pDescriptorCopies
 }
 
+static void
+destroy_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer)
+{
+	os_mutex_lock(&vk->cmd_pool_mutex);
+
+	vk->vkFreeCommandBuffers( //
+	    vk->device,           // device
+	    vk->cmd_pool,         // commandPool
+	    1,                    // commandBufferCount
+	    &command_buffer);     // pCommandBuffers
+
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+}
+
 
 /*
  *
@@ -624,6 +638,9 @@ comp_rendering_close(struct comp_rendering *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
 	struct comp_resources *r = rr->r;
+
+	destroy_command_buffer(vk, rr->cmd);
+	rr->cmd = VK_NULL_HANDLE;
 
 	// Reclaimed by vkResetDescriptorPool.
 	rr->views[0].mesh.descriptor_set = VK_NULL_HANDLE;
