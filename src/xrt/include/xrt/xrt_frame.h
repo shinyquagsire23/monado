@@ -119,11 +119,11 @@ struct xrt_frame_context
 /*!
  * Update the reference counts on frame(s).
  *
- * @param     dst Pointer to a object reference, if the object reference is
- *                non-null will decrement it's counter. The reference that
+ * @param[in,out] dst Pointer to a object reference: if the object reference is
+ *                non-null will decrement its counter. The reference that
  *                @p dst points to will be set to @p src.
- * @param[in] src Object to be have it's refcount increased @p dst is set to
- *                this.
+ * @param[in] src New object for @p dst to refer to (may be null).
+ *                If non-null, will have its refcount increased.
  * @ingroup xrt_iface
  * @relates xrt_frame
  */
