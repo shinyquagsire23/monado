@@ -1,4 +1,6 @@
-# Copyright 2020, Collabora, Ltd. SPDX-License-Identifier: BSL-1.0
+# Copyright 2020, Collabora, Ltd.
+#
+# SPDX-License-Identifier: BSL-1.0
 
 tests_main = static_library(
 	'tests_main',

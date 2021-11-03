@@ -1,4 +1,6 @@
-# Copyright 2018-2020, Collabora, Ltd. SPDX-License-Identifier: BSL-1.0
+# Copyright 2018-2021, Collabora, Ltd.
+#
+# SPDX-License-Identifier: BSL-1.0
 
 # Catch2 main test driver
 add_library(tests_main STATIC tests_main.cpp)
