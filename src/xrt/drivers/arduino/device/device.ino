@@ -243,6 +243,6 @@ setup()
 
 	isConnected = false;
 
-	// IMU has it's own thread.
+	// IMU has its own thread.
 	thread.start(imu_thread);
 }
