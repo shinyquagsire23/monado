@@ -4,7 +4,7 @@
  * @file
  * @brief  Independent swapchain implementation.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp_main
+ * @ingroup comp_util
  */
 
 #include "xrt/xrt_handles.h"

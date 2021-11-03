@@ -26,6 +26,13 @@
  */
 
 /*!
+ * @defgroup comp_util Compositor utility code
+ * @ingroup comp
+ *
+ * @brief General compositor utility code.
+ */
+
+/*!
  * @defgroup comp_client Compositor client code
  * @ingroup comp
  *

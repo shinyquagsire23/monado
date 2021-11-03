@@ -5,7 +5,7 @@
  * @brief  Independent swapchain implementation.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
- * @ingroup comp_main
+ * @ingroup comp_util
  */
 
 #pragma once
@@ -23,6 +23,8 @@ extern "C" {
 
 /*!
  * A garbage collector that collects swapchains to be safely destroyed.
+ *
+ * @ingroup comp_util
  */
 struct comp_swapchain_gc
 {
@@ -33,7 +35,7 @@ struct comp_swapchain_gc
 /*!
  * A single swapchain image, holds the needed state for tracking image usage.
  *
- * @ingroup comp_main
+ * @ingroup comp_util
  * @see comp_swapchain
  */
 struct comp_swapchain_image
@@ -60,7 +62,7 @@ struct comp_swapchain_image
  * sure that compositor lives for as long as the swapchain does and that all
  * swapchains are destroyed before the compositor is destroyed.
  *
- * @ingroup comp_main
+ * @ingroup comp_util
  * @implements xrt_swapchain_native
  * @see comp_compositor
  */
@@ -91,6 +93,7 @@ struct comp_swapchain
 /*!
  * Convenience function to convert a xrt_swapchain to a comp_swapchain.
  *
+ * @ingroup comp_util
  * @private @memberof comp_swapchain
  */
 static inline struct comp_swapchain *
@@ -110,7 +113,7 @@ comp_swapchain(struct xrt_swapchain *xsc)
  * Do garbage collection, destroying any resources that has been scheduled for
  * destruction from other threads.
  *
- * @public @memberof comp_compositor
+ * @ingroup comp_util
  */
 void
 comp_swapchain_garbage_collect(struct comp_swapchain_gc *cscgc);
@@ -118,7 +121,7 @@ comp_swapchain_garbage_collect(struct comp_swapchain_gc *cscgc);
 /*!
  * A compositor function that is implemented in the swapchain code.
  *
- * @public @memberof comp_compositor
+ * @ingroup comp_util
  */
 xrt_result_t
 comp_swapchain_create(struct vk_bundle *vk,
@@ -129,7 +132,7 @@ comp_swapchain_create(struct vk_bundle *vk,
 /*!
  * A compositor function that is implemented in the swapchain code.
  *
- * @public @memberof comp_compositor
+ * @ingroup comp_util
  */
 xrt_result_t
 comp_swapchain_import(struct vk_bundle *vk,
@@ -144,7 +147,7 @@ comp_swapchain_import(struct vk_bundle *vk,
  * does the actual destruction and is called from @ref
  * comp_swapchain_garbage_collect.
  *
- * @private @memberof comp_swapchain
+ * @ingroup comp_util
  */
 void
 comp_swapchain_really_destroy(struct comp_swapchain *sc);

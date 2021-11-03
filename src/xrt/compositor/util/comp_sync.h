@@ -4,7 +4,7 @@
  * @file
  * @brief  Independent @ref xrt_compositor_fence implementation.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp_main
+ * @ingroup comp_util
  */
 
 #pragma once
@@ -25,6 +25,8 @@ extern "C" {
  * The vk_bundle is owned by the compositor, its the state trackers job to make
  * sure that compositor lives for as long as the fence does and that all fences
  * are destroyed before the compositor is destroyed.
+ *
+ * @ingroup comp_util
  */
 xrt_result_t
 comp_fence_import(struct vk_bundle *vk, xrt_graphics_sync_handle_t handle, struct xrt_compositor_fence **out_xcf);

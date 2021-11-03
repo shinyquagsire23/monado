@@ -4,7 +4,7 @@
  * @file
  * @brief  Independent @ref xrt_compositor_fence implementation.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp_main
+ * @ingroup comp_util
  */
 
 #include "xrt/xrt_config_os.h"
