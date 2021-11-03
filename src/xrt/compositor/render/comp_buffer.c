@@ -5,7 +5,7 @@
  * @brief  Buffer functions.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp_main
+ * @ingroup comp_render
  */
 
 #include "main/comp_compositor.h"

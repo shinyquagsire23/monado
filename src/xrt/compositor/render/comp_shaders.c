@@ -5,7 +5,7 @@
  * @brief  Shader loading code.
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp_main
+ * @ingroup comp_render
  */
 
 #include "render/comp_render.h"

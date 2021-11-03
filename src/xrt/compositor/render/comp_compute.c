@@ -4,7 +4,7 @@
  * @file
  * @brief  The compositor compute based rendering code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup comp_main
+ * @ingroup comp_render
  */
 
 #include "math/m_api.h"
