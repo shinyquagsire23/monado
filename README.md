@@ -1,7 +1,8 @@
 # Monado - XR Runtime (XRT)
 
 <!--
-Copyright 2018-2020, Collabora, Ltd.
+Copyright 2018-2021, Collabora, Ltd.
+
 SPDX-License-Identifier: CC-BY-4.0
 
 This must stay in sync with the last section!
@@ -284,17 +285,9 @@ reported by contacting:
   * Ryan Pavlik <ryan.pavlik@collabora.com>
 * freedesktop.org contacts: see most recent list at <https://www.freedesktop.org/wiki/CodeOfConduct/>
 
-## Copyright and License for this README.md file
-
-For this file only:
-
-> Copyright 2018-2020, Collabora, Ltd.
-> Code of Conduct section: excerpt adapted from the [Contributor Covenant](https://www.contributor-covenant.org), version 1.4.1,
-> available at <https://www.contributor-covenant.org/version/1/4/code-of-conduct.html>,
-> and from the freedesktop.org-specific version of that code,
-> available at <https://www.freedesktop.org/wiki/CodeOfConduct/>
->
->
-> SPDX-License-Identifier: CC-BY-4.0
-
-<!-- This must stay in sync with the comment at the start! -->
+Code of Conduct section excerpt adapted from the
+[Contributor Covenant](https://www.contributor-covenant.org), version 1.4.1,
+available at
+<https://www.contributor-covenant.org/version/1/4/code-of-conduct.html>, and
+from the freedesktop.org-specific version of that code, available at
+<https://www.freedesktop.org/wiki/CodeOfConduct/>, used under CC-BY-4.0.

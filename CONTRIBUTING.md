@@ -1,5 +1,11 @@
 # Contribution Guidelines
 
+<!--
+Copyright 2018-2019 Collabora, Ltd.
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 There are plenty of valid reasons why someone might not be able
 to follow all of the guidelines in this section, and that's OK,
 especially for new contributors or those new to open source entirely.
@@ -71,12 +77,3 @@ bug reports should include:
   - if you cannot disclose your code, or even if you can,
     an "artificial", minimally-sized example can be very valuable.
 
----
-
-## Copyright and License for this CONTRIBUTING.md file
-
-For this file only:
-
-> Copyright 2018-2019 Collabora, Ltd.
->
-> SPDX-License-Identifier: CC-BY-4.0
