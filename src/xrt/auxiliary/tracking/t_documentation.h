@@ -36,10 +36,10 @@ extern "C" {
  * holds the controllers with the ball pointing up and the buttons on the back
  * pointing forward. Which if you read the documentation of @ref psmv_device
  * will that the axis of the PSMV are also perfectly aligned with the users
- * coordinate system. So everything "attached" to the user have it's coordinate
+ * coordinate system. So everything "attached" to the user has its coordinate
  * system parallel to the user's.
  *
- * The camera on the other hand is looking directly at the user, it's Z-axis and
+ * The camera on the other hand is looking directly at the user, its Z-axis and
  * X-axis is flipped in relation to the user's. So to compare what is sees to
  * what the user sees, everything is rotated 180° around the Y-axis.
  */

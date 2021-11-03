@@ -118,11 +118,11 @@ t_stereo_camera_calibration_destroy(struct t_stereo_camera_calibration *c);
 /*!
  * Update the reference counts on a stereo calibration data(s).
  *
- * @param     dst Pointer to a object reference, if the object reference is
- *                non-null will decrement it's counter. The reference that
+ * @param[in,out] dst Pointer to a object reference: if the object reference is
+ *                non-null will decrement its counter. The reference that
  *                @p dst points to will be set to @p src.
- * @param[in] src Object to be have it's refcount increased @p dst is set to
- *                this.
+ * @param[in] src New object for @p dst to refer to (may be null).
+ *                If non-null, will have its refcount increased.
  *
  * @relates t_stereo_camera_calibration
  */
@@ -150,18 +150,24 @@ t_stereo_camera_calibration_reference(struct t_stereo_camera_calibration **dst, 
 
 /*!
  * Small helper function that dumps the calibration data to logging.
+ *
+ * @relates t_stereo_camera_calibration
  */
 void
 t_stereo_camera_calibration_dump(struct t_stereo_camera_calibration *c);
 
 /*!
  * Load stereo calibration data from a given file.
+ *
+ * @relates t_stereo_camera_calibration
  */
 bool
 t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_calibration **out_data);
 
 /*!
  * Save the given stereo calibration data to the given file.
+ *
+ * @relates t_stereo_camera_calibration
  */
 bool
 t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_calibration *data);
