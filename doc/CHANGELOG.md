@@ -177,7 +177,7 @@ SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
     now a per layer thing.
     ([!461](https://gitlab.freedesktop.org/monado/monado/merge_requests/461))
   - Add `xrt_compositor_info` struct that allows the compositor carry information
-    to about it's capbilities and it's recommended values. Not everything is hooked
+    to about its capabilities and its recommended values. Not everything is hooked
     up at the moment.
     ([!461](https://gitlab.freedesktop.org/monado/monado/merge_requests/461))
   - Add defines for underlying handle types.
@@ -218,7 +218,7 @@ SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
   - Remove the `out_timestamp` argument to the `xrt_device::get_tracked_pose`
     function, it's not needed anymore and the devices can do prediction better
     as
-    it knows more about it's tracking system the the state tracker.
+    it knows more about its tracking system the the state tracker.
     ([!521](https://gitlab.freedesktop.org/monado/monado/merge_requests/521))
   - Replace mesh generator with `compute_distortion` function on `xrt_device`. This
     is used to both make it possible to use mesh shaders for devices and to provide

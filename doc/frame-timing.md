@@ -18,10 +18,10 @@ scanout starting to the vblank period (like for the Index).
 * `xrBeginFrame` is called by the application, referred to as **begin**.
 * The app renders the current views using the GPU.
 * `xrEndFrame` is called by the application submitting the views.
-* The compositor wakes up to do it's distorting rendering and any warping,
+* The compositor wakes up to do its distorting rendering and any warping,
   checking if the applications rendering has finished. When the compositor
   submits the work to the GPU, referred to as **submit**.
-* The compositor queues it's swapbuffer to the display engine.
+* The compositor queues its swapbuffer to the display engine.
 * Scanout starts, the kernel checked if the compositors rendering was completed
   in time. We refer to this time as **present**, this seems to be common.
 * During the vblank period the display lights up turning the pixels into
