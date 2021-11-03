@@ -237,7 +237,6 @@ cmake_dependent_option(XRT_BUILD_DRIVER_NS "Enable North Star driver" ON "XRT_HA
 cmake_dependent_option(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" ON "XRT_HAVE_GST" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_DEPTHAI "DepthAI" ON "depthai_FOUND" OFF)
 
-# This one defaults to off, even if we find the deps.
 cmake_dependent_option(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" ON "SURVIVE_FOUND" OFF)
 
 cmake_dependent_option(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" ON "ANDROID" OFF)
