@@ -5,6 +5,18 @@ Copyright 2018-2021, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
+
+## Map
+
+The components you will be interacting with is @ref st_prober to find the
+hardware devices and setup a working system, along with the @ref aux code that
+provides various helpers. It is convention in Monado for interfaces to allow
+full, complete control of anything a device might want to modify/control, and to
+provide helper functionality in @ref aux to simplify implementation of the most
+common cases.
+
+## Getting started
+
 The easiest way to begin writing a driver is to start from a working example.
 The @ref drv_sample driver is provided explicitly for this purpose: it creates
 an HMD device, with a custom @ref xrt_auto_prober implementation for hardware
@@ -56,15 +68,6 @@ instances.
 Depending on whether your device can be created from a detected USB HID device,
 you will also need to implement either @ref xrt_auto_prober or a function
 matching the prototype for @ref xrt_prober_entry::found. See below for more details.
-
-## Other Relevant Components
-
-The components you will be interacting with is @ref st_prober to find the
-hardware devices and setup a working system, along with the @ref aux code that
-provides various helpers. It is convention in Monado for interfaces to allow
-full, complete control of anything a device might want to modify/control, and to
-provide helper functionality in @ref aux to simplify implementation of the most
-common cases.
 
 ## Probing
 
