@@ -51,7 +51,7 @@ struct ipc_client_compositor
 {
 	struct xrt_compositor_native base;
 
-	//! Should be turned into it's own object.
+	//! Should be turned into its own object.
 	struct xrt_system_compositor system;
 
 	struct ipc_connection *ipc_c;
