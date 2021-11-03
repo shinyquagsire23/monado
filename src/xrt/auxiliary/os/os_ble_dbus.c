@@ -388,7 +388,7 @@ array_get_first_elem_of_type(const DBusMessageIter *in_parent, int of_type, DBus
 
 /*!
  * Given a the first element in a array of dict, loop over them and check if
- * the key matches it's string value. Returns positive if a match is found,
+ * the key matches its string value. Returns positive if a match is found,
  * zero if not found and negative on failure. The argument @p out_value holds
  * the value of the dict pair.
  */
@@ -516,7 +516,7 @@ dbus_has_name(DBusConnection *conn, const char *name)
 
 /*!
  * Returns true if the object implements the `org.bluez.Device1` interface,
- * and one of it's `UUIDs` matches the given @p uuid.
+ * and one of its `UUIDs` matches the given @p uuid.
  */
 static int
 device_has_uuid(const DBusMessageIter *dict, const char *uuid, const char **out_path_str)
@@ -558,7 +558,7 @@ device_has_uuid(const DBusMessageIter *dict, const char *uuid, const char **out_
 
 
 /*!
- * On a gatt interface object get it's Flags property and check if notify is
+ * On a gatt interface object get its Flags property and check if notify is
  * set, returns positive if it found that Flags property, zero on not finding it
  * and negative on error.
  */
@@ -586,7 +586,7 @@ gatt_iface_get_flag_notifiable(const DBusMessageIter *iface_elm, bool *out_bool)
 }
 
 /*!
- * On a gatt interface object get it's UUID string property, returns positive
+ * On a gatt interface object get its UUID string property, returns positive
  * if found, zero on not finding it and negative on error.
  */
 static int
@@ -610,7 +610,7 @@ gatt_iface_get_uuid(const DBusMessageIter *iface_elm, const char **out_str)
 
 /*!
  * Returns positive value if the object implements the
- * `org.bluez.GattCharacteristic1` interface, it's `UUID` matches the given @p
+ * `org.bluez.GattCharacteristic1` interface, its `UUID` matches the given @p
  * uuid and has the notify flag set.
  */
 static int
