@@ -26,6 +26,16 @@ set(UTIL_SOURCE_FILES
 	util/comp_sync.c
 	)
 
+set(RENDER_SOURCE_FILES
+	render/comp_buffer.c
+	render/comp_compute.c
+	render/comp_render.h
+	render/comp_rendering.c
+	render/comp_resources.c
+	render/comp_shaders.c
+	render/comp_util.c
+	)
+
 set(MAIN_SOURCE_FILES
 	main/comp_compositor.c
 	main/comp_compositor.h
@@ -42,13 +52,6 @@ set(MAIN_SOURCE_FILES
 	main/comp_layer.c
 	main/comp_layer_renderer.h
 	main/comp_layer_renderer.c
-	render/comp_buffer.c
-	render/comp_compute.c
-	render/comp_render.h
-	render/comp_rendering.c
-	render/comp_resources.c
-	render/comp_shaders.c
-	render/comp_util.c
 	)
 
 set(MULTI_SOURCE_FILES
@@ -128,6 +131,23 @@ if(XRT_HAVE_VULKAN)
 	add_library(comp_util STATIC ${UTIL_SOURCE_FILES})
 	target_link_libraries(comp_util PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk)
 	target_include_directories(comp_util PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
+
+##
+# Render library
+#
+
+if(XRT_HAVE_VULKAN)
+	add_library(comp_render STATIC ${SHADER_HEADERS} ${RENDER_SOURCE_FILES})
+	target_link_libraries(comp_render PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk)
+	target_include_directories(comp_render PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+	target_include_directories(comp_render SYSTEM PRIVATE
+		# Shaders - marked SYSTEM so we get no warnings
+		${CMAKE_CURRENT_BINARY_DIR}
+		)
+
+	add_subdirectory(shaders)
 endif()
 
 
@@ -225,13 +245,9 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 			)
 	endif()
 
-	add_library(comp_main STATIC ${SHADER_HEADERS} ${MAIN_SOURCE_FILES})
-	target_link_libraries(comp_main PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk comp_util)
+	add_library(comp_main STATIC ${MAIN_SOURCE_FILES})
+	target_link_libraries(comp_main PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk comp_util comp_render)
 	target_include_directories(comp_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-	target_include_directories(comp_main SYSTEM PRIVATE
-		# Shaders - marked SYSTEM so we get no warnings
-		${CMAKE_CURRENT_BINARY_DIR}
-		)
 
 	if(XRT_HAVE_WAYLAND)
 		target_include_directories(comp_main SYSTEM PRIVATE ${WL_PROTOS_DIR})
@@ -254,8 +270,6 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 	if(ANDROID)
 		target_link_libraries(comp_main PRIVATE aux_ogl aux_android)
 	endif()
-
-	add_subdirectory(shaders)
 endif()
 
 
