@@ -115,9 +115,9 @@ if(XRT_HAVE_OPENCV)
 		tracking/t_tracker_hand.cpp
 		)
 
-		if(XRT_HAVE_SLAM)
-			list(APPEND TRACKING_SOURCE_FILES tracking/t_tracker_slam.cpp)
-		endif()
+endif()
+if(XRT_HAVE_SLAM)
+	list(APPEND TRACKING_SOURCE_FILES tracking/t_tracker_slam.cpp)
 endif()
 
 set(UTIL_SOURCE_FILES
