@@ -43,9 +43,9 @@
  * Get the @ref vk_bundle from @ref comp_rendering_target_resources.
  */
 static inline struct vk_bundle *
-vk_from_rts(struct comp_rendering_target_resources *rts)
+vk_from_rtr(struct comp_rendering_target_resources *rtr)
 {
-	return rts->r->vk;
+	return rtr->r->vk;
 }
 
 /*!
@@ -515,25 +515,25 @@ update_mesh_discriptor_set(struct vk_bundle *vk,
  */
 
 bool
-comp_rendering_target_resources_init(struct comp_rendering_target_resources *rts,
+comp_rendering_target_resources_init(struct comp_rendering_target_resources *rtr,
                                      struct comp_resources *r,
                                      VkImageView target,
                                      struct comp_target_data *data)
 {
 	struct vk_bundle *vk = r->vk;
-	rts->r = r;
+	rtr->r = r;
 
 	assert(data->is_external);
 
-	rts->data = *data;
+	rtr->data = *data;
 
 	C(create_external_render_pass( //
 	    vk,                        // vk_bundle
 	    data->format,              // target_format
-	    &rts->render_pass));       // out_render_pass
+	    &rtr->render_pass));       // out_render_pass
 
 	C(create_mesh_pipeline(vk,                        // vk_bundle
-	                       rts->render_pass,          // render_pass
+	                       rtr->render_pass,          // render_pass
 	                       r->mesh.pipeline_layout,   // pipeline_layout
 	                       r->pipeline_cache,         // pipeline_cache
 	                       r->mesh.src_binding,       // src_binding
@@ -541,26 +541,26 @@ comp_rendering_target_resources_init(struct comp_rendering_target_resources *rts
 	                       r->mesh.stride,            // mesh_stride
 	                       r->shaders->mesh_vert,     // mesh_vert
 	                       r->shaders->mesh_frag,     // mesh_frag
-	                       &rts->mesh.pipeline));     // out_mesh_pipeline
+	                       &rtr->mesh.pipeline));     // out_mesh_pipeline
 
 	C(create_framebuffer(vk,                  // vk_bundle,
 	                     target,              // image_view,
-	                     rts->render_pass,    // render_pass,
+	                     rtr->render_pass,    // render_pass,
 	                     data->width,         // width,
 	                     data->height,        // height,
-	                     &rts->framebuffer)); // out_external_framebuffer
+	                     &rtr->framebuffer)); // out_external_framebuffer
 
 	return true;
 }
 
 void
-comp_rendering_target_resources_close(struct comp_rendering_target_resources *rts)
+comp_rendering_target_resources_close(struct comp_rendering_target_resources *rtr)
 {
-	struct vk_bundle *vk = vk_from_rts(rts);
+	struct vk_bundle *vk = vk_from_rtr(rtr);
 
-	D(RenderPass, rts->render_pass);
-	D(Pipeline, rts->mesh.pipeline);
-	D(Framebuffer, rts->framebuffer);
+	D(RenderPass, rtr->render_pass);
+	D(Pipeline, rtr->mesh.pipeline);
+	D(Framebuffer, rtr->framebuffer);
 }
 
 
@@ -645,20 +645,20 @@ comp_rendering_close(struct comp_rendering *rr)
  */
 
 bool
-comp_draw_begin_target(struct comp_rendering *rr, struct comp_rendering_target_resources *rts)
+comp_draw_begin_target(struct comp_rendering *rr, struct comp_rendering_target_resources *rtr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
 
-	assert(rr->rts == NULL);
-	rr->rts = rts;
+	assert(rr->rtr == NULL);
+	rr->rtr = rtr;
 
 	// This is shared across both views.
 	begin_render_pass(vk,                    //
 	                  rr->cmd,               //
-	                  rr->rts->render_pass,  //
-	                  rr->rts->framebuffer,  //
-	                  rr->rts->data.width,   //
-	                  rr->rts->data.height); //
+	                  rr->rtr->render_pass,  //
+	                  rr->rtr->framebuffer,  //
+	                  rr->rtr->data.width,   //
+	                  rr->rtr->data.height); //
 
 	return true;
 }
@@ -668,8 +668,8 @@ comp_draw_end_target(struct comp_rendering *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
 
-	assert(rr->rts != NULL);
-	rr->rts = NULL;
+	assert(rr->rtr != NULL);
+	rr->rtr = NULL;
 
 	// Stop the [shared] render pass.
 	vk->vkCmdEndRenderPass(rr->cmd);
@@ -682,7 +682,7 @@ comp_draw_begin_view(struct comp_rendering *rr, uint32_t view, struct comp_viewp
 
 	// We currently only support two views.
 	assert(view == 0 || view == 1);
-	assert(rr->rts != NULL);
+	assert(rr->rtr != NULL);
 
 	rr->current_view = view;
 
@@ -732,7 +732,7 @@ void
 comp_draw_end_view(struct comp_rendering *rr)
 {
 	//! Must have a current target.
-	assert(rr->rts != NULL);
+	assert(rr->rtr != NULL);
 }
 
 void
@@ -762,7 +762,7 @@ comp_draw_distortion(struct comp_rendering *rr)
 	vk->vkCmdBindPipeline(               //
 	    rr->cmd,                         // commandBuffer
 	    VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
-	    rr->rts->mesh.pipeline);         // pipeline
+	    rr->rtr->mesh.pipeline);         // pipeline
 
 
 	/*

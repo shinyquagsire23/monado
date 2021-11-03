@@ -365,7 +365,7 @@ struct comp_rendering_target_resources
  * Init a target resource struct, caller has to keep target alive until closed.
  */
 bool
-comp_rendering_target_resources_init(struct comp_rendering_target_resources *rts,
+comp_rendering_target_resources_init(struct comp_rendering_target_resources *rtr,
                                      struct comp_resources *r,
                                      VkImageView target,
                                      struct comp_target_data *data);
@@ -374,7 +374,7 @@ comp_rendering_target_resources_init(struct comp_rendering_target_resources *rts
  * Frees all resources held by the target, does not free the struct itself.
  */
 void
-comp_rendering_target_resources_close(struct comp_rendering_target_resources *rts);
+comp_rendering_target_resources_close(struct comp_rendering_target_resources *rtr);
 
 
 /*
@@ -407,7 +407,7 @@ struct comp_rendering
 	struct comp_resources *r;
 
 	//! The current target we are rendering too, can change during command building.
-	struct comp_rendering_target_resources *rts;
+	struct comp_rendering_target_resources *rtr;
 
 	//! Command buffer where all commands are recorded.
 	VkCommandBuffer cmd;
@@ -469,7 +469,7 @@ struct comp_mesh_ubo_data
  * to comp_draw_begin_view.
  */
 bool
-comp_draw_begin_target(struct comp_rendering *rr, struct comp_rendering_target_resources *rts);
+comp_draw_begin_target(struct comp_rendering *rr, struct comp_rendering_target_resources *rtr);
 
 void
 comp_draw_end_target(struct comp_rendering *rr);
