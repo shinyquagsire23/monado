@@ -296,12 +296,15 @@ if(XRT_BUILD_DRIVER_EUROC)
 	list(APPEND ENABLED_DRIVERS euroc)
 endif()
 
-# We always build the sample driver, to make sure it stays valid, but it never gets linked
-add_library(drv_sample STATIC
-	sample/sample_hmd.c
-	sample/sample_interface.h
-	sample/sample_prober.c)
-target_link_libraries(drv_sample PRIVATE xrt-interfaces aux_util)
+if(XRT_BUILD_SAMPLES)
+	# We build the sample driver to make sure it stays valid,
+	# but it never gets linked into a final target.
+	add_library(drv_sample STATIC
+		sample/sample_hmd.c
+		sample/sample_interface.h
+		sample/sample_prober.c)
+	target_link_libraries(drv_sample PRIVATE xrt-interfaces aux_util)
+endif()
 
 if(ENABLED_HEADSET_DRIVERS)
 	set(ENABLED_DRIVERS ${ENABLED_HEADSET_DRIVERS} ${ENABLED_DRIVERS})

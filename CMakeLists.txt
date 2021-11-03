@@ -229,6 +229,8 @@ cmake_dependent_option(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" ON "Le
 cmake_dependent_option(XRT_BUILD_DRIVER_REMOTE "Enable remote debugging driver" ON "XRT_HAVE_LINUX OR ANDROID" OFF)
 option(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" ON)
 
+option(XRT_BUILD_SAMPLES "Enable compiling sample code implementations that will not be linked into any final targets" ON)
+
 # These all use the Monado internal hid wrapper.
 cmake_dependent_option(XRT_BUILD_DRIVER_HDK "Enable HDK driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_PSMV "Enable Playstation Move driver" ON "XRT_HAVE_INTERNAL_HID" OFF)
