@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Sync code for the main compositor.
+ * @brief  Independent @ref xrt_compositor_fence implementation.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup comp_main
  */
 
+#include "xrt/xrt_config_os.h"
+
+#include "main/comp_sync.h"
+
 #include "util/u_misc.h"
 #include "util/u_handles.h"
-
-#include "main/comp_compositor.h"
-
-#include <xrt/xrt_handles.h>
-#include <xrt/xrt_config_os.h>
+#include "util/u_trace_marker.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,22 +23,23 @@
 #endif
 
 
-
-struct fence
-{
-	struct xrt_compositor_fence base;
-	struct comp_compositor *c;
-
-	VkFence fence;
-};
-
-
 /*
  *
- * Helper functions.
+ * Structs.
  *
  */
 
+/*!
+ * A very simple implementation of a fence primitive.
+ */
+struct fence
+{
+	struct xrt_compositor_fence base;
+
+	struct vk_bundle *vk;
+
+	VkFence fence;
+};
 
 
 /*
@@ -53,7 +54,7 @@ fence_wait(struct xrt_compositor_fence *xcf, uint64_t timeout)
 	COMP_TRACE_MARKER();
 
 	struct fence *f = (struct fence *)xcf;
-	struct vk_bundle *vk = &f->c->vk;
+	struct vk_bundle *vk = f->vk;
 
 	// Count no handle as signled fence.
 	if (f->fence == VK_NULL_HANDLE) {
@@ -65,7 +66,7 @@ fence_wait(struct xrt_compositor_fence *xcf, uint64_t timeout)
 		return XRT_SUCCESS;
 	}
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(f->c, "vkWaitForFences: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vkWaitForFences: %s", vk_result_string(ret));
 		return XRT_ERROR_VULKAN;
 	}
 
@@ -78,7 +79,7 @@ fence_destroy(struct xrt_compositor_fence *xcf)
 	COMP_TRACE_MARKER();
 
 	struct fence *f = (struct fence *)xcf;
-	struct vk_bundle *vk = &f->c->vk;
+	struct vk_bundle *vk = f->vk;
 
 	if (f->fence != VK_NULL_HANDLE) {
 		vk->vkDestroyFence(vk->device, f->fence, NULL);
@@ -91,19 +92,14 @@ fence_destroy(struct xrt_compositor_fence *xcf)
 
 /*
  *
- * Compositor function.
+ * 'Exported' function.
  *
  */
 
 xrt_result_t
-comp_compositor_import_fence(struct xrt_compositor *xc,
-                             xrt_graphics_sync_handle_t handle,
-                             struct xrt_compositor_fence **out_xcf)
+comp_fence_import(struct vk_bundle *vk, xrt_graphics_sync_handle_t handle, struct xrt_compositor_fence **out_xcf)
 {
 	COMP_TRACE_MARKER();
-
-	struct comp_compositor *c = comp_compositor(xc);
-	struct vk_bundle *vk = &c->vk;
 
 	VkFence fence = VK_NULL_HANDLE;
 
@@ -116,7 +112,7 @@ comp_compositor_import_fence(struct xrt_compositor *xc,
 	f->base.wait = fence_wait;
 	f->base.destroy = fence_destroy;
 	f->fence = fence;
-	f->c = c;
+	f->vk = vk;
 
 	*out_xcf = &f->base;
 

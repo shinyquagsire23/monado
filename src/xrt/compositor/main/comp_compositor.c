@@ -125,6 +125,16 @@ compositor_swapchain_import(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
+compositor_import_fence(struct xrt_compositor *xc,
+                        xrt_graphics_sync_handle_t handle,
+                        struct xrt_compositor_fence **out_xcf)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+
+	return comp_fence_import(&c->vk, handle, out_xcf);
+}
+
+static xrt_result_t
 compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -1425,7 +1435,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	c->base.base.create_swapchain = compositor_swapchain_create;
 	c->base.base.import_swapchain = compositor_swapchain_import;
-	c->base.base.import_fence = comp_compositor_import_fence;
+	c->base.base.import_fence = compositor_import_fence;
 	c->base.base.begin_session = compositor_begin_session;
 	c->base.base.end_session = compositor_end_session;
 	c->base.base.predict_frame = compositor_predict_frame;

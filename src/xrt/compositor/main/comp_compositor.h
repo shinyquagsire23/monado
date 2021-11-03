@@ -19,6 +19,7 @@
 
 #include "vk/vk_image_allocator.h"
 
+#include "main/comp_sync.h"
 #include "main/comp_settings.h"
 #include "main/comp_swapchain.h"
 #include "main/comp_window.h"
@@ -209,14 +210,6 @@ comp_compositor(struct xrt_compositor *xc)
 {
 	return (struct comp_compositor *)xc;
 }
-
-/*!
- * For importing fences, defined in comp_sync.c .
- */
-xrt_result_t
-comp_compositor_import_fence(struct xrt_compositor *xc,
-                             xrt_graphics_sync_handle_t handle,
-                             struct xrt_compositor_fence **out_xcf);
 
 /*!
  * Spew level logging.
