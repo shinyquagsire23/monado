@@ -103,6 +103,28 @@ ts_ms()
  */
 
 static xrt_result_t
+compositor_swapchain_create(struct xrt_compositor *xc,
+                            const struct xrt_swapchain_create_info *info,
+                            struct xrt_swapchain **out_xsc)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+
+	return comp_swapchain_create(&c->vk, &c->cscgc, info, out_xsc);
+}
+
+static xrt_result_t
+compositor_swapchain_import(struct xrt_compositor *xc,
+                            const struct xrt_swapchain_create_info *info,
+                            struct xrt_image_native *native_images,
+                            uint32_t num_images,
+                            struct xrt_swapchain **out_xsc)
+{
+	struct comp_compositor *c = comp_compositor(xc);
+
+	return comp_swapchain_import(&c->vk, &c->cscgc, info, native_images, num_images, out_xsc);
+}
+
+static xrt_result_t
 compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -526,7 +548,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 	COMP_SPEW(c, "LAYER_COMMIT finished drawing at %8.3fms", ns_to_ms(c->last_frame_time_ns));
 
 	// Now is a good point to garbage collect.
-	comp_compositor_garbage_collect(c);
+	comp_swapchain_garbage_collect(&c->cscgc);
 
 	return XRT_SUCCESS;
 }
@@ -576,7 +598,7 @@ compositor_destroy(struct xrt_compositor *xc)
 	COMP_DEBUG(c, "COMP_DESTROY");
 
 	// Make sure we don't have anything to destroy.
-	comp_compositor_garbage_collect(c);
+	comp_swapchain_garbage_collect(&c->cscgc);
 
 	comp_renderer_destroy(&c->r);
 
@@ -611,7 +633,7 @@ compositor_destroy(struct xrt_compositor *xc)
 
 	os_precise_sleeper_deinit(&c->sleeper);
 
-	u_threading_stack_fini(&c->threading.destroy_swapchains);
+	u_threading_stack_fini(&c->cscgc.destroy_swapchains);
 
 	free(c);
 }
@@ -1401,8 +1423,8 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 {
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 
-	c->base.base.create_swapchain = comp_swapchain_create;
-	c->base.base.import_swapchain = comp_swapchain_import;
+	c->base.base.create_swapchain = compositor_swapchain_create;
+	c->base.base.import_swapchain = compositor_swapchain_import;
 	c->base.base.import_fence = comp_compositor_import_fence;
 	c->base.base.begin_session = compositor_begin_session;
 	c->base.base.end_session = compositor_end_session;
@@ -1426,7 +1448,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	c->frame.rendering.id = -1;
 	c->xdev = xdev;
 
-	u_threading_stack_init(&c->threading.destroy_swapchains);
+	u_threading_stack_init(&c->cscgc.destroy_swapchains);
 
 	COMP_DEBUG(c, "Doing init %p", (void *)c);
 
@@ -1582,14 +1604,4 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	c->state = COMP_STATE_READY;
 
 	return comp_multi_create_system_compositor(&c->base, sys_info, out_xsysc);
-}
-
-void
-comp_compositor_garbage_collect(struct comp_compositor *c)
-{
-	struct comp_swapchain *sc;
-
-	while ((sc = u_threading_stack_pop(&c->threading.destroy_swapchains))) {
-		comp_swapchain_really_destroy(sc);
-	}
 }

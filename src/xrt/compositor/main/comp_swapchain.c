@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Swapchain code for the main compositor.
+ * @brief  Independent swapchain implementation.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup comp_main
  */
 
+#include "xrt/xrt_handles.h"
+#include "xrt/xrt_config_os.h"
+
 #include "util/u_misc.h"
 #include "util/u_handles.h"
 
-#include "main/comp_compositor.h"
-
-#include <xrt/xrt_handles.h>
-#include <xrt/xrt_config_os.h>
+#include "main/comp_swapchain.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,9 +30,9 @@ swapchain_destroy(struct xrt_swapchain *xsc)
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
-	COMP_SPEW(sc->c, "DESTROY");
+	VK_TRACE(sc->vk, "DESTROY");
 
-	u_threading_stack_push(&sc->c->threading.destroy_swapchains, sc);
+	u_threading_stack_push(&sc->gc->destroy_swapchains, sc);
 }
 
 static xrt_result_t
@@ -40,7 +40,7 @@ swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
-	COMP_SPEW(sc->c, "ACQUIRE_IMAGE");
+	VK_TRACE(sc->vk, "ACQUIRE_IMAGE");
 
 	// Returns negative on empty fifo.
 	int res = u_index_fifo_pop(&sc->fifo, out_index);
@@ -55,7 +55,7 @@ swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
-	COMP_SPEW(sc->c, "WAIT_IMAGE");
+	VK_TRACE(sc->vk, "WAIT_IMAGE");
 	return XRT_SUCCESS;
 }
 
@@ -64,7 +64,7 @@ swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
-	COMP_SPEW(sc->c, "RELEASE_IMAGE");
+	VK_TRACE(sc->vk, "RELEASE_IMAGE");
 
 	int res = u_index_fifo_push(&sc->fifo, index);
 
@@ -89,7 +89,7 @@ swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	}
 
 static struct comp_swapchain *
-alloc_and_set_funcs(struct comp_compositor *c, uint32_t num_images)
+alloc_and_set_funcs(struct vk_bundle *vk, struct comp_swapchain_gc *cscgc, uint32_t num_images)
 {
 	struct comp_swapchain *sc = U_TYPED_CALLOC(struct comp_swapchain);
 	sc->base.base.destroy = swapchain_destroy;
@@ -97,7 +97,8 @@ alloc_and_set_funcs(struct comp_compositor *c, uint32_t num_images)
 	sc->base.base.wait_image = swapchain_wait_image;
 	sc->base.base.release_image = swapchain_release_image;
 	sc->base.base.num_images = num_images;
-	sc->c = c;
+	sc->vk = vk;
+	sc->gc = cscgc;
 
 	// Make sure the handles are invalid.
 	for (uint32_t i = 0; i < ARRAY_SIZE(sc->base.images); i++) {
@@ -128,11 +129,10 @@ is_stencil_only_format(VkFormat format)
 }
 
 static void
-do_post_create_vulkan_setup(struct comp_compositor *c,
+do_post_create_vulkan_setup(struct vk_bundle *vk,
                             const struct xrt_swapchain_create_info *info,
                             struct comp_swapchain *sc)
 {
-	struct vk_bundle *vk = &c->vk;
 	uint32_t num_images = sc->vkic.num_images;
 	VkCommandBuffer cmd_buffer;
 
@@ -271,29 +271,40 @@ image_cleanup(struct vk_bundle *vk, struct comp_swapchain_image *image)
 	D(Sampler, image->repeat_sampler);
 }
 
+static bool
+is_format_supported(struct vk_bundle *vk, VkFormat format)
+{
+	VkFormatProperties prop;
+
+	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);
+
+	// This is a fairly crude way of checking support,
+	// but works well enough.
+	return prop.optimalTilingFeatures != 0;
+}
+
+
 /*
  *
- * Exported functions.
+ * 'Exported' functions.
  *
  */
 
 xrt_result_t
-comp_swapchain_create(struct xrt_compositor *xc,
+comp_swapchain_create(struct vk_bundle *vk,
+                      struct comp_swapchain_gc *cscgc,
                       const struct xrt_swapchain_create_info *info,
                       struct xrt_swapchain **out_xsc)
 {
-	struct comp_compositor *c = comp_compositor(xc);
-	struct vk_bundle *vk = &c->vk;
 	uint32_t num_images = 3;
 	VkResult ret;
 
-	if (!comp_is_format_supported(c, info->format)) {
+	if (!is_format_supported(vk, info->format)) {
 		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
 	}
 
 	if ((info->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT) != 0) {
-		// This compositor doesn't support creating protected content
-		// swapchains.
+		// This compositor doesn't support creating protected content swapchains.
 		return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
 	}
 
@@ -301,11 +312,11 @@ comp_swapchain_create(struct xrt_compositor *xc,
 		num_images = 1;
 	}
 
-	struct comp_swapchain *sc = alloc_and_set_funcs(c, num_images);
+	struct comp_swapchain *sc = alloc_and_set_funcs(vk, cscgc, num_images);
 
-	COMP_DEBUG(c, "CREATE %p %dx%d %s (%ld)", (void *)sc, //
-	           info->width, info->height,                 //
-	           vk_color_format_string(info->format), info->format);
+	VK_DEBUG(vk, "CREATE %p %dx%d %s (%ld)", (void *)sc, //
+	         info->width, info->height,                  //
+	         vk_color_format_string(info->format), info->format);
 
 	// Use the image helper to allocate the images.
 	ret = vk_ic_allocate(vk, info, num_images, &sc->vkic);
@@ -330,7 +341,7 @@ comp_swapchain_create(struct xrt_compositor *xc,
 		sc->base.images[i].use_dedicated_allocation = sc->vkic.images[i].use_dedicated_allocation;
 	}
 
-	do_post_create_vulkan_setup(c, info, sc);
+	do_post_create_vulkan_setup(vk, info, sc);
 
 	// Correctly setup refcounts.
 	xrt_swapchain_reference(out_xsc, &sc->base.base);
@@ -339,19 +350,18 @@ comp_swapchain_create(struct xrt_compositor *xc,
 }
 
 xrt_result_t
-comp_swapchain_import(struct xrt_compositor *xc,
+comp_swapchain_import(struct vk_bundle *vk,
+                      struct comp_swapchain_gc *cscgc,
                       const struct xrt_swapchain_create_info *info,
                       struct xrt_image_native *native_images,
                       uint32_t num_images,
                       struct xrt_swapchain **out_xsc)
 {
-	struct comp_compositor *c = comp_compositor(xc);
-	struct vk_bundle *vk = &c->vk;
 	VkResult ret;
 
-	struct comp_swapchain *sc = alloc_and_set_funcs(c, num_images);
+	struct comp_swapchain *sc = alloc_and_set_funcs(vk, cscgc, num_images);
 
-	COMP_DEBUG(c, "CREATE FROM NATIVE %p %dx%d", (void *)sc, info->width, info->height);
+	VK_DEBUG(vk, "CREATE FROM NATIVE %p %dx%d", (void *)sc, info->width, info->height);
 
 	// Use the image helper to get the images.
 	ret = vk_ic_from_natives(vk, info, native_images, num_images, &sc->vkic);
@@ -359,7 +369,7 @@ comp_swapchain_import(struct xrt_compositor *xc,
 		return XRT_ERROR_VULKAN;
 	}
 
-	do_post_create_vulkan_setup(c, info, sc);
+	do_post_create_vulkan_setup(vk, info, sc);
 
 	// Correctly setup refcounts.
 	xrt_swapchain_reference(out_xsc, &sc->base.base);
@@ -370,9 +380,9 @@ comp_swapchain_import(struct xrt_compositor *xc,
 void
 comp_swapchain_really_destroy(struct comp_swapchain *sc)
 {
-	struct vk_bundle *vk = &sc->c->vk;
+	struct vk_bundle *vk = sc->vk;
 
-	COMP_SPEW(sc->c, "REALLY DESTROY");
+	VK_TRACE(vk, "REALLY DESTROY");
 
 	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
 		image_cleanup(vk, &sc->images[i]);
@@ -385,4 +395,14 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc)
 	vk_ic_destroy(vk, &sc->vkic);
 
 	free(sc);
+}
+
+void
+comp_swapchain_garbage_collect(struct comp_swapchain_gc *cscgc)
+{
+	struct comp_swapchain *sc;
+
+	while ((sc = u_threading_stack_pop(&cscgc->destroy_swapchains))) {
+		comp_swapchain_really_destroy(sc);
+	}
 }

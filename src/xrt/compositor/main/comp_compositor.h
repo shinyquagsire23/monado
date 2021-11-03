@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -20,6 +20,7 @@
 #include "vk/vk_image_allocator.h"
 
 #include "main/comp_settings.h"
+#include "main/comp_swapchain.h"
 #include "main/comp_window.h"
 #include "main/comp_renderer.h"
 #include "main/comp_target.h"
@@ -39,53 +40,6 @@ extern "C" {
  * Structs
  *
  */
-
-/*!
- * A single swapchain image, holds the needed state for tracking image usage.
- *
- * @ingroup comp_main
- * @see comp_swapchain
- */
-struct comp_swapchain_image
-{
-	//! Sampler used by the renderer and distortion code.
-	VkSampler sampler;
-	VkSampler repeat_sampler;
-	//! Views used by the renderer and distortion code, for each array
-	//! layer.
-	struct
-	{
-		VkImageView *alpha;
-		VkImageView *no_alpha;
-	} views;
-	//! The number of array slices in a texture, 1 == regular 2D texture.
-	size_t array_size;
-};
-
-/*!
- * A swapchain that is almost a one to one mapping to a OpenXR swapchain.
- *
- * Not used by the window backend that uses the vk_swapchain to render to.
- *
- * @ingroup comp_main
- * @implements xrt_swapchain_native
- * @see comp_compositor
- */
-struct comp_swapchain
-{
-	struct xrt_swapchain_native base;
-
-	struct comp_compositor *c;
-
-	struct vk_image_collection vkic;
-	struct comp_swapchain_image images[XRT_MAX_SWAPCHAIN_IMAGES];
-
-	/*!
-	 * This fifo is used to always give out the oldest image to acquire
-	 * image, this should probably be made even smarter.
-	 */
-	struct u_index_fifo fifo;
-};
 
 /*!
  * A single layer.
@@ -221,12 +175,7 @@ struct comp_compositor
 		struct comp_frame rendering;
 	} frame;
 
-	struct
-	{
-		//! Thread object for safely destroying swapchain.
-		struct u_threading_stack destroy_swapchains;
-	} threading;
-
+	struct comp_swapchain_gc cscgc;
 
 	struct
 	{
@@ -251,17 +200,6 @@ bool
 comp_is_format_supported(struct comp_compositor *c, VkFormat format);
 
 /*!
- * Convenience function to convert a xrt_swapchain to a comp_swapchain.
- *
- * @private @memberof comp_swapchain
- */
-static inline struct comp_swapchain *
-comp_swapchain(struct xrt_swapchain *xsc)
-{
-	return (struct comp_swapchain *)xsc;
-}
-
-/*!
  * Convenience function to convert a xrt_compositor to a comp_compositor.
  *
  * @private @memberof comp_compositor
@@ -271,47 +209,6 @@ comp_compositor(struct xrt_compositor *xc)
 {
 	return (struct comp_compositor *)xc;
 }
-
-/*!
- * Do garbage collection, destroying any resources that has been scheduled for
- * destruction from other threads.
- *
- * @public @memberof comp_compositor
- */
-void
-comp_compositor_garbage_collect(struct comp_compositor *c);
-
-/*!
- * A compositor function that is implemented in the swapchain code.
- *
- * @public @memberof comp_compositor
- */
-xrt_result_t
-comp_swapchain_create(struct xrt_compositor *xc,
-                      const struct xrt_swapchain_create_info *info,
-                      struct xrt_swapchain **out_xsc);
-
-/*!
- * A compositor function that is implemented in the swapchain code.
- *
- * @public @memberof comp_compositor
- */
-xrt_result_t
-comp_swapchain_import(struct xrt_compositor *xc,
-                      const struct xrt_swapchain_create_info *info,
-                      struct xrt_image_native *native_images,
-                      uint32_t num_images,
-                      struct xrt_swapchain **out_xsc);
-
-/*!
- * Swapchain destruct is delayed until it is safe to destroy them, this function
- * does the actual destruction and is called from @ref
- * comp_compositor_garbage_collect.
- *
- * @private @memberof comp_swapchain
- */
-void
-comp_swapchain_really_destroy(struct comp_swapchain *sc);
 
 /*!
  * For importing fences, defined in comp_sync.c .
