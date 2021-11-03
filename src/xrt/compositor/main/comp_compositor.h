@@ -19,14 +19,15 @@
 
 #include "vk/vk_image_allocator.h"
 
-#include "main/comp_sync.h"
-#include "main/comp_settings.h"
-#include "main/comp_swapchain.h"
-#include "main/comp_window.h"
-#include "main/comp_renderer.h"
-#include "main/comp_target.h"
+#include "util/comp_sync.h"
+#include "util/comp_swapchain.h"
 
 #include "render/comp_render.h"
+
+#include "main/comp_target.h"
+#include "main/comp_window.h"
+#include "main/comp_settings.h"
+#include "main/comp_renderer.h"
 
 
 #ifdef __cplusplus

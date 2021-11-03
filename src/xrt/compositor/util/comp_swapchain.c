@@ -13,7 +13,7 @@
 #include "util/u_misc.h"
 #include "util/u_handles.h"
 
-#include "main/comp_swapchain.h"
+#include "util/comp_swapchain.h"
 
 #include <stdio.h>
 #include <stdlib.h>

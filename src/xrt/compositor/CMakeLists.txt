@@ -17,6 +17,13 @@ spirv_shaders(SHADER_HEADERS
 
 set(CLIENT_SOURCE_FILES)
 
+set(UTIL_SOURCE_FILES
+	util/comp_swapchain.h
+	util/comp_swapchain.c
+	util/comp_sync.h
+	util/comp_sync.c
+	)
+
 set(MAIN_SOURCE_FILES
 	main/comp_compositor.c
 	main/comp_compositor.h
@@ -25,8 +32,6 @@ set(MAIN_SOURCE_FILES
 	main/comp_renderer.h
 	main/comp_settings.c
 	main/comp_settings.h
-	main/comp_swapchain.c
-	main/comp_sync.c
 	main/comp_target.h
 	main/comp_target_swapchain.c
 	main/comp_target_swapchain.h
@@ -110,6 +115,17 @@ endif()
 
 if(XRT_HAVE_OPENGL AND XRT_HAVE_XLIB)
 	target_link_libraries(comp_client PRIVATE OpenGL::GLX)
+endif()
+
+
+##
+# Util library
+#
+
+if(XRT_HAVE_VULKAN)
+	add_library(comp_util STATIC ${UTIL_SOURCE_FILES})
+	target_link_libraries(comp_util PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk)
+	target_include_directories(comp_util PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 
@@ -208,7 +224,7 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 	endif()
 
 	add_library(comp_main STATIC ${SHADER_HEADERS} ${MAIN_SOURCE_FILES})
-	target_link_libraries(comp_main PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk)
+	target_link_libraries(comp_main PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk comp_util)
 	target_include_directories(comp_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 	target_include_directories(comp_main SYSTEM PRIVATE
 		# Shaders - marked SYSTEM so we get no warnings

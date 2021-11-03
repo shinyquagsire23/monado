@@ -9,11 +9,11 @@
 
 #include "xrt/xrt_config_os.h"
 
-#include "main/comp_sync.h"
-
 #include "util/u_misc.h"
 #include "util/u_handles.h"
 #include "util/u_trace_marker.h"
+
+#include "util/comp_sync.h"
 
 #include <stdio.h>
 #include <stdlib.h>
