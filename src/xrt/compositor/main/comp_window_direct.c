@@ -18,7 +18,7 @@
 static inline struct vk_bundle *
 get_vk(struct comp_target_swapchain *cts)
 {
-	return &cts->base.c->vk;
+	return &cts->base.c->base.vk;
 }
 
 static int

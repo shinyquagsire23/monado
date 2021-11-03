@@ -94,7 +94,7 @@ comp_window_wayland_configure(struct comp_window_wayland *w, int32_t width, int3
 static inline struct vk_bundle *
 get_vk(struct comp_window_wayland *cww)
 {
-	return &cww->base.base.c->vk;
+	return &cww->base.base.c->base.vk;
 }
 
 struct comp_target *

@@ -55,7 +55,7 @@ struct comp_window_android
 static inline struct vk_bundle *
 get_vk(struct comp_window_android *cwa)
 {
-	return &cwa->base.base.c->vk;
+	return &cwa->base.base.c->base.vk;
 }
 
 static bool

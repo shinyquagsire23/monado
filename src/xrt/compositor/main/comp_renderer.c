@@ -107,7 +107,7 @@ static void
 renderer_wait_gpu_idle(struct comp_renderer *r)
 {
 	COMP_TRACE_MARKER();
-	struct vk_bundle *vk = &r->c->vk;
+	struct vk_bundle *vk = &r->c->base.vk;
 
 	os_mutex_lock(&vk->queue_mutex);
 	vk->vkDeviceWaitIdle(vk->device);
@@ -117,7 +117,7 @@ renderer_wait_gpu_idle(struct comp_renderer *r)
 static void
 renderer_init_semaphores(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
+	struct vk_bundle *vk = &r->c->base.vk;
 	VkResult ret;
 
 	VkSemaphoreCreateInfo info = {
@@ -358,7 +358,7 @@ renderer_create_renderings_and_fences(struct comp_renderer *r)
 
 	COMP_DEBUG(r->c, "Allocating %d Command Buffers.", r->num_buffers);
 
-	struct vk_bundle *vk = &r->c->vk;
+	struct vk_bundle *vk = &r->c->base.vk;
 
 	bool use_compute = r->settings->use_compute;
 	if (!use_compute) {
@@ -391,7 +391,7 @@ renderer_create_renderings_and_fences(struct comp_renderer *r)
 static void
 renderer_close_renderings_and_fences(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
+	struct vk_bundle *vk = &r->c->base.vk;
 	// Renderings
 	if (r->num_buffers > 0 && r->rtr_array != NULL) {
 		for (uint32_t i = 0; i < r->num_buffers; i++) {
@@ -421,7 +421,7 @@ renderer_close_renderings_and_fences(struct comp_renderer *r)
 static void
 renderer_create_layer_renderer(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
+	struct vk_bundle *vk = &r->c->base.vk;
 
 	assert(comp_target_check_ready(r->c->target));
 
@@ -534,7 +534,7 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 	r->semaphores.render_complete = VK_NULL_HANDLE;
 	r->rtr_array = NULL;
 
-	struct vk_bundle *vk = &r->c->vk;
+	struct vk_bundle *vk = &r->c->base.vk;
 
 	vk->vkGetDeviceQueue(vk->device, vk->queue_family_index, 0, &r->queue);
 	renderer_init_semaphores(r);
@@ -552,7 +552,7 @@ renderer_wait_for_last_fence(struct comp_renderer *r)
 		return;
 	}
 
-	struct vk_bundle *vk = &r->c->vk;
+	struct vk_bundle *vk = &r->c->base.vk;
 	VkResult ret;
 
 	ret = vk->vkWaitForFences(vk->device, 1, &r->fences[r->fenced_buffer], VK_TRUE, UINT64_MAX);
@@ -568,7 +568,7 @@ renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd)
 {
 	COMP_TRACE_MARKER();
 
-	struct vk_bundle *vk = &r->c->vk;
+	struct vk_bundle *vk = &r->c->base.vk;
 	VkResult ret;
 
 	VkPipelineStageFlags stage_flags[1] = {
@@ -727,7 +727,7 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 static void
 renderer_destroy(struct comp_renderer *r)
 {
-	struct vk_bundle *vk = &r->c->vk;
+	struct vk_bundle *vk = &r->c->base.vk;
 
 	// Command buffers
 	renderer_close_renderings_and_fences(r);
@@ -766,8 +766,8 @@ do_gfx_mesh_and_proj(struct comp_renderer *r,
 	const struct xrt_layer_data *data = &layer->data;
 	const uint32_t left_array_index = lvd->sub.array_index;
 	const uint32_t right_array_index = rvd->sub.array_index;
-	const struct comp_swapchain_image *left = &layer->scs[0]->images[lvd->sub.image_index];
-	const struct comp_swapchain_image *right = &layer->scs[1]->images[rvd->sub.image_index];
+	const struct comp_swapchain_image *left = &layer->sc_array[0]->images[lvd->sub.image_index];
+	const struct comp_swapchain_image *right = &layer->sc_array[1]->images[rvd->sub.image_index];
 
 	struct xrt_normalized_rect src_norm_rects[2] = {lvd->sub.norm_rect, rvd->sub.norm_rect};
 	if (data->flip_y) {
@@ -798,13 +798,12 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 	struct comp_compositor *c = r->c;
 	struct comp_target *ct = c->target;
 
-	const uint32_t slot_id = 0;
-	const uint32_t num_layers = c->slots[slot_id].num_layers;
+	const uint32_t num_layers = c->base.slot.num_layers;
 	struct comp_rendering_target_resources *rtr = &r->rtr_array[r->acquired_buffer];
 
-	if (num_layers == 1 && c->slots[slot_id].layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
+	if (num_layers == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
 		int i = 0;
-		const struct comp_layer *layer = &c->slots[slot_id].layers[i];
+		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
 		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
@@ -815,9 +814,9 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 
 		// We mark afterwards to not include CPU time spent.
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
-	} else if (num_layers == 1 && c->slots[slot_id].layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+	} else if (num_layers == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
 		int i = 0;
-		const struct comp_layer *layer = &c->slots[slot_id].layers[i];
+		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
 		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
@@ -910,8 +909,8 @@ do_projection_layers(struct comp_renderer *r,
 	const struct xrt_layer_data *data = &layer->data;
 	uint32_t left_array_index = lvd->sub.array_index;
 	uint32_t right_array_index = rvd->sub.array_index;
-	const struct comp_swapchain_image *left = &layer->scs[0]->images[lvd->sub.image_index];
-	const struct comp_swapchain_image *right = &layer->scs[1]->images[rvd->sub.image_index];
+	const struct comp_swapchain_image *left = &layer->sc_array[0]->images[lvd->sub.image_index];
+	const struct comp_swapchain_image *right = &layer->sc_array[1]->images[rvd->sub.image_index];
 
 	struct comp_viewport_data views[2];
 	calc_viewport_data(r, &views[0], &views[1]);
@@ -991,19 +990,18 @@ dispatch_compute(struct comp_renderer *r, struct comp_rendering_compute *crc)
 	VkImage target_image = r->c->target->images[r->acquired_buffer].handle;
 	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
 
-	uint32_t slot_id = 0;
-	uint32_t num_layers = c->slots[slot_id].num_layers;
-	if (num_layers > 0 && c->slots[slot_id].layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
+	uint32_t num_layers = c->base.slot.num_layers;
+	if (num_layers > 0 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
 		int i = 0;
-		const struct comp_layer *layer = &c->slots[slot_id].layers[i];
+		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
 		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
 		do_projection_layers(r, crc, layer, lvd, rvd);
-	} else if (num_layers > 0 && c->slots[slot_id].layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+	} else if (num_layers > 0 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
 		int i = 0;
-		const struct comp_layer *layer = &c->slots[slot_id].layers[i];
+		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
 		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;

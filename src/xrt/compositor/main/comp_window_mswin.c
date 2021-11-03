@@ -86,7 +86,7 @@ WndProc(HWND hWnd, unsigned int message, WPARAM wParam, LPARAM lParam)
 static inline struct vk_bundle *
 get_vk(struct comp_window_mswin *cwm)
 {
-	return &cwm->base.base.c->vk;
+	return &cwm->base.base.c->base.vk;
 }
 
 static void

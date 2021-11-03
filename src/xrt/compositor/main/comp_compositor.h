@@ -17,8 +17,7 @@
 #include "util/u_index_fifo.h"
 #include "util/u_logging.h"
 
-#include "vk/vk_image_allocator.h"
-
+#include "util/comp_base.h"
 #include "util/comp_sync.h"
 #include "util/comp_swapchain.h"
 
@@ -42,42 +41,6 @@ extern "C" {
  * Structs
  *
  */
-
-/*!
- * A single layer.
- *
- * @ingroup comp_main
- * @see comp_layer_slot
- */
-struct comp_layer
-{
-	/*!
-	 * Up to two compositor swapchains referenced per layer.
-	 *
-	 * Unused elements should be set to null.
-	 */
-	struct comp_swapchain *scs[2];
-
-	/*!
-	 * All basic (trivially-serializable) data associated with a layer.
-	 */
-	struct xrt_layer_data data;
-};
-
-/*!
- * A stack of layers.
- *
- * @ingroup comp_main
- * @see comp_compositor
- */
-struct comp_layer_slot
-{
-	enum xrt_blend_mode env_blend_mode;
-
-	struct comp_layer layers[COMP_MAX_LAYERS];
-
-	uint32_t num_layers;
-};
 
 /*!
  * State to emulate state transitions correctly.
@@ -113,7 +76,7 @@ struct comp_frame
  */
 struct comp_compositor
 {
-	struct xrt_compositor_native base;
+	struct comp_base base;
 
 	//! Renderer helper.
 	struct comp_renderer *r;
@@ -127,9 +90,6 @@ struct comp_compositor
 	//! The settings.
 	struct comp_settings settings;
 
-	//! Vulkan bundle of things.
-	struct vk_bundle vk;
-
 	//! Vulkan shaders that the compositor uses.
 	struct comp_shaders shaders;
 
@@ -138,11 +98,6 @@ struct comp_compositor
 
 	//! State for generating the correct set of events.
 	enum comp_state state;
-
-	struct os_precise_sleeper sleeper;
-
-	//! Triple buffered layer stacks.
-	struct comp_layer_slot slots[3];
 
 	/*!
 	 * @brief Data exclusive to the begin_frame/end_frame for computing an
@@ -176,8 +131,6 @@ struct comp_compositor
 		struct comp_frame waited;
 		struct comp_frame rendering;
 	} frame;
-
-	struct comp_swapchain_gc cscgc;
 
 	struct
 	{

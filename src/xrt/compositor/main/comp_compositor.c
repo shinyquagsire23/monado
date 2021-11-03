@@ -95,44 +95,18 @@ ts_ms()
 	return ns_to_ms(monotonic);
 }
 
+static struct vk_bundle *
+get_vk(struct comp_compositor *c)
+{
+	return &c->base.vk;
+}
+
 
 /*
  *
  * Compositor functions.
  *
  */
-
-static xrt_result_t
-compositor_swapchain_create(struct xrt_compositor *xc,
-                            const struct xrt_swapchain_create_info *info,
-                            struct xrt_swapchain **out_xsc)
-{
-	struct comp_compositor *c = comp_compositor(xc);
-
-	return comp_swapchain_create(&c->vk, &c->cscgc, info, out_xsc);
-}
-
-static xrt_result_t
-compositor_swapchain_import(struct xrt_compositor *xc,
-                            const struct xrt_swapchain_create_info *info,
-                            struct xrt_image_native *native_images,
-                            uint32_t num_images,
-                            struct xrt_swapchain **out_xsc)
-{
-	struct comp_compositor *c = comp_compositor(xc);
-
-	return comp_swapchain_import(&c->vk, &c->cscgc, info, native_images, num_images, out_xsc);
-}
-
-static xrt_result_t
-compositor_import_fence(struct xrt_compositor *xc,
-                        xrt_graphics_sync_handle_t handle,
-                        struct xrt_compositor_fence **out_xcf)
-{
-	struct comp_compositor *c = comp_compositor(xc);
-
-	return comp_fence_import(&c->vk, handle, out_xcf);
-}
 
 static xrt_result_t
 compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
@@ -220,43 +194,6 @@ compositor_mark_frame(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-compositor_wait_frame(struct xrt_compositor *xc,
-                      int64_t *out_frame_id,
-                      uint64_t *out_predicted_display_time_ns,
-                      uint64_t *out_predicted_display_period_ns)
-{
-	COMP_TRACE_MARKER();
-
-	struct comp_compositor *c = comp_compositor(xc);
-
-	int64_t frame_id = -1;
-	uint64_t wake_up_time_ns = 0;
-	uint64_t predicted_gpu_time_ns = 0;
-
-	xrt_comp_predict_frame(               //
-	    xc,                               //
-	    &frame_id,                        //
-	    &wake_up_time_ns,                 //
-	    &predicted_gpu_time_ns,           //
-	    out_predicted_display_time_ns,    //
-	    out_predicted_display_period_ns); //
-
-	uint64_t now_ns = os_monotonic_get_ns();
-	if (now_ns < wake_up_time_ns) {
-		uint32_t delay = (uint32_t)(wake_up_time_ns - now_ns);
-		os_precise_sleeper_nanosleep(&c->sleeper, delay);
-	}
-
-	now_ns = os_monotonic_get_ns();
-
-	xrt_comp_mark_frame(xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, now_ns);
-
-	*out_frame_id = frame_id;
-
-	return XRT_SUCCESS;
-}
-
-static xrt_result_t
 compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct comp_compositor *c = comp_compositor(xc);
@@ -306,144 +243,11 @@ compositor_add_frame_timing(struct comp_compositor *c)
 	    (float)diff * 1.f / 1000.f * 1.f / 1000.f;
 }
 
-static xrt_result_t
-compositor_layer_begin(struct xrt_compositor *xc,
-                       int64_t frame_id,
-                       uint64_t display_time_ns,
-                       enum xrt_blend_mode env_blend_mode)
-{
-	struct comp_compositor *c = comp_compositor(xc);
-
-	// Always zero for now.
-	uint32_t slot_id = 0;
-
-	c->slots[slot_id].env_blend_mode = env_blend_mode;
-	c->slots[slot_id].num_layers = 0;
-	return XRT_SUCCESS;
-}
-
-static xrt_result_t
-compositor_layer_stereo_projection(struct xrt_compositor *xc,
-                                   struct xrt_device *xdev,
-                                   struct xrt_swapchain *l_xsc,
-                                   struct xrt_swapchain *r_xsc,
-                                   const struct xrt_layer_data *data)
-{
-	struct comp_compositor *c = comp_compositor(xc);
-
-	// Without IPC we only have one slot
-	uint32_t slot_id = 0;
-	uint32_t layer_id = c->slots[slot_id].num_layers;
-
-	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
-	layer->scs[0] = comp_swapchain(l_xsc);
-	layer->scs[1] = comp_swapchain(r_xsc);
-	layer->data = *data;
-
-	c->slots[slot_id].num_layers++;
-	return XRT_SUCCESS;
-}
-
-static xrt_result_t
-compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
-                                         struct xrt_device *xdev,
-                                         struct xrt_swapchain *l_xsc,
-                                         struct xrt_swapchain *r_xsc,
-                                         struct xrt_swapchain *l_d_xsc,
-                                         struct xrt_swapchain *r_d_xsc,
-                                         const struct xrt_layer_data *data)
-{
-	struct comp_compositor *c = comp_compositor(xc);
-
-	// Without IPC we only have one slot
-	uint32_t slot_id = 0;
-	uint32_t layer_id = c->slots[slot_id].num_layers;
-
-	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
-	layer->scs[0] = comp_swapchain(l_xsc);
-	layer->scs[1] = comp_swapchain(r_xsc);
-	layer->data = *data;
-
-	c->slots[slot_id].num_layers++;
-	return XRT_SUCCESS;
-}
-
-static xrt_result_t
-do_single(struct xrt_compositor *xc,
-          struct xrt_device *xdev,
-          struct xrt_swapchain *xsc,
-          const struct xrt_layer_data *data)
-{
-	struct comp_compositor *c = comp_compositor(xc);
-
-	// Without IPC we only have one slot
-	uint32_t slot_id = 0;
-	uint32_t layer_id = c->slots[slot_id].num_layers;
-
-	struct comp_layer *layer = &c->slots[slot_id].layers[layer_id];
-	layer->scs[0] = comp_swapchain(xsc);
-	layer->scs[1] = NULL;
-	layer->data = *data;
-
-	c->slots[slot_id].num_layers++;
-	return XRT_SUCCESS;
-}
-
-static xrt_result_t
-compositor_layer_quad(struct xrt_compositor *xc,
-                      struct xrt_device *xdev,
-                      struct xrt_swapchain *xsc,
-                      const struct xrt_layer_data *data)
-{
-	return do_single(xc, xdev, xsc, data);
-}
-
-static xrt_result_t
-compositor_layer_cube(struct xrt_compositor *xc,
-                      struct xrt_device *xdev,
-                      struct xrt_swapchain *xsc,
-                      const struct xrt_layer_data *data)
-{
-#if 0
-	return do_single(xc, xdev, xsc, data);
-#else
-	return XRT_SUCCESS; //! @todo Implement
-#endif
-}
-
-static xrt_result_t
-compositor_layer_cylinder(struct xrt_compositor *xc,
-                          struct xrt_device *xdev,
-                          struct xrt_swapchain *xsc,
-                          const struct xrt_layer_data *data)
-{
-	return do_single(xc, xdev, xsc, data);
-}
-
-static xrt_result_t
-compositor_layer_equirect1(struct xrt_compositor *xc,
-                           struct xrt_device *xdev,
-                           struct xrt_swapchain *xsc,
-                           const struct xrt_layer_data *data)
-{
-	return do_single(xc, xdev, xsc, data);
-}
-
-static xrt_result_t
-compositor_layer_equirect2(struct xrt_compositor *xc,
-                           struct xrt_device *xdev,
-                           struct xrt_swapchain *xsc,
-                           const struct xrt_layer_data *data)
-{
-	return do_single(xc, xdev, xsc, data);
-}
-
 static void
 do_graphics_layers(struct comp_compositor *c)
 {
 	// Always zero for now.
-	uint32_t slot_id = 0;
-	uint32_t num_layers = c->slots[slot_id].num_layers;
+	uint32_t num_layers = c->base.slot.num_layers;
 
 	comp_renderer_destroy_layers(c->r);
 
@@ -452,7 +256,7 @@ do_graphics_layers(struct comp_compositor *c)
 	 * to the distortion shader, so no need to use the layer renderer.
 	 */
 	if (num_layers == 1) {
-		struct comp_layer *layer = &c->slots[slot_id].layers[0];
+		struct comp_layer *layer = &c->base.slot.layers[0];
 
 		// Handled by the distortion shader.
 		if (layer->data.type == XRT_LAYER_STEREO_PROJECTION ||
@@ -464,7 +268,7 @@ do_graphics_layers(struct comp_compositor *c)
 	comp_renderer_allocate_layers(c->r, num_layers);
 
 	for (uint32_t i = 0; i < num_layers; i++) {
-		struct comp_layer *layer = &c->slots[slot_id].layers[i];
+		struct comp_layer *layer = &c->base.slot.layers[i];
 		struct xrt_layer_data *data = &layer->data;
 
 		COMP_SPEW(c, "LAYER_COMMIT (%d) predicted display time: %8.3fms", i, ns_to_ms(data->timestamp));
@@ -473,15 +277,15 @@ do_graphics_layers(struct comp_compositor *c)
 		case XRT_LAYER_QUAD: {
 			struct xrt_layer_quad_data *quad = &layer->data.quad;
 			struct comp_swapchain_image *image;
-			image = &layer->scs[0]->images[quad->sub.image_index];
+			image = &layer->sc_array[0]->images[quad->sub.image_index];
 			comp_renderer_set_quad_layer(c->r, i, image, data);
 		} break;
 		case XRT_LAYER_STEREO_PROJECTION: {
 			struct xrt_layer_stereo_projection_data *stereo = &data->stereo;
 			struct comp_swapchain_image *right;
 			struct comp_swapchain_image *left;
-			left = &layer->scs[0]->images[stereo->l.sub.image_index];
-			right = &layer->scs[1]->images[stereo->r.sub.image_index];
+			left = &layer->sc_array[0]->images[stereo->l.sub.image_index];
+			right = &layer->sc_array[1]->images[stereo->r.sub.image_index];
 
 			comp_renderer_set_projection_layer(c->r, i, left, right, data);
 		} break;
@@ -489,8 +293,8 @@ do_graphics_layers(struct comp_compositor *c)
 			struct xrt_layer_stereo_projection_depth_data *stereo = &data->stereo_depth;
 			struct comp_swapchain_image *right;
 			struct comp_swapchain_image *left;
-			left = &layer->scs[0]->images[stereo->l.sub.image_index];
-			right = &layer->scs[1]->images[stereo->r.sub.image_index];
+			left = &layer->sc_array[0]->images[stereo->l.sub.image_index];
+			right = &layer->sc_array[1]->images[stereo->r.sub.image_index];
 
 			//! @todo: Make use of stereo->l_d and stereo->r_d
 
@@ -499,14 +303,14 @@ do_graphics_layers(struct comp_compositor *c)
 		case XRT_LAYER_CYLINDER: {
 			struct xrt_layer_cylinder_data *cyl = &layer->data.cylinder;
 			struct comp_swapchain_image *image;
-			image = &layer->scs[0]->images[cyl->sub.image_index];
+			image = &layer->sc_array[0]->images[cyl->sub.image_index];
 			comp_renderer_set_cylinder_layer(c->r, i, image, data);
 		} break;
 #ifdef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 		case XRT_LAYER_EQUIRECT1: {
 			struct xrt_layer_equirect1_data *eq = &layer->data.equirect1;
 			struct comp_swapchain_image *image;
-			image = &layer->scs[0]->images[eq->sub.image_index];
+			image = &layer->sc_array[0]->images[eq->sub.image_index];
 			comp_renderer_set_equirect1_layer(c->r, i, image, data);
 		} break;
 #endif
@@ -514,7 +318,7 @@ do_graphics_layers(struct comp_compositor *c)
 		case XRT_LAYER_EQUIRECT2: {
 			struct xrt_layer_equirect2_data *eq = &layer->data.equirect2;
 			struct comp_swapchain_image *image;
-			image = &layer->scs[0]->images[eq->sub.image_index];
+			image = &layer->sc_array[0]->images[eq->sub.image_index];
 			comp_renderer_set_equirect2_layer(c->r, i, image, data);
 		} break;
 #endif
@@ -558,7 +362,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 	COMP_SPEW(c, "LAYER_COMMIT finished drawing at %8.3fms", ns_to_ms(c->last_frame_time_ns));
 
 	// Now is a good point to garbage collect.
-	comp_swapchain_garbage_collect(&c->cscgc);
+	comp_swapchain_garbage_collect(&c->base.cscgc);
 
 	return XRT_SUCCESS;
 }
@@ -603,12 +407,12 @@ static void
 compositor_destroy(struct xrt_compositor *xc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
-	struct vk_bundle *vk = &c->vk;
+	struct vk_bundle *vk = get_vk(c);
 
 	COMP_DEBUG(c, "COMP_DESTROY");
 
 	// Make sure we don't have anything to destroy.
-	comp_swapchain_garbage_collect(&c->cscgc);
+	comp_swapchain_garbage_collect(&c->base.cscgc);
 
 	comp_renderer_destroy(&c->r);
 
@@ -641,9 +445,7 @@ compositor_destroy(struct xrt_compositor *xc)
 		free(c->compositor_frame_times.debug_var);
 	}
 
-	os_precise_sleeper_deinit(&c->sleeper);
-
-	u_threading_stack_fini(&c->cscgc.destroy_swapchains);
+	comp_base_fini(&c->base);
 
 	free(c);
 }
@@ -874,7 +676,7 @@ select_instances_extensions(struct comp_compositor *c, const char ***out_exts, u
 static VkResult
 create_instance(struct comp_compositor *c)
 {
-	struct vk_bundle *vk = &c->vk;
+	struct vk_bundle *vk = get_vk(c);
 	const char **instance_extensions;
 	uint32_t num_extensions;
 	VkResult ret;
@@ -939,7 +741,7 @@ get_device_uuid(struct vk_bundle *vk, struct comp_compositor *c, int gpu_index, 
 static bool
 compositor_init_vulkan(struct comp_compositor *c)
 {
-	struct vk_bundle *vk = &c->vk;
+	struct vk_bundle *vk = get_vk(c);
 	VkResult ret;
 
 	vk->ll = c->settings.log_level;
@@ -1350,8 +1152,6 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c)
 static bool
 compositor_init_window_post_vulkan(struct comp_compositor *c)
 {
-	os_precise_sleeper_init(&c->sleeper);
-
 	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA) {
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 		return compositor_try_window(c, comp_window_direct_nvidia_create(c));
@@ -1392,7 +1192,7 @@ compositor_init_swapchain(struct comp_compositor *c)
 static bool
 compositor_init_shaders(struct comp_compositor *c)
 {
-	struct vk_bundle *vk = &c->vk;
+	struct vk_bundle *vk = get_vk(c);
 
 	return comp_shaders_load(&c->shaders, vk);
 }
@@ -1400,7 +1200,7 @@ compositor_init_shaders(struct comp_compositor *c)
 static bool
 compositor_init_renderer(struct comp_compositor *c)
 {
-	if (!comp_resources_init(&c->nr, &c->shaders, &c->vk, c->xdev)) {
+	if (!comp_resources_init(&c->nr, &c->shaders, get_vk(c), c->xdev)) {
 		return false;
 	}
 
@@ -1411,7 +1211,7 @@ compositor_init_renderer(struct comp_compositor *c)
 bool
 comp_is_format_supported(struct comp_compositor *c, VkFormat format)
 {
-	struct vk_bundle *vk = &c->vk;
+	struct vk_bundle *vk = get_vk(c);
 	VkFormatProperties prop;
 
 	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);
@@ -1433,32 +1233,18 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 {
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 
-	c->base.base.create_swapchain = compositor_swapchain_create;
-	c->base.base.import_swapchain = compositor_swapchain_import;
-	c->base.base.import_fence = compositor_import_fence;
-	c->base.base.begin_session = compositor_begin_session;
-	c->base.base.end_session = compositor_end_session;
-	c->base.base.predict_frame = compositor_predict_frame;
-	c->base.base.mark_frame = compositor_mark_frame;
-	c->base.base.wait_frame = compositor_wait_frame;
-	c->base.base.begin_frame = compositor_begin_frame;
-	c->base.base.discard_frame = compositor_discard_frame;
-	c->base.base.layer_begin = compositor_layer_begin;
-	c->base.base.layer_stereo_projection = compositor_layer_stereo_projection;
-	c->base.base.layer_stereo_projection_depth = compositor_layer_stereo_projection_depth;
-	c->base.base.layer_quad = compositor_layer_quad;
-	c->base.base.layer_cube = compositor_layer_cube;
-	c->base.base.layer_cylinder = compositor_layer_cylinder;
-	c->base.base.layer_equirect1 = compositor_layer_equirect1;
-	c->base.base.layer_equirect2 = compositor_layer_equirect2;
-	c->base.base.layer_commit = compositor_layer_commit;
-	c->base.base.poll_events = compositor_poll_events;
-	c->base.base.destroy = compositor_destroy;
+	c->base.base.base.begin_session = compositor_begin_session;
+	c->base.base.base.end_session = compositor_end_session;
+	c->base.base.base.predict_frame = compositor_predict_frame;
+	c->base.base.base.mark_frame = compositor_mark_frame;
+	c->base.base.base.begin_frame = compositor_begin_frame;
+	c->base.base.base.discard_frame = compositor_discard_frame;
+	c->base.base.base.layer_commit = compositor_layer_commit;
+	c->base.base.base.poll_events = compositor_poll_events;
+	c->base.base.base.destroy = compositor_destroy;
 	c->frame.waited.id = -1;
 	c->frame.rendering.id = -1;
 	c->xdev = xdev;
-
-	u_threading_stack_init(&c->cscgc.destroy_swapchains);
 
 	COMP_DEBUG(c, "Doing init %p", (void *)c);
 
@@ -1483,7 +1269,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	    !compositor_init_swapchain(c) ||
 	    !compositor_init_renderer(c)) {
 		COMP_ERROR(c, "Failed to init compositor %p", (void *)c);
-		c->base.base.destroy(&c->base.base);
+		c->base.base.base.destroy(&c->base.base.base);
 
 		return XRT_ERROR_VULKAN;
 	}
@@ -1498,7 +1284,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	 * remember to update the GL client as well.
 	 */
 
-	struct xrt_compositor_info *info = &c->base.base.info;
+	struct xrt_compositor_info *info = &c->base.base.base.info;
 	/*
 	 * These are the available formats we will expose to our clients.
 	 *
@@ -1613,5 +1399,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	c->state = COMP_STATE_READY;
 
-	return comp_multi_create_system_compositor(&c->base, sys_info, out_xsysc);
+	comp_base_init(&c->base);
+
+	return comp_multi_create_system_compositor(&c->base.base, sys_info, out_xsysc);
 }

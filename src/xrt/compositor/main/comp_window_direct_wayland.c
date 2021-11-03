@@ -120,7 +120,7 @@ comp_window_direct_wayland_destroy(struct comp_target *w)
 static inline struct vk_bundle *
 get_vk(struct comp_window_direct_wayland *cww)
 {
-	return &cww->base.base.c->vk;
+	return &cww->base.base.c->base.vk;
 }
 
 static void

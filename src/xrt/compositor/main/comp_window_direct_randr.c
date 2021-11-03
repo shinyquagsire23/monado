@@ -92,7 +92,7 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w);
 static inline struct vk_bundle *
 get_vk(struct comp_window_direct_randr *cwdr)
 {
-	return &cwdr->base.base.c->vk;
+	return &cwdr->base.base.c->base.vk;
 }
 
 static void

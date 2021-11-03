@@ -71,7 +71,7 @@ comp_window_direct_nvidia_init_swapchain(struct comp_target *ct, uint32_t width,
 static inline struct vk_bundle *
 get_vk(struct comp_target *ct)
 {
-	return &ct->c->vk;
+	return &ct->c->base.vk;
 }
 
 static void

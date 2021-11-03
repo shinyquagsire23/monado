@@ -120,7 +120,7 @@ comp_window_xcb_update_window_title(struct comp_target *ct, const char *title);
 static inline struct vk_bundle *
 get_vk(struct comp_window_xcb *cwx)
 {
-	return &cwx->base.base.c->vk;
+	return &cwx->base.base.c->base.vk;
 }
 
 struct comp_target *

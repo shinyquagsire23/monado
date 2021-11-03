@@ -80,7 +80,7 @@ _check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surf
 static inline struct vk_bundle *
 get_vk(struct comp_target_swapchain *cts)
 {
-	return &cts->base.c->vk;
+	return &cts->base.c->base.vk;
 }
 
 static void
