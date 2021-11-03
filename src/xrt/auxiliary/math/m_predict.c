@@ -43,7 +43,7 @@ do_orientation(const struct xrt_space_relation *rel,
 		accum.z += ang_vel_body_space.z;
 	}
 
-	// We don't want the angular acceleration, it's way to noisy.
+	// We don't want the angular acceleration, it's way too noisy.
 #if 0
 	if (valid_angular_acceleration) {
 		accum.x += delta_s / 2 * rel->angular_acceleration.x;

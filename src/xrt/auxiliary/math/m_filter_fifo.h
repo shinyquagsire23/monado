@@ -27,7 +27,7 @@ void
 m_ff_vec3_f32_alloc(struct m_ff_vec3_f32 **ff_out, size_t num);
 
 /*!
- * Frees the given filter fifo and all it's samples.
+ * Frees the given filter fifo and all its samples.
  */
 void
 m_ff_vec3_f32_free(struct m_ff_vec3_f32 **ff_ptr);
@@ -75,7 +75,7 @@ void
 m_ff_f64_alloc(struct m_ff_f64 **ff_out, size_t num);
 
 /*!
- * Frees the given filter fifo and all it's samples.
+ * Frees the given filter fifo and all its samples.
  */
 void
 m_ff_f64_free(struct m_ff_f64 **ff_ptr);
