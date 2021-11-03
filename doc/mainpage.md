@@ -17,7 +17,7 @@ getting started information and general documentation.
 * @ref understanding-targets - How all the pieces (`xrt_instance`, IPC, OpenXR)
   fit together.
 * @ref vulkan-extensions
-* @ref writing-driver (**not complete**)
+* @ref writing-driver
 * @ref ipc-design
 * @ref frame-timing
 * @ref tracing

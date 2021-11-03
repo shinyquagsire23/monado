@@ -21,6 +21,8 @@ extern "C" {
  * @brief Simple do-nothing sample driver, that cannot be detected by USB VID/PID
  * and thus exposes an "auto-prober" to explicitly discover the device.
  *
+ * See @ref writing-driver for additional information.
+ *
  * This device has an implementation of @ref xrt_auto_prober to perform hardware
  * detection, as well as an implementation of @ref xrt_device for the actual device.
  *
@@ -28,27 +30,6 @@ extern "C" {
  * you can skip the @ref xrt_auto_prober implementation, and instead implement a
  * "found" function that matches the signature expected by xrt_prober_entry::found.
  * See for example @ref hdk_found.
- *
- * After you copy and rename these files, you can customize them with the following,
- * assuming your new device type is called `struct my_device` or `md` for short, and
- * your auto-prober is called `struct my_device_auto_prober` or `mdap` for short:
- *
- * ```sh
- * # First pattern is for renaming device types,
- * # second is for renaming device variables,
- * # third is for renaming device macros.
- * # Fourth and fifth are for renaming auto prober types and variables, respectively.
- * # The last two are for renaming the environment variable and function name
- * # for the environment variable logging config.
- * sed -r -e 's/sample_hmd/my_device/g' \
- *   -e 's/\bsh\b/md/g' \
- *   -e 's/sample_auto_prober/my_device_auto_prober/g' \
- *   -e 's/\bsap\b/mdap/g' \
- *   -e 's/\bSH_/MD_/g' \
- *   -e 's/sample/my_device/g' \
- *   -e 's/SAMPLE/MY_DEVICE/g' \
- *   -i *.c *.h
- * ```
  */
 
 /*!
