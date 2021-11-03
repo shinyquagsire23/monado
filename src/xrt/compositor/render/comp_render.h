@@ -104,7 +104,7 @@ comp_shaders_close(struct comp_shaders *s, struct vk_bundle *vk);
  */
 
 /*!
- * Helper struct holding a buffer and it's memory.
+ * Helper struct holding a buffer and its memory.
  */
 struct comp_buffer
 {

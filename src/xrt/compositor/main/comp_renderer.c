@@ -73,7 +73,7 @@ struct comp_renderer
 	/*!
 	 * Array of "rendering" target resources equal in size to the number of
 	 * comp_target images. Each target resources holds all of the resources
-	 * needed to render to that target and it's views.
+	 * needed to render to that target and its views.
 	 */
 	struct comp_rendering_target_resources *rtr_array;
 
