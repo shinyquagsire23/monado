@@ -217,7 +217,7 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 		ht/ht_interface.h
 		ht/ht_models.hpp
 		ht/ht_hand_math.cpp
-		ht/ht_image_math.hpp
+		ht/ht_image_math.cpp
 		ht/ht_nms.hpp
 		ht/templates/NaivePermutationSort.hpp)
 	target_link_libraries(drv_ht PRIVATE xrt-interfaces aux_os aux_util aux_math aux_gstreamer ONNXRuntime::ONNXRuntime ${OpenCV_LIBRARIES})

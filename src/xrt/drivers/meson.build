@@ -92,7 +92,7 @@ lib_drv_ht = static_library(
 		'ht/ht_interface.h',
 		'ht/ht_models.hpp',
 		'ht/ht_hand_math.cpp',
-		'ht/ht_image_math.hpp',
+		'ht/ht_image_math.cpp',
 		'ht/ht_nms.hpp',
 		'ht/templates/NaivePermutationSort.hpp',
 	),
