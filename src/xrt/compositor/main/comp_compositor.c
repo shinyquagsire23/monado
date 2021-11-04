@@ -79,7 +79,7 @@
  *
  */
 
-#define CVK_ERROR(C, FUNC, MSG, RET) COMP_ERROR(C, FUNC ": %s\t\n" MSG, vk_result_string(RET));
+#define CVK_ERROR(C, FUNC, MSG, RET) COMP_ERROR(C, FUNC ": %s\n\t" MSG, vk_result_string(RET));
 
 static double
 ns_to_ms(int64_t ns)
