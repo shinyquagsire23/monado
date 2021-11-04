@@ -216,7 +216,7 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 		ht/ht_driver.hpp
 		ht/ht_interface.h
 		ht/ht_models.hpp
-		ht/ht_hand_math.hpp
+		ht/ht_hand_math.cpp
 		ht/ht_image_math.hpp
 		ht/ht_nms.hpp
 		ht/templates/NaivePermutationSort.hpp)
