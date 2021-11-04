@@ -227,15 +227,14 @@ reuse:
     - meson .. $MESON_ARGS
     - ninja
 
-debian:cmake:
+debian:bullseye:cmake:
   extends:
-    - .monado.variables.debian:buster
+    - .monado.variables.debian:bullseye
     - .fdo.distribution-image@debian # from ci-templates
     - .monado.base-job.build-cmake
   before_script:
     # Generate "changes since last release" and add to changelog,
     # since this is the build that makes our docs.
-    - pip3 install proclamation
     - pushd doc/changes
     - proclamation build --overwrite vNEXT
     - popd
@@ -503,7 +502,7 @@ pages:
   only:
     - master
   dependencies:
-    - debian:cmake
+    - debian:bullseye:cmake
     - reprepro:package
   script:
     - mkdir -p public
