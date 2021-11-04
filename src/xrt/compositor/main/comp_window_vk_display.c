@@ -66,6 +66,12 @@ comp_window_vk_display_init_swapchain(struct comp_target *ct, uint32_t width, ui
  *
  */
 
+static inline struct vk_bundle *
+get_vk(struct comp_target *ct)
+{
+	return &ct->c->vk;
+}
+
 static void
 _flush(struct comp_target *ct)
 {
@@ -152,7 +158,7 @@ static bool
 comp_window_vk_display_init(struct comp_target *ct)
 {
 	struct comp_window_vk_display *w_direct = (struct comp_window_vk_display *)ct;
-	struct vk_bundle *vk = &ct->c->vk;
+	struct vk_bundle *vk = get_vk(ct);
 
 	// Sanity check.
 	if (vk->instance == VK_NULL_HANDLE) {

@@ -68,6 +68,12 @@ comp_window_direct_nvidia_init_swapchain(struct comp_target *ct, uint32_t width,
  *
  */
 
+static inline struct vk_bundle *
+get_vk(struct comp_target *ct)
+{
+	return &ct->c->vk;
+}
+
 static void
 _flush(struct comp_target *ct)
 {
@@ -163,7 +169,7 @@ static bool
 comp_window_direct_nvidia_init(struct comp_target *ct)
 {
 	struct comp_window_direct_nvidia *w_direct = (struct comp_window_direct_nvidia *)ct;
-	struct vk_bundle *vk = &ct->c->vk;
+	struct vk_bundle *vk = get_vk(ct);
 
 	// Sanity check.
 	if (vk->instance == VK_NULL_HANDLE) {

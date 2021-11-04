@@ -174,9 +174,10 @@ static bool
 comp_window_direct_randr_init(struct comp_target *ct)
 {
 	struct comp_window_direct_randr *w_direct = (struct comp_window_direct_randr *)ct;
+	struct vk_bundle *vk = get_vk(w_direct);
 
 	// Sanity check.
-	if (ct->c->vk.instance != VK_NULL_HANDLE) {
+	if (vk->instance != VK_NULL_HANDLE) {
 		COMP_ERROR(ct->c, "Vulkan initialized before RANDR init!");
 		return false;
 	}
