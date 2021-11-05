@@ -39,9 +39,8 @@
 #include "tracking/t_frame_cv_mat_wrapper.hpp"
 #include "tracking/t_calibration_opencv.hpp"
 
-#include "templates/NaivePermutationSort.hpp"
-
 #include "ht_algorithm.hpp"
+#include "ht_models.hpp"
 
 #include <cjson/cJSON.h>
 #include <opencv2/core/mat.hpp>

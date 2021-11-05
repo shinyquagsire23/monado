@@ -87,6 +87,7 @@ lib_drv_ulv2 = static_library(
 lib_drv_ht = static_library(
 	'drv_ht',
 	files(
+		'ht/ht_algorithm.cpp',
 		'ht/ht_driver.cpp',
 		'ht/ht_driver.hpp',
 		'ht/ht_interface.h',
@@ -94,7 +95,6 @@ lib_drv_ht = static_library(
 		'ht/ht_hand_math.cpp',
 		'ht/ht_image_math.cpp',
 		'ht/ht_nms.cpp',
-		'ht/templates/NaivePermutationSort.hpp',
 	),
 	include_directories: [xrt_include, cjson_include],
 	dependencies: [aux, opencv, onnxruntime, eigen3],
