@@ -11,6 +11,7 @@
 
 #include "cjson/cJSON.h"
 #include "math/m_filter_one_euro.h"
+#include "math/m_vec2.h"
 #include "os/os_time.h"
 #include "util/u_frame.h"
 

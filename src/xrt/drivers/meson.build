@@ -90,7 +90,7 @@ lib_drv_ht = static_library(
 		'ht/ht_driver.cpp',
 		'ht/ht_driver.hpp',
 		'ht/ht_interface.h',
-		'ht/ht_models.hpp',
+		'ht/ht_models.cpp',
 		'ht/ht_hand_math.cpp',
 		'ht/ht_image_math.cpp',
 		'ht/ht_nms.cpp',
