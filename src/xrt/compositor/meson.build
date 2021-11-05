@@ -43,6 +43,8 @@ compositor_srcs = [
 	'util/comp_swapchain.c',
 	'util/comp_sync.h',
 	'util/comp_sync.c',
+	'util/comp_vulkan.h',
+	'util/comp_vulkan.c',
 ]
 
 compile_args = []

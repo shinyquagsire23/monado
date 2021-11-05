@@ -24,6 +24,8 @@ set(UTIL_SOURCE_FILES
 	util/comp_swapchain.c
 	util/comp_sync.h
 	util/comp_sync.c
+	util/comp_vulkan.h
+	util/comp_vulkan.c
 	)
 
 set(RENDER_SOURCE_FILES
