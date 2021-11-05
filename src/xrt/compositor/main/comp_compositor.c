@@ -54,6 +54,7 @@
 #include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
 
+#include "util/comp_vulkan.h"
 #include "main/comp_compositor.h"
 
 #include "multi/comp_multi_interface.h"
@@ -683,185 +684,59 @@ select_instances_extensions(struct comp_compositor *c, const char ***out_exts, u
 	return VK_SUCCESS;
 }
 
-static VkResult
-create_instance(struct comp_compositor *c)
-{
-	struct vk_bundle *vk = get_vk(c);
-	const char **instance_extensions;
-	uint32_t num_extensions;
-	VkResult ret;
-
-	VkApplicationInfo app_info = {
-	    .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-	    .pApplicationName = "Collabora Compositor",
-	    .pEngineName = "Monado",
-	    .apiVersion = VK_MAKE_VERSION(1, 0, 2),
-	};
-
-	ret = select_instances_extensions(c, &instance_extensions, &num_extensions);
-	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "select_instances_extensions", "Failed to select instance extensions.", ret);
-		return ret;
-	}
-
-	VkInstanceCreateInfo instance_info = {
-	    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-	    .pApplicationInfo = &app_info,
-	    .enabledExtensionCount = num_extensions,
-	    .ppEnabledExtensionNames = instance_extensions,
-	};
-
-	ret = vk->vkCreateInstance(&instance_info, NULL, &vk->instance);
-	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "vkCreateInstance", "Failed to create Vulkan instance", ret);
-		return ret;
-	}
-
-	ret = vk_get_instance_functions(vk);
-	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "vk_get_instance_functions", "Failed to get Vulkan instance functions.", ret);
-		return ret;
-	}
-
-	return ret;
-}
-
-static bool
-get_device_uuid(struct vk_bundle *vk, struct comp_compositor *c, int gpu_index, uint8_t *uuid)
-{
-	VkPhysicalDeviceIDProperties pdidp = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
-
-	VkPhysicalDeviceProperties2 pdp2 = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, .pNext = &pdidp};
-
-	VkPhysicalDevice phys[16];
-	uint32_t gpu_count = ARRAY_SIZE(phys);
-	VkResult ret;
-
-	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, phys);
-	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "vkEnumeratePhysicalDevices", "Failed to enumerate physical devices.", ret);
-		return false;
-	}
-	vk->vkGetPhysicalDeviceProperties2(phys[gpu_index], &pdp2);
-	memcpy(uuid, pdidp.deviceUUID, XRT_GPU_UUID_SIZE);
-
-	return true;
-}
-
 static bool
 compositor_init_vulkan(struct comp_compositor *c)
 {
 	struct vk_bundle *vk = get_vk(c);
 	VkResult ret;
 
-	vk->ll = c->settings.log_level;
-
-	//! @todo Do any library loading here.
-	ret = vk_get_loader_functions(vk, vkGetInstanceProcAddr);
-	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "vk_get_loader_functions", "Failed to get VkInstance get process address.", ret);
-		return false;
-	}
-
-	ret = create_instance(c);
-	if (ret != VK_SUCCESS) {
-		// Error already reported.
-		return false;
-	}
-
-	const char *prio_strs[3] = {
-	    "realtime",
-	    "high",
-	    "normal",
+	struct comp_vulkan_arguments vk_args = {
+	    .get_instance_proc_address = vkGetInstanceProcAddr,
+	    .instance_extensions =
+	        {
+	            .array = NULL, // Filled in below
+	            .num = 0,      // Filled in below
+	        },
+	    .required_device_extensions =
+	        {
+	            .array = required_device_extensions,
+	            .num = ARRAY_SIZE(required_device_extensions),
+	        },
+	    .optional_device_extensions =
+	        {
+	            .array = optional_device_extensions,
+	            .num = ARRAY_SIZE(optional_device_extensions),
+	        },
+	    .log_level = c->settings.log_level,
+	    .only_compute_queue = c->settings.use_compute,
+	    .selected_gpu_index = c->settings.selected_gpu_index,
+	    .client_gpu_index = c->settings.client_gpu_index,
 	};
 
-	VkQueueGlobalPriorityEXT prios[3] = {
-	    VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT, // This is the one we really want.
-	    VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT,     // Probably not as good but something.
-	    VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT,   // Default fallback.
-	};
+	struct comp_vulkan_results vk_res = {0};
 
-	bool use_compute = c->settings.use_compute;
-
-	struct vk_device_features device_features = {
-	    .shader_storage_image_write_without_format = true,
-	    .null_descriptor = use_compute,
-	};
-
-	// No other way then to try to see if realtime is available.
-	for (size_t i = 0; i < ARRAY_SIZE(prios); i++) {
-		ret = vk_create_device(                     //
-		    vk,                                     //
-		    c->settings.selected_gpu_index,         //
-		    use_compute,                            // compute_only
-		    prios[i],                               // global_priority
-		    required_device_extensions,             //
-		    ARRAY_SIZE(required_device_extensions), //
-		    optional_device_extensions,             //
-		    ARRAY_SIZE(optional_device_extensions), //
-		    &device_features);                      // optional_device_features
-
-		// All ok!
-		if (ret == VK_SUCCESS) {
-			COMP_INFO(c, "Created device and %s queue with %s priority.",
-			          use_compute ? "compute" : "graphics", prio_strs[i]);
-			break;
-		}
-
-		// Try a lower priority.
-		if (ret == VK_ERROR_NOT_PERMITTED_EXT) {
-			continue;
-		}
-
-		// Some other error!
-		CVK_ERROR(c, "vk_create_device", "Failed to create Vulkan device.", ret);
-		return false;
-	}
-
-	ret = vk_init_mutex(vk);
+	ret = select_instances_extensions(c, &vk_args.instance_extensions.array, &vk_args.instance_extensions.num);
 	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "vk_init_mutex", "Failed to init mutex.", ret);
+		CVK_ERROR(c, "select_instances_extensions", "Failed to select instance extensions.", ret);
+		return ret;
+	}
+
+	if (!comp_vulkan_init_bundle(vk, &vk_args, &vk_res)) {
 		return false;
 	}
 
-	c->settings.selected_gpu_index = vk->physical_device_index;
+	// clang-format off
+	static_assert(ARRAY_SIZE(vk_res.client_gpu_deviceUUID) == XRT_GPU_UUID_SIZE, "array size mismatch");
+	static_assert(ARRAY_SIZE(vk_res.selected_gpu_deviceUUID) == XRT_GPU_UUID_SIZE, "array size mismatch");
+	static_assert(ARRAY_SIZE(vk_res.client_gpu_deviceUUID) == ARRAY_SIZE(c->settings.client_gpu_deviceUUID), "array size mismatch");
+	static_assert(ARRAY_SIZE(vk_res.selected_gpu_deviceUUID) == ARRAY_SIZE(c->settings.selected_gpu_deviceUUID), "array size mismatch");
+	// clang-format on
 
-	// store physical device UUID for compositor in settings
-	if (c->settings.selected_gpu_index >= 0) {
-		if (get_device_uuid(vk, c, c->settings.selected_gpu_index, c->settings.selected_gpu_deviceUUID)) {
-			char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
-			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
-				sprintf(uuid_str + i * 3, "%02x ", c->settings.selected_gpu_deviceUUID[i]);
-			}
-			COMP_DEBUG(c, "Selected %d with uuid: %s", c->settings.selected_gpu_index, uuid_str);
-		} else {
-			COMP_ERROR(c, "Failed to get device %d uuid", c->settings.selected_gpu_index);
-		}
-	}
+	memcpy(c->settings.client_gpu_deviceUUID, vk_res.client_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
+	memcpy(c->settings.selected_gpu_deviceUUID, vk_res.selected_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
 
-	// by default suggest GPU used by compositor to clients
-	if (c->settings.client_gpu_index < 0) {
-		c->settings.client_gpu_index = c->settings.selected_gpu_index;
-	}
-
-	// store physical device UUID suggested to clients in settings
-	if (c->settings.client_gpu_index >= 0) {
-		if (get_device_uuid(vk, c, c->settings.client_gpu_index, c->settings.client_gpu_deviceUUID)) {
-			char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
-			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
-				sprintf(uuid_str + i * 3, "%02x ", c->settings.client_gpu_deviceUUID[i]);
-			}
-			COMP_DEBUG(c, "Suggest %d with uuid: %s to clients", c->settings.client_gpu_index, uuid_str);
-		} else {
-			COMP_ERROR(c, "Failed to get device %d uuid", c->settings.client_gpu_index);
-		}
-	}
-
-	ret = vk_init_cmd_pool(vk);
-	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "vk_init_cmd_pool", "Failed to init command pool.", ret);
-		return false;
-	}
+	c->settings.client_gpu_index = vk_res.client_gpu_index;
+	c->settings.selected_gpu_index = vk_res.selected_gpu_index;
 
 	return true;
 }
