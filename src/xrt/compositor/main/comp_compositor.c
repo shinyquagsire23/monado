@@ -518,13 +518,18 @@ vkGetInstanceProcAddr(VkInstance instance, const char *pName);
 	VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,     \
 	VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,  \
 	VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, \
-	VK_KHR_SURFACE_EXTENSION_NAME                           \
+	VK_KHR_SURFACE_EXTENSION_NAME
 // clang-format on
 
-static const char *instance_extensions_none[] = {COMP_INSTANCE_EXTENSIONS_COMMON};
+static const char *instance_extensions_none[] = {
+    COMP_INSTANCE_EXTENSIONS_COMMON,
+};
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
-static const char *instance_extensions_xcb[] = {COMP_INSTANCE_EXTENSIONS_COMMON, VK_KHR_XCB_SURFACE_EXTENSION_NAME};
+static const char *instance_extensions_xcb[] = {
+    COMP_INSTANCE_EXTENSIONS_COMMON,
+    VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+};
 #endif
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
@@ -534,10 +539,11 @@ static const char *instance_extensions_wayland[] = {
 };
 
 static const char *instance_extensions_direct_wayland[] = {
-    COMP_INSTANCE_EXTENSIONS_COMMON,
-    VK_KHR_DISPLAY_EXTENSION_NAME,
-    VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
-    VK_EXT_DIRECT_MODE_DISPLAY_EXTENSION_NAME,
+    COMP_INSTANCE_EXTENSIONS_COMMON,           //
+    VK_KHR_DISPLAY_EXTENSION_NAME,             //
+    VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,     //
+    VK_EXT_DIRECT_MODE_DISPLAY_EXTENSION_NAME, //
+
 #ifdef VK_EXT_acquire_drm_display
     VK_EXT_ACQUIRE_DRM_DISPLAY_EXTENSION_NAME,
 #endif
@@ -561,13 +567,17 @@ static const char *instance_extensions_vk_display[] = {
 #endif
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
-static const char *instance_extensions_android[] = {COMP_INSTANCE_EXTENSIONS_COMMON,
-                                                    VK_KHR_ANDROID_SURFACE_EXTENSION_NAME};
+static const char *instance_extensions_android[] = {
+    COMP_INSTANCE_EXTENSIONS_COMMON,
+    VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
+};
 #endif
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-static const char *instance_extensions_windows[] = {COMP_INSTANCE_EXTENSIONS_COMMON,
-                                                    VK_KHR_WIN32_SURFACE_EXTENSION_NAME};
+static const char *instance_extensions_windows[] = {
+    COMP_INSTANCE_EXTENSIONS_COMMON,
+    VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+};
 #endif
 
 // Note: Keep synchronized with comp_vk_glue - we should have everything they
