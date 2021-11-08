@@ -51,9 +51,29 @@ struct os_hid_device;
  */
 struct xrt_prober_entry
 {
+	/*!
+	 * USB/Bluetooth vendor ID (VID) to filter on.
+	 */
 	uint16_t vendor_id;
+
+	/*!
+	 * USB/Bluetooth product ID (PID) to filter on.
+	 */
 	uint16_t product_id;
 
+	/*!
+	 * Handler that gets called when a device matching vendor and product ID is detected.
+	 *
+	 * @param xp Prober
+	 * @param devices The array of prober devices found by the prober.
+	 * @param num_devices The number of elements in @p devices
+	 * @param index Which element in the prober device array matches your query?
+	 * @param attached_data
+	 * @param out_xdevs An empty array of size @p XRT_MAX_DEVICES_PER_PROBE you may populate with @ref xrt_device
+	 * instances.
+	 *
+	 * @return the number of elements of @p out_xdevs populated by this call.
+	 */
 	int (*found)(struct xrt_prober *xp,
 	             struct xrt_prober_device **devices,
 	             size_t num_devices,
@@ -61,12 +81,21 @@ struct xrt_prober_entry
 	             cJSON *attached_data,
 	             struct xrt_device **out_xdevs);
 
+	/*!
+	 * A human-readable name for the device associated with this VID/PID.
+	 */
 	const char *name;
+
+	/*!
+	 * A human-readable name for the driver associated with this VID/PID.
+	 *
+	 * Separate because a single driver might handle multiple VID/PID entries.
+	 */
 	const char *driver_name;
 };
 
 /*!
- * Function for creating a auto prober.
+ * Function pointer type for creating a auto prober.
  *
  * @ingroup xrt_iface
  */
@@ -80,7 +109,7 @@ typedef struct xrt_auto_prober *(*xrt_auto_prober_creator)();
 struct xrt_prober_entry_lists
 {
 	/*!
-	 * A a null terminated list of null terminated lists of
+	 * A null terminated list of null terminated lists of
 	 * @ref xrt_prober_entry.
 	 */
 	struct xrt_prober_entry **entries;
@@ -129,12 +158,25 @@ xrt_bus_type_to_string(enum xrt_bus_type t);
  */
 struct xrt_prober_device
 {
+	/*!
+	 * USB/Bluetooth vendor ID (VID)
+	 */
 	uint16_t vendor_id;
+
+	/*!
+	 * USB/Bluetooth product ID (PID)
+	 */
 	uint16_t product_id;
 	char product_name[XRT_DEVICE_PRODUCT_NAME_LEN];
 
+	/*!
+	 * Device bus type
+	 */
 	enum xrt_bus_type bus;
 
+	/*!
+	 * USB device class
+	 */
 	uint8_t usb_dev_class;
 };
 
@@ -467,7 +509,7 @@ struct xrt_auto_prober
 	 * @ref xrt_device pointers. First elements will be populated with new
 	 * devices.
 	 *
-	 * @return The amount of devices written into @p out_xdevs, 0 if none.
+	 * @return The number of devices written into @p out_xdevs, 0 if none.
 	 *
 	 * @note Leeloo Dallas is a reference to The Fifth Element.
 	 */
