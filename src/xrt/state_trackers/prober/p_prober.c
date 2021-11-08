@@ -194,7 +194,7 @@ p_dev_get_usb_dev(struct prober *p,
 {
 	struct prober_device *pdev;
 
-	for (size_t i = 0; i < p->num_devices; i++) {
+	for (size_t i = 0; i < p->device_count; i++) {
 		struct prober_device *pdev = &p->devices[i];
 
 		if (pdev->base.bus != XRT_BUS_TYPE_USB || pdev->usb.bus != bus || pdev->usb.addr != addr) {
@@ -232,7 +232,7 @@ p_dev_get_bluetooth_dev(
 {
 	struct prober_device *pdev;
 
-	for (size_t i = 0; i < p->num_devices; i++) {
+	for (size_t i = 0; i < p->device_count; i++) {
 		struct prober_device *pdev = &p->devices[i];
 
 		if (pdev->base.bus != XRT_BUS_TYPE_BLUETOOTH || pdev->bluetooth.id != id) {
@@ -302,9 +302,9 @@ fill_out_product(struct prober *p, struct prober_device *pdev)
 static void
 add_device(struct prober *p, struct prober_device **out_dev)
 {
-	U_ARRAY_REALLOC_OR_FREE(p->devices, struct prober_device, (p->num_devices + 1));
+	U_ARRAY_REALLOC_OR_FREE(p->devices, struct prober_device, (p->device_count + 1));
 
-	struct prober_device *dev = &p->devices[p->num_devices++];
+	struct prober_device *dev = &p->devices[p->device_count++];
 	U_ZERO(dev);
 
 	*out_dev = dev;
@@ -502,7 +502,7 @@ teardown_devices(struct prober *p)
 	XRT_TRACE_MARKER();
 
 	// Need to free all devices.
-	for (size_t i = 0; i < p->num_devices; i++) {
+	for (size_t i = 0; i < p->device_count; i++) {
 		struct prober_device *pdev = &p->devices[i];
 
 		if (pdev->usb.product != NULL) {
@@ -569,7 +569,7 @@ teardown_devices(struct prober *p)
 	if (p->devices != NULL) {
 		free(p->devices);
 		p->devices = NULL;
-		p->num_devices = 0;
+		p->device_count = 0;
 	}
 }
 
@@ -647,13 +647,13 @@ static void
 add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t xdev_count, bool *have_hmd)
 {
 	// Build a list of all current probed devices.
-	struct xrt_prober_device **dev_list = U_TYPED_ARRAY_CALLOC(struct xrt_prober_device *, p->num_devices);
-	for (size_t i = 0; i < p->num_devices; i++) {
+	struct xrt_prober_device **dev_list = U_TYPED_ARRAY_CALLOC(struct xrt_prober_device *, p->device_count);
+	for (size_t i = 0; i < p->device_count; i++) {
 		dev_list[i] = &p->devices[i].base;
 	}
 
 	// Loop over all devices and entries that might match them.
-	for (size_t i = 0; i < p->num_devices; i++) {
+	for (size_t i = 0; i < p->device_count; i++) {
 		struct prober_device *pdev = &p->devices[i];
 
 		for (size_t k = 0; k < p->num_entries; k++) {
@@ -676,7 +676,7 @@ add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t xdev_count,
 			}
 
 			struct xrt_device *new_xdevs[XRT_MAX_DEVICES_PER_PROBE] = {NULL};
-			int num_found = entry->found(&p->base, dev_list, p->num_devices, i, NULL, &(new_xdevs[0]));
+			int num_found = entry->found(&p->base, dev_list, p->device_count, i, NULL, &(new_xdevs[0]));
 
 			if (num_found <= 0) {
 				continue;
@@ -863,7 +863,7 @@ p_dump(struct xrt_prober *xp)
 	XRT_MAYBE_UNUSED ssize_t k = 0;
 	XRT_MAYBE_UNUSED size_t j = 0;
 
-	for (size_t i = 0; i < p->num_devices; i++) {
+	for (size_t i = 0; i < p->device_count; i++) {
 		struct prober_device *pdev = &p->devices[i];
 		p_dump_device(p, pdev, (int)i);
 	}
@@ -1051,7 +1051,7 @@ p_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *p
 	}
 
 	// Video sources from video devices
-	for (size_t i = 0; i < p->num_devices; i++) {
+	for (size_t i = 0; i < p->device_count; i++) {
 		struct prober_device *pdev = &p->devices[i];
 
 		bool has = false;

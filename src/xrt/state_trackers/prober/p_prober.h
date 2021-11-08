@@ -144,7 +144,7 @@ struct prober
 
 	struct xrt_auto_prober *auto_probers[MAX_AUTO_PROBERS];
 
-	size_t num_devices;
+	size_t device_count;
 	struct prober_device *devices;
 
 	size_t num_entries;
