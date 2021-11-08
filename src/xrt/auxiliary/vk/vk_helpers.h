@@ -218,7 +218,9 @@ struct vk_bundle
 	PFN_vkQueueWaitIdle vkQueueWaitIdle;
 
 	PFN_vkCreateSemaphore vkCreateSemaphore;
-	PFN_vkSignalSemaphore vkSignalSemaphore;
+#ifdef VK_KHR_timeline_semaphore
+	PFN_vkSignalSemaphoreKHR vkSignalSemaphore;
+#endif
 	PFN_vkDestroySemaphore vkDestroySemaphore;
 
 	PFN_vkCreateFence vkCreateFence;

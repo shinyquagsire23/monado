@@ -962,7 +962,9 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkQueueSubmit                 = GET_DEV_PROC(vk, vkQueueSubmit);
 	vk->vkQueueWaitIdle               = GET_DEV_PROC(vk, vkQueueWaitIdle);
 	vk->vkCreateSemaphore             = GET_DEV_PROC(vk, vkCreateSemaphore);
-	vk->vkSignalSemaphore             = GET_DEV_PROC(vk, vkSignalSemaphore);
+#ifdef VK_KHR_timeline_semaphore
+	vk->vkSignalSemaphore             = GET_DEV_PROC(vk, vkSignalSemaphoreKHR);
+#endif
 	vk->vkDestroySemaphore            = GET_DEV_PROC(vk, vkDestroySemaphore);
 	vk->vkCreateFence                 = GET_DEV_PROC(vk, vkCreateFence);
 	vk->vkWaitForFences               = GET_DEV_PROC(vk, vkWaitForFences);
