@@ -154,18 +154,14 @@ oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId
 	sys->views[1].maxSwapchainSampleCount         = info->views[1].max.sample_count;
 	// clang-format on
 
-	struct xrt_device *head = GET_XDEV_BY_ROLE(sys, head);
+	assert(info->num_supported_blend_modes <= ARRAY_SIZE(sys->blend_modes));
+	assert(info->num_supported_blend_modes != 0);
 
-	assert(head->hmd->num_blend_modes <= XRT_MAX_DEVICE_BLEND_MODES);
-	assert(head->hmd->num_blend_modes != 0);
-
-	for (size_t i = 0; i < head->hmd->num_blend_modes; i++) {
-		assert(u_verify_blend_mode_valid(head->hmd->blend_modes[i]));
-		sys->blend_modes[i] = (XrEnvironmentBlendMode)head->hmd->blend_modes[i];
+	for (uint8_t i = 0; i < info->num_supported_blend_modes; i++) {
+		assert(u_verify_blend_mode_valid(info->supported_blend_modes[i]));
+		sys->blend_modes[i] = (XrEnvironmentBlendMode)info->supported_blend_modes[i];
 	}
-	sys->num_blend_modes = (uint32_t)head->hmd->num_blend_modes;
-
-	assert(sys->num_blend_modes <= ARRAY_SIZE(sys->blend_modes));
+	sys->num_blend_modes = (uint32_t)info->num_supported_blend_modes;
 
 	return XR_SUCCESS;
 }
