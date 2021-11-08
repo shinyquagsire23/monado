@@ -72,7 +72,7 @@ check_and_get_interface_lenovo(struct xrt_prober_device *device,
 static bool
 find_control_device(struct xrt_prober *xp,
                     struct xrt_prober_device **devices,
-                    size_t num_devices,
+                    size_t device_count,
                     enum u_logging_level ll,
                     enum wmr_headset_type *out_hmd_type,
                     struct xrt_prober_device **out_device,
@@ -81,7 +81,7 @@ find_control_device(struct xrt_prober *xp,
 	struct xrt_prober_device *dev = NULL;
 	int interface = 0;
 
-	for (size_t i = 0; i < num_devices; i++) {
+	for (size_t i = 0; i < device_count; i++) {
 		bool match = false;
 
 		if (devices[i]->bus != XRT_BUS_TYPE_USB) {
@@ -131,7 +131,7 @@ find_control_device(struct xrt_prober *xp,
 int
 wmr_found(struct xrt_prober *xp,
           struct xrt_prober_device **devices,
-          size_t num_devices,
+          size_t device_count,
           size_t index,
           cJSON *attached_data,
           struct xrt_device **out_xdev)
@@ -153,7 +153,7 @@ wmr_found(struct xrt_prober *xp,
 		return -1;
 	}
 
-	if (!find_control_device(xp, devices, num_devices, ll, &hmd_type, &dev_ctrl, &interface_ctrl)) {
+	if (!find_control_device(xp, devices, device_count, ll, &hmd_type, &dev_ctrl, &interface_ctrl)) {
 		U_LOG_IFL_E(ll,
 		            "Did not find companion control device."
 		            "\n\tCurrently only Reverb G1 and G2 is supported");

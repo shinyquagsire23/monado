@@ -380,7 +380,7 @@ ulv2_device_destroy(struct xrt_device *xdev)
 int
 ulv2_found(struct xrt_prober *xp,
            struct xrt_prober_device **devices,
-           size_t num_devices,
+           size_t device_count,
            size_t index,
            cJSON *attached_data,
            struct xrt_device **out_xdev)

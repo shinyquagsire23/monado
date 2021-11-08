@@ -63,7 +63,7 @@ static int
 init_vive1(struct xrt_prober *xp,
            struct xrt_prober_device *dev,
            struct xrt_prober_device **devices,
-           size_t num_devices,
+           size_t device_count,
            enum u_logging_level ll,
            struct xrt_device **out_xdev)
 {
@@ -77,7 +77,7 @@ init_vive1(struct xrt_prober *xp,
 	struct os_hid_device *sensors_dev = NULL;
 	struct os_hid_device *watchman_dev = NULL;
 
-	for (uint32_t i = 0; i < num_devices; i++) {
+	for (uint32_t i = 0; i < device_count; i++) {
 		struct xrt_prober_device *d = devices[i];
 
 		if (d->vendor_id != VALVE_VID && d->product_id != VIVE_LIGHTHOUSE_FPGA_RX)
@@ -134,7 +134,7 @@ static int
 init_vive_pro(struct xrt_prober *xp,
               struct xrt_prober_device *dev,
               struct xrt_prober_device **devices,
-              size_t num_devices,
+              size_t device_count,
               enum u_logging_level ll,
               struct xrt_device **out_xdev)
 {
@@ -151,7 +151,7 @@ init_vive_pro(struct xrt_prober *xp,
 	struct os_hid_device *sensors_dev = NULL;
 	struct os_hid_device *watchman_dev = NULL;
 
-	for (uint32_t i = 0; i < num_devices; i++) {
+	for (uint32_t i = 0; i < device_count; i++) {
 		struct xrt_prober_device *d = devices[i];
 
 		if (d->vendor_id != VALVE_VID && d->product_id != VIVE_PRO_LHR_PID)
@@ -208,7 +208,7 @@ static int
 init_valve_index(struct xrt_prober *xp,
                  struct xrt_prober_device *dev,
                  struct xrt_prober_device **devices,
-                 size_t num_devices,
+                 size_t device_count,
                  enum u_logging_level ll,
                  struct xrt_device **out_xdevs)
 {
@@ -283,7 +283,7 @@ init_valve_index(struct xrt_prober *xp,
 int
 vive_found(struct xrt_prober *xp,
            struct xrt_prober_device **devices,
-           size_t num_devices,
+           size_t device_count,
            size_t index,
            cJSON *attached_data,
            struct xrt_device **out_xdev)
@@ -302,9 +302,9 @@ vive_found(struct xrt_prober *xp,
 	}
 
 	switch (dev->product_id) {
-	case VIVE_PID: return init_vive1(xp, dev, devices, num_devices, ll, out_xdev);
-	case VIVE_PRO_MAINBOARD_PID: return init_vive_pro(xp, dev, devices, num_devices, ll, out_xdev);
-	case VIVE_PRO_LHR_PID: return init_valve_index(xp, dev, devices, num_devices, ll, out_xdev);
+	case VIVE_PID: return init_vive1(xp, dev, devices, device_count, ll, out_xdev);
+	case VIVE_PRO_MAINBOARD_PID: return init_vive_pro(xp, dev, devices, device_count, ll, out_xdev);
+	case VIVE_PRO_LHR_PID: return init_valve_index(xp, dev, devices, device_count, ll, out_xdev);
 	default: U_LOG_E("No product ids matched %.4x", dev->product_id); return -1;
 	}
 
@@ -314,7 +314,7 @@ vive_found(struct xrt_prober *xp,
 int
 vive_controller_found(struct xrt_prober *xp,
                       struct xrt_prober_device **devices,
-                      size_t num_devices,
+                      size_t device_count,
                       size_t index,
                       cJSON *attached_data,
                       struct xrt_device **out_xdevs)

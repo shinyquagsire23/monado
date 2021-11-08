@@ -99,7 +99,7 @@ struct lh_sensor
 struct lh_model
 {
 	struct lh_sensor *sensors;
-	size_t num_sensors;
+	size_t sensor_count;
 };
 
 struct vive_config

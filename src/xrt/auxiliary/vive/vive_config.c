@@ -167,14 +167,14 @@ _get_lighthouse(struct vive_config *d, const cJSON *json)
 	map = NULL;
 
 	d->lh.sensors = s;
-	d->lh.num_sensors = map_size;
+	d->lh.sensor_count = map_size;
 
 
 	// Transform the sensors into IMU space.
 	struct xrt_pose trackref_to_imu = XRT_POSE_IDENTITY;
 	math_pose_invert(&d->imu.trackref, &trackref_to_imu);
 
-	for (i = 0; i < d->lh.num_sensors; i++) {
+	for (i = 0; i < d->lh.sensor_count; i++) {
 		struct xrt_vec3 point = d->lh.sensors[i].pos;
 		struct xrt_vec3 normal = d->lh.sensors[i].normal;
 
@@ -527,7 +527,7 @@ vive_config_teardown(struct vive_config *config)
 	if (config->lh.sensors != NULL) {
 		free(config->lh.sensors);
 		config->lh.sensors = NULL;
-		config->lh.num_sensors = 0;
+		config->lh.sensor_count = 0;
 	}
 }
 

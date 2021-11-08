@@ -1154,10 +1154,10 @@ oh_device_create(ohmd_context *ctx, bool no_hmds, struct xrt_device **out_xdevs)
 	}
 
 	/* Probe for devices */
-	int num_devices = ohmd_ctx_probe(ctx);
+	int device_count = ohmd_ctx_probe(ctx);
 
 	/* Then loop */
-	for (int i = 0; i < num_devices; i++) {
+	for (int i = 0; i < device_count; i++) {
 		int device_class = 0, device_flags = 0;
 		const char *prod = NULL;
 
