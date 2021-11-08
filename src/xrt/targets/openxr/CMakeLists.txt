@@ -42,12 +42,17 @@ if(XRT_HAVE_SDL2)
 		st_gui
 		imgui_impl_sdl
 		${SDL2_LIBRARIES}
-		drv_qwerty
-		drv_qwerty_includes
 		)
 	target_include_directories(${RUNTIME_TARGET} PRIVATE
 		${SDL2_INCLUDE_DIRS}
 		)
+
+	if(XRT_BUILD_DRIVER_QWERTY)
+		target_link_libraries(${RUNTIME_TARGET} PRIVATE
+			drv_qwerty
+			drv_qwerty_includes
+			)
+	endif()
 endif()
 
 if(XRT_FEATURE_SERVICE)
