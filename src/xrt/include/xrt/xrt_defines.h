@@ -33,7 +33,10 @@ struct xrt_reference
 };
 
 /*!
- * Blend mode that the device supports, exact mirror of XrEnvironmentBlendMode
+ * Blend mode that the device supports, exact mirror of XrEnvironmentBlendMode.
+ *
+ * This is not a bitmask because we want to be able to express a preference order
+ * that may vary by device, etc.
  *
  * @ingroup xrt_iface
  */

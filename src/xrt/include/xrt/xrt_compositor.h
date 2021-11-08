@@ -1548,8 +1548,14 @@ struct xrt_system_compositor_info
 	/*!
 	 * Blend modes supported by the system (the combination of the
 	 * compositor and the HMD capabilities), never changes.
+	 *
+	 * In preference order. Based on the modes reported by the device,
+	 * but the compositor has a chance to modify this.
 	 */
-	enum xrt_blend_mode supported_blend_modes;
+	enum xrt_blend_mode supported_blend_modes[XRT_BLEND_MODE_MAX_ENUM];
+
+	//! Number of meaningful elements in xrt_system_compositor_info::supported_blend_modes
+	uint8_t num_supported_blend_modes;
 
 	//! The vk device as used by the compositor, never changes.
 	uint8_t compositor_vk_deviceUUID[XRT_GPU_UUID_SIZE];
