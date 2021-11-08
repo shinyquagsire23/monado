@@ -90,3 +90,9 @@ if(XRT_BUILD_DRIVER_REMOTE)
 		drv_remote
 		)
 endif()
+
+if(XRT_BUILD_DRIVER_VF)
+	target_link_libraries(st_prober PRIVATE
+		drv_vf
+		)
+endif()
