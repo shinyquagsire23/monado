@@ -157,6 +157,7 @@ struct vk_bundle
 	PFN_vkCreateImage vkCreateImage;
 	PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements;
 	PFN_vkGetImageMemoryRequirements2 vkGetImageMemoryRequirements2;
+	PFN_vkGetImageSubresourceLayout vkGetImageSubresourceLayout;
 	PFN_vkBindImageMemory vkBindImageMemory;
 	PFN_vkDestroyImage vkDestroyImage;
 	PFN_vkCreateImageView vkCreateImageView;
@@ -185,7 +186,9 @@ struct vk_bundle
 	PFN_vkCmdDraw vkCmdDraw;
 	PFN_vkCmdDrawIndexed vkCmdDrawIndexed;
 	PFN_vkCmdDispatch vkCmdDispatch;
+	PFN_vkCmdCopyBuffer vkCmdCopyBuffer;
 	PFN_vkCmdCopyBufferToImage vkCmdCopyBufferToImage;
+	PFN_vkCmdCopyImage vkCmdCopyImage;
 	PFN_vkCmdCopyImageToBuffer vkCmdCopyImageToBuffer;
 	PFN_vkEndCommandBuffer vkEndCommandBuffer;
 	PFN_vkFreeCommandBuffers vkFreeCommandBuffers;
@@ -215,6 +218,7 @@ struct vk_bundle
 	PFN_vkQueueWaitIdle vkQueueWaitIdle;
 
 	PFN_vkCreateSemaphore vkCreateSemaphore;
+	PFN_vkSignalSemaphore vkSignalSemaphore;
 	PFN_vkDestroySemaphore vkDestroySemaphore;
 
 	PFN_vkCreateFence vkCreateFence;

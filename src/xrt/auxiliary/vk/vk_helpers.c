@@ -907,6 +907,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkGetImageMemoryRequirements  = GET_DEV_PROC(vk, vkGetImageMemoryRequirements);
 	// because we use Vulkan API Version 1.0.x, we can only get the KHR version of this function
 	vk->vkGetImageMemoryRequirements2 = GET_DEV_PROC(vk, vkGetImageMemoryRequirements2KHR);
+	vk->vkGetImageSubresourceLayout   = GET_DEV_PROC(vk, vkGetImageSubresourceLayout);
 	vk->vkBindImageMemory             = GET_DEV_PROC(vk, vkBindImageMemory);
 	vk->vkDestroyImage                = GET_DEV_PROC(vk, vkDestroyImage);
 	vk->vkCreateImageView             = GET_DEV_PROC(vk, vkCreateImageView);
@@ -932,7 +933,9 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCmdDraw                     = GET_DEV_PROC(vk, vkCmdDraw);
 	vk->vkCmdDrawIndexed              = GET_DEV_PROC(vk, vkCmdDrawIndexed);
 	vk->vkCmdDispatch                 = GET_DEV_PROC(vk, vkCmdDispatch);
+	vk->vkCmdCopyBuffer               = GET_DEV_PROC(vk, vkCmdCopyBuffer);
 	vk->vkCmdCopyBufferToImage        = GET_DEV_PROC(vk, vkCmdCopyBufferToImage);
+	vk->vkCmdCopyImage                = GET_DEV_PROC(vk, vkCmdCopyImage);
 	vk->vkCmdCopyImageToBuffer        = GET_DEV_PROC(vk, vkCmdCopyImageToBuffer);
 	vk->vkEndCommandBuffer            = GET_DEV_PROC(vk, vkEndCommandBuffer);
 	vk->vkFreeCommandBuffers          = GET_DEV_PROC(vk, vkFreeCommandBuffers);
@@ -959,6 +962,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkQueueSubmit                 = GET_DEV_PROC(vk, vkQueueSubmit);
 	vk->vkQueueWaitIdle               = GET_DEV_PROC(vk, vkQueueWaitIdle);
 	vk->vkCreateSemaphore             = GET_DEV_PROC(vk, vkCreateSemaphore);
+	vk->vkSignalSemaphore             = GET_DEV_PROC(vk, vkSignalSemaphore);
 	vk->vkDestroySemaphore            = GET_DEV_PROC(vk, vkDestroySemaphore);
 	vk->vkCreateFence                 = GET_DEV_PROC(vk, vkCreateFence);
 	vk->vkWaitForFences               = GET_DEV_PROC(vk, vkWaitForFences);
