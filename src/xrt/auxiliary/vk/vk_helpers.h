@@ -426,9 +426,9 @@ vk_create_device(struct vk_bundle *vk,
                  bool only_compute,
                  VkQueueGlobalPriorityEXT global_priorty,
                  const char *const *required_device_extensions,
-                 size_t num_required_device_extensions,
+                 size_t required_device_extension_count,
                  const char *const *optional_device_extensions,
-                 size_t num_optional_device_extension,
+                 size_t optional_device_extension_count,
                  const struct vk_device_features *optional_device_features);
 
 /*!

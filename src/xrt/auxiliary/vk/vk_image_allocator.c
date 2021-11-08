@@ -312,18 +312,18 @@ destroy_image(struct vk_bundle *vk, struct vk_image *image)
 VkResult
 vk_ic_allocate(struct vk_bundle *vk,
                const struct xrt_swapchain_create_info *xscci,
-               uint32_t num_images,
+               uint32_t image_count,
                struct vk_image_collection *out_vkic)
 {
 	VkResult ret = VK_SUCCESS;
 
-	if (num_images > ARRAY_SIZE(out_vkic->images)) {
+	if (image_count > ARRAY_SIZE(out_vkic->images)) {
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 
 	size_t i = 0;
-	for (; i < num_images; i++) {
+	for (; i < image_count; i++) {
 		ret = create_image(vk, xscci, &out_vkic->images[i]);
 		if (ret != VK_SUCCESS) {
 			break;
@@ -331,7 +331,7 @@ vk_ic_allocate(struct vk_bundle *vk,
 	}
 
 	// Set the fields.
-	out_vkic->num_images = num_images;
+	out_vkic->image_count = image_count;
 	out_vkic->info = *xscci;
 
 	if (ret == VK_SUCCESS) {
@@ -357,18 +357,18 @@ VkResult
 vk_ic_from_natives(struct vk_bundle *vk,
                    const struct xrt_swapchain_create_info *xscci,
                    struct xrt_image_native *native_images,
-                   uint32_t num_images,
+                   uint32_t image_count,
                    struct vk_image_collection *out_vkic)
 {
 	VkResult ret = VK_ERROR_INITIALIZATION_FAILED;
 
-	if (num_images > ARRAY_SIZE(out_vkic->images)) {
+	if (image_count > ARRAY_SIZE(out_vkic->images)) {
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 
 	size_t i = 0;
-	for (; i < num_images; i++) {
+	for (; i < image_count; i++) {
 		// Ensure that all handles are consumed or none are.
 		xrt_graphics_buffer_handle_t buf = u_graphics_buffer_ref(native_images[i].handle);
 
@@ -381,13 +381,13 @@ vk_ic_from_natives(struct vk_bundle *vk,
 		native_images[i].handle = buf;
 	}
 	// Set the fields.
-	out_vkic->num_images = num_images;
+	out_vkic->image_count = image_count;
 	out_vkic->info = *xscci;
 
 	if (ret == VK_SUCCESS) {
 		// We have consumed all handles now, close all of the copies we
 		// made, all this to make sure we do all or nothing.
-		for (size_t k = 0; k < num_images; k++) {
+		for (size_t k = 0; k < image_count; k++) {
 			u_graphics_buffer_unref(&native_images[k].handle);
 			native_images[k].size = 0;
 		}
@@ -409,10 +409,10 @@ vk_ic_from_natives(struct vk_bundle *vk,
 void
 vk_ic_destroy(struct vk_bundle *vk, struct vk_image_collection *vkic)
 {
-	for (size_t i = 0; i < vkic->num_images; i++) {
+	for (size_t i = 0; i < vkic->image_count; i++) {
 		destroy_image(vk, &vkic->images[i]);
 	}
-	vkic->num_images = 0;
+	vkic->image_count = 0;
 	U_ZERO(&vkic->info);
 }
 
@@ -425,7 +425,7 @@ vk_ic_get_handles(struct vk_bundle *vk,
 	VkResult ret = VK_SUCCESS;
 
 	size_t i = 0;
-	for (; i < vkic->num_images && i < max_handles; i++) {
+	for (; i < vkic->image_count && i < max_handles; i++) {
 		ret = get_device_memory_handle(vk, vkic->images[i].memory, &out_handles[i]);
 		if (ret != VK_SUCCESS) {
 			break;

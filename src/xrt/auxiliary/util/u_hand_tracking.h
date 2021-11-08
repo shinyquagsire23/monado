@@ -65,7 +65,7 @@ struct u_joint_space_relation
 struct u_finger_joint_set
 {
 	struct u_joint_space_relation joints[5];
-	int num_joints;
+	int joint_count;
 };
 
 /*!

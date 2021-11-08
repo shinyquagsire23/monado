@@ -59,7 +59,9 @@ u_config_json_save_calibration(struct u_config_json *json, struct xrt_settings_t
  * @ingroup aux_util
  */
 void
-u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_override *overrides, size_t num_overrides);
+u_config_json_save_overrides(struct u_config_json *json,
+                             struct xrt_tracking_override *overrides,
+                             size_t override_count);
 
 /*!
  * Read from the JSON loaded json config file and returns the active config,
@@ -90,7 +92,7 @@ u_config_json_get_tracking_settings(struct u_config_json *json, struct xrt_setti
 bool
 u_config_json_get_tracking_overrides(struct u_config_json *json,
                                      struct xrt_tracking_override *out_overrides,
-                                     size_t *out_num_overrides);
+                                     size_t *out_override_count);
 
 /*!
  * Extract remote settings from the JSON.

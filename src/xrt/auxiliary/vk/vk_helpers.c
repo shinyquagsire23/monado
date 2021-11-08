@@ -1136,26 +1136,26 @@ static VkResult
 vk_find_graphics_queue(struct vk_bundle *vk, uint32_t *out_graphics_queue)
 {
 	/* Find the first graphics queue */
-	uint32_t num_queues = 0;
+	uint32_t queue_count = 0;
 	uint32_t i = 0;
-	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &num_queues, NULL);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_count, NULL);
 
-	VkQueueFamilyProperties *queue_family_props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, num_queues);
+	VkQueueFamilyProperties *queue_family_props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, queue_count);
 
-	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &num_queues, queue_family_props);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_count, queue_family_props);
 
-	if (num_queues == 0) {
+	if (queue_count == 0) {
 		VK_DEBUG(vk, "Failed to get queue properties");
 		goto err_free;
 	}
 
-	for (i = 0; i < num_queues; i++) {
+	for (i = 0; i < queue_count; i++) {
 		if (queue_family_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			break;
 		}
 	}
 
-	if (i >= num_queues) {
+	if (i >= queue_count) {
 		VK_DEBUG(vk, "No graphics queue found");
 		goto err_free;
 	}
@@ -1175,20 +1175,20 @@ static VkResult
 vk_find_compute_only_queue(struct vk_bundle *vk, uint32_t *out_compute_queue)
 {
 	/* Find the first graphics queue */
-	uint32_t num_queues = 0;
+	uint32_t queue_count = 0;
 	uint32_t i = 0;
-	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &num_queues, NULL);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_count, NULL);
 
-	VkQueueFamilyProperties *queue_family_props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, num_queues);
+	VkQueueFamilyProperties *queue_family_props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, queue_count);
 
-	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &num_queues, queue_family_props);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_count, queue_family_props);
 
-	if (num_queues == 0) {
+	if (queue_count == 0) {
 		VK_DEBUG(vk, "Failed to get queue properties");
 		goto err_free;
 	}
 
-	for (i = 0; i < num_queues; i++) {
+	for (i = 0; i < queue_count; i++) {
 		if (queue_family_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			continue;
 		}
@@ -1198,7 +1198,7 @@ vk_find_compute_only_queue(struct vk_bundle *vk, uint32_t *out_compute_queue)
 		}
 	}
 
-	if (i >= num_queues) {
+	if (i >= queue_count) {
 		VK_DEBUG(vk, "No compute only queue found");
 		goto err_free;
 	}
@@ -1216,9 +1216,9 @@ err_free:
 }
 
 static bool
-vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t num_props, const char *ext)
+vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t prop_count, const char *ext)
 {
-	for (uint32_t i = 0; i < num_props; i++) {
+	for (uint32_t i = 0; i < prop_count; i++) {
 		if (strcmp(props[i].extensionName, ext) == 0) {
 			return true;
 		}
@@ -1228,7 +1228,7 @@ vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t 
 }
 
 static void
-fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uint32_t num_device_extensions)
+fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uint32_t device_extension_count)
 {
 	// beginning of GENERATED extension code - do not modify - used by scripts
 	// Reset before filling out.
@@ -1236,7 +1236,7 @@ fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uin
 	vk->has_EXT_global_priority = false;
 	vk->has_EXT_robustness2 = false;
 
-	for (uint32_t i = 0; i < num_device_extensions; i++) {
+	for (uint32_t i = 0; i < device_extension_count; i++) {
 		const char *ext = device_extensions[i];
 
 #if defined(VK_GOOGLE_display_timing)
@@ -1267,20 +1267,20 @@ static VkResult
 vk_get_device_ext_props(struct vk_bundle *vk,
                         VkPhysicalDevice physical_device,
                         VkExtensionProperties **out_props,
-                        uint32_t *out_num_props)
+                        uint32_t *out_prop_count)
 {
-	uint32_t num_props = 0;
-	VkResult res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &num_props, NULL);
+	uint32_t prop_count = 0;
+	VkResult res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, NULL);
 	vk_check_error("vkEnumerateDeviceExtensionProperties", res, false);
 
-	VkExtensionProperties *props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, num_props);
+	VkExtensionProperties *props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, prop_count);
 
-	res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &num_props, props);
+	res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, props);
 	vk_check_error_with_free("vkEnumerateDeviceExtensionProperties", res, false, props);
 
 	// Check above returns on failure.
 	*out_props = props;
-	*out_num_props = num_props;
+	*out_prop_count = prop_count;
 
 	return VK_SUCCESS;
 }
@@ -1289,25 +1289,25 @@ static bool
 vk_build_device_extensions(struct vk_bundle *vk,
                            VkPhysicalDevice physical_device,
                            const char *const *required_device_extensions,
-                           uint32_t num_required_device_extensions,
+                           uint32_t required_device_extension_count,
                            const char *const *optional_device_extensions,
-                           uint32_t num_optional_device_extensions,
+                           uint32_t optional_device_extension_count,
                            const char ***out_device_extensions,
-                           uint32_t *out_num_device_extensions)
+                           uint32_t *out_device_extension_count)
 {
 	VkExtensionProperties *props = NULL;
-	uint32_t num_props = 0;
-	if (vk_get_device_ext_props(vk, physical_device, &props, &num_props) != VK_SUCCESS) {
+	uint32_t prop_count = 0;
+	if (vk_get_device_ext_props(vk, physical_device, &props, &prop_count) != VK_SUCCESS) {
 		return false;
 	}
 
-	uint32_t max_exts = num_required_device_extensions + num_optional_device_extensions;
+	uint32_t max_exts = required_device_extension_count + optional_device_extension_count;
 
 	const char **device_extensions = U_TYPED_ARRAY_CALLOC(const char *, max_exts);
 
-	for (uint32_t i = 0; i < num_required_device_extensions; i++) {
+	for (uint32_t i = 0; i < required_device_extension_count; i++) {
 		const char *ext = required_device_extensions[i];
-		if (!vk_check_extension(vk, props, num_props, ext)) {
+		if (!vk_check_extension(vk, props, prop_count, ext)) {
 			U_LOG_E("VkPhysicalDevice does not support required extension %s", ext);
 			free(props);
 			return false;
@@ -1316,12 +1316,12 @@ vk_build_device_extensions(struct vk_bundle *vk,
 		device_extensions[i] = ext;
 	}
 
-	uint32_t num_device_extensions = num_required_device_extensions;
-	for (uint32_t i = 0; i < num_optional_device_extensions; i++) {
+	uint32_t device_extension_count = required_device_extension_count;
+	for (uint32_t i = 0; i < optional_device_extension_count; i++) {
 		const char *ext = optional_device_extensions[i];
-		if (vk_check_extension(vk, props, num_props, ext)) {
+		if (vk_check_extension(vk, props, prop_count, ext)) {
 			U_LOG_D("Using optional device ext %s", ext);
-			device_extensions[num_device_extensions++] = ext;
+			device_extensions[device_extension_count++] = ext;
 		} else {
 			U_LOG_T("NOT using optional device ext %s", ext);
 			continue;
@@ -1329,12 +1329,12 @@ vk_build_device_extensions(struct vk_bundle *vk,
 	}
 
 	// Fill this out here.
-	fill_in_has_extensions(vk, device_extensions, num_device_extensions);
+	fill_in_has_extensions(vk, device_extensions, device_extension_count);
 
 	free(props);
 
 	*out_device_extensions = device_extensions;
-	*out_num_device_extensions = num_device_extensions;
+	*out_device_extension_count = device_extension_count;
 
 	return true;
 }
@@ -1406,9 +1406,9 @@ vk_create_device(struct vk_bundle *vk,
                  bool only_compute,
                  VkQueueGlobalPriorityEXT global_priority,
                  const char *const *required_device_extensions,
-                 size_t num_required_device_extensions,
+                 size_t required_device_extension_count,
                  const char *const *optional_device_extensions,
-                 size_t num_optional_device_extensions,
+                 size_t optional_device_extension_count,
                  const struct vk_device_features *optional_device_features)
 {
 	VkResult ret;
@@ -1419,10 +1419,10 @@ vk_create_device(struct vk_bundle *vk,
 	}
 
 	const char **device_extensions;
-	uint32_t num_device_extensions;
+	uint32_t device_extension_count;
 	if (!vk_build_device_extensions(vk, vk->physical_device, required_device_extensions,
-	                                num_required_device_extensions, optional_device_extensions,
-	                                num_optional_device_extensions, &device_extensions, &num_device_extensions)) {
+	                                required_device_extension_count, optional_device_extensions,
+	                                optional_device_extension_count, &device_extensions, &device_extension_count)) {
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 
@@ -1490,7 +1490,7 @@ vk_create_device(struct vk_bundle *vk,
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 	    .queueCreateInfoCount = 1,
 	    .pQueueCreateInfos = &queue_create_info,
-	    .enabledExtensionCount = num_device_extensions,
+	    .enabledExtensionCount = device_extension_count,
 	    .ppEnabledExtensionNames = device_extensions,
 	    .pEnabledFeatures = &enabled_features,
 	};

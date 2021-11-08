@@ -286,7 +286,7 @@ open_tracking_settings(struct u_config_json *json)
 bool
 u_config_json_get_tracking_overrides(struct u_config_json *json,
                                      struct xrt_tracking_override *out_overrides,
-                                     size_t *out_num_overrides)
+                                     size_t *out_override_count)
 {
 	cJSON *t = open_tracking_settings(json);
 	if (t == NULL) {
@@ -296,14 +296,14 @@ u_config_json_get_tracking_overrides(struct u_config_json *json,
 
 	cJSON *overrides = cJSON_GetObjectItemCaseSensitive(t, "tracking_overrides");
 
-	*out_num_overrides = 0;
+	*out_override_count = 0;
 
 	cJSON *override = NULL;
 	cJSON_ArrayForEach(override, overrides)
 	{
 		bool bad = false;
 
-		struct xrt_tracking_override *o = &out_overrides[(*out_num_overrides)++];
+		struct xrt_tracking_override *o = &out_overrides[(*out_override_count)++];
 		bad |= !get_obj_str(override, "target_device_serial", o->target_device_serial, XRT_DEVICE_NAME_LEN);
 		bad |= !get_obj_str(override, "tracker_device_serial", o->tracker_device_serial, XRT_DEVICE_NAME_LEN);
 
@@ -336,7 +336,7 @@ u_config_json_get_tracking_overrides(struct u_config_json *json,
 		o->input_name = xrt_input_name_enum(input_name);
 
 		if (bad) {
-			*out_num_overrides = 0;
+			*out_override_count = 0;
 			return false;
 		}
 	}
@@ -459,7 +459,7 @@ make_pose(struct xrt_pose *pose)
 }
 
 void
-u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_override *overrides, size_t num_overrides)
+u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_override *overrides, size_t override_count)
 {
 	if (!json->file_loaded) {
 		u_config_json_make_default_root(json);
@@ -475,7 +475,7 @@ u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_ove
 	cJSON_DeleteItemFromObject(t, "tracking_overrides");
 	cJSON *o = cJSON_AddArrayToObject(t, "tracking_overrides");
 
-	for (size_t i = 0; i < num_overrides; i++) {
+	for (size_t i = 0; i < override_count; i++) {
 		cJSON *entry = cJSON_CreateObject();
 
 		cJSON_AddStringToObject(entry, "target_device_serial", overrides[i].target_device_serial);

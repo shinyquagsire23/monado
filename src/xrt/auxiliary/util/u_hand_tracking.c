@@ -422,35 +422,35 @@ u_hand_joints_update_curl(struct u_hand_tracking *set,
 	set->joints.palm.relation.relation_flags = POSE_VALID_FLAGS | VELOCIY_VALID_FLAGS;
 
 	struct u_joint_space_relation *prev = &set->joints.wrist;
-	for (int joint_num = 0; joint_num < set->joints.fingers[XRT_FINGER_LITTLE].num_joints; joint_num++) {
+	for (int joint_num = 0; joint_num < set->joints.fingers[XRT_FINGER_LITTLE].joint_count; joint_num++) {
 		struct u_joint_space_relation *joint = &set->joints.fingers[XRT_FINGER_LITTLE].joints[joint_num];
 		u_hand_joint_compute_next_by_curl(set, prev, hand, at_timestamp_ns, joint, curl_little);
 		prev = joint;
 	}
 
 	prev = &set->joints.wrist;
-	for (int joint_num = 0; joint_num < set->joints.fingers[XRT_FINGER_RING].num_joints; joint_num++) {
+	for (int joint_num = 0; joint_num < set->joints.fingers[XRT_FINGER_RING].joint_count; joint_num++) {
 		struct u_joint_space_relation *joint = &set->joints.fingers[XRT_FINGER_RING].joints[joint_num];
 		u_hand_joint_compute_next_by_curl(set, prev, hand, at_timestamp_ns, joint, curl_ring);
 		prev = joint;
 	}
 
 	prev = &set->joints.wrist;
-	for (int joint_num = 0; joint_num < set->joints.fingers[XRT_FINGER_MIDDLE].num_joints; joint_num++) {
+	for (int joint_num = 0; joint_num < set->joints.fingers[XRT_FINGER_MIDDLE].joint_count; joint_num++) {
 		struct u_joint_space_relation *joint = &set->joints.fingers[XRT_FINGER_MIDDLE].joints[joint_num];
 		u_hand_joint_compute_next_by_curl(set, prev, hand, at_timestamp_ns, joint, curl_middle);
 		prev = joint;
 	}
 
 	prev = &set->joints.wrist;
-	for (int joint_num = 0; joint_num < set->joints.fingers[XRT_FINGER_INDEX].num_joints; joint_num++) {
+	for (int joint_num = 0; joint_num < set->joints.fingers[XRT_FINGER_INDEX].joint_count; joint_num++) {
 		struct u_joint_space_relation *joint = &set->joints.fingers[XRT_FINGER_INDEX].joints[joint_num];
 		u_hand_joint_compute_next_by_curl(set, prev, hand, at_timestamp_ns, joint, curl_index);
 		prev = joint;
 	}
 
 	prev = &set->joints.wrist;
-	for (int joint_num = 0; joint_num < set->joints.fingers[XRT_FINGER_THUMB].num_joints; joint_num++) {
+	for (int joint_num = 0; joint_num < set->joints.fingers[XRT_FINGER_THUMB].joint_count; joint_num++) {
 		struct u_joint_space_relation *joint = &set->joints.fingers[XRT_FINGER_THUMB].joints[joint_num];
 		u_hand_joint_compute_next_by_curl(set, prev, hand, at_timestamp_ns, joint, curl_thumb);
 		prev = joint;
@@ -474,7 +474,7 @@ u_hand_joints_init_default_set(struct u_hand_tracking *set,
 	        .joints = {.palm = {.joint_id = XRT_HAND_JOINT_PALM, .relation = identity},
 	                   .wrist = {.joint_id = XRT_HAND_JOINT_WRIST, .relation = identity},
 
-	                   .fingers = {[XRT_FINGER_LITTLE] = {.num_joints = 5,
+	                   .fingers = {[XRT_FINGER_LITTLE] = {.joint_count = 5,
 	                                                      .joints =
 	                                                          {
 	                                                              {
@@ -500,7 +500,7 @@ u_hand_joints_init_default_set(struct u_hand_tracking *set,
 	                                                              },
 	                                                          }},
 
-	                               [XRT_FINGER_RING] = {.num_joints = 5,
+	                               [XRT_FINGER_RING] = {.joint_count = 5,
 	                                                    .joints =
 	                                                        {
 	                                                            {
@@ -525,7 +525,7 @@ u_hand_joints_init_default_set(struct u_hand_tracking *set,
 	                                                            },
 	                                                        }},
 
-	                               [XRT_FINGER_MIDDLE] = {.num_joints = 5,
+	                               [XRT_FINGER_MIDDLE] = {.joint_count = 5,
 	                                                      .joints =
 	                                                          {
 	                                                              {
@@ -551,7 +551,7 @@ u_hand_joints_init_default_set(struct u_hand_tracking *set,
 	                                                              },
 	                                                          }},
 
-	                               [XRT_FINGER_INDEX] = {.num_joints = 5,
+	                               [XRT_FINGER_INDEX] = {.joint_count = 5,
 	                                                     .joints =
 	                                                         {
 	                                                             {
@@ -576,7 +576,7 @@ u_hand_joints_init_default_set(struct u_hand_tracking *set,
 	                                                             },
 	                                                         }},
 
-	                               [XRT_FINGER_THUMB] = {.num_joints = 4,
+	                               [XRT_FINGER_THUMB] = {.joint_count = 4,
 	                                                     .joints = {
 	                                                         {
 	                                                             .joint_id = XRT_HAND_JOINT_THUMB_METACARPAL,

@@ -133,7 +133,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
                             const struct xrt_swapchain_create_info *info,
                             struct comp_swapchain *sc)
 {
-	uint32_t num_images = sc->vkic.num_images;
+	uint32_t num_images = sc->vkic.image_count;
 	VkCommandBuffer cmd_buffer;
 
 	VkComponentMapping components = {
@@ -335,7 +335,7 @@ comp_swapchain_create(struct vk_bundle *vk,
 	xrt_graphics_buffer_handle_t handles[ARRAY_SIZE(sc->vkic.images)];
 
 	vk_ic_get_handles(vk, &sc->vkic, ARRAY_SIZE(handles), handles);
-	for (uint32_t i = 0; i < sc->vkic.num_images; i++) {
+	for (uint32_t i = 0; i < sc->vkic.image_count; i++) {
 		sc->base.images[i].handle = handles[i];
 		sc->base.images[i].size = sc->vkic.images[i].size;
 		sc->base.images[i].use_dedicated_allocation = sc->vkic.images[i].use_dedicated_allocation;

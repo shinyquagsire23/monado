@@ -33,11 +33,11 @@ index_for(int row, int col, int stride, int offset)
 }
 
 void
-run_func(struct xrt_device *xdev, func_calc calc, int num_views, struct xrt_hmd_parts *target, size_t num)
+run_func(struct xrt_device *xdev, func_calc calc, int view_count, struct xrt_hmd_parts *target, size_t num)
 {
 	assert(calc != NULL);
-	assert(num_views == 2);
-	assert(num_views <= 2);
+	assert(view_count == 2);
+	assert(view_count <= 2);
 
 	size_t vertex_offsets[2] = {0};
 	size_t index_offsets[2] = {0};
@@ -48,7 +48,7 @@ run_func(struct xrt_device *xdev, func_calc calc, int num_views, struct xrt_hmd_
 	int vert_rows = cells_rows + 1;
 
 	size_t vertex_count_per_view = vert_rows * vert_cols;
-	size_t vertex_count = vertex_count_per_view * num_views;
+	size_t vertex_count = vertex_count_per_view * view_count;
 
 	size_t uv_channels_count = 3;
 	size_t stride_in_floats = 2 + uv_channels_count * 2;
@@ -58,7 +58,7 @@ run_func(struct xrt_device *xdev, func_calc calc, int num_views, struct xrt_hmd_
 
 	// Setup the vertices for all views.
 	size_t i = 0;
-	for (int view = 0; view < num_views; view++) {
+	for (int view = 0; view < view_count; view++) {
 		vertex_offsets[view] = i / stride_in_floats;
 
 		for (int r = 0; r < vert_rows; r++) {
@@ -85,12 +85,12 @@ run_func(struct xrt_device *xdev, func_calc calc, int num_views, struct xrt_hmd_
 	}
 
 	size_t index_count_per_view = cells_rows * (vert_cols * 2 + 2);
-	size_t index_count_total = index_count_per_view * num_views;
+	size_t index_count_total = index_count_per_view * view_count;
 	int *indices = U_TYPED_ARRAY_CALLOC(int, index_count_total);
 
 	// Set up indices for all views.
 	i = 0;
-	for (int view = 0; view < num_views; view++) {
+	for (int view = 0; view < view_count; view++) {
 		index_offsets[view] = i;
 
 		size_t off = vertex_offsets[view];
