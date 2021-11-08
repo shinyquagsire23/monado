@@ -61,4 +61,4 @@ struct DetectionModelOutput
 rotatedRectFromJoints(struct ht_view *htv, xrt_vec2 center, xrt_vec2 wrist_to_middle, DetectionModelOutput *out);
 
 void
-planarize(cv::Mat &input, uint8_t *output);
+planarize(const cv::Mat &input, uint8_t *output);

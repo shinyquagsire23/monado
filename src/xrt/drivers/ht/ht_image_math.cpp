@@ -224,7 +224,7 @@ rotatedRectFromJoints(struct ht_view *htv, xrt_vec2 center, xrt_vec2 wrist_to_mi
 }
 
 void
-planarize(cv::Mat &input, uint8_t *output)
+planarize(const cv::Mat &input, uint8_t *output)
 {
 	// output better be the right size, because we are not doing any bounds checking!
 	assert(input.isContinuous());
