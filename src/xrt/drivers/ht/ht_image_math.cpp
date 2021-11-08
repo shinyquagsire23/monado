@@ -94,7 +94,7 @@ raycoord(struct ht_view *htv, struct xrt_vec3 model_out)
 }
 
 cv::Matx23f
-blackbar(cv::Mat &in, cv::Mat &out, xrt_size out_size)
+blackbar(const cv::Mat &in, cv::Mat &out, xrt_size out_size)
 {
 #if 1
 	// Easy to think about, always right, but pretty slow:

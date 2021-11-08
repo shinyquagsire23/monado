@@ -28,7 +28,7 @@ raycoord(struct ht_view *htv, struct xrt_vec3 model_out);
  * Returns a 2x3 transform matrix that takes you back from the blackbarred image to the original image.
  */
 cv::Matx23f
-blackbar(cv::Mat &in, cv::Mat &out, xrt_size out_size);
+blackbar(const cv::Mat &in, cv::Mat &out, xrt_size out_size);
 
 /*!
  * This is a template so that we can use xrt_vec3 or xrt_vec2.
