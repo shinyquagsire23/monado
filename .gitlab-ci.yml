@@ -500,7 +500,7 @@ reprepro:package:
 pages:
   stage: pages
   only:
-    - master
+    - main
   dependencies:
     - debian:bullseye:cmake
     - reprepro:package
