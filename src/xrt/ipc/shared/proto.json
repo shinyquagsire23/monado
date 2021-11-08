@@ -124,7 +124,7 @@
 		],
 		"out": [
 			{"name": "id", "type": "uint32_t"},
-			{"name": "num_images", "type": "uint32_t"},
+			{"name": "image_count", "type": "uint32_t"},
 			{"name": "size", "type": "uint64_t"},
 			{"name": "use_dedicated_allocation", "type": "bool"}
 		],

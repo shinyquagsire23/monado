@@ -1022,9 +1022,9 @@ static struct xrt_binding_profile binding_profiles_index[1] = {
     {
         .name = XRT_DEVICE_SIMPLE_CONTROLLER,
         .inputs = simple_inputs_index,
-        .num_inputs = ARRAY_SIZE(simple_inputs_index),
+        .input_count = ARRAY_SIZE(simple_inputs_index),
         .outputs = simple_outputs_index,
-        .num_outputs = ARRAY_SIZE(simple_outputs_index),
+        .output_count = ARRAY_SIZE(simple_outputs_index),
     },
 };
 
@@ -1032,9 +1032,9 @@ static struct xrt_binding_profile binding_profiles_vive[1] = {
     {
         .name = XRT_DEVICE_SIMPLE_CONTROLLER,
         .inputs = simple_inputs_vive,
-        .num_inputs = ARRAY_SIZE(simple_inputs_vive),
+        .input_count = ARRAY_SIZE(simple_inputs_vive),
         .outputs = simple_outputs_vive,
-        .num_outputs = ARRAY_SIZE(simple_outputs_vive),
+        .output_count = ARRAY_SIZE(simple_outputs_vive),
     },
 };
 
@@ -1132,7 +1132,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 		d->base.update_inputs = vive_controller_device_update_wand_inputs;
 
 		d->base.binding_profiles = binding_profiles_vive;
-		d->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_vive);
+		d->base.binding_profile_count = ARRAY_SIZE(binding_profiles_vive);
 
 		d->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 	} else if (d->config.variant == CONTROLLER_INDEX_LEFT || d->config.variant == CONTROLLER_INDEX_RIGHT) {
@@ -1171,7 +1171,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 		u_hand_joints_init_default_set(&d->hand_tracking, hand, XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
 
 		d->base.binding_profiles = binding_profiles_index;
-		d->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_index);
+		d->base.binding_profile_count = ARRAY_SIZE(binding_profiles_index);
 
 		if (d->config.variant == CONTROLLER_INDEX_LEFT) {
 			d->base.device_type = XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;

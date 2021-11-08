@@ -63,7 +63,7 @@ struct ipc_swapchain_data
 	uint32_t width;
 	uint32_t height;
 	uint64_t format;
-	uint32_t num_images;
+	uint32_t image_count;
 
 	bool active;
 };
@@ -85,7 +85,7 @@ struct ipc_client_state
 	bool io_active;
 
 	//! Number of swapchains in use by client
-	uint32_t num_swapchains;
+	uint32_t swapchain_count;
 
 	//! Ptrs to the swapchains
 	struct xrt_swapchain *xscs[IPC_MAX_CLIENT_SWAPCHAINS];

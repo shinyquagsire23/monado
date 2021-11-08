@@ -86,13 +86,13 @@ ipc_receive(struct ipc_message_channel *imc, void *out_data, size_t size);
  * @param[in] size Maximum size to read, must be greater than 0
  * @param[out] out_handles Array of file descriptors to populate.  Must not be
  * null.
- * @param[in] num_handles Number of elements to receive into @p out_handles,
+ * @param[in] handle_count Number of elements to receive into @p out_handles,
  * must be greater than 0 and must match the value provided at the other end.
  *
  * @public @memberof ipc_message_channel
  */
 xrt_result_t
-ipc_receive_fds(struct ipc_message_channel *imc, void *out_data, size_t size, int *out_handles, uint32_t num_handles);
+ipc_receive_fds(struct ipc_message_channel *imc, void *out_data, size_t size, int *out_handles, uint32_t handle_count);
 
 /*!
  * Send a message along with file descriptors over the IPC channel.
@@ -103,14 +103,14 @@ ipc_receive_fds(struct ipc_message_channel *imc, void *out_data, size_t size, in
  * @param[in] size Size of data pointed-to by @p data, must be greater than 0
  * @param[out] handles Array of file descriptors to send.  Must not be
  * null.
- * @param[in] num_handles Number of elements in @p handles, must be greater
+ * @param[in] handle_count Number of elements in @p handles, must be greater
  * than 0. If this is variable, it must also be separately transmitted ahead of
  * time, because the receiver must have the same value in its receive call.
  *
  * @public @memberof ipc_message_channel
  */
 xrt_result_t
-ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, const int *handles, uint32_t num_handles);
+ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, const int *handles, uint32_t handle_count);
 #endif // XRT_OS_UNIX
 /*!
  * @}
@@ -133,7 +133,7 @@ ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, con
  * @param[in] size Maximum size to read, must be greater than 0
  * @param[out] out_handles Array of shared memory handles to populate.  Must not
  * be null.
- * @param[in] num_handles Number of elements to receive into @p out_handles,
+ * @param[in] handle_count Number of elements to receive into @p out_handles,
  * must be greater than 0 and must match the value provided at the other end.
  *
  * @public @memberof ipc_message_channel
@@ -144,7 +144,7 @@ ipc_receive_handles_shmem(struct ipc_message_channel *imc,
                           void *out_data,
                           size_t size,
                           xrt_shmem_handle_t *out_handles,
-                          uint32_t num_handles);
+                          uint32_t handle_count);
 
 
 /*!
@@ -156,7 +156,7 @@ ipc_receive_handles_shmem(struct ipc_message_channel *imc,
  * @param[in] size Size of data pointed-to by @p data, must be greater than 0
  * @param[out] handles Array of shared memory handles to send.  Must not be
  * null.
- * @param[in] num_handles Number of elements in @p handles, must be greater
+ * @param[in] handle_count Number of elements in @p handles, must be greater
  * than 0. If this is variable, it must also be separately transmitted ahead of
  * time, because the receiver must have the same value in its receive call.
  *
@@ -168,7 +168,7 @@ ipc_send_handles_shmem(struct ipc_message_channel *imc,
                        const void *data,
                        size_t size,
                        const xrt_shmem_handle_t *handles,
-                       uint32_t num_handles);
+                       uint32_t handle_count);
 /*!
  * @}
  */
@@ -191,7 +191,7 @@ ipc_send_handles_shmem(struct ipc_message_channel *imc,
  * @param[in] size Maximum size to read, must be greater than 0
  * @param[out] out_handles Array of graphics buffer handles to populate.  Must
  * not be null.
- * @param[in] num_handles Number of elements to receive into @p out_handles,
+ * @param[in] handle_count Number of elements to receive into @p out_handles,
  * must be greater than 0 and must match the value provided at the other end.
  *
  * @public @memberof ipc_message_channel
@@ -202,7 +202,7 @@ ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
                                     void *out_data,
                                     size_t size,
                                     xrt_graphics_buffer_handle_t *out_handles,
-                                    uint32_t num_handles);
+                                    uint32_t handle_count);
 
 
 /*!
@@ -215,7 +215,7 @@ ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
  * @param[in] size Size of data pointed-to by @p data, must be greater than 0
  * @param[out] handles Array of graphics buffer handles to send.  Must not be
  * null.
- * @param[in] num_handles Number of elements in @p handles, must be greater
+ * @param[in] handle_count Number of elements in @p handles, must be greater
  * than 0. If this is variable, it must also be separately transmitted ahead of
  * time, because the receiver must have the same value in its receive call.
  *
@@ -227,7 +227,7 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
                                  const void *data,
                                  size_t size,
                                  const xrt_graphics_buffer_handle_t *handles,
-                                 uint32_t num_handles);
+                                 uint32_t handle_count);
 
 /*!
  * @}
@@ -250,7 +250,7 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
  * @param[in] size Maximum size to read, must be greater than 0
  * @param[out] out_handles Array of graphics sync handles to populate. Must not
  * be null.
- * @param[in] num_handles Number of elements to receive into @p out_handles,
+ * @param[in] handle_count Number of elements to receive into @p out_handles,
  * must be greater than 0 and must match the value provided at the other end.
  *
  * @public @memberof ipc_message_channel
@@ -261,7 +261,7 @@ ipc_receive_handles_graphics_sync(struct ipc_message_channel *imc,
                                   void *out_data,
                                   size_t size,
                                   xrt_graphics_sync_handle_t *out_handles,
-                                  uint32_t num_handles);
+                                  uint32_t handle_count);
 
 /*!
  * Send a message along with native graphics sync handles over the IPC channel.
@@ -272,7 +272,7 @@ ipc_receive_handles_graphics_sync(struct ipc_message_channel *imc,
  * @param[in] size Size of data pointed-to by @p data, must be greater than 0
  * @param[out] handles Array of graphics sync handles to send.  Must not be
  * null.
- * @param[in] num_handles Number of elements in @p handles, must be greater than
+ * @param[in] handle_count Number of elements in @p handles, must be greater than
  * 0. If this is variable, it must also be separately transmitted ahead of time,
  * because the receiver must have the same value in its receive call.
  *
@@ -284,7 +284,7 @@ ipc_send_handles_graphics_sync(struct ipc_message_channel *imc,
                                const void *data,
                                size_t size,
                                const xrt_graphics_sync_handle_t *handles,
-                               uint32_t num_handles);
+                               uint32_t handle_count);
 
 /*!
  * @}

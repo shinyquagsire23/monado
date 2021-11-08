@@ -458,7 +458,7 @@ comp_rendering_target_resources_init(struct comp_rendering_target_resources *rtr
 	                       r->mesh.pipeline_layout,   // pipeline_layout
 	                       r->pipeline_cache,         // pipeline_cache
 	                       r->mesh.src_binding,       // src_binding
-	                       r->mesh.total_num_indices, // mesh_total_num_indices
+	                       r->mesh.index_count_total, // mesh_total_num_indices
 	                       r->mesh.stride,            // mesh_stride
 	                       r->shaders->mesh_vert,     // mesh_vert
 	                       r->shaders->mesh_frag,     // mesh_frag
@@ -703,24 +703,24 @@ comp_draw_distortion(struct comp_rendering *rr)
 	 * Draw with indices or not?
 	 */
 
-	if (r->mesh.total_num_indices > 0) {
+	if (r->mesh.index_count_total > 0) {
 		vk->vkCmdBindIndexBuffer(  //
 		    rr->cmd,               // commandBuffer
 		    r->mesh.ibo.buffer,    // buffer
 		    0,                     // offset
 		    VK_INDEX_TYPE_UINT32); // indexType
 
-		vk->vkCmdDrawIndexed(             //
-		    rr->cmd,                      // commandBuffer
-		    r->mesh.num_indices[view],    // indexCount
-		    1,                            // instanceCount
-		    r->mesh.offset_indices[view], // firstIndex
-		    0,                            // vertexOffset
-		    0);                           // firstInstance
+		vk->vkCmdDrawIndexed(            //
+		    rr->cmd,                     // commandBuffer
+		    r->mesh.index_counts[view],  // indexCount
+		    1,                           // instanceCount
+		    r->mesh.index_offsets[view], // firstIndex
+		    0,                           // vertexOffset
+		    0);                          // firstInstance
 	} else {
 		vk->vkCmdDraw(            //
 		    rr->cmd,              // commandBuffer
-		    r->mesh.num_vertices, // vertexCount
+		    r->mesh.vertex_count, // vertexCount
 		    1,                    // instanceCount
 		    0,                    // firstVertex
 		    0);                   // firstInstance

@@ -504,7 +504,7 @@ struct xrt_space_relation
 struct xrt_space_graph
 {
 	struct xrt_space_relation steps[XRT_SPACE_GRAPHS_MAX];
-	uint32_t num_steps;
+	uint32_t step_count;
 };
 
 

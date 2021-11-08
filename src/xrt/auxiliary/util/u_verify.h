@@ -23,7 +23,7 @@ u_verify_blend_mode_valid(enum xrt_blend_mode blend_mode)
 static inline bool
 u_verify_blend_mode_supported(struct xrt_device *xdev, enum xrt_blend_mode blend_mode)
 {
-	for (size_t i = 0; i < xdev->hmd->num_blend_modes; i++) {
+	for (size_t i = 0; i < xdev->hmd->blend_mode_count; i++) {
 		if (xdev->hmd->blend_modes[i] == blend_mode) {
 			return true;
 		}

@@ -73,12 +73,12 @@ struct ipc_shared_binding_profile
 	enum xrt_device_name name;
 
 	//! Number of inputs.
-	uint32_t num_inputs;
+	uint32_t input_count;
 	//! Offset into the array of pairs where this input bindings starts.
 	uint32_t first_input_index;
 
 	//! Number of outputs.
-	uint32_t num_outputs;
+	uint32_t output_count;
 	//! Offset into the array of pairs where this output bindings starts.
 	uint32_t first_output_index;
 };
@@ -101,17 +101,17 @@ struct ipc_shared_device
 	char str[XRT_DEVICE_NAME_LEN];
 
 	//! Number of bindings.
-	uint32_t num_binding_profiles;
+	uint32_t binding_profile_count;
 	//! 'Offset' into the array of bindings where the bindings starts.
 	uint32_t first_binding_profile_index;
 
 	//! Number of inputs.
-	uint32_t num_inputs;
+	uint32_t input_count;
 	//! 'Offset' into the array of inputs where the inputs starts.
 	uint32_t first_input_index;
 
 	//! Number of outputs.
-	uint32_t num_outputs;
+	uint32_t output_count;
 	//! 'Offset' into the array of outputs where the outputs starts.
 	uint32_t first_output_index;
 
@@ -155,7 +155,7 @@ struct ipc_layer_slot
 {
 	uint64_t display_time_ns;
 	enum xrt_blend_mode env_blend_mode;
-	uint32_t num_layers;
+	uint32_t layer_count;
 	struct ipc_layer_entry layers[IPC_MAX_LAYERS];
 };
 
@@ -184,24 +184,24 @@ struct ipc_shared_memory
 	/*!
 	 * Number of elements in @ref itracks that are populated/valid.
 	 */
-	size_t num_itracks;
+	size_t itrack_count;
 
 	/*!
 	 * @brief Array of shared tracking origin data.
 	 *
-	 * Only @ref num_itracks elements are populated/valid.
+	 * Only @ref itrack_count elements are populated/valid.
 	 */
 	struct ipc_shared_tracking_origin itracks[IPC_SHARED_MAX_DEVICES];
 
 	/*!
 	 * Number of elements in @ref isdevs that are populated/valid.
 	 */
-	size_t num_isdevs;
+	size_t isdev_count;
 
 	/*!
 	 * @brief Array of shared data per device.
 	 *
-	 * Only @ref num_isdevs elements are populated/valid.
+	 * Only @ref isdev_count elements are populated/valid.
 	 */
 	struct ipc_shared_device isdevs[IPC_SHARED_MAX_DEVICES];
 
@@ -233,7 +233,7 @@ struct ipc_shared_memory
 			struct xrt_fov fov;
 		} views[2];
 		enum xrt_blend_mode blend_modes[XRT_MAX_DEVICE_BLEND_MODES];
-		size_t num_blend_modes;
+		size_t blend_mode_count;
 	} hmd;
 
 	struct xrt_input inputs[IPC_SHARED_MAX_INPUTS];

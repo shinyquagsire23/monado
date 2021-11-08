@@ -227,8 +227,8 @@ struct qwerty_hmd *
 qwerty_hmd_create(void)
 {
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE;
-	size_t num_inputs = 1, num_outputs = 0;
-	struct qwerty_hmd *qh = U_DEVICE_ALLOCATE(struct qwerty_hmd, flags, num_inputs, num_outputs);
+	size_t input_count = 1, output_count = 0;
+	struct qwerty_hmd *qh = U_DEVICE_ALLOCATE(struct qwerty_hmd, flags, input_count, output_count);
 	assert(qh);
 
 	struct qwerty_device *qd = &qh->base;

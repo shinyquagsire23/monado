@@ -64,7 +64,7 @@ client_gl_eglimage_swapchain(struct xrt_swapchain *xsc)
 static void
 client_gl_eglimage_swapchain_teardown_storage(struct client_gl_eglimage_swapchain *sc)
 {
-	uint32_t num_images = sc->base.base.base.num_images;
+	uint32_t num_images = sc->base.base.base.image_count;
 	if (num_images > 0) {
 		glDeleteTextures(num_images, &sc->base.base.images[0]);
 		U_ZERO_ARRAY(sc->base.base.images);
@@ -83,7 +83,7 @@ client_gl_eglimage_swapchain_destroy(struct xrt_swapchain *xsc)
 	struct client_gl_eglimage_swapchain *sc = client_gl_eglimage_swapchain(xsc);
 
 	client_gl_eglimage_swapchain_teardown_storage(sc);
-	sc->base.base.base.num_images = 0;
+	sc->base.base.base.image_count = 0;
 
 	// Drop our reference, does NULL checking.
 	xrt_swapchain_native_reference(&sc->base.xscn, NULL);
@@ -197,20 +197,21 @@ client_gl_eglimage_swapchain_create(struct xrt_compositor *xc,
 	struct client_gl_eglimage_swapchain *sc = U_TYPED_CALLOC(struct client_gl_eglimage_swapchain);
 	sc->base.base.base.destroy = client_gl_eglimage_swapchain_destroy;
 	sc->base.base.base.reference.count = 1;
-	sc->base.base.base.num_images = native_xsc->num_images; // Fetch the number of images from the native swapchain.
+	sc->base.base.base.image_count =
+	    native_xsc->image_count; // Fetch the number of images from the native swapchain.
 	sc->base.xscn = xscn;
 	sc->display = ceglc->dpy;
 
 	struct xrt_swapchain_gl *xscgl = &sc->base.base;
 
-	glGenTextures(native_xsc->num_images, xscgl->images);
+	glGenTextures(native_xsc->image_count, xscgl->images);
 
 	GLuint binding_enum = 0;
 	GLuint tex_target = 0;
 	ogl_texture_target_for_swapchain_info(info, &tex_target, &binding_enum);
 	sc->base.tex_target = tex_target;
 
-	for (uint32_t i = 0; i < native_xsc->num_images; i++) {
+	for (uint32_t i = 0; i < native_xsc->image_count; i++) {
 
 		// Bind new texture name to the target.
 		glBindTexture(tex_target, xscgl->images[i]);

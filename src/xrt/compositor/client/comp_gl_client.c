@@ -420,7 +420,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		sc->base.base.release_image = client_gl_swapchain_release_image;
 	}
 	// Fetch the number of images from the native swapchain.
-	sc->base.base.num_images = xsc->num_images;
+	sc->base.base.image_count = xsc->image_count;
 	sc->xscn = xscn;
 
 	glBindTexture(tex_target, prev_texture);
@@ -473,7 +473,7 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 
 	// Passthrough our formats from the native compositor to the client.
 	size_t count = 0;
-	for (uint32_t i = 0; i < xcn->base.info.num_formats; i++) {
+	for (uint32_t i = 0; i < xcn->base.info.format_count; i++) {
 		int64_t f = vk_format_to_gl(xcn->base.info.formats[i]);
 		if (f == 0) {
 			continue;
@@ -481,7 +481,7 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 
 		c->base.base.info.formats[count++] = f;
 	}
-	c->base.base.info.num_formats = count;
+	c->base.base.info.format_count = count;
 
 	return true;
 }

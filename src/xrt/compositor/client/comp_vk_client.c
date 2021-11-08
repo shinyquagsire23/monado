@@ -53,7 +53,7 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 	struct client_vk_compositor *c = sc->c;
 	struct vk_bundle *vk = &c->vk;
 
-	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
+	for (uint32_t i = 0; i < sc->base.base.image_count; i++) {
 
 		VkResult ret = vk->vkWaitForFences(vk->device, 1, &sc->acquire_release_fence[i], true, MS_TO_NS(500));
 		if (vk_has_error(ret, "vkWaitForFences", __FILE__, __LINE__)) {
@@ -422,11 +422,11 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.wait_image = client_vk_swapchain_wait_image;
 	sc->base.base.release_image = client_vk_swapchain_release_image;
 	sc->base.base.reference.count = 1;
-	sc->base.base.num_images = xsc->num_images; // Fetch the number of images from the native swapchain.
+	sc->base.base.image_count = xsc->image_count; // Fetch the number of images from the native swapchain.
 	sc->c = c;
 	sc->xscn = xscn;
 
-	for (uint32_t i = 0; i < xsc->num_images; i++) {
+	for (uint32_t i = 0; i < xsc->image_count; i++) {
 		ret = vk_create_image_from_native(vk, info, &xscn->images[i], &sc->base.images[i], &sc->mems[i]);
 
 
@@ -450,7 +450,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 	// Prerecord command buffers for swapchain image ownership/layout
 	// transitions
-	for (uint32_t i = 0; i < xsc->num_images; i++) {
+	for (uint32_t i = 0; i < xsc->image_count; i++) {
 		ret = vk_init_cmd_buffer(vk, &sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
 			return XRT_ERROR_VULKAN;
@@ -569,11 +569,11 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 
 	c->xcn = xcn;
 	// passthrough our formats from the native compositor to the client
-	for (uint32_t i = 0; i < xcn->base.info.num_formats; i++) {
+	for (uint32_t i = 0; i < xcn->base.info.format_count; i++) {
 		c->base.base.info.formats[i] = xcn->base.info.formats[i];
 	}
 
-	c->base.base.info.num_formats = xcn->base.info.num_formats;
+	c->base.base.info.format_count = xcn->base.info.format_count;
 
 	ret = vk_init_from_given(&c->vk, getProc, instance, physicalDevice, device, queueFamilyIndex, queueIndex);
 	if (ret != VK_SUCCESS) {

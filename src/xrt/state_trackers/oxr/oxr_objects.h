@@ -1096,7 +1096,7 @@ struct oxr_system
 	XrFormFactor form_factor;
 	XrViewConfigurationType view_config_type;
 	XrViewConfigurationView views[2];
-	uint32_t num_blend_modes;
+	uint32_t blend_mode_count;
 	XrEnvironmentBlendMode blend_modes[3];
 
 #ifdef XR_USE_GRAPHICS_API_VULKAN
@@ -1583,11 +1583,11 @@ struct oxr_action_cache
 {
 	struct oxr_action_state current;
 
-	size_t num_inputs;
+	size_t input_count;
 	struct oxr_action_input *inputs;
 
 	int64_t stop_output_time;
-	size_t num_outputs;
+	size_t output_count;
 	struct oxr_action_output *outputs;
 };
 

@@ -179,7 +179,7 @@ illixr_hmd_create(const char *path_in, const char *comp_in)
 
 	size_t idx = 0;
 	dh->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
-	dh->base.hmd->num_blend_modes = idx;
+	dh->base.hmd->blend_mode_count = idx;
 
 	dh->pose.orientation.w = 1.0f; // All other values set to zero.
 	dh->print_spew = debug_get_bool_option_illixr_spew();

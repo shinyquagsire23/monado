@@ -179,7 +179,7 @@ gui_add_override(struct gui_program *p, struct gui_tracking_overrides *ts)
 		o->offset = identity;
 
 		// set input_name to the first pose in the inputs
-		for (uint32_t i = 0; i < p->xdevs[ts->add_tracker]->num_inputs; i++) {
+		for (uint32_t i = 0; i < p->xdevs[ts->add_tracker]->input_count; i++) {
 			enum xrt_input_name input_name = p->xdevs[ts->add_tracker]->inputs[i].name;
 			if (XRT_GET_INPUT_TYPE(input_name) != XRT_INPUT_TYPE_POSE) {
 				continue;
@@ -234,7 +234,7 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 
 		if (tracker >= 0) {
 			igText("Tracker Input Pose Name");
-			for (uint32_t i = 0; i < p->xdevs[tracker]->num_inputs; i++) {
+			for (uint32_t i = 0; i < p->xdevs[tracker]->input_count; i++) {
 				enum xrt_input_name input_name = p->xdevs[tracker]->inputs[i].name;
 				if (XRT_GET_INPUT_TYPE(input_name) != XRT_INPUT_TYPE_POSE) {
 					continue;

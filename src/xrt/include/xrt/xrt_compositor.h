@@ -374,7 +374,7 @@ struct xrt_swapchain
 	 *
 	 * The images themselves are on the subclasses.
 	 */
-	uint32_t num_images;
+	uint32_t image_count;
 
 	/*!
 	 * Must have called release_image before calling this function.
@@ -625,7 +625,7 @@ struct xrt_session_info
 struct xrt_compositor_info
 {
 	//! Number of formats, never changes.
-	uint32_t num_formats;
+	uint32_t format_count;
 
 	//! Supported formats, never changes.
 	int64_t formats[XRT_MAX_SWAPCHAIN_FORMATS];
@@ -667,7 +667,7 @@ struct xrt_compositor
 	xrt_result_t (*import_swapchain)(struct xrt_compositor *xc,
 	                                 const struct xrt_swapchain_create_info *info,
 	                                 struct xrt_image_native *native_images,
-	                                 uint32_t num_images,
+	                                 uint32_t image_count,
 	                                 struct xrt_swapchain **out_xsc);
 
 	/*!
@@ -953,10 +953,10 @@ static inline xrt_result_t
 xrt_comp_import_swapchain(struct xrt_compositor *xc,
                           const struct xrt_swapchain_create_info *info,
                           struct xrt_image_native *native_images,
-                          uint32_t num_images,
+                          uint32_t image_count,
                           struct xrt_swapchain **out_xsc)
 {
-	return xc->import_swapchain(xc, info, native_images, num_images, out_xsc);
+	return xc->import_swapchain(xc, info, native_images, image_count, out_xsc);
 }
 
 /*!
@@ -1555,7 +1555,7 @@ struct xrt_system_compositor_info
 	enum xrt_blend_mode supported_blend_modes[XRT_BLEND_MODE_MAX_ENUM];
 
 	//! Number of meaningful elements in xrt_system_compositor_info::supported_blend_modes
-	uint8_t num_supported_blend_modes;
+	uint8_t supported_blend_mode_count;
 
 	//! The vk device as used by the compositor, never changes.
 	uint8_t compositor_vk_deviceUUID[XRT_GPU_UUID_SIZE];
@@ -1741,14 +1741,14 @@ struct xrt_image_native_allocator
 	 */
 	xrt_result_t (*images_allocate)(struct xrt_image_native_allocator *xina,
 	                                const struct xrt_swapchain_create_info *xsci,
-	                                size_t num_images,
+	                                size_t image_count,
 	                                struct xrt_image_native *out_images);
 
 	/*!
 	 * Free the given images.
 	 */
 	xrt_result_t (*images_free)(struct xrt_image_native_allocator *xina,
-	                            size_t num_images,
+	                            size_t image_count,
 	                            struct xrt_image_native *images);
 
 	/*!
@@ -1767,10 +1767,10 @@ struct xrt_image_native_allocator
 static inline xrt_result_t
 xrt_images_allocate(struct xrt_image_native_allocator *xina,
                     const struct xrt_swapchain_create_info *xsci,
-                    size_t num_images,
+                    size_t image_count,
                     struct xrt_image_native *out_images)
 {
-	return xina->images_allocate(xina, xsci, num_images, out_images);
+	return xina->images_allocate(xina, xsci, image_count, out_images);
 }
 
 /*!
@@ -1781,9 +1781,9 @@ xrt_images_allocate(struct xrt_image_native_allocator *xina,
  * @public @memberof xrt_image_native_allocate
  */
 static inline xrt_result_t
-xrt_images_free(struct xrt_image_native_allocator *xina, size_t num_images, struct xrt_image_native *images)
+xrt_images_free(struct xrt_image_native_allocator *xina, size_t image_count, struct xrt_image_native *images)
 {
-	return xina->images_free(xina, num_images, images);
+	return xina->images_free(xina, image_count, images);
 }
 
 /*!

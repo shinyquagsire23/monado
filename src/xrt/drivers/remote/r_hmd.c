@@ -108,10 +108,10 @@ r_hmd_create(struct r_hub *r)
 {
 	// Allocate.
 	const enum u_device_alloc_flags flags = U_DEVICE_ALLOC_HMD;
-	const uint32_t num_inputs = 1;
-	const uint32_t num_outputs = 0;
+	const uint32_t input_count = 1;
+	const uint32_t output_count = 0;
 	struct r_hmd *rh = U_DEVICE_ALLOCATE( //
-	    struct r_hmd, flags, num_inputs, num_outputs);
+	    struct r_hmd, flags, input_count, output_count);
 
 	// Setup the basics.
 	rh->base.update_inputs = r_hmd_update_inputs;

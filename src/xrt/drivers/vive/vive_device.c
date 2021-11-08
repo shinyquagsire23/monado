@@ -754,7 +754,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 
 	size_t idx = 0;
 	d->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
-	d->base.hmd->num_blend_modes = idx;
+	d->base.hmd->blend_mode_count = idx;
 
 	d->base.update_inputs = vive_device_update_inputs;
 	d->base.get_tracked_pose = vive_device_get_tracked_pose;

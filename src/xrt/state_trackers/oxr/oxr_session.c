@@ -117,7 +117,7 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 
 	uint32_t filtered_count = 0;
 	int64_t filtered_formats[XRT_MAX_SWAPCHAIN_FORMATS];
-	for (uint32_t i = 0; i < xc->info.num_formats; i++) {
+	for (uint32_t i = 0; i < xc->info.format_count; i++) {
 		int64_t format = xc->info.formats[i];
 
 		if (inst->quirks.disable_vulkan_format_depth_stencil &&

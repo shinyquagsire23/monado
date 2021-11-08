@@ -46,13 +46,13 @@ client_gl_memobj_swapchain_destroy(struct xrt_swapchain *xsc)
 {
 	struct client_gl_memobj_swapchain *sc = client_gl_memobj_swapchain(xsc);
 
-	uint32_t num_images = sc->base.base.base.num_images;
+	uint32_t num_images = sc->base.base.base.image_count;
 	if (num_images > 0) {
 		glDeleteTextures(num_images, &sc->base.base.images[0]);
 		U_ZERO_ARRAY(sc->base.base.images);
 		glDeleteMemoryObjectsEXT(num_images, &sc->memory[0]);
 		U_ZERO_ARRAY(sc->memory);
-		sc->base.base.base.num_images = 0;
+		sc->base.base.base.image_count = 0;
 	}
 
 	// Drop our reference, does NULL checking.
@@ -83,16 +83,17 @@ client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
 	struct client_gl_memobj_swapchain *sc = U_TYPED_CALLOC(struct client_gl_memobj_swapchain);
 	sc->base.base.base.destroy = client_gl_memobj_swapchain_destroy;
 	sc->base.base.base.reference.count = 1;
-	sc->base.base.base.num_images = native_xsc->num_images; // Fetch the number of images from the native swapchain.
+	sc->base.base.base.image_count =
+	    native_xsc->image_count; // Fetch the number of images from the native swapchain.
 	sc->base.xscn = xscn;
 	sc->base.tex_target = tex_target;
 
 	struct xrt_swapchain_gl *xscgl = &sc->base.base;
 
-	glGenTextures(native_xsc->num_images, xscgl->images);
+	glGenTextures(native_xsc->image_count, xscgl->images);
 
-	glCreateMemoryObjectsEXT(native_xsc->num_images, &sc->memory[0]);
-	for (uint32_t i = 0; i < native_xsc->num_images; i++) {
+	glCreateMemoryObjectsEXT(native_xsc->image_count, &sc->memory[0]);
+	for (uint32_t i = 0; i < native_xsc->image_count; i++) {
 		glBindTexture(tex_target, xscgl->images[i]);
 
 		GLint dedicated = xscn->images[i].use_dedicated_allocation ? GL_TRUE : GL_FALSE;

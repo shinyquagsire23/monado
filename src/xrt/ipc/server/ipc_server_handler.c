@@ -59,7 +59,7 @@ set_swapchain_info(volatile struct ipc_client_state *ics,
 	ics->swapchain_data[index].width = info->width;
 	ics->swapchain_data[index].height = info->height;
 	ics->swapchain_data[index].format = info->format;
-	ics->swapchain_data[index].num_images = xsc->num_images;
+	ics->swapchain_data[index].image_count = xsc->image_count;
 }
 
 
@@ -71,16 +71,16 @@ set_swapchain_info(volatile struct ipc_client_state *ics,
 
 xrt_result_t
 ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *ics,
-                               uint32_t max_num_handles,
+                               uint32_t max_handle_capacity,
                                xrt_shmem_handle_t *out_handles,
-                               uint32_t *out_num_handles)
+                               uint32_t *out_handle_count)
 {
 	IPC_TRACE_MARKER();
 
-	assert(max_num_handles >= 1);
+	assert(max_handle_capacity >= 1);
 
 	out_handles[0] = ics->server->ism_handle;
-	*out_num_handles = 1;
+	*out_handle_count = 1;
 
 	return XRT_SUCCESS;
 }
@@ -453,7 +453,7 @@ _update_layers(volatile struct ipc_client_state *ics, struct xrt_compositor *xc,
 {
 	IPC_TRACE_MARKER();
 
-	for (uint32_t i = 0; i < slot->num_layers; i++) {
+	for (uint32_t i = 0; i < slot->layer_count; i++) {
 		volatile struct ipc_layer_entry *layer = &slot->layers[i];
 
 		switch (layer->data.type) {
@@ -505,7 +505,7 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
                                  uint32_t slot_id,
                                  uint32_t *out_free_slot_id,
                                  const xrt_graphics_sync_handle_t *handles,
-                                 const uint32_t num_handles)
+                                 const uint32_t handle_count)
 {
 	IPC_TRACE_MARKER();
 
@@ -518,12 +518,12 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 	xrt_graphics_sync_handle_t sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 
 	// If we have one or more save the first handle.
-	if (num_handles >= 1) {
+	if (handle_count >= 1) {
 		sync_handle = handles[0];
 	}
 
 	// Free all sync handles after the first one.
-	for (uint32_t i = 1; i < num_handles; i++) {
+	for (uint32_t i = 1; i < handle_count; i++) {
 		// Checks for valid handle.
 		xrt_graphics_sync_handle_t tmp = handles[i];
 		u_graphics_sync_unref(&tmp);
@@ -677,12 +677,12 @@ xrt_result_t
 ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
                             const struct xrt_swapchain_create_info *info,
                             uint32_t *out_id,
-                            uint32_t *out_num_images,
+                            uint32_t *out_image_count,
                             uint64_t *out_size,
                             bool *out_use_dedicated_allocation,
-                            uint32_t max_num_handles,
+                            uint32_t max_handle_capacity,
                             xrt_graphics_buffer_handle_t *out_handles,
-                            uint32_t *out_num_handles)
+                            uint32_t *out_handle_count)
 {
 	IPC_TRACE_MARKER();
 
@@ -703,7 +703,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	}
 
 	// It's now safe to increment the number of swapchains.
-	ics->num_swapchains++;
+	ics->swapchain_count++;
 
 	IPC_TRACE(ics->server, "Created swapchain %d.", index);
 
@@ -713,11 +713,11 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	struct xrt_swapchain_native *xscn = (struct xrt_swapchain_native *)xsc;
 
 	// Sanity checking.
-	assert(xsc->num_images <= IPC_MAX_SWAPCHAIN_HANDLES);
-	assert(xsc->num_images <= max_num_handles);
+	assert(xsc->image_count <= IPC_MAX_SWAPCHAIN_HANDLES);
+	assert(xsc->image_count <= max_handle_capacity);
 
 	// Paranoia.
-	for (size_t i = 1; i < xsc->num_images; i++) {
+	for (size_t i = 1; i < xsc->image_count; i++) {
 		assert(xscn->images[0].size == xscn->images[i].size);
 		assert(xscn->images[0].use_dedicated_allocation == xscn->images[i].use_dedicated_allocation);
 	}
@@ -726,11 +726,11 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	*out_size = xscn->images[0].size;
 	*out_use_dedicated_allocation = xscn->images[0].use_dedicated_allocation;
 	*out_id = index;
-	*out_num_images = xsc->num_images;
+	*out_image_count = xsc->image_count;
 
 	// Setup the fds.
-	*out_num_handles = xsc->num_images;
-	for (size_t i = 0; i < xsc->num_images; i++) {
+	*out_handle_count = xsc->image_count;
+	for (size_t i = 0; i < xsc->image_count; i++) {
 		out_handles[i] = xscn->images[i].handle;
 	}
 
@@ -743,7 +743,7 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
                             struct ipc_arg_swapchain_from_native *args,
                             uint32_t *out_id,
                             const xrt_graphics_buffer_handle_t *handles,
-                            uint32_t num_handles)
+                            uint32_t handle_count)
 {
 	IPC_TRACE_MARKER();
 
@@ -756,20 +756,20 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 	}
 
 	struct xrt_image_native xins[IPC_MAX_SWAPCHAIN_HANDLES] = {0};
-	for (uint32_t i = 0; i < num_handles; i++) {
+	for (uint32_t i = 0; i < handle_count; i++) {
 		xins[i].handle = handles[i];
 		xins[i].size = args->sizes[i];
 	}
 
 	// create the swapchain
 	struct xrt_swapchain *xsc = NULL;
-	xret = xrt_comp_import_swapchain(ics->xc, info, xins, num_handles, &xsc);
+	xret = xrt_comp_import_swapchain(ics->xc, info, xins, handle_count, &xsc);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
 
 	// It's now safe to increment the number of swapchains.
-	ics->num_swapchains++;
+	ics->swapchain_count++;
 
 	IPC_TRACE(ics->server, "Created swapchain %d.", index);
 
@@ -834,7 +834,7 @@ ipc_handle_swapchain_destroy(volatile struct ipc_client_state *ics, uint32_t id)
 		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
 	}
 
-	ics->num_swapchains--;
+	ics->swapchain_count--;
 
 	// Drop our reference, does NULL checking. Cast away volatile.
 	xrt_swapchain_reference((struct xrt_swapchain **)&ics->xscs[id], NULL);
@@ -859,7 +859,7 @@ ipc_handle_device_update_input(volatile struct ipc_client_state *ics, uint32_t i
 	// Copy data into the shared memory.
 	struct xrt_input *src = xdev->inputs;
 	struct xrt_input *dst = &ism->inputs[isdev->first_input_index];
-	size_t size = sizeof(struct xrt_input) * isdev->num_inputs;
+	size_t size = sizeof(struct xrt_input) * isdev->input_count;
 
 	bool io_active = ics->io_active && idev->io_active;
 	if (io_active) {
@@ -867,7 +867,7 @@ ipc_handle_device_update_input(volatile struct ipc_client_state *ics, uint32_t i
 	} else {
 		memset(dst, 0, size);
 
-		for (uint32_t i = 0; i < isdev->num_inputs; i++) {
+		for (uint32_t i = 0; i < isdev->input_count; i++) {
 			dst[i].name = src[i].name;
 
 			// Special case the rotation of the head.
@@ -888,7 +888,7 @@ find_input(volatile struct ipc_client_state *ics, uint32_t device_id, enum xrt_i
 	struct ipc_shared_device *isdev = &ism->isdevs[device_id];
 	struct xrt_input *io = &ism->inputs[isdev->first_input_index];
 
-	for (uint32_t i = 0; i < isdev->num_inputs; i++) {
+	for (uint32_t i = 0; i < isdev->input_count; i++) {
 		if (io[i].name == name) {
 			return &io[i];
 		}

@@ -111,7 +111,7 @@ struct xrt_hmd_parts
 	 * Array of supported blend modes.
 	 */
 	enum xrt_blend_mode blend_modes[XRT_MAX_DEVICE_BLEND_MODES];
-	size_t num_blend_modes;
+	size_t blend_mode_count;
 
 	/*!
 	 * Distortion information.
@@ -128,20 +128,20 @@ struct xrt_hmd_parts
 			//! Data.
 			float *vertices;
 			//! Number of vertices.
-			uint32_t num_vertices;
+			uint32_t vertex_count;
 			//! Stride of vertices
 			uint32_t stride;
 			//! 1 or 3 for (chromatic aberration).
-			uint32_t num_uv_channels;
+			uint32_t uv_channels_count;
 
 			//! Indices, for triangle strip.
 			int *indices;
-			//! Number of indices for the triangle strip.
-			uint32_t num_indices[2];
-			//! Offsets for the indices.
-			uint32_t offset_indices[2];
-			//! Total number of indices.
-			uint32_t total_num_indices;
+			//! Number of indices for the triangle strips (one per view).
+			uint32_t index_counts[2];
+			//! Offsets for the indices (one offset per view).
+			uint32_t index_offsets[2];
+			//! Total number of elements in mesh::indices array.
+			uint32_t index_count_total;
 		} mesh;
 	} distortion;
 };
@@ -208,9 +208,9 @@ struct xrt_binding_profile
 	enum xrt_device_name name;
 
 	struct xrt_binding_input_pair *inputs;
-	size_t num_inputs;
+	size_t input_count;
 	struct xrt_binding_output_pair *outputs;
-	size_t num_outputs;
+	size_t output_count;
 };
 
 /*!
@@ -238,18 +238,18 @@ struct xrt_device
 	//! Always set, pointing to the tracking system for this device.
 	struct xrt_tracking_origin *tracking_origin;
 
-	//! Number of bindings.
-	size_t num_binding_profiles;
+	//! Number of bindings in xrt_device::binding_profiles
+	size_t binding_profile_count;
 	// Array of alternative binding profiles.
 	struct xrt_binding_profile *binding_profiles;
 
 	//! Number of inputs.
-	size_t num_inputs;
+	size_t input_count;
 	//! Array of input structs.
 	struct xrt_input *inputs;
 
 	//! Number of outputs.
-	size_t num_outputs;
+	size_t output_count;
 	//! Array of output structs.
 	struct xrt_output *outputs;
 

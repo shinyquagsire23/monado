@@ -170,37 +170,37 @@ ipc_client_device_create(struct ipc_connection *ipc_c, struct xrt_tracking_origi
 	snprintf(icd->base.str, XRT_DEVICE_NAME_LEN, "%s", isdev->str);
 
 	// Setup inputs, by pointing directly to the shared memory.
-	assert(isdev->num_inputs > 0);
+	assert(isdev->input_count > 0);
 	icd->base.inputs = &ism->inputs[isdev->first_input_index];
-	icd->base.num_inputs = isdev->num_inputs;
+	icd->base.input_count = isdev->input_count;
 
 	// Setup outputs, if any point directly into the shared memory.
-	icd->base.num_outputs = isdev->num_outputs;
-	if (isdev->num_outputs > 0) {
+	icd->base.output_count = isdev->output_count;
+	if (isdev->output_count > 0) {
 		icd->base.outputs = &ism->outputs[isdev->first_output_index];
 	} else {
 		icd->base.outputs = NULL;
 	}
 
-	if (isdev->num_binding_profiles > 0) {
+	if (isdev->binding_profile_count > 0) {
 		icd->base.binding_profiles =
-		    U_TYPED_ARRAY_CALLOC(struct xrt_binding_profile, isdev->num_binding_profiles);
-		icd->base.num_binding_profiles = isdev->num_binding_profiles;
+		    U_TYPED_ARRAY_CALLOC(struct xrt_binding_profile, isdev->binding_profile_count);
+		icd->base.binding_profile_count = isdev->binding_profile_count;
 	}
 
-	for (size_t i = 0; i < isdev->num_binding_profiles; i++) {
+	for (size_t i = 0; i < isdev->binding_profile_count; i++) {
 		struct xrt_binding_profile *xbp = &icd->base.binding_profiles[i];
 		struct ipc_shared_binding_profile *isbp =
 		    &ism->binding_profiles[isdev->first_binding_profile_index + i];
 
 		xbp->name = isbp->name;
-		if (isbp->num_inputs > 0) {
+		if (isbp->input_count > 0) {
 			xbp->inputs = &ism->input_pairs[isbp->first_input_index];
-			xbp->num_inputs = isbp->num_inputs;
+			xbp->input_count = isbp->input_count;
 		}
-		if (isbp->num_outputs > 0) {
+		if (isbp->output_count > 0) {
 			xbp->outputs = &ism->output_pairs[isbp->first_output_index];
-			xbp->num_outputs = isbp->num_inputs;
+			xbp->output_count = isbp->input_count;
 		}
 	}
 

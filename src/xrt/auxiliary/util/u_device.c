@@ -183,7 +183,7 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device
 	// Common
 	size_t idx = 0;
 	xdev->hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
-	xdev->hmd->num_blend_modes = idx;
+	xdev->hmd->blend_mode_count = idx;
 
 	if (xdev->hmd->distortion.models == 0) {
 		xdev->hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
@@ -234,7 +234,7 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device
 }
 
 void *
-u_device_allocate(enum u_device_alloc_flags flags, size_t size, size_t num_inputs, size_t num_outputs)
+u_device_allocate(enum u_device_alloc_flags flags, size_t size, size_t input_count, size_t output_count)
 {
 	bool alloc_hmd = (flags & U_DEVICE_ALLOC_HMD) != 0;
 	bool alloc_tracking = (flags & U_DEVICE_ALLOC_TRACKING_NONE) != 0;
@@ -243,11 +243,11 @@ u_device_allocate(enum u_device_alloc_flags flags, size_t size, size_t num_input
 
 	// Inputs
 	size_t offset_inputs = total_size;
-	total_size += num_inputs * sizeof(struct xrt_input);
+	total_size += input_count * sizeof(struct xrt_input);
 
 	// Outputs
 	size_t offset_outputs = total_size;
-	total_size += num_outputs * sizeof(struct xrt_output);
+	total_size += output_count * sizeof(struct xrt_output);
 
 	// HMD
 	size_t offset_hmd = total_size;
@@ -261,18 +261,18 @@ u_device_allocate(enum u_device_alloc_flags flags, size_t size, size_t num_input
 	char *ptr = U_TYPED_ARRAY_CALLOC(char, total_size);
 	struct xrt_device *xdev = (struct xrt_device *)ptr;
 
-	if (num_inputs > 0) {
-		xdev->num_inputs = num_inputs;
+	if (input_count > 0) {
+		xdev->input_count = input_count;
 		xdev->inputs = (struct xrt_input *)(ptr + offset_inputs);
 
 		// Set inputs to active initially, easier for drivers.
-		for (size_t i = 0; i < num_inputs; i++) {
+		for (size_t i = 0; i < input_count; i++) {
 			xdev->inputs[i].active = true;
 		}
 	}
 
-	if (num_outputs > 0) {
-		xdev->num_outputs = num_outputs;
+	if (output_count > 0) {
+		xdev->output_count = output_count;
 		xdev->outputs = (struct xrt_output *)(ptr + offset_outputs);
 	}
 

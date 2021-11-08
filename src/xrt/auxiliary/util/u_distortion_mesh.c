@@ -39,27 +39,27 @@ run_func(struct xrt_device *xdev, func_calc calc, int num_views, struct xrt_hmd_
 	assert(num_views == 2);
 	assert(num_views <= 2);
 
-	size_t offset_vertices[2] = {0};
-	size_t offset_indices[2] = {0};
+	size_t vertex_offsets[2] = {0};
+	size_t index_offsets[2] = {0};
 
 	int cells_cols = num;
 	int cells_rows = num;
 	int vert_cols = cells_cols + 1;
 	int vert_rows = cells_rows + 1;
 
-	size_t num_vertices_per_view = vert_rows * vert_cols;
-	size_t num_vertices = num_vertices_per_view * num_views;
+	size_t vertex_count_per_view = vert_rows * vert_cols;
+	size_t vertex_count = vertex_count_per_view * num_views;
 
-	size_t num_uv_channels = 3;
-	size_t stride_in_floats = 2 + num_uv_channels * 2;
-	size_t num_floats = num_vertices * stride_in_floats;
+	size_t uv_channels_count = 3;
+	size_t stride_in_floats = 2 + uv_channels_count * 2;
+	size_t float_count = vertex_count * stride_in_floats;
 
-	float *verts = U_TYPED_ARRAY_CALLOC(float, num_floats);
+	float *verts = U_TYPED_ARRAY_CALLOC(float, float_count);
 
 	// Setup the vertices for all views.
 	size_t i = 0;
 	for (int view = 0; view < num_views; view++) {
-		offset_vertices[view] = i / stride_in_floats;
+		vertex_offsets[view] = i / stride_in_floats;
 
 		for (int r = 0; r < vert_rows; r++) {
 			// This goes from 0 to 1.0 inclusive.
@@ -84,16 +84,16 @@ run_func(struct xrt_device *xdev, func_calc calc, int num_views, struct xrt_hmd_
 		}
 	}
 
-	size_t num_indices_per_view = cells_rows * (vert_cols * 2 + 2);
-	size_t num_indices = num_indices_per_view * num_views;
-	int *indices = U_TYPED_ARRAY_CALLOC(int, num_indices);
+	size_t index_count_per_view = cells_rows * (vert_cols * 2 + 2);
+	size_t index_count_total = index_count_per_view * num_views;
+	int *indices = U_TYPED_ARRAY_CALLOC(int, index_count_total);
 
 	// Set up indices for all views.
 	i = 0;
 	for (int view = 0; view < num_views; view++) {
-		offset_indices[view] = i;
+		index_offsets[view] = i;
 
-		size_t off = offset_vertices[view];
+		size_t off = vertex_offsets[view];
 
 		for (int r = 0; r < cells_rows; r++) {
 			// Top vertex row for this cell row, left most vertex.
@@ -113,14 +113,14 @@ run_func(struct xrt_device *xdev, func_calc calc, int num_views, struct xrt_hmd_
 	target->distortion.models |= XRT_DISTORTION_MODEL_MESHUV;
 	target->distortion.mesh.vertices = verts;
 	target->distortion.mesh.stride = stride_in_floats * sizeof(float);
-	target->distortion.mesh.num_vertices = num_vertices;
-	target->distortion.mesh.num_uv_channels = num_uv_channels;
+	target->distortion.mesh.vertex_count = vertex_count;
+	target->distortion.mesh.uv_channels_count = uv_channels_count;
 	target->distortion.mesh.indices = indices;
-	target->distortion.mesh.num_indices[0] = num_indices_per_view;
-	target->distortion.mesh.num_indices[1] = num_indices_per_view;
-	target->distortion.mesh.offset_indices[0] = offset_indices[0];
-	target->distortion.mesh.offset_indices[1] = offset_indices[1];
-	target->distortion.mesh.total_num_indices = num_indices;
+	target->distortion.mesh.index_counts[0] = index_count_per_view;
+	target->distortion.mesh.index_counts[1] = index_count_per_view;
+	target->distortion.mesh.index_offsets[0] = index_offsets[0];
+	target->distortion.mesh.index_offsets[1] = index_offsets[1];
+	target->distortion.mesh.index_count_total = index_count_total;
 }
 
 bool

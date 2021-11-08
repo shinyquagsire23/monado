@@ -85,7 +85,7 @@ oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo
 	}
 	bool format_supported = false;
 	struct xrt_compositor *c = sess->compositor;
-	for (uint32_t i = 0; i < c->info.num_formats; i++) {
+	for (uint32_t i = 0; i < c->info.format_count; i++) {
 		if (c->info.formats[i] == createInfo->format) {
 			format_supported = true;
 			break;
@@ -133,16 +133,16 @@ oxr_xrEnumerateSwapchainImages(XrSwapchain swapchain,
 	struct xrt_swapchain *xsc = sc->swapchain;
 
 	if (imageCountOutput != NULL) {
-		*imageCountOutput = xsc->num_images;
+		*imageCountOutput = xsc->image_count;
 	}
 	if (imageCapacityInput == 0) {
 		return XR_SUCCESS;
 	}
-	if (imageCapacityInput < xsc->num_images) {
+	if (imageCapacityInput < xsc->image_count) {
 		return oxr_error(&log, XR_ERROR_SIZE_INSUFFICIENT, "(imageCapacityInput == %u)", imageCapacityInput);
 	}
 
-	return sc->enumerate_images(&log, sc, xsc->num_images, images);
+	return sc->enumerate_images(&log, sc, xsc->image_count, images);
 }
 
 XrResult

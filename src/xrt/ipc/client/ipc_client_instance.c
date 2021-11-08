@@ -64,10 +64,10 @@ struct ipc_client_instance
 	struct ipc_connection ipc_c;
 
 	struct xrt_tracking_origin *xtracks[8];
-	size_t num_xtracks;
+	size_t xtrack_count;
 
 	struct xrt_device *xdevs[8];
-	size_t num_xdevs;
+	size_t xdev_count;
 };
 
 static inline struct ipc_client_instance *
@@ -163,16 +163,16 @@ ipc_connect(struct ipc_connection *ipc_c)
  */
 
 static int
-ipc_client_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t num_xdevs)
+ipc_client_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t xdev_count)
 {
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
 
-	if (num_xdevs < 1) {
+	if (xdev_count < 1) {
 		return -1;
 	}
 
 	// @todo What about ownership?
-	for (size_t i = 0; i < num_xdevs && i < ii->num_xdevs; i++) {
+	for (size_t i = 0; i < xdev_count && i < ii->xdev_count; i++) {
 		xdevs[i] = ii->xdevs[i];
 	}
 
@@ -220,12 +220,12 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
 	// service considers us to be connected until fd is closed
 	ipc_message_channel_close(&ii->ipc_c.imc);
 
-	for (size_t i = 0; i < ii->num_xtracks; i++) {
+	for (size_t i = 0; i < ii->xtrack_count; i++) {
 		u_var_remove_root(ii->xtracks[i]);
 		free(ii->xtracks[i]);
 		ii->xtracks[i] = NULL;
 	}
-	ii->num_xtracks = 0;
+	ii->xtrack_count = 0;
 
 	os_mutex_destroy(&ii->ipc_c.mutex);
 
@@ -323,7 +323,7 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 
 	// Query the server for how many tracking origins it has.
 	count = 0;
-	for (uint32_t i = 0; i < ism->num_itracks; i++) {
+	for (uint32_t i = 0; i < ism->itrack_count; i++) {
 		xtrack = U_TYPED_CALLOC(struct xrt_tracking_origin);
 
 		memcpy(xtrack->name, ism->itracks[i].name, sizeof(xtrack->name));
@@ -337,11 +337,11 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 		u_var_add_pose(xtrack, &xtrack->offset, "offset");
 	}
 
-	ii->num_xtracks = count;
+	ii->xtrack_count = count;
 
 	// Query the server for how many devices it has.
 	count = 0;
-	for (uint32_t i = 0; i < ism->num_isdevs; i++) {
+	for (uint32_t i = 0; i < ism->isdev_count; i++) {
 		struct ipc_shared_device *isdev = &ism->isdevs[i];
 		xtrack = ii->xtracks[isdev->tracking_origin_index];
 
@@ -352,7 +352,7 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 		}
 	}
 
-	ii->num_xdevs = count;
+	ii->xdev_count = count;
 
 	*out_xinst = &ii->base;
 

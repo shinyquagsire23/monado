@@ -175,10 +175,10 @@ r_device_create(struct r_hub *r, bool is_left)
 {
 	// Allocate.
 	const enum u_device_alloc_flags flags = 0;
-	const uint32_t num_inputs = 5;
-	const uint32_t num_outputs = 1;
+	const uint32_t input_count = 5;
+	const uint32_t output_count = 1;
 	struct r_device *rd = U_DEVICE_ALLOCATE( //
-	    struct r_device, flags, num_inputs, num_outputs);
+	    struct r_device, flags, input_count, output_count);
 
 	// Setup the basics.
 	rd->base.update_inputs = r_device_update_inputs;

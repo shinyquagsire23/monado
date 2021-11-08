@@ -630,7 +630,7 @@ public:
 			enum xrt_input_name binding_name = in.monado_input_name;
 
 			struct xrt_input *input = NULL;
-			for (uint32_t ii = 0; ii < m_xdev->num_inputs; ii++) {
+			for (uint32_t ii = 0; ii < m_xdev->input_count; ii++) {
 				if (m_xdev->inputs[ii].name == binding_name) {
 					input = &m_xdev->inputs[ii];
 					break;

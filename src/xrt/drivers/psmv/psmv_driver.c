@@ -977,9 +977,9 @@ static struct xrt_binding_profile binding_profiles[1] = {
     {
         .name = XRT_DEVICE_SIMPLE_CONTROLLER,
         .inputs = simple_inputs,
-        .num_inputs = ARRAY_SIZE(simple_inputs),
+        .input_count = ARRAY_SIZE(simple_inputs),
         .outputs = simple_outputs,
-        .num_outputs = ARRAY_SIZE(simple_outputs),
+        .output_count = ARRAY_SIZE(simple_outputs),
     },
 };
 
@@ -1028,7 +1028,7 @@ psmv_found(struct xrt_prober *xp,
 	psmv->base.set_output = psmv_device_set_output;
 	psmv->base.name = XRT_DEVICE_PSMV;
 	psmv->base.binding_profiles = binding_profiles;
-	psmv->base.num_binding_profiles = ARRAY_SIZE(binding_profiles);
+	psmv->base.binding_profile_count = ARRAY_SIZE(binding_profiles);
 	psmv->fusion.rot.w = 1.0f;
 	psmv->fusion.fusion = imu_fusion_create();
 	psmv->log_level = debug_get_log_option_psmv_log();

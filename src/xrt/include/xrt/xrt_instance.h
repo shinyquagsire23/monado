@@ -76,13 +76,13 @@ struct xrt_instance
 	 * @param xinst Pointer to self
 	 * @param[in,out] xdevs Pointer to xrt_device array. Array elements will
 	 * be populated.
-	 * @param[in] num_xdevs The capacity of the @p xdevs array.
+	 * @param[in] xdev_count The capacity of the @p xdevs array.
 	 *
 	 * @return 0 on success, <0 on error.
 	 *
 	 * @see xrt_prober::probe, xrt_prober::select
 	 */
-	int (*select)(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t num_xdevs);
+	int (*select)(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t xdev_count);
 
 	/*!
 	 * Creates a @ref xrt_system_compositor.
@@ -151,9 +151,9 @@ struct xrt_instance
  * @public @memberof xrt_instance
  */
 static inline int
-xrt_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t num_xdevs)
+xrt_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t xdev_count)
 {
-	return xinst->select(xinst, xdevs, num_xdevs);
+	return xinst->select(xinst, xdevs, xdev_count);
 }
 
 /*!

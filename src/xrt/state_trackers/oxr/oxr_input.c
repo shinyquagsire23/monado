@@ -87,7 +87,7 @@ static void
 oxr_action_cache_teardown(struct oxr_action_cache *cache)
 {
 	// Clean up input transforms
-	for (uint32_t i = 0; i < cache->num_inputs; i++) {
+	for (uint32_t i = 0; i < cache->input_count; i++) {
 		struct oxr_action_input *action_input = &cache->inputs[i];
 		oxr_input_transform_destroy(&(action_input->transforms));
 		action_input->num_transforms = 0;
@@ -461,13 +461,13 @@ do_inputs(struct oxr_binding *binding_point,
           struct xrt_binding_profile *xbp,
           XrPath matched_path,
           struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION],
-          uint32_t *num_inputs)
+          uint32_t *input_count)
 {
 	enum xrt_input_name name = 0;
 	if (xbp == NULL) {
 		name = binding_point->input;
 	} else {
-		for (size_t i = 0; i < xbp->num_inputs; i++) {
+		for (size_t i = 0; i < xbp->input_count; i++) {
 			if (binding_point->input != xbp->inputs[i].from) {
 				continue;
 			}
@@ -485,7 +485,7 @@ do_inputs(struct oxr_binding *binding_point,
 
 	struct xrt_input *input = NULL;
 	if (oxr_xdev_find_input(xdev, name, &input)) {
-		uint32_t index = (*num_inputs)++;
+		uint32_t index = (*input_count)++;
 		inputs[index].input = input;
 		inputs[index].xdev = xdev;
 		inputs[index].bound_path = matched_path;
@@ -501,13 +501,13 @@ do_outputs(struct oxr_binding *binding_point,
            struct xrt_binding_profile *xbp,
            XrPath matched_path,
            struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION],
-           uint32_t *num_outputs)
+           uint32_t *output_count)
 {
 	enum xrt_output_name name = 0;
 	if (xbp == NULL) {
 		name = binding_point->output;
 	} else {
-		for (size_t i = 0; i < xbp->num_outputs; i++) {
+		for (size_t i = 0; i < xbp->output_count; i++) {
 			if (binding_point->output != xbp->outputs[i].from) {
 				continue;
 			}
@@ -525,7 +525,7 @@ do_outputs(struct oxr_binding *binding_point,
 
 	struct xrt_output *output = NULL;
 	if (oxr_xdev_find_output(xdev, name, &output)) {
-		uint32_t index = (*num_outputs)++;
+		uint32_t index = (*output_count)++;
 		outputs[index].name = name;
 		outputs[index].xdev = xdev;
 		outputs[index].bound_path = matched_path;
@@ -546,9 +546,9 @@ do_io_bindings(struct oxr_binding *binding_point,
                struct xrt_binding_profile *xbp,
                XrPath matched_path,
                struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION],
-               uint32_t *num_inputs,
+               uint32_t *input_count,
                struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION],
-               uint32_t *num_outputs)
+               uint32_t *output_count)
 {
 	if (act->data->action_type == XR_ACTION_TYPE_VIBRATION_OUTPUT) {
 		return do_outputs( //
@@ -557,7 +557,7 @@ do_io_bindings(struct oxr_binding *binding_point,
 		    xbp,           //
 		    matched_path,  //
 		    outputs,       //
-		    num_outputs);  //
+		    output_count); //
 	} else {
 		return do_inputs(  //
 		    binding_point, //
@@ -565,14 +565,14 @@ do_io_bindings(struct oxr_binding *binding_point,
 		    xbp,           //
 		    matched_path,  //
 		    inputs,        //
-		    num_inputs);   //
+		    input_count);  //
 	}
 }
 
 static struct xrt_binding_profile *
 get_matching_binding_profile(struct oxr_interaction_profile *profile, struct xrt_device *xdev)
 {
-	for (size_t i = 0; i < xdev->num_binding_profiles; i++) {
+	for (size_t i = 0; i < xdev->binding_profile_count; i++) {
 		if (xdev->binding_profiles[i].name == profile->xname) {
 			return &xdev->binding_profiles[i];
 		}
@@ -604,9 +604,9 @@ get_binding(struct oxr_logger *log,
             struct oxr_interaction_profile *profile,
             enum oxr_subaction_path subaction_path,
             struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION],
-            uint32_t *num_inputs,
+            uint32_t *input_count,
             struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION],
-            uint32_t *num_outputs)
+            uint32_t *output_count)
 {
 	struct xrt_device *xdev = NULL;
 	struct oxr_binding *binding_points[OXR_MAX_BINDINGS_PER_ACTION];
@@ -692,9 +692,9 @@ get_binding(struct oxr_logger *log,
 		    xbp,                     //
 		    matched_path,            //
 		    inputs,                  //
-		    num_inputs,              //
+		    input_count,             //
 		    outputs,                 //
-		    num_outputs);            //
+		    output_count);           //
 
 		if (found) {
 			if (xbp == NULL) {
@@ -760,7 +760,7 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 	if (act_ref->action_type == XR_ACTION_TYPE_POSE_INPUT) {
 
 #define POSE_ANY(NAME)                                                                                                 \
-	if ((act_ref->subaction_paths.NAME || act_ref->subaction_paths.any) && act_attached->NAME.num_inputs > 0) {    \
+	if ((act_ref->subaction_paths.NAME || act_ref->subaction_paths.any) && act_attached->NAME.input_count > 0) {   \
 		act_attached->any_pose_subaction_path.NAME = true;                                                     \
 		oxr_slog(&slog, "\tFor: <any>\n\t\tBinding any pose to " #NAME ".\n");                                 \
 	} else
@@ -794,7 +794,7 @@ oxr_action_cache_stop_output(struct oxr_logger *log, struct oxr_session *sess, s
 
 	union xrt_output_value value = {0};
 
-	for (uint32_t i = 0; i < cache->num_outputs; i++) {
+	for (uint32_t i = 0; i < cache->output_count; i++) {
 		struct oxr_action_output *output = &cache->outputs[i];
 		struct xrt_device *xdev = output->xdev;
 
@@ -805,7 +805,7 @@ oxr_action_cache_stop_output(struct oxr_logger *log, struct oxr_session *sess, s
 static bool
 oxr_input_is_input_for_cache(struct oxr_action_input *action_input, struct oxr_action_cache *cache)
 {
-	for (size_t i = 0; i < cache->num_inputs; i++) {
+	for (size_t i = 0; i < cache->input_count; i++) {
 		if (action_input->bound_path == cache->inputs[i].bound_path) {
 			return true;
 		}
@@ -900,9 +900,9 @@ oxr_input_combine_input(struct oxr_session *sess,
                         bool *is_active)
 {
 	struct oxr_action_input *inputs = cache->inputs;
-	size_t num_inputs = cache->num_inputs;
+	size_t input_count = cache->input_count;
 
-	if (num_inputs == 0) {
+	if (input_count == 0) {
 		*is_active = false;
 		return true;
 	}
@@ -911,7 +911,7 @@ oxr_input_combine_input(struct oxr_session *sess,
 	struct oxr_input_value_tagged res = {0};
 	int64_t res_timestamp = inputs[0].input->timestamp;
 
-	for (size_t i = 0; i < num_inputs; i++) {
+	for (size_t i = 0; i < input_count; i++) {
 		struct oxr_action_input *action_input = &(inputs[i]);
 		struct xrt_input *input = action_input->input;
 
@@ -1026,12 +1026,12 @@ oxr_action_cache_update(struct oxr_logger *log,
 	bool is_active;
 
 	/* a cache can only have outputs or inputs, not both */
-	if (cache->num_outputs > 0) {
+	if (cache->output_count > 0) {
 		cache->current.active = true;
 		if (cache->stop_output_time < time) {
 			oxr_action_cache_stop_output(log, sess, cache);
 		}
-	} else if (cache->num_inputs > 0) {
+	} else if (cache->input_count > 0) {
 
 		if (!oxr_input_combine_input(sess, countActionSets, actionSets, act_attached, subaction_path, cache,
 		                             &combined, &timestamp, &is_active)) {
@@ -1263,19 +1263,19 @@ oxr_action_bind_io(struct oxr_logger *log,
                    enum oxr_subaction_path subaction_path)
 {
 	struct oxr_action_input inputs[OXR_MAX_BINDINGS_PER_ACTION] = {0};
-	uint32_t num_inputs = 0;
+	uint32_t input_count = 0;
 	struct oxr_action_output outputs[OXR_MAX_BINDINGS_PER_ACTION] = {0};
-	uint32_t num_outputs = 0;
+	uint32_t output_count = 0;
 
-	get_binding(log, slog, sess, act, profile, subaction_path, inputs, &num_inputs, outputs, &num_outputs);
+	get_binding(log, slog, sess, act, profile, subaction_path, inputs, &input_count, outputs, &output_count);
 
 	cache->current.active = false;
 
-	if (num_inputs > 0) {
+	if (input_count > 0) {
 		uint32_t count = 0;
 		cache->current.active = true;
-		cache->inputs = U_TYPED_ARRAY_CALLOC(struct oxr_action_input, num_inputs);
-		for (uint32_t i = 0; i < num_inputs; i++) {
+		cache->inputs = U_TYPED_ARRAY_CALLOC(struct oxr_action_input, input_count);
+		for (uint32_t i = 0; i < input_count; i++) {
 
 			// Only add the input if we can find a transform.
 			if (oxr_action_populate_input_transform(log, slog, sess, act, &(inputs[i]))) {
@@ -1292,16 +1292,16 @@ oxr_action_bind_io(struct oxr_logger *log,
 			cache->inputs = NULL;
 		}
 
-		cache->num_inputs = count;
+		cache->input_count = count;
 	}
 
-	if (num_outputs > 0) {
+	if (output_count > 0) {
 		cache->current.active = true;
-		cache->outputs = U_TYPED_ARRAY_CALLOC(struct oxr_action_output, num_outputs);
-		for (uint32_t i = 0; i < num_outputs; i++) {
+		cache->outputs = U_TYPED_ARRAY_CALLOC(struct oxr_action_output, output_count);
+		for (uint32_t i = 0; i < output_count; i++) {
 			cache->outputs[i] = outputs[i];
 		}
-		cache->num_outputs = num_outputs;
+		cache->output_count = output_count;
 	}
 }
 
@@ -1559,13 +1559,13 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
 	}
 
 #define ACCUMULATE_PATHS(X)                                                                                            \
-	if (act_attached->X.num_inputs > 0) {                                                                          \
-		for (uint32_t i = 0; i < act_attached->X.num_inputs; i++) {                                            \
+	if (act_attached->X.input_count > 0) {                                                                         \
+		for (uint32_t i = 0; i < act_attached->X.input_count; i++) {                                           \
 			add_path_to_set(temp, act_attached->X.inputs[i].bound_path, &num_paths);                       \
 		}                                                                                                      \
 	}                                                                                                              \
-	if (act_attached->X.num_outputs > 0) {                                                                         \
-		for (uint32_t i = 0; i < act_attached->X.num_outputs; i++) {                                           \
+	if (act_attached->X.output_count > 0) {                                                                        \
+		for (uint32_t i = 0; i < act_attached->X.output_count; i++) {                                          \
 			add_path_to_set(temp, act_attached->X.outputs[i].bound_path, &num_paths);                      \
 		}                                                                                                      \
 	}
@@ -1778,7 +1778,7 @@ set_action_output_vibration(struct oxr_session *sess,
 	value.vibration.amplitude = data->amplitude;
 	value.vibration.duration = data->duration;
 
-	for (uint32_t i = 0; i < cache->num_outputs; i++) {
+	for (uint32_t i = 0; i < cache->output_count; i++) {
 		struct oxr_action_output *output = &cache->outputs[i];
 		struct xrt_device *xdev = output->xdev;
 

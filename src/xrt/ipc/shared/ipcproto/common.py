@@ -130,7 +130,7 @@ class HandleType:
     @property
     def count_arg_name(self):
         """Get the name of the count argument."""
-        return 'num_'+self.argstem
+        return self.argstem[:-1] + "_count"
 
     @property
     def count_arg_type(self):

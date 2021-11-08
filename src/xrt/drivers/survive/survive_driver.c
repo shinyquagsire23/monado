@@ -791,7 +791,7 @@ survive_device_update_inputs(struct xrt_device *xdev)
 
 	os_mutex_lock(&survive->sys->lock);
 
-	for (size_t i = 0; i < survive->base.num_inputs; i++) {
+	for (size_t i = 0; i < survive->base.input_count; i++) {
 		survive->base.inputs[i] = survive->last_inputs[i];
 	}
 
@@ -838,7 +838,7 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 
 	size_t idx = 0;
 	survive->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
-	survive->base.hmd->num_blend_modes = idx;
+	survive->base.hmd->blend_mode_count = idx;
 
 	switch (survive->hmd.config.variant) {
 	case VIVE_VARIANT_VIVE: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive (libsurvive)"); break;
@@ -918,9 +918,9 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 
 	survive->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 
-	survive->last_inputs = U_TYPED_ARRAY_CALLOC(struct xrt_input, survive->base.num_inputs);
-	survive->num_last_inputs = survive->base.num_inputs;
-	for (size_t i = 0; i < survive->base.num_inputs; i++) {
+	survive->last_inputs = U_TYPED_ARRAY_CALLOC(struct xrt_input, survive->base.input_count);
+	survive->num_last_inputs = survive->base.input_count;
+	for (size_t i = 0; i < survive->base.input_count; i++) {
 		survive->last_inputs[i] = survive->base.inputs[i];
 	}
 
@@ -959,9 +959,9 @@ static struct xrt_binding_profile binding_profiles_index[1] = {
     {
         .name = XRT_DEVICE_SIMPLE_CONTROLLER,
         .inputs = simple_inputs_index,
-        .num_inputs = ARRAY_SIZE(simple_inputs_index),
+        .input_count = ARRAY_SIZE(simple_inputs_index),
         .outputs = simple_outputs_index,
-        .num_outputs = ARRAY_SIZE(simple_outputs_index),
+        .output_count = ARRAY_SIZE(simple_outputs_index),
     },
 };
 
@@ -969,9 +969,9 @@ static struct xrt_binding_profile binding_profiles_vive[1] = {
     {
         .name = XRT_DEVICE_SIMPLE_CONTROLLER,
         .inputs = simple_inputs_vive,
-        .num_inputs = ARRAY_SIZE(simple_inputs_vive),
+        .input_count = ARRAY_SIZE(simple_inputs_vive),
         .outputs = simple_outputs_vive,
-        .num_outputs = ARRAY_SIZE(simple_outputs_vive),
+        .output_count = ARRAY_SIZE(simple_outputs_vive),
     },
 };
 
@@ -1097,7 +1097,7 @@ _create_controller_device(struct survive_system *sys,
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_INDEX_HAPTIC;
 
 		survive->base.binding_profiles = binding_profiles_index;
-		survive->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_index);
+		survive->base.binding_profile_count = ARRAY_SIZE(binding_profiles_index);
 
 		survive->base.hand_tracking_supported = true;
 
@@ -1120,7 +1120,7 @@ _create_controller_device(struct survive_system *sys,
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_VIVE_HAPTIC;
 
 		survive->base.binding_profiles = binding_profiles_vive;
-		survive->base.num_binding_profiles = ARRAY_SIZE(binding_profiles_vive);
+		survive->base.binding_profile_count = ARRAY_SIZE(binding_profiles_vive);
 
 		survive->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 	} else if (survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN1 ||
@@ -1141,9 +1141,9 @@ _create_controller_device(struct survive_system *sys,
 	survive->base.orientation_tracking_supported = true;
 	survive->base.position_tracking_supported = true;
 
-	survive->last_inputs = U_TYPED_ARRAY_CALLOC(struct xrt_input, survive->base.num_inputs);
-	survive->num_last_inputs = survive->base.num_inputs;
-	for (size_t i = 0; i < survive->base.num_inputs; i++) {
+	survive->last_inputs = U_TYPED_ARRAY_CALLOC(struct xrt_input, survive->base.input_count);
+	survive->num_last_inputs = survive->base.input_count;
+	for (size_t i = 0; i < survive->base.input_count; i++) {
 		survive->last_inputs[i] = survive->base.inputs[i];
 	}
 

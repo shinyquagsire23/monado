@@ -96,7 +96,7 @@ alloc_and_set_funcs(struct vk_bundle *vk, struct comp_swapchain_gc *cscgc, uint3
 	sc->base.base.acquire_image = swapchain_acquire_image;
 	sc->base.base.wait_image = swapchain_wait_image;
 	sc->base.base.release_image = swapchain_release_image;
-	sc->base.base.num_images = num_images;
+	sc->base.base.image_count = num_images;
 	sc->vk = vk;
 	sc->gc = cscgc;
 
@@ -384,11 +384,11 @@ comp_swapchain_really_destroy(struct comp_swapchain *sc)
 
 	VK_TRACE(vk, "REALLY DESTROY");
 
-	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
+	for (uint32_t i = 0; i < sc->base.base.image_count; i++) {
 		image_cleanup(vk, &sc->images[i]);
 	}
 
-	for (uint32_t i = 0; i < sc->base.base.num_images; i++) {
+	for (uint32_t i = 0; i < sc->base.base.image_count; i++) {
 		u_graphics_buffer_unref(&sc->base.images[i].handle);
 	}
 

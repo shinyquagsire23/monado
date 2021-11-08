@@ -318,7 +318,7 @@ oxr_hand_tracker_create(struct oxr_logger *log,
 			continue;
 		}
 
-		for (uint32_t j = 0; j < xdev->num_inputs; j++) {
+		for (uint32_t j = 0; j < xdev->input_count; j++) {
 			struct xrt_input *input = &xdev->inputs[j];
 
 			if ((input->name == XRT_INPUT_GENERIC_HAND_TRACKING_LEFT &&

@@ -97,8 +97,8 @@ u_extents_2d_split_side_by_side(struct xrt_device *xdev, const struct u_extents_
 void
 u_device_dump_config(struct xrt_device *xdev, const char *prefix, const char *prod);
 
-#define U_DEVICE_ALLOCATE(type, flags, num_inputs, num_outputs)                                                        \
-	((type *)u_device_allocate(flags, sizeof(type), num_inputs, num_outputs))
+#define U_DEVICE_ALLOCATE(type, flags, input_count, output_count)                                                      \
+	((type *)u_device_allocate(flags, sizeof(type), input_count, output_count))
 
 
 /*!
@@ -110,7 +110,7 @@ u_device_dump_config(struct xrt_device *xdev, const char *prefix, const char *pr
  * @ingroup aux_util
  */
 void *
-u_device_allocate(enum u_device_alloc_flags flags, size_t size, size_t num_inputs, size_t num_outputs);
+u_device_allocate(enum u_device_alloc_flags flags, size_t size, size_t input_count, size_t output_count);
 
 /*!
  * Helper function to free a device and any data hanging of it.

@@ -156,25 +156,25 @@ handle_binding(struct ipc_shared_memory *ism,
 
 	// Copy the initial state and also count the number in input_pairs.
 	size_t input_pair_start = input_pair_index;
-	for (size_t k = 0; k < xbp->num_inputs; k++) {
+	for (size_t k = 0; k < xbp->input_count; k++) {
 		ism->input_pairs[input_pair_index++] = xbp->inputs[k];
 	}
 
 	// Setup the 'offsets' and number of input_pairs.
 	if (input_pair_start != input_pair_index) {
-		isbp->num_inputs = input_pair_index - input_pair_start;
+		isbp->input_count = input_pair_index - input_pair_start;
 		isbp->first_input_index = input_pair_start;
 	}
 
 	// Copy the initial state and also count the number in outputs.
 	size_t output_pair_start = output_pair_index;
-	for (size_t k = 0; k < xbp->num_outputs; k++) {
+	for (size_t k = 0; k < xbp->output_count; k++) {
 		ism->output_pairs[output_pair_index++] = xbp->outputs[k];
 	}
 
 	// Setup the 'offsets' and number of output_pairs.
 	if (output_pair_start != output_pair_index) {
-		isbp->num_outputs = output_pair_index - output_pair_start;
+		isbp->output_count = output_pair_index - output_pair_start;
 		isbp->first_output_index = output_pair_start;
 	}
 
@@ -223,7 +223,7 @@ init_shm(struct ipc_server *s)
 		itrack->offset = xtrack->offset;
 	}
 
-	ism->num_itracks = count;
+	ism->itrack_count = count;
 
 	count = 0;
 	uint32_t input_index = 0;
@@ -257,12 +257,12 @@ init_shm(struct ipc_server *s)
 			ism->hmd.views[1].display.h_pixels = xdev->hmd->views[1].display.h_pixels;
 			ism->hmd.views[1].fov = xdev->hmd->views[1].fov;
 
-			for (size_t i = 0; i < xdev->hmd->num_blend_modes; i++) {
+			for (size_t i = 0; i < xdev->hmd->blend_mode_count; i++) {
 				// Not super necessary, we also do this assert in oxr_system.c
 				assert(u_verify_blend_mode_valid(xdev->hmd->blend_modes[i]));
 				ism->hmd.blend_modes[i] = xdev->hmd->blend_modes[i];
 			}
-			ism->hmd.num_blend_modes = xdev->hmd->num_blend_modes;
+			ism->hmd.blend_mode_count = xdev->hmd->blend_mode_count;
 		}
 
 		// Setup the tracking origin.
@@ -283,44 +283,44 @@ init_shm(struct ipc_server *s)
 
 		// Bindings
 		size_t binding_start = binding_index;
-		for (size_t k = 0; k < xdev->num_binding_profiles; k++) {
+		for (size_t k = 0; k < xdev->binding_profile_count; k++) {
 			handle_binding(ism, &xdev->binding_profiles[k], &ism->binding_profiles[binding_index++],
 			               &input_pair_index, &output_pair_index);
 		}
 
 		// Setup the 'offsets' and number of bindings.
 		if (binding_start != binding_index) {
-			isdev->num_binding_profiles = binding_index - binding_start;
+			isdev->binding_profile_count = binding_index - binding_start;
 			isdev->first_binding_profile_index = binding_start;
 		}
 
 		// Copy the initial state and also count the number in inputs.
 		size_t input_start = input_index;
-		for (size_t k = 0; k < xdev->num_inputs; k++) {
+		for (size_t k = 0; k < xdev->input_count; k++) {
 			ism->inputs[input_index++] = xdev->inputs[k];
 		}
 
 		// Setup the 'offsets' and number of inputs.
 		if (input_start != input_index) {
-			isdev->num_inputs = input_index - input_start;
+			isdev->input_count = input_index - input_start;
 			isdev->first_input_index = input_start;
 		}
 
 		// Copy the initial state and also count the number in outputs.
 		size_t output_start = output_index;
-		for (size_t k = 0; k < xdev->num_outputs; k++) {
+		for (size_t k = 0; k < xdev->output_count; k++) {
 			ism->outputs[output_index++] = xdev->outputs[k];
 		}
 
 		// Setup the 'offsets' and number of outputs.
 		if (output_start != output_index) {
-			isdev->num_outputs = output_index - output_start;
+			isdev->output_count = output_index - output_start;
 			isdev->first_output_index = output_start;
 		}
 	}
 
 	// Finally tell the client how many devices we have.
-	s->ism->num_isdevs = count;
+	s->ism->isdev_count = count;
 
 	snprintf(s->ism->u_git_tag, IPC_VERSION_NAME_LEN, "%s", u_git_tag);
 

@@ -622,7 +622,7 @@ ns_hmd_create(const char *config_path)
 
 	// Not supporting ALPHA_BLEND for now, because I know nothing about it, have no reason to use it, and want to
 	// avoid unintended consequences. As soon as you have a specific reason to support it, go ahead and support it.
-	ns->base.hmd->num_blend_modes = idx;
+	ns->base.hmd->blend_mode_count = idx;
 
 	uint64_t start, end;
 

@@ -49,7 +49,7 @@ oxr_xdev_find_input(struct xrt_device *xdev, enum xrt_input_name name, struct xr
 		return false;
 	}
 
-	for (uint32_t i = 0; i < xdev->num_inputs; i++) {
+	for (uint32_t i = 0; i < xdev->input_count; i++) {
 		if (xdev->inputs[i].name != name) {
 			continue;
 		}
@@ -67,7 +67,7 @@ oxr_xdev_find_output(struct xrt_device *xdev, enum xrt_output_name name, struct 
 		return false;
 	}
 
-	for (uint32_t i = 0; i < xdev->num_outputs; i++) {
+	for (uint32_t i = 0; i < xdev->output_count; i++) {
 		if (xdev->outputs[i].name != name) {
 			continue;
 		}

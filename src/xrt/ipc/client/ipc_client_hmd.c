@@ -147,9 +147,9 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 	snprintf(ich->base.str, XRT_DEVICE_NAME_LEN, "%s", isdev->str);
 
 	// Setup inputs, by pointing directly to the shared memory.
-	assert(isdev->num_inputs > 0);
+	assert(isdev->input_count > 0);
 	ich->base.inputs = &ism->inputs[isdev->first_input_index];
-	ich->base.num_inputs = isdev->num_inputs;
+	ich->base.input_count = isdev->input_count;
 
 #if 0
 	// Setup info.
@@ -172,7 +172,7 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 	for (int i = 0; i < XRT_MAX_DEVICE_BLEND_MODES; i++) {
 		ich->base.hmd->blend_modes[i] = ipc_c->ism->hmd.blend_modes[i];
 	}
-	ich->base.hmd->num_blend_modes = ipc_c->ism->hmd.num_blend_modes;
+	ich->base.hmd->blend_mode_count = ipc_c->ism->hmd.blend_mode_count;
 
 	ich->base.hmd->views[0].display.w_pixels = ipc_c->ism->hmd.views[0].display.w_pixels;
 	ich->base.hmd->views[0].display.h_pixels = ipc_c->ism->hmd.views[0].display.h_pixels;

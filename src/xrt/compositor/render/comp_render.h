@@ -225,11 +225,11 @@ struct comp_resources
 		struct comp_buffer vbo;
 		struct comp_buffer ibo;
 
-		uint32_t num_vertices;
-		uint32_t num_indices[2];
+		uint32_t vertex_count;
+		uint32_t index_counts[2];
 		uint32_t stride;
-		uint32_t offset_indices[2];
-		uint32_t total_num_indices;
+		uint32_t index_offsets[2];
+		uint32_t index_count_total;
 
 		//! Descriptor pool for mesh shaders.
 		VkDescriptorPool descriptor_pool;

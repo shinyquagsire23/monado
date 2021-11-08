@@ -66,7 +66,7 @@ struct xrt_prober_entry
 	 *
 	 * @param xp Prober
 	 * @param devices The array of prober devices found by the prober.
-	 * @param num_devices The number of elements in @p devices
+	 * @param device_count The number of elements in @p devices
 	 * @param index Which element in the prober device array matches your query?
 	 * @param attached_data
 	 * @param out_xdevs An empty array of size @p XRT_MAX_DEVICES_PER_PROBE you may populate with @ref xrt_device
@@ -76,7 +76,7 @@ struct xrt_prober_entry
 	 */
 	int (*found)(struct xrt_prober *xp,
 	             struct xrt_prober_device **devices,
-	             size_t num_devices,
+	             size_t device_count,
 	             size_t index,
 	             cJSON *attached_data,
 	             struct xrt_device **out_xdevs);
@@ -234,7 +234,7 @@ struct xrt_prober
 	 * @param xp Pointer to self
 	 * @param[in,out] xdevs Pointer to xrt_device array. Array elements will
 	 * be populated.
-	 * @param[in] num_xdevs The capacity of the @p xdevs array.
+	 * @param[in] xdev_capacity The capacity of the @p xdevs array.
 	 *
 	 * @return 0 on success (including "no HMD found"), <0 on error.
 	 *
@@ -246,7 +246,7 @@ struct xrt_prober
 	 * xrt_instance_select() method which usually calls xrt_prober_probe()
 	 * and xrt_prober_select().
 	 */
-	int (*select)(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs);
+	int (*select)(struct xrt_prober *xp, struct xrt_device **xdevs, size_t xdev_capacity);
 
 	int (*open_hid_interface)(struct xrt_prober *xp,
 	                          struct xrt_prober_device *xpdev,
@@ -265,7 +265,7 @@ struct xrt_prober
 	int (*list_video_devices)(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
 
 	int (*get_entries)(struct xrt_prober *xp,
-	                   size_t *out_num_entries,
+	                   size_t *out_entry_count,
 	                   struct xrt_prober_entry ***out_entries,
 	                   struct xrt_auto_prober ***out_auto_probers);
 
@@ -334,9 +334,9 @@ xrt_prober_dump(struct xrt_prober *xp)
  * @public @memberof xrt_prober
  */
 static inline int
-xrt_prober_select(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs)
+xrt_prober_select(struct xrt_prober *xp, struct xrt_device **xdevs, size_t xdev_capacity)
 {
-	return xp->select(xp, xdevs, num_xdevs);
+	return xp->select(xp, xdevs, xdev_capacity);
 }
 
 /*!
@@ -424,11 +424,11 @@ xrt_prober_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb
  */
 static inline int
 xrt_prober_get_entries(struct xrt_prober *xp,
-                       size_t *out_num_entries,
+                       size_t *out_entry_count,
                        struct xrt_prober_entry ***out_entries,
                        struct xrt_auto_prober ***out_auto_probers)
 {
-	return xp->get_entries(xp, out_num_entries, out_entries, out_auto_probers);
+	return xp->get_entries(xp, out_entry_count, out_entries, out_auto_probers);
 }
 
 /*!

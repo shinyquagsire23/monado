@@ -107,7 +107,7 @@ oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId
 	// Headless.
 	if (sys->xsysc == NULL) {
 		sys->blend_modes[0] = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
-		sys->num_blend_modes = 1;
+		sys->blend_mode_count = 1;
 		return XR_SUCCESS;
 	}
 
@@ -154,14 +154,14 @@ oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId
 	sys->views[1].maxSwapchainSampleCount         = info->views[1].max.sample_count;
 	// clang-format on
 
-	assert(info->num_supported_blend_modes <= ARRAY_SIZE(sys->blend_modes));
-	assert(info->num_supported_blend_modes != 0);
+	assert(info->supported_blend_mode_count <= ARRAY_SIZE(sys->blend_modes));
+	assert(info->supported_blend_mode_count != 0);
 
-	for (uint8_t i = 0; i < info->num_supported_blend_modes; i++) {
+	for (uint8_t i = 0; i < info->supported_blend_mode_count; i++) {
 		assert(u_verify_blend_mode_valid(info->supported_blend_modes[i]));
 		sys->blend_modes[i] = (XrEnvironmentBlendMode)info->supported_blend_modes[i];
 	}
-	sys->num_blend_modes = (uint32_t)info->num_supported_blend_modes;
+	sys->blend_mode_count = (uint32_t)info->supported_blend_mode_count;
 
 	return XR_SUCCESS;
 }
@@ -238,7 +238,7 @@ oxr_system_enumerate_blend_modes(struct oxr_logger *log,
 {
 	//! @todo Take into account viewConfigurationType
 	OXR_TWO_CALL_HELPER(log, environmentBlendModeCapacityInput, environmentBlendModeCountOutput,
-	                    environmentBlendModes, sys->num_blend_modes, sys->blend_modes, XR_SUCCESS);
+	                    environmentBlendModes, sys->blend_mode_count, sys->blend_modes, XR_SUCCESS);
 }
 
 XrResult

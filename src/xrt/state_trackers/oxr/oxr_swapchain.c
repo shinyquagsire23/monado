@@ -26,7 +26,7 @@ oxr_swapchain_acquire_image(struct oxr_logger *log,
                             uint32_t *out_index)
 {
 	uint32_t index;
-	if (sc->acquired.num >= sc->swapchain->num_images) {
+	if (sc->acquired.num >= sc->swapchain->image_count) {
 		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "All images have been acquired");
 	}
 

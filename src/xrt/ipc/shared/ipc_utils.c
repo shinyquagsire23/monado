@@ -113,15 +113,15 @@ union imcontrol_buf {
 };
 
 xrt_result_t
-ipc_receive_fds(struct ipc_message_channel *imc, void *out_data, size_t size, int *out_handles, uint32_t num_handles)
+ipc_receive_fds(struct ipc_message_channel *imc, void *out_data, size_t size, int *out_handles, uint32_t handle_count)
 {
 	assert(imc != NULL);
 	assert(out_data != NULL);
 	assert(size != 0);
 	assert(out_handles != NULL);
-	assert(num_handles != 0);
+	assert(handle_count != 0);
 	union imcontrol_buf u;
-	const size_t fds_size = sizeof(int) * num_handles;
+	const size_t fds_size = sizeof(int) * handle_count;
 	const size_t cmsg_size = CMSG_SPACE(fds_size);
 	memset(u.buf, 0, cmsg_size);
 
@@ -156,7 +156,7 @@ ipc_receive_fds(struct ipc_message_channel *imc, void *out_data, size_t size, in
 }
 
 xrt_result_t
-ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, const int *handles, uint32_t num_handles)
+ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, const int *handles, uint32_t handle_count)
 {
 	assert(imc != NULL);
 	assert(data != NULL);
@@ -164,7 +164,7 @@ ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, con
 	assert(handles != NULL);
 
 	union imcontrol_buf u = {0};
-	size_t cmsg_size = CMSG_SPACE(sizeof(int) * num_handles);
+	size_t cmsg_size = CMSG_SPACE(sizeof(int) * handle_count);
 
 	struct iovec iov = {0};
 	iov.iov_base = (void *)data;
@@ -179,7 +179,7 @@ ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, con
 	msg.msg_control = u.buf;
 	msg.msg_controllen = cmsg_size;
 
-	const size_t fds_size = sizeof(int) * num_handles;
+	const size_t fds_size = sizeof(int) * handle_count;
 	struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
 	cmsg->cmsg_level = SOL_SOCKET;
 	cmsg->cmsg_type = SCM_RIGHTS;
@@ -189,9 +189,9 @@ ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, con
 
 	ssize_t ret = sendmsg(imc->socket_fd, &msg, MSG_NOSIGNAL);
 	if (ret < 0) {
-		IPC_ERROR(imc, "ERROR: sending %d FDs on socket %d failed with error: '%i' '%s'!", (int)num_handles,
+		IPC_ERROR(imc, "ERROR: sending %d FDs on socket %d failed with error: '%i' '%s'!", (int)handle_count,
 		          imc->socket_fd, errno, strerror(errno));
-		for (uint32_t i = 0; i < num_handles; i++) {
+		for (uint32_t i = 0; i < handle_count; i++) {
 			IPC_ERROR(imc, "\tfd #%i: %i", i, handles[i]);
 		}
 		return XRT_ERROR_IPC_FAILURE;
@@ -200,10 +200,13 @@ ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, con
 }
 
 xrt_result_t
-ipc_receive_handles_shmem(
-    struct ipc_message_channel *imc, void *out_data, size_t size, xrt_shmem_handle_t *out_handles, uint32_t num_handles)
+ipc_receive_handles_shmem(struct ipc_message_channel *imc,
+                          void *out_data,
+                          size_t size,
+                          xrt_shmem_handle_t *out_handles,
+                          uint32_t handle_count)
 {
-	return ipc_receive_fds(imc, out_data, size, out_handles, num_handles);
+	return ipc_receive_fds(imc, out_data, size, out_handles, handle_count);
 }
 
 xrt_result_t
@@ -211,9 +214,9 @@ ipc_send_handles_shmem(struct ipc_message_channel *imc,
                        const void *data,
                        size_t size,
                        const xrt_shmem_handle_t *handles,
-                       uint32_t num_handles)
+                       uint32_t handle_count)
 {
-	return ipc_send_fds(imc, data, size, handles, num_handles);
+	return ipc_send_fds(imc, data, size, handles, handle_count);
 }
 
 
@@ -233,14 +236,14 @@ ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
                                     void *out_data,
                                     size_t size,
                                     xrt_graphics_buffer_handle_t *out_handles,
-                                    uint32_t num_handles)
+                                    uint32_t handle_count)
 {
 	xrt_result_t result = ipc_receive(imc, out_data, size);
 	if (result != XRT_SUCCESS) {
 		return result;
 	}
 	bool failed = false;
-	for (uint32_t i = 0; i < num_handles; ++i) {
+	for (uint32_t i = 0; i < handle_count; ++i) {
 		int err = AHardwareBuffer_recvHandleFromUnixSocket(imc->socket_fd, &(out_handles[i]));
 		if (err != 0) {
 			failed = true;
@@ -255,14 +258,14 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
                                  const void *data,
                                  size_t size,
                                  const xrt_graphics_buffer_handle_t *handles,
-                                 uint32_t num_handles)
+                                 uint32_t handle_count)
 {
 	xrt_result_t result = ipc_send(imc, data, size);
 	if (result != XRT_SUCCESS) {
 		return result;
 	}
 	bool failed = false;
-	for (uint32_t i = 0; i < num_handles; ++i) {
+	for (uint32_t i = 0; i < handle_count; ++i) {
 		int err = AHardwareBuffer_sendHandleToUnixSocket(handles[i], imc->socket_fd);
 		if (err != 0) {
 			failed = true;
@@ -285,9 +288,9 @@ ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
                                     void *out_data,
                                     size_t size,
                                     xrt_graphics_buffer_handle_t *out_handles,
-                                    uint32_t num_handles)
+                                    uint32_t handle_count)
 {
-	return ipc_receive_fds(imc, out_data, size, out_handles, num_handles);
+	return ipc_receive_fds(imc, out_data, size, out_handles, handle_count);
 }
 
 xrt_result_t
@@ -295,9 +298,9 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
                                  const void *data,
                                  size_t size,
                                  const xrt_graphics_buffer_handle_t *handles,
-                                 uint32_t num_handles)
+                                 uint32_t handle_count)
 {
-	return ipc_send_fds(imc, data, size, handles, num_handles);
+	return ipc_send_fds(imc, data, size, handles, handle_count);
 }
 
 #else
@@ -318,13 +321,13 @@ ipc_receive_handles_graphics_sync(struct ipc_message_channel *imc,
                                   void *out_data,
                                   size_t size,
                                   xrt_graphics_sync_handle_t *out_handles,
-                                  uint32_t num_handles)
+                                  uint32_t handle_count)
 {
 	//! @todo Temporary hack to send no handles.
-	if (num_handles == 0) {
+	if (handle_count == 0) {
 		return ipc_receive(imc, out_data, size);
 	} else {
-		return ipc_receive_fds(imc, out_data, size, out_handles, num_handles);
+		return ipc_receive_fds(imc, out_data, size, out_handles, handle_count);
 	}
 }
 
@@ -333,13 +336,13 @@ ipc_send_handles_graphics_sync(struct ipc_message_channel *imc,
                                const void *data,
                                size_t size,
                                const xrt_graphics_sync_handle_t *handles,
-                               uint32_t num_handles)
+                               uint32_t handle_count)
 {
 	//! @todo Temporary hack to send no handles.
-	if (num_handles == 0) {
+	if (handle_count == 0) {
 		return ipc_send(imc, data, size);
 	} else {
-		return ipc_send_fds(imc, data, size, handles, num_handles);
+		return ipc_send_fds(imc, data, size, handles, handle_count);
 	}
 }
 

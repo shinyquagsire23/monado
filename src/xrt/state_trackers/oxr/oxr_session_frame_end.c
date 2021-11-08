@@ -222,7 +222,7 @@ verify_quad_layer(struct xrt_compositor *xc,
 		                 layer_index);
 	}
 
-	if (sc->released.index >= (int)sc->swapchain->num_images) {
+	if (sc->released.index >= (int)sc->swapchain->image_count) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "(frameEndInfo->layers[%u]->subImage.swapchain) internal image index out of bounds",
 		                 layer_index);
@@ -270,7 +270,7 @@ verify_depth_layer(struct xrt_compositor *xc,
 		                 layer_index, i);
 	}
 
-	if (sc->released.index >= (int)sc->swapchain->num_images) {
+	if (sc->released.index >= (int)sc->swapchain->image_count) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "(frameEndInfo->layers[%u]->views[%i]->next<XrCompositionLayerDepthInfoKHR>.subImage."
 		                 "swapchain) internal image index out of bounds",
@@ -393,7 +393,7 @@ verify_projection_layer(struct xrt_compositor *xc,
 			                 layer_index, i);
 		}
 
-		if (sc->released.index >= (int)sc->swapchain->num_images) {
+		if (sc->released.index >= (int)sc->swapchain->image_count) {
 			return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 			                 "(frameEndInfo->layers[%u]->views[%i].subImage."
 			                 "swapchain) internal image index out of bounds",
@@ -498,7 +498,7 @@ verify_cube_layer(struct xrt_compositor *xc,
 		                 "(frameEndInfo->layers[%u]->swapchain) swapchain has not been released!", layer_index);
 	}
 
-	if (sc->released.index >= (int)sc->swapchain->num_images) {
+	if (sc->released.index >= (int)sc->swapchain->image_count) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "(frameEndInfo->layers[%u]->subImage.swapchain) internal image index out of bounds",
 		                 layer_index);
@@ -561,7 +561,7 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 		                 layer_index);
 	}
 
-	if (sc->released.index >= (int)sc->swapchain->num_images) {
+	if (sc->released.index >= (int)sc->swapchain->image_count) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "(frameEndInfo->layers[%u]->subImage.swapchain) internal image index out of bounds",
 		                 layer_index);
@@ -658,7 +658,7 @@ verify_equirect1_layer(struct xrt_compositor *xc,
 		                 layer_index);
 	}
 
-	if (sc->released.index >= (int)sc->swapchain->num_images) {
+	if (sc->released.index >= (int)sc->swapchain->image_count) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "(frameEndInfo->layers[%u]->subImage.swapchain) internal image index out of bounds",
 		                 layer_index);
@@ -742,7 +742,7 @@ verify_equirect2_layer(struct xrt_compositor *xc,
 		                 layer_index);
 	}
 
-	if (sc->released.index >= (int)sc->swapchain->num_images) {
+	if (sc->released.index >= (int)sc->swapchain->image_count) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 		                 "(frameEndInfo->layers[%u]->subImage.swapchain) internal image index out of bounds",
 		                 layer_index);

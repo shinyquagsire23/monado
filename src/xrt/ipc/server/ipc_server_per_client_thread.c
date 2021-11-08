@@ -153,7 +153,7 @@ ipc_server_client_destroy_compositor(volatile struct ipc_client_state *ics)
 	// Multiple threads might be looking at these fields.
 	os_mutex_lock(&ics->server->global_state.lock);
 
-	ics->num_swapchains = 0;
+	ics->swapchain_count = 0;
 
 	// Destroy all swapchains now.
 	for (uint32_t j = 0; j < IPC_MAX_CLIENT_SWAPCHAINS; j++) {

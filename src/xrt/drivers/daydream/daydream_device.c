@@ -337,9 +337,9 @@ static struct xrt_binding_profile binding_profiles[1] = {
     {
         .name = XRT_DEVICE_SIMPLE_CONTROLLER,
         .inputs = simple_inputs,
-        .num_inputs = ARRAY_SIZE(simple_inputs),
+        .input_count = ARRAY_SIZE(simple_inputs),
         .outputs = NULL,
-        .num_outputs = 0,
+        .output_count = 0,
     },
 };
 
@@ -368,7 +368,7 @@ daydream_device_create(struct os_ble_device *ble)
 	dd->base.inputs[5].name = XRT_INPUT_DAYDREAM_VOLUP_CLICK;
 	dd->base.inputs[6].name = XRT_INPUT_DAYDREAM_TOUCHPAD;
 	dd->base.binding_profiles = binding_profiles;
-	dd->base.num_binding_profiles = ARRAY_SIZE(binding_profiles);
+	dd->base.binding_profile_count = ARRAY_SIZE(binding_profiles);
 
 	static int controller_num = 0;
 	snprintf(dd->base.str, XRT_DEVICE_NAME_LEN, "Daydream");

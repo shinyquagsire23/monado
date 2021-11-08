@@ -91,10 +91,10 @@ static bool
 init_mesh_vertex_buffers(struct vk_bundle *vk,
                          struct comp_buffer *vbo,
                          struct comp_buffer *ibo,
-                         uint32_t num_vertices,
+                         uint32_t vertex_count,
                          uint32_t stride,
                          void *vertices,
-                         uint32_t num_indices,
+                         uint32_t index_counts,
                          void *indices)
 {
 	// Using the same flags for all vbos.
@@ -104,8 +104,8 @@ init_mesh_vertex_buffers(struct vk_bundle *vk,
 	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
 	// Distortion vbo and ibo sizes.
-	VkDeviceSize vbo_size = stride * num_vertices;
-	VkDeviceSize ibo_size = sizeof(int) * num_indices;
+	VkDeviceSize vbo_size = stride * vertex_count;
+	VkDeviceSize ibo_size = sizeof(int) * index_counts;
 
 
 	// Don't create vbo if size is zero.
@@ -493,13 +493,13 @@ comp_resources_init(struct comp_resources *r,
 	r->mesh.src_binding = 0;
 	r->mesh.ubo_binding = 1;
 	struct xrt_hmd_parts *parts = xdev->hmd;
-	r->mesh.num_vertices = parts->distortion.mesh.num_vertices;
+	r->mesh.vertex_count = parts->distortion.mesh.vertex_count;
 	r->mesh.stride = parts->distortion.mesh.stride;
-	r->mesh.num_indices[0] = parts->distortion.mesh.num_indices[0];
-	r->mesh.num_indices[1] = parts->distortion.mesh.num_indices[1];
-	r->mesh.total_num_indices = parts->distortion.mesh.total_num_indices;
-	r->mesh.offset_indices[0] = parts->distortion.mesh.offset_indices[0];
-	r->mesh.offset_indices[1] = parts->distortion.mesh.offset_indices[1];
+	r->mesh.index_counts[0] = parts->distortion.mesh.index_counts[0];
+	r->mesh.index_counts[1] = parts->distortion.mesh.index_counts[1];
+	r->mesh.index_count_total = parts->distortion.mesh.index_count_total;
+	r->mesh.index_offsets[0] = parts->distortion.mesh.index_offsets[0];
+	r->mesh.index_offsets[1] = parts->distortion.mesh.index_offsets[1];
 
 	r->compute.src_binding = 0;
 	r->compute.distortion_binding = 1;
@@ -546,10 +546,10 @@ comp_resources_init(struct comp_resources *r,
 	if (!init_mesh_vertex_buffers(vk,                                //
 	                              &r->mesh.vbo,                      //
 	                              &r->mesh.ibo,                      //
-	                              r->mesh.num_vertices,              //
+	                              r->mesh.vertex_count,              //
 	                              r->mesh.stride,                    //
 	                              parts->distortion.mesh.vertices,   //
-	                              r->mesh.total_num_indices,         //
+	                              r->mesh.index_count_total,         //
 	                              parts->distortion.mesh.indices)) { //
 		return false;
 	}

@@ -64,7 +64,7 @@ struct ipc_client_compositor
 		//! Id that we are currently using for submitting layers.
 		uint32_t slot_id;
 
-		uint32_t num_layers;
+		uint32_t layer_count;
 	} layers;
 
 	//! Has the native compositor been created, only supports one for now.
@@ -205,14 +205,14 @@ swapchain_server_create(struct ipc_client_compositor *icc,
 	xrt_graphics_buffer_handle_t remote_handles[IPC_MAX_SWAPCHAIN_HANDLES] = {0};
 	xrt_result_t r = XRT_SUCCESS;
 	uint32_t handle;
-	uint32_t num_images;
+	uint32_t image_count;
 	uint64_t size;
 	bool use_dedicated_allocation;
 
 	r = ipc_call_swapchain_create(icc->ipc_c,                 // connection
 	                              info,                       // in
 	                              &handle,                    // out
-	                              &num_images,                // out
+	                              &image_count,               // out
 	                              &size,                      // out
 	                              &use_dedicated_allocation,  // out
 	                              remote_handles,             // handles
@@ -222,7 +222,7 @@ swapchain_server_create(struct ipc_client_compositor *icc,
 	}
 
 	struct ipc_client_swapchain *ics = U_TYPED_CALLOC(struct ipc_client_swapchain);
-	ics->base.base.num_images = num_images;
+	ics->base.base.image_count = image_count;
 	ics->base.base.wait_image = ipc_compositor_swapchain_wait_image;
 	ics->base.base.acquire_image = ipc_compositor_swapchain_acquire_image;
 	ics->base.base.release_image = ipc_compositor_swapchain_release_image;
@@ -231,7 +231,7 @@ swapchain_server_create(struct ipc_client_compositor *icc,
 	ics->icc = icc;
 	ics->id = handle;
 
-	for (uint32_t i = 0; i < num_images; i++) {
+	for (uint32_t i = 0; i < image_count; i++) {
 		ics->base.images[i].handle = remote_handles[i];
 		ics->base.images[i].size = size;
 		ics->base.images[i].use_dedicated_allocation = use_dedicated_allocation;
@@ -246,7 +246,7 @@ static xrt_result_t
 swapchain_server_import(struct ipc_client_compositor *icc,
                         const struct xrt_swapchain_create_info *info,
                         struct xrt_image_native *native_images,
-                        uint32_t num_images,
+                        uint32_t image_count,
                         struct xrt_swapchain **out_xsc)
 {
 	struct ipc_arg_swapchain_from_native args = {0};
@@ -254,24 +254,24 @@ swapchain_server_import(struct ipc_client_compositor *icc,
 	xrt_result_t r = XRT_SUCCESS;
 	uint32_t id = 0;
 
-	for (uint32_t i = 0; i < num_images; i++) {
+	for (uint32_t i = 0; i < image_count; i++) {
 		handles[i] = native_images[i].handle;
 		args.sizes[i] = native_images[i].size;
 	}
 
 	// This does not consume the handles, it copies them.
-	r = ipc_call_swapchain_import(icc->ipc_c, // connection
-	                              info,       // in
-	                              &args,      // in
-	                              handles,    // handles
-	                              num_images, // handles
-	                              &id);       // out
+	r = ipc_call_swapchain_import(icc->ipc_c,  // connection
+	                              info,        // in
+	                              &args,       // in
+	                              handles,     // handles
+	                              image_count, // handles
+	                              &id);        // out
 	if (r != XRT_SUCCESS) {
 		return r;
 	}
 
 	struct ipc_client_swapchain *ics = U_TYPED_CALLOC(struct ipc_client_swapchain);
-	ics->base.base.num_images = num_images;
+	ics->base.base.image_count = image_count;
 	ics->base.base.wait_image = ipc_compositor_swapchain_wait_image;
 	ics->base.base.acquire_image = ipc_compositor_swapchain_acquire_image;
 	ics->base.base.release_image = ipc_compositor_swapchain_release_image;
@@ -281,7 +281,7 @@ swapchain_server_import(struct ipc_client_compositor *icc,
 	ics->id = id;
 
 	// The handles where copied in the IPC call so we can reuse them here.
-	for (uint32_t i = 0; i < num_images; i++) {
+	for (uint32_t i = 0; i < image_count; i++) {
 		ics->base.images[i] = native_images[i];
 	}
 
@@ -297,14 +297,14 @@ swapchain_allocator_create(struct ipc_client_compositor *icc,
                            struct xrt_swapchain **out_xsc)
 {
 	struct xrt_image_native images[3];
-	uint32_t num_images = (uint32_t)ARRAY_SIZE(images);
+	uint32_t image_count = (uint32_t)ARRAY_SIZE(images);
 	xrt_result_t xret;
 
 	if ((info->create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
-		num_images = 1;
+		image_count = 1;
 	}
 
-	xret = xrt_images_allocate(xina, info, num_images, images);
+	xret = xrt_images_allocate(xina, info, image_count, images);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -313,9 +313,9 @@ swapchain_allocator_create(struct ipc_client_compositor *icc,
 	 * The import function takes ownership of the handles,
 	 * we do not need free them if the call succeeds.
 	 */
-	xret = swapchain_server_import(icc, info, images, num_images, out_xsc);
+	xret = swapchain_server_import(icc, info, images, image_count, out_xsc);
 	if (xret != XRT_SUCCESS) {
-		xrt_images_free(xina, num_images, images);
+		xrt_images_free(xina, image_count, images);
 	}
 
 	return xret;
@@ -343,11 +343,11 @@ static xrt_result_t
 ipc_compositor_swapchain_import(struct xrt_compositor *xc,
                                 const struct xrt_swapchain_create_info *info,
                                 struct xrt_image_native *native_images,
-                                uint32_t num_images,
+                                uint32_t image_count,
                                 struct xrt_swapchain **out_xsc)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
-	return swapchain_server_import(icc, info, native_images, num_images, out_xsc);
+	return swapchain_server_import(icc, info, native_images, image_count, out_xsc);
 }
 
 static xrt_result_t
@@ -486,7 +486,7 @@ ipc_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
-	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
+	struct ipc_layer_entry *layer = &slot->layers[icc->layers.layer_count];
 	struct ipc_client_swapchain *l = ipc_client_swapchain(l_xsc);
 	struct ipc_client_swapchain *r = ipc_client_swapchain(r_xsc);
 
@@ -498,7 +498,7 @@ ipc_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	layer->data = *data;
 
 	// Increment the number of layers.
-	icc->layers.num_layers++;
+	icc->layers.layer_count++;
 
 	return XRT_SUCCESS;
 }
@@ -518,7 +518,7 @@ ipc_compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
 
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
-	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
+	struct ipc_layer_entry *layer = &slot->layers[icc->layers.layer_count];
 	struct ipc_client_swapchain *l = ipc_client_swapchain(l_xsc);
 	struct ipc_client_swapchain *r = ipc_client_swapchain(r_xsc);
 	struct ipc_client_swapchain *l_d = ipc_client_swapchain(l_d_xsc);
@@ -532,7 +532,7 @@ ipc_compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
 	layer->data = *data;
 
 	// Increment the number of layers.
-	icc->layers.num_layers++;
+	icc->layers.layer_count++;
 
 	return XRT_SUCCESS;
 }
@@ -550,7 +550,7 @@ handle_layer(struct xrt_compositor *xc,
 
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
-	struct ipc_layer_entry *layer = &slot->layers[icc->layers.num_layers];
+	struct ipc_layer_entry *layer = &slot->layers[icc->layers.layer_count];
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 
 	layer->xdev_id = 0; //! @todo Real id.
@@ -561,7 +561,7 @@ handle_layer(struct xrt_compositor *xc,
 	layer->data = *data;
 
 	// Increment the number of layers.
-	icc->layers.num_layers++;
+	icc->layers.layer_count++;
 
 	return XRT_SUCCESS;
 }
@@ -622,7 +622,7 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_gra
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 
 	// Last bit of data to put in the shared memory area.
-	slot->num_layers = icc->layers.num_layers;
+	slot->layer_count = icc->layers.layer_count;
 
 	IPC_CALL_CHK(ipc_call_compositor_layer_sync( //
 	    icc->ipc_c,                              //
@@ -633,7 +633,7 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_gra
 	    &icc->layers.slot_id));                  //
 
 	// Reset.
-	icc->layers.num_layers = 0;
+	icc->layers.layer_count = 0;
 
 #ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
 	// Need to consume this handle.
@@ -709,14 +709,14 @@ ipc_compositor_init(struct ipc_client_compositor *icc, struct xrt_compositor_nat
 static inline xrt_result_t
 ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
                                const struct xrt_swapchain_create_info *xsci,
-                               size_t in_num_images,
+                               size_t in_image_count,
                                struct xrt_image_native *out_images)
 {
 	struct ipc_client_compositor *icc = container_of(xina, struct ipc_client_compositor, loopback_xina);
 
 	int remote_fds[IPC_MAX_SWAPCHAIN_FDS] = {0};
 	xrt_result_t r = XRT_SUCCESS;
-	uint32_t num_images;
+	uint32_t image_count;
 	uint32_t handle;
 	uint64_t size;
 
@@ -724,7 +724,7 @@ ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
 		remote_fds[i] = -1;
 	}
 
-	for (size_t i = 0; i < in_num_images; i++) {
+	for (size_t i = 0; i < in_image_count; i++) {
 		out_images[i].fd = -1;
 		out_images[i].size = 0;
 	}
@@ -732,7 +732,7 @@ ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
 	r = ipc_call_swapchain_create(icc->ipc_c,             // connection
 	                              xsci,                   // in
 	                              &handle,                // out
-	                              &num_images,            // out
+	                              &image_count,           // out
 	                              &size,                  // out
 	                              remote_fds,             // fds
 	                              IPC_MAX_SWAPCHAIN_FDS); // fds
@@ -748,8 +748,8 @@ ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
 	assert(r == XRT_SUCCESS);
 
 	// Clumsy way of handling this.
-	if (num_images < in_num_images) {
-		for (uint32_t k = 0; k < num_images && k < in_num_images; k++) {
+	if (image_count < in_image_count) {
+		for (uint32_t k = 0; k < image_count && k < in_image_count; k++) {
 			/*
 			 * Paranoia, we do know that any fd not touched by
 			 * ipc_call_swapchain_create will be -1.
@@ -763,15 +763,15 @@ ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
-	// Copy up to in_num_images, or num_images what ever is lowest.
+	// Copy up to in_image_count, or image_count what ever is lowest.
 	uint32_t i = 0;
-	for (; i < num_images && i < in_num_images; i++) {
+	for (; i < image_count && i < in_image_count; i++) {
 		out_images[i].fd = remote_fds[i];
 		out_images[i].size = size;
 	}
 
 	// Close any fds we are not interested in.
-	for (; i < num_images; i++) {
+	for (; i < image_count; i++) {
 		/*
 		 * Paranoia, we do know that any fd not touched by
 		 * ipc_call_swapchain_create will be -1.
@@ -787,10 +787,10 @@ ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
 
 static inline xrt_result_t
 ipc_compositor_images_free(struct xrt_image_native_allocator *xina,
-                           size_t num_images,
+                           size_t image_count,
                            struct xrt_image_native *out_images)
 {
-	for (uint32_t i = 0; i < num_images; i++) {
+	for (uint32_t i = 0; i < image_count; i++) {
 		close(out_images[i].fd);
 		out_images[i].fd = -1;
 		out_images[i].size = 0;

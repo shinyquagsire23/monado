@@ -63,8 +63,8 @@ dump_relation(const struct xrt_space_relation *r)
 static void
 dump_graph(const struct xrt_space_graph *xsg)
 {
-	fprintf(stderr, "%s %u\n", __func__, xsg->num_steps);
-	for (uint32_t i = 0; i < xsg->num_steps; i++) {
+	fprintf(stderr, "%s %u\n", __func__, xsg->step_count);
+	for (uint32_t i = 0; i < xsg->step_count; i++) {
 		const struct xrt_space_relation *r = &xsg->steps[i];
 		fprintf(stderr, "\t%2u: ", i);
 		dump_relation(r);
@@ -84,7 +84,7 @@ has_step_with_no_pose(const struct xrt_space_graph *xsg)
 	const enum xrt_space_relation_flags pose_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_VALID_BIT);
 
-	for (uint32_t i = 0; i < xsg->num_steps; i++) {
+	for (uint32_t i = 0; i < xsg->step_count; i++) {
 		const struct xrt_space_relation *r = &xsg->steps[i];
 		if ((r->relation_flags & pose_flags) == 0) {
 			return true;
@@ -278,13 +278,13 @@ apply_relation(const struct xrt_space_relation *a,
 void
 m_space_graph_resolve(const struct xrt_space_graph *xsg, struct xrt_space_relation *out_relation)
 {
-	if (xsg->num_steps == 0 || has_step_with_no_pose(xsg)) {
+	if (xsg->step_count == 0 || has_step_with_no_pose(xsg)) {
 		*out_relation = XRT_SPACE_RELATION_ZERO;
 		return;
 	}
 
 	struct xrt_space_relation r = xsg->steps[0];
-	for (uint32_t i = 1; i < xsg->num_steps; i++) {
+	for (uint32_t i = 1; i < xsg->step_count; i++) {
 		apply_relation(&r, &xsg->steps[i], &r);
 	}
 

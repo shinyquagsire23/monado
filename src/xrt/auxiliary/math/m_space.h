@@ -95,8 +95,8 @@ m_space_relation_invert(struct xrt_space_relation *relation, struct xrt_space_re
 static inline struct xrt_space_relation *
 m_space_graph_reserve(struct xrt_space_graph *xsg)
 {
-	if (xsg->num_steps < XRT_SPACE_GRAPHS_MAX) {
-		return &xsg->steps[xsg->num_steps++];
+	if (xsg->step_count < XRT_SPACE_GRAPHS_MAX) {
+		return &xsg->steps[xsg->step_count++];
 	} else {
 		return NULL;
 	}
@@ -108,11 +108,11 @@ m_space_graph_reserve(struct xrt_space_graph *xsg)
 static inline void
 m_space_graph_add_relation(struct xrt_space_graph *xsg, const struct xrt_space_relation *relation)
 {
-	if (xsg->num_steps >= XRT_SPACE_GRAPHS_MAX) {
+	if (xsg->step_count >= XRT_SPACE_GRAPHS_MAX) {
 		return;
 	}
 
-	xsg->steps[xsg->num_steps++] = *relation;
+	xsg->steps[xsg->step_count++] = *relation;
 }
 
 static inline void

@@ -82,7 +82,7 @@ get_mode(struct ipc_connection *ipc_c)
 	}
 
 	P("\nDevices:\n");
-	for (uint32_t i = 0; i < ipc_c->ism->num_isdevs; i++) {
+	for (uint32_t i = 0; i < ipc_c->ism->isdev_count; i++) {
 		struct ipc_shared_device *isdev = &ipc_c->ism->isdevs[i];
 		P("\tid: %d"
 		  "\tname: %d"

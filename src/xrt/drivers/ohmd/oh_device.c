@@ -828,7 +828,7 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 		ohd->base.hmd->blend_modes[bm_idx++] = XRT_BLEND_MODE_ALPHA_BLEND;
 	}
 	ohd->base.hmd->blend_modes[bm_idx++] = XRT_BLEND_MODE_OPAQUE;
-	ohd->base.hmd->num_blend_modes = bm_idx;
+	ohd->base.hmd->blend_mode_count = bm_idx;
 
 	if (info.quirks.video_distortion_vive) {
 		// clang-format off
@@ -1035,19 +1035,19 @@ create_controller(ohmd_context *ctx, int device_idx, int device_flags, enum xrt_
 	bool oculus_touch = false;
 
 	// khronos simple controller has 4 inputs
-	int num_inputs = 4;
-	int num_outputs = 0;
+	int input_count = 4;
+	int output_count = 0;
 
 	if (strcmp(prod, "Rift (CV1): Right Controller") == 0 || strcmp(prod, "Rift (CV1): Left Controller") == 0 ||
 	    strcmp(prod, "Rift S: Right Controller") == 0 || strcmp(prod, "Rift S: Left Controller") == 0) {
 		oculus_touch = true;
 
-		num_inputs = INPUT_INDICES_LAST;
-		num_outputs = 1;
+		input_count = INPUT_INDICES_LAST;
+		output_count = 1;
 	}
 
 	enum u_device_alloc_flags flags = 0;
-	struct oh_device *ohd = U_DEVICE_ALLOCATE(struct oh_device, flags, num_inputs, num_outputs);
+	struct oh_device *ohd = U_DEVICE_ALLOCATE(struct oh_device, flags, input_count, output_count);
 	ohd->base.update_inputs = oh_device_update_inputs;
 	ohd->base.set_output = oh_device_set_output;
 	ohd->base.get_tracked_pose = oh_device_get_tracked_pose;
@@ -1115,7 +1115,7 @@ create_controller(ohmd_context *ctx, int device_idx, int device_flags, enum xrt_
 		// in case the hardware is an analog trigger, change the input after a half pulled trigger.
 		ohd->make_trigger_digital = true;
 
-		if (num_outputs > 0) {
+		if (output_count > 0) {
 			ohd->base.outputs[0].name = XRT_OUTPUT_NAME_SIMPLE_VIBRATION;
 		}
 
