@@ -53,6 +53,7 @@
 #include "util/u_handles.h"
 #include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
+#include "util/u_verify.h"
 
 #include "util/comp_vulkan.h"
 #include "main/comp_compositor.h"
@@ -1255,6 +1256,17 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	sys_info->views[1].max.height_pixels         = h1_2;
 	sys_info->views[1].max.sample_count          = 1;
 	// clang-format on
+
+	// If we can add e.g. video pass-through capabilities, we may need to change (augment) this list.
+	// Just copying it directly right now.
+	assert(xdev->hmd->num_blend_modes <= XRT_MAX_DEVICE_BLEND_MODES);
+	assert(xdev->hmd->num_blend_modes != 0);
+	assert(xdev->hmd->num_blend_modes <= ARRAY_SIZE(sys_info->supported_blend_modes));
+	for (size_t i = 0; i < xdev->hmd->num_blend_modes; ++i) {
+		assert(u_verify_blend_mode_valid(xdev->hmd->blend_modes[i]));
+		sys_info->supported_blend_modes[i] = xdev->hmd->blend_modes[i];
+	}
+	sys_info->num_supported_blend_modes = (uint8_t)xdev->hmd->num_blend_modes;
 
 	u_var_add_root(c, "Compositor", true);
 	u_var_add_ro_f32(c, &c->compositor_frame_times.fps, "FPS (Compositor)");
