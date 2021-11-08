@@ -408,7 +408,7 @@ public:
 			return;
 		}
 
-		for (size_t i = 0; i < p->num_bindings; i++) {
+		for (size_t i = 0; i < p->binding_count; i++) {
 			struct binding_template *b = &p->bindings[i];
 
 			if (b->input != 0) {

@@ -49,7 +49,7 @@ t_instance(struct xrt_instance *xinst)
  */
 
 static int
-t_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t num_xdevs)
+t_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t xdev_count)
 {
 	struct t_instance *tinst = t_instance(xinst);
 
@@ -58,7 +58,7 @@ t_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t 
 		return ret;
 	}
 
-	return xrt_prober_select(tinst->xp, xdevs, num_xdevs);
+	return xrt_prober_select(tinst->xp, xdevs, xdev_count);
 }
 
 static int

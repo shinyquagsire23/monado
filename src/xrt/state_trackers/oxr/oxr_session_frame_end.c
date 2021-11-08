@@ -209,11 +209,11 @@ verify_quad_layer(struct xrt_compositor *xc,
 		                 p->x, p->y, p->z);
 	}
 
-	if (sc->num_array_layers <= quad->subImage.imageArrayIndex) {
+	if (sc->array_layer_count <= quad->subImage.imageArrayIndex) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(frameEndInfo->layers[%u]->subImage.imageArrayIndex == %u) Invalid swapchain array "
 		                 "index for quad layer (%u).",
-		                 layer_index, quad->subImage.imageArrayIndex, sc->num_array_layers);
+		                 layer_index, quad->subImage.imageArrayIndex, sc->array_layer_count);
 	}
 
 	if (!sc->released.yes) {
@@ -277,11 +277,11 @@ verify_depth_layer(struct xrt_compositor *xc,
 		                 layer_index, i);
 	}
 
-	if (sc->num_array_layers <= depth->subImage.imageArrayIndex) {
+	if (sc->array_layer_count <= depth->subImage.imageArrayIndex) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(frameEndInfo->layers[%u]->views[%i]->next<XrCompositionLayerDepthInfoKHR>.subImage."
 		                 "imageArrayIndex == %u) Invalid swapchain array index for projection layer (%u).",
-		                 layer_index, i, depth->subImage.imageArrayIndex, sc->num_array_layers);
+		                 layer_index, i, depth->subImage.imageArrayIndex, sc->array_layer_count);
 	}
 
 	if (is_rect_neg(&depth->subImage.imageRect)) {
@@ -354,7 +354,7 @@ verify_projection_layer(struct xrt_compositor *xc,
 	}
 
 	// number of depth layers must be 0 or proj->viewCount
-	uint32_t num_depth_layers = 0;
+	uint32_t depth_layer_count = 0;
 
 	// Check for valid swapchain states.
 	for (uint32_t i = 0; i < proj->viewCount; i++) {
@@ -400,12 +400,12 @@ verify_projection_layer(struct xrt_compositor *xc,
 			                 layer_index, i);
 		}
 
-		if (sc->num_array_layers <= view->subImage.imageArrayIndex) {
+		if (sc->array_layer_count <= view->subImage.imageArrayIndex) {
 			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 			                 "(frameEndInfo->layers[%u]->views[%i]->subImage."
 			                 "imageArrayIndex == %u) Invalid swapchain array "
 			                 "index for projection layer (%u).",
-			                 layer_index, i, view->subImage.imageArrayIndex, sc->num_array_layers);
+			                 layer_index, i, view->subImage.imageArrayIndex, sc->array_layer_count);
 		}
 
 		if (is_rect_neg(&view->subImage.imageRect)) {
@@ -436,17 +436,17 @@ verify_projection_layer(struct xrt_compositor *xc,
 			if (ret != XR_SUCCESS) {
 				return ret;
 			}
-			num_depth_layers++;
+			depth_layer_count++;
 		}
 #endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
 	}
 
 #ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
-	if (num_depth_layers > 0 && num_depth_layers != proj->viewCount) {
+	if (depth_layer_count > 0 && depth_layer_count != proj->viewCount) {
 		return oxr_error(
 		    log, XR_ERROR_VALIDATION_FAILURE,
 		    "(frameEndInfo->layers[%u] projection layer must have %u depth layers or none, but has: %u)",
-		    layer_index, proj->viewCount, num_depth_layers);
+		    layer_index, proj->viewCount, depth_layer_count);
 	}
 #endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
 
@@ -486,11 +486,11 @@ verify_cube_layer(struct xrt_compositor *xc,
 		                 layer_index, q->x, q->y, q->z, q->w);
 	}
 
-	if (sc->num_array_layers <= cube->imageArrayIndex) {
+	if (sc->array_layer_count <= cube->imageArrayIndex) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(frameEndInfo->layers[%u]->imageArrayIndex == %u) Invalid swapchain array index for "
 		                 "cube layer (%u).",
-		                 layer_index, cube->imageArrayIndex, sc->num_array_layers);
+		                 layer_index, cube->imageArrayIndex, sc->array_layer_count);
 	}
 
 	if (!sc->released.yes) {
@@ -548,11 +548,11 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 		                 p->x, p->y, p->z);
 	}
 
-	if (sc->num_array_layers <= cylinder->subImage.imageArrayIndex) {
+	if (sc->array_layer_count <= cylinder->subImage.imageArrayIndex) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(frameEndInfo->layers[%u]->subImage.imageArrayIndex == %u) Invalid swapchain array "
 		                 "index for cylinder layer (%u).",
-		                 layer_index, cylinder->subImage.imageArrayIndex, sc->num_array_layers);
+		                 layer_index, cylinder->subImage.imageArrayIndex, sc->array_layer_count);
 	}
 
 	if (!sc->released.yes) {
@@ -645,11 +645,11 @@ verify_equirect1_layer(struct xrt_compositor *xc,
 		                 p->x, p->y, p->z);
 	}
 
-	if (sc->num_array_layers <= equirect->subImage.imageArrayIndex) {
+	if (sc->array_layer_count <= equirect->subImage.imageArrayIndex) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(frameEndInfo->layers[%u]->subImage.imageArrayIndex == %u) Invalid swapchain array "
 		                 "index for equirect layer (%u).",
-		                 layer_index, equirect->subImage.imageArrayIndex, sc->num_array_layers);
+		                 layer_index, equirect->subImage.imageArrayIndex, sc->array_layer_count);
 	}
 
 	if (!sc->released.yes) {
@@ -729,11 +729,11 @@ verify_equirect2_layer(struct xrt_compositor *xc,
 		                 p->x, p->y, p->z);
 	}
 
-	if (sc->num_array_layers <= equirect->subImage.imageArrayIndex) {
+	if (sc->array_layer_count <= equirect->subImage.imageArrayIndex) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(frameEndInfo->layers[%u]->subImage.imageArrayIndex == %u) Invalid swapchain array "
 		                 "index for equirect layer (%u).",
-		                 layer_index, equirect->subImage.imageArrayIndex, sc->num_array_layers);
+		                 layer_index, equirect->subImage.imageArrayIndex, sc->array_layer_count);
 	}
 
 	if (!sc->released.yes) {
@@ -918,8 +918,8 @@ submit_projection_layer(struct oxr_session *sess,
 
 	enum xrt_layer_composition_flags flags = convert_layer_flags(proj->layerFlags);
 
-	uint32_t num_chains = ARRAY_SIZE(scs);
-	for (uint32_t i = 0; i < num_chains; i++) {
+	uint32_t swapchain_count = ARRAY_SIZE(scs);
+	for (uint32_t i = 0; i < swapchain_count; i++) {
 		scs[i] = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, proj->views[i].subImage.swapchain);
 		pose_ptr = (struct xrt_pose *)&proj->views[i].pose;
 

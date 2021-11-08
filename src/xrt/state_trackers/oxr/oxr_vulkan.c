@@ -111,15 +111,15 @@ static const char *required_vk_device_extensions[] = {
 
 static void
 find_to_add(char const *const *enabled,
-            uint32_t num_enabled,
+            uint32_t enabled_count,
             const char **required,
-            uint32_t num_required,
+            uint32_t required_count,
             const char **to_add,
-            uint32_t *num_to_add)
+            uint32_t *to_add_count)
 {
-	for (uint32_t i = 0; i < num_required; i++) {
+	for (uint32_t i = 0; i < required_count; i++) {
 		bool already_in_list = false;
-		for (uint32_t j = 0; j < num_enabled; j++) {
+		for (uint32_t j = 0; j < enabled_count; j++) {
 			if (strcmp(enabled[j], required[i]) == 0) {
 				already_in_list = true;
 				break;
@@ -127,7 +127,7 @@ find_to_add(char const *const *enabled,
 		}
 
 		if (!already_in_list) {
-			to_add[(*num_to_add)++] = required[i];
+			to_add[(*to_add_count)++] = required[i];
 		}
 	}
 }
@@ -135,37 +135,37 @@ find_to_add(char const *const *enabled,
 static bool
 extend_instance_extensions(struct oxr_logger *log, VkInstanceCreateInfo *create_info)
 {
-	uint32_t num_required = ARRAY_SIZE(required_vk_instance_extensions);
+	uint32_t required_count = ARRAY_SIZE(required_vk_instance_extensions);
 
-	uint32_t num_to_add = 0;
+	uint32_t to_add_count = 0;
 	const char *to_add[ARRAY_SIZE(required_vk_instance_extensions)];
 
-	uint32_t num_enabled = create_info->enabledExtensionCount;
+	uint32_t enabled_count = create_info->enabledExtensionCount;
 	char const *const *enabled = create_info->ppEnabledExtensionNames;
 
-	find_to_add(enabled, num_enabled, required_vk_instance_extensions, num_required, to_add, &num_to_add);
+	find_to_add(enabled, enabled_count, required_vk_instance_extensions, required_count, to_add, &to_add_count);
 
 	enum u_logging_level ll = debug_get_log_option_compositor_log();
 
-	if (num_to_add == 0) {
+	if (to_add_count == 0) {
 		if (ll <= U_LOGGING_DEBUG) {
 			oxr_log(log, "App enabled all required instance exts");
 		}
 		return false;
 	}
 
-	uint32_t total = num_enabled + num_to_add;
+	uint32_t total = enabled_count + to_add_count;
 	char const **new_enabled = malloc(sizeof(char *) * total);
 
-	for (uint32_t i = 0; i < num_enabled; i++) {
+	for (uint32_t i = 0; i < enabled_count; i++) {
 		new_enabled[i] = enabled[i];
 		if (ll <= U_LOGGING_DEBUG) {
 			oxr_log(log, "Instance ext (app): %s", enabled[i]);
 		}
 	}
 
-	for (uint32_t i = 0; i < num_to_add; i++) {
-		new_enabled[num_enabled + i] = to_add[i];
+	for (uint32_t i = 0; i < to_add_count; i++) {
+		new_enabled[enabled_count + i] = to_add[i];
 		if (ll <= U_LOGGING_DEBUG) {
 			oxr_log(log, "Instance ext (rt): %s", to_add[i]);
 		}
@@ -180,37 +180,37 @@ extend_instance_extensions(struct oxr_logger *log, VkInstanceCreateInfo *create_
 static bool
 extend_device_extensions(struct oxr_logger *log, VkDeviceCreateInfo *create_info)
 {
-	uint32_t num_required = ARRAY_SIZE(required_vk_device_extensions);
+	uint32_t required_count = ARRAY_SIZE(required_vk_device_extensions);
 
-	uint32_t num_to_add = 0;
+	uint32_t to_add_count = 0;
 	const char *to_add[ARRAY_SIZE(required_vk_device_extensions)];
 
-	uint32_t num_enabled = create_info->enabledExtensionCount;
+	uint32_t enabled_count = create_info->enabledExtensionCount;
 	char const *const *enabled = create_info->ppEnabledExtensionNames;
 
-	find_to_add(enabled, num_enabled, required_vk_device_extensions, num_required, to_add, &num_to_add);
+	find_to_add(enabled, enabled_count, required_vk_device_extensions, required_count, to_add, &to_add_count);
 
 	enum u_logging_level ll = debug_get_log_option_compositor_log();
 
-	if (num_to_add == 0) {
+	if (to_add_count == 0) {
 		if (ll <= U_LOGGING_DEBUG) {
 			oxr_log(log, "App enabled all required device exts");
 		}
 		return false;
 	}
 
-	uint32_t total = num_enabled + num_to_add;
+	uint32_t total = enabled_count + to_add_count;
 	char const **new_enabled = malloc(sizeof(char *) * total);
 
-	for (uint32_t i = 0; i < num_enabled; i++) {
+	for (uint32_t i = 0; i < enabled_count; i++) {
 		new_enabled[i] = enabled[i];
 		if (ll <= U_LOGGING_DEBUG) {
 			oxr_log(log, "Device ext (app): %s", enabled[i]);
 		}
 	}
 
-	for (uint32_t i = 0; i < num_to_add; i++) {
-		new_enabled[num_enabled + i] = to_add[i];
+	for (uint32_t i = 0; i < to_add_count; i++) {
+		new_enabled[enabled_count + i] = to_add[i];
 		if (ll <= U_LOGGING_DEBUG) {
 			oxr_log(log, "Device ext (rt): %s", to_add[i]);
 		}

@@ -165,7 +165,7 @@ oxr_input_transform_destroy(struct oxr_input_transform **transform_ptr);
  * Apply an array of input transforms.
  *
  * @param[in] transforms An array of input transforms
- * @param[in] num_transforms The number of elements in @p transform
+ * @param[in] transform_count The number of elements in @p transform
  * @param[in] input The input value and type
  * @param[out] out The transformed value and type
  *
@@ -174,7 +174,7 @@ oxr_input_transform_destroy(struct oxr_input_transform **transform_ptr);
  */
 bool
 oxr_input_transform_process(const struct oxr_input_transform *transforms,
-                            size_t num_transforms,
+                            size_t transform_count,
                             const struct oxr_input_value_tagged *input,
                             struct oxr_input_value_tagged *out);
 
@@ -286,7 +286,7 @@ oxr_input_transform_init_bool_to_vec1(struct oxr_input_transform *transform,
  * @param[in] bound_path_string The path name string that has been bound.
  * @param[out] out_transforms A pointer that will be populated with the output
  * array's address, or NULL.
- * @param[out] out_num_transforms Where to populate the array size
+ * @param[out] out_transform_count Where to populate the array size
  * @return false if not possible
  *
  * @relates oxr_input_transform
@@ -299,7 +299,7 @@ oxr_input_transform_create_chain(struct oxr_logger *log,
                                  const char *action_name,
                                  const char *bound_path_string,
                                  struct oxr_input_transform **out_transforms,
-                                 size_t *out_num_transforms);
+                                 size_t *out_transform_count);
 
 /*!
  * @}

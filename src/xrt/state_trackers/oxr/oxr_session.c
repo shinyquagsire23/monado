@@ -340,7 +340,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 {
 	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, viewLocateInfo->space);
-	uint32_t num_views = 2;
+	uint32_t view_count = 2;
 
 	// Does this apply for all calls?
 	if (!baseSpc->is_reference) {
@@ -350,14 +350,14 @@ oxr_session_locate_views(struct oxr_logger *log,
 
 	// Start two call handling.
 	if (viewCountOutput != NULL) {
-		*viewCountOutput = num_views;
+		*viewCountOutput = view_count;
 	}
 	if (viewCapacityInput == 0) {
 		return oxr_session_success_result(sess);
 	}
-	if (viewCapacityInput < num_views) {
+	if (viewCapacityInput < view_count) {
 		return oxr_error(log, XR_ERROR_SIZE_INSUFFICIENT, "(viewCapacityInput == %u) need %u",
-		                 viewCapacityInput, num_views);
+		                 viewCapacityInput, view_count);
 	}
 	// End two call handling.
 
@@ -388,7 +388,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 	    0.0f,
 	};
 
-	for (uint32_t i = 0; i < num_views; i++) {
+	for (uint32_t i = 0; i < view_count; i++) {
 		struct xrt_pose view_pose = XRT_POSE_IDENTITY;
 
 		// Get the per view pose from the device.
@@ -581,12 +581,12 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 
 	XrResult ret = oxr_event_remove_session_events(log, sess);
 
-	for (size_t i = 0; i < sess->num_action_set_attachments; ++i) {
+	for (size_t i = 0; i < sess->action_set_attachment_count; ++i) {
 		oxr_action_set_attachment_teardown(&sess->act_set_attachments[i]);
 	}
 	free(sess->act_set_attachments);
 	sess->act_set_attachments = NULL;
-	sess->num_action_set_attachments = 0;
+	sess->action_set_attachment_count = 0;
 
 	// If we tore everything down correctly, these are empty now.
 	assert(sess->act_sets_attachments_by_key == NULL || u_hashmap_int_empty(sess->act_sets_attachments_by_key));

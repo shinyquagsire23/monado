@@ -375,7 +375,7 @@ oxr_action_to_openxr(struct oxr_action *act)
 bool
 oxr_classify_sub_action_paths(struct oxr_logger *log,
                               struct oxr_instance *inst,
-                              uint32_t num_subaction_paths,
+                              uint32_t subaction_path_count,
                               const XrPath *subaction_paths,
                               struct oxr_subaction_paths *subaction_paths_out);
 
@@ -547,7 +547,7 @@ oxr_binding_find_bindings_from_key(struct oxr_logger *log,
                                    struct oxr_interaction_profile *profile,
                                    uint32_t key,
                                    struct oxr_binding *bindings[OXR_MAX_BINDINGS_PER_ACTION],
-                                   size_t *num_bindings);
+                                   size_t *binding_count);
 
 /*!
  * @public @memberof oxr_instance
@@ -768,7 +768,7 @@ oxr_destroy_messenger(struct oxr_logger *log, struct oxr_debug_messenger *mssngr
 XrResult
 oxr_system_select(struct oxr_logger *log,
                   struct oxr_system **systems,
-                  uint32_t num_systems,
+                  uint32_t system_count,
                   XrFormFactor form_factor,
                   struct oxr_system **out_selected);
 
@@ -1078,7 +1078,7 @@ struct oxr_system
 	struct xrt_system_compositor *xsysc;
 
 	struct xrt_device *xdevs[16];
-	size_t num_xdevs;
+	size_t xdev_count;
 
 	/* index for xdevs array */
 	struct
@@ -1172,7 +1172,7 @@ struct oxr_instance
 	} event;
 
 	struct oxr_interaction_profile **profiles;
-	size_t num_profiles;
+	size_t profile_count;
 
 	struct oxr_session *sessions;
 
@@ -1286,7 +1286,7 @@ struct oxr_session
 	/*!
 	 * Length of @ref oxr_session::act_set_attachments.
 	 */
-	size_t num_action_set_attachments;
+	size_t action_set_attachment_count;
 
 	/*!
 	 * A map of action set key to action set attachments.
@@ -1393,7 +1393,7 @@ struct oxr_interaction_profile
 	const char *localized_name;
 
 	struct oxr_binding *bindings;
-	size_t num_bindings;
+	size_t binding_count;
 };
 
 /*!
@@ -1402,14 +1402,14 @@ struct oxr_interaction_profile
 struct oxr_binding
 {
 	XrPath *paths;
-	size_t num_paths;
+	size_t path_count;
 
 	//! Name presented to the user.
 	const char *localized_name;
 
 	enum oxr_subaction_path subaction_path;
 
-	size_t num_keys;
+	size_t key_count;
 	uint32_t *keys;
 	//! store which entry in paths was suggested, for each action key
 	uint32_t *preferred_binding_path_index;
@@ -1494,7 +1494,7 @@ struct oxr_action_set_attachment
 	/*!
 	 * Length of @ref oxr_action_set_attachment::act_attachments.
 	 */
-	size_t num_action_attachments;
+	size_t action_attachment_count;
 };
 
 /*!
@@ -1547,7 +1547,7 @@ struct oxr_action_input
 	struct xrt_device *xdev;
 	struct xrt_input *input;
 	struct oxr_input_transform *transforms;
-	size_t num_transforms;
+	size_t transform_count;
 	XrPath bound_path;
 };
 
@@ -1695,7 +1695,7 @@ struct oxr_swapchain
 	uint32_t width, height;
 
 	//! For 1 is 2D texture, greater then 1 2D array texture.
-	uint32_t num_array_layers;
+	uint32_t array_layer_count;
 
 	struct
 	{

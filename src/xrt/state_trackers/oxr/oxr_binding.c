@@ -31,10 +31,10 @@ setup_paths(struct oxr_logger *log,
 		count++;
 	}
 
-	binding->num_paths = count;
+	binding->path_count = count;
 	binding->paths = U_TYPED_ARRAY_CALLOC(XrPath, count);
 
-	for (size_t x = 0; x < binding->num_paths; x++) {
+	for (size_t x = 0; x < binding->path_count; x++) {
 		const char *str = templ->paths[x];
 		size_t len = strlen(str);
 		oxr_path_get_or_create(log, inst, str, len, &binding->paths[x]);
@@ -47,7 +47,7 @@ interaction_profile_find(struct oxr_logger *log,
                          XrPath path,
                          struct oxr_interaction_profile **out_p)
 {
-	for (size_t x = 0; x < inst->num_profiles; x++) {
+	for (size_t x = 0; x < inst->profile_count; x++) {
 		struct oxr_interaction_profile *p = inst->profiles[x];
 		if (p->path != path) {
 			continue;
@@ -97,12 +97,12 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 	struct oxr_interaction_profile *p = U_TYPED_CALLOC(struct oxr_interaction_profile);
 
 	p->xname = templ->name;
-	p->num_bindings = templ->num_bindings;
-	p->bindings = U_TYPED_ARRAY_CALLOC(struct oxr_binding, p->num_bindings);
+	p->binding_count = templ->binding_count;
+	p->bindings = U_TYPED_ARRAY_CALLOC(struct oxr_binding, p->binding_count);
 	p->path = path;
 	p->localized_name = templ->localized_name;
 
-	for (size_t x = 0; x < templ->num_bindings; x++) {
+	for (size_t x = 0; x < templ->binding_count; x++) {
 		struct binding_template *t = &templ->bindings[x];
 		struct oxr_binding *b = &p->bindings[x];
 
@@ -124,8 +124,8 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 	}
 
 	// Add to the list of currently created interaction profiles.
-	U_ARRAY_REALLOC_OR_FREE(inst->profiles, struct oxr_interaction_profile *, (inst->num_profiles + 1));
-	inst->profiles[inst->num_profiles++] = p;
+	U_ARRAY_REALLOC_OR_FREE(inst->profiles, struct oxr_interaction_profile *, (inst->profile_count + 1));
+	inst->profiles[inst->profile_count++] = p;
 
 	*out_p = p;
 
@@ -139,26 +139,26 @@ reset_binding_keys(struct oxr_binding *binding)
 	free(binding->preferred_binding_path_index);
 	binding->keys = NULL;
 	binding->preferred_binding_path_index = NULL;
-	binding->num_keys = 0;
+	binding->key_count = 0;
 }
 
 static void
-reset_all_keys(struct oxr_binding *bindings, size_t num_bindings)
+reset_all_keys(struct oxr_binding *bindings, size_t binding_count)
 {
-	for (size_t x = 0; x < num_bindings; x++) {
+	for (size_t x = 0; x < binding_count; x++) {
 		reset_binding_keys(&bindings[x]);
 	}
 }
 
 static void
-add_key_to_matching_bindings(struct oxr_binding *bindings, size_t num_bindings, XrPath path, uint32_t key)
+add_key_to_matching_bindings(struct oxr_binding *bindings, size_t binding_count, XrPath path, uint32_t key)
 {
-	for (size_t x = 0; x < num_bindings; x++) {
+	for (size_t x = 0; x < binding_count; x++) {
 		struct oxr_binding *b = &bindings[x];
 
 		bool found = false;
 		uint32_t preferred_path_index;
-		for (size_t y = 0; y < b->num_paths; y++) {
+		for (size_t y = 0; y < b->path_count; y++) {
 			if (b->paths[y] == path) {
 				found = true;
 				preferred_path_index = y;
@@ -170,10 +170,10 @@ add_key_to_matching_bindings(struct oxr_binding *bindings, size_t num_bindings, 
 			continue;
 		}
 
-		U_ARRAY_REALLOC_OR_FREE(b->keys, uint32_t, (b->num_keys + 1));
-		U_ARRAY_REALLOC_OR_FREE(b->preferred_binding_path_index, uint32_t, (b->num_keys + 1));
-		b->preferred_binding_path_index[b->num_keys] = preferred_path_index;
-		b->keys[b->num_keys++] = key;
+		U_ARRAY_REALLOC_OR_FREE(b->keys, uint32_t, (b->key_count + 1));
+		U_ARRAY_REALLOC_OR_FREE(b->preferred_binding_path_index, uint32_t, (b->key_count + 1));
+		b->preferred_binding_path_index[b->key_count] = preferred_path_index;
+		b->keys[b->key_count++] = key;
 	}
 }
 
@@ -265,15 +265,15 @@ get_identifier_str_in_profile(struct oxr_logger *log,
 		return NULL;
 	}
 
-	for (size_t i = 0; i < oip->num_bindings; i++) {
+	for (size_t i = 0; i < oip->binding_count; i++) {
 		struct oxr_binding *binding = &oip->bindings[i];
 
-		for (size_t k = 0; k < binding->num_paths; k++) {
+		for (size_t k = 0; k < binding->path_count; k++) {
 			if (binding->paths[k] != path) {
 				continue;
 			}
 			str = binding->localized_name;
-			i = oip->num_bindings; // Break the outer loop as well.
+			i = oip->binding_count; // Break the outer loop as well.
 			break;
 		}
 	}
@@ -362,10 +362,10 @@ oxr_binding_find_bindings_from_key(struct oxr_logger *log,
                                    struct oxr_interaction_profile *p,
                                    uint32_t key,
                                    struct oxr_binding *bindings[OXR_MAX_BINDINGS_PER_ACTION],
-                                   size_t *num_bindings)
+                                   size_t *binding_count)
 {
 	if (p == NULL) {
-		*num_bindings = 0;
+		*binding_count = 0;
 		return;
 	}
 
@@ -373,10 +373,10 @@ oxr_binding_find_bindings_from_key(struct oxr_logger *log,
 	//! then 32 bindings.
 	size_t num = 0;
 
-	for (size_t y = 0; y < p->num_bindings; y++) {
+	for (size_t y = 0; y < p->binding_count; y++) {
 		struct oxr_binding *b = &p->bindings[y];
 
-		for (size_t z = 0; z < b->num_keys; z++) {
+		for (size_t z = 0; z < b->key_count; z++) {
 			if (b->keys[z] == key) {
 				bindings[num++] = b;
 				break;
@@ -384,41 +384,41 @@ oxr_binding_find_bindings_from_key(struct oxr_logger *log,
 		}
 
 		if (num >= 32) {
-			*num_bindings = num;
+			*binding_count = num;
 			return;
 		}
 	}
 
-	*num_bindings = num;
+	*binding_count = num;
 }
 
 void
 oxr_binding_destroy_all(struct oxr_logger *log, struct oxr_instance *inst)
 {
-	for (size_t x = 0; x < inst->num_profiles; x++) {
+	for (size_t x = 0; x < inst->profile_count; x++) {
 		struct oxr_interaction_profile *p = inst->profiles[x];
 
-		for (size_t y = 0; y < p->num_bindings; y++) {
+		for (size_t y = 0; y < p->binding_count; y++) {
 			struct oxr_binding *b = &p->bindings[y];
 
 			reset_binding_keys(b);
 			free(b->paths);
 			b->paths = NULL;
-			b->num_paths = 0;
+			b->path_count = 0;
 			b->input = 0;
 			b->output = 0;
 		}
 
 		free(p->bindings);
 		p->bindings = NULL;
-		p->num_bindings = 0;
+		p->binding_count = 0;
 
 		free(p);
 	}
 
 	free(inst->profiles);
 	inst->profiles = NULL;
-	inst->num_profiles = 0;
+	inst->profile_count = 0;
 }
 
 
@@ -445,16 +445,16 @@ oxr_action_suggest_interaction_profile_bindings(struct oxr_logger *log,
 	}
 
 	struct oxr_binding *bindings = p->bindings;
-	size_t num_bindings = p->num_bindings;
+	size_t binding_count = p->binding_count;
 
 	// Everything is now valid, reset the keys.
-	reset_all_keys(bindings, num_bindings);
+	reset_all_keys(bindings, binding_count);
 
 	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
 		const XrActionSuggestedBinding *s = &suggestedBindings->suggestedBindings[i];
 		struct oxr_action *act = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action *, s->action);
 
-		add_key_to_matching_bindings(bindings, num_bindings, s->binding, act->act_key);
+		add_key_to_matching_bindings(bindings, binding_count, s->binding, act->act_key);
 	}
 
 	return XR_SUCCESS;

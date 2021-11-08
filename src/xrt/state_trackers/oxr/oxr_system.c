@@ -35,17 +35,17 @@ oxr_system_matches(struct oxr_logger *log, struct oxr_system *sys, XrFormFactor 
 XrResult
 oxr_system_select(struct oxr_logger *log,
                   struct oxr_system **systems,
-                  uint32_t num_systems,
+                  uint32_t system_count,
                   XrFormFactor form_factor,
                   struct oxr_system **out_selected)
 {
-	if (num_systems == 0) {
+	if (system_count == 0) {
 		return oxr_error(log, XR_ERROR_FORM_FACTOR_UNSUPPORTED,
 		                 "(getInfo->formFactor) no system available (given: %i)", form_factor);
 	}
 
 	struct oxr_system *selected = NULL;
-	for (uint32_t i = 0; i < num_systems; i++) {
+	for (uint32_t i = 0; i < system_count; i++) {
 		if (oxr_system_matches(log, systems[i], form_factor)) {
 			selected = systems[i];
 			break;

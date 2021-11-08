@@ -37,7 +37,7 @@ qwerty_create_auto_prober(void);
  * gets created.
  */
 void
-qwerty_process_event(struct xrt_device **xdevs, size_t num_xdevs, SDL_Event event);
+qwerty_process_event(struct xrt_device **xdevs, size_t xdev_count, SDL_Event event);
 
 /*!
  * @}

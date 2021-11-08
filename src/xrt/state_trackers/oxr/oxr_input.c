@@ -90,7 +90,7 @@ oxr_action_cache_teardown(struct oxr_action_cache *cache)
 	for (uint32_t i = 0; i < cache->input_count; i++) {
 		struct oxr_action_input *action_input = &cache->inputs[i];
 		oxr_input_transform_destroy(&(action_input->transforms));
-		action_input->num_transforms = 0;
+		action_input->transform_count = 0;
 	}
 	free(cache->inputs);
 	cache->inputs = NULL;
@@ -177,12 +177,12 @@ oxr_action_set_attachment_init(struct oxr_logger *log,
 void
 oxr_action_set_attachment_teardown(struct oxr_action_set_attachment *act_set_attached)
 {
-	for (size_t i = 0; i < act_set_attached->num_action_attachments; ++i) {
+	for (size_t i = 0; i < act_set_attached->action_attachment_count; ++i) {
 		oxr_action_attachment_teardown(&(act_set_attached->act_attachments[i]));
 	}
 	free(act_set_attached->act_attachments);
 	act_set_attached->act_attachments = NULL;
-	act_set_attached->num_action_attachments = 0;
+	act_set_attached->action_attachment_count = 0;
 
 	struct oxr_session *sess = act_set_attached->sess;
 	u_hashmap_int_erase(sess->act_sets_attachments_by_key, act_set_attached->act_set_key);
@@ -372,7 +372,7 @@ oxr_action_create(struct oxr_logger *log,
 bool
 oxr_classify_sub_action_paths(struct oxr_logger *log,
                               struct oxr_instance *inst,
-                              uint32_t num_subaction_paths,
+                              uint32_t subaction_path_count,
                               const XrPath *subaction_paths,
                               struct oxr_subaction_paths *subaction_paths_out)
 {
@@ -383,12 +383,12 @@ oxr_classify_sub_action_paths(struct oxr_logger *log,
 	// Reset the subaction_paths completely.
 	U_ZERO(subaction_paths_out);
 
-	if (num_subaction_paths == 0) {
+	if (subaction_path_count == 0) {
 		subaction_paths_out->any = true;
 		return ret;
 	}
 
-	for (uint32_t i = 0; i < num_subaction_paths; i++) {
+	for (uint32_t i = 0; i < subaction_path_count; i++) {
 		XrPath path = subaction_paths[i];
 
 #define IDENTIFY_PATH(X)                                                                                               \
@@ -585,7 +585,7 @@ static XrPath
 get_matched_xrpath(struct oxr_binding *b, struct oxr_action *act)
 {
 	XrPath preferred_path = XR_NULL_PATH;
-	for (uint32_t i = 0; i < b->num_keys; i++) {
+	for (uint32_t i = 0; i < b->key_count; i++) {
 		if (b->keys[i] == act->act_key) {
 			uint32_t preferred_path_index = XR_NULL_PATH;
 			preferred_path_index = b->preferred_binding_path_index[i];
@@ -816,7 +816,7 @@ oxr_input_is_input_for_cache(struct oxr_action_input *action_input, struct oxr_a
 static bool
 oxr_input_is_bound_in_act_set(struct oxr_action_input *action_input, struct oxr_action_set_attachment *act_set_attached)
 {
-	for (size_t i = 0; i < act_set_attached->num_action_attachments; i++) {
+	for (size_t i = 0; i < act_set_attached->action_attachment_count; i++) {
 		struct oxr_action_attachment *act_attached = &act_set_attached->act_attachments[i];
 
 #define ACCUMULATE_PATHS(X)                                                                                            \
@@ -934,7 +934,7 @@ oxr_input_combine_input(struct oxr_session *sess,
 		};
 
 		struct oxr_input_value_tagged transformed = {0};
-		if (!oxr_input_transform_process(action_input->transforms, action_input->num_transforms, &raw_input,
+		if (!oxr_input_transform_process(action_input->transforms, action_input->transform_count, &raw_input,
 		                                 &transformed)) {
 			// We couldn't transform, how strange. Reset all state.
 			// At this level we don't know what action this is, etc.
@@ -1229,7 +1229,7 @@ oxr_action_attachment_update(struct oxr_logger *log,
  * Try to produce a transform chain to convert the available input into the
  * desired input type.
  *
- * Populates @p action_input->transforms and @p action_input->num_transforms on
+ * Populates @p action_input->transforms and @p action_input->transform_count on
  * success.
  *
  * @returns false if it could not, true if it could
@@ -1242,7 +1242,7 @@ oxr_action_populate_input_transform(struct oxr_logger *log,
                                     struct oxr_action_input *action_input)
 {
 	assert(action_input->transforms == NULL);
-	assert(action_input->num_transforms == 0);
+	assert(action_input->transform_count == 0);
 	const char *str;
 	size_t length;
 	oxr_path_get_string(log, sess->sys->inst, action_input->bound_path, &str, &length);
@@ -1250,7 +1250,7 @@ oxr_action_populate_input_transform(struct oxr_logger *log,
 	enum xrt_input_type t = XRT_GET_INPUT_TYPE(action_input->input->name);
 
 	return oxr_input_transform_create_chain(log, slog, t, act->data->action_type, act->data->name, str,
-	                                        &action_input->transforms, &action_input->num_transforms);
+	                                        &action_input->transforms, &action_input->transform_count);
 }
 
 static void
@@ -1383,12 +1383,12 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 
 	// Allocate room for list. No need to check if anything has been
 	// attached the API function does that.
-	sess->num_action_set_attachments = bindInfo->countActionSets;
+	sess->action_set_attachment_count = bindInfo->countActionSets;
 	sess->act_set_attachments =
-	    U_TYPED_ARRAY_CALLOC(struct oxr_action_set_attachment, sess->num_action_set_attachments);
+	    U_TYPED_ARRAY_CALLOC(struct oxr_action_set_attachment, sess->action_set_attachment_count);
 
 	// Set up the per-session data for these action sets.
-	for (uint32_t i = 0; i < sess->num_action_set_attachments; i++) {
+	for (uint32_t i = 0; i < sess->action_set_attachment_count; i++) {
 		struct oxr_action_set *act_set =
 		    XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action_set *, bindInfo->actionSets[i]);
 		struct oxr_action_set_ref *act_set_ref = act_set->data;
@@ -1397,9 +1397,9 @@ oxr_session_attach_action_sets(struct oxr_logger *log,
 		oxr_action_set_attachment_init(log, sess, act_set, act_set_attached);
 
 		// Allocate the action attachments for this set.
-		act_set_attached->num_action_attachments = oxr_handle_base_get_num_children(&act_set->handle);
+		act_set_attached->action_attachment_count = oxr_handle_base_get_num_children(&act_set->handle);
 		act_set_attached->act_attachments =
-		    U_TYPED_ARRAY_CALLOC(struct oxr_action_attachment, act_set_attached->num_action_attachments);
+		    U_TYPED_ARRAY_CALLOC(struct oxr_action_attachment, act_set_attached->action_attachment_count);
 
 		// Set up the per-session data for the actions.
 		uint32_t child_index = 0;
@@ -1450,12 +1450,12 @@ oxr_action_sync_data(struct oxr_logger *log,
 	int64_t now = time_state_get_now(sess->sys->inst->timekeeping);
 
 	// Loop over all xdev devices.
-	for (size_t i = 0; i < sess->sys->num_xdevs; i++) {
+	for (size_t i = 0; i < sess->sys->xdev_count; i++) {
 		oxr_xdev_update(sess->sys->xdevs[i]);
 	}
 
 	// Reset all action set attachments.
-	for (size_t i = 0; i < sess->num_action_set_attachments; ++i) {
+	for (size_t i = 0; i < sess->action_set_attachment_count; ++i) {
 		act_set_attached = &sess->act_set_attachments[i];
 		U_ZERO(&act_set_attached->requested_subaction_paths);
 	}
@@ -1483,7 +1483,7 @@ oxr_action_sync_data(struct oxr_logger *log,
 #undef ACCUMULATE_REQUESTED
 
 		/* check if we have at least one action for requested subactionpath */
-		for (uint32_t k = 0; k < act_set_attached->num_action_attachments; k++) {
+		for (uint32_t k = 0; k < act_set_attached->action_attachment_count; k++) {
 			struct oxr_action_attachment *act_attached = &act_set_attached->act_attachments[k];
 
 			if (act_attached == NULL) {
@@ -1502,12 +1502,12 @@ oxr_action_sync_data(struct oxr_logger *log,
 	}
 
 	// Now, update all action attachments
-	for (size_t i = 0; i < sess->num_action_set_attachments; ++i) {
+	for (size_t i = 0; i < sess->action_set_attachment_count; ++i) {
 		act_set_attached = &sess->act_set_attachments[i];
 		struct oxr_subaction_paths subaction_paths = act_set_attached->requested_subaction_paths;
 
 
-		for (uint32_t k = 0; k < act_set_attached->num_action_attachments; k++) {
+		for (uint32_t k = 0; k < act_set_attached->action_attachment_count; k++) {
 			struct oxr_action_attachment *act_attached = &act_set_attached->act_attachments[k];
 
 			if (act_attached == NULL) {
@@ -1523,9 +1523,9 @@ oxr_action_sync_data(struct oxr_logger *log,
 }
 
 static void
-add_path_to_set(XrPath path_set[OXR_MAX_BINDINGS_PER_ACTION], XrPath new_path, uint32_t *inout_num_paths)
+add_path_to_set(XrPath path_set[OXR_MAX_BINDINGS_PER_ACTION], XrPath new_path, uint32_t *inout_path_count)
 {
-	const uint32_t n = *inout_num_paths;
+	const uint32_t n = *inout_path_count;
 
 	// Shouldn't be full
 	assert(n < OXR_MAX_BINDINGS_PER_ACTION);
@@ -1538,7 +1538,7 @@ add_path_to_set(XrPath path_set[OXR_MAX_BINDINGS_PER_ACTION], XrPath new_path, u
 		assert(path_set[i] != 0);
 	}
 	path_set[n] = new_path;
-	(*inout_num_paths)++;
+	(*inout_path_count)++;
 }
 
 XrResult
@@ -1550,7 +1550,7 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
                                    XrPath *sources)
 {
 	struct oxr_action_attachment *act_attached = NULL;
-	uint32_t num_paths = 0;
+	uint32_t path_count = 0;
 	XrPath temp[OXR_MAX_BINDINGS_PER_ACTION] = {0};
 
 	oxr_session_get_action_attachment(sess, act_key, &act_attached);
@@ -1561,19 +1561,19 @@ oxr_action_enumerate_bound_sources(struct oxr_logger *log,
 #define ACCUMULATE_PATHS(X)                                                                                            \
 	if (act_attached->X.input_count > 0) {                                                                         \
 		for (uint32_t i = 0; i < act_attached->X.input_count; i++) {                                           \
-			add_path_to_set(temp, act_attached->X.inputs[i].bound_path, &num_paths);                       \
+			add_path_to_set(temp, act_attached->X.inputs[i].bound_path, &path_count);                      \
 		}                                                                                                      \
 	}                                                                                                              \
 	if (act_attached->X.output_count > 0) {                                                                        \
 		for (uint32_t i = 0; i < act_attached->X.output_count; i++) {                                          \
-			add_path_to_set(temp, act_attached->X.outputs[i].bound_path, &num_paths);                      \
+			add_path_to_set(temp, act_attached->X.outputs[i].bound_path, &path_count);                     \
 		}                                                                                                      \
 	}
 
 	OXR_FOR_EACH_SUBACTION_PATH(ACCUMULATE_PATHS)
 #undef ACCUMULATE_PATHS
 
-	OXR_TWO_CALL_HELPER(log, sourceCapacityInput, sourceCountOutput, sources, num_paths, temp,
+	OXR_TWO_CALL_HELPER(log, sourceCapacityInput, sourceCountOutput, sources, path_count, temp,
 	                    oxr_session_success_result(sess));
 }
 

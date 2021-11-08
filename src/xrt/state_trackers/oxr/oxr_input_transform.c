@@ -149,7 +149,7 @@ oxr_input_transform_init_bool_to_vec1(struct oxr_input_transform *transform,
 
 bool
 oxr_input_transform_process(const struct oxr_input_transform *transform,
-                            size_t num_transforms,
+                            size_t transform_count,
                             const struct oxr_input_value_tagged *input,
                             struct oxr_input_value_tagged *out)
 {
@@ -157,7 +157,7 @@ oxr_input_transform_process(const struct oxr_input_transform *transform,
 		return false;
 	}
 	struct oxr_input_value_tagged data = *input;
-	for (size_t i = 0; i < num_transforms; ++i) {
+	for (size_t i = 0; i < transform_count; ++i) {
 		const struct oxr_input_transform *xform = &(transform[i]);
 		switch (xform->type) {
 		case INPUT_TRANSFORM_IDENTITY:
@@ -274,10 +274,10 @@ extend_transform_array(struct oxr_logger *log,
 }
 
 struct oxr_input_transform *
-oxr_input_transform_clone_chain(struct oxr_input_transform *transforms, size_t num_transforms)
+oxr_input_transform_clone_chain(struct oxr_input_transform *transforms, size_t transform_count)
 {
-	struct oxr_input_transform *ret = U_TYPED_ARRAY_CALLOC(struct oxr_input_transform, num_transforms);
-	memcpy(ret, transforms, sizeof(*ret) * num_transforms);
+	struct oxr_input_transform *ret = U_TYPED_ARRAY_CALLOC(struct oxr_input_transform, transform_count);
+	memcpy(ret, transforms, sizeof(*ret) * transform_count);
 	return ret;
 }
 
@@ -289,7 +289,7 @@ oxr_input_transform_create_chain(struct oxr_logger *log,
                                  const char *action_name,
                                  const char *bound_path_string,
                                  struct oxr_input_transform **out_transforms,
-                                 size_t *out_num_transforms)
+                                 size_t *out_transform_count)
 {
 	struct oxr_input_transform chain[OXR_MAX_INPUT_TRANSFORMS] = {0};
 
@@ -298,7 +298,7 @@ oxr_input_transform_create_chain(struct oxr_logger *log,
 
 	struct oxr_input_transform *current_xform = &(chain[0]);
 	if (!oxr_input_transform_init_root(current_xform, input_type)) {
-		*out_num_transforms = 0;
+		*out_transform_count = 0;
 		*out_transforms = NULL;
 		return false;
 	}
@@ -308,41 +308,41 @@ oxr_input_transform_create_chain(struct oxr_logger *log,
 
 	if (identity) {
 		// No transform needed, just return identity to keep this alive.
-		*out_num_transforms = 1;
+		*out_transform_count = 1;
 		*out_transforms = oxr_input_transform_clone_chain(chain, 1);
 		oxr_slog(slog, "\t\t\tUsing identity transform for input.\n");
 		return true;
 	}
 
 	// We start over here.
-	size_t num_transforms = 0;
+	size_t transform_count = 0;
 	while (!oxr_type_matches_xrt(current_xform->result_type, result_type)) {
-		if (num_transforms >= OXR_MAX_INPUT_TRANSFORMS) {
+		if (transform_count >= OXR_MAX_INPUT_TRANSFORMS) {
 			// Couldn't finish the transform to the desired type.
 			oxr_slog(slog,
 			         "\t\t\tSeem to have gotten into a loop, "
 			         "trying to make a rule to transform.\n",
 			         action_name, bound_path_string);
-			*out_num_transforms = 0;
+			*out_transform_count = 0;
 			*out_transforms = NULL;
 			return false;
 		}
 
-		struct oxr_input_transform *new_xform = &(chain[num_transforms]);
+		struct oxr_input_transform *new_xform = &(chain[transform_count]);
 		if (!extend_transform_array(log, slog, new_xform, current_xform, result_type, bound_path_string)) {
 			// Error has already been logged.
 
-			*out_num_transforms = 0;
+			*out_transform_count = 0;
 			*out_transforms = NULL;
 			return false;
 		}
 
-		num_transforms++;
+		transform_count++;
 		current_xform = new_xform;
 	}
 
-	*out_num_transforms = num_transforms;
-	*out_transforms = oxr_input_transform_clone_chain(chain, num_transforms);
+	*out_transform_count = transform_count;
+	*out_transforms = oxr_input_transform_clone_chain(chain, transform_count);
 
 	return true;
 }

@@ -23,7 +23,7 @@ TEST_CASE("input_transform")
 	struct oxr_sink_logger slog = {};
 
 	struct oxr_input_transform *transforms = NULL;
-	size_t num_transforms = 0;
+	size_t transform_count = 0;
 
 	oxr_input_value_tagged input = {};
 	oxr_input_value_tagged output = {};
@@ -37,10 +37,10 @@ TEST_CASE("input_transform")
 			input.type = XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE;
 
 			CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type, "float_action",
-			                                       "/dummy_float", &transforms, &num_transforms));
+			                                       "/dummy_float", &transforms, &transform_count));
 
 			// Just identity
-			CHECK(num_transforms == 1);
+			CHECK(transform_count == 1);
 			CHECK(transforms != nullptr);
 
 			SECTION("Roundtrip")
@@ -48,7 +48,7 @@ TEST_CASE("input_transform")
 				auto value = GENERATE(values({-1.f, -0.5f, 0.f, -0.f, 0.5f, 1.f}));
 				input.value.vec1.x = value;
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(input.value.vec1.x == output.value.vec1.x);
 			}
 		}
@@ -58,10 +58,10 @@ TEST_CASE("input_transform")
 			input.type = XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE;
 
 			CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type, "float_action",
-			                                       "/dummy_float", &transforms, &num_transforms));
+			                                       "/dummy_float", &transforms, &transform_count));
 
 			// Just identity
-			CHECK(num_transforms == 1);
+			CHECK(transform_count == 1);
 			CHECK(transforms != nullptr);
 
 			SECTION("Roundtrip")
@@ -69,7 +69,7 @@ TEST_CASE("input_transform")
 				auto value = GENERATE(values({0.f, -0.f, 0.5f, 1.f}));
 				input.value.vec1.x = value;
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(input.value.vec1.x == output.value.vec1.x);
 			}
 		}
@@ -84,13 +84,13 @@ TEST_CASE("input_transform")
 			{
 				CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type,
 				                                       "float_action", "/dummy_vec2/x", &transforms,
-				                                       &num_transforms));
+				                                       &transform_count));
 
 				// A get-x
-				CHECK(num_transforms == 1);
+				CHECK(transform_count == 1);
 				CHECK(transforms != nullptr);
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(input.value.vec2.x == output.value.vec1.x);
 			}
 
@@ -98,13 +98,13 @@ TEST_CASE("input_transform")
 			{
 				CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type,
 				                                       "float_action", "/dummy_vec2/y", &transforms,
-				                                       &num_transforms));
+				                                       &transform_count));
 
 				// A get-y
-				CHECK(num_transforms == 1);
+				CHECK(transform_count == 1);
 				CHECK(transforms != nullptr);
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(input.value.vec2.y == output.value.vec1.x);
 			}
 
@@ -112,14 +112,14 @@ TEST_CASE("input_transform")
 			{
 				CHECK_FALSE(oxr_input_transform_create_chain(&log, &slog, input.type, action_type,
 				                                             "float_action", "/dummy_vec2", &transforms,
-				                                             &num_transforms));
+				                                             &transform_count));
 
 				// Shouldn't make a transform, not possible
-				CHECK(num_transforms == 0);
+				CHECK(transform_count == 0);
 				CHECK(transforms == nullptr);
 
 				// shouldn't do anything, but shouldn't explode.
-				CHECK_FALSE(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK_FALSE(oxr_input_transform_process(transforms, transform_count, &input, &output));
 			}
 		}
 
@@ -127,17 +127,17 @@ TEST_CASE("input_transform")
 		{
 			input.type = XRT_INPUT_TYPE_BOOLEAN;
 			CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type, "float_action",
-			                                       "/dummy_bool", &transforms, &num_transforms));
+			                                       "/dummy_bool", &transforms, &transform_count));
 
 			// A bool-to-float
-			CHECK(num_transforms == 1);
+			CHECK(transform_count == 1);
 			CHECK(transforms != nullptr);
 
 			SECTION("False")
 			{
 				input.value.boolean = false;
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(0.0f == output.value.vec1.x);
 			}
 
@@ -145,7 +145,7 @@ TEST_CASE("input_transform")
 			{
 				input.value.boolean = true;
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(1.0f == output.value.vec1.x);
 			}
 		}
@@ -159,15 +159,15 @@ TEST_CASE("input_transform")
 			input.type = XRT_INPUT_TYPE_BOOLEAN;
 
 			CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type, "bool_action",
-			                                       "/dummy_bool", &transforms, &num_transforms));
-			CHECK(num_transforms == 1);
+			                                       "/dummy_bool", &transforms, &transform_count));
+			CHECK(transform_count == 1);
 			CHECK(transforms != nullptr);
 
 			SECTION("Roundtrip")
 			{
 				auto value = GENERATE(values({0, 1}));
 				input.value.boolean = bool(value);
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(input.value.boolean == output.value.boolean);
 			}
 		}
@@ -177,8 +177,8 @@ TEST_CASE("input_transform")
 			input.type = XRT_INPUT_TYPE_VEC1_MINUS_ONE_TO_ONE;
 
 			CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type, "bool_action",
-			                                       "/dummy_float", &transforms, &num_transforms));
-			CHECK(num_transforms == 1);
+			                                       "/dummy_float", &transforms, &transform_count));
+			CHECK(transform_count == 1);
 			CHECK(transforms != nullptr);
 
 			SECTION("True")
@@ -186,7 +186,7 @@ TEST_CASE("input_transform")
 				auto value = GENERATE(values({0.5f, 1.f}));
 				input.value.vec1.x = value;
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(output.value.boolean == true);
 			}
 
@@ -195,7 +195,7 @@ TEST_CASE("input_transform")
 				auto value = GENERATE(values({0.0f, -1.f}));
 				input.value.vec1.x = value;
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(output.value.boolean == false);
 			}
 		}
@@ -205,9 +205,9 @@ TEST_CASE("input_transform")
 			input.type = XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE;
 
 			CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type, "bool_action",
-			                                       "/dummy_float", &transforms, &num_transforms));
+			                                       "/dummy_float", &transforms, &transform_count));
 			// A bool to float
-			CHECK(num_transforms == 1);
+			CHECK(transform_count == 1);
 			CHECK(transforms != nullptr);
 
 			SECTION("True")
@@ -215,7 +215,7 @@ TEST_CASE("input_transform")
 				auto value = GENERATE(values({0.95f, 1.f}));
 				input.value.vec1.x = value;
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(output.value.boolean == true);
 			}
 
@@ -224,7 +224,7 @@ TEST_CASE("input_transform")
 				auto value = GENERATE(values({0.0f, 0.5f}));
 				input.value.vec1.x = value;
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(output.value.boolean == false);
 			}
 		}
@@ -239,11 +239,11 @@ TEST_CASE("input_transform")
 			{
 				CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type,
 				                                       "float_action", "/dummy_vec2/x", &transforms,
-				                                       &num_transforms));
-				CHECK(num_transforms == 2);
+				                                       &transform_count));
+				CHECK(transform_count == 2);
 				CHECK(transforms != nullptr);
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(false == output.value.boolean);
 			}
 
@@ -251,11 +251,11 @@ TEST_CASE("input_transform")
 			{
 				CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type,
 				                                       "float_action", "/dummy_vec2/y", &transforms,
-				                                       &num_transforms));
-				CHECK(num_transforms == 2);
+				                                       &transform_count));
+				CHECK(transform_count == 2);
 				CHECK(transforms != nullptr);
 
-				CHECK(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
 				CHECK(true == output.value.boolean);
 			}
 
@@ -263,14 +263,14 @@ TEST_CASE("input_transform")
 			{
 				CHECK_FALSE(oxr_input_transform_create_chain(&log, &slog, input.type, action_type,
 				                                             "float_action", "/dummy", &transforms,
-				                                             &num_transforms));
+				                                             &transform_count));
 
 				// Shouldn't make a transform, not possible
-				CHECK(num_transforms == 0);
+				CHECK(transform_count == 0);
 				CHECK(transforms == nullptr);
 
 				// shouldn't do anything, but shouldn't explode.
-				CHECK_FALSE(oxr_input_transform_process(transforms, num_transforms, &input, &output));
+				CHECK_FALSE(oxr_input_transform_process(transforms, transform_count, &input, &output));
 			}
 		}
 	}
@@ -283,9 +283,9 @@ TEST_CASE("input_transform")
 		{
 			input.type = XRT_INPUT_TYPE_POSE;
 			CHECK(oxr_input_transform_create_chain(&log, &slog, input.type, action_type, "pose_action",
-			                                       "/dummy_pose", &transforms, &num_transforms));
+			                                       "/dummy_pose", &transforms, &transform_count));
 			// Identity, just so this binding doesn't get culled.
-			CHECK(num_transforms == 1);
+			CHECK(transform_count == 1);
 		}
 
 		SECTION("From other input")
@@ -303,10 +303,10 @@ TEST_CASE("input_transform")
 
 			CHECK_FALSE(oxr_input_transform_create_chain(&log, &slog, input.type, action_type,
 			                                             "pose_action", "/dummy", &transforms,
-			                                             &num_transforms));
+			                                             &transform_count));
 
 			// not possible
-			CHECK(num_transforms == 0);
+			CHECK(transform_count == 0);
 			CHECK(transforms == nullptr);
 		}
 	}

@@ -321,14 +321,14 @@ try_move_assignment(struct xrt_device **xdevs, int *hand, int *other_hand)
 }
 
 void
-u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t num_xdevs, int *head, int *left, int *right)
+u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t xdev_count, int *head, int *left, int *right)
 {
 	*head = XRT_DEVICE_ROLE_UNASSIGNED;
 	*left = XRT_DEVICE_ROLE_UNASSIGNED;
 	*right = XRT_DEVICE_ROLE_UNASSIGNED;
-	assert(num_xdevs < INT_MAX);
+	assert(xdev_count < INT_MAX);
 
-	for (size_t i = 0; i < num_xdevs; i++) {
+	for (size_t i = 0; i < xdev_count; i++) {
 		if (xdevs[i] == NULL) {
 			continue;
 		}
@@ -365,7 +365,7 @@ u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t num_xdevs, int *hea
 	}
 
 	// fill unassigned left/right with hand trackers if available
-	for (size_t i = 0; i < num_xdevs; i++) {
+	for (size_t i = 0; i < xdev_count; i++) {
 		if (xdevs[i] == NULL) {
 			continue;
 		}

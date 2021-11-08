@@ -86,7 +86,7 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	u_hashset_destroy(&inst->action_sets.name_store);
 	u_hashset_destroy(&inst->action_sets.loc_store);
 
-	for (size_t i = 0; i < inst->system.num_xdevs; i++) {
+	for (size_t i = 0; i < inst->system.xdev_count; i++) {
 		oxr_xdev_destroy(&inst->system.xdevs[i]);
 	}
 
@@ -273,12 +273,12 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 	OXR_FOR_EACH_VALID_SUBACTION_PATH(POPULATE_ROLES)
 #undef POPULATE_ROLES
 
-	sys->num_xdevs = min_size_t(ARRAY_SIZE(sys->xdevs), NUM_XDEVS);
+	sys->xdev_count = min_size_t(ARRAY_SIZE(sys->xdevs), NUM_XDEVS);
 
-	for (uint32_t i = 0; i < sys->num_xdevs; i++) {
+	for (uint32_t i = 0; i < sys->xdev_count; i++) {
 		sys->xdevs[i] = xdevs[i];
 	}
-	for (size_t i = sys->num_xdevs; i < NUM_XDEVS; i++) {
+	for (size_t i = sys->xdev_count; i < NUM_XDEVS; i++) {
 		oxr_xdev_destroy(&xdevs[i]);
 	}
 

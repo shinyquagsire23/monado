@@ -85,7 +85,7 @@ static int
 p_dump(struct xrt_prober *xp);
 
 static int
-p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs);
+p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t xdev_count);
 
 static int
 p_open_hid_interface(struct xrt_prober *xp,
@@ -614,18 +614,18 @@ teardown(struct prober *p)
 
 static void
 handle_found_device(
-    struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, bool *have_hmd, struct xrt_device *xdev)
+    struct prober *p, struct xrt_device **xdevs, size_t xdev_count, bool *have_hmd, struct xrt_device *xdev)
 {
 	P_DEBUG(p, "Found '%s' %p", xdev->str, (void *)xdev);
 
 	size_t i = 0;
-	for (; i < num_xdevs; i++) {
+	for (; i < xdev_count; i++) {
 		if (xdevs[i] == NULL) {
 			break;
 		}
 	}
 
-	if (i + 1 > num_xdevs) {
+	if (i + 1 > xdev_count) {
 		P_ERROR(p, "Too many devices, closing '%s'", xdev->str);
 		xdev->destroy(xdev);
 		return;
@@ -644,7 +644,7 @@ handle_found_device(
 }
 
 static void
-add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, bool *have_hmd)
+add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t xdev_count, bool *have_hmd)
 {
 	// Build a list of all current probed devices.
 	struct xrt_prober_device **dev_list = U_TYPED_ARRAY_CALLOC(struct xrt_prober_device *, p->num_devices);
@@ -690,7 +690,7 @@ add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, 
 					        num_found, created_idx);
 					continue;
 				}
-				handle_found_device(p, xdevs, num_xdevs, have_hmd, new_xdevs[created_idx]);
+				handle_found_device(p, xdevs, xdev_count, have_hmd, new_xdevs[created_idx]);
 			}
 		}
 	}
@@ -700,7 +700,7 @@ add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, 
 }
 
 static void
-add_from_auto_probers(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, bool *have_hmd)
+add_from_auto_probers(struct prober *p, struct xrt_device **xdevs, size_t xdev_count, bool *have_hmd)
 {
 	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
 
@@ -739,15 +739,15 @@ add_from_auto_probers(struct prober *p, struct xrt_device **xdevs, size_t num_xd
 				        p->auto_probers[i]->name, num_found, created_idx);
 				continue;
 			}
-			handle_found_device(p, xdevs, num_xdevs, have_hmd, new_xdevs[created_idx]);
+			handle_found_device(p, xdevs, xdev_count, have_hmd, new_xdevs[created_idx]);
 		}
 	}
 }
 
 static void
-add_from_remote(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, bool *have_hmd)
+add_from_remote(struct prober *p, struct xrt_device **xdevs, size_t xdev_count, bool *have_hmd)
 {
-	if (num_xdevs < 3) {
+	if (xdev_count < 3) {
 		return;
 	}
 
@@ -763,13 +763,13 @@ add_from_remote(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, b
 }
 
 static void
-apply_tracking_override(struct prober *p, struct xrt_device **xdevs, size_t num_xdevs, struct xrt_tracking_override *o)
+apply_tracking_override(struct prober *p, struct xrt_device **xdevs, size_t xdev_count, struct xrt_tracking_override *o)
 {
 	struct xrt_device *target_xdev = NULL;
 	size_t target_idx = 0;
 	struct xrt_device *tracker_xdev = NULL;
 
-	for (size_t i = 0; i < num_xdevs; i++) {
+	for (size_t i = 0; i < xdev_count; i++) {
 		struct xrt_device *xdev = xdevs[i];
 		if (xdev == NULL) {
 			continue;
@@ -872,7 +872,7 @@ p_dump(struct xrt_prober *xp)
 }
 
 static int
-p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xdevs)
+p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t xdev_count)
 {
 	XRT_TRACE_MARKER();
 
@@ -885,16 +885,16 @@ p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xde
 	switch (active) {
 	case U_ACTIVE_CONFIG_NONE:
 	case U_ACTIVE_CONFIG_TRACKING:
-		add_from_devices(p, xdevs, num_xdevs, &have_hmd);
-		add_from_auto_probers(p, xdevs, num_xdevs, &have_hmd);
+		add_from_devices(p, xdevs, xdev_count, &have_hmd);
+		add_from_auto_probers(p, xdevs, xdev_count, &have_hmd);
 		break;
-	case U_ACTIVE_CONFIG_REMOTE: add_from_remote(p, xdevs, num_xdevs, &have_hmd); break;
+	case U_ACTIVE_CONFIG_REMOTE: add_from_remote(p, xdevs, xdev_count, &have_hmd); break;
 	default: assert(false);
 	}
 
 	// It's easier if we just put the first hmd first,
 	// but keep other internal ordering of devices.
-	for (size_t i = 1; i < num_xdevs; i++) {
+	for (size_t i = 1; i < xdev_count; i++) {
 		if (xdevs[i] == NULL) {
 			continue;
 		}
@@ -916,7 +916,7 @@ p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xde
 	if (u_config_json_get_tracking_overrides(&p->json, overrides, &num_overrides)) {
 		for (size_t i = 0; i < num_overrides; i++) {
 			struct xrt_tracking_override *o = &overrides[i];
-			apply_tracking_override(p, xdevs, num_xdevs, o);
+			apply_tracking_override(p, xdevs, xdev_count, o);
 		}
 	}
 
@@ -929,7 +929,7 @@ p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t num_xde
 
 	// Even if we've found some controllers, we don't use them without an
 	// HMD. So, destroy all other found devices.
-	for (size_t i = 1; i < num_xdevs; i++) {
+	for (size_t i = 1; i < xdev_count; i++) {
 		if (xdevs[i] == NULL) {
 			continue;
 		}

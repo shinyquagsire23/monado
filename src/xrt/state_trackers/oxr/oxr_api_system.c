@@ -53,9 +53,9 @@ oxr_xrGetSystem(XrInstance instance, const XrSystemGetInfo *getInfo, XrSystemId 
 
 	struct oxr_system *selected = NULL;
 	struct oxr_system *systems[1] = {&inst->system};
-	uint32_t num_systems = 1;
+	uint32_t system_count = ARRAY_SIZE(systems);
 
-	XrResult ret = oxr_system_select(&log, systems, num_systems, getInfo->formFactor, &selected);
+	XrResult ret = oxr_system_select(&log, systems, system_count, getInfo->formFactor, &selected);
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}

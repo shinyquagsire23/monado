@@ -311,7 +311,7 @@ oxr_hand_tracker_create(struct oxr_logger *log,
 
 	//! @todo: move hand tracking device selection to oxr_system.
 	// if no xdev with hand tracking is found, create hand tracker without xdev.
-	for (uint32_t i = 0; i < sess->sys->num_xdevs; i++) {
+	for (uint32_t i = 0; i < sess->sys->xdev_count; i++) {
 		struct xrt_device *xdev = sess->sys->xdevs[i];
 
 		if (!xdev || !xdev->hand_tracking_supported) {

@@ -162,14 +162,14 @@ def generate_bindings_c(file, p):
         fname = vendor_name + "_" + hw_name + "_profile.json"
         controller_type = "monado_" + vendor_name + "_" + hw_name
 
-        num_bindings = len(profile.features)
+        binding_count = len(profile.features)
         f.write(f'\t{{ // profile_template\n')
         f.write(f'\t\t.name = {profile.monado_device},\n')
         f.write(f'\t\t.path = "{profile.name}",\n')
         f.write(f'\t\t.localized_name = "{profile.title}",\n')
         f.write(f'\t\t.steamvr_input_profile_path = "{fname}",\n')
         f.write(f'\t\t.steamvr_controller_type = "{controller_type}",\n')
-        f.write(f'\t\t.num_bindings = {num_bindings},\n')
+        f.write(f'\t\t.binding_count = {binding_count},\n')
         f.write(
             f'\t\t.bindings = (struct binding_template[]){{ // array of binding_template\n')
 
@@ -301,7 +301,7 @@ struct profile_template
 \tconst char *steamvr_input_profile_path;
 \tconst char *steamvr_controller_type;
 \tstruct binding_template *bindings;
-\tsize_t num_bindings;
+\tsize_t binding_count;
 }};
 
 #define NUM_PROFILE_TEMPLATES {len(p.profiles)}
