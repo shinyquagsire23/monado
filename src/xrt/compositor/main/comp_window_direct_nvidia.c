@@ -40,7 +40,7 @@ struct comp_window_direct_nvidia
 
 	Display *dpy;
 	struct comp_window_direct_nvidia_display *displays;
-	uint16_t num_displays;
+	uint16_t display_count;
 };
 
 /*
@@ -113,7 +113,7 @@ comp_window_direct_nvidia_destroy(struct comp_target *ct)
 
 	comp_target_swapchain_cleanup(&w_direct->base);
 
-	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
+	for (uint32_t i = 0; i < w_direct->display_count; i++) {
 		struct comp_window_direct_nvidia_display *d = &w_direct->displays[i];
 		d->display = VK_NULL_HANDLE;
 		free(d->name);
@@ -153,14 +153,14 @@ append_nvidia_entry_on_match(struct comp_window_direct_nvidia *w,
 	memcpy(d.name, disp->displayName, disp_entry_length);
 	d.name[disp_entry_length] = '\0';
 
-	w->num_displays += 1;
+	w->display_count += 1;
 
-	U_ARRAY_REALLOC_OR_FREE(w->displays, struct comp_window_direct_nvidia_display, w->num_displays);
+	U_ARRAY_REALLOC_OR_FREE(w->displays, struct comp_window_direct_nvidia_display, w->display_count);
 
 	if (w->displays == NULL)
 		COMP_ERROR(w->base.base.c, "Unable to reallocate randr_displays");
 
-	w->displays[w->num_displays - 1] = d;
+	w->displays[w->display_count - 1] = d;
 
 	return true;
 }
@@ -230,7 +230,7 @@ comp_window_direct_nvidia_current_display(struct comp_window_direct_nvidia *w)
 	if (index == -1)
 		index = 0;
 
-	if (w->num_displays <= (uint32_t)index)
+	if (w->display_count <= (uint32_t)index)
 		return NULL;
 
 	return &w->displays[index];

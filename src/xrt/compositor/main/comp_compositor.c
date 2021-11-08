@@ -249,7 +249,7 @@ static void
 do_graphics_layers(struct comp_compositor *c)
 {
 	// Always zero for now.
-	uint32_t num_layers = c->base.slot.num_layers;
+	uint32_t layer_count = c->base.slot.layer_count;
 
 	comp_renderer_destroy_layers(c->r);
 
@@ -257,7 +257,7 @@ do_graphics_layers(struct comp_compositor *c)
 	 * We have a fast path for single projection layer that goes directly
 	 * to the distortion shader, so no need to use the layer renderer.
 	 */
-	if (num_layers == 1) {
+	if (layer_count == 1) {
 		struct comp_layer *layer = &c->base.slot.layers[0];
 
 		// Handled by the distortion shader.
@@ -267,9 +267,9 @@ do_graphics_layers(struct comp_compositor *c)
 		}
 	}
 
-	comp_renderer_allocate_layers(c->r, num_layers);
+	comp_renderer_allocate_layers(c->r, layer_count);
 
-	for (uint32_t i = 0; i < num_layers; i++) {
+	for (uint32_t i = 0; i < layer_count; i++) {
 		struct comp_layer *layer = &c->base.slot.layers[i];
 		struct xrt_layer_data *data = &layer->data;
 

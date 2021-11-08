@@ -369,7 +369,7 @@ _render_eye(struct comp_layer_renderer *self,
 
 	math_matrix_4x4_inverse_view_projection(&self->mat_world_view[eye], &self->mat_projection[eye], &vp_inv);
 
-	for (uint32_t i = 0; i < self->num_layers; i++) {
+	for (uint32_t i = 0; i < self->layer_count; i++) {
 		bool unpremultiplied_alpha = self->layers[i]->flags & XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT;
 
 		struct vk_buffer *vertex_buffer;
@@ -440,14 +440,14 @@ _init_frame_buffer(struct comp_layer_renderer *self, VkFormat format, VkRenderPa
 }
 
 void
-comp_layer_renderer_allocate_layers(struct comp_layer_renderer *self, uint32_t num_layers)
+comp_layer_renderer_allocate_layers(struct comp_layer_renderer *self, uint32_t layer_count)
 {
 	struct vk_bundle *vk = self->vk;
 
-	self->num_layers = num_layers;
-	self->layers = U_TYPED_ARRAY_CALLOC(struct comp_render_layer *, self->num_layers);
+	self->layer_count = layer_count;
+	self->layers = U_TYPED_ARRAY_CALLOC(struct comp_render_layer *, self->layer_count);
 
-	for (uint32_t i = 0; i < self->num_layers; i++) {
+	for (uint32_t i = 0; i < self->layer_count; i++) {
 		self->layers[i] =
 		    comp_layer_create(vk, &self->descriptor_set_layout, &self->descriptor_set_layout_equirect);
 	}
@@ -456,12 +456,12 @@ comp_layer_renderer_allocate_layers(struct comp_layer_renderer *self, uint32_t n
 void
 comp_layer_renderer_destroy_layers(struct comp_layer_renderer *self)
 {
-	for (uint32_t i = 0; i < self->num_layers; i++)
+	for (uint32_t i = 0; i < self->layer_count; i++)
 		comp_layer_destroy(self->layers[i]);
 	if (self->layers != NULL)
 		free(self->layers);
 	self->layers = NULL;
-	self->num_layers = 0;
+	self->layer_count = 0;
 }
 
 static bool
@@ -474,7 +474,7 @@ _init(
 	self->farZ = 100.0f;
 	self->sample_count = VK_SAMPLE_COUNT_1_BIT;
 
-	self->num_layers = 0;
+	self->layer_count = 0;
 
 	self->extent = extent;
 
@@ -615,7 +615,7 @@ comp_layer_renderer_draw(struct comp_layer_renderer *self)
 	if (vk_init_cmd_buffer(vk, &cmd_buffer) != VK_SUCCESS)
 		return;
 	os_mutex_lock(&vk->cmd_pool_mutex);
-	if (self->num_layers == 0) {
+	if (self->layer_count == 0) {
 		_render_stereo(self, vk, cmd_buffer, &background_color_idle);
 	} else {
 		_render_stereo(self, vk, cmd_buffer, &background_color_active);

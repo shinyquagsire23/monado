@@ -117,7 +117,7 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
  * @ingroup comp_main
  */
 void
-comp_renderer_allocate_layers(struct comp_renderer *self, uint32_t num_layers);
+comp_renderer_allocate_layers(struct comp_renderer *self, uint32_t layer_count);
 
 /*!
  * De-initialize and free internal array of per-layer data.

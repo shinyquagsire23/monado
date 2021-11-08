@@ -139,7 +139,7 @@ comp_swapchain_import(struct vk_bundle *vk,
                       struct comp_swapchain_gc *cscgc,
                       const struct xrt_swapchain_create_info *info,
                       struct xrt_image_native *native_images,
-                      uint32_t num_images,
+                      uint32_t image_count,
                       struct xrt_swapchain **out_xsc);
 
 /*!

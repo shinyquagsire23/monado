@@ -89,14 +89,14 @@ swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	}
 
 static struct comp_swapchain *
-alloc_and_set_funcs(struct vk_bundle *vk, struct comp_swapchain_gc *cscgc, uint32_t num_images)
+alloc_and_set_funcs(struct vk_bundle *vk, struct comp_swapchain_gc *cscgc, uint32_t image_count)
 {
 	struct comp_swapchain *sc = U_TYPED_CALLOC(struct comp_swapchain);
 	sc->base.base.destroy = swapchain_destroy;
 	sc->base.base.acquire_image = swapchain_acquire_image;
 	sc->base.base.wait_image = swapchain_wait_image;
 	sc->base.base.release_image = swapchain_release_image;
-	sc->base.base.image_count = num_images;
+	sc->base.base.image_count = image_count;
 	sc->vk = vk;
 	sc->gc = cscgc;
 
@@ -133,7 +133,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
                             const struct xrt_swapchain_create_info *info,
                             struct comp_swapchain *sc)
 {
-	uint32_t num_images = sc->vkic.image_count;
+	uint32_t image_count = sc->vkic.image_count;
 	VkCommandBuffer cmd_buffer;
 
 	VkComponentMapping components = {
@@ -168,7 +168,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	}
 #endif
 
-	for (uint32_t i = 0; i < num_images; i++) {
+	for (uint32_t i = 0; i < image_count; i++) {
 		sc->images[i].views.alpha = U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
 		sc->images[i].views.no_alpha = U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
 		sc->images[i].array_size = info->array_size;
@@ -195,7 +195,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	}
 
 	// Prime the fifo
-	for (uint32_t i = 0; i < num_images; i++) {
+	for (uint32_t i = 0; i < image_count; i++) {
 		u_index_fifo_push(&sc->fifo, i);
 	}
 
@@ -216,7 +216,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	    .layerCount = info->array_size,
 	};
 
-	for (uint32_t i = 0; i < num_images; i++) {
+	for (uint32_t i = 0; i < image_count; i++) {
 		vk_set_image_layout(vk, cmd_buffer, sc->vkic.images[i].handle, 0, VK_ACCESS_SHADER_READ_BIT,
 		                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		                    subresource_range);
@@ -296,7 +296,7 @@ comp_swapchain_create(struct vk_bundle *vk,
                       const struct xrt_swapchain_create_info *info,
                       struct xrt_swapchain **out_xsc)
 {
-	uint32_t num_images = 3;
+	uint32_t image_count = 3;
 	VkResult ret;
 
 	if (!is_format_supported(vk, info->format)) {
@@ -309,17 +309,17 @@ comp_swapchain_create(struct vk_bundle *vk,
 	}
 
 	if ((info->create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
-		num_images = 1;
+		image_count = 1;
 	}
 
-	struct comp_swapchain *sc = alloc_and_set_funcs(vk, cscgc, num_images);
+	struct comp_swapchain *sc = alloc_and_set_funcs(vk, cscgc, image_count);
 
 	VK_DEBUG(vk, "CREATE %p %dx%d %s (%ld)", (void *)sc, //
 	         info->width, info->height,                  //
 	         vk_color_format_string(info->format), info->format);
 
 	// Use the image helper to allocate the images.
-	ret = vk_ic_allocate(vk, info, num_images, &sc->vkic);
+	ret = vk_ic_allocate(vk, info, image_count, &sc->vkic);
 	if (ret == VK_ERROR_FEATURE_NOT_PRESENT) {
 		free(sc);
 		return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
@@ -354,17 +354,17 @@ comp_swapchain_import(struct vk_bundle *vk,
                       struct comp_swapchain_gc *cscgc,
                       const struct xrt_swapchain_create_info *info,
                       struct xrt_image_native *native_images,
-                      uint32_t num_images,
+                      uint32_t images_count,
                       struct xrt_swapchain **out_xsc)
 {
 	VkResult ret;
 
-	struct comp_swapchain *sc = alloc_and_set_funcs(vk, cscgc, num_images);
+	struct comp_swapchain *sc = alloc_and_set_funcs(vk, cscgc, images_count);
 
 	VK_DEBUG(vk, "CREATE FROM NATIVE %p %dx%d", (void *)sc, info->width, info->height);
 
 	// Use the image helper to get the images.
-	ret = vk_ic_from_natives(vk, info, native_images, num_images, &sc->vkic);
+	ret = vk_ic_from_natives(vk, info, native_images, images_count, &sc->vkic);
 	if (ret != VK_SUCCESS) {
 		return XRT_ERROR_VULKAN;
 	}

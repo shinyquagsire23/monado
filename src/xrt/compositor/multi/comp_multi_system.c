@@ -264,7 +264,7 @@ transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_tim
 			log_frame_time_diff(frame_time_ns, display_time_ns);
 		}
 
-		for (size_t i = 0; i < mc->delivered.num_layers; i++) {
+		for (size_t i = 0; i < mc->delivered.layer_count; i++) {
 			struct multi_layer_entry *layer = &mc->delivered.layers[i];
 
 			switch (layer->data.type) {

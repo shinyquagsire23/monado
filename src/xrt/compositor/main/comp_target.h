@@ -79,7 +79,7 @@ struct comp_target
 	VkFormat format;
 
 	//! Number of images that this target has.
-	uint32_t num_images;
+	uint32_t image_count;
 	//! Array of images and image views for rendering.
 	struct comp_target_image *images;
 

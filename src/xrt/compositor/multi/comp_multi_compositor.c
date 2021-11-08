@@ -43,7 +43,7 @@
 static void
 slot_clear(struct multi_layer_slot *slot)
 {
-	for (size_t i = 0; i < slot->num_layers; i++) {
+	for (size_t i = 0; i < slot->layer_count; i++) {
 		for (size_t k = 0; k < ARRAY_SIZE(slot->layers[i].xscs); k++) {
 			xrt_swapchain_reference(&slot->layers[i].xscs[k], NULL);
 		}
@@ -139,14 +139,14 @@ static xrt_result_t
 multi_compositor_import_swapchain(struct xrt_compositor *xc,
                                   const struct xrt_swapchain_create_info *info,
                                   struct xrt_image_native *native_images,
-                                  uint32_t num_images,
+                                  uint32_t image_count,
                                   struct xrt_swapchain **out_xsc)
 {
 	COMP_TRACE_MARKER();
 
 	struct multi_compositor *mc = multi_compositor(xc);
 
-	return xrt_comp_import_swapchain(&mc->msc->xcn->base, info, native_images, num_images, out_xsc);
+	return xrt_comp_import_swapchain(&mc->msc->xcn->base, info, native_images, image_count, out_xsc);
 }
 
 static xrt_result_t
@@ -306,7 +306,7 @@ multi_compositor_layer_begin(struct xrt_compositor *xc,
 {
 	struct multi_compositor *mc = multi_compositor(xc);
 
-	assert(mc->progress.num_layers == 0);
+	assert(mc->progress.layer_count == 0);
 	U_ZERO(&mc->progress);
 
 	mc->progress.active = true;
@@ -326,7 +326,7 @@ multi_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	struct multi_compositor *mc = multi_compositor(xc);
 	(void)mc;
 
-	size_t index = mc->progress.num_layers++;
+	size_t index = mc->progress.layer_count++;
 	mc->progress.layers[index].xdev = xdev;
 	xrt_swapchain_reference(&mc->progress.layers[index].xscs[0], l_xsc);
 	xrt_swapchain_reference(&mc->progress.layers[index].xscs[1], r_xsc);
@@ -346,7 +346,7 @@ multi_compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
 {
 	struct multi_compositor *mc = multi_compositor(xc);
 
-	size_t index = mc->progress.num_layers++;
+	size_t index = mc->progress.layer_count++;
 	mc->progress.layers[index].xdev = xdev;
 	xrt_swapchain_reference(&mc->progress.layers[index].xscs[0], l_xsc);
 	xrt_swapchain_reference(&mc->progress.layers[index].xscs[1], r_xsc);
@@ -365,7 +365,7 @@ multi_compositor_layer_quad(struct xrt_compositor *xc,
 {
 	struct multi_compositor *mc = multi_compositor(xc);
 
-	size_t index = mc->progress.num_layers++;
+	size_t index = mc->progress.layer_count++;
 	mc->progress.layers[index].xdev = xdev;
 	xrt_swapchain_reference(&mc->progress.layers[index].xscs[0], xsc);
 	mc->progress.layers[index].data = *data;
@@ -381,7 +381,7 @@ multi_compositor_layer_cube(struct xrt_compositor *xc,
 {
 	struct multi_compositor *mc = multi_compositor(xc);
 
-	size_t index = mc->progress.num_layers++;
+	size_t index = mc->progress.layer_count++;
 	mc->progress.layers[index].xdev = xdev;
 	xrt_swapchain_reference(&mc->progress.layers[index].xscs[0], xsc);
 	mc->progress.layers[index].data = *data;
@@ -397,7 +397,7 @@ multi_compositor_layer_cylinder(struct xrt_compositor *xc,
 {
 	struct multi_compositor *mc = multi_compositor(xc);
 
-	size_t index = mc->progress.num_layers++;
+	size_t index = mc->progress.layer_count++;
 	mc->progress.layers[index].xdev = xdev;
 	xrt_swapchain_reference(&mc->progress.layers[index].xscs[0], xsc);
 	mc->progress.layers[index].data = *data;
@@ -413,7 +413,7 @@ multi_compositor_layer_equirect1(struct xrt_compositor *xc,
 {
 	struct multi_compositor *mc = multi_compositor(xc);
 
-	size_t index = mc->progress.num_layers++;
+	size_t index = mc->progress.layer_count++;
 	mc->progress.layers[index].xdev = xdev;
 	xrt_swapchain_reference(&mc->progress.layers[index].xscs[0], xsc);
 	mc->progress.layers[index].data = *data;
@@ -429,7 +429,7 @@ multi_compositor_layer_equirect2(struct xrt_compositor *xc,
 {
 	struct multi_compositor *mc = multi_compositor(xc);
 
-	size_t index = mc->progress.num_layers++;
+	size_t index = mc->progress.layer_count++;
 	mc->progress.layers[index].xdev = xdev;
 	xrt_swapchain_reference(&mc->progress.layers[index].xscs[0], xsc);
 	mc->progress.layers[index].data = *data;

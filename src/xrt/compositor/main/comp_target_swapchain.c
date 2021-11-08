@@ -110,7 +110,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 
 	VkSwapchainKHR old_swapchain_handle = cts->swapchain.handle;
 
-	cts->base.num_images = 0;
+	cts->base.image_count = 0;
 	cts->swapchain.handle = VK_NULL_HANDLE;
 	cts->present_mode = present_mode;
 	cts->preferred.color_format = color_format;
@@ -328,48 +328,48 @@ static bool
 _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkSurfaceFormatKHR *format)
 {
 	struct vk_bundle *vk = get_vk(cts);
-	uint32_t num_formats;
+	uint32_t format_count;
 	VkSurfaceFormatKHR *formats = NULL;
 	VkResult ret;
 
-	ret = vk->vkGetPhysicalDeviceSurfaceFormatsKHR(vk->physical_device, surface, &num_formats, NULL);
+	ret = vk->vkGetPhysicalDeviceSurfaceFormatsKHR(vk->physical_device, surface, &format_count, NULL);
 
-	if (num_formats != 0) {
-		formats = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, num_formats);
-		vk->vkGetPhysicalDeviceSurfaceFormatsKHR(vk->physical_device, surface, &num_formats, formats);
+	if (format_count != 0) {
+		formats = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, format_count);
+		vk->vkGetPhysicalDeviceSurfaceFormatsKHR(vk->physical_device, surface, &format_count, formats);
 	} else {
 		COMP_ERROR(cts->base.c, "Could not enumerate surface formats. '%s'", vk_result_string(ret));
 		return false;
 	}
 
 	// Dump formats
-	for (uint32_t i = 0; i < num_formats; i++) {
+	for (uint32_t i = 0; i < format_count; i++) {
 		COMP_SPEW(cts->base.c, "VkSurfaceFormatKHR: %i [%s, %s]", i, vk_color_format_string(formats[i].format),
 		          vk_color_space_string(formats[i].colorSpace));
 	}
 
 	VkSurfaceFormatKHR *formats_for_colorspace = NULL;
-	formats_for_colorspace = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, num_formats);
+	formats_for_colorspace = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, format_count);
 
-	uint32_t num_formats_cs = 0;
-	uint32_t num_pref_formats = ARRAY_SIZE(preferred_color_formats);
+	uint32_t format_for_colorspace_count = 0;
+	uint32_t pref_format_count = ARRAY_SIZE(preferred_color_formats);
 
 	// Gather formats that match our color space, we will select
 	// from these in preference to others.
 
 
-	for (uint32_t i = 0; i < num_formats; i++) {
+	for (uint32_t i = 0; i < format_count; i++) {
 		if (formats[i].colorSpace == cts->preferred.color_space) {
-			formats_for_colorspace[num_formats_cs] = formats[i];
-			num_formats_cs++;
+			formats_for_colorspace[format_for_colorspace_count] = formats[i];
+			format_for_colorspace_count++;
 		}
 	}
 
-	if (num_formats_cs > 0) {
+	if (format_for_colorspace_count > 0) {
 		// we have at least one format with our preferred colorspace
 		// if we have one that is on our preferred formats list, use it
 
-		for (uint32_t i = 0; i < num_formats_cs; i++) {
+		for (uint32_t i = 0; i < format_for_colorspace_count; i++) {
 			if (formats_for_colorspace[i].format == cts->preferred.color_format) {
 				// perfect match.
 				*format = formats_for_colorspace[i];
@@ -380,8 +380,8 @@ _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, Vk
 		// we don't have our swapchain default format and colorspace,
 		// but we may have at least one preferred format with the
 		// correct colorspace.
-		for (uint32_t i = 0; i < num_formats_cs; i++) {
-			for (uint32_t j = 0; j < num_pref_formats; j++) {
+		for (uint32_t i = 0; i < format_for_colorspace_count; i++) {
+			for (uint32_t j = 0; j < pref_format_count; j++) {
 				if (formats_for_colorspace[i].format == preferred_color_formats[j]) {
 					*format = formats_for_colorspace[i];
 					goto cleanup;
@@ -401,8 +401,8 @@ _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, Vk
 
 		// we have nothing with the preferred colorspace? we can try to
 		// return a preferred format at least
-		for (uint32_t i = 0; i < num_formats; i++) {
-			for (uint32_t j = 0; j < num_pref_formats; j++) {
+		for (uint32_t i = 0; i < format_count; i++) {
+			for (uint32_t j = 0; j < pref_format_count; j++) {
 				if (formats[i].format == preferred_color_formats[j]) {
 					*format = formats_for_colorspace[i];
 					COMP_ERROR(cts->base.c,
@@ -450,20 +450,20 @@ _check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surf
 	struct vk_bundle *vk = get_vk(cts);
 	VkResult ret;
 
-	uint32_t num_present_modes;
+	uint32_t present_mode_count;
 	VkPresentModeKHR *present_modes;
-	ret = vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &num_present_modes, NULL);
+	ret = vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &present_mode_count, NULL);
 
-	if (num_present_modes != 0) {
-		present_modes = U_TYPED_ARRAY_CALLOC(VkPresentModeKHR, num_present_modes);
-		vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &num_present_modes,
+	if (present_mode_count != 0) {
+		present_modes = U_TYPED_ARRAY_CALLOC(VkPresentModeKHR, present_mode_count);
+		vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &present_mode_count,
 		                                              present_modes);
 	} else {
 		COMP_ERROR(cts->base.c, "Could not enumerate present modes. '%s'", vk_result_string(ret));
 		return false;
 	}
 
-	for (uint32_t i = 0; i < num_present_modes; i++) {
+	for (uint32_t i = 0; i < present_mode_count; i++) {
 		if (present_modes[i] == present_mode) {
 			free(present_modes);
 			return true;
@@ -484,7 +484,7 @@ comp_target_swapchain_destroy_image_views(struct comp_target_swapchain *cts)
 
 	struct vk_bundle *vk = get_vk(cts);
 
-	for (uint32_t i = 0; i < cts->base.num_images; i++) {
+	for (uint32_t i = 0; i < cts->base.image_count; i++) {
 		if (cts->base.images[i].view == VK_NULL_HANDLE) {
 			continue;
 		}
@@ -505,21 +505,21 @@ comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts)
 	vk->vkGetSwapchainImagesKHR( //
 	    vk->device,              // device
 	    cts->swapchain.handle,   // swapchain
-	    &cts->base.num_images,   // pSwapchainImageCount
+	    &cts->base.image_count,  // pSwapchainImageCount
 	    NULL);                   // pSwapchainImages
-	assert(cts->base.num_images > 0);
-	COMP_DEBUG(cts->base.c, "Creating %d image views.", cts->base.num_images);
+	assert(cts->base.image_count > 0);
+	COMP_DEBUG(cts->base.c, "Creating %d image views.", cts->base.image_count);
 
-	VkImage *images = U_TYPED_ARRAY_CALLOC(VkImage, cts->base.num_images);
+	VkImage *images = U_TYPED_ARRAY_CALLOC(VkImage, cts->base.image_count);
 	vk->vkGetSwapchainImagesKHR( //
 	    vk->device,              // device
 	    cts->swapchain.handle,   // swapchain
-	    &cts->base.num_images,   // pSwapchainImageCount
+	    &cts->base.image_count,  // pSwapchainImageCount
 	    images);                 // pSwapchainImages
 
 	comp_target_swapchain_destroy_image_views(cts);
 
-	cts->base.images = U_TYPED_ARRAY_CALLOC(struct comp_target_image, cts->base.num_images);
+	cts->base.images = U_TYPED_ARRAY_CALLOC(struct comp_target_image, cts->base.image_count);
 
 	VkImageSubresourceRange subresource_range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -529,7 +529,7 @@ comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts)
 	    .layerCount = 1,
 	};
 
-	for (uint32_t i = 0; i < cts->base.num_images; i++) {
+	for (uint32_t i = 0; i < cts->base.image_count; i++) {
 		cts->base.images[i].handle = images[i];
 		vk_create_view(                 //
 		    vk,                         // vk_bundle

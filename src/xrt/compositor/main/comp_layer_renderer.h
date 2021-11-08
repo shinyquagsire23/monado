@@ -56,7 +56,7 @@ struct comp_layer_renderer
 	float farZ;
 
 	struct comp_render_layer **layers;
-	uint32_t num_layers;
+	uint32_t layer_count;
 
 	uint32_t transformation_ubo_binding;
 	uint32_t texture_binding;
@@ -120,12 +120,12 @@ comp_layer_renderer_set_pose(struct comp_layer_renderer *self,
  * Allocate the array comp_layer_renderer::layers with the given number of elements.
  *
  * @param self Self pointer.
- * @param num_layers The number of layers to support
+ * @param layer_count The number of layers to support
  *
  * @public @memberof comp_layer_renderer
  */
 void
-comp_layer_renderer_allocate_layers(struct comp_layer_renderer *self, uint32_t num_layers);
+comp_layer_renderer_allocate_layers(struct comp_layer_renderer *self, uint32_t layer_count);
 
 /*!
  * De-initialize and free comp_layer_renderer::layers array.

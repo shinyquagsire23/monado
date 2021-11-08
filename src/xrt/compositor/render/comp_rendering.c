@@ -216,7 +216,7 @@ create_mesh_pipeline(struct vk_bundle *vk,
                      VkPipelineLayout pipeline_layout,
                      VkPipelineCache pipeline_cache,
                      uint32_t src_binding,
-                     uint32_t mesh_total_num_indices,
+                     uint32_t mesh_index_count_total,
                      uint32_t mesh_stride,
                      VkShaderModule mesh_vert,
                      VkShaderModule mesh_frag,
@@ -229,7 +229,7 @@ create_mesh_pipeline(struct vk_bundle *vk,
 
 	// Do we use triangle strips or triangles with indices.
 	VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	if (mesh_total_num_indices > 0) {
+	if (mesh_index_count_total > 0) {
 		topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 	}
 
@@ -458,7 +458,7 @@ comp_rendering_target_resources_init(struct comp_rendering_target_resources *rtr
 	                       r->mesh.pipeline_layout,   // pipeline_layout
 	                       r->pipeline_cache,         // pipeline_cache
 	                       r->mesh.src_binding,       // src_binding
-	                       r->mesh.index_count_total, // mesh_total_num_indices
+	                       r->mesh.index_count_total, // mesh_index_count_total
 	                       r->mesh.stride,            // mesh_stride
 	                       r->shaders->mesh_vert,     // mesh_vert
 	                       r->shaders->mesh_frag,     // mesh_frag

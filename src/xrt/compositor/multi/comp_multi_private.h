@@ -70,7 +70,7 @@ struct multi_layer_slot
 {
 	uint64_t display_time_ns; //!< When should this be shown, @see XrFrameEndInfo::displayTime.
 	enum xrt_blend_mode env_blend_mode;
-	uint32_t num_layers;
+	uint32_t layer_count;
 	struct multi_layer_entry layers[MULTI_MAX_LAYERS];
 	bool active;
 };

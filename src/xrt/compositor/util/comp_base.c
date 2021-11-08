@@ -27,14 +27,14 @@ do_single_layer(struct xrt_compositor *xc,
 {
 	struct comp_base *cb = comp_base(xc);
 
-	uint32_t layer_id = cb->slot.num_layers;
+	uint32_t layer_id = cb->slot.layer_count;
 
 	struct comp_layer *layer = &cb->slot.layers[layer_id];
 	layer->sc_array[0] = comp_swapchain(xsc);
 	layer->sc_array[1] = NULL;
 	layer->data = *data;
 
-	cb->slot.num_layers++;
+	cb->slot.layer_count++;
 
 	return XRT_SUCCESS;
 }
@@ -60,12 +60,12 @@ static xrt_result_t
 base_import_swapchain(struct xrt_compositor *xc,
                       const struct xrt_swapchain_create_info *info,
                       struct xrt_image_native *native_images,
-                      uint32_t num_images,
+                      uint32_t image_count,
                       struct xrt_swapchain **out_xsc)
 {
 	struct comp_base *cb = comp_base(xc);
 
-	return comp_swapchain_import(&cb->vk, &cb->cscgc, info, native_images, num_images, out_xsc);
+	return comp_swapchain_import(&cb->vk, &cb->cscgc, info, native_images, image_count, out_xsc);
 }
 
 static xrt_result_t
@@ -85,7 +85,7 @@ base_layer_begin(struct xrt_compositor *xc,
 	struct comp_base *cb = comp_base(xc);
 
 	cb->slot.env_blend_mode = env_blend_mode;
-	cb->slot.num_layers = 0;
+	cb->slot.layer_count = 0;
 
 	return XRT_SUCCESS;
 }
@@ -99,14 +99,14 @@ base_layer_stereo_projection(struct xrt_compositor *xc,
 {
 	struct comp_base *cb = comp_base(xc);
 
-	uint32_t layer_id = cb->slot.num_layers;
+	uint32_t layer_id = cb->slot.layer_count;
 
 	struct comp_layer *layer = &cb->slot.layers[layer_id];
 	layer->sc_array[0] = comp_swapchain(l_xsc);
 	layer->sc_array[1] = comp_swapchain(r_xsc);
 	layer->data = *data;
 
-	cb->slot.num_layers++;
+	cb->slot.layer_count++;
 
 	return XRT_SUCCESS;
 }
@@ -122,7 +122,7 @@ base_layer_stereo_projection_depth(struct xrt_compositor *xc,
 {
 	struct comp_base *cb = comp_base(xc);
 
-	uint32_t layer_id = cb->slot.num_layers;
+	uint32_t layer_id = cb->slot.layer_count;
 
 	struct comp_layer *layer = &cb->slot.layers[layer_id];
 	layer->sc_array[0] = comp_swapchain(l_xsc);
@@ -131,7 +131,7 @@ base_layer_stereo_projection_depth(struct xrt_compositor *xc,
 	layer->sc_array[3] = comp_swapchain(r_d_xsc);
 	layer->data = *data;
 
-	cb->slot.num_layers++;
+	cb->slot.layer_count++;
 
 	return XRT_SUCCESS;
 }

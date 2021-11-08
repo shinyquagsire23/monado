@@ -51,7 +51,7 @@ struct comp_window_direct_randr
 
 	struct comp_window_direct_randr_display *displays;
 
-	uint16_t num_displays;
+	uint16_t display_count;
 };
 
 
@@ -136,7 +136,7 @@ comp_window_direct_randr_destroy(struct comp_target *ct)
 
 	struct vk_bundle *vk = get_vk(w_direct);
 
-	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
+	for (uint32_t i = 0; i < w_direct->display_count; i++) {
 		struct comp_window_direct_randr_display *d = &w_direct->displays[i];
 
 		if (d->display == VK_NULL_HANDLE) {
@@ -162,7 +162,7 @@ comp_window_direct_randr_destroy(struct comp_target *ct)
 static void
 comp_window_direct_randr_list_screens(struct comp_window_direct_randr *w)
 {
-	for (int i = 0; i < w->num_displays; i++) {
+	for (int i = 0; i < w->display_count; i++) {
 		const struct comp_window_direct_randr_display *d = &w->displays[i];
 		COMP_DEBUG(w->base.base.c, "%d: %s %dx%d@%.2f", i, d->name, d->primary_mode.width,
 		           d->primary_mode.height,
@@ -191,22 +191,22 @@ comp_window_direct_randr_init(struct comp_target *ct)
 
 	xcb_screen_iterator_t iter = xcb_setup_roots_iterator(xcb_get_setup(connection));
 
-	while (iter.rem > 0 && w_direct->num_displays == 0) {
+	while (iter.rem > 0 && w_direct->display_count == 0) {
 		w_direct->screen = iter.data;
 		comp_window_direct_randr_get_outputs(w_direct);
 		xcb_screen_next(&iter);
 	}
 
-	if (w_direct->num_displays == 0) {
+	if (w_direct->display_count == 0) {
 		COMP_ERROR(ct->c, "No non-desktop output available.");
 		return false;
 	}
 
-	if (ct->c->settings.display > (int)w_direct->num_displays - 1) {
+	if (ct->c->settings.display > (int)w_direct->display_count - 1) {
 		COMP_DEBUG(ct->c,
 		           "Requested display %d, but only %d displays are "
 		           "available.",
-		           ct->c->settings.display, w_direct->num_displays);
+		           ct->c->settings.display, w_direct->display_count);
 
 		ct->c->settings.display = 0;
 		struct comp_window_direct_randr_display *d = comp_window_direct_randr_current_display(w_direct);
@@ -233,7 +233,7 @@ comp_window_direct_randr_current_display(struct comp_window_direct_randr *w)
 	if (index == -1)
 		index = 0;
 
-	if (w->num_displays <= (uint32_t)index)
+	if (w->display_count <= (uint32_t)index)
 		return NULL;
 
 	return &w->displays[index];
@@ -297,8 +297,8 @@ append_randr_display(struct comp_window_direct_randr *w,
 	uint8_t *name = xcb_randr_get_output_info_name(output_reply);
 	int name_len = xcb_randr_get_output_info_name_length(output_reply);
 
-	int num_modes = xcb_randr_get_output_info_modes_length(output_reply);
-	if (num_modes == 0) {
+	int mode_count = xcb_randr_get_output_info_modes_length(output_reply);
+	if (mode_count == 0) {
 		COMP_ERROR(w->base.base.c,
 		           "%s does not have any modes "
 		           "available. "
@@ -329,14 +329,14 @@ append_randr_display(struct comp_window_direct_randr *w,
 	memcpy(d.name, name, name_len);
 	d.name[name_len] = '\0';
 
-	w->num_displays += 1;
+	w->display_count += 1;
 
-	U_ARRAY_REALLOC_OR_FREE(w->displays, struct comp_window_direct_randr_display, w->num_displays);
+	U_ARRAY_REALLOC_OR_FREE(w->displays, struct comp_window_direct_randr_display, w->display_count);
 
 	if (w->displays == NULL)
 		COMP_ERROR(w->base.base.c, "Unable to reallocate randr_displays");
 
-	w->displays[w->num_displays - 1] = d;
+	w->displays[w->display_count - 1] = d;
 }
 
 static void

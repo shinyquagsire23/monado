@@ -38,7 +38,7 @@ struct comp_window_vk_display
 	struct comp_target_swapchain base;
 
 	struct vk_display *displays;
-	uint16_t num_displays;
+	uint16_t display_count;
 };
 
 /*
@@ -111,7 +111,7 @@ comp_window_vk_display_destroy(struct comp_target *ct)
 
 	comp_target_swapchain_cleanup(&w_direct->base);
 
-	for (uint32_t i = 0; i < w_direct->num_displays; i++) {
+	for (uint32_t i = 0; i < w_direct->display_count; i++) {
 		struct vk_display *d = &w_direct->displays[i];
 		d->display = VK_NULL_HANDLE;
 	}
@@ -129,14 +129,14 @@ append_vk_display_entry(struct comp_window_vk_display *w, struct VkDisplayProper
 	w->base.base.c->settings.preferred.height = disp->physicalResolution.height;
 	struct vk_display d = {.display_properties = *disp, .display = disp->display};
 
-	w->num_displays += 1;
+	w->display_count += 1;
 
-	U_ARRAY_REALLOC_OR_FREE(w->displays, struct vk_display, w->num_displays);
+	U_ARRAY_REALLOC_OR_FREE(w->displays, struct vk_display, w->display_count);
 
 	if (w->displays == NULL)
 		COMP_ERROR(w->base.base.c, "Unable to reallocate vk_display displays");
 
-	w->displays[w->num_displays - 1] = d;
+	w->displays[w->display_count - 1] = d;
 
 	return true;
 }
@@ -216,7 +216,7 @@ comp_window_vk_display_current_display(struct comp_window_vk_display *w)
 	if (index == -1)
 		index = 0;
 
-	if (w->num_displays <= (uint32_t)index)
+	if (w->display_count <= (uint32_t)index)
 		return NULL;
 
 	return &w->displays[index];

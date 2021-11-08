@@ -46,11 +46,11 @@ client_gl_memobj_swapchain_destroy(struct xrt_swapchain *xsc)
 {
 	struct client_gl_memobj_swapchain *sc = client_gl_memobj_swapchain(xsc);
 
-	uint32_t num_images = sc->base.base.base.image_count;
-	if (num_images > 0) {
-		glDeleteTextures(num_images, &sc->base.base.images[0]);
+	uint32_t image_count = sc->base.base.base.image_count;
+	if (image_count > 0) {
+		glDeleteTextures(image_count, &sc->base.base.images[0]);
 		U_ZERO_ARRAY(sc->base.base.images);
-		glDeleteMemoryObjectsEXT(num_images, &sc->memory[0]);
+		glDeleteMemoryObjectsEXT(image_count, &sc->memory[0]);
 		U_ZERO_ARRAY(sc->memory);
 		sc->base.base.base.image_count = 0;
 	}

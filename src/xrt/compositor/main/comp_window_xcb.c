@@ -58,7 +58,7 @@ struct comp_window_xcb
 	xcb_atom_t atom_wm_delete_window;
 
 	struct comp_window_xcb_display *displays;
-	uint16_t num_displays;
+	uint16_t display_count;
 };
 
 
@@ -155,7 +155,7 @@ comp_window_xcb_destroy(struct comp_target *ct)
 	xcb_destroy_window(w_xcb->connection, w_xcb->window);
 	xcb_disconnect(w_xcb->connection);
 
-	for (uint16_t i = 0; i > w_xcb->num_displays; i++)
+	for (uint16_t i = 0; i > w_xcb->display_count; i++)
 		free(w_xcb->displays[i].name);
 
 	free(w_xcb->displays);
@@ -169,7 +169,7 @@ comp_window_xcb_list_screens(struct comp_window_xcb *w, xcb_screen_t *screen)
 	COMP_DEBUG(w->base.base.c, "Screen 0 %dx%d", screen->width_in_pixels, screen->height_in_pixels);
 	comp_window_xcb_get_randr_outputs(w);
 
-	for (uint16_t i = 0; i < w->num_displays; i++) {
+	for (uint16_t i = 0; i < w->display_count; i++) {
 		struct comp_window_xcb_display *d = &w->displays[i];
 		COMP_DEBUG(w->base.base.c, "%d: %s %dx%d [%d, %d]", i, d->name, d->size.width, d->size.height,
 		           d->position.x, d->position.y);
@@ -192,11 +192,11 @@ comp_window_xcb_init(struct comp_target *ct)
 	if (ct->c->settings.fullscreen) {
 		comp_window_xcb_get_randr_outputs(w_xcb);
 
-		if (ct->c->settings.display > (int)w_xcb->num_displays - 1) {
+		if (ct->c->settings.display > (int)w_xcb->display_count - 1) {
 			COMP_DEBUG(ct->c,
 			           "Requested display %d, but only %d "
 			           "displays are available.",
-			           ct->c->settings.display, w_xcb->num_displays);
+			           ct->c->settings.display, w_xcb->display_count);
 
 			ct->c->settings.display = 0;
 			struct comp_window_xcb_display *d = comp_window_xcb_current_display(w_xcb);
@@ -286,13 +286,13 @@ comp_window_xcb_get_randr_outputs(struct comp_window_xcb *w)
 	    xcb_randr_get_screen_resources_reply(w->connection, resources_cookie, NULL);
 	xcb_randr_output_t *xcb_outputs = xcb_randr_get_screen_resources_outputs(resources_reply);
 
-	w->num_displays = xcb_randr_get_screen_resources_outputs_length(resources_reply);
-	if (w->num_displays < 1)
+	w->display_count = xcb_randr_get_screen_resources_outputs_length(resources_reply);
+	if (w->display_count < 1)
 		COMP_ERROR(w->base.base.c, "Failed to retrieve randr outputs");
 
-	w->displays = calloc(w->num_displays, sizeof(struct comp_window_xcb_display));
+	w->displays = calloc(w->display_count, sizeof(struct comp_window_xcb_display));
 
-	for (int i = 0; i < w->num_displays; i++) {
+	for (int i = 0; i < w->display_count; i++) {
 		xcb_randr_get_output_info_cookie_t output_cookie =
 		    xcb_randr_get_output_info(w->connection, xcb_outputs[i], XCB_CURRENT_TIME);
 		xcb_randr_get_output_info_reply_t *output_reply =

@@ -56,7 +56,7 @@ struct comp_layer_slot
 	struct comp_layer layers[COMP_MAX_LAYERS];
 
 	//! Number of submitted layers.
-	uint32_t num_layers;
+	uint32_t layer_count;
 };
 
 /*!

@@ -85,7 +85,7 @@ struct comp_renderer
 	/*!
 	 * The number of renderings/fences we've created: set from comp_target when we use that data.
 	 */
-	uint32_t num_buffers;
+	uint32_t buffer_count;
 
 	/*!
 	 * @brief The layer renderer, which actually knows how to composite layers.
@@ -345,33 +345,33 @@ renderer_build_rendering(struct comp_renderer *r,
 
 /*!
  * @pre comp_target_has_images(r->c->target)
- * Update r->num_buffers before calling.
+ * Update r->buffer_count before calling.
  */
 static void
 renderer_create_renderings_and_fences(struct comp_renderer *r)
 {
 	assert(r->fences == NULL);
-	if (r->num_buffers == 0) {
+	if (r->buffer_count == 0) {
 		COMP_ERROR(r->c, "Requested 0 command buffers.");
 		return;
 	}
 
-	COMP_DEBUG(r->c, "Allocating %d Command Buffers.", r->num_buffers);
+	COMP_DEBUG(r->c, "Allocating %d Command Buffers.", r->buffer_count);
 
 	struct vk_bundle *vk = &r->c->base.vk;
 
 	bool use_compute = r->settings->use_compute;
 	if (!use_compute) {
-		r->rtr_array = U_TYPED_ARRAY_CALLOC(struct comp_rendering_target_resources, r->num_buffers);
+		r->rtr_array = U_TYPED_ARRAY_CALLOC(struct comp_rendering_target_resources, r->buffer_count);
 
-		for (uint32_t i = 0; i < r->num_buffers; ++i) {
+		for (uint32_t i = 0; i < r->buffer_count; ++i) {
 			renderer_build_rendering_target_resources(r, &r->rtr_array[i], i);
 		}
 	}
 
-	r->fences = U_TYPED_ARRAY_CALLOC(VkFence, r->num_buffers);
+	r->fences = U_TYPED_ARRAY_CALLOC(VkFence, r->buffer_count);
 
-	for (uint32_t i = 0; i < r->num_buffers; i++) {
+	for (uint32_t i = 0; i < r->buffer_count; i++) {
 		VkFenceCreateInfo fence_info = {
 		    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
 		    .flags = VK_FENCE_CREATE_SIGNALED_BIT,
@@ -393,8 +393,8 @@ renderer_close_renderings_and_fences(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->base.vk;
 	// Renderings
-	if (r->num_buffers > 0 && r->rtr_array != NULL) {
-		for (uint32_t i = 0; i < r->num_buffers; i++) {
+	if (r->buffer_count > 0 && r->rtr_array != NULL) {
+		for (uint32_t i = 0; i < r->buffer_count; i++) {
 			comp_rendering_target_resources_close(&r->rtr_array[i]);
 		}
 
@@ -403,8 +403,8 @@ renderer_close_renderings_and_fences(struct comp_renderer *r)
 	}
 
 	// Fences
-	if (r->num_buffers > 0 && r->fences != NULL) {
-		for (uint32_t i = 0; i < r->num_buffers; i++) {
+	if (r->buffer_count > 0 && r->fences != NULL) {
+		for (uint32_t i = 0; i < r->buffer_count; i++) {
 			vk->vkDestroyFence(vk->device, r->fences[i], NULL);
 			r->fences[i] = VK_NULL_HANDLE;
 		}
@@ -412,7 +412,7 @@ renderer_close_renderings_and_fences(struct comp_renderer *r)
 		r->fences = NULL;
 	}
 
-	r->num_buffers = 0;
+	r->buffer_count = 0;
 	r->acquired_buffer = -1;
 	r->fenced_buffer = -1;
 }
@@ -425,10 +425,10 @@ renderer_create_layer_renderer(struct comp_renderer *r)
 
 	assert(comp_target_check_ready(r->c->target));
 
-	uint32_t num_layers = 0;
+	uint32_t layer_count = 0;
 	if (r->lr != NULL) {
 		// if we already had one, re-populate it after recreation.
-		num_layers = r->lr->num_layers;
+		layer_count = r->lr->layer_count;
 		comp_layer_renderer_destroy(&r->lr);
 	}
 
@@ -448,8 +448,8 @@ renderer_create_layer_renderer(struct comp_renderer *r)
 	}
 
 	r->lr = comp_layer_renderer_create(vk, &r->c->shaders, extent, VK_FORMAT_B8G8R8A8_SRGB);
-	if (num_layers != 0) {
-		comp_layer_renderer_allocate_layers(r->lr, num_layers);
+	if (layer_count != 0) {
+		comp_layer_renderer_allocate_layers(r->lr, layer_count);
 	}
 }
 
@@ -476,7 +476,7 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 	}
 
 	// We will create images if we don't have any images or if we were told to recreate them.
-	bool create = force_recreate || !comp_target_has_images(target) || (r->num_buffers == 0);
+	bool create = force_recreate || !comp_target_has_images(target) || (r->buffer_count == 0);
 	if (!create) {
 		return true;
 	}
@@ -510,12 +510,12 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 	    image_usage,                     //
 	    r->settings->present_mode);      //
 
-	r->num_buffers = r->c->target->num_images;
+	r->buffer_count = r->c->target->image_count;
 
 	renderer_create_layer_renderer(r);
 	renderer_create_renderings_and_fences(r);
 
-	assert(r->num_buffers != 0);
+	assert(r->buffer_count != 0);
 
 	return true;
 }
@@ -798,10 +798,10 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 	struct comp_compositor *c = r->c;
 	struct comp_target *ct = c->target;
 
-	const uint32_t num_layers = c->base.slot.num_layers;
+	const uint32_t layer_count = c->base.slot.layer_count;
 	struct comp_rendering_target_resources *rtr = &r->rtr_array[r->acquired_buffer];
 
-	if (num_layers == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
+	if (layer_count == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
 		int i = 0;
 		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
@@ -814,7 +814,7 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 
 		// We mark afterwards to not include CPU time spent.
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
-	} else if (num_layers == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+	} else if (layer_count == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
 		int i = 0;
 		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
@@ -990,8 +990,8 @@ dispatch_compute(struct comp_renderer *r, struct comp_rendering_compute *crc)
 	VkImage target_image = r->c->target->images[r->acquired_buffer].handle;
 	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
 
-	uint32_t num_layers = c->base.slot.num_layers;
-	if (num_layers > 0 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
+	uint32_t layer_count = c->base.slot.layer_count;
+	if (layer_count > 0 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
 		int i = 0;
 		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
@@ -999,7 +999,7 @@ dispatch_compute(struct comp_renderer *r, struct comp_rendering_compute *crc)
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
 		do_projection_layers(r, crc, layer, lvd, rvd);
-	} else if (num_layers > 0 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+	} else if (layer_count > 0 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
 		int i = 0;
 		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
@@ -1285,11 +1285,11 @@ comp_renderer_draw(struct comp_renderer *r)
 }
 
 void
-comp_renderer_allocate_layers(struct comp_renderer *self, uint32_t num_layers)
+comp_renderer_allocate_layers(struct comp_renderer *self, uint32_t layer_count)
 {
 	COMP_TRACE_MARKER();
 
-	comp_layer_renderer_allocate_layers(self->lr, num_layers);
+	comp_layer_renderer_allocate_layers(self->lr, layer_count);
 }
 
 void

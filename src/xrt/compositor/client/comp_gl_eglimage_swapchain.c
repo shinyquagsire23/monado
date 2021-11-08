@@ -64,11 +64,11 @@ client_gl_eglimage_swapchain(struct xrt_swapchain *xsc)
 static void
 client_gl_eglimage_swapchain_teardown_storage(struct client_gl_eglimage_swapchain *sc)
 {
-	uint32_t num_images = sc->base.base.base.image_count;
-	if (num_images > 0) {
-		glDeleteTextures(num_images, &sc->base.base.images[0]);
+	uint32_t image_count = sc->base.base.base.image_count;
+	if (image_count > 0) {
+		glDeleteTextures(image_count, &sc->base.base.images[0]);
 		U_ZERO_ARRAY(sc->base.base.images);
-		for (uint32_t i = 0; i < num_images; ++i) {
+		for (uint32_t i = 0; i < image_count; ++i) {
 			if (sc->egl_images[i] != NULL) {
 				eglDestroyImageKHR(sc->display, &(sc->egl_images[i]));
 			}
