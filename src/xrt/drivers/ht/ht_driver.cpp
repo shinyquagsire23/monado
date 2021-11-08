@@ -64,6 +64,7 @@
 #include <exception>
 #include <algorithm>
 
+DEBUG_GET_ONCE_LOG_OPTION(ht_log, "HT_LOG", U_LOGGING_WARN)
 
 /*!
  * Setup helper functions.

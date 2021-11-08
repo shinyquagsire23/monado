@@ -43,8 +43,6 @@
 
 using namespace xrt::auxiliary::util;
 
-DEBUG_GET_ONCE_LOG_OPTION(ht_log, "HT_LOG", U_LOGGING_WARN)
-
 #define HT_TRACE(htd, ...) U_LOG_XDEV_IFL_T(&htd->base, htd->ll, __VA_ARGS__)
 #define HT_DEBUG(htd, ...) U_LOG_XDEV_IFL_D(&htd->base, htd->ll, __VA_ARGS__)
 #define HT_INFO(htd, ...) U_LOG_XDEV_IFL_I(&htd->base, htd->ll, __VA_ARGS__)
