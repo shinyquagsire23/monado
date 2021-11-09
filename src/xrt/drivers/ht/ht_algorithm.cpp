@@ -17,6 +17,7 @@
 #include "ht_driver.hpp"
 #include "ht_hand_math.hpp"
 #include "ht_image_math.hpp"
+#include "ht_model.hpp"
 #include "templates/NaivePermutationSort.hpp"
 
 // Flags to tell state tracker that these are indeed valid joints
@@ -59,15 +60,15 @@ errHistory2D(HandHistory2DBBox *past, Palm7KP *present)
 static std::vector<Hand2D>
 htImageToKeypoints(struct ht_view *htv)
 {
-	int view = htv->view;
 	struct ht_device *htd = htv->htd;
-
+	ht_model *htm = htv->htm;
 
 	cv::Mat raw_input = htv->run_model_on_this;
 
 	// Get a list of palms - drop confidences and ssd bounding boxes, just keypoints.
 
-	std::vector<Palm7KP> hand_detections = htv->run_detection_model(htv, raw_input);
+
+	std::vector<Palm7KP> hand_detections = htm->palm_detection(htv, raw_input);
 
 	std::vector<bool> used_histories;
 	std::vector<bool> used_detections;
@@ -131,11 +132,6 @@ htImageToKeypoints(struct ht_view *htv)
 		return {}; // bail early
 	}
 
-
-
-	std::vector<Hand2D> list_of_hands_in_bbox(
-	    htv->bbox_histories.size()); // all of these are same size as htv->bbox_histories
-
 	std::vector<std::future<Hand2D>> await_list_of_hand_in_bbox; //(htv->bbox_histories.size());
 
 	std::vector<DetectionModelOutput> blah(htv->bbox_histories.size());
@@ -146,13 +142,11 @@ htImageToKeypoints(struct ht_view *htv)
 		HT_DEBUG(htd, "More than two hands (%zu) in 2D view %i", htv->bbox_histories.size(), htv->view);
 	}
 
-
 	for (size_t i = 0; i < htv->bbox_histories.size(); i++) { //(BBoxHistory * entry : htv->bbox_histories) {
 		HandHistory2DBBox *entry = &htv->bbox_histories[i];
 		cv::Mat hand_rect = cv::Mat(224, 224, CV_8UC3);
 		xrt_vec2 unfiltered_middle;
 		xrt_vec2 unfiltered_direction;
-
 
 		centerAndRotationFromJoints(htv, entry->wrist_unfiltered[0], entry->index_unfiltered[0],
 		                            entry->middle_unfiltered[0], entry->pinky_unfiltered[0], &unfiltered_middle,
@@ -171,13 +165,10 @@ htImageToKeypoints(struct ht_view *htv)
 		warpAffine(raw_input, hand_rect, blah[i].warp_there, hand_rect.size());
 
 		await_list_of_hand_in_bbox.push_back(
-		    std::async(std::launch::async, htd->views[view].run_keypoint_model, &htd->views[view], hand_rect));
+		    std::async(std::launch::async, std::bind(&ht_model::hand_landmark, htm, hand_rect)));
 	}
 
-	// cut here
-
 	for (size_t i = 0; i < htv->bbox_histories.size(); i++) {
-
 		Hand2D in_bbox = await_list_of_hand_in_bbox[i].get();
 
 		cv::Matx23f warp_back = blah[i].warp_back;
@@ -212,7 +203,6 @@ htImageToKeypoints(struct ht_view *htv)
 		xrt_vec2 dontuse;
 
 		xrt_vec2 unfiltered_middle, unfiltered_direction;
-
 		centerAndRotationFromJoints(htv, &wrist_in_px_coords, &index_in_px_coords, &middle_in_px_coords,
 		                            &little_in_px_coords, &unfiltered_middle, &unfiltered_direction);
 

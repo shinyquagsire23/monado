@@ -80,6 +80,8 @@ using namespace xrt::auxiliary::util;
 #define FCMIN_D_HAND 12.0f
 #define BETA_HAND 0.05f
 
+class ht_model;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -220,6 +222,7 @@ struct ht_device;
 struct ht_view
 {
 	ht_device *htd;
+	ht_model *htm;
 	int view; // :)))
 
 	// Loaded from config file

@@ -40,6 +40,7 @@
 #include "tracking/t_calibration_opencv.hpp"
 
 #include "ht_algorithm.hpp"
+#include "ht_model.hpp"
 #include "ht_models.hpp"
 
 #include <cjson/cJSON.h>
@@ -618,6 +619,9 @@ ht_device_destroy(struct xrt_device *xdev)
 	// constructor/destructor for ht_device), so we just manually call the destructors for things like std::vector's
 	// that need their destructors to be called to not leak.
 
+	delete htd->views[0].htm;
+	delete htd->views[1].htm;
+
 	u_device_free(&htd->base);
 }
 
@@ -674,9 +678,11 @@ ht_device_create(struct xrt_prober *xp, struct t_stereo_camera_calibration *cali
 	htd->views[0].htd = htd;
 	htd->views[1].htd = htd; // :)
 
+	htd->views[0].htm = new ht_model(htd);
+	htd->views[1].htm = new ht_model(htd);
+
 	htd->views[0].view = 0;
 	htd->views[1].view = 1;
-
 
 	initOnnx(htd);
 
