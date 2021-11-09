@@ -884,7 +884,8 @@ vk_get_instance_functions(struct vk_bundle *vk)
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 	vk->vkCreateWin32SurfaceKHR = GET_INS_PROC(vk, vkCreateWin32SurfaceKHR);
 #endif // defined(VK_USE_PLATFORM_WIN32_KHR)
-       // end of GENERATED instance loader code - do not modify - used by scripts
+
+	// end of GENERATED instance loader code - do not modify - used by scripts
 
 	return VK_SUCCESS;
 }
@@ -1220,6 +1221,7 @@ vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t 
 static void
 fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uint32_t num_device_extensions)
 {
+	// beginning of GENERATED extension code - do not modify - used by scripts
 	// Reset before filling out.
 	vk->has_GOOGLE_display_timing = false;
 	vk->has_EXT_global_priority = false;
@@ -1228,18 +1230,28 @@ fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uin
 	for (uint32_t i = 0; i < num_device_extensions; i++) {
 		const char *ext = device_extensions[i];
 
+#if defined(VK_GOOGLE_display_timing)
 		if (strcmp(ext, VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) == 0) {
 			vk->has_GOOGLE_display_timing = true;
+			continue;
 		}
+#endif // defined(VK_GOOGLE_display_timing)
+
+#if defined(VK_EXT_global_priority)
 		if (strcmp(ext, VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME) == 0) {
 			vk->has_EXT_global_priority = true;
+			continue;
 		}
-#ifdef VK_EXT_robustness2
+#endif // defined(VK_EXT_global_priority)
+
+#if defined(VK_EXT_robustness2)
 		if (strcmp(ext, VK_EXT_ROBUSTNESS_2_EXTENSION_NAME) == 0) {
 			vk->has_EXT_robustness2 = true;
+			continue;
 		}
-#endif
+#endif // defined(VK_EXT_robustness2)
 	}
+	// end of GENERATED extension code - do not modify - used by scripts
 }
 
 static VkResult

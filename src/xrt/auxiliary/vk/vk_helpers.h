@@ -48,9 +48,11 @@ struct vk_bundle
 
 	struct os_mutex queue_mutex;
 
+	// beginning of GENERATED extension code - do not modify - used by scripts
 	bool has_GOOGLE_display_timing;
 	bool has_EXT_global_priority;
 	bool has_EXT_robustness2;
+	// end of GENERATED extension code - do not modify - used by scripts
 
 	bool is_tegra;
 
@@ -129,6 +131,7 @@ struct vk_bundle
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 	PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
 #endif  // defined(VK_USE_PLATFORM_WIN32_KHR)
+
 	// end of GENERATED instance loader code - do not modify - used by scripts
 
 	// beginning of GENERATED device loader code - do not modify - used by scripts

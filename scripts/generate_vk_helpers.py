@@ -4,9 +4,10 @@
 """Simple script to update vk_helpers.{c,h}."""
 
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
-# Each tuple is a function name, followed optionally by one or more conditions to test in the preprocessor, which will be wrapped in "defined()"
+# Each tuple is a function name, followed optionally by one or more conditions
+# to test in the preprocessor, which will be wrapped in "defined()"
 # if they aren't already. Empty tuples insert a blank line.
 
 DEVICE_FUNCTIONS = [
@@ -180,9 +181,9 @@ INSTANCE_FUNCTIONS = [
 ]
 
 EXTENSIONS_TO_CHECK = [
-"GOOGLE_display_timing",
-"EXT_global_priority",
-"EXT_robustness2",
+    "VK_GOOGLE_display_timing",
+    "VK_EXT_global_priority",
+    "VK_EXT_robustness2",
 ]
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -206,31 +207,52 @@ def compute_condition(pp_conditions):
     return " && ".join(wrap_condition(x) for x in pp_conditions)
 
 
+class ConditionalGenerator:
+    """Keep track of conditions to avoid unneeded repetition of ifdefs."""
+
+    def __init__(self):
+        self.current_condition = None
+
+    def process_condition(self, new_condition: Optional[str]) -> Optional[str]:
+        """Return a line (or lines) to yield if required based on the new condition state."""
+        lines = []
+        if self.current_condition and new_condition != self.current_condition:
+            # Close current condition if required.
+            lines.append("#endif  // {}".format(self.current_condition))
+            # empty line
+            lines.append("")
+            self.current_condition = None
+
+        if new_condition != self.current_condition:
+            # Open new condition if required
+            lines.append("#if {}".format(new_condition))
+            self.current_condition = new_condition
+
+        if lines:
+            return "\n".join(lines)
+
+    def finish(self) -> Optional[str]:
+        """Return a line (or lines) to yield if required at the end of the loop."""
+        return self.process_condition(None)
+
+
 def generate_per_function(functions: List[Tuple[str, ...]], per_function_handler):
-    current_condition = None
+    conditional = ConditionalGenerator()
     for data in functions:
         if not data:
             # empty line
             yield ""
             continue
-        new_condition = compute_condition(data[1:])
-        if current_condition and new_condition != current_condition:
-            # Close current condition if required.
-            yield "#endif  // {}".format(current_condition)
-            # empty line
-            yield ""
-            current_condition = None
-
-        if new_condition != current_condition:
-            # Open new condition if required
-            yield "#if {}".format(new_condition)
-            current_condition = new_condition
+        condition_line = conditional.process_condition(compute_condition(data[1:]))
+        if condition_line:
+            yield condition_line
 
         yield per_function_handler(data[0])
 
     # close any trailing conditions
-    if current_condition:
-        yield "#endif  // {}".format(current_condition)
+    condition_line = conditional.finish()
+    if condition_line:
+        yield condition_line
 
 
 def generate_structure_members(functions: List[Tuple[str, ...]]):
@@ -252,6 +274,46 @@ def generate_dev_proc(functions: List[Tuple[str, ...]]):
         return "\tvk->{} = GET_DEV_PROC(vk, {});".format(func, func)
 
     return generate_per_function(functions, per_function)
+
+
+def make_ext_member_name(ext: str):
+    return "has_{}".format(ext[3:])
+
+
+def make_ext_name_define(ext: str):
+    return "{}_EXTENSION_NAME".format(ext.upper()).replace("2", "_2")
+
+
+def generate_ext_members():
+    for ext in EXTENSIONS_TO_CHECK:
+        yield "\tbool {};".format(make_ext_member_name(ext))
+
+
+def generate_ext_check():
+    yield "\t// Reset before filling out."
+
+    for ext in EXTENSIONS_TO_CHECK:
+        yield "\tvk->{} = false;".format(make_ext_member_name(ext))
+
+    yield ""
+    yield "\tfor (uint32_t i = 0; i < device_extension_count; i++) {"
+    yield "\t\tconst char *ext = device_extensions[i];"
+    yield ""
+
+    conditional = ConditionalGenerator()
+    for ext in EXTENSIONS_TO_CHECK:
+        condition_line = conditional.process_condition(compute_condition((ext,)))
+        if condition_line:
+            yield condition_line
+        yield "\t\tif (strcmp(ext, {}) == 0) {{".format(make_ext_name_define(ext))
+        yield "\t\t\tvk->{} = true;".format(make_ext_member_name(ext))
+        yield "\t\t\tcontinue;"
+        yield "\t\t}"
+    # close any trailing conditions
+    condition_line = conditional.finish()
+    if condition_line:
+        yield condition_line
+    yield "\t}"
 
 
 def replace_middle(
@@ -293,6 +355,12 @@ def process_header():
         DEVICE_TEMPLATES["END"],
         list(generate_structure_members(DEVICE_FUNCTIONS)),
     )
+    lines = replace_middle(
+        lines,
+        EXT_TEMPLATES["BEGIN"],
+        EXT_TEMPLATES["END"],
+        list(generate_ext_members()),
+    )
 
     with open(str(HEADER_FN), "w", encoding="utf-8") as fp:
         fp.write("\n".join(lines))
@@ -315,6 +383,13 @@ def process_impl():
         DEVICE_TEMPLATES["BEGIN"],
         DEVICE_TEMPLATES["END"],
         list(generate_dev_proc(DEVICE_FUNCTIONS)),
+    )
+
+    lines = replace_middle(
+        lines,
+        EXT_TEMPLATES["BEGIN"],
+        EXT_TEMPLATES["END"],
+        list(generate_ext_check()),
     )
 
     with open(str(IMPL_FN), "w", encoding="utf-8") as fp:
