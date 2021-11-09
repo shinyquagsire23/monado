@@ -1223,7 +1223,7 @@ fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uin
 	// Reset before filling out.
 	vk->has_GOOGLE_display_timing = false;
 	vk->has_EXT_global_priority = false;
-	vk->has_VK_EXT_robustness2 = false;
+	vk->has_EXT_robustness2 = false;
 
 	for (uint32_t i = 0; i < num_device_extensions; i++) {
 		const char *ext = device_extensions[i];
@@ -1236,7 +1236,7 @@ fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uin
 		}
 #ifdef VK_EXT_robustness2
 		if (strcmp(ext, VK_EXT_ROBUSTNESS_2_EXTENSION_NAME) == 0) {
-			vk->has_VK_EXT_robustness2 = true;
+			vk->has_EXT_robustness2 = true;
 		}
 #endif
 	}
@@ -1346,7 +1346,7 @@ filter_device_features(struct vk_bundle *vk,
 	};
 
 #ifdef VK_EXT_robustness2
-	if (vk->has_VK_EXT_robustness2) {
+	if (vk->has_EXT_robustness2) {
 		physical_device_features.pNext = physical_device_features.pNext;
 		physical_device_features.pNext = (void *)&robust_info;
 	}
@@ -1475,7 +1475,7 @@ vk_create_device(struct vk_bundle *vk,
 	};
 
 #ifdef VK_EXT_robustness2
-	if (vk->has_VK_EXT_robustness2) {
+	if (vk->has_EXT_robustness2) {
 		// This struct is a in/out struct, while device_create_info has a const pNext.
 		robust_info.pNext = (void *)device_create_info.pNext;
 		device_create_info.pNext = (void *)&robust_info;

@@ -50,7 +50,7 @@ struct vk_bundle
 
 	bool has_GOOGLE_display_timing;
 	bool has_EXT_global_priority;
-	bool has_VK_EXT_robustness2;
+	bool has_EXT_robustness2;
 
 	bool is_tegra;
 
