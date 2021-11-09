@@ -62,104 +62,97 @@ struct vk_bundle
 
 	struct os_mutex cmd_pool_mutex;
 
-	// clang-format off
 	// Loader functions
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;
 	PFN_vkCreateInstance vkCreateInstance;
 
-	// Instance functions.
+	// beginning of GENERATED instance loader code - do not modify - used by scripts
 	PFN_vkDestroyInstance vkDestroyInstance;
+	PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;
 	PFN_vkCreateDevice vkCreateDevice;
+	PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
+
 	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
 	PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT;
+
 	PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices;
-	PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
-	PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties;
-#ifdef VK_USE_PLATFORM_DISPLAY_KHR
-	PFN_vkCreateDisplayPlaneSurfaceKHR vkCreateDisplayPlaneSurfaceKHR;
-#endif
-
-#ifdef VK_USE_PLATFORM_XCB_KHR
-	PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
-#endif
-
-#ifdef VK_USE_PLATFORM_WAYLAND_KHR
-	PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
-#ifdef VK_EXT_acquire_drm_display
-	PFN_vkAcquireDrmDisplayEXT vkAcquireDrmDisplayEXT;
-	PFN_vkGetDrmDisplayEXT vkGetDrmDisplayEXT;
-#endif
-#endif
-
-#ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
-	PFN_vkAcquireXlibDisplayEXT vkAcquireXlibDisplayEXT;
-	PFN_vkGetRandROutputDisplayEXT vkGetRandROutputDisplayEXT;
-#endif
-
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
-	PFN_vkCreateAndroidSurfaceKHR vkCreateAndroidSurfaceKHR;
-#endif
-
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-	PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
-#endif
-
-	// Physical device functions.
-	PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties;
-	PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
 	PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties;
 	PFN_vkGetPhysicalDeviceProperties2 vkGetPhysicalDeviceProperties2;
 	PFN_vkGetPhysicalDeviceFeatures2 vkGetPhysicalDeviceFeatures2;
-
+	PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties;
+	PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
 	PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
 	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR;
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;
 	PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR;
-
 	PFN_vkGetPhysicalDeviceFormatProperties vkGetPhysicalDeviceFormatProperties;
-
+	PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties;
 	PFN_vkGetPhysicalDeviceImageFormatProperties2 vkGetPhysicalDeviceImageFormatProperties2;
 
-#ifdef VK_USE_PLATFORM_DISPLAY_KHR
-	PFN_vkGetDisplayModePropertiesKHR vkGetDisplayModePropertiesKHR;
+#if defined(VK_USE_PLATFORM_DISPLAY_KHR)
+	PFN_vkCreateDisplayPlaneSurfaceKHR vkCreateDisplayPlaneSurfaceKHR;
+	PFN_vkGetDisplayPlaneCapabilitiesKHR vkGetDisplayPlaneCapabilitiesKHR;
 	PFN_vkGetPhysicalDeviceDisplayPropertiesKHR vkGetPhysicalDeviceDisplayPropertiesKHR;
 	PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR vkGetPhysicalDeviceDisplayPlanePropertiesKHR;
-	PFN_vkGetDisplayPlaneCapabilitiesKHR vkGetDisplayPlaneCapabilitiesKHR;
+	PFN_vkGetDisplayModePropertiesKHR vkGetDisplayModePropertiesKHR;
 	PFN_vkReleaseDisplayEXT vkReleaseDisplayEXT;
-#endif
 
-	// Device functions.
-	PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;
+#endif  // defined(VK_USE_PLATFORM_DISPLAY_KHR)
+
+#if defined(VK_USE_PLATFORM_XCB_KHR)
+	PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
+
+#endif  // defined(VK_USE_PLATFORM_XCB_KHR)
+
+#if defined(VK_USE_PLATFORM_WAYLAND_KHR)
+	PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
+
+#endif  // defined(VK_USE_PLATFORM_WAYLAND_KHR)
+
+#if defined(VK_USE_PLATFORM_WAYLAND_KHR) && defined(VK_EXT_acquire_drm_display)
+	PFN_vkAcquireDrmDisplayEXT vkAcquireDrmDisplayEXT;
+	PFN_vkGetDrmDisplayEXT vkGetDrmDisplayEXT;
+
+#endif  // defined(VK_USE_PLATFORM_WAYLAND_KHR) && defined(VK_EXT_acquire_drm_display)
+
+#if defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
+	PFN_vkGetRandROutputDisplayEXT vkGetRandROutputDisplayEXT;
+	PFN_vkAcquireXlibDisplayEXT vkAcquireXlibDisplayEXT;
+
+#endif  // defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
+
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
+	PFN_vkCreateAndroidSurfaceKHR vkCreateAndroidSurfaceKHR;
+
+#endif  // defined(VK_USE_PLATFORM_ANDROID_KHR)
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+	PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+#endif  // defined(VK_USE_PLATFORM_WIN32_KHR)
+	// end of GENERATED instance loader code - do not modify - used by scripts
+
+	// beginning of GENERATED device loader code - do not modify - used by scripts
 	PFN_vkDestroyDevice vkDestroyDevice;
 	PFN_vkDeviceWaitIdle vkDeviceWaitIdle;
-
 	PFN_vkAllocateMemory vkAllocateMemory;
 	PFN_vkFreeMemory vkFreeMemory;
 	PFN_vkMapMemory vkMapMemory;
 	PFN_vkUnmapMemory vkUnmapMemory;
-	PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR;
-
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
-	PFN_vkGetMemoryAndroidHardwareBufferANDROID vkGetMemoryAndroidHardwareBufferANDROID;
-	PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID;
-#endif
-
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-	PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR;
-#endif
 
 	PFN_vkCreateBuffer vkCreateBuffer;
 	PFN_vkDestroyBuffer vkDestroyBuffer;
 	PFN_vkBindBufferMemory vkBindBufferMemory;
-	PFN_vkGetBufferMemoryRequirements vkGetBufferMemoryRequirements;
-	PFN_vkFlushMappedMemoryRanges vkFlushMappedMemoryRanges;
 
 	PFN_vkCreateImage vkCreateImage;
-	PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements;
-	PFN_vkGetImageMemoryRequirements2 vkGetImageMemoryRequirements2;
-	PFN_vkGetImageSubresourceLayout vkGetImageSubresourceLayout;
-	PFN_vkBindImageMemory vkBindImageMemory;
 	PFN_vkDestroyImage vkDestroyImage;
+	PFN_vkBindImageMemory vkBindImageMemory;
+
+	PFN_vkGetBufferMemoryRequirements vkGetBufferMemoryRequirements;
+	PFN_vkFlushMappedMemoryRanges vkFlushMappedMemoryRanges;
+	PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements;
+	PFN_vkGetImageMemoryRequirements2KHR vkGetImageMemoryRequirements2KHR;
+	PFN_vkGetImageSubresourceLayout vkGetImageSubresourceLayout;
+
 	PFN_vkCreateImageView vkCreateImageView;
 	PFN_vkDestroyImageView vkDestroyImageView;
 
@@ -171,6 +164,7 @@ struct vk_bundle
 
 	PFN_vkCreateCommandPool vkCreateCommandPool;
 	PFN_vkDestroyCommandPool vkDestroyCommandPool;
+
 	PFN_vkAllocateCommandBuffers vkAllocateCommandBuffers;
 	PFN_vkBeginCommandBuffer vkBeginCommandBuffer;
 	PFN_vkCmdPipelineBarrier vkCmdPipelineBarrier;
@@ -195,20 +189,27 @@ struct vk_bundle
 
 	PFN_vkCreateRenderPass vkCreateRenderPass;
 	PFN_vkDestroyRenderPass vkDestroyRenderPass;
+
 	PFN_vkCreateFramebuffer vkCreateFramebuffer;
 	PFN_vkDestroyFramebuffer vkDestroyFramebuffer;
+
 	PFN_vkCreatePipelineCache vkCreatePipelineCache;
 	PFN_vkDestroyPipelineCache vkDestroyPipelineCache;
+
 	PFN_vkResetDescriptorPool vkResetDescriptorPool;
 	PFN_vkCreateDescriptorPool vkCreateDescriptorPool;
 	PFN_vkDestroyDescriptorPool vkDestroyDescriptorPool;
+
 	PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets;
 	PFN_vkFreeDescriptorSets vkFreeDescriptorSets;
+
 	PFN_vkCreateComputePipelines vkCreateComputePipelines;
 	PFN_vkCreateGraphicsPipelines vkCreateGraphicsPipelines;
 	PFN_vkDestroyPipeline vkDestroyPipeline;
+
 	PFN_vkCreatePipelineLayout vkCreatePipelineLayout;
 	PFN_vkDestroyPipelineLayout vkDestroyPipelineLayout;
+
 	PFN_vkCreateDescriptorSetLayout vkCreateDescriptorSetLayout;
 	PFN_vkUpdateDescriptorSets vkUpdateDescriptorSets;
 	PFN_vkDestroyDescriptorSetLayout vkDestroyDescriptorSetLayout;
@@ -218,9 +219,10 @@ struct vk_bundle
 	PFN_vkQueueWaitIdle vkQueueWaitIdle;
 
 	PFN_vkCreateSemaphore vkCreateSemaphore;
-#ifdef VK_KHR_timeline_semaphore
-	PFN_vkSignalSemaphoreKHR vkSignalSemaphore;
-#endif
+#if defined(VK_KHR_timeline_semaphore)
+	PFN_vkSignalSemaphoreKHR vkSignalSemaphoreKHR;
+#endif  // defined(VK_KHR_timeline_semaphore)
+
 	PFN_vkDestroySemaphore vkDestroySemaphore;
 
 	PFN_vkCreateFence vkCreateFence;
@@ -235,19 +237,30 @@ struct vk_bundle
 	PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR;
 	PFN_vkQueuePresentKHR vkQueuePresentKHR;
 
-#ifdef VK_USE_PLATFORM_WIN32_KHR
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+	PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR;
 	PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR;
 	PFN_vkImportFenceWin32HandleKHR vkImportFenceWin32HandleKHR;
-#else
+#endif  // defined(VK_USE_PLATFORM_WIN32_KHR)
+
+#if !defined(VK_USE_PLATFORM_WIN32_KHR)
+	PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR;
+
 	PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
 	PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;
 
 	PFN_vkImportFenceFdKHR vkImportFenceFdKHR;
 	PFN_vkGetFenceFdKHR vkGetFenceFdKHR;
-#endif
+#endif  // !defined(VK_USE_PLATFORM_WIN32_KHR)
+
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
+	PFN_vkGetMemoryAndroidHardwareBufferANDROID vkGetMemoryAndroidHardwareBufferANDROID;
+	PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID;
+
+#endif  // defined(VK_USE_PLATFORM_ANDROID_KHR)
 
 	PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
-	// clang-format on
+	// end of GENERATED device loader code - do not modify - used by scripts
 };
 
 struct vk_buffer

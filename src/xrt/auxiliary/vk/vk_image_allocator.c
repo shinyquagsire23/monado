@@ -216,7 +216,7 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
 	    .pNext = &memory_dedicated_requirements,
 	};
-	vk->vkGetImageMemoryRequirements2(vk->device, &memory_requirements_info, &memory_requirements);
+	vk->vkGetImageMemoryRequirements2KHR(vk->device, &memory_requirements_info, &memory_requirements);
 
 	/* on tegra we must not use dedicated allocation when it is only preferred to avoid black textures and driver
 	 * errors when blitting from opengl interop textures.
