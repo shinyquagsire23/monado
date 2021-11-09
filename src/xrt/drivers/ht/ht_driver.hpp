@@ -36,9 +36,6 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "core/session/onnxruntime_c_api.h"
-
-#include <future>
 #include <vector>
 
 using namespace xrt::auxiliary::util;
@@ -203,19 +200,6 @@ struct HandHistory2DBBox
 	bool htAlgorithm_approves = false;
 };
 
-
-struct ModelInfo
-{
-	OrtSession *session = nullptr;
-	OrtMemoryInfo *memoryInfo = nullptr;
-	// std::vector's don't make too much sense here, but they're oh so easy
-	std::vector<int64_t> input_shape;
-	size_t input_size_bytes;
-	std::vector<const char *> output_names;
-	std::vector<const char *> input_names;
-};
-
-
 // Forward declaration for ht_view
 struct ht_device;
 
@@ -234,15 +218,6 @@ struct ht_view
 	cv::Mat debug_out_to_this;
 
 	std::vector<HandHistory2DBBox> bbox_histories;
-
-	struct ModelInfo detection_model;
-	std::vector<Palm7KP> (*run_detection_model)(struct ht_view *htv, cv::Mat &img);
-
-	struct ModelInfo keypoint_model;
-	// The cv::mat is passed by value, *not* passed by reference or by pointer;
-	// in the tight loop that sets these off we reuse that cv::Mat; changing the data pointer as all the models are
-	// running is... going to wreak havoc let's say that.
-	Hand2D (*run_keypoint_model)(struct ht_view *htv, cv::Mat img);
 };
 
 enum ht_detection_scribble
@@ -324,11 +299,6 @@ struct ht_device
 		cJSON *output_array;
 	} gst;
 #endif
-
-
-
-	const OrtApi *ort_api;
-	OrtEnv *ort_env;
 
 	struct xrt_frame *frame_for_process;
 	cv::Mat *mat_for_process;

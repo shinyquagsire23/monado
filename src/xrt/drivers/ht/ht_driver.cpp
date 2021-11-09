@@ -41,7 +41,6 @@
 
 #include "ht_algorithm.hpp"
 #include "ht_model.hpp"
-#include "ht_models.hpp"
 
 #include <cjson/cJSON.h>
 #include <opencv2/core/mat.hpp>
@@ -605,7 +604,6 @@ ht_device_destroy(struct xrt_device *xdev)
 
 	// Lock this mutex so we don't try to free things as they're being used on the last iteration
 	os_mutex_lock(&htd->unlocked_between_frames);
-	destroyOnnx(htd);
 	// Remove the variable tracking.
 	u_var_remove_root(htd);
 
@@ -683,8 +681,6 @@ ht_device_create(struct xrt_prober *xp, struct t_stereo_camera_calibration *cali
 
 	htd->views[0].view = 0;
 	htd->views[1].view = 1;
-
-	initOnnx(htd);
 
 	htd->base.tracking_origin = &htd->tracking_origin;
 	htd->base.tracking_origin->type = XRT_TRACKING_TYPE_RGB;

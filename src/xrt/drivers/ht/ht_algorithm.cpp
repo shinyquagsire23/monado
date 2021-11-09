@@ -20,6 +20,8 @@
 #include "ht_model.hpp"
 #include "templates/NaivePermutationSort.hpp"
 
+#include <future>
+
 // Flags to tell state tracker that these are indeed valid joints
 static const enum xrt_space_relation_flags valid_flags_ht = (enum xrt_space_relation_flags)(
     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
