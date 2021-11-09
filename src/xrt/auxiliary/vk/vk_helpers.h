@@ -3,6 +3,14 @@
 /*!
  * @file
  * @brief  Common Vulkan code header.
+ *
+ * Note that some sections of this are generated
+ * by `scripts/generate_vk_helpers.py` - lists of functions
+ * and of optional extensions to check for. In those,
+ * please update the script and run it, instead of editing
+ * directly in this file. The generated parts are delimited
+ * by special comments.
+ *
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @ingroup aux_vk
@@ -99,38 +107,38 @@ struct vk_bundle
 	PFN_vkGetDisplayModePropertiesKHR vkGetDisplayModePropertiesKHR;
 	PFN_vkReleaseDisplayEXT vkReleaseDisplayEXT;
 
-#endif  // defined(VK_USE_PLATFORM_DISPLAY_KHR)
+#endif // defined(VK_USE_PLATFORM_DISPLAY_KHR)
 
 #if defined(VK_USE_PLATFORM_XCB_KHR)
 	PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
 
-#endif  // defined(VK_USE_PLATFORM_XCB_KHR)
+#endif // defined(VK_USE_PLATFORM_XCB_KHR)
 
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
 	PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
 
-#endif  // defined(VK_USE_PLATFORM_WAYLAND_KHR)
+#endif // defined(VK_USE_PLATFORM_WAYLAND_KHR)
 
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR) && defined(VK_EXT_acquire_drm_display)
 	PFN_vkAcquireDrmDisplayEXT vkAcquireDrmDisplayEXT;
 	PFN_vkGetDrmDisplayEXT vkGetDrmDisplayEXT;
 
-#endif  // defined(VK_USE_PLATFORM_WAYLAND_KHR) && defined(VK_EXT_acquire_drm_display)
+#endif // defined(VK_USE_PLATFORM_WAYLAND_KHR) && defined(VK_EXT_acquire_drm_display)
 
 #if defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
 	PFN_vkGetRandROutputDisplayEXT vkGetRandROutputDisplayEXT;
 	PFN_vkAcquireXlibDisplayEXT vkAcquireXlibDisplayEXT;
 
-#endif  // defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
+#endif // defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 	PFN_vkCreateAndroidSurfaceKHR vkCreateAndroidSurfaceKHR;
 
-#endif  // defined(VK_USE_PLATFORM_ANDROID_KHR)
+#endif // defined(VK_USE_PLATFORM_ANDROID_KHR)
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 	PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
-#endif  // defined(VK_USE_PLATFORM_WIN32_KHR)
+#endif // defined(VK_USE_PLATFORM_WIN32_KHR)
 
 	// end of GENERATED instance loader code - do not modify - used by scripts
 
@@ -224,7 +232,7 @@ struct vk_bundle
 	PFN_vkCreateSemaphore vkCreateSemaphore;
 #if defined(VK_KHR_timeline_semaphore)
 	PFN_vkSignalSemaphoreKHR vkSignalSemaphoreKHR;
-#endif  // defined(VK_KHR_timeline_semaphore)
+#endif // defined(VK_KHR_timeline_semaphore)
 
 	PFN_vkDestroySemaphore vkDestroySemaphore;
 
@@ -244,7 +252,7 @@ struct vk_bundle
 	PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR;
 	PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR;
 	PFN_vkImportFenceWin32HandleKHR vkImportFenceWin32HandleKHR;
-#endif  // defined(VK_USE_PLATFORM_WIN32_KHR)
+#endif // defined(VK_USE_PLATFORM_WIN32_KHR)
 
 #if !defined(VK_USE_PLATFORM_WIN32_KHR)
 	PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR;
@@ -254,13 +262,13 @@ struct vk_bundle
 
 	PFN_vkImportFenceFdKHR vkImportFenceFdKHR;
 	PFN_vkGetFenceFdKHR vkGetFenceFdKHR;
-#endif  // !defined(VK_USE_PLATFORM_WIN32_KHR)
+#endif // !defined(VK_USE_PLATFORM_WIN32_KHR)
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 	PFN_vkGetMemoryAndroidHardwareBufferANDROID vkGetMemoryAndroidHardwareBufferANDROID;
 	PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID;
 
-#endif  // defined(VK_USE_PLATFORM_ANDROID_KHR)
+#endif // defined(VK_USE_PLATFORM_ANDROID_KHR)
 
 	PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
 	// end of GENERATED device loader code - do not modify - used by scripts

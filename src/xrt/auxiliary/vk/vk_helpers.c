@@ -3,6 +3,14 @@
 /*!
  * @file
  * @brief  Common Vulkan code.
+ *
+ * Note that some sections of this are generated
+ * by `scripts/generate_vk_helpers.py` - lists of functions
+ * and of optional extensions to check for. In those,
+ * please update the script and run it, instead of editing
+ * directly in this file. The generated parts are delimited
+ * by special comments.
+ *
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @ingroup aux_vk
