@@ -4,181 +4,210 @@
 """Simple script to update vk_helpers.{c,h}."""
 
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Callable, Iterable, List, Optional
 
-# Each tuple is a function name, followed optionally by one or more conditions
-# to test in the preprocessor, which will be wrapped in "defined()"
-# if they aren't already. Empty tuples insert a blank line.
 
-DEVICE_FUNCTIONS = [
-    ("vkDestroyDevice",),
-    ("vkDeviceWaitIdle",),
-    ("vkAllocateMemory",),
-    ("vkFreeMemory",),
-    ("vkMapMemory",),
-    ("vkUnmapMemory",),
-    (),
-    ("vkCreateBuffer",),
-    ("vkDestroyBuffer",),
-    ("vkBindBufferMemory",),
-    (),
-    ("vkCreateImage",),
-    ("vkDestroyImage",),
-    ("vkBindImageMemory",),
-    (),
-    ("vkGetBufferMemoryRequirements",),
-    ("vkFlushMappedMemoryRanges",),
-    ("vkGetImageMemoryRequirements",),
-    ("vkGetImageMemoryRequirements2KHR",),
-    ("vkGetImageSubresourceLayout",),
-    (),
-    ("vkCreateImageView",),
-    ("vkDestroyImageView",),
-    (),
-    ("vkCreateSampler",),
-    ("vkDestroySampler",),
-    (),
-    ("vkCreateShaderModule",),
-    ("vkDestroyShaderModule",),
-    (),
-    ("vkCreateCommandPool",),
-    ("vkDestroyCommandPool",),
-    (),
-    ("vkAllocateCommandBuffers",),
-    ("vkBeginCommandBuffer",),
-    ("vkCmdPipelineBarrier",),
-    ("vkCmdBeginRenderPass",),
-    ("vkCmdSetScissor",),
-    ("vkCmdSetViewport",),
-    ("vkCmdClearColorImage",),
-    ("vkCmdEndRenderPass",),
-    ("vkCmdBindDescriptorSets",),
-    ("vkCmdBindPipeline",),
-    ("vkCmdBindVertexBuffers",),
-    ("vkCmdBindIndexBuffer",),
-    ("vkCmdDraw",),
-    ("vkCmdDrawIndexed",),
-    ("vkCmdDispatch",),
-    ("vkCmdCopyBuffer",),
-    ("vkCmdCopyBufferToImage",),
-    ("vkCmdCopyImage",),
-    ("vkCmdCopyImageToBuffer",),
-    ("vkEndCommandBuffer",),
-    ("vkFreeCommandBuffers",),
-    (),
-    ("vkCreateRenderPass",),
-    ("vkDestroyRenderPass",),
-    (),
-    ("vkCreateFramebuffer",),
-    ("vkDestroyFramebuffer",),
-    (),
-    ("vkCreatePipelineCache",),
-    ("vkDestroyPipelineCache",),
-    (),
-    ("vkResetDescriptorPool",),
-    ("vkCreateDescriptorPool",),
-    ("vkDestroyDescriptorPool",),
-    (),
-    ("vkAllocateDescriptorSets",),
-    ("vkFreeDescriptorSets",),
-    (),
-    ("vkCreateComputePipelines",),
-    ("vkCreateGraphicsPipelines",),
-    ("vkDestroyPipeline",),
-    (),
-    ("vkCreatePipelineLayout",),
-    ("vkDestroyPipelineLayout",),
-    (),
-    ("vkCreateDescriptorSetLayout",),
-    ("vkUpdateDescriptorSets",),
-    ("vkDestroyDescriptorSetLayout",),
-    (),
-    ("vkGetDeviceQueue",),
-    ("vkQueueSubmit",),
-    ("vkQueueWaitIdle",),
-    (),
-    ("vkCreateSemaphore",),
-    ("vkSignalSemaphoreKHR", "VK_KHR_timeline_semaphore"),
-    ("vkDestroySemaphore",),
-    (),
-    ("vkCreateFence",),
-    ("vkWaitForFences",),
-    ("vkGetFenceStatus",),
-    ("vkDestroyFence",),
-    ("vkResetFences",),
-    (),
-    ("vkCreateSwapchainKHR",),
-    ("vkDestroySwapchainKHR",),
-    ("vkGetSwapchainImagesKHR",),
-    ("vkAcquireNextImageKHR",),
-    ("vkQueuePresentKHR",),
-    (),
-    ("vkGetMemoryWin32HandleKHR", "VK_USE_PLATFORM_WIN32_KHR"),
-    ("vkImportSemaphoreWin32HandleKHR", "VK_USE_PLATFORM_WIN32_KHR"),
-    ("vkImportFenceWin32HandleKHR", "VK_USE_PLATFORM_WIN32_KHR"),
-    ("vkGetMemoryFdKHR", "!defined(VK_USE_PLATFORM_WIN32_KHR)"),
-    (),
-    ("vkImportSemaphoreFdKHR", "!defined(VK_USE_PLATFORM_WIN32_KHR)"),
-    ("vkGetSemaphoreFdKHR", "!defined(VK_USE_PLATFORM_WIN32_KHR)"),
-    (),
-    ("vkImportFenceFdKHR", "!defined(VK_USE_PLATFORM_WIN32_KHR)"),
-    ("vkGetFenceFdKHR", "!defined(VK_USE_PLATFORM_WIN32_KHR)"),
-    ("vkGetMemoryAndroidHardwareBufferANDROID", "VK_USE_PLATFORM_ANDROID_KHR"),
-    (
-        "vkGetAndroidHardwareBufferPropertiesANDROID",
-        "VK_USE_PLATFORM_ANDROID_KHR",
-    ),
-    (),
-    ("vkGetPastPresentationTimingGOOGLE",),
-]
-INSTANCE_FUNCTIONS = [
-    ("vkDestroyInstance",),
-    ("vkGetDeviceProcAddr",),
-    ("vkCreateDevice",),
-    ("vkDestroySurfaceKHR",),
-    (),
-    ("vkCreateDebugReportCallbackEXT",),
-    ("vkDestroyDebugReportCallbackEXT",),
-    (),
-    ("vkEnumeratePhysicalDevices",),
-    ("vkGetPhysicalDeviceProperties",),
-    ("vkGetPhysicalDeviceProperties2",),
-    ("vkGetPhysicalDeviceFeatures2",),
-    ("vkGetPhysicalDeviceMemoryProperties",),
-    ("vkGetPhysicalDeviceQueueFamilyProperties",),
-    ("vkGetPhysicalDeviceSurfaceCapabilitiesKHR",),
-    ("vkGetPhysicalDeviceSurfaceFormatsKHR",),
-    ("vkGetPhysicalDeviceSurfacePresentModesKHR",),
-    ("vkGetPhysicalDeviceSurfaceSupportKHR",),
-    ("vkGetPhysicalDeviceFormatProperties",),
-    ("vkEnumerateDeviceExtensionProperties",),
-    ("vkGetPhysicalDeviceImageFormatProperties2",),
-    (),
-    ("vkCreateDisplayPlaneSurfaceKHR", "VK_USE_PLATFORM_DISPLAY_KHR"),
-    ("vkGetDisplayPlaneCapabilitiesKHR", "VK_USE_PLATFORM_DISPLAY_KHR"),
-    ("vkGetPhysicalDeviceDisplayPropertiesKHR", "VK_USE_PLATFORM_DISPLAY_KHR"),
-    ("vkGetPhysicalDeviceDisplayPlanePropertiesKHR", "VK_USE_PLATFORM_DISPLAY_KHR"),
-    ("vkGetDisplayModePropertiesKHR", "VK_USE_PLATFORM_DISPLAY_KHR"),
-    ("vkReleaseDisplayEXT", "VK_USE_PLATFORM_DISPLAY_KHR"),
-    (),
-    ("vkCreateXcbSurfaceKHR", "VK_USE_PLATFORM_XCB_KHR"),
-    (),
-    ("vkCreateWaylandSurfaceKHR", "VK_USE_PLATFORM_WAYLAND_KHR"),
-    (),
-    (
-        "vkAcquireDrmDisplayEXT",
-        "VK_USE_PLATFORM_WAYLAND_KHR",
-        "VK_EXT_acquire_drm_display",
-    ),
-    ("vkGetDrmDisplayEXT", "VK_USE_PLATFORM_WAYLAND_KHR", "VK_EXT_acquire_drm_display"),
-    (),
-    ("vkGetRandROutputDisplayEXT", "VK_USE_PLATFORM_XLIB_XRANDR_EXT"),
-    ("vkAcquireXlibDisplayEXT", "VK_USE_PLATFORM_XLIB_XRANDR_EXT"),
-    (),
-    ("vkCreateAndroidSurfaceKHR", "VK_USE_PLATFORM_ANDROID_KHR"),
-    (),
-    ("vkCreateWin32SurfaceKHR", "VK_USE_PLATFORM_WIN32_KHR"),
-]
+def get_device_cmds():
+    return [
+        Cmd("vkDestroyDevice"),
+        Cmd("vkDeviceWaitIdle"),
+        Cmd("vkAllocateMemory"),
+        Cmd("vkFreeMemory"),
+        Cmd("vkMapMemory"),
+        Cmd("vkUnmapMemory"),
+        None,
+        Cmd("vkCreateBuffer"),
+        Cmd("vkDestroyBuffer"),
+        Cmd("vkBindBufferMemory"),
+        None,
+        Cmd("vkCreateImage"),
+        Cmd("vkDestroyImage"),
+        Cmd("vkBindImageMemory"),
+        None,
+        Cmd("vkGetBufferMemoryRequirements"),
+        Cmd("vkFlushMappedMemoryRanges"),
+        Cmd("vkGetImageMemoryRequirements"),
+        Cmd(
+            "vkGetImageMemoryRequirements2KHR",
+            member_name="vkGetImageMemoryRequirements2",
+        ),
+        Cmd("vkGetImageSubresourceLayout"),
+        None,
+        Cmd("vkCreateImageView"),
+        Cmd("vkDestroyImageView"),
+        None,
+        Cmd("vkCreateSampler"),
+        Cmd("vkDestroySampler"),
+        None,
+        Cmd("vkCreateShaderModule"),
+        Cmd("vkDestroyShaderModule"),
+        None,
+        Cmd("vkCreateCommandPool"),
+        Cmd("vkDestroyCommandPool"),
+        None,
+        Cmd("vkAllocateCommandBuffers"),
+        Cmd("vkBeginCommandBuffer"),
+        Cmd("vkCmdPipelineBarrier"),
+        Cmd("vkCmdBeginRenderPass"),
+        Cmd("vkCmdSetScissor"),
+        Cmd("vkCmdSetViewport"),
+        Cmd("vkCmdClearColorImage"),
+        Cmd("vkCmdEndRenderPass"),
+        Cmd("vkCmdBindDescriptorSets"),
+        Cmd("vkCmdBindPipeline"),
+        Cmd("vkCmdBindVertexBuffers"),
+        Cmd("vkCmdBindIndexBuffer"),
+        Cmd("vkCmdDraw"),
+        Cmd("vkCmdDrawIndexed"),
+        Cmd("vkCmdDispatch"),
+        Cmd("vkCmdCopyBuffer"),
+        Cmd("vkCmdCopyBufferToImage"),
+        Cmd("vkCmdCopyImage"),
+        Cmd("vkCmdCopyImageToBuffer"),
+        Cmd("vkEndCommandBuffer"),
+        Cmd("vkFreeCommandBuffers"),
+        None,
+        Cmd("vkCreateRenderPass"),
+        Cmd("vkDestroyRenderPass"),
+        None,
+        Cmd("vkCreateFramebuffer"),
+        Cmd("vkDestroyFramebuffer"),
+        None,
+        Cmd("vkCreatePipelineCache"),
+        Cmd("vkDestroyPipelineCache"),
+        None,
+        Cmd("vkResetDescriptorPool"),
+        Cmd("vkCreateDescriptorPool"),
+        Cmd("vkDestroyDescriptorPool"),
+        None,
+        Cmd("vkAllocateDescriptorSets"),
+        Cmd("vkFreeDescriptorSets"),
+        None,
+        Cmd("vkCreateComputePipelines"),
+        Cmd("vkCreateGraphicsPipelines"),
+        Cmd("vkDestroyPipeline"),
+        None,
+        Cmd("vkCreatePipelineLayout"),
+        Cmd("vkDestroyPipelineLayout"),
+        None,
+        Cmd("vkCreateDescriptorSetLayout"),
+        Cmd("vkUpdateDescriptorSets"),
+        Cmd("vkDestroyDescriptorSetLayout"),
+        None,
+        Cmd("vkGetDeviceQueue"),
+        Cmd("vkQueueSubmit"),
+        Cmd("vkQueueWaitIdle"),
+        None,
+        Cmd("vkCreateSemaphore"),
+        Cmd(
+            "vkSignalSemaphoreKHR",
+            member_name="vkSignalSemaphore",
+            requires=("VK_KHR_timeline_semaphore",),
+        ),
+        Cmd("vkDestroySemaphore"),
+        None,
+        Cmd("vkCreateFence"),
+        Cmd("vkWaitForFences"),
+        Cmd("vkGetFenceStatus"),
+        Cmd("vkDestroyFence"),
+        Cmd("vkResetFences"),
+        None,
+        Cmd("vkCreateSwapchainKHR"),
+        Cmd("vkDestroySwapchainKHR"),
+        Cmd("vkGetSwapchainImagesKHR"),
+        Cmd("vkAcquireNextImageKHR"),
+        Cmd("vkQueuePresentKHR"),
+        None,
+        Cmd("vkGetMemoryWin32HandleKHR", requires=("VK_USE_PLATFORM_WIN32_KHR",)),
+        Cmd("vkImportSemaphoreWin32HandleKHR", requires=("VK_USE_PLATFORM_WIN32_KHR",)),
+        Cmd("vkImportFenceWin32HandleKHR", requires=("VK_USE_PLATFORM_WIN32_KHR",)),
+        Cmd("vkGetMemoryFdKHR", requires=("!defined(VK_USE_PLATFORM_WIN32_KHR)",)),
+        None,
+        Cmd(
+            "vkImportSemaphoreFdKHR", requires=("!defined(VK_USE_PLATFORM_WIN32_KHR)",)
+        ),
+        Cmd("vkGetSemaphoreFdKHR", requires=("!defined(VK_USE_PLATFORM_WIN32_KHR)",)),
+        None,
+        Cmd("vkImportFenceFdKHR", requires=("!defined(VK_USE_PLATFORM_WIN32_KHR)",)),
+        Cmd("vkGetFenceFdKHR", requires=("!defined(VK_USE_PLATFORM_WIN32_KHR)",)),
+        Cmd(
+            "vkGetMemoryAndroidHardwareBufferANDROID",
+            requires=("VK_USE_PLATFORM_ANDROID_KHR",),
+        ),
+        Cmd(
+            "vkGetAndroidHardwareBufferPropertiesANDROID",
+            requires=("VK_USE_PLATFORM_ANDROID_KHR",),
+        ),
+        None,
+        Cmd("vkGetPastPresentationTimingGOOGLE"),
+    ]
+
+
+def get_instance_cmds():
+    return [
+        Cmd("vkDestroyInstance"),
+        Cmd("vkGetDeviceProcAddr"),
+        Cmd("vkCreateDevice"),
+        Cmd("vkDestroySurfaceKHR"),
+        None,
+        Cmd("vkCreateDebugReportCallbackEXT"),
+        Cmd("vkDestroyDebugReportCallbackEXT"),
+        None,
+        Cmd("vkEnumeratePhysicalDevices"),
+        Cmd("vkGetPhysicalDeviceProperties"),
+        Cmd("vkGetPhysicalDeviceProperties2"),
+        Cmd("vkGetPhysicalDeviceFeatures2"),
+        Cmd("vkGetPhysicalDeviceMemoryProperties"),
+        Cmd("vkGetPhysicalDeviceQueueFamilyProperties"),
+        Cmd("vkGetPhysicalDeviceSurfaceCapabilitiesKHR"),
+        Cmd("vkGetPhysicalDeviceSurfaceFormatsKHR"),
+        Cmd("vkGetPhysicalDeviceSurfacePresentModesKHR"),
+        Cmd("vkGetPhysicalDeviceSurfaceSupportKHR"),
+        Cmd("vkGetPhysicalDeviceFormatProperties"),
+        Cmd("vkEnumerateDeviceExtensionProperties"),
+        Cmd("vkGetPhysicalDeviceImageFormatProperties2"),
+        None,
+        Cmd(
+            "vkCreateDisplayPlaneSurfaceKHR", requires=("VK_USE_PLATFORM_DISPLAY_KHR",)
+        ),
+        Cmd(
+            "vkGetDisplayPlaneCapabilitiesKHR",
+            requires=("VK_USE_PLATFORM_DISPLAY_KHR",),
+        ),
+        Cmd(
+            "vkGetPhysicalDeviceDisplayPropertiesKHR",
+            requires=("VK_USE_PLATFORM_DISPLAY_KHR",),
+        ),
+        Cmd(
+            "vkGetPhysicalDeviceDisplayPlanePropertiesKHR",
+            requires=("VK_USE_PLATFORM_DISPLAY_KHR",),
+        ),
+        Cmd("vkGetDisplayModePropertiesKHR", requires=("VK_USE_PLATFORM_DISPLAY_KHR",)),
+        Cmd("vkReleaseDisplayEXT", requires=("VK_USE_PLATFORM_DISPLAY_KHR",)),
+        None,
+        Cmd("vkCreateXcbSurfaceKHR", requires=("VK_USE_PLATFORM_XCB_KHR",)),
+        None,
+        Cmd("vkCreateWaylandSurfaceKHR", requires=("VK_USE_PLATFORM_WAYLAND_KHR",)),
+        None,
+        Cmd(
+            "vkAcquireDrmDisplayEXT",
+            requires=("VK_USE_PLATFORM_WAYLAND_KHR", "VK_EXT_acquire_drm_display"),
+        ),
+        Cmd(
+            "vkGetDrmDisplayEXT",
+            requires=("VK_USE_PLATFORM_WAYLAND_KHR", "VK_EXT_acquire_drm_display"),
+        ),
+        None,
+        Cmd(
+            "vkGetRandROutputDisplayEXT", requires=("VK_USE_PLATFORM_XLIB_XRANDR_EXT",)
+        ),
+        Cmd("vkAcquireXlibDisplayEXT", requires=("VK_USE_PLATFORM_XLIB_XRANDR_EXT",)),
+        None,
+        Cmd("vkCreateAndroidSurfaceKHR", requires=("VK_USE_PLATFORM_ANDROID_KHR",)),
+        None,
+        Cmd("vkCreateWin32SurfaceKHR", requires=("VK_USE_PLATFORM_WIN32_KHR",)),
+    ]
+
 
 EXTENSIONS_TO_CHECK = [
     "VK_GOOGLE_display_timing",
@@ -193,6 +222,32 @@ IMPL_FN = DIR / "vk_helpers.c"
 
 BEGIN_TEMPLATE = "\t// beginning of GENERATED %s code - do not modify - used by scripts"
 END_TEMPLATE = "\t// end of GENERATED %s code - do not modify - used by scripts"
+
+
+class Cmd:
+    def __init__(
+        self,
+        name: str,
+        member_name: Optional[str] = None,
+        *,
+        requires: Optional[Iterable[str]] = None,
+    ):
+        self.name = name
+        if not member_name:
+            member_name = name
+        self.member_name = member_name
+        if not requires:
+            # normalize empty lists to None
+            requires = None
+        self.requires = requires
+
+    def __repr__(self) -> str:
+        args = [repr(self.name)]
+        if self.member_name != self.name:
+            args.append(repr(self.member_name))
+        if self.requires:
+            args.append(f"requires={repr(self.requires)}")
+        return "Function({})".format(", ".join(args))
 
 
 def wrap_condition(condition):
@@ -236,18 +291,21 @@ class ConditionalGenerator:
         return self.process_condition(None)
 
 
-def generate_per_function(functions: List[Tuple[str, ...]], per_function_handler):
+def generate_per_command(
+    commands: List[Cmd], per_command_handler: Callable[[Cmd], str]
+):
     conditional = ConditionalGenerator()
-    for data in functions:
-        if not data:
+    for cmd in commands:
+        if not cmd:
             # empty line
             yield ""
             continue
-        condition_line = conditional.process_condition(compute_condition(data[1:]))
+        condition = compute_condition(cmd.requires)
+        condition_line = conditional.process_condition(condition)
         if condition_line:
             yield condition_line
 
-        yield per_function_handler(data[0])
+        yield per_command_handler(cmd)
 
     # close any trailing conditions
     condition_line = conditional.finish()
@@ -255,25 +313,25 @@ def generate_per_function(functions: List[Tuple[str, ...]], per_function_handler
         yield condition_line
 
 
-def generate_structure_members(functions: List[Tuple[str, ...]]):
-    def per_function(name):
-        return "\tPFN_{} {};".format(name, name)
+def generate_structure_members(commands: List[Cmd]):
+    def per_command(cmd: Cmd):
+        return "\tPFN_{} {};".format(cmd.name, cmd.member_name)
 
-    return generate_per_function(functions, per_function)
-
-
-def generate_ins_proc(functions: List[Tuple[str, ...]]):
-    def per_function(func: str) -> str:
-        return "\tvk->{} = GET_INS_PROC(vk, {});".format(func, func)
-
-    return generate_per_function(functions, per_function)
+    return generate_per_command(commands, per_command)
 
 
-def generate_dev_proc(functions: List[Tuple[str, ...]]):
-    def per_function(func: str) -> str:
-        return "\tvk->{} = GET_DEV_PROC(vk, {});".format(func, func)
+def generate_proc_macro(macro: str, commands: List[Cmd]):
+    name_width = max([len(cmd.member_name) for cmd in commands if cmd])
 
-    return generate_per_function(functions, per_function)
+    def per_command(cmd: Cmd) -> str:
+        return "\tvk->{} = {}(vk, {});".format(
+            cmd.member_name.ljust(name_width), macro, cmd.name
+        )
+
+    return generate_per_command(
+        commands,
+        per_command,
+    )
 
 
 def make_ext_member_name(ext: str):
@@ -296,7 +354,7 @@ def generate_ext_check():
         yield "\tvk->{} = false;".format(make_ext_member_name(ext))
 
     yield ""
-    yield "\tfor (uint32_t i = 0; i < device_extension_count; i++) {"
+    yield "\tfor (uint32_t i = 0; i < num_device_extensions; i++) {"
     yield "\t\tconst char *ext = device_extensions[i];"
     yield ""
 
@@ -346,14 +404,14 @@ def process_header():
         lines,
         INSTANCE_TEMPLATES["BEGIN"],
         INSTANCE_TEMPLATES["END"],
-        list(generate_structure_members(INSTANCE_FUNCTIONS)),
+        list(generate_structure_members(get_instance_cmds())),
     )
 
     lines = replace_middle(
         lines,
         DEVICE_TEMPLATES["BEGIN"],
         DEVICE_TEMPLATES["END"],
-        list(generate_structure_members(DEVICE_FUNCTIONS)),
+        list(generate_structure_members(get_device_cmds())),
     )
     lines = replace_middle(
         lines,
@@ -375,14 +433,14 @@ def process_impl():
         lines,
         INSTANCE_TEMPLATES["BEGIN"],
         INSTANCE_TEMPLATES["END"],
-        list(generate_ins_proc(INSTANCE_FUNCTIONS)),
+        list(generate_proc_macro("GET_INS_PROC", get_instance_cmds())),
     )
 
     lines = replace_middle(
         lines,
         DEVICE_TEMPLATES["BEGIN"],
         DEVICE_TEMPLATES["END"],
-        list(generate_dev_proc(DEVICE_FUNCTIONS)),
+        list(generate_proc_macro("GET_DEV_PROC", get_device_cmds())),
     )
 
     lines = replace_middle(

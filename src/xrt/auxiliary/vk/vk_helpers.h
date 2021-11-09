@@ -161,7 +161,7 @@ struct vk_bundle
 	PFN_vkGetBufferMemoryRequirements vkGetBufferMemoryRequirements;
 	PFN_vkFlushMappedMemoryRanges vkFlushMappedMemoryRanges;
 	PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements;
-	PFN_vkGetImageMemoryRequirements2KHR vkGetImageMemoryRequirements2KHR;
+	PFN_vkGetImageMemoryRequirements2KHR vkGetImageMemoryRequirements2;
 	PFN_vkGetImageSubresourceLayout vkGetImageSubresourceLayout;
 
 	PFN_vkCreateImageView vkCreateImageView;
@@ -231,7 +231,7 @@ struct vk_bundle
 
 	PFN_vkCreateSemaphore vkCreateSemaphore;
 #if defined(VK_KHR_timeline_semaphore)
-	PFN_vkSignalSemaphoreKHR vkSignalSemaphoreKHR;
+	PFN_vkSignalSemaphoreKHR vkSignalSemaphore;
 #endif // defined(VK_KHR_timeline_semaphore)
 
 	PFN_vkDestroySemaphore vkDestroySemaphore;
