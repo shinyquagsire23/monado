@@ -218,6 +218,7 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 		ht/ht_driver.hpp
 		ht/ht_interface.h
 		ht/ht_models.cpp
+		ht/ht_model.cpp
 		ht/ht_hand_math.cpp
 		ht/ht_image_math.cpp
 		ht/ht_nms.cpp
