@@ -36,123 +36,6 @@
 	}
 
 
-static VkResult
-create_pipeline_cache(struct vk_bundle *vk, VkPipelineCache *out_pipeline_cache)
-{
-	VkResult ret;
-
-	VkPipelineCacheCreateInfo pipeline_cache_info = {
-	    .sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
-	};
-
-	VkPipelineCache pipeline_cache;
-	ret = vk->vkCreatePipelineCache(vk->device,           //
-	                                &pipeline_cache_info, //
-	                                NULL,                 //
-	                                &pipeline_cache);     //
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreatePipelineCache failed: %s", vk_result_string(ret));
-		return ret;
-	}
-
-	*out_pipeline_cache = pipeline_cache;
-
-	return VK_SUCCESS;
-}
-
-static VkResult
-create_pipeline_layout(struct vk_bundle *vk,
-                       VkDescriptorSetLayout descriptor_set_layout,
-                       VkPipelineLayout *out_pipeline_layout)
-{
-	VkResult ret;
-
-	VkPipelineLayoutCreateInfo pipeline_layout_info = {
-	    .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-	    .setLayoutCount = 1,
-	    .pSetLayouts = &descriptor_set_layout,
-	};
-
-	VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
-	ret = vk->vkCreatePipelineLayout(vk->device,            //
-	                                 &pipeline_layout_info, //
-	                                 NULL,                  //
-	                                 &pipeline_layout);     //
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreatePipelineLayout failed: %s", vk_result_string(ret));
-		return ret;
-	}
-
-	*out_pipeline_layout = pipeline_layout;
-
-	return VK_SUCCESS;
-}
-
-static VkResult
-create_descriptor_pool(struct vk_bundle *vk,
-                       uint32_t num_uniform_per_desc,
-                       uint32_t num_sampler_per_desc,
-                       uint32_t num_storage_per_desc,
-                       uint32_t num_descs,
-                       bool freeable,
-                       VkDescriptorPool *out_descriptor_pool)
-{
-	VkResult ret;
-
-
-	uint32_t count = 0;
-	VkDescriptorPoolSize pool_sizes[3] = {0};
-
-	if (num_uniform_per_desc > 0) {
-		pool_sizes[count].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		pool_sizes[count].descriptorCount = num_uniform_per_desc * num_descs;
-		count++;
-	}
-
-	if (num_sampler_per_desc > 0) {
-		pool_sizes[count].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		pool_sizes[count].descriptorCount = num_sampler_per_desc * num_descs;
-		count++;
-	}
-
-	if (num_storage_per_desc > 0) {
-		pool_sizes[count].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		pool_sizes[count].descriptorCount = num_storage_per_desc * num_descs;
-		count++;
-	}
-
-	assert(count > 0 && count <= ARRAY_SIZE(pool_sizes));
-
-	VkDescriptorPoolCreateFlags flags = 0;
-
-	if (freeable) {
-		flags |= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-	}
-
-	VkDescriptorPoolCreateInfo descriptor_pool_info = {
-	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-	    .flags = flags,
-	    .maxSets = num_descs,
-	    .poolSizeCount = count,
-	    .pPoolSizes = pool_sizes,
-	};
-
-	VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
-	ret = vk->vkCreateDescriptorPool(vk->device,            //
-	                                 &descriptor_pool_info, //
-	                                 NULL,                  //
-	                                 &descriptor_pool);     //
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateRenderPass failed: %s", vk_result_string(ret));
-		return ret;
-	}
-
-	*out_descriptor_pool = descriptor_pool;
-
-	return VK_SUCCESS;
-}
-
-
 /*
  *
  * Mesh
@@ -352,49 +235,6 @@ create_compute_descriptor_set_layout(struct vk_bundle *vk,
 	}
 
 	*out_descriptor_set_layout = descriptor_set_layout;
-
-	return VK_SUCCESS;
-}
-
-static VkResult
-create_compute_pipeline(struct vk_bundle *vk,
-                        VkPipelineCache pipeline_cache,
-                        VkShaderModule shader,
-                        VkPipelineLayout pipeline_layout,
-                        VkPipeline *out_compute_pipeline)
-{
-	VkResult ret;
-
-	VkPipelineShaderStageCreateInfo shader_stage_info = {
-	    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-	    .pNext = NULL,
-	    .stage = VK_SHADER_STAGE_COMPUTE_BIT,
-	    .module = shader,
-	    .pName = "main",
-	};
-
-	VkComputePipelineCreateInfo pipeline_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
-	    .stage = shader_stage_info,
-	    .layout = pipeline_layout,
-	};
-
-	VkPipeline pipeline = VK_NULL_HANDLE;
-	ret = vk->vkCreateComputePipelines( //
-	    vk->device,                     //
-	    pipeline_cache,                 //
-	    1,                              //
-	    &pipeline_info,                 //
-	    NULL,                           //
-	    &pipeline);                     //
-	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkCreateComputePipelines failed: %s", vk_result_string(ret));
-		return ret;
-	}
-
-	*out_compute_pipeline = pipeline;
 
 	return VK_SUCCESS;
 }
@@ -671,29 +511,37 @@ comp_resources_init(struct comp_resources *r,
 	 * Shared
 	 */
 
-	C(create_pipeline_cache(vk, &r->pipeline_cache));
+	C(vk_create_pipeline_cache(vk, &r->pipeline_cache));
 
 
 	/*
 	 * Mesh static.
 	 */
 
-	C(create_descriptor_pool(vk,                         // vk_bundle
-	                         1,                          // num_uniform_per_desc
-	                         1,                          // num_sampler_per_desc
-	                         0,                          // num_storage_per_desc
-	                         16 * 2,                     // num_descs
-	                         false,                      // freeable
-	                         &r->mesh.descriptor_pool)); // out_descriptor_pool
+	struct vk_descriptor_pool_info mesh_pool_info = {
+	    .uniform_per_descriptor_count = 1,
+	    .sampler_per_descriptor_count = 1,
+	    .storage_image_per_descriptor_count = 0,
+	    .storage_buffer_per_descriptor_count = 0,
+	    .descriptor_count = 16 * 2,
+	    .freeable = false,
+	};
 
-	C(create_mesh_descriptor_set_layout(vk,                               // vk_bundle
-	                                    r->mesh.src_binding,              // src_binding
-	                                    r->mesh.ubo_binding,              // ubo_binding
-	                                    &r->mesh.descriptor_set_layout)); // out_mesh_descriptor_set_layout
+	C(vk_create_descriptor_pool(    //
+	    vk,                         // vk_bundle
+	    &mesh_pool_info,            // info
+	    &r->mesh.descriptor_pool)); // out_descriptor_pool
 
-	C(create_pipeline_layout(vk,                            // vk_bundle
-	                         r->mesh.descriptor_set_layout, // descriptor_set_layout
-	                         &r->mesh.pipeline_layout));    // out_pipeline_layout
+	C(create_mesh_descriptor_set_layout(  //
+	    vk,                               // vk_bundle
+	    r->mesh.src_binding,              // src_binding
+	    r->mesh.ubo_binding,              // ubo_binding
+	    &r->mesh.descriptor_set_layout)); // out_mesh_descriptor_set_layout
+
+	C(vk_create_pipeline_layout(       //
+	    vk,                            // vk_bundle
+	    r->mesh.descriptor_set_layout, // descriptor_set_layout
+	    &r->mesh.pipeline_layout));    // out_pipeline_layout
 
 	if (!init_mesh_vertex_buffers(vk,                                //
 	                              &r->mesh.vbo,                      //
@@ -722,13 +570,18 @@ comp_resources_init(struct comp_resources *r,
 	    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, // clamp_mode
 	    &r->compute.default_sampler));         // out_sampler
 
-	C(create_descriptor_pool(          //
+	struct vk_descriptor_pool_info compute_pool_info = {
+	    .uniform_per_descriptor_count = 1,
+	    .sampler_per_descriptor_count = 8,
+	    .storage_image_per_descriptor_count = 1,
+	    .storage_buffer_per_descriptor_count = 0,
+	    .descriptor_count = 1,
+	    .freeable = false,
+	};
+
+	C(vk_create_descriptor_pool(       //
 	    vk,                            // vk_bundle
-	    1,                             // num_uniform_per_desc
-	    8,                             // num_sampler_per_desc
-	    1,                             // num_storage_per_desc
-	    1,                             // num_descs
-	    false,                         // freeable
+	    &compute_pool_info,            // info
 	    &r->compute.descriptor_pool)); // out_descriptor_pool
 
 	C(create_compute_descriptor_set_layout(  //
@@ -739,26 +592,26 @@ comp_resources_init(struct comp_resources *r,
 	    r->compute.ubo_binding,              // ubo_binding,
 	    &r->compute.descriptor_set_layout)); // out_descriptor_set_layout
 
-	C(create_pipeline_layout(             //
+	C(vk_create_pipeline_layout(          //
 	    vk,                               // vk_bundle
 	    r->compute.descriptor_set_layout, // descriptor_set_layout
 	    &r->compute.pipeline_layout));    // out_pipeline_layout
 
-	C(create_compute_pipeline(        //
+	C(vk_create_compute_pipeline(     //
 	    vk,                           // vk_bundle
 	    r->pipeline_cache,            // pipeline_cache
 	    r->shaders->clear_comp,       // shader
 	    r->compute.pipeline_layout,   // pipeline_layout
 	    &r->compute.clear_pipeline)); // out_compute_pipeline
 
-	C(create_compute_pipeline(             //
+	C(vk_create_compute_pipeline(          //
 	    vk,                                // vk_bundle
 	    r->pipeline_cache,                 // pipeline_cache
 	    r->shaders->distortion_comp,       // shader
 	    r->compute.pipeline_layout,        // pipeline_layout
 	    &r->compute.distortion_pipeline)); // out_compute_pipeline
 
-	C(create_compute_pipeline(                      //
+	C(vk_create_compute_pipeline(                   //
 	    vk,                                         // vk_bundle
 	    r->pipeline_cache,                          // pipeline_cache
 	    r->shaders->distortion_timewarp_comp,       // shader

@@ -131,35 +131,6 @@ create_external_render_pass(struct vk_bundle *vk, VkFormat format, VkRenderPass 
 }
 
 static VkResult
-create_descriptor_set(struct vk_bundle *vk,
-                      VkDescriptorPool descriptor_pool,
-                      VkDescriptorSetLayout descriptor_layout,
-                      VkDescriptorSet *out_descriptor_set)
-{
-	VkResult ret;
-
-	VkDescriptorSetAllocateInfo alloc_info = {
-	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-	    .descriptorPool = descriptor_pool,
-	    .descriptorSetCount = 1,
-	    .pSetLayouts = &descriptor_layout,
-	};
-
-	VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
-	ret = vk->vkAllocateDescriptorSets(vk->device,       //
-	                                   &alloc_info,      //
-	                                   &descriptor_set); //
-	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkAllocateDescriptorSets failed: %s", vk_result_string(ret));
-		return ret;
-	}
-
-	*out_descriptor_set = descriptor_set;
-
-	return VK_SUCCESS;
-}
-
-static VkResult
 create_framebuffer(struct vk_bundle *vk,
                    VkImageView image_view,
                    VkRenderPass render_pass,
@@ -192,56 +163,6 @@ create_framebuffer(struct vk_bundle *vk,
 	}
 
 	*out_external_framebuffer = framebuffer;
-
-	return VK_SUCCESS;
-}
-
-static VkResult
-create_command_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd)
-{
-	VkResult ret;
-
-	VkCommandBufferAllocateInfo cmd_buffer_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-	    .commandPool = vk->cmd_pool,
-	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-	    .commandBufferCount = 1,
-	};
-
-	VkCommandBuffer cmd = VK_NULL_HANDLE;
-
-	os_mutex_lock(&vk->cmd_pool_mutex);
-
-	ret = vk->vkAllocateCommandBuffers(vk->device,       //
-	                                   &cmd_buffer_info, //
-	                                   &cmd);            //
-
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateFramebuffer failed: %s", vk_result_string(ret));
-		return ret;
-	}
-
-	*out_cmd = cmd;
-
-	return VK_SUCCESS;
-}
-
-static VkResult
-begin_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer)
-{
-	VkResult ret;
-
-	VkCommandBufferBeginInfo command_buffer_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-	};
-
-	ret = vk->vkBeginCommandBuffer(command_buffer, &command_buffer_info);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkBeginCommandBuffer failed: %s", vk_result_string(ret));
-		return ret;
-	}
 
 	return VK_SUCCESS;
 }
@@ -507,20 +428,6 @@ update_mesh_discriptor_set(struct vk_bundle *vk,
 	                           NULL);                             // pDescriptorCopies
 }
 
-static void
-destroy_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer)
-{
-	os_mutex_lock(&vk->cmd_pool_mutex);
-
-	vk->vkFreeCommandBuffers( //
-	    vk->device,           // device
-	    vk->cmd_pool,         // commandPool
-	    1,                    // commandBufferCount
-	    &command_buffer);     // pCommandBuffers
-
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-}
-
 
 /*
  *
@@ -595,22 +502,22 @@ comp_rendering_init(struct comp_rendering *rr, struct comp_resources *r)
 	 * Per rendering.
 	 */
 
-	C(create_command_buffer(vk, &rr->cmd));
+	C(vk_create_command_buffer(vk, &rr->cmd));
 
-	C(begin_command_buffer(vk, rr->cmd));
+	C(vk_begin_command_buffer(vk, rr->cmd));
 
 
 	/*
 	 * Mesh per view
 	 */
 
-	C(create_descriptor_set(                 //
+	C(vk_create_descriptor_set(              //
 	    vk,                                  // vk_bundle
 	    r->mesh.descriptor_pool,             // descriptor_pool
 	    r->mesh.descriptor_set_layout,       // descriptor_set_layout
 	    &rr->views[0].mesh.descriptor_set)); // descriptor_set
 
-	C(create_descriptor_set(                 //
+	C(vk_create_descriptor_set(              //
 	    vk,                                  // vk_bundle
 	    r->mesh.descriptor_pool,             // descriptor_pool
 	    r->mesh.descriptor_set_layout,       // descriptor_set_layout
@@ -623,14 +530,8 @@ void
 comp_rendering_finalize(struct comp_rendering *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
-	VkResult ret;
 
-	// End the command buffer.
-	ret = vk->vkEndCommandBuffer(rr->cmd);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkEndCommandBuffer failed: %s", vk_result_string(ret));
-		return;
-	}
+	vk_end_command_buffer(vk, rr->cmd);
 }
 
 void
@@ -639,7 +540,7 @@ comp_rendering_close(struct comp_rendering *rr)
 	struct vk_bundle *vk = vk_from_rr(rr);
 	struct comp_resources *r = rr->r;
 
-	destroy_command_buffer(vk, rr->cmd);
+	vk_destroy_command_buffer(vk, rr->cmd);
 	rr->cmd = VK_NULL_HANDLE;
 
 	// Reclaimed by vkResetDescriptorPool.
