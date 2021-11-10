@@ -45,6 +45,26 @@ struct os_hid_device;
 #define MAX_AUTO_PROBERS 16
 
 /*!
+ * Function pointer type for a handler that gets called when a device matching vendor and product ID is detected.
+ *
+ * @param xp Prober
+ * @param devices The array of prober devices found by the prober.
+ * @param num_devices The number of elements in @p devices
+ * @param index Which element in the prober device array matches your query?
+ * @param attached_data
+ * @param out_xdevs An empty array of size @p XRT_MAX_DEVICES_PER_PROBE you may populate with @ref xrt_device
+ * instances.
+ *
+ * @return the number of elements of @p out_xdevs populated by this call.
+ */
+typedef int (*xrt_prober_found_function_t)(struct xrt_prober *xp,
+                                           struct xrt_prober_device **devices,
+                                           size_t num_devices,
+                                           size_t index,
+                                           cJSON *attached_data,
+                                           struct xrt_device **out_xdevs);
+
+/*!
  * Entry for a single device.
  *
  * @ingroup xrt_iface
@@ -64,22 +84,9 @@ struct xrt_prober_entry
 	/*!
 	 * Handler that gets called when a device matching vendor and product ID is detected.
 	 *
-	 * @param xp Prober
-	 * @param devices The array of prober devices found by the prober.
-	 * @param device_count The number of elements in @p devices
-	 * @param index Which element in the prober device array matches your query?
-	 * @param attached_data
-	 * @param out_xdevs An empty array of size @p XRT_MAX_DEVICES_PER_PROBE you may populate with @ref xrt_device
-	 * instances.
-	 *
-	 * @return the number of elements of @p out_xdevs populated by this call.
+	 * @see xrt_prober_found_function_t
 	 */
-	int (*found)(struct xrt_prober *xp,
-	             struct xrt_prober_device **devices,
-	             size_t device_count,
-	             size_t index,
-	             cJSON *attached_data,
-	             struct xrt_device **out_xdevs);
+	xrt_prober_found_function_t found;
 
 	/*!
 	 * A human-readable name for the device associated with this VID/PID.
