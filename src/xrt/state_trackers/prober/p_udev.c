@@ -583,13 +583,9 @@ p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
 				ok = true;
 			}
 		} else if (strncmp(line, "HID_NAME=", 9) == 0) {
-			product_name[0] = '\0';
-			strncat(product_name, line + 9, sizeof(product_name));
-
-			// U_LOG_D("\t\tprocuct_name: '%s'", *out_product_name);
+			snprintf(product_name, sizeof(product_name), "%s", line + 9);
 		} else if (strncmp(line, "HID_UNIQ=", 9) == 0) {
 			serial_utf8 = &line[9];
-			// U_LOG_D("\t\tserial: '%s'", line + 9);
 		}
 
 		line = strtok_r(NULL, "\n", &saveptr);
