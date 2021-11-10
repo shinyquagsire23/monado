@@ -29,6 +29,7 @@ extern "C" {
  * Probing function for the PS Move devices.
  *
  * @ingroup drv_psmv
+ * @see xrt_prober_found_function_t
  */
 int
 psmv_found(struct xrt_prober *xp,

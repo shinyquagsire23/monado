@@ -29,6 +29,7 @@ extern "C" {
  * Probing function for Razer Hydra devices.
  *
  * @ingroup drv_hydra
+ * @see xrt_prober_found_function_t
  */
 int
 hydra_found(struct xrt_prober *xp,

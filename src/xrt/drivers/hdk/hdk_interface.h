@@ -31,6 +31,7 @@ extern "C" {
  * Probing function for HDK devices.
  *
  * @ingroup drv_hdk
+ * @see xrt_prober_found_function_t
  */
 int
 hdk_found(struct xrt_prober *xp,

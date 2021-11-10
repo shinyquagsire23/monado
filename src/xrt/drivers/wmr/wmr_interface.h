@@ -27,6 +27,7 @@ extern "C" {
  * Probing function for Windows Mixed Reality devices.
  *
  * @ingroup drv_wmr
+ * @see xrt_prober_found_function_t
  */
 int
 wmr_found(struct xrt_prober *xp,
