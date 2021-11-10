@@ -669,6 +669,121 @@ vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDevi
 VkResult
 vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence);
 
+
+/*
+ *
+ * State creation helpers, in the vk_state_creators.c file.
+ *
+ */
+
+/*!
+ * Arguments to @ref vk_create_descriptor_pool function.
+ */
+struct vk_descriptor_pool_info
+{
+	uint32_t uniform_per_descriptor_count;        //!< VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+	uint32_t sampler_per_descriptor_count;        //!< VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+	uint32_t storage_image_per_descriptor_count;  //!< VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
+	uint32_t storage_buffer_per_descriptor_count; //!< VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
+
+	//! The max count of created descriptors.
+	uint32_t descriptor_count;
+
+	//! Are descriptors freeable, or must vkResetDescriptorPool be used.
+	bool freeable;
+};
+
+/*!
+ * Creates a descriptor pool, made for a single layout.
+ *
+ * Does error logging.
+ */
+VkResult
+vk_create_descriptor_pool(struct vk_bundle *vk,
+                          const struct vk_descriptor_pool_info *info,
+                          VkDescriptorPool *out_descriptor_pool);
+
+/*!
+ * Creates a descriptor set.
+ *
+ * Does error logging.
+ */
+VkResult
+vk_create_descriptor_set(struct vk_bundle *vk,
+                         VkDescriptorPool descriptor_pool,
+                         VkDescriptorSetLayout descriptor_layout,
+                         VkDescriptorSet *out_descriptor_set);
+
+/*!
+ * Creates a pipeline layout from a single descriptor set layout.
+ *
+ * Does error logging.
+ */
+VkResult
+vk_create_pipeline_layout(struct vk_bundle *vk,
+                          VkDescriptorSetLayout descriptor_set_layout,
+                          VkPipelineLayout *out_pipeline_layout);
+
+/*!
+ * Creates a pipeline cache.
+ *
+ * Does error logging.
+ */
+VkResult
+vk_create_pipeline_cache(struct vk_bundle *vk, VkPipelineCache *out_pipeline_cache);
+
+/*!
+ * Creates a compute pipeline, assumes entry function is called 'main'.
+ *
+ * Does error logging.
+ */
+VkResult
+vk_create_compute_pipeline(struct vk_bundle *vk,
+                           VkPipelineCache pipeline_cache,
+                           VkShaderModule shader,
+                           VkPipelineLayout pipeline_layout,
+                           VkPipeline *out_compute_pipeline);
+
+
+/*
+ *
+ * Command buffer helpers, in the vk_command_buffer.c file.
+ *
+ */
+
+/*!
+ * Creates a new command buffer using the bundle's pool, takes the cmd_pool_mutex.
+ *
+ * Does error logging.
+ */
+VkResult
+vk_create_command_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd);
+
+/*!
+ * Destroys a command buffer, takes the cmd_pool_mutex.
+ *
+ * Does error logging.
+ */
+void
+vk_destroy_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
+
+/*!
+ * Issues the vkBeginCommandBuffer function on the command buffer.
+ *
+ * Does error logging.
+ */
+VkResult
+vk_begin_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
+
+/*!
+ * Issues the vkEndCommandBuffer function on the command buffer.
+ *
+ * Does error logging.
+ */
+VkResult
+vk_end_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
+
+
 #ifdef __cplusplus
 }
 #endif

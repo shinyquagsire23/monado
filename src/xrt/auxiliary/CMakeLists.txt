@@ -184,11 +184,13 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/util/u_git_tag.c.in" "${CMAKE_CURREN
 list(APPEND UTIL_SOURCE_FILES "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c")
 
 set(VK_SOURCE_FILES
+	vk/vk_command_buffer.c
 	vk/vk_documentation.h
 	vk/vk_helpers.c
 	vk/vk_helpers.h
 	vk/vk_image_allocator.c
 	vk/vk_image_allocator.h
+	vk/vk_state_creators.c
 	)
 
 # Common includes

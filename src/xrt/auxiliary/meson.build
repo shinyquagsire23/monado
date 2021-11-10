@@ -271,11 +271,13 @@ aux_vive = declare_dependency(
 lib_aux_vk = static_library(
 	'aux_vk',
 	files(
+		'vk/vk_command_buffer.c',
 		'vk/vk_documentation.h',
 		'vk/vk_helpers.h',
 		'vk/vk_helpers.c',
 		'vk/vk_image_allocator.h',
 		'vk/vk_image_allocator.c',
+		'vk/vk_state_creators.c',
 	),
 	include_directories: [
 		xrt_include,
