@@ -42,7 +42,7 @@ struct os_hid_device;
  */
 #define XRT_MAX_DEVICES_PER_PROBE 16
 
-#define MAX_AUTO_PROBERS 16
+#define XRT_MAX_AUTO_PROBERS 16
 
 /*!
  * Function pointer type for a handler that gets called when a device matching vendor and product ID is detected.

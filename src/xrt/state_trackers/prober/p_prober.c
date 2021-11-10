@@ -371,7 +371,7 @@ disable_drivers_from_conflicts(struct prober *p)
 			}
 		}
 
-		for (size_t ap = 0; ap < MAX_AUTO_PROBERS; ap++) {
+		for (size_t ap = 0; ap < XRT_MAX_AUTO_PROBERS; ap++) {
 			if (p->auto_probers[ap] == NULL) {
 				continue;
 			}
@@ -484,7 +484,7 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 		return -1;
 	}
 
-	for (int i = 0; i < MAX_AUTO_PROBERS && lists->auto_probers[i]; i++) {
+	for (int i = 0; i < XRT_MAX_AUTO_PROBERS && lists->auto_probers[i]; i++) {
 		p->auto_probers[i] = lists->auto_probers[i]();
 	}
 
@@ -582,7 +582,7 @@ teardown(struct prober *p)
 	u_var_remove_root((void *)p);
 
 	// Clean up all auto_probers.
-	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
+	for (int i = 0; i < XRT_MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
 		p->auto_probers[i]->destroy(p->auto_probers[i]);
 		p->auto_probers[i] = NULL;
 	}
@@ -702,7 +702,7 @@ add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t xdev_count,
 static void
 add_from_auto_probers(struct prober *p, struct xrt_device **xdevs, size_t xdev_count, bool *have_hmd)
 {
-	for (int i = 0; i < MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
+	for (int i = 0; i < XRT_MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
 
 		bool skip = false;
 		for (size_t disabled = 0; disabled < p->num_disabled_drivers; disabled++) {

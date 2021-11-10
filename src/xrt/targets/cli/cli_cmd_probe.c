@@ -76,7 +76,7 @@ cli_cmd_probe(int argc, const char **argv)
 		printf("\t%s\n", entries[i]->driver_name);
 	}
 
-	for (size_t i = 0; i < MAX_AUTO_PROBERS; i++) {
+	for (size_t i = 0; i < XRT_MAX_AUTO_PROBERS; i++) {
 		if (auto_probers[i] == NULL) {
 			continue;
 		}
