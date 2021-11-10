@@ -5,15 +5,15 @@ Copyright 2018-2021, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
-
 ## Map
 
 The components you will be interacting with is @ref st_prober to find the
 hardware devices and setup a working system, along with the @ref aux code that
-provides various helpers. It is convention in Monado for interfaces to allow
-full, complete control of anything a device might want to modify/control, and to
-provide helper functionality in @ref aux to simplify implementation of the most
-common cases.
+provides various helpers. You will actually be implementing the @ref xrt_device
+interface by writing a driver. It is convention in Monado for interfaces to
+allow full, complete control of anything a device might want to modify/control,
+and to provide helper functionality in @ref aux to simplify implementation of
+the most common cases.
 
 ## Getting started
 
@@ -67,7 +67,8 @@ instances.
 
 Depending on whether your device can be created from a detected USB HID device,
 you will also need to implement either @ref xrt_auto_prober or a function
-matching the prototype for @ref xrt_prober_entry::found. See below for more details.
+matching @ref xrt_prober_found_function_t which is the function pointer type of
+@ref xrt_prober_entry::found. See below for more details.
 
 ## Probing
 
@@ -76,9 +77,10 @@ too hard: you use the auto prober interface when the basic USB VID/PID-based
 interface is not sufficient for you to detect presence/absence of your device,
 or if you don't want to use the built-in HID support for some reason.
 
-If you can use built-in HID, you might consider looking at @ref hdk_found, which
-is a nice example of how to implement detection of an HMD based on the USB HID
-for its IMU.
+If you can detect based on VID/PID, you will instead implement If you can use
+built-in HID, you might consider looking at @ref hdk_found, which is a nice
+example of how to implement @ref xrt_prober_found_function_t to perform
+detection of an HMD based on the USB HID for its IMU.
 
 Either way, your device's detection details will need to be added to a list used
 by the prober at @ref xrt_instance startup time. The stock lists for mainline
