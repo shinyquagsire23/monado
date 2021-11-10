@@ -1102,8 +1102,8 @@ p_get_string_descriptor(struct xrt_prober *xp,
 	XRT_TRACE_MARKER();
 
 	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
-	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
-	XRT_MAYBE_UNUSED int ret;
+	struct prober_device *pdev = (struct prober_device *)xpdev;
+	int ret = 0;
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->base.bus == XRT_BUS_TYPE_USB && pdev->usb.dev != NULL) {
 		ret = p_libusb_get_string_descriptor(p, pdev, which_string, buffer, max_length);
