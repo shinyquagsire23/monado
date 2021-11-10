@@ -5,5 +5,8 @@
 - mr.820
 - mr.817
 - mr.918
+- mr.920
+- mr.942
+- mr.1020
 ---
 More improvements to the Android port.

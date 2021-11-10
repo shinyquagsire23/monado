@@ -17,7 +17,7 @@ plugins {
 
 androidGitVersion {
     tagPattern(/^v[0-9]+.*/)
-    codeFormat = 'MMNNPPBBB'
+    codeFormat = 'MMNPBBBBB'
     format = '%tag%%-count%%-gcommit%%-dirty%'
 }
 
