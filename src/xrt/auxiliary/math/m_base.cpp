@@ -349,41 +349,55 @@ math_quat_slerp(const struct xrt_quat *left, const struct xrt_quat *right, float
 void
 math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
                          const struct xrt_matrix_2x2 *right,
-                         struct xrt_matrix_2x2 *result)
+                         struct xrt_matrix_2x2 *result_out)
 {
-	result->v[0] = left->v[0] * right->v[0] + left->v[1] * right->v[2];
-	result->v[1] = left->v[0] * right->v[1] + left->v[1] * right->v[3];
-	result->v[2] = left->v[2] * right->v[0] + left->v[3] * right->v[2];
-	result->v[3] = left->v[2] * right->v[1] + left->v[3] * right->v[3];
+	const struct xrt_matrix_2x2 l = *left;
+	const struct xrt_matrix_2x2 r = *right;
+
+	struct xrt_matrix_2x2 result = {{
+	    l.v[0] * r.v[0] + l.v[1] * r.v[2],
+	    l.v[0] * r.v[1] + l.v[1] * r.v[3],
+	    l.v[2] * r.v[0] + l.v[3] * r.v[2],
+	    l.v[2] * r.v[1] + l.v[3] * r.v[3],
+	}};
+
+	*result_out = result;
 }
 
 extern "C" void
-math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left, const struct xrt_vec3 *right, struct xrt_vec3 *result)
+math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
+                               const struct xrt_vec3 *right,
+                               struct xrt_vec3 *result_out)
 {
 	Eigen::Matrix3f m;
 	m << left->v[0], left->v[1], left->v[2], // 1
 	    left->v[3], left->v[4], left->v[5],  // 2
 	    left->v[6], left->v[7], left->v[8];  // 3
 
-	map_vec3(*result) = m * copy(right);
+	map_vec3(*result_out) = m * copy(right);
 }
 
 extern "C" void
 math_matrix_3x3_multiply(const struct xrt_matrix_3x3 *left,
                          const struct xrt_matrix_3x3 *right,
-                         struct xrt_matrix_3x3 *result)
+                         struct xrt_matrix_3x3 *result_out)
 {
-	result->v[0] = left->v[0] * right->v[0] + left->v[1] * right->v[3] + left->v[2] * right->v[6];
-	result->v[1] = left->v[0] * right->v[1] + left->v[1] * right->v[4] + left->v[2] * right->v[7];
-	result->v[2] = left->v[0] * right->v[2] + left->v[1] * right->v[5] + left->v[2] * right->v[8];
+	const struct xrt_matrix_3x3 l = *left;
+	const struct xrt_matrix_3x3 r = *right;
 
-	result->v[3] = left->v[3] * right->v[0] + left->v[4] * right->v[3] + left->v[5] * right->v[6];
-	result->v[4] = left->v[3] * right->v[1] + left->v[4] * right->v[4] + left->v[5] * right->v[7];
-	result->v[5] = left->v[3] * right->v[2] + left->v[4] * right->v[5] + left->v[5] * right->v[8];
+	struct xrt_matrix_3x3 result = {{
+	    l.v[0] * r.v[0] + l.v[1] * r.v[3] + l.v[2] * r.v[6],
+	    l.v[0] * r.v[1] + l.v[1] * r.v[4] + l.v[2] * r.v[7],
+	    l.v[0] * r.v[2] + l.v[1] * r.v[5] + l.v[2] * r.v[8],
+	    l.v[3] * r.v[0] + l.v[4] * r.v[3] + l.v[5] * r.v[6],
+	    l.v[3] * r.v[1] + l.v[4] * r.v[4] + l.v[5] * r.v[7],
+	    l.v[3] * r.v[2] + l.v[4] * r.v[5] + l.v[5] * r.v[8],
+	    l.v[6] * r.v[0] + l.v[7] * r.v[3] + l.v[8] * r.v[6],
+	    l.v[6] * r.v[1] + l.v[7] * r.v[4] + l.v[8] * r.v[7],
+	    l.v[6] * r.v[2] + l.v[7] * r.v[5] + l.v[8] * r.v[8],
+	}};
 
-	result->v[6] = left->v[6] * right->v[0] + left->v[7] * right->v[3] + left->v[8] * right->v[6];
-	result->v[7] = left->v[6] * right->v[1] + left->v[7] * right->v[4] + left->v[8] * right->v[7];
-	result->v[8] = left->v[6] * right->v[2] + left->v[7] * right->v[5] + left->v[8] * right->v[8];
+	*result_out = result;
 }
 
 extern "C" void

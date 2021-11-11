@@ -316,12 +316,12 @@ math_quat_slerp(const struct xrt_quat *left, const struct xrt_quat *right, float
 void
 math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
                          const struct xrt_matrix_2x2 *right,
-                         struct xrt_matrix_2x2 *result);
+                         struct xrt_matrix_2x2 *result_out);
 
 void
 math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
                                const struct xrt_vec3 *right,
-                               struct xrt_vec3 *result);
+                               struct xrt_vec3 *result_out);
 
 /*!
  * Multiply Matrix3x3.
@@ -332,7 +332,7 @@ math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
 void
 math_matrix_3x3_multiply(const struct xrt_matrix_3x3 *left,
                          const struct xrt_matrix_3x3 *right,
-                         struct xrt_matrix_3x3 *result);
+                         struct xrt_matrix_3x3 *result_out);
 
 /*!
  * Invert Matrix3x3
