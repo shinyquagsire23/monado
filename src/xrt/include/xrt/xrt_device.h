@@ -23,15 +23,18 @@ struct xrt_tracking;
 
 
 /*!
- * A per-lens view information.
+ * A per-lens/display view information.
  *
  * @ingroup xrt_iface
  */
 struct xrt_view
 {
 	/*!
-	 * Viewport position on the screen, in absolute screen coordinates on
-	 * an unrotated display, like the HMD presents it to the OS.
+	 * @brief Viewport position on the screen.
+	 *
+	 * In absolute screen coordinates on an unrotated display, like the
+	 * HMD presents it to the OS.
+	 *
 	 * This field is only used by @ref comp to setup the device rendering.
 	 *
 	 * If the view is being rotated by xrt_view.rot 90° right in the
@@ -47,14 +50,16 @@ struct xrt_view
 	} viewport;
 
 	/*!
-	 * Physical properties of this display (or the part of a display that
-	 * covers this view), not in absolute screen coordinates but like the
-	 * clients see them i.e. after rotation is applied by xrt_view::rot.
+	 * @brief Physical properties of this display (or the part of a display
+	 * that covers this view).
+	 *
+	 * Not in absolute screen coordinates but like the clients see them i.e.
+	 * after rotation is applied by xrt_view::rot.
 	 * This field is only used for the clients' swapchain setup.
 	 *
 	 * The xrt_view::display::w_pixels and xrt_view::display::h_pixels
 	 * become the recommended image size for this view, after being scaled
-	 * by XRT_COMPOSITOR_SCALE_PERCENTAGE.
+	 * by the debug environment variable `XRT_COMPOSITOR_SCALE_PERCENTAGE`.
 	 */
 	struct
 	{
@@ -65,9 +70,11 @@ struct xrt_view
 	} display;
 
 	/*!
-	 * Rotation 2d matrix used to rotate the position of the output of the
-	 * distortion shaders onto the screen. If the distortion shader is
-	 * based on mesh, then this matrix rotates the vertex positions.
+	 * @brief Rotation 2d matrix used to rotate the position of the output
+	 * of the distortion shaders onto the screen.
+	 *
+	 * If the distortion shader is based on a mesh, then this matrix rotates
+	 * the vertex positions.
 	 */
 	struct xrt_matrix_2x2 rot;
 
@@ -87,8 +94,8 @@ struct xrt_view
 struct xrt_hmd_parts
 {
 	/*!
-	 * The hmd screen as an unrotated display, like the HMD presents it to
-	 * the OS.
+	 * @brief The hmd screen as an unrotated display, like the HMD presents
+	 * it to the OS.
 	 *
 	 * This field is used by @ref comp to setup the extended mode window.
 	 */
@@ -265,9 +272,11 @@ struct xrt_device
 	void (*update_inputs)(struct xrt_device *xdev);
 
 	/*!
-	 * Get relationship of a tracked device to the tracking origin space as
-	 * the base space. It is the responsibility of the device driver to do
-	 * any prediction, there are helper functions available for this.
+	 * @brief Get relationship of a tracked device to the tracking origin
+	 * space as the base space.
+	 *
+	 * It is the responsibility of the device driver to do any prediction,
+	 * there are helper functions available for this.
 	 *
 	 * The timestamps are system monotonic timestamps, such as returned by
 	 * os_monotonic_get_ns().
@@ -289,9 +298,12 @@ struct xrt_device
 	                         struct xrt_space_relation *out_relation);
 
 	/*!
-	 * Get relationship of hand joints to the tracking origin space as
-	 * the base space. It is the responsibility of the device driver to either do prediction or return joints from a
-	 * previous time and write that time out to out_timestamp_ns.
+	 * @brief Get relationship of hand joints to the tracking origin space as
+	 * the base space.
+	 *
+	 * It is the responsibility of the device driver to either do prediction
+	 * or return joints from a previous time and write that time out to
+	 * @p out_timestamp_ns.
 	 *
 	 * The timestamps are system monotonic timestamps, such as returned by
 	 * os_monotonic_get_ns().
@@ -299,23 +311,22 @@ struct xrt_device
 	 * @param[in] xdev           The device.
 	 * @param[in] name           Some devices may have multiple poses on
 	 *                           them, select the one using this field. For
-	 *                           hand tracking use @p
-	 * XRT_INPUT_GENERIC_HAND_TRACKING_DEFAULT_SET.
+	 *                           hand tracking use @p XRT_INPUT_GENERIC_HAND_TRACKING_DEFAULT_SET.
 	 * @param[in] at_timestamp_ns If the device can predict or has a history
 	 *                            of positions, this is when the caller
 	 *                            wants the pose to be from.
 	 * @param[out] out_relation The relation read from the device.
 	 *
-	 * @param[out] out_timestamp_ns
+	 * @param[out] out_timestamp_ns The timestamp of the data being returned.
 	 *
 	 * @see xrt_input_name
 	 */
-
 	void (*get_hand_tracking)(struct xrt_device *xdev,
 	                          enum xrt_input_name name,
 	                          uint64_t desired_timestamp_ns,
 	                          struct xrt_hand_joint_set *out_value,
 	                          uint64_t *out_timestamp_ns);
+
 	/*!
 	 * Set a output value.
 	 *
@@ -328,8 +339,14 @@ struct xrt_device
 	void (*set_output)(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value);
 
 	/*!
-	 * Get the per view pose in relation to the view space. Does not do any
-	 * device level tracking, use get_tracked_pose for that.
+	 * @brief Get the per-view pose in relation to the view space.
+	 *
+	 * On most device with coplanar displays, this just calls a helper to
+	 * process the provided eye relation, but this may also handle canted
+	 * displays as well as eye tracking.
+	 *
+	 * Does not do any device level tracking, use
+	 * xrt_device::get_tracked_pose for that.
 	 *
 	 * @param[in] xdev         The device.
 	 * @param[in] eye_relation The interpupillary relation as a 3D position.
@@ -337,13 +354,17 @@ struct xrt_device
 	 *                         set `out_pose->position.[x|y|z] = ipd.[x|y|z]
 	 *                         / 2.0f` and adjust for left vs right view.
 	 *                         Not to be confused with IPD that is absolute
-	 *                         distance, this is a full 3D translation.
-	 *                         @todo make this param a pointer to const.
+	 *                         distance, this is a full 3D translation
+	 *                         If a device has a more accurate/dynamic way of
+	 *                         knowing the eye relation, it may ignore this
+	 *                         input.
 	 * @param[in] view_index   Index of view.
 	 * @param[out] out_pose    Output pose. See eye_relation argument for
 	 *                         sample position. Be sure to also set
 	 *                         orientation: most likely identity
 	 *                         orientation unless you have canted screens.
+	 *                         (Caution: Even if you have eye tracking, you
+	 *                         won't use eye orientation here!)
 	 */
 	void (*get_view_pose)(struct xrt_device *xdev,
 	                      const struct xrt_vec3 *eye_relation,
