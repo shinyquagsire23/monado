@@ -58,3 +58,47 @@ endif()
 # STB
 add_library(xrt-external-stb INTERFACE)
 target_include_directories(xrt-external-stb INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/stb)
+
+# imgui
+if(XRT_HAVE_SDL2)
+	# c-imgui doesn't do well with IPO - lots of warnings.
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+	add_library(
+		xrt-external-imgui STATIC
+		imgui/imgui/cimgui.cpp
+		imgui/imgui/cimgui.h
+		imgui/imgui/cimplot.cpp
+		imgui/imgui/cimplot.h
+		imgui/imgui/imconfig.h
+		imgui/imgui/imgui.cpp
+		imgui/imgui/imgui.h
+		imgui/imgui/imgui_demo.cpp
+		imgui/imgui/imgui_draw.cpp
+		imgui/imgui/imgui_impl_opengl3.cpp
+		imgui/imgui/imgui_impl_opengl3.h
+		imgui/imgui/imgui_internal.h
+		imgui/imgui/imgui_widgets.cpp
+		imgui/imgui/implot.cpp
+		imgui/imgui/implot.h
+		imgui/imgui/implot_demo.cpp
+		imgui/imgui/implot_internal.h
+		imgui/imgui/implot_items.cpp
+		imgui/imgui/imstb_rectpack.h
+		imgui/imgui/imstb_textedit.h
+		imgui/imgui/imstb_truetype.h
+		imgui/imgui_monado/imgui_monado.cpp
+		)
+	target_include_directories(xrt-external-imgui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+
+	target_compile_definitions(xrt-external-imgui PUBLIC CIMGUI_NO_EXPORT)
+	target_link_libraries(xrt-external-imgui PRIVATE xrt-external-glad)
+
+	add_library(
+		xrt-external-imgui-sdl2 STATIC imgui/imgui/cimgui_sdl.cpp imgui/imgui/imgui_impl_sdl.cpp
+									   imgui/imgui/imgui_impl_sdl.h
+		)
+	target_link_libraries(xrt-external-imgui-sdl2 PRIVATE xrt-external-imgui ${SDL2_LIBRARIES})
+
+	target_include_directories(xrt-external-imgui-sdl2 PRIVATE ${SDL2_INCLUDE_DIRS})
+	target_include_directories(xrt-external-imgui-sdl2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+endif()
