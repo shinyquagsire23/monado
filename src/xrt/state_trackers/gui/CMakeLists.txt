@@ -23,25 +23,28 @@ add_library(
 	gui_window_record.h
 	)
 
-target_link_libraries(st_gui PRIVATE xrt-external-stb aux_util aux_os aux_ogl)
-target_include_directories(st_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR}/../../drivers)
+target_link_libraries(
+	st_gui
+	PRIVATE
+		xrt-external-stb
+		aux_util
+		aux_os
+		aux_ogl
+		drv_includes
+		xrt-external-imgui
+	)
+target_include_directories(st_gui INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 if(XRT_HAVE_GST)
-	target_link_libraries(st_gui PRIVATE
-		aux_gstreamer
-		)
+	target_link_libraries(st_gui PRIVATE aux_gstreamer)
 endif()
 
 if(XRT_BUILD_DRIVER_DEPTHAI)
-    target_link_libraries(st_gui PRIVATE
-        drv_depthai
-        )
+	target_link_libraries(st_gui PRIVATE drv_depthai)
 endif()
 
 if(XRT_BUILD_DRIVER_REMOTE)
-	target_link_libraries(st_gui PRIVATE
-		drv_remote
-		)
+	target_link_libraries(st_gui PRIVATE drv_remote)
 endif()
 
 if(XRT_HAVE_SDL2)

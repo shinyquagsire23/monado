@@ -1,25 +1,37 @@
-# Copyright 2019-2020, Collabora, Ltd.
+# Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 add_subdirectory(bindings)
 
-set(ANDROID_SOURCE_FILES
-	android/android_ahardwarebuffer_allocator.c
-	android/android_ahardwarebuffer_allocator.h
-	android/android_custom_surface.cpp
-	android/android_custom_surface.h
-	android/android_globals.cpp
-	android/android_globals.h
-	android/android_load_class.cpp
-	android/android_load_class.hpp
-	android/android_looper.c
-	android/android_looper.h
-	android/org.freedesktop.monado.auxiliary.cpp
-	android/org.freedesktop.monado.auxiliary.hpp
-	android/org.freedesktop.monado.auxiliary.impl.hpp
+# Common includes
+add_library(aux-includes INTERFACE)
+target_include_directories(
+	aux-includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 	)
+target_link_libraries(aux-includes INTERFACE xrt-interfaces)
 
-set(MATH_SOURCE_FILES
+# OpenGL library.
+if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
+	add_library(
+		aux_ogl STATIC
+		ogl/ogl_documentation.h
+		ogl/ogl_api.c
+		ogl/ogl_api.h
+		ogl/ogl_helpers.c
+		ogl/ogl_helpers.h
+		)
+	target_link_libraries(aux_ogl PUBLIC aux-includes xrt-external-glad)
+	if(XRT_HAVE_EGL)
+		target_sources(aux_ogl PRIVATE ogl/egl_api.c ogl/egl_api.h)
+	endif()
+	if(XRT_HAVE_OPENGLES)
+		target_link_libraries(aux_ogl PUBLIC EGL::EGL)
+	endif()
+endif()
+
+# Math library.
+add_library(
+	aux_math STATIC
 	math/m_api.h
 	math/m_base.cpp
 	math/m_eigen_interop.hpp
@@ -45,47 +57,43 @@ set(MATH_SOURCE_FILES
 	math/m_vec2.h
 	math/m_vec3.h
 	)
+target_link_libraries(aux_math PUBLIC aux-includes aux_util)
+target_include_directories(aux_math SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
 
-set(OGL_SOURCE_FILES
-	ogl/ogl_documentation.h
-	)
-if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
-	list(APPEND OGL_SOURCE_FILES
-		ogl/ogl_api.c
-		ogl/ogl_api.h
-		ogl/ogl_helpers.c
-		ogl/ogl_helpers.h
-		)
-endif()
-if(XRT_HAVE_EGL)
-	list(APPEND OGL_SOURCE_FILES
-		ogl/egl_api.c
-		ogl/egl_api.h
-		)
-endif()
-
-set(OS_SOURCE_FILES
+# OS library.
+add_library(
+	aux_os STATIC
 	os/os_ble.h
 	os/os_documentation.h
 	os/os_hid.h
 	os/os_hid_hidraw.c
 	os/os_threading.h
 	)
+target_link_libraries(aux_os PUBLIC aux-includes xrt-pthreads)
 if(XRT_HAVE_DBUS)
-	list(APPEND OS_SOURCE_FILES
-		os/os_ble_dbus.c
-		)
+	target_sources(aux_os PRIVATE os/os_ble_dbus.c)
+	target_link_libraries(aux_os PRIVATE ${DBUS_LIBRARIES})
+	target_include_directories(aux_os SYSTEM PRIVATE ${DBUS_INCLUDE_DIRS})
 endif()
 
-set(GSTREAMER_SOURCE_FILES
-	gstreamer/gst_internal.h
-	gstreamer/gst_sink.h
-	gstreamer/gst_sink.c
-	gstreamer/gst_pipeline.h
-	gstreamer/gst_pipeline.c
-	)
+# GStreamer library.
+if(XRT_HAVE_GST)
+	add_library(
+		aux_gstreamer STATIC
+		gstreamer/gst_internal.h
+		gstreamer/gst_sink.h
+		gstreamer/gst_sink.c
+		gstreamer/gst_pipeline.h
+		gstreamer/gst_pipeline.c
+		)
+	target_link_libraries(aux_gstreamer PUBLIC aux-includes)
+	target_link_libraries(aux_gstreamer PRIVATE xrt-interfaces aux_math aux_os ${GST_LIBRARIES})
+	target_include_directories(aux_gstreamer PRIVATE ${GST_INCLUDE_DIRS})
+endif()
 
-set(TRACKING_SOURCE_FILES
+# Tracking library.
+add_library(
+	aux_tracking STATIC
 	tracking/t_data_utils.c
 	tracking/t_imu_fusion.hpp
 	tracking/t_imu.cpp
@@ -94,33 +102,45 @@ set(TRACKING_SOURCE_FILES
 	tracking/t_lowpass.hpp
 	tracking/t_tracking.h
 	)
+target_link_libraries(
+	aux_tracking
+	PUBLIC aux-includes
+	PRIVATE aux_math aux_util xrt-external-flexkalman xrt-external-hungarian
+	)
+target_include_directories(aux_tracking SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
 if(XRT_HAVE_OPENCV)
-	list(APPEND TRACKING_SOURCE_FILES
-		tracking/t_calibration_opencv.hpp
-		tracking/t_calibration.cpp
-		tracking/t_convert.cpp
-		tracking/t_debug_hsv_filter.cpp
-		tracking/t_debug_hsv_picker.cpp
-		tracking/t_debug_hsv_viewer.cpp
-		tracking/t_file.cpp
-		tracking/t_frame_cv_mat_wrapper.cpp
-		tracking/t_frame_cv_mat_wrapper.hpp
-		tracking/t_fusion.hpp
-		tracking/t_helper_debug_sink.hpp
-		tracking/t_hsv_filter.c
-		tracking/t_kalman.cpp
-		tracking/t_tracker_psmv_fusion.hpp
-		tracking/t_tracker_psmv.cpp
-		tracking/t_tracker_psvr.cpp
-		tracking/t_tracker_hand.cpp
+	target_sources(
+		aux_tracking
+		PRIVATE
+			tracking/t_calibration_opencv.hpp
+			tracking/t_calibration.cpp
+			tracking/t_convert.cpp
+			tracking/t_debug_hsv_filter.cpp
+			tracking/t_debug_hsv_picker.cpp
+			tracking/t_debug_hsv_viewer.cpp
+			tracking/t_file.cpp
+			tracking/t_frame_cv_mat_wrapper.cpp
+			tracking/t_frame_cv_mat_wrapper.hpp
+			tracking/t_fusion.hpp
+			tracking/t_helper_debug_sink.hpp
+			tracking/t_hsv_filter.c
+			tracking/t_kalman.cpp
+			tracking/t_tracker_psmv_fusion.hpp
+			tracking/t_tracker_psmv.cpp
+			tracking/t_tracker_psvr.cpp
+			tracking/t_tracker_hand.cpp
 		)
-
+	target_include_directories(aux_tracking SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
+	target_link_libraries(aux_tracking PUBLIC ${OpenCV_LIBRARIES})
 endif()
 if(XRT_HAVE_SLAM)
-	list(APPEND TRACKING_SOURCE_FILES tracking/t_tracker_slam.cpp)
+	target_sources(aux_tracking PRIVATE tracking/t_tracker_slam.cpp)
+	target_link_libraries(aux_tracking PRIVATE xrt-external-slam)
 endif()
 
-set(UTIL_SOURCE_FILES
+# Util library.
+add_library(
+	aux_util STATIC
 	util/u_bitwise.c
 	util/u_bitwise.h
 	util/u_debug.c
@@ -178,75 +198,24 @@ set(UTIL_SOURCE_FILES
 	util/u_verify.h
 	util/u_process.c
 	util/u_process.h
+	"${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c"
 	)
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/util/u_git_tag.c.in" "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c" @ONLY)
-list(APPEND UTIL_SOURCE_FILES "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c")
-
-set(VK_SOURCE_FILES
-	vk/vk_command_buffer.c
-	vk/vk_documentation.h
-	vk/vk_helpers.c
-	vk/vk_helpers.h
-	vk/vk_image_allocator.c
-	vk/vk_image_allocator.h
-	vk/vk_state_creators.c
+configure_file(
+	"${CMAKE_CURRENT_SOURCE_DIR}/util/u_git_tag.c.in" "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c"
+	@ONLY
 	)
-
-# Common includes
-add_library(aux-includes INTERFACE)
-target_include_directories(aux-includes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(aux-includes INTERFACE xrt-interfaces)
-
-if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
-	# OpenGL library.
-	add_library(aux_ogl STATIC ${OGL_SOURCE_FILES})
-	target_link_libraries(aux_ogl PUBLIC aux-includes)
-	# for GLAD
-	target_link_libraries(aux_ogl PUBLIC xrt-external-glad)
-	if(XRT_HAVE_OPENGLES)
-		target_link_libraries(aux_ogl PUBLIC EGL::EGL)
-	endif()
-endif()
-
-# OS library.
-add_library(aux_os STATIC ${OS_SOURCE_FILES})
-target_link_libraries(aux_os PUBLIC aux-includes xrt-pthreads)
-if(XRT_HAVE_DBUS)
-	target_link_libraries(aux_os PRIVATE ${DBUS_LIBRARIES})
-	target_include_directories(aux_os SYSTEM
-		PRIVATE
-		${DBUS_INCLUDE_DIRS}
-		)
-endif()
-
-
-# Math library.
-add_library(aux_math STATIC ${MATH_SOURCE_FILES})
-target_link_libraries(aux_math PUBLIC aux-includes aux_util)
-
-# Math files has extra include(s).
-target_include_directories(aux_math SYSTEM
-	PRIVATE ${EIGEN3_INCLUDE_DIR}
-	)
-
-# Util library.
-add_library(aux_util STATIC ${UTIL_SOURCE_FILES})
-target_link_libraries(aux_util PUBLIC aux-includes xrt-pthreads aux_generated_bindings)
-# for u_device
-target_link_libraries(aux_util PUBLIC aux_math)
+target_link_libraries(aux_util PUBLIC aux-includes xrt-pthreads aux_generated_bindings aux_math)
 if(XRT_HAVE_JPEG)
 	target_link_libraries(aux_util PRIVATE ${JPEG_LIBRARIES})
 	target_include_directories(aux_util PRIVATE ${JPEG_INCLUDE_DIRS})
 endif()
-# for cJSON
 if(XRT_HAVE_SYSTEM_CJSON)
 	target_link_libraries(aux_util PUBLIC cJSON::cJSON)
 	target_compile_definitions(aux_util PRIVATE XRT_HAVE_SYSTEM_CJSON)
 else()
 	target_link_libraries(aux_util PUBLIC xrt-external-cjson)
 endif()
-# For u_trace_marker
 if(XRT_FEATURE_TRACING AND XRT_HAVE_PERCETTO)
 	target_link_libraries(aux_util PUBLIC Percetto::percetto)
 endif()
@@ -258,62 +227,18 @@ if(ANDROID)
 	target_link_libraries(aux_util PUBLIC ${ANDROID_LOG_LIBRARY})
 endif()
 
-
-# GStreamer library.
-if(XRT_HAVE_GST)
-	add_library(aux_gstreamer STATIC ${GSTREAMER_SOURCE_FILES})
-	target_link_libraries(aux_gstreamer PUBLIC
-		aux-includes
-		)
-	target_link_libraries(aux_gstreamer PRIVATE
-		xrt-interfaces
-		aux_math
-		aux_os
-		${GST_LIBRARIES}
-		)
-	target_include_directories(aux_gstreamer PRIVATE
-		${GST_INCLUDE_DIRS}
-		)
-endif()
-
-# Tracking library.
-add_library(aux_tracking STATIC ${TRACKING_SOURCE_FILES})
-target_link_libraries(aux_tracking PUBLIC aux-includes PRIVATE aux_math aux_util)
-
-# Tracking files have extra includes.
-target_include_directories(aux_tracking SYSTEM
-	PRIVATE
-	${EIGEN3_INCLUDE_DIR}
-	)
-target_link_libraries(aux_tracking PRIVATE
-	xrt-external-flexkalman
-	xrt-external-hungarian
-	)
-if(XRT_HAVE_OPENCV)
-	target_include_directories(aux_tracking SYSTEM
-		PRIVATE
-		${OpenCV_INCLUDE_DIRS}
-		)
-	target_link_libraries(aux_tracking PUBLIC ${OpenCV_LIBRARIES})
-	if(XRT_HAVE_SLAM)
-		target_link_libraries(aux_tracking PRIVATE xrt-external-slam)
-	endif()
-endif()
-
-if (XRT_BUILD_DRIVER_VIVE OR XRT_BUILD_DRIVER_SURVIVE)
-	set(VIVE_CONFIG_SOURCE_FILES
-		vive/vive_config.h
-		vive/vive_config.c
-		)
-	add_library(aux_vive STATIC ${VIVE_CONFIG_SOURCE_FILES})
-	target_link_libraries(aux_vive PRIVATE xrt-interfaces aux_util aux_math aux_tracking xrt-external-cjson)
-	target_link_libraries(aux_vive PRIVATE ${ZLIB_LIBRARIES})
-	target_include_directories(aux_vive PRIVATE ${ZLIB_INCLUDE_DIRS})
-endif()
-
 if(XRT_HAVE_VULKAN)
 	# Vulkan library.
-	add_library(aux_vk STATIC ${VK_SOURCE_FILES})
+	add_library(
+		aux_vk STATIC
+		vk/vk_command_buffer.c
+		vk/vk_documentation.h
+		vk/vk_helpers.c
+		vk/vk_helpers.h
+		vk/vk_image_allocator.c
+		vk/vk_image_allocator.h
+		vk/vk_state_creators.c
+		)
 	target_link_libraries(aux_vk PUBLIC aux_os aux_util)
 	target_link_libraries(aux_vk PUBLIC Vulkan::Vulkan)
 	target_include_directories(aux_vk PUBLIC ${Vulkan_INCLUDE_DIR})
@@ -322,15 +247,58 @@ if(XRT_HAVE_VULKAN)
 	endif()
 endif()
 
+if(XRT_BUILD_DRIVER_VIVE OR XRT_BUILD_DRIVER_SURVIVE)
+	set(VIVE_CONFIG_SOURCE_FILES vive/vive_config.h vive/vive_config.c)
+	add_library(aux_vive STATIC ${VIVE_CONFIG_SOURCE_FILES})
+	target_link_libraries(
+		aux_vive
+		PRIVATE
+			xrt-interfaces
+			aux_util
+			aux_math
+			aux_tracking
+			xrt-external-cjson
+			${ZLIB_LIBRARIES}
+		)
+	target_include_directories(aux_vive PRIVATE ${ZLIB_INCLUDE_DIRS})
+endif()
 
 if(ANDROID)
-	add_library(android_app_glue STATIC
-		${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
-	target_include_directories(android_app_glue PUBLIC ${ANDROID_NDK}/sources/android/native_app_glue)
-	add_library(aux_android STATIC ${ANDROID_SOURCE_FILES})
-	target_link_libraries(aux_android
+	add_library(
+		android_app_glue STATIC
+		${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
+		)
+	target_include_directories(
+		android_app_glue PUBLIC ${ANDROID_NDK}/sources/android/native_app_glue
+		)
+	# disable these warnings in external code
+	target_compile_options(android_app_glue PRIVATE -Wno-format-pedantic)
+
+	add_library(
+		aux_android STATIC
+		android/android_ahardwarebuffer_allocator.c
+		android/android_ahardwarebuffer_allocator.h
+		android/android_custom_surface.cpp
+		android/android_custom_surface.h
+		android/android_globals.cpp
+		android/android_globals.h
+		android/android_load_class.cpp
+		android/android_load_class.hpp
+		android/android_looper.c
+		android/android_looper.h
+		android/org.freedesktop.monado.auxiliary.cpp
+		android/org.freedesktop.monado.auxiliary.hpp
+		android/org.freedesktop.monado.auxiliary.impl.hpp
+		)
+	target_link_libraries(
+		aux_android
 		PUBLIC aux_util
-		PRIVATE ${ANDROID_LIBRARY} ${ANDROID_LOG_LIBRARY} xrt-external-jni-wrap xrt-external-jnipp android_app_glue
+		PRIVATE
+			${ANDROID_LIBRARY}
+			${ANDROID_LOG_LIBRARY}
+			xrt-external-jni-wrap
+			xrt-external-jnipp
+			android_app_glue
 		)
 	target_link_libraries(aux_vk PUBLIC aux_android)
 endif()

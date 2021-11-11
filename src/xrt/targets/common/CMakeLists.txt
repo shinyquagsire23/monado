@@ -1,24 +1,19 @@
-# Copyright 2019-2020, Collabora, Ltd.
+# Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
-
 
 ####
 # Lists
 #
 
-add_library(target_lists STATIC
-	target_lists.c
+add_library(target_lists STATIC target_lists.c)
+target_link_libraries(
+	target_lists
+	PRIVATE
+		xrt-interfaces
+		aux_util # TODO Remove this after removing #include "util/u_time.h" from xrt_defines.h
+		drv_includes
 	)
-target_link_libraries(target_lists PRIVATE
-	xrt-interfaces
-	aux_util # TODO Remove this after removing #include "util/u_time.h" from xrt_defines.h
-	)
-target_include_directories(target_lists PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
-	)
-target_include_directories(target_lists PUBLIC
-	${CMAKE_CURRENT_SOURCE_DIR}
-	)
+target_include_directories(target_lists PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(XRT_BUILD_DRIVER_ARDUINO)
 	target_link_libraries(target_lists PRIVATE drv_arduino)
@@ -114,40 +109,32 @@ endif()
 # Instance
 #
 if(XRT_FEATURE_COMPOSITOR_MAIN)
-	add_library(target_instance STATIC
-		target_instance.c
+	add_library(target_instance STATIC target_instance.c)
+	target_link_libraries(
+		target_instance
+		PRIVATE
+			xrt-interfaces
+			aux_util
+			st_prober
+			target_lists
+			comp_main
+			drv_includes
 		)
-	target_link_libraries(target_instance PRIVATE
-		xrt-interfaces
-		aux_util
-		st_prober
-		target_lists
-		comp_main
-		)
-	target_include_directories(target_instance PRIVATE
-		${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
-		)
-	target_include_directories(target_instance PUBLIC
-		${CMAKE_CURRENT_SOURCE_DIR}
-		)
+	target_include_directories(target_instance PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 ####
 # Instance without Compositor
 #
 
-add_library(target_instance_no_comp STATIC
-	target_instance_no_comp.c
+add_library(target_instance_no_comp STATIC target_instance_no_comp.c)
+target_link_libraries(
+	target_instance_no_comp
+	PRIVATE
+		xrt-interfaces
+		aux_util
+		st_prober
+		target_lists
+		drv_includes
 	)
-target_link_libraries(target_instance_no_comp PRIVATE
-	xrt-interfaces
-	aux_util
-	st_prober
-	target_lists
-	)
-target_include_directories(target_instance_no_comp PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR}/../../drivers
-	)
-target_include_directories(target_instance_no_comp PUBLIC
-	${CMAKE_CURRENT_SOURCE_DIR}
-	)
+target_include_directories(target_instance_no_comp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

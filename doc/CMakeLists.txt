@@ -3,9 +3,14 @@
 
 # check if Doxygen is installed
 find_package(Doxygen)
+
+# cmake-format: off
+
 cmake_dependent_option(BUILD_DOC "Build documentation" ON "DOXYGEN_FOUND" OFF)
 cmake_dependent_option(BUILD_DOC_WARN_UNDOCUMENTED "Warn on undocumented entities when building documentation" OFF "DOXYGEN_FOUND" OFF)
 cmake_dependent_option(BUILD_DOC_EXTRACT_ALL "Extract all entities for documentation, not just documented ones (conflicts with BUILD_DOC_WARN_UNDOCUMENTED)" ON "DOXYGEN_FOUND AND NOT BUILD_DOC_WARN_UNDOCUMENTED" OFF)
+
+# cmake-format: on
 
 if(BUILD_DOC)
 	if(BUILD_DOC_WARN_UNDOCUMENTED)
@@ -30,15 +35,18 @@ if(BUILD_DOC)
 	configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
 
 	# copy the schema
-	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/example_configs/config_v0.schema.json
-		${CMAKE_CURRENT_BINARY_DIR}/html/config_v0.schema.json
-		@ONLY)
-	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/example_configs/config_v0.schema.json.license
-		${CMAKE_CURRENT_BINARY_DIR}/html/config_v0.schema.json.license
-		@ONLY)
+	configure_file(
+		${CMAKE_CURRENT_SOURCE_DIR}/example_configs/config_v0.schema.json
+		${CMAKE_CURRENT_BINARY_DIR}/html/config_v0.schema.json @ONLY
+		)
+	configure_file(
+		${CMAKE_CURRENT_SOURCE_DIR}/example_configs/config_v0.schema.json.license
+		${CMAKE_CURRENT_BINARY_DIR}/html/config_v0.schema.json.license @ONLY
+		)
 
 	# note the option ALL which allows to build the docs together with the application
-	add_custom_target(doc_doxygen ALL
+	add_custom_target(
+		doc_doxygen ALL
 		COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Generating API documentation with Doxygen"

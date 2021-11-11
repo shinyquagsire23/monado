@@ -11,13 +11,14 @@ add_sanitizers(gui)
 
 target_link_libraries(
 	gui
-	PRIVATE aux_os
-			aux_ogl
-			aux_util
-			aux_math
-			st_gui
-			target_instance_no_comp
-			xrt-external-imgui-sdl2
+	PRIVATE
+		aux_os
+		aux_ogl
+		aux_util
+		aux_math
+		st_gui
+		target_instance_no_comp
+		xrt-external-imgui-sdl2
 	)
 if(WIN32)
 	target_link_libraries(gui PRIVATE SDL2::SDL2main)

@@ -1,157 +1,125 @@
 # Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-spirv_shaders(SHADER_HEADERS
-	shaders/clear.comp
-	shaders/distortion.comp
-	shaders/distortion_timewarp.comp
-	shaders/mesh.frag
-	shaders/mesh.vert
-	shaders/layer.frag
-	shaders/layer.vert
-	shaders/equirect1.vert
-	shaders/equirect1.frag
-	shaders/equirect2.vert
-	shaders/equirect2.frag
-	)
-
-set(CLIENT_SOURCE_FILES)
-
-set(UTIL_SOURCE_FILES
-	util/comp_base.h
-	util/comp_base.c
-	util/comp_swapchain.h
-	util/comp_swapchain.c
-	util/comp_sync.h
-	util/comp_sync.c
-	util/comp_vulkan.h
-	util/comp_vulkan.c
-	)
-
-set(RENDER_SOURCE_FILES
-	render/comp_buffer.c
-	render/comp_compute.c
-	render/comp_render.h
-	render/comp_rendering.c
-	render/comp_resources.c
-	render/comp_shaders.c
-	render/comp_util.c
-	)
-
-set(MAIN_SOURCE_FILES
-	main/comp_compositor.c
-	main/comp_compositor.h
-	main/comp_documentation.h
-	main/comp_renderer.c
-	main/comp_renderer.h
-	main/comp_settings.c
-	main/comp_settings.h
-	main/comp_target.h
-	main/comp_target_swapchain.c
-	main/comp_target_swapchain.h
-	main/comp_window.h
-	main/comp_layer.h
-	main/comp_layer.c
-	main/comp_layer_renderer.h
-	main/comp_layer_renderer.c
-	)
-
-set(MULTI_SOURCE_FILES
-	multi/comp_multi_compositor.c
-	multi/comp_multi_interface.h
-	multi/comp_multi_private.h
-	multi/comp_multi_system.c
-	)
-
-
 ###
 # Client library
 #
 
-if(XRT_HAVE_VULKAN)
-	list(APPEND CLIENT_SOURCE_FILES
-		client/comp_vk_client.c
-		client/comp_vk_client.h
-		client/comp_vk_glue.c
-		)
-endif()
-if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
-	list(APPEND CLIENT_SOURCE_FILES
-		client/comp_gl_client.c
-		client/comp_gl_client.h
-		client/comp_gl_memobj_swapchain.c
-		client/comp_gl_memobj_swapchain.h
-		)
-endif()
-if(XRT_HAVE_OPENGL)
-	list(APPEND CLIENT_SOURCE_FILES
-		client/comp_gl_glue.c
-		)
-endif()
-if(XRT_HAVE_OPENGLES)
-	list(APPEND CLIENT_SOURCE_FILES
-		client/comp_gles_glue.c
-		client/comp_gl_eglimage_swapchain.c
-		client/comp_gl_eglimage_swapchain.h
-		)
-endif()
-if(XRT_HAVE_OPENGL_GLX AND XRT_HAVE_XLIB)
-	list(APPEND CLIENT_SOURCE_FILES
-		client/comp_gl_xlib_client.c
-		client/comp_gl_xlib_client.h
-		client/comp_gl_xlib_glue.c
-		)
-endif()
-if(XRT_HAVE_EGL)
-	list(APPEND CLIENT_SOURCE_FILES
-		client/comp_egl_client.c
-		client/comp_egl_client.h
-		)
-endif()
+add_library(comp_client STATIC)
 
-add_library(comp_client STATIC ${CLIENT_SOURCE_FILES})
-target_link_libraries(comp_client PUBLIC xrt-interfaces PRIVATE aux_util)
+target_link_libraries(
+	comp_client
+	PUBLIC xrt-interfaces
+	PRIVATE aux_util
+	)
 target_include_directories(comp_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(XRT_HAVE_VULKAN)
+	target_sources(
+		comp_client PRIVATE client/comp_vk_client.c client/comp_vk_client.h
+				    client/comp_vk_glue.c
+		)
 	target_link_libraries(comp_client PRIVATE aux_vk)
 endif()
+
 if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
+	target_sources(
+		comp_client
+		PRIVATE client/comp_gl_client.c client/comp_gl_client.h
+			client/comp_gl_memobj_swapchain.c client/comp_gl_memobj_swapchain.h
+		)
 	target_link_libraries(comp_client PRIVATE aux_ogl)
 endif()
 
-if(XRT_HAVE_OPENGL AND XRT_HAVE_XLIB)
+if(XRT_HAVE_OPENGL)
+	target_sources(comp_client PRIVATE client/comp_gl_glue.c)
+endif()
+
+if(XRT_HAVE_OPENGLES)
+	target_sources(
+		comp_client PRIVATE client/comp_gles_glue.c client/comp_gl_eglimage_swapchain.c
+				    client/comp_gl_eglimage_swapchain.h
+		)
+endif()
+
+if(XRT_HAVE_OPENGL_GLX AND XRT_HAVE_XLIB)
+	target_sources(
+		comp_client PRIVATE client/comp_gl_xlib_client.c client/comp_gl_xlib_client.h
+				    client/comp_gl_xlib_glue.c
+		)
 	target_link_libraries(comp_client PRIVATE OpenGL::GLX)
 endif()
 
+if(XRT_HAVE_EGL)
+	target_sources(comp_client PRIVATE client/comp_egl_client.c client/comp_egl_client.h)
+endif()
 
 ##
 # Util library
 #
 
 if(XRT_HAVE_VULKAN)
-	add_library(comp_util STATIC ${UTIL_SOURCE_FILES})
-	target_link_libraries(comp_util PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk)
+	add_library(
+		comp_util STATIC
+		util/comp_base.h
+		util/comp_base.c
+		util/comp_swapchain.h
+		util/comp_swapchain.c
+		util/comp_sync.h
+		util/comp_sync.c
+		util/comp_vulkan.h
+		util/comp_vulkan.c
+		)
+	target_link_libraries(
+		comp_util
+		PUBLIC xrt-interfaces
+		PRIVATE aux_util aux_os aux_vk
+		)
 	target_include_directories(comp_util PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
-
 
 ##
 # Render library
 #
 
 if(XRT_HAVE_VULKAN)
-	add_library(comp_render STATIC ${SHADER_HEADERS} ${RENDER_SOURCE_FILES})
-	target_link_libraries(comp_render PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk)
-	target_include_directories(comp_render PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-	target_include_directories(comp_render SYSTEM PRIVATE
-		# Shaders - marked SYSTEM so we get no warnings
-		${CMAKE_CURRENT_BINARY_DIR}
+	spirv_shaders(
+		SHADER_HEADERS
+		shaders/clear.comp
+		shaders/distortion.comp
+		shaders/distortion_timewarp.comp
+		shaders/mesh.frag
+		shaders/mesh.vert
+		shaders/layer.frag
+		shaders/layer.vert
+		shaders/equirect1.vert
+		shaders/equirect1.frag
+		shaders/equirect2.vert
+		shaders/equirect2.frag
 		)
+
+	add_library(
+		comp_render STATIC
+		${SHADER_HEADERS}
+		render/comp_buffer.c
+		render/comp_compute.c
+		render/comp_render.h
+		render/comp_rendering.c
+		render/comp_resources.c
+		render/comp_shaders.c
+		render/comp_util.c
+		)
+	target_link_libraries(
+		comp_render
+		PUBLIC xrt-interfaces
+		PRIVATE aux_util aux_os aux_vk
+		)
+	target_include_directories(comp_render PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+	# Shaders - marked SYSTEM so we get no warnings
+	target_include_directories(comp_render SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 	add_subdirectory(shaders)
 endif()
-
 
 ##
 # Main library
@@ -159,130 +127,137 @@ endif()
 
 if(XRT_FEATURE_COMPOSITOR_MAIN)
 
+	add_library(
+		comp_main STATIC
+		main/comp_compositor.c
+		main/comp_compositor.h
+		main/comp_documentation.h
+		main/comp_renderer.c
+		main/comp_renderer.h
+		main/comp_settings.c
+		main/comp_settings.h
+		main/comp_target.h
+		main/comp_target_swapchain.c
+		main/comp_target_swapchain.h
+		main/comp_window.h
+		main/comp_layer.h
+		main/comp_layer.c
+		main/comp_layer_renderer.h
+		main/comp_layer_renderer.c
+		)
+	target_link_libraries(
+		comp_main
+		PUBLIC xrt-interfaces
+		PRIVATE
+			aux_util
+			aux_os
+			aux_vk
+			comp_util
+			comp_render
+		)
+	target_include_directories(comp_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
 	if(XRT_HAVE_XCB)
-		list(APPEND MAIN_SOURCE_FILES
-			main/comp_window_xcb.c
-			)
+		target_sources(comp_main PRIVATE main/comp_window_xcb.c)
+		target_include_directories(comp_main SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
+		target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
+		if(XRT_HAVE_EGL)
+			target_include_directories(comp_main SYSTEM PRIVATE ${EGL_INCLUDE_DIRS})
+			target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
+		endif()
 	endif()
 	if(XRT_HAVE_XCB AND XRT_HAVE_XLIB)
-		list(APPEND MAIN_SOURCE_FILES
-			main/comp_window_direct_randr.c
-			main/comp_window_direct_nvidia.c
+		target_sources(
+			comp_main PRIVATE main/comp_window_direct_randr.c
+					  main/comp_window_direct_nvidia.c
 			)
+		target_link_libraries(comp_main PRIVATE ${X11_X11_LIB})
 	endif()
 	if(WIN32)
-		list(APPEND MAIN_SOURCE_FILES
-			main/comp_window_mswin.c
-			)
+		target_sources(comp_main PRIVATE main/comp_window_mswin.c)
 	endif()
-	if (VK_USE_PLATFORM_DISPLAY_KHR)
-		list(APPEND MAIN_SOURCE_FILES
-			main/comp_window_vk_display.c
-			)
+	if(VK_USE_PLATFORM_DISPLAY_KHR)
+		target_sources(comp_main PRIVATE main/comp_window_vk_display.c)
 	endif()
-	if (VK_USE_PLATFORM_DISPLAY_KHR OR XRT_HAVE_XCB)
-		list(APPEND MAIN_SOURCE_FILES
-			main/comp_window_direct.c
-			)
+	if(VK_USE_PLATFORM_DISPLAY_KHR OR XRT_HAVE_XCB)
+		target_sources(comp_main PRIVATE main/comp_window_direct.c)
 	endif()
 
 	# generate wayland protocols
 	if(XRT_HAVE_WAYLAND)
+		target_sources(comp_main PRIVATE main/comp_window_wayland.c)
 		pkg_get_variable(WL_PROTOS_PKG_DIR wayland-protocols pkgdatadir)
 		pkg_get_variable(WL_SCANNER wayland-scanner wayland_scanner)
 
 		set(WL_PROTOS_DIR "${CMAKE_CURRENT_BINARY_DIR}/wayland-protocols")
 		file(MAKE_DIRECTORY "${WL_PROTOS_DIR}")
 
-		set(WL_PROTOS_XML
-			${WL_PROTOS_PKG_DIR}/stable/xdg-shell/xdg-shell.xml
-			)
+		set(WL_PROTOS_XML ${WL_PROTOS_PKG_DIR}/stable/xdg-shell/xdg-shell.xml)
 
-		list(APPEND MAIN_SOURCE_FILES
-			main/comp_window_wayland.c
-			)
+		target_include_directories(comp_main SYSTEM PRIVATE ${WL_PROTOS_DIR})
+		target_link_libraries(comp_main PRIVATE ${WAYLAND_LIBRARIES})
 
-		if (XRT_HAVE_WAYLAND_DIRECT)
-			list(APPEND WL_PROTOS_XML
+		if(XRT_HAVE_WAYLAND_DIRECT)
+			list(
+				APPEND WL_PROTOS_XML
 				${WL_PROTOS_PKG_DIR}/staging/drm-lease/drm-lease-v1.xml
-			)
-
-			list(APPEND MAIN_SOURCE_FILES
-				main/comp_window_direct_wayland.c
 				)
 
-			pkg_check_modules(LIBDRM IMPORTED_TARGET libdrm)
-			set(WAYLAND_DEPS
-				${WAYLAND_LIBRARIES}
-				PkgConfig::LIBDRM
-				)
+			target_sources(comp_main PRIVATE main/comp_window_direct_wayland.c)
+
+			target_link_libraries(comp_main PRIVATE PkgConfig::LIBDRM)
 		endif()
 
-		foreach(WL_PROTO_XML ${WL_PROTOS_XML})
-			get_filename_component(WL_PROTO ${WL_PROTO_XML} NAME_WE)
+		foreach(wl_proto_xml ${WL_PROTOS_XML})
+			get_filename_component(WL_PROTO ${wl_proto_xml} NAME_WE)
 
 			set(WL_PROTO_C "${WL_PROTOS_DIR}/${WL_PROTO}.c")
 			set(WL_PROTO_H "${WL_PROTOS_DIR}/${WL_PROTO}-client-protocol.h")
 
 			add_custom_command(
+				OUTPUT "${WL_PROTO_C}"
 				COMMAND
-				${WL_SCANNER} private-code "${WL_PROTO_XML}" "${WL_PROTO_C}"
-				OUTPUT "${WL_PROTO_C}" VERBATIM)
+					"${WL_SCANNER}" private-code "${wl_proto_xml}"
+					"${WL_PROTO_C}"
+				VERBATIM
+				DEPENDS "${WL_SCANNER}" "${wl_proto_xml}"
+				COMMENT "Generating ${WL_PROTO_C}"
+				)
 
 			add_custom_command(
+				OUTPUT "${WL_PROTO_H}"
 				COMMAND
-				${WL_SCANNER} client-header "${WL_PROTO_XML}" "${WL_PROTO_H}"
-				OUTPUT "${WL_PROTO_H}" VERBATIM)
-
-			list(APPEND MAIN_SOURCE_FILES
-				${WL_PROTO_C}
-				${WL_PROTO_H}
+					"${WL_SCANNER}" client-header "${wl_proto_xml}"
+					"${WL_PROTO_H}"
+				VERBATIM
+				DEPENDS "${WL_SCANNER}" "${wl_proto_xml}"
+				COMMENT "Generating ${WL_PROTO_H}"
 				)
+
+			target_sources(comp_main PRIVATE ${WL_PROTO_C} ${WL_PROTO_H})
 		endforeach()
 
 	endif()
 	if(ANDROID)
-		list(APPEND MAIN_SOURCE_FILES
-			main/comp_window_android.c
-			)
-	endif()
-
-	add_library(comp_main STATIC ${MAIN_SOURCE_FILES})
-	target_link_libraries(comp_main PUBLIC xrt-interfaces PRIVATE aux_util aux_os aux_vk comp_util comp_render)
-	target_include_directories(comp_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-
-	if(XRT_HAVE_WAYLAND)
-		target_include_directories(comp_main SYSTEM PRIVATE ${WL_PROTOS_DIR})
-		target_link_libraries(comp_main PRIVATE
-			${WAYLAND_DEPS} ${WAYLAND_LIBRARIES}
-		)
-	endif()
-	if(XRT_HAVE_XCB)
-		target_include_directories(comp_main SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
-		target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
-	endif()
-
-	if(XRT_HAVE_XCB AND XRT_HAVE_XLIB)
-		target_link_libraries(comp_main PRIVATE ${X11_X11_LIB})
-	endif()
-	if(XRT_HAVE_EGL AND XRT_HAVE_XCB)
-		target_include_directories(comp_main SYSTEM PRIVATE ${EGL_INCLUDE_DIRS})
-		target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
-	endif()
-	if(ANDROID)
+		target_sources(comp_main PRIVATE main/comp_window_android.c)
 		target_link_libraries(comp_main PRIVATE aux_ogl aux_android)
 	endif()
 endif()
-
 
 ###
 # Multi client compositor library
 #
 
-add_library(comp_multi STATIC ${MULTI_SOURCE_FILES})
-target_link_libraries(comp_multi PUBLIC xrt-interfaces PRIVATE aux_util aux_os)
+add_library(
+	comp_multi STATIC multi/comp_multi_compositor.c multi/comp_multi_interface.h
+			  multi/comp_multi_private.h multi/comp_multi_system.c
+	)
+target_link_libraries(
+	comp_multi
+	PUBLIC xrt-interfaces
+	PRIVATE aux_util aux_os
+	)
 target_include_directories(comp_multi PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
 
 if(XRT_FEATURE_COMPOSITOR_MAIN)
 	target_link_libraries(comp_main PRIVATE comp_multi)

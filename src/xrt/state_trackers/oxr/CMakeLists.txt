@@ -1,11 +1,12 @@
-# Copyright 2019-2020, Collabora, Ltd.
+# Copyright 2019-2021, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ###
 # Main code
 #
 
-set(OXR_SOURCE_FILES
+add_library(
+	st_oxr STATIC
 	oxr_api_action.c
 	oxr_api_funcs.h
 	oxr_api_instance.c
@@ -39,69 +40,52 @@ set(OXR_SOURCE_FILES
 	)
 
 if(XRT_HAVE_VULKAN)
-	list(APPEND OXR_SOURCE_FILES
-		oxr_session_gfx_vk.c
-		oxr_swapchain_vk.c
-		oxr_vulkan.c
-		)
+	target_sources(st_oxr PRIVATE oxr_session_gfx_vk.c oxr_swapchain_vk.c oxr_vulkan.c)
+	target_link_libraries(st_oxr PUBLIC Vulkan::Vulkan)
 endif()
 
 if(XRT_HAVE_OPENGL)
-	add_definitions(-DXR_USE_GRAPHICS_API_OPENGL)
+	target_compile_definitions(st_oxr PRIVATE XR_USE_GRAPHICS_API_OPENGL)
 endif()
 if(XRT_HAVE_OPENGLES)
-	add_definitions(-DXR_USE_GRAPHICS_API_OPENGL_ES)
+	target_compile_definitions(st_oxr PRIVATE XR_USE_GRAPHICS_API_OPENGL_ES)
 endif()
 
 if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
-	list(APPEND OXR_SOURCE_FILES
-		oxr_session_gfx_gl.c
-		oxr_swapchain_gl.c
-		)
+	target_sources(st_oxr PRIVATE oxr_session_gfx_gl.c oxr_swapchain_gl.c)
+	target_link_libraries(st_oxr PUBLIC aux_ogl)
 endif()
 
 if(XRT_HAVE_XLIB)
-	add_definitions(-DXR_USE_PLATFORM_XLIB)
+	target_compile_definitions(st_oxr PRIVATE XR_USE_PLATFORM_XLIB)
 endif()
 
 if(XRT_HAVE_EGL)
-	add_definitions(-DXR_USE_PLATFORM_EGL)
-	list(APPEND OXR_SOURCE_FILES
-		oxr_session_gfx_egl.c
-		)
+	target_compile_definitions(st_oxr PRIVATE XR_USE_PLATFORM_EGL)
+	target_sources(st_oxr PRIVATE oxr_session_gfx_egl.c)
 endif()
-
 
 if(ANDROID)
-	add_definitions(-DXR_USE_PLATFORM_ANDROID)
-	list(APPEND OXR_SOURCE_FILES
-		oxr_session_gfx_gles_android.c
-		)
-endif()
-
-add_library(st_oxr STATIC ${OXR_SOURCE_FILES})
-target_link_libraries(st_oxr PRIVATE
-	xrt-interfaces
-	xrt-external-openxr
-	aux_util
-	aux_math
-	aux_generated_bindings
-	comp_client
-	aux-includes
-	PUBLIC
-	aux_os
-	)
-if(XRT_HAVE_VULKAN)
-	target_link_libraries(st_oxr PUBLIC Vulkan::Vulkan)
-endif()
-if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
-	target_link_libraries(st_oxr PUBLIC aux_ogl)
-endif()
-if(ANDROID)
+	target_compile_definitions(st_oxr PRIVATE XR_USE_PLATFORM_ANDROID)
+	target_sources(st_oxr PRIVATE oxr_session_gfx_gles_android.c)
 	target_link_libraries(st_oxr PRIVATE aux_android)
 endif()
-target_include_directories(st_oxr
+
+target_link_libraries(
+	st_oxr
 	PRIVATE
-	${CMAKE_CURRENT_BINARY_DIR}
-	INTERFACE
-	${CMAKE_CURRENT_SOURCE_DIR}/..)
+		xrt-interfaces
+		xrt-external-openxr
+		aux_util
+		aux_math
+		aux_generated_bindings
+		comp_client
+		aux-includes
+	PUBLIC aux_os
+	)
+
+target_include_directories(
+	st_oxr
+	PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+	INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/..
+	)

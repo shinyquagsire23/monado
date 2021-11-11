@@ -5,8 +5,9 @@
 add_library(xrt-external-catch2 INTERFACE)
 target_include_directories(xrt-external-catch2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
 add_library(xrt-external-openvr INTERFACE)
-target_include_directories(xrt-external-openvr INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/openvr_includes)
-
+target_include_directories(
+	xrt-external-openvr INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/openvr_includes
+	)
 
 # cJSON
 add_library(xrt-external-cjson INTERFACE)
@@ -31,26 +32,30 @@ target_include_directories(xrt-external-hungarian INTERFACE ${CMAKE_CURRENT_SOUR
 
 # JNIPP and Android JNI wrappers
 if(ANDROID)
-	add_library(xrt-external-jnipp STATIC
-		jnipp/jnipp.cpp)
+	add_library(xrt-external-jnipp STATIC jnipp/jnipp.cpp)
 	target_include_directories(xrt-external-jnipp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/jnipp)
 
 	file(GLOB WRAP_SOURCES android-jni-wrap/wrap/*.cpp)
-	add_library(xrt-external-jni-wrap STATIC
-		${WRAP_SOURCES})
-	target_include_directories(xrt-external-jni-wrap PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/android-jni-wrap)
+	add_library(xrt-external-jni-wrap STATIC ${WRAP_SOURCES})
+	target_include_directories(
+		xrt-external-jni-wrap PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/android-jni-wrap
+		)
 	target_link_libraries(xrt-external-jni-wrap PUBLIC xrt-external-jnipp)
 endif()
 
 # OpenXR
 add_library(xrt-external-openxr INTERFACE)
-target_include_directories(xrt-external-openxr INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/openxr_includes)
+target_include_directories(
+	xrt-external-openxr INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/openxr_includes
+	)
 
 # External SLAM tracking
-if (SLAM)
+if(SLAM)
 	add_library(xrt-external-slam STATIC slam_tracker/slam_tracker.hpp)
 	set_target_properties(xrt-external-slam PROPERTIES LINKER_LANGUAGE CXX)
-	target_include_directories(xrt-external-slam INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/slam_tracker)
+	target_include_directories(
+		xrt-external-slam INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/slam_tracker
+		)
 	target_include_directories(xrt-external-slam INTERFACE ${SLAM_INCLUDE_DIRS})
 	target_link_libraries(xrt-external-slam INTERFACE ${SLAM_LIBRARIES})
 endif()
@@ -60,9 +65,7 @@ add_library(xrt-external-stb INTERFACE)
 target_include_directories(xrt-external-stb INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/stb)
 
 # imgui
-if(XRT_HAVE_SDL2)
-	# c-imgui doesn't do well with IPO - lots of warnings.
-	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+if(XRT_HAVE_OPENGL)
 	add_library(
 		xrt-external-imgui STATIC
 		imgui/imgui/cimgui.cpp
@@ -88,17 +91,34 @@ if(XRT_HAVE_SDL2)
 		imgui/imgui/imstb_truetype.h
 		imgui/imgui_monado/imgui_monado.cpp
 		)
-	target_include_directories(xrt-external-imgui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
 
-	target_compile_definitions(xrt-external-imgui PUBLIC CIMGUI_NO_EXPORT)
-	target_link_libraries(xrt-external-imgui PRIVATE xrt-external-glad)
-
-	add_library(
-		xrt-external-imgui-sdl2 STATIC imgui/imgui/cimgui_sdl.cpp imgui/imgui/imgui_impl_sdl.cpp
-									   imgui/imgui/imgui_impl_sdl.h
+	target_include_directories(
+		xrt-external-imgui SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui
 		)
-	target_link_libraries(xrt-external-imgui-sdl2 PRIVATE xrt-external-imgui ${SDL2_LIBRARIES})
+	target_include_directories(xrt-external-imgui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+	target_compile_definitions(xrt-external-imgui PUBLIC CIMGUI_NO_EXPORT)
+	set_target_properties(xrt-external-imgui PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+	target_link_libraries(xrt-external-imgui PUBLIC xrt-external-glad)
 
-	target_include_directories(xrt-external-imgui-sdl2 PRIVATE ${SDL2_INCLUDE_DIRS})
-	target_include_directories(xrt-external-imgui-sdl2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+	if(XRT_HAVE_SDL2)
+		add_library(
+			xrt-external-imgui-sdl2 STATIC
+			imgui/imgui/cimgui_sdl.cpp imgui/imgui/imgui_impl_sdl.cpp
+			imgui/imgui/imgui_impl_sdl.h
+			)
+		target_link_libraries(
+			xrt-external-imgui-sdl2
+			PUBLIC xrt-external-imgui
+			PRIVATE ${SDL2_LIBRARIES}
+			)
+
+		target_include_directories(xrt-external-imgui-sdl2 PRIVATE ${SDL2_INCLUDE_DIRS})
+		target_include_directories(
+			xrt-external-imgui-sdl2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui
+			)
+		set_target_properties(
+			xrt-external-imgui-sdl2 PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF
+			)
+	endif()
+
 endif()

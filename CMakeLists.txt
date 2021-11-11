@@ -9,7 +9,11 @@ if(POLICY CMP0072)
 	cmake_policy(SET CMP0072 NEW)
 endif()
 
-option(XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH "Use the absolute path to the runtime in the installed manifest, rather than a bare filename." ON)
+option(
+	XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH
+	"Use the absolute path to the runtime in the installed manifest, rather than a bare filename."
+	ON
+	)
 option(XRT_OPENXR_INSTALL_ACTIVE_RUNTIME "Make Monado the default OpenXR runtime on install" ON)
 
 # We use C++17
@@ -45,7 +49,10 @@ else()
 	find_program(PYTHON_EXECUTABLE python3)
 	if(PYTHON_EXECUTABLE MATCHES "WindowsApps")
 		# If you hit this error, you will have to install Python 3 or try harder to tell CMake where it is.
-		message(FATAL_ERROR "Found WindowsApps alias for Python. Make sure Python3 is installed, then choose 'Manage App Execution Aliases' in Start and disable the aliases for Python.")
+		message(
+			FATAL_ERROR
+				"Found WindowsApps alias for Python. Make sure Python3 is installed, then choose 'Manage App Execution Aliases' in Start and disable the aliases for Python."
+			)
 	endif()
 endif()
 
@@ -56,7 +63,18 @@ find_package(Vulkan MODULE)
 find_package(EGL MODULE)
 find_package(HIDAPI MODULE)
 find_package(OpenHMD MODULE)
-find_package(OpenCV COMPONENTS core calib3d highgui imgproc imgcodecs features2d video CONFIG)
+find_package(
+	OpenCV
+	COMPONENTS
+		core
+		calib3d
+		highgui
+		imgproc
+		imgcodecs
+		features2d
+		video
+		CONFIG
+	)
 find_package(Libusb1 MODULE)
 find_package(JPEG MODULE)
 find_package(realsense2 CONFIG)
@@ -94,7 +112,6 @@ if(PKGCONFIG_FOUND AND NOT ANDROID)
 	pkg_check_modules(FFMPEG libavcodec)
 endif()
 
-
 find_package(OpenGL)
 set(OPENGL_WITHOUT_GLX_FOUND ${OPENGL_FOUND})
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -112,23 +129,19 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		pkg_search_module(WAYLAND wayland-client)
 		pkg_search_module(WAYLAND_SCANNER wayland-scanner)
 		pkg_search_module(WAYLAND_PROTOCOLS wayland-protocols)
-		pkg_search_module(LIBDRM libdrm)
+		pkg_search_module(LIBDRM IMPORTED_TARGET libdrm)
 	endif()
 	find_package(OpenGL COMPONENTS GLX)
 	pkg_search_module(DBUS dbus-1)
 	pkg_search_module(LIBBSD libbsd)
 
-	pkg_check_modules(GST
-		gstreamer-1.0
-		gstreamer-app-1.0
-		gstreamer-video-1.0
-	)
+	pkg_check_modules(GST gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0)
 
 	pkg_check_modules(SURVIVE IMPORTED_TARGET survive)
-else()
 endif()
 
 find_library(RT_LIBRARY rt)
+
 if(ANDROID)
 	find_library(ANDROID_LIBRARY android)
 	find_library(ANDROID_LOG_LIBRARY log)
@@ -149,8 +162,16 @@ foreach(slam_system IN LISTS EXTERNAL_SLAM_SYSTEMS)
 	endif()
 endforeach()
 
+# ILLIXR
+set(ILLIXR_PATH
+    ""
+    CACHE PATH "Path to ILLIXR headers"
+	)
+
 # This one is named differently because that's what CTest uses
 option(BUILD_TESTING "Enable building of the test suite?" ON)
+
+# cmake-format: off
 
 option(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" ON)
 cmake_dependent_option(XRT_HAVE_PERCETTO "Enable percetto support" ON "PERCETTO_FOUND" OFF)
@@ -198,8 +219,6 @@ endif()
 # Most users won't touch these.
 mark_as_advanced(XRT_FEATURE_COMPOSITOR_MAIN XRT_FEATURE_OPENXR)
 
-# ILLIXR
-set(ILLIXR_PATH "" CACHE PATH "Path to ILLIXR headers")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	set(XRT_HAVE_LIBUDEV ON)
@@ -207,6 +226,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 else()
 	cmake_dependent_option(XRT_HAVE_LIBUDEV "Enable libudev (used for device probing on Linux)" ON "UDEV_FOUND" OFF)
 endif()
+
 cmake_dependent_option(XRT_HAVE_LIBUSB "Enable libusb (used for most drivers)" ON "LIBUSB1_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_JPEG "Enable jpeg code (used for some video drivers)" ON "JPEG_FOUND" OFF)
 cmake_dependent_option(XRT_HAVE_OPENCV "Enable OpenCV backend" ON "OpenCV_FOUND" OFF)
@@ -248,9 +268,13 @@ cmake_dependent_option(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" 
 cmake_dependent_option(XRT_BUILD_DRIVER_QWERTY "Enable Qwerty driver" ON "XRT_HAVE_SDL2" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_EUROC "Enable EuRoC dataset driver for SLAM evaluation" ON "XRT_HAVE_OPENCV" OFF)
 
+# cmake-format: on
+
 # You can set this from a superproject to add a driver
 # All drivers must be listed in here to be included in the generated header!
-list(APPEND AVAILABLE_DRIVERS
+list(
+	APPEND
+	AVAILABLE_DRIVERS
 	"ANDROID"
 	"ARDUINO"
 	"DAYDREAM"
@@ -275,7 +299,6 @@ list(APPEND AVAILABLE_DRIVERS
 	"WMR"
 	"EUROC"
 	)
-
 
 # Package name needs to be known by the native code itself.
 # Can be overridden from outside/command line
@@ -313,7 +336,10 @@ endif()
 if(XRT_HAVE_XCB)
 	set(VK_USE_PLATFORM_XCB_KHR TRUE)
 endif()
-if(XRT_HAVE_XCB AND XRT_HAVE_XLIB AND XRT_HAVE_XRANDR)
+if(XRT_HAVE_XCB
+   AND XRT_HAVE_XLIB
+   AND XRT_HAVE_XRANDR
+	)
 	set(VK_USE_PLATFORM_XLIB_XRANDR_EXT TRUE)
 endif()
 if(XRT_HAVE_WAYLAND)
@@ -325,19 +351,11 @@ endif()
 if(WIN32)
 	set(VK_USE_PLATFORM_WIN32_KHR TRUE)
 endif()
-if (XRT_HAVE_VULKAN AND NOT ANDROID)
+if(XRT_HAVE_VULKAN AND NOT ANDROID)
 	set(VK_USE_PLATFORM_DISPLAY_KHR TRUE)
 endif()
 
-if(NOT MSVC)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror-implicit-function-declaration -Werror=incompatible-pointer-types")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror=int-conversion")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")
-
-	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
-	set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--no-undefined")
-endif()
+include(CompilerFlags.cmake)
 
 # Default to PIC code
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -348,18 +366,18 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
 endif()
 
 # Make sure we have pretty colours
-option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." FALSE)
+option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." FALSE)
 
-if ("${FORCE_COLORED_OUTPUT}")
-	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		add_compile_options (-fdiagnostics-color=always)
-	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-		add_compile_options (-fcolor-diagnostics)
-	endif ()
-endif ()
+if(FORCE_COLORED_OUTPUT)
+	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+		add_compile_options(-fdiagnostics-color=always)
+	elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+		add_compile_options(-fcolor-diagnostics)
+	endif()
+endif()
 
 ###
-# Decend into madness.
+# Descend into the source
 ###
 
 add_subdirectory(src)
