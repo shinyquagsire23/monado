@@ -37,6 +37,9 @@ extern "C" {
 #define LENOVO_VID 0x17ef
 #define EXPLORER_PID 0xb801
 
+#define SAMSUNG_VID 0x04e8
+#define ODYSSEY_PID 0x7312
+
 /*!
  * @}
  */

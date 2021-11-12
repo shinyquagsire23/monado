@@ -70,6 +70,21 @@ check_and_get_interface_lenovo(struct xrt_prober_device *device,
 }
 
 static bool
+check_and_get_interface_samsung(struct xrt_prober_device *device,
+                                enum wmr_headset_type *out_hmd_type,
+                                int *out_interface)
+{
+	if (device->product_id != ODYSSEY_PID) {
+		return false;
+	}
+
+	*out_hmd_type = WMR_HEADSET_SAMSUNG_800ZAA;
+	*out_interface = 0;
+
+	return true;
+}
+
+static bool
 find_control_device(struct xrt_prober *xp,
                     struct xrt_prober_device **devices,
                     size_t device_count,
@@ -91,6 +106,7 @@ find_control_device(struct xrt_prober *xp,
 		switch (devices[i]->vendor_id) {
 		case HP_VID: match = check_and_get_interface_hp(devices[i], out_hmd_type, &interface); break;
 		case LENOVO_VID: match = check_and_get_interface_lenovo(devices[i], out_hmd_type, &interface); break;
+		case SAMSUNG_VID: match = check_and_get_interface_samsung(devices[i], out_hmd_type, &interface); break;
 		default: break;
 		}
 
