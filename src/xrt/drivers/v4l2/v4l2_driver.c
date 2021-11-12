@@ -1015,7 +1015,9 @@ dump_contron_name(uint32_t id)
 		CASE(EXPOSURE);
 		CASE(AUTOGAIN);
 		CASE(GAIN);
+#ifdef V4L2_CID_DIGITAL_GAIN
 		CASE(DIGITAL_GAIN);
+#endif
 		CASE(ANALOGUE_GAIN);
 		CASE(HFLIP);
 		CASE(VFLIP);
@@ -1096,7 +1098,9 @@ dump_controls(struct v4l2_fs *vid)
 		V_CHECK(VOLATILE);
 		V_CHECK(HAS_PAYLOAD);
 		V_CHECK(EXECUTE_ON_WRITE);
+#ifdef V4L2_CTRL_FLAG_MODIFY_LAYOUT
 		V_CHECK(MODIFY_LAYOUT);
+#endif
 #undef V_CHECK
 
 		U_LOG_E(" ");
