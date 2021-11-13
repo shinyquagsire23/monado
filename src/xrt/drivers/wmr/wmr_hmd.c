@@ -294,7 +294,9 @@ wmr_run_thread(void *ptr)
 		if (!hololens_sensors_read_packets(wh)) {
 			break;
 		}
+		os_thread_helper_lock(&wh->oth);
 	}
+	os_thread_helper_unlock(&wh->oth);
 
 	WMR_DEBUG(wh, "Exiting reading thread.");
 
