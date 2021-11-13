@@ -13,15 +13,37 @@
 #include "math/m_vec2.h"
 #include "util/u_logging.h"
 
-enum wmr_distortion_model
-{
-	WMR_DISTORTION_MODEL_UNKNOWN = 0,
-	WMR_DISTORTION_MODEL_POLYNOMIAL_3K
-};
+/* Increase this number if anyone releases a headset with
+ * more cameras */
+#define WMR_MAX_CAMERAS 4
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+enum wmr_distortion_model
+{
+	WMR_DISTORTION_MODEL_UNKNOWN = 0,
+	WMR_DISTORTION_MODEL_POLYNOMIAL_3K,
+	WMR_DISTORTION_MODEL_POLYNOMIAL_6KT,
+};
+
+/* Location is used as camera_id for setting gain */
+enum wmr_camera_location
+{
+	WMR_CAMERA_LOCATION_HT0 = 0,
+	WMR_CAMERA_LOCATION_HT1 = 1,
+	WMR_CAMERA_LOCATION_DO0 = 2,
+	WMR_CAMERA_LOCATION_DO1 = 3,
+	WMR_CAMERA_LOCATION_HT2 = 4,
+	WMR_CAMERA_LOCATION_HT3 = 5,
+};
+
+enum wmr_camera_purpose
+{
+	WMR_CAMERA_PURPOSE_HEAD_TRACKING,
+	WMR_CAMERA_PURPOSE_DISPLAY_OBSERVER,
+};
 
 struct wmr_distortion_3K
 {
@@ -33,6 +55,25 @@ struct wmr_distortion_3K
 	 * per the radial distortion model in
 	 * https://docs.opencv.org/master/d9/d0c/group__calib3d.html */
 	double k[3];
+};
+
+struct wmr_distortion_6KT
+{
+	enum wmr_distortion_model model;
+
+	/* The config provides 15 float values: */
+	union {
+		struct
+		{
+			float cx, cy;         /* Principal point */
+			float fx, fy;         /* Focal length */
+			float k[6];           /* Radial distortion coefficients */
+			float dist_x, dist_y; /* Center of distortion */
+			float p2, p1;         /* Tangential distortion parameters */
+			float metric_radius;  /* Metric radius */
+		} params;
+		float v[15];
+	};
 };
 
 struct wmr_distortion_eye_config
@@ -53,6 +94,17 @@ struct wmr_distortion_eye_config
 	struct wmr_distortion_3K distortion3K[3];
 };
 
+struct wmr_camera_config
+{
+	enum wmr_camera_location location;
+	enum wmr_camera_purpose purpose;
+
+	int sensor_width, sensor_height;
+	struct xrt_pose pose;
+
+	struct wmr_distortion_6KT distortion6KT;
+};
+
 struct wmr_hmd_config
 {
 	/* Left and Right eye mapping and distortion params */
@@ -61,6 +113,9 @@ struct wmr_hmd_config
 	struct xrt_pose accel_pose;
 	struct xrt_pose gyro_pose;
 	struct xrt_pose mag_pose;
+
+	int n_cameras;
+	struct wmr_camera_config cameras[WMR_MAX_CAMERAS];
 };
 
 bool
