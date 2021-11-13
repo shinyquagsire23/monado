@@ -290,10 +290,19 @@ lib_drv_qwerty = static_library(
 
 drv_qwerty_include = include_directories('qwerty')
 
+wmr_camera_files = []
+wmr_deps = [aux]
+
+if libusb.found()
+	wmr_camera_files += 'wmr/wmr_camera.c'
+	wmr_deps += [libusb]
+endif
+
 lib_drv_wmr = static_library(
 	'drv_wmr',
 	files(
 		'wmr/wmr_common.h',
+		'wmr/wmr_camera.h',
 		'wmr/wmr_config.c',
 		'wmr/wmr_bt_controller.c',
 		'wmr/wmr_bt_controller.h',
@@ -305,12 +314,12 @@ lib_drv_wmr = static_library(
 		'wmr/wmr_protocol.h',
 		'wmr/wmr_controller_protocol.c',
 		'wmr/wmr_controller_protocol.h',
-	),
+	) + wmr_camera_files,
 	include_directories: [
 		xrt_include,
 		cjson_include,
 	],
-	dependencies: [aux],
+	dependencies: wmr_deps,
 	build_by_default: 'wmr' in drivers,
 )
 

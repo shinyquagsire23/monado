@@ -634,6 +634,10 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 		wh->hid_control_dev = NULL;
 	}
 
+	if (wh->camera != NULL) {
+		wmr_camera_free(wh->camera);
+	}
+
 	// Destroy the fusion.
 	m_imu_3dof_close(&wh->fusion.i3dof);
 
@@ -781,6 +785,7 @@ struct xrt_device *
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
                struct os_hid_device *hid_ctrl,
+               struct wmr_camera *cam,
                enum u_logging_level ll)
 {
 	enum u_device_alloc_flags flags =
@@ -807,6 +812,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	wh->base.hand_tracking_supported = false;
 	wh->hid_hololens_sensors_dev = hid_holo;
 	wh->hid_control_dev = hid_ctrl;
+	wh->camera = cam;
 
 	// Mutex before thread.
 	ret = os_mutex_init(&wh->fusion.mutex);
@@ -953,6 +959,12 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	// Switch on IMU on the HMD.
 	hololens_sensors_enable_imu(wh);
 
+	if (wh->camera != NULL && !wmr_camera_start(wh->camera, wh->config.cameras, wh->config.n_cameras)) {
+		WMR_ERROR(wh, "Activation of HMD cameras failed");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return NULL;
+	}
 
 	// Hand over hololens sensor device to reading thread.
 	ret = os_thread_helper_start(&wh->oth, wmr_run_thread, wh);

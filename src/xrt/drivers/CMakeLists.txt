@@ -297,6 +297,7 @@ list(APPEND ENABLED_HEADSET_DRIVERS drv_multi)
 if(XRT_BUILD_DRIVER_WMR)
 	add_library(
 		drv_wmr STATIC
+		wmr/wmr_camera.h
 		wmr/wmr_common.h
 		wmr/wmr_config.c
 		wmr/wmr_config.h
@@ -313,6 +314,13 @@ if(XRT_BUILD_DRIVER_WMR)
 		)
 	target_link_libraries(drv_wmr PRIVATE xrt-interfaces aux_util aux_math xrt-external-cjson)
 	list(APPEND ENABLED_HEADSET_DRIVERS wmr)
+
+	# Can only build camera support with libusb
+	if(XRT_HAVE_LIBUSB)
+		target_sources(drv_wmr PRIVATE wmr/wmr_camera.c)
+		target_include_directories(drv_wmr PUBLIC ${LIBUSB1_INCLUDE_DIRS})
+		target_link_libraries(drv_wmr PRIVATE ${LIBUSB1_LIBRARIES})
+	endif()
 endif()
 
 if(XRT_BUILD_DRIVER_EUROC)

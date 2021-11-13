@@ -43,6 +43,8 @@ extern "C" {
 #define WMR_CONTROL_MSG_IPD_VALUE 0x01
 #define WMR_CONTROL_MSG_UNKNOWN_05 0x05
 
+#define STR_TO_U32(s) ((uint32_t)(((s)[0]) | ((s)[1] << 8) | ((s)[2] << 16) | ((s)[3] << 24)))
+#define WMR_MAGIC STR_TO_U32("Dlo+")
 
 static const unsigned char hololens_sensors_imu_on[64] = {0x02, 0x07};
 

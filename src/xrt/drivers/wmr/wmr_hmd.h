@@ -22,6 +22,7 @@
 
 #include "wmr_protocol.h"
 #include "wmr_config.h"
+#include "wmr_camera.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,6 +81,8 @@ struct wmr_hmd
 
 	//! Packet reading thread.
 	struct os_thread_helper oth;
+
+	struct wmr_camera *camera;
 
 	enum u_logging_level log_level;
 
@@ -141,6 +144,7 @@ struct xrt_device *
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
                struct os_hid_device *hid_ctrl,
+               struct wmr_camera *cam,
                enum u_logging_level ll);
 
 #define WMR_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
