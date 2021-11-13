@@ -85,13 +85,13 @@ check_and_get_interface_samsung(struct xrt_prober_device *device,
 }
 
 static bool
-find_control_device(struct xrt_prober *xp,
-                    struct xrt_prober_device **devices,
-                    size_t device_count,
-                    enum u_logging_level ll,
-                    enum wmr_headset_type *out_hmd_type,
-                    struct xrt_prober_device **out_device,
-                    int *out_interface)
+find_companion_device(struct xrt_prober *xp,
+                      struct xrt_prober_device **devices,
+                      size_t device_count,
+                      enum u_logging_level ll,
+                      enum wmr_headset_type *out_hmd_type,
+                      struct xrt_prober_device **out_device,
+                      int *out_interface)
 {
 	struct xrt_prober_device *dev = NULL;
 	int interface = 0;
@@ -129,7 +129,9 @@ find_control_device(struct xrt_prober *xp,
 	xrt_prober_get_string_descriptor(xp, dev, XRT_PROBER_STRING_MANUFACTURER, m_str, sizeof(m_str));
 	xrt_prober_get_string_descriptor(xp, dev, XRT_PROBER_STRING_PRODUCT, p_str, sizeof(p_str));
 
-	U_LOG_IFL_D(ll, "Found control device '%s' '%s' (%04X:%04X)", p_str, m_str, dev->vendor_id, dev->product_id);
+	U_LOG_IFL_D(ll, "Found Hololens Sensors' companion device '%s' '%s' (vid %04X, pid%04X)", p_str, m_str,
+	            dev->vendor_id, dev->product_id);
+
 
 	*out_device = dev;
 	*out_interface = interface;
@@ -155,24 +157,26 @@ wmr_found(struct xrt_prober *xp,
 	enum u_logging_level ll = debug_get_log_option_wmr_log();
 
 	struct xrt_prober_device *dev_holo = devices[index];
-	struct xrt_prober_device *dev_ctrl = NULL;
+	struct xrt_prober_device *dev_companion = NULL;
 	enum wmr_headset_type hmd_type = WMR_HEADSET_GENERIC;
 	int interface_holo = 2;
-	int interface_ctrl = 0;
+	int interface_companion = 0;
 
 	unsigned char buf[256] = {0};
 	int result = xrt_prober_get_string_descriptor(xp, dev_holo, XRT_PROBER_STRING_PRODUCT, buf, sizeof(buf));
 
 	if (!xrt_prober_match_string(xp, dev_holo, XRT_PROBER_STRING_MANUFACTURER, MS_HOLOLENS_MANUFACTURER_STRING) ||
 	    !xrt_prober_match_string(xp, dev_holo, XRT_PROBER_STRING_PRODUCT, MS_HOLOLENS_PRODUCT_STRING)) {
-		U_LOG_IFL_E(ll, "HoloLens Sensors manufacturer or product strings did not match.");
+		U_LOG_IFL_E(ll, "HoloLens Sensors manufacturer or product strings did not match");
 		return -1;
 	}
 
-	if (!find_control_device(xp, devices, device_count, ll, &hmd_type, &dev_ctrl, &interface_ctrl)) {
+	U_LOG_IFL_D(ll, "Found HoloLens Sensors HMD device '%s' '%s' (vid %04X, pid %04X)", MS_HOLOLENS_MANUFACTURER_STRING,
+	            MS_HOLOLENS_PRODUCT_STRING, dev_holo->vendor_id, dev_holo->product_id);
+
+	if (!find_companion_device(xp, devices, device_count, ll, &hmd_type, &dev_companion, &interface_companion)) {
 		U_LOG_IFL_E(ll,
-		            "Did not find companion control device."
-		            "\n\tCurrently only Reverb G1 and G2 is supported");
+		            "Did not find HoloLens Sensors' companion device");
 		return -1;
 	}
 
@@ -183,16 +187,16 @@ wmr_found(struct xrt_prober *xp,
 		return -1;
 	}
 
-	struct os_hid_device *hid_ctrl = NULL;
-	result = xrt_prober_open_hid_interface(xp, dev_ctrl, interface_ctrl, &hid_ctrl);
+	struct os_hid_device *hid_companion = NULL;
+	result = xrt_prober_open_hid_interface(xp, dev_companion, interface_companion, &hid_companion);
 	if (result != 0) {
-		U_LOG_IFL_E(ll, "Failed to open HoloLens Control HID interface");
+		U_LOG_IFL_E(ll, "Failed to open HoloLens Sensors' companion HID interface.");
 		return -1;
 	}
 
-	struct xrt_device *p = wmr_hmd_create(hmd_type, hid_holo, hid_ctrl, ll);
+	struct xrt_device *p = wmr_hmd_create(hmd_type, hid_holo, hid_companion, ll);
 	if (!p) {
-		U_LOG_IFL_E(ll, "Failed to create Windows Mixed Reality device");
+		U_LOG_IFL_E(ll, "Failed to create WMR HMD device.");
 		return -1;
 	}
 
