@@ -107,6 +107,17 @@ read16(const unsigned char **buffer)
 }
 
 static inline int32_t
+read24(const unsigned char **buffer)
+{
+	// Note: Preserve sign by shifting up to write MSB
+	int32_t ret = (*(*buffer + 0) << 8) | (*(*buffer + 1) << 16) | (*(*buffer + 2) << 24);
+	*buffer += 3;
+
+	// restore 24 bit scale again
+	return ret >> 8;
+}
+
+static inline int32_t
 read32(const unsigned char **buffer)
 {
 	int32_t ret = (*(*buffer + 0) << 0) |  //

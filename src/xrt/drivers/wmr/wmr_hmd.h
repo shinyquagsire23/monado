@@ -27,21 +27,6 @@
 extern "C" {
 #endif
 
-
-enum rvb_g1_status_bits
-{
-	// clang-format off
-	REVERB_G1_STATUS_BIT_UNKNOWN_BIT_0 = (1 << 0),
-	REVERB_G1_STATUS_BIT_UNKNOWN_BIT_1 = (1 << 1),
-	REVERB_G1_STATUS_BIT_UNKNOWN_BIT_2 = (1 << 2),
-	REVERB_G1_STATUS_BIT_UNKNOWN_BIT_3 = (1 << 3),
-	REVERB_G1_STATUS_BIT_UNKNOWN_BIT_4 = (1 << 4),
-	REVERB_G1_STATUS_BIT_UNKNOWN_BIT_5 = (1 << 5),
-	REVERB_G1_STATUS_BIT_UNKNOWN_BIT_6 = (1 << 6),
-	REVERB_G1_STATUS_BIT_UNKNOWN_BIT_7 = (1 << 7),
-	// clang-format on
-};
-
 enum wmr_headset_type
 {
 	WMR_HEADSET_GENERIC,

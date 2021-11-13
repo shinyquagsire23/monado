@@ -66,6 +66,19 @@ struct wmr_hmd_config
 bool
 wmr_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging_level ll);
 
+
+struct wmr_bt_controller_config
+{
+	/* Todo: still work in progress */
+	struct xrt_pose accel_pose;
+	struct xrt_pose gyro_pose;
+	struct xrt_pose mag_pose;
+};
+
+/* Todo: Extract and parse motion controller config. */
+
+
+
 #ifdef __cplusplus
 }
 #endif

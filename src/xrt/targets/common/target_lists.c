@@ -129,6 +129,7 @@ struct xrt_prober_entry target_entry_list[] = {
 
 #ifdef XRT_BUILD_DRIVER_WMR
     {MICROSOFT_VID, HOLOLENS_SENSORS_PID, wmr_found, "Microsoft HoloLens Sensors", "wmr"},
+    {MICROSOFT_VID, WMR_CONTROLLER_PID, wmr_bt_controller_found, "WMR Bluetooth controller", "wmr"},
 #endif // XRT_BUILD_DRIVER_WMR
 
     {0x0000, 0x0000, NULL, NULL, NULL}, // Terminate

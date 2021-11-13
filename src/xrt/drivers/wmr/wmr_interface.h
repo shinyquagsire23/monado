@@ -37,6 +37,21 @@ wmr_found(struct xrt_prober *xp,
           cJSON *attached_data,
           struct xrt_device **out_xdev);
 
+
+/*!
+ * Probing function for Bluetooth WMR motion controllers.
+ *
+ * @ingroup drv_wmr
+ */
+int
+wmr_bt_controller_found(struct xrt_prober *xp,
+                        struct xrt_prober_device **devices,
+                        size_t device_count,
+                        size_t index,
+                        cJSON *attached_data,
+                        struct xrt_device **out_xdev);
+
+
 /*!
  * @dir drivers/wmr
  *

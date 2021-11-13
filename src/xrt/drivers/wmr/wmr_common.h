@@ -4,7 +4,7 @@
 /*!
  * @file
  * @brief  Defines and constants related to WMR driver code.
- * @author nima01 <nima_zero_one@protonmail.com>
+ * @author Nis Madsen <nima_zero_one@protonmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup drv_wmr
  */
@@ -29,10 +29,14 @@ extern "C" {
 
 #define MICROSOFT_VID 0x045e
 #define HOLOLENS_SENSORS_PID 0x0659
+#define WMR_CONTROLLER_PID 0x065b
+#define WMR_CONTROLLER_LEFT_PRODUCT_STRING "Motion controller - Left"
+#define WMR_CONTROLLER_RIGHT_PRODUCT_STRING "Motion controller - Right"
 
 #define HP_VID 0x03f0
 #define REVERB_G1_PID 0x0c6a
 #define REVERB_G2_PID 0x0580
+
 
 #define LENOVO_VID 0x17ef
 #define EXPLORER_PID 0xb801

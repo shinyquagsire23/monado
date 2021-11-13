@@ -4,7 +4,7 @@
 /*!
  * @file
  * @brief  WMR prober code.
- * @author nima01 <nima_zero_one@protonmail.com>
+ * @author Nis Madsen <nima_zero_one@protonmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup drv_wmr
  */
@@ -17,6 +17,7 @@
 
 #include "wmr_interface.h"
 #include "wmr_hmd.h"
+#include "wmr_bt_controller.h"
 #include "wmr_common.h"
 
 #include <stdio.h>
@@ -171,12 +172,12 @@ wmr_found(struct xrt_prober *xp,
 		return -1;
 	}
 
-	U_LOG_IFL_D(ll, "Found HoloLens Sensors HMD device '%s' '%s' (vid %04X, pid %04X)", MS_HOLOLENS_MANUFACTURER_STRING,
-	            MS_HOLOLENS_PRODUCT_STRING, dev_holo->vendor_id, dev_holo->product_id);
+	U_LOG_IFL_D(ll, "Found HoloLens Sensors HMD device '%s' '%s' (vid %04X, pid %04X)",
+	            MS_HOLOLENS_MANUFACTURER_STRING, MS_HOLOLENS_PRODUCT_STRING, dev_holo->vendor_id,
+	            dev_holo->product_id);
 
 	if (!find_companion_device(xp, devices, device_count, ll, &hmd_type, &dev_companion, &interface_companion)) {
-		U_LOG_IFL_E(ll,
-		            "Did not find HoloLens Sensors' companion device");
+		U_LOG_IFL_E(ll, "Did not find HoloLens Sensors' companion device");
 		return -1;
 	}
 
@@ -197,6 +198,70 @@ wmr_found(struct xrt_prober *xp,
 	struct xrt_device *p = wmr_hmd_create(hmd_type, hid_holo, hid_companion, ll);
 	if (!p) {
 		U_LOG_IFL_E(ll, "Failed to create WMR HMD device.");
+		return -1;
+	}
+
+	*out_xdev = p;
+	return 1;
+}
+
+int
+wmr_bt_controller_found(struct xrt_prober *xp,
+                        struct xrt_prober_device **devices,
+                        size_t num_devices,
+                        size_t index,
+                        cJSON *attached_data,
+                        struct xrt_device **out_xdev)
+{
+
+	enum u_logging_level ll = debug_get_log_option_wmr_log();
+
+	struct os_hid_device *hid_controller = NULL;
+
+	// Only handle Bluetooth connected controllers here.
+	if (devices[index]->bus != XRT_BUS_TYPE_BLUETOOTH) {
+		return 0;
+	}
+
+	unsigned char product_name[XRT_DEVICE_PRODUCT_NAME_LEN] = {0};
+	int ret = xrt_prober_get_string_descriptor(xp, devices[index], XRT_PROBER_STRING_PRODUCT, product_name,
+	                                           sizeof(product_name));
+
+	enum xrt_device_type controller_type = XRT_DEVICE_TYPE_UNKNOWN;
+	int interface_controller = -1;
+
+	switch (devices[index]->product_id) {
+	case WMR_CONTROLLER_PID:
+		if (strncmp((char *)product_name, WMR_CONTROLLER_LEFT_PRODUCT_STRING, sizeof(product_name)) == 0) {
+			controller_type = XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
+			interface_controller = 0;
+			break;
+		} else if (strncmp((char *)product_name, WMR_CONTROLLER_RIGHT_PRODUCT_STRING, sizeof(product_name)) ==
+		           0) {
+			controller_type = XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
+			interface_controller = 0;
+			break;
+		}
+	// else fall through
+	default:
+		U_LOG_IFL_D(ll,
+		            "Unsupported controller device (Bluetooth): vid: 0x%04X, pid: 0x%04X, Product Name: '%s'",
+		            devices[index]->vendor_id, devices[index]->product_id, product_name);
+		return -1;
+	}
+
+
+
+	ret = xrt_prober_open_hid_interface(xp, devices[index], interface_controller, &hid_controller);
+	if (ret != 0) {
+		U_LOG_IFL_E(ll, "Failed to open WMR Bluetooth controller's HID interface");
+		return -1;
+	}
+
+
+	struct xrt_device *p = wmr_bt_controller_create(hid_controller, controller_type, ll);
+	if (!p) {
+		U_LOG_IFL_E(ll, "Failed to create WMR controller (Bluetooth)");
 		return -1;
 	}
 

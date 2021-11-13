@@ -198,6 +198,8 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 		hololens_unknown_17_decode_packet(wh, buffer, size);
 		break;
 	case WMR_MS_HOLOLENS_MSG_CONTROL:
+		WMR_DEBUG(wh, "WMR_MS_HOLOLENS_MSG_CONTROL: %02x, (%i)", buffer[0], size);
+		break;
 	case WMR_MS_HOLOLENS_MSG_DEBUG: //
 		break;
 	default: //
