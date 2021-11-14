@@ -32,11 +32,28 @@
 
 #define NUM_XFERS 2
 
-struct wmr_camera_cmd
+#define WMR_CAMERA_CMD_GAIN 0x80
+#define WMR_CAMERA_CMD_ON 0x81
+#define WMR_CAMERA_CMD_OFF 0x82
+
+#define DEFAULT_GAIN 0x60
+
+struct wmr_camera_active_cmd
 {
 	__le32 magic;
 	__le32 len;
 	__le32 cmd;
+} __attribute__((packed));
+
+struct wmr_camera_gain_cmd
+{
+	__le32 magic;
+	__le32 len;
+	__le16 cmd;
+	__le16 camera_id;
+	__le16 const_6000;
+	__le16 gain;       /* observed 82 to 255 */
+	__le16 camera_id2; /* same as camera_id */
 } __attribute__((packed));
 
 struct wmr_camera
@@ -186,11 +203,11 @@ wmr_camera_send(struct wmr_camera *cam, uint8_t *buf, uint8_t len)
 }
 
 static int
-wmr_set_active(struct wmr_camera *cam, bool active)
+wmr_camera_set_active(struct wmr_camera *cam, bool active)
 {
-	struct wmr_camera_cmd cmd = {.magic = __cpu_to_le32(WMR_MAGIC),
-	                             .len = __cpu_to_le32(sizeof(struct wmr_camera_cmd)),
-	                             .cmd = __cpu_to_le32(active ? 0x81 : 0x82)};
+	struct wmr_camera_active_cmd cmd = {.magic = __cpu_to_le32(WMR_MAGIC),
+	                                    .len = __cpu_to_le32(sizeof(struct wmr_camera_active_cmd)),
+	                                    .cmd = __cpu_to_le32(active ? WMR_CAMERA_CMD_ON : WMR_CAMERA_CMD_OFF)};
 
 	return wmr_camera_send(cam, (uint8_t *)&cmd, sizeof(cmd));
 }
@@ -351,13 +368,25 @@ wmr_camera_start(struct wmr_camera *cam, struct wmr_camera_config *cam_configs, 
 		goto fail;
 	}
 
-	res = wmr_set_active(cam, false);
+	res = wmr_camera_set_active(cam, false);
 	if (res < 0)
 		goto fail;
 
-	res = wmr_set_active(cam, true);
+	res = wmr_camera_set_active(cam, true);
 	if (res < 0)
 		goto fail;
+
+	for (i = 0; i < cam->n_configs; i++) {
+		struct wmr_camera_config *config = cam->configs + i;
+		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING)
+			continue;
+
+		res = wmr_camera_set_gain(cam, config->location, DEFAULT_GAIN);
+		if (res < 0) {
+			WMR_CAM_ERROR(cam, "Failed to set initial gain for camera %d", i);
+			goto fail;
+		}
+	}
 
 	for (i = 0; i < NUM_XFERS; i++) {
 		uint8_t *recv_buf = malloc(cam->xfer_size);
@@ -395,7 +424,7 @@ wmr_camera_stop(struct wmr_camera *cam)
 			libusb_cancel_transfer(cam->xfers[i]);
 	}
 
-	res = wmr_set_active(cam, false);
+	res = wmr_camera_set_active(cam, false);
 	if (res < 0)
 		goto fail;
 
@@ -407,4 +436,18 @@ fail:
 	if (res < 0)
 		WMR_CAM_ERROR(cam, "Error stopping camera input: %s", libusb_error_name(res));
 	return false;
+}
+
+int
+wmr_camera_set_gain(struct wmr_camera *cam, uint8_t camera_id, uint8_t gain)
+{
+	struct wmr_camera_gain_cmd cmd = {.magic = __cpu_to_le32(WMR_MAGIC),
+	                                  .len = __cpu_to_le32(sizeof(struct wmr_camera_gain_cmd)),
+	                                  .cmd = __cpu_to_le16(WMR_CAMERA_CMD_GAIN),
+	                                  .camera_id = __cpu_to_le16(camera_id),
+	                                  .const_6000 = __cpu_to_le16(6000),
+	                                  .gain = __cpu_to_le16(gain),
+	                                  .camera_id2 = __cpu_to_le16(camera_id)};
+
+	return wmr_camera_send(cam, (uint8_t *)&cmd, sizeof(cmd));
 }
