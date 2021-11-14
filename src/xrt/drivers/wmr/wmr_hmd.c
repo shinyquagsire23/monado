@@ -65,13 +65,56 @@ const int headset_map_n = sizeof(headset_map) / sizeof(headset_map[0]);
  */
 
 static void
-hololens_unknown_17_decode_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
+hololens_handle_controller_status_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
-	if (size >= 7) {
-		WMR_TRACE(wh, "Got packet 0x17 (%i)\n\t%02x %02x %02x %02x %02x %02x %02x ", size, buffer[0], buffer[1],
-		          buffer[2], buffer[3], buffer[4], buffer[5], buffer[6]);
-	} else {
-		WMR_TRACE(wh, "Got packet 0x17 (%i)", size);
+	if (size < 3) {
+		WMR_DEBUG(wh, "Got small packet 0x17 (%i)", size);
+		return;
+	}
+
+	uint8_t controller_id = buffer[1];
+	uint8_t pkt_type = buffer[2];
+
+	switch (pkt_type) {
+	case WMR_CONTROLLER_STATUS_UNPAIRED: {
+		WMR_TRACE(wh, "Controller %d is not paired", controller_id);
+		break;
+	}
+	case WMR_CONTROLLER_STATUS_OFFLINE: {
+		if (size < 7) {
+			WMR_TRACE(wh, "Got small controller offline status packet (%i)", size);
+			return;
+		}
+
+		/* Skip packet type, controller id, presence */
+		buffer += 3;
+
+		uint16_t vid = read16(&buffer);
+		uint16_t pid = read16(&buffer);
+		WMR_TRACE(wh, "Controller %d offline. VID 0x%04x PID 0x%04x", controller_id, vid, pid);
+		break;
+	}
+	case WMR_CONTROLLER_STATUS_ONLINE: {
+		if (size < 10) {
+			WMR_TRACE(wh, "Got small controller online status packet (%i)", size);
+			return;
+		}
+
+		/* Skip packet type, controller id, presence */
+		buffer += 3;
+
+		uint16_t vid = read16(&buffer);
+		uint16_t pid = read16(&buffer);
+		uint8_t unknown1 = read8(&buffer);
+		uint16_t unknown2160 = read16(&buffer);
+
+		WMR_TRACE(wh, "Controller %d online. VID 0x%04x PID 0x%04x val1 %u val2 %u", controller_id, vid, pid,
+		          unknown1, unknown2160);
+		break;
+	}
+	default: //
+		WMR_DEBUG(wh, "Unknown controller status packet (%i) type 0x%02x", size, pkt_type);
+		break;
 	}
 }
 
@@ -250,8 +293,8 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 	case WMR_MS_HOLOLENS_MSG_RIGHT_CONTROLLER: //
 		hololens_handle_controller_packet(wh, buffer, size);
 		break;
-	case WMR_MS_HOLOLENS_MSG_UNKNOWN_17: //
-		hololens_unknown_17_decode_packet(wh, buffer, size);
+	case WMR_MS_HOLOLENS_MSG_CONTROLLER_STATUS: //
+		hololens_handle_controller_status_packet(wh, buffer, size);
 		break;
 	case WMR_MS_HOLOLENS_MSG_CONTROL: //
 		WMR_DEBUG(wh, "WMR_MS_HOLOLENS_MSG_CONTROL: %02x, (%i)", buffer[0], size);
