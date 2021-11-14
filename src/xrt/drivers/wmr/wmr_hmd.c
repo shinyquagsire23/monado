@@ -92,6 +92,28 @@ hololens_unknown_05_06_0E_decode_packet(struct wmr_hmd *wh, const unsigned char 
 }
 
 static void
+hololens_decode_debug(struct wmr_hmd *wh, const unsigned char *buffer, int size)
+{
+	if (size < 12) {
+		WMR_TRACE(wh, "Got short debug packet (%i) 0x%02x", size, buffer[0]);
+		return;
+	}
+	buffer += 1;
+
+	uint32_t magic = read32(&buffer);
+	if (magic != WMR_MAGIC) {
+		WMR_TRACE(wh, "Debug packet (%i) 0x%02x had strange magic 0x%08x", size, buffer[0], magic);
+		return;
+	}
+	uint32_t timestamp = read32(&buffer);
+	uint16_t seq = read16(&buffer);
+	uint8_t src_tag = read8(&buffer);
+	int msg_len = size - 12;
+
+	WMR_DEBUG(wh, "HMD debug: TS %f seq %u src %d: %.*s", timestamp / 1000.0, seq, src_tag, msg_len, buffer);
+}
+
+static void
 hololens_sensors_decode_packet(struct wmr_hmd *wh,
                                struct hololens_sensors_packet *pkt,
                                const unsigned char *buffer,
@@ -197,10 +219,11 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 	case WMR_MS_HOLOLENS_MSG_UNKNOWN_17: //
 		hololens_unknown_17_decode_packet(wh, buffer, size);
 		break;
-	case WMR_MS_HOLOLENS_MSG_CONTROL:
+	case WMR_MS_HOLOLENS_MSG_CONTROL: //
 		WMR_DEBUG(wh, "WMR_MS_HOLOLENS_MSG_CONTROL: %02x, (%i)", buffer[0], size);
 		break;
 	case WMR_MS_HOLOLENS_MSG_DEBUG: //
+		hololens_decode_debug(wh, buffer, size);
 		break;
 	default: //
 		WMR_DEBUG(wh, "Unknown message type: %02x, (%i)", buffer[0], size);
