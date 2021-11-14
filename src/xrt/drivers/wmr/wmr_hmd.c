@@ -76,7 +76,12 @@ hololens_unknown_17_decode_packet(struct wmr_hmd *wh, const unsigned char *buffe
 }
 
 static void
-hololens_unknown_05_06_0E_decode_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
+hololens_handle_bt_iface_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
+{
+}
+
+static void
+hololens_handle_controller_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
 	if (size >= 45) {
 		WMR_TRACE(wh,
@@ -211,10 +216,12 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 
 		break;
 	}
-	case WMR_MS_HOLOLENS_MSG_UNKNOWN_05:
-	case WMR_MS_HOLOLENS_MSG_UNKNOWN_06:
-	case WMR_MS_HOLOLENS_MSG_UNKNOWN_0E: //
-		hololens_unknown_05_06_0E_decode_packet(wh, buffer, size);
+	case WMR_MS_HOLOLENS_MSG_BT_IFACE: //
+		hololens_handle_bt_iface_packet(wh, buffer, size);
+		break;
+	case WMR_MS_HOLOLENS_MSG_LEFT_CONTROLLER:
+	case WMR_MS_HOLOLENS_MSG_RIGHT_CONTROLLER: //
+		hololens_handle_controller_packet(wh, buffer, size);
 		break;
 	case WMR_MS_HOLOLENS_MSG_UNKNOWN_17: //
 		hololens_unknown_17_decode_packet(wh, buffer, size);
