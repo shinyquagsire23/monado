@@ -326,15 +326,22 @@ control_ipd_value_decode(struct wmr_hmd *wh, const unsigned char *buffer, int si
 	}
 
 	uint8_t id = read8(&buffer);
-	uint8_t unknown = read8(&buffer);
-	uint16_t value = read16(&buffer);
+	if (id != 0x1) {
+		WMR_ERROR(wh, "Invalid control IPD distance packet ID (expected 0x1 but got %u)", id);
+		return;
+	}
 
-	(void)id;
-	(void)unknown;
+	uint8_t proximity = read8(&buffer);
+	uint16_t ipd_value = read16(&buffer);
 
-	wh->raw_ipd = value;
+	bool changed = (wh->raw_ipd != ipd_value) || (wh->proximity_sensor != proximity);
 
-	WMR_DEBUG(wh, "Got IPD value: %04x", value);
+	wh->raw_ipd = ipd_value;
+	wh->proximity_sensor = proximity;
+
+	if (changed) {
+		WMR_DEBUG(wh, "Proximity sensor %d IPD: %d", proximity, ipd_value);
+	}
 }
 
 static bool

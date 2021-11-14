@@ -99,6 +99,8 @@ struct wmr_hmd
 
 	//! Latest raw IPD value from the device.
 	uint16_t raw_ipd;
+	//! Latest proximity sensor value from the device.
+	uint8_t proximity_sensor;
 
 	/* Distortion related parameters */
 	struct wmr_hmd_distortion_params distortion_params[2];
