@@ -34,14 +34,16 @@ extern "C" {
 #define WMR_MS_HOLOLENS_MSG_SENSORS 0x01
 #define WMR_MS_HOLOLENS_MSG_CONTROL 0x02 // Integrated motion controller messages?
 #define WMR_MS_HOLOLENS_MSG_DEBUG 0x03
-#define WMR_MS_HOLOLENS_MSG_BT_IFACE 0x05 /* Bluetooth interface */
-#define WMR_MS_HOLOLENS_MSG_LEFT_CONTROLLER 0x06 /* Left controller */
+#define WMR_MS_HOLOLENS_MSG_BT_IFACE 0x05         /* Bluetooth interface */
+#define WMR_MS_HOLOLENS_MSG_LEFT_CONTROLLER 0x06  /* Left controller */
 #define WMR_MS_HOLOLENS_MSG_RIGHT_CONTROLLER 0x0E /* Right controller */
 #define WMR_MS_HOLOLENS_MSG_UNKNOWN_17 0x17
 
 // Messages types specific to WMR Hololens Sensors' companion devices
 #define WMR_CONTROL_MSG_IPD_VALUE 0x01
 #define WMR_CONTROL_MSG_UNKNOWN_05 0x05
+
+#define WMR_BT_IFACE_MSG_DEBUG 0x19
 
 #define STR_TO_U32(s) ((uint32_t)(((s)[0]) | ((s)[1] << 8) | ((s)[2] << 16) | ((s)[3] << 24)))
 #define WMR_MAGIC STR_TO_U32("Dlo+")

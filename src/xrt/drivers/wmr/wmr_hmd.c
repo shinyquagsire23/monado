@@ -78,6 +78,33 @@ hololens_unknown_17_decode_packet(struct wmr_hmd *wh, const unsigned char *buffe
 static void
 hololens_handle_bt_iface_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
+	int pkt_type;
+
+	if (size < 2)
+		return;
+
+	if (size < 6) {
+		WMR_DEBUG(wh, "Short Bluetooth interface packet (%d) type 0x%02x", size, buffer[1]);
+		return;
+	}
+
+	pkt_type = buffer[1];
+	if (pkt_type != WMR_BT_IFACE_MSG_DEBUG) {
+		WMR_DEBUG(wh, "Unknown Bluetooth interface packet (%d) type 0x%02x", size, pkt_type);
+		return;
+	}
+	buffer += 2;
+
+	uint16_t tag = read16(&buffer);
+	uint16_t msg_len = read16(&buffer);
+
+	if (size < msg_len + 6) {
+		WMR_DEBUG(wh, "Bluetooth interface debug packet (%d) too short. tag 0x%x msg len %u", size, tag,
+		          msg_len);
+		return;
+	}
+
+	WMR_DEBUG(wh, "BT debug: tag %d: %.*s", tag, msg_len, buffer);
 }
 
 static void
