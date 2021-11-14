@@ -1,9 +1,13 @@
 // Copyright 2021, Jan Schmidt
+// Copyright 2021, Philipp Zabel
+// Copyright 2021, Jakob Bornecrantz
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  WMR camera interface
  * @author Jan Schmidt <jan@centricular.com>
+ * @author Philipp Zabel <philipp.zabel@gmail.com>
+ * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup drv_wmr
  */
 #include <asm/byteorder.h>
@@ -11,6 +15,9 @@
 #include <stdlib.h>
 
 #include "os/os_threading.h"
+#include "util/u_var.h"
+#include "util/u_sink.h"
+#include "util/u_frame.h"
 
 #include "wmr_protocol.h"
 #include "wmr_camera.h"
@@ -46,7 +53,12 @@ struct wmr_camera
 	int n_configs;
 
 	size_t xfer_size;
+	uint32_t frame_width, frame_height;
+	uint8_t last_seq;
+
 	struct libusb_transfer *xfers[NUM_XFERS];
+
+	struct u_sink_debug debug_sinks[2];
 
 	enum u_logging_level log_level;
 };
@@ -78,11 +90,12 @@ struct wmr_camera
  *  It would be good to test these calculations on other headsets with
  *  different camera setups.
  */
-static size_t
-compute_transfer_size(struct wmr_camera *cam)
+static bool
+compute_frame_size(struct wmr_camera *cam)
 {
 	int i, cams_found = 0;
-	size_t F, n_packets, leftover, xfer_size;
+	int width, height;
+	size_t F, n_packets, leftover;
 
 	F = 26;
 
@@ -91,20 +104,42 @@ compute_transfer_size(struct wmr_camera *cam)
 		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING)
 			continue;
 
-		WMR_CAM_DEBUG(cam, "Found head tracking camera index %d", i);
+		WMR_CAM_DEBUG(cam, "Found head tracking camera index %d width %d height %d", i, config->sensor_width,
+		              config->sensor_height);
+
+		if (cams_found == 0) {
+			width = config->sensor_width;
+			height = config->sensor_height;
+		} else if (height != config->sensor_height) {
+			WMR_CAM_ERROR(cam, "Head tracking sensors have mismatched heights - %u != %u. Please report",
+			              height, config->sensor_height);
+			return false;
+		} else {
+			width += config->sensor_width;
+		}
+
 		cams_found++;
 		F += config->sensor_width * (config->sensor_height + 1);
 	}
 
 	if (cams_found == 0)
-		return 0;
+		return false;
+
+	if (width < 1280 || height < 480)
+		return false;
 
 	n_packets = F / (0x6000 - 32);
 	leftover = F - n_packets * (0x6000 - 32);
 
-	xfer_size = n_packets * 0x6000 + 32 + leftover;
+	cam->xfer_size = n_packets * 0x6000 + 32 + leftover;
 
-	return xfer_size;
+	cam->frame_width = width;
+	cam->frame_height = height;
+
+	WMR_CAM_INFO(cam, "WMR camera framebuffer %u x %u - %zu transfer size", cam->frame_width, cam->frame_height,
+	             cam->xfer_size);
+
+	return true;
 }
 
 static void *
@@ -200,6 +235,12 @@ wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level ll)
 		}
 	}
 
+	u_sink_debug_init(&cam->debug_sinks[0]);
+	u_sink_debug_init(&cam->debug_sinks[1]);
+	u_var_add_root(cam, "WMR Camera", true);
+	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "SLAM");
+	u_var_add_sink_debug(cam, &cam->debug_sinks[1], "Controllers");
+
 	return cam;
 
 fail:
@@ -240,26 +281,60 @@ static void LIBUSB_CALL
 img_xfer_cb(struct libusb_transfer *xfer)
 {
 	struct wmr_camera *cam = xfer->user_data;
-	size_t offset, buf_len;
 
 	if (xfer->status != LIBUSB_TRANSFER_COMPLETED) {
 		WMR_CAM_TRACE(cam, "Camera transfer completed with status %u", xfer->status);
 		goto out;
 	}
 
-	WMR_CAM_TRACE(cam, "Camera transfer complete - %d bytes of %d", xfer->actual_length, xfer->length);
-
-	/* TODO: Convert the output into frames and emit them */
-	buf_len = (size_t)xfer->actual_length;
-	for (offset = 0; offset < buf_len; offset += 0x6000) {
-		size_t avail = buf_len - offset;
-		if (avail > 0x6000)
-			avail = 0x6000;
-
-		if (avail < 0x20)
-			break;
+	if (xfer->actual_length < xfer->length) {
+		WMR_CAM_DEBUG(cam, "Camera transfer only delivered %d bytes", xfer->actual_length);
+		goto out;
 	}
 
+	WMR_CAM_TRACE(cam, "Camera transfer complete - %d bytes of %d", xfer->actual_length, xfer->length);
+
+	/* Convert the output into frames and send them off to debug / tracking */
+	struct xrt_frame *xf = NULL;
+
+	/* There's always one extra line of pixels with exposure info */
+	u_frame_create_one_off(XRT_FORMAT_L8, cam->frame_width, cam->frame_height + 1, &xf);
+
+	const uint8_t *src = xfer->buffer;
+
+	uint8_t *dst = xf->data;
+	size_t dst_remain = xf->size;
+	const size_t chunk_size = 0x6000 - 32;
+
+	while (dst_remain > 0) {
+		const size_t to_copy = dst_remain > chunk_size ? chunk_size : dst_remain;
+
+		/* TODO: See if there is useful info in the 32 byte packet headers.
+		 * There seems to be a counter or timestamp there at least */
+		src += 0x20;
+
+		memcpy(dst, src, to_copy);
+		src += to_copy;
+		dst += to_copy;
+		dst_remain -= to_copy;
+	}
+
+	uint16_t exposure = xf->data[6] << 8 | xf->data[7];
+	uint8_t seq = xf->data[89];
+
+	WMR_CAM_TRACE(cam, "Camera frame seq %u (prev %u) - exposure %u", seq, cam->last_seq, exposure);
+
+	/* Exposure of 0 is a dark frame for controller tracking */
+	int sink_index = (exposure == 0) ? 1 : 0;
+
+	if (u_sink_debug_is_active(&cam->debug_sinks[sink_index])) {
+		u_sink_debug_push_frame(&cam->debug_sinks[sink_index], xf);
+	}
+
+	/* TODO: Push frame for tracking */
+	xrt_frame_reference(&xf, NULL);
+
+	cam->last_seq = seq;
 out:
 	libusb_submit_transfer(xfer);
 }
@@ -271,10 +346,8 @@ wmr_camera_start(struct wmr_camera *cam, struct wmr_camera_config *cam_configs, 
 
 	cam->configs = cam_configs;
 	cam->n_configs = n_configs;
-	cam->xfer_size = compute_transfer_size(cam);
-
-	if (cam->xfer_size == 0) {
-		WMR_CAM_WARN(cam, "No head tracking cameras found");
+	if (!compute_frame_size(cam)) {
+		WMR_CAM_WARN(cam, "Invalid config or no head tracking cameras found");
 		goto fail;
 	}
 
