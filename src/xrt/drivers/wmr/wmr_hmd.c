@@ -433,9 +433,7 @@ wmr_config_command_sync(struct wmr_hmd *wh, unsigned char type, unsigned char *b
 		if (buf[0] == WMR_MS_HOLOLENS_MSG_CONTROL) {
 			return size;
 		}
-	} while (buf[0] == WMR_MS_HOLOLENS_MSG_SENSORS || //
-	         buf[0] == WMR_MS_HOLOLENS_MSG_DEBUG ||   //
-	         buf[0] == WMR_MS_HOLOLENS_MSG_UNKNOWN_17);
+	} while (true);
 
 	return -1;
 }
