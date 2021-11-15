@@ -1634,7 +1634,7 @@ struct oxr_action_attachment
 
 
 	/*!
-	 * For pose actions any subactoin paths are special treated, at bind
+	 * For pose actions any subaction paths are special treated, at bind
 	 * time we pick one subaction path and stick to it as long as the action
 	 * lives.
 	 */
