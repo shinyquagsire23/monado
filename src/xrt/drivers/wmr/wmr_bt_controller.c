@@ -8,9 +8,6 @@
  * @ingroup drv_wmr
  */
 
-#include "xrt/xrt_config_os.h"
-#include "xrt/xrt_device.h"
-
 #include "os/os_time.h"
 #include "os/os_hid.h"
 
@@ -25,9 +22,8 @@
 #include "util/u_debug.h"
 #include "util/u_device.h"
 
-#include "wmr_bt_controller.h"
 #include "wmr_common.h"
-#include "wmr_protocol.h"
+#include "wmr_bt_controller.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,91 +47,34 @@ wmr_bt_controller(struct xrt_device *p)
 }
 
 static bool
-control_read_packets(struct wmr_bt_controller *d)
+read_packets(struct wmr_bt_controller *d)
 {
-	unsigned char buffer[WMR_FEATURE_BUFFER_SIZE];
+	unsigned char buffer[WMR_MOTION_CONTROLLER_MSG_BUFFER_SIZE];
 
 	// Do not block
 	int size = os_hid_read(d->controller_hid, buffer, sizeof(buffer), 0);
 
 	if (size < 0) {
-		WMR_ERROR(d, "Error reading from controller device");
+		WMR_ERROR(d, "WMR Controller (Bluetooth): Error reading from device");
 		return false;
 	} else if (size == 0) {
-		WMR_TRACE(d, "No more data to read from controller device");
+		WMR_TRACE(d, "WMR Controller (Bluetooth): No data to read from device");
 		return true; // No more messages, return.
 	} else {
-		WMR_DEBUG(d, "Read %u bytes from controller device", size);
+		WMR_DEBUG(d, "WMR Controller (Bluetooth): Read %u bytes from device", size);
 	}
 
 	switch (buffer[0]) {
-	case WMR_MS_HOLOLENS_MSG_SENSORS: //
-		if (size != 45) {
-			WMR_ERROR(d, "WMR Controller unexpected message size: %d", size);
+	case WMR_BT_MOTION_CONTROLLER_MSG:
+		// Note: skipping msg type byte
+		if (!wmr_controller_packet_parse(&buffer[1], (size_t)size - 1, &d->controller_message, d->ll)) {
+			WMR_ERROR(d, "WMR Controller (Bluetooth): Failed parsing message type: %02x, size: %i",
+			          buffer[0], size);
 			return false;
 		}
-		WMR_DEBUG(d,
-		          "%02x | "                                              // msg type
-		          "%02x %02x %02x %02x %02x %02x %02x %02x | "           // buttons and inputs, battery
-		          "%02x %02x %02x %02x %02x %02x %02x %02x %02x | "      // accel
-		          "%02x %02x | "                                         // temp
-		          "%02x %02x %02x %02x %02x %02x %02x %02x %02x | "      // gyro
-		          "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x | " // timestamp and more?
-		          "%02x %02x %02x %02x %02x %02x",                       // device run state, status and more?
-		          buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7],
-		          buffer[8], buffer[9], buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15],
-		          buffer[16], buffer[17], buffer[18], buffer[19], buffer[20], buffer[21], buffer[22],
-		          buffer[23], buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29],
-		          buffer[30], buffer[31], buffer[32], buffer[33], buffer[34], buffer[35], buffer[36],
-		          buffer[37], buffer[38], buffer[39], buffer[40], buffer[41], buffer[42], buffer[43],
-		          buffer[44]);
-
-		const unsigned char *p = (unsigned char *)&buffer[1];
-
-		// HP Reverb G1 button mask:
-		// Stick_pressed: 0x01
-		// Windows button: 0x02
-		// Menu button: 0x04
-		// Side button: 0x08
-		// Touch-pad pressed: 0x10
-		// BT pairing button: 0x20
-		// Touch-pad touched: 0x40
-		uint8_t buttons = read8(&p);
-
-		// Todo: interpret analog stick data
-		uint8_t stick_1 = read8(&p);
-		uint8_t stick_2 = read8(&p);
-		uint8_t stick_3 = read8(&p);
-
-		uint8_t trigger = read8(&p); // pressure: 0x00 - 0xFF
-
-		// Touchpad coords range: 0x00 - 0x64. Both are 0xFF when untouched.
-		uint8_t pad_x = read8(&p);
-		uint8_t pad_y = read8(&p);
-		uint8_t battery = read8(&p);
-		int32_t accel_x = read24(&p);
-		int32_t accel_y = read24(&p);
-		int32_t accel_z = read24(&p);
-		int32_t temp = read16(&p);
-		int32_t gyro_x = read24(&p);
-		int32_t gyro_y = read24(&p);
-		int32_t gyro_z = read24(&p);
-
-		uint64_t timestamp = read32(&p); // Maybe only part of timestamp.
-		read16(&p);                      // Unknown. Seems to depend on controller orientation.
-		read32(&p);                      // Unknown.
-
-		read16(&p); // Unknown. Device state, etc.
-		read16(&p);
-		read16(&p);
-
-		WMR_DEBUG(d, "timestamp %lu\ttemp %d\taccel x: %f\ty: %f\tz: %f\t\tgyro x: %f\tgyro y: %f\tgyro z: %f",
-		          timestamp, temp, accel_x * 0.001f, accel_y * 0.001f, accel_z * 0.001f, gyro_x * 2e-6,
-		          gyro_y * 2e-6, gyro_z * 2e-6);
-
 		break;
-	default: //
-		WMR_DEBUG(d, "Unknown message type: %02x, size: %i from controller device", buffer[0], size);
+	default:
+		WMR_DEBUG(d, "WMR Controller (Bluetooth): Unknown message type: %02x, size: %i", buffer[0], size);
 		break;
 	}
 
@@ -178,12 +117,12 @@ wmr_bt_controller_run_thread(void *ptr)
 		os_thread_helper_unlock(&d->controller_thread);
 
 		// Does not block.
-		if (!control_read_packets(d)) {
+		if (!read_packets(d)) {
 			break;
 		}
 	}
 
-	WMR_DEBUG(d, "Exiting reading thread.");
+	WMR_DEBUG(d, "WMR Controller (Bluetooth): Exiting reading thread.");
 
 	return NULL;
 }
@@ -199,10 +138,6 @@ wmr_bt_controller_destroy(struct xrt_device *xdev)
 
 
 	if (d->controller_hid != NULL) {
-		/* Do any deinit if we have a deinit function */
-		//		if (d->hmd_desc && d->hmd_desc->deinit_func) {
-		//			d->hmd_desc->deinit_func(d);
-		//		}
 		os_hid_destroy(d->controller_hid);
 		d->controller_hid = NULL;
 	}
@@ -246,12 +181,12 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 
 	int ret = 0;
 
-	// Todo: Read config file from controller
+	// Todo: Read config file from controller if possible.
 
 	// Thread and other state.
 	ret = os_thread_helper_init(&d->controller_thread);
 	if (ret != 0) {
-		WMR_ERROR(d, "Failed to init WMR controller threading!");
+		WMR_ERROR(d, "WMR Controller (Bluetooth): Failed to init controller threading!");
 		wmr_bt_controller_destroy(&d->base);
 		d = NULL;
 		return NULL;
@@ -260,7 +195,7 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 	// Hand over controller device to reading thread.
 	ret = os_thread_helper_start(&d->controller_thread, wmr_bt_controller_run_thread, d);
 	if (ret != 0) {
-		WMR_ERROR(d, "Failed to start WMR controller thread!");
+		WMR_ERROR(d, "WMR Controller (Bluetooth): Failed to start controller thread!");
 		wmr_bt_controller_destroy(&d->base);
 		d = NULL;
 		return NULL;

@@ -303,6 +303,8 @@ lib_drv_wmr = static_library(
 		'wmr/wmr_prober.c',
 		'wmr/wmr_protocol.c',
 		'wmr/wmr_protocol.h',
+		'wmr/wmr_controller_protocol.c',
+		'wmr/wmr_controller_protocol.h',
 	),
 	include_directories: [
 		xrt_include,

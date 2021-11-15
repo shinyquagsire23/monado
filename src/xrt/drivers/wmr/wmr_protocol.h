@@ -30,14 +30,16 @@ extern "C" {
 #define WMR_FEATURE_BUFFER_SIZE 497
 #define WMR_MS_HOLOLENS_NS_PER_TICK 100
 
+// Messages types specific to WMR Hololens Sensors devices
 #define WMR_MS_HOLOLENS_MSG_SENSORS 0x01
-#define WMR_MS_HOLOLENS_MSG_CONTROL 0x02
+#define WMR_MS_HOLOLENS_MSG_CONTROL 0x02 // Integrated motion controller messages?
 #define WMR_MS_HOLOLENS_MSG_DEBUG 0x03
 #define WMR_MS_HOLOLENS_MSG_UNKNOWN_05 0x05
 #define WMR_MS_HOLOLENS_MSG_UNKNOWN_06 0x06
 #define WMR_MS_HOLOLENS_MSG_UNKNOWN_0E 0x0E
 #define WMR_MS_HOLOLENS_MSG_UNKNOWN_17 0x17
 
+// Messages types specific to WMR Hololens Sensors' companion devices
 #define WMR_CONTROL_MSG_IPD_VALUE 0x01
 #define WMR_CONTROL_MSG_UNKNOWN_05 0x05
 

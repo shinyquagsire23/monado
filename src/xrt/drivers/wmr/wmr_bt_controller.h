@@ -12,15 +12,11 @@
 
 
 #include "os/os_threading.h"
-#include "xrt/xrt_prober.h"
 #include "math/m_imu_3dof.h"
 #include "util/u_logging.h"
-
 #include "xrt/xrt_device.h"
-#include "xrt/xrt_prober.h"
 
-#include "wmr_protocol.h"
-#include "wmr_config.h"
+#include "wmr_controller_protocol.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,12 +37,7 @@ struct wmr_bt_controller
 	struct os_thread_helper controller_thread;
 	struct os_mutex lock;
 
-	struct
-	{
-		uint64_t time_ns;
-		uint32_t last_sample_time_raw;
-		timepoint_ns ts_received_ns;
-	} imu;
+	struct wmr_controller_message controller_message;
 
 	struct m_imu_3dof fusion;
 
@@ -61,12 +52,6 @@ struct wmr_bt_controller
 	enum u_logging_level ll;
 
 	uint32_t last_ticks;
-
-	// firmware configuration block, with device names etc
-	// struct wmr_config_header config_hdr;
-
-	// Config data parsed from the firmware JSON
-	// wmr_bt_controller_config config;
 };
 
 

@@ -308,6 +308,8 @@ if(XRT_BUILD_DRIVER_WMR)
 		wmr/wmr_prober.c
 		wmr/wmr_protocol.c
 		wmr/wmr_protocol.h
+		wmr/wmr_controller_protocol.c
+		wmr/wmr_controller_protocol.h
 		)
 	target_link_libraries(drv_wmr PRIVATE xrt-interfaces aux_util aux_math xrt-external-cjson)
 	list(APPEND ENABLED_HEADSET_DRIVERS wmr)
