@@ -20,6 +20,7 @@ target_link_libraries(
 		target_instance_no_comp
 		xrt-external-imgui-sdl2
 	)
+target_include_directories(gui PUBLIC ${SDL2_INCLUDE_DIRS})
 if(WIN32)
 	target_link_libraries(gui PRIVATE SDL2::SDL2main)
 endif()
