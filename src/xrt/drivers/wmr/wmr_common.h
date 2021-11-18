@@ -43,6 +43,8 @@ extern "C" {
 
 #define SAMSUNG_VID 0x04e8
 #define ODYSSEY_PID 0x7312
+#define ODYSSEY_CONTROLLER_PID 0x065d
+
 
 /*!
  * @}

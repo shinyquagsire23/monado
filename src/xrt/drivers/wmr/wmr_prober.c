@@ -234,6 +234,7 @@ wmr_bt_controller_found(struct xrt_prober *xp,
 
 	switch (devices[index]->product_id) {
 	case WMR_CONTROLLER_PID:
+	case ODYSSEY_CONTROLLER_PID:
 		if (strncmp((char *)product_name, WMR_CONTROLLER_LEFT_PRODUCT_STRING, sizeof(product_name)) == 0) {
 			controller_type = XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
 			interface_controller = 0;
