@@ -72,7 +72,7 @@ do_projection_layer_depth(struct xrt_compositor *xc,
 	struct xrt_swapchain *l_xcs = layer->xscs[0];
 	struct xrt_swapchain *r_xcs = layer->xscs[1];
 	struct xrt_swapchain *l_d_xcs = layer->xscs[2];
-	struct xrt_swapchain *r_d_xcs = layer->xscs[2];
+	struct xrt_swapchain *r_d_xcs = layer->xscs[3];
 
 	if (l_xcs == NULL || r_xcs == NULL || l_d_xcs == NULL || r_d_xcs == NULL) {
 		U_LOG_E("Invalid swap chain for projection layer #%u!", i);
