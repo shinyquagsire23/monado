@@ -60,6 +60,9 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 	// Grab the device index from the vk_bundle
 	vk_res->selected_gpu_index = vk->physical_device_index;
 
+	// Grab the suggested device index for the client to use
+	vk_res->client_gpu_index = vk_args->client_gpu_index;
+
 	// Store physical device UUID for compositor in settings
 	if (vk_res->selected_gpu_index >= 0) {
 		if (get_device_uuid(vk, vk_res->selected_gpu_index, vk_res->selected_gpu_deviceUUID)) {
