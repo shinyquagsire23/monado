@@ -293,4 +293,35 @@ aux_vk = declare_dependency(
 
 all_aux = [aux_util, aux_os, aux_math, aux_tracking, aux_generated_bindings, aux_vive]
 
+# GStreamer library.
+if gst_found
+	lib_aux_gstreamer = static_library(
+		'aux_gstreamer',
+		files(
+			'gstreamer/gst_internal.h',
+			'gstreamer/gst_sink.h',
+			'gstreamer/gst_sink.c',
+			'gstreamer/gst_pipeline.h',
+			'gstreamer/gst_pipeline.c',
+		),
+		include_directories: [
+			xrt_include,
+		],
+		dependencies: [
+			aux_math,
+			aux_os,
+			gst,
+			gst_app,
+			gst_video,
+		],
+	)
+
+	aux_gstreamer = declare_dependency(
+		include_directories: aux_include,
+		link_with: lib_aux_gstreamer,
+	)
+
+	all_aux += aux_gstreamer
+endif
+
 aux = declare_dependency(dependencies: all_aux)

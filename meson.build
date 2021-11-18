@@ -387,3 +387,9 @@ if not get_option('libbsd').disabled() and libbsd.found()
 else
 	message('        libbsd: no')
 endif
+
+if gst_found
+	message('       GStreamer: yes')
+else
+	message('       GStreamer: no')
+endif

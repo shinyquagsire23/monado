@@ -122,6 +122,10 @@ if build_tracing
 	have_conf.set('XRT_HAVE_PERCETTO', true)
 endif
 
+if gst_found
+	have_conf.set('XRT_HAVE_GST', true)
+endif
+
 xrt_config_have_h = configure_file(
 	output: 'xrt_config_have.h',
 	configuration: have_conf,

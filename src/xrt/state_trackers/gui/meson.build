@@ -52,6 +52,10 @@ if 'depthai' in drivers
 	gui_deps += [drv_depthai]
 endif
 
+if gst_found
+	gui_deps += [aux_gstreamer]
+endif
+
 lib_st_gui = static_library(
 	'st_gui',
 	files(gui_sources),
