@@ -281,6 +281,40 @@ get_identifier_str_in_profile(struct oxr_logger *log,
 	return str;
 }
 
+static void
+get_profile_for_device_name(struct oxr_logger *log,
+                            struct oxr_instance *inst,
+                            enum xrt_device_name name,
+                            struct oxr_interaction_profile **out_p)
+{
+#define FIND_PROFILE(PATH) interaction_profile_find(log, inst, inst->path_cache.PATH, out_p)
+
+	switch (name) {
+	case XRT_DEVICE_PSMV: FIND_PROFILE(mndx_ball_on_a_stick_controller); return;
+	case XRT_DEVICE_SIMPLE_CONTROLLER: FIND_PROFILE(khr_simple_controller); return;
+	case XRT_DEVICE_INDEX_CONTROLLER: FIND_PROFILE(valve_index_controller); return;
+	case XRT_DEVICE_VIVE_WAND: FIND_PROFILE(htc_vive_controller); return;
+	case XRT_DEVICE_TOUCH_CONTROLLER: FIND_PROFILE(oculus_touch_controller); return;
+	case XRT_DEVICE_WMR_CONTROLLER: FIND_PROFILE(microsoft_motion_controller); return;
+	case XRT_DEVICE_GO_CONTROLLER: FIND_PROFILE(oculus_go_controller); return;
+	case XRT_DEVICE_VIVE_PRO: FIND_PROFILE(htc_vive_pro); return;
+	case XRT_DEVICE_XBOX_CONTROLLER: FIND_PROFILE(microsoft_xbox_controller); return;
+	case XRT_DEVICE_HAND_INTERACTION: FIND_PROFILE(msft_hand_interaction); return;
+
+	// no interaction
+	default:
+	case XRT_DEVICE_HYDRA:
+	case XRT_DEVICE_DAYDREAM:
+	case XRT_DEVICE_GENERIC_HMD:
+	case XRT_DEVICE_REALSENSE:
+	case XRT_DEVICE_HAND_TRACKER:
+	case XRT_DEVICE_VIVE_TRACKER_GEN1:
+	case XRT_DEVICE_VIVE_TRACKER_GEN2: return;
+	}
+
+#undef FIND_PROFILE
+}
+
 
 /*
  *
@@ -298,62 +332,13 @@ oxr_find_profile_for_device(struct oxr_logger *log,
 		return;
 	}
 
-	enum xrt_device_name name = xdev->name;
+	// Does the device directly have a binding profile.
+	get_profile_for_device_name(log, inst, xdev->name, out_p);
 
-	//! @todo A lot more clever selecting the profile here.
-	switch (name) {
-	case XRT_DEVICE_HYDRA:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		return;
-	case XRT_DEVICE_PSMV:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		interaction_profile_find(log, inst, inst->path_cache.mndx_ball_on_a_stick_controller, out_p);
-		return;
-	case XRT_DEVICE_DAYDREAM:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		return;
-	case XRT_DEVICE_SIMPLE_CONTROLLER:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		return;
-	case XRT_DEVICE_INDEX_CONTROLLER:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		interaction_profile_find(log, inst, inst->path_cache.valve_index_controller, out_p);
-		return;
-	case XRT_DEVICE_VIVE_WAND:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		interaction_profile_find(log, inst, inst->path_cache.htc_vive_controller, out_p);
-		return;
-	case XRT_DEVICE_TOUCH_CONTROLLER:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		interaction_profile_find(log, inst, inst->path_cache.oculus_touch_controller, out_p);
-		return;
-	case XRT_DEVICE_WMR_CONTROLLER:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		interaction_profile_find(log, inst, inst->path_cache.microsoft_motion_controller, out_p);
-		return;
-	case XRT_DEVICE_GO_CONTROLLER:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		interaction_profile_find(log, inst, inst->path_cache.oculus_go_controller, out_p);
-		return;
-	case XRT_DEVICE_VIVE_PRO:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		interaction_profile_find(log, inst, inst->path_cache.htc_vive_pro, out_p);
-		return;
-	case XRT_DEVICE_XBOX_CONTROLLER:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		interaction_profile_find(log, inst, inst->path_cache.microsoft_xbox_controller, out_p);
-		return;
-	case XRT_DEVICE_HAND_INTERACTION:
-		interaction_profile_find(log, inst, inst->path_cache.khr_simple_controller, out_p);
-		interaction_profile_find(log, inst, inst->path_cache.msft_hand_interaction, out_p);
-		return;
-
-	// no interaction
-	case XRT_DEVICE_GENERIC_HMD:
-	case XRT_DEVICE_REALSENSE:
-	case XRT_DEVICE_HAND_TRACKER:
-	case XRT_DEVICE_VIVE_TRACKER_GEN1:
-	case XRT_DEVICE_VIVE_TRACKER_GEN2: return;
+	// Find all other binding profile for all device provided profiles.
+	for (size_t i = 0; i < xdev->binding_profile_count; i++) {
+		struct xrt_binding_profile *xbp = &xdev->binding_profiles[i];
+		get_profile_for_device_name(log, inst, xbp->name, out_p);
 	}
 }
 
