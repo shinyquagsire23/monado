@@ -396,13 +396,8 @@ on_elem_sink_debug_add(struct u_var_info *info, void *priv)
 {
 	void *ptr = info->ptr;
 	enum u_var_kind kind = info->kind;
-	struct gui_program *p = ((struct priv_tuple *)priv)->p;
 
 	if (kind != U_VAR_KIND_SINK_DEBUG) {
-		return;
-	}
-
-	if (p->xp == NULL || p->xp->tracking == NULL) {
 		return;
 	}
 
