@@ -140,6 +140,19 @@ starts_with(const char *with, const char *string)
 }
 
 static void
+debug_print_devices(struct oxr_logger *log, struct oxr_system *sys)
+{
+	struct xrt_device *h = GET_XDEV_BY_ROLE(sys, head);
+	struct xrt_device *l = GET_XDEV_BY_ROLE(sys, left);
+	struct xrt_device *r = GET_XDEV_BY_ROLE(sys, right);
+
+	oxr_log(log, "Selected devices\n\tHead: '%s' (%i)\n\tLeft: '%s' (%i)\n\tRight: '%s' (%i)", //
+	        h ? h->str : "<none>", sys->role.head,                                             //
+	        l ? l->str : "<none>", sys->role.left,                                             //
+	        r ? r->str : "<none>", sys->role.right);                                           //
+}
+
+static void
 detect_engine(struct oxr_logger *log, struct oxr_instance *inst, const XrInstanceCreateInfo *createInfo)
 {
 	if (starts_with("UnrealEngine4", createInfo->applicationInfo.engineName)) {
@@ -405,6 +418,8 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 	        inst->appinfo.detected.engine.minor,                                  //
 	        inst->appinfo.detected.engine.patch,                                  //
 	        inst->quirks.disable_vulkan_format_depth_stencil ? "true" : "false"); //
+
+	debug_print_devices(log, sys);
 
 	*out_instance = inst;
 
