@@ -97,6 +97,17 @@ wmr_bt_controller_get_tracked_pose(struct xrt_device *xdev,
 {
 	// struct wmr_bt_controller *d = wmr_bt_controller(xdev);
 	// Todo: implement
+	struct xrt_pose pose = {{0, 0, 0, 1}, {0, 1.2, -0.5}};
+	if (xdev->device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) {
+		pose.position.x = -0.2;
+	} else {
+		pose.position.x = 0.2;
+	}
+
+	out_relation->pose = pose;
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT | XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
 }
 
 static void
@@ -148,6 +159,41 @@ wmr_bt_controller_destroy(struct xrt_device *xdev)
 	free(d);
 }
 
+
+/*
+ *
+ * Bindings
+ *
+ */
+
+static struct xrt_binding_input_pair simple_inputs[4] = {
+    {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_WMR_TRIGGER_VALUE},
+    {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_WMR_MENU_CLICK},
+    {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_WMR_GRIP_POSE},
+    {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_WMR_AIM_POSE},
+};
+
+static struct xrt_binding_output_pair simple_outputs[1] = {
+    {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_WMR_HAPTIC},
+};
+
+static struct xrt_binding_profile binding_profiles[1] = {
+    {
+        .name = XRT_DEVICE_SIMPLE_CONTROLLER,
+        .inputs = simple_inputs,
+        .input_count = ARRAY_SIZE(simple_inputs),
+        .outputs = simple_outputs,
+        .output_count = ARRAY_SIZE(simple_outputs),
+    },
+};
+
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
 struct xrt_device *
 wmr_bt_controller_create(struct os_hid_device *controller_hid,
                          enum xrt_device_type controller_type,
@@ -155,19 +201,28 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 {
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
-	struct wmr_bt_controller *d = U_DEVICE_ALLOCATE(struct wmr_bt_controller, flags, 1, 01);
+	struct wmr_bt_controller *d = U_DEVICE_ALLOCATE(struct wmr_bt_controller, flags, 2, 0);
 
 	d->ll = ll;
 	d->controller_hid = controller_hid;
+
+	if (controller_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) {
+		snprintf(d->base.str, ARRAY_SIZE(d->base.str), "WMR Left Controller");
+	} else {
+		snprintf(d->base.str, ARRAY_SIZE(d->base.str), "WMR Right Controller");
+	}
 
 	d->base.destroy = wmr_bt_controller_destroy;
 	d->base.get_tracked_pose = wmr_bt_controller_get_tracked_pose;
 	d->base.set_output = wmr_bt_controller_set_output;
 	d->base.update_inputs = wmr_bt_controller_update_inputs;
 
-	d->base.inputs[0].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
-	d->base.inputs[1].name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
-
+	d->base.inputs[0].name = XRT_INPUT_WMR_GRIP_POSE;
+	d->base.inputs[0].active = true;
+	d->base.inputs[1].name = XRT_INPUT_WMR_AIM_POSE;
+	d->base.inputs[1].active = true;
+	d->base.binding_profiles = binding_profiles;
+	d->base.binding_profile_count = ARRAY_SIZE(binding_profiles);
 
 	d->base.name = XRT_DEVICE_WMR_CONTROLLER;
 	d->base.device_type = controller_type;
