@@ -58,10 +58,14 @@ create_buffer(struct vk_bundle *vk,
 
 	// Find a memory type index that fits the properties of the buffer.
 	uint32_t memory_type_index = 0;
-	vk_get_memory_type(vk,                      //
-	                   mem_reqs.memoryTypeBits, //
-	                   memory_property_flags,   //
-	                   &memory_type_index);     //
+	if (!vk_get_memory_type(vk,                      //
+	                        mem_reqs.memoryTypeBits, //
+	                        memory_property_flags,   //
+	                        &memory_type_index)) {   //
+		VK_ERROR(vk, "vk_get_memory_type failed: 'false'\n\tFailed to find a matching memory type.");
+		ret = VK_ERROR_OUT_OF_DEVICE_MEMORY;
+		goto err_buffer;
+	}
 
 	VkMemoryAllocateInfo mem_alloc = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
