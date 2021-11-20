@@ -269,7 +269,14 @@ fail:
 void
 wmr_camera_free(struct wmr_camera *cam)
 {
+	// Stop the camera.
 	wmr_camera_stop(cam);
+
+	// Tidy the variable tracking.
+	u_var_remove_root(cam);
+	u_sink_debug_destroy(&cam->debug_sinks[0]);
+	u_sink_debug_destroy(&cam->debug_sinks[1]);
+
 
 	if (cam->ctx != NULL) {
 		int i;
