@@ -22,6 +22,13 @@
 #include "wmr_protocol.h"
 #include "wmr_camera.h"
 
+
+/*
+ *
+ * Defines and structs.
+ *
+ */
+
 #define WMR_CAM_TRACE(c, ...) U_LOG_IFL_T((c)->log_level, __VA_ARGS__)
 #define WMR_CAM_DEBUG(c, ...) U_LOG_IFL_D((c)->log_level, __VA_ARGS__)
 #define WMR_CAM_INFO(c, ...) U_LOG_IFL_I((c)->log_level, __VA_ARGS__)
@@ -79,6 +86,13 @@ struct wmr_camera
 
 	enum u_logging_level log_level;
 };
+
+
+/*
+ *
+ * Helper functions.
+ *
+ */
 
 /* Some WMR headsets use 616538 byte transfers. HP G2 needs 1233018 (4 cameras)
  * As a general formula, it seems we have:
@@ -214,6 +228,76 @@ set_active(struct wmr_camera *cam, bool active)
 	return send_buffer_to_device(cam, (uint8_t *)&cmd, sizeof(cmd));
 }
 
+
+static void LIBUSB_CALL
+img_xfer_cb(struct libusb_transfer *xfer)
+{
+	struct wmr_camera *cam = xfer->user_data;
+
+	if (xfer->status != LIBUSB_TRANSFER_COMPLETED) {
+		WMR_CAM_TRACE(cam, "Camera transfer completed with status %u", xfer->status);
+		goto out;
+	}
+
+	if (xfer->actual_length < xfer->length) {
+		WMR_CAM_DEBUG(cam, "Camera transfer only delivered %d bytes", xfer->actual_length);
+		goto out;
+	}
+
+	WMR_CAM_TRACE(cam, "Camera transfer complete - %d bytes of %d", xfer->actual_length, xfer->length);
+
+	/* Convert the output into frames and send them off to debug / tracking */
+	struct xrt_frame *xf = NULL;
+
+	/* There's always one extra line of pixels with exposure info */
+	u_frame_create_one_off(XRT_FORMAT_L8, cam->frame_width, cam->frame_height + 1, &xf);
+
+	const uint8_t *src = xfer->buffer;
+
+	uint8_t *dst = xf->data;
+	size_t dst_remain = xf->size;
+	const size_t chunk_size = 0x6000 - 32;
+
+	while (dst_remain > 0) {
+		const size_t to_copy = dst_remain > chunk_size ? chunk_size : dst_remain;
+
+		/* TODO: See if there is useful info in the 32 byte packet headers.
+		 * There seems to be a counter or timestamp there at least */
+		src += 0x20;
+
+		memcpy(dst, src, to_copy);
+		src += to_copy;
+		dst += to_copy;
+		dst_remain -= to_copy;
+	}
+
+	uint16_t exposure = xf->data[6] << 8 | xf->data[7];
+	uint8_t seq = xf->data[89];
+
+	WMR_CAM_TRACE(cam, "Camera frame seq %u (prev %u) - exposure %u", seq, cam->last_seq, exposure);
+
+	/* Exposure of 0 is a dark frame for controller tracking */
+	int sink_index = (exposure == 0) ? 1 : 0;
+
+	if (u_sink_debug_is_active(&cam->debug_sinks[sink_index])) {
+		u_sink_debug_push_frame(&cam->debug_sinks[sink_index], xf);
+	}
+
+	/* TODO: Push frame for tracking */
+	xrt_frame_reference(&xf, NULL);
+
+	cam->last_seq = seq;
+out:
+	libusb_submit_transfer(xfer);
+}
+
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
 struct wmr_camera *
 wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level ll)
 {
@@ -302,68 +386,6 @@ wmr_camera_free(struct wmr_camera *cam)
 	}
 
 	free(cam);
-}
-
-static void LIBUSB_CALL
-img_xfer_cb(struct libusb_transfer *xfer)
-{
-	struct wmr_camera *cam = xfer->user_data;
-
-	if (xfer->status != LIBUSB_TRANSFER_COMPLETED) {
-		WMR_CAM_TRACE(cam, "Camera transfer completed with status %u", xfer->status);
-		goto out;
-	}
-
-	if (xfer->actual_length < xfer->length) {
-		WMR_CAM_DEBUG(cam, "Camera transfer only delivered %d bytes", xfer->actual_length);
-		goto out;
-	}
-
-	WMR_CAM_TRACE(cam, "Camera transfer complete - %d bytes of %d", xfer->actual_length, xfer->length);
-
-	/* Convert the output into frames and send them off to debug / tracking */
-	struct xrt_frame *xf = NULL;
-
-	/* There's always one extra line of pixels with exposure info */
-	u_frame_create_one_off(XRT_FORMAT_L8, cam->frame_width, cam->frame_height + 1, &xf);
-
-	const uint8_t *src = xfer->buffer;
-
-	uint8_t *dst = xf->data;
-	size_t dst_remain = xf->size;
-	const size_t chunk_size = 0x6000 - 32;
-
-	while (dst_remain > 0) {
-		const size_t to_copy = dst_remain > chunk_size ? chunk_size : dst_remain;
-
-		/* TODO: See if there is useful info in the 32 byte packet headers.
-		 * There seems to be a counter or timestamp there at least */
-		src += 0x20;
-
-		memcpy(dst, src, to_copy);
-		src += to_copy;
-		dst += to_copy;
-		dst_remain -= to_copy;
-	}
-
-	uint16_t exposure = xf->data[6] << 8 | xf->data[7];
-	uint8_t seq = xf->data[89];
-
-	WMR_CAM_TRACE(cam, "Camera frame seq %u (prev %u) - exposure %u", seq, cam->last_seq, exposure);
-
-	/* Exposure of 0 is a dark frame for controller tracking */
-	int sink_index = (exposure == 0) ? 1 : 0;
-
-	if (u_sink_debug_is_active(&cam->debug_sinks[sink_index])) {
-		u_sink_debug_push_frame(&cam->debug_sinks[sink_index], xf);
-	}
-
-	/* TODO: Push frame for tracking */
-	xrt_frame_reference(&xf, NULL);
-
-	cam->last_seq = seq;
-out:
-	libusb_submit_transfer(xfer);
 }
 
 bool
