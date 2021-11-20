@@ -132,8 +132,9 @@ compute_frame_size(struct wmr_camera *cam)
 
 	for (i = 0; i < cam->config_count; i++) {
 		const struct wmr_camera_config *config = &cam->configs[i];
-		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING)
+		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
 			continue;
+		}
 
 		WMR_CAM_DEBUG(cam, "Found head tracking camera index %d width %d height %d", i, config->sensor_width,
 		              config->sensor_height);
@@ -153,11 +154,13 @@ compute_frame_size(struct wmr_camera *cam)
 		F += config->sensor_width * (config->sensor_height + 1);
 	}
 
-	if (cams_found == 0)
+	if (cams_found == 0) {
 		return false;
+	}
 
-	if (width < 1280 || height < 480)
+	if (width < 1280 || height < 480) {
 		return false;
+	}
 
 	n_packets = F / (0x6000 - 32);
 	leftover = F - n_packets * (0x6000 - 32);
@@ -199,8 +202,9 @@ send_buffer_to_device(struct wmr_camera *cam, uint8_t *buf, uint8_t len)
 	uint8_t *data;
 
 	xfer = libusb_alloc_transfer(0);
-	if (xfer == NULL)
+	if (xfer == NULL) {
 		return LIBUSB_ERROR_NO_MEM;
+	}
 
 	data = malloc(len);
 	if (data == NULL) {
@@ -313,16 +317,19 @@ wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level ll)
 	}
 
 	res = libusb_init(&cam->ctx);
-	if (res < 0)
+	if (res < 0) {
 		goto fail;
+	}
 
 	cam->dev = libusb_open_device_with_vid_pid(cam->ctx, dev_holo->vendor_id, dev_holo->product_id);
-	if (cam->dev == NULL)
+	if (cam->dev == NULL) {
 		goto fail;
+	}
 
 	res = libusb_claim_interface(cam->dev, 3);
-	if (res < 0)
+	if (res < 0) {
 		goto fail;
+	}
 
 	cam->usb_complete = 0;
 	if (os_thread_helper_start(&cam->usb_thread, wmr_cam_usb_thread, cam) != 0) {
@@ -346,6 +353,7 @@ wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level ll)
 	u_var_add_sink_debug(cam, &cam->debug_sinks[1], "Controllers");
 
 	return cam;
+
 
 fail:
 	WMR_CAM_ERROR(cam, "Failed to open camera: %s", libusb_error_name(res));
@@ -372,8 +380,9 @@ wmr_camera_free(struct wmr_camera *cam)
 		cam->usb_complete = 1;
 		os_thread_helper_unlock(&cam->usb_thread);
 
-		if (cam->dev != NULL)
+		if (cam->dev != NULL) {
 			libusb_close(cam->dev);
+		}
 
 		os_thread_helper_destroy(&cam->usb_thread);
 
@@ -401,17 +410,20 @@ wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_con
 	}
 
 	res = set_active(cam, false);
-	if (res < 0)
+	if (res < 0) {
 		goto fail;
+	}
 
 	res = set_active(cam, true);
-	if (res < 0)
+	if (res < 0) {
 		goto fail;
+	}
 
 	for (i = 0; i < cam->config_count; i++) {
 		const struct wmr_camera_config *config = &cam->configs[i];
-		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING)
+		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
 			continue;
+		}
 
 		res = wmr_camera_set_gain(cam, config->location, DEFAULT_GAIN);
 		if (res < 0) {
@@ -427,13 +439,15 @@ wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_con
 		cam->xfers[i]->flags |= LIBUSB_TRANSFER_FREE_BUFFER;
 
 		res = libusb_submit_transfer(cam->xfers[i]);
-		if (res < 0)
+		if (res < 0) {
 			goto fail;
+		}
 	}
 
 	WMR_CAM_INFO(cam, "WMR camera started");
 
 	return true;
+
 
 fail:
 	if (res < 0)
@@ -447,26 +461,32 @@ wmr_camera_stop(struct wmr_camera *cam)
 {
 	int res, i;
 
-	if (!cam->running)
+	if (!cam->running) {
 		return true;
+	}
 	cam->running = false;
 
 	for (i = 0; i < NUM_XFERS; i++) {
-		if (cam->xfers[i] != NULL)
+		if (cam->xfers[i] != NULL) {
 			libusb_cancel_transfer(cam->xfers[i]);
+		}
 	}
 
 	res = set_active(cam, false);
-	if (res < 0)
+	if (res < 0) {
 		goto fail;
+	}
 
 	WMR_CAM_INFO(cam, "WMR camera stopped");
 
 	return true;
 
+
 fail:
-	if (res < 0)
+	if (res < 0) {
 		WMR_CAM_ERROR(cam, "Error stopping camera input: %s", libusb_error_name(res));
+	}
+
 	return false;
 }
 
