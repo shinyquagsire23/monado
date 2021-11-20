@@ -907,7 +907,7 @@ oxr_xdev_get_hand_tracking_at(struct oxr_logger *log,
  *
  */
 
-#ifdef XR_USE_GRAPHICS_API_OPENGL_GLX
+#ifdef XR_USE_GRAPHICS_API_OPENGL
 #ifdef XR_USE_PLATFORM_XLIB
 
 XrResult
@@ -917,7 +917,7 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              struct oxr_session *sess);
 #endif // XR_USE_PLATFORM_XLIB
 
-#endif // XR_USE_GRAPHICS_API_OPENGL_GLX
+#endif // XR_USE_GRAPHICS_API_OPENGL
 
 #if defined(XR_USE_GRAPHICS_API_OPENGL) || defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 XrResult
