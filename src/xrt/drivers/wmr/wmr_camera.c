@@ -66,8 +66,8 @@ struct wmr_camera
 	struct os_thread_helper usb_thread;
 	int usb_complete;
 
-	struct wmr_camera_config *configs;
-	int n_configs;
+	const struct wmr_camera_config *configs;
+	int config_count;
 
 	size_t xfer_size;
 	uint32_t frame_width, frame_height;
@@ -116,8 +116,8 @@ compute_frame_size(struct wmr_camera *cam)
 
 	F = 26;
 
-	for (i = 0; i < cam->n_configs; i++) {
-		struct wmr_camera_config *config = cam->configs + i;
+	for (i = 0; i < cam->config_count; i++) {
+		const struct wmr_camera_config *config = &cam->configs[i];
 		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING)
 			continue;
 
@@ -364,12 +364,12 @@ out:
 }
 
 bool
-wmr_camera_start(struct wmr_camera *cam, struct wmr_camera_config *cam_configs, int n_configs)
+wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_configs, int config_count)
 {
 	int res, i;
 
 	cam->configs = cam_configs;
-	cam->n_configs = n_configs;
+	cam->config_count = config_count;
 	if (!compute_frame_size(cam)) {
 		WMR_CAM_WARN(cam, "Invalid config or no head tracking cameras found");
 		goto fail;
@@ -383,8 +383,8 @@ wmr_camera_start(struct wmr_camera *cam, struct wmr_camera_config *cam_configs, 
 	if (res < 0)
 		goto fail;
 
-	for (i = 0; i < cam->n_configs; i++) {
-		struct wmr_camera_config *config = cam->configs + i;
+	for (i = 0; i < cam->config_count; i++) {
+		const struct wmr_camera_config *config = &cam->configs[i];
 		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING)
 			continue;
 

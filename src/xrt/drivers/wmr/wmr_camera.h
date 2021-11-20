@@ -27,8 +27,13 @@ wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level ll);
 void
 wmr_camera_free(struct wmr_camera *cam);
 
+/*!
+ * Starts the cameras.
+ *
+ * The data pointed to by @p configs must be kept alive for as long as the camera is kept alive.
+ */
 bool
-wmr_camera_start(struct wmr_camera *cam, struct wmr_camera_config *cam_configs, int n_configs);
+wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *configs, int config_count);
 bool
 wmr_camera_stop(struct wmr_camera *cam);
 int
