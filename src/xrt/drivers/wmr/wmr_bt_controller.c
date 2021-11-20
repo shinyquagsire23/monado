@@ -39,6 +39,8 @@
 #define WMR_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->ll, __VA_ARGS__)
 #define WMR_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
 
+#define SET_INPUT(NAME) (d->base.inputs[WMR_INDEX_##NAME].name = XRT_INPUT_WMR_##NAME)
+
 
 static inline struct wmr_bt_controller *
 wmr_bt_controller(struct xrt_device *p)
@@ -113,8 +115,20 @@ wmr_bt_controller_get_tracked_pose(struct xrt_device *xdev,
 static void
 wmr_bt_controller_update_inputs(struct xrt_device *xdev)
 {
-	// struct wmr_bt_controller *d = wmr_bt_controller(xdev);
-	// Todo: implement
+	struct wmr_bt_controller *d = wmr_bt_controller(xdev);
+
+	struct xrt_input *inputs = d->base.inputs;
+
+	//! @todo Mutex protect the input struct.
+
+	inputs[WMR_INDEX_MENU_CLICK].value.boolean = d->input.menu;
+	inputs[WMR_INDEX_SQUEEZE_CLICK].value.boolean = d->input.squeeze;
+	inputs[WMR_INDEX_TRIGGER_VALUE].value.vec1.x = d->input.trigger;
+	inputs[WMR_INDEX_THUMBSTICK_CLICK].value.boolean = d->input.thumbstick.click;
+	inputs[WMR_INDEX_THUMBSTICK].value.vec2 = d->input.thumbstick.values;
+	inputs[WMR_INDEX_TRACKPAD_CLICK].value.boolean = d->input.trackpad.click;
+	inputs[WMR_INDEX_TRACKPAD_TOUCH].value.boolean = d->input.trackpad.touch;
+	inputs[WMR_INDEX_TRACKPAD].value.vec2 = d->input.trackpad.values;
 }
 
 static void *
@@ -143,6 +157,9 @@ static void
 wmr_bt_controller_destroy(struct xrt_device *xdev)
 {
 	struct wmr_bt_controller *d = wmr_bt_controller(xdev);
+
+	// Remove the variable tracking.
+	u_var_remove_root(d);
 
 	// Destroy the thread object.
 	os_thread_helper_destroy(&d->controller_thread);
@@ -201,7 +218,7 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 {
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
-	struct wmr_bt_controller *d = U_DEVICE_ALLOCATE(struct wmr_bt_controller, flags, 2, 0);
+	struct wmr_bt_controller *d = U_DEVICE_ALLOCATE(struct wmr_bt_controller, flags, 10, 1);
 
 	d->ll = ll;
 	d->controller_hid = controller_hid;
@@ -217,10 +234,23 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 	d->base.set_output = wmr_bt_controller_set_output;
 	d->base.update_inputs = wmr_bt_controller_update_inputs;
 
-	d->base.inputs[0].name = XRT_INPUT_WMR_GRIP_POSE;
-	d->base.inputs[0].active = true;
-	d->base.inputs[1].name = XRT_INPUT_WMR_AIM_POSE;
-	d->base.inputs[1].active = true;
+	SET_INPUT(MENU_CLICK);
+	SET_INPUT(SQUEEZE_CLICK);
+	SET_INPUT(TRIGGER_VALUE);
+	SET_INPUT(THUMBSTICK_CLICK);
+	SET_INPUT(THUMBSTICK);
+	SET_INPUT(TRACKPAD_CLICK);
+	SET_INPUT(TRACKPAD_TOUCH);
+	SET_INPUT(TRACKPAD);
+	SET_INPUT(GRIP_POSE);
+	SET_INPUT(AIM_POSE);
+
+	for (uint32_t i = 0; i < d->base.input_count; i++) {
+		d->base.inputs[0].active = true;
+	}
+
+	d->base.outputs[0].name = XRT_OUTPUT_NAME_WMR_HAPTIC;
+
 	d->base.binding_profiles = binding_profiles;
 	d->base.binding_profile_count = ARRAY_SIZE(binding_profiles);
 
@@ -256,6 +286,18 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 		return NULL;
 	}
 
+
+	u_var_add_root(d, d->base.str, true);
+	u_var_add_bool(d, &d->input.menu, "input.menu");
+	u_var_add_bool(d, &d->input.squeeze, "input.squeeze");
+	u_var_add_f32(d, &d->input.trigger, "input.trigger");
+	u_var_add_bool(d, &d->input.thumbstick.click, "input.thumbstick.click");
+	u_var_add_f32(d, &d->input.thumbstick.values.x, "input.thumbstick.values.y");
+	u_var_add_f32(d, &d->input.thumbstick.values.y, "input.thumbstick.values.x");
+	u_var_add_bool(d, &d->input.trackpad.click, "input.trackpad.click");
+	u_var_add_bool(d, &d->input.trackpad.touch, "input.trackpad.touch");
+	u_var_add_f32(d, &d->input.trackpad.values.x, "input.trackpad.values.x");
+	u_var_add_f32(d, &d->input.trackpad.values.y, "input.trackpad.values.y");
 
 	return &d->base;
 }

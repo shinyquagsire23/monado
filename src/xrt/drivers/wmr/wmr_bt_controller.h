@@ -24,6 +24,23 @@ extern "C" {
 
 
 /*!
+ * Indices where each input is in the input list.
+ */
+enum wmr_bt_input_index
+{
+	WMR_INDEX_MENU_CLICK,
+	WMR_INDEX_SQUEEZE_CLICK,
+	WMR_INDEX_TRIGGER_VALUE,
+	WMR_INDEX_THUMBSTICK_CLICK,
+	WMR_INDEX_THUMBSTICK,
+	WMR_INDEX_TRACKPAD_CLICK,
+	WMR_INDEX_TRACKPAD_TOUCH,
+	WMR_INDEX_TRACKPAD,
+	WMR_INDEX_GRIP_POSE,
+	WMR_INDEX_AIM_POSE,
+};
+
+/*!
  * A Bluetooth connected WMR Controller device, representing just a single controller.
  *
  * @ingroup drv_wmr
@@ -52,6 +69,25 @@ struct wmr_bt_controller
 	enum u_logging_level ll;
 
 	uint32_t last_ticks;
+
+	struct
+	{
+		bool menu;
+		bool squeeze;
+		float trigger;
+
+		struct
+		{
+			bool click;
+			struct xrt_vec2 values;
+		} thumbstick;
+		struct
+		{
+			bool click;
+			bool touch;
+			struct xrt_vec2 values;
+		} trackpad;
+	} input;
 };
 
 
