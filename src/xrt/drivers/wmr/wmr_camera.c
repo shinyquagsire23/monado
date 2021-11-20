@@ -255,6 +255,7 @@ wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level ll)
 	u_sink_debug_init(&cam->debug_sinks[0]);
 	u_sink_debug_init(&cam->debug_sinks[1]);
 	u_var_add_root(cam, "WMR Camera", true);
+	u_var_add_log_level(cam, &cam->log_level, "Log level");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "SLAM");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[1], "Controllers");
 
