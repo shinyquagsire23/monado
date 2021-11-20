@@ -210,7 +210,7 @@ android_device_create()
 	snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Android Sensors");
 	snprintf(d->base.serial, XRT_DEVICE_NAME_LEN, "Android Sensors");
 
-	d->ll = debug_get_log_option_android_log();
+	d->log_level = debug_get_log_option_android_log();
 
 	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 

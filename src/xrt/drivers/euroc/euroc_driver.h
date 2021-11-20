@@ -17,11 +17,11 @@
  * @{
  */
 
-#define EUROC_TRACE(e, ...) U_LOG_IFL_T(e->ll, __VA_ARGS__)
-#define EUROC_DEBUG(e, ...) U_LOG_IFL_D(e->ll, __VA_ARGS__)
-#define EUROC_INFO(e, ...) U_LOG_IFL_I(e->ll, __VA_ARGS__)
-#define EUROC_WARN(e, ...) U_LOG_IFL_W(e->ll, __VA_ARGS__)
-#define EUROC_ERROR(e, ...) U_LOG_IFL_E(e->ll, __VA_ARGS__)
+#define EUROC_TRACE(e, ...) U_LOG_IFL_T(e->log_level, __VA_ARGS__)
+#define EUROC_DEBUG(e, ...) U_LOG_IFL_D(e->log_level, __VA_ARGS__)
+#define EUROC_INFO(e, ...) U_LOG_IFL_I(e->log_level, __VA_ARGS__)
+#define EUROC_WARN(e, ...) U_LOG_IFL_W(e->log_level, __VA_ARGS__)
+#define EUROC_ERROR(e, ...) U_LOG_IFL_E(e->log_level, __VA_ARGS__)
 #define EUROC_ASSERT(predicate, ...)                                                                                   \
 	do {                                                                                                           \
 		bool p = predicate;                                                                                    \

@@ -635,7 +635,7 @@ ht_device_create(struct xrt_prober *xp, struct t_stereo_camera_calibration *cali
 	struct ht_device *htd = U_DEVICE_ALLOCATE(struct ht_device, flags, num_hands, 0);
 
 	// Setup logging first. We like logging.
-	htd->ll = debug_get_log_option_ht_log();
+	htd->log_level = debug_get_log_option_ht_log();
 
 	/*
 	 * Get configuration

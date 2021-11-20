@@ -222,7 +222,7 @@ comp_vulkan_init_bundle(struct vk_bundle *vk,
 {
 	VkResult ret;
 
-	vk->ll = vk_args->log_level;
+	vk->log_level = vk_args->log_level;
 
 	ret = vk_get_loader_functions(vk, vk_args->get_instance_proc_address);
 	if (ret != VK_SUCCESS) {

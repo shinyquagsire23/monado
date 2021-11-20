@@ -23,11 +23,11 @@
 #include "math/m_space.h"
 
 
-#define VIVE_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
-#define VIVE_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
-#define VIVE_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
-#define VIVE_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
-#define VIVE_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
+#define VIVE_TRACE(d, ...) U_LOG_IFL_T(d->log_level, __VA_ARGS__)
+#define VIVE_DEBUG(d, ...) U_LOG_IFL_D(d->log_level, __VA_ARGS__)
+#define VIVE_INFO(d, ...) U_LOG_IFL_I(d->log_level, __VA_ARGS__)
+#define VIVE_WARN(d, ...) U_LOG_IFL_W(d->log_level, __VA_ARGS__)
+#define VIVE_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 #define JSON_INT(a, b, c) u_json_get_int(u_json_get(a, b), c)
 #define JSON_FLOAT(a, b, c) u_json_get_float(u_json_get(a, b), c)
@@ -381,9 +381,9 @@ vive_init_defaults(struct vive_config *d)
 }
 
 bool
-vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level ll)
+vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level log_level)
 {
-	d->ll = ll;
+	d->log_level = log_level;
 	vive_init_defaults(d);
 
 	VIVE_DEBUG(d, "JSON config:\n%s", json_string);
@@ -505,7 +505,7 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 	VIVE_DEBUG(d, "eye_target_height_in_pixels: %d", d->display.eye_target_height_in_pixels);
 	VIVE_DEBUG(d, "eye_target_width_in_pixels: %d", d->display.eye_target_width_in_pixels);
 
-	if (d->ll <= U_LOGGING_DEBUG) {
+	if (d->log_level <= U_LOGGING_DEBUG) {
 		_print_vec3("acc_bias", &d->imu.acc_bias);
 		_print_vec3("acc_scale", &d->imu.acc_scale);
 		_print_vec3("gyro_bias", &d->imu.gyro_bias);
@@ -532,9 +532,9 @@ vive_config_teardown(struct vive_config *config)
 }
 
 bool
-vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level ll)
+vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level log_level)
 {
-	d->ll = ll;
+	d->log_level = log_level;
 	VIVE_DEBUG(d, "JSON config:\n%s", json_string);
 
 	cJSON *json = cJSON_Parse(json_string);
@@ -612,7 +612,7 @@ vive_config_parse_controller(struct vive_controller_config *d, char *json_string
 	VIVE_DEBUG(d, "mb_serial_number: %s", d->firmware.mb_serial_number);
 	VIVE_DEBUG(d, "device_serial_number: %s", d->firmware.device_serial_number);
 
-	if (d->ll <= U_LOGGING_DEBUG) {
+	if (d->log_level <= U_LOGGING_DEBUG) {
 		_print_vec3("acc_bias", &d->imu.acc_bias);
 		_print_vec3("acc_scale", &d->imu.acc_scale);
 		_print_vec3("gyro_bias", &d->imu.gyro_bias);

@@ -40,13 +40,13 @@
  *
  */
 
-static enum u_logging_level ll;
+static enum u_logging_level log_level;
 
-#define EGL_TRACE(...) U_LOG_IFL_T(ll, __VA_ARGS__)
-#define EGL_DEBUG(...) U_LOG_IFL_D(ll, __VA_ARGS__)
-#define EGL_INFO(...) U_LOG_IFL_I(ll, __VA_ARGS__)
-#define EGL_WARN(...) U_LOG_IFL_W(ll, __VA_ARGS__)
-#define EGL_ERROR(...) U_LOG_IFL_E(ll, __VA_ARGS__)
+#define EGL_TRACE(...) U_LOG_IFL_T(log_level, __VA_ARGS__)
+#define EGL_DEBUG(...) U_LOG_IFL_D(log_level, __VA_ARGS__)
+#define EGL_INFO(...) U_LOG_IFL_I(log_level, __VA_ARGS__)
+#define EGL_WARN(...) U_LOG_IFL_W(log_level, __VA_ARGS__)
+#define EGL_ERROR(...) U_LOG_IFL_E(log_level, __VA_ARGS__)
 
 DEBUG_GET_ONCE_LOG_OPTION(egl_log, "EGL_LOG", U_LOGGING_INFO)
 
@@ -233,7 +233,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
                                PFNEGLGETPROCADDRESSPROC get_gl_procaddr,
                                struct xrt_compositor_gl **out_xcgl)
 {
-	ll = debug_get_log_option_egl_log();
+	log_level = debug_get_log_option_egl_log();
 
 	gladLoadEGL(display, get_gl_procaddr);
 

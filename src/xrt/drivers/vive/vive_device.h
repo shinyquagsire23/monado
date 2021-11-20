@@ -61,7 +61,7 @@ struct vive_device
 	struct xrt_quat rot_filtered;
 	struct m_relation_history *relation_hist;
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 	bool disconnect_notified;
 
 	struct

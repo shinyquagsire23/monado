@@ -39,11 +39,11 @@
  *
  */
 
-#define HYDRA_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->sys->ll, __VA_ARGS__)
-#define HYDRA_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->sys->ll, __VA_ARGS__)
-#define HYDRA_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->sys->ll, __VA_ARGS__)
-#define HYDRA_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->sys->ll, __VA_ARGS__)
-#define HYDRA_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->sys->ll, __VA_ARGS__)
+#define HYDRA_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->sys->log_level, __VA_ARGS__)
+#define HYDRA_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->sys->log_level, __VA_ARGS__)
+#define HYDRA_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->sys->log_level, __VA_ARGS__)
+#define HYDRA_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->sys->log_level, __VA_ARGS__)
+#define HYDRA_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->sys->log_level, __VA_ARGS__)
 
 DEBUG_GET_ONCE_LOG_OPTION(hydra_log, "HYDRA_LOG", U_LOGGING_WARN)
 
@@ -157,7 +157,7 @@ struct hydra_system
 	bool was_in_gamepad_mode;
 	int motion_attempt_number;
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 };
 
 /*!
@@ -328,7 +328,7 @@ hydra_system_read_data_hid(struct hydra_system *hs, timepoint_ns now)
 			return got_message ? 1 : 0;
 		}
 		if (ret != 52) {
-			U_LOG_IFL_E(hs->ll, "Unexpected data report of size %d", ret);
+			U_LOG_IFL_E(hs->log_level, "Unexpected data report of size %d", ret);
 			return -1;
 		}
 		got_message = true;
@@ -348,7 +348,7 @@ hydra_system_read_data_hid(struct hydra_system *hs, timepoint_ns now)
 		}
 
 		hs->report_time = now;
-		U_LOG_IFL_T(hs->ll,
+		U_LOG_IFL_T(hs->log_level,
 		            "\n\t"
 		            "missed: %s\n\t"
 		            "seq_no: %x\n",
@@ -369,7 +369,7 @@ hydra_system_enter_motion_control(struct hydra_system *hs, timepoint_ns now)
 
 	hs->was_in_gamepad_mode = true;
 	hs->motion_attempt_number++;
-	U_LOG_IFL_D(hs->ll,
+	U_LOG_IFL_D(hs->log_level,
 	            "Setting feature report to start motion-controller mode, "
 	            "attempt %d",
 	            hs->motion_attempt_number);
@@ -526,7 +526,7 @@ hydra_system_remove_child(struct hydra_system *hs, struct hydra_device *hd)
 		if (hs->data_hid != NULL && hs->command_hid != NULL && hs->sm.current_state == HYDRA_SM_REPORTING &&
 		    hs->was_in_gamepad_mode) {
 
-			U_LOG_IFL_D(hs->ll,
+			U_LOG_IFL_D(hs->log_level,
 			            "hydra: Sending command to re-enter gamepad mode "
 			            "and pausing while it takes effect.");
 
@@ -613,7 +613,7 @@ hydra_found(struct xrt_prober *xp,
 	hs->report_counter = -1;
 	hs->refs = 2;
 
-	hs->ll = debug_get_log_option_hydra_log();
+	hs->log_level = debug_get_log_option_hydra_log();
 
 	// Populate the individual devices
 	for (size_t i = 0; i < 2; ++i) {

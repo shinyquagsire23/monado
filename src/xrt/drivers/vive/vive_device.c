@@ -764,7 +764,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.name = XRT_DEVICE_GENERIC_HMD;
 	d->mainboard_dev = mainboard_dev;
 	d->sensors_dev = sensors_dev;
-	d->ll = debug_get_log_option_vive_log();
+	d->log_level = debug_get_log_option_vive_log();
 	d->watchman_dev = watchman_dev;
 
 	d->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
@@ -796,10 +796,10 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 
 	char *config = vive_read_config(d->sensors_dev);
 
-	d->config.ll = d->ll;
+	d->config.log_level = d->log_level;
 	// usb connected HMD variant is known because of USB id, config parsing relies on it.
 	if (config != NULL) {
-		vive_config_parse(&d->config, config, d->ll);
+		vive_config_parse(&d->config, config, d->log_level);
 		free(config);
 	}
 

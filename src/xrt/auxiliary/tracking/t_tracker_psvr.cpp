@@ -40,11 +40,11 @@
 
 DEBUG_GET_ONCE_LOG_OPTION(psvr_log, "PSVR_TRACKING_LOG", U_LOGGING_WARN)
 
-#define PSVR_TRACE(...) U_LOG_IFL_T(t.ll, __VA_ARGS__)
-#define PSVR_DEBUG(...) U_LOG_IFL_D(t.ll, __VA_ARGS__)
-#define PSVR_INFO(...) U_LOG_IFL_I(t.ll, __VA_ARGS__)
-#define PSVR_WARN(...) U_LOG_IFL_W(t.ll, __VA_ARGS__)
-#define PSVR_ERROR(...) U_LOG_IFL_E(t.ll, __VA_ARGS__)
+#define PSVR_TRACE(...) U_LOG_IFL_T(t.log_level, __VA_ARGS__)
+#define PSVR_DEBUG(...) U_LOG_IFL_D(t.log_level, __VA_ARGS__)
+#define PSVR_INFO(...) U_LOG_IFL_I(t.log_level, __VA_ARGS__)
+#define PSVR_WARN(...) U_LOG_IFL_W(t.log_level, __VA_ARGS__)
+#define PSVR_ERROR(...) U_LOG_IFL_E(t.log_level, __VA_ARGS__)
 
 
 /*!
@@ -220,7 +220,7 @@ public:
 	struct xrt_frame_node node = {};
 
 	//! Logging stuff.
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	//! Frame waiting to be processed.
 	struct xrt_frame *frame;
@@ -2045,7 +2045,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
               struct xrt_frame_sink **out_sink)
 {
 	auto &t = *(new TrackerPSVR());
-	t.ll = debug_get_log_option_psvr_log();
+	t.log_level = debug_get_log_option_psvr_log();
 
 	PSVR_INFO("%s", __func__);
 	int ret;
@@ -2135,7 +2135,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 
 	// Everything is safe, now setup the variable tracking.
 	u_var_add_root(&t, "PSVR Tracker", true);
-	u_var_add_log_level(&t, &t.ll, "Log level");
+	u_var_add_log_level(&t, &t.log_level, "Log level");
 	u_var_add_sink_debug(&t, &t.debug.usd, "Debug");
 
 	*out_sink = &t.sink;

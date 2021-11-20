@@ -90,7 +90,7 @@ bool
 wmr_controller_packet_parse(const unsigned char *buffer,
                             size_t len,
                             struct wmr_controller_message *out_message,
-                            enum u_logging_level ll);
+                            enum u_logging_level log_level);
 
 
 /*!

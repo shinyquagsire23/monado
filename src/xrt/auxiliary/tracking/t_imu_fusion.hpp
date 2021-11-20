@@ -27,11 +27,11 @@
 
 DEBUG_GET_ONCE_LOG_OPTION(simple_imu_log, "SIMPLE_IMU_LOG", U_LOGGING_WARN)
 
-#define SIMPLE_IMU_TRACE(...) U_LOG_IFL_T(ll, __VA_ARGS__)
-#define SIMPLE_IMU_DEBUG(...) U_LOG_IFL_D(ll, __VA_ARGS__)
-#define SIMPLE_IMU_INFO(...) U_LOG_IFL_I(ll, __VA_ARGS__)
-#define SIMPLE_IMU_WARN(...) U_LOG_IFL_W(ll, __VA_ARGS__)
-#define SIMPLE_IMU_ERROR(...) U_LOG_IFL_E(ll, __VA_ARGS__)
+#define SIMPLE_IMU_TRACE(...) U_LOG_IFL_T(log_level, __VA_ARGS__)
+#define SIMPLE_IMU_DEBUG(...) U_LOG_IFL_D(log_level, __VA_ARGS__)
+#define SIMPLE_IMU_INFO(...) U_LOG_IFL_I(log_level, __VA_ARGS__)
+#define SIMPLE_IMU_WARN(...) U_LOG_IFL_W(log_level, __VA_ARGS__)
+#define SIMPLE_IMU_ERROR(...) U_LOG_IFL_E(log_level, __VA_ARGS__)
 
 namespace xrt::auxiliary::tracking {
 
@@ -47,7 +47,7 @@ public:
 	 * accelerometer should affect the orientation each second.
 	 */
 	explicit SimpleIMUFusion(double gravity_rate = 0.9)
-	    : gravity_scale_(gravity_rate), ll(debug_get_log_option_simple_imu_log())
+	    : gravity_scale_(gravity_rate), log_level(debug_get_log_option_simple_imu_log())
 	{
 		SIMPLE_IMU_DEBUG("Creating instance");
 	}
@@ -202,7 +202,7 @@ private:
 	uint64_t last_gyro_timestamp_{0};
 	double gyro_min_squared_length_{1.e-8};
 	bool started_{false};
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 };
 
 inline Eigen::Quaterniond

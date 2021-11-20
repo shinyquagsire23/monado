@@ -105,7 +105,7 @@ struct lh_model
 struct vive_config
 {
 	//! log level accessed by the config parser
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	enum VIVE_VARIANT variant;
 
@@ -172,7 +172,7 @@ struct vive_config
 
 struct vive_controller_config
 {
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	enum VIVE_CONTROLLER_VARIANT variant;
 
@@ -203,7 +203,7 @@ struct vive_controller_config
 };
 
 bool
-vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level ll);
+vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level log_level);
 
 /*!
  * Free any allocated resources on this config.
@@ -214,7 +214,7 @@ vive_config_teardown(struct vive_config *d);
 struct vive_controller_device;
 
 bool
-vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level ll);
+vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level log_level);
 
 bool
 vive_get_stereo_camera_calibration(struct vive_config *d,

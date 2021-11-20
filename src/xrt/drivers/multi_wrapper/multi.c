@@ -16,16 +16,16 @@
 
 DEBUG_GET_ONCE_LOG_OPTION(multi_log, "MULTI_LOG", U_LOGGING_WARN)
 
-#define MULTI_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
-#define MULTI_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)
-#define MULTI_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->ll, __VA_ARGS__)
-#define MULTI_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->ll, __VA_ARGS__)
-#define MULTI_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
+#define MULTI_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
+#define MULTI_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
+#define MULTI_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->log_level, __VA_ARGS__)
+#define MULTI_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->log_level, __VA_ARGS__)
+#define MULTI_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->log_level, __VA_ARGS__)
 
 struct multi_device
 {
 	struct xrt_device base;
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	struct
 	{
@@ -224,7 +224,7 @@ multi_create_tracking_override(enum xrt_tracking_override_type override_type,
 		return NULL;
 	}
 
-	d->ll = debug_get_log_option_multi_log();
+	d->log_level = debug_get_log_option_multi_log();
 	d->override_type = override_type;
 
 	// mimic the tracking override target

@@ -67,11 +67,11 @@
 // initializing survive_driver once creates xrt_devices for all connected devices
 static bool survive_already_initialized = false;
 
-#define SURVIVE_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->sys->ll, __VA_ARGS__)
-#define SURVIVE_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->sys->ll, __VA_ARGS__)
-#define SURVIVE_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->sys->ll, __VA_ARGS__)
-#define SURVIVE_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->sys->ll, __VA_ARGS__)
-#define SURVIVE_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->sys->ll, __VA_ARGS__)
+#define SURVIVE_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->sys->log_level, __VA_ARGS__)
+#define SURVIVE_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->sys->log_level, __VA_ARGS__)
+#define SURVIVE_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->sys->log_level, __VA_ARGS__)
+#define SURVIVE_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->sys->log_level, __VA_ARGS__)
+#define SURVIVE_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->sys->log_level, __VA_ARGS__)
 
 struct survive_system;
 
@@ -165,7 +165,7 @@ struct survive_system
 	SurviveSimpleContext *ctx;
 	struct survive_device *hmd;
 	struct survive_device *controllers[MAX_TRACKED_DEVICE_COUNT];
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	float wait_timeout;
 
@@ -742,7 +742,7 @@ _process_event(struct survive_system *ss, struct SurviveSimpleEvent *event)
 
 		struct survive_device *event_device = get_device_by_object(ss, e->object);
 		if (event_device == NULL) {
-			U_LOG_IFL_I(ss->ll, "Event for unknown object not handled");
+			U_LOG_IFL_I(ss->log_level, "Event for unknown object not handled");
 			return;
 		}
 
@@ -759,7 +759,7 @@ _process_event(struct survive_system *ss, struct SurviveSimpleEvent *event)
 		const struct SurviveSimpleConfigEvent *e = survive_simple_get_config_event(event);
 		enum SurviveSimpleObject_type t = survive_simple_object_get_type(e->object);
 		const char *name = survive_simple_object_name(e->object);
-		U_LOG_IFL_D(ss->ll, "Processing config for object name %s: type %d", name, t);
+		U_LOG_IFL_D(ss->log_level, "Processing config for object name %s: type %d", name, t);
 		add_device(ss, e);
 		break;
 	}
@@ -768,7 +768,7 @@ _process_event(struct survive_system *ss, struct SurviveSimpleEvent *event)
 
 		struct survive_device *event_device = get_device_by_object(ss, e->object);
 		if (event_device == NULL) {
-			U_LOG_IFL_E(ss->ll, "Event for unknown object not handled");
+			U_LOG_IFL_E(ss->log_level, "Event for unknown object not handled");
 			return;
 		}
 
@@ -776,11 +776,11 @@ _process_event(struct survive_system *ss, struct SurviveSimpleEvent *event)
 		break;
 	}
 	case SurviveSimpleEventType_DeviceAdded: {
-		U_LOG_IFL_W(ss->ll, "Device added event, but hotplugging not implemented yet");
+		U_LOG_IFL_W(ss->log_level, "Device added event, but hotplugging not implemented yet");
 		break;
 	}
 	case SurviveSimpleEventType_None: break;
-	default: U_LOG_IFL_E(ss->ll, "Unknown event %d", event->event_type);
+	default: U_LOG_IFL_E(ss->log_level, "Unknown event %d", event->event_type);
 	}
 }
 
@@ -815,7 +815,7 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 
 	struct survive_device *survive = U_DEVICE_ALLOCATE(struct survive_device, flags, inputs, outputs);
 
-	if (!vive_config_parse(&survive->hmd.config, conf_str, sys->ll)) {
+	if (!vive_config_parse(&survive->hmd.config, conf_str, sys->log_level)) {
 		free(survive);
 		return false;
 	}
@@ -1000,21 +1000,21 @@ _create_controller_device(struct survive_system *sys,
 		} else if (sys->controllers[SURVIVE_RIGHT_CONTROLLER_INDEX] == NULL) {
 			idx = SURVIVE_RIGHT_CONTROLLER_INDEX;
 		} else {
-			U_LOG_IFL_E(sys->ll, "Only creating 2 controllers!");
+			U_LOG_IFL_E(sys->log_level, "Only creating 2 controllers!");
 			return false;
 		}
 	} else if (variant == CONTROLLER_INDEX_LEFT) {
 		if (sys->controllers[SURVIVE_LEFT_CONTROLLER_INDEX] == NULL) {
 			idx = SURVIVE_LEFT_CONTROLLER_INDEX;
 		} else {
-			U_LOG_IFL_E(sys->ll, "Only creating 1 left controller!");
+			U_LOG_IFL_E(sys->log_level, "Only creating 1 left controller!");
 			return false;
 		}
 	} else if (variant == CONTROLLER_INDEX_RIGHT) {
 		if (sys->controllers[SURVIVE_RIGHT_CONTROLLER_INDEX] == NULL) {
 			idx = SURVIVE_RIGHT_CONTROLLER_INDEX;
 		} else {
-			U_LOG_IFL_E(sys->ll, "Only creating 1 right controller!");
+			U_LOG_IFL_E(sys->log_level, "Only creating 1 right controller!");
 			return false;
 		}
 	} else if (variant == CONTROLLER_TRACKER_GEN1 || variant == CONTROLLER_TRACKER_GEN2) {
@@ -1027,7 +1027,8 @@ _create_controller_device(struct survive_system *sys,
 	}
 
 	if (idx == -1) {
-		U_LOG_IFL_E(sys->ll, "Skipping survive device we couldn't assign: %s!", config->firmware.model_number);
+		U_LOG_IFL_E(sys->log_level, "Skipping survive device we couldn't assign: %s!",
+		            config->firmware.model_number);
 		return false;
 	}
 
@@ -1160,7 +1161,7 @@ add_device(struct survive_system *ss, const struct SurviveSimpleConfigEvent *e)
 {
 	struct SurviveSimpleObject *sso = e->object;
 
-	U_LOG_IFL_D(ss->ll, "Got device config from survive");
+	U_LOG_IFL_D(ss->log_level, "Got device config from survive");
 
 	enum SurviveSimpleObject_type type = survive_simple_object_get_type(sso);
 
@@ -1172,7 +1173,7 @@ add_device(struct survive_system *ss, const struct SurviveSimpleConfigEvent *e)
 
 	} else if (type == SurviveSimpleObject_OBJECT) {
 		struct vive_controller_config config = {0};
-		vive_config_parse_controller(&config, conf_str, ss->ll);
+		vive_config_parse_controller(&config, conf_str, ss->log_level);
 
 		switch (config.variant) {
 		case CONTROLLER_VIVE_WAND:
@@ -1180,16 +1181,16 @@ add_device(struct survive_system *ss, const struct SurviveSimpleConfigEvent *e)
 		case CONTROLLER_INDEX_RIGHT:
 		case CONTROLLER_TRACKER_GEN1:
 		case CONTROLLER_TRACKER_GEN2:
-			U_LOG_IFL_D(ss->ll, "Adding controller: %s.", config.firmware.model_number);
+			U_LOG_IFL_D(ss->log_level, "Adding controller: %s.", config.firmware.model_number);
 			_create_controller_device(ss, sso, &config);
 			break;
 		default:
-			U_LOG_IFL_D(ss->ll, "Skip non controller obj %s.", config.firmware.model_number);
-			U_LOG_IFL_T(ss->ll, "json: %s", conf_str);
+			U_LOG_IFL_D(ss->log_level, "Skip non controller obj %s.", config.firmware.model_number);
+			U_LOG_IFL_T(ss->log_level, "json: %s", conf_str);
 			break;
 		}
 	} else {
-		U_LOG_IFL_D(ss->ll, "Skip non OBJECT obj.");
+		U_LOG_IFL_D(ss->log_level, "Skip non OBJECT obj.");
 	}
 }
 
@@ -1203,7 +1204,7 @@ add_connected_devices(struct survive_system *ss)
 	os_nanosleep(250 * 1000 * 1000);
 
 	size_t objs = survive_simple_get_object_count(ss->ctx);
-	U_LOG_IFL_D(ss->ll, "Object count: %zu", objs);
+	U_LOG_IFL_D(ss->log_level, "Object count: %zu", objs);
 
 	timepoint_ns start = os_monotonic_get_ns();
 
@@ -1216,7 +1217,7 @@ add_connected_devices(struct survive_system *ss)
 	     sso = survive_simple_get_next_object(ss->ctx, sso)) {
 		enum SurviveSimpleObject_type t = survive_simple_object_get_type(sso);
 		const char *name = survive_simple_object_name(sso);
-		U_LOG_IFL_D(ss->ll, "Object name %s: type %d", name, t);
+		U_LOG_IFL_D(ss->log_level, "Object name %s: type %d", name, t);
 
 		// we only want to wait for configs of HMDs and controllers / trackers.
 		// Note: HMDs will be of type SurviveSimpleObject_OBJECT until the config is loaded.
@@ -1225,28 +1226,28 @@ add_connected_devices(struct survive_system *ss)
 		}
 	}
 
-	U_LOG_IFL_D(ss->ll, "Waiting for %d configs", configs_to_wait_for);
+	U_LOG_IFL_D(ss->log_level, "Waiting for %d configs", configs_to_wait_for);
 	while (configs_gotten < configs_to_wait_for) {
 		struct SurviveSimpleEvent event = {0};
 		while (survive_simple_next_event(ss->ctx, &event) != SurviveSimpleEventType_None) {
 			if (event.event_type == SurviveSimpleEventType_ConfigEvent) {
 				_process_event(ss, &event);
 				configs_gotten++;
-				U_LOG_IFL_D(ss->ll, "Got config from device: %d/%d", configs_gotten,
+				U_LOG_IFL_D(ss->log_level, "Got config from device: %d/%d", configs_gotten,
 				            configs_to_wait_for);
 			} else {
-				U_LOG_IFL_T(ss->ll, "Skipping event type %d", event.event_type);
+				U_LOG_IFL_T(ss->log_level, "Skipping event type %d", event.event_type);
 			}
 		}
 
 		if (time_ns_to_s(os_monotonic_get_ns() - start) > ss->wait_timeout) {
-			U_LOG_IFL_D(ss->ll, "Timed out after getting configs for %d/%d devices", configs_gotten,
+			U_LOG_IFL_D(ss->log_level, "Timed out after getting configs for %d/%d devices", configs_gotten,
 			            configs_to_wait_for);
 			break;
 		}
 		os_nanosleep(500 * 1000);
 	}
-	U_LOG_IFL_D(ss->ll, "Waiting for configs took %f ms", time_ns_to_ms_f(os_monotonic_get_ns() - start));
+	U_LOG_IFL_D(ss->log_level, "Waiting for configs took %f ms", time_ns_to_ms_f(os_monotonic_get_ns() - start));
 	return true;
 }
 
@@ -1352,19 +1353,19 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 	ss->base.offset.position.z = 0.0f;
 	ss->base.offset.orientation.w = 1.0f;
 
-	ss->ll = debug_get_log_option_survive_log();
+	ss->log_level = debug_get_log_option_survive_log();
 
 	survive_get_user_config(ss);
 
 	while (!add_connected_devices(ss)) {
-		U_LOG_IFL_E(ss->ll, "Failed to get device config from survive");
+		U_LOG_IFL_E(ss->log_level, "Failed to get device config from survive");
 		continue;
 	}
 
 	// U_LOG_D("Survive HMD %p, controller %p %p", (void *)ss->hmd,
 	//        (void *)ss->controllers[0], (void *)ss->controllers[1]);
 
-	if (ss->ll <= U_LOGGING_DEBUG) {
+	if (ss->log_level <= U_LOGGING_DEBUG) {
 		if (ss->hmd) {
 			u_device_dump_config(&ss->hmd->base, __func__, "libsurvive");
 		}
@@ -1380,7 +1381,7 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 	for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
 
 		if (out_idx == XRT_MAX_DEVICES_PER_PROBE - 1) {
-			U_LOG_IFL_W(ss->ll, "Probed max of %d devices, ignoring further devices",
+			U_LOG_IFL_W(ss->log_level, "Probed max of %d devices, ignoring further devices",
 			            XRT_MAX_DEVICES_PER_PROBE);
 			return out_idx;
 		}
@@ -1418,7 +1419,7 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 	// Mutex before thread.
 	int ret = os_mutex_init(&ss->lock);
 	if (ret != 0) {
-		U_LOG_IFL_E(ss->ll, "Failed to init mutex!");
+		U_LOG_IFL_E(ss->log_level, "Failed to init mutex!");
 		survive_device_destroy((struct xrt_device *)ss->hmd);
 		for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
 			survive_device_destroy((struct xrt_device *)ss->controllers[i]);
@@ -1428,7 +1429,7 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 
 	ret = os_thread_helper_start(&ss->event_thread, run_event_thread, ss);
 	if (ret != 0) {
-		U_LOG_IFL_E(ss->ll, "Failed to start event thread!");
+		U_LOG_IFL_E(ss->log_level, "Failed to start event thread!");
 		survive_device_destroy((struct xrt_device *)ss->hmd);
 		for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
 			survive_device_destroy((struct xrt_device *)ss->controllers[i]);

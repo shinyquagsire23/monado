@@ -20,13 +20,13 @@
 #include <assert.h>
 #include <inttypes.h>
 
-DEBUG_GET_ONCE_LOG_OPTION(ll, "U_TIMING_FRAME_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_TIMING_FRAME_LOG", U_LOGGING_WARN)
 
-#define FT_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_ll(), __VA_ARGS__)
-#define FT_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_ll(), __VA_ARGS__)
-#define FT_LOG_I(...) U_LOG_IFL_I(debug_get_log_option_ll(), __VA_ARGS__)
-#define FT_LOG_W(...) U_LOG_IFL_W(debug_get_log_option_ll(), __VA_ARGS__)
-#define FT_LOG_E(...) U_LOG_IFL_E(debug_get_log_option_ll(), __VA_ARGS__)
+#define FT_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_log_level(), __VA_ARGS__)
+#define FT_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_log_level(), __VA_ARGS__)
+#define FT_LOG_I(...) U_LOG_IFL_I(debug_get_log_option_log_level(), __VA_ARGS__)
+#define FT_LOG_W(...) U_LOG_IFL_W(debug_get_log_option_log_level(), __VA_ARGS__)
+#define FT_LOG_E(...) U_LOG_IFL_E(debug_get_log_option_log_level(), __VA_ARGS__)
 
 #define NUM_FRAMES 16
 

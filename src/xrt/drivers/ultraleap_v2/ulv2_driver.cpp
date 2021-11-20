@@ -23,11 +23,11 @@
 
 DEBUG_GET_ONCE_LOG_OPTION(ulv2_log, "ULV2_LOG", U_LOGGING_INFO)
 
-#define ULV2_TRACE(ulv2d, ...) U_LOG_XDEV_IFL_T(&ulv2d->base, ulv2d->ll, __VA_ARGS__)
-#define ULV2_DEBUG(ulv2d, ...) U_LOG_XDEV_IFL_D(&ulv2d->base, ulv2d->ll, __VA_ARGS__)
-#define ULV2_INFO(ulv2d, ...) U_LOG_XDEV_IFL_I(&ulv2d->base, ulv2d->ll, __VA_ARGS__)
-#define ULV2_WARN(ulv2d, ...) U_LOG_XDEV_IFL_W(&ulv2d->base, ulv2d->ll, __VA_ARGS__)
-#define ULV2_ERROR(ulv2d, ...) U_LOG_XDEV_IFL_E(&ulv2d->base, ulv2d->ll, __VA_ARGS__)
+#define ULV2_TRACE(ulv2d, ...) U_LOG_XDEV_IFL_T(&ulv2d->base, ulv2d->log_level, __VA_ARGS__)
+#define ULV2_DEBUG(ulv2d, ...) U_LOG_XDEV_IFL_D(&ulv2d->base, ulv2d->log_level, __VA_ARGS__)
+#define ULV2_INFO(ulv2d, ...) U_LOG_XDEV_IFL_I(&ulv2d->base, ulv2d->log_level, __VA_ARGS__)
+#define ULV2_WARN(ulv2d, ...) U_LOG_XDEV_IFL_W(&ulv2d->base, ulv2d->log_level, __VA_ARGS__)
+#define ULV2_ERROR(ulv2d, ...) U_LOG_XDEV_IFL_E(&ulv2d->base, ulv2d->log_level, __VA_ARGS__)
 
 #define printf_pose(pose)                                                                                              \
 	printf("%f %f %f  %f %f %f %f\n", pose.position.x, pose.position.y, pose.position.z, pose.orientation.x,       \
@@ -53,7 +53,7 @@ struct ulv2_device
 
 	struct xrt_tracking_origin tracking_origin;
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	bool pthread_should_stop;
 
@@ -399,7 +399,7 @@ ulv2_found(struct xrt_prober *xp,
 
 	math_pose_identity(&ulv2d->base.tracking_origin->offset);
 
-	ulv2d->ll = debug_get_log_option_ulv2_log();
+	ulv2d->log_level = debug_get_log_option_ulv2_log();
 
 	ulv2d->base.update_inputs = ulv2_device_update_inputs;
 	ulv2d->base.get_hand_tracking = ulv2_device_get_hand_tracking;

@@ -315,7 +315,7 @@ hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 	hd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	hd->base.name = XRT_DEVICE_GENERIC_HMD;
 	hd->dev = dev;
-	hd->ll = debug_get_log_option_hdk_log();
+	hd->log_level = debug_get_log_option_hdk_log();
 
 	snprintf(hd->base.str, XRT_DEVICE_NAME_LEN, "OSVR HDK-family Device");
 	snprintf(hd->base.serial, XRT_DEVICE_NAME_LEN, "OSVR HDK-family Device");
@@ -495,7 +495,7 @@ hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 		}
 	}
 
-	if (hd->ll <= U_LOGGING_DEBUG) {
+	if (hd->log_level <= U_LOGGING_DEBUG) {
 		u_device_dump_config(&hd->base, __func__, hd->base.str);
 	}
 

@@ -444,13 +444,13 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 	p->base.can_open = p_can_open;
 	p->base.destroy = p_destroy;
 	p->lists = lists;
-	p->ll = debug_get_log_option_prober_log();
+	p->log_level = debug_get_log_option_prober_log();
 
 	p->json.file_loaded = false;
 	p->json.root = NULL;
 
 	u_var_add_root((void *)p, "Prober", true);
-	u_var_add_ro_u32(p, (uint32_t *)&p->ll, "Log Level");
+	u_var_add_log_level(p, &p->log_level, "Log level");
 
 	int ret;
 

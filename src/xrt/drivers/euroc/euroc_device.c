@@ -90,7 +90,7 @@ struct euroc_device
 	struct xrt_pose offset;
 	struct xrt_pose pose;
 	struct xrt_tracking_origin tracking_origin;
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 };
 
 static inline struct euroc_device *
@@ -197,7 +197,7 @@ euroc_device_create(struct xrt_prober *xp)
 
 	ed->pose = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
 	ed->offset = (struct xrt_pose){{0, 0, 0, 1}, {0.2, 1.3, -0.5}};
-	ed->ll = debug_get_log_option_euroc_log();
+	ed->log_level = debug_get_log_option_euroc_log();
 
 	struct xrt_device *xd = &ed->base;
 

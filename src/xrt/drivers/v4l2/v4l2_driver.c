@@ -44,11 +44,11 @@
  *
  */
 
-#define V4L2_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
-#define V4L2_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
-#define V4L2_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
-#define V4L2_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
-#define V4L2_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
+#define V4L2_TRACE(d, ...) U_LOG_IFL_T(d->log_level, __VA_ARGS__)
+#define V4L2_DEBUG(d, ...) U_LOG_IFL_D(d->log_level, __VA_ARGS__)
+#define V4L2_INFO(d, ...) U_LOG_IFL_I(d->log_level, __VA_ARGS__)
+#define V4L2_WARN(d, ...) U_LOG_IFL_W(d->log_level, __VA_ARGS__)
+#define V4L2_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 #define V_CONTROL_GET(VID, CONTROL)                                                                                    \
 	do {                                                                                                           \
@@ -165,7 +165,7 @@ struct v4l2_fs
 
 	bool is_configured;
 	bool is_running;
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 };
 
 /*!
@@ -323,7 +323,7 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 	}
 
 	// Log controls.
-	if (vid->ll <= U_LOGGING_DEBUG) {
+	if (vid->log_level <= U_LOGGING_DEBUG) {
 		dump_controls(vid);
 	}
 
@@ -762,7 +762,7 @@ v4l2_fs_create(struct xrt_frame_context *xfctx,
 	vid->base.is_running = v4l2_fs_is_running;
 	vid->node.break_apart = v4l2_fs_node_break_apart;
 	vid->node.destroy = v4l2_fs_node_destroy;
-	vid->ll = debug_get_log_option_v4l2_log();
+	vid->log_level = debug_get_log_option_v4l2_log();
 	vid->fd = -1;
 
 	snprintf(vid->base.product, sizeof(vid->base.product), "%s", product);
@@ -792,7 +792,7 @@ v4l2_fs_create(struct xrt_frame_context *xfctx,
 	u_sink_debug_init(&vid->usd);
 	u_var_add_root(vid, "V4L2 Frameserver", true);
 	u_var_add_ro_text(vid, vid->base.name, "Card");
-	u_var_add_ro_u32(vid, &vid->ll, "Log Level");
+	u_var_add_log_level(vid, &vid->log_level, "Log Level");
 	for (size_t i = 0; i < vid->num_states; i++) {
 		u_var_add_i32(vid, &vid->states[i].want[0].value, vid->states[i].name);
 	}

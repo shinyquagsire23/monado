@@ -32,11 +32,11 @@ extern "C" {
  *
  */
 
-#define IPC_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
-#define IPC_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
-#define IPC_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
-#define IPC_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
-#define IPC_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
+#define IPC_TRACE(d, ...) U_LOG_IFL_T(d->log_level, __VA_ARGS__)
+#define IPC_DEBUG(d, ...) U_LOG_IFL_D(d->log_level, __VA_ARGS__)
+#define IPC_INFO(d, ...) U_LOG_IFL_I(d->log_level, __VA_ARGS__)
+#define IPC_WARN(d, ...) U_LOG_IFL_W(d->log_level, __VA_ARGS__)
+#define IPC_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 /*
  *
@@ -293,7 +293,7 @@ struct ipc_server
 	// Should we exit when a client disconnects.
 	bool exit_on_disconnect;
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	struct ipc_thread threads[IPC_MAX_CLIENTS];
 

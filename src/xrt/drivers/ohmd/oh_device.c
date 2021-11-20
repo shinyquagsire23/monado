@@ -130,7 +130,7 @@ struct oh_device
 	int64_t last_update;
 	struct xrt_space_relation last_relation;
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 	bool enable_finite_difference;
 
 	struct
@@ -722,7 +722,7 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 	ohd->base.name = XRT_DEVICE_GENERIC_HMD;
 	ohd->ctx = ctx;
 	ohd->dev = dev;
-	ohd->ll = debug_get_log_option_ohmd_log();
+	ohd->log_level = debug_get_log_option_ohmd_log();
 	ohd->enable_finite_difference = debug_get_bool_option_ohmd_finite_diff();
 	if (strcmp(prod, "Rift (CV1)") == 0 || strcmp(prod, "Rift S") == 0) {
 		ohd->ohmd_device_type = OPENHMD_OCULUS_RIFT_HMD;
@@ -992,7 +992,7 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 		os_nanosleep(time_s_to_ns(1.0));
 	}
 
-	if (ohd->ll <= U_LOGGING_DEBUG) {
+	if (ohd->log_level <= U_LOGGING_DEBUG) {
 		u_device_dump_config(&ohd->base, __func__, prod);
 	}
 
@@ -1001,7 +1001,7 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 	ohd->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 
-	if (ohd->ll <= U_LOGGING_DEBUG) {
+	if (ohd->log_level <= U_LOGGING_DEBUG) {
 		u_device_dump_config(&ohd->base, __func__, prod);
 	}
 
@@ -1047,7 +1047,7 @@ create_controller(ohmd_context *ctx, int device_idx, int device_flags, enum xrt_
 	}
 	ohd->ctx = ctx;
 	ohd->dev = dev;
-	ohd->ll = debug_get_log_option_ohmd_log();
+	ohd->log_level = debug_get_log_option_ohmd_log();
 	ohd->enable_finite_difference = debug_get_bool_option_ohmd_finite_diff();
 
 	for (int i = 0; i < CONTROL_MAPPING_SIZE; i++) {

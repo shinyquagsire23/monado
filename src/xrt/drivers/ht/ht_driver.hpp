@@ -43,11 +43,11 @@
 
 using namespace xrt::auxiliary::util;
 
-#define HT_TRACE(htd, ...) U_LOG_XDEV_IFL_T(&htd->base, htd->ll, __VA_ARGS__)
-#define HT_DEBUG(htd, ...) U_LOG_XDEV_IFL_D(&htd->base, htd->ll, __VA_ARGS__)
-#define HT_INFO(htd, ...) U_LOG_XDEV_IFL_I(&htd->base, htd->ll, __VA_ARGS__)
-#define HT_WARN(htd, ...) U_LOG_XDEV_IFL_W(&htd->base, htd->ll, __VA_ARGS__)
-#define HT_ERROR(htd, ...) U_LOG_XDEV_IFL_E(&htd->base, htd->ll, __VA_ARGS__)
+#define HT_TRACE(htd, ...) U_LOG_XDEV_IFL_T(&htd->base, htd->log_level, __VA_ARGS__)
+#define HT_DEBUG(htd, ...) U_LOG_XDEV_IFL_D(&htd->base, htd->log_level, __VA_ARGS__)
+#define HT_INFO(htd, ...) U_LOG_XDEV_IFL_I(&htd->base, htd->log_level, __VA_ARGS__)
+#define HT_WARN(htd, ...) U_LOG_XDEV_IFL_W(&htd->base, htd->log_level, __VA_ARGS__)
+#define HT_ERROR(htd, ...) U_LOG_XDEV_IFL_E(&htd->base, htd->log_level, __VA_ARGS__)
 
 // #define ht_
 
@@ -363,7 +363,7 @@ struct ht_device
 
 
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 };
 
 static inline struct ht_device *

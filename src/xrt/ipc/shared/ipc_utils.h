@@ -28,7 +28,7 @@ extern "C" {
 struct ipc_message_channel
 {
 	int socket_fd;
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 };
 
 /*!

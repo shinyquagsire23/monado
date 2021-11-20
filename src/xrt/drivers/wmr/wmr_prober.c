@@ -89,7 +89,7 @@ static bool
 find_companion_device(struct xrt_prober *xp,
                       struct xrt_prober_device **devices,
                       size_t device_count,
-                      enum u_logging_level ll,
+                      enum u_logging_level log_level,
                       enum wmr_headset_type *out_hmd_type,
                       struct xrt_prober_device **out_device,
                       int *out_interface)
@@ -116,7 +116,7 @@ find_companion_device(struct xrt_prober *xp,
 		}
 
 		if (dev != NULL) {
-			U_LOG_IFL_W(ll, "Found multiple control devices, using the last.");
+			U_LOG_IFL_W(log_level, "Found multiple control devices, using the last.");
 		}
 		dev = devices[i];
 	}
@@ -130,7 +130,7 @@ find_companion_device(struct xrt_prober *xp,
 	xrt_prober_get_string_descriptor(xp, dev, XRT_PROBER_STRING_MANUFACTURER, m_str, sizeof(m_str));
 	xrt_prober_get_string_descriptor(xp, dev, XRT_PROBER_STRING_PRODUCT, p_str, sizeof(p_str));
 
-	U_LOG_IFL_D(ll, "Found Hololens Sensors' companion device '%s' '%s' (vid %04X, pid%04X)", p_str, m_str,
+	U_LOG_IFL_D(log_level, "Found Hololens Sensors' companion device '%s' '%s' (vid %04X, pid%04X)", p_str, m_str,
 	            dev->vendor_id, dev->product_id);
 
 
@@ -155,7 +155,7 @@ wmr_found(struct xrt_prober *xp,
           cJSON *attached_data,
           struct xrt_device **out_xdev)
 {
-	enum u_logging_level ll = debug_get_log_option_wmr_log();
+	enum u_logging_level log_level = debug_get_log_option_wmr_log();
 
 	struct xrt_prober_device *dev_holo = devices[index];
 	struct xrt_prober_device *dev_companion = NULL;
@@ -168,38 +168,39 @@ wmr_found(struct xrt_prober *xp,
 
 	if (!xrt_prober_match_string(xp, dev_holo, XRT_PROBER_STRING_MANUFACTURER, MS_HOLOLENS_MANUFACTURER_STRING) ||
 	    !xrt_prober_match_string(xp, dev_holo, XRT_PROBER_STRING_PRODUCT, MS_HOLOLENS_PRODUCT_STRING)) {
-		U_LOG_IFL_E(ll, "HoloLens Sensors manufacturer or product strings did not match");
+		U_LOG_IFL_E(log_level, "HoloLens Sensors manufacturer or product strings did not match");
 		return -1;
 	}
 
-	U_LOG_IFL_D(ll, "Found HoloLens Sensors HMD device '%s' '%s' (vid %04X, pid %04X)",
+	U_LOG_IFL_D(log_level, "Found HoloLens Sensors HMD device '%s' '%s' (vid %04X, pid %04X)",
 	            MS_HOLOLENS_MANUFACTURER_STRING, MS_HOLOLENS_PRODUCT_STRING, dev_holo->vendor_id,
 	            dev_holo->product_id);
 
-	if (!find_companion_device(xp, devices, device_count, ll, &hmd_type, &dev_companion, &interface_companion)) {
-		U_LOG_IFL_E(ll, "Did not find HoloLens Sensors' companion device");
+	if (!find_companion_device(xp, devices, device_count, log_level, &hmd_type, &dev_companion,
+	                           &interface_companion)) {
+		U_LOG_IFL_E(log_level, "Did not find HoloLens Sensors' companion device");
 		return -1;
 	}
 
 	struct os_hid_device *hid_holo = NULL;
 	result = xrt_prober_open_hid_interface(xp, dev_holo, interface_holo, &hid_holo);
 	if (result != 0) {
-		U_LOG_IFL_E(ll, "Failed to open HoloLens Sensors HID interface");
+		U_LOG_IFL_E(log_level, "Failed to open HoloLens Sensors HID interface");
 		return -1;
 	}
 
 	struct os_hid_device *hid_companion = NULL;
 	result = xrt_prober_open_hid_interface(xp, dev_companion, interface_companion, &hid_companion);
 	if (result != 0) {
-		U_LOG_IFL_E(ll, "Failed to open HoloLens Sensors' companion HID interface.");
+		U_LOG_IFL_E(log_level, "Failed to open HoloLens Sensors' companion HID interface.");
 		return -1;
 	}
 
-	struct wmr_camera *cam = wmr_camera_open(dev_holo, ll);
+	struct wmr_camera *cam = wmr_camera_open(dev_holo, log_level);
 
-	struct xrt_device *p = wmr_hmd_create(hmd_type, hid_holo, hid_companion, cam, ll);
+	struct xrt_device *p = wmr_hmd_create(hmd_type, hid_holo, hid_companion, cam, log_level);
 	if (!p) {
-		U_LOG_IFL_E(ll, "Failed to create WMR HMD device.");
+		U_LOG_IFL_E(log_level, "Failed to create WMR HMD device.");
 		return -1;
 	}
 
@@ -216,7 +217,7 @@ wmr_bt_controller_found(struct xrt_prober *xp,
                         struct xrt_device **out_xdev)
 {
 
-	enum u_logging_level ll = debug_get_log_option_wmr_log();
+	enum u_logging_level log_level = debug_get_log_option_wmr_log();
 
 	struct os_hid_device *hid_controller = NULL;
 
@@ -247,7 +248,7 @@ wmr_bt_controller_found(struct xrt_prober *xp,
 		}
 	// else fall through
 	default:
-		U_LOG_IFL_D(ll,
+		U_LOG_IFL_D(log_level,
 		            "Unsupported controller device (Bluetooth): vid: 0x%04X, pid: 0x%04X, Product Name: '%s'",
 		            devices[index]->vendor_id, devices[index]->product_id, product_name);
 		return -1;
@@ -257,14 +258,14 @@ wmr_bt_controller_found(struct xrt_prober *xp,
 
 	ret = xrt_prober_open_hid_interface(xp, devices[index], interface_controller, &hid_controller);
 	if (ret != 0) {
-		U_LOG_IFL_E(ll, "Failed to open WMR Bluetooth controller's HID interface");
+		U_LOG_IFL_E(log_level, "Failed to open WMR Bluetooth controller's HID interface");
 		return -1;
 	}
 
 
-	struct xrt_device *p = wmr_bt_controller_create(hid_controller, controller_type, ll);
+	struct xrt_device *p = wmr_bt_controller_create(hid_controller, controller_type, log_level);
 	if (!p) {
-		U_LOG_IFL_E(ll, "Failed to create WMR controller (Bluetooth)");
+		U_LOG_IFL_E(log_level, "Failed to create WMR controller (Bluetooth)");
 		return -1;
 	}
 

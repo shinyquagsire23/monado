@@ -18,11 +18,11 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/version.hpp>
 
-#define SLAM_TRACE(...) U_LOG_IFL_T(t.ll, __VA_ARGS__)
-#define SLAM_DEBUG(...) U_LOG_IFL_D(t.ll, __VA_ARGS__)
-#define SLAM_INFO(...) U_LOG_IFL_I(t.ll, __VA_ARGS__)
-#define SLAM_WARN(...) U_LOG_IFL_W(t.ll, __VA_ARGS__)
-#define SLAM_ERROR(...) U_LOG_IFL_E(t.ll, __VA_ARGS__)
+#define SLAM_TRACE(...) U_LOG_IFL_T(t.log_level, __VA_ARGS__)
+#define SLAM_DEBUG(...) U_LOG_IFL_D(t.log_level, __VA_ARGS__)
+#define SLAM_INFO(...) U_LOG_IFL_I(t.log_level, __VA_ARGS__)
+#define SLAM_WARN(...) U_LOG_IFL_W(t.log_level, __VA_ARGS__)
+#define SLAM_ERROR(...) U_LOG_IFL_E(t.log_level, __VA_ARGS__)
 #define SLAM_ASSERT(predicate, ...)                                                                                    \
 	do {                                                                                                           \
 		bool p = predicate;                                                                                    \
@@ -168,9 +168,9 @@ struct TrackerSlam
 	struct xrt_frame_sink right_sink = {}; //!< Sends right camera frames to the SLAM system
 	struct xrt_imu_sink imu_sink = {};     //!< Sends imu samples to the SLAM system
 
-	enum u_logging_level ll;     //!< Logging level for the SLAM tracker, set by SLAM_LOG var
-	struct os_thread_helper oth; //!< Thread where the external SLAM system runs
-	MatFrame *cv_wrapper;        //!< Wraps a xrt_frame in a cv::Mat to send to the SLAM system
+	enum u_logging_level log_level; //!< Logging level for the SLAM tracker, set by SLAM_LOG var
+	struct os_thread_helper oth;    //!< Thread where the external SLAM system runs
+	MatFrame *cv_wrapper;           //!< Wraps a xrt_frame in a cv::Mat to send to the SLAM system
 
 	// Used for checking that the timestamps come in order
 	mutable timepoint_ns last_imu_ts = INT64_MIN;
@@ -306,15 +306,16 @@ t_slam_start(struct xrt_tracked_slam *xts)
 extern "C" int
 t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts, struct xrt_slam_sinks **out_sink)
 {
-	enum u_logging_level ll = debug_get_log_option_slam_log();
+	enum u_logging_level log_level = debug_get_log_option_slam_log();
 	const char *config_file = debug_get_option_slam_config();
 	if (!config_file) {
-		U_LOG_IFL_W(ll, "SLAM tracker requires a config file set with the SLAM_CONFIG environment variable");
+		U_LOG_IFL_W(log_level,
+		            "SLAM tracker requires a config file set with the SLAM_CONFIG environment variable");
 		return -1;
 	}
 
 	auto &t = *(new TrackerSlam{});
-	t.ll = ll;
+	t.log_level = log_level;
 	t.cv_wrapper = new MatFrame();
 
 	t.base.get_tracked_pose = t_slam_get_tracked_pose;

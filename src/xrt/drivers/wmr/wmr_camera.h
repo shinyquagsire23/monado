@@ -23,7 +23,7 @@ struct wmr_camera;
 
 #ifdef XRT_HAVE_LIBUSB
 struct wmr_camera *
-wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level ll);
+wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level log_level);
 void
 wmr_camera_free(struct wmr_camera *cam);
 

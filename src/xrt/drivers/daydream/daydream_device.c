@@ -375,7 +375,7 @@ daydream_device_create(struct os_ble_device *ble)
 	snprintf(dd->base.serial, XRT_DEVICE_NAME_LEN, "Daydream %d", controller_num++);
 
 	dd->ble = ble;
-	dd->ll = debug_get_log_option_daydream_log();
+	dd->log_level = debug_get_log_option_daydream_log();
 
 	float accel_ticks_to_float = MATH_GRAVITY_M_S2 / 520.0;
 	float gyro_ticks_to_float = 1.0 / 120.0;

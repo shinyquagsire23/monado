@@ -1056,7 +1056,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	struct vive_controller_device *d =
 	    U_DEVICE_ALLOCATE(struct vive_controller_device, flags, VIVE_CONTROLLER_MAX_INDEX, 1);
 
-	d->ll = debug_get_log_option_vive_log();
+	d->log_level = debug_get_log_option_vive_log();
 	d->watchman_gen = WATCHMAN_GEN_UNKNOWN;
 	d->config.variant = CONTROLLER_UNKNOWN;
 
@@ -1101,7 +1101,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	char *config = vive_read_config(d->controller_hid);
 
 	if (config != NULL) {
-		vive_config_parse_controller(&d->config, config, d->ll);
+		vive_config_parse_controller(&d->config, config, d->log_level);
 		free(config);
 	} else {
 		VIVE_ERROR(d, "Could not get Vive controller config\n");

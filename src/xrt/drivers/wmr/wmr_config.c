@@ -15,11 +15,11 @@
 
 #include "wmr_config.h"
 
-#define WMR_TRACE(ll, ...) U_LOG_IFL_T(ll, __VA_ARGS__)
-#define WMR_DEBUG(ll, ...) U_LOG_IFL_D(ll, __VA_ARGS__)
-#define WMR_INFO(ll, ...) U_LOG_IFL_I(ll, __VA_ARGS__)
-#define WMR_WARN(ll, ...) U_LOG_IFL_W(ll, __VA_ARGS__)
-#define WMR_ERROR(ll, ...) U_LOG_IFL_E(ll, __VA_ARGS__)
+#define WMR_TRACE(log_level, ...) U_LOG_IFL_T(log_level, __VA_ARGS__)
+#define WMR_DEBUG(log_level, ...) U_LOG_IFL_D(log_level, __VA_ARGS__)
+#define WMR_INFO(log_level, ...) U_LOG_IFL_I(log_level, __VA_ARGS__)
+#define WMR_WARN(log_level, ...) U_LOG_IFL_W(log_level, __VA_ARGS__)
+#define WMR_ERROR(log_level, ...) U_LOG_IFL_E(log_level, __VA_ARGS__)
 
 #define JSON_INT(a, b, c) u_json_get_int(u_json_get(a, b), c)
 #define JSON_FLOAT(a, b, c) u_json_get_float(u_json_get(a, b), c)
@@ -60,13 +60,13 @@ wmr_config_compute_pose(struct xrt_pose *out_pose, const struct xrt_vec3 *tx, co
 }
 
 static bool
-wmr_config_parse_display(struct wmr_hmd_config *c, cJSON *display, enum u_logging_level ll)
+wmr_config_parse_display(struct wmr_hmd_config *c, cJSON *display, enum u_logging_level log_level)
 {
 	cJSON *json_eye = cJSON_GetObjectItem(display, "AssignedEye");
 	char *json_eye_name = cJSON_GetStringValue(json_eye);
 
 	if (json_eye_name == NULL) {
-		WMR_ERROR(ll, "Invalid/missing eye assignment block");
+		WMR_ERROR(log_level, "Invalid/missing eye assignment block");
 		return false;
 	}
 
@@ -76,14 +76,14 @@ wmr_config_parse_display(struct wmr_hmd_config *c, cJSON *display, enum u_loggin
 	} else if (!strcmp(json_eye_name, "CALIBRATION_DisplayEyeRight")) {
 		eye = &c->eye_params[1];
 	} else {
-		WMR_ERROR(ll, "Unknown AssignedEye \"%s\"", json_eye_name);
+		WMR_ERROR(log_level, "Unknown AssignedEye \"%s\"", json_eye_name);
 		return false;
 	}
 
 	/* Extract display panel parameters */
 	cJSON *affine = cJSON_GetObjectItem(display, "Affine");
 	if (affine == NULL || u_json_get_float_array(affine, eye->affine_xform.v, 9) != 9) {
-		WMR_ERROR(ll, "Missing affine transform for AssignedEye \"%s\"", json_eye_name);
+		WMR_ERROR(log_level, "Missing affine transform for AssignedEye \"%s\"", json_eye_name);
 		return false;
 	}
 
@@ -125,13 +125,13 @@ wmr_config_parse_display(struct wmr_hmd_config *c, cJSON *display, enum u_loggin
 
 		cJSON *dist = cJSON_GetObjectItemCaseSensitive(display, channel_names[channel]);
 		if (!dist) {
-			WMR_ERROR(ll, "Missing distortion channel info %s", channel_names[channel]);
+			WMR_ERROR(log_level, "Missing distortion channel info %s", channel_names[channel]);
 			return false;
 		}
 
 		const char *model_type = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(dist, "ModelType"));
 		if (model_type == NULL) {
-			WMR_ERROR(ll, "Missing distortion type");
+			WMR_ERROR(log_level, "Missing distortion type");
 			return false;
 		}
 
@@ -139,7 +139,7 @@ wmr_config_parse_display(struct wmr_hmd_config *c, cJSON *display, enum u_loggin
 			distortion3K->model = WMR_DISTORTION_MODEL_POLYNOMIAL_3K;
 		} else {
 			distortion3K->model = WMR_DISTORTION_MODEL_UNKNOWN;
-			WMR_ERROR(ll, "Unknown distortion model %s", model_type);
+			WMR_ERROR(log_level, "Unknown distortion model %s", model_type);
 			return false;
 		}
 
@@ -147,14 +147,14 @@ wmr_config_parse_display(struct wmr_hmd_config *c, cJSON *display, enum u_loggin
 		double parameters[5];
 
 		if (!JSON_INT(dist, "ModelParameterCount", &param_count)) {
-			WMR_ERROR(ll, "Missing distortion parameters");
+			WMR_ERROR(log_level, "Missing distortion parameters");
 			return false;
 		}
 
 		cJSON *params_json = cJSON_GetObjectItemCaseSensitive(dist, "ModelParameters");
 		if (params_json == NULL ||
 		    u_json_get_double_array(params_json, parameters, param_count) != (size_t)param_count) {
-			WMR_ERROR(ll, "Missing distortion parameters");
+			WMR_ERROR(log_level, "Missing distortion parameters");
 			return false;
 		}
 
@@ -170,13 +170,13 @@ wmr_config_parse_display(struct wmr_hmd_config *c, cJSON *display, enum u_loggin
 }
 
 static bool
-wmr_config_parse_inertial_sensor(struct wmr_hmd_config *c, cJSON *sensor, enum u_logging_level ll)
+wmr_config_parse_inertial_sensor(struct wmr_hmd_config *c, cJSON *sensor, enum u_logging_level log_level)
 {
 	struct xrt_pose *out_pose;
 
 	const char *sensor_type = cJSON_GetStringValue(cJSON_GetObjectItem(sensor, "SensorType"));
 	if (sensor_type == NULL) {
-		WMR_WARN(ll, "Missing sensor type");
+		WMR_WARN(log_level, "Missing sensor type");
 		return false;
 	}
 
@@ -187,7 +187,7 @@ wmr_config_parse_inertial_sensor(struct wmr_hmd_config *c, cJSON *sensor, enum u
 	} else if (!strcmp(sensor_type, "CALIBRATION_InertialSensorType_Magnetometer")) {
 		out_pose = &c->mag_pose;
 	} else {
-		WMR_WARN(ll, "Unhandled sensor type \"%s\"", sensor_type);
+		WMR_WARN(log_level, "Unhandled sensor type \"%s\"", sensor_type);
 		return false;
 	}
 
@@ -197,12 +197,12 @@ wmr_config_parse_inertial_sensor(struct wmr_hmd_config *c, cJSON *sensor, enum u
 	cJSON *rt = cJSON_GetObjectItem(sensor, "Rt");
 	cJSON *rx = cJSON_GetObjectItem(rt, "Rotation");
 	if (rt == NULL || rx == NULL) {
-		WMR_WARN(ll, "Missing Inertial Sensor calibration");
+		WMR_WARN(log_level, "Missing Inertial Sensor calibration");
 		return false;
 	}
 
 	if (!JSON_VEC3(rt, "Translation", &translation) || u_json_get_float_array(rx, rotation.v, 9) != 9) {
-		WMR_WARN(ll, "Invalid Inertial Sensor calibration");
+		WMR_WARN(log_level, "Invalid Inertial Sensor calibration");
 		return false;
 	}
 
@@ -212,10 +212,10 @@ wmr_config_parse_inertial_sensor(struct wmr_hmd_config *c, cJSON *sensor, enum u
 }
 
 static bool
-wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_logging_level ll)
+wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_logging_level log_level)
 {
 	if (c->n_cameras == WMR_MAX_CAMERAS) {
-		WMR_ERROR(ll, "Too many camera entries. Enlarge WMR_MAX_CAMERAS");
+		WMR_ERROR(log_level, "Too many camera entries. Enlarge WMR_MAX_CAMERAS");
 		return false;
 	}
 
@@ -225,7 +225,7 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	cJSON *json_purpose = cJSON_GetObjectItem(camera, "Purpose");
 	char *json_purpose_name = cJSON_GetStringValue(json_purpose);
 	if (json_purpose_name == NULL) {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - unknown camera purpose %s", c->n_cameras,
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - unknown camera purpose %s", c->n_cameras,
 		          json_purpose_name);
 		return false;
 	}
@@ -235,14 +235,14 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	} else if (!strcmp(json_purpose_name, "CALIBRATION_CameraPurposeDisplayObserver")) {
 		cam_config->purpose = WMR_CAMERA_PURPOSE_DISPLAY_OBSERVER;
 	} else {
-		WMR_ERROR(ll, "Unknown camera purpose: \"%s\" (camera %d)", json_purpose_name, c->n_cameras);
+		WMR_ERROR(log_level, "Unknown camera purpose: \"%s\" (camera %d)", json_purpose_name, c->n_cameras);
 		return false;
 	}
 
 	cJSON *json_location = cJSON_GetObjectItem(camera, "Location");
 	char *json_location_name = cJSON_GetStringValue(json_location);
 	if (json_location_name == NULL) {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - location", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - location", c->n_cameras);
 		return false;
 	}
 
@@ -259,7 +259,7 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	} else if (!strcmp(json_location_name, "CALIBRATION_CameraLocationDO1")) {
 		cam_config->location = WMR_CAMERA_LOCATION_DO1;
 	} else {
-		WMR_ERROR(ll, "Unknown camera location: \"%s\" (camera %d)", json_location_name, c->n_cameras);
+		WMR_ERROR(log_level, "Unknown camera location: \"%s\" (camera %d)", json_location_name, c->n_cameras);
 		return false;
 	}
 
@@ -270,12 +270,12 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	cJSON *rt = cJSON_GetObjectItem(camera, "Rt");
 	cJSON *rx = cJSON_GetObjectItem(rt, "Rotation");
 	if (rt == NULL || rx == NULL) {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - pose", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - pose", c->n_cameras);
 		return false;
 	}
 
 	if (!JSON_VEC3(rt, "Translation", &translation) || u_json_get_float_array(rx, rotation.v, 9) != 9) {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - pose", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - pose", c->n_cameras);
 		return false;
 	}
 
@@ -283,26 +283,26 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 
 	if (!JSON_INT(camera, "SensorWidth", &cam_config->sensor_width) ||
 	    !JSON_INT(camera, "SensorHeight", &cam_config->sensor_height)) {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - sensor size", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - sensor size", c->n_cameras);
 		return false;
 	}
 
 	/* Distortion information */
 	cJSON *dist = cJSON_GetObjectItemCaseSensitive(camera, "Intrinsics");
 	if (!dist) {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - distortion", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - distortion", c->n_cameras);
 		return false;
 	}
 
 	const char *model_type = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(dist, "ModelType"));
 	if (model_type == NULL) {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - missing distortion type", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - missing distortion type", c->n_cameras);
 		return false;
 	}
 
 	if (!strcmp(model_type, "CALIBRATION_LensDistortionModelRational6KT")) {
 	} else {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - unknown distortion type %s", c->n_cameras,
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - unknown distortion type %s", c->n_cameras,
 		          model_type);
 		return false;
 	}
@@ -311,12 +311,12 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 
 	int param_count;
 	if (!JSON_INT(dist, "ModelParameterCount", &param_count)) {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - no ModelParameterCount", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - no ModelParameterCount", c->n_cameras);
 		return false;
 	}
 
 	if (param_count != 15) {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - wrong ModelParameterCount %d", c->n_cameras,
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - wrong ModelParameterCount %d", c->n_cameras,
 		          param_count);
 		return false;
 	}
@@ -324,7 +324,8 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	cJSON *params_json = cJSON_GetObjectItemCaseSensitive(dist, "ModelParameters");
 	if (params_json == NULL ||
 	    u_json_get_float_array(params_json, distortion6KT->v, param_count) != (size_t)param_count) {
-		WMR_ERROR(ll, "Invalid camera calibration block %d - missing distortion parameters", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - missing distortion parameters",
+		          c->n_cameras);
 		return false;
 	}
 
@@ -333,47 +334,47 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 }
 
 static bool
-wmr_config_parse_calibration(struct wmr_hmd_config *c, cJSON *calib_info, enum u_logging_level ll)
+wmr_config_parse_calibration(struct wmr_hmd_config *c, cJSON *calib_info, enum u_logging_level log_level)
 {
 	cJSON *item = NULL;
 
 	// calib_info is object with keys "Cameras", "Displays", and "InertialSensors"
 	cJSON *displays = cJSON_GetObjectItemCaseSensitive(calib_info, "Displays");
 	if (!cJSON_IsArray(displays)) {
-		WMR_ERROR(ll, "Displays: not found or not an Array");
+		WMR_ERROR(log_level, "Displays: not found or not an Array");
 		return false;
 	}
 
 	cJSON_ArrayForEach(item, displays)
 	{
-		if (!wmr_config_parse_display(c, item, ll)) {
-			WMR_ERROR(ll, "Error parsing Display entry");
+		if (!wmr_config_parse_display(c, item, log_level)) {
+			WMR_ERROR(log_level, "Error parsing Display entry");
 			return false;
 		}
 	}
 
 	cJSON *sensors = cJSON_GetObjectItemCaseSensitive(calib_info, "InertialSensors");
 	if (!cJSON_IsArray(sensors)) {
-		WMR_ERROR(ll, "InertialSensors: not found or not an Array");
+		WMR_ERROR(log_level, "InertialSensors: not found or not an Array");
 		return false;
 	}
 
 	cJSON_ArrayForEach(item, sensors)
 	{
-		if (!wmr_config_parse_inertial_sensor(c, item, ll)) {
-			WMR_WARN(ll, "Error parsing InertialSensor entry");
+		if (!wmr_config_parse_inertial_sensor(c, item, log_level)) {
+			WMR_WARN(log_level, "Error parsing InertialSensor entry");
 		}
 	}
 
 	cJSON *cameras = cJSON_GetObjectItemCaseSensitive(calib_info, "Cameras");
 	if (!cJSON_IsArray(cameras)) {
-		WMR_ERROR(ll, "Cameras: not found or not an Array");
+		WMR_ERROR(log_level, "Cameras: not found or not an Array");
 		return false;
 	}
 
 	cJSON_ArrayForEach(item, cameras)
 	{
-		if (!wmr_config_parse_camera_config(c, item, ll))
+		if (!wmr_config_parse_camera_config(c, item, log_level))
 			return false;
 	}
 
@@ -382,25 +383,25 @@ wmr_config_parse_calibration(struct wmr_hmd_config *c, cJSON *calib_info, enum u
 
 
 bool
-wmr_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging_level ll)
+wmr_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging_level log_level)
 {
 	wmr_config_init_defaults(c);
 
 	cJSON *json_root = cJSON_Parse(json_string);
 	if (!cJSON_IsObject(json_root)) {
-		WMR_ERROR(ll, "Could not parse JSON data.");
+		WMR_ERROR(log_level, "Could not parse JSON data.");
 		cJSON_Delete(json_root);
 		return false;
 	}
 
 	cJSON *calib_info = cJSON_GetObjectItemCaseSensitive(json_root, "CalibrationInformation");
 	if (!cJSON_IsObject(calib_info)) {
-		WMR_ERROR(ll, "CalibrationInformation object not found");
+		WMR_ERROR(log_level, "CalibrationInformation object not found");
 		cJSON_Delete(json_root);
 		return false;
 	}
 
-	bool res = wmr_config_parse_calibration(c, calib_info, ll);
+	bool res = wmr_config_parse_calibration(c, calib_info, log_level);
 
 	cJSON_Delete(json_root);
 	return res;

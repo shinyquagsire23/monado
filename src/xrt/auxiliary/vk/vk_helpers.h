@@ -44,7 +44,7 @@ extern "C" {
  */
 struct vk_bundle
 {
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	VkInstance instance;
 	VkPhysicalDevice physical_device;
@@ -311,11 +311,11 @@ vk_color_space_string(VkColorSpaceKHR code);
  *
  */
 
-#define VK_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
-#define VK_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
-#define VK_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
-#define VK_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
-#define VK_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
+#define VK_TRACE(d, ...) U_LOG_IFL_T(d->log_level, __VA_ARGS__)
+#define VK_DEBUG(d, ...) U_LOG_IFL_D(d->log_level, __VA_ARGS__)
+#define VK_INFO(d, ...) U_LOG_IFL_I(d->log_level, __VA_ARGS__)
+#define VK_WARN(d, ...) U_LOG_IFL_W(d->log_level, __VA_ARGS__)
+#define VK_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 /*!
  * @brief Check a Vulkan VkResult, writing an error to the log and returning true if not VK_SUCCESS

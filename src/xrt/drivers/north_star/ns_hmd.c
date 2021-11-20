@@ -540,7 +540,7 @@ ns_hmd_create(const char *config_path)
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 	struct ns_hmd *ns = U_DEVICE_ALLOCATE(struct ns_hmd, flags, 1, 0);
-	ns->ll = debug_get_log_option_ns_log();
+	ns->log_level = debug_get_log_option_ns_log();
 
 	if (!ns_config_load(ns, config_path))
 		goto cleanup; // don't need to print any error, ns_config_load did that for us

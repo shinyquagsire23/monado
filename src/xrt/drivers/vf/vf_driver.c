@@ -44,11 +44,11 @@
  *
  */
 
-#define VF_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
-#define VF_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
-#define VF_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
-#define VF_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
-#define VF_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
+#define VF_TRACE(d, ...) U_LOG_IFL_T(d->log_level, __VA_ARGS__)
+#define VF_DEBUG(d, ...) U_LOG_IFL_D(d->log_level, __VA_ARGS__)
+#define VF_INFO(d, ...) U_LOG_IFL_I(d->log_level, __VA_ARGS__)
+#define VF_WARN(d, ...) U_LOG_IFL_W(d->log_level, __VA_ARGS__)
+#define VF_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 DEBUG_GET_ONCE_LOG_OPTION(vf_log, "VF_LOG", U_LOGGING_WARN)
 
@@ -90,7 +90,7 @@ struct vf_fs
 
 	bool is_configured;
 	bool is_running;
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 };
 
 /*!
@@ -501,7 +501,7 @@ alloc_and_init_common(struct xrt_frame_context *xfctx,      //
 	vid->base.is_running = vf_fs_is_running;
 	vid->node.break_apart = vf_fs_node_break_apart;
 	vid->node.destroy = vf_fs_node_destroy;
-	vid->ll = debug_get_log_option_vf_log();
+	vid->log_level = debug_get_log_option_vf_log();
 
 	// It's now safe to add it to the context.
 	xrt_frame_context_add(xfctx, &vid->node);
@@ -510,7 +510,7 @@ alloc_and_init_common(struct xrt_frame_context *xfctx,      //
 	// clang-format off
 	u_var_add_root(vid, "Video File Frameserver", true);
 	u_var_add_ro_text(vid, vid->base.name, "Card");
-	u_var_add_ro_u32(vid, &vid->ll, "Log Level");
+	u_var_add_log_level(vid, &vid->log_level, "Log Level");
 	// clang-format on
 
 	return &(vid->base);

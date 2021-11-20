@@ -23,14 +23,14 @@ bool
 wmr_controller_packet_parse(const unsigned char *buffer,
                             size_t len,
                             struct wmr_controller_message *out_message,
-                            enum u_logging_level ll)
+                            enum u_logging_level log_level)
 {
 	if (len != 44) {
-		U_LOG_IFL_E(ll, "WMR Controller: unexpected message length: %zd", len);
+		U_LOG_IFL_E(log_level, "WMR Controller: unexpected message length: %zd", len);
 		return false;
 	}
 
-	U_LOG_IFL_D(ll,
+	U_LOG_IFL_D(log_level,
 	            "%02x %02x %02x %02x %02x %02x %02x %02x | "           // buttons and inputs, battery
 	            "%02x %02x %02x %02x %02x %02x %02x %02x %02x | "      // accel
 	            "%02x %02x | "                                         // temp
@@ -75,13 +75,13 @@ wmr_controller_packet_parse(const unsigned char *buffer,
 	read16(&p);
 	read16(&p);
 
-	U_LOG_IFL_D(ll, "buttons: %02x, trigger: %02x, pad_x: %02x, pad_y: %02x", out_message->buttons,
+	U_LOG_IFL_D(log_level, "buttons: %02x, trigger: %02x, pad_x: %02x, pad_y: %02x", out_message->buttons,
 	            out_message->trigger, out_message->pad_x, out_message->pad_y);
 
 	/*
-	        U_LOG_IFL_D(ll, "timestamp %lu\ttemp %d\taccel x: %f\ty: %f\tz: %f\t\tgyro x: %f\tgyro y: %f\tgyro z:
-	   %f", timestamp, temp, accel_x * 0.001f, accel_y * 0.001f, accel_z * 0.001f, gyro_x * 2e-6, gyro_y * 2e-6,
-	                    gyro_z * 2e-6);
+	        U_LOG_IFL_D(log_level, "timestamp %lu\ttemp %d\taccel x: %f\ty: %f\tz: %f\t\tgyro x: %f\tgyro y:
+	   %f\tgyro z: %f", timestamp, temp, accel_x * 0.001f, accel_y * 0.001f, accel_z * 0.001f, gyro_x * 2e-6, gyro_y
+	   * 2e-6, gyro_z * 2e-6);
 	*/
 
 	return true;

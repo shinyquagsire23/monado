@@ -68,7 +68,7 @@ struct vive_controller_device
 
 	struct xrt_quat rot_filtered;
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	uint32_t last_ticks;
 

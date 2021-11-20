@@ -42,11 +42,11 @@
  *
  */
 
-#define DEPTHAI_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
-#define DEPTHAI_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
-#define DEPTHAI_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
-#define DEPTHAI_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
-#define DEPTHAI_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
+#define DEPTHAI_TRACE(d, ...) U_LOG_IFL_T(d->log_level, __VA_ARGS__)
+#define DEPTHAI_DEBUG(d, ...) U_LOG_IFL_D(d->log_level, __VA_ARGS__)
+#define DEPTHAI_INFO(d, ...) U_LOG_IFL_I(d->log_level, __VA_ARGS__)
+#define DEPTHAI_WARN(d, ...) U_LOG_IFL_W(d->log_level, __VA_ARGS__)
+#define DEPTHAI_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 DEBUG_GET_ONCE_LOG_OPTION(depthai_log, "DEPTHAI_LOG", U_LOGGING_INFO)
 
@@ -113,7 +113,7 @@ struct depthai_fs
 	struct xrt_frame_node node;
 	struct os_thread_helper play_thread;
 
-	u_logging_level ll;
+	u_logging_level log_level;
 
 	uint32_t width;
 	uint32_t height;
@@ -243,7 +243,7 @@ depthai_print_connected_cameras(struct depthai_fs *depthai)
 static void
 depthai_print_calib(struct depthai_fs *depthai)
 {
-	if (depthai->ll > U_LOGGING_DEBUG) {
+	if (depthai->log_level > U_LOGGING_DEBUG) {
 		return;
 	}
 
@@ -637,7 +637,7 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->base.is_running = depthai_fs_is_running;
 	depthai->node.break_apart = depthai_fs_node_break_apart;
 	depthai->node.destroy = depthai_fs_node_destroy;
-	depthai->ll = debug_get_log_option_depthai_log();
+	depthai->log_level = debug_get_log_option_depthai_log();
 	depthai->device = d;
 
 	// Some debug printing.

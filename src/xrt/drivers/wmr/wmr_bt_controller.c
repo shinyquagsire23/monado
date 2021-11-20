@@ -33,11 +33,11 @@
 #include <unistd.h> // for sleep()
 #endif
 
-#define WMR_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
-#define WMR_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)
-#define WMR_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->ll, __VA_ARGS__)
-#define WMR_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->ll, __VA_ARGS__)
-#define WMR_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
+#define WMR_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->log_level, __VA_ARGS__)
 
 #define SET_INPUT(NAME) (d->base.inputs[WMR_INDEX_##NAME].name = XRT_INPUT_WMR_##NAME)
 
@@ -69,7 +69,7 @@ read_packets(struct wmr_bt_controller *d)
 	switch (buffer[0]) {
 	case WMR_BT_MOTION_CONTROLLER_MSG:
 		// Note: skipping msg type byte
-		if (!wmr_controller_packet_parse(&buffer[1], (size_t)size - 1, &d->controller_message, d->ll)) {
+		if (!wmr_controller_packet_parse(&buffer[1], (size_t)size - 1, &d->controller_message, d->log_level)) {
 			WMR_ERROR(d, "WMR Controller (Bluetooth): Failed parsing message type: %02x, size: %i",
 			          buffer[0], size);
 			return false;
@@ -214,13 +214,13 @@ static struct xrt_binding_profile binding_profiles[1] = {
 struct xrt_device *
 wmr_bt_controller_create(struct os_hid_device *controller_hid,
                          enum xrt_device_type controller_type,
-                         enum u_logging_level ll)
+                         enum u_logging_level log_level)
 {
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
 	struct wmr_bt_controller *d = U_DEVICE_ALLOCATE(struct wmr_bt_controller, flags, 10, 1);
 
-	d->ll = ll;
+	d->log_level = log_level;
 	d->controller_hid = controller_hid;
 
 	if (controller_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) {

@@ -33,13 +33,13 @@
 #include <inttypes.h>
 
 
-static enum u_logging_level ll;
+static enum u_logging_level log_level;
 
-#define EGL_SC_TRACE(...) U_LOG_IFL_T(ll, __VA_ARGS__)
-#define EGL_SC_DEBUG(...) U_LOG_IFL_D(ll, __VA_ARGS__)
-#define EGL_SC_INFO(...) U_LOG_IFL_I(ll, __VA_ARGS__)
-#define EGL_SC_WARN(...) U_LOG_IFL_W(ll, __VA_ARGS__)
-#define EGL_SC_ERROR(...) U_LOG_IFL_E(ll, __VA_ARGS__)
+#define EGL_SC_TRACE(...) U_LOG_IFL_T(log_level, __VA_ARGS__)
+#define EGL_SC_DEBUG(...) U_LOG_IFL_D(log_level, __VA_ARGS__)
+#define EGL_SC_INFO(...) U_LOG_IFL_I(log_level, __VA_ARGS__)
+#define EGL_SC_WARN(...) U_LOG_IFL_W(log_level, __VA_ARGS__)
+#define EGL_SC_ERROR(...) U_LOG_IFL_E(log_level, __VA_ARGS__)
 
 DEBUG_GET_ONCE_LOG_OPTION(egl_swapchain_log, "EGL_SWAPCHAIN_LOG", U_LOGGING_WARN)
 
@@ -166,7 +166,7 @@ client_gl_eglimage_swapchain_create(struct xrt_compositor *xc,
                                     struct client_gl_swapchain **out_sc)
 {
 	struct client_egl_compositor *ceglc = client_egl_compositor(xc);
-	ll = debug_get_log_option_egl_swapchain_log();
+	log_level = debug_get_log_option_egl_swapchain_log();
 
 	if (xscn == NULL) {
 		EGL_SC_ERROR("Native compositor is null");

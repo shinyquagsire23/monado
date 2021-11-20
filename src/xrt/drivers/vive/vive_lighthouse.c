@@ -20,13 +20,13 @@
 
 #include "vive_lighthouse.h"
 
-static enum u_logging_level ll;
+static enum u_logging_level log_level;
 
-#define LH_TRACE(...) U_LOG_IFL_T(ll, __VA_ARGS__)
-#define LH_DEBUG(...) U_LOG_IFL_D(ll, __VA_ARGS__)
-#define LH_INFO(...) U_LOG_IFL_I(ll, __VA_ARGS__)
-#define LH_WARN(...) U_LOG_IFL_W(ll, __VA_ARGS__)
-#define LH_ERROR(...) U_LOG_IFL_E(ll, __VA_ARGS__)
+#define LH_TRACE(...) U_LOG_IFL_T(log_level, __VA_ARGS__)
+#define LH_DEBUG(...) U_LOG_IFL_D(log_level, __VA_ARGS__)
+#define LH_INFO(...) U_LOG_IFL_I(log_level, __VA_ARGS__)
+#define LH_WARN(...) U_LOG_IFL_W(log_level, __VA_ARGS__)
+#define LH_ERROR(...) U_LOG_IFL_E(log_level, __VA_ARGS__)
 
 DEBUG_GET_ONCE_LOG_OPTION(vive_log, "VIVE_LOG", U_LOGGING_WARN)
 
@@ -538,5 +538,5 @@ lighthouse_watchman_init(struct lighthouse_watchman *watchman, const char *name)
 	watchman->last_timestamp = 0;
 	watchman->last_sync.timestamp = 0;
 	watchman->last_sync.duration = 0;
-	ll = debug_get_log_option_vive_log();
+	log_level = debug_get_log_option_vive_log();
 }

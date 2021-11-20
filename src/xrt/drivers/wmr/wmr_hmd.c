@@ -891,7 +891,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
                struct os_hid_device *hid_ctrl,
                struct wmr_camera *cam,
-               enum u_logging_level ll)
+               enum u_logging_level log_level)
 {
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
@@ -910,7 +910,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	wh->base.destroy = wmr_hmd_destroy;
 	wh->base.name = XRT_DEVICE_GENERIC_HMD;
 	wh->base.device_type = XRT_DEVICE_TYPE_HMD;
-	wh->log_level = ll;
+	wh->log_level = log_level;
 
 	wh->base.orientation_tracking_supported = true;
 	wh->base.position_tracking_supported = false;

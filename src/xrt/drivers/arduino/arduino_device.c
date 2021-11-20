@@ -94,7 +94,7 @@ struct arduino_device
 		bool last;
 	} gui;
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 };
 
 
@@ -104,11 +104,11 @@ struct arduino_device
  *
  */
 
-#define ARDUINO_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
-#define ARDUINO_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)
-#define ARDUINO_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->ll, __VA_ARGS__)
-#define ARDUINO_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->ll, __VA_ARGS__)
-#define ARDUINO_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
+#define ARDUINO_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
+#define ARDUINO_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
+#define ARDUINO_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->log_level, __VA_ARGS__)
+#define ARDUINO_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->log_level, __VA_ARGS__)
+#define ARDUINO_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->log_level, __VA_ARGS__)
 
 static inline struct arduino_device *
 arduino_device(struct xrt_device *xdev)
@@ -395,7 +395,7 @@ arduino_device_create(struct os_ble_device *ble)
 	snprintf(ad->base.serial, XRT_DEVICE_NAME_LEN, "Arduino %d", controller_num++);
 
 	ad->ble = ble;
-	ad->ll = debug_get_log_option_arduino_log();
+	ad->log_level = debug_get_log_option_arduino_log();
 
 	m_imu_3dof_init(&ad->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_300MS);
 

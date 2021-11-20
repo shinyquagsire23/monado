@@ -104,13 +104,13 @@ render_timing(struct u_render_timing *urt)
 	return (struct render_timing *)urt;
 }
 
-DEBUG_GET_ONCE_LOG_OPTION(ll, "U_TIMING_RENDER_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_TIMING_RENDER_LOG", U_LOGGING_WARN)
 
-#define RT_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_ll(), __VA_ARGS__)
-#define RT_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_ll(), __VA_ARGS__)
-#define RT_LOG_I(...) U_LOG_IFL_I(debug_get_log_option_ll(), __VA_ARGS__)
-#define RT_LOG_W(...) U_LOG_IFL_W(debug_get_log_option_ll(), __VA_ARGS__)
-#define RT_LOG_E(...) U_LOG_IFL_E(debug_get_log_option_ll(), __VA_ARGS__)
+#define RT_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_log_level(), __VA_ARGS__)
+#define RT_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_log_level(), __VA_ARGS__)
+#define RT_LOG_I(...) U_LOG_IFL_I(debug_get_log_option_log_level(), __VA_ARGS__)
+#define RT_LOG_W(...) U_LOG_IFL_W(debug_get_log_option_log_level(), __VA_ARGS__)
+#define RT_LOG_E(...) U_LOG_IFL_E(debug_get_log_option_log_level(), __VA_ARGS__)
 
 #define DEBUG_PRINT_FRAME_ID() RT_LOG_T("%" PRIi64, frame_id)
 #define GET_INDEX_FROM_ID(RT, ID) ((uint64_t)(ID) % ARRAY_SIZE((RT)->frames))

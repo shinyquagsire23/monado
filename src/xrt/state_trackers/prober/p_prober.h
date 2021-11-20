@@ -36,11 +36,11 @@
  *
  */
 
-#define P_TRACE(d, ...) U_LOG_IFL_T(d->ll, __VA_ARGS__)
-#define P_DEBUG(d, ...) U_LOG_IFL_D(d->ll, __VA_ARGS__)
-#define P_INFO(d, ...) U_LOG_IFL_I(d->ll, __VA_ARGS__)
-#define P_WARN(d, ...) U_LOG_IFL_W(d->ll, __VA_ARGS__)
-#define P_ERROR(d, ...) U_LOG_IFL_E(d->ll, __VA_ARGS__)
+#define P_TRACE(d, ...) U_LOG_IFL_T(d->log_level, __VA_ARGS__)
+#define P_DEBUG(d, ...) U_LOG_IFL_D(d->log_level, __VA_ARGS__)
+#define P_INFO(d, ...) U_LOG_IFL_I(d->log_level, __VA_ARGS__)
+#define P_WARN(d, ...) U_LOG_IFL_W(d->log_level, __VA_ARGS__)
+#define P_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 #ifdef XRT_OS_LINUX
 /*!
@@ -154,7 +154,7 @@ struct prober
 	size_t num_disabled_drivers;
 	char **disabled_drivers;
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 };
 
 

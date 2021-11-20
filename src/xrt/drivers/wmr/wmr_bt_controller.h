@@ -66,7 +66,7 @@ struct wmr_bt_controller
 
 	struct xrt_quat rot_filtered;
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	uint32_t last_ticks;
 
@@ -94,7 +94,7 @@ struct wmr_bt_controller
 struct xrt_device *
 wmr_bt_controller_create(struct os_hid_device *controller_hid,
                          enum xrt_device_type controller_type,
-                         enum u_logging_level ll);
+                         enum u_logging_level log_level);
 
 
 #ifdef __cplusplus

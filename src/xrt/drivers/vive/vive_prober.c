@@ -64,10 +64,10 @@ init_vive1(struct xrt_prober *xp,
            struct xrt_prober_device *dev,
            struct xrt_prober_device **devices,
            size_t device_count,
-           enum u_logging_level ll,
+           enum u_logging_level log_level,
            struct xrt_device **out_xdev)
 {
-	log_vive_device(ll, xp, dev);
+	log_vive_device(log_level, xp, dev);
 
 	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VIVE_MANUFACTURER_STRING) ||
 	    !xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VIVE_PRODUCT_STRING)) {
@@ -83,7 +83,7 @@ init_vive1(struct xrt_prober *xp,
 		if (d->vendor_id != VALVE_VID && d->product_id != VIVE_LIGHTHOUSE_FPGA_RX)
 			continue;
 
-		log_vive_device(ll, xp, d);
+		log_vive_device(log_level, xp, d);
 
 		int result = xrt_prober_open_hid_interface(xp, d, 0, &sensors_dev);
 		if (result != 0) {
@@ -135,12 +135,12 @@ init_vive_pro(struct xrt_prober *xp,
               struct xrt_prober_device *dev,
               struct xrt_prober_device **devices,
               size_t device_count,
-              enum u_logging_level ll,
+              enum u_logging_level log_level,
               struct xrt_device **out_xdev)
 {
 	XRT_TRACE_MARKER();
 
-	log_vive_device(ll, xp, dev);
+	log_vive_device(log_level, xp, dev);
 
 	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VIVE_MANUFACTURER_STRING) ||
 	    !xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VIVE_PRO_PRODUCT_STRING)) {
@@ -157,7 +157,7 @@ init_vive_pro(struct xrt_prober *xp,
 		if (d->vendor_id != VALVE_VID && d->product_id != VIVE_PRO_LHR_PID)
 			continue;
 
-		log_vive_device(ll, xp, d);
+		log_vive_device(log_level, xp, d);
 
 		int result = xrt_prober_open_hid_interface(xp, d, 0, &sensors_dev);
 		if (result != 0) {
@@ -209,12 +209,12 @@ init_valve_index(struct xrt_prober *xp,
                  struct xrt_prober_device *dev,
                  struct xrt_prober_device **devices,
                  size_t device_count,
-                 enum u_logging_level ll,
+                 enum u_logging_level log_level,
                  struct xrt_device **out_xdevs)
 {
 	XRT_TRACE_MARKER();
 
-	log_vive_device(ll, xp, dev);
+	log_vive_device(log_level, xp, dev);
 
 	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VALVE_INDEX_MANUFACTURER_STRING) ||
 	    !xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VALVE_INDEX_PRODUCT_STRING)) {
@@ -292,9 +292,9 @@ vive_found(struct xrt_prober *xp,
 
 	struct xrt_prober_device *dev = devices[index];
 
-	enum u_logging_level ll = debug_get_log_option_vive_log();
+	enum u_logging_level log_level = debug_get_log_option_vive_log();
 
-	log_vive_device(ll, xp, dev);
+	log_vive_device(log_level, xp, dev);
 
 	if (!xrt_prober_can_open(xp, dev)) {
 		U_LOG_E("Could not open Vive device.");
@@ -302,9 +302,9 @@ vive_found(struct xrt_prober *xp,
 	}
 
 	switch (dev->product_id) {
-	case VIVE_PID: return init_vive1(xp, dev, devices, device_count, ll, out_xdev);
-	case VIVE_PRO_MAINBOARD_PID: return init_vive_pro(xp, dev, devices, device_count, ll, out_xdev);
-	case VIVE_PRO_LHR_PID: return init_valve_index(xp, dev, devices, device_count, ll, out_xdev);
+	case VIVE_PID: return init_vive1(xp, dev, devices, device_count, log_level, out_xdev);
+	case VIVE_PRO_MAINBOARD_PID: return init_vive_pro(xp, dev, devices, device_count, log_level, out_xdev);
+	case VIVE_PRO_LHR_PID: return init_valve_index(xp, dev, devices, device_count, log_level, out_xdev);
 	default: U_LOG_E("No product ids matched %.4x", dev->product_id); return -1;
 	}
 

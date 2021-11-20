@@ -81,7 +81,7 @@ ipc_client_instance(struct xrt_instance *xinst)
 static bool
 ipc_connect(struct ipc_connection *ipc_c)
 {
-	ipc_c->ll = debug_get_log_option_ipc_log();
+	ipc_c->log_level = debug_get_log_option_ipc_log();
 
 	ipc_c->ica = ipc_client_android_create(android_globals_get_vm(), android_globals_get_activity());
 
@@ -104,7 +104,7 @@ ipc_connect(struct ipc_connection *ipc_c)
 	}
 
 	ipc_c->imc.socket_fd = socket;
-	ipc_c->imc.ll = ipc_c->ll;
+	ipc_c->imc.log_level = ipc_c->log_level;
 
 	return true;
 }
@@ -117,7 +117,7 @@ ipc_connect(struct ipc_connection *ipc_c)
 	struct sockaddr_un addr;
 	int ret;
 
-	ipc_c->ll = debug_get_log_option_ipc_log();
+	ipc_c->log_level = debug_get_log_option_ipc_log();
 
 	// create our IPC socket
 
@@ -149,7 +149,7 @@ ipc_connect(struct ipc_connection *ipc_c)
 	}
 
 	ipc_c->imc.socket_fd = socket;
-	ipc_c->imc.ll = ipc_c->ll;
+	ipc_c->imc.log_level = ipc_c->log_level;
 
 	return true;
 }

@@ -303,12 +303,12 @@ out:
  */
 
 struct wmr_camera *
-wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level ll)
+wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level log_level)
 {
 	struct wmr_camera *cam = calloc(1, sizeof(struct wmr_camera));
 	int res, i;
 
-	cam->log_level = ll;
+	cam->log_level = log_level;
 
 	if (os_thread_helper_init(&cam->usb_thread) != 0) {
 		WMR_CAM_ERROR(cam, "Failed to initialise threading");

@@ -119,7 +119,7 @@ struct wmr_hmd_config
 };
 
 bool
-wmr_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging_level ll);
+wmr_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging_level log_level);
 
 
 struct wmr_bt_controller_config

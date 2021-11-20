@@ -55,11 +55,11 @@
 #define RS_SOURCE_STR "RealSense Source"
 #define RS_HOST_SLAM_TRACKER_STR "Host SLAM Tracker for RealSense"
 
-#define RS_TRACE(r, ...) U_LOG_IFL_T(r->ll, __VA_ARGS__)
-#define RS_DEBUG(r, ...) U_LOG_IFL_D(r->ll, __VA_ARGS__)
-#define RS_INFO(r, ...) U_LOG_IFL_I(r->ll, __VA_ARGS__)
-#define RS_WARN(r, ...) U_LOG_IFL_W(r->ll, __VA_ARGS__)
-#define RS_ERROR(r, ...) U_LOG_IFL_E(r->ll, __VA_ARGS__)
+#define RS_TRACE(r, ...) U_LOG_IFL_T(r->log_level, __VA_ARGS__)
+#define RS_DEBUG(r, ...) U_LOG_IFL_D(r->log_level, __VA_ARGS__)
+#define RS_INFO(r, ...) U_LOG_IFL_I(r->log_level, __VA_ARGS__)
+#define RS_WARN(r, ...) U_LOG_IFL_W(r->log_level, __VA_ARGS__)
+#define RS_ERROR(r, ...) U_LOG_IFL_E(r->log_level, __VA_ARGS__)
 #define RS_ASSERT(predicate, ...)                                                                                      \
 	do {                                                                                                           \
 		bool p = predicate;                                                                                    \
@@ -114,9 +114,9 @@ struct rs_hdev
 {
 	struct xrt_device xdev;
 	struct xrt_tracked_slam *slam;
-	struct xrt_pose pose;    //!< Device pose
-	struct xrt_pose offset;  //!< Additional offset to apply to `pose`
-	enum u_logging_level ll; //!< Log level
+	struct xrt_pose pose;           //!< Device pose
+	struct xrt_pose offset;         //!< Additional offset to apply to `pose`
+	enum u_logging_level log_level; //!< Log level
 };
 
 /*!
@@ -129,7 +129,7 @@ struct rs_source
 {
 	struct xrt_fs xfs;
 	struct xrt_frame_node node;
-	enum u_logging_level ll; //!< Log level
+	enum u_logging_level log_level; //!< Log level
 
 	// Sinks
 	struct xrt_frame_sink left_sink;  //!< Intermediate sink for left camera frames
@@ -904,7 +904,7 @@ struct xrt_device *
 rs_hdev_create(struct xrt_prober *xp, int device_idx)
 {
 	struct rs_hdev *rh = U_DEVICE_ALLOCATE(struct rs_hdev, U_DEVICE_ALLOC_TRACKING_NONE, 1, 0);
-	rh->ll = debug_get_log_option_rs_log();
+	rh->log_level = debug_get_log_option_rs_log();
 	rh->pose = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
 	rh->offset = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
 
@@ -930,7 +930,7 @@ rs_hdev_create(struct xrt_prober *xp, int device_idx)
 	// Setup UI
 	u_var_add_root(rh, "RealSense Device", false);
 	u_var_add_ro_text(rh, "Host SLAM", "Tracked by");
-	u_var_add_log_level(rh, &rh->ll, "Log Level");
+	u_var_add_log_level(rh, &rh->log_level, "Log Level");
 	u_var_add_pose(rh, &rh->pose, "SLAM Pose");
 	u_var_add_pose(rh, &rh->offset, "Offset Pose");
 
@@ -951,7 +951,7 @@ struct xrt_fs *
 rs_source_create(struct xrt_frame_context *xfctx, int device_idx)
 {
 	struct rs_source *rs = U_TYPED_CALLOC(struct rs_source);
-	rs->ll = debug_get_log_option_rs_log();
+	rs->log_level = debug_get_log_option_rs_log();
 
 	// Setup xrt_fs
 	struct xrt_fs *xfs = &rs->xfs;
@@ -1017,7 +1017,7 @@ rs_source_create(struct xrt_frame_context *xfctx, int device_idx)
 	m_ff_vec3_f32_alloc(&rs->gyro_ff, 1000);
 	m_ff_vec3_f32_alloc(&rs->accel_ff, 1000);
 	u_var_add_root(rs, "RealSense Source", false);
-	u_var_add_log_level(rs, &rs->ll, "Log Level");
+	u_var_add_log_level(rs, &rs->log_level, "Log Level");
 	u_var_add_ro_ff_vec3_f32(rs, rs->gyro_ff, "Gyroscope");
 	u_var_add_ro_ff_vec3_f32(rs, rs->accel_ff, "Accelerometer");
 	u_var_add_sink_debug(rs, &rs->ui_left_sink, "Left Camera");

@@ -145,10 +145,10 @@ extend_instance_extensions(struct oxr_logger *log, VkInstanceCreateInfo *create_
 
 	find_to_add(enabled, enabled_count, required_vk_instance_extensions, required_count, to_add, &to_add_count);
 
-	enum u_logging_level ll = debug_get_log_option_compositor_log();
+	enum u_logging_level log_level = debug_get_log_option_compositor_log();
 
 	if (to_add_count == 0) {
-		if (ll <= U_LOGGING_DEBUG) {
+		if (log_level <= U_LOGGING_DEBUG) {
 			oxr_log(log, "App enabled all required instance exts");
 		}
 		return false;
@@ -159,14 +159,14 @@ extend_instance_extensions(struct oxr_logger *log, VkInstanceCreateInfo *create_
 
 	for (uint32_t i = 0; i < enabled_count; i++) {
 		new_enabled[i] = enabled[i];
-		if (ll <= U_LOGGING_DEBUG) {
+		if (log_level <= U_LOGGING_DEBUG) {
 			oxr_log(log, "Instance ext (app): %s", enabled[i]);
 		}
 	}
 
 	for (uint32_t i = 0; i < to_add_count; i++) {
 		new_enabled[enabled_count + i] = to_add[i];
-		if (ll <= U_LOGGING_DEBUG) {
+		if (log_level <= U_LOGGING_DEBUG) {
 			oxr_log(log, "Instance ext (rt): %s", to_add[i]);
 		}
 	}
@@ -190,10 +190,10 @@ extend_device_extensions(struct oxr_logger *log, VkDeviceCreateInfo *create_info
 
 	find_to_add(enabled, enabled_count, required_vk_device_extensions, required_count, to_add, &to_add_count);
 
-	enum u_logging_level ll = debug_get_log_option_compositor_log();
+	enum u_logging_level log_level = debug_get_log_option_compositor_log();
 
 	if (to_add_count == 0) {
-		if (ll <= U_LOGGING_DEBUG) {
+		if (log_level <= U_LOGGING_DEBUG) {
 			oxr_log(log, "App enabled all required device exts");
 		}
 		return false;
@@ -204,14 +204,14 @@ extend_device_extensions(struct oxr_logger *log, VkDeviceCreateInfo *create_info
 
 	for (uint32_t i = 0; i < enabled_count; i++) {
 		new_enabled[i] = enabled[i];
-		if (ll <= U_LOGGING_DEBUG) {
+		if (log_level <= U_LOGGING_DEBUG) {
 			oxr_log(log, "Device ext (app): %s", enabled[i]);
 		}
 	}
 
 	for (uint32_t i = 0; i < to_add_count; i++) {
 		new_enabled[enabled_count + i] = to_add[i];
-		if (ll <= U_LOGGING_DEBUG) {
+		if (log_level <= U_LOGGING_DEBUG) {
 			oxr_log(log, "Device ext (rt): %s", to_add[i]);
 		}
 	}
@@ -329,7 +329,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		sprintf(suggested_uuid_str + i * 3, "%02x ", sys->xsysc->info.client_vk_deviceUUID[i]);
 	}
 
-	enum u_logging_level ll = debug_get_log_option_compositor_log();
+	enum u_logging_level log_level = debug_get_log_option_compositor_log();
 	int gpu_index = -1;
 	for (uint32_t i = 0; i < count; i++) {
 		VkPhysicalDeviceIDProperties pdidp = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
@@ -340,7 +340,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		vkGetPhysicalDeviceProperties2(phys[i], &pdp2);
 
 		char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
-		if (ll <= U_LOGGING_DEBUG) {
+		if (log_level <= U_LOGGING_DEBUG) {
 			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
 				sprintf(uuid_str + i * 3, "%02x ", pdidp.deviceUUID[i]);
 			}
@@ -349,7 +349,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 
 		if (memcmp(pdidp.deviceUUID, sys->xsysc->info.client_vk_deviceUUID, XRT_GPU_UUID_SIZE) == 0) {
 			gpu_index = i;
-			if (ll <= U_LOGGING_DEBUG) {
+			if (log_level <= U_LOGGING_DEBUG) {
 				oxr_log(log,
 				        "Using GPU %d with uuid %s suggested "
 				        "by runtime",
@@ -371,7 +371,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		sys->vulkan_enable2_instance = vkInstance;
 	}
 	sys->suggested_vulkan_physical_device = *vkPhysicalDevice;
-	if (ll <= U_LOGGING_DEBUG) {
+	if (log_level <= U_LOGGING_DEBUG) {
 		oxr_log(log, "Suggesting vulkan physical device %p", (void *)*vkPhysicalDevice);
 	}
 

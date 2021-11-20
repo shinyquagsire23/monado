@@ -59,7 +59,7 @@ struct euroc_player
 	struct xrt_slam_sinks out_sinks;  //!< Pointers to downstream sinks
 
 	struct os_thread_helper play_thread;
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 	struct xrt_fs_mode mode; //!< The only fs mode the euroc dataset provides
 	bool is_running;         //!< Set only at start and stop of frameserver stream
 
@@ -678,7 +678,7 @@ euroc_player_setup_gui(struct euroc_player *ep)
 	u_var_add_ro_text(ep, ep->progress_text, "Progress");
 	u_var_add_button(ep, &ep->start_btn, "Start");
 	u_var_add_button(ep, &ep->pause_btn, "Pause");
-	u_var_add_log_level(ep, &ep->ll, "Log Level");
+	u_var_add_log_level(ep, &ep->log_level, "Log level");
 
 	u_var_add_gui_header(ep, NULL, "Playback Options");
 	u_var_add_ro_text(ep, "When using a SLAM system, setting these after start is unlikely to work", "Note");
@@ -726,7 +726,7 @@ euroc_player_create(struct xrt_frame_context *xfctx, const char *path)
 	ep->playback.send_all_imus_first = false;
 	ep->playback.use_source_ts = false;
 
-	ep->ll = debug_get_log_option_euroc_log();
+	ep->log_level = debug_get_log_option_euroc_log();
 	euroc_player_setup_gui(ep);
 
 	ep->left_sink.push_frame = receive_left_frame;

@@ -86,7 +86,7 @@ struct daydream_device
 		struct m_imu_3dof fusion;
 	};
 
-	enum u_logging_level ll;
+	enum u_logging_level log_level;
 
 	struct
 	{
@@ -99,11 +99,11 @@ struct daydream_device *
 daydream_device_create(struct os_ble_device *ble);
 
 
-#define DAYDREAM_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->ll, __VA_ARGS__)
-#define DAYDREAM_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->ll, __VA_ARGS__)
-#define DAYDREAM_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->ll, __VA_ARGS__)
-#define DAYDREAM_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->ll, __VA_ARGS__)
-#define DAYDREAM_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->ll, __VA_ARGS__)
+#define DAYDREAM_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
+#define DAYDREAM_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
+#define DAYDREAM_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->log_level, __VA_ARGS__)
+#define DAYDREAM_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->log_level, __VA_ARGS__)
+#define DAYDREAM_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->log_level, __VA_ARGS__)
 
 
 #ifdef __cplusplus
