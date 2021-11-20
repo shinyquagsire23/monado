@@ -179,7 +179,7 @@ wmr_cam_usb_thread(void *ptr)
 }
 
 static int
-wmr_camera_send(struct wmr_camera *cam, uint8_t *buf, uint8_t len)
+send_buffer_to_device(struct wmr_camera *cam, uint8_t *buf, uint8_t len)
 {
 	struct libusb_transfer *xfer;
 	uint8_t *data;
@@ -203,13 +203,15 @@ wmr_camera_send(struct wmr_camera *cam, uint8_t *buf, uint8_t len)
 }
 
 static int
-wmr_camera_set_active(struct wmr_camera *cam, bool active)
+set_active(struct wmr_camera *cam, bool active)
 {
-	struct wmr_camera_active_cmd cmd = {.magic = __cpu_to_le32(WMR_MAGIC),
-	                                    .len = __cpu_to_le32(sizeof(struct wmr_camera_active_cmd)),
-	                                    .cmd = __cpu_to_le32(active ? WMR_CAMERA_CMD_ON : WMR_CAMERA_CMD_OFF)};
+	struct wmr_camera_active_cmd cmd = {
+	    .magic = __cpu_to_le32(WMR_MAGIC),
+	    .len = __cpu_to_le32(sizeof(struct wmr_camera_active_cmd)),
+	    .cmd = __cpu_to_le32(active ? WMR_CAMERA_CMD_ON : WMR_CAMERA_CMD_OFF),
+	};
 
-	return wmr_camera_send(cam, (uint8_t *)&cmd, sizeof(cmd));
+	return send_buffer_to_device(cam, (uint8_t *)&cmd, sizeof(cmd));
 }
 
 struct wmr_camera *
@@ -376,11 +378,11 @@ wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_con
 		goto fail;
 	}
 
-	res = wmr_camera_set_active(cam, false);
+	res = set_active(cam, false);
 	if (res < 0)
 		goto fail;
 
-	res = wmr_camera_set_active(cam, true);
+	res = set_active(cam, true);
 	if (res < 0)
 		goto fail;
 
@@ -432,7 +434,7 @@ wmr_camera_stop(struct wmr_camera *cam)
 			libusb_cancel_transfer(cam->xfers[i]);
 	}
 
-	res = wmr_camera_set_active(cam, false);
+	res = set_active(cam, false);
 	if (res < 0)
 		goto fail;
 
@@ -449,13 +451,15 @@ fail:
 int
 wmr_camera_set_gain(struct wmr_camera *cam, uint8_t camera_id, uint8_t gain)
 {
-	struct wmr_camera_gain_cmd cmd = {.magic = __cpu_to_le32(WMR_MAGIC),
-	                                  .len = __cpu_to_le32(sizeof(struct wmr_camera_gain_cmd)),
-	                                  .cmd = __cpu_to_le16(WMR_CAMERA_CMD_GAIN),
-	                                  .camera_id = __cpu_to_le16(camera_id),
-	                                  .const_6000 = __cpu_to_le16(6000),
-	                                  .gain = __cpu_to_le16(gain),
-	                                  .camera_id2 = __cpu_to_le16(camera_id)};
+	struct wmr_camera_gain_cmd cmd = {
+	    .magic = __cpu_to_le32(WMR_MAGIC),
+	    .len = __cpu_to_le32(sizeof(struct wmr_camera_gain_cmd)),
+	    .cmd = __cpu_to_le16(WMR_CAMERA_CMD_GAIN),
+	    .camera_id = __cpu_to_le16(camera_id),
+	    .const_6000 = __cpu_to_le16(6000),
+	    .gain = __cpu_to_le16(gain),
+	    .camera_id2 = __cpu_to_le16(camera_id),
+	};
 
-	return wmr_camera_send(cam, (uint8_t *)&cmd, sizeof(cmd));
+	return send_buffer_to_device(cam, (uint8_t *)&cmd, sizeof(cmd));
 }
