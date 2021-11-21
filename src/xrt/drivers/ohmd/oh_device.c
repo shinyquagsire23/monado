@@ -1008,14 +1008,6 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 	ohd->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 
-	if (info.quirks.delay_after_initialization) {
-		unsigned int time_to_sleep = 1;
-		do {
-			//! @todo convert to os_nanosleep
-			time_to_sleep = sleep(time_to_sleep);
-		} while (time_to_sleep);
-	}
-
 	if (ohd->ll <= U_LOGGING_DEBUG) {
 		u_device_dump_config(&ohd->base, __func__, prod);
 	}
