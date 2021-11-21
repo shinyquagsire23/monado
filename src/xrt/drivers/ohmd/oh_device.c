@@ -16,9 +16,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#ifndef XRT_OS_WINDOWS
-#include <unistd.h> // for sleep()
-#endif
 
 #include "os/os_time.h"
 
@@ -992,11 +989,7 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 
 
 	if (info.quirks.delay_after_initialization) {
-		unsigned int time_to_sleep = 1;
-		do {
-			//! @todo convert to os_nanosleep
-			time_to_sleep = sleep(time_to_sleep);
-		} while (time_to_sleep);
+		os_nanosleep(time_s_to_ns(1.0));
 	}
 
 	if (ohd->ll <= U_LOGGING_DEBUG) {
