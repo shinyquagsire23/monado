@@ -78,11 +78,5 @@ wmr_controller_packet_parse(const unsigned char *buffer,
 	U_LOG_IFL_D(log_level, "buttons: %02x, trigger: %02x, pad_x: %02x, pad_y: %02x", out_message->buttons,
 	            out_message->trigger, out_message->pad_x, out_message->pad_y);
 
-	/*
-	        U_LOG_IFL_D(log_level, "timestamp %lu\ttemp %d\taccel x: %f\ty: %f\tz: %f\t\tgyro x: %f\tgyro y:
-	   %f\tgyro z: %f", timestamp, temp, accel_x * 0.001f, accel_y * 0.001f, accel_z * 0.001f, gyro_x * 2e-6, gyro_y
-	   * 2e-6, gyro_z * 2e-6);
-	*/
-
 	return true;
 }
