@@ -37,7 +37,6 @@ struct relation_history_entry
 
 #define leng 4096
 #define power2 12
-#undef RH_DEBUG
 
 struct m_relation_history
 {
@@ -101,9 +100,9 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 			int64_t diff_prediction_ns = 0;
 			diff_prediction_ns = at_timestamp_ns - newest_in_buffer;
 			double delta_s = time_ns_to_s(diff_prediction_ns);
-#ifdef RH_DEBUG
-			U_LOG_E("Extrapolating %f s after the head of the buffer!", delta_s);
-#endif
+
+			U_LOG_T("Extrapolating %f s after the head of the buffer!", delta_s);
+
 			m_predict_relation(&rh->impl[0]->relation, delta_s, out_relation);
 			goto end;
 
@@ -113,15 +112,11 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 			int64_t diff_prediction_ns = 0;
 			diff_prediction_ns = at_timestamp_ns - oldest_in_buffer;
 			double delta_s = time_ns_to_s(diff_prediction_ns);
-#ifdef RH_DEBUG
-			U_LOG_E("Extrapolating %f s before the tail of the buffer!", delta_s);
-#endif
+			U_LOG_T("Extrapolating %f s before the tail of the buffer!", delta_s);
 			m_predict_relation(&rh->impl[rh->impl.length() - 1]->relation, delta_s, out_relation);
 			goto end;
 		}
-#ifdef RH_DEBUG
-		U_LOG_E("Interpolating within buffer!");
-#endif
+		U_LOG_T("Interpolating within buffer!");
 #if 0
 		// Very slow - O(n) - but easier to read
 		int idx = 0;
@@ -133,7 +128,7 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 				break;
 			}
 		}
-		U_LOG_E("Correct answer is %i", idx);
+		U_LOG_T("Correct answer is %i", idx);
 #else
 
 		// Fast - O(log(n)) - but hard to read
@@ -148,9 +143,8 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 			// different place for each power). Bit-shift it and it either doubles or halves. In our case it
 			// halves. step should always be equivalent to pow(2,i). If it's not that's very very bad.
 			step = step >> 1;
-#ifdef RH_DEBUG
 			assert(step == (int)pow(2, i));
-#endif
+
 
 			if (idx >= rh->impl.length()) {
 				// We'd be looking at an uninitialized value. Go back closer to the head of the buffer.
