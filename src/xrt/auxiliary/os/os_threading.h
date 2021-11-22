@@ -476,3 +476,67 @@ os_thread_helper_signal_locked(struct os_thread_helper *oth)
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
+
+#ifdef __cplusplus
+namespace xrt::auxiliary::os {
+
+
+//! A class owning an @ref os_mutex
+class Mutex
+{
+public:
+	//! Construct a mutex
+	Mutex() noexcept
+	{
+		os_mutex_init(&inner_);
+	}
+	//! Destroy a mutex when it goes out of scope
+	~Mutex()
+	{
+		os_mutex_destroy(&inner_);
+	}
+
+	//! Block until the lock can be taken.
+	void
+	lock() noexcept
+	{
+		os_mutex_lock(&inner_);
+	}
+
+	//! Take the lock and return true if possible, but do not block
+	bool
+	try_lock() noexcept
+	{
+		return 0 == os_mutex_trylock(&inner_);
+	}
+
+	//! Release the lock
+	void
+	unlock() noexcept
+	{
+		os_mutex_unlock(&inner_);
+	}
+
+	//! Get a pointer to the owned mutex: do not delete it!
+	os_mutex *
+	get_inner() noexcept
+	{
+		return &inner_;
+	}
+
+	// Do not copy or delete these mutexes.
+	Mutex(Mutex const &) = delete;
+	Mutex(Mutex &&) = delete;
+	Mutex &
+	operator=(Mutex const &) = delete;
+	Mutex &
+	operator=(Mutex &&) = delete;
+
+private:
+	os_mutex inner_{};
+};
+
+} // namespace xrt::auxiliary::os
+
+#endif // __cplusplus
