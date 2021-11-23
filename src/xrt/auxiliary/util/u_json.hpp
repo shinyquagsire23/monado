@@ -94,6 +94,9 @@ public:
 	    : cjson(cjson), is_owner(is_owner), parent(parent)
 	{}
 
+	//! Wrap cJSON object for easy manipulation, does not take ownership
+	JSONNode(cJSON *cjson) : JSONNode(cjson, false, nullptr) {}
+
 	//! Makes a null object; `isInvalid()` on it returns true.
 	JSONNode() {}
 
@@ -320,6 +323,12 @@ public:
 	getName() const
 	{
 		return string(cjson->string ? cjson->string : "");
+	}
+
+	cJSON *
+	getCJSON()
+	{
+		return cjson;
 	}
 };
 

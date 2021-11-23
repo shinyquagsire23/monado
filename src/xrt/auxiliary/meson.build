@@ -244,6 +244,7 @@ lib_aux_tracking = static_library(
 		xrt_include,
 		flexkalman_include,
 		hungarian_include,
+		cjson_include,
 	],
 	dependencies: tracking_deps
 )
