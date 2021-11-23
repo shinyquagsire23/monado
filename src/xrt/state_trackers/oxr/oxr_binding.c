@@ -287,6 +287,10 @@ get_profile_for_device_name(struct oxr_logger *log,
                             enum xrt_device_name name,
                             struct oxr_interaction_profile **out_p)
 {
+	/*
+	 * Map xrt_device_name to an interaction profile XrPath.
+	 * Set *out_p to an oxr_interaction_profile if bindings for that interaction profile XrPath have been suggested.
+	 */
 #define FIND_PROFILE(PATH) interaction_profile_find(log, inst, inst->path_cache.PATH, out_p)
 
 	switch (name) {
@@ -332,13 +336,19 @@ oxr_find_profile_for_device(struct oxr_logger *log,
 		return;
 	}
 
-	// Does the device directly have a binding profile.
+	// Have bindings for this device's interaction profile been suggested?
 	get_profile_for_device_name(log, inst, xdev->name, out_p);
+	if (*out_p != NULL) {
+		return;
+	}
 
-	// Find all other binding profile for all device provided profiles.
+	// Check if bindings for any of this device's alternative interaction profiles have been suggested.
 	for (size_t i = 0; i < xdev->binding_profile_count; i++) {
 		struct xrt_binding_profile *xbp = &xdev->binding_profiles[i];
 		get_profile_for_device_name(log, inst, xbp->name, out_p);
+		if (*out_p != NULL) {
+			return;
+		}
 	}
 }
 
