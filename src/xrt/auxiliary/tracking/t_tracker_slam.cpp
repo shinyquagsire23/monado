@@ -265,6 +265,7 @@ extern "C" void
 t_slam_node_break_apart(struct xrt_frame_node *node)
 {
 	auto &t = *container_of(node, TrackerSlam, node);
+	t.slam->finalize();
 	t.slam->stop();
 	os_thread_helper_stop(&t.oth);
 	SLAM_DEBUG("SLAM tracker dismantled");
@@ -322,6 +323,8 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 
 	std::string config_file_string = std::string(config_file);
 	t.slam = new slam_tracker{config_file_string};
+
+	t.slam->initialize();
 
 	t.left_sink.push_frame = t_slam_frame_sink_push_left;
 	t.right_sink.push_frame = t_slam_frame_sink_push_right;
