@@ -8,6 +8,17 @@
 
 #include <iostream>
 #include <math/m_relation_history.h>
+#include <util/u_template_historybuf.hpp>
+using xrt::auxiliary::util::HistoryBuffer;
+
+template <size_t MaxSize>
+static inline std::ostream &
+operator<<(std::ostream &os, const xrt::auxiliary::util::detail::RingBufferIteratorBase<MaxSize> &iter_base)
+{
+	os << "Iterator@[" << iter_base.index() << "]";
+	return os;
+}
+
 
 #include "catch/catch.hpp"
 
@@ -189,5 +200,175 @@ TEST_CASE("RelationHistory")
 
 		CHECK(rh.get(T2 + (uint64_t)U_TIME_1S_IN_NS, &out_relation) == M_RELATION_HISTORY_RESULT_PREDICTED);
 		CHECK(out_relation.pose.position.x > 2.f);
+	}
+}
+
+TEST_CASE("u_template_historybuf")
+{
+	HistoryBuffer<int, 4> buffer;
+	SECTION("behavior when empty")
+	{
+		CHECK(buffer.empty());
+		CHECK(0 == buffer.size());
+		CHECK_FALSE(buffer.begin().valid());
+		CHECK_FALSE(buffer.end().valid());
+		CHECK(buffer.begin() == buffer.end());
+	}
+	SECTION("behavior with one")
+	{
+		buffer.push_back(0);
+		CHECK_FALSE(buffer.empty());
+		CHECK(buffer.size() == 1);
+
+		// check iterators
+		CHECK(buffer.begin().valid());
+		CHECK_FALSE(buffer.end().valid());
+		CHECK_FALSE(buffer.begin() == buffer.end());
+		{
+			auto it = buffer.end();
+			// should be permanently cleared
+			++it;
+			CHECK_FALSE(it.valid());
+			--it;
+			CHECK_FALSE(it.valid());
+		}
+		CHECK(buffer.begin() == buffer.cbegin());
+		CHECK(buffer.end() == buffer.cend());
+
+		// can we decrement our past-the-end iterator to get the begin iterator?
+		CHECK(buffer.begin() == --(buffer.end()));
+
+		// make sure post-decrement works right
+		CHECK_FALSE(buffer.begin() == (buffer.end())--);
+
+		// make sure post-increment works right
+		CHECK(buffer.begin() == buffer.begin()++);
+
+		// make sure pre-increment works right
+		CHECK_FALSE(buffer.begin() == ++(buffer.begin()));
+
+
+		// check contents
+		CHECK_NOTHROW(buffer.get_at_index(0));
+		CHECK_FALSE(buffer.get_at_index(0) == nullptr);
+		CHECK(*buffer.get_at_index(0) == 0);
+		CHECK_FALSE(buffer.get_at_age(0) == nullptr);
+		CHECK(*buffer.get_at_age(0) == 0);
+		CHECK_NOTHROW(buffer.front());
+		CHECK(buffer.front() == 0);
+		CHECK_NOTHROW(buffer.back());
+		CHECK(buffer.back() == 0);
+
+		CHECK(*buffer.begin() == buffer.front());
+	}
+
+	SECTION("behavior with two")
+	{
+		buffer.push_back(0);
+		buffer.push_back(1);
+		CHECK_FALSE(buffer.empty());
+		CHECK(buffer.size() == 2);
+		SECTION("check iterators")
+		{
+			// check iterators
+			CHECK(buffer.begin().valid());
+			CHECK_FALSE(buffer.end().valid());
+			CHECK_FALSE(buffer.begin() == buffer.end());
+			{
+				auto it = buffer.end();
+				// should be permanently cleared
+				++it;
+				CHECK_FALSE(it.valid());
+				--it;
+				CHECK_FALSE(it.valid());
+			}
+			CHECK(buffer.begin() == buffer.cbegin());
+			CHECK(buffer.end() == buffer.cend());
+
+			// can we decrement our past-the-end iterator to get the begin iterator?
+			CHECK(buffer.begin() == --(--(buffer.end())));
+
+			// make sure post-decrement works right
+			CHECK_FALSE(buffer.begin() == (buffer.end())--);
+
+			// make sure post-increment works right
+			CHECK(buffer.begin() == buffer.begin()++);
+
+			// make sure pre-increment works right
+			CHECK_FALSE(buffer.begin() == ++(buffer.begin()));
+		}
+		SECTION("check contents")
+		{
+			// check contents
+			CHECK_NOTHROW(buffer.get_at_index(0));
+			CHECK_FALSE(buffer.get_at_index(0) == nullptr);
+			CHECK(*buffer.get_at_index(0) == 0);
+			CHECK_FALSE(buffer.get_at_index(1) == nullptr);
+			CHECK(*buffer.get_at_index(1) == 1);
+			CHECK(buffer.get_at_index(2) == nullptr);
+
+			CHECK_NOTHROW(buffer.get_at_age(0));
+			CHECK_FALSE(buffer.get_at_age(0) == nullptr);
+			CHECK(*buffer.get_at_age(0) == 1);
+			CHECK_FALSE(buffer.get_at_age(1) == nullptr);
+			CHECK(*buffer.get_at_age(1) == 0);
+
+			CHECK(buffer.get_at_age(2) == nullptr);
+
+			CHECK_NOTHROW(buffer.front());
+			CHECK(buffer.front() == 0);
+
+			CHECK_NOTHROW(buffer.back());
+			CHECK(buffer.back() == 1);
+
+			CHECK(*buffer.begin() == buffer.front());
+			CHECK(buffer.back() == *(--buffer.end()));
+		}
+	}
+
+	SECTION("algorithm behavior with 3")
+	{
+		buffer.push_back(0);
+		buffer.push_back(2);
+		buffer.push_back(4);
+		CHECK_FALSE(buffer.empty());
+		CHECK(buffer.size() == 3);
+		CHECK(buffer.begin() == std::find(buffer.begin(), buffer.end(), 0));
+		CHECK(++(buffer.begin()) == std::find(buffer.begin(), buffer.end(), 2));
+		CHECK(buffer.end() == std::find(buffer.begin(), buffer.end(), 5));
+
+		CHECK(++(buffer.begin()) == std::lower_bound(buffer.begin(), buffer.end(), 1));
+	}
+}
+
+TEST_CASE("IteratorBase")
+{
+
+	HistoryBuffer<int, 4> buffer;
+	buffer.push_back(0);
+	buffer.push_back(2);
+	buffer.push_back(4);
+	using namespace xrt::auxiliary::util;
+	using iterator = typename HistoryBuffer<int, 4>::iterator;
+	iterator default_constructed{};
+	iterator begin_constructed = buffer.begin();
+	iterator end_constructed = buffer.end();
+
+	SECTION("Check default constructed")
+	{
+		CHECK_FALSE(default_constructed.valid());
+		CHECK(default_constructed.is_cleared());
+	}
+	SECTION("Check begin constructed")
+	{
+		CHECK(begin_constructed.valid());
+		CHECK_FALSE(begin_constructed.is_cleared());
+		CHECK((--begin_constructed).is_cleared());
+	}
+	SECTION("Check end constructed")
+	{
+		CHECK_FALSE(end_constructed.valid());
+		CHECK_FALSE(end_constructed.is_cleared());
+		CHECK((++end_constructed).is_cleared());
 	}
 }

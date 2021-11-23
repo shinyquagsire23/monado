@@ -35,12 +35,12 @@ struct relation_history_entry
 	uint64_t timestamp;
 };
 
-#define leng 4096
-#define power2 12
+constexpr size_t BufLen = 4096;
+constexpr size_t power2 = 12;
 
 struct m_relation_history
 {
-	HistoryBuffer<struct relation_history_entry, leng> impl;
+	HistoryBuffer<struct relation_history_entry, BufLen> impl;
 	bool has_first_sample;
 	struct os_mutex mutex;
 };
@@ -71,11 +71,11 @@ m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation
 	rhe.timestamp = timestamp;
 	bool ret = false;
 	os_mutex_lock(&rh->mutex);
-	// Don't evaluate the second condition if the length is 0 - rh->impl[0] will be NULL!
-	if ((!rh->has_first_sample) || (rhe.timestamp > rh->impl[0]->timestamp)) {
+	// if we aren't empty, we can compare against the latest timestamp.
+	if (rh->impl.empty() || rhe.timestamp > rh->impl.back().timestamp) {
 		// Everything explodes if the timestamps in relation_history aren't monotonically increasing. If we get
 		// a timestamp that's before the most recent timestamp in the buffer, just don't put it in the history.
-		rh->impl.push(rhe);
+		rh->impl.push_back(rhe);
 		ret = true;
 	}
 	rh->has_first_sample = true;
@@ -89,15 +89,14 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 	XRT_TRACE_MARKER();
 	os_mutex_lock(&rh->mutex);
 	m_relation_history_result ret = M_RELATION_HISTORY_RESULT_INVALID;
-
-	if (rh->has_first_sample == 0 || at_timestamp_ns == 0) {
+	if (rh->impl.empty() || at_timestamp_ns == 0) {
 		// Do nothing. You push nothing to the buffer you get nothing from the buffer.
 		goto end;
 	}
 
 	{
-		uint64_t oldest_in_buffer = rh->impl[rh->impl.length() - 1]->timestamp;
-		uint64_t newest_in_buffer = rh->impl[0]->timestamp;
+		uint64_t oldest_in_buffer = rh->impl.front().timestamp;
+		uint64_t newest_in_buffer = rh->impl.back().timestamp;
 
 		if (at_timestamp_ns > newest_in_buffer) {
 			// The desired timestamp is after what our buffer contains.
@@ -108,7 +107,7 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 
 			U_LOG_T("Extrapolating %f s after the head of the buffer!", delta_s);
 
-			m_predict_relation(&rh->impl[0]->relation, delta_s, out_relation);
+			m_predict_relation(&rh->impl.back().relation, delta_s, out_relation);
 			ret = M_RELATION_HISTORY_RESULT_PREDICTED;
 			goto end;
 
@@ -119,33 +118,37 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 			diff_prediction_ns = at_timestamp_ns - oldest_in_buffer;
 			double delta_s = time_ns_to_s(diff_prediction_ns);
 			U_LOG_T("Extrapolating %f s before the tail of the buffer!", delta_s);
-			m_predict_relation(&rh->impl[rh->impl.length() - 1]->relation, delta_s, out_relation);
+			m_predict_relation(&rh->impl.front().relation, delta_s, out_relation);
 			ret = M_RELATION_HISTORY_RESULT_REVERSE_PREDICTED;
-
 			goto end;
 		}
 		U_LOG_T("Interpolating within buffer!");
 #if 0
 		// Very slow - O(n) - but easier to read
-		int idx = 0;
+		size_t idx = 0;
 
-		for (int i = 0; i < rh->impl.length(); i++) {
-			if (rh->impl[i]->timestamp < at_timestamp_ns) {
+		for (size_t i = 0; i < rh->impl.size(); i++) {
+			auto ts = rh->impl.get_at_age(i)->timestamp;
+			if (ts == at_timestamp_ns) {
+				*out_relation = rh->impl.get_at_age(i)->relation;
+				ret = M_RELATION_HISTORY_RESULT_EXACT;
+				goto end;
+			}
+
+			if (ts < at_timestamp_ns) {
 				// If the entry we're looking at is before the input time
 				idx = i;
 				break;
 			}
 		}
-		U_LOG_T("Correct answer is %i", idx);
+		U_LOG_T("Correct answer is %li", idx);
 #else
 
 		// Fast - O(log(n)) - but hard to read
-		int idx = leng / 2; // 2048
+		int idx = BufLen / 2; // 2048
 		int step = idx;
 
 		for (int i = power2 - 2; i >= -1; i--) {
-			uint64_t ts_after = rh->impl[idx - 1]->timestamp;
-			uint64_t ts_before = rh->impl[idx]->timestamp;
 
 			// This is a little hack because any power of two looks like 0b0001000 (with the 1 in a
 			// different place for each power). Bit-shift it and it either doubles or halves. In our case it
@@ -154,11 +157,15 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 			assert(step == (int)pow(2, i));
 
 
-			if (idx >= rh->impl.length()) {
+			if (idx >= (int)rh->impl.size()) {
 				// We'd be looking at an uninitialized value. Go back closer to the head of the buffer.
 				idx -= step;
 				continue;
 			}
+			assert(idx > 0);
+
+			uint64_t ts_after = rh->impl.get_at_age(idx - 1)->timestamp;
+			uint64_t ts_before = rh->impl.get_at_age(idx)->timestamp;
 			if (ts_before == at_timestamp_ns || ts_after == at_timestamp_ns) {
 				// exact match
 				break;
@@ -186,24 +193,24 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 #endif
 
 		// Do the thing.
-		struct xrt_space_relation before = rh->impl[idx]->relation;
-		struct xrt_space_relation after = rh->impl[idx - 1]->relation;
+		struct xrt_space_relation before = rh->impl.get_at_age(idx)->relation;
+		struct xrt_space_relation after = rh->impl.get_at_age(idx - 1)->relation;
 
-		if (rh->impl[idx]->timestamp == at_timestamp_ns) {
+		if (rh->impl.get_at_age(idx)->timestamp == at_timestamp_ns) {
 			// exact match: before
 			*out_relation = before;
 			ret = M_RELATION_HISTORY_RESULT_EXACT;
 			goto end;
 		}
-		if (rh->impl[idx - 1]->timestamp == at_timestamp_ns) {
+		if (rh->impl.get_at_age(idx - 1)->timestamp == at_timestamp_ns) {
 			// exact match: after
 			*out_relation = after;
 			ret = M_RELATION_HISTORY_RESULT_EXACT;
 			goto end;
 		}
 		int64_t diff_before, diff_after = 0;
-		diff_before = at_timestamp_ns - rh->impl[idx]->timestamp;
-		diff_after = rh->impl[idx - 1]->timestamp - at_timestamp_ns;
+		diff_before = at_timestamp_ns - rh->impl.get_at_age(idx)->timestamp;
+		diff_after = rh->impl.get_at_age(idx - 1)->timestamp - at_timestamp_ns;
 
 		float amount_to_lerp = (float)diff_before / (float)(diff_before + diff_after);
 
@@ -234,12 +241,12 @@ m_relation_history_get_latest(struct m_relation_history *rh,
                               struct xrt_space_relation *out_relation)
 {
 	os_mutex_lock(&rh->mutex);
-	if (rh->impl.length() == 0) {
+	if (rh->impl.empty()) {
 		os_mutex_unlock(&rh->mutex);
 		return false;
 	}
-	*out_relation = rh->impl[0]->relation;
-	*out_time_ns = rh->impl[0]->timestamp;
+	*out_relation = rh->impl.back().relation;
+	*out_time_ns = rh->impl.back().timestamp;
 	os_mutex_unlock(&rh->mutex);
 	return true;
 }
@@ -247,7 +254,7 @@ m_relation_history_get_latest(struct m_relation_history *rh,
 uint32_t
 m_relation_history_get_size(const struct m_relation_history *rh)
 {
-	return (uint32_t)rh->impl.length();
+	return (uint32_t)rh->impl.size();
 }
 
 void
