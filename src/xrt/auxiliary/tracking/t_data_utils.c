@@ -80,15 +80,15 @@ dump_size(const char *var, struct xrt_size size)
 }
 
 static void
-dump_distortion(const char *prefix, struct t_camera_calibration *view)
+dump_distortion(struct t_camera_calibration *view)
 {
 	char buf[1024];
 	ssize_t curr = 0;
 
-	U_LOG_RAW("%s.use_fisheye = %s", prefix, view->use_fisheye ? "true" : "false");
+	U_LOG_RAW("use_fisheye = %s", view->use_fisheye ? "true" : "false");
 
 	if (view->use_fisheye) {
-		P("%s.distortion_fisheye = [", prefix);
+		P("distortion_fisheye = [");
 		for (uint32_t col = 0; col < 4; col++) {
 			P("%f", view->distortion_fisheye[col]);
 			if (col < 3) {
@@ -97,7 +97,7 @@ dump_distortion(const char *prefix, struct t_camera_calibration *view)
 		}
 		P("]");
 	} else {
-		P("%s.distortion = [", prefix);
+		P("distortion = [");
 		for (uint32_t col = 0; col < view->distortion_num; col++) {
 			P("%f", view->distortion[col]);
 			if (col < view->distortion_num - 1) {
@@ -134,14 +134,24 @@ t_stereo_camera_calibration_destroy(struct t_stereo_camera_calibration *c)
 }
 
 void
+t_camera_calibration_dump(struct t_camera_calibration *c)
+{
+	U_LOG_RAW("t_camera_calibration {");
+	dump_size("image_size_pixels", c->image_size_pixels);
+	dump_mat("intrinsic", c->intrinsics);
+	dump_distortion(c);
+	U_LOG_RAW("}");
+}
+
+void
 t_stereo_camera_calibration_dump(struct t_stereo_camera_calibration *c)
 {
-	dump_size("view[0].image_size_pixels", c->view[0].image_size_pixels);
-	dump_mat("view[0].intrinsic", c->view[0].intrinsics);
-	dump_distortion("view[0]", &c->view[0]);
-	dump_size("view[1].image_size_pixels", c->view[0].image_size_pixels);
-	dump_mat("view[1].intrinsic", c->view[1].intrinsics);
-	dump_distortion("view[1]", &c->view[1]);
+	U_LOG_RAW("t_stereo_camera_calibration {");
+	U_LOG_RAW("view[0] = ");
+	t_camera_calibration_dump(&c->view[0]);
+	U_LOG_RAW("view[1] = ");
+	t_camera_calibration_dump(&c->view[1]);
 	dump_vector("camera_translation", c->camera_translation);
 	dump_mat("camera_rotation", c->camera_rotation);
+	U_LOG_RAW("}");
 }
