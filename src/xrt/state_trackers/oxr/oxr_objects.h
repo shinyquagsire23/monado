@@ -1171,6 +1171,7 @@ struct oxr_instance
 		struct oxr_event *next;
 	} event;
 
+	//! Interaction profile bindings that have been suggested by the client.
 	struct oxr_interaction_profile **profiles;
 	size_t profile_count;
 
