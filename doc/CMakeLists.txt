@@ -34,7 +34,7 @@ if(BUILD_DOC)
 	# request to configure the file
 	configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
 
-	# copy the schema
+	# copy the schemas
 	configure_file(
 		${CMAKE_CURRENT_SOURCE_DIR}/example_configs/config_v0.schema.json
 		${CMAKE_CURRENT_BINARY_DIR}/html/config_v0.schema.json @ONLY
@@ -42,6 +42,14 @@ if(BUILD_DOC)
 	configure_file(
 		${CMAKE_CURRENT_SOURCE_DIR}/example_configs/config_v0.schema.json.license
 		${CMAKE_CURRENT_BINARY_DIR}/html/config_v0.schema.json.license @ONLY
+		)
+	configure_file(
+		${CMAKE_CURRENT_SOURCE_DIR}/example_configs/calibration_v2.schema.json
+		${CMAKE_CURRENT_BINARY_DIR}/html/calibration_v2.schema.json @ONLY
+		)
+	configure_file(
+		${CMAKE_CURRENT_SOURCE_DIR}/example_configs/calibration_v2.schema.json.license
+		${CMAKE_CURRENT_BINARY_DIR}/html/calibration_v2.schema.json.license @ONLY
 		)
 
 	# note the option ALL which allows to build the docs together with the application

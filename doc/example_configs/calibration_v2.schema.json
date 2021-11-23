@@ -1,0 +1,222 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "title": "Monado calibration file schema v2",
+    "type": "object",
+    "required": [
+        "file",
+        "cameras",
+        "opencv_stereo_calibrate"
+    ],
+    "properties": {
+        "$schema": {
+            "type": "string",
+            "title": "JSON Schema directive",
+            "default": "https://monado.pages.freedesktop.org/monado/calibration_v2.schema.json"
+        },
+        "file": {
+            "description": "Calibration file metadata",
+            "type": "object",
+            "required": [
+                "version"
+            ],
+            "properties": {
+                "version": {
+                    "const": 2
+                },
+                "created_on": {
+                    "$ref": "#/$defs/datetime"
+                }
+            }
+        },
+        "cameras": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Stereo calibrated cameras",
+            "items": {
+                "$ref": "#/$defs/camera"
+            }
+        },
+        "opencv_stereo_calibrate": {
+            "$ref": "#/$defs/opencv_stereo_calibrate"
+        }
+    },
+    "$defs": {
+        "camera": {
+            "type": "object",
+            "required": [
+                "name",
+                "model",
+                "intrinsics",
+                "distortion",
+                "resolution"
+            ],
+            "properties": {
+                "name": {
+                    "$ref": "#/$defs/camera_name"
+                },
+                "model": {
+                    "description": "Camera and distortion model",
+                    "enum": [
+                        "pinhole_radtan5",
+                        "fisheye_equidistant4"
+                    ]
+                },
+                "intrinsics": {
+                    "type": "object",
+                    "required": [
+                        "fx",
+                        "fy",
+                        "cx",
+                        "cy"
+                    ],
+                    "properties": {
+                        "fx": {
+                            "type": "number"
+                        },
+                        "fy": {
+                            "type": "number"
+                        },
+                        "cx": {
+                            "type": "number"
+                        },
+                        "cy": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "distortion": {
+                    "description": "Parameters for the specified distortion model. radtan5: k1,k2,p1,p2,k3. equidistant4: k1,k2,k3,k4.",
+                    "$comment": "There is no easy way to enforce the fields parameters in the schema based on the `model` property, the if-then validation could help but still would be very cumbersome.",
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/equidistant4"
+                        },
+                        {
+                            "$ref": "#/$defs/radtan5"
+                        }
+                    ]
+                },
+                "resolution": {
+                    "type": "object",
+                    "required": [
+                        "width",
+                        "height"
+                    ],
+                    "properties": {
+                        "width": {
+                            "type": "integer"
+                        },
+                        "height": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "camera_name": {
+            "description": "Display name; not necessarily unique.",
+            "type": "string",
+            "maxLength": 128
+        },
+        "opencv_stereo_calibrate": {
+            "description": "Data produced by cv::stereoCalibrate.",
+            "type": "object",
+            "required": [
+                "rotation",
+                "translation",
+                "essential",
+                "fundamental"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "rotation": {
+                    "$ref": "#/$defs/mat3x3d"
+                },
+                "translation": {
+                    "$ref": "#/$defs/mat3x1d"
+                },
+                "essential": {
+                    "$ref": "#/$defs/mat3x3d"
+                },
+                "fundamental": {
+                    "$ref": "#/$defs/mat3x3d"
+                }
+            }
+        },
+        "mat3x3d": {
+            "type": "array",
+            "items": {
+                "type": "number"
+            },
+            "minItems": 9,
+            "maxItems": 9
+        },
+        "mat3x1d": {
+            "type": "array",
+            "items": {
+                "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+        },
+        "equidistant4": {
+            "type": "object",
+            "required": [
+                "k1",
+                "k2",
+                "k3",
+                "k4"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "k1": {
+                    "type": "number"
+                },
+                "k2": {
+                    "type": "number"
+                },
+                "k3": {
+                    "type": "number"
+                },
+                "k4": {
+                    "type": "number"
+                }
+            }
+        },
+        "radtan5": {
+            "type": "object",
+            "required": [
+                "k1",
+                "k2",
+                "p1",
+                "p2",
+                "k3"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "k1": {
+                    "type": "number"
+                },
+                "k2": {
+                    "type": "number"
+                },
+                "p1": {
+                    "type": "number"
+                },
+                "p2": {
+                    "type": "number"
+                },
+                "k3": {
+                    "type": "number"
+                }
+            }
+        },
+        "datetime": {
+            "$comment": "The format specification might not be asserted against, that's why we also provide a regex pattern",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+        }
+    }
+}

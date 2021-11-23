@@ -204,7 +204,7 @@
                 "w"
             ]
         },
-        "vec3": {
+        "vector3": {
             "type": "object",
             "title": "Vector3",
             "properties": {
