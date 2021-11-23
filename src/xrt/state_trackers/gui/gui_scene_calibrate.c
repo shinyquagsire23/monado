@@ -77,7 +77,7 @@ save_calibration(struct calibration_scene *cs)
 
 	saved_header(cs);
 	igSetNextItemWidth(115);
-	igInputText(".calibration", cs->filename, sizeof(cs->filename), 0, NULL, NULL);
+	igInputText(".calibration.json", cs->filename, sizeof(cs->filename), 0, NULL, NULL);
 	igSameLine(0.0f, 4.0f);
 
 	static ImVec2 button_dims = {0, 0};
@@ -93,8 +93,8 @@ save_calibration(struct calibration_scene *cs)
 	 *
 	 */
 
-	char tmp[sizeof(cs->filename) + 16];
-	snprintf(tmp, sizeof(tmp), "%s.calibration", cs->filename);
+	char tmp[sizeof(cs->filename) + 32];
+	snprintf(tmp, sizeof(tmp), "%s.calibration.json", cs->filename);
 
 	u_file_get_path_in_config_dir(tmp, cs->settings->calibration_path, sizeof(cs->settings->calibration_path));
 
@@ -114,10 +114,7 @@ save_calibration(struct calibration_scene *cs)
 	 *
 	 */
 
-	FILE *calib_file = fopen(cs->settings->calibration_path, "wb");
-	t_stereo_camera_calibration_save_v1(calib_file, cs->status.stereo_data);
-	fclose(calib_file);
-	calib_file = NULL;
+	t_stereo_camera_calibration_save(cs->settings->calibration_path, cs->status.stereo_data);
 
 	cs->saved = true;
 }

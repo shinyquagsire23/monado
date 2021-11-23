@@ -13,6 +13,7 @@
 
 #include "xrt/xrt_frame.h"
 #include "util/u_misc.h"
+#include "cjson/cJSON.h"
 
 #include <stdio.h>
 
@@ -165,7 +166,7 @@ void
 t_stereo_camera_calibration_dump(struct t_stereo_camera_calibration *c);
 
 /*!
- * Load stereo calibration data from a given file.
+ * Load stereo calibration data from a given file in v1 format (binary).
  *
  * @relates t_stereo_camera_calibration
  */
@@ -173,12 +174,45 @@ bool
 t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_calibration **out_data);
 
 /*!
- * Save the given stereo calibration data to the given file.
+ * Save the given stereo calibration data to the given file in v1 format (binary).
  *
  * @relates t_stereo_camera_calibration
  */
 bool
 t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_calibration *data);
+
+/*!
+ * Parse the json object in v2 format into stereo calibration data.
+ *
+ * @relates t_stereo_camera_calibration
+ */
+bool
+t_stereo_camera_calibration_from_json_v2(cJSON *json, struct t_stereo_camera_calibration **out_data);
+
+/*!
+ * Convert the given stereo calibration data into a json object in v2 format.
+ *
+ * @relates t_stereo_camera_calibration
+ */
+bool
+t_stereo_camera_calibration_to_json_v2(cJSON **out_json, struct t_stereo_camera_calibration *data);
+
+
+/*!
+ * Load stereo calibration data from a given file path.
+ *
+ * @relates t_stereo_camera_calibration
+ */
+bool
+t_stereo_camera_calibration_load(const char *calib_path, struct t_stereo_camera_calibration **out_data);
+
+/*!
+ * Save the given stereo calibration data to the given file path.
+ *
+ * @relates t_stereo_camera_calibration
+ */
+bool
+t_stereo_camera_calibration_save(const char *calib_path, struct t_stereo_camera_calibration *data);
 
 
 /*

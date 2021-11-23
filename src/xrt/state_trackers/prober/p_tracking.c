@@ -163,18 +163,10 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 		return;
 	}
 
-	// Open the calibration file.
-	FILE *file = fopen(fact->settings.calibration_path, "rb");
-	if (file == NULL) {
-		return;
-	}
-
 	// Parse the calibration data from the file.
-	if (!t_stereo_camera_calibration_load_v1(file, &fact->data)) {
-		fclose(file);
+	if (!t_stereo_camera_calibration_load(fact->settings.calibration_path, &fact->data)) {
 		return;
 	}
-	fclose(file);
 
 	struct xrt_frame_sink *xsink = NULL;
 	struct xrt_frame_sink *xsinks[4] = {0};

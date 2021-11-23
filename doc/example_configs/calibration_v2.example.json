@@ -1,8 +1,7 @@
 {
     "$schema": "https://monado.pages.freedesktop.org/monado/calibration_v2.schema.json",
-    "file": {
-        "version": 2,
-        "created_on": "2021-11-23T14:33:51Z"
+    "metadata": {
+        "version": 2
     },
     "cameras": [
         {

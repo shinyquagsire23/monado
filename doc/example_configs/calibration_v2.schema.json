@@ -3,7 +3,7 @@
     "title": "Monado calibration file schema v2",
     "type": "object",
     "required": [
-        "file",
+        "metadata",
         "cameras",
         "opencv_stereo_calibrate"
     ],
@@ -13,7 +13,7 @@
             "title": "JSON Schema directive",
             "default": "https://monado.pages.freedesktop.org/monado/calibration_v2.schema.json"
         },
-        "file": {
+        "metadata": {
             "description": "Calibration file metadata",
             "type": "object",
             "required": [
@@ -22,9 +22,6 @@
             "properties": {
                 "version": {
                     "const": 2
-                },
-                "created_on": {
-                    "$ref": "#/$defs/datetime"
                 }
             }
         },
@@ -211,12 +208,6 @@
                     "type": "number"
                 }
             }
-        },
-        "datetime": {
-            "$comment": "The format specification might not be asserted against, that's why we also provide a regex pattern",
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
         }
     }
 }

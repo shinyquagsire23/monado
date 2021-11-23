@@ -16,7 +16,7 @@
 #include "os/os_time.h"
 
 
-DEBUG_GET_ONCE_LOG_OPTION(calib_log, "CALIB_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(calib_log, "CALIB_LOG", U_LOGGING_INFO)
 
 #define CALIB_TRACE(...) U_LOG_IFL_T(debug_get_log_option_calib_log(), __VA_ARGS__)
 #define CALIB_DEBUG(...) U_LOG_IFL_D(debug_get_log_option_calib_log(), __VA_ARGS__)
@@ -212,7 +212,7 @@ using xrt::auxiliary::util::json::JSONNode;
 extern "C" bool
 t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_calibration **out_data)
 {
-	using xrt::auxiliary::tracking::StereoCameraCalibrationWrapper;
+
 	t_stereo_camera_calibration *data_ptr = NULL;
 	t_stereo_camera_calibration_alloc(&data_ptr, 5); // Hardcoded to 5 distortion parameters.
 	StereoCameraCalibrationWrapper wrapped(data_ptr);
@@ -274,13 +274,29 @@ t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_cal
 	wrapped.view[1].use_fisheye = wrapped.view[0].use_fisheye;
 	// clang-format on
 
-
 	CALIB_ASSERT_(wrapped.isDataStorageValid());
 
 	t_stereo_camera_calibration_reference(out_data, data_ptr);
 	t_stereo_camera_calibration_reference(&data_ptr, NULL);
 
 	return true;
+}
+
+static bool
+t_stereo_camera_calibration_load_path_v1(const char *calib_path, struct t_stereo_camera_calibration **out_data)
+{
+	CALIB_WARN("Deprecated function %s", __func__);
+
+	FILE *calib_file = fopen(calib_path, "rb");
+	if (calib_file == nullptr) {
+		CALIB_ERROR("Unable to open calibration file: '%s'", calib_path);
+		return false;
+	}
+
+	bool success = t_stereo_camera_calibration_load_v1(calib_file, out_data);
+	fclose(calib_file);
+
+	return success;
 }
 
 #define PINHOLE_RADTAN5 "pinhole_radtan5"
@@ -368,24 +384,19 @@ t_camera_calibration_load_v2(cJSON *cjson_cam, t_camera_calibration *cc)
 	return true;
 }
 
-static bool
-t_stereo_camera_calibration_load_v2(const char *calib_path, struct t_stereo_camera_calibration **out_stereo)
+extern "C" bool
+t_stereo_camera_calibration_from_json_v2(cJSON *cjson, struct t_stereo_camera_calibration **out_stereo)
 {
-	JSONNode json = JSONNode::loadFromFile(calib_path);
-	if (json.isInvalid()) {
-		CALIB_ERROR("Unable to open calibration file: '%s'", calib_path);
-		return false;
-	}
-
+	JSONNode json{cjson};
 	StereoCameraCalibrationWrapper stereo{5}; // Hardcoded to 5 distortion parameters.
 
 	// Load file metadata
 	const int supported_version = 2;
-	int version = json["file"]["version"].asInt(supported_version);
-	if (json["file"]["version"].isInvalid()) {
-		CALIB_WARN("'file.version' not found in %s, will assume v2", calib_path);
+	int version = json["metadata"]["version"].asInt(supported_version);
+	if (json["metadata"]["version"].isInvalid()) {
+		CALIB_WARN("'metadata.version' not found, will assume version=%d", supported_version);
 	}
-	CALIB_ASSERTR(version == supported_version, "Calibration file version (%d) != %d", version, supported_version);
+	CALIB_ASSERTR(version == supported_version, "Calibration json version (%d) != %d", version, supported_version);
 
 	// Load cameras
 	vector<JSONNode> cameras = json["cameras"].asArray();
@@ -412,6 +423,17 @@ t_stereo_camera_calibration_load_v2(const char *calib_path, struct t_stereo_came
 	return true;
 }
 
+static bool
+t_stereo_camera_calibration_load_path_v2(const char *calib_path, struct t_stereo_camera_calibration **out_stereo)
+{
+	JSONNode json = JSONNode::loadFromFile(calib_path);
+	if (json.isInvalid()) {
+		CALIB_ERROR("Unable to open calibration file: '%s'", calib_path);
+		return false;
+	}
+	return t_stereo_camera_calibration_from_json_v2(json.getCJSON(), out_stereo);
+}
+
 
 /*
  *
@@ -422,11 +444,11 @@ t_stereo_camera_calibration_load_v2(const char *calib_path, struct t_stereo_came
 extern "C" bool
 t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_calibration *data)
 {
-	using xrt::auxiliary::tracking::StereoCameraCalibrationWrapper;
+	CALIB_WARN("Deprecated function: %s", __func__);
+
 	StereoCameraCalibrationWrapper wrapped(data);
 	// Dummy matrix
 	cv::Mat dummy;
-
 
 	write_cv_mat(calib_file, &wrapped.view[0].intrinsics_mat);
 	write_cv_mat(calib_file, &wrapped.view[1].intrinsics_mat);
@@ -464,6 +486,21 @@ t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_cal
 	return true;
 }
 
+static bool
+t_stereo_camera_calibration_save_path_v1(const char *calib_path, struct t_stereo_camera_calibration *data)
+{
+	FILE *calib_file = fopen(calib_path, "wb");
+	if (calib_file == nullptr) {
+		CALIB_ERROR("Unable to open calibration file: '%s'", calib_path);
+		return false;
+	}
+
+	bool success = t_stereo_camera_calibration_save_v1(calib_file, data);
+	fclose(calib_file);
+
+	return success;
+}
+
 //! Writes @p mat data into a @p jb as a json array.
 static JSONBuilder &
 operator<<(JSONBuilder &jb, const cv::Mat_<double> &mat)
@@ -476,8 +513,8 @@ operator<<(JSONBuilder &jb, const cv::Mat_<double> &mat)
 	return jb;
 }
 
-static bool
-t_stereo_camera_calibration_save_v2(const char *calib_path, struct t_stereo_camera_calibration *data)
+extern "C" bool
+t_stereo_camera_calibration_to_json_v2(cJSON **out_cjson, struct t_stereo_camera_calibration *data)
 {
 	StereoCameraCalibrationWrapper wrapped(data);
 	JSONBuilder jb{};
@@ -485,12 +522,9 @@ t_stereo_camera_calibration_save_v2(const char *calib_path, struct t_stereo_came
 	jb << "{";
 	jb << "$schema"
 	   << "https://monado.pages.freedesktop.org/monado/calibration_v2.schema.json";
-	jb << "file";
+	jb << "metadata";
 	jb << "{";
 	jb << "version" << 2;
-	char datetime[OS_ISO_STR_SIZE];
-	to_iso_string(os_realtime_get_ns(), datetime);
-	jb << "created_on" << datetime;
 	jb << "}";
 
 	jb << "cameras";
@@ -553,9 +587,25 @@ t_stereo_camera_calibration_save_v2(const char *calib_path, struct t_stereo_came
 
 	jb << "}";
 
-	CALIB_INFO("Saving calibration file: %s", jb.getBuiltNode()->toString().c_str());
-	return jb.getBuiltNode()->saveToFile(calib_path);
+	cJSON *cjson = jb.getBuiltNode()->getCJSON();
+	*out_cjson = cJSON_Duplicate(cjson, true);
+	return true;
 }
+
+static bool
+t_stereo_camera_calibration_save_path_v2(const char *calib_path, struct t_stereo_camera_calibration *data)
+{
+	cJSON *cjson = NULL;
+	bool success = t_stereo_camera_calibration_to_json_v2(&cjson, data);
+	if (!success) {
+		return false;
+	}
+
+	JSONNode json{cjson, true, nullptr}; // is_owner=true so it will free cjson object when leaving scope
+	CALIB_INFO("Saving calibration file: %s", json.toString(false).c_str());
+	return json.saveToFile(calib_path);
+}
+
 
 /*
  *
@@ -629,4 +679,39 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 	// highly unlikely so minimally-helpful error message.
 	CALIB_ERROR("Mat dimension unknown mismatch: '%s'", name);
 	return false;
+}
+
+static bool
+has_json_extension(const char *filename)
+{
+	const char extension[] = ".json";
+	size_t name_len = strlen(filename);
+	size_t ext_len = strlen(extension);
+
+	if (name_len > ext_len) {
+		return strcmp(&filename[name_len - ext_len], extension) == 0;
+	}
+
+	return false;
+}
+
+
+/*
+ *
+ * Exported functions
+ *
+ */
+
+extern "C" bool
+t_stereo_camera_calibration_load(const char *calib_path, struct t_stereo_camera_calibration **out_data)
+{
+	return has_json_extension(calib_path) ? t_stereo_camera_calibration_load_path_v2(calib_path, out_data)
+	                                      : t_stereo_camera_calibration_load_path_v1(calib_path, out_data);
+}
+
+extern "C" bool
+t_stereo_camera_calibration_save(const char *calib_path, struct t_stereo_camera_calibration *data)
+{
+	return has_json_extension(calib_path) ? t_stereo_camera_calibration_save_path_v2(calib_path, data)
+	                                      : t_stereo_camera_calibration_save_path_v1(calib_path, data);
 }
